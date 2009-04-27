@@ -332,9 +332,8 @@ let solve_instanciations_problem = ref (fun _ _ _ _ _ -> assert false)
 let solve_instanciation_problem = ref (fun _ _ _ -> assert false)
 
 let resolve_typeclasses ?(onlyargs=false) ?(split=true) ?(fail=true) env evd =
-  if not (has_typeclasses ( evd)) then evd
-  else
-    !solve_instanciations_problem env (Evarutil.nf_evar_defs evd) onlyargs split fail
+  if not (has_typeclasses evd) then evd
+  else !solve_instanciations_problem env evd onlyargs split fail
 
 let resolve_one_typeclass env evm t =
   !solve_instanciation_problem env evm t

@@ -19,7 +19,7 @@
 
 Require Import Coq.Program.Basics.
 
-Typeclasses Opaque id const flip compose arrow impl iff.
+Typeclasses Opaque id const flip compose arrow impl iff not all.
 
 (** The unconvertible typeclass, to test that two objects of the same type are 
    actually different. *)

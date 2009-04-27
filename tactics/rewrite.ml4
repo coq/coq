@@ -112,6 +112,8 @@ let default_relation = lazy (gen_constant ["Classes"; "SetoidTactics"] "DefaultR
 
 let subrelation = lazy (gen_constant ["Classes"; "RelationClasses"] "subrelation")
 let is_subrelation = lazy (gen_constant ["Classes"; "RelationClasses"] "is_subrelation")
+let do_subrelation = lazy (gen_constant ["Classes"; "Morphisms"] "do_subrelation")
+let apply_subrelation = lazy (gen_constant ["Classes"; "Morphisms"] "apply_subrelation")
 
 let coq_relation = lazy (gen_constant ["Relations";"Relation_Definitions"] "relation")
 let mk_relation a = mkApp (Lazy.force coq_relation, [| a |])
@@ -160,50 +162,49 @@ let split_head = function
     hd :: tl -> hd, tl
   | [] -> assert(false)
 
-let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t option) (f : 'a -> constr) =
-  let new_evar isevars env t =
-    Evarutil.e_new_evar isevars env
+let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t option) (f : 'a -> constr) =
+  let new_evar evars env t =
+    Evarutil.new_evar evars env
       (* ~src:(dummy_loc, ImplicitArg (ConstRef (Lazy.force respectful), (n, Some na))) *) t
   in
-  let mk_relty ty obj =
+  let mk_relty evars ty obj =
     match obj with
       | None -> 
 	  let relty = mk_relation ty in
-	    new_evar isevars env relty
-      | Some x -> f x
+	    new_evar evars env relty
+      | Some x -> evars, f x
   in
-  let rec aux env ty l =
-    let t = Reductionops.whd_betadeltaiota env ( !isevars) ty in
+  let rec aux env evars ty l =
+    let t = Reductionops.whd_betadeltaiota env evars ty in
       match kind_of_term t, l with
       | Prod (na, ty, b), obj :: cstrs -> 
 	  if dependent (mkRel 1) b then
-	    let (b, arg, evars) = aux (Environ.push_rel (na, None, ty) env) b cstrs in
-	    let ty = Reductionops.nf_betaiota ( !isevars) ty in
+	    let (evars, b, arg, cstrs) = aux (Environ.push_rel (na, None, ty) env) evars b cstrs in
+	    let ty = Reductionops.nf_betaiota evars ty in
 	    let pred = mkLambda (na, ty, b) in
 	    let liftarg = mkLambda (na, ty, arg) in
 	    let arg' = mkApp (Lazy.force forall_relation, [| ty ; pred ; liftarg |]) in
-	      mkProd(na, ty, b), arg', (ty, None) :: evars
+	      evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
 	  else
-	    let (b', arg, evars) = aux env (subst1 mkProp b) cstrs in
-	    let ty = Reductionops.nf_betaiota( !isevars) ty in
-	    let relty = mk_relty ty obj in
+	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
+	    let ty = Reductionops.nf_betaiota evars ty in
+	    let evars, relty = mk_relty evars ty obj in
 	    let newarg = mkApp (Lazy.force respectful, [| ty ; b' ; relty ; arg |]) in
-	      mkProd(na, ty, b), newarg, (ty, Some relty) :: evars
+	      evars, mkProd(na, ty, b), newarg, (ty, Some relty) :: cstrs
       | _, obj :: _ -> anomaly "build_signature: not enough products"
       | _, [] -> 
 	  (match finalcstr with
 	      None -> 
-		let t = Reductionops.nf_betaiota( !isevars) ty in
-		let rel = mk_relty t None in 
-		  t, rel, [t, Some rel]
+		let t = Reductionops.nf_betaiota evars ty in
+		let evars, rel = mk_relty evars t None in 
+		  evars, t, rel, [t, Some rel]
 	    | Some codom -> let (t, rel) = Lazy.force codom in
-			      t, rel, [t, Some rel])
-  in aux env m cstrs
-
+			      evars, t, rel, [t, Some rel])
+  in aux env evars m cstrs
+    
 let proper_proof env evars carrier relation x =
-  let goal =
-    mkApp (Lazy.force proper_proxy_type, [| carrier ; relation; x |])
-  in Evarutil.e_new_evar evars env goal
+  let goal = mkApp (Lazy.force proper_proxy_type, [| carrier ; relation; x |])
+  in Evarutil.new_evar evars env goal
 
 let find_class_proof proof_type proof_method env evars carrier relation =
   try 
@@ -410,53 +411,63 @@ type rewrite_result = rewrite_result_info option
   
 type strategy = Environ.env -> evar_defs -> constr -> types ->
   constr option -> evar_defs -> rewrite_result option
-
-let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars =
-  let morph_instance, proj, sigargs, m', args, args' = 
-    let first = try (array_find args' (fun i b -> b <> None)) with Not_found -> raise (Invalid_argument "resolve_morphism") in
-    let morphargs, morphobjs = array_chop first args in
-    let morphargs', morphobjs' = array_chop first args' in
-    let appm = mkApp(m, morphargs) in
-    let appmtype = Typing.type_of env sigma appm in
-    let cstrs = List.map (function None -> None | Some r -> Some (r.rew_car, r.rew_rel)) (Array.to_list morphobjs') in
-    let appmtype', signature, sigargs = build_signature evars env appmtype cstrs cstr (fun (a,r) -> r) in
-    let cl_args = [| appmtype' ; signature ; appm |] in
-    let app = mkApp (Lazy.force proper_type, cl_args) in
-    let morph = Evarutil.e_new_evar evars env app in
-      morph, morph, sigargs, appm, morphobjs, morphobjs'
-  in 
-  let projargs, respars, typeargs = 
-    array_fold_left2 
-      (fun (acc, sigargs, typeargs') x y -> 
-	let (carrier, relation), sigargs = split_head sigargs in
-	  match relation with
-	  | Some relation ->
-	      (match y with
-	      | None ->
-		  let proof = proper_proof env evars carrier relation x in
-		    [ proof ; x ; x ] @ acc, sigargs, x :: typeargs'
-	      | Some r -> 
-		  [ r.rew_prf; r.rew_to; x ] @ acc, sigargs, r.rew_to :: typeargs')
-	  | None -> 
-	      if y <> None then error "Cannot rewrite the argument of a dependent function";
-	      x :: acc, sigargs, x :: typeargs')
-      ([], sigargs, []) args args'
-  in
-  let proof = applistc proj (List.rev projargs) in
-  let newt = applistc m' (List.rev typeargs) in
-    match respars with
-	[ a, Some r ] -> (proof, (a, r, oldt, fnewt newt))
-      | _ -> assert(false)
   
 let resolve_subrelation env sigma car rel rel' res =
-  if convertible env sigma rel rel' then res
+  if eq_constr rel rel' then res
   else
+(*   try let evd' = Evarconv.the_conv_x env rel rel' res.rew_evars in *)
+(* 	{ res with rew_evars = evd' } *)
+(*   with NotConvertible -> *)
     let app = mkApp (Lazy.force subrelation, [|car; rel; rel'|]) in
     let evars, subrel = Evarutil.new_evar res.rew_evars env app in
       { res with 
 	rew_prf = mkApp (subrel, [| res.rew_from ; res.rew_to ; res.rew_prf |]);
 	rew_rel = rel';
 	rew_evars = evars }
+
+
+let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars =
+  let evars, morph_instance, proj, sigargs, m', args, args' = 
+    let first = try (array_find args' (fun i b -> b <> None)) with Not_found -> raise (Invalid_argument "resolve_morphism") in
+    let morphargs, morphobjs = array_chop first args in
+    let morphargs', morphobjs' = array_chop first args' in
+    let appm = mkApp(m, morphargs) in
+    let appmtype = Typing.type_of env sigma appm in
+    let cstrs = List.map (Option.map (fun r -> r.rew_car, r.rew_rel)) (Array.to_list morphobjs') in
+      (* Desired signature *)
+    let evars, appmtype', signature, sigargs = build_signature evars env appmtype cstrs cstr (fun (a,r) -> r) in
+      (* Actual signature found *)
+    let cl_args = [| appmtype' ; signature ; appm |] in
+    let app = mkApp (Lazy.force proper_type, cl_args) in
+    let env' = Environ.push_named
+      (id_of_string "do_subrelation", Some (Lazy.force do_subrelation), Lazy.force apply_subrelation)
+      env
+    in
+    let evars, morph = Evarutil.new_evar evars env' app in
+      evars, morph, morph, sigargs, appm, morphobjs, morphobjs'
+  in 
+  let projargs, evars, respars, typeargs = 
+    array_fold_left2 
+      (fun (acc, evars, sigargs, typeargs') x y -> 
+	let (carrier, relation), sigargs = split_head sigargs in
+	  match relation with
+	  | Some relation ->
+	      (match y with
+	      | None ->
+		  let evars, proof = proper_proof env evars carrier relation x in
+		    [ proof ; x ; x ] @ acc, evars, sigargs, x :: typeargs'
+	      | Some r -> 
+		  [ r.rew_prf; r.rew_to; x ] @ acc, evars, sigargs, r.rew_to :: typeargs')
+	  | None -> 
+	      if y <> None then error "Cannot rewrite the argument of a dependent function";
+	      x :: acc, evars, sigargs, x :: typeargs')
+      ([], evars, sigargs, []) args args'
+  in
+  let proof = applistc proj (List.rev projargs) in
+  let newt = applistc m' (List.rev typeargs) in
+    match respars with
+	[ a, Some r ] -> evars, proof, a, r, oldt, fnewt newt
+      | _ -> assert(false)
 	
 let apply_constraint env sigma car rel cstr res =
   match cstr with
@@ -505,7 +516,7 @@ let subterm all flags (s : strategy) : strategy =
 		  else 
 		    let res = s env sigma arg (Typing.type_of env sigma arg) None evars in
 		      match res with 
-		      | Some None -> (None :: acc, evars, Some false)
+		      | Some None -> (None :: acc, evars, if progress = None then Some false else progress)
 		      | Some (Some r) -> (Some r :: acc, r.rew_evars, Some true)
 		      | None -> (None :: acc, evars, progress))
 		([], evars, success) args
@@ -515,10 +526,9 @@ let subterm all flags (s : strategy) : strategy =
 	      | Some false -> Some None
 	      | Some true ->
 		  let args' = Array.of_list (List.rev args') in
-		  let evarsref = ref evars' in
-		  let (prf, (car, rel, c1, c2)) = resolve_morphism env sigma t m args args' cstr' evarsref in
+		  let evars', prf, car, rel, c1, c2 = resolve_morphism env sigma t m args args' cstr' evars' in
 		  let res = { rew_car = ty; rew_rel = rel; rew_from = c1;
-			      rew_to = c2; rew_prf = prf; rew_evars = !evarsref } in
+			      rew_to = c2; rew_prf = prf; rew_evars = evars' } in
 		    Some (Some res)
 	  in 
 	    if flags.on_morphisms then
@@ -1113,14 +1123,15 @@ let build_morphism_signature m =
 	| _ -> []
     in aux t
   in
-  let t', sig_, evars = build_signature isevars env t cstrs None snd in
+  let evars, t', sig_, cstrs = build_signature !isevars env t cstrs None snd in
+  let _ = isevars := evars in
   let _ = List.iter
     (fun (ty, rel) -> 
       Option.iter (fun rel ->
 	let default = mkApp (Lazy.force default_relation, [| ty; rel |]) in
 	  ignore (Evarutil.e_new_evar isevars env default)) 
 	rel)
-    evars
+    cstrs
   in
   let morph = 
     mkApp (Lazy.force proper_type, [| t; sig_; m |])
@@ -1132,15 +1143,14 @@ let build_morphism_signature m =
 	
 let default_morphism sign m =
   let env = Global.env () in
-  let isevars = ref Evd.empty in
   let t = Typing.type_of env Evd.empty m in
-  let _, sign, evars =
-    build_signature isevars env t (fst sign) (snd sign) (fun (ty, rel) -> rel)
+  let evars, _, sign, cstrs =
+    build_signature Evd.empty env t (fst sign) (snd sign) (fun (ty, rel) -> rel)
   in
   let morph =
     mkApp (Lazy.force proper_type, [| t; sign; m |])
   in
-  let mor = resolve_one_typeclass env !isevars morph in
+  let mor = resolve_one_typeclass env evars morph in
     mor, proper_projection mor morph
     	  
 let add_setoid binders a aeq t n =

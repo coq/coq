@@ -43,7 +43,9 @@ Class Reflexive {A} (R : relation A) :=
   reflexivity : forall x, R x x.
 
 Class Irreflexive {A} (R : relation A) := 
-  irreflexivity :> Reflexive (complement R).
+  irreflexivity : Reflexive (complement R).
+
+Hint Extern 1 (Reflexive (complement _)) => eapply @irreflexivity : typeclasses_instances.
 
 Class Symmetric {A} (R : relation A) := 
   symmetry : forall x y, R x y -> R y x.
@@ -70,8 +72,10 @@ Hint Extern 4 => solve_relation : relations.
 
 (** We can already dualize all these properties. *)
 
-Program Instance flip_Reflexive `(Reflexive A R) : Reflexive (flip R) :=
-  reflexivity (R:=R).
+Program Lemma flip_Reflexive `(Reflexive A R) : Reflexive (flip R).
+Proof. tauto. Qed.
+
+Hint Extern 3 (Reflexive (flip _)) => apply flip_Reflexive : typeclass_instances.
 
 Program Instance flip_Irreflexive `(Irreflexive A R) : Irreflexive (flip R) :=
   irreflexivity (R:=R).
