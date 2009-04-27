@@ -270,8 +270,8 @@ val symbol_of_prod_entry_key :
 (**********************************************************************)
 (* Interpret entry names of the form "ne_constr_list" as entry keys   *)
 
-val interp_entry_name : int option -> string -> string -> 
-  entry_type * Gram.te prod_entry_key
+val interp_entry_name : bool (* true to fail on unknown entry *) ->
+  int option -> string -> string -> entry_type * Gram.te prod_entry_key
 
 (**********************************************************************)
 (* Registering/resetting the level of a constr entry                  *)

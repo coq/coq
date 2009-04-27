@@ -238,7 +238,7 @@ EXTEND
       [ e = argtype; LIDENT "list" -> List0ArgType e
       | e = argtype; LIDENT "option" -> OptArgType e ]
     | "0"
-      [ e = LIDENT -> fst (interp_entry_name None e "")
+      [ e = LIDENT -> fst (interp_entry_name false None e "")
       | "("; e = argtype; ")" -> e ] ]
   ;
   argrule:
@@ -246,10 +246,10 @@ EXTEND
   ;
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let t, g = interp_entry_name None e "" in
+        let t, g = interp_entry_name false None e "" in
 	GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let t, g = interp_entry_name None e sep in
+        let t, g = interp_entry_name false None e sep in
 	GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then

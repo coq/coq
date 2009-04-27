@@ -652,26 +652,26 @@ let rec symbol_of_prod_entry_key = function
 (**********************************************************************)
 (* Interpret entry names of the form "ne_constr_list" as entry keys   *)
 
-let rec interp_entry_name up_level s sep =
+let rec interp_entry_name static up_level s sep =
   let l = String.length s in
   if l > 8 & String.sub s 0 3 = "ne_" & String.sub s (l-5) 5 = "_list" then
-    let t, g = interp_entry_name up_level (String.sub s 3 (l-8)) "" in
+    let t, g = interp_entry_name static up_level (String.sub s 3 (l-8)) "" in
     List1ArgType t, Alist1 g
   else if l > 12 & String.sub s 0 3 = "ne_" &
                    String.sub s (l-9) 9 = "_list_sep" then
-    let t, g = interp_entry_name up_level (String.sub s 3 (l-12)) "" in
+    let t, g = interp_entry_name static up_level (String.sub s 3 (l-12)) "" in
     List1ArgType t, Alist1sep (g,sep)
   else if l > 5 & String.sub s (l-5) 5 = "_list" then
-    let t, g = interp_entry_name up_level (String.sub s 0 (l-5)) "" in
+    let t, g = interp_entry_name static up_level (String.sub s 0 (l-5)) "" in
     List0ArgType t, Alist0 g
   else if l > 9 & String.sub s (l-9) 9 = "_list_sep" then
-    let t, g = interp_entry_name up_level (String.sub s 0 (l-9)) "" in
+    let t, g = interp_entry_name static up_level (String.sub s 0 (l-9)) "" in
     List0ArgType t, Alist0sep (g,sep)
   else if l > 4 & String.sub s (l-4) 4 = "_opt" then
-    let t, g = interp_entry_name up_level (String.sub s 0 (l-4)) "" in
+    let t, g = interp_entry_name static up_level (String.sub s 0 (l-4)) "" in
     OptArgType t, Aopt g
   else if l > 5 & String.sub s (l-5) 5 = "_mods" then
-    let t, g = interp_entry_name up_level (String.sub s 0 (l-1)) "" in
+    let t, g = interp_entry_name static up_level (String.sub s 0 (l-1)) "" in
     List0ArgType t, Amodifiers g
   else
     let s = if s = "hyp" then "var" else s in
@@ -684,7 +684,10 @@ let rec interp_entry_name up_level s sep =
       try Some (get_entry uprim s), Aentry ("prim",s) with Not_found ->
       try Some (get_entry uconstr s), Aentry ("constr",s) with Not_found ->
       try Some (get_entry utactic s), Aentry ("tactic",s) with Not_found ->
-      None, Aentry ("",s) in
+	if static then
+	  error ("Unknown entry "^s^".")
+	else
+	  None, Aentry ("",s) in
     let t =
       match t with
 	| Some t -> type_of_typed_entry t

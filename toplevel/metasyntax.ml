@@ -47,7 +47,7 @@ let interp_prod_item lev = function
   | TacTerm s -> GramTerminal s
   | TacNonTerm (loc, nt, po) ->
       let sep = match po with Some (_,sep) -> sep | _ -> "" in
-      let (etyp, e) = interp_entry_name (Some lev) nt sep in
+      let (etyp, e) = interp_entry_name true (Some lev) nt sep in
       GramNonTerminal (loc, etyp, e, Option.map fst po)
 
 let make_terminal_status = function

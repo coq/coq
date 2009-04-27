@@ -2420,6 +2420,10 @@ and interp_atomic ist gl = function
         let wit = wit_list0 (globwit_ident_gen b) in
 	let mk_ident x = value_of_ident (interp_fresh_ident ist gl x) in
         VList (List.map mk_ident (out_gen wit x))
+    | List0ArgType IntroPatternArgType -> 
+        let wit = wit_list0 globwit_intro_pattern in
+	let mk_ipat x = VIntroPattern (snd (interp_intro_pattern ist gl x)) in
+        VList (List.map mk_ipat (out_gen wit x))
     | List1ArgType ConstrArgType -> 
         let wit = wit_list1 globwit_constr in
         VList (List.map (mk_constr_value ist gl) (out_gen wit x))
@@ -2436,6 +2440,10 @@ and interp_atomic ist gl = function
         let wit = wit_list1 (globwit_ident_gen b) in
 	let mk_ident x = value_of_ident (interp_fresh_ident ist gl x) in
         VList (List.map mk_ident (out_gen wit x))
+    | List1ArgType IntroPatternArgType -> 
+        let wit = wit_list1 globwit_intro_pattern in
+	let mk_ipat x = VIntroPattern (snd (interp_intro_pattern ist gl x)) in
+        VList (List.map mk_ipat (out_gen wit x))
     | StringArgType | BoolArgType
     | QuantHypArgType | RedExprArgType 
     | OpenConstrArgType _ | ConstrWithBindingsArgType 
