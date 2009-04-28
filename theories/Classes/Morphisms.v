@@ -422,8 +422,8 @@ Proof. firstorder. Qed.
 Lemma inverse2 `(subrelation A R R') : subrelation R (inverse (inverse R')).
 Proof. firstorder. Qed.
 
-Hint Extern 1 (subrelation (flip (flip _)) _) => eapply @inverse1 : typeclass_instances.
-Hint Extern 1 (subrelation _ (flip (flip _))) => eapply @inverse2 : typeclass_instances.
+Hint Extern 1 (subrelation (flip _) _) => eapply @inverse1 : typeclass_instances.
+Hint Extern 1 (subrelation _ (flip _)) => eapply @inverse2 : typeclass_instances.
 
 (** That's if and only if *)
 Instance eq_subrelation `(Reflexive A R) : subrelation (@eq A) R.
@@ -448,18 +448,17 @@ Proof.
   apply H0.
 Qed.
 
-Lemma proper_normalizes_proper `(Proper A R0 m, Normalizes A R0 R1) : Proper R1 m.
+Lemma proper_normalizes_proper `(Normalizes A R0 R1, Proper A R1 m) : Proper R0 m.
 Proof.
   intros A R0 m H R' H'.
-  red in H, H'. setoid_rewrite <- H'.
+  red in H, H'. setoid_rewrite H.
   assumption.
 Qed.
 
 Ltac proper_normalization :=
   match goal with
     | [ _ : normalization_done |- _ ] => fail 1
-    | [ _ : apply_subrelation |- _ ] => fail 1
-    | [ |- @Proper _ ?R _ ] => let H := fresh "H" in
+    | [ _ : apply_subrelation |- @Proper _ ?R _ ] => let H := fresh "H" in
       set(H:=did_normalization) ; eapply @proper_normalizes_proper
   end.
 

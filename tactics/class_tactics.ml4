@@ -117,12 +117,6 @@ let unify_resolve flags (c,clenv) gls =
 
 (** Hack to properly solve dependent evars that are typeclasses *)
 
-let unify_e_resolve flags (c,clenv) =
-  unify_e_resolve flags (c, clenv)
-
-let unify_resolve flags (c,clenv) =
-  unify_resolve flags (c, clenv)
-
 let flags_of_state st =
   {auto_unif_flags with 
     modulo_conv_on_closed_terms = Some st; modulo_delta = st}
@@ -266,7 +260,7 @@ let hints_tac hints =
       (pri, pp, res)
     in
     let tacs =
-      let poss = e_possible_resolve hints info.hints gl.evar_concl in
+      let poss = e_possible_resolve hints info.hints (Evarutil.nf_evar s gl.evar_concl) in
       let l =
 	Util.list_map_append (fun (tac, pri, pptac) ->
 	  try [tac {it = gl; sigma = s}, pri, pptac] with e when catchable e -> [])
