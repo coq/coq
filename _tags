@@ -21,6 +21,7 @@
 
 "toplevel/mltop.ml4": is_mltop, use_macro
 
+"parsing/lexer.ml4": use_macro
 "lib/compat.ml4": use_macro
 "parsing/g_xml.ml4": use_extend
 "parsing/q_constr.ml4": use_extend, use_MLast
