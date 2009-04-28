@@ -14,8 +14,8 @@ predicate from the regular existence (i.e., [Prop]-existence). One
 requires that the underlying set is countable and that the predicate
 is decidable. *)
 
-(** Coq does not allow case analysis on sort [Set] when the goal is in
-[Prop]. Therefore, one cannot eliminate [exists n, P n] in order to
+(** Coq does not allow case analysis on sort [Prop] when the goal is in
+[Set]. Therefore, one cannot eliminate [exists n, P n] in order to
 show [{n : nat | P n}]. However, one can perform a recursion on an
 inductive predicate in sort [Prop] so that the returning type of the
 recursion is in [Set]. This trick is described in Coq'Art book, Sect.
