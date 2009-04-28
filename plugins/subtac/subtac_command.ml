@@ -51,8 +51,13 @@ open Subtac_obligations
 (* Functions to parse and interpret constructions *)
 
 let evar_nf isevars c =
-  isevars := Evarutil.nf_evar_defs !isevars;
   Evarutil.nf_isevar !isevars c
+
+let get_undefined_evars evd =
+  Evd.fold (fun ev evi evd' ->
+    if evi.evar_body = Evar_empty then 
+      Evd.add evd' ev (nf_evar_info evd evi)
+    else evd') evd Evd.empty
 
 let interp_gen kind isevars env 
                ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
@@ -314,6 +319,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   in
   let def = wrapper fix_def in
   let typ = it_mkProd_or_LetIn top_arity binders_rel in
+  let _ = isevars := Evarutil.nf_evar_defs !isevars in
   let fullcoqc = Evarutil.nf_isevar !isevars def in
   let fullctyp = Evarutil.nf_isevar !isevars typ in
   let evm = evars_of_term !isevars Evd.empty fullctyp in
@@ -417,9 +423,10 @@ let interp_recursive fixkind l boxed =
 
   (* Instantiate evars and check all are resolved *)
   let evd,_ = Evarconv.consider_remaining_unif_problems env_rec !evdref in
-  let fixdefs = List.map (nf_evar ( evd)) fixdefs in
-  let fixtypes = List.map (nf_evar ( evd)) fixtypes in
-  let rec_sign = nf_named_context_evar ( evd) rec_sign in
+  let evd = Evarutil.nf_evar_defs evd in
+  let fixdefs = List.map (nf_evar evd) fixdefs in
+  let fixtypes = List.map (nf_evar evd) fixtypes in
+  let rec_sign = nf_named_context_evar evd rec_sign in
     
   let recdefs = List.length rec_sign in
   List.iter (check_evars env_rec Evd.empty evd) fixdefs;
