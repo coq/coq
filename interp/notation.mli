@@ -39,6 +39,11 @@ val declare_scope : scope_name -> unit
 
 val current_scopes : unit -> scopes
 
+(* Check where a scope is opened or not in a scope list, or in
+ * the current opened scopes *)
+val scope_is_open_in_scopes : scope_name -> scopes -> bool
+val scope_is_open : scope_name -> bool
+
 (* Open scope *)
 
 val open_close_scope : 

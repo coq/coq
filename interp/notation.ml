@@ -92,6 +92,11 @@ let scope_stack = ref []
 
 let current_scopes () = !scope_stack
 
+let scope_is_open_in_scopes sc l = 
+  List.mem (Scope sc) l
+
+let scope_is_open sc = scope_is_open_in_scopes sc (!scope_stack) 
+
 (* TODO: push nat_scope, z_scope, ... in scopes summary *)
 
 (* Exportation of scopes *)
