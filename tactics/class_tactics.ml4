@@ -205,7 +205,9 @@ let typeclasses_debug = ref false
 
 type validation = evar_map -> proof_tree list -> proof_tree
 
-type autoinfo = { hints : Auto.hint_db; auto_depth: int; auto_last_tac: std_ppcmds }
+let pr_depth l = prlist_with_sep (fun () -> str ".") pr_int (List.rev l)
+
+type autoinfo = { hints : Auto.hint_db; auto_depth: int list; auto_last_tac: std_ppcmds }
 type autogoal = goal * autoinfo
 type 'ans fk = unit -> 'ans
 type ('a,'ans) sk = 'a -> 'ans fk -> 'ans
@@ -254,34 +256,38 @@ let solve_tac (x : 'a tac) : 'a tac =
       
 let hints_tac hints = 
   { skft = fun sk fk {it = gl,info; sigma = s} ->
-    if !typeclasses_debug then msgnl (str"depth=" ++ int info.auto_depth ++ str": " ++ info.auto_last_tac
-					 ++ spc () ++ str "->" ++ spc () ++ pr_ev s gl);
+(*     if !typeclasses_debug then msgnl (str"depth=" ++ int info.auto_depth ++ str": " ++ info.auto_last_tac *)
+(* 					 ++ spc () ++ str "->" ++ spc () ++ pr_ev s gl); *)
     let possible_resolve ((lgls,v) as res, pri, pp) =
       (pri, pp, res)
     in
     let tacs =
-      let poss = e_possible_resolve hints info.hints (Evarutil.nf_evar s gl.evar_concl) in
+      let concl = Evarutil.nf_evar s gl.evar_concl in
+      let poss = e_possible_resolve hints info.hints concl in
       let l =
 	Util.list_map_append (fun (tac, pri, pptac) ->
 	  try [tac {it = gl; sigma = s}, pri, pptac] with e when catchable e -> [])
 	  poss
       in
+	if l = [] && !typeclasses_debug then
+	  msgnl (pr_depth info.auto_depth ++ str": no match for " ++ 
+		    Printer.pr_constr_env (Evd.evar_env gl) concl ++ int (List.length poss) ++ str" possibilities");
 	List.map possible_resolve l
     in
     let tacs = List.sort compare tacs in
-    let info = { info with auto_depth = succ info.auto_depth } in
-    let rec aux = function
+    let rec aux i = function
       | (_, pp, ({it = gls; sigma = s}, v)) :: tl ->
-	  if !typeclasses_debug then msgnl (str"depth=" ++ int info.auto_depth ++ str": " ++ pp
-					       ++ spc () ++ str"succeeded on" ++ spc () ++ pr_ev s gl);
+	  if !typeclasses_debug then msgnl (pr_depth (i :: info.auto_depth) ++ str": " ++ pp
+					       ++ str" on" ++ spc () ++ pr_ev s gl);
 	  let fk =
-	    (fun () -> if !typeclasses_debug then msgnl (str"backtracked after " ++ pp ++ spc () ++ str"failed");
-	    aux tl) 
+	    (fun () -> (* if !typeclasses_debug then msgnl (str"backtracked after " ++ pp); *)
+	    aux (succ i) tl) 
 	  in
-	  let glsv = {it = List.map (fun g -> g, { info with auto_last_tac = pp }) gls; sigma = s}, fun _ -> v in
+	  let glsv = {it = list_map_i (fun j g -> g, 
+	    { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp }) 1 gls; sigma = s}, fun _ -> v in
 	    sk glsv fk
       | [] -> fk ()
-    in aux tacs }
+    in aux 1 tacs }
     
 let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk =
   let rec aux s (acc : (autogoal list * validation) list) fk = function
@@ -344,10 +350,12 @@ let make_autogoal ?(st=full_transparent_state) g =
   let sign = pf_hyps g in
   let hintlist = list_map_append (pf_apply make_resolve_hyp g st (true,false,false) None) sign in
   let hints = Hint_db.add_list hintlist (Hint_db.empty st true) in
-    (g.it, { hints = hints ; auto_depth = 0; auto_last_tac = mt() })
+    (g.it, { hints = hints ; auto_depth = []; auto_last_tac = mt() })
       
 let make_autogoals ?(st=full_transparent_state) gs evm' =
-  { it = List.map (fun g -> make_autogoal ~st {it = snd g; sigma = evm'}) gs; sigma = evm' }
+  { it = list_map_i (fun i g -> 
+    let (gl, auto) = make_autogoal ~st {it = snd g; sigma = evm'} in
+      (gl, { auto with auto_depth = [i]})) 1 gs; sigma = evm' }
     
 let run_on_evars ?(st=full_transparent_state) p evm tac =
   match evars_to_goals p evm with
@@ -641,4 +649,18 @@ TACTIC EXTEND not_evar
     match kind_of_term ty with
     | Evar _ -> tclFAIL 0 (str"Evar")
     | _ -> tclIDTAC ]
+END
+
+TACTIC EXTEND is_ground
+  [ "is_ground" constr(ty) ] -> [ fun gl ->
+    if Evarutil.is_ground_term (project gl) ty then tclIDTAC gl
+    else tclFAIL 0 (str"Not ground") gl ]
+END
+
+TACTIC EXTEND autoapply
+  [ "autoapply" constr(c) "using" preident(i) ] -> [ fun gl ->
+    let flags = flags_of_state (Auto.Hint_db.transparent_state (Auto.searchtable_map i)) in
+    let cty = pf_type_of gl c in
+    let ce = mk_clenv_from gl (c,cty) in
+      unify_e_resolve flags (c,ce) gl ]
 END

@@ -118,14 +118,22 @@ Proof. firstorder. Qed.
 
 (** The subrelation property goes through products as usual. *)
 
-Instance subrelation_respectful `(subl : subrelation A R₂ R₁, subr : subrelation B S₁ S₂) :
+Lemma subrelation_respectful `(subl : subrelation A R₂ R₁, subr : subrelation B S₁ S₂) :
   subrelation (R₁ ==> S₁) (R₂ ==> S₂).
 Proof. simpl_relation. apply subr. apply H. apply subl. apply H0. Qed.
 
 (** And of course it is reflexive. *)
 
-Instance subrelation_refl : ! subrelation A R R.
+Lemma subrelation_refl A R : @subrelation A R R.
 Proof. simpl_relation. Qed.
+
+Ltac class_apply c := autoapply c using typeclass_instances.
+
+Ltac subrelation_tac T U := 
+  (is_ground T ; is_ground U ; class_apply @subrelation_refl) ||
+    class_apply @subrelation_respectful || class_apply @subrelation_refl.
+
+Hint Extern 3 (@subrelation _ ?T ?U) => subrelation_tac T U : typeclass_instances.
 
 (** [Proper] is itself a covariant morphism for [subrelation]. *)
 
@@ -139,10 +147,10 @@ CoInductive apply_subrelation : Prop := do_subrelation.
 
 Ltac proper_subrelation :=
   match goal with 
-    [ H : apply_subrelation |- _ ] => clear H ; eapply @subrelation_proper
+    [ H : apply_subrelation |- _ ] => clear H ; class_apply @subrelation_proper
   end.
 
-Hint Extern 4 (@Proper _ ?H _) => proper_subrelation : typeclass_instances.
+Hint Extern 5 (@Proper _ ?H _) => proper_subrelation : typeclass_instances.
 
 Instance proper_subrelation_proper : 
   Proper (subrelation ++> @eq _ ==> impl) (@Proper A).
@@ -188,7 +196,7 @@ Program Instance flip_proper
    contravariant in the first argument, covariant in the second. *)
 
 Program Instance trans_contra_co_morphism
-  `(Transitive A R) : Proper (R --> R ++> impl) R | 6.
+  `(Transitive A R) : Proper (R --> R ++> impl) R.
 
   Next Obligation.
   Proof with auto.
@@ -245,7 +253,7 @@ Program Instance per_partial_app_morphism
    to get an [R y z] goal. *)
 
 Program Instance trans_co_eq_inv_impl_morphism
-  `(Transitive A R) : Proper (R ==> (@eq A) ==> inverse impl) R | 3.
+  `(Transitive A R) : Proper (R ==> (@eq A) ==> inverse impl) R | 2.
 
   Next Obligation.
   Proof with auto.
@@ -254,7 +262,7 @@ Program Instance trans_co_eq_inv_impl_morphism
 
 (** Every Symmetric and Transitive relation gives rise to an equivariant morphism. *)
 
-Program Instance PER_morphism `(PER A R) : Proper (R ==> R ==> iff) R | 2.
+Program Instance PER_morphism `(PER A R) : Proper (R ==> R ==> iff) R | 1.
 
   Next Obligation.
   Proof with auto.
@@ -322,8 +330,8 @@ Proof. firstorder. Qed.
 Lemma proper_proper_proxy `(Proper A R x) : ProperProxy R x.
 Proof. firstorder. Qed.
 
-Hint Extern 1 (ProperProxy _ _) => apply eq_proper_proxy || eapply @reflexive_proper_proxy : typeclass_instances.
-(* Hint Extern 2 (ProperProxy ?R _) => not_evar R ; eapply @proper_proper_proxy : typeclass_instances. *)
+Hint Extern 1 (ProperProxy _ _) => class_apply eq_proper_proxy || class_apply @reflexive_proper_proxy : typeclass_instances.
+Hint Extern 2 (ProperProxy ?R _) => not_evar R ; class_apply @proper_proper_proxy : typeclass_instances.
 
 (** [R] is Reflexive, hence we can build the needed proof. *)
 
@@ -340,7 +348,7 @@ CoInductive normalization_done : Prop := did_normalization.
 Ltac partial_application_tactic := 
   let rec do_partial_apps H m :=
     match m with
-      | ?m' ?x => eapply @Reflexive_partial_app_morphism ; [do_partial_apps H m'|clear H]
+      | ?m' ?x => class_apply @Reflexive_partial_app_morphism ; [do_partial_apps H m'|clear H]
       | _ => idtac
     end
   in
@@ -368,10 +376,10 @@ Ltac partial_application_tactic :=
     | [ |- @Proper ?T _ (?m ?x) ] => 
       match goal with 
         | [ _ : PartialApplication |- _ ] => 
-          eapply @Reflexive_partial_app_morphism
+          class_apply @Reflexive_partial_app_morphism
         | _ => 
           on_morphism (m x) || 
-            (eapply @Reflexive_partial_app_morphism ;
+            (class_apply @Reflexive_partial_app_morphism ;
               [ pose Build_PartialApplication | idtac ])
       end
   end.
@@ -407,8 +415,8 @@ Qed.
 
 Ltac inverse :=   
   match goal with
-    | [ |- Normalizes _ (respectful _ _) _ ] => eapply @inverse_arrow
-    | _ => eapply @inverse_atom
+    | [ |- Normalizes _ (respectful _ _) _ ] => class_apply @inverse_arrow
+    | _ => class_apply @inverse_atom
   end.
 
 Hint Extern 1 (Normalizes _ _ _) => inverse : typeclass_instances.
@@ -422,18 +430,21 @@ Proof. firstorder. Qed.
 Lemma inverse2 `(subrelation A R R') : subrelation R (inverse (inverse R')).
 Proof. firstorder. Qed.
 
-Hint Extern 1 (subrelation (flip _) _) => eapply @inverse1 : typeclass_instances.
-Hint Extern 1 (subrelation _ (flip _)) => eapply @inverse2 : typeclass_instances.
+Hint Extern 1 (subrelation (flip _) _) => class_apply @inverse1 : typeclass_instances.
+Hint Extern 1 (subrelation _ (flip _)) => class_apply @inverse2 : typeclass_instances.
 
 (** That's if and only if *)
-Instance eq_subrelation `(Reflexive A R) : subrelation (@eq A) R.
+
+Lemma eq_subrelation `(Reflexive A R) : subrelation (@eq A) R.
 Proof. simpl_relation. Qed.
+
+Hint Extern 3 (subrelation (@eq _) ?R) => not_evar R ; class_apply eq_subrelation.
 
 (** Once we have normalized, we will apply this instance to simplify the problem. *)
 
 Definition proper_inverse_proper `(mor : Proper A R m) : Proper (inverse R) m := mor.
 
-Hint Extern 2 (@Proper _ (flip _) _) => eapply @proper_inverse_proper : typeclass_instances.
+Hint Extern 2 (@Proper _ (flip _) _) => class_apply @proper_inverse_proper : typeclass_instances.
 
 (** Bootstrap !!! *)
 
@@ -450,8 +461,9 @@ Qed.
 
 Lemma proper_normalizes_proper `(Normalizes A R0 R1, Proper A R1 m) : Proper R0 m.
 Proof.
-  intros A R0 m H R' H'.
-  red in H, H'. setoid_rewrite H.
+  intros A R0 R1 H m H'.
+  red in H, H'.
+  setoid_rewrite H.
   assumption.
 Qed.
 
@@ -459,7 +471,7 @@ Ltac proper_normalization :=
   match goal with
     | [ _ : normalization_done |- _ ] => fail 1
     | [ _ : apply_subrelation |- @Proper _ ?R _ ] => let H := fresh "H" in
-      set(H:=did_normalization) ; eapply @proper_normalizes_proper
+      set(H:=did_normalization) ; class_apply @proper_normalizes_proper
   end.
 
 Hint Extern 6 (@Proper _ _ _) => proper_normalization : typeclass_instances.
@@ -476,7 +488,8 @@ Proof. intros. apply reflexive_proper. Qed.
 Ltac proper_reflexive :=
   match goal with
     | [ _ : normalization_done |- _ ] => fail 1
-    | [ |- @Proper _ _ _ ] => apply proper_eq || eapply @reflexive_proper
+    | [ _ : apply_subrelation |- _ ] => class_apply proper_eq || class_apply @reflexive_proper
+    | _ => class_apply proper_eq
   end.
 
 Hint Extern 7 (@Proper _ _ _) => proper_reflexive : typeclass_instances.

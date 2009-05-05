@@ -581,7 +581,7 @@ let subterm all flags (s : strategy) : strategy =
 	      
       | Lambda (n, t, b) when flags.under_lambdas ->
 	  let env' = Environ.push_rel (n, None, t) env in
-	  let b' = aux env' sigma b (Typing.type_of env' sigma b) (unlift_cstr env sigma cstr) evars in
+	  let b' = s env' sigma b (Typing.type_of env' sigma b) (unlift_cstr env sigma cstr) evars in
 	    (match b' with
 	    | Some (Some r) ->
 		Some (Some { r with
