@@ -26,7 +26,17 @@ exception ReductionTacticError of reduction_tactic_error
 
 (*s Reduction functions associated to tactics. \label{tacred} *)
 
-val is_evaluable : env -> evaluable_global_reference -> bool
+(* Evaluable global reference *)
+
+val is_evaluable : Environ.env -> evaluable_global_reference -> bool
+
+val error_not_evaluable : Libnames.global_reference -> 'a
+
+val evaluable_of_global_reference :
+  Environ.env -> Libnames.global_reference -> evaluable_global_reference
+
+val global_of_evaluable_reference :
+  evaluable_global_reference -> Libnames.global_reference
 
 exception Redelimination
 
@@ -75,7 +85,7 @@ val reduce_to_atomic_ind : env ->  evar_map -> types -> inductive * types
 val reduce_to_quantified_ind : env ->  evar_map -> types -> inductive * types
 
 (* [reduce_to_quantified_ref env sigma ref t] try to put [t] in the form
-   [t'=(x1:A1)..(xn:An)(ref args)] and raise [Not_found] if not possible *)
+   [t'=(x1:A1)..(xn:An)(ref args)] and fails with user error if not possible *)
 val reduce_to_quantified_ref :
   env ->  evar_map -> Libnames.global_reference -> types -> types
 

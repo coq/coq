@@ -291,7 +291,7 @@ let qualid_of_con c =
 
 let set_rigid c = 
   Auto.add_hints false [typeclasses_db] 
-    (Vernacexpr.HintsTransparency ([qualid_of_con c], false))
+    (Auto.HintsTransparencyEntry ([EvalConstRef c], false))
 
 let declare_instance_cst glob con =
   let instance = Typeops.type_of_constant (Global.env ()) con in

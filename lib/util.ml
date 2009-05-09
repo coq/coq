@@ -49,6 +49,12 @@ exception Error_in_file of string * (bool * string * loc) * exn
 let on_fst f (a,b) = (f a,b)
 let on_snd f (a,b) = (a,f b)
 
+(* Mapping under pairs *)
+
+let on_pi1 f (a,b,c) = (f a,b,c)
+let on_pi2 f (a,b,c) = (a,f b,c)
+let on_pi3 f (a,b,c) = (a,b,f c)
+
 (* Projections from triplets *)
 
 let pi1 (a,_,_) = a

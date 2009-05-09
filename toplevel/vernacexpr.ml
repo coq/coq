@@ -110,7 +110,7 @@ type comment =
   | CommentString of string
   | CommentInt of int
 
-type hints =
+type hints_expr =
   | HintsResolve of (int option * bool * constr_expr) list
   | HintsImmediate of constr_expr list
   | HintsUnfold of reference list
@@ -124,15 +124,6 @@ type search_restriction =
   | SearchInside of reference list
   | SearchOutside of reference list
 
-type option_value =
-  | StringValue of string
-  | IntValue of int
-  | BoolValue of bool
-
-type option_ref_value =
-  | StringRefValue of string
-  | QualidRefValue of reference
-
 type rec_flag       = bool (* true = Rec;           false = NoRec          *)
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
 type opacity_flag   = bool (* true = Opaque;        false = Transparent    *)
@@ -143,6 +134,15 @@ type specif_flag    = bool (* true = Specification; false = Implementation *)
 type inductive_flag = Decl_kinds.recursivity_kind
 type onlyparsing_flag = bool (* true = Parse only;  false = Print also     *)
 type infer_flag     = bool (* true = try to Infer record; false = nothing  *)
+
+type option_value =
+  | StringValue of string
+  | IntValue of int
+  | BoolValue of bool
+
+type option_ref_value =
+  | StringRefValue of string
+  | QualidRefValue of reference
 
 type sort_expr = Rawterm.rawsort
 
@@ -301,7 +301,7 @@ type vernac_expr =
   | VernacDeclareTacticDefinition of
       rec_flag * (reference * bool * raw_tactic_expr) list
   | VernacCreateHintDb of locality_flag * lstring * bool
-  | VernacHints of locality_flag * lstring list * hints
+  | VernacHints of locality_flag * lstring list * hints_expr
   | VernacSyntacticDefinition of identifier located * (identifier list * constr_expr) *
       locality_flag * onlyparsing_flag
   | VernacDeclareImplicits of locality_flag * lreference * 

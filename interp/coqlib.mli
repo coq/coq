@@ -137,6 +137,10 @@ val build_coq_not : constr delayed
 (* Conjunction *)
 val build_coq_and : constr delayed
 val build_coq_conj : constr delayed
+val build_coq_iff : constr delayed
+
+val build_coq_iff_left_proj : constr delayed
+val build_coq_iff_right_proj : constr delayed
 
 (* Disjunction *)
 val build_coq_or : constr delayed
@@ -154,3 +158,4 @@ val coq_sumbool_ref : global_reference lazy_t
 val coq_sig_ref : global_reference lazy_t
 
 val coq_or_ref : global_reference lazy_t
+val coq_iff_ref : global_reference lazy_t

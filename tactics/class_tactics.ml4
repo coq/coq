@@ -480,13 +480,15 @@ let _ =
     
 VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings
 | [ "Typeclasses" "Transparent" reference_list(cl) ] -> [
-    add_hints false [typeclasses_db] (Vernacexpr.HintsTransparency (cl, true))
+    add_hints false [typeclasses_db]
+      (interp_hints (Vernacexpr.HintsTransparency (cl, true)))
   ]
 END
 	
 VERNAC COMMAND EXTEND Typeclasses_Rigid_Settings
 | [ "Typeclasses" "Opaque" reference_list(cl) ] -> [
-    add_hints false [typeclasses_db] (Vernacexpr.HintsTransparency (cl, false))
+    add_hints false [typeclasses_db]
+      (interp_hints (Vernacexpr.HintsTransparency (cl, false)))
   ]
 END
 

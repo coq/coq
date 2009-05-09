@@ -35,15 +35,20 @@ exception ReductionTacticError of reduction_tactic_error
 exception Elimconst
 exception Redelimination
 
+let error_not_evaluable r =
+  errorlabstrm "error_not_evaluable"
+    (str "Cannot coerce" ++ spc () ++ Nametab.pr_global_env Idset.empty r ++ 
+     spc () ++ str "to an evaluable reference.")
+
+let is_evaluable_const env cst =
+  is_transparent (ConstKey cst) && evaluable_constant cst env
+
+let is_evaluable_var env id =
+  is_transparent (VarKey id) && evaluable_named id env
+
 let is_evaluable env = function
-  | EvalConstRef kn ->
-      is_transparent (ConstKey kn) &&
-      let cb = Environ.lookup_constant kn env in
-      cb.const_body <> None & not cb.const_opaque
-  | EvalVarRef id ->
-      is_transparent (VarKey id) &&
-      let (_,value,_) = Environ.lookup_named id env in
-      value <> None
+  | EvalConstRef cst -> is_evaluable_const env cst
+  | EvalVarRef id -> is_evaluable_var env id
 
 let value_of_evaluable_ref env = function
   | EvalConstRef con -> constant_value env con
@@ -52,6 +57,15 @@ let value_of_evaluable_ref env = function
 let constr_of_evaluable_ref = function
   | EvalConstRef con -> mkConst con
   | EvalVarRef id -> mkVar id
+
+let evaluable_of_global_reference env = function
+  | ConstRef cst when is_evaluable_const env cst -> EvalConstRef cst
+  | VarRef id when is_evaluable_var env id -> EvalVarRef id
+  | r -> error_not_evaluable r
+
+let global_of_evaluable_reference = function
+  | EvalConstRef cst -> ConstRef cst
+  | EvalVarRef id -> VarRef id
 
 type evaluable_reference =
   | EvalConst of constant

@@ -204,6 +204,47 @@ VERNAC COMMAND EXTEND HintRewrite
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
     ":" preident(b) ] ->
   [ add_rewrite_hint b o t l ]
+| [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
+  [ add_rewrite_hint "core" o (Tacexpr.TacId []) l ]
+| [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
+  [ add_rewrite_hint "core" o t l ]
+END
+
+open Term
+open Coqlib
+
+let project_hint pri l2r c =
+  let env = Global.env() in
+  let c = Constrintern.interp_constr Evd.empty env c in
+  let t = Retyping.get_type_of env Evd.empty c in
+  let t = 
+    Tacred.reduce_to_quantified_ref env Evd.empty (Lazy.force coq_iff_ref) t in
+  let sign,ccl = decompose_prod_assum t in
+  let (a,b) = match snd (decompose_app ccl) with
+    | [a;b] -> (a,b)
+    | _ -> assert false in
+  let p =
+    if l2r then build_coq_iff_left_proj () else build_coq_iff_right_proj () in
+  let c = Reductionops.whd_beta Evd.empty (mkApp (c,Termops.extended_rel_vect 0 sign)) in
+  let c = it_mkLambda_or_LetIn
+    (mkApp (p,[|mkArrow a (lift 1 b);mkArrow b (lift 1 a);c|])) sign in
+  (pri,true,c)
+
+let add_hints_iff l2r lc n bl =
+  Auto.add_hints true bl
+    (Auto.HintsResolveEntry (List.map (project_hint n l2r) lc))
+
+VERNAC COMMAND EXTEND HintResolveIff
+  [ "Hint" "Resolve" "->" ne_constr_list(lc) natural_opt(n)
+    ":" preident_list(bl) ] ->
+  [ add_hints_iff true lc n bl ]
+| [ "Hint" "Resolve" "<-" ne_constr_list(lc) natural_opt(n)
+    ":" preident_list(bl) ] ->
+  [ add_hints_iff false lc n bl ]
+| [ "Hint" "Resolve" "->" ne_constr_list(lc) natural_opt(n) ] ->
+  [ add_hints_iff true lc n ["core"] ]
+| [ "Hint" "Resolve" "<-" ne_constr_list(lc) natural_opt(n) ] ->
+  [ add_hints_iff false lc n ["core"] ]
 END
 
 

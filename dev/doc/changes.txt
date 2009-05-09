@@ -2,7 +2,7 @@
 = CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
 =========================================
 
-** Cleaning in parsing extensions (commit )
+** Cleaning in parsing extensions (commit 12108)
 
 Many moves and renamings, one new file (Extrawit, that contains wit_tactic).
 

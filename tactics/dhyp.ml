@@ -225,16 +225,10 @@ let (inDD,_) =
 		    classify_function = classify_dd;
                     export_function = export_dd }
 
-let forward_intern_tac = 
-  ref (fun _ -> failwith "intern_tac is not installed for DHyp")
-
-let set_extern_intern_tac f = forward_intern_tac := f
-
 let catch_all_sort_pattern = PMeta(Some (id_of_string "SORT"))
 let catch_all_type_pattern = PMeta(Some (id_of_string "TYPE"))
     
-let add_destructor_hint local na loc pat pri code =
-  let code = !forward_intern_tac code in
+let add_destructor_hint local na loc (_,pat) pri code =
   let code =
     begin match loc, code with
       | HypLocation _, TacFun ([id],body) -> (id,body)
@@ -242,8 +236,6 @@ let add_destructor_hint local na loc pat pri code =
       | _ ->
 	  errorlabstrm "add_destructor_hint"
           (str "The tactic should be a function of the hypothesis name.") end
-  in
-  let (_,pat) = Constrintern.intern_constr_pattern Evd.empty (Global.env()) pat
   in
   let pat = match loc with
     | HypLocation b ->

@@ -174,11 +174,6 @@ let find_reference env qid =
 	-> VarRef id
     | _ -> Nametab.locate qid
 
-let error_not_evaluable s =
-  errorlabstrm "evalref_of_ref" 
-    (str "Cannot coerce" ++ spc ()  ++ s ++ spc () ++
-     str "to an evaluable reference.")
-
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 let atomic_mactab = ref Idmap.empty
 let add_primitive_tactic s tac =
@@ -315,23 +310,23 @@ let coerce_to_tactic loc id = function
 
 (* We have identifier <| global_reference <| constr *)
 
-let find_ident id sign = 
-  List.mem id (fst sign.ltacvars) or 
-  List.mem id (ids_of_named_context (Environ.named_context sign.genv))
+let find_ident id ist = 
+  List.mem id (fst ist.ltacvars) or 
+  List.mem id (ids_of_named_context (Environ.named_context ist.genv))
 
-let find_recvar qid sign = List.assoc qid sign.ltacrecvars
+let find_recvar qid ist = List.assoc qid ist.ltacrecvars
 
 (* a "var" is a ltac var or a var introduced by an intro tactic *)
-let find_var id sign = List.mem id (fst sign.ltacvars)
+let find_var id ist = List.mem id (fst ist.ltacvars)
 
 (* a "ctxvar" is a var introduced by an intro tactic (Intro/LetTac/...) *)
-let find_ctxvar id sign = List.mem id (snd sign.ltacvars)
+let find_ctxvar id ist = List.mem id (snd ist.ltacvars)
 
 (* a "ltacvar" is an ltac var (Let-In/Fun/...) *)
-let find_ltacvar id sign = find_var id sign & not (find_ctxvar id sign)
+let find_ltacvar id ist = find_var id ist & not (find_ctxvar id ist)
 
-let find_hyp id sign =
-  List.mem id (ids_of_named_context (Environ.named_context sign.genv))
+let find_hyp id ist =
+  List.mem id (ids_of_named_context (Environ.named_context ist.genv))
 
 (* Globalize a name introduced by Intro/LetTac/... ; it is allowed to *)
 (* be fresh in which case it is binding later on *)
@@ -549,11 +544,6 @@ let intern_induction_arg ist = function
       else
 	ElimOnIdent (loc,id)
 
-let evaluable_of_global_reference = function
-  | ConstRef c -> EvalConstRef c
-  | VarRef c -> EvalVarRef c
-  | r -> error_not_evaluable (pr_global r)
-
 let short_name = function
   | AN (Ident (loc,id)) when not !strict_check -> Some (loc,id)
   | _ -> None
@@ -566,21 +556,21 @@ let interp_global_reference r =
   | Ident (loc,id) when not !strict_check -> VarRef id
   | _ -> error_global_not_found_loc lqid
 
-let intern_evaluable_reference_or_by_notation = function
-  | AN r -> evaluable_of_global_reference (interp_global_reference r)
+let intern_evaluable_reference_or_by_notation ist = function
+  | AN r -> evaluable_of_global_reference ist.genv (interp_global_reference r)
   | ByNotation (loc,ntn,sc) ->
-      evaluable_of_global_reference
+      evaluable_of_global_reference ist.genv
       (Notation.interp_notation_as_global_reference loc
         (function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc)
 
-(* Globalizes a reduction expression *)
+(* Globalize a reduction expression *)
 let intern_evaluable ist = function
   | AN (Ident (loc,id)) when find_ltacvar id ist -> ArgVar (loc,id)
   | AN (Ident (_,id)) when
       (not !strict_check & find_hyp id ist) or find_ctxvar id ist ->
       ArgArg (EvalVarRef id, None)
   | r ->
-      let e = intern_evaluable_reference_or_by_notation r in
+      let e = intern_evaluable_reference_or_by_notation ist r in
       let na = short_name r in
       ArgArg (e,na)
 
@@ -1331,7 +1321,7 @@ let interp_evaluable ist env = function
       (* Maybe [id] has been introduced by Intro-like tactics *)
       (try match Environ.lookup_named id env with
        | (_,Some _,_) -> EvalVarRef id
-       | _ -> error_not_evaluable (pr_id id)
+       | _ -> error_not_evaluable (VarRef id)
        with Not_found ->
        match r with
        | EvalConstRef _ -> r
@@ -2951,5 +2941,3 @@ let _ = Auto.set_extern_intern_tac
     (intern_tactic {(make_empty_glob_sign()) with ltacvars=(l,[])}))
 let _ = Auto.set_extern_subst_tactic subst_tactic
 let _ = Dhyp.set_extern_interp eval_tactic
-let _ = Dhyp.set_extern_intern_tac
-  (fun t -> intern_tactic (make_empty_glob_sign()) t)

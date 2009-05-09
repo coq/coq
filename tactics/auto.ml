@@ -325,8 +325,8 @@ let make_resolve_hyp env sigma (hname,_,htyp) =
     | e when Logic.catchable_exception e -> anomaly "make_resolve_hyp"
 
 (* REM : in most cases hintname = id *)
-let make_unfold (ref, eref) =
-  (Some ref,
+let make_unfold eref =
+  (Some (global_of_evaluable_reference eref),
    { pri = 4;
      pat = None;
      code = Unfold_nth eref })
@@ -522,57 +522,57 @@ let forward_intern_tac =
 
 let set_extern_intern_tac f = forward_intern_tac := f
 
+type hints_entry =
+  | HintsResolveEntry of (int option * bool * constr) list
+  | HintsImmediateEntry of constr list
+  | HintsUnfoldEntry of evaluable_global_reference list
+  | HintsTransparencyEntry of evaluable_global_reference list * bool
+  | HintsExternEntry of 
+      int * (patvar list * constr_pattern) option * glob_tactic_expr
+  | HintsDestructEntry of identifier * int * (bool,unit) location * 
+      (patvar list * constr_pattern) * glob_tactic_expr
+
+let interp_hints h =
+  let f = Constrintern.interp_constr Evd.empty (Global.env()) in
+  let fr r =
+    let gr = Syntax_def.global_with_alias r in
+    let r' = evaluable_of_global_reference (Global.env()) gr in
+    Dumpglob.add_glob (loc_of_reference r) gr;
+    r' in
+  let fp = Constrintern.intern_constr_pattern Evd.empty (Global.env()) in
+  match h with
+  | HintsResolve lhints -> HintsResolveEntry (List.map (on_pi3 f) lhints)
+  | HintsImmediate lhints -> HintsImmediateEntry (List.map f lhints)
+  | HintsUnfold lhints -> HintsUnfoldEntry (List.map fr lhints)
+  | HintsTransparency (lhints, b) ->
+      HintsTransparencyEntry (List.map fr lhints, b)
+  | HintsConstructors lqid ->
+      let constr_hints_of_ind qid =
+        let isp = inductive_of_reference qid in
+        let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
+        list_tabulate (fun i -> None, true, mkConstruct (isp,i+1))
+	  (Array.length consnames) in
+	HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
+  | HintsExtern (pri, patcom, tacexp) ->
+      let pat =	Option.map fp patcom in
+      let tacexp = !forward_intern_tac (match pat with None -> [] | Some (l, _) -> l) tacexp in
+      HintsExternEntry (pri, pat, tacexp)
+  | HintsDestruct(na,pri,loc,pat,code) ->
+      let (l,_ as pat) = fp pat in
+      HintsDestructEntry (na,pri,loc,pat,!forward_intern_tac l code)
+
 let add_hints local dbnames0 h =
   let dbnames = if dbnames0 = [] then ["core"] else dbnames0 in
   let env = Global.env() and sigma = Evd.empty in
-  let f = Constrintern.interp_constr sigma env in
   match h with
-  | HintsResolve lhints ->	
-      add_resolves env sigma (List.map (fun (pri, b, x) -> pri, b, f x) lhints) local dbnames
-  | HintsImmediate lhints ->
-      add_trivials env sigma (List.map f lhints) local dbnames
-  | HintsUnfold lhints ->
-      let f r =
-	let gr = Syntax_def.global_with_alias r in
-        let r' = match gr with
-         | ConstRef c -> EvalConstRef c
-         | VarRef c -> EvalVarRef c
-         | _ -> 
-           errorlabstrm "evalref_of_ref"
-            (str "Cannot coerce" ++ spc () ++ pr_global gr ++ spc () ++
-             str "to an evaluable reference.")
-        in
-	  Dumpglob.add_glob (loc_of_reference r) gr;
-	 (gr,r') in
-      add_unfolds (List.map f lhints) local dbnames
- | HintsTransparency (lhints, b) ->
-      let f r =
-	let gr = Syntax_def.global_with_alias r in
-        let r' = match gr with
-         | ConstRef c -> EvalConstRef c
-         | VarRef c -> EvalVarRef c
-         | _ -> 
-           errorlabstrm "evalref_of_ref"
-            (str "Cannot coerce" ++ spc () ++ pr_global gr ++ spc () ++
-             str "to an evaluable reference.")
-        in
-	  Dumpglob.add_glob (loc_of_reference r) gr;
-	  r' in
-      add_transparency (List.map f lhints) b local dbnames
-  | HintsConstructors lqid ->
-      let add_one qid =
-        let env = Global.env() and sigma = Evd.empty in
-        let isp = inductive_of_reference qid in
-        let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
-        let lcons = list_tabulate
-          (fun i -> None, true, mkConstruct (isp,i+1)) (Array.length consnames) in
-        add_resolves env sigma lcons local dbnames in
-      List.iter add_one lqid
-  | HintsExtern (pri, patcom, tacexp) ->
-      let pat =	Option.map (Constrintern.intern_constr_pattern Evd.empty (Global.env())) patcom in
-      let tacexp = !forward_intern_tac (match pat with None -> [] | Some (l, _) -> l) tacexp in
+  | HintsResolveEntry lhints -> add_resolves env sigma lhints local dbnames
+  | HintsImmediateEntry lhints -> add_trivials env sigma lhints local dbnames
+  | HintsUnfoldEntry lhints -> add_unfolds lhints local dbnames
+  | HintsTransparencyEntry (lhints, b) ->
+      add_transparency lhints b local dbnames
+  | HintsExternEntry (pri, pat, tacexp) ->
       add_externs pri pat tacexp local dbnames
-  | HintsDestruct(na,pri,loc,pat,code) ->
+  | HintsDestructEntry (na,pri,loc,pat,code) ->
       if dbnames0<>[] then
         warn (str"Database selection not implemented for destruct hints");
       Dhyp.add_destructor_hint local na loc pat pri code

@@ -258,6 +258,10 @@ let coq_and = lazy_init_constant ["Logic"] "and"
 let coq_conj = lazy_init_constant ["Logic"] "conj"
 let coq_or = lazy_init_constant ["Logic"] "or"
 let coq_ex = lazy_init_constant ["Logic"] "ex"
+let coq_iff = lazy_init_constant ["Logic"] "iff"
+
+let coq_iff_left_proj  = lazy_init_constant ["Logic"] "proj1"
+let coq_iff_right_proj = lazy_init_constant ["Logic"] "proj2"
 
 (* Runtime part *)
 let build_coq_True ()  = Lazy.force coq_True
@@ -267,8 +271,13 @@ let build_coq_False () = Lazy.force coq_False
 let build_coq_not ()   = Lazy.force coq_not
 let build_coq_and ()   = Lazy.force coq_and
 let build_coq_conj ()  = Lazy.force coq_conj
-let build_coq_or ()   = Lazy.force coq_or
-let build_coq_ex ()   = Lazy.force coq_ex
+let build_coq_or ()    = Lazy.force coq_or
+let build_coq_ex ()    = Lazy.force coq_ex
+let build_coq_iff ()   = Lazy.force coq_iff
+
+let build_coq_iff_left_proj ()  = Lazy.force coq_iff_left_proj
+let build_coq_iff_right_proj () = Lazy.force coq_iff_right_proj
+
 
 (* The following is less readable but does not depend on parsing *)
 let coq_eq_ref      = lazy (init_reference ["Logic"] "eq")
@@ -280,4 +289,5 @@ let coq_False_ref   = lazy (init_reference ["Logic"] "False")
 let coq_sumbool_ref = lazy (init_reference ["Specif"] "sumbool")
 let coq_sig_ref = lazy (init_reference ["Specif"] "sig")
 let coq_or_ref     = lazy (init_reference ["Logic"] "or")
+let coq_iff_ref    = lazy (init_reference ["Logic"] "iff")
 

@@ -114,10 +114,7 @@ let pr_inductive env ind = pr_lconstr_env env (mkInd ind)
 let pr_constructor env cstr = pr_lconstr_env env (mkConstruct cstr)
 
 let pr_evaluable_reference ref =
- let ref' = match ref with
-  | EvalConstRef const -> ConstRef const
-  | EvalVarRef sp -> VarRef sp in
- pr_global ref'
+  pr_global (Tacred.global_of_evaluable_reference ref)
 
 (*let pr_rawterm t =
   pr_lconstr (Constrextern.extern_rawconstr Idset.empty t)*)

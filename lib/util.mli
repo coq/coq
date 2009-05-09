@@ -59,6 +59,12 @@ exception Error_in_file of string * (bool * string * loc) * exn
 val on_fst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
 val on_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
 
+(* Mapping under triple *)
+
+val on_pi1 : ('a -> 'b) -> 'a * 'c * 'd -> 'b * 'c * 'd
+val on_pi2 : ('a -> 'b) -> 'c * 'a * 'd -> 'c * 'b * 'd
+val on_pi3 : ('a -> 'b) -> 'c * 'd * 'a -> 'c * 'd * 'b
+
 (*s Projections from triplets *)
 
 val pi1 : 'a * 'b * 'c -> 'a

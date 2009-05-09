@@ -69,6 +69,16 @@ type hint_db_name = string
 
 type hint_db = Hint_db.t
 
+type hints_entry =
+  | HintsResolveEntry of (int option * bool * constr) list
+  | HintsImmediateEntry of constr list
+  | HintsUnfoldEntry of evaluable_global_reference list
+  | HintsTransparencyEntry of evaluable_global_reference list * bool
+  | HintsExternEntry of 
+      int * (patvar list * constr_pattern) option * Tacexpr.glob_tactic_expr
+  | HintsDestructEntry of identifier * int * (bool,unit) Tacexpr.location * 
+      (patvar list * constr_pattern) * Tacexpr.glob_tactic_expr
+
 val searchtable_map : hint_db_name -> hint_db
 
 val searchtable_add : (hint_db_name * hint_db) -> unit
@@ -82,7 +92,9 @@ val create_hint_db : bool -> hint_db_name -> transparent_state -> bool -> unit
 
 val current_db_names : unit -> hint_db_name list
 
-val add_hints : locality_flag -> hint_db_name list -> hints -> unit
+val interp_hints : hints_expr -> hints_entry
+
+val add_hints : locality_flag -> hint_db_name list -> hints_entry -> unit
 
 val print_searchtable : unit -> unit
 

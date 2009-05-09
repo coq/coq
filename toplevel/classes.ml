@@ -34,16 +34,13 @@ open Entries
 
 let typeclasses_db = "typeclass_instances"
 
-let qualid_of_con c = 
-  Qualid (dummy_loc, shortest_qualid_of_global Idset.empty (ConstRef c))
-
 let _ =
   Typeclasses.register_add_instance_hint 
     (fun inst pri ->
       Flags.silently (fun () ->      
 	Auto.add_hints false [typeclasses_db] 
-	  (Vernacexpr.HintsResolve 
-	      [pri, false, CAppExpl (dummy_loc, (None, qualid_of_con inst), [])])) ())
+	  (Auto.HintsResolveEntry
+	      [pri, false, mkConst inst])) ())
     
 let declare_instance_cst glob con =
   let instance = Typeops.type_of_constant (Global.env ()) con in
