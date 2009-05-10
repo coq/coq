@@ -548,16 +548,16 @@ let short_name = function
   | AN (Ident (loc,id)) when not !strict_check -> Some (loc,id)
   | _ -> None
 
-let interp_global_reference r =
+let intern_evaluable_global_reference ist r =
   let lqid = qualid_of_reference r in
-  try locate_global_with_alias lqid
+  try evaluable_of_global_reference ist.genv (locate_global_with_alias lqid)
   with Not_found ->
   match r with 
-  | Ident (loc,id) when not !strict_check -> VarRef id
+  | Ident (loc,id) when not !strict_check -> EvalVarRef id
   | _ -> error_global_not_found_loc lqid
 
 let intern_evaluable_reference_or_by_notation ist = function
-  | AN r -> evaluable_of_global_reference ist.genv (interp_global_reference r)
+  | AN r -> intern_evaluable_global_reference ist r
   | ByNotation (loc,ntn,sc) ->
       evaluable_of_global_reference ist.genv
       (Notation.interp_notation_as_global_reference loc

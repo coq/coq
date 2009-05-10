@@ -17,6 +17,8 @@ Tactics
 - Tactic "idtac" now displays its list arguments.
 - Tactic "tauto" now proves classical tautologies as soon as classical logic
   (i.e. library Classical_Prop or Classical) is loaded.
+- New "Hint Resolve ->" (or "<-") for declaring iff's as oriented
+  hints (wish #2104).
 
 Tactic Language
 

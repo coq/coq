@@ -44,12 +44,9 @@ let lookup_rel n env =
   lookup_rel n env.env_rel_context
 
 let evaluable_rel n env =
-  try
-    match lookup_rel n env with
-        (_,Some _,_) -> true
-      | _ -> false
-  with Not_found -> 
-    false
+  match lookup_rel n env with
+  | (_,Some _,_) -> true
+  | _ -> false
 
 let nb_rel env = env.env_nb_rel
 
@@ -111,11 +108,9 @@ let named_body id env =
   let (_,b,_) = lookup_named id env in b
 
 let evaluable_named id env =
-  try 
-    match named_body id env with
-    |Some _      -> true
-    | _          -> false
-  with Not_found -> false
+  match named_body id env with
+  | Some _      -> true
+  | _          -> false
       
 let reset_with_named_context (ctxt,ctxtv) env =
   { env with
@@ -175,7 +170,7 @@ let constant_opt_value env cst =
 (* A global const is evaluable if it is defined and not opaque *)
 let evaluable_constant cst env =
   try let _  = constant_value env cst in true
-  with Not_found | NotEvaluableConst _ -> false
+  with NotEvaluableConst _ -> false
 
 (* Mutual Inductives *)
 let lookup_mind = lookup_mind

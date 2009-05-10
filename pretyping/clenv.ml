@@ -231,9 +231,9 @@ let clenv_dependent hyps_only clenv =
   let nonlinear = duplicated_metas (clenv_value clenv) in
   (* Make the assumption that duplicated metas have internal dependencies *)
   List.filter
-    (fun mv -> (Metaset.mem mv deps &&
-                not (hyps_only && Metaset.mem mv ctyp_mvs))
-               or List.mem mv nonlinear) 
+    (fun mv -> if Metaset.mem mv deps
+               then not (hyps_only && Metaset.mem mv ctyp_mvs)
+               else List.mem mv nonlinear)
     mvs
 
 let clenv_missing ce = clenv_dependent true ce
