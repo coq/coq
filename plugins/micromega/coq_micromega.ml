@@ -1169,26 +1169,35 @@ let compact_proofs (cnf_ff: 'cst cnf) res (cnf_ff': 'cst cnf) =
     let remap i = 
       (*Printf.printf "nth (len:%i) %i\n" (List.length old_cl) i;*)
       let formula = try fst (List.nth old_cl i) with Failure _ -> failwith "bad old index" in
-	List.assoc formula new_cl  in
-    let res = prover.compact prf remap  in
+	List.assoc formula new_cl in
 
       if debug then 
 	begin
-	  Printf.printf "\ncompact_proof : %a %a %a -> %a\n" 
+	  Printf.printf "\ncompact_proof : %a %a %a" 
 	    (pp_ml_list prover.pp_f) (List.map fst old_cl) 
 	    prover.pp_prf prf 
-	    (pp_ml_list prover.pp_f) (List.map fst new_cl)  
+	    (pp_ml_list prover.pp_f) (List.map fst new_cl)   ;
+	    flush stdout
+	end ;
+      let res = try prover.compact prf remap with x -> 
+	match prover.prover (List.map fst new_cl) with 
+	  | None -> failwith "prover error" 
+	  | Some p -> p 
+      in
+
+      if debug then 
+	begin
+	  Printf.printf " -> %a\n" 
 	    prover.pp_prf res ;
 	  flush stdout
 	end
 	  ; 
       res in
 
-    (* This seems overkill when List.length cnf_ff = List.length cnf_ff'. Isn't there a 1-1-mapping *)
-  let cnf_res = List.combine cnf_ff res in
-  let l = 
+  let cnf_res = List.combine cnf_ff res in (* we get pairs clause * proof *)
+  let l = (* This is not the right criterion for matching clauses *)
     List.map (fun x -> let (o,p) = List.find (fun lp -> is_sublist x (fst lp)) cnf_res in (o,p,x)) cnf_ff' in
-
+    
    List.map (fun (o,p,n) -> compact_proof o p n) l
 
 
@@ -1494,4 +1503,3 @@ let sos_R gl =
 let xlia gl = 
  micromega_gen parse_zarith Mc.negate Mc.normalise   zz_domain_spec 
   [linear_Z] gl
-

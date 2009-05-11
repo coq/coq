@@ -26,3 +26,11 @@ Proof.
   lia.
 Qed.  
 
+Lemma compact_proof : forall z,
+ (z < 0) ->
+ (z >= 0) ->
+  (0 >= z \/ 0 < z) -> False.
+Proof.
+ intros.
+ lia. 
+Qed.
