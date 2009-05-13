@@ -1434,6 +1434,7 @@ object(self)
 
 
   method toggle_proof_visibility (cursor:GText.iter) =
+    let start_keywords = ["Theorem";"Lemma";"Corollary";"Remark";"Proposition";"Fact";"Property"] in
     let has_tag_by_name (it:GText.iter) name =
       let tt = new GText.tag_table (input_buffer#tag_table) in
         match tt#lookup name with
@@ -1441,9 +1442,13 @@ object(self)
           | _ -> false
     in
       try
-        let stmt_start =
-          find_nearest_backward cursor ["Theorem";"Lemma";"Corollary";"Remark";"Proposition";"Fact";"Property"]
+        let rec find_stmt_start from =
+          let cand_start = find_nearest_backward from start_keywords in
+          let cand_end = find_word_end cand_start in
+          let cand_word = input_buffer#get_text ~start:cand_start ~stop:cand_end () in
+            if List.mem cand_word start_keywords then cand_start else find_stmt_start cand_start
         in
+        let stmt_start = find_stmt_start cursor in
         let stmt_end = find_next_sentence stmt_start in
         let proof_end =
           find_next_sentence (find_nearest_forward stmt_end ["Qed";"Defined";"Admitted"])

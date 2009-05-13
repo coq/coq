@@ -122,14 +122,14 @@ let find_comment_end (start:GText.iter) =
 
 
 let rec find_string_end (start:GText.iter) =
-  let backslash = int_of_char '\\' in
-  let rec escape c =
-    (c#char = backslash) && not (escape c#backward_char)
+  let dblquote = int_of_char '"' in
+  let rec escaped_dblquote c =
+    (c#char = dblquote) && not (escaped_dblquote c#backward_char)
   in
     match start#forward_search "\"" with
       | None -> raise Not_found
       | Some (stop,next_start) ->
-          if escape stop#backward_char
+          if escaped_dblquote stop#backward_char
           then find_string_end next_start
           else next_start
 

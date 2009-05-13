@@ -425,8 +425,9 @@ let interp_with_options verbosely options s =
   prerr_endline s;
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   let pe = Pcoq.Gram.Entry.parse Pcoq.main_entry pa in
-  (* Temporary hack to make coqide.byte work (WTF???) *)
-  Pervasives.prerr_endline "";
+  (* Temporary hack to make coqide.byte work (WTF???) - now with less screen
+  * pollution *)
+  Pervasives.prerr_string " \r"; Pervasives.flush stderr;
   match pe with 
     | None -> assert false
     | Some((loc,vernac) as last) ->
@@ -702,24 +703,3 @@ let current_status () =
     path ^ ", proving " ^ (Names.string_of_id (Pfedit.get_current_proof_name ()))
   with _ -> path
 
-
-
-(* analyzed_view's methods that use stuff here
- *
- * process_next_phrase
- * undo_last_step
- * go_to_insert
- * reset_initial
- * process_until_end_or_error
- * show_goals
- *)
-
-(* process_next_phrase =>
- * 
- * send_to_coq
- * * interp_and_replace | interp
- * push_phrase
- * get_current_goals
- *)
-
-(* functions called by analyzed_view's method *)
