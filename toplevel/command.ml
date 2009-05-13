@@ -464,16 +464,17 @@ let compute_interning_datas env ty l nal typl impll =
       (na, (ty, idl, impl, compute_arguments_scope typ)) in
   (l, list_map3 mk_interning_data nal typl impll)
 
+ 
+ (* temporary open scopes during interpretation of mutual families 
+    so that locally defined notations are available 
+ *)
+let open_temp_scopes =  function
+  | None -> ()
+  | Some sc -> if not (Notation.scope_is_open sc)
+     then Notation.open_close_scope (false,true,sc)
+ 
 let declare_interning_data (_,impls) (df,c,scope) =
-  silently (fun sc ->
-    Metasyntax.add_notation_interpretation df impls c sc;
-    (* Temporary opening of scopes for interpretation
-     of notations in mutual inductive types *)
-    match sc with 
-     | None -> ()
-     | Some sc -> if not (Notation.scope_is_open sc)
-        then Notation.open_close_scope (false,true,sc)
-     ) scope
+  silently (Metasyntax.add_notation_interpretation df impls c) scope
 
 let push_named_types env idl tl =
   List.fold_left2 (fun env id t -> Environ.push_named (id,None,t) env)
@@ -551,7 +552,10 @@ let interp_mutual paramsl indl notations finite =
   let constructors =
     States.with_state_protection (fun () -> 
      (* Temporary declaration of notations and scopes *)
-     List.iter (declare_interning_data impls) notations;
+     List.iter (fun ((_,_,sc) as x ) ->
+       declare_interning_data impls x;
+       open_temp_scopes sc
+     ) notations;
      (* Interpret the constructor types *)
      list_map3 (interp_cstrs evdref env_ar_params impls) mldatas arities indl)
      () in
@@ -662,18 +666,10 @@ let build_mutual l finite =
   let coes = extract_coercions indl in
   let notations,indl = prepare_inductive ntnl indl in
   let mie,impls = interp_mutual paramsl indl notations finite in
-  let cur_scopes = Notation.current_scopes() in 
-  let temp_scopes = List.map (fun (_,_,sc) -> sc) notations in
   (* Declare the mutual inductive block with its eliminations *)
   ignore (declare_mutual_with_eliminations false mie impls);
   (* Declare the possible notations of inductive types *)
   List.iter (declare_interning_data ([],[])) notations;
-  (* Close temporary opened scope for interpretation of mutual ind *)
-  List.iter (function
-    | None -> ()
-    | Some sc ->
-      if not (Notation.scope_is_open_in_scopes sc cur_scopes)
-      then Notation.open_close_scope (false,false,sc) ) temp_scopes; 
   (* Declare the coercions *)
   List.iter (fun qid -> Class.try_add_new_coercion (locate qid) Global) coes
 
@@ -866,7 +862,10 @@ let interp_recursive fixkind l boxed =
   (* Interp bodies with rollback because temp use of notations/implicit *)
   let fixdefs = 
     States.with_state_protection (fun () -> 
-      List.iter (declare_interning_data impls) notations;
+      List.iter (fun ((_,_,sc) as x) ->
+        declare_interning_data impls x;
+        open_temp_scopes sc
+      ) notations;
       list_map3 (interp_fix_body evdref env_rec impls) fixctxs fixl fixccls)
       () in
 

@@ -53,6 +53,8 @@ val declare_assumption : identifier located list ->
   coercion_flag -> assumption_kind -> local_binder list -> constr_expr -> 
   bool -> bool -> bool -> unit
 
+val open_temp_scopes : Topconstr.scope_name option -> unit
+
 val declare_interning_data : 'a * Constrintern.implicits_env ->
     string * Topconstr.constr_expr * Topconstr.scope_name option -> unit
 

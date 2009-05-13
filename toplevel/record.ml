@@ -52,7 +52,10 @@ let interp_fields_evars isevars env nots l =
       in
       let d = (i,b',t') in
 	(* Temporary declaration of notations and scopes *)
-	Option.iter (declare_interning_data impls) no;
+	Option.iter (fun ((_,_,sc) as x) ->
+          declare_interning_data impls x;
+          open_temp_scopes sc
+        ) no;
 	(push_rel d env, impl :: uimpls, d::params, impls))
     (env, [], [], ([], [])) nots l
 
