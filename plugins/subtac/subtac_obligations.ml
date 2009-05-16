@@ -17,8 +17,6 @@ open Evd
 open Declare
 open Proof_type
 
-type definition_hook = global_reference -> unit
-
 let ppwarn cmd = Pp.warn (str"Program:" ++ cmd)
 let pperror cmd = Util.errorlabstrm "Program" cmd
 let error s = pperror (str s)
@@ -56,7 +54,7 @@ type program_info = {
   prg_implicits : (Topconstr.explicitation * (bool * bool * bool)) list;
   prg_notations : notations ;
   prg_kind : definition_kind;
-  prg_hook : definition_hook;
+  prg_hook : Tacexpr.declaration_hook;
 }
 
 let assumption_message id =
@@ -209,7 +207,7 @@ let declare_definition prg =
 	  if Impargs.is_implicit_args () || prg.prg_implicits <> [] then
 	    Impargs.declare_manual_implicits false gr prg.prg_implicits;
 	  print_message (Subtac_utils.definition_message prg.prg_name);
-	  prg.prg_hook gr;
+	  prg.prg_hook local gr;
 	  gr
 
 open Pp
@@ -531,7 +529,7 @@ let show_term n =
 	      my_print_constr (Global.env ()) prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
 	    ++ my_print_constr (Global.env ()) prg.prg_body)
 
-let add_definition n b t ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic ?(hook=fun x -> ()) obls =
+let add_definition n b t ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic ?(hook=fun _ _ -> ()) obls =
   Flags.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
   let prg = init_prog_info n b t [] None [] obls implicits kind hook in
   let obls,_ = prg.prg_obligations in
@@ -553,7 +551,7 @@ let add_mutual_definitions l ?tactic ?(kind=Global,false,Definition) notations f
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
   let upd = List.fold_left
       (fun acc (n, b, t, imps, obls) ->
-	let prg = init_prog_info n b t deps (Some fixkind) notations obls imps kind (fun x -> ()) in
+	let prg = init_prog_info n b t deps (Some fixkind) notations obls imps kind (fun _ _ -> ()) in
 	  ProgMap.add n prg acc)
       !from_prg l
   in

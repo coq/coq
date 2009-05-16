@@ -142,7 +142,7 @@ let subtac (loc, command) =
 	  start_proof_and_print env isevars (Some lid) (Global, DefinitionBody Definition) (bl,t) 
 	    (fun _ _ -> ())
       | DefineBody (bl, _, c, tycon) -> 
-	  ignore(Subtac_pretyping.subtac_proof defkind env isevars id bl c tycon))
+	  ignore(Subtac_pretyping.subtac_proof defkind hook env isevars id bl c tycon))
   | VernacFixpoint (l, b) -> 
       List.iter (fun ((lid, _, _, _, _), _) -> 
 	check_fresh lid;
