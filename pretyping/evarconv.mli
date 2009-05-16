@@ -35,3 +35,9 @@ val evar_eqappr_x :
 (*i*)
 
 val consider_remaining_unif_problems : env -> evar_defs -> evar_defs * bool
+
+val check_conv_record : constr * types list -> constr * types list ->
+  constr * constr list * (constr list * constr list) *
+    (constr list * types list) *
+    (constr list * types list) * constr * 
+    (int * constr)
