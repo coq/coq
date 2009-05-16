@@ -446,8 +446,8 @@ let resolve_all_evars debug m env p oevd do_split fail =
 	  | None -> 
 	      if fail then 
 		(* Unable to satisfy the constraints. *)
-		let evm =  evd in
-		let evm = if do_split then select_evars comp evm else evm in
+		let evm = if do_split then select_evars comp evd else evd in
+		let evm = Evarutil.nf_evars evm in
 		let _, ev = Evd.fold 
 		  (fun ev evi (b,acc) -> 
 		    (* focus on one instance if only one was searched for *)

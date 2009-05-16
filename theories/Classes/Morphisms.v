@@ -101,8 +101,7 @@ Hint Unfold Transitive : core.
 
 Typeclasses Opaque respectful pointwise_relation forall_relation.
 
-Program Instance respectful_per `(PER A (R : relation A), PER B (R' : relation B)) : 
-  PER (R ==> R').
+Program Instance respectful_per `(PER A R, PER B R') : PER (R ==> R').
 
   Next Obligation.
   Proof with auto.
@@ -126,8 +125,6 @@ Proof. simpl_relation. apply subr. apply H. apply subl. apply H0. Qed.
 
 Lemma subrelation_refl A R : @subrelation A R R.
 Proof. simpl_relation. Qed.
-
-Ltac class_apply c := autoapply c using typeclass_instances.
 
 Ltac subrelation_tac T U := 
   (is_ground T ; is_ground U ; class_apply @subrelation_refl) ||
@@ -438,7 +435,7 @@ Hint Extern 1 (subrelation _ (flip _)) => class_apply @inverse2 : typeclass_inst
 Lemma eq_subrelation `(Reflexive A R) : subrelation (@eq A) R.
 Proof. simpl_relation. Qed.
 
-Hint Extern 3 (subrelation (@eq _) ?R) => not_evar R ; class_apply eq_subrelation.
+(* Hint Extern 3 (subrelation (@eq _) ?R) => not_evar R ; class_apply eq_subrelation : typeclass_instances. *)
 
 (** Once we have normalized, we will apply this instance to simplify the problem. *)
 

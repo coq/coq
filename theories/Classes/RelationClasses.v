@@ -45,7 +45,7 @@ Class Reflexive {A} (R : relation A) :=
 Class Irreflexive {A} (R : relation A) := 
   irreflexivity : Reflexive (complement R).
 
-Hint Extern 1 (Reflexive (complement _)) => eapply @irreflexivity : typeclasses_instances.
+Hint Extern 1 (Reflexive (complement _)) => class_apply @irreflexivity : typeclasses_instances.
 
 Class Symmetric {A} (R : relation A) := 
   symmetry : forall x y, R x y -> R y x.
@@ -311,7 +311,7 @@ Notation "∙⊥∙" := false_predicate : predicate_scope.
 (** Predicate equivalence is an equivalence, and predicate implication defines a preorder. *)
 
 Program Instance predicate_equivalence_equivalence : Equivalence (@predicate_equivalence l).
-  Next Obligation.
+  Next Obligation. 
     induction l ; firstorder.
   Qed.
   Next Obligation.
