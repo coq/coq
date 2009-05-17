@@ -155,19 +155,37 @@ let order_hyps      = Tacmach.order_hyps
 (* Renaming hypotheses *)
 let rename_hyp      = Tacmach.rename_hyp
 
+(**************************************************************)
+(*          Fresh names                                       *)
+(**************************************************************)
+
+let fresh_id_avoid avoid id =
+  next_global_ident_away true id avoid
+
+let fresh_id avoid id gl =
+  fresh_id_avoid (avoid@(pf_ids_of_hyps gl)) id
+
+(**************************************************************)
+(*          Fixpoints and CoFixpoints                         *)
+(**************************************************************)
+
 (* Refine as a fixpoint *)
 let mutual_fix = Tacmach.mutual_fix
 
-let fix ido n = match ido with
-  | None -> mutual_fix (Pfedit.get_current_proof_name ()) n []
-  | Some id -> mutual_fix id n []
+let fix ido n gl = match ido with
+  | None -> 
+      mutual_fix (fresh_id [] (Pfedit.get_current_proof_name ()) gl) n [] gl
+  | Some id ->
+      mutual_fix id n [] gl
 
 (* Refine as a cofixpoint *)
 let mutual_cofix = Tacmach.mutual_cofix
 
-let cofix = function
-  | None -> mutual_cofix (Pfedit.get_current_proof_name ()) []
-  | Some id -> mutual_cofix id []
+let cofix ido gl = match ido with
+  | None -> 
+      mutual_cofix (fresh_id [] (Pfedit.get_current_proof_name ()) gl) [] gl
+  | Some id ->
+      mutual_cofix id [] gl
 
 (**************************************************************)
 (*          Reduction and conversion tactics                  *)
@@ -285,12 +303,6 @@ let unfold_constr = function
 (*******************************************)
 (*         Introduction tactics            *)
 (*******************************************)
-
-let fresh_id_avoid avoid id =
-  next_global_ident_away true id avoid
-
-let fresh_id avoid id gl =
-  fresh_id_avoid (avoid@(pf_ids_of_hyps gl)) id
 
 let id_of_name_with_default id = function
   | Anonymous -> id
