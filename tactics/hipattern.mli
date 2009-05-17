@@ -52,15 +52,25 @@ type testing_function = constr -> bool
 val match_with_non_recursive_type : (constr * constr list) matching_function
 val is_non_recursive_type         : testing_function 
 
+(* Non recursive type with no indices and exactly one argument for each
+   constructor; canonical definition of n-ary disjunction if strict *)
 val match_with_disjunction : ?strict:bool -> (constr * constr list) matching_function
 val is_disjunction         : ?strict:bool -> testing_function 
 
+(* Non recursive tuple (one constructor and no indices) with no inner
+   dependencies; canonical definition of n-ary conjunction if strict *)
 val match_with_conjunction : ?strict:bool -> (constr * constr list) matching_function
 val is_conjunction         : ?strict:bool -> testing_function 
 
+(* Non recursive tuple, possibly with inner dependencies *)
 val match_with_record      : (constr * constr list) matching_function
 val is_record              : testing_function 
 
+(* Like record but supports and tells if recursive (e.g. Acc) *)
+val match_with_tuple       : (constr * constr list * bool) matching_function
+val is_tuple               : testing_function 
+
+(* No constructor, possibly with indices *)
 val match_with_empty_type  : constr matching_function
 val is_empty_type          : testing_function 
 

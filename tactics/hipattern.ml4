@@ -83,13 +83,13 @@ let has_nodep_prod = has_nodep_prod_after 0
 
 (* style: None = record; Some false = conjunction; Some true = strict conj *)
 
-let match_with_one_constructor style t =
+let match_with_one_constructor style allow_rec t =
   let (hdapp,args) = decompose_app t in 
   match kind_of_term hdapp with
   | Ind ind -> 
       let (mib,mip) = Global.lookup_inductive ind in
       if (Array.length mip.mind_consnames = 1)
-	&& (not (mis_is_recursive (ind,mib,mip)))
+	&& (allow_rec or not (mis_is_recursive (ind,mib,mip)))
         && (mip.mind_nrealargs = 0)
       then
 	if style = Some true (* strict conjunction *) then
@@ -115,10 +115,10 @@ let match_with_one_constructor style t =
   | _ -> None
 
 let match_with_conjunction ?(strict=false) t =
-  match_with_one_constructor (Some strict) t
+  match_with_one_constructor (Some strict) false t
 
-let match_with_record t = 
-  match_with_one_constructor None t
+let match_with_record t =
+  match_with_one_constructor None false t
 
 let is_conjunction ?(strict=false) t =
   op2bool (match_with_conjunction ~strict t)
@@ -126,6 +126,16 @@ let is_conjunction ?(strict=false) t =
 let is_record t =
   op2bool (match_with_record t)
 
+let match_with_tuple t = 
+  let t = match_with_one_constructor None true t in
+  Option.map (fun (hd,l) ->
+    let ind = destInd hd in
+    let (mib,mip) = Global.lookup_inductive ind in
+    let isrec = mis_is_recursive (ind,mib,mip) in
+    (hd,l,isrec)) t
+
+let is_tuple t =
+  op2bool (match_with_tuple t)
 
 (* A general disjunction type is a non-recursive with-no-indices inductive 
    type with of which all constructors have a single argument;

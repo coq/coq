@@ -155,19 +155,37 @@ let order_hyps      = Tacmach.order_hyps
 (* Renaming hypotheses *)
 let rename_hyp      = Tacmach.rename_hyp
 
+(**************************************************************)
+(*          Fresh names                                       *)
+(**************************************************************)
+
+let fresh_id_avoid avoid id =
+  next_global_ident_away true id avoid
+
+let fresh_id avoid id gl =
+  fresh_id_avoid (avoid@(pf_ids_of_hyps gl)) id
+
+(**************************************************************)
+(*          Fixpoints and CoFixpoints                         *)
+(**************************************************************)
+
 (* Refine as a fixpoint *)
 let mutual_fix = Tacmach.mutual_fix
 
-let fix ido n = match ido with
-  | None -> mutual_fix (Pfedit.get_current_proof_name ()) n []
-  | Some id -> mutual_fix id n []
+let fix ido n gl = match ido with
+  | None -> 
+      mutual_fix (fresh_id [] (Pfedit.get_current_proof_name ()) gl) n [] gl
+  | Some id ->
+      mutual_fix id n [] gl
 
 (* Refine as a cofixpoint *)
 let mutual_cofix = Tacmach.mutual_cofix
 
-let cofix = function
-  | None -> mutual_cofix (Pfedit.get_current_proof_name ()) []
-  | Some id -> mutual_cofix id []
+let cofix ido gl = match ido with
+  | None -> 
+      mutual_cofix (fresh_id [] (Pfedit.get_current_proof_name ()) gl) [] gl
+  | Some id ->
+      mutual_cofix id [] gl
 
 (**************************************************************)
 (*          Reduction and conversion tactics                  *)
@@ -359,12 +377,6 @@ let unfold_constr = function
 (*******************************************)
 (*         Introduction tactics            *)
 (*******************************************)
-
-let fresh_id_avoid avoid id =
-  next_global_ident_away true id avoid
-
-let fresh_id avoid id gl =
-  fresh_id_avoid (avoid@(pf_ids_of_hyps gl)) id
 
 let id_of_name_with_default id = function
   | Anonymous -> id
@@ -787,8 +799,8 @@ let simplest_case c = general_case_analysis false (c,NoBindings)
 let descend_in_conjunctions with_evars tac exit c gl =
   try
     let (mind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-    match match_with_record ((strip_prod t)) with
-    | Some _ ->
+    match match_with_tuple (strip_prod t) with
+    | Some (_,_,isrec) ->
 	let n = (mis_constr_nargs mind).(0) in
 	let sort = elimination_sort_of_goal gl in
 	let elim = pf_apply make_case_gen gl mind sort in
@@ -798,7 +810,8 @@ let descend_in_conjunctions with_evars tac exit c gl =
 	    tclDO n intro;
 	    onNLastHypsId n (fun l ->
 	      tclFIRST
-		(List.map (fun id -> tclTHEN (tac (mkVar id)) (thin l)) l))])
+		(List.map (fun id ->
+		  tclTHEN (tac (not isrec) (mkVar id)) (thin l)) l))])
           gl
     | None ->
 	raise Exit
@@ -830,7 +843,7 @@ let general_apply with_delta with_destruct with_evars (c,lbind) gl0 =
   step. *)
   let concl_nprod = nb_prod (pf_concl gl0) in
   let evm, c = c in
-  let rec try_main_apply c gl =
+  let rec try_main_apply with_destruct c gl =
     let thm_ty0 = nf_betaiota (project gl) (pf_type_of gl c) in
     let try_apply thm_ty nprod =
       let n = nb_prod thm_ty - nprod in
@@ -861,9 +874,11 @@ let general_apply with_delta with_destruct with_evars (c,lbind) gl0 =
 		raise exn
 	in try_red_apply thm_ty0 
   in
-    if evm = Evd.empty then try_main_apply c gl0
+    if evm = Evd.empty then try_main_apply with_destruct c gl0
     else
-      tclTHEN (tclEVARS (Evd.merge gl0.sigma evm)) (try_main_apply c) gl0
+      tclTHEN
+	(tclEVARS (Evd.merge gl0.sigma evm))
+	(try_main_apply with_destruct c) gl0
 
 let rec apply_with_ebindings_gen b e = function
   | [] ->
@@ -935,7 +950,7 @@ let apply_in_once with_delta with_destruct with_evars id ((sigma,d),lbind) gl0 =
     if with_delta then default_unify_flags else default_no_delta_unify_flags in
   let t' = pf_get_hyp_typ gl0 id in
   let innerclause = mk_clenv_from_n gl0 (Some 0) (mkVar id,t') in
-  let rec aux c gl =
+  let rec aux with_destruct c gl =
     try
       let clause = apply_in_once_main flags innerclause (c,lbind) gl in
       let res = clenv_refine_in with_evars id clause gl in
@@ -944,9 +959,9 @@ let apply_in_once with_delta with_destruct with_evars id ((sigma,d),lbind) gl0 =
     with exn when with_destruct ->
       descend_in_conjunctions true aux (fun _ -> raise exn) c gl
   in
-    if sigma = Evd.empty then aux d gl0
+    if sigma = Evd.empty then aux with_destruct d gl0
     else
-      tclTHEN (tclEVARS (Evd.merge gl0.sigma sigma)) (aux d) gl0
+      tclTHEN (tclEVARS (Evd.merge gl0.sigma sigma)) (aux with_destruct d) gl0
 
 
 
