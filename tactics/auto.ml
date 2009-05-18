@@ -708,6 +708,7 @@ let auto_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state; 
   use_metas_eagerly = false;
   modulo_delta = empty_transparent_state;
+  resolve_evars = true;
 }
 
 (* Try unification with the precompiled clause, then use registered Apply *)

@@ -272,6 +272,7 @@ let rewrite_unif_flags = {
   Unification.modulo_conv_on_closed_terms = None;
   Unification.use_metas_eagerly = true;
   Unification.modulo_delta = empty_transparent_state;
+  Unification.resolve_evars = true;
 }
 
 let conv_transparent_state = (Idpred.empty, Cpred.full)
@@ -280,6 +281,7 @@ let rewrite2_unif_flags = {
   Unification.modulo_conv_on_closed_terms = Some conv_transparent_state;
   Unification.use_metas_eagerly = true;
   Unification.modulo_delta = empty_transparent_state;
+  Unification.resolve_evars = true;
 }
 
 let convertible env evd x y =
@@ -320,7 +322,7 @@ let unify_eqn env sigma hypinfo t =
 		let mvs = clenv_dependent false env' in
 		  clenv_pose_metas_as_evars env' mvs
 	      in
-	      let evd' = Typeclasses.resolve_typeclasses ~fail:false env'.env env'.evd in
+	      let evd' = Typeclasses.resolve_typeclasses ~fail:true env'.env env'.evd in
 	      let env' = { env' with evd = evd' } in
 	      let nf c = Evarutil.nf_evar ( evd') (Clenv.clenv_nf_meta env' c) in
 	      let c1 = nf c1 and c2 = nf c2

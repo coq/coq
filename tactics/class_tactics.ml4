@@ -103,6 +103,7 @@ let auto_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
   modulo_delta = var_full_transparent_state;
+  resolve_evars = false;
 }
 
 let unify_e_resolve flags (c,clenv) gls = 

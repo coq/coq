@@ -42,3 +42,5 @@ val no_instance : env -> identifier located -> constr list -> 'a
 val unsatisfiable_constraints : env -> evar_defs -> evar option -> 'a
 
 val mismatched_ctx_inst : env -> contexts -> constr_expr list -> rel_context -> 'a
+
+val unsatisfiable_exception : exn -> bool

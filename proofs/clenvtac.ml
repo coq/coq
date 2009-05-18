@@ -107,6 +107,7 @@ let fail_quick_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state; 
   use_metas_eagerly = false;
   modulo_delta = empty_transparent_state;
+  resolve_evars = false;
 }
 
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)

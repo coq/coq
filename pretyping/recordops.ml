@@ -310,8 +310,6 @@ let outCanonicalStructure x = fst (outCanonStruct x)
 let lookup_canonical_conversion (proj,pat) =
   List.assoc pat (Refmap.find proj !object_table)
 
-let isEvar_or_Meta c = isEvar c || isMeta c
-
 let is_open_canonical_projection sigma (c,args) =
   try 
     let l = Refmap.find (global_of_constr c) !object_table in

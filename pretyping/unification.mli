@@ -18,6 +18,7 @@ type unify_flags = {
   modulo_conv_on_closed_terms : Names.transparent_state option; 
   use_metas_eagerly : bool;
   modulo_delta : Names.transparent_state;
+  resolve_evars : bool;
 }
 
 val default_unify_flags : unify_flags

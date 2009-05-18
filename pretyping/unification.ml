@@ -127,18 +127,21 @@ type unify_flags = {
   modulo_conv_on_closed_terms : Names.transparent_state option;
   use_metas_eagerly : bool;
   modulo_delta : Names.transparent_state;
+  resolve_evars : bool;
 }
 
 let default_unify_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
   modulo_delta = full_transparent_state;
+  resolve_evars = false;
 }
 
 let default_no_delta_unify_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
   modulo_delta = empty_transparent_state;
+  resolve_evars = false;
 }
 
 let expand_key env = function
@@ -308,14 +311,18 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	      solve_canonical_projection curenvnb pb b cM f1l1 cN f2l2 substn
 	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else error_cannot_unify (fst curenvnb) sigma (cM,cN)
-    in try f1 () with e when precatchable_exception e -> 
-      if isApp cN then
-	let f2l2 = decompose_app cN in
-	  if is_open_canonical_projection sigma f2l2 then
-	    let f1l1 = decompose_app cM in
-	      solve_canonical_projection curenvnb pb b cN f2l2 cM f1l1 substn
+    in
+      if flags.modulo_conv_on_closed_terms = None then 
+	error_cannot_unify (fst curenvnb) sigma (cM,cN)
+      else
+	try f1 () with e when precatchable_exception e -> 
+	  if isApp cN then
+	    let f2l2 = decompose_app cN in
+	      if is_open_canonical_projection sigma f2l2 then
+		let f1l1 = decompose_app cM in
+		  solve_canonical_projection curenvnb pb b cN f2l2 cM f1l1 substn
+	      else error_cannot_unify (fst curenvnb) sigma (cM,cN)
 	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)
-      else error_cannot_unify (fst curenvnb) sigma (cM,cN)
 
   and solve_canonical_projection curenvnb pb b cM f1l1 cN f2l2 (sigma,ms,es) =
     let (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
@@ -665,8 +672,13 @@ let w_unify_meta_types env ?(flags=default_unify_flags) evd =
    types of metavars are unifiable with the types of their instances    *)
 
 let check_types env flags (sigma,_,_ as subst) m n =
-  if isEvar (fst (whd_stack sigma m)) or isEvar (fst (whd_stack sigma n)) then
-    unify_0_with_initial_metas subst true env topconv 
+  if isEvar_or_Meta (fst (whd_stack sigma m)) then
+    unify_0_with_initial_metas subst true env Cumul
+      flags
+      (Retyping.get_type_of env sigma n)
+      (Retyping.get_type_of env sigma m)
+  else if isEvar_or_Meta (fst (whd_stack sigma n)) then
+    unify_0_with_initial_metas subst true env Cumul
       flags
       (Retyping.get_type_of env sigma m)
       (Retyping.get_type_of env sigma n)
@@ -677,12 +689,16 @@ let w_unify_core_0 env with_types cv_pb flags m n evd =
   let (sigma,ms,es) = check_types env flags (evd,mc1,[]) m n in
   let subst2 =
      unify_0_with_initial_metas (evd',ms,es) true env cv_pb flags m n
-  in 
-  w_merge env with_types flags subst2
+  in
+  let evd = w_merge env with_types flags subst2 in
+    if flags.resolve_evars then 
+      try Typeclasses.resolve_typeclasses ~onlyargs:false ~split:true ~fail:true env evd
+      with e when Typeclasses_errors.unsatisfiable_exception e ->
+	error_cannot_unify env evd (m, n)
+    else evd
 
 let w_unify_0 env = w_unify_core_0 env false
 let w_typed_unify env = w_unify_core_0 env true
-
 
 (* takes a substitution s, an open term op and a closed term cl
    try to find a subterm of cl which matches op, if op is just a Meta
@@ -762,7 +778,7 @@ let w_unify_to_subterm_list env flags allow_K oplist t evd =
     (fun op (evd,l) ->
       if isMeta op then
 	if allow_K then (evd,op::l)
-	else error "Match_subterm"
+	else error "Unify_to_subterm_list"
       else if occur_meta_or_existential op then
         let (evd',cl) =
           try 

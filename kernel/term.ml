@@ -349,6 +349,10 @@ let same_kind c1 c2 = (isprop c1 & isprop c2) or (is_Type c1 & is_Type c2)
 (* Tests if an evar *)
 let isEvar c = match kind_of_term c with Evar _ -> true | _ -> false
 
+let isEvar_or_Meta c = match kind_of_term c with 
+  | Evar _ | Meta _ -> true
+  | _ -> false
+
 (* Destructs a casted term *)
 let destCast c = match kind_of_term c with 
   | Cast (t1,k,t2) -> (t1,k,t2)

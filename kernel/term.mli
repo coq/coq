@@ -227,6 +227,7 @@ val isVar  : constr -> bool
 val isInd  : constr -> bool
 val isEvar : constr -> bool
 val isMeta : constr -> bool
+val isEvar_or_Meta : constr -> bool
 val isSort : constr -> bool
 val isCast : constr -> bool
 val isApp : constr -> bool

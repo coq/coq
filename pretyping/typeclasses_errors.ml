@@ -53,3 +53,9 @@ let unsatisfiable_constraints env evd ev =
 	    (env, UnsatisfiableConstraints (evd, Some (evi, kind)))))
 	    
 let mismatched_ctx_inst env c n m = typeclass_error env (MismatchedContextInstance (c, n, m))
+
+let rec unsatisfiable_exception exn =
+  match exn with
+  | TypeClassError (_, UnsatisfiableConstraints _) -> true
+  | Ploc.Exc (_, e) -> unsatisfiable_exception e
+  | _ -> false
