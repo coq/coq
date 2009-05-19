@@ -57,5 +57,5 @@ let mismatched_ctx_inst env c n m = typeclass_error env (MismatchedContextInstan
 let rec unsatisfiable_exception exn =
   match exn with
   | TypeClassError (_, UnsatisfiableConstraints _) -> true
-  | Ploc.Exc (_, e) -> unsatisfiable_exception e
+  | Stdpp.Exc_located(_, e) -> unsatisfiable_exception e
   | _ -> false
