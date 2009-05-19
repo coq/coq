@@ -338,15 +338,15 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	      (evd', mkMeta mv :: ks, m - 1))
 	(sigma,[],List.length bs - 1) bs
     in
-    let substn = 
-      List.fold_left2 (fun s u1 u -> unirec_rec curenvnb pb b s u1 (substl ks u)) (evd,ms,es) us2 us
+    let unilist2 f substn l l' = 
+      try List.fold_left2 f substn l l' 
+      with Invalid_argument "List.fold_left2" -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
     in
-    let substn = 
-      List.fold_left2 (fun s u1 u -> unirec_rec curenvnb pb b s u1 (substl ks u)) substn params1 params
-    in 
-    let substn =
-      List.fold_left2 (unirec_rec curenvnb pb b) substn ts ts1
-    in 
+    let substn = unilist2 (fun s u1 u -> unirec_rec curenvnb pb b s u1 (substl ks u)) 
+      (evd,ms,es) us2 us in
+    let substn = unilist2 (fun s u1 u -> unirec_rec curenvnb pb b s u1 (substl ks u)) 
+      substn params1 params in 
+    let substn = unilist2 (unirec_rec curenvnb pb b) substn ts ts1 in 
       unirec_rec curenvnb pb b substn c1 (applist (c,(List.rev ks)))
 
   in
