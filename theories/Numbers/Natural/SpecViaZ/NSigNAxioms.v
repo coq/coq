@@ -340,7 +340,6 @@ rewrite N.spec_of_N, Z_of_N_abs, Zabs_eq; auto.
 fold (recursion a f n).
 apply recursion_wd; auto.
 red; auto.
-red; auto.
 unfold N.to_N.
 
 rewrite N.spec_succ.

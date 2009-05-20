@@ -206,7 +206,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	| _, Meta k when not (dependent cN cM) -> 
 	    (* Here we check that [cM] does not contain any local variables *)
 	    if nb = 0 then
-              (sigma,(k,cM,snd (extract_instance_status pb))::metasubst,evarsubst)
+              (sigma,(k,cM,fst (extract_instance_status pb))::metasubst,evarsubst)
 	    else if noccur_between 1 nb cM
 	    then
               (sigma,(k,lift (-nb) cM,fst (extract_instance_status pb))::metasubst,
@@ -545,19 +545,25 @@ let w_coerce env evd mv c =
   let mvty = Typing.meta_type evd mv in
   w_coerce_to_type env evd c cty mvty
 
-let unify_to_type env sigma flags c u =
+let unify_to_type env sigma flags c status u =
   let c = refresh_universes c in
   let t = get_type_of env sigma c in
   let t = Tacred.hnf_constr env sigma (nf_betaiota sigma (nf_meta sigma t)) in
   let u = Tacred.hnf_constr env sigma u in
-  try unify_0 env sigma Cumul flags t u
-  with e when precatchable_exception e -> (sigma,[],[])
+    if status = IsSuperType then
+      unify_0 env sigma Cumul flags u t
+    else if status = IsSubType then
+      unify_0 env sigma Cumul flags t u
+    else 
+      try unify_0 env sigma Cumul flags t u
+      with e when precatchable_exception e ->
+	unify_0 env sigma Cumul flags u t
 
-let unify_type env sigma flags mv c =
+let unify_type env sigma flags mv status c =
   let mvty = Typing.meta_type sigma mv in
-  if occur_meta_or_existential mvty or is_arity env sigma mvty then
-    unify_to_type env sigma flags c mvty
-  else (sigma,[],[])
+(*   if occur_meta_or_existential mvty or is_arity env sigma mvty then *)
+    unify_to_type env sigma flags c status mvty
+(*   else (sigma,[],[]) *)
 
 (* Move metas that may need coercion at the end of the list of instances *)
 
@@ -614,10 +620,10 @@ let w_merge env with_types flags (evd,metas,evars) =
 	  if with_types & to_type <> TypeProcessed then
 	    if to_type = CoerceToType then
               (* Some coercion may have to be inserted *)
-	      (w_coerce env evd mv c,([],[])),[]
+	      (w_coerce env evd mv c,([],[])),eqns
 	    else
               (* No coercion needed: delay the unification of types *)
-	      ((evd,c),([],[])),(mv,c)::eqns
+	      ((evd,c),([],[])),(mv,status,c)::eqns
 	  else 
 	    ((evd,c),([],[])),eqns in
 	  if meta_defined evd mv then
@@ -637,8 +643,8 @@ let w_merge env with_types flags (evd,metas,evars) =
 
     (* Process type eqns *)
     match eqns with
-    | (mv,c)::eqns ->
-        let (evd,metas,evars) = unify_type env evd flags mv c in 
+    | (mv,status,c)::eqns ->
+        let (evd,metas,evars) = unify_type env evd flags mv status c in 
         w_merge_rec evd metas evars eqns
     | [] -> evd
 		
@@ -721,7 +727,7 @@ let w_unify_to_subterm env ?(flags=default_unify_flags) (op,cl) evd =
     let cl = strip_outer_cast cl in
     (try 
        if closed0 cl 
-       then w_unify_0 env topconv flags op cl evd,cl
+       then w_typed_unify env topconv flags op cl evd,cl
        else error "Bound 1"
      with ex when precatchable_exception ex ->
        (match kind_of_term cl with 
@@ -784,9 +790,12 @@ let w_unify_to_subterm_list env flags allow_K oplist t evd =
           try 
 	    (* This is up to delta for subterms w/o metas ... *)
 	    w_unify_to_subterm env ~flags (strip_outer_cast op,t) evd
-          with PretypeError (env,NoOccurrenceFound _) when allow_K -> (evd,op)
+	  with PretypeError (env,NoOccurrenceFound _) when allow_K -> (evd,op)
         in 
-	(evd',cl::l)
+	  if not allow_K && (* ensure we found a different instance *)
+	    List.exists (fun op -> eq_constr op cl) l
+	  then error "Unify_to_subterm_list"
+	  else (evd',cl::l)
       else if allow_K or dependent op t then
 	(evd,op::l)
       else
