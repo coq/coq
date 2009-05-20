@@ -53,17 +53,14 @@ let descend n p =
 	     | left,(wanted::right) ->
 		 (wanted,
 		  (fun pfl' ->
-                     if (List.length pfl' = 1) 
-		       & (List.hd pfl').goal = wanted.goal 
-		     then
-                       let pf'       = List.hd pfl' in
-                       let spfl      = left@(pf'::right) in
-                       let newstatus = and_status (List.map pf_status spfl) in
-                       { p with 
-			   open_subgoals = newstatus;
-			   ref           = Some(r,spfl) }
-                     else 
-		       error "descend: validation"))
+		    if false (* debug *) then assert
+		      (List.length pfl'=1 & (List.hd pfl').goal = wanted.goal);
+                    let pf'       = List.hd pfl' in
+                    let spfl      = left@(pf'::right) in
+                    let newstatus = and_status (List.map pf_status spfl) in
+                    { p with 
+			open_subgoals = newstatus;
+			ref           = Some(r,spfl) }))
 	     | _ -> assert false)
     	else 
 	  error "Too few subproofs"
@@ -929,3 +926,15 @@ let tclINFO (tac : tactic) gls =
     msgnl (hov 0 (str "Info failed to apply validation"))
   end;
   res
+
+let pp_proof = ref (fun _ _ _ -> assert false)
+let set_proof_printer f = pp_proof := f
+
+let print_pftreestate {tpf = pf; tpfsigma = sigma; tstack = stack } =
+  (if stack = []
+   then str "Rooted proof tree is:"
+   else (str "Proof tree at occurrence [" ++ 
+         prlist_with_sep (fun () -> str ";") (fun (n,_) -> int n)
+           (List.rev stack) ++ str "] is:")) ++ fnl() ++
+  !pp_proof sigma (Global.named_context()) pf ++
+  Evd.pr_evar_defs sigma

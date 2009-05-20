@@ -72,7 +72,7 @@ let thin_sign osign sign =
        with Not_found | Different -> Environ.push_named_context_val d sign)
     sign ~init:Environ.empty_named_context_val
 
-let rec print_proof sigma osign pf =
+let rec print_proof _sigma osign pf =
   let hyps = Environ.named_context_of_val pf.goal.evar_hyps in
   let hyps' = thin_sign osign hyps in
   match pf.ref with
@@ -84,7 +84,7 @@ let rec print_proof sigma osign pf =
 	   spc () ++ str" BY " ++
 	   hov 0 (pr_rule r) ++ fnl () ++
 	   str"  " ++
-	   hov 0 (prlist_with_sep pr_fnl (print_proof sigma hyps) spfl))
+	   hov 0 (prlist_with_sep pr_fnl (print_proof _sigma hyps) spfl))
 	  
 let pr_change gl = 
   str"change " ++
@@ -221,4 +221,5 @@ let print_subscript sigma sign pf =
     format_print_info_script sigma sign pf
 
 let _ = Refiner.set_info_printer print_subscript
+let _ = Refiner.set_proof_printer print_proof
 

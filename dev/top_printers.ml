@@ -103,6 +103,7 @@ let ppevm evd = pp(pr_evar_defs evd)
 let ppevd evd = pp(pr_evar_defs evd)
 let ppclenv clenv = pp(pr_clenv clenv)
 let ppgoal g = pp(db_pr_goal g)
+let pppftreestate p = pp(print_pftreestate p)
 
 let pr_gls gls =
   hov 0 (pr_evar_defs (sig_sig gls) ++ fnl () ++ db_pr_goal (sig_it gls))

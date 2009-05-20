@@ -174,7 +174,7 @@ let mark_proof_tree_as_done pt =
 let mark_as_done pts = 
   map_pftreestate 
     (fun _ -> mark_proof_tree_as_done) 
-    (traverse 0 pts) 
+    (up_to_matching_rule is_focussing_command pts)
 
 (* post-instruction focus management *)
 

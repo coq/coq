@@ -236,3 +236,6 @@ open Pp
 (*i*)
 val set_info_printer :
   (evar_map -> named_context -> proof_tree -> Pp.std_ppcmds) -> unit
+val set_proof_printer :
+  (evar_map -> named_context -> proof_tree -> Pp.std_ppcmds) -> unit
+val print_pftreestate : pftreestate -> Pp.std_ppcmds

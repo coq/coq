@@ -35,7 +35,7 @@ proofs. Well-formed proofs are actually proof script where only the
 reasoning is incomplete. All the other aspects of the proof are
 correct:
 \begin{itemize}
-\item All objects refered to exist where they are used
+\item All objects referred to exist where they are used
 \item Conclusion steps actually prove something related to the
   conclusion of the theorem (the {\tt thesis}.
 \item Hypothesis introduction steps are done when the goal is an
@@ -50,7 +50,7 @@ correct:
 This section explain what differences the casual Coq user will
 experience using the \DPL .
 \begin{enumerate}
-\item The focussing mechanism is constrained so that only one goal at
+\item The focusing mechanism is constrained so that only one goal at
   a time is visible.
 \item Giving a statement that Coq cannot prove does not produce an
   error, only a warning: this allows to go on with the proof and fill
@@ -133,7 +133,7 @@ Conventions:\begin{itemize}
 
 \subsection{Temporary names}
 
-In proof commands where an optional name is asked for, ommiting the
+In proof commands where an optional name is asked for, omitting the
 name will trigger the creation of a fresh temporary name (e.g. for a
 hypothesis). Temporary names always start with an undescore '\_'
 character (e.g. {\tt \_hyp0}). Temporary names have a lifespan of one
@@ -143,8 +143,7 @@ command: they get erased after the next command. They can however be safely in t
 
 \subsection{Starting and Ending a mathematical proof}
 
-
- The standard way to use the \DPL is to first state a {\texttt{Lemma/Theorem/Definition}} and then use the {\texttt{proof}} command to switch the current subgoal to mathematical mode.  After the proof is completed, the {\texttt{end proof}} command will close the mathematical proof. If any subgoal remains to be proven, they will be displayed using the usual Coq display.
+ The standard way to use the \DPL is to first state a {\texttt{Lemma/Theorem/Definition}} and then use the {\texttt{proof}} command to switch the current subgoal to mathematical mode.  After the proof is completed, the {\texttt{end proof}} command will close the mathematical proof. If any subgoal remains to be proved, they will be displayed using the usual Coq display.
 
 \begin{coq_example}
 Theorem this_is_trivial: True.
@@ -178,7 +177,7 @@ Abort.
 
 As with all other block structures, the {\texttt{end proof}} command
 assumes that your proof is complete. If not, executing it will be
-equivalent to admitting that tehe statement is proven: A warning will
+equivalent to admitting that the statement is proved: A warning will
 be issued and you will not be able to run the {\texttt{Qed}}
 command. Instead, you can run {\texttt{Admitted}} if you wish to start
 another theorem and come back
@@ -348,7 +347,7 @@ conclusion step & {\tt thus} & {\tt hence} &
                 {\tt focus on} & {\tt thus $\sim$=/=$\sim$}\\ 
 \hline
 \end{tabular}
-\caption{Correspondance between basic forward steps and conclusion steps}
+\caption{Correspondence between basic forward steps and conclusion steps}
 \end{figure}
 
 Let us begin with simple examples :
@@ -462,7 +461,7 @@ hence (P 2).
 Abort.
 \end{coq_eval}
 
-Here a more involved exmaple where the choice of {\tt P 2} propagates
+Here a more involved example where the choice of {\tt P 2} propagates
 the choice of {\tt 2} to another part of the formula.
 
 \begin{coq_eval}
@@ -534,10 +533,10 @@ Abort.
 
 \subsection{Introduction steps}
 
-When the {\tt thesis} consists of a hypothestical formula (implication
+When the {\tt thesis} consists of a hypothetical formula (implication
 or universal quantification (e.g. \verb+A -> B+) , it is possible to
-assume the hypotetical part {\tt A} and then prove {\tt B}. In the
-\DPL{}, this comes in two syntactic flavours that are semantically
+assume the hypothetical part {\tt A} and then prove {\tt B}. In the
+\DPL{}, this comes in two syntactic flavors that are semantically
 equivalent : {\tt let} and {\tt assume}. Their syntax is designed so that {\tt let} works better for universal quantifiers and {\tt assume} for implications.
 
 \begin{coq_eval}
@@ -554,7 +553,7 @@ assume HP:(P x).
 Abort.
 \end{coq_eval}
 
-In the {\tt let} variant, the type of the assumed objet is optional
+In the {\tt let} variant, the type of the assumed object is optional
 provided it can be deduced from the command. The objects introduced by
 let can be followed by assumptions using {\tt such that}.
 
@@ -572,7 +571,7 @@ let x be such that HP:(P x). (* here x's type is inferred from (P x) *)
 Abort.
 \end{coq_eval}
 
-In the {\tt assume } variant, the type of the assumed objet is mandatory but the name is optional :
+In the {\tt assume } variant, the type of the assumed object is mandatory but the name is optional :
 
 \begin{coq_eval}
 Theorem T: forall (P:nat -> Prop), forall x, P x -> P x -> P x.
@@ -606,8 +605,8 @@ Abort.
 \subsection{Tuple elimination steps}
 
 In the \CIC, many objects dealt with in simple proofs are tuples :
-pairs , records, existentially quantified formulae. These are so
-comman that the \DPL{} provides a mechanism to extract members of
+pairs , records, existentially quantified formulas. These are so
+common that the \DPL{} provides a mechanism to extract members of
 those tuples, and also objects in tuples within tuples within
 tuples...
 
@@ -735,7 +734,7 @@ End Coq.
 If the object on which a case analysis occurs in the statement to be
 proved, the command {\tt suppose it is }\emph{pattern} is better
 suited than {\tt suppose}. \emph{pattern} may contain nested patterns
-with {\tt as} clauses. A detailled description of patterns is to be
+with {\tt as} clauses. A detailed description of patterns is to be
 found in figure \ref{term-syntax-aux}. here is an example.
 
 \begin{coq_eval}
@@ -793,7 +792,7 @@ language justifications are made of two components:
 Justification objects : {\texttt{by}} followed by a comma-{}separated
 list of objects that will be used by a selected tactic to prove the
 statement. This defaults to the empty list (the statement should then
-be tautological). The * wildcard provides the usual tactics behaviour:
+be tautological). The * wildcard provides the usual tactics behavior:
 use all statements in local context. However, this wildcard should be
 avoided since it reduces the robustness of the script.
 

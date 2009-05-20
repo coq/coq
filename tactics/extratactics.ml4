@@ -234,15 +234,17 @@ let add_hints_iff l2r lc n bl =
   Auto.add_hints true bl
     (Auto.HintsResolveEntry (List.map (project_hint n l2r) lc))
 
-VERNAC COMMAND EXTEND HintResolveIff
+VERNAC COMMAND EXTEND HintResolveIffLR
   [ "Hint" "Resolve" "->" ne_constr_list(lc) natural_opt(n)
     ":" preident_list(bl) ] ->
   [ add_hints_iff true lc n bl ]
-| [ "Hint" "Resolve" "<-" ne_constr_list(lc) natural_opt(n)
-    ":" preident_list(bl) ] ->
-  [ add_hints_iff false lc n bl ]
 | [ "Hint" "Resolve" "->" ne_constr_list(lc) natural_opt(n) ] ->
   [ add_hints_iff true lc n ["core"] ]
+END
+VERNAC COMMAND EXTEND HintResolveIffRL
+  [ "Hint" "Resolve" "<-" ne_constr_list(lc) natural_opt(n)
+    ":" preident_list(bl) ] ->
+  [ add_hints_iff false lc n bl ]
 | [ "Hint" "Resolve" "<-" ne_constr_list(lc) natural_opt(n) ] ->
   [ add_hints_iff false lc n ["core"] ]
 END
