@@ -947,22 +947,22 @@ and evar_define ?(choose=false) env (evk,_ as ev) rhs evd =
 (* Auxiliary functions for the conversion algorithms modulo evars
  *)
 
-let has_undefined_evars evd t =
-  let evm =  evd in
+let has_undefined_evars_or_sorts evd t =
   let rec has_ev t =
     match kind_of_term t with
-        Evar (ev,args) ->
-          (match evar_body (Evd.find evm ev) with
-            | Evar_defined c ->
-                has_ev c; Array.iter has_ev args
-            | Evar_empty ->
-	        raise NotInstantiatedEvar)
-      | _ -> iter_constr has_ev t in
+    | Evar (ev,args) ->
+        (match evar_body (Evd.find evd ev) with
+        | Evar_defined c ->
+            has_ev c; Array.iter has_ev args
+        | Evar_empty ->
+	    raise NotInstantiatedEvar)
+    | Sort s when is_sort_variable evd s -> raise Not_found
+    | _ -> iter_constr has_ev t in
   try let _ = has_ev t in false
   with (Not_found | NotInstantiatedEvar) -> true
 
 let is_ground_term evd t =
-  not (has_undefined_evars evd t)
+  not (has_undefined_evars_or_sorts evd t)
 
 let is_ground_env evd env =
   let is_ground_decl = function

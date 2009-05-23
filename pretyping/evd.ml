@@ -184,9 +184,13 @@ type sort_constraints = sort_constraint UniverseMap.t
 
 let rec canonical_find u scstr =
   match UniverseMap.find u scstr with
-      EqSort u' -> canonical_find u' scstr
-    | c -> (u,c)
+  | EqSort u' -> canonical_find u' scstr
+  | c -> (u,c)
 
+let find_univ u scstr =
+  try canonical_find u scstr
+  with Not_found -> u, DefinedSort (Type u)
+    
 let whd_sort_var scstr t =
   match kind_of_term t with
       Sort(Type u) ->
@@ -238,7 +242,6 @@ let new_sort_var cstr =
   let u = Termops.new_univ() in
   (u, UniverseMap.add u (SortVar([],[])) cstr)
 
-
 let set_leq_sort (u1,(leq1,geq1)) (u2,(leq2,geq2)) scstr =
   let rec search_rec (is_b, betw, not_betw) u1 =
     if List.mem u1 betw then (true, betw, not_betw)
@@ -264,8 +267,8 @@ let set_leq_sort (u1,(leq1,geq1)) (u2,(leq2,geq2)) scstr =
 let set_leq s1 s2 scstr =
   let u1 = var_of_sort s1 in
   let u2 = var_of_sort s2 in
-  let (cu1,c1) = canonical_find u1 scstr in
-  let (cu2,c2) = canonical_find u2 scstr in
+  let (cu1,c1) = find_univ u1 scstr in
+  let (cu2,c2) = find_univ u2 scstr in
   if cu1=cu2 then scstr
   else
     match c1,c2 with
@@ -315,8 +318,11 @@ module EvarMap = struct
   let eq_evar_map x y = x == y ||
     (EvarInfoMap.equal eq_evar_info (fst x) (fst y) &&
       UniverseMap.equal (=) (snd x) (snd y))
-
-  let merge e e' = fold (fun n v sigma -> add sigma n v) e' e
+  let constraints (sigma,sm) = sm
+  let merge (sigma,sm) (sigma',sm') = 
+    let ev = EvarInfoMap.fold (fun n v sigma -> EvarInfoMap.add sigma n v) sigma' sigma in
+    let sm = UniverseMap.fold (fun u cstr sm -> UniverseMap.add u cstr sm) sm' sm in
+      (ev,sm)
   
 end
  
@@ -479,11 +485,10 @@ let subst_evar_info s evi =
       evar_body = subst_evb evi.evar_body }
 
 let subst_evar_defs_light sub evd =
-  assert (UniverseMap.is_empty (snd evd.evars));
   assert (evd.conv_pbs = []);
   { evd with
-      metas = Metamap.map (map_clb (subst_mps sub)) evd.metas;
-      evars = ExistentialMap.map (subst_evar_info sub)  (fst evd.evars), snd evd.evars
+    metas = Metamap.map (map_clb (subst_mps sub)) evd.metas;
+    evars = ExistentialMap.map (subst_evar_info sub)  (fst evd.evars), (snd evd.evars);
   }
 
 let subst_evar_map = subst_evar_defs_light
@@ -572,6 +577,9 @@ let extract_changed_conv_pbs evd p =
 let extract_all_conv_pbs evd =
   extract_conv_pbs evd (fun _ -> true)
 
+let solve_sort_cstrs cstrs = (* TODO: Check validity *)
+  UniverseMap.empty
+
 (* spiwack: should it be replaced by Evd.merge? *)
 let evar_merge evd evars =
   { evd with evars = EvarMap.merge evd.evars evars.evars }
@@ -590,6 +598,30 @@ let set_leq_sort_variable ({evars=(sigma,sm)}as d) u1 u2 =
 let define_sort_variable ({evars=(sigma,sm)}as d) u s =
   { d with evars = (sigma, set_sort_variable u s sm) }
 let pr_sort_constraints {evars=(_,sm)} = pr_sort_cstrs sm
+let solve_sort_constraints ({evars=(sigma,sm)} as d) =
+  { d with evars = (sigma, solve_sort_cstrs sm) }
+
+(* This refreshes universes in types introducing sort variables;
+   works only for inferred types (i.e. for
+   types of the form (x1:A1)...(xn:An)B with B a sort or an atom in
+   head normal form) *)
+let universes_to_variables_gen strict evd t =
+  let modified = ref false in
+  let evdref = ref evd in
+  let rec refresh t = match kind_of_term t with
+    | Sort (Type u as us) when strict or u <> Univ.type0m_univ ->
+(* 	if Univ.is_univ_variable u then  *)
+	  let s', evd = new_sort_variable !evdref in
+	  let evd = set_leq_sort_variable evd s' us in
+	    evdref := evd; modified := true; mkSort s'
+(* 	else t *)
+    | Prod (na,u,v) -> mkProd (na,u,refresh v)
+    | _ -> t in
+  let t' = refresh t in
+  if !modified then !evdref, t' else evd, t
+
+let universes_to_variables = universes_to_variables_gen false
+let universes_to_variables_strict = universes_to_variables_gen true
 
 (**********************************************************)
 (* Accessing metas *)
@@ -764,10 +796,12 @@ let pr_meta_map mmap =
       	hov 0 
 	  (pr_meta mv ++ pr_name na ++ str " : " ++
            print_constr b.rebus ++ fnl ())
-    | (mv,Clval(na,(b,s),_)) ->
+    | (mv,Clval(na,(b,s),t)) ->
       	hov 0 
 	  (pr_meta mv ++ pr_name na ++ str " := " ++
-           print_constr b.rebus ++ spc () ++ pr_instance_status s ++ fnl ())
+           print_constr b.rebus ++ 
+	   str " : " ++ print_constr t.rebus ++
+	   spc () ++ pr_instance_status s ++ fnl ())
   in
   prlist pr_meta_binding (metamap_to_list mmap)
 
@@ -788,12 +822,19 @@ let pr_evar_info evi =
   in
   hov 2 (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]")
 
-let pr_evar_defs_t sigma =
-  h 0 
-    (prlist_with_sep pr_fnl
-      (fun (ev,evi) ->
-        h 0 (str(string_of_existential ev)++str"=="++ pr_evar_info evi))
-      (EvarMap.to_list sigma))
+let pr_evar_defs_t (evars,cstrs as sigma) =
+  let evs = 
+    if evars = EvarInfoMap.empty then mt ()
+    else
+      str"EVARS:"++brk(0,1)++
+	h 0 (prlist_with_sep pr_fnl
+		(fun (ev,evi) ->
+		  h 0 (str(string_of_existential ev)++str"=="++ pr_evar_info evi))
+		(EvarMap.to_list sigma))++fnl()
+  and cs =
+    if cstrs = UniverseMap.empty then mt ()
+    else pr_sort_cstrs cstrs++fnl() 
+  in evs ++ cs
 
 let pr_constraints pbs =
   h 0
@@ -807,7 +848,7 @@ let pr_constraints pbs =
 let pr_evar_defs evd =
   let pp_evm =
     if evd.evars = EvarMap.empty then mt() else
-      str"EVARS:"++brk(0,1)++pr_evar_defs_t evd.evars++fnl() in
+      pr_evar_defs_t evd.evars++fnl() in
   let cstrs =
     if evd.conv_pbs = [] then mt() else
     str"CONSTRAINTS:"++brk(0,1)++pr_constraints evd.conv_pbs++fnl() in

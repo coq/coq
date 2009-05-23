@@ -21,7 +21,7 @@ open Environ
    either produces a wrong result or raise an anomaly. Use with care.
    It doesn't handle predicative universes too. *)
 
-val get_type_of : env -> evar_map -> constr -> types
+val get_type_of : ?refresh:bool -> env -> evar_map -> constr -> types
 val get_sort_of : env -> evar_map -> types -> sorts
 val get_sort_family_of : env -> evar_map -> types -> sorts_family
 

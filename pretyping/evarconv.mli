@@ -16,6 +16,10 @@ open Reductionops
 open Evd
 (*i*)
 
+(* Comparison function considering sort variables. *)
+val constr_unify_with_sorts : evar_defs -> conv_pb ->
+  types -> types -> bool * evar_defs
+
 (* returns exception Reduction.NotConvertible if not unifiable *)
 val the_conv_x     : env -> constr -> constr -> evar_defs -> evar_defs
 val the_conv_x_leq : env -> constr -> constr -> evar_defs -> evar_defs

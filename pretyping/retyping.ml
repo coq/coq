@@ -161,8 +161,10 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
 
 (* We are outside the kernel: we take fresh universes *)
 (* to avoid tactics and co to refresh universes themselves *)
-let get_type_of env sigma c =
-  let f,_,_,_ = retype sigma in refresh_universes (f env c)
+let get_type_of ?(refresh=true) env sigma c =
+  let f,_,_,_ = retype sigma in
+  let t = f env c in
+    if refresh then refresh_universes t else t
 
 (* Makes an assumption from a constr *)
 let get_assumption_of env evc c = c

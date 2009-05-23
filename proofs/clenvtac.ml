@@ -73,10 +73,11 @@ let clenv_pose_dependent_evars with_evars clenv =
 
 let clenv_refine with_evars ?(with_classes=true) clenv gls =
   let clenv = clenv_pose_dependent_evars with_evars clenv in
+  let evd = Evd.solve_sort_constraints clenv.evd in
   let evd' = 
     if with_classes then 
-      Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd 
-    else clenv.evd
+      Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env evd 
+    else evd
   in
   tclTHEN
     (tclEVARS ( evd')) 

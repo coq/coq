@@ -73,7 +73,8 @@ let clenv_push_prod cl =
 	let mv = new_meta () in
 	let dep = dependent (mkRel 1) u in
 	let na' = if dep then na else Anonymous in
-	let e' = meta_declare mv t ~name:na' cl.evd in
+	let evd,t' = Evd.universes_to_variables cl.evd t in
+	let e' = meta_declare mv t' ~name:na' evd in
 	let concl = if dep then subst1 (mkMeta mv) u else u in
 	let def = applist (cl.templval.rebus,[mkMeta mv]) in
 	{ templval = mk_freelisted def;
@@ -95,7 +96,8 @@ let clenv_environments evd bound t =
 	  let mv = new_meta () in
 	  let dep = dependent (mkRel 1) t2 in
 	  let na' = if dep then na else Anonymous in
-	  let e' = meta_declare mv t1 ~name:na' e in
+	  let e',t1' = Evd.universes_to_variables e t1 in
+	  let e' = meta_declare mv t1' ~name:na' e' in
 	  clrec (e', (mkMeta mv)::metas) (Option.map ((+) (-1)) n)
 	    (if dep then (subst1 (mkMeta mv) t2) else t2)
       | (n, LetIn (na,b,_,t)) -> clrec (e,metas) n (subst1 b t)
@@ -112,7 +114,8 @@ let clenv_environments_evars env evd bound t =
       | (Some 0, _) -> (e, List.rev ts, t)
       | (n, Cast (t,_,_)) -> clrec (e,ts) n t
       | (n, Prod (na,t1,t2)) ->
-          let e',constr = Evarutil.new_evar e env t1 in
+	  let e',t1' = Evd.universes_to_variables e t1 in
+          let e',constr = Evarutil.new_evar e' env t1' in
 	  let dep = dependent (mkRel 1) t2 in
 	  clrec (e', constr::ts) (Option.map ((+) (-1)) n)
 	    (if dep then (subst1 constr t2) else t2)
