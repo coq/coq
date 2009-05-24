@@ -610,11 +610,11 @@ let universes_to_variables_gen strict evd t =
   let evdref = ref evd in
   let rec refresh t = match kind_of_term t with
     | Sort (Type u as us) when strict or u <> Univ.type0m_univ ->
-(* 	if Univ.is_univ_variable u then  *)
+	if not (is_sort_variable !evdref us) then
 	  let s', evd = new_sort_variable !evdref in
 	  let evd = set_leq_sort_variable evd s' us in
 	    evdref := evd; modified := true; mkSort s'
-(* 	else t *)
+	else t
     | Prod (na,u,v) -> mkProd (na,u,refresh v)
     | _ -> t in
   let t' = refresh t in

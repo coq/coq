@@ -633,7 +633,7 @@ let w_merge env with_types flags (evd,metas,evars) =
 	      (w_coerce env evd mv c,([],[])),eqns
 	    else
               (* No coercion needed: delay the unification of types *)
-	      ((evd,c),([],[])),(mv,status,c)::eqns
+	      ((evd,c),([],[])),eqns@[(mv,status,c)]
 	  else 
 	    ((evd,c),([],[])),eqns in
 	  if meta_defined evd mv then
@@ -692,8 +692,8 @@ let check_types env flags (sigma,ms,es as subst) m n =
     isEvar_or_Meta (fst (whd_stack sigma n)) then
     let sigma, mt = get_type_of_with_variables env sigma m in
     let sigma, nt = get_type_of_with_variables env sigma n in
-      unify_0_with_initial_metas (sigma,ms,es) true env topconv
-	flags mt nt
+      unify_0_with_initial_metas (sigma,ms,es) true env topconv flags
+	(nf_betaiota sigma mt) (nf_betaiota sigma nt)
   else subst
     
 let w_unify_core_0 env with_types cv_pb flags m n evd =
