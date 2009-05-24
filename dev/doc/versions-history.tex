@@ -1,0 +1,351 @@
+\documentclass[a4paper]{book}
+\usepackage{fullpage}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsfonts}
+
+\newcommand{\feature}[1]{{\em #1}}
+
+\begin{document}
+
+\begin{center}
+\begin{huge}
+An history of Coq versions
+\end{huge}
+\end{center}
+\bigskip
+
+\centerline{\large 1984-1989: The Calculus of Constructions}
+\mbox{}\\
+\mbox{}\\
+\begin{tabular}{l|l|l}
+version & date & comments \\
+\hline
+CoC V1.10& mention of dates from 6 December & implementation language is Caml\\
+         & 1984 to 13 February 1985 \\
+
+CoC V1.11& mention of dates from 6 December\\
+         & 1984 to 19 February 1985\\
+
+CoC V2.13& dated 16 December 1985\\
+
+CoC V2.13& dated 25 June 1986\\
+
+CoC V3.1& dated 20 November 1986 & \feature{auto}\\
+
+CoC V3.2& dated 27 November 1986\\
+
+CoC V3.3 and V3.4& dated 1 January 1987 & creation of a directory for examples\\
+
+CoC V4.1& dated 24 July 1987\\
+
+CoC V4.2& dated 10 September 1987\\
+
+CoC V4.3& dated 15 September 1987\\
+
+CoC V4.4& dated 27 January 1988\\
+
+CoC V4.5 and V4.5.5& dated 15 March 1988\\
+
+CoC V4.6 and V4.7& dated 1 September 1988\\
+
+CoC V4.8& dated 1 December 1988\\
+
+CoC V4.8.5& dated 1 February 1989\\
+
+CoC V4.9& dated 1 March 1989\\
+
+CoC V4.10 and 4.10.1& dated 1 May 1989 & first public release - in English\\
+\end{tabular}
+
+\bigskip
+\bigskip
+
+\newpage
+
+\centerline{\large 1989-now: The Calculus of Inductive Constructions}
+\mbox{}\\
+\centerline{I- RCS archives in Caml and Caml-Light}
+\mbox{}\\
+\mbox{}\\
+\begin{tabular}{l|l|l}
+version & date & comments \\
+\hline
+Coq V5.0 & headers dated 1 January 1990 & internal use \\
+  & & \feature{inductive types with primitive recursor}\\
+
+Coq V5.1 & ended 12 July 1990 & internal use \\
+
+Coq V5.2 & log dated 4 October 1990 & internal use \\
+
+Coq V5.3 & log dated 12 October 1990 & internal use \\
+
+Coq V5.4 & headers dated 24 October 1990 & internal use, \feature{extraction} (version 1) [3-12-90]\\
+
+Coq V5.5 & started 6 December 1990 & internal use \\
+
+Coq V5.6 beta & 1991 & first announce of the new Coq based on CIC \\
+ & & (in May at TYPES?)\\
+ & & \feature{rewrite tactic}\\
+ & & use of RCS at least from February 1991\\
+
+Coq V5.6& 7 August 1991 & \\
+
+Coq V5.6 patch 1& 13 November 1991 & \\
+
+Coq V5.6 (last) & mention of 27 November 1992\\
+
+Coq V5.7.0& 1992 & translation to Caml-Light \footnotemark\\
+
+Coq V5.8& 12 February 1993 & \feature{Program} (version 1), \feature{simpl}\\
+
+& & has the xcoq graphical interface\\
+
+& & first explicit notion of standard library\\
+
+& & includes a MacOS 7-9 version\\
+
+Coq V5.8.1& released 28 April 1993 & with xcoq graphical interface and MacOS 7-9 support\\
+
+Coq V5.8.2& released 9 July 1993 & with xcoq graphical interface and MacOS 7-9 support\\
+
+Coq V5.8.3& released 6 December 1993 % Announce on coq-club
+          & with xcoq graphical interface and MacOS 7-9 support\\
+
+ & & 3 branches: Lyon (V5.8.x), Ulm (V5.10.x) and Rocq (V5.9)\\
+
+Coq V5.9 alpha& 7 July 1993 & 
+experimental version based on evars refinement \\
+              & & (merge from experimental ``V6.0'' and some pre-V5.8.3 \\
+              & & version), not released\\
+
+& March 1994 & \feature{tauto} tactic in V5.9 branch\\
+
+Coq V5.9 & 27 January 1993 & experimental version based on evars refinement\\
+         & & not released\\
+\end{tabular}
+
+\bigskip
+\bigskip
+
+\footnotetext{archive lost?}
+
+\newpage
+
+\centerline{II- Starting with CVS archives in Caml-Light}
+\mbox{}\\
+\mbox{}\\
+\begin{tabular}{l|l|l}
+version & date & comments \\
+\hline
+Coq V5.10 ``Murthy'' & 22 January 1994 & 
+introduction of the ``DOPN'' structure\\
+ & & \feature{eapply/prolog} tactics\\
+ & & private use of cvs on madiran.inria.fr\\
+
+Coq V5.10.1 ``Murthy''& 15 April 1994 \\
+
+Coq V5.10.2 ``Murthy''& 19 April 1994 & \feature{mutual inductive types, fixpoint} (from Lyon's branch)\\
+
+Coq V5.10.3& 28 April 1994 \\
+
+Coq V5.10.5& dated 13 May 1994 & \feature{inversion}, \feature{discriminate}, \feature{injection} \\
+  & & \feature{type synthesis of hidden arguments}\\
+  & & \feature{separate compilation}, \feature{reset mechanism} \\
+
+Coq V5.10.6& dated 30 May 1994\\
+Coq Lyon's archive & in 1994 & cvs server set up on woodstock.ens-lyon.fr\\
+
+Coq V5.10.9& announced on 17 August 1994 &
+ % Announced by Catherine Parent on coqdev
+ % Version avec une copie de THEORIES pour les inductifs mutuels 
+ \\
+
+Coq V5.10.11& announced on 2 February 1995 & \feature{compute}\\
+Coq Rocq's archive & on 16 February 1995 & set up of ``V5.10'' cvs archive on pauillac.inria.fr \\
+ & & with first dispatch of files over src/* directories\\
+
+Coq V5.10.12& dated 30 January 1995 & on Lyon's cvs\\
+
+Coq V5.10.13& dated 9 June 1995 & on Lyon's cvs\\
+
+Coq V5.10.14.OO& dated 30 June 1995 & on Lyon's cvs\\
+
+Coq V5.10.14.a& announced 5 September 1995 & bug-fix release \\ % Announce on coq-club by BW 
+
+Coq V5.10.14.b& released 2 October 1995 & bug-fix release\\
+  & & MS-DOS version released on 30 October 1995\\
+ % still available at ftp://ftp.ens-lyon.fr/pub/LIP/COQ/V5.10.14.old/ in May 2009
+ % also known in /net/pauillac/constr archive as ``V5.11 old'' \\
+ % A copy of Coq V5.10.15 dated 1 January 1996 coming from Lyon's CVS is
+ % known in /net/pauillac/constr archive as ``V5.11 new old'' \\
+
+Coq V5.10.15 & released 20 February 1996 & \feature{Logic, Sorting, new Sets and Relations libraries} \\
+  % Announce on coq-club by BW
+  % dated 15 February 1996 and bound to pauillac's cvs in /net/pauillac/constr archive 
+  & & MacOS 7-9 version released on 1 March 1996 \\ % Announce on coq-club by BW
+
+Coq V5.11 & dated 1 March 1996 & not released, not in pauillac's CVS, \feature{eauto} \\
+\end{tabular}
+
+\bigskip
+\bigskip
+
+\newpage
+
+\centerline{III- A CVS archive in Caml Special Light}
+\mbox{}\\
+\mbox{}\\
+\begin{tabular}{l|l|l}
+version & date & comments \\
+\hline
+Coq ``V6'' archive & 20 March 1996 & new cvs repository on pauillac.inria.fr with code ported \\
+ & & to Caml Special Light (to later become Objective Caml)\\
+ & & has implicit arguments and coercions\\
+
+Coq V6.1beta& released 18 November 1996 & \feature{coercions} [23-5-1996], \feature{user-level implicit arguments} [23-5-1996]\\
+ & & \feature{omega} [10-9-1996] \\
+ & & \feature{natural language proof printing} (stopped from Coq V7) [6-9-1996]\\
+ & & \feature{pattern-matching compilation} [7-10-1996]\\
+ & & \feature{ring} (version 1, ACSimpl) [11-12-1996]\\
+
+Coq V6.1& released December 1996 & \\
+
+Coq V6.2beta& released 30 January 1998 & % Announced on coq-club 2-2-1998 by CP
+      \feature{SearchIsos} (stopped from Coq V7) [9-11-1997]\\
+  & & grammar extension mechanism moved to Camlp4 [12-6-1997]\\
+  & & \feature{refine tactic}\\
+  & & includes a Windows version\\
+
+Coq V6.2& released 4 May 1998 & % Announced on coq-club 5-5-1998 by CP
+  \feature{ring} (version 2) [7-4-1998] \\
+
+Coq V6.2.1& released 23 July 1998\\
+
+Coq V6.2.2 beta& released 30 January 1998\\
+
+Coq V6.2.2& released 23 September 1998\\
+
+Coq V6.2.3& released 22 December 1998 & \feature{Real numbers library} [from 13-11-1998] \\
+
+Coq V6.2.4& released 8 February 1999\\
+
+Coq V6.3& released 27 July 1999 & \feature{autorewrite} [25-3-1999]\\
+ & & \feature{Correctness} (deprecated in V8, led to Why) [28-10-1997]\\
+
+Coq V6.3.1& released 7 December 1999\\
+\end{tabular}
+\medskip
+\bigskip
+
+\newpage
+\centerline{IV- New CVS, back to a kernel-centric implementation}
+\mbox{}\\
+\mbox{}\\
+\begin{tabular}{l|l|l}
+version & date & comments \\
+\hline
+Coq ``V7'' archive & August 1999 & new cvs archive based on J.-C. Filliâtre's \\
+   & & \feature{kernel-centric} architecture \\
+   & & more care for outside readers\\
+   & & (indentation, ocaml warning protection)\\
+Coq V7.0beta& released 27 December 2000 & \feature{${\cal L}_{\mathit{tac}}$} \\
+Coq V7.0beta2& released 2 February 2001\\
+
+Coq V7.0& released 25 April 2001 & \feature{extraction} (version 2) [6-2-2001] \\
+  & & \feature{field} (version 1) [19-4-2001], \feature{fourier} [20-4-2001] \\
+
+Coq V7.1& released 25 September 2001 & \feature{setoid rewriting} (version 1) [10-7-2001]\\
+
+Coq V7.2& released 10 January 2002\\
+
+Coq V7.3& released 16 May 2002\\
+
+Coq V7.3.1& released 5 October 2002 & \feature{module system} [2-8-2002]\\
+  & & \feature{pattern-matching compilation} (version 2) [13-6-2002]\\
+
+Coq V7.4& released 6 February 2003 & \feature{notation}, \feature{scopes} [13-10-2002]\\
+
+Coq V8.0& released 21 April 2004 & \feature{new concrete syntax}, \feature{Set predicative}, \feature{CoqIDE} [from 4-2-2003]\\
+
+Coq V8.0pl1& released 18 July 2004\\
+
+Coq V8.0pl2& released 22 January 2005\\
+
+Coq V8.0pl3& released 13 January 2006\\
+
+Coq V8.0pl4& released 26 January 2007\\
+
+Coq ``svn'' archive & 6 March 2006 & cvs archive moved to subversion control management\\
+
+Coq V8.1beta& released 12 July 2006 & \feature{bytecode compiler} [20-10-2004] \\
+  & & \feature{setoid rewriting} (version 2) [3-9-2004]\\
+  & & \feature{functional induction} [1-2-2006]\\
+  & & \feature{Strings library} [8-2-2006], \feature{FSets/FMaps library} [15-3-2006] \\
+  & & \feature{Program} (version 2, Russell) [5-3-2006] \\
+  & & \feature{declarative language} [20-9-2006]\\
+  & & \feature{ring} (version 3) [18-11-2005]\\
+
+Coq V8.1gamma& released 7 November 2006 & \feature{field} (version 2) [29-9-2006]\\
+
+Coq V8.1& released 10 February 2007 & \\
+
+Coq V8.1pl1& released 27 July 2007 & \\
+Coq V8.1pl2& released 13 October 2007 & \\
+Coq V8.1pl3& released 13 December 2007 & \\
+Coq V8.1pl4& released 9 October 2008 & \\
+
+Coq V8.2 beta1& released 13 June 2008 & \\
+Coq V8.2 beta2& released 19 June 2008 & \\
+Coq V8.2 beta3& released 27 June 2008 & \\
+Coq V8.2 beta4& released 8 August 2008 & \\
+
+Coq V8.2 & released 17 February 2009 & \feature{type classes} [10-12-2007], \feature{machine words} [11-5-2007]\\
+  & & \feature{big integers} [11-5-2007], \feature{abstract arithmetics} [9-2007]\\
+  & & \feature{setoid rewriting} (version 3) [18-12-2007] \\
+  & & \feature{micromega solving platform} [19-5-2008]\\
+
+& & a first package released on
+February 11 was incomplete\\
+\end{tabular}
+
+\medskip
+\bigskip
+\newpage
+
+\centerline{\large Other important dates}
+\mbox{}\\
+\mbox{}\\
+\begin{tabular}{l|l|l}
+version & date & comments \\
+\hline
+Lechenadec's version in C& mention of \\
+ & 13 January 1985 on \\
+ & some vernacular files\\
+Set up of the coq-club mailing list & 28 July 1993\\
+
+Coq V6.0 ``evars'' & & experimentation based on evars
+refinement started \\
+  & & in 1991 by Gilles from V5.6 beta,\\
+  & & with work by Hugo in July 1992\\
+
+Coq V6.0 ``evars'' ``light'' & July 1993 & Hugo's port of the first
+evars-based experimentation \\
+ & & to Coq V5.7, version from October/November
+1992\\
+
+CtCoq & released 25 October 1995 & first beta-version  \\ % Announce on coq-club by Janet  
+
+Proto with explicit substitutions & 1997 &\\
+
+Coq web site & 15 April 1998 & new site designed by David Delahaye \\
+
+Coq web site & January 2004 & web site new style \\
+  & & designed by Julien Narboux and Florent Kirchner \\
+
+Coq web site & April 2009 & new Drupal-based site \\
+  & & designed by Jean-Marc Notin and Denis Cousineau \\
+
+\end{tabular}
+
+\end{document}
