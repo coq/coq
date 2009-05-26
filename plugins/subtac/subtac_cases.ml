@@ -1734,7 +1734,7 @@ let abstract_tomatch env tomatchs =
 	     Rel n -> (lift lenctx c, lift_tomatch_type lenctx t) :: prev, ctx, names
 	   | _ -> 
 	       let name = next_ident_away_from (id_of_string "filtered_var") names in
-		 (mkRel 1, lift_tomatch_type 1 t) :: lift_ctx 1 prev, 
+		 (mkRel 1, lift_tomatch_type (succ lenctx) t) :: lift_ctx 1 prev, 
 	       (Name name, Some (lift lenctx c), lift lenctx $ type_of_tomatch t) :: ctx, 
 	       name :: names)
       ([], [], []) tomatchs
