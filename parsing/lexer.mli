@@ -21,6 +21,7 @@ type error =
 exception Error of error
 
 val add_token : string * string -> unit
+val remove_keyword : string -> unit
 val is_keyword : string -> bool
 
 val location_function : int -> loc

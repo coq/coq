@@ -59,6 +59,25 @@ let ttree_find ttree str =
   in 
   proc_rec ttree 0
 
+(* Removes a string from a dictionary: returns an equal dictionary
+   if the word not present. *)
+let ttree_remove ttree str =
+  let rec remove tt i =
+    if i == String.length str then 
+      {node = None; branch = tt.branch}
+    else
+      let c = str.[i] in
+      let br =
+        match try Some (CharMap.find c tt.branch) with Not_found -> None with
+          | Some tt' ->
+              CharMap.add c (remove tt' (i + 1)) (CharMap.remove c tt.branch)
+          | None -> tt.branch
+      in
+      { node = tt.node; branch = br }
+  in 
+  remove ttree 0
+
+
 (* Errors occuring while lexing (explained as "Lexer error: ...") *)
 
 type error =
@@ -170,6 +189,9 @@ let is_keyword s =
 let add_keyword str =
   check_keyword str;
   token_tree := ttree_add !token_tree str
+
+let remove_keyword str = 
+  token_tree := ttree_remove !token_tree str
 
 (* Adding a new token (keyword or special token). *)
 let add_token (con, str) = match con with
