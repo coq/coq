@@ -1102,9 +1102,9 @@ let save_remaining_recthms (local,kind) body opaq i (id,(t_i,imps)) =
   | None ->
       (match local with
       | Local ->
-          let impl=false and keep=false in (* copy values from Vernacentries *)
+          let impl=false in (* copy values from Vernacentries *)
           let k = IsAssumption Conjectural in
-          let c = SectionLocalAssum (t_i,impl,keep) in
+          let c = SectionLocalAssum (t_i,impl,[]) in
 	  let _ = declare_variable id (Lib.cwd(),c,k) in
           (Local,VarRef id,imps)
       | Global ->

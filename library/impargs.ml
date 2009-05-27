@@ -546,22 +546,19 @@ let declare_implicits local ref =
       
 let declare_var_implicits id =
   let flags = !implicit_args in
-    if flags.auto then
-      declare_implicits_gen ImplLocal flags (VarRef id)
+    declare_implicits_gen ImplLocal flags (VarRef id)
 
 let declare_constant_implicits con =
   let flags = !implicit_args in
-    if flags.auto then
-      declare_implicits_gen (ImplConstant (con,flags)) flags (ConstRef con)
+    declare_implicits_gen (ImplConstant (con,flags)) flags (ConstRef con)
 
 let declare_mib_implicits kn =
   let flags = !implicit_args in
-    if flags.auto then
-      let imps = array_map_to_list
-	(fun (ind,cstrs) -> ind::(Array.to_list cstrs))
-	(compute_mib_implicits flags [] kn) in
-	add_anonymous_leaf
-	  (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
+  let imps = array_map_to_list
+    (fun (ind,cstrs) -> ind::(Array.to_list cstrs))
+    (compute_mib_implicits flags [] kn) in
+    add_anonymous_leaf
+      (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
       
 (* Declare manual implicits *)
 type manual_explicitation = Topconstr.explicitation * (bool * bool * bool) 

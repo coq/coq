@@ -452,7 +452,7 @@ type variable_context = variable_info list
 type abstr_list = variable_context Names.Cmap.t * variable_context Names.KNmap.t
 
 let sectab =
-  ref ([] : ((Names.identifier * binding_kind * Term.types option) list * Cooking.work_list * abstr_list) list)
+  ref ([] : ((Names.identifier * binding_kind * (Term.types * Names.identifier list) option) list * Cooking.work_list * abstr_list) list)
 
 let add_section () =
   sectab := ([],(Names.Cmap.empty,Names.KNmap.empty),(Names.Cmap.empty,Names.KNmap.empty)) :: !sectab
@@ -460,11 +460,15 @@ let add_section () =
 let add_section_variable id impl keep =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
-    | (vars,repl,abs)::sl -> sectab := ((id,impl,keep)::vars,repl,abs)::sl
+    | (vars,repl,abs)::sl ->
+	sectab := ((id,impl,keep)::vars,repl,abs)::sl
 
 let rec extract_hyps = function
   | ((id,impl,keep)::idl,(id',b,t)::hyps) when id=id' -> (id',impl,b,t) :: extract_hyps (idl,hyps)
-  | ((id,impl,Some ty)::idl,hyps) -> (id,impl,None,ty) :: extract_hyps (idl,hyps)
+  | ((id,impl,Some (ty,keep))::idl,hyps) -> 
+      if List.exists (fun (id,_,_) -> List.mem id keep) hyps then
+	(id,impl,None,ty) :: extract_hyps (idl,hyps)
+      else extract_hyps (idl,hyps)
   | (id::idl,hyps) -> extract_hyps (idl,hyps)
   | [], _ -> []
 
