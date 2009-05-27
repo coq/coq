@@ -93,8 +93,6 @@ type tried_tactic =
   | Success of int (* nb of goals after *)
   | Failed
 
-val try_interptac: string -> tried_tactic
-
 (* Message to display in lower status bar. *)
 
 val current_status : unit -> string
