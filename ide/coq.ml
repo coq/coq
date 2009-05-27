@@ -459,35 +459,10 @@ let interp_and_replace s =
   let msg = read_stdout () in
   result,msg
 
-let nb_subgoals pf =
-  List.length (fst (Refiner.frontier (Tacmach.proof_of_pftreestate pf)))
-
 type tried_tactic = 
   | Interrupted
   | Success of int (* nb of goals after *)
   | Failed
-
-let try_interptac s = 
-  try
-    prerr_endline ("Starting try_interptac: "^s);
-    let pf = get_pftreestate () in
-    let pe = Pcoq.Gram.Entry.parse 
-	       Pcoq.main_entry 
-	       (Pcoq.Gram.parsable (Stream.of_string s)) 
-    in match pe with 
-    | Some (loc,(VernacSolve (n, tac, _))) ->
-	let tac = Tacinterp.interp tac in
-	let pf' = solve_nth_pftreestate n tac pf in
-	prerr_endline "Success";
-	let nb_goals = nb_subgoals pf' - nb_subgoals pf in
-	Success nb_goals
-    | _ ->
-	prerr_endline "try_interptac: not a tactic"; Failed
-  with 
-  | Sys.Break | Stdpp.Exc_located (_,Sys.Break)
-      -> prerr_endline "try_interp: interrupted"; Interrupted
-  | Stdpp.Exc_located (_,e) -> prerr_endline ("try_interp: failed ("^(Printexc.to_string e)); Failed
-  | e -> Failed	  
 
 let rec is_pervasive_exn = function
   | Out_of_memory | Stack_overflow | Sys.Break -> true
