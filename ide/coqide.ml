@@ -538,7 +538,6 @@ let warning msg =
     msg
 
 
-
 class analyzed_view (_script:Undo.undoable_view) (_pv:GText.view) (_mv:GText.view) _cs =
 object(self)
   val input_view = _script
@@ -861,11 +860,11 @@ object(self)
                               ignore
                                 (tag#connect#event ~callback:
                                    (fun ~origin ev it ->
-                                      begin match GdkEvent.get_type ev with 
+                                      match GdkEvent.get_type ev with 
                                         | `BUTTON_PRESS -> 
                                             let ev = (GdkEvent.Button.cast ev) in
                                               if (GdkEvent.Button.button ev) = 3
-                                              then begin 
+                                              then (
                                                 let loc_menu = GMenu.menu () in
                                                 let factory = 
                                                   new GMenu.factory loc_menu in
@@ -887,7 +886,8 @@ object(self)
                                                   loc_menu#popup 
                                                     ~button:3
                                                     ~time:(GdkEvent.Button.time ev);
-                                              end
+                                                  true)
+                                              else false
                                         | `MOTION_NOTIFY -> 
                                             proof_buffer#remove_tag
                                               ~start:proof_buffer#start_iter
@@ -905,9 +905,9 @@ object(self)
                                                 last_shown_area;
 
                                               prerr_endline "Applied tag";
-                                              ()
-                                        | _ -> ()
-                                      end;false
+                                              false
+                                        | _ ->
+                                            false
                                    )
                                 );
                               tag
@@ -1025,7 +1025,6 @@ object(self)
                     true
           end else false
           else false
-
 
   method process_next_phrase verbosely display_goals do_highlight = 
     let get_next_phrase () =
@@ -1531,6 +1530,8 @@ object(self)
               )
     );
     ignore (input_buffer#add_selection_clipboard cb);
+    ignore (proof_buffer#add_selection_clipboard cb);
+    ignore (message_buffer#add_selection_clipboard cb);
     let paren_highlight_tag = input_buffer#create_tag ~name:"paren" [`BACKGROUND "purple"]  in
       self#electric_paren paren_highlight_tag;
       ignore (input_buffer#connect#after#mark_set 
@@ -1558,10 +1559,12 @@ object(self)
                                           end));
 
       ignore ((input_view :> GText.view)#event#connect#button_release
-                (fun b -> if GdkEvent.Button.button b = 3
-                 then let cav = session_notebook#current_term.analyzed_view in
-                   cav#toggle_proof_visibility cav#get_insert; true
+                (fun b ->
+                   if GdkEvent.Button.button b = 3
+                   then let cav = session_notebook#current_term.analyzed_view in
+                     cav#toggle_proof_visibility cav#get_insert; true
                    else false));
+      
 
 end
 
@@ -1621,15 +1624,6 @@ let create_session () =
        "hidden",[`INVISIBLE true; `EDITABLE false];
        "locked",[`EDITABLE false; `BACKGROUND "light grey"]
       ] in
-  let _ =
-    script#event#connect#button_press ~callback:
-      (fun ev -> GdkEvent.Button.button ev = 3) in
-  let _ =
-    proof#event#connect#button_press ~callback:
-      (fun ev -> GdkEvent.Button.button ev = 3) in
-  let _ =
-    message#event#connect#button_press ~callback:
-      (fun ev -> GdkEvent.Button.button ev = 3) in
   let _ =
     message#buffer#create_tag ~name:"error" [`FOREGROUND "red"] in
   let _ =
@@ -2148,13 +2142,23 @@ let main files =
 				 (fun () -> 
 				    ignore session_notebook#current_term.script#clear_undo));
 			ignore(edit_f#add_separator ());
+                        let get_active_view_for_cp () =
+                          let has_sel (i0,i1) = i0#compare i1 <> 0 in
+                          let current = session_notebook#current_term in
+                            if has_sel current.script#buffer#selection_bounds
+                            then current.script#as_view
+                            else if has_sel current.proof_view#buffer#selection_bounds
+                            then current.proof_view#as_view
+                            else current.message_view#as_view
+                        in
 			ignore(edit_f#add_item "Cut" ~key:GdkKeysyms._X ~callback:
 				 (fun () -> GtkSignal.emit_unit
-				    session_notebook#current_term.script#as_view 
-				    GtkText.View.S.cut_clipboard));
+				    (get_active_view_for_cp ()) 
+				    GtkText.View.S.cut_clipboard
+                                 )); 
 			ignore(edit_f#add_item "Copy" ~key:GdkKeysyms._C ~callback:
 				 (fun () -> GtkSignal.emit_unit
-				    session_notebook#current_term.script#as_view 
+				    (get_active_view_for_cp ()) 
 				    GtkText.View.S.copy_clipboard));
 			ignore(edit_f#add_item "Paste" ~key:GdkKeysyms._V ~callback:
 				 (fun () -> 
