@@ -26,8 +26,7 @@ open Termops
 (*s Flags governing the computation of implicit arguments *)
 
 type implicits_flags = {
-  main : bool;
-  manual : bool;                     (* automatic or manual only *)
+  auto : bool;                     (* automatic or manual only *)
   strict : bool;                   (* true = strict *)
   strongly_strict : bool;            (* true = strongly strict *)
   reversible_pattern : bool;
@@ -38,8 +37,7 @@ type implicits_flags = {
 (* les implicites sont stricts par défaut en v8 *)
 
 let implicit_args = ref { 
-  main = false;
-  manual = false;
+  auto = false;
   strict = true;
   strongly_strict = false;
   reversible_pattern = false;
@@ -48,11 +46,7 @@ let implicit_args = ref {
 }
 
 let make_implicit_args flag =
-  implicit_args := { !implicit_args with main = flag }
-
-let make_manual_implicit_args flag =
-  implicit_args := { !implicit_args with main = if flag then true else !implicit_args.main;
-    manual = flag }
+  implicit_args := { !implicit_args with auto = flag }
 
 let make_strict_implicit_args flag =
   implicit_args := { !implicit_args with strict = flag }
@@ -69,9 +63,7 @@ let make_contextual_implicit_args flag =
 let make_maximal_implicit_args flag =
   implicit_args := { !implicit_args with maximal = flag }
 
-let is_implicit_args () = !implicit_args.main
-let is_manual_implicit_args () = !implicit_args.manual
-let is_auto_implicit_args () = !implicit_args.main && not (is_manual_implicit_args ())
+let is_implicit_args () = !implicit_args.auto
 let is_strict_implicit_args () = !implicit_args.strict
 let is_strongly_strict_implicit_args () = !implicit_args.strongly_strict
 let is_reversible_pattern_implicit_args () = !implicit_args.reversible_pattern
@@ -317,9 +309,9 @@ let compute_implicits_auto env f manual t =
   match manual with
   | [] -> 
       let l = compute_implicits_flags env f false t in
-	if f.manual then List.map (const None) l
+	if not f.auto then List.map (const None) l
 	else prepare_implicits f l
-  | _ -> compute_manual_implicits env f t (not f.manual) manual
+  | _ -> compute_manual_implicits env f t f.auto manual
 	
 let compute_implicits env t = compute_implicits_auto env !implicit_args [] t
 
@@ -521,7 +513,7 @@ let rebuild_implicits (req,l) =
       | ImplManual m -> 
 	  let oldimpls = snd (List.hd l) in
 	  let auto = 
-	    if flags.main then
+	    if flags.auto then
 	      let newimpls = compute_global_implicits flags [] ref in
 		merge_impls oldimpls newimpls
 	    else oldimpls
@@ -547,32 +539,33 @@ let declare_implicits_gen req flags ref =
   add_anonymous_leaf (inImplicits (req,[ref,imps]))
 
 let declare_implicits local ref =
-  let flags = { !implicit_args with main = true } in
+  let flags = { !implicit_args with auto = true } in
   let req = 
     if local then ImplLocal else ImplInteractive(ref,flags,ImplAuto) in
-  declare_implicits_gen req flags ref
-
+    declare_implicits_gen req flags ref
+      
 let declare_var_implicits id =
-  if !implicit_args.main then
-    declare_implicits_gen ImplLocal !implicit_args (VarRef id)
+  let flags = !implicit_args in
+    if flags.auto then
+      declare_implicits_gen ImplLocal flags (VarRef id)
 
 let declare_constant_implicits con =
-  if !implicit_args.main then
-    let flags = !implicit_args in
-    declare_implicits_gen (ImplConstant (con,flags)) flags (ConstRef con)
+  let flags = !implicit_args in
+    if flags.auto then
+      declare_implicits_gen (ImplConstant (con,flags)) flags (ConstRef con)
 
 let declare_mib_implicits kn =
-  if !implicit_args.main then
-    let flags = !implicit_args in
-    let imps = array_map_to_list
-      (fun (ind,cstrs) -> ind::(Array.to_list cstrs))
-      (compute_mib_implicits flags [] kn) in
-    add_anonymous_leaf
-      (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
-
+  let flags = !implicit_args in
+    if flags.auto then
+      let imps = array_map_to_list
+	(fun (ind,cstrs) -> ind::(Array.to_list cstrs))
+	(compute_mib_implicits flags [] kn) in
+	add_anonymous_leaf
+	  (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
+      
 (* Declare manual implicits *)
 type manual_explicitation = Topconstr.explicitation * (bool * bool * bool) 
-
+  
 let compute_implicits_with_manual env typ enriching l = 
   compute_manual_implicits env !implicit_args typ enriching l
 
@@ -580,7 +573,7 @@ let declare_manual_implicits local ref ?enriching l =
   let flags = !implicit_args in
   let env = Global.env () in
   let t = Global.type_of_global ref in
-  let enriching = Option.default (is_auto_implicit_args ()) enriching in
+  let enriching = Option.default flags.auto enriching in
   let l' = compute_manual_implicits env flags t enriching l in
   let req =
     if local or isVarRef ref then ImplLocal

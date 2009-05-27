@@ -14,8 +14,6 @@
 
 (* $Id$ *)
 
-Set Manual Implicit Arguments.
-
 (** Export notations. *)
 
 Require Export Coq.Classes.Equivalence.

@@ -258,7 +258,6 @@ let named_of_rel_context l =
   in ctx
 
 let context ?(hook=fun _ -> ()) l =
-  Impargs.make_manual_implicit_args true;
   let env = Global.env() in
   let evars = ref Evd.empty in
   let (env', fullctx), impls = interp_context_evars evars env l in

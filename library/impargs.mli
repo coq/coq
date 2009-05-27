@@ -20,7 +20,6 @@ open Nametab
     are outside the kernel, which knows nothing about implicit arguments. *)
 
 val make_implicit_args : bool -> unit
-val make_manual_implicit_args : bool -> unit
 val make_strict_implicit_args : bool -> unit
 val make_strongly_strict_implicit_args : bool -> unit
 val make_reversible_pattern_implicit_args : bool -> unit
@@ -28,7 +27,6 @@ val make_contextual_implicit_args : bool -> unit
 val make_maximal_implicit_args : bool -> unit
 
 val is_implicit_args : unit -> bool
-val is_manual_implicit_args : unit -> bool
 val is_strict_implicit_args : unit -> bool
 val is_strongly_strict_implicit_args : unit -> bool
 val is_reversible_pattern_implicit_args : unit -> bool

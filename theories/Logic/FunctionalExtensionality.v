@@ -11,8 +11,6 @@
 (** This module states the axiom of (dependent) functional extensionality and (dependent) eta-expansion.
    It introduces a tactic [extensionality] to apply the axiom of extensionality to an equality goal. *)
 
-Set Manual Implicit Arguments.
-
 (** The converse of functional extensionality. *)
 
 Lemma equal_f : forall {A B : Type} {f g : A -> B}, 
