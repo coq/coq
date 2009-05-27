@@ -24,15 +24,22 @@ open Evarutil
 open Libnames
 open Evd
 
-let base_sort_conv evd pb s0 s1 =
-  match (s0,s1) with
+let base_sort_conv evd pb s1 s2 =
+  match (s1,s2) with
     | (Prop c1, Prop c2) -> if c1 = Null or c2 = Pos then Some evd else None (* Prop <= Set *)
-    | (Prop c1, Type u)  -> if pb = Reduction.CUMUL then Some evd else None
-    | (Type u, Prop c)   -> 
-	if Evd.is_sort_variable evd s0 then
-	  Some (Evd.define_sort_variable evd s0 s1)
+    | (Prop c1, Type u)  -> 
+	if pb = Reduction.CUMUL then Some evd 
+	else if Evd.is_sort_variable evd s2 then
+	  Some (Evd.define_sort_variable evd s2 s1)
 	else None
-    | (Type u1, Type u2) -> Some evd
+    | (Type u, Prop c)   -> 
+	if Evd.is_sort_variable evd s1 then
+	  Some (Evd.define_sort_variable evd s1 s2)
+	else None
+    | (Type u1, Type u2) -> 
+	match pb with
+	| CONV -> Some (Evd.set_eq_sort_variable evd s1 s2)
+	| CUMUL -> Some (Evd.set_leq_sort_variable evd s1 s2)
 
 let unify_constr_univ evd f cv_pb t1 t2 = 
   match kind_of_term t1, kind_of_term t2 with

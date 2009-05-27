@@ -240,6 +240,7 @@ val new_sort_variable : evar_defs -> sorts * evar_defs
 val is_sort_variable : evar_defs -> sorts -> bool
 val whd_sort_variable : evar_defs -> constr -> constr
 val set_leq_sort_variable : evar_defs -> sorts -> sorts -> evar_defs
+val set_eq_sort_variable : evar_defs -> sorts -> sorts -> evar_defs
 val define_sort_variable : evar_defs -> sorts -> sorts -> evar_defs
 val solve_sort_constraints : evar_defs -> evar_defs
 

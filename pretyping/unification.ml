@@ -180,6 +180,14 @@ let is_trans_fconv_pb pb flags env sigma m n =
   | Cumul -> is_trans_fconv CUMUL flags env sigma m n
   | ConvUnderApp _ -> is_trans_fconv CONV flags env sigma m n
 
+let occur_meta_or_sortvar evd c =
+  let rec occrec c = match kind_of_term c with
+    | Meta _ -> raise Occur
+    | Sort s -> if Evd.is_sort_variable evd s then raise Occur
+    | _ -> iter_constr occrec c
+  in try occrec c; false with Occur -> true
+
+
 let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flags m n =
   let trivial_unify curenv pb (sigma,metasubst,_) m n =
     let subst = if flags.use_metas_eagerly then metasubst else ms in
@@ -361,7 +369,8 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       unirec_rec curenvnb pb b substn c1 (applist (c,(List.rev ks)))
 
   in
-    if (if occur_meta m || occur_meta n then false else
+  let m = whd_sort_variable sigma m and n = whd_sort_variable sigma n in
+    if (if occur_meta_or_sortvar sigma m || occur_meta_or_sortvar sigma n then false else
       if (match flags.modulo_conv_on_closed_terms with
       | Some flags ->
 	  is_trans_fconv_pb cv_pb flags env sigma m n
@@ -564,10 +573,7 @@ let unify_to_type env sigma flags c status u =
       unify_0 env sigma Cumul flags u t
     else if status = IsSubType then
       unify_0 env sigma Cumul flags t u
-    else 
-      try unify_0 env sigma Cumul flags t u
-      with e when precatchable_exception e ->
-	unify_0 env sigma Cumul flags u t
+    else unify_0 env sigma topconv flags t u
 
 let unify_type env sigma flags mv status c =
   let mvty = Typing.meta_type sigma mv in

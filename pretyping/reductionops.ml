@@ -510,7 +510,7 @@ let rec whd_evar sigma c =
         (match safe_evar_value sigma ev with
             Some c -> whd_evar sigma c
           | None -> c)
-    | Sort s when is_sort_variable sigma s -> whd_sort_variable sigma c
+    | Sort s -> whd_sort_variable sigma c
     | _ -> c
 
 let nf_evar =

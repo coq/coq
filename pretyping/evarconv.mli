@@ -17,6 +17,9 @@ open Evd
 (*i*)
 
 (* Comparison function considering sort variables. *)
+val base_sort_conv : evar_defs -> conv_pb ->
+  sorts -> sorts -> evar_defs option
+
 val constr_unify_with_sorts : evar_defs -> conv_pb ->
   types -> types -> bool * evar_defs
 

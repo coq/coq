@@ -202,7 +202,7 @@ let whd_sort_var scstr t =
     | _ -> t
 
 let rec set_impredicative u s scstr =
-  match UniverseMap.find u scstr with
+  match snd (find_univ u scstr) with
     | DefinedSort s' ->
         if family_of_sort s = family_of_sort s' then scstr
         else failwith "sort constraint inconsistency"
@@ -214,7 +214,7 @@ let rec set_impredicative u s scstr =
           (List.fold_left (fun g u' -> set_impredicative u' s g) scstr ul)
 
 let rec set_predicative u s scstr =
-  match UniverseMap.find u scstr with
+  match snd (find_univ u scstr) with
     | DefinedSort s' ->
         if family_of_sort s = family_of_sort s' then scstr
         else failwith "sort constraint inconsistency"
@@ -264,9 +264,7 @@ let set_leq_sort (u1,(leq1,geq1)) (u2,(leq2,geq2)) scstr =
     UniverseMap.add u1 (SortVar(u2::leq1,geq1))
       (UniverseMap.add u2 (SortVar(leq2, u1::geq2)) scstr)
 
-let set_leq s1 s2 scstr =
-  let u1 = var_of_sort s1 in
-  let u2 = var_of_sort s2 in
+let set_leq_var u1 u2 scstr =
   let (cu1,c1) = find_univ u1 scstr in
   let (cu2,c2) = find_univ u2 scstr in
   if cu1=cu2 then scstr
@@ -279,6 +277,31 @@ let set_leq s1 s2 scstr =
       | _, DefinedSort(Type _) -> scstr
       | DefinedSort(Type _ as s), _ -> set_predicative u2 s scstr
       | DefinedSort(Prop _), _ -> scstr
+
+let set_leq s1 s2 scstr =
+  let u1 = var_of_sort s1 in
+  let u2 = var_of_sort s2 in
+    set_leq_var u1 u2 scstr
+
+let set_eq_sort (u1,(leq1,geq1)) u2 scstr =
+  UniverseMap.add u1 (EqSort u2)
+    (List.fold_left (fun g u -> set_leq_var u u2 g) 
+	(List.fold_left (fun g u -> set_leq_var u2 u g) scstr geq1) leq1)
+
+let set_eq s1 s2 scstr = 
+  let u1 = var_of_sort s1 in
+  let u2 = var_of_sort s2 in
+  let (cu1,c1) = find_univ u1 scstr in
+  let (cu2,c2) = find_univ u2 scstr in
+  if cu1=cu2 then scstr
+  else
+    match c1,c2 with
+        (EqSort _, _ | _, EqSort _) -> assert false
+      | SortVar(leq1,geq1), _ ->
+          set_eq_sort (cu1,(leq1,geq1)) cu2 scstr
+      | _, SortVar(leq2,geq2) ->
+          set_eq_sort (cu2,(leq2,geq2)) cu1 scstr
+      | DefinedSort s, DefinedSort s' -> scstr
 
 let set_sort_variable s1 s2 scstr =
   let u = var_of_sort s1 in
@@ -319,10 +342,11 @@ module EvarMap = struct
     (EvarInfoMap.equal eq_evar_info (fst x) (fst y) &&
       UniverseMap.equal (=) (snd x) (snd y))
   let constraints (sigma,sm) = sm
+  let merge_constraints sm sm' =
+    UniverseMap.fold (fun u cstr sm -> UniverseMap.add u cstr sm) sm' sm
   let merge (sigma,sm) (sigma',sm') = 
     let ev = EvarInfoMap.fold (fun n v sigma -> EvarInfoMap.add sigma n v) sigma' sigma in
-    let sm = UniverseMap.fold (fun u cstr sm -> UniverseMap.add u cstr sm) sm' sm in
-      (ev,sm)
+      (ev,merge_constraints sm sm')
   
 end
  
@@ -507,7 +531,8 @@ let empty =  {
   metas=Metamap.empty 
 }
 
-let evars_reset_evd evd d = {d with evars = evd.evars}
+let evars_reset_evd evd d = {d with evars = (fst evd.evars, 
+					    EvarMap.merge_constraints (snd evd.evars) (snd d.evars))}
 let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
 let evar_source evk d =
   try List.assoc evk d.history
@@ -595,6 +620,8 @@ let is_sort_variable {evars=(_,sm)} s =
 let whd_sort_variable {evars=(_,sm)} t = whd_sort_var sm t
 let set_leq_sort_variable ({evars=(sigma,sm)}as d) u1 u2 =
   { d with evars = (sigma, set_leq u1 u2 sm) }
+let set_eq_sort_variable ({evars=(sigma,sm)}as d) u1 u2 =
+  { d with evars = (sigma, set_eq u1 u2 sm) }
 let define_sort_variable ({evars=(sigma,sm)}as d) u s =
   { d with evars = (sigma, set_sort_variable u s sm) }
 let pr_sort_constraints {evars=(_,sm)} = pr_sort_cstrs sm
