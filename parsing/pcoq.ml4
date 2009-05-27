@@ -134,7 +134,15 @@ module Gram =
       :: !camlp4_state;
       G.extend e pos rls
     let delete_rule e pil =
-      errorlabstrm "Pcoq.delete_rule" (str "GDELETE_RULE forbidden.")
+      (* spiwack: if you use load an ML module which contains GDELETE_RULE
+	  in a section, God kills a kitty. As it would corrupt remove_grammars.
+          There does not seem to be a good way to undo a delete rule. As deleting
+	  takes fewer arguments than extending. The production rule isn't returned
+	  by delete_rule. If we could retrieve the necessary information, then
+	  ByGEXTEND provides just the framework we need to allow this in section.
+	  I'm not entirely sure it makes sense, but at least it would be more correct.
+          *)
+      G.delete_rule e pil
   end
 
 
