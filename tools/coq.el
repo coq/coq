@@ -5,6 +5,12 @@
 ;;
 ;; modified by Marco Maggesi <maggesi@math.unifi.it> for coq-inferior
 
+; compatibility code for proofgeneral files
+(require 'coq-font-lock)
+; ProofGeneral files. remember to remove coq version tests in
+; coq-syntax.el
+(require 'coq-syntax)
+
 (defvar coq-mode-map nil
   "Keymap used in Coq mode.")
 (if coq-mode-map
@@ -57,7 +63,9 @@
   (make-local-variable 'parse-sexp-ignore-comments)
   (setq parse-sexp-ignore-comments nil)
   (make-local-variable 'indent-line-function)
-  (setq indent-line-function 'coq-indent-command))
+  (setq indent-line-function 'coq-indent-command)
+  (make-local-variable 'font-lock-keywords)
+  (setq font-lock-defaults '(coq-font-lock-keywords-1)))
 
 ;;; The major mode
 
@@ -128,54 +136,6 @@ Does nothing otherwise."
     (if (and (>= current-offset coq-mode-indentation)
              (coq-in-indentation))
         (backward-delete-char-untabify coq-mode-indentation))))
-
-;;; Hilight
-
-(cond 
- (window-system
-  (setq hilit-mode-enable-list  '(not text-mode)
-        hilit-inhibit-hooks     nil
-        hilit-inhibit-rebinding nil)
-  
-  (require 'hilit19)
-       (setq  hilit-quietly t)
-       (hilit-set-mode-patterns
-        'coq-mode
-        '(;;comments
-          ("(\\*" "\\*)" comment)
-          ;;strings
-          (hilit-string-find ?' string)
-	  ;;directives
-          ("^[ \t]*\\(AddPath\\|DelPath\\|Add[ \t]+ML[ \t]+Path\\|Declare[ \t]+ML[ \t]+Module\\|Require\\|Export\\|Module\\|Opaque\\|Transparent\\|Section\\|Chapter\\|End\\|Load\\|Print\\|Show\\)[ \t]+[^.]*" nil include)
-	  ("Implicit[ \t]+Arguments[ \t]+\\(On\\|Off\\)[^.]*" nil include)
-          ;;grammar definitions
-	  ("^[ \t]*Syntax[ \t]+\\(tactic\\|command\\)" nil define)
-	  ("^[ \t]*Syntax[ \t]+\\(tactic\\|command\\)[ \t]*level[ \t]+[0-9]+[ \t]*" nil define)
-	  ("^[ \t]*level[ \t]+[0-9]+[ \t]*:" nil define)
-	  ("^[ \t]*Grammar.*" ":=" define)
-          ("^[ \t]*Tactic[ \t]+Definition" ":=" define) 
-	  ("^[ \t]*Token[^.]*" nil define)
-	  ("^[ \t]*\\(Coercion\\|Class\\|Infix\\)[ \t]+[[A-Za-z0-9$_\\']+" nil define)
-          ;;declarations
-	  ("^[ \t]*Recursive[ \t]+Definition[ \t]+[A-Za-z0-9$_\\']+" nil defun)
-          ("^[ \t]*Syntactic[ \t]+Definition[ \t]+[A-Za-z0-9$_\\']+" nil defun)
-          ("^[ \t]*Tactic[ \t]+Definition[ \t]+[A-Za-z0-9$_\\']+" nil defun)
-	  ("^[ \t]*Inductive[ \t]+\\(Set\\|Prop\\|Type\\)[ \t]+[A-Za-z0-9$_\\']+" nil defun)
-	  ("^[ \t]*Mutual[ \t]+\\(Inductive\\|CoInductive\\)[ \t]+[A-Za-z0-9$_\\']+" nil defun)
-	  ("^[ \t]*\\(Inductive\\|CoInductive\\|CoFixpoint\\|Definition\\|Local\\|Fixpoint\\|with\\|Record\\|Correctness\\)[ \t]+[A-Za-z0-9$_\\']+" nil defun)
-	  ("^[ \t]*\\(Derive\\|Dependant[ \t]+Derive\\)[ \t]+\\(Inversion\\|Inversion_clear\\)[ \t]+[A-Za-z0-9$_\\']+" nil defun)
-	  ("^[ \t]*\\(Variable\\|Parameter\\|Hypothesis\\).*" ":" defun)
-	  ("^[ \t]*\\(Global[ \t]+Variable\\).*" ":" defun)
-	  ("^[ \t]*\\(Realizer[ \t]+Program\\|Realizer\\)" nil defun)
-	  ;;proofs
-	  ("^[ \t]*\\(Lemma\\|Theorem\\|Remark\\|Axiom\\).*" ":" defun)
-	  ("^[ \t]*Proof" nil decl)
-	  ("^[ \t]*\\(Save\\|Qed\\|Defined\\|Hint\\|Immediate\\)[^.]*" nil decl)
-          ;;keywords
-          ("[^_]\\<\\(Case\\|Cases\\|case\\|esac\\|of\\|end\\|in\\|Match\\|with\\|Fix\\|let\\|if\\|then\\|else\\)\\>[^_]" 1 keyword)
-          ("[^_]\\<\\(begin\\|assert\\|invariant\\|variant\\|for\\|while\\|do\\|done\\|state\\)\\>[^_]" 1 keyword)
-          ))
-))
 
 ;;; coq.el ends here
 
