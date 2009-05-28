@@ -25,7 +25,8 @@ open Libnames
 open Evd
 
 let base_sort_conv evd pb s1 s2 =
-  match (s1,s2) with
+  try
+    match (s1,s2) with
     | (Prop c1, Prop c2) -> if c1 = Null or c2 = Pos then Some evd else None (* Prop <= Set *)
     | (Prop c1, Type u)  -> 
 	if pb = Reduction.CUMUL then Some evd 
@@ -40,6 +41,7 @@ let base_sort_conv evd pb s1 s2 =
 	match pb with
 	| CONV -> Some (Evd.set_eq_sort_variable evd s1 s2)
 	| CUMUL -> Some (Evd.set_leq_sort_variable evd s1 s2)
+  with e -> None
 
 let unify_constr_univ evd f cv_pb t1 t2 = 
   match kind_of_term t1, kind_of_term t2 with

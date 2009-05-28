@@ -573,7 +573,11 @@ let unify_to_type env sigma flags c status u =
       unify_0 env sigma Cumul flags u t
     else if status = IsSubType then
       unify_0 env sigma Cumul flags t u
-    else unify_0 env sigma topconv flags t u
+    else (* If the terms were convertible under an app, 
+	    the types could be in any inclusion order *)
+      try unify_0 env sigma Cumul flags t u
+      with ex when precatchable_exception ex ->
+	unify_0 env sigma Cumul flags u t
 
 let unify_type env sigma flags mv status c =
   let mvty = Typing.meta_type sigma mv in
