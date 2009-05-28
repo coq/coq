@@ -81,3 +81,24 @@ type term_pr = {
 
 val set_term_pr : term_pr -> unit
 val default_term_pr : term_pr
+
+(* The modular constr printer. 
+    [modular_constr_pr pr s p t] prints the head of the term [t] and calls
+    [pr] on its subterms. 
+    [s] is typically {!Pp.mt} and [p] is [lsimple] for "constr" printers and [ltop]
+    for "lconstr" printers (spiwack: we might need more specification here).
+    We can make a new modular constr printer by overriding certain branches,
+    for instance if we want to build a printer which prints "Prop" as "Omega"
+    instead we can proceed as follows:
+    let my_modular_constr_pr pr s p = function
+      | CSort (_,RProp Null) -> str "Omega"
+      | t -> modular_constr_pr pr s p t 
+    Which has the same type. We can turn a modular printer into a printer by
+    taking its fixpoint. *)
+
+type precedence
+val lsimple : precedence
+val ltop : precedence
+val modular_constr_pr : 
+               ((unit->std_ppcmds) -> precedence -> constr_expr -> std_ppcmds) -> 
+                (unit->std_ppcmds) -> precedence  -> constr_expr -> std_ppcmds

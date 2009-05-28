@@ -487,18 +487,24 @@ let pr_fun () =
 
 let pr_fun_sep = lazy (if !Flags.unicode_syntax then str "," else str " =>")
 
-let rec pr sep inherited a =
+
+let pr_dangling_with_for sep pr inherited a =
+  match a with
+  | (CFix (_,_,[_])|CCoFix(_,_,[_])) -> pr sep (latom,E) a
+  | _ -> pr sep inherited a
+
+let pr pr sep inherited a =
   let (strm,prec) = match a with
   | CRef r -> pr_reference r, latom
   | CFix (_,id,fix) ->
       hov 0 (str"fix " ++
              pr_recursive
-               (pr_fixdecl (pr mt) (pr_dangling_with_for mt)) (snd id) fix),
+               (pr_fixdecl (pr mt) (pr_dangling_with_for mt pr)) (snd id) fix),
       lfix
   | CCoFix (_,id,cofix) ->
       hov 0 (str "cofix " ++
              pr_recursive
-              (pr_cofixdecl (pr mt) (pr_dangling_with_for mt)) (snd id) cofix),
+              (pr_cofixdecl (pr mt) (pr_dangling_with_for mt pr)) (snd id) cofix),
       lfix
   | CArrow (_,a,b) ->
       hov 0 (pr mt (larrow,L) a ++ str " ->" ++
@@ -568,9 +574,9 @@ let rec pr sep inherited a =
       hv 0 (
 	str "let '" ++ 
 	  hov 0 (pr_patt ltop p ++ 
-		 pr_asin (pr_dangling_with_for mt) asin ++
+		 pr_asin (pr_dangling_with_for mt pr) asin ++
 		 str " :=" ++ pr spc ltop c ++ 
-		 pr_case_type (pr_dangling_with_for mt) rtntypopt ++
+		 pr_case_type (pr_dangling_with_for mt pr) rtntypopt ++
 		 str " in" ++ pr spc ltop b)),
 	lletpattern
   | CCases(_,_,rtntypopt,c,eqns) ->
@@ -578,8 +584,8 @@ let rec pr sep inherited a =
         (hv 0 (str "match" ++ brk (1,2) ++
 		  hov 0 (
 		    prlist_with_sep sep_v
-		      (pr_case_item (pr_dangling_with_for mt)) c
-		    ++ pr_case_type (pr_dangling_with_for mt) rtntypopt) ++
+		      (pr_case_item (pr_dangling_with_for mt pr)) c
+		    ++ pr_case_type (pr_dangling_with_for mt pr) rtntypopt) ++
 		  spc () ++ str "with") ++
 		  prlist (pr_eqn (pr mt)) eqns ++ spc() ++ str "end"),
       latom
@@ -626,12 +632,6 @@ let rec pr sep inherited a =
   pr_with_comments loc
     (sep() ++ if prec_less prec inherited then strm else surround strm)
 
-and pr_dangling_with_for sep inherited a =
-  match a with
-  | (CFix (_,_,[_])|CCoFix(_,_,[_])) -> pr sep (latom,E) a
-  | _ -> pr sep inherited a
-
-let pr = pr mt
 
 let rec strip_context n iscast t =
   if n = 0 then
@@ -670,6 +670,11 @@ type term_pr = {
   pr_constr_pattern_expr  : constr_pattern_expr -> std_ppcmds;
   pr_lconstr_pattern_expr : constr_pattern_expr -> std_ppcmds
 }
+
+type precedence =  Ppextend.precedence * Ppextend.parenRelation
+let modular_constr_pr = pr
+let rec fix rf x =rf (fix rf) x
+let pr = fix modular_constr_pr mt
 
 let default_term_pr = {
   pr_constr_expr   = pr lsimple;
