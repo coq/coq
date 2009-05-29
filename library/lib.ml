@@ -463,14 +463,16 @@ let add_section_variable id impl keep =
     | (vars,repl,abs)::sl ->
 	sectab := ((id,impl,keep)::vars,repl,abs)::sl
 
-let rec extract_hyps = function
-  | ((id,impl,keep)::idl,(id',b,t)::hyps) when id=id' -> (id',impl,b,t) :: extract_hyps (idl,hyps)
-  | ((id,impl,Some (ty,keep))::idl,hyps) -> 
-      if List.exists (fun (id,_,_) -> List.mem id keep) hyps then
-	(id,impl,None,ty) :: extract_hyps (idl,hyps)
-      else extract_hyps (idl,hyps)
-  | (id::idl,hyps) -> extract_hyps (idl,hyps)
-  | [], _ -> []
+let extract_hyps (secs,ohyps) =
+  let rec aux = function
+    | ((id,impl,keep)::idl,(id',b,t)::hyps) when id=id' -> (id',impl,b,t) :: aux (idl,hyps)
+    | ((id,impl,Some (ty,keep))::idl,hyps) -> 
+	if List.exists (fun (id,_,_) -> List.mem id keep) ohyps then
+	  (id,impl,None,ty) :: aux (idl,hyps)
+	else aux (idl,hyps)
+    | (id::idl,hyps) -> aux (idl,hyps)
+    | [], _ -> []
+  in aux (secs,ohyps)
 
 let instance_from_variable_context sign =
   let rec inst_rec = function
