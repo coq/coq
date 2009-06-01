@@ -243,6 +243,7 @@ val set_leq_sort_variable : evar_defs -> sorts -> sorts -> evar_defs
 val set_eq_sort_variable : evar_defs -> sorts -> sorts -> evar_defs
 val define_sort_variable : evar_defs -> sorts -> sorts -> evar_defs
 val solve_sort_constraints : evar_defs -> evar_defs
+val clear_sort_constraints : evar_defs -> evar_defs
 
 val universes_to_variables : evar_defs -> types -> evar_defs * types
 

@@ -190,15 +190,15 @@ let rec canonical_find u scstr =
 let find_univ u scstr =
   try canonical_find u scstr
   with Not_found -> u, DefinedSort (Type u)
-    
+
 let whd_sort_var scstr t =
   match kind_of_term t with
       Sort(Type u) ->
         (try
           match canonical_find u scstr with
-              _, DefinedSort s -> mkSort s
-            | _ -> t
-        with Not_found -> t)
+          | _, DefinedSort s -> mkSort s
+          | _ -> t
+          with Not_found -> t)
     | _ -> t
 
 let rec set_impredicative u s scstr =
@@ -533,6 +533,7 @@ let empty =  {
 
 let evars_reset_evd evd d = {d with evars = (fst evd.evars, 
 					    EvarMap.merge_constraints (snd evd.evars) (snd d.evars))}
+
 let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
 let evar_source evk d =
   try List.assoc evk d.history
@@ -627,6 +628,8 @@ let define_sort_variable ({evars=(sigma,sm)}as d) u s =
 let pr_sort_constraints {evars=(_,sm)} = pr_sort_cstrs sm
 let solve_sort_constraints ({evars=(sigma,sm)} as d) =
   { d with evars = (sigma, solve_sort_cstrs sm) }
+let clear_sort_constraints ({evars=(sigma,sm)} as d) =
+  { d with evars = (sigma, UniverseMap.empty) }
 
 (* This refreshes universes in types introducing sort variables;
    works only for inferred types (i.e. for
@@ -639,7 +642,11 @@ let universes_to_variables_gen strict evd t =
     | Sort (Type u as us) when strict or u <> Univ.type0m_univ ->
 	if not (is_sort_variable !evdref us) then
 	  let s', evd = new_sort_variable !evdref in
-	  let evd = set_leq_sort_variable evd s' us in
+	  let evd = 
+	    if not (Univ.is_univ_variable u) then
+	      set_leq_sort_variable evd us s'
+	    else evd
+	  in
 	    evdref := evd; modified := true; mkSort s'
 	else t
     | Prod (na,u,v) -> mkProd (na,u,refresh v)

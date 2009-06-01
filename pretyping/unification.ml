@@ -176,14 +176,13 @@ let oracle_order env cf1 cf2 =
       | Some k2 -> Some (Conv_oracle.oracle_order k1 k2)
 
 let is_trans_fconv_pb pb flags env sigma m n =
-  match pb with
-  | Cumul -> is_trans_fconv CUMUL flags env sigma m n
-  | ConvUnderApp _ -> is_trans_fconv CONV flags env sigma m n
+  let sigma' = clear_sort_constraints sigma in
+    is_trans_fconv (conv_pb_of pb) flags env sigma' m n
 
 let occur_meta_or_sortvar evd c =
   let rec occrec c = match kind_of_term c with
     | Meta _ -> raise Occur
-    | Sort s -> if Evd.is_sort_variable evd s then raise Occur
+    | Sort (Type u) -> raise Occur
     | _ -> iter_constr occrec c
   in try occrec c; false with Occur -> true
 
@@ -369,7 +368,6 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       unirec_rec curenvnb pb b substn c1 (applist (c,(List.rev ks)))
 
   in
-  let m = whd_sort_variable sigma m and n = whd_sort_variable sigma n in
     if (if occur_meta_or_sortvar sigma m || occur_meta_or_sortvar sigma n then false else
       if (match flags.modulo_conv_on_closed_terms with
       | Some flags ->
