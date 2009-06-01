@@ -308,9 +308,9 @@ let const v _ = v
 let compute_implicits_auto env f manual t =
   match manual with
   | [] -> 
-      let l = compute_implicits_flags env f false t in
-	if not f.auto then List.map (const None) l
-	else prepare_implicits f l
+      if not f.auto then []
+      else let l = compute_implicits_flags env f false t in
+	     prepare_implicits f l
   | _ -> compute_manual_implicits env f t f.auto manual
 	
 let compute_implicits env t = compute_implicits_auto env !implicit_args [] t
