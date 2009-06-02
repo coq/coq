@@ -121,7 +121,7 @@ Hint Resolve measure_wf.
 
 Section Fix_rects.
 
-  Variable A: Set.
+  Variable A: Type.
   Variable P: A -> Type.
   Variable R : A -> A -> Prop.
   Variable Rwf : well_founded R.
@@ -220,7 +220,7 @@ Section Fix_rects.
 
 End Fix_rects.
 
-(** Tactic to fold a definitions based on [Fix_measure_sub]. *)
+(** Tactic to fold a definition based on [Fix_measure_sub]. *)
 
 Ltac fold_sub f :=
   match goal with
@@ -245,8 +245,8 @@ Module WfExtensionality.
   (** For a function defined with Program using a well-founded order. *)
 
   Program Lemma fix_sub_eq_ext :
-    forall (A : Set) (R : A -> A -> Prop) (Rwf : well_founded R)
-      (P : A -> Set)
+    forall (A : Type) (R : A -> A -> Prop) (Rwf : well_founded R)
+      (P : A -> Type)
       (F_sub : forall x : A, (forall (y : A | R y x), P y) -> P x),
       forall x : A,
         Fix_sub A R Rwf P F_sub x =
