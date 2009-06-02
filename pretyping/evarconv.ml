@@ -24,40 +24,6 @@ open Evarutil
 open Libnames
 open Evd
 
-let base_sort_conv evd pb s1 s2 =
-  try
-    match (s1,s2) with
-    | (Prop c1, Prop c2) -> if c1 = Null or c2 = Pos then Some evd else None (* Prop <= Set *)
-    | (Prop c1, Type u)  -> 
-	if pb = Reduction.CUMUL then Some evd 
-	else if Evd.is_sort_variable evd s2 then
-	  Some (Evd.define_sort_variable evd s2 s1)
-	else None
-    | (Type u, Prop c)   -> 
-	if Evd.is_sort_variable evd s1 then
-	  Some (Evd.define_sort_variable evd s1 s2)
-	else None
-    | (Type u1, Type u2) -> 
-	match pb with
-	| CONV -> Some (Evd.set_eq_sort_variable evd s1 s2)
-	| CUMUL -> Some (Evd.set_leq_sort_variable evd s1 s2)
-  with e -> None
-
-let unify_constr_univ evd f cv_pb t1 t2 = 
-  match kind_of_term t1, kind_of_term t2 with
-      Sort s1, Sort s2 -> 
-	(match base_sort_conv !evd cv_pb s1 s2 with
-	| Some evd' -> evd := evd'; true
-	| None -> false)
-    | Prod (_,t1,c1), Prod (_,t2,c2) -> 
-	f Reduction.CONV t1 t2 & f cv_pb c1 c2
-    | _ -> compare_constr (f Reduction.CONV) t1 t2
-
-let constr_unify_with_sorts evd cv_pb t1 t2 = 
-  let evdref = ref evd in
-  let rec aux cv_pb t1 t2 = unify_constr_univ evdref aux cv_pb t1 t2 in
-    if aux cv_pb t1 t2 then true, !evdref else false, evd
-
 type flex_kind_of_term =
   | Rigid of constr 
   | MaybeFlexible of constr
@@ -410,10 +376,8 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	| _, Cast (c2,_,_) -> evar_eqappr_x env evd pbty appr1 (c2,l2)
 
 	| Sort s1, Sort s2 when l1=[] & l2=[] ->
-	    (match base_sort_conv evd pbty s1 s2 with
-	    | Some evd' -> evd',true
-	    | None -> evd, false)
-	      
+            (evd,base_sort_cmp pbty s1 s2)
+
 	| Lambda (na,c1,c'1), Lambda (_,c2,c'2) when l1=[] & l2=[] -> 
             ise_and evd
               [(fun i -> evar_conv_x env i CONV c1 c2);
@@ -578,11 +542,11 @@ let apply_conversion_problem_heuristic env evd pbty t1 t2 =
 
 let consider_remaining_unif_problems env evd =
   let (evd,pbs) = extract_all_conv_pbs evd in
-    List.fold_left
-      (fun (evd,b as p) (pbty,env,t1,t2) ->
-	if b then apply_conversion_problem_heuristic env evd pbty t1 t2 else p)
-      (evd,true)
-      pbs
+  List.fold_left
+    (fun (evd,b as p) (pbty,env,t1,t2) ->
+      if b then apply_conversion_problem_heuristic env evd pbty t1 t2 else p)
+    (evd,true)
+    pbs
 
 (* Main entry points *)
 

@@ -184,25 +184,21 @@ type sort_constraints = sort_constraint UniverseMap.t
 
 let rec canonical_find u scstr =
   match UniverseMap.find u scstr with
-  | EqSort u' -> canonical_find u' scstr
-  | c -> (u,c)
-
-let find_univ u scstr =
-  try canonical_find u scstr
-  with Not_found -> u, DefinedSort (Type u)
+      EqSort u' -> canonical_find u' scstr
+    | c -> (u,c)
 
 let whd_sort_var scstr t =
   match kind_of_term t with
       Sort(Type u) ->
         (try
           match canonical_find u scstr with
-          | _, DefinedSort s -> mkSort s
-          | _ -> t
-          with Not_found -> t)
+              _, DefinedSort s -> mkSort s
+            | _ -> t
+        with Not_found -> t)
     | _ -> t
 
 let rec set_impredicative u s scstr =
-  match snd (find_univ u scstr) with
+  match UniverseMap.find u scstr with
     | DefinedSort s' ->
         if family_of_sort s = family_of_sort s' then scstr
         else failwith "sort constraint inconsistency"
@@ -214,7 +210,7 @@ let rec set_impredicative u s scstr =
           (List.fold_left (fun g u' -> set_impredicative u' s g) scstr ul)
 
 let rec set_predicative u s scstr =
-  match snd (find_univ u scstr) with
+  match UniverseMap.find u scstr with
     | DefinedSort s' ->
         if family_of_sort s = family_of_sort s' then scstr
         else failwith "sort constraint inconsistency"
@@ -242,6 +238,7 @@ let new_sort_var cstr =
   let u = Termops.new_univ() in
   (u, UniverseMap.add u (SortVar([],[])) cstr)
 
+
 let set_leq_sort (u1,(leq1,geq1)) (u2,(leq2,geq2)) scstr =
   let rec search_rec (is_b, betw, not_betw) u1 =
     if List.mem u1 betw then (true, betw, not_betw)
@@ -264,9 +261,11 @@ let set_leq_sort (u1,(leq1,geq1)) (u2,(leq2,geq2)) scstr =
     UniverseMap.add u1 (SortVar(u2::leq1,geq1))
       (UniverseMap.add u2 (SortVar(leq2, u1::geq2)) scstr)
 
-let set_leq_var u1 u2 scstr =
-  let (cu1,c1) = find_univ u1 scstr in
-  let (cu2,c2) = find_univ u2 scstr in
+let set_leq s1 s2 scstr =
+  let u1 = var_of_sort s1 in
+  let u2 = var_of_sort s2 in
+  let (cu1,c1) = canonical_find u1 scstr in
+  let (cu2,c2) = canonical_find u2 scstr in
   if cu1=cu2 then scstr
   else
     match c1,c2 with
@@ -277,31 +276,6 @@ let set_leq_var u1 u2 scstr =
       | _, DefinedSort(Type _) -> scstr
       | DefinedSort(Type _ as s), _ -> set_predicative u2 s scstr
       | DefinedSort(Prop _), _ -> scstr
-
-let set_leq s1 s2 scstr =
-  let u1 = var_of_sort s1 in
-  let u2 = var_of_sort s2 in
-    set_leq_var u1 u2 scstr
-
-let set_eq_sort (u1,(leq1,geq1)) u2 scstr =
-  UniverseMap.add u1 (EqSort u2)
-    (List.fold_left (fun g u -> set_leq_var u u2 g) 
-	(List.fold_left (fun g u -> set_leq_var u2 u g) scstr geq1) leq1)
-
-let set_eq s1 s2 scstr = 
-  let u1 = var_of_sort s1 in
-  let u2 = var_of_sort s2 in
-  let (cu1,c1) = find_univ u1 scstr in
-  let (cu2,c2) = find_univ u2 scstr in
-  if cu1=cu2 then scstr
-  else
-    match c1,c2 with
-        (EqSort _, _ | _, EqSort _) -> assert false
-      | SortVar(leq1,geq1), _ ->
-          set_eq_sort (cu1,(leq1,geq1)) cu2 scstr
-      | _, SortVar(leq2,geq2) ->
-          set_eq_sort (cu2,(leq2,geq2)) cu1 scstr
-      | DefinedSort s, DefinedSort s' -> scstr
 
 let set_sort_variable s1 s2 scstr =
   let u = var_of_sort s1 in
@@ -341,12 +315,8 @@ module EvarMap = struct
   let eq_evar_map x y = x == y ||
     (EvarInfoMap.equal eq_evar_info (fst x) (fst y) &&
       UniverseMap.equal (=) (snd x) (snd y))
-  let constraints (sigma,sm) = sm
-  let merge_constraints sm sm' =
-    UniverseMap.fold (fun u cstr sm -> UniverseMap.add u cstr sm) sm' sm
-  let merge (sigma,sm) (sigma',sm') = 
-    let ev = EvarInfoMap.fold (fun n v sigma -> EvarInfoMap.add sigma n v) sigma' sigma in
-      (ev,merge_constraints sm sm')
+
+  let merge e e' = fold (fun n v sigma -> add sigma n v) e' e
   
 end
  
@@ -509,10 +479,11 @@ let subst_evar_info s evi =
       evar_body = subst_evb evi.evar_body }
 
 let subst_evar_defs_light sub evd =
+  assert (UniverseMap.is_empty (snd evd.evars));
   assert (evd.conv_pbs = []);
   { evd with
-    metas = Metamap.map (map_clb (subst_mps sub)) evd.metas;
-    evars = ExistentialMap.map (subst_evar_info sub)  (fst evd.evars), (snd evd.evars);
+      metas = Metamap.map (map_clb (subst_mps sub)) evd.metas;
+      evars = ExistentialMap.map (subst_evar_info sub)  (fst evd.evars), snd evd.evars
   }
 
 let subst_evar_map = subst_evar_defs_light
@@ -531,9 +502,7 @@ let empty =  {
   metas=Metamap.empty 
 }
 
-let evars_reset_evd evd d = {d with evars = (fst evd.evars, 
-					    EvarMap.merge_constraints (snd evd.evars) (snd d.evars))}
-
+let evars_reset_evd evd d = {d with evars = evd.evars}
 let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
 let evar_source evk d =
   try List.assoc evk d.history
@@ -603,9 +572,6 @@ let extract_changed_conv_pbs evd p =
 let extract_all_conv_pbs evd =
   extract_conv_pbs evd (fun _ -> true)
 
-let solve_sort_cstrs cstrs = (* TODO: Check validity *)
-  UniverseMap.empty
-
 (* spiwack: should it be replaced by Evd.merge? *)
 let evar_merge evd evars =
   { evd with evars = EvarMap.merge evd.evars evars.evars }
@@ -621,41 +587,9 @@ let is_sort_variable {evars=(_,sm)} s =
 let whd_sort_variable {evars=(_,sm)} t = whd_sort_var sm t
 let set_leq_sort_variable ({evars=(sigma,sm)}as d) u1 u2 =
   { d with evars = (sigma, set_leq u1 u2 sm) }
-let set_eq_sort_variable ({evars=(sigma,sm)}as d) u1 u2 =
-  { d with evars = (sigma, set_eq u1 u2 sm) }
 let define_sort_variable ({evars=(sigma,sm)}as d) u s =
   { d with evars = (sigma, set_sort_variable u s sm) }
 let pr_sort_constraints {evars=(_,sm)} = pr_sort_cstrs sm
-let solve_sort_constraints ({evars=(sigma,sm)} as d) =
-  { d with evars = (sigma, solve_sort_cstrs sm) }
-let clear_sort_constraints ({evars=(sigma,sm)} as d) =
-  { d with evars = (sigma, UniverseMap.empty) }
-
-(* This refreshes universes in types introducing sort variables;
-   works only for inferred types (i.e. for
-   types of the form (x1:A1)...(xn:An)B with B a sort or an atom in
-   head normal form) *)
-let universes_to_variables_gen strict evd t =
-  let modified = ref false in
-  let evdref = ref evd in
-  let rec refresh t = match kind_of_term t with
-    | Sort (Type u as us) when strict or u <> Univ.type0m_univ ->
-	if not (is_sort_variable !evdref us) then
-	  let s', evd = new_sort_variable !evdref in
-	  let evd = 
-	    if not (Univ.is_univ_variable u) then
-	      set_leq_sort_variable evd us s'
-	    else evd
-	  in
-	    evdref := evd; modified := true; mkSort s'
-	else t
-    | Prod (na,u,v) -> mkProd (na,u,refresh v)
-    | _ -> t in
-  let t' = refresh t in
-  if !modified then !evdref, t' else evd, t
-
-let universes_to_variables = universes_to_variables_gen false
-let universes_to_variables_strict = universes_to_variables_gen true
 
 (**********************************************************)
 (* Accessing metas *)
