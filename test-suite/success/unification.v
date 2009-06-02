@@ -126,3 +126,13 @@ intros.
 exists (fun n => match n with O => a | S n' => f' n' end).
 constructor.
 Qed.
+
+(* Check use of types in unification (see Andrej Bauer's mail on
+   coq-club, June 1 2009; it did not work in 8.2, probably started to
+   work after Sozeau improved support for the use of types in unification) *)
+
+Goal (forall (A B : Set) (f : A -> B), (fun x => f x) = f) -> 
+ forall (A B C : Set) (g : (A -> B) -> C) (f : A -> B), g (fun x => f x) = g f.
+Proof.
+  intros.
+  rewrite H.

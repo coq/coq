@@ -624,8 +624,8 @@ let test_trans_conversion f reds env sigma x y =
   try let _ = f reds env (nf_evar sigma x) (nf_evar sigma y) in true
   with NotConvertible -> false
 
-let is_trans_conv env sigma = test_trans_conversion Reduction.trans_conv env sigma
-let is_trans_conv_leq env sigma = test_trans_conversion Reduction.trans_conv_leq env sigma
+let is_trans_conv reds env sigma = test_trans_conversion Reduction.trans_conv reds env sigma
+let is_trans_conv_leq reds env sigma = test_trans_conversion Reduction.trans_conv_leq reds env sigma
 let is_trans_fconv = function | CONV -> is_trans_conv | CUMUL -> is_trans_conv_leq
 
 (********************************************************************)
