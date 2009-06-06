@@ -98,7 +98,7 @@ let push_rel_defs =
 (* We have x1:t1...xn:tn,xi':ti,y1..yk |- c and re-generalize
    over xi:ti to get x1:t1...xn:tn,xi':ti,y1..yk |- c[xi:=xi'] *)
 
-let regeneralize_rel i k j = if j = i+k then k else if j < i+k then j else j
+let regeneralize_rel i k j = if j = i+k then k+1 else j
 
 let rec regeneralize_index i k t = match kind_of_term t with
   | Rel j when j = i+k -> mkRel (k+1)
@@ -603,19 +603,13 @@ let find_dependencies_signature deps_in_rhs typs =
   let _,l = List.fold_right2 find_dependencies deps_in_rhs typs (k,[]) in
   List.map (fun (_,deps,_) -> deps) l
 
-(******)
+(* Assume we had terms t1..tq to match in a context xp:Tp,...,x1:T1 |-
+   and xn:Tn has just been regeneralized into x:Tn so that the terms
+   to match are now to be considered in the context xp:Tp,...,x1:T1,x:Tn |-.
 
-(* A Pushed term to match has just been substituted by some
-   constructor t = (ci x1...xn) and the terms x1 ... xn have been added to
-   match 
-
-   - all terms to match and to push (dependent on t by definition)
-     must have (Rel depth) substituted by t and Rel's>depth lifted by n
-   - all pushed terms to match (non dependent on t by definition) must
-     be lifted by n
-
-  We start with depth=1
-*)
+   [regeneralize_index_tomatch n tomatch] updates t1..tq so that
+   former references to xn are now references to x. Note that t1..tq
+   are already adjusted to the context xp:Tp,...,x1:T1,x:Tn |-. *)
 
 let regeneralize_index_tomatch n =
   let rec genrec depth = function
@@ -653,6 +647,13 @@ let replace_tomatch n c =
 
 let liftn_rel_declaration n k = map_rel_declaration (liftn n k)
 let substnl_rel_declaration sigma k = map_rel_declaration (substnl sigma k)
+
+(* [liftn_tomatch_stack]: a term to match has just been substituted by
+   some constructor t = (ci x1...xn) and the terms x1 ... xn have been
+   added to match; all pushed terms to match must be lifted by n
+   (knowing that [Abstract] introduces a binder in the list of pushed
+   terms to match).
+*)
 
 let rec liftn_tomatch_stack n depth = function
   | [] -> []
