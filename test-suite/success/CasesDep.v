@@ -480,3 +480,29 @@ Fixpoint app {A} {n m} (v : listn A n) (w : listn A m) : listn A (n + m) :=
     | niln => w
     | consn a n' v' => consn _ a _ (app v' w)
   end.
+
+(* Testing regression of bug 2106 *)
+
+Set Implicit Arguments.
+Require Import List.
+
+Inductive nt := E.
+Definition root := E.
+Inductive ctor : list nt -> nt -> Type := 
+ Plus : ctor (cons E (cons E nil)) E.
+
+Inductive term : nt -> Type :=
+| Term : forall s n, ctor s n -> spine s -> term n
+with spine : list nt -> Type :=
+| EmptySpine : spine nil
+| ConsSpine : forall n s, term n -> spine s -> spine (n :: s).
+
+Inductive step : nt -> nt -> Type :=
+  | Step : forall l n r n' (c:ctor (l++n::r) n'), spine l -> spine r -> step n
+n'.
+
+Definition test (s:step E E) :=
+  match s with
+    | Step nil _ (cons E nil) _ Plus l l' => true
+    | _ => false
+  end.
