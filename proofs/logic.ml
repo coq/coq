@@ -517,7 +517,7 @@ let prim_refiner r sigma goal =
         let sg2 = mk_goal sign cl in
         if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 
-    | FixRule (f,n,rest) ->
+    | FixRule (f,n,rest,j) ->
      	let rec check_ind env k cl = 
           match kind_of_term (strip_outer_cast cl) with 
             | Prod (na,c1,b) -> 
@@ -531,7 +531,8 @@ let prim_refiner r sigma goal =
             | _ -> error "Not enough products."
 	in
 	let (sp,_) = check_ind env n cl in
-	let all = (f,n,cl)::rest in
+	let firsts,lasts = list_chop j rest in
+	let all = firsts@(f,n,cl)::lasts in
      	let rec mk_sign sign = function 
 	  | (f,n,ar)::oth ->
 	      let (sp',_)  = check_ind env n ar in 
@@ -539,14 +540,15 @@ let prim_refiner r sigma goal =
 		error ("Fixpoints should be on the same " ^ 
 		       "mutual inductive declaration.");
 	      if !check && mem_named_context f (named_context_of_val sign) then
-		error "Name already used in the environment";
+		error
+		  ("Name "^string_of_id f^" already used in the environment");
 	      mk_sign (push_named_context_val (f,None,ar) sign) oth
 	  | [] -> 
 	      List.map (fun (_,_,c) -> mk_goal sign c) all
 	in 
 	  (mk_sign sign all, sigma)
 	
-    | Cofix (f,others) ->
+    | Cofix (f,others,j) ->
      	let rec check_is_coind env cl = 
 	  let b = whd_betadeltaiota env sigma cl in
           match kind_of_term b with
@@ -558,7 +560,8 @@ let prim_refiner r sigma goal =
 		  error ("All methods must construct elements " ^
 			  "in coinductive types.")
 	in
-	let all = (f,cl)::others in
+	let firsts,lasts = list_chop j others in
+	let all = firsts@(f,cl)::lasts in
      	List.iter (fun (_,c) -> check_is_coind env c) all;
         let rec mk_sign sign = function 
           | (f,ar)::oth ->
@@ -687,24 +690,26 @@ let prim_extractor subfun vl pft =
 	    mkLetIn (Name id,subfun vl spf1,subst_proof_vars vl t,
                     subfun (add_proof_var id vl) spf2)
 
-      | Some (Prim (FixRule (f,n,others)),spfl) ->
-	  let all = Array.of_list ((f,n,cl)::others) in
+      | Some (Prim (FixRule (f,n,others,j)),spfl) ->
+	  let firsts,lasts = list_chop j others in
+	  let all = Array.of_list (firsts@(f,n,cl)::lasts) in
 	  let lcty = Array.map (fun (_,_,ar) -> subst_proof_vars vl ar) all in
 	  let names = Array.map (fun (f,_,_) -> Name f) all in
 	  let vn = Array.map (fun (_,n,_) -> n-1) all in
 	  let newvl = List.fold_left (fun vl (id,_,_) -> add_proof_var id vl)
             (add_proof_var f vl) others in
 	  let lfix = Array.map (subfun newvl) (Array.of_list spfl) in
-	    mkFix ((vn,0),(names,lcty,lfix))	
+	    mkFix ((vn,j),(names,lcty,lfix))	
 
-      | Some (Prim (Cofix (f,others)),spfl) ->
-	  let all = Array.of_list ((f,cl)::others) in
+      | Some (Prim (Cofix (f,others,j)),spfl) ->
+	  let firsts,lasts = list_chop j others in
+	  let all = Array.of_list (firsts@(f,cl)::lasts) in
 	  let lcty = Array.map (fun (_,ar) -> subst_proof_vars vl ar) all in
 	  let names  = Array.map (fun (f,_) -> Name f) all in
 	  let newvl = List.fold_left (fun vl (id,_)-> add_proof_var id vl)
             (add_proof_var f vl) others in 
 	  let lfix = Array.map (subfun newvl) (Array.of_list spfl) in
-	    mkCoFix (0,(names,lcty,lfix))
+	    mkCoFix (j,(names,lcty,lfix))
 	      
       | Some (Prim (Refine c),spfl) ->
 	  let mvl = collect_meta_variables c in

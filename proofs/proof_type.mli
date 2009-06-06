@@ -29,8 +29,8 @@ open Pattern
 type prim_rule =
   | Intro of identifier
   | Cut of bool * bool * identifier * types
-  | FixRule of identifier * int * (identifier * int * constr) list
-  | Cofix of identifier * (identifier * constr) list
+  | FixRule of identifier * int * (identifier * int * constr) list * int
+  | Cofix of identifier * (identifier * constr) list * int
   | Refine of constr
   | Convert_concl of types * cast_kind 
   | Convert_hyp of named_declaration

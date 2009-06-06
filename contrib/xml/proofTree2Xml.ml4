@@ -82,8 +82,8 @@ let first_word s =
 let string_of_prim_rule x = match x with
   | Proof_type.Intro _-> "Intro"
   | Proof_type.Cut _ -> "Cut"
-  | Proof_type.FixRule (_,_,_) -> "FixRule"
-  | Proof_type.Cofix (_,_)-> "Cofix"
+  | Proof_type.FixRule _ -> "FixRule"
+  | Proof_type.Cofix _ -> "Cofix"
   | Proof_type.Refine _ -> "Refine"
   | Proof_type.Convert_concl _ -> "Convert_concl"
   | Proof_type.Convert_hyp _->"Convert_hyp"

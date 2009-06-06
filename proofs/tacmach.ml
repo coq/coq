@@ -211,11 +211,15 @@ let rec rename_hyp_no_check l gl = match l with
       tclTHEN (refiner (Prim (Rename (id1,id2)))) 
 	(rename_hyp_no_check l) gl
 
-let mutual_fix f n others gl = 
-  with_check (refiner (Prim (FixRule (f,n,others)))) gl
+let mutual_fix_with_index f n others j gl =
+  with_check (refiner (Prim (FixRule (f,n,others,j)))) gl
 
-let mutual_cofix f others gl = 
-  with_check (refiner (Prim (Cofix (f,others)))) gl
+let mutual_fix f n others = mutual_fix_with_index f n others 0
+
+let mutual_cofix_with_index f others j gl =
+  with_check (refiner (Prim (Cofix (f,others,j)))) gl
+
+let mutual_cofix f others = mutual_cofix_with_index f others 0
     
 (* Versions with consistency checks *)
 

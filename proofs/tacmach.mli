@@ -137,6 +137,10 @@ val order_hyps : identifier list -> tactic
 val mutual_fix      :
   identifier -> int -> (identifier * int * constr) list -> tactic
 val mutual_cofix    : identifier -> (identifier * constr) list -> tactic
+val mutual_fix_with_index :
+  identifier -> int -> (identifier * int * constr) list -> int -> tactic
+val mutual_cofix_with_index : 
+  identifier -> (identifier * constr) list -> int -> tactic
 
 (*s The most primitive tactics with consistency and type checking *)
 
