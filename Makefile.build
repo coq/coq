@@ -649,7 +649,7 @@ ifeq ($(BEST),opt)
 endif
 # csdpcert is not meant to be directly called by the user; we install
 # it with libraries
-	-$(MKDIR) -p $(FULLCOQLIB)/plugins/micromega
+	-$(MKDIR) $(FULLCOQLIB)/plugins/micromega
 	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/plugins/micromega
 	-$(INSTALLLIB) revision $(FULLCOQLIB)
 
