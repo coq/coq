@@ -178,9 +178,9 @@ Section Facts.
   Defined.
 
 
-  (*************************)
+  (**************************)
   (** *** Facts about [app] *)
-  (*************************)
+  (**************************)
 
   (** Discrimination *)
   Theorem app_cons_not_nil : forall (x y:list A) (a:A), nil <> x ++ a :: y.
@@ -193,34 +193,39 @@ Section Facts.
 
 
   (** Concat with [nil] *)
-
-  Theorem app_nil_end : forall l:list A, l = l ++ nil.
-  Proof. 
-    induction l; simpl in |- *; auto.
-    rewrite <- IHl; auto.
+  Theorem app_nil_l : forall l:list A, nil ++ l = l.
+  Proof.
+    reflexivity.
   Qed.
+
+  Theorem app_nil_r : forall l:list A, l ++ nil = l.
+  Proof. 
+    induction l; simpl; f_equal; auto.
+  Qed.
+
+  (* begin hide *)
+  (* Compatibility *)
+  Theorem app_nil_end : forall (l:list A), l = l ++ nil.
+  Proof. symmetry; apply app_nil_r. Qed.
+  (* end hide *)
 
   (** [app] is associative *)
-  Theorem app_ass : forall l m n:list A, (l ++ m) ++ n = l ++ m ++ n.
+  Theorem app_assoc : forall l m n:list A, l ++ m ++ n = (l ++ m) ++ n.
   Proof. 
-    intros. induction l; simpl in |- *; auto.
-    now_show (a :: (l ++ m) ++ n = a :: l ++ m ++ n).
-    rewrite <- IHl; auto.
+    intros l m n; induction l; simpl; f_equal; auto.
   Qed.
-  Hint Resolve app_ass.
 
-  Theorem ass_app : forall l m n:list A, l ++ m ++ n = (l ++ m) ++ n.
+  Theorem app_assoc_reverse : forall l m n:list A, (l ++ m) ++ n = l ++ m ++ n.
   Proof. 
-    auto using app_ass.
+     auto using app_assoc.
   Qed.
+  Hint Resolve app_assoc_reverse.
 
   (** [app] commutes with [cons] *) 
   Theorem app_comm_cons : forall (x y:list A) (a:A), a :: (x ++ y) = (a :: x) ++ y.
   Proof.
     auto.
   Qed.
-
-
 
   (** Facts deduced from the result of a concatenation *)  
 
@@ -241,8 +246,8 @@ Section Facts.
     left; split; auto.
     right; split; auto.
     generalize H.
-    generalize (app_nil_end l); intros E.
-    rewrite <- E; auto.
+    generalize (app_nil_r l); intros E.
+    rewrite -> E; auto.
     intros.
     injection H.
     intro.
@@ -335,7 +340,7 @@ Section Facts.
 
 End Facts.
 
-Hint Resolve app_nil_end ass_app app_ass: datatypes v62.
+Hint Resolve app_assoc app_assoc_reverse: datatypes v62.
 Hint Resolve app_comm_cons app_cons_not_nil: datatypes v62.
 Hint Immediate app_eq_nil: datatypes v62.
 Hint Resolve app_eq_unit app_inj_tail: datatypes v62. 
@@ -638,12 +643,12 @@ Section ListOps.
     auto.
 
     simpl in |- *.
-    apply app_nil_end; auto.
+    rewrite app_nil_r; auto.
 
     intro y.
     simpl in |- *.
     rewrite (IHl y).
-    apply (app_ass (rev y) (rev l) (a :: nil)).
+    rewrite app_assoc; trivial.
   Qed.
 
   Remark rev_unit : forall (l:list A) (a:A), rev (l ++ a :: nil) = a :: rev l.
@@ -725,7 +730,7 @@ Section ListOps.
   Lemma rev_append_rev : forall l l', rev_acc l l' = rev l ++ l'.
   Proof.
     induction l; simpl; auto; intros.
-    rewrite <- ass_app; firstorder.
+    rewrite <- app_assoc; firstorder.
   Qed.
 
   Notation rev_acc_rev := rev_append_rev (only parsing).
@@ -733,7 +738,7 @@ Section ListOps.
   Lemma rev_alt : forall l, rev l = rev_append l nil.
   Proof.
     intros; rewrite rev_append_rev.
-    apply app_nil_end.
+    rewrite app_nil_r; trivial.
   Qed.
 
 
@@ -855,9 +860,9 @@ Section ListOps.
     Theorem Permutation_app_swap : forall (l l' : list A), Permutation (l++l') (l'++l).
     Proof.
       induction l as [|x l]. 
-      simpl; intro l'; rewrite <- app_nil_end; trivial.
+      simpl; intro l'; rewrite app_nil_r; trivial.
       induction l' as [|y l'].
-      simpl; rewrite <- app_nil_end; trivial.
+      simpl; rewrite app_nil_r; trivial.
       simpl; apply Permutation_trans with (l' := x :: y :: l' ++ l).
       constructor; rewrite app_comm_cons; apply IHl.
       apply Permutation_trans with (l' := y :: x :: l' ++ l); constructor.
@@ -990,7 +995,7 @@ Section ListOps.
        forall l l1 l2, Permutation (l1 ++ l) (l2 ++ l) -> Permutation l1 l2.
     Proof.
     induction l.
-    intros l1 l2; do 2 rewrite <- app_nil_end; auto.
+    intros l1 l2; do 2 rewrite app_nil_r; auto.
     intros.
     apply IHl.
     apply Permutation_app_inv with a; auto.
@@ -1858,9 +1863,17 @@ Hint Rewrite
   rev_length (* length (rev l) = length l *)
   : list.
 
-Hint Rewrite <- 
-  app_nil_end (* l = l ++ nil *)
+Hint Rewrite ->
+  app_nil_r (* l ++ nil = l *)
   : list.
 
 Ltac simpl_list := autorewrite with list.
 Ltac ssimpl_list := autorewrite with list using simpl.
+
+(* begin hide *)
+(* Compatibility *)
+Notation ass_app := app_assoc (only parsing).
+Notation app_ass := app_assoc_reverse (only parsing).
+Hint Resolve app_nil_end : datatypes v62.
+(* end hide *)
+
