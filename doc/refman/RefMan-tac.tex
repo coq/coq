@@ -343,7 +343,7 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
   \ident{}, at the top of the local context, or at the bottom of the
   local context. All hypotheses on which the new hypothesis depends
   are moved too so as to respect the order of dependencies between
-  hypotheses. Note that {\tt intro as bottom} is is a synonym for {\tt
+  hypotheses. Note that {\tt intro at bottom} is a synonym for {\tt
   intro} with no argument.
 
 \begin{ErrMsgs}
@@ -633,7 +633,7 @@ in the list of subgoals remaining to prove.
       The premises of this hypothesis (either universal
       quantifications or non-dependent implications) are instantiated
       by concrete terms coming either from arguments \term$_1$
-      $\ldots$ \term$n$ or from a bindings list (see
+      $\ldots$ \term$_n$ or from a bindings list (see
       Section~\ref{Binding-list} for more about bindings lists). In the
       second form, all instantiation elements must be given, whereas
       in the first form the application to \term$_1$ {\ldots}
@@ -643,7 +643,7 @@ in the list of subgoals remaining to prove.
 
       The name {\ident} can also refer to a global lemma or
       hypothesis. In this case, for compatibility reasons, the
-      behavior of {\tt specialize} is close to the one of {\tt
+      behavior of {\tt specialize} is close to that of {\tt
         generalize}: the instantiated statement becomes an additional 
       premise of the goal. 
 
@@ -673,7 +673,7 @@ tuple type, then the tuple is (recursively) decomposed and the first
 component of the tuple of which a non dependent premise matches the
 conclusion of the type of {\ident}. Tuples are decomposed in a
 width-first left-to-right order (for instance if the type of {\tt H1}
-is a \verb=A <-> B= statement, and the type of {\tt H2} is \verb=B=
+is a \verb=A <-> B= statement, and the type of {\tt H2} is \verb=A=
 then {\tt apply H1 in H2} transforms the type of {\tt H2} into {\tt
   B}). The tactic {\tt apply} relies on first-order pattern-matching
 with dependent types.
@@ -761,8 +761,7 @@ Abort.
 If the goal is $G$ and $t$ is a subterm of type $T$ in the goal, then
 {\tt generalize} \textit{t} replaces the goal by {\tt forall (x:$T$), $G'$}
 where $G'$ is obtained from $G$ by replacing all occurrences of $t$ by
-{\tt x}. The name of the variable (here {\tt n}) is chosen accordingly
-to $T$.
+{\tt x}. The name of the variable (here {\tt n}) is chosen based on $T$.
 
 \begin{Variants}
 \item {\tt generalize {\term$_1$ , \dots\ , \term$_n$}}
@@ -973,7 +972,7 @@ by a number.
 \index{Binding list}
 \label{Binding-list}}
 
-Tactics that take a term as argument may also support bindings list so
+Tactics that take a term as argument may also support a bindings list, so
 as to instantiate some parameters of the term by name or position.
 The general form of a term equipped with a bindings list is {\tt
 {\term} with {\bindinglist}} where {\bindinglist} may be of two
@@ -1136,7 +1135,7 @@ conversion should occur on the type part, the body part or both
 Goal clauses are written after a conversion tactic (tactics
 \texttt{set}~\ref{tactic:set},          \texttt{rewrite}~\ref{rewrite},
 \texttt{replace}~\ref{tactic:replace}                               and
-\texttt{autorewrite}~\ref{tactic:autorewrite}  also  use clauses)  and
+\texttt{autorewrite}~\ref{tactic:autorewrite} also use goal clauses)  and
 are introduced by  the keyword \texttt{in}. If no goal clause is provided,
 the default is to perform the conversion only in the conclusion.
 
@@ -1189,8 +1188,8 @@ unfolded (see Section~\ref{Opaque}).
 The goal may be normalized with two strategies: {\em lazy} ({\tt lazy}
 tactic), or {\em call-by-value} ({\tt cbv} tactic). The lazy strategy
 is a call-by-need strategy, with sharing of reductions: the arguments of a
-function call are partially evaluated only when necessary, but if an
-argument is used several times, it is computed only once. This
+function call are partially evaluated only when necessary, and if an
+argument is used several times then it is computed only once. This
 reduction is efficient for reducing expressions with dead code. For
 instance, the proofs of a proposition {\tt exists~$x$. $P(x)$} reduce to a
 pair of a witness $t$, and a proof that $t$ satisfies the predicate
@@ -1287,7 +1286,7 @@ $\beta\iota$-reduction rule.  Then it expands transparent constants
 and tries to reduce {\tt T'} according, once more, to $\beta\iota$
 rules. But when the $\iota$ rule is not applicable then possible
 $\delta$-reductions are not applied.  For instance trying to use {\tt
-simpl} on {\tt (plus n O)=n} does change nothing.  Notice that only
+simpl} on {\tt (plus n O)=n} changes nothing.  Notice that only
 transparent constants whose name can be reused as such in the
 recursive calls are possibly unfolded. For instance a constant defined
 by {\tt plus' := plus} is possibly unfolded and reused in the
@@ -1674,7 +1673,7 @@ induction n.
   When an occurrence clause is given, an equation between {\term} and
   the value it gets in each case of the induction is added to the
   context of the subgoals corresponding to the induction cases (even
-  if no clause {\tt as {\namingintropattern}} is given.
+  if no clause {\tt as {\namingintropattern}} is given).
 
 \item {\tt induction {\term$_1$} with {\bindinglist$_1$} as {\namingintropattern} {\disjconjintropattern} using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}\\
      {\tt einduction {\term$_1$} with {\bindinglist$_1$} as {\namingintropattern} {\disjconjintropattern} using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}
@@ -1851,15 +1850,15 @@ last introduced hypothesis.
   Section~\ref{Occurrences clauses}.
 
   When an occurrence clause is given, an equation between {\term} and
-  the value it gets in each cases of the analysis is added to the
+  the value it gets in each case of the analysis is added to the
   context of the subgoals corresponding to the cases (even
-  if no clause {\tt as {\namingintropattern}} is given.
+  if no clause {\tt as {\namingintropattern}} is given).
 
 \item{\tt destruct {\term$_1$} with {\bindinglist$_1$} as {\disjconjintropattern} \_eqn: {\namingintropattern}  using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}\\
      {\tt edestruct {\term$_1$} with {\bindinglist$_1$} as {\disjconjintropattern} \_eqn: {\namingintropattern} using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}
 
   These are the general forms of {\tt destruct} and {\tt edestruct}.
-  It combines the effects of the {\tt with}, {\tt as}, {\tt using},
+  They combine the effects of the {\tt with}, {\tt as}, {\tt using},
   and {\tt in} clauses.
 
 \item{\tt case \term}\label{case}\tacindex{case}
@@ -1875,8 +1874,8 @@ last introduced hypothesis.
  forgetting its original form. This is done by generating equalities
  between the original form of the term and the outcomes of the case
  analysis. The effect of this tactic is similar to the effect of {\tt
- destruct {\term} in |- *} to the exception that no new hypotheses 
- is introduced in the context.
+ destruct {\term} in |- *} with the exception that no new hypotheses 
+ are introduced in the context.
 
 \item {\tt case {\term} with {\bindinglist}}
 
