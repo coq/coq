@@ -55,13 +55,13 @@ let h_fix ido n      = abstract_tactic (TacFix (ido,n)) (fix ido n)
 let h_mutual_fix b id n l =
   abstract_tactic
     (TacMutualFix (b,id,n,List.map (fun (id,n,c) -> (id,n,inj_open c)) l))
-    (mutual_fix id n l)
+    (mutual_fix id n l 0)
 
 let h_cofix ido      = abstract_tactic (TacCofix ido) (cofix ido)
 let h_mutual_cofix b id l =
   abstract_tactic
     (TacMutualCofix (b,id,List.map (fun (id,c) -> (id,inj_open c)) l)) 
-    (mutual_cofix id l)
+    (mutual_cofix id l 0)
 
 let h_cut c          = abstract_tactic (TacCut (inj_open c)) (cut c)
 let h_generalize_gen cl =

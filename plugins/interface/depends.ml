@@ -58,8 +58,8 @@ let explore_tree pfs =
     | Refine c -> "Refine " ^ (string_of_ppcmds (Printer.prterm c))
     | Intro identifier -> "Intro"
     | Cut (bool, _, identifier, types) -> "Cut"
-    | FixRule (identifier, int, l) -> "FixRule"
-    | Cofix (identifier, l) -> "Cofix"
+    | FixRule (identifier, int, l, _) -> "FixRule"
+    | Cofix (identifier, l, _) -> "Cofix"
     | Convert_concl (types, cast_kind) -> "Convert_concl"
     | Convert_hyp named_declaration -> "Convert_hyp"
     | Thin identifier_list -> "Thin"
@@ -411,8 +411,8 @@ and depends_of_prim_rule pr acc = match pr with
   | Refine c                     -> depends_of_constr c acc
   | Intro id                     -> acc
   | Cut (_, _, _, t)             -> depends_of_constr t acc (* TODO: check what 3nd argument contains *)
-  | FixRule (_, _, l)            -> list_union_map (o depends_of_constr trd_of_3) l acc (* TODO: check what the arguments contain *)
-  | Cofix (_, l)                 -> list_union_map (o depends_of_constr snd) l acc (* TODO: check what the arguments contain *)
+  | FixRule (_, _, l, _)         -> list_union_map (o depends_of_constr trd_of_3) l acc (* TODO: check what the arguments contain *)
+  | Cofix (_, l, _)              -> list_union_map (o depends_of_constr snd) l acc (* TODO: check what the arguments contain *)
   | Convert_concl (t, _)         -> depends_of_constr t acc
   | Convert_hyp (_, None, t)     -> depends_of_constr t acc
   | Convert_hyp (_, (Some c), t) -> depends_of_constr c (depends_of_constr t acc)

@@ -174,18 +174,18 @@ let mutual_fix = Tacmach.mutual_fix
 
 let fix ido n gl = match ido with
   | None -> 
-      mutual_fix (fresh_id [] (Pfedit.get_current_proof_name ()) gl) n [] gl
+      mutual_fix (fresh_id [] (Pfedit.get_current_proof_name ()) gl) n [] 0 gl
   | Some id ->
-      mutual_fix id n [] gl
+      mutual_fix id n [] 0 gl
 
 (* Refine as a cofixpoint *)
 let mutual_cofix = Tacmach.mutual_cofix
 
 let cofix ido gl = match ido with
   | None -> 
-      mutual_cofix (fresh_id [] (Pfedit.get_current_proof_name ()) gl) [] gl
+      mutual_cofix (fresh_id [] (Pfedit.get_current_proof_name ()) gl) [] 0 gl
   | Some id ->
-      mutual_cofix id [] gl
+      mutual_cofix id [] 0 gl
 
 (**************************************************************)
 (*          Reduction and conversion tactics                  *)

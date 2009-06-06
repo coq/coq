@@ -330,29 +330,30 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
           gl
 
     (* fix => tactique Fix *)
-    | Fix ((ni,_),(fi,ai,_)) , _ ->
+    | Fix ((ni,j),(fi,ai,_)) , _ ->
 	let out_name = function
 	  | Name id -> id
           | _ -> error "Recursive functions must have names."
 	in
 	let fixes = array_map3 (fun f n c -> (out_name f,succ n,c)) fi ni ai in
+	let firsts,lasts = list_chop j (Array.to_list fixes) in
 	tclTHENS
-	  (mutual_fix (out_name fi.(0)) (succ ni.(0))
-	    (List.tl (Array.to_list fixes)))
+	  (mutual_fix (out_name fi.(j)) (succ ni.(j)) (firsts@List.tl lasts) j)
 	  (List.map (function
 		       | None -> tclIDTAC 
 		       | Some th -> tcc_aux subst th) sgp)
 	  gl
 
     (* cofix => tactique CoFix *)
-    | CoFix (_,(fi,ai,_)) , _ ->
+    | CoFix (j,(fi,ai,_)) , _ ->
 	let out_name = function
 	  | Name id -> id
           | _ -> error "Recursive functions must have names."
 	in
 	let cofixes = array_map2 (fun f c -> (out_name f,c)) fi ai in
+	let firsts,lasts = list_chop j (Array.to_list cofixes) in
 	tclTHENS
-	  (mutual_cofix (out_name fi.(0)) (List.tl (Array.to_list cofixes)))
+	  (mutual_cofix (out_name fi.(j)) (firsts@List.tl lasts) j)
 	  (List.map (function
 		       | None -> tclIDTAC 
 		       | Some th -> tcc_aux subst th) sgp)
