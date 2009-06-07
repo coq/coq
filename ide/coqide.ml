@@ -183,7 +183,6 @@ exception Size of int
 
 let update_on_end_of_segment cmd_stk id =
   let lookup_section = function 
-    | { reset_info = ResetAtSegmentStart id',_,_ } when id = id' -> raise Exit
     | { reset_info = _,_,r } -> r := false
   in
     try Stack.iter lookup_section cmd_stk with Exit -> ()
@@ -218,7 +217,6 @@ let repush_phrase cmd_stk reset_info x =
 type backtrack =
 | BacktrackToNextActiveMark
 | BacktrackToMark of reset_mark
-| BacktrackToModSec of Names.identifier
 | NoBacktrack
 
 let add_undo = function (n,a,b,p,l as x) -> if p = 0 then (n+1,a,b,p,l) else x
@@ -229,30 +227,20 @@ let add_qed q (n,a,b,p,l as x) =
   if q = 0 then x else (n,a,BacktrackToNextActiveMark,p+q,l)
 let add_backtrack (n,a,b,p,l) b' = (n,a,b',p,l)
 
-let update_proofs (n,a,b,p,cur_lems) prev_lems =
+let update_proofs (n,a,b,p,(cur_lems,ntacsteps)) (prev_lems,prev_ntacsteps) =
   let ncommon = List.length (Util.list_intersect cur_lems prev_lems) in
   let openproofs = List.length cur_lems - ncommon in
   let closedproofs = List.length prev_lems - ncommon in
-  let undos = (n,a,b,p,prev_lems) in
-  add_qed closedproofs (Util.iterate add_abort openproofs undos)
+  let undos = (n,a,b,p,(prev_lems,prev_ntacsteps)) in
+  let undos = add_qed closedproofs (Util.iterate add_abort openproofs undos) in
+  Util.iterate add_undo (ntacsteps - prev_ntacsteps) undos
 
 let pop_command cmd_stk undos t =
   let (state_info,undo_info,section_info) = t.reset_info in
   let undos =
     if !section_info then
       let undos = update_proofs undos undo_info in
-      match state_info with
-      | _ when is_vernac_tactic_command (snd t.ast) ->
-	  (* A tactic, active if not below a Qed *)
-          add_undo undos
-      | ResetAtRegisteredObject mark ->
-          add_backtrack undos (BacktrackToMark mark)
-      | ResetAtSegmentStart id ->
-          add_backtrack undos (BacktrackToModSec id)
-      | _ when is_vernac_state_preserving_command (snd t.ast) ->
-	  undos
-      | _ ->
-          add_backtrack undos BacktrackToNextActiveMark
+      add_backtrack undos (BacktrackToMark state_info)
     else
       begin 
         prerr_endline "In section";
@@ -282,7 +270,6 @@ let apply_tactic_undo n =
 
 let apply_reset = function
   | BacktrackToMark mark -> reset_to mark
-  | BacktrackToModSec id -> reset_to_mod id
   | NoBacktrack -> ()
   | BacktrackToNextActiveMark -> assert false
 
@@ -304,7 +291,7 @@ let rec apply_undos cmd_stk (n,a,b,p,l as undos) =
       begin
         let t = Stack.top cmd_stk in
         apply_undos cmd_stk (pop_command cmd_stk undos t);
-        let reset_info = Coq.compute_reset_info (snd t.ast) in
+        let reset_info = Coq.compute_reset_info () in
         interp_last t.ast;
         repush_phrase cmd_stk reset_info t
       end

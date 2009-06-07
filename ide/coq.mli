@@ -29,22 +29,15 @@ type printing_state = {
 
 val printing_state : printing_state
 
-type reset_mark =
-  | ResetToId of Names.identifier
-  | ResetToState of Libnames.object_name
+type reset_mark
 
-type reset_status =
-  | NoReset
-  | ResetAtSegmentStart of Names.identifier
-  | ResetAtRegisteredObject of reset_mark
-
-type undo_info = identifier list
+type undo_info = identifier list * int
 
 val undo_info : unit -> undo_info
 
-type reset_info = reset_status * undo_info * bool ref
+type reset_info = reset_mark * undo_info * bool ref
 
-val compute_reset_info : Vernacexpr.vernac_expr -> reset_info
+val compute_reset_info : unit -> reset_info
 val reset_initial : unit -> unit
 val reset_to : reset_mark -> unit
 val reset_to_mod : identifier -> unit

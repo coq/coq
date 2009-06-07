@@ -355,63 +355,29 @@ let is_vernac_tactic_command com =
 let is_vernac_proof_ending_command com =
   List.mem ProofEndingCommand (attribute_of_vernac_command com)
 
-type undo_info = identifier list
+type undo_info = identifier list * int
 
-let undo_info () = Pfedit.get_all_proof_names ()
+let undo_info () = Pfedit.get_all_proof_names (), Pfedit.current_proof_depth()
 
-type reset_mark =
-  | ResetToId of Names.identifier     (* Relying on identifiers only *)
-  | ResetToState of Libnames.object_name (* Relying on states if any *)
+type reset_mark = Libnames.object_name
 
-type reset_status =
-  | NoReset
-  | ResetAtSegmentStart of Names.identifier
-  | ResetAtRegisteredObject of reset_mark
+type reset_info = reset_mark * undo_info * bool ref
 
-type reset_info = reset_status * undo_info * bool ref
-
-
-let reset_mark id = match Lib.has_top_frozen_state () with
-  | Some sp -> 
-      prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
-      ResetToState sp
-  | None -> ResetToId id
-
-let compute_reset_info = function 
-  | VernacBeginSection id 
-  | VernacDefineModule (_,id, _, _, _) 
-  | VernacDeclareModule (_,id, _, _)
-  | VernacDeclareModuleType (id, _, _) ->
-      ResetAtSegmentStart (snd id), undo_info(), ref true
-
-  | VernacDefinition (_, (_,id), DefineBody _, _)
-  | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
-  | VernacInductive (_,_, (((_,(_,id)),_,_,_,_),_) :: _) ->
-      ResetAtRegisteredObject (reset_mark id), undo_info(), ref true
-
-  | com when is_vernac_proof_ending_command com -> NoReset, undo_info(), ref true
-  | VernacEndSegment _ -> NoReset, undo_info(), ref true
-
-  | com when is_vernac_tactic_command com -> NoReset, undo_info(), ref true
-  | _ ->
-      (match Lib.has_top_frozen_state () with
-      | Some sp -> 
-	  prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
-	  ResetAtRegisteredObject (ResetToState sp)
-      | None -> NoReset), undo_info(), ref true
+let compute_reset_info () =
+  (match Lib.has_top_frozen_state () with
+    | Some st -> 
+	prerr_endline ("On top of state "^Libnames.string_of_path (fst st));
+	st
+    | None -> 
+	failwith "FATAL ERROR: NO RESET"), undo_info(), ref true
 
 let reset_initial () = 
   prerr_endline "Reset initial called"; flush stderr;
   Vernacentries.abort_refine Lib.reset_initial ()
 
-let reset_to = function
-  | ResetToId id ->
-      prerr_endline ("Reset called with "^(string_of_id id));
-      Lib.reset_name (Util.dummy_loc,id)
-  | ResetToState sp ->
-      prerr_endline
-        ("Reset called with state "^(Libnames.string_of_path (fst sp)));
-      Lib.reset_to_state sp
+let reset_to st =
+  prerr_endline ("Reset called with state "^(Libnames.string_of_path (fst st)));
+  Lib.reset_to_state st
 
 let reset_to_mod id = 
   prerr_endline ("Reset called to Mod/Sect with "^(string_of_id id)); 
@@ -443,7 +409,7 @@ let interp_with_options verbosely options s =
 	if not (is_vernac_goal_printing_command vernac) then
 	  (* Verbose if in small step forward and not a tactic *)
 	  Flags.make_silent (not verbosely);
-	let reset_info = compute_reset_info vernac in
+	let reset_info = compute_reset_info () in
 	List.iter (fun (set_option,_) -> raw_interp set_option) options;
 	raw_interp s;
 	Flags.make_silent true;
