@@ -39,6 +39,7 @@ type intro_pattern_expr =
   | IntroRewrite of bool
   | IntroIdentifier of identifier
   | IntroFresh of identifier
+  | IntroForthcoming of bool
   | IntroAnonymous
 and or_and_intro_pattern_expr = (loc * intro_pattern_expr) list list
 

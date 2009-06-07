@@ -65,7 +65,6 @@ val find_intro_names : rel_context -> goal sigma -> identifier list
 
 val intro                : tactic
 val introf               : tactic
-val intro_force          : bool -> tactic
 val intro_move        : identifier option -> identifier move_location -> tactic
 
   (* [intro_avoiding idl] acts as intro but prevents the new identifier

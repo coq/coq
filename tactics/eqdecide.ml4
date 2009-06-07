@@ -74,7 +74,7 @@ let mkBranches c1 c2 =
 
 let solveNoteqBranch side = 
   tclTHEN (choose_noteq side)
-    (tclTHEN (intro_force true)
+    (tclTHEN introf
       (onLastHypId (fun id -> Extratactics.h_discrHyp id)))
 
 let h_solveNoteqBranch side =

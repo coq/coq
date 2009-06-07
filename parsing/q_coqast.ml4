@@ -75,6 +75,7 @@ let mlexpr_of_intro_pattern = function
   | Genarg.IntroWildcard -> <:expr< Genarg.IntroWildcard >>
   | Genarg.IntroAnonymous -> <:expr< Genarg.IntroAnonymous >>
   | Genarg.IntroFresh id -> <:expr< Genarg.IntroFresh (mlexpr_of_ident $dloc$ id) >>
+  | Genarg.IntroForthcoming b -> <:expr< Genarg.IntroForthcoming (mlexpr_of_bool $dloc$ b) >>
   | Genarg.IntroIdentifier id ->
       <:expr< Genarg.IntroIdentifier (mlexpr_of_ident $dloc$ id) >>
   | Genarg.IntroOrAndPattern _ | Genarg.IntroRewrite _ ->

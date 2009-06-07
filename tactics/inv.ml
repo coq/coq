@@ -378,7 +378,7 @@ let rewrite_equations_gene othin neqns ba gl =
 let rec get_names allow_conj (loc,pat) = match pat with
   | IntroWildcard ->
       error "Discarding pattern not allowed for inversion equations."
-  | IntroAnonymous ->
+  | IntroAnonymous | IntroForthcoming _ ->
       error "Anonymous pattern not allowed for inversion equations."
   | IntroFresh _ ->
       error "Fresh pattern not allowed for inversion equations."

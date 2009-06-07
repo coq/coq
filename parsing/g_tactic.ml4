@@ -256,7 +256,9 @@ GEXTEND Gram
   naming_intropattern:
     [ [ prefix = pattern_ident -> loc, IntroFresh prefix
       | "?" -> loc, IntroAnonymous
-      | id = ident -> loc, IntroIdentifier id ] ]
+      | id = ident -> loc, IntroIdentifier id
+      | "*" -> loc, IntroForthcoming true
+      | "**" -> loc, IntroForthcoming false ] ]
   ;
   intropattern_modifier:
     [ [ IDENT "_eqn"; 

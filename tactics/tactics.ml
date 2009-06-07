@@ -432,30 +432,27 @@ let build_intro_tac id = function
   | MoveToEnd true -> introduction id
   | dest -> tclTHEN (introduction id) (move_hyp true id dest)
 
-let rec intro_gen loc name_flag move_flag force_flag gl =
+let rec intro_gen loc name_flag move_flag force_flag dep_flag gl =
   match kind_of_term (pf_concl gl) with
-    | Prod (name,t,_) -> 
+    | Prod (name,t,u) when not dep_flag or (dependent (mkRel 1) u) ->
 	build_intro_tac (find_name loc (name,None,t) gl name_flag) move_flag gl
-    | LetIn (name,b,t,_) ->
+    | LetIn (name,b,t,u) when not dep_flag or (dependent (mkRel 1) u) ->
 	build_intro_tac (find_name loc (name,Some b,t) gl name_flag) move_flag
 	  gl
     | _ -> 
 	if not force_flag then raise (RefinerError IntroNeedsProduct);
 	try
 	  tclTHEN try_red_in_concl
-	    (intro_gen loc name_flag move_flag force_flag) gl
+	    (intro_gen loc name_flag move_flag force_flag dep_flag) gl
 	with Redelimination ->
 	  user_err_loc(loc,"Intro",str "No product even after head-reduction.")
 
-let intro_mustbe_force id = intro_gen dloc (IntroMustBe id) no_move true
-let intro_using id = intro_gen dloc (IntroBasedOn (id,[])) no_move false
-let intro_force force_flag = intro_gen dloc (IntroAvoid []) no_move force_flag
-let intro = intro_force false
-let introf = intro_force true
-
-let intro_avoiding l = intro_gen dloc (IntroAvoid l) no_move false 
-
-let introf_move_name destopt = intro_gen dloc (IntroAvoid []) destopt true
+let intro_mustbe_force id = intro_gen dloc (IntroMustBe id) no_move true false
+let intro_using id = intro_gen dloc (IntroBasedOn (id,[])) no_move false false
+let intro = intro_gen dloc (IntroAvoid []) no_move false false
+let introf = intro_gen dloc (IntroAvoid []) no_move true false
+let intro_avoiding l = intro_gen dloc (IntroAvoid l) no_move false false
+let introf_move_name destopt = intro_gen dloc (IntroAvoid []) destopt true false
 
 (**** Multiple introduction tactics ****)
 
@@ -463,9 +460,12 @@ let rec intros_using = function
   | []     -> tclIDTAC
   | str::l -> tclTHEN (intro_using str) (intros_using l)
 
-let intros = tclREPEAT (intro_force false)
+let intros = tclREPEAT intro
 
 let intro_erasing id = tclTHEN (thin [id]) (introduction id)
+
+let intro_forthcoming_gen loc name_flag move_flag dep_flag =
+    tclREPEAT (intro_gen loc name_flag  move_flag false dep_flag)
 
 let rec get_next_hyp_position id = function
   | [] -> error ("No such hypothesis: " ^ string_of_id id)
@@ -508,8 +508,8 @@ let intros_replacing ids gl =
 (* User-level introduction tactics *)
 
 let intro_move idopt hto = match idopt with
-  | None -> intro_gen dloc (IntroAvoid []) hto true
-  | Some id -> intro_gen dloc (IntroMustBe id) hto true
+  | None -> intro_gen dloc (IntroAvoid []) hto true false
+  | Some id -> intro_gen dloc (IntroMustBe id) hto true false
 
 let pf_lookup_hypothesis_as_renamed env ccl = function
   | AnonHyp n -> pf_lookup_index_as_renamed env ccl n
@@ -567,7 +567,7 @@ let try_intros_until tac = function
 let rec intros_move = function
   | [] -> tclIDTAC
   | (hyp,destopt) :: rest ->
-      tclTHEN (intro_gen dloc (IntroMustBe hyp) destopt false)
+      tclTHEN (intro_gen dloc (IntroMustBe hyp) destopt false false)
 	(intros_move rest)
 
 let dependent_in_decl a (_,c,t) =
@@ -1243,8 +1243,8 @@ let rewrite_hyp l2r id gl =
 let rec explicit_intro_names = function
 | (_, IntroIdentifier id) :: l ->
     id :: explicit_intro_names l
-| (_, (IntroWildcard | IntroAnonymous | IntroFresh _ | IntroRewrite _)) :: l ->
-    explicit_intro_names l
+| (_, (IntroWildcard | IntroAnonymous | IntroFresh _ 
+      | IntroRewrite _ | IntroForthcoming _)) :: l -> explicit_intro_names l
 | (_, IntroOrAndPattern ll) :: l' -> 
     List.flatten (List.map (fun l -> explicit_intro_names (l@l')) ll)
 | [] ->
@@ -1257,24 +1257,30 @@ let rec explicit_intro_names = function
 let rec intros_patterns b avoid thin destopt = function
   | (loc, IntroWildcard) :: l ->
       tclTHEN 
-        (intro_gen loc (IntroAvoid(avoid@explicit_intro_names l)) no_move true)
+        (intro_gen loc (IntroAvoid(avoid@explicit_intro_names l))
+	  no_move true false)
         (onLastHypId (fun id ->
 	  tclORELSE
 	    (tclTHEN (clear [id]) (intros_patterns b avoid thin destopt l))
 	    (intros_patterns b avoid ((loc,id)::thin) destopt l)))
   | (loc, IntroIdentifier id) :: l ->
       tclTHEN
-        (intro_gen loc (IntroMustBe id) destopt true)
+        (intro_gen loc (IntroMustBe id) destopt true false)
         (intros_patterns b avoid thin destopt l)
   | (loc, IntroAnonymous) :: l ->
       tclTHEN
         (intro_gen loc (IntroAvoid (avoid@explicit_intro_names l))
-	  destopt true)
+	  destopt true false)
         (intros_patterns b avoid thin destopt l)
   | (loc, IntroFresh id) :: l ->
       tclTHEN
         (intro_gen loc (IntroBasedOn (id, avoid@explicit_intro_names l))
-	  destopt true)
+	  destopt true false)
+        (intros_patterns b avoid thin destopt l)
+  | (loc, IntroForthcoming onlydeps) :: l ->
+      tclTHEN
+        (intro_forthcoming_gen loc (IntroAvoid (avoid@explicit_intro_names l))
+	  destopt onlydeps)
         (intros_patterns b avoid thin destopt l)
   | (loc, IntroOrAndPattern ll) :: l' ->
       tclTHEN
@@ -1284,7 +1290,8 @@ let rec intros_patterns b avoid thin destopt = function
 	    (intros_patterns b avoid thin destopt)))
   | (loc, IntroRewrite l2r) :: l ->
       tclTHEN 
-        (intro_gen loc (IntroAvoid(avoid@explicit_intro_names l)) no_move true)
+        (intro_gen loc (IntroAvoid(avoid@explicit_intro_names l))
+	  no_move true false)
         (onLastHypId (fun id ->
 	  tclTHEN
 	    (rewrite_hyp l2r id)
@@ -1319,6 +1326,8 @@ let prepare_intros s ipat gl = match ipat with
       onLastHypId
 	(intro_or_and_pattern loc true ll [] 
 	  (intros_patterns true [] [] no_move))
+  | IntroForthcoming _ -> user_err_loc
+      (loc,"",str "Introduction pattern for one hypothesis expected")
 
 let ipat_of_name = function
   | Anonymous -> None
@@ -1351,7 +1360,8 @@ let as_tac id ipat = match ipat with
       intro_or_and_pattern loc true ll [] (intros_patterns true [] [] no_move)
         id
   | Some (loc,
-      (IntroIdentifier _ | IntroAnonymous | IntroFresh _ | IntroWildcard)) ->
+      (IntroIdentifier _ | IntroAnonymous | IntroFresh _ | 
+       IntroWildcard | IntroForthcoming _)) ->
       user_err_loc (loc,"", str "Disjunctive/conjunctive pattern expected")
   | None -> tclIDTAC
 
@@ -1587,13 +1597,13 @@ let letin_tac_gen with_eq name c ty occs gl =
       let refl = applist (eqdata.refl, [t;mkVar id]) in
       mkNamedLetIn id c t (mkLetIn (Name heq, refl, eq, ccl)),
       tclTHEN
-	(intro_gen loc (IntroMustBe heq) lastlhyp true)
+	(intro_gen loc (IntroMustBe heq) lastlhyp true false)
 	(thin_body [heq;id])
     | None ->
 	mkNamedLetIn id c t ccl, tclIDTAC in
   tclTHENLIST
     [ convert_concl_no_check newcl DEFAULTcast;
-      intro_gen dloc (IntroMustBe id) lastlhyp true;
+      intro_gen dloc (IntroMustBe id) lastlhyp true false;
       eq_tac;
       tclMAP convert_hyp_no_check depdecls ] gl
 
@@ -1691,13 +1701,18 @@ let rec first_name_buggy avoid gl (loc,pat) = match pat with
   | IntroWildcard -> no_move
   | IntroRewrite _ -> no_move
   | IntroIdentifier id -> MoveAfter id
-  | IntroAnonymous | IntroFresh _ -> (* buggy *) no_move
+  | IntroAnonymous | IntroFresh _ | IntroForthcoming _ -> (* buggy *) no_move
 
-let consume_pattern avoid id gl = function
+let rec consume_pattern avoid id isdep gl = function
   | [] -> ((dloc, IntroIdentifier (fresh_id avoid id gl)), [])
   | (loc,IntroAnonymous)::names ->
       let avoid = avoid@explicit_intro_names names in
       ((loc,IntroIdentifier (fresh_id avoid id gl)), names)
+  | (loc,IntroForthcoming true)::names when not isdep ->
+      consume_pattern avoid id isdep gl names
+  | (loc,IntroForthcoming _)::names as fullpat ->
+      let avoid = avoid@explicit_intro_names names in
+      ((loc,IntroIdentifier (fresh_id avoid id gl)), fullpat)
   | (loc,IntroFresh id')::names ->
       let avoid = avoid@explicit_intro_names names in
       ((loc,IntroIdentifier (fresh_id avoid id' gl)), names)
@@ -1719,14 +1734,14 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
   let avoid = avoid @ avoid' in
   let rec peel_tac ra names tophyp gl =
     match ra with
-    | (RecArg,recvarname) ::
-        (IndArg,hyprecname) :: ra' ->
+    | (RecArg,deprec,recvarname) ::
+        (IndArg,depind,hyprecname) :: ra' ->
         let recpat,names = match names with
           | [loc,IntroIdentifier id as pat] ->
               let id' = next_ident_away (add_prefix "IH" id) avoid in
 	      (pat, [dloc, IntroIdentifier id'])
-          | _ -> consume_pattern avoid recvarname gl names in
-        let hyprec,names = consume_pattern avoid hyprecname gl names in
+          | _ -> consume_pattern avoid recvarname deprec gl names in
+        let hyprec,names = consume_pattern avoid hyprecname depind gl names in
         (* IH stays at top: we need to update tophyp *)
         (* This is buggy for intro-or-patterns with different first hypnames *)
         (* Would need to pass peel_tac as a continuation of intros_patterns *)
@@ -1738,16 +1753,16 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
 	  [ intros_patterns true avoid [] (update destopt tophyp) [recpat];
 	    intros_patterns true avoid [] no_move [hyprec];
 	    peel_tac ra' names newtophyp] gl
-    | (IndArg,hyprecname) :: ra' ->
+    | (IndArg,dep,hyprecname) :: ra' ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
-        let pat,names = consume_pattern avoid hyprecname gl names in
+        let pat,names = consume_pattern avoid hyprecname dep gl names in
 	tclTHEN (intros_patterns true avoid [] (update destopt tophyp) [pat])
           (peel_tac ra' names tophyp) gl
-    | (RecArg,recvarname) :: ra' ->
-        let pat,names = consume_pattern avoid recvarname gl names in
+    | (RecArg,dep,recvarname) :: ra' ->
+        let pat,names = consume_pattern avoid recvarname dep gl names in
 	tclTHEN (intros_patterns true avoid [] (update destopt tophyp) [pat]) 
           (peel_tac ra' names tophyp) gl
-    | (OtherArg,_) :: ra' ->
+    | (OtherArg,_,_) :: ra' ->
         let pat,names = match names with
           | [] -> (dloc, IntroAnonymous), []
           | pat::names -> pat,names in
@@ -2477,8 +2492,10 @@ let compute_elim_signature elimc elimt names_info ind_type_guess =
 	    | _ -> OtherArg in 
 	let rec check_branch p c = 
 	  match kind_of_term c with
-	    | Prod (_,t,c) -> is_pred p t :: check_branch (p+1) c
-	    | LetIn (_,_,_,c) -> OtherArg :: check_branch (p+1) c
+	    | Prod (_,t,c) ->
+		(is_pred p t, dependent (mkRel 1) c) :: check_branch (p+1) c
+	    | LetIn (_,_,_,c) ->
+		(OtherArg, dependent (mkRel 1) c) :: check_branch (p+1) c
 	    | _ when is_pred p c = IndArg -> []
 	    | _ -> raise Exit in 
 	let rec find_branches p lbrch = 
@@ -2487,11 +2504,12 @@ let compute_elim_signature elimc elimt names_info ind_type_guess =
 		(try
 		  let lchck_brch = check_branch p t in
 		  let n = List.fold_left 
-		    (fun n b -> if b=RecArg then n+1 else n) 0 lchck_brch in
+		    (fun n (b,_) -> if b=RecArg then n+1 else n) 0 lchck_brch in
 		  let recvarname, hyprecname, avoid = 
 		    make_up_names n scheme.indref names_info in
 		  let namesign = 
-		    List.map (fun b -> (b,if b=IndArg then hyprecname else recvarname))
+		    List.map (fun (b,dep) ->
+		      (b,dep,if b=IndArg then hyprecname else recvarname))
 		      lchck_brch in
 		  (avoid,namesign) :: find_branches (p+1) brs
 		with Exit-> error_ind_scheme "the branches of")
@@ -2508,8 +2526,10 @@ let compute_elim_signature elimc elimt names_info ind_type_guess =
 	    | _ when hd = indhd -> RecArg
 	    | _ -> OtherArg in
 	let rec check_branch p c = match kind_of_term c with
-	  | Prod (_,t,c) -> is_pred p t :: check_branch (p+1) c
-	  | LetIn (_,_,_,c) -> OtherArg :: check_branch (p+1) c
+	  | Prod (_,t,c) -> 
+	      (is_pred p t, dependent (mkRel 1) c) :: check_branch (p+1) c
+	  | LetIn (_,_,_,c) ->
+	      (OtherArg, dependent (mkRel 1) c) :: check_branch (p+1) c
 	  | _ when is_pred p c = IndArg -> []
 	  | _ -> raise Exit in 
 	let rec find_branches p lbrch =
@@ -2518,11 +2538,12 @@ let compute_elim_signature elimc elimt names_info ind_type_guess =
 		(try
 		  let lchck_brch = check_branch p t in
 		  let n = List.fold_left 
-		    (fun n b -> if b=RecArg then n+1 else n) 0 lchck_brch in
+		    (fun n (b,_) -> if b=RecArg then n+1 else n) 0 lchck_brch in
 		  let recvarname, hyprecname, avoid = 
 		    make_up_names n scheme.indref names_info in
 		  let namesign = 
-		    List.map (fun b -> (b,if b=IndArg then hyprecname else recvarname))
+		    List.map (fun (b,dep) -> 
+		      (b,dep,if b=IndArg then hyprecname else recvarname))
 		      lchck_brch in
 		  (avoid,namesign) :: find_branches (p+1) brs
 		with Exit -> error_ind_scheme "the branches of")

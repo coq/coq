@@ -485,7 +485,7 @@ let rec intern_intro_pattern lf ist = function
       loc, IntroIdentifier (intern_ident lf ist id)
   | loc, IntroFresh id ->
       loc, IntroFresh (intern_ident lf ist id)
-  | loc, (IntroWildcard | IntroAnonymous | IntroRewrite _)
+  | loc, (IntroWildcard | IntroAnonymous | IntroRewrite _ | IntroForthcoming _)
       as x -> x
 
 and intern_or_and_intro_pattern lf ist =
@@ -1362,7 +1362,8 @@ let rec intropattern_ids (loc,pat) = match pat with
   | IntroIdentifier id -> [id]
   | IntroOrAndPattern ll -> 
       List.flatten (List.map intropattern_ids (List.flatten ll))
-  | IntroWildcard | IntroAnonymous | IntroFresh _ | IntroRewrite _ -> []
+  | IntroWildcard | IntroAnonymous | IntroFresh _ | IntroRewrite _ 
+  | IntroForthcoming _ -> []
 
 let rec extract_ids ids = function
   | (id,VIntroPattern ipat)::tl when not (List.mem id ids) ->
@@ -1661,7 +1662,7 @@ let rec interp_intro_pattern ist gl = function
       loc, interp_intro_pattern_var loc ist (pf_env gl) id
   | loc, IntroFresh id ->
       loc, IntroFresh (interp_fresh_ident ist gl id)
-  | loc, (IntroWildcard | IntroAnonymous | IntroRewrite _)
+  | loc, (IntroWildcard | IntroAnonymous | IntroRewrite _ | IntroForthcoming _)
       as x -> x
 
 and interp_or_and_intro_pattern ist gl =

@@ -82,6 +82,7 @@ type intro_pattern_expr =
   | IntroRewrite of bool
   | IntroIdentifier of identifier
   | IntroFresh of identifier
+  | IntroForthcoming of bool
   | IntroAnonymous
 and or_and_intro_pattern_expr = (loc * intro_pattern_expr) list list
 
@@ -92,6 +93,8 @@ let rec pr_intro_pattern (_,pat) = match pat with
   | IntroRewrite false -> str "<-"
   | IntroIdentifier id -> pr_id id
   | IntroFresh id -> str "?" ++ pr_id id
+  | IntroForthcoming true -> str "*"
+  | IntroForthcoming false -> str "**"
   | IntroAnonymous -> str "?"
 
 and pr_or_and_intro_pattern = function

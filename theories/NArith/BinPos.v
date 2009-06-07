@@ -266,12 +266,19 @@ Definition Pmax (p p' : positive) := match Pcompare p p' Eq with
  end.
 
 (**********************************************************************)
-(** Miscellaneous properties of binary positive numbers *)
+(** Decidability of equality on binary positive numbers *)
 
-Lemma ZL11 : forall p:positive, p = 1 \/ p <> 1.
+Lemma positive_eq_dec : forall x y: positive, {x = y} + {x <> y}.
 Proof.
-  intros x; case x; intros; (left; reflexivity) || (right; discriminate).
+  decide equality.
+Defined.
+
+(* begin hide *)
+Corollary ZL11 : forall p:positive, p = 1 \/ p <> 1.
+Proof.
+  intro; edestruct positive_eq_dec; eauto.
 Qed.
+(* end hide *)
 
 (**********************************************************************)
 (** Properties of successor on binary positive numbers *)
