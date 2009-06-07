@@ -21,6 +21,7 @@
 
 Name: \texttt{#2}}
 
+\newcommand\zero{\texttt{zero}}
 \newcommand\op{\texttt{op}}
 \newcommand\opp{\texttt{op'}}
 \newcommand\oppp{\texttt{op''}}
@@ -444,7 +445,7 @@ more uniform names would be no sacrilege.
 \begin{itemize}
 \item Merge \term{sum}, \term{sumor} and \term{sumbool} (possible thanks
   to sort polymorphism of inductive types?
-\item Having \term{\~ A} as a notation for \term{A -> False} rather
+\item Having \term{\~{} A} as a notation for \term{A -> False} rather
 than for \term{not A} would avoid all these problems of converting
 \term{A -> False} and \term{not A} [suggested by EM].
 \item If yes, what uniform naming schemes? We need at least uniform
@@ -764,6 +765,8 @@ library is nice, because it is in a language close to the one of Coq,
 because this is a priori to have a certified list library for
 Objective Caml, and finally because this is a following of the ideas
 having led to the \library{FSet}/\library{FMap} library).
+
+Is the right associativity of \term{++} the right one?
 
 \paragraph{Open questions}
 
@@ -1312,11 +1315,24 @@ standard library of Coq}
 
   Remark: the general definition is ``exists n, iter n op x = x''.
 
-\itemrule{Nilpotency of element elt wrt a ring D with additive
-neutral element zero and multiplicative binary operator {\op}}{Delt\_nilpotent}
+\itemrule{Nilpotency of element elt wrt a ring D with additive neutral
+element {\zero} and multiplicative binary operator
+{\op}}{Delt\_nilpotent} 
 {op elt elt = zero}
 
-  Remark: we leave the ring structure of D implicit; the general definition is ``exists n, iter n op x = elt''.
+  Remark: we leave the ring structure of D implicit; the general definition is ``exists n, iter n op elt = zero''.
+
+\itemrule{Zero-product property in a ring D with additive neutral
+element {\zero} and multiplicative binary operator
+{\op}}{D\_integral}
+{forall x y, op x y = zero -> x = zero \/ y = zero}
+
+  Remark: we leave the ring structure of D implicit; the Coq library
+  uses either \texttt{\_is\_O} (for \texttt{nat}), \texttt{\_integral}
+    (for \texttt{Z}, \texttt{Q} and \texttt{R}), \texttt{eq\_mul\_0} (for
+    \texttt{NZ}).
+
+  Remark: The French school says ``integrité''.
 
 \itemrule{Nilpotency of binary operator {\op} wrt to its absorbing element
 zero in D}{Dop\_nilpotent} {forall x, op x x = zero}
@@ -1784,6 +1800,214 @@ le_S_gt:    remplacer par unfold gt, unfold lt (i.e. lt_le_S) ?
 Rle_lt_0_plus_1
 le_Sn_le
 \end{verbatim}
+
+\section{On the different naming schemes for the totality of order, decidability of equality, etc.}
+
+(as of June 2009)
+
+\begin{itemize}
+\item Total order
+
+\begin{itemize}
+\item Trichotomy
+
+\begin{verbatim}
+  Lemma Rtotal_order : forall r1 r2, r1 < r2 \/ r1 = r2 \/ r1 > r2.
+  Theorem Ztrichotomy : forall n m:Z, n < m \/ n = m \/ n > m.
+  Theorem NZlt_trichotomy : forall n m : NZ, n < m \/ n == m \/ m < n.
+  Definition lt_eq_lt_dec n m : {n < m} + {n = m} + {m < n}. (* nat *)
+  Definition gt_eq_gt_dec n m : {m > n} + {n = m} + {n > m}. (* nat *)
+  Axiom total_order_T : forall r1 r2:R, {r1 < r2} + {r1 = r2} + {r1 > r2}.
+  Theorem Ztrichotomy_inf : forall n m:Z, {n < m} + {n = m} + {n > m}.
+
+  Lemma Q_dec : forall x y, {x<y} + {y<x} + {x==y}.
+  Lemma Qc_dec : forall x y, {x<y} + {y<x} + {x=y}.
+  Lemma Z_dec : forall n m:Z, {n < m} + {n > m} + {n = m}.
+  Lemma Z_dec' : forall n m:Z, {n < m} + {m < n} + {n = m}.
+\end{verbatim}
+
+\item Conditional dichotomy
+
+\begin{verbatim}
+  Theorem not_eq : forall n m : nat, n <> m -> n < m \/ m < n.
+  Theorem nat_total_order : forall n m : nat, n <> m -> n < m \/ m < n.
+  Theorem not_Zeq : forall n m:Z, n <> m -> n < m \/ m < n.
+  Lemma Rdichotomy : forall r1 r2, r1 <> r2 -> r1 < r2 \/ r1 > r2.
+  Theorem NZlt_gt_cases : forall n m : NZ, n ~= m <-> n < m \/ n > m.
+  Lemma not_Zeq_inf : forall n m:Z, n <> m -> {n < m} + {m < n}.
+\end{verbatim}
+
+\item Non standard conditional dichotomy
+
+\begin{verbatim}
+  Definition le_lt_eq_dec n m : n <= m -> {n < m} + {n = m}.
+  Lemma Rle_lt_or_eq_dec : forall r1 r2, r1 <= r2 -> {r1 < r2} + {r1 = r2}.
+  Definition Z_le_lt_eq_dec : x <= y -> {x < y} + {x = y}.
+\end{verbatim}
+
+\item Dichotomy
+
+\begin{verbatim}
+  Lemma Zle_or_lt : forall n m:Z, n <= m \/ m < n.
+  Theorem le_or_lt : forall n m, n <= m \/ m < n.
+  Lemma Rlt_or_le : forall r1 r2, r1 < r2 \/ r2 <= r1.
+  Lemma Rgt_or_ge : forall r1 r2, r1 > r2 \/ r2 >= r1.
+  Lemma Rle_or_lt : forall r1 r2, r1 <= r2 \/ r2 < r1.
+  Lemma Rge_or_gt : forall r1 r2, r1 >= r2 \/ r2 > r1.
+  Theorem NZle_gt_cases : forall n m : NZ, n <= m \/ n > m.
+  Theorem NZlt_ge_cases : forall n m : NZ, n < m \/ n >= m.
+  Definition lt_ge_dec : forall x y, {x < y} + {x >= y}. (* nat *)
+  Definition le_lt_dec n m : {n <= m} + {m < n}. (* nat *)
+  Definition le_gt_dec n m : {n <= m} + {n > m}.
+  Lemma Qlt_le_dec : forall x y, {x<y} + {y<=x}.
+  Lemma Qclt_le_dec : forall x y, {x<y} + {y<=x}.
+  Lemma Rlt_le_dec : forall r1 r2, {r1 < r2} + {r2 <= r1}.
+  Lemma Rgt_ge_dec : forall r1 r2, {r1 > r2} + {r2 >= r1}.
+  Lemma Rle_lt_dec : forall r1 r2, {r1 <= r2} + {r2 < r1}.
+  Lemma Rge_gt_dec : forall r1 r2, {r1 >= r2} + {r2 > r1}.
+  Axiom gt_le_dec : forall x y: int, {x > y} + {x <= y}.
+  Axiom ge_lt_dec :  forall x y : int, {x >= y} + {x < y}.
+  Definition Z_lt_ge_dec : {x < y} + {x >= y}.
+  Lemma Z_lt_le_dec : {x < y} + {y <= x}.
+  Definition Z_le_gt_dec : {x <= y} + {x > y}.
+  Definition Z_gt_le_dec : {x > y} + {x <= y}.
+  Definition Z_ge_lt_dec : {x >= y} + {x < y}.
+
+  Corollary
+    Lemma Rcase_abs : forall r, {r < 0} + {r >= 0}. 
+\end{verbatim}
+
+\item Weak dichotomy
+
+\begin{verbatim}
+  Lemma ni_le_total : forall d d':natinf, ni_le d d' \/ ni_le d' d.
+  Definition le_ge_dec n m : {n <= m} + {n >= m}.
+  Theorem NZle_ge_cases : forall n m : NZ, n <= m \/ n >= m.
+  Lemma le_dec : forall n m, {n <= m} + {m <= n}.
+\end{verbatim}
+
+\item Dichotomy on discrete domain
+
+\begin{verbatim}
+  Definition le_le_S_dec n m : {n <= m} + {S m <= n}.
+\end{verbatim}
+
+\end{itemize}
+
+\item Decidability of equality
+
+\begin{verbatim}
+ Lemma Req_dec : forall r1 r2, r1 = r2 \/ r1 <> r2.
+ Theorem eq_nat_decide : forall n m, {eq_nat n m} + {~ eq_nat n m}.
+ Theorem eq_nat_dec : forall n m, {n = m} + {n <> m}.
+ Lemma bool_dec : forall b1 b2 : bool, {b1 = b2} + {b1 <> b2}.
+ Lemma eq_dec (x y: positive): {x = y} + {x <> y}.
+ Theorem Qeq_dec : forall x y, {x==y} + {~ x==y}.
+ Theorem Qc_eq_dec : forall x y:Qc, {x=y} + {x<>y}.
+ Lemma Req_EM_T : forall r1 r2:R, {r1 = r2} + {r1 <> r2}.
+ Definition ascii_dec : forall a b : ascii, {a = b} + {a <> b}.
+ Definition string_dec : forall s1 s2 : string, {s1 = s2} + {s1 <> s2}.
+ Axiom eq_dec : forall x y : int, { x == y } + {~ x==y }.
+ Definition Z_eq_dec : {x = y} + {x <> y}.
+\end{verbatim}
+
+\item Decidability of order
+
+\begin{verbatim}
+ Lemma In_dec : forall m x, { In x m } + { ~ In x m }.
+ Theorem excluded_middle_informative : forall P:Prop, {P} + {~ P}.
+ Lemma Rlt_dec : forall r1 r2, {r1 < r2} + {~ r1 < r2}.
+ Lemma Rle_dec : forall r1 r2, {r1 <= r2} + {~ r1 <= r2}.
+ Lemma Rgt_dec : forall r1 r2, {r1 > r2} + {~ r1 > r2}.
+ Lemma Rge_dec : forall r1 r2, {r1 >= r2} + {~ r1 >= r2}.
+ Definition Z_lt_dec : {x < y} + {~ x < y}.
+ Definition Z_le_dec : {x <= y} + {~ x <= y}.
+ Definition Z_gt_dec : {x > y} + {~ x > y}.
+ Definition Z_ge_dec : {x >= y} + {~ x >= y}.
+ Definition Zeven_dec : forall z:Z, {Zeven z} + {~ Zeven z}.
+ Definition Zodd_dec : forall z:Z, {Zodd z} + {~ Zodd z}.
+\end{verbatim}
+
+\item Definition of $\leq$ in the discrete case
+
+\begin{verbatim}
+ Lemma le_le_S_eq : forall n m, n <= m -> S n <= m \/ n = m.
+ Theorem gt_S : forall n m, S n > m -> n > m \/ m = n.
+ Theorem NZle_succ_r : forall n m : NZ, n <= S m <-> n <= m \/ n == S m.
+ Lemma Zgt_succ_gt_or_eq : forall n m:Z, Zsucc n > m -> n > m \/ m = n.
+\end{verbatim}
+
+\item Definition of $\leq$ as <= vs <
+
+\begin{verbatim}
+ Lemma Zle_lt_or_eq : forall n m:Z, n <= m -> n < m \/ n = m.
+ Theorem le_lt_or_eq : forall n m, n <= m -> n < m \/ n = m.
+ Lemma Qle_lt_or_eq : forall x y, x<=y -> x<y \/ x==y.
+ Lemma Qcle_lt_or_eq : forall x y, x<=y -> x<y \/ x==y.
+\end{verbatim}
+
+\item Weakening of < into $<>$
+
+\begin{verbatim}
+ Lemma Rlt_dichotomy_converse : forall r1 r2, r1 < r2 \/ r1 > r2 -> r1 <> r2.
+\end{verbatim}
+
+\item Well-ordering properties of \texttt{nat}
+
+\begin{verbatim}
+ Theorem gt_O_eq : forall n, n > 0 \/ 0 = n.
+ Definition zerop n : {n = 0} + {0 < n}.
+\end{verbatim}
+
+\item \texttt{odd}/\texttt{even}
+
+\begin{verbatim}
+ Lemma even_or_odd : forall n, even n \/ odd n.
+ Lemma even_odd_dec : forall n, {even n} + {odd n}.
+ Definition Zeven_odd_dec : forall z:Z, {Zeven z} + {Zodd z}.
+\end{verbatim}
+
+\item Lattice properties
+
+\begin{verbatim}
+ Lemma max_spec : forall n m, m <= n /\ max n m = n \/ n <= m /\ max n m = m.
+ Lemma ni_min_case : forall d d':natinf, ni_min d d' = d \/ ni_min d d' = d'.
+ Lemma Rmax_Rle : forall r1 r2 r, r <= Rmax r1 r2 <-> r <= r1 \/ r <= r2.
+ Lemma Zmax_le_prime : forall n m p:Z, p <= Zmax n m -> p <= n \/ p <= m.
+ Lemma Zmin_irreducible : forall n m:Z, Zmin n m = n \/ Zmin n m = m.
+ Lemma max_dec : forall n m, {max n m = n} + {max n m = m}.
+ Lemma min_dec : forall n m, {min n m = n} + {min n m = m}.
+ Lemma Nmin_choice : forall a b, {Nmin a b = a} + {Nmin a b = b}.
+ Lemma Zmax_irreducible_dec : forall n m:Z, {Zmax n m = n} + {Zmax n m = m}.
+ Lemma Zmin_irreducible_inf : forall n m:Z, {Zmin n m = n} + {Zmin n m = m}.
+ Lemma Zmin_le_prime_inf : forall n m p:Z, Zmin n m <= p -> {n <= p} + {m <= p}.
+\end{verbatim}
+
+\item Zero-product
+
+\begin{verbatim}
+ Lemma mult_is_O : forall n m, n * m = 0 -> n = 0 \/ m = 0.
+ Theorem Qmult_integral : forall x y, x*y==0 -> x==0 \/ y==0.
+ Theorem Qcmult_integral : forall x y, x*y=0 -> x=0 \/ y=0.
+ Lemma Rmult_integral : forall r1 r2, r1 * r2 = 0 -> r1 = 0 \/ r2 = 0.
+ Theorem NZeq_mul_0 : forall n m : NZ, n * m == 0 <-> n == 0 \/ m == 0.
+ Theorem Zmult_integral : forall n m:Z, n * m = Z0 -> n = Z0 \/ m = Z0.
+\end{verbatim}
+
+\item Other properties of multiplication
+
+\begin{verbatim}
+ Lemma mult_O_le : forall n m, m = 0 \/ n <= m * n.
+ Lemma Rmult_eq_0_compat : forall r1 r2, r1 = 0 \/ r2 = 0 -> r1 * r2 = 0.
+\end{verbatim}
+
+\item Inversion
+
+\begin{verbatim}
+ Theorem O_or_S : forall n, {m : nat | S m = n} + {0 = n}.
+ Definition Ndiscr : forall n:N, { p:positive | n = Npos p } + { n = N0 }.
+\end{verbatim}
+\end{itemize}
 
 \section{A list of inconsistencies}
 
