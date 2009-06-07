@@ -19,6 +19,8 @@ Tactics
   (i.e. library Classical_Prop or Classical) is loaded.
 - New "Hint Resolve ->" (or "<-") for declaring iff's as oriented
   hints (wish #2104).
+- New introduction patterns "*" for introducing the next block of dependent 
+  variables and "**" for introducing all quantified variables and hypotheses.
 
 Tactic Language
 
