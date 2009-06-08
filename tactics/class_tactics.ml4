@@ -217,7 +217,7 @@ type 'a tac = { skft : 'ans. ('a,'ans) sk -> 'ans fk -> autogoal sigma -> 'ans }
 type auto_result = autogoal list sigma * validation
 
 type atac = auto_result tac
-  
+
 let lift_tactic tac (f : goal list sigma -> autoinfo -> autogoal list sigma) : 'a tac =
   { skft = fun sk fk {it = gl,hints; sigma=s} ->
     let res = try Some (tac {it=gl; sigma=s}) with e when catchable e -> None in
@@ -326,6 +326,7 @@ let run_list_tac (t : 'a tac) p goals (gl : autogoal list sigma) : auto_result o
 let rec fix (t : 'a tac) : 'a tac = 
   then_tac t { skft = fun sk fk -> (fix t).skft sk fk }
 
+  
 (* A special one for getting everything into a dnet. *)
 
 let is_transparent_gr (ids, csts) = function
@@ -357,10 +358,10 @@ let make_autogoals ?(st=full_transparent_state) gs evm' =
   { it = list_map_i (fun i g -> 
     let (gl, auto) = make_autogoal ~st {it = snd g; sigma = evm'} in
       (gl, { auto with auto_depth = [i]})) 1 gs; sigma = evm' }
-    
+
 let run_on_evars ?(st=full_transparent_state) p evm tac =
   match evars_to_goals p evm with
-  | None -> raise Not_found
+  | None -> None
   | Some (goals, evm') ->
       match run_list_tac tac p goals (make_autogoals ~st goals evm') with
       | None -> raise Not_found
@@ -379,13 +380,15 @@ let eauto hints g =
 
 let real_eauto st hints p evd =
   let tac = fix (hints_tac hints) in
-    run_on_evars ~st p evd tac
-      
+  let rec aux evd =
+    match run_on_evars ~st p evd tac with
+    | None -> evd
+    | Some evd' -> aux evd'
+  in aux evd
+
 let resolve_all_evars_once debug (mode, depth) p evd =
   let db = searchtable_map typeclasses_db in
-    match real_eauto (Hint_db.transparent_state db) [db] p evd with
-    | None -> raise Not_found
-    | Some res -> res
+    real_eauto (Hint_db.transparent_state db) [db] p evd
 
 exception FoundTerm of constr
 

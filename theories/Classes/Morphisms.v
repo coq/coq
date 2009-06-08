@@ -325,7 +325,7 @@ Proof. firstorder. Qed.
 Lemma proper_proper_proxy `(Proper A R x) : ProperProxy R x.
 Proof. firstorder. Qed.
 
-Hint Extern 1 (ProperProxy _ _) => class_apply eq_proper_proxy || class_apply @reflexive_proper_proxy : typeclass_instances.
+Hint Extern 1 (ProperProxy _ _) => class_apply @eq_proper_proxy || class_apply @reflexive_proper_proxy : typeclass_instances.
 Hint Extern 2 (ProperProxy ?R _) => not_evar R ; class_apply @proper_proper_proxy : typeclass_instances.
 
 (** [R] is Reflexive, hence we can build the needed proof. *)
