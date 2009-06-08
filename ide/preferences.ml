@@ -90,6 +90,7 @@ type pref =
       mutable window_height :int;
       mutable query_window_width : int;
       mutable query_window_height : int;
+      mutable fold_delay_ms : int;
 (*
       mutable use_utf8_notation : bool;
 *)
@@ -144,6 +145,7 @@ let (current:pref ref) =
     window_height = 600; 
     query_window_width = 600;
     query_window_height = 400;
+    fold_delay_ms = 400;
 (*
     use_utf8_notation = false;
 *)
@@ -214,6 +216,7 @@ let save_pref () =
     add "window_width" [string_of_int p.window_width] ++
     add "query_window_height" [string_of_int p.query_window_height] ++
     add "query_window_width" [string_of_int p.query_window_width] ++
+    add "fold_delay_ms" [string_of_int p.fold_delay_ms] ++
     add "auto_complete" [string_of_bool p.auto_complete] ++
     add "stop_before" [string_of_bool p.stop_before] ++
     add "lax_syntax" [string_of_bool p.lax_syntax] ++
@@ -275,6 +278,7 @@ let load_pref () =
     set_int "window_height" (fun v -> np.window_height <- v);
     set_int "query_window_width" (fun v -> np.query_window_width <- v);
     set_int "query_window_height" (fun v -> np.query_window_height <- v);
+    set_int "fold_delay_ms" (fun v -> np.fold_delay_ms <- v);
     set_bool "auto_complete" (fun v -> np.auto_complete <- v);
     set_bool "stop_before" (fun v -> np.stop_before <- v);
     set_bool "lax_syntax" (fun v -> np.lax_syntax <- v);
@@ -407,6 +411,14 @@ let configure ?(apply=(fun () -> ())) () =
       "Auto save delay (ms)" 
       (string_of_int !current.auto_save_delay)
   in  
+
+  let fold_delay_ms =
+    string
+      ~f:(fun s -> !current.fold_delay_ms <-
+                   (try int_of_string s with _ -> 300))
+      "double click delay to trigger folding (ms)"
+      (string_of_int !current.fold_delay_ms)
+  in
 
   let stop_before =
     bool
@@ -570,7 +582,7 @@ let configure ?(apply=(fun () -> ())) () =
 	     [automatic_tactics]);
      Section("Shortcuts",
 	     [modifiers_valid; modifier_for_tactics;
-	      modifier_for_templates; modifier_for_display; modifier_for_navigation]);
+	      modifier_for_templates; modifier_for_display; modifier_for_navigation; fold_delay_ms]);
      Section("Misc",
 	     misc)]
   in
