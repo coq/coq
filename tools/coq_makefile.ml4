@@ -243,12 +243,12 @@ let footer_includes () =
 let implicit () =
   let ml_rules () =
     print "%.cmi: %.mli\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
-    print "%.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) -c $(PP) $<\n\n";
-    print "%.cmx: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -c $(PP) $<\n\n";
-    print "%.cmxs: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $(PP) $<\n\n";
-    print "%.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) -c $(PP) -impl $<\n\n";
-    print "%.cmx: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -c $(PP) -impl $<\n\n";
-    print "%.cmxs: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $(PP) -impl $<\n\n";
+    print "%.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
+    print "%.cmx: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
+    print "%.cmxs: %.ml\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $(PP) $<\n\n";
+    print "%.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
+    print "%.cmx: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
+    print "%.cmxs: %.ml4\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $(PP) -impl $<\n\n";
     print "%.ml.d: %.ml\n";
     print "\t$(CAMLBIN)ocamldep -slash $(COQSRCLIBS) $(OCAMLLIBS) $(PP) \"$<\" > \"$@\"\n\n"
   and v_rule () =
@@ -283,8 +283,8 @@ let variables defs =
     print "COQDOC:=$(COQBIN)coqdoc\n";
     print "COQMKTOP:=$(COQBIN)coqmktop\n";
     (* Caml executables and relative variables *)
-    printf "CAMLC:=$(CAMLBIN)%s -rectypes\n" best_ocamlc;
-    printf "CAMLOPTC:=$(CAMLBIN)%s -rectypes\n" best_ocamlopt;
+    printf "CAMLC:=$(CAMLBIN)%s -c -rectypes\n" best_ocamlc;
+    printf "CAMLOPTC:=$(CAMLBIN)%s -c -rectypes\n" best_ocamlopt;
     printf "CAMLLINK:=$(CAMLBIN)%s -rectypes\n" best_ocamlc;
     printf "CAMLOPTLINK:=$(CAMLBIN)%s -rectypes\n" best_ocamlopt;
     print "GRAMMARS:=grammar.cma\n";
