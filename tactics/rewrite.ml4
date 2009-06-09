@@ -162,9 +162,17 @@ let split_head = function
     hd :: tl -> hd, tl
   | [] -> assert(false)
 
+let new_goal_evar (goal,cstr) env t = 
+  let goal', t = Evarutil.new_evar goal env t in
+    (goal', cstr), t
+
+let new_cstr_evar (goal,cstr) env t = 
+  let cstr', t = Evarutil.new_evar cstr env t in
+    (goal, cstr'), t
+
 let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t option) (f : 'a -> constr) =
   let new_evar evars env t =
-    Evarutil.new_evar evars env
+    new_cstr_evar evars env
       (* ~src:(dummy_loc, ImplicitArg (ConstRef (Lazy.force respectful), (n, Some na))) *) t
   in
   let mk_relty evars ty obj =
@@ -175,19 +183,19 @@ let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t 
       | Some x -> evars, f x
   in
   let rec aux env evars ty l =
-    let t = Reductionops.whd_betadeltaiota env evars ty in
+    let t = Reductionops.whd_betadeltaiota env (fst evars) ty in
       match kind_of_term t, l with
       | Prod (na, ty, b), obj :: cstrs -> 
 	  if dependent (mkRel 1) b then
 	    let (evars, b, arg, cstrs) = aux (Environ.push_rel (na, None, ty) env) evars b cstrs in
-	    let ty = Reductionops.nf_betaiota evars ty in
+	    let ty = Reductionops.nf_betaiota (fst evars) ty in
 	    let pred = mkLambda (na, ty, b) in
 	    let liftarg = mkLambda (na, ty, arg) in
 	    let arg' = mkApp (Lazy.force forall_relation, [| ty ; pred ; liftarg |]) in
 	      evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
 	  else
 	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
-	    let ty = Reductionops.nf_betaiota evars ty in
+	    let ty = Reductionops.nf_betaiota (fst evars) ty in
 	    let evars, relty = mk_relty evars ty obj in
 	    let newarg = mkApp (Lazy.force respectful, [| ty ; b' ; relty ; arg |]) in
 	      evars, mkProd(na, ty, b), newarg, (ty, Some relty) :: cstrs
@@ -195,7 +203,7 @@ let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t 
       | _, [] -> 
 	  (match finalcstr with
 	      None -> 
-		let t = Reductionops.nf_betaiota evars ty in
+		let t = Reductionops.nf_betaiota (fst evars) ty in
 		let evars, rel = mk_relty evars t None in 
 		  evars, t, rel, [t, Some rel]
 	    | Some codom -> let (t, rel) = Lazy.force codom in
@@ -204,7 +212,7 @@ let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t 
     
 let proper_proof env evars carrier relation x =
   let goal = mkApp (Lazy.force proper_proxy_type, [| carrier ; relation; x |])
-  in Evarutil.new_evar evars env goal
+  in new_cstr_evar evars env goal
 
 let find_class_proof proof_type proof_method env evars carrier relation =
   try 
@@ -284,8 +292,15 @@ let rewrite2_unif_flags = {
   Unification.resolve_evars = true;
 }
 
+let setoid_rewrite_unif_flags = {
+  Unification.modulo_conv_on_closed_terms = Some conv_transparent_state;
+  Unification.use_metas_eagerly = true;
+  Unification.modulo_delta = conv_transparent_state;
+  Unification.resolve_evars = true;
+}
+
 let convertible env evd x y =
-  Reductionops.is_conv env ( evd) x y
+  Reductionops.is_conv env evd x y
   
 let allowK = true
 
@@ -303,43 +318,44 @@ let unify_eqn env sigma hypinfo t =
   if isEvar t then None
   else try 
     let {cl=cl; prf=prf; car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = !hypinfo in
+    let left = if l2r then c1 else c2 in
     let env', prf, c1, c2, car, rel =
-      let left = if l2r then c1 else c2 in
-	match abs with
-	    Some (absprf, absprfty) -> 
-	      let env' = clenv_unify allowK ~flags:rewrite2_unif_flags CONV left t cl in
-		env', prf, c1, c2, car, rel
-	  | None ->
-	      let env' =
-		try clenv_unify allowK ~flags:rewrite_unif_flags
-		  CONV left t cl
-		with Pretype_errors.PretypeError _ ->
-		  (* For Ring essentially, only when doing setoid_rewrite *)
-		  clenv_unify allowK ~flags:rewrite2_unif_flags
-		    CONV left t cl
-	      in
-	      let env' = 
-		let mvs = clenv_dependent false env' in
-		  clenv_pose_metas_as_evars env' mvs
-	      in
-	      let evd' = Typeclasses.resolve_typeclasses ~fail:true env'.env env'.evd in
-	      let env' = { env' with evd = evd' } in
-	      let nf c = Evarutil.nf_evar ( evd') (Clenv.clenv_nf_meta env' c) in
-	      let c1 = nf c1 and c2 = nf c2
-	      and car = nf car and rel = nf rel 
-	      and prf = nf (Clenv.clenv_value env') in
-	      let ty1 = Typing.mtype_of env'.env env'.evd c1 
-	      and ty2 = Typing.mtype_of env'.env env'.evd c2
-	      in
-		if convertible env env'.evd ty1 ty2 then (
-		  if occur_meta prf then hypinfo := refresh_hypinfo env sigma !hypinfo;
-		  env', prf, c1, c2, car, rel)
-		else raise Reduction.NotConvertible
+      match abs with
+      | Some (absprf, absprfty) -> 
+	  let env' = clenv_unify allowK ~flags:rewrite2_unif_flags CONV left t cl in
+	    env', prf, c1, c2, car, rel
+      | None ->
+	  let env' =
+	    try clenv_unify allowK ~flags:rewrite_unif_flags CONV left t cl
+	    with Pretype_errors.PretypeError _ ->
+	      (* For Ring essentially, only when doing setoid_rewrite *)
+	      clenv_unify allowK ~flags:rewrite2_unif_flags CONV left t cl
+	  in
+	  let env' = 
+	    let mvs = clenv_dependent false env' in
+	      clenv_pose_metas_as_evars env' mvs
+	  in
+	  let evd' = Typeclasses.resolve_typeclasses ~fail:true env'.env env'.evd in
+	  let env' = { env' with evd = evd' } in
+	  let nf c = Evarutil.nf_evar ( evd') (Clenv.clenv_nf_meta env' c) in
+	  let c1 = nf c1 and c2 = nf c2
+	  and car = nf car and rel = nf rel 
+	  and prf = nf (Clenv.clenv_value env') in
+	  let ty1 = Typing.mtype_of env'.env env'.evd c1 
+	  and ty2 = Typing.mtype_of env'.env env'.evd c2
+	  in
+	    if convertible env env'.evd ty1 ty2 then (
+	      if occur_meta prf then 
+		hypinfo := refresh_hypinfo env sigma !hypinfo;
+	      env', prf, c1, c2, car, rel)
+	    else raise Reduction.NotConvertible
     in
     let res =
       if l2r then (prf, (car, rel, c1, c2))
       else
-	try (mkApp (get_symmetric_proof env Evd.empty car rel, [| c1 ; c2 ; prf |]), (car, rel, c2, c1))
+	try (mkApp (get_symmetric_proof env Evd.empty car rel, 
+		   [| c1 ; c2 ; prf |]),
+	    (car, rel, c2, c1))
 	with Not_found ->
 	  (prf, (car, inverse car rel, c2, c1))
     in Some (env', res)
@@ -400,19 +416,21 @@ type rewrite_flags = { under_lambdas : bool; on_morphisms : bool }
 
 let default_flags = { under_lambdas = true; on_morphisms = true; }
 
+type evars = evar_defs * evar_defs (* goal evars, constraint evars *)
+
 type rewrite_result_info = {
   rew_car : constr;
   rew_rel : constr;
   rew_from : constr;
   rew_to : constr;
   rew_prf : constr;
-  rew_evars : evar_defs;
+  rew_evars : evars;
 }
 
 type rewrite_result = rewrite_result_info option
   
 type strategy = Environ.env -> evar_defs -> constr -> types ->
-  constr option -> evar_defs -> rewrite_result option
+  constr option -> evars -> rewrite_result option
   
 let resolve_subrelation env sigma car rel rel' res =
   if eq_constr rel rel' then res
@@ -421,7 +439,7 @@ let resolve_subrelation env sigma car rel rel' res =
 (* 	{ res with rew_evars = evd' } *)
 (*   with NotConvertible -> *)
     let app = mkApp (Lazy.force subrelation, [|car; rel; rel'|]) in
-    let evars, subrel = Evarutil.new_evar res.rew_evars env app in
+    let evars, subrel = new_cstr_evar res.rew_evars env app in
       { res with 
 	rew_prf = mkApp (subrel, [| res.rew_from ; res.rew_to ; res.rew_prf |]);
 	rew_rel = rel';
@@ -445,7 +463,7 @@ let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars 
       (id_of_string "do_subrelation", Some (Lazy.force do_subrelation), Lazy.force apply_subrelation)
       env
     in
-    let evars, morph = Evarutil.new_evar evars env' app in
+    let evars, morph = new_cstr_evar evars env' app in
       evars, morph, morph, sigargs, appm, morphobjs, morphobjs'
   in 
   let projargs, evars, respars, typeargs = 
@@ -490,11 +508,11 @@ let apply_rule hypinfo loccs : strategy =
 	match unif with
 	| Some (env', (prf, (car, rel, c1, c2))) when is_occ !occ -> 
 	    begin
-	      let evars = Evd.evar_merge evars 
+	      let goalevars = Evd.evar_merge (fst evars)
 		(Evd.undefined_evars (Evarutil.nf_evar_defs env'.evd))
 	      in
 	      let res = { rew_car = ty; rew_rel = rel; rew_from = c1; 
-			  rew_to = c2; rew_prf = prf; rew_evars = evars } 
+			  rew_to = c2; rew_prf = prf; rew_evars = goalevars, snd evars } 
 	      in Some (Some (apply_constraint env sigma car rel cstr res))
 	    end
 	| _ -> None
@@ -534,9 +552,11 @@ let subterm all flags (s : strategy) : strategy =
 		    Some (Some res)
 	  in 
 	    if flags.on_morphisms then
-	      let evarsref = ref evars in
+	      let evarsref = ref (snd evars) in
 	      let cstr' = lift_cstr env sigma evarsref args cstr' in
-	      let m' = s env sigma m (Typing.type_of env sigma m) (Option.map (fun c -> snd (Lazy.force c)) cstr') !evarsref in
+	      let m' = s env sigma m (Typing.type_of env sigma m) 
+		(Option.map (fun c -> snd (Lazy.force c)) cstr') (fst evars, !evarsref)
+	      in
 		match m' with
 		| None -> rewrite_args None (* Standard path, try rewrite on arguments *)
 		| Some None -> rewrite_args (Some false)
@@ -545,7 +565,7 @@ let subterm all flags (s : strategy) : strategy =
 		       We just apply it. *)
 		    let nargs = Array.length args in
 		    let res = 
-		      { rew_car = decomp_prod env r.rew_evars nargs r.rew_car;
+		      { rew_car = decomp_prod env (fst r.rew_evars) nargs r.rew_car;
 			rew_rel = decomp_pointwise nargs r.rew_rel; 
 			rew_from = mkApp(r.rew_from, args); rew_to = mkApp(r.rew_to, args);
 			rew_prf = mkApp (r.rew_prf, args); rew_evars = r.rew_evars }
@@ -608,7 +628,7 @@ let transitivity env sigma (res : rewrite_result_info) (next : strategy) : rewri
   | Some None -> Some (Some res)
   | Some (Some res') -> 
       let prfty = mkApp (Lazy.force transitive_type, [| res.rew_car ; res.rew_rel |]) in
-      let evars, prf = Evarutil.new_evar res'.rew_evars env prfty in
+      let evars, prf = new_cstr_evar res'.rew_evars env prfty in
       let prf = mkApp (prf, [|res.rew_from; res'.rew_from; res'.rew_to;
 			      res.rew_prf; res'.rew_prf |])
       in Some (Some { res' with rew_from = res.rew_from; rew_evars = evars; rew_prf = prf })
@@ -625,12 +645,12 @@ module Strategies =
     let refl : strategy =
       fun env sigma t ty cstr evars -> 
 	let evars, rel = match cstr with
-	  | None -> Evarutil.new_evar evars env (mk_relation ty)
+	  | None -> new_cstr_evar evars env (mk_relation ty)
 	  | Some r -> evars, r
 	in
 	let evars, proof =
 	  let mty = mkApp (Lazy.force proper_proxy_type, [| ty ; rel; t |]) in
-	    Evarutil.new_evar evars env mty
+	    new_cstr_evar evars env mty
 	in
 	  Some (Some { rew_car = ty; rew_rel = rel; rew_from = t; rew_to = t; 
 		       rew_prf = proof; rew_evars = evars })
@@ -721,6 +741,38 @@ let apply_strategy (s : strategy) env sigma concl cstr evars =
 	evars := res.rew_evars;
 	Some (Some (res.rew_prf, (res.rew_car, res.rew_rel, res.rew_from, res.rew_to)))
 
+let evars_of_evi evi =
+  Intset.union (Evarutil.evars_of_term evi.evar_concl) 
+    (match evi.evar_body with
+    | Evar_defined b -> Evarutil.evars_of_term b
+    | Evar_empty -> Intset.empty)
+
+let split_evars_once sigma evd = 
+  Evd.fold (fun ev evi deps ->
+    if Intset.mem ev deps then 
+      Intset.union (evars_of_evi evi) deps
+    else deps) evd sigma
+    
+let existentials_of_evd evd =
+  Evd.fold (fun ev evi acc -> Intset.add ev acc) evd Intset.empty 
+
+let evd_of_existentials evd exs =
+  Intset.fold (fun i acc -> 
+    let evi = Evd.find evd i in
+      Evd.add acc i evi) exs Evd.empty
+
+let split_evars sigma evd = 
+  let rec aux deps = 
+    let deps' = split_evars_once deps evd in
+      if Intset.equal deps' deps then
+	evd_of_existentials evd deps
+      else aux deps'
+  in aux (existentials_of_evd sigma)
+
+let merge_evars (goal,cstr) = Evd.merge goal cstr
+let solve_constraints env evars =
+  Typeclasses.resolve_typeclasses env ~split:false ~fail:true (merge_evars evars)
+
 let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
   let concl, is_hyp = 
     match clause with
@@ -735,18 +787,19 @@ let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
       | Some _ -> (sort, impl)
   in
   let sigma = project gl in
-  let evars = ref (Evd.create_evar_defs sigma) in
+  let evars = ref (Evd.create_evar_defs sigma, Evd.empty) in
   let env = pf_env gl in
   let eq = apply_strategy strat env sigma concl (Some (Lazy.lazy_from_val cstr)) evars in
     match eq with
     | Some (Some (p, (_, _, oldt, newt))) -> 
 	(try
-	    evars := Typeclasses.resolve_typeclasses env ~split:false ~fail:true !evars;
-	    let p = Evarutil.nf_isevar !evars p in
-	    let newt = Evarutil.nf_isevar !evars newt in
-	    let undef = Evd.undefined_evars !evars in
-	    let abs = Option.map (fun (x, y) -> Evarutil.nf_isevar !evars x,
-	      Evarutil.nf_isevar !evars y) abs in
+	    let cstrevars = !evars in
+	    let evars = solve_constraints env cstrevars in
+	    let p = Evarutil.nf_isevar evars p in
+	    let newt = Evarutil.nf_isevar evars newt in
+	    let abs = Option.map (fun (x, y) -> 
+	      Evarutil.nf_isevar evars x, Evarutil.nf_isevar evars y) abs in
+	    let undef = split_evars (fst cstrevars) evars in
 	    let rewtac = 
 	      match is_hyp with
 	      | Some id -> 
@@ -773,13 +826,14 @@ let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
 			       [| mkMeta goal_meta; t |])))
 	    in
 	    let evartac =
-	      if not (undef = Evd.empty) then Refiner.tclEVARS (Evd.merge sigma undef)
+	      if not (undef = Evd.empty) then 
+		Refiner.tclEVARS undef
 	      else tclIDTAC
 	    in tclTHENLIST [evartac; rewtac] gl
 	  with 
 	  | Stdpp.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
 	  | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
-	      tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints." 
+	      tclFAIL 0 (str"setoid rewrite failed: unable to satisfy the rewriting constraints." 
 			  ++ fnl () ++ Himsg.explain_typeclass_error env e) gl)
     | Some None -> 
 	tclFAIL 0 (str"setoid rewrite failed: no progress made") gl
@@ -1116,7 +1170,7 @@ let build_morphism_signature m =
   let env = Global.env () in
   let m = Constrintern.interp_constr Evd.empty env m in
   let t = Typing.type_of env Evd.empty m in
-  let isevars = ref Evd.empty in
+  let isevars = ref (Evd.empty, Evd.empty) in
   let cstrs = 
     let rec aux t = 
       match kind_of_term t with
@@ -1131,15 +1185,15 @@ let build_morphism_signature m =
     (fun (ty, rel) -> 
       Option.iter (fun rel ->
 	let default = mkApp (Lazy.force default_relation, [| ty; rel |]) in
-	  ignore (Evarutil.e_new_evar isevars env default)) 
+	let evars,c = new_cstr_evar !isevars env default in
+	  isevars := evars)
 	rel)
     cstrs
   in
   let morph = 
     mkApp (Lazy.force proper_type, [| t; sig_; m |])
   in
-  let evd = 
-    Typeclasses.resolve_typeclasses ~fail:true ~onlyargs:false env !isevars in
+  let evd = solve_constraints env !isevars in
   let m = Evarutil.nf_isevar evd morph in
     Evarutil.check_evars env Evd.empty evd m; m
 	
@@ -1147,12 +1201,12 @@ let default_morphism sign m =
   let env = Global.env () in
   let t = Typing.type_of env Evd.empty m in
   let evars, _, sign, cstrs =
-    build_signature Evd.empty env t (fst sign) (snd sign) (fun (ty, rel) -> rel)
+    build_signature (Evd.empty,Evd.empty) env t (fst sign) (snd sign) (fun (ty, rel) -> rel)
   in
   let morph =
     mkApp (Lazy.force proper_type, [| t; sign; m |])
   in
-  let mor = resolve_one_typeclass env evars morph in
+  let mor = resolve_one_typeclass env (merge_evars evars) morph in
     mor, proper_projection mor morph
     	  
 let add_setoid binders a aeq t n =
