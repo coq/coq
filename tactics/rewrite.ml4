@@ -217,7 +217,8 @@ let proper_proof env evars carrier relation x =
 let find_class_proof proof_type proof_method env evars carrier relation =
   try 
     let goal = mkApp (Lazy.force proof_type, [| carrier ; relation |]) in
-      Typeclasses.resolve_one_typeclass env evars goal
+    let c = Typeclasses.resolve_one_typeclass env evars goal in
+      mkApp (Lazy.force proof_method, [| carrier; relation; c |])
   with e when Logic.catchable_exception e -> raise Not_found
 
 let get_reflexive_proof env = find_class_proof reflexive_type reflexive_proof env
