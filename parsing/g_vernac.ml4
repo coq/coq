@@ -447,10 +447,13 @@ GEXTEND Gram
 	  CWith_Module (fqid,qid)
       ] ]
   ;
-  module_type:
+  module_type_atom:
     [ [ qid = qualid -> CMTEident qid
-(* ... *)
-      | mty = module_type; me = module_expr_atom -> CMTEapply (mty,me) 
+      | mty = module_type_atom; me = module_expr_atom -> CMTEapply (mty,me) 
+      ] ]
+  ;
+  module_type:
+    [ [ mty = module_type_atom -> mty
       | mty = module_type; "with"; decl = with_declaration -> CMTEwith (mty,decl)
       ] ]
   ;
