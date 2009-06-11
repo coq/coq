@@ -335,6 +335,7 @@ let is_transparent_gr (ids, csts) = function
   | IndRef _ | ConstructRef _ -> false
 
 let make_resolve_hyp env sigma st flags pri (id, _, cty) =
+  let cty = Evarutil.nf_evar sigma cty in
   let ctx, ar = decompose_prod cty in
   let keep = 
     match kind_of_term (fst (decompose_app ar)) with
@@ -379,7 +380,7 @@ let eauto hints g =
 	{it = List.map fst goals; sigma = s}, valid s
 
 let real_eauto st hints p evd =
-  let tac = fix (hints_tac hints) in
+  let tac = fix (or_tac intro_tac (hints_tac hints)) in
   let rec aux evd =
     match run_on_evars ~st p evd tac with
     | None -> evd

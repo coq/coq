@@ -434,9 +434,15 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 
     | RProd(loc,name,bk,c1,c2)        ->
 	let j = pretype_type empty_valcon env evdref lvar c1 in
-	let var = (name,j.utj_val) in
-	let env' = push_rel_assum var env in
-	let j' = pretype_type empty_valcon env' evdref lvar c2 in
+	let j' =
+	  if name = Anonymous then
+	    let j = pretype_type empty_valcon env evdref lvar c2 in
+	      { j with utj_val = lift 1 j.utj_val }
+	  else
+	    let var = (name,j.utj_val) in
+	    let env' = push_rel_assum var env in
+	      pretype_type empty_valcon env' evdref lvar c2
+	in
 	let resj =
 	  try judge_of_product env name j j'
 	  with TypeError _ as e -> Stdpp.raise_with_loc loc e in
