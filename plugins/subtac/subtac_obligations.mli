@@ -34,6 +34,7 @@ val add_mutual_definitions :
       (Topconstr.explicitation * (bool * bool * bool)) list * obligation_info) list -> 
   ?tactic:Proof_type.tactic ->
   ?kind:Decl_kinds.definition_kind ->
+  ?hook:Tacexpr.declaration_hook ->
   notations ->
   Command.fixpoint_kind -> unit
 

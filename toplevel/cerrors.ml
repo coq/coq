@@ -85,7 +85,7 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_inductive_error e)
   | RecursionSchemeError e -> 
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_recursion_scheme_error e)
-  | Proof_type.LtacLocated (_,(Refiner.FailError (i,s) as exc)) when s <> mt () ->
+  | Proof_type.LtacLocated (_,(Refiner.FailError (i,s) as exc)) when Lazy.force s <> mt () ->
       explain_exn_default_aux anomaly_string report_fn exc
   | Proof_type.LtacLocated (s,exc) ->
       hov 0 (Himsg.explain_ltac_call_trace s ++ fnl ()
@@ -108,7 +108,7 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
                Libnames.pr_qualid q ++ str ".")
   | Refiner.FailError (i,s) ->
       hov 0 (str "Error: Tactic failure" ++ 
-                (if s <> mt() then str ":" ++ s else mt ()) ++
+                (if Lazy.force s <> mt() then str ":" ++ Lazy.force s else mt ()) ++
                 if i=0 then str "." else str " (level " ++ int i ++ str").")
   | Stdpp.Exc_located (loc,exc) ->
       hov 0 ((if loc = dummy_loc then (mt ())

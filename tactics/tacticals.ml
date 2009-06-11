@@ -59,6 +59,7 @@ let tclINFO          = Refiner.tclINFO
 let tclCOMPLETE      = Refiner.tclCOMPLETE
 let tclAT_LEAST_ONCE = Refiner.tclAT_LEAST_ONCE
 let tclFAIL          = Refiner.tclFAIL
+let tclFAIL_lazy     = Refiner.tclFAIL_lazy
 let tclDO            = Refiner.tclDO
 let tclPROGRESS      = Refiner.tclPROGRESS
 let tclWEAK_PROGRESS = Refiner.tclWEAK_PROGRESS

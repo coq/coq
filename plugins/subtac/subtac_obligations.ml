@@ -238,6 +238,7 @@ let reduce_fix =
 
 let declare_mutual_definition l =
   let len = List.length l in
+  let first = List.hd l in
   let fixdefs, fixtypes, fiximps = 
     list_split3
       (List.map (fun x -> 
@@ -245,11 +246,11 @@ let declare_mutual_definition l =
 	  (strip_lam_n len subs), snd (decompose_prod_n len typ), x.prg_implicits) l)
   in
 (*   let fixdefs = List.map reduce_fix fixdefs in *)
-  let fixkind = Option.get (List.hd l).prg_fixkind in
+  let fixkind = Option.get first.prg_fixkind in
   let arrrec, recvec = Array.of_list fixtypes, Array.of_list fixdefs in
   let fixdecls = (Array.of_list (List.map (fun x -> Name x.prg_name) l), arrrec, recvec) in
-  let boxed = true (* TODO *) in
-  let fixnames = (List.hd l).prg_deps in
+  let (local,boxed,kind) = first.prg_kind in
+  let fixnames = first.prg_deps in
   let kind = if fixkind <> IsCoFixpoint then Fixpoint else CoFixpoint in
   let indexes, fixdecls =
     match fixkind with
@@ -264,9 +265,11 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let kns = list_map4 (declare_fix boxed kind) fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
-    List.iter (Command.declare_interning_data ([],[])) (List.hd l).prg_notations;
+    List.iter (Command.declare_interning_data ([],[])) first.prg_notations;
     Flags.if_verbose ppnl (Command.recursive_message kind indexes fixnames);
-    (match List.hd kns with ConstRef kn -> kn | _ -> assert false)
+    let gr = List.hd kns in
+    let kn = match gr with ConstRef kn -> kn | _ -> assert false in
+      first.prg_hook local gr; kn
       
 let declare_obligation obl body =
   match obl.obl_status with
@@ -468,7 +471,7 @@ and solve_obligation_by_tac prg obls i tac =
 	    | Stdpp.Exc_located(_, Proof_type.LtacLocated (_, Refiner.FailError (_, s)))
 	    | Stdpp.Exc_located(_, Refiner.FailError (_, s))
 	    | Refiner.FailError (_, s) ->
-		user_err_loc (obl.obl_location, "solve_obligation", s)
+		user_err_loc (obl.obl_location, "solve_obligation", Lazy.force s)
 	    | e -> false)
 
 and solve_prg_obligations prg tac = 
@@ -547,11 +550,11 @@ let add_definition n b t ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
 	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
 	| _ -> res)
 	
-let add_mutual_definitions l ?tactic ?(kind=Global,false,Definition) notations fixkind =
+let add_mutual_definitions l ?tactic ?(kind=Global,false,Definition) ?(hook=fun _ _ -> ()) notations fixkind =
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
   let upd = List.fold_left
       (fun acc (n, b, t, imps, obls) ->
-	let prg = init_prog_info n b t deps (Some fixkind) notations obls imps kind (fun _ _ -> ()) in
+	let prg = init_prog_info n b t deps (Some fixkind) notations obls imps kind hook in
 	  ProgMap.add n prg acc)
       !from_prg l
   in

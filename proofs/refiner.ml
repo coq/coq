@@ -335,10 +335,12 @@ let tclIDTAC_MESSAGE s gls =
 let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" (str s)
 
 (* A special exception for levels for the Fail tactic *)
-exception FailError of int * std_ppcmds
+exception FailError of int * std_ppcmds Lazy.t
 
 (* The Fail tactic *)
-let tclFAIL lvl s g = raise (FailError (lvl,s))
+let tclFAIL lvl s g = raise (FailError (lvl,lazy s))
+
+let tclFAIL_lazy lvl s g = raise (FailError (lvl,s))
 
 let start_tac gls =
   let (sigr,g) = unpackage gls in

@@ -525,7 +525,7 @@ let pr_constraints printenv env evm =
       pr_evar_defs evm
       
 let explain_unsatisfiable_constraints env evd constr =
-  let evm =  evd in
+  let evm = Evarutil.nf_evars evd in
   match constr with
   | None ->
       str"Unable to satisfy the following constraints:" ++ fnl() ++

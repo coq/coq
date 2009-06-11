@@ -834,8 +834,9 @@ let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
 	  with 
 	  | Stdpp.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
 	  | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
-	      tclFAIL 0 (str"setoid rewrite failed: unable to satisfy the rewriting constraints." 
-			  ++ fnl () ++ Himsg.explain_typeclass_error env e) gl)
+	      Refiner.tclFAIL_lazy 0 
+		(lazy (str"setoid rewrite failed: unable to satisfy the rewriting constraints." 
+			++ fnl () ++ Himsg.explain_typeclass_error env e)) gl)
     | Some None -> 
 	tclFAIL 0 (str"setoid rewrite failed: no progress made") gl
     | None -> raise Not_found

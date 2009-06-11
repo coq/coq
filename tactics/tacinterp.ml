@@ -1918,7 +1918,7 @@ and eval_with_fail ist is_lazy goal tac =
   with
     | FailError (0,s) | Stdpp.Exc_located(_, FailError (0,s)) 
     | Stdpp.Exc_located(_,LtacLocated (_,FailError (0,s))) ->
-	raise (Eval_fail s)
+	raise (Eval_fail (Lazy.force s))
     | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
     | Stdpp.Exc_located(s,FailError (lvl,s')) ->
 	raise (Stdpp.Exc_located(s,FailError (lvl - 1, s')))
