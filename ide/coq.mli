@@ -65,8 +65,6 @@ val get_current_goals : unit -> goal list
 
 val get_current_pm_goal : unit -> goal
 
-val get_current_goals_nb : unit -> int
-
 val print_no_goal : unit -> string
 
 val process_exn : exn -> string*(Util.loc option)

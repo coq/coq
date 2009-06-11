@@ -514,23 +514,15 @@ let get_current_pm_goal () =
   let gl = sig_it gls in
     prepare_goal sigma gl
 
-
 let get_current_goals () = 
     let pfts = get_pftreestate () in
     let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in 
     let sigma = Tacmach.evc_of_pftreestate pfts in
     List.map (prepare_goal sigma) gls
 
-let get_current_goals_nb () = 
-  try List.length (get_current_goals ()) with _ -> 0
-  
 let print_no_goal () =
-    let pfts = get_pftreestate () in
-    let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in 
-    assert (gls = []);
-    let sigma = Tacmach.project (Tacmach.top_goal_of_pftreestate pfts) in
-    msg (Printer.pr_subgoals (Decl_mode.get_end_command pfts) sigma gls)
-
+  (* Fall back on standard coq goal printer for completed goal printing *)
+  msg (pr_open_subgoals ())
 
 let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =
   [("clear "^ident),("clear "^ident^".");

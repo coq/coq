@@ -769,7 +769,7 @@ object(self)
     try
       proof_buffer#set_text "";
       match Decl_mode.get_current_mode () with
-          Decl_mode.Mode_none ->  proof_buffer#insert (Coq.print_no_goal ())
+          Decl_mode.Mode_none -> ()
         | Decl_mode.Mode_tactic ->   
             begin
               let s = Coq.get_current_goals () in
@@ -827,8 +827,7 @@ object(self)
         try
           proof_buffer#set_text "";
           match Decl_mode.get_current_mode () with
-              Decl_mode.Mode_none ->  
-                proof_buffer#insert (Coq.print_no_goal ())
+              Decl_mode.Mode_none -> ()
             | Decl_mode.Mode_tactic ->   
                 begin
                   match Coq.get_current_goals () with 

@@ -274,7 +274,7 @@ let default_pr_goal g =
 	  pr_ltype_env_at_top env g.evar_concl
     else 
       (str "     *** Declarative Mode ***" ++ fnl ()++fnl ()),
-      (str"thesis := "  ++ fnl ()),
+      (str "thesis := "  ++ fnl ()),
        pr_context_of env,
        pr_ltype_env_at_top env g.evar_concl
   in
@@ -336,11 +336,11 @@ let default_pr_subgoals close_cmd sigma = function
 	| None ->
 	    let exl = Evarutil.non_instantiated sigma in 
 	      if exl = [] then 
-		(str"Proof completed."  ++ fnl ())
+		(str"Proof completed." ++ fnl ())
 	      else
 		let pei = pr_evars_int 1 exl in
 		  (str "No more subgoals but non-instantiated existential " ++
-		     str "variables :"  ++fnl () ++ (hov 0 pei))
+		     str "variables:" ++ fnl () ++ (hov 0 pei))
       end
   | [g] ->
       let pg = default_pr_goal g in
@@ -386,20 +386,15 @@ let pr_goal     x = !printer_pr.pr_goal     x
 (* End abstraction layer                                              *)
 (**********************************************************************)
 
-let pr_subgoals_of_pfts pfts =
-  let close_cmd = Decl_mode.get_end_command pfts in
-  let gls = fst (Refiner.frontier (proof_of_pftreestate pfts)) in 
-  let sigma = (top_goal_of_pftreestate pfts).sigma in
-    pr_subgoals close_cmd sigma gls
-      
 let pr_open_subgoals () =
   let pfts = get_pftreestate () in
+  let gls = fst (frontier (proof_of_pftreestate pfts)) in 
   match focus() with
     | 0 -> 
-	pr_subgoals_of_pfts pfts
+        let sigma = (top_goal_of_pftreestate pfts).sigma in
+        let close_cmd = Decl_mode.get_end_command pfts in
+        pr_subgoals close_cmd sigma gls
     | n -> 
-	let pf = proof_of_pftreestate pfts in
-	let gls = fst (frontier pf) in 
 	assert (n > List.length gls);
 	if List.length gls < 2 then 
 	  pr_subgoal n gls
