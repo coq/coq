@@ -12,6 +12,7 @@
    Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
    91405 Orsay, France *)
 
+Require Import Relation_Definitions.
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.Program.Program.
 

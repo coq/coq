@@ -10,6 +10,8 @@
 
 Require Export Coq.Classes.SetoidTactics.
 
+Export Morphisms.MorphismNotations.
+
 (** For backward compatibility *)
 
 Definition Setoid_Theory := @Equivalence.

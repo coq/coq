@@ -182,7 +182,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
   in
     isevars := undefined_evars !isevars;
     Evarutil.check_evars env Evd.empty !isevars termtype;
-    let hook gr = 
+    let hook vis gr = 
       let cst = match gr with ConstRef kn -> kn | _ -> assert false in
       let inst = Typeclasses.new_instance k pri global cst in
 	Impargs.declare_manual_implicits false gr ~enriching:false imps;

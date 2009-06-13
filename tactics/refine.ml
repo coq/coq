@@ -368,10 +368,15 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 
 (* Et finalement la tactique refine elle-même : *)
 
-let refine oc gl =
+let refine (evd,c) gl =
   let sigma = project gl in
-  let (sigma,c) = Evarutil.evars_to_metas sigma oc in
+  let evd = Evd.evars_of (Typeclasses.resolve_typeclasses
+			     ~onlyargs:true ~fail:false (pf_env gl) 
+			     (Evd.create_evar_defs evd)) 
+  in
+  let c = Evarutil.nf_evar evd c in
+  let (evd,c) = Evarutil.evars_to_metas sigma (evd,c) in
   (* Relies on Cast's put on Meta's by evars_to_metas, because it is otherwise 
      complicated to update meta types when passing through a binder *)
-  let th = compute_metamap (pf_env gl) sigma c in
-  tclTHEN (Refiner.tclEVARS sigma) (tcc_aux [] th) gl
+  let th = compute_metamap (pf_env gl) evd c in
+  tclTHEN (Refiner.tclEVARS evd) (tcc_aux [] th) gl

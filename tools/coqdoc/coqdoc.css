@@ -57,6 +57,11 @@ body { padding: 0px 0px;
     display: inline;
     font-family: monospace } 
 
+.comment { 
+    display: inline;
+    font-family: monospace;
+    color: red; } 
+
 .code { 
     display: block;
     font-family: monospace } 
@@ -80,7 +85,15 @@ body { padding: 0px 0px;
     color: rgb(40%,0%,40%);
 }
 
+.id[type="variable"] { 
+    color: rgb(40%,0%,40%);
+}
+
 .id[type="definition"] { 
+    color: rgb(0%,40%,0%);
+}
+
+.id[type="abbreviation"] { 
     color: rgb(0%,40%,0%);
 }
 
@@ -88,7 +101,27 @@ body { padding: 0px 0px;
     color: rgb(0%,40%,0%);
 }
 
+.id[type="instance"] { 
+    color: rgb(0%,40%,0%);
+}
+
+.id[type="projection"] { 
+    color: rgb(0%,40%,0%);
+}
+
+.id[type="method"] { 
+    color: rgb(0%,40%,0%);
+}
+
 .id[type="inductive"] { 
+    color: rgb(0%,0%,80%);
+}
+
+.id[type="record"] { 
+    color: rgb(0%,0%,80%);
+}
+
+.id[type="class"] { 
     color: rgb(0%,0%,80%);
 }
 

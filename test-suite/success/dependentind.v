@@ -1,5 +1,4 @@
 Require Import Coq.Program.Program.
-Set Manual Implicit Arguments.
 
 
 Variable A : Set.
@@ -105,7 +104,7 @@ Save.
 
 (** Example by Andrew Kenedy, uses simplification of the first component of dependent pairs. *)
 
-Unset Manual Implicit Arguments.
+Set Implicit Arguments.
 
 Inductive Ty :=
  | Nat : Ty

@@ -99,7 +99,7 @@ let declare_assumption env isevars idl is_coe k bl c nl =
       Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr c bl) None 
     in
     let c = solve_tccs_in_type env id isevars evm c typ in
-      List.iter (Command.declare_one_assumption is_coe k c imps false false nl) idl
+      List.iter (Command.declare_one_assumption is_coe k c imps false [] nl) idl
   else
     errorlabstrm "Command.Assumption"
 	(str "Cannot declare an assumption while in proof editing mode.")
@@ -127,7 +127,6 @@ let check_fresh (loc,id) =
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
-  check_required_library ["Coq";"Program";"Tactics"];
   let env = Global.env () in
   let isevars = ref (create_evar_defs Evd.empty) in
   try
@@ -143,7 +142,7 @@ let subtac (loc, command) =
 	  start_proof_and_print env isevars (Some lid) (Global, DefinitionBody Definition) (bl,t) 
 	    (fun _ _ -> ())
       | DefineBody (bl, _, c, tycon) -> 
-	  ignore(Subtac_pretyping.subtac_proof defkind env isevars id bl c tycon))
+	  ignore(Subtac_pretyping.subtac_proof defkind hook env isevars id bl c tycon))
   | VernacFixpoint (l, b) -> 
       List.iter (fun ((lid, _, _, _, _), _) -> 
 	check_fresh lid;

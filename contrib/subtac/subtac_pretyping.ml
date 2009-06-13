@@ -84,13 +84,6 @@ let find_with_index x l =
     | [] -> raise Not_found
   in aux 0 l
 
-let list_split_at index l = 
-  let rec aux i acc = function
-      hd :: tl when i = index -> (List.rev acc), tl
-    | hd :: tl -> aux (succ i) (hd :: acc) tl
-    | [] -> failwith "list_split_at: Invalid argument"
-  in aux 0 [] l
-
 open Vernacexpr
 
 let coqintern_constr evd env : Topconstr.constr_expr -> Rawterm.rawconstr = Constrintern.intern_constr (evars_of evd) env
@@ -136,9 +129,9 @@ let subtac_process env isevars id bl c tycon =
 
 open Subtac_obligations
 
-let subtac_proof kind env isevars id bl c tycon =
+let subtac_proof kind hook env isevars id bl c tycon =
   let evm, coqc, coqt, imps = subtac_process env isevars id bl c tycon in
   let evm' = Subtac_utils.evars_of_term evm Evd.empty coqc in
   let evm' = Subtac_utils.evars_of_term evm evm' coqt in
   let evars, def, ty = Eterm.eterm_obligations env id !isevars evm' 0 coqc coqt in
-    add_definition id def ty ~implicits:imps ~kind:kind evars
+    add_definition id def ty ~implicits:imps ~kind ~hook evars

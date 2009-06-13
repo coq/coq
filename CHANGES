@@ -8,6 +8,20 @@ Language and commands
 - Fixing name aliases bug #2085 with modules.
 - Fixing checker bug #2065 with -impredicative-set option.
 - Complying with 8.1 heuristic when unification returns several solutions.
+- Add [Print Opaque Dependencies] command to print the assumptions and 
+  the opaque constants a definition uses.
+- Fixing performance issue in Program's type inference when there are
+  many existentials.
+- Fixing bug #2093, using Program does not require to import Program.Tactics
+  anymore, it will use [idtac] as the default obligation tactic.
+- Fix imports when requiring Setoid, to avoid cluttering the context with
+  internal names.
+- Fixing bug #2089, Combined Scheme was not treating parameters correctly.
+- Fixing Program to use hooks correctly, when called through [Program Coercion]
+  for example.
+- Fixing manual implicit arguments to always work and remove 
+  [Set Manual Implicit Arguments] option.
+- Fixing refine to work with typeclasses.
 
 Tactics
 
@@ -17,6 +31,7 @@ Tactics
 - Fixing unbalanced parenthesis in Ltac debug trace printer.
 - Fixing missing sort unification check in lemma application (bug #2084).
 - Fixing "as" clause of "apply in" that was not working in the general case.
+- Fixing eauto not using external hints with no pattern.
 
 Tools and development
 
@@ -24,6 +39,8 @@ Tools and development
 - Temporary hack for coqide.byte "double free or corruption" problem.
 - Added support for code development under Bazaar.
 - Added support for compilation under Solaris (thanks to Eric Le Lay, #2078).
+- Parsing fixes and support for parsing regular comments inline in coqdoc,
+  using option -parse-comments (suggestions by B. Pierce).
 
 Changes from V8.1 to V8.2
 =========================

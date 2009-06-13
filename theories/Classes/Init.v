@@ -15,11 +15,6 @@
 
 (* $Id$ *)
 
-(* Ltac typeclass_instantiation := typeclasses eauto || eauto. *)
-
-Tactic Notation "clapply" ident(c) :=
-  eapply @c ; typeclasses eauto.
-
 (** Hints for the proof search: these combinators should be considered rigid. *)
 
 Require Import Coq.Program.Basics.
@@ -29,12 +24,12 @@ Typeclasses Opaque id const flip compose arrow impl iff.
 (** The unconvertible typeclass, to test that two objects of the same type are 
    actually different. *)
 
-Class Unconvertible (A : Type) (a b : A).
+Class Unconvertible (A : Type) (a b : A) := unconvertible : unit.
 
 Ltac unconvertible :=
   match goal with
     | |- @Unconvertible _ ?x ?y => unify x y with typeclass_instances ; fail 1 "Convertible"
-    | |- _ => eapply Build_Unconvertible 
+    | |- _ => exact tt
   end.
 
 Hint Extern 0 (@Unconvertible _ _ _) => unconvertible : typeclass_instances.

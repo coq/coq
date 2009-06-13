@@ -264,6 +264,14 @@ let named_of_rel_context l =
       l ([], [])
   in ctx
 
+let push_named_context = List.fold_right push_named
+
+let rec list_filter_map f = function
+  | [] -> []
+  | hd :: tl -> match f hd with
+    | None -> list_filter_map f tl
+    | Some x -> x :: list_filter_map f tl
+
 let context ?(hook=fun _ -> ()) l =
   let env = Global.env() in
   let evars = ref (Evd.create_evar_defs Evd.empty) in
@@ -273,6 +281,14 @@ let context ?(hook=fun _ -> ()) l =
   List.iter (fun (n, b, t) -> Option.iter ce b; ce t) fullctx;
   let ctx = try named_of_rel_context fullctx with _ -> 
     error "Anonymous variables not allowed in contexts."
+  in
+  let env = push_named_context ctx env in
+  let keeps = 
+    List.fold_left (fun acc (id,_,t) ->
+      match class_of_constr t with
+      | None -> acc
+      | Some _ -> List.map pi1 (keep_hyps env (Idset.singleton id)) :: acc)
+      [] ctx
   in
     List.iter (function (id,_,t) -> 
       if Lib.is_modtype () then 
@@ -285,10 +301,14 @@ let context ?(hook=fun _ -> ()) l =
 		hook (ConstRef cst)
 	    | None -> ()
       else (
-	let impl = List.exists (fun (x,_) -> match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
+	let impl = List.exists (fun (x,_) -> 
+	  match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls 
+	and keep = 
+	  let l = list_filter_map (fun ids -> if List.mem id ids then Some ids else None) keeps in
+	    List.concat l
 	in
 	  Command.declare_one_assumption false (Local (* global *), Definitional) t
-	    [] impl (* implicit *) true (* always kept *) false (* inline *) (dummy_loc, id);
+	    [] impl (* implicit *) keep (* always kept *) false (* inline *) (dummy_loc, id);
 	  match class_of_constr t with
 	  | None -> ()
 	  | Some tc -> hook (VarRef id)))

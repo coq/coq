@@ -34,7 +34,7 @@ open Nametab
 
 type section_variable_entry =
   | SectionLocalDef of constr * types option * bool (* opacity *)
-  | SectionLocalAssum of types * bool * bool (* Implicit status, Keep *)
+  | SectionLocalAssum of types * bool * identifier list (* Implicit status, Keep list *)
 
 type variable_declaration = dir_path * section_variable_entry * logical_kind
 

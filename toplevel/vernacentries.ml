@@ -373,7 +373,7 @@ let vernac_assumption kind l nl=
 	List.iter (fun lid -> 
 	  if global then Dumpglob.dump_definition lid false "ax" 
 	  else Dumpglob.dump_definition lid true "var") idl;
-      declare_assumption idl is_coe kind [] c false false nl) l
+      declare_assumption idl is_coe kind [] c false [] nl) l
 
 let vernac_record k finite struc binders sort nameopt cfs =
   let const = match nameopt with 
@@ -810,14 +810,6 @@ let _ =
 let _ =
   declare_bool_option 
     { optsync  = true;
-      optname  = "manual implicit arguments";
-      optkey   = (TertiaryTable ("Manual","Implicit","Arguments"));
-      optread  = Impargs.is_manual_implicit_args;
-      optwrite = Impargs.make_manual_implicit_args }
-
-let _ =
-  declare_bool_option 
-    { optsync  = true;
       optname  = "strict implicit arguments";
       optkey   = (SecondaryTable ("Strict","Implicit"));
       optread  = Impargs.is_strict_implicit_args;
@@ -1110,9 +1102,10 @@ let vernac_print = function
   | PrintAbout qid -> msgnl (print_about qid)
   | PrintImplicit qid -> msg (print_impargs qid)
 (*spiwack: prints all the axioms and section variables used by a term *)
-  | PrintAssumptions r ->
+  | PrintAssumptions (o,r) ->
       let cstr = constr_of_global (global_with_alias r) in
-      let nassumptions = Environ.assumptions cstr (Global.env ()) in
+      let nassumptions = Environ.assumptions (Conv_oracle.get_transp_state ())
+	~add_opaque:o cstr (Global.env ()) in
       msg (Printer.pr_assumptionset (Global.env ()) nassumptions)
 
 let global_module r =

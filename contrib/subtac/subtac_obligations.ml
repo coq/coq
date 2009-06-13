@@ -17,8 +17,6 @@ open Evd
 open Declare
 open Proof_type
 
-type definition_hook = global_reference -> unit
-
 let ppwarn cmd = Pp.warn (str"Program:" ++ cmd)
 let pperror cmd = Util.errorlabstrm "Program" cmd
 let error s = pperror (str s)
@@ -56,14 +54,14 @@ type program_info = {
   prg_implicits : (Topconstr.explicitation * (bool * bool)) list;
   prg_notations : notations ;
   prg_kind : definition_kind;
-  prg_hook : definition_hook;
+  prg_hook : Tacexpr.declaration_hook;
 }
 
 let assumption_message id =
   Flags.if_verbose message ((string_of_id id) ^ " is assumed")
 
 let default_tactic : Proof_type.tactic ref = ref Refiner.tclIDTAC
-let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Obj.magic ())
+let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Tacexpr.TacId [])
 
 let set_default_tactic t = default_tactic_expr := t; default_tactic := Tacinterp.eval_tactic t
 
@@ -203,7 +201,7 @@ let declare_definition prg =
 	  if Impargs.is_implicit_args () || prg.prg_implicits <> [] then
 	    Impargs.declare_manual_implicits false gr prg.prg_implicits;
 	  print_message (Subtac_utils.definition_message prg.prg_name);
-	  prg.prg_hook gr;
+	  prg.prg_hook local gr;
 	  gr
 
 open Pp
@@ -234,6 +232,7 @@ let reduce_fix =
 
 let declare_mutual_definition l =
   let len = List.length l in
+  let first = List.hd l in
   let fixdefs, fixtypes, fiximps = 
     list_split3
       (List.map (fun x -> 
@@ -241,11 +240,11 @@ let declare_mutual_definition l =
 	  snd (decompose_lam_n len subs), snd (decompose_prod_n len typ), x.prg_implicits) l)
   in
 (*   let fixdefs = List.map reduce_fix fixdefs in *)
-  let fixkind = Option.get (List.hd l).prg_fixkind in
+  let fixkind = Option.get first.prg_fixkind in
   let arrrec, recvec = Array.of_list fixtypes, Array.of_list fixdefs in
   let fixdecls = (Array.of_list (List.map (fun x -> Name x.prg_name) l), arrrec, recvec) in
-  let boxed = true (* TODO *) in
-  let fixnames = (List.hd l).prg_deps in
+  let (local,boxed,kind) = first.prg_kind in
+  let fixnames = first.prg_deps in
   let kind = if fixkind <> IsCoFixpoint then Fixpoint else CoFixpoint in
   let indexes, fixdecls =
     match fixkind with
@@ -260,9 +259,11 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let kns = list_map4 (declare_fix boxed kind) fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
-    List.iter (Command.declare_interning_data ([],[])) (List.hd l).prg_notations;
+    List.iter (Command.declare_interning_data ([],[])) first.prg_notations;
     Flags.if_verbose ppnl (Command.recursive_message kind indexes fixnames);
-    (match List.hd kns with ConstRef kn -> kn | _ -> assert false)
+    let gr = List.hd kns in
+    let kn = match gr with ConstRef kn -> kn | _ -> assert false in
+      first.prg_hook local gr; kn
       
 let declare_obligation obl body =
   match obl.obl_status with
@@ -525,7 +526,7 @@ let show_term n =
 	      my_print_constr (Global.env ()) prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
 	    ++ my_print_constr (Global.env ()) prg.prg_body)
 
-let add_definition n b t ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic ?(hook=fun x -> ()) obls =
+let add_definition n b t ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic ?(hook=fun _ _ -> ()) obls =
   Flags.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
   let prg = init_prog_info n b t [] None [] obls implicits kind hook in
   let obls,_ = prg.prg_obligations in
@@ -543,11 +544,11 @@ let add_definition n b t ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
 	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
 	| _ -> res)
 	
-let add_mutual_definitions l ?tactic ?(kind=Global,false,Definition) notations fixkind =
+let add_mutual_definitions l ?tactic ?(kind=Global,false,Definition) ?(hook=fun _ _ -> ()) notations fixkind =
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
   let upd = List.fold_left
       (fun acc (n, b, t, imps, obls) ->
-	let prg = init_prog_info n b t deps (Some fixkind) notations obls imps kind (fun x -> ()) in
+	let prg = init_prog_info n b t deps (Some fixkind) notations obls imps kind hook in
 	  ProgMap.add n prg acc)
       !from_prg l
   in

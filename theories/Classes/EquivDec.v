@@ -14,8 +14,6 @@
 
 (* $Id$ *)
 
-Set Manual Implicit Arguments.
-
 (** Export notations. *)
 
 Require Export Coq.Classes.Equivalence.
@@ -144,9 +142,10 @@ Program Instance list_eqdec `(eqa : EqDec A eq) : ! EqDec (list A) eq :=
       | _, _ => in_right
     end }.
 
-  Solve Obligations using unfold equiv, complement in * ; program_simpl ; intuition (discriminate || eauto).
+  Solve Obligations using unfold equiv, complement in *; program_simpl;
+    intuition (discriminate || eauto).
 
-  Next Obligation.
-  Proof. clear aux. red in H0. subst. 
-    destruct y; intuition (discriminate || eauto).
-  Defined.
+  Next Obligation. destruct x ; destruct y ; intuition eauto. Defined.
+
+  Solve Obligations using unfold equiv, complement in *; program_simpl;
+    intuition (discriminate || eauto).

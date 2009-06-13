@@ -292,13 +292,13 @@ module Latex = struct
 
   let ident s l = 
     if !in_title then (
-      printf "\\texorpdfstring{";
+      printf "\\texorpdfstring{\\protect";
       with_latex_printing (fun s -> ident s l) s;
       printf "}{"; raw_ident s; printf "}")
     else
       with_latex_printing (fun s -> ident s l) s
     
-  let symbol = with_latex_printing raw_ident
+  let symbol s = with_latex_printing raw_ident s
 
   let rec reach_item_level n = 
     if !item_level < n then begin
@@ -319,6 +319,12 @@ module Latex = struct
   let start_doc () = in_doc := true
 
   let end_doc () = in_doc := false; stop_item ()
+
+  let comment c = char c
+
+  let start_comment () = printf "\\begin{coqdoccomment}\n"
+
+  let end_comment () = printf "\\end{coqdoccomment}\n"
 
   let start_coq () = printf "\\begin{coqdoccode}\n"
 
@@ -454,14 +460,15 @@ module Html = struct
   let ident_ref m fid typ s =
     match find_module m with
     | Local ->
+	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
 	printf "<span class=\"id\" type=\"%s\">" typ; 
-	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid; raw_ident s;
-	printf "</a></span>"
+	raw_ident s;
+	printf "</span></a>"
     | Coqlib when !externals ->
 	let m = Filename.concat !coqlib m in
-	  printf "<span class=\"id\" type=\"%s\">" typ; 
 	  printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
-	  raw_ident s; printf "</a></span>"
+	  printf "<span class=\"id\" type=\"%s\">" typ; 
+	  raw_ident s; printf "</span></a>"
     | Coqlib | Unknown ->
 	printf "<span class=\"id\" type=\"%s\">" typ; raw_ident s; printf "</span>"
 	  
@@ -475,8 +482,9 @@ module Html = struct
 	try
 	  (match Index.find !current_module loc with
 	     | Def (fullid,ty) -> 
+		 printf "<a name=\"%s\">" fullid; 
 		 printf "<span class=\"id\" type=\"%s\">" (type_name ty); 
-		 printf "<a name=\"%s\">" fullid; raw_ident s; printf "</a></span>"
+		 raw_ident s; printf "</span></a>"
              | Mod (m,s') when s = s' ->
 		 module_ref m s
 	     | Ref (m,fullid,ty) -> 
@@ -498,9 +506,11 @@ module Html = struct
     with Not_found -> 
       f tok
 
-  let ident s l = with_html_printing (fun s -> ident s l) s
+  let ident s l =
+    with_html_printing (fun s -> ident s l) s
 
-  let symbol = with_html_printing raw_ident
+  let symbol s =
+    with_html_printing raw_ident s
 
   let rec reach_item_level n = 
     if !item_level < n then begin
@@ -530,6 +540,10 @@ module Html = struct
     stop_item (); 
     if not !raw_comments then printf "\n</div>\n"
 
+  let start_comment () = printf "<span class=\"comment\">(*"
+
+  let end_comment () = printf "*)</span>"
+
   let start_code () = end_doc (); start_coq ()
 
   let end_code () = end_coq (); start_doc ()
@@ -538,7 +552,11 @@ module Html = struct
 
   let end_inline_coq () = printf "</span>"
 
-  let paragraph () = stop_item (); printf "\n<br/><br/>\n"
+  let paragraph () = 
+    let i = !item_level in
+      stop_item ();
+      if i > 0 then printf "\n"
+      else printf "\n<br/> <br/>\n"
 
   let section lev f =
     let lab = new_label () in
@@ -768,6 +786,9 @@ module TeXmacs = struct
 
   let end_coq () = ()
 
+  let start_comment () = ()
+  let end_comment () = ()
+
   let start_code () = in_doc := true; printf "<\\code>\n"
   let end_code () = in_doc := false; printf "\n</code>"
 
@@ -847,7 +868,7 @@ module Raw = struct
 
   let ident s loc = raw_ident s
 
-  let symbol = raw_ident
+  let symbol s = raw_ident s
 
   let item n = printf "- "
 
@@ -855,6 +876,9 @@ module Raw = struct
 
   let start_doc () = printf "(** "
   let end_doc () = printf " *)\n"
+
+  let start_comment () = ()
+  let end_comment () = ()
 
   let start_coq () = ()
   let end_coq () = ()
@@ -908,6 +932,9 @@ let start_module =
 
 let start_doc = select Latex.start_doc Html.start_doc TeXmacs.start_doc Raw.start_doc
 let end_doc = select Latex.end_doc Html.end_doc TeXmacs.end_doc Raw.end_doc
+
+let start_comment = select Latex.start_comment Html.start_comment TeXmacs.start_comment Raw.start_comment
+let end_comment = select Latex.end_comment Html.end_comment TeXmacs.end_comment Raw.end_comment
 
 let start_coq = select Latex.start_coq Html.start_coq TeXmacs.start_coq Raw.start_coq
 let end_coq = select Latex.end_coq Html.end_coq TeXmacs.end_coq Raw.end_coq

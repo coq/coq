@@ -577,9 +577,14 @@ let error_uninstantiated_metas t clenv =
   let id = match na with Name id -> id | _ -> anomaly "unnamed dependent meta"
   in errorlabstrm "" (str "Cannot find an instance for " ++ pr_id id ++ str".")
 
-let clenv_refine_in with_evars id clenv gl =
+let clenv_refine_in with_evars ?(with_classes=true) id clenv gl =
   let clenv = clenv_pose_dependent_evars with_evars clenv in
-  let new_hyp_typ  = clenv_type clenv in
+  let clenv = 
+    if with_classes then 
+      { clenv with evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd }
+    else clenv
+  in
+  let new_hyp_typ = clenv_type clenv in
   if not with_evars & occur_meta new_hyp_typ then 
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf  = clenv_value clenv in
@@ -2180,7 +2185,7 @@ let dependent_pattern c gl =
     let conclvar = subst_term_occ all_occurrences c ty in
       mkNamedLambda id cty conclvar
   in
-  let subst = (c, varname c, cty) :: List.map (fun c -> (c, varname c, pf_type_of gl c)) deps in
+  let subst = (c, varname c, cty) :: List.rev_map (fun c -> (c, varname c, pf_type_of gl c)) deps in
   let concllda = List.fold_left mklambda (pf_concl gl) subst in 
   let conclapp = applistc concllda (List.rev_map pi1 subst) in
     convert_concl_no_check conclapp DEFAULTcast gl

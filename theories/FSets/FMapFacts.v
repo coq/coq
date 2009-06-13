@@ -15,7 +15,7 @@
   different styles: equivalence and boolean equalities. 
 *)
 
-Require Import Bool DecidableType DecidableTypeEx OrderedType.
+Require Import Bool DecidableType DecidableTypeEx OrderedType Morphisms.
 Require Export FMapInterface. 
 Set Implicit Arguments.
 Unset Strict Implicit.

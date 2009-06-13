@@ -554,7 +554,7 @@ fun env field value ->
 type context_object =
   | Variable of identifier (* A section variable or a Let definition *)
   | Axiom of constant      (* An axiom or a constant. *)
-
+  | Opaque of constant     (* An opaque constant. *)
 
 (* Defines a set of [assumption] *)
 module OrderedContextObject = 
@@ -566,15 +566,19 @@ struct
       | Axiom k1 , Axiom k2 -> Pervasives.compare k1 k2
 	          (* spiwack: it would probably be cleaner
 		     to provide a [kn_ord] function *)
+      | Opaque k1 , Opaque k2 -> Pervasives.compare k1 k2
       | Variable _ , Axiom _ -> -1
       | Axiom _ , Variable _ -> 1
+      | Opaque _ , _ -> -1
+      | _, Opaque _ -> 1
 end
 
 module ContextObjectSet = Set.Make (OrderedContextObject)
 module ContextObjectMap = Map.Make (OrderedContextObject)
 
 
-let assumptions (* t env *) =   
+let assumptions ?(add_opaque=false) st (* t env *) =
+  let (idts,knst) = st in
   (* Infix definition for chaining function that accumulate
      on a and a ContextObjectSet, ContextObjectMap.  *)
   let ( ** ) f1 f2 s m = let (s',m') = f1 s m in f2 s' m' in
@@ -650,16 +654,26 @@ let assumptions (* t env *) =
 
   and add_kn kn env s acc =
     let cb = lookup_constant kn env in
-    match cb.Declarations.const_body with
-    | None -> 
-	let ctype = 
-	  match cb.Declarations.const_type with
-	  | PolymorphicArity (ctx,a) -> mkArity (ctx, Type a.poly_level)
-	  | NonPolymorphicType t -> t
-	in
-	(s,ContextObjectMap.add (Axiom kn) ctype acc)
-    | Some body -> aux (Declarations.force body) env s acc
-
+    let do_type cst =
+      let ctype =
+	match cb.Declarations.const_type with
+	| PolymorphicArity (ctx,a) -> mkArity (ctx, Type a.poly_level)
+	| NonPolymorphicType t -> t
+      in
+	(s,ContextObjectMap.add cst ctype acc)
+    in
+    let (s,acc) =
+      if cb.Declarations.const_body <> None
+	&& (cb.Declarations.const_opaque || not (Cpred.mem kn knst))
+	&& add_opaque 
+      then
+	do_type (Opaque kn)
+      else (s,acc)
+    in
+      match cb.Declarations.const_body with
+      | None -> do_type (Axiom kn)
+      | Some body -> aux (Declarations.force body) env s acc
+	  
   and aux_memoize_kn kn env =
     try_and_go (Axiom kn) (add_kn kn env)
  in

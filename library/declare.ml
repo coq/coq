@@ -43,7 +43,7 @@ let set_xml_declare_inductive f = xml_declare_inductive := if_xml f
 
 type section_variable_entry =
   | SectionLocalDef of constr * types option * bool (* opacity *)
-  | SectionLocalAssum of types * bool * bool (* Implicit status, Keep *)
+  | SectionLocalAssum of types * bool * identifier list (* Implicit status, Keep *)
 
 type variable_declaration = dir_path * section_variable_entry * logical_kind
 
@@ -58,7 +58,7 @@ let cache_variable ((sp,_),o) =
     | SectionLocalAssum (ty, impl, keep) ->
         let cst = Global.push_named_assum (id,ty) in
 	let impl = if impl then Lib.Implicit else Lib.Explicit in
-	let keep = if keep then Some ty else None in
+	let keep = if keep <> [] then Some (ty, keep) else None in
 	impl, true, cst, keep
     | SectionLocalDef (c,t,opaq) -> 
         let cst = Global.push_named_def (id,c,t) in

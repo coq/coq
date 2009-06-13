@@ -113,7 +113,7 @@ let add_constraints cst senv =
 (* terms which are closed under the environnement env, i.e
    terms which only depends on constant who are themselves closed *)
 let closed env term = 
-  ContextObjectMap.is_empty (assumptions env term)
+  ContextObjectMap.is_empty (assumptions full_transparent_state env term)
 
 (* the set of safe terms in an environement any recursive set of
    terms who are known not to prove inconsistent statement. It should

@@ -15,11 +15,11 @@
 
 (* $Id$ *)
 
-Require Export Coq.Classes.RelationClasses.
-Require Export Coq.Classes.Morphisms.
-Require Export Coq.Classes.Morphisms_Prop.
-Require Export Coq.Classes.Equivalence.
-Require Export Coq.Relations.Relation_Definitions.
+Require Import Coq.Classes.Morphisms Coq.Classes.Morphisms_Prop.
+Require Export Coq.Classes.RelationClasses Coq.Relations.Relation_Definitions.
+Require Import Coq.Classes.Equivalence Coq.Program.Basics.
+
+Export MorphismNotations.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

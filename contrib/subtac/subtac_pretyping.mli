@@ -19,5 +19,6 @@ val interp :
 val subtac_process : env -> evar_defs ref -> identifier -> local_binder list ->
   constr_expr -> constr_expr option -> evar_map * constr * types * manual_explicitation list
 
-val subtac_proof : Decl_kinds.definition_kind -> env -> evar_defs ref -> identifier -> local_binder list ->
+val subtac_proof : Decl_kinds.definition_kind -> Tacexpr.declaration_hook -> 
+  env -> evar_defs ref -> identifier -> local_binder list ->
   constr_expr -> constr_expr option -> Subtac_obligations.progress
