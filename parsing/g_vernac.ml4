@@ -499,6 +499,13 @@ GEXTEND Gram
       | IDENT "Context"; c = binders_let -> 
 	  VernacContext c
 	    
+      | IDENT "Instance"; ":";
+	 expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
+	 pri = OPT [ "|"; i = natural -> i ] ; 
+	 props = [ ":="; "{"; r = record_declaration; "}" -> r | 
+	     ":="; c = lconstr -> c | -> CRecord (loc, None, []) ] ->
+	   VernacInstance (not (use_non_locality ()), [], ((loc,Anonymous), expl, t), props, pri)
+
       | IDENT "Instance"; name = identref; sup = OPT binders_let; ":";
 	 expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ; 
