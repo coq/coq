@@ -15,13 +15,16 @@ Language and commands
 - Fixing bug #2093, using Program does not require to import Program.Tactics
   anymore, it will use [idtac] as the default obligation tactic.
 - Fix imports when requiring Setoid, to avoid cluttering the context with
-  internal names.
+  internal names (possible source of incompatibility, import Morphisms to fix).
 - Fixing bug #2089, Combined Scheme was not treating parameters correctly.
 - Fixing Program to use hooks correctly, when called through [Program Coercion]
   for example.
 - Fixing manual implicit arguments to always work and remove 
-  [Set Manual Implicit Arguments] option.
+  [Set Manual Implicit Arguments] option (possible source of incompatibility).
 - Fixing refine to work with typeclasses.
+- Fixing implementation of [Context] to discharge class instances only on definitions
+  using some of the parameters or the instance itself (possible source of 
+  incompatibility).
 
 Tactics
 

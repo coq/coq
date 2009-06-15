@@ -375,25 +375,6 @@ Ltac partial_application_tactic :=
       end
   end.
 
-Section PartialAppTest.
-  Instance and_ar : Params and 0.
-
-  Goal Morphism (iff) (and True True).
-    partial_application_tactic.
-  Admitted.
-
-  Goal Morphism (iff) (or True True).
-    partial_application_tactic.
-    partial_application_tactic. 
-  Admitted.
-
-  Goal Morphism (iff ==> iff) (iff True).
-    partial_application_tactic.
-    (*partial_application_tactic. *)
-   Admitted.
-
-End PartialAppTest.
-
 Hint Extern 4 (@Morphism _ _ _) => partial_application_tactic : typeclass_instances.
 
 Lemma inverse_respectful : forall (A : Type) (R : relation A) (B : Type) (R' : relation B),

@@ -245,7 +245,6 @@ module SearchProblem = struct
 	    Option.iter (fun r ->
 (*  	      msg (str"do cut:" ++ pr_ev sigma (List.hd gl) ++ str"\n"); *)
 	      r := true) do_cut;
-	  let sigma = Evarutil.nf_evars sigma in
 	  let gl = List.map (Evarutil.nf_evar_info sigma) gl in
 	  let nbgl = List.length gl in
 (* 	  let gl' = { it = gl ; sigma = sigma } in *)
@@ -338,6 +337,7 @@ let is_transparent_gr (ids, csts) = function
   | IndRef _ | ConstructRef _ -> false
 
 let make_resolve_hyp env sigma st flags pri (id, _, cty) =
+  let cty = Evarutil.nf_evar sigma cty in
   let ctx, ar = decompose_prod cty in
   let keep = 
     match kind_of_term (fst (decompose_app ar)) with
