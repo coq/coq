@@ -6,7 +6,7 @@
 # 
 ##################################
 
-VERSION=8.1
+VERSION=8.1pl5
 DATE=`LANG=C date +"%B %Y"`
 
 # a local which command for sh
