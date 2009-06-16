@@ -690,7 +690,7 @@ let elimination_clause_scheme with_evars allow_K elimclause indclause gl =
        | _  -> errorlabstrm "elimination_clause"
              (str "The type of elimination clause is not well-formed.")) 
   in
-  let elimclause' = clenv_fchain indmv elimclause indclause in 
+  let elimclause' = clenv_fchain ~flags:elim_flags indmv elimclause indclause in 
   res_pf elimclause' ~with_evars:with_evars ~allow_K:allow_K ~flags:elim_flags
     gl
 
@@ -702,13 +702,16 @@ let elimination_clause_scheme with_evars allow_K elimclause indclause gl =
  * matching I, lbindc are the expected terms for c arguments 
  *)
 
+let general_elim_clause_gen elimtac indclause (elimc,lbindelimc) gl =
+  let elimt      = pf_type_of gl elimc in
+  let elimclause = make_clenv_binding gl (elimc,elimt) lbindelimc in 
+    elimtac elimclause indclause gl
+
 let general_elim_clause elimtac (c,lbindc) (elimc,lbindelimc) gl =
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
   let indclause  = make_clenv_binding gl (c,t) lbindc  in
-  let elimt      = pf_type_of gl elimc in
-  let elimclause = make_clenv_binding gl (elimc,elimt) lbindelimc in 
-    elimtac elimclause indclause gl
+    general_elim_clause_gen elimtac indclause (elimc,lbindelimc) gl
 
 let general_elim with_evars c e ?(allow_K=true) =
   general_elim_clause (elimination_clause_scheme with_evars allow_K) c e

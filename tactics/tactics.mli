@@ -248,6 +248,15 @@ type elim_scheme = {
 val compute_elim_sig : ?elimc: constr with_ebindings -> types -> elim_scheme
 val rebuild_elimtype_from_scheme: elim_scheme -> types
 
+val elimination_clause_scheme : evars_flag -> 
+  bool -> clausenv -> clausenv -> tactic
+
+val elimination_in_clause_scheme : evars_flag -> identifier ->
+  clausenv -> clausenv -> tactic
+
+val general_elim_clause_gen : (Clenv.clausenv -> 'a -> tactic) ->
+  'a -> constr * open_constr bindings -> tactic
+
 val general_elim  : evars_flag ->
   constr with_ebindings -> constr with_ebindings -> ?allow_K:bool -> tactic
 val general_elim_in : evars_flag -> 

@@ -54,23 +54,66 @@ open Evd
    -- Eduardo (19/8/97)
 *)
 
+let rewrite_unif_flags = {
+  Unification.modulo_conv_on_closed_terms = None;
+  Unification.use_metas_eagerly = true;
+  Unification.modulo_delta = empty_transparent_state;
+  Unification.resolve_evars = true;
+}
+
+let instantiate_lemma env sigma gl c ty l l2r concl =
+  let eqclause = Clenv.make_clenv_binding { gl with sigma = sigma } (c,ty) l in
+  let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
+  let rec split_last_two = function
+      | [c1;c2] -> [],(c1, c2)
+      | x::y::z ->
+	  let l,res = split_last_two (y::z) in x::l, res
+      | _ -> error "The term provided is not an applied relation." in
+  let others,(c1,c2) = split_last_two args in
+  let evd', c' = 
+    Unification.w_unify_to_subterm ~flags:rewrite_unif_flags env
+      ((if l2r then c1 else c2),concl) eqclause.evd
+  in
+  let cl' = {eqclause with evd = evd'} in
+  let cl' =
+    let mvs = clenv_dependent false cl' in
+      clenv_pose_metas_as_evars cl' mvs
+  in cl'
+
+let instantiate_lemma env sigma gl c ty l l2r concl =
+  let gl = { gl with sigma = sigma } in
+  let ct = pf_type_of gl c in
+  let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
+  let eqclause = Clenv.make_clenv_binding gl (c,t) l in
+    eqclause
+
+let rewrite_elim with_evars c e ?(allow_K=true) =
+  general_elim_clause_gen (elimination_clause_scheme with_evars allow_K) c e
+
+let rewrite_elim_in with_evars id c e =
+  general_elim_clause_gen (elimination_in_clause_scheme with_evars id) c e
+
 (* Ad hoc asymmetric general_elim_clause *)
-let general_elim_clause with_evars cls sigma c l elim = 
+let general_elim_clause with_evars cls rew elim =
   try 
     (match cls with
       | None ->
 	  (* was tclWEAK_PROGRESS which only fails for tactics generating one 
              subgoal and did not fail for useless conditional rewritings generating
              an extra condition *)
-	  tclNOTSAMEGOAL (tclTHEN (Refiner.tclEVARS sigma)
-			     (general_elim with_evars (c,l) elim ~allow_K:false))
-      | Some id ->
-	  tclTHEN (Refiner.tclEVARS sigma) (general_elim_in with_evars id (c,l) elim))
+	  tclNOTSAMEGOAL (rewrite_elim with_evars rew elim ~allow_K:false)
+      | Some id -> rewrite_elim_in with_evars id rew elim)
   with Pretype_errors.PretypeError (env,
 				   (Pretype_errors.NoOccurrenceFound (c', _))) ->
     raise (Pretype_errors.PretypeError
 	      (env, (Pretype_errors.NoOccurrenceFound (c', cls))))
-      
+
+let general_elim_clause with_evars cls sigma c t l l2r elim gl =
+  let c = instantiate_lemma (pf_env gl) sigma gl c t l l2r
+    (match cls with None -> pf_concl gl | Some id -> pf_get_hyp_typ gl id)
+  in 
+    tclTHEN (Refiner.tclEVARS c.evd) (general_elim_clause with_evars cls c elim) gl
+
 (* The next function decides in particular whether to try a regular 
   rewrite or a setoid rewrite. 
   Approach is to break everything, if [eq] appears in head position 
@@ -94,9 +137,9 @@ let find_elim hdcncl lft2rgt cls gl =
   try pf_global gl (id_of_string rwr_thm)
   with Not_found -> error ("Cannot find rewrite principle "^rwr_thm^".")
 
-let leibniz_rewrite_ebindings_clause cls lft2rgt sigma c l with_evars gl hdcncl =
+let leibniz_rewrite_ebindings_clause cls lft2rgt sigma c t l with_evars gl hdcncl =
   let elim = find_elim hdcncl lft2rgt cls gl in
-  general_elim_clause with_evars cls sigma c l (elim,NoBindings) gl
+  general_elim_clause with_evars cls sigma c t l lft2rgt (elim,NoBindings) gl
 
 let adjust_rewriting_direction args lft2rgt =
   if List.length args = 1 then
@@ -115,21 +158,23 @@ let general_rewrite_ebindings_clause cls lft2rgt occs ((c,l) : open_constr with_
     let sigma, c' = c in
     let sigma = Evd.merge sigma (project gl) in
     let ctype = get_type_of env sigma c' in 
-    let rels, t = decompose_prod (whd_betaiotazeta sigma ctype) in
+    let rels, t = decompose_prod_assum (whd_betaiotazeta sigma ctype) in
       match match_with_equality_type t with
       | Some (hdcncl,args) -> (* Fast path: direct leibniz rewrite *)
 	  let lft2rgt = adjust_rewriting_direction args lft2rgt in
-	  leibniz_rewrite_ebindings_clause cls lft2rgt sigma c' l with_evars gl hdcncl
+	  leibniz_rewrite_ebindings_clause cls lft2rgt sigma c' (it_mkProd_or_LetIn t rels) 
+	    l with_evars gl hdcncl
       | None ->
-	  let env' = List.fold_left (fun env (n,t) -> push_rel (n, None, t) env) env rels in
-	  let _,t' = splay_prod env' sigma t in (* Search for underlying eq *)
+	  let env' = push_rel_context rels env in
+	  let rels',t' = splay_prod_assum env' sigma t in (* Search for underlying eq *)
 	    match match_with_equality_type t' with
 	    | Some (hdcncl,args) -> (* Maybe a setoid relation with eq inside *)
 		let lft2rgt = adjust_rewriting_direction args lft2rgt in
 		if l = NoBindings && !is_applied_setoid_relation t then
 		  !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
 		else
-		  (try leibniz_rewrite_ebindings_clause cls lft2rgt sigma c' l with_evars gl hdcncl
+		  (try leibniz_rewrite_ebindings_clause cls lft2rgt sigma c'
+		      (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars gl hdcncl
 		    with e -> 
 		      try !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
 		      with _ -> raise e)
@@ -886,7 +931,7 @@ let injEq ipats (eq,(t,t1,t2)) eq_clause =
 	errorlabstrm "Equality.inj" 
 	   (str"Nothing to do, it is an equality between convertible terms.")
     | Inr posns ->
-(* Est-ce utile à partir du moment où les arguments projetés subissent "nf" ?
+(* Est-ce utile Ã  partir du moment oÃ¹ les arguments projetÃ©s subissent "nf" ?
 	let t1 = try_delta_expand env sigma t1 in
 	let t2 = try_delta_expand env sigma t2 in
 *)
