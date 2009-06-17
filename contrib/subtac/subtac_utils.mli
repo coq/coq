@@ -45,9 +45,9 @@ val and_typ : constr lazy_t
 val eqdep_ind : constr lazy_t
 val eqdep_rec : constr lazy_t
 
-val jmeq_ind : constr lazy_t
-val jmeq_rec : constr lazy_t
-val jmeq_refl : constr lazy_t
+val jmeq_ind : unit -> constr
+val jmeq_rec : unit -> constr
+val jmeq_refl : unit -> constr
 
 val boolind : constr lazy_t
 val sumboolind : constr lazy_t
@@ -103,7 +103,7 @@ val mk_ex_pi1 : constr -> constr -> constr -> constr
 val mk_ex_pi1 : constr -> constr -> constr -> constr
 val mk_eq : types -> constr -> constr -> types
 val mk_eq_refl : types -> constr -> constr
-val mk_JMeq : types -> constr-> types -> constr -> types
+val mk_JMeq : types -> constr -> types -> constr -> types
 val mk_JMeq_refl : types -> constr -> constr
 val mk_conj : types list -> types
 val mk_not : types -> types

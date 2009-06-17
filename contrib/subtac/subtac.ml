@@ -236,9 +236,6 @@ let subtac (loc, command) =
 	  debug 2 (Himsg.explain_pretype_error env exn);
 	  raise e
 
-      | e'' -> msg_warning (str "Unexpected exception: " ++ Cerrors.explain_exn e'');
-	  raise e)
+      | e'' -> raise e)
 	
-  | e -> 
-      msg_warning (str "Uncatched exception: " ++ Cerrors.explain_exn e);
-      raise e
+  | e -> raise e

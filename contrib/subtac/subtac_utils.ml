@@ -64,15 +64,17 @@ let eqdep_rec = lazy (init_constant ["Logic";"Eqdep"] "eq_dep_rec")
 let eqdep_ind_ref = lazy (init_reference [ "Logic";"Eqdep"] "eq_dep")
 let eqdep_intro_ref = lazy (init_reference [ "Logic";"Eqdep"] "eq_dep_intro")
 
-let jmeq_ind =   
-  lazy (check_required_library ["Coq";"Logic";"JMeq"]; 
-	init_constant ["Logic";"JMeq"] "JMeq")
-let jmeq_rec = 
-  lazy (check_required_library ["Coq";"Logic";"JMeq"]; 
-	init_constant ["Logic";"JMeq"] "JMeq_rec")
-let jmeq_refl = 
-  lazy (check_required_library ["Coq";"Logic";"JMeq"];
-	init_constant ["Logic";"JMeq"] "JMeq_refl")
+let jmeq_ind () =   
+  check_required_library ["Coq";"Logic";"JMeq"]; 
+  init_constant ["Logic";"JMeq"] "JMeq"
+
+let jmeq_rec () = 
+  check_required_library ["Coq";"Logic";"JMeq"]; 
+  init_constant ["Logic";"JMeq"] "JMeq_rec"
+
+let jmeq_refl () = 
+  check_required_library ["Coq";"Logic";"JMeq"];
+  init_constant ["Logic";"JMeq"] "JMeq_refl"
 
 let ex_ind = lazy (init_constant ["Init"; "Logic"] "ex")
 let ex_intro = lazy (init_reference ["Init"; "Logic"] "ex_intro")
@@ -277,8 +279,8 @@ let mkSubset name typ prop =
 
 let mk_eq typ x y = mkApp (Lazy.force eq_ind, [| typ; x ; y |])
 let mk_eq_refl typ x = mkApp (Lazy.force eq_refl, [| typ; x |])
-let mk_JMeq typ x typ' y = mkApp (Lazy.force jmeq_ind, [| typ; x ; typ'; y |])
-let mk_JMeq_refl typ x = mkApp (Lazy.force jmeq_refl, [| typ; x |])
+let mk_JMeq typ x typ' y = mkApp (jmeq_ind (), [| typ; x ; typ'; y |])
+let mk_JMeq_refl typ x = mkApp (jmeq_refl (), [| typ; x |])
 
 let unsafe_fold_right f = function
     hd :: tl -> List.fold_right f tl hd

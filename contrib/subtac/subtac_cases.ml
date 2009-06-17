@@ -1476,9 +1476,6 @@ let eq_id avoid id =
 
 let mk_eq typ x y = mkApp (Lazy.force eq_ind, [| typ; x ; y |])
 let mk_eq_refl typ x = mkApp (Lazy.force eq_refl, [| typ; x |])
-let mk_JMeq typ x typ' y = 
-  mkApp (Lazy.force Subtac_utils.jmeq_ind, [| typ; x ; typ'; y |])
-let mk_JMeq_refl typ x = mkApp (Lazy.force Subtac_utils.jmeq_refl, [| typ; x |])
     
 let hole = RHole (dummy_loc, Evd.QuestionMark (Evd.Define true))
 
