@@ -404,7 +404,10 @@ let interp_recursive fixkind l boxed =
   let rec_sign = 
     List.fold_left2 (fun env' id t ->
       let sort = Retyping.get_type_of env !evdref t in
-      let fixprot = mkApp (Lazy.force Subtac_utils.fix_proto, [|sort; t|]) in
+      let fixprot = 
+	try mkApp (Lazy.force Subtac_utils.fix_proto, [|sort; t|]) 
+	with e -> t
+      in
 	(id,None,fixprot) :: env')
       [] fixnames fixtypes
   in
