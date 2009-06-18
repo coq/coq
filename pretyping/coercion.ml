@@ -101,6 +101,10 @@ module Default = struct
     let p = lookup_pattern_path_between (ind1,ind2) in
       apply_pattern_coercion loc pat p
 
+  let saturate_evd env evd =
+    Typeclasses.resolve_typeclasses
+      ~onlyargs:true ~split:true ~fail:false env evd
+
   (* appliquer le chemin de coercions p à hj *)
   let apply_coercion env sigma p hj typ_cl =
     try 
@@ -125,11 +129,15 @@ module Default = struct
 	    let (evd',t) = define_evar_as_product evd ev in
 	      (evd',{ uj_val = j.uj_val; uj_type = t })
 	| _ ->
-       	    (try
-      	       let t,p =
-		 lookup_path_to_fun_from env ( evd) j.uj_type in
-		 (evd,apply_coercion env ( evd) p j t)
-	     with Not_found -> (evd,j))
+      	    let t,p =
+	      lookup_path_to_fun_from env ( evd) j.uj_type in
+	      (evd,apply_coercion env ( evd) p j t)
+		
+  let inh_app_fun env evd j =
+    try inh_app_fun env evd j
+    with Not_found ->
+      try inh_app_fun env (saturate_evd env evd) j
+      with Not_found -> (evd, j)
 
   let inh_tosort_force loc env evd j =
     try
@@ -209,8 +217,11 @@ module Default = struct
 	    try 
 	      inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
 	    with NoCoercion ->
-	      let sigma =  evd in
-		error_actual_type_loc loc env sigma cj t
+	      let evd = saturate_evd env evd in
+		try
+		  inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
+		with NoCoercion ->
+		  error_actual_type_loc loc env evd cj t
 	  in
 	  let val' = match val' with Some v -> v | None -> assert(false) in
 	    (evd',{ uj_val = val'; uj_type = t })
