@@ -742,16 +742,10 @@ let apply_strategy (s : strategy) env sigma concl cstr evars =
 	evars := res.rew_evars;
 	Some (Some (res.rew_prf, (res.rew_car, res.rew_rel, res.rew_from, res.rew_to)))
 
-let evars_of_evi evi =
-  Intset.union (Evarutil.evars_of_term evi.evar_concl) 
-    (match evi.evar_body with
-    | Evar_defined b -> Evarutil.evars_of_term b
-    | Evar_empty -> Intset.empty)
-
 let split_evars_once sigma evd = 
   Evd.fold (fun ev evi deps ->
     if Intset.mem ev deps then 
-      Intset.union (evars_of_evi evi) deps
+      Intset.union (Class_tactics.evars_of_evi evi) deps
     else deps) evd sigma
     
 let existentials_of_evd evd =

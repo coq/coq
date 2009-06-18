@@ -701,7 +701,8 @@ let w_unify_core_0 env with_types cv_pb flags m n evd =
   in
   let evd = w_merge env with_types flags subst2 in
     if flags.resolve_evars then 
-      try Typeclasses.resolve_typeclasses ~onlyargs:false ~split:true ~fail:true env evd
+      try Typeclasses.resolve_typeclasses ~onlyargs:false ~split:false
+	~fail:true env evd
       with e when Typeclasses_errors.unsatisfiable_exception e ->
 	error_cannot_unify env evd (m, n)
     else evd

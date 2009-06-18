@@ -417,9 +417,15 @@ let rec merge_deps deps = function
 	merge_deps (Intset.union deps hd) tl
       else hd :: merge_deps deps tl
 	
+let evars_of_evi evi =
+  Intset.union (Evarutil.evars_of_term evi.evar_concl) 
+    (match evi.evar_body with
+    | Evar_defined b -> Evarutil.evars_of_term b
+    | Evar_empty -> Intset.empty)
+
 let split_evars evm =
   Evd.fold (fun ev evi acc ->
-    let deps = Intset.union (Intset.singleton ev) (Evarutil.evars_of_term evi.evar_concl) in
+    let deps = Intset.union (Intset.singleton ev) (evars_of_evi evi) in
       merge_deps deps acc)
     evm []
 
@@ -430,7 +436,7 @@ let select_evars evs evm =
 
 let resolve_all_evars debug m env p oevd do_split fail =
   let oevm =  oevd in
-  let split = if do_split then split_evars (Evd.undefined_evars oevd) else [Intset.empty] in
+  let split = if do_split then split_evars oevd else [Intset.empty] in
   let p = if do_split then 
     fun comp ev evi -> (Intset.mem ev comp || not (Evd.mem oevm ev)) && p ev evi
     else fun _ -> p 
@@ -450,7 +456,7 @@ let resolve_all_evars debug m env p oevd do_split fail =
 	  match res with
 	  | None -> 
 	      if fail then 
-		(* Unable to satisfy the constraints. *)
+		(* Unable to satisfy the constraints. *)		
 		let evm = if do_split then select_evars comp evd else evd in
 		let _, ev = Evd.fold 
 		  (fun ev evi (b,acc) -> 

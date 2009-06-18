@@ -28,7 +28,7 @@ type typeclass_error =
     | NotAClass of constr
     | UnboundMethod of global_reference * identifier located (* Class name, method *)
     | NoInstance of identifier located * constr list
-    | UnsatisfiableConstraints of evar_defs * (evar_info * hole_kind) option
+    | UnsatisfiableConstraints of evar_defs * (existential_key * hole_kind) option
     | MismatchedContextInstance of contexts * constr_expr list * rel_context (* found, expected *)
 
 exception TypeClassError of env * typeclass_error
@@ -42,16 +42,14 @@ let unbound_method env cid id = typeclass_error env (UnboundMethod (cid, id))
 let no_instance env id args = typeclass_error env (NoInstance (id, args))
 
 let unsatisfiable_constraints env evd ev = 
-  let evd = Evd.undefined_evars evd in
-    match ev with
-    | None ->
-	raise (TypeClassError (env, UnsatisfiableConstraints (evd, None)))
-    | Some ev ->
-	let evi = Evd.find evd ev in
-	let loc, kind = Evd.evar_source ev evd in
-	  raise (Stdpp.Exc_located (loc, TypeClassError
-	    (env, UnsatisfiableConstraints (evd, Some (evi, kind)))))
-	    
+  match ev with
+  | None ->
+      raise (TypeClassError (env, UnsatisfiableConstraints (evd, None)))
+  | Some ev ->
+      let loc, kind = Evd.evar_source ev evd in
+	raise (Stdpp.Exc_located (loc, TypeClassError
+	  (env, UnsatisfiableConstraints (evd, Some (ev, kind)))))
+	  
 let mismatched_ctx_inst env c n m = typeclass_error env (MismatchedContextInstance (c, n, m))
 
 let rec unsatisfiable_exception exn =

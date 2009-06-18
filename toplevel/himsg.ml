@@ -526,15 +526,16 @@ let pr_constraints printenv env evm =
       
 let explain_unsatisfiable_constraints env evd constr =
   let evm = Evarutil.nf_evars evd in
+  let undef = Evd.undefined_evars evm in
   match constr with
   | None ->
       str"Unable to satisfy the following constraints:" ++ fnl() ++
 	pr_constraints true env evm
-  | Some (evi, k) -> 
-      explain_unsolvable_implicit env evi k None ++ fnl () ++
-	if List.length (Evd.to_list evm) > 1 then
+  | Some (ev, k) -> 
+      explain_unsolvable_implicit env (Evd.find evm ev) k None ++ fnl () ++
+	if List.length (Evd.to_list undef) > 1 then
 	  str"With the following constraints:" ++ fnl() ++ 
-	    pr_constraints false env evm
+	    pr_constraints false env (Evd.remove undef ev)
 	else mt ()
 	
 let explain_mismatched_contexts env c i j = 
