@@ -105,8 +105,8 @@ let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
 	let ty = generalize_constr_expr comtyp bl in
 	let b = abstract_constr_expr com bl in
 	let evdref = ref Evd.empty in
-	let ty, impls = interp_type_evars_impls ~evdref env ty in
-	let b, imps = interp_casted_constr_evars_impls ~evdref env b ty in
+	let ty, impls = interp_type_evars_impls ~evdref ~fail_evar:false env ty in
+	let b, imps = interp_casted_constr_evars_impls ~evdref ~fail_evar:false env b ty in
 	let body, typ = nf_isevar !evdref b, nf_isevar !evdref ty in
 	  check_evars env Evd.empty !evdref body;
 	  check_evars env Evd.empty !evdref typ;

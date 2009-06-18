@@ -1243,31 +1243,33 @@ let interp_open_constr_patvar sigma env c =
 let interp_constr_judgment sigma env c =
   Default.understand_judgment sigma env (intern_constr sigma env c)
 
-let interp_constr_evars_gen_impls ?evdref
+let interp_constr_evars_gen_impls ?evdref ?(fail_evar=true)
     env ?(impls=([],[])) kind c =
-  match evdref with 
-    | None -> 
-	let c = intern_gen (kind=IsType) ~impls Evd.empty env c in
-	let imps = Implicit_quantifiers.implicits_of_rawterm c in
-	  Default.understand_gen kind Evd.empty env c, imps
-    | Some evdref ->
-	let c = intern_gen (kind=IsType) ~impls ( !evdref) env c in
-	let imps = Implicit_quantifiers.implicits_of_rawterm c in
-	  Default.understand_tcc_evars evdref env kind c, imps
+  let evdref =
+    match evdref with
+    | None -> ref Evd.empty
+    | Some evdref -> evdref
+  in
+  let c = intern_gen (kind=IsType) ~impls !evdref env c in
+  let imps = Implicit_quantifiers.implicits_of_rawterm c in
+    if fail_evar then 
+      Default.understand_gen kind !evdref env c, imps
+    else
+      Default.understand_tcc_evars evdref env kind c, imps
+	      
+let interp_casted_constr_evars_impls ?evdref ?(fail_evar=true)
+    env ?(impls=([],[])) c typ =
+  interp_constr_evars_gen_impls ?evdref ~fail_evar env ~impls (OfType (Some typ)) c
+
+let interp_type_evars_impls ?evdref ?(fail_evar=true) env ?(impls=([],[])) c =
+  interp_constr_evars_gen_impls ?evdref ~fail_evar env IsType ~impls c
+
+let interp_constr_evars_impls ?evdref ?(fail_evar=true) env ?(impls=([],[])) c =
+  interp_constr_evars_gen_impls ?evdref ~fail_evar env (OfType None) ~impls c
 
 let interp_constr_evars_gen evdref env ?(impls=([],[])) kind c =
   let c = intern_gen (kind=IsType) ~impls ( !evdref) env c in
     Default.understand_tcc_evars evdref env kind c
-      
-let interp_casted_constr_evars_impls ?evdref
-    env ?(impls=([],[])) c typ =
-  interp_constr_evars_gen_impls ?evdref env ~impls (OfType (Some typ)) c
-
-let interp_type_evars_impls ?evdref env ?(impls=([],[])) c =
-  interp_constr_evars_gen_impls ?evdref env IsType ~impls c
-
-let interp_constr_evars_impls ?evdref env ?(impls=([],[])) c =
-  interp_constr_evars_gen_impls ?evdref env (OfType None) ~impls c
 
 let interp_casted_constr_evars evdref env ?(impls=([],[])) c typ =
   interp_constr_evars_gen evdref env ~impls (OfType (Some typ)) c

@@ -94,13 +94,15 @@ val interp_casted_constr : evar_map -> env -> ?impls:full_implicits_env ->
 
 (* Accepting evars and giving back the manual implicits in addition. *)
 
-val interp_casted_constr_evars_impls : ?evdref:(evar_defs ref) -> env -> 
+val interp_casted_constr_evars_impls : ?evdref:(evar_defs ref) -> ?fail_evar:bool -> env -> 
   ?impls:full_implicits_env -> constr_expr -> types -> constr * manual_implicits
 
-val interp_type_evars_impls : ?evdref:(evar_defs ref) -> env -> ?impls:full_implicits_env ->
+val interp_type_evars_impls : ?evdref:(evar_defs ref) -> ?fail_evar:bool ->
+  env -> ?impls:full_implicits_env ->
   constr_expr -> types * manual_implicits
 
-val interp_constr_evars_impls : ?evdref:(evar_defs ref) -> env -> ?impls:full_implicits_env ->
+val interp_constr_evars_impls : ?evdref:(evar_defs ref) -> ?fail_evar:bool ->
+  env -> ?impls:full_implicits_env ->
   constr_expr -> constr * manual_implicits
 
 val interp_casted_constr_evars : evar_defs ref -> env -> 
