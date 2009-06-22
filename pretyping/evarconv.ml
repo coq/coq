@@ -474,11 +474,11 @@ and conv_record env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
   let (evd',ks,_) =
     List.fold_left
       (fun (i,ks,m) b ->
-	 if m=0 then (i,t2::ks, n-1) else
+	 if m=n then (i,t2::ks, m-1) else
 	 let dloc = (dummy_loc,InternalHole) in
          let (i',ev) = new_evar i env ~src:dloc (substl ks b) in
-	 (i', ev :: ks, n - 1))
-      (evd,[],n) bs
+	 (i', ev :: ks, m - 1))
+      (evd,[],List.length bs - 1) bs
   in
   ise_and evd'
     [(fun i ->
