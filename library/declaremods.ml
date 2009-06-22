@@ -643,29 +643,29 @@ let rec get_modtype_substobjs env = function
 	      (map_msid msid mp)
 	| _ -> sub_alias in
       let (subst, mbids, msid, objs) = get_modtype_substobjs env mexpr in
-	(match mbids with
-	   | mbid::mbids ->
-               let resolve =
-		 Modops.resolver_of_environment farg_id farg_b mp sub_alias env in
-	       let sub3=
-		 if sub1 = empty_subst then
-		   update_subst sub_alias (map_mbid farg_id mp (Some resolve))
-		 else
-		   let sub1' = join_alias sub1 (map_mbid farg_id mp (Some resolve)) in
-		   let sub_alias' =  update_subst sub_alias sub1' in
-	    join sub1' sub_alias'
-	       in
-	       let sub3 = join sub3 
-		 (update_subst sub_alias (map_mbid farg_id mp (Some resolve))) in
-		 (* application outside the kernel, only for substitutive
-                    objects (that are all non-logical objects) *)
-		 ((join 
-		     (join subst sub3)
-		     (map_mbid mbid mp (Some resolve)))
-		    , mbids, msid, objs)
+      let mbid,mbids= (match mbids with
+	   | mbid::mbids -> mbid,mbids
 	   | [] -> match mexpr with
 	       | MSEident _  -> error "Application of a non-functor"
-	       | _ -> error "Application of a functor with too few arguments")
+	       | _ -> error "Application of a functor with too few arguments") in
+      let resolve =
+	Modops.resolver_of_environment farg_id farg_b mp sub_alias env in
+      let sub3=
+	if sub1 = empty_subst then
+	  update_subst sub_alias (map_mbid farg_id mp (Some resolve))
+	else
+	  let sub1' = join_alias sub1 (map_mbid farg_id mp (Some resolve)) in
+	  let sub_alias' =  update_subst sub_alias sub1' in
+	    join sub1' sub_alias'
+      in
+      let sub3 = join sub3 
+	(update_subst sub_alias (map_mbid farg_id mp (Some resolve))) in
+	(* application outside the kernel, only for substitutive
+           objects (that are all non-logical objects) *)
+	((join 
+	    (join subst sub3)
+	    (map_mbid mbid mp (Some resolve)))
+	   , mbids, msid, objs)
   | MSEapply (_,mexpr) ->
       Modops.error_application_to_not_path mexpr
 
@@ -950,29 +950,31 @@ let rec get_module_substobjs env = function
 	      (map_msid msid mp)
 	| _ -> sub_alias in
       let (subst, mbids, msid, objs) = get_module_substobjs env mexpr in
+      let mbid,mbids = 
 	(match mbids with
-	   | mbid::mbids ->
-               let resolve =
-		 Modops.resolver_of_environment farg_id farg_b mp sub_alias env in
-	       let sub3=
-		 if sub1 = empty_subst then
-		   update_subst sub_alias (map_mbid farg_id mp (Some resolve))
-		 else
-		   let sub1' = join_alias sub1 (map_mbid farg_id mp (Some resolve)) in
-		   let sub_alias' =  update_subst sub_alias sub1' in
-		     join sub1' sub_alias'
-	       in
-	       let sub3 = join sub3 (update_subst sub_alias 
-				       (map_mbid farg_id mp (Some resolve))) in
-		 (* application outside the kernel, only for substitutive
-                    objects (that are all non-logical objects) *)
-		((join 
-		    (join subst sub3)
-		       (map_mbid mbid mp (Some resolve)))
-		       , mbids, msid, objs)
+	   | mbid::mbids ->mbid,mbids
+	       
 	   | [] -> match mexpr with
 	       | MSEident _  -> error "Application of a non-functor"
-	       | _ -> error "Application of a functor with too few arguments")
+	       | _ -> error "Application of a functor with too few arguments") in
+      let resolve =
+	Modops.resolver_of_environment farg_id farg_b mp sub_alias env in
+      let sub3=
+	if sub1 = empty_subst then
+	  update_subst sub_alias (map_mbid farg_id mp (Some resolve))
+	else
+	  let sub1' = join_alias sub1 (map_mbid farg_id mp (Some resolve)) in
+	  let sub_alias' =  update_subst sub_alias sub1' in
+		     join sub1' sub_alias'
+      in
+      let sub3 = join sub3 (update_subst sub_alias 
+			      (map_mbid farg_id mp (Some resolve))) in
+	(* application outside the kernel, only for substitutive
+           objects (that are all non-logical objects) *)
+	((join 
+	    (join subst sub3)
+	    (map_mbid mbid mp (Some resolve)))
+	   , mbids, msid, objs)
   | MSEapply (_,mexpr) ->
       Modops.error_application_to_not_path mexpr
   | MSEwith (mty, With_Definition _) -> get_module_substobjs env mty
