@@ -1036,7 +1036,10 @@ let is_unification_pattern (env,nb) f l t =
 
 (* From a unification problem "?X l1 = term1 l2" such that l1 is made
    of distinct rel's, build "\x1...xn.(term1 l2)" (patterns unification) *)
-
+(* NB: does not work when (term1 l2) contains metas because metas
+   *implicitly* depend on Vars but lambda abstraction will not reflect this 
+   dependency: ?X x = ?1 (?1 is a meta) will return \_.?1 while it should
+   return \y. ?1{x\y} (non constant function if ?1 depends on x) (BB) *)
 let solve_pattern_eqn env l1 c =
   let l1 = List.map (expand_var env) l1 in
   let c' = List.fold_right (fun a c ->
