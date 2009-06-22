@@ -954,11 +954,13 @@ Module OrdProperties (M:S).
    elements s = elements_lt x s ++ elements_ge x s.
   Proof.
   unfold elements_lt, elements_ge, leb; intros.
-  eapply (@filter_split _ E.eq); eauto with set. ME.order. ME.order. ME.order.
+  eapply (@filter_split _ E.eq); trivial with set; auto with set.
+   ME.order. ME.order. ME.order.
   intros.
   rewrite gtb_1 in H.
   assert (~E.lt y x).
-   unfold gtb in *; destruct (E.compare x y); intuition; try discriminate; ME.order.
+   unfold gtb in *; destruct (E.compare x y); intuition;
+   try discriminate; ME.order.
   ME.order.
   Qed.
 

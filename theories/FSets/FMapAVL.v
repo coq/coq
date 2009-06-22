@@ -1793,7 +1793,7 @@ Lemma map2_2 : forall m m' y, bst m -> bst m' ->
   In y (map2 f m m') -> In y m \/ In y m'.
 Proof.
 unfold map2; intros.
-eapply map2_opt_2 with (f0:=fun _ => f); eauto; intros.
+eapply map2_opt_2 with (f0:=fun _ => f); try eassumption; trivial; intros.
  apply map_option_bst; auto.
  apply map_option_bst; auto.
  rewrite map_option_find; auto.
