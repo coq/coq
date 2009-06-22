@@ -324,9 +324,6 @@ let rec attribute_of_vernac_command = function
   | VernacExtend ("Subtac_Obligations", _) -> [GoalStartingCommand]
   | VernacExtend _ -> []
 
-let is_vernac_goal_starting_command com =
-  List.mem GoalStartingCommand (attribute_of_vernac_command com)
-
 let is_vernac_navigation_command com =
   List.mem NavigationCommand (attribute_of_vernac_command com)
 
@@ -343,17 +340,6 @@ let is_vernac_goal_printing_command com =
   let attribute = attribute_of_vernac_command com in
   List.mem GoalStartingCommand attribute or
   List.mem SolveCommand attribute
-
-let is_vernac_state_preserving_command com =
-  let attribute = attribute_of_vernac_command com in
-  List.mem OtherStatePreservingCommand attribute or
-  List.mem QueryCommand attribute
-
-let is_vernac_tactic_command com =
-  List.mem SolveCommand (attribute_of_vernac_command com)
-
-let is_vernac_proof_ending_command com =
-  List.mem ProofEndingCommand (attribute_of_vernac_command com)
 
 type undo_info = identifier list * int
 
