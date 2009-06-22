@@ -175,7 +175,7 @@ let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t 
     new_cstr_evar evars env
       (* ~src:(dummy_loc, ImplicitArg (ConstRef (Lazy.force respectful), (n, Some na))) *) t
   in
-  let mk_relty evars ty obj =
+  let mk_relty evars env ty obj =
     match obj with
       | None -> 
 	  let relty = mk_relation ty in
@@ -192,11 +192,12 @@ let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t 
 	    let pred = mkLambda (na, ty, b) in
 	    let liftarg = mkLambda (na, ty, arg) in
 	    let arg' = mkApp (Lazy.force forall_relation, [| ty ; pred ; liftarg |]) in
-	      evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
+	      if obj = None then evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
+	      else raise (Invalid_argument "build_signature: no constraint can apply on a dependent argument")
 	  else
 	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
 	    let ty = Reductionops.nf_betaiota (fst evars) ty in
-	    let evars, relty = mk_relty evars ty obj in
+	    let evars, relty = mk_relty evars env ty obj in
 	    let newarg = mkApp (Lazy.force respectful, [| ty ; b' ; relty ; arg |]) in
 	      evars, mkProd(na, ty, b), newarg, (ty, Some relty) :: cstrs
       | _, obj :: _ -> anomaly "build_signature: not enough products"
@@ -204,7 +205,7 @@ let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t 
 	  (match finalcstr with
 	      None -> 
 		let t = Reductionops.nf_betaiota (fst evars) ty in
-		let evars, rel = mk_relty evars t None in 
+		let evars, rel = mk_relty evars env t None in 
 		  evars, t, rel, [t, Some rel]
 	    | Some codom -> let (t, rel) = Lazy.force codom in
 			      evars, t, rel, [t, Some rel])
@@ -467,22 +468,24 @@ let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars 
     let evars, morph = new_cstr_evar evars env' app in
       evars, morph, morph, sigargs, appm, morphobjs, morphobjs'
   in 
-  let projargs, evars, respars, typeargs = 
+  let projargs, subst, evars, respars, typeargs = 
     array_fold_left2 
-      (fun (acc, evars, sigargs, typeargs') x y -> 
+      (fun (acc, subst, evars, sigargs, typeargs') x y -> 
 	let (carrier, relation), sigargs = split_head sigargs in
 	  match relation with
 	  | Some relation ->
+	      let carrier = substl subst carrier 
+	      and relation = substl subst relation in
 	      (match y with
 	      | None ->
 		  let evars, proof = proper_proof env evars carrier relation x in
-		    [ proof ; x ; x ] @ acc, evars, sigargs, x :: typeargs'
+		    [ proof ; x ; x ] @ acc, subst, evars, sigargs, x :: typeargs'
 	      | Some r -> 
-		  [ r.rew_prf; r.rew_to; x ] @ acc, evars, sigargs, r.rew_to :: typeargs')
+		  [ r.rew_prf; r.rew_to; x ] @ acc, subst, evars, sigargs, r.rew_to :: typeargs')
 	  | None -> 
 	      if y <> None then error "Cannot rewrite the argument of a dependent function";
-	      x :: acc, evars, sigargs, x :: typeargs')
-      ([], evars, sigargs, []) args args'
+	      x :: acc, x :: subst, evars, sigargs, x :: typeargs')
+      ([], [], evars, sigargs, []) args args'
   in
   let proof = applistc proj (List.rev projargs) in
   let newt = applistc m' (List.rev typeargs) in
