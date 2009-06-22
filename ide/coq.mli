@@ -48,11 +48,6 @@ val interp_last : Util.loc * Vernacexpr.vernac_expr -> unit
 val interp_and_replace : string -> 
       (reset_info * (Util.loc * Vernacexpr.vernac_expr)) * string
 
-val is_vernac_tactic_command : Vernacexpr.vernac_expr -> bool
-val is_vernac_state_preserving_command : Vernacexpr.vernac_expr -> bool
-val is_vernac_goal_starting_command : Vernacexpr.vernac_expr -> bool
-val is_vernac_proof_ending_command : Vernacexpr.vernac_expr -> bool
-
 (* type hyp = (identifier * constr option * constr) * string *)
 
 type hyp = env * evar_map * 
