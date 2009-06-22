@@ -1252,10 +1252,7 @@ let interp_constr_evars_gen_impls ?evdref ?(fail_evar=true)
   in
   let c = intern_gen (kind=IsType) ~impls !evdref env c in
   let imps = Implicit_quantifiers.implicits_of_rawterm c in
-    if fail_evar then 
-      Default.understand_gen kind !evdref env c, imps
-    else
-      Default.understand_tcc_evars evdref env kind c, imps
+    Default.understand_tcc_evars ~fail_evar evdref env kind c, imps
 	      
 let interp_casted_constr_evars_impls ?evdref ?(fail_evar=true)
     env ?(impls=([],[])) c typ =

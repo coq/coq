@@ -629,8 +629,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   let understand_tcc ?(resolve_classes=true) sigma env ?expected_type:exptyp c =
     ise_pretype_gen false resolve_classes sigma env ([],[]) (OfType exptyp) c
 
-  let understand_tcc_evars evdref env kind c =
-    pretype_gen false true evdref env ([],[]) kind c
+  let understand_tcc_evars ?(fail_evar=false) ?(resolve_classes=true) evdref env kind c =
+    pretype_gen fail_evar resolve_classes evdref env ([],[]) kind c
 end
 
 module Default : S = SubtacPretyping_F(Coercion.Default)

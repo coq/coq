@@ -101,7 +101,7 @@ sig
   val understand_tcc : ?resolve_classes:bool ->
     evar_map -> env -> ?expected_type:types -> rawconstr -> open_constr
 
-  val understand_tcc_evars :
+  val understand_tcc_evars : ?fail_evar:bool -> ?resolve_classes:bool ->
     evar_defs ref -> env -> typing_constraint -> rawconstr -> constr
     
   (* More general entry point with evars from ltac *)
@@ -724,8 +724,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   let understand_tcc ?(resolve_classes=true) sigma env ?expected_type:exptyp c =
     ise_pretype_gen false resolve_classes sigma env ([],[]) (OfType exptyp) c
 
-  let understand_tcc_evars evdref env kind c =
-    pretype_gen false true evdref env ([],[]) kind c
+  let understand_tcc_evars ?(fail_evar=false) ?(resolve_classes=true) evdref env kind c =
+    pretype_gen fail_evar resolve_classes evdref env ([],[]) kind c
 end
 
 module Default : S = Pretyping_F(Coercion.Default)

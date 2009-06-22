@@ -43,7 +43,7 @@ sig
   val understand_tcc : ?resolve_classes:bool ->
     evar_map -> env -> ?expected_type:types -> rawconstr -> open_constr
     
-  val understand_tcc_evars :
+  val understand_tcc_evars : ?fail_evar:bool -> ?resolve_classes:bool ->
     evar_defs ref -> env -> typing_constraint -> rawconstr -> constr
 
   (* More general entry point with evars from ltac *)
