@@ -66,7 +66,8 @@ val positions_of_implicits : implicits_list -> int list
 val compute_implicits : env -> types -> implicits_list
 
 (* A [manual_explicitation] is a tuple of a positional or named explicitation with
-   maximal insertion, force inference and force usage flags. *)
+   maximal insertion, force inference and force usage flags. Forcing usage makes 
+   the argument implicit even if the automatic inference considers it not inferable. *)
 type manual_explicitation = Topconstr.explicitation * (bool * bool * bool)
 
 val compute_implicits_with_manual : env -> types -> bool -> 
