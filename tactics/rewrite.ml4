@@ -193,7 +193,7 @@ let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t 
 	    let liftarg = mkLambda (na, ty, arg) in
 	    let arg' = mkApp (Lazy.force forall_relation, [| ty ; pred ; liftarg |]) in
 	      if obj = None then evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
-	      else raise (Invalid_argument "build_signature: no constraint can apply on a dependent argument")
+	      else error "build_signature: no constraint can apply on a dependent argument"
 	  else
 	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
 	    let ty = Reductionops.nf_betaiota (fst evars) ty in
