@@ -1,4 +1,4 @@
-(* -*- compile-command: "make -C ../.. bin/coqtop.byte" -*- *)
+(* -*- compile-command: "make -C ../.. plugins/subtac/subtac_plugin.cma" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -1774,20 +1774,22 @@ let lift_ctx n ctx =
   in ctx'
 
 (* Turn matched terms into variables. *)
-let abstract_tomatch env tomatchs =
-  let prev, ctx, names = 
+let abstract_tomatch env tomatchs tycon =
+  let prev, ctx, names, tycon = 
     List.fold_left
-      (fun (prev, ctx, names) (c, t) ->
+      (fun (prev, ctx, names, tycon) (c, t) ->
 	 let lenctx =  List.length ctx in
 	 match kind_of_term c with
-	     Rel n -> (lift lenctx c, lift_tomatch_type lenctx t) :: prev, ctx, names
+	     Rel n -> (lift lenctx c, lift_tomatch_type lenctx t) :: prev, ctx, names, tycon
 	   | _ -> 
+	       let tycon = Option.map
+		 (fun t -> subst_term_occ all_occurrences (lift 1 c) (lift 1 t)) tycon in
 	       let name = next_ident_away_from (id_of_string "filtered_var") names in
 		 (mkRel 1, lift_tomatch_type (succ lenctx) t) :: lift_ctx 1 prev, 
 	       (Name name, Some (lift lenctx c), lift lenctx $ type_of_tomatch t) :: ctx, 
-	       name :: names)
-      ([], [], []) tomatchs
-  in List.rev prev, ctx
+	       name :: names, tycon)
+      ([], [], [], valcon_of_tycon tycon) tomatchs
+  in List.rev prev, ctx, tycon
     
 let is_dependent_ind = function
     IsInd (_, IndType (indf, args)) when List.length args > 0 -> true
@@ -1930,8 +1932,7 @@ let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constra
   let tomatchs = coerce_to_indtype typing_fun isevars env matx tomatchl in
   let _isdep = List.exists (fun (x, y) -> is_dependent_ind y) tomatchs in
     if predopt = None then
-      let tomatchs, tomatchs_lets = abstract_tomatch env tomatchs in
-      let tomatchs_len = List.length tomatchs_lets in
+      let tomatchs, tomatchs_lets, tycon = abstract_tomatch env tomatchs tycon in
       let env = push_rel_context tomatchs_lets env in
       let len = List.length eqns in 
       let sign, allnames, signlen, eqs, neqs, args = 
@@ -1944,11 +1945,11 @@ let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constra
 
       in
       let tycon, arity = 
-	match valcon_of_tycon tycon with
+	match tycon with
 	| None -> let ev = mkExistential env isevars in ev, ev
 	| Some t -> 
 	    t, prepare_predicate_from_arsign_tycon loc env ( !isevars)
-	      tomatchs sign (lift tomatchs_len t)
+	      tomatchs sign t
       in
       let neqs, arity = 
 	let ctx = context_of_arsign eqs in
