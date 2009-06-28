@@ -1600,19 +1600,22 @@ let prepare_predicate_from_arsign_tycon loc env tomatchs sign arsign c =
 	  | Rel n when dependent tm c 
 		&& signlen = 1 (* The term to match is not of a dependent type itself *) ->
 	      ((n, len) :: subst, len - signlen)
-	  | Rel _ when not (dependent tm c)
-		&& signlen > 1 (* The term is of a dependent type but does not appear in 
-				  the tycon, maybe some variable in its type does. *) ->
+	  | Rel n when signlen > 1 (* The term is of a dependent type,
+				      maybe some variable in its type appears in the tycon. *) ->
 	      (match tmtype with
 		  NotInd _ -> (* len - signlen, subst*) assert false (* signlen > 1 *)
 		| IsInd (_, IndType(indf,realargs),_) ->
-		    List.fold_left
-		      (fun (subst, len) arg -> 
-			match kind_of_term arg with
+		    let subst = 
+		      if dependent tm c && List.for_all isRel realargs 
+		      then (n, 1) :: subst else subst 
+		    in
+		      List.fold_left
+			(fun (subst, len) arg -> 
+			  match kind_of_term arg with
 			  | Rel n when dependent arg c ->
 			      ((n, len) :: subst, pred len)
 			  | _ -> (subst, pred len))
-		      (subst, len) realargs)
+			(subst, len) realargs)
 	  | _ -> (subst, len - signlen))
       ([], nar) tomatchs arsign
   in

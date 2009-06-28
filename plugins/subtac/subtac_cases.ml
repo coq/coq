@@ -291,6 +291,62 @@ let evd_comb2 f isevars x y =
   isevars := evd';
   y
 
+let context_of_arsign l =
+  let (x, _) = List.fold_right
+    (fun c (x, n) -> 
+      (lift_rel_context n c @ x, List.length c + n))
+    l ([], 0)
+  in x
+
+(* We put the tycon inside the arity signature, possibly discovering dependencies. *)
+
+let prepare_predicate_from_arsign_tycon loc env evm tomatchs arsign c =
+  let nar = List.fold_left (fun n sign -> List.length sign + n) 0 arsign in
+  let subst, len = 
+    List.fold_left2 (fun (subst, len) (tm, tmtype) sign ->
+      let signlen = List.length sign in
+	match kind_of_term tm with
+	  | Rel n when dependent tm c 
+		&& signlen = 1 (* The term to match is not of a dependent type itself *) ->
+	      ((n, len) :: subst, len - signlen)
+	  | Rel n when signlen > 1 (* The term is of a dependent type,
+				      maybe some variable in its type appears in the tycon. *) ->
+	      (match tmtype with
+	      | NotInd _ -> (* len - signlen, subst*) assert false (* signlen > 1 *)
+	      | IsInd (_, IndType(indf,realargs)) ->
+		  let subst = 
+		    if dependent tm c && List.for_all isRel realargs 
+		    then (n, 1) :: subst else subst 
+		  in
+		    List.fold_left
+		      (fun (subst, len) arg -> 
+			match kind_of_term arg with
+			| Rel n when dependent arg c ->
+			    ((n, len) :: subst, pred len)
+			| _ -> (subst, pred len))
+		      (subst, len) realargs)
+	  | _ -> (subst, len - signlen))
+      ([], nar) tomatchs arsign
+  in
+  let rec predicate lift c =
+    match kind_of_term c with
+      | Rel n when n > lift -> 
+	  (try 
+	      (* Make the predicate dependent on the matched variable *)
+	      let idx = List.assoc (n - lift) subst in
+		mkRel (idx + lift)
+	    with Not_found -> 
+	      (* A variable that is not matched, lift over the arsign. *)
+	      mkRel (n + nar))
+      | _ ->
+	  map_constr_with_binders succ predicate lift c 
+  in
+    try 
+      (* The tycon may be ill-typed after abstraction. *)
+      let pred = predicate 0 c in
+      let env' = push_rel_context (context_of_arsign arsign) env in
+	ignore(Typing.sort_of env' evm pred); pred
+    with _ -> lift nar c
 
 module Cases_F(Coercion : Coercion.S) : S = struct
 
@@ -1465,13 +1521,6 @@ let mk_JMeq_refl typ x = mkApp (Lazy.force Subtac_utils.jmeq_refl, [| typ; x |])
     
 let hole = RHole (dummy_loc, Evd.QuestionMark (Evd.Define true))
 
-let context_of_arsign l =
-  let (x, _) = List.fold_right
-    (fun c (x, n) -> 
-      (lift_rel_context n c @ x, List.length c + n))
-    l ([], 0)
-  in x
-
 let constr_of_pat env isevars arsign pat avoid = 
   let rec typ env (ty, realargs) pat avoid = 
     match pat with
@@ -1850,53 +1899,6 @@ let nf_evars_env evar_defs (env : env) : env =
     Environ.fold_rel_context (fun e (na, b, t) e' -> Environ.push_rel (na, Option.map nf b, nf t) e')
      ~init:env' env
       
-(* We put the tycon inside the arity signature, possibly discovering dependencies. *)
-
-let prepare_predicate_from_arsign_tycon loc env evm tomatchs arsign c =
-  let nar = List.fold_left (fun n sign -> List.length sign + n) 0 arsign in
-  let subst, len = 
-    List.fold_left2 (fun (subst, len) (tm, tmtype) sign ->
-      let signlen = List.length sign in
-	match kind_of_term tm with
-	  | Rel n when dependent tm c 
-		&& signlen = 1 (* The term to match is not of a dependent type itself *) ->
-	      ((n, len) :: subst, len - signlen)
-	  | Rel _ when not (dependent tm c)
-		&& signlen > 1 (* The term is of a dependent type but does not appear in 
-				  the tycon, maybe some variable in its type does. *) ->
-	      (match tmtype with
-		  NotInd _ -> (* len - signlen, subst*) assert false (* signlen > 1 *)
-		| IsInd (_, IndType(indf,realargs)) ->
-		    List.fold_left
-		      (fun (subst, len) arg -> 
-			match kind_of_term arg with
-			  | Rel n when dependent arg c ->
-			      ((n, len) :: subst, pred len)
-			  | _ -> (subst, pred len))
-		      (subst, len) realargs)
-	  | _ -> (subst, len - signlen))
-      ([], nar) tomatchs arsign
-  in
-  let rec predicate lift c =
-    match kind_of_term c with
-      | Rel n when n > lift -> 
-	  (try 
-	      (* Make the predicate dependent on the matched variable *)
-	      let idx = List.assoc (n - lift) subst in
-		mkRel (idx + lift)
-	    with Not_found -> 
-	      (* A variable that is not matched, lift over the arsign. *)
-	      mkRel (n + nar))
-      | _ ->
-	  map_constr_with_binders succ predicate lift c 
-  in
-    try 
-      (* The tycon may be ill-typed after abstraction. *)
-      let pred = predicate 0 c in
-      let env' = push_rel_context (context_of_arsign arsign) env in
-	ignore(Typing.sort_of env' evm pred); pred
-    with _ -> lift nar c
-
 
 let prepare_predicate_from_rettyp loc typing_fun isevars env tomatchs sign tycon rtntyp =
   (* We extract the signature of the arity *)
