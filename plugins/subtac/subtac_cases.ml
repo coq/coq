@@ -1788,7 +1788,7 @@ let abstract_tomatch env tomatchs tycon =
 		 (mkRel 1, lift_tomatch_type (succ lenctx) t) :: lift_ctx 1 prev, 
 	       (Name name, Some (lift lenctx c), lift lenctx $ type_of_tomatch t) :: ctx, 
 	       name :: names, tycon)
-      ([], [], [], valcon_of_tycon tycon) tomatchs
+      ([], [], [], tycon) tomatchs
   in List.rev prev, ctx, tycon
     
 let is_dependent_ind = function
@@ -1932,7 +1932,8 @@ let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constra
   let tomatchs = coerce_to_indtype typing_fun isevars env matx tomatchl in
   let _isdep = List.exists (fun (x, y) -> is_dependent_ind y) tomatchs in
     if predopt = None then
-      let tomatchs, tomatchs_lets, tycon = abstract_tomatch env tomatchs tycon in
+      let tycon = valcon_of_tycon tycon in
+      let tomatchs, tomatchs_lets, tycon' = abstract_tomatch env tomatchs tycon in
       let env = push_rel_context tomatchs_lets env in
       let len = List.length eqns in 
       let sign, allnames, signlen, eqs, neqs, args = 
@@ -1945,10 +1946,10 @@ let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constra
 
       in
       let tycon, arity = 
-	match tycon with
+	match tycon' with
 	| None -> let ev = mkExistential env isevars in ev, ev
 	| Some t -> 
-	    t, prepare_predicate_from_arsign_tycon loc env ( !isevars)
+	    Option.get tycon, prepare_predicate_from_arsign_tycon loc env ( !isevars)
 	      tomatchs sign t
       in
       let neqs, arity = 
