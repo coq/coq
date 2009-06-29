@@ -248,10 +248,18 @@ let rec number len = parser
 
 let escape len c = store len c
 
-let rec string bp len = parser
+let rec string in_comments bp len = parser
   | [< ''"'; esc=(parser [<''"' >] -> true | [< >] -> false); s >] ->
-      if esc then string bp (store len '"') s else len
-  | [< 'c; s >] -> string bp (store len c) s 
+      if esc then string in_comments bp (store len '"') s else len
+  | [< ''*'; s >] ->
+      (parser
+        | [< '')'; s >] -> 
+	    if in_comments then
+	      warning "Not interpreting \"*)\" as the end of current non-terminated comment because it occurs in a non-terminated string of the comment.";
+	    string in_comments bp (store (store len '*') ')') s 
+        | [< >] ->
+	    string in_comments bp (store len '*') s) s
+  | [< 'c; s >] -> string in_comments bp (store len c) s 
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
 
 (* Hook for exporting comment into xml theory files *)
@@ -337,7 +345,7 @@ let rec comment bp = parser bp2
          | [< s >] -> real_push_char '*'; comment bp s >] -> ()
   | [< ''"'; s >] ->
       if Flags.do_beautify() then (push_string"\"";comm_string bp2 s)
-      else ignore (string bp2 0 s);
+      else ignore (string true bp2 0 s);
       comment bp s
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_comment
   | [< 'z; s >] -> real_push_char z; comment bp s
@@ -446,7 +454,7 @@ let rec next_token = parser bp
   | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
       comment_stop bp;
       (("INT", get_buff len), (bp, ep))
-  | [< ''\"'; len = string bp 0 >] ep ->
+  | [< ''\"'; len = string false bp 0 >] ep ->
       comment_stop bp;
       (("STRING", get_buff len), (bp, ep))
   | [< ' ('(' as c);

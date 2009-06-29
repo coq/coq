@@ -74,6 +74,8 @@ Hint Resolve andb_true_intro: bool.
 
 Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.
 
+Hint Constructors eq_true : eq_true.
+
 (** Additional rewriting lemmas about [eq_true] *)
 
 Lemma eq_true_ind_r :

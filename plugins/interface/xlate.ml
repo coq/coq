@@ -635,6 +635,7 @@ let rec xlate_intro_pattern (loc,pat) = match pat with
   | IntroAnonymous -> xlate_error "TODO: IntroAnonymous"
   | IntroFresh _ -> xlate_error "TODO: IntroFresh"
   | IntroRewrite _ -> xlate_error "TODO: IntroRewrite"
+  | IntroForthcoming _ -> xlate_error "TODO: IntroForthcoming"
 
 let compute_INV_TYPE = function
    FullInversionClear -> CT_inv_clear

@@ -139,7 +139,14 @@ and next_interior_order = parse
 and comment = parse
   | "*)" { !comment_start,lexeme_end lexbuf,"comment" }
   | "(*" { ignore (comment lexbuf); comment lexbuf }
+  | "\"" { string_in_comment lexbuf }
   | _    { comment lexbuf }
+  | eof  { raise End_of_file }
+
+and string_in_comment = parse
+  | "\"\"" { string_in_comment lexbuf }
+  | "\"" { comment lexbuf }
+  | _ { string_in_comment lexbuf }
   | eof  { raise End_of_file }
 
 {

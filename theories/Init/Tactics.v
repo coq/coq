@@ -167,7 +167,7 @@ Ltac easy :=
     solve [reflexivity | symmetry; trivial] ||
     contradiction ||
     (split; do_atom)
-  with do_ccl := trivial; repeat do_intro; do_atom in
+  with do_ccl := trivial with eq_true; repeat do_intro; do_atom in
   (use_hyps; do_ccl) || fail "Cannot solve this goal".
 
 Tactic Notation "now" tactic(t) := t; easy.
