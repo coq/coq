@@ -2345,7 +2345,7 @@ and interp_atomic ist gl = function
       Equality.general_multi_multi_rewrite ev
 	(List.map (fun (b,m,c) -> (b,m,interp_open_constr_with_bindings ist gl c)) l)
 	(interp_clause ist gl cl)
-	(Option.map (interp_tactic ist) by)
+	(Option.map (fun by -> tclCOMPLETE (interp_tactic ist by), Equality.Naive) by)
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       Inv.dinv k (Option.map (pf_interp_constr ist gl) c)
         (Option.map (interp_intro_pattern ist gl) ids)

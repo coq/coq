@@ -34,6 +34,9 @@ val w_unify :
 val w_unify_to_subterm :
   env -> ?flags:unify_flags -> constr * constr -> evar_defs -> evar_defs * constr
 
+val w_unify_to_subterm_all :
+  env -> ?flags:unify_flags -> constr * constr -> evar_defs -> (evar_defs * constr) list
+
 val w_unify_meta_types : env -> ?flags:unify_flags -> evar_defs -> evar_defs
 
 (* [w_coerce_to_type env evd c ctyp typ] tries to coerce [c] of type

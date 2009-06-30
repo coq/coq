@@ -111,33 +111,35 @@ let one_base general_rewrite_maybe_in tac_main bas =
     tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
       tclTHEN tac
         (tclREPEAT_MAIN 
-	  (tclTHENSFIRSTn (general_rewrite_maybe_in dir csr) [|tac_main|] tc)))
+	    (tclTHENFIRST (general_rewrite_maybe_in dir csr tc) tac_main)))
       tclIDTAC lrul))
 
 (* The AutoRewrite tactic *)
-let autorewrite tac_main lbas =
+let autorewrite ?(conds=Naive) tac_main lbas =
   tclREPEAT_MAIN (tclPROGRESS
     (List.fold_left (fun tac bas -> 
        tclTHEN tac
-        (one_base (fun dir -> general_rewrite dir all_occurrences)
+        (one_base (fun dir c tac ->
+	  let tac = tac, conds in
+	    general_rewrite dir all_occurrences ~tac c)
 	  tac_main bas))
       tclIDTAC lbas))
 
-let autorewrite_multi_in idl tac_main lbas : tactic =
+let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas : tactic =
   fun gl -> 
  (* let's check at once if id exists (to raise the appropriate error) *)
  let _ = List.map (Tacmach.pf_get_hyp gl) idl in
  let general_rewrite_in id =
   let id = ref id in
   let to_be_cleared = ref false in
-   fun dir cstr gl ->
+   fun dir cstr tac gl ->
     let last_hyp_id =
      match (Environ.named_context_of_val gl.Evd.it.Evd.evar_hyps) with
         (last_hyp_id,_,_)::_ -> last_hyp_id
       | _ -> (* even the hypothesis id is missing *)
              error ("No such hypothesis: " ^ (string_of_id !id) ^".")
     in
-    let gl' = general_rewrite_in dir all_occurrences !id cstr false gl in
+    let gl' = general_rewrite_in dir all_occurrences ~tac:(tac, conds) !id cstr false gl in
     let gls = (fst gl').Evd.it in
     match gls with
        g::_ ->
@@ -167,11 +169,11 @@ let autorewrite_multi_in idl tac_main lbas : tactic =
        tclTHEN tac (one_base (general_rewrite_in id) tac_main bas)) tclIDTAC lbas)))
    idl gl
 
-let autorewrite_in id = autorewrite_multi_in [id]
+let autorewrite_in ?(conds=Naive) id = autorewrite_multi_in ~conds [id]
 
-let gen_auto_multi_rewrite tac_main lbas cl = 
+let gen_auto_multi_rewrite conds tac_main lbas cl = 
   let try_do_hyps treat_id l = 
-    autorewrite_multi_in (List.map treat_id l) tac_main lbas
+    autorewrite_multi_in ~conds (List.map treat_id l) tac_main lbas
   in 
   if cl.concl_occs <> all_occurrences_expr &
      cl.concl_occs <> no_occurrences_expr
@@ -184,7 +186,7 @@ let gen_auto_multi_rewrite tac_main lbas cl =
 	| _ ->      tclTHENFIRST t1 t2
     in
     compose_tac
-	(if cl.concl_occs <> no_occurrences_expr then autorewrite tac_main lbas else tclIDTAC)
+	(if cl.concl_occs <> no_occurrences_expr then autorewrite ~conds tac_main lbas else tclIDTAC)
 	(match cl.onhyps with 
 	   | Some l -> try_do_hyps (fun ((_,id),_) -> id) l
 	   | None -> 
@@ -194,16 +196,16 @@ let gen_auto_multi_rewrite tac_main lbas cl =
 		 let ids =  Tacmach.pf_ids_of_hyps gl
 		 in try_do_hyps (fun id -> id)  ids gl)
 
-let auto_multi_rewrite = gen_auto_multi_rewrite Refiner.tclIDTAC
+let auto_multi_rewrite ?(conds=Naive) = gen_auto_multi_rewrite conds Refiner.tclIDTAC
 
-let auto_multi_rewrite_with tac_main lbas cl gl =
+let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl gl =
   let onconcl = cl.Tacexpr.concl_occs <> no_occurrences_expr in
   match onconcl,cl.Tacexpr.onhyps with 
     | false,Some [_] | true,Some [] | false,Some [] ->   
 	(* autorewrite with .... in clause using tac n'est sur que 
 	   si clause represente soit le but soit UNE hypothese 
 	*)
-	gen_auto_multi_rewrite tac_main  lbas cl gl
+	gen_auto_multi_rewrite conds tac_main lbas cl gl
     | _ -> 
 	    Util.errorlabstrm "autorewrite" 
 	      (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")

@@ -27,36 +27,46 @@ open Rawterm
 open Genarg
 (*i*)
 
+type orientation = bool
+
+type conditions = 
+  | Naive (* Only try the first occurence of the lemma (default) *)
+  | FirstSolved (* Use the first match whose side-conditions are solved *)
+  | AllMatches (* Rewrite all matches whose side-conditions are solved *)
+      
 val general_rewrite_bindings : 
-  bool -> occurrences -> constr with_bindings -> evars_flag -> tactic
+  orientation -> occurrences -> ?tac:(tactic * conditions) -> constr with_bindings -> evars_flag -> tactic
 val general_rewrite : 
-  bool -> occurrences -> constr -> tactic
+  orientation -> occurrences -> ?tac:(tactic * conditions) -> constr -> tactic
 
 (* Equivalent to [general_rewrite l2r] *)
-val rewriteLR   : constr -> tactic
-val rewriteRL   : constr  -> tactic
+val rewriteLR   : ?tac:(tactic * conditions) -> constr -> tactic
+val rewriteRL   : ?tac:(tactic * conditions) -> constr  -> tactic
 
 (* Warning: old [general_rewrite_in] is now [general_rewrite_bindings_in] *)
 
 val register_general_setoid_rewrite_clause :
-  (identifier option -> bool ->
+  (identifier option -> orientation ->
     occurrences -> open_constr -> new_goals:constr list -> tactic) -> unit
 val register_is_applied_setoid_relation : (constr -> bool) -> unit
 
-val general_rewrite_bindings_in :
-  bool -> occurrences -> identifier -> constr with_bindings -> evars_flag -> tactic
-val general_rewrite_in          :
-  bool -> occurrences -> identifier -> constr -> evars_flag -> tactic
+val general_rewrite_ebindings_clause : identifier option -> 
+  orientation -> occurrences -> ?tac:(tactic * conditions) -> open_constr with_bindings -> evars_flag -> tactic
 
-val general_multi_rewrite : 
-  bool -> evars_flag -> open_constr with_bindings -> clause -> tactic
+val general_rewrite_bindings_in : 
+  orientation -> occurrences -> ?tac:(tactic * conditions) -> identifier -> constr with_bindings -> evars_flag -> tactic
+val general_rewrite_in          :
+  orientation -> occurrences -> ?tac:(tactic * conditions) -> identifier -> constr -> evars_flag -> tactic
+
+val general_multi_rewrite :
+  orientation -> evars_flag -> ?tac:(tactic * conditions) -> open_constr with_bindings -> clause -> tactic
 val general_multi_multi_rewrite : 
   evars_flag -> (bool * multi * open_constr with_bindings) list -> clause -> 
-  tactic option -> tactic
+  (tactic * conditions) option -> tactic
 
-val conditional_rewrite : bool -> tactic -> open_constr with_bindings -> tactic
+val conditional_rewrite : orientation -> tactic -> open_constr with_bindings -> tactic
 val conditional_rewrite_in :
-  bool -> identifier -> tactic -> open_constr with_bindings -> tactic
+  orientation -> identifier -> tactic -> open_constr with_bindings -> tactic
 
 val replace_in_clause_maybe_by : constr -> constr -> clause -> tactic option -> tactic
 val replace    : constr -> constr -> tactic

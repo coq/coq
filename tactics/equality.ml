@@ -46,6 +46,13 @@ open Evd
 
 (* Rewriting tactics *)
 
+type orientation = bool
+
+type conditions = 
+  | Naive (* Only try the first occurence of the lemma (default) *)
+  | FirstSolved (* Use the first match whose side-conditions are solved *)
+  | AllMatches (* Rewrite all matches whose side-conditions are solved *)
+      
 (* Warning : rewriting from left to right only works
    if there exists in the context a theorem named <eqname>_<suffsort>_r
    with type (A:<sort>)(x:A)(P:A->Prop)(P x)->(y:A)(eqname A y x)->(P y).
@@ -61,7 +68,12 @@ let rewrite_unif_flags = {
   Unification.resolve_evars = true;
 }
 
-let instantiate_lemma env sigma gl c ty l l2r concl =
+let side_tac tac sidetac =
+  match sidetac with
+  | None -> tac
+  | Some sidetac -> tclTHENSFIRSTn tac [|tclIDTAC|] sidetac
+
+let instantiate_lemma_all env sigma gl c ty l l2r concl =
   let eqclause = Clenv.make_clenv_binding { gl with sigma = sigma } (c,ty) l in
   let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
   let rec split_last_two = function
@@ -70,22 +82,22 @@ let instantiate_lemma env sigma gl c ty l l2r concl =
 	  let l,res = split_last_two (y::z) in x::l, res
       | _ -> error "The term provided is not an applied relation." in
   let others,(c1,c2) = split_last_two args in
-  let evd', c' = 
-    Unification.w_unify_to_subterm ~flags:rewrite_unif_flags env
-      ((if l2r then c1 else c2),concl) eqclause.evd
-  in
-  let cl' = {eqclause with evd = evd'} in
-  let cl' =
+  let try_occ (evd', c') = 
+    let cl' = {eqclause with evd = evd'} in
     let mvs = clenv_dependent false cl' in
       clenv_pose_metas_as_evars cl' mvs
-  in cl'
+  in
+  let occs = 
+    Unification.w_unify_to_subterm_all ~flags:rewrite_unif_flags env
+      ((if l2r then c1 else c2),concl) eqclause.evd
+  in List.map try_occ occs
 
 let instantiate_lemma env sigma gl c ty l l2r concl =
   let gl = { gl with sigma = sigma } in
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
   let eqclause = Clenv.make_clenv_binding gl (c,t) l in
-    eqclause
+   [eqclause]
 
 let rewrite_elim with_evars c e ?(allow_K=true) =
   general_elim_clause_gen (elimination_clause_scheme with_evars allow_K) c e
@@ -108,11 +120,25 @@ let general_elim_clause with_evars cls rew elim =
     raise (Pretype_errors.PretypeError
 	      (env, (Pretype_errors.NoOccurrenceFound (c', cls))))
 
-let general_elim_clause with_evars cls sigma c t l l2r elim gl =
-  let c = instantiate_lemma (pf_env gl) sigma gl c t l l2r
-    (match cls with None -> pf_concl gl | Some id -> pf_get_hyp_typ gl id)
-  in 
-    tclTHEN (Refiner.tclEVARS c.evd) (general_elim_clause with_evars cls c elim) gl
+let general_elim_clause with_evars tac cls sigma c t l l2r elim gl =
+  let all, firstonly, tac = 
+    match tac with
+    | None -> false, false, None
+    | Some (tac, Naive) -> false, false, Some tac
+    | Some (tac, FirstSolved) -> true, true, Some (tclCOMPLETE tac)
+    | Some (tac, AllMatches) -> true, false, Some (tclCOMPLETE tac)
+  in
+  let cs = 
+    (if not all then instantiate_lemma else instantiate_lemma_all)
+      (pf_env gl) sigma gl c t l l2r
+      (match cls with None -> pf_concl gl | Some id -> pf_get_hyp_typ gl id)
+  in
+  let try_clause c =
+    side_tac (tclTHEN (Refiner.tclEVARS c.evd) (general_elim_clause with_evars cls c elim)) tac
+  in
+    if firstonly then
+      tclFIRST (List.map try_clause cs) gl
+    else tclMAP try_clause cs gl
 
 (* The next function decides in particular whether to try a regular 
   rewrite or a setoid rewrite. 
@@ -137,9 +163,9 @@ let find_elim hdcncl lft2rgt cls gl =
   try pf_global gl (id_of_string rwr_thm)
   with Not_found -> error ("Cannot find rewrite principle "^rwr_thm^".")
 
-let leibniz_rewrite_ebindings_clause cls lft2rgt sigma c t l with_evars gl hdcncl =
+let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars gl hdcncl =
   let elim = find_elim hdcncl lft2rgt cls gl in
-  general_elim_clause with_evars cls sigma c t l lft2rgt (elim,NoBindings) gl
+  general_elim_clause with_evars tac cls sigma c t l lft2rgt (elim,NoBindings) gl
 
 let adjust_rewriting_direction args lft2rgt =
   if List.length args = 1 then
@@ -150,9 +176,12 @@ let adjust_rewriting_direction args lft2rgt =
     (* other equality *)
     lft2rgt
 
-let general_rewrite_ebindings_clause cls lft2rgt occs ((c,l) : open_constr with_bindings) with_evars gl =
+let setoid_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
+
+let general_rewrite_ebindings_clause cls lft2rgt occs ?tac
+    ((c,l) : open_constr with_bindings) with_evars gl =
   if occs <> all_occurrences then (
-    !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl)
+    setoid_side_tac (!general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[]) tac gl)
   else
     let env = pf_env gl in
     let sigma, c' = c in
@@ -162,7 +191,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs ((c,l) : open_constr with_
       match match_with_equality_type t with
       | Some (hdcncl,args) -> (* Fast path: direct leibniz rewrite *)
 	  let lft2rgt = adjust_rewriting_direction args lft2rgt in
-	  leibniz_rewrite_ebindings_clause cls lft2rgt sigma c' (it_mkProd_or_LetIn t rels) 
+          leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c' (it_mkProd_or_LetIn t rels) 
 	    l with_evars gl hdcncl
       | None ->
 	  let env' = push_rel_context rels env in
@@ -171,34 +200,37 @@ let general_rewrite_ebindings_clause cls lft2rgt occs ((c,l) : open_constr with_
 	    | Some (hdcncl,args) -> (* Maybe a setoid relation with eq inside *)
 		let lft2rgt = adjust_rewriting_direction args lft2rgt in
 		if l = NoBindings && !is_applied_setoid_relation t then
-		  !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
+		  setoid_side_tac (!general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[]) tac gl
 		else
-		  (try leibniz_rewrite_ebindings_clause cls lft2rgt sigma c'
+		  (try leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c'
 		      (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars gl hdcncl
 		    with e -> 
-		      try !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
+		      try setoid_side_tac (!general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[]) tac gl
 		      with _ -> raise e)
 	    | None -> (* Can't be leibniz, try setoid *)
 		if l = NoBindings
-		then !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
+		then setoid_side_tac (!general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[]) tac gl
 		else error "The term provided does not end with an equation."
 	    
 let general_rewrite_ebindings = 
   general_rewrite_ebindings_clause None
-let general_rewrite_bindings l2r occs (c,bl) = 
-  general_rewrite_ebindings_clause None l2r occs (inj_open c,inj_ebindings bl)
 
-let general_rewrite l2r occs c =
-  general_rewrite_bindings l2r occs (c,NoBindings) false
+let general_rewrite_bindings l2r occs ?tac (c,bl) = 
+  general_rewrite_ebindings_clause None l2r occs ?tac (inj_open c,inj_ebindings bl)
 
-let general_rewrite_ebindings_in l2r occs id =
-  general_rewrite_ebindings_clause (Some id) l2r occs
-let general_rewrite_bindings_in l2r occs id (c,bl) =
-  general_rewrite_ebindings_clause (Some id) l2r occs (inj_open c,inj_ebindings bl)
-let general_rewrite_in l2r occs id c = 
-  general_rewrite_ebindings_clause (Some id) l2r occs (inj_open c,NoBindings)
+let general_rewrite l2r occs ?tac c =
+  general_rewrite_bindings l2r occs ?tac (c,NoBindings) false
 
-let general_multi_rewrite l2r with_evars c cl = 
+let general_rewrite_ebindings_in l2r occs ?tac id =
+  general_rewrite_ebindings_clause (Some id) l2r occs ?tac
+
+let general_rewrite_bindings_in l2r occs ?tac id (c,bl) =
+  general_rewrite_ebindings_clause (Some id) l2r occs ?tac (inj_open c,inj_ebindings bl)
+
+let general_rewrite_in l2r occs ?tac id c = 
+  general_rewrite_ebindings_clause (Some id) l2r occs ?tac (inj_open c,NoBindings)
+
+let general_multi_rewrite l2r with_evars ?tac c cl = 
   let occs_of = on_snd (List.fold_left 
     (fun acc ->
       function ArgArg x -> x :: acc | ArgVar _ -> acc)
@@ -212,12 +244,12 @@ let general_multi_rewrite l2r with_evars c cl =
 	  | [] -> tclIDTAC
 	  | ((occs,id),_) :: l -> 
 	    tclTHENFIRST
-	      (general_rewrite_ebindings_in l2r (occs_of occs) id c with_evars)
+	      (general_rewrite_ebindings_in l2r (occs_of occs) ?tac id c with_evars)
 	      (do_hyps l)
 	in 
 	if cl.concl_occs = no_occurrences_expr then do_hyps l else
 	  tclTHENFIRST
-	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) c with_evars)
+	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) ?tac c with_evars)
 	   (do_hyps l)
     | None -> 
 	(* Otherwise, if we are told to rewrite in all hypothesis via the 
@@ -226,7 +258,7 @@ let general_multi_rewrite l2r with_evars c cl =
 	  | [] -> (fun gl -> error "Nothing to rewrite.")
 	  | id :: l -> 
 	    tclIFTHENTRYELSEMUST 
-	     (general_rewrite_ebindings_in l2r all_occurrences id c with_evars)
+	     (general_rewrite_ebindings_in l2r all_occurrences ?tac id c with_evars)
 	     (do_hyps_atleastonce l)
 	in 
 	let do_hyps gl = 
@@ -238,16 +270,11 @@ let general_multi_rewrite l2r with_evars c cl =
 	in 
 	if cl.concl_occs = no_occurrences_expr then do_hyps else
 	  tclIFTHENTRYELSEMUST 
-	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) c with_evars)
+	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) ?tac c with_evars)
 	   do_hyps
 
 let general_multi_multi_rewrite with_evars l cl tac = 
-  let do1 l2r c = 
-    match tac with
-	None -> general_multi_rewrite l2r with_evars c cl
-      | Some tac -> tclTHENSFIRSTn (general_multi_rewrite l2r with_evars c cl)
-	  [|tclIDTAC|] (tclCOMPLETE tac)
-  in
+  let do1 l2r c = general_multi_rewrite l2r with_evars ?tac c cl in
   let rec doN l2r c = function 
     | Precisely n when n <= 0 -> tclIDTAC
     | Precisely 1 -> do1 l2r c
@@ -1300,4 +1327,5 @@ let replace_multi_term dir_opt c  =
   in 
   rewrite_multi_assumption_cond cond_eq_fun 
 
-let _ = Tactics.register_general_multi_rewrite general_multi_rewrite
+let _ = Tactics.register_general_multi_rewrite 
+  (fun b evars t cls -> general_multi_rewrite b evars t cls)

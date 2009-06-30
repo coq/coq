@@ -19,6 +19,8 @@ open Names
 open Tacexpr
 open Rawterm
 open Tactics
+open Util
+open Termops
 
 (* Equality *)
 open Equality
@@ -190,8 +192,39 @@ TACTIC EXTEND autorewrite
     ]
 END
 
+TACTIC EXTEND autorewrite_star
+| [ "autorewrite" "*" "with" ne_preident_list(l) in_arg_hyp(cl) ] ->
+    [ auto_multi_rewrite ~conds:AllMatches l (glob_in_arg_hyp_to_clause  cl) ]
+| [ "autorewrite" "*" "with" ne_preident_list(l) in_arg_hyp(cl) "using" tactic(t) ] ->
+    [ let cl =  glob_in_arg_hyp_to_clause cl in 
+	auto_multi_rewrite_with ~conds:AllMatches (snd t) l cl ]
+END
 
+open Extraargs
 
+let rewrite_star clause orient occs c (tac : glob_tactic_expr option) =
+  let tac' = Option.map (fun t -> Tacinterp.eval_tactic t, FirstSolved) tac in
+  general_rewrite_ebindings_clause clause orient occs ?tac:tac' (c,NoBindings) true 
+
+let occurrences_of = function
+  | n::_ as nl when n < 0 -> (false,List.map abs nl)
+  | nl -> 
+      if List.exists (fun n -> n < 0) nl then
+	error "Illegal negative occurrence number.";
+      (true,nl)
+
+TACTIC EXTEND rewrite_star
+| [ "rewrite" "*" orient(o) open_constr(c) "in" hyp(id) "at" occurrences(occ) by_arg_tac(tac) ] -> 
+    [ rewrite_star (Some id) o (occurrences_of occ) c tac ]
+| [ "rewrite" "*" orient(o) open_constr(c) "at" occurrences(occ) "in" hyp(id) by_arg_tac(tac) ] -> 
+    [ rewrite_star (Some id) o (occurrences_of occ) c tac ]
+| [ "rewrite" "*" orient(o) open_constr(c) "in" hyp(id) by_arg_tac(tac) ] -> 
+    [ rewrite_star (Some id) o all_occurrences c tac ]
+| [ "rewrite" "*" orient(o) open_constr(c) "at" occurrences(occ) by_arg_tac(tac) ] -> 
+    [ rewrite_star None o (occurrences_of occ) c tac ]
+| [ "rewrite" "*" orient(o) open_constr(c) by_arg_tac(tac) ] -> 
+    [ rewrite_star None o all_occurrences c tac ]
+    END
 
 let add_rewrite_hint name ort t lcsr =
   let env = Global.env() and sigma = Evd.empty in

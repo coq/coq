@@ -783,6 +783,70 @@ let w_unify_to_subterm env ?(flags=default_unify_flags) (op,cl) evd =
   with ex when precatchable_exception ex ->
     raise (PretypeError (env,NoOccurrenceFound (op, None)))
 
+(* Tries to find all instances of term [cl] in term [op].
+   Unifies [cl] to every subterm of [op] and return all the matches.
+   Fails if no match is found *)
+let w_unify_to_subterm_all env ?(flags=default_unify_flags) (op,cl) evd =
+  let return a b =
+    let (evd,c as a) = a () in
+      if List.exists (fun (evd',c') -> eq_constr c c') b then b else a :: b 
+  in
+  let fail str _ = error str in
+  let bind f g a = 
+    let a1 = try f a
+             with ex
+             when precatchable_exception ex -> a
+    in try g a1
+       with ex
+       when precatchable_exception ex -> a1
+  in
+  let bind_iter f a =
+    let n = Array.length a in 
+    let rec ffail i =
+      if i = n then fun a -> a
+      else bind (f a.(i)) (ffail (i+1))
+    in ffail 0
+  in
+  let rec matchrec cl =
+    let cl = strip_outer_cast cl in
+      (bind 
+	  (if closed0 cl 
+	  then return (fun () -> w_typed_unify env topconv flags op cl evd,cl)
+            else fail "Bound 1")
+          (match kind_of_term cl with 
+	    | App (f,args) ->
+		let n = Array.length args in
+		assert (n>0);
+		let c1 = mkApp (f,Array.sub args 0 (n-1)) in
+		let c2 = args.(n-1) in
+		bind (matchrec c1) (matchrec c2)
+
+            | Case(_,_,c,lf) -> (* does not search in the predicate *)
+		bind (matchrec c) (bind_iter matchrec lf)
+
+	    | LetIn(_,c1,_,c2) -> 
+		bind (matchrec c1) (matchrec c2)
+
+	    | Fix(_,(_,types,terms)) ->
+		bind (bind_iter matchrec types) (bind_iter matchrec terms)
+	
+	    | CoFix(_,(_,types,terms)) -> 
+		bind (bind_iter matchrec types) (bind_iter matchrec terms)
+
+            | Prod (_,t,c) ->
+		bind (matchrec t) (matchrec c)
+		  
+            | Lambda (_,t,c) ->
+		bind (matchrec t) (matchrec c)
+
+            | _ -> fail "Match_subterm")) 
+  in 
+  let res = matchrec cl [] in
+  if res = [] then
+    raise (PretypeError (env,NoOccurrenceFound (op, None)))
+  else
+    res
+
 let w_unify_to_subterm_list env flags allow_K oplist t evd = 
   List.fold_right 
     (fun op (evd,l) ->
