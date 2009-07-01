@@ -601,18 +601,20 @@ let import_module export (loc,qid) =
 (************************************************************************)
 (*s Initializing the compilation of a library. *)
 
-let check_coq_overwriting p =
+let check_coq_overwriting p id =
   let l = repr_dirpath p in
   if not !Flags.boot && l <> [] && string_of_id (list_last l) = "Coq" then
-    errorlabstrm "" (strbrk ("Name "^string_of_dirpath p^" starts with prefix \"Coq\" which is reserved for the Coq library."))
+    errorlabstrm ""
+      (strbrk ("Cannot build module "^string_of_dirpath p^"."^string_of_id id^
+      ": it starts with prefix \"Coq\" which is reserved for the Coq library."))
 
 let start_library f = 
   let paths = get_load_paths () in
   let _,longf =
     System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
   let ldir0 = find_logical_path (Filename.dirname longf) in
-  check_coq_overwriting ldir0;
   let id = id_of_string (Filename.basename f) in
+  check_coq_overwriting ldir0 id;
   let ldir = extend_dirpath ldir0 id in
   Declaremods.start_library ldir;
   ldir,longf

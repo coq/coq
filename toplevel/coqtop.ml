@@ -74,11 +74,9 @@ let outputstate () = if !outputstate <> "" then extern_state !outputstate
 let set_default_include d = push_include (d,Nameops.default_root_prefix)
 let set_include d p =
   let p = dirpath_of_string p in
-  Library.check_coq_overwriting p;
   push_include (d,p)
 let set_rec_include d p =
   let p = dirpath_of_string p in 
-  Library.check_coq_overwriting p;
   push_rec_include(d,p)
 
 let load_vernacular_list = ref ([] : (string * bool) list)
