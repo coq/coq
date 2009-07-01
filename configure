@@ -7,8 +7,8 @@
 ##################################
 
 VERSION=8.2pl1
-VOMAGIC=08210
-STATEMAGIC=58210
+VOMAGIC=08200
+STATEMAGIC=58200
 DATE=`LANG=C date +"%B %Y"`
 
 # Create the bin/ directory if non-existent
