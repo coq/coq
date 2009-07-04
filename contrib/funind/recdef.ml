@@ -960,11 +960,6 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 		       let ids' = pf_ids_of_hyps g in 
 		       lid := List.rev (list_subtract ids' ids);
 		       if !lid = [] then lid := [hid];
-(* 		       list_iter_i  *)
-(* 			 (fun i v ->  *)
-(* 			    msgnl (str "hyp" ++ int i ++ str " " ++  *)
-(* 				     Nameops.pr_id v ++ fnl () ++ fnl())) *)
-(* 			      !lid; *)
 		       tclIDTAC g
 		    )
 		    g
@@ -976,9 +971,22 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 	       Auto.h_auto None [] (Some [])  g
 	   | _ ->
 	       incr h_num;
-	       tclTHEN
-		 (eapply_with_bindings (mkVar (List.nth !lid !h_num), NoBindings))
-		 e_assumption
+	       (observe_tac "finishing using"
+		  (
+		    tclCOMPLETE(
+		      tclFIRST[
+			tclTHEN
+			  (eapply_with_bindings (mkVar (List.nth !lid !h_num), NoBindings))
+			  e_assumption;			  
+		      Eauto.eauto_with_bases
+			false
+			(true,5)
+			[delayed_force refl_equal]
+			[Auto.Hint_db.empty empty_transparent_state false]
+		      ]
+		    )
+		  )
+	       ) 
       		 g)
 ;
     Command.save_named opacity;
