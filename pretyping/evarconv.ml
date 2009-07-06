@@ -482,15 +482,15 @@ and conv_record env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
   in
   ise_and evd'
     [(fun i ->
-      ise_list2 i
-        (fun i u1 u -> evar_conv_x env i CONV u1 (substl ks u))
-        us2 us);
-     (fun i ->
        ise_list2 i
          (fun i x1 x -> evar_conv_x env i CONV x1 (substl ks x))
          params1 params);
-     (fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) ts ts1);
-     (fun i -> evar_conv_x env i CONV c1 (applist (c,(List.rev ks))))]
+    (fun i ->
+      ise_list2 i
+        (fun i u1 u -> evar_conv_x env i CONV u1 (substl ks u))
+        us2 us);
+    (fun i -> evar_conv_x env i CONV c1 (applist (c,(List.rev ks))));
+    (fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) ts ts1)]
 
 (* We assume here |l1| <= |l2| *)
 
