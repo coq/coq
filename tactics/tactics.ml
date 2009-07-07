@@ -613,7 +613,7 @@ let resolve_classes gl =
     if evd = Evd.empty then tclIDTAC gl
     else
       let evd' = Typeclasses.resolve_typeclasses env (Evd.create_evar_defs evd) in
-	(tclTHEN (tclEVARS ( evd')) tclNORMEVAR) gl
+	(tclTHEN (tclEVARS evd') tclNORMEVAR) gl
 
 (**************************)
 (*     Cut tactics        *)
@@ -662,7 +662,7 @@ let clenv_refine_in with_evars ?(with_classes=true) id clenv gl =
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
   tclTHEN
-    (tclEVARS ( clenv.evd))
+    (tclEVARS clenv.evd)
     (cut_replacing id new_hyp_typ
       (fun x gl -> refine_no_check new_hyp_prf gl)) gl
 
@@ -1077,7 +1077,7 @@ let specialize mopt (c,lbind) g =
       let clause = make_clenv_binding g (c,pf_type_of g c) lbind in
       let clause = clenv_unify_meta_types clause in
       let (thd,tstack) =
-        whd_stack ( clause.evd) (clenv_value clause) in
+        whd_stack clause.evd (clenv_value clause) in
       let nargs = List.length tstack in
       let tstack = match mopt with 
 	| Some m -> 
@@ -1093,7 +1093,7 @@ let specialize mopt (c,lbind) g =
 	errorlabstrm "" (str "Cannot infer an instance for " ++
           pr_name (meta_name clause.evd (List.hd (collect_metas term))) ++
 	  str ".");
-      Some ( clause.evd), term
+      Some clause.evd, term
   in
   tclTHEN 
     (match evars with Some e -> tclEVARS e | _ -> tclIDTAC)
@@ -3282,5 +3282,5 @@ let unify ?(state=full_transparent_state) x y gl =
     in
     let evd = w_unify false (pf_env gl) Reduction.CONV 
       ~flags x y (Evd.create_evar_defs (project gl))
-    in tclEVARS ( evd) gl
+    in tclEVARS evd gl
   with _ -> tclFAIL 0 (str"Not unifiable") gl

@@ -44,14 +44,14 @@ let abstract_scheme env c l lname_typ =
     lname_typ
 
 let abstract_list_all env evd typ c l =
-  let ctxt,_ = splay_prod_n env ( evd) (List.length l) typ in
+  let ctxt,_ = splay_prod_n env evd (List.length l) typ in
   let l_with_all_occs = List.map (function a -> (all_occurrences,a)) l in
   let p = abstract_scheme env c l_with_all_occs ctxt in 
   try 
-    if is_conv_leq env ( evd) (Typing.mtype_of env evd p) typ then p
+    if is_conv_leq env evd (Typing.mtype_of env evd p) typ then p
     else error "abstract_list_all"
   with UserError _ | Type_errors.TypeError _ ->
-    error_cannot_find_well_typed_abstraction env ( evd) p l
+    error_cannot_find_well_typed_abstraction env evd p l
 
 (**)
 
@@ -487,14 +487,14 @@ let applyHead env evd n c  =
     if n = 0 then 
       (evd, c)
     else 
-      match kind_of_term (whd_betadeltaiota env ( evd) cty) with
+      match kind_of_term (whd_betadeltaiota env evd cty) with
         | Prod (_,c1,c2) ->
             let (evd',evar) = 
 	      Evarutil.new_evar evd env ~src:(dummy_loc,GoalEvar) c1 in
 	    apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) evd'
 	| _ -> error "Apply_Head_Then"
   in 
-  apprec n c (Typing.type_of env ( evd) c) evd
+  apprec n c (Typing.type_of env evd c) evd
 
 let is_mimick_head f =
   match kind_of_term f with
@@ -524,7 +524,7 @@ let try_to_coerce env evd c cty tycon =
   let (evd',j') = inh_conv_coerce_rigid_to dummy_loc env evd j tycon in
   let (evd',b) = Evarconv.consider_remaining_unif_problems env evd' in
   if b then
-    let evd' = Evd.map_metas_fvalue (nf_evar ( evd')) evd' in
+    let evd' = Evd.map_metas_fvalue (nf_evar evd') evd' in
     (evd',j'.uj_val)
   else
     error "Cannot solve unification constraints"
@@ -537,7 +537,7 @@ let w_coerce_to_type env evd c cty mvty =
     (* inh_conv_coerce_rigid_to should have reasoned modulo reduction 
        but there are cases where it though it was not rigid (like in
        fst (nat,nat)) and stops while it could have seen that it is rigid *)
-    let cty = Tacred.hnf_constr env ( evd) cty in
+    let cty = Tacred.hnf_constr env evd cty in
     try_to_coerce env evd c cty tycon
 
 let w_coerce env evd mv c =
@@ -582,7 +582,7 @@ let order_metas metas =
 
 let solve_simple_evar_eqn env evd ev rhs =
   let evd,b = solve_simple_eqn Evarconv.evar_conv_x env evd (CONV,ev,rhs) in
-  if not b then error_cannot_unify env ( evd) (mkEvar ev,rhs);
+  if not b then error_cannot_unify env evd (mkEvar ev,rhs);
   let (evd,b) = Evarconv.consider_remaining_unif_problems env evd in
   if not b then error "Cannot solve unification constraints";
   evd
@@ -598,7 +598,7 @@ let w_merge env with_types flags (evd,metas,evars) =
     match evars with
     | ((evn,_ as ev),rhs)::evars' ->
     	if is_defined_evar evd ev then
-	  let v = Evd.existential_value ( evd) ev in
+	  let v = Evd.existential_value evd ev in
 	  let (evd,metas',evars'') =
 	    unify_0 env evd topconv flags rhs v in
 	  w_merge_rec evd (metas'@metas) (evars''@evars') eqns
@@ -607,7 +607,7 @@ let w_merge env with_types flags (evd,metas,evars) =
           match kind_of_term rhs with
 	  | App (f,cl) when is_mimick_head f & occur_meta rhs' ->
 	      if occur_evar evn rhs' then
-                error_occur_check env ( evd) evn rhs';
+                error_occur_check env evd evn rhs';
 	      let evd' = mimick_evar evd flags f (Array.length cl) evn in
 	      w_merge_rec evd' metas evars eqns
           | _ ->
@@ -652,7 +652,7 @@ let w_merge env with_types flags (evd,metas,evars) =
     | [] -> evd
 		
   and mimick_evar evd flags hdc nargs sp =
-    let ev = Evd.find ( evd) sp in
+    let ev = Evd.find evd sp in
     let sp_env = Global.env_of_context ev.evar_hyps in
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (evd'',mc,ec) =
@@ -882,8 +882,8 @@ let secondOrderAbstraction env flags allow_K typ (p, oplist) evd =
   w_merge env false flags (evd',[p,pred,(ConvUpToEta 0,TypeProcessed)],[])
 
 let w_unify2 env flags allow_K cv_pb ty1 ty2 evd =
-  let c1, oplist1 = whd_stack ( evd) ty1 in
-  let c2, oplist2 = whd_stack ( evd) ty2 in
+  let c1, oplist1 = whd_stack evd ty1 in
+  let c2, oplist2 = whd_stack evd ty2 in
   match kind_of_term c1, kind_of_term c2 with
     | Meta p1, _ ->
         (* Find the predicate *)
@@ -921,8 +921,8 @@ let w_unify2 env flags allow_K cv_pb ty1 ty2 evd =
    Meta(1) had meta-variables in it. *)
 let w_unify allow_K env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
   let cv_pb = of_conv_pb cv_pb in
-  let hd1,l1 = whd_stack ( evd) ty1 in
-  let hd2,l2 = whd_stack ( evd) ty2 in
+  let hd1,l1 = whd_stack evd ty1 in
+  let hd2,l2 = whd_stack evd ty2 in
     match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with
       (* Pattern case *)
       | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)

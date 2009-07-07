@@ -127,7 +127,7 @@ let clenv_conv_leq env sigma t c bound =
   let evars,args,_ = clenv_environments_evars env evd (Some bound) ty in
   let evars = Evarconv.the_conv_x_leq env t (applist (c,args)) evars in
   let evars,_ = Evarconv.consider_remaining_unif_problems env evars in
-  let args = List.map (whd_evar ( evars)) args in
+  let args = List.map (whd_evar evars) args in
   check_evars env sigma evars (applist (c,args));
   args
 
@@ -248,7 +248,7 @@ let clenv_unify_meta_types ?(flags=default_unify_flags) clenv =
   { clenv with evd = w_unify_meta_types ~flags:flags clenv.env clenv.evd }
 
 let clenv_unique_resolver allow_K ?(flags=default_unify_flags) clenv gl =
-  if isMeta (fst (whd_stack ( clenv.evd) clenv.templtyp.rebus)) then
+  if isMeta (fst (whd_stack clenv.evd clenv.templtyp.rebus)) then
     clenv_unify allow_K CUMUL ~flags:flags (clenv_type clenv) (pf_concl gl)
       (clenv_unify_meta_types ~flags:flags clenv)
   else
@@ -335,7 +335,7 @@ let clenv_fchain ?(allow_K=true) ?(flags=default_unify_flags) mv clenv nextclenv
     { templval = clenv.templval;
       templtyp = clenv.templtyp;
       evd = 
-        evar_merge (meta_merge clenv.evd nextclenv.evd) ( clenv.evd);
+        evar_merge (meta_merge clenv.evd nextclenv.evd) clenv.evd;
       env = nextclenv.env } in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv'' =
@@ -396,7 +396,7 @@ let error_already_defined b =
           (str "Position " ++ int n ++ str" already defined.")
 
 let clenv_unify_binding_type clenv c t u =
-  if isMeta (fst (whd_stack ( clenv.evd) u)) then
+  if isMeta (fst (whd_stack clenv.evd u)) then
     (* Not enough information to know if some subtyping is needed *)
     CoerceToType, clenv, c
   else
@@ -410,7 +410,7 @@ let clenv_unify_binding_type clenv c t u =
 let clenv_assign_binding clenv k (sigma,c) =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
   let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
-  let c_typ = nf_betaiota ( clenv'.evd) (clenv_get_type_of clenv' c) in
+  let c_typ = nf_betaiota clenv'.evd (clenv_get_type_of clenv' c) in
   let status,clenv'',c = clenv_unify_binding_type clenv' c c_typ k_typ in
   { clenv'' with evd = meta_assign k (c,(UserGiven,status)) clenv''.evd }
 

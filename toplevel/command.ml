@@ -507,7 +507,7 @@ let check_all_names_different indl =
   if l <> [] then raise (InductiveError (SameNamesOverlap l))
 
 let mk_mltype_data evdref env assums arity indname =
-  let is_ml_type = is_sort env ( !evdref) arity in
+  let is_ml_type = is_sort env !evdref arity in
   (is_ml_type,indname,assums)
 
 let prepare_param = function
@@ -852,7 +852,7 @@ let interp_recursive fixkind l boxed =
     List.split (List.map (interp_fix_context evdref env) fixl) in
   let fixccls = List.map2 (interp_fix_ccl evdref) fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
-  let fixtypes = List.map (nf_evar ( !evdref)) fixtypes in
+  let fixtypes = List.map (nf_evar !evdref) fixtypes in
   let env_rec = push_named_types env fixnames fixtypes in
 
   (* Get interpretation metadatas *)
@@ -871,8 +871,8 @@ let interp_recursive fixkind l boxed =
 
   (* Instantiate evars and check all are resolved *)
   let evd,_ = consider_remaining_unif_problems env_rec !evdref in
-  let fixdefs = List.map (nf_evar ( evd)) fixdefs in
-  let fixtypes = List.map (nf_evar ( evd)) fixtypes in
+  let fixdefs = List.map (nf_evar evd) fixdefs in
+  let fixtypes = List.map (nf_evar evd) fixtypes in
   let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env evd in
   List.iter (check_evars env_rec Evd.empty evd) fixdefs;
   List.iter (check_evars env Evd.empty evd) fixtypes;

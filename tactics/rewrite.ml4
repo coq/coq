@@ -150,7 +150,7 @@ let is_applied_setoid_relation t =
 	else (try      
 	    let evd, evar = Evarutil.new_evar Evd.empty (Global.env()) (new_Type ()) in
 	    let inst = mkApp (Lazy.force setoid_relation, [| evar; c |]) in
-	      ignore(Typeclasses.resolve_one_typeclass (Global.env()) ( evd) inst);
+	      ignore(Typeclasses.resolve_one_typeclass (Global.env()) evd inst);
 	      true
 	  with _ -> false)
   | _ -> false
@@ -339,7 +339,7 @@ let unify_eqn env sigma hypinfo t =
 	  in
 	  let evd' = Typeclasses.resolve_typeclasses ~fail:true env'.env env'.evd in
 	  let env' = { env' with evd = evd' } in
-	  let nf c = Evarutil.nf_evar ( evd') (Clenv.clenv_nf_meta env' c) in
+	  let nf c = Evarutil.nf_evar evd' (Clenv.clenv_nf_meta env' c) in
 	  let c1 = nf c1 and c2 = nf c2
 	  and car = nf car and rel = nf rel 
 	  and prf = nf (Clenv.clenv_value env') in

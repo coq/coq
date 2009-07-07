@@ -43,7 +43,7 @@ module type S = sig
   val inh_coerce_to_base : loc ->
     env -> evar_defs -> unsafe_judgment -> evar_defs * unsafe_judgment
     
-  (* [inh_coerce_to_prod env isevars t] coerces [t] to a product type *)
+  (* [inh_coerce_to_prod env evars t] coerces [t] to a product type *)
   val inh_coerce_to_prod : loc ->
     env -> evar_defs -> type_constraint_type -> evar_defs * type_constraint_type
 
@@ -122,7 +122,7 @@ module Default = struct
     with _ -> anomaly "apply_coercion"
 
   let inh_app_fun env evd j = 
-    let t = whd_betadeltaiota env ( evd) j.uj_type in
+    let t = whd_betadeltaiota env evd j.uj_type in
       match kind_of_term t with
 	| Prod (_,_,_) -> (evd,j)
 	| Evar ev ->
@@ -168,11 +168,11 @@ module Default = struct
     else
     let v', t' =
       try 
-	let t2,t1,p = lookup_path_between env ( evd) (t,c1) in
+	let t2,t1,p = lookup_path_between env evd (t,c1) in
 	  match v with
 	      Some v -> 
 		let j =
-		  apply_coercion env ( evd) p
+		  apply_coercion env evd p
 		    {uj_val = v; uj_type = t} t2 in
 		  Some j.uj_val, j.uj_type
 	    | None -> None, t
@@ -187,8 +187,8 @@ module Default = struct
     try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->
     match
-      kind_of_term (whd_betadeltaiota env ( evd) t),
-      kind_of_term (whd_betadeltaiota env ( evd) c1)
+      kind_of_term (whd_betadeltaiota env evd t),
+      kind_of_term (whd_betadeltaiota env evd c1)
     with
     | Prod (name,t1,t2), Prod (_,u1,u2) -> 
         (* Conversion did not work, we may succeed with a coercion. *)

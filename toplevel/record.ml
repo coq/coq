@@ -32,7 +32,7 @@ open Topconstr
 (********** definition d'un record (structure) **************)
 
 let interp_evars evdref env ?(impls=([],[])) k typ =
-  let typ' = intern_gen true ~impls ( !evdref) env typ in
+  let typ' = intern_gen true ~impls !evdref env typ in
   let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
     imps, Pretyping.Default.understand_tcc_evars evdref env k typ'
 
@@ -40,11 +40,11 @@ let mk_interning_data env na impls typ =
   let impl = Impargs.compute_implicits_with_manual env typ (Impargs.is_implicit_args()) impls
   in (na, (Constrintern.Method, [], impl, Notation.compute_arguments_scope typ))
     
-let interp_fields_evars isevars env nots l =
+let interp_fields_evars evars env nots l =
   List.fold_left2
     (fun (env, uimpls, params, impls) no ((loc, i), b, t) ->
-      let impl, t' = interp_evars isevars env ~impls Pretyping.IsType t in
-      let b' = Option.map (fun x -> snd (interp_evars isevars env ~impls (Pretyping.OfType (Some t')) x)) b in
+      let impl, t' = interp_evars evars env ~impls Pretyping.IsType t in
+      let b' = Option.map (fun x -> snd (interp_evars evars env ~impls (Pretyping.OfType (Some t')) x)) b in
       let impls = 
 	match i with
 	| Anonymous -> impls

@@ -80,7 +80,7 @@ let clenv_refine with_evars ?(with_classes=true) clenv gls =
     else clenv.evd
   in
   tclTHEN
-    (tclEVARS ( evd')) 
+    (tclEVARS evd') 
     (refine (clenv_cast_meta clenv (clenv_value clenv)))
     gls
 

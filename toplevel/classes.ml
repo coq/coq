@@ -65,7 +65,7 @@ type binder_list = (identifier located * bool * constr_expr) list
 (* Calls to interpretation functions. *)
 
 let interp_type_evars evdref env ?(impls=([],[])) typ =
-  let typ' = intern_gen true ~impls ( !evdref) env typ in
+  let typ' = intern_gen true ~impls !evdref env typ in
   let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
     imps, Pretyping.Default.understand_tcc_evars evdref env Pretyping.IsType typ'
     
@@ -73,14 +73,14 @@ let interp_type_evars evdref env ?(impls=([],[])) typ =
 
 open Topconstr
     
-let type_ctx_instance isevars env ctx inst subst =
+let type_ctx_instance evars env ctx inst subst =
   let (s, _) = 
     List.fold_left2
       (fun (subst, instctx) (na, b, t) ce ->
 	let t' = substl subst t in
 	let c' = 
 	  match b with 
-	  | None -> interp_casted_constr_evars isevars env ce t'
+	  | None -> interp_casted_constr_evars evars env ce t'
 	  | Some b -> substl subst b
 	in
 	let d = na, Some c', t' in
@@ -126,7 +126,7 @@ let declare_instance_constant k pri global imps ?hook id term termtype =
 let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
     ?(tac:Proof_type.tactic option) ?(hook:(Names.constant -> unit) option) pri =
   let env = Global.env() in
-  let isevars = ref Evd.empty in
+  let evars = ref Evd.empty in
   let tclass = 
     match bk with
     | Implicit ->
@@ -143,7 +143,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
   let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
   let k, ctx', imps, subst = 
     let c = Command.generalize_constr_expr tclass ctx in
-    let imps, c' = interp_type_evars isevars env c in
+    let imps, c' = interp_type_evars evars env c in
     let ctx, c = decompose_prod_assum c' in
     let cl, args = Typeclasses.dest_class_app (push_rel_context ctx env) c in
       cl, ctx, imps, List.rev args
@@ -160,18 +160,18 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	    Termops.next_global_ident_away false i (Termops.ids_of_context env)
   in
   let env' = push_rel_context ctx' env in
-  isevars := Evarutil.nf_evar_defs !isevars;
-  isevars := resolve_typeclasses env !isevars;
-  let sigma =  !isevars in
+  evars := Evarutil.nf_evar_defs !evars;
+  evars := resolve_typeclasses env !evars;
+  let sigma =  !evars in
   let subst = List.map (Evarutil.nf_evar sigma) subst in
     if Lib.is_modtype () then
       begin
 	let _, ty_constr = instance_constructor k (List.rev subst) in
 	let termtype = 
 	  let t = it_mkProd_or_LetIn ty_constr ctx' in
-	    Evarutil.nf_isevar !isevars t
+	    Evarutil.nf_isevar !evars t
 	in
-	Evarutil.check_evars env Evd.empty !isevars termtype;
+	Evarutil.check_evars env Evd.empty !evars termtype;
 	let cst = Declare.declare_internal_constant id
 	  (Entries.ParameterEntry (termtype,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in instance_hook k None false imps ?hook cst; id
@@ -195,7 +195,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	      let term = match props with [] -> CHole (Util.dummy_loc, None) 
 		| [(_,f)] -> f | _ -> assert false in
 	      let ty' = substl subst ty in
-	      let c = interp_casted_constr_evars isevars env' term ty' in
+	      let c = interp_casted_constr_evars evars env' term ty' in
 		c :: subst
 	  | _ ->
 	      let props, rest = 
@@ -213,7 +213,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 		if rest <> [] then 
 		  unbound_method env' k.cl_impl (fst (List.hd rest))
 		else
-		  type_ctx_instance isevars env' k.cl_props props subst
+		  type_ctx_instance evars env' k.cl_props props subst
 	in
 	let subst = List.fold_left2 
 	  (fun subst' s (_, b, _) -> if b = None then s :: subst' else subst')
@@ -222,24 +222,24 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	let app, ty_constr = instance_constructor k subst in
 	let termtype = 
 	  let t = it_mkProd_or_LetIn ty_constr ctx' in
-	    Evarutil.nf_isevar !isevars t
+	    Evarutil.nf_isevar !evars t
 	in
 	let term = Termops.it_mkLambda_or_LetIn app ctx' in
-	isevars := Evarutil.nf_evar_defs !isevars;
-	let term = Evarutil.nf_isevar !isevars term in
-	let evm =  (undefined_evars !isevars) in
-	Evarutil.check_evars env Evd.empty !isevars termtype;
+	evars := Evarutil.nf_evar_defs !evars;
+	let term = Evarutil.nf_isevar !evars term in
+	let evm =  (undefined_evars !evars) in
+	Evarutil.check_evars env Evd.empty !evars termtype;
 	  if Evd.is_empty evm then
 	    declare_instance_constant k pri global imps ?hook id term termtype
 	  else begin
-	    isevars := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env !isevars;
+	    evars := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env !evars;
 	    let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	      Flags.silently (fun () ->
 		Command.start_proof id kind termtype 
 		  (fun _ -> function ConstRef cst -> instance_hook k pri global imps ?hook cst
 		    | _ -> assert false);
 		if props <> [] then 
-		  Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS ( !isevars)) *)
+		  Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS !evars) *)
 		    (!refine_ref (evm, term));
 		(match tac with Some tac -> Pfedit.by tac | None -> ())) ();
 	      Flags.if_verbose (msg $$ Printer.pr_open_subgoals) ();
@@ -269,7 +269,7 @@ let context ?(hook=fun _ -> ()) l =
   let env = Global.env() in
   let evars = ref Evd.empty in
   let (env', fullctx), impls = interp_context_evars evars env l in
-  let fullctx = Evarutil.nf_rel_context_evar ( !evars) fullctx in
+  let fullctx = Evarutil.nf_rel_context_evar !evars fullctx in
   let ce t = Evarutil.check_evars env Evd.empty !evars t in
   List.iter (fun (n, b, t) -> Option.iter ce b; ce t) fullctx;
   let ctx = try named_of_rel_context fullctx with _ -> 

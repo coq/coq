@@ -62,7 +62,7 @@ let evar_apprec env evd stack c =
   in aux (c, append_stack_list stack empty_stack)
 
 let apprec_nohdbeta env evd c =
-  match kind_of_term (fst (Reductionops.whd_stack ( evd) c)) with
+  match kind_of_term (fst (Reductionops.whd_stack evd c)) with
     | (Case _ | Fix _) -> applist (evar_apprec env evd [] c)
     | _ -> c
 
@@ -166,7 +166,7 @@ let rec evar_conv_x env evd pbty term1 term2 =
      Note: incomplete heuristic... *)
   let ground_test =
     if is_ground_term evd term1 && is_ground_term evd term2 then
-      if is_fconv pbty env ( evd) term1 term2 then
+      if is_fconv pbty env evd term1 term2 then
         Some true
       else if is_ground_env evd env then Some false
       else None
@@ -222,7 +222,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  then
 	    (* Miller-Pfenning's patterns unification *)
 	    (* Preserve generality (except that CCI has no eta-conversion) *)
-	    let t2 = nf_evar ( evd) (applist appr2) in
+	    let t2 = nf_evar evd (applist appr2) in
 	    let t2 = solve_pattern_eqn env l1 t2 in
 	    solve_simple_eqn evar_conv_x env evd (pbty,ev1,t2)
 	  else if
@@ -254,7 +254,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  then
 	    (* Miller-Pfenning's patterns unification *)
 	    (* Preserve generality (except that CCI has no eta-conversion) *)
-	    let t1 = nf_evar ( evd) (applist appr1) in
+	    let t1 = nf_evar evd (applist appr1) in
 	    let t1 = solve_pattern_eqn env l2 t1 in
 	    solve_simple_eqn evar_conv_x env evd (pbty,ev2,t1)
 	  else if
@@ -293,7 +293,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
              if the first argument is a beta-redex (expand a constant
              only if necessary) or the second argument is potentially
              usable as a canonical projection *)
-	  if isLambda flex1 or is_open_canonical_projection ( i) appr2
+	  if isLambda flex1 or is_open_canonical_projection i appr2
 	  then
 	    match eval_flexible_term env flex1 with
 	    | Some v1 ->
@@ -322,7 +322,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	then
 	  (* Miller-Pfenning's patterns unification *)
 	  (* Preserve generality (except that CCI has no eta-conversion) *)
-	  let t2 = nf_evar ( evd) (applist appr2) in
+	  let t2 = nf_evar evd (applist appr2) in
 	  let t2 = solve_pattern_eqn env l1 t2 in
 	  solve_simple_eqn evar_conv_x env evd (pbty,ev1,t2)
 	else
@@ -337,7 +337,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	then
 	  (* Miller-Pfenning's patterns unification *)
 	  (* Preserve generality (except that CCI has no eta-conversion) *)
-	  let t1 = nf_evar ( evd) (applist appr1) in
+	  let t1 = nf_evar evd (applist appr1) in
 	  let t1 = solve_pattern_eqn env l2 t1 in
 	  solve_simple_eqn evar_conv_x env evd (pbty,ev2,t1)
 	else
@@ -382,7 +382,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
             ise_and evd
               [(fun i -> evar_conv_x env i CONV c1 c2);
                (fun i ->
-                 let c = nf_evar ( i) c1 in
+                 let c = nf_evar i c1 in
                  evar_conv_x (push_rel (na,None,c) env) i CONV c'1 c'2)]
 
 	| LetIn (na,b1,t1,c'1), LetIn (_,b2,_,c'2) ->
@@ -390,8 +390,8 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
               ise_and i
                 [(fun i -> evar_conv_x env i CONV b1 b2);
                  (fun i ->
-                   let b = nf_evar ( i) b1 in
-	           let t = nf_evar ( i) t1 in
+                   let b = nf_evar i b1 in
+	           let t = nf_evar i t1 in
                    evar_conv_x (push_rel (na,Some b,t) env) i pbty c'1 c'2);
                  (fun i -> ise_list2 i
                      (fun i -> evar_conv_x env i CONV) l1 l2)]
@@ -414,7 +414,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
             ise_and evd
               [(fun i -> evar_conv_x env i CONV c1 c2);
                (fun i ->
- 	         let c = nf_evar ( i) c1 in
+ 	         let c = nf_evar i c1 in
 	         evar_conv_x (push_rel (n,None,c) env) i pbty c'1 c'2)]
 
 	| Ind sp1, Ind sp2 ->
@@ -508,15 +508,15 @@ let first_order_unification env evd (ev1,l1) (term2,l2) =
 	solve_simple_eqn ~choose:true evar_conv_x env i (CONV,ev1,t2))]
 
 let choose_less_dependent_instance evk evd term args =
-  let evi = Evd.find ( evd) evk in
+  let evi = Evd.find evd evk in
   let subst = make_pure_subst evi args in
   let subst' = List.filter (fun (id,c) -> c = term) subst in
   if subst' = [] then error "Too complex unification problem." else
   Evd.define evk (mkVar (fst (List.hd subst'))) evd
 
 let apply_conversion_problem_heuristic env evd pbty t1 t2 =
-  let t1 = apprec_nohdbeta env evd (whd_castappevar ( evd) t1) in
-  let t2 = apprec_nohdbeta env evd (whd_castappevar ( evd) t2) in
+  let t1 = apprec_nohdbeta env evd (whd_castappevar evd t1) in
+  let t2 = apprec_nohdbeta env evd (whd_castappevar evd t2) in
   let (term1,l1 as appr1) = decompose_app t1 in
   let (term2,l2 as appr2) = decompose_app t2 in
   match kind_of_term term1, kind_of_term term2 with

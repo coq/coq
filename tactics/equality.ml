@@ -665,7 +665,7 @@ let onEquality with_evars tac (c,lbindc) gls =
     with PatternMatchingFailure ->
       errorlabstrm "" (str"No primitive equality found.") in
   tclTHEN
-    (Refiner.tclEVARS ( eq_clause'.evd)) 
+    (Refiner.tclEVARS eq_clause'.evd) 
     (tac eq eq_clause') gls
 
 let onNegatedEquality with_evars tac gls =
@@ -796,21 +796,21 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       else
 	error "Cannot solve an unification problem."
     else
-      let (a,p_i_minus_1) = match whd_beta_stack ( !evdref) p_i with
+      let (a,p_i_minus_1) = match whd_beta_stack !evdref p_i with
 	| (_sigS,[a;p]) -> (a,p)
  	| _ -> anomaly "sig_clausal_form: should be a sigma type" in
       let ev = Evarutil.e_new_evar evdref env a in
       let rty = beta_applist(p_i_minus_1,[ev]) in
       let tuple_tail = sigrec_clausal_form (siglen-1) rty in
       match
-	Evd.existential_opt_value ( !evdref) 
+	Evd.existential_opt_value !evdref 
 	(destEvar ev)
       with
 	| Some w -> applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
 	| None -> anomaly "Not enough components to build the dependent tuple"
   in
   let scf = sigrec_clausal_form siglen ty in
-  Evarutil.nf_evar ( !evdref) scf
+  Evarutil.nf_evar !evdref scf
 
 (* The problem is to build a destructor (a generalization of the
    predecessor) which, when applied to a term made of constructors

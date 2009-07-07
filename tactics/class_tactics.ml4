@@ -408,7 +408,7 @@ let has_undefined p oevd evd =
   Evd.fold (fun ev evi has -> has ||
     (evi.evar_body = Evar_empty && p ev evi && 
 	(try Typeclasses.is_resolvable (Evd.find oevd ev) with _ -> true)))
-    ( evd) false
+    evd false
 
 let rec merge_deps deps = function
   | [] -> [deps]
