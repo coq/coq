@@ -545,6 +545,7 @@ let rec expansions_of_var env x =
  *)
 
 exception NotUnique
+exception NotUniqueInType of types
 
 type evar_projection = 
 | ProjectVar 
@@ -581,6 +582,12 @@ let project_with_effects env sigma effects t subst =
   let c, p = filter_solution (find_projectable_vars false env sigma t subst) in
   effects := p :: !effects;
   c
+
+let rec find_solution_type evarenv = function
+  | (id,ProjectVar _)::l -> pi3 (lookup_named id evarenv)
+  | [id,ProjectEvar _] -> (* bugged *) pi3 (lookup_named id evarenv)
+  | (id,ProjectEvar _)::l -> find_solution_type evarenv l
+  | [] -> assert false
 
 (* In case the solution to a projection problem requires the instantiation of
  * subsidiary evars, [do_projection_effects] performs them; it
@@ -695,7 +702,7 @@ let filter_along f projs v =
  * such that "hyps' |- ?e : T"
  *)
 
-let do_restrict_hyps_virtual evd evk filter =
+let restrict_hyps evd evk filter =
     (* What to do with dependencies?
        Assume we have x:A, y:B(x), z:C(x,y) |- ?e:T(x,y,z) and restrict on y.
        - If y is in a non-erasable position in C(x,y) (i.e. it is not below an
@@ -712,15 +719,15 @@ let do_restrict_hyps_virtual evd evk filter =
     let filter,_ = List.fold_right (fun oldb (l,filter) ->
       if oldb then List.hd filter::l,List.tl filter else (false::l,filter))
       oldfilter ([],List.rev filter) in
-    new_evar evd env ~src:(evar_source evk evd)
-      ~filter:filter evi.evar_concl
+    (env,evar_source evk evd,filter,evi.evar_concl)
 
 let do_restrict_hyps evd evk projs =
   let filter = List.map filter_of_projection projs in
   if List.for_all (fun x -> x) filter then
     evd,evk
   else
-    let evd,nc = do_restrict_hyps_virtual evd evk filter in
+    let env,src,filter,ccl = restrict_hyps evd evk filter in
+    let evd,nc = new_evar evd env ~src ~filter ccl in
     let evd = Evd.define evk nc evd in
     let evk',_ = destEvar nc in
     evd,evk'
@@ -834,7 +841,9 @@ let rec invert_definition choose env evd (evk,argsv as ev) rhs =
       let c, p = match sols with
 	| [] -> raise Not_found
 	| [id,p] -> (mkVar id, p)
-	| (id,p)::_::_ -> if choose then (mkVar id, p) else raise NotUnique
+	| (id,p)::_::_ ->
+	    if choose then (mkVar id, p)
+	    else raise (NotUniqueInType(find_solution_type (evar_env evi) sols))
       in
       let ty = lazy (Retyping.get_type_of env !evdref t) in
       let evd = do_projection_effects evar_define env ty !evdref p in
@@ -842,14 +851,15 @@ let rec invert_definition choose env evd (evk,argsv as ev) rhs =
       c
     with
       | Not_found -> raise (NotInvertibleUsingOurAlgorithm t)
-      | NotUnique ->
+      | NotUniqueInType ty ->
 	  if not !progress then raise NotEnoughInformationToProgress;
 	  (* No unique projection but still restrict to where it is possible *)
 	  let ts = expansions_of_var env t in
 	  let test c = isEvar c or List.mem c ts in
 	  let filter = array_map_to_list test argsv in
 	  let args' = filter_along (fun x -> x) filter argsv in
-	  let evd,evar = do_restrict_hyps_virtual !evdref evk filter in
+	  let evarenv,src,filter,_ = restrict_hyps !evdref evk filter in
+	  let evd,evar = new_evar !evdref evarenv ~src ~filter ty in
 	  let evk',_ = destEvar evar in
 	  let pb = (Reduction.CONV,env,mkEvar(evk',args'),t) in
 	  evdref := Evd.add_conv_pb pb evd;
