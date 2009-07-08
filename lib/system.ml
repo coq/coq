@@ -153,8 +153,12 @@ let where_in_path ?(warn=true) path filename =
 
 let find_file_in_path ?(warn=true) paths filename =
   if not (Filename.is_implicit filename) then
-    let root = Filename.dirname filename in
-    root, filename
+    if Sys.file_exists filename then
+      let root = Filename.dirname filename in
+      root, filename
+    else
+      errorlabstrm "System.find_file_in_path"
+	(hov 0 (str "Can't find file" ++ spc () ++ str filename))
   else 
     try where_in_path ~warn paths filename
     with Not_found ->
