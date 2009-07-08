@@ -137,20 +137,27 @@ let _ =
       Summary.survive_module = false;
       Summary.survive_section = false }
 
-(* Check that c is an "elimination constant"
+(* [compute_consteval] determines whether c is an "elimination constant"
 
-   either [xn:An]..[x1:A1](<P>Case (Rel i) of f1..fk end g1 ..gp)
+   either [yn:Tn]..[y1:T1](match yi with f1..fk end g1 ..gp)
 
-   or     [xn:An]..[x1:A1](Fix(f|t) (Rel i1) ..(Rel ip))
-          with i1..ip distinct variables not occuring in t 
+   or     [yn:Tn]..[y1:T1](Fix(f|t) yi1..yip)
+          with yi1..yip distinct variables among the yi, not occurring in t 
 
-   In the second case, keep relevenant information ([i1,Ai1;..;ip,Aip],n)
-   in order to compute an equivalent of Fix(f|t)[xi<-ai] as 
+   In the second case, [check_fix_reversibility [T1;...;Tn] args fix] 
+   checks that [args] is a subset of disjoint variables in y1..yn (a necessary
+   condition for reversibility). It also returns the relevant
+   information ([i1,Ti1;..;ip,Tip],n) in order to compute an
+   equivalent of Fix(f|t) such that
 
-      [yip:Bip]..[yi1:Bi1](F bn..b1) 
-   == [yip:Bip]..[yi1:Bi1](Fix(f|t)[xi<-ai] (Rel p)..(Rel 1))
+   g := [xp:Tip']..[x1:Ti1'](f a1..an)
+     == [xp:Tip']..[x1:Ti1'](Fix(f|t) yi1..yip)
 
-   with bj=aj if j<>ik and bj=(Rel c) and Bic=Aic[xn..xic-1 <- an..aic-1]
+   with a_k:=y_k if k<>i_j, a_k:=args_k otherwise, and 
+   Tij':=Tij[x1..xi(j-1) <- a1..ai(j-1)]
+
+   Note that the types Tk, when no i_j=k, must not be dependent on
+   the xp..x1.
 *)
 
 let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
@@ -172,8 +179,14 @@ let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
          | _ -> 
 	     raise Elimconst) args
   in
-  if not (list_distinct (List.map fst li)) then 
+  let reversible_rels = List.map fst li in
+  if not (list_distinct reversible_rels) then 
     raise Elimconst;
+  list_iter_i (fun i t_i ->
+    if not (List.mem_assoc (i+1) li) then
+      let fvs = List.map ((+) (i+1)) (Intset.elements (free_rels t_i)) in
+      if list_intersect fvs reversible_rels <> [] then raise Elimconst)
+    labs;
   let k = lv.(i) in
   if k < nargs then
 (*  Such an optimisation would need eta-expansion 
@@ -294,19 +307,22 @@ let rev_firstn_liftn fn ln =
 (* If f is bound to EliminationFix (n',infos), then n' is the minimal
    number of args for starting the reduction and infos is
    (nbfix,[(yi1,Ti1);...;(yip,Tip)],n) indicating that f converts
-   to some [y1:T1,...,yn:Tn](Fix(..) yip .. yi1) where we can remark that
-   yij = Rel(n+1-j)
+   to some [y1:T1,...,yn:Tn](Fix(..) yip .. yi1) where the y_{i_j} consist in a
+   disjoint subset of the yi, i.e. 1 <= ij <= n and the ij are disjoint (in
+   particular, p <= n).
 
-   f is applied to largs and we need for recursive calls to build the function
+   f is applied to largs := arg1 .. argn and we need for recursive
+   calls to build the function
+
       g := [xp:Tip',...,x1:Ti1'](f a1 ... an)
 
    s.t. (g u1 ... up) reduces to (Fix(..) u1 ... up)
 
    This is made possible by setting 
-      a_k:=z_j    if k=i_j
-      a_k:=y_k    otherwise
+      a_k:=x_j    if k=i_j for some j
+      a_k:=arg_k  otherwise
 
-   The type Tij' is Tij[yn..yi(j-1)..y1 <- ai(j-1)..a1]
+   The type Tij' is Tij[yi(j-1)..y1 <- ai(j-1)..a1]
 *)
 
 let x = Name (id_of_string "x")
@@ -328,7 +344,7 @@ let make_elim_fun (names,(nbfix,lv,n)) largs =
       | Some (minargs,ref) ->
           let body = applistc (mkEvalRef ref) la in
           let g = 
-            list_fold_left_i (fun q (* j from comment is n+1-q *) c (ij,tij) ->
+            list_fold_left_i (fun q (* j = n+1-q *) c (ij,tij) ->
               let subst = List.map (lift (-q)) (list_firstn (n-ij) la) in
               let tij' = substl (List.rev subst) tij in
 	      mkLambda (x,tij',c)) 1 body (List.rev lv)
