@@ -123,7 +123,7 @@ module Hint_db = struct
     hintdb_map : search_entry Constr_map.t;
     (* A list of unindexed entries starting with an unfoldable constant
        or with no associated pattern. *)
-    hintdb_nopat : stored_data list
+    hintdb_nopat : (global_reference option * stored_data) list
   }
 
   let empty st use_dn = { hintdb_state = st;
@@ -136,24 +136,44 @@ module Hint_db = struct
     with Not_found -> empty_se
       
   let map_none db = 
-    Sort.merge pri_order db.hintdb_nopat []
+    Sort.merge pri_order (List.map snd db.hintdb_nopat) []
       
   let map_all k db =
     let (l,l',_) = find k db in
-      Sort.merge pri_order (db.hintdb_nopat @ l) l'
+      Sort.merge pri_order (List.map snd db.hintdb_nopat @ l) l'
 
   let map_auto (k,c) db =
     let st = if db.use_dn then Some db.hintdb_state else None in
     let l' = lookup_tacs (k,c) st (find k db) in
-      Sort.merge pri_order db.hintdb_nopat l'
+      Sort.merge pri_order (List.map snd db.hintdb_nopat) l'
 	
   let is_exact = function 
     | Give_exact _ -> true
     | _ -> false
 
-  let rebuild_db st' db = 
-    { db with hintdb_map = Constr_map.map (rebuild_dn st') db.hintdb_map }
+  let addkv gr v db = 
+    let k = match gr with
+      | Some gr -> if db.use_dn && is_transparent_gr db.hintdb_state gr then None else Some gr
+      | None -> None
+    in
+    let dnst = if db.use_dn then Some db.hintdb_state else None in
+    let pat = if not db.use_dn && is_exact v.code then None else v.pat in
+      match k with
+      | None ->
+	  if not (List.exists (fun (_, v') -> v = v') db.hintdb_nopat) then
+	    { db with hintdb_nopat = (gr,v) :: db.hintdb_nopat }
+	  else db
+      | Some gr ->
+	  let oval = find gr db in
+	    { db with hintdb_map = Constr_map.add gr (add_tac pat v dnst oval) db.hintdb_map }
 
+  let rebuild_db st' db =
+    let db' = 
+      { db with hintdb_map = Constr_map.map (rebuild_dn st') db.hintdb_map;
+	hintdb_state = st'; hintdb_nopat = [] }
+    in 
+      List.fold_left (fun db (gr,v) -> addkv gr v db) db' db.hintdb_nopat
+	
   let add_one (k,v) db =
     let st',rebuild =
       match v.code with
@@ -164,40 +184,20 @@ module Hint_db = struct
 	    | EvalConstRef cst -> (ids, Cpred.add cst csts)), true
       | _ -> db.hintdb_state, false
     in
-    let dnst, db, k =
-      if db.use_dn then
-	let db', k' = 
-	  if rebuild then rebuild_db st' db, k
-	  else (* not an unfold *)
-	    (match k with
-	    | Some gr -> db, if is_transparent_gr st' gr then None else k
-	    | None -> db, None)
-	in
-	  (Some st', db', k')
-      else None, db, k
-    in
-    let pat = if not db.use_dn && is_exact v.code then None else v.pat in
-      match k with
-      | None ->
-	  if not (List.mem v db.hintdb_nopat) then
-	    { db with hintdb_nopat = v :: db.hintdb_nopat }
-	  else db
-      | Some gr ->
-	  let oval = find gr db in
-	    { db with hintdb_map = Constr_map.add gr (add_tac pat v dnst oval) db.hintdb_map;
-	      hintdb_state = st' }
+    let db = if db.use_dn && rebuild then rebuild_db st' db else db
+    in addkv k v db
 	
   let add_list l db = List.fold_right add_one l db
     
   let iter f db = 
-    f None db.hintdb_nopat;
+    f None (List.map snd db.hintdb_nopat);
     Constr_map.iter (fun k (l,l',_) -> f (Some k) (l@l')) db.hintdb_map
     
   let transparent_state db = db.hintdb_state
 
   let set_transparent_state db st =
-    let db = if db.use_dn then rebuild_db st db else db in
-      { db with hintdb_state = st }
+    if db.use_dn then rebuild_db st db 
+    else { db with hintdb_state = st }
 
   let use_dn db = db.use_dn
 	
