@@ -277,3 +277,10 @@ try eapply ex_intro.
 trivial.
 Qed.
 
+(* Check pattern-unification on evars in apply unification *)
+
+Lemma evar : exists f : nat -> nat, forall x, f x = 0 -> x = 0.
+Proof.
+eexists; intros x H.
+apply H.
+Qed.

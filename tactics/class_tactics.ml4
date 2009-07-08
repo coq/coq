@@ -104,6 +104,7 @@ let auto_unif_flags = {
   use_metas_eagerly = true;
   modulo_delta = var_full_transparent_state;
   resolve_evars = false;
+  use_evars_pattern_unification = true;
 }
 
 let unify_e_resolve flags (c,clenv) gls = 

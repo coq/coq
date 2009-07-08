@@ -128,6 +128,7 @@ type unify_flags = {
   use_metas_eagerly : bool;
   modulo_delta : Names.transparent_state;
   resolve_evars : bool;
+  use_evars_pattern_unification : bool
 }
 
 let default_unify_flags = {
@@ -135,6 +136,7 @@ let default_unify_flags = {
   use_metas_eagerly = true;
   modulo_delta = full_transparent_state;
   resolve_evars = false;
+  use_evars_pattern_unification = true;
 }
 
 let default_no_delta_unify_flags = {
@@ -142,6 +144,7 @@ let default_no_delta_unify_flags = {
   use_metas_eagerly = true;
   modulo_delta = empty_transparent_state;
   resolve_evars = false;
+  use_evars_pattern_unification = true;
 }
 
 let expand_key env = function
@@ -229,12 +232,14 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 		  (unirec_rec curenvnb topconv true substn p1 p2) c1 c2) cl1 cl2
 
 	| App (f1,l1), _ when
-	    isMeta f1 & is_unification_pattern curenvnb f1 l1 cN &
+	    (isMeta f1 || flags.use_evars_pattern_unification && isEvar f1) &
+	    is_unification_pattern curenvnb f1 l1 cN &
 	    not (dependent f1 cN) ->
 	      solve_pattern_eqn_array curenvnb f1 l1 cN substn
 
 	| _, App (f2,l2) when
-	    isMeta f2 & is_unification_pattern curenvnb f2 l2 cM &
+	    (isMeta f2 || flags.use_evars_pattern_unification && isEvar f2) &
+	    is_unification_pattern curenvnb f2 l2 cM &
 	    not (dependent f2 cM) ->
 	      solve_pattern_eqn_array curenvnb f2 l2 cM substn
 

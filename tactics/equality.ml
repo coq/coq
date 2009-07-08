@@ -66,6 +66,7 @@ let rewrite_unif_flags = {
   Unification.use_metas_eagerly = true;
   Unification.modulo_delta = empty_transparent_state;
   Unification.resolve_evars = true;
+  Unification.use_evars_pattern_unification = true;
 }
 
 let side_tac tac sidetac =

@@ -681,6 +681,7 @@ let elim_flags = {
   use_metas_eagerly = true;
   modulo_delta = empty_transparent_state;
   resolve_evars = false;
+  use_evars_pattern_unification = true;
 }
 
 let elimination_clause_scheme with_evars allow_K elimclause indclause gl = 
