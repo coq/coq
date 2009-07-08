@@ -155,6 +155,7 @@ let commands = [
 ]
 
 let state_preserving = [
+  "About";
   "Check";
   "Eval";
   "Eval lazy in";
