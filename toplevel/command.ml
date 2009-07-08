@@ -515,7 +515,7 @@ let prepare_param = function
   | (na,Some b,_) -> out_name na, LocalDef b
 
 let interp_ind_arity evdref env ind =
-  interp_type_evars evdref env ind.ind_arity
+  interp_type_evars_impls ~evdref env ind.ind_arity
 
 let interp_cstrs evdref env impls mldata arity ind =
   let cnames,ctyps = List.split ind.ind_lc in
@@ -540,12 +540,13 @@ let interp_mutual paramsl indl notations finite =
 
   (* Interpret the arities *)
   let arities = List.map (interp_ind_arity evdref env_params) indl in
-  let fullarities = List.map (fun c -> it_mkProd_or_LetIn c ctx_params) arities in
+  let fullarities = List.map (fun (c, _) -> it_mkProd_or_LetIn c ctx_params) arities in
   let env_ar = push_types env0 indnames fullarities in
   let env_ar_params = push_rel_context ctx_params env_ar in
 
   (* Compute interpretation metadatas *)
-  let indimpls = List.map (fun _ -> userimpls) fullarities in
+  let indimpls = List.map (fun (_, impls) -> userimpls @ lift_implicits (List.length userimpls) impls) arities in
+  let arities = List.map fst arities in
   let impls = compute_interning_datas env0 Inductive params indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
 
@@ -582,9 +583,9 @@ let interp_mutual paramsl indl notations finite =
   }) indl arities constructors in
   let impls = 
     let len = List.length ctx_params in
-      List.map (fun (_,_,impls) ->
-	userimpls, List.map (fun impls -> 
-	  userimpls @ (lift_implicits len impls)) impls) constructors
+      List.map2 (fun indimpls (_,_,cimpls) ->
+	indimpls, List.map (fun impls -> 
+	  userimpls @ (lift_implicits len impls)) cimpls) indimpls constructors
   in
   (* Build the mutual inductive entry *)
   { mind_entry_params = List.map prepare_param ctx_params;
