@@ -599,7 +599,7 @@ let project_with_effects env sigma effects t subst =
   c
 
 let rec find_solution_type evarenv = function
-  | (id,ProjectVar _)::l -> pi3 (lookup_named id evarenv)
+  | (id,ProjectVar)::l -> pi3 (lookup_named id evarenv)
   | [id,ProjectEvar _] -> (* bugged *) pi3 (lookup_named id evarenv)
   | (id,ProjectEvar _)::l -> find_solution_type evarenv l
   | [] -> assert false
