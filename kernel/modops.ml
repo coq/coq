@@ -144,11 +144,13 @@ let rec subst_with_body sub = function
 
 and subst_modtype sub mtb =
   let typ_expr' = subst_struct_expr sub mtb.typ_expr in
-    if typ_expr'==mtb.typ_expr then
+  let sub_mtb = join_alias mtb.typ_alias sub in
+    if typ_expr'==mtb.typ_expr && sub_mtb==mtb.typ_alias then
       mtb
     else
       { mtb with 
-	  typ_expr = typ_expr'}
+	  typ_expr = typ_expr';
+	  typ_alias = sub_mtb}
 	
 and subst_structure sub sign = 
   let subst_body  = function
