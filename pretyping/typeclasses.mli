@@ -80,7 +80,7 @@ val bool_out : Dyn.t -> bool
 val is_resolvable : evar_info -> bool
 val mark_unresolvable : evar_info -> evar_info
 val mark_unresolvables : evar_map -> evar_map
-val is_class_evar : evar_info -> bool
+val is_class_evar : evar_map -> evar_info -> bool
 
 val resolve_typeclasses : ?onlyargs:bool -> ?split:bool -> ?fail:bool -> 
   env -> evar_defs -> evar_defs

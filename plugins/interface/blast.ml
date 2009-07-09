@@ -187,7 +187,7 @@ and e_my_find_search db_list local_db hdc concl =
 	 match t with
 	   | Res_pf (term,cl) -> unify_resolve st (term,cl)
 	   | ERes_pf (term,cl) -> unify_e_resolve (term,cl)
-	   | Give_exact (c) -> e_give_exact_constr c
+	   | Give_exact (c) -> e_give_exact c
 	   | Res_pf_THEN_trivial_fail (term,cl) ->
                tclTHEN (unify_e_resolve (term,cl)) 
 		 (e_trivial_fail_db db_list local_db)
@@ -218,7 +218,7 @@ let e_possible_resolve db_list local_db gl =
 		      (fst (head_constr_bound gl)) gl)
   with Bound | Not_found -> []
 
-let assumption_tac_list id = apply_tac_list (e_give_exact_constr (mkVar id))
+let assumption_tac_list id = apply_tac_list (e_give_exact (mkVar id))
 
 let find_first_goal gls = 
   try first_goal gls with UserError _ -> assert false
@@ -266,7 +266,7 @@ module MySearchProblem = struct
 	let l = 
 	  filter_tactics s.tacres
 	    (List.map 
-	       (fun id -> (e_give_exact_constr (mkVar id),
+	       (fun id -> (e_give_exact (mkVar id),
 			   (str "Exact" ++ spc()++ pr_id id)))
 	       (pf_ids_of_hyps g))
 	in

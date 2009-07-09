@@ -31,7 +31,7 @@ open Auto
 open Rawterm
 open Hiddentac
 
-let e_give_exact ?(flags=Unification.default_unify_flags) c gl = let t1 = (pf_type_of gl c) and t2 = pf_concl gl in 
+let e_give_exact ?(flags=auto_unif_flags) c gl = let t1 = (pf_type_of gl c) and t2 = pf_concl gl in 
   if occur_existential t1 or occur_existential t2 then 
      tclTHEN (Clenvtac.unify ~flags t1) (exact_check c) gl
   else exact_check c gl
@@ -49,10 +49,8 @@ TACTIC EXTEND eexact
 | [ "eexact" constr(c) ] -> [ e_give_exact c ]
 END
 
-let e_give_exact_constr = h_eexact
-
 let registered_e_assumption gl = 
-  tclFIRST (List.map (fun id gl -> e_give_exact_constr (mkVar id) gl) 
+  tclFIRST (List.map (fun id gl -> e_give_exact (mkVar id) gl) 
               (pf_ids_of_hyps gl)) gl
 
 (************************************************************************)
@@ -137,7 +135,7 @@ and e_my_find_search_nodelta db_list local_db hdc concl =
 	 match t with
 	   | Res_pf (term,cl) -> unify_resolve_nodelta (term,cl)
 	   | ERes_pf (term,cl) -> unify_e_resolve_nodelta (term,cl)
-	   | Give_exact (c) -> e_give_exact_constr c
+	   | Give_exact (c) -> e_give_exact c
 	   | Res_pf_THEN_trivial_fail (term,cl) ->
                tclTHEN (unify_e_resolve_nodelta (term,cl)) 
 		 (e_trivial_fail_db false db_list local_db)
@@ -267,7 +265,7 @@ module SearchProblem = struct
 	let l = 
 	  filter_tactics s.tacres
 	    (List.map 
-	       (fun id -> (e_give_exact_constr (mkVar id),
+	       (fun id -> (e_give_exact (mkVar id),
 			   (str "exact" ++ spc () ++ pr_id id)))
 	       (pf_ids_of_hyps g))
 	in

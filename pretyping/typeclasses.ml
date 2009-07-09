@@ -315,17 +315,18 @@ let mark_unresolvables sigma =
     Evd.add evs ev (mark_unresolvable evi))
     sigma Evd.empty
     
-let rec is_class_type c =
+let rec is_class_type evd c =
   match kind_of_term c with
-  | Prod (_, _, t) -> is_class_type t
+  | Prod (_, _, t) -> is_class_type evd t
+  | Evar (e, _) when is_defined evd e -> is_class_type evd (Evarutil.nf_evar evd c)
   | _ -> class_of_constr c <> None
 
-let is_class_evar evi = 
-  is_class_type evi.Evd.evar_concl
+let is_class_evar evd evi = 
+  is_class_type evd evi.Evd.evar_concl
     
 let has_typeclasses evd =
   Evd.fold (fun ev evi has -> has || 
-    (evi.evar_body = Evar_empty && is_class_evar evi && is_resolvable evi))
+    (evi.evar_body = Evar_empty && is_class_evar evd evi && is_resolvable evi))
     evd false
 
 let solve_instanciations_problem = ref (fun _ _ _ _ _ -> assert false)

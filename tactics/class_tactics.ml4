@@ -91,7 +91,7 @@ open Auto
 let e_give_exact flags c gl = 
   let t1 = (pf_type_of gl c) and t2 = pf_concl gl in 
     if occur_existential t1 or occur_existential t2 then 
-      tclTHEN (Clenvtac.unify (* ~flags *) t1) (exact_no_check c) gl
+      tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl
     else exact_check c gl
 (*   let t1 = (pf_type_of gl c) in *)
 (*     tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl *)
@@ -286,7 +286,8 @@ let hints_tac hints =
 	    aux (succ i) tl) 
 	  in
 	  let glsv = {it = list_map_i (fun j g -> g, 
-	    { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp }) 1 gls; sigma = s}, fun _ -> v in
+	    { info with auto_depth = j :: i :: info.auto_depth; 
+	      auto_last_tac = pp }) 1 gls; sigma = s}, fun _ -> v in
 	    sk glsv fk
       | [] -> fk ()
     in aux 1 tacs }
@@ -477,8 +478,8 @@ let resolve_typeclass_evars d p env evd onlyargs split fail =
   let pred = 
     if onlyargs then 
       (fun ev evi -> Typeclasses.is_implicit_arg (snd (Evd.evar_source ev evd)) &&
-	Typeclasses.is_class_evar evi)
-    else (fun ev evi -> Typeclasses.is_class_evar evi)
+	Typeclasses.is_class_evar evd evi)
+    else (fun ev evi -> Typeclasses.is_class_evar evd evi)
   in resolve_all_evars d p env pred evd split fail
     
 let solve_inst debug mode depth env evd onlyargs split fail =

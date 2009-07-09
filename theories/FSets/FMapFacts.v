@@ -762,7 +762,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   Notation eqke := (@eq_key_elt elt).
   Notation eqk := (@eq_key elt).
-
+  
   (** Complements about InA, NoDupA and findA *)
 
   Lemma InA_eqke_eqk : forall k1 k2 e1 e2 l,
@@ -790,7 +790,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   intros. symmetry.
   unfold eqb.
   rewrite <- findA_NoDupA, InA_rev, findA_NoDupA
-   by eauto using NoDupA_rev; eauto.
+   by eauto using NoDupA_rev; eauto. apply H0.
   case_eq (findA (eqb k) (rev l)); auto.
   intros e.
   unfold eqb.
@@ -898,7 +898,8 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
    intros k e a m' m'' H ? ? ?; eapply Hstep; eauto.
    revert H; unfold l; rewrite InA_rev, elements_mapsto_iff; auto.
   assert (Hdup : NoDupA eqk l).
-   unfold l. apply NoDupA_rev; try red; eauto. apply elements_3w.
+   unfold l. apply NoDupA_rev; try red; unfold eq_key ; eauto.
+   apply elements_3w.
   assert (Hsame : forall k, find k m = findA (eqb k) l).
    intros k. unfold l. rewrite elements_o, findA_rev; auto.
    apply elements_3w.
@@ -1106,8 +1107,8 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   intros (k,e) (k',e'); unfold eq_key; simpl; auto.
   apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
   apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
-  apply ForallList2_equiv1 with (eqA:=eqk); try red; eauto.
-  apply NoDupA_rev; try red; eauto. apply elements_3w.
+  apply ForallList2_equiv1 with (eqA:=eqk); try red ; unfold eq_key ; eauto.
+  apply NoDupA_rev; try red ; unfold eq_key; eauto. apply elements_3w.
   red; intros.
   do 2 rewrite InA_rev.
   destruct x; do 2 rewrite <- elements_mapsto_iff.
@@ -1139,7 +1140,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   unfold f'; intros (k1,e1) (k2,e2); unfold eq_key; simpl; auto.
   apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
   apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
-  apply ForallList2_equiv1 with (eqA:=eqk); try red; eauto.
+  apply ForallList2_equiv1 with (eqA:=eqk); try red; unfold eq_key ; eauto.
   apply NoDupA_rev; try red; eauto. apply elements_3w.
   rewrite InA_rev.
   contradict H.
@@ -2163,8 +2164,7 @@ Module OrdProperties (M:S).
   Qed.
 
   Lemma fold_Add_Above : forall m1 m2 x e (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)
-   (f:key->elt->A->A)(i:A),
-   Proper (E.eq==>Leibniz==>eqA==>eqA) f ->
+   (f:key->elt->A->A)(i:A) (P:Proper (E.eq==>Leibniz==>eqA==>eqA) f),
    Above x m1 -> Add x e m1 m2 ->
    eqA (fold f m2 i) (f x e (fold f m1 i)).
   Proof.
@@ -2172,7 +2172,7 @@ Module OrdProperties (M:S).
   set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
   transitivity (fold_right f' i (rev (elements m1 ++ (x,e)::nil))).
   apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
-  intros (k1,e1) (k2,e2) a1 a2 (Hk,He) Ha; unfold f'; simpl in *; apply H; auto.
+  intros (k1,e1) (k2,e2) a1 a2 (Hk,He) Ha; unfold f'; simpl in *. apply P; auto.
   apply eqlistA_rev.
   apply elements_Add_Above; auto.
   rewrite distr_rev; simpl.
@@ -2180,8 +2180,7 @@ Module OrdProperties (M:S).
   Qed.
 
   Lemma fold_Add_Below : forall m1 m2 x e (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)
-   (f:key->elt->A->A)(i:A),
-   Proper (E.eq==>Leibniz==>eqA==>eqA) f ->
+   (f:key->elt->A->A)(i:A) (P:Proper (E.eq==>Leibniz==>eqA==>eqA) f),
    Below x m1 -> Add x e m1 m2 ->
    eqA (fold f m2 i) (fold f m1 (f x e i)).
   Proof.
@@ -2189,7 +2188,7 @@ Module OrdProperties (M:S).
   set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
   transitivity (fold_right f' i (rev (((x,e)::nil)++elements m1))).
   apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
-  intros (k1,e1) (k2,e2) a1 a2 (Hk,He) Ha; unfold f'; simpl in *; apply H; auto.
+  intros (k1,e1) (k2,e2) a1 a2 (Hk,He) Ha; unfold f'; simpl in *; apply P; auto.
   apply eqlistA_rev.
   simpl; apply elements_Add_Below; auto.
   rewrite distr_rev; simpl.
