@@ -718,6 +718,11 @@ and body = parse
   | '.' space+ { Output.char '.'; Output.char ' '; 
 	  if not !formatted then false else body lexbuf }
   | '"' { Output.char '"'; ignore(notation lexbuf); body lexbuf }
+  | "(**" space_nl
+      { Output.end_coq (); Output.start_doc (); 
+	let eol = doc_bol lexbuf in
+	  Output.end_doc (); Output.start_coq (); 
+	  if eol then body_bol lexbuf else body lexbuf }
   | "(*" { comment_level := 1; 
 	   if !Cdglobals.parse_comments then Output.start_comment ();
 	   let eol = comment lexbuf in 
