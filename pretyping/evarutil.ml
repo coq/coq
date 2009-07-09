@@ -113,11 +113,27 @@ let push_dependent_evars sigma emap =
       (sigma',emap') (collect_evars emap' ccl))
     emap (sigma,emap)
 
+let push_duplicated_evars sigma emap c	=
+  let rec collrec (one,(sigma,emap) as acc) c =
+    match kind_of_term c with
+    | Evar (evk,_) when not (Evd.mem sigma evk) ->
+       if List.mem evk one then
+         let sigma' = Evd.add sigma evk (Evd.find emap	evk) in
+         let emap' = Evd.remove emap evk in
+         (one,(sigma',emap'))
+       else
+         (evk::one,(sigma,emap))
+    | _ ->
+       fold_constr collrec acc	c
+  in   
+  snd (collrec ([],(sigma,emap)) c)
+
 (* replaces a mapping of existentials into a mapping of metas.
    Problem if an evar appears in the type of another one (pops anomaly) *)
 let evars_to_metas sigma (emap, c) =
   let emap = nf_evars emap in
   let sigma',emap' = push_dependent_evars sigma emap in
+  let sigma',emap' = push_duplicated_evars sigma' emap' c in
   let change_exist evar =
     let ty = nf_betaiota emap (existential_type emap evar) in
     let n = new_meta() in
