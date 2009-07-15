@@ -350,10 +350,10 @@ let pr_record (sp,tyi) =
       str ": " ++ pr_lconstr_env envpar arity ++ brk(1,2) ++ 
       str ":= " ++ pr_id cstrnames.(0)) ++ 
     brk(1,2) ++
-    hv 2 (str "{" ++
-      prlist_with_sep (fun () -> str ";" ++ brk(1,0))
+    hv 2 (str "{ " ++
+      prlist_with_sep (fun () -> str ";" ++ brk(2,0))
         (fun (id,b,c) -> 
-	  str " " ++ pr_id id ++ str (if b then " : " else " := ") ++ 
+	  pr_id id ++ str (if b then " : " else " := ") ++ 
 	  pr_lconstr_env envpar c) fields) ++ str" }")
 
 let gallina_print_inductive sp =

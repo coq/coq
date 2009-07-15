@@ -30,7 +30,8 @@ Vernacular commands
 
 - New command "Timeout <n> <command>." interprets a command and a timeout
   interrupts the interpretation after <n> seconds.
-- Option -R now supports binding Coq root read-only
+- Option -R now supports binding Coq root read-only.
+- New support for local binders in the syntax of Record/Structure fields.
 
 Tools
 

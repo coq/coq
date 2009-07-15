@@ -329,16 +329,22 @@ GEXTEND Gram
   record_field:
     [ [ bd = record_binder; ntn = decl_notation -> bd,ntn ] ]
   ;
+  record_binder_body:
+    [ [ l = binders_let; oc = of_type_with_opt_coercion; 
+         t = lconstr -> fun id -> (oc,AssumExpr (id,mkCProdN loc l t))
+      | l = binders_let; oc = of_type_with_opt_coercion;
+         t = lconstr; ":="; b = lconstr -> fun id ->
+	   (oc,DefExpr (id,mkCLambdaN loc l b,Some (mkCProdN loc l t)))
+      | l = binders_let; ":="; b = lconstr -> fun id ->
+         match b with
+	 | CCast(_,b, Rawterm.CastConv (_, t)) ->
+	     (false,DefExpr(id,mkCLambdaN loc l b,Some (mkCProdN loc l t)))
+         | _ ->
+	     (false,DefExpr(id,mkCLambdaN loc l b,None)) ] ]
+  ;
   record_binder:
     [ [ id = name -> (false,AssumExpr(id,CHole (loc, None)))
-      | id = name; oc = of_type_with_opt_coercion; t = lconstr ->
-         (oc,AssumExpr (id,t))
-      | id = name; oc = of_type_with_opt_coercion;
-             t = lconstr; ":="; b = lconstr -> (oc,DefExpr (id,b,Some t))
-      | id = name; ":="; b = lconstr ->
-         match b with
-             CCast(_,b, Rawterm.CastConv (_, t)) -> (false,DefExpr(id,b,Some t))
-           | _ -> (false,DefExpr(id,b,None)) ] ]
+      | id = name; f = record_binder_body -> f id ] ]
   ;
   assum_list:
     [ [ bl = LIST1 assum_coe -> bl | b = simple_assum_coe -> [b] ] ]

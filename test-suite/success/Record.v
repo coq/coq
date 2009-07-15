@@ -80,3 +80,10 @@ Record DecidableOrder : Type :=
 ; le_trans : transitive _ le
 ; le_total : forall x y, {x <= y}+{y <= x}
 }.
+
+(* Test syntactic sugar suggested by wish report #2138 *)
+
+Record R : Type := {
+  P (A : Type) : Prop := exists x : A -> A, x = x;
+  Q A : P A -> P A
+}.
