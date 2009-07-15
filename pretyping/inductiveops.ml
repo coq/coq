@@ -375,13 +375,16 @@ let set_pattern_names env ind brv =
       mip.mind_nf_lc in
   array_map2 (set_names env) arities brv
 
-
-let type_case_branches_with_names env indspec pj c =
+let type_case_branches_with_names env indspec p c =
   let (ind,args) = indspec in
-  let (lbrty,conclty,_) = Inductive.type_case_branches env indspec pj c in
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let params = list_firstn mib.mind_nparams args in
-  if is_elim_predicate_explicitly_dependent env pj.uj_val (ind,params) then
+  let (mib,mip as specif) = Inductive.lookup_mind_specif env ind in
+  let nparams = mib.mind_nparams in
+  let (params,realargs) = list_chop nparams args in
+  let lbrty = Inductive.build_branches_type ind specif params p in
+  (* Build case type *)
+  let conclty = Reduction.beta_appvect p (Array.of_list (realargs@[c])) in
+  (* Adjust names *)
+  if is_elim_predicate_explicitly_dependent env p (ind,params) then
     (set_pattern_names env ind lbrty, conclty)
   else (lbrty, conclty)
 

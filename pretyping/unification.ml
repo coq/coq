@@ -97,7 +97,6 @@ let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst) =
             sigma,(k,lift (-nb) c,pb)::metasubst,evarsubst
 	  else error_cannot_unify_local env sigma (mkApp (f, l),c,c)
     | Evar ev ->
-      (* Currently unused: incompatible with eauto/eassumption backtracking *)
 	sigma,metasubst,(ev,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
     | _ -> assert false
 

@@ -104,7 +104,7 @@ val arity_of_case_predicate :
   env -> inductive_family -> bool -> sorts -> types
 
 val type_case_branches_with_names :
-  env -> inductive * constr list -> unsafe_judgment -> constr ->
+  env -> inductive * constr list -> constr -> constr ->
     types array * types
 val make_case_info : env -> inductive -> case_style -> case_info
 

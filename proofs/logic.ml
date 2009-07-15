@@ -436,12 +436,11 @@ and mk_casegoals sigma goal goalacc p c =
   let env = evar_env goal in
   let (acc',ct) = mk_hdgoals sigma goal goalacc c in 
   let (acc'',pt) = mk_hdgoals sigma goal acc' p in
-  let pj = {uj_val=p; uj_type=pt} in 
   let indspec =
     try find_mrectype env sigma ct
     with Not_found -> anomaly "mk_casegoals" in
   let (lbrty,conclty) =
-    type_case_branches_with_names env indspec pj c in
+    type_case_branches_with_names env indspec p c in
   (acc'',lbrty,conclty)
 
 

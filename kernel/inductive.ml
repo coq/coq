@@ -308,10 +308,7 @@ let is_correct_arity env c pj ind specif params =
             try conv env a1 dep_ind
             with NotConvertible -> raise (LocalArity None) in
 	  check_allowed_sort ksort specif;
-	  (true, Constraint.union u univ)
-      | Sort s', [] ->
-	  check_allowed_sort (family_of_sort s') specif;
-	  (false, u)
+	  Constraint.union u univ
       | _ ->
 	  raise (LocalArity None)
   in 
@@ -325,38 +322,34 @@ let is_correct_arity env c pj ind specif params =
 
 (* [p] is the predicate, [i] is the constructor number (starting from 0),
    and [cty] is the type of the constructor (params not instantiated) *)
-let build_branches_type ind (_,mip as specif) params dep p =
+let build_branches_type ind (_,mip as specif) params p =
   let build_one_branch i cty =
     let typi = full_constructor_instantiate (ind,specif,params) cty in
     let (args,ccl) = decompose_prod_assum typi in
     let nargs = rel_context_length args in
     let (_,allargs) = decompose_app ccl in
     let (lparams,vargs) = list_chop (inductive_params specif) allargs in
-    let cargs =
-      if dep then
-        let cstr = ith_constructor_of_inductive ind (i+1) in
-        let dep_cstr = applist (mkConstruct cstr,lparams@(local_rels args)) in
-        vargs @ [dep_cstr]
-      else
-        vargs in
+    let cargs = 
+      let cstr = ith_constructor_of_inductive ind (i+1) in
+      let dep_cstr = applist (mkConstruct cstr,lparams@(local_rels args)) in
+      vargs @ [dep_cstr] in
     let base = beta_appvect (lift nargs p) (Array.of_list cargs) in
     it_mkProd_or_LetIn base args in
   Array.mapi build_one_branch mip.mind_nf_lc
 
 (* [p] is the predicate, [c] is the match object, [realargs] is the
    list of real args of the inductive type *)
-let build_case_type dep p c realargs =
-  let args = if dep then realargs@[c] else realargs in
-  beta_appvect p (Array.of_list args)
+let build_case_type p c realargs =
+  beta_appvect p (Array.of_list (realargs@[c]))
 
 let type_case_branches env (ind,largs) pj c =
   let specif = lookup_mind_specif env ind in 
   let nparams = inductive_params specif in
   let (params,realargs) = list_chop nparams largs in
   let p = pj.uj_val in
-  let (dep,univ) = is_correct_arity env c pj ind specif params in
-  let lc = build_branches_type ind specif params dep p in
-  let ty = build_case_type dep p c realargs in
+  let univ = is_correct_arity env c pj ind specif params in
+  let lc = build_branches_type ind specif params p in
+  let ty = build_case_type p c realargs in
   (lc, ty, univ)
 
 

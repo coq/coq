@@ -65,6 +65,10 @@ val type_case_branches :
   env -> inductive * constr list -> unsafe_judgment -> constr
     -> types array * types * constraints
 
+val build_branches_type :
+  inductive -> mutual_inductive_body * one_inductive_body ->
+    constr list -> constr -> types array
+
 (* Return the arity of an inductive type *)
 val mind_arity : one_inductive_body -> rel_context * sorts_family
 
