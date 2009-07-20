@@ -336,16 +336,11 @@ Proof. intros. injection H. intros ; auto. Defined.
 Lemma simplification_K : Π A (x : A) (B : x = x -> Type), B (refl_equal x) -> (Π p : x = x, B p).
 Proof. intros. rewrite (UIP_refl A). assumption. Defined.
 
-(** This hint database and the following tactic can be used with [autosimpl] to 
-   unfold everything to [eq_rect]s. *)
-
-Hint Unfold solution_left solution_right deletion simplification_heq
-  simplification_existT1 simplification_existT2
-  eq_rect_r eq_rec eq_ind : equations.
-
 (** Simply unfold as much as possible. *)
 
-Ltac unfold_equations := repeat progress autosimpl with equations.
+Ltac unfold_equations :=
+  unfold solution_left, solution_right, deletion, simplification_heq,
+    simplification_existT1, simplification_existT2, eq_rect_r, eq_rec, eq_ind.
 
 (** The tactic [simplify_equations] is to be used when a program generated using [Equations] 
    is in the goal. It simplifies it as much as possible, possibly using [K] if needed. *) 
