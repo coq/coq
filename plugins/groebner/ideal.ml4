@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*i camlp4deps: "lib/refutpat.cmo" i*)
+(* NB: The above camlp4 extension adds a let* syntax for refutable patterns *)
+
 (* 
    Nullstellensatz par calcul de base de Grobner
 
@@ -738,7 +741,7 @@ let normal_form d p g mg onlyhead =
     | (a,v)::p' ->
 	(try
 	   let q = find_reductor d v g mg in
-	   let (b,u)::q' = q.pol in
+	   let* (b,u)::q' = q.pol in
 	   let c = P.pgcdP a b in
 	   let a' = P.divP b c in
 	   let b' = P.oppP (P.divP a c) in
@@ -767,7 +770,7 @@ let reduce_rem d r lt lq =
   r
 
 let tail_normal_form d p g mg =
-  let (a,v)::p' = p in
+  let* (a,v)::p' = p in
   let (c,r)= (normal_form d p' g mg false) in
   plusP d [(P.multP a c,v)] r
 
@@ -798,8 +801,8 @@ let head_normal_form d p lt mt =
     then ((* info "=";*) [])
     else (
       while !h <> [] && (!g).pol <> [] do
-	let (a,v)::p' = !h in
-	let (b,u)::q' = (!g).pol in
+	let* (a,v)::p' = !h in
+	let* (b,u)::q' = (!g).pol in
 	let c = P.pgcdP a b in
 	let a' = P.divP b c in
 	let b' = P.oppP (P.divP a c) in
@@ -827,7 +830,7 @@ let head_reduce d lq lt mt =
   let ls = ref lq in
   let lq = ref [] in
   while !ls <> [] do
-    let p::ls1 = !ls in
+    let* p::ls1 = !ls in
     ls := ls1;
     if !homogeneous && p.pol<>[] && deg_hom p.pol > deg_hom !pol_courant
     then info "h"
@@ -858,7 +861,7 @@ let hashtbl_multiplicative d lf =
   hashtbl_reductor := Hashtbl.create 51;
   List.iter
     (fun g ->
-      let (_,u)::_ = g.pol in
+      let (_,u) = List.hd g.pol in
       Hashpol.add mg g.pol (monom_multiplicative d u lf))
     lf;
   (*info ("temps de hashtbl_multiplicative: "
@@ -956,8 +959,8 @@ let head_normal_form3 d p lt mt =
     then ((* info "=";*) [])
     else (
       while !h <> [] && (!g).pol <> [] do
-	let (a,v)::p' = !h in
-	let (b,u)::q' = (!g).pol in
+	let* (a,v)::p' = !h in
+        let* (b,u)::q' = (!g).pol in
 	let c = P.pgcdP a b in
 	let a' = P.divP b c in
 	let b' = P.oppP (P.divP a c) in
@@ -984,14 +987,14 @@ let janet3 d lf p0 =
   let r = ref p0 in
   let lf = List.map (pol_to_pol3 d) lf in
 
-  let f::lf1 = lf in
+  let* f::lf1 = lf in
   let lt = ref [f] in
   let mt = ref (hashtbl_multiplicative d !lt) in
   let lq = ref lf1 in
   r := reduce_rem  d !r !lt !lq ; (* janet_normal_form  d !r !lt !mt ;*)
   info ("reste: "^(stringPcut !r)^"\n");
   while !lq <> [] && !r <> [] do
-    let p::lq1 = !lq in
+    let* p::lq1 = !lq in
     lq := lq1;
 (*
     if p.pol = p.anc 
@@ -1247,12 +1250,12 @@ let divide_rem_with_critical_pair = ref false
 let choix_spol d p l =
   if !divide_rem_with_critical_pair
   then (
-    let (_,m)::_ = p in
+    let (_,m) = List.hd p in
     try (
       let q =
 	List.find
 	  (fun q ->
-	    let (_,m')::_ = q in
+	    let (_,m') = List.hd q in
 	    div_mon_test d m m')
 	  l in
       q::(list_diff l q))
@@ -1269,7 +1272,7 @@ let pbuchf d pq p lp0=
       match lpc with
         [] -> test_dans_ideal d p lp lp0
       | _ ->
-	  let (a::lpc2)= choix_spol d !pol_courant lpc in
+	  let* a::lpc2 = choix_spol d !pol_courant lpc in
 	  if !homogeneous && a<>[] && deg_hom a > deg_hom !pol_courant
 	  then (info "h";pbuchf lp lpc2)
 	  else

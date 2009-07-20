@@ -111,6 +111,7 @@ let libcoqrun = "kernel/byterun/libcoqrun.a"
 
 let grammar = "parsing/grammar.cma"
 let qconstr = "parsing/q_constr.cmo"
+let refutpat = "lib/refutpat.cmo"
 
 let initialcoq = "states/initial.coq"
 let init_vo = ["theories/Init/Prelude.vo";"theories/Init/Logic_Type.vo"]
@@ -253,6 +254,7 @@ let extra_rules () = begin
 
   flag_and_dep ["is_ml4"; "p4mod"; "use_grammar"] (P grammar);
   flag_and_dep ["is_ml4"; "p4mod"; "use_constr"] (P qconstr);
+  flag_and_dep ["is_ml4"; "p4mod"; "use_refutpat"] (P refutpat);
 
 (** Special case of toplevel/mltop.ml4: 
     - mltop.ml will be the old mltop.optml and be used to obtain mltop.cmx
