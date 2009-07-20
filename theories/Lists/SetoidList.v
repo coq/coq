@@ -646,7 +646,7 @@ Qed.
 
 End Restriction.
 
-(** we know state similar results, but without restriction on transpose. *)
+(** we now state similar results, but without restriction on transpose. *)
 
 Variable Tra :transpose f.
 
