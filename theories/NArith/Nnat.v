@@ -179,22 +179,12 @@ Lemma nat_of_Ncompare :
  forall a a', Ncompare a a' = nat_compare (nat_of_N a) (nat_of_N a').
 Proof.
   destruct a; destruct a'; simpl.
-  compute; auto.
-  generalize (lt_O_nat_of_P p).
-  unfold nat_compare.
-  destruct (lt_eq_lt_dec 0 (nat_of_P p)) as [[H|H]|H]; auto.
-  rewrite <- H; inversion 1.
-  intros; generalize (lt_trans _ _ _ H0 H); inversion 1.
-  generalize (lt_O_nat_of_P p).
-  unfold nat_compare.
-  destruct (lt_eq_lt_dec (nat_of_P p) 0) as [[H|H]|H]; auto.
-  intros; generalize (lt_trans _ _ _ H0 H); inversion 1.
-  rewrite H; inversion 1.
-  unfold nat_compare.
-  destruct (lt_eq_lt_dec (nat_of_P p) (nat_of_P p0)) as [[H|H]|H]; auto.
-  apply nat_of_P_lt_Lt_compare_complement_morphism; auto.
-  rewrite (nat_of_P_inj _ _ H); apply Pcompare_refl.
-  apply nat_of_P_gt_Gt_compare_complement_morphism; auto.
+  reflexivity.
+  assert (NZ : 0 < nat_of_P p) by auto using lt_O_nat_of_P.
+  destruct nat_of_P; [inversion NZ|auto].
+  assert (NZ : 0 < nat_of_P p) by auto using lt_O_nat_of_P.
+  destruct nat_of_P; [inversion NZ|auto].
+  apply nat_of_P_compare_morphism.
 Qed.
 
 Lemma N_of_nat_compare : 
@@ -210,8 +200,8 @@ Lemma nat_of_Nmin :
   forall a a', nat_of_N (Nmin a a') = min (nat_of_N a) (nat_of_N a').
 Proof.
   intros; unfold Nmin; rewrite nat_of_Ncompare.
-  unfold nat_compare.
-  destruct (lt_eq_lt_dec (nat_of_N a) (nat_of_N a')) as [[|]|]; 
+  rewrite nat_compare_equiv; unfold nat_compare_alt.
+  destruct (lt_eq_lt_dec (nat_of_N a) (nat_of_N a')) as [[|]|];
     simpl; intros; symmetry; auto with arith.
   apply min_l; rewrite e; auto with arith.
 Qed.
@@ -230,8 +220,8 @@ Lemma nat_of_Nmax :
   forall a a', nat_of_N (Nmax a a') = max (nat_of_N a) (nat_of_N a').
 Proof.
   intros; unfold Nmax; rewrite nat_of_Ncompare.
-  unfold nat_compare.
-  destruct (lt_eq_lt_dec (nat_of_N a) (nat_of_N a')) as [[|]|]; 
+  rewrite nat_compare_equiv; unfold nat_compare_alt.
+  destruct (lt_eq_lt_dec (nat_of_N a) (nat_of_N a')) as [[|]|];
     simpl; intros; symmetry; auto with arith.
   apply max_r; rewrite e; auto with arith.
 Qed.

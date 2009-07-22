@@ -354,6 +354,35 @@ Proof.
   trivial.
 Qed.
 
+(* Nleb and Ncompare *)
+
+(* NB: No need to prove that Nleb a b = true <-> Ncompare a b <> Gt,
+   this statement is in fact Nleb_Nle! *)
+
+Lemma Nltb_Ncompare : forall a b,
+ Nleb a b = false <-> Ncompare a b = Gt.
+Proof.
+ intros.
+ assert (IFF : forall x:bool, x = false <-> ~ x = true)
+   by (destruct x; intuition).
+ rewrite IFF, Nleb_Nle; unfold Nle.
+ destruct (Ncompare a b); split; intro H; auto;
+  elim H; discriminate.
+Qed.
+
+Lemma Ncompare_Gt_Nltb : forall a b,
+ Ncompare a b = Gt -> Nleb a b = false.
+Proof.
+ intros; apply <- Nltb_Ncompare; auto.
+Qed.
+
+Lemma Ncompare_Lt_Nltb : forall a b,
+ Ncompare a b = Lt -> Nleb b a = false.
+Proof.
+ intros a b H.
+ rewrite Nltb_Ncompare, <- Ncompare_antisym, H; auto.
+Qed.
+
 (* An alternate [min] function over [N] *)
 
 Definition Nmin' (a b:N) := if Nleb a b then a else b.

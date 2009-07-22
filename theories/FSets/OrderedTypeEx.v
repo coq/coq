@@ -55,18 +55,17 @@ Module Nat_as_OT <: UsualOrderedType.
   Definition lt := lt.
 
   Lemma lt_trans : forall x y z : t, lt x y -> lt y z -> lt x z.
-  Proof. unfold lt in |- *; intros; apply lt_trans with y; auto. Qed.
+  Proof. unfold lt; intros; apply lt_trans with y; auto. Qed.
 
   Lemma lt_not_eq : forall x y : t, lt x y -> ~ eq x y.
-  Proof. unfold lt, eq in |- *; intros; omega. Qed.
+  Proof. unfold lt, eq; intros; omega. Qed.
 
   Definition compare : forall x y : t, Compare lt eq x y.
   Proof.
-    intros; case (lt_eq_lt_dec x y).
-    simple destruct 1; intro.
-    constructor 1; auto.
-    constructor 2; auto.
-    intro; constructor 3; auto.
+    intros x y; destruct (nat_compare x y) as [ | | ]_eqn.
+    apply EQ. apply nat_compare_eq; assumption.
+    apply LT. apply nat_compare_Lt_lt; assumption.
+    apply GT. apply nat_compare_Gt_gt; assumption.
   Defined.
 
   Definition eq_dec := eq_nat_dec.
@@ -96,10 +95,10 @@ Module Z_as_OT <: UsualOrderedType.
 
   Definition compare : forall x y, Compare lt eq x y.
   Proof.
-    intros x y; case_eq (x ?= y); intros.
-    apply EQ; unfold eq; apply Zcompare_Eq_eq; auto.
-    apply LT; unfold lt, Zlt; auto.
-    apply GT; unfold lt, Zlt; rewrite <- Zcompare_Gt_Lt_antisym; auto.
+    intros x y; destruct (x ?= y) as [ | | ]_eqn.
+    apply EQ; apply Zcompare_Eq_eq; assumption.
+    apply LT; assumption.
+    apply GT; apply Zgt_lt; assumption.
   Defined.
 
   Definition eq_dec := Z_eq_dec.
@@ -136,13 +135,10 @@ Module Positive_as_OT <: UsualOrderedType.
 
   Definition compare : forall x y : t, Compare lt eq x y.
   Proof.
-  intros x y.
-  case_eq ((x ?= y) Eq); intros.
-  apply EQ; apply Pcompare_Eq_eq; auto.
-  apply LT; unfold lt; auto.
-  apply GT; unfold lt.
-  replace Eq with (CompOpp Eq); auto.
-  rewrite <- Pcompare_antisym; rewrite H; auto.
+  intros x y. destruct ((x ?= y) Eq) as [ | | ]_eqn.
+  apply EQ; apply Pcompare_Eq_eq; assumption.
+  apply LT; assumption.
+  apply GT; apply ZC1; assumption.
   Defined.
 
   Definition eq_dec : forall x y, { eq x y } + { ~ eq x y }.
@@ -178,19 +174,10 @@ Module N_as_OT <: UsualOrderedType.
 
   Definition compare : forall x y : t, Compare lt eq x y.
   Proof.
-  intros x y.
-  case_eq ((x ?= y)%N); intros.
-  apply EQ; apply Ncompare_Eq_eq; auto.
-  apply LT; unfold lt; auto.
-   generalize (Nleb_Nle y x).
-   unfold Nle; rewrite <- Ncompare_antisym.
-   destruct (x ?= y)%N; simpl; try discriminate.
-   clear H; intros H.
-   destruct (Nleb y x); intuition.
-  apply GT; unfold lt.
-   generalize (Nleb_Nle x y).
-   unfold Nle; destruct (x ?= y)%N; simpl; try discriminate.
-   destruct (Nleb x y); intuition.
+  intros x y. destruct (x ?= y)%N as [ | | ]_eqn.
+  apply EQ; apply Ncompare_Eq_eq; assumption.
+  apply LT; apply Ncompare_Lt_Nltb; assumption.
+  apply GT; apply Ncompare_Gt_Nltb; assumption.
   Defined.
 
   Definition eq_dec : forall x y, { eq x y } + { ~ eq x y }.
