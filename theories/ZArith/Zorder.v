@@ -276,8 +276,7 @@ Qed.
 
 Lemma Zlt_trans : forall n m p:Z, n < m -> m < p -> n < p.
 Proof.
-  intros n m p H1 H2; apply Zgt_lt; apply Zgt_trans with (m := m); apply Zlt_gt;
-    assumption.
+  exact Zcompare_Lt_trans.
 Qed.
 
 (** Mixed transitivity *)

@@ -383,9 +383,28 @@ destruct n; destruct m; simpl; auto.
 exact (Pcompare_antisym p p0 Eq).
 Qed.
 
+Lemma Ngt_Nlt : forall n m, n > m -> m < n.
+Proof.
+unfold Ngt, Nlt; intros n m GT.
+rewrite <- Ncompare_antisym, GT; reflexivity.
+Qed.
+
 Theorem Nlt_irrefl : forall n : N, ~ n < n.
 Proof.
 intro n; unfold Nlt; now rewrite Ncompare_refl.
+Qed.
+
+Theorem Nlt_trans : forall n m q, n < m -> m < q -> n < q.
+Proof.
+destruct n;
+ destruct m; try discriminate;
+ destruct q; try discriminate; auto.
+eapply Plt_trans; eauto.
+Qed.
+
+Theorem Nlt_not_eq : forall n m, n < m -> ~ n = m.
+Proof.
+ intros n m LT EQ. subst m. elim (Nlt_irrefl n); auto.
 Qed.
 
 Theorem Ncompare_n_Sm :

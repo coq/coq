@@ -64,29 +64,33 @@ Qed.
 
 Lemma Zcompare_Gt_Lt_antisym : forall n m:Z, (n ?= m) = Gt <-> (m ?= n) = Lt.
 Proof.
-  intros x y; split; intro H;
-    [ change Lt with (CompOpp Gt) in |- *; rewrite <- Zcompare_antisym;
-      rewrite H; reflexivity
-      | change Gt with (CompOpp Lt) in |- *; rewrite <- Zcompare_antisym;
-	rewrite H; reflexivity ].
+  intros x y.
+  rewrite <- Zcompare_antisym. change Gt with (CompOpp Lt).
+  split.
+  auto using CompOpp_inj.
+  intros; f_equal; auto.
 Qed.
 
 (** * Transitivity of comparison *)
 
+Lemma Zcompare_Lt_trans :
+  forall n m p:Z, (n ?= m) = Lt -> (m ?= p) = Lt -> (n ?= p) = Lt.
+Proof.
+  intros x y z; case x; case y; case z; simpl;
+    try discriminate; auto with arith.
+  intros; eapply Plt_trans; eauto.
+  intros p q r; rewrite 3 Pcompare_antisym; simpl.
+  intros; eapply Plt_trans; eauto.
+Qed.
+
 Lemma Zcompare_Gt_trans :
   forall n m p:Z, (n ?= m) = Gt -> (m ?= p) = Gt -> (n ?= p) = Gt.
 Proof.
-  intros x y z; case x; case y; case z; simpl in |- *;
-    try (intros; discriminate H || discriminate H0); auto with arith;
-      [ intros p q r H H0; apply nat_of_P_gt_Gt_compare_complement_morphism;
-	unfold gt in |- *; apply lt_trans with (m := nat_of_P q);
-	  apply nat_of_P_lt_Lt_compare_morphism; apply ZC1; 
-	    assumption
-	| intros p q r; do 3 rewrite <- ZC4; intros H H0;
-	  apply nat_of_P_gt_Gt_compare_complement_morphism; 
-	    unfold gt in |- *; apply lt_trans with (m := nat_of_P q);
-	      apply nat_of_P_lt_Lt_compare_morphism; apply ZC1; 
-		assumption ].
+  intros n m p Hnm Hmp.
+  apply <- Zcompare_Gt_Lt_antisym.
+  apply -> Zcompare_Gt_Lt_antisym in Hnm.
+  apply -> Zcompare_Gt_Lt_antisym in Hmp.
+  eapply Zcompare_Lt_trans; eauto.
 Qed.
 
 (** * Comparison and opposite *)

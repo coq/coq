@@ -206,6 +206,21 @@ Definition CompOpp (r:comparison) :=
     | Gt => Lt
   end.
 
+Lemma CompOpp_involutive : forall c, CompOpp (CompOpp c) = c.
+Proof.
+  destruct c; reflexivity.
+Qed.
+
+Lemma CompOpp_inj : forall c c', CompOpp c = CompOpp c' -> c = c'.
+Proof.
+  destruct c; destruct c'; auto; discriminate.
+Qed.
+
+Lemma CompOpp_iff : forall c c', CompOpp c = c' <-> c = CompOpp c'.
+Proof.
+  split; intros; apply CompOpp_inj; rewrite CompOpp_involutive; auto.
+Qed.
+
 (** Identity *)
 
 Definition ID := forall A:Type, A -> A.

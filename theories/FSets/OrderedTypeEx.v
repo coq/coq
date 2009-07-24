@@ -160,24 +160,16 @@ Module N_as_OT <: UsualOrderedType.
   Definition eq_sym := @sym_eq t.
   Definition eq_trans := @trans_eq t.
 
-  Definition lt p q:= Nleb q p = false.
- 
-  Definition lt_trans := Nltb_trans.
-
-  Lemma lt_not_eq : forall x y : t, lt x y -> ~ eq x y.
-  Proof.
-  intros; intro.
-  rewrite H0 in H.
-  unfold lt in H.
-  rewrite Nleb_refl in H; discriminate.
-  Qed.
+  Definition lt:=Nlt.
+  Definition lt_trans := Nlt_trans.
+  Definition lt_not_eq := Nlt_not_eq.
 
   Definition compare : forall x y : t, Compare lt eq x y.
   Proof.
   intros x y. destruct (x ?= y)%N as [ | | ]_eqn.
   apply EQ; apply Ncompare_Eq_eq; assumption.
-  apply LT; apply Ncompare_Lt_Nltb; assumption.
-  apply GT; apply Ncompare_Gt_Nltb; assumption.
+  apply LT; assumption.
+  apply GT. apply Ngt_Nlt; assumption.
   Defined.
 
   Definition eq_dec : forall x y, { eq x y } + { ~ eq x y }.
