@@ -64,10 +64,6 @@ val general_multi_multi_rewrite :
   evars_flag -> (bool * multi * open_constr with_bindings) list -> clause -> 
   (tactic * conditions) option -> tactic
 
-val conditional_rewrite : orientation -> tactic -> open_constr with_bindings -> tactic
-val conditional_rewrite_in :
-  orientation -> identifier -> tactic -> open_constr with_bindings -> tactic
-
 val replace_in_clause_maybe_by : constr -> constr -> clause -> tactic option -> tactic
 val replace    : constr -> constr -> tactic
 val replace_in : identifier -> constr -> constr -> tactic

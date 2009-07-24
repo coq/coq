@@ -6,8 +6,8 @@ injection H.
 replace a with b.
 rewrite <- H with (a := b).
 rewrite <- H with (a := b) in H1.
-conditional (auto) rewrite H with (1 := b).
-conditional (auto) rewrite H with (1 := b) in H2.
+rewrite H with (1 := b).
+rewrite H with (1 := b) in H2.
 dependent rewrite H.
 cutrewrite (a = b).
 cutrewrite (a = b) in H.

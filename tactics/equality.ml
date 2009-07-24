@@ -290,21 +290,8 @@ let general_multi_multi_rewrite with_evars l cl tac =
     | (l2r,m,c)::l -> tclTHENFIRST (doN l2r c m) (loop l)
   in loop l
 
-(* Conditional rewriting, the success of a rewriting is related 
-   to the resolution of the conditions by a given tactic *)
-
-let conditional_rewrite lft2rgt tac (c,bl) = 
-  tclTHENSFIRSTn
-    (general_rewrite_ebindings lft2rgt all_occurrences (c,bl) false)
-    [|tclIDTAC|] (tclCOMPLETE tac)
-
 let rewriteLR = general_rewrite true all_occurrences
 let rewriteRL = general_rewrite false all_occurrences
-
-let conditional_rewrite_in lft2rgt id tac (c,bl) = 
-  tclTHENSFIRSTn
-    (general_rewrite_ebindings_in lft2rgt all_occurrences id (c,bl) false)
-    [|tclIDTAC|] (tclCOMPLETE tac)
 
 (* Replacing tactics *)
 

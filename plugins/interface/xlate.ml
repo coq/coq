@@ -1039,21 +1039,6 @@ and xlate_tac =
     | TacRewrite(_,_,_,Some _) -> xlate_error "TODO: rewrite by"
     | TacRewrite(false,_,cl,_) -> xlate_error "TODO: rewrite of several hyps at once"
     | TacRewrite(true,_,cl,_) -> xlate_error "TODO: erewrite"
-    | TacExtend (_,"conditional_rewrite", [t; b; cbindl]) ->
-     let t = out_gen rawwit_main_tactic t in
-     let b = out_gen Extraargs.rawwit_orient b in
-     let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
-     let c = xlate_formula c and bindl = xlate_bindings bindl in
-     if b then CT_condrewrite_lr (xlate_tactic t, c, bindl, ctv_ID_OPT_NONE)
-     else CT_condrewrite_rl (xlate_tactic t, c, bindl, ctv_ID_OPT_NONE)
-    | TacExtend (_,"conditional_rewrite", [t; b; cbindl; id]) ->
-     let t = out_gen rawwit_main_tactic t in
-     let b = out_gen Extraargs.rawwit_orient b in
-     let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
-     let c = xlate_formula c and bindl = xlate_bindings bindl in
-     let id = ctf_ID_OPT_SOME (xlate_ident (snd (out_gen rawwit_var id))) in
-     if b then CT_condrewrite_lr (xlate_tactic t, c, bindl, id)
-     else CT_condrewrite_rl (xlate_tactic t, c, bindl, id)
     | TacExtend (_,"dependent_rewrite", [b; c]) ->
       let b = out_gen Extraargs.rawwit_orient b in
       let c = xlate_formula (out_gen rawwit_constr c) in

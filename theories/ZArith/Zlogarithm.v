@@ -54,20 +54,19 @@ Section Log_pos. (* Log of positive integers *)
   Theorem log_inf_correct :
     forall x:positive,
       0 <= log_inf x /\ two_p (log_inf x) <= Zpos x < two_p (Zsucc (log_inf x)).
+  Proof.
     simple induction x; intros; simpl in |- *;
       [ elim H; intros Hp HR; clear H; split;
 	[ auto with zarith
-	  | conditional apply Zle_le_succ; trivial rewrite
-	    two_p_S with (x := Zsucc (log_inf p));
-	    conditional trivial rewrite two_p_S;
-	      conditional trivial rewrite two_p_S in HR; rewrite (BinInt.Zpos_xI p);
+	  | rewrite two_p_S with (x := Zsucc (log_inf p)) by (apply Zle_le_succ; trivial);
+	    rewrite two_p_S by trivial;
+	    rewrite two_p_S in HR by trivial; rewrite (BinInt.Zpos_xI p);
 		omega ]
 	| elim H; intros Hp HR; clear H; split;
 	  [ auto with zarith
-	    | conditional apply Zle_le_succ; trivial rewrite
-	      two_p_S with (x := Zsucc (log_inf p));
-	      conditional trivial rewrite two_p_S;
-		conditional trivial rewrite two_p_S in HR; rewrite (BinInt.Zpos_xO p);
+	    | rewrite two_p_S with (x := Zsucc (log_inf p)) by (apply Zle_le_succ; trivial);
+	      rewrite two_p_S by trivial;
+	      rewrite two_p_S in HR by trivial; rewrite (BinInt.Zpos_xO p);
 		  omega ]
 	| unfold two_power_pos in |- *; unfold shift_pos in |- *; simpl in |- *;
 	  omega ].
