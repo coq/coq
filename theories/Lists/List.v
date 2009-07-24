@@ -316,7 +316,12 @@ Section Facts.
     now_show (H = a \/ In a (y ++ m)).
     elim H2; auto.
   Qed.
-  
+
+  Lemma in_app_iff : forall l l' (a:A), In a (l++l') <-> In a l \/ In a l'.
+  Proof.
+    split; auto using in_app_or, in_or_app.
+  Qed.
+
   Lemma app_inv_head:
    forall l l1 l2 : list A, l ++ l1 = l ++ l2 ->  l1 = l2.
   Proof.
@@ -1853,7 +1858,7 @@ End NatSeq.
   (** * Exporting hints and tactics *)
 
 
-Hint Rewrite 
+Hint Rewrite
   rev_involutive (* rev (rev l) = l *)
   rev_unit (* rev (l ++ a :: nil) = a :: rev l *)
   map_nth (* nth n (map f l) (f d) = f (nth n l d) *)
@@ -1861,9 +1866,6 @@ Hint Rewrite
   seq_length (* length (seq start len) = len *)
   app_length (* length (l ++ l') = length l + length l' *)
   rev_length (* length (rev l) = length l *)
-  : list.
-
-Hint Rewrite ->
   app_nil_r (* l ++ nil = l *)
   : list.
 
