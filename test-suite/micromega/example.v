@@ -28,7 +28,7 @@ Qed.
 Lemma some_pol : forall x, 4 * x ^ 2 + 3 * x + 2 >= 0.
 Proof.
   intros. 
-  psatz Z 2. 
+  psatz Z 2.
 Qed.
 
 
@@ -333,7 +333,8 @@ Qed.
 
 Lemma motzkin' : forall x y, (x^2+y^2+1)*(x^2*y^4 + x^4*y^2 + 1 - 3*x^2*y^2) >= 0.
 Proof.
-  intros ; psatz Z.
+  intros.
+  psatz Z 1.
 Qed.
 
 
