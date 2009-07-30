@@ -24,7 +24,7 @@ let time str f x =
   res
 
 
-type tag = int
+type tag = Tag.t
 type 'cst atom = 'cst Micromega.formula
 
 type 'cst formula =
@@ -43,7 +43,7 @@ let rec pp_formula o f =
     | TT -> output_string  o "tt"
     | FF -> output_string  o "ff"
     | X c -> output_string o "X " 
-    | A(_,t,_) -> Printf.fprintf o "A(%i)" t
+    | A(_,t,_) -> Printf.fprintf o "A(%a)" Tag.pp t
     | C(f1,f2) -> Printf.fprintf o "C(%a,%a)" pp_formula f1 pp_formula f2
     | D(f1,f2) -> Printf.fprintf o "D(%a,%a)" pp_formula f1 pp_formula f2
     | I(f1,n,f2) -> Printf.fprintf o "I(%a%s,%a)" 
@@ -58,12 +58,15 @@ let rec ids_of_formula f =
     | I(f1,Some id,f2) -> id::(ids_of_formula f2)
     | _                -> []
 
-(* obsolete *)
-
-let tag_formula t f = f (* to be removed *)
-(* obsolete *)
-
 module ISet = Set.Make(struct type t = int let compare : int -> int -> int = Pervasives.compare end)
+
+let selecti s m = 
+  let rec xselect i m = 
+    match m with
+      | [] -> []
+      | e::m -> if ISet.mem i s then e:: (xselect (i+1) m) else xselect (i+1) m in
+    xselect 0 m
+
 
 type 'cst clause = ('cst Micromega.nFormula * tag) list 
 
@@ -106,6 +109,7 @@ let cnf (negate: 'cst atom -> 'cst mc_cnf) (normalise:'cst atom -> 'cst mc_cnf) 
       (if pol then or_cnf else and_cnf) (xcnf  (not pol) e1) (xcnf  pol e2) in
 
   xcnf  true f
+
 
 module M =
 struct
@@ -191,7 +195,8 @@ struct
  let coq_R1    = lazy (constant "R1")
 
 
- let coq_proofTerm = lazy (constant "ProofTerm")
+ let coq_proofTerm = lazy (constant "ZArithProof")
+ let coq_doneProof = lazy (constant "DoneProof")
  let coq_ratProof = lazy (constant "RatProof")
  let coq_cutProof = lazy (constant "CutProof")
  let coq_enumProof = lazy (constant "EnumProof")
@@ -245,6 +250,10 @@ struct
  let coq_PEsub = lazy (constant "PEsub")
  let coq_PEpow = lazy (constant "PEpow")
 
+ let coq_PX = lazy (constant "PX" )
+ let coq_Pc = lazy (constant"Pc")
+ let coq_Pinj = lazy (constant "Pinj")
+
 
  let coq_OpEq = lazy (constant "OpEq")
  let coq_OpNEq = lazy (constant "OpNEq")
@@ -254,14 +263,13 @@ struct
  let coq_OpGt = lazy (constant  "OpGt")
 
 
- let coq_S_In = lazy (constant "S_In")
- let coq_S_Square = lazy (constant "S_Square")
- let coq_S_Monoid = lazy (constant "S_Monoid")
- let coq_S_Ideal = lazy (constant "S_Ideal")
- let coq_S_Mult = lazy (constant "S_Mult")
- let coq_S_Add  = lazy (constant "S_Add")
- let coq_S_Pos  = lazy (constant "S_Pos")
- let coq_S_Z    = lazy (constant "S_Z")
+ let coq_PsatzIn = lazy (constant "PsatzIn")
+ let coq_PsatzSquare = lazy (constant "PsatzSquare")
+ let coq_PsatzMulE = lazy (constant "PsatzMulE")
+ let coq_PsatzMultC = lazy (constant "PsatzMulC")
+ let coq_PsatzAdd  = lazy (constant "PsatzAdd")
+ let coq_PsatzC  = lazy (constant "PsatzC")
+ let coq_PsatzZ    = lazy (constant "PsatzZ")
  let coq_coneMember    = lazy (constant "coneMember")
   
 
@@ -465,47 +473,64 @@ let parse_q term =
      in
    dump_expr e
 
- let rec dump_monoid l = dump_list (Lazy.force coq_nat) dump_nat l
 
- let rec dump_cone typ dump_z e = 
+ let dump_pol typ dump_c e = 
+   let rec dump_pol e = 
+     match e with 
+       | Mc.Pc n -> mkApp(Lazy.force coq_Pc, [|typ ; dump_c n|])
+       | Mc.Pinj(p,pol) -> mkApp(Lazy.force coq_Pinj , [| typ ; dump_positive p ; dump_pol pol|])
+       | Mc.PX(pol1,p,pol2) -> mkApp(Lazy.force coq_PX, [| typ ; dump_pol pol1 ; dump_positive p ; dump_pol pol2|]) in
+     dump_pol e
+
+ let pp_pol pp_c o e = 
+   let rec pp_pol o e = 
+     match e with 
+       | Mc.Pc n -> Printf.fprintf o "Pc %a" pp_c n
+       | Mc.Pinj(p,pol) -> Printf.fprintf o "Pinj(%a,%a)" pp_positive p pp_pol pol
+       | Mc.PX(pol1,p,pol2) -> Printf.fprintf o "PX(%a,%a,%a)" pp_pol pol1 pp_positive p pp_pol pol2 in
+     pp_pol o e
+     
+   
+ let pp_cnf pp_c o f = 
+   let pp_clause o l = List.iter (fun ((p,_),t) -> Printf.fprintf o "(%a @%a)" (pp_pol pp_c)  p Tag.pp t) l in
+     List.iter (fun l -> Printf.fprintf o "[%a]" pp_clause l) f
+
+	   
+ let dump_psatz typ dump_z e = 
   let z = Lazy.force typ in 
  let rec dump_cone e =
   match e with
-   | Mc.S_In n -> mkApp(Lazy.force coq_S_In,[| z; dump_nat n |])
-   | Mc.S_Ideal(e,c) -> mkApp(Lazy.force coq_S_Ideal, 
-			     [| z; dump_expr z dump_z e ; dump_cone c |])
-   | Mc.S_Square e -> mkApp(Lazy.force coq_S_Square, 
-			   [| z;dump_expr z dump_z e|])
-   | Mc.S_Monoid l -> mkApp (Lazy.force coq_S_Monoid, 
-			    [|z; dump_monoid l|])
-   | Mc.S_Add(e1,e2) -> mkApp(Lazy.force coq_S_Add,
+   | Mc.PsatzIn n -> mkApp(Lazy.force coq_PsatzIn,[| z; dump_nat n |])
+   | Mc.PsatzMulC(e,c) -> mkApp(Lazy.force coq_PsatzMultC, 
+			     [| z; dump_pol z dump_z e ; dump_cone c |])
+   | Mc.PsatzSquare e -> mkApp(Lazy.force coq_PsatzSquare, 
+			   [| z;dump_pol z dump_z e|])
+   | Mc.PsatzAdd(e1,e2) -> mkApp(Lazy.force coq_PsatzAdd,
 			     [| z; dump_cone e1; dump_cone e2|])
-   | Mc.S_Mult(e1,e2) -> mkApp(Lazy.force coq_S_Mult,
+   | Mc.PsatzMulE(e1,e2) -> mkApp(Lazy.force coq_PsatzMulE,
 			      [| z; dump_cone e1; dump_cone e2|])
-   | Mc.S_Pos p -> mkApp(Lazy.force coq_S_Pos,[| z; dump_z p|])
-   | Mc.S_Z    -> mkApp( Lazy.force coq_S_Z,[| z|]) in 
+   | Mc.PsatzC p -> mkApp(Lazy.force coq_PsatzC,[| z; dump_z p|])
+   | Mc.PsatzZ    -> mkApp( Lazy.force coq_PsatzZ,[| z|]) in 
   dump_cone e
 
 
- let  pp_cone pp_z o e = 
+ let  pp_psatz pp_z o e = 
   let rec pp_cone o e = 
    match e with 
-    | Mc.S_In n -> 
-       Printf.fprintf o "(S_In %a)%%nat" pp_nat n
-    | Mc.S_Ideal(e,c) -> 
-       Printf.fprintf o "(S_Ideal %a %a)" (pp_expr pp_z) e pp_cone c
-    | Mc.S_Square e -> 
-       Printf.fprintf o "(S_Square %a)" (pp_expr pp_z) e
-    | Mc.S_Monoid l -> 
-       Printf.fprintf o "(S_Monoid %a)" (pp_list "[" "]" pp_nat) l
-    | Mc.S_Add(e1,e2) -> 
-       Printf.fprintf o "(S_Add %a %a)" pp_cone e1 pp_cone e2
-    | Mc.S_Mult(e1,e2) -> 
-       Printf.fprintf o "(S_Mult %a %a)" pp_cone e1 pp_cone e2
-    | Mc.S_Pos p -> 
-       Printf.fprintf o "(S_Pos %a)%%positive" pp_z p
-    | Mc.S_Z    -> 
-       Printf.fprintf o "S_Z" in
+    | Mc.PsatzIn n -> 
+       Printf.fprintf o "(In %a)%%nat" pp_nat n
+    | Mc.PsatzMulC(e,c) -> 
+       Printf.fprintf o "( %a [*] %a)" (pp_pol pp_z) e pp_cone c
+    | Mc.PsatzSquare e -> 
+       Printf.fprintf o "(%a^2)" (pp_pol pp_z) e
+    | Mc.PsatzAdd(e1,e2) -> 
+       Printf.fprintf o "(%a [+] %a)" pp_cone e1 pp_cone e2
+    | Mc.PsatzMulE(e1,e2) -> 
+       Printf.fprintf o "(%a [*] %a)" pp_cone e1 pp_cone e2
+    | Mc.PsatzC p -> 
+       Printf.fprintf o "(%a)%%positive" pp_z p
+    | Mc.PsatzZ    -> 
+       Printf.fprintf o "0" in
    pp_cone o e
 
 
@@ -651,6 +676,7 @@ let parse_q term =
     let (expr1,env) = parse_expr env t1 in
     let (expr2,env) = parse_expr env t2 in
     (op expr1 expr2,env) in
+
     match kind_of_term term with
      | App(t,args) -> 
 	(
@@ -661,9 +687,14 @@ let parse_q term =
 	      | Opp     -> let (expr,env) = parse_expr env args.(0) in
 			    (Mc.PEopp expr, env)
 	      | Power   -> 
-		 let (expr,env) = parse_expr env args.(0) in
-		 let exp = (parse_exp args.(1)) in 
-		  (Mc.PEpow(expr, exp)  , env) 
+		  begin
+		    try 
+		      let (expr,env) = parse_expr env args.(0) in
+		      let exp = (parse_exp args.(1)) in 
+			(Mc.PEpow(expr, exp)  , env) 
+		    with _ ->   (* if the exponent is a variable *)
+		      let (env,n) = Env.compute_rank_add env term in (Mc.PEX n, env)
+		  end
 	      | Ukn  s -> 
 		 if debug 
 		 then (Printf.printf "unknown op: %s\n" s; flush stdout;);
@@ -784,7 +815,7 @@ let parse_rexpr =
  let parse_formula parse_atom env term =
 
   let parse_atom env tg t = try let (at,env) = parse_atom env t in 
-				  (A(at,tg,t), env,tg+1) with _ -> (X(t),env,tg) in
+				  (A(at,tg,t), env,Tag.next tg) with _ -> (X(t),env,tg) in
 
   let rec xparse_formula env tg term =
    match kind_of_term term with
@@ -877,11 +908,11 @@ open M
 
 
 let rec sig_of_cone = function
- | Mc.S_In n -> [CoqToCaml.nat n]
- | Mc.S_Ideal(e,w) -> sig_of_cone w
- | Mc.S_Mult(w1,w2) ->
+ | Mc.PsatzIn n -> [CoqToCaml.nat n]
+ | Mc.PsatzMulE(w1,w2) ->
     (sig_of_cone w1)@(sig_of_cone w2)
- | Mc.S_Add(w1,w2) -> 	(sig_of_cone w1)@(sig_of_cone w2)
+ | Mc.PsatzMulC(w1,w2) -> (sig_of_cone w2)
+ | Mc.PsatzAdd(w1,w2) -> 	(sig_of_cone w1)@(sig_of_cone w2)
  | _  -> []
 
 let same_proof sg cl1 cl2 =
@@ -897,10 +928,10 @@ let same_proof sg cl1 cl2 =
 
 let tags_of_clause tgs wit clause = 
  let rec xtags tgs = function
-  | Mc.S_In n -> Names.Idset.union tgs  
+  | Mc.PsatzIn n -> Names.Idset.union tgs  
      (snd (List.nth clause (CoqToCaml.nat n) ))
-  | Mc.S_Ideal(e,w) -> xtags tgs w
-  | Mc.S_Mult (w1,w2) | Mc.S_Add(w1,w2) -> xtags (xtags tgs w1) w2
+  | Mc.PsatzMulC(e,w) -> xtags tgs w
+  | Mc.PsatzMulE (w1,w2) | Mc.PsatzAdd(w1,w2) -> xtags (xtags tgs w1) w2
   |   _   -> tgs in
   xtags tgs wit
 
@@ -975,29 +1006,28 @@ let rec pp_varmap o vm =
 
 
 let rec dump_proof_term = function 
- | Micromega.RatProof cone -> 
-    Term.mkApp(Lazy.force coq_ratProof, [|dump_cone coq_Z dump_z cone|])
- | Micromega.CutProof(e,q,cone,prf) ->
+  | Micromega.DoneProof -> Lazy.force coq_doneProof
+  | Micromega.RatProof(cone,rst) -> 
+    Term.mkApp(Lazy.force coq_ratProof, [| dump_psatz coq_Z dump_z cone; dump_proof_term rst|])
+ | Micromega.CutProof(cone,prf) ->
     Term.mkApp(Lazy.force coq_cutProof, 
-	      [| dump_expr (Lazy.force coq_Z) dump_z e ; 
-		 dump_q q ; 
-		 dump_cone coq_Z dump_z cone ; 
+	      [| dump_psatz coq_Z dump_z cone ; 
 		 dump_proof_term prf|])
- | Micromega.EnumProof( q1,e1,q2,c1,c2,prfs) -> 
+ | Micromega.EnumProof(c1,c2,prfs) -> 
     Term.mkApp (Lazy.force coq_enumProof,
-	       [| dump_q q1 ; dump_expr (Lazy.force coq_Z) dump_z e1 ; dump_q q2;
-		  dump_cone coq_Z dump_z c1 ; dump_cone coq_Z dump_z c2 ; 
+	       [|  dump_psatz coq_Z dump_z c1 ; dump_psatz coq_Z dump_z c2 ; 
 		  dump_list (Lazy.force coq_proofTerm) dump_proof_term prfs |])
 
 let pp_q o q = Printf.fprintf o "%a/%a" pp_z q.Micromega.qnum pp_positive q.Micromega.qden
  
  
 let rec pp_proof_term o = function
- | Micromega.RatProof cone -> Printf.fprintf o "R[%a]" (pp_cone  pp_z) cone
- | Micromega.CutProof(e,q,_,p) -> failwith "not implemented"
- | Micromega.EnumProof(q1,e1,q2,c1,c2,rst) -> 
-    Printf.fprintf o "EP[%a,%a,%a,%a,%a,%a]" 
-     pp_q q1 (pp_expr pp_z) e1 pp_q q2 (pp_cone pp_z) c1 (pp_cone pp_z) c2 
+  | Micromega.DoneProof -> Printf.fprintf o "D"
+  | Micromega.RatProof(cone,rst) -> Printf.fprintf o "R[%a,%a]" (pp_psatz  pp_z) cone pp_proof_term rst
+  | Micromega.CutProof(cone,rst) -> Printf.fprintf o "C[%a,%a]" (pp_psatz  pp_z) cone pp_proof_term rst
+  | Micromega.EnumProof(c1,c2,rst) -> 
+      Printf.fprintf o "EP[%a,%a,%a]" 
+	(pp_psatz pp_z) c1 (pp_psatz pp_z) c2 
      (pp_list "[" "]" pp_proof_term) rst
 
 let rec parse_hyps parse_arith env tg hyps =
@@ -1016,7 +1046,7 @@ exception ParseError
 
 let parse_goal parse_arith env hyps term = 
  (*  try*)
- let (f,env,tg) = parse_formula parse_arith env 0 term in
+ let (f,env,tg) = parse_formula parse_arith env (Tag.from 0) term in
  let (lhyps,env,tg) = parse_hyps parse_arith env tg hyps in
   (lhyps,f,env)
    (*  with Failure x -> raise ParseError*)
@@ -1043,7 +1073,7 @@ let qq_domain_spec  = lazy {
  coeff = Lazy.force coq_Q;
  dump_coeff = dump_q ;
  proof_typ = Lazy.force coq_QWitness ;
- dump_proof = dump_cone coq_Q dump_q
+ dump_proof = dump_psatz coq_Q dump_q
 }
 
 let rz_domain_spec = lazy {
@@ -1051,7 +1081,7 @@ let rz_domain_spec = lazy {
  coeff = Lazy.force coq_Z;
  dump_coeff = dump_z;
  proof_typ = Lazy.force coq_ZWitness ;
- dump_proof = dump_cone coq_Z dump_z
+ dump_proof = dump_psatz coq_Z dump_z
 }
 
 
@@ -1060,7 +1090,7 @@ let abstract_formula hyps f =
   let rec xabs f = 
     match f with
       | X c -> X c
-      | A(a,t,term) -> if ISet.mem t hyps then A(a,t,term) else X(term)
+      | A(a,t,term) -> if TagSet.mem t hyps then A(a,t,term) else X(term)
       | C(f1,f2) -> 
 	  (match xabs f1 , xabs f2 with
 	    |   X a1    ,  X a2   -> X (Term.mkApp(Lazy.force coq_and, [|a1;a2|]))
@@ -1079,8 +1109,10 @@ let abstract_formula hyps f =
 	    | X a1      , None   , X a2   -> X (Term.mkArrow a1 a2)
 	    |   af1     ,  _     , af2    -> I(af1,hyp,af2)
 	  )
-      | x -> x in
-    xabs f
+      | FF -> FF
+      | TT -> TT
+
+  in  xabs f
 
 
 
@@ -1125,21 +1157,6 @@ let find_witness provers    polys1 =
     try_any provers (List.map fst polys1)
 
 
-let witness_list_tags prover l = 
- 
- let rec xwitness_list l = 
-  match l with
-   | [] -> Some([])
-   | e::l -> 
-      match find_witness prover e  with
-       | None -> None
-       | Some w -> 
-	  (match xwitness_list l with
-	   | None -> None
-	   | Some l -> Some (w::l)
-	  ) in
-  xwitness_list l
-
 let witness_list prover l = 
  let rec xwitness_list l = 
   match l with
@@ -1155,6 +1172,8 @@ let witness_list prover l =
   xwitness_list l
 
 
+let witness_list_tags  = witness_list
+ 
 let is_singleton = function [] -> true | [e] -> true | _ -> false
 
 let pp_ml_list pp_elt o l = 
@@ -1167,7 +1186,6 @@ let compact_proofs (cnf_ff: 'cst cnf) res (cnf_ff': 'cst cnf) =
   let compact_proof (old_cl:'cst clause) (prf,prover) (new_cl:'cst clause) = 
     let new_cl = Mutils.mapi (fun (f,_) i -> (f,i)) new_cl in
     let remap i = 
-      (*Printf.printf "nth (len:%i) %i\n" (List.length old_cl) i;*)
       let formula = try fst (List.nth old_cl i) with Failure _ -> failwith "bad old index" in
 	List.assoc formula new_cl in
 
@@ -1179,12 +1197,13 @@ let compact_proofs (cnf_ff: 'cst cnf) res (cnf_ff': 'cst cnf) =
 	    (pp_ml_list prover.pp_f) (List.map fst new_cl)   ;
 	    flush stdout
 	end ;
-      let res = try prover.compact prf remap with x -> 
+      let res = try prover.compact prf remap with x ->
+	if debug then Printf.fprintf stdout "Proof compaction %s" (Printexc.to_string x) ; 
+ 
 	match prover.prover (List.map fst new_cl) with 
-	  | None -> failwith "prover error" 
+	  | None -> failwith "proof compaction error"
 	  | Some p -> p 
       in
-
       if debug then 
 	begin
 	  Printf.printf " -> %a\n" 
@@ -1194,11 +1213,19 @@ let compact_proofs (cnf_ff: 'cst cnf) res (cnf_ff': 'cst cnf) =
 	  ; 
       res in
 
+
+
+  let is_proof_compatible (old_cl:'cst clause) (prf,prover) (new_cl:'cst clause) = 
+    let hyps_idx = prover.hyps prf in
+    let hyps = selecti hyps_idx old_cl in
+      is_sublist hyps new_cl in
+
   let cnf_res = List.combine cnf_ff res in (* we get pairs clause * proof *)
-  let l = (* This is not the right criterion for matching clauses *)
-    List.map (fun x -> let (o,p) = List.find (fun lp -> is_sublist x (fst lp)) cnf_res in (o,p,x)) cnf_ff' in
     
-   List.map (fun (o,p,n) -> compact_proof o p n) l
+    List.map (fun x -> 
+      let (o,p) = List.find (fun (l,p) -> is_proof_compatible l p x) cnf_res 
+      in compact_proof o p x) cnf_ff' 
+    
 
 
 
@@ -1220,33 +1247,47 @@ let micromega_tauto negate normalise spec prover env polys1 polys2  gl =
       let formula_typ = (Term.mkApp( Lazy.force coq_Cstr,[| spec.coeff|])) in
       let ff = dump_formula formula_typ 
         (dump_cstr spec.typ spec.dump_coeff) ff in
-        Pp.pp (Printer.prterm  ff) ;  Pp.pp_flush ()
+        Pp.pp (Printer.prterm  ff) ;  Pp.pp_flush ();
+	  Printf.fprintf stdout "cnf : %a\n" (pp_cnf (fun o _ -> ())) cnf_ff
     end;
 
    match witness_list_tags prover  cnf_ff with
     | None -> Tacticals.tclFAIL 0 (Pp.str "Cannot find witness") gl
-    | Some res -> (*Printf.printf "\nList %i" (List.length res); *)
+    | Some res -> (*Printf.printf "\nList %i" (List.length `res); *)
+
         let hyps = List.fold_left (fun s (cl,(prf,p)) -> 
-	  let tags = ISet.fold (fun i s -> try ISet.add (snd (List.nth cl i)) s  with Invalid_argument _ -> s) (p.hyps prf) ISet.empty in
-	  ISet.union s tags) ISet.empty (List.combine cnf_ff res) in
+	  let tags = ISet.fold (fun i s -> let t = snd (List.nth cl i) in
+					     if debug then (Printf.fprintf stdout "T : %i -> %a" i Tag.pp t) ;
+	    (*try*) TagSet.add t s (* with Invalid_argument _ -> s*)) (p.hyps prf) TagSet.empty in
+	  TagSet.union s tags) TagSet.empty (List.combine cnf_ff res) in
 
 	  if debug then (Printf.printf "TForm : %a\n" pp_formula ff ; flush stdout;
-			 Printf.printf "Hyps : %a\n" (fun o s -> ISet.fold (fun i _ -> Printf.fprintf o "%i " i) s ()) hyps) ;  
+			 Printf.printf "Hyps : %a\n" (fun o s -> TagSet.fold (fun i _ -> Printf.fprintf o "%a " Tag.pp i) s ()) hyps) ;  
 	  
         let ff'   = abstract_formula hyps ff in
 	  
+        let cnf_ff' = cnf negate normalise ff' in
+
 	  if debug then
 	    begin
 	      Pp.pp (Pp.str "\nAFormula\n") ; 
 	      let formula_typ = (Term.mkApp( Lazy.force coq_Cstr,[| spec.coeff|])) in
 	      let ff' = dump_formula formula_typ 
 		(dump_cstr spec.typ spec.dump_coeff) ff' in
-		Pp.pp (Printer.prterm  ff') ;  Pp.pp_flush ()
+		Pp.pp (Printer.prterm  ff') ;  Pp.pp_flush ();
+		Printf.fprintf stdout "cnf : %a\n" (pp_cnf (fun o _ -> ())) cnf_ff'
 	    end;
 
-
-        let cnf_ff' = cnf negate normalise ff' in
-        let res' = compact_proofs cnf_ff res cnf_ff' in
+   (* Even if it does not work, this does not mean it is not provable 
+      -- the prover is REALLY incomplete *)
+(*	if debug then
+	  begin
+	    (* recompute the proofs *)
+	    match witness_list_tags prover  cnf_ff' with
+	      | None -> failwith "abstraction is wrong"
+	      | Some res -> ()
+	  end ; *)
+	  let res' = compact_proofs cnf_ff res cnf_ff' in
 
         let (ff',res',ids) = (ff',res',List.map Term.mkVar (ids_of_formula ff')) in
 
@@ -1276,41 +1317,65 @@ let micromega_gen
    | ParseError  -> Tacticals.tclFAIL 0 (Pp.str "Bad logical fragment") gl
 
 
-let lift_ratproof prover l =
+let lift_ratproof  prover l =
  match prover l with
   | None -> None
-  | Some c -> Some (Mc.RatProof c)
-
+  | Some c -> Some (Mc.RatProof( c,Mc.DoneProof))
 
 type csdpcert = Sos.positivstellensatz option
-type micromega_polys = (Micromega.q Mc.pExpr * Mc.op1) list
+type micromega_polys = (Mc.q Mc.pol * Mc.op1) list
 type provername = string * int option
 
-let call_csdpcert provername poly =
-  let tmp_to,ch_to = Filename.open_temp_file "csdpcert" ".in" in
-  let tmp_from = Filename.temp_file "csdpcert" ".out" in
-  output_value ch_to (provername,poly : provername * micromega_polys);
-  close_out ch_to;
+open Persistent_cache
+
+module Cache = PHashtable(struct 
+  type t = (provername * micromega_polys) 
+  let equal = (=)
+  let hash  = Hashtbl.hash
+end)
+
+let cache_name = "csdp.cache" 
+
+let cache = lazy (Cache.open_in cache_name)
+
+
+let really_call_csdpcert : provername -> micromega_polys -> csdpcert =
+  fun provername poly -> 
+
   let cmdname =
     List.fold_left Filename.concat (Envars.coqlib ())
       ["plugins"; "micromega"; "csdpcert" ^ Coq_config.exec_extension] in
-  let c = Sys.command (cmdname ^" "^ tmp_to ^" "^ tmp_from) in
-  (try Sys.remove tmp_to with _ -> ());
-  if c <> 0 then Util.error ("Failed to call csdp certificate generator");
-  let ch_from = open_in tmp_from in
-  let cert = (input_value ch_from : csdpcert) in
-  close_in ch_from; Sys.remove tmp_from;
-  cert
 
-let rec z_to_q_expr e = 
+    command cmdname [| cmdname |] (provername,poly) 
+
+
+
+let call_csdpcert prover pb =
+
+  let cache = Lazy.force cache in
+    try 
+      Cache.find cache (prover,pb) 
+    with Not_found -> 
+      let cert = really_call_csdpcert prover pb in
+	Cache.add cache (prover,pb) cert ; 
+	cert
+
+
+
+
+  
+
+
+
+
+
+
+
+let rec z_to_q_pol e = 
  match e with
-  | Mc.PEc z   -> Mc.PEc {Mc.qnum = z ; Mc.qden = Mc.XH}
-  | Mc.PEX x   -> Mc.PEX x
-  | Mc.PEadd(e1,e2) -> Mc.PEadd(z_to_q_expr e1, z_to_q_expr e2)
-  | Mc.PEsub(e1,e2) -> Mc.PEsub(z_to_q_expr e1, z_to_q_expr e2)
-  | Mc.PEmul(e1,e2) -> Mc.PEmul(z_to_q_expr e1, z_to_q_expr e2)
-  | Mc.PEopp(e) -> Mc.PEopp(z_to_q_expr e)
-  | Mc.PEpow(e,n) -> Mc.PEpow(z_to_q_expr e,n)
+  | Mc.Pc z   -> Mc.Pc {Mc.qnum = z ; Mc.qden = Mc.XH}
+  | Mc.Pinj(p,pol)   -> Mc.Pinj(p,z_to_q_pol pol)
+  | Mc.PX(pol1,p,pol2) -> Mc.PX(z_to_q_pol pol1, p, z_to_q_pol pol2)
 
 
 let call_csdpcert_q provername poly = 
@@ -1324,7 +1389,7 @@ let call_csdpcert_q provername poly =
 
 
 let call_csdpcert_z provername poly = 
- let l = List.map (fun (e,o) -> (z_to_q_expr e,o)) poly in
+ let l = List.map (fun (e,o) -> (z_to_q_pol e,o)) poly in
   match call_csdpcert provername l with
    | None -> None
    | Some cert -> 
@@ -1334,45 +1399,51 @@ let call_csdpcert_z provername poly =
       else ((print_string "buggy certificate" ; flush stdout) ;None)
 
 
-let hyps_of_cone  prf = 
+let  xhyps_of_cone base acc prf = 
   let rec xtract e acc = 
     match e with
-    | Mc.S_Pos _ | Mc.S_Z | Mc.S_Square _ -> acc
-    | Mc.S_In n -> ISet.add (CoqToCaml.nat n) acc
-    | Mc.S_Ideal(_,c) -> xtract  c acc
-    | Mc.S_Monoid []   -> acc
-    | Mc.S_Monoid (i::l) -> xtract (Mc.S_Monoid l) (ISet.add (CoqToCaml.nat i) acc)
-    | Mc.S_Add(e1,e2) |  Mc.S_Mult(e1,e2) -> xtract e1 (xtract e2 acc) in
+    | Mc.PsatzC _ | Mc.PsatzZ | Mc.PsatzSquare _ -> acc
+    | Mc.PsatzIn n -> let n = (CoqToCaml.nat n) in
+			if n >= base
+			then  ISet.add (n-base) acc
+			else acc
+    | Mc.PsatzMulC(_,c) -> xtract  c acc
+    | Mc.PsatzAdd(e1,e2) |  Mc.PsatzMulE(e1,e2) -> xtract e1 (xtract e2 acc) in
 
-    xtract prf ISet.empty
+    xtract prf acc
+
+let hyps_of_cone prf = xhyps_of_cone 0 ISet.empty prf
 
 let compact_cone prf f  =
   let np n = CamlToCoq.nat (f (CoqToCaml.nat n)) in
 
   let rec xinterp prf = 
     match prf with
-    | Mc.S_Pos _ | Mc.S_Z | Mc.S_Square _ -> prf
-    | Mc.S_In n -> Mc.S_In (np n)
-    | Mc.S_Ideal(e,c) -> Mc.S_Ideal(e,xinterp c)
-    | Mc.S_Monoid l  -> Mc.S_Monoid (Mc.map np l)
-    | Mc.S_Add(e1,e2) -> Mc.S_Add(xinterp e1,xinterp e2)
-    | Mc.S_Mult(e1,e2) -> Mc.S_Mult(xinterp e1,xinterp e2) in
+    | Mc.PsatzC _ | Mc.PsatzZ | Mc.PsatzSquare _ -> prf
+    | Mc.PsatzIn n -> Mc.PsatzIn (np n)
+    | Mc.PsatzMulC(e,c) -> Mc.PsatzMulC(e,xinterp c)
+    | Mc.PsatzAdd(e1,e2) -> Mc.PsatzAdd(xinterp e1,xinterp e2)
+    | Mc.PsatzMulE(e1,e2) -> Mc.PsatzMulE(xinterp e1,xinterp e2) in
 
     xinterp prf
 
-
 let hyps_of_pt pt = 
-  let translate x s = ISet.fold (fun i s -> ISet.add (i - x) s) s ISet.empty in
-
-  let rec xhyps ofset pt acc = 
+  let rec xhyps base pt acc = 
     match pt with
-      | Mc.RatProof p -> ISet.union acc (translate ofset (hyps_of_cone p))
-      | Mc.CutProof(_,_,c,pt) -> xhyps (ofset+1) pt (ISet.union (translate (ofset+1) (hyps_of_cone c)) acc)
-      | Mc.EnumProof(_,_,_,c1,c2,l) -> 
-	  let s = ISet.union acc (translate (ofset +1) (ISet.union (hyps_of_cone c1) (hyps_of_cone c2))) in
-	    List.fold_left (fun s x -> xhyps (ofset +  1) x s) s l in
+      | Mc.DoneProof -> acc
+      | Mc.RatProof(c,pt) ->  xhyps (base+1) pt (xhyps_of_cone base acc c)
+      | Mc.CutProof(c,pt) -> xhyps (base+1) pt (xhyps_of_cone base acc c)
+      | Mc.EnumProof(c1,c2,l) -> 
+	  let s = xhyps_of_cone base (xhyps_of_cone base acc c2) c1 in
+	    List.fold_left (fun s x -> xhyps (base + 1) x s) s l in
     
     xhyps 0 pt ISet.empty
+
+let hyps_of_pt pt = 
+  let res = hyps_of_pt pt in
+    if debug 
+    then (Printf.fprintf stdout "\nhyps_of_pt : %a -> " pp_proof_term pt ; ISet.iter (fun i -> Printf.printf "%i " i) res);
+    res
 	  
   
 let compact_pt pt f = 
@@ -1382,39 +1453,44 @@ let compact_pt pt f =
 
   let rec compact_pt ofset pt = 
     match pt with
-      | Mc.RatProof p -> Mc.RatProof (compact_cone p (translate ofset))
-      | Mc.CutProof(x,y,c,pt) -> Mc.CutProof(x,y,compact_cone c (translate (ofset+1)), compact_pt (ofset+1) pt )
-      | Mc.EnumProof(a,b,c,c1,c2,l) -> Mc.EnumProof(a,b,c,compact_cone c1 (translate (ofset+1)), compact_cone c2 (translate (ofset+1)),
+      | Mc.DoneProof -> Mc.DoneProof
+      | Mc.RatProof(c,pt) -> Mc.RatProof(compact_cone c (translate (ofset)), compact_pt (ofset+1) pt )
+      | Mc.CutProof(c,pt) -> Mc.CutProof(compact_cone c (translate (ofset)), compact_pt (ofset+1) pt )
+      | Mc.EnumProof(c1,c2,l) -> Mc.EnumProof(compact_cone c1 (translate (ofset)), compact_cone c2 (translate (ofset)),
 						   Mc.map (fun x -> compact_pt (ofset+1) x) l) in
     compact_pt 0 pt
 
+
+
 (** Definition of provers *)
-      
+
+let lift_pexpr_prover p l =  p (List.map (fun (e,o) -> Mc.denorm e , o) l)
+
 let linear_prover_Z = {
   name    = "linear prover" ; 
-  prover  = lift_ratproof (Certificate.linear_prover Certificate.z_spec) ; 
+  prover  = lift_ratproof (lift_pexpr_prover (Certificate.linear_prover_with_cert Certificate.z_spec)) ; 
   hyps    = hyps_of_pt ;
   compact = compact_pt ;
   pp_prf  = pp_proof_term;
-  pp_f    = fun o x -> pp_expr pp_z o (fst x)
+  pp_f    = fun o x -> pp_pol pp_z o (fst x)
 }
 
 let linear_prover_Q = {
   name    = "linear prover";
-  prover  = (Certificate.linear_prover Certificate.q_spec) ; 
+  prover  = lift_pexpr_prover (Certificate.linear_prover_with_cert Certificate.q_spec) ; 
   hyps    = hyps_of_cone ; 
   compact = compact_cone ;
-  pp_prf  = pp_cone pp_q ;
-  pp_f   = fun o x -> pp_expr pp_q o  (fst x)
+  pp_prf  = pp_psatz pp_q ;
+  pp_f   = fun o x -> pp_pol pp_q o  (fst x)
 }
 
 let linear_prover_R = {
   name    = "linear prover";
-  prover  = (Certificate.linear_prover Certificate.z_spec) ; 
+  prover  = lift_pexpr_prover (Certificate.linear_prover_with_cert Certificate.z_spec) ; 
   hyps    = hyps_of_cone ; 
   compact = compact_cone ;
-  pp_prf  = pp_cone pp_z ;
-  pp_f    =  fun o x -> pp_expr pp_z o (fst x)
+  pp_prf  = pp_psatz pp_z ;
+  pp_f    =  fun o x -> pp_pol pp_z o (fst x)
 }
 
 let non_linear_prover_Q str o = {
@@ -1422,8 +1498,8 @@ let non_linear_prover_Q str o = {
   prover  = call_csdpcert_q (str, o);
   hyps    = hyps_of_cone;
   compact = compact_cone ;
-  pp_prf  = pp_cone pp_q ;
-  pp_f    = fun o x -> pp_expr pp_q o  (fst x)
+  pp_prf  = pp_psatz pp_q ;
+  pp_f    = fun o x -> pp_pol pp_q o  (fst x)
 }
 
 let non_linear_prover_R str o = {
@@ -1431,8 +1507,8 @@ let non_linear_prover_R str o = {
   prover  = call_csdpcert_z (str, o);
   hyps    = hyps_of_cone;
   compact = compact_cone;
-  pp_prf  = pp_cone pp_z;
-  pp_f    = fun o x -> pp_expr pp_z o  (fst x)
+  pp_prf  = pp_psatz pp_z;
+  pp_f    = fun o x -> pp_pol pp_z o  (fst x)
 }
 
 let non_linear_prover_Z str o  = {
@@ -1441,16 +1517,19 @@ let non_linear_prover_Z str o  = {
   hyps    = hyps_of_pt;
   compact = compact_pt;
   pp_prf  = pp_proof_term;
-  pp_f    =  fun o x -> pp_expr pp_z o (fst x)
+  pp_f    =  fun o x -> pp_pol pp_z o (fst x)
 }
+
+
+
 
 let linear_Z =   {
   name = "lia";
-  prover = Certificate.zlinear_prover ; 
+  prover = lift_pexpr_prover Certificate.zlinear_prover ; 
   hyps   = hyps_of_pt;
   compact = compact_pt;
   pp_prf      = pp_proof_term;
-  pp_f    = fun o x -> pp_expr pp_z o (fst x)
+  pp_f    = fun o x -> pp_pol pp_z o (fst x)
 }
 
 
@@ -1461,22 +1540,23 @@ let psatzl_Z gl =
  micromega_gen parse_zarith  Mc.negate Mc.normalise zz_domain_spec
   [linear_prover_Z ] gl
 
+
 let psatzl_Q gl = 
- micromega_gen  parse_qarith Mc.cnf_negate Mc.cnf_normalise qq_domain_spec 
+ micromega_gen  parse_qarith Mc.qnegate Mc.qnormalise qq_domain_spec 
   [ linear_prover_Q ]   gl
 
 
 let psatz_Q i gl = 
- micromega_gen parse_qarith Mc.cnf_negate Mc.cnf_normalise qq_domain_spec
+ micromega_gen parse_qarith Mc.qnegate Mc.qnormalise qq_domain_spec
   [ non_linear_prover_Q "real_nonlinear_prover" (Some i) ]  gl
 
 
 let psatzl_R gl = 
- micromega_gen  parse_rarith Mc.cnf_negate Mc.cnf_normalise rz_domain_spec 
+ micromega_gen  parse_rarith Mc.rnegate Mc.rnormalise rz_domain_spec 
   [ linear_prover_R ]   gl
 
 let psatz_R i gl = 
- micromega_gen parse_rarith Mc.cnf_negate Mc.cnf_normalise rz_domain_spec
+ micromega_gen parse_rarith Mc.rnegate Mc.rnormalise rz_domain_spec
   [ non_linear_prover_R "real_nonlinear_prover" (Some i)]  gl
 
 
@@ -1490,12 +1570,12 @@ let sos_Z gl =
   [non_linear_prover_Z "pure_sos" None]  gl
 
 let sos_Q gl = 
- micromega_gen parse_qarith Mc.cnf_negate Mc.cnf_normalise  qq_domain_spec 
+ micromega_gen parse_qarith Mc.qnegate Mc.qnormalise  qq_domain_spec 
   [non_linear_prover_Q "pure_sos" None]  gl
 
 
 let sos_R gl = 
- micromega_gen parse_rarith Mc.cnf_negate Mc.cnf_normalise  rz_domain_spec 
+ micromega_gen parse_rarith Mc.rnegate Mc.rnormalise  rz_domain_spec 
   [non_linear_prover_R "pure_sos" None]  gl
 
 
@@ -1503,3 +1583,7 @@ let sos_R gl =
 let xlia gl = 
  micromega_gen parse_zarith Mc.negate Mc.normalise   zz_domain_spec 
   [linear_Z] gl
+
+(* Local Variables: *)
+(* coding: utf-8 *)
+(* End: *)

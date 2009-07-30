@@ -831,8 +831,6 @@ struct
 end
 open EstimateElimEq
 
-
-
 module Fourier =
 struct
 

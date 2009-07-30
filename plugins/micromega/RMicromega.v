@@ -17,7 +17,7 @@ Require Import RingMicromega.
 Require Import Refl.
 Require Import Raxioms RIneq Rpow_def DiscrR.
 Require Setoid.
-Declare ML Module "micromega_plugin".
+(*Declare ML Module "micromega_plugin".*)
 
 Definition Rsrt : ring_theory R0 R1 Rplus Rmult Rminus Ropp (@eq R).
 Proof.
@@ -61,7 +61,6 @@ Proof.
 Qed.
 
 Require ZMicromega.
-
 (* R with coeffs in Z *)
 
 Lemma RZSORaddon :
@@ -128,17 +127,17 @@ Proof.
 Qed.
 
 Definition Reval_nformula :=
-  eval_nformula 0 Rplus Rmult Rminus Ropp (@eq R) Rle Rlt IZR Nnat.nat_of_N pow.
+  eval_nformula 0 Rplus Rmult  (@eq R) Rle Rlt IZR.
 
 
 Lemma Reval_nformula_dec : forall env d, (Reval_nformula env d) \/ ~ (Reval_nformula env d).
 Proof.
-  exact (fun env d =>eval_nformula_dec Rsor IZR Nnat.nat_of_N pow env d).
+  exact (fun env d =>eval_nformula_dec Rsor IZR env d).
 Qed.
 
-Definition RWitness := ConeMember Z.
+Definition RWitness := Psatz Z.
 
-Definition RWeakChecker := check_normalised_formulas 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool Zle_bool.
+Definition RWeakChecker := check_normalised_formulas 0%Z 1%Z Zplus Zmult  Zeq_bool Zle_bool.
 
 Require Import List.
 
@@ -156,8 +155,13 @@ Qed.
 
 Require Import Tauto.
 
+Definition Rnormalise := @cnf_normalise Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool.
+Definition Rnegate := @cnf_negate Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool.
+
 Definition RTautoChecker (f : BFormula (Formula Z)) (w: list RWitness)  : bool :=
-  @tauto_checker (Formula Z) (NFormula Z) (@cnf_normalise Z) (@cnf_negate Z)  RWitness RWeakChecker f w.
+  @tauto_checker (Formula Z) (NFormula Z) 
+  Rnormalise Rnegate
+  RWitness RWeakChecker f w.
 
 Lemma RTautoChecker_sound : forall f w, RTautoChecker f w = true -> forall env, eval_f  (Reval_formula env)  f.
 Proof.
@@ -166,10 +170,13 @@ Proof.
   apply (tauto_checker_sound  Reval_formula Reval_nformula).
   apply Reval_nformula_dec.
   intros. rewrite Reval_formula_compat.
-  unfold Reval_formula'. now apply (cnf_normalise_correct Rsor).
-  intros. rewrite Reval_formula_compat. unfold Reval_formula. now apply (cnf_negate_correct Rsor).
+  unfold Reval_formula'. now apply (cnf_normalise_correct Rsor RZSORaddon).
+  intros. rewrite Reval_formula_compat. unfold Reval_formula. now apply (cnf_negate_correct Rsor RZSORaddon).
   intros t w0.
   apply RWeakChecker_sound.
 Qed.
 
 
+(* Local Variables: *)
+(* coding: utf-8 *)
+(* End: *)

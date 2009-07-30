@@ -263,10 +263,10 @@ let  rec_simpl_cone n_spec e =
   Mc.simpl_cone n_spec.zero n_spec.unit n_spec.mult n_spec.eqb in
 
  let rec rec_simpl_cone  = function
- | Mc.S_Mult(t1, t2) -> 
-    simpl_cone  (Mc.S_Mult (rec_simpl_cone t1, rec_simpl_cone t2))
- | Mc.S_Add(t1,t2)  -> 
-    simpl_cone (Mc.S_Add (rec_simpl_cone t1, rec_simpl_cone t2))
+ | Mc.PsatzMulE(t1, t2) -> 
+    simpl_cone  (Mc.PsatzMulE (rec_simpl_cone t1, rec_simpl_cone t2))
+ | Mc.PsatzAdd(t1,t2)  -> 
+    simpl_cone (Mc.PsatzAdd (rec_simpl_cone t1, rec_simpl_cone t2))
  |  x           -> simpl_cone x in
   rec_simpl_cone e
    
@@ -286,28 +286,28 @@ let factorise_linear_cone c =
  
  let rec cone_list  c l = 
   match c with
-   | Mc.S_Add (x,r) -> cone_list  r (x::l)
+   | Mc.PsatzAdd (x,r) -> cone_list  r (x::l)
    |  _        ->  c :: l in
   
  let factorise c1 c2 =
   match c1 , c2 with
-   | Mc.S_Ideal(x,y) , Mc.S_Ideal(x',y') -> 
-      if x = x' then Some (Mc.S_Ideal(x, Mc.S_Add(y,y'))) else None
-   | Mc.S_Mult(x,y) , Mc.S_Mult(x',y') -> 
-      if x = x' then Some (Mc.S_Mult(x, Mc.S_Add(y,y'))) else None
+   | Mc.PsatzMulC(x,y) , Mc.PsatzMulC(x',y') -> 
+      if x = x' then Some (Mc.PsatzMulC(x, Mc.PsatzAdd(y,y'))) else None
+   | Mc.PsatzMulE(x,y) , Mc.PsatzMulE(x',y') -> 
+      if x = x' then Some (Mc.PsatzMulE(x, Mc.PsatzAdd(y,y'))) else None
    |  _     -> None in
   
  let rec rebuild_cone l pending  =
   match l with
    | [] -> (match pending with
-      | None -> Mc.S_Z
+      | None -> Mc.PsatzZ
       | Some p -> p
      )
    | e::l -> 
       (match pending with
        | None -> rebuild_cone l (Some e) 
        | Some p -> (match factorise p e with
-          | None -> Mc.S_Add(p, rebuild_cone l (Some e))
+          | None -> Mc.PsatzAdd(p, rebuild_cone l (Some e))
           | Some f -> rebuild_cone l (Some f) )
       ) in
 
@@ -405,34 +405,34 @@ let big_int_to_z = Ml2C.bigint
  
 (* For Q, this is a pity that the certificate has been scaled 
    -- at a lower layer, certificates are using nums... *)
-let make_certificate n_spec cert li = 
+let make_certificate n_spec (cert,li) = 
  let bint_to_cst = n_spec.bigint_to_number in
   match cert with
-   | [] -> None
+   | [] -> failwith "empty_certificate"
    | e::cert' -> 
       let cst = match compare_big_int e zero_big_int with
-       | 0 -> Mc.S_Z
-       | 1 ->  Mc.S_Pos (bint_to_cst e) 
+       | 0 -> Mc.PsatzZ
+       | 1 ->  Mc.PsatzC (bint_to_cst e) 
        | _ -> failwith "positivity error" 
       in
       let rec scalar_product cert l =
        match cert with
-        | [] -> Mc.S_Z
+        | [] -> Mc.PsatzZ
         | c::cert -> match l with
            | [] -> failwith "make_certificate(1)"
            | i::l ->  
               let r = scalar_product cert l in
                match compare_big_int c  zero_big_int with
-                | -1 -> Mc.S_Add (
-                   Mc.S_Ideal (Mc.PEc ( bint_to_cst c), Mc.S_In (Ml2C.nat i)), 
+                | -1 -> Mc.PsatzAdd (
+                   Mc.PsatzMulC (Mc.Pc ( bint_to_cst c), Mc.PsatzIn (Ml2C.nat i)), 
                    r)
                 | 0  -> r
-                | _ ->  Mc.S_Add (
-                   Mc.S_Mult (Mc.S_Pos (bint_to_cst c), Mc.S_In (Ml2C.nat i)),
+                | _ ->  Mc.PsatzAdd (
+                   Mc.PsatzMulE (Mc.PsatzC (bint_to_cst c), Mc.PsatzIn (Ml2C.nat i)),
                    r) in
        
-      Some ((factorise_linear_cone 
-              (simplify_cone n_spec (Mc.S_Add (cst, scalar_product cert' li)))))
+        ((factorise_linear_cone 
+             (simplify_cone n_spec (Mc.PsatzAdd (cst, scalar_product cert' li)))))
 
 
 exception Found of Monomial.t
@@ -494,11 +494,11 @@ let raw_certificate l =
     dual_raw_certificate l 
 
 
-let simple_linear_prover to_constant l =
+let simple_linear_prover (*to_constant*) l =
  let (lc,li) = List.split l in
   match raw_certificate lc with
    |  None -> None (* No certificate *)
-   | Some cert -> make_certificate to_constant cert li
+   | Some cert -> (* make_certificate to_constant*)Some (cert,li)
       
       
 
@@ -511,12 +511,19 @@ let linear_prover n_spec l  =
                    Mc.NonEqual -> failwith "cannot happen"
                   |  y -> ((dev_form n_spec x, y),i)) l' in
   
-  simple_linear_prover n_spec l' 
+  simple_linear_prover (*n_spec*) l' 
 
 
 let linear_prover n_spec l  =
  try linear_prover n_spec l with
    x -> (print_string (Printexc.to_string x); None)
+
+let linear_prover_with_cert spec l = 
+  match linear_prover spec l with
+    | None -> None
+    | Some cert -> Some (make_certificate spec cert)
+
+
 
 (* zprover.... *)
 
@@ -560,7 +567,7 @@ let eq x y = Vect.compare x y = 0
 let  remove e  l  = List.fold_left (fun l x -> if eq x e then l else x::l) [] l
 
 
-(* The prover is (probably) incomplete --
+(* The prover is (probably) incomplete -- 
    only searching for naive cutting planes *)
 
 let candidates sys = 
@@ -581,9 +588,11 @@ let candidates sys =
     else  (Vect.mul (Int 1 // gcd) cstr.coeffs)::l) [] sys) @ vars
 
 
+
+
 let rec xzlinear_prover planes sys = 
  match linear_prover z_spec sys with
-  | Some prf -> Some (Mc.RatProof prf)
+  | Some prf ->  Some (Mc.RatProof (make_certificate z_spec prf,Mc.DoneProof))
   | None     -> (* find the candidate with the smallest range *)
      (* Grrr - linear_prover is also calling 'make_linear_system' *)
      let ll = List.fold_right (fun (e,k) r -> match k with
@@ -635,7 +644,9 @@ let rec xzlinear_prover planes sys =
                  with
                   | None -> None
                   | Some prf -> 
-                     Some (Mc.EnumProof(Ml2C.q lb,expr,Ml2C.q ub,clb,cub,prf)))
+		      let bound_proof (c,l) = make_certificate z_spec (List.tl c , List.tl (List.map (fun x -> x -1) l)) in 
+		      
+                     Some (Mc.EnumProof((*Ml2C.q lb,expr,Ml2C.q ub,*) bound_proof clb, bound_proof cub,prf)))
              | _ -> None
            )
        |  _ -> None
@@ -739,19 +750,29 @@ open Micromega
   | Sub(t1,t2) ->  PEsub (term_to_q_expr t1,  term_to_q_expr t2)
   | _ -> failwith "term_to_q_expr: not implemented"
 
+ let term_to_q_pol e = Mc.norm_aux (Ml2C.q (Int 0)) (Ml2C.q (Int 1)) Mc.qplus  Mc.qmult Mc.qminus Mc.qopp Mc.qeq_bool (term_to_q_expr e)
+
+
+ let rec product l = 
+   match l with
+     | [] -> Mc.PsatzZ
+     | [i] -> Mc.PsatzIn (Ml2C.nat i)
+     | i ::l -> Mc.PsatzMulE(Mc.PsatzIn (Ml2C.nat i), product l)
+
+
 let  q_cert_of_pos  pos = 
  let rec _cert_of_pos = function
-   Axiom_eq i ->  Mc.S_In (Ml2C.nat i)
-  | Axiom_le i ->  Mc.S_In (Ml2C.nat i)
-  | Axiom_lt i ->  Mc.S_In (Ml2C.nat i)
-  | Monoid l  -> Mc.S_Monoid (List.map Ml2C.nat l)
+   Axiom_eq i ->  Mc.PsatzIn (Ml2C.nat i)
+  | Axiom_le i ->  Mc.PsatzIn (Ml2C.nat i)
+  | Axiom_lt i ->  Mc.PsatzIn (Ml2C.nat i)
+  | Monoid l  -> product l
   | Rational_eq n | Rational_le n | Rational_lt n -> 
-     if compare_num n (Int 0) = 0 then Mc.S_Z else
-      Mc.S_Pos (Ml2C.q   n)
-  | Square t -> Mc.S_Square (term_to_q_expr  t)
-  | Eqmul (t, y) -> Mc.S_Ideal(term_to_q_expr t, _cert_of_pos y)
-  | Sum (y, z) -> Mc.S_Add  (_cert_of_pos y, _cert_of_pos z)
-  | Product (y, z) -> Mc.S_Mult (_cert_of_pos y, _cert_of_pos z) in
+     if compare_num n (Int 0) = 0 then Mc.PsatzZ else
+      Mc.PsatzC (Ml2C.q   n)
+  | Square t -> Mc.PsatzSquare (term_to_q_pol  t)
+  | Eqmul (t, y) -> Mc.PsatzMulC(term_to_q_pol t, _cert_of_pos y)
+  | Sum (y, z) -> Mc.PsatzAdd  (_cert_of_pos y, _cert_of_pos z)
+  | Product (y, z) -> Mc.PsatzMulE (_cert_of_pos y, _cert_of_pos z) in
   simplify_cone q_spec (_cert_of_pos pos)
 
 
@@ -767,19 +788,24 @@ let  q_cert_of_pos  pos =
   | Sub(t1,t2) ->  PEsub (term_to_z_expr t1,  term_to_z_expr t2)
   | _ -> failwith "term_to_z_expr: not implemented"
 
+ let term_to_z_pol e = Mc.norm_aux (Ml2C.z 0) (Ml2C.z 1) Mc.zplus  Mc.zmult Mc.zminus Mc.zopp Mc.zeq_bool (term_to_z_expr e)
+
 let  z_cert_of_pos  pos = 
  let s,pos = (scale_certificate pos) in
  let rec _cert_of_pos = function
-   Axiom_eq i ->  Mc.S_In (Ml2C.nat i)
-  | Axiom_le i ->  Mc.S_In (Ml2C.nat i)
-  | Axiom_lt i ->  Mc.S_In (Ml2C.nat i)
-  | Monoid l  -> Mc.S_Monoid (List.map Ml2C.nat l)
+   Axiom_eq i ->  Mc.PsatzIn (Ml2C.nat i)
+  | Axiom_le i ->  Mc.PsatzIn (Ml2C.nat i)
+  | Axiom_lt i ->  Mc.PsatzIn (Ml2C.nat i)
+  | Monoid l  -> product l
   | Rational_eq n | Rational_le n | Rational_lt n -> 
-     if compare_num n (Int 0) = 0 then Mc.S_Z else
-      Mc.S_Pos (Ml2C.bigint (big_int_of_num  n))
-  | Square t -> Mc.S_Square (term_to_z_expr  t)
-  | Eqmul (t, y) -> Mc.S_Ideal(term_to_z_expr t, _cert_of_pos y)
-  | Sum (y, z) -> Mc.S_Add  (_cert_of_pos y, _cert_of_pos z)
-  | Product (y, z) -> Mc.S_Mult (_cert_of_pos y, _cert_of_pos z) in
+     if compare_num n (Int 0) = 0 then Mc.PsatzZ else
+      Mc.PsatzC (Ml2C.bigint (big_int_of_num  n))
+  | Square t -> Mc.PsatzSquare (term_to_z_pol  t)
+  | Eqmul (t, y) -> Mc.PsatzMulC(term_to_z_pol t, _cert_of_pos y)
+  | Sum (y, z) -> Mc.PsatzAdd  (_cert_of_pos y, _cert_of_pos z)
+  | Product (y, z) -> Mc.PsatzMulE (_cert_of_pos y, _cert_of_pos z) in
   simplify_cone z_spec (_cert_of_pos pos)
 
+(* Local Variables: *)
+(* coding: utf-8 *)
+(* End: *)

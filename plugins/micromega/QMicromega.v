@@ -17,7 +17,7 @@ Require Import RingMicromega.
 Require Import Refl.
 Require Import QArith.
 Require Import Qfield.
-Declare ML Module "micromega_plugin".
+(*Declare ML Module "micromega_plugin".*)
 
 Lemma Qsor : SOR 0 1 Qplus Qmult Qminus Qopp Qeq  Qle Qlt.
 Proof.
@@ -105,6 +105,7 @@ Qed.
 Lemma Qeval_expr_compat : forall env e, Qeval_expr env e = Qeval_expr' env e.
 Proof.
   induction e ; simpl ; subst ; try congruence.
+  reflexivity.
   rewrite IHe.
   apply QNpower.
 Qed.
@@ -137,9 +138,8 @@ Proof.
 Qed.
 
 
-
 Definition Qeval_nformula :=
-  eval_nformula 0 Qplus Qmult Qminus Qopp Qeq Qle Qlt (fun x => x) (fun x => x) (pow_N 1 Qmult).
+  eval_nformula 0 Qplus Qmult  Qeq Qle Qlt (fun x => x) .
 
 Definition Qeval_op1 (o : Op1) : Q -> Prop :=
 match o with
@@ -149,22 +149,15 @@ match o with
 | NonStrict => fun x : Q => 0 <= x
 end.
 
-Lemma Qeval_nformula_simpl : forall env f, Qeval_nformula env f = (let (p, op) := f in Qeval_op1 op (Qeval_expr env p)).
-Proof.
-  intros.
-  destruct f.
-  rewrite Qeval_expr_compat.
-  reflexivity.
-Qed.
-  
+
 Lemma Qeval_nformula_dec : forall env d, (Qeval_nformula env d) \/ ~ (Qeval_nformula env d).
 Proof.
-  exact (fun env d =>eval_nformula_dec Qsor (fun x => x) (fun x => x) (pow_N 1 Qmult) env d).
+  exact (fun env d =>eval_nformula_dec Qsor (fun x => x)  env d).
 Qed.
 
-Definition QWitness := ConeMember Q.
+Definition QWitness := Psatz Q.
 
-Definition QWeakChecker := check_normalised_formulas 0 1 Qplus Qmult Qminus Qopp Qeq_bool Qle_bool.
+Definition QWeakChecker := check_normalised_formulas 0 1 Qplus Qmult Qeq_bool Qle_bool.
 
 Require Import List.
 
@@ -182,8 +175,15 @@ Qed.
 
 Require Import Tauto.
 
+Definition Qnormalise := @cnf_normalise Q 0 1 Qplus Qmult Qminus Qopp Qeq_bool.
+Definition Qnegate := @cnf_negate Q 0 1 Qplus Qmult Qminus Qopp Qeq_bool.
+
 Definition QTautoChecker (f : BFormula (Formula Q)) (w: list QWitness)  : bool :=
-  @tauto_checker (Formula Q) (NFormula Q) (@cnf_normalise Q) (@cnf_negate Q)  QWitness QWeakChecker f w.
+  @tauto_checker (Formula Q) (NFormula Q) 
+  Qnormalise
+  Qnegate QWitness QWeakChecker f w.
+
+
 
 Lemma QTautoChecker_sound : forall f w, QTautoChecker f w = true -> forall env, eval_f  (Qeval_formula env)  f.
 Proof.
@@ -191,10 +191,12 @@ Proof.
   unfold QTautoChecker.
   apply (tauto_checker_sound  Qeval_formula Qeval_nformula).
   apply Qeval_nformula_dec.
-  intros. rewrite Qeval_formula_compat. unfold Qeval_formula'. now apply (cnf_normalise_correct Qsor).
-  intros. rewrite Qeval_formula_compat. unfold Qeval_formula'. now apply (cnf_negate_correct Qsor).
+  intros. rewrite Qeval_formula_compat. unfold Qeval_formula'. now  apply (cnf_normalise_correct Qsor QSORaddon).
+  intros. rewrite Qeval_formula_compat. unfold Qeval_formula'. now apply (cnf_negate_correct Qsor QSORaddon).
   intros t w0.
   apply QWeakChecker_sound.
 Qed.
 
-
+(* Local Variables: *)
+(* coding: utf-8 *)
+(* End: *)

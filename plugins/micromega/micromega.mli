@@ -1,5 +1,3 @@
-type __ = Obj.t
-
 val negb : bool -> bool
 
 type nat =
@@ -12,6 +10,8 @@ type comparison =
   | Gt
 
 val compOpp : comparison -> comparison
+
+val plus : nat -> nat -> nat
 
 val app : 'a1 list -> 'a1 list -> 'a1 list
 
@@ -55,6 +55,8 @@ val pmult : positive -> positive -> positive
 
 val pcompare : positive -> positive -> comparison -> comparison
 
+val psize : positive -> nat
+
 type n =
   | N0
   | Npos of positive
@@ -82,9 +84,7 @@ val zmult : z -> z -> z
 
 val zcompare : z -> z -> comparison
 
-val dcompare_inf : comparison -> bool option
-
-val zcompare_rec : z -> z -> (__ -> 'a1) -> (__ -> 'a1) -> (__ -> 'a1) -> 'a1
+val zabs : z -> z
 
 val z_gt_dec : z -> z -> bool
 
@@ -101,6 +101,8 @@ val n_of_nat : nat -> n
 val zdiv_eucl_POS : positive -> z -> z  *  z
 
 val zdiv_eucl : z -> z -> z  *  z
+
+val zdiv : z -> z -> z
 
 type 'c pol =
   | Pc of 'c
@@ -168,6 +170,10 @@ val pmul :
   'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 ->
   bool) -> 'a1 pol -> 'a1 pol -> 'a1 pol
 
+val psquare :
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 ->
+  bool) -> 'a1 pol -> 'a1 pol
+
 type 'c pExpr =
   | PEc of 'c
   | PEX of positive
@@ -224,8 +230,6 @@ val tauto_checker :
   ('a1 -> 'a2 cnf) -> ('a1 -> 'a2 cnf) -> ('a2 list -> 'a3 -> bool) -> 'a1
   bFormula -> 'a3 list -> bool
 
-type 'c pExprC = 'c pExpr
-
 type 'c polC = 'c pol
 
 type op1 =
@@ -234,43 +238,42 @@ type op1 =
   | Strict
   | NonStrict
 
-type 'c nFormula = 'c pExprC  *  op1
+type 'c nFormula = 'c polC  *  op1
 
-type monoidMember = nat list
+val opAdd : op1 -> op1 -> op1 option
 
-type 'c coneMember =
-  | S_In of nat
-  | S_Ideal of 'c pExprC * 'c coneMember
-  | S_Square of 'c pExprC
-  | S_Monoid of monoidMember
-  | S_Mult of 'c coneMember * 'c coneMember
-  | S_Add of 'c coneMember * 'c coneMember
-  | S_Pos of 'c
-  | S_Z
+type 'c psatz =
+  | PsatzIn of nat
+  | PsatzSquare of 'c polC
+  | PsatzMulC of 'c polC * 'c psatz
+  | PsatzMulE of 'c psatz * 'c psatz
+  | PsatzAdd of 'c psatz * 'c psatz
+  | PsatzC of 'c
+  | PsatzZ
 
-val nformula_times : 'a1 nFormula -> 'a1 nFormula -> 'a1 nFormula
-
-val nformula_plus : 'a1 nFormula -> 'a1 nFormula -> 'a1 nFormula
-
-val eval_monoid : 'a1 -> 'a1 nFormula list -> monoidMember -> 'a1 pExprC
-
-val eval_cone :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool) -> 'a1 nFormula
-  list -> 'a1 coneMember -> 'a1 nFormula
-
-val normalise_pexpr :
+val pexpr_times_nformula :
   'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 ->
-  'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pExprC -> 'a1 polC
+  bool) -> 'a1 polC -> 'a1 nFormula -> 'a1 nFormula option
+
+val nformula_times_nformula :
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 ->
+  bool) -> 'a1 nFormula -> 'a1 nFormula -> 'a1 nFormula option
+
+val nformula_plus_nformula :
+  'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 nFormula -> 'a1
+  nFormula -> 'a1 nFormula option
+
+val eval_Psatz :
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 ->
+  bool) -> ('a1 -> 'a1 -> bool) -> 'a1 nFormula list -> 'a1 psatz -> 'a1
+  nFormula option
 
 val check_inconsistent :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 ->
-  'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool) -> 'a1
-  nFormula -> bool
+  'a1 -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool) -> 'a1 nFormula -> bool
 
 val check_normalised_formulas :
   'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 ->
-  'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool) -> 'a1
-  nFormula list -> 'a1 coneMember -> bool
+  bool) -> ('a1 -> 'a1 -> bool) -> 'a1 nFormula list -> 'a1 psatz -> bool
 
 type op2 =
   | OpEq
@@ -280,27 +283,53 @@ type op2 =
   | OpLt
   | OpGt
 
-type 'c formula = { flhs : 'c pExprC; fop : op2; frhs : 'c pExprC }
+type 'c formula = { flhs : 'c pExpr; fop : op2; frhs : 'c pExpr }
 
-val flhs : 'a1 formula -> 'a1 pExprC
+val flhs : 'a1 formula -> 'a1 pExpr
 
 val fop : 'a1 formula -> op2
 
-val frhs : 'a1 formula -> 'a1 pExprC
+val frhs : 'a1 formula -> 'a1 pExpr
 
-val xnormalise : 'a1 formula -> 'a1 nFormula list
+val norm :
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 ->
+  'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pExpr -> 'a1 pol
 
-val cnf_normalise : 'a1 formula -> 'a1 nFormula cnf
+val psub0 :
+  'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1) -> ('a1
+  -> 'a1 -> bool) -> 'a1 pol -> 'a1 pol -> 'a1 pol
 
-val xnegate : 'a1 formula -> 'a1 nFormula list
+val padd0 :
+  'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pol -> 'a1 pol ->
+  'a1 pol
 
-val cnf_negate : 'a1 formula -> 'a1 nFormula cnf
+val xnormalise :
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 ->
+  'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1 nFormula
+  list
 
-val simpl_expr : 'a1 -> ('a1 -> 'a1 -> bool) -> 'a1 pExprC -> 'a1 pExprC
+val cnf_normalise :
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 ->
+  'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1 nFormula
+  cnf
+
+val xnegate :
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 ->
+  'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1 nFormula
+  list
+
+val cnf_negate :
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 ->
+  'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1 nFormula
+  cnf
+
+val xdenorm : positive -> 'a1 pol -> 'a1 pExpr
+
+val denorm : 'a1 pol -> 'a1 pExpr
 
 val simpl_cone :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 coneMember
-  -> 'a1 coneMember
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 psatz ->
+  'a1 psatz
 
 type q = { qnum : z; qden : positive }
 
@@ -320,6 +349,12 @@ val qopp : q -> q
 
 val qminus : q -> q -> q
 
+val pgcdn : nat -> positive -> positive -> positive
+
+val pgcd : positive -> positive -> positive
+
+val zgcd : z -> z -> z
+
 type 'a t =
   | Empty
   | Leaf of 'a
@@ -327,9 +362,15 @@ type 'a t =
 
 val find : 'a1 -> 'a1 t -> positive -> 'a1
 
-type zWitness = z coneMember
+type zWitness = z psatz
 
-val zWeakChecker : z nFormula list -> z coneMember -> bool
+val zWeakChecker : z nFormula list -> z psatz -> bool
+
+val psub1 : z pol -> z pol -> z pol
+
+val padd1 : z pol -> z pol -> z pol
+
+val norm0 : z pExpr -> z pol
 
 val xnormalise0 : z formula -> z nFormula list
 
@@ -341,35 +382,53 @@ val negate : z formula -> z nFormula cnf
 
 val ceiling : z -> z -> z
 
-type proofTerm =
-  | RatProof of zWitness
-  | CutProof of z pExprC * q * zWitness * proofTerm
-  | EnumProof of q * z pExprC * q * zWitness * zWitness * proofTerm list
+type zArithProof =
+  | DoneProof
+  | RatProof of zWitness * zArithProof
+  | CutProof of zWitness * zArithProof
+  | EnumProof of zWitness * zWitness * zArithProof list
 
-val makeLb : z pExpr -> q -> z nFormula
+val isZ0 : z -> bool
 
-val qceiling : q -> z
+val zgcd_pol : z polC -> z  *  z
 
-val makeLbCut : z pExprC -> q -> z nFormula
+val zdiv_pol : z polC -> z -> z polC
 
-val neg_nformula : z nFormula -> z pExpr  *  op1
+val makeCuttingPlane : z polC -> z polC  *  z
 
-val cutChecker :
-  z nFormula list -> z pExpr -> q -> zWitness -> z nFormula option
+val genCuttingPlane : z nFormula -> ((z polC  *  z)  *  op1) option
 
-val zChecker : z nFormula list -> proofTerm -> bool
+val nformula_of_cutting_plane : ((z polC  *  z)  *  op1) -> z nFormula
 
-val zTautoChecker : z formula bFormula -> proofTerm list -> bool
+val is_pol_Z0 : z polC -> bool
 
-val map_cone : (nat -> nat) -> zWitness -> zWitness
+val eval_Psatz0 : z nFormula list -> zWitness -> z nFormula option
 
-val indexes : zWitness -> nat list
+val check_inconsistent0 : z nFormula -> bool
+
+val zChecker : z nFormula list -> zArithProof -> bool
+
+val zTautoChecker : z formula bFormula -> zArithProof list -> bool
 
 val n_of_Z : z -> n
 
-type qWitness = q coneMember
+type qWitness = q psatz
 
-val qWeakChecker : q nFormula list -> q coneMember -> bool
+val qWeakChecker : q nFormula list -> q psatz -> bool
+
+val qnormalise : q formula -> q nFormula cnf
+
+val qnegate : q formula -> q nFormula cnf
 
 val qTautoChecker : q formula bFormula -> qWitness list -> bool
+
+type rWitness = z psatz
+
+val rWeakChecker : z nFormula list -> z psatz -> bool
+
+val rnormalise : z formula -> z nFormula cnf
+
+val rnegate : z formula -> z nFormula cnf
+
+val rTautoChecker : z formula bFormula -> rWitness list -> bool
 

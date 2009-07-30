@@ -31,6 +31,11 @@ TACTIC EXTEND PsatzZ
 | [ "psatz_Z" ] -> [ Coq_micromega.psatz_Z (-1) ]
 END
 
+TACTIC EXTEND ZOmicron
+[ "xlia"  ] -> [ Coq_micromega.xlia]
+END
+
+
 TACTIC EXTEND Sos_Z
 | [ "sos_Z" ] -> [ Coq_micromega.sos_Z]
    END
@@ -53,9 +58,6 @@ TACTIC EXTEND QOmicron
 END
 
 
-TACTIC EXTEND ZOmicron
-[ "xlia"  ] -> [ Coq_micromega.xlia]
-END
 
 TACTIC EXTEND ROmicron
 [ "psatzl_R"  ] -> [ Coq_micromega.psatzl_R]

@@ -40,16 +40,6 @@ struct
   |  PEopp p ->  Opp (expr_to_term p)
 
       
-
-
-(* let term_to_expr e =
-  let e' = term_to_expr e in
-   if debug 
-   then Printf.printf "term_to_expr : %s - %s\n"  
-    (string_of_poly (poly_of_term  e)) 
-    (string_of_poly (poly_of_term (expr_to_term e')));
-   e' *)
-
 end 
 open M      
 
@@ -98,6 +88,7 @@ let rec sets_of_list l =
 
 (* The exploration is probably not complete - for simple cases, it works... *)
 let real_nonlinear_prover d l =
+  let l = List.map (fun (e,op) -> (Mc.denorm e,op)) l in
  try 
   let (eq,ge,neq) = partition_expr l in
 
@@ -151,6 +142,8 @@ let real_nonlinear_prover d l =
 
 (* This is somewhat buggy, over Z, strict inequality vanish... *)
 let pure_sos  l =
+  let l = List.map (fun (e,o) -> Mc.denorm e, o) l in
+
  (* If there is no strict inequality, 
     I should nonetheless be able to try something - over Z  > is equivalent to -1  >= *)
  try 
@@ -172,26 +165,26 @@ let pure_sos  l =
   |  x        -> None
 
 
-type micromega_polys = (Micromega.q Mc.pExpr * Mc.op1) list
+type micromega_polys = (Micromega.q Mc.pol * Mc.op1) list
 type csdp_certificate = Sos.positivstellensatz option
 type provername = string * int option
 
-let main () =
-  if Array.length Sys.argv <> 3 then
-    (Printf.printf "Usage: csdpcert inputfile outputfile\n"; exit 1);
-  let input_file = Sys.argv.(1) in
-  let output_file = Sys.argv.(2) in
-  let inch = open_in input_file in
-  let (prover,poly) = (input_value inch : provername * micromega_polys) in
-  close_in inch;
-  let cert =
+
+let run_prover prover pb = 
     match prover with
-    | "real_nonlinear_prover", Some d -> real_nonlinear_prover d poly
-    | "pure_sos", None -> pure_sos poly
-    | prover, _ -> (Printf.printf "unknown prover: %s\n" prover; exit 1) in
-  let outch = open_out output_file in
-  output_value outch (cert:csdp_certificate);
-  close_out outch;
+    | "real_nonlinear_prover", Some d -> real_nonlinear_prover d pb
+    | "pure_sos", None -> pure_sos pb
+    | prover, _ -> (Printf.printf "unknown prover: %s\n" prover; exit 1)
+
+
+let main () =
+  let (prover,poly) = (input_value stdin : provername * micromega_polys) in
+  let cert = run_prover prover poly in
+  output_value stdout (cert:csdp_certificate);
   exit 0;;
 
 let _ = main () in ()
+
+(* Local Variables: *)
+(* coding: utf-8 *)
+(* End: *)

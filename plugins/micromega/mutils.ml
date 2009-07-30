@@ -51,6 +51,7 @@ let rec map3 f l1 l2 l3 =
     |      _   -> raise (Invalid_argument "map3")
 
 
+
 let rec is_sublist l1 l2 = 
   match l1 ,l2 with
     | [] ,_ -> true
@@ -326,3 +327,65 @@ struct
 
    _hash_list  l 0
 end
+
+module type Tag =
+sig
+  type t
+
+  val from : int -> t
+  val next : t -> t
+  val pp : out_channel -> t -> unit
+  val compare : t -> t -> int
+end
+
+module Tag : Tag =
+struct
+  type t = int
+  let from i = i
+  let next i = i + 1
+  let pp o i = output_string o (string_of_int i)
+  let compare : int -> int -> int = Pervasives.compare
+end
+
+module TagSet = Set.Make(Tag)
+
+
+let command exe_path args vl =
+
+  (* creating pipes for stdin, stdout, stderr *)
+  let (stdin_read,stdin_write) = Unix.pipe ()
+  and (stdout_read,stdout_write) = Unix.pipe ()
+  and (stderr_read,stderr_write) = Unix.pipe () in
+
+  (* Creating channels from dile descr *)
+  let outch = Unix.out_channel_of_descr stdin_write in
+  let inch  = Unix.in_channel_of_descr  stdout_read in 
+
+  (* Create the process *)
+  let pid = Unix.create_process exe_path args stdin_read stdout_write stderr_write in
+
+  (* Write the data on the stdin of the future process *)
+    Marshal.to_channel outch vl [Marshal.No_sharing] ; 
+    flush outch ;
+    
+  (* Wait for its completion *)
+    let _pid,status = Unix.waitpid [] pid in
+
+  (* Recover the result *)
+    let res = 
+      match status with
+	| Unix.WEXITED 0 -> Marshal.from_channel inch 
+	| _         -> None in
+     
+    (* Cleanup  *)
+      close_out outch ; close_in inch ; 
+      List.iter (fun x -> try Unix.close x with _ -> ()) [stdin_read; stdin_write; stderr_write; stdout_write];
+      res
+
+
+
+
+
+(* Local Variables: *)
+(* coding: utf-8 *)
+(* End: *)

@@ -16,6 +16,7 @@
 
 Require Import ZMicromega.
 Require Import QMicromega.
+Require Import RMicromega.
 Require Import VarMap.
 Require Import RingMicromega.
 Require Import NArith.
@@ -37,5 +38,10 @@ Extract Inductive sumor => option [ Some None ].
 Extract Inlined Constant andb => "(&&)".
 
 Extraction "micromega.ml"
-  List.map simpl_cone map_cone indexes
-  n_of_Z Nnat.N_of_nat ZTautoChecker QTautoChecker find.
+  List.map simpl_cone (*map_cone  indexes*)
+  denorm
+  n_of_Z Nnat.N_of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.
+
+(* Local Variables: *)
+(* coding: utf-8 *)
+(* End: *)

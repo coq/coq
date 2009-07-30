@@ -1,6 +1,3 @@
-type __ = Obj.t
-let __ = let rec f _ = Obj.repr f in Obj.repr f
-
 (** val negb : bool -> bool **)
 
 let negb = function
@@ -22,6 +19,13 @@ let compOpp = function
   | Eq -> Eq
   | Lt -> Gt
   | Gt -> Lt
+
+(** val plus : nat -> nat -> nat **)
+
+let rec plus n0 m =
+  match n0 with
+    | O -> m
+    | S p -> S (plus p m)
 
 (** val app : 'a1 list -> 'a1 list -> 'a1 list **)
 
@@ -205,6 +209,13 @@ let rec pcompare x y r =
                | XH -> r
                | _ -> Lt)
 
+(** val psize : positive -> nat **)
+
+let rec psize = function
+  | XI p2 -> S (psize p2)
+  | XO p2 -> S (psize p2)
+  | XH -> S O
+
 type n =
   | N0
   | Npos of positive
@@ -323,25 +334,19 @@ let zcompare x y =
            | Zneg y' -> compOpp (pcompare x' y' Eq)
            | _ -> Lt)
 
-(** val dcompare_inf : comparison -> bool option **)
+(** val zabs : z -> z **)
 
-let dcompare_inf = function
-  | Eq -> Some true
-  | Lt -> Some false
-  | Gt -> None
-
-(** val zcompare_rec :
-    z -> z -> (__ -> 'a1) -> (__ -> 'a1) -> (__ -> 'a1) -> 'a1 **)
-
-let zcompare_rec x y h1 h2 h3 =
-  match dcompare_inf (zcompare x y) with
-    | Some x0 -> if x0 then h1 __ else h2 __
-    | None -> h3 __
+let zabs = function
+  | Z0 -> Z0
+  | Zpos p -> Zpos p
+  | Zneg p -> Zpos p
 
 (** val z_gt_dec : z -> z -> bool **)
 
 let z_gt_dec x y =
-  zcompare_rec x y (fun _ -> false) (fun _ -> false) (fun _ -> true)
+  match zcompare x y with
+    | Gt -> true
+    | _ -> false
 
 (** val zle_bool : z -> z -> bool **)
 
@@ -420,6 +425,11 @@ let zdiv_eucl a b =
                   | _ -> (zopp (zplus q0 (Zpos XH))) , (zminus b r))
            | Zneg b' ->
                let q0 , r = zdiv_eucl_POS a' (Zpos b') in q0 , (zopp r))
+
+(** val zdiv : z -> z -> z **)
+
+let zdiv a b =
+  let q0 , x = zdiv_eucl a b in q0
 
 type 'c pol =
   | Pc of 'c
@@ -800,6 +810,25 @@ let rec pmul cO cI cadd cmul ceqb p p'' = match p'' with
                    pmul cO cI cadd cmul ceqb x x0) q' XH p2) i
                  (pmul cO cI cadd cmul ceqb q0 q')))
 
+(** val psquare :
+    'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
+    -> bool) -> 'a1 pol -> 'a1 pol **)
+
+let rec psquare cO cI cadd cmul ceqb = function
+  | Pc c -> Pc (cmul c c)
+  | Pinj (j, q0) -> Pinj (j, (psquare cO cI cadd cmul ceqb q0))
+  | PX (p2, i, q0) ->
+      mkPX cO ceqb
+        (padd cO cadd ceqb
+          (mkPX cO ceqb (psquare cO cI cadd cmul ceqb p2) i (p0 cO))
+          (pmul cO cI cadd cmul ceqb p2
+            (let p3 = pmulC cO cI cmul ceqb q0 (cadd cI cI) in
+            match p3 with
+              | Pc c -> p3
+              | Pinj (j', q1) -> Pinj ((pplus XH j'), q1)
+              | PX (p4, p5, p6) -> Pinj (XH, p3)))) i
+        (psquare cO cI cadd cmul ceqb q0)
+
 type 'c pExpr =
   | PEc of 'c
   | PEX of positive
@@ -961,8 +990,6 @@ let rec cnf_checker checker f l =
 let tauto_checker normalise0 negate0 checker f w =
   cnf_checker checker (xcnf normalise0 negate0 true f) w
 
-type 'c pExprC = 'c pExpr
-
 type 'c polC = 'c pol
 
 type op1 =
@@ -971,119 +998,137 @@ type op1 =
   | Strict
   | NonStrict
 
-type 'c nFormula = 'c pExprC  *  op1
+type 'c nFormula = 'c polC  *  op1
 
-type monoidMember = nat list
+(** val opAdd : op1 -> op1 -> op1 option **)
 
-type 'c coneMember =
-  | S_In of nat
-  | S_Ideal of 'c pExprC * 'c coneMember
-  | S_Square of 'c pExprC
-  | S_Monoid of monoidMember
-  | S_Mult of 'c coneMember * 'c coneMember
-  | S_Add of 'c coneMember * 'c coneMember
-  | S_Pos of 'c
-  | S_Z
+let opAdd o o' =
+  match o with
+    | Equal -> Some o'
+    | NonEqual -> (match o' with
+                     | Equal -> Some NonEqual
+                     | _ -> None)
+    | Strict -> (match o' with
+                   | NonEqual -> None
+                   | _ -> Some Strict)
+    | NonStrict ->
+        (match o' with
+           | NonEqual -> None
+           | Strict -> Some Strict
+           | _ -> Some NonStrict)
 
-(** val nformula_times : 'a1 nFormula -> 'a1 nFormula -> 'a1 nFormula **)
+type 'c psatz =
+  | PsatzIn of nat
+  | PsatzSquare of 'c polC
+  | PsatzMulC of 'c polC * 'c psatz
+  | PsatzMulE of 'c psatz * 'c psatz
+  | PsatzAdd of 'c psatz * 'c psatz
+  | PsatzC of 'c
+  | PsatzZ
 
-let nformula_times f f' =
-  let p , op = f in
-  let p' , op' = f' in
-  (PEmul (p, p')) ,
-  (match op with
-     | Equal -> Equal
-     | NonEqual -> NonEqual
-     | Strict -> op'
-     | NonStrict -> NonStrict)
-
-(** val nformula_plus : 'a1 nFormula -> 'a1 nFormula -> 'a1 nFormula **)
-
-let nformula_plus f f' =
-  let p , op = f in
-  let p' , op' = f' in
-  (PEadd (p, p')) ,
-  (match op with
-     | Equal -> op'
-     | NonEqual -> NonEqual
-     | Strict -> Strict
-     | NonStrict -> (match op' with
-                       | Strict -> Strict
-                       | _ -> NonStrict))
-
-(** val eval_monoid :
-    'a1 -> 'a1 nFormula list -> monoidMember -> 'a1 pExprC **)
-
-let rec eval_monoid cI l = function
-  | [] -> PEc cI
-  | n0 :: ns0 -> PEmul
-      ((let q0 , o = nth n0 l ((PEc cI) , NonEqual) in
-       (match o with
-          | NonEqual -> q0
-          | _ -> PEc cI)), (eval_monoid cI l ns0))
-
-(** val eval_cone :
-    'a1 -> 'a1 -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool) -> 'a1
-    nFormula list -> 'a1 coneMember -> 'a1 nFormula **)
-
-let rec eval_cone cO cI ceqb cleb l = function
-  | S_In n0 ->
-      let f = nth n0 l ((PEc cO) , Equal) in
-      let p , o = f in
-      (match o with
-         | NonEqual -> (PEc cO) , Equal
-         | _ -> f)
-  | S_Ideal (p, cm') ->
-      let f = eval_cone cO cI ceqb cleb l cm' in
-      let q0 , op = f in
-      (match op with
-         | Equal -> (PEmul (q0, p)) , Equal
-         | _ -> f)
-  | S_Square p -> (PEmul (p, p)) , NonStrict
-  | S_Monoid m -> let p = eval_monoid cI l m in (PEmul (p, p)) , Strict
-  | S_Mult (p, q0) ->
-      nformula_times (eval_cone cO cI ceqb cleb l p)
-        (eval_cone cO cI ceqb cleb l q0)
-  | S_Add (p, q0) ->
-      nformula_plus (eval_cone cO cI ceqb cleb l p)
-        (eval_cone cO cI ceqb cleb l q0)
-  | S_Pos c ->
-      if (&&) (cleb cO c) (negb (ceqb cO c))
-      then (PEc c) , Strict
-      else (PEc cO) , Equal
-  | S_Z -> (PEc cO) , Equal
-
-(** val normalise_pexpr :
+(** val pexpr_times_nformula :
     'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
-    -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pExprC -> 'a1 polC **)
+    -> bool) -> 'a1 polC -> 'a1 nFormula -> 'a1 nFormula option **)
 
-let normalise_pexpr cO cI cplus ctimes cminus copp ceqb x =
-  norm_aux cO cI cplus ctimes cminus copp ceqb x
+let pexpr_times_nformula cO cI cplus ctimes ceqb e = function
+  | ef , o ->
+      (match o with
+         | Equal -> Some ((pmul cO cI cplus ctimes ceqb e ef) , Equal)
+         | _ -> None)
+
+(** val nformula_times_nformula :
+    'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
+    -> bool) -> 'a1 nFormula -> 'a1 nFormula -> 'a1 nFormula option **)
+
+let nformula_times_nformula cO cI cplus ctimes ceqb f1 f2 =
+  let e1 , o1 = f1 in
+  let e2 , o2 = f2 in
+  (match o1 with
+     | Equal -> Some ((pmul cO cI cplus ctimes ceqb e1 e2) , Equal)
+     | NonEqual ->
+         (match o2 with
+            | Equal -> Some ((pmul cO cI cplus ctimes ceqb e1 e2) , Equal)
+            | NonEqual -> Some ((pmul cO cI cplus ctimes ceqb e1 e2) ,
+                NonEqual)
+            | _ -> None)
+     | Strict ->
+         (match o2 with
+            | NonEqual -> None
+            | _ -> Some ((pmul cO cI cplus ctimes ceqb e1 e2) , o2))
+     | NonStrict ->
+         (match o2 with
+            | Equal -> Some ((pmul cO cI cplus ctimes ceqb e1 e2) , Equal)
+            | NonEqual -> None
+            | _ -> Some ((pmul cO cI cplus ctimes ceqb e1 e2) , NonStrict)))
+
+(** val nformula_plus_nformula :
+    'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 nFormula -> 'a1
+    nFormula -> 'a1 nFormula option **)
+
+let nformula_plus_nformula cO cplus ceqb f1 f2 =
+  let e1 , o1 = f1 in
+  let e2 , o2 = f2 in
+  (match opAdd o1 o2 with
+     | Some x -> Some ((padd cO cplus ceqb e1 e2) , x)
+     | None -> None)
+
+(** val eval_Psatz :
+    'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
+    -> bool) -> ('a1 -> 'a1 -> bool) -> 'a1 nFormula list -> 'a1 psatz -> 'a1
+    nFormula option **)
+
+let rec eval_Psatz cO cI cplus ctimes ceqb cleb l = function
+  | PsatzIn n0 -> Some (nth n0 l ((Pc cO) , Equal))
+  | PsatzSquare e0 -> Some ((psquare cO cI cplus ctimes ceqb e0) , NonStrict)
+  | PsatzMulC (re, e0) ->
+      (match eval_Psatz cO cI cplus ctimes ceqb cleb l e0 with
+         | Some x -> pexpr_times_nformula cO cI cplus ctimes ceqb re x
+         | None -> None)
+  | PsatzMulE (f1, f2) ->
+      (match eval_Psatz cO cI cplus ctimes ceqb cleb l f1 with
+         | Some x ->
+             (match eval_Psatz cO cI cplus ctimes ceqb cleb l f2 with
+                | Some x' ->
+                    nformula_times_nformula cO cI cplus ctimes ceqb x x'
+                | None -> None)
+         | None -> None)
+  | PsatzAdd (f1, f2) ->
+      (match eval_Psatz cO cI cplus ctimes ceqb cleb l f1 with
+         | Some x ->
+             (match eval_Psatz cO cI cplus ctimes ceqb cleb l f2 with
+                | Some x' -> nformula_plus_nformula cO cplus ceqb x x'
+                | None -> None)
+         | None -> None)
+  | PsatzC c ->
+      if (&&) (cleb cO c) (negb (ceqb cO c))
+      then Some ((Pc c) , Strict)
+      else None
+  | PsatzZ -> Some ((Pc cO) , Equal)
 
 (** val check_inconsistent :
-    'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
-    -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool)
-    -> 'a1 nFormula -> bool **)
+    'a1 -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool) -> 'a1 nFormula ->
+    bool **)
 
-let check_inconsistent cO cI cplus ctimes cminus copp ceqb cleb = function
+let check_inconsistent cO ceqb cleb = function
   | e , op ->
-      (match normalise_pexpr cO cI cplus ctimes cminus copp ceqb e with
+      (match e with
          | Pc c ->
              (match op with
                 | Equal -> negb (ceqb c cO)
-                | NonEqual -> false
+                | NonEqual -> ceqb c cO
                 | Strict -> cleb c cO
                 | NonStrict -> (&&) (cleb c cO) (negb (ceqb c cO)))
          | _ -> false)
 
 (** val check_normalised_formulas :
     'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
-    -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool)
-    -> 'a1 nFormula list -> 'a1 coneMember -> bool **)
+    -> bool) -> ('a1 -> 'a1 -> bool) -> 'a1 nFormula list -> 'a1 psatz ->
+    bool **)
 
-let check_normalised_formulas cO cI cplus ctimes cminus copp ceqb cleb l cm =
-  check_inconsistent cO cI cplus ctimes cminus copp ceqb cleb
-    (eval_cone cO cI ceqb cleb l cm)
+let check_normalised_formulas cO cI cplus ctimes ceqb cleb l cm =
+  match eval_Psatz cO cI cplus ctimes ceqb cleb l cm with
+    | Some f -> check_inconsistent cO ceqb cleb f
+    | None -> false
 
 type op2 =
   | OpEq
@@ -1093,9 +1138,9 @@ type op2 =
   | OpLt
   | OpGt
 
-type 'c formula = { flhs : 'c pExprC; fop : op2; frhs : 'c pExprC }
+type 'c formula = { flhs : 'c pExpr; fop : op2; frhs : 'c pExpr }
 
-(** val flhs : 'a1 formula -> 'a1 pExprC **)
+(** val flhs : 'a1 formula -> 'a1 pExpr **)
 
 let flhs x = x.flhs
 
@@ -1103,120 +1148,164 @@ let flhs x = x.flhs
 
 let fop x = x.fop
 
-(** val frhs : 'a1 formula -> 'a1 pExprC **)
+(** val frhs : 'a1 formula -> 'a1 pExpr **)
 
 let frhs x = x.frhs
 
-(** val xnormalise : 'a1 formula -> 'a1 nFormula list **)
+(** val norm :
+    'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
+    -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pExpr -> 'a1 pol **)
 
-let xnormalise t0 =
+let norm cO cI cplus ctimes cminus copp ceqb pe =
+  norm_aux cO cI cplus ctimes cminus copp ceqb pe
+
+(** val psub0 :
+    'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1) -> ('a1
+    -> 'a1 -> bool) -> 'a1 pol -> 'a1 pol -> 'a1 pol **)
+
+let psub0 cO cplus cminus copp ceqb p p' =
+  psub cO cplus cminus copp ceqb p p'
+
+(** val padd0 :
+    'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pol -> 'a1 pol
+    -> 'a1 pol **)
+
+let padd0 cO cplus ceqb p p' =
+  padd cO cplus ceqb p p'
+
+(** val xnormalise :
+    'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
+    -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1
+    nFormula list **)
+
+let xnormalise cO cI cplus ctimes cminus copp ceqb t0 =
   let { flhs = lhs; fop = o; frhs = rhs } = t0 in
+  let lhs0 = norm cO cI cplus ctimes cminus copp ceqb lhs in
+  let rhs0 = norm cO cI cplus ctimes cminus copp ceqb rhs in
   (match o with
-     | OpEq -> ((PEsub (lhs, rhs)) , Strict) :: (((PEsub (rhs, lhs)) ,
-         Strict) :: [])
-     | OpNEq -> ((PEsub (lhs, rhs)) , Equal) :: []
-     | OpLe -> ((PEsub (lhs, rhs)) , Strict) :: []
-     | OpGe -> ((PEsub (rhs, lhs)) , Strict) :: []
-     | OpLt -> ((PEsub (lhs, rhs)) , NonStrict) :: []
-     | OpGt -> ((PEsub (rhs, lhs)) , NonStrict) :: [])
+     | OpEq -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0) , Strict) ::
+         (((psub0 cO cplus cminus copp ceqb rhs0 lhs0) , Strict) :: [])
+     | OpNEq -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0) , Equal) :: []
+     | OpLe -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0) , Strict) :: []
+     | OpGe -> ((psub0 cO cplus cminus copp ceqb rhs0 lhs0) , Strict) :: []
+     | OpLt -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0) , NonStrict) ::
+         []
+     | OpGt -> ((psub0 cO cplus cminus copp ceqb rhs0 lhs0) , NonStrict) ::
+         [])
 
-(** val cnf_normalise : 'a1 formula -> 'a1 nFormula cnf **)
+(** val cnf_normalise :
+    'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
+    -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1
+    nFormula cnf **)
 
-let cnf_normalise t0 =
-  map (fun x -> x :: []) (xnormalise t0)
+let cnf_normalise cO cI cplus ctimes cminus copp ceqb t0 =
+  map (fun x -> x :: []) (xnormalise cO cI cplus ctimes cminus copp ceqb t0)
 
-(** val xnegate : 'a1 formula -> 'a1 nFormula list **)
+(** val xnegate :
+    'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
+    -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1
+    nFormula list **)
 
-let xnegate t0 =
+let xnegate cO cI cplus ctimes cminus copp ceqb t0 =
   let { flhs = lhs; fop = o; frhs = rhs } = t0 in
+  let lhs0 = norm cO cI cplus ctimes cminus copp ceqb lhs in
+  let rhs0 = norm cO cI cplus ctimes cminus copp ceqb rhs in
   (match o with
-     | OpEq -> ((PEsub (lhs, rhs)) , Equal) :: []
-     | OpNEq -> ((PEsub (lhs, rhs)) , Strict) :: (((PEsub (rhs, lhs)) ,
-         Strict) :: [])
-     | OpLe -> ((PEsub (rhs, lhs)) , NonStrict) :: []
-     | OpGe -> ((PEsub (lhs, rhs)) , NonStrict) :: []
-     | OpLt -> ((PEsub (rhs, lhs)) , Strict) :: []
-     | OpGt -> ((PEsub (lhs, rhs)) , Strict) :: [])
+     | OpEq -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0) , Equal) :: []
+     | OpNEq -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0) , Strict) ::
+         (((psub0 cO cplus cminus copp ceqb rhs0 lhs0) , Strict) :: [])
+     | OpLe -> ((psub0 cO cplus cminus copp ceqb rhs0 lhs0) , NonStrict) ::
+         []
+     | OpGe -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0) , NonStrict) ::
+         []
+     | OpLt -> ((psub0 cO cplus cminus copp ceqb rhs0 lhs0) , Strict) :: []
+     | OpGt -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0) , Strict) :: [])
 
-(** val cnf_negate : 'a1 formula -> 'a1 nFormula cnf **)
+(** val cnf_negate :
+    'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
+    -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1
+    nFormula cnf **)
 
-let cnf_negate t0 =
-  map (fun x -> x :: []) (xnegate t0)
+let cnf_negate cO cI cplus ctimes cminus copp ceqb t0 =
+  map (fun x -> x :: []) (xnegate cO cI cplus ctimes cminus copp ceqb t0)
 
-(** val simpl_expr :
-    'a1 -> ('a1 -> 'a1 -> bool) -> 'a1 pExprC -> 'a1 pExprC **)
+(** val xdenorm : positive -> 'a1 pol -> 'a1 pExpr **)
 
-let rec simpl_expr cI ceqb e = match e with
-  | PEadd (x, y) -> PEadd ((simpl_expr cI ceqb x), (simpl_expr cI ceqb y))
-  | PEmul (y, z0) ->
-      let y' = simpl_expr cI ceqb y in
-      (match y' with
-         | PEc c ->
-             if ceqb c cI
-             then simpl_expr cI ceqb z0
-             else PEmul (y', (simpl_expr cI ceqb z0))
-         | _ -> PEmul (y', (simpl_expr cI ceqb z0)))
-  | _ -> e
+let rec xdenorm jmp = function
+  | Pc c -> PEc c
+  | Pinj (j, p2) -> xdenorm (pplus j jmp) p2
+  | PX (p2, j, q0) -> PEadd ((PEmul ((xdenorm jmp p2), (PEpow ((PEX jmp),
+      (Npos j))))), (xdenorm (psucc jmp) q0))
+
+(** val denorm : 'a1 pol -> 'a1 pExpr **)
+
+let denorm p =
+  xdenorm XH p
 
 (** val simpl_cone :
-    'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1
-    coneMember -> 'a1 coneMember **)
+    'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 psatz ->
+    'a1 psatz **)
 
 let simpl_cone cO cI ctimes ceqb e = match e with
-  | S_Square t0 ->
-      let x = simpl_expr cI ceqb t0 in
-      (match x with
-         | PEc c -> if ceqb cO c then S_Z else S_Pos (ctimes c c)
-         | _ -> S_Square x)
-  | S_Mult (t1, t2) ->
+  | PsatzSquare t0 ->
+      (match t0 with
+         | Pc c -> if ceqb cO c then PsatzZ else PsatzC (ctimes c c)
+         | _ -> PsatzSquare t0)
+  | PsatzMulE (t1, t2) ->
       (match t1 with
-         | S_Mult (x, x0) ->
+         | PsatzMulE (x, x0) ->
              (match x with
-                | S_Pos p2 ->
+                | PsatzC p2 ->
                     (match t2 with
-                       | S_Pos c -> S_Mult ((S_Pos (ctimes c p2)), x0)
-                       | S_Z -> S_Z
+                       | PsatzC c -> PsatzMulE ((PsatzC (ctimes c p2)), x0)
+                       | PsatzZ -> PsatzZ
                        | _ -> e)
                 | _ ->
                     (match x0 with
-                       | S_Pos p2 ->
+                       | PsatzC p2 ->
                            (match t2 with
-                              | S_Pos c -> S_Mult ((S_Pos (ctimes c p2)), x)
-                              | S_Z -> S_Z
+                              | PsatzC c -> PsatzMulE ((PsatzC
+                                  (ctimes c p2)), x)
+                              | PsatzZ -> PsatzZ
                               | _ -> e)
                        | _ ->
                            (match t2 with
-                              | S_Pos c ->
-                                  if ceqb cI c then t1 else S_Mult (t1, t2)
-                              | S_Z -> S_Z
+                              | PsatzC c ->
+                                  if ceqb cI c
+                                  then t1
+                                  else PsatzMulE (t1, t2)
+                              | PsatzZ -> PsatzZ
                               | _ -> e)))
-         | S_Pos c ->
+         | PsatzC c ->
              (match t2 with
-                | S_Mult (x, x0) ->
+                | PsatzMulE (x, x0) ->
                     (match x with
-                       | S_Pos p2 -> S_Mult ((S_Pos (ctimes c p2)), x0)
+                       | PsatzC p2 -> PsatzMulE ((PsatzC (ctimes c p2)), x0)
                        | _ ->
                            (match x0 with
-                              | S_Pos p2 -> S_Mult ((S_Pos (ctimes c p2)), x)
+                              | PsatzC p2 -> PsatzMulE ((PsatzC
+                                  (ctimes c p2)), x)
                               | _ ->
-                                  if ceqb cI c then t2 else S_Mult (t1, t2)))
-                | S_Add (y, z0) -> S_Add ((S_Mult ((S_Pos c), y)), (S_Mult
-                    ((S_Pos c), z0)))
-                | S_Pos c0 -> S_Pos (ctimes c c0)
-                | S_Z -> S_Z
-                | _ -> if ceqb cI c then t2 else S_Mult (t1, t2))
-         | S_Z -> S_Z
+                                  if ceqb cI c
+                                  then t2
+                                  else PsatzMulE (t1, t2)))
+                | PsatzAdd (y, z0) -> PsatzAdd ((PsatzMulE ((PsatzC c), y)),
+                    (PsatzMulE ((PsatzC c), z0)))
+                | PsatzC c0 -> PsatzC (ctimes c c0)
+                | PsatzZ -> PsatzZ
+                | _ -> if ceqb cI c then t2 else PsatzMulE (t1, t2))
+         | PsatzZ -> PsatzZ
          | _ ->
              (match t2 with
-                | S_Pos c -> if ceqb cI c then t1 else S_Mult (t1, t2)
-                | S_Z -> S_Z
+                | PsatzC c -> if ceqb cI c then t1 else PsatzMulE (t1, t2)
+                | PsatzZ -> PsatzZ
                 | _ -> e))
-  | S_Add (t1, t2) ->
+  | PsatzAdd (t1, t2) ->
       (match t1 with
-         | S_Z -> t2
+         | PsatzZ -> t2
          | _ -> (match t2 with
-                   | S_Z -> t1
-                   | _ -> S_Add (t1, t2)))
+                   | PsatzZ -> t1
+                   | _ -> PsatzAdd (t1, t2)))
   | _ -> e
 
 type q = { qnum : z; qden : positive }
@@ -1260,6 +1349,50 @@ let qopp x =
 let qminus x y =
   qplus x (qopp y)
 
+(** val pgcdn : nat -> positive -> positive -> positive **)
+
+let rec pgcdn n0 a b =
+  match n0 with
+    | O -> XH
+    | S n1 ->
+        (match a with
+           | XI a' ->
+               (match b with
+                  | XI b' ->
+                      (match pcompare a' b' Eq with
+                         | Eq -> a
+                         | Lt -> pgcdn n1 (pminus b' a') a
+                         | Gt -> pgcdn n1 (pminus a' b') b)
+                  | XO b0 -> pgcdn n1 a b0
+                  | XH -> XH)
+           | XO a0 ->
+               (match b with
+                  | XI p -> pgcdn n1 a0 b
+                  | XO b0 -> XO (pgcdn n1 a0 b0)
+                  | XH -> XH)
+           | XH -> XH)
+
+(** val pgcd : positive -> positive -> positive **)
+
+let pgcd a b =
+  pgcdn (plus (psize a) (psize b)) a b
+
+(** val zgcd : z -> z -> z **)
+
+let zgcd a b =
+  match a with
+    | Z0 -> zabs b
+    | Zpos a0 ->
+        (match b with
+           | Z0 -> zabs a
+           | Zpos b0 -> Zpos (pgcd a0 b0)
+           | Zneg b0 -> Zpos (pgcd a0 b0))
+    | Zneg a0 ->
+        (match b with
+           | Z0 -> zabs a
+           | Zpos b0 -> Zpos (pgcd a0 b0)
+           | Zneg b0 -> Zpos (pgcd a0 b0))
+
 type 'a t =
   | Empty
   | Leaf of 'a
@@ -1277,28 +1410,42 @@ let rec find default vm p =
            | XO p2 -> find default l p2
            | XH -> e)
 
-type zWitness = z coneMember
+type zWitness = z psatz
 
-(** val zWeakChecker : z nFormula list -> z coneMember -> bool **)
+(** val zWeakChecker : z nFormula list -> z psatz -> bool **)
 
 let zWeakChecker x x0 =
-  check_normalised_formulas Z0 (Zpos XH) zplus zmult zminus zopp zeq_bool
-    zle_bool x x0
+  check_normalised_formulas Z0 (Zpos XH) zplus zmult zeq_bool zle_bool x x0
+
+(** val psub1 : z pol -> z pol -> z pol **)
+
+let psub1 p p' =
+  psub0 Z0 zplus zminus zopp zeq_bool p p'
+
+(** val padd1 : z pol -> z pol -> z pol **)
+
+let padd1 p p' =
+  padd0 Z0 zplus zeq_bool p p'
+
+(** val norm0 : z pExpr -> z pol **)
+
+let norm0 pe =
+  norm Z0 (Zpos XH) zplus zmult zminus zopp zeq_bool pe
 
 (** val xnormalise0 : z formula -> z nFormula list **)
 
 let xnormalise0 t0 =
   let { flhs = lhs; fop = o; frhs = rhs } = t0 in
+  let lhs0 = norm0 lhs in
+  let rhs0 = norm0 rhs in
   (match o with
-     | OpEq -> ((PEsub (lhs, (PEadd (rhs, (PEc (Zpos XH)))))) , NonStrict) ::
-         (((PEsub (rhs, (PEadd (lhs, (PEc (Zpos XH)))))) , NonStrict) :: [])
-     | OpNEq -> ((PEsub (lhs, rhs)) , Equal) :: []
-     | OpLe -> ((PEsub (lhs, (PEadd (rhs, (PEc (Zpos XH)))))) , NonStrict) ::
-         []
-     | OpGe -> ((PEsub (rhs, (PEadd (lhs, (PEc (Zpos XH)))))) , NonStrict) ::
-         []
-     | OpLt -> ((PEsub (lhs, rhs)) , NonStrict) :: []
-     | OpGt -> ((PEsub (rhs, lhs)) , NonStrict) :: [])
+     | OpEq -> ((psub1 lhs0 (padd1 rhs0 (Pc (Zpos XH)))) , NonStrict) ::
+         (((psub1 rhs0 (padd1 lhs0 (Pc (Zpos XH)))) , NonStrict) :: [])
+     | OpNEq -> ((psub1 lhs0 rhs0) , Equal) :: []
+     | OpLe -> ((psub1 lhs0 (padd1 rhs0 (Pc (Zpos XH)))) , NonStrict) :: []
+     | OpGe -> ((psub1 rhs0 (padd1 lhs0 (Pc (Zpos XH)))) , NonStrict) :: []
+     | OpLt -> ((psub1 lhs0 rhs0) , NonStrict) :: []
+     | OpGt -> ((psub1 rhs0 lhs0) , NonStrict) :: [])
 
 (** val normalise : z formula -> z nFormula cnf **)
 
@@ -1309,17 +1456,16 @@ let normalise t0 =
 
 let xnegate0 t0 =
   let { flhs = lhs; fop = o; frhs = rhs } = t0 in
+  let lhs0 = norm0 lhs in
+  let rhs0 = norm0 rhs in
   (match o with
-     | OpEq -> ((PEsub (lhs, rhs)) , Equal) :: []
-     | OpNEq -> ((PEsub (lhs, (PEadd (rhs, (PEc (Zpos XH)))))) , NonStrict)
-         :: (((PEsub (rhs, (PEadd (lhs, (PEc (Zpos XH)))))) , NonStrict) ::
-         [])
-     | OpLe -> ((PEsub (rhs, lhs)) , NonStrict) :: []
-     | OpGe -> ((PEsub (lhs, rhs)) , NonStrict) :: []
-     | OpLt -> ((PEsub (rhs, (PEadd (lhs, (PEc (Zpos XH)))))) , NonStrict) ::
-         []
-     | OpGt -> ((PEsub (lhs, (PEadd (rhs, (PEc (Zpos XH)))))) , NonStrict) ::
-         [])
+     | OpEq -> ((psub1 lhs0 rhs0) , Equal) :: []
+     | OpNEq -> ((psub1 lhs0 (padd1 rhs0 (Pc (Zpos XH)))) , NonStrict) ::
+         (((psub1 rhs0 (padd1 lhs0 (Pc (Zpos XH)))) , NonStrict) :: [])
+     | OpLe -> ((psub1 rhs0 lhs0) , NonStrict) :: []
+     | OpGe -> ((psub1 lhs0 rhs0) , NonStrict) :: []
+     | OpLt -> ((psub1 rhs0 (padd1 lhs0 (Pc (Zpos XH)))) , NonStrict) :: []
+     | OpGt -> ((psub1 lhs0 (padd1 rhs0 (Pc (Zpos XH)))) , NonStrict) :: [])
 
 (** val negate : z formula -> z nFormula cnf **)
 
@@ -1334,88 +1480,155 @@ let ceiling a b =
      | Z0 -> q0
      | _ -> zplus q0 (Zpos XH))
 
-type proofTerm =
-  | RatProof of zWitness
-  | CutProof of z pExprC * q * zWitness * proofTerm
-  | EnumProof of q * z pExprC * q * zWitness * zWitness * proofTerm list
+type zArithProof =
+  | DoneProof
+  | RatProof of zWitness * zArithProof
+  | CutProof of zWitness * zArithProof
+  | EnumProof of zWitness * zWitness * zArithProof list
 
-(** val makeLb : z pExpr -> q -> z nFormula **)
+(** val isZ0 : z -> bool **)
 
-let makeLb v q0 =
-  let { qnum = n0; qden = d } = q0 in
-  (PEsub ((PEmul ((PEc (Zpos d)), v)), (PEc n0))) , NonStrict
+let isZ0 = function
+  | Z0 -> true
+  | _ -> false
 
-(** val qceiling : q -> z **)
+(** val zgcd_pol : z polC -> z  *  z **)
 
-let qceiling q0 =
-  let { qnum = n0; qden = d } = q0 in ceiling n0 (Zpos d)
+let rec zgcd_pol = function
+  | Pc c -> Z0 , c
+  | Pinj (p2, p3) -> zgcd_pol p3
+  | PX (p2, p3, q0) ->
+      let g1 , c1 = zgcd_pol p2 in
+      let g2 , c2 = zgcd_pol q0 in
+      if isZ0 g1
+      then Z0 , c2
+      else if isZ0 (zgcd g1 c1)
+           then Z0 , c2
+           else if isZ0 g2 then Z0 , c2 else (zgcd (zgcd g1 c1) g2) , c2
 
-(** val makeLbCut : z pExprC -> q -> z nFormula **)
+(** val zdiv_pol : z polC -> z -> z polC **)
 
-let makeLbCut v q0 =
-  (PEsub (v, (PEc (qceiling q0)))) , NonStrict
+let rec zdiv_pol p x =
+  match p with
+    | Pc c -> Pc (zdiv c x)
+    | Pinj (j, p2) -> Pinj (j, (zdiv_pol p2 x))
+    | PX (p2, j, q0) -> PX ((zdiv_pol p2 x), j, (zdiv_pol q0 x))
 
-(** val neg_nformula : z nFormula -> z pExpr  *  op1 **)
+(** val makeCuttingPlane : z polC -> z polC  *  z **)
 
-let neg_nformula = function
-  | e , o -> (PEopp (PEadd (e, (PEc (Zpos XH))))) , o
+let makeCuttingPlane p =
+  let g , c = zgcd_pol p in
+  if zgt_bool g Z0
+  then (zdiv_pol (psubC zminus p c) g) , (zopp (ceiling (zopp c) g))
+  else p , Z0
 
-(** val cutChecker :
-    z nFormula list -> z pExpr -> q -> zWitness -> z nFormula option **)
+(** val genCuttingPlane : z nFormula -> ((z polC  *  z)  *  op1) option **)
 
-let cutChecker l e lb pf =
-  if zWeakChecker ((neg_nformula (makeLb e lb)) :: l) pf
-  then Some (makeLbCut e lb)
-  else None
+let genCuttingPlane = function
+  | e , op ->
+      (match op with
+         | Equal ->
+             let g , c = zgcd_pol e in
+             if (&&) (zgt_bool g Z0)
+                  ((&&) (zgt_bool c Z0) (negb (zeq_bool (zgcd g c) g)))
+             then None
+             else Some ((e , Z0) , op)
+         | NonEqual -> Some ((e , Z0) , op)
+         | Strict ->
+             let p , c = makeCuttingPlane (psubC zminus e (Zpos XH)) in
+             Some ((p , c) , NonStrict)
+         | NonStrict ->
+             let p , c = makeCuttingPlane e in Some ((p , c) , NonStrict))
 
-(** val zChecker : z nFormula list -> proofTerm -> bool **)
+(** val nformula_of_cutting_plane :
+    ((z polC  *  z)  *  op1) -> z nFormula **)
+
+let nformula_of_cutting_plane = function
+  | e_z , o -> let e , z0 = e_z in (padd1 e (Pc z0)) , o
+
+(** val is_pol_Z0 : z polC -> bool **)
+
+let is_pol_Z0 = function
+  | Pc z0 -> (match z0 with
+                | Z0 -> true
+                | _ -> false)
+  | _ -> false
+
+(** val eval_Psatz0 : z nFormula list -> zWitness -> z nFormula option **)
+
+let eval_Psatz0 x x0 =
+  eval_Psatz Z0 (Zpos XH) zplus zmult zeq_bool zle_bool x x0
+
+(** val check_inconsistent0 : z nFormula -> bool **)
+
+let check_inconsistent0 f =
+  check_inconsistent Z0 zeq_bool zle_bool f
+
+(** val zChecker : z nFormula list -> zArithProof -> bool **)
 
 let rec zChecker l = function
-  | RatProof pf0 -> zWeakChecker l pf0
-  | CutProof (e, q0, pf0, rst) ->
-      (match cutChecker l e q0 pf0 with
-         | Some c -> zChecker (c :: l) rst
+  | DoneProof -> false
+  | RatProof (w, pf0) ->
+      (match eval_Psatz0 l w with
+         | Some f ->
+             if check_inconsistent0 f then true else zChecker (f :: l) pf0
          | None -> false)
-  | EnumProof (lb, e, ub, pf1, pf2, rst) ->
-      (match cutChecker l e lb pf1 with
-         | Some n0 ->
-             (match cutChecker l (PEopp e) (qopp ub) pf2 with
-                | Some n1 ->
-                    let rec label pfs lb0 ub0 =
-                      match pfs with
-                        | [] -> if z_gt_dec lb0 ub0 then true else false
-                        | pf0 :: rsr ->
-                            (&&)
-                              (zChecker (((PEsub (e, (PEc lb0))) , Equal) ::
-                                l) pf0) (label rsr (zplus lb0 (Zpos XH)) ub0)
-                    in label rst (qceiling lb) (zopp (qceiling (qopp ub)))
+  | CutProof (w, pf0) ->
+      (match eval_Psatz0 l w with
+         | Some f ->
+             (match genCuttingPlane f with
+                | Some cp ->
+                    zChecker ((nformula_of_cutting_plane cp) :: l) pf0
+                | None -> true)
+         | None -> false)
+  | EnumProof (w1, w2, pf0) ->
+      (match eval_Psatz0 l w1 with
+         | Some f1 ->
+             (match eval_Psatz0 l w2 with
+                | Some f2 ->
+                    (match genCuttingPlane f1 with
+                       | Some p ->
+                           let p2 , op3 = p in
+                           let e1 , z1 = p2 in
+                           (match genCuttingPlane f2 with
+                              | Some p3 ->
+                                  let p4 , op4 = p3 in
+                                  let e2 , z2 = p4 in
+                                  (match op3 with
+                                     | NonStrict ->
+                                         (match op4 with
+                                            | NonStrict ->
+                                                if is_pol_Z0 (padd1 e1 e2)
+                                                then 
+                                                  let rec label pfs lb ub =
+                                                    
+                                                  match pfs with
+                                                    | 
+                                                  [] ->
+                                                  if z_gt_dec lb ub
+                                                  then true
+                                                  else false
+                                                    | 
+                                                  pf1 :: rsr ->
+                                                  (&&)
+                                                  (zChecker
+                                                  (((psub1 e1 (Pc lb)) ,
+                                                  Equal) :: l) pf1)
+                                                  (label rsr
+                                                  (zplus lb (Zpos XH)) ub)
+                                                  in label pf0 (zopp z1) z2
+                                                else false
+                                            | _ -> false)
+                                     | _ -> false)
+                              | None -> false)
+                       | None -> false)
                 | None -> false)
          | None -> false)
 
-(** val zTautoChecker : z formula bFormula -> proofTerm list -> bool **)
+(** val zTautoChecker : z formula bFormula -> zArithProof list -> bool **)
 
 let zTautoChecker f w =
   tauto_checker normalise negate zChecker f w
-
-(** val map_cone : (nat -> nat) -> zWitness -> zWitness **)
-
-let rec map_cone f e = match e with
-  | S_In n0 -> S_In (f n0)
-  | S_Ideal (e0, cm) -> S_Ideal (e0, (map_cone f cm))
-  | S_Monoid l -> S_Monoid (map f l)
-  | S_Mult (cm1, cm2) -> S_Mult ((map_cone f cm1), (map_cone f cm2))
-  | S_Add (cm1, cm2) -> S_Add ((map_cone f cm1), (map_cone f cm2))
-  | _ -> e
-
-(** val indexes : zWitness -> nat list **)
-
-let rec indexes = function
-  | S_In n0 -> n0 :: []
-  | S_Ideal (e0, cm) -> indexes cm
-  | S_Monoid l -> l
-  | S_Mult (cm1, cm2) -> app (indexes cm1) (indexes cm2)
-  | S_Add (cm1, cm2) -> app (indexes cm1) (indexes cm2)
-  | _ -> []
 
 (** val n_of_Z : z -> n **)
 
@@ -1423,17 +1636,50 @@ let n_of_Z = function
   | Zpos p -> Npos p
   | _ -> N0
 
-type qWitness = q coneMember
+type qWitness = q psatz
 
-(** val qWeakChecker : q nFormula list -> q coneMember -> bool **)
+(** val qWeakChecker : q nFormula list -> q psatz -> bool **)
 
 let qWeakChecker x x0 =
   check_normalised_formulas { qnum = Z0; qden = XH } { qnum = (Zpos XH);
-    qden = XH } qplus qmult qminus qopp qeq_bool qle_bool x x0
+    qden = XH } qplus qmult qeq_bool qle_bool x x0
+
+(** val qnormalise : q formula -> q nFormula cnf **)
+
+let qnormalise t0 =
+  cnf_normalise { qnum = Z0; qden = XH } { qnum = (Zpos XH); qden = XH }
+    qplus qmult qminus qopp qeq_bool t0
+
+(** val qnegate : q formula -> q nFormula cnf **)
+
+let qnegate t0 =
+  cnf_negate { qnum = Z0; qden = XH } { qnum = (Zpos XH); qden = XH } qplus
+    qmult qminus qopp qeq_bool t0
 
 (** val qTautoChecker : q formula bFormula -> qWitness list -> bool **)
 
 let qTautoChecker f w =
-  tauto_checker (fun x -> cnf_normalise x) (fun x -> 
-    cnf_negate x) qWeakChecker f w
+  tauto_checker qnormalise qnegate qWeakChecker f w
+
+type rWitness = z psatz
+
+(** val rWeakChecker : z nFormula list -> z psatz -> bool **)
+
+let rWeakChecker x x0 =
+  check_normalised_formulas Z0 (Zpos XH) zplus zmult zeq_bool zle_bool x x0
+
+(** val rnormalise : z formula -> z nFormula cnf **)
+
+let rnormalise t0 =
+  cnf_normalise Z0 (Zpos XH) zplus zmult zminus zopp zeq_bool t0
+
+(** val rnegate : z formula -> z nFormula cnf **)
+
+let rnegate t0 =
+  cnf_negate Z0 (Zpos XH) zplus zmult zminus zopp zeq_bool t0
+
+(** val rTautoChecker : z formula bFormula -> rWitness list -> bool **)
+
+let rTautoChecker f w =
+  tauto_checker rnormalise rnegate rWeakChecker f w
 

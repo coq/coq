@@ -1125,6 +1125,7 @@ let file_of_string filename s =
   let fd = Pervasives.open_out filename in
   output_string fd s; close_out fd
 
+(*
 let request_mark = "*** REQUEST ***"
 let answer_mark  = "*** ANSWER ***"
 let end_mark     = "*** END ***"
@@ -1171,16 +1172,16 @@ let flush_to_cache string_problem string_result =
     close_out outch
   with Sys_error _ -> 
     print_endline "Warning: Could not open or write to csdp cache"
-
+*)
 exception CsdpInfeasible
 
 let run_csdp dbg string_problem =
-  try
+(*  try
    let res = look_in_cache string_problem in
    if res = infeasible_mark then raise CsdpInfeasible;
    if res = failure_mark then failwith "csdp error";
    res
-  with Not_found ->
+  with Not_found -> *)
   let input_file = Filename.temp_file "sos" ".dat-s" in
   let output_file = Filename.temp_file "sos" ".dat-s" in
   let temp_path = Filename.dirname input_file in
@@ -1189,15 +1190,15 @@ let run_csdp dbg string_problem =
   file_of_string params_file csdp_params;
   let rv = Sys.command("cd "^temp_path^"; csdp "^input_file^" "^output_file^
                        (if dbg then "" else "> /dev/null")) in
-  if rv = 1 or rv = 2 then 
-    (flush_to_cache string_problem infeasible_mark; raise CsdpInfeasible);
+    if rv = 1 or rv = 2 then 
+      ((*flush_to_cache string_problem infeasible_mark;*) raise CsdpInfeasible); 
   if rv = 127 then
      (print_string "csdp not found, exiting..."; exit 1);
   if rv <> 0 & rv <> 3 (* reduced accuracy *) then
-    (flush_to_cache string_problem failure_mark;
+    ((*flush_to_cache string_problem failure_mark;*)
      failwith("csdp: error "^string_of_int rv));
   let string_result = string_of_file output_file in
-  flush_to_cache string_problem string_result;
+(*  flush_to_cache string_problem string_result;*)
   if not dbg then
     (Sys.remove input_file; Sys.remove output_file; Sys.remove params_file);
   string_result
