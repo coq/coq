@@ -8,7 +8,7 @@
 (*                                                                      *)
 (* Micromega: A reflexive tactic using the Positivstellensatz           *)
 (*                                                                      *)
-(*  Frédéric Besson (Irisa/Inria) 2006-2008                             *)
+(*  Frédéric Besson (Irisa/Inria) 2006-2009                             *)
 (*                                                                      *)
 (************************************************************************)
 
@@ -1199,10 +1199,10 @@ let compact_proofs (cnf_ff: 'cst cnf) res (cnf_ff': 'cst cnf) =
 	end ;
       let res = try prover.compact prf remap with x ->
 	if debug then Printf.fprintf stdout "Proof compaction %s" (Printexc.to_string x) ; 
- 
+	(* This should not happen -- this is the recovery plan... *)
 	match prover.prover (List.map fst new_cl) with 
 	  | None -> failwith "proof compaction error"
-	  | Some p -> p 
+	  | Some p ->  p 
       in
       if debug then 
 	begin
@@ -1334,10 +1334,7 @@ module Cache = PHashtable(struct
   let hash  = Hashtbl.hash
 end)
 
-let cache_name = "csdp.cache" 
-
-let cache = lazy (Cache.open_in cache_name)
-
+let csdp_cache = "csdp.cache" 
 
 let really_call_csdpcert : provername -> micromega_polys -> csdpcert =
   fun provername poly -> 
@@ -1350,26 +1347,11 @@ let really_call_csdpcert : provername -> micromega_polys -> csdpcert =
 
 
 
-let call_csdpcert prover pb =
-
-  let cache = Lazy.force cache in
-    try 
-      Cache.find cache (prover,pb) 
-    with Not_found -> 
-      let cert = really_call_csdpcert prover pb in
-	Cache.add cache (prover,pb) cert ; 
-	cert
+let xcall_csdpcert =
+  Cache.memo csdp_cache (fun (prover,pb) -> really_call_csdpcert prover pb)
 
 
-
-
-  
-
-
-
-
-
-
+let call_csdpcert prover pb = xcall_csdpcert (prover,pb)
 
 let rec z_to_q_pol e = 
  match e with
@@ -1520,12 +1502,18 @@ let non_linear_prover_Z str o  = {
   pp_f    =  fun o x -> pp_pol pp_z o (fst x)
 }
 
+module CacheZ = PHashtable(struct 
+  type t = (Mc.z Mc.pol * Mc.op1) list
+  let equal = (=)
+  let hash  = Hashtbl.hash
+end)
 
+let memo_zlinear_prover = CacheZ.memo "lia.cache" (lift_pexpr_prover Certificate.zlinear_prover)
 
 
 let linear_Z =   {
   name = "lia";
-  prover = lift_pexpr_prover Certificate.zlinear_prover ; 
+  prover = memo_zlinear_prover ; 
   hyps   = hyps_of_pt;
   compact = compact_pt;
   pp_prf      = pp_proof_term;

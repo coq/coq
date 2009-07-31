@@ -4,7 +4,6 @@
 (* - Laurent Théry (thery@sophia.inria.fr) has isolated the HOL              *)
 (*   independent bits                                                        *)
 (* - Frédéric Besson (fbesson@irisa.fr) is using it to feed  micromega       *)
-(* - Addition of a csdp cache by the Coq development team                    *)
 (* ========================================================================= *)
 
 (* ========================================================================= *)
@@ -1109,7 +1108,6 @@ let csdp_params = csdp_default_parameters;;
 
 (* ------------------------------------------------------------------------- *)
 (* The same thing with CSDP.                                                 *)
-(* Modified by the Coq development team to use a cache                       *)
 (* ------------------------------------------------------------------------- *)
 
 let buffer_add_line buff line =
@@ -1125,63 +1123,10 @@ let file_of_string filename s =
   let fd = Pervasives.open_out filename in
   output_string fd s; close_out fd
 
-(*
-let request_mark = "*** REQUEST ***"
-let answer_mark  = "*** ANSWER ***"
-let end_mark     = "*** END ***"
-let infeasible_mark = "Infeasible\n"
-let failure_mark    = "Failure\n"
 
-let cache_name = "csdp.cache"
-
-let look_in_cache string_problem =
-  let n = String.length string_problem in
-  try
-    let inch = open_in cache_name in
-    let rec search () =
-      while input_line inch <> request_mark do () done;
-      let i = ref 0 in
-      while !i < n & string_problem.[!i] = input_char inch do incr i done;
-      if !i < n or input_line inch <> answer_mark then
-	search ()
-      else begin
-	let buff = Buffer.create 16 in
-	let line = ref (input_line inch) in
-	while (!line <> end_mark) do
-	  buffer_add_line buff !line; line := input_line inch
-	done;
-	close_in inch;
-	Buffer.contents buff
-      end in
-    try search () with End_of_file -> close_in inch; raise Not_found
-  with Sys_error _ -> raise Not_found
-
-let flush_to_cache string_problem string_result =
-  try
-    let flags = [Open_append;Open_text;Open_creat] in
-    let outch = open_out_gen flags 0o666 cache_name in
-    begin 
-    try
-      Printf.fprintf outch "%s\n" request_mark;
-      Printf.fprintf outch "%s" string_problem;
-      Printf.fprintf outch "%s\n" answer_mark;
-      Printf.fprintf outch "%s" string_result;
-      Printf.fprintf outch "%s\n" end_mark;
-    with Sys_error _ as e -> close_out outch; raise e
-    end;
-    close_out outch
-  with Sys_error _ -> 
-    print_endline "Warning: Could not open or write to csdp cache"
-*)
 exception CsdpInfeasible
 
 let run_csdp dbg string_problem =
-(*  try
-   let res = look_in_cache string_problem in
-   if res = infeasible_mark then raise CsdpInfeasible;
-   if res = failure_mark then failwith "csdp error";
-   res
-  with Not_found -> *)
   let input_file = Filename.temp_file "sos" ".dat-s" in
   let output_file = Filename.temp_file "sos" ".dat-s" in
   let temp_path = Filename.dirname input_file in
@@ -1190,15 +1135,12 @@ let run_csdp dbg string_problem =
   file_of_string params_file csdp_params;
   let rv = Sys.command("cd "^temp_path^"; csdp "^input_file^" "^output_file^
                        (if dbg then "" else "> /dev/null")) in
-    if rv = 1 or rv = 2 then 
-      ((*flush_to_cache string_problem infeasible_mark;*) raise CsdpInfeasible); 
+    if rv = 1 or rv = 2 then raise CsdpInfeasible; 
   if rv = 127 then
      (print_string "csdp not found, exiting..."; exit 1);
   if rv <> 0 & rv <> 3 (* reduced accuracy *) then
-    ((*flush_to_cache string_problem failure_mark;*)
-     failwith("csdp: error "^string_of_int rv));
+     failwith("csdp: error "^string_of_int rv);
   let string_result = string_of_file output_file in
-(*  flush_to_cache string_problem string_result;*)
   if not dbg then
     (Sys.remove input_file; Sys.remove output_file; Sys.remove params_file);
   string_result

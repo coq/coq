@@ -40,6 +40,10 @@ module type PHashtable =
 	Once closed, a table cannot be used.
 	i.e, copy, find,add will raise UnboundTable *)
 
+    val memo : string -> (key -> 'a) -> (key -> 'a)
+      (** [memo cache f] returns a memo function for [f] using file [cache] as persistent table.
+	  Note that the cache is just loaded when needed *)
+
   end
 
 open Hashtbl
@@ -86,15 +90,12 @@ let finally f rst =
 
 
 (** [from_file f] returns a hashtable by parsing records from file [f].
-    The structure of the file is
-    (KEY NL ELEM NL)* 
-    where 
-    NL is the character '\n'
-    KEY and ELEM are strings (without NL) parsed 
-    by the functions Key.parse and Elem.parse
+    Elements of the file are marshelled pairs of Caml structures.
+    (To ensure portability across platforms, closures are not allowed.)
 
     Raises Sys_error if the file cannot be open
-    Raises InvalidTableFormat if the file does not conform to the format,
+    Raises InvalidTableFormat if the file does not conform to the format
+    i.e, Marshal.from_channel fails
 *)
 
 
@@ -166,6 +167,18 @@ let find t k =
     else
       let res = Table.find tbl k in
 	res 
+
+let memo cache f = 
+  let tbl = lazy (open_in cache) in
+    fun x -> 
+      let tbl = Lazy.force tbl in
+	try 
+	  find tbl x
+	with
+	    Not_found -> 
+	      let res = f x in
+		add tbl x res ;
+		res
 
 end
 
