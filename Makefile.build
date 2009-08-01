@@ -255,12 +255,12 @@ checker/check.cmxa: | checker/check.mllib.d
 ifeq ($(BEST),opt)
 plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMX)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) nums.cmxa -o $@ $^
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) nums.cmxa unix.cmxa -o $@ $^
 	$(STRIP) $@
 else
 plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) nums.cma -o $@ $^
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) nums.cma unix.cma -o $@ $^
 endif
 
 ###########################################################################
