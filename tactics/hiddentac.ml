@@ -105,7 +105,7 @@ let h_revert l = abstract_tactic (TacRevert l) (revert l)
 
 (* Constructors *)
 let h_left ev l  = abstract_tactic (TacLeft (ev,l)) (left_with_ebindings ev l)
-let h_right ev l = abstract_tactic (TacLeft (ev,l)) (right_with_ebindings ev l)
+let h_right ev l = abstract_tactic (TacRight (ev,l)) (right_with_ebindings ev l)
 let h_split ev l = abstract_tactic (TacSplit (ev,false,l)) (split_with_ebindings ev l)
 (* Moved to tacinterp because of dependencies in Tacinterp.interp
 let h_any_constructor t =
