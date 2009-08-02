@@ -45,6 +45,17 @@ let strict_in_hyp_and_ccl = false
 (* Whether unit type includes equality types *)
 let strict_unit = false
 
+(* Whether inner iff are unfolded *)
+let iff_unfolding = ref false
+
+open Goptions
+let _ =
+  declare_bool_option 
+    { optsync  = true;
+      optname  = "unfolding of iff and not in intuition";
+      optkey   = ["Intuition";"Iff";"Unfolding"];
+      optread  = (fun () -> !iff_unfolding);
+      optwrite = (:=) iff_unfolding }
 
 (** Test *)
 
@@ -180,6 +191,7 @@ let simplif ist =
        (match reverse goal with
         | id: ?X1 |- _ => $t_is_conj; elim id; do 2 intro; clear id
         | id: (Coq.Init.Logic.iff _ _) |- _ => elim id; do 2 intro; clear id
+        | id: (Coq.Init.Logic.not _) |- _ => red in id
         | id: ?X1 |- _ => $t_is_disj; elim id; intro; clear id
         | id0: ?X1 -> ?X2, id1: ?X1|- _ =>
 	    (* generalize (id0 id1); intro; clear id0 does not work
@@ -204,6 +216,7 @@ let simplif ist =
 	  (* moved from "id:(?A\/?B)->?X2|-" to "?A->?X2,?B->?X2|-" *)
         | |- ?X1 => $t_is_conj; split
         | |- (Coq.Init.Logic.iff _ _) => split
+        | |- (Coq.Init.Logic.not _) => red
         end;
         $t_not_dep_intros) >>
 
@@ -236,7 +249,10 @@ let rec tauto_intuit t_reduce solver ist =
    ) >>
 
 let reduction_not _ist =
- <:tactic< unfold Coq.Init.Logic.not in * >>
+  if !iff_unfolding then
+    <:tactic< unfold Coq.Init.Logic.not, Coq.Init.Logic.iff in * >>
+  else
+    <:tactic< unfold Coq.Init.Logic.not in * >>
 
 let t_reduction_not = tacticIn reduction_not
 

@@ -31,7 +31,7 @@ open Genarg
 
 
 let _ = Constrextern.print_evar_arguments := true
-let _ = set_bool_option_value (SecondaryTable ("Printing","Matching")) false
+let _ = set_bool_option_value ["Printing";"Matching"] false
 let _ = Detyping.set_detype_anonymous (fun _ _ -> raise Not_found)
 
 (* std_ppcmds *)

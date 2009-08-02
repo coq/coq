@@ -647,13 +647,13 @@ GEXTEND Gram
 	  VernacPrintOption table
 
       | IDENT "Add"; table = IDENT; field = IDENT; v = LIST1 option_ref_value
-        -> VernacAddOption (SecondaryTable (table,field), v)
+        -> VernacAddOption ([table;field], v)
       (* Un value global ci-dessous va être caché par un field au dessus! *)
       (* En fait, on donne priorité aux tables secondaires *)
       (* Pas de syntaxe pour les tables tertiaires pour cause de conflit *)
       (* (mais de toutes façons, pas utilisées) *)
       | IDENT "Add"; table = IDENT; v = LIST1 option_ref_value ->
-          VernacAddOption (PrimaryTable table, v)
+          VernacAddOption ([table], v)
 
       | IDENT "Test"; table = option_table; "for"; v = LIST1 option_ref_value
         -> VernacMemOption (table, v)
@@ -661,9 +661,9 @@ GEXTEND Gram
           VernacPrintOption table
 
       | IDENT "Remove"; table = IDENT; field = IDENT; v= LIST1 option_ref_value
-        -> VernacRemoveOption (SecondaryTable (table,field), v)
+        -> VernacRemoveOption ([table;field], v)
       | IDENT "Remove"; table = IDENT; v = LIST1 option_ref_value ->
-	  VernacRemoveOption (PrimaryTable table, v) 
+	  VernacRemoveOption ([table], v) 
 
       | IDENT "proof" -> VernacDeclProof
       | "return" -> VernacReturn ]]
@@ -735,9 +735,7 @@ GEXTEND Gram
       | s  = STRING   -> StringRefValue s ] ]
   ;
   option_table:
-    [ [ f1 = IDENT; f2 = IDENT; f3 = IDENT -> TertiaryTable (f1,f2,f3)
-      | f1 = IDENT; f2 = IDENT -> SecondaryTable (f1,f2)
-      | f1 = IDENT -> PrimaryTable f1 ] ]
+    [ [ fl = LIST1 IDENT -> fl ]]
   ;
   as_dirpath:
     [ [ d = OPT [ "as"; d = dirpath -> d ] -> d ] ]
@@ -781,10 +779,10 @@ GEXTEND Gram
 
 (* Tactic Debugger *)
       |	IDENT "Debug"; IDENT "On" -> 
-          VernacSetOption (SecondaryTable ("Ltac","Debug"), BoolValue true)
+          VernacSetOption (["Ltac";"Debug"], BoolValue true)
 
       |	IDENT "Debug"; IDENT "Off" ->
-          VernacSetOption (SecondaryTable ("Ltac","Debug"), BoolValue false)
+          VernacSetOption (["Ltac";"Debug"], BoolValue false)
 
  ] ];
     END

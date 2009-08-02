@@ -166,12 +166,9 @@ let pr_option_ref_value = function
   | QualidRefValue id -> pr_reference id
   | StringRefValue s -> qs s
 
-let pr_printoption a b = match a with
-  | Goptions.PrimaryTable table -> str table ++ pr_opt (prlist_with_sep sep pr_option_ref_value) b
-  | Goptions.SecondaryTable (table,field) -> str table ++ spc() ++ str field ++ pr_opt (prlist_with_sep sep pr_option_ref_value) b
-  | Goptions.TertiaryTable (table,field1,field2) -> str table ++ spc() ++
-      str field1 ++ spc() ++ str field2 ++ 
-      pr_opt (prlist_with_sep sep pr_option_ref_value) b
+let pr_printoption table b =
+  prlist_with_sep spc str table ++
+  pr_opt (prlist_with_sep sep pr_option_ref_value) b
 
 let pr_set_option a b = 
   let pr_opt_value = function 

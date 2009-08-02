@@ -310,7 +310,7 @@ let end_autoinstance () =
 let _ =
   Goptions.declare_bool_option
     { Goptions.optsync=true;
-      Goptions.optkey=Goptions.PrimaryTable("Autoinstance");
+      Goptions.optkey=["Autoinstance"];
       Goptions.optname="automatic typeclass instance recognition";
       Goptions.optread=(fun () -> !autoinstance_opt);
       Goptions.optwrite=(fun b -> if b then begin_autoinstance() else end_autoinstance()) }

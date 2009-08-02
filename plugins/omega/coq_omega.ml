@@ -61,7 +61,7 @@ let _ =
   declare_bool_option 
     { optsync  = false;
       optname  = "Omega system time displaying flag";
-      optkey   = SecondaryTable ("Omega","System");
+      optkey   = ["Omega";"System"];
       optread  = read display_system_flag;
       optwrite = write display_system_flag }
 
@@ -69,7 +69,7 @@ let _ =
   declare_bool_option 
     { optsync  = false;
       optname  = "Omega action display flag";
-      optkey   = SecondaryTable ("Omega","Action");
+      optkey   = ["Omega";"Action"];
       optread  = read display_action_flag;
       optwrite = write display_action_flag }
 
@@ -77,7 +77,7 @@ let _ =
   declare_bool_option 
     { optsync  = false;
       optname  = "Omega old style flag";
-      optkey   = SecondaryTable ("Omega","OldStyle");
+      optkey   = ["Omega";"OldStyle"];
       optread  = read old_style_flag;
       optwrite = write old_style_flag }
 

@@ -122,6 +122,18 @@ let unify_r2l x = x
 let sort_eqns = unify_r2l
 *)
 
+(* Option introduced and activated in Coq 8.3 *)
+let global_evars_pattern_unification_flag = ref true
+
+open Goptions
+let _ =
+  declare_bool_option 
+    { optsync  = true;
+      optname  = "pattern-unification for existential variables in tactics";
+      optkey   = ["Tactic";"Evars";"Pattern";"Unification"];
+      optread  = (fun () -> !global_evars_pattern_unification_flag);
+      optwrite = (:=) global_evars_pattern_unification_flag }
+
 type unify_flags = { 
   modulo_conv_on_closed_terms : Names.transparent_state option;
   use_metas_eagerly : bool;
@@ -145,6 +157,9 @@ let default_no_delta_unify_flags = {
   resolve_evars = false;
   use_evars_pattern_unification = true;
 }
+
+let use_evars_pattern_unification flags =
+  !global_evars_pattern_unification_flag && flags.use_evars_pattern_unification 
 
 let expand_key env = function
   | Some (ConstKey cst) -> constant_opt_value env cst
@@ -231,13 +246,13 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 		  (unirec_rec curenvnb topconv true substn p1 p2) c1 c2) cl1 cl2
 
 	| App (f1,l1), _ when
-	    (isMeta f1 || flags.use_evars_pattern_unification && isEvar f1) &
+	    (isMeta f1 || use_evars_pattern_unification flags && isEvar f1) &
 	    is_unification_pattern curenvnb f1 l1 cN &
 	    not (dependent f1 cN) ->
 	      solve_pattern_eqn_array curenvnb f1 l1 cN substn
 
 	| _, App (f2,l2) when
-	    (isMeta f2 || flags.use_evars_pattern_unification && isEvar f2) &
+	    (isMeta f2 || use_evars_pattern_unification flags && isEvar f2) &
 	    is_unification_pattern curenvnb f2 l2 cM &
 	    not (dependent f2 cM) ->
 	      solve_pattern_eqn_array curenvnb f2 l2 cM substn

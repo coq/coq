@@ -413,7 +413,7 @@ module CoercionPrinting =
     let encode = coercion_of_reference
     let subst = subst_coe_typ
     let printer x = pr_global_env Idset.empty x
-    let key = Goptions.SecondaryTable ("Printing","Coercion")
+    let key = ["Printing";"Coercion"]
     let title = "Explicitly printed coercions: "
     let member_message x b =
       str "Explicit printing of coercion " ++ printer x ++

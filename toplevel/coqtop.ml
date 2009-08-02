@@ -163,6 +163,12 @@ let set_vm_opt () =
   Flags.set_boxed_definitions !boxed_def;
   Vconv.set_use_vm !use_vm
 
+(*s Compatibility options *)
+
+let compat_version = ref None
+let set_compat_options () =
+  Option.iter Coqcompat.set_compat_options !compat_version
+
 (*s Parsing of the command line.
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
     between coqtop and coqc. *)
@@ -267,6 +273,9 @@ let parse_args is_ide =
 
     | "-debug" :: rem -> set_debug (); parse rem
 
+    | "-compat" :: v :: rem -> compat_version := Some v; parse rem
+    | "-compat" :: []       -> usage ()
+
     | "-vm" :: rem -> use_vm := true; parse rem
     | "-emacs" :: rem -> Flags.print_emacs := true; Pp.make_pp_emacs(); parse rem
     | "-emacs-U" :: rem -> Flags.print_emacs := true; 
@@ -293,7 +302,9 @@ let parse_args is_ide =
     | "-user" :: u :: rem -> set_rcuser u; parse rem
     | "-user" :: []       -> usage ()
 
-    | "-notactics" :: rem -> remove_top_ml (); parse rem
+    | "-notactics" :: rem -> 
+	warning "Obsolete option \"-notactics\".";
+	remove_top_ml (); parse rem
 
     | "-just-parsing" :: rem -> Vernac.just_parsing := true; parse rem
 
@@ -339,6 +350,7 @@ let init is_ide =
       init_load_path ();
       inputstate ();
       set_vm_opt ();
+      set_compat_options ();
       engage ();
       if (not !batch_mode|| !compile_list=[]) && Global.env_is_empty() then
         Option.iter Declaremods.start_library !toplevel_name;

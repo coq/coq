@@ -327,7 +327,7 @@ let auto_inline () = !auto_inline_ref
 let _ = declare_bool_option
 	  {optsync = true;
 	   optname = "Extraction AutoInline";
-	   optkey = SecondaryTable ("Extraction", "AutoInline");
+	   optkey = ["Extraction"; "AutoInline"];
 	   optread = auto_inline;
 	   optwrite = (:=) auto_inline_ref}
 
@@ -340,7 +340,7 @@ let type_expand () = !type_expand_ref
 let _ = declare_bool_option
 	  {optsync = true;
 	   optname = "Extraction TypeExpand";
-	   optkey = SecondaryTable ("Extraction", "TypeExpand");
+	   optkey = ["Extraction"; "TypeExpand"];
 	   optread = type_expand;
 	   optwrite = (:=) type_expand_ref}
 
@@ -389,14 +389,14 @@ let optims () = !opt_flag_ref
 let _ = declare_bool_option
 	  {optsync = true;
 	   optname = "Extraction Optimize";
-	   optkey = SecondaryTable ("Extraction", "Optimize");
+	   optkey = ["Extraction"; "Optimize"];
 	   optread = (fun () -> !int_flag_ref <> 0);
 	   optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
 
 let _ = declare_int_option
           { optsync = true;
             optname = "Extraction Flag";
-            optkey = SecondaryTable("Extraction","Flag");
+            optkey = ["Extraction";"Flag"];
             optread = (fun _ -> Some !int_flag_ref);
             optwrite = (function
                           | None -> chg_flag 0

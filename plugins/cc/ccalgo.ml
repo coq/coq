@@ -31,7 +31,7 @@ let _=
   let gdopt=
     { optsync=true;
       optname="Congruence Verbose";
-      optkey=SecondaryTable("Congruence","Verbose"); 
+      optkey=["Congruence";"Verbose"]; 
       optread=(fun ()-> !cc_verbose); 
       optwrite=(fun b -> cc_verbose := b)}  
   in

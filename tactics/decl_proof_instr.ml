@@ -44,7 +44,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "strict mode";
-      optkey   = (SecondaryTable ("Strict","Proofs"));
+      optkey   = ["Strict";"Proofs"];
       optread  = get_strictness;
       optwrite = set_strictness }
 

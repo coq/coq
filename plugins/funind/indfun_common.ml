@@ -495,7 +495,7 @@ let function_debug_sig =
   {
     optsync = false;
     optname = "Function debug";
-    optkey =  PrimaryTable("Function_debug");
+    optkey =  ["Function_debug"];
     optread = (fun () -> !function_debug);
     optwrite = (fun b -> function_debug := b)
   }
@@ -514,7 +514,7 @@ let strict_tcc_sig =
   {
     optsync = false;
     optname = "Raw Function Tcc";
-    optkey =  PrimaryTable("Function_raw_tcc");
+    optkey =  ["Function_raw_tcc"];
     optread = (fun () -> !strict_tcc);
     optwrite = (fun b -> strict_tcc := b)
   }

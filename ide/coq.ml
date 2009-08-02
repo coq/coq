@@ -156,10 +156,7 @@ let prepare_option (l,dft) =
   let unset = (String.concat " " ("Unset"::l)) ^ "." in
   if dft then unset,set else set,unset
 
-let coqide_known_option = function
-  | Goptions.TertiaryTable (a,b,c) -> List.mem [a;b;c] !known_options
-  | Goptions.SecondaryTable (a,b) -> List.mem [a;b] !known_options
-  | Goptions.PrimaryTable a -> List.mem [a] !known_options
+let coqide_known_option table = List.mem table !known_options
 
 let with_printing_implicit = prepare_option printing_implicit_data
 let with_printing_coercions = prepare_option printing_coercions_data
@@ -278,8 +275,7 @@ let rec attribute_of_vernac_command = function
   | VernacDeclareImplicits _ -> []
   | VernacReserve _ -> []
   | VernacSetOpacity _ -> []
-  | VernacSetOption (Goptions.SecondaryTable ("Ltac","Debug"), _) -> 
-      [DebugCommand]
+  | VernacSetOption (["Ltac";"Debug"], _) -> [DebugCommand]
   | VernacSetOption (o,BoolValue true) | VernacUnsetOption o ->
       if coqide_known_option o then [KnownOptionCommand] else []
   | VernacSetOption _ -> []

@@ -77,7 +77,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "transparency of Program obligations";
-      optkey   = (SecondaryTable ("Transparent","Obligations"));
+      optkey   = ["Transparent";"Obligations"];
       optread  = get_proofs_transparency;
       optwrite = set_proofs_transparency; } 
 

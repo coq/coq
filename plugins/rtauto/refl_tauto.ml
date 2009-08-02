@@ -245,7 +245,7 @@ let verbose = ref false
 let opt_verbose=
   {optsync=true;
    optname="Rtauto Verbose";
-   optkey=SecondaryTable("Rtauto","Verbose");
+   optkey=["Rtauto";"Verbose"];
    optread=(fun () -> !verbose);
    optwrite=(fun b -> verbose:=b)}
 
@@ -256,7 +256,7 @@ let check = ref false
 let opt_check=
   {optsync=true;
    optname="Rtauto Check";
-   optkey=SecondaryTable("Rtauto","Check");
+   optkey=["Rtauto";"Check"];
    optread=(fun () -> !check);
    optwrite=(fun b -> check:=b)}
 

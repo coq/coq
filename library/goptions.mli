@@ -15,11 +15,12 @@
    - Variables storing options value are created by applying one of the
    [declare_int_option], [declare_bool_option], ... functions.
 
-   Each table/option is uniquely identified by a key of type [option_name].
-   There are two kinds of table/option idenfiers: the primary ones
-   (supposed to be more global) and the secondary ones
+   Each table/option is uniquely identified by a key of type [option_name]
+   which consists in a list of strings. Note that for parsing constraints, 
+   table names must not be made of more than 2 strings while option names
+   can be of arbitrary length.
 
-   The declaration of a table, say of name [SecondaryTable("Toto","Titi")] 
+   The declaration of a table, say of name [["Toto";"Titi"]] 
    automatically makes available the following vernacular commands:
 
       Add Toto Titi foo.
@@ -28,26 +29,18 @@
       Test Toto Titi.
 
    The declaration of a non boolean option value, say of name
-   [SecondaryTable("Tata","Tutu")], automatically makes available the
+   [["Tata";"Tutu";"Titi"]], automatically makes available the
    following vernacular commands:
 
-       Set Tata Tutu val.
-       Print Table Tata Tutu.
+       Set Tata Tutu Titi val.
+       Print Table Tata Tutu Titi.
 
    If it is the declaration of a boolean value, the following
    vernacular commands are made available:
 
-       Set Tata Tutu.
-       Unset Tata Tutu.
-       Print Table Tata Tutu. (* synonym: Test Table Tata Tutu. *)
-
-   For a primary table, say of name [PrimaryTable("Bidule")], the
-   vernacular commands look like
-
-      Add Bidule foo.
-      Print Table Bidule foo.
-      Set Bidule foo.
-      ...
+       Set Tata Tutu Titi.
+       Unset Tata Tutu Titi.
+       Print Table Tata Tutu Titi. (* synonym: Test Table Tata Tutu Titi. *)
 
    The created table/option may be declared synchronous or not
    (synchronous = consistent with the resetting commands)                   *)
@@ -64,11 +57,8 @@ open Mod_subst
 
 (*s Things common to tables and options. *)
 
-(* The type of primary or secondary table/option keys *)
-type option_name =
-  | PrimaryTable of string
-  | SecondaryTable of string * string
-  | TertiaryTable of string * string * string
+(* The type of table/option keys *)
+type option_name = string list
 
 val error_undeclared_key : option_name -> 'a
 

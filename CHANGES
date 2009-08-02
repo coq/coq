@@ -5,22 +5,25 @@ Tactics
 
 - Tactic "discriminate" now performs intros before trying to discriminate an
   hypothesis of the goal (previously it applied intro only if the goal
-  had the form t1<>t2).
+  had the form t1<>t2) (exceptional source of incompatibilities - former
+  behavior can be obtained by "Unset Discriminate Introduction").
 - Tactic "rewrite" now supports rewriting on ad hoc equalities such as eq_true.
-- Tactic "intuition" now preserves inner "iff" (exceptional source of 
-  incompatibilities solvable by redefining "intuition" as 
-  "unfold iff in *; intuition".
+- Tactic "intuition" now preserves inner "iff" and "not" (exceptional
+  source of incompatibilities solvable by redefining "intuition" as
+  "unfold iff, not in *; intuition", or by using "Set Intuition Unfolding".)
 - Improved support of dependent goals over objects in dependent types for
   "destruct" (rare source of incompatibility).
 - Tactic "quote" now supports quotation of arbitrary terms (not just the
   goal).
-- Tactic "idtac" now displays its list arguments.
+- Tactic "idtac" now displays its "list" arguments.
 - Tactic "tauto" now proves classical tautologies as soon as classical logic
   (i.e. library Classical_Prop or Classical) is loaded.
 - New "Hint Resolve ->" (or "<-") for declaring iff's as oriented
   hints (wish #2104).
 - New introduction patterns "*" for introducing the next block of dependent 
   variables and "**" for introducing all quantified variables and hypotheses.
+- Pattern Unification for existential variables activated in tactics and 
+  new option "Unset Tactic Evars Pattern Unification" to deactivate it.
 
 Tactic Language
 
@@ -38,6 +41,8 @@ Tools
 - New coqtop/coqc option -beautify to reformat .v files (usable
   e.g. to globally update notations).
 - New tool beautify-archive to beautify a full archive of developments.
+- New coqtop/coqc option -compat X.Y to simulate the general behavior
+  of previous versions of Coq (provides e.g. support for 8.2 compatibility).
 
 Library
 

@@ -33,6 +33,7 @@ let print_usage_channel co command =
   -is f                  (idem)
   -nois                  start with an empty state
   -outputstate f         write state in file f.coq
+  -compat X.Y            provides compatibility support for Coq version X.Y
 
   -load-ml-object f      load ML object file f 
   -load-ml-source f      load ML file f 

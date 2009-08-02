@@ -44,6 +44,19 @@ open Clenv
 open Clenvtac
 open Evd
 
+(* Options *)
+
+let discr_do_intro = ref true
+
+open Goptions
+let _ =
+  declare_bool_option 
+    { optsync  = true;
+      optname  = "automatic introduction of hypotheses by discriminate";
+      optkey   = ["Discriminate";"Introduction"];
+      optread  = (fun () -> !discr_do_intro);
+      optwrite = (:=) discr_do_intro }
+
 (* Rewriting tactics *)
 
 type orientation = bool
@@ -676,10 +689,13 @@ let discrClause with_evars = onClause (discrSimpleClause with_evars)
 
 let discrEverywhere with_evars = 
   tclORELSE
-    (tclTHEN
-      (tclREPEAT introf) 
-      (Tacticals.tryAllHyps
-        (fun id -> tclCOMPLETE (discr with_evars (mkVar id,NoBindings)))))
+    (if !discr_do_intro then
+      (tclTHEN
+	(tclREPEAT introf) 
+	(Tacticals.tryAllHyps
+          (fun id -> tclCOMPLETE (discr with_evars (mkVar id,NoBindings)))))
+     else (* <= 8.2 compat *)
+       Tacticals.tryAllHypsAndConcl (discrSimpleClause with_evars))
     (fun gls -> 
        errorlabstrm "DiscrEverywhere" (str"No discriminable equalities."))
 

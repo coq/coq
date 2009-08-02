@@ -272,7 +272,7 @@ let _ =
   declare_bool_option
     { optsync  = true;
       optname  = "automatic declaration of boolean equality";
-      optkey   = (SecondaryTable ("Equality","Scheme"));
+      optkey   = ["Equality";"Scheme"];
       optread  = (fun () -> !eq_flag) ;
       optwrite = (fun b -> eq_flag := b) }
 
@@ -640,7 +640,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "automatic declaration of eliminations";
-      optkey   = (SecondaryTable ("Elimination","Schemes"));
+      optkey   = ["Elimination";"Schemes"];
       optread  = (fun () -> !elim_flag) ;
       optwrite = (fun b -> elim_flag := b) }
 

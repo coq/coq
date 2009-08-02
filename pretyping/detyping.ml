@@ -74,7 +74,7 @@ module PrintingCasesMake =
 	if kn' == kn then obj else
 	  (kn',i), ints
     let printer (ind,_) = pr_global_env Idset.empty (IndRef ind)
-    let key = Goptions.SecondaryTable ("Printing",Test.field)
+    let key = ["Printing";Test.field]
     let title = Test.title
     let member_message x = Test.member_message (printer x)
     let synchronous = true
@@ -118,7 +118,7 @@ let force_wildcard () = !wildcard_value
 let _ = declare_bool_option 
 	  { optsync  = true;
 	    optname  = "forced wildcard";
-	    optkey   = SecondaryTable ("Printing","Wildcard");
+	    optkey   = ["Printing";"Wildcard"];
 	    optread  = force_wildcard;
 	    optwrite = (:=) wildcard_value }
 
@@ -128,7 +128,7 @@ let synthetize_type () = !synth_type_value
 let _ = declare_bool_option 
 	  { optsync  = true;
 	    optname  = "pattern matching return type synthesizability";
-	    optkey   = SecondaryTable ("Printing","Synth");
+	    optkey   = ["Printing";"Synth"];
 	    optread  = synthetize_type;
 	    optwrite = (:=) synth_type_value }
 
@@ -138,7 +138,7 @@ let reverse_matching () = !reverse_matching_value
 let _ = declare_bool_option 
 	  { optsync  = true;
 	    optname  = "pattern-matching reversibility";
-	    optkey   = SecondaryTable ("Printing","Matching");
+	    optkey   = ["Printing";"Matching"];
 	    optread  = reverse_matching;
 	    optwrite = (:=) reverse_matching_value }
 

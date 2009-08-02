@@ -330,7 +330,7 @@ let is_predicate_explicitly_dep env pred arsign =
 	  srec (push_rel_assum (na,t) env) b arsign
       | Lambda (na,_,_), _ ->
 
-       (* The following code has impact on the introduction names
+       (* The following code has an impact on the introduction names
 	  given by the tactics "case" and "inversion": when the
 	  elimination is not dependent, "case" uses Anonymous for
 	  inductive types in Prop and names created by mkProd_name for

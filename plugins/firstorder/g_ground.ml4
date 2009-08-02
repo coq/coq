@@ -30,7 +30,7 @@ let _=
   let gdopt=
     { optsync=true;
       optname="Firstorder Depth";
-      optkey=SecondaryTable("Firstorder","Depth"); 
+      optkey=["Firstorder";"Depth"]; 
       optread=(fun ()->Some !ground_depth); 
       optwrite=
    (function 
@@ -45,7 +45,7 @@ let _=
   let gdopt=
     { optsync=true;
       optname="Congruence Depth";
-      optkey=SecondaryTable("Congruence","Depth"); 
+      optkey=["Congruence";"Depth"]; 
       optread=(fun ()->Some !congruence_depth); 
       optwrite=
    (function 

@@ -50,7 +50,7 @@ let pruning = ref true
 let opt_pruning=
   {optsync=true;
    optname="Rtauto Pruning";
-   optkey=SecondaryTable("Rtauto","Pruning");
+   optkey=["Rtauto";"Pruning"];
    optread=(fun () -> !pruning);
    optwrite=(fun b -> pruning:=b)}
 

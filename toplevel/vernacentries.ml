@@ -785,7 +785,7 @@ let _ =
   declare_bool_option 
     { optsync  = false;
       optname  = "silent";
-      optkey   = (PrimaryTable "Silent");
+      optkey   = ["Silent"];
       optread  = is_silent;
       optwrite = make_silent_if_not_pcoq }
 
@@ -793,7 +793,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "implicit arguments";
-      optkey   = (SecondaryTable ("Implicit","Arguments"));
+      optkey   = ["Implicit";"Arguments"];
       optread  = Impargs.is_implicit_args;
       optwrite = Impargs.make_implicit_args }
 
@@ -801,7 +801,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "strict implicit arguments";
-      optkey   = (SecondaryTable ("Strict","Implicit"));
+      optkey   = ["Strict";"Implicit"];
       optread  = Impargs.is_strict_implicit_args;
       optwrite = Impargs.make_strict_implicit_args }
 
@@ -809,7 +809,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "strong strict implicit arguments";
-      optkey   = (TertiaryTable ("Strongly","Strict","Implicit"));
+      optkey   = ["Strongly";"Strict";"Implicit"];
       optread  = Impargs.is_strongly_strict_implicit_args;
       optwrite = Impargs.make_strongly_strict_implicit_args }
 
@@ -817,7 +817,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "contextual implicit arguments";
-      optkey   = (SecondaryTable ("Contextual","Implicit"));
+      optkey   = ["Contextual";"Implicit"];
       optread  = Impargs.is_contextual_implicit_args;
       optwrite = Impargs.make_contextual_implicit_args }
 
@@ -825,7 +825,7 @@ let _ =
 (*   declare_bool_option  *)
 (*     { optsync  = true; *)
 (*       optname  = "forceable implicit arguments"; *)
-(*       optkey   = (SecondaryTable ("Forceable","Implicit")); *)
+(*       optkey   = ["Forceable";"Implicit")); *)
 (*       optread  = Impargs.is_forceable_implicit_args; *)
 (*       optwrite = Impargs.make_forceable_implicit_args } *)
 
@@ -833,7 +833,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "implicit status of reversible patterns";
-      optkey   = (TertiaryTable ("Reversible","Pattern","Implicit"));
+      optkey   = ["Reversible";"Pattern";"Implicit"];
       optread  = Impargs.is_reversible_pattern_implicit_args;
       optwrite = Impargs.make_reversible_pattern_implicit_args }
 
@@ -841,7 +841,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "maximal insertion of implicit";
-      optkey   = (TertiaryTable ("Maximal","Implicit","Insertion"));
+      optkey   = ["Maximal";"Implicit";"Insertion"];
       optread  = Impargs.is_maximal_implicit_args;
       optwrite = Impargs.make_maximal_implicit_args }
 
@@ -849,7 +849,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "coercion printing";
-      optkey   = (SecondaryTable ("Printing","Coercions"));
+      optkey   = ["Printing";"Coercions"];
       optread  = (fun () -> !Constrextern.print_coercions);
       optwrite = (fun b ->  Constrextern.print_coercions := b) }
 
@@ -857,14 +857,14 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "printing of existential variable instances";
-      optkey   = (TertiaryTable ("Printing","Existential","Instances"));
+      optkey   = ["Printing";"Existential";"Instances"];
       optread  = (fun () -> !Constrextern.print_evar_arguments);
       optwrite = (:=) Constrextern.print_evar_arguments }
 let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "implicit arguments printing";
-      optkey   = (SecondaryTable ("Printing","Implicit"));
+      optkey   = ["Printing";"Implicit"];
       optread  = (fun () -> !Constrextern.print_implicits);
       optwrite = (fun b ->  Constrextern.print_implicits := b) }
 
@@ -872,7 +872,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "implicit arguments defensive printing";
-      optkey   = (TertiaryTable ("Printing","Implicit","Defensive"));
+      optkey   = ["Printing";"Implicit";"Defensive"];
       optread  = (fun () -> !Constrextern.print_implicits_defensive);
       optwrite = (fun b ->  Constrextern.print_implicits_defensive := b) }
 
@@ -880,7 +880,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "projection printing using dot notation";
-      optkey   = (SecondaryTable ("Printing","Projections"));
+      optkey   = ["Printing";"Projections"];
       optread  = (fun () -> !Constrextern.print_projections);
       optwrite = (fun b ->  Constrextern.print_projections := b) }
 
@@ -888,7 +888,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "notations printing";
-      optkey   = (SecondaryTable ("Printing","Notations"));
+      optkey   = ["Printing";"Notations"];
       optread  = (fun () -> not !Constrextern.print_no_symbol);
       optwrite = (fun b ->  Constrextern.print_no_symbol := not b) }
 
@@ -896,7 +896,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "raw printing";
-      optkey   = (SecondaryTable ("Printing","All"));
+      optkey   = ["Printing";"All"];
       optread  = (fun () -> !Flags.raw_print);
       optwrite = (fun b -> Flags.raw_print := b) }
 
@@ -904,7 +904,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "use of virtual machine inside the kernel";
-      optkey   = (SecondaryTable ("Virtual","Machine"));
+      optkey   = ["Virtual";"Machine"];
       optread  = (fun () -> Vconv.use_vm ());
       optwrite = (fun b -> Vconv.set_use_vm b) }
 
@@ -912,7 +912,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "use of boxed definitions";
-      optkey   = (SecondaryTable ("Boxed","Definitions"));
+      optkey   = ["Boxed";"Definitions"];
       optread  = Flags.boxed_definitions;
       optwrite = (fun b -> Flags.set_boxed_definitions b) } 
 
@@ -920,60 +920,60 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "use of boxed values";
-      optkey   = (SecondaryTable ("Boxed","Values"));
+      optkey   = ["Boxed";"Values"];
       optread  = (fun _ -> not (Vm.transp_values ()));
       optwrite = (fun b -> Vm.set_transp_values (not b)) } 
 
 let _ =
   declare_int_option
-    { optsync=false;
-      optkey=PrimaryTable("Undo");
-      optname="the undo limit";
-      optread=Pfedit.get_undo;
-      optwrite=Pfedit.set_undo }
+    { optsync  = false;
+      optname  = "the undo limit";
+      optkey   = ["Undo"];
+      optread  = Pfedit.get_undo;
+      optwrite = Pfedit.set_undo }
 
 let _ =
   declare_int_option
-    { optsync=false;
-      optkey=SecondaryTable("Hyps","Limit");
-      optname="the hypotheses limit";
-      optread=Flags.print_hyps_limit;
-      optwrite=Flags.set_print_hyps_limit }
+    { optsync  = false;
+      optname  = "the hypotheses limit";
+      optkey   = ["Hyps";"Limit"];
+      optread  = Flags.print_hyps_limit;
+      optwrite = Flags.set_print_hyps_limit }
 
 let _ =
   declare_int_option
-    { optsync=true;
-      optkey=SecondaryTable("Printing","Depth");
-      optname="the printing depth";
-      optread=Pp_control.get_depth_boxes;
-      optwrite=Pp_control.set_depth_boxes }
+    { optsync  = true;
+      optname  = "the printing depth";
+      optkey   = ["Printing";"Depth"];
+      optread  = Pp_control.get_depth_boxes;
+      optwrite = Pp_control.set_depth_boxes }
 
 let _ =
   declare_int_option
-    { optsync=true;
-      optkey=SecondaryTable("Printing","Width");
-      optname="the printing width";
-      optread=Pp_control.get_margin;
-      optwrite=Pp_control.set_margin }
+    { optsync  = true;
+      optname  = "the printing width";
+      optkey   = ["Printing";"Width"];
+      optread  = Pp_control.get_margin;
+      optwrite = Pp_control.set_margin }
 
 let _ =
   declare_bool_option
-    { optsync=true;
-      optkey=SecondaryTable("Printing","Universes");
-      optname="printing of universes";
-      optread=(fun () -> !Constrextern.print_universes);
-      optwrite=(fun b -> Constrextern.print_universes:=b) }
+    { optsync  = true;
+      optname  = "printing of universes";
+      optkey   = ["Printing";"Universes"];
+      optread  = (fun () -> !Constrextern.print_universes);
+      optwrite = (fun b -> Constrextern.print_universes:=b) }
 
 let vernac_debug b =
   set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
 
 let _ =
   declare_bool_option
-    { optsync=false;
-      optkey=SecondaryTable("Ltac","Debug");
-      optname="Ltac debug";
-      optread=(fun () -> get_debug () <> Tactic_debug.DebugOff);
-      optwrite=vernac_debug }
+    { optsync  = false;
+      optname  = "Ltac debug";
+      optkey   = ["Ltac";"Debug"];
+      optread  = (fun () -> get_debug () <> Tactic_debug.DebugOff);
+      optwrite = vernac_debug }
 
 let vernac_set_opacity local str =
   let glob_ref r =

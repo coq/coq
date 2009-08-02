@@ -404,7 +404,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CPrim (_, String _) -> xlate_error "CPrim (String): TODO"
    | CHole _ -> CT_existvarc 
 (* I assume CDynamic has been inserted to make free form extension of
-   the language possible, but this would go agains the logic of pcoq anyway. *)
+   the language possible, but this would go against the logic of pcoq anyway. *)
    | CDynamic (_, _) -> assert false
    | CDelimiters (_, key, num) -> 
 	 CT_num_encapsulator(CT_num_type key , xlate_formula  num)
@@ -2179,21 +2179,21 @@ let rec xlate_vernac =
   | VernacLocate(LocateNotation s) -> CT_locate_notation(CT_string s)
   | VernacTime(v) -> CT_time(xlate_vernac v)
   | VernacTimeout(n,v) -> CT_timeout(CT_int n,xlate_vernac v)
-  | VernacSetOption (Goptions.SecondaryTable ("Implicit", "Arguments"), BoolValue true)->CT_user_vernac (CT_ident "IMPLICIT_ARGS_ON", CT_varg_list[])
+  | VernacSetOption (["Implicit"; "Arguments"], BoolValue true)->CT_user_vernac (CT_ident "IMPLICIT_ARGS_ON", CT_varg_list[])
   |VernacExactProof f -> CT_proof(xlate_formula f)
   | VernacSetOption (table, BoolValue true) -> 
       let table1 = 
 	match table with
-	    PrimaryTable(s) -> CT_coerce_ID_to_TABLE(CT_ident s)
-	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2)
-	  | TertiaryTable(s1,s2,s3) -> xlate_error "TODO: TertiaryTable" in
+	    [s] -> CT_coerce_ID_to_TABLE(CT_ident s)
+	  | [s1;s2] -> CT_table(CT_ident s1, CT_ident s2)
+	  | _ -> xlate_error "TODO: arbitrary-length Table names" in
 	CT_set_option(table1)
   | VernacSetOption (table, v) -> 
       let table1 = 
 	match table with
-	    PrimaryTable(s) -> CT_coerce_ID_to_TABLE(CT_ident s)
-	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2)
-	  | TertiaryTable(s1,s2,s3) -> xlate_error "TODO: TertiaryTable" in
+	    [s] -> CT_coerce_ID_to_TABLE(CT_ident s)
+	  | [s1;s2] -> CT_table(CT_ident s1, CT_ident s2)
+	  | _ -> xlate_error "TODO: arbitrary-length Table names" in
       let value =
 	match v with
 	  | BoolValue _ -> assert false
@@ -2205,9 +2205,9 @@ let rec xlate_vernac =
   | VernacUnsetOption(table) ->
       let table1 = 
 	match table with
-	    PrimaryTable(s) -> CT_coerce_ID_to_TABLE(CT_ident s)
-	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2)
-	  | TertiaryTable(s1,s2,s3) -> xlate_error "TODO: TertiaryTable" in
+	    [s] -> CT_coerce_ID_to_TABLE(CT_ident s)
+	  | [s1;s2] -> CT_table(CT_ident s1, CT_ident s2)
+	  | _ -> xlate_error "TODO: arbitrary-length Table names" in
 	CT_unset_option(table1)
   | VernacAddOption (table, l) ->
       let values =
@@ -2221,9 +2221,9 @@ let rec xlate_vernac =
 	match values with [] -> assert false | a::b -> (a,b) in
       let table1 = 
 	match table with
-	    PrimaryTable(s) -> CT_coerce_ID_to_TABLE(CT_ident s)
-	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2)
-	  | TertiaryTable(s1,s2,s3) -> xlate_error "TODO: TertiaryTable" in
+	    [s] -> CT_coerce_ID_to_TABLE(CT_ident s)
+	  | [s1;s2] -> CT_table(CT_ident s1, CT_ident s2)
+	  | _ -> xlate_error "TODO: arbitrary-length Table names" in
 	CT_set_option_value2(table1, CT_id_or_string_ne_list(fst, values1))
   | VernacImport(true, a::l) ->
       CT_export_id(CT_id_ne_list(reference_to_ct_ID a,

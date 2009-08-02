@@ -42,7 +42,7 @@ let _ =
   declare_string_option 
     { optsync  = false;
       optname  = "Whelp server";
-      optkey   = (SecondaryTable ("Whelp","Server"));
+      optkey   = ["Whelp";"Server"];
       optread  = (fun () -> !whelp_server_name);
       optwrite = (fun s -> whelp_server_name := s) }
 
@@ -50,7 +50,7 @@ let _ =
   declare_string_option 
     { optsync  = false;
       optname  = "Whelp getter";
-      optkey   = (SecondaryTable ("Whelp","Getter"));
+      optkey   = ["Whelp";"Getter"];
       optread  = (fun () -> !getter_server_name);
       optwrite = (fun s -> getter_server_name := s) }
 
