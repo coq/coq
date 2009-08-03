@@ -176,10 +176,9 @@ val apply_type : constr -> constr list -> tactic
 val apply_term : constr -> constr list -> tactic
 val bring_hyps : named_context -> tactic
 
-val apply                 : constr      -> tactic
-val apply_without_reduce  : constr      -> tactic
-val apply_list            : constr list -> tactic
-  
+val apply                 : constr -> tactic
+val eapply                : constr -> tactic
+
 val apply_with_ebindings_gen : 
   advanced_flag -> evars_flag -> open_constr with_ebindings list -> tactic
 
@@ -271,8 +270,8 @@ val simple_induct : quantified_hypothesis -> tactic
 
 val new_induct : evars_flag -> constr with_ebindings induction_arg list -> 
   constr with_ebindings option -> 
-  intro_pattern_expr located option * intro_pattern_expr located option ->
-  clause option -> tactic
+    intro_pattern_expr located option * intro_pattern_expr located option ->
+      clause option -> tactic
 
 (*s Case analysis tactics. *)
 
@@ -282,16 +281,16 @@ val simplest_case         : constr -> tactic
 val simple_destruct          : quantified_hypothesis -> tactic
 val new_destruct : evars_flag -> constr with_ebindings induction_arg list -> 
   constr with_ebindings option -> 
-  intro_pattern_expr located option * intro_pattern_expr located option ->
-  clause option -> tactic
+    intro_pattern_expr located option * intro_pattern_expr located option ->
+      clause option -> tactic
 
 (*s Generic case analysis / induction tactics. *)
 
 val induction_destruct : evars_flag -> rec_flag -> 
   (constr with_ebindings induction_arg list *
-   constr with_ebindings option *
-   (intro_pattern_expr located option * intro_pattern_expr located option) *
-   clause option) list ->
+  constr with_ebindings option *
+  (intro_pattern_expr located option * intro_pattern_expr located option) *
+  clause option) list ->
     tactic
 
 (*s Eliminations giving the type instead of the proof. *)
@@ -312,7 +311,7 @@ val dorE : bool -> clause ->tactic
 (*s Introduction tactics. *)
 
 val constructor_tac      : evars_flag -> int option -> int -> 
-                           open_constr bindings  -> tactic
+  open_constr bindings  -> tactic
 val any_constructor      : evars_flag -> tactic option -> tactic
 val one_constructor      : int -> open_constr bindings  -> tactic
 
@@ -331,21 +330,22 @@ val simplest_split       : tactic
 (*s Logical connective tactics. *)
 
 val register_setoid_reflexivity : tactic -> unit
-val reflexivity_red             : bool -> goal sigma -> tactic option
+val reflexivity_red             : bool -> tactic
 val reflexivity                 : tactic
 val intros_reflexivity          : tactic
 
 val register_setoid_symmetry : tactic -> unit
-val symmetry_red                : bool -> goal sigma -> tactic option
+val symmetry_red                : bool -> tactic
 val symmetry                    : tactic
 val register_setoid_symmetry_in : (identifier -> tactic) -> unit
 val symmetry_in                 : identifier -> tactic
 val intros_symmetry             : clause -> tactic
 
-val register_setoid_transitivity : (constr -> tactic) -> unit
-val transitivity_red            : bool -> constr -> goal sigma -> tactic option
+val register_setoid_transitivity : (constr option -> tactic) -> unit
+val transitivity_red            : bool -> constr option -> tactic
 val transitivity                : constr -> tactic
-val intros_transitivity         : constr -> tactic
+val etransitivity               : tactic
+val intros_transitivity         : constr option -> tactic
 
 val cut                         : constr -> tactic
 val cut_intro                   : constr -> tactic

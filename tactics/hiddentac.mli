@@ -113,7 +113,7 @@ val h_change          :
 (* Equivalence relations *)
 val h_reflexivity     : tactic
 val h_symmetry        : Tacticals.clause -> tactic
-val h_transitivity    : constr -> tactic
+val h_transitivity    : constr option -> tactic
 
 val h_simplest_apply  : constr -> tactic 
 val h_simplest_eapply : constr -> tactic 

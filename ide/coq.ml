@@ -523,14 +523,14 @@ let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =
     pr_ast
     ^".") ] @
 
-   (if is_equation ast then
+   (if is_equality_type ast then
       [ "discriminate "^ident, "discriminate "^ident^".";
 	"injection "^ident, "injection "^ident^"." ]
     else
       []) @
    
    (let _,t = splay_prod env sigma ast in
-    if is_equation t then 
+    if is_equality_type t then 
       [ "rewrite "^ident, "rewrite "^ident^".";
 	"rewrite <- "^ident, "rewrite <- "^ident^"." ]
     else
@@ -546,7 +546,7 @@ let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =
    ("inversion_clear "^ident^".")] 
 
 let concl_menu (_,_,concl,_) = 
-  let is_eq = is_equation concl in
+  let is_eq = is_equality_type concl in
   ["intro", "intro.";
    "intros", "intros.";
    "intuition","intuition." ] @

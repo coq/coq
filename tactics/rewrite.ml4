@@ -1390,9 +1390,8 @@ let setoid_proof gl ty fn fallback =
       let evm, car = project gl, pf_type_of gl args.(0) in
 	fn env evm car rel gl
     with e -> 
-      match fallback gl with
-      | Some tac -> tac gl
-      | None -> 
+      try fallback gl
+      with Hipattern.NoEquationFound ->
 	  match e with
 	  | Not_found ->
 	      let rel, args = relation_of_constr env (pf_concl gl) in
@@ -1412,9 +1411,11 @@ let setoid_symmetry gl =
 let setoid_transitivity c gl =
   setoid_proof gl "transitive" 
     (fun env evm car rel ->
-      apply_with_bindings
-	((get_transitive_proof env evm car rel),
-	Rawterm.ExplicitBindings [ dummy_loc, Rawterm.NamedHyp (id_of_string "y"), c ]))
+      let proof = get_transitive_proof env evm car rel in
+      match c with
+      | None -> eapply proof
+      | Some c ->
+	  apply_with_bindings (proof,Rawterm.ExplicitBindings [ dummy_loc, Rawterm.NamedHyp (id_of_string "y"), c ]))
     (transitivity_red true c)
     
 let setoid_symmetry_in id gl =
@@ -1450,7 +1451,8 @@ TACTIC EXTEND setoid_reflexivity
 END
 
 TACTIC EXTEND setoid_transitivity
-[ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity t ]
+  [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity (Some t) ]
+| [ "setoid_etransitivity" ] -> [ setoid_transitivity None ]
 END
 
 let implify id gl =

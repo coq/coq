@@ -357,7 +357,8 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
     (* Equivalence relations *)
     | TacReflexivity
     | TacSymmetry     _ -> acc
-    | TacTransitivity c -> depends_of_'constr c acc
+    | TacTransitivity (Some c) -> depends_of_'constr c acc
+    | TacTransitivity None -> acc
 
     (* Equality and inversion *)
     | TacRewrite (_,cbl,_,_) -> list_union_map (o depends_of_'constr_with_bindings (fun (_,_,x)->x)) cbl acc

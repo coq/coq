@@ -632,10 +632,9 @@ let apply_on_clause (f,t) clause =
      | _  -> errorlabstrm "" (str "Ill-formed clause applicator.")) in
   clenv_fchain argmv f_clause clause
 
-let discr_positions env sigma (lbeq,(t,t1,t2)) eq_clause cpath dirn sort =
+let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn sort =
   let e = next_ident_away eq_baseid (ids_of_context env) in
   let e_env = push_named (e,None,t) env in
-  let eqn = mkApp(lbeq.eq,[|t;t1;t2|]) in
   let discriminator =
     build_discriminator sigma e_env dirn (mkVar e) sort cpath in
   let (pf, absurd_term) = discrimination_pf e (t,t1,t2) discriminator lbeq in
@@ -645,8 +644,8 @@ let discr_positions env sigma (lbeq,(t,t1,t2)) eq_clause cpath dirn sort =
   tclTHENS (cut_intro absurd_term)
     [onLastHypId gen_absurdity; refine pf]
 
-let discrEq (lbeq,(t,t1,t2) as u) eq_clause gls =
-  let sigma =  eq_clause.evd in
+let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause gls =
+  let sigma = eq_clause.evd in
   let env = pf_env gls in
   match find_positions env sigma t1 t2 with
     | Inr _ ->
@@ -655,19 +654,26 @@ let discrEq (lbeq,(t,t1,t2) as u) eq_clause gls =
 	let sort = pf_apply get_type_of gls (pf_concl gls) in 
 	discr_positions env sigma u eq_clause cpath dirn sort gls
 
+let extract_main_eq_args gl = function
+  | MonomorphicLeibnizEq (e1,e2) -> let t = pf_type_of gl e1 in (t,e1,e2)
+  | PolymorphicLeibnizEq (t,e1,e2) -> (t,e1,e2)
+  | HeterogenousEq (t1,e1,t2,e2) ->
+      if pf_conv_x gl t1 t2 then (t1,e1,e2)
+      else error"Don't know what to do with JMeq on arguments not of same type."
+
 let onEquality with_evars tac (c,lbindc) gls =
   let t = pf_type_of gls c in
   let t' = try snd (pf_reduce_to_quantified_ind gls t) with UserError _ -> t in
   let eq_clause = make_clenv_binding gls (c,t') lbindc in
   let eq_clause' = clenv_pose_dependent_evars with_evars eq_clause in
   let eqn = clenv_type eq_clause' in
-  let eq =
+  let eq,eq_args =
     try find_eq_data_decompose eqn
     with PatternMatchingFailure ->
       errorlabstrm "" (str"No primitive equality found.") in
   tclTHEN
     (Refiner.tclEVARS eq_clause'.evd) 
-    (tac eq eq_clause') gls
+    (tac (eq,eqn,extract_main_eq_args gls eq_args) eq_clause') gls
 
 let onNegatedEquality with_evars tac gls =
   let ccl = pf_concl gls in
@@ -688,7 +694,9 @@ let discr with_evars = onEquality with_evars discrEq
 let discrClause with_evars = onClause (discrSimpleClause with_evars)
 
 let discrEverywhere with_evars = 
+(*
   tclORELSE
+*)
     (if !discr_do_intro then
       (tclTHEN
 	(tclREPEAT introf) 
@@ -696,9 +704,9 @@ let discrEverywhere with_evars =
           (fun id -> tclCOMPLETE (discr with_evars (mkVar id,NoBindings)))))
      else (* <= 8.2 compat *)
        Tacticals.tryAllHypsAndConcl (discrSimpleClause with_evars))
-    (fun gls -> 
+(*    (fun gls -> 
        errorlabstrm "DiscrEverywhere" (str"No discriminable equalities."))
-
+*)
 let discr_tac with_evars = function
   | None -> discrEverywhere with_evars
   | Some c -> onInductionArg (discr with_evars) c
@@ -926,7 +934,7 @@ let simplify_args env sigma t =
     | eq, [t1;c1;t2;c2] -> applist (eq,[t1;nf env sigma c1;t2;nf env sigma c2])
     | _ -> t
 
-let inject_at_positions env sigma (eq,(t,t1,t2)) eq_clause posns =
+let inject_at_positions env sigma (eq,_,(t,t1,t2)) eq_clause posns =
   let e = next_ident_away eq_baseid (ids_of_context env) in
   let e_env = push_named (e,None,t) env in
   let injectors =
@@ -951,8 +959,8 @@ let inject_at_positions env sigma (eq,(t,t1,t2)) eq_clause posns =
 exception Not_dep_pair
 
 
-let injEq ipats (eq,(t,t1,t2)) eq_clause =
-  let sigma =  eq_clause.evd in
+let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
+  let sigma = eq_clause.evd in
   let env = eq_clause.env in
   match find_positions env sigma t1 t2 with
     | Inl _ ->
@@ -1000,7 +1008,7 @@ let injEq ipats (eq,(t,t1,t2)) eq_clause =
             ) else (raise Not_dep_pair) 
         ) with _ ->
 	tclTHEN
-	  (inject_at_positions env sigma (eq,(t,t1,t2)) eq_clause posns)
+	  (inject_at_positions env sigma u eq_clause posns)
 	  (intros_pattern no_move ipats)
 
 let inj ipats with_evars = onEquality with_evars (injEq ipats)
@@ -1012,7 +1020,7 @@ let injClause ipats with_evars = function
 let injConcl gls  = injClause [] false None gls
 let injHyp id gls = injClause [] false (Some (ElimOnIdent (dummy_loc,id))) gls
 
-let decompEqThen ntac (lbeq,(t,t1,t2) as u) clause gls =
+let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause gls =
   let sort = pf_apply get_type_of gls (pf_concl gls) in 
   let sigma =  clause.evd in
   let env = pf_env gls in 
@@ -1023,8 +1031,7 @@ let decompEqThen ntac (lbeq,(t,t1,t2) as u) clause gls =
         ntac 0 gls
     | Inr posns ->
 	tclTHEN
-	  (inject_at_positions env sigma (lbeq,(t,t1,t2)) clause
-	    (List.rev posns))
+	  (inject_at_positions env sigma u clause (List.rev posns))
 	  (ntac (List.length posns))
 	  gls
 
@@ -1034,14 +1041,26 @@ let dEqThen with_evars ntac = function
 
 let dEq with_evars = dEqThen with_evars (fun x -> tclIDTAC)
 
+let swap_equality_args = function
+  | MonomorphicLeibnizEq (e1,e2) -> [e2;e1]
+  | PolymorphicLeibnizEq (t,e1,e2) -> [t;e2;e1]
+  | HeterogenousEq (t1,e1,t2,e2) -> [t2;e2;t1;e1]
+
+let get_equality_args = function
+  | MonomorphicLeibnizEq (e1,e2) -> [e1;e2]
+  | PolymorphicLeibnizEq (t,e1,e2) -> [t;e1;e2]
+  | HeterogenousEq (t1,e1,t2,e2) -> [t1;e1;t2;e2]
+
 let swap_equands gls eqn =
-  let (lbeq,(t,e1,e2)) = find_eq_data_decompose eqn in 
-  applist(lbeq.eq,[t;e2;e1])
+  let (lbeq,eq_args) = find_eq_data_decompose eqn in 
+  applist(lbeq.eq,swap_equality_args eq_args)
 
 let swapEquandsInConcl gls =
-  let (lbeq,(t,e1,e2)) = find_eq_data_decompose (pf_concl gls) in
+  let (lbeq,eq_args) = find_eq_data_decompose (pf_concl gls) in
   let sym_equal = lbeq.sym in
-  refine (applist(sym_equal,[t;e2;e1;Evarutil.mk_new_meta()])) gls
+  refine
+    (applist(sym_equal,(swap_equality_args eq_args@[Evarutil.mk_new_meta()])))
+    gls
 
 (* Refine from [|- P e2] to [|- P e1] and [|- e1=e2:>t] (body is P (Rel 1)) *)
 
@@ -1102,12 +1121,13 @@ let subst_tuple_term env sigma dep_pair b =
       (fun (e,t) body -> lambda_create env (t,subst_term e body)) e_list b in
   beta_applist(abst_B,proj_list)
 
-(* Comme "replace" mais decompose les egalites dependantes *)
+(* Like "replace" but decompose dependent equalities *)
 
 exception NothingToRewrite
 
 let cutSubstInConcl_RL eqn gls =
-  let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose eqn in
+  let (lbeq,eq_args) = find_eq_data_decompose eqn in
+  let (t,e1,e2 as eq) = extract_main_eq_args gls eq_args in
   let body = pf_apply subst_tuple_term gls e2 (pf_concl gls) in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
   bareRevSubstInConcl lbeq body eq gls
@@ -1125,7 +1145,8 @@ let cutSubstInConcl_LR eqn gls =
 let cutSubstInConcl l2r =if l2r then cutSubstInConcl_LR else cutSubstInConcl_RL
 
 let cutSubstInHyp_LR eqn id gls =
-  let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose eqn in 
+  let (lbeq,eq_args) = find_eq_data_decompose eqn in 
+  let (t,e1,e2 as eq) = extract_main_eq_args gls eq_args in
   let body = pf_apply subst_tuple_term gls e1 (pf_get_hyp_typ gls id) in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
   cut_replacing id (subst1 e2 body)
@@ -1208,9 +1229,9 @@ let unfold_body x gl =
 exception FoundHyp of (identifier * constr * bool)
 
 (* tests whether hyp [c] is [x = t] or [t = x], [x] not occuring in [t] *)
-let is_eq_x x (id,_,c) =
+let is_eq_x gl x (id,_,c) =
   try
-    let (_,lhs,rhs) = snd (find_eq_data_decompose c) in
+    let (_,lhs,rhs) = extract_main_eq_args gl (snd(find_eq_data_decompose c)) in
     if (x = lhs) && not (occur_term x rhs) then raise (FoundHyp (id,rhs,true));
     if (x = rhs) && not (occur_term x lhs) then raise (FoundHyp (id,lhs,false))
   with PatternMatchingFailure ->
@@ -1226,7 +1247,7 @@ let subst_one x gl =
   (* Find a non-recursive definition for x *)
   let (hyp,rhs,dir) = 
     try
-      let test hyp _ = is_eq_x varx hyp in
+      let test hyp _ = is_eq_x gl varx hyp in
       Sign.fold_named_context test ~init:() hyps;
       errorlabstrm "Subst"
         (str "Cannot find any non-recursive equality over " ++ pr_id x ++
@@ -1274,7 +1295,7 @@ let subst ids = tclTHEN tclNORMEVAR (tclMAP subst_one ids)
 let subst_all gl =
   let test (_,c) =
     try
-      let (_,x,y) = snd (find_eq_data_decompose c) in
+      let (_,x,y) = extract_main_eq_args gl (snd (find_eq_data_decompose c)) in
       (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
       if eq_constr x y then failwith "caught";
       match kind_of_term x with Var x -> x | _ -> 
@@ -1291,19 +1312,19 @@ let subst_all gl =
 
 let cond_eq_term_left c t gl =
   try
-    let (_,x,_) = snd (find_eq_data_decompose t) in
+    let (_,x,_) = extract_main_eq_args gl (snd (find_eq_data_decompose t)) in
     if pf_conv_x gl c x then true else failwith "not convertible"
   with PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term_right c t gl = 
   try
-    let (_,_,x) = snd (find_eq_data_decompose t) in
+    let (_,_,x) = extract_main_eq_args gl (snd (find_eq_data_decompose t)) in
     if pf_conv_x gl c x then false else failwith "not convertible"
   with PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term c t gl = 
   try
-    let (_,x,y) = snd (find_eq_data_decompose t) in
+    let (_,x,y) = extract_main_eq_args gl (snd (find_eq_data_decompose t)) in
     if pf_conv_x gl c x then true 
     else if pf_conv_x gl c y then false
     else failwith "not convertible"

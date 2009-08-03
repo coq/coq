@@ -892,16 +892,18 @@ let polynom lc gl =
       do "Ring c1 c2 ... cn" and then try to apply the simplification
       theorems declared for the relation *)
     | [] ->
-	(match Hipattern.match_with_equation (pf_concl gl) with
-	   | Some (eq,t::args) ->
+	(try 
+	  match Hipattern.match_with_equation (pf_concl gl) with
+	   | _,_,Hipattern.PolymorphicLeibnizEq (t,c1,c2) ->
 	       let th = guess_theory t in
-	       if List.exists 
-		 (fun c1 -> not (safe_pf_conv_x gl t (pf_type_of gl c1))) args
-	       then 
-		 errorlabstrm "Ring :"
-		   (str" All terms must have the same type");
-	       (tclTHEN (raw_polynom th None args) (guess_eq_tac th)) gl
-	   | _ -> (match match_with_equiv (pf_concl gl) with
+	       (tclTHEN (raw_polynom th None [c1;c2]) (guess_eq_tac th)) gl
+	   | _,_,Hipattern.HeterogenousEq (t1,c1,t2,c2) 
+	       when safe_pf_conv_x gl t1 t2 ->
+	       let th = guess_theory t1 in
+	       (tclTHEN (raw_polynom th None [c1;c2]) (guess_eq_tac th)) gl
+	   | _ -> raise Exit
+	  with Hipattern.NoEquationFound | Exit ->
+	          (match match_with_equiv (pf_concl gl) with
 		     | Some (equiv, c1::args) ->
 			 let t = (pf_type_of gl c1) in
 			 let th = (guess_theory t) in

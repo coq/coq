@@ -1066,7 +1066,8 @@ and xlate_tac =
 		(out_gen (wit_list1 rawwit_ident) l)))
     | TacReflexivity -> CT_reflexivity
     | TacSymmetry cls -> CT_symmetry(xlate_clause cls)
-    | TacTransitivity c -> CT_transitivity (xlate_formula c)
+    | TacTransitivity (Some c) -> CT_transitivity (xlate_formula c)
+    | TacTransitivity None -> xlate_error "TODO: etransitivity"
     | TacAssumption -> CT_assumption
     | TacExact c -> CT_exact (xlate_formula c)
     | TacExactNoCheck c -> CT_exact_no_check (xlate_formula c)

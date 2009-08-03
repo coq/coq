@@ -24,6 +24,8 @@ Tactics
   variables and "**" for introducing all quantified variables and hypotheses.
 - Pattern Unification for existential variables activated in tactics and 
   new option "Unset Tactic Evars Pattern Unification" to deactivate it.
+- New tactic "etransitivity".
+- Support of JMeq for "injection" and "discriminate".
 
 Tactic Language
 

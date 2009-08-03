@@ -76,6 +76,8 @@ val glob_false : global_reference
 
 (* Equality *)
 val glob_eq : global_reference
+val glob_identity : global_reference
+val glob_jmeq : global_reference
 
 (*s Constructions and patterns related to Coq initial state are unknown
    at compile time. Therefore, we can only provide methods to build
@@ -104,21 +106,22 @@ val build_sigma_type : coq_sigma_data delayed
 (* Non-dependent pairs in Set from Datatypes *)
 val build_prod : coq_sigma_data delayed
 
-type coq_leibniz_eq_data = {
+type coq_eq_data = {
   eq   : constr;
-  refl : constr;
   ind  : constr;
-  rrec : constr option;
-  rect : constr option;
-  congr: constr;
-  sym  : constr }
+  refl : constr;
+  sym  : constr;
+  trans: constr;
+  congr: constr }
 
-val build_coq_eq_data : coq_leibniz_eq_data delayed
-val build_coq_identity_data : coq_leibniz_eq_data delayed
+val build_coq_eq_data : coq_eq_data delayed
+val build_coq_identity_data : coq_eq_data delayed
+val build_coq_jmeq_data : coq_eq_data delayed
 
 val build_coq_eq       : constr delayed (* = [(build_coq_eq_data()).eq] *)
 val build_coq_eq_sym   : constr delayed (* = [(build_coq_eq_data()).sym] *)
 val build_coq_f_equal2 : constr delayed
+
 
 (* Specif *)
 val build_coq_sumbool : constr delayed
@@ -150,6 +153,7 @@ val build_coq_ex : constr delayed
 
 val coq_eq_ref : global_reference lazy_t
 val coq_identity_ref : global_reference lazy_t
+val coq_jmeq_ref : global_reference lazy_t
 val coq_existS_ref : global_reference lazy_t
 val coq_existT_ref : global_reference lazy_t
 val coq_not_ref : global_reference lazy_t

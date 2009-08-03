@@ -128,7 +128,8 @@ let h_change oc c cl =
 let h_reflexivity    = abstract_tactic TacReflexivity intros_reflexivity
 let h_symmetry c     = abstract_tactic (TacSymmetry c) (intros_symmetry c)
 let h_transitivity c =
-  abstract_tactic (TacTransitivity (inj_open c)) (intros_transitivity c)
+  abstract_tactic (TacTransitivity (Option.map inj_open c))
+    (intros_transitivity c)
 
 let h_simplest_apply c  = h_apply false false [inj_open c,NoBindings]
 let h_simplest_eapply c = h_apply false true [inj_open c,NoBindings]

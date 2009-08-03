@@ -24,10 +24,10 @@ let set_compat_options = function
       set_bool_option_value ["Intuition";"Iff";"Unfolding"] true
 
   | "8.1" ->
-      warning "Compatibility with versions 8.1 not supported."
+      warning "Compatibility with version 8.1 not supported."
 
   | "8.0" ->
-      warning "Compatibility with versions 8.0 not supported."
+      warning "Compatibility with version 8.0 not supported."
 
   | s ->
       error ("Unknown compatibility version \""^s^"\".")

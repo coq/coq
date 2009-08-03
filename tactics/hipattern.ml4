@@ -219,28 +219,47 @@ let is_unit_type t =
    inductive binary relation R, so that R has only one constructor
    establishing its reflexivity.  *)
 
-let coq_refl_rel1_pattern  = PATTERN [ forall A:_, forall x:A, _ A x x ]
-let coq_refl_rel2_pattern  = PATTERN [ forall x:_, _ x x ]
-let coq_refl_reljm_pattern = PATTERN [ forall A:_, forall x:A, _ A x A x ]
+type equation_kind =
+  | MonomorphicLeibnizEq of constr * constr
+  | PolymorphicLeibnizEq of constr * constr * constr
+  | HeterogenousEq of constr * constr * constr * constr
+
+exception NoEquationFound
+
+let coq_refl_leibniz1_pattern = PATTERN [ forall x:_, _ x x ]
+let coq_refl_leibniz2_pattern = PATTERN [ forall A:_, forall x:A, _ A x x ]
+let coq_refl_jm_pattern       = PATTERN [ forall A:_, forall x:A, _ A x A x ]
+
+open Libnames
 
 let match_with_equation t =
-  let (hdapp,args) = decompose_app t in
-  match (kind_of_term hdapp) with
-    | Ind ind -> 
+  if not (isApp t) then raise NoEquationFound;
+  let (hdapp,args) = destApp t in
+  match kind_of_term hdapp with
+  | Ind ind ->
+      if IndRef ind = glob_eq then
+	Some (build_coq_eq_data()),hdapp,
+	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
+      else if IndRef ind = glob_identity then
+	Some (build_coq_identity_data()),hdapp,
+	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
+      else if IndRef ind = glob_jmeq then
+	Some (build_coq_jmeq_data()),hdapp,
+	HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
+      else
         let (mib,mip) = Global.lookup_inductive ind in
         let constr_types = mip.mind_nf_lc in 
         let nconstr = Array.length mip.mind_consnames in
-	if nconstr = 1 &&
-           (is_matching coq_refl_rel1_pattern constr_types.(0) ||
-            is_matching coq_refl_rel2_pattern constr_types.(0) ||
-            is_matching coq_refl_reljm_pattern constr_types.(0)) 
-        then 
-	  Some (hdapp,args)
-        else 
-	  None
-    | _ -> None
-
-let is_equation t = op2bool (match_with_equation  t)
+	if nconstr = 1 then
+          if is_matching coq_refl_leibniz1_pattern constr_types.(0) then
+	    None, hdapp, MonomorphicLeibnizEq(args.(0),args.(1))
+	  else if is_matching coq_refl_leibniz2_pattern constr_types.(0) then
+	    None, hdapp, PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
+	  else if is_matching coq_refl_jm_pattern constr_types.(0) then
+	    None, hdapp, HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
+	  else raise NoEquationFound
+        else raise NoEquationFound
+    | _ -> raise NoEquationFound
 
 let match_with_equality_type t =
   let (hdapp,args) = decompose_app t in
@@ -254,6 +273,8 @@ let match_with_equality_type t =
         else 
 	  None
     | _ -> None
+
+let is_equality_type t = op2bool (match_with_equality_type t)
 
 let coq_arrow_pattern = PATTERN [ ?X1 -> ?X2 ]
 
@@ -333,16 +354,22 @@ let rec first_match matcher = function
 let coq_eq_pattern_gen eq = lazy PATTERN [ %eq ?X1 ?X2 ?X3 ]
 let coq_eq_pattern = coq_eq_pattern_gen coq_eq_ref
 let coq_identity_pattern = coq_eq_pattern_gen coq_identity_ref
+let coq_jmeq_pattern = lazy PATTERN [ %coq_jmeq_ref ?X1 ?X2 ?X3 ?X4 ]
 
 let match_eq eqn eq_pat =
-  match matches (Lazy.force eq_pat) eqn with
+  let pat = try Lazy.force eq_pat with _ -> raise PatternMatchingFailure in
+  match matches pat eqn with
     | [(m1,t);(m2,x);(m3,y)] ->
 	assert (m1 = meta1 & m2 = meta2 & m3 = meta3);
-	(t,x,y)
-    | _ -> anomaly "match_eq: an eq pattern should match 3 terms"
+	PolymorphicLeibnizEq (t,x,y)
+    | [(m1,t);(m2,x);(m3,t');(m4,x')] ->
+	assert (m1 = meta1 & m2 = meta2 & m3 = meta3 & m4 = meta4);
+	HeterogenousEq (t,x,t',x')
+    | _ -> anomaly "match_eq: an eq pattern should match 3 or 4 terms"
 
 let equalities =
   [coq_eq_pattern, build_coq_eq_data;
+   coq_jmeq_pattern, build_coq_jmeq_data;
    coq_identity_pattern, build_coq_identity_data]
 
 let find_eq_data_decompose eqn = (* fails with PatternMatchingFailure *)

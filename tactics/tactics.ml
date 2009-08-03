@@ -905,15 +905,12 @@ let eapply_with_bindings (c,bl) =
 let apply c =
   apply_with_ebindings (inj_open c,NoBindings)
 
+let eapply c =
+  eapply_with_ebindings (inj_open c,NoBindings)
+
 let apply_list = function 
   | c::l -> apply_with_bindings (c,ImplicitBindings l)
   | _ -> assert false
-
-(* Resolution with no reduction on the type (used ?) *)
-
-let apply_without_reduce c gl = 
-  let clause = mk_clenv_type_of gl c in 
-  res_pf clause gl
 
 (* [apply_in hyp c] replaces
 
@@ -2116,9 +2113,6 @@ let mkHRefl t x =
 (*   mkApp (coq_constant "mkHEq" ["Logic";"EqdepFacts"] "eq_dep_intro", *)
 (* 	[| ty; mkApp (Lazy.force id, [|ty|]); t; x |]) *)
 
-let mkCoe a x p px y eq = 
-  mkApp (Option.get (build_coq_eq_data ()).rect, [| a; x; p; px; y; eq |])
-
 let lift_togethern n l =
   let l', _ =
     List.fold_right
@@ -3059,13 +3053,11 @@ let reflexivity_red allowred gl =
   else whd_betadeltaiota (pf_env gl) (project gl) (pf_concl gl) 
   in 
     match match_with_equality_type concl with
-    | None -> None
-    | Some _ -> Some (one_constructor 1 NoBindings)
+    | None -> raise NoEquationFound
+    | Some _ -> one_constructor 1 NoBindings gl
 
-let reflexivity gl = 
-  match reflexivity_red false gl with
-  | None -> !setoid_reflexivity gl
-  | Some tac -> tac gl
+let reflexivity gl =
+  try reflexivity_red false gl with NoEquationFound -> !setoid_reflexivity gl
       
 let intros_reflexivity  = (tclTHEN intros reflexivity)
 
@@ -3079,41 +3071,35 @@ let intros_reflexivity  = (tclTHEN intros reflexivity)
 let setoid_symmetry = ref (fun _ -> assert false)
 let register_setoid_symmetry f = setoid_symmetry := f
 
+(* This is probably not very useful any longer *)
+let prove_symmetry hdcncl eq_kind =
+  let symc =
+    match eq_kind with
+    | MonomorphicLeibnizEq (c1,c2) -> mkApp(hdcncl,[|c2;c1|])
+    | PolymorphicLeibnizEq (typ,c1,c2) -> mkApp(hdcncl,[|typ;c2;c1|])
+    | HeterogenousEq (t1,c1,t2,c2) -> mkApp(hdcncl,[|t2;c2;t1;c1|]) in
+  tclTHENFIRST (cut symc)
+    (tclTHENLIST 
+      [ intro; 
+        onLastHyp simplest_case; 
+	one_constructor 1 NoBindings ])
+
 let symmetry_red allowred gl =
   (* PL: usual symmetry don't perform any reduction when searching 
      for an equality, but we may need to do some when called back from 
      inside setoid_reflexivity (see Optimize cases in setoid_replace.ml). *)
-  let concl = if not allowred then pf_concl gl
-  else whd_betadeltaiota (pf_env gl) (project gl) (pf_concl gl) 
+  let concl =
+    if not allowred then pf_concl gl else pf_whd_betadeltaiota gl (pf_concl gl)
   in 
-    match match_with_equation concl with
-    | None -> None
-    | Some (hdcncl,args) -> Some (fun gl ->
-        let hdcncls = string_of_inductive hdcncl in
-        begin 
-	  try 
-            tclTHEN
-              (convert_concl_no_check concl DEFAULTcast)
-	      (apply (pf_parse_const gl ("sym_"^hdcncls))) gl
-          with  _ ->
-            let symc = match args with 
-	      | [t1; c1; t2; c2] -> mkApp (hdcncl, [| t2; c2; t1; c1 |])
-              | [typ;c1;c2] -> mkApp (hdcncl, [| typ; c2; c1 |])
-              | [c1;c2]     -> mkApp (hdcncl, [| c2; c1 |])
-	      | _ -> assert false 
-	    in 
-	    tclTHENFIRST (cut symc)
-              (tclTHENLIST 
-		[ intro;
-		  onLastHyp simplest_case;
-		  one_constructor 1 NoBindings ])
-	      gl
-	end)
+  match match_with_equation concl with
+  | Some eq_data,_,_ ->
+      tclTHEN
+        (convert_concl_no_check concl DEFAULTcast)
+      (apply eq_data.sym) gl
+  | None,eq,eq_kind -> prove_symmetry eq eq_kind gl
 
-let symmetry gl = 
-  match symmetry_red false gl with
-  | None -> !setoid_symmetry gl
-  | Some tac -> tac gl
+let symmetry gl =
+  try symmetry_red false gl with NoEquationFound -> !setoid_symmetry gl
 
 let setoid_symmetry_in = ref (fun _ _ -> assert false)
 let register_setoid_symmetry_in f = setoid_symmetry_in := f
@@ -3121,18 +3107,17 @@ let register_setoid_symmetry_in f = setoid_symmetry_in := f
 let symmetry_in id gl = 
   let ctype = pf_type_of gl (mkVar id) in 
   let sign,t = decompose_prod_assum ctype in
-  match match_with_equation t with
-    | None -> !setoid_symmetry_in id gl
-    | Some (hdcncl,args) -> 
-        let symccl = match args with 
-	  | [t1; c1; t2; c2] -> mkApp (hdcncl, [| t2; c2; t1; c1 |])
-          | [typ;c1;c2] -> mkApp (hdcncl, [| typ; c2; c1 |])
-          | [c1;c2]     -> mkApp (hdcncl, [| c2; c1 |])
-	  | _ -> assert false in
-	tclTHENS (cut (it_mkProd_or_LetIn symccl sign))
-	  [ intro_replacing id;
-            tclTHENLIST [ intros; symmetry; apply (mkVar id); assumption ] ]
-	  gl
+  try 
+    let _,hdcncl,eq = match_with_equation t in
+    let symccl = match eq with
+      | MonomorphicLeibnizEq (c1,c2) -> mkApp (hdcncl, [| c2; c1 |])
+      | PolymorphicLeibnizEq (typ,c1,c2) -> mkApp (hdcncl, [| typ; c2; c1 |])
+      | HeterogenousEq (t1,c1,t2,c2) -> mkApp (hdcncl, [| t2; c2; t1; c1 |]) in
+    tclTHENS (cut (it_mkProd_or_LetIn symccl sign))
+      [ intro_replacing id;
+        tclTHENLIST [ intros; symmetry; apply (mkVar id); assumption ] ]
+      gl
+  with NoEquationFound -> !setoid_symmetry_in id gl
 
 let intros_symmetry =
   onClause
@@ -3155,47 +3140,52 @@ let intros_symmetry =
 let setoid_transitivity = ref (fun _ _ -> assert false)
 let register_setoid_transitivity f = setoid_transitivity := f
 
+(* This is probably not very useful any longer *)
+let prove_transitivity hdcncl eq_kind t gl =
+  let eq1,eq2 =
+    match eq_kind with
+    | MonomorphicLeibnizEq (c1,c2) ->
+      (mkApp (hdcncl, [| c1; t|]), mkApp (hdcncl, [| t; c2 |]))
+  | PolymorphicLeibnizEq (typ,c1,c2) ->
+      (mkApp (hdcncl, [| typ; c1; t |]), mkApp (hdcncl, [| typ; t; c2 |]))
+  | HeterogenousEq (typ1,c1,typ2,c2) ->
+      let typt = pf_type_of gl t in
+      (mkApp(hdcncl, [| typ1; c1; typt ;t |]),
+       mkApp(hdcncl, [| typt; t; typ2; c2 |])) in
+  tclTHENFIRST (cut eq2)
+    (tclTHENFIRST (cut eq1)
+      (tclTHENLIST
+	[ tclDO 2 intro;
+	  onLastHyp simplest_case;
+	  assumption ])) gl
+
 let transitivity_red allowred t gl =
   (* PL: usual transitivity don't perform any reduction when searching 
      for an equality, but we may need to do some when called back from 
      inside setoid_reflexivity (see Optimize cases in setoid_replace.ml). *)
-  let concl = if not allowred then pf_concl gl
-  else whd_betadeltaiota (pf_env gl) (project gl) (pf_concl gl) 
-  in 
+  let concl =
+    if not allowred then pf_concl gl else pf_whd_betadeltaiota gl (pf_concl gl)
+  in
   match match_with_equation concl with
-    | None -> None
-    | Some (hdcncl,args) -> Some (fun gl ->
-        let hdcncls = string_of_inductive hdcncl in
-        begin
-	  try 
-	    apply_list [(pf_parse_const gl ("trans_"^hdcncls));t] gl 
-          with  _ -> 
-            let eq1, eq2 = match args with 
-	      | [typ1;c1;typ2;c2] -> let typt = pf_type_of gl t in
-                  ( mkApp(hdcncl, [| typ1; c1; typt ;t |]),
-		    mkApp(hdcncl, [| typt; t; typ2; c2 |]) )
-              | [typ;c1;c2] ->
-		  ( mkApp (hdcncl, [| typ; c1; t |]),
-		    mkApp (hdcncl, [| typ; t; c2 |]) )
-	      | [c1;c2]     ->
-		  ( mkApp (hdcncl, [| c1; t|]),
-		    mkApp (hdcncl, [| t; c2 |]) )
-	      | _ -> assert false 
-	    in
-            tclTHENFIRST (cut eq2)
-	      (tclTHENFIRST (cut eq1)
-                (tclTHENLIST
-		  [ tclDO 2 intro;
-		    onLastHyp simplest_case;
-		    assumption ])) gl
-        end)
+  | Some eq_data,_,_ ->
+      tclTHEN
+        (convert_concl_no_check concl DEFAULTcast)
+        (match t with
+	 | None -> eapply eq_data.trans
+	 | Some t -> apply_list [eq_data.trans;t]) gl
+  | None,eq,eq_kind ->
+      match t with
+      | None -> error "etransitivity not supported for this relation."
+      | Some t -> prove_transitivity eq eq_kind t gl
 
-let transitivity t gl =
-  match transitivity_red false t gl with
-  | None -> !setoid_transitivity t gl
-  | Some tac -> tac gl
-      
-let intros_transitivity  n  = tclTHEN intros (transitivity n)
+let transitivity_gen t gl =
+  try transitivity_red false t gl
+  with NoEquationFound -> !setoid_transitivity t gl
+
+let etransitivity = transitivity_gen None
+let transitivity t = transitivity_gen (Some t)
+
+let intros_transitivity  n  = tclTHEN intros (transitivity_gen n)
 
 (* tactical to save as name a subproof such that the generalisation of 
    the current goal, abstracted with respect to the local signature, 

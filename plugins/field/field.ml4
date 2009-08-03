@@ -154,10 +154,12 @@ END
 (* Guesses the type and calls field_gen with the right theory *)
 let field g =
   Coqlib.check_required_library ["Coq";"field";"LegacyField"];
-  let typ = 
-    match Hipattern.match_with_equation (pf_concl g) with
-      | Some (eq,t::args) when eq = (Coqlib.build_coq_eq_data()).Coqlib.eq -> t
-      | _ -> error "The statement is not built from Leibniz' equality" in
+  let typ =
+    try match Hipattern.match_with_equation (pf_concl g) with
+      | _,_,Hipattern.PolymorphicLeibnizEq (t,_,_) -> t
+      | _ -> raise Exit
+    with Hipattern.NoEquationFound | Exit ->
+      error "The statement is not built from Leibniz' equality" in
   let th = VConstr (lookup (pf_env g) typ) in
   (interp_tac_gen [(id_of_string "FT",th)] [] (get_debug ())
     <:tactic< match goal with |- (@eq _ _ _) => field_gen FT end >>) g

@@ -16,6 +16,7 @@ open Sign
 open Evd
 open Pattern
 open Proof_trees
+open Coqlib
 (*i*)
 
 (*s Given a term with second-order variables in it,
@@ -81,11 +82,9 @@ val is_unit_or_eq_type     : testing_function
 (* type with only one constructor and no arguments, no indices *)
 val is_unit_type           : testing_function 
 
-val match_with_equation    : (constr * constr list) matching_function
-val is_equation            : testing_function 
-
 (* type with only one constructor, no arguments and at least one dependency *)
 val match_with_equality_type : (constr * constr list) matching_function
+val is_equality_type       : testing_function
 
 val match_with_nottype     : (constr * constr) matching_function
 val is_nottype             : testing_function 
@@ -110,14 +109,23 @@ val is_nodep_ind           : testing_function
 val match_with_sigma_type   : (constr * constr list) matching_function	  
 val is_sigma_type           : testing_function 
 
-(***** Destructing patterns bound to some theory *)
+(* Recongnize inductive relation defined by reflexivity *)
 
-open Coqlib
+type equation_kind =
+  | MonomorphicLeibnizEq of constr * constr
+  | PolymorphicLeibnizEq of constr * constr * constr
+  | HeterogenousEq of constr * constr * constr * constr
+
+exception NoEquationFound
+
+val match_with_equation:
+  constr -> coq_eq_data option * constr * equation_kind
+
+(***** Destructing patterns bound to some theory *)
 
 (* Match terms [(eq A t u)] or [(identity A t u)] *)
 (* Returns associated lemmas and [A,t,u] *)
-val find_eq_data_decompose : constr -> 
-  coq_leibniz_eq_data * (constr * constr * constr)
+val find_eq_data_decompose : constr -> coq_eq_data * equation_kind
 
 (* Match a term of the form [(existT A P t p)] *)
 (* Returns associated lemmas and [A,P,t,p] *)

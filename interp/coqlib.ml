@@ -82,6 +82,8 @@ let init_reference dir s = gen_reference "Coqlib" ("Init"::dir) s
 
 let init_constant dir s = gen_constant "Coqlib" ("Init"::dir) s  
 
+let logic_constant dir s = gen_constant "Coqlib" ("Logic"::dir) s  
+
 let arith_dir = ["Coq";"Arith"]
 let arith_modules = [arith_dir]
 
@@ -107,9 +109,18 @@ let datatypes_id = id_of_string "Datatypes"
 
 let logic_module_name = ["Coq";"Init";"Logic"]
 let logic_module = make_dir logic_module_name
-let logic_type_module = make_dir ["Coq";"Init";"Logic_Type"]
-let datatypes_module = make_dir ["Coq";"Init";"Datatypes"]
-let arith_module = make_dir ["Coq";"Arith";"Arith"]
+
+let logic_type_module_name = ["Coq";"Init";"Logic_Type"]
+let logic_type_module = make_dir logic_type_module_name
+
+let datatypes_module_name = ["Coq";"Init";"Datatypes"]
+let datatypes_module = make_dir datatypes_module_name
+
+let arith_module_name = ["Coq";"Arith";"Arith"]
+let arith_module = make_dir arith_module_name
+
+let jmeq_module_name = ["Coq";"Logic";"JMeq"]
+let jmeq_module = make_dir jmeq_module_name
 
 (* TODO: temporary hack *)
 let make_kn dir id = Libnames.encode_kn dir id
@@ -145,8 +156,13 @@ let glob_false  = ConstructRef path_of_false
 
 (** Equality *)
 let eq_kn = make_kn logic_module (id_of_string "eq")
-
 let glob_eq = IndRef (eq_kn,0)
+
+let identity_kn = make_kn datatypes_module (id_of_string "identity")
+let glob_identity = IndRef (identity_kn,0)
+
+let jmeq_kn = make_kn jmeq_module (id_of_string "JMeq")
+let glob_jmeq = IndRef (jmeq_kn,0)
 
 type coq_sigma_data = {
   proj1 : constr;
@@ -185,18 +201,24 @@ let build_prod () =
     typ = init_constant ["Datatypes"] "prod" }
 
 (* Equalities *)
-type coq_leibniz_eq_data = {
+type coq_eq_data = {
   eq   : constr;
-  refl : constr;
   ind  : constr;
+  refl : constr;
+  sym  : constr;
+  trans: constr;
+  congr: constr }
+
+type coq_rewrite_data = {
   rrec : constr option;
-  rect : constr option;
-  congr: constr;
-  sym  : constr }
+  rect : constr option
+}
 
 let lazy_init_constant dir id = lazy (init_constant dir id)
+let lazy_logic_constant dir id = lazy (logic_constant dir id)
 
-(* Equality on Set *)
+(* Leibniz equality on Type *)
+
 let coq_eq_eq = lazy_init_constant ["Logic"] "eq"
 let coq_eq_refl = lazy_init_constant ["Logic"] "eq_refl"
 let coq_eq_ind = lazy_init_constant ["Logic"] "eq_ind"
@@ -204,23 +226,43 @@ let coq_eq_rec = lazy_init_constant ["Logic"] "eq_rec"
 let coq_eq_rect = lazy_init_constant ["Logic"] "eq_rect"
 let coq_eq_congr = lazy_init_constant ["Logic"] "f_equal"
 let coq_eq_sym  = lazy_init_constant ["Logic"] "eq_sym"
+let coq_eq_trans  = lazy_init_constant ["Logic"] "eq_trans"
 let coq_f_equal2 = lazy_init_constant ["Logic"] "f_equal2"
 
 let build_coq_eq_data () =
   let _ = check_required_library logic_module_name in {
   eq = Lazy.force coq_eq_eq;
-  refl = Lazy.force coq_eq_refl;
   ind = Lazy.force coq_eq_ind;
-  rrec = Some (Lazy.force coq_eq_rec);
-  rect = Some (Lazy.force coq_eq_rect);
-  congr = Lazy.force coq_eq_congr;
-  sym = Lazy.force coq_eq_sym }
+  refl = Lazy.force coq_eq_refl;
+  sym = Lazy.force coq_eq_sym;
+  trans = Lazy.force coq_eq_trans;
+  congr = Lazy.force coq_eq_congr }
 
 let build_coq_eq () = Lazy.force coq_eq_eq
 let build_coq_eq_sym () = Lazy.force coq_eq_sym
 let build_coq_f_equal2 () = Lazy.force coq_f_equal2
 
 let build_coq_sym_eq = build_coq_eq_sym (* compatibility *)
+
+(* Heterogenous equality on Type *)
+
+let coq_jmeq_eq = lazy_logic_constant ["JMeq"] "JMeq"
+let coq_jmeq_refl = lazy_logic_constant ["JMeq"] "JMeq_refl"
+let coq_jmeq_ind = lazy_logic_constant ["JMeq"] "JMeq_ind"
+let coq_jmeq_rec = lazy_logic_constant ["JMeq"] "JMeq_rec"
+let coq_jmeq_rect = lazy_logic_constant ["JMeq"] "JMeq_rect"
+let coq_jmeq_sym  = lazy_logic_constant ["JMeq"] "JMeq_sym"
+let coq_jmeq_congr  = lazy_logic_constant ["JMeq"] "JMeq_congr"
+let coq_jmeq_trans  = lazy_logic_constant ["JMeq"] "JMeq_trans"
+
+let build_coq_jmeq_data () =
+  let _ = check_required_library jmeq_module_name in {
+  eq = Lazy.force coq_jmeq_eq;
+  ind = Lazy.force coq_jmeq_ind;
+  refl = Lazy.force coq_jmeq_refl;
+  sym = Lazy.force coq_jmeq_sym;
+  trans = Lazy.force coq_jmeq_trans;
+  congr = Lazy.force coq_jmeq_congr }
 
 (* Specif *)
 let coq_sumbool  = lazy_init_constant ["Specif"] "sumbool"
@@ -235,15 +277,16 @@ let coq_identity_rec = lazy_init_constant ["Datatypes"] "identity_rec"
 let coq_identity_rect = lazy_init_constant ["Datatypes"] "identity_rect"
 let coq_identity_congr = lazy_init_constant ["Logic_Type"] "identity_congr"
 let coq_identity_sym = lazy_init_constant ["Logic_Type"] "identity_sym"
+let coq_identity_trans = lazy_init_constant ["Logic_Type"] "identity_trans"
 
-let build_coq_identity_data () = {
+let build_coq_identity_data () =
+  let _ = check_required_library datatypes_module_name in {
   eq = Lazy.force coq_identity_eq;
-  refl = Lazy.force coq_identity_refl;
   ind = Lazy.force coq_identity_ind;
-  rrec = Some (Lazy.force coq_identity_rec);
-  rect = Some (Lazy.force coq_identity_rect);
-  congr = Lazy.force coq_identity_congr;
-  sym = Lazy.force coq_identity_sym }
+  refl = Lazy.force coq_identity_refl;
+  sym = Lazy.force coq_identity_sym;
+  trans = Lazy.force coq_identity_trans;
+  congr = Lazy.force coq_identity_congr }
 
 (* The False proposition *)
 let coq_False  = lazy_init_constant ["Logic"] "False"
@@ -281,7 +324,8 @@ let build_coq_iff_right_proj () = Lazy.force coq_iff_right_proj
 
 (* The following is less readable but does not depend on parsing *)
 let coq_eq_ref      = lazy (init_reference ["Logic"] "eq")
-let coq_identity_ref     = lazy (init_reference ["Datatypes"] "identity")
+let coq_identity_ref = lazy (init_reference ["Datatypes"] "identity")
+let coq_jmeq_ref     = lazy (gen_reference "Coqlib" ["Logic";"JMeq"] "JMeq")
 let coq_existS_ref  = lazy (anomaly "use coq_existT_ref")
 let coq_existT_ref  = lazy (init_reference ["Specif"] "existT")
 let coq_not_ref     = lazy (init_reference ["Logic"] "not")
