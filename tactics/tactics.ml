@@ -840,7 +840,7 @@ let check_evars sigma evm gl =
     errorlabstrm "apply" (str"Uninstantiated existential variables: " ++ 
       fnl () ++ pr_evar_defs rest)
 
-let general_apply with_delta with_destruct with_evars (c,lbind) gl0 =
+let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
   let flags = 
     if with_delta then default_unify_flags else default_no_delta_unify_flags in
   (* The actual type of the theorem. It will be matched against the
@@ -874,9 +874,9 @@ let general_apply with_delta with_destruct with_evars (c,lbind) gl0 =
 	    with PretypeError _|RefinerError _|UserError _|Failure _|Exit ->
 	      if with_destruct then
                 descend_in_conjunctions with_evars
-                  try_main_apply (fun _ -> raise exn) c gl
+                  try_main_apply (fun _ -> Stdpp.raise_with_loc loc exn) c gl
 	      else
-		raise exn
+		Stdpp.raise_with_loc loc exn
 	in try_red_apply thm_ty0 
   in
     if evm = Evd.empty then try_main_apply with_destruct c gl0
@@ -888,19 +888,18 @@ let general_apply with_delta with_destruct with_evars (c,lbind) gl0 =
 let rec apply_with_ebindings_gen b e = function
   | [] ->
       tclIDTAC
-  | [cb] ->
-      general_apply b b e cb
+  | [cb] -> general_apply b b e cb
   | cb::cbl -> 
       tclTHENLAST (general_apply b b e cb) (apply_with_ebindings_gen b e cbl)
 
-let apply_with_ebindings cb = apply_with_ebindings_gen false false [cb]
-let eapply_with_ebindings cb = apply_with_ebindings_gen false true [cb]
+let apply_with_ebindings cb = apply_with_ebindings_gen false false [dloc,cb]
+let eapply_with_ebindings cb = apply_with_ebindings_gen false true [dloc,cb]
 
 let apply_with_bindings (c,bl) =
   apply_with_ebindings (inj_open c,inj_ebindings bl)
 
 let eapply_with_bindings (c,bl) =
-  apply_with_ebindings_gen false true [inj_open c,inj_ebindings bl]
+  apply_with_ebindings_gen false true [dloc,(inj_open c,inj_ebindings bl)]
 
 let apply c =
   apply_with_ebindings (inj_open c,NoBindings)
@@ -947,7 +946,8 @@ let apply_in_once_main flags innerclause (d,lbind) gl =
     with NotExtensibleClause -> raise err in 
   aux (make_clenv_binding gl (d,thm) lbind)
 
-let apply_in_once with_delta with_destruct with_evars id ((sigma,d),lbind) gl0 =
+let apply_in_once with_delta with_destruct with_evars id 
+  (loc,((sigma,d),lbind)) gl0 =
   let flags = 
     if with_delta then default_unify_flags else default_no_delta_unify_flags in
   let t' = pf_get_hyp_typ gl0 id in
@@ -1141,7 +1141,8 @@ let constructor_tac with_evars expctdnumopt i lbind gl =
     Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
   check_number_of_constructors expctdnumopt i nconstr;
   let cons = mkConstruct (ith_constructor_of_inductive mind i) in
-  let apply_tac = general_apply true false with_evars (inj_open cons,lbind) in
+  let apply_tac =
+    general_apply true false with_evars (dloc,(inj_open cons,lbind)) in
   (tclTHENLIST 
      [convert_concl_no_check redcl DEFAULTcast; intros; apply_tac]) gl
 
@@ -1373,6 +1374,9 @@ let general_apply_in with_delta with_destruct with_evars id lemmas ipat gl =
     gl
 
 let apply_in simple with_evars = general_apply_in simple simple with_evars
+
+let simple_apply_in id c = 
+  apply_in false false id [dloc,((Evd.empty,c),NoBindings)] None
 
 (**************************)
 (*   Generalize tactics   *)

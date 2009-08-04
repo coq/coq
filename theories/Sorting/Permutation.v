@@ -12,22 +12,23 @@ Require Import Relations List Multiset Arith.
 
 (** This file define a notion of permutation for lists, based on multisets: 
     there exists a permutation between two lists iff every elements have 
-    the same multiplicities in the two lists. 
+    the same multiplicity in the two lists. 
 
-    Unlike [List.Permutation], the present notion of permutation requires
-    a decidable equality. At the same time, this definition can be used 
-    with a non-standard equality, whereas [List.Permutation] cannot.
-      
+    Unlike [List.Permutation], the present notion of permutation
+    requires the domain to be equipped with a decidable equality. This
+    equality allows to reason modulo the effective equivalence-class
+    representative used in each list.
+
     The present file contains basic results, obtained without any particular
     assumption on the decidable equality used.
-	
+
     File [PermutSetoid] contains additional results about permutations 
     with respect to an setoid equality (i.e. an equivalence relation). 
 
     Finally, file [PermutEq] concerns Coq equality : this file is similar 
     to the previous one, but proves in addition that [List.Permutation]
     and [permutation] are equivalent in this context.
-x*)
+*)
 
 Set Implicit Arguments.
 

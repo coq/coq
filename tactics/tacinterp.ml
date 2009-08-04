@@ -1731,6 +1731,17 @@ let interp_constr_with_bindings ist gl (c,bl) =
 let interp_open_constr_with_bindings ist gl (c,bl) =
   (pf_interp_open_constr false ist gl c, interp_bindings ist gl bl)
 
+let loc_of_bindings = function
+| NoBindings -> dummy_loc
+| ImplicitBindings l -> loc_of_rawconstr (fst (list_last l))
+| ExplicitBindings l -> pi1 (list_last l)
+
+let interp_open_constr_with_bindings_loc ist gl ((c,_),bl as cb) =
+  let loc1 = loc_of_rawconstr c in
+  let loc2 = loc_of_bindings bl in
+  let loc = if loc2 = dummy_loc then loc1 else join_loc loc1 loc2 in
+  (loc,interp_open_constr_with_bindings ist gl cb)
+
 let interp_induction_arg ist gl = function
   | ElimOnConstr c -> ElimOnConstr (interp_constr_with_bindings ist gl c)
   | ElimOnAnonHyp n as x -> x
@@ -2230,9 +2241,9 @@ and interp_atomic ist gl = function
   | TacExactNoCheck c -> h_exact_no_check (pf_interp_constr ist gl c)
   | TacVmCastNoCheck c -> h_vm_cast_no_check (pf_interp_constr ist gl c)
   | TacApply (a,ev,cb,None) ->
-      h_apply a ev (List.map (interp_open_constr_with_bindings ist gl) cb)
+      h_apply a ev (List.map (interp_open_constr_with_bindings_loc ist gl) cb)
   | TacApply (a,ev,cb,Some cl) ->
-      h_apply_in a ev (List.map (interp_open_constr_with_bindings ist gl) cb)
+      h_apply_in a ev (List.map (interp_open_constr_with_bindings_loc ist gl) cb)
         (interp_in_hyp_as ist gl cl)
   | TacElim (ev,cb,cbo) ->
       h_elim ev (interp_constr_with_bindings ist gl cb)

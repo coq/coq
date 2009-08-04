@@ -722,7 +722,7 @@ let unify_resolve_nodelta (c,clenv) gl =
 let unify_resolve flags (c,clenv) gl = 
   let clenv' = connect_clenv gl clenv in
   let _ = clenv_unique_resolver false ~flags clenv' gl in  
-  h_apply true false [inj_open c,NoBindings] gl
+  h_apply true false [dummy_loc,(inj_open c,NoBindings)] gl
 
 let unify_resolve_gen = function
   | None -> unify_resolve_nodelta

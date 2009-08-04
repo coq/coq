@@ -38,9 +38,9 @@ val h_exact_no_check  : constr -> tactic
 val h_vm_cast_no_check  : constr -> tactic
 
 val h_apply           : advanced_flag -> evars_flag -> 
-  open_constr with_bindings list -> tactic
+  open_constr with_bindings located list -> tactic
 val h_apply_in        : advanced_flag -> evars_flag -> 
-  open_constr with_bindings list -> 
+  open_constr with_bindings located list -> 
   identifier * intro_pattern_expr located option -> tactic
 
 val h_elim            : evars_flag -> constr with_ebindings ->

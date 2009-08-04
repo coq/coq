@@ -535,7 +535,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 *)
                     tclREPEAT (
                       tclTHENSEQ [
-                         apply_in false false freshz [(Evd.empty,andb_prop()),Rawterm.NoBindings] None;
+                         simple_apply_in freshz (andb_prop());
                          fun gl ->
                            let fresht = fresh_id (!avoid) (id_of_string "Z") gsig 
                            in

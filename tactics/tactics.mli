@@ -180,7 +180,8 @@ val apply                 : constr -> tactic
 val eapply                : constr -> tactic
 
 val apply_with_ebindings_gen : 
-  advanced_flag -> evars_flag -> open_constr with_ebindings list -> tactic
+  advanced_flag -> evars_flag -> open_constr with_ebindings located list ->
+    tactic
 
 val apply_with_bindings   : constr with_bindings -> tactic
 val eapply_with_bindings  : constr with_bindings -> tactic
@@ -192,8 +193,10 @@ val cut_and_apply         : constr -> tactic
 
 val apply_in : 
   advanced_flag -> evars_flag -> identifier -> 
-  open_constr with_ebindings list ->
+  open_constr with_ebindings located list ->
   intro_pattern_expr located option -> tactic
+
+val simple_apply_in : identifier -> constr -> tactic
 
 (*s Elimination tactics. *)
 

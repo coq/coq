@@ -785,11 +785,10 @@ Section ListOps.
   End Reverse_Induction.
 
 
+  (*********************************************************************)
+  (** ** List permutations as a composition of adjacent transpositions *)
+  (*********************************************************************)
 
-  (***********************************)
-  (** ** Lists modulo permutation    *)
-  (***********************************)
-  
   Section Permutation.
 
     Inductive Permutation : list A -> list A -> Prop :=

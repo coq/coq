@@ -13,7 +13,7 @@ Require Import Omega Relations Multiset Permutation SetoidList.
 Set Implicit Arguments.
 
 (** This file contains additional results about permutations 
-     with respect to an setoid equality (i.e. an equivalence relation). 
+     with respect to a setoid equality (i.e. an equivalence relation). 
 *)
 
 Section Perm.
