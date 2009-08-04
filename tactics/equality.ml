@@ -654,26 +654,16 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause gls =
 	let sort = pf_apply get_type_of gls (pf_concl gls) in 
 	discr_positions env sigma u eq_clause cpath dirn sort gls
 
-let extract_main_eq_args gl = function
-  | MonomorphicLeibnizEq (e1,e2) -> let t = pf_type_of gl e1 in (t,e1,e2)
-  | PolymorphicLeibnizEq (t,e1,e2) -> (t,e1,e2)
-  | HeterogenousEq (t1,e1,t2,e2) ->
-      if pf_conv_x gl t1 t2 then (t1,e1,e2)
-      else error"Don't know what to do with JMeq on arguments not of same type."
-
 let onEquality with_evars tac (c,lbindc) gls =
   let t = pf_type_of gls c in
   let t' = try snd (pf_reduce_to_quantified_ind gls t) with UserError _ -> t in
   let eq_clause = make_clenv_binding gls (c,t') lbindc in
   let eq_clause' = clenv_pose_dependent_evars with_evars eq_clause in
   let eqn = clenv_type eq_clause' in
-  let eq,eq_args =
-    try find_eq_data_decompose eqn
-    with PatternMatchingFailure ->
-      errorlabstrm "" (str"No primitive equality found.") in
+  let eq,eq_args = find_this_eq_data_decompose gls eqn in
   tclTHEN
     (Refiner.tclEVARS eq_clause'.evd) 
-    (tac (eq,eqn,extract_main_eq_args gls eq_args) eq_clause') gls
+    (tac (eq,eqn,eq_args) eq_clause') gls
 
 let onNegatedEquality with_evars tac gls =
   let ccl = pf_concl gls in
@@ -1046,17 +1036,12 @@ let swap_equality_args = function
   | PolymorphicLeibnizEq (t,e1,e2) -> [t;e2;e1]
   | HeterogenousEq (t1,e1,t2,e2) -> [t2;e2;t1;e1]
 
-let get_equality_args = function
-  | MonomorphicLeibnizEq (e1,e2) -> [e1;e2]
-  | PolymorphicLeibnizEq (t,e1,e2) -> [t;e1;e2]
-  | HeterogenousEq (t1,e1,t2,e2) -> [t1;e1;t2;e2]
-
 let swap_equands gls eqn =
-  let (lbeq,eq_args) = find_eq_data_decompose eqn in 
+  let (lbeq,eq_args) = find_eq_data eqn in 
   applist(lbeq.eq,swap_equality_args eq_args)
 
 let swapEquandsInConcl gls =
-  let (lbeq,eq_args) = find_eq_data_decompose (pf_concl gls) in
+  let (lbeq,eq_args) = find_eq_data (pf_concl gls) in
   let sym_equal = lbeq.sym in
   refine
     (applist(sym_equal,(swap_equality_args eq_args@[Evarutil.mk_new_meta()])))
@@ -1126,8 +1111,7 @@ let subst_tuple_term env sigma dep_pair b =
 exception NothingToRewrite
 
 let cutSubstInConcl_RL eqn gls =
-  let (lbeq,eq_args) = find_eq_data_decompose eqn in
-  let (t,e1,e2 as eq) = extract_main_eq_args gls eq_args in
+  let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose gls eqn in
   let body = pf_apply subst_tuple_term gls e2 (pf_concl gls) in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
   bareRevSubstInConcl lbeq body eq gls
@@ -1145,8 +1129,7 @@ let cutSubstInConcl_LR eqn gls =
 let cutSubstInConcl l2r =if l2r then cutSubstInConcl_LR else cutSubstInConcl_RL
 
 let cutSubstInHyp_LR eqn id gls =
-  let (lbeq,eq_args) = find_eq_data_decompose eqn in 
-  let (t,e1,e2 as eq) = extract_main_eq_args gls eq_args in
+  let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose gls eqn in 
   let body = pf_apply subst_tuple_term gls e1 (pf_get_hyp_typ gls id) in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
   cut_replacing id (subst1 e2 body)
@@ -1231,7 +1214,7 @@ exception FoundHyp of (identifier * constr * bool)
 (* tests whether hyp [c] is [x = t] or [t = x], [x] not occuring in [t] *)
 let is_eq_x gl x (id,_,c) =
   try
-    let (_,lhs,rhs) = extract_main_eq_args gl (snd(find_eq_data_decompose c)) in
+    let (_,lhs,rhs) = snd (find_eq_data_decompose gl c) in
     if (x = lhs) && not (occur_term x rhs) then raise (FoundHyp (id,rhs,true));
     if (x = rhs) && not (occur_term x lhs) then raise (FoundHyp (id,lhs,false))
   with PatternMatchingFailure ->
@@ -1295,7 +1278,7 @@ let subst ids = tclTHEN tclNORMEVAR (tclMAP subst_one ids)
 let subst_all gl =
   let test (_,c) =
     try
-      let (_,x,y) = extract_main_eq_args gl (snd (find_eq_data_decompose c)) in
+      let (_,x,y) = snd (find_eq_data_decompose gl c) in
       (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
       if eq_constr x y then failwith "caught";
       match kind_of_term x with Var x -> x | _ -> 
@@ -1312,19 +1295,19 @@ let subst_all gl =
 
 let cond_eq_term_left c t gl =
   try
-    let (_,x,_) = extract_main_eq_args gl (snd (find_eq_data_decompose t)) in
+    let (_,x,_) = snd (find_eq_data_decompose gl t) in
     if pf_conv_x gl c x then true else failwith "not convertible"
   with PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term_right c t gl = 
   try
-    let (_,_,x) = extract_main_eq_args gl (snd (find_eq_data_decompose t)) in
+    let (_,_,x) = snd (find_eq_data_decompose gl t) in
     if pf_conv_x gl c x then false else failwith "not convertible"
   with PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term c t gl = 
   try
-    let (_,x,y) = extract_main_eq_args gl (snd (find_eq_data_decompose t)) in
+    let (_,x,y) = snd (find_eq_data_decompose gl t) in
     if pf_conv_x gl c x then true 
     else if pf_conv_x gl c y then false
     else failwith "not convertible"

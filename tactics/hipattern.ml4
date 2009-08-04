@@ -208,7 +208,8 @@ let match_with_unit_or_eq_type t =
 let is_unit_or_eq_type t = op2bool (match_with_unit_or_eq_type t)
 
 (* A unit type is an inductive type with no indices but possibly
-   (useless) parameters, and that has no constructors *)
+   (useless) parameters, and that has no arguments in its unique
+   constructor *)
 
 let is_unit_type t =
   match match_with_conjunction t with
@@ -372,8 +373,31 @@ let equalities =
    coq_jmeq_pattern, build_coq_jmeq_data;
    coq_identity_pattern, build_coq_identity_data]
 
-let find_eq_data_decompose eqn = (* fails with PatternMatchingFailure *)
+let find_eq_data eqn = (* fails with PatternMatchingFailure *)
   first_match (match_eq eqn) equalities
+
+let extract_eq_args gl = function
+  | MonomorphicLeibnizEq (e1,e2) -> 
+      let t = Tacmach.pf_type_of gl e1 in (t,e1,e2)
+  | PolymorphicLeibnizEq (t,e1,e2) -> (t,e1,e2)
+  | HeterogenousEq (t1,e1,t2,e2) ->
+      if Tacmach.pf_conv_x gl t1 t2 then (t1,e1,e2)
+      else raise PatternMatchingFailure
+
+let find_eq_data_decompose gl eqn =
+  let (lbeq,eq_args) = find_eq_data eqn in
+  (lbeq,extract_eq_args gl eq_args)
+
+let find_this_eq_data_decompose gl eqn =
+  let (lbeq,eq_args) = 
+    try find_eq_data eqn
+    with PatternMatchingFailure ->
+      errorlabstrm "" (str "No primitive equality found.") in
+  let eq_args =
+    try extract_eq_args gl eq_args
+    with PatternMatchingFailure -> 
+      error "Don't know what to do with JMeq on arguments not of same type." in
+  (lbeq,eq_args)
 
 open Tacmach
 open Tacticals
