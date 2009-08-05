@@ -157,16 +157,15 @@ Qed.
 
 (** We now consider [Q] seen as a setoid. *)
 
-Definition Q_Setoid : Setoid_Theory Q Qeq.
-Proof.
- split; red; unfold Qeq in |- *; auto; apply Qeq_trans.
-Qed.
+Add Relation Q Qeq
+  reflexivity proved by Qeq_refl
+  symmetry proved by Qeq_sym
+  transitivity proved by Qeq_trans
+as Q_Setoid.
 
-Add Setoid Q Qeq Q_Setoid as Qsetoid.
-
-Hint Resolve (Seq_refl Q Qeq Q_Setoid): qarith.
-Hint Resolve (Seq_sym Q Qeq Q_Setoid): qarith.
-Hint Resolve (Seq_trans Q Qeq Q_Setoid): qarith.
+Hint Resolve Qeq_refl : qarith.
+Hint Resolve Qeq_sym : qarith.
+Hint Resolve Qeq_trans : qarith.
 
 Theorem Qnot_eq_sym : forall x y, ~x == y -> ~y == x.
 Proof.
