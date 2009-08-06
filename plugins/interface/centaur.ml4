@@ -146,7 +146,7 @@ let ctf_acknowledge_command request_id command_count opt_exn =
         g_count, !current_goal_index
     else
       (0, 0)
-  and statnum = Lib.current_state_label ()
+  and statnum = Lib.current_command_label ()
   and dpth = let d = Pfedit.current_proof_depth() in if d >= 0 then d else 0
   and pending = CT_id_list (List.map xlate_ident (Pfedit.get_all_proof_names())) in
    (ctf_header "acknowledge" request_id ++

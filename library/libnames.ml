@@ -188,7 +188,7 @@ let encode_kn dir id = make_kn (MPfile dir) empty_dirpath (label_of_id id)
 let encode_con dir id = make_con (MPfile dir) empty_dirpath (label_of_id id)
 
 let decode_kn kn = 
-  let rec dir_of_mp = function
+  let rec dirpath_of_module = function
     | MPfile dir -> repr_dirpath dir
     | MPbound mbid -> 
 	let _,_,dp = repr_mbid mbid in
@@ -198,11 +198,11 @@ let decode_kn kn =
 	let _,_,dp = repr_msid msid in
 	let id = id_of_msid msid in
 	  id::(repr_dirpath dp) 
-    | MPdot(mp,l) -> (id_of_label l)::(dir_of_mp mp)
+    | MPdot(mp,l) -> (id_of_label l)::(dirpath_of_module mp)
   in
   let mp,sec_dir,l = repr_kn kn in
     if (repr_dirpath sec_dir) = [] then
-     (make_dirpath (dir_of_mp mp)),id_of_label l
+     (make_dirpath (dirpath_of_module mp)),id_of_label l
     else
       anomaly "Section part should be empty!"
 

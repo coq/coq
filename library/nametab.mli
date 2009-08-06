@@ -16,7 +16,21 @@ open Libnames
 (*i*)
 
 (*s This module contains the tables for globalization, which
-    associates internal object references to qualified names (qualid). *)
+    associates internal object references to qualified names (qualid).
+
+    There are three classes of names:
+
+    1a- internal kernel names: [kernel_name], [constant], [inductive],
+        [module_path]
+
+    1b- other internal names: [global_reference], [syndef_name],
+        [extended_global_reference], [global_dir_reference], ...
+
+    2- full, non ambiguous user names: [full_path] and [dir_path]
+
+    3- non necessarily full, possibly ambiguous user names: [reference]
+       and [qualid]
+*)
 
 (* Most functions in this module fall into one of the following categories:
    \begin{itemize}
@@ -130,14 +144,12 @@ val full_name_module : qualid -> dir_path
 (*s Reverse lookup -- finding user names corresponding to the given
   internal name *)
 
-(* Returns the dirpath associated to a module path *)
-
-val dir_of_mp : module_path -> dir_path
-
-(* Returns full path bound to a global reference or syntactic definition *)
+(* Returns the full path bound to a global reference or syntactic
+   definition, and the (full) dirpath associated to a module path *)
 
 val path_of_syndef : syndef_name -> full_path
 val path_of_global : global_reference -> full_path
+val dirpath_of_module : module_path -> dir_path
 
 (* Returns in particular the dirpath or the basename of the full path
    associated to global reference *)

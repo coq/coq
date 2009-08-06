@@ -460,7 +460,7 @@ let basename_of_global ref =
 let path_of_syndef kn = 
   Globrevtab.find (SynDef kn) !the_globrevtab
 
-let dir_of_mp mp =
+let dirpath_of_module mp =
   MPmap.find mp !the_modrevtab
 
 
