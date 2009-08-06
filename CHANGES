@@ -26,6 +26,7 @@ Tactics
   new option "Unset Tactic Evars Pattern Unification" to deactivate it.
 - New tactic "etransitivity".
 - Support of JMeq for "injection" and "discriminate".
+- New variant "subst'" of "subst" that supports JMeq.
 
 Tactic Language
 

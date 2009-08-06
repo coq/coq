@@ -335,7 +335,12 @@ END
 
 TACTIC EXTEND subst
 | [ "subst" ne_var_list(l) ] -> [ subst l ]
-| [ "subst" ] -> [ subst_all ]
+| [ "subst" ] -> [ subst_all ~strict:true] (* W/o JMeq *)
+
+END
+
+TACTIC EXTEND subst'
+| [ "subst'" ] -> [ subst_all ~strict:false ] (* With JMeq *)
 END
 
 open Evar_tactics

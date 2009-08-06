@@ -1208,6 +1208,9 @@ let unfold_body x gl =
 
 
 
+let restrict_to_eq_and_identity eq = (* compatibility *)
+  if eq <> constr_of_global glob_eq && eq <> constr_of_global glob_identity then
+    raise PatternMatchingFailure
 
 exception FoundHyp of (identifier * constr * bool)
 
@@ -1220,7 +1223,7 @@ let is_eq_x gl x (id,_,c) =
   with PatternMatchingFailure ->
     ()
 
-let subst_one x gl = 
+let subst_one x gl =
   let hyps = pf_hyps gl in
   let (_,xval,_) = pf_get_hyp gl x in
   (* If x has a body, simply replace x with body and clear x *)
@@ -1275,10 +1278,11 @@ let subst_one x gl =
 
 let subst ids = tclTHEN tclNORMEVAR (tclMAP subst_one ids)
 
-let subst_all gl =
+let subst_all ?(strict=true) gl =
   let test (_,c) =
     try
-      let (_,x,y) = snd (find_eq_data_decompose gl c) in
+      let lbeq,(_,x,y) = find_eq_data_decompose gl c in
+      if strict then restrict_to_eq_and_identity lbeq.eq;
       (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
       if eq_constr x y then failwith "caught";
       match kind_of_term x with Var x -> x | _ -> 

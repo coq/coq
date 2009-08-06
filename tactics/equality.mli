@@ -129,7 +129,7 @@ val injectable : env -> evar_map -> constr -> constr -> bool
 val unfold_body : identifier -> tactic
 
 val subst : identifier list -> tactic
-val subst_all : tactic
+val subst_all : ?strict:bool -> tactic
 
 (* Replace term *)
 (* [replace_multi_term dir_opt c cl] 
