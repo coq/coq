@@ -113,7 +113,7 @@ let subst_scope (_,subst,sc) = sc
 
 open Libobject
 
-let classify_scope (_,(local,_,_ as o)) =
+let classify_scope (local,_,_ as o) =
   if local then Dispose else Substitute o
 
 let export_scope (local,_,_ as x) = if local then None else Some x
@@ -201,7 +201,7 @@ let aconstr_key = function (* Rem: AApp(ARef ref,[]) stands for @ref *)
 (**********************************************************************)
 (* Interpreting numbers (not in summary because functional objects)   *)
 
-type required_module = section_path * string list 
+type required_module = full_path * string list 
 
 type 'a prim_token_interpreter =
     loc -> 'a -> rawconstr
@@ -248,7 +248,7 @@ let declare_string_interpreter sc dir interp (patl,uninterp,inpat) =
     (patl, (fun r -> Option.map mkString (uninterp r)), inpat)
 
 let check_required_module loc sc (sp,d) =
-  try let _ = Nametab.absolute_reference sp in ()
+  try let _ = Nametab.global_of_path sp in ()
   with Not_found ->
     user_err_loc (loc,"prim_token_interpreter",
     str ("Cannot interpret in "^sc^" without requiring first module "
@@ -485,7 +485,7 @@ let (inArgumentsScope,outArgumentsScope) =
       cache_function = cache_arguments_scope;
       load_function = load_arguments_scope;
       subst_function = subst_arguments_scope;
-      classify_function = (fun (_,o) -> Substitute o);
+      classify_function = (fun o -> Substitute o);
       discharge_function = discharge_arguments_scope;
       rebuild_function = rebuild_arguments_scope;
       export_function = (fun x -> Some x) }

@@ -141,7 +141,7 @@ let dummy_constant (ce,_,mk) = dummy_constant_entry,[],mk
 
 let export_constant cst = Some (dummy_constant cst)
 
-let classify_constant (_,cst) = Substitute (dummy_constant cst)
+let classify_constant cst = Substitute (dummy_constant cst)
 
 let (inConstant,_) =
   declare_object { (default_object "CONSTANT") with
@@ -267,7 +267,7 @@ let (inInductive,_) =
     cache_function = cache_inductive;
     load_function = load_inductive;
     open_function = open_inductive;
-    classify_function = (fun (_,a) -> Substitute (dummy_inductive_entry a));
+    classify_function = (fun a -> Substitute (dummy_inductive_entry a));
     subst_function = ident_subst_function;
     discharge_function = discharge_inductive;
     export_function = export_inductive } 

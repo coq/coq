@@ -579,14 +579,14 @@ let lookup_eliminator ind_sp s =
   let id = add_suffix ind_id (elimination_suffix s) in
   (* Try first to get an eliminator defined in the same section as the *)
   (* inductive type *)
-  let ref = ConstRef (make_con mp dp (label_of_id id)) in
-  try 
-    let _ = sp_of_global ref in
-    constr_of_global ref
+  try
+    let cst = make_con mp dp (label_of_id id) in
+    let _ = Global.lookup_constant cst in
+    mkConst cst
   with Not_found ->
   (* Then try to get a user-defined eliminator in some other places *)
   (* using short name (e.g. for "eq_rec") *)
-  try constr_of_global (Nametab.locate (make_short_qualid id))
+  try constr_of_global (Nametab.locate (qualid_of_ident id))
   with Not_found ->
     errorlabstrm "default_elim"
       (strbrk "Cannot find the elimination combinator " ++
@@ -594,25 +594,3 @@ let lookup_eliminator ind_sp s =
        pr_global_env Idset.empty (IndRef ind_sp) ++ 
        strbrk " on sort " ++ pr_sort_family s ++
        strbrk " is probably not allowed.")
-
-
-(*  let env = Global.env() in
-  let path = sp_of_global None (IndRef ind_sp) in
-  let dir, base = repr_path path in
-  let id = add_suffix base (elimination_suffix s) in
-  (* Try first to get an eliminator defined in the same section as the *)
-  (* inductive type *)
-  try construct_absolute_reference (Names.make_path dir id)
-  with Not_found ->
-  (* Then try to get a user-defined eliminator in some other places *)
-  (* using short name (e.g. for "eq_rec") *)
-    try constr_of_global (Nametab.locate (make_short_qualid id))
-    with Not_found ->
-      errorlabstrm "default_elim"
-	(str "Cannot find the elimination combinator " ++
-           pr_id id ++ spc () ++
-	   str "The elimination of the inductive definition " ++
-           pr_id base ++ spc () ++ str "on sort " ++ 
-           spc () ++ pr_sort_family s ++
-	   str " is probably not allowed")
-*)

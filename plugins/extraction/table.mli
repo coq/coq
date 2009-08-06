@@ -13,7 +13,7 @@ open Libnames
 open Miniml
 open Declarations
 
-val safe_id_of_global : global_reference -> identifier
+val safe_basename_of_global : global_reference -> identifier
 
 (*s Warning and Error messages. *)
 

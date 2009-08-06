@@ -33,7 +33,7 @@ type 'a object_declaration = {
   cache_function : object_name * 'a -> unit;
   load_function : int -> object_name * 'a -> unit;
   open_function : int -> object_name * 'a -> unit;
-  classify_function : object_name * 'a -> 'a substitutivity;
+  classify_function : 'a -> 'a substitutivity;
   subst_function : object_name * substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
   rebuild_function : 'a -> 'a;
@@ -48,7 +48,7 @@ let default_object s = {
   open_function = (fun _ _ -> ());
   subst_function = (fun _ -> 
     yell ("The object "^s^" does not know how to substitute!"));
-  classify_function = (fun (_,obj) -> Keep obj);
+  classify_function = (fun obj -> Keep obj);
   discharge_function = (fun _ -> None);
   rebuild_function = (fun x -> x);
   export_function = (fun _ -> None)} 
@@ -74,7 +74,7 @@ type dynamic_object_declaration = {
   dyn_load_function : int -> object_name * obj -> unit;
   dyn_open_function : int -> object_name * obj -> unit;
   dyn_subst_function : object_name * substitution * obj -> obj;
-  dyn_classify_function : object_name * obj -> obj substitutivity;
+  dyn_classify_function : obj -> obj substitutivity;
   dyn_discharge_function : object_name * obj -> obj option;
   dyn_rebuild_function : obj -> obj;
   dyn_export_function : obj -> obj option }
@@ -100,9 +100,9 @@ let declare_object odecl =
     if Dyn.tag lobj = na then 
       infun (odecl.subst_function (oname,sub,outfun lobj))
     else anomaly "somehow we got the wrong dynamic object in the substfun"
-  and classifier (spopt,lobj) = 
+  and classifier lobj = 
     if Dyn.tag lobj = na then 
-      match odecl.classify_function (spopt,outfun lobj) with
+      match odecl.classify_function (outfun lobj) with
 	| Dispose -> Dispose
 	| Substitute obj -> Substitute (infun obj)
 	| Keep obj -> Keep (infun obj)
@@ -167,14 +167,14 @@ let open_object i ((_,lobj) as node) =
 let subst_object ((_,_,lobj) as node) = 
   apply_dyn_fun lobj (fun d -> d.dyn_subst_function node) lobj
 
-let classify_object ((_,lobj) as node) = 
-  apply_dyn_fun Dispose (fun d -> d.dyn_classify_function node) lobj
+let classify_object lobj = 
+  apply_dyn_fun Dispose (fun d -> d.dyn_classify_function lobj) lobj
 
 let discharge_object ((_,lobj) as node) = 
   apply_dyn_fun None (fun d -> d.dyn_discharge_function node) lobj
 
-let rebuild_object (lobj as node) =
-  apply_dyn_fun lobj (fun d -> d.dyn_rebuild_function node) lobj
+let rebuild_object lobj =
+  apply_dyn_fun lobj (fun d -> d.dyn_rebuild_function lobj) lobj
 
 let export_object lobj =
   apply_dyn_fun None (fun d -> d.dyn_export_function lobj) lobj

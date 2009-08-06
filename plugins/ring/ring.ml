@@ -274,7 +274,7 @@ let (theory_to_obj, obj_to_theory) =
 		    open_function = (fun i o -> if i=1 then cache_th o);
                     cache_function = cache_th;
 		    subst_function = subst_th;
-		    classify_function = (fun (_,x) -> Substitute x);
+		    classify_function = (fun x -> Substitute x);
 		    export_function = export_th }
 
 (* from the set A, guess the associated theory *)
@@ -733,7 +733,7 @@ let build_setspolynom gl th lc =
 
 module SectionPathSet =
   Set.Make(struct
-	     type t = section_path
+	     type t = full_path
 	     let compare = Pervasives.compare
 	   end)
 

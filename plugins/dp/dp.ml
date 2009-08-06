@@ -115,7 +115,7 @@ let rename_global r =
 	s
       end
     in
-    loop (Nametab.id_of_global r)
+    loop (Nametab.basename_of_global r)
 
 let foralls =
   List.fold_right 

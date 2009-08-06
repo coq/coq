@@ -770,7 +770,7 @@ let ids_of_cases_tomatch tms =
     tms []
 
 let is_constructor id =
-  try ignore (Nametab.extended_locate (make_short_qualid id)); true
+  try ignore (Nametab.locate_extended (qualid_of_ident id)); true
   with Not_found -> true
  
 let rec cases_pattern_fold_names f a = function

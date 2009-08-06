@@ -384,7 +384,7 @@ let (inCoercion,_) =
     load_function = load_coercion;
     cache_function = cache_coercion;
     subst_function = subst_coercion;
-    classify_function = (fun (_,x) -> Substitute x);
+    classify_function = (fun x -> Substitute x);
     discharge_function = discharge_coercion;
     export_function = (function x -> Some x)  }
 

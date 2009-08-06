@@ -47,7 +47,7 @@ let rec head_const c = match kind_of_term c with
 
 let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
   let env = Global.env () in
-  let crible_rec (sp,_) lobj = match object_tag lobj with
+  let crible_rec (sp,kn) lobj = match object_tag lobj with
     | "VARIABLE" ->
 	(try 
 	   let (id,_,typ) = Global.lookup_named (basename sp) in 
@@ -57,14 +57,13 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
 	     fn (VarRef id) env typ
 	 with Not_found -> (* we are in a section *) ())
     | "CONSTANT" ->
-	let cst = locate_constant (qualid_of_sp sp) in
+	let cst = constant_of_kn kn in
 	let typ = Typeops.type_of_constant env cst in
         if refopt = None
 	  || head_const typ = constr_of_global (Option.get refopt)
 	then
 	  fn (ConstRef cst) env typ
     | "INDUCTIVE" -> 
-	let kn = locate_mind (qualid_of_sp sp) in
         let mib = Global.lookup_mind kn in 
         (match refopt with 
 	  | Some (IndRef ((kn',tyi) as ind)) when kn=kn' ->
@@ -86,7 +85,7 @@ let crible ref = gen_crible (Some ref)
 
 (* Fine Search. By Yves Bertot. *)
 
-exception No_section_path
+exception No_full_path
 
 let rec head c = 
   let c = strip_outer_cast c in
@@ -95,9 +94,9 @@ let rec head c =
   | LetIn (_,_,_,c) -> head c
   | _              -> c
       
-let constr_to_section_path c = match kind_of_term c with
+let constr_to_full_path c = match kind_of_term c with
   | Const sp -> sp
-  | _ -> raise No_section_path
+  | _ -> raise No_full_path
       
 let xor a b = (a or b) & (not (a & b))
 
@@ -109,14 +108,14 @@ let plain_display ref a c =
 let filter_by_module (module_list:dir_path list) (accept:bool) 
   (ref:global_reference) _ _ =
   try
-    let sp = sp_of_global ref in
+    let sp = path_of_global ref in
     let sl = dirpath sp in
     let rec filter_aux = function
       | m :: tl -> (not (is_dirpath_prefix_of m sl)) && (filter_aux tl)
       | [] -> true 
     in
     xor accept (filter_aux module_list)
-  with No_section_path -> 
+  with No_full_path -> 
     false
 
 let ref_eq = Libnames.encode_kn Coqlib.logic_module (id_of_string "eq"), 0
@@ -209,7 +208,7 @@ let gen_filtered_search filter_function display_function =
 
 (** SearchAbout *)
 
-let name_of_reference ref = string_of_id (id_of_global ref)
+let name_of_reference ref = string_of_id (basename_of_global ref)
 
 type glob_search_about_item =
   | GlobSearchSubPattern of constr_pattern

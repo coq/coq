@@ -131,9 +131,9 @@ let get_discharged_hyp_names sp = List.map basename (get_discharged_hyps sp)
 
 let section_parameters = function
   | RRef (_,(ConstructRef ((induri,_),_) | IndRef (induri,_))) ->
-      get_discharged_hyp_names (sp_of_global (IndRef(induri,0)))
+      get_discharged_hyp_names (path_of_global (IndRef(induri,0)))
   | RRef (_,(ConstRef cst as ref)) ->
-      get_discharged_hyp_names (sp_of_global ref)
+      get_discharged_hyp_names (path_of_global ref)
   | _ -> []
 
 let merge vl al =
@@ -217,7 +217,7 @@ END
 VERNAC COMMAND EXTEND Whelp
 | [ "Whelp" "Locate" string(s) ] -> [ whelp_locate s ] 
 | [ "Whelp" "Locate" preident(s) ] -> [ whelp_locate s ] 
-| [ "Whelp" "Elim" global(r) ] -> [ whelp_elim (inductive_of_reference_with_alias r) ] 
+| [ "Whelp" "Elim" global(r) ] -> [ whelp_elim (global_inductive_with_alias r) ] 
 | [ "Whelp" whelp_constr_request(req) constr(c) ] -> [ whelp_constr_expr req c]
 END
 

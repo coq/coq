@@ -206,7 +206,7 @@ let cache_dd (_,(_,na,dd)) =
       (str"The code which adds destructor hints broke;" ++ spc () ++ 
 	 str"this is not supposed to happen")
 
-let classify_dd (_,(local,_,_ as o)) =
+let classify_dd (local,_,_ as o) =
   if local then Dispose else Substitute o
 
 let export_dd (local,_,_ as x) = if local then None else Some x

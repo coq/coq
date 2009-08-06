@@ -161,7 +161,7 @@ let new_inst_no =
   fun () -> incr cnt; string_of_int !cnt
 
 let make_instance_ident gr =
-  Nameops.add_suffix (Nametab.id_of_global gr) ("_autoinstance_"^new_inst_no())
+  Nameops.add_suffix (Nametab.basename_of_global gr) ("_autoinstance_"^new_inst_no())
 
 let new_instance_message ident typ def =
   Flags.if_verbose

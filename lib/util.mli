@@ -171,6 +171,7 @@ val list_lastn : int -> 'a list -> 'a list
 val list_skipn : int -> 'a list -> 'a list 
 val list_addn : int -> 'a -> 'a list -> 'a list
 val list_prefix_of : 'a list -> 'a list -> bool
+(* [list_drop_prefix p l] returns [t] if [l=p++t] else return [l] *)
 val list_drop_prefix : 'a list -> 'a list -> 'a list
 val list_drop_last : 'a list -> 'a list
 (* [map_append f [x1; ...; xn]] returns [(f x1)@(f x2)@...@(f xn)] *)

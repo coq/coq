@@ -137,7 +137,7 @@ and print_modexpr locals mexpr = match mexpr with
 
 
 let rec printable_body dir =     
-  let dir = dirpath_prefix dir in
+  let dir = pop_dirpath dir in
     dir = empty_dirpath || 
     try 
       match Nametab.locate_dir (qualid_of_dirpath dir) with

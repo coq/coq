@@ -34,7 +34,7 @@ let pr_name = function
   | Name id -> pr_id id
   | Anonymous -> str "_"
 
-let pr_sp sp = str(string_of_kn sp)
+let pr_path sp = str(string_of_kn sp)
 let pr_con sp = str(string_of_con sp)
 
 let rec pr_constr c = match kind_of_term c with
@@ -65,9 +65,9 @@ let rec pr_constr c = match kind_of_term c with
       (str"Evar#" ++ int e ++ str"{" ++
        prlist_with_sep spc pr_constr (Array.to_list l) ++str"}")
   | Const c -> str"Cst(" ++ pr_con c ++ str")"
-  | Ind (sp,i) -> str"Ind(" ++ pr_sp sp ++ str"," ++ int i ++ str")"
+  | Ind (sp,i) -> str"Ind(" ++ pr_path sp ++ str"," ++ int i ++ str")"
   | Construct ((sp,i),j) ->
-      str"Constr(" ++ pr_sp sp ++ str"," ++ int i ++ str"," ++ int j ++ str")"
+      str"Constr(" ++ pr_path sp ++ str"," ++ int i ++ str"," ++ int j ++ str")"
   | Case (ci,p,c,bl) -> v 0
       (hv 0 (str"<"++pr_constr p++str">"++ cut() ++ str"Case " ++
              pr_constr c ++ str"of") ++ cut() ++
@@ -711,7 +711,7 @@ let add_vname vars = function
     Name id -> Idset.add id vars
   | _ -> vars
 
-let id_of_global = Nametab.id_of_global
+let basename_of_global = Nametab.basename_of_global
 
 let sort_hdchar = function
   | Prop(_) -> "P"
@@ -731,9 +731,9 @@ let hdchar env c =
 	if i=0 then 
 	  lowercase_first_char (id_of_label (label kn))
 	else 
-	  lowercase_first_char (id_of_global (IndRef x))
+	  lowercase_first_char (basename_of_global (IndRef x))
     | Construct ((sp,i) as x) ->
-	lowercase_first_char (id_of_global (ConstructRef x))
+	lowercase_first_char (basename_of_global (ConstructRef x))
     | Var id  -> lowercase_first_char id
     | Sort s -> sort_hdchar s
     | Rel n ->
@@ -839,14 +839,14 @@ let is_imported_ref = function
 
 let is_global id =
   try 
-    let ref = locate (make_short_qualid id) in
+    let ref = locate (qualid_of_ident id) in
     not (is_imported_ref ref)
   with Not_found -> 
     false
 
 let is_constructor id =
   try 
-    match locate (make_short_qualid id) with 
+    match locate (qualid_of_ident id) with 
       | ConstructRef _ as ref -> not (is_imported_ref ref)
       | _ -> false
   with Not_found -> 
@@ -907,12 +907,12 @@ let occur_rel p env id =
 let occur_id nenv id0 c =
   let rec occur n c = match kind_of_term c with
     | Var id when  id=id0 -> raise Occur
-    | Const kn when id_of_global (ConstRef kn) = id0 -> raise Occur
+    | Const kn when basename_of_global (ConstRef kn) = id0 -> raise Occur
     | Ind ind_sp
-	when id_of_global (IndRef ind_sp) = id0 ->
+	when basename_of_global (IndRef ind_sp) = id0 ->
         raise Occur
     | Construct cstr_sp
-	when id_of_global (ConstructRef cstr_sp) = id0 ->
+	when basename_of_global (ConstructRef cstr_sp) = id0 ->
         raise Occur
     | Rel p when p>n & occur_rel (p-n) nenv id0 -> raise Occur
     | _ -> iter_constr_with_binders succ occur n c

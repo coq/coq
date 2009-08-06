@@ -118,7 +118,7 @@ let type_of_global_ref gr =
 let remove_sections dir =
   if Libnames.is_dirpath_prefix_of dir (Lib.cwd ()) then
     (* Not yet (fully) discharged *)
-    Libnames.extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ())
+    Libnames.pop_dirpath_n (Lib.sections_depth ()) (Lib.cwd ())
   else
     (* Theorem/Lemma outside its outer section of definition *)
     dir
@@ -139,7 +139,7 @@ let add_glob_gen loc sp lib_dp ty =
 
 let add_glob loc ref = 
   if dump () && loc <> Util.dummy_loc then
-    let sp = Nametab.sp_of_global ref in
+    let sp = Nametab.path_of_global ref in
     let lib_dp = Lib.library_part ref in
     let ty = type_of_global_ref ref in
       add_glob_gen loc sp lib_dp ty
@@ -150,7 +150,7 @@ let mp_of_kn kn =
 
 let add_glob_kn loc kn =
   if dump () && loc <> Util.dummy_loc then
-    let sp = Nametab.sp_of_syntactic_definition kn in
+    let sp = Nametab.path_of_syndef kn in
     let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
       add_glob_gen loc sp lib_dp "syndef"
 

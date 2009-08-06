@@ -58,9 +58,9 @@ let load_and_subst_objects i prefix subst seg =
 let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
-    | ((sp,kn as oname),Leaf o) :: stk -> 
+    | ((sp,kn),Leaf o) :: stk -> 
 	let id = Names.id_of_label (Names.label kn) in
-	  (match classify_object (oname,o) with 
+	  (match classify_object o with 
 	     | Dispose -> clean acc stk
 	     | Keep o' -> 
 		 clean (substl, (id,o')::keepl, anticipl) stk
@@ -117,7 +117,7 @@ let cwd () = fst !path_prefix
 let current_dirpath sec =
   Libnames.drop_dirpath_prefix (library_dp ()) 
     (if sec then cwd () 
-      else Libnames.extract_dirpath_prefix (sections_depth ()) (cwd ()))
+      else Libnames.pop_dirpath_n (sections_depth ()) (cwd ()))
     
 let make_path id = Libnames.make_path (cwd ()) id
 
@@ -211,10 +211,6 @@ let add_anonymous_entry node =
   add_entry name node;
   name
 
-let add_absolutely_named_leaf sp obj =
-  cache_object (sp,obj);
-  add_entry sp (Leaf obj)
-
 let add_leaf id obj =
   if fst (current_prefix ()) = Names.initial_path then 
     error ("No session module started (use -top dir)");
@@ -250,58 +246,55 @@ let add_frozen_state () =
 (* Modules. *)
 
 
-let is_something_opened = function 
-    (_,OpenedSection _) -> true 
-  | (_,OpenedModule _) -> true
-  | (_,OpenedModtype _) -> true
+let is_opened id = function 
+    oname,(OpenedSection _ | OpenedModule _ | OpenedModtype _) when
+      basename (fst oname) = id -> true
+  | _ -> false
+
+let is_opening_node = function 
+    _,(OpenedSection _ | OpenedModule _ | OpenedModtype _) -> true
   | _ -> false
 
 
 let current_mod_id () = 
-  try match find_entry_p is_something_opened with
-    | oname,OpenedModule (_,_,nametab) -> 
+  try match find_entry_p is_opening_node with
+    | oname,OpenedModule (_,_,fs) -> 
 	basename (fst oname)
-    | oname,OpenedModtype (_,nametab) -> 
+    | oname,OpenedModtype (_,fs) -> 
 	basename (fst oname)
     | _ -> error "you are not in a module"
   with Not_found ->
     error "no opened modules"
 
 
-let start_module export id mp nametab = 
-  let dir = extend_dirpath (fst !path_prefix) id in
+let start_module export id mp fs = 
+  let dir = add_dirpath_suffix (fst !path_prefix) id in
   let prefix = dir,(mp,Names.empty_dirpath) in
   let oname = make_path id, make_kn id in
   if Nametab.exists_module dir then
     errorlabstrm "open_module" (pr_id id ++ str " already exists") ;
-  add_entry oname (OpenedModule (export,prefix,nametab));
+  add_entry oname (OpenedModule (export,prefix,fs));
   path_prefix := prefix;
   prefix
 (*  add_frozen_state () must be called in declaremods *)
+
+let error_still_opened string oname =
+  let id = basename (fst oname) in
+  errorlabstrm "" (str string ++ spc () ++ pr_id id ++ str " is still opened.")
  
-let end_module id = 
-  let oname,nametab = 
-    try match find_entry_p is_something_opened with
-      | oname,OpenedModule (_,_,nametab) -> 
-	  let id' = basename (fst oname) in
-	    if id<>id' then 
-	      errorlabstrm "end_module" (str "last opened module is " ++ pr_id id'); 
-	    oname,nametab
-      | oname,OpenedModtype _ ->
-	  let id' = basename (fst oname) in
-	    errorlabstrm "end_module" 
-	      (str "module type " ++ pr_id id' ++ str " is still opened")
-      | oname,OpenedSection _ ->
-	  let id' = basename (fst oname) in
-	    errorlabstrm  "end_module" 
-	      (str "section " ++ pr_id id' ++ str " is still opened")
+let end_module () = 
+  let oname,fs = 
+    try match find_entry_p is_opening_node with
+      | oname,OpenedModule (_,_,fs) -> oname,fs
+      | oname,OpenedModtype _ -> error_still_opened "Module Type" oname
+      | oname,OpenedSection _ -> error_still_opened "Section" oname
       | _ -> assert false
     with Not_found ->
-      error "no opened modules"
+      error "No opened modules."
   in
   let (after,modopening,before) = split_lib oname in
   lib_stk := before;
-  add_entry (make_oname id) (ClosedModule (List.rev_append after (List.rev modopening)));
+  add_entry oname (ClosedModule (List.rev_append after (List.rev modopening)));
   let prefix = !path_prefix in
   (* LEM: This module business seems more complicated than sections;
           shouldn't a backtrack into a closed module also do something
@@ -311,48 +304,37 @@ let end_module id =
   recalc_path_prefix ();
   (* add_frozen_state must be called after processing the module, 
      because we cannot recache interactive modules  *) 
-  (oname, prefix, nametab,after)
+  (oname, prefix, fs, after)
 
-let start_modtype id mp nametab = 
-  let dir = extend_dirpath (fst !path_prefix) id in
+let start_modtype id mp fs = 
+  let dir = add_dirpath_suffix (fst !path_prefix) id in
   let prefix = dir,(mp,Names.empty_dirpath) in
   let sp = make_path id in
   let name = sp, make_kn id in
   if Nametab.exists_cci sp then
     errorlabstrm "open_modtype" (pr_id id ++ str " already exists") ;
-  add_entry name (OpenedModtype (prefix,nametab));
+  add_entry name (OpenedModtype (prefix,fs));
   path_prefix := prefix;
   prefix
 
-let end_modtype id = 
-  let sp,nametab = 
-    try match find_entry_p is_something_opened with
-      | oname,OpenedModtype (_,nametab) -> 
-	  let id' = basename (fst oname) in
-	  if id<>id' then 
-	    errorlabstrm "end_modtype" (str "last opened module type is " ++ pr_id id'); 
-	    oname,nametab
-      | oname,OpenedModule _ ->
-	  let id' = basename (fst oname) in
-	    errorlabstrm "end_modtype" 
-	      (str "module " ++ pr_id id' ++ str " is still opened")
-      | oname,OpenedSection _ ->
-	  let id' = basename (fst oname) in
-	    errorlabstrm "end_modtype" 
-	      (str "section " ++ pr_id id' ++ str " is still opened")
+let end_modtype () = 
+  let oname,fs = 
+    try match find_entry_p is_opening_node with
+      | oname,OpenedModtype (_,fs) -> oname,fs
+      | oname,OpenedModule _ -> error_still_opened "Module" oname
+      | oname,OpenedSection _ -> error_still_opened "Section" oname
       | _ -> assert false
     with Not_found ->
       error "no opened module types"
   in
-  let (after,modtypeopening,before) = split_lib sp in
+  let (after,modtypeopening,before) = split_lib oname in
   lib_stk := before;
-  add_entry (make_oname id) (ClosedModtype (List.rev_append after (List.rev modtypeopening)));
+  add_entry oname (ClosedModtype (List.rev_append after (List.rev modtypeopening)));
   let dir = !path_prefix in
   recalc_path_prefix ();
   (* add_frozen_state must be called after processing the module type.
      This is because we cannot recache interactive module types *) 
-  (sp,dir,nametab,after)
-
+  (oname,dir,fs,after)
 
 
 let contents_after = function
@@ -381,16 +363,16 @@ let start_compilation s mp =
 
 let end_compilation dir =
   let _ =
-    try match find_entry_p is_something_opened with
-      | _, OpenedSection _ -> error "There are some open sections"
-      | _, OpenedModule _ -> error "There are some open modules"
-      | _, OpenedModtype _ -> error "There are some open module types"
+    try match snd (find_entry_p is_opening_node) with
+      | OpenedSection _ -> error "There are some open sections."
+      | OpenedModule _ -> error "There are some open modules."
+      | OpenedModtype _ -> error "There are some open module types."
       | _ -> assert false
     with
 	Not_found -> () 
   in
   let module_p =
-    function (_,CompilingLibrary _) -> true | x -> is_something_opened x
+    function (_,CompilingLibrary _) -> true | x -> is_opening_node x
   in
   let oname = 
     try match find_entry_p module_p with
@@ -434,8 +416,12 @@ let is_module () =
 	Not_found -> false
 
 
-(* Returns the most recent OpenedThing node *)
-let what_is_opened () = find_entry_p is_something_opened
+(* Returns the opening node of a given name *)
+let find_opening_node id =
+  try snd (find_entry_p (is_opened id))
+  with Not_found -> 
+  try ignore (find_entry_p is_opening_node); error "There is nothing to end."
+  with Not_found -> error "Nothing to end of this name."
 
 (* Discharge tables *)
 
@@ -549,18 +535,18 @@ let set_xml_close_section f = xml_close_section := f
 
 let open_section id =
   let olddir,(mp,oldsec) = !path_prefix in
-  let dir = extend_dirpath olddir id in
-  let prefix = dir, (mp, extend_dirpath oldsec id) in
+  let dir = add_dirpath_suffix olddir id in
+  let prefix = dir, (mp, add_dirpath_suffix oldsec id) in
   let name = make_path id, make_kn id (* this makes little sense however *) in
-    if Nametab.exists_section dir then
-      errorlabstrm "open_section" (pr_id id ++ str " already exists");
-    let sum = freeze_summaries() in
-      add_entry name (OpenedSection (prefix, sum));
-      (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
-      Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
-      path_prefix := prefix;
-      if !Flags.xml_export then !xml_open_section id;
-      add_section ()
+  if Nametab.exists_section dir then
+    errorlabstrm "open_section" (pr_id id ++ str " already exists.");
+  let fs = freeze_summaries() in
+  add_entry name (OpenedSection (prefix, fs));
+  (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
+  Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
+  path_prefix := prefix;
+  if !Flags.xml_export then !xml_open_section id;
+  add_section ()
 
 
 (* Restore lib_stk and summaries as before the section opening, and
@@ -575,14 +561,10 @@ let discharge_item ((sp,_ as oname),e) =
   | OpenedSection _ | OpenedModtype _ | OpenedModule _ | CompilingLibrary _ ->
       anomaly "discharge_item"
 
-let close_section id =
+let close_section () =
   let oname,fs = 
-    try match find_entry_p is_something_opened with
-      | oname,OpenedSection (_,fs) -> 
-	  let id' = basename (fst oname) in 
-	    if id <> id' then 
-	      errorlabstrm "close_section" (str "Last opened section is " ++ pr_id id' ++ str ".");
-	    (oname,fs)
+    try match find_entry_p is_opening_node with
+      | oname,OpenedSection (_,fs) -> oname,fs
       | _ -> assert false 
     with Not_found ->
       error "No opened section."
@@ -591,8 +573,8 @@ let close_section id =
   lib_stk := before;
   let full_olddir = fst !path_prefix in
   pop_path_prefix ();
-  add_entry (make_oname id) (ClosedSection (List.rev_append secdecls (List.rev secopening)));
-  if !Flags.xml_export then !xml_close_section id;
+  add_entry oname (ClosedSection (List.rev_append secdecls (List.rev secopening)));
+  if !Flags.xml_export then !xml_close_section (basename (fst oname));
   let newdecls = List.map discharge_item secdecls in
   Summary.section_unfreeze_summaries fs;
   List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;
@@ -826,7 +808,7 @@ let library_part ref =
     | _ -> dp_of_mp (mp_of_global ref)
 
 let remove_section_part ref =
-  let sp = Nametab.sp_of_global ref in
+  let sp = Nametab.path_of_global ref in
   let dir,_ = repr_path sp in
   match ref with
   | VarRef id -> 
@@ -834,7 +816,7 @@ let remove_section_part ref =
   | _ ->
       if is_dirpath_prefix_of dir (cwd ()) then
         (* Not yet (fully) discharged *)
-        extract_dirpath_prefix (sections_depth ()) (cwd ())
+        pop_dirpath_n (sections_depth ()) (cwd ())
       else
 	(* Theorem/Lemma outside its outer section of definition *)
 	dir
@@ -844,11 +826,11 @@ let remove_section_part ref =
 
 let pop_kn kn =
   let (mp,dir,l) = Names.repr_kn kn in
-  Names.make_kn mp (dirpath_prefix dir) l
+  Names.make_kn mp (pop_dirpath dir) l
 
 let pop_con con = 
   let (mp,dir,l) = Names.repr_con con in
-  Names.make_con mp (dirpath_prefix dir) l
+  Names.make_con mp (pop_dirpath dir) l
 
 let con_defined_in_sec kn = 
   let _,dir,_ = Names.repr_con kn in

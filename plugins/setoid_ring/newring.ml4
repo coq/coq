@@ -352,18 +352,11 @@ let from_name = ref Spmap.empty
 
 let ring_for_carrier r = Cmap.find r !from_carrier
 let ring_for_relation rel = Cmap.find rel !from_relation
-let ring_lookup_by_name ref =
-  Spmap.find (Nametab.locate_obj (snd(qualid_of_reference ref))) !from_name
 
 
-let find_ring_structure env sigma l oname =
-  match oname, l with
-      Some rf, _ ->
-        (try ring_lookup_by_name rf
-        with Not_found ->
-          errorlabstrm "ring"
-            (str "found no ring named "++pr_reference rf))
-    | None, t::cl' ->
+let find_ring_structure env sigma l =
+  match l with
+    | t::cl' ->
         let ty = Retyping.get_type_of env sigma t in
         let check c =
           let ty' = Retyping.get_type_of env sigma c in
@@ -377,7 +370,7 @@ let find_ring_structure env sigma l oname =
           errorlabstrm "ring"
             (str"cannot find a declared ring structure over"++
              spc()++str"\""++pr_constr ty++str"\""))
-    | None, [] -> assert false
+    | [] -> assert false
 (*
         let (req,_,_) = dest_rel cl in
         (try ring_for_relation req
@@ -457,7 +450,7 @@ let (theory_to_obj, obj_to_theory) =
       open_function = (fun i o -> if i=1 then cache_th o);
       cache_function = cache_th;
       subst_function = subst_th;
-      classify_function = (fun (_,x) -> Substitute x);
+      classify_function = (fun x -> Substitute x);
       export_function = export_th }
 
 
@@ -835,7 +828,7 @@ let ring_lookup (f:glob_tactic_expr) lH rl t gl =
   let env = pf_env gl in
   let sigma = project gl in
   let rl = make_args_list rl t in
-  let e = find_ring_structure env sigma rl None in
+  let e = find_ring_structure env sigma rl in
   let rl = carg (make_term_list e.ring_carrier rl) in
   let lH = carg (make_hyp_list env lH) in
   let ring = ltac_ring_structure e in
@@ -941,20 +934,11 @@ let field_from_name = ref Spmap.empty
 
 let field_for_carrier r = Cmap.find r !field_from_carrier
 let field_for_relation rel = Cmap.find rel !field_from_relation
-let field_lookup_by_name ref =
-  Spmap.find (Nametab.locate_obj (snd(qualid_of_reference ref)))
-    !field_from_name
 
-
-let find_field_structure env sigma l oname =
+let find_field_structure env sigma l =
   check_required_library (cdir@["Field_tac"]);
-  match oname, l with
-      Some rf, _ ->
-        (try field_lookup_by_name rf
-        with Not_found ->
-          errorlabstrm "field"
-            (str "found no field named "++pr_reference rf))
-    | None, t::cl' ->
+  match l with
+    | t::cl' ->
         let ty = Retyping.get_type_of env sigma t in
         let check c =
           let ty' = Retyping.get_type_of env sigma c in
@@ -968,7 +952,7 @@ let find_field_structure env sigma l oname =
           errorlabstrm "field"
             (str"cannot find a declared field structure over"++
              spc()++str"\""++pr_constr ty++str"\""))
-    | None, [] -> assert false
+    | [] -> assert false
 (*        let (req,_,_) = dest_rel cl in
         (try field_for_relation req
         with Not_found ->
@@ -1046,7 +1030,7 @@ let (ftheory_to_obj, obj_to_ftheory) =
       open_function = (fun i o -> if i=1 then cache_th o);
       cache_function = cache_th;
       subst_function = subst_th;
-      classify_function = (fun (_,x) -> Substitute x);
+      classify_function = (fun x -> Substitute x);
       export_function = export_th }
 
 let field_equality r inv req =
@@ -1175,7 +1159,7 @@ let field_lookup (f:glob_tactic_expr) lH rl t gl =
   let env = pf_env gl in
   let sigma = project gl in
   let rl = make_args_list rl t in
-  let e = find_field_structure env sigma rl None in
+  let e = find_field_structure env sigma rl in
   let rl = carg (make_term_list e.field_carrier rl) in
   let lH = carg (make_hyp_list env lH) in
   let field = ltac_field_structure e in

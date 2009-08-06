@@ -35,7 +35,7 @@ let (inToken, outToken) =
        open_function = (fun i o -> if i=1 then cache_token o);
        cache_function = cache_token;
        subst_function = Libobject.ident_subst_function;
-       classify_function = (fun (_,o) -> Substitute o);
+       classify_function = (fun o -> Substitute o);
        export_function = (fun x -> Some x)}
 
 let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
@@ -74,7 +74,7 @@ let (inTacticGrammar, outTacticGrammar) =
        open_function = (fun i o -> if i=1 then cache_tactic_notation o);
        cache_function = cache_tactic_notation;
        subst_function = subst_tactic_notation;
-       classify_function = (fun (_,o) -> Substitute o);
+       classify_function = (fun o -> Substitute o);
        export_function = (fun x -> Some x)}
 
 let cons_production_parameter l = function
@@ -681,7 +681,7 @@ let subst_syntax_extension (_,subst,(local,sy)) =
   (local, List.map (fun (prec,ntn,gr,pp) ->
      (prec,ntn, subst_parsing_rule subst gr, subst_printing_rule subst pp)) sy)
 
-let classify_syntax_definition (_,(local,_ as o)) =
+let classify_syntax_definition (local,_ as o) =
   if local then Dispose else Substitute o
 
 let export_syntax_definition (local,_ as o) =
@@ -873,7 +873,7 @@ let cache_notation o =
 let subst_notation (_,subst,(lc,scope,pat,b,ndf)) =
   (lc,scope,subst_interpretation subst pat,b,ndf)
 
-let classify_notation (_,(local,_,_,_,_ as o)) =
+let classify_notation (local,_,_,_,_ as o) =
   if local then Dispose else Substitute o
 
 let export_notation (local,_,_,_,_ as o) =
@@ -1058,7 +1058,7 @@ let (inScopeCommand,outScopeCommand) =
       open_function = open_scope_command;
       load_function = load_scope_command;
       subst_function = subst_scope_command;
-      classify_function = (fun (_,obj) -> Substitute obj);
+      classify_function = (fun obj -> Substitute obj);
       export_function = (fun x -> Some x) }
 
 let add_delimiters scope key =

@@ -106,7 +106,7 @@ let convert_one_inductive sp tyi =
   let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp tyi in
   let env = Global.env () in
   let envpar = push_rel_context params env in
-  let sp = sp_of_global (IndRef (sp, tyi)) in
+  let sp = path_of_global (IndRef (sp, tyi)) in
   (((false,(dummy_loc,basename sp)),
    convert_env(List.rev params),
    Some (extern_constr true envpar arity), Vernacexpr.Inductive_kw ,
@@ -192,18 +192,6 @@ let leaf_entry_to_ast_list ((sp,kn),lobj) =
 let name_to_ast ref =
   let (loc,qid) = qualid_of_reference ref in
   let l = 
-    try
-      let sp = Nametab.locate_obj qid in
-      let (sp,lobj) = 
-      	let (sp,entry) =
-          List.find (fun en -> (fst (fst en)) = sp) (Lib.contents_after None)
-      	in
-	  match entry with
-            | Lib.Leaf obj -> (sp,obj)
-            | _ -> raise Not_found
-      in
-    	leaf_entry_to_ast_list (sp,lobj)
-    with Not_found -> 
       try 
     	match Nametab.locate qid with
 	  | ConstRef sp -> constant_to_ast_list sp
@@ -220,7 +208,7 @@ let name_to_ast ref =
 		   | Some c1 -> make_definition_ast name c1 typ [])
 	  with Not_found ->
 	    try
-	      let _sp = Nametab.locate_syntactic_definition qid in
+	      let _sp = Nametab.locate_syndef qid in
 		errorlabstrm "print"
       		  (str "printing of syntax definitions not implemented")
 	    with Not_found ->

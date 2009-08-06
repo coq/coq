@@ -15,7 +15,7 @@
 (* Utility Functions *)
 
 exception TwoModulesWhoseDirPathIsOneAPrefixOfTheOther;;
-let get_module_path_of_section_path path =
+let get_module_path_of_full_path path =
  let dirpath = fst (Libnames.repr_path path) in
  let modules = Lib.library_dp () :: (Library.loaded_libraries ()) in
   match
@@ -177,7 +177,7 @@ let uri_of_kernel_name tag =
 
 let uri_of_declaration id tag =
  let module LN = Libnames in
- let dir = LN.extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ()) in
+ let dir = LN.pop_dirpath_n (Lib.sections_depth ()) (Lib.cwd ()) in
  let tokens = token_list_of_path dir id tag in
   "cic:/" ^ String.concat "/" tokens
 
@@ -468,14 +468,14 @@ print_endline "PASSATO" ; flush stdout ;
                 match g with
                    Libnames.ConstructRef ((induri,_),_)
                  | Libnames.IndRef (induri,_) ->
-                    Nametab.sp_of_global (Libnames.IndRef (induri,0))
+                    Nametab.path_of_global (Libnames.IndRef (induri,0))
                  | Libnames.VarRef id ->
                     (* Invariant: variables are never cooked in Coq *)
                     raise Not_found
-                 | _ -> Nametab.sp_of_global g
+                 | _ -> Nametab.path_of_global g
                in
                Dischargedhypsmap.get_discharged_hyps sp,
-               get_module_path_of_section_path sp
+               get_module_path_of_full_path sp
              with Not_found ->
                 (* no explicit substitution *)
                 [], Libnames.dirpath_of_string "dummy"

@@ -76,7 +76,7 @@ type 'a object_declaration = {
   cache_function : object_name * 'a -> unit;
   load_function : int -> object_name * 'a -> unit;
   open_function : int -> object_name * 'a -> unit;
-  classify_function : object_name * 'a -> 'a substitutivity;
+  classify_function : 'a -> 'a substitutivity;
   subst_function : object_name * substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
   rebuild_function : 'a -> 'a;
@@ -111,7 +111,7 @@ val cache_object : object_name * obj -> unit
 val load_object : int -> object_name * obj -> unit
 val open_object : int -> object_name * obj -> unit
 val subst_object : object_name * substitution * obj -> obj
-val classify_object : object_name * obj -> obj substitutivity
+val classify_object : obj -> obj substitutivity
 val export_object : obj -> obj option
 val discharge_object : object_name * obj -> obj option
 val rebuild_object : obj -> obj

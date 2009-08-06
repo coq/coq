@@ -612,7 +612,7 @@ let eq_local_binders bl1 bl2 =
   List.length bl1 = List.length bl2 && List.for_all2 eq_local_binder bl1 bl2
 
 let extract_coercions indl =
-  let mkqid (_,((_,id),_)) = make_short_qualid id in
+  let mkqid (_,((_,id),_)) = qualid_of_ident id in
   let extract lc = List.filter (fun (iscoe,_) -> iscoe) lc in
   List.map mkqid (List.flatten(List.map (fun (_,_,_,lc) -> extract lc) indl))
 
@@ -930,7 +930,7 @@ requested
        let l1,l2 = split_scheme q in
     ( match t with
       | InductionScheme (x,y,z) ->
-             let ind = mkInd (Nametab.inductive_of_reference y) in
+             let ind = mkInd (Nametab.global_inductive y) in
              let sort_of_ind = family_of_sort (Typing.sort_of env Evd.empty ind)
 in
              let z' = family_of_sort (interp_sort z) in
@@ -969,7 +969,7 @@ let build_induction_scheme lnamedepindsort =
   let lrecspec =
     List.map
       (fun (_,dep,indid,sort) ->
-        let ind = Nametab.inductive_of_reference indid in
+        let ind = Nametab.global_inductive indid in
         let (mib,mip) = Global.lookup_inductive ind in
          (ind,mib,mip,dep,interp_elimination_sort sort)) 
       lnamedepindsort
@@ -998,7 +998,7 @@ tried to declare different schemes at once *)
     else (
       if ischeme <> [] then build_induction_scheme ischeme;
       List.iter ( fun indname -> 
-        let ind = Nametab.inductive_of_reference indname
+        let ind = Nametab.global_inductive indname
         in declare_eq_scheme (fst ind);
         try
            make_eq_decidability ind 

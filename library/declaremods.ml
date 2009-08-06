@@ -104,7 +104,7 @@ let _ = Summary.declare_summary "MODULE-INFO"
 	    Summary.survive_module = false;
 	    Summary.survive_section = false }
 
-(* auxiliary functions to transform section_path and kernel_name given
+(* auxiliary functions to transform full_path and kernel_name given
    by Lib into module_path and dir_path needed for modules *)
 
 let mp_of_kn kn = 
@@ -116,7 +116,7 @@ let mp_of_kn kn =
 
 let dir_of_sp sp = 
   let dir,id = repr_path sp in
-    extend_dirpath dir id
+    add_dirpath_suffix dir id
 
 let msid_of_mp = function
     MPself msid -> msid
@@ -287,7 +287,7 @@ let subst_module ((sp,kn),subst,(entry,substobjs,_)) =
     (None,substobjs,substituted)
 
 
-let classify_module (_,(_,substobjs,_)) =
+let classify_module (_,substobjs,_) =
   Substitute (None,substobjs,None)
 
 
@@ -449,7 +449,7 @@ and subst_module_alias ((sp,kn),subst,(entry,substobjs,_)) =
 	  end
       | None -> anomaly "Modops: Empty info"
 
-and classify_module_alias (_,(entry,substobjs,_)) =
+and classify_module_alias (entry,substobjs,_) =
   Substitute (entry,substobjs,None)
 	        
 let (in_module_alias,out_module_alias) =
@@ -530,7 +530,7 @@ let cache_modtype ((sp,kn),(entry,modtypeobjs)) =
 
   if Nametab.exists_modtype sp then
     errorlabstrm "cache_modtype"
-      (pr_sp sp ++ str " already exists") ;
+      (pr_path sp ++ str " already exists") ;
 
   Nametab.push_modtype (Nametab.Until 1) sp (mp_of_kn kn);
 
@@ -542,7 +542,7 @@ let load_modtype i ((sp,kn),(entry,modtypeobjs)) =
 
   if Nametab.exists_modtype sp then
     errorlabstrm "cache_modtype"
-      (pr_sp sp ++ str " already exists") ;
+      (pr_path sp ++ str " already exists") ;
 
   Nametab.push_modtype (Nametab.Until i) sp (mp_of_kn kn);
     
@@ -553,11 +553,11 @@ let open_modtype i ((sp,kn),(entry,_)) =
   check_empty "open_modtype" entry;
 
   if 
-    try Nametab.locate_modtype (qualid_of_sp sp) <> (mp_of_kn kn) 
+    try Nametab.locate_modtype (qualid_of_path sp) <> (mp_of_kn kn) 
     with Not_found -> true
   then
     errorlabstrm ("open_modtype") 
-      (pr_sp sp ++ str " should already exist!");
+      (pr_path sp ++ str " should already exist!");
 
   Nametab.push_modtype (Nametab.Exactly i) sp (mp_of_kn kn)
 
@@ -566,7 +566,7 @@ let subst_modtype (_,subst,(entry,(subs,mbids,msid,objs))) =
   (entry,(join subs subst,mbids,msid,objs))
 
 
-let classify_modtype (_,(_,substobjs)) =
+let classify_modtype (_,substobjs) =
   Substitute (None,substobjs)
 
 
@@ -726,9 +726,9 @@ let start_module interp_modtype export id args res_o =
   Lib.add_frozen_state (); mp
 
 
-let end_module id =
+let end_module () =
 
-  let oldoname,oldprefix,fs,lib_stack = Lib.end_module id in
+  let oldoname,oldprefix,fs,lib_stack = Lib.end_module () in
   let mbids, res_o, sub_o = !openmod_info in
   let substitute, keep, special = Lib.classify_segment lib_stack in
 
@@ -753,6 +753,7 @@ let end_module id =
     (* must be called after get_modtype_substobjs, because of possible
      dependencies on functor arguments *)
 
+  let id = basename (fst oldoname) in
   let mp = Global.end_module id res_o in
 
   begin match sub_o with
@@ -845,7 +846,7 @@ let cache_import (_,(_,mp)) =
   let mp = Nametab.locate_module (qualid_of_dirpath dir) in  *)
   really_import_module mp
 
-let classify_import (_,(export,_ as obj)) = 
+let classify_import (export,_ as obj) = 
   if export then Substitute obj else Dispose
 
 let subst_import (_,subst,(export,mp as obj)) =
@@ -880,9 +881,10 @@ let start_modtype interp_modtype id args =
   Lib.add_frozen_state (); mp
 
 
-let end_modtype id =
+let end_modtype () =
 
-  let oldoname,prefix,fs,lib_stack = Lib.end_modtype id in
+  let oldoname,prefix,fs,lib_stack = Lib.end_modtype () in
+  let id = basename (fst oldoname) in
   let ln = Global.end_modtype id in
   let substitute, _, special = Lib.classify_segment lib_stack in
 
@@ -1041,7 +1043,7 @@ let subst_include (oname,subst,((me,is_mod),substobj,_)) =
   let substituted = subst_substobjs dir mp1 substobjs in
     ((subst_inc_expr subst' me,is_mod),substobjs,substituted)
 
-let classify_include (_,((me,is_mod),substobjs,_)) =
+let classify_include ((me,is_mod),substobjs,_) =
   Substitute ((me,is_mod),substobjs,None)
 
 let (in_include,out_include) =

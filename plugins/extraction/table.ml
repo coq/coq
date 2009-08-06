@@ -182,7 +182,7 @@ let modular () = !modular_ref
    WARNING: for inductive objects, an extract_inductive must have been
    done before. *)
 
-let safe_id_of_global = function
+let safe_basename_of_global = function
   | ConstRef kn -> let _,_,l = repr_con kn in id_of_label l
   | IndRef (kn,i) -> (snd (lookup_ind kn)).ind_packets.(i).ip_typename
   | ConstructRef ((kn,i),j) ->
@@ -191,7 +191,7 @@ let safe_id_of_global = function
 
 let safe_pr_global r =
  try Printer.pr_global r
- with _ -> pr_id (safe_id_of_global r)
+ with _ -> pr_id (safe_basename_of_global r)
 
 (* idem, but with qualification, and only for constants. *)
 
@@ -207,7 +207,7 @@ let pr_long_mp mp =
   let lid = repr_dirpath (Nametab.dir_of_mp mp) in
   str (String.concat "." (List.map string_of_id (List.rev lid)))
 
-let pr_long_global ref = pr_sp (Nametab.sp_of_global ref)
+let pr_long_global ref = pr_path (Nametab.path_of_global ref)
 
 (*S Warning and Error messages. *)
 
@@ -452,7 +452,7 @@ let (inline_extraction,_) =
        cache_function = (fun (_,(b,l)) -> add_inline_entries b l);
        load_function = (fun _ (_,(b,l)) -> add_inline_entries b l);
        export_function = (fun x -> Some x);
-       classify_function = (fun (_,o) -> Substitute o);
+       classify_function = (fun o -> Substitute o);
        subst_function =
         (fun (_,s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))
     }
@@ -535,7 +535,7 @@ let (blacklist_extraction,_) =
        cache_function = (fun (_,l) -> add_blacklist_entries l);
        load_function = (fun _ (_,l) -> add_blacklist_entries l);
        export_function = (fun x -> Some x);
-       classify_function = (fun (_,o) -> Libobject.Keep o);
+       classify_function = (fun o -> Libobject.Keep o);
        subst_function = (fun (_,_,x) -> x)
     }
 
@@ -595,7 +595,7 @@ let (in_customs,_) =
        cache_function = (fun (_,(r,ids,s)) -> add_custom r ids s);
        load_function = (fun _ (_,(r,ids,s)) -> add_custom r ids s);
        export_function = (fun x -> Some x);
-       classify_function = (fun (_,o) -> Substitute o);
+       classify_function = (fun o -> Substitute o);
        subst_function =
         (fun (_,s,(r,ids,str)) -> (fst (subst_global s r), ids, str))
     }

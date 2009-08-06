@@ -224,7 +224,7 @@ let subst_hintrewrite (_,subst,(rbase,list as node)) =
     if list' == list then node else
       (rbase,list')
       
-let classify_hintrewrite (_,x) = Libobject.Substitute x
+let classify_hintrewrite x = Libobject.Substitute x
 
 
 (* Declaration of the Hint Rewrite library object *)

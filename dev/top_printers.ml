@@ -46,7 +46,7 @@ let ppdir dir = pp (pr_dirpath dir)
 let ppmp mp = pp(str (string_of_mp mp))
 let ppcon con = pp(pr_con con)
 let ppkn kn = pp(pr_kn kn)
-let ppsp sp = pp(pr_sp sp)
+let ppsp sp = pp(pr_path sp)
 let ppqualid qid = pp(pr_qualid qid)
 let ppclindex cl = pp(Classops.pr_cl_index cl)
 

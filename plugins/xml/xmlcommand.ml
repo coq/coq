@@ -102,7 +102,7 @@ let filter_params pvars hyps =
  in
   let cwd = Lib.cwd () in
   let cwdsp = Libnames.make_path cwd (Names.id_of_string "dummy") in
-  let modulepath = Cic2acic.get_module_path_of_section_path cwdsp in
+  let modulepath = Cic2acic.get_module_path_of_full_path cwdsp in
    aux (Names.repr_dirpath modulepath) (List.rev pvars)
 ;;
 
@@ -118,7 +118,7 @@ let search_variables () =
  let module N = Names in
   let cwd = Lib.cwd () in
   let cwdsp = Libnames.make_path cwd (Names.id_of_string "dummy") in
-  let modulepath = Cic2acic.get_module_path_of_section_path cwdsp in
+  let modulepath = Cic2acic.get_module_path_of_full_path cwdsp in
    let rec aux =
     function
        [] -> []

@@ -506,7 +506,7 @@ let simple_extraction r = match locate_ref [r] with
 let extraction_library is_rec m =
   init true;
   let dir_m =
-    let q = make_short_qualid m in
+    let q = qualid_of_ident m in
     try Nametab.full_name_module q with Not_found -> error_unknown_module q
   in
   Visit.add_mp (MPfile dir_m);

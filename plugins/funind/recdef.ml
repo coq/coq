@@ -1386,7 +1386,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let tcc_lemma_constr = ref None in 
 (*   let _ = Pp.msgnl (str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
   let hook _ _ =   
-    let term_ref = Nametab.locate (make_short_qualid term_id) in
+    let term_ref = Nametab.locate (qualid_of_ident term_id) in
     let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
 (*     message "start second proof"; *)
     let stop = ref false in 
@@ -1404,7 +1404,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
     end;
     if not !stop
     then
-      let eq_ref = Nametab.locate (make_short_qualid equation_id ) in
+      let eq_ref = Nametab.locate (qualid_of_ident equation_id ) in
       let f_ref = destConst (constr_of_global f_ref) 
       and functional_ref = destConst (constr_of_global functional_ref) 
       and eq_ref = destConst (constr_of_global eq_ref) in

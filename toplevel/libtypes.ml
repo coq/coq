@@ -74,7 +74,7 @@ let (input,output) =
 	load_function = (fun _ -> load);
 	subst_function = (fun (_,s,t) -> subst s t);
 	export_function = (fun x -> Some x);
-	classify_function = (fun (_,x) -> Substitute x) 
+	classify_function = (fun x -> Substitute x) 
     }
 
 let update () = Lib.add_anonymous_leaf (input !defined_types)
@@ -102,7 +102,7 @@ let add a b = Profile.profile1 add_key add a b
 
 let _ = Declare.add_cache_hook 
   ( fun sp ->
-      let gr = Nametab.absolute_reference sp in
+      let gr = Nametab.global_of_path sp in
       let ty = Global.type_of_global gr in
       add ty gr )
 

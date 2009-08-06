@@ -77,7 +77,7 @@ let (inStruc,outStruc) =
     cache_function = cache_structure;
     load_function = load_structure;
     subst_function = subst_structure;
-    classify_function = (fun (_,x) -> Substitute x);
+    classify_function = (fun x -> Substitute x);
     discharge_function = discharge_structure;
     export_function = (function x -> Some x) }
 
@@ -141,7 +141,7 @@ let (in_method,out_method) =
 	cache_function = load_method;
 	subst_function = (fun (_,s,(ty,id)) -> Mod_subst.subst_mps s ty,subst_id s id);
 	export_function = (fun x -> Some x);
-	classify_function = (fun (_,x) -> Substitute x) 
+	classify_function = (fun x -> Substitute x) 
     }
 
 let methods_matching c = MethodsDnet.search_pattern !meth_dnet c
@@ -271,7 +271,7 @@ let (inCanonStruc,outCanonStruct) =
     open_function = open_canonical_structure;
     cache_function = cache_canonical_structure;
     subst_function = subst_canonical_structure;
-    classify_function = (fun (_,x) -> Substitute x);
+    classify_function = (fun x -> Substitute x);
     discharge_function = discharge_canonical_structure;
     export_function = (function x -> Some x) }
 
@@ -281,7 +281,7 @@ let add_canonical_structure x = Lib.add_anonymous_leaf (inCanonStruc x)
 
 let error_not_structure ref =
   errorlabstrm "object_declare"
-    (Nameops.pr_id (id_of_global ref) ++ str" is not a structure object.")
+    (Nameops.pr_id (basename_of_global ref) ++ str" is not a structure object.")
 
 let check_and_decompose_canonical_structure ref =
   let sp = match ref with ConstRef sp -> sp | _ -> error_not_structure ref in

@@ -16,6 +16,7 @@ open Topconstr
 open Libobject
 open Lib
 open Nameops
+open Nametab
 
 (* Syntactic definitions. *)
 
@@ -37,13 +38,13 @@ let load_syntax_constant i ((sp,kn),(local,pat,onlyparse)) =
     errorlabstrm "cache_syntax_constant"
       (pr_id (basename sp) ++ str " already exists");
   add_syntax_constant kn pat;
-  Nametab.push_syntactic_definition (Nametab.Until i) sp kn;
+  Nametab.push_syndef (Nametab.Until i) sp kn;
   if not onlyparse then
     (* Declare it to be used as long name *)
     Notation.declare_uninterpretation (Notation.SynDefRule kn) pat
 
 let open_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
-  Nametab.push_syntactic_definition (Nametab.Exactly i) sp kn;
+  Nametab.push_syndef (Nametab.Exactly i) sp kn;
   if not onlyparse then
     (* Redeclare it to be used as (short) name in case an other (distfix)
        notation was declared inbetween *)
@@ -55,7 +56,7 @@ let cache_syntax_constant d =
 let subst_syntax_constant ((sp,kn),subst,(local,pat,onlyparse)) =
   (local,subst_interpretation subst pat,onlyparse)
 
-let classify_syntax_constant (_,(local,_,_ as o)) =
+let classify_syntax_constant (local,_,_ as o) =
   if local then Dispose else Substitute o
 
 let export_syntax_constant (local,_,_ as o) =
@@ -85,19 +86,19 @@ let search_syntactic_definition loc kn =
 
 let global_of_extended_global = function
   | TrueGlobal ref -> ref
-  | SyntacticDef kn -> 
+  | SynDef kn -> 
   match search_syntactic_definition dummy_loc kn with
   | [],ARef ref -> ref
   | _ -> raise Not_found
 
 let locate_global_with_alias (loc,qid) =
-  let ref = Nametab.extended_locate qid in
+  let ref = Nametab.locate_extended qid in
   try global_of_extended_global ref
   with Not_found ->
     user_err_loc (loc,"",pr_qualid qid ++ 
       str " is bound to a notation that does not denote a reference")
 
-let inductive_of_reference_with_alias r =
+let global_inductive_with_alias r =
   match locate_global_with_alias (qualid_of_reference r) with
   | IndRef ind -> ind
   | ref ->

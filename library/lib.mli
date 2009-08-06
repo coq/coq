@@ -52,7 +52,6 @@ val segment_of_objects :
   current list of operations (most recent ones coming first). *)
 
 val add_leaf : Names.identifier -> Libobject.obj -> Libnames.object_name
-val add_absolutely_named_leaf : Libnames.object_name -> Libobject.obj -> unit
 val add_anonymous_leaf : Libobject.obj -> unit
 
 (* this operation adds all objects with the same name and calls [load_object]
@@ -81,8 +80,8 @@ val contents_after : Libnames.object_name option -> library_segment
 (* User-side names *)
 val cwd : unit -> Names.dir_path
 val current_dirpath : bool -> Names.dir_path
-val make_path : Names.identifier -> Libnames.section_path
-val path_of_include : unit -> Libnames.section_path
+val make_path : Names.identifier -> Libnames.full_path
+val path_of_include : unit -> Libnames.full_path
 
 (* Kernel-side names *)
 val current_prefix : unit -> Names.module_path * Names.dir_path
@@ -98,20 +97,19 @@ val is_modtype : unit -> bool
 val is_module : unit -> bool
 val current_mod_id : unit -> Names.module_ident
 
-(* Returns the most recent OpenedThing node *)
-val what_is_opened : unit -> Libnames.object_name * node
-
+(* Returns the opening node of a given name *)
+val find_opening_node : Names.identifier -> node
 
 (*s Modules and module types *)
 
 val start_module : 
   bool option -> Names.module_ident -> Names.module_path -> Summary.frozen -> Libnames.object_prefix
-val end_module : Names.module_ident 
+val end_module : unit
   -> Libnames.object_name * Libnames.object_prefix * Summary.frozen * library_segment
 
 val start_modtype : 
   Names.module_ident -> Names.module_path -> Summary.frozen -> Libnames.object_prefix
-val end_modtype : Names.module_ident 
+val end_modtype : unit
   -> Libnames.object_name * Libnames.object_prefix * Summary.frozen * library_segment
 (* [Lib.add_frozen_state] must be called after each of the above functions *)
 
@@ -134,7 +132,7 @@ val remove_section_part : Libnames.global_reference -> Names.dir_path
 (*s Sections *)
 
 val open_section : Names.identifier -> unit
-val close_section : Names.identifier -> unit
+val close_section : unit -> unit
 
 (*s Backtracking (undo). *)
 

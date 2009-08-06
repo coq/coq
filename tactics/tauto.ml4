@@ -277,7 +277,7 @@ let tauto_classical nnpp g =
 
 let tauto g =
   try 
-    let nnpp = constr_of_global (Nametab.absolute_reference coq_nnpp_path) in
+    let nnpp = constr_of_global (Nametab.global_of_path coq_nnpp_path) in
     (* try intuitionistic version first to avoid an axiom if possible *)
     tclORELSE tauto_intuitionistic (tauto_classical nnpp) g
   with Not_found ->

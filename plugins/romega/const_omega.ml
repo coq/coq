@@ -20,15 +20,15 @@ let destructurate t =
   match Term.kind_of_term c, args with
     | Term.Const sp, args ->
 	Kapp (Names.string_of_id
-		(Nametab.id_of_global (Libnames.ConstRef sp)),
+		(Nametab.basename_of_global (Libnames.ConstRef sp)),
 	      args)
     | Term.Construct csp , args ->
 	Kapp (Names.string_of_id
-		(Nametab.id_of_global (Libnames.ConstructRef csp)),
+		(Nametab.basename_of_global (Libnames.ConstructRef csp)),
 	      args)
     | Term.Ind isp, args ->
 	Kapp (Names.string_of_id
-		(Nametab.id_of_global (Libnames.IndRef isp)),
+		(Nametab.basename_of_global (Libnames.IndRef isp)),
 	      args)
     | Term.Var id,[] -> Kvar(Names.string_of_id id)
     | Term.Prod (Names.Anonymous,typ,body), [] -> Kimp(typ,body)
@@ -46,7 +46,7 @@ let dest_const_apply t =
     | Term.Construct csp -> Libnames.ConstructRef csp
     | Term.Ind isp       -> Libnames.IndRef isp
     | _ -> raise Destruct
-  in  Nametab.id_of_global ref, args
+  in  Nametab.basename_of_global ref, args
 
 let logic_dir = ["Coq";"Logic";"Decidable"]
 

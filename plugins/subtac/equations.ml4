@@ -10,7 +10,7 @@
 (*i camlp4deps: "parsing/grammar.cma" i*)
 (*i camlp4use: "pa_extend.cmo" i*) 
 
-(* $Id: subtac_cases.ml 11198 2008-07-01 17:03:43Z msozeau $ *)
+(* $Id$ *)
 
 open Cases
 open Util
@@ -824,13 +824,13 @@ open Decl_kinds
 type equation = constr_expr * (constr_expr, identifier located) rhs
 
 let locate_reference qid =
-  match Nametab.extended_locate qid with
+  match Nametab.locate_extended qid with
     | TrueGlobal ref -> true
-    | SyntacticDef kn -> true
+    | SynDef kn -> true
 
 let is_global id =
   try 
-    locate_reference (make_short_qualid id)
+    locate_reference (qualid_of_ident id)
   with Not_found -> 
     false
 

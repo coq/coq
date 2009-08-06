@@ -21,17 +21,17 @@ open Reduction
 
 type work_list = identifier array Cmap.t * identifier array KNmap.t
 
-let dirpath_prefix p = match repr_dirpath p with
+let pop_dirpath p = match repr_dirpath p with
   | [] -> anomaly "dirpath_prefix: empty dirpath"
   | _::l -> make_dirpath l
 
 let pop_kn kn =
   let (mp,dir,l) = Names.repr_kn kn in
-  Names.make_kn mp (dirpath_prefix dir) l
+  Names.make_kn mp (pop_dirpath dir) l
 
 let pop_con con = 
   let (mp,dir,l) = Names.repr_con con in
-  Names.make_con mp (dirpath_prefix dir) l
+  Names.make_con mp (pop_dirpath dir) l
 
 type my_global_reference =
   | ConstRef of constant

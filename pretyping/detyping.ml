@@ -32,7 +32,7 @@ let dl = dummy_loc
 (* Tools for printing of Cases                                              *)
 
 let encode_inductive r =
-  let indsp = inductive_of_reference r in
+  let indsp = global_inductive r in
   let constr_lengths = mis_constr_nargs indsp in
   (indsp,constr_lengths)
 

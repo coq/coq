@@ -59,7 +59,7 @@ val logic_module : dir_path
 val logic_type_module : dir_path
 
 (* Natural numbers *)
-val nat_path : section_path
+val nat_path : full_path
 val glob_nat : global_reference
 val path_of_O : constructor
 val path_of_S : constructor

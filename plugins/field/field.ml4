@@ -75,7 +75,7 @@ let (in_addfield,out_addfield)=
        Libobject.open_function = (fun i o -> if i=1 then cache_addfield o);
        Libobject.cache_function = cache_addfield;
        Libobject.subst_function = subst_addfield;
-       Libobject.classify_function = (fun (_,a) -> Libobject.Substitute a);
+       Libobject.classify_function = (fun a -> Libobject.Substitute a);
        Libobject.export_function = export_addfield }
 
 (* Adds a theory to the table *)

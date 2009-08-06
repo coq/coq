@@ -67,7 +67,7 @@ let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 
 let try_find_global_reference dir s =
   let sp = Libnames.make_path (make_dir ("Coq"::dir)) (id_of_string s) in
-    Nametab.absolute_reference sp
+    Nametab.global_of_path sp
       
 let try_find_reference dir s =
   constr_of_global (try_find_global_reference dir s)

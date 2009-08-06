@@ -308,7 +308,7 @@ let subst_import (_,_,o) = o
 
 let export_import o = Some o
 
-let classify_import (_,(_,export as obj)) = 
+let classify_import (_,export as obj) = 
   if export then Substitute obj else Dispose
 
 
@@ -367,7 +367,7 @@ let locate_qualified_library warn qid =
     if loadpath = [] then raise LibUnmappedDir;
     let name = string_of_id base ^ ".vo" in
     let lpath, file = System.where_in_path ~warn (List.map fst loadpath) name in
-    let dir = extend_dirpath (List.assoc lpath loadpath) base in
+    let dir = add_dirpath_suffix (List.assoc lpath loadpath) base in
     (* Look if loaded *)
     if library_is_loaded dir then (LibLoaded, dir, library_full_filename dir)
     (* Otherwise, look for it in the file system *)
@@ -540,7 +540,7 @@ let (in_require, out_require) =
        open_function = (fun _ _ -> assert false);
        export_function = export_require;
        discharge_function = discharge_require;
-       classify_function = (fun (_,o) -> Anticipate o) }
+       classify_function = (fun o -> Anticipate o) }
 
 (* Require libraries, import them if [export <> None], mark them for export
    if [export = Some true] *)
@@ -615,7 +615,7 @@ let start_library f =
   let ldir0 = find_logical_path (Filename.dirname longf) in
   let id = id_of_string (Filename.basename f) in
   check_coq_overwriting ldir0 id;
-  let ldir = extend_dirpath ldir0 id in
+  let ldir = add_dirpath_suffix ldir0 id in
   Declaremods.start_library ldir;
   ldir,longf
 

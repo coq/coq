@@ -506,12 +506,11 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_o =
          Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)])
            export
 
-let vernac_end_module export (loc,id) =
-  let mp = Declaremods.end_module id in
-    Dumpglob.dump_modref loc mp "mod";
-    if_verbose message ("Module "^ string_of_id id ^" is defined") ;
-    Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
-
+let vernac_end_module export (loc,id as lid) =
+  let mp = Declaremods.end_module () in
+  Dumpglob.dump_modref loc mp "mod";
+  if_verbose message ("Module "^ string_of_id id ^" is defined") ;
+  Option.iter (fun export -> vernac_import export [Ident lid]) export
 
 let vernac_declare_module_type (loc,id) binders_ast mty_ast_o =
   if Lib.sections_are_opened () then
@@ -549,46 +548,43 @@ let vernac_declare_module_type (loc,id) binders_ast mty_ast_o =
 	  if_verbose message 
 	    ("Module Type "^ string_of_id id ^" is defined")
 
-
 let vernac_end_modtype (loc,id) =
-  let mp = Declaremods.end_modtype id in
-    Dumpglob.dump_modref loc mp "modtype";
-    if_verbose message 
-      ("Module Type "^ string_of_id id ^" is defined")
-
+  let mp = Declaremods.end_modtype () in
+  Dumpglob.dump_modref loc mp "modtype";
+  if_verbose message ("Module Type "^ string_of_id id ^" is defined")
+	  
 let vernac_include = function
   | CIMTE mty_ast ->
       Declaremods.declare_include Modintern.interp_modtype mty_ast false
   | CIME mexpr_ast ->
       Declaremods.declare_include Modintern.interp_modexpr mexpr_ast true
 	  
-	  
-	  
 (**********************)
 (* Gallina extensions *)
 
-  (* Sections *)
+(* Sections *)
 
 let vernac_begin_section (_, id as lid) =
   check_no_pending_proofs ();
   Dumpglob.dump_definition lid true "sec";
   Lib.open_section id
 
-let vernac_end_section (loc, id) = 
-  
-    Dumpglob.dump_reference loc 
-      (string_of_dirpath (Lib.current_dirpath true)) "<>" "sec";
-  Lib.close_section id
+let vernac_end_section (loc,_) =
+  Dumpglob.dump_reference loc 
+    (string_of_dirpath (Lib.current_dirpath true)) "<>" "sec";
+  Lib.close_section ()
 
-let vernac_end_segment lid =
+(* Dispatcher of the "End" command *)
+
+let vernac_end_segment (_,id as lid) =
   check_no_pending_proofs ();
-  let o = try Lib.what_is_opened () with 
-      Not_found -> error "There is nothing to end." in
-    match o with
-      | _,Lib.OpenedModule (export,_,_) -> vernac_end_module export lid
-      | _,Lib.OpenedModtype _ -> vernac_end_modtype lid
-      | _,Lib.OpenedSection _ -> vernac_end_section lid
-      | _ -> anomaly "No more opened things"
+  match Lib.find_opening_node id with
+  | Lib.OpenedModule (export,_,_) -> vernac_end_module export lid
+  | Lib.OpenedModtype _ -> vernac_end_modtype lid
+  | Lib.OpenedSection _ -> vernac_end_section lid
+  | _ -> anomaly "No more opened things"
+
+(* Libraries *)
 
 let vernac_require import _ qidl =
   let qidl = List.map qualid_of_reference qidl in
@@ -596,6 +592,8 @@ let vernac_require import _ qidl =
   if Dumpglob.dump () then
     List.iter2 (fun (loc, _) dp -> Dumpglob.dump_libref loc dp "lib") qidl (List.map fst modrefl);
   Library.require_library_from_dirpath modrefl import
+
+(* Coercions and canonical structures *)
 
 let vernac_canonical r =
   Recordops.declare_canonical_structure (global_with_alias r)

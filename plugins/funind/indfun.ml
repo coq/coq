@@ -471,7 +471,7 @@ let register_mes fname rec_impls wf_mes_expr wf_arg using_lemmas args ret_type b
   in
   let ltof = 
     let make_dir l = make_dirpath (List.map id_of_string (List.rev l)) in 
-    Libnames.Qualid (dummy_loc,Libnames.qualid_of_sp 
+    Libnames.Qualid (dummy_loc,Libnames.qualid_of_path 
       (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (id_of_string "ltof")))
   in
   let fun_from_mes = 

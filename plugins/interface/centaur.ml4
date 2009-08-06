@@ -146,7 +146,7 @@ let ctf_acknowledge_command request_id command_count opt_exn =
         g_count, !current_goal_index
     else
       (0, 0)
-  and statnum = Lib.current_command_label ()
+  and statnum = Lib.current_state_label ()
   and dpth = let d = Pfedit.current_proof_depth() in if d >= 0 then d else 0
   and pending = CT_id_list (List.map xlate_ident (Pfedit.get_all_proof_names())) in
    (ctf_header "acknowledge" request_id ++
@@ -409,12 +409,12 @@ let inspect n =
 		  (match oname, object_tag lobj with
                        (sp,_), "VARIABLE" ->
 			 let (_, _, v) = Global.lookup_named (basename sp) in
-			   add_search2 (Nametab.locate (qualid_of_sp sp)) v
+			   add_search2 (Nametab.locate (qualid_of_path sp)) v
 		     | (sp,kn), "CONSTANT" ->
 			 let typ = Typeops.type_of_constant (Global.env()) (constant_of_kn kn) in
-			   add_search2 (Nametab.locate (qualid_of_sp sp)) typ
+			   add_search2 (Nametab.locate (qualid_of_path sp)) typ
 		     | (sp,kn), "MUTUALINDUCTIVE" ->
-			 add_search2 (Nametab.locate (qualid_of_sp sp))
+			 add_search2 (Nametab.locate (qualid_of_path sp))
 			   (Pretyping.Default.understand Evd.empty (Global.env())
 			      (RRef(dummy_loc, IndRef(kn,0))))
 		     | _ -> failwith ("unexpected value 1 for "^ 
@@ -764,12 +764,12 @@ let full_name_of_ref r =
      | ConstRef _ -> str "CST"
      | IndRef _ -> str "IND"
      | ConstructRef _ -> str "CSR")
-  ++ str " " ++ (pr_sp (Nametab.sp_of_global r))
+  ++ str " " ++ (pr_path (Nametab.path_of_global r))
     (* LEM TODO: Cleanly separate path from id (see Libnames.string_of_path) *)
 
 let string_of_ref =
   (*LEM TODO: Will I need the Var/Const/Ind/Construct info?*)
-  Depends.o Libnames.string_of_path Nametab.sp_of_global
+  Depends.o Libnames.string_of_path Nametab.path_of_global
 
 let print_depends compute_depends ptree =
   output_results (List.fold_left (fun x y -> x ++ (full_name_of_ref y) ++ fnl())

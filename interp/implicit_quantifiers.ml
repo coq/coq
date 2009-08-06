@@ -30,13 +30,13 @@ let ids_of_list l =
   List.fold_right Idset.add l Idset.empty
 
 let locate_reference qid =
-  match Nametab.extended_locate qid with
+  match Nametab.locate_extended qid with
     | TrueGlobal ref -> true
-    | SyntacticDef kn -> true
+    | SynDef kn -> true
 
 let is_global id =
   try 
-    locate_reference (make_short_qualid id)
+    locate_reference (qualid_of_ident id)
   with Not_found -> 
     false
 

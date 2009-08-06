@@ -21,7 +21,7 @@ type 'a with_backtracking = tactic -> 'a
 
 val wrap : int -> bool -> seqtac
 
-val id_of_global: global_reference -> identifier
+val basename_of_global: global_reference -> identifier
 
 val clear_global: global_reference -> tactic
 

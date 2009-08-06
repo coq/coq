@@ -446,7 +446,7 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
 	  if hintlist' == hintlist then obj else
 	    (local,name,AddTactic hintlist')
 	      
-let classify_autohint (_,((local,name,hintlist) as obj)) =
+let classify_autohint ((local,name,hintlist) as obj) =
   if local or hintlist = (AddTactic []) then Dispose else Substitute obj
 
 let export_autohint ((local,name,hintlist) as obj) =
@@ -548,7 +548,7 @@ let interp_hints h =
       HintsTransparencyEntry (List.map fr lhints, b)
   | HintsConstructors lqid ->
       let constr_hints_of_ind qid =
-        let isp = inductive_of_reference qid in
+        let isp = global_inductive qid in
         let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
         list_tabulate (fun i -> None, true, mkConstruct (isp,i+1))
 	  (Array.length consnames) in
@@ -1121,7 +1121,7 @@ let superauto n to_add argl  =
 
 let interp_to_add gl r =
   let r = Syntax_def.locate_global_with_alias (qualid_of_reference r) in
-  let id = id_of_global r in
+  let id = basename_of_global r in
   (next_ident_away id (pf_ids_of_hyps gl), constr_of_global r)
 
 let gen_superauto nopt l a b gl =

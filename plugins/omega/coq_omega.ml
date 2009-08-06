@@ -398,11 +398,11 @@ let destructurate_prop t =
     | _, [_;_] when c = Lazy.force coq_ge -> Kapp (Ge,args)
     | _, [_;_] when c = Lazy.force coq_gt -> Kapp (Gt,args)
     | Const sp, args ->
-	Kapp (Other (string_of_id (id_of_global (ConstRef sp))),args)
+	Kapp (Other (string_of_id (basename_of_global (ConstRef sp))),args)
     | Construct csp , args ->
-	Kapp (Other (string_of_id (id_of_global (ConstructRef csp))), args)
+	Kapp (Other (string_of_id (basename_of_global (ConstructRef csp))), args)
     | Ind isp, args ->
-	Kapp (Other (string_of_id (id_of_global (IndRef isp))),args)
+	Kapp (Other (string_of_id (basename_of_global (IndRef isp))),args)
     | Var id,[] -> Kvar id
     | Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
     | Prod (Name _,_,_),[] -> error "Omega: Not a quantifier-free goal"

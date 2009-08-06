@@ -336,11 +336,11 @@ let check_no_explicitation l =
 
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid loc qid intern env args =
-  try match Nametab.extended_locate qid with
+  try match Nametab.locate_extended qid with
   | TrueGlobal ref ->
       Dumpglob.add_glob loc ref;
       RRef (loc, ref), args
-  | SyntacticDef sp ->
+  | SynDef sp ->
       Dumpglob.add_glob_kn loc sp;
       let (ids,c) = Syntax_def.search_syntactic_definition loc sp in
       let nids = List.length ids in
@@ -365,7 +365,7 @@ let intern_applied_reference intern (_, unb, _, _ as env) lvar args = function
   | Ident (loc, id) ->
       try intern_var env lvar loc id, args
       with Not_found -> 
-      let qid = make_short_qualid id in
+      let qid = qualid_of_ident id in
       try
 	let r,args2 = intern_non_secvar_qualid loc qid intern env args in
 	find_appl_head_data lvar r, args2
@@ -536,10 +536,10 @@ type pattern_qualid_kind =
 let find_constructor ref f aliases pats scopes =
   let (loc,qid) = qualid_of_reference ref in
   let gref =
-    try extended_locate qid
+    try locate_extended qid
     with Not_found -> raise (InternalisationError (loc,NotAConstructor ref)) in
   match gref with
-  | SyntacticDef sp ->
+  | SynDef sp ->
       let (vars,a) = Syntax_def.search_syntactic_definition loc sp in
       (match a with
        | ARef (ConstructRef cstr) ->
@@ -1357,21 +1357,21 @@ let interp_context_evars ?(fail_anonymous=false) evdref env params =
 (* Locating reference, possibly via an abbreviation *)
 
 let locate_reference qid =
-  match Nametab.extended_locate qid with
+  match Nametab.locate_extended qid with
     | TrueGlobal ref -> ref
-    | SyntacticDef kn -> 
+    | SynDef kn -> 
 	match Syntax_def.search_syntactic_definition dummy_loc kn with
 	  | [],ARef ref -> ref
 	  | _ -> raise Not_found
 
 let is_global id =
   try 
-    let _ = locate_reference (make_short_qualid id) in true
+    let _ = locate_reference (qualid_of_ident id) in true
   with Not_found -> 
     false
 
 let global_reference id = 
-  constr_of_global (locate_reference (make_short_qualid id))
+  constr_of_global (locate_reference (qualid_of_ident id))
 
 let construct_reference ctx id =
   try
@@ -1380,5 +1380,5 @@ let construct_reference ctx id =
     global_reference id
 
 let global_reference_in_absolute_module dir id = 
-  constr_of_global (Nametab.absolute_reference (Libnames.make_path dir id))
+  constr_of_global (Nametab.global_of_path (Libnames.make_path dir id))
 

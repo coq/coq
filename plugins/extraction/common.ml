@@ -303,9 +303,9 @@ let ref_renaming_fun (k,r) =
     if l = [""] (* this happens only at toplevel of the monolithic case *)
     then
       let globs = Idset.elements (get_global_ids ()) in
-      let id = next_ident_away (kindcase_id k (safe_id_of_global r)) globs in
+      let id = next_ident_away (kindcase_id k (safe_basename_of_global r)) globs in
       string_of_id id
-    else modular_rename k (safe_id_of_global r)
+    else modular_rename k (safe_basename_of_global r)
   in
   add_global_ids (id_of_string s);
   s::l

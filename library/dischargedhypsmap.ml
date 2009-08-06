@@ -20,7 +20,7 @@ open Libobject
 open Lib
 open Nametab
 
-type discharged_hyps = section_path list
+type discharged_hyps = full_path list
 
 let discharged_hyps_map = ref Spmap.empty
 

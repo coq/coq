@@ -105,7 +105,7 @@ module MakeTable =
 		Libobject.open_function = load_options;
 		Libobject.cache_function = cache_options;
 		Libobject.subst_function = subst_options;
-		Libobject.classify_function = (fun (_,x) -> Substitute x);
+		Libobject.classify_function = (fun x -> Substitute x);
 		Libobject.export_function = export_options} 
 	in
         ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),

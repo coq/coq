@@ -2054,7 +2054,7 @@ let make_up_names n ind_opt cname =
     if is_hyp then 
       match ind_opt with
 	| None -> id_of_string ind_prefix
-	| Some ind_id -> add_prefix ind_prefix (Nametab.id_of_global ind_id)
+	| Some ind_id -> add_prefix ind_prefix (Nametab.basename_of_global ind_id)
     else add_prefix ind_prefix cname in
   let hyprecname = make_base n base_ind in
   let avoid =

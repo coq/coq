@@ -77,7 +77,7 @@ let export_strategy (local,obj) =
       EvalVarRef _ -> None
     | EvalConstRef _ as q -> Some q) obj
 
-let classify_strategy (_,(local,_ as obj)) = 
+let classify_strategy (local,_ as obj) = 
   if local then Dispose else Substitute obj
 
 let disch_ref ref =

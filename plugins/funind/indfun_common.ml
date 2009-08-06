@@ -350,7 +350,7 @@ let subst_Function (_,subst,finfos) =
       is_general = finfos.is_general
     }
 
-let classify_Function (_,infos) = Libobject.Substitute infos
+let classify_Function infos = Libobject.Substitute infos
 
 let export_Function infos = Some infos
 
@@ -440,7 +440,7 @@ let _ =
 
 let find_or_none id = 
   try Some 
-    (match Nametab.locate (make_short_qualid id) with ConstRef c -> c | _ -> Util.anomaly "Not a constant" 
+    (match Nametab.locate (qualid_of_ident id) with ConstRef c -> c | _ -> Util.anomaly "Not a constant" 
     ) 
   with Not_found -> None
 
@@ -467,7 +467,7 @@ let add_Function is_general f =
   and rec_lemma = find_or_none (Nameops.add_suffix f_id "_rec")
   and prop_lemma = find_or_none (Nameops.add_suffix f_id "_ind")
   and graph_ind = 
-    match Nametab.locate (make_short_qualid (mk_rel_id f_id)) 
+    match Nametab.locate (qualid_of_ident (mk_rel_id f_id)) 
     with | IndRef ind -> ind | _ -> Util.anomaly "Not an inductive"
   in
   let finfos = 

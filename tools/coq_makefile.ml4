@@ -331,12 +331,12 @@ let rec special = function
   | _ :: r -> special r
       
 let custom sps =
-  let pr_sp (file,dependencies,com) =
+  let pr_path (file,dependencies,com) =
     print file; print ": "; print dependencies; print "\n";
     print "\t"; print com; print "\n\n"
   in
     if sps <> [] then section "Custom targets.";
-    List.iter pr_sp sps
+    List.iter pr_path sps
 
 let subdirs sds =
   let pr_subdir s =

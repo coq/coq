@@ -335,7 +335,7 @@ let print_version_action () =
 let load_syntax_action reqid module_name =
  msg (str "loading " ++ str module_name ++ str "... ");
  try
-      (let qid = Libnames.make_short_qualid (Names.id_of_string module_name) in
+      (let qid = Libnames.qualid_of_ident (Names.id_of_string module_name) in
       require_library [dummy_loc,qid] None;
       msg (str "opening... ");
       Declaremods.import_module false (Nametab.locate_module qid); 

@@ -2,6 +2,28 @@
 = CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
 =========================================
 
+** Cleaning in libnames/nametab interfaces
+
+Functions:
+
+dirpath_prefix -> pop_dirpath
+extract_dirpath_prefix pop_dirpath_n
+extend_dirpath -> add_dirpath_suffix
+qualid_of_sp -> qualid_of_path
+pr_sp -> pr_path
+make_short_qualid -> qualid_of_ident
+sp_of_syntactic_definition -> path_of_syntactic_definition 
+sp_of_global -> path_of_global
+id_of_global -> basename_of_global
+absolute_reference -> global_of_path
+locate_syntactic_definition -> locate_syndef
+path_of_syntactic_definition -> path_of_syndef
+push_syntactic_definition -> push_syndef
+
+Types:
+
+section_path -> full_path
+
 ** Cleaning in parsing extensions (commit 12108)
 
 Many moves and renamings, one new file (Extrawit, that contains wit_tactic).

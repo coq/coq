@@ -309,7 +309,7 @@ let (inMLModule,outMLModule) =
                     cache_function = cache_ml_module_object;
                     export_function = export_ml_module_object;
                     subst_function = (fun (_,_,o) -> o);
-                    classify_function = (fun (_,o) -> Substitute o) }
+                    classify_function = (fun o -> Substitute o) }
 
 let declare_ml_modules l =
   Lib.add_anonymous_leaf (inMLModule {mnames=l})

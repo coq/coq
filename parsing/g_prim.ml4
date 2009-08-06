@@ -71,7 +71,7 @@ GEXTEND Gram
   ;
   basequalid:
     [ [ id = ident; (l,id')=fields -> local_make_qualid (l@[id]) id'
-      | id = ident -> make_short_qualid id
+      | id = ident -> qualid_of_ident id
       ] ]
   ;
   name:

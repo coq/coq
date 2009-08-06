@@ -374,7 +374,7 @@ let loc_of_by_notation f = function
 let destIndRef = function IndRef ind -> ind | _ -> failwith "destIndRef"
 
 let intern_inductive_or_by_notation = function
-  | AN r -> Nametab.inductive_of_reference r
+  | AN r -> Nametab.global_inductive r
   | ByNotation (loc,ntn,sc) ->
       destIndRef (Notation.interp_notation_as_global_reference loc
         (function IndRef ind -> true | _ -> false) ntn sc)
@@ -2847,7 +2847,7 @@ let (inMD,outMD) =
      load_function   = load_md;
      open_function   = open_md;
      subst_function = subst_md;
-     classify_function = (fun (_,o) -> Substitute o);       
+     classify_function = (fun o -> Substitute o);       
      export_function = (fun x -> Some x)}
 
 let print_ltac id =

@@ -191,7 +191,7 @@ let locate_any_name ref =
   let (loc,qid) = qualid_of_reference ref in
   try Term (N.locate qid)
   with Not_found -> 
-  try Syntactic (N.locate_syntactic_definition qid)
+  try Syntactic (N.locate_syndef qid)
   with Not_found ->
   try Dir (N.locate_dir qid)
   with Not_found ->
@@ -205,9 +205,9 @@ let pr_located_qualid = function
 	| IndRef _ -> "Inductive"
 	| ConstructRef _ -> "Constructor"
 	| VarRef _ -> "Variable" in
-      str ref_str ++ spc () ++ pr_sp (Nametab.sp_of_global ref)
+      str ref_str ++ spc () ++ pr_global ref
   | Syntactic kn ->
-      str "Notation" ++ spc () ++ pr_sp (Nametab.sp_of_syntactic_definition kn)
+      str "Notation" ++ spc () ++ pr_path (Nametab.path_of_syndef kn)
   | Dir dir ->
       let s,dir = match dir with
 	| DirOpenModule (dir,_) -> "Open Module", dir
@@ -218,7 +218,7 @@ let pr_located_qualid = function
       in
       str s ++ spc () ++ pr_dirpath dir
   | ModuleType (qid,_) ->
-      str "Module Type" ++ spc () ++ pr_sp (Nametab.full_name_modtype qid)
+      str "Module Type" ++ spc () ++ pr_path (Nametab.full_name_modtype qid)
   | Undefined qid ->    
       pr_qualid qid ++ spc () ++ str "not a defined object."
 
@@ -228,9 +228,9 @@ let print_located_qualid ref =
   let expand = function
     | TrueGlobal ref ->
 	Term ref, N.shortest_qualid_of_global Idset.empty ref
-    | SyntacticDef kn ->
+    | SynDef kn ->
 	Syntactic kn, N.shortest_qualid_of_syndef Idset.empty kn in
-  match List.map expand (N.extended_locate_all qid) with
+  match List.map expand (N.locate_extended_all qid) with
     | [] -> 
 	let (dir,id) = repr_qualid qid in
 	if dir = empty_dirpath then
@@ -635,18 +635,6 @@ let print_name ref =
     if (repr_dirpath dir) <> [] then raise Not_found;
     let (_,c,typ) = Global.lookup_named str in 
     (print_named_decl (str,c,typ))
-  with Not_found ->
-  try 
-    let sp = Nametab.locate_obj qid in
-    let (oname,lobj) = 
-      let (oname,entry) =
-	List.find (fun en -> (fst (fst en)) = sp) (Lib.contents_after None)
-      in
-      match entry with
-	| Lib.Leaf obj -> (oname,obj)
-	| _ -> raise Not_found
-    in
-    print_leaf_entry true (oname,lobj)
   with Not_found ->
     errorlabstrm
       "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")

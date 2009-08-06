@@ -16,7 +16,7 @@ open Libnames
 (*i*)
 
 (*s This module contains the tables for globalization, which
-  associates internal object references to qualified names (qualid). *)
+    associates internal object references to qualified names (qualid). *)
 
 (* Most functions in this module fall into one of the following categories:
    \begin{itemize}
@@ -24,7 +24,7 @@ open Libnames
    
    Registers the [object_reference] to be referred to by the
    [full_user_name] (and its suffixes according to [visibility]).
-   [full_user_name] can either be a [section_path] or a [dir_path].
+   [full_user_name] can either be a [full_path] or a [dir_path].
 
    \item [exists : full_user_name -> bool] 
    
@@ -34,8 +34,12 @@ open Libnames
    \item [locate : qualid -> object_reference]
 
    Finds the object referred to by [qualid] or raises [Not_found]
+
+   \item [full_name : qualid -> full_user_name]
+
+   Finds the full user name referred to by [qualid] or raises [Not_found]
    
-   \item [name_of : object_reference -> user_name]
+   \item [shortest_qualid_of : object_reference -> user_name]
 
    The [user_name] can be for example the shortest non ambiguous [qualid] or 
    the [full_user_name] or [identifier]. Such a function can also have a 
@@ -52,9 +56,6 @@ val error_global_not_found_loc : loc -> qualid -> 'a
 val error_global_not_found     : qualid -> 'a
 val error_global_constant_not_found_loc : loc -> qualid -> 'a
 
-
-
-
 (*s Register visibility of things *)
 
 (* The visibility can be registered either
@@ -70,88 +71,79 @@ val error_global_constant_not_found_loc : loc -> qualid -> 'a
 
 type visibility = Until of int | Exactly of int
 
-val push : visibility -> section_path -> global_reference -> unit
-val push_syntactic_definition : 
-  visibility -> section_path -> kernel_name -> unit
-val push_modtype : visibility -> section_path -> module_path -> unit
+val push : visibility -> full_path -> global_reference -> unit
+val push_modtype : visibility -> full_path -> module_path -> unit
 val push_dir : visibility -> dir_path -> global_dir_reference -> unit
-val push_object : visibility -> section_path -> unit
-val push_tactic : visibility -> section_path -> kernel_name -> unit
+val push_syndef : visibility -> full_path -> syndef_name -> unit
+
+type ltac_constant = kernel_name
+val push_tactic : visibility -> full_path -> ltac_constant -> unit
 
 
 (*s The following functions perform globalization of qualified names *)
 
-(* This returns the section path of a constant or fails with [Not_found] *)
+(* These functions globalize a (partially) qualified name or fail with
+   [Not_found] *)
+
 val locate : qualid -> global_reference
-
-(* This function is used to transform a qualified identifier into a
-   global reference, with a nice error message in case of failure *)
-val global : reference -> global_reference
-
-(* The same for inductive types *)
-val inductive_of_reference : reference -> inductive
-
-(* This locates also syntactic definitions; raise [Not_found] if not found *)
-val extended_locate : qualid -> extended_global_reference
-
-(* This locates all names with a given suffix, if qualid is valid as
-   such, it comes first in the list *)
-val extended_locate_all : qualid -> extended_global_reference list
-
-(* This locates all global references with a given suffixe *)
-val locate_all : qualid -> global_reference list
-
-val locate_obj : qualid -> section_path
-
+val locate_extended : qualid -> extended_global_reference
 val locate_constant : qualid -> constant
-val locate_mind : qualid -> mutual_inductive
-val locate_section : qualid -> dir_path
+val locate_syndef : qualid -> syndef_name
 val locate_modtype : qualid -> module_path
-val locate_syntactic_definition : qualid -> kernel_name
-
-type ltac_constant = kernel_name
-val locate_tactic : qualid -> ltac_constant
 val locate_dir : qualid -> global_dir_reference
 val locate_module : qualid -> module_path
+val locate_section : qualid -> dir_path
+val locate_tactic : qualid -> ltac_constant
 
-(* A variant looking up a [section_path] *)
-val absolute_reference : section_path -> global_reference
-val extended_absolute_reference : section_path -> extended_global_reference
+(* These functions globalize user-level references into global
+   references, like [locate] and co, but raise a nice error message
+   in case of failure *)
 
+val global : reference -> global_reference
+val global_inductive : reference -> inductive
+
+(* These functions locate all global references with a given suffix;
+   if [qualid] is valid as such, it comes first in the list *)
+
+val locate_all : qualid -> global_reference list
+val locate_extended_all : qualid -> extended_global_reference list
+
+(* Mapping a full path to a global reference *)
+
+val global_of_path : full_path -> global_reference
+val extended_global_of_path : full_path -> extended_global_reference
 
 (*s These functions tell if the given absolute name is already taken *)
 
-val exists_cci : section_path -> bool
-val exists_modtype : section_path -> bool
-
-(* Those three functions are the same *)
+val exists_cci : full_path -> bool
+val exists_modtype : full_path -> bool
 val exists_dir : dir_path -> bool
-val exists_section : dir_path -> bool (* deprecated *)
-val exists_module : dir_path -> bool (* deprecated *)
+val exists_section : dir_path -> bool (* deprecated synonym of [exists_dir] *)
+val exists_module : dir_path -> bool (* deprecated synonym of [exists_dir] *)
 
+(*s These functions locate qualids into full user names *)
 
-(*s These functions turn qualids into full user names: [section_path]s
-  or [dir_path]s *)
-
-val full_name_modtype : qualid -> section_path
-val full_name_cci : qualid -> section_path
-
-(* As above but checks that the path found is indeed a module *)
+val full_name_cci : qualid -> full_path
+val full_name_modtype : qualid -> full_path
 val full_name_module : qualid -> dir_path
-
 
 (*s Reverse lookup -- finding user names corresponding to the given
   internal name *)
 
-val sp_of_syntactic_definition : kernel_name -> section_path
-val shortest_qualid_of_global : Idset.t -> global_reference -> qualid
-val shortest_qualid_of_syndef : Idset.t -> kernel_name -> qualid
-val shortest_qualid_of_tactic : ltac_constant -> qualid
+(* Returns the dirpath associated to a module path *)
 
 val dir_of_mp : module_path -> dir_path
 
-val sp_of_global : global_reference -> section_path
-val id_of_global : global_reference -> identifier
+(* Returns full path bound to a global reference or syntactic definition *)
+
+val path_of_syndef : syndef_name -> full_path
+val path_of_global : global_reference -> full_path
+
+(* Returns in particular the dirpath or the basename of the full path
+   associated to global reference *)
+
+val dirpath_of_global : global_reference -> dir_path
+val basename_of_global : global_reference -> identifier
 
 (* Printing of global references using names as short as possible *)
 val pr_global_env : Idset.t -> global_reference -> std_ppcmds
@@ -161,13 +153,8 @@ val pr_global_env : Idset.t -> global_reference -> std_ppcmds
    Coq.A.B.x, try to find the shortest among x, B.x, A.B.x and
    Coq.A.B.x that denotes the same object. *)
 
-val shortest_qualid_of_module : module_path -> qualid
+val shortest_qualid_of_global : Idset.t -> global_reference -> qualid
+val shortest_qualid_of_syndef : Idset.t -> syndef_name -> qualid
 val shortest_qualid_of_modtype : module_path -> qualid
-
-
-(*
-type frozen
-
-val freeze : unit -> frozen
-val unfreeze : frozen -> unit
-*)
+val shortest_qualid_of_module : module_path -> qualid
+val shortest_qualid_of_tactic : ltac_constant -> qualid

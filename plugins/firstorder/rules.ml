@@ -45,7 +45,7 @@ let wrap n b continue seq gls=
     add_formula Concl dummy_id (pf_concl gls) seq1 gls else seq1 in
     continue seq2 gls
 
-let id_of_global=function
+let basename_of_global=function
     VarRef id->id
   | _->assert false
 

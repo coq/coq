@@ -13,6 +13,7 @@ open Util
 open Names
 open Topconstr
 open Rawterm
+open Nametab
 open Libnames
 (*i*)
 
@@ -39,4 +40,4 @@ val global_of_extended_global : extended_global_reference -> global_reference
 val global_with_alias : reference -> global_reference
 
 (* The same for inductive types *)
-val inductive_of_reference_with_alias : reference -> inductive
+val global_inductive_with_alias : reference -> inductive
