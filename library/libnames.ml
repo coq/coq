@@ -289,3 +289,8 @@ let pop_global_reference = function
   | IndRef (kn,i) -> IndRef (pop_kn kn,i)
   | ConstructRef ((kn,i),j) -> ConstructRef ((pop_kn kn,i),j)
   | VarRef id -> anomaly "VarRef not poppable"
+
+(* Deprecated synonyms *)
+
+let make_short_qualid = qualid_of_ident
+let qualid_of_sp = qualid_of_path

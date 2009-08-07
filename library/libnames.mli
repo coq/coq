@@ -164,3 +164,8 @@ val loc_of_reference : reference -> loc
 val pop_con : constant -> constant
 val pop_kn : kernel_name -> kernel_name
 val pop_global_reference : global_reference -> global_reference
+
+(* Deprecated synonyms *)
+
+val make_short_qualid : identifier -> qualid (* = qualid_of_ident *)
+val qualid_of_sp : full_path -> qualid (* = qualid_of_path *)

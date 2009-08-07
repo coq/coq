@@ -205,7 +205,7 @@ let pr_located_qualid = function
 	| IndRef _ -> "Inductive"
 	| ConstructRef _ -> "Constructor"
 	| VarRef _ -> "Variable" in
-      str ref_str ++ spc () ++ pr_global ref
+      str ref_str ++ spc () ++ pr_path (Nametab.path_of_global ref)
   | Syntactic kn ->
       str "Notation" ++ spc () ++ pr_path (Nametab.path_of_syndef kn)
   | Dir dir ->

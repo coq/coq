@@ -362,7 +362,7 @@ let make_elim_fun (names,(nbfix,lv,n)) largs =
 
 let dummy = mkProp
 let vfx = id_of_string"_expanded_fix_"
-let vfun = id_of_string"_elimminator_function_"
+let vfun = id_of_string"_eliminator_function_"
 
 (* Mark every occurrence of substituted vars (associated to a function)
    as a problem variable: an evar that can be instantiated either by

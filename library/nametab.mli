@@ -170,3 +170,8 @@ val shortest_qualid_of_syndef : Idset.t -> syndef_name -> qualid
 val shortest_qualid_of_modtype : module_path -> qualid
 val shortest_qualid_of_module : module_path -> qualid
 val shortest_qualid_of_tactic : ltac_constant -> qualid
+
+(* Deprecated synonyms *)
+
+val extended_locate : qualid -> extended_global_reference (*= locate_extended *)
+val absolute_reference : full_path -> global_reference (* = global_of_path *)

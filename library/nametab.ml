@@ -551,3 +551,8 @@ let _ =
       Summary.init_function = init;
       Summary.survive_module = false;
       Summary.survive_section = false }
+
+(* Deprecated synonyms *)
+
+let extended_locate = locate_extended
+let absolute_reference = global_of_path

@@ -105,6 +105,8 @@ open Ppextend
 open Reserve
 open Syntax_def
 open Topconstr
+open Prettyp
+open Search
 
 open Clenvtac
 open Evar_refiner
@@ -180,7 +182,7 @@ let constr_of_string s =
 open Declarations;;
 
 let constbody_of_string s =
-  let b = Global.lookup_constant (Nametab.locate_constant (qualid_of_sp (path_of_string s))) in
+  let b = Global.lookup_constant (Nametab.locate_constant (qualid_of_string s)) in
   Option.get b.const_body;;
 
 (* Get the current goal *)
