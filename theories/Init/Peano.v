@@ -77,8 +77,7 @@ Definition IsSucc (n:nat) : Prop :=
 
 Theorem O_S : forall n:nat, 0 <> S n.
 Proof.
-  unfold not; intros n H.
-  inversion H.
+  discriminate.
 Qed.
 Hint Resolve O_S: core.
 
