@@ -29,7 +29,7 @@ val add_tactic_notation :
 (* Adding a (constr) notation in the environment*)
 
 val add_infix : locality_flag -> (string * syntax_modifier list) ->
-  reference -> scope_name option -> unit
+  constr_expr -> scope_name option -> unit
 
 val add_notation : locality_flag -> constr_expr ->
   (string * syntax_modifier list) -> scope_name option -> unit

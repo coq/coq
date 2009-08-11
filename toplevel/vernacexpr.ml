@@ -206,7 +206,7 @@ type vernac_expr =
   | VernacBindScope of scope_name * class_rawexpr list
   | VernacArgumentsScope of locality_flag * lreference * scope_name option list
   | VernacInfix of locality_flag * (lstring * syntax_modifier list) *
-      lreference * scope_name option
+      constr_expr * scope_name option
   | VernacNotation of
       locality_flag * constr_expr * (lstring * syntax_modifier list) *
       scope_name option

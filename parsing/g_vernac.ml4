@@ -811,7 +811,7 @@ GEXTEND Gram
 	 VernacArgumentsScope (use_non_locality (),qid,scl)
 
      | IDENT "Infix"; local = obsolete_locality;
-	 op = ne_string; ":="; p = global; 
+	 op = ne_string; ":="; p = constr; 
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
          VernacInfix (enforce_locality_of local,(op,modl),p,sc)

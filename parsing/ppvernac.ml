@@ -508,7 +508,7 @@ let rec pr_vernac = function
     ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
   | VernacInfix (local,(s,mv),q,sn) -> (* A Verifier *)
       hov 0 (hov 0 (str"Infix " ++ pr_locality local
-      ++ qs s ++ str " :=" ++ spc() ++ pr_reference q) ++
+      ++ qs s ++ str " :=" ++ pr_constrarg q) ++
       pr_syntax_modifiers mv ++
       (match sn with
     | None -> mt()
@@ -521,7 +521,7 @@ let rec pr_vernac = function
           let s' = String.sub s 1 (n-2) in
           if String.contains s' '\'' then qs s else str s'
 	else qs s in
-      hov 2( str"Notation" ++ spc() ++ pr_locality local ++ ps ++
+      hov 2 (str"Notation" ++ spc() ++ pr_locality local ++ ps ++
       str " :=" ++ pr_constrarg c ++ pr_syntax_modifiers l ++
       (match opt with
         | None -> mt()

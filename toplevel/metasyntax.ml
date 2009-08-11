@@ -1011,7 +1011,7 @@ let add_infix local (inf,modifiers) pr sc =
   check_infix_modifiers modifiers;
   (* check the precedence *)
   let metas = [inject_var "x"; inject_var "y"] in
-  let c = mkAppC (mkRefC pr,metas) in
+  let c = mkAppC (pr,metas) in
   let df = "x "^(quote_notation_token inf)^" y" in
   add_notation local c (df,modifiers) sc
 
