@@ -1096,6 +1096,25 @@ let substl_rel_context l =
 let lift_rel_context n =
   map_rel_context_with_binders (liftn n)
 
+let smash_rel_context sign =
+  let rec aux acc = function
+  | [] -> acc
+  | (_,None,_ as d) :: l -> aux (d::acc) l
+  | (_,Some b,_) :: l ->
+      (* Quadratic in the number of let but there are probably a few of them *)
+      aux (List.rev (substl_rel_context [b] (List.rev acc))) l
+  in List.rev (aux [] sign)
+
+let adjust_subst_to_rel_context sign l =
+  let rec aux subst sign l =
+    match sign, l with 
+    | (_,None,_)::sign', a::args' -> aux (a::subst) sign' args'
+    | (_,Some c,_)::sign', args' ->
+	aux (substl (List.rev subst) c :: subst) sign' args'
+    | [], [] -> List.rev subst
+    | _ -> anomaly "Instance and signature do not match"
+  in aux [] (List.rev sign) l
+
 let fold_named_context_both_sides f l ~init = list_fold_right_and_left f l init
 
 let rec mem_named_context id = function

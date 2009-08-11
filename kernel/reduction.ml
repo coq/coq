@@ -117,6 +117,15 @@ let beta_appvect c v =
       | _ -> applist (substl env t, stack) in
   stacklam [] c (Array.to_list v)
 
+let betazeta_appvect n c v =
+  let rec stacklam n env t stack =
+    if n = 0 then applist (substl env t, stack) else
+    match kind_of_term t, stack with
+        Lambda(_,_,c), arg::stacktl -> stacklam (n-1) (arg::env) c stacktl
+      | LetIn(_,b,_,c), _ -> stacklam (n-1) (b::env) c stack
+      | _ -> anomaly "Not enough lambda/let's" in
+  stacklam n [] c (Array.to_list v)
+
 (********************************************************************)
 (*                         Conversion                               *)
 (********************************************************************)

@@ -270,16 +270,20 @@ let get_instantiated_arity (mib,mip) params =
 
 let elim_sorts (_,mip) = mip.mind_kelim
 
-let rel_list n m = 
-  let rec reln l p = 
-    if p>m then l else reln (mkRel(n+p)::l) (p+1)
+let extended_rel_list n hyps =
+  let rec reln l p = function
+    | (_,None,_) :: hyps -> reln (mkRel (n+p) :: l) (p+1) hyps
+    | (_,Some _,_) :: hyps -> reln l (p+1) hyps
+    | [] -> l
   in 
-  reln [] 1
+  reln [] 1 hyps
 
 let build_dependent_inductive ind (_,mip) params =
-  let nrealargs = mip.mind_nrealargs in
+  let realargs,_ = list_chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
   applist 
-    (mkInd ind, (List.map (lift nrealargs) params)@(rel_list 0 nrealargs))
+    (mkInd ind,
+       List.map (lift mip.mind_nrealargs_ctxt) params 
+       @ extended_rel_list 0 realargs)
 
 (* This exception is local *)
 exception LocalArity of (sorts_family * sorts_family * arity_error) option
@@ -309,6 +313,8 @@ let is_correct_arity env c pj ind specif params =
             with NotConvertible -> raise (LocalArity None) in
 	  check_allowed_sort ksort specif;
 	  Constraint.union u univ
+      | _, (_,Some _,_ as d)::ar' ->
+	  srec (push_rel d env) (lift 1 pt') ar' u
       | _ ->
 	  raise (LocalArity None)
   in 
@@ -339,8 +345,8 @@ let build_branches_type ind (_,mip as specif) params p =
 
 (* [p] is the predicate, [c] is the match object, [realargs] is the
    list of real args of the inductive type *)
-let build_case_type p c realargs =
-  beta_appvect p (Array.of_list (realargs@[c]))
+let build_case_type n p c realargs =
+  betazeta_appvect (n+1) p (Array.of_list (realargs@[c]))
 
 let type_case_branches env (ind,largs) pj c =
   let specif = lookup_mind_specif env ind in 
@@ -349,7 +355,7 @@ let type_case_branches env (ind,largs) pj c =
   let p = pj.uj_val in
   let univ = is_correct_arity env c pj ind specif params in
   let lc = build_branches_type ind specif params p in
-  let ty = build_case_type p c realargs in
+  let ty = build_case_type (snd specif).mind_nrealargs_ctxt p c realargs in
   (lc, ty, univ)
 
 

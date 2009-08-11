@@ -26,7 +26,7 @@ type metavariable = int
 (* This defines Cases annotations *)
 type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle
 type case_printing =
-  { ind_nargs : int; (* number of real args of the inductive type *)
+  { ind_nargs : int; (* length of the arity of the inductive type *)
     style     : case_style }
 type case_info =
   { ci_ind        : inductive;

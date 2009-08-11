@@ -58,7 +58,7 @@ let mis_make_case_com depopt env sigma ind (mib,mip as specif) kind =
       (RecursionSchemeError
 	 (NotAllowedCaseAnalysis (false,new_sort_in_family kind,ind)));
 
-  let ndepar = mip.mind_nrealargs + 1 in
+  let ndepar = mip.mind_nrealargs_ctxt + 1 in
 
   (* Pas génant car env ne sert pas à typer mais juste à renommer les Anonym *)
   (* mais pas très joli ... (mais manque get_sort_of à ce niveau) *)
@@ -594,3 +594,56 @@ let lookup_eliminator ind_sp s =
        pr_global_env Idset.empty (IndRef ind_sp) ++ 
        strbrk " on sort " ++ pr_sort_family s ++
        strbrk " is probably not allowed.")
+
+(* Build the congruence lemma associated to an inductive type 
+   I p1..pn a1..am with one constructor C : I q1..qn b1..bm *)
+
+(* TODO: extend it to types with more than one index *)
+
+let build_congr env (eq,refl) ind (mib,mip) =
+  if Array.length mib.mind_packets <> 1 or Array.length mip.mind_nf_lc <> 1 then
+    error "Not an inductive type with a single constructor.";
+  if mip.mind_nrealargs <> 1 then
+    error "Expect an inductive type with one predicate parameter.";
+  let i = 1 in
+  let realsign,_ = list_chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
+  if List.exists (fun (_,b,_) -> b <> None) realsign then
+    error "Inductive equalities with local definitions in arity not supported";
+  let env_with_arity = push_rel_context mip.mind_arity_ctxt env in
+  let (_,_,ty) = lookup_rel (mip.mind_nrealargs - i + 1) env_with_arity in
+  let _,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
+  let _,constrargs = decompose_app ccl in
+  let c = List.nth constrargs (i - 1) in
+  let varB = id_of_string "B" in
+  let varH = id_of_string "H" in
+  let varf = id_of_string "f" in
+  let ci = make_case_info (Global.env()) ind RegularStyle in
+  let my_it_mkLambda_or_LetIn s c = it_mkLambda_or_LetIn ~init:c s in
+  let my_it_mkLambda_or_LetIn_name s c = it_mkLambda_or_LetIn_name env c s in
+  my_it_mkLambda_or_LetIn mib.mind_params_ctxt
+     (mkNamedLambda varB (new_Type ())
+     (mkNamedLambda varf (mkArrow (lift 1 ty) (mkVar varB))
+     (my_it_mkLambda_or_LetIn_name (lift_rel_context 2 realsign)
+     (mkNamedLambda varH
+        (applist
+           (mkInd ind,
+	    extended_rel_list (mip.mind_nrealargs+2) mib.mind_params_ctxt @
+	    extended_rel_list 0 realsign))
+     (mkCase (ci,
+       my_it_mkLambda_or_LetIn_name
+	 (lift_rel_context (mip.mind_nrealargs+3) realsign)
+         (mkLambda
+           (Anonymous,
+            applist
+             (mkInd ind,
+	        extended_rel_list (2*mip.mind_nrealargs+3) mib.mind_params_ctxt
+	        @ extended_rel_list 0 realsign),
+            mkApp (eq, 
+	      [|mkVar varB;
+                mkApp (mkVar varf, [|lift (2*mip.mind_nrealargs+3) c|]);
+		mkApp (mkVar varf, [|mkRel (mip.mind_nrealargs - i + 2)|])|]))),
+       mkVar varH,
+       [|mkApp (refl,
+          [|mkVar varB;
+	    mkApp (mkVar varf, [|lift (mip.mind_nrealargs+2) c|])|])|]))))))
+ 

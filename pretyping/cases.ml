@@ -954,14 +954,18 @@ let adjust_impossible_cases pb pred tomatch submat =
 (* s.t Gamma,x1'..xn' |- match Pushed(x1')..Pushed(xn') rest with..end :pred'*)
 (*                                                                           *)
 (*****************************************************************************)
-let specialize_predicate newtomatchs (names,(depna,_)) cs tms ccl =
+let specialize_predicate newtomatchs (names,(depna,_)) arsign cs tms ccl =
   (* Assume some gamma st: gamma, (X,x:=realargs,copt), tms |- ccl *)
   let nrealargs = List.length names in
   let k = nrealargs + (if depna<>Anonymous then 1 else 0) in
   (* We adjust pred st: gamma, x1..xn, (X,x:=realargs,copt), tms |- ccl' *)
   let n = cs.cs_nargs in
   let ccl' = liftn_predicate n (k+1) ccl tms in
-  let argsi = if nrealargs <> 0 then Array.to_list cs.cs_concl_realargs else [] in
+  let argsi =
+    if nrealargs <> 0 then
+      adjust_subst_to_rel_context arsign (Array.to_list cs.cs_concl_realargs)
+    else
+      [] in
   let copti = if depna<>Anonymous then Some (build_dependent_constructor cs) else None in
   (* The substituends argsi, copti are all defined in gamma, x1...xn *)
   (* We need _parallel_ bindings to get gamma, x1...xn, tms |- ccl'' *)
@@ -1063,7 +1067,7 @@ let shift_problem ((current,t),_,(nadep,_)) pb =
      mat = List.map remove_current_pattern pb.mat }
 
 (* Building the sub-pattern-matching problem for a given branch *)
-let build_branch current deps (realnames,dep) pb eqns const_info =
+let build_branch current deps (realnames,dep) pb arsign eqns const_info =
   (* We remember that we descend through a constructor *)
   let alias_type =
     if Array.length const_info.cs_concl_realargs = 0
@@ -1120,7 +1124,7 @@ let build_branch current deps (realnames,dep) pb eqns const_info =
       1 typs' (List.rev dep_sign) in
 
   let pred = 
-    specialize_predicate typs'' (realnames,dep) const_info tomatch pb.pred in
+    specialize_predicate typs'' (realnames,dep) arsign const_info tomatch pb.pred in
 
   let currents = List.map (fun x -> Pushed x) typs'' in
 
@@ -1179,6 +1183,7 @@ and match_current pb tomatch =
     | IsInd (_,(IndType(indf,realargs) as indt),names) ->
 	let mind,_ = dest_ind_family indf in
 	let cstrs = get_constructors pb.env indf in
+	let arsign, _ = get_arity pb.env indf in
 	let eqns,onlydflt = group_equations pb mind current cstrs pb.mat in
 	if (Array.length cstrs <> 0 or pb.mat <> []) & onlydflt  then
 	  compile (shift_problem ct pb)
@@ -1189,7 +1194,7 @@ and match_current pb tomatch =
 	  let pb = generalize_problem (names,dep) pb deps in
 
 	  (* We compile branches *)
-	  let brs = array_map2 (compile_branch current (names,dep) deps pb) eqns cstrs in
+	  let brs = array_map2 (compile_branch current (names,dep) deps pb arsign) eqns cstrs in
 
 	  (* We build the (elementary) case analysis *)
 	  let brvals = Array.map (fun (v,_) -> v) brs in
@@ -1202,8 +1207,8 @@ and match_current pb tomatch =
 	  { uj_val = applist (case, inst);
 	    uj_type = substl inst typ }
 
-and compile_branch current names deps pb eqn cstr =
-  let sign, pb = build_branch current deps names pb eqn cstr in
+and compile_branch current names deps pb arsign eqn cstr =
+  let sign, pb = build_branch current deps names pb arsign eqn cstr in
   let j = compile pb in
   (it_mkLambda_or_LetIn j.uj_val sign, j.uj_type)
 
@@ -1550,19 +1555,19 @@ let extract_arity_signature env0 tomatchl tmsign =
 	    str"Unexpected type annotation for a term of non inductive type."))
       | IsInd (term,IndType(indf,realargs),_) ->
           let indf' = lift_inductive_family n indf in
-	  let (ind,params) = dest_ind_family indf' in
-	  let nrealargs = List.length realargs in
+	  let (ind,_) = dest_ind_family indf' in
+	  let nparams_ctxt,nrealargs_ctxt = inductive_nargs env0 ind in
+	  let arsign = fst (get_arity env0 indf') in
 	  let realnal =
 	    match t with
 	      | Some (loc,ind',nparams,realnal) ->
 		  if ind <> ind' then
 		    user_err_loc (loc,"",str "Wrong inductive type.");
-		  if List.length params <> nparams
-		    or nrealargs <> List.length realnal then
+		  if nparams_ctxt <> nparams
+		    or nrealargs_ctxt <> List.length realnal then
 		      anomaly "Ill-formed 'in' clause in cases";
 		  List.rev realnal
-	      | None -> list_make nrealargs Anonymous in
-	  let arsign = fst (get_arity env0 indf') in
+	      | None -> list_make nrealargs_ctxt Anonymous in
 (* 	  let na =  *)
 (* 	    match na with  *)
 (* 	      | Name _ -> na *)

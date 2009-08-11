@@ -267,6 +267,8 @@ val process_rel_context : (rel_declaration -> env -> env) -> env -> env
 val assums_of_rel_context : rel_context -> (name * constr) list
 val lift_rel_context : int -> rel_context -> rel_context
 val substl_rel_context : constr list -> rel_context -> rel_context
+val smash_rel_context : rel_context -> rel_context (* expand lets in context *)
+val adjust_subst_to_rel_context : rel_context -> constr list -> constr list
 val map_rel_context_in_env :
   (env -> constr -> constr) -> env -> rel_context -> rel_context
 val map_rel_context_with_binders : 

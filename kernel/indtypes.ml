@@ -588,6 +588,7 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
   (* Compute the set of used section variables *)
   let hyps =  used_section_variables env inds in
   let nparamargs = rel_context_nhyps params in
+  let nparamdecls = rel_context_length params in
   (* Check one inductive *)
   let build_one_packet (id,cnames,lc,(ar_sign,ar_kind)) recarg =
     (* Type of constructors in normal form *)
@@ -629,6 +630,7 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
 	mind_arity = arkind;
 	mind_arity_ctxt = ar_sign;
 	mind_nrealargs = rel_context_nhyps ar_sign - nparamargs;
+	mind_nrealargs_ctxt = rel_context_length ar_sign - nparamdecls;
 	mind_kelim = kelim;
 	mind_consnames = Array.of_list cnames;
 	mind_consnrealdecls = consnrealargs;

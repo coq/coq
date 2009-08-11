@@ -115,6 +115,9 @@ type one_inductive_body = {
  (* Number of expected real arguments of the type (no let, no params) *)
     mind_nrealargs : int;
 
+ (* Length of realargs context (with let, no params) *)
+    mind_nrealargs_ctxt : int;
+
  (* List of allowed elimination sorts *)
     mind_kelim : sorts_family list;
 

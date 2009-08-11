@@ -42,7 +42,7 @@ type metavariable = int
 (*s Case annotation *)
 type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle
 type case_printing =
-  { ind_nargs : int; (* number of real args of the inductive type *)
+  { ind_nargs : int; (* length of the arity of the inductive type *)
     style     : case_style }
 (* the integer is the number of real args, needed for reduction *)
 type case_info =

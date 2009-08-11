@@ -1,4 +1,32 @@
-(* Check local definitions in context of inductive types *)
+(* Test des definitions inductives imbriquees *)
+
+Require Import List.
+
+Inductive X : Set :=
+    cons1 : list X -> X.
+
+Inductive Y : Set :=
+    cons2 : list (Y * Y) -> Y.
+
+(* Test inductive types with local definitions (arity) *)
+
+Inductive eq1 : forall A:Type, let B:=A in A -> Prop :=
+  refl1 : eq1 True I.
+
+Check 
+ fun (P : forall A : Type, let B := A in A -> Type) (f : P True I) (A : Type) =>
+   let B := A in
+     fun (a : A) (e : eq1 A a) =>
+       match e in (eq1 A0 B0 a0) return (P A0 a0) with
+       | refl1 => f
+       end.
+
+Inductive eq2 (A:Type) (a:A)
+  : forall B C:Type, let D:=(A*B*C)%type in D -> Prop :=
+  refl2 : eq2 A a unit bool (a,tt,true).
+
+(* Check inductive types with local definitions (parameters) *)
+
 Inductive A (C D : Prop) (E:=C) (F:=D) (x y : E -> F) : E -> Set :=
     I : forall z : E, A C D x y z.
 
@@ -9,7 +37,7 @@ Check
    fun (x y : E -> F) (P : forall c : C, A C D x y c -> Type)
      (f : forall z : C, P z (I C D x y z)) (y0 : C) 
      (a : A C D x y y0) =>
-   match a as a0 in (A _ _ _ _ y1) return (P y1 a0) with
+   match a as a0 in (A _ _ _ _ _ _ y1) return (P y1 a0) with
    | I x0 => f x0
    end).
 

@@ -129,7 +129,7 @@ let get_full_arity_sign env ind =
 
 let inductive_nargs env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  mib.mind_nparams, mip.mind_nrealargs
+  (rel_context_length (mib.mind_params_ctxt), mip.mind_nrealargs_ctxt)
 
 let allowed_sorts env (kn,i as ind) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
@@ -138,7 +138,7 @@ let allowed_sorts env (kn,i as ind) =
 (* Annotation for cases *)
 let make_case_info env ind style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let print_info = { ind_nargs = mip.mind_nrealargs; style = style } in
+  let print_info = { ind_nargs = mip.mind_nrealargs_ctxt; style = style } in
   { ci_ind     = ind;
     ci_npar    = mib.mind_nparams;
     ci_cstr_nargs = mip.mind_consnrealdecls;

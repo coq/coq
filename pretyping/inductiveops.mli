@@ -58,7 +58,7 @@ val mis_nf_constructor_type :
 val mis_constr_nargs : inductive -> int array
 val mis_constr_nargs_env : env -> inductive -> int array
 
-(* Return number of expected parameters and of expected real arguments *)
+(* Return the lengths of parameters signature and real arguments signature *)
 val inductive_nargs : env -> inductive -> int * int
 
 val mis_constructor_nargs_env : env -> constructor -> int

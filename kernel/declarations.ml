@@ -135,6 +135,9 @@ type one_inductive_body = {
  (* Number of expected real arguments of the type (no let, no params) *)
     mind_nrealargs : int;
 
+ (* Length of realargs context (with let, no params) *)
+    mind_nrealargs_ctxt : int;
+
  (* List of allowed elimination sorts *)
     mind_kelim : sorts_family list;
 
@@ -223,6 +226,7 @@ let subst_mind_packet sub mbp =
     mind_arity = subst_arity sub mbp.mind_arity;
     mind_user_lc = array_smartmap (subst_mps sub) mbp.mind_user_lc;
     mind_nrealargs = mbp.mind_nrealargs;
+    mind_nrealargs_ctxt = mbp.mind_nrealargs_ctxt;
     mind_kelim = mbp.mind_kelim;
     mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*); 
     mind_nb_constant = mbp.mind_nb_constant;
