@@ -2104,7 +2104,7 @@ let rec xlate_vernac =
 	 CT_local_reserve_notation(translated_s, translated_modif_list)
        else
 	 CT_reserve_notation(translated_s, translated_modif_list)
-   | VernacInfix (b,(str,modl),id, opt_scope) ->
+   | VernacInfix (b,(str,modl),CRef id, opt_scope) ->
        let id1 = loc_qualid_to_ct_ID id in
        let modl1 = CT_modifier_list(List.map xlate_syntax_modifier modl) in
        let s = CT_string str in
@@ -2115,6 +2115,8 @@ let rec xlate_vernac =
 	   CT_local_infix(s, id1,modl1, translated_scope)
 	 else
 	   CT_infix(s, id1,modl1, translated_scope)
+   | VernacInfix (b,(str,modl),_ , opt_scope) -> 
+       xlate_error "TODO: Infix not ref"
    | VernacCoercion (s, id1, id2, id3) ->
       let id_opt = CT_coerce_NONE_to_IDENTITY_OPT CT_none in
       let local_opt =
