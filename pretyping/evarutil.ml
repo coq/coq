@@ -1149,6 +1149,22 @@ let solve_refl conv_algo env evd evk argsv1 argsv2 =
   let pb = (Reduction.CONV,env,mkEvar(evk,argsv1),mkEvar(evk,argsv2)) in
   Evd.add_conv_pb pb evd
 
+(* Util *)
+
+let check_instance_type conv_algo env evd ev1 t2 =
+  let typ2 = Retyping.get_type_of env (evars_of evd) (refresh_universes t2) in
+  let typ1 = existential_type (evars_of evd) ev1 in
+  match kind_of_term (whd_evar (evars_of evd) typ2) with
+  | Evar _ ->
+      (* No firm constraints: don't want to commit to an equal
+	 solution while only subtyping is requested *)
+      evd
+  | _ ->
+      let evd,b = conv_algo env evd Reduction.CUMUL typ2 typ1 in
+      if b then evd else
+	user_err_loc (fst (evar_source (fst ev1) evd),"",
+	  str "Unable to find a well-typed instantiation")
+
 (* Tries to solve problem t1 = t2.
  * Precondition: t1 is an uninstantiated evar
  * Returns an optional list of evars that were instantiated, or None
@@ -1163,10 +1179,18 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
 	  if evk1 = evk2 then
 	    solve_refl conv_algo env evd evk1 args1 args2
 	  else
-	    if pbty = Reduction.CONV 
+	    if pbty = None
 	    then solve_evar_evar evar_define env evd ev1 ev2
-	    else add_conv_pb (pbty,env,mkEvar ev1,t2) evd
+	    else if pbty = Some true then
+	      add_conv_pb (Reduction.CUMUL,env,mkEvar ev1,t2) evd
+	    else
+	      add_conv_pb (Reduction.CUMUL,env,t2,mkEvar ev1) evd
       | _ ->
+	  let evd =
+	    if pbty = Some false then
+	      check_instance_type conv_algo env evd ev1 t2 
+	    else
+	      evd in
 	  let evd = evar_define ~choose env ev1 t2 evd in
 	  let evm = evars_of evd in
 	  let evi = Evd.find evm evk1 in
