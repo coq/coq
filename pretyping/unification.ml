@@ -600,7 +600,7 @@ let order_metas metas =
 (* Solve an equation ?n[x1=u1..xn=un] = t where ?n is an evar *)
 
 let solve_simple_evar_eqn env evd ev rhs =
-  let evd,b = solve_simple_eqn Evarconv.evar_conv_x env evd (CONV,ev,rhs) in
+  let evd,b = solve_simple_eqn Evarconv.evar_conv_x env evd (None,ev,rhs) in
   if not b then error_cannot_unify env evd (mkEvar ev,rhs);
   let (evd,b) = Evarconv.consider_remaining_unif_problems env evd in
   if not b then error "Cannot solve unification constraints";

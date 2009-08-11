@@ -80,7 +80,7 @@ val solve_refl :
     evar_defs
 val solve_simple_eqn :
   (env ->  evar_defs -> conv_pb -> constr -> constr -> evar_defs * bool)
-  -> ?choose:bool -> env ->  evar_defs -> conv_pb * existential * constr ->
+  -> ?choose:bool -> env ->  evar_defs -> bool option * existential * constr ->
     evar_defs * bool
 
 (* [check_evars env initial_sigma extended_sigma c] fails if some
