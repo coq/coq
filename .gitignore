@@ -3,6 +3,7 @@
 *.d.raw
 *.vo
 *.cm*
+*.annot
 *.o
 *.a
 *.log
