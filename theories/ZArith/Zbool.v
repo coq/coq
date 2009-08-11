@@ -18,9 +18,9 @@ Require Import Sumbool.
 Unset Boxed Definitions.
 Open Local Scope Z_scope.
 
-(** * Boolean operations from decidabilty of order *)
+(** * Boolean operations from decidability of order *)
 (** The decidability of equality and order relations over
-    type [Z] give some boolean functions with the adequate specification. *)
+    type [Z] gives some boolean functions with the adequate specification. *)
 
 Definition Z_lt_ge_bool (x y:Z) := bool_of_sumbool (Z_lt_ge_dec x y).
 Definition Z_ge_lt_bool (x y:Z) := bool_of_sumbool (Z_ge_lt_dec x y).
