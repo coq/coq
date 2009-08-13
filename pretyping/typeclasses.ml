@@ -95,9 +95,7 @@ let _ =
   Summary.declare_summary "classes_and_instances"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init;
-      Summary.survive_module = false;
-      Summary.survive_section = true }
+      Summary.init_function = init }
 
 let add_instance_hint_ref = ref (fun id pri -> assert false)
 let register_add_instance_hint =

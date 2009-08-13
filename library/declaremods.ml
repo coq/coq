@@ -100,9 +100,7 @@ let _ = Summary.declare_summary "MODULE-INFO"
 				       modtab_substobjs := MPmap.empty;
 				       modtab_objects := MPmap.empty;
 				       openmod_info := ([],None,None);
-				       library_cache := Dirmap.empty);
-	    Summary.survive_module = false;
-	    Summary.survive_section = false }
+				       library_cache := Dirmap.empty) }
 
 (* auxiliary functions to transform full_path and kernel_name given
    by Lib into module_path and dir_path needed for modules *)
@@ -512,9 +510,7 @@ let _ = Summary.declare_summary "MODTYPE-INFO"
 					   openmodtype_info := snd ft);
 	    Summary.init_function = (fun () ->
 				       modtypetab := MPmap.empty;
-				       openmodtype_info := []);
-	    Summary.survive_module = false;
-	    Summary.survive_section = true }
+				       openmodtype_info := []) }
 
 
 let cache_modtype ((sp,kn),(entry,modtypeobjs)) =
@@ -754,14 +750,12 @@ let end_module () =
      dependencies on functor arguments *)
 
   let id = basename (fst oldoname) in
-  let mp = Global.end_module id res_o in
+  let mp = Global.end_module fs id res_o in
 
   begin match sub_o with
       None -> ()
     | Some sub_mtb -> check_subtypes mp sub_mtb
   end;
-
-  Summary.module_unfreeze_summaries fs;
 
   let substituted = subst_substobjs dir mp substobjs in
   let node = in_module (None,substobjs,substituted) in
@@ -885,17 +879,15 @@ let end_modtype () =
 
   let oldoname,prefix,fs,lib_stack = Lib.end_modtype () in
   let id = basename (fst oldoname) in
-  let ln = Global.end_modtype id in
   let substitute, _, special = Lib.classify_segment lib_stack in
 
   let msid = msid_of_prefix prefix in
   let mbids = !openmodtype_info in
-
-  Summary.module_unfreeze_summaries fs;
-
   let modtypeobjs = empty_subst, mbids, msid, substitute in
 
+  let ln = Global.end_modtype fs id in
   let oname = Lib.add_leaves id (special@[in_modtype (None, modtypeobjs)]) in
+
   if fst oname <> fst oldoname then
     anomaly
       "Section paths generated on start_ and end_modtype do not match";
@@ -970,8 +962,8 @@ let rec get_module_substobjs env = function
 		       (map_mbid mbid mp (Some resolve)))
 		       , mbids, msid, objs)
 	   | [] -> match mexpr with
-	       | MSEident _  -> error "Application of a non-functor"
-	       | _ -> error "Application of a functor with too few arguments")
+	       | MSEident _  -> error "Application of a non-functor."
+	       | _ -> error "Application of a functor with too few arguments.")
   | MSEapply (_,mexpr) ->
       Modops.error_application_to_not_path mexpr
   | MSEwith (mty, With_Definition _) -> get_module_substobjs env mty

@@ -110,9 +110,7 @@ let _ =
   Summary.declare_summary "inh_graph"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init;
-      Summary.survive_module = false;
-      Summary.survive_section = false }
+      Summary.init_function = init }
 
 let _ = init()
 

@@ -142,9 +142,7 @@ let _ =
   Summary.declare_summary "program-tcc-table"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init;
-      Summary.survive_module = false;
-      Summary.survive_section = false }
+      Summary.init_function = init }
 
 let progmap_union = ProgMap.fold ProgMap.add
 

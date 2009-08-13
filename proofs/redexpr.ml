@@ -108,9 +108,7 @@ let _ =
   Summary.declare_summary "Transparent constants and variables"
     { Summary.freeze_function = Conv_oracle.freeze;
       Summary.unfreeze_function = Conv_oracle.unfreeze;
-      Summary.init_function = Conv_oracle.init;
-      Summary.survive_module = false;
-      Summary.survive_section = false }
+      Summary.init_function = Conv_oracle.init }
 
 
 (* Generic reduction: reduction functions used in reduction tactics *)

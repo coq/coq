@@ -125,9 +125,7 @@ let _ =
   declare_summary "record-methods-state"
     { freeze_function = (fun () -> !meth_dnet);
       unfreeze_function = (fun m -> meth_dnet := m);
-      init_function = (fun () -> meth_dnet := MethodsDnet.empty);
-      survive_module = false;
-      survive_section = false }
+      init_function = (fun () -> meth_dnet := MethodsDnet.empty) }
 
 open Libobject
 
@@ -333,6 +331,4 @@ let _ =
   Summary.declare_summary "objdefs"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init;
-      Summary.survive_module = false;
-      Summary.survive_section = false }
+      Summary.init_function = init }

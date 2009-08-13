@@ -31,9 +31,7 @@ let _ =
   declare_summary "Global environment"
     { freeze_function = (fun () -> !global_env);
       unfreeze_function = (fun fr -> global_env := fr);
-      init_function = (fun () -> global_env := empty_environment);
-      survive_module = true;
-      survive_section = false }
+      init_function = (fun () -> global_env := empty_environment) }
 
 (* Then we export the functions of [Typing] on that environment. *)
 
@@ -82,9 +80,10 @@ let start_module id =
     global_env := newenv;
     mp
 
-let end_module id mtyo =
+let end_module fs id mtyo =
   let l = label_of_id id in
   let mp,newenv = end_module l mtyo !global_env in
+    Summary.unfreeze_summaries fs;
     global_env := newenv;
     mp
 
@@ -100,9 +99,10 @@ let start_modtype id =
     global_env := newenv;
     mp
 
-let end_modtype id =
+let end_modtype fs id =
   let l = label_of_id id in
   let kn,newenv = end_modtype l !global_env in
+    Summary.unfreeze_summaries fs;
     global_env := newenv;
     kn
 

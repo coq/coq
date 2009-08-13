@@ -181,9 +181,7 @@ let _ =
   Summary.declare_summary "tactic-ring-table"
     { Summary.freeze_function = (fun () -> !theories_map);
       Summary.unfreeze_function = (fun t -> theories_map := t);
-      Summary.init_function = (fun () -> theories_map := Cmap.empty);
-      Summary.survive_module = false;
-      Summary.survive_section = false }
+      Summary.init_function = (fun () -> theories_map := Cmap.empty) }
 
 (* declare a new type of object in the environment, "tactic-ring-theory"
    The functions theory_to_obj and obj_to_theory do the conversions

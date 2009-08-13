@@ -427,9 +427,7 @@ let _ =
   declare_summary "transitivity-steps"
     { freeze_function = freeze;
       unfreeze_function = unfreeze;
-      init_function = init;
-      survive_module = false; 
-      survive_section = false }
+      init_function = init }
 
 (* Main entry points *)
 

@@ -66,12 +66,13 @@ val set_engagement : engagement -> unit
    of the started module / module type *)
 
 val start_module : identifier -> module_path
-val end_module : identifier -> module_struct_entry option -> module_path
+val end_module :
+  Summary.frozen -> identifier -> module_struct_entry option -> module_path
 
 val add_module_parameter : mod_bound_id -> module_struct_entry -> unit
 
 val start_modtype : identifier -> module_path
-val end_modtype : identifier -> module_path
+val end_modtype : Summary.frozen -> identifier -> module_path
 
 
 

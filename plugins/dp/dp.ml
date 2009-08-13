@@ -203,9 +203,7 @@ let () =
     { Summary.freeze_function = (fun () -> !globals, !globals_stack);
       Summary.unfreeze_function = 
 	(fun (g,s) -> globals := g; globals_stack := s);
-      Summary.init_function = (fun () -> ());
-      Summary.survive_module = false;
-      Summary.survive_section = false }
+      Summary.init_function = (fun () -> ()) }
 
 let add_global r d = globals := Refmap.add r d !globals
 let mem_global r = Refmap.mem r !globals
@@ -986,6 +984,4 @@ let _ = declare_summary "Dp options"
 	    init_function = 
 	      (fun () -> 
 		debug := false; trace := false; timeout := 10; 
-		prelude_files := []);
-	    survive_module = true;
-	    survive_section = true }  
+		prelude_files := []) }  

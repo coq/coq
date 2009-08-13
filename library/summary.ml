@@ -14,9 +14,7 @@ open Util
 type 'a summary_declaration = {
   freeze_function : unit -> 'a;
   unfreeze_function : 'a -> unit;
-  init_function : unit -> unit;
-  survive_module : bool ;
-  survive_section : bool }
+  init_function : unit -> unit }
 
 let summaries = 
   (Hashtbl.create 17 : (string, Dyn.t summary_declaration) Hashtbl.t)
@@ -29,9 +27,7 @@ let internal_declare_summary sumname sdecl =
   let ddecl = {
     freeze_function = dyn_freeze;
     unfreeze_function = dyn_unfreeze;
-    init_function = dyn_init;
-    survive_module = sdecl.survive_module;
-    survive_section = sdecl.survive_section } 
+    init_function = dyn_init }
   in
   if Hashtbl.mem summaries sumname then
     anomalylabstrm "Summary.declare_summary"
@@ -51,23 +47,12 @@ let freeze_summaries () =
   !m
 
 
-let unfreeze_some_summaries p fs = 
+let unfreeze_summaries fs = 
   Hashtbl.iter
     (fun id decl -> 
-       try 
-	 if p decl then
-	   decl.unfreeze_function (Stringmap.find id fs)
+       try decl.unfreeze_function (Stringmap.find id fs)
        with Not_found -> decl.init_function())
     summaries
-
-let unfreeze_summaries = 
-  unfreeze_some_summaries (fun _ -> true)
-
-let section_unfreeze_summaries =
-  unfreeze_some_summaries (fun decl -> not decl.survive_section)
-
-let module_unfreeze_summaries =
-  unfreeze_some_summaries (fun decl -> not decl.survive_module)
 
 let init_summaries () =
   Hashtbl.iter (fun _ decl -> decl.init_function()) summaries

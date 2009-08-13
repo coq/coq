@@ -54,9 +54,7 @@ let _ =
   Summary.declare_summary "Head_decl"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init;
-      Summary.survive_module = true;
-      Summary.survive_section = false }
+      Summary.init_function = init }
 
 let variable_head id  = Evalrefmap.find (EvalVarRef id) !head_map
 let constant_head cst = Evalrefmap.find (EvalConstRef cst) !head_map

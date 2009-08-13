@@ -56,9 +56,7 @@ let _ =
   Summary.declare_summary "field"
     { Summary.freeze_function   = freeze;
       Summary.unfreeze_function = unfreeze;
-      Summary.init_function     = init;
-      Summary.survive_module = false;
-      Summary.survive_section   = false }
+      Summary.init_function     = init }
 
 let load_addfield _ = ()
 let cache_addfield (_,(typ,th)) = th_tab := Gmap.add typ th !th_tab

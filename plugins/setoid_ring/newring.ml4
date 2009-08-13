@@ -389,9 +389,7 @@ let _ =
       Summary.init_function =
         (fun () ->
           from_carrier := Cmap.empty; from_relation := Cmap.empty;
-          from_name := Spmap.empty);
-      Summary.survive_module = false;
-      Summary.survive_section = false }
+          from_name := Spmap.empty) }
 
 let add_entry (sp,_kn) e =
 (*  let _ = ty e.ring_lemma1 in
@@ -971,9 +969,7 @@ let _ =
       Summary.init_function =
         (fun () ->
           field_from_carrier := Cmap.empty; field_from_relation := Cmap.empty;
-          field_from_name := Spmap.empty);
-      Summary.survive_module = false;
-      Summary.survive_section = false }
+          field_from_name := Spmap.empty) }
 
 let add_field_entry (sp,_kn) e =
 (*

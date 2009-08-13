@@ -31,9 +31,7 @@ let _ =
   Summary.declare_summary "reserved-type"
     { Summary.freeze_function = (fun () -> !reserve_table);
       Summary.unfreeze_function = (fun r -> reserve_table := r);
-      Summary.init_function = (fun () -> reserve_table := Idmap.empty);
-      Summary.survive_module = false;
-      Summary.survive_section = false }
+      Summary.init_function = (fun () -> reserve_table := Idmap.empty) }
 
 let declare_reserved_type (loc,id) t = 
   if id <> root_of_id id then

@@ -27,9 +27,7 @@ let vartab = ref (Idmap.empty : variable_data Idmap.t)
 let _ = Summary.declare_summary "VARIABLE"
   { Summary.freeze_function = (fun () -> !vartab);
     Summary.unfreeze_function = (fun ft -> vartab := ft);
-    Summary.init_function = (fun () -> vartab := Idmap.empty);
-    Summary.survive_module = false;
-    Summary.survive_section = false }
+    Summary.init_function = (fun () -> vartab := Idmap.empty) }
 
 let add_variable_data id o = vartab := Idmap.add id o !vartab
 
@@ -47,9 +45,7 @@ let csttab = ref (Cmap.empty : logical_kind Cmap.t)
 let _ = Summary.declare_summary "CONSTANT"
 	  { Summary.freeze_function = (fun () -> !csttab);
 	    Summary.unfreeze_function = (fun ft -> csttab := ft);
-	    Summary.init_function = (fun () -> csttab := Cmap.empty);
-	    Summary.survive_module = false;
-	    Summary.survive_section = false }
+	    Summary.init_function = (fun () -> csttab := Cmap.empty) }
 
 let add_constant_kind kn k = csttab := Cmap.add kn k !csttab
 

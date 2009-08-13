@@ -14,9 +14,7 @@
 type 'a summary_declaration = {
   freeze_function : unit -> 'a;
   unfreeze_function : 'a -> unit;
-  init_function : unit -> unit;
-  survive_module : bool;    (* should be false is most cases *)
-  survive_section : bool }
+  init_function : unit -> unit }
 
 val declare_summary : string -> 'a summary_declaration -> unit
 
@@ -24,8 +22,6 @@ type frozen
 
 val freeze_summaries : unit -> frozen
 val unfreeze_summaries : frozen -> unit
-val section_unfreeze_summaries : frozen -> unit
-val module_unfreeze_summaries : frozen -> unit
 val init_summaries : unit -> unit
 
 (** Beware: if some code is dynamically loaded via dynlink after the

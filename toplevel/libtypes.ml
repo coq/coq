@@ -51,9 +51,7 @@ let _ =
   declare_summary "type-library-state"
     { freeze_function = freeze;
       unfreeze_function = unfreeze;
-      init_function = init;
-      survive_module = false;
-      survive_section = false }
+      init_function = init }
 
 let load (_,d) =
 (*  Profile.print_logical_stats !all_types;

@@ -519,9 +519,7 @@ let _ =
   Summary.declare_summary "section-context"
     { Summary.freeze_function = freeze_sectab;
       Summary.unfreeze_function = unfreeze_sectab;
-      Summary.init_function = init_sectab;
-      Summary.survive_module = false;
-      Summary.survive_section = false }
+      Summary.init_function = init_sectab }
 
 (*************)
 (* Sections. *)
@@ -576,7 +574,7 @@ let close_section () =
   add_entry oname (ClosedSection (List.rev_append secdecls (List.rev secopening)));
   if !Flags.xml_export then !xml_close_section (basename (fst oname));
   let newdecls = List.map discharge_item secdecls in
-  Summary.section_unfreeze_summaries fs;
+  Summary.unfreeze_summaries fs;
   List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;
   Cooking.clear_cooking_sharing ();
   Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)

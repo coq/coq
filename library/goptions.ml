@@ -83,9 +83,7 @@ module MakeTable =
 	Summary.declare_summary nick
           { Summary.freeze_function = freeze;
             Summary.unfreeze_function = unfreeze;
-            Summary.init_function = init;
-	    Summary.survive_module = false;
-	    Summary.survive_section = true }
+            Summary.init_function = init }
 
     let (add_option,remove_option) =
       if A.synchronous then
@@ -244,11 +242,9 @@ let declare_option cast uncast
 		       classify_function = (fun _ -> Dispose)}
     in 
     let _ = declare_summary (nickname key) 
-	      {freeze_function = read;
+	     { freeze_function = read;
 	       unfreeze_function = write;
-	       init_function = (fun () -> write default);
-	       survive_module = false;
-	       survive_section = false}
+	       init_function = (fun () -> write default) }
     in 
     fun v -> add_anonymous_leaf (decl_obj v)
   else write
