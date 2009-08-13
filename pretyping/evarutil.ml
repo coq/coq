@@ -1152,14 +1152,16 @@ let solve_refl conv_algo env evd evk argsv1 argsv2 =
 (* Util *)
 
 let check_instance_type conv_algo env evd ev1 t2 =
-  let typ2 = Retyping.get_type_of env (evars_of evd) (refresh_universes t2) in
-  let typ1 = existential_type (evars_of evd) ev1 in
-  match kind_of_term (whd_evar (evars_of evd) typ2) with
-  | Evar _ ->
-      (* No firm constraints: don't want to commit to an equal
-	 solution while only subtyping is requested *)
-      evd
-  | _ ->
+  let t2 = nf_evar evd t2 in
+  if has_undefined_evars evd t2 then
+    (* May contain larger constraints than needed: don't want to
+       commit to an equal solution while only subtyping is requested *)
+    evd
+  else
+    let typ2 = Retyping.get_type_of env (evars_of evd) (refresh_universes t2) in
+    if isEvar typ2 then (* Don't want to commit too early too *) evd
+    else
+      let typ1 = existential_type evd ev1 in
       let evd,b = conv_algo env evd Reduction.CUMUL typ2 typ1 in
       if b then evd else
 	user_err_loc (fst (evar_source (fst ev1) evd),"",
