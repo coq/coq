@@ -312,10 +312,31 @@ let browse f url =
     f ("Could not execute\n\""^com^
        "\"\ncheck your preferences for setting a valid browser command\n")
 
+let doc_url () =
+  if !current.doc_url = use_default_doc_url || !current.doc_url = "" then 
+    if Sys.file_exists
+      (String.sub Coq_config.localwwwrefman 7
+	(String.length Coq_config.localwwwrefman - 7))
+    then
+      Coq_config.localwwwrefman
+    else
+      Coq_config.wwwrefman
+  else !current.doc_url
+
 let url_for_keyword =
   let ht = Hashtbl.create 97 in
+  lazy (
   begin try
-    let cin = open_in (lib_ide_file "index_urls.txt") in
+    let cin = 
+      try open_in (lib_ide_file "index_urls.txt")
+      with _ ->
+	let doc_url = doc_url () in
+	let n = String.length doc_url in
+	if n > 8 && String.sub doc_url 0 7 = "file://" then
+	  open_in (String.sub doc_url 7 (n-7) ^ "index_urls.txt")
+	else
+	  raise Exit
+    in
     try while true do
       let s = input_line cin in
       try 
@@ -324,18 +345,20 @@ let url_for_keyword =
 	let u = String.sub s (i + 1) (String.length s - i - 1) in
 	Hashtbl.add ht k u
       with _ ->
-	()
+	Printf.eprintf "Warning: Cannot parse documentation index file.\n";
+	flush stderr
     done with End_of_file ->
       close_in cin
   with _ ->
-    ()
+    Printf.eprintf "Warning: Cannot find documentation index file.\n";
+    flush stderr
   end;
-  (Hashtbl.find ht : string -> string)
+  Hashtbl.find ht : string -> string)
 
 
 let browse_keyword f text = 
-  try let u = url_for_keyword text in browse f (!current.doc_url ^ u) 
-  with Not_found -> f ("No documentation found for "^text)
+  try let u = Lazy.force url_for_keyword text in browse f (doc_url() ^ u) 
+  with Not_found -> f ("No documentation found for \""^text^"\".\n")
 
 
 (*

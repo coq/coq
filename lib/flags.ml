@@ -102,6 +102,15 @@ let browser_cmd_fmt =
  with
   Not_found -> Coq_config.browser
 
+let is_standard_doc_url url =
+  let wwwcompatprefix = "http://www.lix.polytechnique.fr/coq/" in
+  let wwwprefix = "http://coq.inria.fr/" in
+  let n = String.length wwwprefix in
+  let n' = String.length Coq_config.wwwrefman in
+  url = Coq_config.localwwwrefman ||
+  url = Coq_config.wwwrefman ||
+  url = wwwcompatprefix ^ String.sub Coq_config.wwwrefman n (n'-n)
+
 (* Options for changing coqlib *)
 let coqlib_spec = ref false
 let coqlib = ref Coq_config.coqlib

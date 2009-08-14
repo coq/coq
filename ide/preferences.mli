@@ -71,3 +71,5 @@ val change_font : ( Pango.font_description -> unit) ref
 val show_toolbar : (bool -> unit) ref
 val auto_complete : (bool -> unit) ref
 val resize_window : (unit -> unit) ref
+
+val use_default_doc_url : string

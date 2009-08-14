@@ -70,7 +70,9 @@ val boxed_definitions : unit -> bool
 
 (* Returns string format for default browser to use from Coq or CoqIDE *)
 val browser_cmd_fmt : string
- 
+
+val is_standard_doc_url : string -> bool
+
 (* Substitute %s in the first chain by the second chain *)
 val subst_command_placeholder : string -> string -> string
 

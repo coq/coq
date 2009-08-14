@@ -3127,7 +3127,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					    ~callback:
 					    (fun () -> 
 					       let av = session_notebook#current_term.analyzed_view in 
-						 browse av#insert_message (!current.doc_url)) in
+						 browse av#insert_message (doc_url ())) in
 					  let _ = help_factory#add_item "Browse Coq _Library" 
 					    ~callback:
 					    (fun () -> 

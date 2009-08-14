@@ -258,15 +258,15 @@ doc/RecTutorial/RecTutorial.html: doc/RecTutorial/RecTutorial.tex
 
 # Not robust, improve...
 ide/index_urls.txt: doc/refman/html/index.html
-	@ rm -f ide/index_urls.txt
-	cat doc/refman/html/command-index.html doc/refman/html/tactic-index.html | grep li-indexenv | grep HREF | sed -e 's@.*<TT>\(.*\)</TT>.*, <A HREF="\(.*\)">.*@\1,\2@' > ide/index_urls.txt
+	@ rm -f doc/refman/html/index_urls.txt
+	cat doc/refman/html/command-index.html doc/refman/html/tactic-index.html | grep li-indexenv | grep HREF | sed -e 's@.*<TT>\(.*\)</TT>.*, <A HREF="\(.*\)">.*@\1,\2@' > doc/refman/html/index_urls.txt
 
 
 ######################################################################
 # Install all documentation files
 ######################################################################
 
-install-doc: install-doc-meta install-doc-html install-doc-printable
+install-doc: install-doc-meta install-doc-html install-doc-printable install-doc-index-url
 
 install-doc-meta:
 	$(MKDIR) $(FULLDOCDIR)
@@ -293,6 +293,10 @@ install-doc-printable:
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.ps $(FULLDOCDIR)/ps/RecTutorial.ps
 	$(INSTALLLIB) doc/faq/FAQ.v.ps $(FULLDOCDIR)/ps/FAQ.ps
 
+install-doc-index-url:
+	$(MKDIR) $(FULLDOCDIR)/ps $(FULLDOCDIR)/pdf
+	$(INSTALLLIB) doc/refman/html/index_urls.txt \
+		$(FULLDOCDIR)/html/refman 
 
 # For emacs:
 # Local Variables:

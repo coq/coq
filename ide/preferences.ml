@@ -101,6 +101,8 @@ type pref =
       mutable opposite_tabs : bool;
 }
 
+let use_default_doc_url = "(automatic)"
+
 let (current:pref ref) = 
   ref {
     cmd_coqc = "coqc";
@@ -224,7 +226,6 @@ let save_pref () =
     add "opposite_tabs" [string_of_bool p.opposite_tabs] ++
     Config_lexer.print_file pref_file
   with _ -> prerr_endline "Could not save preferences."
- 
 
 let load_pref () =
   (try GtkData.AccelMap.load accel_file with _ -> ());
@@ -269,7 +270,10 @@ let load_pref () =
     set_command_with_pair_compat "cmd_browse" (fun v -> np.cmd_browse <- v);
     set_command_with_pair_compat "cmd_editor" (fun v -> np.cmd_editor <- v);
     set_hd "text_font" (fun v -> np.text_font <- Pango.Font.from_string v);
-    set_hd "doc_url" (fun v -> np.doc_url <- v);
+    set_hd "doc_url" (fun v ->
+      if not (Flags.is_standard_doc_url v) && v <> use_default_doc_url then
+	prerr_endline ("Warning: Non-standard URL for Coq documentation in preference file: "^v);
+      np.doc_url <- v);
     set_hd "library_url" (fun v -> np.library_url <- v);
     set_bool "show_toolbar" (fun v -> np.show_toolbar <- v);
     set_bool "contextual_menus_on_goal" 
@@ -535,11 +539,28 @@ let configure ?(apply=(fun () -> ())) () =
                    else !current.cmd_browse])
       !current.cmd_browse
   in    
-  let doc_url = 
-    string ~f:(fun s -> !current.doc_url <- s) " Manual URL"  !current.doc_url in
+  let doc_url =
+    let predefined = [
+      use_default_doc_url
+    ] in
+    combo
+      "Manual URL"
+      ~f:(fun s -> !current.doc_url <- s)
+      ~new_allowed: true
+      (predefined@[if List.mem !current.doc_url predefined then ""
+                   else !current.doc_url])
+      !current.doc_url in
   let library_url = 
-    string ~f:(fun s -> !current.library_url <- s) "Library URL"  !current.library_url in
-
+    let predefined = [
+      Coq_config.wwwstdlib
+    ] in
+    combo
+      "Library URL"
+      ~f:(fun s -> !current.library_url <- s)
+      (predefined@[if List.mem !current.library_url predefined then ""
+                   else !current.library_url])
+      !current.library_url
+  in
   let automatic_tactics = 
     strings
       ~f:(fun l -> !current.automatic_tactics <- l) 

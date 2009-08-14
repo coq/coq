@@ -371,7 +371,7 @@ if [ "$browser_spec" = "no" ]; then
 fi
 
 if [ "$wwwcoq_spec" = "no" ]; then
-    WWWCOQ="http://www.lix.polytechnique.fr/coq/"
+    WWWCOQ="http://coq.inria.fr/"
 fi
 
 #########################################
@@ -759,13 +759,13 @@ case $mandir_spec/$prefix_spec/$local in
 esac
 
 case $docdir_spec/$prefix_spec/$local in
-    yes/*/*) DOCDIR=$docdir;;
-    */yes/*) DOCDIR=$prefix/share/doc/coq ;;
-    */*/true) DOCDIR=$COQTOP/man ;;
+    yes/*/*) DOCDIR=$docdir; HTMLREFMANDIR=$DOCDIR/html/refman;;
+    */yes/*) DOCDIR=$prefix/share/doc/coq; HTMLREFMANDIR=$DOCDIR/html/refman;;
+    */*/true) DOCDIR=$COQTOP/doc; HTMLREFMANDIR=$DOCDIR/refman/html;;
     *)  printf "Where should I install the Coq documentation [$docdir_def]? "
         read DOCDIR
 	case $DOCDIR in
-	    "") DOCDIR=$docdir_def;;
+	    "") DOCDIR=$docdir_def; HTMLREFMANDIR=$DOCDIR/html/refman;;
 	    *) true;;
 	esac;;
 esac
@@ -1019,6 +1019,7 @@ let browser = "$BROWSER"
 let wwwcoq = "$WWWCOQ"
 let wwwrefman = wwwcoq ^ "distrib/" ^ version ^ "/refman/"
 let wwwstdlib = wwwcoq ^ "distrib/" ^ version ^ "/stdlib/"
+let localwwwrefman = "file://$HTMLREFMANDIR/"
 
 END_OF_COQ_CONFIG
 
