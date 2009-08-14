@@ -447,6 +447,7 @@ install-ide-opt:
 install-ide-files:
 	$(MKDIR) $(FULLIDELIB)
 	$(INSTALLLIB) $(IDEFILES) $(FULLIDELIB)
+	if (test -f ide/index_urls.txt); then $(INSTALLLIB) ide/index_urls.txt $(FULLIDELIB); fi
 
 install-ide-info:
 	$(MKDIR) $(FULLIDELIB)

@@ -363,7 +363,7 @@ if [ "$browser_spec" = "no" ]; then
 fi
 
 if [ "$wwwcoq_spec" = "no" ]; then
-    WWWCOQ="http://www.lix.polytechnique.fr/coq/"
+    WWWCOQ="http://coq.inria.fr/"
 fi
 
 #########################################
