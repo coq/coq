@@ -1,5 +1,6 @@
 Coq_config
 
+Profile
 Pp_control 
 Pp
 Compat
