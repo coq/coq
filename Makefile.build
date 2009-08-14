@@ -774,7 +774,7 @@ source-doc:
 
 dev/printers.cma: $(PRINTERSCMO)
 	$(SHOW)'Testing $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) gramlib.cma $(PRINTERSCMO) -o test-printer
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) unix.cma gramlib.cma $(PRINTERSCMO) -o test-printer
 	@rm -f test-printer
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(PRINTERSCMO) -linkall -a -o $@
@@ -782,10 +782,10 @@ dev/printers.cma: $(PRINTERSCMO)
 parsing/grammar.cma: $(GRAMMARCMO)
 	$(SHOW)'Testing $@'
 	@touch test.ml4
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) $(GRAMMARCMO) -impl" -impl test.ml4 -o test-grammar
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -I $(CAMLLIB) unix.cma $(GRAMMARCMO) -impl" -impl test.ml4 -o test-grammar
 	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) unix.cma $(GRAMMARCMO) -linkall -a -o $@
 
 # toplevel/mltop.ml4 (ifdef Byte)
 

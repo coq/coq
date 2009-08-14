@@ -435,7 +435,7 @@ MCHECKER:=\
 # grammar modules with camlp4
 
 GRAMMARNEEDEDCMO:=\
-  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/flags.cmo \
+  lib/profile.cmo lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/flags.cmo \
   lib/util.cmo lib/bigint.cmo lib/dyn.cmo lib/hashcons.cmo lib/predicate.cmo \
   lib/rtree.cmo lib/option.cmo \
   kernel/names.cmo kernel/univ.cmo \
