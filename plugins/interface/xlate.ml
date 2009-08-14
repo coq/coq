@@ -2182,16 +2182,16 @@ let rec xlate_vernac =
   | VernacLocate(LocateNotation s) -> CT_locate_notation(CT_string s)
   | VernacTime(v) -> CT_time(xlate_vernac v)
   | VernacTimeout(n,v) -> CT_timeout(CT_int n,xlate_vernac v)
-  | VernacSetOption (["Implicit"; "Arguments"], BoolValue true)->CT_user_vernac (CT_ident "IMPLICIT_ARGS_ON", CT_varg_list[])
+  | VernacSetOption (_,["Implicit"; "Arguments"], BoolValue true)->CT_user_vernac (CT_ident "IMPLICIT_ARGS_ON", CT_varg_list[])
   |VernacExactProof f -> CT_proof(xlate_formula f)
-  | VernacSetOption (table, BoolValue true) -> 
+  | VernacSetOption (_,table, BoolValue true) -> 
       let table1 = 
 	match table with
 	    [s] -> CT_coerce_ID_to_TABLE(CT_ident s)
 	  | [s1;s2] -> CT_table(CT_ident s1, CT_ident s2)
 	  | _ -> xlate_error "TODO: arbitrary-length Table names" in
 	CT_set_option(table1)
-  | VernacSetOption (table, v) -> 
+  | VernacSetOption (_,table, v) -> 
       let table1 = 
 	match table with
 	    [s] -> CT_coerce_ID_to_TABLE(CT_ident s)
@@ -2205,7 +2205,7 @@ let rec xlate_vernac =
 	  | IntValue n ->
 	      CT_coerce_INT_to_SINGLE_OPTION_VALUE(CT_int n) in
 	CT_set_option_value(table1, value)
-  | VernacUnsetOption(table) ->
+  | VernacUnsetOption(_,table) ->
       let table1 = 
 	match table with
 	    [s] -> CT_coerce_ID_to_TABLE(CT_ident s)
