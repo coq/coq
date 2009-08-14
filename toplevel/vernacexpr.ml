@@ -309,8 +309,8 @@ type vernac_expr =
   | VernacReserve of lident list * constr_expr
   | VernacSetOpacity of
       locality_flag * (Conv_oracle.level * lreference list) list
-  | VernacUnsetOption of Goptions.option_name
-  | VernacSetOption of Goptions.option_name * option_value
+  | VernacUnsetOption of bool option * Goptions.option_name
+  | VernacSetOption of bool option * Goptions.option_name * option_value
   | VernacAddOption of Goptions.option_name * option_ref_value list
   | VernacRemoveOption of Goptions.option_name * option_ref_value list
   | VernacMemOption of Goptions.option_name * option_ref_value list
@@ -367,24 +367,21 @@ let check_locality () =
   if !locality_flag = Some false then
     syntax_checking_error "This command does not support the \"Global\" prefix."
 
-let use_locality () =
-  let local = match !locality_flag with Some true -> true | _ -> false in
+let use_locality_full () =
+  let r = !locality_flag in
   locality_flag := None;
-  local
+   r
+
+let use_locality () =
+  match use_locality_full () with Some true -> true | _ -> false 
 
 let use_locality_exp () = local_of_bool (use_locality ())
 
 let use_section_locality () =
-  let local = 
-    match !locality_flag with Some b -> b | None -> Lib.sections_are_opened ()
-  in
-  locality_flag := None;
-  local
+  match use_locality_full () with Some b -> b | None -> Lib.sections_are_opened ()
 
 let use_non_locality () =
-  let local = match !locality_flag with Some false -> false | _ -> true in
-  locality_flag := None;
-  local
+  match use_locality_full () with Some false -> false | _ -> true 
 
 let enforce_locality () =
   let local =

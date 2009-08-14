@@ -275,8 +275,8 @@ let rec attribute_of_vernac_command = function
   | VernacDeclareImplicits _ -> []
   | VernacReserve _ -> []
   | VernacSetOpacity _ -> []
-  | VernacSetOption (["Ltac";"Debug"], _) -> [DebugCommand]
-  | VernacSetOption (o,BoolValue true) | VernacUnsetOption o ->
+  | VernacSetOption (_,["Ltac";"Debug"], _) -> [DebugCommand]
+  | VernacSetOption (_,o,BoolValue true) | VernacUnsetOption (_,o) ->
       if coqide_known_option o then [KnownOptionCommand] else []
   | VernacSetOption _ -> []
   | VernacRemoveOption _ -> []

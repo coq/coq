@@ -147,6 +147,10 @@ let pr_search a b pr_p = match a with
   | SearchRewrite c -> str"SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchAbout sl -> str"SearchAbout" ++ spc() ++ str "[" ++ prlist_with_sep spc pr_search_about sl ++ str "]" ++ pr_in_out_modules b
 
+let pr_locality_full = function
+  | None -> mt()
+  | Some true -> str"Local "
+  | Some false -> str"Global "
 let pr_locality local = if local then str "Local " else str ""
 let pr_non_locality local = if local then str "" else str "Global "
 
@@ -854,9 +858,10 @@ let rec pr_vernac = function
                str"[" ++ prlist_with_sep sep pr_reference q ++ str"]") in
       hov 1 (pr_locality local ++ str"Strategy" ++ spc() ++
              hv 0 (prlist_with_sep sep pr_line l))
-  | VernacUnsetOption na ->
-      hov 1 (str"Unset" ++ spc() ++ pr_printoption na None)
-  | VernacSetOption (na,v) -> hov 2 (str"Set" ++ spc() ++ pr_set_option na v)
+  | VernacUnsetOption (l,na) ->
+      hov 1 (pr_locality_full l ++ str"Unset" ++ spc() ++ pr_printoption na None)
+  | VernacSetOption (l,na,v) -> 
+      hov 2 (pr_locality_full l ++ str"Set" ++ spc() ++ pr_set_option na v)
   | VernacAddOption (na,l) -> hov 2 (str"Add" ++ spc() ++ pr_printoption na (Some l))
   | VernacRemoveOption (na,l) -> hov 2 (str"Remove" ++ spc() ++ pr_printoption na (Some l))
   | VernacMemOption (na,l) -> hov 2 (str"Test" ++ spc() ++ pr_printoption na (Some l))

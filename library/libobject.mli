@@ -29,7 +29,7 @@ open Mod_subst
    * an opening function, specifying what to do when the module 
      containing the object is opened (imported);
      If the object wishes to register its visibility in the Nametab, 
-     it should do so for the sufix of the length the "int" argument
+     it should do so for the suffix of the length the "int" argument
 
    * a classification function, specyfying what to do with the object,
      when the current module (containing the object) is ended;
@@ -49,7 +49,7 @@ open Mod_subst
 
    * a substitution function, performing the substitution; 
      this function should be declared for substitutive objects 
-     only (see obove)
+     only (see above)
 
    * a discharge function, that is applied at section closing time to
      collect the data necessary to rebuild the discharged form of the

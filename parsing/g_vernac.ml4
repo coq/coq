@@ -637,11 +637,11 @@ GEXTEND Gram
 
       (* Pour intervenir sur les tables de paramètres *)
       | "Set"; table = option_table; v = option_value ->
-  	  VernacSetOption (table,v)
+  	  VernacSetOption (use_locality_full(),table,v)
       | "Set"; table = option_table ->
-  	  VernacSetOption (table,BoolValue true)
+  	  VernacSetOption (use_locality_full(),table,BoolValue true)
       | IDENT "Unset"; table = option_table ->
-  	  VernacUnsetOption table
+  	  VernacUnsetOption (use_locality_full(),table)
 
       | IDENT "Print"; IDENT "Table"; table = option_table ->
 	  VernacPrintOption table
@@ -779,10 +779,10 @@ GEXTEND Gram
 
 (* Tactic Debugger *)
       |	IDENT "Debug"; IDENT "On" -> 
-          VernacSetOption (["Ltac";"Debug"], BoolValue true)
+          VernacSetOption (None,["Ltac";"Debug"], BoolValue true)
 
       |	IDENT "Debug"; IDENT "Off" ->
-          VernacSetOption (["Ltac";"Debug"], BoolValue false)
+          VernacSetOption (None,["Ltac";"Debug"], BoolValue false)
 
  ] ];
     END

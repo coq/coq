@@ -235,24 +235,46 @@ let declare_option cast uncast
   { optsync=sync; optname=name; optkey=key; optread=read; optwrite=write } =
   check_key key;
   let default = read() in
-  let write = if sync then 
-    let (decl_obj,_) = 
-      declare_object {(default_object (nickname key)) with
+  (* spiwack: I use two spaces in the nicknames of "local" and "global" objects.
+      That way I shouldn't collide with [nickname key] for any [key]. As [key]-s are
+       lists of strings *without* spaces. *)
+  let (write,lwrite,gwrite) = if sync then 
+    let (ldecl_obj,_) = (* "Local": doesn't survive section or modules. *)
+      declare_object {(default_object ("L  "^nickname key)) with
 		       cache_function = (fun (_,v) -> write v);
 		       classify_function = (fun _ -> Dispose)}
+    in 
+    let (decl_obj,_) = (* default locality: survives sections but not modules. *)
+      declare_object {(default_object (nickname key)) with
+		       cache_function = (fun (_,v) -> write v);
+		       classify_function = (fun _ -> Dispose);
+		       discharge_function = (fun (_,v) -> Some v)}
+    in 
+    let (gdecl_obj,_) = (* "Global": survives section and modules. *)
+      declare_object {(default_object ("G  "^nickname key)) with
+		       cache_function = (fun (_,v) -> write v);
+		       classify_function = (fun v -> Keep v);
+		       discharge_function = (fun (_,v) -> Some v);
+		       load_function = (fun _ (_,v) -> write v);
+		       (* spiwack: I'm unsure whether this function does anyting *)
+		       export_function = (fun v -> Some v)}
     in 
     let _ = declare_summary (nickname key) 
 	     { freeze_function = read;
 	       unfreeze_function = write;
 	       init_function = (fun () -> write default) }
     in 
-    fun v -> add_anonymous_leaf (decl_obj v)
-  else write
+    begin fun v -> add_anonymous_leaf (decl_obj v) end ,
+    begin fun v -> add_anonymous_leaf (ldecl_obj v) end ,
+    begin fun v -> add_anonymous_leaf (gdecl_obj v) end
+  else write,write,write
   in 
   let cread () = cast (read ()) in
   let cwrite v = write (uncast v) in 
-  value_tab := OptionMap.add key (name,(sync,cread,cwrite)) !value_tab; 
-  write
+  let clwrite v = lwrite (uncast v) in 
+  let cgwrite v = gwrite (uncast v) in 
+  value_tab := OptionMap.add key (name,(sync,cread,cwrite,clwrite,cgwrite)) !value_tab; 
+  write 
 
 type 'a write_function = 'a -> unit
 
@@ -273,27 +295,36 @@ let declare_string_option =
 
 (* Setting values of options *)
 
-let set_option_value check_and_cast key v =
-  let (name,(_,read,write)) =
+let set_option_value locality check_and_cast key v =
+  let (name,(_,read,write,lwrite,gwrite)) =
     try get_option key
     with Not_found -> error ("There is no option "^(nickname key)^".")
+  in
+  let write = match locality with
+    | None -> write
+    | Some true -> lwrite
+    | Some false -> gwrite
   in
   write (check_and_cast v (read ()))
 
 let bad_type_error () = error "Bad type of value for this option"
 
-let set_int_option_value = set_option_value
+let set_int_option_value_gen locality = set_option_value  locality
   (fun v -> function 
      | (IntValue _) -> IntValue v
      | _ -> bad_type_error ())
-let set_bool_option_value = set_option_value
+let set_bool_option_value_gen locality = set_option_value locality
   (fun v -> function 
      | (BoolValue _) -> BoolValue v
      | _ -> bad_type_error ())
-let set_string_option_value = set_option_value
+let set_string_option_value_gen locality = set_option_value locality
  (fun v -> function 
     | (StringValue _) -> StringValue v
     | _ -> bad_type_error ())
+
+let set_int_option_value = set_int_option_value_gen None
+let set_bool_option_value = set_bool_option_value_gen None
+let set_string_option_value = set_string_option_value_gen None
 
 (* Printing options/tables *)
 
@@ -307,7 +338,7 @@ let msg_option_value (name,v) =
     | IdentValue r    -> pr_global_env Idset.empty r
 
 let print_option_value key =
-  let (name,(_,read,_)) = get_option key in
+  let (name,(_,read,_,_,_)) = get_option key in
   let s = read () in 
   match s with
     | BoolValue b -> 
@@ -322,7 +353,7 @@ let print_tables () =
   msg
     (str "Synchronous options:" ++ fnl () ++
      OptionMap.fold 
-       (fun key (name,(sync,read,write)) p -> 
+       (fun key (name,(sync,read,_,_,_)) p -> 
 	  if sync then 
 	    p ++ str ("  "^(nickname key)^": ") ++
 	    msg_option_value (name,read()) ++ fnl ()
@@ -331,7 +362,7 @@ let print_tables () =
        !value_tab (mt ()) ++
      str "Asynchronous options:" ++ fnl () ++
      OptionMap.fold 
-       (fun key (name,(sync,read,write)) p -> 
+       (fun key (name,(sync,read,_,_,_)) p -> 
 	  if sync then 
 	    p
 	  else 

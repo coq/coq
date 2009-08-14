@@ -983,15 +983,15 @@ let vernac_set_opacity local str =
   let str = List.map (fun (lev,ql) -> (lev,List.map glob_ref ql)) str in
   Redexpr.set_strategy local str
 
-let vernac_set_option key = function
-  | StringValue s -> set_string_option_value key s
-  | IntValue n -> set_int_option_value key (Some n)
-  | BoolValue b -> set_bool_option_value key b
+let vernac_set_option locality key = function
+  | StringValue s -> set_string_option_value_gen locality key s
+  | IntValue n -> set_int_option_value_gen locality key (Some n)
+  | BoolValue b -> set_bool_option_value_gen locality key b
 
-let vernac_unset_option key =
-  try set_bool_option_value key false
+let vernac_unset_option locality key =
+  try set_bool_option_value_gen locality key false
   with _ ->
-  set_int_option_value key None
+  set_int_option_value_gen locality key None
 
 let vernac_add_option key lv =
   let f = function
@@ -1371,8 +1371,8 @@ let interp c = match c with
   | VernacDeclareImplicits (local,qid,l) ->vernac_declare_implicits local qid l
   | VernacReserve (idl,c) -> vernac_reserve idl c
   | VernacSetOpacity (local,qidl) -> vernac_set_opacity local qidl
-  | VernacSetOption (key,v) -> vernac_set_option key v
-  | VernacUnsetOption key -> vernac_unset_option key
+  | VernacSetOption (locality,key,v) -> vernac_set_option locality key v
+  | VernacUnsetOption (locality,key) -> vernac_unset_option locality key
   | VernacRemoveOption (key,v) -> vernac_remove_option key v
   | VernacAddOption (key,v) -> vernac_add_option key v
   | VernacMemOption (key,v) -> vernac_mem_option key v
