@@ -1,0 +1,535 @@
+\documentclass[a4paper]{article}
+\usepackage{fullpage}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsfonts}
+
+\parindent=0pt
+\parskip=10pt
+
+%%%%%%%%%%%%%
+% Macros
+\newcommand\itemrule[3]{
+\subsubsection{#1}
+\begin{quote}
+\begin{tt}
+#3
+\end{tt}
+\end{quote}
+\begin{quote}
+Name: \texttt{#2}
+\end{quote}}
+
+\newcommand\formula[1]{\begin{tt}#1\end{tt}}
+\newcommand\tactic[1]{\begin{tt}#1\end{tt}}
+\newcommand\command[1]{\begin{tt}#1\end{tt}}
+\newcommand\term[1]{\begin{tt}#1\end{tt}}
+\newcommand\library[1]{\texttt{#1}}
+\newcommand\name[1]{\texttt{#1}}
+
+\newcommand\zero{\texttt{zero}}
+\newcommand\op{\texttt{op}}
+\newcommand\opPrime{\texttt{op'}}
+\newcommand\opSecond{\texttt{op''}}
+\newcommand\phimapping{\texttt{phi}}
+\newcommand\D{\texttt{D}}
+\newcommand\elt{\texttt{elt}}
+\newcommand\rel{\texttt{rel}}
+\newcommand\relp{\texttt{rel'}}
+
+%%%%%%%%%%%%%
+
+\begin{document}
+
+\begin{center}
+\begin{huge}
+Proposed naming conventions for the Coq standard library
+\end{huge}
+\end{center}
+\bigskip
+
+The following document describes a proposition of canonical naming
+schemes for the Coq standard library. Obviously and unfortunately, the
+current state of the library is not as homogeneous as it would be if
+it would systematically follow such a scheme. To tend in this
+direction, we however recommend to follow the following suggestions.
+
+\tableofcontents
+
+\section{General conventions}
+
+\subsection{Variable names}
+
+\begin{itemize}
+
+\item Variables are preferably quantified at the head of the
+  statement, even if some premisses do not depend of one of them. For
+  instance, one would state
+\begin{quote}
+\begin{tt}
+  {forall x y z:D, x <= y -> x+z <= y+z}
+\end{tt}
+\end{quote}
+and not
+\begin{quote}
+\begin{tt}
+  {forall x y:D, x <= y -> forall z:D, x+z <= y+z}
+\end{tt}
+\end{quote}
+
+\item Variables are preferably quantified (and named) in the order of
+  ``importance'', then of appearance, from left to right, even if
+  for the purpose of some tactics it would have been more convenient
+  to have, say, the variables not occurring in the conclusion
+  first. For instance, one would state
+\begin{quote}
+\begin{tt}
+  {forall x y z:D, x+z <= y+z -> x <= y}
+\end{tt}
+\end{quote}
+and not
+\begin{quote}
+\begin{tt}
+  {forall z x y:D, x+z <= y+z -> x <= y}
+\end{tt}
+\end{quote}
+nor
+\begin{quote}
+\begin{tt}
+  {forall x y z:D, y+x <= z+x -> y <= z}
+\end{tt}
+\end{quote}
+
+\item Choice of effective names is domain-dependent. For instance, on
+  natural numbers, the convention is to use the variables $n$, $m$,
+  $p$, $q$, $r$, $s$ in this order.
+
+  On generic domains, the convention is to use the letters $x$, $y$,
+  $z$, $t$. When more than three variables are needed, indexing variables
+
+  It is conventional to use specific names for variables having a
+  special meaning. For instance, $eps$ or $\epsilon$ can be used to
+  denote a number intended to be as small as possible. Also, $q$ and
+  $r$ can be used to denote a quotient and a rest. This is good
+  practice.
+
+\end{itemize}
+
+\subsection{Disjunctive statements}
+
+A disjunctive statement with a computational content will be suffixed
+by \name{\_inf}. For instance, if
+
+\begin{quote}
+\begin{tt}
+{forall x y, op x y = zero -> x = zero \/ y = zero}
+\end{tt}
+\end{quote}
+has name \texttt{D\_integral}, then
+\begin{quote}
+\begin{tt}
+{forall x y, op x y = zero -> \{x = zero\} + \{y = zero\}}
+\end{tt}
+\end{quote}
+will have name \texttt{D\_integral\_inf}.
+
+As an exception, decidability statements, such as 
+\begin{quote}
+\begin{tt}
+{forall x y, \{x = y\} + \{x <> y\}}
+\end{tt}
+\end{quote}
+will have a named ended in \texttt{\_dec}. Idem for cotransitivity
+lemmas which are inherently computational that are ended in
+\texttt{\_cotrans}.
+
+\section{Equational properties of operations}
+
+\subsection{General conventions}
+
+If the conclusion is in the other way than listed below, add suffix
+\name{\_reverse} to the lemma name.
+
+\subsection{Specific conventions}
+
+\itemrule{Associativity of binary operator {\op} on domain {\D}}{Dop\_assoc}
+{forall x y z:D, op x (op y z) = op (op x y) z}
+
+  Remark: Symmetric form: \name{Dop\_assoc\_reverse}:
+  \formula{forall x y z:D, op (op x y) z = op x (op y z)}
+
+\itemrule{Commutativity of binary operator {\op} on domain {\D}}{Dop\_comm}
+{forall x y:D, op x y = op y x}
+
+  Remark: Avoid \formula{forall x y:D, op y x = op x y}, or at worst, call it
+  \name{Dop\_comm\_reverse}
+
+\itemrule{Left neutrality of element elt for binary operator {\op}}{Dop\_elt\_l}
+{forall x:D, op elt x = x}
+
+  Remark: In English, ``{\elt} is an identity for {\op}'' seems to be
+  a more common terminology.
+
+\itemrule{Right neutrality of element elt for binary operator {\op}}{Dop\_elt\_r}
+{forall x:D, op x elt = x}
+
+  Remark: By convention, if the identities are reminiscent to zero or one, they
+  are written 1 and 0 in the name of the property.
+
+\itemrule{Left absorption of element elt for binary operator {\op}}{Dop\_elt\_l}
+{forall x:D, op elt x = elt}
+
+  Remarks:
+  \begin{itemize}
+  \item In French school, this property is named "elt est absorbant pour op"
+  \item English, the property seems generally named "elt is a zero of op"
+  \item In the context of lattices, this a boundedness property, it may
+     be called "elt is a bound on D", or referring to a (possibly
+     arbitrarily oriented) order "elt is a least element of D" or "elt
+     is a greatest element of D"
+  \end{itemize}
+
+\itemrule{Right absorption of element {\elt} for binary operator {\op}}{Dop\_elt\_l  [BAD ??]}
+{forall x:D, op x elt = elt}
+
+\itemrule{Left distributivity of binary operator {\op} over {\opPrime} on domain {\D}}{Dop\_op'\_distr\_l}
+{forall x y z:D, op (op' x y) z = op' (op x z) (op y z)}
+
+  Remark: Some authors say ``distribution''.
+
+\itemrule{Right distributivity of binary operator {\op} over {\opPrime} on domain {\D}}{Dop\_op'\_distr\_r}
+{forall x y z:D, op z (op' x y) = op' (op z x) (op z y)}
+
+  Remark: Note the order of arguments.
+
+\itemrule{Distributivity of unary operator {\op} over binary op' on domain {\D}}{Dop\_op'\_distr}
+{forall x y:D, op (op' x y) = op' (op x) (op y)}
+
+\itemrule{Left distributivity of unary operator {\op} over binary op' on domain {\D}}{Dop\_op'\_distr\_l}
+{forall x y:D, op (op' x y) = op' (op x) y}
+
+  Question: Call it left commutativity ??
+
+\itemrule{Right distributivity of unary operator {\op} over binary op' on domain {\D}}{Dop\_op'\_distr\_r}
+{forall x y:D, op (op' x y) = op' x (op y)}
+
+\itemrule{Idempotency of binary operator {\op} on domain {\D}}{Dop\_idempotent}
+{forall x:D, op x n = x}
+
+\itemrule{Idempotency of unary operator {\op} on domain {\D}}{Dop\_idempotent}
+{forall x:D, op (op x) = op x}
+
+  Remark: This is actually idempotency of {\op} wrt to composition and
+  identity.
+
+\itemrule{Idempotency of element elt for binary operator {\op} on domain {\D}}{Dop\_elt\_idempotent}
+{op elt elt = elt}
+
+  Remark: Generally useless in CIC for concrete, computable operators
+
+  Remark: The general definition is ``exists n, iter n op x = x''.
+
+\itemrule{Nilpotency of element elt wrt a ring D with additive neutral
+element {\zero} and multiplicative binary operator
+{\op}}{Delt\_nilpotent} 
+{op elt elt = zero}
+
+  Remark: We leave the ring structure of D implicit; the general definition is ``exists n, iter n op elt = zero''.
+
+\itemrule{Zero-product property in a ring D with additive neutral
+element {\zero} and multiplicative binary operator
+{\op}}{D\_integral}
+{forall x y, op x y = zero -> x = zero \/ y = zero}
+
+  Remark: We leave the ring structure of D implicit; the Coq library
+  uses either \texttt{\_is\_O} (for \texttt{nat}), \texttt{\_integral}
+    (for \texttt{Z}, \texttt{Q} and \texttt{R}), \texttt{eq\_mul\_0} (for
+    \texttt{NZ}).
+
+  Remark: The French school says ``integrité''.
+
+\itemrule{Nilpotency of binary operator {\op} wrt to its absorbing element
+zero in D}{Dop\_nilpotent} {forall x, op x x = zero}
+
+  Remark: Did not find this definition on the web, but it used in
+  the Coq library (to characterize \name{xor}).
+
+\itemrule{Involutivity of unary op on D}{Dop\_involutive}
+{forall x:D, op (op x) = x}
+
+\itemrule{Absorption law on the left for binary operator {\op} over binary operator {\op}' on the left}{Dop\_op'\_absorption\_l\_l}
+{forall x y:D, op x (op' x y) = x}
+
+\itemrule{Absorption law on the left for binary operator {\op} over binary operator {\op}' on the right}{Dop\_op'\_absorption\_l\_r}
+{forall x y:D, op x (op' y x) = x}
+
+  Remark: Similarly for \name{Dop\_op'\_absorption\_r\_l} and \name{Dop\_op'\_absorption\_r\_r}.
+
+\itemrule{De Morgan law's for binary operators {\opPrime} and {\opSecond} wrt
+to unary op on domain {\D}}{Dop'\_op''\_de\_morgan,
+Dop''\_op'\_de\_morgan ?? \mbox{leaving the complementing operation
+implicit})}
+{forall x y:D, op (op' x y) = op'' (op x) (op y)\\
+forall x y:D, op (op'' x y) = op' (op x) (op y)}
+
+\itemrule{Left complementation of binary operator {\op} by means of unary {\opPrime} wrt neutral element {\elt} of {\op} on domain {\D}}{Dop\_op'\_opp\_l}
+{forall x:D, op (op' x) x = elt}
+
+Remark: If the name of the opposite function is reminiscent of the
+notion of complement (e.g. if it is called \texttt{opp}), one can
+simply say {Dop\_opp\_l}.
+
+\itemrule{Right complementation of binary operator {\op} by means of unary {\op'} wrt neutral element {\elt} of {\op} on domain {\D}}{Dop\_opp\_r}
+{forall x:D, op x (op' x) = elt}
+
+Example: \formula{Radd\_opp\_l: forall r : R, - r + r = 0}
+
+\itemrule{Associativity of binary operators {\op} and {\op'}}{Dop\_op'\_assoc}
+{forall x y z, op x (op' y z) = op (op' x y) z}
+
+Example: \formula{forall x y z, x + (y - z) = (x + y) - z}
+
+\itemrule{Right extrusion of binary operator {\opPrime} over binary operator {\op}}{Dop\_op'\_extrusion\_r}
+{forall x y z, op x (op' y z) = op' (op x y) z}
+
+Remark: This requires {\op} and {\opPrime} to have their right and left
+argument respectively and their return types identical.
+
+Example: \formula{forall x y z, x + (y - z) = (x + y) - z}
+
+Remark: Other less natural combinations are possible, such
+as \formula{forall x y z, op x (op' y z) = op' y (op x z)}.
+
+\itemrule{Left extrusion of binary operator {\opPrime} over binary operator {\op}}{Dop\_op'\_extrusion\_l}
+{forall x y z, op (op' x y) z = op' x (op y z)}
+
+Remark: Operations are not necessarily internal composition laws.  It
+is only required that {\op} and {\opPrime} have their right and left
+argument respectively and their return type identical.
+
+Remark: When the type are heterogeneous, only one extrusion law is possible and it can simply be named {Dop\_op'\_extrusion}.
+
+Example: \formula{app\_cons\_extrusion : forall a l l', (a :: l) ++ l' = a :: (l ++ l')}, in arithmetic
+
+%======================================================================
+%\section{Properties of elements}
+
+%Remark: Not used in current library
+
+
+
+%======================================================================
+\section{Preservation and compatibility properties of operations}
+
+\subsection{With respect to equality}
+
+\itemrule{Injectivity of unary operator {\op}}{Dop\_inj}
+{forall x y:D, op x = op y -> x = y}
+
+\itemrule{Left regularity of binary operator {\op}}{Dop\_reg\_l, Dop\_inj\_l, or Dop\_cancel\_l}
+{forall x y z:D, op z x = op z y -> x = y}
+
+  Remark: Note the order of arguments.
+
+  Remark: The Coq usage is to called it regularity but the English
+  standard seems to be cancellation. The recommended form is not
+  decided yet.
+
+  Remark: Shall a property like $n^p \leq n^q \rightarrow p \leq q$
+  (for $n\geq 1$) be called cancellation or should it be reserved for
+  operators that have an inverse?
+
+\itemrule{Right regularity of binary operator {\op}}{Dop\_reg\_r, Dop\_inj\_r, Dop\_cancel\_r}
+{forall x y z:D, op x z = op y z -> x = y}
+
+\subsection{With respect to a relation {\rel}}
+
+\itemrule{Compatibility of unary operator {\op}}{Dop\_rel\_compat}
+{forall x y:D, rel x y -> rel (op x) (op y)}
+
+\itemrule{Left compatibility of binary operator {\op}}{Dop\_rel\_compat\_l}
+{forall x y z:D, rel x y -> rel (op z x) (op z y)}
+
+\itemrule{Right compatibility of binary operator {\op}}{Dop\_rel\_compat\_r}
+{forall x y z:D, rel x y -> rel (op x z) (op y z)}
+
+  Remark: For equality, use names of the form \name{Dop\_eq\_compat\_l} or
+  \name{Dop\_eq\_compat\_r}
+(\formula{forall x y z:D, y = x -> op y z = op x z} and
+\formula{forall x y z:D, y = x -> op y z = op x z})
+
+  Remark: Should we admit (or even prefer) the name
+  \name{Dop\_rel\_monotone}, \name{Dop\_rel\_monotone\_l},
+  \name{Dop\_rel\_monotone\_r} when {\rel} is an order ?
+
+\itemrule{Left regularity of binary operator {\op}}{Dop\_rel\_reg\_l}
+{forall x y z:D, rel (op z x) (op z y) -> rel x y}
+
+\itemrule{Right regularity of binary operator {\op}}{Dop\_rel\_reg\_r}
+{forall x y z:D, rel (op x z) (op y z) -> rel x y}
+
+  Question: Would it be better to have \name{z} as first argument, since it
+  is missing in the conclusion ?? (or admit we shall use the options
+  ``\texttt{with p}''?)
+
+\itemrule{Left distributivity of binary operator {\op} over {\opPrime} along relation {\rel} on domain {\D}}{Dop\_op'\_rel\_distr\_l}
+{forall x y z:D, rel (op (op' x y) z) (op' (op x z) (op y z))}
+
+  Example: standard property of (not necessarily distributive) lattices
+
+  Remark: In a (non distributive) lattice, by swapping join and meet,
+  one would like also,
+\formula{forall x y z:D, rel (op' (op x z) (op y z)) (op (op' x y) z)}.
+  How to name it with a symmetric name (use
+ \name{Dop\_op'\_rel\_distr\_mon\_l} and
+ \name{Dop\_op'\_rel\_distr\_anti\_l})?
+
+\itemrule{Irreducibility of binary operator {\op} on domain {\D}}{Dop\_irreducible}
+{forall x y z:D, z = op x y -> z = x $\backslash/$ z = y}
+
+  Question: What about the constructive version ? Call it \name{Dop\_irreducible\_inf} ?
+\formula{forall x y z:D, z = op x y -> \{z = x\} + \{z = y\}}
+
+\itemrule{Primality of binary operator {\op} along relation {\rel} on domain {\D}}{Dop\_rel\_prime}
+{forall x y z:D, rel z (op x y) -> rel z x $\backslash/$ rel  z y}
+
+
+%======================================================================
+\section{Morphisms}
+
+\itemrule{Morphism between structures {\D} and {\D'}}{\name{D'\_of\_D}}{D -> D'}
+
+Remark: If the domains are one-letter long, one can used \texttt{IDD'} as for
+\name{INR} or \name{INZ}.
+
+\itemrule{Morphism {\phimapping} mapping unary operators {\op} to {\op'}}{phi\_op\_op', phi\_op\_op'\_morphism}
+{forall x:D, phi (op x) = op' (phi x)}
+
+Remark: If the operators have the same name in both domains, one use
+\texttt{D'\_of\_D\_op} or \texttt{IDD'\_op}.
+
+Example: \formula{Z\_of\_nat\_mult: forall n m : nat, Z\_of\_nat (n * m) = (Z\_of\_nat n * Z\_of\_nat m)\%Z}.
+
+Remark: If the operators have different names on distinct domains, one
+can use \texttt{op\_op'}.
+
+\itemrule{Morphism {\phimapping} mapping binary operators {\op} to
+{\op'}}{phi\_op\_op', phi\_op\_op'\_morphism}  {forall
+x y:D, phi (op x y) = op' (phi x) (phi y)}
+
+Remark: If the operators have the same name in both domains, one use
+\texttt{D'\_of\_D\_op} or \texttt{IDD'\_op}.
+
+Remark: If the operators have different names on distinct domains, one
+can use \texttt{op\_op'}.
+
+\itemrule{Morphism {\phimapping} mapping binary operator {\op} to
+binary relation {\rel}}{phi\_op\_rel, phi\_op\_rel\_morphism}
+{forall x y:D, phi (op x y) <-> rel (phi x) (phi y)}
+
+Remark: If the operator and the relation have similar name, one uses
+\texttt{phi\_op}. 
+
+Question: How to name each direction? (add \_elim for -> and \_intro
+for <- ?? -- as done in Bool.v ??)
+
+Example: \formula{eq\_true\_neg: \~{} eq\_true b <-> eq\_true (negb b)}.
+
+%======================================================================
+\section{Preservation and compatibility properties of operations wrt order}
+
+\itemrule{Compatibility of binary operator {\op} wrt (strict order) {\rel} and (large order) {\rel'}}{Dop\_rel\_rel'\_compat}
+{forall x y z t:D, rel x y -> rel' z t -> rel (op x z) (op y t)}
+
+\itemrule{Compatibility of binary operator {\op} wrt (large order) {\relp} and (strict order) {\rel}}{Dop\_rel'\_rel\_compat}
+{forall x y z t:D, rel' x y -> rel z t -> rel (op x z) (op y t)}
+
+
+%======================================================================
+\section{Properties of relations}
+
+\itemrule{Reflexivity of relation {\rel} on domain {\D}}{Drel\_refl}
+{forall x:D, rel x x}
+
+\itemrule{Symmetry of relation {\rel} on domain {\D}}{Drel\_sym}
+{forall x y:D, rel x y -> rel y x}
+
+\itemrule{Transitivity of relation {\rel} on domain {\D}}{Drel\_trans}
+{forall x y z:D, rel x y -> rel y z -> rel x z}
+
+\itemrule{Antisymmetry of relation {\rel} on domain {\D}}{Drel\_antisym}
+{forall x y:D, rel x y -> rel y x -> x = y}
+
+\itemrule{Irreflexivity of relation {\rel} on domain {\D}}{Drel\_irrefl}
+{forall x:D, \~{} rel x x}
+
+\itemrule{Asymmetry of relation {\rel} on domain {\D}}{Drel\_asym}
+{forall x y:D, rel x y -> \~{} rel y x}
+
+\itemrule{Cotransitivity of relation {\rel} on domain {\D}}{Drel\_cotrans}
+{forall x y z:D, rel x y -> \{rel z y\} + \{rel x z\}}
+
+\itemrule{Linearity of relation {\rel} on domain {\D}}{Drel\_trichotomy}
+{forall x y:D, \{rel x y\} + \{x = y\} + \{rel y x\}}
+
+  Questions: Or call it \name{Drel\_total}, or \name{Drel\_linear} use
+  $\backslash/$ ? or use a ternary sumbool, or a ternary disjunction,
+  for nicer elimination.
+
+\itemrule{Informative decidability of relation {\rel} on domain {\D}}{Drel\_dec (or Drel\_dect, Drel\_dec\_inf ?)}
+{forall x y:D, \{rel x y\} + \{\~{} rel x y\}}
+
+  Remark: If equality: \name{D\_eq\_dec} or \name{D\_dec} (not like
+  \name{eq\_nat\_dec})
+
+\itemrule{Non informative decidability of relation {\rel} on domain {\D}}{Drel\_dec\_prop (or Drel\_dec)}
+{forall x y:D, rel x y $\backslash/$ \~{} rel x y}
+
+\itemrule{Inclusion of relation {\rel} in relation {\rel}' on domain {\D}}{Drel\_rel'\_incl (or Drel\_incl\_rel')}
+{forall x y:D, rel x y -> rel' x y}
+
+  Remark: Use \name{Drel\_rel'\_weak} for a strict inclusion ??
+
+%======================================================================
+\section{Arithmetical conventions}
+
+\begin{minipage}{6in}
+\renewcommand{\thefootnote}{\thempfootnote}  % For footnotes...
+\begin{tabular}{lll}
+Zero on domain {\D} & D0 & (notation \verb=0=)\\
+One on domain {\D} & D1 (if explicitly defined) & (notation \verb=1=)\\
+Successor on domain {\D} & Dsucc\\
+Predessor on domain {\D} & Dpred\\
+Addition on domain {\D} & Dadd/Dplus\footnote{Coq historically uses \texttt{plus} and \texttt{mult} for addition and multiplication which are inconsistent notations, the recommendation is to use \texttt{add} and \texttt{mul} except in existng libraries that already use \texttt{plus} and \texttt{mult}}
+ & (infix notation \verb=+= [50,L])\\
+Multiplication on domain {\D} & Dmul/Dmult\footnotemark[\value{footnote}] & (infix notation \verb=*= [40,L]))\\
+Soustraction on domain {\D} & Dminus & (infix notation \verb=-= [50,L])\\
+Opposite on domain {\D} & Dopp (if any) & (prefix notation \verb=-= [35,R]))\\
+Inverse on domain {\D} & Dinv (if any) & (prefix notation \verb=/= [35,R]))\\
+Power on domain {\D} & Dpower & (infix notation \verb=^= [30,R])\\
+Minimal element on domain {\D} & Dmin\\
+Maximal element on domain {\D} & Dmax\\
+Large less than order on {\D} & Dle & (infix notations \verb!<=! and \verb!>=! [70,N]))\\
+Strict less than order on {\D} & Dlt & (infix notations \verb=<= and \verb=>= [70,N]))\\
+\end{tabular}
+\bigskip
+\end{minipage}
+
+\bigskip
+
+The status of \verb!>=! and \verb!>! is undecided yet. It will eithet
+be accepted only as parsing notations or may also accepted as a {\em
+  definition} for the \verb!<=! and \verb!<! (like in \texttt{nat}) or
+even as a different definition (like it is the case in \texttt{Z}).
+
+\bigskip
+
+Exception: Peano Arithmetic which is used for pedagogical purpose:
+
+\begin{itemize}
+\item domain name is implicit
+\item \term{0} (digit $0$) is \term{O} (the 15th letter of the alphabet)
+\item \term{succ} is \verb!S! (but \term{succ} can be used in theorems)
+\end{itemize}
+
+\end{document}
