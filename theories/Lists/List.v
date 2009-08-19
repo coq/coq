@@ -1128,6 +1128,12 @@ Section Map.
 
 End Map. 
 
+Lemma map_id : forall (A :Type) (l : list A),
+  map (fun x => x) l = l.
+Proof.
+  induction l; simpl; auto; rewrite IHl; auto.
+Qed.
+
 Lemma map_map : forall (A B C:Type)(f:A->B)(g:B->C) l, 
   map g (map f l) = map (fun x => g (f x)) l.
 Proof.
