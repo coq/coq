@@ -1294,6 +1294,14 @@ End Fold_Right_Recursor.
       rewrite IHl; auto with arith.
     Qed.
 
+    Lemma existsb_app : forall l1 l2, 
+      existsb (l1++l2) = existsb l1 || existsb l2.
+    Proof.
+      induction l1; intros l2; simpl.
+        solve[auto].
+      case (f a); simpl; solve[auto].
+    Qed.
+
   (** find whether a boolean function is satisfied by 
     all the elements of a list. *)
 
@@ -1315,6 +1323,13 @@ End Fold_Right_Recursor.
       rewrite H1; auto. 
     Qed.
 
+    Lemma forallb_app :
+      forall l1 l2, forallb (l1++l2) = forallb l1 && forallb l2.
+    Proof.
+      induction l1; simpl.
+        solve[auto].
+      case (f a); simpl; solve[auto].
+    Qed.
   (** [filter] *)
 
     Fixpoint filter (l:list A) : list A := 
