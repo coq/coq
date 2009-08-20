@@ -20,6 +20,11 @@ module Mc = Micromega
 module Ml2C = Mutils.CamlToCoq
 module C2Ml = Mutils.CoqToCaml
 
+type micromega_polys = (Micromega.q Mc.pol * Mc.op1) list
+type csdp_certificate = S of Sos.positivstellensatz option | F of string
+type provername = string * int option
+
+
 let debug = false
 
 module M =
@@ -135,10 +140,10 @@ let real_nonlinear_prover d l =
 
   let proof = list_fold_right_elements 
    (fun s t -> Sum(s,t)) (proof_ne :: proofs_ideal @ proofs_cone) in
-   Some proof
+   S (Some proof)
  with 
-  | Sos.TooDeep -> None
-
+  | Sos.TooDeep -> S None
+  |    x        ->   F (Printexc.to_string x)
 
 (* This is somewhat buggy, over Z, strict inequality vanish... *)
 let pure_sos  l =
@@ -159,15 +164,11 @@ let pure_sos  l =
   let proof = Sum(Axiom_lt i, pos) in
 (*  let s,proof' = scale_certificate proof in
   let cert  = snd (cert_of_pos proof') in *)
-   Some proof
+    S (Some proof)
  with
-  | Not_found -> (* This is no strict inequality *) None
-  |  x        -> None
+  | Not_found -> (* This is no strict inequality *) F "pure_sos cannot solve this goal"
+  |  x        -> F (Printf.sprintf "pure_sos : %s"  (Printexc.to_string x))
 
-
-type micromega_polys = (Micromega.q Mc.pol * Mc.op1) list
-type csdp_certificate = Sos.positivstellensatz option
-type provername = string * int option
 
 
 let run_prover prover pb = 
@@ -178,10 +179,10 @@ let run_prover prover pb =
 
 
 let main () =
-  let (prover,poly) = (input_value stdin : provername * micromega_polys) in
-  let cert = run_prover prover poly in
-  output_value stdout (cert:csdp_certificate);
-  exit 0;;
+    let (prover,poly) = (input_value stdin : provername * micromega_polys) in
+    let cert = run_prover prover poly in
+      output_value stdout (cert:csdp_certificate);
+      exit 0 ;;
 
 let _ = main () in ()
 

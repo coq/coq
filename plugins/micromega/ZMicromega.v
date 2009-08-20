@@ -1081,6 +1081,25 @@ Proof.
   apply ZChecker_sound.
 Qed.
 
+Fixpoint xhyps_of_pt (base:nat) (acc : list nat) (pt:ZArithProof)  : list nat :=
+  match pt with
+    | DoneProof => acc
+    | RatProof c pt => xhyps_of_pt (S base ) (xhyps_of_psatz base acc c) pt
+    | CutProof c pt => xhyps_of_pt (S base ) (xhyps_of_psatz base acc c) pt
+    | EnumProof c1 c2 l => 
+      let acc := xhyps_of_psatz base (xhyps_of_psatz base acc c2) c1 in
+        List.fold_left (xhyps_of_pt (S base)) l acc
+  end.
+
+Definition hyps_of_pt (pt : ZArithProof) : list nat := xhyps_of_pt 0 nil pt.
+
+
+(*Lemma hyps_of_pt_correct : forall pt l, *)
+
+
+
+
+
 
 Open Scope Z_scope.
 

@@ -357,14 +357,14 @@ let command exe_path args vl =
   and (stdout_read,stdout_write) = Unix.pipe ()
   and (stderr_read,stderr_write) = Unix.pipe () in
 
-  (* Creating channels from dile descr *)
+  (* Creating channels from file descr *)
   let outch = Unix.out_channel_of_descr stdin_write in
   let inch  = Unix.in_channel_of_descr  stdout_read in 
 
   (* Create the process *)
   let pid = Unix.create_process exe_path args stdin_read stdout_write stderr_write in
 
-  (* Write the data on the stdin of the future process *)
+  (* Write the data on the stdin of the created process *)
     Marshal.to_channel outch vl [Marshal.No_sharing] ; 
     flush outch ;
     
@@ -374,7 +374,8 @@ let command exe_path args vl =
   (* Recover the result *)
     let res = 
       match status with
-	| Unix.WEXITED 0 -> Marshal.from_channel inch 
+	| Unix.WEXITED 0 -> 
+	    Some (Marshal.from_channel inch)
 	| _         -> None in
      
     (* Cleanup  *)

@@ -1125,6 +1125,7 @@ let file_of_string filename s =
 
 
 exception CsdpInfeasible
+exception CsdpNotFound
 
 let run_csdp dbg string_problem =
   let input_file = Filename.temp_file "sos" ".dat-s" in
@@ -1136,8 +1137,7 @@ let run_csdp dbg string_problem =
   let rv = Sys.command("cd "^temp_path^"; csdp "^input_file^" "^output_file^
                        (if dbg then "" else "> /dev/null")) in
     if rv = 1 or rv = 2 then raise CsdpInfeasible; 
-  if rv = 127 then
-     (print_string "csdp not found, exiting..."; exit 1);
+  if rv = 127 then raise CsdpNotFound ;
   if rv <> 0 & rv <> 3 (* reduced accuracy *) then
      failwith("csdp: error "^string_of_int rv);
   let string_result = string_of_file output_file in
@@ -1474,8 +1474,9 @@ let sdpa_of_blockproblem comment nblocks blocksizes obj mats =
 let csdp_blocks nblocks blocksizes obj mats =
   let string_problem = sdpa_of_blockproblem "" nblocks blocksizes obj mats in
   try parse_csdpoutput (run_csdp !debugging string_problem)
-  with CsdpInfeasible -> failwith "csdp: Problem is infeasible"
-
+  with 
+    | CsdpInfeasible -> failwith "csdp: Problem is infeasible"
+   
 (* ------------------------------------------------------------------------- *)
 (* 3D versions of matrix operations to consider blocks separately.           *)
 (* ------------------------------------------------------------------------- *)

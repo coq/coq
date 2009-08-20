@@ -25,7 +25,9 @@ module type PHashtable =
 
 
     val open_in : string -> 'a t
-    (** [open_in f] rebuilds a table from the records stored in file [f] *)
+    (** [open_in f] rebuilds a table from the records stored in file [f].
+	As marshaling is not type-safe, it migth segault.
+    *)
 
     val find : 'a t -> key -> 'a
     (** find has the specification of Hashtable.find *)
@@ -42,7 +44,7 @@ module type PHashtable =
 
     val memo : string -> (key -> 'a) -> (key -> 'a)
       (** [memo cache f] returns a memo function for [f] using file [cache] as persistent table.
-	  Note that the cache is just loaded when needed *)
+	  Note that the cache will only be loaded when the function is used for the first time *)
 
   end
 
@@ -87,16 +89,6 @@ let finally f rst =
     (try rst () 
     with _  -> raise x
     ); raise x
-
-
-(** [from_file f] returns a hashtable by parsing records from file [f].
-    Elements of the file are marshelled pairs of Caml structures.
-    (To ensure portability across platforms, closures are not allowed.)
-
-    Raises Sys_error if the file cannot be open
-    Raises InvalidTableFormat if the file does not conform to the format
-    i.e, Marshal.from_channel fails
-*)
 
 
 let read_key_elem inch =

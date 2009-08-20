@@ -8,7 +8,7 @@
 (*                                                                      *)
 (* Micromega: A reflexive tactic using the Positivstellensatz           *)
 (*                                                                      *)
-(*  Frédéric Besson (Irisa/Inria) 2006-2008                           *)
+(*  Frédéric Besson (Irisa/Inria) 2006-2008                             *)
 (*                                                                      *)
 (************************************************************************)
 
@@ -322,3 +322,6 @@ Set Implicit Arguments.
 
 End S.
 
+(* Local Variables: *)
+(* coding: utf-8 *)
+(* End: *)

@@ -456,6 +456,41 @@ Proof.
   simpl.   apply  addon.(SORrm).(morph0).
 Qed.
 
+Fixpoint ge_bool (n m  : nat) : bool :=
+ match n with 
+   | O   => match m with 
+            |  O => true
+            | S _ => false
+          end
+   | S n  => match m with 
+               | O => true
+               | S m => ge_bool n m 
+             end
+   end.
+
+Lemma ge_bool_cases : forall n m, (if ge_bool n m then n >= m else n < m)%nat.
+Proof.
+  induction n ; simpl.
+  destruct m ; simpl.
+  constructor.
+  omega.
+  destruct m.
+  constructor.
+  omega.
+  generalize (IHn m).
+  destruct (ge_bool n m) ; omega.
+Qed.
+
+
+Fixpoint xhyps_of_psatz (base:nat) (acc : list nat) (prf : Psatz)  : list nat :=
+  match prf with 
+    | PsatzC _ | PsatzZ | PsatzSquare _ => acc
+    | PsatzMulC _ prf => xhyps_of_psatz base acc prf
+    | PsatzAdd e1 e2 | PsatzMulE e1 e2 => xhyps_of_psatz base (xhyps_of_psatz base acc e2) e1
+    | PsatzIn n => if ge_bool n base then (n::acc) else acc
+  end.
+
+
 (* roughly speaking, normalise_pexpr_correct is a proof of
   forall env p, eval_pexpr env p == eval_pol env (normalise_pexpr p) *)
 
