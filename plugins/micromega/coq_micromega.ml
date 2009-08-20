@@ -1344,11 +1344,8 @@ let really_call_csdpcert : provername -> micromega_polys -> Sos.positivstellensa
       ["plugins"; "micromega"; "csdpcert" ^ Coq_config.exec_extension] in
 
     match command cmdname [| cmdname |] (provername,poly) with
-      | None -> failwith "unix error"
-      | Some res -> 
-	  match res with
-	    | F str -> failwith str
-	    | S res -> res
+      | F str -> failwith str
+      | S res -> res
 
 
 

@@ -14,6 +14,15 @@
 
 let debug = false
 
+let finally f rst = 
+  try 
+    let res = f () in
+      rst () ; res
+  with x -> 
+    (try rst () 
+    with _  -> raise x
+    ); raise x
+
 let map_option f x = 
   match x with
     | None -> None
@@ -371,17 +380,20 @@ let command exe_path args vl =
   (* Wait for its completion *)
     let _pid,status = Unix.waitpid [] pid in
 
-  (* Recover the result *)
-    let res = 
-      match status with
-	| Unix.WEXITED 0 -> 
-	    Some (Marshal.from_channel inch)
-	| _         -> None in
-     
-    (* Cleanup  *)
-      close_out outch ; close_in inch ; 
-      List.iter (fun x -> try Unix.close x with _ -> ()) [stdin_read; stdin_write; stderr_write; stdout_write];
-      res
+      finally 
+	(fun () -> 
+	  (* Recover the result *)
+	  match status with
+	    | Unix.WEXITED 0 -> Marshal.from_channel inch
+	    | Unix.WEXITED i -> failwith (Printf.sprintf "command \"%s\" exited %i" exe_path i)
+	    | Unix.WSIGNALED i -> failwith (Printf.sprintf "command \"%s\" killed %i" exe_path i)
+	    | Unix.WSTOPPED  i -> failwith (Printf.sprintf "command \"%s\" stopped %i" exe_path i))
+	(fun () -> 
+	  (* Cleanup  *)
+	  close_out outch ; close_in inch ; 
+	  List.iter (fun x -> try Unix.close x with _ -> ()) [stdin_read; stdin_write; stderr_write; stdout_write]
+	)
+
 
 
 
