@@ -90,23 +90,16 @@ let includes = ref []
 let push_include (s, alias) = includes := (s,alias,false) :: !includes
 let push_rec_include (s, alias) = includes := (s,alias,true) :: !includes
 
-let check_coq_overwriting p = 
-  if string_of_id (list_last (repr_dirpath p)) = "Coq" then
-    error "The \"Coq\" logical root directory is reserved for the Coq library"
-
 let set_default_include d =
   push_include (d, Check.default_root_prefix)
 let set_default_rec_include d =
   let p = Check.default_root_prefix in
-  check_coq_overwriting p; 
   push_rec_include (d, p)
 let set_include d p =
   let p = dirpath_of_string p in
-  check_coq_overwriting p;
   push_include (d,p)
 let set_rec_include d p =
   let p = dirpath_of_string p in
-  check_coq_overwriting p;
   push_rec_include(d,p)
 
 (* Initializes the LoadPath *)

@@ -253,16 +253,20 @@ let get_instantiated_arity (mib,mip) params =
 
 let elim_sorts (_,mip) = mip.mind_kelim
 
-let rel_list n m = 
-  let rec reln l p = 
-    if p>m then l else reln (Rel(n+p)::l) (p+1)
+let extended_rel_list n hyps =
+  let rec reln l p = function
+    | (_,None,_) :: hyps -> reln (Rel (n+p) :: l) (p+1) hyps
+    | (_,Some _,_) :: hyps -> reln l (p+1) hyps
+    | [] -> l
   in 
-  reln [] 1
+  reln [] 1 hyps
 
 let build_dependent_inductive ind (_,mip) params =
-  let nrealargs = mip.mind_nrealargs in
+  let realargs,_ = list_chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
   applist 
-    (Ind ind, (List.map (lift nrealargs) params)@(rel_list 0 nrealargs))
+    (Ind ind,
+       List.map (lift mip.mind_nrealargs_ctxt) params
+       @ extended_rel_list 0 realargs)
 
 (* This exception is local *)
 exception LocalArity of (sorts_family * sorts_family * arity_error) option

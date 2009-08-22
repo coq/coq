@@ -136,6 +136,7 @@ let small_unit constrsinfos =
 (* check information related to inductive arity *)
 let typecheck_arity env params inds =
   let nparamargs = rel_context_nhyps params in
+  let nparamdecls = rel_context_length params in
   let check_arity arctxt = function
       Monomorphic mar ->
         let ar = mar.mind_user_arity in
@@ -154,8 +155,12 @@ let typecheck_arity env params inds =
         (* Arities (with params) are typed-checked here *)
         let arity = check_arity ar_ctxt ind.mind_arity in
         (* mind_nrealargs *)
-        if ind.mind_nrealargs <> rel_context_nhyps ar_ctxt - nparamargs then
+	let nrealargs = rel_context_nhyps ar_ctxt - nparamargs in
+        if ind.mind_nrealargs <> nrealargs then
              failwith "bad number of real inductive arguments";
+	let nrealargs_ctxt = rel_context_length ar_ctxt - nparamdecls in
+        if ind.mind_nrealargs_ctxt <> nrealargs_ctxt then
+             failwith "bad length of real inductive arguments signature";
 	(* We do not need to generate the universe of full_arity; if
 	   later, after the validation of the inductive definition,
 	   full_arity is used as argument or subject to cast, an
