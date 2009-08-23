@@ -514,8 +514,8 @@ type one_inductive_body = {
 
 let val_one_ind = val_tuple "one_inductive_body"
   [|val_id;val_rctxt;val_ind_arity;val_array val_id;val_array val_constr;
-    val_int; val_list val_sortfam;val_array val_constr;val_array val_int;
-    val_wfp; val_int; val_int; no_val|]
+    val_int;val_int;val_list val_sortfam;val_array val_constr;val_array val_int;
+    val_wfp;val_int;val_int;no_val|]
 
 
 type mutual_inductive_body = {
