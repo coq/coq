@@ -611,9 +611,11 @@ let build_congr env (eq,refl) ind (mib,mip) =
     error "Inductive equalities with local definitions in arity not supported";
   let env_with_arity = push_rel_context mip.mind_arity_ctxt env in
   let (_,_,ty) = lookup_rel (mip.mind_nrealargs - i + 1) env_with_arity in
-  let _,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
+  let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
-  let c = List.nth constrargs (i - 1) in
+  if rel_context_length constrsign<>rel_context_length mib.mind_params_ctxt then
+    error "Constructor must have no arguments";
+  let c = List.nth constrargs (i + mib.mind_nparams - 1) in
   let varB = id_of_string "B" in
   let varH = id_of_string "H" in
   let varf = id_of_string "f" in
@@ -636,14 +638,15 @@ let build_congr env (eq,refl) ind (mib,mip) =
            (Anonymous,
             applist
              (mkInd ind,
-	        extended_rel_list (2*mip.mind_nrealargs+3) mib.mind_params_ctxt
+	        extended_rel_list (2*mip.mind_nrealargs_ctxt+3) 
+		  mib.mind_params_ctxt
 	        @ extended_rel_list 0 realsign),
             mkApp (eq, 
 	      [|mkVar varB;
-                mkApp (mkVar varf, [|lift (2*mip.mind_nrealargs+3) c|]);
+                mkApp (mkVar varf, [|lift (2*mip.mind_nrealargs_ctxt+4) c|]);
 		mkApp (mkVar varf, [|mkRel (mip.mind_nrealargs - i + 2)|])|]))),
        mkVar varH,
        [|mkApp (refl,
           [|mkVar varB;
-	    mkApp (mkVar varf, [|lift (mip.mind_nrealargs+2) c|])|])|]))))))
+	    mkApp (mkVar varf, [|lift (mip.mind_nrealargs+3) c|])|])|]))))))
  
