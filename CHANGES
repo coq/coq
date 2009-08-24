@@ -27,6 +27,8 @@ Tactics
 - New tactic "etransitivity".
 - Support of JMeq for "injection" and "discriminate".
 - New variant "subst'" of "subst" that supports JMeq.
+- New tactic "decide lemma with hyp" for rewriting decidability lemmas
+  when one knows which side is true.
 
 Tactic Language
 

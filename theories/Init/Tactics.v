@@ -10,6 +10,7 @@
 
 Require Import Notations.
 Require Import Logic.
+Require Import Specif.
 
 (** * Useful tactics *)
 
@@ -173,4 +174,32 @@ Ltac easy :=
 Tactic Notation "now" tactic(t) := t; easy.
 
 (** A tactic to document or check what is proved at some point of a script *)
+
 Ltac now_show c := change c.
+
+(** Support for rewriting decidability statements *)
+
+Set Implicit Arguments.
+
+Lemma decide_left : forall (C:Prop) (decide:{C}+{~C}), 
+  C -> forall P:{C}+{~C}->Prop, (forall H:C, P (left _ H)) -> P decide.
+Proof.
+intros; destruct decide. apply H0. contradiction.
+Qed.
+
+Lemma decide_right : forall (C:Prop) (decide:{C}+{~C}),
+  ~C -> forall P:{C}+{~C}->Prop, (forall H:~C, P (right _ H)) -> P decide.
+Proof.
+intros; destruct decide. contradiction. apply H0.
+Qed.
+
+Tactic Notation "decide" constr(lemma) "with" constr(H) :=
+  let try_to_merge_hyps H := 
+     try (clear H; intro H) || 
+     (let H' := fresh H "bis" in intro H'; try clear H') ||
+     (let H' := fresh in intro H'; try clear H') in
+  match type of H with
+  | ~ ?C => apply (decide_right lemma H); try_to_merge_hyps H
+  | ?C -> False => apply (decide_right lemma H); try_to_merge_hyps H
+  | _ => apply (decide_left lemma H); try_to_merge_hyps H
+  end.
