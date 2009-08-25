@@ -643,7 +643,11 @@ VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
   funind cc subtac rtauto
 
 DOC_TARGETS:=doc doc-html doc-ps doc-pdf stdlib refman tutorial faq \
-  rectutorial refman-quick refman-nodep stdlib-nodep
+  rectutorial refman-quick refman-nodep stdlib-nodep \
+  install-doc install-doc-meta install-doc-html install-doc-printable install-doc-index-url \
+  ide/index_urls.txt
+
+DOC_TARGET_PATTERNS:=%.dvi %.ps %.eps %.pdf %.html %.v.tex %.hva
 
 STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
   interp parsing pretyping highparsing toplevel hightactics \
@@ -653,7 +657,8 @@ STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
   world install coqide coqide-files coq coqlib \
   coqlight states pcoq-files check init theories theories-light \
   $(DOC_TARGETS) $(VO_TARGETS) validate \
-  %.vo %.glob states/% install-% %.ml4-preprocessed
+  %.vo %.glob states/% install-% %.ml4-preprocessed \
+  $(DOC_TARGET_PATTERNS)
 
 ifndef CM_STAGE1
  STAGE2_TARGETS+=$(CAML_OBJECT_PATTERNS)
