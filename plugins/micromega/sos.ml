@@ -1,5 +1,5 @@
 (* ========================================================================= *)
-(* - This code originates from John Harrison's HOL LIGHT 2.20                *)
+(* - This code originates from John Harrison's HOL LIGHT 2.30                *)
 (*   (see file LICENSE.sos for license, copyright and disclaimer)            *)
 (* - Laurent Théry (thery@sophia.inria.fr) has isolated the HOL              *)
 (*   independent bits                                                        *)
@@ -9,531 +9,20 @@
 (* ========================================================================= *)
 (* Nonlinear universal reals procedure using SOS decomposition.              *)
 (* ========================================================================= *)
-
 open Num;;
 open List;;
+open Sos_types;;
+open Sos_lib;;
+
+(*
+prioritize_real();;
+*)
 
 let debugging = ref false;;
 
 exception Sanity;;
 
 exception Unsolvable;;
-
-(* ------------------------------------------------------------------------- *)
-(* Comparisons that are reflexive on NaN and also short-circuiting.          *)
-(* ------------------------------------------------------------------------- *)
-
-let (=?) = fun x y -> Pervasives.compare x y = 0;;
-let (<?) = fun x y -> Pervasives.compare x y < 0;;
-let (<=?) = fun x y -> Pervasives.compare x y <= 0;;
-let (>?) = fun x y -> Pervasives.compare x y > 0;;
-let (>=?) = fun x y -> Pervasives.compare x y >= 0;;
-
-(* ------------------------------------------------------------------------- *)
-(* Combinators.                                                              *)
-(* ------------------------------------------------------------------------- *)
-
-let (o) = fun f g x -> f(g x);;
-
-(* ------------------------------------------------------------------------- *)
-(* Some useful functions on "num" type.                                      *)
-(* ------------------------------------------------------------------------- *)
-
-
-let num_0 = Int 0
-and num_1 = Int 1
-and num_2 = Int 2
-and num_10 = Int 10;;
-
-let pow2 n = power_num num_2 (Int n);;
-let pow10 n = power_num num_10 (Int n);;
-
-let numdom r =
-  let r' = Ratio.normalize_ratio (ratio_of_num r) in
-  num_of_big_int(Ratio.numerator_ratio r'),
-  num_of_big_int(Ratio.denominator_ratio r');;
-
-let numerator = (o) fst numdom
-and denominator = (o) snd numdom;;
-
-let gcd_num n1 n2 =
-  num_of_big_int(Big_int.gcd_big_int (big_int_of_num n1) (big_int_of_num n2));;
-
-let lcm_num x y =
-  if x =/ num_0 & y =/ num_0 then num_0
-  else abs_num((x */ y) // gcd_num x y);;
-
-
-(* ------------------------------------------------------------------------- *)
-(* List basics.                                                              *)
-(* ------------------------------------------------------------------------- *)
-
-let rec el n l =
-  if n = 0 then hd l else el (n - 1) (tl l);;
-
-
-(* ------------------------------------------------------------------------- *)
-(* Various versions of list iteration.                                       *)
-(* ------------------------------------------------------------------------- *)
-
-let rec itlist f l b =
-  match l with
-    [] -> b
-  | (h::t) -> f h (itlist f t b);;
-
-let rec end_itlist f l =
-  match l with
-        []     -> failwith "end_itlist"
-      | [x]    -> x
-      | (h::t) -> f h (end_itlist f t);;
-
-let rec itlist2 f l1 l2 b =
-  match (l1,l2) with
-    ([],[]) -> b
-  | (h1::t1,h2::t2) -> f h1 h2 (itlist2 f t1 t2 b)
-  | _ -> failwith "itlist2";;
-
-(* ------------------------------------------------------------------------- *)
-(* All pairs arising from applying a function over two lists.                *)
-(* ------------------------------------------------------------------------- *)
-
-let rec allpairs f l1 l2 =
-  match l1 with
-   h1::t1 ->  itlist (fun x a -> f h1 x :: a) l2 (allpairs f t1 l2)
-  | [] -> [];;
-
-(* ------------------------------------------------------------------------- *)
-(* String operations (surely there is a better way...)                       *)
-(* ------------------------------------------------------------------------- *)
-
-let implode l = itlist (^) l "";;
-
-let explode s =
-  let rec exap n l =
-      if n < 0 then l else
-      exap (n - 1) ((String.sub s n 1)::l) in
-  exap (String.length s - 1) [];;
-
-
-(* ------------------------------------------------------------------------- *)
-(* Attempting function or predicate applications.                            *)
-(* ------------------------------------------------------------------------- *)
-
-let can f x = try (f x; true) with Failure _ -> false;;
-
-
-(* ------------------------------------------------------------------------- *)
-(* Repetition of a function.                                                 *)
-(* ------------------------------------------------------------------------- *)
-
-let rec funpow n f x =
-  if n < 1 then x else funpow (n-1) f (f x);;
-
-
-(* ------------------------------------------------------------------------- *)
-(*  term??                                                                   *)
-(* ------------------------------------------------------------------------- *)
-
-type vname = string;;
-
-type term =
-| Zero
-| Const of Num.num
-| Var of vname
-| Inv of term
-| Opp of term
-| Add of (term * term)
-| Sub of (term * term)
-| Mul of (term * term)
-| Div of (term * term)
-| Pow of (term * int);;
-
-
-(* ------------------------------------------------------------------------- *)
-(* Data structure for Positivstellensatz refutations.                        *)
-(* ------------------------------------------------------------------------- *)
-
-type positivstellensatz =
-   Axiom_eq of int
- | Axiom_le of int
- | Axiom_lt of int
- | Rational_eq of num
- | Rational_le of num
- | Rational_lt of num
- | Square of term
- | Monoid of int list
- | Eqmul of term * positivstellensatz
- | Sum of positivstellensatz * positivstellensatz
- | Product of positivstellensatz * positivstellensatz;;
-
-
-
-(* ------------------------------------------------------------------------- *)
-(* Replication and sequences.                                                *)
-(* ------------------------------------------------------------------------- *)
-
-let rec replicate x n =
-    if n < 1 then []
-    else x::(replicate x (n - 1));;
-
-let rec (--) = fun m n -> if m > n then [] else m::((m + 1) -- n);;
-
-(* ------------------------------------------------------------------------- *)
-(* Various useful list operations.                                           *)
-(* ------------------------------------------------------------------------- *)
-
-let rec forall p l =
-  match l with
-    [] -> true
-  | h::t -> p(h) & forall p t;;
-
-let rec tryfind f l =
-  match l with
-      [] -> failwith "tryfind"
-    | (h::t) -> try f h with Failure _ -> tryfind f t;;
-
-let index x =
-  let rec ind n l =
-    match l with
-      [] -> failwith "index"
-    | (h::t) -> if x =? h then n else ind (n + 1) t in
-  ind 0;;
-
-(* ------------------------------------------------------------------------- *)
-(* "Set" operations on lists.                                                *)
-(* ------------------------------------------------------------------------- *)
-
-let rec mem x lis =
-  match lis with
-    [] -> false
-  | (h::t) -> x =? h or mem x t;;
-
-let insert x l =
-  if mem x l then l else x::l;;
-
-let union l1 l2 = itlist insert l1 l2;;
-
-let subtract l1 l2 = filter (fun x -> not (mem x l2)) l1;;
-
-(* ------------------------------------------------------------------------- *)
-(* Merging and bottom-up mergesort.                                          *)
-(* ------------------------------------------------------------------------- *)
-
-let rec merge ord l1 l2 =
-  match l1 with
-    [] -> l2
-  | h1::t1 -> match l2 with
-                [] -> l1
-              | h2::t2 -> if ord h1 h2 then h1::(merge ord t1 l2)
-                          else h2::(merge ord l1 t2);;
-
-
-(* ------------------------------------------------------------------------- *)
-(* Common measure predicates to use with "sort".                             *)
-(* ------------------------------------------------------------------------- *)
-
-let increasing f x y = f x <? f y;;
-
-let decreasing f x y = f x >? f y;;
-
-(* ------------------------------------------------------------------------- *)
-(* Zipping, unzipping etc.                                                   *)
-(* ------------------------------------------------------------------------- *)
-
-let rec zip l1 l2 =
-  match (l1,l2) with
-        ([],[]) -> []
-      | (h1::t1,h2::t2) -> (h1,h2)::(zip t1 t2)
-      | _ -> failwith "zip";;
-
-let rec unzip =
-  function [] -> [],[]
-         | ((a,b)::rest) -> let alist,blist = unzip rest in
-                            (a::alist,b::blist);;
-
-(* ------------------------------------------------------------------------- *)
-(* Iterating functions over lists.                                           *)
-(* ------------------------------------------------------------------------- *)
-
-let rec do_list f l =
-  match l with
-    [] -> ()
-  | (h::t) -> (f h; do_list f t);;
-
-(* ------------------------------------------------------------------------- *)
-(* Sorting.                                                                  *)
-(* ------------------------------------------------------------------------- *)
-
-let rec sort cmp lis =
-  match lis with
-    [] -> []
-  | piv::rest ->
-      let r,l = partition (cmp piv) rest in
-      (sort cmp l) @ (piv::(sort cmp r));;
-
-(* ------------------------------------------------------------------------- *)
-(* Removing adjacent (NB!) equal elements from list.                         *)
-(* ------------------------------------------------------------------------- *)
-
-let rec uniq l =
-  match l with
-    x::(y::_ as t) -> let t' = uniq t in
-                      if x =? y then t' else
-                      if t'==t then l else x::t'
- | _ -> l;;
-
-(* ------------------------------------------------------------------------- *)
-(* Convert list into set by eliminating duplicates.                          *)
-(* ------------------------------------------------------------------------- *)
-
-let setify s = uniq (sort (<=?) s);;
-
-(* ------------------------------------------------------------------------- *)
-(* Polymorphic finite partial functions via Patricia trees.                  *)
-(*                                                                           *)
-(* The point of this strange representation is that it is canonical (equal   *)
-(* functions have the same encoding) yet reasonably efficient on average.    *)
-(*                                                                           *)
-(* Idea due to Diego Olivier Fernandez Pons (OCaml list, 2003/11/10).        *)
-(* ------------------------------------------------------------------------- *)
-
-type ('a,'b)func =
-   Empty
- | Leaf of int * ('a*'b)list
- | Branch of int * int * ('a,'b)func * ('a,'b)func;;
-
-(* ------------------------------------------------------------------------- *)
-(* Undefined function.                                                       *)
-(* ------------------------------------------------------------------------- *)
-
-let undefined = Empty;;
-
-(* ------------------------------------------------------------------------- *)
-(* In case of equality comparison worries, better use this.                  *)
-(* ------------------------------------------------------------------------- *)
-
-let is_undefined f =
-  match f with
-    Empty -> true
-  | _ -> false;;
-
-(* ------------------------------------------------------------------------- *)
-(* Operation analagous to "map" for lists.                                   *)
-(* ------------------------------------------------------------------------- *)
-
-let mapf =
-  let rec map_list f l =
-    match l with
-      [] -> []
-    | (x,y)::t -> (x,f(y))::(map_list f t) in
-  let rec mapf f t =
-    match t with
-      Empty -> Empty
-    | Leaf(h,l) -> Leaf(h,map_list f l)
-    | Branch(p,b,l,r) -> Branch(p,b,mapf f l,mapf f r) in
-  mapf;;
-
-(* ------------------------------------------------------------------------- *)
-(* Operations analogous to "fold" for lists.                                 *)
-(* ------------------------------------------------------------------------- *)
-
-let foldl =
-  let rec foldl_list f a l =
-    match l with
-      [] -> a
-    | (x,y)::t -> foldl_list f (f a x y) t in
-  let rec foldl f a t =
-    match t with
-      Empty -> a
-    | Leaf(h,l) -> foldl_list f a l
-    | Branch(p,b,l,r) -> foldl f (foldl f a l) r in
-  foldl;;
-
-let foldr =
-  let rec foldr_list f l a =
-    match l with
-      [] -> a
-    | (x,y)::t -> f x y (foldr_list f t a) in
-  let rec foldr f t a =
-    match t with
-      Empty -> a
-    | Leaf(h,l) -> foldr_list f l a
-    | Branch(p,b,l,r) -> foldr f l (foldr f r a) in
-  foldr;;
-
-(* ------------------------------------------------------------------------- *)
-(* Redefinition and combination.                                             *)
-(* ------------------------------------------------------------------------- *)
-
-let (|->),combine =
-  let ldb x y = let z = x lxor y in z land (-z) in
-  let newbranch p1 t1 p2 t2 =
-    let b = ldb p1 p2 in
-    let p = p1 land (b - 1) in
-    if p1 land b = 0 then Branch(p,b,t1,t2)
-    else Branch(p,b,t2,t1) in
-  let rec define_list (x,y as xy) l =
-    match l with
-      (a,b as ab)::t ->
-          if x =? a then xy::t
-          else if x <? a then xy::l
-          else ab::(define_list xy t)
-    | [] -> [xy]
-  and combine_list op z l1 l2 =
-    match (l1,l2) with
-      [],_ -> l2
-    | _,[] -> l1
-    | ((x1,y1 as xy1)::t1,(x2,y2 as xy2)::t2) ->
-          if x1 <? x2 then xy1::(combine_list op z t1 l2)
-          else if x2 <? x1 then xy2::(combine_list op z l1 t2) else
-          let y = op y1 y2 and l = combine_list op z t1 t2 in
-          if z(y) then l else (x1,y)::l in
-  let (|->) x y =
-    let k = Hashtbl.hash x in
-    let rec upd t =
-      match t with
-        Empty -> Leaf (k,[x,y])
-      | Leaf(h,l) ->
-           if h = k then Leaf(h,define_list (x,y) l)
-           else newbranch h t k (Leaf(k,[x,y]))
-      | Branch(p,b,l,r) ->
-          if k land (b - 1) <> p then newbranch p t k (Leaf(k,[x,y]))
-          else if k land b = 0 then Branch(p,b,upd l,r)
-          else Branch(p,b,l,upd r) in
-    upd in
-  let rec combine op z t1 t2 =
-    match (t1,t2) with
-      Empty,_ -> t2
-    | _,Empty -> t1
-    | Leaf(h1,l1),Leaf(h2,l2) ->
-          if h1 = h2 then
-            let l = combine_list op z l1 l2 in
-            if l = [] then Empty else Leaf(h1,l)
-          else newbranch h1 t1 h2 t2
-    | (Leaf(k,lis) as lf),(Branch(p,b,l,r) as br) |
-      (Branch(p,b,l,r) as br),(Leaf(k,lis) as lf) ->
-          if k land (b - 1) = p then
-            if k land b = 0 then
-              let l' = combine op z lf l in
-              if is_undefined l' then r else Branch(p,b,l',r)
-            else
-              let r' = combine op z lf r in
-              if is_undefined r' then l else Branch(p,b,l,r')
-          else
-            newbranch k lf p br
-    | Branch(p1,b1,l1,r1),Branch(p2,b2,l2,r2) ->
-          if b1 < b2 then
-            if p2 land (b1 - 1) <> p1 then newbranch p1 t1 p2 t2
-            else if p2 land b1 = 0 then
-              let l = combine op z l1 t2 in
-              if is_undefined l then r1 else Branch(p1,b1,l,r1)
-            else
-              let r = combine op z r1 t2 in
-              if is_undefined r then l1 else Branch(p1,b1,l1,r)
-          else if b2 < b1 then
-            if p1 land (b2 - 1) <> p2 then newbranch p1 t1 p2 t2
-            else if p1 land b2 = 0 then
-              let l = combine op z t1 l2 in
-              if is_undefined l then r2 else Branch(p2,b2,l,r2)
-            else
-              let r = combine op z t1 r2 in
-              if is_undefined r then l2 else Branch(p2,b2,l2,r)
-          else if p1 = p2 then
-            let l = combine op z l1 l2 and r = combine op z r1 r2 in
-            if is_undefined l then r
-            else if is_undefined r then l else Branch(p1,b1,l,r)
-          else
-            newbranch p1 t1 p2 t2 in
-  (|->),combine;;
-
-(* ------------------------------------------------------------------------- *)
-(* Special case of point function.                                           *)
-(* ------------------------------------------------------------------------- *)
-
-let (|=>) = fun x y -> (x |-> y) undefined;;
-
-
-(* ------------------------------------------------------------------------- *)
-(* Grab an arbitrary element.                                                *)
-(* ------------------------------------------------------------------------- *)
-
-let rec choose t =
-  match t with
-    Empty -> failwith "choose: completely undefined function"
-  | Leaf(h,l) -> hd l
-  | Branch(b,p,t1,t2) -> choose t1;;
-
-(* ------------------------------------------------------------------------- *)
-(* Application.                                                              *)
-(* ------------------------------------------------------------------------- *)
-
-let applyd =
-  let rec apply_listd l d x =
-    match l with
-      (a,b)::t -> if x =? a then b
-                  else if x >? a then apply_listd t d x else d x
-    | [] -> d x in
-  fun f d x ->
-    let k = Hashtbl.hash x in
-    let rec look t =
-      match t with
-        Leaf(h,l) when h = k -> apply_listd l d x
-      | Branch(p,b,l,r) -> look (if k land b = 0 then l else r)
-      | _ -> d x in
-    look f;;
-
-let apply f = applyd f (fun x -> failwith "apply");;
-
-let tryapplyd f a d = applyd f (fun x -> d) a;;
-
-let defined f x = try apply f x; true with Failure _ -> false;;
-
-(* ------------------------------------------------------------------------- *)
-(* Undefinition.                                                             *)
-(* ------------------------------------------------------------------------- *)
-
-let undefine =
-  let rec undefine_list x l =
-    match l with
-      (a,b as ab)::t ->
-          if x =? a then t
-          else if x <? a then l else
-          let t' = undefine_list x t in
-          if t' == t then l else ab::t'
-    | [] -> [] in
-  fun x ->
-    let k = Hashtbl.hash x in
-    let rec und t =
-      match t with
-        Leaf(h,l) when h = k ->
-          let l' = undefine_list x l in
-          if l' == l then t
-          else if l' = [] then Empty
-          else Leaf(h,l')
-      | Branch(p,b,l,r) when k land (b - 1) = p ->
-          if k land b = 0 then
-            let l' = und l in
-            if l' == l then t
-            else if is_undefined l' then r
-            else Branch(p,b,l',r)
-          else
-            let r' = und r in
-            if r' == r then t
-            else if is_undefined r' then l
-            else Branch(p,b,l,r')
-      | _ -> t in
-    und;;
-
-
-(* ------------------------------------------------------------------------- *)
-(* Mapping to sorted-list representation of the graph, domain and range.     *)
-(* ------------------------------------------------------------------------- *)
-
-let graph f = setify (foldl (fun a x y -> (x,y)::a) [] f);;
-
-let dom f = setify(foldl (fun a x y -> x::a) [] f);;
-
-let ran f = setify(foldl (fun a x y -> y::a) [] f);;
 
 (* ------------------------------------------------------------------------- *)
 (* Turn a rational into a decimal string with d sig digits.                  *)
@@ -553,7 +42,6 @@ let decimalize =
     (if x </ Int 0 then "-0." else "0.") ^
     implode(tl(explode(string_of_num k))) ^
     (if e = 0 then "" else "e"^string_of_int e);;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Iterations over numbers, and lists indexed by numbers.                    *)
@@ -617,7 +105,7 @@ let vector_1 = vector_const (Int 1);;
 let vector_cmul c (v:vector) =
   let n = dim v in
   if c =/ Int 0 then vector_0 n
-  else n,mapf (fun x -> c */ x) (snd v);;
+  else n,mapf (fun x -> c */ x) (snd v)
 
 let vector_neg (v:vector) = (fst v,mapf minus_num (snd v) :vector);;
 
@@ -627,6 +115,12 @@ let vector_add (v1:vector) (v2:vector) =
   (n,combine (+/) (fun x -> x =/ Int 0) (snd v1) (snd v2) :vector);;
 
 let vector_sub v1 v2 = vector_add v1 (vector_neg v2);;
+
+let vector_dot (v1:vector) (v2:vector) =
+  let m = dim v1 and n = dim v2 in
+  if m <> n then failwith "vector_add: incompatible dimensions" else
+  foldl (fun a i x -> x +/ a) (Int 0)
+        (combine ( */ ) (fun x -> x =/ Int 0) (snd v1) (snd v2));;
 
 let vector_of_list l =
   let n = length l in
@@ -789,13 +283,13 @@ let poly_variables (p:poly) =
 (* Order monomials for human presentation.                                   *)
 (* ------------------------------------------------------------------------- *)
 
-let humanorder_varpow (x1,k1) (x2,k2) = x1 < x2 or (x1 = x2 & k1 > k2);;
+let humanorder_varpow (x1,k1) (x2,k2) = x1 < x2 or x1 = x2 & k1 > k2;;
 
 let humanorder_monomial =
   let rec ord l1 l2 = match (l1,l2) with
     _,[] -> true
   | [],_ -> false
-  | h1::t1,h2::t2 -> humanorder_varpow h1 h2 or (h1 = h2 & ord t1 t2) in
+  | h1::t1,h2::t2 -> humanorder_varpow h1 h2 or h1 = h2 & ord t1 t2 in
   fun m1 m2 -> m1 = m2 or
                ord (sort humanorder_varpow (graph m1))
                    (sort humanorder_varpow (graph m2));;
@@ -886,7 +380,7 @@ let print_poly m = Format.print_string(string_of_poly m);;
 *)
 
 (* ------------------------------------------------------------------------- *)
-(* Conversion from term.                                                     *)
+(* Conversion from  term.                                                 *)
 (* ------------------------------------------------------------------------- *)
 
 let rec poly_of_term t = match t with
@@ -914,7 +408,7 @@ let rec poly_of_term t = match t with
 
 let sdpa_of_vector (v:vector) =
   let n = dim v in
-  let strs = map (o (decimalize 20) (element v)) (1--n) in
+  let strs = map (o (decimalize 20)  (element v)) (1--n) in
   end_itlist (fun x y -> x ^ " " ^ y) strs ^ "\n";;
 
 (* ------------------------------------------------------------------------- *)
@@ -965,103 +459,28 @@ let sdpa_of_problem comment obj mats =
 (* More parser basics.                                                       *)
 (* ------------------------------------------------------------------------- *)
 
-exception Noparse;;
-
-
-let isspace,issep,isbra,issymb,isalpha,isnum,isalnum =
-  let charcode s = Char.code(String.get s 0) in
-  let spaces = " \t\n\r"
-  and separators = ",;"
-  and brackets = "()[]{}"
-  and symbs = "\\!@#$%^&*-+|\\<=>/?~.:"
-  and alphas = "'abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  and nums = "0123456789" in
-  let allchars = spaces^separators^brackets^symbs^alphas^nums in
-  let csetsize = itlist ((o) max charcode) (explode allchars) 256 in
-  let ctable = Array.make csetsize 0 in
-  do_list (fun c -> Array.set ctable (charcode c) 1) (explode spaces);
-  do_list (fun c -> Array.set ctable (charcode c) 2) (explode separators);
-  do_list (fun c -> Array.set ctable (charcode c) 4) (explode brackets);
-  do_list (fun c -> Array.set ctable (charcode c) 8) (explode symbs);
-  do_list (fun c -> Array.set ctable (charcode c) 16) (explode alphas);
-  do_list (fun c -> Array.set ctable (charcode c) 32) (explode nums);
-  let isspace c = Array.get ctable (charcode c) = 1
-  and issep c  = Array.get ctable (charcode c) = 2
-  and isbra c  = Array.get ctable (charcode c) = 4
-  and issymb c = Array.get ctable (charcode c) = 8
-  and isalpha c = Array.get ctable (charcode c) = 16
-  and isnum c = Array.get ctable (charcode c) = 32
-  and isalnum c = Array.get ctable (charcode c) >= 16 in
-  isspace,issep,isbra,issymb,isalpha,isnum,isalnum;;
-
-let (||) parser1 parser2 input =
-  try parser1 input
-  with Noparse -> parser2 input;;
-
-let (++) parser1 parser2 input =
-  let result1,rest1 = parser1 input in
-  let result2,rest2 = parser2 rest1 in
-  (result1,result2),rest2;;
-
-let rec many prs input =
-  try let result,next = prs input in
-      let results,rest = many prs next in
-      (result::results),rest
-  with Noparse -> [],input;;
-
-let (>>) prs treatment input =
-  let result,rest = prs input in
-  treatment(result),rest;;
-
-let fix err prs input =
-  try prs input
-  with Noparse -> failwith (err ^ " expected");;
-
-let rec listof prs sep err =
-  prs ++ many (sep ++ fix err prs >> snd) >> (fun (h,t) -> h::t);;
-
-let possibly prs input =
-  try let x,rest = prs input in [x],rest
-  with Noparse -> [],input;;
-
-let some p =
-  function
-      [] -> raise Noparse
-    | (h::t) -> if p h then (h,t) else raise Noparse;;
-
-let a tok = some (fun item -> item = tok);;
-
-let rec atleast n prs i =
-  (if n <= 0 then many prs
-   else prs ++ atleast (n - 1) prs >> (fun (h,t) -> h::t)) i;;
-
-let finished input =
-  if input = [] then 0,input else failwith "Unparsed input";;
-
 let word s =
    end_itlist (fun p1 p2 -> (p1 ++ p2) >> (fun (s,t) -> s^t))
               (map a (explode s));;
-
 let token s =
   many (some isspace) ++ word s ++ many (some isspace)
   >> (fun ((_,t),_) -> t);;
 
 let decimal =
   let numeral = some isnum in
-  let decimalint = atleast 1 numeral >> ((o) Num.num_of_string implode) in
+  let decimalint = atleast 1 numeral >> ((o) Num.num_of_string  implode) in
   let decimalfrac = atleast 1 numeral
     >> (fun s -> Num.num_of_string(implode s) // pow10 (length s)) in
   let decimalsig =
     decimalint ++ possibly (a "." ++ decimalfrac >> snd)
-    >> (function (h,[]) -> h | (h,[x]) -> h +/ x | _ -> failwith "decimalsig") in
+    >> (function (h,[]) -> h | (h,[x]) -> h +/ x) in
   let signed prs =
        a "-" ++ prs >> ((o) minus_num snd)
     || a "+" ++ prs >> snd
     || prs in
   let exponent = (a "e" || a "E") ++ signed decimalint >> snd in
     signed decimalsig ++ possibly exponent
-    >> (function (h,[]) -> h | (h,[x]) -> h */ power_num (Int 10) x | _ -> 
-     failwith "exponent");;
+    >> (function (h,[]) -> h | (h,[x]) -> h */ power_num (Int 10) x);;
 
 let mkparser p s =
   let x,rst = p(explode s) in
@@ -1073,15 +492,72 @@ let parse_decimal = mkparser decimal;;
 (* Parse back a vector.                                                      *)
 (* ------------------------------------------------------------------------- *)
 
-let parse_csdpoutput =
+let parse_sdpaoutput,parse_csdpoutput =
+  let vector =
+    token "{" ++ listof decimal (token ",") "decimal" ++ token "}"
+               >> (fun ((_,v),_) -> vector_of_list v) in
+  let parse_vector = mkparser vector in
   let rec skipupto dscr prs inp =
       (dscr ++ prs >> snd
     || some (fun c -> true) ++ skipupto dscr prs >> snd) inp in
   let ignore inp = (),[] in
+  let sdpaoutput =
+    skipupto (word "xVec" ++ token "=")
+             (vector ++ ignore >> fst) in
   let csdpoutput =
     (decimal ++ many(a " " ++ decimal >> snd) >> (fun (h,t) -> h::t)) ++
     (a " " ++ a "\n" ++ ignore) >> ((o) vector_of_list fst) in
-  mkparser csdpoutput;;
+  mkparser sdpaoutput,mkparser csdpoutput;;
+
+(* ------------------------------------------------------------------------- *)
+(* Also parse the SDPA output to test success (CSDP yields a return code).   *)
+(* ------------------------------------------------------------------------- *)
+
+let sdpa_run_succeeded =
+   let rec skipupto dscr prs inp =
+      (dscr ++ prs >> snd
+    || some (fun c -> true) ++ skipupto dscr prs >> snd) inp in
+  let prs = skipupto (word "phase.value" ++ token "=")
+                     (possibly (a "p") ++ possibly (a "d") ++
+                      (word "OPT" || word "FEAS")) in
+  fun s -> try prs (explode s); true with Noparse -> false;;
+
+(* ------------------------------------------------------------------------- *)
+(* The default parameters. Unfortunately this goes to a fixed file.          *)
+(* ------------------------------------------------------------------------- *)
+
+let sdpa_default_parameters =
+"100     unsigned int maxIteration;
+1.0E-7  double 0.0 < epsilonStar;
+1.0E2   double 0.0 < lambdaStar;
+2.0     double 1.0 < omegaStar;
+-1.0E5  double lowerBound;
+1.0E5   double upperBound;
+0.1     double 0.0 <= betaStar <  1.0;
+0.2     double 0.0 <= betaBar  <  1.0, betaStar <= betaBar;
+0.9     double 0.0 < gammaStar  <  1.0;
+1.0E-7  double 0.0 < epsilonDash;
+";;
+
+(* ------------------------------------------------------------------------- *)
+(* These were suggested by Makoto Yamashita for problems where we are        *)
+(* right at the edge of the semidefinite cone, as sometimes happens.         *)
+(* ------------------------------------------------------------------------- *)
+
+let sdpa_alt_parameters =
+"1000    unsigned int maxIteration;
+1.0E-7  double 0.0 < epsilonStar;
+1.0E4   double 0.0 < lambdaStar;
+2.0     double 1.0 < omegaStar;
+-1.0E5  double lowerBound;
+1.0E5   double upperBound;
+0.1     double 0.0 <= betaStar <  1.0;
+0.2     double 0.0 <= betaBar  <  1.0, betaStar <= betaBar;
+0.9     double 0.0 < gammaStar  <  1.0;
+1.0E-7  double 0.0 < epsilonDash;
+";;
+
+let sdpa_params = sdpa_alt_parameters;;
 
 (* ------------------------------------------------------------------------- *)
 (* CSDP parameters; so far I'm sticking with the defaults.                   *)
@@ -1107,47 +583,57 @@ printlevel=1
 let csdp_params = csdp_default_parameters;;
 
 (* ------------------------------------------------------------------------- *)
+(* Now call SDPA on a problem and parse back the output.                     *)
+(* ------------------------------------------------------------------------- *)
+
+let run_sdpa dbg obj mats =
+  let input_file = Filename.temp_file "sos" ".dat-s" in
+  let output_file =
+    String.sub input_file 0 (String.length input_file - 6) ^ ".out"
+  and params_file = Filename.concat (!temp_path) "param.sdpa" in
+  file_of_string input_file (sdpa_of_problem "" obj mats);
+  file_of_string params_file sdpa_params;
+  Sys.command("cd "^ !temp_path ^
+              "; sdpa "^input_file ^ " " ^ output_file ^
+              (if dbg then "" else "> /dev/null"));
+  let op = string_of_file output_file in
+  if not(sdpa_run_succeeded op) then failwith "sdpa: call failed" else
+  let res = parse_sdpaoutput op in
+  ((if dbg then ()
+   else (Sys.remove input_file; Sys.remove output_file));
+   res);;
+
+let sdpa obj mats = run_sdpa (!debugging) obj mats;;
+
+(* ------------------------------------------------------------------------- *)
 (* The same thing with CSDP.                                                 *)
 (* ------------------------------------------------------------------------- *)
 
-let buffer_add_line buff line =
-  Buffer.add_string buff line; Buffer.add_char buff '\n'
-
-let string_of_file filename =
-  let fd = open_in filename in
-  let buff = Buffer.create 16 in
-  try while true do buffer_add_line buff (input_line fd) done; failwith ""
-  with End_of_file -> (close_in fd; Buffer.contents buff)
-
-let file_of_string filename s =
-  let fd = Pervasives.open_out filename in
-  output_string fd s; close_out fd
-
-
-exception CsdpInfeasible
-exception CsdpNotFound
-
-let run_csdp dbg string_problem =
+let run_csdp dbg obj mats =
   let input_file = Filename.temp_file "sos" ".dat-s" in
-  let output_file = Filename.temp_file "sos" ".dat-s" in
-  let temp_path = Filename.dirname input_file in
-  let params_file = Filename.concat temp_path "param.csdp" in
-  file_of_string input_file string_problem;
+  let output_file =
+    String.sub input_file 0 (String.length input_file - 6) ^ ".out"
+  and params_file = Filename.concat (!temp_path) "param.csdp" in
+  file_of_string input_file (sdpa_of_problem "" obj mats);
   file_of_string params_file csdp_params;
-  let rv = Sys.command("cd "^temp_path^"; csdp "^input_file^" "^output_file^
+  let rv = Sys.command("cd "^(!temp_path)^"; csdp "^input_file ^
+                        " " ^ output_file ^
                        (if dbg then "" else "> /dev/null")) in
-    if rv = 1 or rv = 2 then raise CsdpInfeasible; 
-  if rv = 127 then raise CsdpNotFound ;
-  if rv <> 0 & rv <> 3 (* reduced accuracy *) then
-     failwith("csdp: error "^string_of_int rv);
-  let string_result = string_of_file output_file in
-  if not dbg then
-    (Sys.remove input_file; Sys.remove output_file; Sys.remove params_file);
-  string_result
+  let op = string_of_file output_file in
+  let res = parse_csdpoutput op in
+  ((if dbg then ()
+    else (Sys.remove input_file; Sys.remove output_file));
+    rv,res);;
 
 let csdp obj mats =
-  try parse_csdpoutput (run_csdp !debugging (sdpa_of_problem "" obj mats))
-  with CsdpInfeasible -> failwith "csdp: Problem is infeasible"
+  let rv,res = run_csdp (!debugging) obj mats in
+  (if rv = 1 or rv = 2 then failwith "csdp: Problem is infeasible"
+   else if rv = 3 then ()
+    (* Format.print_string "csdp warning: Reduced accuracy";
+     Format.print_newline() *)
+   else if rv <> 0 then failwith("csdp: error "^string_of_int rv)
+   else ());
+  res;;
 
 (* ------------------------------------------------------------------------- *)
 (* Try some apparently sensible scaling first. Note that this is purely to   *)
@@ -1191,8 +677,24 @@ let linear_program_basic a =
   let m,n = dimensions a in
   let mats =  map (fun j -> diagonal (column j a)) (1--n)
   and obj = vector_const (Int 1) m in
-  try ignore (run_csdp false (sdpa_of_problem "" obj mats)); true
-  with CsdpInfeasible -> false
+  let rv,res = run_csdp false obj mats in
+  if rv = 1 or rv = 2 then false
+  else if rv = 0 then true
+  else failwith "linear_program: An error occurred in the SDP solver";;
+
+(* ------------------------------------------------------------------------- *)
+(* Alternative interface testing A x >= b for matrix A, vector b.            *)
+(* ------------------------------------------------------------------------- *)
+
+let linear_program a b =
+  let m,n = dimensions a in
+  if dim b <> m then failwith "linear_program: incompatible dimensions" else
+  let mats = diagonal b :: map (fun j -> diagonal (column j a)) (1--n)
+  and obj = vector_const (Int 1) m in
+  let rv,res = run_csdp false obj mats in
+  if rv = 1 or rv = 2 then false
+  else if rv = 0 then true
+  else failwith "linear_program: An error occurred in the SDP solver";;
 
 (* ------------------------------------------------------------------------- *)
 (* Test whether a point is in the convex hull of others. Rather than use     *)
@@ -1217,9 +719,7 @@ let in_convex_hull pts pt =
 (* ------------------------------------------------------------------------- *)
 
 let minimal_convex_hull =
-  let augment1 = function (m::ms) -> if in_convex_hull ms m then ms else ms@[m] 
-          | _ -> failwith "augment1"
-  in
+  let augment1 (m::ms) = if in_convex_hull ms m then ms else ms@[m] in
   let augment m ms = funpow 3 augment1 (m::ms) in
   fun mons ->
     let mons' = itlist augment (tl mons) [hd mons] in
@@ -1244,6 +744,7 @@ let equation_eval assig eq =
 (* "one" that's used for a constant term.                                    *)
 (* ------------------------------------------------------------------------- *)
 
+let failstore = ref [];;
 
 let eliminate_equations =
   let rec extract_first p l =
@@ -1255,7 +756,7 @@ let eliminate_equations =
   let rec eliminate vars dun eqs =
     match vars with
       [] -> if forall is_undefined eqs then dun
-            else (raise Unsolvable)
+            else (failstore := [vars,dun,eqs]; raise Unsolvable)
     | v::vs ->
             try let eq,oeqs = extract_first (fun e -> defined e v) eqs in
                 let a = apply eq v in
@@ -1373,8 +874,8 @@ let deration d =
             foldl (fun a i c -> gcd_num a (numerator c)) (Int 0) (snd l) in
     (c // (a */ a)),mapa (fun x -> a */ x) l in
   let d' = map adj d in
-  let a = itlist ((o) lcm_num ((o) denominator fst)) d' (Int 1) //
-          itlist ((o) gcd_num ((o) numerator fst)) d' (Int 0)  in
+  let a = itlist ((o) lcm_num ( (o) denominator fst)) d' (Int 1) //
+          itlist ((o) gcd_num ( (o) numerator fst)) d' (Int 0)  in
   (Int 1 // a),map (fun (c,l) -> (a */ c,l)) d';;
 
 (* ------------------------------------------------------------------------- *)
@@ -1426,9 +927,9 @@ let epoly_pmul p q acc =
 let epoly_cmul c l =
   if c =/ Int 0 then undefined else mapf (equation_cmul c) l;;
 
-let epoly_neg x = epoly_cmul (Int(-1)) x;;
+let epoly_neg = epoly_cmul (Int(-1));;
 
-let epoly_add x = combine equation_add is_undefined x;;
+let epoly_add = combine equation_add is_undefined;;
 
 let epoly_sub p q = epoly_add p (epoly_neg q);;
 
@@ -1471,12 +972,33 @@ let sdpa_of_blockproblem comment nblocks blocksizes obj mats =
 (* Hence run CSDP on a problem in block diagonal form.                       *)
 (* ------------------------------------------------------------------------- *)
 
-let csdp_blocks nblocks blocksizes obj mats =
-  let string_problem = sdpa_of_blockproblem "" nblocks blocksizes obj mats in
-  try parse_csdpoutput (run_csdp !debugging string_problem)
-  with 
-    | CsdpInfeasible -> failwith "csdp: Problem is infeasible"
-   
+let run_csdp dbg nblocks blocksizes obj mats =
+  let input_file = Filename.temp_file "sos" ".dat-s" in
+  let output_file =
+    String.sub input_file 0 (String.length input_file - 6) ^ ".out"
+  and params_file = Filename.concat (!temp_path) "param.csdp" in
+  file_of_string input_file
+   (sdpa_of_blockproblem "" nblocks blocksizes obj mats);
+  file_of_string params_file csdp_params;
+  let rv = Sys.command("cd "^(!temp_path)^"; csdp "^input_file ^
+                        " " ^ output_file ^
+                       (if dbg then "" else "> /dev/null")) in
+  let op = string_of_file output_file in
+  let res = parse_csdpoutput op in
+  ((if dbg then ()
+    else (Sys.remove input_file; Sys.remove output_file));
+    rv,res);;
+
+let csdp nblocks blocksizes obj mats =
+  let rv,res = run_csdp (!debugging) nblocks blocksizes obj mats in
+  (if rv = 1 or rv = 2 then failwith "csdp: Problem is infeasible"
+   else if rv = 3 then ()
+    (*Format.print_string "csdp warning: Reduced accuracy";
+     Format.print_newline() *)
+   else if rv <> 0 then failwith("csdp: error "^string_of_int rv)
+   else ());
+  res;;
+
 (* ------------------------------------------------------------------------- *)
 (* 3D versions of matrix operations to consider blocks separately.           *)
 (* ------------------------------------------------------------------------- *)
@@ -1500,7 +1022,7 @@ let blocks blocksizes bm =
         let m = foldl
           (fun a (b,i,j) c -> if b = b0 then ((i,j) |-> c) a else a)
           undefined bm in
-        (*let d = foldl (fun a (i,j) c -> max a (max i j)) 0 m in*)
+        let d = foldl (fun a (i,j) c -> max a (max i j)) 0 m in
         (((bs,bs),m):matrix))
       (zip blocksizes (1--length blocksizes));;
 
@@ -1508,9 +1030,7 @@ let blocks blocksizes bm =
 (* Positiv- and Nullstellensatz. Flag "linf" forces a linear representation. *)
 (* ------------------------------------------------------------------------- *)
 
-let real_positivnullstellensatz_general linf d eqs leqs pol 
-  :   poly list *  (positivstellensatz * (num * poly) list) list  =
-  
+let real_positivnullstellensatz_general linf d eqs leqs pol =
   let vars = itlist ((o) union poly_variables) (pol::eqs @ map fst leqs) [] in
   let monoid =
     if linf then
@@ -1563,7 +1083,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol
             itern 1 pvs (fun v i -> (i |--> tryapplyd diagents v (Int 0)))
                         undefined in
   let raw_vec = if pvs = [] then vector_0 0
-                else scale_then (csdp_blocks nblocks blocksizes) obj mats in
+                else scale_then (csdp nblocks blocksizes) obj mats in
   let find_rounding d =
    (if !debugging then
      (Format.print_string("Trying rounding with limit "^string_of_num d);
@@ -1603,24 +1123,20 @@ let real_positivnullstellensatz_general linf d eqs leqs pol
            (itlist2 (fun p q -> poly_add (poly_mul p q)) cfs eqs
                     (poly_neg pol)) in
   if not(is_undefined sanity) then raise Sanity else
-     cfs,map (fun (a,b) -> snd a,b) msq;;
+  cfs,map (fun (a,b) -> snd a,b) msq;;
 
+(* ------------------------------------------------------------------------- *)
+(* Iterative deepening.                                                      *)
+(* ------------------------------------------------------------------------- *)
 
-let term_of_monoid l1 m = itlist  (fun i m -> Mul (nth l1 i,m)) m (Const num_1)
+let rec deepen f n =
+  try print_string "Searching with depth limit ";
+      print_int n; print_newline(); f n
+  with Failure _ -> deepen f (n + 1);;
 
-let rec term_of_pos l1 x = match x with
-   Axiom_eq i -> failwith "term_of_pos"
- | Axiom_le i -> nth l1 i
- | Axiom_lt i -> nth l1 i
- | Monoid m   -> term_of_monoid l1 m
- | Rational_eq n -> Const n
- | Rational_le n -> Const n
- | Rational_lt n -> Const n
- | Square t -> Pow (t, 2)
- | Eqmul (t, y) -> Mul (t, term_of_pos l1 y)
- | Sum (y, z) -> Add  (term_of_pos l1 y, term_of_pos l1 z)
- | Product (y, z) -> Mul (term_of_pos l1 y, term_of_pos l1 z);;
-
+(* ------------------------------------------------------------------------- *)
+(* The ordering so we can create canonical HOL polynomials.                  *)
+(* ------------------------------------------------------------------------- *)
 
 let dest_monomial mon = sort (increasing fst) (graph mon);;
 
@@ -1649,7 +1165,7 @@ let dest_poly p =
       (sort (fun (m1,_) (m2,_) -> monomial_order m1 m2) (graph p));;
 
 (* ------------------------------------------------------------------------- *)
-(* Map back polynomials and their composites to term.                        *)
+(* Map back polynomials and their composites to HOL.                         *)
 (* ------------------------------------------------------------------------- *)
 
 let term_of_varpow =
@@ -1682,73 +1198,195 @@ let term_of_sos (pr,sqs) =
   if sqs = [] then pr
   else Product(pr,end_itlist (fun a b -> Sum(a,b)) (map term_of_sqterm sqs));;
 
-let rec deepen f n =
-  try (*print_string "Searching with depth limit ";
-      print_int n; print_newline();*) f n
-  with Failure _ -> deepen f (n + 1);;
-
-
-
-
-
-exception TooDeep
-
-let deepen_until limit f n = 
-  match compare limit 0 with
-    | 0 -> raise TooDeep
-    | -1 -> deepen f n
-    | _  -> 
-	let rec d_until  f n =
-	  try if !debugging 
-	  then (print_string "Searching with depth limit "; 
-		print_int n; print_newline()) ; f n
-	  with Failure x -> 
-	    if !debugging then (Printf.printf "solver error : %s\n" x) ; 
-	    if n = limit then raise TooDeep else  d_until f (n + 1) in
-	  d_until f n
-
-
-(* patch to remove  zero polynomials from equalities.
-   In this case, hol light loops *)
-
-let real_nonlinear_prover  depthmax eqs les lts =
-  let eq = map poly_of_term eqs
-  and le = map poly_of_term les
-  and lt = map poly_of_term lts in
-  let pol = itlist poly_mul lt (poly_const num_1)
-  and lep = map (fun (t,i) -> t,Axiom_le i) (zip le (0--(length le - 1)))
-  and ltp =  map (fun (t,i) -> t,Axiom_lt i) (zip lt (0--(length lt - 1))) 
-  and eqp =  itlist2 (fun t i res -> 
-   if t = undefined then res else (t,Axiom_eq i)::res) eq (0--(length eq - 1)) []
-  in
-    
-  let proof =
-      let leq = lep @ ltp in
-      let eq = List.map fst eqp in
-      let tryall d =
-	let e = multidegree pol (*and pol' = poly_neg pol*) in
-	let k = if e = 0 then 1 else d / e in
-	  tryfind (fun i -> d,i, 
-	   real_positivnullstellensatz_general false d  eq leq
-            (poly_neg(poly_pow pol i)))
-           (0--k) in
-      let d,i,(cert_ideal,cert_cone) = deepen_until depthmax tryall 0 in
-      let proofs_ideal =
-       map2 (fun q i -> Eqmul(term_of_poly q,i))
-        cert_ideal (List.map snd eqp)
-      and proofs_cone = map term_of_sos cert_cone
-      and proof_ne =
-       if lt = [] then Rational_lt num_1 else
-	let p = end_itlist (fun s t -> Product(s,t)) (map snd ltp) in
-	 funpow i (fun q -> Product(p,q)) (Rational_lt num_1) in
-       end_itlist (fun s t -> Sum(s,t)) (proof_ne :: proofs_ideal @ proofs_cone) in
-   if !debugging then (print_string("Translating proof certificate to Coq"); print_newline());
-   proof;;
-
-
+(* ------------------------------------------------------------------------- *)
+(* Interface to HOL.                                                         *)
+(* ------------------------------------------------------------------------- *)
+(*
+let REAL_NONLINEAR_PROVER translator (eqs,les,lts) =
+  let eq0 = map (poly_of_term o lhand o concl) eqs
+  and le0 = map (poly_of_term o lhand o concl) les
+  and lt0 = map (poly_of_term o lhand o concl) lts in
+  let eqp0 = map (fun (t,i) -> t,Axiom_eq i) (zip eq0 (0--(length eq0 - 1)))
+  and lep0 = map (fun (t,i) -> t,Axiom_le i) (zip le0 (0--(length le0 - 1)))
+  and ltp0 = map (fun (t,i) -> t,Axiom_lt i) (zip lt0 (0--(length lt0 - 1))) in
+  let keq,eq = partition (fun (p,_) -> multidegree p = 0) eqp0
+  and klep,lep = partition (fun (p,_) -> multidegree p = 0) lep0
+  and kltp,ltp = partition (fun (p,_) -> multidegree p = 0) ltp0 in
+  let trivial_axiom (p,ax) =
+    match ax with
+      Axiom_eq n when eval undefined p <>/ num_0 -> el n eqs
+    | Axiom_le n when eval undefined p </ num_0 -> el n les
+    | Axiom_lt n when eval undefined p <=/ num_0 -> el n lts
+    | _ -> failwith "not a trivial axiom" in
+  try let th = tryfind trivial_axiom (keq @ klep @ kltp) in
+      CONV_RULE (LAND_CONV REAL_POLY_CONV THENC REAL_RAT_RED_CONV) th
+  with Failure _ ->
+  let pol = itlist poly_mul (map fst ltp) (poly_const num_1) in
+  let leq = lep @ ltp in
+  let tryall d =
+    let e = multidegree pol in
+    let k = if e = 0 then 0 else d / e in
+    let eq' = map fst eq in
+    tryfind (fun i -> d,i,real_positivnullstellensatz_general false d eq' leq
+                          (poly_neg(poly_pow pol i)))
+            (0--k) in
+  let d,i,(cert_ideal,cert_cone) = deepen tryall 0 in
+  let proofs_ideal =
+    map2 (fun q (p,ax) -> Eqmul(term_of_poly q,ax)) cert_ideal eq
+  and proofs_cone = map term_of_sos cert_cone
+  and proof_ne =
+    if ltp = [] then Rational_lt num_1 else
+    let p = end_itlist (fun s t -> Product(s,t)) (map snd ltp) in
+    funpow i (fun q -> Product(p,q)) (Rational_lt num_1) in
+  let proof = end_itlist (fun s t -> Sum(s,t))
+                         (proof_ne :: proofs_ideal @ proofs_cone) in
+  print_string("Translating proof certificate to HOL");
+  print_newline();
+  translator (eqs,les,lts) proof;;
+*)
+(* ------------------------------------------------------------------------- *)
+(* A wrapper that tries to substitute away variables first.                  *)
+(* ------------------------------------------------------------------------- *)
+(*
+let REAL_NONLINEAR_SUBST_PROVER =
+  let zero = `&0:real`
+  and mul_tm = `( * ):real->real->real`
+  and shuffle1 =
+    CONV_RULE(REWR_CONV(REAL_ARITH `a + x = (y:real) <=> x = y - a`))
+  and shuffle2 =
+    CONV_RULE(REWR_CONV(REAL_ARITH `x + a = (y:real) <=> x = y - a`)) in
+  let rec substitutable_monomial fvs tm =
+    match tm with
+      Var(_,Tyapp("real",[])) when not (mem tm fvs) -> Int 1,tm
+    | Comb(Comb(Const("real_mul",_),c),(Var(_,_) as t))
+         when is_ratconst c & not (mem t fvs)
+          -> rat_of_term c,t
+    | Comb(Comb(Const("real_add",_),s),t) ->
+         (try substitutable_monomial (union (frees t) fvs) s
+          with Failure _ -> substitutable_monomial (union (frees s) fvs) t)
+    | _ -> failwith "substitutable_monomial"
+  and isolate_variable v th =
+    match lhs(concl th) with
+      x when x = v -> th
+    | Comb(Comb(Const("real_add",_),(Var(_,Tyapp("real",[])) as x)),t)
+        when x = v -> shuffle2 th
+    | Comb(Comb(Const("real_add",_),s),t) ->
+        isolate_variable v(shuffle1 th) in
+  let make_substitution th =
+    let (c,v) = substitutable_monomial [] (lhs(concl th)) in
+    let th1 = AP_TERM (mk_comb(mul_tm,term_of_rat(Int 1 // c))) th in
+    let th2 = CONV_RULE(BINOP_CONV REAL_POLY_MUL_CONV) th1 in
+    CONV_RULE (RAND_CONV REAL_POLY_CONV) (isolate_variable v th2) in
+  fun translator ->
+    let rec substfirst(eqs,les,lts) =
+      try let eth = tryfind make_substitution eqs in
+          let modify =
+            CONV_RULE(LAND_CONV(SUBS_CONV[eth] THENC REAL_POLY_CONV)) in
+          substfirst(filter (fun t -> lhand(concl t) <> zero) (map modify eqs),
+                     map modify les,map modify lts)
+      with Failure _ -> REAL_NONLINEAR_PROVER translator (eqs,les,lts) in
+    substfirst;;
+*)
+(* ------------------------------------------------------------------------- *)
+(* Overall function.                                                         *)
+(* ------------------------------------------------------------------------- *)
+(*
+let REAL_SOS =
+  let init = GEN_REWRITE_CONV ONCE_DEPTH_CONV [DECIMAL]
+  and pure = GEN_REAL_ARITH REAL_NONLINEAR_SUBST_PROVER in
+  fun tm -> let th = init tm in EQ_MP (SYM th) (pure(rand(concl th)));;
+*)
+(* ------------------------------------------------------------------------- *)
+(* Add hacks for division.                                                   *)
+(* ------------------------------------------------------------------------- *)
+(*
+let REAL_SOSFIELD =
+  let inv_tm = `inv:real->real` in
+  let prenex_conv =
+    TOP_DEPTH_CONV BETA_CONV THENC
+    PURE_REWRITE_CONV[FORALL_SIMP; EXISTS_SIMP; real_div;
+                      REAL_INV_INV; REAL_INV_MUL; GSYM REAL_POW_INV] THENC
+    NNFC_CONV THENC DEPTH_BINOP_CONV `(/\)` CONDS_CELIM_CONV THENC
+    PRENEX_CONV
+  and setup_conv = NNF_CONV THENC WEAK_CNF_CONV THENC CONJ_CANON_CONV
+  and core_rule t =
+    try REAL_ARITH t
+    with Failure _ -> try REAL_RING t
+    with Failure _ -> REAL_SOS t
+  and is_inv =
+    let is_div = is_binop `(/):real->real->real` in
+    fun tm -> (is_div tm or (is_comb tm & rator tm = inv_tm)) &
+              not(is_ratconst(rand tm)) in
+  let BASIC_REAL_FIELD tm =
+    let is_freeinv t = is_inv t & free_in t tm in
+    let itms = setify(map rand (find_terms is_freeinv tm)) in
+    let hyps = map (fun t -> SPEC t REAL_MUL_RINV) itms in
+    let tm' = itlist (fun th t -> mk_imp(concl th,t)) hyps tm in
+    let itms' = map (curry mk_comb inv_tm) itms in
+    let gvs = map (genvar o type_of) itms' in
+    let tm'' = subst (zip gvs itms') tm' in
+    let th1 = setup_conv tm'' in
+    let cjs = conjuncts(rand(concl th1)) in
+    let ths = map core_rule cjs in
+    let th2 = EQ_MP (SYM th1) (end_itlist CONJ ths) in
+    rev_itlist (C MP) hyps (INST (zip itms' gvs) th2) in
+  fun tm ->
+    let th0 = prenex_conv tm in
+    let tm0 = rand(concl th0) in
+    let avs,bod = strip_forall tm0 in
+    let th1 = setup_conv bod in
+    let ths = map BASIC_REAL_FIELD (conjuncts(rand(concl th1))) in
+    EQ_MP (SYM th0) (GENL avs (EQ_MP (SYM th1) (end_itlist CONJ ths)));;
+*)
+(* ------------------------------------------------------------------------- *)
+(* Integer version.                                                          *)
+(* ------------------------------------------------------------------------- *)
+(*
+let INT_SOS =
+  let atom_CONV =
+    let pth = prove
+      (`(~(x <= y) <=> y + &1 <= x:int) /\
+        (~(x < y) <=> y <= x) /\
+        (~(x = y) <=> x + &1 <= y \/ y + &1 <= x) /\
+        (x < y <=> x + &1 <= y)`,
+       REWRITE_TAC[INT_NOT_LE; INT_NOT_LT; INT_NOT_EQ; INT_LT_DISCRETE]) in
+    GEN_REWRITE_CONV I [pth]
+  and bub_CONV = GEN_REWRITE_CONV TOP_SWEEP_CONV
+   [int_eq; int_le; int_lt; int_ge; int_gt;
+    int_of_num_th; int_neg_th; int_add_th; int_mul_th;
+    int_sub_th; int_pow_th; int_abs_th; int_max_th; int_min_th] in
+  let base_CONV = TRY_CONV atom_CONV THENC bub_CONV in
+  let NNF_NORM_CONV = GEN_NNF_CONV false
+   (base_CONV,fun t -> base_CONV t,base_CONV(mk_neg t)) in
+  let init_CONV =
+    GEN_REWRITE_CONV DEPTH_CONV [FORALL_SIMP; EXISTS_SIMP] THENC
+    GEN_REWRITE_CONV DEPTH_CONV [INT_GT; INT_GE] THENC
+    CONDS_ELIM_CONV THENC NNF_NORM_CONV in
+  let p_tm = `p:bool`
+  and not_tm = `(~)` in
+  let pth = TAUT(mk_eq(mk_neg(mk_neg p_tm),p_tm)) in
+  fun tm ->
+    let th0 = INST [tm,p_tm] pth
+    and th1 = NNF_NORM_CONV(mk_neg tm) in
+    let th2 = REAL_SOS(mk_neg(rand(concl th1))) in
+    EQ_MP th0 (EQ_MP (AP_TERM not_tm (SYM th1)) th2);;
+*)
+(* ------------------------------------------------------------------------- *)
+(* Natural number version.                                                   *)
+(* ------------------------------------------------------------------------- *)
+(*
+let SOS_RULE tm =
+  let avs = frees tm in
+  let tm' = list_mk_forall(avs,tm) in
+  let th1 = NUM_TO_INT_CONV tm' in
+  let th2 = INT_SOS (rand(concl th1)) in
+  SPECL avs (EQ_MP (SYM th1) th2);;
+*)
 (* ------------------------------------------------------------------------- *)
 (* Now pure SOS stuff.                                                       *)
 (* ------------------------------------------------------------------------- *)
+
+(*prioritize_real();;*)
 
 (* ------------------------------------------------------------------------- *)
 (* Some combinatorial helper functions.                                      *)
@@ -1770,6 +1408,88 @@ let changevariables zoln pol =
         poly_0 pol;;
 
 (* ------------------------------------------------------------------------- *)
+(* Return to original non-block matrices.                                    *)
+(* ------------------------------------------------------------------------- *)
+
+let sdpa_of_vector (v:vector) =
+  let n = dim v in
+  let strs = map (o (decimalize 20) (element v)) (1--n) in
+  end_itlist (fun x y -> x ^ " " ^ y) strs ^ "\n";;
+
+let sdpa_of_blockdiagonal k m =
+  let pfx = string_of_int k ^" " in
+  let ents =
+    foldl (fun a (b,i,j) c -> if i > j then a else ((b,i,j),c)::a) [] m in
+  let entss = sort (increasing fst) ents in
+  itlist (fun ((b,i,j),c) a ->
+     pfx ^ string_of_int b ^ " " ^ string_of_int i ^ " " ^ string_of_int j ^
+     " " ^ decimalize 20 c ^ "\n" ^ a) entss "";;
+
+let sdpa_of_matrix k (m:matrix) =
+  let pfx = string_of_int k ^ " 1 " in
+  let ms = foldr (fun (i,j) c a -> if i > j then a else ((i,j),c)::a)
+                 (snd m) [] in
+  let mss = sort (increasing fst) ms in
+  itlist (fun ((i,j),c) a ->
+     pfx ^ string_of_int i ^ " " ^ string_of_int j ^
+     " " ^ decimalize 20 c ^ "\n" ^ a) mss "";;
+
+let sdpa_of_problem comment obj mats =
+  let m = length mats - 1
+  and n,_ = dimensions (hd mats) in
+  "\"" ^ comment ^ "\"\n" ^
+  string_of_int m ^ "\n" ^
+  "1\n" ^
+  string_of_int n ^ "\n" ^
+  sdpa_of_vector obj ^
+  itlist2 (fun k m a -> sdpa_of_matrix (k - 1) m ^ a)
+          (1--length mats) mats "";;
+
+let run_sdpa dbg obj mats =
+  let input_file = Filename.temp_file "sos" ".dat-s" in
+  let output_file =
+    String.sub input_file 0 (String.length input_file - 6) ^ ".out"
+  and params_file = Filename.concat (!temp_path) "param.sdpa" in
+  file_of_string input_file (sdpa_of_problem "" obj mats);
+  file_of_string params_file sdpa_params;
+  Sys.command("cd "^(!temp_path)^"; sdpa "^input_file ^ " " ^ output_file ^
+              (if dbg then "" else "> /dev/null"));
+  let op = string_of_file output_file in
+  if not(sdpa_run_succeeded op) then failwith "sdpa: call failed" else
+  let res = parse_sdpaoutput op in
+  ((if dbg then ()
+   else (Sys.remove input_file; Sys.remove output_file));
+   res);;
+
+let sdpa obj mats = run_sdpa (!debugging) obj mats;;
+
+let run_csdp dbg obj mats =
+  let input_file = Filename.temp_file "sos" ".dat-s" in
+  let output_file =
+    String.sub input_file 0 (String.length input_file - 6) ^ ".out"
+  and params_file = Filename.concat (!temp_path) "param.csdp" in
+  file_of_string input_file (sdpa_of_problem "" obj mats);
+  file_of_string params_file csdp_params;
+  let rv = Sys.command("cd "^(!temp_path)^"; csdp "^input_file ^
+                       " " ^ output_file ^
+                       (if dbg then "" else "> /dev/null")) in
+  let op = string_of_file output_file in
+  let res = parse_csdpoutput op in
+  ((if dbg then ()
+    else (Sys.remove input_file; Sys.remove output_file));
+    rv,res);;
+
+let csdp obj mats =
+  let rv,res = run_csdp (!debugging) obj mats in
+  (if rv = 1 or rv = 2 then failwith "csdp: Problem is infeasible"
+    else if rv = 3 then ()
+(*    (Format.print_string "csdp warning: Reduced accuracy";
+     Format.print_newline()) *)
+   else if rv <> 0 then failwith("csdp: error "^string_of_int rv)
+   else ());
+  res;;
+
+(* ------------------------------------------------------------------------- *)
 (* Sum-of-squares function with some lowbrow symmetry reductions.            *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1782,11 +1502,11 @@ let sumofsquares_general_symmetry tool pol =
      (fun vars' ->
         is_undefined(poly_sub pol (changevariables (zip vars vars') pol)))
      (allpermutations vars) in
-(*    let lpps2 = allpairs monomial_mul lpps lpps in*)
-(*    let lpp2_classes =
+    let lpps2 = allpairs monomial_mul lpps lpps in
+    let lpp2_classes =
        setify(map (fun m ->
          setify(map (fun vars' -> changevariables_monomial (zip vars vars') m)
-                   invariants)) lpps2) in *)
+                   invariants)) lpps2) in
     let lpns = zip lpps (1--length lpps) in
     let lppcs =
       filter (fun (m,(n1,n2)) -> n1 <= n2)
@@ -1859,5 +1579,327 @@ let sumofsquares_general_symmetry tool pol =
   let sos = poly_cmul rat (end_itlist poly_add sqs) in
   if is_undefined(poly_sub sos pol) then rat,lins else raise Sanity;;
 
-let (sumofsquares: poly -> Num.num * (( Num.num * poly) list))  = 
-sumofsquares_general_symmetry csdp;;
+let sumofsquares = sumofsquares_general_symmetry csdp;;
+
+(* ------------------------------------------------------------------------- *)
+(* Pure HOL SOS conversion.                                                  *)
+(* ------------------------------------------------------------------------- *)
+(*
+let SOS_CONV =
+  let mk_square =
+    let pow_tm = `(pow)` and two_tm = `2` in
+    fun tm -> mk_comb(mk_comb(pow_tm,tm),two_tm)
+  and mk_prod = mk_binop `( * )`
+  and mk_sum = mk_binop `(+)` in
+  fun tm ->
+    let k,sos = sumofsquares(poly_of_term tm) in
+    let mk_sqtm(c,p) =
+      mk_prod (term_of_rat(k */ c)) (mk_square(term_of_poly p)) in
+    let tm' = end_itlist mk_sum (map mk_sqtm sos) in
+    let th = REAL_POLY_CONV tm and th' = REAL_POLY_CONV tm' in
+    TRANS th (SYM th');;
+*)
+(* ------------------------------------------------------------------------- *)
+(* Attempt to prove &0 <= x by direct SOS decomposition.                     *)
+(* ------------------------------------------------------------------------- *)
+(*
+let PURE_SOS_TAC =
+  let tac =
+    MATCH_ACCEPT_TAC(REWRITE_RULE[GSYM REAL_POW_2] REAL_LE_SQUARE) ORELSE
+    MATCH_ACCEPT_TAC REAL_LE_SQUARE ORELSE
+    (MATCH_MP_TAC REAL_LE_ADD THEN CONJ_TAC) ORELSE
+    (MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC) ORELSE
+    CONV_TAC(RAND_CONV REAL_RAT_REDUCE_CONV THENC REAL_RAT_LE_CONV) in
+  REPEAT GEN_TAC THEN REWRITE_TAC[real_ge] THEN
+  GEN_REWRITE_TAC I [GSYM REAL_SUB_LE] THEN
+  CONV_TAC(RAND_CONV SOS_CONV) THEN
+  REPEAT tac THEN NO_TAC;;
+
+let PURE_SOS tm = prove(tm,PURE_SOS_TAC);;
+*)
+(* ------------------------------------------------------------------------- *)
+(* Examples.                                                                 *)
+(* ------------------------------------------------------------------------- *)
+
+(*****
+
+time REAL_SOS
+  `a1 >= &0 /\ a2 >= &0 /\
+   (a1 * a1 + a2 * a2 = b1 * b1 + b2 * b2 + &2) /\
+   (a1 * b1 + a2 * b2 = &0)
+   ==> a1 * a2 - b1 * b2 >= &0`;;
+
+time REAL_SOS `&3 * x + &7 * a < &4 /\ &3 < &2 * x ==> a < &0`;;
+
+time REAL_SOS
+  `b pow 2 < &4 * a * c ==> ~(a * x pow 2 + b * x + c = &0)`;;
+
+time REAL_SOS
+  `(a * x pow 2 + b * x + c = &0) ==> b pow 2 >= &4 * a * c`;;
+
+time REAL_SOS
+ `&0 <= x /\ x <= &1 /\ &0 <= y /\ y <= &1
+  ==> x pow 2 + y pow 2 < &1 \/
+      (x - &1) pow 2 + y pow 2 < &1 \/
+      x pow 2 + (y - &1) pow 2 < &1 \/
+      (x - &1) pow 2 + (y - &1) pow 2 < &1`;;
+
+time REAL_SOS
+ `&0 <= b /\ &0 <= c /\ &0 <= x /\ &0 <= y /\
+  (x pow 2 = c) /\ (y pow 2 = a pow 2 * c + b)
+  ==> a * c <= y * x`;;
+
+time REAL_SOS
+ `&0 <= x /\ &0 <= y /\ &0 <= z /\ x + y + z <= &3
+  ==> x * y + x * z + y * z >= &3 * x * y * z`;;
+
+time REAL_SOS
+ `(x pow 2 + y pow 2 + z pow 2 = &1) ==> (x + y + z) pow 2 <= &3`;;
+
+time REAL_SOS
+ `(w pow 2 + x pow 2 + y pow 2 + z pow 2 = &1)
+  ==> (w + x + y + z) pow 2 <= &4`;;
+
+time REAL_SOS
+ `x >= &1 /\ y >= &1 ==> x * y >= x + y - &1`;;
+
+time REAL_SOS
+ `x > &1 /\ y > &1 ==> x * y > x + y - &1`;;
+
+time REAL_SOS
+ `abs(x) <= &1
+  ==> abs(&64 * x pow 7 - &112 * x pow 5 + &56 * x pow 3 - &7 * x) <= &1`;;
+
+time REAL_SOS
+ `abs(x - z) <= e /\ abs(y - z) <= e /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
+  ==> abs((u * x + v * y) - z) <= e`;;
+
+(* ------------------------------------------------------------------------- *)
+(* One component of denominator in dodecahedral example.                     *)
+(* ------------------------------------------------------------------------- *)
+
+time REAL_SOS
+  `&2 <= x /\ x <= &125841 / &50000 /\
+   &2 <= y /\ y <= &125841 / &50000 /\
+   &2 <= z /\ z <= &125841 / &50000
+   ==> &2 * (x * z + x * y + y * z) - (x * x + y * y + z * z) >= &0`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Over a larger but simpler interval.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+time REAL_SOS
+ `&2 <= x /\ x <= &4 /\ &2 <= y /\ y <= &4 /\ &2 <= z /\ z <= &4
+  ==> &0 <= &2 * (x * z + x * y + y * z) - (x * x + y * y + z * z)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* We can do 12. I think 12 is a sharp bound; see PP's certificate.          *)
+(* ------------------------------------------------------------------------- *)
+
+time REAL_SOS
+ `&2 <= x /\ x <= &4 /\ &2 <= y /\ y <= &4 /\ &2 <= z /\ z <= &4
+  ==> &12 <= &2 * (x * z + x * y + y * z) - (x * x + y * y + z * z)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Gloptipoly example.                                                       *)
+(* ------------------------------------------------------------------------- *)
+
+(*** This works but normalization takes minutes
+
+time REAL_SOS
+ `(x - y - &2 * x pow 4 = &0) /\ &0 <= x /\ x <= &2 /\ &0 <= y /\ y <= &3
+  ==> y pow 2 - &7 * y - &12 * x + &17 >= &0`;;
+
+ ***)
+
+(* ------------------------------------------------------------------------- *)
+(* Inequality from sci.math (see "Leon-Sotelo, por favor").                  *)
+(* ------------------------------------------------------------------------- *)
+
+time REAL_SOS
+  `&0 <= x /\ &0 <= y /\ (x * y = &1)
+   ==> x + y <= x pow 2 + y pow 2`;;
+
+time REAL_SOS
+  `&0 <= x /\ &0 <= y /\ (x * y = &1)
+   ==> x * y * (x + y) <= x pow 2 + y pow 2`;;
+
+time REAL_SOS
+  `&0 <= x /\ &0 <= y ==> x * y * (x + y) pow 2 <= (x pow 2 + y pow 2) pow 2`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Some examples over integers and natural numbers.                          *)
+(* ------------------------------------------------------------------------- *)
+
+time SOS_RULE `!m n. 2 * m + n = (n + m) + m`;;
+time SOS_RULE `!n. ~(n = 0) ==> (0 MOD n = 0)`;;
+time SOS_RULE  `!m n. m < n ==> (m DIV n = 0)`;;
+time SOS_RULE `!n:num. n <= n * n`;;
+time SOS_RULE  `!m n. n * (m DIV n) <= m`;;
+time SOS_RULE `!n. ~(n = 0) ==> (0 DIV n = 0)`;;
+time SOS_RULE `!m n p. ~(p = 0) /\ m <= n ==> m DIV p <= n DIV p`;;
+time SOS_RULE `!a b n. ~(a = 0) ==> (n <= b DIV a <=> a * n <= b)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* This is particularly gratifying --- cf hideous manual proof in arith.ml   *)
+(* ------------------------------------------------------------------------- *)
+
+(*** This doesn't now seem to work as well as it did; what changed?
+
+time SOS_RULE
+ `!a b c d. ~(b = 0) /\ b * c < (a + 1) * d ==> c DIV d <= a DIV b`;;
+
+ ***)
+
+(* ------------------------------------------------------------------------- *)
+(* Key lemma for injectivity of Cantor-type pairing functions.               *)
+(* ------------------------------------------------------------------------- *)
+
+time SOS_RULE
+ `!x1 y1 x2 y2. ((x1 + y1) EXP 2 + x1 + 1 = (x2 + y2) EXP 2 + x2 + 1)
+                ==> (x1 + y1 = x2 + y2)`;;
+
+time SOS_RULE
+ `!x1 y1 x2 y2. ((x1 + y1) EXP 2 + x1 + 1 = (x2 + y2) EXP 2 + x2 + 1) /\
+                (x1 + y1 = x2 + y2)
+                ==> (x1 = x2) /\ (y1 = y2)`;;
+
+time SOS_RULE
+ `!x1 y1 x2 y2.
+      (((x1 + y1) EXP 2 + 3 * x1 + y1) DIV 2 =
+       ((x2 + y2) EXP 2 + 3 * x2 + y2) DIV 2)
+       ==> (x1 + y1 = x2 + y2)`;;
+
+time SOS_RULE
+ `!x1 y1 x2 y2.
+      (((x1 + y1) EXP 2 + 3 * x1 + y1) DIV 2 =
+       ((x2 + y2) EXP 2 + 3 * x2 + y2) DIV 2) /\
+      (x1 + y1 = x2 + y2)
+      ==> (x1 = x2) /\ (y1 = y2)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Reciprocal multiplication (actually just ARITH_RULE does these).          *)
+(* ------------------------------------------------------------------------- *)
+
+time SOS_RULE `x <= 127 ==> ((86 * x) DIV 256 = x DIV 3)`;;
+
+time SOS_RULE `x < 2 EXP 16 ==> ((104858 * x) DIV (2 EXP 20) = x DIV 10)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* This is more impressive since it's really nonlinear. See REMAINDER_DECODE *)
+(* ------------------------------------------------------------------------- *)
+
+time SOS_RULE `0 < m /\ m < n  ==> ((m * ((n * x) DIV m + 1)) DIV n = x)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Some conversion examples.                                                 *)
+(* ------------------------------------------------------------------------- *)
+
+time SOS_CONV
+ `&2 * x pow 4 + &2 * x pow 3 * y - x pow 2 * y pow 2 + &5 * y pow 4`;;
+
+time SOS_CONV
+ `x pow 4 - (&2 * y * z + &1) * x pow 2 +
+  (y pow 2 * z pow 2 + &2 * y * z + &2)`;;
+
+time SOS_CONV `&4 * x pow 4 +
+          &4 * x pow 3 * y - &7 * x pow 2 * y pow 2 - &2 * x * y pow 3 +
+          &10 * y pow 4`;;
+
+time SOS_CONV `&4 * x pow 4 * y pow 6 + x pow 2 - x * y pow 2 + y pow 2`;;
+
+time SOS_CONV
+  `&4096 * (x pow 4 + x pow 2 + z pow 6 - &3 * x pow 2 * z pow 2) + &729`;;
+
+time SOS_CONV
+ `&120 * x pow 2 - &63 * x pow 4 + &10 * x pow 6 +
+  &30 * x * y - &120 * y pow 2 + &120 * y pow 4 + &31`;;
+
+time SOS_CONV
+ `&9 * x pow 2 * y pow 4 + &9 * x pow 2 * z pow 4 + &36 * x pow 2 * y pow 3 +
+  &36 * x pow 2 * y pow 2 - &48 * x * y * z pow 2 + &4 * y pow 4 +
+  &4 * z pow 4 - &16 * y pow 3 + &16 * y pow 2`;;
+
+time SOS_CONV
+ `(x pow 2 + y pow 2 + z pow 2) *
+  (x pow 4 * y pow 2 + x pow 2 * y pow 4 +
+   z pow 6 - &3 * x pow 2 * y pow 2 *   z pow 2)`;;
+
+time SOS_CONV
+ `x pow 4 + y pow 4 + z pow 4 - &4 * x * y * z + x + y + z + &3`;;
+
+(*** I think this will work, but normalization is slow
+
+time SOS_CONV
+ `&100 * (x pow 4 + y pow 4 + z pow 4 - &4 * x * y * z + x + y + z) + &212`;;
+
+ ***)
+
+time SOS_CONV
+ `&100 * ((&2 * x - &2) pow 2 + (x pow 3 - &8 * x - &2) pow 2) - &588`;;
+
+time SOS_CONV
+ `x pow 2 * (&120 - &63 * x pow 2 + &10 * x pow 4) + &30 * x * y +
+    &30 * y pow 2 * (&4 * y pow 2 - &4) + &31`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Example of basic rule.                                                    *)
+(* ------------------------------------------------------------------------- *)
+
+time PURE_SOS
+  `!x. x pow 4 + y pow 4 + z pow 4 - &4 * x * y * z + x + y + z + &3
+       >= &1 / &7`;;
+
+time PURE_SOS
+ `&0 <= &98 * x pow 12 +
+        -- &980 * x pow 10 +
+        &3038 * x pow 8 +
+        -- &2968 * x pow 6 +
+        &1022 * x pow 4 +
+        -- &84 * x pow 2 +
+        &2`;;
+
+time PURE_SOS
+ `!x. &0 <= &2 * x pow 14 +
+            -- &84 * x pow 12 +
+            &1022 * x pow 10 +
+            -- &2968 * x pow 8 +
+            &3038 * x pow 6 +
+            -- &980 * x pow 4 +
+            &98 * x pow 2`;;
+
+(* ------------------------------------------------------------------------- *)
+(* From Zeng et al, JSC vol 37 (2004), p83-99.                               *)
+(* All of them work nicely with pure SOS_CONV, except (maybe) the one noted. *)
+(* ------------------------------------------------------------------------- *)
+
+PURE_SOS
+  `x pow 6 + y pow 6 + z pow 6 - &3 * x pow 2 * y pow 2 * z pow 2 >= &0`;;
+
+PURE_SOS `x pow 4 + y pow 4 + z pow 4 + &1 - &4*x*y*z >= &0`;;
+
+PURE_SOS `x pow 4 + &2*x pow 2*z + x pow 2 - &2*x*y*z + &2*y pow 2*z pow 2 +
+&2*y*z pow 2 + &2*z pow 2 - &2*x + &2* y*z + &1 >= &0`;;
+
+(**** This is harder. Interestingly, this fails the pure SOS test, it seems.
+      Yet only on rounding(!?) Poor Newton polytope optimization or something?
+      But REAL_SOS does finally converge on the second run at level 12!
+
+REAL_SOS
+`x pow 4*y pow 4 - &2*x pow 5*y pow 3*z pow 2 + x pow 6*y pow 2*z pow 4 + &2*x
+pow 2*y pow 3*z - &4* x pow 3*y pow 2*z pow 3 + &2*x pow 4*y*z pow 5 + z pow
+2*y pow 2 - &2*z pow 4*y*x + z pow 6*x pow 2 >= &0`;;
+
+ ****)
+
+PURE_SOS
+`x pow 4 + &4*x pow 2*y pow 2 + &2*x*y*z pow 2 + &2*x*y*w pow 2 + y pow 4 + z
+pow 4 + w pow 4 + &2*z pow 2*w pow 2 + &2*x pow 2*w + &2*y pow 2*w + &2*x*y +
+&3*w pow 2 + &2*z pow 2 + &1 >= &0`;;
+
+PURE_SOS
+`w pow 6 + &2*z pow 2*w pow 3 + x pow 4 + y pow 4 + z pow 4 + &2*x pow 2*w +
+&2*x pow 2*z + &3*x pow 2 + w pow 2 + &2*z*w + z pow 2 + &2*z + &2*w + &1 >=
+&0`;;
+
+*****)

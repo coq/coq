@@ -15,17 +15,24 @@
 open Big_int
 open Num
 open Sos
+open Sos_types
+open Sos_lib
+
 
 module Mc = Micromega
 module Ml2C = Mutils.CamlToCoq
 module C2Ml = Mutils.CoqToCaml
 
 type micromega_polys = (Micromega.q Mc.pol * Mc.op1) list
-type csdp_certificate = S of Sos.positivstellensatz option | F of string
+type csdp_certificate = S of Sos_types.positivstellensatz option | F of string
 type provername = string * int option
 
 
-let debug = false
+let debug = true
+let flags = [Open_append;Open_binary;Open_creat] 
+
+let chan = open_out_gen flags 0o666 "trace"
+
 
 module M =
 struct
@@ -58,16 +65,16 @@ let rec canonical_sum_to_string = function s -> failwith "not implemented"
 
 let print_canonical_sum m = Format.print_string (canonical_sum_to_string m)
 
-let print_list_term l = 
- print_string "print_list_term\n";
- List.iter (fun (e,k) -> Printf.printf "q: %s %s ;"
+let print_list_term o l = 
+  output_string o "print_list_term\n";
+ List.iter (fun (e,k) -> Printf.fprintf o "q: %s %s ;"
   (string_of_poly (poly_of_term (expr_to_term e))) 
   (match k with 
     Mc.Equal -> "= " 
    | Mc.Strict -> "> " 
    | Mc.NonStrict -> ">= " 
-   | _ -> failwith "not_implemented")) l ;
- print_string "\n"
+   | _ -> failwith "not_implemented")) (List.map (fun (e, o) -> Mc.denorm e , o) l) ;
+ output_string o "\n"
 
 
 let partition_expr l = 
@@ -142,7 +149,7 @@ let real_nonlinear_prover d l =
    (fun s t -> Sum(s,t)) (proof_ne :: proofs_ideal @ proofs_cone) in
    S (Some proof)
  with 
-  | Sos.TooDeep -> S None
+  | Sos_lib.TooDeep -> S None
   |    x        ->   F (Printexc.to_string x)
 
 (* This is somewhat buggy, over Z, strict inequality vanish... *)
@@ -166,8 +173,8 @@ let pure_sos  l =
   let cert  = snd (cert_of_pos proof') in *)
     S (Some proof)
  with
-  | Not_found -> (* This is no strict inequality *) F "pure_sos cannot solve this goal"
-  |  x        -> F (Printf.sprintf "pure_sos : %s"  (Printexc.to_string x))
+(*   | Sos.CsdpNotFound -> F "Sos.CsdpNotFound" *)
+   |  x        -> (* May be that could be refined *) S None 
 
 
 
@@ -178,11 +185,27 @@ let run_prover prover pb =
     | prover, _ -> (Printf.printf "unknown prover: %s\n" prover; exit 1)
 
 
+let output_csdp_certificate o = function
+  | S None -> output_string o "S None"
+  | S (Some p) -> Printf.fprintf o "S (Some %a)" output_psatz p
+  | F s        -> Printf.fprintf o "F %s" s
+
+
 let main () =
+  try 
     let (prover,poly) = (input_value stdin : provername * micromega_polys) in
     let cert = run_prover prover poly in
+(*      Printf.fprintf chan "%a -> %a" print_list_term poly output_csdp_certificate cert ;
+      close_out chan ;   *)
+        
       output_value stdout (cert:csdp_certificate);
-      exit 0 ;;
+      flush stdout ; 
+      Marshal.to_channel  chan (cert:csdp_certificate) [] ;
+      flush chan ; 
+      exit 0 
+  with  x -> (Printf.fprintf chan "error %s" (Printexc.to_string x)  ; exit 1)
+
+;;
 
 let _ = main () in ()
 

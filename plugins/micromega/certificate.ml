@@ -18,6 +18,7 @@
 (*open Micromega.Polynomial*)
 open Big_int
 open Num
+open Sos_lib
 
 module Mc = Micromega
 module Ml2C = Mutils.CamlToCoq
@@ -671,7 +672,8 @@ let zlinear_prover sys =
  let res = xzlinear_prover candidates sys in
    (*Printf.printf "Time prover : %f" (Sys.time () -. t0) ;*) res
 
-open Sos
+open Sos_types
+open Mutils
 
 let rec scale_term t = 
  match t with

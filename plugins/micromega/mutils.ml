@@ -360,21 +360,18 @@ module TagSet = Set.Make(Tag)
 
 
 let command exe_path args vl =
-
   (* creating pipes for stdin, stdout, stderr *)
   let (stdin_read,stdin_write) = Unix.pipe ()
   and (stdout_read,stdout_write) = Unix.pipe ()
   and (stderr_read,stderr_write) = Unix.pipe () in
 
-  (* Creating channels from file descr *)
-  let outch = Unix.out_channel_of_descr stdin_write in
-  let inch  = Unix.in_channel_of_descr  stdout_read in 
 
   (* Create the process *)
   let pid = Unix.create_process exe_path args stdin_read stdout_write stderr_write in
 
   (* Write the data on the stdin of the created process *)
-    Marshal.to_channel outch vl [Marshal.No_sharing] ; 
+  let outch = Unix.out_channel_of_descr stdin_write in
+    output_value outch vl ;
     flush outch ;
     
   (* Wait for its completion *)
@@ -384,14 +381,15 @@ let command exe_path args vl =
 	(fun () -> 
 	  (* Recover the result *)
 	  match status with
-	    | Unix.WEXITED 0 -> Marshal.from_channel inch
+	    | Unix.WEXITED 0 -> 
+		let inch  = Unix.in_channel_of_descr  stdout_read in 
+		  begin try Marshal.from_channel inch with x -> failwith (Printf.sprintf "command \"%s\" exited %s" exe_path (Printexc.to_string x)) end
 	    | Unix.WEXITED i -> failwith (Printf.sprintf "command \"%s\" exited %i" exe_path i)
 	    | Unix.WSIGNALED i -> failwith (Printf.sprintf "command \"%s\" killed %i" exe_path i)
 	    | Unix.WSTOPPED  i -> failwith (Printf.sprintf "command \"%s\" stopped %i" exe_path i))
 	(fun () -> 
 	  (* Cleanup  *)
-	  close_out outch ; close_in inch ; 
-	  List.iter (fun x -> try Unix.close x with _ -> ()) [stdin_read; stdin_write; stderr_write; stdout_write]
+	  List.iter (fun x -> try Unix.close x with _ -> ()) [stdin_read; stdin_write; stdout_read ; stdout_write ; stderr_read; stderr_write]
 	)
 
 

@@ -255,7 +255,8 @@ PARSERREQUIRESCMX:=$(LINKCMX) $(PARSERCMA:.cma=.cmxa)
 
 CSDPCERTCMO:=$(addprefix plugins/micromega/, \
   mutils.cmo 	micromega.cmo 	mfourier.cmo 	certificate.cmo \
-  sos.cmo 	csdpcert.cmo )
+  sos_types.cmo sos_lib.cmo sos.cmo 	csdpcert.cmo )
+
 CSDPCERTCMX:= $(CSDPCERTCMO:.cmo=.cmx)
 
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma

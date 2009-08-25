@@ -1323,7 +1323,7 @@ let lift_ratproof  prover l =
   | Some c -> Some (Mc.RatProof( c,Mc.DoneProof))
 
 type micromega_polys = (Micromega.q Mc.pol * Mc.op1) list
-type csdp_certificate = S of Sos.positivstellensatz option | F of string
+type csdp_certificate = S of Sos_types.positivstellensatz option | F of string
 type provername = string * int option
 
 open Persistent_cache
@@ -1336,14 +1336,14 @@ end)
 
 let csdp_cache = "csdp.cache" 
 
-let really_call_csdpcert : provername -> micromega_polys -> Sos.positivstellensatz option  =
+let really_call_csdpcert : provername -> micromega_polys -> Sos_types.positivstellensatz option  =
   fun provername poly -> 
 
   let cmdname =
     List.fold_left Filename.concat (Envars.coqlib ())
       ["plugins"; "micromega"; "csdpcert" ^ Coq_config.exec_extension] in
 
-    match command cmdname [| cmdname |] (provername,poly) with
+    match ((command cmdname [| cmdname |] (provername,poly)) : csdp_certificate) with
       | F str -> failwith str
       | S res -> res
 
