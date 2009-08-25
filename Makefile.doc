@@ -266,6 +266,8 @@ ide/index_urls.txt: doc/refman/html/index.html
 # Install all documentation files
 ######################################################################
 
+.PHONY: install-doc install-doc-meta install-doc-html install-doc-printable install-doc-index-url
+
 install-doc: install-doc-meta install-doc-html install-doc-printable install-doc-index-url
 
 install-doc-meta:
