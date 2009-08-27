@@ -844,8 +844,7 @@ let classify_import (export,_ as obj) =
   if export then Substitute obj else Dispose
 
 let subst_import (_,subst,(export,mp as obj)) =
-  let subst' = remove_alias subst in
-  let mp' = subst_mp subst' mp in
+  let mp' = subst_mp subst mp in
     if mp'==mp then obj else
       (export,mp')
 	
