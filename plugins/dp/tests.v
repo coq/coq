@@ -39,7 +39,7 @@ Parameter nlist: list nat -> Prop.
 
 Lemma poly_1 : forall l,  nlist l -> True.
 intros. 
-simplify.
+simplify. 
 Qed.
 
 (* user lists *)
@@ -75,7 +75,7 @@ Qed.
 (* First example with the 0 and the equality translated *)
 
 Goal 0 = 0.
-simplify.
+simplify. 
 Qed.
 
 (* Examples in the Propositional Calculus
@@ -90,7 +90,7 @@ Qed.
 
 Goal A -> (A \/ C).
 
-simplify.
+simplify. 
 Qed.
 
 

@@ -699,7 +699,7 @@ let file_contents f =
 let timeout_sys_command cmd =
   if !debug then Format.eprintf "command line: %s@." cmd;
   let out = Filename.temp_file "out" "" in
-  let cmd = sprintf "cpulimit %d %s > %s 2>&1" !timeout cmd out in
+  let cmd = sprintf "why-cpulimit %d %s > %s 2>&1" !timeout cmd out in
   let ret = Sys.command cmd in
   if !debug then 
     Format.eprintf "Output file %s:@.%s@." out (file_contents out);
@@ -729,12 +729,12 @@ let why_files f = String.concat " " (!prelude_files @ [f])
 
 let call_simplify fwhy =
   let cmd = 
-    sprintf "why --no-arrays --simplify --encoding sstrat %s" (why_files fwhy) 
+    sprintf "why --simplify %s" (why_files fwhy) 
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fsx = Filename.chop_suffix fwhy ".why" ^ "_why.sx" in
   let cmd = 
-    sprintf "timeout %d Simplify %s > out 2>&1 && grep -q -w Valid out" 
+    sprintf "why-cpulimit %d Simplify %s > out 2>&1 && grep -q -w Valid out" 
       !timeout fsx
   in
   let out = Sys.command cmd in
@@ -745,7 +745,7 @@ let call_simplify fwhy =
   r
 
 let call_ergo fwhy =
-  let cmd = sprintf "why --no-arrays --why %s" (why_files fwhy) in
+  let cmd = sprintf "why --alt-ergo %s" (why_files fwhy) in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fwhy = Filename.chop_suffix fwhy ".why" ^ "_why.why" in
   let ftrace = Filename.temp_file "ergo_trace" "" in
@@ -795,12 +795,12 @@ let call_zenon fwhy =
 
 let call_yices fwhy =
   let cmd = 
-    sprintf "why --no-arrays -smtlib --encoding sstrat %s" (why_files fwhy)
+    sprintf "why -smtlib --encoding sstrat %s" (why_files fwhy)
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fsmt = Filename.chop_suffix fwhy ".why" ^ "_why.smt" in
   let cmd = 
-    sprintf "timeout %d yices -pc 0 -smt < %s > out 2>&1 && grep -q -w unsat out" 
+    sprintf "why-cpulimit %d yices -pc 0 -smt %s > out 2>&1 && grep -q -w unsat out" 
       !timeout fsmt
   in
   let out = Sys.command cmd in
@@ -812,7 +812,7 @@ let call_yices fwhy =
 
 let call_cvcl fwhy =
   let cmd = 
-    sprintf "why --no-arrays --cvcl --encoding sstrat %s" (why_files fwhy)
+    sprintf "why --cvcl --encoding sstrat %s" (why_files fwhy)
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fcvc = Filename.chop_suffix fwhy ".why" ^ "_why.cvc" in
@@ -829,7 +829,7 @@ let call_cvcl fwhy =
 
 let call_harvey fwhy =
   let cmd = 
-    sprintf "why --no-arrays --harvey --encoding strat %s" (why_files fwhy)
+    sprintf "why --harvey --encoding strat %s" (why_files fwhy)
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let frv = Filename.chop_suffix fwhy ".why" ^ "_why.rv" in
@@ -854,7 +854,7 @@ let call_harvey fwhy =
   r
 
 let call_gwhy fwhy =
-  let cmd = sprintf "gwhy --no-arrays  %s" (why_files fwhy) in
+  let cmd = sprintf "gwhy %s" (why_files fwhy) in
   if Sys.command cmd <> 0 then ignore (Sys.command (sprintf "emacs %s" fwhy));
   NoAnswer
 
