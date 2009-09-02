@@ -1,4 +1,4 @@
-(* -*- compile-command: "make -C ../.. bin/coqtop.byte" -*- *)
+(* -*- compile-command: "make -C ../.. plugins/subtac/subtac_plugin.cma" -*- *)
 open Printf
 open Pp
 open Subtac_utils
@@ -347,23 +347,21 @@ let update_obls prg obls rem =
       if rem > 0 then Remain rem
       else (
 	match prg'.prg_deps with
-	    [] ->
-	      let kn = declare_definition prg' in
-		from_prg := ProgMap.remove prg.prg_name !from_prg;
-		Defined kn
-	  | l ->
-	      let progs = List.map (fun x -> ProgMap.find x !from_prg) prg'.prg_deps in
-		if List.for_all (fun x -> obligations_solved x) progs then 
-		  (let kn = declare_mutual_definition progs in
-		     from_prg := List.fold_left
-		       (fun acc x -> 
-			 ProgMap.remove x.prg_name acc) !from_prg progs;
-		    Defined (ConstRef kn))
-		else Dependent);
-    in
-      update_state (!from_prg, !default_tactic_expr);
-      res
-	    
+	| [] ->
+	    let kn = declare_definition prg' in
+	      from_prg := ProgMap.remove prg.prg_name !from_prg;
+	      Defined kn
+	| l ->
+	    let progs = List.map (fun x -> ProgMap.find x !from_prg) prg'.prg_deps in
+	      if List.for_all (fun x -> obligations_solved x) progs then 
+		(let kn = declare_mutual_definition progs in
+		   from_prg := List.fold_left
+		     (fun acc x -> 
+		       ProgMap.remove x.prg_name acc) !from_prg progs;
+		  Defined (ConstRef kn))
+	      else Dependent);
+    in update_state (!from_prg, !default_tactic_expr); res
+  
 let is_defined obls x = obls.(x).obl_body <> None
 
 let deps_remaining obls deps = 
@@ -421,7 +419,10 @@ let rec solve_obligation prg num =
 		in
 		let obls = Array.copy obls in
 		let _ = obls.(num) <- obl in
-		  match update_obls prg obls (pred rem) with
+		let res = try update_obls prg obls (pred rem) 
+		  with e -> pperror (Cerrors.explain_exn e) 
+		in
+		  match res with
 		  | Remain n when n > 0 ->
 		      if has_dependencies obls num then
 			ignore(auto_solve_obligations (Some prg.prg_name) None)
@@ -447,30 +448,30 @@ and subtac_obligation (user_num, name, typ) =
    
 and solve_obligation_by_tac prg obls i tac =
   let obl = obls.(i) in
-  match obl.obl_body with 
-      Some _ -> false
+    match obl.obl_body with 
+    | Some _ -> false
     | None -> 
-	(try
-	    if deps_remaining obls obl.obl_deps = [] then
-	     let obl = subst_deps_obl obls obl in
-	     let tac = 
-	       match tac with
-	       | Some t -> t
-	       | None -> 
-		   match obl.obl_tac with
-		   | Some t -> Tacinterp.interp t
-		   | None -> !default_tactic
-	     in
-	     let t = Subtac_utils.solve_by_tac (evar_of_obligation obl) tac in
-	       obls.(i) <- declare_obligation obl t;
-	       true
-	    else false
-	  with
-	    | Stdpp.Exc_located(_, Proof_type.LtacLocated (_, Refiner.FailError (_, s)))
-	    | Stdpp.Exc_located(_, Refiner.FailError (_, s))
-	    | Refiner.FailError (_, s) ->
-		user_err_loc (obl.obl_location, "solve_obligation", Lazy.force s)
-	    | e -> false)
+	try
+	  if deps_remaining obls obl.obl_deps = [] then
+	    let obl = subst_deps_obl obls obl in
+	    let tac = 
+	      match tac with
+	      | Some t -> t
+	      | None -> 
+		  match obl.obl_tac with
+		  | Some t -> Tacinterp.interp t
+		  | None -> !default_tactic
+	    in
+	    let t = Subtac_utils.solve_by_tac (evar_of_obligation obl) tac in
+	      obls.(i) <- declare_obligation obl t;
+	      true
+	  else false
+	with
+	| Stdpp.Exc_located(_, Proof_type.LtacLocated (_, Refiner.FailError (_, s)))
+	| Stdpp.Exc_located(_, Refiner.FailError (_, s))
+	| Refiner.FailError (_, s) ->
+	    user_err_loc (obl.obl_location, "solve_obligation", Lazy.force s)
+	| e -> false
 
 and solve_prg_obligations prg tac = 
   let obls, rem = prg.prg_obligations in

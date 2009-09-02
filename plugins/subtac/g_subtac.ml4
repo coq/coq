@@ -101,41 +101,52 @@ VERNAC COMMAND EXTEND Subtac
 [ "Program" subtac_gallina_loc(g) ] -> [ Subtac.subtac g ]
   END
 
+let try_catch_exn f e =
+  try f e
+  with exn -> errorlabstrm "Program" (Cerrors.explain_exn exn)
+
+let subtac_obligation e = try_catch_exn Subtac_obligations.subtac_obligation e
+let next_obligation e = try_catch_exn Subtac_obligations.next_obligation e
+let try_solve_obligation e = try_catch_exn Subtac_obligations.try_solve_obligation e
+let try_solve_obligations e = try_catch_exn Subtac_obligations.try_solve_obligations e
+let solve_all_obligations e = try_catch_exn Subtac_obligations.solve_all_obligations e
+let admit_obligations e = try_catch_exn Subtac_obligations.admit_obligations e
+
 VERNAC COMMAND EXTEND Subtac_Obligations
-| [ "Obligation" integer(num) "of" ident(name) ":" lconstr(t) ] -> [ Subtac_obligations.subtac_obligation (num, Some name, Some t) ]
-| [ "Obligation" integer(num) "of" ident(name) ] -> [ Subtac_obligations.subtac_obligation (num, Some name, None) ]
-| [ "Obligation" integer(num) ":" lconstr(t) ] -> [ Subtac_obligations.subtac_obligation (num, None, Some t) ]      
-| [ "Obligation" integer(num) ] -> [ Subtac_obligations.subtac_obligation (num, None, None) ]
-| [ "Next" "Obligation" "of" ident(name) ] -> [ Subtac_obligations.next_obligation (Some name) ]
-| [ "Next" "Obligation" ] -> [ Subtac_obligations.next_obligation None ]
+| [ "Obligation" integer(num) "of" ident(name) ":" lconstr(t) ] -> [ subtac_obligation (num, Some name, Some t) ]
+| [ "Obligation" integer(num) "of" ident(name) ] -> [ subtac_obligation (num, Some name, None) ]
+| [ "Obligation" integer(num) ":" lconstr(t) ] -> [ subtac_obligation (num, None, Some t) ]      
+| [ "Obligation" integer(num) ] -> [ subtac_obligation (num, None, None) ]
+| [ "Next" "Obligation" "of" ident(name) ] -> [ next_obligation (Some name) ]
+| [ "Next" "Obligation" ] -> [ next_obligation None ]
 END
 
 VERNAC COMMAND EXTEND Subtac_Solve_Obligation
 | [ "Solve" "Obligation" integer(num) "of" ident(name) "using" tactic(t) ] -> 
-    [ Subtac_obligations.try_solve_obligation num (Some name) (Some (Tacinterp.interp t)) ]
+    [ try_solve_obligation num (Some name) (Some (Tacinterp.interp t)) ]
 | [ "Solve" "Obligation" integer(num) "using" tactic(t) ] -> 
-    [ Subtac_obligations.try_solve_obligation num None (Some (Tacinterp.interp t)) ]
+    [ try_solve_obligation num None (Some (Tacinterp.interp t)) ]
       END
 
 VERNAC COMMAND EXTEND Subtac_Solve_Obligations
 | [ "Solve" "Obligations" "of" ident(name) "using" tactic(t) ] -> 
-    [ Subtac_obligations.try_solve_obligations (Some name) (Some (Tacinterp.interp t)) ]
+    [ try_solve_obligations (Some name) (Some (Tacinterp.interp t)) ]
 | [ "Solve" "Obligations" "using" tactic(t) ] -> 
-    [ Subtac_obligations.try_solve_obligations None (Some (Tacinterp.interp t)) ]
+    [ try_solve_obligations None (Some (Tacinterp.interp t)) ]
 | [ "Solve" "Obligations" ] -> 
-    [ Subtac_obligations.try_solve_obligations None None ]
+    [ try_solve_obligations None None ]
       END
 
 VERNAC COMMAND EXTEND Subtac_Solve_All_Obligations
 | [ "Solve" "All" "Obligations" "using" tactic(t) ] -> 
-    [ Subtac_obligations.solve_all_obligations (Some (Tacinterp.interp t)) ]
+    [ solve_all_obligations (Some (Tacinterp.interp t)) ]
 | [ "Solve" "All" "Obligations" ] -> 
-    [ Subtac_obligations.solve_all_obligations None ]
+    [ solve_all_obligations None ]
       END
 
 VERNAC COMMAND EXTEND Subtac_Admit_Obligations
-| [ "Admit" "Obligations" "of" ident(name) ] -> [ Subtac_obligations.admit_obligations (Some name) ] 
-| [ "Admit" "Obligations" ] -> [ Subtac_obligations.admit_obligations None ] 
+| [ "Admit" "Obligations" "of" ident(name) ] -> [ admit_obligations (Some name) ] 
+| [ "Admit" "Obligations" ] -> [ admit_obligations None ] 
     END
 
 VERNAC COMMAND EXTEND Subtac_Set_Solver
