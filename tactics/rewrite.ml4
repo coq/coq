@@ -170,7 +170,7 @@ let new_cstr_evar (goal,cstr) env t =
   let cstr', t = Evarutil.new_evar cstr env t in
     (goal, cstr'), t
 
-let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t option) (f : 'a -> constr) =
+let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a option) (f : 'a -> constr) =
   let new_evar evars env t =
     new_cstr_evar evars env
       (* ~src:(dummy_loc, ImplicitArg (ConstRef (Lazy.force respectful), (n, Some na))) *) t
@@ -203,12 +203,12 @@ let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t 
       | _, obj :: _ -> anomaly "build_signature: not enough products"
       | _, [] -> 
 	  (match finalcstr with
-	      None -> 
-		let t = Reductionops.nf_betaiota (fst evars) ty in
-		let evars, rel = mk_relty evars env t None in 
-		  evars, t, rel, [t, Some rel]
-	    | Some codom -> let (t, rel) = Lazy.force codom in
-			      evars, t, rel, [t, Some rel])
+	  | None -> 
+	      let t = Reductionops.nf_betaiota (fst evars) ty in
+	      let evars, rel = mk_relty evars env t None in 
+		evars, t, rel, [t, Some rel]
+	  | Some codom -> let (t, rel) = codom in
+			    evars, t, rel, [t, Some rel])
   in aux env evars m cstrs
     
 let proper_proof env evars carrier relation x =
@@ -396,11 +396,12 @@ let rec decomp_pointwise n c =
       | _ -> raise Not_found
 	  
 let lift_cstr env sigma evars args cstr =
-  let cstr () =
+  let cstr =
     let start = 
       match cstr with
-	| Some codom -> Lazy.force codom
-	| None -> let car = Evarutil.e_new_evar evars env (new_Type ()) in
+      | Some codom -> codom
+      | None -> 
+	  let car = Evarutil.e_new_evar evars env (new_Type ()) in
 	  let rel = Evarutil.e_new_evar evars env (mk_relation car) in
 	    (car, rel)
     in
@@ -411,7 +412,7 @@ let lift_cstr env sigma evars args cstr =
 	  let rel' = mkApp (Lazy.force pointwise_relation, [| ty; car; rel |]) in
 	    (car', rel'))
 	args start
-  in Some (Lazy.lazy_from_fun cstr)
+  in Some cstr
 
 let unlift_cstr env sigma = function
   | None -> None
@@ -532,7 +533,7 @@ let apply_lemma (evm,c) left2right loccs : strategy =
 
 let subterm all flags (s : strategy) : strategy =
   let rec aux env sigma t ty cstr evars =
-    let cstr' = Option.map (fun c -> lazy (ty, c)) cstr in
+    let cstr' = Option.map (fun c -> (ty, c)) cstr in
       match kind_of_term t with
       | App (m, args) ->
 	  let rewrite_args success = 
@@ -562,7 +563,7 @@ let subterm all flags (s : strategy) : strategy =
 	      let evarsref = ref (snd evars) in
 	      let cstr' = lift_cstr env sigma evarsref args cstr' in
 	      let m' = s env sigma m (Typing.type_of env sigma m) 
-		(Option.map (fun c -> snd (Lazy.force c)) cstr') (fst evars, !evarsref)
+		(Option.map snd cstr') (fst evars, !evarsref)
 	      in
 		match m' with
 		| None -> rewrite_args None (* Standard path, try rewrite on arguments *)
@@ -621,7 +622,7 @@ let subterm all flags (s : strategy) : strategy =
 		  rew_to = mkLambda (n, t, r.rew_to) })
 	    | _ -> b')
 	      
-      | _ -> None
+      | _ -> if all then Some None else None
   in aux
 
 let all_subterms = subterm true default_flags
@@ -639,6 +640,12 @@ let transitivity env sigma (res : rewrite_result_info) (next : strategy) : rewri
       let prf = mkApp (prf, [|res.rew_from; res'.rew_from; res'.rew_to;
 			      res.rew_prf; res'.rew_prf |])
       in Some (Some { res' with rew_from = res.rew_from; rew_evars = evars; rew_prf = prf })
+
+(** Rewriting strategies.
+    
+    Inspired by ELAN's rewriting strategies:
+    http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.21.4049
+*)
 
 module Strategies = 
   struct
@@ -739,7 +746,7 @@ let rewrite_with (evm,c) left2right loccs : strategy =
 let apply_strategy (s : strategy) env sigma concl cstr evars =
   let res =
     s env sigma concl (Typing.type_of env sigma concl)
-      (Option.map (fun c -> snd (Lazy.force c)) cstr) !evars
+      (Option.map snd cstr) !evars
   in
     match res with
     | None -> None
@@ -790,7 +797,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
   let sigma = project gl in
   let evars = ref (Evd.create_evar_defs sigma, Evd.empty) in
   let env = pf_env gl in
-  let eq = apply_strategy strat env sigma concl (Some (Lazy.lazy_from_val cstr)) evars in
+  let eq = apply_strategy strat env sigma concl (Some cstr) evars in
     match eq with
     | Some (Some (p, (_, _, oldt, newt))) -> 
 	(try
@@ -1223,7 +1230,7 @@ let add_setoid binders a aeq t n =
        ((dummy_loc,id_of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
        ((dummy_loc,id_of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])])
 
-let add_morphism_infer m n =
+let add_morphism_infer glob m n =
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
   let instance = build_morphism_signature m in
@@ -1231,7 +1238,7 @@ let add_morphism_infer m n =
       let cst = Declare.declare_internal_constant instance_id
 	(Entries.ParameterEntry (instance,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
-	add_instance (Typeclasses.new_instance (Lazy.force proper_class) None false cst);
+	add_instance (Typeclasses.new_instance (Lazy.force proper_class) None glob cst);
 	declare_projection n instance_id (ConstRef cst)
     else
       let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
@@ -1240,14 +1247,14 @@ let add_morphism_infer m n =
 	    Command.start_proof instance_id kind instance 
 	      (fun _ -> function
 		  Libnames.ConstRef cst -> 
-		    add_instance (Typeclasses.new_instance 
-				     (Lazy.force proper_class) None false cst);
+		    add_instance (Typeclasses.new_instance (Lazy.force proper_class) None 
+				     false cst);
 		    declare_projection n instance_id (ConstRef cst)
 		| _ -> assert false);
 	    Pfedit.by (Tacinterp.interp <:tactic< Coq.Classes.SetoidTactics.add_morphism_tactic>>)) ();
 	Flags.if_verbose (fun x -> msg (Printer.pr_open_subgoals x)) () 
 
-let add_morphism binders m s n =
+let add_morphism glob binders m s n =
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
   let instance = 
@@ -1257,8 +1264,9 @@ let add_morphism binders m s n =
 	     [cHole; s; m]))
   in	  
   let tac = Tacinterp.interp <:tactic<add_morphism_tactic>> in
-    ignore(new_instance binders instance (CRecord (dummy_loc,None,[]))
-	      ~generalize:false ~tac ~hook:(fun cst -> declare_projection n instance_id (ConstRef cst)) None)
+    ignore(new_instance ~global:glob binders instance (CRecord (dummy_loc,None,[]))
+	      ~generalize:false ~tac 
+	      ~hook:(fun cst -> declare_projection n instance_id (ConstRef cst)) None)
 
 VERNAC COMMAND EXTEND AddSetoid1
    [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
@@ -1266,11 +1274,12 @@ VERNAC COMMAND EXTEND AddSetoid1
   | [ "Add" "Parametric" "Setoid" binders_let(binders) ":" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
      [	add_setoid binders a aeq t n ]
   | [ "Add" "Morphism" constr(m) ":" ident(n) ] ->
-      [ add_morphism_infer m n ]
+      [ add_morphism_infer (not (Vernacexpr.use_section_locality ())) m n ]
   | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ] ->
-      [ add_morphism [] m s n ]
-  | [ "Add" "Parametric" "Morphism" binders_let(binders) ":" constr(m) "with" "signature" lconstr(s) "as" ident(n) ] ->
-      [ add_morphism binders m s n ]
+      [ add_morphism (not (Vernacexpr.use_section_locality ())) [] m s n ]
+  | [ "Add" "Parametric" "Morphism" binders_let(binders) ":" constr(m) 
+	"with" "signature" lconstr(s) "as" ident(n) ] -> 
+      [ add_morphism (not (Vernacexpr.use_section_locality ())) binders m s n ]
 END
 
 (** Bind to "rewrite" too *)

@@ -237,14 +237,7 @@ type vernac_expr =
   | VernacIdentityCoercion of locality * lident * 
       class_rawexpr * class_rawexpr
 
-  (* Type classes *)
-(*   | VernacClass of *)
-(*       lident * (\* name *\) *)
-(* 	local_binder list * (\* params *\) *)
-(* 	sort_expr located option * (\* arity *\) *)
-(* 	local_binder list * (\* constraints *\) *)
-(* 	(lident * bool * constr_expr) list (\* props, with substructure hints *\) *)
-	
+  (* Type classes *)	
   | VernacInstance of
       bool * (* global *)
       local_binder list * (* super *)
