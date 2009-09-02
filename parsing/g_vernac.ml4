@@ -67,8 +67,7 @@ GEXTEND Gram
   vernac: FIRST
     [ [ IDENT "Time"; v = vernac -> VernacTime v 
       | IDENT "Timeout"; n = natural; v = vernac -> VernacTimeout(n,v)
-      | locality; v = vernac_aux -> 
-	  check_locality (); v ] ]
+      | locality; v = vernac_aux -> v ] ]
   ;
   vernac_aux:
     (* Better to parse "." here: in case of failure (e.g. in coerce_to_var), *)

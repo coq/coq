@@ -1406,3 +1406,6 @@ let interp c = match c with
 
   (* Extensions *)
   | VernacExtend (opn,args) -> Vernacinterp.call (opn,args)
+
+let interp c = interp c ; check_locality ()
+
