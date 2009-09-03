@@ -66,6 +66,7 @@ let usage () =
   prerr_endline "  --inputenc <string>  set LaTeX input encoding";
   prerr_endline "  --interpolate        try to typeset identifiers in comments using definitions in the same module";
   prerr_endline "  --parse-comments     parse regular comments";
+  prerr_endline "  --plain-comments     consider comments as non-literate text";
   prerr_endline "";
   exit 1
 
@@ -276,6 +277,8 @@ let parse () =
 	Cdglobals.raw_comments := true; parse_rec rem
     | ("-parse-comments" | "--parse-comments") :: rem ->
 	Cdglobals.parse_comments := true; parse_rec rem
+    | ("-plain-comments" | "--plain-comments") :: rem ->
+	Cdglobals.plain_comments := true; parse_rec rem
     | ("-interpolate" | "--interpolate") :: rem ->
 	Cdglobals.interpolate := true; parse_rec rem
 

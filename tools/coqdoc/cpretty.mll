@@ -577,30 +577,40 @@ and doc = parse
   | nl
       { Output.char '\n'; doc_bol lexbuf }
   | "[[" nl
-      { formatted := true; Output.line_break (); Output.start_inline_coq ();
-	let eol = body_bol lexbuf in 
-	  Output.end_inline_coq (); formatted := false;
-	  if eol then doc_bol lexbuf else doc lexbuf}
+      { if !Cdglobals.plain_comments
+        then (Output.char '['; Output.char '['; doc lexbuf)
+        else (formatted := true; 
+              Output.line_break (); Output.start_inline_coq ();
+	      let eol = body_bol lexbuf in 
+	        Output.end_inline_coq (); formatted := false;
+	        if eol then doc_bol lexbuf else doc lexbuf)}
   | "["
-      { brackets := 1; 
-	Output.start_inline_coq (); escaped_coq lexbuf; Output.end_inline_coq ();
-	doc lexbuf }
+      { if !Cdglobals.plain_comments then Output.char '['
+        else (brackets := 1;  Output.start_inline_coq (); escaped_coq lexbuf;
+              Output.end_inline_coq ()); doc lexbuf }
   | '*'* "*)" space* nl
       { true }
   | '*'* "*)"
       { false }
   | "$"
-      { Output.start_latex_math (); escaped_math_latex lexbuf; doc lexbuf }
+      { if !Cdglobals.plain_comments then Output.char '$'
+        else (Output.start_latex_math (); escaped_math_latex lexbuf);
+        doc lexbuf }
   | "$$"
-      { Output.char '$'; doc lexbuf }
+      { if !Cdglobals.plain_comments then Output.char '$'; 
+        Output.char '$'; doc lexbuf }
   | "%"
-      { escaped_latex lexbuf; doc lexbuf }
+      { if !Cdglobals.plain_comments then Output.char '%'
+        else escaped_latex lexbuf; doc lexbuf }
   | "%%"
-      { Output.char '%'; doc lexbuf }
+      { if !Cdglobals.plain_comments then Output.char '%';
+        Output.char '%'; doc lexbuf }
   | "#"
-      { escaped_html lexbuf; doc lexbuf }
+      { if !Cdglobals.plain_comments then Output.char '#'
+        else escaped_html lexbuf; doc lexbuf }
   | "##"
-      { Output.char '#'; doc lexbuf }
+      { if !Cdglobals.plain_comments then Output.char '#';
+        Output.char '#'; doc lexbuf }
   | eof 
       { false }
   | _ 
@@ -628,7 +638,7 @@ and escaped_html = parse
   | _   { Output.html_char (lexeme_char lexbuf 0); escaped_html lexbuf }
 
 and verbatim = parse
-  | nl ">>" { Output.verbatim_char '\n'; Output.stop_verbatim () }
+  | nl ">>" space* nl? { Output.verbatim_char '\n'; Output.stop_verbatim () }
   | eof { Output.stop_verbatim () }
   | _ { Output.verbatim_char (lexeme_char lexbuf 0); verbatim lexbuf }
 
@@ -679,22 +689,64 @@ and comment = parse
 	   if !Cdglobals.parse_comments then Output.start_comment ();
 	   comment lexbuf }
   | "*)" space* nl {
-      if !Cdglobals.parse_comments then	(Output.end_comment (); Output.line_break ());
+      if !Cdglobals.parse_comments then	
+	(Output.end_comment (); Output.line_break ());
       decr comment_level; if !comment_level > 0 then comment lexbuf else true }
   | "*)" { 
       if !Cdglobals.parse_comments then (Output.end_comment ());
       decr comment_level; if !comment_level > 0 then comment lexbuf else false }
-  | "[" { 
-      if !Cdglobals.parse_comments then (
-	brackets := 1;
-	Output.start_inline_coq (); escaped_coq lexbuf; Output.end_inline_coq ());
+  | "[" {
+      if !Cdglobals.parse_comments then
+	if !Cdglobals.plain_comments then Output.char '['
+        else (brackets := 1; Output.start_inline_coq ();
+              escaped_coq lexbuf; Output.end_inline_coq ());
       comment lexbuf }
+  | "[[" {
+      if !Cdglobals.parse_comments then
+        if !Cdglobals.plain_comments then (Output.char '['; Output.char '[')
+        else (formatted := true;
+              Output.line_break (); Output.start_inline_coq ();
+              let _ = body_bol lexbuf in
+                Output.end_inline_coq (); formatted := false);
+      comment lexbuf}
+  | "$"
+      { if !Cdglobals.parse_comments then
+          if !Cdglobals.plain_comments then Output.char '$'
+          else (Output.start_latex_math (); escaped_math_latex lexbuf);
+        comment lexbuf }
+  | "$$"
+      { if !Cdglobals.parse_comments 
+        then 
+          (if !Cdglobals.plain_comments then Output.char '$'; Output.char '$');
+        doc lexbuf }
+  | "%"
+      { if !Cdglobals.parse_comments
+          then 
+            if !Cdglobals.plain_comments then Output.char '%'
+            else escaped_latex lexbuf; comment lexbuf }
+  | "%%"
+      { if !Cdglobals.parse_comments 
+        then 
+          (if !Cdglobals.plain_comments then Output.char '%'; Output.char '%');
+        comment lexbuf }
+  | "#"
+      { if !Cdglobals.parse_comments
+        then
+          if !Cdglobals.plain_comments then Output.char '$'
+          else escaped_html lexbuf; comment lexbuf }
+  | "##"
+      { if !Cdglobals.parse_comments 
+        then 
+          (if !Cdglobals.plain_comments then Output.char '#'; Output.char '#');
+        comment lexbuf }
   | eof  { false }
-  | space+ { if !Cdglobals.parse_comments then 
-	Output.indentation (fst (count_spaces (lexeme lexbuf))); comment lexbuf }
-  | nl   { if !Cdglobals.parse_comments then Output.line_break (); comment lexbuf }
+  | space+ { if !Cdglobals.parse_comments
+             then Output.indentation (fst (count_spaces (lexeme lexbuf)));
+             comment lexbuf }
+  | nl   { if !Cdglobals.parse_comments
+           then Output.line_break (); comment lexbuf }
   | _    { if !Cdglobals.parse_comments then Output.char (lexeme_char lexbuf 0);
-  comment lexbuf }
+           comment lexbuf }
       
 and skip_to_dot = parse
   | '.' space* nl { true }

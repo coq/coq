@@ -58,6 +58,7 @@ let coqlib = ref Coq_config.wwwstdlib
 let coqlib_path = ref Coq_config.coqlib
 let raw_comments = ref false
 let parse_comments = ref false
+let plain_comments = ref false
 let interpolate = ref false
 
 let charset = ref "iso-8859-1"

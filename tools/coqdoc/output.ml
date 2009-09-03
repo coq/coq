@@ -668,14 +668,17 @@ module Html = struct
 	  printf "<hr/>"; print_table ()
 	end
 	    
-  let make_toc () = 
+	  
+  let make_toc () =
     let make_toc_entry = function
       | Toc_library m -> 
 	  stop_item ();
 	  printf "<a href=\"%s.html\"><h2>Library %s</h2></a>\n" m m
       | Toc_section (n, f, r) ->
-	  item n; 
-	  printf "<a href=\"%s\">" r; f (); printf "</a>\n"
+          if n <= 3 then begin
+	    item n; 
+	    printf "<a href=\"%s\">" r; f (); printf "</a>\n"
+	  end
     in
       Queue.iter make_toc_entry toc_q;
       stop_item ();
