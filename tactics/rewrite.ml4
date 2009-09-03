@@ -1236,24 +1236,24 @@ let add_morphism_infer glob m n =
   let instance = build_morphism_signature m in
     if Lib.is_modtype () then 
       let cst = Declare.declare_internal_constant instance_id
-	(Entries.ParameterEntry (instance,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
+				(Entries.ParameterEntry (instance,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
-	add_instance (Typeclasses.new_instance (Lazy.force proper_class) None glob cst);
-	declare_projection n instance_id (ConstRef cst)
+				add_instance (Typeclasses.new_instance (Lazy.force proper_class) None glob cst);
+				declare_projection n instance_id (ConstRef cst)
     else
       let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
-	Flags.silently 
-	  (fun () ->
-	    Command.start_proof instance_id kind instance 
-	      (fun _ -> function
-		  Libnames.ConstRef cst -> 
-		    add_instance (Typeclasses.new_instance (Lazy.force proper_class) None 
-				     false cst);
-		    declare_projection n instance_id (ConstRef cst)
-		| _ -> assert false);
-	    Pfedit.by (Tacinterp.interp <:tactic< Coq.Classes.SetoidTactics.add_morphism_tactic>>)) ();
-	Flags.if_verbose (fun x -> msg (Printer.pr_open_subgoals x)) () 
-
+				Flags.silently 
+					(fun () ->
+						Command.start_proof instance_id kind instance 
+							(fun _ -> function
+								Libnames.ConstRef cst -> 
+									add_instance (Typeclasses.new_instance (Lazy.force proper_class) None 
+																	 glob cst);
+									declare_projection n instance_id (ConstRef cst)
+								| _ -> assert false);
+						Pfedit.by (Tacinterp.interp <:tactic< Coq.Classes.SetoidTactics.add_morphism_tactic>>)) ();
+				Flags.if_verbose (fun x -> msg (Printer.pr_open_subgoals x)) () 
+					
 let add_morphism glob binders m s n =
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
