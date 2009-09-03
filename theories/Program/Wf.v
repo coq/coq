@@ -22,64 +22,53 @@ Section Well_founded.
   Variable A : Type.
   Variable R : A -> A -> Prop.
   Hypothesis Rwf : well_founded R.
+    
+  Variable P : A -> Type.
   
-  Section Acc.
-    
-    Variable P : A -> Type.
-    
-    Variable F_sub : forall x:A, (forall y: { y : A | R y x }, P (proj1_sig y)) -> P x.
-    
-    Fixpoint Fix_F_sub (x : A) (r : Acc R x) {struct r} : P x :=
-      F_sub x (fun y: { y : A | R y x}  => Fix_F_sub (proj1_sig y) 
-        (Acc_inv r (proj2_sig y))).
-    
-    Definition Fix_sub (x : A) := Fix_F_sub x (Rwf x).
-  End Acc.
+  Variable F_sub : forall x:A, (forall y: { y : A | R y x }, P (proj1_sig y)) -> P x.
   
-  Section FixPoint.
-    Variable P : A -> Type.
-    
-    Variable F_sub : forall x:A, (forall y: { y : A | R y x }, P (proj1_sig y)) -> P x.
-    
-    Notation Fix_F := (Fix_F_sub P F_sub) (only parsing). (* alias *)
-    
-    Definition Fix (x:A) := Fix_F_sub P F_sub x (Rwf x).
-    
-    Hypothesis
-      F_ext :
-      forall (x:A) (f g:forall y:{y:A | R y x}, P (`y)),
-        (forall (y : A | R y x), f y = g y) -> F_sub x f = F_sub x g.
+  Fixpoint Fix_F_sub (x : A) (r : Acc R x) {struct r} : P x :=
+    F_sub x (fun y: { y : A | R y x}  => Fix_F_sub (proj1_sig y) 
+      (Acc_inv r (proj2_sig y))).
+  
+  Definition Fix_sub (x : A) := Fix_F_sub x (Rwf x).
+  
+  (* Notation Fix_F := (Fix_F_sub P F_sub) (only parsing). (* alias *) *)  
+  (* Definition Fix (x:A) := Fix_F_sub P F_sub x (Rwf x). *)
+  
+  Hypothesis
+    F_ext :
+    forall (x:A) (f g:forall y:{y:A | R y x}, P (`y)),
+      (forall (y : A | R y x), f y = g y) -> F_sub x f = F_sub x g.
 
-    Lemma Fix_F_eq :
-      forall (x:A) (r:Acc R x),
-        F_sub x (fun (y:A|R y x) => Fix_F (`y) (Acc_inv r (proj2_sig y))) = Fix_F x r.
-    Proof. 
-      destruct r using Acc_inv_dep; auto.
-    Qed.
-    
-    Lemma Fix_F_inv : forall (x:A) (r s:Acc R x), Fix_F x r = Fix_F x s.
-    Proof.
-      intro x; induction (Rwf x); intros.
-      rewrite (proof_irrelevance (Acc R x) r s) ; auto.
-    Qed.
+  Lemma Fix_F_eq :
+    forall (x:A) (r:Acc R x),
+      F_sub x (fun (y:A|R y x) => Fix_F_sub (`y) (Acc_inv r (proj2_sig y))) = Fix_F_sub x r.
+  Proof. 
+    destruct r using Acc_inv_dep; auto.
+  Qed.
+  
+  Lemma Fix_F_inv : forall (x:A) (r s:Acc R x), Fix_F_sub x r = Fix_F_sub x s.
+  Proof.
+    intro x; induction (Rwf x); intros.
+    rewrite (proof_irrelevance (Acc R x) r s) ; auto.
+  Qed.
 
-    Lemma Fix_eq : forall x:A, Fix x = F_sub x (fun (y:A|R y x) => Fix (proj1_sig y)).
-    Proof.
-      intro x; unfold Fix in |- *.
-      rewrite <- (Fix_F_eq ).
-      apply F_ext; intros.
-      apply Fix_F_inv.
-    Qed.
+  Lemma Fix_eq : forall x:A, Fix_sub x = F_sub x (fun (y:A|R y x) => Fix_sub (proj1_sig y)).
+  Proof.
+    intro x; unfold Fix_sub in |- *.
+    rewrite <- (Fix_F_eq ).
+    apply F_ext; intros.
+    apply Fix_F_inv.
+  Qed.
 
-    Lemma fix_sub_eq :
-        forall x : A,
-          Fix_sub P F_sub x =
-          let f_sub := F_sub in
-            f_sub x (fun (y : A | R y x) => Fix (`y)).
-      exact Fix_eq.
-    Qed.
-
- End FixPoint.
+  Lemma fix_sub_eq :
+    forall x : A,
+      Fix_sub x =
+      let f_sub := F_sub in
+        f_sub x (fun (y : A | R y x) => Fix_sub (`y)).
+    exact Fix_eq.
+  Qed.
 
 End Well_founded.
 
@@ -192,7 +181,7 @@ Section Fix_rects.
   Qed.
 
   (* Finally, Fix_F_rect lets one prove a property of
-  functions defined using Fix_F by showing that
+  functions defined using Fix_F_sub by showing that
   property to be invariant over single application of the function
   body (f). *)
 
@@ -250,7 +239,7 @@ Module WfExtensionality.
       (F_sub : forall x : A, (forall (y : A | R y x), P y) -> P x),
       forall x : A,
         Fix_sub A R Rwf P F_sub x =
-          F_sub x (fun (y : A | R y x) => Fix A R Rwf P F_sub y).
+          F_sub x (fun (y : A | R y x) => Fix_sub A R Rwf P F_sub y).
   Proof.
     intros ; apply Fix_eq ; auto.
     intros.
