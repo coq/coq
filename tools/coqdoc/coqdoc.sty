@@ -103,14 +103,14 @@
   \newcommand{\coqdef}[3]{\phantomsection\hypertarget{coq:#1}{#3}}
   \newcommand{\coqref}[2]{\hyperlink{coq:#1}{#2}}
   \newcommand{\identref}[2]{\hyperlink{coq:#1}{\textsf {#2}}}
-  \newcommand{\coqlibrary}[2]{\cleardoublepage\phantomsection
-    \hypertarget{coq:#1}{\chapter{Library \texorpdfstring{\coqdoccst}{}{#2}}}}
+  \newcommand{\coqlibrary}[3]{\cleardoublepage\phantomsection
+    \hypertarget{coq:#1}{\chapter{#2\texorpdfstring{\coqdoccst}{}{#3}}}}
 \else
   \newcommand{\coqdef}[3]{#3}
   \newcommand{\coqref}[2]{#2}
   \newcommand{\texorpdfstring}[2]{#1}
   \newcommand{\identref}[2]{\textsf{#2}}
-  \newcommand{\coqlibrary}[2]{\cleardoublepage\chapter{Library \coqdoccst{#2}}}
+  \newcommand{\coqlibrary}[2]{\cleardoublepage\chapter{#2\coqdoccst{#3}}}
 \fi
 \usepackage{xr}
 

@@ -50,6 +50,7 @@ let gallina = ref false
 let short = ref false
 let index = ref true
 let multi_index = ref false
+let index_name = ref "index"
 let toc = ref false
 let page_title = ref ""
 let title = ref ""
@@ -59,6 +60,9 @@ let coqlib_path = ref Coq_config.coqlib
 let raw_comments = ref false
 let parse_comments = ref false
 let plain_comments = ref false
+let toc_depth = (ref None : int option ref)
+let lib_name = ref "Library"
+let lib_subtitles = ref false
 let interpolate = ref false
 
 let charset = ref "iso-8859-1"
@@ -83,4 +87,3 @@ type coq_module = string
 type file =
   | Vernac_file of string * coq_module
   | Latex_file of string
-      

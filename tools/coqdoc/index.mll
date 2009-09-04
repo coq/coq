@@ -43,7 +43,7 @@ type index_entry =
   | Ref of coq_module * string * entry_type
   | Mod of coq_module * string
 
-let current_type = ref Library
+let current_type : entry_type ref = ref Library
 let current_library = ref ""
   (** refers to the file being parsed *)
 
@@ -200,7 +200,9 @@ let index_size = List.fold_left (fun s (_,l) -> s + List.length l) 0
 let hashtbl_elements h = Hashtbl.fold (fun x y l -> (x,y)::l) h []
   
 let type_name = function
-  | Library -> "library"
+  | Library -> 
+      let ln = !lib_name in
+        if ln <> "" then String.lowercase ln else "library"
   | Module -> "module"
   | Definition -> "definition"
   | Inductive -> "inductive"
@@ -236,8 +238,8 @@ let all_entries () =
       idx_entries = sort_entries !gl; 
       idx_size = List.length !gl },
     Hashtbl.fold (fun t e l -> (t, { idx_name = type_name t; 
-				   idx_entries = sort_entries e; 
-				   idx_size = List.length e }) :: l) bt []
+				             idx_entries = sort_entries e; 
+				             idx_size = List.length e }) :: l) bt []
     
 }
 

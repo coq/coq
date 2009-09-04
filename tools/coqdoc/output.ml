@@ -77,13 +77,24 @@ let is_tactic =
 
 (*s Current Coq module *)
 
-let current_module = ref ""
+let current_module : (string * string option) ref = ref ("",None)
 
-let set_module m = current_module := m; page_title := m
+let get_module withsub =
+  let (m,sub) = !current_module in
+  if withsub then 
+    match sub with 
+    | None -> m
+    | Some sub -> m ^ ": " ^ sub
+  else
+    m
+
+let set_module m sub = current_module := (m,sub); 
+                       page_title := get_module true
 
 (*s Common to both LaTeX and HTML *)
 
 let item_level = ref 0
+let in_doc = ref false
 
 (*s Customized pretty-print *)
 
@@ -119,14 +130,15 @@ let initialize () =
 	"forall", "\\ensuremath{\\forall}", if_utf8 "∀";
 	"exists", "\\ensuremath{\\exists}", if_utf8 "∃";
 	"Π", "\\ensuremath{\\Pi}", if_utf8 "Π";
-	"λ", "\\ensuremath{\\lambda}", if_utf8 "λ"
+	"λ", "\\ensuremath{\\lambda}", if_utf8 "λ";
+      "PROOFBOX", "\\ensuremath{\\Box}", Some "<font size=-2>&#9744;</font>"; (* FIX THIS *)
 	(* "fun", "\\ensuremath{\\lambda}" ? *)
       ]
 
 (*s Table of contents *)
 
 type toc_entry = 
-  | Toc_library of string
+  | Toc_library of string * string option
   | Toc_section of int * (unit -> unit) * string
 
 let (toc_q : toc_entry Queue.t) = Queue.create ()
@@ -140,7 +152,6 @@ let new_label = let r = ref 0 in fun () -> incr r; "lab" ^ string_of_int !r
 module Latex = struct
 
   let in_title = ref false
-  let in_doc = ref false
 
   (*s Latex preamble *)
 
@@ -155,6 +166,10 @@ module Latex = struct
       printf "\\usepackage[T1]{fontenc}\n";
       printf "\\usepackage{fullpage}\n";
       printf "\\usepackage{coqdoc}\n";
+      printf "\\usepackage{amsmath,amssymb}\n";
+      match !toc_depth with
+      | None -> ()
+      | Some n -> printf "\\setcounter{tocdepth}{%i}\n" n;
       Queue.iter (fun s -> printf "%s\n" s) preamble;
       printf "\\begin{document}\n"
     end;
@@ -202,12 +217,15 @@ module Latex = struct
     for i = 0 to String.length s - 1 do label_char s.[i] done
 
   let start_module () = 
-    if not !short then begin
-      printf "\\coqlibrary{"; 
-      label_ident !current_module; 
-      printf "}{";
-      raw_ident !current_module; 
-      printf "}\n\n"
+    let ln = !lib_name in
+      if not !short then begin
+        printf "\\coqlibrary{"; 
+        label_ident (get_module false);
+        printf "}{";
+        if ln <> "" then printf "%s " ln;
+        printf "}{";
+        raw_ident (get_module true);
+        printf "}\n\n"
     end
 
   let start_latex_math () = output_char '$'
@@ -262,7 +280,7 @@ module Latex = struct
 
   let reference s = function
     | Def (fullid,typ) -> 
-	defref !current_module fullid typ s
+	defref (get_module false) fullid typ s
     | Mod (m,s') when s = s' ->
 	module_ref m s
     | Ref (m,fullid,typ) -> 
@@ -276,14 +294,14 @@ module Latex = struct
     end else begin
       begin
 	try
-	  reference s (Index.find !current_module loc)
+	  reference s (Index.find (get_module false) loc)
 	with Not_found ->
 	  if is_tactic s then begin
 	    printf "\\coqdoctac{"; raw_ident s; printf "}"
 	  end else begin
 	    if !Cdglobals.interpolate && !in_doc (* always a var otherwise *) 
 	    then
-	      try reference s (Index.find_string !current_module s)
+	      try reference s (Index.find_string (get_module false) s)
 	      with _ -> (printf "\\coqdocvar{"; raw_ident s; printf "}")
 	    else (printf "\\coqdocvar{"; raw_ident s; printf "}")
 	  end
@@ -322,6 +340,12 @@ module Latex = struct
 
   let comment c = char c
 
+  (* This is broken if we are in math mode, but coqdoc currently isn't
+     tracking that *)
+  let start_emph () = printf "\\textit{ "
+
+  let stop_emph () = printf "}"
+
   let start_comment () = printf "\\begin{coqdoccomment}\n"
 
   let end_comment () = printf "\\end{coqdoccomment}\n"
@@ -350,7 +374,7 @@ module Latex = struct
   let rule () =
     printf "\\par\n\\noindent\\hrulefill\\par\n\\noindent{}"
 
-  let paragraph () = stop_item (); printf "\n\n"
+  let paragraph () = printf "\n\n"
 
   let line_break () = printf "\\coqdoceol\n"
 
@@ -372,7 +396,7 @@ end
 (*s HTML output *)
 
 module Html = struct
-
+    
   let header () =
     if !header_trailer then
       if !header_file_spec then
@@ -396,8 +420,8 @@ module Html = struct
 	end
 
   let trailer () =
-    if !index && !current_module <> "Index" then 
-      printf "</div>\n\n<div id=\"footer\">\n<hr/><a href=\"index.html\">Index</a>";
+    if !index && (get_module false) <> "Index" then 
+      printf "</div>\n\n<div id=\"footer\">\n<hr/><a href=\"%s.html\">Index</a>" !index_name;
     if !header_trailer then 
       if !footer_file_spec then
 	let cin = Pervasives.open_in !footer_file in
@@ -415,9 +439,14 @@ module Html = struct
 	end
 
   let start_module () = 
+    let ln = !lib_name in
     if not !short then begin
-      add_toc_entry (Toc_library !current_module);
-      printf "<h1 class=\"libtitle\">Library %s</h1>\n\n" !current_module
+      let (m,sub) = !current_module in
+        add_toc_entry (Toc_library (m,sub));
+        if ln = ""  then
+          printf "<h1 class=\"libtitle\">%s</h1>\n\n" (get_module true)
+        else
+          printf "<h1 class=\"libtitle\">%s %s</h1>\n\n" ln (get_module true)
     end
 
   let indentation n = for i = 1 to n do printf "&nbsp;" done
@@ -472,6 +501,19 @@ module Html = struct
     | Coqlib | Unknown ->
 	printf "<span class=\"id\" type=\"%s\">" typ; raw_ident s; printf "</span>"
 	  
+  let reference s r = 
+    match r with
+    | Def (fullid,ty) -> 
+	  printf "<a name=\"%s\">" fullid; 
+	  printf "<span class=\"id\" type=\"%s\">" (type_name ty); 
+	  raw_ident s; printf "</span></a>"
+    | Mod (m,s') when s = s' ->
+	  module_ref m s
+    | Ref (m,fullid,ty) -> 
+	  ident_ref m fullid (type_name ty) s
+    | Mod _ ->
+	  printf "<span class=\"id\" type=\"mod\">"; raw_ident s ; printf "</span>"
+
   let ident s loc = 
     if is_keyword s then begin
       printf "<span class=\"id\" type=\"keyword\">"; 
@@ -479,25 +521,19 @@ module Html = struct
       printf "</span>"
     end else 
       begin
-	try
-	  (match Index.find !current_module loc with
-	     | Def (fullid,ty) -> 
-		 printf "<a name=\"%s\">" fullid; 
-		 printf "<span class=\"id\" type=\"%s\">" (type_name ty); 
-		 raw_ident s; printf "</span></a>"
-             | Mod (m,s') when s = s' ->
-		 module_ref m s
-	     | Ref (m,fullid,ty) -> 
-		 ident_ref m fullid (type_name ty) s
-	     | Mod _ ->
-		 printf "<span class=\"id\" type=\"mod\">"; raw_ident s ; printf "</span>")
-	with Not_found ->
-	  if is_tactic s then
-	    (printf "<span class=\"id\" type=\"tactic\">"; raw_ident s; printf "</span>")
-	  else
-	    (printf "<span class=\"id\" type=\"var\">"; raw_ident s ; printf "</span>")
+	  try reference s (Index.find (get_module false) loc)
+	  with Not_found ->
+	    if is_tactic s then
+		(printf "<span class=\"id\" type=\"tactic\">"; raw_ident s; printf "</span>")
+	    else
+		if !Cdglobals.interpolate && !in_doc (* always a var otherwise *) 
+		then
+	        try reference s (Index.find_string (get_module false) s)
+	        with _ ->
+		    (printf "<span class=\"id\" type=\"var\">"; raw_ident s ; printf "</span>")
+	    else (printf "<span class=\"id\" type=\"var\">"; raw_ident s ; printf "</span>")
       end
-
+	  
   let with_html_printing f tok =
     try 
       (match Hashtbl.find token_pp tok with
@@ -514,7 +550,7 @@ module Html = struct
 
   let rec reach_item_level n = 
     if !item_level < n then begin
-      printf "\n<ul>\n<li>"; incr item_level;
+      printf "<ul>\n<li>"; incr item_level;
       reach_item_level n
     end else if !item_level > n then begin
       printf "\n</li>\n</ul>\n"; decr item_level;
@@ -532,13 +568,17 @@ module Html = struct
 
   let end_coq () = if not !raw_comments then printf "</div>\n"
 
-  let start_doc () = 
+  let start_doc () = in_doc := true;
     if not !raw_comments then
       printf "\n<div class=\"doc\">\n"
 
-  let end_doc () =
+  let end_doc () = in_doc := false;
     stop_item (); 
     if not !raw_comments then printf "\n</div>\n"
+
+  let start_emph () = printf "<i>"
+  
+  let stop_emph () = printf "</i>"
 
   let start_comment () = printf "<span class=\"comment\">(*"
 
@@ -552,16 +592,15 @@ module Html = struct
 
   let end_inline_coq () = printf "</span>"
 
-  let paragraph () = 
-    let i = !item_level in
-      stop_item ();
-      if i > 0 then printf "\n"
-      else printf "\n<br/> <br/>\n"
+  let paragraph () = printf "\n<br/> <br/>\n"
 
   let section lev f =
     let lab = new_label () in
-    let r = sprintf "%s.html#%s" !current_module lab in
-    add_toc_entry (Toc_section (lev, f, r));
+    let r = sprintf "%s.html#%s" (get_module false) lab in
+    match !toc_depth with
+    | None -> add_toc_entry (Toc_section (lev, f, r))
+    | Some n -> if lev <= n then add_toc_entry (Toc_section (lev, f, r))
+                  else ();
     stop_item ();
     printf "<a name=\"%s\"></a><h%d class=\"section\">" lab lev;
     f ();
@@ -572,7 +611,7 @@ module Html = struct
   (* make a HTML index from a list of triples (name,text,link) *)
   let index_ref i c =
     let idxc = sprintf "%s_%c" i.idx_name c in
-    if !multi_index then "index_" ^ idxc ^ ".html" else "index.html#" ^ idxc
+    !index_name ^ (if !multi_index then "_" ^ idxc ^ ".html" else ".html#" ^ idxc)
 
   let letter_index category idx (c,l) =
     if l <> [] then begin
@@ -591,8 +630,12 @@ module Html = struct
   let format_global_index =
     Index.map 
       (fun s (m,t) -> 
-	 if t = Library then 
-	   "[library]", m ^ ".html"
+	 if t = Library then
+         let ln = !lib_name in
+           if ln <> "" then
+	       "[" ^ String.lowercase ln ^ "]", m ^ ".html"
+           else
+	       "[library]", m ^ ".html"
 	 else
 	   sprintf "[%s, in <a href=\"%s.html\">%s</a>]" (type_name t) m m ,
 	 sprintf "%s.html#%s" m s)
@@ -629,7 +672,7 @@ module Html = struct
     (* Attn: make_one_multi_index créé un nouveau fichier... *)
     let idx = i.idx_name in
     let one_letter ((c,l) as cl) =
-      open_out_file (sprintf "index_%s_%c.html" idx c);
+      open_out_file (sprintf "%s_%s_%c.html" !index_name idx c);
       if (!header_trailer) then header ();
       prt_tbl (); printf "<hr/>";
       letter_index true idx cl;
@@ -659,7 +702,7 @@ module Html = struct
 	all_letters i
       end
     in
-      current_module := "Index";
+      set_module "Index" None;
       if !title <> "" then printf "<h1>%s</h1>\n" !title;
       print_table ();
       if not (!multi_index) then 
@@ -668,21 +711,25 @@ module Html = struct
 	  printf "<hr/>"; print_table ()
 	end
 	    
-	  
-  let make_toc () =
-    let make_toc_entry = function
-      | Toc_library m -> 
-	  stop_item ();
-	  printf "<a href=\"%s.html\"><h2>Library %s</h2></a>\n" m m
-      | Toc_section (n, f, r) ->
-          if n <= 3 then begin
-	    item n; 
-	    printf "<a href=\"%s\">" r; f (); printf "</a>\n"
-	  end
-    in
-      Queue.iter make_toc_entry toc_q;
-      stop_item ();
-
+    let make_toc () = 
+	let ln = !lib_name in
+      let make_toc_entry = function
+        | Toc_library (m,sub) -> 
+ 		stop_item ();
+		let ms = match sub with | None -> m | Some s -> m ^ ": " ^ s in
+              if ln = "" then
+ 	          printf "<a href=\"%s.html\"><h2>%s</h2></a>\n" m ms
+              else
+ 	          printf "<a href=\"%s.html\"><h2>%s %s</h2></a>\n" m ln ms
+        | Toc_section (n, f, r) ->
+  		item n; 
+  		printf "<a href=\"%s\">" r; f (); printf "</a>\n"
+      in
+        printf "<div id=\"toc\">\n";
+        Queue.iter make_toc_entry toc_q;
+        stop_item ();
+        printf "</div>\n"
+	    
 end
 
 
@@ -691,8 +738,6 @@ end
 module TeXmacs = struct
 
   (*s Latex preamble *)
-
-  let in_doc = ref false
 
   let (preamble : string Queue.t) = 
     in_doc := false; Queue.create ()
@@ -789,6 +834,9 @@ module TeXmacs = struct
 
   let end_coq () = ()
 
+  let start_emph () = printf "<with|font shape|italic|"
+  let stop_emph () = printf ">"
+
   let start_comment () = ()
   let end_comment () = ()
 
@@ -810,7 +858,7 @@ module TeXmacs = struct
   let rule () =
     printf "\n<hrule>\n"
 
-  let paragraph () = stop_item (); printf "\n\n"
+  let paragraph () = printf "\n\n"
 
   let line_break_true () = printf "<format|line break>"
 
@@ -874,14 +922,17 @@ module Raw = struct
   let symbol s = raw_ident s
 
   let item n = printf "- "
-
   let stop_item () = ()
+  let reach_item_level _ = ()
 
   let start_doc () = printf "(** "
   let end_doc () = printf " *)\n"
 
-  let start_comment () = ()
-  let end_comment () = ()
+  let start_emph () = printf "_"
+  let stop_emph () = printf "_"
+
+  let start_comment () = printf "(*"
+  let end_comment () = printf "*)"
 
   let start_coq () = ()
   let end_coq () = ()
@@ -891,10 +942,10 @@ module Raw = struct
 
   let section_kind = 
     function
-      | 1 -> "*"
-      | 2 -> "**"
-      | 3 -> "***"
-      | 4 -> "****"
+      | 1 -> "* "
+      | 2 -> "** "
+      | 3 -> "*** "
+      | 4 -> "**** "
       | _ -> assert false    
 
   let section lev f = 
@@ -959,6 +1010,7 @@ let empty_line_of_code = select
 let section = select Latex.section Html.section TeXmacs.section Raw.section
 let item = select Latex.item Html.item TeXmacs.item Raw.item
 let stop_item = select Latex.stop_item Html.stop_item TeXmacs.stop_item Raw.stop_item
+let reach_item_level = select Latex.reach_item_level Html.reach_item_level TeXmacs.reach_item_level Raw.reach_item_level
 let rule = select Latex.rule Html.rule TeXmacs.rule Raw.rule
 
 let char = select Latex.char Html.char TeXmacs.char Raw.char
@@ -971,6 +1023,11 @@ let latex_string =
 let html_char = select Latex.html_char Html.html_char TeXmacs.html_char Raw.html_char
 let html_string = 
   select Latex.html_string Html.html_string TeXmacs.html_string Raw.html_string
+
+let start_emph =
+  select Latex.start_emph Html.start_emph TeXmacs.start_emph Raw.start_emph
+let stop_emph =
+  select Latex.stop_emph Html.stop_emph TeXmacs.stop_emph Raw.stop_emph
 
 let start_latex_math = 
   select Latex.start_latex_math Html.start_latex_math TeXmacs.start_latex_math Raw.start_latex_math

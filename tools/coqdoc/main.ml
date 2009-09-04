@@ -46,6 +46,7 @@ let usage () =
   prerr_endline "  --with-footer <file> append <file> as html footer";
   prerr_endline "  --no-index           do not output the index";
   prerr_endline "  --multi-index        index split in multiple files";
+  prerr_endline "  --index <string>     set index name (default is index)";
   prerr_endline "  --toc                output a table of contents";
   prerr_endline "  --vernac <file>      consider <file> as a .v file";
   prerr_endline "  --tex <file>         consider <file> as a .tex file";
@@ -67,6 +68,10 @@ let usage () =
   prerr_endline "  --interpolate        try to typeset identifiers in comments using definitions in the same module";
   prerr_endline "  --parse-comments     parse regular comments";
   prerr_endline "  --plain-comments     consider comments as non-literate text";
+  prerr_endline "  --toc-depth <int>    don't include TOC entries for sections below level <int>";
+  prerr_endline "  --no-lib-name        don't display \"Library\" before library names in the toc";
+  prerr_endline "  --lib-name <string>  call top level toc entries <string> instead of \"Library\"";
+  prerr_endline "  --lib-subtitles      first line comments of the form (** * ModuleName : text *) will be interpreted as subtitles";
   prerr_endline "";
   exit 1
 
@@ -229,6 +234,10 @@ let parse () =
 	index := false; parse_rec rem
     | ("-multi-index" | "--multi-index") :: rem ->
 	multi_index := true; parse_rec rem
+    | ("-index" | "--index") :: s :: rem ->
+	Cdglobals.index_name := s; parse_rec rem
+    | ("-index" | "--index") :: [] ->
+	usage ()
     | ("-toc" | "--toc" | "--table-of-contents") :: rem ->
 	toc := true; parse_rec rem
     | ("-stdout" | "--stdout") :: rem ->
@@ -281,6 +290,25 @@ let parse () =
 	Cdglobals.plain_comments := true; parse_rec rem
     | ("-interpolate" | "--interpolate") :: rem ->
 	Cdglobals.interpolate := true; parse_rec rem
+    | ("-toc-depth" | "--toc-depth") :: [] ->
+      usage ()
+    | ("-toc-depth" | "--toc-depth") :: ds :: rem ->
+      let d = try int_of_string ds with 
+                Failure _ -> 
+                  (eprintf "--toc-depth must be followed by an integer";
+                   exit 1)
+      in
+      Cdglobals.toc_depth := Some d;
+      parse_rec rem
+    | ("-no-lib-name" | "--no-lib-name") :: rem ->
+      Cdglobals.lib_name := "";
+      parse_rec rem
+    | ("-lib-name" | "--lib-name") :: ds :: rem ->
+      Cdglobals.lib_name := ds;
+      parse_rec rem
+    | ("-lib-subtitles" | "--lib-subtitles") :: rem ->
+      Cdglobals.lib_subtitles := true;
+      parse_rec rem
 
     | ("-latin1" | "--latin1") :: rem ->
 	Cdglobals.set_latin1 (); parse_rec rem
@@ -386,7 +414,9 @@ let copy src dst =
 let gen_one_file l =
   let file = function
     | Vernac_file (f,m) -> 
-	Output.set_module m; Cpretty.coq_file f m
+        let sub = if !lib_subtitles then Cpretty.detect_subtitle f m else None in
+          Output.set_module m sub;
+          Cpretty.coq_file f m
     | Latex_file _ -> ()
   in
     if (!header_trailer) then Output.header ();
@@ -398,8 +428,9 @@ let gen_one_file l =
 let gen_mult_files l =
   let file = function
     | Vernac_file (f,m) -> 
-	Output.set_module m;
+      let sub = if !lib_subtitles then Cpretty.detect_subtitle f m else None in
 	let hf = target_full_name m in
+        Output.set_module m sub;
 	  open_out_file hf;
 	  if (!header_trailer) then Output.header (); 
 	  Cpretty.coq_file f m; 
@@ -410,7 +441,7 @@ let gen_mult_files l =
     List.iter file l;
     if (!index && !target_language=HTML) then begin
       if (!multi_index) then Output.make_multi_index (); 
-      open_out_file "index.html"; 
+      open_out_file (!index_name^".html"); 
       page_title := (if !title <> "" then !title else "Index");
       if (!header_trailer) then Output.header (); 
       Output.make_index (); 

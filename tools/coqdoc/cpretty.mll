@@ -13,7 +13,14 @@
 
 {
   open Printf
-  open Lexing 
+  open Lexing
+
+  (* A list function we need *)
+  let rec take n ls = 
+    if n = 0 then [] else
+      match ls with
+        | [] -> []
+        | (l :: ls) -> l :: (take (n-1) ls)
 
   (* count the number of spaces at the beginning of a string *)
   let count_spaces s =
@@ -60,6 +67,15 @@
   let in_proof = ref None
 
   let backtrack lexbuf = lexbuf.lex_curr_pos <- lexbuf.lex_start_pos
+  let backtrack_past_newline lexbuf =
+    let buf = lexeme lexbuf in
+    let splits = Str.bounded_split_delim (Str.regexp "['\n']") buf 2 in
+      match splits with
+        | [] -> ()
+        | (_ :: []) -> ()
+        | (s1 :: rest :: _) ->
+            let length_skip = 1 + String.length s1 in
+              lexbuf.lex_curr_pos <- lexbuf.lex_start_pos + length_skip
 
   let is_space = function ' ' | '\t' | '\n' | '\r' -> true | _ -> false
 
@@ -117,6 +133,62 @@
 	false
     end else
       true
+
+  (* for item lists *)
+  type list_compare = 
+      | Before 
+      | StartLevel of int
+      | InLevel of int * bool
+
+  (* Before : we're before any levels
+     StartLevel : at the same column as the dash in a level
+     InLevel : after the dash of this level, but before any deeper dashes.
+               bool is true if this is the last level *)
+  let find_level levels cur_indent =
+    match levels with
+    | [] -> Before
+    | (l::ls) -> 
+        if cur_indent < l then Before
+        else 
+          (* cur_indent will never be less than the head of the list *)
+          let rec findind ls n = 
+            match ls with
+            | [] -> InLevel (n,true)
+            | (l :: []) -> if cur_indent = l then StartLevel n
+                           else InLevel (n,true)
+            | (l1 :: l2 :: ls) -> 
+                if cur_indent = l1 then StartLevel n
+                else if cur_indent < l2 then InLevel (n,false)
+                     else findind (l2 :: ls) (n+1)
+          in
+            findind (l::ls) 1
+
+  type is_start_list =
+    | Rule
+    | List of int
+    | Neither
+
+  let check_start_list str =
+    let n_dashes = count_dashes str in
+    let (n_spaces,_) = count_spaces str in
+      if n_dashes >= 4 then 
+        Rule
+      else 
+        if n_dashes = 1 then
+          List n_spaces
+        else
+          Neither
+
+   (* examine a string for subtitleness *)
+  let subtitle m s = 
+    match Str.split_delim (Str.regexp ":") s with
+    | [] -> false
+    | (name::_) ->
+        if (cut_head_tail_spaces name) = m then
+          true
+        else
+          false
+
 
   (* tokens pretty-print *)
 
@@ -191,6 +263,15 @@ let id = firstchar identchar*
 let pfx_id = (id '.')*
 let identifier = 
   id | pfx_id id
+
+(* This misses unicode stuff, and it adds "[" and "]".  It's only an
+   approximation of idents - used for detecting whether an underscore
+   is part of an identifier or meant to indicate emphasis *)
+let nonidentchar = 
+  [^ 'A'-'Z' 'a'-'z' '_' '[' ']'
+      (* iso 8859-1 accents *) 
+    '\192'-'\214' '\216'-'\246' '\248'-'\255'
+    '\'' '0'-'9' '@' ]
 
 let symbolchar_symbol_no_brackets =
   ['!' '$' '%' '&' '*' '+' ',' '^' '#'
@@ -558,36 +639,161 @@ and doc_bol = parse
   | space* section space+ ([^'\n' '*'] | '*'+ [^'\n' ')' '*'])* ('*'+ '\n')?
       { let eol, lex = strip_eol (lexeme lexbuf) in
         let lev, s = sec_title lex in
-          Output.section lev (fun () -> ignore (doc (from_string s)));
-	  if eol then doc_bol lexbuf else doc lexbuf }
+          if subtitle (Output.get_module false) s then
+            ()
+          else
+            Output.section lev (fun () -> ignore (doc None (from_string s)));
+	    if eol then doc_bol lexbuf else doc None lexbuf }
+  | space* nl space* '-'+
+      { (* adding this production instead of just letting the paragraph
+           production and the begin list production fire eliminates
+           extra vertical whitespace. *)
+        let buf' = lexeme lexbuf in
+        let buf = 
+          let bufs = Str.split_delim (Str.regexp "['\n']") buf' in
+            match bufs with
+              | (_ :: s :: []) -> s
+              | (_ :: _ :: s :: _) -> s
+              | _ -> eprintf "Internal error bad_split1 - please report\n";
+                     exit 1
+        in
+          match check_start_list buf with
+          | Neither -> backtrack_past_newline lexbuf; doc None lexbuf
+          | List n -> Output.item 1; doc (Some [n]) lexbuf
+          | Rule -> Output.rule (); doc None lexbuf
+      }
   | space* '-'+
-      { let n = count_dashes (lexeme lexbuf) in
-	if n >= 4 then Output.rule () else Output.item n;
-        doc lexbuf }
+      { let buf = lexeme lexbuf in
+          match check_start_list buf with
+          | Neither -> backtrack lexbuf; doc None lexbuf
+          | List n -> Output.item 1; doc (Some [n]) lexbuf
+          | Rule -> Output.rule (); doc None lexbuf
+      }
   | "<<" space*
       { Output.start_verbatim (); verbatim lexbuf; doc_bol lexbuf }
   | eof 
       { true }
+  | '_'
+      { Output.start_emph (); 
+        doc None lexbuf }
   | _ 
-      { backtrack lexbuf; doc lexbuf }
+      { backtrack lexbuf; doc None lexbuf }
+
+(*s Scanning lists - using whitespace *)
+and doc_list_bol indents = parse
+  | space* '-'
+      { let (n_spaces,_) = count_spaces (lexeme lexbuf) in
+        match find_level indents n_spaces with
+        | Before -> backtrack lexbuf; doc_bol lexbuf
+        | StartLevel n -> Output.item n; doc (Some (take n indents)) lexbuf
+        | InLevel (n,true) -> 
+            let items = List.length indents in
+              Output.item (items+1);
+              doc (Some (List.append indents [n_spaces])) lexbuf
+        | InLevel (_,false) ->
+            backtrack lexbuf; doc_bol lexbuf
+      }
+  | "<<" space*
+      { Output.start_verbatim (); 
+        verbatim lexbuf; 
+        doc_list_bol indents lexbuf }
+  | "[[" nl
+      { formatted := true;
+        Output.paragraph ();
+        Output.start_inline_coq (); 
+        ignore(body_bol lexbuf);
+        Output.end_inline_coq ();
+        formatted := false;
+        doc_list_bol indents lexbuf }
+  | space* nl space* '-'
+      { (* Like in the doc_bol production, these two productions
+           exist only to deal properly with whitespace *)
+        Output.paragraph ();
+        backtrack_past_newline lexbuf;
+        doc_list_bol indents lexbuf }
+  | space* nl space* _
+      { let buf' = lexeme lexbuf in
+        let buf = 
+          let bufs = Str.split_delim (Str.regexp "['\n']") buf' in
+            match bufs with
+              | (_ :: s :: []) -> s
+              | (_ :: _ :: s :: _) -> s
+              | _ -> eprintf "Internal error bad_split2 - please report\n";
+                     exit 1
+        in
+        let (n_spaces,_) = count_spaces buf in
+        match find_level indents n_spaces with 
+        | InLevel _ ->
+            Output.paragraph ();
+            backtrack_past_newline lexbuf;
+            doc_list_bol indents lexbuf
+        | StartLevel n ->
+            if n = 1 then
+              begin
+                Output.stop_item ();
+                backtrack_past_newline lexbuf;
+                doc_bol lexbuf
+              end
+            else
+              begin
+                Output.paragraph ();
+                backtrack_past_newline lexbuf;
+                doc_list_bol indents lexbuf
+              end
+        | Before -> Output.stop_item (); 
+                    backtrack_past_newline lexbuf; 
+                    doc_bol lexbuf
+
+      }
+  | space* _ 
+      { let (n_spaces,_) = count_spaces (lexeme lexbuf) in
+        match find_level indents n_spaces with 
+        | Before -> Output.stop_item (); backtrack lexbuf; 
+                    doc_bol lexbuf
+        | StartLevel n ->
+            Output.reach_item_level (n-1);
+            backtrack lexbuf;
+            doc (Some (take (n-1) indents)) lexbuf
+        | InLevel (n,_) ->
+            Output.reach_item_level n;
+            backtrack lexbuf;
+            doc (Some (take n indents)) lexbuf
+      }
 
 (*s Scanning documentation elsewhere *)
-
-and doc = parse
+and doc indents = parse
   | nl
-      { Output.char '\n'; doc_bol lexbuf }
+      { Output.char '\n'; 
+        match indents with 
+        | Some ls -> doc_list_bol ls lexbuf 
+        | None -> doc_bol lexbuf }
   | "[[" nl
       { if !Cdglobals.plain_comments
-        then (Output.char '['; Output.char '['; doc lexbuf)
+        then (Output.char '['; Output.char '['; doc indents lexbuf)
         else (formatted := true; 
               Output.line_break (); Output.start_inline_coq ();
 	      let eol = body_bol lexbuf in 
 	        Output.end_inline_coq (); formatted := false;
-	        if eol then doc_bol lexbuf else doc lexbuf)}
+	        if eol then
+		  match indents with 
+		  | Some ls -> doc_list_bol ls lexbuf 
+		  | None -> doc_bol lexbuf
+		else doc indents lexbuf)}
+  | "[]"
+      { Output.symbol "PROOFBOX"; doc indents lexbuf }
   | "["
       { if !Cdglobals.plain_comments then Output.char '['
         else (brackets := 1;  Output.start_inline_coq (); escaped_coq lexbuf;
-              Output.end_inline_coq ()); doc lexbuf }
+              Output.end_inline_coq ()); doc indents lexbuf }
+  | "(*"
+      { backtrack lexbuf ;
+        let bol_parse = match indents with
+                        | Some is -> doc_list_bol is
+                        | None   -> doc_bol
+        in
+        let eol = comment lexbuf in
+          if eol then bol_parse lexbuf else doc indents lexbuf
+      }
   | '*'* "*)" space* nl
       { true }
   | '*'* "*)"
@@ -595,26 +801,37 @@ and doc = parse
   | "$"
       { if !Cdglobals.plain_comments then Output.char '$'
         else (Output.start_latex_math (); escaped_math_latex lexbuf);
-        doc lexbuf }
+        doc indents lexbuf }
   | "$$"
       { if !Cdglobals.plain_comments then Output.char '$'; 
-        Output.char '$'; doc lexbuf }
+        Output.char '$'; doc indents lexbuf }
   | "%"
       { if !Cdglobals.plain_comments then Output.char '%'
-        else escaped_latex lexbuf; doc lexbuf }
+        else escaped_latex lexbuf; doc indents lexbuf }
   | "%%"
       { if !Cdglobals.plain_comments then Output.char '%';
-        Output.char '%'; doc lexbuf }
+        Output.char '%'; doc indents lexbuf }
   | "#"
       { if !Cdglobals.plain_comments then Output.char '#'
-        else escaped_html lexbuf; doc lexbuf }
+        else escaped_html lexbuf; doc indents lexbuf }
   | "##"
       { if !Cdglobals.plain_comments then Output.char '#';
-        Output.char '#'; doc lexbuf }
+        Output.char '#'; doc indents lexbuf }
+  | nonidentchar '_' nonidentchar
+      { List.iter (fun x -> Output.char (lexeme_char lexbuf x)) [0;1;2];
+        doc indents lexbuf}
+  | nonidentchar '_'
+      { Output.char (lexeme_char lexbuf 0); 
+        Output.start_emph (); 
+        doc indents lexbuf }
+  | '_' nonidentchar
+      { Output.stop_emph (); 
+        Output.char (lexeme_char lexbuf 1);
+        doc indents lexbuf }
   | eof 
       { false }
   | _ 
-      { Output.char (lexeme_char lexbuf 0); doc lexbuf }
+      { Output.char (lexeme_char lexbuf 0); doc indents lexbuf }
 
 (*s Various escapings *)
 
@@ -638,7 +855,8 @@ and escaped_html = parse
   | _   { Output.html_char (lexeme_char lexbuf 0); escaped_html lexbuf }
 
 and verbatim = parse
-  | nl ">>" space* nl? { Output.verbatim_char '\n'; Output.stop_verbatim () }
+  | nl ">>" space* nl { Output.verbatim_char '\n'; Output.stop_verbatim () }
+  | nl ">>" { Output.verbatim_char '\n'; Output.stop_verbatim () }
   | eof { Output.stop_verbatim () }
   | _ { Output.verbatim_char (lexeme_char lexbuf 0); verbatim lexbuf }
 
@@ -672,7 +890,7 @@ and comments = parse
   | '"' [^ '"']* '"' 
       { let s = lexeme lexbuf in
 	let s = String.sub s 1 (String.length s - 2) in
-	ignore (doc (from_string s)); comments lexbuf }
+	ignore (doc None (from_string s)); comments lexbuf }
   | ([^ '.' '"'] | '.' [^ ' ' '\t' '\n'])+
       { escaped_coq (from_string (lexeme lexbuf)); comments lexbuf }
   | "." (space_nl | eof)
@@ -718,7 +936,7 @@ and comment = parse
       { if !Cdglobals.parse_comments 
         then 
           (if !Cdglobals.plain_comments then Output.char '$'; Output.char '$');
-        doc lexbuf }
+        doc None lexbuf }
   | "%"
       { if !Cdglobals.parse_comments
           then 
@@ -761,12 +979,46 @@ and body_bol = parse
 
 and body = parse
   | nl {Output.line_break(); body_bol lexbuf}
-  | nl+ space* "]]"
-      { if not !formatted then begin symbol lexbuf (lexeme lexbuf); body lexbuf end else true }
+  | nl+ space* "]]" space* nl
+      { if not !formatted then 
+          begin 
+            symbol lexbuf (lexeme lexbuf); 
+            body lexbuf 
+          end 
+        else 
+          begin
+            Output.paragraph ();
+            true
+          end }
+  | "]]" space* nl
+      { if not !formatted then 
+          begin 
+            symbol lexbuf (lexeme lexbuf); 
+            body lexbuf 
+          end 
+        else 
+          begin
+            Output.paragraph ();
+            true
+          end }
   | eof { false }
   | '.' space* nl | '.' space* eof 
 	{ Output.char '.'; Output.line_break(); 
 	  if not !formatted then true else body_bol lexbuf }      
+  | '.' space* nl "]]" space* nl
+	{ Output.char '.';
+        if not !formatted then
+          begin
+            eprintf "Error: stray ]] at %d\n"  (lexeme_start lexbuf); 
+            flush stderr;
+            exit 1
+          end
+	  else 
+          begin
+            Output.paragraph ();
+            true
+          end
+      }
   | '.' space+ { Output.char '.'; Output.char ' '; 
 	  if not !formatted then false else body lexbuf }
   | '"' { Output.char '"'; ignore(notation lexbuf); body lexbuf }
@@ -821,18 +1073,51 @@ and printing_token_body = parse
   | _   { Buffer.add_string token_buffer (lexeme lexbuf); 
 	  printing_token_body lexbuf }
 
+(*s A small scanner to support the chapter subtitle feature *)
+and st_start m = parse
+  | "(*" "*"+ space+ "*" space+
+      { st_modname m lexbuf }
+  | _ 
+      { None }
+
+and st_modname m = parse
+  | identifier space* ":" space*
+      { if subtitle m (lexeme lexbuf) then
+          st_subtitle lexbuf
+        else
+          None
+      }
+  | _ 
+      { None }
+
+and st_subtitle = parse
+  | [^ '\n']* '\n'
+      { let st = lexeme lexbuf in
+        let i = try Str.search_forward (Str.regexp "\\**)") st 0 with 
+                   Not_found -> 
+                     (eprintf "unterminated comment at beginning of file\n";
+                      exit 1)
+        in
+          Some (cut_head_tail_spaces (String.sub st 0 i))
+      }
+  | _ 
+      { None }
 (*s Applying the scanners to files *)
 
 {
-
   let coq_file f m =
     reset ();
-    Index.current_library := m;
-    Output.start_module ();
     let c = open_in f in
     let lb = from_channel c in
-    Output.start_coq (); coq_bol lb; Output.end_coq ();
-    close_in c
+      (Index.current_library := m;
+       Output.start_module ();
+       Output.start_coq (); coq_bol lb; Output.end_coq ();
+       close_in c)
 
+  let detect_subtitle f m =
+    let c = open_in f in
+    let lb = from_channel c in
+    let sub = st_start m lb in
+      close_in c;
+      sub
 }
-

@@ -16,7 +16,8 @@ val initialize : unit -> unit
 val add_printing_token : string -> string option * string option -> unit
 val remove_printing_token : string -> unit
 
-val set_module : coq_module -> unit
+val set_module : coq_module -> string option -> unit
+val get_module : bool -> string
 
 val header : unit -> unit
 val trailer : unit -> unit
@@ -27,6 +28,9 @@ val start_module : unit -> unit
 
 val start_doc : unit -> unit
 val end_doc : unit -> unit
+
+val start_emph : unit -> unit
+val stop_emph : unit -> unit
 
 val start_comment : unit -> unit
 val end_comment : unit -> unit
@@ -48,6 +52,8 @@ val empty_line_of_code : unit -> unit
 val section : int -> (unit -> unit) -> unit
 
 val item : int -> unit
+val stop_item : unit -> unit
+val reach_item_level : int -> unit
 
 val rule : unit -> unit
 
