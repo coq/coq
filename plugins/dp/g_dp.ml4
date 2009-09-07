@@ -24,6 +24,10 @@ TACTIC EXTEND Yices
   [ "yices" ] -> [ yices ]
 END
 
+TACTIC EXTEND CVC3
+  [ "cvc3" ] -> [ cvc3 ]
+END
+
 TACTIC EXTEND CVCLite
   [ "cvcl" ] -> [ cvc_lite ]
 END

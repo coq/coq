@@ -66,11 +66,17 @@ let dp_trace x = Lib.add_anonymous_leaf (dp_trace_obj x)
 let logic_dir = ["Coq";"Logic";"Decidable"]
 let coq_modules =
   init_modules @ [logic_dir] @ arith_modules @ zarith_base_modules
-    @ [["Coq"; "ZArith"; "BinInt"]]
+    @ [["Coq"; "ZArith"; "BinInt"];
+       ["Coq"; "Reals"; "Rdefinitions"]; 
+       ["Coq"; "Reals"; "Raxioms";];
+       ["Coq"; "Reals"; "Rbasic_fun";];
+       ["Coq"; "Reals"; "R_sqrt";];
+       ["Coq"; "Reals"; "Rfunctions";]]
     @ [["Coq"; "omega"; "OmegaLemmas"]]
 
 let constant = gen_constant_in_modules "dp" coq_modules
 
+(* integers constants and operations *)
 let coq_Z = lazy (constant "Z")
 let coq_Zplus = lazy (constant "Zplus")
 let coq_Zmult = lazy (constant "Zmult")
@@ -89,6 +95,21 @@ let coq_xH = lazy (constant "xH")
 let coq_xI = lazy (constant "xI")
 let coq_xO = lazy (constant "xO")
 let coq_iff = lazy (constant "iff")
+
+(* real constants and operations *)
+let coq_R = lazy (constant "R")
+let coq_R0 = lazy (constant "R0")
+let coq_R1 = lazy (constant "R1")
+let coq_Rgt = lazy (constant "Rgt")
+let coq_Rle = lazy (constant "Rle")
+let coq_Rge = lazy (constant "Rge")
+let coq_Rlt = lazy (constant "Rlt")
+let coq_Rplus = lazy (constant "Rplus")
+let coq_Rmult = lazy (constant "Rmult")
+let coq_Ropp = lazy (constant "Ropp")
+let coq_Rminus = lazy (constant "Rminus")
+let coq_Rdiv = lazy (constant "Rdiv")
+let coq_powerRZ = lazy (constant "powerRZ")
 
 (* not Prop typed expressions *)
 exception NotProp
@@ -273,30 +294,78 @@ let new_abstraction =
 exception NotArithConstant
 
 (* translates a closed Coq term p:positive into a FOL term of type int *)
+
+let big_two = Big_int.succ_big_int Big_int.unit_big_int
+
 let rec tr_positive p = match kind_of_term p with
   | Term.Construct _ when p = Lazy.force coq_xH ->
-      Cst 1
+      Big_int.unit_big_int
   | Term.App (f, [|a|]) when f = Lazy.force coq_xI ->
+(*
       Plus (Mult (Cst 2, tr_positive a), Cst 1)
+*)
+      Big_int.succ_big_int (Big_int.mult_big_int big_two (tr_positive a))
   | Term.App (f, [|a|]) when f = Lazy.force coq_xO ->
+(*
       Mult (Cst 2, tr_positive a)
+*)
+      Big_int.mult_big_int big_two (tr_positive a)
   | Term.Cast (p, _, _) ->
       tr_positive p
   | _ ->
       raise NotArithConstant
 
-(* translates a closed Coq term t:Z into a FOL term of type int *)
+(* translates a closed Coq term t:Z or R into a FOL term of type int or real *)
 let rec tr_arith_constant t = match kind_of_term t with
   | Term.Construct _ when t = Lazy.force coq_Z0 ->
-      Cst 0
+      Cst Big_int.zero_big_int
   | Term.App (f, [|a|]) when f = Lazy.force coq_Zpos ->
-      tr_positive a
+      Cst (tr_positive a)
   | Term.App (f, [|a|]) when f = Lazy.force coq_Zneg ->
-      Moins (Cst 0, tr_positive a)
+      Cst (Big_int.minus_big_int (tr_positive a))
+  | Term.Const _ when t = Lazy.force coq_R0 ->
+      RCst Big_int.zero_big_int
+  | Term.Const _ when t = Lazy.force coq_R1 ->
+      RCst Big_int.unit_big_int
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rplus ->
+      let ta = tr_arith_constant a in
+      let tb = tr_arith_constant b in
+      begin match ta,tb with
+        | RCst na, RCst nb -> RCst (Big_int.add_big_int na nb)
+        | _ -> raise NotArithConstant
+      end
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rmult ->
+      let ta = tr_arith_constant a in
+      let tb = tr_arith_constant b in
+      begin match ta,tb with
+        | RCst na, RCst nb -> RCst (Big_int.mult_big_int na nb)
+        | _ -> raise NotArithConstant
+      end
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_powerRZ ->
+      tr_powerRZ a b
   | Term.Cast (t, _, _) ->
       tr_arith_constant t
   | _ -> 
       raise NotArithConstant
+
+(* translates a constant of the form (powerRZ 2 int_constant) *)
+and tr_powerRZ a b =
+  (* checking first that a is (R1 + R1) *)
+  match kind_of_term a with
+  | Term.App (f, [|c;d|]) when f = Lazy.force coq_Rplus -> 
+      begin
+      match kind_of_term c,kind_of_term d with
+        | Term.Const _, Term.Const _
+            when c = Lazy.force coq_R1 && d = Lazy.force coq_R1 ->
+            begin
+              match tr_arith_constant b with
+                | Cst n -> Power2 n
+                | _ -> raise NotArithConstant
+            end
+        | _ -> raise NotArithConstant
+      end
+  | _ -> raise NotArithConstant
+
 
 (* translate a Coq term t:Set into a FOL type expression;
    tv = list of type variables *)
@@ -304,6 +373,8 @@ and tr_type tv env t =
   let t = Reductionops.nf_betadeltaiota env Evd.empty t in
   if t = Lazy.force coq_Z then 
     Tid ("int", [])
+  else if t = Lazy.force coq_R then 
+    Tid ("real", [])
   else match kind_of_term t with
     | Var x when List.mem x tv ->
 	Tvar (string_of_id x)
@@ -330,7 +401,10 @@ and make_term_abstraction tv env c =
   let ty = Typing.type_of env Evd.empty c in
   let id = new_abstraction () in
   match tr_decl env id ty with
-    | DeclFun (id,_,_,_) as d ->
+    | DeclFun (id,_,_,_) as _d ->
+        raise NotFO
+        (* [CM 07/09/2009] deactivated because it generates 
+           unbound identifiers 'abstraction_<number>' 
 	begin try
 	  Hashtbl.find term_abstractions c
 	with Not_found ->
@@ -338,6 +412,7 @@ and make_term_abstraction tv env c =
 	  globals_stack := d :: !globals_stack;
 	  id
 	end
+        *)
     | _ ->
 	raise NotFO
 
@@ -536,7 +611,12 @@ and equations_for_case env id vars tv bv ci e br = match kind_of_term e with
       raise NotFO
 
 (* assumption: t:T:Set *)
-and tr_term tv bv env t = match kind_of_term t with
+and tr_term tv bv env t = 
+      try
+	tr_arith_constant t
+      with NotArithConstant ->
+  match kind_of_term t with
+    (* binary operations on integers *)
   | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zplus -> 
       Plus (tr_term tv bv env a, tr_term tv bv env b)
   | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zminus -> 
@@ -545,12 +625,20 @@ and tr_term tv bv env t = match kind_of_term t with
       Mult (tr_term tv bv env a, tr_term tv bv env b)
   | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zdiv -> 
       Div (tr_term tv bv env a, tr_term tv bv env b)
+  | Term.App (f, [|a|]) when f = Lazy.force coq_Zopp -> 
+      Opp (tr_term tv bv env a)
+    (* binary operations on reals *)
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rplus -> 
+      Plus (tr_term tv bv env a, tr_term tv bv env b)
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rminus -> 
+      Moins (tr_term tv bv env a, tr_term tv bv env b)
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rmult -> 
+      Mult (tr_term tv bv env a, tr_term tv bv env b)
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rdiv -> 
+      Div (tr_term tv bv env a, tr_term tv bv env b)
   | Term.Var id when List.mem id bv ->
       App (string_of_id id, [])
   | _ ->
-      try
-	tr_arith_constant t
-      with NotArithConstant ->
 	let f, cl = decompose_app t in
 	begin try
 	  let r = global_of_constr f in
@@ -602,6 +690,7 @@ and tr_formula tv bv env f =
 	  Fatom (Eq (tr_term tv bv env a, tr_term tv bv env b))
 	else 
 	  raise NotFO
+          (* comparisons on integers *)
     | _, [a;b] when c = Lazy.force coq_Zle ->
 	Fatom (Le (tr_term tv bv env a, tr_term tv bv env b))
     | _, [a;b] when c = Lazy.force coq_Zlt ->
@@ -609,6 +698,15 @@ and tr_formula tv bv env f =
     | _, [a;b] when c = Lazy.force coq_Zge ->
 	Fatom (Ge (tr_term tv bv env a, tr_term tv bv env b))
     | _, [a;b] when c = Lazy.force coq_Zgt ->
+	Fatom (Gt (tr_term tv bv env a, tr_term tv bv env b))
+          (* comparisons on reals *)
+    | _, [a;b] when c = Lazy.force coq_Rle ->
+	Fatom (Le (tr_term tv bv env a, tr_term tv bv env b))
+    | _, [a;b] when c = Lazy.force coq_Rlt ->
+	Fatom (Lt (tr_term tv bv env a, tr_term tv bv env b))
+    | _, [a;b] when c = Lazy.force coq_Rge ->
+	Fatom (Ge (tr_term tv bv env a, tr_term tv bv env b))
+    | _, [a;b] when c = Lazy.force coq_Rgt ->
 	Fatom (Gt (tr_term tv bv env a, tr_term tv bv env b))
     | _, [] when c = build_coq_False () ->
 	False
@@ -673,7 +771,7 @@ let tr_goal gl =
   hyps, c
 
 
-type prover = Simplify | Ergo | Yices | CVCLite | Harvey | Zenon | Gwhy
+type prover = Simplify | Ergo | Yices | CVCLite | Harvey | Zenon | Gwhy | CVC3
 
 let remove_files = List.iter (fun f -> try Sys.remove f with _ -> ())
 
@@ -751,9 +849,9 @@ let call_ergo fwhy =
   let ftrace = Filename.temp_file "ergo_trace" "" in
   let cmd = 
     if !trace then
-      sprintf "ergo -cctrace %s %s" ftrace fwhy
+      sprintf "alt-ergo -cctrace %s %s" ftrace fwhy
     else
-      sprintf "ergo %s" fwhy
+      sprintf "alt-ergo %s" fwhy
   in
   let ret,out = timeout_sys_command cmd in
   let r = 
@@ -770,6 +868,7 @@ let call_ergo fwhy =
   in
   if not !debug then remove_files [fwhy; out];
   r
+
 
 let call_zenon fwhy =
   let cmd = 
@@ -801,6 +900,23 @@ let call_yices fwhy =
   let fsmt = Filename.chop_suffix fwhy ".why" ^ "_why.smt" in
   let cmd = 
     sprintf "why-cpulimit %d yices -pc 0 -smt %s > out 2>&1 && grep -q -w unsat out" 
+      !timeout fsmt
+  in
+  let out = Sys.command cmd in
+  let r = 
+    if out = 0 then Valid None else if out = 1 then Invalid else Timeout 
+  in
+  if not !debug then remove_files [fwhy; fsmt];
+  r
+
+let call_cvc3 fwhy =
+  let cmd = 
+    sprintf "why -smtlib --encoding sstrat %s" (why_files fwhy)
+  in
+  if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
+  let fsmt = Filename.chop_suffix fwhy ".why" ^ "_why.smt" in
+  let cmd = 
+    sprintf "why-cpulimit %d cvc3 -lang smt %s > out 2>&1 && grep -q -w unsat out" 
       !timeout fsmt
   in
   let out = Sys.command cmd in
@@ -878,6 +994,7 @@ let call_prover prover q =
   match prover with
     | Simplify -> call_simplify fwhy
     | Ergo -> call_ergo fwhy
+    | CVC3 -> call_cvc3 fwhy
     | Yices -> call_yices fwhy
     | Zenon -> call_zenon fwhy
     | CVCLite -> call_cvcl fwhy
@@ -906,6 +1023,7 @@ let dp prover gl =
 
 let simplify = tclTHEN intros (dp Simplify)
 let ergo = tclTHEN intros (dp Ergo)
+let cvc3 = tclTHEN intros (dp CVC3)
 let yices = tclTHEN intros (dp Yices)
 let cvc_lite = tclTHEN intros (dp CVCLite)
 let harvey = dp Harvey

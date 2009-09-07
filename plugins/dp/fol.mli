@@ -6,11 +6,14 @@ type typ =
   | Tid of string * typ list
 
 type term =   
-  | Cst of int
+  | Cst of Big_int.big_int
+  | RCst of Big_int.big_int
+  | Power2 of Big_int.big_int
   | Plus of term * term
   | Moins of term * term
   | Mult of term * term
   | Div of term * term
+  | Opp of term
   | App of string * term list
 
 and atom =   

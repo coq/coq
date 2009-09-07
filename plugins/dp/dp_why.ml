@@ -43,13 +43,18 @@ let ident fmt s =
 let rec print_typ fmt = function
   | Tvar x -> fprintf fmt "'%a" ident x
   | Tid ("int", []) -> fprintf fmt "int"
+  | Tid ("real", []) -> fprintf fmt "real"
   | Tid (x, []) -> fprintf fmt "%a" ident x
   | Tid (x, [t]) -> fprintf fmt "%a %a" print_typ t ident x
   | Tid (x,tl) -> fprintf fmt "(%a) %a" (print_list comma print_typ) tl ident x
 
 let rec print_term fmt = function
   | Cst n -> 
-      fprintf fmt "%d" n
+      fprintf fmt "%s" (Big_int.string_of_big_int n)
+  | RCst s -> 
+      fprintf fmt "%s.0" (Big_int.string_of_big_int s)
+  | Power2 n ->
+      fprintf fmt "0x1p%s" (Big_int.string_of_big_int n)
   | Plus (a, b) ->
       fprintf fmt "@[(%a +@ %a)@]" print_term a print_term b
   | Moins (a, b) ->
@@ -58,6 +63,8 @@ let rec print_term fmt = function
       fprintf fmt "@[(%a *@ %a)@]" print_term a print_term b
   | Div (a, b) ->
       fprintf fmt "@[(%a /@ %a)@]" print_term a print_term b
+  | Opp (a) ->
+      fprintf fmt "@[(-@ %a)@]" print_term a 
   | App (id, []) ->
       fprintf fmt "%a" ident id
   | App (id, tl) ->
@@ -145,6 +152,7 @@ let print_query fmt (decls,concl) =
 let output_file f q =
   let c = open_out f in
   let fmt = formatter_of_out_channel c in
+  fprintf fmt "include \"real.why\"@.";
   fprintf fmt "@[%a@]@." print_query q;
   close_out c
 

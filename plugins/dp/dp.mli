@@ -4,6 +4,7 @@ open Proof_type
 
 val simplify : tactic
 val ergo : tactic
+val cvc3 : tactic
 val yices : tactic
 val cvc_lite : tactic
 val harvey : tactic

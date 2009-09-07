@@ -116,7 +116,13 @@ and read_main_proof = parse
 	  
     let rec print_term fmt = function
       | Cst n -> 
-	  fprintf fmt "%d" n
+	  fprintf fmt "%s" (Big_int.string_of_big_int n)
+      | RCst s -> 
+          fprintf fmt "%s" (Big_int.string_of_big_int s)
+      | Power2 n ->
+          fprintf fmt "@[(powerRZ 2 %s)@]" (Big_int.string_of_big_int n)
+
+          (* TODO: bug, it might be operations on reals *)
       | Plus (a, b) ->
 	  fprintf fmt "@[(Zplus %a %a)@]" print_term a print_term b
       | Moins (a, b) ->
@@ -125,6 +131,8 @@ and read_main_proof = parse
 	  fprintf fmt "@[(Zmult %a %a)@]" print_term a print_term b
       | Div (a, b) ->
 	  fprintf fmt "@[(Zdiv %a %a)@]" print_term a print_term b
+      | Opp (a) ->
+	  fprintf fmt "@[(Zopp %a)@]" print_term a 
       | App (id, []) ->
 	  fprintf fmt "%s" id
       | App (id, tl) ->

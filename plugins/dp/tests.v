@@ -1,6 +1,18 @@
 
 Require Import ZArith.
 Require Import Classical.
+Require Export Reals.
+
+
+(* real numbers *)
+
+Lemma real_expr: (0 <= 9 * 4)%R.
+ergo.
+Qed.
+
+Lemma powerRZ_translation: (powerRZ 2 15 < powerRZ 2 17)%R.
+ergo.
+Qed.
 
 Dp_debug.
 Dp_timeout 3.
