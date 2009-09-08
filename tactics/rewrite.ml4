@@ -127,7 +127,8 @@ let setoid_equiv = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv")
 let setoid_proper = lazy (gen_constant ["Classes"; "SetoidClass"] "setoid_proper")
 let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "Equivalence_Reflexive")
 
-let setoid_relation = lazy (gen_constant ["Classes"; "SetoidTactics"] "SetoidRelation")
+let rewrite_relation_class = lazy (gen_constant ["Classes"; "RelationClasses"] "RewriteRelation")
+let rewrite_relation = lazy (gen_constant ["Classes"; "RelationClasses"] "rewrite_relation")
   
 let arrow_morphism a b = 
   if isprop a && isprop b then
@@ -142,21 +143,24 @@ let proper_type = lazy (constr_of_global (Lazy.force proper_class).cl_impl)
 
 let proper_proxy_type = lazy (constr_of_global (Lazy.force proper_proxy_class).cl_impl)
 
-let is_applied_setoid_relation t =
+let is_applied_rewrite_relation env sigma rels t =
   match kind_of_term t with
   | App (c, args) when Array.length args >= 2 ->
       let head = if isApp c then fst (destApp c) else c in 
-	if eq_constr (Lazy.force coq_eq) head then false
-	else (try      
-	    let evd, evar = Evarutil.new_evar Evd.empty (Global.env()) (new_Type ()) in
-	    let inst = mkApp (Lazy.force setoid_relation, [| evar; c |]) in
-	      ignore(Typeclasses.resolve_one_typeclass (Global.env()) evd inst);
-	      true
-	  with _ -> false)
-  | _ -> false
+	if eq_constr (Lazy.force coq_eq) head then None
+	else 
+	  (try
+	      let params, args = array_chop (Array.length args - 2) args in
+	      let env' = Environ.push_rel_context rels env in
+	      let evd, evar = Evarutil.new_evar sigma env' (new_Type ()) in
+	      let inst = mkApp (Lazy.force rewrite_relation_class, [| evar; mkApp (c, params) |]) in
+	      let _ = Typeclasses.resolve_one_typeclass env' evd inst in
+		Some (sigma, it_mkProd_or_LetIn t rels)
+	  with _ -> None)
+  | _ -> None
       
 let _ = 
-  Equality.register_is_applied_setoid_relation is_applied_setoid_relation
+  Equality.register_is_applied_rewrite_relation is_applied_rewrite_relation
 
 let split_head = function
     hd :: tl -> hd, tl
@@ -218,7 +222,7 @@ let proper_proof env evars carrier relation x =
 let find_class_proof proof_type proof_method env evars carrier relation =
   try 
     let goal = mkApp (Lazy.force proof_type, [| carrier ; relation |]) in
-    let c = Typeclasses.resolve_one_typeclass env evars goal in
+    let evars, c = Typeclasses.resolve_one_typeclass env evars goal in
       mkApp (Lazy.force proof_method, [| carrier; relation; c |])
   with e when Logic.catchable_exception e -> raise Not_found
 
@@ -1010,7 +1014,7 @@ let constr_tac = Tacinterp.interp (Tacexpr.TacAtom (dummy_loc, Tacexpr.TacAnyCon
 
 let declare_relation ?(binders=[]) a aeq n refl symm trans = 
   init_setoid ();
-  let instance = declare_instance a aeq (add_suffix n "_relation") "Coq.Classes.SetoidTactics.SetoidRelation"
+  let instance = declare_instance a aeq (add_suffix n "_relation") "Coq.Classes.RelationClasses.RewriteRelation"
   in ignore(anew_instance binders instance []);
   match (refl,symm,trans) with 
       (None, None, None) -> ()
@@ -1215,14 +1219,14 @@ let default_morphism sign m =
   let morph =
     mkApp (Lazy.force proper_type, [| t; sign; m |])
   in
-  let mor = resolve_one_typeclass env (merge_evars evars) morph in
+  let evars, mor = resolve_one_typeclass env (merge_evars evars) morph in
     mor, proper_projection mor morph
     	  
 let add_setoid binders a aeq t n =
   init_setoid ();
   let _lemma_refl = declare_instance_refl binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in 
   let _lemma_sym = declare_instance_sym binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
-  let _lemma_trans = declare_instance_trans binders a aeq n (mkappc "Seq_trans" [a;aeq;t])  in
+  let _lemma_trans = declare_instance_trans binders a aeq n (mkappc "Seq_trans" [a;aeq;t]) in
   let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
   in ignore(
     anew_instance binders instance
@@ -1242,18 +1246,18 @@ let add_morphism_infer glob m n =
 				declare_projection n instance_id (ConstRef cst)
     else
       let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
-				Flags.silently 
-					(fun () ->
-						Command.start_proof instance_id kind instance 
-							(fun _ -> function
-								Libnames.ConstRef cst -> 
-									add_instance (Typeclasses.new_instance (Lazy.force proper_class) None 
-																	 glob cst);
-									declare_projection n instance_id (ConstRef cst)
-								| _ -> assert false);
-						Pfedit.by (Tacinterp.interp <:tactic< Coq.Classes.SetoidTactics.add_morphism_tactic>>)) ();
-				Flags.if_verbose (fun x -> msg (Printer.pr_open_subgoals x)) () 
-					
+	Flags.silently 
+	  (fun () ->
+	    Command.start_proof instance_id kind instance 
+	      (fun _ -> function
+		Libnames.ConstRef cst -> 
+		  add_instance (Typeclasses.new_instance (Lazy.force proper_class) None 
+				   glob cst);
+		  declare_projection n instance_id (ConstRef cst)
+		| _ -> assert false);
+	    Pfedit.by (Tacinterp.interp <:tactic< Coq.Classes.SetoidTactics.add_morphism_tactic>>)) ();
+	Flags.if_verbose (fun x -> msg (Printer.pr_open_subgoals x)) () 
+	  
 let add_morphism glob binders m s n =
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
@@ -1351,7 +1355,7 @@ let apply_lemma gl (evm,c) cl l2r occs =
     Strategies.choice app (subterm true general_rewrite_flags (fun env -> aux () env))
   in !hypinfo, aux ()
 	
-let general_s_rewrite cl l2r occs c ~new_goals gl =
+let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
   let meta = Evarutil.new_meta() in
   let hypinfo, strat = apply_lemma gl c cl l2r occs in
     try cl_rewrite_clause_aux ~abs:hypinfo.abs strat meta cl gl
@@ -1367,7 +1371,7 @@ let general_s_rewrite_clause x =
     | None -> general_s_rewrite None
     | Some id -> general_s_rewrite (Some id)
 	
-let _ = Equality.register_general_setoid_rewrite_clause general_s_rewrite_clause
+let _ = Equality.register_general_rewrite_clause general_s_rewrite_clause
 
 let is_loaded d =
   let d' = List.map id_of_string d in

@@ -703,6 +703,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   intros; intro.
   generalize (mem_1 H0).
   rewrite mem_find.
+  red in H.
   rewrite H.
   rewrite grs.
   intros; discriminate.

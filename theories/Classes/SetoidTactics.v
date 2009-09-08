@@ -1,4 +1,3 @@
-(* -*- coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.SetoidTactics") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -23,18 +22,6 @@ Export ProperNotations.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
-
-(** Setoid relation on a given support: declares a relation as a setoid
-   for use with rewrite. It helps choosing if a rewrite should be handled
-   by setoid_rewrite or the regular rewrite using leibniz equality.
-   Users can declare an [SetoidRelation A RA] anywhere to declare default 
-   relations. This is also done automatically by the [Declare Relation A RA]
-   commands. *)
-
-Class SetoidRelation A (R : relation A).
-
-Instance impl_setoid_relation : SetoidRelation impl.
-Instance iff_setoid_relation : SetoidRelation iff.
 
 (** Default relation on a given support. Can be used by tactics
    to find a sensible default relation on any carrier. Users can 

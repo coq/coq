@@ -77,31 +77,32 @@ Proof. tauto. Qed.
 
 Hint Extern 3 (Reflexive (flip _)) => apply flip_Reflexive : typeclass_instances.
 
-Program Instance flip_Irreflexive `(Irreflexive A R) : Irreflexive (flip R) :=
+Program Definition flip_Irreflexive `(Irreflexive A R) : Irreflexive (flip R) :=
   irreflexivity (R:=R).
 
-Program Instance flip_Symmetric `(Symmetric A R) : Symmetric (flip R).
+Program Definition flip_Symmetric `(Symmetric A R) : Symmetric (flip R) :=
+  fun x y H => symmetry (R:=R) H.
 
-  Solve Obligations using unfold flip ; intros ; eapply symmetry ; assumption.
-
-Program Instance flip_Asymmetric `(Asymmetric A R) : Asymmetric (flip R).
+Program Definition flip_Asymmetric `(Asymmetric A R) : Asymmetric (flip R) :=
+  fun x y H H' => asymmetry (R:=R) H H'.
   
-  Solve Obligations using program_simpl ; unfold flip in * ; intros ; eapply asymmetry ; eauto.
+Program Definition flip_Transitive `(Transitive A R) : Transitive (flip R) :=
+  fun x y z H H' => transitivity (R:=R) H' H.
 
-Program Instance flip_Transitive `(Transitive A R) : Transitive (flip R).
+Hint Extern 3 (Irreflexive (flip _)) => class_apply flip_Irreflexive : typeclass_instances.
+Hint Extern 3 (Symmetric (flip _)) => class_apply flip_Symmetric : typeclass_instances.
+Hint Extern 3 (Asymmetric (flip _)) => class_apply flip_Asymmetric : typeclass_instances.
+Hint Extern 3 (Transitive (flip _)) => class_apply flip_Transitive : typeclass_instances.
 
-  Solve Obligations using unfold flip ; program_simpl ; eapply transitivity ; eauto.
-
-Program Instance Reflexive_complement_Irreflexive `(Reflexive A (R : relation A))
+Definition Reflexive_complement_Irreflexive `(Reflexive A (R : relation A))
    : Irreflexive (complement R).
+Proof. firstorder. Qed.
 
-  Next Obligation. 
-  Proof. firstorder. Qed.
+Definition complement_Symmetric `(Symmetric A (R : relation A)) : Symmetric (complement R).
+Proof. firstorder. Qed.
 
-Program Instance complement_Symmetric `(Symmetric A (R : relation A)) : Symmetric (complement R).
-
-  Next Obligation.
-  Proof. firstorder. Qed.
+Hint Extern 3 (Symmetric (complement _)) => class_apply complement_Symmetric : typeclass_instances.
+Hint Extern 3 (Irreflexive (complement _)) => class_apply Reflexive_complement_Irreflexive : typeclass_instances.
 
 (** * Standard instances. *)
 
@@ -180,8 +181,9 @@ Instance Equivalence_PER `(Equivalence A R) : PER R | 10 :=
 Class Antisymmetric A eqA `{equ : Equivalence A eqA} (R : relation A) :=
   antisymmetry : forall x y, R x y -> R y x -> eqA x y.
 
-Program Instance flip_antiSymmetric `(Antisymmetric A eqA R) :
-  ! Antisymmetric A eqA (flip R).
+Program Definition flip_antiSymmetric `(Antisymmetric A eqA R) :
+  Antisymmetric A eqA (flip R).
+Proof. firstorder. Qed.
 
 (** Leibinz equality [eq] is an equivalence relation.
    The instance has low priority as it is always applicable 
@@ -392,3 +394,22 @@ Program Instance subrelation_partial_order :
 
 Typeclasses Opaque arrows predicate_implication predicate_equivalence 
   relation_equivalence pointwise_lifting.
+
+(** Rewrite relation on a given support: declares a relation as a rewrite
+   relation for use by the generalized rewriting tactic.
+   It helps choosing if a rewrite should be handled
+   by the generalized or the regular rewriting tactic using leibniz equality.
+   Users can declare an [RewriteRelation A RA] anywhere to declare default
+   relations. This is also done automatically by the [Declare Relation A RA]
+   commands. *)
+
+Class RewriteRelation {A : Type} (RA : relation A).
+
+Instance: RewriteRelation impl.
+Instance: RewriteRelation iff.
+Instance: RewriteRelation (@relation_equivalence A).
+
+(** Any [Equivalence] declared in the context is automatically considered 
+   a rewrite relation. *)
+
+Instance equivalence_rewrite_relation `(Equivalence A eqA) : RewriteRelation eqA.

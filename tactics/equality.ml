@@ -155,17 +155,17 @@ let general_elim_clause with_evars tac cls sigma c t l l2r elim gl =
     else tclMAP try_clause cs gl
 
 (* The next function decides in particular whether to try a regular 
-  rewrite or a setoid rewrite. 
+  rewrite or a generalized rewrite. 
   Approach is to break everything, if [eq] appears in head position 
-  then regular rewrite else try setoid rewrite. 
-  If occurrences are set, use setoid_rewrite.
+  then regular rewrite else try general rewrite. 
+  If occurrences are set, use general rewrite.
 *)
 
-let general_setoid_rewrite_clause = ref (fun _ -> assert false)
-let register_general_setoid_rewrite_clause = (:=) general_setoid_rewrite_clause
+let general_rewrite_clause = ref (fun _ -> assert false)
+let register_general_rewrite_clause = (:=) general_rewrite_clause
 
-let is_applied_setoid_relation = ref (fun _ -> false)
-let register_is_applied_setoid_relation = (:=) is_applied_setoid_relation
+let is_applied_rewrite_relation = ref (fun _ _ _ _ -> None)
+let register_is_applied_rewrite_relation = (:=) is_applied_rewrite_relation
 
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. *)
@@ -190,12 +190,12 @@ let adjust_rewriting_direction args lft2rgt =
     (* other equality *)
     lft2rgt
 
-let setoid_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
+let rewrite_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
 
 let general_rewrite_ebindings_clause cls lft2rgt occs ?tac
     ((c,l) : open_constr with_bindings) with_evars gl =
   if occs <> all_occurrences then (
-    setoid_side_tac (!general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[]) tac gl)
+    rewrite_side_tac (!general_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac gl)
   else
     let env = pf_env gl in
     let sigma, c' = c in
@@ -208,24 +208,21 @@ let general_rewrite_ebindings_clause cls lft2rgt occs ?tac
           leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c' (it_mkProd_or_LetIn t rels) 
 	    l with_evars gl hdcncl
       | None ->
-	  let env' = push_rel_context rels env in
-	  let rels',t' = splay_prod_assum env' sigma t in (* Search for underlying eq *)
-	    match match_with_equality_type t' with
-	    | Some (hdcncl,args) -> (* Maybe a setoid relation with eq inside *)
-		let lft2rgt = adjust_rewriting_direction args lft2rgt in
-		if l = NoBindings && !is_applied_setoid_relation t then
-		  setoid_side_tac (!general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[]) tac gl
-		else
-		  (try leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c'
-		      (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars gl hdcncl
-		    with e -> 
-		      try setoid_side_tac (!general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[]) tac gl
-		      with _ -> raise e)
-	    | None -> (* Can't be leibniz, try setoid *)
-		if l = NoBindings
-		then setoid_side_tac (!general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[]) tac gl
-		else error "The term provided does not end with an equation."
-	    
+	  match !is_applied_rewrite_relation env sigma rels t with
+	  | Some _ ->
+	      rewrite_side_tac (!general_rewrite_clause cls 
+				  lft2rgt occs (c,l) ~new_goals:[]) tac gl
+	  | None ->
+	      let env' = push_rel_context rels env in
+	      let rels',t' = splay_prod_assum env' sigma t in (* Search for underlying eq *)
+		match match_with_equality_type t' with
+		| Some (hdcncl,args) ->
+		    let lft2rgt = adjust_rewriting_direction args lft2rgt in
+		      leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c'
+			(it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars gl hdcncl
+		| None -> 
+		    error "The provided term does not end with an equality or a declared rewrite relation."
+		      
 let general_rewrite_ebindings = 
   general_rewrite_ebindings_clause None
 

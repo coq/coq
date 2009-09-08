@@ -399,9 +399,10 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
   let gls = { it = Evd.make_evar (Environ.named_context_val env) gl; sigma = sigma } in
   let gls', v = eauto [searchtable_map typeclasses_db] gls in
   let term = v [] in
-  let term = fst (Refiner.extract_open_proof (sig_sig gls') term) in
-  let term = Evarutil.nf_evar (sig_sig gls') term in
-    if occur_existential term then raise Not_found else term
+  let evd = sig_sig gls' in
+  let term = fst (Refiner.extract_open_proof evd term) in
+  let term = Evarutil.nf_evar evd term in
+    evd, term
 
 let _ = 
   Typeclasses.solve_instanciation_problem := (fun x y z -> resolve_one_typeclass x ~sigma:y z)
@@ -457,7 +458,8 @@ let resolve_all_evars debug m env p oevd do_split fail =
 	let res = try aux 1 (p comp) evd with Not_found -> None in
 	  match res with
 	  | None -> 
-	      if fail then 
+	      if fail then
+		let evd = Evarutil.nf_evars evd in
 		(* Unable to satisfy the constraints. *)		
 		let evm = if do_split then select_evars comp evd else evd in
 		let _, ev = Evd.fold 
@@ -469,7 +471,7 @@ let resolve_all_evars debug m env p oevd do_split fail =
 		      else b, None
 		    else b, acc) evm (false, None)
 		in
-		  Typeclasses_errors.unsatisfiable_constraints env (Evd.evars_reset_evd evm evd) ev
+		  Typeclasses_errors.unsatisfiable_constraints (Evarutil.nf_env_evar evm env) evm ev
 	      else (* Best effort: do nothing *) oevd
 	  | Some evd' -> docomp evd' comps
   in docomp oevd split

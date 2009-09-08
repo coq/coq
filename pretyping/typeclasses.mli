@@ -84,10 +84,10 @@ val is_class_evar : evar_map -> evar_info -> bool
 
 val resolve_typeclasses : ?onlyargs:bool -> ?split:bool -> ?fail:bool -> 
   env -> evar_defs -> evar_defs
-val resolve_one_typeclass : env -> evar_map -> types -> constr
+val resolve_one_typeclass : env -> evar_map -> types -> open_constr
 
 val register_add_instance_hint : (constant -> int option -> unit) -> unit
 val add_instance_hint : constant -> int option -> unit
 
 val solve_instanciations_problem : (env -> evar_defs -> bool -> bool -> bool -> evar_defs) ref
-val solve_instanciation_problem : (env -> evar_map -> types -> constr) ref
+val solve_instanciation_problem : (env -> evar_map -> types -> open_constr) ref

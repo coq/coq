@@ -45,10 +45,10 @@ val rewriteRL   : ?tac:(tactic * conditions) -> constr  -> tactic
 
 (* Warning: old [general_rewrite_in] is now [general_rewrite_bindings_in] *)
 
-val register_general_setoid_rewrite_clause :
+val register_general_rewrite_clause :
   (identifier option -> orientation ->
-    occurrences -> open_constr -> new_goals:constr list -> tactic) -> unit
-val register_is_applied_setoid_relation : (constr -> bool) -> unit
+    occurrences -> open_constr with_bindings -> new_goals:constr list -> tactic) -> unit
+val register_is_applied_rewrite_relation : (env -> evar_defs -> rel_context -> constr -> open_constr option) -> unit
 
 val general_rewrite_ebindings_clause : identifier option -> 
   orientation -> occurrences -> ?tac:(tactic * conditions) -> open_constr with_bindings -> evars_flag -> tactic

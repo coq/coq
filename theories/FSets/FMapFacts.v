@@ -1021,7 +1021,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   case_eq (find k' m'); auto; intros e'; rewrite <- find_mapsto_iff.
   intro; elim (Heq k' e'); auto.
   intros k e a m' m'' _ _ Hadd Heq k'.
-  rewrite Hadd, 2 add_o, Heq; auto.
+  red in Heq. rewrite Hadd, 2 add_o, Heq; auto.
   Qed.
 
   Section Fold_More.

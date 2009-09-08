@@ -342,7 +342,7 @@ module Latex = struct
 
   (* This is broken if we are in math mode, but coqdoc currently isn't
      tracking that *)
-  let start_emph () = printf "\\textit{ "
+  let start_emph () = printf "\\textit{"
 
   let stop_emph () = printf "}"
 
