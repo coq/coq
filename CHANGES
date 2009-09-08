@@ -49,6 +49,23 @@ Tools
 - New coqtop/coqc option -compat X.Y to simulate the general behavior
   of previous versions of Coq (provides e.g. support for 8.2 compatibility).
 
+Coqdoc
+
+- List have been revamped.  List depth and scope is now determined by
+  an "offside" whitespace rule.
+- Text may be italicized by placing it in _underscores_.
+- The "--index <string>" flag changes the filename of the index.
+- The "--toc-depth <int>" flag limits the depth of headers which are
+  included in the table of contents.
+- The "--lib-name <string>" flag prints "<string> Foo" instead of
+  "Library Foo" where library titles are called for.  The
+  "--no-lib-name" flag eliminates the extra title.
+- New option "--parse-comments" to allow parsing of regular ("(* *)") 
+  comments.
+- New option "--plain-comments" to disable interpretation inside comments.
+- New option "--interpolate" to try and typeset identifiers in Coq escapings
+  using the available globalization information.
+
 Library
 
 - Use "Coq standard" names for the properties of eq and identity

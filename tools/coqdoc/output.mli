@@ -61,6 +61,8 @@ val char : char -> unit
 val ident : string -> loc -> unit
 val symbol : string -> unit
 
+val proofbox : unit -> unit
+
 val latex_char : char -> unit
 val latex_string : string -> unit
 val html_char : char -> unit

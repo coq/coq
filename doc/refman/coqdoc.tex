@@ -118,22 +118,40 @@ Example:
 
 
 \paragraph{Lists.}
-List items are introduced by 1 to 4 leading dashes.
-Deepness of the list is indicated by the number of dashes.
-List ends with a blank line.
+List items are introduced by a leading dash.  \coqdoc\ uses whitespace
+to determine the depth of a new list item and which text belongs in
+which list items.  A list ends when a line of text starts at or before
+the level of indenting of the list's dash.  A list item's dash must
+always be the first non-space character on its line (so, in
+particular, a list can not begin on the first line of a comment -
+start it on the second line instead).
+
 Example:
 \begin{verbatim}
-    This module defines
-        - the predecessor [pred]
-        - the addition [plus]
-        - order relations:
-          -- less or equal [le]
-          -- less [lt]
+     We go by induction on [n]:
+     - If [n] is 0...
+     - If [n] is [S n'] we require...
+
+       two paragraphs of reasoning, and two subcases:
+
+       - In the first case...
+       - In the second case...
+
+     So the theorem holds.
 \end{verbatim}
 
 \paragraph{Rules.}
 More than 4 leading dashes produce an horizontal rule.
 
+\paragraph{Emphasis.}
+Text can be italicized by placing it in underscores.  A non-identifier
+character must precede the leading underscore and follow the trailing
+underscore, so that uses of underscores in names aren't mistaken for
+emphasis.  Usually, these are spaces or punctuation.
+
+\begin{verbatim}
+    This sentence contains some _emphasized text_.
+\end{verbatim}
 
 \paragraph{Escapings to \LaTeX\ and HTML.}
 Pure \LaTeX\ or HTML material can be inserted using the following
@@ -166,14 +184,14 @@ Here is the corresponding caml code:
 Hyperlinks can be inserted into the HTML output, so that any
 identifier is linked to the place of its definition.
 
-In order to get hyperlinks you need to first compile your \Coq\ file
-using \texttt{coqc \mm{}dump-glob \emph{file}}; this appends 
-\Coq\ names resolutions done during the compilation to file
-\texttt{\emph{file}}. Take care of erasing this file, if any, when
-starting the whole compilation process.
+\texttt{coqc \emph{file}.v} automatically dumps localization information
+in \texttt{\emph{file}.glob} or appends it to a file specified using option
+\texttt{\mm{}dump-glob \emph{file}}. Take care of erasing this global file, if
+any, when starting the whole compilation process.
 
-Then invoke \texttt{coqdoc \mm{}glob-from \emph{file}} to tell
-\coqdoc\ to look for name resolutions into the file \texttt{\emph{file}}.
+Then invoke \texttt{coqdoc} or \texttt{coqdoc \mm{}glob-from \emph{file}} to tell
+\coqdoc\ to look for name resolutions into the file \texttt{\emph{file}}
+(it will look in \texttt{\emph{file}.glob} by default).
 
 Identifiers from the \Coq\ standard library are linked to the \Coq\
 web site at \url{http://coq.inria.fr/library/}. This behavior can be
@@ -279,16 +297,6 @@ suffix \verb!.tex!.
   directory (option \texttt{-d} does not change the filename specified
   with option \texttt{-o}, if any).
 
-\item[\texttt{-s }, \texttt{\mm{}short}] ~\par
-  
-  Do not insert titles for the files. The default behavior is to
-  insert a title like ``Library Foo'' for each file.
-
-\item[\texttt{-t }\textit{string}, 
-      \texttt{\mm{}title }\textit{string}] ~\par
-  
-  Set the document title.      
-
 \item[\texttt{\mm{}body-only}] ~\par
 
   Suppress the header and trailer of the final document. Thus, you can
@@ -325,7 +333,7 @@ suffix \verb!.tex!.
 
 \end{description}
 
-\paragraph{Index options} ~\par
+\paragraph{Index options}
 
 Default behavior is to build an index, for the HTML output only, into
 \texttt{index.html}.
@@ -341,9 +349,14 @@ Default behavior is to build an index, for the HTML output only, into
   Generate one page for each category and each letter in the index,
   together with a top page \texttt{index.html}.
 
+\item[\texttt{\mm{}index }\textit{string}] ~\par
+
+  Make the filename of the index \textit{string} instead of ``index''.
+  Useful since ``index.html'' is special.
+
 \end{description}
 
-\paragraph{Table of contents option} ~\par
+\paragraph{Table of contents option}
 
 \begin{description}
 
@@ -353,6 +366,11 @@ Default behavior is to build an index, for the HTML output only, into
   For a \LaTeX\ output, it inserts a \verb!\tableofcontents! at the
   beginning of the document. For a HTML output, it builds a table of
   contents into \texttt{toc.html}.
+
+\item[\texttt{\mm{}toc-depth }\textit{int}] ~\par
+
+  Only include headers up to depth \textit{int} in the table of
+  contents.
 
 \end{description}
 
@@ -384,6 +402,40 @@ Default behavior is to build an index, for the HTML output only, into
 
 \end{description}
 
+\paragraph{Title options}
+\begin{description}
+\item[\texttt{-s }, \texttt{\mm{}short}] ~\par
+  
+  Do not insert titles for the files. The default behavior is to
+  insert a title like ``Library Foo'' for each file.
+
+\item[\texttt{\mm{}lib-name }\textit{string}] ~\par
+
+  Print ``\textit{string} Foo'' instead of ``Library Foo'' in titles.
+  For example ``Chapter'' and ``Module'' are reasonable choices.
+
+\item[\texttt{\mm{}no-lib-name}] ~\par
+
+  Print just ``Foo'' instead of ``Library Foo'' in titles.
+
+\item[\texttt{\mm{}lib-subtitles}] ~\par
+
+  Look for library subtitles.  When enabled, the beginning of each
+  file is checked for a comment of the form:
+\begin{alltt}
+(** * ModuleName : text *)
+\end{alltt}
+  where \texttt{ModuleName} must be the name of the file.  If it is
+  present, the \texttt{text} is used as a subtitle for the module in
+  appropriate places.
+
+\item[\texttt{-t }\textit{string}, 
+      \texttt{\mm{}title }\textit{string}] ~\par
+  
+  Set the document title.      
+
+\end{description}
+
 \paragraph{Contents options}
 \begin{description}
 
@@ -408,7 +460,25 @@ The behavior of options \texttt{-g} and \texttt{-l} can be locally
 overridden using the \texttt{(* begin show *)} \dots\ \texttt{(* end
   show *)} environment (see above).
 
-\paragraph{Language options} ~\par
+There are a few options to drive the parsing of comments:
+\begin{description}
+\item[\texttt{\mm{}parse-comments}] ~\par
+
+  Parses regular comments delimited by \texttt{(*} and \texttt{*)} as 
+  well. They are typeset inline.
+
+\item[\texttt{\mm{}plain-comments}] ~\par
+
+  Do not interpret comments, simply copy them as plain-text.
+
+\item[\texttt{\mm{}interpolate}] ~\par
+
+  Use the globalization information to typeset identifiers appearing in
+  \Coq{} escapings inside comments.
+\end{description}
+
+
+\paragraph{Language options}
 
 Default behavior is to assume ASCII 7 bits input files.
 
@@ -448,11 +518,15 @@ into your own preamble the command
 \begin{quote}
   \verb|\usepackage{coqdoc}|
 \end{quote}
+
+The package optionally takes the argument \verb|[color]| to typeset
+identifiers with colors (this requires the \verb|xcolor| package).
+
 Then you may alter the rendering of the document by
 redefining some macros:
 \begin{description}
 
-\item[\texttt{coqdockw}, \texttt{coqdocid}] ~ 
+\item[\texttt{coqdockw}, \texttt{coqdocid}, \ldots] ~ 
   
   The one-argument macros for typesetting keywords and identifiers.
   Defaults are sans-serif for keywords and italic for identifiers.

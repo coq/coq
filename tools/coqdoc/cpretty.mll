@@ -780,7 +780,7 @@ and doc indents = parse
 		  | None -> doc_bol lexbuf
 		else doc indents lexbuf)}
   | "[]"
-      { Output.symbol "PROOFBOX"; doc indents lexbuf }
+      { Output.proofbox (); doc indents lexbuf }
   | "["
       { if !Cdglobals.plain_comments then Output.char '['
         else (brackets := 1;  Output.start_inline_coq (); escaped_coq lexbuf;

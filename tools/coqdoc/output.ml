@@ -131,7 +131,6 @@ let initialize () =
 	"exists", "\\ensuremath{\\exists}", if_utf8 "∃";
 	"Π", "\\ensuremath{\\Pi}", if_utf8 "Π";
 	"λ", "\\ensuremath{\\lambda}", if_utf8 "λ";
-      "PROOFBOX", "\\ensuremath{\\Box}", Some "<font size=-2>&#9744;</font>"; (* FIX THIS *)
 	(* "fun", "\\ensuremath{\\lambda}" ? *)
       ]
 
@@ -317,6 +316,8 @@ module Latex = struct
       with_latex_printing (fun s -> ident s l) s
     
   let symbol s = with_latex_printing raw_ident s
+
+  let proofbox () = printf "\\ensuremath{\\Box}"
 
   let rec reach_item_level n = 
     if !item_level < n then begin
@@ -547,6 +548,8 @@ module Html = struct
 
   let symbol s =
     with_html_printing raw_ident s
+
+  let proofbox () = printf "<font size=-2>&#9744;</font>"
 
   let rec reach_item_level n = 
     if !item_level < n then begin
@@ -810,6 +813,8 @@ module TeXmacs = struct
 
   let symbol s = if !in_doc then symbol_true s else raw_ident s
 
+  let proofbox () = printf "QED"
+
   let rec reach_item_level n = 
     if !item_level < n then begin
       printf "\n<\\itemize>\n<item>"; incr item_level;
@@ -921,6 +926,8 @@ module Raw = struct
 
   let symbol s = raw_ident s
 
+  let proofbox () = printf "[]"
+
   let item n = printf "- "
   let stop_item () = ()
   let reach_item_level _ = ()
@@ -1016,6 +1023,8 @@ let rule = select Latex.rule Html.rule TeXmacs.rule Raw.rule
 let char = select Latex.char Html.char TeXmacs.char Raw.char
 let ident = select Latex.ident Html.ident TeXmacs.ident Raw.ident
 let symbol = select Latex.symbol Html.symbol TeXmacs.symbol Raw.symbol
+
+let proofbox = select Latex.proofbox Html.proofbox TeXmacs.proofbox Raw.proofbox
 
 let latex_char = select Latex.latex_char Html.latex_char TeXmacs.latex_char Raw.latex_char
 let latex_string = 
