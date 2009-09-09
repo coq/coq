@@ -208,20 +208,19 @@ let general_rewrite_ebindings_clause cls lft2rgt occs ?tac
           leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c' (it_mkProd_or_LetIn t rels) 
 	    l with_evars gl hdcncl
       | None ->
-	  match !is_applied_rewrite_relation env sigma rels t with
-	  | Some _ ->
-	      rewrite_side_tac (!general_rewrite_clause cls 
-				  lft2rgt occs (c,l) ~new_goals:[]) tac gl
-	  | None ->
-	      let env' = push_rel_context rels env in
-	      let rels',t' = splay_prod_assum env' sigma t in (* Search for underlying eq *)
-		match match_with_equality_type t' with
-		| Some (hdcncl,args) ->
-		    let lft2rgt = adjust_rewriting_direction args lft2rgt in
-		      leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c'
-			(it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars gl hdcncl
-		| None -> 
-		    error "The provided term does not end with an equality or a declared rewrite relation."
+	  try
+	    rewrite_side_tac (!general_rewrite_clause cls 
+				 lft2rgt occs (c,l) ~new_goals:[]) tac gl
+	  with e -> (* Try to see if there's an equality hidden *)
+	    let env' = push_rel_context rels env in
+	    let rels',t' = splay_prod_assum env' sigma t in (* Search for underlying eq *)
+	      match match_with_equality_type t' with
+	      | Some (hdcncl,args) ->
+		  let lft2rgt = adjust_rewriting_direction args lft2rgt in
+		    leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c'
+		      (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars gl hdcncl
+	      | None -> raise e
+		  (* error "The provided term does not end with an equality or a declared rewrite relation." *)
 		      
 let general_rewrite_ebindings = 
   general_rewrite_ebindings_clause None
