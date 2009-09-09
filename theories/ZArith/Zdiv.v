@@ -588,38 +588,31 @@ Qed.
 
 (** Some additionnal inequalities about Zdiv. *)
 
-Theorem Zdiv_le_upper_bound: 
-  forall a b q, 0 <= a -> 0 < b -> a <= q*b -> a/b <= q.
+Theorem Zdiv_lt_upper_bound:
+  forall a b q, 0 < b -> a < q*b -> a/b < q.
 Proof.
-  intros a b q H1 H2 H3.
-  apply Zmult_le_reg_r with b; auto with zarith.
-  apply Zle_trans with (2 := H3).
+  intros a b q H1 H2.
+  apply Zmult_lt_reg_r with b; auto with zarith.
+  apply Zle_lt_trans with (2 := H2).
   pattern a at 2; rewrite (Z_div_mod_eq a b); auto with zarith.
   rewrite (Zmult_comm b); case (Z_mod_lt a b); auto with zarith.
 Qed.
 
-Theorem Zdiv_lt_upper_bound: 
-  forall a b q, 0 <= a -> 0 < b -> a < q*b -> a/b < q.
+Theorem Zdiv_le_upper_bound:
+  forall a b q, 0 < b -> a <= q*b -> a/b <= q.
 Proof.
-  intros a b q H1 H2 H3.
-  apply Zmult_lt_reg_r with b; auto with zarith.
-  apply Zle_lt_trans with (2 := H3).
-  pattern a at 2; rewrite (Z_div_mod_eq a b); auto with zarith.
-  rewrite (Zmult_comm b); case (Z_mod_lt a b); auto with zarith.
+  intros.
+  rewrite <- (Z_div_mult_full q b); auto with zarith.
+  apply Z_div_le; auto with zarith.
 Qed.
 
-Theorem Zdiv_le_lower_bound: 
-  forall a b q, 0 <= a -> 0 < b -> q*b <= a -> q <= a/b.
+Theorem Zdiv_le_lower_bound:
+  forall a b q, 0 < b -> q*b <= a -> q <= a/b.
 Proof.
-  intros a b q H1 H2 H3.
-  assert (q < a / b + 1); auto with zarith.
-  apply Zmult_lt_reg_r with b; auto with zarith.
-  apply Zle_lt_trans with (1 := H3).
-  pattern a at 1; rewrite (Z_div_mod_eq a b); auto with zarith.
-  rewrite Zmult_plus_distr_l; rewrite (Zmult_comm b); case (Z_mod_lt a b);
-   auto with zarith.
+  intros.
+  rewrite <- (Z_div_mult_full q b); auto with zarith.
+  apply Z_div_le; auto with zarith.
 Qed.
-
 
 (** A division of respect opposite monotonicity for the divisor *)
 

@@ -299,25 +299,7 @@ Proof.
   auto with zarith.
 Qed.
 
-Lemma narrow_interval_upper_bound : forall a b x, a > 0 -> a * x  <= b -> x <= Zdiv b a.
-Proof.
-  unfold Zdiv.
-  intros.
-  generalize (Z_div_mod b a H).
-  destruct (Zdiv_eucl b a).
-  intros.
-  destruct H1.
-  destruct H2.
-  subst.
-  assert (HH :x <= z \/ z <= x -1) by (destruct (Ztrichotomy x z) ; intuition (auto with zarith)).
-  destruct HH ;auto.
-  assert (0 < a) by auto with zarith.
-  generalize (Zmult_lt_0_le_compat_r _ _ _ H4 H1).
-  intros.
-  ring_simplify in H5.
-  rewrite Zmult_comm in H5.
-  auto with zarith.
-Qed.
+(** NB: narrow_interval_upper_bound is Zdiv.Zdiv_le_lower_bound *)
 
 Require Import QArith.
 
@@ -465,23 +447,17 @@ Proof.
   induction p ; constructor ; auto.
   exists c. ring.
 Qed.
-  
 
-Lemma Zgcd_minus : forall a b c,  0 < Zgcd a b -> (a | c - b ) -> (Zgcd a b  | c).
+Lemma Zgcd_minus : forall a b c, (a | c - b ) -> (Zgcd a b | c).
 Proof.
-  intros.
-  destruct H0.
-  exists  (q * (a / (Zgcd a b)) + (b / (Zgcd a b))).
-  rewrite Zmult_comm.
-   rewrite Zmult_plus_distr_r.
-   replace  (Zgcd a b * (q * (a / Zgcd a b))) with (q * ((Zgcd a b) * (a / Zgcd a b))) by ring.
-  rewrite <- Zdivide_Zdiv_eq ; auto.
-  rewrite <- Zdivide_Zdiv_eq ; auto.
-  auto with zarith.
-  destruct (Zgcd_is_gcd a b) ; auto.
-  destruct (Zgcd_is_gcd a b) ; auto.
+  intros a b c (q,Hq).
+  destruct (Zgcd_is_gcd a b) as [(a',Ha) (b',Hb) _].
+  set (g:=Zgcd a b) in *; clearbody g.
+  exists (q * a' + b').
+  symmetry in Hq. rewrite <- Zeq_plus_swap in Hq.
+  rewrite <- Hq, Hb, Ha. ring.
 Qed.
-  
+
 Lemma Zdivide_pol_sub : forall p a b, 
   0 < Zgcd a b -> 
   Zdivide_pol a (PsubC Zminus p b) -> 
@@ -503,44 +479,6 @@ Proof.
   destruct (Zgcd_is_gcd a b) ; assumption.
   apply IHp2 ; assumption.
 Qed.
-
-Lemma Zgcd_com : forall a b, Zgcd a b = Zgcd b a.
-Proof.
-  intros.
-  apply Zis_gcd_gcd.
-  apply Zgcd_is_pos.
-  destruct (Zgcd_is_gcd b a).
-  constructor ; auto.
-Qed.
-
-Lemma Zgcd_ass : forall a b c, Zgcd (Zgcd a b) c = Zgcd a (Zgcd b c).
-Proof.
-  intros.
-  apply Zis_gcd_gcd.
-  apply (Zgcd_is_pos a (Zgcd b c)).
-  constructor ; auto.
-  destruct (Zgcd_is_gcd  a b).
-  apply H1.
-  destruct (Zgcd_is_gcd  a (Zgcd b c)) ; auto.
-  destruct (Zgcd_is_gcd  a (Zgcd b c)) ; auto.
-  destruct (Zgcd_is_gcd  b c) ; auto.
-  apply Zdivide_trans with (2:= H5);auto.
-  destruct (Zgcd_is_gcd b c).
-  destruct (Zgcd_is_gcd a  (Zgcd b c)).
-  apply Zdivide_trans with (2:= H0);auto.
-  (* 3 *)
-  intros.
-  destruct (Zgcd_is_gcd a (Zgcd b c)).
-  apply H3.
-  destruct (Zgcd_is_gcd a b).
-  apply Zdivide_trans with (2:= H4) ; auto.
-  destruct (Zgcd_is_gcd b c).
-  apply H6. 
-  destruct (Zgcd_is_gcd a b).
-  apply Zdivide_trans with (2:= H8) ; auto.
-  auto.  
-Qed.
-
 
 Lemma Zdivide_pol_sub_0 : forall p a, 
   Zdivide_pol a (PsubC Zminus p 0) -> 
@@ -837,50 +775,6 @@ Proof.
   assumption.
 Qed.  
 
-Lemma negb_true : forall x, negb x = true <-> x = false.
-Proof.
-  destruct x ; simpl; intuition.
-Qed.
-
-
-Lemma Zgcd_not_max : forall a b, 0 <=  a -> Zgcd a b <> a -> ~ (a | b).
-Proof.
-  intros.
-  intro. apply H0.
-  apply Zis_gcd_gcd; auto.
-  constructor ; auto.
-  exists 1. ring.
-Qed.
-
-Lemma  Zmod_Zopp_Zdivide : forall a b , a <> 0 -> (- b) mod a = 0 -> (a | b). 
-Proof.
-  unfold Zmod.
-  intros a b.
-  generalize (Z_div_mod_full (-b) a).
-  destruct (Zdiv_eucl (-b) a).
-  intros.
-  subst.
-  exists (-z). 
-  apply H in H0. destruct H0.
-  rewrite <- Zopp_mult_distr_l.
-  rewrite Zmult_comm. auto with zarith.
-Qed.
-
-Lemma ceiling_not_div : forall a b, a <> 0 -> ~ (a | b) -> ceiling (- b) a = Zdiv (-b) a + 1.
-Proof.
-  unfold ceiling.
-  intros.
-  assert ((-b) mod a <> 0).
-   generalize (Zmod_Zopp_Zdivide a b) ; tauto.
-  revert H1.
-  unfold Zdiv, Zmod.
-  generalize (Z_div_mod_full (-b) a).
-  destruct (Zdiv_eucl (-b) a).
-  intros.
-  destruct z0 ; congruence.
-Qed.
-
-
 Lemma  genCuttingPlaneNone : forall env f, 
   genCuttingPlane f = None -> 
   eval_nformula env f -> False.
@@ -892,32 +786,24 @@ Proof.
   case_eq (Zgt_bool g 0 && (Zgt_bool c 0 && negb (Zeq_bool (Zgcd g c) g))).
   intros. 
   flatten_bool.
-  rewrite negb_true in H5.
+  rewrite negb_true_iff in H5.
   apply Zeq_bool_neq in H5.
+  contradict H5.
   rewrite <- Zgt_is_gt_bool in H3.
   rewrite <- Zgt_is_gt_bool in H.
-  simpl in H2.
-  change (RingMicromega.eval_pol 0 Zplus Zmult (fun z => z)) with eval_pol in H2.
+  apply Zis_gcd_gcd; auto with zarith.
+  constructor; auto with zarith.
+  change (eval_pol env p = 0) in H2.
   rewrite Zgcd_pol_correct_lt with (1:= H0) in H2; auto with zarith.
-  revert H2.
-  generalize (eval_pol env (Zdiv_pol (PsubC Zminus p c) g)) ; intro x.
-  intros.
-  assert (g * x >= -c) by auto with zarith.
-  assert (g * x <= -c) by auto with zarith.
-  apply narrow_interval_lower_bound in H4 ; auto.
-  apply narrow_interval_upper_bound in H6 ; auto.
-  apply Zgcd_not_max in H5; auto with zarith.
-  rewrite ceiling_not_div in H4. 
-  auto with zarith.
-  auto with zarith.
-  auto.
+  set (x:=eval_pol env (Zdiv_pol (PsubC Zminus p c) g)) in *; clearbody x.
+  exists (-x).
+  rewrite <- Zopp_mult_distr_l, Zmult_comm; auto with zarith.
   (**)
   discriminate.
   discriminate.
   destruct (makeCuttingPlane (PsubC Zminus p 1)) ; discriminate.
   destruct (makeCuttingPlane p) ; discriminate.
 Qed.
-
 
   
 Lemma ZChecker_sound : forall w l, ZChecker l w = true -> forall env, make_impl  (eval_nformula env)  l False.

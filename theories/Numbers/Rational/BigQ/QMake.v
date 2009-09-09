@@ -140,7 +140,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
   Z.spec_0 N.spec_0 Z.spec_1 N.spec_1 Z.spec_m1 Z.spec_opp
   Zcompare_spec_alt Ncompare_spec_alt
   Z.spec_add N.spec_add Z.spec_mul N.spec_mul 
-  Z.spec_gcd N.spec_gcd Zgcd_Zabs
+  Z.spec_gcd N.spec_gcd Zgcd_Zabs Zgcd_1
   spec_Z_of_N spec_Zabs_N
  : nz.
  Ltac nzsimpl := autorewrite with nz in *.
@@ -279,7 +279,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  replace (N.to_Z q) with 0%Z in * by romega.
  rewrite Zdiv_0_l in H0; discriminate.
  (* Gt *)
- simpl; auto.
+ simpl; auto with zarith.
  Qed.
 
  (** Reduction function : producing irreducible fractions *) 
@@ -304,7 +304,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  Proof.
  intros [ z | n d ].
  unfold red.
- symmetry; apply Qred_identity; simpl; auto.
+ symmetry; apply Qred_identity; simpl; auto with zarith.
  unfold red; apply strong_spec_norm.
  Qed.
    
@@ -700,7 +700,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  unfold Reduced; intros.
  rewrite strong_spec_red, Qred_iff.
  destruct x as [zx|nx dx]; destruct y as [zy|ny dy].
- simpl in *; auto.
+ simpl in *; auto with zarith.
  simpl.
  rewrite <- Qred_iff, <- strong_spec_red, strong_spec_mul_norm_Qz_Qq; auto.
  simpl.
@@ -714,10 +714,8 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  assert (Hgc' := strong_spec_irred ny dx).
  destruct irred as (n1,d1); destruct irred as (n2,d2). 
  simpl snd in *; destruct Hg as [Hg1 Hg2]; destruct Hg' as [Hg1' Hg2'].
- destr_neq_bool; simpl; nzsimpl; intros.
- apply Zis_gcd_gcd; auto with zarith; apply Zis_gcd_1.
- destr_neq_bool; simpl; nzsimpl; intros.
- auto.
+ destr_neq_bool; simpl; nzsimpl; intros; auto.
+ destr_neq_bool; simpl; nzsimpl; intros; auto.
 
  revert H H0.
  rewrite 2 strong_spec_red, 2 Qred_iff; simpl.
@@ -729,8 +727,8 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  rewrite N_to_Z2P in *; auto.
  rewrite Z2P_correct.
 
- apply Zgcd_mult_rel_prime; rewrite Zgcd_sym; 
-  apply Zgcd_mult_rel_prime; rewrite Zgcd_sym; auto.
+ apply Zgcd_mult_rel_prime; rewrite Zgcd_comm;
+  apply Zgcd_mult_rel_prime; rewrite Zgcd_comm; auto.
  
  rewrite Zgcd_1_rel_prime in *.
  apply bezout_rel_prime.
@@ -912,7 +910,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  rewrite Zabs_eq; auto with zarith.
  rewrite N_to_Z2P in *; auto.
  rewrite Z2P_correct; auto with zarith.
- rewrite Zgcd_sym; auto.
+ rewrite Zgcd_comm; auto.
  (* 0 > n *)
  destr_neq_bool; nzsimpl; simpl; auto; intros.
  destr_zcompare; simpl; nzsimpl; auto.
@@ -928,7 +926,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  rewrite N_to_Z2P in *; auto.
  rewrite Z2P_correct; auto with zarith.
  intros.
- rewrite Zgcd_sym, Zgcd_Zabs, Zgcd_sym.
+ rewrite Zgcd_comm, Zgcd_Zabs, Zgcd_comm.
  apply Zis_gcd_gcd; auto with zarith.
  apply Zis_gcd_minus.
  rewrite Zopp_involutive, <- H1; apply Zgcd_is_gcd.

@@ -202,6 +202,16 @@ Proof.
   destruct b; trivial.
 Qed.
 
+Lemma negb_true_iff : forall b, negb b = true <-> b = false.
+Proof.
+ destruct b; intuition.
+Qed.
+
+Lemma negb_false_iff : forall b, negb b = false <-> b = true.
+Proof.
+ destruct b; intuition.
+Qed.
+
 
 (********************************)
 (** * Properties of [orb]     *)

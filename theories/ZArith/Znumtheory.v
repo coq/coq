@@ -201,19 +201,17 @@ Qed.
 
 (** [Zdivide] can be expressed using [Zmod]. *)
 
-Lemma Zmod_divide : forall a b:Z, b > 0 -> a mod b = 0 -> (b | a).
+Lemma Zmod_divide : forall a b, b<>0 -> a mod b = 0 -> (b | a).
 Proof.
-  intros a b H H0.
-  apply Zdivide_intro with (a / b).
-  pattern a at 1 in |- *; rewrite (Z_div_mod_eq a b H).
-  rewrite H0; ring.
+ intros a b NZ EQ.
+ apply Zdivide_intro with (a/b).
+ rewrite (Z_div_mod_eq_full a b NZ) at 1.
+ rewrite EQ; ring.
 Qed.
 
-Lemma Zdivide_mod : forall a b:Z, b > 0 -> (b | a) -> a mod b = 0.
+Lemma Zdivide_mod : forall a b, (b | a) -> a mod b = 0.
 Proof.
-  intros a b; simple destruct 2; intros; subst.
-  change (q * b) with (0 + q * b) in |- *.
-  rewrite Z_mod_plus; auto.
+  intros a b (c,->); apply Z_mod_mult.
 Qed.
 
 (** [Zdivide] is hence decidable *)
@@ -1130,6 +1128,42 @@ Proof.
   rewrite Zmult_comm.
   rewrite <- Zdivide_Zdiv_eq; auto.
 Qed.
+
+Lemma Zgcd_comm : forall a b, Zgcd a b = Zgcd b a.
+Proof.
+  intros.
+  apply Zis_gcd_gcd.
+  apply Zgcd_is_pos.
+  apply Zis_gcd_sym.
+  apply Zgcd_is_gcd.
+Qed.
+
+Lemma Zgcd_ass : forall a b c, Zgcd (Zgcd a b) c = Zgcd a (Zgcd b c).
+Proof.
+  intros.
+  apply Zis_gcd_gcd.
+  apply Zgcd_is_pos.
+  destruct (Zgcd_is_gcd a b).
+  destruct (Zgcd_is_gcd b c).
+  destruct (Zgcd_is_gcd a (Zgcd b c)).
+  constructor; eauto using Zdivide_trans.
+Qed.
+
+Lemma Zgcd_Zabs : forall a b, Zgcd (Zabs a) b = Zgcd a b.
+Proof.
+  destruct a; simpl; auto.
+Qed.
+
+Lemma Zgcd_0 : forall a, Zgcd a 0 = Zabs a.
+Proof.
+  destruct a; simpl; auto.
+Qed.
+
+Lemma Zgcd_1 : forall a, Zgcd a 1 = 1.
+Proof.
+  intros; apply Zis_gcd_gcd; auto with zarith; apply Zis_gcd_1.
+Qed.
+Hint Resolve Zgcd_0 Zgcd_1 : zarith.
 
 Theorem Zgcd_1_rel_prime : forall a b, 
  Zgcd a b = 1 <-> rel_prime a b.

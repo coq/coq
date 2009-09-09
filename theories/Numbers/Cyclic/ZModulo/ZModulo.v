@@ -546,7 +546,6 @@ Section ZModulo.
   apply Z_div_pos; auto with zarith.
   subst a; auto with zarith.
   apply Zdiv_lt_upper_bound; auto with zarith.
-  subst a; auto with zarith.
   subst a.
   replace (wB*[|b|]) with (([|b|]-1)*wB + wB) by ring.
   apply Zlt_le_trans with ([|a1|]*wB+wB); auto with zarith.

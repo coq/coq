@@ -547,16 +547,14 @@ Qed.
 (** Some additionnal inequalities about Zdiv. *)
 
 Theorem ZOdiv_le_upper_bound: 
-  forall a b q, 0 <= a -> 0 < b -> a <= q*b -> a/b <= q.
+  forall a b q, 0 < b -> a <= q*b -> a/b <= q.
 Proof.
-  intros a b q H1 H2 H3.
-  apply Zmult_le_reg_r with b; auto with zarith.
-  apply Zle_trans with (2 := H3).
-  pattern a at 2; rewrite (ZO_div_mod_eq a b); auto with zarith.
-  rewrite (Zmult_comm b); case (ZOmod_lt_pos_pos a b); auto with zarith.
+  intros.
+  rewrite <- (ZO_div_mult q b); auto with zarith.
+  apply ZO_div_monotone; auto with zarith.
 Qed.
 
-Theorem ZOdiv_lt_upper_bound: 
+Theorem ZOdiv_lt_upper_bound:
   forall a b q, 0 <= a -> 0 < b -> a < q*b -> a/b < q.
 Proof.
   intros a b q H1 H2 H3.
@@ -566,16 +564,12 @@ Proof.
   rewrite (Zmult_comm b); case (ZOmod_lt_pos_pos a b); auto with zarith.
 Qed.
 
-Theorem ZOdiv_le_lower_bound: 
-  forall a b q, 0 <= a -> 0 < b -> q*b <= a -> q <= a/b.
+Theorem ZOdiv_le_lower_bound:
+  forall a b q, 0 < b -> q*b <= a -> q <= a/b.
 Proof.
-  intros a b q H1 H2 H3.
-  assert (q < a / b + 1); auto with zarith.
-  apply Zmult_lt_reg_r with b; auto with zarith.
-  apply Zle_lt_trans with (1 := H3).
-  pattern a at 1; rewrite (ZO_div_mod_eq a b); auto with zarith.
-  rewrite Zmult_plus_distr_l; rewrite (Zmult_comm b); case (ZOmod_lt_pos_pos a b);
-   auto with zarith.
+  intros.
+  rewrite <- (ZO_div_mult q b); auto with zarith.
+  apply ZO_div_monotone; auto with zarith.
 Qed.
 
 Theorem ZOdiv_sgn: forall a b, 

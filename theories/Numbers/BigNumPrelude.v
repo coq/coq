@@ -356,20 +356,6 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  compute in H1; discriminate.
  compute; auto.
  Qed.
- 
- Lemma Zgcd_Zabs : forall z z', Zgcd (Zabs z) z' = Zgcd z z'.
- Proof.
- destruct z; simpl; auto.
- Qed.
-
- Lemma Zgcd_sym : forall p q, Zgcd p q = Zgcd q p.
- Proof.
- intros.
- apply Zis_gcd_gcd.
- apply Zgcd_is_pos.
- apply Zis_gcd_sym.
- apply Zgcd_is_gcd.
- Qed.
 
  Lemma Zdiv_gcd_zero : forall a b, b / Zgcd a b = 0 -> b <> 0 -> 
   Zgcd a b = 0.
@@ -382,12 +368,6 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  rewrite Z_div_mult_full; auto.
  intros; subst k; simpl in *; subst b; elim H0; auto.
  Qed.
-
- Lemma Zgcd_1 : forall z, Zgcd z 1 = 1.
- Proof.
- intros; apply Zis_gcd_gcd; auto with zarith; apply Zis_gcd_1.
- Qed.
- Hint Resolve Zgcd_1.
 
  Lemma Zgcd_mult_rel_prime : forall a b c, 
   Zgcd a c = 1 -> Zgcd b c = 1 -> Zgcd (a*b) c = 1.

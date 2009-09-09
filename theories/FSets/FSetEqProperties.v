@@ -734,7 +734,7 @@ generalize (equal_mem_2 _ _ H x).
 rewrite filter_b; auto.
 rewrite empty_mem.
 rewrite H0; simpl;intros.
-replace true with (negb false);auto;apply negb_sym;auto.
+rewrite <- negb_false_iff; auto.
 Qed.
 
 Lemma for_all_mem_3: 
@@ -762,7 +762,7 @@ exists x.
 rewrite filter_b in H1; auto.
 elim (andb_prop _ _ H1).
 split;auto.
-replace false with (negb true);auto;apply negb_sym;auto.
+rewrite <- negb_true_iff; auto.
 Qed.
 
 (** Properties of [exists] *)
@@ -794,8 +794,8 @@ Proof.
 intros.
 rewrite for_all_exists; auto.
 rewrite for_all_mem_1;auto with bool.
-intros;generalize (H x H0);intros. 
-symmetry;apply negb_sym;simpl;auto.
+intros;generalize (H x H0);intros.
+rewrite negb_true_iff; auto.
 Qed.
 
 Lemma exists_mem_2: 
@@ -803,9 +803,9 @@ Lemma exists_mem_2:
 Proof.
 intros.
 rewrite for_all_exists in H; auto.
-replace false with (negb true);auto;apply negb_sym;symmetry.
-rewrite (for_all_mem_2 (fun x => negb (f x)) Comp' s);simpl;auto.
-replace true with (negb false);auto;apply negb_sym;auto.
+rewrite negb_false_iff in H.
+rewrite <- negb_true_iff.
+apply for_all_mem_2 with (2:=H); auto.
 Qed.
 
 Lemma exists_mem_3: 
@@ -813,9 +813,9 @@ Lemma exists_mem_3:
 Proof.
 intros.
 rewrite for_all_exists; auto.
-symmetry;apply negb_sym;simpl.
+rewrite negb_true_iff.
 apply for_all_mem_3 with x;auto.
-rewrite H0;auto.
+rewrite negb_false_iff; auto.
 Qed.
 
 Lemma exists_mem_4: 
@@ -823,11 +823,11 @@ Lemma exists_mem_4:
 Proof.
 intros.
 rewrite for_all_exists in H; auto.
-elim (for_all_mem_4 (fun x =>negb (f x)) Comp' s);intros.
+rewrite negb_true_iff in H.
+elim (for_all_mem_4 (fun x =>negb (f x)) Comp' s);intros;auto.
 elim p;intros.
 exists x;split;auto.
-replace true with (negb false);auto;apply negb_sym;auto.
-replace false with (negb true);auto;apply negb_sym;auto.
+rewrite <-negb_false_iff; auto.
 Qed.
 
 End Bool'.
