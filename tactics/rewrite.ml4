@@ -76,6 +76,8 @@ let gen_constant dir s = Coqlib.gen_constant "rewrite" dir s
 let coq_proj1 = lazy(gen_constant ["Init"; "Logic"] "proj1")
 let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
 let coq_eq = lazy(gen_constant ["Init"; "Logic"] "eq")
+let coq_eq_rect = lazy (gen_constant ["Init"; "Logic"] "eq_rect")
+let coq_f_equal = lazy (gen_constant ["Init"; "Logic"] "f_equal")
 let iff = lazy (gen_constant ["Init"; "Logic"] "iff")
 let coq_all = lazy (gen_constant ["Init"; "Logic"] "all")
 let impl = lazy (gen_constant ["Program"; "Basics"] "impl")
@@ -535,6 +537,15 @@ let apply_lemma (evm,c) left2right loccs : strategy =
     let hypinfo = ref (decompose_applied_relation env evars c left2right) in
       apply_rule hypinfo loccs env sigma
 
+let make_leibniz_proof c ty r =
+  let prf = mkApp (Lazy.force coq_f_equal, 
+		  [| r.rew_car; ty;
+		     mkLambda (Anonymous, r.rew_car, c (mkRel 1));
+		     r.rew_from; r.rew_to; r.rew_prf |])
+  in
+    { r with rew_car = ty; rew_rel = mkApp (Lazy.force coq_eq, [| ty |]); 
+      rew_from = c r.rew_from; rew_to = c r.rew_to; rew_prf = prf }
+      
 let subterm all flags (s : strategy) : strategy =
   let rec aux env sigma t ty cstr evars =
     let cstr' = Option.map (fun c -> (ty, c)) cstr in
@@ -606,7 +617,7 @@ let subterm all flags (s : strategy) : strategy =
       (* 		  in res, occ *)
       (* 		else *)
 	      
-      | Prod (n, dom, codom) ->
+      | Prod (n, dom, codom) when eq_constr ty mkProp ->
 	  let lam = mkLambda (n, dom, codom) in
 	  let res = aux env sigma (mkApp (Lazy.force coq_all, [| dom; lam |])) ty cstr evars in
 	    (match res with
@@ -626,6 +637,31 @@ let subterm all flags (s : strategy) : strategy =
 		  rew_to = mkLambda (n, t, r.rew_to) })
 	    | _ -> b')
 	      
+      | Case (ci, p, c, brs) ->
+	  let cty = Typing.type_of env sigma c in
+	  let cstr = Some (mkApp (Lazy.force coq_eq, [| cty |])) in
+	  let c' = s env sigma c cty cstr evars in
+	    (match c' with
+	    | Some (Some r) ->
+		Some (Some (make_leibniz_proof (fun x -> mkCase (ci, p, x, brs)) ty r))
+	    | x -> 
+		if array_for_all ((=) 0) ci.ci_cstr_nargs then
+		  let cstr = Some (mkApp (Lazy.force coq_eq, [| ty |])) in
+		  let found, brs' = Array.fold_left (fun (found, acc) br -> 
+		    if found <> None then (found, fun x -> br :: acc x) 
+		    else
+		      match s env sigma br ty cstr evars with
+		      | Some (Some r) -> (Some r, fun x -> x :: acc x)
+		      | _ -> (None, fun x -> br :: acc x)) 
+		    (None, fun x -> []) brs 
+		  in
+		    match found with
+		    | Some r ->
+			let ctxc x = mkCase (ci, p, c, Array.of_list (List.rev (brs' x))) in
+			  Some (Some (make_leibniz_proof ctxc ty r))
+		    | None -> x
+		else x)
+
       | _ -> if all then Some None else None
   in aux
 
