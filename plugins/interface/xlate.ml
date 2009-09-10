@@ -996,8 +996,8 @@ and xlate_tac =
     | TacIntroMove _ -> xlate_error "TODO"
     | TacLeft (false,bindl) -> CT_left (xlate_bindings bindl)
     | TacRight (false,bindl) -> CT_right (xlate_bindings bindl)
-    | TacSplit (false,false,bindl) -> CT_split (xlate_bindings bindl)
-    | TacSplit (false,true,bindl) -> CT_exists (xlate_bindings bindl)
+    | TacSplit (false,false,[bindl]) -> CT_split (xlate_bindings bindl)
+    | TacSplit (false,true,[bindl]) -> CT_exists (xlate_bindings bindl)
     | TacSplit _ | TacRight _ | TacLeft _ -> 
 	xlate_error "TODO: esplit, eright, etc"
     | TacExtend (_,"replace", [c1; c2;cl;tac_opt]) ->

@@ -197,7 +197,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   (* Constructors *)
   | TacLeft of evars_flag * 'constr bindings
   | TacRight of evars_flag * 'constr bindings
-  | TacSplit of evars_flag * split_flag * 'constr bindings
+  | TacSplit of evars_flag * split_flag * 'constr bindings list
   | TacAnyConstructor of evars_flag * 'tac option
   | TacConstructor of evars_flag * int or_metaid * 'constr bindings
 

@@ -394,7 +394,7 @@ let rec mlexpr_of_atomic_tactic = function
       <:expr< Tacexpr.TacRight $mlexpr_of_bool ev$ $mlexpr_of_binding_kind l$>>
   | Tacexpr.TacSplit (ev,b,l) ->
       <:expr< Tacexpr.TacSplit
-        ($mlexpr_of_bool ev$,$mlexpr_of_bool b$,$mlexpr_of_binding_kind l$)>>
+        ($mlexpr_of_bool ev$,$mlexpr_of_bool b$,$mlexpr_of_list mlexpr_of_binding_kind l$)>>
   | Tacexpr.TacAnyConstructor (ev,t) ->
       <:expr< Tacexpr.TacAnyConstructor $mlexpr_of_bool ev$ $mlexpr_of_option mlexpr_of_tactic t$>>
   | Tacexpr.TacConstructor (ev,n,l) ->

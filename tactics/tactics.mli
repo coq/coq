@@ -324,7 +324,7 @@ val split                : constr bindings -> tactic
 
 val left_with_ebindings  : evars_flag -> open_constr bindings -> tactic
 val right_with_ebindings : evars_flag -> open_constr bindings -> tactic
-val split_with_ebindings : evars_flag -> open_constr bindings -> tactic
+val split_with_ebindings : evars_flag -> open_constr bindings list -> tactic
 
 val simplest_left        : tactic
 val simplest_right       : tactic

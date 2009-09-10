@@ -198,8 +198,8 @@ let _ =
         "eleft", TacLeft(true,NoBindings);
         "right", TacRight(false,NoBindings);
         "eright", TacRight(true,NoBindings);
-        "split", TacSplit(false,false,NoBindings);
-        "esplit", TacSplit(true,false,NoBindings);
+        "split", TacSplit(false,false,[NoBindings]);
+        "esplit", TacSplit(true,false,[NoBindings]);
         "constructor", TacAnyConstructor (false,None);
         "econstructor", TacAnyConstructor (true,None);
         "reflexivity", TacReflexivity;
@@ -777,7 +777,7 @@ let rec intern_atomic lf ist x =
   (* Constructors *)
   | TacLeft (ev,bl) -> TacLeft (ev,intern_bindings ist bl)
   | TacRight (ev,bl) -> TacRight (ev,intern_bindings ist bl)
-  | TacSplit (ev,b,bl) -> TacSplit (ev,b,intern_bindings ist bl)
+  | TacSplit (ev,b,bll) -> TacSplit (ev,b,List.map (intern_bindings ist) bll)
   | TacAnyConstructor (ev,t) -> TacAnyConstructor (ev,Option.map (intern_tactic ist) t)
   | TacConstructor (ev,n,bl) -> TacConstructor (ev,n,intern_bindings ist bl)
 
@@ -2325,7 +2325,7 @@ and interp_atomic ist gl = function
   (* Constructors *)
   | TacLeft (ev,bl) -> h_left ev (interp_bindings ist gl bl)
   | TacRight (ev,bl) -> h_right ev (interp_bindings ist gl bl)
-  | TacSplit (ev,_,bl) -> h_split ev (interp_bindings ist gl bl)
+  | TacSplit (ev,_,bll) -> h_split ev (List.map (interp_bindings ist gl) bll)
   | TacAnyConstructor (ev,t) ->
       abstract_tactic (TacAnyConstructor (ev,t))
         (Tactics.any_constructor ev (Option.map (interp_tactic ist) t))
@@ -2649,7 +2649,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Constructors *)
   | TacLeft (ev,bl) -> TacLeft (ev,subst_bindings subst bl)
   | TacRight (ev,bl) -> TacRight (ev,subst_bindings subst bl)
-  | TacSplit (ev,b,bl) -> TacSplit (ev,b,subst_bindings subst bl)
+  | TacSplit (ev,b,bll) -> TacSplit (ev,b,List.map (subst_bindings subst) bll)
   | TacAnyConstructor (ev,t) -> TacAnyConstructor (ev,Option.map (subst_tactic subst) t)
   | TacConstructor (ev,n,bl) -> TacConstructor (ev,n,subst_bindings subst bl)
 

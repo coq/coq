@@ -602,10 +602,11 @@ GEXTEND Gram
       | IDENT "eleft";  bl = with_bindings -> TacLeft  (true,bl)
       | IDENT "right";  bl = with_bindings -> TacRight (false,bl)
       | IDENT "eright"; bl = with_bindings -> TacRight (true,bl)
-      | IDENT "split";  bl = with_bindings -> TacSplit (false,false,bl)
-      | IDENT "esplit"; bl = with_bindings -> TacSplit (true,false,bl)
-      | "exists";        bl = opt_bindings -> TacSplit (false,true,bl)
-      | IDENT "eexists"; bl = opt_bindings -> TacSplit (true,true,bl)
+      | IDENT "split";  bl = with_bindings -> TacSplit (false,false,[bl])
+      | IDENT "esplit"; bl = with_bindings -> TacSplit (true,false,[bl])
+      | "exists"; bll = LIST1 opt_bindings SEP "," -> TacSplit (false,true,bll)
+      | IDENT "eexists"; bll = LIST1 opt_bindings SEP "," ->
+	  TacSplit (true,true,bll)
       | IDENT "constructor"; n = num_or_meta; l = with_bindings ->
 	  TacConstructor (false,n,l)
       | IDENT "econstructor"; n = num_or_meta; l = with_bindings ->

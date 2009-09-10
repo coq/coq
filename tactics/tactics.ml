@@ -1166,7 +1166,8 @@ let any_constructor with_evars tacopt gl =
 
 let left_with_ebindings  with_evars = constructor_tac with_evars (Some 2) 1
 let right_with_ebindings with_evars = constructor_tac with_evars (Some 2) 2
-let split_with_ebindings with_evars = constructor_tac with_evars (Some 1) 1
+let split_with_ebindings with_evars =
+  tclMAP (constructor_tac with_evars (Some 1) 1)
 
 let left l             = left_with_ebindings false (inj_ebindings l)
 let simplest_left      = left NoBindings
@@ -1174,7 +1175,7 @@ let simplest_left      = left NoBindings
 let right l            = right_with_ebindings false (inj_ebindings l)
 let simplest_right     = right NoBindings
 
-let split l            = split_with_ebindings false (inj_ebindings l)
+let split l            = split_with_ebindings false [inj_ebindings l]
 let simplest_split     = split NoBindings
 
 

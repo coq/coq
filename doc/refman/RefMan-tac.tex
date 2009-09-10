@@ -1515,6 +1515,10 @@ equivalent to {\tt intros; apply ci}.
   case of existential quantification $\exists x\cdot P(x)$. 
   Then, it is equivalent to {\tt intros; constructor 1 with \bindinglist}.
 
+\item {\tt exists \nelist{\bindinglist}{,}}
+
+  This iteratively applies {\tt exists {\bindinglist}}.
+
 \item {\tt left}\tacindex{left}\\
       {\tt right}\tacindex{right}
 
