@@ -11,6 +11,27 @@
 (** This module implements various tactics used to simplify the goals produced by Program,
    which are also generally useful. *)
 
+(** Debugging tactics to show the goal during evaluation. *)
+
+Ltac show_goal := match goal with [ |- ?T ] => idtac T end.
+
+Ltac show_hyp id := 
+  match goal with 
+    | [ H := ?b : ?T |- _ ] => 
+      match H with
+        | id => idtac id ":=" b ":" T
+      end
+    | [ H : ?T |- _ ] => 
+      match H with
+        | id => idtac id  ":"  T
+      end
+  end.
+
+Ltac show_hyps :=
+  try match reverse goal with
+        | [ H : ?T |- _ ] => show_hyp H ; fail
+      end.
+
 (** The [do] tactic but using a Coq-side nat. *)
 
 Ltac do_nat n tac :=

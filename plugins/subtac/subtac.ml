@@ -75,11 +75,13 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
 	next_global_ident_away false (id_of_string "Unnamed_thm")
  	  (Pfedit.get_all_proof_names ())
   in
-  let evm, c, typ, _imps = 
+  let evm, c, typ, imps = 
     Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr t bl) None 
   in
   let c = solve_tccs_in_type env id isevars evm c typ in
-    Command.start_proof id kind c hook	
+    Command.start_proof id kind c (fun loc gr -> 
+      Impargs.declare_manual_implicits (loc = Local) gr ~enriching:true imps;
+      hook loc gr)
       
 let print_subgoals () = Flags.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
 

@@ -179,7 +179,7 @@ Instance Equivalence_PER `(Equivalence A R) : PER R | 10 :=
 (** We can now define antisymmetry w.r.t. an equivalence relation on the carrier. *)
 
 Class Antisymmetric A eqA `{equ : Equivalence A eqA} (R : relation A) :=
-  antisymmetry : forall x y, R x y -> R y x -> eqA x y.
+  antisymmetry : forall {x y}, R x y -> R y x -> eqA x y.
 
 Program Definition flip_antiSymmetric `(Antisymmetric A eqA R) :
   Antisymmetric A eqA (flip R).
