@@ -166,9 +166,9 @@ module Latex = struct
       printf "\\usepackage{fullpage}\n";
       printf "\\usepackage{coqdoc}\n";
       printf "\\usepackage{amsmath,amssymb}\n";
-      match !toc_depth with
-      | None -> ()
-      | Some n -> printf "\\setcounter{tocdepth}{%i}\n" n;
+      (match !toc_depth with
+       | None -> ()
+       | Some n -> printf "\\setcounter{tocdepth}{%i}\n" n);
       Queue.iter (fun s -> printf "%s\n" s) preamble;
       printf "\\begin{document}\n"
     end;
@@ -600,10 +600,10 @@ module Html = struct
   let section lev f =
     let lab = new_label () in
     let r = sprintf "%s.html#%s" (get_module false) lab in
-    match !toc_depth with
-    | None -> add_toc_entry (Toc_section (lev, f, r))
-    | Some n -> if lev <= n then add_toc_entry (Toc_section (lev, f, r))
-                  else ();
+    (match !toc_depth with
+     | None -> add_toc_entry (Toc_section (lev, f, r))
+     | Some n -> if lev <= n then add_toc_entry (Toc_section (lev, f, r))
+                   else ());
     stop_item ();
     printf "<a name=\"%s\"></a><h%d class=\"section\">" lab lev;
     f ();

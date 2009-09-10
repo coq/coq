@@ -639,7 +639,8 @@ and doc_bol = parse
   | space* section space+ ([^'\n' '*'] | '*'+ [^'\n' ')' '*'])* ('*'+ '\n')?
       { let eol, lex = strip_eol (lexeme lexbuf) in
         let lev, s = sec_title lex in
-          if subtitle (Output.get_module false) s then
+          if (!Cdglobals.lib_subtitles) &&
+             (subtitle (Output.get_module false) s) then
             ()
           else
             Output.section lev (fun () -> ignore (doc None (from_string s)));
