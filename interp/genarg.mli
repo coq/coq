@@ -21,7 +21,9 @@ type 'a and_short_name = 'a * identifier located option
 
 type 'a or_by_notation =
   | AN of 'a
-  | ByNotation of loc * string * Notation.delimiters option
+  | ByNotation of (loc * string * Notation.delimiters option)
+
+val loc_of_or_by_notation : ('a -> loc) -> 'a or_by_notation -> loc
 
 (* In globalize tactics, we need to keep the initial [constr_expr] to recompute*)
 (* in the environment by the effective calls to Intro, Inversion, etc *)

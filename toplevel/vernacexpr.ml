@@ -30,7 +30,7 @@ type lname = name located
 type lstring = string
 type lreference = reference
 
-type class_rawexpr = FunClass | SortClass | RefClass of reference
+type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
   
 type printable =
   | PrintTables
@@ -44,18 +44,17 @@ type printable =
   | PrintModuleType of reference
   | PrintMLLoadPath
   | PrintMLModules
-  | PrintName of reference
-  | PrintOpaqueName of reference
+  | PrintName of reference or_by_notation
   | PrintGraph
   | PrintClasses
   | PrintTypeClasses
-  | PrintInstances of reference
+  | PrintInstances of reference or_by_notation
   | PrintLtac of reference
   | PrintCoercions
   | PrintCoercionPaths of class_rawexpr * class_rawexpr
   | PrintCanonicalConversions
   | PrintUniverses of string option
-  | PrintHint of reference
+  | PrintHint of reference or_by_notation
   | PrintHintGoal
   | PrintHintDbName of string
   | PrintRewriteHintDbName of string
@@ -63,9 +62,9 @@ type printable =
   | PrintScopes
   | PrintScope of string
   | PrintVisibility of string option
-  | PrintAbout of reference
-  | PrintImplicit of reference
-  | PrintAssumptions of bool * reference
+  | PrintAbout of reference or_by_notation
+  | PrintImplicit of reference or_by_notation
+  | PrintAssumptions of bool * reference or_by_notation
 
 type search_about_item =
   | SearchSubPattern of constr_pattern_expr
@@ -78,11 +77,10 @@ type searchable =
   | SearchAbout of (bool * search_about_item) list
 
 type locatable =
-  | LocateTerm of reference
+  | LocateTerm of reference or_by_notation
   | LocateLibrary of reference
   | LocateModule of reference
   | LocateFile of string
-  | LocateNotation of notation
 
 type goable =
   | GoTo of int
@@ -188,8 +186,8 @@ type proof_end =
   | Proved of opacity_flag * (lident * theorem_kind option) option
 
 type scheme =
-  | InductionScheme of bool * lreference * sort_expr
-  | EqualityScheme of lreference
+  | InductionScheme of bool * reference or_by_notation * sort_expr
+  | EqualityScheme of reference or_by_notation
 
 type vernac_expr =
   (* Control *)
@@ -204,7 +202,8 @@ type vernac_expr =
   | VernacOpenCloseScope of (locality_flag * bool * scope_name)
   | VernacDelimiters of scope_name * lstring
   | VernacBindScope of scope_name * class_rawexpr list
-  | VernacArgumentsScope of locality_flag * lreference * scope_name option list
+  | VernacArgumentsScope of locality_flag * reference or_by_notation * 
+      scope_name option list
   | VernacInfix of locality_flag * (lstring * syntax_modifier list) *
       constr_expr * scope_name option
   | VernacNotation of
@@ -232,8 +231,9 @@ type vernac_expr =
   | VernacRequire of
       export_flag option * specif_flag option * lreference list
   | VernacImport of export_flag * lreference list
-  | VernacCanonical of lreference
-  | VernacCoercion of locality * lreference * class_rawexpr * class_rawexpr
+  | VernacCanonical of reference or_by_notation
+  | VernacCoercion of locality * reference or_by_notation * 
+      class_rawexpr * class_rawexpr
   | VernacIdentityCoercion of locality * lident * 
       class_rawexpr * class_rawexpr
 
@@ -297,11 +297,11 @@ type vernac_expr =
   | VernacHints of locality_flag * lstring list * hints_expr
   | VernacSyntacticDefinition of identifier located * (identifier list * constr_expr) *
       locality_flag * onlyparsing_flag
-  | VernacDeclareImplicits of locality_flag * lreference * 
+  | VernacDeclareImplicits of locality_flag * reference or_by_notation * 
       (explicitation * bool * bool) list option
   | VernacReserve of lident list * constr_expr
   | VernacSetOpacity of
-      locality_flag * (Conv_oracle.level * lreference list) list
+      locality_flag * (Conv_oracle.level * reference or_by_notation list) list
   | VernacUnsetOption of bool option * Goptions.option_name
   | VernacSetOption of bool option * Goptions.option_name * option_value
   | VernacAddOption of Goptions.option_name * option_ref_value list

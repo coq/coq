@@ -46,6 +46,7 @@ open Goptions
 open Mod_subst
 open Evd
 open Decls
+open Smartlocate
 
 let rec abstract_constr_expr c = function
   | [] -> c
@@ -930,8 +931,8 @@ requested
        let l1,l2 = split_scheme q in
     ( match t with
       | InductionScheme (x,y,z) ->
-             let ind = mkInd (Nametab.global_inductive y) in
-             let sort_of_ind = family_of_sort (Typing.sort_of env Evd.empty ind)
+             let ind = smart_global_inductive y in
+             let sort_of_ind = Retyping.get_sort_family_of env Evd.empty (mkInd ind)
 in
              let z' = family_of_sort (interp_sort z) in
              let suffix = (
@@ -955,8 +956,8 @@ in
                        | InSet  -> "_rec_nodep"
                        | InType -> "_rect_nodep")
                 ) in
-            let newid = (string_of_id (coerce_reference_to_id y))^suffix in
-            let newref = (dummy_loc,id_of_string newid) in
+            let newid = add_suffix (basename_of_global (IndRef ind)) suffix in
+            let newref = (dummy_loc,newid) in
           ((newref,x,y,z)::l1),l2
       | EqualityScheme  x -> l1,(x::l2)
     )
@@ -969,7 +970,7 @@ let build_induction_scheme lnamedepindsort =
   let lrecspec =
     List.map
       (fun (_,dep,indid,sort) ->
-        let ind = Nametab.global_inductive indid in
+        let ind = smart_global_inductive indid in
         let (mib,mip) = Global.lookup_inductive ind in
          (ind,mib,mip,dep,interp_elimination_sort sort)) 
       lnamedepindsort
@@ -998,7 +999,7 @@ tried to declare different schemes at once *)
     else (
       if ischeme <> [] then build_induction_scheme ischeme;
       List.iter ( fun indname -> 
-        let ind = Nametab.global_inductive indname
+        let ind = smart_global_inductive indname
         in declare_eq_scheme (fst ind);
         try
            make_eq_decidability ind 

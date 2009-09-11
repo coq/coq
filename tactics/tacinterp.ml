@@ -26,6 +26,7 @@ open Names
 open Nameops
 open Libnames
 open Nametab
+open Smartlocate
 open Pfedit
 open Proof_type
 open Refiner
@@ -365,17 +366,7 @@ let intern_or_var ist = function
   | ArgVar locid -> ArgVar (intern_hyp ist locid)
   | ArgArg _ as x -> x
 
-let loc_of_by_notation f = function
-  | AN c -> f c
-  | ByNotation (loc,s,_) -> loc
-
-let destIndRef = function IndRef ind -> ind | _ -> failwith "destIndRef"
-
-let intern_inductive_or_by_notation = function
-  | AN r -> Nametab.global_inductive r
-  | ByNotation (loc,ntn,sc) ->
-      destIndRef (Notation.interp_notation_as_global_reference loc
-        (function IndRef ind -> true | _ -> false) ntn sc)
+let intern_inductive_or_by_notation = smart_global_inductive
 
 let intern_inductive ist = function
   | AN (Ident (loc,id)) when find_var id ist -> ArgVar (loc,id)

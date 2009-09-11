@@ -619,8 +619,7 @@ let print_sec_context sec =
 let print_sec_context_typ sec =
   print_context false None (read_sec_context sec)
 
-let print_name ref = 
-  match locate_any_name ref with
+let print_any_name = function
   | Term (ConstRef sp) -> print_constant_with_infos sp
   | Term (IndRef (sp,_)) -> print_inductive sp
   | Term (ConstructRef ((sp,_),_)) -> print_inductive sp
@@ -638,6 +637,14 @@ let print_name ref =
   with Not_found ->
     errorlabstrm
       "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
+
+let print_name = function
+  | Genarg.ByNotation (loc,ntn,sc) ->
+      print_any_name
+        (Term (Notation.interp_notation_as_global_reference loc (fun _ -> true) 
+               ntn sc))
+  | Genarg.AN ref ->
+      print_any_name (locate_any_name ref)
 
 let print_opaque_name qid = 
   let env = Global.env () in
@@ -657,8 +664,7 @@ let print_opaque_name qid =
         let (_,c,ty) = lookup_named id env in 
 	print_named_decl (id,c,ty)
 
-let print_about ref = 
-  let k = locate_any_name ref in
+let print_about_any k =
   begin match k with
   | Term ref ->
       print_ref false ref ++ fnl () ++ print_name_infos ref ++ 
@@ -670,8 +676,16 @@ let print_about ref =
   ++
   hov 0 (str "Expands to: " ++ pr_located_qualid k)
 
+let print_about = function
+  | Genarg.ByNotation (loc,ntn,sc) ->
+      print_about_any
+        (Term (Notation.interp_notation_as_global_reference loc (fun _ -> true) 
+               ntn sc))
+  | Genarg.AN ref ->
+      print_about_any (locate_any_name ref)
+
 let print_impargs ref =
-  let ref = Nametab.global ref in
+  let ref = Smartlocate.smart_global ref in
   let impl = implicits_of_global ref in
   let has_impl = List.filter is_status_implicit impl <> [] in
   (* Need to reduce since implicits are computed with products flattened *)

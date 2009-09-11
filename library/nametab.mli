@@ -21,12 +21,12 @@ open Libnames
     There are three classes of names:
 
     1a- internal kernel names: [kernel_name], [constant], [inductive],
-        [module_path]
+        [module_path], [dir_path]
 
     1b- other internal names: [global_reference], [syndef_name],
         [extended_global_reference], [global_dir_reference], ...
 
-    2- full, non ambiguous user names: [full_path] and [dir_path]
+    2- full, non ambiguous user names: [full_path]
 
     3- non necessarily full, possibly ambiguous user names: [reference]
        and [qualid]

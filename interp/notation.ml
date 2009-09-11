@@ -536,7 +536,7 @@ let decompose_notation_key s =
     let tok =
       match String.sub s n (pos-n) with
       | "_" -> NonTerminal (id_of_string "_")
-      | s -> Terminal s in
+      | s -> Terminal (drop_simple_quotes s) in
     decomp_ntn (tok::dirs) (pos+1)	  
   in
     decomp_ntn [] 0
@@ -650,15 +650,16 @@ let interp_notation_as_global_reference loc test ntn sc =
       | [] -> error_notation_not_reference loc ntn
       | _ -> error_ambiguous_notation loc ntn
 
-let locate_notation prraw ntn =
+let locate_notation prraw ntn scope =
   let ntns = factorize_entries (browse_notation false ntn !scope_map) in
+  let scopes = Option.fold_right push_scope scope !scope_stack in
   if ntns = [] then
     str "Unknown notation"
   else
     t (str "Notation            " ++
     tab () ++ str "Scope     " ++ tab () ++ fnl () ++ 
     prlist (fun (ntn,l) ->
-      let scope = find_default ntn !scope_stack in
+      let scope = find_default ntn scopes in
       prlist 
 	(fun (sc,r,(_,df)) ->
 	  hov 0 (

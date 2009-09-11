@@ -83,6 +83,7 @@ val is_blank : char -> bool
 val explode : string -> string list
 val implode : string list -> string
 val strip : string -> string
+val drop_simple_quotes : string -> string
 val string_index_from : string -> int -> string -> int
 val string_string_contains : where:string -> what:string -> bool
 val plural : int -> string -> string

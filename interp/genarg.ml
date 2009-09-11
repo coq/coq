@@ -47,7 +47,11 @@ type argument_type =
 type 'a and_short_name = 'a * identifier located option
 type 'a or_by_notation =
   | AN of 'a
-  | ByNotation of loc * string * Notation.delimiters option
+  | ByNotation of (loc * string * Notation.delimiters option)
+
+let loc_of_or_by_notation f = function
+  | AN c -> f c
+  | ByNotation (loc,s,_) -> loc
 
 type rawconstr_and_expr = rawconstr * constr_expr option
 type open_constr_expr = unit * constr_expr

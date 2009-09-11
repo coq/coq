@@ -306,11 +306,11 @@ GEXTEND Gram
       | id = identref; ":="; kind = scheme_kind -> (Some id,kind) ] ]
   ;
   scheme_kind:
-    [ [ IDENT "Induction"; "for"; ind = global;
+    [ [ IDENT "Induction"; "for"; ind = smart_global;
           IDENT "Sort"; s = sort-> InductionScheme(true,ind,s)
-      | IDENT "Minimality"; "for"; ind = global;
+      | IDENT "Minimality"; "for"; ind = smart_global;
           IDENT "Sort"; s = sort-> InductionScheme(false,ind,s)
-      | IDENT "Equality"; "for" ; ind = global -> EqualityScheme(ind)  ] ]
+      | IDENT "Equality"; "for" ; ind = smart_global -> EqualityScheme(ind) ] ]
   ;
   (* Various Binders *)
 (*
@@ -465,17 +465,20 @@ GEXTEND Gram
 
   gallina_ext:
     [ [ (* Transparent and Opaque *)
-        IDENT "Transparent"; l = LIST1 global ->
+        IDENT "Transparent"; l = LIST1 smart_global ->
           VernacSetOpacity (use_non_locality (),[Conv_oracle.transparent,l])
-      | IDENT "Opaque"; l = LIST1 global ->
+      | IDENT "Opaque"; l = LIST1 smart_global ->
           VernacSetOpacity (use_non_locality (),[Conv_oracle.Opaque, l])
       | IDENT "Strategy"; l =
-          LIST1 [ lev=strategy_level; "["; q=LIST1 global; "]" -> (lev,q)] ->
+          LIST1 [ lev=strategy_level; "["; q=LIST1 smart_global; "]" -> (lev,q)] ->
             VernacSetOpacity (use_locality (),l)
       (* Canonical structure *)
       | IDENT "Canonical"; IDENT "Structure"; qid = global ->
-	  VernacCanonical qid
-      | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
+	  VernacCanonical (AN qid)
+      | IDENT "Canonical"; IDENT "Structure"; ntn = by_notation ->
+	  VernacCanonical (ByNotation ntn)
+      | IDENT "Canonical"; IDENT "Structure"; qid = global;
+          d = def_body ->
           let s = coerce_reference_to_id qid in
 	  VernacDefinition 
 	    ((Global,false,CanonicalStructure),(dummy_loc,s),d,
@@ -496,10 +499,16 @@ GEXTEND Gram
 	   VernacIdentityCoercion (use_locality_exp (), f, s, t)
       | IDENT "Coercion"; IDENT "Local"; qid = global; ":";
 	 s = class_rawexpr; ">->"; t = class_rawexpr -> 
-	  VernacCoercion (enforce_locality_exp (), qid, s, t)
+	  VernacCoercion (enforce_locality_exp (), AN qid, s, t)
+      | IDENT "Coercion"; IDENT "Local"; ntn = by_notation; ":";
+	 s = class_rawexpr; ">->"; t = class_rawexpr -> 
+	  VernacCoercion (enforce_locality_exp (), ByNotation ntn, s, t)
       | IDENT "Coercion"; qid = global; ":"; s = class_rawexpr; ">->";
          t = class_rawexpr ->
-	  VernacCoercion (use_locality_exp (), qid, s, t)
+	  VernacCoercion (use_locality_exp (), AN qid, s, t)
+      | IDENT "Coercion"; ntn = by_notation; ":"; s = class_rawexpr; ">->";
+         t = class_rawexpr ->
+	  VernacCoercion (use_locality_exp (), ByNotation ntn, s, t)
 	     
       | IDENT "Context"; c = binders_let -> 
 	  VernacContext c
@@ -530,7 +539,7 @@ GEXTEND Gram
       | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is
 
       (* Implicit *)
-      | IDENT "Implicit"; IDENT "Arguments"; qid = global; 
+      | IDENT "Implicit"; IDENT "Arguments"; qid = smart_global; 
 	   pos = OPT [ "["; l = LIST0 implicit_name; "]" -> 
 	     List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
 	   VernacDeclareImplicits (use_section_locality (),qid,pos)
@@ -601,13 +610,13 @@ GEXTEND Gram
 
       (* Printing (careful factorization of entries) *)
       | IDENT "Print"; p = printable -> VernacPrint p
-      | IDENT "Print"; qid = global -> VernacPrint (PrintName qid)
+      | IDENT "Print"; qid = smart_global -> VernacPrint (PrintName qid)
       | IDENT "Print"; IDENT "Module"; "Type"; qid = global -> 
 	  VernacPrint (PrintModuleType qid)
       | IDENT "Print"; IDENT "Module"; qid = global -> 
 	  VernacPrint (PrintModule qid)
       | IDENT "Inspect"; n = natural -> VernacPrint (PrintInspect n)
-      | IDENT "About"; qid = global -> VernacPrint (PrintAbout qid)
+      | IDENT "About"; qid = smart_global -> VernacPrint (PrintAbout qid)
 
       (* Searching the environment *)
       | IDENT "Search"; c = constr_pattern; l = in_or_out_modules -> 
@@ -674,7 +683,7 @@ GEXTEND Gram
 	  fun g -> VernacCheckMayEval (None, g, c) ] ]
   ;
   printable:
-    [ [ IDENT "Term"; qid = global -> PrintName qid
+    [ [ IDENT "Term"; qid = smart_global -> PrintName qid
       | IDENT "All" -> PrintFullContext
       | IDENT "Section"; s = global -> PrintSectionContext s
       | IDENT "Grammar"; ent = IDENT ->
@@ -690,40 +699,36 @@ GEXTEND Gram
       | IDENT "Graph" -> PrintGraph
       | IDENT "Classes" ->  PrintClasses
       | IDENT "TypeClasses" -> PrintTypeClasses
-      | IDENT "Instances"; qid = global -> PrintInstances qid
+      | IDENT "Instances"; qid = smart_global -> PrintInstances qid
       | IDENT "Ltac"; qid = global -> PrintLtac qid
       | IDENT "Coercions" -> PrintCoercions
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr
          -> PrintCoercionPaths (s,t)
       | IDENT "Canonical"; IDENT "Projections" -> PrintCanonicalConversions
       | IDENT "Tables" -> PrintTables
-(* Obsolete: was used for cooking V6.3 recipes ??
-      | IDENT "Proof"; qid = global -> PrintOpaqueName qid
-*)
       | IDENT "Hint" -> PrintHintGoal
-      | IDENT "Hint"; qid = global -> PrintHint qid
+      | IDENT "Hint"; qid = smart_global -> PrintHint qid
       | IDENT "Hint"; "*" -> PrintHintDb
       | IDENT "HintDb"; s = IDENT -> PrintHintDbName s
       | "Rewrite"; IDENT "HintDb"; s = IDENT -> PrintRewriteHintDbName s
       | IDENT "Scopes" -> PrintScopes
       | IDENT "Scope"; s = IDENT -> PrintScope s
       | IDENT "Visibility"; s = OPT IDENT -> PrintVisibility s
-      | IDENT "Implicit"; qid = global -> PrintImplicit qid
+      | IDENT "Implicit"; qid = smart_global -> PrintImplicit qid
       | IDENT "Universes"; fopt = OPT ne_string -> PrintUniverses fopt
-      | IDENT "Assumptions"; qid = global -> PrintAssumptions (false, qid)
-      | IDENT "Opaque"; IDENT "Dependencies"; qid = global -> PrintAssumptions (true, qid) ] ]
+      | IDENT "Assumptions"; qid = smart_global -> PrintAssumptions (false, qid)
+      | IDENT "Opaque"; IDENT "Dependencies"; qid = smart_global -> PrintAssumptions (true, qid) ] ]
   ;
   class_rawexpr:
     [ [ IDENT "Funclass" -> FunClass
       | IDENT "Sortclass" -> SortClass
-      | qid = global -> RefClass qid ] ]
+      | qid = smart_global -> RefClass qid ] ]
   ;
   locatable:
-    [ [ qid = global -> LocateTerm qid
+    [ [ qid = smart_global -> LocateTerm qid
       | IDENT "File"; f = ne_string -> LocateFile f
       | IDENT "Library"; qid = global -> LocateLibrary qid
-      | IDENT "Module"; qid = global -> LocateModule qid
-      | s = ne_string -> LocateNotation s ] ]
+      | IDENT "Module"; qid = global -> LocateModule qid ] ]
   ;
   option_value:
     [ [ n  = integer   -> IntValue n
@@ -805,7 +810,7 @@ GEXTEND Gram
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with"; 
        refl = LIST1 class_rawexpr -> VernacBindScope (sc,refl)
 
-     | IDENT "Arguments"; IDENT "Scope"; qid = global;
+     | IDENT "Arguments"; IDENT "Scope"; qid = smart_global;
        "["; scl = LIST0 opt_scope; "]" -> 
 	 VernacArgumentsScope (use_non_locality (),qid,scl)
 

@@ -37,7 +37,7 @@ GEXTEND Gram
   GLOBAL: 
     bigint natural integer identref name ident var preident
     fullyqualid qualid reference dirpath
-    ne_string string pattern_ident pattern_identref;
+    ne_string string pattern_ident pattern_identref by_notation smart_global;
   preident:
     [ [ s = IDENT -> s ] ]
   ;
@@ -83,6 +83,13 @@ GEXTEND Gram
         Qualid (loc, local_make_qualid (l@[id]) id')
       | id = ident -> Ident (loc,id)
       ] ]
+  ;
+  by_notation:
+    [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> key ] -> (loc,s,sc) ] ]
+  ;
+  smart_global:
+    [ [ c = reference -> Genarg.AN c
+      | ntn = by_notation -> Genarg.ByNotation ntn ] ]
   ;
   qualid:
     [ [ qid = basequalid -> loc, qid ] ]

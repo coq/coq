@@ -167,7 +167,8 @@ val decompose_notation_key : notation -> symbol list
 (* Prints scopes (expect a pure aconstr printer *)
 val pr_scope : (rawconstr -> std_ppcmds) -> scope_name -> std_ppcmds
 val pr_scopes : (rawconstr -> std_ppcmds) -> std_ppcmds
-val locate_notation : (rawconstr -> std_ppcmds) -> notation -> std_ppcmds
+val locate_notation : (rawconstr -> std_ppcmds) -> notation -> 
+      scope_name option -> std_ppcmds
 
 val pr_visibility: (rawconstr -> std_ppcmds) -> scope_name option -> std_ppcmds
 

@@ -15,7 +15,7 @@ open Term
 open Libnames
 open Pattern
 open Nametab
-open Syntax_def
+open Smartlocate
 
 (************************************************************************)
 (* Generic functions to find Coq objects *)

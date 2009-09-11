@@ -217,7 +217,7 @@ END
 VERNAC COMMAND EXTEND Whelp
 | [ "Whelp" "Locate" string(s) ] -> [ whelp_locate s ] 
 | [ "Whelp" "Locate" preident(s) ] -> [ whelp_locate s ] 
-| [ "Whelp" "Elim" global(r) ] -> [ whelp_elim (global_inductive_with_alias r) ] 
+| [ "Whelp" "Elim" global(r) ] -> [ whelp_elim (Smartlocate.global_inductive_with_alias r) ] 
 | [ "Whelp" whelp_constr_request(req) constr(c) ] -> [ whelp_constr_expr req c]
 END
 

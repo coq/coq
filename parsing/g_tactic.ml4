@@ -215,11 +215,6 @@ GEXTEND Gram
       | c1 = constr; "at"; occs = occs_nums; "with"; c2 = constr ->
           (Some (occs,c1), c2) ] ]
   ;
-  smart_global:
-    [ [ c = global -> AN c
-      | s = ne_string; sc = OPT ["%"; key = IDENT -> key ] -> 
-	  ByNotation (loc,s,sc) ] ]
-  ;
   occs_nums:
     [ [ nl = LIST1 nat_or_var -> no_occurrences_expr_but nl
       | "-"; n = nat_or_var; nl = LIST0 int_or_var ->

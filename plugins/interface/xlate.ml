@@ -217,10 +217,14 @@ let reference_to_ct_ID = function
   | Ident (_,id) -> CT_ident (Names.string_of_id id)
   | Qualid (_,qid) -> CT_ident (Libnames.string_of_qualid qid)
 
+let loc_smart_global_to_ct_ID = function
+  | AN ref -> reference_to_ct_ID ref
+  | ByNotation _ -> xlate_error "smart_global to do"
+
 let xlate_class = function
   | FunClass -> CT_ident "FUNCLASS"
   | SortClass -> CT_ident "SORTCLASS"
-  | RefClass qid -> loc_qualid_to_ct_ID qid
+  | RefClass qid -> loc_smart_global_to_ct_ID qid
 
 let id_to_pattern_var ctid =
  match ctid with
@@ -1837,7 +1841,7 @@ let rec xlate_vernac =
       CT_strategy(CT_level_list
         (List.map (fun (l,q) ->
           (level_to_ct_LEVEL l,
-           CT_id_list(List.map loc_qualid_to_ct_ID q))) l))
+           CT_id_list(List.map loc_smart_global_to_ct_ID q))) l))
   | VernacUndo n -> CT_undo (CT_coerce_INT_to_INT_OPT (CT_int n))
   | VernacShow (ShowGoal nopt) -> CT_show_goal (xlate_int_opt nopt)
   | VernacShow ShowNode -> CT_show_node
@@ -1860,8 +1864,7 @@ let rec xlate_vernac =
   | VernacPrint p ->
       (match p with
 	  PrintFullContext -> CT_print_all
-	| PrintName id -> CT_print_id (loc_qualid_to_ct_ID id)
-	| PrintOpaqueName id -> CT_print_opaqueid (loc_qualid_to_ct_ID id)
+	| PrintName id -> CT_print_id (loc_smart_global_to_ct_ID id)
 	| PrintSectionContext id -> CT_print_section (loc_qualid_to_ct_ID id)
 	| PrintModules -> CT_print_modules
 	| PrintGrammar name -> CT_print_grammar CT_grammar_none
@@ -1871,7 +1874,7 @@ let rec xlate_vernac =
 	| PrintRewriteHintDbName id -> 
 	    CT_print_rewrite_hintdb (CT_ident id)
 	| PrintHint id ->
-	    CT_print_hint (CT_coerce_ID_to_ID_OPT (loc_qualid_to_ct_ID id))
+	    CT_print_hint (CT_coerce_ID_to_ID_OPT (loc_smart_global_to_ct_ID id))
 	| PrintHintGoal -> CT_print_hint ctv_ID_OPT_NONE
 	| PrintLoadPath None -> CT_print_loadpath
 	| PrintLoadPath _ -> xlate_error "TODO: Print LoadPath dir"
@@ -1903,8 +1906,8 @@ let rec xlate_vernac =
 	      (match id_opt with
 		   Some id -> CT_coerce_ID_to_ID_OPT(CT_ident id)
 		 | None -> ctv_ID_OPT_NONE)
-        | PrintAbout qid -> CT_print_about(loc_qualid_to_ct_ID qid)
-	| PrintImplicit qid -> CT_print_implicit(loc_qualid_to_ct_ID qid))
+        | PrintAbout qid -> CT_print_about(loc_smart_global_to_ct_ID qid)
+	| PrintImplicit qid -> CT_print_implicit(loc_smart_global_to_ct_ID qid))
   | VernacBeginSection (_,id) ->
       CT_coerce_SECTION_BEGIN_to_COMMAND (CT_section (xlate_ident id))
   | VernacEndSegment (_,id) -> CT_section_end (xlate_ident id)
@@ -2007,12 +2010,12 @@ let rec xlate_vernac =
       | (Some (_,id), InductionScheme (depstr, inde, sort)) ->
            CT_scheme_spec
             (xlate_ident id, xlate_dep depstr, 
-	    CT_coerce_ID_to_FORMULA (loc_qualid_to_ct_ID inde),
+	    CT_coerce_ID_to_FORMULA (loc_smart_global_to_ct_ID inde),
 	     xlate_sort sort)
       | (None, InductionScheme (depstr, inde, sort)) ->
            CT_scheme_spec
             (xlate_ident (id_of_string ""), xlate_dep depstr,
-            CT_coerce_ID_to_FORMULA (loc_qualid_to_ct_ID inde),
+            CT_coerce_ID_to_FORMULA (loc_smart_global_to_ct_ID inde),
              xlate_sort sort)
       | (_, EqualityScheme _) -> xlate_error "TODO: Scheme Equality" in
         CT_ind_scheme
@@ -2064,7 +2067,7 @@ let rec xlate_vernac =
    | VernacOpenCloseScope(true, false, s) -> CT_local_close_scope(CT_ident s)
    | VernacOpenCloseScope(false, false, s) -> CT_close_scope(CT_ident s)
    | VernacArgumentsScope(true, qid, l) -> 
-       CT_arguments_scope(loc_qualid_to_ct_ID qid,
+       CT_arguments_scope(loc_smart_global_to_ct_ID qid,
 		       CT_id_opt_list
 		       (List.map
 			  (fun x ->
@@ -2077,7 +2080,7 @@ let rec xlate_vernac =
    | VernacBindScope(id, a::l) -> 
        let xlate_class_rawexpr = function
 	   FunClass -> CT_ident "Funclass" | SortClass -> CT_ident "Sortclass"
-	 | RefClass qid -> loc_qualid_to_ct_ID qid in
+	 | RefClass qid -> loc_smart_global_to_ct_ID qid in
        CT_bind_scope(CT_ident id,
 		     CT_id_ne_list(xlate_class_rawexpr a,
 				   List.map xlate_class_rawexpr l))
@@ -2124,7 +2127,7 @@ let rec xlate_vernac =
        (* Cannot decide whether it is a global or a Local but at toplevel *)
        | Global -> CT_coerce_NONE_to_LOCAL_OPT CT_none
        | Local -> CT_local in
-      CT_coercion (local_opt, id_opt, loc_qualid_to_ct_ID id1,
+      CT_coercion (local_opt, id_opt, loc_smart_global_to_ct_ID id1,
         xlate_class id2, xlate_class id3)
 
    | VernacIdentityCoercion (s, (_,id1), id2, id3) ->
@@ -2157,7 +2160,7 @@ let rec xlate_vernac =
       CT_scomments(CT_scomment_content_list (List.map xlate_comment l))
   | VernacDeclareImplicits(true, id, opt_positions) ->
       CT_implicits
-	(reference_to_ct_ID id,
+	(loc_smart_global_to_ct_ID id,
 	 match opt_positions with
 	     None -> CT_coerce_NONE_to_ID_LIST_OPT CT_none
 	   | Some l -> 
@@ -2175,11 +2178,10 @@ let rec xlate_vernac =
 			       List.map (fun (_,x) -> xlate_ident x) l),
 		 xlate_formula f)
   | VernacReserve([], _) -> assert false
-  | VernacLocate(LocateTerm id) -> CT_locate(reference_to_ct_ID id)
+  | VernacLocate(LocateTerm id) -> CT_locate(loc_smart_global_to_ct_ID id)
   | VernacLocate(LocateLibrary id) -> CT_locate_lib(reference_to_ct_ID id)
   | VernacLocate(LocateModule _) -> xlate_error "TODO: Locate Module"
   | VernacLocate(LocateFile s) -> CT_locate_file(CT_string s)
-  | VernacLocate(LocateNotation s) -> CT_locate_notation(CT_string s)
   | VernacTime(v) -> CT_time(xlate_vernac v)
   | VernacTimeout(n,v) -> CT_timeout(CT_int n,xlate_vernac v)
   | VernacSetOption (_,["Implicit"; "Arguments"], BoolValue true)->CT_user_vernac (CT_ident "IMPLICIT_ARGS_ON", CT_varg_list[])

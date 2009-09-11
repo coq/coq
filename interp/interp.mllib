@@ -4,7 +4,8 @@ Ppextend
 Notation
 Dumpglob
 Genarg 
-Syntax_def 
+Syntax_def
+Smartlocate
 Reserve
 Impargs 
 Implicit_quantifiers

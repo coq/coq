@@ -99,6 +99,10 @@ let strip s =
   let a = lstrip_rec 0 and b = rstrip_rec (n-1) in
   String.sub s a (b-a+1)
 
+let drop_simple_quotes s =
+  let n = String.length s in
+  if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' then String.sub s 1 (n-2) else s
+
 (* substring searching... *)
 
 (* gdzie = where, co = what *)

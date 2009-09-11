@@ -273,6 +273,8 @@ module Prim =
     let bigint = Gram.Entry.create "Prim.bigint"
     let string = gec_gen rawwit_string "string"
     let reference = make_gen_entry uprim rawwit_ref "reference"
+    let by_notation = Gram.Entry.create "by_notation"
+    let smart_global = Gram.Entry.create "smart_global"
 
     (* parsed like ident but interpreted as a term *)
     let var = gec_gen rawwit_var "var"

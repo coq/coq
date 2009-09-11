@@ -81,29 +81,3 @@ let declare_syntactic_definition local id onlyparse pat =
 
 let search_syntactic_definition loc kn =
   out_pat (KNmap.find kn !syntax_table)
-
-let global_of_extended_global = function
-  | TrueGlobal ref -> ref
-  | SynDef kn -> 
-  match search_syntactic_definition dummy_loc kn with
-  | [],ARef ref -> ref
-  | _ -> raise Not_found
-
-let locate_global_with_alias (loc,qid) =
-  let ref = Nametab.locate_extended qid in
-  try global_of_extended_global ref
-  with Not_found ->
-    user_err_loc (loc,"",pr_qualid qid ++ 
-      str " is bound to a notation that does not denote a reference")
-
-let global_inductive_with_alias r =
-  match locate_global_with_alias (qualid_of_reference r) with
-  | IndRef ind -> ind
-  | ref ->
-      user_err_loc (loc_of_reference r,"global_inductive",
-        pr_reference r ++ spc () ++ str "is not an inductive type")
-
-let global_with_alias r =
-  let (loc,qid as lqid) = qualid_of_reference r in
-  try locate_global_with_alias lqid
-  with Not_found -> Nametab.error_global_not_found_loc loc qid

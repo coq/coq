@@ -50,6 +50,8 @@ let pr_lname = function
     (loc,Name id) -> pr_lident (loc,id)
   | lna -> pr_located pr_name lna
 
+let pr_smart_global = pr_or_by_notation pr_reference
+
 let pr_ltac_id = Libnames.pr_reference
 
 let pr_module = Libnames.pr_reference
@@ -164,7 +166,7 @@ let pr_explanation (e,b,f) =
 let pr_class_rawexpr = function
   | FunClass -> str"Funclass"
   | SortClass -> str"Sortclass"
-  | RefClass qid -> pr_reference qid
+  | RefClass qid -> pr_smart_global qid
 
 let pr_option_ref_value = function
   | QualidRefValue id -> pr_reference id
@@ -304,7 +306,7 @@ let pr_onescheme (idop,schem) =
       | None -> spc ()
     ) ++
     hov 0 ((if dep then str"Induction for" else str"Minimality for")
-    ++ spc() ++ pr_reference ind) ++ spc() ++ 
+    ++ spc() ++ pr_smart_global ind) ++ spc() ++ 
     hov 0 (str"Sort" ++ spc() ++ pr_rawsort s)
   | EqualityScheme ind -> 
     (match idop with
@@ -312,7 +314,7 @@ let pr_onescheme (idop,schem) =
       | None -> spc()
     ) ++
     hov 0 (str"Equality for")
-    ++ spc() ++ pr_reference ind
+    ++ spc() ++ pr_smart_global ind
 
 let begin_of_inductive = function
     [] -> 0
@@ -321,7 +323,7 @@ let begin_of_inductive = function
 let pr_class_rawexpr = function
   | FunClass -> str"Funclass"
   | SortClass -> str"Sortclass"
-  | RefClass qid -> pr_reference qid
+  | RefClass qid -> pr_smart_global qid
 
 let pr_assumption_token many = function
   | (Local,Logical) ->
@@ -508,7 +510,8 @@ let rec pr_vernac = function
   | VernacArgumentsScope (local,q,scl) -> let pr_opt_scope = function 
       |	None -> str"_"
       |	Some sc -> str sc in 
-    str"Arguments Scope" ++ spc() ++ pr_non_locality local ++ pr_reference q 
+    str"Arguments Scope" ++ spc() ++ pr_non_locality local ++ 
+    pr_smart_global q 
     ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
   | VernacInfix (local,(s,mv),q,sn) -> (* A Verifier *)
       hov 0 (hov 0 (str"Infix " ++ pr_locality local
@@ -541,7 +544,7 @@ let rec pr_vernac = function
         | None -> mt()
         | Some r ->
             str"Eval" ++ spc() ++
-            pr_red_expr (pr_constr, pr_lconstr, pr_or_by_notation pr_reference) r ++
+            pr_red_expr (pr_constr, pr_lconstr, pr_smart_global) r ++
             str" in" ++ spc() in
       let pr_def_body = function
         | DefineBody (bl,red,body,d) ->
@@ -690,12 +693,12 @@ let rec pr_vernac = function
   | VernacImport (f,l) ->
       (if f then str"Export" else str"Import") ++ spc() ++
       prlist_with_sep sep pr_import_module l
-  | VernacCanonical q -> str"Canonical Structure" ++ spc() ++ pr_reference q
+  | VernacCanonical q -> str"Canonical Structure" ++ spc() ++ pr_smart_global q
   | VernacCoercion (s,id,c1,c2) ->
       hov 1 (
 	str"Coercion" ++ (match s with | Local -> spc() ++
 	  str"Local" ++ spc() | Global -> spc()) ++
-	pr_reference id ++ spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++
+	pr_smart_global id ++ spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++
 	spc() ++ str">->" ++ spc() ++ pr_class_rawexpr c2)
   | VernacIdentityCoercion (s,id,c1,c2) ->
       hov 1 (
@@ -831,10 +834,10 @@ let rec pr_vernac = function
 	 prlist_with_sep spc pr_id ids ++ str" :=" ++ pr_constrarg c ++
          pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
   | VernacDeclareImplicits (local,q,None) ->
-      hov 2 (str"Implicit Arguments" ++ spc() ++ pr_reference q)
+      hov 2 (str"Implicit Arguments" ++ spc() ++ pr_smart_global q)
   | VernacDeclareImplicits (local,q,Some imps) ->
       hov 1 (str"Implicit Arguments " ++ pr_non_locality local ++
-	spc() ++ pr_reference q ++ spc() ++
+	spc() ++ pr_smart_global q ++ spc() ++
 	str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
   | VernacReserve (idl,c) ->
       hov 1 (str"Implicit Type" ++
@@ -843,10 +846,10 @@ let rec pr_vernac = function
         pr_lconstr c)
   | VernacSetOpacity(b,[k,l]) when k=Conv_oracle.transparent ->
       hov 1 (str"Transparent" ++ pr_non_locality b ++
-             spc() ++ prlist_with_sep sep pr_reference l)
+             spc() ++ prlist_with_sep sep pr_smart_global l)
   | VernacSetOpacity(b,[Conv_oracle.Opaque,l]) ->
       hov 1 (str"Opaque" ++ pr_non_locality b ++
-             spc() ++ prlist_with_sep sep pr_reference l)
+             spc() ++ prlist_with_sep sep pr_smart_global l)
   | VernacSetOpacity (local,l) ->
       let pr_lev = function
           Conv_oracle.Opaque -> str"opaque"
@@ -855,7 +858,7 @@ let rec pr_vernac = function
         | Conv_oracle.Level n -> int n in
       let pr_line (l,q) =
         hov 2 (pr_lev l ++ spc() ++
-               str"[" ++ prlist_with_sep sep pr_reference q ++ str"]") in
+               str"[" ++ prlist_with_sep sep pr_smart_global q ++ str"]") in
       hov 1 (pr_locality local ++ str"Strategy" ++ spc() ++
              hv 0 (prlist_with_sep sep pr_line l))
   | VernacUnsetOption (l,na) ->
@@ -870,7 +873,7 @@ let rec pr_vernac = function
       let pr_mayeval r c = match r with 
       | Some r0 ->
           hov 2 (str"Eval" ++ spc() ++
-          pr_red_expr (pr_constr,pr_lconstr,pr_or_by_notation pr_reference) r0 ++
+          pr_red_expr (pr_constr,pr_lconstr,pr_smart_global) r0 ++
           spc() ++ str"in" ++ spc () ++ pr_constr c)
       | None -> hov 2 (str"Check" ++ spc() ++ pr_constr c) 
       in 
@@ -891,41 +894,39 @@ let rec pr_vernac = function
 	| PrintGraph -> str"Print Graph"
 	| PrintClasses -> str"Print Classes"
 	| PrintTypeClasses -> str"Print TypeClasses"
-	| PrintInstances qid -> str"Print Instances" ++ spc () ++ pr_reference qid
+	| PrintInstances qid -> str"Print Instances" ++ spc () ++ pr_smart_global qid
 	| PrintLtac qid -> str"Print Ltac" ++ spc() ++ pr_reference qid
 	| PrintCoercions -> str"Print Coercions"
 	| PrintCoercionPaths (s,t) -> str"Print Coercion Paths" ++ spc() ++ pr_class_rawexpr s ++ spc() ++ pr_class_rawexpr t
 	| PrintCanonicalConversions -> str"Print Canonical Structures"
 	| PrintTables -> str"Print Tables"
-	| PrintOpaqueName qid -> str"Print Term" ++ spc() ++ pr_reference qid
 	| PrintHintGoal -> str"Print Hint"
-	| PrintHint qid -> str"Print Hint" ++ spc() ++ pr_reference qid
+	| PrintHint qid -> str"Print Hint" ++ spc() ++ pr_smart_global qid
 	| PrintHintDb -> str"Print Hint *"
 	| PrintHintDbName s -> str"Print HintDb" ++ spc() ++ str s
 	| PrintRewriteHintDbName s -> str"Print Rewrite HintDb" ++ spc() ++ str s
 	| PrintUniverses fopt -> str"Dump Universes" ++ pr_opt str fopt
-	| PrintName qid -> str"Print" ++ spc()  ++ pr_reference qid
+	| PrintName qid -> str"Print" ++ spc()  ++ pr_smart_global qid
 	| PrintModuleType qid -> str"Print Module Type" ++ spc() ++ pr_reference qid
 	| PrintModule qid -> str"Print Module" ++ spc() ++ pr_reference qid
 	| PrintInspect n -> str"Inspect" ++ spc() ++ int n
 	| PrintScopes -> str"Print Scopes"
 	| PrintScope s -> str"Print Scope" ++ spc() ++ str s 
 	| PrintVisibility s -> str"Print Visibility" ++ pr_opt str s 
-	| PrintAbout qid -> str"About" ++ spc()  ++ pr_reference qid
-	| PrintImplicit qid -> str"Print Implicit" ++ spc()  ++ pr_reference qid
+	| PrintAbout qid -> str"About" ++ spc()  ++ pr_smart_global qid
+	| PrintImplicit qid -> str"Print Implicit" ++ spc()  ++ pr_smart_global qid
 (* spiwack: command printing all the axioms and section variables used in a 
          term *)
 	| PrintAssumptions (b,qid) -> (if b then str"Print Assumptions" else str"Print Opaque Dependencies")
-	    ++spc()++pr_reference qid
+	    ++ spc() ++ pr_smart_global qid
       in pr_printable p
   | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_constr_pattern_expr
   | VernacLocate loc -> 
       let pr_locate =function
-	| LocateTerm qid ->  pr_reference qid
+	| LocateTerm qid -> pr_smart_global qid
 	| LocateFile f -> str"File" ++ spc() ++ qs f
 	| LocateLibrary qid -> str"Library" ++ spc () ++ pr_module qid
 	| LocateModule qid -> str"Module" ++ spc () ++ pr_module qid
-	| LocateNotation s -> qs s
       in str"Locate" ++ spc() ++ pr_locate loc
   | VernacComments l ->
       hov 2

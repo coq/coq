@@ -23,6 +23,14 @@ type global_reference =
   | ConstructRef of constructor
 
 let isVarRef = function VarRef _ -> true | _ -> false
+let isConstRef = function ConstRef _ -> true | _ -> false
+let isIndRef = function IndRef _ -> true | _ -> false
+let isConstructRef = function ConstructRef _ -> true | _ -> false
+
+let destVarRef = function VarRef ind -> ind | _ -> failwith "destVarRef"
+let destConstRef = function ConstRef ind -> ind | _ -> failwith "destConstRef"
+let destIndRef = function IndRef ind -> ind | _ -> failwith "destIndRef"
+let destConstructRef = function ConstructRef ind -> ind | _ -> failwith "destConstructRef"
 
 let subst_constructor subst ((kn,i),j as ref) =
   let kn' = subst_kn subst kn in 

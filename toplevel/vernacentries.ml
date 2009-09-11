@@ -44,7 +44,7 @@ type pcoq_hook = {
   solve : int -> unit;
   abort : string -> unit;
   search : searchable -> dir_path list * bool -> unit;
-  print_name : reference -> unit;
+  print_name : reference Genarg.or_by_notation -> unit;
   print_check : Environ.env -> Environ.unsafe_judgment -> unit;
   print_eval : Reductionops.reduction_function -> Environ.env -> Evd.evar_map -> constr_expr ->
     Environ.unsafe_judgment -> unit;
@@ -59,7 +59,7 @@ let set_pcoq_hook f = pcoq := Some f
 let cl_of_qualid = function
   | FunClass -> Classops.CL_FUN
   | SortClass -> Classops.CL_SORT
-  | RefClass r -> Class.class_of_global (global_with_alias r)
+  | RefClass r -> Class.class_of_global (Smartlocate.smart_global r)
 
 (*******************)
 (* "Show" commands *)
@@ -278,9 +278,9 @@ let print_located_module r =
 	str "No module is referred to by name ") ++ pr_qualid qid
   in msgnl msg  
 
-let global_with_alias r =
-  let gr = global_with_alias r in
-    Dumpglob.add_glob (loc_of_reference r) gr;
+let smart_global r =
+  let gr = Smartlocate.smart_global r in
+    Dumpglob.add_glob (Genarg.loc_of_or_by_notation loc_of_reference r) gr;
     gr
 
 (**********)
@@ -296,7 +296,7 @@ let vernac_bind_scope sc cll =
 let vernac_open_close_scope = Notation.open_close_scope
 
 let vernac_arguments_scope local r scl =
-  Notation.declare_arguments_scope local (global_with_alias r) scl
+  Notation.declare_arguments_scope local (smart_global r) scl
 
 let vernac_infix = Metasyntax.add_infix
 
@@ -596,14 +596,14 @@ let vernac_require import _ qidl =
 (* Coercions and canonical structures *)
 
 let vernac_canonical r =
-  Recordops.declare_canonical_structure (global_with_alias r)
+  Recordops.declare_canonical_structure (smart_global r)
 
 let vernac_coercion stre ref qids qidt =
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  let ref' = global_with_alias ref in
+  let ref' = smart_global ref in
   Class.try_add_new_coercion_with_target ref' stre source target;
-  if_verbose message ((string_of_reference ref) ^ " is now a coercion")
+  if_verbose msgnl (pr_global ref' ++ str " is now a coercion")
 
 let vernac_identity_coercion stre id qids qidt =
   let target = cl_of_qualid qidt in
@@ -764,10 +764,10 @@ let vernac_syntactic_definition lid =
   
 let vernac_declare_implicits local r = function
   | Some imps ->
-      Impargs.declare_manual_implicits local (global_with_alias r) ~enriching:false
+      Impargs.declare_manual_implicits local (smart_global r) ~enriching:false
 	(List.map (fun (ex,b,f) -> ex, (b,true,f)) imps)
   | None -> 
-      Impargs.declare_implicits local (global_with_alias r)
+      Impargs.declare_implicits local (smart_global r)
 
 let vernac_reserve idl c =
   let t = Constrintern.interp_type Evd.empty (Global.env()) c in
@@ -975,7 +975,7 @@ let _ =
 
 let vernac_set_opacity local str =
   let glob_ref r =
-    match global_with_alias r with
+    match smart_global r with
       | ConstRef sp -> EvalConstRef sp
       | VarRef id -> EvalVarRef id
       | _ -> error
@@ -1064,11 +1064,10 @@ let vernac_print = function
   | PrintName qid -> 
       if !pcoq <> None then (Option.get !pcoq).print_name qid
       else msg (print_name qid)
-  | PrintOpaqueName qid -> msg (print_opaque_name qid)
   | PrintGraph -> ppnl (Prettyp.print_graph())
   | PrintClasses -> ppnl (Prettyp.print_classes())
   | PrintTypeClasses -> ppnl (Prettyp.print_typeclasses())
-  | PrintInstances c -> ppnl (Prettyp.print_instances (global c))
+  | PrintInstances c -> ppnl (Prettyp.print_instances (smart_global c))
   | PrintLtac qid -> ppnl (Tacinterp.print_ltac (snd (qualid_of_reference qid)))
   | PrintCoercions -> ppnl (Prettyp.print_coercions())
   | PrintCoercionPaths (cls,clt) ->
@@ -1076,7 +1075,7 @@ let vernac_print = function
   | PrintCanonicalConversions -> ppnl (Prettyp.print_canonical_projections ())
   | PrintUniverses None -> pp (Univ.pr_universes (Global.universes ()))
   | PrintUniverses (Some s) -> dump_universes s
-  | PrintHint r -> Auto.print_hint_ref (global_with_alias r)
+  | PrintHint r -> Auto.print_hint_ref (smart_global r)
   | PrintHintGoal -> Auto.print_applicable_hint ()
   | PrintHintDbName s -> Auto.print_hint_db_by_name s
   | PrintRewriteHintDbName s -> Autorewrite.print_rewrite_hintdb s
@@ -1091,7 +1090,7 @@ let vernac_print = function
   | PrintImplicit qid -> msg (print_impargs qid)
 (*spiwack: prints all the axioms and section variables used by a term *)
   | PrintAssumptions (o,r) ->
-      let cstr = constr_of_global (global_with_alias r) in
+      let cstr = constr_of_global (smart_global r) in
       let nassumptions = Environ.assumptions (Conv_oracle.get_transp_state ())
 	~add_opaque:o cstr (Global.env ()) in
       msg (Printer.pr_assumptionset (Global.env ()) nassumptions)
@@ -1144,13 +1143,14 @@ let vernac_search s r =
       Search.search_about (List.map (on_snd interp_search_about_item) sl) r
 
 let vernac_locate = function
-  | LocateTerm qid -> msgnl (print_located_qualid qid)
+  | LocateTerm (Genarg.AN qid) -> msgnl (print_located_qualid qid)
+  | LocateTerm (Genarg.ByNotation (_,ntn,sc)) ->
+      ppnl
+        (Notation.locate_notation
+          (Constrextern.without_symbols pr_lrawconstr) ntn sc)
   | LocateLibrary qid -> print_located_library qid
   | LocateModule qid -> print_located_module qid
   | LocateFile f -> locate_file f
-  | LocateNotation ntn ->
-      ppnl (Notation.locate_notation (Constrextern.without_symbols pr_lrawconstr)
-	(Metasyntax.standardize_locatable_notation ntn))
 
 (********************)
 (* Proof management *)

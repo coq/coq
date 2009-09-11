@@ -34,6 +34,7 @@ open Clenv
 open Hiddentac
 open Libnames
 open Nametab
+open Smartlocate
 open Libobject
 open Library
 open Printer
@@ -533,7 +534,7 @@ type hints_entry =
 let interp_hints h =
   let f = Constrintern.interp_constr Evd.empty (Global.env()) in
   let fr r =
-    let gr = Syntax_def.global_with_alias r in
+    let gr = global_with_alias r in
     let r' = evaluable_of_global_reference (Global.env()) gr in
     Dumpglob.add_glob (loc_of_reference r) gr;
     r' in
@@ -1118,7 +1119,7 @@ let superauto n to_add argl  =
   tclTRY (tclCOMPLETE (search_superauto n to_add argl))
 
 let interp_to_add gl r =
-  let r = Syntax_def.locate_global_with_alias (qualid_of_reference r) in
+  let r = locate_global_with_alias (qualid_of_reference r) in
   let id = basename_of_global r in
   (next_ident_away id (pf_ids_of_hyps gl), constr_of_global r)
 

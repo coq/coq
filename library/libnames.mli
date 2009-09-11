@@ -24,6 +24,14 @@ type global_reference =
   | ConstructRef of constructor
 
 val isVarRef : global_reference -> bool
+val isConstRef : global_reference -> bool
+val isIndRef : global_reference -> bool
+val isConstructRef : global_reference -> bool
+
+val destVarRef : global_reference -> variable
+val destConstRef : global_reference -> constant
+val destIndRef : global_reference -> inductive
+val destConstructRef : global_reference -> constructor
 
 val subst_constructor : substitution -> constructor -> constructor * constr
 val subst_global : substitution -> global_reference -> global_reference * constr

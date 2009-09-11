@@ -182,6 +182,8 @@ module Prim :
     val qualid : qualid located Gram.Entry.e
     val fullyqualid : identifier list located Gram.Entry.e
     val reference : reference Gram.Entry.e
+    val by_notation : (loc * string * string option) Gram.Entry.e
+    val smart_global : reference or_by_notation Gram.Entry.e
     val dirpath : dir_path Gram.Entry.e
     val ne_string : string Gram.Entry.e
     val var : identifier located Gram.Entry.e

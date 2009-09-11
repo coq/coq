@@ -240,8 +240,6 @@ let parse_format (loc,str) =
 
 type symbol_token = WhiteSpace of int | String of string
 
-(* Decompose the notation string into tokens *)
-
 let split_notation_string str =
   let push_token beg i l =
     if beg = i then l else
@@ -307,10 +305,6 @@ let rec interp_list_parser hd = function
 
 (* Find non-terminal tokens of notation *)
 
-let unquote_notation_token s =
-  let n = String.length s in
-  if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' then String.sub s 1 (n-2) else s
-
 let is_normal_token str =
   try let _ = Lexer.check_ident str in true with Lexer.Error _ -> false
 
@@ -321,26 +315,18 @@ let quote_notation_token x =
   if (n > 0 & norm) or (n > 2 & x.[0] = '\'') then "'"^x^"'"
   else x
 
-let rec raw_analyse_notation_tokens = function
-  | []    -> [], []
-  | String ".." :: sl ->
-      let (vars,l) = raw_analyse_notation_tokens sl in
-      (list_add_set ldots_var vars, NonTerminal ldots_var :: l)
+let rec raw_analyze_notation_tokens = function
+  | []    -> []
+  | String ".." :: sl -> NonTerminal ldots_var :: raw_analyze_notation_tokens sl
   | String "_" :: _ -> error "_ must be quoted."
   | String x :: sl when is_normal_token x ->
       Lexer.check_ident x;
-      let id = Names.id_of_string x in
-      let (vars,l) = raw_analyse_notation_tokens sl in
-      if List.mem id vars then
-	error ("Variable "^x^" occurs more than once.");
-      (id::vars, NonTerminal id :: l)
+      NonTerminal (Names.id_of_string x) :: raw_analyze_notation_tokens sl
   | String s :: sl ->
       Lexer.check_keyword s;
-      let (vars,l) = raw_analyse_notation_tokens sl in
-      (vars, Terminal (unquote_notation_token s) :: l)
+      Terminal (drop_simple_quotes s) :: raw_analyze_notation_tokens sl
   | WhiteSpace n :: sl ->
-      let (vars,l) = raw_analyse_notation_tokens sl in
-      (vars, Break n :: l)
+      Break n :: raw_analyze_notation_tokens sl
 
 let is_numeral symbs = 
   match List.filter (function Break _ -> false | _ -> true) symbs with
@@ -349,8 +335,23 @@ let is_numeral symbs =
   | _ ->
       false
 
-let analyse_notation_tokens l =
-  let vars,l = raw_analyse_notation_tokens l in
+let rec get_notation_vars = function
+  | [] -> []
+  | NonTerminal id :: sl ->
+      let vars = get_notation_vars sl in
+      if List.mem id vars then
+        if id <> ldots_var then
+	  error ("Variable "^string_of_id id^" occurs more than once.")
+        else
+          vars
+      else
+        id::vars
+  | (Terminal _ | Break _) :: sl -> get_notation_vars sl
+  | SProdList _ :: _ -> assert false
+
+let analyze_notation_tokens l =
+  let l = raw_analyze_notation_tokens l in
+  let vars = get_notation_vars l in
   let extrarecvars,recvars,l = interp_list_parser [] l in
   (if extrarecvars = [] then [], [], vars, l
    else extrarecvars, recvars, list_subtract vars recvars, l)
@@ -538,7 +539,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
       when s' = String.make (String.length s') ' ' ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
   | Terminal s :: symbs, (UnpTerminal s') :: fmt
-      when s = unquote_notation_token s' ->
+      when s = drop_simple_quotes s' ->
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
   | NonTerminal s :: symbs, UnpTerminal s' :: fmt when s = id_of_string s' ->
       let i = list_index s vars in
@@ -829,7 +830,7 @@ let compute_syntax_data (df,modifiers) =
   (* Notation defaults to NONA *)
   let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
   let toks = split_notation_string df in
-  let (extrarecvars,recvars,vars,symbols) = analyse_notation_tokens toks in
+  let (extrarecvars,recvars,vars,symbols) = analyze_notation_tokens toks in
   let ntn_for_interp = make_notation_key symbols in
   let symbols' = remove_curly_brackets symbols in
   let need_squash = (symbols <> symbols') in
@@ -962,7 +963,7 @@ let add_notation_in_scope local df c mods scope =
 
 let add_notation_interpretation_core local df names c scope onlyparse =
   let dfs = split_notation_string df in
-  let (extrarecvars,recvars,vars,symbs) = analyse_notation_tokens dfs in
+  let (extrarecvars,recvars,vars,symbs) = analyze_notation_tokens dfs in
   (* Redeclare pa/pp rules *)
   if not (is_numeral symbs) then begin
     let sy_rules = recover_notation_syntax (make_notation_key symbs) in
@@ -1014,19 +1015,6 @@ let add_infix local (inf,modifiers) pr sc =
   let c = mkAppC (pr,metas) in
   let df = "x "^(quote_notation_token inf)^" y" in
   add_notation local c (df,modifiers) sc
-
-(**********************************************************************)
-(* Miscellaneous                                                      *)
-
-let standardize_locatable_notation ntn =
-  let unquote = function
-    | String s -> [unquote_notation_token s]
-    | _ -> [] in
-  if String.contains ntn ' ' then
-    String.concat " " 
-      (List.flatten (List.map unquote (split_notation_string ntn)))
-  else
-    unquote_notation_token ntn
 
 (**********************************************************************)
 (* Delimiters and classes bound to scopes                             *)
