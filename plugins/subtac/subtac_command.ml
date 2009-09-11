@@ -383,7 +383,8 @@ let check_evars env initial_sigma evd c =
 	  if not (Evd.mem initial_sigma evk) then
             let (loc,k) = evar_source evk evd in
 	      (match k with
-	      | QuestionMark _ -> ()
+	      | QuestionMark _
+	      | ImplicitArg (_, _, false) -> ()
 	      | _ ->
 		  let evi = nf_evar_info sigma (Evd.find sigma evk) in
 		    Pretype_errors.error_unsolvable_implicit loc env sigma evi k None)
@@ -426,6 +427,9 @@ let interp_recursive fixkind l boxed =
 
   (* Instantiate evars and check all are resolved *)
   let evd,_ = Evarconv.consider_remaining_unif_problems env_rec !evdref in
+  let evd = Typeclasses.resolve_typeclasses
+    ~onlyargs:true ~split:true ~fail:false env_rec evd
+  in
   let evd = Evarutil.nf_evar_defs evd in
   let fixdefs = List.map (nf_evar evd) fixdefs in
   let fixtypes = List.map (nf_evar evd) fixtypes in
