@@ -2,6 +2,7 @@
 \def\eol{\setlength\parskip{0pt}\par}
 \def\indent#1{\noindent\kern#1}
 \def\cst#1{\textsf{#1}}
+
 \newcommand\tele[1]{\overrightarrow{#1}}
 
 \achapter{\protect{Type Classes}}
@@ -173,6 +174,44 @@ Admitted.
 
 These instances are used just as well as lemmas in the instance hint database.
 
+\asection{Sections and contexts}
+\label{SectionContext}
+To ease the parameterisation of developments by type classes, we provide
+a new way to introduce variables into section contexts, compatible with 
+the implicit argument mechanism. 
+The new command works similarly to the \texttt{Variables} vernacular
+(see \ref{Variable}), except it accepts any binding context as argument.
+For example:
+
+\begin{coq_example}
+Section EqDec_defs.
+  Context `{EA : EqDec A}.
+\end{coq_example}
+
+\begin{coq_example*}
+  Global Instance option_eqb : EqDec (option A) :=
+  { eqb x y := match x, y with
+    | Some x, Some y => eqb x y
+    | None, None => true
+    | _, _ => false
+    end }.
+\end{coq_example*}
+\begin{coq_eval}
+Proof.
+intros x y ; destruct x ; destruct y ; intros H ; 
+try discriminate ; try apply eqb_leibniz in H ;
+subst ; auto. 
+Defined.
+\end{coq_eval}
+
+\begin{coq_example}
+End EqDec_defs.
+About option_eqb.
+\end{coq_example}
+
+Here the \texttt{Global} modifier redeclares the instance at the end of 
+the section, once it has been generalized by the context variabes it uses.
+
 \asection{Building hierarchies}
 
 \subsection{Superclasses}
@@ -327,6 +366,13 @@ type class to the instance database. It can be used for redeclaring
 instances at the end of sections, or declaring structure projections as
 instances. This is almost equivalent to {\tt Hint Resolve {\ident} :
   typeclass\_instances}.
+
+\subsection{\tt Context {\binder$_1$ \ldots \binder$_n$}}
+\comindex{Context}
+\label{Context}
+
+Declares variables according to the given binding context, which might
+use implicit generalization (see \ref{SectionContext}).
 
 \subsection{\tt Typeclasses Transparent, Opaque {\ident$_1$ \ldots \ident$_n$}}
 \comindex{Typeclasses Transparent}
