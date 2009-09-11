@@ -120,8 +120,7 @@ REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
 REFMANTEXFILES:=$(addprefix doc/refman/, \
   headers.sty Reference-Manual.tex \
   RefMan-pre.tex RefMan-int.tex RefMan-pro.tex RefMan-com.tex \
-  RefMan-uti.tex RefMan-ide.tex RefMan-add.tex RefMan-modr.tex \
-  ExternalProvers.tex ) \
+  RefMan-uti.tex RefMan-ide.tex RefMan-add.tex RefMan-modr.tex ) \
   $(REFMANCOQTEXFILES) \
 
 REFMANEPSFILES:=doc/refman/coqide.eps doc/refman/coqide-queries.eps

@@ -43,6 +43,8 @@ Vernacular commands
   interrupts the interpretation after <n> seconds.
 - Option -R now supports binding Coq root read-only.
 - New support for local binders in the syntax of Record/Structure fields.
+- Most commands referring to constant (e.g. Print or About) now support
+  referring to the constant by a notation string.
 
 Tools
 
