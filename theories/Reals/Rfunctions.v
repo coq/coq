@@ -619,6 +619,18 @@ Proof.
   unfold Zpower_nat in |- *; auto.
 Qed.
 
+Lemma Zpower_pos_powerRZ :
+  forall n m, IZR (Zpower_pos n m) = IZR n ^Z Zpos m.
+Proof.
+  intros.
+  rewrite Zpower_pos_nat; simpl.
+  induction (nat_of_P m).
+  easy.
+  unfold Zpower_nat; simpl.
+  rewrite mult_IZR.
+  now rewrite <- IHn0.
+Qed.
+
 Lemma powerRZ_lt : forall (x:R) (z:Z), 0 < x -> 0 < x ^Z z.
 Proof.
   intros x z; case z; simpl in |- *; auto with real.

@@ -515,6 +515,13 @@ Qed.
 
 (*i Old i*)Hint Resolve Rmult_eq_compat_l: v62.
 
+Lemma Rmult_eq_compat_r : forall r r1 r2, r1 = r2 -> r1 * r = r2 * r.
+Proof.
+  intros.
+  rewrite <- 2!(Rmult_comm r).
+  now apply Rmult_eq_compat_l.
+Qed.
+
 (**********)
 Lemma Rmult_eq_reg_l : forall r r1 r2, r * r1 = r * r2 -> r <> 0 -> r1 = r2.
 Proof.
@@ -523,6 +530,13 @@ Proof.
   transitivity (/ r * r * r2).
   repeat rewrite Rmult_assoc; rewrite H; trivial.
   field; trivial.
+Qed.
+
+Lemma Rmult_eq_reg_r : forall r r1 r2, r1 * r = r2 * r -> r <> 0 -> r1 = r2.
+Proof.
+  intros.
+  apply Rmult_eq_reg_l with (2 := H0).
+  now rewrite 2!(Rmult_comm r).
 Qed.
 
 (**********)
@@ -973,6 +987,13 @@ Proof.
   right; apply (Rplus_eq_reg_l r r1 r2 H0).
 Qed.
 
+Lemma Rplus_le_reg_r : forall r r1 r2, r1 + r <= r2 + r -> r1 <= r2.
+Proof.
+  intros.
+  apply (Rplus_le_reg_l r).
+  now rewrite 2!(Rplus_comm r).
+Qed.
+
 Lemma Rplus_gt_reg_l : forall r r1 r2, r + r1 > r + r2 -> r1 > r2.
 Proof.
   unfold Rgt in |- *; intros; apply (Rplus_lt_reg_r r r2 r1 H).
@@ -1267,6 +1288,14 @@ Proof.
       intro; apply (Rlt_irrefl (z * x)); auto.
 Qed.
 
+Lemma Rmult_lt_reg_r : forall r r1 r2 : R, 0 < r -> r1 * r < r2 * r -> r1 < r2.
+Proof.
+  intros.
+  apply Rmult_lt_reg_l with r.
+  exact H.
+  now rewrite 2!(Rmult_comm r).
+Qed.
+
 Lemma Rmult_gt_reg_l : forall r r1 r2, 0 < r -> r * r1 < r * r2 -> r1 < r2.
 Proof. eauto using Rmult_lt_reg_l with rorders. Qed.
 
@@ -1280,6 +1309,14 @@ Proof.
   rewrite H1; auto with real.
   rewrite <- Rmult_assoc; rewrite Rinv_l; auto with real.
   rewrite <- Rmult_assoc; rewrite Rinv_l; auto with real.
+Qed.
+
+Lemma Rmult_le_reg_r : forall r r1 r2, 0 < r -> r1 * r <= r2 * r -> r1 <= r2.
+Proof.
+  intros.
+  apply Rmult_le_reg_l with r.
+  exact H.
+  now rewrite 2!(Rmult_comm r).
 Qed.
 
 (*********************************************************)
@@ -1741,9 +1778,18 @@ Proof.
 Qed.
 
 (**********)
-Lemma Ropp_Ropp_IZR : forall n:Z, IZR (- n) = - IZR n.
+Lemma opp_IZR : forall n:Z, IZR (- n) = - IZR n.
 Proof.
   intro z; case z; simpl in |- *; auto with real.
+Qed.
+
+Definition Ropp_Ropp_IZR := opp_IZR.
+
+Lemma minus_IZR : forall n m:Z, IZR (n - m) = IZR n - IZR m.
+Proof.
+  intros; unfold Zminus, Rminus.
+  rewrite <- opp_IZR.
+  apply plus_IZR.
 Qed.
 
 (**********)

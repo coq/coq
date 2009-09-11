@@ -220,10 +220,12 @@ Proof.
   apply Rge_le; assumption.
 Qed.
 
-Lemma RRle_abs : forall x:R, x <= Rabs x.
+Lemma Rle_abs : forall x:R, x <= Rabs x.
 Proof.
   intro; unfold Rabs in |- *; case (Rcase_abs x); intros; fourier.
 Qed.
+
+Definition RRle_abs := Rle_abs.
 
 (*********)
 Lemma Rabs_pos_eq : forall x:R, 0 <= x -> Rabs x = x.
@@ -507,3 +509,8 @@ Proof.
   apply Rabs_right; auto with real zarith.
 Qed.
  
+Lemma abs_IZR : forall z, IZR (Zabs z) = Rabs (IZR z).
+Proof.
+  intros.
+  now rewrite Rabs_Zabs.
+Qed.
