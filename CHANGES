@@ -31,6 +31,7 @@ Tactics
   when one knows which side is true.
 - Tactic "exists" and "eexists" supports iteration using
   comma-separated arguments.
+- Tactic "gappa" has been removed from the Dp plugin.
 
 Tactic Language
 
