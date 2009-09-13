@@ -14,6 +14,7 @@ open Names
 open Nameops
 open Term
 open Termops
+open Inductiveops
 open Sign
 open Environ
 open Inductive
@@ -547,10 +548,9 @@ let interp_hints h =
       HintsTransparencyEntry (List.map fr lhints, b)
   | HintsConstructors lqid ->
       let constr_hints_of_ind qid =
-        let isp = global_inductive qid in
-        let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
-        list_tabulate (fun i -> None, true, mkConstruct (isp,i+1))
-	  (Array.length consnames) in
+        let ind = global_inductive qid in
+        list_tabulate (fun i -> None, true, mkConstruct (ind,i+1))
+	  (nconstructors ind) in
 	HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
   | HintsExtern (pri, patcom, tacexp) ->
       let pat =	Option.map fp patcom in
@@ -727,10 +727,21 @@ let unify_resolve_gen = function
   | None -> unify_resolve_nodelta
   | Some flags -> unify_resolve flags
 
+(* Util *)
+
+let expand_constructor_hints lems =
+  list_map_append (fun lem ->
+    match kind_of_term lem with
+    | Ind ind ->
+	list_tabulate (fun i -> mkConstruct (ind,i+1)) (nconstructors ind)
+    | _ ->
+	[lem]) lems
+
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
 
 let add_hint_lemmas eapply lems hint_db gl =
+  let lems = expand_constructor_hints lems in
   let hintlist' = 
     list_map_append (pf_apply make_resolves gl (eapply,true,false) None) lems in
   Hint_db.add_list hintlist' hint_db
@@ -926,7 +937,7 @@ let extend_local_db gl decl db =
 (* Try to decompose hypothesis [decl] into atomic components of a 
    conjunction with maximum depth [p] (or solve the goal from an 
    empty type) then call the continuation tactic with hint db extended 
-   with the obtappined not-further-decomposable hypotheses *)
+   with the obtained not-further-decomposable hypotheses *)
 
 let rec decomp_and_register_decl p kont (id,_,_ as decl) db gl =
   if p = 0 then

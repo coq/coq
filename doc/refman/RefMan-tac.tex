@@ -3115,10 +3115,16 @@ hints of the database named {\tt core}.
   Uses all existing hint databases, minus the special database
   {\tt v62}. See Section~\ref{Hints-databases}
 
-\item \texttt{auto using $lemma_1, \ldots, lemma_n$}
+\item \texttt{auto using \nterm{lemma}$_1$ , \ldots , \nterm{lemma}$_n$}
 
-  Uses $lemma_1, \ldots, lemma_n$ in addition to hints (can be combined
-  with the \texttt{with \ident} option).
+  Uses \nterm{lemma}$_1$, \ldots, \nterm{lemma}$_n$ in addition to
+  hints (can be combined with the \texttt{with \ident} option). If
+  $lemma_i$ is an inductive type, it is the collection of its
+  constructors which is added as hints.
+
+\item \texttt{auto using \nterm{lemma}$_1$ , \ldots , \nterm{lemma}$_n$ with \ident$_1$ \dots\ \ident$_n$}
+
+  This combines the effects of the {\tt using} and {\tt with} options.
 
 \item {\tt trivial}\tacindex{trivial}
 
@@ -3300,11 +3306,17 @@ instead may reason about any first-order class inductive definition.
    Adds lemmas \ident$_1$ \dots\ \ident$_n$ to the proof-search
    environment.
 
- \item {\tt firstorder using \ident$_1$ \dots\ \ident$_n$ }
+ \item {\tt firstorder using {\qualid}$_1$ , \dots\ , {\qualid}$_n$ }
    \tacindex{firstorder using}
 
-   Adds lemmas in {\tt auto} hints bases \ident$_1$ \dots\ \ident$_n$
-   to the proof-search environment.
+   Adds lemmas in {\tt auto} hints bases {\qualid}$_1$ \dots\ {\qualid}$_n$
+   to the proof-search environment. If {\qualid}$_i$ refers to an inductive
+   type, it is the collection of its constructors which is added as hints.
+
+\item \texttt{firstorder using {\qualid}$_1$ , \dots\ , {\qualid}$_n$ with \ident$_1$ \dots\ \ident$_n$}
+
+  This combines the effects of the {\tt using} and {\tt with} options.
+
 \end{Variants}
 
 Proof-search is bounded by a depth parameter which can be set by typing the

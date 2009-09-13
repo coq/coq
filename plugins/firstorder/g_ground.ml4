@@ -58,12 +58,7 @@ let default_solver=(Tacinterp.interp <:tactic<auto with *>>)
 
 let fail_solver=tclFAIL 0 (Pp.str "GTauto failed")
 		      
-type external_env=
-    Ids of global_reference list
-  | Bases of Auto.hint_db_name list
-  | Void
-
-let gen_ground_tac flag taco ext gl=
+let gen_ground_tac flag taco ids bases gl=
   let backup= !qflag in
     try
       qflag:=flag;
@@ -71,11 +66,9 @@ let gen_ground_tac flag taco ext gl=
 	match taco with 
 	    Some tac-> tac
 	  | None-> default_solver in
-      let startseq=
-	match ext with
-	    Void -> (fun gl -> empty_seq !ground_depth)
-	  | Ids l-> create_with_ref_list l !ground_depth
-	  | Bases l-> create_with_auto_hints l !ground_depth in
+      let startseq gl=
+	let seq=empty_seq !ground_depth in
+	extend_with_auto_hints bases (extend_with_ref_list ids seq gl) gl in
       let result=ground_tac solver startseq gl in 
 	qflag:=backup;result
     with e ->qflag:=backup;raise e
@@ -96,18 +89,45 @@ let normalize_evaluables=
 	   unfold_in_hyp (Lazy.force defined_connectives) 
 	   (Tacexpr.InHypType id)) *)
 
+open Genarg
+open Ppconstr
+open Printer
+let pr_firstorder_using_raw _ _ _ = prlist_with_sep pr_coma pr_reference
+let pr_firstorder_using_glob _ _ _ = prlist_with_sep pr_coma (pr_or_var (pr_located pr_global))
+let pr_firstorder_using_typed _ _ _ = prlist_with_sep pr_coma pr_global
+
+ARGUMENT EXTEND firstorder_using
+  TYPED AS reference_list
+  PRINTED BY pr_firstorder_using_typed
+  RAW_TYPED AS reference_list
+  RAW_PRINTED BY pr_firstorder_using_raw
+  GLOB_TYPED AS reference_list
+  GLOB_PRINTED BY pr_firstorder_using_glob
+| [ "using" reference(a) ] -> [ [a] ]
+| [ "using" reference(a) "," ne_reference_list_sep(l,",") ] -> [ a::l ]
+| [ "using" reference(a) reference(b) reference_list(l) ] -> [
+    Flags.if_verbose
+      Pp.msg_warning (Pp.str "Deprecated syntax; use \",\" as separator");
+    a::b::l
+  ]
+| [ ] -> [ [] ]
+END
+
 TACTIC EXTEND firstorder
-    [ "firstorder" tactic_opt(t) "using" ne_reference_list(l) ] -> 
-      [ gen_ground_tac true (Option.map eval_tactic t) (Ids l) ]
+    [ "firstorder" tactic_opt(t) firstorder_using(l) ] ->
+      [ gen_ground_tac true (Option.map eval_tactic t) l [] ]
 |   [ "firstorder" tactic_opt(t) "with" ne_preident_list(l) ] -> 
-      [ gen_ground_tac true (Option.map eval_tactic t) (Bases l) ]
+      [ gen_ground_tac true (Option.map eval_tactic t) [] l ]
+|   [ "firstorder" tactic_opt(t) firstorder_using(l) 
+       "with" ne_preident_list(l') ] -> 
+      [ gen_ground_tac true (Option.map eval_tactic t) l l' ]
 |   [ "firstorder" tactic_opt(t) ] -> 
-      [ gen_ground_tac true (Option.map eval_tactic t) Void ]
+      [ gen_ground_tac true (Option.map eval_tactic t) [] [] ]
 END
 
 TACTIC EXTEND gintuition
   [ "gintuition" tactic_opt(t) ] ->
-     [ gen_ground_tac false (Option.map eval_tactic t) Void ]
+     [ gen_ground_tac false (Option.map eval_tactic t) [] [] ]
 END
 
 
@@ -119,7 +139,7 @@ let default_declarative_automation gls =
        (Some (tclTHEN
 		default_solver
 		(Cctac.congruence_tac !congruence_depth [])))
-       Void) gls
+       [] []) gls
 
 
 

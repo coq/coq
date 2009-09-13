@@ -71,7 +71,6 @@ let substnl_ind_type l n = map_inductive_type (substnl l n)
 let mkAppliedInd (IndType ((ind,params), realargs)) =
   applist (mkInd ind,params@realargs)
 
-
 (* Does not consider imbricated or mutually recursive types *) 
 let mis_is_recursive_subset listind rarg = 
   let rec one_is_rec rvec = 
@@ -124,6 +123,10 @@ let constructor_nrealhyps env (ind,j) =
 let get_full_arity_sign env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_arity_ctxt
+
+let nconstructors ind = 
+  let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
+  Array.length mip.mind_consnames
 
 (* Length of arity (w/o local defs) *)
 

@@ -833,6 +833,10 @@ GEXTEND Gram
 	 pil = LIST1 production_item; ":="; t = Tactic.tactic
          -> VernacTacticNotation (n,pil,t)
 
+     | IDENT "Reserved"; IDENT "Infix"; s = ne_string;
+	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ] ->
+	   VernacSyntaxExtension (use_locality (),("_ '"^s^"' _",l))
+
      | IDENT "Reserved"; IDENT "Notation"; local = obsolete_locality; 
 	 s = ne_string; 
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]

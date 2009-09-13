@@ -32,6 +32,10 @@ Tactics
 - Tactic "exists" and "eexists" supports iteration using
   comma-separated arguments.
 - Tactic "gappa" has been removed from the Dp plugin.
+- Tactic "firstorder" now supports the combination of its "using" and
+  "with" options.
+- An inductive type as argument of the "using" option of "auto/eauto/firstorder"
+  is interpreted as using the collection of its constructors.
 
 Tactic Language
 
@@ -45,6 +49,8 @@ Vernacular commands
 - New support for local binders in the syntax of Record/Structure fields.
 - Most commands referring to constant (e.g. Print or About) now support
   referring to the constant by a notation string.
+- Added "Reserved Infix" as a specific shortcut of the corresponding
+  "Reserved Notation".
 
 Tools
 
