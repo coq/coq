@@ -736,7 +736,7 @@ let interp_modifiers modl =
 let check_infix_modifiers modifiers =
   let (assoc,level,t,b,fmt) = interp_modifiers modifiers in
   if t <> [] then
-    error "explicit entry level or type unexpected in infix notation."
+    error "Explicit entry level or type unexpected in infix notation."
 
 let no_syntax_modifiers modifiers = 
   modifiers = [] or modifiers = [SetOnlyParsing]

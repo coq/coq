@@ -835,7 +835,8 @@ GEXTEND Gram
 
      | IDENT "Reserved"; IDENT "Infix"; s = ne_string;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ] ->
-	   VernacSyntaxExtension (use_locality (),("_ '"^s^"' _",l))
+	   Metasyntax.check_infix_modifiers l;
+	   VernacSyntaxExtension (use_locality (),("x '"^s^"' y",l))
 
      | IDENT "Reserved"; IDENT "Notation"; local = obsolete_locality; 
 	 s = ne_string; 

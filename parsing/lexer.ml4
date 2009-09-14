@@ -50,12 +50,8 @@ let ttree_add ttree str =
 
 let ttree_find ttree str =
   let rec proc_rec tt i =
-    if i == String.length str then
-      match tt.node with
-	| Some s -> s
-	| None -> raise Not_found
-    else 
-      proc_rec (CharMap.find str.[i] tt.branch) (i+1)
+    if i == String.length str then tt
+    else proc_rec (CharMap.find str.[i] tt.branch) (i+1)
   in 
   proc_rec ttree 0
 
@@ -181,10 +177,9 @@ let check_keyword str =
 (* Keyword and symbol dictionary *)
 let token_tree = ref empty_ttree
 
-let find_keyword s = ttree_find !token_tree s
-
 let is_keyword s = 
-  try let _ = ttree_find !token_tree s in true with Not_found -> false
+  try match (ttree_find !token_tree s).node with None -> false | Some _ -> true 
+  with Not_found -> false
 
 let add_keyword str =
   check_keyword str;
@@ -366,7 +361,7 @@ and update_longest_valid_token last nj tt cs =
   | None ->
       progress_further last nj tt cs
 
-(* nr is the number of char peeked since last valid token *)
+(* nj is the number of char peeked since last valid token *)
 (* n the number of char in utf8 block *)
 and progress_utf8 last nj n c tt cs =
   try
@@ -392,6 +387,12 @@ and progress_from_byte last nj tt cs = function
   | '\xF0'..'\xF7' as c -> progress_utf8 last nj 4 c tt cs
   | _ (* '\x80'..\xBF'|'\xF8'..'\xFF' *) ->
       error_utf8 cs
+
+let find_keyword id s =
+  let tt = ttree_find !token_tree id in
+  match progress_further tt.node 0 tt s with
+  | None -> raise Not_found
+  | Some c -> c
 
 (* Must be a special token *)
 let process_chars bp c cs =
@@ -447,10 +448,10 @@ let rec next_token = parser bp
   | [< ''?'; s >] ep ->
       let t = parse_after_qmark bp s in comment_stop bp; (t, (ep, bp))
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
-       len = ident_tail (store 0 c) >] ep ->
+       len = ident_tail (store 0 c); s >] ep ->
       let id = get_buff len in 
       comment_stop bp;
-      (try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
+      (try ("", find_keyword id s) with Not_found -> ("IDENT", id)), (bp, ep)
   | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
       comment_stop bp;
       (("INT", get_buff len), (bp, ep))
@@ -473,7 +474,7 @@ let rec next_token = parser bp
 	    let id = get_buff len in
 	    let ep = Stream.count s in
 	    comment_stop bp;
-	    (try ("",find_keyword id) with Not_found -> ("IDENT",id)), (bp, ep)
+	    (try ("",find_keyword id s) with Not_found -> ("IDENT",id)), (bp, ep)
 	| AsciiChar | Utf8Token ((UnicodeSymbol | UnicodeIdentPart), _) -> 
 	    let t = process_chars bp (Stream.next s) s in
 	    comment_stop bp; t

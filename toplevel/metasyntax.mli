@@ -56,3 +56,5 @@ val print_grammar : string -> unit
 (* Evaluate whether a notation is not printable *)
 
 val is_not_printable : aconstr -> bool
+
+val check_infix_modifiers : syntax_modifier list -> unit
