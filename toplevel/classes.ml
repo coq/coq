@@ -275,14 +275,6 @@ let context ?(hook=fun _ -> ()) l =
   let ctx = try named_of_rel_context fullctx with _ -> 
     error "Anonymous variables not allowed in contexts."
   in
-  let env = push_named_context ctx env in
-  let keeps = 
-    List.fold_left (fun acc (id,_,t) ->
-      match class_of_constr t with
-      | None -> acc
-      | Some _ -> List.map pi1 (keep_hyps env (Idset.singleton id)) :: acc)
-      [] ctx
-  in
     List.iter (function (id,_,t) -> 
       if Lib.is_modtype () then 
 	let cst = Declare.declare_internal_constant id
@@ -296,12 +288,9 @@ let context ?(hook=fun _ -> ()) l =
       else (
 	let impl = List.exists (fun (x,_) -> 
 	  match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls 
-	and keep = 
-	  let l = list_filter_map (fun ids -> if List.mem id ids then Some ids else None) keeps in
-	    List.concat l
 	in
 	  Command.declare_one_assumption false (Local (* global *), Definitional) t
-	    [] impl (* implicit *) keep (* always kept *) false (* inline *) (dummy_loc, id);
+	    [] impl (* implicit *) false (* inline *) (dummy_loc, id);
 	  match class_of_constr t with
 	  | None -> ()
 	  | Some tc -> hook (VarRef id)))

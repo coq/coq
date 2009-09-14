@@ -438,24 +438,20 @@ type variable_context = variable_info list
 type abstr_list = variable_context Names.Cmap.t * variable_context Names.KNmap.t
 
 let sectab =
-  ref ([] : ((Names.identifier * binding_kind * (Term.types * Names.identifier list) option) list * Cooking.work_list * abstr_list) list)
+  ref ([] : ((Names.identifier * binding_kind) list * Cooking.work_list * abstr_list) list)
 
 let add_section () =
   sectab := ([],(Names.Cmap.empty,Names.KNmap.empty),(Names.Cmap.empty,Names.KNmap.empty)) :: !sectab
 
-let add_section_variable id impl keep =
+let add_section_variable id impl =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | (vars,repl,abs)::sl ->
-	sectab := ((id,impl,keep)::vars,repl,abs)::sl
+	sectab := ((id,impl)::vars,repl,abs)::sl
 
 let extract_hyps (secs,ohyps) =
   let rec aux = function
-    | ((id,impl,keep)::idl,(id',b,t)::hyps) when id=id' -> (id',impl,b,t) :: aux (idl,hyps)
-    | ((id,impl,Some (ty,keep))::idl,hyps) -> 
-	if List.exists (fun (id,_,_) -> List.mem id keep) ohyps then
-	  (id,impl,None,ty) :: aux (idl,hyps)
-	else aux (idl,hyps)
+    | ((id,impl)::idl,(id',b,t)::hyps) when id=id' -> (id',impl,b,t) :: aux (idl,hyps)
     | (id::idl,hyps) -> aux (idl,hyps)
     | [], _ -> []
   in aux (secs,ohyps)
@@ -495,13 +491,13 @@ let section_segment_of_constant con =
 let section_segment_of_mutual_inductive kn =
   Names.KNmap.find kn (snd (pi3 (List.hd !sectab)))
 
-let rec list_mem_assoc_in_triple x = function
+let rec list_mem_assoc x = function
   | [] -> raise Not_found
-  | (a,_,_)::l -> compare a x = 0 or list_mem_assoc_in_triple x l
+  | (a,_)::l -> compare a x = 0 or list_mem_assoc x l
 
 let section_instance = function
   | VarRef id ->
-      if list_mem_assoc_in_triple id (pi1 (List.hd !sectab)) then [||]
+      if list_mem_assoc id (pi1 (List.hd !sectab)) then [||]
       else raise Not_found
   | ConstRef con ->
       Names.Cmap.find con (fst (pi2 (List.hd !sectab)))

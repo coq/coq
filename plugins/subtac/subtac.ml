@@ -101,7 +101,7 @@ let declare_assumption env isevars idl is_coe k bl c nl =
       Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr c bl) None 
     in
     let c = solve_tccs_in_type env id isevars evm c typ in
-      List.iter (Command.declare_one_assumption is_coe k c imps false [] nl) idl
+      List.iter (Command.declare_one_assumption is_coe k c imps false nl) idl
   else
     errorlabstrm "Command.Assumption"
 	(str "Cannot declare an assumption while in proof editing mode.")

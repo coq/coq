@@ -46,7 +46,7 @@ let add_cache_hook f = cache_hook := f
 
 type section_variable_entry =
   | SectionLocalDef of constr * types option * bool (* opacity *)
-  | SectionLocalAssum of types * bool * identifier list (* Implicit status, Keep *)
+  | SectionLocalAssum of types * bool (* Implicit status *)
 
 type variable_declaration = dir_path * section_variable_entry * logical_kind
 
@@ -57,17 +57,16 @@ let cache_variable ((sp,_),o) =
   (* Constr raisonne sur les noms courts *)
   if variable_exists id then
     errorlabstrm "cache_variable" (pr_id id ++ str " already exists");
-  let impl,opaq,cst,keep = match d with (* Fails if not well-typed *)
-    | SectionLocalAssum (ty, impl, keep) ->
+  let impl,opaq,cst = match d with (* Fails if not well-typed *)
+    | SectionLocalAssum (ty, impl) ->
         let cst = Global.push_named_assum (id,ty) in
 	let impl = if impl then Lib.Implicit else Lib.Explicit in
-	let keep = if keep <> [] then Some (ty, keep) else None in
-	impl, true, cst, keep
+	impl, true, cst
     | SectionLocalDef (c,t,opaq) -> 
         let cst = Global.push_named_def (id,c,t) in
-        Lib.Explicit, opaq, cst, None in
+        Lib.Explicit, opaq, cst in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
-  add_section_variable id impl keep;
+  add_section_variable id impl;
   Dischargedhypsmap.set_discharged_hyps sp [];
   add_variable_data id (p,opaq,cst,mk)
 

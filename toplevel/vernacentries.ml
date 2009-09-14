@@ -373,7 +373,7 @@ let vernac_assumption kind l nl=
 	List.iter (fun lid -> 
 	  if global then Dumpglob.dump_definition lid false "ax" 
 	  else Dumpglob.dump_definition lid true "var") idl;
-      declare_assumption idl is_coe kind [] c false [] nl) l
+      declare_assumption idl is_coe kind [] c false nl) l
 	  
 let vernac_record k finite infer struc binders sort nameopt cfs =
   let const = match nameopt with 

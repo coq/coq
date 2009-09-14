@@ -45,13 +45,13 @@ val syntax_definition : identifier -> identifier list * constr_expr ->
 
 val declare_one_assumption : coercion_flag -> assumption_kind -> Term.types ->
   Impargs.manual_explicitation list ->
-  bool (* implicit *) -> identifier list (* keep *) -> bool (* inline *) -> Names.variable located  -> unit
+  bool (* implicit *) -> bool (* inline *) -> Names.variable located  -> unit
   
 val set_declare_assumption_hook : (types -> unit) -> unit
 
 val declare_assumption : identifier located list ->
   coercion_flag -> assumption_kind -> local_binder list -> constr_expr -> 
-  bool -> identifier list -> bool -> unit
+  bool -> bool -> unit
 
 val open_temp_scopes : Topconstr.scope_name option -> unit
 
