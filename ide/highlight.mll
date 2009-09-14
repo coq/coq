@@ -12,7 +12,7 @@
 
   open Lexing
 
-  type color = string
+  type color = GText.tag
 
   type highlight_order = int * int * color
 
@@ -106,17 +106,17 @@ rule next_starting_order = parse
   | "(*" { comment_start := lexeme_start lexbuf; comment lexbuf }
   | space+ { next_starting_order lexbuf }
   | multiword_declaration
-      { starting:=false; lexeme_start lexbuf, lexeme_end lexbuf, "decl" }
+      { starting:=false; lexeme_start lexbuf, lexeme_end lexbuf, Tags.Script.decl }
   | multiword_command
-      { starting:=false; lexeme_start lexbuf, lexeme_end lexbuf, "kwd" }
+      { starting:=false; lexeme_start lexbuf, lexeme_end lexbuf, Tags.Script.kwd }
   | ident as id 
       { if id = "Time" then next_starting_order lexbuf else
 	begin
 	  starting:=false; 
           if is_one_word_command id then 
-	    lexeme_start lexbuf, lexeme_end lexbuf, "kwd" 
+	    lexeme_start lexbuf, lexeme_end lexbuf, Tags.Script.kwd 
 	  else if is_one_word_declaration id then
-	    lexeme_start lexbuf, lexeme_end lexbuf, "decl"
+	    lexeme_start lexbuf, lexeme_end lexbuf, Tags.Script.decl
 	  else
 	    next_interior_order lexbuf
 	end
@@ -129,7 +129,7 @@ and next_interior_order = parse
       { comment_start := lexeme_start lexbuf; comment lexbuf }
   | ident as id 
       { if is_constr_kw id then
-	  lexeme_start lexbuf, lexeme_end lexbuf, "kwd"
+	  lexeme_start lexbuf, lexeme_end lexbuf, Tags.Script.kwd
         else
 	  next_interior_order lexbuf }
   | "." (" "|"\n"|"\t") { starting := true; next_starting_order lexbuf }
@@ -137,7 +137,7 @@ and next_interior_order = parse
   | eof  { raise End_of_file }
 
 and comment = parse
-  | "*)" { !comment_start,lexeme_end lexbuf,"comment" }
+  | "*)" { !comment_start,lexeme_end lexbuf,Tags.Script.comment }
   | "(*" { ignore (comment lexbuf); comment lexbuf }
   | "\"" { string_in_comment lexbuf }
   | _    { comment lexbuf }
@@ -160,10 +160,10 @@ and string_in_comment = parse
     else begin
       highlighting := true;
       prerr_endline "Highlighting slice now";
-      input_buffer#remove_tag_by_name ~start ~stop "error";
-      input_buffer#remove_tag_by_name ~start ~stop "kwd";
-      input_buffer#remove_tag_by_name ~start ~stop "decl";
-      input_buffer#remove_tag_by_name ~start ~stop "comment";
+      input_buffer#remove_tag ~start ~stop Tags.Script.error;
+      input_buffer#remove_tag ~start ~stop Tags.Script.kwd;
+      input_buffer#remove_tag ~start ~stop Tags.Script.decl;
+      input_buffer#remove_tag ~start ~stop Tags.Script.comment;
 
       (try begin
 	let offset = start#offset in
@@ -179,7 +179,7 @@ and string_in_comment = parse
 	    let b,e = convert_pos b,convert_pos e in
 	    let start = input_buffer#get_iter_at_char (offset + b) in
 	    let stop = input_buffer#get_iter_at_char (offset + e) in
-	    input_buffer#apply_tag_by_name ~start ~stop o 
+	    input_buffer#apply_tag ~start ~stop o 
 	  done
 	with End_of_file -> ()
       end

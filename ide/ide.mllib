@@ -7,6 +7,7 @@ Configwin_ihm
 Configwin
 Editable_cells
 Config_parser
+Tags
 Typed_notebook
 Config_lexer
 Utf8_convert

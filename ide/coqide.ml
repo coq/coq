@@ -161,8 +161,6 @@ let notebook_page_of_session {script=script;tab_label=bname;proof_view=proof;mes
     state_paned#set_position 1;
     (Some session_tab#coerce,None,session_paned#coerce)
 
-
-
 let session_notebook =
   Typed_notebook.create notebook_page_of_session ~border_width:2 ~show_border:false ~scrollable:true ()
 
@@ -833,8 +831,7 @@ object(self)
                   match Coq.get_current_goals () with 
                       [] -> Util.anomaly "show_goals_full"
                     | ((hyps,concl)::r) as s ->
-                        let last_shown_area = 
-                          proof_buffer#create_tag [`BACKGROUND "light green"]
+                        let last_shown_area = Tags.Proof.highlight
                         in
                         let goal_nb = List.length s in
                           proof_buffer#insert (Printf.sprintf "%d subgoal%s\n" 
@@ -956,7 +953,7 @@ object(self)
                  let i = self#get_start_of_input in 
                  let starti = i#forward_chars start in
                  let stopi = i#forward_chars stop in
-                   input_buffer#apply_tag_by_name "error"
+                   input_buffer#apply_tag Tags.Script.error
                      ~start:starti
                      ~stop:stopi;
                    input_buffer#place_cursor starti) in
@@ -1030,22 +1027,22 @@ object(self)
         | Some(start,stop) ->
             prerr_endline "process_next_phrase : to_process highlight";
             if do_highlight then begin
-              input_buffer#apply_tag_by_name ~start ~stop "to_process";
+              input_buffer#apply_tag Tags.Script.to_process ~start ~stop;
               prerr_endline "process_next_phrase : to_process applied";
             end;
             prerr_endline "process_next_phrase : getting phrase";
             Some((start,stop),start#get_slice ~stop) in
     let remove_tag (start,stop) =
       if do_highlight then begin
-        input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
+        input_buffer#remove_tag Tags.Script.to_process ~start ~stop;
         input_view#set_editable true;
         pop_info ();
       end in
     let mark_processed reset_info is_complete (start,stop) ast =
       let b = input_buffer in
         b#move_mark ~where:stop (`NAME "start_of_input");
-        b#apply_tag_by_name 
-          (if is_complete then "processed" else "unjustified") ~start ~stop;
+        b#apply_tag 
+          (if is_complete then Tags.Script.processed else Tags.Script.unjustified) ~start ~stop;
         if (self#get_insert#compare) stop <= 0 then 
           begin
             b#place_cursor stop;
@@ -1079,8 +1076,8 @@ object(self)
         else input_buffer#insert ~iter:stop ("\n"^insertphrase); 
         let start = self#get_start_of_input in
           input_buffer#move_mark ~where:stop (`NAME "start_of_input");
-          input_buffer#apply_tag_by_name 
-            (if is_complete then "processed" else "unjustified") ~start ~stop;
+          input_buffer#apply_tag 
+            (if is_complete then Tags.Script.processed else Tags.Script.unjustified) ~start ~stop;
              if (self#get_insert#compare) stop <= 0 then 
                input_buffer#place_cursor stop;
              let start_of_phrase_mark = `MARK (input_buffer#create_mark start) in
@@ -1126,7 +1123,7 @@ object(self)
     let start = self#get_start_of_input#copy in
     let start' = `OFFSET start#offset in
       sync (fun _ ->
-              input_buffer#apply_tag_by_name ~start ~stop "to_process";
+              input_buffer#apply_tag Tags.Script.to_process ~start ~stop;
               input_view#set_editable false) ();
       push_info "Coq is computing";
       let get_current () =
@@ -1149,7 +1146,7 @@ object(self)
                 (* Start and stop might be invalid if an eol was added at eof *)
                 let start = input_buffer#get_iter start' in
                 let stop =  input_buffer#get_iter stop' in
-                  input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
+                  input_buffer#remove_tag Tags.Script.to_process ~start ~stop;
                   input_view#set_editable true) ();
         pop_info()
 
@@ -1163,8 +1160,8 @@ object(self)
                  let start = input_buffer#get_iter_at_mark inf.start in
                  let stop = input_buffer#get_iter_at_mark inf.stop in
                    input_buffer#move_mark ~where:start (`NAME "start_of_input");
-                   input_buffer#remove_tag_by_name "processed" ~start ~stop;
-                   input_buffer#remove_tag_by_name "unjustified" ~start ~stop;
+                   input_buffer#remove_tag Tags.Script.processed ~start ~stop;
+                   input_buffer#remove_tag Tags.Script.unjustified ~start ~stop;
                    input_buffer#delete_mark inf.start;
                    input_buffer#delete_mark inf.stop;
               ) 
@@ -1202,14 +1199,14 @@ object(self)
                       if Stack.is_empty cmd_stack then input_buffer#start_iter 
                       else input_buffer#get_iter_at_mark (Stack.top cmd_stack).stop in
                       prerr_endline "Removing (long) processed tag...";
-                      input_buffer#remove_tag_by_name 
+                      input_buffer#remove_tag 
+                        Tags.Script.processed
                         ~start 
-                        ~stop:self#get_start_of_input
-                        "processed";
-                      input_buffer#remove_tag_by_name 
+                        ~stop:self#get_start_of_input;
+                      input_buffer#remove_tag 
+                        Tags.Script.unjustified
                         ~start 
-                        ~stop:self#get_start_of_input
-                        "unjustified";
+                        ~stop:self#get_start_of_input;
                       prerr_endline "Moving (long) start_of_input...";
                       input_buffer#move_mark ~where:start (`NAME "start_of_input");
                       self#show_goals;
@@ -1243,14 +1240,14 @@ object(self)
           let start = input_buffer#get_iter_at_mark last_command.start in
           let update_input () =
             prerr_endline "Removing processed tag...";
-            input_buffer#remove_tag_by_name 
+            input_buffer#remove_tag
+              Tags.Script.processed
               ~start
-              ~stop:(input_buffer#get_iter_at_mark last_command.stop) 
-              "processed";
-            input_buffer#remove_tag_by_name 
+              ~stop:(input_buffer#get_iter_at_mark last_command.stop);
+            input_buffer#remove_tag
+              Tags.Script.unjustified
               ~start
-              ~stop:(input_buffer#get_iter_at_mark last_command.stop) 
-              "unjustified";
+              ~stop:(input_buffer#get_iter_at_mark last_command.stop);
             prerr_endline "Moving start_of_input";
             input_buffer#move_mark
               ~where:start
@@ -1420,12 +1417,12 @@ object(self)
 
   method toggle_proof_visibility (cursor:GText.iter) =
     let start_keywords = ["Theorem";"Lemma";"Corollary";"Remark";"Proposition";"Fact";"Property"] in
-    let has_tag_by_name (it:GText.iter) name =
+  (*  let has_tag_by_name (it:GText.iter) name =
       let tt = new GText.tag_table (input_buffer#tag_table) in
         match tt#lookup name with
           | Some named_tag -> it#has_tag (new GText.tag named_tag)
           | _ -> false
-    in
+    in*)
       try
         let rec find_stmt_start from =
           let cand_start = find_nearest_backward from start_keywords in
@@ -1438,19 +1435,19 @@ object(self)
         let proof_end =
           find_next_sentence (find_nearest_forward stmt_end ["Qed";"Defined";"Admitted"])
         in
-          if has_tag_by_name stmt_start "locked"
+          if stmt_start#has_tag Tags.Script.locked
           then self#unhide_proof stmt_start stmt_end proof_end
           else self#hide_proof stmt_start stmt_end proof_end
       with
           Not_found -> ()
 
   method hide_proof (stmt_start:GText.iter) (stmt_end:GText.iter) (proof_end:GText.iter) =
-    input_buffer#apply_tag_by_name "hidden" ~start:stmt_end ~stop:proof_end;
-    input_buffer#apply_tag_by_name "locked" ~start:stmt_start ~stop:stmt_end
+    input_buffer#apply_tag Tags.Script.hidden ~start:stmt_end ~stop:proof_end;
+    input_buffer#apply_tag Tags.Script.locked ~start:stmt_start ~stop:stmt_end
 
   method unhide_proof (stmt_start:GText.iter) (stmt_end:GText.iter) (proof_end:GText.iter) =
-    input_buffer#remove_tag_by_name "hidden" ~start:stmt_end ~stop:proof_end;
-    input_buffer#remove_tag_by_name "locked" ~start:stmt_start ~stop:stmt_end
+    input_buffer#remove_tag Tags.Script.hidden ~start:stmt_end ~stop:proof_end;
+    input_buffer#remove_tag Tags.Script.locked ~start:stmt_start ~stop:stmt_end
 
   initializer 
     ignore (message_buffer#connect#insert_text
@@ -1470,14 +1467,14 @@ object(self)
                            if (start#compare self#get_start_of_input)>=0
                            then 
                              begin
-                               input_buffer#remove_tag_by_name 
+                               input_buffer#remove_tag 
+                                 Tags.Script.processed
+                                 ~start
+                                 ~stop;
+                               input_buffer#remove_tag 
+                                 Tags.Script.unjustified
                                  ~start
                                  ~stop
-                                 "processed";
-                               input_buffer#remove_tag_by_name 
-                                 ~start
-                                 ~stop
-                                 "unjustified"
                              end
               )
     );
@@ -1507,10 +1504,10 @@ object(self)
                                ~x:(Gdk.Rectangle.x r + Gdk.Rectangle.width r)
                                ~y:(Gdk.Rectangle.y r + Gdk.Rectangle.height r)
                            in
-                             input_buffer#remove_tag_by_name 
+                             input_buffer#remove_tag
+                               Tags.Script.error
                                ~start:self#get_start_of_input
-                               ~stop
-                               "error";
+                               ~stop;
                              Highlight.highlight_around_current_line
                                input_buffer 
               )
@@ -1558,8 +1555,6 @@ object(self)
 
 end
 
-
-
 let last_make = ref "";;
 let last_make_index = ref 0;;
 let search_compile_error_regexp =
@@ -1586,11 +1581,17 @@ let search_next_error () =
 
 let create_session () =
   let script =
-    Undo.undoable_view ~buffer:(GText.buffer ()) ~wrap_mode:`NONE () in
+    Undo.undoable_view
+      ~buffer:(GText.buffer ~tag_table:Tags.Script.table ())
+      ~wrap_mode:`NONE () in
   let proof =
-    GText.view ~editable:false ~wrap_mode:`CHAR () in
+    GText.view
+      ~buffer:(GText.buffer ~tag_table:Tags.Proof.table ())
+      ~editable:false ~wrap_mode:`CHAR () in
   let message =
-    GText.view ~editable:false ~wrap_mode:`WORD () in
+    GText.view
+      ~buffer:(GText.buffer ~tag_table:Tags.Message.table ())
+      ~editable:false ~wrap_mode:`WORD () in
   let basename =
     GMisc.label ~text:"*scratch*" () in
   let stack =
@@ -1599,7 +1600,7 @@ let create_session () =
     new analyzed_view script proof message stack in
   let _ =
     script#buffer#create_mark ~name:"start_of_input" script#buffer#start_iter in
-  let _ =
+ (* let _ =
     List.map (fun (n,p) -> script#buffer#create_tag ~name:n p)
       ["kwd",[`FOREGROUND "blue"];
        "decl",[`FOREGROUND "orange red"];
@@ -1615,7 +1616,7 @@ let create_session () =
        "locked",[`EDITABLE false; `BACKGROUND "light grey"]
       ] in
   let _ =
-    message#buffer#create_tag ~name:"error" [`FOREGROUND "red"] in
+    message#buffer#create_tag ~name:"error" [`FOREGROUND "red"] in*)
   let _ =
     proof#buffer#create_mark ~name:"end_of_conclusion" proof#buffer#start_iter in
   let _ =
@@ -2265,7 +2266,7 @@ let main files =
 				  let start = b#get_iter_at_mark start
 				  and stop = b#get_iter_at_mark stop
 				  in
-				    b#remove_tag_by_name ~start ~stop "found";
+				    b#remove_tag Tags.Script.found ~start ~stop;
 				    last_found:=None;
 				    start,stop
 			  in
@@ -2292,7 +2293,7 @@ let main files =
 			  with
 			    | None -> ()
 			    | Some(start,stop) ->
-				b#apply_tag_by_name "found" ~start ~stop;
+				b#apply_tag Tags.Script.found ~start ~stop;
 				let start = `MARK (b#create_mark start)
 				and stop = `MARK (b#create_mark stop)
 				in
@@ -3000,7 +3001,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 						  *)
 						let starti = input_buffer#get_iter_at_byte ~line:(line-1) start in
 						let stopi = input_buffer#get_iter_at_byte ~line:(line-1) stop in
-						  input_buffer#apply_tag_by_name "error"
+						  input_buffer#apply_tag Tags.Script.error
    						    ~start:starti
 						    ~stop:stopi;
 						  input_buffer#place_cursor starti;
