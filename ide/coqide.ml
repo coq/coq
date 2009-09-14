@@ -1540,19 +1540,6 @@ object(self)
                                             prerr_endline "Should recenter : yes";
                                             self#recenter_insert
                                           end));
-
-      ignore (let last_left_click = ref 0 in
-        (input_view :> GText.view)#event#connect#button_release
-                (fun b ->
-                   let click_time = Int32.to_int (GdkEvent.Button.time b) in
-                   if GdkEvent.Button.button b = 1
-                   then (if (click_time - !last_left_click < !current.fold_delay_ms)
-                         then (let cav = session_notebook#current_term.analyzed_view in
-                                 cav#toggle_proof_visibility cav#get_insert; true)
-                         else (last_left_click := click_time; false))
-                   else false));
-      
-
 end
 
 let last_make = ref "";;
