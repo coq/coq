@@ -589,7 +589,7 @@ PLUGINSVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
 	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO) $(QUOTEVO) \
             $(INTERFACEVO) $(GBVO)
 
-ALLVO:= $(INITVO) $(THEORIESVO) $(PLUGINSVO)
+ALLVO:= $(THEORIESVO) $(PLUGINSVO)
 VFILES:= $(ALLVO:.vo=.v)
 
 # convert a (stdlib) filename into a module name:

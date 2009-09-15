@@ -49,7 +49,7 @@ ifdef QUICK
 %.v.tex: %.tex
 	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
 else
-%.v.tex: %.tex | $(COQTEX) $(COQTOPEXE) $(PLUGINSVO) $(THEORIESVO)
+%.v.tex: %.tex $(COQTEX) $(COQTOPEXE) $(PLUGINSVO) $(THEORIESVO)
 	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
 endif
 
@@ -189,11 +189,11 @@ ifdef QUICK
 doc/stdlib/index-body.html:
 	- rm -rf doc/stdlib/html
 	$(MKDIR) doc/stdlib/html
-	$(COQDOC) -q -d doc/stdlib/html --multi-index --html -g \
+	$(COQDOC) -q -boot -d doc/stdlib/html --multi-index --html -g \
 	  -R theories Coq $(THEORIESVO:.vo=.v)
 	mv doc/stdlib/html/index.html doc/stdlib/index-body.html
 else
-doc/stdlib/index-body.html: | $(COQDOC) $(THEORIESVO)
+doc/stdlib/index-body.html: $(COQDOC) $(THEORIESVO)
 	- rm -rf doc/stdlib/html
 	$(MKDIR) doc/stdlib/html
 	$(COQDOC) -q -boot -d doc/stdlib/html --multi-index --html -g \
@@ -216,7 +216,7 @@ doc/stdlib/Library.coqdoc.tex:
 	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
             -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
 else
-doc/stdlib/Library.coqdoc.tex: | $(COQDOC) $(THEORIESLIGHTVO)
+doc/stdlib/Library.coqdoc.tex: $(COQDOC) $(THEORIESLIGHTVO)
 	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
             -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
 endif
