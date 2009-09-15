@@ -151,9 +151,7 @@ VERNAC COMMAND EXTEND Subtac_Admit_Obligations
 
 VERNAC COMMAND EXTEND Subtac_Set_Solver
 | [ "Obligation" "Tactic" ":=" tactic(t) ] -> [ 
-    Coqlib.check_required_library ["Coq";"Program";"Tactics"];
-    Tacinterp.add_tacdef false 
-      [(Qualid (dummy_loc, qualid_of_string "Coq.Program.Tactics.obligation_tactic"), true, t)] ]
+    Subtac_obligations.set_default_tactic (Tacinterp.glob_tactic t) ]
 END
 
 VERNAC COMMAND EXTEND Subtac_Show_Obligations

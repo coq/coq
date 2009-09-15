@@ -291,4 +291,4 @@ Ltac program_simplify :=
 
 Ltac program_simpl := program_simplify ; auto.
 
-Ltac obligation_tactic := program_simpl.
+Obligation Tactic := program_simpl.

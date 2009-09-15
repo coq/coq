@@ -112,6 +112,8 @@ module ProgMap = Map.Make(struct type t = identifier let compare = compare end)
 
 let map_replace k v m = ProgMap.add k v (ProgMap.remove k m)
 
+let map_keys m = ProgMap.fold (fun k _ l -> k :: l) m []
+
 let map_cardinal m = 
   let i = ref 0 in 
     ProgMap.iter (fun _ _ -> incr i) m;
@@ -130,7 +132,7 @@ let from_prg : program_info ProgMap.t ref = ref ProgMap.empty
 let freeze () = !from_prg, !default_tactic_expr
 let unfreeze (v, t) = from_prg := v; set_default_tactic t
 let init () =
-  from_prg := ProgMap.empty; set_default_tactic (Subtac_utils.tactics_call "obligation_tactic" [])
+  from_prg := ProgMap.empty; set_default_tactic (Tacexpr.TacId [])
 
 (** Beware: if this code is dynamically loaded via dynlink after the start
     of Coq, then this [init] function will not be run by [Lib.init ()].
@@ -150,16 +152,35 @@ let cache (_, (infos, tac)) =
   from_prg := infos;
   set_default_tactic tac
 
+let load (_, (_, tac)) =
+  set_default_tactic tac
+
+let subst (_, s, (infos, tac)) = 
+  (infos, Tacinterp.subst_tactic s tac)
+
 let (input,output) = 
   declare_object
     { (default_object "Program state") with
       cache_function = cache;
-      load_function = (fun _ -> cache);
-      open_function = (fun _ -> cache);
-      classify_function = (fun _ -> Dispose);
+      load_function = (fun _ -> load);
+      open_function = (fun _ -> load);
+      classify_function = (fun (infos, tac) ->
+	if not (ProgMap.is_empty infos) then
+	  errorlabstrm "Program" (str "Unsolved obligations when closing module:" ++ spc () ++
+				   prlist_with_sep spc (fun x -> Nameops.pr_id x)
+				   (map_keys infos));
+	Substitute (ProgMap.empty, tac));
+      subst_function = subst;
       export_function = (fun x -> Some x) }
+
+let update_state () = 
+(*   msgnl (str "Updating obligations info"); *)
+  Lib.add_anonymous_leaf (input (!from_prg, !default_tactic_expr))
     
 open Evd
+
+let progmap_remove prg = 
+  from_prg := ProgMap.remove prg.prg_name !from_prg
 	  
 let rec intset_to = function
     -1 -> Intset.empty
@@ -195,6 +216,7 @@ let declare_definition prg =
             Flags.if_verbose msg_warning 
 	      (str"Local definition " ++ Nameops.pr_id prg.prg_name ++ 
 		  str" is not visible from current goals");
+	  progmap_remove prg; update_state ();
           VarRef prg.prg_name
     | (Global|Local) ->
 	let c =
@@ -206,6 +228,7 @@ let declare_definition prg =
 	    Impargs.declare_manual_implicits false gr prg.prg_implicits;
 	  print_message (Subtac_utils.definition_message prg.prg_name);
 	  prg.prg_hook local gr;
+	  progmap_remove prg; update_state ();
 	  gr
 
 open Pp
@@ -267,7 +290,9 @@ let declare_mutual_definition l =
     Flags.if_verbose ppnl (Command.recursive_message kind indexes fixnames);
     let gr = List.hd kns in
     let kn = match gr with ConstRef kn -> kn | _ -> assert false in
-      first.prg_hook local gr; kn
+      first.prg_hook local gr; 
+      List.iter progmap_remove l;
+      update_state (); kn
       
 let declare_obligation obl body =
   match obl.obl_status with
@@ -320,11 +345,7 @@ let get_prog_err n =
   try get_prog n with NoObligations id -> pperror (explain_no_obligations id)
 
 let obligations_solved prg = (snd prg.prg_obligations) = 0
-
-let update_state s = 
-(*   msgnl (str "Updating obligations info"); *)
-  Lib.add_anonymous_leaf (input s)
-
+    
 type progress = 
     | Remain of int 
     | Dependent
@@ -343,25 +364,19 @@ let update_obls prg obls rem =
   let prg' = { prg with prg_obligations = (obls, rem) } in
     from_prg := map_replace prg.prg_name prg' !from_prg;
     obligations_message rem;
-    let res = 
-      if rem > 0 then Remain rem
-      else (
-	match prg'.prg_deps with
-	| [] ->
-	    let kn = declare_definition prg' in
-	      from_prg := ProgMap.remove prg.prg_name !from_prg;
-	      Defined kn
-	| l ->
-	    let progs = List.map (fun x -> ProgMap.find x !from_prg) prg'.prg_deps in
-	      if List.for_all (fun x -> obligations_solved x) progs then 
-		(let kn = declare_mutual_definition progs in
-		   from_prg := List.fold_left
-		     (fun acc x -> 
-		       ProgMap.remove x.prg_name acc) !from_prg progs;
-		  Defined (ConstRef kn))
-	      else Dependent);
-    in update_state (!from_prg, !default_tactic_expr); res
-  
+    if rem > 0 then Remain rem
+    else (
+      match prg'.prg_deps with
+      | [] ->
+	  let kn = declare_definition prg' in
+	    Defined kn
+      | l ->
+	  let progs = List.map (fun x -> ProgMap.find x !from_prg) prg'.prg_deps in
+	    if List.for_all (fun x -> obligations_solved x) progs then
+	      let kn = declare_mutual_definition progs in
+		Defined (ConstRef kn)
+	    else Dependent)
+    
 let is_defined obls x = obls.(x).obl_body <> None
 
 let deps_remaining obls deps = 
