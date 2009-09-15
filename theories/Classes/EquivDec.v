@@ -22,6 +22,9 @@ Require Export Coq.Classes.Equivalence.
    classically. *)
 
 Require Import Coq.Logic.Decidable.
+Require Import Coq.Bool.Bool.
+Require Import Coq.Arith.Peano_dec.
+Require Import Coq.Program.Program.
 
 Open Scope equiv_scope.
 
@@ -43,8 +46,6 @@ Definition swap_sumbool {A B} (x : { A } + { B }) : { B } + { A } :=
     | left H => @right _ _ H 
     | right H => @left _ _ H 
   end.
-
-Require Import Coq.Program.Program.
 
 Open Local Scope program_scope.
 
@@ -69,13 +70,9 @@ Infix "<>b" := nequiv_decb (no associativity, at level 70).
 
 (** Decidable leibniz equality instances. *)
 
-Require Import Coq.Arith.Peano_dec.
-
 (** The equiv is burried inside the setoid, but we can recover it by specifying which setoid we're talking about. *)
 
 Program Instance nat_eq_eqdec : EqDec nat eq := eq_nat_dec.
-
-Require Import Coq.Bool.Bool.
 
 Program Instance bool_eqdec : EqDec bool eq := bool_dec.
 
@@ -87,6 +84,8 @@ Program Instance unit_eqdec : EqDec unit eq := λ x y, in_left.
     reflexivity.
   Qed.
 
+Obligation Tactic := unfold complement, equiv ; program_simpl.
+
 Program Instance prod_eqdec `(EqDec A eq, EqDec B eq) :
   ! EqDec (prod A B) eq :=
   { equiv_dec x y :=
@@ -97,8 +96,6 @@ Program Instance prod_eqdec `(EqDec A eq, EqDec B eq) :
       else in_right
     else in_right }.
 
-  Solve Obligations using unfold complement, equiv ; program_simpl.
-
 Program Instance sum_eqdec `(EqDec A eq, EqDec B eq) :
   EqDec (sum A B) eq := {
   equiv_dec x y := 
@@ -107,8 +104,6 @@ Program Instance sum_eqdec `(EqDec A eq, EqDec B eq) :
       | inr a, inr b => if a == b then in_left else in_right
       | inl _, inr _ | inr _, inl _ => in_right
     end }.
-
-  Solve Obligations using unfold complement, equiv ; program_simpl.
 
 (** Objects of function spaces with countable domains like bool have decidable equality. 
    Proving the reflection requires functional extensionality though. *)
@@ -120,10 +115,8 @@ Program Instance bool_function_eqdec `(EqDec A eq) : ! EqDec (bool -> A) eq :=
       else in_right
     else in_right }.
 
-  Solve Obligations using try red ; unfold equiv, complement ; program_simpl.
-
   Next Obligation.
-  Proof.
+  Proof. 
     extensionality x.
     destruct x ; auto.
   Qed.
@@ -144,7 +137,6 @@ Program Instance list_eqdec `(eqa : EqDec A eq) : ! EqDec (list A) eq :=
 
   Solve Obligations using unfold equiv, complement in * ; program_simpl ; intuition (discriminate || eauto).
 
-
-  Next Obligation. destruct x ; destruct y ; intuition eauto. Defined.
+  Next Obligation. destruct y ; intuition eauto. Defined.
 
   Solve Obligations using unfold equiv, complement in * ; program_simpl ; intuition (discriminate || eauto).
