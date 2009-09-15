@@ -176,11 +176,10 @@ let print_location_in_file s inlibrary fname loc =
     try
       let (line, bol) = line_of_pos 1 0 0 in
       close_in ic;
-      hov 0
-        (errstrm ++ str"File " ++ str ("\""^fname^"\"") ++ str"," ++ spc() ++
-         hov 0 (str"line " ++ int line ++ str"," ++ spc() ++
-                str"characters " ++
-                Cerrors.print_loc (make_loc (bp-bol,ep-bol))) ++ str":") ++
+      hov 0 (* No line break so as to follow emacs error message format *)
+        (errstrm ++ str"File " ++ str ("\""^fname^"\"") ++
+         str", line " ++ int line ++ str", characters " ++
+         Cerrors.print_loc (make_loc (bp-bol,ep-bol))) ++ str":" ++
       fnl ()
     with e ->
       (close_in ic;
