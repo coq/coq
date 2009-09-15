@@ -176,6 +176,9 @@ let (input,output) =
 let update_state () = 
 (*   msgnl (str "Updating obligations info"); *)
   Lib.add_anonymous_leaf (input (!from_prg, !default_tactic_expr))
+
+let set_default_tactic t = 
+  set_default_tactic t; update_state ()
     
 open Evd
 
