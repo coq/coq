@@ -21,27 +21,27 @@ open Mod_subst
      If the object wishes to register its visibility in the Nametab, 
      it should do so for all possible sufixes.
 
-   * a loading function, specifying what to do when the module 
-     containing the object is loaded; 
-     If the object wishes to register its visibility in the Nametab, 
-     it should do so for all sufixes no shorter then the "int" argument
+   * a loading function, specifying what to do when the module
+     containing the object is loaded;
+     If the object wishes to register its visibility in the Nametab,
+     it should do so for all sufixes no shorter than the "int" argument
 
    * an opening function, specifying what to do when the module 
      containing the object is opened (imported);
      If the object wishes to register its visibility in the Nametab, 
      it should do so for the suffix of the length the "int" argument
 
-   * a classification function, specyfying what to do with the object,
+   * a classification function, specifying what to do with the object,
      when the current module (containing the object) is ended;
      The possibilities are:
-     Dispose   - the object dies at the end of the module
-     Substitue - meaning the object is substitutive and 
-                 the module name must be updated
-     Keep      - the object is not substitutive, but survives module 
-                 closing
-     Anticipate - this is for objects which have to be explicitely 
-                 managed by the [end_module] function (like Require 
-                 and Read markers)
+     Dispose    - the object dies at the end of the module
+     Substitute - meaning the object is substitutive and
+                  the module name must be updated
+     Keep       - the object is not substitutive, but survives module
+                  closing
+     Anticipate - this is for objects that have to be explicitely
+                  managed by the [end_module] function (like Require
+                  and Read markers)
 
      The classification function is also an occasion for a cleanup
      (if this function returns Keep or Substitute of some object, the 
@@ -59,9 +59,9 @@ open Mod_subst
      rebuild the non volatile content of a section from the data
      collected by the discharge function
 
-   * an export function, to enable optional writing of its contents 
-     to disk (.vo). This function is also the oportunity to remove 
-     redundant information in order to keep .vo size small 
+   * an export function, to enable optional writing of its contents
+     to disk (.vo). This function is also the opportunity to remove
+     redundant information in order to keep .vo size small
 
      The export function is a little obsolete and will be removed 
      in the near future... 
