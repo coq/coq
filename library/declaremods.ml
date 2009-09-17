@@ -296,8 +296,7 @@ let (in_module,out_module) =
     load_function = load_module;
     open_function = open_module;
     subst_function = subst_module;
-    classify_function = classify_module;
-    export_function = (fun _ -> anomaly "No modules in sections!") }
+    classify_function = classify_module }
 
 
 let rec replace_alias modalias_obj obj =
@@ -456,9 +455,7 @@ let (in_module_alias,out_module_alias) =
 		    open_function = open_module_alias;
 		    classify_function = classify_module_alias;
 		    subst_function = subst_module_alias;
-		    load_function = load_module_alias;
-		    export_function = (fun _ -> anomaly "No modules in sections!") }
-
+		    load_function = load_module_alias }
 
 
 
@@ -487,8 +484,7 @@ let (in_modkeep,_) =
   declare_object {(default_object "MODULE KEEP OBJECTS") with
     cache_function = cache_keep;
     load_function = load_keep;
-    open_function = open_keep;
-    export_function = (fun _ -> anomaly "No modules in sections!") }
+    open_function = open_keep }
 
 (* we remember objects for a module type. In case of a declaration:
    Module M:SIG:=...
@@ -572,8 +568,7 @@ let (in_modtype,_) =
       open_function = open_modtype;
       load_function = load_modtype;
       subst_function = subst_modtype;
-      classify_function = classify_modtype;
-      export_function = Option.make }
+      classify_function = classify_modtype }
 
 
 
@@ -1043,8 +1038,7 @@ let (in_include,out_include) =
     load_function = load_include;
     open_function = open_include;
     subst_function = subst_include;
-    classify_function = classify_include;
-    export_function = (fun _ -> anomaly "No modules in section!") }
+    classify_function = classify_include }
 
 let rec update_include (sub,mbids,msid,objs) =
   let rec replace_include = function

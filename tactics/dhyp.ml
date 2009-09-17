@@ -220,8 +220,7 @@ let (inDD,_) =
                     cache_function = cache_dd;
 		    open_function = (fun i o -> if i=1 then cache_dd o);
                     subst_function = subst_dd;
-		    classify_function = classify_dd;
-                    export_function = export_dd }
+		    classify_function = classify_dd }
 
 let catch_all_sort_pattern = PMeta(Some (id_of_string "SORT"))
 let catch_all_type_pattern = PMeta(Some (id_of_string "TYPE"))

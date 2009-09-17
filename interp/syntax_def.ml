@@ -57,17 +57,13 @@ let subst_syntax_constant ((sp,kn),subst,(local,pat,onlyparse)) =
 let classify_syntax_constant (local,_,_ as o) =
   if local then Dispose else Substitute o
 
-let export_syntax_constant (local,_,_ as o) =
-  if local then None else Some o
-
 let (in_syntax_constant, out_syntax_constant) =
   declare_object {(default_object "SYNTAXCONSTANT") with
     cache_function = cache_syntax_constant;
     load_function = load_syntax_constant;
     open_function = open_syntax_constant;
     subst_function = subst_syntax_constant;
-    classify_function = classify_syntax_constant;
-    export_function = export_syntax_constant } 
+    classify_function = classify_syntax_constant }
 
 type syndef_interpretation = (identifier * subscopes) list * aconstr
 

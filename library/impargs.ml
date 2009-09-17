@@ -521,9 +521,6 @@ let rebuild_implicits (req,l) =
 	  let l' = merge_impls auto m in [ref,l']
   in (req,l')
 
-let export_implicits (req,_ as x) =
-  if req = ImplLocal then None else Some x
-
 let (inImplicits, _) =
   declare_object {(default_object "IMPLICITS") with
     cache_function = cache_implicits;
@@ -531,8 +528,7 @@ let (inImplicits, _) =
     subst_function = subst_implicits;
     classify_function = (fun x -> Substitute x);
     discharge_function = discharge_implicits;
-    rebuild_function = rebuild_implicits;
-    export_function = export_implicits }
+    rebuild_function = rebuild_implicits }
 
 let declare_implicits_gen req flags ref =
   let imps = compute_global_implicits flags [] ref in

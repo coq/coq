@@ -408,8 +408,7 @@ let (inTransitivity,_) =
     cache_function = cache_transitivity_lemma;
     open_function = (fun i o -> if i=1 then cache_transitivity_lemma o);
     subst_function = subst_transitivity_lemma;
-    classify_function = (fun o -> Substitute o);
-    export_function = (fun x -> Some x) }
+    classify_function = (fun o -> Substitute o) }
 
 (* Synchronisation with reset *)
 

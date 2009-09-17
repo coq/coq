@@ -440,16 +440,14 @@ let subst_th (_,subst,th) =
       ring_post_tac = posttac' }
 
 
-let (theory_to_obj, obj_to_theory) = 
-  let cache_th (name,th) = add_entry name th
-  and export_th x = Some x in
+let (theory_to_obj, obj_to_theory) =
+  let cache_th (name,th) = add_entry name th in
   declare_object
     {(default_object "tactic-new-ring-theory") with
       open_function = (fun i o -> if i=1 then cache_th o);
       cache_function = cache_th;
       subst_function = subst_th;
-      classify_function = (fun x -> Substitute x);
-      export_function = export_th }
+      classify_function = (fun x -> Substitute x)}
 
 
 let setoid_of_relation env a r =
@@ -1018,16 +1016,14 @@ let subst_th (_,subst,th) =
       field_pre_tac = pretac';
       field_post_tac = posttac' }
 
-let (ftheory_to_obj, obj_to_ftheory) = 
-  let cache_th (name,th) = add_field_entry name th
-  and export_th x = Some x in
+let (ftheory_to_obj, obj_to_ftheory) =
+  let cache_th (name,th) = add_field_entry name th in
   declare_object
     {(default_object "tactic-new-field-theory") with
       open_function = (fun i o -> if i=1 then cache_th o);
       cache_function = cache_th;
       subst_function = subst_th;
-      classify_function = (fun x -> Substitute x);
-      export_function = export_th }
+      classify_function = (fun x -> Substitute x) }
 
 let field_equality r inv req =
   match kind_of_term req with

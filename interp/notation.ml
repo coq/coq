@@ -116,15 +116,12 @@ open Libobject
 let classify_scope (local,_,_ as o) =
   if local then Dispose else Substitute o
 
-let export_scope (local,_,_ as x) = if local then None else Some x
-
 let (inScope,outScope) =
   declare_object {(default_object "SCOPE") with
       cache_function = cache_scope;
       open_function = open_scope;
       subst_function = subst_scope;
-      classify_function = classify_scope;
-      export_function = export_scope }
+      classify_function = classify_scope }
 
 let open_close_scope (local,opening,sc) =
   Lib.add_anonymous_leaf (inScope (local,opening,Scope sc))
@@ -487,8 +484,7 @@ let (inArgumentsScope,outArgumentsScope) =
       subst_function = subst_arguments_scope;
       classify_function = (fun o -> Substitute o);
       discharge_function = discharge_arguments_scope;
-      rebuild_function = rebuild_arguments_scope;
-      export_function = (fun x -> Some x) }
+      rebuild_function = rebuild_arguments_scope }
 
 let declare_arguments_scope_gen req r scl =
   Lib.add_anonymous_leaf (inArgumentsScope (req,r,scl))

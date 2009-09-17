@@ -40,8 +40,7 @@ let (dp_timeout_obj,_) =
   declare_object
     {(default_object "Dp_timeout") with
        cache_function = (fun (_,x) -> set_timeout x);
-       load_function = (fun _ (_,x) -> set_timeout x);
-       export_function = (fun x -> Some x)}
+       load_function = (fun _ (_,x) -> set_timeout x)}
 
 let dp_timeout x = Lib.add_anonymous_leaf (dp_timeout_obj x)
 
@@ -49,8 +48,7 @@ let (dp_debug_obj,_) =
   declare_object
     {(default_object "Dp_debug") with
        cache_function = (fun (_,x) -> set_debug x);
-       load_function = (fun _ (_,x) -> set_debug x);
-       export_function = (fun x -> Some x)}
+       load_function = (fun _ (_,x) -> set_debug x)}
 
 let dp_debug x = Lib.add_anonymous_leaf (dp_debug_obj x)
 
@@ -58,8 +56,7 @@ let (dp_trace_obj,_) =
   declare_object
     {(default_object "Dp_trace") with
        cache_function = (fun (_,x) -> set_trace x);
-       load_function = (fun _ (_,x) -> set_trace x);
-       export_function = (fun x -> Some x)}
+       load_function = (fun _ (_,x) -> set_trace x)}
 
 let dp_trace x = Lib.add_anonymous_leaf (dp_trace_obj x)
 
@@ -818,8 +815,7 @@ let (dp_prelude_obj,_) =
   declare_object
     {(default_object "Dp_prelude") with
        cache_function = (fun (_,x) -> set_prelude x);
-       load_function = (fun _ (_,x) -> set_prelude x);
-       export_function = (fun x -> Some x)}
+       load_function = (fun _ (_,x) -> set_prelude x)}
 
 let dp_prelude x = Lib.add_anonymous_leaf (dp_prelude_obj x)
 
@@ -1061,8 +1057,7 @@ let (dp_hint_obj,_) =
   declare_object
     {(default_object "Dp_hint") with
        cache_function = (fun (_,l) -> dp_hint l);
-       load_function = (fun _ (_,l) -> dp_hint l);
-       export_function = (fun x -> Some x)}
+       load_function = (fun _ (_,l) -> dp_hint l)}
 
 let dp_hint l = Lib.add_anonymous_leaf (dp_hint_obj l)
 
@@ -1088,8 +1083,7 @@ let (dp_predefined_obj,_) =
   declare_object
     {(default_object "Dp_predefined") with
        cache_function = (fun (_,(id,s)) -> dp_predefined id s);
-       load_function = (fun _ (_,(id,s)) -> dp_predefined id s);
-       export_function = (fun x -> Some x)}
+       load_function = (fun _ (_,(id,s)) -> dp_predefined id s)}
 
 let dp_predefined id s = Lib.add_anonymous_leaf (dp_predefined_obj (id,s))
 

@@ -59,13 +59,6 @@ open Mod_subst
      rebuild the non volatile content of a section from the data
      collected by the discharge function
 
-   * an export function, to enable optional writing of its contents
-     to disk (.vo). This function is also the opportunity to remove
-     redundant information in order to keep .vo size small
-
-     The export function is a little obsolete and will be removed
-     in the near future...
-
 *)
 
 type 'a substitutivity =
@@ -79,8 +72,7 @@ type 'a object_declaration = {
   classify_function : 'a -> 'a substitutivity;
   subst_function : object_name * substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
-  rebuild_function : 'a -> 'a;
-  export_function : 'a -> 'a option }
+  rebuild_function : 'a -> 'a }
 
 (* The default object is a "Keep" object with empty methods.
    Object creators are advised to use the construction
@@ -112,7 +104,6 @@ val load_object : int -> object_name * obj -> unit
 val open_object : int -> object_name * obj -> unit
 val subst_object : object_name * substitution * obj -> obj
 val classify_object : obj -> obj substitutivity
-val export_object : obj -> obj option
 val discharge_object : object_name * obj -> obj option
 val rebuild_object : obj -> obj
 val relax : bool -> unit

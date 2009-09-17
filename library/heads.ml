@@ -155,8 +155,6 @@ let discharge_head (_,(ref,k)) =
 let rebuild_head (ref,k) =
   (ref, compute_head ref)
 
-let export_head o = Some o
-
 let (inHead, _) =
   declare_object {(default_object "HEAD") with
     cache_function = cache_head;
@@ -164,8 +162,7 @@ let (inHead, _) =
     subst_function = subst_head;
     classify_function = (fun x -> Substitute x);
     discharge_function = discharge_head;
-    rebuild_function = rebuild_head;
-    export_function = export_head }
+    rebuild_function = rebuild_head }
 
 let declare_head c =
   let hd = compute_head c in

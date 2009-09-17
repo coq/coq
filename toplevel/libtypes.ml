@@ -71,7 +71,6 @@ let (input,output) =
     { (default_object "LIBTYPES") with
 	load_function = (fun _ -> load);
 	subst_function = (fun (_,s,t) -> subst s t);
-	export_function = (fun x -> Some x);
 	classify_function = (fun x -> Substitute x)
     }
 

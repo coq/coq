@@ -71,12 +71,6 @@ let map_strategy f l =
       if ql'=[] then str else (lev,ql')::str) l [] in
   if l'=[] then None else Some (false,l')
 
-let export_strategy (local,obj) =
-  if local then None else
-  map_strategy (function
-      EvalVarRef _ -> None
-    | EvalConstRef _ as q -> Some q) obj
-
 let classify_strategy (local,_ as obj) =
   if local then Dispose else Substitute obj
 
@@ -97,8 +91,7 @@ let (inStrategy,outStrategy) =
 		    load_function = (fun _ (_,obj) -> cache_strategy obj);
 		    subst_function = subst_strategy;
                     discharge_function = discharge_strategy;
-		    classify_function = classify_strategy;
-                    export_function = export_strategy }
+		    classify_function = classify_strategy }
 
 
 let set_strategy local str =

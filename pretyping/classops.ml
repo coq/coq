@@ -383,8 +383,7 @@ let (inCoercion,_) =
     cache_function = cache_coercion;
     subst_function = subst_coercion;
     classify_function = (fun x -> Substitute x);
-    discharge_function = discharge_coercion;
-    export_function = (function x -> Some x)  }
+    discharge_function = discharge_coercion }
 
 let declare_coercion coef stre ~isid ~src:cls ~target:clt ~params:ps =
   Lib.add_anonymous_leaf (inCoercion (coef,stre,isid,cls,clt,ps))

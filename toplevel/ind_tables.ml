@@ -16,9 +16,6 @@ let eq_scheme_map = ref Indmap.empty
 let cache_scheme (_,(ind,const)) =
     eq_scheme_map := Indmap.add ind const (!eq_scheme_map)
 
-let export_scheme obj =
-    Some obj
-
 
 
 let _ = Summary.declare_summary "eqscheme"
@@ -45,15 +42,6 @@ let cache_lb (_,(ind,const)) =
 
 let cache_dec (_,(ind,const)) =
     dec_map := Indmap.add ind const (!dec_map)
-
-let export_bool_leib obj =
-    Some obj
-
-let export_leib_bool obj =
-    Some obj
-
-let export_dec_proof obj =
-    Some obj
 
 
 

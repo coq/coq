@@ -299,13 +299,10 @@ let cache_ml_module_object (_,{mnames=mnames}) =
 	      error ("Dynamic link not supported (module "^name^")")))
     mnames
 
-let export_ml_module_object x = Some x
-					 
 let (inMLModule,outMLModule) =
   declare_object {(default_object "ML-MODULE") with
                     load_function = (fun _ -> cache_ml_module_object);
                     cache_function = cache_ml_module_object;
-                    export_function = export_ml_module_object;
                     subst_function = (fun (_,_,o) -> o);
                     classify_function = (fun o -> Substitute o) }
 

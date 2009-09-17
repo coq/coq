@@ -265,15 +265,13 @@ let subst_th (_,subst,(c,th as obj)) =
       (c',th')
 
 
-let (theory_to_obj, obj_to_theory) = 
-  let cache_th (_,(c, th)) = theories_map_add (c,th)
-  and export_th x = Some x in
+let (theory_to_obj, obj_to_theory) =
+  let cache_th (_,(c, th)) = theories_map_add (c,th) in
   declare_object {(default_object "tactic-ring-theory") with
 		    open_function = (fun i o -> if i=1 then cache_th o);
                     cache_function = cache_th;
 		    subst_function = subst_th;
-		    classify_function = (fun x -> Substitute x);
-		    export_function = export_th }
+		    classify_function = (fun x -> Substitute x) }
 
 (* from the set A, guess the associated theory *)
 (* With this simple solution, the theory to use is automatically guessed *)

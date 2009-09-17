@@ -96,15 +96,13 @@ module MakeTable =
 	    if p' == p then obj else
 	      (f,p')
 	in
-	let export_options fp = Some fp in
         let (inGo,outGo) =
           Libobject.declare_object {(Libobject.default_object nick) with
                 Libobject.load_function = load_options;
 		Libobject.open_function = load_options;
 		Libobject.cache_function = cache_options;
 		Libobject.subst_function = subst_options;
-		Libobject.classify_function = (fun x -> Substitute x);
-		Libobject.export_function = export_options} 
+		Libobject.classify_function = (fun x -> Substitute x)}
 	in
         ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
          (fun c -> Lib.add_anonymous_leaf (inGo (GOrmv, c))))
@@ -255,9 +253,7 @@ let declare_option cast uncast
 		       cache_function = (fun (_,v) -> write v);
 		       classify_function = (fun v -> Keep v);
 		       discharge_function = (fun (_,v) -> Some v);
-		       load_function = (fun _ (_,v) -> write v);
-		       (* spiwack: I'm unsure whether this function does anyting *)
-		       export_function = (fun v -> Some v)}
+		       load_function = (fun _ (_,v) -> write v)}
     in
     let _ = declare_summary (nickname key)
 	     { freeze_function = read;

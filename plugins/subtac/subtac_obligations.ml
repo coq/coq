@@ -170,8 +170,7 @@ let (input,output) =
 				   prlist_with_sep spc (fun x -> Nameops.pr_id x)
 				   (map_keys infos));
 	Substitute (ProgMap.empty, tac));
-      subst_function = subst;
-      export_function = (fun x -> Some x) }
+      subst_function = subst}
 
 let update_state () =
 (*   msgnl (str "Updating obligations info"); *)

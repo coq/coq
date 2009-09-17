@@ -2836,8 +2836,7 @@ let (inMD,outMD) =
      load_function   = load_md;
      open_function   = open_md;
      subst_function = subst_md;
-     classify_function = (fun o -> Substitute o);
-     export_function = (fun x -> Some x)}
+     classify_function = (fun o -> Substitute o)}
 
 let print_ltac id =
  try

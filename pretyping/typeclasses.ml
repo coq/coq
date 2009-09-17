@@ -169,8 +169,7 @@ let (class_input,class_output) =
       classify_function = (fun x -> Substitute x);
       discharge_function = (fun a -> Some (discharge_class a));
       rebuild_function = rebuild_class;
-      subst_function = subst_class;
-      export_function = (fun x -> Some x) }
+      subst_function = subst_class }
 
 let add_class cl =
   Lib.add_anonymous_leaf (class_input cl)
@@ -213,8 +212,7 @@ let (instance_input,instance_output) =
       classify_function = (fun x -> Substitute x);
       discharge_function = (fun a -> Some (discharge_instance a));
       rebuild_function = rebuild_instance;
-      subst_function = subst_instance;
-      export_function = (fun x -> Some x) }
+      subst_function = subst_instance }
 
 let add_instance i =
   Lib.add_anonymous_leaf (instance_input i);

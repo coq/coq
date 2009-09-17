@@ -352,8 +352,6 @@ let subst_Function (_,subst,finfos) =
 
 let classify_Function infos = Libobject.Substitute infos
 
-let export_Function infos = Some infos
-
 
 let discharge_Function (_,finfos) =
   let function_constant' = Lib.discharge_con finfos.function_constant
@@ -410,7 +408,6 @@ let in_Function,out_Function =
        Libobject.load_function  = load_Function;
        Libobject.classify_function  = classify_Function;
        Libobject.subst_function = subst_Function;
-       Libobject.export_function = export_Function;
        Libobject.discharge_function = discharge_Function
 (*        Libobject.open_function = open_Function; *)
     }

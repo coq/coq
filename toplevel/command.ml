@@ -282,8 +282,7 @@ let (inScheme,_) =
   declare_object {(default_object "EQSCHEME") with
                     cache_function = Ind_tables.cache_scheme;
                     load_function = (fun _ -> Ind_tables.cache_scheme);
-                    subst_function = Auto_ind_decl.subst_in_constr;
-                    export_function = Ind_tables.export_scheme }
+                    subst_function = Auto_ind_decl.subst_in_constr }
 
 let declare_eq_scheme sp =
   let mib = Global.lookup_mind sp in
@@ -315,22 +314,19 @@ let (inBoolLeib,_) =
   declare_object {(default_object "BOOLLIEB") with
                     cache_function = Ind_tables.cache_bl;
                     load_function = (fun _ -> Ind_tables.cache_bl);
-                    subst_function = Auto_ind_decl.subst_in_constr;
-                    export_function = Ind_tables.export_bool_leib }
+                    subst_function = Auto_ind_decl.subst_in_constr }
 
 let (inLeibBool,_) =
   declare_object {(default_object "LIEBBOOL") with
                     cache_function = Ind_tables.cache_lb;
                     load_function = (fun _ -> Ind_tables.cache_lb);
-                    subst_function = Auto_ind_decl.subst_in_constr;
-                    export_function = Ind_tables.export_leib_bool }
+                    subst_function = Auto_ind_decl.subst_in_constr }
 
 let (inDec,_) =
   declare_object {(default_object "EQDEC") with
                     cache_function = Ind_tables.cache_dec;
                     load_function = (fun _ -> Ind_tables.cache_dec);
-                    subst_function = Auto_ind_decl.subst_in_constr;
-                    export_function = Ind_tables.export_dec_proof }
+                    subst_function = Auto_ind_decl.subst_in_constr }
 
 let start_hook = ref ignore
 let set_start_hook = (:=) start_hook

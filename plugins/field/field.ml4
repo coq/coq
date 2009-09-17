@@ -65,7 +65,6 @@ let subst_addfield (_,subst,(typ,th as obj)) =
   let th' = subst_mps subst th in
     if typ' == typ && th' == th then obj else
       (typ',th')
-let export_addfield x = Some x
 
 (* Declaration of the Add Field library object *)
 let (in_addfield,out_addfield)=
@@ -73,8 +72,7 @@ let (in_addfield,out_addfield)=
        Libobject.open_function = (fun i o -> if i=1 then cache_addfield o);
        Libobject.cache_function = cache_addfield;
        Libobject.subst_function = subst_addfield;
-       Libobject.classify_function = (fun a -> Libobject.Substitute a);
-       Libobject.export_function = export_addfield }
+       Libobject.classify_function = (fun a -> Libobject.Substitute a)}
 
 (* Adds a theory to the table *)
 let add_field a aplus amult aone azero aopp aeq ainv aminus_o adiv_o rth

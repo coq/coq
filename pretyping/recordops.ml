@@ -78,8 +78,7 @@ let (inStruc,outStruc) =
     load_function = load_structure;
     subst_function = subst_structure;
     classify_function = (fun x -> Substitute x);
-    discharge_function = discharge_structure;
-    export_function = (function x -> Some x) }
+    discharge_function = discharge_structure }
 
 let declare_structure (s,c,kl,pl) =
   Lib.add_anonymous_leaf (inStruc (s,c,kl,pl))
@@ -138,7 +137,6 @@ let (in_method,out_method) =
 	load_function = (fun _ -> load_method);
 	cache_function = load_method;
 	subst_function = (fun (_,s,(ty,id)) -> Mod_subst.subst_mps s ty,subst_id s id);
-	export_function = (fun x -> Some x);
 	classify_function = (fun x -> Substitute x)
     }
 
@@ -270,8 +268,7 @@ let (inCanonStruc,outCanonStruct) =
     cache_function = cache_canonical_structure;
     subst_function = subst_canonical_structure;
     classify_function = (fun x -> Substitute x);
-    discharge_function = discharge_canonical_structure;
-    export_function = (function x -> Some x) }
+    discharge_function = discharge_canonical_structure }
 
 let add_canonical_structure x = Lib.add_anonymous_leaf (inCanonStruc x)
 

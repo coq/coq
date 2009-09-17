@@ -457,8 +457,7 @@ let (inAutoHint,_) =
                     cache_function = cache_autohint;
 		    load_function = (fun _ -> cache_autohint);
 		    subst_function = subst_autohint;
-		    classify_function = classify_autohint;
-                    export_function = export_autohint }
+		    classify_function = classify_autohint }
 
 
 let create_hint_db l n st b =

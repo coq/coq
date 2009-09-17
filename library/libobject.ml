@@ -36,8 +36,7 @@ type 'a object_declaration = {
   classify_function : 'a -> 'a substitutivity;
   subst_function : object_name * substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
-  rebuild_function : 'a -> 'a;
-  export_function : 'a -> 'a option }
+  rebuild_function : 'a -> 'a }
 
 let yell s = anomaly s
 
@@ -50,8 +49,7 @@ let default_object s = {
     yell ("The object "^s^" does not know how to substitute!"));
   classify_function = (fun obj -> Keep obj);
   discharge_function = (fun _ -> None);
-  rebuild_function = (fun x -> x);
-  export_function = (fun _ -> None)}
+  rebuild_function = (fun x -> x)}
 
 
 (* The suggested object declaration is the following:
@@ -76,8 +74,7 @@ type dynamic_object_declaration = {
   dyn_subst_function : object_name * substitution * obj -> obj;
   dyn_classify_function : obj -> obj substitutivity;
   dyn_discharge_function : object_name * obj -> obj option;
-  dyn_rebuild_function : obj -> obj;
-  dyn_export_function : obj -> obj option }
+  dyn_rebuild_function : obj -> obj }
 
 let object_tag lobj = Dyn.tag lobj
 
@@ -117,12 +114,6 @@ let declare_object odecl =
   and rebuild lobj =
     if Dyn.tag lobj = na then infun (odecl.rebuild_function (outfun lobj))
     else anomaly "somehow we got the wrong dynamic object in the rebuildfun"
-  and exporter lobj =
-    if Dyn.tag lobj = na then
-      Option.map infun (odecl.export_function (outfun lobj))
-    else
-      anomaly "somehow we got the wrong dynamic object in the exportfun"
-
   in
   Hashtbl.add cache_tab na { dyn_cache_function = cacher;
 			     dyn_load_function = loader;
@@ -130,8 +121,7 @@ let declare_object odecl =
 			     dyn_subst_function = substituter;
 			     dyn_classify_function = classifier;
 			     dyn_discharge_function = discharge;
-			     dyn_rebuild_function = rebuild;
-                             dyn_export_function = exporter };
+			     dyn_rebuild_function = rebuild };
   (infun,outfun)
 
 (* this function describes how the cache, load, open, and export functions
@@ -175,6 +165,3 @@ let discharge_object ((_,lobj) as node) =
 
 let rebuild_object lobj =
   apply_dyn_fun lobj (fun d -> d.dyn_rebuild_function lobj) lobj
-
-let export_object lobj =
-  apply_dyn_fun None (fun d -> d.dyn_export_function lobj) lobj

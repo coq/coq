@@ -35,8 +35,7 @@ let (inToken, outToken) =
        open_function = (fun i o -> if i=1 then cache_token o);
        cache_function = cache_token;
        subst_function = Libobject.ident_subst_function;
-       classify_function = (fun o -> Substitute o);
-       export_function = (fun x -> Some x)}
+       classify_function = (fun o -> Substitute o)}
 
 let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 
@@ -74,8 +73,7 @@ let (inTacticGrammar, outTacticGrammar) =
        open_function = (fun i o -> if i=1 then cache_tactic_notation o);
        cache_function = cache_tactic_notation;
        subst_function = subst_tactic_notation;
-       classify_function = (fun o -> Substitute o);
-       export_function = (fun x -> Some x)}
+       classify_function = (fun o -> Substitute o)}
 
 let cons_production_parameter l = function
   | GramTerminal _ -> l
@@ -693,8 +691,7 @@ let (inSyntaxExtension, outSyntaxExtension) =
        open_function = (fun i o -> if i=1 then cache_syntax_extension o);
        cache_function = cache_syntax_extension;
        subst_function = subst_syntax_extension;
-       classify_function = classify_syntax_definition;
-       export_function = export_syntax_definition}
+       classify_function = classify_syntax_definition}
 
 (**************************************************************************)
 (* Precedences                                                            *)
@@ -886,8 +883,7 @@ let (inNotation, outNotation) =
        cache_function = cache_notation;
        subst_function = subst_notation;
        load_function = load_notation;
-       classify_function = classify_notation;
-       export_function = export_notation}
+       classify_function = classify_notation}
 
 (**********************************************************************)
 (* Recovering existing syntax                                         *)
@@ -1046,8 +1042,7 @@ let (inScopeCommand,outScopeCommand) =
       open_function = open_scope_command;
       load_function = load_scope_command;
       subst_function = subst_scope_command;
-      classify_function = (fun obj -> Substitute obj);
-      export_function = (fun x -> Some x) }
+      classify_function = (fun obj -> Substitute obj)}
 
 let add_delimiters scope key =
   Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeDelim key))

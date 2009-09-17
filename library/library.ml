@@ -304,11 +304,8 @@ let cache_import obj =
 
 let subst_import (_,_,o) = o
 
-let export_import o = Some o
-
 let classify_import (_,export as obj) =
   if export then Substitute obj else Dispose
-
 
 let (in_import, out_import) =
   declare_object {(default_object "IMPORT LIBRARY") with
@@ -523,10 +520,6 @@ let cache_require o =
   load_require 1 o;
   open_require 1 o
 
-  (* keeps the require marker for closed section replay but removes
-     OS dependent fields from .vo files for cross-platform compatibility *)
-let export_require (_,l,e) = Some ([],l,e)
-
 let discharge_require (_,o) = Some o
 
 (* open_function is never called from here because an Anticipate object *)
@@ -536,7 +529,6 @@ let (in_require, out_require) =
        cache_function = cache_require;
        load_function = load_require;
        open_function = (fun _ _ -> assert false);
-       export_function = export_require;
        discharge_function = discharge_require;
        classify_function = (fun o -> Anticipate o) }
 

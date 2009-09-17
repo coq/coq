@@ -415,8 +415,7 @@ let (extr_lang,_) =
   declare_object
     {(default_object "Extraction Lang") with
        cache_function = (fun (_,l) -> lang_ref := l);
-       load_function = (fun _ (_,l) -> lang_ref := l);
-       export_function = (fun x -> Some x)}
+       load_function = (fun _ (_,l) -> lang_ref := l)}
 
 let _ = declare_summary "Extraction Lang"
 	  { freeze_function = (fun () -> !lang_ref);
@@ -449,7 +448,6 @@ let (inline_extraction,_) =
     {(default_object "Extraction Inline") with
        cache_function = (fun (_,(b,l)) -> add_inline_entries b l);
        load_function = (fun _ (_,(b,l)) -> add_inline_entries b l);
-       export_function = (fun x -> Some x);
        classify_function = (fun o -> Substitute o);
        subst_function =
         (fun (_,s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))
@@ -492,8 +490,7 @@ let (reset_inline,_) =
   declare_object
     {(default_object "Reset Extraction Inline") with
        cache_function = (fun (_,_)-> inline_table :=  empty_inline_table);
-       load_function = (fun _ (_,_)-> inline_table :=  empty_inline_table);
-       export_function = (fun x -> Some x)}
+       load_function = (fun _ (_,_)-> inline_table :=  empty_inline_table)}
 
 let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
@@ -530,7 +527,6 @@ let (blacklist_extraction,_) =
     {(default_object "Extraction Blacklist") with
        cache_function = (fun (_,l) -> add_blacklist_entries l);
        load_function = (fun _ (_,l) -> add_blacklist_entries l);
-       export_function = (fun x -> Some x);
        classify_function = (fun o -> Libobject.Keep o);
        subst_function = (fun (_,_,x) -> x)
     }
@@ -558,8 +554,7 @@ let (reset_blacklist,_) =
   declare_object
     {(default_object "Reset Extraction Blacklist") with
        cache_function = (fun (_,_)-> blacklist_table := Idset.empty);
-       load_function = (fun _ (_,_)-> blacklist_table := Idset.empty);
-       export_function = (fun x -> Some x)}
+       load_function = (fun _ (_,_)-> blacklist_table := Idset.empty)}
 
 let reset_extraction_blacklist () = Lib.add_anonymous_leaf (reset_blacklist ())
 
@@ -588,7 +583,6 @@ let (in_customs,_) =
     {(default_object "ML extractions") with
        cache_function = (fun (_,(r,ids,s)) -> add_custom r ids s);
        load_function = (fun _ (_,(r,ids,s)) -> add_custom r ids s);
-       export_function = (fun x -> Some x);
        classify_function = (fun o -> Substitute o);
        subst_function =
         (fun (_,s,(r,ids,str)) -> (fst (subst_global s r), ids, str))
