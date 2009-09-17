@@ -234,12 +234,8 @@ let dump_universes s =
 (* "Locate" commands *)
 
 let locate_file f =
-  try
-    let _,file = System.where_in_path ~warn:false (Library.get_load_paths ()) f in
-    msgnl (str file)
-  with Not_found ->
-    msgnl (hov 0 (str"Can't find file" ++ spc () ++ str f ++ spc () ++
-		  str"on loadpath"))
+  let _,file = System.find_file_in_path ~warn:false (Library.get_load_paths ()) f in
+  msgnl (str file)
 
 let msg_found_library = function
   | Library.LibLoaded, fulldir, file ->
