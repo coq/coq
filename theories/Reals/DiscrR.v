@@ -19,7 +19,7 @@ Qed.
 Lemma Rplus_lt_pos : forall x y:R, 0 < x -> 0 < y -> 0 < x + y.
 intros.
 apply Rlt_trans with x.
-assumption. 
+assumption.
 pattern x at 1 in |- *; rewrite <- Rplus_0_r.
 apply Rplus_lt_compat_l.
 assumption.
@@ -63,9 +63,9 @@ Ltac omega_sup :=
   change 0 with (IZR 0);
   repeat
     rewrite <- plus_IZR ||
-      rewrite <- mult_IZR || rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus; 
+      rewrite <- mult_IZR || rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus;
   apply IZR_lt; omega.
-  
+
 Ltac prove_sup :=
   match goal with
   |  |- (?X1 > ?X2) => change (X2 < X1) in |- *; prove_sup
@@ -83,5 +83,5 @@ Ltac Rcompute :=
   change 0 with (IZR 0);
   repeat
     rewrite <- plus_IZR ||
-      rewrite <- mult_IZR || rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus; 
+      rewrite <- mult_IZR || rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus;
   apply IZR_eq; try reflexivity.

@@ -25,7 +25,7 @@
 
 (** Key codes
 
-   Ce fichier provient de X11/keysymdef.h 
+   Ce fichier provient de X11/keysymdef.h
    les noms des symboles deviennent : XK_ -> xk_
 
    Thanks to Fabrice Le Fessant.
@@ -1334,11 +1334,11 @@ let xk_Thai_khokhai					= 0xda2
 let xk_Thai_khokhuat				= 0xda3
 let xk_Thai_khokhwai				= 0xda4
 let xk_Thai_khokhon					= 0xda5
-let xk_Thai_khorakhang			        = 0xda6  
-let xk_Thai_ngongu					= 0xda7  
-let xk_Thai_chochan					= 0xda8  
-let xk_Thai_choching				= 0xda9   
-let xk_Thai_chochang				= 0xdaa  
+let xk_Thai_khorakhang			        = 0xda6
+let xk_Thai_ngongu					= 0xda7
+let xk_Thai_chochan					= 0xda8
+let xk_Thai_choching				= 0xda9
+let xk_Thai_chochang				= 0xdaa
 let xk_Thai_soso					= 0xdab
 let xk_Thai_chochoe					= 0xdac
 let xk_Thai_yoying					= 0xdad
@@ -1380,39 +1380,39 @@ let xk_Thai_saraa					= 0xdd0
 let xk_Thai_maihanakat				= 0xdd1
 let xk_Thai_saraaa					= 0xdd2
 let xk_Thai_saraam					= 0xdd3
-let xk_Thai_sarai					= 0xdd4   
-let xk_Thai_saraii					= 0xdd5   
-let xk_Thai_saraue					= 0xdd6    
-let xk_Thai_sarauee					= 0xdd7    
-let xk_Thai_sarau					= 0xdd8    
-let xk_Thai_sarauu					= 0xdd9   
+let xk_Thai_sarai					= 0xdd4
+let xk_Thai_saraii					= 0xdd5
+let xk_Thai_saraue					= 0xdd6
+let xk_Thai_sarauee					= 0xdd7
+let xk_Thai_sarau					= 0xdd8
+let xk_Thai_sarauu					= 0xdd9
 let xk_Thai_phinthu					= 0xdda
 let xk_Thai_maihanakat_maitho   			= 0xdde
 let xk_Thai_baht					= 0xddf
-let xk_Thai_sarae					= 0xde0    
+let xk_Thai_sarae					= 0xde0
 let xk_Thai_saraae					= 0xde1
 let xk_Thai_sarao					= 0xde2
-let xk_Thai_saraaimaimuan				= 0xde3   
-let xk_Thai_saraaimaimalai				= 0xde4  
+let xk_Thai_saraaimaimuan				= 0xde3
+let xk_Thai_saraaimaimalai				= 0xde4
 let xk_Thai_lakkhangyao				= 0xde5
 let xk_Thai_maiyamok				= 0xde6
 let xk_Thai_maitaikhu				= 0xde7
-let xk_Thai_maiek					= 0xde8   
+let xk_Thai_maiek					= 0xde8
 let xk_Thai_maitho					= 0xde9
 let xk_Thai_maitri					= 0xdea
 let xk_Thai_maichattawa				= 0xdeb
 let xk_Thai_thanthakhat				= 0xdec
 let xk_Thai_nikhahit				= 0xded
-let xk_Thai_leksun					= 0xdf0 
-let xk_Thai_leknung					= 0xdf1  
-let xk_Thai_leksong					= 0xdf2 
+let xk_Thai_leksun					= 0xdf0
+let xk_Thai_leknung					= 0xdf1
+let xk_Thai_leksong					= 0xdf2
 let xk_Thai_leksam					= 0xdf3
-let xk_Thai_leksi					= 0xdf4  
-let xk_Thai_lekha					= 0xdf5  
-let xk_Thai_lekhok					= 0xdf6  
-let xk_Thai_lekchet					= 0xdf7  
-let xk_Thai_lekpaet					= 0xdf8  
-let xk_Thai_lekkao					= 0xdf9 
+let xk_Thai_leksi					= 0xdf4
+let xk_Thai_lekha					= 0xdf5
+let xk_Thai_lekhok					= 0xdf6
+let xk_Thai_lekchet					= 0xdf7
+let xk_Thai_lekpaet					= 0xdf8
+let xk_Thai_lekkao					= 0xdf9
 
 
 (*

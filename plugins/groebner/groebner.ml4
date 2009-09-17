@@ -75,17 +75,17 @@ module BigInt = struct
   let hash x =
     try (int_of_big_int x)
     with _-> 1
-  let puis = power_big_int_positive_int 
+  let puis = power_big_int_positive_int
 
   (* a et b positifs, résultat positif *)
-  let rec pgcd a b = 
-    if equal b coef0 
+  let rec pgcd a b =
+    if equal b coef0
     then a
     else if lt a b then pgcd b a else pgcd b (modulo a b)
 
 
   (* signe du pgcd = signe(a)*signe(b) si non nuls. *)
-  let pgcd2 a b = 
+  let pgcd2 a b =
     if equal a coef0 then b
     else if equal b coef0 then a
     else let c = pgcd (abs a) (abs b) in
@@ -113,7 +113,7 @@ module Ent = struct
   let coef0 = Entiers.ent0
   let coef1 = Entiers.ent1
   let to_string = Entiers.string_of_ent
-  let to_int x = Entiers.int_of_ent x 
+  let to_int x = Entiers.int_of_ent x
   let hash x =Entiers.hash_ent x
   let signe = Entiers.signe_ent
 
@@ -122,14 +122,14 @@ module Ent = struct
     |_ -> (mult p (puis p (n-1)))
 
   (* a et b positifs, résultat positif *)
-  let rec pgcd a b = 
-    if equal b coef0 
+  let rec pgcd a b =
+    if equal b coef0
     then a
     else if lt a b then pgcd b a else pgcd b (modulo a b)
 
 
   (* signe du pgcd = signe(a)*signe(b) si non nuls. *)
-  let pgcd2 a b = 
+  let pgcd2 a b =
     if equal a coef0 then b
     else if equal b coef0 then a
     else let c = pgcd (abs a) (abs b) in
@@ -175,7 +175,7 @@ let tpexpr =
   lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PExpr")
 let ttconst = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEc")
 let ttvar = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEX")
-let ttadd = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEadd")  
+let ttadd = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEadd")
 let ttsub = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEsub")
 let ttmul = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEmul")
 let ttopp = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEopp")
@@ -202,7 +202,7 @@ let mkt_app name l =  mkApp (Lazy.force name, Array.of_list l)
 let tlp () = mkt_app tlist [mkt_app tpexpr [Lazy.force tz]]
 let tllp () = mkt_app tlist [tlp()]
 
-let rec mkt_pos n = 
+let rec mkt_pos n =
   if n =/ num_1 then Lazy.force pxH
   else if mod_num n num_2 =/ num_0 then
     mkt_app pxO [mkt_pos (quo_num n num_2)]
@@ -214,7 +214,7 @@ let mkt_n n =
   then Lazy.force nN0
   else mkt_app nNpos [mkt_pos n]
 
-let mkt_z z  = 
+let mkt_z z  =
   if z =/ num_0 then  Lazy.force z0
   else if z >/ num_0 then
     mkt_app zpos [mkt_pos z]
@@ -224,14 +224,14 @@ let mkt_z z  =
 let rec mkt_term t  =  match t with
 | Zero -> mkt_term (Const num_0)
 | Const r -> let (n,d) = numdom r in
-  mkt_app  ttconst [Lazy.force tz; mkt_z n]     
-| Var v -> mkt_app ttvar [Lazy.force tz; mkt_pos (num_of_string v)]     
+  mkt_app  ttconst [Lazy.force tz; mkt_z n]
+| Var v -> mkt_app ttvar [Lazy.force tz; mkt_pos (num_of_string v)]
 | Opp t1 -> mkt_app  ttopp [Lazy.force tz; mkt_term t1]
 | Add (t1,t2) -> mkt_app  ttadd [Lazy.force tz; mkt_term t1; mkt_term t2]
 | Sub (t1,t2) -> mkt_app  ttsub [Lazy.force tz; mkt_term t1; mkt_term t2]
 | Mul (t1,t2) -> mkt_app  ttmul [Lazy.force tz; mkt_term t1; mkt_term t2]
-| Pow (t1,n) ->  if (n = 0) then 
-    mkt_app ttconst [Lazy.force tz; mkt_z num_1]     
+| Pow (t1,n) ->  if (n = 0) then
+    mkt_app ttconst [Lazy.force tz; mkt_z num_1]
 else
     mkt_app ttpow [Lazy.force tz; mkt_term t1; mkt_n (num_of_int n)]
 
@@ -270,10 +270,10 @@ let rec parse_term p =
     else Zero
 | _ -> Zero
 
-let rec parse_request lp = 
+let rec parse_request lp =
   match kind_of_term lp with
     | App (_,[|_|])  -> []
-    | App (_,[|_;p;lp1|])  -> 
+    | App (_,[|_;p;lp1|])  ->
 	(parse_term p)::(parse_request lp1)
     |_-> assert false
 
@@ -433,7 +433,7 @@ let rec remove_list_tail l i =
    ...
    [cn+m n+m-1,...,cn+m 1]]
 
-   enleve les polynomes intermediaires inutiles pour calculer le dernier 
+   enleve les polynomes intermediaires inutiles pour calculer le dernier
  *)
 
 let remove_zeros zero lci =
@@ -491,7 +491,7 @@ let theoremedeszeros_termes lp =
       for i=m downto 1 do lvar:=["x"^string_of_int i^""]@(!lvar); done;
       name_var:=!lvar;
 
-      let lp = List.map (term_pol_sparse nparam) lp in 
+      let lp = List.map (term_pol_sparse nparam) lp in
       match lp with
       | [] -> assert false
       | p::lp1 ->
@@ -499,7 +499,7 @@ let theoremedeszeros_termes lp =
 	  let (cert,lp0,p,_lct) = theoremedeszeros lpol p in
 	  let lc = cert.last_comb::List.rev cert.gb_comb in
 	  match remove_zeros (fun x -> x=zeroP) lc with
-	  | [] -> assert false 
+	  | [] -> assert false
 	  | (lq::lci) ->
 	      (* lci commence par les nouveaux polynomes *)
 	      let m= !nvars in
@@ -524,7 +524,7 @@ let groebner lpol =
   init_constants ();
   let lp= parse_request lpol in
   let (_lp0,_p,c,r,_lci,_lq as rthz) = theoremedeszeros_termes lp in
-  let certif = certificat_vers_polynome_creux rthz in 
+  let certif = certificat_vers_polynome_creux rthz in
   let certif = hash_certif certif in
   let certif = certif_term certif in
   let c = mkt_term c in

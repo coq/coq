@@ -80,7 +80,7 @@ Fixpoint Qeval_expr (env: PolEnv Q) (e: PExpr Q) : Q :=
   end.
 
 Lemma Qeval_expr_simpl : forall env e,
-  Qeval_expr env e = 
+  Qeval_expr env e =
   match e with
     | PEc c =>  c
     | PEX j =>  env j
@@ -179,7 +179,7 @@ Definition Qnormalise := @cnf_normalise Q 0 1 Qplus Qmult Qminus Qopp Qeq_bool.
 Definition Qnegate := @cnf_negate Q 0 1 Qplus Qmult Qminus Qopp Qeq_bool.
 
 Definition QTautoChecker (f : BFormula (Formula Q)) (w: list QWitness)  : bool :=
-  @tauto_checker (Formula Q) (NFormula Q) 
+  @tauto_checker (Formula Q) (NFormula Q)
   Qnormalise
   Qnegate QWitness QWeakChecker f w.
 

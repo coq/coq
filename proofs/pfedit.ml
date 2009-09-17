@@ -81,26 +81,26 @@ let get_current_goal_context () = get_goal_context 1
 
 let set_current_proof = Edit.focus proof_edits
 
-let resume_proof (loc,id) = 
-  try 
+let resume_proof (loc,id) =
+  try
     Edit.focus proof_edits id
   with Invalid_argument "Edit.focus" ->
     user_err_loc(loc,"Pfedit.set_proof",str"No such proof" ++ msg_proofs false)
 
 let suspend_proof () =
-  try 
+  try
     Edit.unfocus proof_edits
   with Invalid_argument "Edit.unfocus" ->
     errorlabstrm "Pfedit.suspend_current_proof"
       (str"No active proof" ++ (msg_proofs true))
-      
+
 let resume_last_proof () =
   match (Edit.last_focused proof_edits) with
     | None ->
         errorlabstrm "resume_last" (str"No proof-editing in progress.")
-    | Some p -> 
+    | Some p ->
 	Edit.focus proof_edits p
-	  
+
 let get_current_proof_name () =
   match Edit.read proof_edits with
     | None ->
@@ -114,14 +114,14 @@ let add_proof (na,pfs,ts) =
 let delete_proof_gen = Edit.delete proof_edits
 
 let delete_proof (loc,id) =
-  try 
+  try
     delete_proof_gen id
   with (UserError ("Edit.delete",_)) ->
     user_err_loc
       (loc,"Pfedit.delete_proof",str"No such proof" ++ msg_proofs false)
-      
+
 let mutate f =
-  try 
+  try
     Edit.mutate proof_edits (fun _ pfs -> f pfs)
   with Invalid_argument "Edit.mutate" ->
     errorlabstrm "Pfedit.mutate"
@@ -131,31 +131,31 @@ let start (na,ts) =
   let pfs = mk_pftreestate ts.top_goal in
   let pfs = Option.fold_right solve_pftreestate ts.top_init_tac pfs in
   add_proof(na,pfs,ts)
-    
+
 let restart_proof () =
   match Edit.read proof_edits with
-    | None -> 
+    | None ->
 	errorlabstrm "Pfedit.restart"
           (str"No focused proof to restart" ++ msg_proofs true)
-    | Some(na,_,ts) -> 
+    | Some(na,_,ts) ->
 	delete_proof_gen na;
         start (na,ts);
         set_current_proof na
 
 let proof_term () =
   extract_pftreestate (get_pftreestate())
-    
+
 (* Detect is one has completed a subtree of the initial goal *)
-let subtree_solved () = 
+let subtree_solved () =
   let pts = get_pftreestate () in
-  is_complete_proof (proof_of_pftreestate pts) & 
+  is_complete_proof (proof_of_pftreestate pts) &
   not (is_top_pftreestate pts)
 
-let tree_solved () = 
+let tree_solved () =
   let pts = get_pftreestate () in
   is_complete_proof (proof_of_pftreestate pts)
 
-let top_tree_solved () = 
+let top_tree_solved () =
   let pts = get_pftreestate () in
   is_complete_proof (proof_of_pftreestate (top_of_tree pts))
 
@@ -165,19 +165,19 @@ let top_tree_solved () =
 
 let set_undo = function
   | None -> undo_limit := undo_default
-  | Some n -> 
-      if n>=0 then 
+  | Some n ->
+      if n>=0 then
 	undo_limit := n
-      else 
+      else
 	error "Cannot set a negative undo limit"
 
 let get_undo () = Some !undo_limit
 
 let undo n =
-  try 
-    Edit.undo proof_edits n; 
-       (* needed because the resolution of a subtree is done in 2 steps 
-       then a sequence of undo can lead to a focus on a completely solved 
+  try
+    Edit.undo proof_edits n;
+       (* needed because the resolution of a subtree is done in 2 steps
+       then a sequence of undo can lead to a focus on a completely solved
        subtree - this solution only works properly if undoing one step *)
     if subtree_solved() then  Edit.undo proof_edits 1
   with (Invalid_argument "Edit.undo") ->
@@ -186,14 +186,14 @@ let undo n =
 (* Undo current focused proof to reach depth [n]. This is used in
    [vernac_backtrack]. *)
 let undo_todepth n =
-  try 
+  try
     Edit.undo_todepth proof_edits n
   with (Invalid_argument "Edit.undo") ->
     errorlabstrm "Pfedit.undo" (str"No focused proof" ++ msg_proofs true)
 
 (* Return the depth of the current focused proof stack, this is used
    to put informations in coq prompt (in emacs mode). *)
-let current_proof_depth() = 
+let current_proof_depth() =
   try
     Edit.depth proof_edits
   with (Invalid_argument "Edit.depth") -> -1
@@ -206,7 +206,7 @@ let xml_cook_proof = ref (fun _ -> ())
 let set_xml_cook_proof f = xml_cook_proof := f
 
 let cook_proof k =
-  let (pfs,ts) = get_state() 
+  let (pfs,ts) = get_state()
   and ident = get_current_proof_name () in
   let {evar_concl=concl} = ts.top_goal
   and strength = ts.top_strength in
@@ -220,19 +220,19 @@ let cook_proof k =
       const_entry_boxed = false},
     ts.top_compute_guard, strength, ts.top_hook))
 
-let current_proof_statement () = 
+let current_proof_statement () =
   let ts = get_topstate() in
-  (get_current_proof_name (), ts.top_strength, 
+  (get_current_proof_name (), ts.top_strength,
    ts.top_goal.evar_concl, ts.top_hook)
 
 (*********************************************************************)
 (*              Abort   functions                                    *)
 (*********************************************************************)
- 
+
 let refining () = [] <> (Edit.dom proof_edits)
 
 let check_no_pending_proofs () =
-  if refining () then 
+  if refining () then
     errorlabstrm "check_no_pending_proofs"
       (str"Proof editing in progress" ++ (msg_proofs false) ++ fnl() ++
          str"Use \"Abort All\" first or complete proof(s).")
@@ -254,7 +254,7 @@ let set_end_tac tac =
 
 let start_proof na str sign concl ?init_tac ?(compute_guard=false) hook =
   let top_goal = mk_goal sign concl None in
-  let ts = { 
+  let ts = {
     top_end_tac = None;
     top_init_tac = init_tac;
     top_compute_guard = compute_guard;
@@ -269,7 +269,7 @@ let solve_nth k tac =
   let pft = get_pftreestate () in
   if not (List.mem (-1) (cursor_of_pftreestate pft)) then
     mutate (solve_nth_pftreestate k tac)
-  else 
+  else
     error "cannot apply a tactic when we are descended behind a tactic-node"
 
 let by tac = mutate (solve_pftreestate tac)
@@ -278,7 +278,7 @@ let instantiate_nth_evar_com n c =
   mutate (Evar_refiner.instantiate_pf_com n c)
 
 let traverse n = mutate (traverse n)
- 
+
 (* [traverse_to path]
 
    Traverses the current proof to get to the location specified by
@@ -296,7 +296,7 @@ let common_ancestor l1 l2 =
       | _, _ -> List.rev l1, List.length l2
   in
   common_aux (List.rev l1) (List.rev l2)
-      
+
 let rec traverse_up = function
   | 0 -> (function pf -> pf)
   | n -> (function pf -> Refiner.traverse 0 (traverse_up (n - 1) pf))
@@ -326,11 +326,11 @@ let make_focus n = focus_n := n
 let focus () = !focus_n
 let focused_goal () = let n = !focus_n in if n=0 then 1 else n
 
-let reset_top_of_tree () = 
+let reset_top_of_tree () =
   mutate top_of_tree
- 
-let reset_top_of_script () = 
-  mutate (fun pts -> 
+
+let reset_top_of_script () =
+  mutate (fun pts ->
 	try
 	 up_until_matching_rule is_proof_instr pts
 	with Not_found -> top_of_tree pts)

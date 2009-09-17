@@ -18,7 +18,7 @@ type pp_global_params = {
 
 (* Default parameters of pretty-printing *)
 
-let dflt_gp = { 
+let dflt_gp = {
   margin     = 78;
   max_indent = 50;
   max_depth  = 50;
@@ -26,7 +26,7 @@ let dflt_gp = {
 
 (* A deeper pretty-printer to print proof scripts *)
 
-let deep_gp = { 
+let deep_gp = {
   margin     = 78;
   max_indent = 50;
   max_depth  = 10000;
@@ -35,13 +35,13 @@ let deep_gp = {
 (* set_gp : Format.formatter -> pp_global_params -> unit
  * set the parameters of a formatter *)
 
-let set_gp ft gp = 
+let set_gp ft gp =
   Format.pp_set_margin ft gp.margin ;
   Format.pp_set_max_indent ft gp.max_indent ;
   Format.pp_set_max_boxes ft gp.max_depth ;
   Format.pp_set_ellipsis_text ft gp.ellipsis
 
-let set_dflt_gp ft = set_gp ft dflt_gp 
+let set_dflt_gp ft = set_gp ft dflt_gp
 
 let get_gp ft =
   { margin = Format.pp_get_margin ft ();
@@ -56,7 +56,7 @@ type 'a pp_formatter_params = {
   fp_output : out_channel ;
   fp_output_function : string -> int -> int -> unit ;
   fp_flush_function : unit -> unit }
-				
+
 (* Output functions for stdout and stderr *)
 
 let std_fp = {
@@ -69,7 +69,7 @@ let err_fp = {
   fp_output_function = output stderr;
   fp_flush_function = (fun () -> flush stderr) }
 
-(* with_fp : 'a pp_formatter_params -> Format.formatter 
+(* with_fp : 'a pp_formatter_params -> Format.formatter
  * returns of formatter for given formatter functions *)
 
 let with_fp fp =
@@ -83,7 +83,7 @@ let with_output_to ch =
   let ft = with_fp { fp_output = ch ;
       	             fp_output_function = (output ch) ;
 	             fp_flush_function = (fun () -> flush ch) } in
-  set_gp ft deep_gp; 
+  set_gp ft deep_gp;
   ft
 
 let std_ft = ref Format.std_formatter

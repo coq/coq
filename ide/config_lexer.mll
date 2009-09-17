@@ -28,19 +28,19 @@ rule token = parse
   | '#' [^ '\n']* { token lexbuf }
   | ident { IDENT (lexeme lexbuf) }
   | '='   { EQUAL }
-  | '"'   { Buffer.reset string_buffer; 
+  | '"'   { Buffer.reset string_buffer;
 	    Buffer.add_char string_buffer '"';
 	    string lexbuf;
 	    let s = Buffer.contents string_buffer in
 	    STRING (Scanf.sscanf s "%S" (fun s -> s)) }
   | _     { let c = lexeme_start lexbuf in
-	    eprintf ".coqiderc: invalid character (%d)\n@." c; 
+	    eprintf ".coqiderc: invalid character (%d)\n@." c;
 	    token lexbuf }
   | eof   { EOF }
 
 and string = parse
   | '"'  { Buffer.add_char string_buffer '"' }
-  | '\\' '"' | _ 
+  | '\\' '"' | _
          { Buffer.add_string string_buffer (lexeme lexbuf); string lexbuf }
   | eof  { eprintf ".coqiderc: unterminated string\n@." }
 
@@ -60,7 +60,7 @@ and string = parse
       | [] -> ()
       | s :: sl -> fprintf fmt "%S@ %a" s print_list sl
     in
-    Stringmap.iter 
+    Stringmap.iter
       (fun k s -> fprintf fmt "@[<hov 2>%s = %a@]@\n" k print_list s) m;
     fprintf fmt "@.";
     close_out c

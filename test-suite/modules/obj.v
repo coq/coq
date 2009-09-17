@@ -1,7 +1,7 @@
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Module M. 
+Module M.
   Definition a (s : Set) := s.
   Print a.
 End M.

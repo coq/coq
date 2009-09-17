@@ -8,7 +8,7 @@
    tactics were using Typing.type_of and not Typeops.typing; the former
    was not checking hyps inclusion so that the discrepancy in the types
    of section variables seen as goal variables was not a problem (at the
-   end, when the proof is completed, the section variable recovers its 
+   end, when the proof is completed, the section variable recovers its
    original type and all is correct for Typeops) *)
 
 Section A.
@@ -16,9 +16,9 @@ Variable H:not True.
 Lemma f:nat->nat. destruct H. exact I. Defined.
 Goal f 0=f 1.
 red in H.
-(* next tactic was failing wrt bug #1325 because type-checking the goal 
+(* next tactic was failing wrt bug #1325 because type-checking the goal
    detected a syntactically different type for the section variable H *)
-case 0. 
+case 0.
 Reset A.
 
 (* Variant with polymorphic inductive types for bug #1325 *)

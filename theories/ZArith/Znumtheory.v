@@ -15,13 +15,13 @@ Require Import Zdiv.
 Require Import Wf_nat.
 Open Local Scope Z_scope.
 
-(** This file contains some notions of number theory upon Z numbers: 
+(** This file contains some notions of number theory upon Z numbers:
      - a divisibility predicate [Zdivide]
      - a gcd predicate [gcd]
      - Euclid algorithm [euclid]
      - a relatively prime predicate [rel_prime]
      - a prime predicate [prime]
-     - an efficient [Zgcd] function 
+     - an efficient [Zgcd] function
 *)
 
 (** * Divisibility *)
@@ -171,7 +171,7 @@ Proof.
   rewrite H1 in H0; left; omega.
   rewrite H1 in H0; right; omega.
 Qed.
- 
+
 Theorem Zdivide_trans: forall a b c, (a | b) -> (b | c) ->  (a | c).
 Proof.
   intros a b c [d H1] [e H2]; exists (d * e); auto with zarith.
@@ -220,7 +220,7 @@ Lemma Zdivide_dec : forall a b:Z, {(a | b)} + {~ (a | b)}.
 Proof.
   intros a b; elim (Ztrichotomy_inf a 0).
   (* a<0 *)
-  intros H; elim H; intros. 
+  intros H; elim H; intros.
   case (Z_eq_dec (b mod - a) 0).
   left; apply Zdivide_opp_l_rev; apply Zmod_divide; auto with zarith.
   intro H1; right; intro; elim H1; apply Zdivide_mod; auto with zarith.
@@ -234,7 +234,7 @@ Proof.
   intro H1; right; intro; elim H1; apply Zdivide_mod; auto with zarith.
 Qed.
 
-Theorem Zdivide_Zdiv_eq: forall a b : Z, 
+Theorem Zdivide_Zdiv_eq: forall a b : Z,
  0 < a -> (a | b) ->  b = a * (b / a).
 Proof.
   intros a b Hb Hc.
@@ -242,7 +242,7 @@ Proof.
   rewrite (Zdivide_mod b a); auto with zarith.
 Qed.
 
-Theorem Zdivide_Zdiv_eq_2: forall a b c : Z, 
+Theorem Zdivide_Zdiv_eq_2: forall a b c : Z,
  0 < a -> (a | b) -> (c * b)/a = c * (b / a).
 Proof.
   intros a b c H1 H2.
@@ -250,7 +250,7 @@ Proof.
   rewrite Hz; rewrite Zmult_assoc.
   repeat rewrite Z_div_mult; auto with zarith.
 Qed.
- 
+
 Theorem Zdivide_Zabs_l: forall a b, (Zabs a | b) ->  (a | b).
 Proof.
   intros a b [x H]; subst b.
@@ -258,7 +258,7 @@ Proof.
   exists (- x); ring.
   exists x; ring.
 Qed.
- 
+
 Theorem Zdivide_Zabs_inv_l: forall a b, (a | b) ->  (Zabs a | b).
 Proof.
   intros a b [x H]; subst b.
@@ -267,7 +267,7 @@ Proof.
   exists x; ring.
 Qed.
 
-Theorem Zdivide_le: forall a b : Z, 
+Theorem Zdivide_le: forall a b : Z,
  0 <= a -> 0 < b -> (a | b) ->  a <= b.
 Proof.
   intros a b H1 H2 [q H3]; subst b.
@@ -278,7 +278,7 @@ Proof.
   intros H4; subst q; omega.
 Qed.
 
-Theorem Zdivide_Zdiv_lt_pos: forall a b : Z, 
+Theorem Zdivide_Zdiv_lt_pos: forall a b : Z,
  1 < a -> 0 < b -> (a | b) ->  0 < b / a < b .
 Proof.
   intros a b H1 H2 H3; split.
@@ -305,7 +305,7 @@ Proof.
   rewrite Zplus_0_l; rewrite Zmod_mod; auto with zarith.
 Qed.
 
-Lemma Zmod_divide_minus: forall a b c : Z, 0 < b -> 
+Lemma Zmod_divide_minus: forall a b c : Z, 0 < b ->
  a mod b = c -> (b | a - c).
 Proof.
   intros a b c H H1; apply Zmod_divide; auto with zarith.
@@ -315,7 +315,7 @@ Proof.
   subst; apply Z_mod_lt; auto with zarith.
 Qed.
 
-Lemma Zdivide_mod_minus: forall a b c : Z, 0 <= c < b -> 
+Lemma Zdivide_mod_minus: forall a b c : Z, 0 <= c < b ->
  (b | a - c) -> a mod b = c.
 Proof.
   intros a b c (H1, H2) H3; assert (0 < b); try apply Zle_lt_trans with c; auto.
@@ -326,9 +326,9 @@ Proof.
 Qed.
 
 (** * Greatest common divisor (gcd). *)
-   
-(** There is no unicity of the gcd; hence we define the predicate [gcd a b d] 
-     expressing that [d] is a gcd of [a] and [b]. 
+
+(** There is no unicity of the gcd; hence we define the predicate [gcd a b d]
+     expressing that [d] is a gcd of [a] and [b].
      (We show later that the [gcd] is actually unique if we discard its sign.) *)
 
 Inductive Zis_gcd (a b d:Z) : Prop :=
@@ -377,8 +377,8 @@ Proof.
 Qed.
 
 Hint Resolve Zis_gcd_sym Zis_gcd_0 Zis_gcd_minus Zis_gcd_opp: zarith.
- 
-Theorem Zis_gcd_unique: forall a b c d : Z, 
+
+Theorem Zis_gcd_unique: forall a b c d : Z,
  Zis_gcd a b c -> Zis_gcd a b d ->  c = d \/ c = (- d).
 Proof.
 intros a b c d H1 H2.
@@ -429,7 +429,7 @@ Section extended_euclid_algorithm.
   (** The recursive part of Euclid's algorithm uses well-founded
       recursion of non-negative integers. It maintains 6 integers
       [u1,u2,u3,v1,v2,v3] such that the following invariant holds:
-      [u1*a+u2*b=u3] and [v1*a+v2*b=v3] and [gcd(u2,v3)=gcd(a,b)]. 
+      [u1*a+u2*b=u3] and [v1*a+v2*b=v3] and [gcd(u2,v3)=gcd(a,b)].
       *)
 
   Lemma euclid_rec :
@@ -453,8 +453,8 @@ Section extended_euclid_algorithm.
     replace (u3 - q * x) with (u3 mod x).
     apply Z_mod_lt; omega.
     assert (xpos : x > 0). omega.
-    generalize (Z_div_mod_eq u3 x xpos). 
-    unfold q in |- *. 
+    generalize (Z_div_mod_eq u3 x xpos).
+    unfold q in |- *.
     intro eq; pattern u3 at 2 in |- *; rewrite eq; ring.
     apply (H (u3 - q * x) Hq (proj1 Hq) v1 v2 x (u1 - q * v1) (u2 - q * v2)).
     tauto.
@@ -529,7 +529,7 @@ Proof.
   rewrite H6; rewrite H7; ring.
   ring.
 Qed.
-  
+
 
 (** * Relative primality *)
 
@@ -610,16 +610,16 @@ Proof.
   intros a b g; intros.
   assert (g <> 0).
   intro.
-  elim H1; intros. 
+  elim H1; intros.
   elim H4; intros.
   rewrite H2 in H6; subst b; omega.
   unfold rel_prime in |- *.
   destruct H1.
   destruct H1 as (a',H1).
   destruct H3 as (b',H3).
-  replace (a/g) with a'; 
+  replace (a/g) with a';
     [|rewrite H1; rewrite Z_div_mult; auto with zarith].
-  replace (b/g) with b'; 
+  replace (b/g) with b';
     [|rewrite H3; rewrite Z_div_mult; auto with zarith].
   constructor.
   exists a'; auto with zarith.
@@ -641,7 +641,7 @@ Proof.
   red; apply Zis_gcd_sym; auto with zarith.
 Qed.
 
-Theorem rel_prime_div: forall p q r, 
+Theorem rel_prime_div: forall p q r,
  rel_prime p q -> (r | p) -> rel_prime r q.
 Proof.
   intros p q r H (u, H1); subst.
@@ -668,7 +668,7 @@ Proof.
   exists 1; auto with zarith.
 Qed.
 
-Theorem rel_prime_mod: forall p q, 0 < q -> 
+Theorem rel_prime_mod: forall p q, 0 < q ->
  rel_prime p q -> rel_prime (p mod q) q.
 Proof.
   intros p q H H0.
@@ -681,7 +681,7 @@ Proof.
   pattern p at 3; rewrite (Z_div_mod_eq p q); try ring; auto with zarith.
 Qed.
 
-Theorem rel_prime_mod_rev: forall p q, 0 < q -> 
+Theorem rel_prime_mod_rev: forall p q, 0 < q ->
  rel_prime (p mod q) q -> rel_prime p q.
 Proof.
   intros p q H H0.
@@ -713,7 +713,7 @@ Proof.
   assert
     (a = - p \/ - p < a < -1 \/ a = -1 \/ a = 0 \/ a = 1 \/ 1 < a < p \/ a = p).
   assert (Zabs a <= Zabs p). apply Zdivide_bounds; [ assumption | omega ].
-  generalize H3. 
+  generalize H3.
   pattern (Zabs a) in |- *; apply Zabs_ind; pattern (Zabs p) in |- *;
     apply Zabs_ind; intros; omega.
   intuition idtac.
@@ -783,7 +783,7 @@ Proof.
   intros H1; absurd (1 < 1); auto with zarith.
   inversion H1; auto.
 Qed.
- 
+
 Lemma prime_2: prime 2.
 Proof.
   apply prime_intro; auto with zarith.
@@ -793,7 +793,7 @@ Proof.
   subst n; red; auto with zarith.
   apply Zis_gcd_intro; auto with zarith.
 Qed.
- 
+
 Theorem prime_3: prime 3.
 Proof.
   apply prime_intro; auto with zarith.
@@ -810,7 +810,7 @@ Proof.
   subst n; red; auto with zarith.
   apply Zis_gcd_intro; auto with zarith.
 Qed.
- 
+
 Theorem prime_ge_2: forall p, prime p ->  2 <= p.
 Proof.
   intros p Hp; inversion Hp; auto with zarith.
@@ -818,7 +818,7 @@ Qed.
 
 Definition prime' p := 1<p /\ (forall n, 1<n<p -> ~ (n|p)).
 
-Theorem prime_alt: 
+Theorem prime_alt:
  forall p, prime' p <-> prime p.
 Proof.
   split; destruct 1; intros.
@@ -846,7 +846,7 @@ Proof.
   apply Zis_gcd_intro; auto with zarith.
   apply H0; auto with zarith.
 Qed.
- 
+
 Theorem square_not_prime: forall a, ~ prime (a * a).
 Proof.
   intros a Ha.
@@ -862,10 +862,10 @@ Proof.
   exists b; auto.
 Qed.
 
-Theorem prime_div_prime: forall p q, 
+Theorem prime_div_prime: forall p q,
  prime p -> prime q -> (p | q) -> p = q.
 Proof.
-  intros p q H H1 H2; 
+  intros p q H H1 H2;
   assert (Hp: 0 < p); try apply Zlt_le_trans with 2; try apply prime_ge_2; auto with zarith.
   assert (Hq: 0 < q); try apply Zlt_le_trans with 2; try apply prime_ge_2; auto with zarith.
   case prime_divisors with (2 := H2); auto.
@@ -876,10 +876,10 @@ Proof.
 Qed.
 
 
-(** We could obtain a [Zgcd] function via Euclid algorithm. But we propose 
+(** We could obtain a [Zgcd] function via Euclid algorithm. But we propose
   here a binary version of [Zgcd], faster and executable within Coq.
 
-   Algorithm: 
+   Algorithm:
 
    gcd 0 b = b
    gcd a 0 = a
@@ -887,23 +887,23 @@ Qed.
    gcd (2a+1) (2b) = gcd (2a+1) b
    gcd (2a) (2b+1) = gcd a (2b+1)
    gcd (2a+1) (2b+1) = gcd (b-a) (2*a+1)
-                    or gcd (a-b) (2*b+1), depending on whether a<b 
-*)   
+                    or gcd (a-b) (2*b+1), depending on whether a<b
+*)
 
 Open Scope positive_scope.
 
-Fixpoint Pgcdn (n: nat) (a b : positive) { struct n } : positive := 
-  match n with 
+Fixpoint Pgcdn (n: nat) (a b : positive) { struct n } : positive :=
+  match n with
     | O => 1
-    | S n => 
-      match a,b with 
-	| xH, _ => 1 
+    | S n =>
+      match a,b with
+	| xH, _ => 1
 	| _, xH => 1
 	| xO a, xO b => xO (Pgcdn n a b)
 	| a, xO b => Pgcdn n a b
 	| xO a, b => Pgcdn n a b
-	| xI a', xI b' => 
-          match Pcompare a' b' Eq with 
+	| xI a', xI b' =>
+          match Pcompare a' b' Eq with
 	    | Eq => a
 	    | Lt => Pgcdn  n (b'-a') a
 	    | Gt => Pgcdn n (a'-b') b
@@ -917,7 +917,7 @@ Close Scope positive_scope.
 
 Definition Zgcd (a b : Z) : Z :=
   match a,b with
-    | Z0, _ => Zabs b 
+    | Z0, _ => Zabs b
     | _, Z0 => Zabs a
     | Zpos a, Zpos b => Zpos (Pgcd a b)
     | Zpos a, Zneg b => Zpos (Pgcd a b)
@@ -930,8 +930,8 @@ Proof.
   unfold Zgcd; destruct a; destruct b; auto with zarith.
 Qed.
 
-Lemma Zis_gcd_even_odd : forall a b g, Zis_gcd (Zpos a) (Zpos (xI b)) g -> 
-  Zis_gcd (Zpos (xO a)) (Zpos (xI b)) g. 
+Lemma Zis_gcd_even_odd : forall a b g, Zis_gcd (Zpos a) (Zpos (xI b)) g ->
+  Zis_gcd (Zpos (xO a)) (Zpos (xI b)) g.
 Proof.
   intros.
   destruct H.
@@ -949,7 +949,7 @@ Proof.
   omega.
 Qed.
 
-Lemma Pgcdn_correct : forall n a b, (Psize a + Psize b<=n)%nat -> 
+Lemma Pgcdn_correct : forall n a b, (Psize a + Psize b<=n)%nat ->
   Zis_gcd (Zpos a) (Zpos b) (Zpos (Pgcdn n a b)).
 Proof.
   intro n; pattern n; apply lt_wf_ind; clear n; intros.
@@ -975,7 +975,7 @@ Proof.
   rewrite (Zpos_minus_morphism _ _ H1).
   assert (0 < Zpos a) by (compute; auto).
   omega.
-  omega.  
+  omega.
   rewrite Zpos_xO; do 2 rewrite Zpos_xI.
   rewrite Zpos_minus_morphism; auto.
   omega.
@@ -993,7 +993,7 @@ Proof.
   assert (0 < Zpos b) by (compute; auto).
   omega.
   rewrite ZC4; rewrite H1; auto.
-  omega.  
+  omega.
   rewrite Zpos_xO; do 2 rewrite Zpos_xI.
   rewrite Zpos_minus_morphism; auto.
   omega.
@@ -1060,7 +1060,7 @@ Proof.
   split; [apply Zgcd_is_gcd  | apply Zgcd_is_pos].
 Qed.
 
-Theorem Zdivide_Zgcd: forall p q r : Z, 
+Theorem Zdivide_Zgcd: forall p q r : Z,
  (p | q) -> (p | r) -> (p | Zgcd q r).
 Proof.
   intros p q r H1 H2.
@@ -1069,7 +1069,7 @@ Proof.
   inversion_clear H3; auto.
 Qed.
 
-Theorem Zis_gcd_gcd: forall a b c : Z, 
+Theorem Zis_gcd_gcd: forall a b c : Z,
  0 <= c ->  Zis_gcd a b c -> Zgcd a b = c.
 Proof.
   intros a b c H1 H2.
@@ -1101,7 +1101,7 @@ Proof.
   rewrite H1; ring.
 Qed.
 
-Theorem Zgcd_div_swap0 : forall a b : Z, 
+Theorem Zgcd_div_swap0 : forall a b : Z,
  0 < Zgcd a b ->
  0 < b ->
  (a / Zgcd a b) * b = a * (b/Zgcd a b).
@@ -1114,7 +1114,7 @@ Proof.
   rewrite <- Zdivide_Zdiv_eq; auto.
 Qed.
 
-Theorem Zgcd_div_swap : forall a b c : Z, 
+Theorem Zgcd_div_swap : forall a b c : Z,
  0 < Zgcd a b ->
  0 < b ->
  (c * a) / Zgcd a b * b = c * a * (b/Zgcd a b).
@@ -1165,7 +1165,7 @@ Proof.
 Qed.
 Hint Resolve Zgcd_0 Zgcd_1 : zarith.
 
-Theorem Zgcd_1_rel_prime : forall a b, 
+Theorem Zgcd_1_rel_prime : forall a b,
  Zgcd a b = 1 <-> rel_prime a b.
 Proof.
   unfold rel_prime; split; intro H.
@@ -1176,7 +1176,7 @@ Proof.
   generalize (Zgcd_is_pos a b); auto with zarith.
 Qed.
 
-Definition rel_prime_dec: forall a b, 
+Definition rel_prime_dec: forall a b,
  { rel_prime a b }+{ ~ rel_prime a b }.
 Proof.
   intros a b; case (Z_eq_dec (Zgcd a b) 1); intros H1.
@@ -1190,7 +1190,7 @@ Definition prime_dec_aux:
   { exists n, 1 < n < m  /\ ~ rel_prime n p }.
 Proof.
   intros p m.
-  case (Z_lt_dec 1 m); intros H1; 
+  case (Z_lt_dec 1 m); intros H1;
    [ | left; intros; elimtype False; omega ].
   pattern m; apply natlike_rec; auto with zarith.
   left; intros; elimtype False; omega.
@@ -1255,34 +1255,34 @@ Qed.
 
 Open Scope positive_scope.
 
-Fixpoint Pggcdn (n: nat) (a b : positive) { struct n } : (positive*(positive*positive)) := 
-  match n with 
+Fixpoint Pggcdn (n: nat) (a b : positive) { struct n } : (positive*(positive*positive)) :=
+  match n with
     | O => (1,(a,b))
-    | S n => 
-      match a,b with 
-	| xH, b => (1,(1,b)) 
+    | S n =>
+      match a,b with
+	| xH, b => (1,(1,b))
 	| a, xH => (1,(a,1))
-	| xO a, xO b => 
-           let (g,p) := Pggcdn n a b in 
+	| xO a, xO b =>
+           let (g,p) := Pggcdn n a b in
            (xO g,p)
-	| a, xO b => 
-           let (g,p) := Pggcdn n a b in 
-           let (aa,bb) := p in 
+	| a, xO b =>
+           let (g,p) := Pggcdn n a b in
+           let (aa,bb) := p in
            (g,(aa, xO bb))
-	| xO a, b => 
-           let (g,p) := Pggcdn n a b in 
-           let (aa,bb) := p in 
+	| xO a, b =>
+           let (g,p) := Pggcdn n a b in
+           let (aa,bb) := p in
            (g,(xO aa, bb))
-	| xI a', xI b' => 
-           match Pcompare a' b' Eq with 
+	| xI a', xI b' =>
+           match Pcompare a' b' Eq with
 	     | Eq => (a,(1,1))
-	     | Lt => 
-	        let (g,p) := Pggcdn n (b'-a') a in 
-	        let (ba,aa) := p in 
+	     | Lt =>
+	        let (g,p) := Pggcdn n (b'-a') a in
+	        let (ba,aa) := p in
 	        (g,(aa, aa + xO ba))
-	     | Gt => 
-		let (g,p) := Pggcdn n (a'-b') b in 
-		let (ab,bb) := p in 
+	     | Gt =>
+		let (g,p) := Pggcdn n (a'-b') b in
+		let (ab,bb) := p in
 		(g,(bb+xO ab, bb))
 	   end
       end
@@ -1294,28 +1294,28 @@ Open Scope Z_scope.
 
 Definition Zggcd (a b : Z) : Z*(Z*Z) :=
   match a,b with
-    | Z0, _ => (Zabs b,(0, Zsgn b)) 
+    | Z0, _ => (Zabs b,(0, Zsgn b))
     | _, Z0 => (Zabs a,(Zsgn a, 0))
-    | Zpos a, Zpos b => 
-       let (g,p) := Pggcd a b in 
-       let (aa,bb) := p in 
+    | Zpos a, Zpos b =>
+       let (g,p) := Pggcd a b in
+       let (aa,bb) := p in
        (Zpos g, (Zpos aa, Zpos bb))
-    | Zpos a, Zneg b => 
-       let (g,p) := Pggcd a b in 
-       let (aa,bb) := p in 
+    | Zpos a, Zneg b =>
+       let (g,p) := Pggcd a b in
+       let (aa,bb) := p in
        (Zpos g, (Zpos aa, Zneg bb))
-    | Zneg a, Zpos b => 
-       let (g,p) := Pggcd a b in 
-       let (aa,bb) := p in 
+    | Zneg a, Zpos b =>
+       let (g,p) := Pggcd a b in
+       let (aa,bb) := p in
        (Zpos g, (Zneg aa, Zpos bb))
     | Zneg a, Zneg b =>
-       let (g,p) := Pggcd a b in 
-       let (aa,bb) := p in 
+       let (g,p) := Pggcd a b in
+       let (aa,bb) := p in
        (Zpos g, (Zneg aa, Zneg bb))
   end.
 
 
-Lemma Pggcdn_gcdn : forall n a b, 
+Lemma Pggcdn_gcdn : forall n a b,
   fst (Pggcdn n a b) = Pgcdn n a b.
 Proof.
   induction n.
@@ -1336,15 +1336,15 @@ Qed.
 
 Lemma Zggcd_gcd : forall a b, fst (Zggcd a b) = Zgcd a b.
 Proof.
-  destruct a; destruct b; simpl; auto; rewrite <- Pggcd_gcd; 
+  destruct a; destruct b; simpl; auto; rewrite <- Pggcd_gcd;
     destruct (Pggcd p p0) as (g,(aa,bb)); simpl; auto.
 Qed.
 
 Open Scope positive_scope.
 
-Lemma Pggcdn_correct_divisors : forall n a b, 
-  let (g,p) := Pggcdn n a b in 
-  let (aa,bb):=p in 
+Lemma Pggcdn_correct_divisors : forall n a b,
+  let (g,p) := Pggcdn n a b in
+  let (aa,bb):=p in
   (a=g*aa) /\ (b=g*bb).
 Proof.
   induction n.
@@ -1371,7 +1371,7 @@ Proof.
   rewrite <- H1; rewrite <- H0.
   simpl; f_equal; symmetry.
   apply Pplus_minus; auto.
-  (* Then... *) 
+  (* Then... *)
   generalize (IHn (xI a) b); destruct (Pggcdn n (xI a) b) as (g,(ab,bb)); simpl.
   intros (H0,H1); split; auto.
   rewrite Pmult_xO_permute_r; rewrite H1; auto.
@@ -1382,9 +1382,9 @@ Proof.
   intros (H0,H1); split; subst; auto.
 Qed.
 
-Lemma Pggcd_correct_divisors : forall a b, 
-  let (g,p) := Pggcd a b in 
-  let (aa,bb):=p in 
+Lemma Pggcd_correct_divisors : forall a b,
+  let (g,p) := Pggcd a b in
+  let (aa,bb):=p in
   (a=g*aa) /\ (b=g*bb).
 Proof.
   intros a b; exact (Pggcdn_correct_divisors (Psize a + Psize b)%nat a b).
@@ -1392,17 +1392,17 @@ Qed.
 
 Close Scope positive_scope.
 
-Lemma Zggcd_correct_divisors : forall a b, 
-  let (g,p) := Zggcd a b in 
-  let (aa,bb):=p in 
+Lemma Zggcd_correct_divisors : forall a b,
+  let (g,p) := Zggcd a b in
+  let (aa,bb):=p in
   (a=g*aa) /\ (b=g*bb).
 Proof.
-  destruct a; destruct b; simpl; auto; try solve [rewrite Pmult_comm; simpl; auto]; 
-    generalize (Pggcd_correct_divisors p p0); destruct (Pggcd p p0) as (g,(aa,bb)); 
+  destruct a; destruct b; simpl; auto; try solve [rewrite Pmult_comm; simpl; auto];
+    generalize (Pggcd_correct_divisors p p0); destruct (Pggcd p p0) as (g,(aa,bb));
       destruct 1; subst; auto.
 Qed.
 
-Theorem Zggcd_opp: forall x y, 
+Theorem Zggcd_opp: forall x y,
   Zggcd (-x) y = let (p1,p) := Zggcd x y in
                  let (p2,p3) := p in
                  (p1,(-p2,p3)).

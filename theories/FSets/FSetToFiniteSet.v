@@ -6,8 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* Finite sets library.  
- * Authors: Pierre Letouzey and Jean-Christophe Filliâtre 
+(* Finite sets library.
+ * Authors: Pierre Letouzey and Jean-Christophe Filliâtre
  * Institution: LRI, CNRS UMR 8623 - Université Paris Sud
  *              91405 Orsay, France *)
 
@@ -16,14 +16,14 @@
 Require Import Ensembles Finite_sets.
 Require Import FSetInterface FSetProperties OrderedTypeEx DecidableTypeEx.
 
-(** * Going from [FSets] with usual Leibniz equality 
+(** * Going from [FSets] with usual Leibniz equality
     to the good old [Ensembles] and [Finite_sets] theory. *)
 
 Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
  Module MP:= WProperties_fun U M.
  Import M MP FM Ensembles Finite_sets.
 
- Definition mkEns : M.t -> Ensemble M.elt := 
+ Definition mkEns : M.t -> Ensemble M.elt :=
    fun s x => M.In x s.
 
  Notation " !! " := mkEns.
@@ -115,11 +115,11 @@ Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
  Proof.
  intro s; pattern s; apply set_induction; clear s; intros.
  intros; replace (!!s) with (Empty_set elt); auto with sets.
- symmetry; apply Extensionality_Ensembles. 
+ symmetry; apply Extensionality_Ensembles.
  apply Empty_Empty_set; auto.
  replace (!!s') with (Add _ (!!s) x).
  constructor 2; auto.
- symmetry; apply Extensionality_Ensembles. 
+ symmetry; apply Extensionality_Ensembles.
  apply Add_Add; auto.
  Qed.
 
@@ -128,18 +128,18 @@ Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
  intro s; pattern s; apply set_induction; clear s; intros.
  intros; replace (!!s) with (Empty_set elt); auto with sets.
  rewrite cardinal_1; auto with sets.
- symmetry; apply Extensionality_Ensembles. 
+ symmetry; apply Extensionality_Ensembles.
  apply Empty_Empty_set; auto.
  replace (!!s') with (Add _ (!!s) x).
- rewrite (cardinal_2 H0 H1); auto with sets. 
- symmetry; apply Extensionality_Ensembles. 
+ rewrite (cardinal_2 H0 H1); auto with sets.
+ symmetry; apply Extensionality_Ensembles.
  apply Add_Add; auto.
  Qed.
 
- (** we can even build a function from Finite Ensemble to FSet 
+ (** we can even build a function from Finite Ensemble to FSet
      ... at least in Prop. *)
 
- Lemma Ens_to_FSet : forall e : Ensemble M.elt, Finite _ e -> 
+ Lemma Ens_to_FSet : forall e : Ensemble M.elt, Finite _ e ->
    exists s:M.t, !!s === e.
  Proof.
  induction 1.
@@ -147,7 +147,7 @@ Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
  apply empty_Empty_Set.
  destruct IHFinite as (s,Hs).
  exists (M.add x s).
- apply Extensionality_Ensembles in Hs. 
+ apply Extensionality_Ensembles in Hs.
  rewrite <- Hs.
  apply add_Add.
  Qed.

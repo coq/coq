@@ -24,10 +24,10 @@ type section_path = {
   basename : string }
 let dir_of_path p =
   make_dirpath (List.map id_of_string p.dirpath)
-let path_of_dirpath dir = 
+let path_of_dirpath dir =
   match repr_dirpath dir with
       [] -> failwith "path_of_dirpath"
-    | l::dir -> 
+    | l::dir ->
         {dirpath=List.map string_of_id dir;basename=string_of_id l}
 let pr_dirlist dp =
   prlist_with_sep (fun _ -> str".") str (List.rev dp)
@@ -40,7 +40,7 @@ type library_objects
 
 type compilation_unit_name = dir_path
 
-type library_disk = { 
+type library_disk = {
   md_name : compilation_unit_name;
   md_compiled : Safe_typing.compiled_library;
   md_objects : library_objects;
@@ -48,7 +48,7 @@ type library_disk = {
   md_imports : compilation_unit_name list }
 
 (************************************************************************)
-(*s Modules on disk contain the following informations (after the magic 
+(*s Modules on disk contain the following informations (after the magic
     number, and before the digest). *)
 
 (*s Modules loaded in memory contain the following informations. They are
@@ -61,7 +61,7 @@ type library_t = {
   library_deps : (compilation_unit_name * Digest.t) list;
   library_digest : Digest.t }
 
-module LibraryOrdered = 
+module LibraryOrdered =
   struct
     type t = dir_path
     let compare d1 d2 =
@@ -121,7 +121,7 @@ let load_paths = ref ([],[] : System.physical_path list * logical_path list)
 let get_load_paths () = fst !load_paths
 
 (* Hints to partially detects if two paths refer to the same repertory *)
-let rec remove_path_dot p = 
+let rec remove_path_dot p =
   let curdir = Filename.concat Filename.current_dir_name "" in (* Unix: "./" *)
   let n = String.length curdir in
   if String.length p > n && String.sub p 0 n = curdir then
@@ -139,7 +139,7 @@ let strip_path p =
 
 let canonical_path_name p =
   let current = Sys.getcwd () in
-  try 
+  try
     Sys.chdir p;
     let p' = Sys.getcwd () in
     Sys.chdir current;
@@ -148,7 +148,7 @@ let canonical_path_name p =
     (* We give up to find a canonical name and just simplify it... *)
     strip_path p
 
-let find_logical_path phys_dir = 
+let find_logical_path phys_dir =
   let phys_dir = canonical_path_name phys_dir in
   match list_filter2 (fun p d -> p = phys_dir) !load_paths with
   | _,[dir] -> dir
@@ -159,7 +159,7 @@ let is_in_load_paths phys_dir =
   let dir = canonical_path_name phys_dir in
   let lp = get_load_paths () in
   let check_p = fun p -> (String.compare dir p) == 0 in
-    List.exists check_p lp 
+    List.exists check_p lp
 
 let remove_load_path dir =
   load_paths := list_filter2 (fun p d -> p <> dir) !load_paths
@@ -171,7 +171,7 @@ let add_load_path (phys_path,coq_path) =
   let phys_path = canonical_path_name phys_path in
     match list_filter2 (fun p d -> p = phys_path) !load_paths with
       | _,[dir] ->
-	  if coq_path <> dir 
+	  if coq_path <> dir
             (* If this is not the default -I . to coqtop *)
             && not
             (phys_path = canonical_path_name Filename.current_dir_name
@@ -195,7 +195,7 @@ let physical_paths (dp,lp) = dp
 
 let load_paths_of_dir_path dir =
   fst (list_filter2 (fun p d -> d = dir) !load_paths)
-    
+
 let get_full_load_paths () = List.combine (fst !load_paths) (snd !load_paths)
 
 (************************************************************************)
@@ -235,8 +235,8 @@ let locate_qualified_library qid =
     let dir =
       extend_dirpath (find_logical_path path) (id_of_string qid.basename) in
     (* Look if loaded *)
-    try 
-      (dir, library_full_filename dir)      
+    try
+      (dir, library_full_filename dir)
     with Not_found ->
       (dir, file)
   with Not_found -> raise LibNotFound
@@ -245,7 +245,7 @@ let explain_locate_library_error qid = function
   | LibUnmappedDir ->
       let prefix = qid.dirpath in
       errorlabstrm "load_absolute_library_from"
-      (str "Cannot load " ++ pr_path qid ++ str ":" ++ spc () ++ 
+      (str "Cannot load " ++ pr_path qid ++ str ":" ++ spc () ++
       str "no physical path bound to" ++ spc () ++ pr_dirlist prefix ++ fnl ())
   | LibNotFound ->
       errorlabstrm "load_absolute_library_from"
@@ -261,7 +261,7 @@ let try_locate_absolute_library dir =
 let try_locate_qualified_library qid =
   try
     locate_qualified_library qid
-  with e -> 
+  with e ->
     explain_locate_library_error qid e
 
 (************************************************************************)
@@ -300,7 +300,7 @@ let depgraph = ref LibraryMap.empty
 
 let intern_from_file (dir, f) =
   Flags.if_verbose msg (str"[intern "++str f++str" ...");
-  let (md,digest) = 
+  let (md,digest) =
     try
       let ch = with_magic_number_check raw_intern_library f in
       let (md:library_disk) = System.marshal_in ch in
@@ -312,7 +312,7 @@ let intern_from_file (dir, f) =
       Flags.if_verbose msgnl(str" done]");
       md,digest
     with e -> Flags.if_verbose msgnl(str" failed!]"); raise e in
-  depgraph := LibraryMap.add md.md_name md.md_deps !depgraph; 
+  depgraph := LibraryMap.add md.md_name md.md_deps !depgraph;
   mk_library md f digest
 
 let get_deps (dir, f) =

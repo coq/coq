@@ -31,7 +31,7 @@ type lstring = string
 type lreference = reference
 
 type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
-  
+
 type printable =
   | PrintTables
   | PrintFullContext
@@ -164,7 +164,7 @@ type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
   | RecordDecl of lident option * local_decl_expr with_coercion with_notation list
 type inductive_expr =
-  lident with_coercion * local_binder list * constr_expr option * inductive_kind * 
+  lident with_coercion * local_binder list * constr_expr option * inductive_kind *
     constructor_list_or_record_decl_expr
 
 type module_binder = bool option * lident list * module_type_ast
@@ -196,13 +196,13 @@ type vernac_expr =
   | VernacTime of vernac_expr
   | VernacTimeout of int * vernac_expr
 
-  (* Syntax *) 
+  (* Syntax *)
   | VernacTacticNotation of int * grammar_tactic_prod_item_expr list * raw_tactic_expr
   | VernacSyntaxExtension of locality_flag * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of (locality_flag * bool * scope_name)
   | VernacDelimiters of scope_name * lstring
   | VernacBindScope of scope_name * class_rawexpr list
-  | VernacArgumentsScope of locality_flag * reference or_by_notation * 
+  | VernacArgumentsScope of locality_flag * reference or_by_notation *
       scope_name option list
   | VernacInfix of locality_flag * (lstring * syntax_modifier list) *
       constr_expr * scope_name option
@@ -211,9 +211,9 @@ type vernac_expr =
       scope_name option
 
   (* Gallina *)
-  | VernacDefinition of definition_kind * lident * definition_expr * 
+  | VernacDefinition of definition_kind * lident * definition_expr *
       declaration_hook
-  | VernacStartTheoremProof of theorem_kind * 
+  | VernacStartTheoremProof of theorem_kind *
       (lident option * (local_binder list * constr_expr)) list *
         bool * declaration_hook
   | VernacEndProof of proof_end
@@ -232,12 +232,12 @@ type vernac_expr =
       export_flag option * specif_flag option * lreference list
   | VernacImport of export_flag * lreference list
   | VernacCanonical of reference or_by_notation
-  | VernacCoercion of locality * reference or_by_notation * 
+  | VernacCoercion of locality * reference or_by_notation *
       class_rawexpr * class_rawexpr
-  | VernacIdentityCoercion of locality * lident * 
+  | VernacIdentityCoercion of locality * lident *
       class_rawexpr * class_rawexpr
 
-  (* Type classes *)	
+  (* Type classes *)
   | VernacInstance of
       bool * (* global *)
       local_binder list * (* super *)
@@ -246,16 +246,16 @@ type vernac_expr =
 	int option (* Priority *)
 
   | VernacContext of local_binder list
-	
+
   | VernacDeclareInstance of
       lident (* instance name *)
 
   (* Modules and Module Types *)
-  | VernacDeclareModule of bool option * lident * 
+  | VernacDeclareModule of bool option * lident *
       module_binder list * (module_type_ast * bool)
-  | VernacDefineModule of bool option * lident * 
+  | VernacDefineModule of bool option * lident *
       module_binder list * (module_type_ast * bool) option * module_ast option
-  | VernacDeclareModuleType of lident * 
+  | VernacDeclareModuleType of lident *
       module_binder list * module_type_ast option
   | VernacInclude of include_ast
 
@@ -297,7 +297,7 @@ type vernac_expr =
   | VernacHints of locality_flag * lstring list * hints_expr
   | VernacSyntacticDefinition of identifier located * (identifier list * constr_expr) *
       locality_flag * onlyparsing_flag
-  | VernacDeclareImplicits of locality_flag * reference or_by_notation * 
+  | VernacDeclareImplicits of locality_flag * reference or_by_notation *
       (explicitation * bool * bool) list option
   | VernacReserve of lident list * constr_expr
   | VernacSetOpacity of
@@ -345,7 +345,7 @@ and located_vernac_expr = loc * vernac_expr
 
 exception DuringSyntaxChecking of exn
 
-let syntax_checking_error s = 
+let syntax_checking_error s =
   raise (DuringSyntaxChecking (UserError ("",Pp.str s)))
 
 (* Managing locality *)
@@ -366,7 +366,7 @@ let use_locality_full () =
    r
 
 let use_locality () =
-  match use_locality_full () with Some true -> true | _ -> false 
+  match use_locality_full () with Some true -> true | _ -> false
 
 let use_locality_exp () = local_of_bool (use_locality ())
 
@@ -374,16 +374,16 @@ let use_section_locality () =
   match use_locality_full () with Some b -> b | None -> Lib.sections_are_opened ()
 
 let use_non_locality () =
-  match use_locality_full () with Some false -> false | _ -> true 
+  match use_locality_full () with Some false -> false | _ -> true
 
 let enforce_locality () =
   let local =
-    match !locality_flag with 
+    match !locality_flag with
     | Some false ->
 	error "Cannot be simultaneously Local and Global."
-    | _ -> 
+    | _ ->
 	Flags.if_verbose
-	  Pp.warning "Obsolete syntax: use \"Local\" as a prefix."; 
+	  Pp.warning "Obsolete syntax: use \"Local\" as a prefix.";
 	true in
   locality_flag := None;
   local
@@ -391,8 +391,8 @@ let enforce_locality () =
 let enforce_locality_exp () = local_of_bool (enforce_locality ())
 
 let enforce_locality_of local =
-  let local = 
-    match !locality_flag with 
+  let local =
+    match !locality_flag with
     | Some false when local ->
 	error "Cannot be simultaneously Local and Global."
     | Some true when local ->

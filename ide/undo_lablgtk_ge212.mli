@@ -18,7 +18,7 @@ object
   method clear_undo : unit
 end
 
-val undoable_view : 
+val undoable_view :
     ?buffer:GText.buffer ->
     ?editable:bool ->
     ?cursor_visible:bool ->

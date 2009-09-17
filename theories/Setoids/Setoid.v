@@ -29,35 +29,35 @@ Definition Seq_trans A Aeq (s : Setoid_Theory A Aeq) : forall x y z:A, Aeq x y -
   unfold Setoid_Theory. intros ; transitivity y ; assumption.
 Defined.
 
-(** Some tactics for manipulating Setoid Theory not officially 
+(** Some tactics for manipulating Setoid Theory not officially
     declared as Setoid. *)
 
 Ltac trans_st x :=
   idtac "trans_st on Setoid_Theory is OBSOLETE";
   idtac "use transitivity on Equivalence instead";
   match goal with
-    | H : Setoid_Theory _ ?eqA |- ?eqA _ _ => 
+    | H : Setoid_Theory _ ?eqA |- ?eqA _ _ =>
       apply (Seq_trans _ _ H) with x; auto
   end.
 
 Ltac sym_st :=
   idtac "sym_st on Setoid_Theory is OBSOLETE";
   idtac "use symmetry on Equivalence instead";
-  match goal with 
-    | H : Setoid_Theory _ ?eqA |- ?eqA _ _ => 
+  match goal with
+    | H : Setoid_Theory _ ?eqA |- ?eqA _ _ =>
       apply (Seq_sym _ _ H); auto
   end.
 
 Ltac refl_st :=
   idtac "refl_st on Setoid_Theory is OBSOLETE";
   idtac "use reflexivity on Equivalence instead";
-  match goal with 
-    | H : Setoid_Theory _ ?eqA |- ?eqA _ _ => 
+  match goal with
+    | H : Setoid_Theory _ ?eqA |- ?eqA _ _ =>
       apply (Seq_refl _ _ H); auto
   end.
 
 Definition gen_st : forall A : Set, Setoid_Theory _ (@eq A).
-Proof. 
-  constructor; congruence. 
+Proof.
+  constructor; congruence.
 Qed.
-  
+

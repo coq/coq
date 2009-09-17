@@ -11,10 +11,10 @@
 
 (*i $Id$ i*)
 
-(*s {\bf coqwc.} Counts the lines of spec, proof and comments in a Coq source. 
+(*s {\bf coqwc.} Counts the lines of spec, proof and comments in a Coq source.
     It assumes the files to be lexically well-formed. *)
 
-(*i*){ 
+(*i*){
 open Printf
 open Lexing
 open Filename
@@ -40,8 +40,8 @@ let tplines = ref 0
 let tdlines = ref 0
 
 let update_totals () =
-  tslines := !tslines + !slines; 
-  tplines := !tplines + !plines; 
+  tslines := !tslines + !slines;
+  tplines := !tplines + !plines;
   tdlines := !tdlines + !dlines
 
 (*s The following booleans indicate whether we have seen spec, proof or
@@ -53,12 +53,12 @@ let seen_proof = ref false
 let seen_comment = ref false
 
 let newline () =
-  if !seen_spec then incr slines; 
-  if !seen_proof then incr plines; 
-  if !seen_comment then incr dlines; 
+  if !seen_spec then incr slines;
+  if !seen_proof then incr plines;
+  if !seen_comment then incr dlines;
   seen_spec := false; seen_proof := false; seen_comment := false
 
-let reset_counters () = 
+let reset_counters () =
   seen_spec := false; seen_proof := false; seen_comment := false;
   slines := 0; plines := 0; dlines := 0
 
@@ -83,7 +83,7 @@ let print_totals () = print_line !tslines !tplines !tdlines (Some "total")
 (*i*)}(*i*)
 
 (*s Shortcuts for regular expressions. The [rcs] regular expression
-    is used to skip the CVS infos possibly contained in some comments, 
+    is used to skip the CVS infos possibly contained in some comments,
     in order not to consider it as documentation. *)
 
 let space = [' ' '\t' '\r']
@@ -96,7 +96,7 @@ let rcs_keyword =
 let rcs = "\036" rcs_keyword [^ '$']* "\036"
 let stars = "(*" '*'* "*)"
 let dot = '.' (' ' | '\t' | '\n' | '\r' | eof)
-let proof_start =   
+let proof_start =
   "Theorem" | "Lemma" | "Fact" | "Remark" | "Goal" | "Correctness" | "Obligation" | "Next"
 let proof_end =
   ("Save" | "Qed" | "Defined" | "Abort" | "Admitted") [^'.']* '.'
@@ -105,10 +105,10 @@ let proof_end =
 
 rule spec = parse
   | "(*"   { comment lexbuf; spec lexbuf }
-  | '"'    { let n = string lexbuf in slines := !slines + n; 
+  | '"'    { let n = string lexbuf in slines := !slines + n;
 	     seen_spec := true; spec lexbuf }
   | '\n'   { newline (); spec lexbuf }
-  | space+ | stars 
+  | space+ | stars
            { spec lexbuf }
   | proof_start space
            { seen_spec := true; spec_to_dot lexbuf; proof lexbuf }
@@ -118,7 +118,7 @@ rule spec = parse
            { seen_spec := true; definition lexbuf }
   | "Program"? "Fixpoint" space
   	   { seen_spec := true; definition lexbuf }
-  | character | _ 
+  | character | _
 	   { seen_spec := true; spec lexbuf }
   | eof    { () }
 
@@ -126,29 +126,29 @@ rule spec = parse
 
 and spec_to_dot = parse
   | "(*"   { comment lexbuf; spec_to_dot lexbuf }
-  | '"'    { let n = string lexbuf in slines := !slines + n; 
+  | '"'    { let n = string lexbuf in slines := !slines + n;
 	     seen_spec := true; spec_to_dot lexbuf }
   | '\n'   { newline (); spec_to_dot lexbuf }
   | dot    { () }
-  | space+ | stars 
+  | space+ | stars
            { spec_to_dot lexbuf }
-  | character | _ 
+  | character | _
 	   { seen_spec := true; spec_to_dot lexbuf }
   | eof    { () }
 
-(*s [definition] scans a definition; passes to [proof] is the body is 
+(*s [definition] scans a definition; passes to [proof] is the body is
     absent, and to [spec] otherwise *)
 
 and definition = parse
   | "(*"   { comment lexbuf; definition lexbuf }
-  | '"'    { let n = string lexbuf in slines := !slines + n; 
+  | '"'    { let n = string lexbuf in slines := !slines + n;
 	     seen_spec := true; definition lexbuf }
   | '\n'   { newline (); definition lexbuf }
   | ":="   { seen_spec := true; spec lexbuf }
   | dot    { proof lexbuf }
-  | space+ | stars 
+  | space+ | stars
            { definition lexbuf }
-  | character | _ 
+  | character | _
 	   { seen_spec := true; definition lexbuf }
   | eof    { () }
 
@@ -156,30 +156,30 @@ and definition = parse
 
 and proof = parse
   | "(*"   { comment lexbuf; proof lexbuf }
-  | '"'    { let n = string lexbuf in plines := !plines + n; 
+  | '"'    { let n = string lexbuf in plines := !plines + n;
 	     seen_proof := true; proof lexbuf }
-  | space+ | stars 
+  | space+ | stars
            { proof lexbuf }
   | '\n'   { newline (); proof lexbuf }
-  | "Proof" space* '.' 
+  | "Proof" space* '.'
            { seen_proof := true; proof lexbuf }
   | "Proof" space
            { proof_term lexbuf }
   | proof_end
            { seen_proof := true; spec lexbuf }
-  | character | _ 
+  | character | _
 	   { seen_proof := true; proof lexbuf }
   | eof    { () }
 
 and proof_term = parse
   | "(*"   { comment lexbuf; proof_term lexbuf }
-  | '"'    { let n = string lexbuf in plines := !plines + n; 
+  | '"'    { let n = string lexbuf in plines := !plines + n;
 	     seen_proof := true; proof_term lexbuf }
-  | space+ | stars 
+  | space+ | stars
            { proof_term lexbuf }
   | '\n'   { newline (); proof_term lexbuf }
   | dot    { spec lexbuf }
-  | character | _ 
+  | character | _
 	   { seen_proof := true; proof_term lexbuf }
   | eof    { () }
 
@@ -188,12 +188,12 @@ and proof_term = parse
 and comment = parse
   | "(*"   { comment lexbuf; comment lexbuf }
   | "*)"   { () }
-  | '"'    { let n = string lexbuf in dlines := !dlines + n; 
+  | '"'    { let n = string lexbuf in dlines := !dlines + n;
 	     seen_comment := true; comment lexbuf }
   | '\n'   { newline (); comment lexbuf }
   | space+ | stars
 	   { comment lexbuf }
-  | character | _ 
+  | character | _
 	   { seen_comment := true; comment lexbuf }
   | eof    { () }
 
@@ -212,9 +212,9 @@ and string = parse
     It stops whenever it encounters an empty line or any character outside
     a comment. In this last case, it correctly resets the lexer position
     on that character (decreasing [lex_curr_pos] by 1). *)
- 
+
 and read_header = parse
-  | "(*"   { skip_comment lexbuf; skip_until_nl lexbuf; 
+  | "(*"   { skip_comment lexbuf; skip_until_nl lexbuf;
 	     read_header lexbuf }
   | "\n"   { () }
   | space+ { read_header lexbuf }
@@ -250,9 +250,9 @@ let process_file f =
     print_file (Some f);
     update_totals ()
   with
-    | Sys_error "Is a directory" -> 
+    | Sys_error "Is a directory" ->
 	flush stdout; eprintf "coqwc: %s: Is a directory\n" f; flush stderr
-    | Sys_error s -> 
+    | Sys_error s ->
 	flush stdout; eprintf "coqwc: %s\n" s; flush stderr
 
 (*s Parsing of the command line. *)
@@ -269,9 +269,9 @@ let usage () =
 let rec parse = function
   | [] -> []
   | ("-h" | "-?" | "-help" | "--help") :: _ -> usage ()
-  | ("-s" | "--spec-only") :: args -> 
+  | ("-s" | "--spec-only") :: args ->
       proof_only := false; spec_only := true; parse args
-  | ("-r" | "--proof-only") :: args -> 
+  | ("-r" | "--proof-only") :: args ->
       spec_only := false; proof_only := true; parse args
   | ("-p" | "--percentage") :: args -> percentage := true; parse args
   | ("-e" | "--header") :: args -> skip_header := false; parse args
@@ -281,7 +281,7 @@ let rec parse = function
 
 let main () =
   let files = parse (List.tl (Array.to_list Sys.argv)) in
-  if not (!spec_only || !proof_only) then 
+  if not (!spec_only || !proof_only) then
     printf "     spec    proof comments\n";
   match files with
     | [] -> process_channel stdin; print_file None

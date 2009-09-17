@@ -19,8 +19,8 @@ open Pp
 (* An integer is canonically represented as an array of k-digits blocs.
 
    0 is represented by the empty array and -1 by the singleton [|-1|].
-   The first bloc is in the range ]0;10^k[ for positive numbers. 
-   The first bloc is in the range ]-10^k;-1[ for negative ones. 
+   The first bloc is in the range ]0;10^k[ for positive numbers.
+   The first bloc is in the range ]-10^k;-1[ for negative ones.
    All other blocs are numbers in the range [0;10^k[.
 
    Negative numbers are represented using 2's complementation. For instance,
@@ -78,7 +78,7 @@ let normalize_neg n =
   if Array.length n' = 0 then [|-1|] else (n'.(0) <- n'.(0) - base; n')
 
 let rec normalize n =
-  if Array.length n = 0 then n else 
+  if Array.length n = 0 then n else
     if n.(0) = -1 then normalize_neg n else normalize_pos n
 
 let neg m =
@@ -192,7 +192,7 @@ let euclid m d =
     if is_strictly_neg m then (-1),neg m else 1,Array.copy m in
   let isnegd, d = if is_strictly_neg d then (-1),neg d else 1,d in
   if d = zero then raise Division_by_zero;
-  let q,r = 
+  let q,r =
     if less_than m d then (zero,m) else
     let ql = Array.length m - Array.length d in
     let q = Array.create (ql+1) 0 in
@@ -200,7 +200,7 @@ let euclid m d =
     while not (less_than_shift_pos !i m d) do
       if m.(!i)=0 then incr i else
       if can_divide !i m d 0 then begin
-        let v = 
+        let v =
           if Array.length d > 1 && d.(0) <> m.(!i) then
             (m.(!i) * base + m.(!i+1)) / (d.(0) * base + d.(1) + 1)
           else
@@ -232,11 +232,11 @@ let of_string s =
   let r = (String.length s - !d) mod size in
   let h = String.sub s (!d) r in
   if !d = String.length s - 1 && isneg && h="1" then neg_one else
-  let e = if h<>"" then 1 else 0 in 
+  let e = if h<>"" then 1 else 0 in
   let l = (String.length s - !d) / size in
   let a = Array.create (l + e + n) 0 in
   if isneg then begin
-    a.(0) <- (-1); 
+    a.(0) <- (-1);
     let carry = ref 0 in
     for i=l downto 1 do
       let v = int_of_string (String.sub s ((i-1)*size + !d +r) size)+ !carry in
@@ -296,7 +296,7 @@ let app_pair f (m, n) =
   (f m, f n)
 
 let add m n =
-  if Obj.is_int m & Obj.is_int n 
+  if Obj.is_int m & Obj.is_int n
   then big_of_int (coerce_to_int m + coerce_to_int n)
   else big_of_ints (add (ints_of_z m) (ints_of_z n))
 
@@ -311,8 +311,8 @@ let mult m n =
   else big_of_ints (mult (ints_of_z m) (ints_of_z n))
 
 let euclid m n =
-  if Obj.is_int m & Obj.is_int n 
-  then app_pair big_of_int 
+  if Obj.is_int m & Obj.is_int n
+  then app_pair big_of_int
     (coerce_to_int m / coerce_to_int n, coerce_to_int m mod coerce_to_int n)
   else app_pair big_of_ints (euclid (ints_of_z m) (ints_of_z n))
 
@@ -360,12 +360,12 @@ let pow  =
       let (quo,rem) = div2_with_rest m in
       pow_aux
 	((* [if m mod 2 = 1]*)
-         if rem then 
+         if rem then
           mult n odd_rest
 	 else
           odd_rest )
 	(* quo = [m/2] *)
-	(mult n n) quo 
+	(mult n n) quo
   in
   pow_aux one
 
@@ -393,7 +393,7 @@ let check () =
     let s = Printf.sprintf "%30s" (to_string n) in
     let s' = Printf.sprintf "% 30.0f" (round n') in
     if s <> s' then Printf.printf "%s: %s <> %s\n" op s s' in
-List.iter (fun a -> List.iter (fun b ->  
+List.iter (fun a -> List.iter (fun b ->
   let n = of_string a and m = of_string b in
   let n' = float_of_string a and m' = float_of_string b in
   let a = add n m and a' = n' +. m' in

@@ -17,7 +17,7 @@
  let cRcpt = ref 0
  let comments = ref true
  let print s = output_string !chan_out s
- 
+
  exception Fin_fichier
 
 }
@@ -26,17 +26,17 @@ let space = [' ' '\t' '\n' '\r']
 let enddot = '.' (' ' | '\t' | '\n' | '\r' | eof)
 
 rule action = parse
-  | "Theorem" space { print "Theorem "; body lexbuf; 
+  | "Theorem" space { print "Theorem "; body lexbuf;
   	              cRcpt := 1; action lexbuf }
-  | "Lemma" space   { print "Lemma ";   body lexbuf; 
+  | "Lemma" space   { print "Lemma ";   body lexbuf;
       	       	      cRcpt := 1; action lexbuf }
-  | "Fact" space    { print "Fact ";   body lexbuf; 
+  | "Fact" space    { print "Fact ";   body lexbuf;
       	       	      cRcpt := 1; action lexbuf }
-  | "Remark" space  { print "Remark ";  body lexbuf; 
+  | "Remark" space  { print "Remark ";  body lexbuf;
       	       	      cRcpt := 1; action lexbuf }
-  | "Goal" space    { print "Goal ";    body lexbuf; 
+  | "Goal" space    { print "Goal ";    body lexbuf;
       	       	      cRcpt := 1; action lexbuf }
-  | "Correctness" space { print "Correctness "; body_pgm lexbuf; 
+  | "Correctness" space { print "Correctness "; body_pgm lexbuf;
       	       	          cRcpt := 1; action lexbuf }
   | "Definition" space  { print "Definition "; body_def lexbuf;
 			  cRcpt := 1; action lexbuf }
@@ -55,7 +55,7 @@ rule action = parse
   | _         { print (Lexing.lexeme lexbuf); cRcpt := 0; action lexbuf }
 
 and comment = parse
-  | "(*"  { (if !comments then print "(*"); 
+  | "(*"  { (if !comments then print "(*");
       	    comment_depth := succ !comment_depth; comment lexbuf }
   | "*)"  { (if !comments then print "*)");
       	    comment_depth := pred !comment_depth;
@@ -63,15 +63,15 @@ and comment = parse
   | "*)" [' ''\t']*'\n' { (if !comments then print (Lexing.lexeme lexbuf));
       			  comment_depth := pred !comment_depth;
 			  if !comment_depth > 0 then comment lexbuf }
-  | eof   { raise Fin_fichier } 
-  | _     { (if !comments then print (Lexing.lexeme lexbuf)); 
+  | eof   { raise Fin_fichier }
+  | _     { (if !comments then print (Lexing.lexeme lexbuf));
 	    comment lexbuf }
 
 and skip_comment = parse
   | "(*"  { comment_depth := succ !comment_depth; skip_comment lexbuf }
   | "*)"  { comment_depth := pred !comment_depth;
             if !comment_depth > 0 then skip_comment lexbuf }
-  | eof   { raise Fin_fichier } 
+  | eof   { raise Fin_fichier }
   | _     { skip_comment lexbuf }
 
 and body_def = parse
@@ -83,14 +83,14 @@ and body = parse
   | ":="   { print ".\n"; skip_proof lexbuf }
   | "(*"   { print "(*"; comment_depth := 1;
       	     comment lexbuf; body lexbuf }
-  | eof    { raise Fin_fichier } 
+  | eof    { raise Fin_fichier }
   | _      { print (Lexing.lexeme lexbuf); body lexbuf }
 
 and body_pgm = parse
   | enddot { print ".\n"; skip_proof lexbuf }
   | "(*"   { print "(*"; comment_depth := 1;
       	     comment lexbuf; body_pgm lexbuf }
-  | eof    { raise Fin_fichier } 
+  | eof    { raise Fin_fichier }
   | _      { print (Lexing.lexeme lexbuf); body_pgm lexbuf }
 
 and skip_until_point = parse
@@ -98,13 +98,13 @@ and skip_until_point = parse
   | enddot   { end_of_line lexbuf }
   | "(*"     { comment_depth := 1;
       	       skip_comment lexbuf; skip_until_point lexbuf }
-  | eof      { raise Fin_fichier } 
+  | eof      { raise Fin_fichier }
   | _        { skip_until_point lexbuf }
 
 and end_of_line = parse
   | [' ' '\t' ]*	{ end_of_line lexbuf }
   | '\n'		{ () }
-  | eof   	     	{ raise Fin_fichier } 
+  | eof   	     	{ raise Fin_fichier }
   | _	  		{ print (Lexing.lexeme lexbuf) }
 
 and skip_proof = parse
@@ -124,5 +124,5 @@ and skip_proof = parse
   | "Proof" [' ' '\t']* '.'  { skip_proof lexbuf }
   | "(*"    { comment_depth := 1;
       	      skip_comment lexbuf; skip_proof lexbuf }
-  | eof     { raise Fin_fichier } 
+  | eof     { raise Fin_fichier }
   | _       { skip_proof lexbuf }

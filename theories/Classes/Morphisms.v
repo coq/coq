@@ -8,7 +8,7 @@
 (************************************************************************)
 
 (* Typeclass-based morphism definition and standard, minimal instances.
- 
+
    Author: Matthieu Sozeau
    Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
    91405 Orsay, France *)
@@ -22,11 +22,11 @@ Require Export Coq.Classes.RelationClasses.
 
 (** * Morphisms.
 
-   We now turn to the definition of [Proper] and declare standard instances. 
+   We now turn to the definition of [Proper] and declare standard instances.
    These will be used by the [setoid_rewrite] tactic later. *)
 
 (** A morphism for a relation [R] is a proper element of the relation.
-   The relation [R] will be instantiated by [respectful] and [A] by an arrow type 
+   The relation [R] will be instantiated by [respectful] and [A] by an arrow type
    for usual morphisms. *)
 
 Class Proper {A} (R : relation A) (m : A) : Prop :=
@@ -36,12 +36,12 @@ Class Proper {A} (R : relation A) (m : A) : Prop :=
 
 (** The fully dependent version, not used yet. *)
 
-Definition respectful_hetero 
-  (A B : Type) 
-  (C : A -> Type) (D : B -> Type) 
-  (R : A -> B -> Prop) 
-  (R' : forall (x : A) (y : B), C x -> D y -> Prop) : 
-    (forall x : A, C x) -> (forall x : B, D x) -> Prop := 
+Definition respectful_hetero
+  (A B : Type)
+  (C : A -> Type) (D : B -> Type)
+  (R : A -> B -> Prop)
+  (R' : forall (x : A) (y : B), C x -> D y -> Prop) :
+    (forall x : A, C x) -> (forall x : B, D x) -> Prop :=
     fun f g => forall x y, R x y -> R' x y (f x) (g y).
 
 (** The non-dependent version is an instance where we forget dependencies. *)
@@ -59,12 +59,12 @@ Arguments Scope respectful [type_scope type_scope signature_scope signature_scop
 
 Module ProperNotations.
 
-  Notation " R ++> R' " := (@respectful _ _ (R%signature) (R'%signature)) 
+  Notation " R ++> R' " := (@respectful _ _ (R%signature) (R'%signature))
     (right associativity, at level 55) : signature_scope.
-  
+
   Notation " R ==> R' " := (@respectful _ _ (R%signature) (R'%signature))
     (right associativity, at level 55) : signature_scope.
-  
+
   Notation " R --> R' " := (@respectful _ _ (inverse (R%signature)) (R'%signature))
     (right associativity, at level 55) : signature_scope.
 
@@ -74,7 +74,7 @@ Export ProperNotations.
 
 Open Local Scope signature_scope.
 
-(** Dependent pointwise lifting of a relation on the range. *) 
+(** Dependent pointwise lifting of a relation on the range. *)
 
 Definition forall_relation {A : Type} {B : A -> Type} (sig : Π a : A, relation (B a)) : relation (Π x : A, B x) :=
   λ f g, Π a : A, sig a (f a) (g a).
@@ -83,10 +83,10 @@ Arguments Scope forall_relation [type_scope type_scope signature_scope].
 
 (** Non-dependent pointwise lifting *)
 
-Definition pointwise_relation (A : Type) {B : Type} (R : relation B) : relation (A -> B) := 
+Definition pointwise_relation (A : Type) {B : Type} (R : relation B) : relation (A -> B) :=
   Eval compute in forall_relation (B:=λ _, B) (λ _, R).
 
-Lemma pointwise_pointwise A B (R : relation B) : 
+Lemma pointwise_pointwise A B (R : relation B) :
   relation_equivalence (pointwise_relation A R) (@eq A ==> R).
 Proof. intros. split. simpl_relation. firstorder. Qed.
 
@@ -124,7 +124,7 @@ Proof. simpl_relation. apply subr. apply H. apply subl. apply H0. Qed.
 Lemma subrelation_refl A R : @subrelation A R R.
 Proof. simpl_relation. Qed.
 
-Ltac subrelation_tac T U := 
+Ltac subrelation_tac T U :=
   (is_ground T ; is_ground U ; class_apply @subrelation_refl) ||
     class_apply @subrelation_respectful || class_apply @subrelation_refl.
 
@@ -141,13 +141,13 @@ Qed.
 CoInductive apply_subrelation : Prop := do_subrelation.
 
 Ltac proper_subrelation :=
-  match goal with 
+  match goal with
     [ H : apply_subrelation |- _ ] => clear H ; class_apply @subrelation_proper
   end.
 
 Hint Extern 5 (@Proper _ ?H _) => proper_subrelation : typeclass_instances.
 
-Instance proper_subrelation_proper : 
+Instance proper_subrelation_proper :
   Proper (subrelation ++> @eq _ ==> impl) (@Proper A).
 Proof. reduce. subst. firstorder. Qed.
 
@@ -176,7 +176,7 @@ Program Instance complement_proper
     intuition.
   Qed.
 
-(** The [inverse] too, actually the [flip] instance is a bit more general. *) 
+(** The [inverse] too, actually the [flip] instance is a bit more general. *)
 
 Program Instance flip_proper
   `(mor : Proper (A -> B -> C) (RA ==> RB ==> RC) f) :
@@ -187,7 +187,7 @@ Program Instance flip_proper
     apply mor ; auto.
   Qed.
 
-(** Every Transitive relation gives rise to a binary morphism on [impl], 
+(** Every Transitive relation gives rise to a binary morphism on [impl],
    contravariant in the first argument, covariant in the second. *)
 
 Program Instance trans_contra_co_morphism
@@ -263,13 +263,13 @@ Program Instance PER_morphism `(PER A R) : Proper (R ==> R ==> iff) R | 1.
   Proof with auto.
     split ; intros.
     transitivity x0... transitivity x... symmetry...
-  
+
     transitivity y... transitivity y0... symmetry...
   Qed.
 
 Lemma symmetric_equiv_inverse `(Symmetric A R) : relation_equivalence R (flip R).
 Proof. firstorder. Qed.
-  
+
 Program Instance compose_proper A B C R₀ R₁ R₂ :
   Proper ((R₁ ==> R₂) ==> (R₀ ==> R₁) ==> (R₀ ==> R₂)) (@compose A B C).
 
@@ -279,7 +279,7 @@ Program Instance compose_proper A B C R₀ R₁ R₂ :
     unfold compose. apply H. apply H0. apply H1.
   Qed.
 
-(** Coq functions are morphisms for leibniz equality, 
+(** Coq functions are morphisms for leibniz equality,
    applied only if really needed. *)
 
 Instance reflexive_eq_dom_reflexive (A : Type) `(Reflexive B R') :
@@ -288,13 +288,13 @@ Proof. simpl_relation. Qed.
 
 (** [respectful] is a morphism for relation equivalence. *)
 
-Instance respectful_morphism : 
+Instance respectful_morphism :
   Proper (relation_equivalence ++> relation_equivalence ++> relation_equivalence) (@respectful A B).
 Proof.
   reduce.
   unfold respectful, relation_equivalence, predicate_equivalence in * ; simpl in *.
   split ; intros.
-  
+
     rewrite <- H0.
     apply H1.
     rewrite H.
@@ -308,10 +308,10 @@ Qed.
 
 (** Every element in the carrier of a reflexive relation is a morphism for this relation.
    We use a proxy class for this case which is used internally to discharge reflexivity constraints.
-   The [Reflexive] instance will almost always be used, but it won't apply in general to any kind of 
+   The [Reflexive] instance will almost always be used, but it won't apply in general to any kind of
    [Proper (A -> B) _ _] goal, making proof-search much slower. A cleaner solution would be to be able
    to set different priorities in different hint bases and select a particular hint database for
-   resolution of a type class constraint.*) 
+   resolution of a type class constraint.*)
 
 Class ProperProxy {A} (R : relation A) (m : A) : Prop :=
   proper_proxy : R m m.
@@ -340,7 +340,7 @@ Class PartialApplication.
 
 CoInductive normalization_done : Prop := did_normalization.
 
-Ltac partial_application_tactic := 
+Ltac partial_application_tactic :=
   let rec do_partial_apps H m :=
     match m with
       | ?m' ?x => class_apply @Reflexive_partial_app_morphism ; [do_partial_apps H m'|clear H]
@@ -350,7 +350,7 @@ Ltac partial_application_tactic :=
   let rec do_partial H ar m :=
     match ar with
       | 0 => do_partial_apps H m
-      | S ?n' => 
+      | S ?n' =>
         match m with
           ?m' ?x => do_partial H n' m'
         end
@@ -362,18 +362,18 @@ Ltac partial_application_tactic :=
     let v := eval compute in n in clear n ;
     let H := fresh in
       assert(H:Params m' v) by typeclasses eauto ;
-      let v' := eval compute in v in 
+      let v' := eval compute in v in
       do_partial H v' m
  in
   match goal with
     | [ _ : normalization_done |- _ ] => fail 1
     | [ _ : @Params _ _ _ |- _ ] => fail 1
-    | [ |- @Proper ?T _ (?m ?x) ] => 
-      match goal with 
-        | [ _ : PartialApplication |- _ ] => 
+    | [ |- @Proper ?T _ (?m ?x) ] =>
+      match goal with
+        | [ _ : PartialApplication |- _ ] =>
           class_apply @Reflexive_partial_app_morphism
-        | _ => 
-          on_morphism (m x) || 
+        | _ =>
+          on_morphism (m x) ||
             (class_apply @Reflexive_partial_app_morphism ;
               [ pose Build_PartialApplication | idtac ])
       end
@@ -391,7 +391,7 @@ Qed.
 
 (** Special-purpose class to do normalization of signatures w.r.t. inverse. *)
 
-Class Normalizes (A : Type) (m : relation A) (m' : relation A) : Prop := 
+Class Normalizes (A : Type) (m : relation A) (m' : relation A) : Prop :=
   normalizes : relation_equivalence m m'.
 
 (** Current strategy: add [inverse] everywhere and reduce using [subrelation]
@@ -408,7 +408,7 @@ Proof. unfold Normalizes. intros.
   rewrite NA, NB. firstorder.
 Qed.
 
-Ltac inverse :=   
+Ltac inverse :=
   match goal with
     | [ |- Normalizes _ (respectful _ _) _ ] => class_apply @inverse_arrow
     | _ => class_apply @inverse_atom
@@ -416,7 +416,7 @@ Ltac inverse :=
 
 Hint Extern 1 (Normalizes _ _ _) => inverse : typeclass_instances.
 
-(** Treating inverse: can't make them direct instances as we 
+(** Treating inverse: can't make them direct instances as we
    need at least a [flip] present in the goal. *)
 
 Lemma inverse1 `(subrelation A R' R) : subrelation (inverse (inverse R')) R.
@@ -477,7 +477,7 @@ Lemma reflexive_proper `{Reflexive A R} (x : A)
    : Proper R x.
 Proof. firstorder. Qed.
 
-Lemma proper_eq A (x : A) : Proper (@eq A) x. 
+Lemma proper_eq A (x : A) : Proper (@eq A) x.
 Proof. intros. apply reflexive_proper. Qed.
 
 Ltac proper_reflexive :=

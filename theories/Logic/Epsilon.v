@@ -17,12 +17,12 @@ Set Implicit Arguments.
 
 (** Hilbert's epsilon: operator and specification in one statement *)
 
-Axiom epsilon_statement : 
+Axiom epsilon_statement :
   forall (A : Type) (P : A->Prop), inhabited A ->
     { x : A | (exists x, P x) -> P x }.
 
 Lemma constructive_indefinite_description :
-  forall (A : Type) (P : A->Prop), 
+  forall (A : Type) (P : A->Prop),
     (exists x, P x) -> { x : A | P x }.
 Proof.
   apply epsilon_imp_constructive_indefinite_description.
@@ -45,7 +45,7 @@ Proof.
 Qed.
 
 Lemma constructive_definite_description :
-  forall (A : Type) (P : A->Prop), 
+  forall (A : Type) (P : A->Prop),
     (exists! x, P x) -> { x : A | P x }.
 Proof.
   apply iota_imp_constructive_definite_description.
@@ -57,7 +57,7 @@ Qed.
 Definition epsilon (A : Type) (i:inhabited A) (P : A->Prop) : A
   := proj1_sig (epsilon_statement P i).
 
-Definition epsilon_spec (A : Type) (i:inhabited A) (P : A->Prop) : 
+Definition epsilon_spec (A : Type) (i:inhabited A) (P : A->Prop) :
   (exists x, P x) -> P (epsilon i P)
   := proj2_sig (epsilon_statement P i).
 
@@ -66,7 +66,7 @@ Definition epsilon_spec (A : Type) (i:inhabited A) (P : A->Prop) :
 Definition iota (A : Type) (i:inhabited A) (P : A->Prop) : A
   := proj1_sig (iota_statement P i).
 
-Definition iota_spec (A : Type) (i:inhabited A) (P : A->Prop) : 
+Definition iota_spec (A : Type) (i:inhabited A) (P : A->Prop) :
   (exists! x:A, P x) -> P (iota i P)
   := proj2_sig (iota_statement P i).
 

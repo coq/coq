@@ -27,7 +27,7 @@ Definition index := list bool.
 
 Inductive L (A:Set) : index -> Set :=
   initL: A -> L A nil
-  | pluslL: forall l:index, One -> L A (false::l) 
+  | pluslL: forall l:index, One -> L A (false::l)
   | plusrL: forall l:index, L A l -> L A (false::l)
   | varL: forall l:index, L A l -> L A (true::l)
   | appL: forall l:index, L A (true::l) -> L A (true::l) -> L A (true::l)
@@ -109,7 +109,7 @@ Proof.
   exact (monL (fun x:One + A =>
     (match (maybe (fun a:A => initL a) x) with
        | inl u => pluslL _ _ u
-       | inr t' => plusrL t' end)) r). 
+       | inr t' => plusrL t' end)) r).
 Defined.
 
 Section minimal.
@@ -119,11 +119,11 @@ Hypothesis G: Set -> Set.
 Hypothesis step: sub1 (LamF' G) G.
 
 Fixpoint L'(A:Set)(i:index){struct i} : Set :=
-  match i with 
+  match i with
     nil => A
     | false::l => One + L' A l
     | true::l => G (L' A l)
-  end. 
+  end.
 
 Definition LinL': forall (A:Set)(i:index), L A i -> L' A i.
 Proof.
@@ -177,7 +177,7 @@ Proof.
   assumption.
   induction a.
   simpl L' in t.
-  apply (aczelapp (l1:=true::nil) (l2:=i)). 
+  apply (aczelapp (l1:=true::nil) (l2:=i)).
   exact (lam' IHi t).
   simpl L' in t.
   induction t.

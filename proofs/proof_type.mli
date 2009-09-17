@@ -32,7 +32,7 @@ type prim_rule =
   | FixRule of identifier * int * (identifier * int * constr) list * int
   | Cofix of identifier * (identifier * constr) list * int
   | Refine of constr
-  | Convert_concl of types * cast_kind 
+  | Convert_concl of types * cast_kind
   | Convert_hyp of named_declaration
   | Thin of identifier list
   | ThinBody of identifier list
@@ -58,7 +58,7 @@ type prim_rule =
                                     lc     : [Set of evars occurring
                                               in the type of evar] } };
                ...
-               number of last evar, 
+               number of last evar,
                it = { evar_concl = [the type of evar]
                       evar_hyps = [the context of the evar]
                       evar_body = [the body of the Evar if any]
@@ -69,11 +69,11 @@ type prim_rule =
 \end{verbatim}
 *)
 
-(*s Proof trees. 
-  [ref] = [None] if the goal has still to be proved, 
+(*s Proof trees.
+  [ref] = [None] if the goal has still to be proved,
   and [Some (r,l)] if the rule [r] was applied to the goal
-  and gave [l] as subproofs to be completed. 
-  if [ref = (Some(Nested(Tactic t,p),l))] then [p] is the proof 
+  and gave [l] as subproofs to be completed.
+  if [ref = (Some(Nested(Tactic t,p),l))] then [p] is the proof
   that the goal can be proven if the goals in [l] are solved. *)
 type proof_tree = {
   open_subgoals : int;
@@ -82,11 +82,11 @@ type proof_tree = {
 
 and rule =
   | Prim of prim_rule
-  | Nested of compound_rule * proof_tree 
+  | Nested of compound_rule * proof_tree
   | Decl_proof of bool
   | Daimon
 
-and compound_rule= 
+and compound_rule=
   (* the boolean of Tactic tells if the default tactic is used *)
   | Tactic of tactic_expr * bool
   | Proof_instr of bool * proof_instr
@@ -127,7 +127,7 @@ and tactic_arg =
    glob_tactic_expr)
      Tacexpr.gen_tactic_arg
 
-type ltac_call_kind = 
+type ltac_call_kind =
   | LtacNotationCall of string
   | LtacNameCall of ltac_constant
   | LtacAtomCall of glob_atomic_tactic_expr * atomic_tactic_expr option ref

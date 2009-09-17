@@ -43,7 +43,7 @@ Proof.
   rewrite Hrecn; [ ring | assumption ].
   omega.
   omega.
-Qed. 
+Qed.
 
 (**********)
 Lemma prod_SO_pos :
@@ -80,9 +80,9 @@ Qed.
 
 (** Application to factorial *)
 Lemma fact_prodSO :
-  forall n:nat, INR (fact n) = prod_f_R0 (fun k:nat => 
-     (match (eq_nat_dec k 0) with 
-          | left   _ => 1%R 
+  forall n:nat, INR (fact n) = prod_f_R0 (fun k:nat =>
+     (match (eq_nat_dec k 0) with
+          | left   _ => 1%R
           | right _ => INR k
                         end)) n.
 Proof.
@@ -102,7 +102,7 @@ Proof.
   replace (S (S (2 * n0))) with (2 * n0 + 2)%nat; [ idtac | ring ].
   replace (S n0) with (n0 + 1)%nat; [ idtac | ring ].
   ring.
-Qed. 
+Qed.
 
 (** We prove that (N!)^2<=(2N-k)!*k! forall k in [|O;2N|] *)
 Lemma RfactN_fact2N_factk :
@@ -112,7 +112,7 @@ Lemma RfactN_fact2N_factk :
 Proof.
   assert (forall (n:nat), 0 <= (if eq_nat_dec n 0 then 1 else INR n)).
   intros; case (eq_nat_dec n 0); auto with real.
-  assert (forall (n:nat), (0 < n)%nat ->  
+  assert (forall (n:nat), (0 < n)%nat ->
      (if eq_nat_dec n 0 then 1 else INR n) = INR n).
   intros n; case (eq_nat_dec n 0); auto with real.
   intros; absurd (0 < n)%nat; omega.
@@ -125,7 +125,7 @@ Proof.
   rewrite Rmult_assoc; apply Rmult_le_compat_l.
   apply prod_SO_pos; intros; auto.
   replace (2 * N - k - N-1)%nat with (N - k-1)%nat.
-  rewrite Rmult_comm; rewrite (prod_SO_split 
+  rewrite Rmult_comm; rewrite (prod_SO_split
         (fun l:nat => if eq_nat_dec l 0 then 1 else INR l) N k).
   apply Rmult_le_compat_l.
   apply prod_SO_pos; intros; auto.
@@ -138,14 +138,14 @@ Proof.
   assumption.
   omega.
   omega.
-  rewrite <- (Rmult_comm (prod_f_R0 (fun l:nat => 
+  rewrite <- (Rmult_comm (prod_f_R0 (fun l:nat =>
           if eq_nat_dec l 0 then 1 else INR l) k));
-    rewrite (prod_SO_split (fun l:nat => 
+    rewrite (prod_SO_split (fun l:nat =>
           if eq_nat_dec l 0 then 1 else INR l) k N).
   rewrite Rmult_assoc; apply Rmult_le_compat_l.
   apply prod_SO_pos; intros; auto.
   rewrite Rmult_comm;
-    rewrite (prod_SO_split (fun l:nat => 
+    rewrite (prod_SO_split (fun l:nat =>
           if eq_nat_dec l 0 then 1 else INR l) N (2 * N - k)).
   apply Rmult_le_compat_l.
   apply prod_SO_pos; intros; auto.
@@ -160,7 +160,7 @@ Proof.
   omega.
   assumption.
   omega.
-Qed. 
+Qed.
 
 
 (**********)

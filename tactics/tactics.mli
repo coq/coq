@@ -102,7 +102,7 @@ val try_intros_until :
 (* Apply a tactic on a quantified hypothesis, an hypothesis in context
    or a term with bindings *)
 
-val onInductionArg : 
+val onInductionArg :
   (constr with_ebindings -> tactic) ->
     constr with_ebindings induction_arg -> tactic
 
@@ -129,7 +129,7 @@ val reduct_in_hyp     : tactic_reduction -> hyp_location -> tactic
 val reduct_option     : tactic_reduction * cast_kind -> goal_location -> tactic
 val reduct_in_concl   : tactic_reduction * cast_kind -> tactic
 val change_in_concl   : (occurrences * constr) option -> constr -> tactic
-val change_in_hyp     : (occurrences * constr) option -> constr -> 
+val change_in_hyp     : (occurrences * constr) option -> constr ->
                         hyp_location -> tactic
 val red_in_concl      : tactic
 val red_in_hyp        : hyp_location -> tactic
@@ -146,13 +146,13 @@ val normalise_option  : goal_location -> tactic
 val normalise_vm_in_concl : tactic
 val unfold_in_concl   :
   (occurrences * evaluable_global_reference) list -> tactic
-val unfold_in_hyp     : 
+val unfold_in_hyp     :
   (occurrences * evaluable_global_reference) list -> hyp_location -> tactic
-val unfold_option     : 
+val unfold_option     :
   (occurrences * evaluable_global_reference) list -> goal_location -> tactic
 val change            :
   (occurrences * constr) option -> constr -> clause -> tactic
-val pattern_option    : 
+val pattern_option    :
   (occurrences * constr) list -> goal_location -> tactic
 val reduce            : red_expr -> clause -> tactic
 val unfold_constr     : global_reference -> tactic
@@ -179,7 +179,7 @@ val bring_hyps : named_context -> tactic
 val apply                 : constr -> tactic
 val eapply                : constr -> tactic
 
-val apply_with_ebindings_gen : 
+val apply_with_ebindings_gen :
   advanced_flag -> evars_flag -> open_constr with_ebindings located list ->
     tactic
 
@@ -191,8 +191,8 @@ val eapply_with_ebindings : open_constr with_ebindings -> tactic
 
 val cut_and_apply         : constr -> tactic
 
-val apply_in : 
-  advanced_flag -> evars_flag -> identifier -> 
+val apply_in :
+  advanced_flag -> evars_flag -> identifier ->
   open_constr with_ebindings located list ->
   intro_pattern_expr located option -> tactic
 
@@ -203,7 +203,7 @@ val simple_apply_in : identifier -> constr -> tactic
 
 (*
    The general form of an induction principle is the following:
-   
+
    forall prm1 prm2 ... prmp,                          (induction parameters)
    forall Q1...,(Qi:Ti_1 -> Ti_2 ->...-> Ti_ni),...Qq, (predicates)
    branch1, branch2, ... , branchr,                    (branches of the principle)
@@ -226,7 +226,7 @@ val simple_apply_in : identifier -> constr -> tactic
 
 (* [rel_contexts] and [rel_declaration] actually contain triples, and
    lists are actually in reverse order to fit [compose_prod]. *)
-type elim_scheme = { 
+type elim_scheme = {
   elimc: constr with_ebindings option;
   elimt: types;
   indref: global_reference option;
@@ -235,12 +235,12 @@ type elim_scheme = {
   predicates: rel_context; (* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
   npredicates: int;        (* Number of predicates *)
   branches: rel_context;   (* branchr,...,branch1 *)
-  nbranches: int;          (* Number of branches *) 
+  nbranches: int;          (* Number of branches *)
   args: rel_context;       (* (xni, Ti_ni) ... (x1, Ti_1) *)
   nargs: int;              (* number of arguments *)
-  indarg: rel_declaration option; (* Some (H,I prm1..prmp x1...xni) 
+  indarg: rel_declaration option; (* Some (H,I prm1..prmp x1...xni)
 				     if HI is in premisses, None otherwise *)
-  concl: types;            (* Qi x1...xni HI (f...), HI and (f...) 
+  concl: types;            (* Qi x1...xni HI (f...), HI and (f...)
 			      are optional and mutually exclusive *)
   indarg_in_concl: bool;   (* true if HI appears at the end of conclusion *)
   farg_in_concl: bool;     (* true if (f...) appears at the end of conclusion *)
@@ -250,7 +250,7 @@ type elim_scheme = {
 val compute_elim_sig : ?elimc: constr with_ebindings -> types -> elim_scheme
 val rebuild_elimtype_from_scheme: elim_scheme -> types
 
-val elimination_clause_scheme : evars_flag -> 
+val elimination_clause_scheme : evars_flag ->
   bool -> clausenv -> clausenv -> tactic
 
 val elimination_in_clause_scheme : evars_flag -> identifier ->
@@ -261,18 +261,18 @@ val general_elim_clause_gen : (Clenv.clausenv -> 'a -> tactic) ->
 
 val general_elim  : evars_flag ->
   constr with_ebindings -> constr with_ebindings -> ?allow_K:bool -> tactic
-val general_elim_in : evars_flag -> 
+val general_elim_in : evars_flag ->
   identifier -> constr with_ebindings -> constr with_ebindings -> tactic
 
 val default_elim  : evars_flag -> constr with_ebindings -> tactic
 val simplest_elim : constr -> tactic
-val elim : 
+val elim :
   evars_flag -> constr with_ebindings -> constr with_ebindings option -> tactic
 
 val simple_induct : quantified_hypothesis -> tactic
 
-val new_induct : evars_flag -> constr with_ebindings induction_arg list -> 
-  constr with_ebindings option -> 
+val new_induct : evars_flag -> constr with_ebindings induction_arg list ->
+  constr with_ebindings option ->
     intro_pattern_expr located option * intro_pattern_expr located option ->
       clause option -> tactic
 
@@ -282,14 +282,14 @@ val general_case_analysis : evars_flag -> constr with_ebindings ->  tactic
 val simplest_case         : constr -> tactic
 
 val simple_destruct          : quantified_hypothesis -> tactic
-val new_destruct : evars_flag -> constr with_ebindings induction_arg list -> 
-  constr with_ebindings option -> 
+val new_destruct : evars_flag -> constr with_ebindings induction_arg list ->
+  constr with_ebindings option ->
     intro_pattern_expr located option * intro_pattern_expr located option ->
       clause option -> tactic
 
 (*s Generic case analysis / induction tactics. *)
 
-val induction_destruct : evars_flag -> rec_flag -> 
+val induction_destruct : evars_flag -> rec_flag ->
   (constr with_ebindings induction_arg list *
   constr with_ebindings option *
   (intro_pattern_expr located option * intro_pattern_expr located option) *
@@ -313,7 +313,7 @@ val dorE : bool -> clause ->tactic
 
 (*s Introduction tactics. *)
 
-val constructor_tac      : evars_flag -> int option -> int -> 
+val constructor_tac      : evars_flag -> int option -> int ->
   open_constr bindings  -> tactic
 val any_constructor      : evars_flag -> tactic option -> tactic
 val one_constructor      : int -> open_constr bindings  -> tactic
@@ -352,13 +352,13 @@ val intros_transitivity         : constr option -> tactic
 
 val cut                         : constr -> tactic
 val cut_intro                   : constr -> tactic
-val cut_replacing               : 
+val cut_replacing               :
   identifier -> constr -> (tactic -> tactic) -> tactic
 val cut_in_parallel             : constr list -> tactic
 
 val assert_as : bool -> intro_pattern_expr located option -> constr -> tactic
 val forward   : tactic option -> intro_pattern_expr located option -> constr -> tactic
-val letin_tac : (bool * intro_pattern_expr located) option -> name -> 
+val letin_tac : (bool * intro_pattern_expr located) option -> name ->
   constr -> types option -> clause -> tactic
 val assert_tac : name -> types -> tactic
 val assert_by  : name -> types -> tactic -> tactic
@@ -379,5 +379,5 @@ val abstract_generalize : identifier -> ?generalize_vars:bool -> tactic
 
 val dependent_pattern : constr -> tactic
 
-val register_general_multi_rewrite : 
+val register_general_multi_rewrite :
   (bool -> evars_flag -> open_constr with_bindings -> clause -> tactic) -> unit

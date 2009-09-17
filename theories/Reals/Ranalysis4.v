@@ -31,8 +31,8 @@ Proof.
   unfold div_fct, inv_fct, fct_cte in |- *; intro X0; elim X0; intros;
     unfold derivable_pt in |- *; exists x0;
       unfold derivable_pt_abs in |- *; unfold derivable_pt_lim in |- *;
-        unfold derivable_pt_abs in p; unfold derivable_pt_lim in p; 
-          intros; elim (p eps H0); intros; exists x1; intros; 
+        unfold derivable_pt_abs in p; unfold derivable_pt_lim in p;
+          intros; elim (p eps H0); intros; exists x1; intros;
             unfold Rdiv in H1; unfold Rdiv in |- *; rewrite <- (Rmult_1_l (/ f x));
               rewrite <- (Rmult_1_l (/ f (x + h))).
   apply H1; assumption.
@@ -60,14 +60,14 @@ Proof.
   elim pr1; intros.
   elim pr2; intros.
   simpl in |- *.
-  assert (H0 := uniqueness_step2 _ _ _ p). 
-  assert (H1 := uniqueness_step2 _ _ _ p0). 
+  assert (H0 := uniqueness_step2 _ _ _ p).
+  assert (H1 := uniqueness_step2 _ _ _ p0).
   cut (limit1_in (fun h:R => (f (x + h) - f x) / h) (fun h:R => h <> 0) x1 0).
-  intro; assert (H3 := uniqueness_step1 _ _ _ _ H0 H2). 
+  intro; assert (H3 := uniqueness_step1 _ _ _ _ H0 H2).
   assumption.
   unfold limit1_in in |- *; unfold limit_in in |- *; unfold dist in |- *;
     simpl in |- *; unfold R_dist in |- *; unfold limit1_in in H1;
-      unfold limit_in in H1; unfold dist in H1; simpl in H1; 
+      unfold limit_in in H1; unfold dist in H1; simpl in H1;
         unfold R_dist in H1.
   intros; elim (H1 eps H2); intros.
   elim H3; intros.
@@ -122,7 +122,7 @@ Proof.
   case (Rcase_abs h); intro.
   rewrite (Rabs_left h r) in H2.
   left; rewrite Rplus_comm; apply Rplus_lt_reg_r with (- h); rewrite Rplus_0_r;
-    rewrite <- Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_l; 
+    rewrite <- Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_l;
       apply H2.
   apply Rplus_le_le_0_compat.
   left; apply H.
@@ -178,12 +178,12 @@ Proof.
   unfold continuity in |- *; intro.
   case (Req_dec x 0); intro.
   unfold continuity_pt in |- *; unfold continue_in in |- *;
-    unfold limit1_in in |- *; unfold limit_in in |- *; 
-      simpl in |- *; unfold R_dist in |- *; intros; exists eps; 
+    unfold limit1_in in |- *; unfold limit_in in |- *;
+      simpl in |- *; unfold R_dist in |- *; intros; exists eps;
         split.
   apply H0.
   intros; rewrite H; rewrite Rabs_R0; unfold Rminus in |- *; rewrite Ropp_0;
-    rewrite Rplus_0_r; rewrite Rabs_Rabsolu; elim H1; 
+    rewrite Rplus_0_r; rewrite Rabs_Rabsolu; elim H1;
       intros; rewrite H in H3; unfold Rminus in H3; rewrite Ropp_0 in H3;
         rewrite Rplus_0_r in H3; apply H3.
   apply derivable_continuous_pt; apply (Rderivable_pt_abs x H).
@@ -297,7 +297,7 @@ Proof.
   induction  N as [| N HrecN].
   exists 0; apply H.
   exists
-    (sum_f_R0 (fun k:nat => INR (S k) * An (S k) * x ^ k) (pred (S N))); 
+    (sum_f_R0 (fun k:nat => INR (S k) * An (S k) * x ^ k) (pred (S N)));
     apply H.
 Qed.
 
@@ -317,7 +317,7 @@ Proof.
   ((exp + comp exp (- id)) * fct_cte (/ 2))%F; [ idtac | reflexivity ].
   replace ((exp x - exp (- x)) * / 2) with
   ((exp x + exp (- x) * -1) * fct_cte (/ 2) x +
-    (exp + comp exp (- id))%F x * 0). 
+    (exp + comp exp (- id))%F x * 0).
   apply derivable_pt_lim_mult.
   apply derivable_pt_lim_plus.
   apply derivable_pt_lim_exp.
@@ -337,7 +337,7 @@ Proof.
   ((exp - comp exp (- id)) * fct_cte (/ 2))%F; [ idtac | reflexivity ].
   replace ((exp x + exp (- x)) * / 2) with
   ((exp x - exp (- x) * -1) * fct_cte (/ 2) x +
-    (exp - comp exp (- id))%F x * 0). 
+    (exp - comp exp (- id))%F x * 0).
   apply derivable_pt_lim_mult.
   apply derivable_pt_lim_minus.
   apply derivable_pt_lim_exp.

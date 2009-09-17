@@ -12,7 +12,7 @@ class ['a] typed_notebook default_build nb =
 object(self)
   inherit GPack.notebook nb as super
   val mutable term_list = []
-  
+
   method append_term ?(build=default_build) (term:'a) =
     let tab_label,menu_label,page = build term in
       (* XXX - Temporary hack to compile with archaic lablgtk *)

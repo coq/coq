@@ -18,7 +18,7 @@ open Names
 open Topconstr
 (*i*)
 
-(* Module expressions and module types are interpreted relatively to 
+(* Module expressions and module types are interpreted relatively to
    eventual functor or funsig arguments. *)
 
 val interp_modtype : env -> module_type_ast -> module_struct_entry

@@ -33,8 +33,8 @@ let is_bind = function
 
 (* Functions on goals *)
 
-let mk_goal hyps cl extra = 
-  { evar_hyps = hyps; evar_concl = cl; 
+let mk_goal hyps cl extra =
+  { evar_hyps = hyps; evar_concl = cl;
     evar_filter = List.map (fun _ -> true) (named_context_of_val hyps);
     evar_body = Evar_empty; evar_extra = extra }
 
@@ -48,9 +48,9 @@ let ref_of_proof pf =
 let rule_of_proof pf =
   let (r,_) = ref_of_proof pf in r
 
-let children_of_proof pf = 
+let children_of_proof pf =
   let (_,cl) = ref_of_proof pf in cl
-				    
+
 let goal_of_proof pf = pf.goal
 
 let subproof_of_proof pf = match pf.ref with
@@ -74,7 +74,7 @@ let pf_lookup_name_as_renamed env ccl s =
 let pf_lookup_index_as_renamed env ccl n =
   Detyping.lookup_index_as_renamed env ccl n
 
-(* Functions on rules (Proof mode) *) 
+(* Functions on rules (Proof mode) *)
 
 let is_dem_rule  = function
     Decl_proof _  -> true
@@ -85,9 +85,9 @@ let is_proof_instr = function
   | _ -> false
 
 let is_focussing_command = function
-    Decl_proof b -> b 
-  | Nested (Proof_instr (b,_),_) -> b 
-  | _ -> false   
+    Decl_proof b -> b
+  | Nested (Proof_instr (b,_),_) -> b
+  | _ -> false
 
 
 (*********************************************************************)

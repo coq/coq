@@ -25,7 +25,7 @@ Fixpoint max n m {struct n} : nat :=
 
 (** * Inductive characterization of [max] *)
 
-Lemma max_case_strong : forall n m (P:nat -> Type), 
+Lemma max_case_strong : forall n m (P:nat -> Type),
   (m<=n -> P n) -> (n<=m -> P m) -> P (max n m).
 Proof.
   induction n; destruct m; simpl in *; auto with arith.
@@ -63,7 +63,7 @@ Qed.
 
 Lemma plus_max_distr_l : forall n m p, max (p + n) (p + m) = p + max n m.
 Proof.
-  induction p; simpl; auto. 
+  induction p; simpl; auto.
 Qed.
 
 Lemma plus_max_distr_r : forall n m p, max (n + p) (m + p) = max n m + p.

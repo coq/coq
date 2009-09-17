@@ -21,31 +21,31 @@ open Termops
 
 (* The instantiate tactic *)
 
-let evar_list evc c = 
+let evar_list evc c =
   let rec evrec acc c =
     match kind_of_term c with
     | Evar (n, _) when Evd.mem evc n -> c :: acc
     | _ -> fold_constr evrec acc c
-  in 
+  in
     evrec [] c
 
-let instantiate n (ist,rawc) ido gl = 
+let instantiate n (ist,rawc) ido gl =
   let sigma = gl.sigma in
-  let evl = 
+  let evl =
     match ido with
-	ConclLocation () -> evar_list sigma gl.it.evar_concl 
+	ConclLocation () -> evar_list sigma gl.it.evar_concl
       | HypLocation (id,hloc) ->
 	  let decl = Environ.lookup_named_val id gl.it.evar_hyps in
 	    match hloc with
-		InHyp ->  
-		  (match decl with 
+		InHyp ->
+		  (match decl with
 		      (_,None,typ) -> evar_list sigma typ
-		    | _ -> error 
+		    | _ -> error
 			"Please be more specific: in type or value?")
 	      | InHypTypeOnly ->
 		  let (_, _, typ) = decl in evar_list sigma typ
 	      | InHypValueOnly ->
-		  (match decl with 
+		  (match decl with
 		      (_,Some body,_) -> evar_list sigma body
 		    | _ -> error "Not a defined hypothesis.") in
     if List.length evl < n then
@@ -59,9 +59,9 @@ let instantiate n (ist,rawc) ido gl =
         (tclEVARS sigma')
         tclNORMEVAR
         gl
-	
+
 let let_evar name typ gls =
   let sigma',evar = Evarutil.new_evar gls.sigma (pf_env gls) typ in
   Refiner.tclTHEN (Refiner.tclEVARS sigma')
     (Tactics.letin_tac None name evar None nowhere) gls
- 
+

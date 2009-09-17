@@ -120,12 +120,12 @@ Defined.
 Definition Qeq_bool x y :=
   (Zeq_bool (Qnum x * QDen y) (Qnum y * QDen x))%Z.
 
-Definition Qle_bool x y := 
+Definition Qle_bool x y :=
   (Zle_bool (Qnum x * QDen y) (Qnum y * QDen x))%Z.
 
 Lemma Qeq_bool_iff : forall x y, Qeq_bool x y = true <-> x == y.
 Proof.
-  unfold Qeq_bool, Qeq; intros. 
+  unfold Qeq_bool, Qeq; intros.
   symmetry; apply Zeq_is_eq_bool.
 Qed.
 

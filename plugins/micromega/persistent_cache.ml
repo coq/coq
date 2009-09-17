@@ -13,13 +13,13 @@
 (************************************************************************)
 
 
-module type PHashtable = 
+module type PHashtable =
   sig
     type 'a t
-    type key 
+    type key
 
     val create : int -> string -> 'a t
-    (** [create i f] creates an empty persistent table 
+    (** [create i f] creates an empty persistent table
 	with initial size i
 	associated with file [f] *)
 
@@ -31,7 +31,7 @@ module type PHashtable =
 
     val find : 'a t -> key -> 'a
     (** find has the specification of Hashtable.find *)
-      
+
     val add  : 'a t -> key -> 'a -> unit
     (** [add tbl key elem] adds the binding [key] [elem] to the table [tbl].
 	(and writes the binding to the file associated with [tbl].)
@@ -50,7 +50,7 @@ module type PHashtable =
 
 open Hashtbl
 
-module PHashtable(Key:HashedType) : PHashtable with type key = Key.t  = 
+module PHashtable(Key:HashedType) : PHashtable with type key = Key.t  =
 struct
 
   type key = Key.t
@@ -66,27 +66,27 @@ struct
   type mode = Closed | Open
 
 
-  type 'a t = 
-      { 
+  type 'a t =
+      {
 	outch : out_channel ;
-	mutable status : mode ; 
+	mutable status : mode ;
 	htbl : 'a Table.t
       }
 
 
-let create i f = 
-  { 
-    outch = open_out_bin f ; 
-    status = Open ; 
+let create i f =
+  {
+    outch = open_out_bin f ;
+    status = Open ;
     htbl = Table.create i
   }
 
-let finally f rst = 
-  try 
+let finally f rst =
+  try
     let res = f () in
       rst () ; res
-  with x -> 
-    (try rst () 
+  with x ->
+    (try rst ()
     with _  -> raise x
     ); raise x
 
@@ -94,80 +94,80 @@ let finally f rst =
 let read_key_elem inch =
   try
     Some (Marshal.from_channel inch)
-  with 
+  with
     | End_of_file -> None
     |    _        -> raise InvalidTableFormat
-      
-let open_in f = 
+
+let open_in f =
   let flags = [Open_rdonly;Open_binary;Open_creat] in
   let inch = open_in_gen flags 0o666 f in
   let htbl = Table.create 10 in
 
-  let rec xload () = 
+  let rec xload () =
     match read_key_elem inch with
       | None -> ()
-      | Some (key,elem) -> 
-	  Table.add htbl key elem ; 
+      | Some (key,elem) ->
+	  Table.add htbl key elem ;
 	  xload () in
 
-    try 
+    try
       finally (fun () -> xload () ) (fun () -> close_in inch) ;
       {
 	outch = begin
 	  let flags = [Open_append;Open_binary;Open_creat] in
-	    open_out_gen flags 0o666 f 
+	    open_out_gen flags 0o666 f
 	end ;
 	status = Open ;
 	htbl = htbl
       }
-    with InvalidTableFormat -> 
+    with InvalidTableFormat ->
       (* Try to keep as many entries as possible *)
       begin
 	let flags = [Open_wronly; Open_trunc;Open_binary;Open_creat] in
 	let outch = open_out_gen flags 0o666 f in
-	  Table.iter (fun k e -> Marshal.to_channel outch (k,e) [Marshal.No_sharing]) htbl; 
+	  Table.iter (fun k e -> Marshal.to_channel outch (k,e) [Marshal.No_sharing]) htbl;
 	  { outch = outch ;
-	    status = Open ; 
+	    status = Open ;
 	    htbl   = htbl
 	  }
       end
 
 
-let close t = 
+let close t =
   let {outch = outch ; status = status ; htbl = tbl} = t in
     match t.status with
     | Closed -> () (* don't do it twice *)
-    | Open  -> 
-	close_out outch ; 
+    | Open  ->
+	close_out outch ;
 	Table.clear tbl ;
 	t.status <- Closed
 
-let add t k e = 
+let add t k e =
   let {outch = outch ; status = status ; htbl = tbl} = t in
     if status = Closed
     then raise UnboundTable
     else
       begin
-	Table.add tbl k e ; 
+	Table.add tbl k e ;
 	Marshal.to_channel outch (k,e) [Marshal.No_sharing]
       end
 
-let find t k = 
+let find t k =
   let {outch = outch ; status = status ; htbl = tbl} = t in
     if status = Closed
     then raise UnboundTable
     else
       let res = Table.find tbl k in
-	res 
+	res
 
-let memo cache f = 
+let memo cache f =
   let tbl = lazy (open_in cache) in
-    fun x -> 
+    fun x ->
       let tbl = Lazy.force tbl in
-	try 
+	try
 	  find tbl x
 	with
-	    Not_found -> 
+	    Not_found ->
 	      let res = f x in
 		add tbl x res ;
 		res

@@ -13,7 +13,7 @@ Goal forall s k k' m,
   (pl k' (nexists (fun w => (nexists (fun b => pl (pair w w)
     (pl (pair s b)
     (nexists (fun w0 => (nexists (fun a => pl (pair b w0)
-      (nexists (fun w1 => (nexists (fun c => pl 
+      (nexists (fun w1 => (nexists (fun c => pl
         (pair a w1) (pl (pair a c) k))))))))))))))) m.
 intros.
 eapply plImp; [ | eauto | intros ].

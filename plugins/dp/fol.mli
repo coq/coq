@@ -1,11 +1,11 @@
 
 (* Polymorphic First-Order Logic (that is Why's input logic) *)
 
-type typ = 
+type typ =
   | Tvar of string
   | Tid of string * typ list
 
-type term =   
+type term =
   | Cst of Big_int.big_int
   | RCst of Big_int.big_int
   | Power2 of Big_int.big_int
@@ -16,7 +16,7 @@ type term =
   | Opp of term
   | App of string * term list
 
-and atom =   
+and atom =
   | Eq of term * term
   | Le of term * term
   | Lt of term * term
@@ -24,7 +24,7 @@ and atom =
   | Gt of term * term
   | Pred of string * term list
 
-and form = 
+and form =
   | Fatom of atom
   | Imp of form * form
   | Iff of form * form
@@ -48,8 +48,8 @@ type query = decl list * form
 
 (* prover result *)
 
-type prover_answer = 
-  | Valid of string option 
+type prover_answer =
+  | Valid of string option
   | Invalid
   | DontKnow
   | Timeout

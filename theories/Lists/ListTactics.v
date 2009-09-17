@@ -22,10 +22,10 @@ Ltac list_fold_right fcons fnil l :=
 Ltac lazy_list_fold_right fcons fnil l :=
   let f :=
     match l with
-    | ?x :: ?tl => 
+    | ?x :: ?tl =>
          fun _ =>
          fcons x ltac:(fun _ => lazy_list_fold_right fcons fnil tl)
-    | nil => fun _ => fnil() 
+    | nil => fun _ => fnil()
     end in
   f().
 
@@ -75,7 +75,7 @@ Ltac check_is_list t :=
 
 Ltac check_fv l :=
   check_is_list l;
-  match type of l with 
+  match type of l with
   | list _ => idtac
   | _      => fail 100 "anomaly: built an ill-typed list"
   end.

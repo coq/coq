@@ -63,8 +63,8 @@ let nf_evar sigma ~preserve =
 (* Warning: statuses, goals, prim_rules and tactic_exprs are not unshared! *)
 let rec unshare_proof_tree =
  let module PT = Proof_type in
-  function {PT.open_subgoals = status ; 
-	    PT.goal = goal ; 
+  function {PT.open_subgoals = status ;
+	    PT.goal = goal ;
 	    PT.ref = ref} ->
    let unshared_ref =
     match ref with
@@ -78,8 +78,8 @@ let rec unshare_proof_tree =
 	in
          Some (unshared_rule, List.map unshare_proof_tree pfs)
    in
-    {PT.open_subgoals = status ; 
-     PT.goal = goal ; 
+    {PT.open_subgoals = status ;
+     PT.goal = goal ;
      PT.ref = unshared_ref}
 ;;
 
@@ -105,13 +105,13 @@ let extract_open_proof sigma pf =
     match node with
        {PT.ref=Some(PT.Prim _,_)} as pf ->
         L.prim_extractor proof_extractor vl pf
-	  
+
      | {PT.ref=Some(PT.Nested (_,hidden_proof),spfl)} ->
 	 let sgl,v = Refiner.frontier hidden_proof in
 	 let flat_proof = v spfl in
          ProofTreeHash.add proof_tree_to_flattened_proof_tree node flat_proof ;
 	 proof_extractor vl flat_proof
-	  
+
      | {PT.ref=None;PT.goal=goal} ->
 	 let visible_rels =
            Util.map_succeed
@@ -124,14 +124,14 @@ let extract_open_proof sigma pf =
 (*CSC: it becomes a Rel; otherwise a Var. Then it can be already used  *)
 (*CSC: as the evar_instance. Ordering the instance becomes useless (it *)
 (*CSC: will already be ordered.                                        *)
-             (Termops.ids_of_named_context 
+             (Termops.ids_of_named_context
 		(Environ.named_context_of_val goal.Evd.evar_hyps)) in
 	 let sorted_rels =
 	   Sort.list (fun (n1,_) (n2,_) -> n1 < n2 ) visible_rels in
 	 let context =
-	   let l = 
+	   let l =
              List.map
-               (fun (_,id) -> Sign.lookup_named id 
+               (fun (_,id) -> Sign.lookup_named id
 		   (Environ.named_context_of_val goal.Evd.evar_hyps))
                sorted_rels in
 	   Environ.val_of_named_context l
@@ -144,7 +144,7 @@ let extract_open_proof sigma pf =
              evar_instance in
          evd := evd' ;
          evar
-	  
+
      | _ -> Util.anomaly "Bug : a case has been forgotten in proof_extractor"
    in
     let unsharedconstr =

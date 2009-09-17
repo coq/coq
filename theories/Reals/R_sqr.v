@@ -61,7 +61,7 @@ Proof.
       | elim H0; intro;
         [ elim H; symmetry  in |- *; exact H1
           | rewrite Rsqr_neg; generalize (Ropp_lt_gt_contravar x 0 H1);
-            rewrite Ropp_0; intro; unfold Rsqr in |- *; 
+            rewrite Ropp_0; intro; unfold Rsqr in |- *;
               apply Rmult_lt_0_compat; assumption ] ].
 Qed.
 
@@ -103,8 +103,8 @@ Proof.
     [ assumption
       | cut (y < x);
         [ intro; unfold Rsqr in H;
-          generalize (Rmult_le_0_lt_compat y x y x H1 H1 H2 H2); 
-            intro; generalize (Rle_lt_trans (x * x) (y * y) (x * x) H H3); 
+          generalize (Rmult_le_0_lt_compat y x y x H1 H1 H2 H2);
+            intro; generalize (Rle_lt_trans (x * x) (y * y) (x * x) H H3);
               intro; elim (Rlt_irrefl (x * x) H4)
           | auto with real ] ].
 Qed.
@@ -115,8 +115,8 @@ Proof.
     [ assumption
       | cut (y < x);
         [ intro; unfold Rsqr in H;
-          generalize (Rmult_le_0_lt_compat y x y x H0 H0 H1 H1); 
-            intro; generalize (Rle_lt_trans (x * x) (y * y) (x * x) H H2); 
+          generalize (Rmult_le_0_lt_compat y x y x H0 H0 H1 H1);
+            intro; generalize (Rle_lt_trans (x * x) (y * y) (x * x) H H2);
               intro; elim (Rlt_irrefl (x * x) H3)
           | auto with real ] ].
 Qed.
@@ -152,7 +152,7 @@ Proof.
   generalize (Ropp_lt_gt_contravar x 0 r); rewrite Ropp_0; intro;
     generalize (Rlt_le 0 (- x) H1); intro; rewrite (Rsqr_neg x) in H;
       generalize (Rsqr_incr_0 (- x) y H H2 H0); intro;
-        rewrite <- (Ropp_involutive x); apply Ropp_ge_le_contravar; 
+        rewrite <- (Ropp_involutive x); apply Ropp_ge_le_contravar;
           apply Rle_ge; assumption.
   apply Rle_trans with 0;
     [ rewrite <- Ropp_0; apply Ropp_ge_le_contravar; apply Rle_ge; assumption
@@ -165,7 +165,7 @@ Proof.
   intros; case (Rcase_abs x); intro.
   generalize (Ropp_lt_gt_contravar x 0 r); rewrite Ropp_0; intro;
     generalize (Rlt_le 0 (- x) H2); intro;
-      generalize (Ropp_le_ge_contravar (- y) x H); rewrite Ropp_involutive; 
+      generalize (Ropp_le_ge_contravar (- y) x H); rewrite Ropp_involutive;
         intro; generalize (Rge_le y (- x) H4); intro; rewrite (Rsqr_neg x);
           apply Rsqr_incr_1; assumption.
   generalize (Rge_le x 0 r); intro; apply Rsqr_incr_1; assumption.
@@ -175,9 +175,9 @@ Lemma neg_pos_Rsqr_le : forall x y:R, - y <= x -> x <= y -> Rsqr x <= Rsqr y.
 Proof.
   intros; case (Rcase_abs x); intro.
   generalize (Ropp_lt_gt_contravar x 0 r); rewrite Ropp_0; intro;
-    generalize (Ropp_le_ge_contravar (- y) x H); rewrite Ropp_involutive; 
+    generalize (Ropp_le_ge_contravar (- y) x H); rewrite Ropp_involutive;
       intro; generalize (Rge_le y (- x) H2); intro; generalize (Rlt_le 0 (- x) H1);
-        intro; generalize (Rle_trans 0 (- x) y H4 H3); intro; 
+        intro; generalize (Rle_trans 0 (- x) y H4 H3); intro;
           rewrite (Rsqr_neg x); apply Rsqr_incr_1; assumption.
   generalize (Rge_le x 0 r); intro; generalize (Rle_trans 0 x y H1 H0); intro;
     apply Rsqr_incr_1; assumption.
@@ -225,16 +225,16 @@ Proof.
   intros; unfold Rabs in |- *; case (Rcase_abs x); case (Rcase_abs y); intros.
   rewrite (Rsqr_neg x) in H; rewrite (Rsqr_neg y) in H;
     generalize (Ropp_lt_gt_contravar y 0 r);
-      generalize (Ropp_lt_gt_contravar x 0 r0); rewrite Ropp_0; 
+      generalize (Ropp_lt_gt_contravar x 0 r0); rewrite Ropp_0;
         intros; generalize (Rlt_le 0 (- x) H0); generalize (Rlt_le 0 (- y) H1);
           intros; apply Rsqr_inj; assumption.
   rewrite (Rsqr_neg x) in H; generalize (Rge_le y 0 r); intro;
-    generalize (Ropp_lt_gt_contravar x 0 r0); rewrite Ropp_0; 
-      intro; generalize (Rlt_le 0 (- x) H1); intro; apply Rsqr_inj; 
+    generalize (Ropp_lt_gt_contravar x 0 r0); rewrite Ropp_0;
+      intro; generalize (Rlt_le 0 (- x) H1); intro; apply Rsqr_inj;
         assumption.
   rewrite (Rsqr_neg y) in H; generalize (Rge_le x 0 r0); intro;
-    generalize (Ropp_lt_gt_contravar y 0 r); rewrite Ropp_0; 
-      intro; generalize (Rlt_le 0 (- y) H1); intro; apply Rsqr_inj; 
+    generalize (Ropp_lt_gt_contravar y 0 r); rewrite Ropp_0;
+      intro; generalize (Rlt_le 0 (- y) H1); intro; apply Rsqr_inj;
         assumption.
   generalize (Rge_le x 0 r0); generalize (Rge_le y 0 r); intros; apply Rsqr_inj;
     assumption.

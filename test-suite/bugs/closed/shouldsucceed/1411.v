@@ -23,7 +23,7 @@ Program Fixpoint fetch t p (x:Exact t p) {struct t} :=
    match t, p with
    | No p' , nil      => p'
    | No p' , _::_     => unreachable nat _
-   | Br l r, nil      => unreachable nat _ 
+   | Br l r, nil      => unreachable nat _
    | Br l r, true::t  => fetch l t _
    | Br l r, false::t => fetch r t _
    end.

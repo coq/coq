@@ -51,7 +51,7 @@ val arities_of_constructors : inductive -> mind_specif -> types array
 val type_of_constructors : inductive -> mind_specif -> types array
 
 (* Transforms inductive specification into types (in nf) *)
-val arities_of_specif : mutual_inductive -> mind_specif -> types array 
+val arities_of_specif : mutual_inductive -> mind_specif -> types array
 
 
 (* [type_case_branches env (I,args) (p:A) c] computes useful types

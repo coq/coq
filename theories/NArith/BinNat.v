@@ -45,7 +45,7 @@ Definition Ndouble_plus_one x :=
 
 (** Operation x -> 2*x *)
 
-Definition Ndouble n := 
+Definition Ndouble n :=
   match n with
   | N0 => N0
   | Npos p => Npos (xO p)
@@ -130,12 +130,12 @@ Infix ">" := Ngt : N_scope.
 
 (** Min and max *)
 
-Definition Nmin (n n' : N) := match Ncompare n n' with 
+Definition Nmin (n n' : N) := match Ncompare n n' with
  | Lt | Eq => n
  | Gt => n'
  end.
 
-Definition Nmax (n n' : N) := match Ncompare n n' with 
+Definition Nmax (n n' : N) := match Ncompare n n' with
  | Lt | Eq => n'
  | Gt => n
  end.
@@ -149,7 +149,7 @@ Lemma N_ind_double :
    (forall a, P a -> P (Ndouble_plus_one a)) -> P a.
 Proof.
   intros; elim a. trivial.
-  simple induction p. intros. 
+  simple induction p. intros.
   apply (H1 (Npos p0)); trivial.
   intros; apply (H0 (Npos p0)); trivial.
   intros; apply (H1 N0); assumption.
@@ -162,7 +162,7 @@ Lemma N_rec_double :
    (forall a, P a -> P (Ndouble_plus_one a)) -> P a.
 Proof.
   intros; elim a. trivial.
-  simple induction p. intros. 
+  simple induction p. intros.
   apply (H1 (Npos p0)); trivial.
   intros; apply (H0 (Npos p0)); trivial.
   intros; apply (H1 N0); assumption.
@@ -354,7 +354,7 @@ destruct p; intros Hp H.
 contradiction Hp; reflexivity.
 destruct n; destruct m; reflexivity || (try discriminate H).
 injection H; clear H; intro H; rewrite Pmult_reg_r with (1 := H); reflexivity.
-Qed. 
+Qed.
 
 (** Properties of comparison *)
 
@@ -373,7 +373,7 @@ Qed.
 
 Theorem Ncompare_eq_correct : forall n m:N, (n ?= m) = Eq <-> n = m.
 Proof.
-split; intros; 
+split; intros;
  [ apply Ncompare_Eq_eq; auto | subst; apply Ncompare_refl ].
 Qed.
 

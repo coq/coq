@@ -64,23 +64,23 @@ type definition_entry = {
 
 type parameter_entry = types*bool
 
-type constant_entry = 
+type constant_entry =
   | DefinitionEntry of definition_entry
   | ParameterEntry of parameter_entry
 
 (*s Modules *)
 
-type module_struct_entry = 
+type module_struct_entry =
     MSEident of module_path
   | MSEfunctor of mod_bound_id * module_struct_entry * module_struct_entry
   | MSEwith of module_struct_entry * with_declaration
   | MSEapply of module_struct_entry * module_struct_entry
 
-and with_declaration = 
+and with_declaration =
     With_Module of identifier list * module_path
   | With_Definition of identifier list * constr
 
-and module_entry = 
+and module_entry =
     { mod_entry_type : module_struct_entry option;
       mod_entry_expr : module_struct_entry option}
 

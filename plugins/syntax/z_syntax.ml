@@ -33,7 +33,7 @@ let positive_path = make_path positive_module "positive"
 (* TODO: temporary hack *)
 let make_kn dir id = Libnames.encode_kn dir id
 
-let positive_kn = 
+let positive_kn =
   make_kn (make_dir positive_module) (id_of_string "positive")
 let glob_positive = IndRef (positive_kn,0)
 let path_of_xI = ((positive_kn,0),1)
@@ -52,10 +52,10 @@ let pos_of_bignat dloc x =
       | (q,false) -> RApp (dloc, ref_xO,[pos_of q])
       | (q,true) when q <> zero -> RApp (dloc,ref_xI,[pos_of q])
       | (q,true) -> ref_xH
-  in 
+  in
   pos_of x
 
-let error_non_positive dloc = 
+let error_non_positive dloc =
   user_err_loc (dloc, "interp_positive",
     str "Only strictly positive numbers in type \"positive\".")
 
@@ -74,9 +74,9 @@ let rec bignat_of_pos = function
   | _ -> raise Non_closed_number
 
 let uninterp_positive p =
-  try 
+  try
     Some (bignat_of_pos p)
-  with Non_closed_number -> 
+  with Non_closed_number ->
     None
 
 (************************************************************************)
@@ -87,7 +87,7 @@ let _ = Notation.declare_numeral_interpreter "positive_scope"
   (positive_path,positive_module)
   interp_positive
   ([RRef (dummy_loc, glob_xI);
-    RRef (dummy_loc, glob_xO); 
+    RRef (dummy_loc, glob_xO);
     RRef (dummy_loc, glob_xH)],
    uninterp_positive,
    true)
@@ -106,10 +106,10 @@ let glob_Npos = ConstructRef path_of_Npos
 
 let n_path = make_path binnat_module "N"
 
-let n_of_binnat dloc pos_or_neg n = 
+let n_of_binnat dloc pos_or_neg n =
   if n <> zero then
     RApp(dloc, RRef (dloc,glob_Npos), [pos_of_bignat dloc n])
-  else 
+  else
     RRef (dloc, glob_N0)
 
 let error_negative dloc =
@@ -138,11 +138,11 @@ let uninterp_n p =
 let _ = Notation.declare_numeral_interpreter "N_scope"
   (n_path,binnat_module)
   n_of_int
-  ([RRef (dummy_loc, glob_N0); 
+  ([RRef (dummy_loc, glob_N0);
     RRef (dummy_loc, glob_Npos)],
   uninterp_n,
   true)
-   
+
 (**********************************************************************)
 (* Parsing Z via scopes                                               *)
 (**********************************************************************)
@@ -158,12 +158,12 @@ let glob_ZERO = ConstructRef path_of_ZERO
 let glob_POS = ConstructRef path_of_POS
 let glob_NEG = ConstructRef path_of_NEG
 
-let z_of_int dloc n = 
+let z_of_int dloc n =
   if n <> zero then
     let sgn, n =
       if is_pos_or_zero n then glob_POS, n else glob_NEG, Bigint.neg n in
     RApp(dloc, RRef (dloc,sgn), [pos_of_bignat dloc n])
-  else 
+  else
     RRef (dloc, glob_ZERO)
 
 (**********************************************************************)
@@ -187,8 +187,8 @@ let uninterp_z p =
 let _ = Notation.declare_numeral_interpreter "Z_scope"
   (z_path,binint_module)
   z_of_int
-  ([RRef (dummy_loc, glob_ZERO); 
-    RRef (dummy_loc, glob_POS); 
+  ([RRef (dummy_loc, glob_ZERO);
+    RRef (dummy_loc, glob_POS);
     RRef (dummy_loc, glob_NEG)],
   uninterp_z,
   true)

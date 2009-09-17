@@ -71,11 +71,11 @@ let ppidset l = pp (prset pr_id (Idset.elements l))
 
 let pP s = pp (hov 0 s)
 
-let safe_pr_global = function 
+let safe_pr_global = function
   | ConstRef kn -> pp (str "CONSTREF(" ++ pr_con kn ++ str ")")
-  | IndRef (kn,i) -> pp (str "INDREF(" ++ pr_kn kn ++ str "," ++ 
+  | IndRef (kn,i) -> pp (str "INDREF(" ++ pr_kn kn ++ str "," ++
 			  int i ++ str ")")
-  | ConstructRef ((kn,i),j) -> pp (str "INDREF(" ++ pr_kn kn ++ str "," ++ 
+  | ConstructRef ((kn,i),j) -> pp (str "INDREF(" ++ pr_kn kn ++ str "," ++
 				      int i ++ str "," ++ int j ++ str ")")
   | VarRef id -> pp (str "VARREF(" ++ pr_id id ++ str ")")
 
@@ -135,7 +135,7 @@ let ppobj obj = Format.print_string (Libobject.object_tag obj)
 
 let cnt = ref 0
 
-let cast_kind_display k = 
+let cast_kind_display k =
   match k with
   | VMcast -> "VMcast"
   | DEFAULTcast -> "DEFAULTcast"
@@ -146,7 +146,7 @@ let constr_display csr =
   | Meta n -> "Meta("^(string_of_int n)^")"
   | Var id -> "Var("^(string_of_id id)^")"
   | Sort s -> "Sort("^(sort_display s)^")"
-  | Cast (c,k, t) -> 
+  | Cast (c,k, t) ->
       "Cast("^(term_display c)^","^(cast_kind_display k)^","^(term_display t)^")"
   | Prod (na,t,c) ->
       "Prod("^(name_display na)^","^(term_display t)^","^(term_display c)^")\n"
@@ -213,25 +213,25 @@ let print_pure_constr csr =
       print_string "::"; (term_display t); print_string ")"; close_box()
   | Prod (Name(id),t,c) ->
       open_hovbox 1;
-      print_string"("; print_string (string_of_id id); 
-      print_string ":"; box_display t; 
-      print_string ")"; print_cut(); 
+      print_string"("; print_string (string_of_id id);
+      print_string ":"; box_display t;
+      print_string ")"; print_cut();
       box_display c; close_box()
   | Prod (Anonymous,t,c) ->
       print_string"("; box_display t; print_cut(); print_string "->";
-      box_display c; print_string ")"; 
+      box_display c; print_string ")";
   | Lambda (na,t,c) ->
       print_string "["; name_display na;
       print_string ":"; box_display t; print_string "]";
-      print_cut(); box_display c; 
+      print_cut(); box_display c;
   | LetIn (na,b,t,c) ->
-      print_string "["; name_display na; print_string "="; 
+      print_string "["; name_display na; print_string "=";
       box_display b; print_cut();
       print_string ":"; box_display t; print_string "]";
-      print_cut(); box_display c; 
-  | App (c,l) -> 
-      print_string "("; 
-      box_display c; 
+      print_cut(); box_display c;
+  | App (c,l) ->
+      print_string "(";
+      box_display c;
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string ")"
   | Evar (e,l) -> print_string "Evar#"; print_int e; print_string "{";
@@ -258,25 +258,25 @@ let print_pure_constr csr =
       open_vbox 0;
       Array.iter (fun x ->  print_cut();  box_display x) bl;
       close_box();
-      print_cut(); 
-      print_string "end"; 
+      print_cut();
+      print_string "end";
       close_box()
   | Fix ((t,i),(lna,tl,bl)) ->
-      print_string "Fix("; print_int i; print_string ")"; 
+      print_string "Fix("; print_int i; print_string ")";
       print_cut();
       open_vbox 0;
       let rec print_fix () =
         for k = 0 to (Array.length tl) - 1 do
 	  open_vbox 0;
-	  name_display lna.(k); print_string "/"; 
+	  name_display lna.(k); print_string "/";
 	  print_int t.(k); print_cut(); print_string ":";
 	  box_display tl.(k) ; print_cut(); print_string ":=";
 	  box_display bl.(k); close_box ();
 	  print_cut()
         done
-      in print_string"{"; print_fix(); print_string"}" 
+      in print_string"{"; print_fix(); print_string"}"
   | CoFix(i,(lna,tl,bl)) ->
-      print_string "CoFix("; print_int i; print_string ")"; 
+      print_string "CoFix("; print_int i; print_string ")";
       print_cut();
       open_vbox 0;
       let rec print_fix () =
@@ -301,27 +301,27 @@ let print_pure_constr csr =
     | Name id -> print_string (string_of_id id)
     | Anonymous -> print_string "_"
 (* Remove the top names for library and Scratch to avoid long names *)
-  and sp_display sp = 
+  and sp_display sp =
 (*    let dir,l = decode_kn sp in
-    let ls = 
-      match List.rev (List.map string_of_id (repr_dirpath dir)) with 
+    let ls =
+      match List.rev (List.map string_of_id (repr_dirpath dir)) with
           ("Top"::l)-> l
-	| ("Coq"::_::l) -> l 
+	| ("Coq"::_::l) -> l
 	| l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
       print_string (string_of_kn sp)
-  and sp_con_display sp = 
+  and sp_con_display sp =
 (*    let dir,l = decode_kn sp in
-    let ls = 
-      match List.rev (List.map string_of_id (repr_dirpath dir)) with 
+    let ls =
+      match List.rev (List.map string_of_id (repr_dirpath dir)) with
           ("Top"::l)-> l
-	| ("Coq"::_::l) -> l 
+	| ("Coq"::_::l) -> l
 	| l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
       print_string (string_of_con sp)
 
   in
-    try 
+    try
      box_display csr; print_flush()
     with e ->
 	print_string (Printexc.to_string e);print_flush ();
@@ -370,7 +370,7 @@ let pp_generic_argument arg =
 (* Vernac-level debugging commands                                    *)
 
 let in_current_context f c =
-  let (evmap,sign) = 
+  let (evmap,sign) =
     try Pfedit.get_current_goal_context ()
     with e when Logic.catchable_exception e -> (Evd.empty, Global.env()) in
   f (Constrintern.interp_constr evmap sign c)
@@ -431,26 +431,26 @@ open Libnames
 let encode_path loc prefix mpdir suffix id =
   let dir = match mpdir with
     | None -> []
-    | Some (mp,dir) -> 
+    | Some (mp,dir) ->
 	(repr_dirpath (dirpath_of_string (string_of_mp mp))@
 	repr_dirpath dir) in
-  Qualid (loc, make_qualid 
+  Qualid (loc, make_qualid
     (make_dirpath (List.rev (id_of_string prefix::dir@suffix))) id)
 
 let raw_string_of_ref loc = function
-  | ConstRef cst -> 
+  | ConstRef cst ->
       let (mp,dir,id) = repr_con cst in
       encode_path loc "CST" (Some (mp,dir)) [] (id_of_label id)
   | IndRef (kn,i) ->
       let (mp,dir,id) = repr_kn kn in
-      encode_path loc "IND" (Some (mp,dir)) [id_of_label id] 
+      encode_path loc "IND" (Some (mp,dir)) [id_of_label id]
 	(id_of_string ("_"^string_of_int i))
-  | ConstructRef ((kn,i),j) -> 
+  | ConstructRef ((kn,i),j) ->
       let (mp,dir,id) = repr_kn kn in
       encode_path loc "CSTR" (Some (mp,dir))
-	[id_of_label id;id_of_string ("_"^string_of_int i)] 
+	[id_of_label id;id_of_string ("_"^string_of_int i)]
 	(id_of_string ("_"^string_of_int j))
-  | VarRef id -> 
+  | VarRef id ->
       encode_path loc "SECVAR" None [] id
 
 let short_string_of_ref loc = function
@@ -460,8 +460,8 @@ let short_string_of_ref loc = function
   | IndRef (kn,i) ->
       encode_path loc "IND" None [id_of_label (pi3 (repr_kn kn))]
         (id_of_string ("_"^string_of_int i))
-  | ConstructRef ((kn,i),j) -> 
-      encode_path loc "CSTR" None 
+  | ConstructRef ((kn,i),j) ->
+      encode_path loc "CSTR" None
         [id_of_label (pi3 (repr_kn kn));id_of_string ("_"^string_of_int i)]
         (id_of_string ("_"^string_of_int j))
 

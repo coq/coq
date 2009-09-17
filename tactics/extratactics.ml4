@@ -26,7 +26,7 @@ open Termops
 open Equality
 
 
-TACTIC EXTEND replace 
+TACTIC EXTEND replace
    ["replace" constr(c1) "with" constr(c2) in_arg_hyp(in_hyp) by_arg_tac(tac) ]
 -> [ replace_in_clause_maybe_by c1 c2 (glob_in_arg_hyp_to_clause in_hyp) (Option.map Tacinterp.eval_tactic tac) ]
 END
@@ -97,10 +97,10 @@ let h_discrHyp id = h_discriminate_main (Term.mkVar id,NoBindings)
 TACTIC EXTEND injection_main
 | [ "injection" constr_with_bindings(c) ] ->
     [ injClause [] false (Some (ElimOnConstr c)) ]
-END 
+END
 TACTIC EXTEND injection
 | [ "injection" ] -> [ injClause [] false None ]
-| [ "injection" quantified_hypothesis(h) ] -> 
+| [ "injection" quantified_hypothesis(h) ] ->
     [ injClause [] false (Some (induction_arg_of_quantified_hyp h)) ]
 END
 TACTIC EXTEND einjection_main
@@ -110,21 +110,21 @@ END
 TACTIC EXTEND einjection
 | [ "einjection" ] -> [ injClause [] true None ]
 | [ "einjection" quantified_hypothesis(h) ] -> [ injClause [] true (Some (induction_arg_of_quantified_hyp h)) ]
-END 
+END
 TACTIC EXTEND injection_as_main
 | [ "injection" constr_with_bindings(c) "as" simple_intropattern_list(ipat)] ->
     [ injClause ipat false (Some (ElimOnConstr c)) ]
-END 
+END
 TACTIC EXTEND injection_as
 | [ "injection" "as" simple_intropattern_list(ipat)] ->
     [ injClause ipat false None ]
 | [ "injection" quantified_hypothesis(h) "as" simple_intropattern_list(ipat) ] ->
     [ injClause ipat false (Some (induction_arg_of_quantified_hyp h)) ]
-END 
+END
 TACTIC EXTEND einjection_as_main
 | [ "einjection" constr_with_bindings(c) "as" simple_intropattern_list(ipat)] ->
     [ injClause ipat true (Some (ElimOnConstr c)) ]
-END 
+END
 TACTIC EXTEND einjection_as
 | [ "einjection" "as" simple_intropattern_list(ipat)] ->
     [ injClause ipat true None ]
@@ -160,7 +160,7 @@ END
 (* AutoRewrite *)
 
 open Autorewrite
-(* J.F : old version 
+(* J.F : old version
 TACTIC EXTEND autorewrite
   [ "autorewrite" "with" ne_preident_list(l) ] ->
     [ autorewrite Refiner.tclIDTAC l ]
@@ -177,8 +177,8 @@ TACTIC EXTEND autorewrite
 | [ "autorewrite" "with" ne_preident_list(l) in_arg_hyp(cl) ] ->
     [ auto_multi_rewrite  l (glob_in_arg_hyp_to_clause  cl) ]
 | [ "autorewrite" "with" ne_preident_list(l) in_arg_hyp(cl) "using" tactic(t) ] ->
-    [ 
-      let cl =  glob_in_arg_hyp_to_clause cl in 
+    [
+      let cl =  glob_in_arg_hyp_to_clause cl in
       auto_multi_rewrite_with (snd t) l cl
 
     ]
@@ -188,7 +188,7 @@ TACTIC EXTEND autorewrite_star
 | [ "autorewrite" "*" "with" ne_preident_list(l) in_arg_hyp(cl) ] ->
     [ auto_multi_rewrite ~conds:AllMatches l (glob_in_arg_hyp_to_clause  cl) ]
 | [ "autorewrite" "*" "with" ne_preident_list(l) in_arg_hyp(cl) "using" tactic(t) ] ->
-    [ let cl =  glob_in_arg_hyp_to_clause cl in 
+    [ let cl =  glob_in_arg_hyp_to_clause cl in
 	auto_multi_rewrite_with ~conds:AllMatches (snd t) l cl ]
 END
 
@@ -196,25 +196,25 @@ open Extraargs
 
 let rewrite_star clause orient occs c (tac : glob_tactic_expr option) =
   let tac' = Option.map (fun t -> Tacinterp.eval_tactic t, FirstSolved) tac in
-  general_rewrite_ebindings_clause clause orient occs ?tac:tac' (c,NoBindings) true 
+  general_rewrite_ebindings_clause clause orient occs ?tac:tac' (c,NoBindings) true
 
 let occurrences_of = function
   | n::_ as nl when n < 0 -> (false,List.map abs nl)
-  | nl -> 
+  | nl ->
       if List.exists (fun n -> n < 0) nl then
 	error "Illegal negative occurrence number.";
       (true,nl)
 
 TACTIC EXTEND rewrite_star
-| [ "rewrite" "*" orient(o) open_constr(c) "in" hyp(id) "at" occurrences(occ) by_arg_tac(tac) ] -> 
+| [ "rewrite" "*" orient(o) open_constr(c) "in" hyp(id) "at" occurrences(occ) by_arg_tac(tac) ] ->
     [ rewrite_star (Some id) o (occurrences_of occ) c tac ]
-| [ "rewrite" "*" orient(o) open_constr(c) "at" occurrences(occ) "in" hyp(id) by_arg_tac(tac) ] -> 
+| [ "rewrite" "*" orient(o) open_constr(c) "at" occurrences(occ) "in" hyp(id) by_arg_tac(tac) ] ->
     [ rewrite_star (Some id) o (occurrences_of occ) c tac ]
-| [ "rewrite" "*" orient(o) open_constr(c) "in" hyp(id) by_arg_tac(tac) ] -> 
+| [ "rewrite" "*" orient(o) open_constr(c) "in" hyp(id) by_arg_tac(tac) ] ->
     [ rewrite_star (Some id) o all_occurrences c tac ]
-| [ "rewrite" "*" orient(o) open_constr(c) "at" occurrences(occ) by_arg_tac(tac) ] -> 
+| [ "rewrite" "*" orient(o) open_constr(c) "at" occurrences(occ) by_arg_tac(tac) ] ->
     [ rewrite_star None o (occurrences_of occ) c tac ]
-| [ "rewrite" "*" orient(o) open_constr(c) by_arg_tac(tac) ] -> 
+| [ "rewrite" "*" orient(o) open_constr(c) by_arg_tac(tac) ] ->
     [ rewrite_star None o all_occurrences c tac ]
     END
 
@@ -242,7 +242,7 @@ let project_hint pri l2r c =
   let env = Global.env() in
   let c = Constrintern.interp_constr Evd.empty env c in
   let t = Retyping.get_type_of env Evd.empty c in
-  let t = 
+  let t =
     Tacred.reduce_to_quantified_ref env Evd.empty (Lazy.force coq_iff_ref) t in
   let sign,ccl = decompose_prod_assum t in
   let (a,b) = match snd (decompose_app ccl) with
@@ -396,11 +396,11 @@ let step left x tac =
 (* Main function to push lemmas in persistent environment *)
 
 let cache_transitivity_lemma (_,(left,lem)) =
-  if left then  
+  if left then
     transitivity_left_table  := lem :: !transitivity_left_table
   else
     transitivity_right_table := lem :: !transitivity_right_table
-  
+
 let subst_transitivity_lemma (_,subst,(b,ref)) = (b,subst_mps subst ref)
 
 let (inTransitivity,_) =
@@ -408,22 +408,22 @@ let (inTransitivity,_) =
     cache_function = cache_transitivity_lemma;
     open_function = (fun i o -> if i=1 then cache_transitivity_lemma o);
     subst_function = subst_transitivity_lemma;
-    classify_function = (fun o -> Substitute o);       
+    classify_function = (fun o -> Substitute o);
     export_function = (fun x -> Some x) }
 
 (* Synchronisation with reset *)
 
 let freeze () = !transitivity_left_table, !transitivity_right_table
 
-let unfreeze (l,r) = 
+let unfreeze (l,r) =
   transitivity_left_table := l;
   transitivity_right_table := r
 
-let init () = 
+let init () =
   transitivity_left_table := [];
   transitivity_right_table := []
 
-let _ = 
+let _ =
   declare_summary "transitivity-steps"
     { freeze_function = freeze;
       unfreeze_function = unfreeze;
@@ -468,7 +468,7 @@ END
 (*spiwack : Vernac commands for retroknowledge *)
 
 VERNAC COMMAND EXTEND RetroknowledgeRegister
- | [ "Register" constr(c) "as" retroknowledge_field(f) "by" constr(b)] -> 
+ | [ "Register" constr(c) "as" retroknowledge_field(f) "by" constr(b)] ->
            [ let tc = Constrintern.interp_constr Evd.empty (Global.env ()) c in
              let tb = Constrintern.interp_constr Evd.empty (Global.env ()) b in
              Global.register f tc tb ]
@@ -476,7 +476,7 @@ END
 
 
 
-(* sozeau: abs/gen for induction on instantiated dependent inductives, using "Ford" induction as 
+(* sozeau: abs/gen for induction on instantiated dependent inductives, using "Ford" induction as
   defined by Conor McBride *)
 TACTIC EXTEND generalize_eqs
 | ["generalize_eqs" hyp(id) ] -> [ abstract_generalize id ~generalize_vars:false ]

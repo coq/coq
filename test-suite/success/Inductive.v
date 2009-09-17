@@ -13,7 +13,7 @@ Inductive Y : Set :=
 Inductive eq1 : forall A:Type, let B:=A in A -> Prop :=
   refl1 : eq1 True I.
 
-Check 
+Check
  fun (P : forall A : Type, let B := A in A -> Type) (f : P True I) (A : Type) =>
    let B := A in
      fun (a : A) (e : eq1 A a) =>
@@ -35,7 +35,7 @@ Check
    let E := C in
    let F := D in
    fun (x y : E -> F) (P : forall c : C, A C D x y c -> Type)
-     (f : forall z : C, P z (I C D x y z)) (y0 : C) 
+     (f : forall z : C, P z (I C D x y z)) (y0 : C)
      (a : A C D x y y0) =>
    match a as a0 in (A _ _ _ _ _ _ y1) return (P y1 a0) with
    | I x0 => f x0
@@ -48,7 +48,7 @@ Check
    let E := C in
    let F := D in
    fun (x y : E -> F) (P : B C D x y -> Type)
-     (f : forall p0 q0 : C, P (Build_B C D x y p0 q0)) 
+     (f : forall p0 q0 : C, P (Build_B C D x y p0 q0))
      (b : B C D x y) =>
    match b as b0 return (P b0) with
    | Build_B x0 x1 => f x0 x1

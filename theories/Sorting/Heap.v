@@ -25,7 +25,7 @@ Section defs.
   Variable eqA : relation A.
 
   Let gtA (x y:A) := ~ leA x y.
-  
+
   Hypothesis leA_dec : forall x y:A, {leA x y} + {leA y x}.
   Hypothesis eqA_dec : forall x y:A, {eqA x y} + {~ eqA x y}.
   Hypothesis leA_refl : forall x y:A, eqA x y -> leA x y.
@@ -37,7 +37,7 @@ Section defs.
 
   Let emptyBag := EmptyBag A.
   Let singletonBag := SingletonBag _ eqA_dec.
-  
+
   Inductive Tree :=
     | Tree_Leaf : Tree
     | Tree_Node : A -> Tree -> Tree -> Tree.
@@ -92,7 +92,7 @@ Section defs.
       forall T:Tree, is_heap T -> P T.
   Proof.
     simple induction T; auto with datatypes.
-    intros a G PG D PD PN. 
+    intros a G PG D PD PN.
     elim (invert_heap a G D); auto with datatypes.
     intros H1 H2; elim H2; intros H3 H4; elim H4; intros.
     apply X0; auto with datatypes.
@@ -109,7 +109,7 @@ Section defs.
       forall T:Tree, is_heap T -> P T.
   Proof.
     simple induction T; auto with datatypes.
-    intros a G PG D PD PN. 
+    intros a G PG D PD PN.
     elim (invert_heap a G D); auto with datatypes.
     intros H1 H2; elim H2; intros H3 H4; elim H4; intros.
     apply X; auto with datatypes.
@@ -167,15 +167,15 @@ Section defs.
     elim (X a0); intros.
     apply insert_exist with (Tree_Node a T2 T0);
       auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
-    simpl in |- *; apply treesort_twist1; trivial with datatypes. 
+    simpl in |- *; apply treesort_twist1; trivial with datatypes.
     elim (X a); intros T3 HeapT3 ConT3 LeA.
-    apply insert_exist with (Tree_Node a0 T2 T3); 
+    apply insert_exist with (Tree_Node a0 T2 T3);
       auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
     apply node_is_heap; auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
-    apply low_trans with a; auto with datatypes. 
+    apply low_trans with a; auto with datatypes.
     apply LeA; auto with datatypes.
     apply low_trans with a; auto with datatypes.
-    simpl in |- *; apply treesort_twist2; trivial with datatypes. 
+    simpl in |- *; apply treesort_twist2; trivial with datatypes.
   Qed.
 
 
@@ -186,7 +186,7 @@ Section defs.
     forall T:Tree,
       is_heap T ->
       meq (list_contents _ eqA_dec l) (contents T) -> build_heap l.
-  
+
   Lemma list_to_heap : forall l:list A, build_heap l.
   Proof.
     simple induction l.
@@ -204,7 +204,7 @@ Section defs.
 
 
   (** ** Building the sorted list *)
-  
+
   Inductive flat_spec (T:Tree) : Type :=
     flat_exist :
     forall l:list A,

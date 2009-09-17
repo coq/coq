@@ -12,7 +12,7 @@ Check
 
 (* Suggested by Pierre Letouzey (PR#207) *)
 Inductive Boite : Set :=
-    boite : forall b : bool, (if b then nat else (nat * nat)%type) -> Boite. 
+    boite : forall b : bool, (if b then nat else (nat * nat)%type) -> Boite.
 
 Definition test (B : Boite) :=
   match B return nat with
@@ -30,7 +30,7 @@ Check [x]
   end.
 
 Check [x]
-  Cases x of 
+  Cases x of
     (c true true) => true
   | (c false O) => true
   | _ => false
@@ -40,7 +40,7 @@ Check [x]
 Check
   [x:I]
    Cases x of
-     (c b y) => 
+     (c b y) =>
       (<[b:bool](if b then bool else nat)->bool>if b
        then [y](if y then true else false)
        else [y]Cases y of

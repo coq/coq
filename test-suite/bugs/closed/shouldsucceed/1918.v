@@ -35,7 +35,7 @@ Definition mon (X:k1) : Type := forall (A B:Set), (A -> B) -> X A -> X B.
 
 (** extensionality *)
 Definition ext (X:k1)(h: mon X): Prop :=
-  forall (A B:Set)(f g:A -> B), 
+  forall (A B:Set)(f g:A -> B),
         (forall a, f a = g a) -> forall r, h _ _ f r = h _ _ g r.
 
 (** first functor law *)
@@ -44,7 +44,7 @@ Definition fct1 (X:k1)(m: mon X) : Prop :=
 
 (** second functor law *)
 Definition fct2 (X:k1)(m: mon X) : Prop :=
- forall (A B C:Set)(f:A -> B)(g:B -> C)(x:X A), 
+ forall (A B C:Set)(f:A -> B)(g:B -> C)(x:X A),
        m _ _ (g o f) x = m _ _ g (m _ _ f x).
 
 (** pack up the good properties of the approximation into
@@ -60,7 +60,7 @@ Definition pEFct (F:k2) : Type :=
   forall (X:k1), EFct X -> EFct (F X).
 
 
-(** we show some closure properties of pEFct, depending on such properties 
+(** we show some closure properties of pEFct, depending on such properties
       for EFct *)
 
 Definition moncomp (X Y:k1)(mX:mon X)(mY:mon Y): mon (fun A => X(Y A)).
@@ -92,7 +92,7 @@ Proof.
   apply (f2 ef2).
 Defined.
 
-Corollary comppEFct (F G:k2): pEFct F -> pEFct G -> 
+Corollary comppEFct (F G:k2): pEFct F -> pEFct G ->
       pEFct (fun X A => F X (G X A)).
 Proof.
   red.
@@ -104,7 +104,7 @@ Defined.
 Lemma sumEFct (X Y:k1): EFct X -> EFct Y -> EFct (fun A => X A + Y A)%type.
 Proof.
   intros X Y ef1 ef2.
-  set (m12:=fun (A B:Set)(f:A->B) x => match x with 
+  set (m12:=fun (A B:Set)(f:A->B) x => match x with
     | inl y => inl _ (m ef1 f y)
     | inr y => inr _ (m ef2 f y)
   end).
@@ -133,7 +133,7 @@ Proof.
   rewrite (f2 ef2); reflexivity.
 Defined.
 
-Corollary sumpEFct (F G:k2): pEFct F -> pEFct G -> 
+Corollary sumpEFct (F G:k2): pEFct F -> pEFct G ->
       pEFct (fun X A => F X A + G X A)%type.
 Proof.
   red.
@@ -145,7 +145,7 @@ Defined.
 Lemma prodEFct (X Y:k1): EFct X -> EFct Y -> EFct (fun A => X A * Y A)%type.
 Proof.
   intros X Y ef1 ef2.
-  set (m12:=fun (A B:Set)(f:A->B) x => match x with 
+  set (m12:=fun (A B:Set)(f:A->B) x => match x with
     (x1,x2) => (m ef1 f x1, m ef2 f x2) end).
   apply (mkEFct(m:=m12)); red; intros.
 (* prove ext *)
@@ -168,7 +168,7 @@ Proof.
   apply (f2 ef2).
 Defined.
 
-Corollary prodpEFct (F G:k2): pEFct F -> pEFct G -> 
+Corollary prodpEFct (F G:k2): pEFct F -> pEFct G ->
       pEFct (fun X A => F X A * G X A)%type.
 Proof.
   red.
@@ -248,19 +248,19 @@ Module Type LNMIt_Type.
 
 Parameter F:k2.
 Parameter FpEFct: pEFct F.
-Parameter mu20: k1. 
+Parameter mu20: k1.
 Definition  mu2: k1:= fun A => mu20 A.
 Parameter mapmu2: mon mu2.
 Definition MItType: Type :=
   forall G : k1, (forall X : k1, X c_k1 G -> F X c_k1 G) -> mu2 c_k1 G.
 Parameter MIt0 : MItType.
-Definition MIt : MItType:= fun G s A t => MIt0 s t. 
-Definition InType : Type := 
-    forall (X:k1)(ef:EFct X)(j: X c_k1 mu2), 
+Definition MIt : MItType:= fun G s A t => MIt0 s t.
+Definition InType : Type :=
+    forall (X:k1)(ef:EFct X)(j: X c_k1 mu2),
         NAT j (m ef) mapmu2 -> F X c_k1 mu2.
 Parameter In : InType.
 Axiom mapmu2Red : forall (A:Set)(X:k1)(ef:EFct X)(j: X c_k1 mu2)
-    (n: NAT j (m ef) mapmu2)(t: F X A)(B:Set)(f:A->B), 
+    (n: NAT j (m ef) mapmu2)(t: F X A)(B:Set)(f:A->B),
             mapmu2 f (In ef n t) = In ef n (m (FpEFct ef) f t).
 Axiom MItRed : forall (G : k1)
   (s : forall X : k1, X c_k1 G -> F X c_k1 G)(X : k1)(ef:EFct X)(j: X c_k1 mu2)
@@ -327,8 +327,8 @@ Fixpoint Pow (X:k1)(k:nat){struct k}:k1:=
 
 Fixpoint POW  (k:nat)(X:k1)(m:mon X){struct k} : mon (Pow X k) :=
   match k return mon (Pow X k)
-      with 0 => fun _ _ f  => f 
-     |  S k' => fun _ _ f  => m _ _ (POW k' m f) 
+      with 0 => fun _ _ f  => f
+     |  S k' => fun _ _ f  => m _ _ (POW k' m f)
    end.
 
 Module Type BushkToList_Type.

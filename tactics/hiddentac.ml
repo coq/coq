@@ -37,7 +37,7 @@ let h_assumption     = abstract_tactic TacAssumption assumption
 let h_exact c        = abstract_tactic (TacExact (inj_open c)) (exact_check c)
 let h_exact_no_check c =
   abstract_tactic (TacExactNoCheck (inj_open c)) (exact_no_check c)
-let h_vm_cast_no_check c = 
+let h_vm_cast_no_check c =
   abstract_tactic (TacVmCastNoCheck (inj_open c)) (vm_cast_no_check c)
 let h_apply simple ev cb =
   abstract_tactic (TacApply (simple,ev,List.map snd cb,None))
@@ -60,7 +60,7 @@ let h_mutual_fix b id n l =
 let h_cofix ido      = abstract_tactic (TacCofix ido) (cofix ido)
 let h_mutual_cofix b id l =
   abstract_tactic
-    (TacMutualCofix (b,id,List.map (fun (id,c) -> (id,inj_open c)) l)) 
+    (TacMutualCofix (b,id,List.map (fun (id,c) -> (id,inj_open c)) l))
     (mutual_cofix id l 0)
 
 let h_cut c          = abstract_tactic (TacCut (inj_open c)) (cut c)
@@ -78,13 +78,13 @@ let h_let_tac b na c cl =
 
 (* Derived basic tactics *)
 let h_simple_induction_destruct isrec h =
-  abstract_tactic (TacSimpleInductionDestruct (isrec,h)) 
+  abstract_tactic (TacSimpleInductionDestruct (isrec,h))
     (if isrec then (simple_induct h) else (simple_destruct h))
 let h_simple_induction = h_simple_induction_destruct true
 let h_simple_destruct = h_simple_induction_destruct false
 
 let h_induction_destruct isrec ev l =
-  abstract_tactic (TacInductionDestruct (isrec,ev,List.map (fun (c,e,idl,cl) -> 
+  abstract_tactic (TacInductionDestruct (isrec,ev,List.map (fun (c,e,idl,cl) ->
     List.map inj_ia c,Option.map inj_open_wb e,idl,cl) l))
     (induction_destruct ev isrec l)
 let h_new_induction ev c e idl cl = h_induction_destruct ev true [c,e,idl,cl]
@@ -118,7 +118,7 @@ let h_simplest_left   = h_left false NoBindings
 let h_simplest_right  = h_right false NoBindings
 
 (* Conversion *)
-let h_reduce r cl  = 
+let h_reduce r cl  =
   abstract_tactic (TacReduce (inj_red_expr r,cl)) (reduce r cl)
 let h_change oc c cl =
   abstract_tactic (TacChange (Option.map inj_occ oc,inj_open c,cl))

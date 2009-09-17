@@ -17,7 +17,7 @@ Goal f =
       | n, O => n
       | _, _ => O
     end.
-  unfold f. 
+  unfold f.
   reflexivity.
 Qed.
 

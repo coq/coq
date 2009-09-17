@@ -25,7 +25,7 @@ type glob_search_about_item =
 val search_by_head : constr -> dir_path list * bool -> unit
 val search_rewrite : constr -> dir_path list * bool -> unit
 val search_pattern : constr -> dir_path list * bool -> unit
-val search_about  : 
+val search_about  :
   (bool * glob_search_about_item) list -> dir_path list * bool -> unit
 
 (* The filtering function that is by standard search facilities.
@@ -39,14 +39,14 @@ val filter_by_module_from_list :
    They are also used for pcoq. *)
 val gen_filtered_search : (global_reference -> env -> constr -> bool) ->
       (global_reference -> env -> constr -> unit) -> unit
-val filtered_search : (global_reference -> env -> constr -> bool) -> 
+val filtered_search : (global_reference -> env -> constr -> bool) ->
   (global_reference -> env -> constr -> unit) -> global_reference -> unit
 val raw_pattern_search : (global_reference -> env -> constr -> bool) ->
   (global_reference -> env -> constr -> unit) -> constr_pattern -> unit
 val raw_search_rewrite : (global_reference -> env -> constr -> bool) ->
   (global_reference -> env -> constr -> unit) -> constr_pattern -> unit
 val raw_search_about : (global_reference -> env -> constr -> bool) ->
-  (global_reference -> env -> constr -> unit) -> 
+  (global_reference -> env -> constr -> unit) ->
       (bool * glob_search_about_item) list -> unit
 val raw_search_by_head : (global_reference -> env -> constr -> bool) ->
   (global_reference -> env -> constr -> unit) -> constr_pattern -> unit

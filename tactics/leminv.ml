@@ -39,7 +39,7 @@ open Decl_kinds
 let not_work_message = "tactic fails to build the inversion lemma, may be because the predicate has arguments that depend on other arguments"
 
 let no_inductive_inconstr env constr =
-  (str "Cannot recognize an inductive predicate in " ++ 
+  (str "Cannot recognize an inductive predicate in " ++
      pr_lconstr_env env constr ++
      str "." ++ spc () ++ str "If there is one, may be the structure of the arity" ++
      spc () ++ str "or of the type of constructors" ++ spc () ++
@@ -87,7 +87,7 @@ let no_inductive_inconstr env constr =
    the respective assumption in each subgoal.
 
  *)
- 
+
 let thin_ids env (hyps,vars) =
   fst
     (List.fold_left
@@ -106,16 +106,16 @@ let thin_ids env (hyps,vars) =
 let get_local_sign sign =
   let lid = ids_of_sign sign in
   let globsign = Global.named_context() in
-  let add_local id res_sign = 
-    if not (mem_sign globsign id) then 
+  let add_local id res_sign =
+    if not (mem_sign globsign id) then
       add_sign (lookup_sign id sign) res_sign
-    else 
+    else
       res_sign
-  in 
+  in
   List.fold_right add_local lid nil_sign
 *)
 (* returs the identifier of lid that was the latest declared in sign.
- * (i.e. is the identifier id of lid such that 
+ * (i.e. is the identifier id of lid such that
  * sign_length (sign_prefix id sign) > sign_length (sign_prefix id' sign) >
  * for any id'<>id in lid).
  * it returns both the pair (id,(sign_prefix id sign)) *)
@@ -123,14 +123,14 @@ let get_local_sign sign =
 let max_prefix_sign lid sign =
   let rec max_rec (resid,prefix) = function
     | [] -> (resid,prefix)
-    | (id::l) -> 
-	let pre = sign_prefix id sign in  
-	if sign_length pre > sign_length prefix then 
+    | (id::l) ->
+	let pre = sign_prefix id sign in
+	if sign_length pre > sign_length prefix then
           max_rec (id,pre) l
-        else 
+        else
 	  max_rec (resid,prefix) l
   in
-  match lid with 
+  match lid with
     | [] -> nil_sign
     | id::l -> snd (max_rec (id, sign_prefix id sign) l)
 *)
@@ -148,14 +148,14 @@ let rec add_prods_sign env sigma t =
 
 (* [dep_option] indicates wether the inversion lemma is dependent or not.
    If it is dependent and I is of the form (x_bar:T_bar)(I t_bar) then
-   the stated goal will be (x_bar:T_bar)(H:(I t_bar))(P t_bar H) 
+   the stated goal will be (x_bar:T_bar)(H:(I t_bar))(P t_bar H)
    where P:(x_bar:T_bar)(H:(I x_bar))[sort].
    The generalisation of such a goal at the moment of the dependent case should
    be easy.
 
    If it is non dependent, then if [I]=(I t_bar) and (x_bar:T_bar) are the
    variables occurring in [I], then the stated goal will be:
-    (x_bar:T_bar)(I t_bar)->(P x_bar) 
+    (x_bar:T_bar)(I t_bar)->(P x_bar)
    where P: P:(x_bar:T_bar)[sort].
 *)
 
@@ -166,7 +166,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
   let pty,goal =
     if dep_option  then
       let pty = make_arity env true indf sort in
-      let goal = 
+      let goal =
 	mkProd
 	  (Anonymous, mkAppliedInd ind, applist(mkVar p,realargs@[mkRel 1]))
       in
@@ -177,11 +177,11 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let revargs,ownsign =
 	fold_named_context
 	  (fun env (id,_,_ as d) (revargs,hyps) ->
-             if List.mem id ivars then 
+             if List.mem id ivars then
 	       ((mkVar id)::revargs,add_named_decl d hyps)
-	     else 
+	     else
 	       (revargs,hyps))
-          env ~init:([],[]) 
+          env ~init:([],[])
       in
       let pty = it_mkNamedProd_or_LetIn (mkSort sort) ownsign in
       let goal = mkArrow i (applist(mkVar p, List.rev revargs)) in
@@ -203,14 +203,14 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let ind =
     try find_rectype env sigma i
     with Not_found ->
-      errorlabstrm "inversion_scheme" (no_inductive_inconstr env i) 
+      errorlabstrm "inversion_scheme" (no_inductive_inconstr env i)
   in
   let (invEnv,invGoal) =
-    compute_first_inversion_scheme env sigma ind sort dep_option 
+    compute_first_inversion_scheme env sigma ind sort dep_option
   in
-  assert 
-    (list_subset 
-       (global_vars env invGoal) 
+  assert
+    (list_subset
+       (global_vars env invGoal)
        (ids_of_named_context (named_context invEnv)));
   (*
     errorlabstrm "lemma_inversion"
@@ -226,7 +226,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
       (fun env (id,_,_ as d) sign ->
          if mem_named_context id global_named_context then sign
 	 else add_named_decl d sign)
-      invEnv ~init:empty_named_context 
+      invEnv ~init:empty_named_context
   in
   let (_,ownSign,mvb) =
     List.fold_left
@@ -234,23 +234,23 @@ let inversion_scheme env sigma t sort dep_option inv_op =
          let h = next_ident_away (id_of_string "H") avoid in
 	 (h::avoid, add_named_decl (h,None,mvty) sign, (mv,mkVar h)::mvb))
       (ids_of_context invEnv, ownSign, [])
-      meta_types 
+      meta_types
   in
-  let invProof = 
+  let invProof =
     it_mkNamedLambda_or_LetIn
-      (local_strong (fun _ -> whd_meta mvb) Evd.empty pfterm) ownSign 
+      (local_strong (fun _ -> whd_meta mvb) Evd.empty pfterm) ownSign
   in
   invProof
 
 let add_inversion_lemma name env sigma t sort dep inv_op =
   let invProof = inversion_scheme env sigma t sort dep inv_op in
-  let _ = 
+  let _ =
     declare_constant name
-    (DefinitionEntry 
+    (DefinitionEntry
        { const_entry_body = invProof;
          const_entry_type = None;
          const_entry_opaque = false;
-	 const_entry_boxed = true && (Flags.boxed_definitions())}, 
+	 const_entry_boxed = true && (Flags.boxed_definitions())},
      IsProof Lemma)
   in ()
 
@@ -262,11 +262,11 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
 let inversion_lemma_from_goal n na (loc,id) sort dep_option inv_op =
   let pts = get_pftreestate() in
   let gl = nth_goal_of_pftreestate n pts in
-  let t = 
+  let t =
     try pf_get_hyp_typ gl id
     with Not_found -> Pretype_errors.error_var_not_found_loc loc id in
   let env = pf_env gl and sigma = project gl in
-(* Pourquoi ??? 
+(* Pourquoi ???
   let fv = global_vars env t in
   let thin_ids = thin_ids (hyps,fv) in
   if not(list_subset thin_ids fv) then
@@ -275,14 +275,14 @@ let inversion_lemma_from_goal n na (loc,id) sort dep_option inv_op =
 	 str"free variables in the types of an inductive" ++ spc () ++
 	 str"which are not free in its instance."); *)
   add_inversion_lemma na env sigma t sort dep_option inv_op
-   
+
 let add_inversion_lemma_exn na com comsort bool tac =
   let env = Global.env () and sigma = Evd.empty in
   let c = Constrintern.interp_type sigma env com in
   let sort = Pretyping.interp_sort comsort in
   try
     add_inversion_lemma na env sigma c sort bool tac
-  with 
+  with
     |   UserError ("Case analysis",s) -> (* référence à Indrec *)
 	  errorlabstrm "Inv needs Nodep Prop Set" s
 
@@ -295,23 +295,23 @@ let lemInv id c gls =
     let clause = mk_clenv_type_of gls c in
     let clause = clenv_constrain_last_binding (mkVar id) clause in
     Clenvtac.res_pf clause ~allow_K:true gls
-  with 
-    |  UserError (a,b) -> 
-	 errorlabstrm "LemInv" 
-	   (str "Cannot refine current goal with the lemma " ++ 
-	      pr_lconstr_env (Global.env()) c) 
+  with
+    |  UserError (a,b) ->
+	 errorlabstrm "LemInv"
+	   (str "Cannot refine current goal with the lemma " ++
+	      pr_lconstr_env (Global.env()) c)
 
 let lemInv_gen id c = try_intros_until (fun id -> lemInv id c) id
 
 let lemInvIn id c ids gls =
   let hyps = List.map (pf_get_hyp gls) ids in
   let intros_replace_ids gls =
-    let nb_of_new_hyp  = nb_prod (pf_concl gls) - List.length ids in 
-    if nb_of_new_hyp < 1  then 
+    let nb_of_new_hyp  = nb_prod (pf_concl gls) - List.length ids in
+    if nb_of_new_hyp < 1  then
       intros_replacing ids gls
-    else 
+    else
       (tclTHEN (tclDO nb_of_new_hyp intro) (intros_replacing ids)) gls
-  in 
+  in
   ((tclTHEN (tclTHEN (bring_hyps hyps) (lemInv id c))
     (intros_replace_ids)) gls)
 

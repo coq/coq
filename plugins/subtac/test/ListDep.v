@@ -22,7 +22,7 @@ Section Map_DependentRecursor.
   Variable l : list U.
   Variable f : { x : U | In x l } -> V.
 
-  Obligations Tactic := unfold sub_list in * ; 
+  Obligations Tactic := unfold sub_list in * ;
     program_simpl ; intuition.
 
   Program Fixpoint map_rec ( l' : list U | sub_list l' l )
@@ -32,16 +32,16 @@ Section Map_DependentRecursor.
       | cons x tl => let tl' := map_rec tl in
 	f x :: tl'
     end.
-    
+
   Next Obligation.
     destruct_call map_rec.
     simpl in *.
     subst l'.
     simpl ; auto with arith.
   Qed.
-      
+
   Program Definition map : list V := map_rec l.
-    
+
 End Map_DependentRecursor.
 
 Extraction map.

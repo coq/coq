@@ -23,7 +23,7 @@ type command_mode =
   | Mode_none
 
 val mode_of_pftreestate : pftreestate -> command_mode
-    
+
 val get_current_mode : unit -> command_mode
 
 val check_not_proof_mode : string -> unit
@@ -42,7 +42,7 @@ type elim_kind =
 
 type recpath = int option*Declarations.wf_paths
 
-type per_info = 
+type per_info =
     {per_casee:constr;
      per_ctype:types;
      per_ind:inductive;
@@ -52,7 +52,7 @@ type per_info =
      per_nparams:int;
      per_wf:recpath}
 
-type stack_info = 
+type stack_info =
     Per of Decl_expr.elim_type * per_info * elim_kind * Names.identifier list
   | Suppose_case
   | Claim

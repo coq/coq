@@ -18,7 +18,7 @@ Proof.
 induction n.
  simpl ; apply Dummy0.
  replace (2 * S n0) with (2*n0 + 2) ; auto with arith.
-  apply DummyApp. 
+  apply DummyApp.
    2:exact Dummy2.
    apply IHn0 ; abstract omega.
 Defined.

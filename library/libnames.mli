@@ -47,7 +47,7 @@ val global_of_constr : constr -> global_reference
 val constr_of_reference : global_reference -> constr
 val reference_of_constr : constr -> global_reference
 
-module Refset : Set.S with type elt = global_reference 
+module Refset : Set.S with type elt = global_reference
 module Refmap : Map.S with type key = global_reference
 
 (*s Extended global references *)
@@ -65,7 +65,7 @@ val dirpath_of_string : string -> dir_path
 val string_of_dirpath : dir_path -> string
 
 (* Pop the suffix of a [dir_path] *)
-val pop_dirpath : dir_path -> dir_path 
+val pop_dirpath : dir_path -> dir_path
 
 (* Pop the suffix n times *)
 val pop_dirpath_n : int -> dir_path -> dir_path
@@ -146,7 +146,7 @@ type object_prefix = dir_path * (module_path * dir_path)
 val make_oname : object_prefix -> identifier -> object_name
 
 (* to this type are mapped [dir_path]'s in the nametab *)
-type global_dir_reference = 
+type global_dir_reference =
   | DirOpenModule of object_prefix
   | DirOpenModtype of object_prefix
   | DirOpenSection of object_prefix
@@ -158,7 +158,7 @@ type global_dir_reference =
     global name (referred either by a qualified name or by a single
     name) or a variable *)
 
-type reference = 
+type reference =
   | Qualid of qualid located
   | Ident of identifier located
 

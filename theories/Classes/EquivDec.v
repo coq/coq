@@ -18,7 +18,7 @@
 
 Require Export Coq.Classes.Equivalence.
 
-(** The [DecidableSetoid] class asserts decidability of a [Setoid]. It can be useful in proofs to reason more 
+(** The [DecidableSetoid] class asserts decidability of a [Setoid]. It can be useful in proofs to reason more
    classically. *)
 
 Require Import Coq.Logic.Decidable.
@@ -43,8 +43,8 @@ Notation " x == y " := (equiv_dec (x :>) (y :>)) (no associativity, at level 70)
 
 Definition swap_sumbool {A B} (x : { A } + { B }) : { B } + { A } :=
   match x with
-    | left H => @right _ _ H 
-    | right H => @left _ _ H 
+    | left H => @right _ _ H
+    | right H => @left _ _ H
   end.
 
 Open Local Scope program_scope.
@@ -89,34 +89,34 @@ Obligation Tactic := unfold complement, equiv ; program_simpl.
 Program Instance prod_eqdec `(EqDec A eq, EqDec B eq) :
   ! EqDec (prod A B) eq :=
   { equiv_dec x y :=
-    let '(x1, x2) := x in 
-    let '(y1, y2) := y in 
-    if x1 == y1 then 
+    let '(x1, x2) := x in
+    let '(y1, y2) := y in
+    if x1 == y1 then
       if x2 == y2 then in_left
       else in_right
     else in_right }.
 
 Program Instance sum_eqdec `(EqDec A eq, EqDec B eq) :
   EqDec (sum A B) eq := {
-  equiv_dec x y := 
+  equiv_dec x y :=
     match x, y with
       | inl a, inl b => if a == b then in_left else in_right
       | inr a, inr b => if a == b then in_left else in_right
       | inl _, inr _ | inr _, inl _ => in_right
     end }.
 
-(** Objects of function spaces with countable domains like bool have decidable equality. 
+(** Objects of function spaces with countable domains like bool have decidable equality.
    Proving the reflection requires functional extensionality though. *)
 
 Program Instance bool_function_eqdec `(EqDec A eq) : ! EqDec (bool -> A) eq :=
-  { equiv_dec f g := 
+  { equiv_dec f g :=
     if f true == g true then
       if f false == g false then in_left
       else in_right
     else in_right }.
 
   Next Obligation.
-  Proof. 
+  Proof.
     extensionality x.
     destruct x ; auto.
   Qed.
@@ -124,11 +124,11 @@ Program Instance bool_function_eqdec `(EqDec A eq) : ! EqDec (bool -> A) eq :=
 Require Import List.
 
 Program Instance list_eqdec `(eqa : EqDec A eq) : ! EqDec (list A) eq :=
-  { equiv_dec := 
+  { equiv_dec :=
     fix aux (x : list A) y { struct x } :=
     match x, y with
       | nil, nil => in_left
-      | cons hd tl, cons hd' tl' => 
+      | cons hd tl, cons hd' tl' =>
         if hd == hd' then
           if aux tl tl' then in_left else in_right
           else in_right

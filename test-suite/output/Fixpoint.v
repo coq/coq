@@ -1,7 +1,7 @@
 Require Import List.
 
 Check
-  (fix F (A B : Set) (f : A -> B) (l : list A) {struct l} : 
+  (fix F (A B : Set) (f : A -> B) (l : list A) {struct l} :
    list B := match l with
              | nil => nil
              | a :: l => f a :: F _ _ f l

@@ -8,7 +8,7 @@ open Topconstr
 val lemInv_gen : quantified_hypothesis -> constr -> tactic
 val lemInvIn_gen : quantified_hypothesis -> constr -> identifier list -> tactic
 
-val lemInv_clause : 
+val lemInv_clause :
   quantified_hypothesis -> constr -> identifier list -> tactic
 
 val inversion_lemma_from_goal :

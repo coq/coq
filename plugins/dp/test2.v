@@ -36,7 +36,7 @@ Goal fct O = O.
  Admitted.
 
 Fixpoint even (n:nat) : Prop :=
-  match n with 
+  match n with
   O => True
   | S O => False
   | S (S p) => even p
@@ -64,9 +64,9 @@ BUG avec head prédéfini : manque eta-expansion sur A:Set
 
 Goal forall x, head _ (p _ _ 1 2) = Some x -> fst x = 1.
 
-Print value. 
+Print value.
 Print Some.
- 
+
 zenon.
 *)
 

@@ -21,7 +21,7 @@ Unset Strict Implicit.
 
 Require Export Coq.Classes.SetoidClass.
 
-(** The [DecidableSetoid] class asserts decidability of a [Setoid]. It can be useful in proofs to reason more 
+(** The [DecidableSetoid] class asserts decidability of a [Setoid]. It can be useful in proofs to reason more
    classically. *)
 
 Require Import Coq.Logic.Decidable.
@@ -41,8 +41,8 @@ Notation " x == y " := (equiv_dec (x :>) (y :>)) (no associativity, at level 70)
 
 Definition swap_sumbool {A B} (x : { A } + { B }) : { B } + { A } :=
   match x with
-    | left H => @right _ _ H 
-    | right H => @left _ _ H 
+    | left H => @right _ _ H
+    | right H => @left _ _ H
   end.
 
 Require Import Coq.Program.Program.
@@ -96,9 +96,9 @@ Program Instance unit_eqdec : EqDec (eq_setoid unit) :=
 
 Program Instance prod_eqdec `(! EqDec (eq_setoid A), ! EqDec (eq_setoid B)) : EqDec (eq_setoid (prod A B)) :=
   λ x y,
-    let '(x1, x2) := x in 
-    let '(y1, y2) := y in 
-    if x1 == y1 then 
+    let '(x1, x2) := x in
+    let '(y1, y2) := y in
+    if x1 == y1 then
       if x2 == y2 then in_left
       else in_right
     else in_right.

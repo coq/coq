@@ -53,13 +53,13 @@ let execute_when_necessary v =
  (match v with
   | VernacOpenCloseScope sc -> Vernacentries.interp v
   | VernacRequire (_,_,l) ->
-      (try 
+      (try
 	Vernacentries.interp v
        with _ ->
 	 let l=prlist_with_sep spc pr_reference l in
 	 msgnl (str "Reinterning of " ++ l ++ str " failed"))
   | VernacRequireFrom (_,_,f) ->
-      (try 
+      (try
 	Vernacentries.interp v
        with _ ->
 	 msgnl (str "Reinterning of " ++ Util.pr_str f ++ str " failed"))
@@ -112,7 +112,7 @@ let rec get_sub_aux string_list snd_pos =
 let rec get_substring_list string_list fst_pos snd_pos =
   match string_list with
     [] -> []
-  | s::l -> 
+  | s::l ->
     let len = String.length s in
     if fst_pos > len then
        get_substring_list l (fst_pos - len - 1) (snd_pos - len - 1)
@@ -146,10 +146,10 @@ let make_parse_error_item s l =
 let parse_command_list reqid stream string_list =
     let rec parse_whole_stream () =
     let this_pos = Stream.count stream in
-    let first_ast = 
+    let first_ast =
         try ParseOK (Gram.Entry.parse Pcoq.main_entry (Gram.parsable stream))
         with
-        | (Stdpp.Exc_located(l, Stream.Error txt)) as e -> 
+        | (Stdpp.Exc_located(l, Stream.Error txt)) as e ->
           begin
              msgnl (ctf_SyntaxWarningMessage reqid (Cerrors.explain_exn e));
              try
@@ -161,7 +161,7 @@ let parse_command_list reqid stream string_list =
 		    (Stream.count stream))
              with End_of_file -> ParseOK None
            end
-        | e-> 
+        | e->
           begin
             discard_to_dot stream;
 	    ParseError ("PARSING_ERROR2",
@@ -172,11 +172,11 @@ let parse_command_list reqid stream string_list =
         let _ast0 = (execute_when_necessary ast) in
           (try xlate_vernac ast
 	  with e ->
-	    make_parse_error_item "PARSING_ERROR2" 
+	    make_parse_error_item "PARSING_ERROR2"
 		     (get_substring_list string_list this_pos
 		       (Stream.count stream)))::parse_whole_stream()
     | ParseOK None -> []
-    | ParseError (s,l) -> 
+    | ParseError (s,l) ->
 	(make_parse_error_item s l)::parse_whole_stream()
  in
     match parse_whole_stream () with
@@ -200,21 +200,21 @@ let parse_string_action reqid phylum char_stream string_list =
         (Gram.Entry.parse Pcoq.Vernac_.vernac_eoi (Gram.parsable char_stream))))
       | "TACTIC_COM" ->
        P_t
-        (xlate_tactic (Gram.Entry.parse Pcoq.Tactic.tactic_eoi 
+        (xlate_tactic (Gram.Entry.parse Pcoq.Tactic.tactic_eoi
                          (Gram.parsable char_stream)))
       | "FORMULA" ->
        P_f
         (xlate_formula
-	   (Gram.Entry.parse 
+	   (Gram.Entry.parse
               (Pcoq.eoi_entry Pcoq.Constr.lconstr) (Gram.parsable char_stream)))
       | "ID" -> P_id (CT_ident
-                        (Libnames.string_of_qualid 
-			 (snd 
+                        (Libnames.string_of_qualid
+			 (snd
 			       (Gram.Entry.parse  (Pcoq.eoi_entry Pcoq.Prim.qualid)
 						 (Gram.parsable char_stream)))))
       | "STRING" ->
 	  P_s
-         (CT_string (Gram.Entry.parse Pcoq.Prim.string 
+         (CT_string (Gram.Entry.parse Pcoq.Prim.string
                   (Gram.parsable char_stream)))
       | "INT" ->
 	  P_i (CT_int (Gram.Entry.parse Pcoq.Prim.natural
@@ -225,7 +225,7 @@ let parse_string_action reqid phylum char_stream string_list =
  | Stdpp.Exc_located(l,Match_failure(_,_,_)) ->
     flush_until_end_of_stream char_stream;
     msgnl (ctf_SyntaxErrorMessage reqid
-              (Cerrors.explain_exn 
+              (Cerrors.explain_exn
                  (Stdpp.Exc_located(l,Stream.Error "match failure"))))
  | e ->
     flush_until_end_of_stream char_stream;
@@ -233,7 +233,7 @@ let parse_string_action reqid phylum char_stream string_list =
 
 
 let quiet_parse_string_action char_stream =
- try let _ = 
+ try let _ =
          Gram.Entry.parse Pcoq.Vernac_.vernac_eoi (Gram.parsable char_stream) in
      ()
  with
@@ -242,9 +242,9 @@ let quiet_parse_string_action char_stream =
 
 let parse_file_action reqid file_name =
  try let file_chan = open_in file_name in
-     (* file_chan_err, stream_err are the channel and stream  used to 
+     (* file_chan_err, stream_err are the channel and stream  used to
         get the text when a syntax error occurs *)
-     let file_chan_err = open_in file_name in 
+     let file_chan_err = open_in file_name in
      let stream = Stream.of_channel file_chan in
      let _stream_err = Stream.of_channel file_chan_err in
      let rec discard_to_dot () =
@@ -252,21 +252,21 @@ let parse_file_action reqid file_name =
        with Stdpp.Exc_located(_,Token.Error _) -> discard_to_dot() in
        match let rec parse_whole_file () =
 	 let this_pos = Stream.count stream in
-           match 
+           match
              try
 	       ParseOK(Gram.Entry.parse Pcoq.main_entry (Gram.parsable stream))
              with
-               | Stdpp.Exc_located(l,Stream.Error txt) -> 
+               | Stdpp.Exc_located(l,Stream.Error txt) ->
                    msgnl (ctf_SyntaxWarningMessage reqid
 			    (str "Error with file" ++ spc () ++
 			     str file_name ++ fnl () ++
-			     Cerrors.explain_exn 
+			     Cerrors.explain_exn
 				 (Stdpp.Exc_located(l,Stream.Error txt))));
-		   (try 
+		   (try
 		      begin
                       	discard_to_dot ();
                     	ParseError ("PARSING_ERROR",
-				   (make_string_list file_chan_err this_pos 
+				   (make_string_list file_chan_err this_pos
 			       	      (Stream.count stream)))
 		      end
                     with End_of_file -> ParseOK None)
@@ -277,10 +277,10 @@ let parse_file_action reqid file_name =
 			       (make_string_list file_chan this_pos
 				  (Stream.count stream)))
                    end
-		   
+
              with
                | ParseOK (Some (_,ast)) ->
-		   let _ast0=(execute_when_necessary ast) in 
+		   let _ast0=(execute_when_necessary ast) in
 		   let term =
                      (try xlate_vernac ast
 		      with e ->
@@ -291,10 +291,10 @@ let parse_file_action reqid file_name =
 				      "\n");
 			make_parse_error_item "PARSING_ERROR2"
 			  (make_string_list file_chan_err this_pos
-			    (Stream.count stream))) in 
+			    (Stream.count stream))) in
 		     term::parse_whole_file ()
                | ParseOK None -> []
-	       | ParseError (s,l) -> 
+	       | ParseError (s,l) ->
 		   (make_parse_error_item s l)::parse_whole_file () in
          parse_whole_file () with
 	   | first_one :: tail ->
@@ -305,7 +305,7 @@ let parse_file_action reqid file_name =
 	 | Stdpp.Exc_located(l,Match_failure(_,_,_)) ->
 	     msgnl
 	       (ctf_SyntaxErrorMessage reqid
-		  (str "Error with file" ++ spc () ++ str file_name ++ 
+		  (str "Error with file" ++ spc () ++ str file_name ++
 		   fnl () ++
 		     Cerrors.explain_exn
 		       (Stdpp.Exc_located(l,Stream.Error "match failure"))))
@@ -320,7 +320,7 @@ let add_rec_path_action reqid string_arg ident_arg =
     begin
       add_rec_path directory_name (Libnames.dirpath_of_string ident_arg)
     end;;
-	
+
 
 let add_path_action reqid string_arg =
   let directory_name = expand_path_macros string_arg in
@@ -338,7 +338,7 @@ let load_syntax_action reqid module_name =
       (let qid = Libnames.qualid_of_ident (Names.id_of_string module_name) in
       require_library [dummy_loc,qid] None;
       msg (str "opening... ");
-      Declaremods.import_module false (Nametab.locate_module qid); 
+      Declaremods.import_module false (Nametab.locate_module qid);
       msgnl (str "done" ++ fnl ());
       ())
  with
@@ -365,11 +365,11 @@ let coqparser_loop inchan =
  add_path_action, add_rec_path_action, load_syntax_action) inchan;;
 
 if !Sys.interactive then ()
- else 
+ else
 Libobject.relax true;
-(let coqdir = 
+(let coqdir =
    try Sys.getenv "COQDIR"
-   with Not_found -> 
+   with Not_found ->
      let coqdir = Envars.coqlib () in
        if Sys.file_exists coqdir then
 	 coqdir
@@ -385,8 +385,8 @@ Libobject.relax true;
    try
      Sys.getenv "VERNACRC"
    with
-       Not_found -> 
-	 List.fold_left 
+       Not_found ->
+	 List.fold_left
 	   (fun s1 s2 -> (Filename.concat s1 s2))
 	   coqdir [ "plugins"; "interface"; "vernacrc"] in
    try
@@ -417,6 +417,6 @@ Libobject.relax true;
 msgnl (str "Starting Centaur Specialized Parser Loop");
 try
   coqparser_loop stdin
-with 
+with
   | End_of_file -> ()
   | e -> msgnl(Cerrors.explain_exn e))

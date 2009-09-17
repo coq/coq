@@ -17,9 +17,9 @@ Require Import CyclicAxioms.
 
 (** * From [CyclicType] to [NZAxiomsSig] *)
 
-(** A [Z/nZ] representation given by a module type [CyclicType] 
-    implements [NZAxiomsSig], e.g. the common properties between 
-    N and Z with no ordering. Notice that the [n] in [Z/nZ] is 
+(** A [Z/nZ] representation given by a module type [CyclicType]
+    implements [NZAxiomsSig], e.g. the common properties between
+    N and Z with no ordering. Notice that the [n] in [Z/nZ] is
     a power of 2.
 *)
 
@@ -98,7 +98,7 @@ Notation "x * y" := (NZmul x y) : IntScope.
 
 Theorem gt_wB_1 : 1 < wB.
 Proof.
-unfold base. 
+unfold base.
 apply Zpower_gt_1; unfold Zlt; auto with zarith.
 Qed.
 

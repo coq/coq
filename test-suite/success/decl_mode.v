@@ -8,10 +8,10 @@ proof.
   assume n:nat.
   per induction on n.
     suppose it is 0.
-     suffices (0=0) to show thesis. 
+     suffices (0=0) to show thesis.
      thus thesis.
     suppose it is (S m) and Hrec:thesis for m.
-      have (div2 (double (S m))= div2 (S (S (double m)))). 
+      have (div2 (double (S m))= div2 (S (S (double m)))).
            ~= (S (div2 (double m))).
       thus ~= (S m) by Hrec.
   end induction.
@@ -56,12 +56,12 @@ proof.
 end proof.
 Qed.
 
-Lemma main_thm_aux: forall n,even n -> 
+Lemma main_thm_aux: forall n,even n ->
 double (double (div2 n *div2 n))=n*n.
 proof.
   given n such that H:(even n).
- *** have (double (double (div2 n * div2 n)) 
-        = double (div2 n) * double (div2 n)) 
+ *** have (double (double (div2 n * div2 n))
+        = double (div2 n) * double (div2 n))
         by double_mult_l,double_mult_r.
   thus ~= (n*n) by H,even_double.
 end proof.
@@ -75,14 +75,14 @@ proof.
   per induction on m.
     suppose it is 0.
       thus thesis.
-    suppose it is (S mm) and thesis for mm. 
+    suppose it is (S mm) and thesis for mm.
       then H:(even (S (S (mm+mm)))).
       have (S (S (mm + mm)) = S mm + S mm)  using omega.
       hence (even (S mm +S mm)) by H.
   end induction.
 end proof.
 Qed.
- 
+
 Theorem main_theorem: forall n p, n*n=double (p*p) -> p=0.
 proof.
   assume n0:nat.
@@ -95,7 +95,7 @@ proof.
           suppose it is (S p').
             assume (n * n = double (S p' * S p')).
               =~ 0 by H1,mult_n_O.
-              ~= (S (  p' + p' * S p' + S p'* S p')) 
+              ~= (S (  p' + p' * S p' + S p'* S p'))
                 by plus_n_Sm.
             hence thesis .
           suppose it is 0.
@@ -106,19 +106,19 @@ proof.
         have (even (double (p*p))) by even_double_n .
         then (even (n*n)) by H0.
         then H2:(even n) by even_is_even_times_even.
-        then (double (double (div2 n *div2 n))=n*n) 
+        then (double (double (div2 n *div2 n))=n*n)
           by main_thm_aux.
           ~= (double (p*p)) by H0.
-        then H':(double (div2 n *div2 n)= p*p) by double_inv. 
+        then H':(double (div2 n *div2 n)= p*p) by double_inv.
         have (even (double (div2 n *div2 n))) by even_double_n.
         then (even (p*p)) by even_double_n,H'.
         then H3:(even p) by even_is_even_times_even.
-        have (double(double (div2 n * div2 n)) = n*n) 
+        have (double(double (div2 n * div2 n)) = n*n)
           by H2,main_thm_aux.
           ~= (double (p*p)) by H0.
-          ~= (double(double (double (div2 p * div2 p)))) 
+          ~= (double(double (double (div2 p * div2 p))))
             by H3,main_thm_aux.
-        then H'':(div2 n * div2 n = double (div2 p * div2 p)) 
+        then H'':(div2 n * div2 n = double (div2 p * div2 p))
           by double_inv.
         then (div2 n < n) by lt_div2,neq_O_lt,H1.
         then H4:(div2 p=0) by  (H (div2 n)),H''.
@@ -137,8 +137,8 @@ Coercion IZR: Z >->R.*)
 
 Open Scope R_scope.
 
-Lemma square_abs_square: 
-  forall p,(INR (Zabs_nat p) * INR (Zabs_nat p)) = (IZR p * IZR p). 
+Lemma square_abs_square:
+  forall p,(INR (Zabs_nat p) * INR (Zabs_nat p)) = (IZR p * IZR p).
 proof.
   assume p:Z.
   per cases on p.
@@ -147,7 +147,7 @@ proof.
     suppose it is (Zpos z).
       thus thesis.
     suppose it is (Zneg z).
-      have ((INR (Zabs_nat (Zneg z)) * INR (Zabs_nat (Zneg z))) = 
+      have ((INR (Zabs_nat (Zneg z)) * INR (Zabs_nat (Zneg z))) =
       (IZR (Zpos z) * IZR (Zpos z))).
            ~= ((- IZR (Zpos z)) * (- IZR (Zpos z))).
       thus ~= (IZR (Zneg z) * IZR (Zneg z)).
@@ -160,19 +160,19 @@ Definition irrational (x:R):Prop :=
 
 Theorem irrationnal_sqrt_2: irrational (sqrt (INR 2%nat)).
 proof.
-  let p:Z,q:nat be such that H:(q<>0%nat) 
+  let p:Z,q:nat be such that H:(q<>0%nat)
                          and H0:(sqrt (INR 2%nat)=(IZR p/INR q)).
   have H_in_R:(INR q<>0:>R) by H.
   have triv:((IZR p/INR q* INR q) =IZR p :>R) by * using field.
   have sqrt2:((sqrt (INR 2%nat) * sqrt (INR 2%nat))= INR 2%nat:>R) by sqrt_def.
-  have (INR (Zabs_nat p * Zabs_nat p) 
-     = (INR (Zabs_nat p) * INR (Zabs_nat p))) 
+  have (INR (Zabs_nat p * Zabs_nat p)
+     = (INR (Zabs_nat p) * INR (Zabs_nat p)))
     by mult_INR.
     ~=  (IZR p* IZR p) by square_abs_square.
     ~=  ((IZR p/INR q*INR q)*(IZR p/INR q*INR q)) by triv. (* we have to factor because field is too weak *)
     ~=  ((IZR p/INR q)*(IZR p/INR q)*(INR q*INR q)) using ring.
     ~=  (sqrt (INR 2%nat) * sqrt (INR 2%nat)*(INR q*INR q)) by H0.
-    ~= (INR (2%nat * (q*q)))  by sqrt2,mult_INR. 
+    ~= (INR (2%nat * (q*q)))  by sqrt2,mult_INR.
   then  (Zabs_nat p * Zabs_nat p = 2* (q * q))%nat.
     ~= ((q*q)+(q*q))%nat.
     ~= (Div2.double (q*q)).

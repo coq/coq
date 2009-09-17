@@ -22,12 +22,12 @@ open Library
    constructor (the name of which defaults to Build_S) *)
 
 type struc_typ = {
-  s_CONST : constructor; 
+  s_CONST : constructor;
   s_EXPECTEDPARAM : int;
   s_PROJKIND : (name * bool) list;
   s_PROJ : constant option list }
 
-val declare_structure : 
+val declare_structure :
   inductive * constructor * (name * bool) list * constant option list -> unit
 
 (* [lookup_projections isp] returns the projections associated to the
@@ -46,8 +46,8 @@ val find_projection : global_reference -> struc_typ
 val declare_method :
   global_reference -> Evd.evar -> Evd.evar_map -> unit
   (* and here is how to search for methods matched by a given term: *)
-val methods_matching : constr -> 
-  ((global_reference*Evd.evar*Evd.evar_map) * 
+val methods_matching : constr ->
+  ((global_reference*Evd.evar*Evd.evar_map) *
      (constr*existential_key)*Termops.subst) list
 
 (*s A canonical structure declares "canonical" conversion hints between *)
@@ -56,7 +56,7 @@ val methods_matching : constr ->
 
 type cs_pattern =
     Const_cs of global_reference
-  | Prod_cs 
+  | Prod_cs
   | Sort_cs of sorts_family
   | Default_cs
 
@@ -69,10 +69,10 @@ type obj_typ = {
   o_TCOMPS : constr list } (* ordered *)
 
 val cs_pattern_of_constr : constr -> cs_pattern * int * constr list
- 
+
 val lookup_canonical_conversion : (global_reference * cs_pattern) -> obj_typ
 val declare_canonical_structure : global_reference -> unit
 val is_open_canonical_projection :
   Evd.evar_map -> (constr * constr list) -> bool
-val canonical_projections : unit -> 
+val canonical_projections : unit ->
   ((global_reference * cs_pattern) * obj_typ) list

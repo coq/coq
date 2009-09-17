@@ -12,7 +12,7 @@
 (*                       http://helm.cs.unibo.it                        *)
 (************************************************************************)
 
-type types = { synthesized : Term.types; expected : Term.types option; } 
+type types = { synthesized : Term.types; expected : Term.types option; }
 
 val cprop : Names.constant
 

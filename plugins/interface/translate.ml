@@ -25,9 +25,9 @@ let translate_constr at_top env c =
 (*translates a named_context into a centaur-tree --> PREMISES_LIST *)
 (* this code is inspired from printer.ml (function pr_named_context_of) *)
 let translate_sign env =
-  let l = 
+  let l =
     Environ.fold_named_context
-      (fun env (id,v,c) l -> 
+      (fun env (id,v,c) l ->
 	 (match v with
 	      None ->
 	       	CT_premise(CT_ident(string_of_id id), translate_constr false env c)
@@ -36,19 +36,19 @@ let translate_sign env =
 		  (CT_coerce_ID_to_FORMULA (CT_ident (string_of_id id)),
 		   translate_constr false env v1,
 		   translate_constr false env c))::l)
-      env ~init:[] 
+      env ~init:[]
   in
   CT_premises_list l;;
-       
+
 (* the function rev_and_compact performs two operations:
    1- it reverses the list of integers given as argument
    2- it replaces sequences of "1" by a negative number that is
       the length of the sequence. *)
 let rec rev_and_compact l = function
     [] -> l
-  | 1::tl -> 
+  | 1::tl ->
       (match l with
-              n::tl' -> 
+              n::tl' ->
         if n < 0 then
           rev_and_compact ((n - 1)::tl') tl
         else

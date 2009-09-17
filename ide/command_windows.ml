@@ -8,9 +8,9 @@
 
 (* $Id$ *)
 
-class command_window () = 
-(*  let window = GWindow.window 
-		 ~allow_grow:true ~allow_shrink:true 
+class command_window () =
+(*  let window = GWindow.window
+		 ~allow_grow:true ~allow_shrink:true
 		 ~width:500 ~height:250
 		 ~position:`CENTER
 		 ~title:"CoqIde queries" ~show:false ()
@@ -19,23 +19,23 @@ class command_window () =
   let _ = frame#misc#hide () in
   let _ = GtkData.AccelGroup.create () in
   let hbox = GPack.hbox ~homogeneous:false ~packing:frame#add () in
-  let toolbar = GButton.toolbar 
-		  ~orientation:`VERTICAL 
+  let toolbar = GButton.toolbar
+		  ~orientation:`VERTICAL
 		  ~style:`ICONS
-		  ~tooltips:true 
-		  ~packing:(hbox#pack 
+		  ~tooltips:true
+		  ~packing:(hbox#pack
 			       ~expand:false
 			       ~fill:false)
 		  ()
   in
-  let notebook = GPack.notebook ~scrollable:true 
-		   ~packing:(hbox#pack 
+  let notebook = GPack.notebook ~scrollable:true
+		   ~packing:(hbox#pack
 			       ~expand:true
 			       ~fill:true
-			    ) 
+			    )
 		   ()
   in
-  let _ = 
+  let _ =
     toolbar#insert_button
       ~tooltip:"Hide Commands Pane"
       ~text:"Hide Pane"
@@ -43,7 +43,7 @@ class command_window () =
       ~callback:frame#misc#hide
       ()
   in
-  let new_page_menu = 
+  let new_page_menu =
     toolbar#insert_button
       ~tooltip:"New Page"
       ~text:"New Page"
@@ -51,7 +51,7 @@ class command_window () =
       ()
   in
 
-  let _ = 
+  let _ =
     toolbar#insert_button
       ~tooltip:"Delete Page"
       ~text:"Delete Page"
@@ -65,10 +65,10 @@ object(self)
 
   val new_page_menu = new_page_menu
   val notebook = notebook
-  method frame = frame 
+  method frame = frame
   method new_command ?command ?term () =
     let appendp x = ignore (notebook#append_page x) in
-    let frame = GBin.frame 
+    let frame = GBin.frame
 		  ~shadow_type:`ETCHED_OUT
 		  ~packing:appendp
 		  ()
@@ -84,15 +84,15 @@ object(self)
 		  ()
     in
     combo#disable_activate ();
-    let on_activate c () = 
-      if List.mem combo#entry#text Coq_commands.state_preserving then c () 
-      else prerr_endline "Not a state preserving command" 
+    let on_activate c () =
+      if List.mem combo#entry#text Coq_commands.state_preserving then c ()
+      else prerr_endline "Not a state preserving command"
     in
     let entry = GEdit.entry ~packing:(hbox#pack ~expand:true) () in
     entry#misc#set_can_default true;
     let r_bin =
-      GBin.scrolled_window 
-	~vpolicy:`AUTOMATIC 
+      GBin.scrolled_window
+	~vpolicy:`AUTOMATIC
 	~hpolicy:`AUTOMATIC
 	~packing:(vbox#pack ~fill:true ~expand:true) () in
     let ok_b = GButton.button ~label:"Ok" ~packing:(hbox#pack ~expand:false) () in
@@ -101,13 +101,13 @@ object(self)
     result#set_editable false;
     let callback () =
       let com = combo#entry#text in
-      let phrase = 
+      let phrase =
 	if String.get com (String.length com - 1) = '.'
-	then com ^ " " else com ^ " " ^ entry#text ^" . " 
+	then com ^ " " else com ^ " " ^ entry#text ^" . "
       in
       try
 	ignore(Coq.interp false phrase);
-	result#buffer#set_text 
+	result#buffer#set_text
 	  ("Result for command " ^ phrase ^ ":\n" ^ Ideutils.read_stdout ())
       with e ->
 	let (s,loc) = Coq.process_exn e in
@@ -117,16 +117,16 @@ object(self)
     ignore (combo#entry#connect#activate ~callback:(on_activate callback));
     ignore (ok_b#connect#clicked ~callback:(on_activate callback));
 
-    begin match command,term with 
+    begin match command,term with
       | None,None -> ()
-      | Some c, None -> 
+      | Some c, None ->
 	  combo#entry#set_text c;
-	  
-      | Some c, Some t -> 
+
+      | Some c, Some t ->
 	  combo#entry#set_text c;
 	  entry#set_text t
-	 
-      | None , Some t -> 
+
+      | None , Some t ->
 	  entry#set_text t
     end;
     on_activate callback ();
@@ -134,9 +134,9 @@ object(self)
     entry#misc#grab_default ();
     ignore (entry#connect#activate ~callback);
     ignore (combo#entry#connect#activate ~callback);
-    self#frame#misc#show () 
+    self#frame#misc#show ()
 
-  initializer 
+  initializer
     ignore (new_page_menu#connect#clicked self#new_command);
    (* ignore (window#event#connect#delete (fun _ -> window#misc#hide(); true));*)
 end
@@ -145,6 +145,6 @@ let command_window = ref None
 
 let main () = command_window := Some (new command_window ())
 
-let command_window () = match !command_window with 
+let command_window () = match !command_window with
   | None -> failwith "No command window."
   | Some c -> c

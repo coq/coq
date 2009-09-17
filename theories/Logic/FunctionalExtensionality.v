@@ -13,7 +13,7 @@
 
 (** The converse of functional extensionality. *)
 
-Lemma equal_f : forall {A B : Type} {f g : A -> B}, 
+Lemma equal_f : forall {A B : Type} {f g : A -> B},
   f = g -> forall x, f x = g x.
 Proof.
   intros.
@@ -23,11 +23,11 @@ Qed.
 
 (** Statements of functional extensionality for simple and dependent functions. *)
 
-Axiom functional_extensionality_dep : forall {A} {B : A -> Type}, 
-  forall (f g : forall x : A, B x), 
+Axiom functional_extensionality_dep : forall {A} {B : A -> Type},
+  forall (f g : forall x : A, B x),
   (forall x, f x = g x) -> f = g.
 
-Lemma functional_extensionality {A B} (f g : A -> B) : 
+Lemma functional_extensionality {A B} (f g : A -> B) :
   (forall x, f x = g x) -> f = g.
 Proof.
   intros ; eauto using @functional_extensionality_dep.
@@ -37,8 +37,8 @@ Qed.
 
 Tactic Notation "extensionality" ident(x) :=
   match goal with
-    [ |- ?X = ?Y ] => 
-    (apply (@functional_extensionality _ _ X Y) || 
+    [ |- ?X = ?Y ] =>
+    (apply (@functional_extensionality _ _ X Y) ||
      apply (@functional_extensionality_dep _ _ X Y)) ; intro x
   end.
 
@@ -51,7 +51,7 @@ Proof.
   extensionality x.
   reflexivity.
 Qed.
-  
+
 Lemma eta_expansion {A B} (f : A -> B) : f = fun x => f x.
 Proof.
   intros A B f. apply (eta_expansion_dep f).

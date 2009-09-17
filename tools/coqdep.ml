@@ -45,7 +45,7 @@ let add_coqlib_known phys_dir log_dir f =
 	Hashtbl.add coqlibKnown name ()
     | _ -> ()
 
-let sort () = 
+let sort () =
   let seen = Hashtbl.create 97 in
   let rec loop file =
     let file = canonize file in
@@ -57,8 +57,8 @@ let sort () =
 	while true do
 	  match coq_action lb with
 	    | Require sl ->
-		List.iter 
-		  (fun s -> 
+		List.iter
+		  (fun s ->
 		    try loop (Hashtbl.find vKnown s)
 		    with Not_found -> ())
 		sl
@@ -73,16 +73,16 @@ let sort () =
   List.iter (fun (name,_) -> loop name) !vAccu
 
 let (dep_tab : (string,string list) Hashtbl.t) = Hashtbl.create 151
-						     
-let mL_dep_list b f = 
-  try 
+
+let mL_dep_list b f =
+  try
     Hashtbl.find dep_tab f
   with Not_found ->
-    let deja_vu = ref ([] : string list) in 
-    try 
-      let chan = open_in f in 
-      let buf = Lexing.from_channel chan in 
-      try 
+    let deja_vu = ref ([] : string list) in
+    try
+      let chan = open_in f in
+      let buf = Lexing.from_channel chan in
+      try
 	while true do
 	  let (Use_module str) = caml_action buf in
 	  if str = b then begin
@@ -93,14 +93,14 @@ let mL_dep_list b f =
             if not (List.mem str !deja_vu) then addQueue deja_vu str
       	done; []
       with Fin_fichier -> begin
-	close_in chan; 
+	close_in chan;
 	let rl = List.rev !deja_vu in
       	Hashtbl.add dep_tab f rl;
 	rl
       end
     with Sys_error _ -> []
 
-let affiche_Declare f dcl = 
+let affiche_Declare f dcl =
   printf "\n*** In file %s: \n" f;
   printf "Declare ML Module";
   List.iter (fun str -> printf " \"%s\"" str) dcl;
@@ -115,7 +115,7 @@ let warning_Declare f dcl =
   eprintf ".\n";
   flush stderr
 
-let traite_Declare f = 
+let traite_Declare f =
   let decl_list = ref ([] : string list) in
   let rec treat = function
     | s :: ll ->
@@ -133,15 +133,15 @@ let traite_Declare f =
     try
       let chan = open_in f in
       let buf = Lexing.from_channel chan in
-	begin try 
+	begin try
 	    while true do
       	      let tok = coq_action buf in
       		(match tok with
-		  | Declare sl -> 
+		  | Declare sl ->
 		      decl_list := [];
 		      treat sl;
 		      decl_list := List.rev !decl_list;
-		      if !option_D then 
+		      if !option_D then
 			affiche_Declare f !decl_list
 		      else if !decl_list <> sl then
 			warning_Declare f !decl_list

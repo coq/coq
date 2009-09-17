@@ -56,7 +56,7 @@ Proof.
   destruct sor.(SORsetoid).
   apply Equivalence_Transitive.
 Qed.
-  
+
 
 Add Relation R req
   reflexivity proved by sor.(SORsetoid).(@Equivalence_Reflexive _ _)

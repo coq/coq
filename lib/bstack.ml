@@ -47,10 +47,10 @@ let push bs e =
   incr_size bs;
   bs.depth <- bs.depth + 1;
   bs.stack.(bs.pos) <- e
-	  
+
 let pop bs =
   if bs.size > 1 then begin
-    bs.size <- bs.size - 1; 
+    bs.size <- bs.size - 1;
     bs.depth <- bs.depth - 1;
     let oldpos = bs.pos in
     decr_pos bs;
@@ -61,7 +61,7 @@ let pop bs =
 let top bs =
   if bs.size >= 1 then bs.stack.(bs.pos)
   else error "Nothing on the stack"
-	  
+
 let app_push bs f =
   if bs.size = 0 then error "Nothing on the stack"
   else push bs (f (bs.stack.(bs.pos)))

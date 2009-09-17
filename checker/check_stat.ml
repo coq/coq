@@ -17,7 +17,7 @@ open Environ
 
 let memory_stat = ref false
 
-let print_memory_stat () = 
+let print_memory_stat () =
   if !memory_stat then begin
     Format.printf "total heap size = %d kbytes\n" (heap_size_kb ());
     Format.print_newline();
@@ -37,7 +37,7 @@ let cst_filter f csts =
     (fun c ce acc -> if f c ce then c::acc else acc)
     csts []
 
-let is_ax _ cb = cb.const_body = None 
+let is_ax _ cb = cb.const_body = None
 
 let pr_ax csts =
   let axs = cst_filter is_ax csts in

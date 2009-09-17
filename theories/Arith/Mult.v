@@ -43,7 +43,7 @@ Hint Resolve mult_1_l: arith v62.
 
 Lemma mult_1_r : forall n, n * 1 = n.
 Proof.
-  induction n; [ trivial | 
+  induction n; [ trivial |
     simpl; rewrite IHn; reflexivity].
 Qed.
 Hint Resolve mult_1_r: arith v62.
@@ -118,7 +118,7 @@ Proof.
     edestruct O_S; eauto.
     destruct plus_is_one with (1:=H) as [[-> Hnm] | [-> Hnm]].
       simpl in H; rewrite mult_0_r in H; elim (O_S _ H).
-      rewrite mult_1_r in Hnm; auto. 
+      rewrite mult_1_r in Hnm; auto.
 Qed.
 
 (** ** Multiplication and successor *)
@@ -176,7 +176,7 @@ Qed.
 
 Lemma mult_S_lt_compat_l : forall n m p, m < p -> S n * m < S n * p.
 Proof.
-  induction n; intros; simpl in *. 
+  induction n; intros; simpl in *.
     rewrite <- 2! plus_n_O; assumption.
     auto using plus_lt_compat.
 Qed.
@@ -219,8 +219,8 @@ Qed.
 
 (** * Tail-recursive mult *)
 
-(** [tail_mult] is an alternative definition for [mult] which is 
-    tail-recursive, whereas [mult] is not. This can be useful 
+(** [tail_mult] is an alternative definition for [mult] which is
+    tail-recursive, whereas [mult] is not. This can be useful
     when extracting programs. *)
 
 Fixpoint mult_acc (s:nat) m n {struct n} : nat :=
@@ -244,7 +244,7 @@ Proof.
   intros; unfold tail_mult in |- *; rewrite <- mult_acc_aux; auto.
 Qed.
 
-(** [TailSimpl] transforms any [tail_plus] and [tail_mult] into [plus] 
+(** [TailSimpl] transforms any [tail_plus] and [tail_mult] into [plus]
     and [mult] and simplify *)
 
 Ltac tail_simpl :=

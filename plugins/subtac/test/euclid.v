@@ -1,12 +1,12 @@
 Require Import Coq.Program.Program.
 Require Import Coq.Arith.Compare_dec.
 Notation "( x & y )" := (existS _ x y) : core_scope.
-  
+
 Require Import Omega.
 
 Program Fixpoint euclid (a : nat) (b : { b : nat | b <> O }) {wf lt a}  :
   { q : nat & { r : nat | a = b * q + r /\ r < b } } :=
-  if le_lt_dec b a then let (q', r) := euclid (a - b) b in 
+  if le_lt_dec b a then let (q', r) := euclid (a - b) b in
   (S q' & r)
   else (O & a).
 

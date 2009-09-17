@@ -44,7 +44,7 @@ module type S =
 module Make(Ord: OrderedType) =
   struct
     module EltSet = Set.Make(Ord)
- 
+
     (* when bool is false, the denoted set is the complement of
        the given set *)
     type elt = Ord.t

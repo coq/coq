@@ -18,9 +18,9 @@ Require Import Logic.
 
 (** Subsets and Sigma-types *)
 
-(** [(sig A P)], or more suggestively [{x:A | P x}], denotes the subset 
+(** [(sig A P)], or more suggestively [{x:A | P x}], denotes the subset
     of elements of the type [A] which satisfy the predicate [P].
-    Similarly [(sig2 A P Q)], or [{x:A | P x & Q x}], denotes the subset 
+    Similarly [(sig2 A P Q)], or [{x:A | P x & Q x}], denotes the subset
     of elements of the type [A] which satisfy both [P] and [Q]. *)
 
 Inductive sig (A:Type) (P:A -> Prop) : Type :=
@@ -29,7 +29,7 @@ Inductive sig (A:Type) (P:A -> Prop) : Type :=
 Inductive sig2 (A:Type) (P Q:A -> Prop) : Type :=
     exist2 : forall x:A, P x -> Q x -> sig2 P Q.
 
-(** [(sigT A P)], or more suggestively [{x:A & (P x)}] is a Sigma-type. 
+(** [(sigT A P)], or more suggestively [{x:A & (P x)}] is a Sigma-type.
     Similarly for [(sigT2 A P Q)], also written [{x:A & (P x) & (Q x)}]. *)
 
 Inductive sigT (A:Type) (P:A -> Type) : Type :=
@@ -123,7 +123,7 @@ Coercion sig_of_sigT : sigT >-> sig.
 
 Inductive sumbool (A B:Prop) : Set :=
   | left : A -> {A} + {B}
-  | right : B -> {A} + {B} 
+  | right : B -> {A} + {B}
  where "{ A } + { B }" := (sumbool A B) : type_scope.
 
 Add Printing If sumbool.
@@ -133,7 +133,7 @@ Add Printing If sumbool.
 
 Inductive sumor (A:Type) (B:Prop) : Type :=
   | inleft : A -> A + {B}
-  | inright : B -> A + {B} 
+  | inright : B -> A + {B}
  where "A + { B }" := (sumor A B) : type_scope.
 
 Add Printing If sumor.
@@ -186,12 +186,12 @@ Section Choice_lemmas.
 
 End Choice_lemmas.
 
- (** A result of type [(Exc A)] is either a normal value of type [A] or 
+ (** A result of type [(Exc A)] is either a normal value of type [A] or
      an [error] :
 
      [Inductive Exc [A:Type] : Type := value : A->(Exc A) | error : (Exc A)].
 
-     It is implemented using the option type. *) 
+     It is implemented using the option type. *)
 
 Definition Exc := option.
 Definition value := Some.

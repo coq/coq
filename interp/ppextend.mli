@@ -40,7 +40,7 @@ val ppcmd_of_box : ppbox -> std_ppcmds -> std_ppcmds
 
 val ppcmd_of_cut : ppcut -> std_ppcmds
 
-type unparsing = 
+type unparsing =
   | UnpMetaVar of int * parenRelation
   | UnpListMetaVar of int * parenRelation * unparsing list
   | UnpTerminal of string

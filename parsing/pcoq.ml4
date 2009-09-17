@@ -24,7 +24,7 @@ open Ppextend
 
 (* The parser of Coq *)
 
-IFDEF CAMLP5 THEN 
+IFDEF CAMLP5 THEN
 
 module L =
   struct
@@ -34,7 +34,7 @@ module L =
 
 module G = Grammar.GMake(L)
 
-ELSE 
+ELSE
 
 module L =
   struct
@@ -55,7 +55,7 @@ let grammar_delete e pos reinit rls =
 	 99 and 200. We didn't find a good solution to this problem
 	 (e.g. using G.extend to know if the level exists results in a
 	 printed error message as side effect). As a consequence an
-	 extension at 99 or 8 (and for pattern 200 too) inside a section 
+	 extension at 99 or 8 (and for pattern 200 too) inside a section
          corrupts the parser. *)
 
       List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
@@ -63,7 +63,7 @@ let grammar_delete e pos reinit rls =
   if reinit <> None then
     let lev = match pos with Some (Gramext.Level n) -> n | _ -> assert false in
     let pos =
-      if lev = "200" then Gramext.First 
+      if lev = "200" then Gramext.First
       else Gramext.After (string_of_int (int_of_string lev + 1)) in
     G.extend e (Some pos) [Some lev,reinit,[]];
 
@@ -116,7 +116,7 @@ type camlp4_entry_rules =
 
 type ext_kind =
   | ByGrammar of
-      grammar_object G.Entry.e * Gramext.position option * 
+      grammar_object G.Entry.e * Gramext.position option *
       camlp4_entry_rules list * Gramext.g_assoc option
   | ByGEXTEND of (unit -> unit) * (unit -> unit)
 
@@ -215,16 +215,16 @@ let uconstr = create_univ "constr"
 let utactic = create_univ "tactic"
 let uvernac = create_univ "vernac"
 
-let get_univ s = 
+let get_univ s =
   try
     Hashtbl.find univ_tab s
   with Not_found ->
     anomaly ("Unknown grammar universe: "^s)
 
-let get_entry (u, utab) s = Hashtbl.find utab s 
+let get_entry (u, utab) s = Hashtbl.find utab s
 
 let get_entry_type (u, utab) s =
-  try 
+  try
     type_of_typed_entry (get_entry (u, utab) s)
   with Not_found ->
     errorlabstrm "Pcoq.get_entry"
@@ -263,7 +263,7 @@ let make_gen_entry (u,univ) rawwit s =
 module Prim =
   struct
     let gec_gen x = make_gen_entry uprim x
-    
+
     (* Entries that can be refered via the string -> Gram.Entry.e table *)
     (* Typically for tactic or vernac extensions *)
     let preident = gec_gen rawwit_pre_ident "preident"
@@ -334,7 +334,7 @@ module Tactic =
 
     (* Entries that can be refered via the string -> Gram.Entry.e table *)
     (* Typically for tactic user extensions *)
-    let open_constr = 
+    let open_constr =
       make_gen_entry utactic (rawwit_open_constr_gen false) "open_constr"
     let casted_open_constr =
       make_gen_entry utactic (rawwit_open_constr_gen true) "casted_open_constr"
@@ -347,7 +347,7 @@ module Tactic =
       make_gen_entry utactic rawwit_quant_hyp "quantified_hypothesis"
     let int_or_var = make_gen_entry utactic rawwit_int_or_var "int_or_var"
     let red_expr = make_gen_entry utactic rawwit_red_expr "red_expr"
-    let simple_intropattern = 
+    let simple_intropattern =
       make_gen_entry utactic rawwit_intro_pattern "simple_intropattern"
 
     (* Main entries for ltac *)
@@ -395,7 +395,7 @@ let main_entry = Vernac_.main_entry
    left border and into "constr LEVEL n" elsewhere), to the level below
    (to be translated into "NEXT") or to an below wrt associativity (to be
    translated in camlp4 into "constr" without level) or to another level
-   (to be translated into "constr LEVEL n") 
+   (to be translated into "constr LEVEL n")
 
    The boolean is true if the entry was existing _and_ empty; this to
    circumvent a weakness of camlp4/camlp5 whose undo mechanism is not the
@@ -422,7 +422,7 @@ let default_pattern_levels =
    1,Gramext.LeftA,false;
    0,Gramext.RightA,false]
 
-let level_stack = 
+let level_stack =
   ref [(default_levels, default_pattern_levels)]
 
 (* At a same level, LeftA takes precedence over RightA and NoneA *)
@@ -442,7 +442,7 @@ let create_assoc = function
 let error_level_assoc p current expected =
   let pr_assoc = function
     | Gramext.LeftA -> str "left"
-    | Gramext.RightA -> str "right" 
+    | Gramext.RightA -> str "right"
     | Gramext.NonA -> str "non" in
   errorlabstrm ""
     (str "Level " ++ int p ++ str " is already declared " ++
@@ -508,7 +508,7 @@ let register_empty_levels forpat levels =
 let find_position forpat assoc level =
   find_position_gen forpat false assoc level
 
-(* Synchronise the stack of level updates *) 
+(* Synchronise the stack of level updates *)
 let synchronize_level_positions () =
   let _ = find_position true None None in ()
 
@@ -517,7 +517,7 @@ let synchronize_level_positions () =
 
 (* Camlp4 levels do not treat NonA: use RightA with a NEXT on the left *)
 let camlp4_assoc = function
-  | Some Gramext.NonA | Some Gramext.RightA -> Gramext.RightA 
+  | Some Gramext.NonA | Some Gramext.RightA -> Gramext.RightA
   | None | Some Gramext.LeftA -> Gramext.LeftA
 
 (* [adjust_level assoc from prod] where [assoc] and [from] are the name
@@ -628,7 +628,7 @@ let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
     match interp_constr_prod_entry_key assoc from forpat typ with
       | (eobj,None,_) -> Gramext.Snterm (Gram.Entry.obj eobj)
       | (eobj,Some None,_) -> Gramext.Snext
-      | (eobj,Some (Some (lev,cur)),_) -> 
+      | (eobj,Some (Some (lev,cur)),_) ->
           Gramext.Snterml (Gram.Entry.obj eobj,constr_level lev)
 
 (**********************************************************************)

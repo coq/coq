@@ -33,7 +33,7 @@ open Names
 let nat_of_int dloc n =
   if is_pos_or_zero n then begin
       if less_than (of_string "5000") n then
-	Flags.if_warn msg_warning 
+	Flags.if_warn msg_warning
 	  (strbrk "Stack overflow or segmentation fault happens when " ++
 	   strbrk "working with large numbers in nat (observed threshold " ++
 	   strbrk "may vary from 5000 to 70000 depending on your system " ++
@@ -41,11 +41,11 @@ let nat_of_int dloc n =
       let ref_O = RRef (dloc, glob_O) in
       let ref_S = RRef (dloc, glob_S) in
       let rec mk_nat acc n =
-	if n <> zero then 
+	if n <> zero then
 	  mk_nat (RApp (dloc,ref_S, [acc])) (sub_1 n)
-	else 
+	else
 	  acc
-      in 
+      in
       mk_nat ref_O n
     end
   else
@@ -61,9 +61,9 @@ let rec int_of_nat = function
   | RApp (_,RRef (_,s),[a]) when s = glob_S -> add_1 (int_of_nat a)
   | RRef (_,z) when z = glob_O -> zero
   | _ -> raise Non_closed_number
-	  
+
 let uninterp_nat p =
-  try 
+  try
     Some (int_of_nat p)
   with
     Non_closed_number -> None

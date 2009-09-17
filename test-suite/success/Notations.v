@@ -14,7 +14,7 @@ Parameter P : Type -> Type -> Type -> Type.
 Notation "e |= t --> v" := (P e t v)     (at level 100, t at level 54).
 Check (nat |= nat --> nat).
 
-(* Check that first non empty definition at an empty level can be of any 
+(* Check that first non empty definition at an empty level can be of any
    associativity *)
 
 Definition marker := O.

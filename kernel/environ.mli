@@ -15,7 +15,7 @@ open Declarations
 open Sign
 (*i*)
 
-(*s Unsafe environments. We define here a datatype for environments. 
+(*s Unsafe environments. We define here a datatype for environments.
    Since typing is not yet defined, it is not possible to check the
    informations added in environments, and that is why we speak here
    of ``unsafe'' environments. *)
@@ -24,7 +24,7 @@ open Sign
    - a context for de Bruijn variables
    - a context for de Bruijn variables vm values
    - a context for section variables and goal assumptions
-   - a context for section variables and goal assumptions vm values 
+   - a context for section variables and goal assumptions vm values
    - a context for global constants and axioms
    - a context for inductive definitions
    - a set of universe constraints
@@ -55,7 +55,7 @@ val empty_context : env -> bool
 
 (************************************************************************)
 (*s Context of de Bruijn variables ([rel_context]) *)
-val nb_rel           : env -> int 
+val nb_rel           : env -> int
 val push_rel         : rel_declaration -> env -> env
 val push_rel_context :     rel_context -> env -> env
 val push_rec_types   : rec_declaration -> env -> env
@@ -80,12 +80,12 @@ val empty_named_context_val : named_context_val
 
 (* [map_named_val f ctxt] apply [f] to the body and the type of
    each declarations.
-   *** /!\ ***   [f t] should be convertible with t *)  
-val map_named_val : 
+   *** /!\ ***   [f t] should be convertible with t *)
+val map_named_val :
    (constr -> constr) -> named_context_val -> named_context_val
 
 val push_named : named_declaration -> env -> env
-val push_named_context_val  : 
+val push_named_context_val  :
     named_declaration -> named_context_val -> named_context_val
 
 
@@ -98,7 +98,7 @@ val lookup_named_val : variable -> named_context_val -> named_declaration
 val evaluable_named  : variable -> env -> bool
 val named_type : variable -> env -> types
 val named_body : variable -> env -> constr option
- 
+
 (*s Recurrence on [named_context]: older declarations processed first *)
 
 val fold_named_context :
@@ -181,7 +181,7 @@ val keep_hyps : env -> Idset.t -> section_context
   actually only a datatype to store a term with its type and the type of its
   type. *)
 
-type unsafe_judgment = { 
+type unsafe_judgment = {
   uj_val  : constr;
   uj_type : types }
 
@@ -189,14 +189,14 @@ val make_judge : constr -> types -> unsafe_judgment
 val j_val  : unsafe_judgment -> constr
 val j_type : unsafe_judgment -> types
 
-type unsafe_type_judgment = { 
+type unsafe_type_judgment = {
   utj_val  : constr;
   utj_type : sorts }
 
 
 (*s Compilation of global declaration *)
 
-val compile_constant_body : 
+val compile_constant_body :
     env -> constr_substituted option -> bool -> bool -> Cemitcodes.body_code
                                  (* opaque *) (* boxed *)
 
@@ -206,7 +206,7 @@ exception Hyp_not_found
    return [tail::(f head (id,_,_) (rev tail))::head].
    the value associated to id should not change *)
 
-val apply_to_hyp : named_context_val -> variable -> 
+val apply_to_hyp : named_context_val -> variable ->
   (named_context -> named_declaration -> named_context -> named_declaration) ->
     named_context_val
 
@@ -219,7 +219,7 @@ val apply_to_hyp_and_dependent_on : named_context_val -> variable ->
       named_context_val
 
 val insert_after_hyp : named_context_val -> variable ->
-  named_declaration -> 
+  named_declaration ->
     (named_context -> unit) -> named_context_val
 
 val remove_hyps : identifier list -> (named_declaration -> named_declaration) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val
@@ -250,7 +250,7 @@ type context_object =
 module OrderedContextObject :  Set.OrderedType with type t = context_object
 module ContextObjectMap : Map.S with type key = context_object
 
-(* collects all the assumptions (optionally including opaque definitions) 
+(* collects all the assumptions (optionally including opaque definitions)
    on which a term relies (together with their type) *)
 val assumptions : ?add_opaque:bool -> transparent_state -> constr -> env -> Term.types ContextObjectMap.t
 

@@ -27,7 +27,7 @@ let env () = env_of_safe_env !global_env
 
 let env_is_empty () = is_empty !global_env
 
-let _ = 
+let _ =
   declare_summary "Global environment"
     { freeze_function = (fun () -> !global_env);
       unfreeze_function = (fun fr -> global_env := fr);
@@ -57,12 +57,12 @@ let push_named_def d =
       anomaly "Kernel names do not match."
 *)
 
-let add_thing add dir id thing = 
+let add_thing add dir id thing =
   let kn, newenv = add dir (label_of_id id) thing !global_env in
     global_env := newenv;
     kn
 
-let add_constant = add_thing add_constant 
+let add_constant = add_thing add_constant
 let add_mind = add_thing add_mind
 let add_modtype = add_thing (fun _ -> add_modtype) ()
 let add_module = add_thing (fun _ -> add_module) ()
@@ -120,16 +120,16 @@ let lookup_modtype kn = lookup_modtype kn (env())
 
 
 
-let start_library dir = 
+let start_library dir =
   let mp,newenv = start_library dir !global_env in
-    global_env := newenv; 
+    global_env := newenv;
     mp
 
 let export s = snd (export !global_env s)
 
-let import cenv digest = 
-  let mp,newenv = import cenv digest !global_env in 
-    global_env := newenv; 
+let import cenv digest =
+  let mp,newenv = import cenv digest !global_env in
+    global_env := newenv;
     mp
 
 
@@ -137,13 +137,13 @@ let import cenv digest =
 (*s Function to get an environment from the constants part of the global
     environment and a given context. *)
 
-let env_of_context hyps = 
+let env_of_context hyps =
   reset_with_named_context hyps (env())
 
 open Libnames
 
 let type_of_reference env = function
-  | VarRef id -> Environ.named_type id env 
+  | VarRef id -> Environ.named_type id env
   | ConstRef c -> Typeops.type_of_constant env c
   | IndRef ind ->
      let specif = Inductive.lookup_mind_specif env ind in

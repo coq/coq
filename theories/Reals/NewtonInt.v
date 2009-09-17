@@ -31,7 +31,7 @@ Lemma FTCN_step1 :
     Newton_integrable (fun x:R => derive_pt f x (cond_diff f x)) a b.
 Proof.
   intros f a b; unfold Newton_integrable in |- *; exists (d1 f);
-    unfold antiderivative in |- *; intros; case (Rle_dec a b); 
+    unfold antiderivative in |- *; intros; case (Rle_dec a b);
       intro;
         [ left; split; [ intros; exists (cond_diff f x); reflexivity | assumption ]
           | right; split;
@@ -229,15 +229,15 @@ Lemma NewtonInt_P6 :
     l * NewtonInt f a b pr1 + NewtonInt g a b pr2.
 Proof.
   intros f g l a b pr1 pr2; unfold NewtonInt in |- *;
-    case (NewtonInt_P5 f g l a b pr1 pr2); intros; case pr1; 
-      intros; case pr2; intros; case (total_order_T a b); 
+    case (NewtonInt_P5 f g l a b pr1 pr2); intros; case pr1;
+      intros; case pr2; intros; case (total_order_T a b);
         intro.
   elim s; intro.
   elim o; intro.
   elim o0; intro.
   elim o1; intro.
   assert (H2 := antiderivative_P1 f g x0 x1 l a b H0 H1);
-    assert (H3 := antiderivative_Ucte _ _ _ _ _ H H2); 
+    assert (H3 := antiderivative_Ucte _ _ _ _ _ H H2);
       elim H3; intros; assert (H5 : a <= a <= b).
   split; [ right; reflexivity | left; assumption ].
   assert (H6 : a <= b <= b).
@@ -260,7 +260,7 @@ Proof.
   unfold antiderivative in H1; elim H1; intros;
     elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H3 r)).
   assert (H2 := antiderivative_P1 f g x0 x1 l b a H0 H1);
-    assert (H3 := antiderivative_Ucte _ _ _ _ _ H H2); 
+    assert (H3 := antiderivative_Ucte _ _ _ _ _ H H2);
       elim H3; intros; assert (H5 : b <= a <= a).
   split; [ left; assumption | right; reflexivity ].
   assert (H6 : b <= b <= a).
@@ -313,7 +313,7 @@ Proof.
   apply RRle_abs.
   apply H13.
   apply Rplus_le_reg_l with (- x); rewrite <- Rplus_assoc; rewrite Rplus_opp_l;
-    rewrite Rplus_0_l; rewrite Rplus_comm; unfold D in |- *; 
+    rewrite Rplus_0_l; rewrite Rplus_comm; unfold D in |- *;
       apply Rmin_r.
   elim n; left; assumption.
   assert
@@ -396,7 +396,7 @@ Proof.
   cut (b < x + h).
   intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ r0 H14)).
   apply Rplus_lt_reg_r with (- h - b); replace (- h - b + b) with (- h);
-    [ idtac | ring ]; replace (- h - b + (x + h)) with (x - b); 
+    [ idtac | ring ]; replace (- h - b + (x + h)) with (x - b);
     [ idtac | ring ]; apply Rle_lt_trans with (Rabs h).
   rewrite <- Rabs_Ropp; apply RRle_abs.
   apply Rlt_le_trans with D.

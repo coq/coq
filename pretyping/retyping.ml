@@ -81,7 +81,7 @@ let retype sigma =
     | Cast (c,_, t) -> t
     | Sort _ | Prod _ -> mkSort (sort_of env cstr)
 
-  and sort_of env t = 
+  and sort_of env t =
     match kind_of_term t with
     | Cast (c,_, s) when isSort s -> destSort s
     | Sort (Prop c) -> type1_sort
@@ -111,14 +111,14 @@ let retype sigma =
     | Cast (c,_, s) when isSort s -> family_of_sort (destSort s)
     | Sort (Prop c) -> InType
     | Sort (Type u) -> InType
-    | Prod (name,t,c2) -> 
+    | Prod (name,t,c2) ->
 	let s2 = sort_family_of (push_rel (name,None,t) env) c2 in
 	if Environ.engagement env <> Some ImpredicativeSet &&
 	   s2 = InSet & sort_family_of env t = InType then InType else s2
     | App(f,args) when isGlobalRef f ->
 	let t = type_of_global_reference_knowing_parameters env f args in
         family_of_sort (sort_of_atomic_type env sigma t args)
-    | App(f,args) -> 
+    | App(f,args) ->
 	family_of_sort (sort_of_atomic_type env sigma (type_of env f) args)
     | Lambda _ | Fix _ | Construct _ ->
         anomaly "sort_of: Not a type (1)"

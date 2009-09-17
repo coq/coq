@@ -12,12 +12,12 @@
 
 (*s A search problem implements the following signature [SearchProblem].
     [state] is the type of states of the search tree.
-    [branching] is the branching function; if [branching s] returns an 
+    [branching] is the branching function; if [branching s] returns an
     empty list, then search from [s] is aborted; successors of [s] are
     recursively searched in the order they appear in the list.
-    [success] determines whether a given state is a success. 
+    [success] determines whether a given state is a success.
 
-    [pp] is a pretty-printer for states used in debugging versions of the 
+    [pp] is a pretty-printer for states used in debugging versions of the
     search functions. *)
 
 module type SearchProblem = sig
@@ -33,7 +33,7 @@ module type SearchProblem = sig
 end
 
 (*s Functor [Make] returns some search functions given a search problem.
-    Search functions raise [Not_found] if no success is found. 
+    Search functions raise [Not_found] if no success is found.
     States are always visited in the order they appear in the
     output of [branching] (whatever the search method is).
     Debugging versions of the search functions print the position of the

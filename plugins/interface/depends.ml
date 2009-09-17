@@ -317,7 +317,7 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
     | TacLApply c -> depends_of_'constr c acc
 
     (* Automation tactics *)
-    | TacTrivial (cl, bs) -> 
+    | TacTrivial (cl, bs) ->
 	(* TODO: Maybe make use of bs: list of hint bases to be used. *)
 	list_union_map depends_of_'constr cl acc
     | TacAuto (_, cs, bs) ->
@@ -336,7 +336,7 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
     | TacClear     _
     | TacClearBody _
     | TacMove      _
-    | TacRename    _ 
+    | TacRename    _
     | TacRevert    _ -> acc
 
     (* Constructors *)

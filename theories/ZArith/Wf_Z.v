@@ -40,7 +40,7 @@ Proof.
   intro x; destruct x; intros;
     [ exists 0%nat; auto with arith
       | specialize (ZL4 p); intros Hp; elim Hp; intros; exists (S x); intros;
-	simpl in |- *; specialize (nat_of_P_o_P_of_succ_nat_eq_succ x); 
+	simpl in |- *; specialize (nat_of_P_o_P_of_succ_nat_eq_succ x);
 	  intro Hx0; rewrite <- H0 in Hx0; apply f_equal with (f := Zpos);
 	    apply nat_of_P_inj; auto with arith
       | absurd (0 <= Zneg p);
@@ -120,13 +120,13 @@ Proof.
       | assumption ].
 Qed.
 
-Section Efficient_Rec. 
+Section Efficient_Rec.
 
-  (** [natlike_rec2] is the same as [natlike_rec], but with a different proof, designed 
+  (** [natlike_rec2] is the same as [natlike_rec], but with a different proof, designed
       to give a better extracted term. *)
 
   Let R (a b:Z) := 0 <= a /\ a < b.
-  
+
   Let R_wf : well_founded R.
   Proof.
     set

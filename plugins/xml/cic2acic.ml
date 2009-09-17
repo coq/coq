@@ -22,12 +22,12 @@ let get_module_path_of_full_path path =
    List.filter
     (function modul -> Libnames.is_dirpath_prefix_of modul dirpath) modules
   with
-     [] -> 
+     [] ->
        Pp.warning ("Modules not supported: reference to "^
          Libnames.string_of_path path^" will be wrong");
        dirpath
    | [modul] -> modul
-   | _ -> 
+   | _ ->
        raise TwoModulesWhoseDirPathIsOneAPrefixOfTheOther
 ;;
 
@@ -134,7 +134,7 @@ let token_list_of_kernel_name ~keep_sections kn tag =
        else
         let module_path =
           let f = N.string_of_id (N.id_of_msid self) in
-          let _,longf = 
+          let _,longf =
             System.find_file_in_path (Library.get_load_path ()) (f^".v") in
           let ldir0 = Library.find_logical_path (Filename.dirname longf) in
           let id = Names.id_of_string (Filename.basename f) in
@@ -159,9 +159,9 @@ let token_list_of_kernel_name tag =
  let module N = Names in
  let module LN = Libnames in
  let id,dir = match tag with
-   | Variable kn -> 
+   | Variable kn ->
        N.id_of_label (N.label kn), Lib.cwd ()
-   | Constant con -> 
+   | Constant con ->
        N.id_of_label (N.con_label con),
        Lib.remove_section_part (LN.ConstRef con)
    | Inductive kn ->
@@ -211,7 +211,7 @@ module CPropRetyping =
         | T.Prod (na,c1,c2) -> subst_type env sigma (T.subst1 h c2) rest
         | _ -> Util.anomaly "Non-functional construction"
 
-                                                                                
+
   let sort_of_atomic_type env sigma ft args =
   let rec concl_of_arity env ar =
     match T.kind_of_term (DoubleTypeInference.whd_betadeltaiotacprop env sigma ar) with
@@ -219,7 +219,7 @@ module CPropRetyping =
       | T.Sort s -> Coq_sort (T.family_of_sort s)
       | _ -> outsort env sigma (subst_type env sigma ft (Array.to_list args))
   in concl_of_arity env ft
-                                                                                
+
 let typeur sigma metamap =
   let rec type_of env cstr=
     match Term.kind_of_term cstr with
@@ -265,7 +265,7 @@ let typeur sigma metamap =
         | Coq_sort T.InSet -> T.mkSet
         | Coq_sort T.InType -> T.mkType Univ.type1_univ (* ERROR HERE *)
         | CProp -> T.mkConst DoubleTypeInference.cprop
-                                                                                
+
   and sort_of env t =
     match Term.kind_of_term t with
     | T.Cast (c,_, s) when T.isSort s -> family_of_term s
@@ -287,7 +287,7 @@ let typeur sigma metamap =
     | T.Lambda _ | T.Fix _ | T.Construct _ ->
         Util.anomaly "sort_of: Not a type (1)"
     | _ -> outsort env sigma (type_of env t)
-                                                                                
+
   and sort_family_of env t =
     match T.kind_of_term t with
     | T.Cast (c,_, s) when T.isSort s -> family_of_term s
@@ -299,7 +299,7 @@ let typeur sigma metamap =
     | T.Lambda _ | T.Fix _ | T.Construct _ ->
         Util.anomaly "sort_of: Not a type (1)"
     | _ -> outsort env sigma (type_of env t)
-                                                                                
+
   in type_of, sort_of, sort_family_of
 
   let get_type_of env sigma c = let f,_,_ = typeur sigma [] in f env c
@@ -484,7 +484,7 @@ print_endline "PASSATO" ; flush stdout ;
            (* an explicit named substitution of "type" *)
            (* (variable * argument) list, whose        *)
            (* second element is the list of residual   *)
-           (* arguments and whose third argument is    *) 
+           (* arguments and whose third argument is    *)
            (* the list of uninstantiated variables     *)
            let rec get_explicit_subst variables arguments =
             match variables,arguments with
@@ -497,7 +497,7 @@ print_endline "PASSATO" ; flush stdout ;
                 let he1'' =
                  String.concat "/"
                   (List.map Names.string_of_id (List.rev he1')) ^ "/"
-                 ^ (Names.string_of_id he1_id) ^ ".var" 
+                 ^ (Names.string_of_id he1_id) ^ ".var"
                 in
                  (he1'',he2)::subst, extra_args, uninst
            in
@@ -528,7 +528,7 @@ print_endline "PASSATO" ; flush stdout ;
          in
 
           (* Now that we have all the auxiliary functions we  *)
-          (* can finally proceed with the main case analysis. *) 
+          (* can finally proceed with the main case analysis. *)
           match T.kind_of_term tt with
              T.Rel n ->
               let id =

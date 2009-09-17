@@ -40,7 +40,7 @@ Require Export Classical_sets.
 Section Sets_as_an_algebra.
 
   Variable U : Type.
-  
+
   Lemma sincl_add_x :
     forall (A B:Ensemble U) (x:U),
       ~ In U A x ->
@@ -63,7 +63,7 @@ Section Sets_as_an_algebra.
     intros X x H'; red in |- *.
     intros x0 H'0; elim H'0; auto with sets.
   Qed.
-  
+
   Lemma incl_soustr :
     forall (X Y:Ensemble U) (x:U),
       Included U X Y -> Included U (Subtract U X x) (Subtract U Y x).
@@ -73,7 +73,7 @@ Section Sets_as_an_algebra.
     intros H'1 H'2.
     apply Subtract_intro; auto with sets.
   Qed.
-  
+
   Lemma incl_soustr_add_l :
     forall (X:Ensemble U) (x:U), Included U (Subtract U (Add U X x) x) X.
   Proof.
@@ -93,7 +93,7 @@ Section Sets_as_an_algebra.
     red in |- *; intro H'1; apply H'; rewrite H'1; auto with sets.
   Qed.
   Hint Resolve incl_soustr_add_r: sets v62.
-  
+
   Lemma add_soustr_2 :
     forall (X:Ensemble U) (x:U),
       In U X x -> Included U X (Add U (Subtract U X x) x).
@@ -103,7 +103,7 @@ Section Sets_as_an_algebra.
     elim (classic (x = x0)); intro K; auto with sets.
     elim K; auto with sets.
   Qed.
-  
+
   Lemma add_soustr_1 :
     forall (X:Ensemble U) (x:U),
       In U X x -> Included U (Add U (Subtract U X x) x) X.
@@ -114,7 +114,7 @@ Section Sets_as_an_algebra.
     intros t H'1; try assumption.
     rewrite <- (Singleton_inv U x t); auto with sets.
   Qed.
-  
+
   Lemma add_soustr_xy :
     forall (X:Ensemble U) (x y:U),
       x <> y -> Subtract U (Add U X x) y = Add U (Subtract U X y) x.
@@ -133,7 +133,7 @@ Section Sets_as_an_algebra.
     intro H'0; elim H'0; auto with sets.
     intro H'0; rewrite <- H'0; auto with sets.
   Qed.
-  
+
   Lemma incl_st_add_soustr :
     forall (X Y:Ensemble U) (x:U),
       ~ In U X x ->
@@ -151,13 +151,13 @@ Section Sets_as_an_algebra.
     red in |- *; intro H'0; apply H'2.
     rewrite H'0; auto 8 using add_soustr_xy, add_soustr_1, add_soustr_2 with sets.
   Qed.
-  
+
   Lemma Sub_Add_new :
     forall (X:Ensemble U) (x:U), ~ In U X x -> X = Subtract U (Add U X x) x.
   Proof.
     auto using incl_soustr_add_l with sets.
   Qed.
-  
+
   Lemma Simplify_add :
     forall (X X0:Ensemble U) (x:U),
       ~ In U X x -> ~ In U X0 x -> Add U X x = Add U X0 x -> X = X0.
@@ -167,7 +167,7 @@ Section Sets_as_an_algebra.
     rewrite (Sub_Add_new X0 x); auto with sets.
     rewrite H'1; auto with sets.
   Qed.
-  
+
   Lemma Included_Add :
     forall (X A:Ensemble U) (x:U),
       Included U X (Add U A x) ->
@@ -201,7 +201,7 @@ Section Sets_as_an_algebra.
     absurd (In U X x0); auto with sets.
     rewrite <- H'5; auto with sets.
   Qed.
-  
+
   Lemma setcover_inv :
     forall A x y:Ensemble U,
       covers (Ensemble U) (Power_set_PO U A) y x ->
@@ -219,7 +219,7 @@ Section Sets_as_an_algebra.
     elim H'1.
     exists z; auto with sets.
   Qed.
-  
+
   Theorem Add_covers :
     forall A a:Ensemble U,
       Included U a A ->
@@ -255,7 +255,7 @@ Section Sets_as_an_algebra.
     intros x1 H'10; elim H'10; auto with sets.
     intros x2 H'11; elim H'11; auto with sets.
   Qed.
-  
+
   Theorem covers_Add :
     forall A a a':Ensemble U,
       Included U a A ->
@@ -301,7 +301,7 @@ Section Sets_as_an_algebra.
     intros x H'1; elim H'1; intros H'2 H'3; rewrite H'2; clear H'1.
     apply Add_covers; intuition.
   Qed.
-  
+
   Theorem Singleton_atomic :
     forall (x:U) (A:Ensemble U),
       In U A x ->
@@ -311,7 +311,7 @@ Section Sets_as_an_algebra.
     rewrite <- (Empty_set_zero' U x).
     apply Add_covers; auto with sets.
   Qed.
-  
+
   Lemma less_than_singleton :
     forall (X:Ensemble U) (x:U),
       Strict_Included U X (Singleton U x) -> X = Empty_set U.

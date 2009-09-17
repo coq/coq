@@ -24,7 +24,7 @@ open Libnames
 
 type contexts = Parameters | Properties
 
-type typeclass_error = 
+type typeclass_error =
     | NotAClass of constr
     | UnboundMethod of global_reference * identifier located (* Class name, method *)
     | NoInstance of identifier located * constr list
@@ -41,7 +41,7 @@ let unbound_method env cid id = typeclass_error env (UnboundMethod (cid, id))
 
 let no_instance env id args = typeclass_error env (NoInstance (id, args))
 
-let unsatisfiable_constraints env evd ev = 
+let unsatisfiable_constraints env evd ev =
   match ev with
   | None ->
       raise (TypeClassError (env, UnsatisfiableConstraints (evd, None)))
@@ -49,7 +49,7 @@ let unsatisfiable_constraints env evd ev =
       let loc, kind = Evd.evar_source ev evd in
 	raise (Stdpp.Exc_located (loc, TypeClassError
 	  (env, UnsatisfiableConstraints (evd, Some (ev, kind)))))
-	  
+
 let mismatched_ctx_inst env c n m = typeclass_error env (MismatchedContextInstance (c, n, m))
 
 let rec unsatisfiable_exception exn =

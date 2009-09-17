@@ -44,7 +44,7 @@ Proof. (* Intuitionistic *)
 unfold not in |- *; intros P notex n abs.
 apply notex.
 exists n; trivial.
-Qed. 
+Qed.
 
 Lemma not_ex_not_all :
  forall P:U -> Prop, ~ (exists n : U, ~ P n) -> forall n:U, P n.

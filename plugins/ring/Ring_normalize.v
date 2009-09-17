@@ -39,11 +39,11 @@ Variable Aeq : A -> A -> bool.
 (* Normal abtract Polynomials             *)
 (******************************************)
 (* DEFINITIONS :
-- A varlist is a sorted product of one or more variables : x, x*y*z 
+- A varlist is a sorted product of one or more variables : x, x*y*z
 - A monom is a constant, a varlist or the product of a constant by a varlist
   variables. 2*x*y, x*y*z, 3 are monoms : 2*3, x*3*y, 4*x*3 are NOT.
-- A canonical sum is either a monom or an ordered sum of monoms 
-  (the order on monoms is defined later) 
+- A canonical sum is either a monom or an ordered sum of monoms
+  (the order on monoms is defined later)
 - A normal polynomial it either a constant or a canonical sum or a constant
   plus a canonical sum
 *)
@@ -61,14 +61,14 @@ Inductive canonical_sum : Type :=
 
 (* Order on monoms *)
 
-(* That's the lexicographic order on varlist, extended by : 
-  - A constant is less than every monom 
+(* That's the lexicographic order on varlist, extended by :
+  - A constant is less than every monom
   - The relation between two varlist is preserved by multiplication by a
   constant.
 
-  Examples : 
+  Examples :
   3 < x < y
-  x*y < x*y*y*z 
+  x*y < x*y*y*z
   2*x*y < x*y*y*z
   x*y < 54*x*y*y*z
   4*x*y < 59*x*y*y*z
@@ -214,7 +214,7 @@ Fixpoint canonical_sum_scalar2 (l0:varlist) (s:canonical_sum) {struct s} :
   end.
 
 (* Computes c0*l0*s  *)
-Fixpoint canonical_sum_scalar3 (c0:A) (l0:varlist) 
+Fixpoint canonical_sum_scalar3 (c0:A) (l0:varlist)
  (s:canonical_sum) {struct s} : canonical_sum :=
   match s with
   | Cons_monom c l t =>
@@ -225,7 +225,7 @@ Fixpoint canonical_sum_scalar3 (c0:A) (l0:varlist)
   | Nil_monom => Nil_monom
   end.
 
-(* returns the product of two canonical sums *) 
+(* returns the product of two canonical sums *)
 Fixpoint canonical_sum_prod (s1 s2:canonical_sum) {struct s1} :
  canonical_sum :=
   match s1 with
@@ -282,7 +282,7 @@ Definition spolynomial_simplify (x:spolynomial) :=
 
 Variable vm : varmap A.
 
-(* Interpretation of list of variables 
+(* Interpretation of list of variables
  * [x1; ... ; xn ] is interpreted as (find v x1)* ... *(find v xn)
  * The unbound variables are mapped to 0. Normally this case sould
  * never occur. Since we want only to prove correctness theorems, which form
@@ -608,7 +608,7 @@ repeat rewrite ics_aux_ok.
 repeat rewrite interp_m_ok.
 rewrite H.
 rewrite varlist_merge_ok.
-repeat rewrite (SR_distr_right T). 
+repeat rewrite (SR_distr_right T).
 repeat rewrite <- (SR_mult_assoc T).
 repeat rewrite <- (SR_plus_assoc T).
 rewrite (SR_mult_permute T a (interp_vl l) (interp_vl v)).
@@ -620,7 +620,7 @@ repeat rewrite ics_aux_ok.
 repeat rewrite interp_m_ok.
 rewrite H.
 rewrite varlist_merge_ok.
-repeat rewrite (SR_distr_right T). 
+repeat rewrite (SR_distr_right T).
 repeat rewrite <- (SR_mult_assoc T).
 repeat rewrite <- (SR_plus_assoc T).
 reflexivity.
@@ -639,7 +639,7 @@ repeat rewrite ics_aux_ok.
 repeat rewrite interp_m_ok.
 rewrite H.
 rewrite varlist_merge_ok.
-repeat rewrite (SR_distr_right T). 
+repeat rewrite (SR_distr_right T).
 repeat rewrite <- (SR_mult_assoc T).
 repeat rewrite <- (SR_plus_assoc T).
 rewrite (SR_mult_permute T a (interp_vl l) (interp_vl v)).
@@ -651,7 +651,7 @@ repeat rewrite ics_aux_ok.
 repeat rewrite interp_m_ok.
 rewrite H.
 rewrite varlist_merge_ok.
-repeat rewrite (SR_distr_right T). 
+repeat rewrite (SR_distr_right T).
 repeat rewrite <- (SR_mult_assoc T).
 repeat rewrite <- (SR_plus_assoc T).
 rewrite (SR_mult_permute T c (interp_vl l) (interp_vl v)).

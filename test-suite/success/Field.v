@@ -31,7 +31,7 @@ Proof.
   intros.
    field.
 Abort.
- 
+
 (* Example 3 *)
 Goal forall a b : R, 1 / (a * b) * (1 / (1 / b)) = 1 / a.
 Proof.
@@ -44,7 +44,7 @@ Proof.
   intros.
    field_simplify_eq.
 Abort.
- 
+
 Goal forall a b : R, 1 / (a * b) * (1 / 1 / b) = 1 / a.
 Proof.
   intros.
@@ -58,21 +58,21 @@ Proof.
   intros.
    field; auto.
 Qed.
- 
+
 (* Example 5 *)
 Goal forall a : R, 1 = 1 * (1 / a) * a.
 Proof.
   intros.
    field.
 Abort.
- 
+
 (* Example 6 *)
 Goal forall a b : R, b = b * / a * a.
 Proof.
   intros.
    field.
 Abort.
- 
+
 (* Example 7 *)
 Goal forall a b : R, b = b * (1 / a) * a.
 Proof.

@@ -56,13 +56,13 @@ type contextual_reduction_function = env -> evar_map -> constr -> constr
 type reduction_function = contextual_reduction_function
 type local_reduction_function = evar_map -> constr -> constr
 
-type contextual_stack_reduction_function = 
+type contextual_stack_reduction_function =
     env -> evar_map -> constr -> constr * constr list
 type stack_reduction_function = contextual_stack_reduction_function
 type local_stack_reduction_function =
     evar_map -> constr -> constr * constr list
 
-type contextual_state_reduction_function = 
+type contextual_state_reduction_function =
     env -> evar_map -> state -> state
 type state_reduction_function = contextual_state_reduction_function
 type local_state_reduction_function = evar_map -> state -> state
@@ -79,15 +79,15 @@ val strong : reduction_function -> reduction_function
 val local_strong : local_reduction_function -> local_reduction_function
 val strong_prodspine : local_reduction_function -> local_reduction_function
 (*i
-val stack_reduction_of_reduction : 
+val stack_reduction_of_reduction :
   'a reduction_function -> 'a state_reduction_function
 i*)
-val stacklam : (state -> 'a) -> constr list -> constr -> constr stack -> 'a 
+val stacklam : (state -> 'a) -> constr list -> constr -> constr stack -> 'a
 
 (*s Generic Optimized Reduction Function using Closures *)
 
 val clos_norm_flags : Closure.RedFlags.reds -> reduction_function
-(* Same as [(strong whd_beta[delta][iota])], but much faster on big terms *) 
+(* Same as [(strong whd_beta[delta][iota])], but much faster on big terms *)
 val nf_beta : local_reduction_function
 val nf_betaiota : local_reduction_function
 val nf_betadeltaiota : reduction_function

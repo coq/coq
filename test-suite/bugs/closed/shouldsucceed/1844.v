@@ -188,7 +188,7 @@ with exec_finish: function -> outcome -> store -> value -> store -> Prop :=
 
 with exec_function: function -> store -> value -> store -> Prop :=
  | exec_function_intro: forall f st out st1 v st',
-     exec f.(fn_body) st out st1 -> 
+     exec f.(fn_body) st out st1 ->
      exec_finish f out st1 v st' ->
      exec_function f st v st'.
 

@@ -20,7 +20,7 @@ let not_impl name x =
   let desc =
     if Obj.is_block (Obj.repr x) then
       "tag = " ^ string_of_int (Obj.tag (Obj.repr x))
-    else 
+    else
       "int_val = " ^ string_of_int (Obj.magic x)
   in
   failwith ("<Q_util." ^ name ^ ", not impl: " ^ desc)

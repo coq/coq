@@ -35,7 +35,7 @@ let interp_binder_evars evdref env na t =
 
 let interp_binders_evars isevars env avoid l =
   List.fold_left
-    (fun (env, ids, params) ((loc, i), t) -> 
+    (fun (env, ids, params) ((loc, i), t) ->
       let n = Name i in
       let t' = interp_binder_evars isevars env n t in
       let d = (i,None,t') in
@@ -44,7 +44,7 @@ let interp_binders_evars isevars env avoid l =
 
 let interp_typeclass_context_evars isevars env avoid l =
   List.fold_left
-    (fun (env, ids, params) (iid, bk, cl) -> 
+    (fun (env, ids, params) (iid, bk, cl) ->
       let t' = interp_binder_evars isevars env (snd iid) cl in
       let i = match snd iid with
 	| Anonymous -> Nameops.next_name_away (Termops.named_hd env t' Anonymous) ids
@@ -56,13 +56,13 @@ let interp_typeclass_context_evars isevars env avoid l =
 
 let interp_constrs_evars isevars env avoid l =
   List.fold_left
-    (fun (env, ids, params) t -> 
+    (fun (env, ids, params) t ->
       let t' = interp_binder_evars isevars env Anonymous t in
       let id = Nameops.next_name_away (Termops.named_hd env t' Anonymous) ids in
       let d = (id,None,t') in
 	(push_named d env, id :: ids, d::params))
     (env, avoid, []) l
-    
+
 let interp_constr_evars_gen evdref env ?(impls=([],[])) kind c =
   SPretyping.understand_tcc_evars evdref env kind
     (intern_gen (kind=IsType) ~impls ( !evdref) env c)
@@ -99,11 +99,11 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
     match bk with
     | Implicit ->
 	Implicit_quantifiers.implicit_application Idset.empty (* need no avoid *)
-	  ~allow_partial:false (fun avoid (clname, (id, _, t)) -> 
-	    match clname with 
-	    | Some (cl, b) -> 
-		let t = 
-		  if b then 
+	  ~allow_partial:false (fun avoid (clname, (id, _, t)) ->
+	    match clname with
+	    | Some (cl, b) ->
+		let t =
+		  if b then
 		    let _k = class_info cl in
 		      CHole (Util.dummy_loc, Some Evd.InternalHole)
 		  else CHole (Util.dummy_loc, None)
@@ -113,21 +113,21 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
       | Explicit -> cl
   in
   let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
-  let k, ctx', imps, subst = 
+  let k, ctx', imps, subst =
     let c = Command.generalize_constr_expr tclass ctx in
     let c', imps = interp_type_evars_impls ~evdref:isevars env c in
     let ctx, c = decompose_prod_assum c' in
     let cl, args = Typeclasses.dest_class_app (push_rel_context ctx env) c in
       cl, ctx, imps, (List.rev args)
   in
-  let id = 
+  let id =
     match snd instid with
-    | Name id -> 
+    | Name id ->
 	let sp = Lib.make_path id in
 	  if Nametab.exists_cci sp then
 	    errorlabstrm "new_instance" (Nameops.pr_id id ++ Pp.str " already exists");
 	  id
-    | Anonymous -> 
+    | Anonymous ->
 	let i = Nameops.add_suffix (Classes.id_of_class k) "_instance_0" in
 	  Termops.next_global_ident_away false i (Termops.ids_of_context env)
   in
@@ -136,29 +136,29 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
   isevars := resolve_typeclasses ~onlyargs:false ~fail:true env' !isevars;
   let sigma =  !isevars in
   let subst = List.map (Evarutil.nf_evar sigma) subst in
-  let subst = 
-    let props = 
+  let subst =
+    let props =
       match props with
-      | CRecord (loc, _, fs) -> 
-	  if List.length fs > List.length k.cl_props then 
+      | CRecord (loc, _, fs) ->
+	  if List.length fs > List.length k.cl_props then
 	    Classes.mismatched_props env' (List.map snd fs) k.cl_props;
 	  fs
-      | _ -> 
-	  if List.length k.cl_props <> 1 then 
+      | _ ->
+	  if List.length k.cl_props <> 1 then
 	    errorlabstrm "new_instance" (Pp.str "Expected a definition for the instance body")
 	  else [(dummy_loc, Nameops.out_name (pi1 (List.hd k.cl_props))), props]
     in
-      match k.cl_props with 
-      | [(na,b,ty)] -> 
+      match k.cl_props with
+      | [(na,b,ty)] ->
 	  let term = match props with [] -> CHole (Util.dummy_loc, None) | [(_,f)] -> f | _ -> assert false in
 	  let ty' = substl subst ty in
 	  let c = interp_casted_constr_evars isevars env' term ty' in
 	    c :: subst
       | _ ->
-	  let props, rest = 
+	  let props, rest =
 	    List.fold_left
-	      (fun (props, rest) (id,_,_) -> 
-		try 
+	      (fun (props, rest) (id,_,_) ->
+		try
 		  let ((loc, mid), c) = List.find (fun ((_,id'), c) -> Name id' = id) rest in
 		  let rest' = List.filter (fun ((_,id'), c) -> Name id' <> id) rest in
 		    Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
@@ -166,23 +166,23 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 		with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
 	      ([], props) k.cl_props
 	  in
-	    if rest <> [] then 
+	    if rest <> [] then
 	      unbound_method env' k.cl_impl (fst (List.hd rest))
 	    else
 	      fst (type_ctx_instance isevars env' k.cl_props props subst)
   in
-  let subst = List.fold_left2 
+  let subst = List.fold_left2
     (fun subst' s (_, b, _) -> if b = None then s :: subst' else subst')
     [] subst (k.cl_props @ snd k.cl_context)
   in
   let inst_constr, ty_constr = instance_constructor k subst in
   isevars := Evarutil.nf_evar_defs !isevars;
   let term = Evarutil.nf_isevar !isevars (it_mkLambda_or_LetIn inst_constr ctx')
-  and termtype = Evarutil.nf_isevar !isevars (it_mkProd_or_LetIn ty_constr ctx') 
+  and termtype = Evarutil.nf_isevar !isevars (it_mkProd_or_LetIn ty_constr ctx')
   in
     isevars := undefined_evars !isevars;
     Evarutil.check_evars env Evd.empty !isevars termtype;
-    let hook vis gr = 
+    let hook vis gr =
       let cst = match gr with ConstRef kn -> kn | _ -> assert false in
       let inst = Typeclasses.new_instance k pri global cst in
 	Impargs.declare_manual_implicits false gr ~enriching:false imps;
@@ -191,4 +191,4 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
     let evm = Subtac_utils.evars_of_term ( !isevars) Evd.empty term in
     let obls, constr, typ = Eterm.eterm_obligations env id !isevars evm 0 term termtype in
       id, Subtac_obligations.add_definition id constr typ ~kind:(Global,false,Instance) ~hook obls
-	
+

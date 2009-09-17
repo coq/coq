@@ -2,8 +2,8 @@ Check (forall A:Type, (exists x:A, forall (y:A), x <> y) -> 2 = 3).
 
 
 
-Inductive nat : Set := 
- | O : nat 
+Inductive nat : Set :=
+ | O : nat
  | S : nat->nat.
 Check nat.
 Check O.
@@ -18,8 +18,8 @@ Print le.
 Theorem zero_leq_three: 0 <= 3.
 
 Proof.
- constructor 2. 
- constructor 2.  
+ constructor 2.
+ constructor 2.
  constructor 2.
  constructor 1.
 
@@ -35,7 +35,7 @@ Qed.
 
 Lemma zero_lt_three : 0 < 3.
 Proof.
- repeat constructor. 
+ repeat constructor.
 Qed.
 
 Print zero_lt_three.
@@ -134,7 +134,7 @@ Require Import Compare_dec.
 
 Check le_lt_dec.
 
-Definition max (n p :nat) := match le_lt_dec n p with 
+Definition max (n p :nat) := match le_lt_dec n p with
                              | left _ => p
                              | right _ => n
                              end.
@@ -154,9 +154,9 @@ Extraction max.
 
 
 Inductive tree(A:Type)   : Type :=
-    node : A -> forest A -> tree A 
+    node : A -> forest A -> tree A
 with
-  forest (A: Type)    : Type := 
+  forest (A: Type)    : Type :=
     nochild  : forest A |
     addchild : tree A -> forest A -> forest A.
 
@@ -164,7 +164,7 @@ with
 
 
 
-Inductive 
+Inductive
   even    : nat->Prop :=
     evenO : even  O |
     evenS : forall n, odd n -> even (S n)
@@ -178,11 +178,11 @@ Qed.
 
 
 
-Definition nat_case := 
+Definition nat_case :=
  fun (Q : Type)(g0 : Q)(g1 : nat -> Q)(n:nat) =>
     match n return Q with
-    | 0 => g0 
-    | S p => g1 p 
+    | 0 => g0
+    | S p => g1 p
     end.
 
 Eval simpl in (nat_case nat 0 (fun p => p) 34).
@@ -202,7 +202,7 @@ Eval simpl in fun p => pred (S p).
 
 
 Definition xorb (b1 b2:bool) :=
-match b1, b2 with 
+match b1, b2 with
  | false, true => true
  | true, false => true
  | _ , _       => false
@@ -210,7 +210,7 @@ end.
 
 
  Definition pred_spec (n:nat) := {m:nat | n=0 /\ m=0  \/ n = S m}.
-  
+
 
  Definition predecessor : forall n:nat, pred_spec n.
   intro n;case n.
@@ -222,7 +222,7 @@ Print predecessor.
 
 Extraction predecessor.
 
-Theorem nat_expand : 
+Theorem nat_expand :
   forall n:nat, n = match n with 0 => 0 | S p => S p end.
  intro n;case n;simpl;auto.
 Qed.
@@ -230,7 +230,7 @@ Qed.
 Check (fun p:False => match p return 2=3 with end).
 
 Theorem fromFalse : False -> 0=1.
- intro absurd. 
+ intro absurd.
  contradiction.
 Qed.
 
@@ -246,12 +246,12 @@ Section equality_elimination.
 
 End equality_elimination.
 
-           
+
 Theorem trans : forall n m p:nat, n=m -> m=p -> n=p.
 Proof.
- intros n m p eqnm.  
+ intros n m p eqnm.
  case eqnm.
- trivial.        
+ trivial.
 Qed.
 
 Lemma Rw :  forall x y: nat, y = y * x -> y * x * x = y.
@@ -284,7 +284,7 @@ Lemma four_n : forall n:nat, n+n+n+n = 4*n.
 
  Undo.
  intro n; pattern n at 1.
- 
+
 
  rewrite <- mult_1_l.
  repeat rewrite   mult_distr_S.
@@ -316,7 +316,7 @@ Proof.
  intros m Hm; exists m;trivial.
 Qed.
 
-Definition Vtail_total 
+Definition Vtail_total
    (A : Type) (n : nat) (v : vector A n) : vector A (pred n):=
 match v in (vector _ n0) return (vector A (pred n0)) with
 | Vnil => Vnil A
@@ -324,7 +324,7 @@ match v in (vector _ n0) return (vector A (pred n0)) with
 end.
 
 Definition Vtail' (A:Type)(n:nat)(v:vector A n) : vector A (pred n).
- intros A n v; case v.  
+ intros A n v; case v.
  simpl.
  exact (Vnil A).
  simpl.
@@ -333,7 +333,7 @@ Defined.
 
 (*
 Inductive Lambda : Set :=
-  lambda : (Lambda -> False) -> Lambda. 
+  lambda : (Lambda -> False) -> Lambda.
 
 
 Error: Non strictly positive occurrence of "Lambda" in
@@ -349,7 +349,7 @@ Section Paradox.
  (*
   understand matchL Q l (fun h : Lambda -> False => t)
 
-  as match l return Q with lambda h => t end 
+  as match l return Q with lambda h => t end
  *)
 
  Definition application (f x: Lambda) :False :=
@@ -379,26 +379,26 @@ Definition isingle l := inode l (fun i => ileaf).
 
 Definition t1 := inode 0 (fun n => isingle (Z_of_nat (2*n))).
 
-Definition t2 := inode 0 
-                      (fun n : nat => 
+Definition t2 := inode 0
+                      (fun n : nat =>
                                inode (Z_of_nat n)
                                      (fun p => isingle (Z_of_nat (n*p)))).
 
 
 Inductive itree_le : itree-> itree -> Prop :=
   | le_leaf : forall t, itree_le  ileaf t
-  | le_node  : forall l l' s s', 
-                       Zle l l' -> 
-                      (forall i, exists j:nat, itree_le (s i) (s' j)) -> 
+  | le_node  : forall l l' s s',
+                       Zle l l' ->
+                      (forall i, exists j:nat, itree_le (s i) (s' j)) ->
                       itree_le  (inode  l s) (inode  l' s').
 
 
-Theorem itree_le_trans : 
+Theorem itree_le_trans :
   forall t t', itree_le t t' ->
                forall t'', itree_le t' t'' -> itree_le t t''.
  induction t.
  constructor 1.
- 
+
  intros t'; case t'.
  inversion 1.
  intros z0 i0 H0.
@@ -411,20 +411,20 @@ Theorem itree_le_trans :
  inversion_clear H0.
  intro i2; case (H4 i2).
  intros.
- generalize (H i2 _ H0). 
+ generalize (H i2 _ H0).
  intros.
  case (H3 x);intros.
  generalize (H5 _ H6).
  exists x0;auto.
 Qed.
 
- 
+
 
 Inductive itree_le' : itree-> itree -> Prop :=
   | le_leaf' : forall t, itree_le'  ileaf t
-  | le_node' : forall l l' s s' g, 
-                       Zle l l' ->  
-                      (forall i, itree_le' (s i) (s' (g i))) -> 
+  | le_node' : forall l l' s s' g,
+                       Zle l l' ->
+                      (forall i, itree_le' (s i) (s' (g i))) ->
                        itree_le'  (inode  l s) (inode  l' s').
 
 
@@ -436,7 +436,7 @@ Lemma t1_le_t2 : itree_le t1 t2.
  constructor.
  auto with zarith.
  intro i; exists (2 * i).
- unfold isingle. 
+ unfold isingle.
  constructor.
  auto with zarith.
  exists i;constructor.
@@ -457,7 +457,7 @@ Qed.
 
 Require Import List.
 
-Inductive ltree  (A:Set) : Set :=  
+Inductive ltree  (A:Set) : Set :=
           lnode   : A -> list (ltree A) -> ltree A.
 
 Inductive prop : Prop :=
@@ -482,8 +482,8 @@ Qed.
 Check (fun (P:Prop->Prop)(p: ex_Prop P) =>
       match p with exP_intro X HX => X end).
 Error:
-Incorrect elimination of "p" in the inductive type  
-"ex_Prop", the return type has sort "Type" while it should be 
+Incorrect elimination of "p" in the inductive type
+"ex_Prop", the return type has sort "Type" while it should be
 "Prop"
 
 Elimination of an inductive object of sort "Prop"
@@ -493,11 +493,11 @@ because proofs can be eliminated only to build proofs
 *)
 
 
-Inductive  typ : Type := 
-  typ_intro : Type -> typ. 
+Inductive  typ : Type :=
+  typ_intro : Type -> typ.
 
 Definition typ_inject: typ.
-split. 
+split.
 exact typ.
 (*
 Defined.
@@ -543,13 +543,13 @@ Reset comes_from_the_left.
 
  Definition comes_from_the_left (P Q:Prop)(H:P \/ Q): Prop :=
   match H with
-         |  or_introl p => True 
+         |  or_introl p => True
          |  or_intror q => False
   end.
 
 Error:
-Incorrect elimination of "H" in the inductive type  
-"or", the return type has sort "Type" while it should be 
+Incorrect elimination of "H" in the inductive type
+"or", the return type has sort "Type" while it should be
 "Prop"
 
 Elimination of an inductive object of sort "Prop"
@@ -561,41 +561,41 @@ because proofs can be eliminated only to build proofs
 Definition comes_from_the_left_sumbool
             (P Q:Prop)(x:{P}+{Q}): Prop :=
   match x with
-         |  left  p => True 
+         |  left  p => True
          |  right q => False
   end.
 
 
 
-                    
+
 Close Scope Z_scope.
 
 
 
 
 
-Theorem S_is_not_O : forall n, S n <> 0. 
+Theorem S_is_not_O : forall n, S n <> 0.
 
-Definition Is_zero (x:nat):= match x with 
-                                     | 0 => True  
+Definition Is_zero (x:nat):= match x with
+                                     | 0 => True
                                      | _ => False
                              end.
  Lemma O_is_zero : forall m, m = 0 -> Is_zero m.
  Proof.
   intros m H; subst m.
-  (*  
+  (*
   ============================
    Is_zero 0
   *)
   simpl;trivial.
  Qed.
- 
+
  red; intros n Hn.
  apply O_is_zero with (m := S n).
  assumption.
 Qed.
 
-Theorem disc2 : forall n, S (S n) <> 1. 
+Theorem disc2 : forall n, S (S n) <> 1.
 Proof.
  intros n Hn; discriminate.
 Qed.
@@ -611,7 +611,7 @@ Qed.
 
 Theorem inj_succ  : forall n m, S n = S m -> n = m.
 Proof.
- 
+
 
 Lemma inj_pred : forall n m, n = m -> pred n = pred m.
 Proof.
@@ -645,9 +645,9 @@ Proof.
  intros n p H; case H ;
    intros; discriminate.
 Qed.
-   
+
 eapply not_le_Sn_0_with_constraints; eauto.
-Qed. 
+Qed.
 
 
 Theorem not_le_Sn_0' : forall n:nat, ~ (S n <= 0).
@@ -660,7 +660,7 @@ Check le_Sn_0_inv.
 
 Theorem le_Sn_0'' : forall n p : nat, ~ S n <= 0 .
 Proof.
- intros n p H; 
+ intros n p H;
  inversion H using le_Sn_0_inv.
 Qed.
 
@@ -668,9 +668,9 @@ Derive Inversion_clear le_Sn_0_inv' with (forall n :nat, S n <=  0).
 Check le_Sn_0_inv'.
 
 
-Theorem le_reverse_rules : 
- forall n m:nat, n <= m -> 
-                   n = m \/  
+Theorem le_reverse_rules :
+ forall n m:nat, n <= m ->
+                   n = m \/
                    exists p, n <=  p /\ m = S p.
 Proof.
   intros n m H; inversion H.
@@ -683,21 +683,21 @@ Restart.
 Qed.
 
 Inductive ArithExp : Set :=
-     Zero : ArithExp 
+     Zero : ArithExp
    | Succ : ArithExp -> ArithExp
    | Plus : ArithExp -> ArithExp -> ArithExp.
 
 Inductive RewriteRel : ArithExp -> ArithExp -> Prop :=
      RewSucc  : forall e1 e2 :ArithExp,
-                  RewriteRel e1 e2 -> RewriteRel (Succ e1) (Succ e2) 
+                  RewriteRel e1 e2 -> RewriteRel (Succ e1) (Succ e2)
   |  RewPlus0 : forall e:ArithExp,
-                  RewriteRel (Plus Zero e) e 
+                  RewriteRel (Plus Zero e) e
   |  RewPlusS : forall e1 e2:ArithExp,
                   RewriteRel e1 e2 ->
                   RewriteRel (Plus (Succ e1) e2) (Succ (Plus e1 e2)).
 
 
-  
+
 Fixpoint plus (n p:nat) {struct n} : nat :=
   match n with
           | 0 => p
@@ -718,7 +718,7 @@ Fixpoint plus'' (n p:nat) {struct n} : nat :=
 
 
 Fixpoint even_test (n:nat) : bool :=
-  match n 
+  match n
   with 0 =>  true
      | 1 =>  false
      | S (S p) => even_test p
@@ -728,20 +728,20 @@ Fixpoint even_test (n:nat) : bool :=
 Reset even_test.
 
 Fixpoint even_test (n:nat) : bool :=
-  match n 
-  with 
+  match n
+  with
       | 0 =>  true
       | S p => odd_test p
   end
 with odd_test (n:nat) : bool :=
   match n
-  with 
+  with
      | 0 => false
      | S p => even_test p
  end.
 
 
-  
+
 Eval simpl in even_test.
 
 
@@ -758,11 +758,11 @@ Section Principle_of_Induction.
 Variable    P               : nat -> Prop.
 Hypothesis  base_case       : P 0.
 Hypothesis  inductive_step   : forall n:nat, P n -> P (S n).
-Fixpoint nat_ind  (n:nat)    : (P n) := 
+Fixpoint nat_ind  (n:nat)    : (P n) :=
    match n return P n with
           | 0 => base_case
           | S m => inductive_step m (nat_ind m)
-   end. 
+   end.
 
 End Principle_of_Induction.
 
@@ -782,9 +782,9 @@ Variable    P               : nat -> nat ->Prop.
 Hypothesis  base_case1      : forall x:nat, P 0 x.
 Hypothesis  base_case2      : forall x:nat, P (S x) 0.
 Hypothesis  inductive_step   : forall n m:nat, P n m -> P (S n) (S m).
-Fixpoint nat_double_ind (n m:nat){struct n} : P n m := 
-  match n, m return P n m with 
-         |  0 ,     x    =>  base_case1 x 
+Fixpoint nat_double_ind (n m:nat){struct n} : P n m :=
+  match n, m return P n m with
+         |  0 ,     x    =>  base_case1 x
          |  (S x),    0  =>  base_case2 x
          |  (S x), (S y) =>  inductive_step x y (nat_double_ind x y)
      end.
@@ -795,15 +795,15 @@ Variable    P               : nat -> nat -> Type.
 Hypothesis  base_case1      : forall x:nat, P 0 x.
 Hypothesis  base_case2      : forall x:nat, P (S x) 0.
 Hypothesis  inductive_step   : forall n m:nat, P n m -> P (S n) (S m).
-Fixpoint nat_double_rect (n m:nat){struct n} : P n m := 
-  match n, m return P n m with 
-         |   0 ,     x    =>  base_case1 x 
+Fixpoint nat_double_rect (n m:nat){struct n} : P n m :=
+  match n, m return P n m with
+         |   0 ,     x    =>  base_case1 x
          |  (S x),    0   => base_case2 x
          |  (S x), (S y)  => inductive_step x y (nat_double_rect x y)
      end.
 End Principle_of_Double_Recursion.
 
-Definition min : nat -> nat -> nat  := 
+Definition min : nat -> nat -> nat  :=
   nat_double_rect (fun (x y:nat) => nat)
                  (fun (x:nat) => 0)
                  (fun (y:nat) => 0)
@@ -855,11 +855,11 @@ Qed.
 
 Hint Resolve le'_n_Sp.
 
- 
+
 Lemma le_le' : forall n p, n<=p -> le' n p.
 Proof.
  induction 1;auto with arith.
-Qed. 
+Qed.
 
 
 Print Acc.
@@ -869,7 +869,7 @@ Require Import Minus.
 
 (*
 Fixpoint div (x y:nat){struct x}: nat :=
- if eq_nat_dec x 0 
+ if eq_nat_dec x 0
   then 0
   else if eq_nat_dec y 0
        then x
@@ -902,18 +902,18 @@ Qed.
 Lemma minus_smaller_positive : forall x y:nat, x <>0 -> y <> 0 ->
                                      x - y < x.
 Proof.
- destruct x; destruct y; 
- ( simpl;intros; apply minus_smaller_S || 
+ destruct x; destruct y;
+ ( simpl;intros; apply minus_smaller_S ||
    intros; absurd (0=0); auto).
 Qed.
 
-Definition minus_decrease : forall x y:nat, Acc lt x -> 
-                                         x <> 0 -> 
+Definition minus_decrease : forall x y:nat, Acc lt x ->
+                                         x <> 0 ->
                                          y <> 0 ->
                                          Acc lt (x-y).
 Proof.
  intros x y H; case H.
- intros Hz posz posy. 
+ intros Hz posz posy.
  apply Hz; apply minus_smaller_positive; assumption.
 Defined.
 
@@ -924,18 +924,18 @@ Print minus_decrease.
 Definition div_aux (x y:nat)(H: Acc lt x):nat.
  fix 3.
  intros.
-  refine (if eq_nat_dec x 0 
-         then 0 
-         else if eq_nat_dec y 0 
+  refine (if eq_nat_dec x 0
+         then 0
+         else if eq_nat_dec y 0
               then y
               else div_aux (x-y) y _).
- apply (minus_decrease x y H);assumption. 
+ apply (minus_decrease x y H);assumption.
 Defined.
 
 
 Print div_aux.
 (*
-div_aux = 
+div_aux =
 (fix div_aux (x y : nat) (H : Acc lt x) {struct H} : nat :=
    match eq_nat_dec x 0 with
    | left _ => 0
@@ -949,7 +949,7 @@ div_aux =
 *)
 
 Require Import Wf_nat.
-Definition div x y := div_aux x y (lt_wf x). 
+Definition div x y := div_aux x y (lt_wf x).
 
 Extraction div.
 (*
@@ -975,7 +975,7 @@ Proof.
 Abort.
 
 (*
- Lemma vector0_is_vnil_aux : forall (A:Type)(n:nat)(v:vector A n), 
+ Lemma vector0_is_vnil_aux : forall (A:Type)(n:nat)(v:vector A n),
                                   n= 0 -> v = Vnil A.
 
 Toplevel input, characters 40281-40287
@@ -994,7 +994,7 @@ The term "Vnil A" has type "vector A 0" while it is expected to have type
 
 (* On devrait changer Set en Type ? *)
 
-Lemma vector0_is_vnil_aux : forall (A:Type)(n:nat)(v:vector A n), 
+Lemma vector0_is_vnil_aux : forall (A:Type)(n:nat)(v:vector A n),
                                   n= 0 -> JMeq v (Vnil A).
 Proof.
  destruct v.
@@ -1030,7 +1030,7 @@ Eval simpl in (fun (A:Type)(v:vector A 0) => v).
 
 Lemma Vid_eq : forall (n:nat) (A:Type)(v:vector A n), v=(Vid _ n v).
 Proof.
- destruct v. 
+ destruct v.
  reflexivity.
  reflexivity.
 Defined.
@@ -1038,7 +1038,7 @@ Defined.
 Theorem zero_nil : forall A (v:vector A 0), v = Vnil.
 Proof.
  intros.
- change (Vnil (A:=A)) with (Vid _ 0 v). 
+ change (Vnil (A:=A)) with (Vid _ 0 v).
  apply Vid_eq.
 Defined.
 
@@ -1054,7 +1054,7 @@ Defined.
 
 
 
-Definition vector_double_rect : 
+Definition vector_double_rect :
     forall (A:Type) (P: forall (n:nat),(vector A n)->(vector A n) -> Type),
         P 0 Vnil Vnil ->
         (forall n (v1 v2 : vector A n) a b, P n v1 v2 ->
@@ -1109,7 +1109,7 @@ Qed.
  |  LCons : A -> LList A -> LList A.
 
 
- 
+
 
 
  Definition head (A:Type)(s : Stream A) := match s with Cons a s' => a end.
@@ -1148,7 +1148,7 @@ Hypothesis  bisim2 : forall s1 s2:Stream A, R s1 s2 ->
 CoFixpoint park_ppl     : forall s1 s2:Stream A, R s1 s2 ->
                                                EqSt s1 s2 :=
  fun s1 s2 (p : R s1 s2) =>
-      eqst s1 s2 (bisim1  p) 
+      eqst s1 s2 (bisim1  p)
                  (park_ppl  (bisim2  p)).
 End Parks_Principle.
 
@@ -1158,7 +1158,7 @@ Theorem map_iterate : forall (A:Type)(f:A->A)(x:A),
 Proof.
  intros A f x.
  apply park_ppl with
-   (R:=  fun s1 s2 => exists x: A, 
+   (R:=  fun s1 s2 => exists x: A,
                       s1 = iterate f (f x) /\ s2 = map f (iterate f x)).
 
  intros s1 s2 (x0,(eqs1,eqs2));rewrite eqs1;rewrite eqs2;reflexivity.

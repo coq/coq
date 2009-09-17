@@ -37,10 +37,10 @@ Section Zn2Z.
 
  Variable znz : Type.
 
- (** From a type [znz] representing a cyclic structure Z/nZ, 
+ (** From a type [znz] representing a cyclic structure Z/nZ,
      we produce a representation of Z/2nZ by pairs of elements of [znz]
-     (plus a special case for zero). High half of the new number comes 
-     first. 
+     (plus a special case for zero). High half of the new number comes
+     first.
  *)
 
  Inductive zn2z :=
@@ -57,10 +57,10 @@ End Zn2Z.
 
 Implicit Arguments W0 [znz].
 
-(** From a cyclic representation [w], we iterate the [zn2z] construct 
-    [n] times, gaining the type of binary trees of depth at most [n], 
-    whose leafs are either W0 (if depth < n) or elements of w 
-    (if depth = n). 
+(** From a cyclic representation [w], we iterate the [zn2z] construct
+    [n] times, gaining the type of binary trees of depth at most [n],
+    whose leafs are either W0 (if depth < n) or elements of w
+    (if depth = n).
 *)
 
 Fixpoint word (w:Type) (n:nat) : Type :=

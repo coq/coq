@@ -135,7 +135,7 @@ Qed.
 Definition apply (f:nat->Prop) := forall x, f x.
 Goal apply (fun n => n=0) -> 1=0.
 intro H.
-auto. 
+auto.
 Qed.
 
 (* The following fails if the coercion Zpos is not introduced around p
@@ -157,10 +157,10 @@ Qed.
 
 Definition succ x := S x.
 Goal forall (I : nat -> Set) (P : nat -> Prop) (Q : forall n:nat, I n -> Prop),
-  (forall x y, P x -> Q x y) -> 
+  (forall x y, P x -> Q x y) ->
   (forall x, P (S x)) -> forall y: I (S 0), Q (succ 0) y.
 intros.
-apply H with (y:=y). 
+apply H with (y:=y).
 (* [x] had two possible instances: [S 0], coming from unifying the
    type of [y] with [I ?n] and [succ 0] coming from the unification with
    the goal; only the first one allows to make the next apply (which
@@ -171,14 +171,14 @@ Qed.
 (* A similar example with a arbitrary long conversion between the two
    possible instances *)
 
-Fixpoint compute_succ x := 
+Fixpoint compute_succ x :=
   match x with O => S 0 | S n => S (compute_succ n) end.
 
 Goal forall (I : nat -> Set) (P : nat -> Prop) (Q : forall n:nat, I n -> Prop),
-  (forall x y, P x -> Q x y) -> 
+  (forall x y, P x -> Q x y) ->
   (forall x, P (S x)) -> forall y: I (S 100), Q (compute_succ 100) y.
 intros.
-apply H with (y:=y). 
+apply H with (y:=y).
 apply H0.
 Qed.
 
@@ -187,10 +187,10 @@ Qed.
    subgoal which precisely fails) *)
 
 Definition ID (A:Type) := A.
-Goal forall f:Type -> Type, 
-  forall (P : forall A:Type, A -> Prop), 
-  (forall (B:Type) x, P (f B) x -> P (f B) x) -> 
-  (forall (A:Type) x, P (f (f A)) x) -> 
+Goal forall f:Type -> Type,
+  forall (P : forall A:Type, A -> Prop),
+  (forall (B:Type) x, P (f B) x -> P (f B) x) ->
+  (forall (A:Type) x, P (f (f A)) x) ->
   forall (A:Type) (x:f (f A)), P (f (ID (f A))) x.
 intros.
 apply H.
@@ -250,7 +250,7 @@ Lemma eta : forall f : (forall P, P 1),
   (forall P, f P = f P) ->
    forall Q, f (fun x => Q x) = f (fun x => Q x).
 intros.
-apply H. 
+apply H.
 Qed.
 
 (* Test propagation of evars from subgoal to brother subgoals *)
@@ -258,7 +258,7 @@ Qed.
   (* This works because unfold calls clos_norm_flags which calls nf_evar *)
 
 Lemma eapply_evar_unfold : let x:=O in O=x -> 0=O.
-intros x H; eapply trans_equal; 
+intros x H; eapply trans_equal;
 [apply H | unfold x;match goal with |- ?x = ?x => reflexivity end].
 Qed.
 

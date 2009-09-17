@@ -8,11 +8,11 @@
 
 (* $Id$ *)
 
-(** * Type [Z] viewed modulo a particular constant corresponds to [Z/nZ] 
+(** * Type [Z] viewed modulo a particular constant corresponds to [Z/nZ]
       as defined abstractly in CyclicAxioms. *)
 
-(** Even if the construction provided here is not reused for building 
-  the efficient arbitrary precision numbers, it provides a simple 
+(** Even if the construction provided here is not reused for building
+  the efficient arbitrary precision numbers, it provides a simple
   implementation of CyclicAxioms, hence ensuring its coherence. *)
 
 Set Implicit Arguments.
@@ -56,9 +56,9 @@ Section ZModulo.
   destruct 1; auto.
  Qed.
  Let digits_gt_1 := spec_more_than_1_digit.
- 
+
  Lemma wB_pos : wB > 0.
- Proof.  
+ Proof.
   unfold wB, base; auto with zarith.
  Qed.
  Hint Resolve wB_pos.
@@ -79,7 +79,7 @@ Section ZModulo.
   auto.
  Qed.
 
- Definition znz_of_pos x := 
+ Definition znz_of_pos x :=
    let (q,r) := Zdiv_eucl_POS x wB in (N_of_Z q, r).
 
  Lemma spec_of_pos : forall p,
@@ -90,10 +90,10 @@ Section ZModulo.
   destruct (Zdiv_eucl_POS p wB); simpl; destruct 1.
   unfold znz_to_Z; rewrite Zmod_small; auto.
   assert (0 <= z).
-   replace z with (Zpos p / wB) by 
+   replace z with (Zpos p / wB) by
     (symmetry; apply Zdiv_unique with z0; auto).
    apply Z_div_pos; auto with zarith.
-  replace (Z_of_N (N_of_Z z)) with z by 
+  replace (Z_of_N (N_of_Z z)) with z by
     (destruct z; simpl; auto; elim H1; auto).
   rewrite Zmult_comm; auto.
  Qed.
@@ -110,7 +110,7 @@ Section ZModulo.
  Definition znz_0 := 0.
  Definition znz_1 := 1.
  Definition znz_Bm1 := wB - 1.
-  
+
  Lemma spec_0 : [|znz_0|] = 0.
  Proof.
   unfold znz_to_Z, znz_0.
@@ -121,7 +121,7 @@ Section ZModulo.
  Proof.
   unfold znz_to_Z, znz_1.
   apply Zmod_small; split; auto with zarith.
-  unfold wB, base.  
+  unfold wB, base.
   apply Zlt_trans with (Zpos digits); auto.
   apply Zpower2_lt_lin; auto with zarith.
  Qed.
@@ -138,7 +138,7 @@ Section ZModulo.
 
  Definition znz_compare x y := Zcompare [|x|] [|y|].
 
- Lemma spec_compare : forall x y, 
+ Lemma spec_compare : forall x y,
        match znz_compare x y with
        | Eq => [|x|] = [|y|]
        | Lt => [|x|] < [|y|]
@@ -150,19 +150,19 @@ Section ZModulo.
   intros; apply Zcompare_Eq_eq; auto.
  Qed.
 
- Definition znz_eq0 x := 
+ Definition znz_eq0 x :=
    match [|x|] with Z0 => true | _ => false end.
- 
+
  Lemma spec_eq0 : forall x, znz_eq0 x = true -> [|x|] = 0.
  Proof.
   unfold znz_eq0; intros; now destruct [|x|].
  Qed.
 
- Definition znz_opp_c x := 
+ Definition znz_opp_c x :=
    if znz_eq0 x then C0 0 else C1 (- x).
  Definition znz_opp x := - x.
  Definition znz_opp_carry x := - x - 1.
- 
+
  Lemma spec_opp_c : forall x, [-|znz_opp_c x|] = -[|x|].
  Proof.
  intros; unfold znz_opp_c, znz_to_Z; auto.
@@ -180,7 +180,7 @@ Section ZModulo.
  change ((- x) mod wB = (0 - (x mod wB)) mod wB).
  rewrite Zminus_mod_idemp_r; simpl; auto.
  Qed.
-  
+
  Lemma spec_opp_carry : forall x, [|znz_opp_carry x|] = wB - [|x|] - 1.
  Proof.
  intros; unfold znz_opp_carry, znz_to_Z; auto.
@@ -194,15 +194,15 @@ Section ZModulo.
  generalize (Z_mod_lt x wB wB_pos); omega.
  Qed.
 
- Definition znz_succ_c x := 
-  let y := Zsucc x in 
+ Definition znz_succ_c x :=
+  let y := Zsucc x in
   if znz_eq0 y then C1 0 else C0 y.
 
- Definition znz_add_c x y := 
-  let z := [|x|] + [|y|] in 
+ Definition znz_add_c x y :=
+  let z := [|x|] + [|y|] in
   if Z_lt_le_dec z wB then C0 z else C1 (z-wB).
 
- Definition znz_add_carry_c x y := 
+ Definition znz_add_carry_c x y :=
   let z := [|x|]+[|y|]+1 in
   if Z_lt_le_dec z wB then C0 z else C1 (z-wB).
 
@@ -210,7 +210,7 @@ Section ZModulo.
  Definition znz_add := Zplus.
  Definition znz_add_carry x y := x + y + 1.
 
- Lemma Zmod_equal : 
+ Lemma Zmod_equal :
   forall x y z, z>0 -> (x-y) mod z = 0 -> x mod z = y mod z.
  Proof.
  intros.
@@ -225,12 +225,12 @@ Section ZModulo.
  Proof.
  intros; unfold znz_succ_c, znz_to_Z, Zsucc.
  case_eq (znz_eq0 (x+1)); intros; unfold interp_carry.
- 
+
  rewrite Zmult_1_l.
  replace (wB + 0 mod wB) with wB by auto with zarith.
  symmetry; rewrite Zeq_plus_swap.
  assert ((x+1) mod wB = 0) by (apply spec_eq0; auto).
- replace (wB-1) with ((wB-1) mod wB) by 
+ replace (wB-1) with ((wB-1) mod wB) by
   (apply Zmod_small; generalize wB_pos; omega).
  rewrite <- Zminus_mod_idemp_l; rewrite Z_mod_same; simpl; auto.
  apply Zmod_equal; auto.
@@ -289,15 +289,15 @@ Section ZModulo.
  rewrite Zplus_mod_idemp_l; auto.
  Qed.
 
- Definition znz_pred_c x := 
+ Definition znz_pred_c x :=
   if znz_eq0 x then C1 (wB-1) else C0 (x-1).
 
- Definition znz_sub_c x y := 
-  let z := [|x|]-[|y|] in 
+ Definition znz_sub_c x y :=
+  let z := [|x|]-[|y|] in
   if Z_lt_le_dec z 0 then C1 (wB+z) else C0 z.
 
- Definition znz_sub_carry_c x y := 
-  let z := [|x|]-[|y|]-1 in 
+ Definition znz_sub_carry_c x y :=
+  let z := [|x|]-[|y|]-1 in
   if Z_lt_le_dec z 0 then C1 (wB+z) else C0 z.
 
  Definition znz_pred := Zpred.
@@ -323,7 +323,7 @@ Section ZModulo.
  Proof.
  intros; unfold znz_sub_c, znz_to_Z, interp_carry.
  destruct Z_lt_le_dec.
- replace ((wB + (x mod wB - y mod wB)) mod wB) with 
+ replace ((wB + (x mod wB - y mod wB)) mod wB) with
    (wB + (x mod wB - y mod wB)).
  omega.
  symmetry; apply Zmod_small.
@@ -337,7 +337,7 @@ Section ZModulo.
  Proof.
  intros; unfold znz_sub_carry_c, znz_to_Z, interp_carry.
  destruct Z_lt_le_dec.
- replace ((wB + (x mod wB - y mod wB - 1)) mod wB) with 
+ replace ((wB + (x mod wB - y mod wB - 1)) mod wB) with
    (wB + (x mod wB - y mod wB -1)).
  omega.
  symmetry; apply Zmod_small.
@@ -358,7 +358,7 @@ Section ZModulo.
  intros; unfold znz_sub, znz_to_Z; apply Zminus_mod.
  Qed.
 
- Lemma spec_sub_carry : 
+ Lemma spec_sub_carry :
   forall x y, [|znz_sub_carry x y|] = ([|x|] - [|y|] - 1) mod wB.
  Proof.
  intros; unfold znz_sub_carry, znz_to_Z.
@@ -367,15 +367,15 @@ Section ZModulo.
  rewrite Zminus_mod_idemp_l.
  auto.
  Qed.
-  
- Definition znz_mul_c x y := 
+
+ Definition znz_mul_c x y :=
   let (h,l) := Zdiv_eucl ([|x|]*[|y|]) wB in
   if znz_eq0 h then if znz_eq0 l then W0 else WW h l else WW h l.
 
  Definition znz_mul := Zmult.
 
  Definition znz_square_c x := znz_mul_c x x.
- 
+
  Lemma spec_mul_c : forall x y, [|| znz_mul_c x y ||] = [|x|] * [|y|].
  Proof.
  intros; unfold znz_mul_c, zn2z_to_Z.
@@ -426,7 +426,7 @@ Section ZModulo.
  destruct Zdiv_eucl as (q,r); destruct 1; intros.
  injection H1; clear H1; intros.
  assert ([|r|]=r).
-  apply Zmod_small; generalize (Z_mod_lt b wB wB_pos); fold [|b|]; 
+  apply Zmod_small; generalize (Z_mod_lt b wB wB_pos); fold [|b|];
    auto with zarith.
  assert ([|q|]=q).
   apply Zmod_small.
@@ -453,7 +453,7 @@ Section ZModulo.
 
  Definition znz_mod x y := [|x|] mod [|y|].
  Definition znz_mod_gt x y := [|x|] mod [|y|].
- 
+
  Lemma spec_mod :  forall a b, 0 < [|b|] ->
       [|znz_mod a b|] = [|a|] mod [|b|].
  Proof.
@@ -469,7 +469,7 @@ Section ZModulo.
  Proof.
  intros; apply spec_mod; auto.
  Qed.
- 
+
  Definition znz_gcd x y := Zgcd [|x|] [|y|].
  Definition znz_gcd_gt x y := Zgcd [|x|] [|y|].
 
@@ -516,7 +516,7 @@ Section ZModulo.
   intros. apply spec_gcd; auto.
  Qed.
 
- Definition znz_div21 a1 a2 b := 
+ Definition znz_div21 a1 a2 b :=
   Zdiv_eucl ([|a1|]*wB+[|a2|]) [|b|].
 
  Lemma spec_div21 : forall a1 a2 b,
@@ -537,7 +537,7 @@ Section ZModulo.
  destruct Zdiv_eucl as (q,r); destruct 1; intros.
  injection H4; clear H4; intros.
  assert ([|r|]=r).
-  apply Zmod_small; generalize (Z_mod_lt b wB wB_pos); fold [|b|]; 
+  apply Zmod_small; generalize (Z_mod_lt b wB wB_pos); fold [|b|];
    auto with zarith.
  assert ([|q|]=q).
   apply Zmod_small.
@@ -576,7 +576,7 @@ Section ZModulo.
  apply Zmod_le; auto with zarith.
  Qed.
 
- Definition znz_is_even x := 
+ Definition znz_is_even x :=
    if Z_eq_dec ([|x|] mod 2) 0 then true else false.
 
  Lemma spec_is_even : forall x,
@@ -586,7 +586,7 @@ Section ZModulo.
  generalize (Z_mod_lt [|x|] 2); omega.
  Qed.
 
- Definition znz_sqrt x := Zsqrt_plain [|x|]. 
+ Definition znz_sqrt x := Zsqrt_plain [|x|].
  Lemma spec_sqrt : forall x,
        [|znz_sqrt x|] ^ 2 <= [|x|] < ([|znz_sqrt x|] + 1) ^ 2.
  Proof.
@@ -609,12 +609,12 @@ Section ZModulo.
  generalize wB_pos; auto with zarith.
  Qed.
 
- Definition znz_sqrt2 x y := 
-  let z := [|x|]*wB+[|y|] in 
-  match z with 
+ Definition znz_sqrt2 x y :=
+  let z := [|x|]*wB+[|y|] in
+  match z with
    | Z0 => (0, C0 0)
-   | Zpos p => 
-      let (s,r,_,_) := sqrtrempos p in 
+   | Zpos p =>
+      let (s,r,_,_) := sqrtrempos p in
       (s, if Z_lt_le_dec r wB then C0 r else C1 (r-wB))
    | Zneg _ => (0, C0 0)
   end.
@@ -651,7 +651,7 @@ Section ZModulo.
  rewrite Zpower_2; auto with zarith.
  replace [|r-wB|] with (r-wB) by (symmetry; apply Zmod_small; auto with zarith).
  rewrite Zpower_2; omega.
- 
+
  assert (0<=Zneg p).
   rewrite Heqz; generalize wB_pos; auto with zarith.
  compute in H0; elim H0; auto.
@@ -665,8 +665,8 @@ Section ZModulo.
  apply two_power_pos_correct.
  Qed.
 
- Definition znz_head0 x := match [|x|] with 
-   | Z0 => znz_zdigits 
+ Definition znz_head0 x := match [|x|] with
+   | Z0 => znz_zdigits
    | Zpos p => znz_zdigits - log_inf p - 1
    | _ => 0
   end.
@@ -695,7 +695,7 @@ Section ZModulo.
  change (Zpos x~0) with (2*(Zpos x)) in H.
  replace p with (Zsucc (p-1)) in H; auto with zarith.
  rewrite Zpower_Zsucc in H; auto with zarith.
- 
+
  simpl; intros; destruct p; compute; auto with zarith.
  Qed.
 
@@ -730,8 +730,8 @@ Section ZModulo.
    by ring.
  unfold wB, base, znz_zdigits; auto with zarith.
  apply Zmult_le_compat; auto with zarith.
- 
- apply Zlt_le_trans 
+
+ apply Zlt_le_trans
    with (2^(znz_zdigits - log_inf p - 1)*(2^(Zsucc (log_inf p)))).
  apply Zmult_lt_compat_l; auto with zarith.
  rewrite <- Zpower_exp; auto with zarith.
@@ -740,17 +740,17 @@ Section ZModulo.
  unfold wB, base, znz_zdigits; auto with zarith.
  Qed.
 
- Fixpoint Ptail p := match p with 
+ Fixpoint Ptail p := match p with
   | xO p => (Ptail p)+1
   | _ => 0
- end. 
+ end.
 
  Lemma Ptail_pos : forall p, 0 <= Ptail p.
  Proof.
  induction p; simpl; auto with zarith.
  Qed.
  Hint Resolve Ptail_pos.
- 
+
  Lemma Ptail_bounded : forall p d, Zpos p < 2^(Zpos d) -> Ptail p < Zpos d.
  Proof.
  induction p; try (compute; auto; fail).
@@ -775,7 +775,7 @@ Section ZModulo.
  Qed.
 
  Definition znz_tail0 x :=
-  match [|x|] with 
+  match [|x|] with
    | Z0 => znz_zdigits
    | Zpos p => Ptail p
    | Zneg _ => 0
@@ -788,7 +788,7 @@ Section ZModulo.
   apply spec_zdigits.
  Qed.
 
- Lemma spec_tail0  : forall x, 0 < [|x|] -> 
+ Lemma spec_tail0  : forall x, 0 < [|x|] ->
          exists y, 0 <= y /\ [|x|] = (2 * y + 1) * (2 ^ [|znz_tail0 x|]).
  Proof.
  intros; unfold znz_tail0.
@@ -818,7 +818,7 @@ Section ZModulo.
 
  (** Let's now group everything in two records *)
 
- Definition zmod_op := mk_znz_op 
+ Definition zmod_op := mk_znz_op
     (znz_digits : positive)
     (znz_zdigits: znz)
     (znz_to_Z   : znz -> Z)
@@ -859,11 +859,11 @@ Section ZModulo.
     (znz_div_gt      : znz -> znz -> znz * znz)
     (znz_div         : znz -> znz -> znz * znz)
 
-    (znz_mod_gt      : znz -> znz -> znz) 
-    (znz_mod         : znz -> znz -> znz) 
+    (znz_mod_gt      : znz -> znz -> znz)
+    (znz_mod         : znz -> znz -> znz)
 
     (znz_gcd_gt      : znz -> znz -> znz)
-    (znz_gcd         : znz -> znz -> znz) 
+    (znz_gcd         : znz -> znz -> znz)
     (znz_add_mul_div : znz -> znz -> znz -> znz)
     (znz_pos_mod     : znz -> znz -> znz)
 
@@ -878,54 +878,54 @@ Section ZModulo.
     spec_more_than_1_digit
 
     spec_0
-    spec_1   
-    spec_Bm1 
+    spec_1
+    spec_Bm1
 
-    spec_compare 
-    spec_eq0 
+    spec_compare
+    spec_eq0
 
-    spec_opp_c 
-    spec_opp 
-    spec_opp_carry 
+    spec_opp_c
+    spec_opp
+    spec_opp_carry
 
-    spec_succ_c 
-    spec_add_c  
-    spec_add_carry_c 
-    spec_succ 
-    spec_add 
-    spec_add_carry 
+    spec_succ_c
+    spec_add_c
+    spec_add_carry_c
+    spec_succ
+    spec_add
+    spec_add_carry
 
-    spec_pred_c 
-    spec_sub_c 
-    spec_sub_carry_c 
-    spec_pred 
-    spec_sub 
-    spec_sub_carry 
+    spec_pred_c
+    spec_sub_c
+    spec_sub_carry_c
+    spec_pred
+    spec_sub
+    spec_sub_carry
 
-    spec_mul_c 
-    spec_mul 
-    spec_square_c 
+    spec_mul_c
+    spec_mul
+    spec_square_c
 
-    spec_div21 
-    spec_div_gt 
-    spec_div 
-   
-    spec_mod_gt 
-    spec_mod 
-      
-    spec_gcd_gt 
-    spec_gcd 
+    spec_div21
+    spec_div_gt
+    spec_div
 
-    spec_head00 
-    spec_head0  
-    spec_tail00 
-    spec_tail0  
+    spec_mod_gt
+    spec_mod
 
-    spec_add_mul_div 
-    spec_pos_mod 
+    spec_gcd_gt
+    spec_gcd
 
-    spec_is_even 
-    spec_sqrt2 
+    spec_head00
+    spec_head0
+    spec_tail00
+    spec_tail0
+
+    spec_add_mul_div
+    spec_pos_mod
+
+    spec_is_even
+    spec_sqrt2
     spec_sqrt.
 
 End ZModulo.
@@ -934,7 +934,7 @@ End ZModulo.
 
 Module Type PositiveNotOne.
  Parameter p : positive.
- Axiom not_one : p<> 1%positive. 
+ Axiom not_one : p<> 1%positive.
 End PositiveNotOne.
 
 Module ZModuloCyclicType (P:PositiveNotOne) <: CyclicType.

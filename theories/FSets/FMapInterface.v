@@ -8,7 +8,7 @@
 
 (* $Id$ *)
 
-(** * Finite map library *)  
+(** * Finite map library *)
 
 (** This file proposes interfaces for finite maps *)
 
@@ -16,8 +16,8 @@ Require Export Bool DecidableType OrderedType.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-(** When compared with Ocaml Map, this signature has been split in 
-    several parts : 
+(** When compared with Ocaml Map, this signature has been split in
+    several parts :
 
    - The first parts [WSfun] and [WS] propose signatures for weak
      maps, which are maps with no ordering on the key type nor the
@@ -29,18 +29,18 @@ Unset Strict Implicit.
      (add, find, ...). The only function that asks for more is
      [equal], whose first argument should be a comparison on data.
 
-   - Then comes [Sfun] and [S], that extend [WSfun] and [WS] to the 
-     case where the key type is ordered. The main novelty is that 
+   - Then comes [Sfun] and [S], that extend [WSfun] and [WS] to the
+     case where the key type is ordered. The main novelty is that
      [elements] is required to produce sorted lists.
 
-   - Finally, [Sord] extends [S] with a complete comparison function. For 
-     that, the data type should have a decidable total ordering as well. 
+   - Finally, [Sord] extends [S] with a complete comparison function. For
+     that, the data type should have a decidable total ordering as well.
 
    If unsure, what you're looking for is probably [S]: apart from [Sord],
-   all other signatures are subsets of [S]. 
+   all other signatures are subsets of [S].
 
-   Some additional differences with Ocaml: 
-    
+   Some additional differences with Ocaml:
+
     - no [iter] function, useless since Coq is purely functional
     - [option] types are used instead of [Not_found] exceptions
     - more functions are provided: [elements] and [cardinal] and [map2]
@@ -51,7 +51,7 @@ Unset Strict Implicit.
 Definition Cmp (elt:Type)(cmp:elt->elt->bool) e1 e2 := cmp e1 e2 = true.
 
 (** ** Weak signature for maps
-   
+
     No requirements for an ordering on keys nor elements, only decidability
     of equality on keys. First, a functorial signature: *)
 
@@ -61,8 +61,8 @@ Module Type WSfun (E : DecidableType).
 
   Parameter t : Type -> Type.
   (** the abstract type of maps *)
- 
-  Section Types. 
+
+  Section Types.
 
     Variable elt:Type.
 
@@ -73,61 +73,61 @@ Module Type WSfun (E : DecidableType).
     (** Test whether a map is empty or not. *)
 
     Parameter add : key -> elt -> t elt -> t elt.
-    (** [add x y m] returns a map containing the same bindings as [m], 
-	plus a binding of [x] to [y]. If [x] was already bound in [m], 
+    (** [add x y m] returns a map containing the same bindings as [m],
+	plus a binding of [x] to [y]. If [x] was already bound in [m],
 	its previous binding disappears. *)
 
-    Parameter find : key -> t elt -> option elt. 
-    (** [find x m] returns the current binding of [x] in [m], 
+    Parameter find : key -> t elt -> option elt.
+    (** [find x m] returns the current binding of [x] in [m],
 	or [None] if no such binding exists. *)
 
     Parameter remove : key -> t elt -> t elt.
-    (** [remove x m] returns a map containing the same bindings as [m], 
+    (** [remove x m] returns a map containing the same bindings as [m],
 	except for [x] which is unbound in the returned map. *)
 
     Parameter mem : key -> t elt -> bool.
-    (** [mem x m] returns [true] if [m] contains a binding for [x], 
+    (** [mem x m] returns [true] if [m] contains a binding for [x],
 	and [false] otherwise. *)
 
     Variable elt' elt'' : Type.
 
     Parameter map : (elt -> elt') -> t elt -> t elt'.
-    (** [map f m] returns a map with same domain as [m], where the associated 
+    (** [map f m] returns a map with same domain as [m], where the associated
 	value a of all bindings of [m] has been replaced by the result of the
 	application of [f] to [a]. Since Coq is purely functional, the order
         in which the bindings are passed to [f] is irrelevant. *)
 
     Parameter mapi : (key -> elt -> elt') -> t elt -> t elt'.
-    (** Same as [map], but the function receives as arguments both the 
+    (** Same as [map], but the function receives as arguments both the
 	key and the associated value for each binding of the map. *)
 
-    Parameter map2 : 
+    Parameter map2 :
      (option elt -> option elt' -> option elt'') -> t elt -> t elt' ->  t elt''.
-    (** [map2 f m m'] creates a new map whose bindings belong to the ones 
-        of either [m] or [m']. The presence and value for a key [k] is 
-        determined by [f e e'] where [e] and [e'] are the (optional) bindings 
+    (** [map2 f m m'] creates a new map whose bindings belong to the ones
+        of either [m] or [m']. The presence and value for a key [k] is
+        determined by [f e e'] where [e] and [e'] are the (optional) bindings
         of [k] in [m] and [m']. *)
 
     Parameter elements : t elt -> list (key*elt).
-    (** [elements m] returns an assoc list corresponding to the bindings 
+    (** [elements m] returns an assoc list corresponding to the bindings
         of [m], in any order. *)
 
-    Parameter cardinal : t elt -> nat. 
+    Parameter cardinal : t elt -> nat.
     (** [cardinal m] returns the number of bindings in [m]. *)
 
     Parameter fold : forall A: Type, (key -> elt -> A -> A) -> t elt -> A -> A.
-    (** [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)], 
-	where [k1] ... [kN] are the keys of all bindings in [m] 
+    (** [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)],
+	where [k1] ... [kN] are the keys of all bindings in [m]
 	(in any order), and [d1] ... [dN] are the associated data. *)
 
     Parameter equal : (elt -> elt -> bool) -> t elt -> t elt -> bool.
-    (** [equal cmp m1 m2] tests whether the maps [m1] and [m2] are equal, 
-      that is, contain equal keys and associate them with equal data. 
-      [cmp] is the equality predicate used to compare the data associated 
+    (** [equal cmp m1 m2] tests whether the maps [m1] and [m2] are equal,
+      that is, contain equal keys and associate them with equal data.
+      [cmp] is the equality predicate used to compare the data associated
       with the keys. *)
 
-    Section Spec. 
-      
+    Section Spec.
+
       Variable m m' m'' : t elt.
       Variable x y z : key.
       Variable e e' : elt.
@@ -139,24 +139,24 @@ Module Type WSfun (E : DecidableType).
       Definition Empty m := forall (a : key)(e:elt) , ~ MapsTo a e m.
 
       Definition eq_key (p p':key*elt) := E.eq (fst p) (fst p').
-      
-      Definition eq_key_elt (p p':key*elt) := 
+
+      Definition eq_key_elt (p p':key*elt) :=
           E.eq (fst p) (fst p') /\ (snd p) = (snd p').
 
     (** Specification of [MapsTo] *)
       Parameter MapsTo_1 : E.eq x y -> MapsTo x e m -> MapsTo y e m.
-      
+
     (** Specification of [mem] *)
       Parameter mem_1 : In x m -> mem x m = true.
-      Parameter mem_2 : mem x m = true -> In x m. 
-      
+      Parameter mem_2 : mem x m = true -> In x m.
+
     (** Specification of [empty] *)
       Parameter empty_1 : Empty empty.
 
     (** Specification of [is_empty] *)
-      Parameter is_empty_1 : Empty m -> is_empty m = true. 
+      Parameter is_empty_1 : Empty m -> is_empty m = true.
       Parameter is_empty_2 : is_empty m = true -> Empty m.
-      
+
     (** Specification of [add] *)
       Parameter add_1 : E.eq x y -> MapsTo y e (add x e m).
       Parameter add_2 : ~ E.eq x y -> MapsTo y e m -> MapsTo y e (add x e' m).
@@ -168,50 +168,50 @@ Module Type WSfun (E : DecidableType).
       Parameter remove_3 : MapsTo y e (remove x m) -> MapsTo y e m.
 
     (** Specification of [find] *)
-      Parameter find_1 : MapsTo x e m -> find x m = Some e. 
+      Parameter find_1 : MapsTo x e m -> find x m = Some e.
       Parameter find_2 : find x m = Some e -> MapsTo x e m.
 
     (** Specification of [elements] *)
-      Parameter elements_1 : 
+      Parameter elements_1 :
         MapsTo x e m -> InA eq_key_elt (x,e) (elements m).
-      Parameter elements_2 : 
+      Parameter elements_2 :
         InA eq_key_elt (x,e) (elements m) -> MapsTo x e m.
-      (** When compared with ordered maps, here comes the only 
+      (** When compared with ordered maps, here comes the only
          property that is really weaker: *)
-      Parameter elements_3w : NoDupA eq_key (elements m).  
+      Parameter elements_3w : NoDupA eq_key (elements m).
 
     (** Specification of [cardinal] *)
       Parameter cardinal_1 : cardinal m = length (elements m).
 
-    (** Specification of [fold] *)  
+    (** Specification of [fold] *)
       Parameter fold_1 :
 	forall (A : Type) (i : A) (f : key -> elt -> A -> A),
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
 
     (** Equality of maps *)
- 
+
     (** Caveat: there are at least three distinct equality predicates on maps.
-      - The simpliest (and maybe most natural) way is to consider keys up to 
-        their equivalence [E.eq], but elements up to Leibniz equality, in 
+      - The simpliest (and maybe most natural) way is to consider keys up to
+        their equivalence [E.eq], but elements up to Leibniz equality, in
         the spirit of [eq_key_elt] above. This leads to predicate [Equal].
       - Unfortunately, this [Equal] predicate can't be used to describe
-        the [equal] function, since this function (for compatibility with 
-        ocaml) expects a boolean comparison [cmp] that may identify more 
-        elements than Leibniz. So logical specification of [equal] is done 
+        the [equal] function, since this function (for compatibility with
+        ocaml) expects a boolean comparison [cmp] that may identify more
+        elements than Leibniz. So logical specification of [equal] is done
         via another predicate [Equivb]
       - This predicate [Equivb] is quite ad-hoc with its boolean [cmp],
         it can be generalized in a [Equiv] expecting a more general
         (possibly non-decidable) equality predicate on elements *)
 
      Definition Equal m m' := forall y, find y m = find y m'.
-     Definition Equiv (eq_elt:elt->elt->Prop) m m' := 
-         (forall k, In k m <-> In k m') /\ 
-         (forall k e e', MapsTo k e m -> MapsTo k e' m' -> eq_elt e e').  
+     Definition Equiv (eq_elt:elt->elt->Prop) m m' :=
+         (forall k, In k m <-> In k m') /\
+         (forall k e e', MapsTo k e m -> MapsTo k e' m' -> eq_elt e e').
      Definition Equivb (cmp: elt->elt->bool) := Equiv (Cmp cmp).
 
      (** Specification of [equal] *)
 
-     Variable cmp : elt -> elt -> bool. 
+     Variable cmp : elt -> elt -> bool.
 
      Parameter equal_1 : Equivb cmp m m' -> equal cmp m m' = true.
      Parameter equal_2 : equal cmp m m' = true -> Equivb cmp m m'.
@@ -220,26 +220,26 @@ Module Type WSfun (E : DecidableType).
    End Types.
 
     (** Specification of [map] *)
-      Parameter map_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)(f:elt->elt'), 
+      Parameter map_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)(f:elt->elt'),
         MapsTo x e m -> MapsTo x (f e) (map f m).
-      Parameter map_2 : forall (elt elt':Type)(m: t elt)(x:key)(f:elt->elt'), 
+      Parameter map_2 : forall (elt elt':Type)(m: t elt)(x:key)(f:elt->elt'),
         In x (map f m) -> In x m.
- 
+
     (** Specification of [mapi] *)
       Parameter mapi_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)
-        (f:key->elt->elt'), MapsTo x e m -> 
+        (f:key->elt->elt'), MapsTo x e m ->
         exists y, E.eq y x /\ MapsTo x (f y e) (mapi f m).
       Parameter mapi_2 : forall (elt elt':Type)(m: t elt)(x:key)
         (f:key->elt->elt'), In x (mapi f m) -> In x m.
 
     (** Specification of [map2] *)
       Parameter map2_1 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
-	(x:key)(f:option elt->option elt'->option elt''), 
-	In x m \/ In x m' -> 
-        find x (map2 f m m') = f (find x m) (find x m').       
+	(x:key)(f:option elt->option elt'->option elt''),
+	In x m \/ In x m' ->
+        find x (map2 f m m') = f (find x m) (find x m').
 
      Parameter map2_2 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
-	(x:key)(f:option elt->option elt'->option elt''), 
+	(x:key)(f:option elt->option elt'->option elt''),
         In x (map2 f m m') -> In x m \/ In x m'.
 
   Hint Immediate MapsTo_1 mem_2 is_empty_2
@@ -252,11 +252,11 @@ Module Type WSfun (E : DecidableType).
 End WSfun.
 
 
-(** ** Static signature for Weak Maps 
+(** ** Static signature for Weak Maps
 
     Similar to [WSfun] but expressed in a self-contained way. *)
 
-Module Type WS. 
+Module Type WS.
   Declare Module E : DecidableType.
   Include Type WSfun E.
 End WS.
@@ -274,7 +274,7 @@ Module Type Sfun (E : OrderedType).
    Parameter elements_3 : forall m, sort lt_key (elements m).
    (** Remark: since [fold] is specified via [elements], this stronger
    specification of [elements] has an indirect impact on [fold],
-   which can now be proved to receive elements in increasing order. *) 
+   which can now be proved to receive elements in increasing order. *)
   End elt.
 End Sfun.
 
@@ -282,7 +282,7 @@ End Sfun.
 
 (** ** Maps on ordered keys, self-contained signature *)
 
-Module Type S. 
+Module Type S.
   Declare Module E : OrderedType.
   Include Type Sfun E.
 End S.
@@ -293,28 +293,28 @@ End S.
 
 Module Type Sord.
 
-  Declare Module Data : OrderedType.   
-  Declare Module MapS : S. 
+  Declare Module Data : OrderedType.
+  Declare Module MapS : S.
   Import MapS.
-  
-  Definition t := MapS.t Data.t. 
+
+  Definition t := MapS.t Data.t.
 
   Parameter eq : t -> t -> Prop.
-  Parameter lt : t -> t -> Prop. 
- 
+  Parameter lt : t -> t -> Prop.
+
   Axiom eq_refl : forall m : t, eq m m.
   Axiom eq_sym : forall m1 m2 : t, eq m1 m2 -> eq m2 m1.
   Axiom eq_trans : forall m1 m2 m3 : t, eq m1 m2 -> eq m2 m3 -> eq m1 m3.
   Axiom lt_trans : forall m1 m2 m3 : t, lt m1 m2 -> lt m2 m3 -> lt m1 m3.
   Axiom lt_not_eq : forall m1 m2 : t, lt m1 m2 -> ~ eq m1 m2.
 
-  Definition cmp e e' := match Data.compare e e' with EQ _ => true | _ => false end.	
+  Definition cmp e e' := match Data.compare e e' with EQ _ => true | _ => false end.
 
   Parameter eq_1 : forall m m', Equivb cmp m m' -> eq m m'.
   Parameter eq_2 : forall m m', eq m m' -> Equivb cmp m m'.
 
   Parameter compare : forall m1 m2, Compare lt eq m1 m2.
-  (** Total ordering between maps. [Data.compare] is a total ordering 
+  (** Total ordering between maps. [Data.compare] is a total ordering
       used to compare data associated with equal keys in the two maps. *)
 
 End Sord.

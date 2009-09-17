@@ -35,8 +35,8 @@ let named_context env = env.env_named_context
 let named_context_val env = env.env_named_context,env.env_named_vals
 let rel_context env = env.env_rel_context
 
-let empty_context env = 
-  env.env_rel_context = empty_rel_context 
+let empty_context env =
+  env.env_rel_context = empty_rel_context
   && env.env_named_context = empty_named_context
 
 (* Rel context *)
@@ -53,7 +53,7 @@ let nb_rel env = env.env_nb_rel
 let push_rel = push_rel
 
 let push_rel_context ctxt x = Sign.fold_rel_context push_rel ctxt ~init:x
-    
+
 let push_rec_types (lna,typarray,_) env =
   let ctxt = array_map2_i (fun i na t -> (na, None, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
@@ -63,12 +63,12 @@ let fold_rel_context f env ~init =
     match env.env_rel_context with
     | [] -> init
     | rd::rc ->
-	let env = 
+	let env =
 	  { env with
 	    env_rel_context = rc;
 	    env_rel_val = List.tl env.env_rel_val;
 	    env_nb_rel = env.env_nb_rel - 1 } in
-	f env rd (fold_right env) 
+	f env rd (fold_right env)
   in fold_right env
 
 (* Named context *)
@@ -78,13 +78,13 @@ let named_vals_of_val = snd
 
 (* [map_named_val f ctxt] apply [f] to the body and the type of
    each declarations.
-   *** /!\ ***   [f t] should be convertible with t *)  
-let map_named_val f (ctxt,ctxtv) = 
+   *** /!\ ***   [f t] should be convertible with t *)
+let map_named_val f (ctxt,ctxtv) =
   let ctxt =
     List.map (fun (id,body,typ) -> (id, Option.map f body, f typ)) ctxt in
   (ctxt,ctxtv)
 
-let empty_named_context = empty_named_context 
+let empty_named_context = empty_named_context
 
 let push_named = push_named
 let push_named_context_val = push_named_context_val
@@ -111,7 +111,7 @@ let evaluable_named id env =
   match named_body id env with
   | Some _      -> true
   | _          -> false
-      
+
 let reset_with_named_context (ctxt,ctxtv) env =
   { env with
     env_named_context = ctxt;
@@ -121,36 +121,36 @@ let reset_with_named_context (ctxt,ctxtv) env =
     env_nb_rel = 0 }
 
 let reset_context = reset_with_named_context empty_named_context_val
- 
+
 let fold_named_context f env ~init =
   let rec fold_right env =
     match env.env_named_context with
     | [] -> init
     | d::ctxt ->
-	let env = 
+	let env =
 	  reset_with_named_context (ctxt,List.tl env.env_named_vals) env in
-	f env d (fold_right env) 
+	f env d (fold_right env)
   in fold_right env
 
 let fold_named_context_reverse f ~init env =
   Sign.fold_named_context_reverse f ~init:init (named_context env)
- 
+
 (* Global constants *)
 
 let lookup_constant = lookup_constant
 
 let add_constant kn cs env =
-  let new_constants = 
+  let new_constants =
     Cmap.add kn (cs,ref None) env.env_globals.env_constants in
-  let new_globals = 
-    { env.env_globals with 
-	env_constants = new_constants } in 
+  let new_globals =
+    { env.env_globals with
+	env_constants = new_constants } in
   { env with env_globals = new_globals }
 
 (* constant_type gives the type of a constant *)
 let constant_type env kn =
   let cb = lookup_constant kn env in
-    cb.const_type  
+    cb.const_type
 
 type const_evaluation_result = NoBody | Opaque
 
@@ -179,8 +179,8 @@ let scrape_mind = scrape_mind
 
 let add_mind kn mib env =
   let new_inds = KNmap.add kn mib env.env_globals.env_inductives in
-  let new_globals = 
-    { env.env_globals with 
+  let new_globals =
+    { env.env_globals with
 	env_inductives = new_inds } in
   { env with env_globals = new_globals }
 
@@ -188,15 +188,15 @@ let add_mind kn mib env =
 let set_universes g env =
   if env.env_stratification.env_universes == g then env
   else
-    { env with env_stratification = 
+    { env with env_stratification =
       { env.env_stratification with env_universes = g } }
 
 let add_constraints c env =
-  if c == Constraint.empty then 
-    env 
+  if c == Constraint.empty then
+    env
   else
     let s = env.env_stratification in
-    { env with env_stratification = 
+    { env with env_stratification =
       { s with env_universes = merge_constraints c s.env_universes } }
 
 let set_engagement c env = (* Unsafe *)
@@ -225,17 +225,17 @@ let vars_of_global env constr =
     | Construct cstr -> lookup_constructor_variables cstr env
     | _ -> []
 
-let global_vars_set env constr = 
+let global_vars_set env constr =
   let rec filtrec acc c =
     let vl = vars_of_global env c in
     let acc = List.fold_right Idset.add vl acc in
       fold_constr filtrec acc c
-  in 
+  in
     filtrec Idset.empty constr
 
 
-(* [keep_hyps env ids] keeps the part of the section context of [env] which 
-   contains the variables of the set [ids], and recursively the variables 
+(* [keep_hyps env ids] keeps the part of the section context of [env] which
+   contains the variables of the set [ids], and recursively the variables
    contained in the types of the needed variables. *)
 
 let keep_hyps env needed =
@@ -243,12 +243,12 @@ let keep_hyps env needed =
     Sign.fold_named_context_reverse
       (fun need (id,copt,t) ->
         if Idset.mem id need then
-          let globc = 
+          let globc =
 	    match copt with
 	      | None -> Idset.empty
 	      | Some c -> global_vars_set env c in
 	  Idset.union
-            (global_vars_set env t) 
+            (global_vars_set env t)
 	    (Idset.union globc need)
         else need)
       ~init:needed
@@ -262,39 +262,39 @@ let keep_hyps env needed =
 
 (* Modules *)
 
-let add_modtype ln mtb env = 
+let add_modtype ln mtb env =
   let new_modtypes = MPmap.add ln mtb env.env_globals.env_modtypes in
-  let new_globals = 
-    { env.env_globals with 
+  let new_globals =
+    { env.env_globals with
 	env_modtypes = new_modtypes } in
   { env with env_globals = new_globals }
 
-let shallow_add_module mp mb env = 
+let shallow_add_module mp mb env =
   let new_mods = MPmap.add mp mb env.env_globals.env_modules in
-  let new_globals = 
-    { env.env_globals with 
+  let new_globals =
+    { env.env_globals with
 	env_modules = new_mods } in
   { env with env_globals = new_globals }
 
-let rec scrape_alias mp env = 
+let rec scrape_alias mp env =
   try
     let mp1 = MPmap.find mp env.env_globals.env_alias in
       scrape_alias mp1 env
   with
       Not_found -> mp
 
-let lookup_module mp env = 
+let lookup_module mp env =
   let mp = scrape_alias mp env in
     MPmap.find mp env.env_globals.env_modules
 
-let lookup_modtype ln env = 
+let lookup_modtype ln env =
   let mp = scrape_alias ln env in
   MPmap.find mp env.env_globals.env_modtypes
 
 let register_alias mp1 mp2 env =
   let new_alias =  MPmap.add mp1 mp2 env.env_globals.env_alias in
-  let new_globals = 
-    { env.env_globals with 
+  let new_globals =
+    { env.env_globals with
 	env_alias = new_alias } in
     { env with env_globals = new_globals }
 
@@ -302,8 +302,8 @@ let lookup_alias mp env =
   MPmap.find mp env.env_globals.env_alias
 
 (*s Judgments. *)
-	
-type unsafe_judgment = { 
+
+type unsafe_judgment = {
   uj_val : constr;
   uj_type : types }
 
@@ -314,13 +314,13 @@ let make_judge v tj =
 let j_val j = j.uj_val
 let j_type j = j.uj_type
 
-type unsafe_type_judgment = { 
+type unsafe_type_judgment = {
   utj_val : constr;
   utj_type : sorts }
 
 (*s Compilation of global declaration *)
 
-let compile_constant_body = Cbytegen.compile_constant_body  
+let compile_constant_body = Cbytegen.compile_constant_body
 
 exception Hyp_not_found
 
@@ -330,7 +330,7 @@ let rec apply_to_hyp (ctxt,vals) id f =
     | (idc,c,ct as d)::ctxt, v::vals ->
 	if idc = id then
 	  (f ctxt d rtail)::ctxt, v::vals
-	else 
+	else
 	  let ctxt',vals' = aux (d::rtail) ctxt vals in
 	  d::ctxt', v::vals'
     | [],[] -> raise Hyp_not_found
@@ -343,8 +343,8 @@ let rec apply_to_hyp_and_dependent_on (ctxt,vals) id f g =
     | (idc,c,ct as d)::ctxt, v::vals ->
 	if idc = id then
 	  let sign = ctxt,vals in
-	  push_named_context_val (f d sign) sign 
-	else 
+	  push_named_context_val (f d sign) sign
+	else
 	  let (ctxt,vals as sign) = aux ctxt vals in
 	  push_named_context_val (g d sign) sign
     | [],[] -> raise Hyp_not_found
@@ -356,9 +356,9 @@ let insert_after_hyp (ctxt,vals) id d check =
     match  ctxt, vals with
     | (idc,c,ct)::ctxt', v::vals' ->
 	if idc = id then begin
-	  check ctxt; 
-	  push_named_context_val d (ctxt,vals) 
-	end else 
+	  check ctxt;
+	  push_named_context_val d (ctxt,vals)
+	end else
 	  let ctxt,vals = aux ctxt vals in
 	  d::ctxt, v::vals
     | [],[] -> raise Hyp_not_found
@@ -369,9 +369,9 @@ let insert_after_hyp (ctxt,vals) id d check =
 (* To be used in Logic.clear_hyps *)
 let remove_hyps ids check_context check_value (ctxt, vals) =
   List.fold_right2 (fun (id,_,_ as d) (id',v) (ctxt,vals) ->
-      if List.mem id ids then 
+      if List.mem id ids then
 	(ctxt,vals)
-      else 	  
+      else
 	let nd = check_context d in
 	let nv = check_value v in
 	  (nd::ctxt,(id',nv)::vals))
@@ -402,25 +402,25 @@ let registered env field =
    unregister function *)
 let unregister env field =
   match field with
-    | KInt31 (_,Int31Type) -> 
+    | KInt31 (_,Int31Type) ->
 	(*there is only one matching kind due to the fact that Environ.env
           is abstract, and that the only function which add elements to the
           retroknowledge is Environ.register which enforces this shape *)
-	(match retroknowledge find env field with 
+	(match retroknowledge find env field with
 	   | Ind i31t -> let i31c = Construct (i31t, 1) in
-	     {env with retroknowledge = 
+	     {env with retroknowledge =
 		 remove (retroknowledge clear_info env i31c) field}
 	   | _ -> assert false)
     |_ -> {env with retroknowledge =
-	   try 
-	     remove (retroknowledge clear_info env 
+	   try
+	     remove (retroknowledge clear_info env
                        (retroknowledge find env field)) field
 	   with Not_found ->
 	     retroknowledge remove env field}
 
 
 
-(* the Environ.register function syncrhonizes the proactive and reactive 
+(* the Environ.register function syncrhonizes the proactive and reactive
    retroknowledge. *)
 let register =
 
@@ -428,7 +428,7 @@ let register =
      see pretyping/vnorm.ml for more information) *)
   let constr_of_int31 =
     let nth_digit_plus_one i n = (* calculates the nth (starting with 0)
-                                    digit of i and adds 1 to it 
+                                    digit of i and adds 1 to it
                                     (nth_digit_plus_one 1 3 = 2) *)
       if (land) i ((lsl) 1 n) = 0 then
         1
@@ -445,8 +445,8 @@ let register =
 
   (* subfunction which adds the information bound to the constructor of
      the int31 type to the reactive retroknowledge *)
-  let add_int31c retroknowledge c = 
-    let rk = add_vm_constant_static_info retroknowledge c 
+  let add_int31c retroknowledge c =
+    let rk = add_vm_constant_static_info retroknowledge c
                                          Cbytegen.compile_structured_int31
     in
     add_vm_constant_dynamic_info rk c Cbytegen.dynamic_int31_compilation
@@ -464,7 +464,7 @@ fun env field value ->
      operators to the reactive retroknowledge. *)
   let add_int31_binop_from_const op =
     match value with
-      | Const kn ->  retroknowledge add_int31_op env value 2 
+      | Const kn ->  retroknowledge add_int31_op env value 2
 	                               op kn
       | _ -> anomaly "Environ.register: should be a constant"
   in
@@ -476,66 +476,66 @@ fun env field value ->
   in
   (* subfunction which completes the function constr_of_int31 above
      by performing the actual retroknowledge operations *)
-  let add_int31_decompilation_from_type rk = 
-    (* invariant : the type of bits is registered, otherwise the function 
+  let add_int31_decompilation_from_type rk =
+    (* invariant : the type of bits is registered, otherwise the function
        would raise Not_found. The invariant is enforced in safe_typing.ml *)
     match field with
-      | KInt31 (grp, Int31Type) -> 
+      | KInt31 (grp, Int31Type) ->
 	  (match Retroknowledge.find rk (KInt31 (grp,Int31Bits)) with
-	    | Ind i31bit_type ->  
-		(match value with 
-		  | Ind i31t -> 
+	    | Ind i31bit_type ->
+		(match value with
+		  | Ind i31t ->
 		      Retroknowledge.add_vm_decompile_constant_info rk
 		               value (constr_of_int31 i31t i31bit_type)
 		  | _ -> anomaly "Environ.register: should be an inductive type")
 	    | _ -> anomaly "Environ.register: Int31Bits should be an inductive type")
       | _ -> anomaly "Environ.register: add_int31_decompilation_from_type called with an abnormal field"
   in
-  {env with retroknowledge = 
-  let retroknowledge_with_reactive_info = 
+  {env with retroknowledge =
+  let retroknowledge_with_reactive_info =
   match field with
-    | KInt31 (_, Int31Type) -> 
+    | KInt31 (_, Int31Type) ->
         let i31c = match value with
                      | Ind i31t -> (Construct (i31t, 1))
 		     | _ -> anomaly "Environ.register: should be an inductive type"
 	in
-	add_int31_decompilation_from_type 
-	  (add_vm_before_match_info 
-	     (retroknowledge add_int31c env i31c) 
+	add_int31_decompilation_from_type
+	  (add_vm_before_match_info
+	     (retroknowledge add_int31c env i31c)
 	     value Cbytegen.int31_escape_before_match)
     | KInt31 (_, Int31Plus) -> add_int31_binop_from_const Cbytecodes.Kaddint31
     | KInt31 (_, Int31PlusC) -> add_int31_binop_from_const Cbytecodes.Kaddcint31
     | KInt31 (_, Int31PlusCarryC) -> add_int31_binop_from_const Cbytecodes.Kaddcarrycint31
     | KInt31 (_, Int31Minus) -> add_int31_binop_from_const Cbytecodes.Ksubint31
     | KInt31 (_, Int31MinusC) -> add_int31_binop_from_const Cbytecodes.Ksubcint31
-    | KInt31 (_, Int31MinusCarryC) -> add_int31_binop_from_const 
+    | KInt31 (_, Int31MinusCarryC) -> add_int31_binop_from_const
 	                                           Cbytecodes.Ksubcarrycint31
     | KInt31 (_, Int31Times) -> add_int31_binop_from_const Cbytecodes.Kmulint31
     | KInt31 (_, Int31TimesC) -> add_int31_binop_from_const Cbytecodes.Kmulcint31
     | KInt31 (_, Int31Div21) -> (* this is a ternary operation *)
                                 (match value with
 				 | Const kn ->
-				     retroknowledge add_int31_op env value 3 
+				     retroknowledge add_int31_op env value 3
 	                               Cbytecodes.Kdiv21int31 kn
 				 | _ -> anomaly "Environ.register: should be a constant")
     | KInt31 (_, Int31Div) -> add_int31_binop_from_const Cbytecodes.Kdivint31
     | KInt31 (_, Int31AddMulDiv) -> (* this is a ternary operation *)
                                 (match value with
 				 | Const kn ->
-				     retroknowledge add_int31_op env value 3 
+				     retroknowledge add_int31_op env value 3
 	                               Cbytecodes.Kaddmuldivint31 kn
 				 | _ -> anomaly "Environ.register: should be a constant")
     | KInt31 (_, Int31Compare) -> add_int31_binop_from_const Cbytecodes.Kcompareint31
     | KInt31 (_, Int31Head0) -> add_int31_unop_from_const Cbytecodes.Khead0int31
-    | KInt31 (_, Int31Tail0) -> add_int31_unop_from_const Cbytecodes.Ktail0int31 
-    | _ -> env.retroknowledge 
+    | KInt31 (_, Int31Tail0) -> add_int31_unop_from_const Cbytecodes.Ktail0int31
+    | _ -> env.retroknowledge
   in
   Retroknowledge.add_field retroknowledge_with_reactive_info field value
   }
 
 
 (**************************************************************)
-(* spiwack: the following definitions are used by the function 
+(* spiwack: the following definitions are used by the function
    [assumptions] which gives as an output the set of all
    axioms and sections variables on which a given term depends
    in a context (expectingly the Global context) *)
@@ -546,10 +546,10 @@ type context_object =
   | Opaque of constant     (* An opaque constant. *)
 
 (* Defines a set of [assumption] *)
-module OrderedContextObject = 
-struct 
+module OrderedContextObject =
+struct
   type t = context_object
-  let compare x y = 
+  let compare x y =
       match x , y with
       | Variable i1 , Variable i2 -> id_ord i1 i2
       | Axiom k1 , Axiom k2 -> Pervasives.compare k1 k2
@@ -572,8 +572,8 @@ let assumptions ?(add_opaque=false) st (* t env *) =
      on a and a ContextObjectSet, ContextObjectMap.  *)
   let ( ** ) f1 f2 s m = let (s',m') = f1 s m in f2 s' m' in
   (* This function eases memoization, by checking if an object is already
-     stored before trying and applying a function. 
-     If the object is there, the function is not fired (we are in a 
+     stored before trying and applying a function.
+     If the object is there, the function is not fired (we are in a
      particular case where memoized object don't need a treatment at all).
      If the object isn't there, it is stored and the function is fired*)
   let try_and_go o f s m =
@@ -585,7 +585,7 @@ let assumptions ?(add_opaque=false) st (* t env *) =
   let identity2 s m = (s,m) in
   (* Goes recursively into the term to see if it depends on assumptions
     the 3 important cases are : - Const _ where we need to first unfold
-    the constant and return the needed assumptions of its body in the 
+    the constant and return the needed assumptions of its body in the
     environment,
                                 - Rel _ which means the term is a variable
     which has been bound earlier by a Lambda or a Prod (returns [] ),
@@ -601,30 +601,30 @@ let assumptions ?(add_opaque=false) st (* t env *) =
   let rec aux t env s acc =
     match kind_of_term t with
     | Var id -> aux_memoize_id id env s acc
-    | Meta _ | Evar _ -> 
+    | Meta _ | Evar _ ->
 	Util.anomaly "Environ.assumption: does not expect a meta or an evar"
-    | Cast (e1,_,e2) | Prod (_,e1,e2) | Lambda (_,e1,e2) -> 
+    | Cast (e1,_,e2) | Prod (_,e1,e2) | Lambda (_,e1,e2) ->
                            ((aux e1 env)**(aux e2 env)) s acc
     | LetIn (_,e1,e2,e3) -> ((aux e1 env)**
                              (aux e2 env)**
                              (aux e3 env))
-	                     s acc 
+	                     s acc
     | App (e1, e_array) -> ((aux e1 env)**
-			    (Array.fold_right 
+			    (Array.fold_right
 			       (fun e f -> (aux e env)**f)
                                e_array identity2))
 	                   s acc
     | Case (_,e1,e2,e_array) -> ((aux e1 env)**
                                  (aux e2 env)**
-				 (Array.fold_right 
+				 (Array.fold_right
 				    (fun e f -> (aux e env)**f)
                                     e_array identity2))
 	                        s acc
     | Fix (_,(_, e1_array, e2_array)) | CoFix (_,(_,e1_array, e2_array)) ->
-                  ((Array.fold_right 
+                  ((Array.fold_right
 		      (fun e f -> (aux e env)**f)
                       e1_array identity2) **
-                   (Array.fold_right 
+                   (Array.fold_right
 		      (fun e f -> (aux e env)**f)
                       e2_array identity2))
 		     s acc
@@ -654,7 +654,7 @@ let assumptions ?(add_opaque=false) st (* t env *) =
     let (s,acc) =
       if cb.Declarations.const_body <> None
 	&& (cb.Declarations.const_opaque || not (Cpred.mem kn knst))
-	&& add_opaque 
+	&& add_opaque
       then
 	do_type (Opaque kn)
       else (s,acc)
@@ -662,13 +662,13 @@ let assumptions ?(add_opaque=false) st (* t env *) =
       match cb.Declarations.const_body with
       | None -> do_type (Axiom kn)
       | Some body -> aux (Declarations.force body) env s acc
-	  
+
   and aux_memoize_kn kn env =
     try_and_go (Axiom kn) (add_kn kn env)
  in
  fun t env ->
    snd (aux t env (ContextObjectSet.empty) (ContextObjectMap.empty))
-    
+
 (* /spiwack *)
 
 

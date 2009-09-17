@@ -25,7 +25,7 @@ open Typeops
 let constrain_type env j cst1 = function
   | None ->
       make_polymorphic_if_constant_for_ind env j, cst1
-  | Some t -> 
+  | Some t ->
       let (tj,cst2) = infer_type env t in
       let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
       assert (t = tj.utj_val);
@@ -34,7 +34,7 @@ let constrain_type env j cst1 = function
 let local_constrain_type env j cst1 = function
   | None ->
       j.uj_type, cst1
-  | Some t -> 
+  | Some t ->
       let (tj,cst2) = infer_type env t in
       let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
       assert (t = tj.utj_val);
@@ -59,7 +59,7 @@ let translate_local_assum env t =
 let safe_push_named (id,_,_ as d) env =
   let _ =
     try
-      let _ = lookup_named id env in 
+      let _ = lookup_named id env in
       error ("Identifier "^string_of_id id^" already defined.")
     with Not_found -> () in
   push_named d env
@@ -99,18 +99,18 @@ let infer_declaration env dcl =
 let global_vars_set_constant_type env = function
   | NonPolymorphicType t -> global_vars_set env t
   | PolymorphicArity (ctx,_) ->
-      Sign.fold_rel_context 
+      Sign.fold_rel_context
         (fold_rel_declaration
 	  (fun t c -> Idset.union (global_vars_set env t) c))
       ctx ~init:Idset.empty
 
 let build_constant_declaration env kn (body,typ,cst,op,boxed,inline) =
   let ids =
-    match body with 
+    match body with
     | None -> global_vars_set_constant_type env typ
     | Some b ->
-        Idset.union 
-	  (global_vars_set env (Declarations.force b)) 
+        Idset.union
+	  (global_vars_set env (Declarations.force b))
 	  (global_vars_set_constant_type env typ)
   in
   let tps = Cemitcodes.from_val (compile_constant_body env body op boxed) in
@@ -121,7 +121,7 @@ let build_constant_declaration env kn (body,typ,cst,op,boxed,inline) =
       const_body_code = tps;
      (* const_type_code = to_patch env typ;*)
       const_constraints = cst;
-      const_opaque = op; 
+      const_opaque = op;
       const_inline = inline}
 
 (*s Global and local constant declaration. *)
@@ -129,9 +129,9 @@ let build_constant_declaration env kn (body,typ,cst,op,boxed,inline) =
 let translate_constant env kn ce =
   build_constant_declaration env kn (infer_declaration env ce)
 
-let translate_recipe env kn r = 
+let translate_recipe env kn r =
   build_constant_declaration env kn (Cooking.cook_constant env r)
 
 (* Insertion of inductive types. *)
 
-let translate_mind env mie = check_inductive env mie 
+let translate_mind env mie = check_inductive env mie

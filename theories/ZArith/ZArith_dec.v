@@ -28,7 +28,7 @@ Lemma Zcompare_rect :
     ((n ?= m) = Eq -> P) -> ((n ?= m) = Lt -> P) -> ((n ?= m) = Gt -> P) -> P.
 Proof.
   intros * H1 H2 H3.
-  destruct (n ?= m); auto. 
+  destruct (n ?= m); auto.
 Defined.
 
 Lemma Zcompare_rec :
@@ -41,13 +41,13 @@ Defined.
 Section decidability.
 
   Variables x y : Z.
-  
+
   (** * Decidability of equality on binary integers *)
 
   Definition Z_eq_dec : {x = y} + {x <> y}.
   Proof.
     decide equality; apply positive_eq_dec.
-  Defined. 
+  Defined.
 
   (** * Decidability of order on binary integers *)
 
@@ -68,7 +68,7 @@ Section decidability.
     left. rewrite H. discriminate.
     right. tauto.
   Defined.
-  
+
   Definition Z_gt_dec : {x > y} + {~ x > y}.
   Proof.
     unfold Zgt in |- *.

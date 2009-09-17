@@ -58,9 +58,9 @@ let zz = Util.dummy_loc;;
 let rec get_subterm  (depth:int) (path: int list) (constr:constr) =
   match depth, path, kind_of_term constr with
     0, l, c -> (constr,l)
-  | n, 2::a::tl, App(func,arr) -> 
+  | n, 2::a::tl, App(func,arr) ->
       get_subterm (n - 2) tl arr.(a-1)
-  | _,l,_ -> failwith (int_list_to_string 
+  | _,l,_ -> failwith (int_list_to_string
                         "wrong path or wrong form of term"
                         l);;
 
@@ -93,12 +93,12 @@ let rec find_cmd (l:(string * dad_rule) list) env constr p p1 p2 =
        if deg > length then
          failwith "internal"
        else
-         let term_to_match, p_r = 
-             try 
+         let term_to_match, p_r =
+             try
                 get_subterm (length - deg) p constr
              with
                 Failure s -> failwith "internal" in
-         let _, constr_pat = 
+         let _, constr_pat =
             intern_constr_pattern Evd.empty (Global.env())
                ((*ct_to_ast*) pat) in
          let subst = matches constr_pat term_to_match in
@@ -136,26 +136,26 @@ let dad_tac display_function = function
    l -> let p1, p2 = part_tac_args [] l in
         (function g ->
            let (p_a, p1prime, p2prime) = decompose_path (List.rev p1,p2) in
-           (display_function 
+           (display_function
             (find_cmd (!dad_rule_list) (pf_env g)
 	       (pf_concl g) p_a p1prime p2prime));
             tclIDTAC g);;
 *)
 let dad_tac display_function p1 p2 g =
   let (p_a, p1prime, p2prime) = decompose_path (p1,p2) in
-  (display_function 
+  (display_function
     (find_cmd (!dad_rule_list) (pf_env g) (pf_concl g) p_a p1prime p2prime));
   tclIDTAC g;;
 
 (* Now we enter dad rule list management. *)
 
 let add_dad_rule name patt p1 p2 depth pr command =
-  dad_rule_list := (name, 
+  dad_rule_list := (name,
 		    (patt, p1, p2, depth, pr, command))::!dad_rule_list;;
 
 let rec remove_if_exists name = function
     [] -> false, []
-  | ((a,b) as rule1)::tl -> if a = name then 
+  | ((a,b) as rule1)::tl -> if a = name then
                let result1, l = (remove_if_exists name tl) in
                true, l
              else
@@ -177,11 +177,11 @@ let constrain ((n : patvar),(pat : constr_pattern)) sigma =
   if List.mem_assoc n sigma then
     if pat = (List.assoc n sigma) then sigma
     else failwith "internal"
-  else 
+  else
     (n,pat)::sigma
-    
+
 (* This function is inspired from matches_core in pattern.ml *)
-let more_general_pat pat1 pat2 = 
+let more_general_pat pat1 pat2 =
   let rec match_rec sigma p1 p2 =
     match p1, p2 with
       | PMeta (Some n), m -> constrain (n,m) sigma
@@ -203,7 +203,7 @@ let more_general_pat pat1 pat2 =
       | PApp (c1,arg1), PApp (c2,arg2) ->
         (try array_fold_left2 match_rec (match_rec sigma c1 c2) arg1 arg2
          with Invalid_argument _ -> failwith "internal")
-      | _ -> failwith "unexpected case in more_general_pat" in 
+      | _ -> failwith "unexpected case in more_general_pat" in
   try let _ = match_rec [] pat1 pat2 in true
   with Failure "internal" -> false;;
 
@@ -214,7 +214,7 @@ let more_general r1 r2 =
 	(more_general_pat patt1 patt2) &
       (is_prefix p11 p21) & (is_prefix p12 p22);;
 
-let not_less_general r1 r2 = 
+let not_less_general r1 r2 =
   not (match r1,r2 with
     (_,(patt1,p11,p12,_,_,_)),
     (_,(patt2,p21,p22,_,_,_)) ->
@@ -235,7 +235,7 @@ let rec add_in_list_sorting rule1 = function
 	rule1::this_list
 and add_in_list_sorting_aux rule1 = function
     [] -> []
-  | b::tl -> 
+  | b::tl ->
       if more_general rule1 b then
       	b::(add_in_list_sorting rule1 tl)
       else
@@ -245,7 +245,7 @@ and add_in_list_sorting_aux rule1 = function
 	| _ -> rule1::tl2);;
 
 let rec sort_list = function
-    [] -> [] 
+    [] -> []
   | a::l -> add_in_list_sorting a (sort_list l);;
 
 let mk_dad_meta n = CPatVar (zz,(true,Nameops.make_ident "DAD" (Some n)));;

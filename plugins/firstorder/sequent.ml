@@ -27,7 +27,7 @@ let priority = (* pure heuristics, <=0 for non reversible *)
 	begin
 	  match rf with
 	      Rarrow               -> 100
-	    | Rand                 ->  40 
+	    | Rand                 ->  40
 	    | Ror                  -> -15
 	    | Rfalse               -> -50
 	    | Rforall              -> 100
@@ -38,7 +38,7 @@ let priority = (* pure heuristics, <=0 for non reversible *)
 	    Lfalse                 -> 999
 	  | Land _                 ->  90
 	  | Lor _                  ->  40
-	  | Lforall (_,_,_)        -> -30 
+	  | Lforall (_,_,_)        -> -30
 	  | Lexists _              ->  60
 	  | LA(_,lap) ->
 	      match lap with
@@ -48,7 +48,7 @@ let priority = (* pure heuristics, <=0 for non reversible *)
 		| LLor (_,_)       ->  70
 		| LLforall _       -> -20
 		| LLexists (_,_)   ->  50
-		| LLarrow  (_,_,_) -> -10 
+		| LLarrow  (_,_,_) -> -10
 
 let left_reversible lpat=(priority lpat)>0
 
@@ -71,15 +71,15 @@ let rec compare_list f l1 l2=
     | _,[] -> 1
     | (h1::q1),(h2::q2) -> (f =? (compare_list f)) h1 h2 q1 q2
 
-let compare_array f v1 v2=  
+let compare_array f v1 v2=
   let l=Array.length v1 in
   let c=l - Array.length v2 in
     if c=0 then
       let rec comp_aux i=
-	if i<0 then 0 
+	if i<0 then 0
 	else
 	  let ci=f v1.(i) v2.(i) in
-	    if ci=0 then 
+	    if ci=0 then
 	      comp_aux (i-1)
 	    else ci
       in comp_aux (l-1)
@@ -93,16 +93,16 @@ let compare_constr_int f t1 t2 =
     | Sort s1, Sort s2 -> Pervasives.compare s1 s2
     | Cast (c1,_,_), _ -> f c1 t2
     | _, Cast (c2,_,_) -> f t1 c2
-    | Prod (_,t1,c1), Prod (_,t2,c2) 
+    | Prod (_,t1,c1), Prod (_,t2,c2)
     | Lambda (_,t1,c1), Lambda (_,t2,c2) ->
-	(f =? f) t1 t2 c1 c2 
-    | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> 
+	(f =? f) t1 t2 c1 c2
+    | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) ->
 	((f =? f) ==? f) b1 b2 t1 t2 c1 c2
     | App (_,_), App (_,_) ->
-	let c1,l1=decompose_app t1 
+	let c1,l1=decompose_app t1
 	and c2,l2=decompose_app t2 in
 	  (f =? (compare_list f)) c1 c2 l1 l2
-    | Evar (e1,l1), Evar (e2,l2) -> 
+    | Evar (e1,l1), Evar (e2,l2) ->
 	((-) =? (compare_array f)) e1 e2 l1 l2
     | Const c1, Const c2 -> Pervasives.compare c1 c2
     | Ind c1, Ind c2 -> Pervasives.compare c1 c2
@@ -119,7 +119,7 @@ let compare_constr_int f t1 t2 =
 
 let rec compare_constr m n=
   compare_constr_int compare_constr m n
-    
+
 module OrderedConstr=
 struct
   type t=constr
@@ -129,13 +129,13 @@ end
 type h_item = global_reference * (int*constr) option
 
 module Hitem=
-struct 
+struct
   type t = h_item
   let compare (id1,co1) (id2,co2)=
-    (Pervasives.compare 
+    (Pervasives.compare
      =? (fun oc1 oc2 ->
-	   match oc1,oc2 with 
-	       Some (m1,c1),Some (m2,c2) -> 
+	   match oc1,oc2 with
+	       Some (m1,c1),Some (m2,c2) ->
 		 ((-) =? OrderedConstr.compare) m1 m2 c1 c2
 	     | _,_->Pervasives.compare oc1 oc2)) id1 id2 co1 co2
 end
@@ -145,16 +145,16 @@ module CM=Map.Make(OrderedConstr)
 module History=Set.Make(Hitem)
 
 let cm_add typ nam cm=
-  try 
+  try
     let l=CM.find typ cm in CM.add typ (nam::l) cm
   with
       Not_found->CM.add typ [nam] cm
-	
+
 let cm_remove typ nam cm=
   try
-    let l=CM.find typ cm in 
+    let l=CM.find typ cm in
     let l0=List.filter (fun id->id<>nam) l in
-      match l0 with 
+      match l0 with
 	  []->CM.remove typ cm
 	| _ ->CM.add typ l0 cm
       with Not_found ->cm
@@ -172,7 +172,7 @@ type t=
      depth:int}
 
 let deepen seq={seq with depth=seq.depth-1}
- 
+
 let record item seq={seq with history=History.add item seq.history}
 
 let lookup item seq=
@@ -192,12 +192,12 @@ let rec add_formula side nam t seq gl=
 	begin
 	  match side with
 	      Concl ->
-		{seq with 
+		{seq with
 		   redexes=HP.add f seq.redexes;
 		   gl=f.constr;
 		   glatom=None}
 	    | _ ->
-		{seq with 
+		{seq with
 		   redexes=HP.add f seq.redexes;
 		   context=cm_add f.constr nam seq.context}
 	end
@@ -206,15 +206,15 @@ let rec add_formula side nam t seq gl=
 	    Concl ->
 	      {seq with gl=t;glatom=Some t}
 	  | _ ->
-	      {seq with 
+	      {seq with
 		 context=cm_add t nam seq.context;
 		 latoms=t::seq.latoms}
-	      
+
 let re_add_formula_list lf seq=
   let do_one f cm=
     if f.id == dummy_id then cm
     else cm_add f.constr f.id cm in
-  {seq with 
+  {seq with
      redexes=List.fold_right HP.add lf seq.redexes;
      context=List.fold_right do_one lf seq.context}
 
@@ -234,17 +234,17 @@ let rec take_formula seq=
   and hp=HP.remove seq.redexes in
     if hd.id == dummy_id then
       let nseq={seq with redexes=hp} in
-	if seq.gl==hd.constr then 
+	if seq.gl==hd.constr then
 	  hd,nseq
 	else
 	  take_formula nseq (* discarding deprecated goal *)
     else
-      hd,{seq with 
+      hd,{seq with
 	    redexes=hp;
 	    context=cm_remove hd.constr hd.id seq.context}
-	
+
 let empty_seq depth=
-  {redexes=HP.empty;   
+  {redexes=HP.empty;
    context=CM.empty;
    latoms=[];
    gl=(mkMeta 1);
@@ -264,7 +264,7 @@ let expand_constructor_hints =
 let extend_with_ref_list l seq gl=
   let l = expand_constructor_hints l in
   let f gr seq=
-    let c=constr_of_global gr in    
+    let c=constr_of_global gr in
     let typ=(pf_type_of gl c) in
       add_formula Hyp gr typ seq gl in
     List.fold_right f l seq
@@ -277,8 +277,8 @@ let extend_with_auto_hints l seq gl=
     match p_a_t.code with
 	Res_pf (c,_) | Give_exact c
       | Res_pf_THEN_trivial_fail (c,_) ->
-	  (try 
-	     let gr=global_of_constr c in 
+	  (try
+	     let gr=global_of_constr c in
 	     let typ=(pf_type_of gl c) in
 	       seqref:=add_formula Hint gr typ !seqref gl
 	   with Not_found->())
@@ -288,7 +288,7 @@ let extend_with_auto_hints l seq gl=
     let hdb=
       try
 	searchtable_map dbname
-      with Not_found-> 
+      with Not_found->
 	error ("Firstorder: "^dbname^" : No such Hint database") in
       Hint_db.iter g hdb in
     List.iter h l;
@@ -297,16 +297,16 @@ let extend_with_auto_hints l seq gl=
 let print_cmap map=
   let print_entry c l s=
     let xc=Constrextern.extern_constr false (Global.env ()) c in
-      str "| " ++ 
-      Util.prlist Printer.pr_global l ++ 
+      str "| " ++
+      Util.prlist Printer.pr_global l ++
       str " : " ++
-      Ppconstr.pr_constr_expr xc ++ 
-      cut () ++ 
+      Ppconstr.pr_constr_expr xc ++
+      cut () ++
       s in
-    msgnl (v 0 
-	     (str "-----" ++ 
+    msgnl (v 0
+	     (str "-----" ++
 	      cut () ++
 	      CM.fold print_entry map (mt ()) ++
 	      str "-----"))
 
-	
+

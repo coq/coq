@@ -19,14 +19,14 @@ open Reduction
 open Inductive
 open Modops
 (*i*)
-open Pp      
+open Pp
 
 
 
 (* This local type is used to subtype a constant with a constructor or
    an inductive type. It can also be useful to allow reorderings in
    inductive types *)
-type namedobject = 
+type namedobject =
   | Constant of constant_body
   | IndType of inductive * mutual_inductive_body
   | IndConstr of constructor * mutual_inductive_body
@@ -37,11 +37,11 @@ type namedobject =
 (* adds above information about one mutual inductive: all types and
    constructors *)
 
-let add_nameobjects_of_mib ln mib map = 
+let add_nameobjects_of_mib ln mib map =
   let add_nameobjects_of_one j oib map =
     let ip = (ln,j) in
-    let map = 
-      array_fold_right_i 
+    let map =
+      array_fold_right_i
       (fun i id map ->
         Labmap.add (label_of_id id) (IndConstr((ip,i+1), mib)) map)
       oib.mind_consnames
@@ -54,8 +54,8 @@ let add_nameobjects_of_mib ln mib map =
 
 (* creates namedobject map for the whole signature *)
 
-let make_label_map mp list = 
-  let add_one (l,e) map = 
+let make_label_map mp list =
+  let add_one (l,e) map =
    let add_map obj = Labmap.add l obj map in
    match e with
     | SFBconst cb -> add_map (Constant cb)
@@ -74,11 +74,11 @@ let check_conv_error error f env a1 a2 =
       NotConvertible -> error ()
 
 (* for now we do not allow reorderings *)
-let check_inductive env msid1 l info1 mib2 spec2 = 
+let check_inductive env msid1 l info1 mib2 spec2 =
   let kn = make_kn (MPself msid1) empty_dirpath l in
   let error () = error_not_match l spec2 in
   let check_conv f = check_conv_error error f in
-  let mib1 = 
+  let mib1 =
     match info1 with
       | IndType ((_,0), mib) -> mib
       | _ -> error ()
@@ -87,7 +87,7 @@ let check_inductive env msid1 l info1 mib2 spec2 =
 
     (* Due to sort-polymorphism in inductive types, the conclusions of
        t1 and t2, if in Type, are generated as the least upper bounds
-       of the types of the constructors. 
+       of the types of the constructors.
 
        By monotonicity of the infered l.u.b.  wrt subtyping (i.e.  if X:U
        |- T(X):s and |- M:U' and U'<=U then infer_type(T(M))<=s), each
@@ -114,7 +114,7 @@ let check_inductive env msid1 l info1 mib2 spec2 =
       | Type _, Type _ -> (* shortcut here *) Prop Null, Prop Null
       | (Prop _, Type _) | (Type _,Prop _) -> error ()
       | _ -> (s1, s2) in
-    check_conv conv_leq env 
+    check_conv conv_leq env
       (mkArity (ctx1,s1)) (mkArity (ctx2,s2))
   in
 
@@ -145,7 +145,7 @@ let check_inductive env msid1 l info1 mib2 spec2 =
   check (fun mib -> mib.mind_finite);
   check (fun mib -> mib.mind_ntypes);
   assert (mib1.mind_hyps=[] && mib2.mind_hyps=[]);
-  assert (Array.length mib1.mind_packets >= 1 
+  assert (Array.length mib1.mind_packets >= 1
 	    && Array.length mib2.mind_packets >= 1);
 
   (* Check that the expected numbers of uniform parameters are the same *)
@@ -155,10 +155,10 @@ let check_inductive env msid1 l info1 mib2 spec2 =
   (* the inductive types and constructors types have to be convertible *)
   check (fun mib -> mib.mind_nparams);
 
-  begin 
+  begin
     match mib2.mind_equiv with
       | None -> ()
-      | Some kn2' -> 
+      | Some kn2' ->
 	  let kn2 = scrape_mind env kn2' in
 	  let kn1 = match mib1.mind_equiv with
 	      None -> kn
@@ -168,17 +168,17 @@ let check_inductive env msid1 l info1 mib2 spec2 =
   end;
   (* we check that records and their field names are preserved. *)
   check (fun mib -> mib.mind_record);
-  if mib1.mind_record then begin 
-    let rec names_prod_letin t = match t with 
+  if mib1.mind_record then begin
+    let rec names_prod_letin t = match t with
       | Prod(n,_,t) -> n::(names_prod_letin t)
       | LetIn(n,_,_,t) -> n::(names_prod_letin t)
       | Cast(t,_,_) -> names_prod_letin t
       | _ -> []
-    in 
+    in
     assert (Array.length mib1.mind_packets = 1);
     assert (Array.length mib2.mind_packets = 1);
-    assert (Array.length mib1.mind_packets.(0).mind_user_lc = 1); 
-    assert (Array.length mib2.mind_packets.(0).mind_user_lc = 1); 
+    assert (Array.length mib1.mind_packets.(0).mind_user_lc = 1);
+    assert (Array.length mib2.mind_packets.(0).mind_user_lc = 1);
     check (fun mib -> names_prod_letin mib.mind_packets.(0).mind_user_lc.(0));
   end;
   (* we first check simple things *)
@@ -187,10 +187,10 @@ let check_inductive env msid1 l info1 mib2 spec2 =
   let _ = array_map2_i check_cons_types mib1.mind_packets mib2.mind_packets
   in ()
 
-let check_constant env msid1 l info1 cb2 spec2 = 
+let check_constant env msid1 l info1 cb2 spec2 =
   let error () = error_not_match l spec2 in
   let check_conv f = check_conv_error error f in
-  let check_type env t1 t2 = 
+  let check_type env t1 t2 =
 
     (* If the type of a constant is generated, it may mention
        non-variable algebraic universes that the general conversion
@@ -201,7 +201,7 @@ let check_constant env msid1 l info1 cb2 spec2 =
        Gamma |- A |> T, Gamma |- A' |> T' and Gamma |- A=A' then T <= T').
        Hence they don't have to be checked again *)
 
-    let t1,t2 = 
+    let t1,t2 =
       if isArity t2 then
         let (ctx2,s2) = destArity t2 in
         match s2 with
@@ -283,32 +283,32 @@ let rec check_modules env msid1 l msb1 msb2 =
   let mty1 = module_type_of_module (Some mp) msb1 in
   let mty2 =  module_type_of_module None msb2 in
   check_modtypes env mty1 mty2 false
-	
 
-and check_signatures env (msid1,sig1) alias (msid2,sig2') = 
+
+and check_signatures env (msid1,sig1) alias (msid2,sig2') =
   let mp1 = MPself msid1 in
-  let env = add_signature mp1 sig1 env in 
+  let env = add_signature mp1 sig1 env in
   let alias = update_subst_alias alias (map_msid msid2 mp1) in
   let sig2 = subst_structure alias sig2' in
   let sig2 = subst_signature_msid msid2 mp1 sig2 in
   let map1 = make_label_map mp1 sig1 in
-  let check_one_body (l,spec2) = 
-    let info1 = 
-      try 
-	Labmap.find l map1 
-      with 
+  let check_one_body (l,spec2) =
+    let info1 =
+      try
+	Labmap.find l map1
+      with
 	  Not_found -> error_no_such_label_sub l msid1 msid2
     in
       match spec2 with
 	| SFBconst cb2 ->
 	    check_constant env msid1 l info1 cb2 spec2
-	| SFBmind mib2 -> 
+	| SFBmind mib2 ->
 	    check_inductive env msid1 l info1 mib2 spec2
-	| SFBmodule msb2 ->  
+	| SFBmodule msb2 ->
 	    begin
 	      match info1 with
 		| Module msb -> check_modules env msid1 l msb msb2
-		| Alias (mp,typ_opt) ->let msb = 
+		| Alias (mp,typ_opt) ->let msb =
 		    {mod_expr = Some (SEBident mp);
 		     mod_type = typ_opt;
 		     mod_constraints = Constraint.empty;
@@ -318,11 +318,11 @@ and check_signatures env (msid1,sig1) alias (msid2,sig2') =
 		| _ -> error_not_match l spec2
 	    end
 	| SFBalias (mp,typ_opt,_) ->
-	    begin	
+	    begin
 	      match info1 with
 		| Alias (mp1,_) -> check_modpath_equiv env mp mp1
-		| Module msb -> 
-		    let msb1 = 
+		| Module msb ->
+		    let msb1 =
 		      {mod_expr = Some (SEBident mp);
 		       mod_type = typ_opt;
 		       mod_constraints = Constraint.empty;
@@ -332,7 +332,7 @@ and check_signatures env (msid1,sig1) alias (msid2,sig2') =
 		| _ -> error_not_match l spec2
 	    end
 	| SFBmodtype mtb2 ->
-	    let mtb1 = 
+	    let mtb1 =
 	      match info1 with
 		| Modtype mtb -> mtb
 		| _ -> error_not_match l spec2
@@ -341,7 +341,7 @@ and check_signatures env (msid1,sig1) alias (msid2,sig2') =
   in
     List.iter check_one_body sig2
 
-and check_modtypes env mtb1 mtb2 equiv = 
+and check_modtypes env mtb1 mtb2 equiv =
   if mtb1==mtb2 then () else (* just in case  :) *)
   let mtb1',mtb2'=
     (match mtb1.typ_strength with
@@ -349,23 +349,23 @@ and check_modtypes env mtb1 mtb2 equiv =
 	   eval_struct env mtb2.typ_expr
        | Some mp -> strengthen  env mtb1.typ_expr mp,
 	   eval_struct env mtb2.typ_expr) in
-      let rec check_structure env str1 str2 equiv = 
+      let rec check_structure env str1 str2 equiv =
 	match str1, str2 with
-	  | SEBstruct (msid1,list1), 
-	    SEBstruct (msid2,list2) -> 
+	  | SEBstruct (msid1,list1),
+	    SEBstruct (msid2,list2) ->
 	      check_signatures env
 		(msid1,list1) mtb1.typ_alias (msid2,list2);
 	      if equiv then
-		check_signatures env 
-		  (msid2,list2) mtb2.typ_alias  (msid1,list1) 
-	  | SEBfunctor (arg_id1,arg_t1,body_t1), 
+		check_signatures env
+		  (msid2,list2) mtb2.typ_alias  (msid1,list1)
+	  | SEBfunctor (arg_id1,arg_t1,body_t1),
 	      SEBfunctor (arg_id2,arg_t2,body_t2) ->
 	      check_modtypes env arg_t2 arg_t1 equiv;
 		(* contravariant *)
-	      let env = 
-		add_module (MPbound arg_id2) (module_body_of_type arg_t2) env 
+	      let env =
+		add_module (MPbound arg_id2) (module_body_of_type arg_t2) env
 	      in
-	      let body_t1' = 
+	      let body_t1' =
 		(* since we are just checking well-typedness we do not need
 		   to expand any constant. Hence the identity resolver. *)
 		subst_struct_expr
@@ -375,14 +375,14 @@ and check_modtypes env mtb1 mtb2 equiv =
 		check_structure env (eval_struct env body_t1')
 		  (eval_struct env body_t2) equiv
 	  | _ , _ -> error_incompatible_modtypes mtb1 mtb2
-      in 
+      in
      if mtb1'== mtb2' then ()
      else check_structure env mtb1' mtb2' equiv
 
-let check_subtypes env sup super = 
+let check_subtypes env sup super =
   (*if sup<>super then*)
   check_modtypes env sup super false
-	  
-let check_equal env sup super = 
+
+let check_equal env sup super =
   (*if sup<>super then*)
   check_modtypes env sup super true

@@ -56,5 +56,5 @@ Lemma simpl_plus_l_rr1 :
  (forall m p : Nat, plus' n m = plus' n p -> m = p) ->
  forall m p : Nat, S' (plus' n m) = S' (plus' n p) -> m = p.
 intros.
- eauto. (* does EApply H *) 
+ eauto. (* does EApply H *)
 Qed.

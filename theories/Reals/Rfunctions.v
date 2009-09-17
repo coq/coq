@@ -38,13 +38,13 @@ Lemma INR_fact_neq_0 : forall n:nat, INR (fact n) <> 0.
 Proof.
   intro; red in |- *; intro; apply (not_O_INR (fact n) (fact_neq_0 n));
     assumption.
-Qed.    
+Qed.
 
 (*********)
 Lemma fact_simpl : forall n:nat, fact (S n) = (S n * fact n)%nat.
 Proof.
   intro; reflexivity.
-Qed. 
+Qed.
 
 (*********)
 Lemma simpl_fact :
@@ -160,7 +160,7 @@ Proof.
     rewrite <- (let (H1, H2) := Rmult_ne (x ^ a) in H1);
       rewrite (Rmult_comm (INR n) (x ^ a));
         rewrite <- (Rmult_plus_distr_l (x ^ a) 1 (INR n));
-          rewrite (Rplus_comm 1 (INR n)); rewrite <- (S_INR n); 
+          rewrite (Rplus_comm 1 (INR n)); rewrite <- (S_INR n);
             apply Rmult_comm.
 Qed.
 
@@ -185,7 +185,7 @@ Proof.
         fold (x > 0) in H;
           apply (Rlt_0_sqr x (Rlt_dichotomy_converse x 0 (or_intror (x < 0) H))).
   rewrite (S_INR n0); ring.
-  unfold Rle in H0; elim H0; intro. 
+  unfold Rle in H0; elim H0; intro.
   unfold Rle in |- *; left; apply Rmult_lt_compat_l.
   rewrite Rplus_comm; apply (Rle_lt_0_plus_1 x (Rlt_le 0 x H)).
   assumption.
@@ -288,7 +288,7 @@ Lemma pow_lt_1_zero :
       0 < y ->
       exists N : nat, (forall n:nat, (n >= N)%nat -> Rabs (x ^ n) < y).
 Proof.
-  intros; elim (Req_dec x 0); intro. 
+  intros; elim (Req_dec x 0); intro.
   exists 1%nat; rewrite H1; intros n GE; rewrite pow_ne_zero.
   rewrite Rabs_R0; assumption.
   inversion GE; auto.
@@ -758,7 +758,7 @@ Proof.
     rewrite (Ropp_minus_distr y x) in H; generalize (Rlt_asym (x - y) 0 r0);
       intro; unfold Rgt in H; elimtype False; auto.
   generalize (minus_Rge y x r); intro; generalize (minus_Rge x y r0); intro;
-    generalize (Rge_antisym x y H0 H); intro; rewrite H1; 
+    generalize (Rge_antisym x y H0 H); intro; rewrite H1;
       ring.
 Qed.
 
@@ -771,7 +771,7 @@ Proof.
   rewrite (Ropp_minus_distr x y); generalize (sym_eq H); intro;
     apply (Rminus_diag_eq y x H0).
   apply (Rminus_diag_uniq x y H).
-  apply (Rminus_diag_eq x y H). 
+  apply (Rminus_diag_eq x y H).
 Qed.
 
 Lemma R_dist_eq : forall x:R, R_dist x x = 0.

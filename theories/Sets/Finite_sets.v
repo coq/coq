@@ -52,7 +52,7 @@ Require Import Constructive_sets.
 
 Section Ensembles_finis_facts.
   Variable U : Type.
-  
+
   Lemma cardinal_invert :
     forall (X:Ensemble U) (p:nat),
       cardinal U X p ->

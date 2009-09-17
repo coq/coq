@@ -6,11 +6,11 @@ open Mod_subst
 
 (* Relocation information *)
 type reloc_info =
-  | Reloc_annot of annot_switch 
+  | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
   | Reloc_getglobal of constant
 
-type patch = reloc_info * int 
+type patch = reloc_info * int
 
 let patch_int buff pos n =
   String.unsafe_set buff pos (Char.unsafe_chr n);
@@ -76,10 +76,10 @@ type label_definition =
   | Label_undefined of (int * int) list
 
 let label_table  = ref ([| |] : label_definition array)
-(* le ieme element de la table = Label_defined n signifie que l'on a 
+(* le ieme element de la table = Label_defined n signifie que l'on a
    deja rencontrer le label i et qu'il est a l'offset n.
-                               = Label_undefined l signifie que l'on a 
-   pas encore rencontrer ce label, le premier entier indique ou est l'entier 
+                               = Label_undefined l signifie que l'on a
+   pas encore rencontrer ce label, le premier entier indique ou est l'entier
    a patcher dans la string, le deuxieme son origine  *)
 
 let extend_label_table needed =
@@ -156,11 +156,11 @@ let emit_instr = function
       if ofs = -2 || ofs = 0 || ofs = 2
       then out (opOFFSETCLOSURE0 + ofs / 2)
       else (out opOFFSETCLOSURE; out_int ofs)
-  | Kpush ->      
+  | Kpush ->
       out opPUSH
-  | Kpop n ->      
+  | Kpop n ->
       out opPOP; out_int n
-  | Kpush_retaddr lbl -> 
+  | Kpush_retaddr lbl ->
       out opPUSH_RETADDR; out_label lbl
   | Kapply n ->
       if n < 4 then out(opAPPLY1 + n - 1) else (out opAPPLY; out_int n)
@@ -173,11 +173,11 @@ let emit_instr = function
       out opRETURN; out_int 0
   | Krestart ->
       out opRESTART
-  | Kgrab n -> 
+  | Kgrab n ->
       out opGRAB; out_int n
-  | Kgrabrec(rec_arg) -> 
+  | Kgrabrec(rec_arg) ->
       out opGRABREC; out_int rec_arg
-  | Kclosure(lbl, n) -> 
+  | Kclosure(lbl, n) ->
       out opCLOSURE; out_int n; out_label lbl
   | Kclosurerec(nfv,init,lbl_types,lbl_bodies) ->
       out opCLOSUREREC;out_int (Array.length lbl_bodies);
@@ -193,12 +193,12 @@ let emit_instr = function
       Array.iter (out_label_with_orig org) lbl_types;
       let org = !out_position in
       Array.iter (out_label_with_orig org) lbl_bodies
-  | Kgetglobal q -> 
+  | Kgetglobal q ->
       out opGETGLOBAL; slot_for_getglobal q
-  | Kconst((Const_b0 i)) -> 
+  | Kconst((Const_b0 i)) ->
       if i >= 0 && i <= 3
           then out (opCONST0 + i)
-          else (out opCONSTINT; out_int i) 
+          else (out opCONSTINT; out_int i)
   | Kconst c ->
       out opGETGLOBAL; slot_for_const c
   | Kmakeblock(n, t) ->
@@ -223,7 +223,7 @@ let emit_instr = function
       if n <= 1 then out (opGETFIELD0+n)
       else (out opGETFIELD;out_int n)
   | Ksetfield n ->
-      if n <= 1 then out (opSETFIELD0+n) 
+      if n <= 1 then out (opSETFIELD0+n)
       else (out opSETFIELD;out_int n)
   | Ksequence _ -> raise (Invalid_argument "Cemitcodes.emit_instr")
   (* spiwack *)
@@ -247,7 +247,7 @@ let emit_instr = function
   | Kcompint31 -> out opCOMPINT31
   | Kdecompint31 -> out opDECOMPINT31
   (*/spiwack *)
-  | Kstop -> 
+  | Kstop ->
       out opSTOP
 
 (* Emission of a list of instructions. Include some peephole optimization. *)
@@ -258,26 +258,26 @@ let rec emit = function
   | Kpush :: Kacc n :: c ->
       if n < 8 then out(opPUSHACC0 + n) else (out opPUSHACC; out_int n);
       emit c
-  | Kpush :: Kenvacc n :: c -> 
+  | Kpush :: Kenvacc n :: c ->
       if n >= 1 && n <= 4
       then out(opPUSHENVACC1 + n - 1)
       else (out opPUSHENVACC; out_int n);
       emit c
-  | Kpush :: Koffsetclosure ofs :: c -> 
+  | Kpush :: Koffsetclosure ofs :: c ->
       if ofs = -2 || ofs = 0 || ofs = 2
       then out(opPUSHOFFSETCLOSURE0 + ofs / 2)
       else (out opPUSHOFFSETCLOSURE; out_int ofs);
       emit c
   | Kpush :: Kgetglobal id :: c ->
-      out opPUSHGETGLOBAL; slot_for_getglobal id; emit c 
-  | Kpush :: Kconst (Const_b0 i) :: c -> 
+      out opPUSHGETGLOBAL; slot_for_getglobal id; emit c
+  | Kpush :: Kconst (Const_b0 i) :: c ->
       if i >= 0 && i <= 3
       then out (opPUSHCONST0 + i)
       else (out opPUSHCONSTINT; out_int i);
       emit c
   | Kpush :: Kconst const :: c ->
       out opPUSHGETGLOBAL; slot_for_const const;
-      emit c 
+      emit c
   | Kpop n :: Kjump :: c ->
       out opRETURN; out_int n; emit c
   | Ksequence(c1,c2)::c ->
@@ -306,7 +306,7 @@ let rec subst_strcst s sc =
   | Const_bn(tag,args) -> Const_bn(tag,Array.map (subst_strcst s) args)
   | Const_ind(ind) -> let kn,i = ind in Const_ind((subst_kn s kn, i))
 
-let subst_patch s (ri,pos) = 
+let subst_patch s (ri,pos) =
   match ri with
   | Reloc_annot a ->
       let (kn,i) = a.ci.ci_ind in
@@ -315,7 +315,7 @@ let subst_patch s (ri,pos) =
   | Reloc_const sc -> (Reloc_const (subst_strcst s sc), pos)
   | Reloc_getglobal kn -> (Reloc_getglobal (fst (subst_con s kn)), pos)
 
-let subst_to_patch s (code,pl,fv) = 
+let subst_to_patch s (code,pl,fv) =
   code,List.rev_map (subst_patch s) pl,fv
 
 type body_code =
@@ -334,7 +334,7 @@ let from_val = from_val
 
 let force = force subst_body_code
 
-let subst_to_patch_subst = subst_substituted 
+let subst_to_patch_subst = subst_substituted
 
 let is_boxed tps =
   match force tps with
@@ -348,10 +348,10 @@ let to_memory (init_code, fun_code, fv) =
   let code = String.create !out_position in
   String.unsafe_blit !out_buffer 0 code 0 !out_position;
   let reloc = List.rev !reloc_info in
-  Array.iter (fun lbl -> 
+  Array.iter (fun lbl ->
     (match lbl with
       Label_defined _ -> assert true
-    | Label_undefined patchlist -> 
+    | Label_undefined patchlist ->
 	assert (patchlist = []))) !label_table;
   (code, reloc, fv)
 

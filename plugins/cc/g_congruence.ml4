@@ -15,12 +15,12 @@ open Tactics
 open Tacticals
 
 (* Tactic registration *)
-      
+
 TACTIC EXTEND cc
  [ "congruence" ] -> [ congruence_tac 1000 [] ]
  |[ "congruence" integer(n) ] -> [ congruence_tac n [] ]
  |[ "congruence" "with" ne_constr_list(l) ] -> [ congruence_tac 1000 l ]
- |[ "congruence" integer(n) "with" ne_constr_list(l) ] -> 
+ |[ "congruence" integer(n) "with" ne_constr_list(l) ] ->
    [ congruence_tac n l ]
 END
 

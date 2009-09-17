@@ -35,7 +35,7 @@ Section Bounds.
   Variable D : PO U.
 
   Let C := Carrier_of U D.
-  
+
   Let R := Rel_of U D.
 
   Inductive Upper_Bound (B:Ensemble U) (x:U) : Prop :=
@@ -45,7 +45,7 @@ Section Bounds.
   Inductive Lower_Bound (B:Ensemble U) (x:U) : Prop :=
     Lower_Bound_definition :
     In U C x -> (forall y:U, In U B y -> R x y) -> Lower_Bound B x.
-  
+
   Inductive Lub (B:Ensemble U) (x:U) : Prop :=
     Lub_definition :
     Upper_Bound B x -> (forall y:U, Upper_Bound B y -> R x y) -> Lub B x.
@@ -57,7 +57,7 @@ Section Bounds.
   Inductive Bottom (bot:U) : Prop :=
     Bottom_definition :
     In U C bot -> (forall y:U, In U C y -> R bot y) -> Bottom bot.
-  
+
   Inductive Totally_ordered (B:Ensemble U) : Prop :=
     Totally_ordered_definition :
     (Included U B C ->
@@ -77,7 +77,7 @@ Section Bounds.
       Included U (Couple U x1 x2) X ->
       exists x3 : _, In U X x3 /\ Upper_Bound (Couple U x1 x2) x3) ->
     Directed X.
-  
+
   Inductive Complete : Prop :=
     Definition_of_Complete :
     (exists bot : _, Bottom bot) ->
@@ -102,7 +102,7 @@ Section Specific_orders.
 
   Record Cpo : Type := Definition_of_cpo
     {PO_of_cpo : PO U; Cpo_cond : Complete U PO_of_cpo}.
-  
+
   Record Chain : Type := Definition_of_chain
     {PO_of_chain : PO U;
     Chain_cond : Totally_ordered U PO_of_chain (Carrier_of U PO_of_chain)}.

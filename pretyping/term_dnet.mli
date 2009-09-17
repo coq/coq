@@ -15,8 +15,8 @@ open Libnames
 open Mod_subst
 (*i*)
 
-(* Dnets on constr terms. 
-   
+(* Dnets on constr terms.
+
    An instantiation of Dnet on (an approximation of) constr. It
    associates a term (possibly with Evar) with an
    identifier. Identifiers must be unique (no two terms sharing the
@@ -51,7 +51,7 @@ module type OPT = sig
   (* pre-treatment to terms before adding or searching *)
   val reduce : constr -> constr
 
-  (* direction of post-filtering w.r.t sort subtyping : 
+  (* direction of post-filtering w.r.t sort subtyping :
      - true means query <= terms in the structure
      - false means terms <= query
  *)
@@ -78,14 +78,14 @@ sig
 
   val subst : substitution -> t -> t
 
-  (* 
-   * High-level primitives describing specific search problems 
+  (*
+   * High-level primitives describing specific search problems
    *)
 
   (* [search_pattern dn c] returns all terms/patterns in dn
      matching/matched by c *)
   val search_pattern : t -> constr -> result list
-   
+
   (* [search_concl dn c] returns all matches under products and
      letins, i.e. it finds subterms whose conclusion matches c. The
      complexity depends only on c ! *)
@@ -95,7 +95,7 @@ sig
      heads. Finds terms of the form [forall H_1...H_n, C t_1...t_n]
      where C matches c *)
   val search_head_concl : t -> constr -> result list
-    
+
   (* [search_eq_concl dn eq c] searches terms of the form [forall
      H1...Hn, eq _ X1 X2] where either X1 or X2 matches c *)
   val search_eq_concl : t -> constr -> constr -> result list

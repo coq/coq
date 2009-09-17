@@ -25,35 +25,35 @@ type term =
   | Constructor of cinfo (* constructor arity + nhyps *)
 
 type patt_kind =
-    Normal 
+    Normal
   | Trivial of types
   | Creates_variables
 
 type ccpattern =
     PApp of term * ccpattern list
-  | PVar of int 
+  | PVar of int
 
 type pa_constructor =
     { cnode : int;
       arity : int;
       args  : int list}
 
-module PacMap : Map.S with type key = pa_constructor  
+module PacMap : Map.S with type key = pa_constructor
 
 type forest
 
-type state 
+type state
 
 type rule=
     Congruence
-  | Axiom of constr * bool 
+  | Axiom of constr * bool
   | Injection of int * pa_constructor * int * pa_constructor * int
 
 type from=
     Goal
   | Hyp of constr
   | HeqG of constr
-  | HeqnH of constr*constr 
+  | HeqnH of constr*constr
 
 type 'a eq = {lhs:int;rhs:int;rule:'a}
 
@@ -84,7 +84,7 @@ val add_equality : state -> constr -> term -> term -> unit
 
 val add_disequality : state -> from -> term -> term -> unit
 
-val add_quant : state -> identifier -> bool -> 
+val add_quant : state -> identifier -> bool ->
   int * patt_kind * ccpattern * patt_kind * ccpattern -> unit
 
 val tail_pac : pa_constructor -> pa_constructor
@@ -99,7 +99,7 @@ val get_constructor_info : forest -> int -> cinfo
 
 val subterms : forest -> int -> int * int
 
-val join_path : forest -> int -> int -> 
+val join_path : forest -> int -> int ->
   ((int * int) * equality) list * ((int * int) * equality) list
 
 type quant_eq=
@@ -117,10 +117,10 @@ type pa_fun=
      fnargs:int}
 
 type matching_problem
- 
+
 module PafMap: Map.S with type key = pa_fun
 
-val make_fun_table : state -> Intset.t PafMap.t 
+val make_fun_table : state -> Intset.t PafMap.t
 
 val do_match :  state ->
     (quant_eq * int array) list ref -> matching_problem Stack.t -> unit
@@ -150,20 +150,20 @@ val execute : bool -> state -> explanation option
 
 module PacMap:Map.S with type key=pa_constructor
 
-type term = 
-    Symb of Term.constr 
+type term =
+    Symb of Term.constr
   | Eps
-  | Appli of term * term 
+  | Appli of term * term
   | Constructor of Names.constructor*int*int
 
-type rule = 
-    Congruence 
+type rule =
+    Congruence
   | Axiom of Names.identifier
   | Injection of int*int*int*int
 
 type equality =
-    {lhs : int; 
-     rhs : int; 
+    {lhs : int;
+     rhs : int;
      rule : rule}
 
 module ST :
@@ -175,47 +175,47 @@ sig
   val delete : int -> t -> unit
   val delete_list : int list -> t -> unit
 end
-  
+
 module UF :
 sig
-  type t 
-  exception Discriminable of int * int * int * int * t 
+  type t
+  exception Discriminable of int * int * int * int * t
   val empty : unit -> t
   val find : t -> int -> int
   val size : t -> int -> int
   val get_constructor : t -> int -> Names.constructor
   val pac_arity : t -> int -> int * int -> int
-  val mem_node_pac : t -> int -> int * int -> int 
-  val add_pacs : t -> int -> pa_constructor PacMap.t -> 
+  val mem_node_pac : t -> int -> int * int -> int
+  val add_pacs : t -> int -> pa_constructor PacMap.t ->
     int list * equality list
-  val term : t -> int -> term    
+  val term : t -> int -> term
   val subterms : t -> int -> int * int
   val add : t -> term -> int
   val union : t -> int -> int -> equality -> int list * equality list
-  val join_path : t -> int -> int -> 
+  val join_path : t -> int -> int ->
     ((int*int)*equality) list*
     ((int*int)*equality) list
 end
-  
+
 
 val combine_rec : UF.t -> int list -> equality list
 val process_rec : UF.t -> equality list -> int list
 
 val cc : UF.t -> unit
-  
+
 val make_uf :
   (Names.identifier * (term * term)) list -> UF.t
 
 val add_one_diseq : UF.t -> (term * term) -> int * int
 
-val add_disaxioms : 
-  UF.t -> (Names.identifier * (term * term)) list -> 
+val add_disaxioms :
+  UF.t -> (Names.identifier * (term * term)) list ->
   (Names.identifier * (int * int)) list
-  
+
 val check_equal : UF.t -> int * int -> bool
 
-val find_contradiction : UF.t -> 
-  (Names.identifier * (int * int)) list -> 
+val find_contradiction : UF.t ->
+  (Names.identifier * (int * int)) list ->
   (Names.identifier * (int * int))
 *)
 

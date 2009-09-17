@@ -18,4 +18,4 @@ Definition f :=
   let h := f in (* h = Rel 4 *)
   fix F (n:nat) : nat :=
   h F S n. (* here Rel 4 = g *)
-  
+

@@ -38,7 +38,7 @@ let glob_Ascii = lazy (make_reference "Ascii")
 open Lazy
 
 let interp_ascii dloc p =
-  let rec aux n p = 
+  let rec aux n p =
      if n = 0 then [] else
      let mp = p mod 2 in
      RRef (dloc,if mp = 0 then glob_false else glob_true)
@@ -46,7 +46,7 @@ let interp_ascii dloc p =
   RApp (dloc,RRef(dloc,force glob_Ascii), aux 8 p)
 
 let interp_ascii_string dloc s =
-  let p = 
+  let p =
     if String.length s = 1 then int_of_char s.[0]
     else
       if String.length s = 3 & is_digit s.[0] & is_digit s.[1] & is_digit s.[2]
@@ -62,12 +62,12 @@ let uninterp_ascii r =
     | RRef (_,k)::l when k = glob_true  -> 1+2*(uninterp_bool_list (n-1)  l)
     | RRef (_,k)::l when k = glob_false -> 2*(uninterp_bool_list (n-1) l)
     | _ -> raise Non_closed_ascii in
-  try 
+  try
     let rec aux = function
     | RApp (_,RRef (_,k),l) when k = force glob_Ascii -> uninterp_bool_list 8 l
     | _ -> raise Non_closed_ascii in
     Some (aux r)
-  with 
+  with
    Non_closed_ascii -> None
 
 let make_ascii_string n =

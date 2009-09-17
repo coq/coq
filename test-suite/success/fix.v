@@ -47,10 +47,10 @@ Fixpoint maxVar (e : rExpr) : rNat :=
 
 Require Import Streams.
 
-Definition decomp (s:Stream nat) : Stream nat := 
+Definition decomp (s:Stream nat) : Stream nat :=
   match s with Cons _ s => s end.
 
-CoFixpoint bx0 : Stream nat := Cons 0 bx1 
+CoFixpoint bx0 : Stream nat := Cons 0 bx1
 with bx1 : Stream nat := Cons 1 bx0.
 
 Lemma bx0bx : decomp bx0 = bx1.

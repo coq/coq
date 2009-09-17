@@ -38,7 +38,7 @@ Set Implicit Arguments.
 Section EqdepDec.
 
   Variable A : Type.
-  
+
   Let comp (x y y':A) (eq1:x = y) (eq2:x = y') : y = y' :=
     eq_ind _ (fun a => a = y') eq2 _ eq1.
 
@@ -49,7 +49,7 @@ Section EqdepDec.
   Qed.
 
   Variable eq_dec : forall x y:A, x = y \/ x <> y.
-  
+
   Variable x : A.
 
   Let nu (y:A) (u:x = y) : x = y :=
@@ -63,13 +63,13 @@ Section EqdepDec.
     unfold nu in |- *.
     case (eq_dec x y); intros.
     reflexivity.
-  
+
     case n; trivial.
   Qed.
 
 
   Let nu_inv (y:A) (v:x = y) : x = y := comp (nu (refl_equal x)) v.
-  
+
 
   Remark nu_left_inv : forall (y:A) (u:x = y), nu_inv (nu u) = u.
   Proof.
@@ -88,7 +88,7 @@ Section EqdepDec.
     reflexivity.
   Qed.
 
-  Theorem K_dec : 
+  Theorem K_dec :
     forall P:x = x -> Prop, P (refl_equal x) -> forall p:x = x, P p.
   Proof.
     intros.
@@ -118,10 +118,10 @@ Section EqdepDec.
     case (eq_dec x x).
     intro e.
     elim e using K_dec; trivial.
-    
+
     intros.
     case n; trivial.
-    
+
     case H.
     reflexivity.
   Qed.
@@ -173,13 +173,13 @@ Unset Implicit Arguments.
 (** The signature of decidable sets in [Type] *)
 
 Module Type DecidableType.
-  
+
   Parameter U:Type.
   Axiom eq_dec : forall x y:U, {x = y} + {x <> y}.
 
 End DecidableType.
 
-(** The module [DecidableEqDep] collects equality properties for decidable 
+(** The module [DecidableEqDep] collects equality properties for decidable
     set in [Type] *)
 
 Module DecidableEqDep (M:DecidableType).
@@ -247,7 +247,7 @@ Module Type DecidableSet.
 
 End DecidableSet.
 
-(** The module [DecidableEqDepSet] collects equality properties for decidable 
+(** The module [DecidableEqDepSet] collects equality properties for decidable
     set in [Set] *)
 
 Module DecidableEqDepSet (M:DecidableSet).
@@ -307,11 +307,11 @@ End DecidableEqDepSet.
   (** From decidability to inj_pair2 **)
 Lemma inj_pair2_eq_dec : forall A:Type, (forall x y:A, {x=y}+{x<>y}) ->
    ( forall (P:A -> Type) (p:A) (x y:P p), existT P p x = existT P p y -> x = y ).
-Proof. 
+Proof.
   intros A eq_dec.
   apply eq_dep_eq__inj_pair2.
   apply eq_rect_eq__eq_dep_eq.
-  unfold Eq_rect_eq. 
+  unfold Eq_rect_eq.
   apply eq_rect_eq_dec.
   apply eq_dec.
 Qed.

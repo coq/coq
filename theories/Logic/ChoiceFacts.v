@@ -20,7 +20,7 @@ description principles
             (a "type-theoretic" axiom of choice)
 - AC!     = functional relation reification
             (known as axiom of unique choice in topos theory,
-             sometimes called principle of definite description in 
+             sometimes called principle of definite description in
              the context of constructive type theory)
 
 - GAC_rel = guarded relational form of the (non extensional) axiom of choice
@@ -146,16 +146,16 @@ Definition ConstructiveDefiniteDescription_on :=
 
 (** GAC_rel *)
 
-Definition GuardedRelationalChoice_on := 
+Definition GuardedRelationalChoice_on :=
   forall P : A->Prop, forall R : A->B->Prop,
     (forall x : A, P x -> exists y : B, R x y) ->
-    (exists R' : A->B->Prop, 
+    (exists R' : A->B->Prop,
       subrelation R' R /\ forall x, P x -> exists! y, R' x y).
 
 (** GAC_fun *)
 
-Definition GuardedFunctionalChoice_on := 
-  forall P : A->Prop, forall R : A->B->Prop, 
+Definition GuardedFunctionalChoice_on :=
+  forall P : A->Prop, forall R : A->B->Prop,
     inhabited B ->
     (forall x : A, P x -> exists y : B, R x y) ->
     (exists f : A->B, forall x, P x -> R x (f x)).
@@ -163,34 +163,34 @@ Definition GuardedFunctionalChoice_on :=
 (** GFR_fun *)
 
 Definition GuardedFunctionalRelReification_on :=
-  forall P : A->Prop, forall R : A->B->Prop, 
+  forall P : A->Prop, forall R : A->B->Prop,
     inhabited B ->
     (forall x : A, P x -> exists! y : B, R x y) ->
     (exists f : A->B, forall x : A, P x -> R x (f x)).
 
 (** OAC_rel *)
 
-Definition OmniscientRelationalChoice_on := 
+Definition OmniscientRelationalChoice_on :=
   forall R : A->B->Prop,
-    exists R' : A->B->Prop, 
+    exists R' : A->B->Prop,
       subrelation R' R /\ forall x : A, (exists y : B, R x y) -> exists! y, R' x y.
 
 (** OAC_fun *)
 
-Definition OmniscientFunctionalChoice_on := 
-  forall R : A->B->Prop, 
+Definition OmniscientFunctionalChoice_on :=
+  forall R : A->B->Prop,
     inhabited B ->
     exists f : A->B, forall x : A, (exists y : B, R x y) -> R x (f x).
 
 (** D_epsilon *)
 
-Definition EpsilonStatement_on := 
+Definition EpsilonStatement_on :=
   forall P:A->Prop,
     inhabited A -> { x:A | (exists x, P x) -> P x }.
 
 (** D_iota *)
 
-Definition IotaStatement_on := 
+Definition IotaStatement_on :=
   forall P:A->Prop,
     inhabited A -> { x:A | (exists! x, P x) -> P x }.
 
@@ -207,7 +207,7 @@ Notation FunctionalChoiceOnInhabitedSet :=
 Notation FunctionalRelReification :=
   (forall A B, FunctionalRelReification_on A B).
 
-Notation GuardedRelationalChoice := 
+Notation GuardedRelationalChoice :=
   (forall A B, GuardedRelationalChoice_on A B).
 Notation GuardedFunctionalChoice :=
   (forall A B, GuardedFunctionalChoice_on A B).
@@ -219,14 +219,14 @@ Notation OmniscientRelationalChoice :=
 Notation OmniscientFunctionalChoice :=
   (forall A B, OmniscientFunctionalChoice_on A B).
 
-Notation ConstructiveDefiniteDescription := 
+Notation ConstructiveDefiniteDescription :=
   (forall A, ConstructiveDefiniteDescription_on A).
-Notation ConstructiveIndefiniteDescription := 
+Notation ConstructiveIndefiniteDescription :=
   (forall A, ConstructiveIndefiniteDescription_on A).
 
-Notation IotaStatement := 
+Notation IotaStatement :=
   (forall A, IotaStatement_on A).
-Notation EpsilonStatement := 
+Notation EpsilonStatement :=
   (forall A, EpsilonStatement_on A).
 
 (** Subclassical schemes *)
@@ -235,7 +235,7 @@ Definition ProofIrrelevance :=
   forall (A:Prop) (a1 a2:A), a1 = a2.
 
 Definition IndependenceOfGeneralPremises :=
-  forall (A:Type) (P:A -> Prop) (Q:Prop), 
+  forall (A:Type) (P:A -> Prop) (Q:Prop),
     inhabited A ->
     (Q -> exists x, P x) -> exists x, Q -> P x.
 
@@ -270,7 +270,7 @@ Proof.
   apply HR'R; assumption.
 Qed.
 
-Lemma funct_choice_imp_rel_choice : 
+Lemma funct_choice_imp_rel_choice :
   forall A B, FunctionalChoice_on A B -> RelationalChoice_on A B.
 Proof.
   intros A B FunCh R H.
@@ -283,7 +283,7 @@ Proof.
     trivial.
 Qed.
 
-Lemma funct_choice_imp_description : 
+Lemma funct_choice_imp_description :
   forall A B, FunctionalChoice_on A B -> FunctionalRelReification_on A B.
 Proof.
   intros A B FunCh R H.
@@ -297,7 +297,7 @@ Proof.
 Qed.
 
 Corollary FunChoice_Equiv_RelChoice_and_ParamDefinDescr :
-  forall A B, FunctionalChoice_on A B <-> 
+  forall A B, FunctionalChoice_on A B <->
     RelationalChoice_on A B /\ FunctionalRelReification_on A B.
 Proof.
   intros A B; split.
@@ -312,7 +312,7 @@ Qed.
 
 (** We show that the guarded formulations of the axiom of choice
    are equivalent to their "omniscient" variant and comes from the non guarded
-   formulation in presence either of the independance of general premises 
+   formulation in presence either of the independance of general premises
    or subset types (themselves derivable from subtypes thanks to proof-
    irrelevance) *)
 
@@ -341,12 +341,12 @@ Proof.
 Qed.
 
 Lemma rel_choice_indep_of_general_premises_imp_guarded_rel_choice :
-  forall A B, inhabited B -> RelationalChoice_on A B -> 
+  forall A B, inhabited B -> RelationalChoice_on A B ->
     IndependenceOfGeneralPremises -> GuardedRelationalChoice_on A B.
 Proof.
   intros A B Inh AC_rel IndPrem P R H.
   destruct (AC_rel (fun x y => P x -> R x y)) as (R',(HR'R,H0)).
-  intro x. apply IndPrem. exact Inh. intro Hx. 
+  intro x. apply IndPrem. exact Inh. intro Hx.
   apply H; assumption.
   exists (fun x y => P x /\ R' x y).
   firstorder.
@@ -385,7 +385,7 @@ Qed.
 (** ** AC_fun + IGP = GAC_fun = OAC_fun = AC_fun + Drinker *)
 
 (** AC_fun + IGP = GAC_fun *)
- 
+
 Lemma guarded_fun_choice_imp_indep_of_general_premises :
   GuardedFunctionalChoice -> IndependenceOfGeneralPremises.
 Proof.
@@ -446,7 +446,7 @@ Proof.
 Qed.
 
 Lemma fun_choice_and_small_drinker_imp_omniscient_fun_choice :
-  FunctionalChoiceOnInhabitedSet -> SmallDrinker'sParadox 
+  FunctionalChoiceOnInhabitedSet -> SmallDrinker'sParadox
   -> OmniscientFunctionalChoice.
 Proof.
   intros AC_fun Drinker A B R Inh.
@@ -456,10 +456,10 @@ Proof.
 Qed.
 
 Corollary fun_choice_and_small_drinker_iff_omniscient_fun_choice :
-  FunctionalChoiceOnInhabitedSet /\ SmallDrinker'sParadox 
+  FunctionalChoiceOnInhabitedSet /\ SmallDrinker'sParadox
   <-> OmniscientFunctionalChoice.
 Proof.
-  auto decomp using 
+  auto decomp using
     omniscient_fun_choice_imp_small_drinker,
     omniscient_fun_choice_imp_fun_choice,
     fun_choice_and_small_drinker_imp_omniscient_fun_choice.
@@ -510,7 +510,7 @@ Lemma constructive_indefinite_description_and_small_drinker_imp_epsilon :
   SmallDrinker'sParadox -> ConstructiveIndefiniteDescription ->
   EpsilonStatement.
 Proof.
-  intros Drinkers D_epsilon A P Inh; 
+  intros Drinkers D_epsilon A P Inh;
   apply D_epsilon; apply Drinkers; assumption.
 Qed.
 
@@ -542,7 +542,7 @@ Qed.
 
     We show instead that functional relation reification and the
     functional form of the axiom of choice are equivalent on decidable
-    relation with [nat] as codomain 
+    relation with [nat] as codomain
 *)
 
 Require Import Wf_nat.
@@ -552,10 +552,10 @@ Definition FunctionalChoice_on_rel (A B:Type) (R:A->B->Prop) :=
   (forall x:A, exists y : B, R x y) ->
   exists f : A -> B, (forall x:A, R x (f x)).
 
-Lemma classical_denumerable_description_imp_fun_choice : 
-  forall A:Type, 
-    FunctionalRelReification_on A nat -> 
-    forall R:A->nat->Prop, 
+Lemma classical_denumerable_description_imp_fun_choice :
+  forall A:Type,
+    FunctionalRelReification_on A nat ->
+    forall R:A->nat->Prop,
       (forall x y, decidable (R x y)) -> FunctionalChoice_on_rel R.
 Proof.
   intros A Descr.
@@ -563,7 +563,7 @@ Proof.
   set (R':= fun x y => R x y /\ forall y', R x y' -> y <= y').
   destruct (Descr R') as (f,Hf).
   intro x.
-  apply (dec_inh_nat_subset_has_unique_least_element (R x)). 
+  apply (dec_inh_nat_subset_has_unique_least_element (R x)).
     apply Rdec.
     apply (H x).
     exists f.
@@ -582,12 +582,12 @@ Definition DependentFunctionalChoice_on (A:Type) (B:A -> Type) :=
     (forall x:A, exists y : B x, R x y) ->
     (exists f : (forall x:A, B x), forall x:A, R x (f x)).
 
-Notation DependentFunctionalChoice := 
+Notation DependentFunctionalChoice :=
   (forall A (B:A->Type), DependentFunctionalChoice_on B).
 
 (** The easy part *)
 
-Theorem dep_non_dep_functional_choice : 
+Theorem dep_non_dep_functional_choice :
   DependentFunctionalChoice -> FunctionalChoice.
 Proof.
   intros AC_depfun A B R H.
@@ -606,12 +606,12 @@ Scheme eq_indd := Induction for eq Sort Prop.
 Definition proj1_inf (A B:Prop) (p : A/\B) :=
   let (a,b) := p in a.
 
-Theorem non_dep_dep_functional_choice : 
+Theorem non_dep_dep_functional_choice :
   FunctionalChoice -> DependentFunctionalChoice.
 Proof.
   intros AC_fun A B R H.
-  pose (B' := { x:A & B x }). 
-  pose (R' := fun (x:A) (y:B') => projT1 y = x /\ R (projT1 y) (projT2 y)). 
+  pose (B' := { x:A & B x }).
+  pose (R' := fun (x:A) (y:B') => projT1 y = x /\ R (projT1 y) (projT2 y)).
   destruct (AC_fun A B' R') as (f,Hf).
   intros x. destruct (H x) as (y,Hy).
   exists (existT (fun x => B x) x y). split; trivial.
@@ -633,7 +633,7 @@ Notation DependentFunctionalRelReification :=
 
 (** The easy part *)
 
-Theorem dep_non_dep_functional_rel_reification : 
+Theorem dep_non_dep_functional_rel_reification :
   DependentFunctionalRelReification -> FunctionalRelReification.
 Proof.
   intros DepFunReify A B R H.
@@ -646,12 +646,12 @@ Qed.
     conjunction projections and dependent elimination of conjunction
     and equality *)
 
-Theorem non_dep_dep_functional_rel_reification : 
+Theorem non_dep_dep_functional_rel_reification :
   FunctionalRelReification -> DependentFunctionalRelReification.
 Proof.
   intros AC_fun A B R H.
-  pose (B' := { x:A & B x }). 
-  pose (R' := fun (x:A) (y:B') => projT1 y = x /\ R (projT1 y) (projT2 y)). 
+  pose (B' := { x:A & B x }).
+  pose (R' := fun (x:A) (y:B') => projT1 y = x /\ R (projT1 y) (projT2 y)).
   destruct (AC_fun A B' R') as (f,Hf).
   intros x. destruct (H x) as (y,(Hy,Huni)).
   exists (existT (fun x => B x) x y). repeat split; trivial.
@@ -665,7 +665,7 @@ Proof.
   destruct Heq using eq_indd; trivial.
 Qed.
 
-Corollary dep_iff_non_dep_functional_rel_reification : 
+Corollary dep_iff_non_dep_functional_rel_reification :
   FunctionalRelReification <-> DependentFunctionalRelReification.
 Proof.
   auto decomp using
@@ -786,11 +786,11 @@ Proof.
   intros [|] [|] H1 H2; simpl in *; reflexivity || contradiction.
   left; trivial.
   right; trivial.
-Qed.  
+Qed.
 
 Corollary fun_reification_descr_computational_excluded_middle_in_prop_context :
   FunctionalRelReification ->
-  (forall P:Prop, P \/ ~ P) -> 
+  (forall P:Prop, P \/ ~ P) ->
   forall C:Prop, ((forall P:Prop, {P} + {~ P}) -> C) -> C.
 Proof.
   intros FunReify EM C; auto decomp using

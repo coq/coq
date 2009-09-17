@@ -5,7 +5,7 @@ Undo.
 intros x H H0.
 replace x with 0.
 Undo.
-replace x with 0 in  |- *. 
+replace x with 0 in  |- *.
 Undo.
 replace x with 1 in *.
 Undo.

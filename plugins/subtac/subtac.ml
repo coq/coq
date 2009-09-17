@@ -23,7 +23,7 @@ open Typeops
 open Libnames
 open Classops
 open List
-open Recordops 
+open Recordops
 open Evarutil
 open Pretype_errors
 open Rawterm
@@ -50,14 +50,14 @@ open Tacinterp
 open Tacexpr
 
 let solve_tccs_in_type env id isevars evm c typ =
-  if not (evm = Evd.empty) then 
+  if not (evm = Evd.empty) then
     let stmt_id = Nameops.add_suffix id "_stmt" in
     let obls, c', t' = eterm_obligations env stmt_id !isevars evm 0 ~status:Expand c typ in
       match Subtac_obligations.add_definition stmt_id c' typ obls with
-      | Subtac_obligations.Defined cst -> constant_value (Global.env()) 
+      | Subtac_obligations.Defined cst -> constant_value (Global.env())
 	  (match cst with ConstRef kn -> kn | _ -> assert false)
-      | _ -> 
-	  errorlabstrm "start_proof" 
+      | _ ->
+	  errorlabstrm "start_proof"
 	    (str "The statement obligations could not be resolved automatically, " ++ spc () ++
 		str "write a statement definition first.")
   else
@@ -75,30 +75,30 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
 	next_global_ident_away false (id_of_string "Unnamed_thm")
  	  (Pfedit.get_all_proof_names ())
   in
-  let evm, c, typ, imps = 
-    Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr t bl) None 
+  let evm, c, typ, imps =
+    Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr t bl) None
   in
   let c = solve_tccs_in_type env id isevars evm c typ in
-    Command.start_proof id kind c (fun loc gr -> 
+    Command.start_proof id kind c (fun loc gr ->
       Impargs.declare_manual_implicits (loc = Local) gr ~enriching:true imps;
       hook loc gr)
-      
+
 let print_subgoals () = Flags.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
 
 let start_proof_and_print env isevars idopt k t hook =
   start_proof_com env isevars idopt k t hook;
   print_subgoals ()
-	  
+
 let _ = Detyping.set_detype_anonymous (fun loc n -> RVar (loc, id_of_string ("Anonymous_REL_" ^ string_of_int n)))
-  
+
 let assumption_message id =
   Flags.if_verbose message ((string_of_id id) ^ " is assumed")
 
 let declare_assumption env isevars idl is_coe k bl c nl =
   if not (Pfedit.refining ()) then
     let id = snd (List.hd idl) in
-    let evm, c, typ, imps = 
-      Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr c bl) None 
+    let evm, c, typ, imps =
+      Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr c bl) None
     in
     let c = solve_tccs_in_type env id isevars evm c typ in
       List.iter (Command.declare_one_assumption is_coe k c imps false nl) idl
@@ -115,9 +115,9 @@ let dump_variable lid = ()
 
 let vernac_assumption env isevars kind l nl =
   let global = fst kind = Global in
-    List.iter (fun (is_coe,(idl,c)) -> 
+    List.iter (fun (is_coe,(idl,c)) ->
       if Dumpglob.dump () then
-	List.iter (fun lid -> 
+	List.iter (fun lid ->
 	  if global then Dumpglob.dump_definition lid (not global) "ax"
 	  else dump_variable lid) idl;
       declare_assumption env isevars idl is_coe kind [] c nl) l
@@ -125,7 +125,7 @@ let vernac_assumption env isevars kind l nl =
 let check_fresh (loc,id) =
   if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
     user_err_loc (loc,"",pr_id id ++ str " already exists")
-      
+
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
@@ -133,25 +133,25 @@ let subtac (loc, command) =
   let isevars = ref (create_evar_defs Evd.empty) in
   try
   match command with
-  | VernacDefinition (defkind, (_, id as lid), expr, hook) -> 
+  | VernacDefinition (defkind, (_, id as lid), expr, hook) ->
       check_fresh lid;
       Dumpglob.dump_definition lid false "def";
       (match expr with
-      | ProveBody (bl, t) -> 
+      | ProveBody (bl, t) ->
 	  if Lib.is_modtype () then
 	    errorlabstrm "Subtac_command.StartProof"
 	      (str "Proof editing mode not supported in module types");
-	  start_proof_and_print env isevars (Some lid) (Global, DefinitionBody Definition) (bl,t) 
+	  start_proof_and_print env isevars (Some lid) (Global, DefinitionBody Definition) (bl,t)
 	    (fun _ _ -> ())
-      | DefineBody (bl, _, c, tycon) -> 
+      | DefineBody (bl, _, c, tycon) ->
 	  ignore(Subtac_pretyping.subtac_proof defkind hook env isevars id bl c tycon))
-  | VernacFixpoint (l, b) -> 
-      List.iter (fun ((lid, _, _, _, _), _) -> 
+  | VernacFixpoint (l, b) ->
+      List.iter (fun ((lid, _, _, _, _), _) ->
 	check_fresh lid;
 	Dumpglob.dump_definition lid false "fix") l;
       let _ = trace (str "Building fixpoint") in
 	ignore(Subtac_command.build_recursive l b)
-	  
+
   | VernacStartTheoremProof (thkind, [Some id, (bl, t)], lettop, hook) ->
       Dumpglob.dump_definition id false "prf";
       if not(Pfedit.refining ()) then
@@ -163,30 +163,30 @@ let subtac (loc, command) =
 	  (str "Proof editing mode not supported in module types");
       check_fresh id;
       start_proof_and_print env isevars (Some id) (Global, Proof thkind) (bl,t) hook
-	
-  | VernacAssumption (stre,nl,l) -> 
+
+  | VernacAssumption (stre,nl,l) ->
       vernac_assumption env isevars stre l nl
-	
+
   | VernacInstance (glob, sup, is, props, pri) ->
       dump_constraint "inst" is;
       ignore(Subtac_classes.new_instance ~global:glob sup is props pri)
-	
+
   | VernacCoFixpoint (l, b) ->
-      if Dumpglob.dump () then 
+      if Dumpglob.dump () then
 	List.iter (fun ((lid, _, _, _), _) -> Dumpglob.dump_definition lid false "cofix") l;
       ignore(Subtac_command.build_corecursive l b)
-	
-  (*| VernacEndProof e -> 
+
+  (*| VernacEndProof e ->
     subtac_end_proof e*)
 
   | _ -> user_err_loc (loc,"", str ("Invalid Program command"))
-  with 
+  with
   | Typing_error e ->
       msg_warning (str "Type error in Program tactic:");
-      let cmds = 
+      let cmds =
 	(match e with
 	| NonFunctionalApp (loc, x, mux, e) ->
-	    str "non functional application of term " ++ 
+	    str "non functional application of term " ++
 	      e ++ str " to function " ++ x ++ str " of (mu) type " ++ mux
 	| NonSigma (loc, t) ->
 	    str "Term is not of Sigma type: " ++ t
@@ -197,10 +197,10 @@ let subtac (loc, command) =
 	    str "Term is ill-sorted:" ++ spc () ++ t
 	)
       in msg_warning cmds
-	
+
   | Subtyping_error e ->
       msg_warning (str "(Program tactic) Subtyping error:");
-      let cmds = 
+      let cmds =
 	match e with
 	| UncoercibleInferType (loc, x, y) ->
 	    str "Uncoercible terms:" ++ spc ()
@@ -217,15 +217,15 @@ let subtac (loc, command) =
   | Cases.PatternMatchingError (env, exn) as e ->
       debug 2 (Himsg.explain_pattern_matching_error env exn);
       raise e
-	
+
   | Type_errors.TypeError (env, exn) as e ->
       debug 2 (Himsg.explain_type_error env exn);
       raise e
-	
+
   | Pretype_errors.PretypeError (env, exn) as e ->
       debug 2 (Himsg.explain_pretype_error env exn);
       raise e
-	
+
   | (Stdpp.Exc_located (loc, Proof_type.LtacLocated (_,e')) |
      Stdpp.Exc_located (loc, e') as e) ->
       debug 2 (str "Parsing exception: ");
@@ -233,14 +233,14 @@ let subtac (loc, command) =
       | Type_errors.TypeError (env, exn) ->
 	  debug 2 (Himsg.explain_type_error env exn);
 	  raise e
-	    
+
       | Pretype_errors.PretypeError (env, exn) ->
 	  debug 2 (Himsg.explain_pretype_error env exn);
 	  raise e
 
       | e'' -> msg_warning (str "Unexpected exception: " ++ Cerrors.explain_exn e'');
 	  raise e)
-	
-  | e -> 
+
+  | e ->
       msg_warning (str "Uncatched exception: " ++ Cerrors.explain_exn e);
       raise e

@@ -1,7 +1,7 @@
 
 {
 
-  open Lexing 
+  open Lexing
   open Pp
   open Util
   open Names
@@ -12,9 +12,9 @@
 
   let debug = ref false
   let set_debug b = debug := b
-  
+
   let buf = Buffer.create 1024
-    
+
   let string_of_global env ref =
     Libnames.string_of_qualid (Nametab.shortest_qualid_of_global env ref)
 
@@ -50,15 +50,15 @@ and scan = parse
   { anomaly "malformed Zenon proof term" }
 
 and read_coq_term = parse
-| "." "\n" 
+| "." "\n"
   { let s = Buffer.contents buf in Buffer.clear buf; s }
 | "coq__" (ident as id) (* a Why keyword renamed *)
   { Buffer.add_string buf id; read_coq_term lexbuf }
-| ("dp_axiom__" ['0'-'9']+) as id 
+| ("dp_axiom__" ['0'-'9']+) as id
   { axioms := id :: !axioms; Buffer.add_string buf id; read_coq_term lexbuf }
-| _ as c 
+| _ as c
   { Buffer.add_char buf c; read_coq_term lexbuf }
-| eof 
+| eof
   { anomaly "malformed Zenon proof term" }
 
 and read_lemma_proof = parse
@@ -71,7 +71,7 @@ and read_lemma_proof = parse
 and read_main_proof = parse
 | ":=" "\n"
   { read_coq_term lexbuf }
-| _ 
+| _
   { read_main_proof lexbuf }
 | eof
   { anomaly "malformed Zenon proof term" }
@@ -88,7 +88,7 @@ and read_main_proof = parse
     if not !debug then begin try Sys.remove f with _ -> () end;
     p
 
-  let constr_of_string gl s = 
+  let constr_of_string gl s =
     let parse_constr = Pcoq.parse_string Pcoq.Constr.constr in
     Constrintern.interp_constr (project gl) (pf_env gl) (parse_constr s)
 
@@ -102,7 +102,7 @@ and read_main_proof = parse
       | [] -> ()
       | [x] -> print fmt x
       | x :: r -> print fmt x; sep fmt (); print_list sep print fmt r
-	  
+
     let space fmt () = fprintf fmt "@ "
     let comma fmt () = fprintf fmt ",@ "
 
@@ -110,14 +110,14 @@ and read_main_proof = parse
       | Tvar x -> fprintf fmt "%s" x
       | Tid ("int", []) -> fprintf fmt "Z"
       | Tid (x, []) -> fprintf fmt "%s" x
-      | Tid (x, [t]) -> fprintf fmt "(%s %a)" x print_typ t 
-      | Tid (x,tl) -> 
-	  fprintf fmt "(%s %a)" x (print_list comma print_typ) tl 
-	  
+      | Tid (x, [t]) -> fprintf fmt "(%s %a)" x print_typ t
+      | Tid (x,tl) ->
+	  fprintf fmt "(%s %a)" x (print_list comma print_typ) tl
+
     let rec print_term fmt = function
-      | Cst n -> 
+      | Cst n ->
 	  fprintf fmt "%s" (Big_int.string_of_big_int n)
-      | RCst s -> 
+      | RCst s ->
           fprintf fmt "%s" (Big_int.string_of_big_int s)
       | Power2 n ->
           fprintf fmt "@[(powerRZ 2 %s)@]" (Big_int.string_of_big_int n)
@@ -132,13 +132,13 @@ and read_main_proof = parse
       | Div (a, b) ->
 	  fprintf fmt "@[(Zdiv %a %a)@]" print_term a print_term b
       | Opp (a) ->
-	  fprintf fmt "@[(Zopp %a)@]" print_term a 
+	  fprintf fmt "@[(Zopp %a)@]" print_term a
       | App (id, []) ->
 	  fprintf fmt "%s" id
       | App (id, tl) ->
 	  fprintf fmt "@[(%s %a)@]" id print_terms tl
 
-    and print_terms fmt tl = 
+    and print_terms fmt tl =
       print_list space print_term fmt tl
 
     (* builds the text for "forall vars, f vars = t" *)
@@ -146,17 +146,17 @@ and read_main_proof = parse
       let binder fmt (x,t) = fprintf fmt "(%s: %a)" x print_typ t in
       fprintf str_formatter
 	"@[(forall %a, %s %a = %a)@]@."
-	(print_list space binder) vars f 
+	(print_list space binder) vars f
 	(print_list space (fun fmt (x,_) -> pp_print_string fmt x)) vars
 	print_term t;
       flush_str_formatter ()
-			   
+
   end
 
   let prove_axiom id = match Dp_why.find_proof id with
-    | Immediate t -> 
+    | Immediate t ->
 	exact_check t
-    | Fun_def (f, vars, ty, t) -> 
+    | Fun_def (f, vars, ty, t) ->
 	tclTHENS
 	  (fun gl ->
 	     let s = Coq.fun_def_axiom f vars t in

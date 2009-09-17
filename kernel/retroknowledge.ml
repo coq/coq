@@ -28,8 +28,8 @@ type nat_field =
   | NatType
   | NatPlus
   | NatTimes
-  
-type n_field = 
+
+type n_field =
   | NPositive
   | NType
   | NTwice
@@ -39,7 +39,7 @@ type n_field =
   | NPlus
   | NTimes
 
-type int31_field = 
+type int31_field =
   | Int31Bits
   | Int31Type
   | Int31Twice
@@ -83,9 +83,9 @@ module Proactive =
 
 type proactive = entry Proactive.t
 
-(* the reactive knowledge is represented as a functionaly map 
+(* the reactive knowledge is represented as a functionaly map
    from the type of terms (actually it is the terms whose outermost
-   layer is unfolded (typically by Term.kind_of_term)) to the 
+   layer is unfolded (typically by Term.kind_of_term)) to the
    type reactive_end which is a record containing all the kind of reactive
    information needed *)
 (* todo: because of the bug with output state, reactive_end should eventually
@@ -131,18 +131,18 @@ type action =
 
 
 (*initialisation*)
-let initial_flags = 
+let initial_flags =
       {fastcomputation = true;}
 
-let initial_proactive = 
+let initial_proactive =
   (Proactive.empty:proactive)
 
-let initial_reactive = 
+let initial_reactive =
   (Reactive.empty:reactive)
 
 let initial_retroknowledge =
-  {flags = initial_flags; 
-   proactive = initial_proactive; 
+  {flags = initial_flags;
+   proactive = initial_proactive;
    reactive = initial_reactive }
 
 let empty_reactive_end =
@@ -175,7 +175,7 @@ let find knowledge field =
 (*access functions for reactive retroknowledge*)
 
 (* used for compiling of functions (add, mult, etc..) *)
-let get_vm_compiling_info knowledge key = 
+let get_vm_compiling_info knowledge key =
   match (Reactive.find key knowledge.reactive).vm_compiling
   with
     | None -> raise Not_found
@@ -195,18 +195,18 @@ let get_vm_constant_dynamic_info knowledge key =
     | None -> raise Not_found
     | Some f -> f knowledge.flags.fastcomputation
 
-let get_vm_before_match_info knowledge key = 
+let get_vm_before_match_info knowledge key =
   match (Reactive.find key knowledge.reactive).vm_before_match
   with
     | None -> raise Not_found
     | Some f -> f knowledge.flags.fastcomputation
 
-let get_vm_decompile_constant_info knowledge key = 
+let get_vm_decompile_constant_info knowledge key =
   match (Reactive.find key knowledge.reactive).vm_decompile_const
   with
     | None -> raise Not_found
     | Some f -> f
-  
+
 
 
 (* functions manipulating reactive knowledge *)

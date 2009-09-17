@@ -62,10 +62,10 @@ Check
 
 Inductive list''' (A:Set) (B:=(A*A)%type) (a:A) : B -> Set :=
   | nil''' : list''' A a (a,a)
-  | cons''' : 
+  | cons''' :
      forall a' : A, let m := (a',a) in list''' A a m -> list''' A a (a,a).
 
-Fixpoint length''' (A:Set) (B:=(A*A)%type) (a:A) (m:B) (l:list''' A a m) 
+Fixpoint length''' (A:Set) (B:=(A*A)%type) (a:A) (m:B) (l:list''' A a m)
   {struct l} : nat :=
   match l with
   | nil''' => 0

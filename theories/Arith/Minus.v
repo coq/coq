@@ -120,10 +120,10 @@ Proof.
 
     intros n m Hnm; apply le_elim_rel with (n:=n) (m:=m); trivial.
       intros q; destruct q; auto with arith.
-        simpl. 
+        simpl.
         apply le_trans with (m := p - 0); [apply HI | rewrite <- minus_n_O];
           auto with arith.
-        
+
       intros q r Hqr _. simpl. auto using HI.
 Qed.
 

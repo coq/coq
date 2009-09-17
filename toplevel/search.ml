@@ -49,8 +49,8 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
   let env = Global.env () in
   let crible_rec (sp,kn) lobj = match object_tag lobj with
     | "VARIABLE" ->
-	(try 
-	   let (id,_,typ) = Global.lookup_named (basename sp) in 
+	(try
+	   let (id,_,typ) = Global.lookup_named (basename sp) in
            if refopt = None
 	     || head_const typ = constr_of_global (Option.get refopt)
 	   then
@@ -63,22 +63,22 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
 	  || head_const typ = constr_of_global (Option.get refopt)
 	then
 	  fn (ConstRef cst) env typ
-    | "INDUCTIVE" -> 
-        let mib = Global.lookup_mind kn in 
-        (match refopt with 
+    | "INDUCTIVE" ->
+        let mib = Global.lookup_mind kn in
+        (match refopt with
 	  | Some (IndRef ((kn',tyi) as ind)) when kn=kn' ->
 	      print_constructors ind fn env
 	        (Array.length (mib.mind_packets.(tyi).mind_user_lc))
           | Some _ -> ()
 	  | _ ->
-              Array.iteri 
+              Array.iteri
 	        (fun i mip -> print_constructors (kn,i) fn env
 	          (Array.length mip.mind_user_lc)) mib.mind_packets)
     | _ -> ()
-  in 
-  try 
+  in
+  try
     Declaremods.iter_all_segments crible_rec
-  with Not_found -> 
+  with Not_found ->
     ()
 
 let crible ref = gen_crible (Some ref)
@@ -87,17 +87,17 @@ let crible ref = gen_crible (Some ref)
 
 exception No_full_path
 
-let rec head c = 
+let rec head c =
   let c = strip_outer_cast c in
   match kind_of_term c with
   | Prod (_,_,c) -> head c
   | LetIn (_,_,_,c) -> head c
   | _              -> c
-      
+
 let constr_to_full_path c = match kind_of_term c with
   | Const sp -> sp
   | _ -> raise No_full_path
-      
+
 let xor a b = (a or b) & (not (a & b))
 
 let plain_display ref a c =
@@ -105,17 +105,17 @@ let plain_display ref a c =
   let pr = pr_global ref in
   msg (hov 2 (pr ++ str":" ++ spc () ++ pc) ++ fnl ())
 
-let filter_by_module (module_list:dir_path list) (accept:bool) 
+let filter_by_module (module_list:dir_path list) (accept:bool)
   (ref:global_reference) _ _ =
   try
     let sp = path_of_global ref in
     let sl = dirpath sp in
     let rec filter_aux = function
       | m :: tl -> (not (is_dirpath_prefix_of m sl)) && (filter_aux tl)
-      | [] -> true 
+      | [] -> true
     in
     xor accept (filter_aux module_list)
-  with No_full_path -> 
+  with No_full_path ->
     false
 
 let ref_eq = Libnames.encode_kn Coqlib.logic_module (id_of_string "eq"), 0
@@ -129,18 +129,18 @@ let mk_rewrite_pattern2 eq pattern =
   PApp (PRef eq, [| PMeta None; PMeta None; pattern |])
 
 let pattern_filter pat _ a c =
-  try 
+  try
     try
-      is_matching pat (head c) 
-    with _ -> 
+      is_matching pat (head c)
+    with _ ->
       is_matching
 	pat (head (Typing.type_of (Global.env()) Evd.empty c))
-    with UserError _ -> 
+    with UserError _ ->
       false
 
 let filtered_search filter_function display_function ref =
   crible ref
-    (fun s a c -> if filter_function s a c then display_function s a c) 
+    (fun s a c -> if filter_function s a c then display_function s a c)
 
 let rec id_from_pattern = function
   | PRef gr -> gr
@@ -149,32 +149,32 @@ let rec id_from_pattern = function
  *)
   | PApp (p,_) -> id_from_pattern p
   | _ -> error "The pattern is not simple enough."
-	
+
 let raw_pattern_search extra_filter display_function pat =
   let name = id_from_pattern pat in
-  filtered_search 
-    (fun s a c -> (pattern_filter pat s a c) & extra_filter s a c) 
+  filtered_search
+    (fun s a c -> (pattern_filter pat s a c) & extra_filter s a c)
     display_function name
 
 let raw_search_rewrite extra_filter display_function pattern =
   filtered_search
     (fun s a c ->
        ((pattern_filter (mk_rewrite_pattern1 gref_eq pattern) s a c) ||
-        (pattern_filter (mk_rewrite_pattern2 gref_eq pattern) s a c)) 
+        (pattern_filter (mk_rewrite_pattern2 gref_eq pattern) s a c))
        && extra_filter s a c)
     display_function gref_eq
 
 let raw_search_by_head extra_filter display_function pattern =
   Util.todo "raw_search_by_head"
 
-(* 
+(*
  * functions to use the new Libtypes facility
  *)
 
 let raw_search search_function extra_filter display_function pat =
   let env = Global.env() in
-  List.iter 
-    (fun (gr,_,_) -> 
+  List.iter
+    (fun (gr,_,_) ->
        let typ = Global.type_of_global gr in
        if extra_filter gr env typ then
 	 display_function gr env typ
@@ -193,7 +193,7 @@ let filter_by_module_from_list = function
   | [], _ -> (fun _ _ _ -> true)
   | l, outside -> filter_by_module l (not outside)
 
-let search_by_head pat inout = 
+let search_by_head pat inout =
   text_search_by_head (filter_by_module_from_list inout) pat
 
 let search_rewrite pat inout =
@@ -204,7 +204,7 @@ let search_pattern pat inout =
 
 let gen_filtered_search filter_function display_function =
   gen_crible None
-    (fun s a c -> if filter_function s a c then display_function s a c) 
+    (fun s a c -> if filter_function s a c then display_function s a c)
 
 (** SearchAbout *)
 
@@ -221,10 +221,10 @@ let search_about_item (itemref,typ) = function
 let raw_search_about filter_modules display_function l =
   let filter ref' env typ =
     filter_modules ref' env typ &&
-    List.for_all (fun (b,i) -> b = search_about_item (ref',typ) i) l && 
+    List.for_all (fun (b,i) -> b = search_about_item (ref',typ) i) l &&
     not (string_string_contains (name_of_reference ref') "_subproof")
   in
   gen_filtered_search filter display_function
 
-let search_about ref inout = 
+let search_about ref inout =
   raw_search_about (filter_by_module_from_list inout) plain_display ref

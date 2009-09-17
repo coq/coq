@@ -30,24 +30,24 @@ open Pattern
 open Tacexpr
 open Clenv
 
-    
+
 (* This function put casts around metavariables whose type could not be
  * infered by the refiner, that is head of applications, predicates and
  * subject of Cases.
  * Does check that the casted type is closed. Anyway, the refiner would
  * fail in this case... *)
 
-let clenv_cast_meta clenv = 
+let clenv_cast_meta clenv =
   let rec crec u =
     match kind_of_term u with
       | App _ | Case _ -> crec_hd u
       | Cast (c,_,_) when isMeta c -> u
       | _  -> map_constr crec u
-	    
+
   and crec_hd u =
     match kind_of_term (strip_outer_cast u) with
       | Meta mv ->
-	  (try 
+	  (try
             let b = Typing.meta_type clenv.evd mv in
 	    assert (not (occur_meta b));
 	    if occur_meta b then u
@@ -57,7 +57,7 @@ let clenv_cast_meta clenv =
       | Case(ci,p,c,br) ->
 	  mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)
       | _ -> u
-  in 
+  in
   crec
 
 let clenv_value_cast_meta clenv =
@@ -73,14 +73,14 @@ let clenv_pose_dependent_evars with_evars clenv =
 
 let clenv_refine with_evars ?(with_classes=true) clenv gls =
   let clenv = clenv_pose_dependent_evars with_evars clenv in
-  let evd' = 
-    if with_classes then 
-      Typeclasses.resolve_typeclasses ~fail:(not with_evars) 
-	clenv.env clenv.evd 
+  let evd' =
+    if with_classes then
+      Typeclasses.resolve_typeclasses ~fail:(not with_evars)
+	clenv.env clenv.evd
     else clenv.evd
   in
   tclTHEN
-    (tclEVARS evd') 
+    (tclEVARS evd')
     (refine (clenv_cast_meta clenv (clenv_value clenv)))
     gls
 
@@ -105,7 +105,7 @@ let e_res_pf clenv = res_pf clenv ~with_evars:true ~allow_K:false ~flags:dft
 open Unification
 
 let fail_quick_unif_flags = {
-  modulo_conv_on_closed_terms = Some full_transparent_state; 
+  modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = false;
   modulo_delta = empty_transparent_state;
   resolve_evars = false;
@@ -113,7 +113,7 @@ let fail_quick_unif_flags = {
 }
 
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)
-let unifyTerms ?(flags=fail_quick_unif_flags) m n gls = 
+let unifyTerms ?(flags=fail_quick_unif_flags) m n gls =
   let env = pf_env gls in
   let evd = create_goal_evar_defs (project gls) in
   let evd' = w_unify false env CONV ~flags m n evd in

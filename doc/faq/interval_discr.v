@@ -69,7 +69,7 @@ Qed.
 (** Definition of having finite cardinality [n+1] for a set [A] *)
 
 Definition card (A:Set) n :=
-  exists f, 
+  exists f,
     (forall x:A, f x <= n) /\
     (forall x y:A, f x = f y -> x = y) /\
     (forall m, m <= n -> exists x:A, f x = m).
@@ -86,7 +86,7 @@ split.
 (* bounded *)
 intro x; apply (proj2_sig x).
 split.
-(* injectivity *) 
+(* injectivity *)
 intros (p,Hp) (q,Hq).
 simpl.
 intro Hpq.
@@ -123,7 +123,7 @@ left.
   apply eq_S.
   assumption.
 right.
-  intro HeqS. 
+  intro HeqS.
   injection HeqS; intro Heq.
   apply Hneq.
   apply dep_pair_intro.
@@ -133,7 +133,7 @@ Qed.
 (** Showing that the cardinality relation is functional on decidable sets *)
 
 Lemma card_inj_aux :
-  forall (A:Type) f g n, 
+  forall (A:Type) f g n,
     (forall x:A, f x <= 0) ->
     (forall x y:A, f x = f y -> x = y) ->
     (forall m, m <= S n -> exists x:A, g x = m)
@@ -175,7 +175,7 @@ lemma by generalizing over a first-order definition of [x<>y], say
   Qed.
 
 Lemma dec_restrict :
-  forall (A:Set), 
+  forall (A:Set),
     (forall x y :A, {x=y}+{x<>y}) ->
      forall z (x y :{a:A|a<>z}), {x=y}+{x<>y}.
 Proof.
@@ -185,7 +185,7 @@ left; apply neq_dep_intro; assumption.
 right; intro Heq; injection Heq; exact Hneq.
 Qed.
 
-Lemma pred_inj : forall n m, 
+Lemma pred_inj : forall n m,
   0 <> n -> 0 <> m -> pred m = pred n -> m = n.
 Proof.
 destruct n.
@@ -242,13 +242,13 @@ destruct (le_lt_or_eq _ _ Hfx).
 contradiction (lt_not_le (f y) (f z)).
 Qed.
 
-Theorem card_inj : forall m n (A:Set), 
+Theorem card_inj : forall m n (A:Set),
   (forall x y :A, {x=y}+{x<>y}) ->
-  card A m -> card A n -> m = n. 
+  card A m -> card A n -> m = n.
 Proof.
-induction m; destruct n; 
+induction m; destruct n;
 intros A Hdec
- (f,(Hfbound,(Hfinj,Hfsurj))) 
+ (f,(Hfbound,(Hfinj,Hfsurj)))
  (g,(Hgbound,(Hginj,Hgsurj))).
 (* 0/0 *)
 reflexivity.
@@ -265,7 +265,7 @@ apply dec_restrict.
 assumption.
 (* cardinality of {x:A|x<>xSn} is m *)
 pose (f' := fun x' : {x:A|x<>xSn} =>
-    let (x,Hneq) := x' in 
+    let (x,Hneq) := x' in
     if le_lt_dec (f xSn) (f x)
     then pred (f x)
     else f x).
@@ -361,7 +361,7 @@ destruct (le_lt_dec (f xSn) (f x)) as [Hle'|Hlt'].
   assumption.
 (* cardinality of {x:A|x<>xSn} is n *)
 pose (g' := fun x' : {x:A|x<>xSn} =>
-   let (x,Hneq) := x' in 
+   let (x,Hneq) := x' in
    if Hdec x xSn then 0 else g x).
 exists g'.
 split.

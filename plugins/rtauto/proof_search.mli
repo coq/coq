@@ -11,10 +11,10 @@
 type form=
     Atom of int
   | Arrow of form * form
-  | Bot 
+  | Bot
   | Conjunct of form * form
   | Disjunct of form * form
-  
+
 type proof =
     Ax of int
   | I_Arrow of proof

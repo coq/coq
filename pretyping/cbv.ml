@@ -75,7 +75,7 @@ and cbv_stack =
   | CASE of constr * constr array * case_info * cbv_value subs * cbv_stack
 
 (* les vars pourraient etre des constr,
-   cela permet de retarder les lift: utile ?? *) 
+   cela permet de retarder les lift: utile ?? *)
 
 (* relocation of a value; used when a value stored in a context is expanded
  * in a larger context. e.g.  [%k (S.t)](k+1) --> [^k]t  (t is shifted of k)
@@ -173,7 +173,7 @@ let fixp_reducible flgs ((reci,i),_) stk =
               CONSTR _ -> true
             | _ -> false)
       | _ -> false
-  else 
+  else
     false
 
 let cofixp_reducible flgs _ stk =
@@ -181,7 +181,7 @@ let cofixp_reducible flgs _ stk =
     match stk with
       | (CASE _ | APP(_,CASE _)) -> true
       | _ -> false
-  else 
+  else
     false
 
 
@@ -261,7 +261,7 @@ and norm_head_ref k info env stack normt =
  * env, with context stack, i.e. ([env]t stack).  First computes weak
  * head normal form of t and checks if a redex appears with the stack.
  * If so, recursive call to reach the real head normal form.  If not,
- * we build a value. 
+ * we build a value.
  *)
 and cbv_stack_term info stack env t =
   match norm_head info env t stack with
@@ -297,15 +297,15 @@ and cbv_stack_term info stack env t =
 	let cargs =
           Array.sub args ci.ci_npar (Array.length args - ci.ci_npar) in
         cbv_stack_term info (stack_app cargs stk) env br.(n-1)
-         
+
     (* constructor of arity 0 in a Case -> IOTA *)
     | (CONSTR((_,n),_), CASE(_,br,_,env,stk))
             when red_set (info_flags info) fIOTA ->
                     cbv_stack_term info stk env br.(n-1)
 
-    (* may be reduced later by application *)  
-    | (FIXP(fix,env,[||]), APP(appl,TOP)) -> FIXP(fix,env,appl) 
-    | (COFIXP(cofix,env,[||]), APP(appl,TOP)) -> COFIXP(cofix,env,appl) 
+    (* may be reduced later by application *)
+    | (FIXP(fix,env,[||]), APP(appl,TOP)) -> FIXP(fix,env,appl)
+    | (COFIXP(cofix,env,[||]), APP(appl,TOP)) -> COFIXP(cofix,env,appl)
     | (CONSTR(c,[||]), APP(appl,TOP)) -> CONSTR(c,appl)
 
     (* definitely a value *)
@@ -350,14 +350,14 @@ and cbv_norm_value info = function (* reduction under binders *)
         (mkFix (lij,
 		(names,
                  Array.map (cbv_norm_term info env) lty,
-		 Array.map (cbv_norm_term info 
+		 Array.map (cbv_norm_term info
 			      (subs_liftn (Array.length lty) env)) bds)),
          Array.map (cbv_norm_value info) args)
   | COFIXP ((j,(names,lty,bds)),env,args) ->
       mkApp
         (mkCoFix (j,
 		  (names,Array.map (cbv_norm_term info env) lty,
-		   Array.map (cbv_norm_term info 
+		   Array.map (cbv_norm_term info
 				(subs_liftn (Array.length lty) env)) bds)),
          Array.map (cbv_norm_value info) args)
   | CONSTR (c,args) ->

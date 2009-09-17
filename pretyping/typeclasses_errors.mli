@@ -24,7 +24,7 @@ open Libnames
 
 type contexts = Parameters | Properties
 
-type typeclass_error = 
+type typeclass_error =
   | NotAClass of constr
   | UnboundMethod of global_reference * identifier located (* Class name, method *)
   | NoInstance of identifier located * constr list

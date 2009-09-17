@@ -15,11 +15,11 @@ let glob_file = ref Pervasives.stdout
 
 let open_glob_file f =
   glob_file := Pervasives.open_out f
-  
+
 let close_glob_file () =
   Pervasives.close_out !glob_file
 
-type glob_output_t = 
+type glob_output_t =
     | NoGlob
     | StdOut
     | MultFiles
@@ -39,7 +39,7 @@ let dump_to_dotglob f = glob_output := MultFiles
 
 let dump_into_file f = glob_output := File f; open_glob_file f
 
-let dump_string s = 
+let dump_string s =
   if dump () then Pervasives.output_string !glob_file s
 
 
@@ -68,7 +68,7 @@ let coqdoc_unfreeze (lt,tn,lp) =
 open Decl_kinds
 
 let type_of_logical_kind = function
-  | IsDefinition def -> 
+  | IsDefinition def ->
       (match def with
       | Definition -> "def"
       | Coercion -> "coe"
@@ -102,7 +102,7 @@ let type_of_global_ref gr =
     "class"
   else
     match gr with
-    | Libnames.ConstRef cst -> 
+    | Libnames.ConstRef cst ->
 	type_of_logical_kind (Decls.constant_kind cst)
     | Libnames.VarRef v ->
 	"var" ^ type_of_logical_kind (Decls.variable_kind v)
@@ -124,7 +124,7 @@ let remove_sections dir =
     dir
 
 let dump_ref loc filepath modpath ident ty =
-  dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
+  dump_string (Printf.sprintf "R%d %s %s %s %s\n"
 		  (fst (Util.unloc loc)) filepath modpath ident ty)
 
 let add_glob_gen loc sp lib_dp ty =
@@ -137,16 +137,16 @@ let add_glob_gen loc sp lib_dp ty =
     let ident = Names.string_of_id id in
       dump_ref loc filepath modpath ident ty
 
-let add_glob loc ref = 
+let add_glob loc ref =
   if dump () && loc <> Util.dummy_loc then
     let sp = Nametab.path_of_global ref in
     let lib_dp = Lib.library_part ref in
     let ty = type_of_global_ref ref in
       add_glob_gen loc sp lib_dp ty
-      
-let mp_of_kn kn = 
-  let mp,sec,l = Names.repr_kn kn in 
-    Names.MPdot (mp,l) 
+
+let mp_of_kn kn =
+  let mp,sec,l = Names.repr_kn kn in
+    Names.MPdot (mp,l)
 
 let add_glob_kn loc kn =
   if dump () && loc <> Util.dummy_loc then
@@ -155,13 +155,13 @@ let add_glob_kn loc kn =
       add_glob_gen loc sp lib_dp "syndef"
 
 let dump_binding loc id = ()
-      
+
 let dump_definition (loc, id) sec s =
-  dump_string (Printf.sprintf "%s %d %s %s\n" s (fst (Util.unloc loc)) 
+  dump_string (Printf.sprintf "%s %d %s %s\n" s (fst (Util.unloc loc))
 			(Names.string_of_dirpath (Lib.current_dirpath sec)) (Names.string_of_id id))
-    
+
 let dump_reference loc modpath ident ty =
-  dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
+  dump_string (Printf.sprintf "R%d %s %s %s %s\n"
 		  (fst (Util.unloc loc)) (Names.string_of_dirpath (Lib.library_dp ())) modpath ident ty)
 
 let dump_constraint ((loc, n), _, _) sec ty =
@@ -177,7 +177,7 @@ let dump_name (loc, n) sec ty =
 let dump_local_binder b sec ty =
   if dump () then
     match b with
-      | Topconstr.LocalRawAssum (nl, _, _) -> 
+      | Topconstr.LocalRawAssum (nl, _, _) ->
 	  List.iter (fun x -> dump_name x sec ty) nl
       | Topconstr.LocalRawDef _ -> ()
 
@@ -187,7 +187,7 @@ let dump_modref loc mp ty =
     let l = if l = [] then l else Util.list_drop_last l in
     let fp = Names.string_of_dirpath dp in
     let mp = Names.string_of_dirpath (Names.make_dirpath l) in
-      dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
+      dump_string (Printf.sprintf "R%d %s %s %s %s\n"
 		      (fst (Util.unloc loc)) fp mp "<>" ty)
 
 let dump_moddef loc mp ty =
@@ -197,7 +197,7 @@ let dump_moddef loc mp ty =
       dump_string (Printf.sprintf "%s %d %s %s\n" ty (fst (Util.unloc loc)) "<>" mp)
 
 let dump_libref loc dp ty =
-  dump_string (Printf.sprintf "R%d %s <> <> %s\n" 
+  dump_string (Printf.sprintf "R%d %s <> <> %s\n"
 		  (fst (Util.unloc loc)) (Names.string_of_dirpath dp) ty)
 
 let dump_notation_location pos ((path,df),sc) =

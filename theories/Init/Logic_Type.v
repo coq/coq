@@ -28,7 +28,7 @@ Section identity_is_a_congruence.
  Variable f : A -> B.
 
  Variables x y z : A.
- 
+
  Lemma identity_sym : identity x y -> identity y x.
  Proof.
   destruct 1; trivial.

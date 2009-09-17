@@ -7,7 +7,7 @@ Variable I_eq :I -> I -> Prop.
 Variable I_eq_equiv : Setoid_Theory I I_eq.
 
 (* Add Relation I I_eq
-  reflexivity proved by I_eq_equiv.(Seq_refl I I_eq) 
+  reflexivity proved by I_eq_equiv.(Seq_refl I I_eq)
   symmetry proved by I_eq_equiv.(Seq_sym I I_eq)
   transitivity proved by I_eq_equiv.(Seq_trans I I_eq)
 as I_eq_relation. *)

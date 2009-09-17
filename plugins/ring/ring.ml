@@ -30,7 +30,7 @@ open Libobject
 open Closure
 open Tacred
 open Tactics
-open Pattern 
+open Pattern
 open Hiddentac
 open Nametab
 open Quote
@@ -96,13 +96,13 @@ let coq_SetPopp = lazy (ring_constant "SetPopp")
 let coq_interp_setsp = lazy (ring_constant "interp_setsp")
 let coq_interp_setp = lazy (ring_constant "interp_setp")
 let coq_interp_setcs = lazy (ring_constant "interp_setcs")
-let coq_setspolynomial_simplify = 
+let coq_setspolynomial_simplify =
   lazy (ring_constant "setspolynomial_simplify")
-let coq_setpolynomial_simplify = 
+let coq_setpolynomial_simplify =
   lazy (ring_constant "setpolynomial_simplify")
-let coq_setspolynomial_simplify_ok = 
+let coq_setspolynomial_simplify_ok =
   lazy (ring_constant "setspolynomial_simplify_ok")
-let coq_setpolynomial_simplify_ok = 
+let coq_setpolynomial_simplify_ok =
   lazy (ring_constant "setpolynomial_simplify_ok")
 
 (* Ring abstract *)
@@ -123,9 +123,9 @@ let coq_interp_acs = lazy (ring_constant "interp_acs")
 let coq_interp_sacs = lazy (ring_constant "interp_sacs")
 let coq_aspolynomial_normalize = lazy (ring_constant "aspolynomial_normalize")
 let coq_apolynomial_normalize = lazy (ring_constant "apolynomial_normalize")
-let coq_aspolynomial_normalize_ok = 
+let coq_aspolynomial_normalize_ok =
   lazy (ring_constant "aspolynomial_normalize_ok")
-let coq_apolynomial_normalize_ok = 
+let coq_apolynomial_normalize_ok =
   lazy (ring_constant "apolynomial_normalize_ok")
 
 (* Logic --> to be found in Coqlib *)
@@ -135,8 +135,8 @@ let mkLApp(fc,v) = mkApp(Lazy.force fc, v)
 
 (*********** Useful types and functions ************)
 
-module OperSet = 
-  Set.Make (struct 
+module OperSet =
+  Set.Make (struct
 	      type t = global_reference
 	      let compare = (Pervasives.compare : t->t->int)
 	    end)
@@ -166,7 +166,7 @@ type theory =
                                        (* Must be empty for an abstract ring *)
     }
 
-(* Theories are stored in a table which is synchronised with the Reset 
+(* Theories are stored in a table which is synchronised with the Reset
    mechanism. *)
 
 module Cmap = Map.Make(struct type t = constr let compare = compare end)
@@ -177,7 +177,7 @@ let theories_map_add (c,t) = theories_map := Cmap.add c t !theories_map
 let theories_map_find c = Cmap.find c !theories_map
 let theories_map_mem c = Cmap.mem c !theories_map
 
-let _ = 
+let _ =
   Summary.declare_summary "tactic-ring-table"
     { Summary.freeze_function = (fun () -> !theories_map);
       Summary.unfreeze_function = (fun t -> theories_map := t);
@@ -188,23 +188,23 @@ let _ =
    between theories and environement objects. *)
 
 
-let subst_morph subst morph = 
+let subst_morph subst morph =
   let plusm' = subst_mps subst morph.plusm in
   let multm' = subst_mps subst morph.multm in
   let oppm' = Option.smartmap (subst_mps subst) morph.oppm in
-    if plusm' == morph.plusm 
-      && multm' == morph.multm 
-      && oppm' == morph.oppm then 
+    if plusm' == morph.plusm
+      && multm' == morph.multm
+      && oppm' == morph.oppm then
 	morph
     else
       { plusm = plusm' ;
 	multm = multm' ;
 	oppm = oppm' ;
       }
-  
-let subst_set subst cset = 
+
+let subst_set subst cset =
   let same = ref true in
-  let copy_subst c newset = 
+  let copy_subst c newset =
     let c' = subst_mps subst c in
       if not (c' == c) then same := false;
       ConstrSet.add c' newset
@@ -212,21 +212,21 @@ let subst_set subst cset =
   let cset' = ConstrSet.fold copy_subst cset ConstrSet.empty in
     if !same then cset else cset'
 
-let subst_theory subst th = 
+let subst_theory subst th =
   let th_equiv' = Option.smartmap (subst_mps subst) th.th_equiv in
   let th_setoid_th' = Option.smartmap (subst_mps subst) th.th_setoid_th in
   let th_morph' = Option.smartmap (subst_morph subst) th.th_morph in
-  let th_a' = subst_mps subst th.th_a in                   
+  let th_a' = subst_mps subst th.th_a in
   let th_plus' = subst_mps subst th.th_plus in
   let th_mult' = subst_mps subst th.th_mult in
   let th_one' = subst_mps subst th.th_one in
   let th_zero' = subst_mps subst th.th_zero in
   let th_opp' = Option.smartmap (subst_mps subst) th.th_opp in
   let th_eq' = subst_mps subst th.th_eq in
-  let th_t' = subst_mps subst th.th_t in          
+  let th_t' = subst_mps subst th.th_t in
   let th_closed' = subst_set subst th.th_closed in
-    if th_equiv' == th.th_equiv 
-      && th_setoid_th' == th.th_setoid_th 
+    if th_equiv' == th.th_equiv
+      && th_setoid_th' == th.th_setoid_th
       && th_morph' == th.th_morph
       && th_a' == th.th_a
       && th_plus' == th.th_plus
@@ -236,29 +236,29 @@ let subst_theory subst th =
       && th_opp' == th.th_opp
       && th_eq' == th.th_eq
       && th_t' == th.th_t
-      && th_closed' == th.th_closed 
-    then 
-      th 
+      && th_closed' == th.th_closed
+    then
+      th
     else
-    { th_ring = th.th_ring ;  
+    { th_ring = th.th_ring ;
       th_abstract = th.th_abstract ;
-      th_setoid = th.th_setoid ;  
+      th_setoid = th.th_setoid ;
       th_equiv = th_equiv' ;
       th_setoid_th = th_setoid_th' ;
       th_morph = th_morph' ;
-      th_a = th_a' ;            
+      th_a = th_a' ;
       th_plus = th_plus' ;
       th_mult = th_mult' ;
       th_one = th_one' ;
       th_zero = th_zero' ;
-      th_opp = th_opp' ;        
+      th_opp = th_opp' ;
       th_eq = th_eq' ;
-      th_t = th_t' ;            
-      th_closed = th_closed' ;  
+      th_t = th_t' ;
+      th_closed = th_closed' ;
     }
 
 
-let subst_th (_,subst,(c,th as obj)) = 
+let subst_th (_,subst,(c,th as obj)) =
   let c' = subst_mps subst c in
   let th' = subst_theory subst th in
     if c' == c && th' == th then obj else
@@ -280,21 +280,21 @@ let (theory_to_obj, obj_to_theory) =
 (* But only one theory can be declared for a given Set *)
 
 let guess_theory a =
-  try 
+  try
     theories_map_find a
-  with Not_found -> 
-    errorlabstrm "Ring" 
+  with Not_found ->
+    errorlabstrm "Ring"
       (str "No Declared Ring Theory for " ++
 	 pr_lconstr a ++ fnl () ++
 	 str "Use Add [Semi] Ring to declare it")
 
 (* Looks up an option *)
 
-let unbox = function 
+let unbox = function
   | Some w -> w
   | None -> anomaly "Ring : Not in case of a setoid ring."
 
-(* Protects the convertibility test against undue exceptions when using it 
+(* Protects the convertibility test against undue exceptions when using it
    with untyped terms *)
 
 let safe_pf_conv_x gl c1 c2 = try pf_conv_x gl c1 c2 with _ -> false
@@ -320,8 +320,8 @@ let states_compatibility_for env plus mult opp morphs =
    | Some opp, Some compat -> check opp compat
    | _,_ -> assert false)
 
-let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus amult aone azero aopp aeq t cset = 
-  if theories_map_mem a then errorlabstrm "Add Semi Ring" 
+let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus amult aone azero aopp aeq t cset =
+  if theories_map_mem a then errorlabstrm "Add Semi Ring"
     (str "A (Semi-)(Setoid-)Ring Structure is already declared for " ++
        pr_lconstr a);
   let env = Global.env () in
@@ -332,10 +332,10 @@ let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus 
 	not (implement_theory env (unbox asetth) coq_Setoid_Theory
 	  [| a; (unbox aequiv) |]) ||
         not (states_compatibility_for env aplus amult aopp (unbox amorph))
-        )) then 
+        )) then
       errorlabstrm "addring" (str "Not a valid Setoid-Ring theory");
     if (not want_ring & want_setoid & (
-        not (implement_theory env t coq_Semi_Setoid_Ring_Theory 
+        not (implement_theory env t coq_Semi_Setoid_Ring_Theory
 	  [| a; (unbox aequiv); aplus; amult; aone; azero; aeq|]) ||
 	not (implement_theory env (unbox asetth) coq_Setoid_Theory
 	  [| a; (unbox aequiv) |]) ||
@@ -348,10 +348,10 @@ let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus 
       errorlabstrm "addring" (str "Not a valid Ring theory");
     if (not want_ring & not want_setoid &
 	not (implement_theory env t coq_Semi_Ring_Theory
-	  [| a; aplus; amult; aone; azero; aeq |])) then 
+	  [| a; aplus; amult; aone; azero; aeq |])) then
       errorlabstrm "addring" (str "Not a valid Semi-Ring theory");
     Lib.add_anonymous_leaf
-      (theory_to_obj 
+      (theory_to_obj
 	 (a, { th_ring = want_ring;
 	       th_abstract = want_abstract;
 	       th_setoid = want_setoid;
@@ -374,9 +374,9 @@ let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus 
    gl : goal sigma
    th : semi-ring theory (concrete)
    cl : constr list [c1; c2; ...]
- 
-Builds 
-   - a list of tuples [(c1, c'1, c''1, c'1_eq_c''1); ... ] 
+
+Builds
+   - a list of tuples [(c1, c'1, c''1, c'1_eq_c''1); ... ]
   where c'i is convertible with ci and
   c'i_eq_c''i is a proof of equality of c'i and c''i
 
@@ -386,43 +386,43 @@ let build_spolynom gl th lc =
   let varhash  = (Hashtbl.create 17 : (constr, constr) Hashtbl.t) in
   let varlist = ref ([] : constr list) in (* list of variables *)
   let counter = ref 1 in (* number of variables created + 1 *)
-  (* aux creates the spolynom p by a recursive destructuration of c 
+  (* aux creates the spolynom p by a recursive destructuration of c
      and builds the varmap with side-effects *)
-  let rec aux c = 
-    match (kind_of_term (strip_outer_cast c)) with 
+  let rec aux c =
+    match (kind_of_term (strip_outer_cast c)) with
       | App (binop,[|c1; c2|]) when safe_pf_conv_x gl binop th.th_plus ->
 	  mkLApp(coq_SPplus, [|th.th_a; aux c1; aux c2 |])
       | App (binop,[|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
 	  mkLApp(coq_SPmult, [|th.th_a; aux c1; aux c2 |])
       | _ when closed_under th.th_closed c ->
 	  mkLApp(coq_SPconst, [|th.th_a; c |])
-      | _ -> 
-	  try Hashtbl.find varhash c 
-	  with Not_found -> 
+      | _ ->
+	  try Hashtbl.find varhash c
+	  with Not_found ->
 	    let newvar =
               mkLApp(coq_SPvar, [|th.th_a; (path_of_int !counter) |]) in
-	    begin 
+	    begin
 	      incr counter;
 	      varlist := c :: !varlist;
 	      Hashtbl.add varhash c newvar;
 	      newvar
 	    end
-  in 
+  in
   let lp = List.map aux lc in
   let v = btree_of_array (Array.of_list (List.rev !varlist)) th.th_a in
-  List.map 
-    (fun p -> 
+  List.map
+    (fun p ->
        (mkLApp (coq_interp_sp,
                [|th.th_a; th.th_plus; th.th_mult; th.th_zero; v; p |]),
 	mkLApp (coq_interp_cs,
                [|th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; v;
-		  pf_reduce cbv_betadeltaiota gl 
-		    (mkLApp (coq_spolynomial_simplify, 
-			    [| th.th_a; th.th_plus; th.th_mult; 
-			       th.th_one; th.th_zero; 
+		  pf_reduce cbv_betadeltaiota gl
+		    (mkLApp (coq_spolynomial_simplify,
+			    [| th.th_a; th.th_plus; th.th_mult;
+			       th.th_one; th.th_zero;
 			       th.th_eq; p|])) |]),
 	mkLApp (coq_spolynomial_simplify_ok,
-	        [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; 
+	        [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero;
 		  th.th_eq; v; th.th_t; p |])))
     lp
 
@@ -430,9 +430,9 @@ let build_spolynom gl th lc =
    gl : goal sigma
    th : ring theory (concrete)
    cl : constr list [c1; c2; ...]
- 
-Builds 
-   - a list of tuples [(c1, c'1, c''1, c'1_eq_c''1); ... ] 
+
+Builds
+   - a list of tuples [(c1, c'1, c''1, c'1_eq_c''1); ... ]
   where c'i is convertible with ci and
   c'i_eq_c''i is a proof of equality of c'i and c''i
 
@@ -442,8 +442,8 @@ let build_polynom gl th lc =
   let varhash  = (Hashtbl.create 17 : (constr, constr) Hashtbl.t) in
   let varlist = ref ([] : constr list) in (* list of variables *)
   let counter = ref 1 in (* number of variables created + 1 *)
-  let rec aux c = 
-    match (kind_of_term (strip_outer_cast c)) with 
+  let rec aux c =
+    match (kind_of_term (strip_outer_cast c)) with
       | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_plus ->
 	  mkLApp(coq_Pplus, [|th.th_a; aux c1; aux c2 |])
       | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
@@ -459,12 +459,12 @@ let build_polynom gl th lc =
 	  mkLApp(coq_Popp, [|th.th_a; aux c1|])
       | _ when closed_under th.th_closed c ->
 	  mkLApp(coq_Pconst, [|th.th_a; c |])
-      | _ -> 
-	  try Hashtbl.find varhash c 
-	  with Not_found -> 
+      | _ ->
+	  try Hashtbl.find varhash c
+	  with Not_found ->
 	    let newvar =
               mkLApp(coq_Pvar, [|th.th_a; (path_of_int !counter) |]) in
-	    begin 
+	    begin
 	      incr counter;
 	      varlist := c :: !varlist;
 	      Hashtbl.add varhash c newvar;
@@ -473,20 +473,20 @@ let build_polynom gl th lc =
   in
   let lp = List.map aux lc in
   let v = (btree_of_array (Array.of_list (List.rev !varlist)) th.th_a) in
-  List.map 
-    (fun p -> 
+  List.map
+    (fun p ->
        (mkLApp(coq_interp_p,
 	       [| th.th_a; th.th_plus; th.th_mult; th.th_zero;
                  (unbox th.th_opp); v; p |])),
 	mkLApp(coq_interp_cs,
 	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; v;
-		  pf_reduce cbv_betadeltaiota gl 
+		  pf_reduce cbv_betadeltaiota gl
 		    (mkLApp(coq_polynomial_simplify,
-			    [| th.th_a; th.th_plus; th.th_mult; 
-			       th.th_one; th.th_zero; 
+			    [| th.th_a; th.th_plus; th.th_mult;
+			       th.th_one; th.th_zero;
 			       (unbox th.th_opp); th.th_eq; p |])) |]),
 	mkLApp(coq_polynomial_simplify_ok,
-	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; 
+	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero;
 		  (unbox th.th_opp); th.th_eq; v; th.th_t; p |]))
     lp
 
@@ -494,9 +494,9 @@ let build_polynom gl th lc =
    gl : goal sigma
    th : semi-ring theory (abstract)
    cl : constr list [c1; c2; ...]
- 
-Builds 
-   - a list of tuples [(c1, c'1, c''1, c'1_eq_c''1); ... ] 
+
+Builds
+   - a list of tuples [(c1, c'1, c''1, c'1_eq_c''1); ... ]
   where c'i is convertible with ci and
   c'i_eq_c''i is a proof of equality of c'i and c''i
 
@@ -506,41 +506,41 @@ let build_aspolynom gl th lc =
   let varhash  = (Hashtbl.create 17 : (constr, constr) Hashtbl.t) in
   let varlist = ref ([] : constr list) in (* list of variables *)
   let counter = ref 1 in (* number of variables created + 1 *)
-  (* aux creates the aspolynom p by a recursive destructuration of c 
+  (* aux creates the aspolynom p by a recursive destructuration of c
      and builds the varmap with side-effects *)
-  let rec aux c = 
-    match (kind_of_term (strip_outer_cast c)) with 
+  let rec aux c =
+    match (kind_of_term (strip_outer_cast c)) with
       | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_plus ->
 	  mkLApp(coq_ASPplus, [| aux c1; aux c2 |])
       | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
 	  mkLApp(coq_ASPmult, [| aux c1; aux c2 |])
       | _ when safe_pf_conv_x gl c th.th_zero -> Lazy.force coq_ASP0
       | _ when safe_pf_conv_x gl c th.th_one -> Lazy.force coq_ASP1
-      | _ -> 
-	  try Hashtbl.find varhash c 
-	  with Not_found -> 
+      | _ ->
+	  try Hashtbl.find varhash c
+	  with Not_found ->
 	    let newvar = mkLApp(coq_ASPvar, [|(path_of_int !counter) |]) in
-	    begin 
+	    begin
 	      incr counter;
 	      varlist := c :: !varlist;
 	      Hashtbl.add varhash c newvar;
 	      newvar
 	    end
-  in 
+  in
   let lp = List.map aux lc in
   let v = btree_of_array (Array.of_list (List.rev !varlist)) th.th_a in
-  List.map 
-    (fun p -> 
+  List.map
+    (fun p ->
        (mkLApp(coq_interp_asp,
-               [| th.th_a; th.th_plus; th.th_mult; 
+               [| th.th_a; th.th_plus; th.th_mult;
 		  th.th_one; th.th_zero; v; p |]),
 	mkLApp(coq_interp_acs,
-               [| th.th_a; th.th_plus; th.th_mult; 
+               [| th.th_a; th.th_plus; th.th_mult;
 		  th.th_one; th.th_zero; v;
-		  pf_reduce cbv_betadeltaiota gl 
+		  pf_reduce cbv_betadeltaiota gl
 		    (mkLApp(coq_aspolynomial_normalize,[|p|])) |]),
 	mkLApp(coq_spolynomial_simplify_ok,
-	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; 
+	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero;
 		  th.th_eq; v; th.th_t; p |])))
     lp
 
@@ -548,9 +548,9 @@ let build_aspolynom gl th lc =
    gl : goal sigma
    th : ring theory (abstract)
    cl : constr list [c1; c2; ...]
- 
-Builds 
-   - a list of tuples [(c1, c'1, c''1, c'1_eq_c''1); ... ] 
+
+Builds
+   - a list of tuples [(c1, c'1, c''1, c'1_eq_c''1); ... ]
   where c'i is convertible with ci and
   c'i_eq_c''i is a proof of equality of c'i and c''i
 
@@ -560,14 +560,14 @@ let build_apolynom gl th lc =
   let varhash  = (Hashtbl.create 17 : (constr, constr) Hashtbl.t) in
   let varlist = ref ([] : constr list) in (* list of variables *)
   let counter = ref 1 in (* number of variables created + 1 *)
-  let rec aux c = 
-    match (kind_of_term (strip_outer_cast c)) with 
+  let rec aux c =
+    match (kind_of_term (strip_outer_cast c)) with
       | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_plus ->
 	  mkLApp(coq_APplus, [| aux c1; aux c2 |])
       | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
 	  mkLApp(coq_APmult, [| aux c1; aux c2 |])
       (* The special case of Zminus *)
-      | App (binop, [|c1; c2|]) 
+      | App (binop, [|c1; c2|])
 	  when safe_pf_conv_x gl c
             (mkApp(th.th_plus, [|c1; mkApp(unbox th.th_opp,[|c2|]) |])) ->
 	    mkLApp(coq_APplus,
@@ -576,12 +576,12 @@ let build_apolynom gl th lc =
 	  mkLApp(coq_APopp, [| aux c1 |])
       | _ when safe_pf_conv_x gl c th.th_zero -> Lazy.force coq_AP0
       | _ when safe_pf_conv_x gl c th.th_one -> Lazy.force coq_AP1
-      | _ -> 
-	  try Hashtbl.find varhash c 
-	  with Not_found -> 
+      | _ ->
+	  try Hashtbl.find varhash c
+	  with Not_found ->
 	    let newvar =
               mkLApp(coq_APvar, [| path_of_int !counter |]) in
-	    begin 
+	    begin
 	      incr counter;
 	      varlist := c :: !varlist;
 	      Hashtbl.add varhash c newvar;
@@ -590,28 +590,28 @@ let build_apolynom gl th lc =
   in
   let lp = List.map aux lc in
   let v = (btree_of_array (Array.of_list (List.rev !varlist)) th.th_a) in
-  List.map 
-    (fun p -> 
+  List.map
+    (fun p ->
        (mkLApp(coq_interp_ap,
-	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; 
+	       [| th.th_a; th.th_plus; th.th_mult; th.th_one;
 		  th.th_zero; (unbox th.th_opp); v; p |]),
 	mkLApp(coq_interp_sacs,
-	       [| th.th_a; th.th_plus; th.th_mult; 
-		  th.th_one; th.th_zero; (unbox th.th_opp); v; 
-		  pf_reduce cbv_betadeltaiota gl 
+	       [| th.th_a; th.th_plus; th.th_mult;
+		  th.th_one; th.th_zero; (unbox th.th_opp); v;
+		  pf_reduce cbv_betadeltaiota gl
 		    (mkLApp(coq_apolynomial_normalize, [|p|])) |]),
 	mkLApp(coq_apolynomial_normalize_ok,
-	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; 
+	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero;
 		  (unbox th.th_opp); th.th_eq; v; th.th_t; p |])))
     lp
-    
+
 (*
    gl : goal sigma
    th : setoid ring theory (concrete)
    cl : constr list [c1; c2; ...]
- 
-Builds 
-   - a list of tuples [(c1, c'1, c''1, c'1_eq_c''1); ... ] 
+
+Builds
+   - a list of tuples [(c1, c'1, c''1, c'1_eq_c''1); ... ]
   where c'i is convertible with ci and
   c'i_eq_c''i is a proof of equality of c'i and c''i
 
@@ -621,8 +621,8 @@ let build_setpolynom gl th lc =
   let varhash  = (Hashtbl.create 17 : (constr, constr) Hashtbl.t) in
   let varlist = ref ([] : constr list) in (* list of variables *)
   let counter = ref 1 in (* number of variables created + 1 *)
-  let rec aux c = 
-    match (kind_of_term (strip_outer_cast c)) with 
+  let rec aux c =
+    match (kind_of_term (strip_outer_cast c)) with
       | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_plus ->
 	  mkLApp(coq_SetPplus, [|th.th_a; aux c1; aux c2 |])
       | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
@@ -638,12 +638,12 @@ let build_setpolynom gl th lc =
 	  mkLApp(coq_SetPopp, [| th.th_a; aux c1 |])
       | _ when closed_under th.th_closed c ->
 	  mkLApp(coq_SetPconst, [| th.th_a; c |])
-      | _ -> 
-	  try Hashtbl.find varhash c 
-	  with Not_found -> 
+      | _ ->
+	  try Hashtbl.find varhash c
+	  with Not_found ->
 	    let newvar =
               mkLApp(coq_SetPvar, [| th.th_a; path_of_int !counter |]) in
-	    begin 
+	    begin
 	      incr counter;
 	      varlist := c :: !varlist;
 	      Hashtbl.add varhash c newvar;
@@ -652,17 +652,17 @@ let build_setpolynom gl th lc =
   in
   let lp = List.map aux lc in
   let v = (btree_of_array (Array.of_list (List.rev !varlist)) th.th_a) in
-  List.map 
-    (fun p -> 
+  List.map
+    (fun p ->
        (mkLApp(coq_interp_setp,
 	       [| th.th_a; th.th_plus; th.th_mult; th.th_zero;
                   (unbox th.th_opp); v; p |]),
 	mkLApp(coq_interp_setcs,
 	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; v;
-		  pf_reduce cbv_betadeltaiota gl 
+		  pf_reduce cbv_betadeltaiota gl
 		    (mkLApp(coq_setpolynomial_simplify,
-			    [| th.th_a; th.th_plus; th.th_mult; 
-			       th.th_one; th.th_zero; 
+			    [| th.th_a; th.th_plus; th.th_mult;
+			       th.th_one; th.th_zero;
 			       (unbox th.th_opp); th.th_eq; p |])) |]),
 	mkLApp(coq_setpolynomial_simplify_ok,
 	       [| th.th_a; (unbox th.th_equiv); th.th_plus;
@@ -676,9 +676,9 @@ let build_setpolynom gl th lc =
    gl : goal sigma
    th : semi setoid ring theory (concrete)
    cl : constr list [c1; c2; ...]
- 
-Builds 
-   - a list of tuples [(c1, c'1, c''1, c'1_eq_c''1); ... ] 
+
+Builds
+   - a list of tuples [(c1, c'1, c''1, c'1_eq_c''1); ... ]
   where c'i is convertible with ci and
   c'i_eq_c''i is a proof of equality of c'i and c''i
 
@@ -688,20 +688,20 @@ let build_setspolynom gl th lc =
   let varhash  = (Hashtbl.create 17 : (constr, constr) Hashtbl.t) in
   let varlist = ref ([] : constr list) in (* list of variables *)
   let counter = ref 1 in (* number of variables created + 1 *)
-  let rec aux c = 
-    match (kind_of_term (strip_outer_cast c)) with 
+  let rec aux c =
+    match (kind_of_term (strip_outer_cast c)) with
       | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_plus ->
 	  mkLApp(coq_SetSPplus, [|th.th_a; aux c1; aux c2 |])
       | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
 	  mkLApp(coq_SetSPmult, [| th.th_a; aux c1; aux c2 |])
       | _ when closed_under th.th_closed c ->
 	  mkLApp(coq_SetSPconst, [| th.th_a; c |])
-      | _ -> 
+      | _ ->
 	  try Hashtbl.find varhash c
 	  with Not_found ->
 	    let newvar =
               mkLApp(coq_SetSPvar, [|th.th_a; path_of_int !counter |]) in
-	    begin 
+	    begin
 	      incr counter;
 	      varlist := c :: !varlist;
 	      Hashtbl.add varhash c newvar;
@@ -716,10 +716,10 @@ let build_setspolynom gl th lc =
 	       [| th.th_a; th.th_plus; th.th_mult; th.th_zero; v; p |]),
 	mkLApp(coq_interp_setcs,
                [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; v;
-		  pf_reduce cbv_betadeltaiota gl 
+		  pf_reduce cbv_betadeltaiota gl
 		    (mkLApp(coq_setspolynomial_simplify,
-			    [| th.th_a; th.th_plus; th.th_mult; 
-			       th.th_one; th.th_zero; 
+			    [| th.th_a; th.th_plus; th.th_mult;
+			       th.th_one; th.th_zero;
 			       th.th_eq; p |])) |]),
 	mkLApp(coq_setspolynomial_simplify_ok,
 	       [| th.th_a; (unbox th.th_equiv); th.th_plus;
@@ -737,12 +737,12 @@ module SectionPathSet =
 
 (* Avec l'uniformisation des red_kind, on perd ici sur la structure
    SectionPathSet; peut-être faudra-t-il la déplacer dans Closure *)
-let constants_to_unfold = 
+let constants_to_unfold =
 (*  List.fold_right SectionPathSet.add *)
-  let transform s = 
+  let transform s =
     let sp = path_of_string s in
     let dir, id = repr_path sp in
-      Libnames.encode_con dir id 
+      Libnames.encode_con dir id
   in
   List.map transform
     [ "Coq.ring.Ring_normalize.interp_cs";
@@ -772,9 +772,9 @@ let polynom_unfold_tac =
   let flags =
     (mkflags(fBETA::fIOTA::(List.map fCONST constants_to_unfold))) in
   reduct_in_concl (cbv_norm_flags flags,DEFAULTcast)
-      
+
 let polynom_unfold_tac_in_term gl =
-  let flags = 
+  let flags =
     (mkflags(fBETA::fIOTA::fZETA::(List.map fCONST constants_to_unfold)))
   in
   cbv_norm_flags flags (pf_env gl) (project gl)
@@ -783,7 +783,7 @@ let polynom_unfold_tac_in_term gl =
 (* th : theory associated to t *)
 (* op : clause (None for conclusion or Some id for hypothesis id) *)
 (* gl : goal  *)
-(* Does the rewriting c_i -> (interp R RC v (polynomial_simplify p_i)) 
+(* Does the rewriting c_i -> (interp R RC v (polynomial_simplify p_i))
    where the ring R, the Ring theory RC, the varmap v and the polynomials p_i
    are guessed and such that c_i = (interp R RC v p_i) *)
 let raw_polynom th op lc gl =
@@ -791,7 +791,7 @@ let raw_polynom th op lc gl =
      after t in the list. This is to avoid that the normalization of t'
      modifies t in a non-desired way *)
   let lc = sort_subterm gl lc in
-  let ltriplets = 
+  let ltriplets =
     if th.th_setoid then
       if th.th_ring
       then build_setpolynom gl th lc
@@ -802,23 +802,23 @@ let raw_polynom th op lc gl =
 	then build_apolynom gl th lc
 	else build_polynom gl th lc
       else
-	if th.th_abstract 
+	if th.th_abstract
 	then build_aspolynom gl th lc
-	else build_spolynom gl th lc in 
-  let polynom_tac = 
+	else build_spolynom gl th lc in
+  let polynom_tac =
     List.fold_right2
       (fun ci (c'i, c''i, c'i_eq_c''i) tac ->
-         let c'''i = 
-	   if !term_quality then polynom_unfold_tac_in_term gl c''i else c''i 
+         let c'''i =
+	   if !term_quality then polynom_unfold_tac_in_term gl c''i else c''i
 	 in
-         if !term_quality && safe_pf_conv_x gl c'''i ci then 
+         if !term_quality && safe_pf_conv_x gl c'''i ci then
 	   tac (* convertible terms *)
          else if th.th_setoid
 	 then
-           (tclORELSE 
+           (tclORELSE
               (tclORELSE
 		 (h_exact c'i_eq_c''i)
-		 (h_exact (mkLApp(coq_seq_sym, 
+		 (h_exact (mkLApp(coq_seq_sym,
 				  [| th.th_a; (unbox th.th_equiv);
                                      (unbox th.th_setoid_th);
 				     c'''i; ci; c'i_eq_c''i |]))))
@@ -826,7 +826,7 @@ let raw_polynom th op lc gl =
 		 (tclORELSE
                    (Equality.general_rewrite true
 		     Termops.all_occurrences c'i_eq_c''i)
-                   (Equality.general_rewrite false 
+                   (Equality.general_rewrite false
 		     Termops.all_occurrences c'i_eq_c''i))
                  [tac]))
 	 else
@@ -835,13 +835,13 @@ let raw_polynom th op lc gl =
 		 (h_exact c'i_eq_c''i)
 		 (h_exact (mkApp(build_coq_eq_sym (),
 				 [|th.th_a; c'''i; ci; c'i_eq_c''i |]))))
-	      (tclTHENS 
-		 (elim_type 
+	      (tclTHENS
+		 (elim_type
 		    (mkApp(build_coq_eq (), [|th.th_a; c'''i; ci |])))
 		 [ tac;
                    h_exact c'i_eq_c''i ]))
 )
-      lc ltriplets polynom_unfold_tac 
+      lc ltriplets polynom_unfold_tac
   in
   polynom_tac gl
 
@@ -864,19 +864,19 @@ let guess_eq_tac th =
 				  th.th_plus |])))
 		 reflexivity)))))
 
-let guess_equiv_tac th = 
+let guess_equiv_tac th =
   (tclORELSE (apply (mkLApp(coq_seq_refl,
 			    [| th.th_a; (unbox th.th_equiv);
 			       (unbox th.th_setoid_th)|])))
-     (tclTHEN 
+     (tclTHEN
 	polynom_unfold_tac
-	(tclREPEAT 
-	   (tclORELSE 
+	(tclREPEAT
+	   (tclORELSE
 	      (apply (unbox th.th_morph).plusm)
 	      (apply (unbox th.th_morph).multm)))))
 
 let match_with_equiv c = match (kind_of_term c) with
-  | App (e,a) -> 
+  | App (e,a) ->
       if (List.mem e []) (*  (Setoid_replace.equiv_list ())) *)
       then Some (decompose_app c)
       else None
@@ -884,18 +884,18 @@ let match_with_equiv c = match (kind_of_term c) with
 
 let polynom lc gl =
   Coqlib.check_required_library ["Coq";"ring";"LegacyRing"];
-  match lc with 
+  match lc with
    (* If no argument is given, try to recognize either an equality or
-      a declared relation with arguments c1 ... cn, 
+      a declared relation with arguments c1 ... cn,
       do "Ring c1 c2 ... cn" and then try to apply the simplification
       theorems declared for the relation *)
     | [] ->
-	(try 
+	(try
 	  match Hipattern.match_with_equation (pf_concl gl) with
 	   | _,_,Hipattern.PolymorphicLeibnizEq (t,c1,c2) ->
 	       let th = guess_theory t in
 	       (tclTHEN (raw_polynom th None [c1;c2]) (guess_eq_tac th)) gl
-	   | _,_,Hipattern.HeterogenousEq (t1,c1,t2,c2) 
+	   | _,_,Hipattern.HeterogenousEq (t1,c1,t2,c2)
 	       when safe_pf_conv_x gl t1 t2 ->
 	       let th = guess_theory t1 in
 	       (tclTHEN (raw_polynom th None [c1;c2]) (guess_eq_tac th)) gl
@@ -905,22 +905,22 @@ let polynom lc gl =
 		     | Some (equiv, c1::args) ->
 			 let t = (pf_type_of gl c1) in
 			 let th = (guess_theory t) in
-			   if List.exists 
+			   if List.exists
 			     (fun c2 -> not (safe_pf_conv_x gl t (pf_type_of gl c2))) args
-			   then 
+			   then
 			     errorlabstrm "Ring :"
 			       (str" All terms must have the same type");
-			   (tclTHEN (raw_polynom th None (c1::args)) (guess_equiv_tac th)) gl		   
-		     | _ -> errorlabstrm "polynom :" 
+			   (tclTHEN (raw_polynom th None (c1::args)) (guess_equiv_tac th)) gl
+		     | _ -> errorlabstrm "polynom :"
 			 (str" This goal is not an equality nor a setoid equivalence")))
     (* Elsewhere, guess the theory, check that all terms have the same type
        and apply raw_polynom *)
-    | c :: lc' -> 
-	let t = pf_type_of gl c in 
-	let th = guess_theory t in 
-	  if List.exists 
+    | c :: lc' ->
+	let t = pf_type_of gl c in
+	let th = guess_theory t in
+	  if List.exists
 	    (fun c1 -> not (safe_pf_conv_x gl t (pf_type_of gl c1))) lc'
-	  then 
+	  then
 	    errorlabstrm "Ring :"
 	      (str" All terms must have the same type");
 	  (tclTHEN (raw_polynom th None lc) polynom_unfold_tac) gl

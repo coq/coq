@@ -48,7 +48,7 @@ Fixpoint conc (Δ Γ : ctx) : ctx :=
 
 Notation " Γ  ; Δ " := (conc Δ Γ) (at level 25, left associativity) : context_scope.
 
-Reserved Notation " Γ ⊢ τ " (at level 30, no associativity). 
+Reserved Notation " Γ ⊢ τ " (at level 30, no associativity).
 
 Inductive term : ctx -> type -> Type :=
 | ax : `(Γ, τ ⊢ τ)
@@ -64,7 +64,7 @@ Open Local Scope context_scope.
 
 Ltac eqns := subst ; reverse ; simplify_dep_elim ; simplify_IH_hyps.
 
-Lemma weakening : forall Γ Δ τ, Γ ; Δ ⊢ τ -> 
+Lemma weakening : forall Γ Δ τ, Γ ; Δ ⊢ τ ->
   forall τ', Γ , τ' ; Δ ⊢ τ.
 Proof with simpl in * ; eqns ; eauto with lambda.
   intros Γ Δ τ H.
@@ -97,7 +97,7 @@ Proof with simpl in * ; eqns ; eauto.
 
     apply weak...
 
-  apply abs... 
+  apply abs...
     specialize (IHterm (Δ, τ0))...
 
   eapply app...

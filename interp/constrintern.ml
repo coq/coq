@@ -75,7 +75,7 @@ let explain_not_a_constructor ref =
   str "Unknown constructor: " ++ pr_reference ref
 
 let explain_unbound_fix_name is_cofix id =
-  str "The name" ++ spc () ++ pr_id id ++ 
+  str "The name" ++ spc () ++ pr_id id ++
   spc () ++ str "is not bound in the corresponding" ++ spc () ++
   str (if is_cofix then "co" else "") ++ str "fixpoint definition"
 
@@ -92,13 +92,13 @@ let explain_bad_explicitation_number n po =
       let s = match po with
 	| None -> str "a regular argument"
 	| Some p -> int p in
-      str "Bad explicitation number: found " ++ int n ++ 
+      str "Bad explicitation number: found " ++ int n ++
       str" but was expecting " ++ s
   | ExplByName id ->
       let s = match po with
 	| None -> str "a regular argument"
 	| Some p -> (*pr_id (name_of_position p) in*) failwith "" in
-      str "Bad explicitation name: found " ++ pr_id id ++ 
+      str "Bad explicitation name: found " ++ pr_id id ++
       str" but was expecting " ++ s
 
 let explain_internalisation_error e =
@@ -114,7 +114,7 @@ let explain_internalisation_error e =
   pp ++ str "."
 
 let error_bad_inductive_type loc =
-  user_err_loc (loc,"",str 
+  user_err_loc (loc,"",str
     "This should be an inductive type applied to names or \"_\".")
 
 let error_inductive_parameter_not_implicit loc =
@@ -135,8 +135,8 @@ and spaces ntn n =
 let expand_notation_string ntn n =
   let pos = List.nth (wildcards ntn 0) n in
   let hd = if pos = 0 then "" else String.sub ntn 0 pos in
-  let tl = 
-    if pos = String.length ntn then "" 
+  let tl =
+    if pos = String.length ntn then ""
     else String.sub ntn (pos+1) (String.length ntn - pos -1) in
   hd ^ "{ _ }" ^ tl
 
@@ -146,7 +146,7 @@ let contract_notation ntn (l,ll) =
   let ntn' = ref ntn in
   let rec contract_squash n = function
     | [] -> []
-    | CNotation (_,"{ _ }",([a],[])) :: l -> 
+    | CNotation (_,"{ _ }",([a],[])) :: l ->
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (a::l)
     | a :: l ->
@@ -159,7 +159,7 @@ let contract_pat_notation ntn (l,ll) =
   let ntn' = ref ntn in
   let rec contract_squash n = function
     | [] -> []
-    | CPatNotation (_,"{ _ }",([a],[])) :: l -> 
+    | CPatNotation (_,"{ _ }",([a],[])) :: l ->
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (a::l)
     | a :: l ->
@@ -175,7 +175,7 @@ let make_current_scope (tmp_scope,scopes) = Option.List.cons tmp_scope scopes
 
 let set_var_scope loc id (_,_,scopt,scopes) varscopes =
   let idscopes = List.assoc id varscopes in
-  if !idscopes <> None & 
+  if !idscopes <> None &
     make_current_scope (Option.get !idscopes)
     <> make_current_scope (scopt,scopes) then
       user_err_loc (loc,"set_var_scope",
@@ -217,28 +217,28 @@ let rec subst_aconstr_in_rawconstr loc interp (subst,substlist as sub) infos c =
       begin
 	(* subst remembers the delimiters stack in the interpretation *)
 	(* of the notations *)
-	try 
+	try
 	  let (a,(scopt,subscopes)) = List.assoc id subst in
 	  interp (ids,unb,scopt,subscopes@scopes) a
-	with Not_found -> 
-	try 
+	with Not_found ->
+	try
 	  RVar (loc,List.assoc id renaming)
-	with Not_found -> 
+	with Not_found ->
 	  (* Happens for local notation joint with inductive/fixpoint defs *)
 	  RVar (loc,id)
       end
   | AList (x,_,iter,terminator,lassoc) ->
-      (try 
+      (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (l,(scopt,subscopes)) = List.assoc x substlist in
-        let termin = 
+        let termin =
           subst_aconstr_in_rawconstr loc interp sub subinfos terminator in
-	List.fold_right (fun a t -> 
+	List.fold_right (fun a t ->
           subst_iterator ldots_var t
-            (subst_aconstr_in_rawconstr loc interp 
+            (subst_aconstr_in_rawconstr loc interp
               ((x,(a,(scopt,subscopes)))::subst,substlist) subinfos iter))
             (if lassoc then List.rev l else l) termin
-      with Not_found -> 
+      with Not_found ->
           anomaly "Inconsistent substitution of recursive notation")
   | t ->
       rawconstr_of_aconstr_with_binders loc (traverse_binder sub)
@@ -285,7 +285,7 @@ let intern_var (env,unbound_vars,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) l
   (* Is [id] an inductive type potentially with implicit *)
   try
     let ty,l,impl,argsc = List.assoc id impls in
-    let l = List.map 
+    let l = List.map
       (fun id -> CRef (Ident (loc,id)), Some (loc,ExplByName id)) l in
     let tys = string_of_ty ty in
       Dumpglob.dump_reference loc "<>" (string_of_id id) tys;
@@ -319,7 +319,7 @@ let intern_var (env,unbound_vars,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) l
       with _ ->
 	(* [id] a goal variable *)
 	RVar (loc,id), [], [], []
-	    
+
 let find_appl_head_data (_,_,_,(_,impls)) = function
   | RRef (_,ref) as x -> x,implicits_of_global ref,find_arguments_scope ref,[]
   | x -> x,[],[],[]
@@ -364,7 +364,7 @@ let intern_applied_reference intern (_, unb, _, _ as env) lvar args = function
 	find_appl_head_data lvar r, args2
   | Ident (loc, id) ->
       try intern_var env lvar loc id, args
-      with Not_found -> 
+      with Not_found ->
       let qid = qualid_of_ident id in
       try
 	let r,args2 = intern_non_secvar_qualid loc qid intern env args in
@@ -374,7 +374,7 @@ let intern_applied_reference intern (_, unb, _, _ as env) lvar args = function
 	if !interning_grammar || unb then
 	  (RVar (loc,id), [], [], []),args
 	else raise e
-	  
+
 let interp_reference vars r =
   let (r,_,_,_),_ =
     intern_applied_reference (fun _ -> error_not_enough_arguments dummy_loc)
@@ -415,11 +415,11 @@ let simple_product_of_cases_patterns pl =
     pl [[],[]]
 
 (* Check linearity of pattern-matching *)
-let rec has_duplicate = function 
+let rec has_duplicate = function
   | [] -> None
   | x::l -> if List.mem x l then (Some x) else has_duplicate l
 
-let loc_of_lhs lhs = 
+let loc_of_lhs lhs =
  join_loc (fst (List.hd lhs)) (fst (list_last lhs))
 
 let check_linearity lhs ids =
@@ -436,7 +436,7 @@ let check_number_of_pattern loc n l =
 
 let check_or_pat_variables loc ids idsl =
   if List.exists (fun ids' -> not (list_eq_set ids ids')) idsl then
-    user_err_loc (loc, "", str 
+    user_err_loc (loc, "", str
     "The components of this disjunctive pattern must bind the same variables.")
 
 let check_constructor_length env loc cstr pl pl0 =
@@ -458,7 +458,7 @@ let alias_of = function
   | (id::_,_) -> Name id
 
 let message_redundant_alias (id1,id2) =
-  if_verbose warning 
+  if_verbose warning
    ("Alias variable "^(string_of_id id1)^" is merged with "^(string_of_id id2))
 
 (* Expanding notations *)
@@ -487,10 +487,10 @@ let subst_cases_pattern loc alias intern fullsubst scopes a =
       begin
 	(* subst remembers the delimiters stack in the interpretation *)
 	(* of the notations *)
-	try 
+	try
 	  let (a,(scopt,subscopes)) = List.assoc id subst in
 	    intern (subscopes@scopes) ([],[]) scopt a
-	with Not_found -> 
+	with Not_found ->
 	  if id = ldots_var then [], [[], PatVar (loc,Name id)] else
 	  anomaly ("Unbound pattern notation variable: "^(string_of_id id))
 	  (*
@@ -506,30 +506,30 @@ let subst_cases_pattern loc alias intern fullsubst scopes a =
       let args = chop_aconstr_constructor loc cstr args in
       let idslpll = List.map (aux Anonymous fullsubst) args in
       let ids',pll = product_of_cases_patterns [] idslpll in
-      let pl' = List.map (fun (asubst,pl) -> 
+      let pl' = List.map (fun (asubst,pl) ->
         asubst,PatCstr (loc,cstr,pl,alias)) pll in
 	ids', pl'
   | AList (x,_,iter,terminator,lassoc) ->
-      (try 
+      (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (l,(scopt,subscopes)) = List.assoc x substlist in
         let termin = aux Anonymous fullsubst terminator in
         let idsl,v =
-	  List.fold_right (fun a (tids,t) -> 
+	  List.fold_right (fun a (tids,t) ->
             let uids,u = aux Anonymous ((x,(a,(scopt,subscopes)))::subst,substlist) iter in
             let pll = List.map (subst_pat_iterator ldots_var t) u in
             tids@uids, List.flatten pll)
             (if lassoc then List.rev l else l) termin in
         idsl, List.map (fun ((asubst, pl) as x) ->
 	  match pl with PatCstr (loc, c, pl, Anonymous) -> (asubst, PatCstr (loc, c, pl, alias)) | _ -> x) v
-      with Not_found -> 
+      with Not_found ->
           anomaly "Inconsistent substitution of recursive notation")
   | t -> error_invalid_pattern_notation loc
   in aux alias fullsubst a
 
 (* Differentiating between constructors and matching variables *)
 type pattern_qualid_kind =
-  | ConstrPat of constructor * (identifier list * 
+  | ConstrPat of constructor * (identifier list *
       ((identifier * identifier) list * cases_pattern) list) list
   | VarPat of identifier
 
@@ -554,14 +554,14 @@ let find_constructor ref f aliases pats scopes =
 	   let idspl1 = List.map (subst_cases_pattern loc (alias_of aliases) f (subst,[]) scopes) args in
 	   cstr, idspl1, pats2
        | _ -> raise Not_found)
-      
+
   | TrueGlobal r ->
       let rec unf = function
         | ConstRef cst ->
 	    let v = Environ.constant_value (Global.env()) cst in
 	    unf (global_of_constr v)
-        | ConstructRef cstr -> 
-	    Dumpglob.add_glob loc r; 
+        | ConstructRef cstr ->
+	    Dumpglob.add_glob loc r;
 	    cstr, [], pats
         | _ -> raise Not_found
       in unf r
@@ -584,13 +584,13 @@ let maybe_constructor ref f aliases scopes =
               str " is understood as a pattern variable");
         VarPat (find_pattern_variable ref)
 
-let mustbe_constructor loc ref f aliases patl scopes = 
+let mustbe_constructor loc ref f aliases patl scopes =
   try find_constructor ref f aliases patl scopes
   with (Environ.NotEvaluableConst _ | Not_found) ->
     raise (InternalisationError (loc,NotAConstructor ref))
 
 let rec intern_cases_pattern genv scopes (ids,asubst as aliases) tmp_scope pat=
-  let intern_pat = intern_cases_pattern genv in 
+  let intern_pat = intern_cases_pattern genv in
   match pat with
   | CPatAlias (loc, p, id) ->
       let aliases' = merge_aliases aliases id in
@@ -604,7 +604,7 @@ let rec intern_cases_pattern genv scopes (ids,asubst as aliases) tmp_scope pat=
       let pl' = List.map (fun (asubst,pl) ->
         (asubst, PatCstr (loc,c,pl,alias_of aliases))) pll in
       ids',pl'
-  | CPatNotation (loc,"- _",([CPatPrim(_,Numeral p)],[])) 
+  | CPatNotation (loc,"- _",([CPatPrim(_,Numeral p)],[]))
       when Bigint.is_strictly_pos p ->
       intern_pat scopes aliases tmp_scope (CPatPrim(loc,Numeral(Bigint.neg p)))
   | CPatNotation (_,"( _ )",([a],[])) ->
@@ -621,7 +621,7 @@ let rec intern_cases_pattern genv scopes (ids,asubst as aliases) tmp_scope pat=
       in ids@ids'', pl
   | CPatPrim (loc, p) ->
       let a = alias_of aliases in
-      let (c,df) = Notation.interp_prim_token_cases_pattern loc p a 
+      let (c,df) = Notation.interp_prim_token_cases_pattern loc p a
 	(tmp_scope,scopes) in
       Dumpglob.dump_notation_location (fst (unloc loc)) df;
       (ids,[asubst,c])
@@ -660,10 +660,10 @@ let check_capture loc ty = function
       ()
 
 let locate_if_isevar loc na = function
-  | RHole _ -> 
+  | RHole _ ->
       (try match na with
 	| Name id ->  Reserve.find_reserved_type id
-	| Anonymous -> raise Not_found 
+	| Anonymous -> raise Not_found
       with Not_found -> RHole (loc, Evd.BinderType na))
   | x -> x
 
@@ -674,25 +674,25 @@ let check_hidden_implicit_parameters id (_,_,_,(indnames,_)) =
 of its constructor.")
 
 let push_name_env ?(fail_anonymous=false) lvar (ids,unb,tmpsc,scopes as env) = function
-  | Anonymous -> 
+  | Anonymous ->
       if fail_anonymous then errorlabstrm "" (str "Anonymous variables not allowed");
       env
-  | Name id -> 
+  | Name id ->
       check_hidden_implicit_parameters id lvar;
       (Idset.add id ids, unb,tmpsc,scopes)
 
 let push_loc_name_env ?(fail_anonymous=false) lvar (ids,unb,tmpsc,scopes as env) loc = function
-  | Anonymous -> 
+  | Anonymous ->
       if fail_anonymous then user_err_loc (loc,"", str "Anonymous variables not allowed");
       env
-  | Name id -> 
+  | Name id ->
       check_hidden_implicit_parameters id lvar;
       Dumpglob.dump_binding loc id;
       (Idset.add id ids,unb,tmpsc,scopes)
 
 let intern_generalized_binder ?(fail_anonymous=false) intern_type lvar
     (ids,unb,tmpsc,sc as env) bl (loc, na) b b' t ty =
-  let ty = 
+  let ty =
     if t then ty else
       Implicit_quantifiers.implicit_application ids
 	Implicit_quantifiers.combine_params_freevar ty
@@ -702,11 +702,11 @@ let intern_generalized_binder ?(fail_anonymous=false) intern_type lvar
   let env' = List.fold_left (fun env (x, l) -> push_loc_name_env ~fail_anonymous lvar env l (Name x)) env fvs in
   let bl = List.map (fun (id, loc) -> (Name id, b, None, RHole (loc, Evd.BinderType (Name id)))) fvs in
   let na = match na with
-    | Anonymous -> 
-	if fail_anonymous then na 
+    | Anonymous ->
+	if fail_anonymous then na
 	else
-	  let name = 
-	    let id = 
+	  let name =
+	    let id =
 	      match ty with
 	      | CApp (_, (_, CRef (Ident (loc,id))), _) -> id
 	      | _ -> id_of_string "H"
@@ -736,25 +736,25 @@ let intern_local_binder_aux ?(fail_anonymous=false) intern intern_type lvar ((id
 let intern_generalization intern (ids,unb,tmp_scope,scopes as env) lvar loc bk ak c =
   let c = intern (ids,true,tmp_scope,scopes) c in
   let fvs = Implicit_quantifiers.free_vars_of_rawconstr ~bound:ids c in
-  let env', c' = 
-    let abs = 
-      let pi = 
+  let env', c' =
+    let abs =
+      let pi =
 	match ak with
 	| Some AbsPi -> true
-	| None when tmp_scope = Some Notation.type_scope 
+	| None when tmp_scope = Some Notation.type_scope
 	    || List.mem Notation.type_scope scopes -> true
 	| _ -> false
-      in 
+      in
 	if pi then
 	  (fun (id, loc') acc ->
 	    RProd (join_loc loc' loc, Name id, bk, RHole (loc', Evd.BinderType (Name id)), acc))
 	else
-	  (fun (id, loc') acc -> 
+	  (fun (id, loc') acc ->
 	    RLambda (join_loc loc' loc, Name id, bk, RHole (loc', Evd.BinderType (Name id)), acc))
     in
-      List.fold_right (fun (id, loc as lid) (env, acc) -> 
+      List.fold_right (fun (id, loc as lid) (env, acc) ->
 	let env' = push_loc_name_env lvar env loc (Name id) in
-	  (env', abs lid acc)) fvs (env,c) 
+	  (env', abs lid acc)) fvs (env,c)
   in c'
 
 (**********************************************************************)
@@ -762,20 +762,20 @@ let intern_generalization intern (ids,unb,tmp_scope,scopes as env) lvar loc bk a
 
 let merge_impargs l args =
   List.fold_right (fun a l ->
-    match a with 
-      | (_,Some (_,(ExplByName id as x))) when 
+    match a with
+      | (_,Some (_,(ExplByName id as x))) when
 	  List.exists (function (_,Some (_,y)) -> x=y | _ -> false) args -> l
       | _ -> a::l)
-    l args 
+    l args
 
-let check_projection isproj nargs r = 
+let check_projection isproj nargs r =
   match (r,isproj) with
   | RRef (loc, ref), Some _ ->
       (try
 	let n = Recordops.find_projection_nparams ref + 1 in
 	if nargs <> n then
 	  user_err_loc (loc,"",str "Projection has not the right number of explicit parameters.");
-      with Not_found -> 
+      with Not_found ->
 	user_err_loc
 	(loc,"",pr_global_env Idset.empty ref ++ str " is not a registered projection."))
   | _, Some _ -> user_err_loc (loc_of_rawconstr r, "", str "Not a projection.")
@@ -811,7 +811,7 @@ let extract_explicit_arg imps args =
 	      id
 	  | ExplByPos (p,_id) ->
 	      let id =
-		try 
+		try
 		  let imp = List.nth imps (p-1) in
 		  if not (is_status_implicit imp) then failwith "imp";
 		  name_of_implicit imp
@@ -848,7 +848,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
         let idl = Array.map
           (fun (id,(n,order),bl,ty,bd) ->
 	     let intern_ro_arg f =
-	       let idx = 
+	       let idx =
 		 match n with
 		     Some (loc, n) -> list_index0 (Name n) (List.map snd (names_of_local_assums bl))
 		   | None -> 0
@@ -856,13 +856,13 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	       let before, after = list_chop idx bl in
 	       let ((ids',_,_,_) as env',rbefore) =
 		 List.fold_left intern_local_binder (env,[]) before in
-	       let ro = f (intern (ids', unb, tmp_scope, scopes)) in 
+	       let ro = f (intern (ids', unb, tmp_scope, scopes)) in
 	       let n' = Option.map (fun _ -> List.length before) n in
 		 n', ro, List.fold_left intern_local_binder (env',rbefore) after
 	     in
 	     let n, ro, ((ids',_,_,_),rbl) =
 	       match order with
-	       | CStructRec -> 
+	       | CStructRec ->
 		   intern_ro_arg (fun _ -> RStructRec)
 	       | CWfRec c ->
 		   intern_ro_arg (fun f -> RWfRec (f c))
@@ -870,10 +870,10 @@ let internalise sigma globalenv env allow_patvar lvar c =
 		   intern_ro_arg (fun f -> RMeasureRec (f m, Option.map f r))
 	     in
 	     let ids'' = List.fold_right Idset.add lf ids' in
-	     ((n, ro), List.rev rbl, 
+	     ((n, ro), List.rev rbl,
              intern_type (ids',unb,tmp_scope,scopes) ty,
              intern (ids'',unb,None,scopes) bd)) dl in
-	RRec (loc,RFix 
+	RRec (loc,RFix
 	      (Array.map (fun (ro,_,_,_) -> ro) idl,n),
               Array.of_list lf,
               Array.map (fun (_,bl,_,_) -> bl) idl,
@@ -914,7 +914,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	RLetIn (loc, na, intern (reset_tmp_scope env) c1,
           intern (push_loc_name_env lvar env loc1 na) c2)
     | CNotation (loc,"- _",([CPrim (_,Numeral p)],[]))
-	when Bigint.is_strictly_pos p -> 
+	when Bigint.is_strictly_pos p ->
 	intern env (CPrim (loc,Numeral (Bigint.neg p)))
     | CNotation (_,"( _ )",([a],[])) -> intern env a
     | CNotation (loc,ntn,args) ->
@@ -946,42 +946,42 @@ let internalise sigma globalenv env allow_patvar lvar c =
                 let c = intern_notation intern env loc ntn ([],[]) in
                 find_appl_head_data lvar c, args
             | x -> (intern env f,[],[],[]), args in
-	let args = 
+	let args =
 	  intern_impargs c env impargs args_scopes (merge_impargs l args) in
 	check_projection isproj (List.length args) c;
-	(match c with 
+	(match c with
           (* Now compact "(f args') args" *)
 	  | RApp (loc', f', args') -> RApp (join_loc loc' loc, f',args'@args)
 	  | _ -> RApp (loc, c, args))
     | CRecord (loc, w, fs) ->
 	let id, _ = List.hd fs in
-	let record = 
+	let record =
 	  let (id,_,_,_),_ = intern_applied_reference intern env lvar [] (Ident id) in
 	    match id with
-	    | RRef (loc, ref) -> 
+	    | RRef (loc, ref) ->
 		(try Recordops.find_projection ref
 		  with Not_found -> user_err_loc (loc, "intern", str"Not a projection"))
 	    | c -> user_err_loc (loc_of_rawconstr id, "intern", str"Not a projection")
 	in
 	let args =
-	  let pars = list_make record.Recordops.s_EXPECTEDPARAM (CHole (loc, None)) in	    
-	  let fields, rest = 
+	  let pars = list_make record.Recordops.s_EXPECTEDPARAM (CHole (loc, None)) in
+	  let fields, rest =
 	    List.fold_left (fun (args, rest as acc) (na, b) ->
-	      if b then 
-		try 
+	      if b then
+		try
 		  let id = out_name na in
 		  let _, t = List.assoc id rest in
 		    t :: args, List.remove_assoc id rest
 		with _ -> CHole (loc, Some (Evd.QuestionMark (Evd.Define true))) :: args, rest
 	      else acc) ([], List.map (fun ((loc, id), t) -> id, (loc, t)) fs) record.Recordops.s_PROJKIND
-	  in 
-	    if rest <> [] then 
+	  in
+	    if rest <> [] then
 	      let id, (loc, t) = List.hd rest in
 		user_err_loc (loc,"intern",(str "Unknown field name " ++ pr_id id))
 	    else pars @ List.rev fields
 	in
-	let constrname = 
-	  Qualid (loc, shortest_qualid_of_global Idset.empty (ConstructRef record.Recordops.s_CONST)) 
+	let constrname =
+	  Qualid (loc, shortest_qualid_of_global Idset.empty (ConstructRef record.Recordops.s_CONST))
 	in
 	let app = CAppExpl (loc, (None, constrname), args) in
 	  intern env app
@@ -1008,7 +1008,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
         let env'' = List.fold_left (push_name_env lvar) env ids in
         let p' = Option.map (intern_type env'') po in
         RIf (loc, c', (na', p'), intern env b1, intern env b2)
-    | CHole (loc, k) -> 
+    | CHole (loc, k) ->
 	RHole (loc, match k with Some k -> k | None -> Evd.QuestionMark (Evd.Define true))
     | CPatVar (loc, n) when allow_patvar ->
 	RPatVar (loc, n)
@@ -1027,12 +1027,12 @@ let internalise sigma globalenv env allow_patvar lvar c =
 
   and intern_type env = intern (set_type_scope env)
 
-  and intern_local_binder env bind = 
+  and intern_local_binder env bind =
     intern_local_binder_aux intern intern_type lvar env bind
 
   (* Expands a multiple pattern into a disjunction of multiple patterns *)
   and intern_multiple_pattern scopes n (loc,pl) =
-    let idsl_pll = 
+    let idsl_pll =
       List.map (intern_cases_pattern globalenv scopes ([],[]) None) pl in
     check_number_of_pattern loc n pl;
     product_of_cases_patterns [] idsl_pll
@@ -1061,7 +1061,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
   and intern_case_item (vars,unb,_,scopes as env) (tm,(na,t)) =
     let tm' = intern env tm in
     let ids,typ = match t with
-    | Some t -> 
+    | Some t ->
 	let tids = ids_of_cases_indtype t in
 	let tids = List.fold_right Idset.add tids Idset.empty in
 	let t = intern_type (tids,unb,None,scopes) t in
@@ -1081,14 +1081,14 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	if List.exists ((<>) Anonymous) parnal then
 	  error_inductive_parameter_not_implicit loc;
 	realnal, Some (loc,ind,nparams,realnal)
-    | None -> 
+    | None ->
 	[], None in
     let na = match tm', na with
       | RVar (_,id), None when Idset.mem id vars -> Name id
       | _, None -> Anonymous
       | _, Some na -> na in
     (tm',(na,typ)), na::ids
-      
+
   and iterate_prod loc2 env bk ty body nal =
     let rec default env bk = function
     | (loc1,na)::nal ->
@@ -1100,14 +1100,14 @@ let internalise sigma globalenv env allow_patvar lvar c =
     in
       match bk with
 	| Default b -> default env b nal
-	| Generalized (b,b',t) -> 
+	| Generalized (b,b',t) ->
 	    let env, ibind = intern_generalized_binder intern_type lvar
 	      env [] (List.hd nal) b b' t ty in
 	    let body = intern_type env body in
 	      it_mkRProd ibind body
-					   
-  and iterate_lam loc2 env bk ty body nal = 
-    let rec default env bk = function 
+
+  and iterate_lam loc2 env bk ty body nal =
+    let rec default env bk = function
       | (loc1,na)::nal ->
 	  if nal <> [] then check_capture loc1 ty na;
 	  let body = default (push_loc_name_env lvar env loc1 na) bk nal in
@@ -1116,19 +1116,19 @@ let internalise sigma globalenv env allow_patvar lvar c =
       | [] -> intern env body
     in match bk with
       | Default b -> default env b nal
-      | Generalized (b, b', t) ->	  
+      | Generalized (b, b', t) ->
 	  let env, ibind = intern_generalized_binder intern_type lvar
 	    env [] (List.hd nal) b b' t ty in
 	  let body = intern env body in
 	    it_mkRLambda ibind body
-	      
+
   and intern_impargs c env l subscopes args =
     let eargs, rargs = extract_explicit_arg l args in
     let rec aux n impl subscopes eargs rargs =
       let (enva,subscopes') = apply_scope_env env subscopes in
       match (impl,rargs) with
       | (imp::impl', rargs) when is_status_implicit imp ->
-	  begin try 
+	  begin try
 	    let id = name_of_implicit imp in
 	    let (_,a) = List.assoc id eargs in
 	    let eargs' = List.remove_assoc id eargs in
@@ -1139,16 +1139,16 @@ let internalise sigma globalenv env allow_patvar lvar c =
             (* with implicit arguments if maximal insertion is set *)
 	    []
 	  else
-	    RHole (set_hole_implicit (n,get_implicit_name n l) (force_inference_of imp) c) :: 
+	    RHole (set_hole_implicit (n,get_implicit_name n l) (force_inference_of imp) c) ::
 	      aux (n+1) impl' subscopes' eargs rargs
 	  end
       | (imp::impl', a::rargs') ->
 	  intern enva a :: aux (n+1) impl' subscopes' eargs rargs'
-      | (imp::impl', []) -> 
-	  if eargs <> [] then 
+      | (imp::impl', []) ->
+	  if eargs <> [] then
 	    (let (id,(loc,_)) = List.hd eargs in
 	       user_err_loc (loc,"",str "Not enough non implicit
-	    arguments to accept the argument bound to " ++ 
+	    arguments to accept the argument bound to " ++
 		 pr_id id ++ str"."));
 	  []
       | ([], rargs) ->
@@ -1162,8 +1162,8 @@ let internalise sigma globalenv env allow_patvar lvar c =
         let (enva,subscopes) = apply_scope_env env subscopes in
         (intern enva a) :: (intern_args env subscopes args)
 
-  in 
-  try 
+  in
+  try
     intern env c
   with
       InternalisationError (loc,e) ->
@@ -1175,26 +1175,26 @@ let internalise sigma globalenv env allow_patvar lvar c =
 (**************************************************************************)
 
 let extract_ids env =
-  List.fold_right Idset.add 
+  List.fold_right Idset.add
     (Termops.ids_of_rel_context (Environ.rel_context env))
     Idset.empty
 
 let intern_gen isarity sigma env
                ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
-  let tmp_scope = 
+  let tmp_scope =
     if isarity then Some Notation.type_scope else None in
     internalise sigma env (extract_ids env, false, tmp_scope,[])
       allow_patvar (ltacvars,Environ.named_context env, [], impls) c
-      
-let intern_constr sigma env c = intern_gen false sigma env c 
 
-let intern_type sigma env c = intern_gen true sigma env c 
+let intern_constr sigma env c = intern_gen false sigma env c
+
+let intern_type sigma env c = intern_gen true sigma env c
 
 let intern_pattern env patt =
   try
-    intern_cases_pattern env [] ([],[]) None patt 
-  with 
+    intern_cases_pattern env [] ([],[]) None patt
+  with
       InternalisationError (loc,e) ->
 	user_err_loc (loc,"internalize",explain_internalisation_error e)
 
@@ -1204,7 +1204,7 @@ type manual_implicits = (explicitation * (bool * bool * bool)) list
 (*********************************************************************)
 (* Functions to parse and interpret constructions *)
 
-let interp_gen kind sigma env 
+let interp_gen kind sigma env
                ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
   let c = intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars sigma env c in
@@ -1217,7 +1217,7 @@ let interp_type sigma env ?(impls=([],[])) c =
   interp_gen IsType sigma env ~impls c
 
 let interp_casted_constr sigma env ?(impls=([],[])) c typ =
-  interp_gen (OfType (Some typ)) sigma env ~impls c 
+  interp_gen (OfType (Some typ)) sigma env ~impls c
 
 let interp_open_constr sigma env c =
   Default.understand_tcc sigma env (intern_constr sigma env c)
@@ -1228,8 +1228,8 @@ let interp_open_constr_patvar sigma env c =
   let evars = ref (Gmap.empty : (identifier,rawconstr) Gmap.t) in
   let rec patvar_to_evar r = match r with
     | RPatVar (loc,(_,id)) ->
-	( try Gmap.find id !evars 
-	  with Not_found -> 
+	( try Gmap.find id !evars
+	  with Not_found ->
 	    let ev = Evarutil.e_new_evar sigma env (Termops.new_Type()) in
 	    let ev = Evarutil.e_new_evar sigma env ev in
 	    let rev = REvar (loc,(fst (Term.destEvar ev)),None) (*TODO*) in
@@ -1253,7 +1253,7 @@ let interp_constr_evars_gen_impls ?evdref ?(fail_evar=true)
   let c = intern_gen (kind=IsType) ~impls !evdref env c in
   let imps = Implicit_quantifiers.implicits_of_rawterm c in
     Default.understand_tcc_evars ~fail_evar evdref env kind c, imps
-	      
+
 let interp_casted_constr_evars_impls ?evdref ?(fail_evar=true)
     env ?(impls=([],[])) c typ =
   interp_constr_evars_gen_impls ?evdref ~fail_evar env ~impls (OfType (Some typ)) c
@@ -1290,7 +1290,7 @@ let interp_aconstr impls (vars,varslist) a =
   let a = aconstr_of_rawconstr vars c in
   (* Returns [a] and the ordered list of variables with their scopes *)
   (* Variables occurring in binders have no relevant scope since bound *)
-  let vl = List.map (fun (id,r) -> 
+  let vl = List.map (fun (id,r) ->
     (id,match !r with None -> None,[] | Some (a,l) -> a,l)) vl in
   list_chop (List.length vars) vl, a
 
@@ -1320,7 +1320,7 @@ let intern_context fail_anonymous sigma env params =
 	    (intern_local_binder_aux ~fail_anonymous (my_intern_constr sigma env lvar) (my_intern_type sigma env lvar) lvar)
 	    ((extract_ids env,false,None,[]), []) params)
 
-let interp_context_gen understand_type understand_judgment env bl = 
+let interp_context_gen understand_type understand_judgment env bl =
   let (env, par, _, impls) =
     List.fold_left
       (fun (env,params,n,impls) (na, k, b, t) ->
@@ -1329,7 +1329,7 @@ let interp_context_gen understand_type understand_judgment env bl =
 	      let t' = locate_if_isevar (loc_of_rawconstr t) na t in
 	      let t = understand_type env t' in
 	      let d = (na,None,t) in
-	      let impls = 
+	      let impls =
 		if k = Implicit then
 		  let na = match na with Name n -> Some n | Anonymous -> None in
 		    (ExplByPos (n, na), (true, true, true)) :: impls
@@ -1343,34 +1343,34 @@ let interp_context_gen understand_type understand_judgment env bl =
       (env,[],1,[]) (List.rev bl)
   in (env, par), impls
 
-let interp_context ?(fail_anonymous=false) sigma env params = 
+let interp_context ?(fail_anonymous=false) sigma env params =
   let bl = intern_context fail_anonymous sigma env params in
-    interp_context_gen (Default.understand_type sigma) 
+    interp_context_gen (Default.understand_type sigma)
       (Default.understand_judgment sigma) env bl
-    
+
 let interp_context_evars ?(fail_anonymous=false) evdref env params =
   let bl = intern_context fail_anonymous !evdref env params in
     interp_context_gen (fun env t -> Default.understand_tcc_evars evdref env IsType t)
       (Default.understand_judgment_tcc evdref) env bl
-    
+
 (**********************************************************************)
 (* Locating reference, possibly via an abbreviation *)
 
 let locate_reference qid =
   match Nametab.locate_extended qid with
     | TrueGlobal ref -> ref
-    | SynDef kn -> 
+    | SynDef kn ->
 	match Syntax_def.search_syntactic_definition dummy_loc kn with
 	  | [],ARef ref -> ref
 	  | _ -> raise Not_found
 
 let is_global id =
-  try 
+  try
     let _ = locate_reference (qualid_of_ident id) in true
-  with Not_found -> 
+  with Not_found ->
     false
 
-let global_reference id = 
+let global_reference id =
   constr_of_global (locate_reference (qualid_of_ident id))
 
 let construct_reference ctx id =
@@ -1379,6 +1379,6 @@ let construct_reference ctx id =
   with Not_found ->
     global_reference id
 
-let global_reference_in_absolute_module dir id = 
+let global_reference_in_absolute_module dir id =
   constr_of_global (Nametab.global_of_path (Libnames.make_path dir id))
 

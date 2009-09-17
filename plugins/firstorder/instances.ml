@@ -37,8 +37,8 @@ let compare_instance inst1 inst2=
 
 let compare_gr id1 id2=
   if id1==id2 then 0 else
-    if id1==dummy_id then 1 
-    else if id2==dummy_id then -1 
+    if id1==dummy_id then 1
+    else if id2==dummy_id then -1
     else Pervasives.compare id1 id2
 
 module OrderedInstance=
@@ -48,7 +48,7 @@ struct
     (compare_instance =? compare_gr) inst2 inst1 id2 id1
     (* we want a __decreasing__ total order *)
 end
-  
+
 module IS=Set.Make(OrderedInstance)
 
 let make_simple_atoms seq=
@@ -62,7 +62,7 @@ let do_sequent setref triv id seq i dom atoms=
   let flag=ref true in
   let phref=ref triv in
   let do_atoms a1 a2 =
-    let do_pair t1 t2 = 
+    let do_pair t1 t2 =
       match unif_atoms i dom t1 t2 with
 	  None->()
 	| Some (Phantom _) ->phref:=true
@@ -71,27 +71,27 @@ let do_sequent setref triv id seq i dom atoms=
       List.iter (fun t->List.iter (do_pair t) a2.positive) a1.negative in
     HP.iter (fun lf->do_atoms atoms lf.atoms) seq.redexes;
     do_atoms atoms (make_simple_atoms seq);
-    !flag && !phref 
- 
+    !flag && !phref
+
 let match_one_quantified_hyp setref seq lf=
-  match lf.pat with 
+  match lf.pat with
       Left(Lforall(i,dom,triv))|Right(Rexists(i,dom,triv))->
 	if do_sequent setref triv lf.id seq i dom lf.atoms then
-	  setref:=IS.add ((Phantom dom),lf.id) !setref 
-    | _ ->anomaly "can't happen" 
+	  setref:=IS.add ((Phantom dom),lf.id) !setref
+    | _ ->anomaly "can't happen"
 
 let give_instances lf seq=
   let setref=ref IS.empty in
     List.iter (match_one_quantified_hyp setref seq) lf;
     IS.elements !setref
-	  	  
+
 (* collector for the engine *)
 
 let rec collect_quantified seq=
   try
     let hd,seq1=take_formula seq in
-      (match hd.pat with 
-	   Left(Lforall(_,_,_)) | Right(Rexists(_,_,_)) -> 
+      (match hd.pat with
+	   Left(Lforall(_,_,_)) | Right(Rexists(_,_,_)) ->
 	     let (q,seq2)=collect_quantified seq1 in
 	       ((hd::q),seq2)
 	 | _->[],seq)
@@ -109,10 +109,10 @@ let mk_open_instance id gl m t=
   let var_id=
     if id==dummy_id then dummy_bvid else
       let typ=pf_type_of gl (constr_of_global id) in
-	(* since we know we will get a product, 
+	(* since we know we will get a product,
 	   reduction is not too expensive *)
       let (nam,_,_)=destProd (whd_betadeltaiota env evmap typ) in
-	match nam with 
+	match nam with
 	    Name id -> id
 	  | Anonymous ->  dummy_bvid in
   let revt=substl (list_tabulate (fun i->mkRel (m-i)) m) t in
@@ -123,15 +123,15 @@ let mk_open_instance id gl m t=
   let nt=it_mkLambda_or_LetIn revt (aux m []) in
   let rawt=Detyping.detype false [] [] nt in
   let rec raux n t=
-    if n=0 then t else 
+    if n=0 then t else
       match t with
 	  RLambda(loc,name,k,_,t0)->
 	    let t1=raux (n-1) t0 in
 	      RLambda(loc,name,k,RHole (dummy_loc,Evd.BinderType name),t1)
 	| _-> anomaly "can't happen" in
-  let ntt=try 
+  let ntt=try
     Pretyping.Default.understand evmap env (raux m rawt)
-  with _ -> 
+  with _ ->
     error "Untypable instance, maybe higher-order non-prenex quantification" in
     decompose_lam_n_assum m ntt
 
@@ -140,51 +140,51 @@ let mk_open_instance id gl m t=
 let left_instance_tac (inst,id) continue seq=
   match inst with
       Phantom dom->
-	if lookup (id,None) seq then 
+	if lookup (id,None) seq then
 	  tclFAIL 0 (Pp.str "already done")
 	else
-	  tclTHENS (cut dom) 
+	  tclTHENS (cut dom)
 	    [tclTHENLIST
 	       [introf;
-		(fun gls->generalize 
+		(fun gls->generalize
 		   [mkApp(constr_of_global id,
 			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])] gls);
 		introf;
-		tclSOLVE [wrap 1 false continue 
+		tclSOLVE [wrap 1 false continue
 			    (deepen (record (id,None) seq))]];
 	    tclTRY assumption]
     | Real((m,t) as c,_)->
-	if lookup (id,Some c) seq then 
+	if lookup (id,Some c) seq then
 	  tclFAIL 0 (Pp.str "already done")
-	else 
+	else
 	  let special_generalize=
-	    if m>0 then 
-	      fun gl-> 
+	    if m>0 then
+	      fun gl->
 		let (rc,ot)= mk_open_instance id gl m t in
-		let gt= 
-		  it_mkLambda_or_LetIn 
+		let gt=
+		  it_mkLambda_or_LetIn
 		    (mkApp(constr_of_global id,[|ot|])) rc in
 		  generalize [gt] gl
 	    else
 	      generalize [mkApp(constr_of_global id,[|t|])]
 	  in
-	    tclTHENLIST 
+	    tclTHENLIST
 	      [special_generalize;
-	       introf; 
-	       tclSOLVE 
+	       introf;
+	       tclSOLVE
 		 [wrap 1 false continue (deepen (record (id,Some c) seq))]]
-	      
+
 let right_instance_tac inst continue seq=
   match inst with
       Phantom dom ->
-	tclTHENS (cut dom) 
+	tclTHENS (cut dom)
 	[tclTHENLIST
 	   [introf;
 	    (fun gls->
-	       split (Rawterm.ImplicitBindings 
+	       split (Rawterm.ImplicitBindings
 			[mkVar (Tacmach.pf_nth_hyp_id gls 1)]) gls);
 	    tclSOLVE [wrap 0 true continue (deepen seq)]];
-	 tclTRY assumption] 
+	 tclTRY assumption]
     | Real ((0,t),_) ->
 	(tclTHEN (split (Rawterm.ImplicitBindings [t]))
 	   (tclSOLVE [wrap 0 true continue (deepen seq)]))
@@ -192,7 +192,7 @@ let right_instance_tac inst continue seq=
 	tclFAIL 0 (Pp.str "not implemented ... yet")
 
 let instance_tac inst=
-  if (snd inst)==dummy_id then 
+  if (snd inst)==dummy_id then
     right_instance_tac (fst inst)
   else
     left_instance_tac inst
@@ -203,4 +203,4 @@ let quantified_tac lf backtrack continue seq gl=
       (tclFIRST (List.map (fun inst->instance_tac inst continue seq) insts))
       backtrack gl
 
- 
+

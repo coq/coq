@@ -46,9 +46,9 @@ Defined.
 (** It is possible to directly prove the induction principle going
    back to primitive recursion on natural numbers ([induction_ltof1])
    or to use the previous lemmas to extract a program with a fixpoint
-   ([induction_ltof2]) 
+   ([induction_ltof2])
 
-the ML-like program for [induction_ltof1] is : 
+the ML-like program for [induction_ltof1] is :
 [[
 let induction_ltof1 f F a =
   let rec indrec n k =
@@ -58,7 +58,7 @@ let induction_ltof1 f F a =
   in indrec (f a + 1) a
 ]]
 
-the ML-like program for [induction_ltof2] is : 
+the ML-like program for [induction_ltof2] is :
 [[
    let induction_ltof2 F a = indrec a
    where rec indrec a = F a indrec;;
@@ -78,7 +78,7 @@ Proof.
   unfold ltof in |- *; intros b ltfafb.
   apply IHn.
   apply lt_le_trans with (f a); auto with arith.
-Defined. 
+Defined.
 
 Theorem induction_gtof1 :
   forall P:A -> Set,
@@ -271,8 +271,8 @@ Fixpoint iter_nat (n:nat) (A:Type) (f:A -> A) (x:A) {struct n} : A :=
 Theorem iter_nat_plus :
   forall (n m:nat) (A:Type) (f:A -> A) (x:A),
     iter_nat (n + m) A f x = iter_nat n A f (iter_nat m A f x).
-Proof.    
+Proof.
   simple induction n;
     [ simpl in |- *; auto with arith
-      | intros; simpl in |- *; apply f_equal with (f := f); apply H ].  
+      | intros; simpl in |- *; apply f_equal with (f := f); apply H ].
 Qed.

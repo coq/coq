@@ -22,9 +22,9 @@ open Names
 open Vernacexpr
 
 (**************************************************************************)
-(*  
+(*
  * --- Note on the mapping of grammar productions to camlp4 actions ---
- *  
+ *
  * Translation of environments: a production
  *   [ nt1(x1) ... nti(xi) ] -> act(x1..xi)
  * is written (with camlp4 conventions):
@@ -34,9 +34,9 @@ open Vernacexpr
  * the make_*_action family build the following closure:
  *
  *      ((fun env ->
- *          (fun vi -> 
+ *          (fun vi ->
  *             (fun env -> ...
- *           
+ *
  *                  (fun v1 ->
  *                     (fun env -> gram_action .. env act)
  *                     ((x1,v1)::env))
@@ -81,7 +81,7 @@ let make_constr_action
 	  make (CPrim (dummy_loc,Numeral v) :: env, envlist) tl)
     | Some (p, ETConstrList _) :: tl ->
         Gramext.action (fun (v:constr_expr list) -> make (env, v::envlist) tl)
-    | Some (p, ETPattern) :: tl -> 
+    | Some (p, ETPattern) :: tl ->
 	failwith "Unexpected entry of type cases pattern" in
   make ([],[]) (List.rev pil)
 
@@ -106,7 +106,7 @@ let make_cases_pattern_action
     | Some (p, ETConstrList _) :: tl ->
         Gramext.action (fun (v:cases_pattern_expr list) ->
 	  make (env, v :: envlist) tl)
-    | Some (p, (ETPattern | ETOther _)) :: tl -> 
+    | Some (p, (ETPattern | ETOther _)) :: tl ->
 	failwith "Unexpected entry of type cases pattern or other" in
   make ([],[]) (List.rev pil)
 
@@ -153,7 +153,7 @@ let extend_constr_notation (n,assoc,ntn,rule) =
 let make_generic_action
   (f:loc -> ('b * raw_generic_argument) list -> 'a) pil =
   let rec make env = function
-    | [] -> 
+    | [] ->
 	Gramext.action (fun loc -> f loc env)
     | None :: tl -> (* parse a non-binding item *)
         Gramext.action (fun _ -> make env tl)
@@ -167,7 +167,7 @@ let make_rule univ f g pt =
   (symbs, act)
 
 (**********************************************************************)
-(** Grammar extensions declared at ML level                           *) 
+(** Grammar extensions declared at ML level                           *)
 
 type grammar_prod_item =
   | GramTerminal of string
@@ -200,7 +200,7 @@ let extend_vernac_command_grammar s gl =
   Gram.extend Vernac_.command None [(None, None, List.rev rules)]
 
 (**********************************************************************)
-(** Grammar declaration for Tactic Notation (Coq level)               *) 
+(** Grammar declaration for Tactic Notation (Coq level)               *)
 
 let get_tactic_entry n =
   if n = 0 then
@@ -209,7 +209,7 @@ let get_tactic_entry n =
     weaken_entry Tactic.binder_tactic, None
   else if 1<=n && n<5 then
     weaken_entry Tactic.tactic_expr, Some (Gramext.Level (string_of_int n))
-  else 
+  else
     error ("Invalid Tactic Notation level: "^(string_of_int n)^".")
 
 (* Declaration of the tactic grammar rule *)
@@ -219,7 +219,7 @@ let head_is_ident = function GramTerminal _::_ -> true | _ -> false
 let add_tactic_entry (key,lev,prods,tac) =
   let univ = get_univ "tactic" in
   let entry, pos = get_tactic_entry lev in
-  let rules = 
+  let rules =
     if lev = 0 then begin
       if not (head_is_ident prods) then
 	error "Notation for simple tactic must start with an identifier.";
@@ -228,7 +228,7 @@ let add_tactic_entry (key,lev,prods,tac) =
       make_rule univ (mkact key tac) make_prod_item prods
     end
     else
-      let mkact s tac loc l = 
+      let mkact s tac loc l =
 	(TacAtom(loc,TacAlias(loc,s,l,tac)):raw_tactic_expr) in
       make_rule univ (mkact key tac) make_prod_item prods in
   synchronize_level_positions ();
@@ -237,7 +237,7 @@ let add_tactic_entry (key,lev,prods,tac) =
 (**********************************************************************)
 (** State of the grammar extensions                                   *)
 
-type notation_grammar = 
+type notation_grammar =
     int * Gramext.g_assoc option * notation * grammar_constr_prod_item list
 
 type all_grammar_command =
@@ -268,7 +268,7 @@ type frozen_t = all_grammar_command list * Lexer.frozen_t
 
 let freeze () = (!grammar_state, Lexer.freeze ())
 
-(* We compare the current state of the grammar and the state to unfreeze, 
+(* We compare the current state of the grammar and the state to unfreeze,
    by computing the longest common suffixes *)
 let factorize_grams l1 l2 =
   if l1 == l2 then ([], [], l1) else list_share_tails l1 l2
@@ -288,7 +288,7 @@ let unfreeze (grams, lex) =
   grammar_state := common;
   Lexer.unfreeze lex;
   List.iter extend_grammar (List.rev redo)
- 
+
 let init_grammar () =
   remove_grammars (number_of_entries !grammar_state);
   grammar_state := []
@@ -298,7 +298,7 @@ let init () =
 
 open Summary
 
-let _ = 
+let _ =
   declare_summary "GRAMMAR_LEXER"
     { freeze_function = freeze;
       unfreeze_function = unfreeze;

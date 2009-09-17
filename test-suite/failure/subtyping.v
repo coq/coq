@@ -4,17 +4,17 @@ Module Type T.
 
  Parameter A : Type.
 
- Inductive L : Prop := 
+ Inductive L : Prop :=
  | L0
  | L1 :  (A -> Prop) -> L.
 
 End T.
 
-Module TT : T. 
+Module TT : T.
 
  Parameter A : Type.
 
- Inductive L : Type := 
+ Inductive L : Type :=
  | L0
  | L1 :  (A -> Prop) -> L.
 

@@ -36,16 +36,16 @@ Proof.
   replace (l1 * (/ f2 x * / f2 (x + h)) * - f2 (x + h)) with
   (- (l1 * / f2 x * (f2 (x + h) * / f2 (x + h)))); [ idtac | ring ].
   replace (f1 x * (/ f2 x * / f2 (x + h)) * (f2 (x + h) * / h)) with
-  (f1 x * / f2 x * / h * (f2 (x + h) * / f2 (x + h))); 
+  (f1 x * / f2 x * / h * (f2 (x + h) * / f2 (x + h)));
   [ idtac | ring ].
   replace (f1 x * (/ f2 x * / f2 (x + h)) * (- f2 x * / h)) with
-  (- (f1 x * / f2 (x + h) * / h * (f2 x * / f2 x))); 
+  (- (f1 x * / f2 (x + h) * / h * (f2 x * / f2 x)));
   [ idtac | ring ].
   replace (l2 * f1 x * (/ f2 x * / f2 x * / f2 (x + h)) * f2 (x + h)) with
   (l2 * f1 x * / f2 x * / f2 x * (f2 (x + h) * / f2 (x + h)));
   [ idtac | ring ].
   replace (l2 * f1 x * (/ f2 x * / f2 x * / f2 (x + h)) * - f2 x) with
-  (- (l2 * f1 x * / f2 x * / f2 (x + h) * (f2 x * / f2 x))); 
+  (- (l2 * f1 x * / f2 x * / f2 (x + h) * (f2 x * / f2 x)));
   [ idtac | ring ].
   repeat rewrite <- Rinv_r_sym; try assumption || ring.
   apply prod_neq_R0; assumption.
@@ -58,7 +58,7 @@ Proof.
 Qed.
 
 Lemma maj_term1 :
-  forall (x h eps l1 alp_f2:R) (eps_f2 alp_f1d:posreal) 
+  forall (x h eps l1 alp_f2:R) (eps_f2 alp_f1d:posreal)
     (f1 f2:R -> R),
     0 < eps ->
     f2 x <> 0 ->
@@ -105,7 +105,7 @@ Proof.
 Qed.
 
 Lemma maj_term2 :
-  forall (x h eps l1 alp_f2 alp_f2t2:R) (eps_f2:posreal) 
+  forall (x h eps l1 alp_f2 alp_f2t2:R) (eps_f2:posreal)
     (f2:R -> R),
     0 < eps ->
     f2 x <> 0 ->
@@ -143,7 +143,7 @@ Proof.
   replace (Rabs 2) with 2.
   rewrite (Rmult_comm 2).
   replace (Rabs l1 * (Rabs (/ f2 x) * Rabs (/ f2 x)) * 2) with
-  (Rabs l1 * (Rabs (/ f2 x) * (Rabs (/ f2 x) * 2))); 
+  (Rabs l1 * (Rabs (/ f2 x) * (Rabs (/ f2 x) * 2)));
   [ idtac | ring ].
   repeat apply Rmult_lt_compat_l.
   apply Rabs_pos_lt; assumption.
@@ -176,7 +176,7 @@ Proof.
 Qed.
 
 Lemma maj_term3 :
-  forall (x h eps l2 alp_f2:R) (eps_f2 alp_f2d:posreal) 
+  forall (x h eps l2 alp_f2:R) (eps_f2 alp_f2d:posreal)
     (f1 f2:R -> R),
     0 < eps ->
     f2 x <> 0 ->
@@ -218,7 +218,7 @@ Proof.
   replace (Rabs 2) with 2.
   rewrite (Rmult_comm 2).
   replace (Rabs (f1 x) * (Rabs (/ f2 x) * Rabs (/ f2 x)) * 2) with
-  (Rabs (f1 x) * (Rabs (/ f2 x) * (Rabs (/ f2 x) * 2))); 
+  (Rabs (f1 x) * (Rabs (/ f2 x) * (Rabs (/ f2 x) * 2)));
   [ idtac | ring ].
   repeat apply Rmult_lt_compat_l.
   apply Rabs_pos_lt; assumption.
@@ -251,7 +251,7 @@ Proof.
 Qed.
 
 Lemma maj_term4 :
-  forall (x h eps l2 alp_f2 alp_f2c:R) (eps_f2:posreal) 
+  forall (x h eps l2 alp_f2 alp_f2c:R) (eps_f2:posreal)
     (f1 f2:R -> R),
     0 < eps ->
     f2 x <> 0 ->
@@ -431,7 +431,7 @@ Proof.
   assert (Hyp : 0 < 2).
   prove_sup0.
   intro; rewrite H11 in H10; assert (H12 := Rmult_lt_compat_l 2 _ _ Hyp H10);
-    rewrite Rmult_1_r in H12; rewrite <- Rinv_r_sym in H12; 
+    rewrite Rmult_1_r in H12; rewrite <- Rinv_r_sym in H12;
       [ idtac | discrR ].
   cut (IZR 1 < IZR 2).
   unfold IZR in |- *; unfold INR, nat_of_P in |- *; simpl in |- *; intro;

@@ -2,11 +2,11 @@ Require Import Program Arith.
 
 Program Fixpoint check_n  (n : nat) (P : { i | i < n } -> bool) (p : nat)
   (H : forall (i : { i | i < n }), i < p -> P i = true)
-  {measure (n - p)} : 
+  {measure (n - p)} :
   Exc (forall (p : { i | i < n}), P p = true) :=
   match le_lt_dec n p with
   | left _ => value _
-  | right cmp => 
+  | right cmp =>
       if dec (P p) then
         check_n n P (S p) _
       else

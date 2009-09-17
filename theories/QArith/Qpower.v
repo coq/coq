@@ -59,7 +59,7 @@ Qed.
 
 Lemma Qmult_power : forall a b n, (a*b)^n == a^n*b^n.
 Proof.
-  intros a b [|n|n]; simpl; 
+  intros a b [|n|n]; simpl;
   try rewrite Qmult_power_positive;
   try rewrite Qinv_mult_distr;
   reflexivity.
@@ -73,7 +73,7 @@ Qed.
 
 Lemma Qinv_power : forall a n, (/a)^n == /a^n.
 Proof.
-  intros a [|n|n]; simpl; 
+  intros a [|n|n]; simpl;
   try rewrite Qinv_power_positive;
   reflexivity.
 Qed.
@@ -173,8 +173,8 @@ Qed.
 
 Lemma Qpower_mult : forall a n m, a^(n*m) ==  (a^n)^m.
 Proof.
-intros a [|n|n] [|m|m]; simpl; 
- try rewrite Qpower_positive_1; 
+intros a [|n|n] [|m|m]; simpl;
+ try rewrite Qpower_positive_1;
  try rewrite Qpower_mult_positive;
  try rewrite Qinv_power_positive;
  try rewrite Qinv_involutive;

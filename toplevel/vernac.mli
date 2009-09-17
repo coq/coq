@@ -41,6 +41,6 @@ val compile : bool -> string -> unit
 
 (* Interpret a vernac AST *)
 
-val vernac_com : 
+val vernac_com :
   (Vernacexpr.vernac_expr -> unit) ->
   Util.loc * Vernacexpr.vernac_expr -> unit

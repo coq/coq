@@ -1,15 +1,15 @@
 (* Test patterns unification *)
 
-Lemma l1 : (forall P, (exists x:nat, P x) -> False) 
+Lemma l1 : (forall P, (exists x:nat, P x) -> False)
          -> forall P, (exists x:nat, P x /\ P x) -> False.
 Proof.
 intros; apply (H _ H0).
 Qed.
 
 Lemma l2 :  forall A:Set, forall Q:A->Set,
-           (forall (P: forall x:A, Q x -> Prop), 
-                   (exists x:A, exists y:Q x, P x y) -> False) 
-         -> forall (P: forall x:A, Q x -> Prop), 
+           (forall (P: forall x:A, Q x -> Prop),
+                   (exists x:A, exists y:Q x, P x y) -> False)
+         -> forall (P: forall x:A, Q x -> Prop),
                    (exists x:A, exists y:Q x, P x y /\ P x y) -> False.
 Proof.
 intros; apply (H _ H0).
@@ -43,7 +43,7 @@ Check (fun _h1 => (zenon_notall nat _ (fun _T_0 =>
 
    Note that the example originally came from a non re-typable
    pretty-printed term (the checked term is actually re-printed the
-   same form it is checked).  
+   same form it is checked).
 *)
 
 Set Implicit Arguments.
@@ -73,10 +73,10 @@ Qed.
 
 (* Test unification modulo eta-expansion (if possible) *)
 
-(* In this example, two instances for ?P (argument of hypothesis H) can be 
+(* In this example, two instances for ?P (argument of hypothesis H) can be
    inferred (one is by unifying the type [Q true] and [?P true] of the
    goal and type of [H]; the other is by unifying the argument of [f]);
-   we need to unify both instances up to allowed eta-expansions of the 
+   we need to unify both instances up to allowed eta-expansions of the
    instances (eta is allowed if the meta was applied to arguments)
 
    This used to fail before revision 9389 in trunk
@@ -92,7 +92,7 @@ Qed.
 
 (* Test instanciation of evars by unification *)
 
-Goal (forall x, 0 * x = 0 -> True) -> True.    
+Goal (forall x, 0 * x = 0 -> True) -> True.
 intros; eapply H.
 rewrite <- plus_n_Sm. (* should refine ?x with S ?x' *)
 Abort.
@@ -131,7 +131,7 @@ Qed.
    coq-club, June 1 2009; it did not work in 8.2, probably started to
    work after Sozeau improved support for the use of types in unification) *)
 
-Goal (forall (A B : Set) (f : A -> B), (fun x => f x) = f) -> 
+Goal (forall (A B : Set) (f : A -> B), (fun x => f x) = f) ->
  forall (A B C : Set) (g : (A -> B) -> C) (f : A -> B), g (fun x => f x) = g f.
 Proof.
   intros.

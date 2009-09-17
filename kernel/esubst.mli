@@ -35,7 +35,7 @@ val subs_shift_cons: int * 'a subs * 'a array -> 'a subs
  * shifted by lams), or (Inr (k',p)) when the variable k is just relocated
  * as k'; p is None if the variable points inside subs and Some(k) if the
  * variable points k bindings beyond subs (cf argument of ESID).
- *) 
+ *)
 val expand_rel: int -> 'a subs -> (int * 'a, int * int option) Util.union
 
 (* Tests whether a substitution behaves like the identity *)

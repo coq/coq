@@ -57,7 +57,7 @@ Qed.
 
 Section Theory_of_semi_setoid_rings.
 
-Record Semi_Setoid_Ring_Theory : Prop := 
+Record Semi_Setoid_Ring_Theory : Prop :=
   {SSR_plus_comm : forall n m:A, n + m == m + n;
    SSR_plus_assoc : forall n m p:A, n + (m + p) == n + m + p;
    SSR_mult_comm : forall n m:A, n * m == m * n;
@@ -76,7 +76,7 @@ Let plus_assoc := SSR_plus_assoc T.
 Let mult_comm := SSR_mult_comm T.
 Let mult_assoc := SSR_mult_assoc T.
 Let plus_zero_left := SSR_plus_zero_left T.
-Let mult_one_left := SSR_mult_one_left T. 
+Let mult_one_left := SSR_mult_one_left T.
 Let mult_zero_left := SSR_mult_zero_left T.
 Let distr_left := SSR_distr_left T.
 Let plus_reg_left := SSR_plus_reg_left T.
@@ -90,7 +90,7 @@ Hint Resolve plus_comm plus_assoc mult_comm mult_assoc plus_zero_left
 Hint Immediate equiv_sym.
 
 (* Lemmas whose form is x=y are also provided in form y=x because
-  Auto does not symmetry *) 
+  Auto does not symmetry *)
 Lemma SSR_mult_assoc2 : forall n m p:A, n * m * p == n * (m * p).
 auto. Qed.
 
@@ -174,7 +174,7 @@ End Theory_of_semi_setoid_rings.
 
 Section Theory_of_setoid_rings.
 
-Record Setoid_Ring_Theory : Prop := 
+Record Setoid_Ring_Theory : Prop :=
   {STh_plus_comm : forall n m:A, n + m == m + n;
    STh_plus_assoc : forall n m p:A, n + (m + p) == n + m + p;
    STh_mult_comm : forall n m:A, n * m == m * n;
@@ -192,7 +192,7 @@ Let plus_assoc := STh_plus_assoc T.
 Let mult_comm := STh_mult_comm T.
 Let mult_assoc := STh_mult_assoc T.
 Let plus_zero_left := STh_plus_zero_left T.
-Let mult_one_left := STh_mult_one_left T. 
+Let mult_one_left := STh_mult_one_left T.
 Let opp_def := STh_opp_def T.
 Let distr_left := STh_distr_left T.
 Let equiv_refl := Seq_refl A Aequiv S.

@@ -47,7 +47,7 @@ val telescope :
   Term.types * (Names.name * Term.types option * Term.types) list *
     Term.constr
 
-val build_wellfounded : 
+val build_wellfounded :
            Names.identifier * 'a * Topconstr.local_binder list *
            Topconstr.constr_expr * Topconstr.constr_expr ->
            Topconstr.constr_expr ->

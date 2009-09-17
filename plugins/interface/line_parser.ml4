@@ -6,7 +6,7 @@ by a precise keyword, which is also expected to appear alone on a line. *)
 (* The main parsing loop procedure is "parser_loop", given at the end of this
 file.  It read lines one by one and checks whether they can be parsed using
 a very simple parser.  This very simple parser uses a lexer, which is also given
-in this file.  
+in this file.
 
 The lexical analyser:
  There are only 5 sorts of tokens *)
@@ -19,7 +19,7 @@ type simple_tokens = Tspace | Tid of string | Tint of int | Tstring of string |
    code in src/meta/lexer.ml of Coq revision 6.1) *)
 let add_in_buff,get_buff =
   let buff = ref (String.create 80) in
-    (fun i x -> 
+    (fun i x ->
        let len = String.length !buff in
         if i >= len then (buff := !buff ^ (String.create len);());
          String.set !buff i x;
@@ -47,16 +47,16 @@ let get_digit c =  Char.code c - code0;;
 let rec parse_int intval = parser
   [< ''0'..'9' as c ; i=parse_int (10 * intval + get_digit c)>] -> i
 | [< >] -> Tint intval;;
-      
-(* The string lexer is borrowed from the string parser of Coq V6.1 
+
+(* The string lexer is borrowed from the string parser of Coq V6.1
    This may be a problem if convention have changed in Coq,
    However this parser is only used to recognize file names which should
    not contain too many special characters *)
 
 let rec spec_char = parser
-  [< ''n' >] -> '\n' 
+  [< ''n' >] -> '\n'
 | [< ''t' >] -> '\t'
-| [< ''b' >] -> '\008' 
+| [< ''b' >] -> '\008'
 | [< ''r' >] -> '\013'
 | [< ''0'..'9' as c; v= (spec1 (get_digit c)) >] ->
     Char.chr v
@@ -93,7 +93,7 @@ let rec next_token = parser _count
 | [< '']' >] -> Trbracket
 | [< '_ ; x = next_token >] -> x;;
 
-(* A very simple lexical analyser to recognize a integer value behind 
+(* A very simple lexical analyser to recognize a integer value behind
    blank characters *)
 
 let rec next_int = parser _count
@@ -139,7 +139,7 @@ let line_list_to_stream string_list =
                   count := !count + !current_length + 1;
                   match !reserve with
 		  | [] -> None
-                  | s1::rest -> 
+                  | s1::rest ->
                     begin
                       buff := s1;
                       current_length := String.length !buff;
@@ -149,7 +149,7 @@ let line_list_to_stream string_list =
                end
              else
                Some(String.get !buff (i - !count)));;
- 
+
 
 (* In older revisions of this file you would find a function that
    does line oriented breakdown of the input channel without resorting to
@@ -196,14 +196,14 @@ let parser_loop functions input_channel =
       load_syntax_action = functions in
   let rec parser_loop_rec input_channel =
   (let line = input_line input_channel in
-  let reqid, parser_request = 
-      try 
+  let reqid, parser_request =
+      try
       (match Stream.from (token_stream (Stream.of_string line)) with
         parser
         | [< 'Tid "print_version" >] ->
                      0, PRINT_VERSION
         | [< 'Tid "parse_string" ; 'Tint reqid ; 'Tlbracket ;
-             'Tid phylum ; 'Trbracket >] 
+             'Tid phylum ; 'Trbracket >]
                   -> reqid,PARSE_STRING phylum
         | [< 'Tid "quiet_parse_string" >] ->
                      0,QUIET_PARSE_STRING

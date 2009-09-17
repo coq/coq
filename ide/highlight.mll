@@ -24,7 +24,7 @@
     let h = Hashtbl.create 97 in
     List.iter (fun s -> Hashtbl.add h s ())
       [  "Add" ; "Check"; "Eval"; "Extraction" ;
-	 "Load" ; "Undo"; "Goal"; 
+	 "Load" ; "Undo"; "Goal";
 	 "Proof" ; "Print"; "Qed" ; "Defined" ; "Save" ;
 	 "End" ; "Section"; "Chapter"; "Transparent"; "Opaque"; "Comments"
       ];
@@ -33,9 +33,9 @@
   let is_constr_kw =
     let h = Hashtbl.create 97 in
       List.iter (fun s -> Hashtbl.add h s ())
-	[ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "for"; 
+	[ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "for";
 	  "end"; "as"; "let"; "in"; "dest"; "if"; "then"; "else"; "return";
-	  "Prop"; "Set"; "Type" ]; 
+	  "Prop"; "Set"; "Type" ];
       Hashtbl.mem h
 
   (* Without this table, the automaton would be too big and
@@ -62,11 +62,11 @@
   let starting = ref true
 }
 
-let space = 
+let space =
   [' ' '\010' '\013' '\009' '\012']
-let firstchar = 
+let firstchar =
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255']
-let identchar = 
+let identchar =
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let ident = firstchar identchar*
 
@@ -79,8 +79,8 @@ let multiword_declaration =
 let locality = ("Local" space+)?
 
 let multiword_command =
-  "Set" (space+ ident)* 
-| "Unset" (space+ ident)* 
+  "Set" (space+ ident)*
+| "Unset" (space+ ident)*
 | "Open" space+ locality "Scope"
 | "Close" space+ locality "Scope"
 | "Bind" space+ "Scope"
@@ -109,12 +109,12 @@ rule next_starting_order = parse
       { starting:=false; lexeme_start lexbuf, lexeme_end lexbuf, Tags.Script.decl }
   | multiword_command
       { starting:=false; lexeme_start lexbuf, lexeme_end lexbuf, Tags.Script.kwd }
-  | ident as id 
+  | ident as id
       { if id = "Time" then next_starting_order lexbuf else
 	begin
-	  starting:=false; 
-          if is_one_word_command id then 
-	    lexeme_start lexbuf, lexeme_end lexbuf, Tags.Script.kwd 
+	  starting:=false;
+          if is_one_word_command id then
+	    lexeme_start lexbuf, lexeme_end lexbuf, Tags.Script.kwd
 	  else if is_one_word_declaration id then
 	    lexeme_start lexbuf, lexeme_end lexbuf, Tags.Script.decl
 	  else
@@ -125,9 +125,9 @@ rule next_starting_order = parse
   | eof  { raise End_of_file }
 
 and next_interior_order = parse
-  | "(*" 
+  | "(*"
       { comment_start := lexeme_start lexbuf; comment lexbuf }
-  | ident as id 
+  | ident as id
       { if is_constr_kw id then
 	  lexeme_start lexbuf, lexeme_end lexbuf, Tags.Script.kwd
         else
@@ -154,9 +154,9 @@ and string_in_comment = parse
 
   let highlighting = ref false
 
-  let highlight_slice (input_buffer:GText.buffer) (start:GText.iter) stop = 
+  let highlight_slice (input_buffer:GText.buffer) (start:GText.iter) stop =
     starting := true; (* approximation: assume the beginning of a sentence *)
-    if !highlighting then prerr_endline "Rejected highlight" 
+    if !highlighting then prerr_endline "Rejected highlight"
     else begin
       highlighting := true;
       prerr_endline "Highlighting slice now";
@@ -170,16 +170,16 @@ and string_in_comment = parse
 	let s = start#get_slice ~stop in
 	let convert_pos = byte_offset_to_char_offset s in
 	let lb = Lexing.from_string s in
-	try 
+	try
 	  while true do
 	    let b,e,o =
 	      if !starting then next_starting_order lb
 	      else next_interior_order lb in
-	    
+
 	    let b,e = convert_pos b,convert_pos e in
 	    let start = input_buffer#get_iter_at_char (offset + b) in
 	    let stop = input_buffer#get_iter_at_char (offset + e) in
-	    input_buffer#apply_tag ~start ~stop o 
+	    input_buffer#apply_tag ~start ~stop o
 	  done
 	with End_of_file -> ()
       end
@@ -188,22 +188,22 @@ and string_in_comment = parse
     end
 
   let highlight_current_line input_buffer =
-    try 
+    try
       let i = get_insert input_buffer in
       highlight_slice input_buffer (i#set_line_offset 0) i
     with _ -> ()
 
-  let highlight_around_current_line input_buffer = 
-    try 
+  let highlight_around_current_line input_buffer =
+    try
       let i = get_insert input_buffer in
-      highlight_slice input_buffer 
-	(i#backward_lines 10) 
+      highlight_slice input_buffer
+	(i#backward_lines 10)
 	(ignore (i#nocopy#forward_lines 10);i)
 
     with _ -> ()
-      
-  let highlight_all input_buffer = 
-  try 
+
+  let highlight_all input_buffer =
+  try
     highlight_slice input_buffer input_buffer#start_iter input_buffer#end_iter
   with _ -> ()
 

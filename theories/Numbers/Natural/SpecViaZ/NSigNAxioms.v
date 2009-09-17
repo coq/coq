@@ -97,7 +97,7 @@ Section Induction.
 Variable A : N.t -> Prop.
 Hypothesis A_wd : predicate_wd N.eq A.
 Hypothesis A0 : A 0.
-Hypothesis AS : forall n, A n <-> A (N.succ n). 
+Hypothesis AS : forall n, A n <-> A (N.succ n).
 
 Add Morphism A with signature N.eq ==> iff as A_morph.
 Proof. apply A_wd. Qed.
@@ -221,7 +221,7 @@ Proof.
 Qed.
 
 Add Morphism N.compare with signature N.eq ==> N.eq ==> (@eq comparison) as compare_wd.
-Proof. 
+Proof.
 intros x x' Hx y y' Hy.
 rewrite 2 spec_compare_alt. unfold N.eq in *. rewrite Hx, Hy; intuition.
 Qed.

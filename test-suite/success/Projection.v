@@ -12,7 +12,7 @@ Check fun (s:S) (a b:s.(Dom)) => s.(Op) a b.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
-Unset Strict Implicit. 
+Unset Strict Implicit.
 
 Structure S' (A : Set) : Type :=  {Dom' : Type; Op' : A -> Dom' -> Dom'}.
 
@@ -29,9 +29,9 @@ Check fun (s:S') (a b:s.(Dom')) => _.(Op') a b.
 Check fun (s:S') (a b:s.(Dom')) => s.(Op') a b.
 
 Set Implicit Arguments.
-Unset Strict Implicits. 
+Unset Strict Implicits.
 
-Structure S' (A:Set) : Type := 
+Structure S' (A:Set) : Type :=
  {Dom'     : Type;
   Op'      : A -> Dom' -> Dom'}.
 

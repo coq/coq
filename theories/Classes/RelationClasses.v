@@ -8,7 +8,7 @@
 
 (* Typeclass-based relations, tactics and standard instances.
    This is the basic theory needed to formalize morphisms and setoids.
- 
+
    Author: Matthieu Sozeau
    Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
    91405 Orsay, France *)
@@ -42,18 +42,18 @@ Unset Strict Implicit.
 Class Reflexive {A} (R : relation A) :=
   reflexivity : forall x, R x x.
 
-Class Irreflexive {A} (R : relation A) := 
+Class Irreflexive {A} (R : relation A) :=
   irreflexivity : Reflexive (complement R).
 
 Hint Extern 1 (Reflexive (complement _)) => class_apply @irreflexivity : typeclasses_instances.
 
-Class Symmetric {A} (R : relation A) := 
+Class Symmetric {A} (R : relation A) :=
   symmetry : forall x y, R x y -> R y x.
 
-Class Asymmetric {A} (R : relation A) := 
+Class Asymmetric {A} (R : relation A) :=
   asymmetry : forall x y, R x y -> R y x -> False.
 
-Class Transitive {A} (R : relation A) := 
+Class Transitive {A} (R : relation A) :=
   transitivity : forall x y z, R x y -> R y z -> R x z.
 
 Hint Resolve @irreflexivity : ord.
@@ -63,7 +63,7 @@ Unset Implicit Arguments.
 (** A HintDb for relations. *)
 
 Ltac solve_relation :=
-  match goal with 
+  match goal with
   | [ |- ?R ?x ?x ] => reflexivity
   | [ H : ?R ?x ?y |- ?R ?y ?x ] => symmetry ; exact H
   end.
@@ -85,7 +85,7 @@ Program Definition flip_Symmetric `(Symmetric A R) : Symmetric (flip R) :=
 
 Program Definition flip_Asymmetric `(Asymmetric A R) : Asymmetric (flip R) :=
   fun x y H H' => asymmetry (R:=R) H H'.
-  
+
 Program Definition flip_Transitive `(Transitive A R) : Transitive (flip R) :=
   fun x y z H H' => transitivity (R:=R) H' H.
 
@@ -122,7 +122,7 @@ Tactic Notation "reduce" "in" hyp(Hid) := reduce_hyp Hid.
 
 Ltac reduce := reduce_goal.
 
-Tactic Notation "apply" "*" constr(t) := 
+Tactic Notation "apply" "*" constr(t) :=
   first [ refine t | refine (t _) | refine (t _ _) | refine (t _ _ _) | refine (t _ _ _ _) |
     refine (t _ _ _ _ _) | refine (t _ _ _ _ _ _) | refine (t _ _ _ _ _ _ _) ].
 
@@ -186,7 +186,7 @@ Program Definition flip_antiSymmetric `(Antisymmetric A eqA R) :
 Proof. firstorder. Qed.
 
 (** Leibinz equality [eq] is an equivalence relation.
-   The instance has low priority as it is always applicable 
+   The instance has low priority as it is always applicable
    if only the type is constrained. *)
 
 Program Instance eq_equivalence : Equivalence (@eq A) | 10.
@@ -208,8 +208,8 @@ Require Import Coq.Lists.List.
 
 (** A compact representation of non-dependent arities, with the codomain singled-out. *)
 
-Fixpoint arrows (l : list Type) (r : Type) : Type := 
-  match l with 
+Fixpoint arrows (l : list Type) (r : Type) : Type :=
+  match l with
     | nil => r
     | A :: l' => A -> arrows l' r
   end.
@@ -232,7 +232,7 @@ Definition unary_predicate A := predicate (cons A nil).
 
 Definition binary_relation A := predicate (cons A (cons A nil)).
 
-(** We can close a predicate by universal or existential quantification. *) 
+(** We can close a predicate by universal or existential quantification. *)
 
 Fixpoint predicate_all (l : list Type) : predicate l -> Prop :=
   match l with
@@ -246,7 +246,7 @@ Fixpoint predicate_exists (l : list Type) : predicate l -> Prop :=
     | A :: tl => fun f => exists x : A, predicate_exists tl (f x)
   end.
 
-(** Pointwise extension of a binary operation on [T] to a binary operation 
+(** Pointwise extension of a binary operation on [T] to a binary operation
    on functions whose codomain is [T].
    For an operator on [Prop] this lifts the operator to a binary operation. *)
 
@@ -254,7 +254,7 @@ Fixpoint pointwise_extension {T : Type} (op : binary_operation T)
   (l : list Type) : binary_operation (arrows l T) :=
   match l with
     | nil => fun R R' => op R R'
-    | A :: tl => fun R R' => 
+    | A :: tl => fun R R' =>
       fun x => pointwise_extension op tl (R x) (R' x)
   end.
 
@@ -263,7 +263,7 @@ Fixpoint pointwise_extension {T : Type} (op : binary_operation T)
 Fixpoint pointwise_lifting (op : binary_relation Prop)  (l : list Type) : binary_relation (predicate l) :=
   match l with
     | nil => fun R R' => op R R'
-    | A :: tl => fun R R' => 
+    | A :: tl => fun R R' =>
       forall x, pointwise_lifting op tl (R x) (R' x)
   end.
 
@@ -295,7 +295,7 @@ Infix "\∙/" := predicate_union (at level 85, right associativity) : predicate_
 
 (** The always [True] and always [False] predicates. *)
 
-Fixpoint true_predicate {l : list Type} : predicate l := 
+Fixpoint true_predicate {l : list Type} : predicate l :=
   match l with
     | nil => True
     | A :: tl => fun _ => @true_predicate tl
@@ -313,7 +313,7 @@ Notation "∙⊥∙" := false_predicate : predicate_scope.
 (** Predicate equivalence is an equivalence, and predicate implication defines a preorder. *)
 
 Program Instance predicate_equivalence_equivalence : Equivalence (@predicate_equivalence l).
-  Next Obligation. 
+  Next Obligation.
     induction l ; firstorder.
   Qed.
   Next Obligation.
@@ -333,11 +333,11 @@ Program Instance predicate_implication_preorder :
   Qed.
   Next Obligation.
     induction l. firstorder.
-    unfold predicate_implication in *. simpl in *. 
+    unfold predicate_implication in *. simpl in *.
     intro. pose (IHl (x x0) (y x0) (z x0)). firstorder.
   Qed.
 
-(** We define the various operations which define the algebra on binary relations, 
+(** We define the various operations which define the algebra on binary relations,
    from the general ones. *)
 
 Definition relation_equivalence {A : Type} : relation (relation A) :=
@@ -365,20 +365,20 @@ Proof. intro A. exact (@predicate_implication_preorder (cons A (cons A nil))). Q
 
 (** *** Partial Order.
    A partial order is a preorder which is additionally antisymmetric.
-   We give an equivalent definition, up-to an equivalence relation 
+   We give an equivalent definition, up-to an equivalence relation
    on the carrier. *)
 
 Class PartialOrder {A} eqA `{equ : Equivalence A eqA} R `{preo : PreOrder A R} :=
   partial_order_equivalence : relation_equivalence eqA (relation_conjunction R (inverse R)).
 
-(** The equivalence proof is sufficient for proving that [R] must be a morphism 
+(** The equivalence proof is sufficient for proving that [R] must be a morphism
    for equivalence (see Morphisms).
    It is also sufficient to show that [R] is antisymmetric w.r.t. [eqA] *)
 
 Instance partial_order_antisym `(PartialOrder A eqA R) : ! Antisymmetric A eqA R.
 Proof with auto.
-  reduce_goal. 
-  pose proof partial_order_equivalence as poe. do 3 red in poe. 
+  reduce_goal.
+  pose proof partial_order_equivalence as poe. do 3 red in poe.
   apply <- poe. firstorder.
 Qed.
 
@@ -392,7 +392,7 @@ Program Instance subrelation_partial_order :
     unfold relation_equivalence in *. firstorder.
   Qed.
 
-Typeclasses Opaque arrows predicate_implication predicate_equivalence 
+Typeclasses Opaque arrows predicate_implication predicate_equivalence
   relation_equivalence pointwise_lifting.
 
 (** Rewrite relation on a given support: declares a relation as a rewrite
@@ -409,7 +409,7 @@ Instance: RewriteRelation impl.
 Instance: RewriteRelation iff.
 Instance: RewriteRelation (@relation_equivalence A).
 
-(** Any [Equivalence] declared in the context is automatically considered 
+(** Any [Equivalence] declared in the context is automatically considered
    a rewrite relation. *)
 
 Instance equivalence_rewrite_relation `(Equivalence A eqA) : RewriteRelation eqA.

@@ -30,19 +30,19 @@ open Lib
    constructed by [interp_modtype] from functor arguments [fargs] and
    by [interp_modexpr] from [expr]. At least one of [typ], [expr] must
    be non-empty.
-   
+
    The [bool] in [typ] tells if the module must be abstracted [true]
    with respect to the module type or merely matched without any
    restriction [false].
 *)
 
-val declare_module : 
+val declare_module :
   (env -> 'modtype -> module_struct_entry) -> (env -> 'modexpr -> module_struct_entry) ->
-  identifier -> 
-  (identifier located list * 'modtype) list -> ('modtype * bool) option -> 
+  identifier ->
+  (identifier located list * 'modtype) list -> ('modtype * bool) option ->
   'modexpr option -> module_path
- 
-val start_module : (env -> 'modtype -> module_struct_entry) -> 
+
+val start_module : (env -> 'modtype -> module_struct_entry) ->
   bool option -> identifier -> (identifier located list * 'modtype) list ->
    ('modtype * bool) option -> module_path
 
@@ -52,10 +52,10 @@ val end_module : unit -> module_path
 
 (*s Module types *)
 
-val declare_modtype : (env -> 'modtype -> module_struct_entry) -> 
+val declare_modtype : (env -> 'modtype -> module_struct_entry) ->
   identifier -> (identifier located list * 'modtype) list -> 'modtype -> module_path
 
-val start_modtype : (env -> 'modtype -> module_struct_entry) -> 
+val start_modtype : (env -> 'modtype -> module_struct_entry) ->
   identifier -> (identifier located list * 'modtype) list -> module_path
 
 val end_modtype : unit -> module_path
@@ -73,8 +73,8 @@ type library_name = dir_path
 
 type library_objects
 
-val register_library : 
-  library_name -> 
+val register_library :
+  library_name ->
     Safe_typing.compiled_library -> library_objects -> Digest.t -> unit
 
 val start_library : library_name -> unit
@@ -99,7 +99,7 @@ val import_module : bool -> module_path -> unit
 
 (* Include  *)
 
-val declare_include : (env -> 'struct_expr -> module_struct_entry) -> 
+val declare_include : (env -> 'struct_expr -> module_struct_entry) ->
   'struct_expr -> bool -> unit
 
 (*s [iter_all_segments] iterate over all segments, the modules'

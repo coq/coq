@@ -810,13 +810,13 @@ class modifiers_param_box param =
       ()
   in
   let value = ref param.md_value in
-  let _ = 
+  let _ =
     match param.md_help with
       None -> ()
     | Some help ->
 	let tooltips = GData.tooltips () in
 	ignore (hbox#connect#destroy ~callback: tooltips#destroy);
-	tooltips#set_tip wev#coerce ~text: help ~privat: help 
+	tooltips#set_tip wev#coerce ~text: help ~privat: help
   in
   let _ = we#set_text (Configwin_types.modifiers_to_string param.md_value) in
   let mods_we_care = param.md_allow in
@@ -830,7 +830,7 @@ class modifiers_param_box param =
     we#set_text (Configwin_types.modifiers_to_string !value);
     false
   in
-  let _ = 
+  let _ =
     if param.md_editable then
       ignore (we#event#connect#key_press capture)
     else
@@ -1093,13 +1093,13 @@ let edit ?(with_apply=true)
       (fun conf_struct -> new configuration_box tooltips conf_struct wnote)
       conf_struct_list
   in
-    
+
     if with_apply then
       dialog#add_button Configwin_messages.mApply `APPLY;
-    
+
     dialog#add_button Configwin_messages.mOk `OK;
     dialog#add_button Configwin_messages.mCancel `CANCEL;
-    
+
     let f_apply () =
       List.iter (fun param_box -> param_box#apply) list_param_box  ;
       apply ()
@@ -1441,11 +1441,11 @@ let hotkey ?(editable=true) ?(expand=true) ?help ?(f=(fun _ -> ())) label v =
       hk_expand = expand ;
     }
 
-let modifiers 
-  ?(editable=true) 
-  ?(expand=true) 
-  ?help 
-  ?(allow=[`CONTROL;`SHIFT;`LOCK;`MOD1;`MOD1;`MOD2;`MOD3;`MOD4;`MOD5]) 
+let modifiers
+  ?(editable=true)
+  ?(expand=true)
+  ?help
+  ?(allow=[`CONTROL;`SHIFT;`LOCK;`MOD1;`MOD1;`MOD2;`MOD3;`MOD4;`MOD5])
   ?(f=(fun _ -> ())) label v =
   Modifiers_param
     {
@@ -1456,7 +1456,7 @@ let modifiers
       md_f_apply = f ;
       md_expand = expand ;
       md_allow = allow ;
-    } 
+    }
 
 (** Create a custom param.*)
 let custom ?label box f expand =

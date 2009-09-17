@@ -36,7 +36,7 @@ let anomaly_loc (loc,s,strm) = Stdpp.raise_with_loc loc (Anomaly (s,strm))
 let user_err_loc (loc,s,strm) = Stdpp.raise_with_loc loc (UserError (s,strm))
 let invalid_arg_loc (loc,s) = Stdpp.raise_with_loc loc (Invalid_argument s)
 
-let located_fold_left f x (_,a) = f x a 
+let located_fold_left f x (_,a) = f x a
 let located_iter2 f (_,a) (_,b) = f a b
 
 (* Like Exc_located, but specifies the outermost file read, the filename
@@ -73,13 +73,13 @@ let is_blank = function
 
 (* Strings *)
 
-let explode s = 
+let explode s =
   let rec explode_rec n =
     if n >= String.length s then
       []
-    else 
+    else
       String.make 1 (String.get s n) :: explode_rec (succ n)
-  in 
+  in
   explode_rec 0
 
 let implode sl = String.concat "" sl
@@ -107,12 +107,12 @@ let drop_simple_quotes s =
 
 (* gdzie = where, co = what *)
 (* gdzie=gdzie(string) gl=gdzie(length) gi=gdzie(index) *)
-let rec is_sub gdzie gl gi co cl ci = 
+let rec is_sub gdzie gl gi co cl ci =
   (ci>=cl) ||
-  ((String.unsafe_get gdzie gi = String.unsafe_get co ci) && 
+  ((String.unsafe_get gdzie gi = String.unsafe_get co ci) &&
    (is_sub gdzie gl (gi+1) co cl (ci+1)))
 
-let rec raw_str_index i gdzie l c co cl = 
+let rec raw_str_index i gdzie l c co cl =
   (* First adapt to ocaml 3.11 new semantics of index_from *)
   if (i+cl > l) then raise Not_found;
   (* Then proceed as in ocaml < 3.11 *)
@@ -120,7 +120,7 @@ let rec raw_str_index i gdzie l c co cl =
     if (i'+cl <= l) && (is_sub gdzie l i' co cl 0) then i' else
       raw_str_index (i'+1) gdzie l c co cl
 
-let string_index_from gdzie i co = 
+let string_index_from gdzie i co =
   if co="" then i else
     raw_str_index i gdzie (String.length gdzie)
       (String.unsafe_get co 0) co (String.length co)
@@ -142,7 +142,7 @@ let ordinal n =
 let split_string_at c s =
   let len = String.length s in
   let rec split n =
-    try  
+    try
       let pos = String.index_from s n c in
       let dir = String.sub s n (pos-n) in
       dir :: split (succ pos)
@@ -231,7 +231,7 @@ let classify_unicode unicode =
     begin match unicode with
     (* utf-8 general punctuation U2080-2089 *)
     (* Hyphens *)
-    | x when 0x2010 <= x & x <= 0x2011 -> UnicodeLetter 
+    | x when 0x2010 <= x & x <= 0x2011 -> UnicodeLetter
     (* Dashes and other symbols *)
     | x when 0x2012 <= x & x <= 0x2027 -> UnicodeSymbol
     (* Per mille and per ten thousand signs *)
@@ -243,9 +243,9 @@ let classify_unicode unicode =
     | x when 0x2058 <= x & x <= 0x205E -> UnicodeSymbol
     (* Invisible mathematical operators *)
     | x when 0x2061 <= x & x <= 0x2063 -> UnicodeSymbol
-    (* utf-8 superscript U2070-207C *) 
+    (* utf-8 superscript U2070-207C *)
     | x when 0x2070 <= x & x <= 0x207C -> UnicodeSymbol
-    (* utf-8 subscript U2080-2089 *) 
+    (* utf-8 subscript U2080-2089 *)
     | x when 0x2080 <= x & x <= 0x2089 -> UnicodeIdentPart
     (* utf-8 letter-like U2100-214F *)
     | x when 0x2100 <= x & x <= 0x214F -> UnicodeLetter
@@ -296,7 +296,7 @@ let classify_unicode unicode =
 exception End_of_input
 
 let utf8_of_unicode n =
-  if n < 128 then 
+  if n < 128 then
     String.make 1 (Char.chr n)
   else if n < 2048 then
     let s = String.make 2 (Char.chr (128 + n mod 64)) in
@@ -306,18 +306,18 @@ let utf8_of_unicode n =
     end
   else if n < 65536 then
     let s = String.make 3 (Char.chr (128 + n mod 64)) in
-    begin 
+    begin
       s.[1] <- Char.chr (128 + (n / 64) mod 64);
-      s.[0] <- Char.chr (224 + n / 4096); 
+      s.[0] <- Char.chr (224 + n / 4096);
       s
     end
   else
     let s = String.make 4 (Char.chr (128 + n mod 64)) in
-    begin 
+    begin
       s.[2] <- Char.chr (128 + (n / 64) mod 64);
       s.[1] <- Char.chr (128 + (n / 4096) mod 64);
       s.[0] <- Char.chr (240 + n / 262144);
-      s 
+      s
     end
 
 let next_utf8 s i =
@@ -370,7 +370,7 @@ let check_ident_gen handle s =
 	i := !i + j
       done
     with End_of_input -> ()
-  with 
+  with
   | End_of_input -> error "The empty string is not an identifier."
   | UnsupportedUtf8 -> error (s^": unsupported character in utf8 sequence.")
   | Invalid_argument _ -> error (s^": invalid utf8 sequence.")
@@ -411,18 +411,18 @@ let lowercase_unicode s unicode =
     | 0x038C -> 0x03CC
     | x when 0x038E <= x & x <= 0x038F -> x + 63
     | x when 0x0390 <= x & x <= 0x03AB & x <> 0x03A2 -> x + 32
-    (* utf-8 Greek lowercase letters U03B0-03CE *)	
+    (* utf-8 Greek lowercase letters U03B0-03CE *)
     | x when 0x03AC <= x & x <= 0x03CE -> x
     | x when 0x03CF <= x & x <= 0x03FF ->
 	warning ("Unable to decide which lowercase letter to map to "^s); x
     (* utf-8 Cyrillic letters U0400-0481 *)
     | x when 0x0400 <= x & x <= 0x040F -> x + 80
     | x when 0x0410 <= x & x <= 0x042F -> x + 32
-    | x when 0x0430 <= x & x <= 0x045F -> x 
+    | x when 0x0430 <= x & x <= 0x045F -> x
     | x when 0x0460 <= x & x <= 0x0481 ->
 	if x mod 2 = 1 then x else x + 1
     (* utf-8 Cyrillic letters U048A-U4F9 (Warning: 04CF) *)
-    | x when 0x048A <= x & x <= 0x04F9 & x <> 0x04CF -> 
+    | x when 0x048A <= x & x <= 0x04F9 & x <> 0x04CF ->
 	if x mod 2 = 1 then x else x + 1
     (* utf-8 Cyrillic supplement letters U0500-U050F *)
     | x when 0x0500 <= x & x <= 0x050F ->
@@ -510,41 +510,41 @@ let rec list_compare cmp l1 l2 =
 	   | 0 -> list_compare cmp l1 l2
 	   | c -> c)
 
-let list_intersect l1 l2 = 
+let list_intersect l1 l2 =
   List.filter (fun x -> List.mem x l2) l1
 
-let list_union l1 l2 = 
+let list_union l1 l2 =
   let rec urec = function
     | [] -> l2
     | a::l -> if List.mem a l2 then urec l else a::urec l
-  in 
+  in
   urec l1
 
-let list_unionq l1 l2 = 
+let list_unionq l1 l2 =
   let rec urec = function
     | [] -> l2
     | a::l -> if List.memq a l2 then urec l else a::urec l
-  in 
+  in
   urec l1
 
 let list_subtract l1 l2 =
   if l2 = [] then l1 else List.filter (fun x -> not (List.mem x l2)) l1
 
-let list_subtractq l1 l2 = 
+let list_subtractq l1 l2 =
   if l2 = [] then l1 else List.filter (fun x -> not (List.memq x l2)) l1
 
-let list_chop n l = 
+let list_chop n l =
   let rec chop_aux acc = function
     | (0, l2) -> (List.rev acc, l2)
     | (n, (h::t)) -> chop_aux (h::acc) (pred n, t)
     | (_, []) -> failwith "list_chop"
-  in 
+  in
   chop_aux [] (n,l)
 
-let list_tabulate f len = 
+let list_tabulate f len =
   let rec tabrec n =
     if n = len then [] else (f n)::(tabrec (n+1))
-  in 
+  in
   tabrec 0
 
 let rec list_make n v =
@@ -552,41 +552,41 @@ let rec list_make n v =
   else if n < 0 then invalid_arg "list_make"
   else v::list_make (n-1) v
 
-let list_assign l n e = 
+let list_assign l n e =
   let rec assrec stk = function
     | ((h::t), 0) -> List.rev_append stk (e::t)
     | ((h::t), n) -> assrec (h::stk) (t, n-1)
     | ([], _) -> failwith "list_assign"
-  in 
+  in
   assrec [] (l,n)
 
 let rec list_smartmap f l = match l with
     [] -> l
-  | h::tl -> 
+  | h::tl ->
       let h' = f h and tl' = list_smartmap f tl in
 	if h'==h && tl'==tl then l
 	else h'::tl'
 
 let list_map_left f = (* ensures the order in case of side-effects *)
   let rec map_rec = function
-    | [] -> [] 
+    | [] -> []
     | x::l -> let v = f x in v :: map_rec l
-  in 
+  in
   map_rec
 
-let list_map_i f = 
+let list_map_i f =
   let rec map_i_rec i = function
-    | [] -> [] 
+    | [] -> []
     | x::l -> let v = f i x in v :: map_i_rec (i+1) l
-  in 
+  in
   map_i_rec
 
-let list_map2_i f i l1 l2 =  
+let list_map2_i f i l1 l2 =
   let rec map_i i = function
     | ([], []) -> []
     | ((h1::t1), (h2::t2)) -> let v = f i h1 h2 in v :: map_i (succ i) (t1,t2)
     | (_, _) -> invalid_arg "map2_i"
-  in 
+  in
   map_i i (l1,l2)
 
 let list_map3 f l1 l2 l3 =
@@ -594,7 +594,7 @@ let list_map3 f l1 l2 l3 =
     | ([], [], []) -> []
     | ((h1::t1), (h2::t2), (h3::t3)) -> let v = f h1 h2 h3 in v::map (t1,t2,t3)
     | (_, _, _) -> invalid_arg "map3"
-  in 
+  in
   map (l1,l2,l3)
 
 let list_map4 f l1 l2 l3 l4 =
@@ -602,41 +602,41 @@ let list_map4 f l1 l2 l3 l4 =
     | ([], [], [], []) -> []
     | ((h1::t1), (h2::t2), (h3::t3), (h4::t4)) -> let v = f h1 h2 h3 h4 in v::map (t1,t2,t3,t4)
     | (_, _, _, _) -> invalid_arg "map4"
-  in 
+  in
   map (l1,l2,l3,l4)
 
-let list_index x = 
+let list_index x =
   let rec index_x n = function
     | y::l -> if x = y then n else index_x (succ n) l
     | [] -> raise Not_found
-  in 
+  in
   index_x 1
 
-let list_index0 x l = list_index x l - 1 
+let list_index0 x l = list_index x l - 1
 
-let list_unique_index x = 
+let list_unique_index x =
   let rec index_x n = function
-    | y::l -> 
-	if x = y then 
+    | y::l ->
+	if x = y then
 	  if List.mem x l then raise Not_found
-	  else n 
+	  else n
 	else index_x (succ n) l
-    | [] -> raise Not_found 
+    | [] -> raise Not_found
   in index_x 1
 
 let list_fold_right_i f i l =
   let rec it_list_f i l a = match l with
     | [] -> a
     | b::l -> f (i-1) b (it_list_f (i-1) l a)
-  in 
+  in
   it_list_f (List.length l + i) l
 
-let list_fold_left_i f = 
+let list_fold_left_i f =
   let rec it_list_f i a = function
-    | [] -> a 
+    | [] -> a
     | b::l -> it_list_f (i+1) (f i a b) l
-  in 
-  it_list_f 
+  in
+  it_list_f
 
 let rec list_fold_left3 f accu l1 l2 l3 =
   match (l1, l2, l3) with
@@ -667,16 +667,16 @@ let list_iter3 f l1 l2 l3 =
     | ([], [], []) -> ()
     | ((h1::t1), (h2::t2), (h3::t3)) -> f h1 h2 h3; iter (t1,t2,t3)
     | (_, _, _) -> invalid_arg "map3"
-  in 
+  in
   iter (l1,l2,l3)
 
 let list_iter_i f l = list_fold_left_i (fun i _ x -> f i x) 0 () l
 
-let list_for_all_i p = 
+let list_for_all_i p =
   let rec for_all_p i = function
-    | [] -> true 
+    | [] -> true
     | a::l -> p i a && for_all_p (i+1) l
-  in 
+  in
   for_all_p
 
 let list_except x l = List.filter (fun y -> not (x = y)) l
@@ -714,18 +714,18 @@ let rec list_sep_last = function
   | hd::[] -> (hd,[])
   | hd::tl -> let (l,tl) = list_sep_last tl in (l,hd::tl)
 
-let list_try_find_i f = 
+let list_try_find_i f =
   let rec try_find_f n = function
     | [] -> failwith "try_find_i"
     | h::t -> try f n h with Failure _ -> try_find_f (n+1) t
-  in 
+  in
   try_find_f
 
-let list_try_find f = 
+let list_try_find f =
   let rec try_find_f = function
     | [] -> failwith "try_find"
     | h::t -> try f h with Failure _ -> try_find_f t
-  in 
+  in
   try_find_f
 
 let list_uniquize l =
@@ -739,12 +739,12 @@ let list_uniquize l =
     | [] -> List.rev acc
   in aux [] l
 
-let rec list_distinct l = 
+let rec list_distinct l =
   let visited = Hashtbl.create 23 in
   let rec loop = function
     | h::t ->
 	if Hashtbl.mem visited h then false
-	else 
+	else
 	  begin
 	    Hashtbl.add visited h h;
 	    loop t
@@ -757,10 +757,10 @@ let rec list_merge_uniq cmp l1 l2 =
   | [], l2 -> l2
   | l1, [] -> l1
   | h1 :: t1, h2 :: t2 ->
-      let c = cmp h1 h2 in 
-      if c = 0 
+      let c = cmp h1 h2 in
+      if c = 0
       then h1 :: list_merge_uniq cmp t1 t2
-      else if c <= 0 
+      else if c <= 0
       then h1 :: list_merge_uniq cmp t1 l2
       else h2 :: list_merge_uniq cmp l1 t2
 
@@ -789,13 +789,13 @@ let list_subset l1 l2 =
   let rec look = function
     | [] -> true
     | x::ll -> try Hashtbl.find t2 x; look ll with Not_found -> false
-  in 
+  in
   look l1
 
-(* [list_split_at i l] splits [l] into two lists [(l1,l2)] such that [l1++l2=l] 
+(* [list_split_at i l] splits [l] into two lists [(l1,l2)] such that [l1++l2=l]
     and [l1] has length [i].
     It raises [Failure] when [i] is negative or greater than the length of [l]  *)
-let list_split_at index l = 
+let list_split_at index l =
   let rec aux i acc = function
       tl when i = index -> (List.rev acc), tl
     | hd :: tl -> aux (succ i) (hd :: acc) tl
@@ -805,12 +805,12 @@ let list_split_at index l =
 (* [list_split_when p l] splits [l] into two lists [(l1,a::l2)] such that
     [l1++(a::l2)=l], [p a=true] and [p b = false] for every element [b] of [l1].
     If there is no such [a], then it returns [(l,[])] instead *)
-let list_split_when p = 
-  let rec split_when_loop x y = 
-    match y with 
+let list_split_when p =
+  let rec split_when_loop x y =
+    match y with
       | []      -> ([],[])
       | (a::l)  -> if (p a) then (List.rev x,y) else split_when_loop (a::x) l
-  in 
+  in
   split_when_loop []
 
 let rec list_split3 = function
@@ -831,7 +831,7 @@ let list_firstn n l =
     | (0, l) -> List.rev acc
     | (n, (h::t)) -> aux (h::acc) (pred n, t)
     | _ -> failwith "firstn"
-  in 
+  in
   aux [] (n,l)
 
 let rec list_last = function
@@ -846,20 +846,20 @@ let list_lastn n l =
   in
   if len < n then failwith "lastn" else aux len l
 
-let rec list_skipn n l = match n,l with 
-  | 0, _ -> l 
+let rec list_skipn n l = match n,l with
+  | 0, _ -> l
   | _, [] -> failwith "list_fromn"
   | n, _::l -> list_skipn (pred n) l
 
-let rec list_addn n x l = 
+let rec list_addn n x l =
   if n = 0 then l else x :: (list_addn (pred n) x l)
 
-let list_prefix_of prefl l = 
+let list_prefix_of prefl l =
   let rec prefrec = function
     | (h1::t1, h2::t2) -> h1 = h2 && prefrec (t1,t2)
     | ([], _) -> true
     | (_, _) -> false
-  in 
+  in
     prefrec (prefl,l)
 
 let list_drop_prefix p l =
@@ -867,7 +867,7 @@ let list_drop_prefix p l =
   let rec list_drop_prefix_rec = function
     | ([], tl) -> Some tl
     | (_, []) -> None
-    | (h1::tp, h2::tl) -> 
+    | (h1::tp, h2::tl) ->
 	if h1 = h2 then list_drop_prefix_rec (tp,tl) else None
   in
     match list_drop_prefix_rec (p,l) with
@@ -883,7 +883,7 @@ let list_share_tails l1 l2 =
   let rec shr_rev acc = function
     | ((x1::l1), (x2::l2)) when x1 == x2 -> shr_rev (x1::acc) (l1,l2)
     | (l1,l2) -> (List.rev l1, List.rev l2, acc)
-  in 
+  in
   shr_rev [] (List.rev l1, List.rev l2)
 
 let rec list_fold_map f e = function
@@ -894,10 +894,10 @@ let rec list_fold_map f e = function
          e'',h'::t'
 
 (* (* tail-recursive version of the above function *)
-let list_fold_map f e l = 
-  let g (e,b') h = 
+let list_fold_map f e l =
+  let g (e,b') h =
     let (e',h') = f e h in
-      (e',h'::b') 
+      (e',h'::b')
   in
   let (e',lrev) = List.fold_left g (e,[]) l in
     (e',List.rev lrev)
@@ -921,17 +921,17 @@ let list_union_map f l acc =
     acc
     l
 
-(* A generic cartesian product: for any operator (**), 
-   [list_cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]], 
+(* A generic cartesian product: for any operator (**),
+   [list_cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]],
    and so on if there are more elements in the lists. *)
 
-let rec list_cartesian op l1 l2 = 
+let rec list_cartesian op l1 l2 =
   list_map_append (fun x -> List.map (op x) l2) l1
 
-(* [list_cartesians] is an n-ary cartesian product: it iterates 
+(* [list_cartesians] is an n-ary cartesian product: it iterates
    [list_cartesian] over a list of lists.  *)
 
-let list_cartesians op init ll = 
+let list_cartesians op init ll =
   List.fold_right (list_cartesian op) ll [init]
 
 (* list_combinations [[a;b];[c;d]] gives [[a;c];[a;d];[b;c];[b;d]] *)
@@ -940,12 +940,12 @@ let list_combinations l = list_cartesians (fun x l -> x::l) [] l
 
 (* Keep only those products that do not return None *)
 
-let rec list_cartesian_filter op l1 l2 = 
+let rec list_cartesian_filter op l1 l2 =
   list_map_append (fun x -> list_map_filter (op x) l2) l1
 
 (* Keep only those products that do not return None *)
 
-let rec list_cartesians_filter op init ll = 
+let rec list_cartesians_filter op init ll =
   List.fold_right (list_cartesian_filter op) ll [init]
 
 (* Drop the last element of a list *)
@@ -961,61 +961,61 @@ let array_compare item_cmp v1 v2 =
 	-1 -> 0
       | i ->
 	  let c' = item_cmp v1.(i) v2.(i) in
-	  if c'<>0 then c' 
+	  if c'<>0 then c'
 	  else cmp (i-1) in
     cmp (Array.length v1 - 1)
 
-let array_exists f v = 
+let array_exists f v =
   let rec exrec = function
     | -1 -> false
     | n -> (f v.(n)) || (exrec (n-1))
-  in 
-  exrec ((Array.length v)-1) 
+  in
+  exrec ((Array.length v)-1)
 
-let array_for_all f v = 
+let array_for_all f v =
   let rec allrec = function
     | -1 -> true
     | n -> (f v.(n)) && (allrec (n-1))
-  in 
-  allrec ((Array.length v)-1) 
+  in
+  allrec ((Array.length v)-1)
 
 let array_for_all2 f v1 v2 =
   let rec allrec = function
     | -1 -> true
     | n -> (f v1.(n) v2.(n)) && (allrec (n-1))
-  in 
+  in
   let lv1 = Array.length v1 in
-  lv1 = Array.length v2 && allrec (pred lv1) 
+  lv1 = Array.length v2 && allrec (pred lv1)
 
 let array_for_all3 f v1 v2 v3 =
   let rec allrec = function
     | -1 -> true
     | n -> (f v1.(n) v2.(n) v3.(n)) && (allrec (n-1))
-  in 
+  in
   let lv1 = Array.length v1 in
-  lv1 = Array.length v2 && lv1 = Array.length v3 && allrec (pred lv1) 
+  lv1 = Array.length v2 && lv1 = Array.length v3 && allrec (pred lv1)
 
 let array_for_all4 f v1 v2 v3 v4 =
   let rec allrec = function
     | -1 -> true
     | n -> (f v1.(n) v2.(n) v3.(n) v4.(n)) && (allrec (n-1))
-  in 
+  in
   let lv1 = Array.length v1 in
   lv1 = Array.length v2 &&
   lv1 = Array.length v3 &&
   lv1 = Array.length v4 &&
-    allrec (pred lv1) 
+    allrec (pred lv1)
 
-let array_for_all_i f i v = 
-  let rec allrec i n = n = Array.length v || f i v.(n) && allrec (i+1) (n+1) in 
+let array_for_all_i f i v =
+  let rec allrec i n = n = Array.length v || f i v.(n) && allrec (i+1) (n+1) in
   allrec i 0
 
-let array_hd v = 
+let array_hd v =
   match Array.length v with
     | 0 -> failwith "array_hd"
     | _ -> v.(0)
 
-let array_tl v = 
+let array_tl v =
   match Array.length v with
     | 0 -> failwith "array_tl"
     | n -> Array.sub v 1 (pred n)
@@ -1027,12 +1027,12 @@ let array_last v =
 
 let array_cons e v = Array.append [|e|] v
 
-let array_rev t = 
+let array_rev t =
   let n=Array.length t in
-    if n <=0 then () 
+    if n <=0 then ()
     else
       let tmp=ref t.(0) in
-      for i=0 to pred (n/2) do 
+      for i=0 to pred (n/2) do
 	tmp:=t.((pred n)-i);
 	t.((pred n)-i)<- t.(i);
 	t.(i)<- !tmp
@@ -1063,7 +1063,7 @@ let array_fold_right2 f v1 v2 a =
 
 let array_fold_left2 f a v1 v2 =
   let lv1 = Array.length v1 in
-  let rec fold a n = 
+  let rec fold a n =
     if n >= lv1 then a else fold (f a v1.(n) v2.(n)) (succ n)
   in
   if Array.length v2 <> lv1 then invalid_arg "array_fold_left2";
@@ -1071,25 +1071,25 @@ let array_fold_left2 f a v1 v2 =
 
 let array_fold_left2_i f a v1 v2 =
   let lv1 = Array.length v1 in
-  let rec fold a n = 
+  let rec fold a n =
     if n >= lv1 then a else fold (f n a v1.(n) v2.(n)) (succ n)
   in
   if Array.length v2 <> lv1 then invalid_arg "array_fold_left2";
   fold a 0
 
-let array_fold_left_from n f a v = 
+let array_fold_left_from n f a v =
   let rec fold a n =
     if n >= Array.length v then a else fold (f a v.(n)) (succ n)
-  in 
+  in
   fold a n
 
-let array_fold_right_from n f v a = 
+let array_fold_right_from n f v a =
   let rec fold n =
     if n >= Array.length v then a else f v.(n) (fold (succ n))
-  in 
+  in
   fold n
 
-let array_app_tl v l = 
+let array_app_tl v l =
   if Array.length v = 0 then invalid_arg "array_app_tl";
   array_fold_right_from 1 (fun e l -> e::l) v l
 
@@ -1109,9 +1109,9 @@ exception Local of int
 
 (* If none of the elements is changed by f we return ar itself.
    The for loop looks for the first such an element.
-   If found it is temporarily stored in a ref and the new array is produced, 
+   If found it is temporarily stored in a ref and the new array is produced,
    but f is not re-applied to elements that are already checked *)
-let array_smartmap f ar = 
+let array_smartmap f ar =
   let ar_size = Array.length ar in
   let aux = ref None in
   try
@@ -1125,10 +1125,10 @@ let array_smartmap f ar =
     done;
     ar
   with
-      Local i -> 
-	let copy j = 
-	  if j<i then ar.(j) 
-	  else if j=i then 
+      Local i ->
+	let copy j =
+	  if j<i then ar.(j)
+	  else if j=i then
 	    match !aux with Some a' -> a' | None -> failwith "Error"
 	  else f (ar.(j))
 	in
@@ -1136,8 +1136,8 @@ let array_smartmap f ar =
 
 let array_map2 f v1 v2 =
   if Array.length v1 <> Array.length v2 then invalid_arg "array_map2";
-  if Array.length v1 == 0 then 
-    [| |] 
+  if Array.length v1 == 0 then
+    [| |]
   else begin
     let res = Array.create (Array.length v1) (f v1.(0) v2.(0)) in
     for i = 1 to pred (Array.length v1) do
@@ -1148,8 +1148,8 @@ let array_map2 f v1 v2 =
 
 let array_map2_i f v1 v2 =
   if Array.length v1 <> Array.length v2 then invalid_arg "array_map2";
-  if Array.length v1 == 0 then 
-    [| |] 
+  if Array.length v1 == 0 then
+    [| |]
   else begin
     let res = Array.create (Array.length v1) (f 0 v1.(0) v2.(0)) in
     for i = 1 to pred (Array.length v1) do
@@ -1161,8 +1161,8 @@ let array_map2_i f v1 v2 =
 let array_map3 f v1 v2 v3 =
   if Array.length v1 <> Array.length v2 ||
      Array.length v1 <> Array.length v3 then invalid_arg "array_map3";
-  if Array.length v1 == 0 then 
-    [| |] 
+  if Array.length v1 == 0 then
+    [| |]
   else begin
     let res = Array.create (Array.length v1) (f v1.(0) v2.(0) v3.(0)) in
     for i = 1 to pred (Array.length v1) do
@@ -1203,7 +1203,7 @@ let pure_functional = false
 let array_fold_map' f v e =
 if pure_functional then
   let (l,e) =
-    Array.fold_right 
+    Array.fold_right
       (fun x (l,e) -> let (y,e) = f x e in (y::l,e))
       v ([],e) in
   (Array.of_list l,e)
@@ -1219,8 +1219,8 @@ let array_fold_map f e v =
 
 let array_fold_map2' f v1 v2 e =
   let e' = ref e in
-  let v' = 
-    array_map2 (fun x1 x2 -> let (y,e) = f x1 x2 !e' in e' := e; y) v1 v2 
+  let v' =
+    array_map2 (fun x1 x2 -> let (y,e) = f x1 x2 !e' in e' := e; y) v1 v2
   in
   (v',!e')
 
@@ -1253,10 +1253,10 @@ let identity x = x
 
 let compose f g x = f (g x)
 
-let iterate f = 
+let iterate f =
   let rec iterate_f n x =
     if n <= 0 then x else iterate_f (pred n) (f x)
-  in 
+  in
   iterate_f
 
 let repeat n f x =
@@ -1265,7 +1265,7 @@ let repeat n f x =
 let iterate_for a b f x =
   let rec iterate i v = if i > b then v else iterate (succ i) (f i v) in
   iterate a x
- 
+
 (* Misc *)
 
 type ('a,'b) union = Inl of 'a | Inr of 'b
@@ -1281,22 +1281,22 @@ let intmap_to_list m = Intmap.fold (fun n v l -> (n,v)::l) m []
 
 let intmap_inv m b = Intmap.fold (fun n v l -> if v = b then n::l else l) m []
 
-let interval n m = 
+let interval n m =
   let rec interval_n (l,m) =
     if n > m then l else interval_n (m::l,pred m)
-  in 
+  in
   interval_n ([],m)
 
 
-let map_succeed f = 
-  let rec map_f = function 
+let map_succeed f =
+  let rec map_f = function
     | [] -> []
     |  h::t -> try (let x = f h in x :: map_f t) with Failure _ -> map_f t
-  in 
-  map_f 
+  in
+  map_f
 
 (* Pretty-printing *)
-  
+
 let pr_spc = spc
 let pr_fnl = fnl
 let pr_int = int
@@ -1312,7 +1312,7 @@ let nth n = str (ordinal n)
 
 (* [prlist pr [a ; ... ; c]] outputs [pr a ++ ... ++ pr c] *)
 
-let rec prlist elem l = match l with 
+let rec prlist elem l = match l with
   | []   -> mt ()
   | h::t -> Stream.lapp (fun () -> elem h) (prlist elem t)
 
@@ -1320,7 +1320,7 @@ let rec prlist elem l = match l with
    if a strict behavior is needed, use [prlist_strict] instead.
    evaluation is done from left to right. *)
 
-let rec prlist_strict elem l = match l with 
+let rec prlist_strict elem l = match l with
   | []   -> mt ()
   | h::t ->
       let e = elem h in let r = prlist_strict elem t in e++r
@@ -1344,7 +1344,7 @@ let rec pr_sequence elem = function
       let e = elem h and r = pr_sequence elem t in
       if e = mt () then r else e ++ spc () ++ r
 
-(* [pr_enum pr [a ; b ; ... ; c]] outputs 
+(* [pr_enum pr [a ; b ; ... ; c]] outputs
    [pr a ++ str "," ++ pr b ++ str "," ++ ... ++ str "and" ++ pr c] *)
 
 let pr_enum pr l =
@@ -1355,11 +1355,11 @@ let pr_enum pr l =
 let pr_vertical_list pr = function
   | [] -> str "none" ++ fnl ()
   | l -> fnl () ++ str "  " ++ hov 0 (prlist_with_sep pr_fnl pr l) ++ fnl ()
-      
+
 let prvecti elem v =
   let n = Array.length v in
   let rec pr i =
-    if i = 0 then 
+    if i = 0 then
       elem 0 v.(0)
     else
       let r = pr (i-1) and e = elem i v.(i) in r ++ e
@@ -1371,10 +1371,10 @@ let prvecti elem v =
 
 let prvect_with_sep sep elem v =
   let rec pr n =
-    if n = 0 then 
+    if n = 0 then
       elem v.(0)
-    else 
-      let r = pr (n-1) and s = sep() and e = elem v.(n) in 
+    else
+      let r = pr (n-1) and s = sep() and e = elem v.(n) in
       r ++ s ++ e
       in
   let n = Array.length v in
@@ -1428,34 +1428,34 @@ let memon_eq eq n f =
 (*s Size of ocaml values. *)
 
 module Size = struct
-  
+
   open Obj
 
   (*s Pointers already visited are stored in a hash-table, where
       comparisons are done using physical equality. *)
 
   module H = Hashtbl.Make(
-    struct 
-      type t = Obj.t 
-      let equal = (==) 
+    struct
+      type t = Obj.t
+      let equal = (==)
       let hash o = Hashtbl.hash (magic o : int)
     end)
-	       
+
   let node_table = (H.create 257 : unit H.t)
-		     
+
   let in_table o = try H.find node_table o; true with Not_found -> false
-      
+
   let add_in_table o = H.add node_table o ()
-			 
+
   let reset_table () = H.clear node_table
-			 
+
   (*s Objects are traversed recursively, as soon as their tags are less than
       [no_scan_tag]. [count] records the numbers of words already visited. *)
 
   let size_of_double = size (repr 1.0)
-			 
+
   let count = ref 0
-		
+
   let rec traverse t =
     if not (in_table t) then begin
       add_in_table t;
@@ -1465,20 +1465,20 @@ module Size = struct
 	if tag < no_scan_tag then begin
 	  count := !count + 1 + n;
 	  for i = 0 to n - 1 do
-      	    let f = field t i in 
+      	    let f = field t i in
 	    if is_block f then traverse f
 	  done
 	end else if tag = string_tag then
-	  count := !count + 1 + n 
+	  count := !count + 1 + n
 	else if tag = double_tag then
 	  count := !count + size_of_double
 	else if tag = double_array_tag then
-	  count := !count + 1 + size_of_double * n 
+	  count := !count + 1 + size_of_double * n
 	else
 	  incr count
       end
     end
-      
+
   (*s Sizes of objects in words and in bytes. The size in bytes is computed
       system-independently according to [Sys.word_size]. *)
 
@@ -1511,6 +1511,6 @@ let heap_size_kb () = (heap_size () + 1023) / 1024
 (*s interruption *)
 
 let interrupt = ref false
-let check_for_interrupt () = 
+let check_for_interrupt () =
   if !interrupt then begin interrupt := false; raise Sys.Break end
 

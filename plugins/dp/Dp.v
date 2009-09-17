@@ -103,14 +103,14 @@ Definition zenon_notequal_s := fun T a b x y => zenon_notequal T a b y x.
 Set Implicit Arguments.
 Section congr.
   Variable t:Type.
-Lemma ergo_eq_concat_1 : 
+Lemma ergo_eq_concat_1 :
   forall (P:t -> Prop) (x y:t),
     P x -> x = y -> P y.
 Proof.
   intros; subst; auto.
 Qed.
 
-Lemma ergo_eq_concat_2 : 
+Lemma ergo_eq_concat_2 :
   forall (P:t -> t -> Prop) (x1 x2 y1 y2:t),
     P x1 x2 -> x1 = y1 -> x2 = y2 -> P y1 y2.
 Proof.

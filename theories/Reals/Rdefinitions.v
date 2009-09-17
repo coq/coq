@@ -30,8 +30,8 @@ Parameter R1 : R.
 Parameter Rplus : R -> R -> R.
 Parameter Rmult : R -> R -> R.
 Parameter Ropp : R -> R.
-Parameter Rinv : R -> R. 
-Parameter Rlt : R -> R -> Prop.    
+Parameter Rinv : R -> R.
+Parameter Rlt : R -> R -> Prop.
 Parameter up : R -> Z.
 
 Infix "+" := Rplus : R_scope.

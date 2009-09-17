@@ -73,14 +73,14 @@ Ltac rewrite_S_to_plus :=
   match goal with
   |  |- (?X1 = ?X2) =>
       try
-       let t1 :=  
+       let t1 :=
        (**)  (**)
        rewrite_S_to_plus_term X1
        with t2 := rewrite_S_to_plus_term X2 in
        change (t1 = t2) in |- *
   |  |- (?X1 = ?X2) =>
       try
-       let t1 := 
+       let t1 :=
        (**)  (**)
        rewrite_S_to_plus_term X1
        with t2 := rewrite_S_to_plus_term X2 in

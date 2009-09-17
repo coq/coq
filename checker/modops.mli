@@ -22,10 +22,10 @@ open Environ
 (* make the environment entry out of type *)
 val module_body_of_type : module_type_body -> module_body
 
-val module_type_of_module : module_path option -> module_body -> 
-  module_type_body 
+val module_type_of_module : module_path option -> module_body ->
+  module_type_body
 
-val destr_functor : 
+val destr_functor :
   env -> struct_expr_body -> mod_bound_id * module_type_body * struct_expr_body
 
 (* Evaluation functions *)
@@ -47,7 +47,7 @@ val strengthen : env -> struct_expr_body -> module_path -> struct_expr_body
 
 val update_subst : env -> module_body -> module_path -> bool * substitution
 
-val error_incompatible_modtypes : 
+val error_incompatible_modtypes :
   module_type_body -> module_type_body -> 'a
 
 val error_not_match : label -> structure_field_body -> 'a
@@ -63,7 +63,7 @@ val error_signature_expected : struct_expr_body -> 'a
 
 val error_not_a_constant : label -> 'a
 
-val error_not_a_module : label -> 'a 
+val error_not_a_module : label -> 'a
 
 val error_a_generative_module_expected : label -> 'a
 

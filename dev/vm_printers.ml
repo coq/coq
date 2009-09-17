@@ -7,9 +7,9 @@ open Vm
 
 let ppripos (ri,pos) =
   (match ri with
-  | Reloc_annot a -> 
+  | Reloc_annot a ->
       let sp,i = a.ci.ci_ind in
-      print_string 
+      print_string
 	("annot : MutInd("^(string_of_kn sp)^","^(string_of_int i)^")\n")
   | Reloc_const _ ->
       print_string "structured constant\n"
@@ -29,8 +29,8 @@ let ppsort = function
 
 
 let print_idkey idk =
-  match idk with 
-  | ConstKey sp -> 
+  match idk with
+  | ConstKey sp ->
       print_string "Cons(";
       print_string (string_of_con sp);
       print_string ")"
@@ -38,8 +38,8 @@ let print_idkey idk =
   | RelKey i -> print_string "~";print_int i
 
 let rec ppzipper z =
-  match z with 
-  | Zapp args -> 
+  match z with
+  | Zapp args ->
       let n = nargs args in
       open_hbox ();
       for i = 0 to n-2 do
@@ -50,7 +50,7 @@ let rec ppzipper z =
   | Zfix _ -> print_string "Zfix"
   | Zswitch _ -> print_string "Zswitch"
 
-and ppstack s = 
+and ppstack s =
   open_hovbox 0;
   print_string "[";
   List.iter (fun z -> ppzipper z;print_string " | ") s;
@@ -67,14 +67,14 @@ and ppatom a =
       print_string ")"
 
 and ppwhd whd =
-  match whd with 
+  match whd with
   | Vsort s -> ppsort s
   | Vprod _ -> print_string "product"
   | Vfun _ -> print_string "function"
   | Vfix _ -> print_vfix()
   | Vcofix _ -> print_string "cofix"
   | Vconstr_const i -> print_string "C(";print_int i;print_string")"
-  | Vconstr_block b -> ppvblock b      
+  | Vconstr_block b -> ppvblock b
   | Vatom_stk(a,s) ->
       open_hbox();ppatom a;close_box();
       print_string"@";ppstack s

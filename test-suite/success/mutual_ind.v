@@ -9,7 +9,7 @@
 
 Require Export List.
 
- Record signature : Type := 
+ Record signature : Type :=
    {sort : Set;
     sort_beq : sort -> sort -> bool;
     sort_beq_refl : forall f : sort, true = sort_beq f f;
@@ -20,14 +20,14 @@ Require Export List.
     fsym_beq_refl : forall f : fsym, true = fsym_beq f f;
     fsym_beq_eq : forall f1 f2 : fsym, true = fsym_beq f1 f2 -> f1 = f2}.
 
- 
+
  Variable F : signature.
 
   Definition vsym := (sort F * nat)%type.
 
   Definition vsym_sort := fst (A:=sort F) (B:=nat).
   Definition vsym_nat := snd (A:=sort F) (B:=nat).
- 
+
 
   Inductive term : sort F -> Set :=
     | term_var : forall v : vsym, term (vsym_sort v)

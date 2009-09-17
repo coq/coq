@@ -43,7 +43,7 @@ let rec make_let e = function
       let loc = join_loc loc (MLast.loc_of_expr e) in
       let e = make_let e l in
       let v = <:expr< Genarg.out_gen $make_wit loc t$ $lid:p$ >> in
-      let v = 
+      let v =
         (* Special case for tactics which must be stored in algebraic
            form to avoid marshalling closures and to be reprinted *)
         if is_tactic_genarg t then
@@ -95,7 +95,7 @@ let rec make_eval_tactic e = function
 
 let rec make_fun e = function
   | [] -> e
-  | GramNonTerminal(loc,_,_,Some p)::l -> 
+  | GramNonTerminal(loc,_,_,Some p)::l ->
       let p = Names.string_of_id p in
       <:expr< fun $lid:p$ -> $make_fun e l$ >>
   | _::l -> make_fun e l
@@ -138,7 +138,7 @@ let rec contains_epsilon = function
   | ExtraArgType("hintbases") -> true
   | _ -> false
 let is_atomic = function
-  | GramTerminal s :: l when 
+  | GramTerminal s :: l when
       List.for_all (function
           GramTerminal _ -> false
 	| GramNonTerminal(_,t,_,_) -> contains_epsilon t) l
@@ -152,7 +152,7 @@ let declare_tactic loc s cl =
   let hide_tac (p,e) =
     (* reste a definir les fonctions cachees avec des noms frais *)
     let stac = "h_"^s in
-    let e = 
+    let e =
       make_fun
         <:expr<
           Refiner.abstract_extended_tactic $mlexpr_of_string s$ $make_args p$ $make_eval_tactic e p$
@@ -194,7 +194,7 @@ EXTEND
   ;
   tacrule:
     [ [ "["; l = LIST1 tacargs; "]"; "->"; "["; e = Pcaml.expr; "]"
-        -> 
+        ->
 	  if match List.hd l with GramNonTerminal _ -> true | _ -> false then
 	    (* En attendant la syntaxe de tacticielles *)
 	    failwith "Tactic syntax must start with an identifier";

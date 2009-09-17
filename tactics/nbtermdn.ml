@@ -31,7 +31,7 @@ type ('na,'a) t = {
   mutable table : ('na,constr_pattern * 'a) Gmap.t;
   mutable patterns : (global_reference option,'a Btermdn.t) Gmap.t }
 
-type ('na,'a) frozen_t = 
+type ('na,'a) frozen_t =
     ('na,constr_pattern * 'a) Gmap.t
     * (global_reference option,'a Btermdn.t) Gmap.t
 
@@ -43,46 +43,46 @@ let get_dn dnm hkey =
   try Gmap.find hkey dnm with Not_found -> Btermdn.create ()
 
 let add dn (na,(pat,valu)) =
-  let hkey = Option.map fst (Termdn.constr_pat_discr pat) in 
+  let hkey = Option.map fst (Termdn.constr_pat_discr pat) in
   dn.table <- Gmap.add na (pat,valu) dn.table;
   let dnm = dn.patterns in
   dn.patterns <- Gmap.add hkey (Btermdn.add None (get_dn dnm hkey) (pat,valu)) dnm
-    
+
 let rmv dn na =
   let (pat,valu) = Gmap.find na dn.table in
-  let hkey = Option.map fst (Termdn.constr_pat_discr pat) in 
+  let hkey = Option.map fst (Termdn.constr_pat_discr pat) in
   dn.table <- Gmap.remove na dn.table;
   let dnm = dn.patterns in
   dn.patterns <- Gmap.add hkey (Btermdn.rmv None (get_dn dnm hkey) (pat,valu)) dnm
 
 let in_dn dn na = Gmap.mem na dn.table
-			  
+
 let remap ndn na (pat,valu) =
   rmv ndn na;
   add ndn (na,(pat,valu))
 
 let lookup dn valu =
-  let hkey = 
-    match (Termdn.constr_val_discr valu) with 
+  let hkey =
+    match (Termdn.constr_val_discr valu) with
     | Dn.Label(l,_) -> Some l
     | _ -> None
-  in 
+  in
   try Btermdn.lookup None (Gmap.find hkey dn.patterns) valu with Not_found -> []
 
 let app f dn = Gmap.iter f dn.table
-		       
+
 let dnet_depth = Btermdn.dnet_depth
-		   
+
 let freeze dn = (dn.table, dn.patterns)
 
 let unfreeze (fnm,fdnm) dn =
   dn.table <- fnm;
   dn.patterns <- fdnm
 
-let empty dn = 
+let empty dn =
   dn.table <- Gmap.empty;
   dn.patterns <- Gmap.empty
 
-let to2lists dn = 
+let to2lists dn =
   (Gmap.to_list dn.table, Gmap.to_list dn.patterns)
 

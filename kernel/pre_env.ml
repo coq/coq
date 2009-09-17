@@ -18,10 +18,10 @@ open Declarations
 (* The type of environments. *)
 
 
-type key = int option ref 
+type key = int option ref
 
 type constant_key = constant_body * key
- 
+
 type globals = {
   env_constants : constant_key Cmap.t;
   env_inductives : mutual_inductive_body KNmap.t;
@@ -34,7 +34,7 @@ type stratification = {
   env_engagement : engagement option
 }
 
-type val_kind = 
+type val_kind =
     | VKvalue of values * Idset.t
     | VKnone
 
@@ -56,7 +56,7 @@ type named_context_val = named_context * named_vals
 
 let empty_named_context_val = [],[]
 
-let empty_env = { 
+let empty_env = {
   env_globals = {
     env_constants = Cmap.empty;
     env_inductives = KNmap.empty;
@@ -77,25 +77,25 @@ let empty_env = {
 (* Rel context *)
 
 let nb_rel env = env.env_nb_rel
-  
+
 let push_rel d env =
   let rval = ref VKnone in
     { env with
       env_rel_context = add_rel_decl d env.env_rel_context;
       env_rel_val = rval :: env.env_rel_val;
       env_nb_rel = env.env_nb_rel + 1 }
- 
+
 let lookup_rel_val n env =
   try List.nth env.env_rel_val (n - 1)
   with _ -> raise Not_found
-    
+
 let env_of_rel n env =
   { env with
     env_rel_context = Util.list_skipn n env.env_rel_context;
     env_rel_val = Util.list_skipn n env.env_rel_val;
     env_nb_rel = env.env_nb_rel - n
   }
-    
+
 (* Named context *)
 
 let push_named_context_val d (ctxt,vals) =
@@ -105,21 +105,21 @@ let push_named_context_val d (ctxt,vals) =
 
 exception ASSERT of rel_context
 
-let push_named d env = 
+let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
   assert (env.env_rel_context = []); *)
   let id,body,_ = d in
   let rval = ref VKnone in
-    { env with  
+    { env with
       env_named_context = Sign.add_named_decl d env.env_named_context;
       env_named_vals =  (id,rval):: env.env_named_vals }
 
 let lookup_named_val id env =
   snd(List.find (fun (id',_) -> id = id') env.env_named_vals)
-    
+
 (* Warning all the names should be different *)
 let env_of_named id env = env
- 
+
 (* Global constants *)
 
 let lookup_constant_key kn env =
@@ -132,7 +132,7 @@ let lookup_constant kn env =
 let lookup_mind kn env =
   KNmap.find kn env.env_globals.env_inductives
 
-let rec scrape_mind env kn = 
+let rec scrape_mind env kn =
   match (lookup_mind kn env).mind_equiv with
     | None -> kn
     | Some kn' -> scrape_mind env kn'

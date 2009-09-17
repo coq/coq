@@ -33,8 +33,8 @@ Definition interior (D:R -> Prop) (x:R) : Prop := neighbourhood D x.
 Lemma interior_P1 : forall D:R -> Prop, included (interior D) D.
 Proof.
   intros; unfold included in |- *; unfold interior in |- *; intros;
-    unfold neighbourhood in H; elim H; intros; unfold included in H0; 
-      apply H0; unfold disc in |- *; unfold Rminus in |- *; 
+    unfold neighbourhood in H; elim H; intros; unfold included in H0;
+      apply H0; unfold disc in |- *; unfold Rminus in |- *;
         rewrite Rplus_opp_r; rewrite Rabs_R0; apply (cond_pos x0).
 Qed.
 
@@ -98,7 +98,7 @@ Lemma complementary_P1 :
     ~ (exists y : R, intersection_domain D (complementary D) y).
 Proof.
   intro; red in |- *; intro; elim H; intros;
-    unfold intersection_domain, complementary in H0; elim H0; 
+    unfold intersection_domain, complementary in H0; elim H0;
       intros; elim H2; assumption.
 Qed.
 
@@ -110,23 +110,23 @@ Proof.
       elim H1; intro.
   assumption.
   assert (H3 := H _ H2); assert (H4 := H0 _ H3); elim H4; intros;
-    unfold intersection_domain in H5; elim H5; intros; 
+    unfold intersection_domain in H5; elim H5; intros;
       elim H6; assumption.
 Qed.
 
 Lemma adherence_P3 : forall D:R -> Prop, closed_set (adherence D).
 Proof.
   intro; unfold closed_set, adherence in |- *;
-    unfold open_set, complementary, point_adherent in |- *; 
+    unfold open_set, complementary, point_adherent in |- *;
       intros;
         set
           (P :=
             fun V:R -> Prop =>
               neighbourhood V x ->  exists y : R, intersection_domain V D y);
-          assert (H0 := not_all_ex_not _ P H); elim H0; intros V0 H1; 
+          assert (H0 := not_all_ex_not _ P H); elim H0; intros V0 H1;
             unfold P in H1; assert (H2 := imply_to_and _ _ H1);
               unfold neighbourhood in |- *; elim H2; intros; unfold neighbourhood in H3;
-                elim H3; intros; exists x0; unfold included in |- *; 
+                elim H3; intros; exists x0; unfold included in |- *;
                   intros; red in |- *; intro.
   assert (H8 := H7 V0);
     cut (exists delta : posreal, (forall x:R, disc x1 delta x -> V0 x)).
@@ -170,7 +170,7 @@ Proof.
   apply adherence_P2; assumption.
   unfold eq_Dom in |- *; unfold included in |- *; intros;
     assert (H0 := adherence_P3 D); unfold closed_set in H0;
-      unfold closed_set in |- *; unfold open_set in |- *; 
+      unfold closed_set in |- *; unfold open_set in |- *;
         unfold open_set in H0; intros; assert (H2 : complementary (adherence D) x).
   unfold complementary in |- *; unfold complementary in H1; red in |- *; intro;
     elim H; clear H; intros _ H; elim H1; apply (H _ H2).
@@ -178,7 +178,7 @@ Proof.
     unfold neighbourhood in H3; elim H3; intros; exists x0;
       unfold included in |- *; unfold included in H4; intros;
         assert (H6 := H4 _ H5); unfold complementary in H6;
-          unfold complementary in |- *; red in |- *; intro; 
+          unfold complementary in |- *; red in |- *; intro;
             elim H; clear H; intros H _; elim H6; apply (H _ H7).
 Qed.
 
@@ -187,7 +187,7 @@ Lemma neighbourhood_P1 :
     included D1 D2 -> neighbourhood D1 x -> neighbourhood D2 x.
 Proof.
   unfold included, neighbourhood in |- *; intros; elim H0; intros; exists x0;
-    intros; unfold included in |- *; unfold included in H1; 
+    intros; unfold included in |- *; unfold included in H1;
       intros; apply (H _ (H1 _ H2)).
 Qed.
 
@@ -211,8 +211,8 @@ Proof.
   unfold open_set in |- *; intros; unfold intersection_domain in H1; elim H1;
     intros.
   assert (H4 := H _ H2); assert (H5 := H0 _ H3);
-    unfold intersection_domain in |- *; unfold neighbourhood in H4, H5; 
-      elim H4; clear H; intros del1 H; elim H5; clear H0; 
+    unfold intersection_domain in |- *; unfold neighbourhood in H4, H5;
+      elim H4; clear H; intros del1 H; elim H5; clear H0;
         intros del2 H0; cut (0 < Rmin del1 del2).
   intro; set (del := mkposreal _ H6).
   exists del; unfold included in |- *; intros; unfold included in H, H0;
@@ -292,7 +292,7 @@ Proof.
   apply (sym_not_eq (A:=R)); apply H7.
   unfold disc in H6; apply H6.
   intros; unfold continuity_pt in |- *; unfold continue_in in |- *;
-    unfold limit1_in in |- *; unfold limit_in in |- *; 
+    unfold limit1_in in |- *; unfold limit_in in |- *;
       intros.
   assert (H1 := H (disc (f x) (mkposreal eps H0))).
   cut (neighbourhood (disc (f x) (mkposreal eps H0)) (f x)).
@@ -317,8 +317,8 @@ Proof.
   intros; unfold open_set in H0; unfold open_set in |- *; intros;
     assert (H2 := continuity_P1 f x); elim H2; intros H3 _;
       assert (H4 := H3 (H x)); unfold neighbourhood, image_rec in |- *;
-        unfold image_rec in H1; assert (H5 := H4 D (H0 (f x) H1)); 
-          elim H5; intros V0 H6; elim H6; intros; unfold neighbourhood in H7; 
+        unfold image_rec in H1; assert (H5 := H4 D (H0 (f x) H1));
+          elim H5; intros V0 H6; elim H6; intros; unfold neighbourhood in H7;
             elim H7; intros del H9; exists del; unfold included in H9;
               unfold included in |- *; intros; apply (H8 _ (H9 _ H10)).
 Qed.
@@ -333,7 +333,7 @@ Proof.
   intros; apply continuity_P2; assumption.
   intros; unfold continuity in |- *; unfold continuity_pt in |- *;
     unfold continue_in in |- *; unfold limit1_in in |- *;
-      unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *; 
+      unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *;
         intros; cut (open_set (disc (f x) (mkposreal _ H0))).
   intro; assert (H2 := H _ H1).
   unfold open_set, image_rec in H2; cut (disc (f x) (mkposreal _ H0) (f x)).
@@ -466,7 +466,7 @@ Proof.
     cut (covering_open_set X f0).
   intro; assert (H3 := H1 H2); elim H3; intros D' H4;
     unfold covering_finite in H4; elim H4; intros; unfold family_finite in H6;
-      unfold domain_finite in H6; elim H6; intros l H7; 
+      unfold domain_finite in H6; elim H6; intros l H7;
         unfold bounded in |- *; set (r := MaxRlist l).
   exists (- r); exists r; intros.
   unfold covering in H5; assert (H9 := H5 _ H8); elim H9; intros;
@@ -538,9 +538,9 @@ Proof.
   intro; assert (H10 := H0 (disc x (mkposreal _ H9)));
     cut (neighbourhood (disc x (mkposreal alp H9)) x).
   intro; assert (H12 := H10 H11); elim H12; clear H12; intros y H12;
-    unfold intersection_domain in H12; elim H12; clear H12; 
-      intros; assert (H14 := H7 _ H13); elim H14; clear H14; 
-        intros y0 H14; elim H14; clear H14; intros; unfold g in H14; 
+    unfold intersection_domain in H12; elim H12; clear H12;
+      intros; assert (H14 := H7 _ H13); elim H14; clear H14;
+        intros y0 H14; elim H14; clear H14; intros; unfold g in H14;
           elim H14; clear H14; intros; unfold disc in H12; simpl in H12;
             cut (alp <= Rabs (y0 - x) / 2).
   intro; assert (H18 := Rlt_le_trans _ _ _ H12 H17);
@@ -557,10 +557,10 @@ Proof.
   unfold disc in |- *; unfold Rminus in |- *; rewrite Rplus_opp_r;
     rewrite Rabs_R0; apply H9.
   unfold alp in |- *; apply MinRlist_P2; intros;
-    assert (H10 := AbsList_P2 _ _ _ H9); elim H10; clear H10; 
-      intros z H10; elim H10; clear H10; intros; rewrite H11; 
+    assert (H10 := AbsList_P2 _ _ _ H9); elim H10; clear H10;
+      intros z H10; elim H10; clear H10; intros; rewrite H11;
         apply H2; elim (H8 z); clear H8; intros; assert (H13 := H12 H10);
-          unfold intersection_domain, D in H13; elim H13; clear H13; 
+          unfold intersection_domain, D in H13; elim H13; clear H13;
             intros; assumption.
   unfold covering_open_set in |- *; split.
   unfold covering in |- *; intros; exists x0; simpl in |- *; unfold g in |- *;
@@ -577,7 +577,7 @@ Proof.
   rewrite <- (Rabs_Ropp (x0 - x1)); rewrite Ropp_minus_distr; apply H6.
   apply H5.
   unfold included, disc in |- *; simpl in |- *; intros; elim H6; intros;
-    rewrite <- (Rabs_Ropp (x1 - x0)); rewrite Ropp_minus_distr; 
+    rewrite <- (Rabs_Ropp (x1 - x0)); rewrite Ropp_minus_distr;
       apply H7.
   apply open_set_P6 with (fun z:R => False).
   apply open_set_P4.
@@ -639,8 +639,8 @@ Proof.
   intro; assert (H3 := completeness A H1 H2); elim H3; clear H3; intros m H3;
     unfold is_lub in H3; cut (a <= m <= b).
   intro; unfold covering_open_set in H; elim H; clear H; intros;
-    unfold covering in H; assert (H6 := H m H4); elim H6; 
-      clear H6; intros y0 H6; unfold family_open_set in H5; 
+    unfold covering in H; assert (H6 := H m H4); elim H6;
+      clear H6; intros y0 H6; unfold family_open_set in H5;
         assert (H7 := H5 y0); unfold open_set in H7; assert (H8 := H7 m H6);
           unfold neighbourhood in H8; elim H8; clear H8; intros eps H8;
             cut (exists x : R, A x /\ m - eps < x <= m).
@@ -651,11 +651,11 @@ Proof.
       set (Db := fun x:R => Dx x \/ x = y0); exists Db;
         unfold covering_finite in |- *; split.
   unfold covering in |- *; unfold covering_finite in H12; elim H12; clear H12;
-    intros; unfold covering in H12; case (Rle_dec x0 x); 
+    intros; unfold covering in H12; case (Rle_dec x0 x);
       intro.
   cut (a <= x0 <= x).
   intro; assert (H16 := H12 x0 H15); elim H16; clear H16; intros; exists x1;
-    simpl in H16; simpl in |- *; unfold Db in |- *; elim H16; 
+    simpl in H16; simpl in |- *; unfold Db in |- *; elim H16;
       clear H16; intros; split; [ apply H16 | left; apply H17 ].
   split.
   elim H14; intros; assumption.
@@ -672,9 +672,9 @@ Proof.
   apply Rge_minus; apply Rle_ge; elim H14; intros _ H15; apply H15.
   unfold Db in |- *; right; reflexivity.
   unfold family_finite in |- *; unfold domain_finite in |- *;
-    unfold covering_finite in H12; elim H12; clear H12; 
-      intros; unfold family_finite in H13; unfold domain_finite in H13; 
-        elim H13; clear H13; intros l H13; exists (cons y0 l); 
+    unfold covering_finite in H12; elim H12; clear H12;
+      intros; unfold family_finite in H13; unfold domain_finite in H13;
+        elim H13; clear H13; intros l H13; exists (cons y0 l);
           intro; split.
   intro; simpl in H14; unfold intersection_domain in H14; elim (H13 x0);
     clear H13; intros; case (Req_dec x0 y0); intro.
@@ -723,7 +723,7 @@ Proof.
     set (Db := fun x:R => Dx x \/ x = y0); exists Db;
       unfold covering_finite in |- *; split.
   unfold covering in |- *; unfold covering_finite in H12; elim H12; clear H12;
-    intros; unfold covering in H12; case (Rle_dec x0 x); 
+    intros; unfold covering in H12; case (Rle_dec x0 x);
       intro.
   cut (a <= x0 <= x).
   intro; assert (H16 := H12 x0 H15); elim H16; clear H16; intros; exists x1;
@@ -758,15 +758,15 @@ Proof.
   ring.
   unfold Db in |- *; right; reflexivity.
   unfold family_finite in |- *; unfold domain_finite in |- *;
-    unfold covering_finite in H12; elim H12; clear H12; 
-      intros; unfold family_finite in H13; unfold domain_finite in H13; 
-        elim H13; clear H13; intros l H13; exists (cons y0 l); 
+    unfold covering_finite in H12; elim H12; clear H12;
+      intros; unfold family_finite in H13; unfold domain_finite in H13;
+        elim H13; clear H13; intros l H13; exists (cons y0 l);
           intro; split.
   intro; simpl in H14; unfold intersection_domain in H14; elim (H13 x0);
     clear H13; intros; case (Req_dec x0 y0); intro.
   simpl in |- *; left; apply H16.
   simpl in |- *; right; apply H13; simpl in |- *;
-    unfold intersection_domain in |- *; unfold Db in H14; 
+    unfold intersection_domain in |- *; unfold Db in H14;
       decompose [and or] H14.
   split; assumption.
   elim H16; assumption.
@@ -793,7 +793,7 @@ Proof.
   set (P := fun n:R => A n /\ m - eps < n <= m);
     assert (H12 := not_ex_all_not _ P H9); unfold P in H12;
       unfold is_upper_bound in |- *; intros;
-        assert (H14 := not_and_or _ _ (H12 x)); elim H14; 
+        assert (H14 := not_and_or _ _ (H12 x)); elim H14;
           intro.
   elim H15; apply H13.
   elim (not_and_or _ _ H15); intro.
@@ -806,11 +806,11 @@ Proof.
   split.
   apply (H3 _ H0).
   apply (H4 b); unfold is_upper_bound in |- *; intros; unfold A in H5; elim H5;
-    clear H5; intros H5 _; elim H5; clear H5; intros _ H5; 
+    clear H5; intros H5 _; elim H5; clear H5; intros _ H5;
       apply H5.
   exists a; apply H0.
   unfold bound in |- *; exists b; unfold is_upper_bound in |- *; intros;
-    unfold A in H1; elim H1; clear H1; intros H1 _; elim H1; 
+    unfold A in H1; elim H1; clear H1; intros H1 _; elim H1;
       clear H1; intros _ H1; apply H1.
   unfold A in |- *; split.
   split; [ right; reflexivity | apply r ].
@@ -862,15 +862,15 @@ Proof.
   elim H10; intros H11 _; unfold complementary in H11; elim H11; apply H7.
   apply H9.
   unfold family_finite in |- *; unfold domain_finite in |- *;
-    unfold family_finite in H6; unfold domain_finite in H6; 
+    unfold family_finite in H6; unfold domain_finite in H6;
       elim H6; clear H6; intros l H6; exists l; intro; assert (H7 := H6 x);
         elim H7; clear H7; intros.
   split.
   intro; apply H7; simpl in |- *; unfold intersection_domain in |- *;
-    simpl in H9; unfold intersection_domain in H9; unfold D' in |- *; 
+    simpl in H9; unfold intersection_domain in H9; unfold D' in |- *;
       apply H9.
   intro; assert (H10 := H8 H9); simpl in H10; unfold intersection_domain in H10;
-    simpl in |- *; unfold intersection_domain in |- *; 
+    simpl in |- *; unfold intersection_domain in |- *;
       unfold D' in H10; apply H10.
   unfold covering_open_set in |- *; unfold covering_open_set in H2; elim H2;
     clear H2; intros.
@@ -964,14 +964,14 @@ Proof.
       simpl in H11; elim H11; intros z H12; exists z; unfold g in H12;
         unfold image_rec in H12; rewrite H9; apply H12.
   unfold family_finite in H6; unfold domain_finite in H6;
-    unfold family_finite in |- *; unfold domain_finite in |- *; 
-      elim H6; intros l H7; exists l; intro; elim (H7 x); 
+    unfold family_finite in |- *; unfold domain_finite in |- *;
+      elim H6; intros l H7; exists l; intro; elim (H7 x);
         intros; split; intro.
   apply H8; simpl in H10; simpl in |- *; apply H10.
   apply (H9 H10).
   unfold covering_open_set in |- *; split.
   unfold covering in |- *; intros; simpl in |- *; unfold covering in H1;
-    unfold image_dir in H1; unfold g in |- *; unfold image_rec in |- *; 
+    unfold image_dir in H1; unfold g in |- *; unfold image_rec in |- *;
       apply H1.
   exists x; split; [ reflexivity | apply H4 ].
   unfold family_open_set in |- *; unfold family_open_set in H2; intro;
@@ -1014,8 +1014,8 @@ Proof.
   exists h; split.
   unfold continuity in |- *; intro; case (Rtotal_order x a); intro.
   unfold continuity_pt in |- *; unfold continue_in in |- *;
-    unfold limit1_in in |- *; unfold limit_in in |- *; 
-      simpl in |- *; unfold R_dist in |- *; intros; exists (a - x); 
+    unfold limit1_in in |- *; unfold limit_in in |- *;
+      simpl in |- *; unfold R_dist in |- *; intros; exists (a - x);
         split.
   change (0 < a - x) in |- *; apply Rlt_Rminus; assumption.
   intros; elim H5; clear H5; intros _ H5; unfold h in |- *.
@@ -1034,8 +1034,8 @@ Proof.
     unfold limit1_in in H6; unfold limit_in in H6; simpl in H6;
       unfold R_dist in H6; unfold continuity_pt in |- *;
         unfold continue_in in |- *; unfold limit1_in in |- *;
-          unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *; 
-            intros; elim (H6 _ H7); intros; exists (Rmin x0 (b - a)); 
+          unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *;
+            intros; elim (H6 _ H7); intros; exists (Rmin x0 (b - a));
               split.
   unfold Rmin in |- *; case (Rle_dec x0 (b - a)); intro.
   elim H8; intros; assumption.
@@ -1067,8 +1067,8 @@ Proof.
     unfold limit1_in in H7; unfold limit_in in H7; simpl in H7;
       unfold R_dist in H7; unfold continuity_pt in |- *;
         unfold continue_in in |- *; unfold limit1_in in |- *;
-          unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *; 
-            intros; elim (H7 _ H8); intros; elim H9; clear H9; 
+          unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *;
+            intros; elim (H7 _ H8); intros; elim H9; clear H9;
               intros.
   assert (H11 : 0 < x - a).
   apply Rlt_Rminus; assumption.
@@ -1119,8 +1119,8 @@ Proof.
     unfold limit1_in in H8; unfold limit_in in H8; simpl in H8;
       unfold R_dist in H8; unfold continuity_pt in |- *;
         unfold continue_in in |- *; unfold limit1_in in |- *;
-          unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *; 
-            intros; elim (H8 _ H9); intros; exists (Rmin x0 (b - a)); 
+          unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *;
+            intros; elim (H8 _ H9); intros; exists (Rmin x0 (b - a));
               split.
   unfold Rmin in |- *; case (Rle_dec x0 (b - a)); intro.
   elim H10; intros; assumption.
@@ -1152,8 +1152,8 @@ Proof.
   assumption.
   apply Rmin_r.
   unfold continuity_pt in |- *; unfold continue_in in |- *;
-    unfold limit1_in in |- *; unfold limit_in in |- *; 
-      simpl in |- *; unfold R_dist in |- *; intros; exists (x - b); 
+    unfold limit1_in in |- *; unfold limit_in in |- *;
+      simpl in |- *; unfold R_dist in |- *; intros; exists (x - b);
         split.
   change (0 < x - b) in |- *; apply Rlt_Rminus; assumption.
   intros; elim H8; clear H8; intros.
@@ -1210,8 +1210,8 @@ Proof.
   intro; unfold image_dir in H8; elim H8; clear H8; intros Mxx H8; elim H8;
     clear H8; intros; exists Mxx; split.
   intros; rewrite <- (Heq c H10); rewrite <- (Heq Mxx H9); intros;
-    rewrite <- H8; unfold is_lub in H7; elim H7; clear H7; 
-      intros H7 _; unfold is_upper_bound in H7; apply H7; 
+    rewrite <- H8; unfold is_lub in H7; elim H7; clear H7;
+      intros H7 _; unfold is_upper_bound in H7; apply H7;
         unfold image_dir in |- *; exists c; split; [ reflexivity | apply H10 ].
   apply H9.
   elim (classic (image_dir g (fun c:R => a <= c <= b) M)); intro.
@@ -1298,7 +1298,7 @@ Proof.
   intro; assert (H2 := continuity_ab_maj (- f0)%F a b H H1); elim H2;
     intros x0 H3; exists x0; intros; split.
   intros; rewrite <- (Ropp_involutive (f0 x0));
-    rewrite <- (Ropp_involutive (f0 c)); apply Ropp_le_contravar; 
+    rewrite <- (Ropp_involutive (f0 c)); apply Ropp_le_contravar;
       elim H3; intros; unfold opp_fct in H5; apply H5; apply H4.
   elim H3; intros; assumption.
   intros.
@@ -1348,10 +1348,10 @@ Lemma ValAdh_un_prop :
 Proof.
   intros; split; intro.
   unfold ValAdh in H; unfold ValAdh_un in |- *;
-    unfold intersection_family in |- *; simpl in |- *; 
+    unfold intersection_family in |- *; simpl in |- *;
       intros; elim H0; intros N H1; unfold adherence in |- *;
-        unfold point_adherent in |- *; intros; elim (H V N H2); 
-          intros; exists (un x0); unfold intersection_domain in |- *; 
+        unfold point_adherent in |- *; intros; elim (H V N H2);
+          intros; exists (un x0); unfold intersection_domain in |- *;
             elim H3; clear H3; intros; split.
   assumption.
   split.
@@ -1367,9 +1367,9 @@ Proof.
             (exists n : nat, INR N = INR n)) x).
   apply H; exists N; reflexivity.
   unfold adherence in H1; unfold point_adherent in H1; assert (H2 := H1 _ H0);
-    elim H2; intros; unfold intersection_domain in H3; 
-      elim H3; clear H3; intros; elim H4; clear H4; intros; 
-        elim H4; clear H4; intros; elim H4; clear H4; intros; 
+    elim H2; intros; unfold intersection_domain in H3;
+      elim H3; clear H3; intros; elim H4; clear H4; intros;
+        elim H4; clear H4; intros; elim H4; clear H4; intros;
           exists x1; split.
   apply (INR_le _ _ H6).
   rewrite H4 in H3; apply H3.
@@ -1379,7 +1379,7 @@ Lemma adherence_P4 :
   forall F G:R -> Prop, included F G -> included (adherence F) (adherence G).
 Proof.
   unfold adherence, included in |- *; unfold point_adherent in |- *; intros;
-    elim (H0 _ H1); unfold intersection_domain in |- *; 
+    elim (H0 _ H1); unfold intersection_domain in |- *;
       intros; elim H2; clear H2; intros; exists x0; split;
         [ assumption | apply (H _ H3) ].
 Qed.
@@ -1392,7 +1392,7 @@ Definition intersection_vide_in (D:R -> Prop) (f:family) : Prop :=
     (ind f x -> included (f x) D) /\
     ~ (exists y : R, intersection_family f y).
 
-Definition intersection_vide_finite_in (D:R -> Prop) 
+Definition intersection_vide_finite_in (D:R -> Prop)
   (f:family) : Prop := intersection_vide_in D f /\ family_finite f.
 
 (**********)
@@ -1417,9 +1417,9 @@ Proof.
     elim (H1 x); intros; unfold intersection_family in H5;
       assert
         (H6 := not_ex_all_not _ (fun y:R => forall y0:R, ind g y0 -> g y0 y) H5 x);
-        assert (H7 := not_all_ex_not _ (fun y0:R => ind g y0 -> g y0 x) H6); 
-          elim H7; intros; exists x0; elim (imply_to_and _ _ H8); 
-            intros; unfold f0 in |- *; simpl in |- *; unfold f' in |- *; 
+        assert (H7 := not_all_ex_not _ (fun y0:R => ind g y0 -> g y0 x) H6);
+          elim H7; intros; exists x0; elim (imply_to_and _ _ H8);
+            intros; unfold f0 in |- *; simpl in |- *; unfold f' in |- *;
               split; [ apply H10 | apply H9 ].
   unfold family_open_set in |- *; intro; elim (classic (D' x)); intro.
   apply open_set_P6 with (complementary (g x)).
@@ -1448,7 +1448,7 @@ Proof.
     unfold covering in H4; elim (H4 x0 H7); intros; simpl in H8;
       unfold intersection_domain in H6; cut (ind g x1 /\ SF x1).
   intro; assert (H10 := H6 x1 H9); elim H10; clear H10; intros H10 _; elim H8;
-    clear H8; intros H8 _; unfold f' in H8; unfold complementary in H8; 
+    clear H8; intros H8 _; unfold f' in H8; unfold complementary in H8;
       elim H8; clear H8; intros H8 _; elim H8; assumption.
   split.
   apply (cond_fam f0).
@@ -1463,15 +1463,15 @@ Proof.
   unfold covering_finite in H4; elim H4; clear H4; intros H4 _;
     cut (exists z : R, X z).
   intro; elim H5; clear H5; intros; unfold covering in H4; elim (H4 x0 H5);
-    intros; simpl in H6; elim Hyp'; exists x1; elim H6; 
+    intros; simpl in H6; elim Hyp'; exists x1; elim H6;
       intros; unfold intersection_domain in |- *; split.
   apply (cond_fam f0); exists x0; apply H7.
   apply H8.
   apply Hyp.
   unfold covering_finite in H4; elim H4; clear H4; intros;
     unfold family_finite in H5; unfold domain_finite in H5;
-      unfold family_finite in |- *; unfold domain_finite in |- *; 
-        elim H5; clear H5; intros l H5; exists l; intro; elim (H5 x); 
+      unfold family_finite in |- *; unfold domain_finite in |- *;
+        elim H5; clear H5; intros l H5; exists l; intro; elim (H5 x);
           intros; split; intro;
             [ apply H6; simpl in |- *; simpl in H8; apply H8 | apply (H7 H8) ].
 Qed.
@@ -1506,7 +1506,7 @@ Proof.
   intro; cut (intersection_vide_in X f0).
   intro; assert (H7 := H3 H5 H6).
   elim H7; intros SF H8; unfold intersection_vide_finite_in in H8; elim H8;
-    clear H8; intros; unfold intersection_vide_in in H8; 
+    clear H8; intros; unfold intersection_vide_in in H8;
       elim (H8 0); intros _ H10; elim H10; unfold family_finite in H9;
         unfold domain_finite in H9; elim H9; clear H9; intros l H9;
           set (r := MaxRlist l); cut (D r).
@@ -1536,7 +1536,7 @@ Proof.
       assert
         (H17 :=
           not_ex_all_not _ (fun z:R => intersection_domain (ind f0) SF z) H13);
-        assert (H18 := H16 x); unfold intersection_family in H18; 
+        assert (H18 := H16 x); unfold intersection_family in H18;
           simpl in H18;
             assert
               (H19 :=
@@ -1604,8 +1604,8 @@ Proof.
   elim Hyp; clear Hyp; intro Hyp.
 (* X possède un seul élément *)
   unfold uniform_continuity in |- *; intros; exists (mkposreal _ Rlt_0_1);
-    intros; elim Hyp; clear Hyp; intros; elim H4; clear H4; 
-      intros; assert (H6 := H5 _ H1); assert (H7 := H5 _ H2); 
+    intros; elim Hyp; clear Hyp; intros; elim H4; clear H4;
+      intros; assert (H6 := H5 _ H1); assert (H7 := H5 _ H2);
         rewrite H6; rewrite H7; unfold Rminus in |- *; rewrite Rplus_opp_r;
           rewrite Rabs_R0; apply (cond_pos eps).
 (* X possède au moins deux éléments distincts *)
@@ -1616,8 +1616,8 @@ Proof.
     elim H2; intros; exists x; exists x0; split.
   apply H3.
   elim Hyp; intros; elim H4; intros; decompose [and] H5;
-    assert (H10 := H3 _ H6); assert (H11 := H3 _ H8); 
-      elim H10; intros; elim H11; intros; case (total_order_T x x0); 
+    assert (H10 := H3 _ H6); assert (H11 := H3 _ H8);
+      elim H10; intros; elim H11; intros; case (total_order_T x x0);
         intro.
   elim s; intro.
   assumption.
@@ -1652,7 +1652,7 @@ Proof.
   assumption.
   assert (H4 := H _ H3); unfold continuity_pt in H4; unfold continue_in in H4;
     unfold limit1_in in H4; unfold limit_in in H4; simpl in H4;
-      unfold R_dist in H4; elim (H4 (eps / 2) (H1 eps)); 
+      unfold R_dist in H4; elim (H4 (eps / 2) (H1 eps));
         intros;
           set
             (E :=
@@ -1661,7 +1661,7 @@ Proof.
                 (forall z:R, Rabs (z - x) < zeta -> Rabs (f0 z - f0 x) < eps / 2));
             assert (H6 : bound E).
   unfold bound in |- *; exists (M - m); unfold is_upper_bound in |- *;
-    unfold E in |- *; intros; elim H6; clear H6; intros H6 _; 
+    unfold E in |- *; intros; elim H6; clear H6; intros H6 _;
       elim H6; clear H6; intros _ H6; apply H6.
   assert (H7 :  exists x : R, E x).
   elim H5; clear H5; intros; exists (Rmin x0 (M - m)); unfold E in |- *; intros;
@@ -1693,14 +1693,14 @@ Proof.
   intro; assert (H16 := H14 _ H15);
     elim (Rlt_irrefl _ (Rlt_le_trans _ _ _ H10 H16)).
   unfold is_upper_bound in |- *; intros; unfold is_upper_bound in H13;
-    assert (H16 := H13 _ H15); case (Rle_dec x2 (Rabs (z - x))); 
+    assert (H16 := H13 _ H15); case (Rle_dec x2 (Rabs (z - x)));
       intro.
   assumption.
   elim (H12 x2); split; [ split; [ auto with real | assumption ] | assumption ].
   split.
   apply p.
   unfold disc in |- *; unfold Rminus in |- *; rewrite Rplus_opp_r;
-    rewrite Rabs_R0; simpl in |- *; unfold Rdiv in |- *; 
+    rewrite Rabs_R0; simpl in |- *; unfold Rdiv in |- *;
       apply Rmult_lt_0_compat; [ apply H8 | apply Rinv_0_lt_compat; prove_sup0 ].
   elim H7; intros; unfold E in H8; elim H8; intros H9 _; elim H9; intros H10 _;
     unfold is_lub in p; elim p; intros; unfold is_upper_bound in H12;
@@ -1711,8 +1711,8 @@ Proof.
   unfold family_open_set in |- *; intro; simpl in |- *; elim (classic (X x));
     intro.
   unfold g in |- *; unfold open_set in |- *; intros; elim H4; clear H4;
-    intros _ H4; elim H4; clear H4; intros; elim H4; clear H4; 
-      intros; unfold neighbourhood in |- *; case (Req_dec x x0); 
+    intros _ H4; elim H4; clear H4; intros; elim H4; clear H4;
+      intros; unfold neighbourhood in |- *; case (Req_dec x x0);
         intro.
   exists (mkposreal _ (H1 x1)); rewrite <- H6; unfold included in |- *; intros;
     split.
@@ -1745,7 +1745,7 @@ Proof.
   intros; unfold g in H4; elim H4; clear H4; intros H4 _; elim H3; apply H4.
   elim (H0 _ H3); intros DF H4; unfold covering_finite in H4; elim H4; clear H4;
     intros; unfold family_finite in H5; unfold domain_finite in H5;
-      unfold covering in H4; simpl in H4; simpl in H5; elim H5; 
+      unfold covering in H4; simpl in H4; simpl in H5; elim H5;
         clear H5; intros l H5; unfold intersection_domain in H5;
           cut
             (forall x:R,
@@ -1761,8 +1761,8 @@ Proof.
         (fun x del:R =>
           0 < del /\
           (forall z:R, Rabs (z - x) < del -> Rabs (f0 z - f0 x) < eps / 2) /\
-          included (g x) (fun z:R => Rabs (z - x) < del / 2)) H6); 
-      elim H7; clear H7; intros l' H7; elim H7; clear H7; 
+          included (g x) (fun z:R => Rabs (z - x) < del / 2)) H6);
+      elim H7; clear H7; intros l' H7; elim H7; clear H7;
         intros; set (D := MinRlist l'); cut (0 < D / 2).
   intro; exists (mkposreal _ H9); intros; assert (H13 := H4 _ H10); elim H13;
     clear H13; intros xi H13; assert (H14 : In xi l).
@@ -1785,8 +1785,8 @@ Proof.
     rewrite double; apply Rplus_lt_compat_l; apply H19.
   discrR.
   assert (H19 := H8 i H17); elim H19; clear H19; intros; rewrite <- H18 in H20;
-    elim H20; clear H20; intros; rewrite <- Rabs_Ropp; 
-      rewrite Ropp_minus_distr; apply H20; unfold included in H21; 
+    elim H20; clear H20; intros; rewrite <- Rabs_Ropp;
+      rewrite Ropp_minus_distr; apply H20; unfold included in H21;
         elim H13; intros; assert (H24 := H21 x H22);
           apply Rle_lt_trans with (Rabs (y - x) + Rabs (x - xi)).
   replace (y - xi) with (y - x + (x - xi)); [ apply Rabs_triang | ring ].
@@ -1803,7 +1803,7 @@ Proof.
   unfold Rdiv in |- *; apply Rmult_lt_0_compat;
     [ unfold D in |- *; apply MinRlist_P2; intros; elim (pos_Rl_P2 l' y); intros;
       elim (H10 H9); intros; elim H12; intros; rewrite H14;
-        rewrite <- H7 in H13; elim (H8 x H13); intros; 
+        rewrite <- H7 in H13; elim (H8 x H13); intros;
           apply H15
       | apply Rinv_0_lt_compat; prove_sup0 ].
   intros; elim (H5 x); intros; elim (H8 H6); intros;
@@ -1814,14 +1814,14 @@ Proof.
           (forall z:R, Rabs (z - x) < zeta -> Rabs (f0 z - f0 x) < eps / 2));
       assert (H11 : bound E).
   unfold bound in |- *; exists (M - m); unfold is_upper_bound in |- *;
-    unfold E in |- *; intros; elim H11; clear H11; intros H11 _; 
+    unfold E in |- *; intros; elim H11; clear H11; intros H11 _;
       elim H11; clear H11; intros _ H11; apply H11.
   assert (H12 :  exists x : R, E x).
   assert (H13 := H _ H9); unfold continuity_pt in H13;
-    unfold continue_in in H13; unfold limit1_in in H13; 
+    unfold continue_in in H13; unfold limit1_in in H13;
       unfold limit_in in H13; simpl in H13; unfold R_dist in H13;
-        elim (H13 _ (H1 eps)); intros; elim H12; clear H12; 
-          intros; exists (Rmin x0 (M - m)); unfold E in |- *; 
+        elim (H13 _ (H1 eps)); intros; elim H12; clear H12;
+          intros; exists (Rmin x0 (M - m)); unfold E in |- *;
             intros; split.
   split;
     [ unfold Rmin in |- *; case (Rle_dec x0 (M - m)); intro;
@@ -1850,7 +1850,7 @@ Proof.
   intro; assert (H21 := H19 _ H20);
     elim (Rlt_irrefl _ (Rlt_le_trans _ _ _ H15 H21)).
   unfold is_upper_bound in |- *; intros; unfold is_upper_bound in H18;
-    assert (H21 := H18 _ H20); case (Rle_dec x1 (Rabs (z - x))); 
+    assert (H21 := H18 _ H20); case (Rle_dec x1 (Rabs (z - x)));
       intro.
   assumption.
   elim (H17 x1); split.
@@ -1864,7 +1864,7 @@ Proof.
   apply H21.
   elim H12; intros; unfold E in H13; elim H13; intros H14 _; elim H14;
     intros H15 _; unfold is_lub in p; elim p; intros;
-      unfold is_upper_bound in H16; unfold is_upper_bound in H17; 
+      unfold is_upper_bound in H16; unfold is_upper_bound in H17;
         split.
   apply Rlt_le_trans with x1; [ assumption | apply (H16 _ H13) ].
   apply H17; intros; unfold E in H18; elim H18; intros; elim H19; intros;

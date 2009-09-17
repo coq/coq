@@ -34,7 +34,7 @@ let raise_with_file file exc =
     match exc with
       | DuringCommandInterp(loc,e)
       | Stdpp.Exc_located (loc,DuringSyntaxChecking e) -> (loc,e)
-      | e -> (dummy_loc,e) 
+      | e -> (dummy_loc,e)
   in
   let (inner,inex) =
     match re with
@@ -43,7 +43,7 @@ let raise_with_file file exc =
       | Stdpp.Exc_located (loc, e) when loc <> dummy_loc ->
           ((false,file, loc), e)
       | _ -> ((false,file,cmdloc), re)
-  in 
+  in
   raise (Error_in_file (file, inner, disable_drop inex))
 
 let real_error = function
@@ -68,7 +68,7 @@ let open_file_twice_if verbosely fname =
   (in_chan, longfname, (po, verb_ch))
 
 let close_input in_chan (_,verb) =
-  try 
+  try
     close_in in_chan;
     match verb with
       | Some verb_ch -> close_in verb_ch
@@ -88,7 +88,7 @@ let verbose_phrase verbch loc =
     | _ -> ()
 
 exception End_of_input
-  
+
 let parse_phrase (po, verbch) =
   match Pcoq.Gram.Entry.parse Pcoq.main_entry po with
     | Some (loc,_ as com) -> verbose_phrase verbch loc; com
@@ -133,7 +133,7 @@ let rec vernac_com interpfun (loc,com) =
         (* end translator state *)
         (* coqdoc state *)
         let cds = Dumpglob.coqdoc_freeze() in
-          if !Flags.beautify_file then 
+          if !Flags.beautify_file then
 	    begin
               let _,f = find_file_in_path ~warn:(Flags.is_verbose())
 		(Library.get_load_paths ())
@@ -141,7 +141,7 @@ let rec vernac_com interpfun (loc,com) =
 		chan_beautify := open_out (f^beautify_suffix);
 		Pp.comments := []
             end;
-          begin 
+          begin
 	    try
 	      read_vernac_file verbosely (make_suffix fname ".v");
               if !Flags.beautify_file then close_out !chan_beautify;
@@ -149,7 +149,7 @@ let rec vernac_com interpfun (loc,com) =
               Lexer.restore_com_state cs;
               Pp.comments := cl;
               Dumpglob.coqdoc_unfreeze cds
-	    with e -> 
+	    with e ->
 	      if !Flags.beautify_file then close_out !chan_beautify;
               chan_beautify := ch;
               Lexer.restore_com_state cs;
@@ -157,7 +157,7 @@ let rec vernac_com interpfun (loc,com) =
               Dumpglob.coqdoc_unfreeze cds;
 	      raise e
 	  end
-	      
+
     | VernacList l -> List.iter (fun (_,v) -> interp v) l
 
     | VernacTime v ->
@@ -185,11 +185,11 @@ let rec vernac_com interpfun (loc,com) =
 
     | v -> if not !just_parsing then interpfun v
 
-  in 
+  in
     try
       if do_beautify () then pr_new_syntax loc (Some com);
       interp com
-    with e -> 
+    with e ->
       Format.set_formatter_out_channel stdout;
       raise (DuringCommandInterp (loc, e))
 
@@ -199,10 +199,10 @@ and vernac interpfun input =
 and read_vernac_file verbosely s =
   Flags.make_warn verbosely;
   let interpfun =
-    if verbosely then 
+    if verbosely then
       Vernacentries.interp
-    else 
-      Flags.silently Vernacentries.interp 
+    else
+      Flags.silently Vernacentries.interp
   in
   let (in_chan, fname, input) = open_file_twice_if verbosely s in
   try
@@ -239,17 +239,17 @@ let set_xml_end_library f = xml_end_library := f
 let load_vernac verb file =
   chan_beautify :=
     if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout;
-  try 
+  try
     read_vernac_file verb file;
     if !Flags.beautify_file then close_out !chan_beautify;
-  with e -> 
+  with e ->
     if !Flags.beautify_file then close_out !chan_beautify;
     raise_with_file file e
 
 (* Compile a vernac file (f is assumed without .v suffix) *)
 let compile verbosely f =
   let ldir,long_f_dot_v = Flags.verbosely Library.start_library f in
-    if Dumpglob.multi_dump () then 
+    if Dumpglob.multi_dump () then
       Dumpglob.open_glob_file (f ^ ".glob");
     Dumpglob.dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
     if !Flags.xml_export then !xml_start_library ();

@@ -10,13 +10,13 @@
 
 (** * Finite set library *)
 
-(** Set interfaces, inspired by the one of Ocaml. When compared with 
-    Ocaml, the main differences are: 
+(** Set interfaces, inspired by the one of Ocaml. When compared with
+    Ocaml, the main differences are:
     - the lack of [iter] function, useless since Coq is purely functional
     - the use of [option] types instead of [Not_found] exceptions
-    - the use of [nat] instead of [int] for the [cardinal] function 
+    - the use of [nat] instead of [int] for the [cardinal] function
 
-    Several variants of the set interfaces are available: 
+    Several variants of the set interfaces are available:
     - [WSfun] : functorial signature for weak sets, non-dependent style
     - [WS]    : self-contained version of [WSfun]
     - [Sfun]  : functorial signature for ordered sets, non-dependent style
@@ -24,7 +24,7 @@
     - [Sdep]  : analog of [S] written using dependent style
 
     If unsure, [S] is probably what you're looking for: other signatures
-    are subsets of it, apart from [Sdep] which is isomorphic to [S] (see 
+    are subsets of it, apart from [Sdep] which is isomorphic to [S] (see
     [FSetBridge]).
 *)
 
@@ -34,14 +34,14 @@ Unset Strict Implicit.
 
 (** * Non-dependent signatures
 
-    The following signatures presents sets as purely informative 
+    The following signatures presents sets as purely informative
     programs together with axioms *)
 
 
 
 (** ** Functorial signature for weak sets
 
-    Weak sets are sets without ordering on base elements, only 
+    Weak sets are sets without ordering on base elements, only
     a decidable equality. *)
 
 Module Type WSfun (E : DecidableType).
@@ -57,7 +57,7 @@ Module Type WSfun (E : DecidableType).
   Definition Empty s := forall a : elt, ~ In a s.
   Definition For_all (P : elt -> Prop) s := forall x, In x s -> P x.
   Definition Exists (P : elt -> Prop) s := exists x, In x s /\ P x.
-  
+
   Notation "s  [=]  t" := (Equal s t) (at level 70, no associativity).
   Notation "s  [<=]  t" := (Subset s t) (at level 70, no associativity).
 
@@ -137,7 +137,7 @@ Module Type WSfun (E : DecidableType).
   the set is empty. Which element is chosen is unspecified.
   Equal sets could return different elements. *)
 
-  Section Spec. 
+  Section Spec.
 
   Variable s s' s'': t.
   Variable x y : elt.
@@ -146,15 +146,15 @@ Module Type WSfun (E : DecidableType).
   Parameter In_1 : E.eq x y -> In x s -> In y s.
 
   (** Specification of [eq] *)
-  Parameter eq_refl : eq s s. 
+  Parameter eq_refl : eq s s.
   Parameter eq_sym : eq s s' -> eq s' s.
   Parameter eq_trans : eq s s' -> eq s' s'' -> eq s s''.
 
   (** Specification of [mem] *)
   Parameter mem_1 : In x s -> mem x s = true.
-  Parameter mem_2 : mem x s = true -> In x s. 
- 
-  (** Specification of [equal] *) 
+  Parameter mem_2 : mem x s = true -> In x s.
+
+  (** Specification of [equal] *)
   Parameter equal_1 : Equal s s' -> equal s s' = true.
   Parameter equal_2 : equal s s' = true -> Equal s s'.
 
@@ -166,13 +166,13 @@ Module Type WSfun (E : DecidableType).
   Parameter empty_1 : Empty empty.
 
   (** Specification of [is_empty] *)
-  Parameter is_empty_1 : Empty s -> is_empty s = true. 
+  Parameter is_empty_1 : Empty s -> is_empty s = true.
   Parameter is_empty_2 : is_empty s = true -> Empty s.
- 
+
   (** Specification of [add] *)
   Parameter add_1 : E.eq x y -> In y (add x s).
   Parameter add_2 : In y s -> In y (add x s).
-  Parameter add_3 : ~ E.eq x y -> In y (add x s) -> In y s. 
+  Parameter add_3 : ~ E.eq x y -> In y (add x s) -> In y s.
 
   (** Specification of [remove] *)
   Parameter remove_1 : E.eq x y -> ~ In y (remove x s).
@@ -180,12 +180,12 @@ Module Type WSfun (E : DecidableType).
   Parameter remove_3 : In y (remove x s) -> In y s.
 
   (** Specification of [singleton] *)
-  Parameter singleton_1 : In y (singleton x) -> E.eq x y. 
-  Parameter singleton_2 : E.eq x y -> In y (singleton x). 
+  Parameter singleton_1 : In y (singleton x) -> E.eq x y.
+  Parameter singleton_2 : E.eq x y -> In y (singleton x).
 
   (** Specification of [union] *)
   Parameter union_1 : In x (union s s') -> In x s \/ In x s'.
-  Parameter union_2 : In x s -> In x (union s s'). 
+  Parameter union_2 : In x s -> In x (union s s').
   Parameter union_3 : In x s' -> In x (union s s').
 
   (** Specification of [inter] *)
@@ -194,24 +194,24 @@ Module Type WSfun (E : DecidableType).
   Parameter inter_3 : In x s -> In x s' -> In x (inter s s').
 
   (** Specification of [diff] *)
-  Parameter diff_1 : In x (diff s s') -> In x s. 
+  Parameter diff_1 : In x (diff s s') -> In x s.
   Parameter diff_2 : In x (diff s s') -> ~ In x s'.
   Parameter diff_3 : In x s -> ~ In x s' -> In x (diff s s').
- 
-  (** Specification of [fold] *)  
+
+  (** Specification of [fold] *)
   Parameter fold_1 : forall (A : Type) (i : A) (f : elt -> A -> A),
       fold f s i = fold_left (fun a e => f e a) (elements s) i.
 
-  (** Specification of [cardinal] *)  
+  (** Specification of [cardinal] *)
   Parameter cardinal_1 : cardinal s = length (elements s).
 
   Section Filter.
-  
+
   Variable f : elt -> bool.
 
   (** Specification of [filter] *)
-  Parameter filter_1 : compat_bool E.eq f -> In x (filter f s) -> In x s. 
-  Parameter filter_2 : compat_bool E.eq f -> In x (filter f s) -> f x = true. 
+  Parameter filter_1 : compat_bool E.eq f -> In x (filter f s) -> In x s.
+  Parameter filter_2 : compat_bool E.eq f -> In x (filter f s) -> f x = true.
   Parameter filter_3 :
       compat_bool E.eq f -> In x s -> f x = true -> In x (filter f s).
 
@@ -243,7 +243,7 @@ Module Type WSfun (E : DecidableType).
   (** Specification of [elements] *)
   Parameter elements_1 : In x s -> InA E.eq x (elements s).
   Parameter elements_2 : InA E.eq x (elements s) -> In x s.
-  (** When compared with ordered sets, here comes the only 
+  (** When compared with ordered sets, here comes the only
       property that is really weaker: *)
   Parameter elements_3w : NoDupA E.eq (elements s).
 
@@ -257,11 +257,11 @@ Module Type WSfun (E : DecidableType).
     is_empty_1 choose_1 choose_2 add_1 add_2 remove_1
     remove_2 singleton_2 union_1 union_2 union_3
     inter_3 diff_3 fold_1 filter_3 for_all_1 exists_1
-    partition_1 partition_2 elements_1 elements_3w 
+    partition_1 partition_2 elements_1 elements_3w
     : set.
   Hint Immediate In_1 mem_2 equal_2 subset_2 is_empty_2 add_3
     remove_3 singleton_1 inter_1 inter_2 diff_1 diff_2
-    filter_1 filter_2 for_all_2 exists_2 elements_2 
+    filter_1 filter_2 for_all_2 exists_2 elements_2
     : set.
 
 End WSfun.
@@ -270,7 +270,7 @@ End WSfun.
 
 (** ** Static signature for weak sets
 
-    Similar to the functorial signature [SW], except that the 
+    Similar to the functorial signature [SW], except that the
     module [E] of base elements is incorporated in the signature. *)
 
 Module Type WS.
@@ -295,48 +295,48 @@ Module Type Sfun (E : OrderedType).
 
   Parameter min_elt : t -> option elt.
   (** Return the smallest element of the given set
-  (with respect to the [E.compare] ordering), 
+  (with respect to the [E.compare] ordering),
   or [None] if the set is empty. *)
 
   Parameter max_elt : t -> option elt.
   (** Same as [min_elt], but returns the largest element of the
   given set. *)
 
-  Section Spec. 
+  Section Spec.
 
   Variable s s' s'' : t.
   Variable x y : elt.
- 
+
   (** Specification of [lt] *)
   Parameter lt_trans : lt s s' -> lt s' s'' -> lt s s''.
   Parameter lt_not_eq : lt s s' -> ~ eq s s'.
 
   (** Additional specification of [elements] *)
-  Parameter elements_3 : sort E.lt (elements s).  
+  Parameter elements_3 : sort E.lt (elements s).
 
   (** Remark: since [fold] is specified via [elements], this stronger
-   specification of [elements] has an indirect impact on [fold], 
+   specification of [elements] has an indirect impact on [fold],
    which can now be proved to receive elements in increasing order.
   *)
 
   (** Specification of [min_elt] *)
-  Parameter min_elt_1 : min_elt s = Some x -> In x s. 
-  Parameter min_elt_2 : min_elt s = Some x -> In y s -> ~ E.lt y x. 
+  Parameter min_elt_1 : min_elt s = Some x -> In x s.
+  Parameter min_elt_2 : min_elt s = Some x -> In y s -> ~ E.lt y x.
   Parameter min_elt_3 : min_elt s = None -> Empty s.
 
-  (** Specification of [max_elt] *)  
-  Parameter max_elt_1 : max_elt s = Some x -> In x s. 
-  Parameter max_elt_2 : max_elt s = Some x -> In y s -> ~ E.lt x y. 
+  (** Specification of [max_elt] *)
+  Parameter max_elt_1 : max_elt s = Some x -> In x s.
+  Parameter max_elt_2 : max_elt s = Some x -> In y s -> ~ E.lt x y.
   Parameter max_elt_3 : max_elt s = None -> Empty s.
 
   (** Additional specification of [choose] *)
-  Parameter choose_3 : choose s = Some x -> choose s' = Some y -> 
+  Parameter choose_3 : choose s = Some x -> choose s' = Some y ->
     Equal s s' -> E.eq x y.
 
   End Spec.
 
   Hint Resolve elements_3 : set.
-  Hint Immediate 
+  Hint Immediate
     min_elt_1 min_elt_2 min_elt_3 max_elt_1 max_elt_2 max_elt_3 : set.
 
 End Sfun.
@@ -344,7 +344,7 @@ End Sfun.
 
 (** ** Static signature for sets on ordered elements
 
-    Similar to the functorial signature [Sfun], except that the 
+    Similar to the functorial signature [Sfun], except that the
     module [E] of base elements is incorporated in the signature. *)
 
 Module Type S.
@@ -411,7 +411,7 @@ Module Type Sdep.
 
   Parameter
     singleton : forall x : elt, {s : t | forall y : elt, In y s <-> E.eq x y}.
-  
+
   Parameter
     remove :
       forall (x : elt) (s : t),
@@ -433,7 +433,7 @@ Module Type Sdep.
       {s'' : t | forall x : elt, In x s'' <-> In x s /\ ~ In x s'}.
 
   Parameter equal : forall s s' : t, {s[=]s'} + {~ s[=]s'}.
- 
+
   Parameter subset : forall s s' : t, {Subset s s'} + {~ Subset s s'}.
 
   Parameter
@@ -447,7 +447,7 @@ Module Type Sdep.
       forall (P : elt -> Prop) (Pdec : forall x : elt, {P x} + {~ P x})
         (s : t),
       {compat_P E.eq P -> For_all P s} + {compat_P E.eq P -> ~ For_all P s}.
-  
+
   Parameter
     exists_ :
       forall (P : elt -> Prop) (Pdec : forall x : elt, {P x} + {~ P x})
@@ -474,7 +474,7 @@ Module Type Sdep.
   Parameter
     fold :
       forall (A : Type) (f : elt -> A -> A) (s : t) (i : A),
-      {r : A | let (l,_) := elements s in 
+      {r : A | let (l,_) := elements s in
                   r = fold_left (fun a e => f e a) l i}.
 
   Parameter
@@ -494,10 +494,10 @@ Module Type Sdep.
 
   Parameter choose : forall s : t, {x : elt | In x s} + {Empty s}.
 
-  (** The [choose_3] specification of [S] cannot be packed 
+  (** The [choose_3] specification of [S] cannot be packed
         in the dependent version of [choose], so we leave it separate. *)
-  Parameter choose_equal : forall s s', Equal s s' -> 
-     match choose s, choose s' with 
+  Parameter choose_equal : forall s s', Equal s s' ->
+     match choose s, choose s' with
        | inleft (exist x _), inleft (exist x' _) => E.eq x x'
        | inright _, inright _  => True
        | _, _  => False

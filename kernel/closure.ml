@@ -40,7 +40,7 @@ let incr_cnt red cnt =
   if red then begin
     if !stats then incr cnt;
     true
-  end else 
+  end else
     false
 
 let with_stats c =
@@ -126,13 +126,13 @@ module RedFlags = (struct
 	{ red with r_const = Idpred.remove id l1, l2 }
 
   let red_add_transparent red tr =
-    { red with r_const = tr } 
+    { red with r_const = tr }
 
   let mkflags = List.fold_left red_add no_red
 
   let red_set red = function
     | BETA -> incr_cnt red.r_beta beta
-    | CONST kn -> 
+    | CONST kn ->
 	let (_,l) = red.r_const in
 	let c = Cpred.mem kn l in
 	incr_cnt c delta
@@ -168,7 +168,7 @@ let betaiotazeta = mkflags [fBETA;fIOTA;fZETA]
 (* Removing fZETA for finer behaviour would break many developments *)
 let unfold_side_flags = [fBETA;fIOTA;fZETA]
 let unfold_side_red = mkflags [fBETA;fIOTA;fZETA]
-let unfold_red kn = 
+let unfold_red kn =
   let flag = match kn with
     | EvalVarRef id -> fVAR id
     | EvalConstRef kn -> fCONST kn in
@@ -208,7 +208,7 @@ type 'a infos = {
 let info_flags info = info.i_flags
 
 let ref_value_cache info ref =
-  try  
+  try
     Some (Hashtbl.find info.i_tab ref)
   with Not_found ->
   try
@@ -232,7 +232,7 @@ let evar_value info ev =
 
 let defined_vars flags env =
 (*  if red_local_const (snd flags) then*)
-    Sign.fold_named_context 
+    Sign.fold_named_context
       (fun (id,b,_) e ->
 	 match b with
 	   | None -> e
@@ -242,7 +242,7 @@ let defined_vars flags env =
 
 let defined_rels flags env =
 (*  if red_local_const (snd flags) then*)
-  Sign.fold_rel_context 
+  Sign.fold_rel_context
       (fun (id,b,t) (i,subs) ->
 	 match b with
 	   | None -> (i+1, subs)
@@ -300,8 +300,8 @@ let neutr = function
   | (Whnf|Norm) -> Whnf
   | (Red|Cstr) -> Red
 
-type fconstr = { 
-  mutable norm: red_state; 
+type fconstr = {
+  mutable norm: red_state;
   mutable term: fterm }
 
 and fterm =
@@ -339,7 +339,7 @@ let update v1 (no,t) =
   else {norm=no;term=t}
 
 (**********************************************************************)
-(* The type of (machine) stacks (= lambda-bar-calculus' contexts)     *) 
+(* The type of (machine) stacks (= lambda-bar-calculus' contexts)     *)
 
 type stack_member =
   | Zapp of fconstr array
@@ -387,7 +387,7 @@ let array_of_stack s =
   in Array.concat (stackrec s)
 let rec stack_assign s p c = match s with
   | Zapp args :: s ->
-      let q = Array.length args in 
+      let q = Array.length args in
       if p >= q then
 	Zapp args :: stack_assign s (p-q) c
       else
@@ -395,7 +395,7 @@ let rec stack_assign s p c = match s with
          nargs.(p) <- c;
          Zapp nargs :: s)
   | _ -> s
-let rec stack_tail p s = 
+let rec stack_tail p s =
   if p = 0 then s else
     match s with
       | Zapp args :: s ->
@@ -659,7 +659,7 @@ let term_of_fconstr =
 
 (* fstrong applies unfreeze_fun recursively on the (freeze) term and
  * yields a term.  Assumes that the unfreeze_fun never returns a
- * FCLOS term. 
+ * FCLOS term.
 let rec fstrong unfreeze_fun lfts v =
   to_constr (fstrong unfreeze_fun) lfts (unfreeze_fun v)
 *)
@@ -852,7 +852,7 @@ let rec knr info m stk =
   | FLambda(n,tys,f,e) when red_set info.i_flags fBETA ->
       (match get_args n tys f e stk with
           Inl e', s -> knit info e' f s
-        | Inr lam, s -> (lam,s)) 
+        | Inr lam, s -> (lam,s))
   | FFlex(ConstKey kn) when red_set info.i_flags (fCONST kn) ->
       (match ref_value_cache info (ConstKey kn) with
           Some v -> kni info v stk
@@ -931,7 +931,7 @@ let rec kl info m =
     zip_term (kl info) (norm_head info nm) s
 
 (* no redex: go up for atoms and already normalized terms, go down
-   otherwise. *) 
+   otherwise. *)
 and norm_head info m =
   if is_val m then (incr prune; term_of_fconstr m) else
     match m.term with

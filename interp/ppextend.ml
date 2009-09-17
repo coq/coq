@@ -50,7 +50,7 @@ let ppcmd_of_cut = function
   | PpBrk(n1,n2) -> brk(n1,n2)
   | PpTbrk(n1,n2) -> tbrk(n1,n2)
 
-type unparsing = 
+type unparsing =
   | UnpMetaVar of int * parenRelation
   | UnpListMetaVar of int * parenRelation * unparsing list
   | UnpTerminal of string

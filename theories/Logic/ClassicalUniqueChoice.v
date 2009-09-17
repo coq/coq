@@ -80,4 +80,4 @@ destruct (f P).
     discriminate.
     assumption.
 Qed.
- 
+

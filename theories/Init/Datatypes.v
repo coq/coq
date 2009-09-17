@@ -98,7 +98,7 @@ Defined.
 
 (** [nat] is the datatype of natural numbers built from [O] and successor [S];
     note that the constructor name is the letter O.
-    Numbers in [nat] can be denoted using a decimal notation; 
+    Numbers in [nat] can be denoted using a decimal notation;
     e.g. [3%nat] abbreviates [S (S (S O))] *)
 
 Inductive nat : Set :=
@@ -166,7 +166,7 @@ Section projections.
   Definition snd (p:A * B) := match p with
 				| (x, y) => y
                               end.
-End projections. 
+End projections.
 
 Hint Resolve pair inl inr: core.
 
@@ -181,13 +181,13 @@ Lemma injective_projections :
     fst p1 = fst p2 -> snd p1 = snd p2 -> p1 = p2.
 Proof.
   destruct p1; destruct p2; simpl in |- *; intros Hfst Hsnd.
-  rewrite Hfst; rewrite Hsnd; reflexivity. 
+  rewrite Hfst; rewrite Hsnd; reflexivity.
 Qed.
 
-Definition prod_uncurry (A B C:Type) (f:prod A B -> C) 
+Definition prod_uncurry (A B C:Type) (f:prod A B -> C)
   (x:A) (y:B) : C := f (pair x y).
 
-Definition prod_curry (A B C:Type) (f:A -> B -> C) 
+Definition prod_curry (A B C:Type) (f:A -> B -> C)
   (p:prod A B) : C := match p with
                        | pair x y => f x y
                        end.

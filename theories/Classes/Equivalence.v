@@ -7,10 +7,10 @@
 (************************************************************************)
 
 (* Typeclass-based setoids. Definitions on [Equivalence].
- 
+
    Author: Matthieu Sozeau
    Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
-   91405 Orsay, France *) 
+   91405 Orsay, France *)
 
 (* $Id$ *)
 
@@ -34,7 +34,7 @@ Definition equiv `{Equivalence A R} : relation A := R.
 Notation " x === y " := (equiv x y) (at level 70, no associativity) : equiv_scope.
 
 Notation " x =/= y " := (complement equiv x y) (at level 70, no associativity) : equiv_scope.
-  
+
 Open Local Scope equiv_scope.
 
 (** Overloading for [PER]. *)
@@ -60,7 +60,7 @@ Program Instance equiv_transitive `(sa : Equivalence A) : Transitive equiv.
 
 (** Use the [substitute] command which substitutes an equivalence in every hypothesis. *)
 
-Ltac setoid_subst H := 
+Ltac setoid_subst H :=
   match type of H with
     ?x === ?y => substitute H ; clear H x
   end.
@@ -70,7 +70,7 @@ Ltac setoid_subst_nofail :=
     | [ H : ?x === ?y |- _ ] => setoid_subst H ; setoid_subst_nofail
     | _ => idtac
   end.
-  
+
 (** [subst*] will try its best at substituting every equality in the goal. *)
 
 Tactic Notation "subst" "*" := subst_no_fail ; setoid_subst_nofail.
@@ -100,19 +100,19 @@ Ltac equivify := repeat equivify_tac.
 
 Section Respecting.
 
-  (** Here we build an equivalence instance for functions which relates respectful ones only, 
+  (** Here we build an equivalence instance for functions which relates respectful ones only,
      we do not export it. *)
 
-  Definition respecting `(eqa : Equivalence A (R : relation A), eqb : Equivalence B (R' : relation B)) : Type := 
+  Definition respecting `(eqa : Equivalence A (R : relation A), eqb : Equivalence B (R' : relation B)) : Type :=
     { morph : A -> B | respectful R R' morph morph }.
-  
+
   Program Instance respecting_equiv `(eqa : Equivalence A R, eqb : Equivalence B R') :
     Equivalence (fun (f g : respecting eqa eqb) => forall (x y : A), R x y -> R' (proj1_sig f x) (proj1_sig g y)).
-  
+
   Solve Obligations using unfold respecting in * ; simpl_relation ; program_simpl.
 
   Next Obligation.
-  Proof. 
+  Proof.
     unfold respecting in *. program_simpl. transitivity (y y0); auto. apply H0. reflexivity.
   Qed.
 

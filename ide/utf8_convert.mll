@@ -9,7 +9,7 @@
 (* $Id$ *)
 
 {
-  open Lexing 
+  open Lexing
   let b = Buffer.create 127
 
 }
@@ -24,16 +24,16 @@ rule entry = parse
   | "\\x{" (short | long ) '}'
       { let s = lexeme lexbuf in
 	let n = String.length s in
-	let code = 
-	  try Glib.Utf8.from_unichar 
-	    (int_of_string ("0x"^(String.sub s 3 (n - 4)))) 
+	let code =
+	  try Glib.Utf8.from_unichar
+	    (int_of_string ("0x"^(String.sub s 3 (n - 4))))
 	  with _ -> s
 	in
 	let c = if Glib.Utf8.validate code then code else s in
 	Buffer.add_string b c;
 	entry lexbuf
       }
-  | _ 
+  | _
       { let s = lexeme lexbuf in
 	Buffer.add_string b s;
 	entry lexbuf}

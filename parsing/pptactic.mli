@@ -25,8 +25,8 @@ val pr_and_short_name : ('a -> std_ppcmds) -> 'a and_short_name -> std_ppcmds
 val pr_or_by_notation : ('a -> std_ppcmds) -> 'a or_by_notation -> std_ppcmds
 
 type 'a raw_extra_genarg_printer =
-    (constr_expr -> std_ppcmds) -> 
-    (constr_expr -> std_ppcmds) -> 
+    (constr_expr -> std_ppcmds) ->
+    (constr_expr -> std_ppcmds) ->
     (tolerability -> raw_tactic_expr -> std_ppcmds) ->
     'a -> std_ppcmds
 
@@ -37,13 +37,13 @@ type 'a glob_extra_genarg_printer =
     'a -> std_ppcmds
 
 type 'a extra_genarg_printer =
-    (Term.constr -> std_ppcmds) -> 
-    (Term.constr -> std_ppcmds) -> 
+    (Term.constr -> std_ppcmds) ->
+    (Term.constr -> std_ppcmds) ->
     (tolerability -> glob_tactic_expr -> std_ppcmds) ->
     'a -> std_ppcmds
 
   (* if the boolean is false then the extension applies only to old syntax *)
-val declare_extra_genarg_pprule : 
+val declare_extra_genarg_pprule :
   ('c raw_abstract_argument_type * 'c raw_extra_genarg_printer) ->
   ('a glob_abstract_argument_type * 'a glob_extra_genarg_printer) ->
   ('b typed_abstract_argument_type * 'b extra_genarg_printer) -> unit
@@ -51,12 +51,12 @@ val declare_extra_genarg_pprule :
 type grammar_terminals = string option list
 
   (* if the boolean is false then the extension applies only to old syntax *)
-val declare_extra_tactic_pprule : 
+val declare_extra_tactic_pprule :
   string * argument_type list * (int * grammar_terminals) -> unit
 
 val exists_extra_tactic_pprule : string -> argument_type list -> bool
 
-val pr_raw_generic : 
+val pr_raw_generic :
   (constr_expr -> std_ppcmds) ->
   (constr_expr -> std_ppcmds) ->
   (tolerability -> raw_tactic_expr -> std_ppcmds) ->
@@ -83,7 +83,7 @@ val pr_ltac_constant : Nametab.ltac_constant -> std_ppcmds
 val pr_raw_tactic : env -> raw_tactic_expr -> std_ppcmds
 
 val pr_raw_tactic_level : env -> tolerability -> raw_tactic_expr -> std_ppcmds
- 
+
 val pr_glob_tactic : env -> glob_tactic_expr -> std_ppcmds
 
 val pr_tactic : env -> Proof_type.tactic_expr -> std_ppcmds

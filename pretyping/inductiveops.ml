@@ -71,15 +71,15 @@ let substnl_ind_type l n = map_inductive_type (substnl l n)
 let mkAppliedInd (IndType ((ind,params), realargs)) =
   applist (mkInd ind,params@realargs)
 
-(* Does not consider imbricated or mutually recursive types *) 
-let mis_is_recursive_subset listind rarg = 
-  let rec one_is_rec rvec = 
+(* Does not consider imbricated or mutually recursive types *)
+let mis_is_recursive_subset listind rarg =
+  let rec one_is_rec rvec =
     List.exists
       (fun ra ->
         match dest_recarg ra with
-	  | Mrec i -> List.mem i listind 
+	  | Mrec i -> List.mem i listind
           | _ -> false) rvec
-  in 
+  in
   array_exists one_is_rec (dest_subterms rarg)
 
 let mis_is_recursive (ind,mib,mip) =
@@ -90,7 +90,7 @@ let mis_nf_constructor_type (ind,mib,mip) j =
   let specif = mip.mind_nf_lc
   and ntypes = mib.mind_ntypes
   and nconstr = Array.length mip.mind_consnames in
-  let make_Ik k = mkInd ((fst ind),ntypes-k-1) in 
+  let make_Ik k = mkInd ((fst ind),ntypes-k-1) in
   if j > nconstr then error "Not enough constructors in the type.";
   substl (list_tabulate make_Ik ntypes) specif.(j-1)
 
@@ -101,15 +101,15 @@ let mis_constr_nargs indsp =
   let recargs = dest_subterms mip.mind_recargs in
   Array.map List.length recargs
 
-let mis_constr_nargs_env env (kn,i) = 
+let mis_constr_nargs_env env (kn,i) =
   let mib = Environ.lookup_mind kn env in
-  let mip = mib.mind_packets.(i) in 
+  let mip = mib.mind_packets.(i) in
   let recargs = dest_subterms mip.mind_recargs in
   Array.map List.length recargs
 
 let mis_constructor_nargs_env env ((kn,i),j) =
   let mib = Environ.lookup_mind kn env in
-  let mip = mib.mind_packets.(i) in 
+  let mip = mib.mind_packets.(i) in
   recarg_length mip.mind_recargs j + mib.mind_nparams
 
 let constructor_nrealargs env (ind,j) =
@@ -124,7 +124,7 @@ let get_full_arity_sign env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_arity_ctxt
 
-let nconstructors ind = 
+let nconstructors ind =
   let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
   Array.length mip.mind_consnames
 
@@ -175,7 +175,7 @@ let instantiate_params t args sign =
 	(match kind_of_term t with
 	   | Prod(_,_,t) -> inst (a::s) t (ctxt,args)
 	   | _ -> anomaly"instantiate_params: type, ctxt and args mismatch")
-    | ((_,(Some b),_)::ctxt,args) -> 
+    | ((_,(Some b),_)::ctxt,args) ->
 	(match kind_of_term t with
 	   | LetIn(_,_,_,t) -> inst ((substl s b)::s) t (ctxt,args)
 	   | _ -> anomaly"instantiate_params: type, ctxt and args mismatch")
@@ -252,7 +252,7 @@ let build_dependent_constructor cs =
 let build_dependent_inductive env ((ind, params) as indf) =
   let arsign,_ = get_arity env indf in
   let nrealargs = List.length arsign in
-  applist 
+  applist
     (mkInd ind,
      (List.map (lift nrealargs) params)@(extended_rel_list 0 arsign))
 
@@ -325,7 +325,7 @@ let find_coinductive env sigma c =
 (* find appropriate names for pattern variables. Useful in the Case
    and Inversion (case_then_using et case_nodep_then_using) tactics. *)
 
-let is_predicate_explicitly_dep env pred arsign = 
+let is_predicate_explicitly_dep env pred arsign =
   let rec srec env pval arsign =
     let pv' = whd_betadeltaiota env Evd.empty pval in
     match kind_of_term pv', arsign with
@@ -405,7 +405,7 @@ let arity_of_case_predicate env (ind,params) dep k =
 (* Check if u (sort of a parameter) appears in the sort of the
    inductive (is). This is done by trying to enforce u > u' >= is
    in the empty univ graph. If an inconsistency appears, then
-   is depends on u. *)  
+   is depends on u. *)
 let is_constrained is u =
   try
     let u' = fresh_local_univ() in
@@ -456,7 +456,7 @@ let type_of_inductive_knowing_conclusion env mip conclty =
 (* A function which checks that a term well typed verifies both
    syntactic conditions *)
 
-let control_only_guard env c = 
+let control_only_guard env c =
   let check_fix_cofix e c = match kind_of_term c with
     | CoFix (_,(_,_,_) as cofix) ->
 	Inductive.check_cofix e cofix
@@ -464,12 +464,12 @@ let control_only_guard env c =
 	Inductive.check_fix e fix
     | _ -> ()
   in
-  let rec iter env c = 
-    check_fix_cofix env c; 
+  let rec iter env c =
+    check_fix_cofix env c;
     iter_constr_with_full_binders push_rel iter env c
   in
   iter env c
 
-let subst_inductive subst (kn,i as ind) = 
+let subst_inductive subst (kn,i as ind) =
   let kn' = Mod_subst.subst_kn subst kn in
   if kn == kn' then ind else (kn',i)

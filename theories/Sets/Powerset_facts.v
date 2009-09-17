@@ -41,34 +41,34 @@ Section Sets_as_an_algebra.
   Proof.
     auto 6 with sets.
   Qed.
-  
+
   Theorem Empty_set_zero' : forall x:U, Add U (Empty_set U) x = Singleton U x.
   Proof.
     unfold Add at 1 in |- *; auto using Empty_set_zero with sets.
   Qed.
-  
+
   Lemma less_than_empty :
     forall X:Ensemble U, Included U X (Empty_set U) -> X = Empty_set U.
   Proof.
     auto with sets.
   Qed.
-  
+
   Theorem Union_commutative : forall A B:Ensemble U, Union U A B = Union U B A.
   Proof.
     auto with sets.
   Qed.
-  
+
   Theorem Union_associative :
     forall A B C:Ensemble U, Union U (Union U A B) C = Union U A (Union U B C).
   Proof.
     auto 9 with sets.
   Qed.
-  
+
   Theorem Union_idempotent : forall A:Ensemble U, Union U A A = A.
   Proof.
     auto 7 with sets.
   Qed.
-  
+
   Lemma Union_absorbs :
     forall A B:Ensemble U, Included U B A -> Union U A B = A.
   Proof.
@@ -82,7 +82,7 @@ Section Sets_as_an_algebra.
     intros x0 H'; elim H'; (intros x1 H'0; elim H'0; auto with sets).
     intros x0 H'; elim H'; auto with sets.
   Qed.
-  
+
   Theorem Triple_as_union :
     forall x y z:U,
       Union U (Union U (Singleton U x) (Singleton U y)) (Singleton U z) =
@@ -94,7 +94,7 @@ Section Sets_as_an_algebra.
     intros x1 H'0; elim H'0; auto with sets.
     intros x0 H'; elim H'; auto with sets.
   Qed.
-  
+
   Theorem Triple_as_Couple : forall x y:U, Couple U x y = Triple U x x y.
   Proof.
     intros x y.
@@ -102,7 +102,7 @@ Section Sets_as_an_algebra.
     rewrite <- (Union_idempotent (Singleton U x)).
     apply Triple_as_union.
   Qed.
-  
+
   Theorem Triple_as_Couple_Singleton :
     forall x y z:U, Triple U x y z = Union U (Couple U x y) (Singleton U z).
   Proof.
@@ -110,7 +110,7 @@ Section Sets_as_an_algebra.
     rewrite <- (Triple_as_union x y z).
     rewrite <- (Couple_as_union x y); auto with sets.
   Qed.
-  
+
   Theorem Intersection_commutative :
     forall A B:Ensemble U, Intersection U A B = Intersection U B A.
   Proof.
@@ -118,7 +118,7 @@ Section Sets_as_an_algebra.
     apply Extensionality_Ensembles.
     split; red in |- *; intros x H'; elim H'; auto with sets.
   Qed.
-  
+
   Theorem Distributivity :
     forall A B C:Ensemble U,
       Intersection U A (Union U B C) =
@@ -132,7 +132,7 @@ Section Sets_as_an_algebra.
     elim H'1; auto with sets.
     elim H'; intros x0 H'0; elim H'0; auto with sets.
   Qed.
-  
+
   Theorem Distributivity' :
     forall A B C:Ensemble U,
       Union U A (Intersection U B C) =
@@ -149,13 +149,13 @@ Section Sets_as_an_algebra.
     generalize H'1.
     elim H'2; auto with sets.
   Qed.
-  
+
   Theorem Union_add :
     forall (A B:Ensemble U) (x:U), Add U (Union U A B) x = Union U A (Add U B x).
   Proof.
     unfold Add in |- *; auto using Union_associative with sets.
   Qed.
-  
+
   Theorem Non_disjoint_union :
     forall (X:Ensemble U) (x:U), In U X x -> Add U X x = X.
   Proof.
@@ -165,7 +165,7 @@ Section Sets_as_an_algebra.
     intros x0 H'0; elim H'0; auto with sets.
     intros t H'1; elim H'1; auto with sets.
   Qed.
-  
+
   Theorem Non_disjoint_union' :
     forall (X:Ensemble U) (x:U), ~ In U X x -> Subtract U X x = X.
   Proof.
@@ -178,12 +178,12 @@ Section Sets_as_an_algebra.
     lapply (Singleton_inv U x x0); auto with sets.
     intro H'4; apply H'; rewrite H'4; auto with sets.
   Qed.
-  
+
   Lemma singlx : forall x y:U, In U (Add U (Empty_set U) x) y -> x = y.
   Proof.
     intro x; rewrite (Empty_set_zero' x); auto with sets.
   Qed.
-  
+
   Lemma incl_add :
     forall (A B:Ensemble U) (x:U),
       Included U A B -> Included U (Add U A x) (Add U B x).
@@ -209,7 +209,7 @@ Section Sets_as_an_algebra.
     absurd (In U A x0); auto with sets.
     rewrite <- H'4; auto with sets.
   Qed.
-  
+
   Lemma Add_commutative :
     forall (A:Ensemble U) (x y:U), Add U (Add U A x) y = Add U (Add U A y) x.
   Proof.
@@ -220,7 +220,7 @@ Section Sets_as_an_algebra.
     rewrite <- (Union_associative A (Singleton U y) (Singleton U x));
       auto with sets.
   Qed.
-  
+
   Lemma Add_commutative' :
     forall (A:Ensemble U) (x y z:U),
       Add U (Add U (Add U A x) y) z = Add U (Add U (Add U A z) x) y.
@@ -229,7 +229,7 @@ Section Sets_as_an_algebra.
     rewrite (Add_commutative (Add U A x) y z).
     rewrite (Add_commutative A x z); auto with sets.
   Qed.
-  
+
   Lemma Add_distributes :
     forall (A B:Ensemble U) (x y:U),
       Included U B A -> Add U (Add U A x) y = Union U (Add U A x) (Add U B y).

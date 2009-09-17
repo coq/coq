@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(* Coq interface to the Whelp query engine developed at 
+(* Coq interface to the Whelp query engine developed at
    the University of Bologna *)
 
 open Names

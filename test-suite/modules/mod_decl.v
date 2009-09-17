@@ -31,17 +31,17 @@ Module Type T.
   Module M0.
     Axiom A : Set.
   End M0.
-  
+
   Declare Module M1: SIG.
-  
+
   Module M2 <: SIG.
     Definition A := nat.
   End M2.
-  
+
   Module M3 := M0.
-  
+
   Module M4 : SIG := M0.
-  
+
   Module M5 <: SIG := M0.
 
   Module M6 := F M0.

@@ -55,9 +55,9 @@ val subst_const_body : substitution -> constant_body -> constant_body
 (**********************************************************************)
 (*s Representation of mutual inductive types in the kernel            *)
 
-type recarg = 
-  | Norec 
-  | Mrec of int 
+type recarg =
+  | Norec
+  | Mrec of int
   | Imbr of inductive
 
 val subst_recarg : substitution -> recarg -> recarg
@@ -85,7 +85,7 @@ type monomorphic_inductive_arity = {
   mind_sort : sorts;
 }
 
-type inductive_arity = 
+type inductive_arity =
 | Monomorphic of monomorphic_inductive_arity
 | Polymorphic of polymorphic_arity
 
@@ -139,7 +139,7 @@ type one_inductive_body = {
  (* number of no constant constructor *)
     mind_nb_args : int;
 
-    mind_reloc_tbl :  Cbytecodes.reloc_table; 
+    mind_reloc_tbl :  Cbytecodes.reloc_table;
   }
 
 type mutual_inductive_body = {
@@ -181,11 +181,11 @@ val subst_mind : substitution -> mutual_inductive_body -> mutual_inductive_body
 (*s Modules: signature component specifications, module types, and
   module declarations *)
 
-type structure_field_body = 
+type structure_field_body =
   | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
   | SFBmodule of module_body
-  | SFBalias of module_path * struct_expr_body option 
+  | SFBalias of module_path * struct_expr_body option
       * constraints option
   | SFBmodtype of module_type_body
 
@@ -193,25 +193,25 @@ and structure_body = (label * structure_field_body) list
 
 and struct_expr_body =
   | SEBident of module_path
-  | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body 
+  | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body
   | SEBstruct of mod_self_id * structure_body
   | SEBapply of struct_expr_body * struct_expr_body
       * constraints
   | SEBwith of struct_expr_body * with_declaration_body
 
 and with_declaration_body =
-    With_module_body of identifier list * module_path 
+    With_module_body of identifier list * module_path
       * struct_expr_body option  * constraints
   | With_definition_body of  identifier list * constant_body
-        
-and module_body = 
+
+and module_body =
     { mod_expr : struct_expr_body option;
       mod_type : struct_expr_body option;
       mod_constraints : constraints;
       mod_alias : substitution;
       mod_retroknowledge : Retroknowledge.action list}
 
-and module_type_body = 
+and module_type_body =
     { typ_expr : struct_expr_body;
       typ_strength : module_path option;
       typ_alias : substitution}

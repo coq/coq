@@ -213,7 +213,7 @@ Proof.
   apply Rabs_pos_lt; unfold Rdiv, Rsqr in |- *; repeat rewrite Rmult_assoc;
     repeat apply prod_neq_R0.
   red in |- *; intro; rewrite H11 in H6; elim (Rlt_irrefl _ H6).
-  assumption. 
+  assumption.
   assumption.
   apply Rinv_neq_0_compat; repeat apply prod_neq_R0;
     [ discrR | discrR | discrR | assumption ].
@@ -380,7 +380,7 @@ Proof.
   unfold Rdiv, Rsqr in |- *.
   repeat rewrite Rinv_mult_distr; try assumption.
   repeat apply prod_neq_R0; try assumption.
-  red in |- *; intro H18; rewrite H18 in H6; elim (Rlt_irrefl _ H6). 
+  red in |- *; intro H18; rewrite H18 in H6; elim (Rlt_irrefl _ H6).
   apply Rinv_neq_0_compat; discrR.
   apply Rinv_neq_0_compat; discrR.
   apply Rinv_neq_0_compat; discrR.
@@ -408,14 +408,14 @@ Proof.
   unfold Rsqr, Rdiv in |- *.
   repeat rewrite Rinv_mult_distr; try assumption || discrR.
   repeat apply prod_neq_R0; try assumption.
-  red in |- *; intro H13; rewrite H13 in H6; elim (Rlt_irrefl _ H6). 
+  red in |- *; intro H13; rewrite H13 in H6; elim (Rlt_irrefl _ H6).
   apply Rinv_neq_0_compat; discrR.
   apply Rinv_neq_0_compat; discrR.
   apply Rinv_neq_0_compat; discrR.
   apply Rinv_neq_0_compat; assumption.
   apply Rinv_neq_0_compat; assumption.
   apply prod_neq_R0; [ discrR | assumption ].
-  red in |- *; intro H11; rewrite H11 in H6; elim (Rlt_irrefl _ H6). 
+  red in |- *; intro H11; rewrite H11 in H6; elim (Rlt_irrefl _ H6).
   apply Rinv_neq_0_compat; discrR.
   apply Rinv_neq_0_compat; discrR.
   apply Rinv_neq_0_compat; discrR.
@@ -519,7 +519,7 @@ Proof.
   repeat apply Rmin_pos.
   apply (cond_pos eps_f2).
   elim H3; intros; assumption.
-  apply (cond_pos alp_f1d). 
+  apply (cond_pos alp_f1d).
   apply (cond_pos alp_f2d).
   elim H11; intros; assumption.
   apply Rabs_pos_lt.
@@ -776,7 +776,7 @@ Proof.
 Qed.
 
 Lemma derive_pt_div :
-  forall (f1 f2:R -> R) (x:R) (pr1:derivable_pt f1 x) 
+  forall (f1 f2:R -> R) (x:R) (pr1:derivable_pt f1 x)
     (pr2:derivable_pt f2 x) (na:f2 x <> 0),
     derive_pt (f1 / f2) x (derivable_pt_div _ _ _ pr1 pr2 na) =
     (derive_pt f1 x pr1 * f2 x - derive_pt f2 x pr2 * f1 x) / Rsqr (f2 x).

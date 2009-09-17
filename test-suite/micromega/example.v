@@ -19,7 +19,7 @@ Lemma not_so_easy : forall x n : Z,
   2*x + 1 <= 2 *n -> x <= n-1.
 Proof.
   intros.
-  lia. 
+  lia.
 Qed.
 
 
@@ -27,19 +27,19 @@ Qed.
 
 Lemma some_pol : forall x, 4 * x ^ 2 + 3 * x + 2 >= 0.
 Proof.
-  intros. 
+  intros.
   psatz Z 2.
 Qed.
 
 
-Lemma Zdiscr: forall a b c x, 
+Lemma Zdiscr: forall a b c x,
   a * x ^ 2 + b * x + c = 0 -> b ^ 2 - 4 * a * c >= 0.
 Proof.
   intros ; psatz Z 4.
 Qed.
 
 
-Lemma plus_minus : forall x y, 
+Lemma plus_minus : forall x y,
   0 = x + y -> 0 =  x -y -> 0 = x /\ 0 = y.
 Proof.
   intros.
@@ -48,20 +48,20 @@ Qed.
 
 
 
-Lemma mplus_minus : forall x y, 
+Lemma mplus_minus : forall x y,
   x + y >= 0 -> x -y >= 0 -> x^2 - y^2 >= 0.
 Proof.
   intros; psatz Z 2.
 Qed.
 
-Lemma pol3: forall x y, 0 <= x + y ->  
+Lemma pol3: forall x y, 0 <= x + y ->
   x^3 + 3*x^2*y + 3*x* y^2 + y^3 >= 0.
 Proof.
   intros; psatz Z 4.
 Qed.
 
 
-(* Motivating example from: Expressiveness + Automation + Soundness: 
+(* Motivating example from: Expressiveness + Automation + Soundness:
    Towards COmbining SMT Solvers and Interactive Proof Assistants *)
 Parameter rho : Z.
 Parameter rho_ge : rho >= 0.
@@ -76,7 +76,7 @@ Definition rbound2 (C:Z -> Z -> Z) : Prop :=
 
 
 Lemma bounded_drift : forall s t p q C D, s <= t /\ correct p t  /\ correct q t /\
-  rbound1 C /\ rbound2 C /\ rbound1 D /\ rbound2 D  -> 
+  rbound1 C /\ rbound2 C /\ rbound1 D /\ rbound2 D  ->
   Zabs (C p t - D q t) <= Zabs (C p s - D q s) + 2 * rho * (t- s).
 Proof.
   intros.
@@ -194,8 +194,8 @@ Qed.
 (* from hol_light/Examples/sos.ml *)
 
 Lemma hol_light1 : forall a1 a2 b1 b2,
-  a1 >= 0 -> a2 >= 0 -> 
-   (a1 * a1 + a2 * a2 = b1 * b1 + b2 * b2 + 2) -> 
+  a1 >= 0 -> a2 >= 0 ->
+   (a1 * a1 + a2 * a2 = b1 * b1 + b2 * b2 + 2) ->
    (a1 * b1 + a2 * b2 = 0) -> a1 * a2 - b1 * b2 >= 0.
 Proof.
   intros ; psatz Z 4.
@@ -323,7 +323,7 @@ Proof.
 Qed.
 
 
-Lemma hol_light24 : forall x1 y1 x2 y2, x1 >= 0 -> x2 >= 0 -> y1 >= 0 -> y2 >= 0 -> 
+Lemma hol_light24 : forall x1 y1 x2 y2, x1 >= 0 -> x2 >= 0 -> y1 >= 0 -> y2 >= 0 ->
   ((x1 + y1) ^2 + x1 + 1 = (x2 + y2) ^ 2 + x2 + 1)
                 -> (x1 + y1 = x2 + y2).
 Proof.

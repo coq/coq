@@ -248,7 +248,7 @@ val hotkey : ?editable: bool -> ?expand: bool -> ?help: string ->
 
 val modifiers : ?editable: bool -> ?expand: bool -> ?help: string ->
   ?allow:(Gdk.Tags.modifier list) ->
-  ?f: (Gdk.Tags.modifier list -> unit) -> 
+  ?f: (Gdk.Tags.modifier list -> unit) ->
     string -> Gdk.Tags.modifier list -> parameter_kind
 
 (** [custom box f expand] creates a custom parameter, with

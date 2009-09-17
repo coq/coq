@@ -1,4 +1,4 @@
-Definition ifte (T : Set) (A B : Prop) (s : {A} + {B}) 
+Definition ifte (T : Set) (A B : Prop) (s : {A} + {B})
   (th el : T) := if s then th else el.
 
 Implicit Arguments ifte.
@@ -33,7 +33,7 @@ Module Type ELEM.
   Parameter T : Set.
   Parameter eq_dec : forall a a' : T, {a = a'} + {a <> a'}.
 End ELEM.
-                                        
+
 Module Type SET (Elt: ELEM).
   Parameter T : Set.
   Parameter empty : T.
@@ -104,11 +104,11 @@ Module Nat.
 End Nat.
 
 
-Module SetNat := F Nat. 
+Module SetNat := F Nat.
 
 
-Lemma no_zero_in_empty : SetNat.find 0 SetNat.empty = false. 
-apply SetNat.find_empty_false. 
+Lemma no_zero_in_empty : SetNat.find 0 SetNat.empty = false.
+apply SetNat.find_empty_false.
 Qed.
 
 (***************************************************************************)
@@ -120,8 +120,8 @@ Module Lemmas (G: SET) (E: ELEM).
    forall (S : ESet.T) (a1 a2 : E.T),
    let S1 := ESet.add a1 (ESet.add a2 S) in
    let S2 := ESet.add a2 (ESet.add a1 S) in
-   forall a : E.T, ESet.find a S1 = ESet.find a S2. 
-  
+   forall a : E.T, ESet.find a S1 = ESet.find a S2.
+
     intros.
     unfold S1, S2 in |- *.
     elim (E.eq_dec a a1); elim (E.eq_dec a a2); intros H1 H2;
@@ -137,10 +137,10 @@ Inductive list (A : Set) : Set :=
   | nil : list A
   | cons : A -> list A -> list A.
 
-Module ListDict (E: ELEM). 
+Module ListDict (E: ELEM).
   Definition T := list E.T.
   Definition elt := E.T.
-   
+
   Definition empty := nil elt.
   Definition add (e : elt) (s : T) := cons elt e s.
   Fixpoint find (e : elt) (s : T) {struct s} : bool :=
@@ -160,7 +160,7 @@ Module ListDict (E: ELEM).
     auto.
 
   Qed.
-  
+
 
   Lemma find_add_false :
    forall (s : T) (e e' : E.T), e <> e' -> find e (add e' s) = find e s.
@@ -171,8 +171,8 @@ Module ListDict (E: ELEM).
      rewrite H0.
     simpl in |- *.
     reflexivity.
-  Qed.    
-  
+  Qed.
+
 
 End ListDict.
 

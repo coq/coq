@@ -148,35 +148,35 @@ the above form:
 
         XXX: This tactic and the similar subsequent ones should
         have been defined using [autorewrite]. However, dealing
-        with multiples rewrite sites and side-conditions is 
-        done more cleverly with the following explicit 
+        with multiples rewrite sites and side-conditions is
+        done more cleverly with the following explicit
         analysis of goals. *)
 
-    Ltac or_not_l_iff P Q tac := 
-      (rewrite (or_not_l_iff_1 P Q) by tac) || 
+    Ltac or_not_l_iff P Q tac :=
+      (rewrite (or_not_l_iff_1 P Q) by tac) ||
       (rewrite (or_not_l_iff_2 P Q) by tac).
 
-    Ltac or_not_r_iff P Q tac := 
-      (rewrite (or_not_r_iff_1 P Q) by tac) || 
+    Ltac or_not_r_iff P Q tac :=
+      (rewrite (or_not_r_iff_1 P Q) by tac) ||
       (rewrite (or_not_r_iff_2 P Q) by tac).
 
-    Ltac or_not_l_iff_in P Q H tac := 
-      (rewrite (or_not_l_iff_1 P Q) in H by tac) || 
+    Ltac or_not_l_iff_in P Q H tac :=
+      (rewrite (or_not_l_iff_1 P Q) in H by tac) ||
       (rewrite (or_not_l_iff_2 P Q) in H by tac).
 
-    Ltac or_not_r_iff_in P Q H tac := 
-      (rewrite (or_not_r_iff_1 P Q) in H by tac) || 
+    Ltac or_not_r_iff_in P Q H tac :=
+      (rewrite (or_not_r_iff_1 P Q) in H by tac) ||
       (rewrite (or_not_r_iff_2 P Q) in H by tac).
 
     Tactic Notation "push" "not" "using" ident(db) :=
-      let dec := solve_decidable using db in 
+      let dec := solve_decidable using db in
       unfold not, iff;
       repeat (
         match goal with
         | |- context [True -> False] => rewrite not_true_iff
         | |- context [False -> False] => rewrite not_false_iff
         | |- context [(?P -> False) -> False] => rewrite (not_not_iff P) by dec
-        | |- context [(?P -> False) -> (?Q -> False)] => 
+        | |- context [(?P -> False) -> (?Q -> False)] =>
             rewrite (contrapositive P Q) by dec
         | |- context [(?P -> False) \/ ?Q] => or_not_l_iff P Q dec
         | |- context [?P \/ (?Q -> False)] => or_not_r_iff P Q dec
@@ -192,23 +192,23 @@ the above form:
 
     Tactic Notation
       "push" "not" "in" "*" "|-" "using" ident(db) :=
-      let dec := solve_decidable using db in 
+      let dec := solve_decidable using db in
       unfold not, iff in * |-;
       repeat (
         match goal with
         | H: context [True -> False] |- _ => rewrite not_true_iff in H
         | H: context [False -> False] |- _ => rewrite not_false_iff in H
-        | H: context [(?P -> False) -> False] |- _ => 
+        | H: context [(?P -> False) -> False] |- _ =>
           rewrite (not_not_iff P) in H by dec
         | H: context [(?P -> False) -> (?Q -> False)] |- _ =>
           rewrite (contrapositive P Q) in H by dec
         | H: context [(?P -> False) \/ ?Q] |- _ => or_not_l_iff_in P Q H dec
         | H: context [?P \/ (?Q -> False)] |- _ => or_not_r_iff_in P Q H dec
-        | H: context [(?P -> False) -> ?Q] |- _ => 
+        | H: context [(?P -> False) -> ?Q] |- _ =>
           rewrite (imp_not_l P Q) in H by dec
         | H: context [?P \/ ?Q -> False] |- _ => rewrite (not_or_iff P Q) in H
         | H: context [?P /\ ?Q -> False] |- _ => rewrite (not_and_iff P Q) in H
-        | H: context [(?P -> ?Q) -> False] |- _ => 
+        | H: context [(?P -> ?Q) -> False] |- _ =>
           rewrite (not_imp_iff P Q) in H by dec
         end);
       fold any not.
@@ -253,7 +253,7 @@ the above form:
         the hypotheses and goal together. *)
 
     Tactic Notation "pull" "not" "using" ident(db) :=
-      let dec := solve_decidable using db in 
+      let dec := solve_decidable using db in
       unfold not, iff;
       repeat (
         match goal with
@@ -269,7 +269,7 @@ the above form:
           rewrite <- (not_or_iff P Q)
         | |- context [?P -> ?Q -> False] => rewrite <- (not_and_iff P Q)
         | |- context [?P /\ (?Q -> False)] => rewrite <- (not_imp_iff P Q) by dec
-        | |- context [(?Q -> False) /\ ?P] => 
+        | |- context [(?Q -> False) /\ ?P] =>
           rewrite <- (not_imp_rev_iff P Q) by dec
         end);
       fold any not.
@@ -279,7 +279,7 @@ the above form:
 
     Tactic Notation
       "pull" "not" "in" "*" "|-" "using" ident(db) :=
-      let dec := solve_decidable using db in 
+      let dec := solve_decidable using db in
       unfold not, iff in * |-;
       repeat (
         match goal with
@@ -294,8 +294,8 @@ the above form:
         | H: context [(?P -> False) -> ?Q] |- _ =>
           rewrite (imp_not_l P Q) in H by dec
         | H: context [(?P -> False) /\ (?Q -> False)] |- _ =>
-          rewrite <- (not_or_iff P Q) in H 
-        | H: context [?P -> ?Q -> False] |- _ => 
+          rewrite <- (not_or_iff P Q) in H
+        | H: context [?P -> ?Q -> False] |- _ =>
           rewrite <- (not_and_iff P Q) in H
         | H: context [?P /\ (?Q -> False)] |- _ =>
           rewrite <- (not_imp_iff P Q) in H by dec

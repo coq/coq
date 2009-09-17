@@ -17,34 +17,34 @@ Obligation Tactic := crush.
 
 Program Definition vnil {A} : vector A 0 := {| vec_list := [] |}.
 
-Program Definition vcons {A n} (a : A) (v : vector A n) : vector A (S n) := 
+Program Definition vcons {A n} (a : A) (v : vector A n) : vector A (S n) :=
   {| vec_list := cons a (vec_list v) |}.
 
 Hint Rewrite map_length rev_length : datatypes.
 
-Program Definition vmap {A B n} (f : A -> B) (v : vector A n) : vector B n := 
+Program Definition vmap {A B n} (f : A -> B) (v : vector A n) : vector B n :=
   {| vec_list := map f v |}.
 
-Program Definition vreverse {A n} (v : vector A n) : vector A n := 
+Program Definition vreverse {A n} (v : vector A n) : vector A n :=
   {| vec_list := rev v |}.
 
-Fixpoint va_list {A B} (v : list (A -> B)) (w : list A) : list B := 
+Fixpoint va_list {A B} (v : list (A -> B)) (w : list A) : list B :=
   match v, w with
     | nil, nil => nil
     | cons f fs, cons x xs => cons (f x) (va_list fs xs)
     | _, _ => nil
   end.
 
-Program Definition va {A B n} (v : vector (A -> B) n) (w : vector A n) : vector B n := 
+Program Definition va {A B n} (v : vector (A -> B) n) (w : vector A n) : vector B n :=
   {| vec_list := va_list v w |}.
 
-Next Obligation. 
+Next Obligation.
   destruct v as [v Hv]; destruct w as [w Hw] ; simpl.
-  subst n. revert w Hw. induction v ; destruct w ; crush. 
+  subst n. revert w Hw. induction v ; destruct w ; crush.
   rewrite IHv ; auto.
 Qed.
 
-(* Correct type inference of record notation. Initial example by Spiwack. *) 
+(* Correct type inference of record notation. Initial example by Spiwack. *)
 
 Inductive Machin := {
  Bazar : option Machin

@@ -30,10 +30,10 @@ let _=
   let gdopt=
     { optsync=true;
       optname="Firstorder Depth";
-      optkey=["Firstorder";"Depth"]; 
-      optread=(fun ()->Some !ground_depth); 
+      optkey=["Firstorder";"Depth"];
+      optread=(fun ()->Some !ground_depth);
       optwrite=
-   (function 
+   (function
 	None->ground_depth:=3
       |	Some i->ground_depth:=(max i 0))}
   in
@@ -45,10 +45,10 @@ let _=
   let gdopt=
     { optsync=true;
       optname="Congruence Depth";
-      optkey=["Congruence";"Depth"]; 
-      optread=(fun ()->Some !congruence_depth); 
+      optkey=["Congruence";"Depth"];
+      optread=(fun ()->Some !congruence_depth);
       optwrite=
-   (function 
+   (function
 	None->congruence_depth:=0
       |	Some i->congruence_depth:=(max i 0))}
   in
@@ -57,23 +57,23 @@ let _=
 let default_solver=(Tacinterp.interp <:tactic<auto with *>>)
 
 let fail_solver=tclFAIL 0 (Pp.str "GTauto failed")
-		      
+
 let gen_ground_tac flag taco ids bases gl=
   let backup= !qflag in
     try
       qflag:=flag;
-      let solver= 
-	match taco with 
+      let solver=
+	match taco with
 	    Some tac-> tac
 	  | None-> default_solver in
       let startseq gl=
 	let seq=empty_seq !ground_depth in
 	extend_with_auto_hints bases (extend_with_ref_list ids seq gl) gl in
-      let result=ground_tac solver startseq gl in 
+      let result=ground_tac solver startseq gl in
 	qflag:=backup;result
     with e ->qflag:=backup;raise e
-      
-(* special for compatibility with Intuition 
+
+(* special for compatibility with Intuition
 
 let constant str = Coqlib.gen_constant "User" ["Init";"Logic"] str
 
@@ -83,10 +83,10 @@ let defined_connectives=lazy
 
 let normalize_evaluables=
   onAllHypsAndConcl
-    (function 
+    (function
 	 None->unfold_in_concl (Lazy.force defined_connectives)
-       | Some id-> 
-	   unfold_in_hyp (Lazy.force defined_connectives) 
+       | Some id->
+	   unfold_in_hyp (Lazy.force defined_connectives)
 	   (Tacexpr.InHypType id)) *)
 
 open Genarg
@@ -116,12 +116,12 @@ END
 TACTIC EXTEND firstorder
     [ "firstorder" tactic_opt(t) firstorder_using(l) ] ->
       [ gen_ground_tac true (Option.map eval_tactic t) l [] ]
-|   [ "firstorder" tactic_opt(t) "with" ne_preident_list(l) ] -> 
+|   [ "firstorder" tactic_opt(t) "with" ne_preident_list(l) ] ->
       [ gen_ground_tac true (Option.map eval_tactic t) [] l ]
-|   [ "firstorder" tactic_opt(t) firstorder_using(l) 
-       "with" ne_preident_list(l') ] -> 
+|   [ "firstorder" tactic_opt(t) firstorder_using(l)
+       "with" ne_preident_list(l') ] ->
       [ gen_ground_tac true (Option.map eval_tactic t) l l' ]
-|   [ "firstorder" tactic_opt(t) ] -> 
+|   [ "firstorder" tactic_opt(t) ] ->
       [ gen_ground_tac true (Option.map eval_tactic t) [] [] ]
 END
 
@@ -131,11 +131,11 @@ TACTIC EXTEND gintuition
 END
 
 
-let default_declarative_automation gls = 
+let default_declarative_automation gls =
   tclORELSE
-    (tclORELSE (Auto.h_trivial [] None) 
+    (tclORELSE (Auto.h_trivial [] None)
     (Cctac.congruence_tac !congruence_depth []))
-    (gen_ground_tac true 
+    (gen_ground_tac true
        (Some (tclTHEN
 		default_solver
 		(Cctac.congruence_tac !congruence_depth [])))
@@ -143,6 +143,6 @@ let default_declarative_automation gls =
 
 
 
-let () = 
+let () =
   Decl_proof_instr.register_automation_tac default_declarative_automation
 

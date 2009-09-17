@@ -7,7 +7,7 @@
 (************************************************************************)
 
 (* Functional morphisms.
- 
+
    Author: Matthieu Sozeau
    Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
    91405 Orsay, France *)

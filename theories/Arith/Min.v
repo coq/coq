@@ -27,7 +27,7 @@ Fixpoint min n m {struct n} : nat :=
 
 Lemma min_0_l : forall n : nat, min 0 n = 0.
 Proof.
-  trivial. 
+  trivial.
 Qed.
 
 Lemma min_0_r : forall n : nat, min n 0 = 0.

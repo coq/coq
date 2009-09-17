@@ -26,7 +26,7 @@ Theorem lt_irrefl : forall n, ~ n < n.
 Proof le_Sn_n.
 Hint Resolve lt_irrefl: arith v62.
 
-(** * Relationship between [le] and [lt] *) 
+(** * Relationship between [le] and [lt] *)
 
 Theorem lt_le_S : forall n m, n < m -> S n <= m.
 Proof.

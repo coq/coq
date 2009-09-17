@@ -31,14 +31,14 @@ let (extern_state,intern_state) =
 
 let with_heavy_rollback f x =
   let st = freeze () in
-  try 
+  try
     f x
   with reraise ->
     (unfreeze st; raise reraise)
 
 let with_state_protection f x =
   let st = freeze () in
-  try 
+  try
     let a = f x in unfreeze st; a
   with reraise ->
     (unfreeze st; raise reraise)

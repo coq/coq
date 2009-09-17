@@ -69,8 +69,8 @@ exception BoundPattern;;
 
 let rec head_pattern_bound t =
   match t with
-    | PProd (_,_,b)  -> head_pattern_bound b 
-    | PLetIn (_,_,b) -> head_pattern_bound b 
+    | PProd (_,_,b)  -> head_pattern_bound b
+    | PLetIn (_,_,b) -> head_pattern_bound b
     | PApp (c,args)  -> head_pattern_bound c
     | PIf (c,_,_)  -> head_pattern_bound c
     | PCase (_,p,c,br) -> head_pattern_bound c
@@ -149,11 +149,11 @@ let rec subst_pattern subst pat = match pat with
       let ref',t = subst_global subst ref in
 	if ref' == ref then pat else
 	 pattern_of_constr t
-  | PVar _ 
+  | PVar _
   | PEvar _
   | PRel _ -> pat
   | PApp (f,args) ->
-      let f' = subst_pattern subst f in 
+      let f' = subst_pattern subst f in
       let args' = array_smartmap (subst_pattern subst) args in
 	if f' == f && args' == args then pat else
 	  PApp (f',args')
@@ -176,7 +176,7 @@ let rec subst_pattern subst pat = match pat with
       let c2' = subst_pattern subst c2 in
 	if c1' == c1 && c2' == c2 then pat else
 	  PLetIn (name,c1',c2')
-  | PSort _ 
+  | PSort _
   | PMeta _ -> pat
   | PIf (c,c1,c2) ->
       let c' = subst_pattern subst c in
@@ -186,12 +186,12 @@ let rec subst_pattern subst pat = match pat with
 	  PIf (c',c1',c2')
   | PCase ((a,b,ind,n as cs),typ,c,branches) ->
       let ind' = Option.smartmap (Inductiveops.subst_inductive subst) ind in
-      let typ' = subst_pattern subst typ in 
+      let typ' = subst_pattern subst typ in
       let c' = subst_pattern subst c in
       let branches' = array_smartmap (subst_pattern subst) branches in
       let cs' = if ind == ind' then cs else (a,b,ind',n) in
 	if typ' == typ && c' == c && branches' == branches then pat else
-	  PCase(cs',typ', c', branches') 
+	  PCase(cs',typ', c', branches')
   | PFix fixpoint ->
       let cstr = mkFix fixpoint in
       let fixpoint' = destFix (subst_mps subst cstr) in
@@ -204,7 +204,7 @@ let rec subst_pattern subst pat = match pat with
 	  PCoFix cofixpoint'
 
 let mkPLambda na b = PLambda(na,PMeta None,b)
-let rev_it_mkPLambda = List.fold_right mkPLambda 
+let rev_it_mkPLambda = List.fold_right mkPLambda
 
 let rec pat_of_raw metas vars = function
   | RVar (_,id) ->
@@ -217,14 +217,14 @@ let rec pat_of_raw metas vars = function
   (* Hack pour ne pas réécrire une interprétation complète des patterns*)
   | RApp (_, RPatVar (_,(true,n)), cl) ->
       metas := n::!metas; PSoApp (n, List.map (pat_of_raw metas vars) cl)
-  | RApp (_,c,cl) -> 
+  | RApp (_,c,cl) ->
       PApp (pat_of_raw metas vars c,
 	    Array.of_list (List.map (pat_of_raw metas vars) cl))
   | RLambda (_,na,bk,c1,c2) ->
       name_iter (fun n -> metas := n::!metas) na;
       PLambda (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
-  | RProd (_,na,bk,c1,c2) -> 
+  | RProd (_,na,bk,c1,c2) ->
       name_iter (fun n -> metas := n::!metas) na;
       PProd (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
@@ -264,7 +264,7 @@ let rec pat_of_raw metas vars = function
       let cstr_nargs,brs = (Array.map fst cbrs, Array.map snd cbrs) in
       PCase ((sty,cstr_nargs,ind,ind_nargs), pred,
              pat_of_raw metas vars c, brs)
-             
+
   | r ->
       let loc = loc_of_rawconstr r in
       user_err_loc (loc,"pattern_of_rawconstr", Pp.str"Non supported pattern.")
@@ -287,7 +287,7 @@ and pat_of_raw_branch loc metas vars ind brs i =
               | PatCstr(loc,_,_,_) ->
                   user_err_loc (loc,"pattern_of_rawconstr",
                                 Pp.str "Non supported pattern.")) lv in
-        let vars' = List.rev lna @ vars in 
+        let vars' = List.rev lna @ vars in
 	List.length lv, rev_it_mkPLambda lna (pat_of_raw metas vars' br)
     | _ -> user_err_loc (loc,"pattern_of_rawconstr",
                          str "No unique branch for " ++ int (i+1) ++

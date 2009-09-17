@@ -21,9 +21,9 @@ open Environ
 let inductive_of_constructor = fst
 
 let conv_leq_vecti env v1 v2 =
-  array_fold_left2_i 
+  array_fold_left2_i
     (fun i _ t1 t2 ->
-      (try conv_leq env t1 t2 
+      (try conv_leq env t1 t2
       with NotConvertible -> raise (NotConvertibleVect i)); ())
     ()
     v1
@@ -57,18 +57,18 @@ let judge_of_prop = Sort (Type type1_univ)
 let judge_of_type u = Sort (Type (super u))
 
 (*s Type of a de Bruijn index. *)
-	  
-let judge_of_relative env n = 
+
+let judge_of_relative env n =
   try
     let (_,_,typ) = lookup_rel n env in
     lift n typ
-  with Not_found -> 
+  with Not_found ->
     error_unbound_rel env n
 
 (* Type of variables *)
 let judge_of_variable env id =
   try named_type id env
-  with Not_found -> 
+  with Not_found ->
     error_unbound_var env id
 
 (* Management of context of variables. *)
@@ -115,7 +115,7 @@ let extract_context_levels env =
 let make_polymorphic_if_arity env t =
   let params, ccl = dest_prod_assum env t in
   match ccl with
-  | Sort (Type u) -> 
+  | Sort (Type u) ->
       let param_ccls = extract_context_levels env params in
       let s = { poly_param_levels = param_ccls; poly_level = u} in
       PolymorphicArity (params,s)
@@ -141,10 +141,10 @@ let type_of_constant env cst =
 let judge_of_constant_knowing_parameters env cst paramstyp =
   let c = Const cst in
   let cb =
-    try lookup_constant cst env 
+    try lookup_constant cst env
     with Not_found ->
       failwith ("Cannot find constant: "^string_of_con cst) in
-  let _ = check_args env c cb.const_hyps in 
+  let _ = check_args env c cb.const_hyps in
   type_of_constant_knowing_parameters env cb.const_type paramstyp
 
 let judge_of_constant env cst =
@@ -159,19 +159,19 @@ let judge_of_apply env (f,funj) argjv =
         (match whd_betadeltaiota env typ with
           | Prod (_,c1,c2) ->
 	      (try conv_leq env hj c1
-	      with NotConvertible -> 
+	      with NotConvertible ->
 		error_cant_apply_bad_type env (n,c1, hj) (f,funj) argjv);
 	      apply_rec (n+1) (subst1 h c2) restjl
           | _ ->
 	      error_cant_apply_not_functional env (f,funj) argjv)
-  in 
+  in
   apply_rec 1 funj (Array.to_list argjv)
 
 (* Type of product *)
 
 let sort_of_product env domsort rangsort =
   match (domsort, rangsort) with
-    (* Product rule (s,Prop,Prop) *) 
+    (* Product rule (s,Prop,Prop) *)
     | (_,       Prop Null)  -> rangsort
     (* Product rule (Prop/Set,Set,Set) *)
     | (Prop _,  Prop Pos) -> rangsort
@@ -187,7 +187,7 @@ let sort_of_product env domsort rangsort =
     | (Prop Pos,  Type u2)  -> Type (sup type0_univ u2)
     (* Product rule (Prop,Type_i,Type_i) *)
     | (Prop Null, Type _)  -> rangsort
-    (* Product rule (Type_i,Type_i,Type_i) *) 
+    (* Product rule (Type_i,Type_i,Type_i) *)
     | (Type u1, Type u2) -> Type (sup u1 u2)
 
 (* Type of a type cast *)
@@ -204,7 +204,7 @@ let judge_of_cast env (c,cj) k tj =
     match k with
     | VMcast -> vm_conv CUMUL
     | DEFAULTcast -> conv_leq in
-  try 
+  try
     conversion env cj tj
   with NotConvertible ->
     error_actual_type env (c,cj) tj
@@ -241,17 +241,17 @@ let judge_of_constructor env c =
   let constr = Construct c in
   let _ =
     let ((kn,_),_) = c in
-    let mib = 
+    let mib =
       try lookup_mind kn env
       with Not_found ->
         failwith ("Cannot find inductive: "^string_of_kn (fst (fst c))) in
-    check_args env constr mib.mind_hyps in 
+    check_args env constr mib.mind_hyps in
   let specif = lookup_mind_specif env (inductive_of_constructor c) in
   type_of_constructor c specif
 
 (* Case. *)
 
-let check_branch_types env (c,cj) (lfj,explft) = 
+let check_branch_types env (c,cj) (lfj,explft) =
   try conv_leq_vecti env lfj explft
   with
       NotConvertibleVect i ->
@@ -321,22 +321,22 @@ let rec execute env cstr =
 	    | Ind ind ->
 		(* Sort-polymorphism of inductive types *)
 		judge_of_inductive_knowing_parameters env ind jl
-	    | Const cst -> 
+	    | Const cst ->
 		(* Sort-polymorphism of constant *)
 		judge_of_constant_knowing_parameters env cst jl
-	    | _ -> 
+	    | _ ->
 		(* No sort-polymorphism *)
 		execute env f
 	in
         let jl = array_map2 (fun c ty -> c,ty) args jl in
 	judge_of_apply env (f,j) jl
-	    
-    | Lambda (name,c1,c2) -> 
+
+    | Lambda (name,c1,c2) ->
         let _ = execute_type env c1 in
 	let env1 = push_rel (name,None,c1) env in
-        let j' = execute env1 c2 in 
+        let j' = execute env1 c2 in
         Prod(name,c1,j')
-	  
+
     | Prod (name,c1,c2) ->
         let varj = execute_type env c1 in
 	let env1 = push_rel (name,None,c1) env in
@@ -354,7 +354,7 @@ let rec execute env cstr =
         let env1 = push_rel (name,Some c1,c2) env in
         let j' = execute env1 c3 in
         subst1 c1 j'
-	  
+
     | Cast (c,k,t) ->
         let cj = execute env c in
         let _ = execute_type env t in
@@ -371,13 +371,13 @@ let rec execute env cstr =
         let pj = execute env p in
         let lfj = execute_array env lf in
         judge_of_case env ci (p,pj) (c,cj) lfj
-  
+
     | Fix ((_,i as vni),recdef) ->
         let fix_ty = execute_recdef env recdef i in
         let fix = (vni,recdef) in
         check_fix env fix;
 	fix_ty
-	  
+
     | CoFix (i,recdef) ->
         let fix_ty = execute_recdef env recdef i in
         let cofix = (i,recdef) in
@@ -391,10 +391,10 @@ let rec execute env cstr =
     | Evar _ ->
 	anomaly "the kernel does not support existential variables"
 
-and execute_type env constr = 
+and execute_type env constr =
   let j = execute env constr in
   snd (type_judgment env (constr,j))
-	  
+
 and execute_recdef env (names,lar,vdef) i =
   let larj = execute_array env lar in
   let larj = array_map2 (fun c ty -> c,ty) lar larj in
@@ -406,7 +406,7 @@ and execute_recdef env (names,lar,vdef) i =
 
 and execute_array env = Array.map (execute env)
 
-and execute_list env = List.map (execute env) 
+and execute_list env = List.map (execute env)
 
 (* Derived functions *)
 let infer env constr = execute env constr
@@ -418,7 +418,7 @@ let infer_v env cv = execute_array env cv
 let check_ctxt env rels =
   fold_rel_context (fun d env ->
     match d with
-        (_,None,ty) -> 
+        (_,None,ty) ->
           let _ = infer_type env ty in
           push_rel d env
       | (_,Some bd,ty) ->
@@ -436,7 +436,7 @@ let check_named_ctxt env ctxt =
         failwith ("variable "^string_of_id id^" defined twice")
       with Not_found -> () in
     match d with
-        (_,None,ty) -> 
+        (_,None,ty) ->
           let _ = infer_type env ty in
           push_named d env
       | (_,Some bd,ty) ->

@@ -16,35 +16,35 @@ module type Ordered = sig
 end
 
 module type S =sig
-  
+
   (* Type of functional heaps *)
   type t
 
   (* Type of elements *)
   type elt
-    
+
   (* The empty heap *)
   val empty : t
-    
+
   (* [add x h] returns a new heap containing the elements of [h], plus [x];
      complexity $O(log(n))$ *)
   val add : elt -> t -> t
-    
+
   (* [maximum h] returns the maximum element of [h]; raises [EmptyHeap]
      when [h] is empty; complexity $O(1)$ *)
   val maximum : t -> elt
-    
+
   (* [remove h] returns a new heap containing the elements of [h], except
-     the maximum of [h]; raises [EmptyHeap] when [h] is empty; 
-     complexity $O(log(n))$ *) 
+     the maximum of [h]; raises [EmptyHeap] when [h] is empty;
+     complexity $O(log(n))$ *)
   val remove : t -> t
-    
+
   (* usual iterators and combinators; elements are presented in
      arbitrary order *)
   val iter : (elt -> unit) -> t -> unit
-    
+
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    
+
 end
 
 exception EmptyHeap
@@ -54,9 +54,9 @@ exception EmptyHeap
 module Functional(X : Ordered) = struct
 
   (* Heaps are encoded as complete binary trees, i.e., binary trees
-     which are full expect, may be, on the bottom level where it is filled 
-     from the left. 
-     These trees also enjoy the heap property, namely the value of any node 
+     which are full expect, may be, on the bottom level where it is filled
+     from the left.
+     These trees also enjoy the heap property, namely the value of any node
      is greater or equal than those of its left and right subtrees.
 
      There are 4 kinds of complete binary trees, denoted by 4 constructors:
@@ -68,7 +68,7 @@ module Functional(X : Ordered) = struct
      and [PFP] for a partial tree with a full left subtree and a partial
      right subtree. *)
 
-  type t = 
+  type t =
     | Empty
     | FFF of t * X.t * t (* full    (full,    full) *)
     | PPF of t * X.t * t (* partial (partial, full) *)
@@ -78,7 +78,7 @@ module Functional(X : Ordered) = struct
   type elt = X.t
 
   let empty = Empty
- 
+
   (* smart constructors for insertion *)
   let p_f l x r = match l with
     | Empty | FFF _ -> PFF (l, x, r)
@@ -89,7 +89,7 @@ module Functional(X : Ordered) = struct
     | r -> PFP (l, x, r)
 
   let rec add x = function
-    | Empty -> 
+    | Empty ->
 	FFF (Empty, x, Empty)
     (* insertion to the left *)
     | FFF (l, y, r) | PPF (l, y, r) ->
@@ -113,9 +113,9 @@ module Functional(X : Ordered) = struct
     | r -> PFP (l, x, r)
 
   let rec remove = function
-    | Empty -> 
+    | Empty ->
 	raise EmptyHeap
-    | FFF (Empty, _, Empty) -> 
+    | FFF (Empty, _, Empty) ->
 	Empty
     | PFF (l, _, Empty) ->
 	l
@@ -124,30 +124,30 @@ module Functional(X : Ordered) = struct
         let xl = maximum l in
 	let xr = maximum r in
 	let l' = remove l in
-	if X.compare xl xr >= 0 then 
-	  p_f l' xl r 
-	else 
+	if X.compare xl xr >= 0 then
+	  p_f l' xl r
+	else
 	  p_f l' xr (add xl (remove r))
     (* remove on the right *)
     | FFF (l, x, r) | PFP (l, x, r) ->
         let xl = maximum l in
 	let xr = maximum r in
 	let r' = remove r in
-	if X.compare xl xr > 0 then 
+	if X.compare xl xr > 0 then
 	  pf_ (add xr (remove l)) xl r'
-	else 
+	else
 	  pf_ l xr r'
 
   let rec iter f = function
-    | Empty -> 
+    | Empty ->
 	()
-    | FFF (l, x, r) | PPF (l, x, r) | PFF (l, x, r) | PFP (l, x, r) -> 
+    | FFF (l, x, r) | PPF (l, x, r) | PFF (l, x, r) | PFP (l, x, r) ->
 	iter f l; f x; iter f r
 
   let rec fold f h x0 = match h with
-    | Empty -> 
+    | Empty ->
 	x0
-    | FFF (l, x, r) | PPF (l, x, r) | PFF (l, x, r) | PFP (l, x, r) -> 
+    | FFF (l, x, r) | PPF (l, x, r) | PFF (l, x, r) | PFP (l, x, r) ->
 	fold f l (fold f r (f x x0))
 
 end

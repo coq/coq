@@ -24,7 +24,7 @@ open Libnames
 open Nameops
 open Classops
 open List
-open Recordops 
+open Recordops
 open Evarutil
 open Pretype_errors
 open Rawterm
@@ -65,27 +65,27 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     let (evd',t) = f !evdref x y z in
       evdref := evd';
       t
-	
+
   let mt_evd = Evd.empty
-    
+
   (* Utilisé pour inférer le prédicat des Cases *)
   (* Semble exagérement fort *)
   (* Faudra préférer une unification entre les types de toutes les clauses *)
   (* et autoriser des ? à rester dans le résultat de l'unification *)
-  
+
   let evar_type_fixpoint loc env evdref lna lar vdefj =
-    let lt = Array.length vdefj in 
-      if Array.length lar = lt then 
-	for i = 0 to lt-1 do 
+    let lt = Array.length vdefj in
+      if Array.length lar = lt then
+	for i = 0 to lt-1 do
           if not (e_cumul env evdref (vdefj.(i)).uj_type
 		    (lift lt lar.(i))) then
             error_ill_typed_rec_body_loc loc env ( !evdref)
               i lna vdefj lar
 	done
 
-  let check_branches_message loc env evdref c (explft,lft) = 
+  let check_branches_message loc env evdref c (explft,lft) =
     for i = 0 to Array.length explft - 1 do
-      if not (e_cumul env evdref lft.(i) explft.(i)) then 
+      if not (e_cumul env evdref lft.(i) explft.(i)) then
 	let sigma =  !evdref in
 	  error_ill_formed_branch_loc loc env sigma c i lft.(i) explft.(i)
     done
@@ -137,19 +137,19 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
       if n=0 then p else
 	match kind_of_term p with
 	  | Lambda (_,_,c) -> decomp (n-1) c
-	  | _ -> decomp (n-1) (applist (lift 1 p, [mkRel 1])) 
+	  | _ -> decomp (n-1) (applist (lift 1 p, [mkRel 1]))
     in
     let sign,s = decompose_prod_n n pj.uj_type in
     let ind = build_dependent_inductive env indf in
     let s' = mkProd (Anonymous, ind, s) in
     let ccl = lift 1 (decomp n pj.uj_val) in
     let ccl' = mkLambda (Anonymous, ind, ccl) in
-      {uj_val=it_mkLambda ccl' sign; uj_type=it_mkProd s' sign} 
+      {uj_val=it_mkLambda ccl' sign; uj_type=it_mkProd s' sign}
 
   (*************************************************************************)
   (* Main pretyping function                                               *)
 
-  let pretype_ref evdref env ref = 
+  let pretype_ref evdref env ref =
     let c = constr_of_global ref in
       make_judge c (Retyping.get_type_of env Evd.empty c)
 
@@ -160,7 +160,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   (* [pretype tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
   (* in environment [env], with existential variables [( evdref)] and *)
   (* the type constraint tycon *)
-  let rec pretype (tycon : type_constraint) env evdref lvar c = 
+  let rec pretype (tycon : type_constraint) env evdref lvar c =
 (*     let _ = try Subtac_utils.trace (str "pretype " ++ Subtac_utils.my_print_rawconstr env c ++ *)
 (* 			       str " with tycon " ++ Evarutil.pr_tycon env tycon)  *)
 (*     with _ -> () *)
@@ -187,12 +187,12 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	let j = (Retyping.get_judgment_of env ( !evdref) c) in
 	  inh_conv_coerce_to_tycon loc env evdref j tycon
 
-    | RPatVar (loc,(someta,n)) -> 
+    | RPatVar (loc,(someta,n)) ->
 	anomaly "Found a pattern variable in a rawterm to type"
-	  
+
     | RHole (loc,k) ->
 	let ty =
-          match tycon with 
+          match tycon with
             | Some (None, ty) -> ty
             | None | Some _ ->
 		e_new_evar evdref env ~src:(loc,InternalHole) (new_Type ()) in
@@ -221,19 +221,19 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	let nbfix = Array.length lar in
 	let names = Array.map (fun id -> Name id) names in
 	  (* Note: bodies are not used by push_rec_types, so [||] is safe *)
-	let newenv = 
-	  let marked_ftys = 
+	let newenv =
+	  let marked_ftys =
 	    Array.map (fun ty -> let sort = Retyping.get_type_of env !evdref ty in
 				   mkApp (Lazy.force Subtac_utils.fix_proto, [| sort; ty |]))
 	      ftys
 	  in
-	    push_rec_types (names,marked_ftys,[||]) env 
+	    push_rec_types (names,marked_ftys,[||]) env
 	in
 	let fixi = match fixkind with RFix (vn, i) -> i | RCoFix i -> i in
 	let vdefj =
-	  array_map2_i 
+	  array_map2_i
 	    (fun i ctxt def ->
-	      let fty = 
+	      let fty =
 		let ty = ftys.(i) in
 		  if i = fixi then (
 		    Option.iter (fun tycon ->
@@ -260,19 +260,19 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	      (* First, let's find the guard indexes. *)
 	      (* If recursive argument was not given by user, we try all args.
 	         An earlier approach was to look only for inductive arguments,
-		 but doing it properly involves delta-reduction, and it finally 
-                 doesn't seem worth the effort (except for huge mutual 
+		 but doing it properly involves delta-reduction, and it finally
+                 doesn't seem worth the effort (except for huge mutual
 		 fixpoints ?) *)
-	      let possible_indexes = Array.to_list (Array.mapi 
-		(fun i (n,_) -> match n with 
+	      let possible_indexes = Array.to_list (Array.mapi
+		(fun i (n,_) -> match n with
 		   | Some n -> [n]
 		   | None -> list_map_i (fun i _ -> i) 0 ctxtv.(i))
 		vn)
-	      in 
-	      let fixdecls = (names,ftys,fdefs) in 
-	      let indexes = search_guard loc env possible_indexes fixdecls in 
+	      in
+	      let fixdecls = (names,ftys,fdefs) in
+	      let indexes = search_guard loc env possible_indexes fixdecls in
 	      make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
-	  | RCoFix i -> 
+	  | RCoFix i ->
 	      let cofix = (i,(names,ftys,fdefs)) in
 	      (try check_cofix env cofix with e -> Stdpp.raise_with_loc loc e);
 	      make_judge (mkCoFix cofix) ftys.(i) in
@@ -281,10 +281,10 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     | RSort (loc,s) ->
 	inh_conv_coerce_to_tycon loc env evdref (pretype_sort s) tycon
 
-    | RApp (loc,f,args) -> 
-	let length = List.length args in 
+    | RApp (loc,f,args) ->
+	let length = List.length args in
 	let ftycon =
-	  let ty = 
+	  let ty =
 	    if length > 0 then
 	      match tycon with
 	      | None -> None
@@ -292,7 +292,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	      | Some (Some (init, cur), ty) ->
 		  Some (Some (length + init, length + cur), ty)
  	    else tycon
-	  in 
+	  in
 	    match ty with
 	    | Some (_, t) when Subtac_coercion.disc_subset t = None -> ty
 	    | _ -> None
@@ -314,14 +314,14 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		      let hj = pretype (mk_tycon (nf_evar !evdref c1)) env evdref lvar c in
 		      let value, typ = applist (j_val resj, [j_val hj]), subst1 hj.uj_val c2 in
 		      let typ' = nf_evar !evdref typ in
-			apply_rec env (n+1) 
+			apply_rec env (n+1)
 			  { uj_val = nf_evar !evdref value;
 			    uj_type = nf_evar !evdref typ' }
 			  (Option.map (fun (abs, c) -> abs, nf_evar !evdref c) tycon) rest
 
 		  | _ ->
 		      let hj = pretype empty_tycon env evdref lvar c in
-			error_cant_apply_not_functional_loc 
+			error_cant_apply_not_functional_loc
 			  (join_loc floc argloc) env ( !evdref)
 	      		  resj [hj]
 	in
@@ -337,20 +337,20 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  inh_conv_coerce_to_tycon loc env evdref resj tycon
 
     | RLambda(loc,name,k,c1,c2)      ->
-	let tycon' = evd_comb1 
-	  (fun evd tycon -> 
-	    match tycon with 
-	    | None -> evd, tycon 
-	    | Some ty -> 
+	let tycon' = evd_comb1
+	  (fun evd tycon ->
+	    match tycon with
+	    | None -> evd, tycon
+	    | Some ty ->
 		let evd, ty' = Coercion.inh_coerce_to_prod loc env evd ty in
-		  evd, Some ty') 
-	  evdref tycon 
+		  evd, Some ty')
+	  evdref tycon
 	in
 	let (name',dom,rng) = evd_comb1 (split_tycon loc env) evdref tycon' in
 	let dom_valcon = valcon_of_tycon dom in
 	let j = pretype_type dom_valcon env evdref lvar c1 in
 	let var = (name,None,j.utj_val) in
-	let j' = pretype rng (push_rel var env) evdref lvar c2 in 
+	let j' = pretype rng (push_rel var env) evdref lvar c2 in
 	let resj = judge_of_abstraction env name j j' in
 	  inh_conv_coerce_to_tycon loc env evdref resj tycon
 
@@ -363,7 +363,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  try judge_of_product env name j j'
 	  with TypeError _ as e -> Stdpp.raise_with_loc loc e in
 	  inh_conv_coerce_to_tycon loc env evdref resj tycon
-	    
+
     | RLetIn(loc,name,c1,c2)      ->
 	let j = pretype empty_tycon env evdref lvar c1 in
 	let t = refresh_universes j.uj_type in
@@ -375,11 +375,11 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 
     | RLetTuple (loc,nal,(na,po),c,d) ->
 	let cj = pretype empty_tycon env evdref lvar c in
-	let (IndType (indf,realargs)) = 
+	let (IndType (indf,realargs)) =
 	  try find_rectype env ( !evdref) cj.uj_type
 	  with Not_found ->
 	    let cloc = loc_of_rawconstr c in
-	      error_case_not_inductive_loc cloc env ( !evdref) cj 
+	      error_case_not_inductive_loc cloc env ( !evdref) cj
 	in
 	let cstrs = get_constructors env indf in
 	if Array.length cstrs <> 1 then
@@ -406,7 +406,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		     let ccl = nf_evar ( !evdref) pj.utj_val in
 		     let psign = make_arity_signature env true indf in (* with names *)
 		     let p = it_mkLambda_or_LetIn ccl psign in
-		     let inst = 
+		     let inst =
 		       (Array.to_list cs.cs_concl_realargs)
 		       @[build_dependent_constructor cs] in
 		     let lp = lift cs.cs_nargs p in
@@ -416,45 +416,45 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		     let v =
 		       let mis,_ = dest_ind_family indf in
 		       let ci = make_case_info env mis LetStyle in
-			 mkCase (ci, p, cj.uj_val,[|f|]) in 
+			 mkCase (ci, p, cj.uj_val,[|f|]) in
 		       { uj_val = v; uj_type = substl (realargs@[cj.uj_val]) ccl }
 
-		 | None -> 
+		 | None ->
 		     let tycon = lift_tycon cs.cs_nargs tycon in
 		     let fj = pretype tycon env_f evdref lvar d in
 		     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
 		     let ccl = nf_evar ( !evdref) fj.uj_type in
 		     let ccl =
 		       if noccur_between 1 cs.cs_nargs ccl then
-			 lift (- cs.cs_nargs) ccl 
+			 lift (- cs.cs_nargs) ccl
 		       else
-			 error_cant_find_case_type_loc loc env ( !evdref) 
+			 error_cant_find_case_type_loc loc env ( !evdref)
 			   cj.uj_val in
 		     let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign in
 		     let v =
 		       let mis,_ = dest_ind_family indf in
 		       let ci = make_case_info env mis LetStyle in
-			 mkCase (ci, p, cj.uj_val,[|f|] ) 
+			 mkCase (ci, p, cj.uj_val,[|f|] )
 		     in
 		       { uj_val = v; uj_type = ccl })
 
     | RIf (loc,c,(na,po),b1,b2) ->
 	let cj = pretype empty_tycon env evdref lvar c in
-	let (IndType (indf,realargs)) = 
+	let (IndType (indf,realargs)) =
 	  try find_rectype env ( !evdref) cj.uj_type
 	  with Not_found ->
 	    let cloc = loc_of_rawconstr c in
 	      error_case_not_inductive_loc cloc env ( !evdref) cj in
-	let cstrs = get_constructors env indf in 
+	let cstrs = get_constructors env indf in
 	  if Array.length cstrs <> 2 then
             user_err_loc (loc,"",
 			  str "If is only for inductive types with two constructors.");
 
-	  let arsgn = 
+	  let arsgn =
 	    let arsgn,_ = get_arity env indf in
 	      if not !allow_anonymous_refs then
 		(* Make dependencies from arity signature impossible *)
-		List.map (fun (_,b,t) -> (Anonymous,b,t)) arsgn 
+		List.map (fun (_,b,t) -> (Anonymous,b,t)) arsgn
 	      else arsgn
 	  in
 	  let nar = List.length arsgn in
@@ -467,10 +467,10 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		let pred = it_mkLambda_or_LetIn ccl psign in
 		let typ = lift (- nar) (beta_applist (pred,[cj.uj_val])) in
 		let jtyp = inh_conv_coerce_to_tycon loc env evdref {uj_val = pred;
-								     uj_type = typ} tycon 
+								     uj_type = typ} tycon
 		in
 		  jtyp.uj_val, jtyp.uj_type
-	    | None -> 
+	    | None ->
 		let p = match tycon with
 		  | Some (None, ty) -> ty
 		  | None | Some _ ->
@@ -484,18 +484,18 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	    let n = rel_context_length cs.cs_args in
 	    let pi = lift n pred in (* liftn n 2 pred ? *)
 	    let pi = beta_applist (pi, [build_dependent_constructor cs]) in
-	    let csgn = 
+	    let csgn =
 	      if not !allow_anonymous_refs then
-		List.map (fun (_,b,t) -> (Anonymous,b,t)) cs.cs_args 
-	      else 
-		List.map 
+		List.map (fun (_,b,t) -> (Anonymous,b,t)) cs.cs_args
+	      else
+		List.map
 		  (fun (n, b, t) ->
 		     match n with
                          Name _ -> (n, b, t)
                        | Anonymous -> (Name (id_of_string "H"), b, t))
 		cs.cs_args
 	    in
-	    let env_c = push_rels csgn env in 
+	    let env_c = push_rels csgn env in
 (* 	      msgnl (str "Pi is: " ++ Termops.print_constr_env env_c pi); *)
 	    let bj = pretype (mk_tycon pi) env_c evdref lvar b in
 	      it_mkLambda_or_LetIn bj.uj_val cs.cs_args in
@@ -548,7 +548,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		 let t = Retyping.get_type_of env sigma v in
 		   match kind_of_term (whd_betadeltaiota env sigma t) with
                      | Sort s -> s
-                     | Evar ev when is_Type (existential_type sigma ev) -> 
+                     | Evar ev when is_Type (existential_type sigma ev) ->
 			 evd_comb1 (define_evar_as_sort) evdref ev
                      | _ -> anomaly "Found a type constraint which is not a type"
                in
@@ -579,7 +579,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  (pretype_type empty_valcon env evdref lvar c).utj_val in
     evdref := fst (consider_remaining_unif_problems env !evdref);
     if resolve_classes then
-      evdref := 
+      evdref :=
         Typeclasses.resolve_typeclasses ~onlyargs:false
 	  ~split:true ~fail:fail_evar env !evdref;
     let c = nf_evar !evdref c' in

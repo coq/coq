@@ -2,7 +2,7 @@ Module Type SET.
   Axiom T : Set.
   Axiom x : T.
 End SET.
- 
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 

@@ -11,8 +11,8 @@ Require Import Streams.
 
 (** * Memoization *)
 
-(** Successive outputs of a given function [f] are stored in 
-    a stream in order to avoid duplicated computations. *) 
+(** Successive outputs of a given function [f] are stored in
+    a stream in order to avoid duplicated computations. *)
 
 Section MemoFunction.
 
@@ -24,8 +24,8 @@ CoFixpoint memo_make (n:nat) : Stream A := Cons (f n) (memo_make (S n)).
 Definition memo_list := memo_make 0.
 
 Fixpoint memo_get (n:nat) (l:Stream A) : A :=
-  match n with 
-    | O => hd l 
+  match n with
+    | O => hd l
     | S n1 => memo_get n1 (tl l)
   end.
 
@@ -49,7 +49,7 @@ Variable g: A -> A.
 Hypothesis Hg_correct: forall n, f (S n) = g (f n).
 
 CoFixpoint imemo_make (fn:A) : Stream A :=
-  let fn1 := g fn in 
+  let fn1 := g fn in
   Cons fn1 (imemo_make fn1).
 
 Definition imemo_list := let f0 := f 0 in
@@ -68,7 +68,7 @@ Qed.
 
 End MemoFunction.
 
-(** For a dependent function, the previous solution is 
+(** For a dependent function, the previous solution is
     reused thanks to a temporarly hiding of the dependency
     in a "container" [memo_val]. *)
 
@@ -88,7 +88,7 @@ Fixpoint is_eq (n m : nat) {struct n}: {n = m} + {True} :=
   | S n1, S m1 =>
      match is_eq n1 m1 with
      | left H => left True (f_equal S H)
-     | right _ => right (S n1 = S m1) I 
+     | right _ => right (S n1 = S m1) I
      end
   end.
 
@@ -134,7 +134,7 @@ Variable g: forall n, A n -> A (S n).
 
 Hypothesis Hg_correct: forall n, f (S n) = g n (f n).
 
-Let mg v :=  match v with 
+Let mg v :=  match v with
              memo_mval n1 v1 => memo_mval (S n1) (g n1 v1) end.
 
 Definition dimemo_list := imemo_list _ mf mg.
@@ -166,13 +166,13 @@ End DependentMemoFunction.
 Require Import ZArith.
 Open Scope Z_scope.
 
-Fixpoint tfact (n: nat) := 
-  match n with 
-   | O => 1 
-   | S n1 => Z_of_nat n * tfact n1 
+Fixpoint tfact (n: nat) :=
+  match n with
+   | O => 1
+   | S n1 => Z_of_nat n * tfact n1
   end.
 
-Definition lfact_list := 
+Definition lfact_list :=
   dimemo_list _ tfact (fun n z => (Z_of_nat (S  n) * z)).
 
 Definition lfact n := dmemo_get _ tfact n lfact_list.
@@ -183,18 +183,18 @@ intros n; unfold lfact, lfact_list.
 rewrite dimemo_get_correct; auto.
 Qed.
 
-Fixpoint nop p := 
+Fixpoint nop p :=
   match p with
-   | xH => 0 
-   | xI p1 => nop p1 
-   | xO p1 => nop p1 
+   | xH => 0
+   | xI p1 => nop p1
+   | xO p1 => nop p1
   end.
 
-Fixpoint test z := 
+Fixpoint test z :=
   match z with
-   | Z0 => 0 
-   | Zpos p1 => nop p1 
-   | Zneg p1 => nop p1 
+   | Z0 => 0
+   | Zpos p1 => nop p1
+   | Zneg p1 => nop p1
   end.
 
 Time Eval vm_compute in test (lfact 2000).
@@ -202,4 +202,4 @@ Time Eval vm_compute in test (lfact 2000).
 Time Eval vm_compute in test (lfact 1500).
 Time Eval vm_compute in (lfact 1500).
 *)
- 
+

@@ -27,7 +27,7 @@ open Vernacexpr
 
 let break_happened = ref false
 
-(* Before outputing any data, output_results makes sure that no interrupt 
+(* Before outputing any data, output_results makes sure that no interrupt
    is going to disturb the process. *)
 let output_results_nl stream =
     let _ = Sys.signal Sys.sigint
@@ -36,7 +36,7 @@ let output_results_nl stream =
   msgnl stream
 
 let rearm_break () =
-  let _ = Sys.signal Sys.sigint (Sys.Signal_handle(fun _ -> raise Sys.Break)) in 
+  let _ = Sys.signal Sys.sigint (Sys.Signal_handle(fun _ -> raise Sys.Break)) in
     ()
 
 let check_break () =
@@ -52,7 +52,7 @@ let global_request_id = ref 013
 let acknowledge_command_ref =
    ref(fun request_id command_count opt_exn
       -> (fnl () ++ str "acknowledge command number " ++
-           int request_id ++ fnl () ++ 
+           int request_id ++ fnl () ++
          str "successfully executed " ++ int command_count ++ fnl () ++
            str "error message" ++ fnl () ++
          (match opt_exn with
@@ -76,7 +76,7 @@ let set_start_marker s =
   start_marker := s;
   start_length := String.length s;
   start_marker_buffer := String.make !start_length ' '
-    
+
 let set_end_marker s =
   end_marker := s
 
@@ -89,7 +89,7 @@ let rec parse_one_command_group input_channel =
     String.blit this_line 0 !start_marker_buffer 0 !start_length;
     if !start_marker_buffer = !start_marker then
       let req_id_line = input_line input_channel in
-      	begin 
+      	begin
 	  (try
             global_request_id := int_of_string req_id_line
 	  with
@@ -114,7 +114,7 @@ let rec parse_one_command_group input_channel =
 		      None
 		    else
 		      let first_cmd_status =
-                      	try 
+                      	try
 			  raw_do_vernac
 			    (Pcoq.Gram.parsable stream_tail);
 		      	None
@@ -126,17 +126,17 @@ let rec parse_one_command_group input_channel =
 		  let r = execute_n_commands 0 in
 		    (match r with
 			 None ->
-			   output_results_nl 
+			   output_results_nl
 			     (acknowledge_command
 			      	!global_request_id !count None)
 		       | Some(rank, e) ->
-			   (match e with 
+			   (match e with
                     	     | DuringCommandInterp(a,e1)
 			     | Stdpp.Exc_located (a,DuringSyntaxChecking e1) ->
 				  output_results_nl
 				    (acknowledge_command
 				       !global_request_id rank (Some e1))
-			      | e -> 
+			      | e ->
 				  output_results_nl
 				    (acknowledge_command
 				       !global_request_id rank (Some e))));
@@ -158,7 +158,7 @@ let protected_loop input_chan =
       looprec input_chan;
     end
   and looprec input_chan =
-    try 
+    try
       while true do parse_one_command_group input_chan done
     with
       | Vernacexpr.Drop -> raise Vernacexpr.Drop

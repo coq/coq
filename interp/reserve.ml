@@ -24,22 +24,22 @@ let cache_reserved_type (_,(id,t)) =
   reserve_table := Idmap.add id t !reserve_table
 
 let (in_reserved, _) =
-  declare_object {(default_object "RESERVED-TYPE") with 
+  declare_object {(default_object "RESERVED-TYPE") with
     cache_function = cache_reserved_type }
 
-let _ = 
+let _ =
   Summary.declare_summary "reserved-type"
     { Summary.freeze_function = (fun () -> !reserve_table);
       Summary.unfreeze_function = (fun r -> reserve_table := r);
       Summary.init_function = (fun () -> reserve_table := Idmap.empty) }
 
-let declare_reserved_type (loc,id) t = 
+let declare_reserved_type (loc,id) t =
   if id <> root_of_id id then
     user_err_loc(loc,"declare_reserved_type",
     (pr_id id ++ str
       " is not reservable: it must have no trailing digits, quote, or _"));
   begin try
-    let _ = Idmap.find id !reserve_table in 
+    let _ = Idmap.find id !reserve_table in
     user_err_loc(loc,"declare_reserved_type",
     (pr_id id++str" is already bound to a type"))
   with Not_found -> () end;
@@ -66,7 +66,7 @@ let rec unloc = function
       RIf (dummy_loc,unloc c,(na,Option.map unloc po),unloc b1,unloc b2)
   | RRec (_,fk,idl,bl,tyl,bv) ->
       RRec (dummy_loc,fk,idl,
-            Array.map (List.map 
+            Array.map (List.map
               (fun (na,k,obd,ty) -> (na,k,Option.map unloc obd, unloc ty)))
               bl,
             Array.map unloc tyl,
@@ -82,7 +82,7 @@ let rec unloc = function
 
 let anonymize_if_reserved na t = match na with
   | Name id as na ->
-      (try 
+      (try
 	if not !Flags.raw_print & unloc t = find_reserved_type id
 	then RHole (dummy_loc,Evd.BinderType na)
 	else t

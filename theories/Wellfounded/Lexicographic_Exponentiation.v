@@ -10,7 +10,7 @@
 
 (** Author: Cristina Cornes
 
-    From : Constructing Recursion Operators in Type Theory                
+    From : Constructing Recursion Operators in Type Theory
            L. Paulson  JSC (1986) 2, 325-355  *)
 
 Require Import List.
@@ -20,12 +20,12 @@ Require Import Transitive_Closure.
 Section Wf_Lexicographic_Exponentiation.
   Variable A : Set.
   Variable leA : A -> A -> Prop.
-  
+
   Notation Power := (Pow A leA).
   Notation Lex_Exp := (lex_exp A leA).
   Notation ltl := (Ltl A leA).
   Notation Descl := (Desc A leA).
-  
+
   Notation List := (list A).
   Notation Nil := (nil (A:=A)).
   (* useless but symmetric *)
@@ -33,13 +33,13 @@ Section Wf_Lexicographic_Exponentiation.
   Notation "<< x , y >>" := (exist Descl x y) (at level 0, x, y at level 100).
 
   (* Hint Resolve d_one d_nil t_step. *)
-  
+
   Lemma left_prefix : forall x y z:List, ltl (x ++ y) z -> ltl x z.
   Proof.
     simple induction x.
     simple induction z.
     simpl in |- *; intros H.
-    inversion_clear H. 
+    inversion_clear H.
     simpl in |- *; intros; apply (Lt_nil A leA).
     intros a l HInd.
     simpl in |- *.
@@ -71,12 +71,12 @@ Section Wf_Lexicographic_Exponentiation.
     rewrite H8.
     right; exists x2; auto with sets.
   Qed.
-  
+
   Lemma desc_prefix : forall (x:List) (a:A), Descl (x ++ Cons a Nil) -> Descl x.
   Proof.
     intros.
     inversion H.
-    generalize (app_cons_not_nil _ _ _ H1); simple induction 1. 
+    generalize (app_cons_not_nil _ _ _ H1); simple induction 1.
     cut (x ++ Cons a Nil = Cons x0 Nil); auto with sets.
     intro.
     generalize (app_eq_unit _ _ H0).
@@ -87,7 +87,7 @@ Section Wf_Lexicographic_Exponentiation.
     simple induction 1; intros.
     rewrite <- H4; auto with sets.
   Qed.
-  
+
   Lemma desc_tail :
     forall (x:List) (a b:A),
       Descl (Cons b (x ++ Cons a Nil)) -> clos_trans A leA a b.
@@ -99,7 +99,7 @@ Section Wf_Lexicographic_Exponentiation.
         forall a b:A,
           Descl (Cons b (x ++ Cons a Nil)) -> clos_trans A leA a b).
     intros.
-    
+
     inversion H.
     cut (Cons b (Cons a Nil) = (Nil ++ Cons b Nil) ++ Cons a Nil);
       auto with sets; intro.
@@ -108,17 +108,17 @@ Section Wf_Lexicographic_Exponentiation.
     generalize (app_inj_tail (l ++ Cons y Nil) (Nil ++ Cons b Nil) _ _ H4);
       simple induction 1.
     intros.
-    
+
     generalize (app_inj_tail _ _ _ _ H6); simple induction 1; intros.
     generalize H1.
     rewrite <- H10; rewrite <- H7; intro.
     apply (t_step A leA); auto with sets.
-    
+
     intros.
     inversion H0.
     generalize (app_cons_not_nil _ _ _ H3); intro.
     elim H1.
-    
+
     generalize H0.
     generalize (app_comm_cons (l ++ Cons x0 Nil) (Cons a Nil) b);
       simple induction 1.
@@ -127,11 +127,11 @@ Section Wf_Lexicographic_Exponentiation.
     generalize (H x0 b H6).
     intro.
     apply t_trans with (A := A) (y := x0); auto with sets.
-    
+
     apply t_step.
     generalize H1.
     rewrite H4; intro.
-    
+
     generalize (app_inj_tail _ _ _ _ H8); simple induction 1.
     intros.
     generalize H2; generalize (app_comm_cons l (Cons x0 Nil) b).
@@ -154,7 +154,7 @@ Section Wf_Lexicographic_Exponentiation.
     generalize (app_eq_nil _ _ H0); simple induction 1.
     intros.
     rewrite H2; rewrite H3; split; apply d_nil.
-    
+
     intros.
     cut (x0 ++ y = Cons x Nil); auto with sets.
     intros E.
@@ -162,15 +162,15 @@ Section Wf_Lexicographic_Exponentiation.
     simple induction 1; intros.
     rewrite H2; rewrite H3; split.
     apply d_nil.
-    
+
     apply d_one.
-    
+
     simple induction 1; intros.
     rewrite H2; rewrite H3; split.
     apply d_one.
-    
+
     apply d_nil.
-    
+
     do 5 intro.
     intros Hind.
     do 2 intro.
@@ -181,13 +181,13 @@ Section Wf_Lexicographic_Exponentiation.
         forall x0:List,
           (l ++ Cons y Nil) ++ Cons x Nil = x0 ++ y0 ->
           Descl x0 /\ Descl y0).
-    
+
     intro.
     generalize (app_nil_end x1); simple induction 1; simple induction 1.
     split. apply d_conc; auto with sets.
-    
+
     apply d_nil.
-    
+
     do 3 intro.
     generalize x1.
     apply rev_ind with
@@ -202,7 +202,7 @@ Section Wf_Lexicographic_Exponentiation.
     split.
     generalize (app_inj_tail _ _ _ _ H2); simple induction 1.
     simple induction 1; auto with sets.
-    
+
     apply d_one.
     do 5 intro.
     generalize (app_ass x4 (l1 ++ Cons x2 Nil) (Cons x3 Nil)).
@@ -219,7 +219,7 @@ Section Wf_Lexicographic_Exponentiation.
     generalize (Hind x4 (l1 ++ Cons x2 Nil) H11).
     simple induction 1; split.
     auto with sets.
-    
+
     generalize H14.
     rewrite <- H10; intro.
     apply d_conc; auto with sets.
@@ -233,11 +233,11 @@ Section Wf_Lexicographic_Exponentiation.
     intros.
     apply (dist_aux (x ++ y) H x y); auto with sets.
   Qed.
-  
+
   Lemma desc_end :
     forall (a b:A) (x:List),
       Descl (x ++ Cons a Nil) /\ ltl (x ++ Cons a Nil) (Cons b Nil) ->
-      clos_trans A leA a b. 
+      clos_trans A leA a b.
   Proof.
     intros a b x.
     case x.
@@ -246,14 +246,14 @@ Section Wf_Lexicographic_Exponentiation.
     intros.
     inversion H1; auto with sets.
     inversion H3.
-    
+
     simple induction 1.
     generalize (app_comm_cons l (Cons a Nil) a0).
     intros E; rewrite <- E; intros.
     generalize (desc_tail l a a0 H0); intro.
     inversion H1.
     apply t_trans with (y := a0); auto with sets.
-    
+
     inversion H4.
   Qed.
 
@@ -268,15 +268,15 @@ Section Wf_Lexicographic_Exponentiation.
     intro.
     case x.
     intros; apply (Lt_nil A leA).
-    
+
     simpl in |- *; intros.
     inversion_clear H0.
     apply (Lt_hd A leA a b); auto with sets.
-    
+
     inversion_clear H1.
   Qed.
-  
-  
+
+
   Lemma acc_app :
     forall (x1 x2:List) (y1:Descl (x1 ++ x2)),
       Acc Lex_Exp << x1 ++ x2, y1 >> ->
@@ -285,11 +285,11 @@ Section Wf_Lexicographic_Exponentiation.
     intros.
     apply (Acc_inv (R:=Lex_Exp) (x:=<< x1 ++ x2, y1 >>)).
     auto with sets.
-    
+
     unfold lex_exp in |- *; simpl in |- *; auto with sets.
   Qed.
-  
-  
+
+
   Theorem wf_lex_exp : well_founded leA -> well_founded Lex_Exp.
   Proof.
     unfold well_founded at 2 in |- *.
@@ -303,7 +303,7 @@ Section Wf_Lexicographic_Exponentiation.
 	forall (x0:List) (y:Descl x0), ltl x0 x -> Acc Lex_Exp << x0, y >>).
     intros.
     inversion_clear H0.
-    
+
     intro.
     generalize (well_founded_ind (wf_clos_trans A leA H)).
     intros GR.
@@ -318,7 +318,7 @@ Section Wf_Lexicographic_Exponentiation.
     generalize (right_prefix x2 l (Cons x1 Nil) H1).
     simple induction 1.
     intro; apply (H0 x2 y1 H3).
-    
+
     simple induction 1.
     intro; simple induction 1.
     clear H4 H2.
@@ -340,8 +340,8 @@ Section Wf_Lexicographic_Exponentiation.
     unfold lex_exp at 1 in |- *.
     simpl in |- *; intros x4 y3. intros.
     apply (H0 x4 y3); auto with sets.
-    
-    intros. 
+
+    intros.
     generalize (dist_Desc_concat l (l0 ++ Cons x4 Nil) y1).
     simple induction 1.
     intros.

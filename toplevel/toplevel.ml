@@ -20,7 +20,7 @@ open Protectedtoplevel
 (* A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
 
-type input_buffer = { 
+type input_buffer = {
   mutable prompt : unit -> string;
   mutable str : string; (* buffer of already read characters *)
   mutable len : int;    (* number of chars in the buffer *)
@@ -72,7 +72,7 @@ let prompt_char ic ibuf count =
     ibuf.str.[ibuf.len] <- c;
     ibuf.len <- ibuf.len + 1;
     Some c
-  with End_of_file -> 
+  with End_of_file ->
     None
 
 (* Reinitialize the char stream (after a Drop) *)
@@ -94,22 +94,22 @@ let get_bols_of_loc ibuf (bp,ep) =
     if b < 0 or e < b then anomaly "Bad location";
     match lines with
       | ([],None) -> ([], Some (b,e))
-      | (fl,oe) -> ((b,e)::fl, oe) 
+      | (fl,oe) -> ((b,e)::fl, oe)
   in
   let rec lines_rec ba after = function
     | []                  -> add_line (0,ba) after
     | ll::_ when ll <= bp -> add_line (ll,ba) after
     | ll::fl              ->
         let nafter = if ll < ep then add_line (ll,ba) after else after in
-        lines_rec ll nafter fl 
+        lines_rec ll nafter fl
   in
   let (fl,ll) = lines_rec ibuf.len ([],None) ibuf.bols in
   (fl,Option.get ll)
 
 let dotted_location (b,e) =
-  if e-b < 3 then 
+  if e-b < 3 then
     ("", String.make (e-b) ' ')
-  else 
+  else
     (String.make (e-b-1) '.', " ")
 
 let blanching_string s i n =
@@ -127,11 +127,11 @@ let blanching_string s i n =
 
 let print_highlight_location ib loc =
   let (bp,ep) = unloc loc in
-  let bp = bp - ib.start 
+  let bp = bp - ib.start
   and ep = ep - ib.start in
   let highlight_lines =
     match get_bols_of_loc ib (bp,ep) with
-      | ([],(bl,el)) ->  
+      | ([],(bl,el)) ->
 	  (str"> " ++ str(String.sub ib.str bl (el-bl-1)) ++ fnl () ++
              str"> " ++ str(blanching_string ib.str bl (bp-bl)) ++
              str(String.make (ep-bp) '^'))
@@ -144,9 +144,9 @@ let print_highlight_location ib loc =
             prlist (fun (bi,ei) ->
                       (str"> " ++ str(String.sub ib.str bi (ei-bi)))) ml in
           let ln = (str"> " ++ str(String.sub ib.str bn (ep-bn)) ++
-                      str sn ++ str dn) in 
+                      str sn ++ str dn) in
 	  (l1 ++ li ++ ln)
-  in 
+  in
   let loc = make_loc (bp,ep) in
   (str"Toplevel input, characters " ++ Cerrors.print_loc loc ++ str":" ++ fnl () ++
      highlight_lines ++ fnl ())
@@ -184,7 +184,7 @@ let print_location_in_file s inlibrary fname loc =
     with e ->
       (close_in ic;
        hov 1 (errstrm ++ spc() ++ str"(invalid location):") ++ fnl ())
-	
+
 let print_command_location ib dloc =
   match dloc with
     | Some (bp,ep) ->
@@ -198,10 +198,10 @@ let valid_loc dloc loc =
     | Some dloc ->
 	let (bd,ed) = unloc dloc in let (b,e) = unloc loc in bd<=b & e<=ed
     | _ -> true
-	  
+
 let valid_buffer_loc ib dloc loc =
-  valid_loc dloc loc & 
-  let (b,e) = unloc loc in b-ib.start >= 0 & e-ib.start < ib.len & b<=e 
+  valid_loc dloc loc &
+  let (b,e) = unloc loc in b-ib.start >= 0 & e-ib.start < ib.len & b<=e
 
 (*s The Coq prompt is the name of the focused proof, if any, and "Coq"
     otherwise. We trap all exceptions to prevent the error message printing
@@ -209,35 +209,35 @@ let valid_buffer_loc ib dloc loc =
 let make_prompt () =
   try
     (Names.string_of_id (Pfedit.get_current_proof_name ())) ^ " < "
-  with _ -> 
+  with _ ->
     "Coq < "
 
-(*let build_pending_list l = 
+(*let build_pending_list l =
   let pl = ref ">" in
   let l' = ref l in
-  let res = 
-    while List.length !l' > 1 do 
+  let res =
+    while List.length !l' > 1 do
       pl := !pl ^ "|" Names.string_of_id x;
       l':=List.tl !l'
     done in
   let last = try List.hd !l' with _ ->   in
   "<"^l'
-*)    
+*)
 
 (* the coq prompt added to the default one when in emacs mode
    The prompt contains the current state label [n] (for global
    backtracking) and the current proof state [p] (for proof
    backtracking) plus the list of open (nested) proofs (for proof
    aborting when backtracking). It looks like:
-   
+
    "n |lem1|lem2|lem3| p < "
 *)
 let make_emacs_prompt() =
   let statnum = string_of_int (Lib.current_command_label ()) in
   let dpth = Pfedit.current_proof_depth() in
   let pending = Pfedit.get_all_proof_names() in
-  let pendingprompt = 
-    List.fold_left 
+  let pendingprompt =
+    List.fold_left
       (fun acc x -> acc ^ (if acc <> "" then "|" else "") ^ Names.string_of_id x)
       "" pending in
   let proof_info = if dpth >= 0 then string_of_int dpth else "0" in
@@ -248,9 +248,9 @@ let make_emacs_prompt() =
  * initialized when a vernac command is immediately followed by "\n",
  * or after a Drop. *)
 let top_buffer =
-  let pr() = 
-    emacs_prompt_startstring() 
-    ^ make_prompt() 
+  let pr() =
+    emacs_prompt_startstring()
+    ^ make_prompt()
     ^ make_emacs_prompt()
     ^ emacs_prompt_endstring()
   in
@@ -263,7 +263,7 @@ let top_buffer =
 
 let set_prompt prompt =
   top_buffer.prompt
-  <- (fun () -> 
+  <- (fun () ->
     emacs_prompt_startstring()
     ^ prompt ()
     ^ emacs_prompt_endstring())
@@ -287,31 +287,31 @@ let print_toplevel_error exc =
       | DuringCommandInterp (loc,ie)
       | Stdpp.Exc_located (loc, DuringSyntaxChecking ie) ->
           if loc = dummy_loc then (None,ie) else (Some loc, ie)
-      | _ -> (None, exc) 
+      | _ -> (None, exc)
   in
   let (locstrm,exc) =
     match exc with
       | Stdpp.Exc_located (loc, ie) ->
           if valid_buffer_loc top_buffer dloc loc then
             (print_highlight_location top_buffer loc, ie)
-          else 
+          else
 	    ((mt ()) (* print_command_location top_buffer dloc *), ie)
       | Error_in_file (s, (inlibrary, fname, loc), ie) ->
           (print_location_in_file s inlibrary fname loc, ie)
-      | _ -> 
+      | _ ->
 	  ((mt ()) (* print_command_location top_buffer dloc *), exc)
   in
   match exc with
-    | End_of_input -> 
+    | End_of_input ->
 	msgerrnl (mt ()); pp_flush(); exit 0
     | Vernacexpr.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise Vernacexpr.Drop;
         (str"Error: There is no ML toplevel." ++ fnl ())
     | Vernacexpr.ProtectedLoop ->
 	raise Vernacexpr.ProtectedLoop
-    | Vernacexpr.Quit -> 
+    | Vernacexpr.Quit ->
 	raise Vernacexpr.Quit
-    | _ -> 
+    | _ ->
 	(if is_pervasive_exn exc then (mt ()) else locstrm) ++
         Cerrors.explain_exn exc
 
@@ -321,14 +321,14 @@ let parse_to_dot =
     | ("", ".") -> ()
     | ("EOI", "") -> raise End_of_input
     | _ -> dot st
-  in 
+  in
   Gram.Entry.of_parser "Coqtoplevel.dot" dot
-    
+
 (* We assume that when a lexer error occurs, at least one char was eaten *)
 let rec discard_to_dot () =
-  try 
+  try
     Gram.Entry.parse parse_to_dot top_buffer.tokens
-  with Stdpp.Exc_located(_,Token.Error _) -> 
+  with Stdpp.Exc_located(_,Token.Error _) ->
     discard_to_dot()
 
 
@@ -336,14 +336,14 @@ let rec discard_to_dot () =
  * in encountered. *)
 
 let process_error = function
-  | DuringCommandInterp _ 
+  | DuringCommandInterp _
   | Stdpp.Exc_located (_,DuringSyntaxChecking _) as e -> e
   | e ->
-      if is_pervasive_exn e then 
+      if is_pervasive_exn e then
 	e
-      else 
-        try 
-	  discard_to_dot (); e 
+      else
+        try
+	  discard_to_dot (); e
 	with
           | End_of_input -> End_of_input
           | de -> if is_pervasive_exn de then de else e
@@ -357,11 +357,11 @@ let do_vernac () =
   msgerrnl (mt ());
   if !print_emacs then msgerr (str (top_buffer.prompt()));
   resynch_buffer top_buffer;
-  begin 
-    try 
+  begin
+    try
       raw_do_vernac top_buffer.tokens
-    with e -> 
-      msgnl (print_toplevel_error (process_error e)) 
+    with e ->
+      msgnl (print_toplevel_error (process_error e))
   end;
   flush_all()
 
@@ -386,7 +386,7 @@ let rec coq_switch b =
       protected_loop stdin
   with
     | Vernacexpr.Drop -> ()
-    | Vernacexpr.ProtectedLoop -> 
+    | Vernacexpr.ProtectedLoop ->
 	Lib.declare_initial_state();
 	coq_switch false
     | End_of_input -> msgerrnl (mt ()); pp_flush(); exit 0

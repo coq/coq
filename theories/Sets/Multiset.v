@@ -22,7 +22,7 @@ Section multiset_defs.
 
   Inductive multiset : Type :=
     Bag : (A -> nat) -> multiset.
-  
+
   Definition EmptyBag := Bag (fun a:A => 0).
   Definition SingletonBag (a:A) :=
     Bag (fun a':A => match Aeq_dec a a' with
@@ -31,23 +31,23 @@ Section multiset_defs.
                      end).
 
   Definition multiplicity (m:multiset) (a:A) : nat := let (f) := m in f a.
-  
+
   (** multiset equality *)
   Definition meq (m1 m2:multiset) :=
     forall a:A, multiplicity m1 a = multiplicity m2 a.
-  
+
   Lemma meq_refl : forall x:multiset, meq x x.
   Proof.
     destruct x; unfold meq; reflexivity.
   Qed.
-  
+
   Lemma meq_trans : forall x y z:multiset, meq x y -> meq y z -> meq x z.
   Proof.
     unfold meq in |- *.
     destruct x; destruct y; destruct z.
     intros; rewrite H; auto.
   Qed.
-  
+
   Lemma meq_sym : forall x y:multiset, meq x y -> meq y x.
   Proof.
     unfold meq in |- *.
@@ -62,7 +62,7 @@ Section multiset_defs.
   Proof.
     unfold meq in |- *; unfold munion in |- *; simpl in |- *; auto.
   Qed.
-  
+
   Lemma munion_empty_right : forall x:multiset, meq x (munion x EmptyBag).
   Proof.
     unfold meq in |- *; unfold munion in |- *; simpl in |- *; auto.
@@ -70,7 +70,7 @@ Section multiset_defs.
 
 
   Require Plus. (* comm. and ass. of plus *)
-  
+
   Lemma munion_comm : forall x y:multiset, meq (munion x y) (munion y x).
   Proof.
     unfold meq in |- *; unfold multiplicity in |- *; unfold munion in |- *.
@@ -106,28 +106,28 @@ Section multiset_defs.
   Lemma munion_rotate :
     forall x y z:multiset, meq (munion x (munion y z)) (munion z (munion x y)).
   Proof.
-    intros; apply (op_rotate multiset munion meq). 
+    intros; apply (op_rotate multiset munion meq).
       apply munion_comm.
       apply munion_ass.
       exact meq_trans.
       exact meq_sym.
       trivial.
   Qed.
-  
+
   Lemma meq_congr :
     forall x y z t:multiset, meq x y -> meq z t -> meq (munion x z) (munion y t).
   Proof.
     intros; apply (cong_congr multiset munion meq); auto using meq_left, meq_right.
       exact meq_trans.
   Qed.
-  
+
   Lemma munion_perm_left :
     forall x y z:multiset, meq (munion x (munion y z)) (munion y (munion x z)).
   Proof.
     intros; apply (perm_left multiset munion meq); auto using munion_comm, munion_ass, meq_left, meq_right, meq_sym.
       exact meq_trans.
   Qed.
-  
+
   Lemma multiset_twist1 :
     forall x y z t:multiset,
       meq (munion x (munion (munion y z) t)) (munion (munion y (munion x t)) z).
@@ -156,7 +156,7 @@ Section multiset_defs.
     apply meq_right; apply meq_left; trivial.
     apply multiset_twist1.
   Qed.
-  
+
   Lemma treesort_twist2 :
     forall x y z t u:multiset,
       meq u (munion y z) ->
@@ -168,7 +168,7 @@ Section multiset_defs.
   Qed.
 
 
-(*i theory of minter to do similarly 
+(*i theory of minter to do similarly
 Require Min.
 (* multiset intersection *)
 Definition minter := [m1,m2:multiset]

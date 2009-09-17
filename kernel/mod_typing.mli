@@ -18,7 +18,7 @@ open Mod_subst
 
 val translate_module : env -> module_entry -> module_body
 
-val translate_struct_entry : env -> module_struct_entry -> 
+val translate_struct_entry : env -> module_struct_entry ->
   struct_expr_body * substitution
 
 val add_modtype_constraints : env -> module_type_body -> env

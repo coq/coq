@@ -29,7 +29,7 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
 	  (Pretyping.OfType (Some evi.evar_concl)) rawc
     with _ ->
       let loc = Rawterm.loc_of_rawconstr rawc in
-      user_err_loc 
+      user_err_loc
         (loc,"",Pp.str ("Instance is not well-typed in the environment of " ^
 			string_of_existential evk))
   in
@@ -37,10 +37,10 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
 
 (* vernac command Existential *)
 
-let instantiate_pf_com n com pfts = 
+let instantiate_pf_com n com pfts =
   let gls = top_goal_of_pftreestate pfts in
-  let sigma = gls.sigma in 
-  let (evk,evi) = 
+  let sigma = gls.sigma in
+  let (evk,evi) =
     let evl = Evarutil.non_instantiated sigma in
       if (n <= 0) then
 	error "incorrect existential variable index"
@@ -48,8 +48,8 @@ let instantiate_pf_com n com pfts =
 	  error "not so many uninstantiated existential variables"
       else
 	List.nth evl (n-1)
-  in 
+  in
   let env = Evd.evar_env evi in
-  let rawc = Constrintern.intern_constr sigma env com in 
+  let rawc = Constrintern.intern_constr sigma env com in
   let sigma' = w_refine (evk,evi) (([],[]),rawc) sigma in
   change_constraints_pftreestate sigma' pfts

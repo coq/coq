@@ -56,7 +56,7 @@ type obj =
  | InductiveDefinition of
     inductiveType list *                           (* inductive types ,      *)
     params * int                                   (*  parameters,n ind. pars*)
-and inductiveType = 
+and inductiveType =
  identifier * bool * constr *                 (* typename, inductive, arity *)
   constructor list                            (*  constructors              *)
 and constructor =
@@ -78,9 +78,9 @@ type aconstr =
   | ACase      of id * uri * int * aconstr * aconstr * aconstr list
   | AFix       of id * int * ainductivefun list
   | ACoFix     of id * int * acoinductivefun list
-and ainductivefun = 
+and ainductivefun =
  id * identifier * int * aconstr * aconstr
-and acoinductivefun = 
+and acoinductivefun =
  id * identifier * aconstr * aconstr
 and explicit_named_substitution = id option * (uri * aconstr) list
 
@@ -101,7 +101,7 @@ type aobj =
  | AInductiveDefinition of id *
     anninductiveType list *                        (* inductive types ,      *)
     params * int                                   (*  parameters,n ind. pars*)
-and anninductiveType = 
+and anninductiveType =
  id * identifier * bool * aconstr *           (* typename, inductive, arity *)
   annconstructor list                         (*  constructors              *)
 and annconstructor =

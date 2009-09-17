@@ -51,28 +51,28 @@ let searchisos = ref false
 let coqide     = ref false
 let echo       = ref false
 
-let src_dirs () = 
+let src_dirs () =
   [ []; ["kernel";"byterun"]; [ "config" ]; [ "toplevel" ] ] @
   if !coqide then [[ "ide" ]] else []
 
-let includes () = 
+let includes () =
   let coqlib = Envars.coqlib () in
   let camlp4lib = Envars.camlp4lib () in
     List.fold_right
       (fun d l -> "-I" :: ("\"" ^ List.fold_left Filename.concat coqlib d ^ "\"") :: l)
       (src_dirs ())
-      (["-I"; "\"" ^ camlp4lib ^ "\""] @ 
+      (["-I"; "\"" ^ camlp4lib ^ "\""] @
 	 ["-I"; "\"" ^ coqlib ^ "\""] @
 	 (if !coqide then ["-thread"; "-I"; "+lablgtk2"] else []))
 
 (* Transform bytecode object file names in native object file names *)
 let native_suffix f =
-  if Filename.check_suffix f ".cmo" then 
+  if Filename.check_suffix f ".cmo" then
     (Filename.chop_suffix f ".cmo") ^ ".cmx"
-  else if Filename.check_suffix f ".cma" then 
+  else if Filename.check_suffix f ".cma" then
     (Filename.chop_suffix f ".cma") ^ ".cmxa"
-  else  
-    if Filename.check_suffix f ".a" then f 
+  else
+    if Filename.check_suffix f ".a" then f
     else
       failwith ("File "^f^" has not extension .cmo, .cma or .a")
 
@@ -112,8 +112,8 @@ let all_subdirs dir =
   let l = ref [dir] in
   let add f = l := f :: !l in
   let rec traverse dir =
-    let dirh = 
-      try opendir dir with Unix_error _ -> invalid_arg "all_subdirs" 
+    let dirh =
+      try opendir dir with Unix_error _ -> invalid_arg "all_subdirs"
     in
     try
       while true do
@@ -152,13 +152,13 @@ Flags are:
 let parse_args () =
   let rec parse (op,fl) = function
     | [] -> List.rev op, List.rev fl
-    | "-coqlib" :: d :: rem -> 
+    | "-coqlib" :: d :: rem ->
 	Flags.coqlib_spec := true; Flags.coqlib := d ; parse (op,fl) rem
     | "-coqlib" :: _        -> usage ()
-    | "-camlbin" :: d :: rem -> 
+    | "-camlbin" :: d :: rem ->
 	Flags.camlbin_spec := true; Flags.camlbin := d ; parse (op,fl) rem
     | "-camlbin" :: _        -> usage ()
-    | "-camlp4bin" :: d :: rem -> 
+    | "-camlp4bin" :: d :: rem ->
 	Flags.camlp4bin_spec := true; Flags.camlp4bin := d ; parse (op,fl) rem
     | "-camlp4bin" :: _        -> usage ()
     | "-boot" :: rem -> Flags.boot := true; parse (op,fl) rem
@@ -167,7 +167,7 @@ let parse_args () =
     | "-top" :: rem -> top := true ; parse (op,fl) rem
     | "-ide" :: rem ->
         coqide := true; parse (op,fl) rem
-    | "-v8" :: rem -> 
+    | "-v8" :: rem ->
 	Printf.eprintf "warning: option -v8 deprecated";
 	parse (op,fl) rem
     | "-echo" :: rem -> echo := true ; parse (op,fl) rem
@@ -185,8 +185,8 @@ let parse_args () =
         parse (o::op,fl) rem
     | ("-h"|"--help") :: _ -> usage ()
     | f :: rem ->
-	if Filename.check_suffix f ".ml" 
-	  or Filename.check_suffix f ".cmx" 
+	if Filename.check_suffix f ".ml"
+	  or Filename.check_suffix f ".cmx"
 	  or Filename.check_suffix f ".cmo"
 	  or Filename.check_suffix f ".cmxa"
 	  or Filename.check_suffix f ".cma" then
@@ -243,14 +243,14 @@ let create_tmp_main_file modules =
   let main_name = Filename.temp_file "coqmain" ".ml" in
   let oc = open_out main_name in
   try
-    (* Add the pre-linked modules *)    
+    (* Add the pre-linked modules *)
     output_string oc "List.iter Mltop.add_known_module [\"";
     output_string oc (String.concat "\";\"" modules);
     output_string oc "\"];;\n";
     (* Initializes the kind of loading *)
     output_string oc (declare_loading_string());
     (* Start the right toplevel loop: Coq or Coq_searchisos *)
-    if !searchisos then 
+    if !searchisos then
       output_string oc "Cmd_searchisos_line.start();;\n"
     else if !coqide then
       output_string oc "Coqide.start();;\n"
@@ -258,7 +258,7 @@ let create_tmp_main_file modules =
       output_string oc "Coqtop.start();;\n";
     close_out oc;
     main_name
-  with e -> 
+  with e ->
     clean main_name; raise e
 
 (* main part *)
@@ -298,19 +298,19 @@ let main () =
     let args = if !top then args @ [ "topstart.cmo" ] else args in
       (* Now, with the .cma, we MUST use the -linkall option *)
     let command = String.concat " " (prog::"-rectypes"::args) in
-      if !echo then 
-	begin 
-	  print_endline command; 
-	  print_endline 
-	    ("(command length is " ^ 
+      if !echo then
+	begin
+	  print_endline command;
+	  print_endline
+	    ("(command length is " ^
 	       (string_of_int (String.length command)) ^ " characters)");
-	  flush Pervasives.stdout 
+	  flush Pervasives.stdout
 	end;
       let retcode = Sys.command command in
 	clean main_file;
 	(* command gives the exit code in HSB, and signal in LSB !!! *)
-	if retcode > 255 then retcode lsr 8 else retcode 
-  with e -> 
+	if retcode > 255 then retcode lsr 8 else retcode
+  with e ->
     clean main_file; raise e
 
 let retcode =

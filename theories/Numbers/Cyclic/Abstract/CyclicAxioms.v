@@ -12,8 +12,8 @@
 
 (** * Signature and specification of a bounded integer structure *)
 
-(** This file specifies how to represent [Z/nZ] when [n=2^d], 
-    [d] being the number of digits of these bounded integers. *) 
+(** This file specifies how to represent [Z/nZ] when [n=2^d],
+    [d] being the number of digits of these bounded integers. *)
 
 Set Implicit Arguments.
 
@@ -33,7 +33,7 @@ Section Z_nZ_Op.
  Record znz_op := mk_znz_op {
 
     (* Conversion functions with Z *)
-    znz_digits : positive;  
+    znz_digits : positive;
     znz_zdigits: znz;
     znz_to_Z   : znz -> Z;
     znz_of_pos : positive -> N * znz; (* Euclidean division by [2^digits] *)
@@ -78,12 +78,12 @@ Section Z_nZ_Op.
     znz_div         : znz -> znz -> znz * znz;
 
     znz_mod_gt      : znz -> znz -> znz; (* specialized version of [znz_mod] *)
-    znz_mod         : znz -> znz -> znz; 
+    znz_mod         : znz -> znz -> znz;
 
     znz_gcd_gt      : znz -> znz -> znz; (* specialized version of [znz_gcd] *)
-    znz_gcd         : znz -> znz -> znz; 
+    znz_gcd         : znz -> znz -> znz;
     (* [znz_add_mul_div p i j] is a combination of the [(digits-p)]
-       low bits of [i] above the [p] high bits of [j]: 
+       low bits of [i] above the [p] high bits of [j]:
        [znz_add_mul_div p i j = i*2^p+j/2^(digits-p)] *)
     znz_add_mul_div : znz -> znz -> znz -> znz;
     (* [znz_pos_mod p i] is [i mod 2^p] *)
@@ -135,7 +135,7 @@ Section Z_nZ_Spec.
  Let w_mul_c       := w_op.(znz_mul_c).
  Let w_mul         := w_op.(znz_mul).
  Let w_square_c    := w_op.(znz_square_c).
- 
+
  Let w_div21       := w_op.(znz_div21).
  Let w_div_gt      := w_op.(znz_div_gt).
  Let w_div         := w_op.(znz_div).
@@ -229,25 +229,25 @@ Section Z_nZ_Spec.
     spec_div : forall a b, 0 < [|b|] ->
       let (q,r) := w_div a b in
       [|a|] = [|q|] * [|b|] + [|r|] /\
-      0 <= [|r|] < [|b|]; 
-   
+      0 <= [|r|] < [|b|];
+
     spec_mod_gt : forall a b, [|a|] > [|b|] -> 0 < [|b|] ->
       [|w_mod_gt a b|] = [|a|] mod [|b|];
     spec_mod :  forall a b, 0 < [|b|] ->
       [|w_mod a b|] = [|a|] mod [|b|];
-      
+
     spec_gcd_gt : forall a b, [|a|] > [|b|] ->
       Zis_gcd [|a|] [|b|] [|w_gcd_gt a b|];
     spec_gcd : forall a b, Zis_gcd [|a|] [|b|] [|w_gcd a b|];
 
- 
+
     (* shift operations *)
     spec_head00:  forall x, [|x|] = 0 -> [|w_head0 x|] = Zpos w_digits;
     spec_head0  : forall x,  0 < [|x|] ->
-	 wB/ 2 <= 2 ^ ([|w_head0 x|]) * [|x|] < wB;  
+	 wB/ 2 <= 2 ^ ([|w_head0 x|]) * [|x|] < wB;
     spec_tail00:  forall x, [|x|] = 0 -> [|w_tail0 x|] = Zpos w_digits;
-    spec_tail0  : forall x, 0 < [|x|] -> 
-         exists y, 0 <= y /\ [|x|] = (2 * y + 1) * (2 ^ [|w_tail0 x|]) ;  
+    spec_tail0  : forall x, 0 < [|x|] ->
+         exists y, 0 <= y /\ [|x|] = (2 * y + 1) * (2 ^ [|w_tail0 x|]) ;
     spec_add_mul_div : forall x y p,
        [|p|] <= Zpos w_digits ->
        [| w_add_mul_div p x y |] =
@@ -272,23 +272,23 @@ End Z_nZ_Spec.
 (** Generic construction of double words *)
 
 Section WW.
- 
+
  Variable w : Type.
  Variable w_op : znz_op w.
  Variable op_spec : znz_spec w_op.
- 
+
  Let wB := base w_op.(znz_digits).
  Let w_to_Z := w_op.(znz_to_Z).
  Let w_eq0 := w_op.(znz_eq0).
  Let w_0 := w_op.(znz_0).
 
- Definition znz_W0 h := 
+ Definition znz_W0 h :=
   if w_eq0 h then W0 else WW h w_0.
 
- Definition znz_0W l := 
+ Definition znz_0W l :=
   if w_eq0 l then W0 else WW w_0 l.
 
- Definition znz_WW h l := 
+ Definition znz_WW h l :=
   if w_eq0 h then znz_0W l else WW h l.
 
  Lemma spec_W0 : forall h,
@@ -300,7 +300,7 @@ Section WW.
  unfold w_0; rewrite op_spec.(spec_0); auto with zarith.
  Qed.
 
- Lemma spec_0W : forall l, 
+ Lemma spec_0W : forall l,
    zn2z_to_Z wB w_to_Z (znz_0W l) = w_to_Z l.
  Proof.
  unfold zn2z_to_Z, znz_0W, w_to_Z; simpl; intros.
@@ -309,7 +309,7 @@ Section WW.
  unfold w_0; rewrite op_spec.(spec_0); auto with zarith.
  Qed.
 
- Lemma spec_WW : forall h l, 
+ Lemma spec_WW : forall h l,
   zn2z_to_Z wB w_to_Z (znz_WW h l) = (w_to_Z h)*wB + w_to_Z l.
  Proof.
  unfold znz_WW, w_to_Z; simpl; intros.
@@ -324,7 +324,7 @@ End WW.
 (** Injecting [Z] numbers into a cyclic structure *)
 
 Section znz_of_pos.
- 
+
  Variable w : Type.
  Variable w_op : znz_op w.
  Variable op_spec : znz_spec w_op.
@@ -349,7 +349,7 @@ Section znz_of_pos.
   apply Zle_trans with X; auto with zarith
  end.
  match goal with |- ?X <= _ =>
-  pattern X at 1; rewrite <- (Zmult_1_l); 
+  pattern X at 1; rewrite <- (Zmult_1_l);
   apply Zmult_le_compat_r; auto with zarith
  end.
  case p1; simpl; intros; red; simpl; intros; discriminate.

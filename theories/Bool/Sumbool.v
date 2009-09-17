@@ -39,18 +39,18 @@ Defined.
 Section connectives.
 
   Variables A B C D : Prop.
-  
+
   Hypothesis H1 : {A} + {B}.
   Hypothesis H2 : {C} + {D}.
-  
+
   Definition sumbool_and : {A /\ C} + {B \/ D}.
     case H1; case H2; auto.
   Defined.
-  
+
   Definition sumbool_or : {A \/ C} + {B /\ D}.
     case H1; case H2; auto.
   Defined.
-  
+
   Definition sumbool_not : {B} + {A}.
     case H1; auto.
   Defined.

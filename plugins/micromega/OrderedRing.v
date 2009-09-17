@@ -162,7 +162,7 @@ Qed.
 Theorem Rminus_eq_0 : forall n m : R, n - m == 0 <-> n == m.
 Proof.
 intros n m.
-split; intro H. setoid_replace n with ((n - m) + m) by ring. rewrite H. 
+split; intro H. setoid_replace n with ((n - m) + m) by ring. rewrite H.
 now rewrite Rplus_0_l.
 rewrite H; ring.
 Qed.

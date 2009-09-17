@@ -65,7 +65,7 @@ Section Well_founded.
   exact (fun P:A -> Prop => well_founded_induction_type P).
  Defined.
 
-(** Well-founded fixpoints *) 
+(** Well-founded fixpoints *)
 
  Section FixPoint.
 
@@ -80,13 +80,13 @@ Section Well_founded.
   Lemma Fix_F_eq :
    forall (x:A) (r:Acc x),
      F (fun (y:A) (p:R y x) => Fix_F (x:=y) (Acc_inv r p)) = Fix_F (x:=x) r.
-  Proof. 
+  Proof.
    destruct r using Acc_inv_dep; auto.
   Qed.
 
   Definition Fix (x:A) := Fix_F (Rwf x).
 
-  (** Proof that [well_founded_induction] satisfies the fixpoint equation. 
+  (** Proof that [well_founded_induction] satisfies the fixpoint equation.
       It requires an extra property of the functional *)
 
   Hypothesis
@@ -111,7 +111,7 @@ Section Well_founded.
 
  End FixPoint.
 
-End Well_founded. 
+End Well_founded.
 
 (** Well-founded fixpoints over pairs *)
 
@@ -120,7 +120,7 @@ Section Well_founded_2.
   Variables A B : Type.
   Variable R : A * B -> A * B -> Prop.
 
-  Variable P : A -> B -> Type. 
+  Variable P : A -> B -> Type.
 
   Section FixPoint_2.
 
@@ -129,7 +129,7 @@ Section Well_founded_2.
       forall (x:A) (x':B),
         (forall (y:A) (y':B), R (y, y') (x, x') -> P y y') -> P x x'.
 
-  Fixpoint Fix_F_2 (x:A) (x':B) (a:Acc R (x, x')) {struct a} : 
+  Fixpoint Fix_F_2 (x:A) (x':B) (a:Acc R (x, x')) {struct a} :
    P x x' :=
     F
       (fun (y:A) (y':B) (h:R (y, y') (x, x')) =>

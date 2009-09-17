@@ -50,7 +50,7 @@ let iff_unfolding = ref false
 
 open Goptions
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "unfolding of iff and not in intuition";
       optkey   = ["Intuition";"Iff";"Unfolding"];
@@ -77,7 +77,7 @@ let is_unit_or_eq ist =
 let is_record t =
   let (hdapp,args) = decompose_app t in
     match (kind_of_term hdapp) with
-      | Ind ind  -> 
+      | Ind ind  ->
           let (mib,mip) = Global.lookup_inductive ind in
 	    mib.Declarations.mind_record
       | _ -> false
@@ -86,13 +86,13 @@ let is_binary t =
   isApp t &&
   let (hdapp,args) = decompose_app t in
     match (kind_of_term hdapp) with
-    | Ind ind  -> 
+    | Ind ind  ->
         let (mib,mip) = Global.lookup_inductive ind in
 	  mib.Declarations.mind_nparams = 2
     | _ -> false
 
 let iter_tac tacl =
-  List.fold_right (fun tac tacs -> <:tactic< $tac; $tacs >>) tacl 
+  List.fold_right (fun tac tacs -> <:tactic< $tac; $tacs >>) tacl
 
 (** Dealing with conjunction *)
 
@@ -111,10 +111,10 @@ let flatten_contravariant_conj ist =
   match match_with_conjunction ~strict:strict_in_contravariant_hyp typ with
   | Some (_,args) ->
       let i = List.length args in
-      if not binary_mode || i = 2 then 
+      if not binary_mode || i = 2 then
 	let newtyp = valueIn (VConstr (List.fold_right mkArrow args c)) in
 	let intros =
-	  iter_tac (List.map (fun _ -> <:tactic< intro >>) args) 
+	  iter_tac (List.map (fun _ -> <:tactic< intro >>) args)
 	  <:tactic< idtac >> in
 	<:tactic<
           let newtyp := $newtyp in
@@ -143,10 +143,10 @@ let flatten_contravariant_disj ist =
   match match_with_disjunction ~strict:strict_in_contravariant_hyp typ with
   | Some (_,args) ->
       let i = List.length args in
-      if not binary_mode || i = 2 then 
+      if not binary_mode || i = 2 then
 	iter_tac (list_map_i (fun i arg ->
 	  let typ = valueIn (VConstr (mkArrow arg c)) in
-	  <:tactic< 
+	  <:tactic<
             let typ := $typ in
 	    assert typ by (intro; apply id; constructor $i; assumption)
 	  >>) 1 args) <:tactic< clear id >>
@@ -166,7 +166,7 @@ let not_dep_intros ist =
   | H:(Coq.Init.Logic.not _)|-_    => unfold Coq.Init.Logic.not at 1 in H
   | H:(Coq.Init.Logic.not _)->_|-_    => unfold Coq.Init.Logic.not at 1 in H
   end >>
-				      
+
 let axioms ist =
   let t_is_unit_or_eq = tacticIn is_unit_or_eq
   and t_is_empty = tacticIn is_empty in
@@ -231,7 +231,7 @@ let rec tauto_intuit t_reduce solver ist =
    || match reverse goal with
       | id:(?X1 -> ?X2)-> ?X3|- _ =>
 	  cut X3;
-	    [ intro; clear id; $t_tauto_intuit 
+	    [ intro; clear id; $t_tauto_intuit
 	    | cut (X1 -> X2);
 		[ exact id
 		| generalize (fun y:X2 => id (fun x:X1 => y)); intro; clear id;
@@ -276,7 +276,7 @@ let tauto_classical nnpp g =
   with UserError _ -> errorlabstrm "tauto" (str "Classical tauto failed.")
 
 let tauto g =
-  try 
+  try
     let nnpp = constr_of_global (Nametab.global_of_path coq_nnpp_path) in
     (* try intuitionistic version first to avoid an axiom if possible *)
     tclORELSE tauto_intuitionistic (tauto_classical nnpp) g

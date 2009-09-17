@@ -38,29 +38,29 @@ Require Import Logic_Type.
 
 Section Orderings.
    Variable U : Type.
-   
+
    Definition Relation := U -> U -> Prop.
 
    Variable R : Relation.
-   
+
    Definition Reflexive : Prop := forall x : U, R x x.
-   
+
    Definition Transitive : Prop := forall x y z : U, R x y -> R y z -> R x z.
-   
+
    Definition Symmetric : Prop := forall x y : U, R x y -> R y x.
-   
+
    Definition Antisymmetric : Prop := forall x y : U, R x y -> R y x -> x = y.
-   
+
    Definition contains (R R' : Relation) : Prop :=
      forall x y : U, R' x y -> R x y.
   Definition same_relation (R R' : Relation) : Prop :=
     contains R R' /\ contains R' R.
 Inductive Equivalence : Prop :=
     Build_Equivalence : Reflexive -> Transitive -> Symmetric -> Equivalence.
-   
+
    Inductive PER : Prop :=
        Build_PER : Symmetric -> Transitive -> PER.
-   
+
 End Orderings.
 
 (***** Setoid  *******)
@@ -105,7 +105,7 @@ Definition Map_setoid := Build_Setoid Map ext Equiv_map_eq.
 
 End Maps.
 
-Notation ap := (explicit_ap _ _). 
+Notation ap := (explicit_ap _ _).
 
 (* <Warning> : Grammar is replaced by Notation *)
 
@@ -128,8 +128,8 @@ Axiom eq_Suc : forall n m : posint, n = m -> Suc n = Suc m.
 
 Definition pred (n : posint) : posint :=
   match n return posint with
-  | Z => (* Z *)  Z 
-      (* Suc u *) 
+  | Z => (* Z *)  Z
+      (* Suc u *)
   | Suc u => u
   end.
 
@@ -141,7 +141,7 @@ Axiom not_eq_Suc : forall n m : posint, n <> m -> Suc n <> Suc m.
 Definition IsSuc (n : posint) : Prop :=
   match n return Prop with
   | Z => (* Z *)  False
-      (* Suc p *) 
+      (* Suc p *)
   | Suc p => True
   end.
 Definition IsZero (n : posint) : Prop :=
@@ -163,7 +163,7 @@ Definition Decidable (A : Type) (R : Relation A) :=
   forall x y : A, R x y \/ ~ R x y.
 
 
-Record DSetoid : Type := 
+Record DSetoid : Type :=
   {Set_of : Setoid; prf_decid : Decidable (elem Set_of) (equal Set_of)}.
 
 (* example de Dsetoide d'entiers *)
@@ -190,7 +190,7 @@ Definition Dposint := Build_DSetoid Set_of_posint Eq_posint_deci.
 
 Section Sig.
 
-Record Signature : Type := 
+Record Signature : Type :=
   {Sigma : DSetoid; Arity : Map (Set_of Sigma) (Set_of Dposint)}.
 
 Variable S : Signature.
@@ -268,8 +268,8 @@ Reset equalT.
 
 Fixpoint equalT (t1 : TERM) : TERM -> Prop :=
   match t1 return (TERM -> Prop) with
-  | var v1 => 
-      (*var*) 
+  | var v1 =>
+      (*var*)
       fun t2 : TERM =>
       match t2 return Prop with
       | var v2 =>
@@ -289,12 +289,12 @@ Fixpoint equalT (t1 : TERM) : TERM -> Prop :=
           EqListT (ap (Arity S) op1) l1 (ap (Arity S) op2) l2
       end
   end
- 
+
  with EqListT (n1 : posint) (l1 : LTERM n1) {struct l1} :
  forall n2 : posint, LTERM n2 -> Prop :=
   match l1 in (LTERM _) return (forall n2 : posint, LTERM n2 -> Prop) with
   | nil =>
-      (*nil*) 
+      (*nil*)
       fun (n2 : posint) (l2 : LTERM n2) =>
       match l2 in (LTERM _) return Prop with
       | nil =>
@@ -336,7 +336,7 @@ Fixpoint equalT (t1 : TERM) : TERM -> Prop :=
           EqListT (ap (Arity S) op1) l1 (ap (Arity S) op2) l2
       end
   end
- 
+
  with EqListT (n1 : posint) (l1 : LTERM n1) {struct l1} :
  forall n2 : posint, LTERM n2 -> Prop :=
   match l1 return (forall n2 : posint, LTERM n2 -> Prop) with
@@ -374,8 +374,8 @@ Fixpoint equalT (t1 : TERM) : TERM -> Prop :=
           EqListT (ap (Arity S) op1) l1 (ap (Arity S) op2) l2
       end
   end
- 
- with EqListT (n1 : posint) (l1 : LTERM n1) (n2 : posint) 
+
+ with EqListT (n1 : posint) (l1 : LTERM n1) (n2 : posint)
  (l2 : LTERM n2) {struct l1} : Prop :=
   match l1 with
   | nil => match l2 with
@@ -401,8 +401,8 @@ Fixpoint equalT (t1 t2 : TERM) {struct t1} : Prop :=
       equal _ op1 op2 /\ EqListT (ap (Arity S) op1) l1 (ap (Arity S) op2) l2
   | _, _ => False
   end
- 
- with EqListT (n1 : posint) (l1 : LTERM n1) (n2 : posint) 
+
+ with EqListT (n1 : posint) (l1 : LTERM n1) (n2 : posint)
  (l2 : LTERM n2) {struct l1} : Prop :=
   match l1, l2 with
   | nil, nil => True
@@ -433,16 +433,16 @@ Inductive I : unit -> Type :=
 | C : forall a, I a -> I tt.
 
 (*
-Definition F (l:I tt) : l = l := 
+Definition F (l:I tt) : l = l :=
 match l return l = l with
 | C tt (C _ l')  => refl_equal (C tt (C _ l'))
 end.
 
 one would expect that the compilation of F (this involves
-some kind of pattern-unification) would produce: 
+some kind of pattern-unification) would produce:
 *)
 
-Definition F (l:I tt) : l = l := 
+Definition F (l:I tt) : l = l :=
 match l return l = l with
 | C tt l' => match l' return C _ l' = C _ l' with C _ l''  => refl_equal (C tt (C _ l'')) end
 end.
@@ -451,7 +451,7 @@ Inductive J : nat -> Type :=
 | D : forall a, J (S a) -> J a.
 
 (*
-Definition G (l:J O) : l = l := 
+Definition G (l:J O) : l = l :=
 match l return l = l with
 | D O (D 1 l')  => refl_equal (D O (D 1 l'))
 | D _ _  => refl_equal _
@@ -461,7 +461,7 @@ one would expect that the compilation of G (this involves inversion)
 would produce:
 *)
 
-Definition G (l:J O) : l = l := 
+Definition G (l:J O) : l = l :=
 match l return l = l with
 | D 0 l'' =>
     match l'' as _l'' in J n return
@@ -488,7 +488,7 @@ Require Import List.
 
 Inductive nt := E.
 Definition root := E.
-Inductive ctor : list nt -> nt -> Type := 
+Inductive ctor : list nt -> nt -> Type :=
  Plus : ctor (cons E (cons E nil)) E.
 
 Inductive term : nt -> Type :=

@@ -10,7 +10,7 @@
 
 
 
-(* La tactique Fourier ne fonctionne de manière sûre que si les coefficients 
+(* La tactique Fourier ne fonctionne de manière sûre que si les coefficients
 des inéquations et équations sont entiers. En attendant la tactique Field.
 *)
 
@@ -26,9 +26,9 @@ open Contradiction
 
 (******************************************************************************
 Opérations sur les combinaisons linéaires affines.
-La partie homogène d'une combinaison linéaire est en fait une table de hash 
-qui donne le coefficient d'un terme du calcul des constructions, 
-qui est zéro si le terme n'y est pas. 
+La partie homogène d'une combinaison linéaire est en fait une table de hash
+qui donne le coefficient d'un terme du calcul des constructions,
+qui est zéro si le terme n'y est pas.
 *)
 
 type flin = {fhom:(constr , rational)Hashtbl.t;
@@ -38,27 +38,27 @@ let flin_zero () = {fhom=Hashtbl.create 50;fcste=r0};;
 
 let flin_coef f x = try (Hashtbl.find f.fhom x) with _-> r0;;
 
-let flin_add f x c = 
+let flin_add f x c =
     let cx = flin_coef f x in
     Hashtbl.remove f.fhom x;
     Hashtbl.add f.fhom x (rplus cx c);
     f
 ;;
-let flin_add_cste f c = 
+let flin_add_cste f c =
     {fhom=f.fhom;
      fcste=rplus f.fcste c}
 ;;
 
 let flin_one () = flin_add_cste (flin_zero()) r1;;
 
-let flin_plus f1 f2 = 
+let flin_plus f1 f2 =
     let f3 = flin_zero() in
     Hashtbl.iter (fun x c -> let _=flin_add f3 x c in ()) f1.fhom;
     Hashtbl.iter (fun x c -> let _=flin_add f3 x c in ()) f2.fhom;
     flin_add_cste (flin_add_cste f3 f1.fcste) f2.fcste;
 ;;
 
-let flin_minus f1 f2 = 
+let flin_minus f1 f2 =
     let f3 = flin_zero() in
     Hashtbl.iter (fun x c -> let _=flin_add f3 x c in ()) f1.fhom;
     Hashtbl.iter (fun x c -> let _=flin_add f3 x (rop c) in ()) f2.fhom;
@@ -69,17 +69,17 @@ let flin_emult a f =
     Hashtbl.iter (fun x c -> let _=flin_add f2 x (rmult a c) in ()) f.fhom;
     flin_add_cste f2 (rmult a f.fcste);
 ;;
-    
+
 (*****************************************************************************)
 open Vernacexpr
 
 type ineq = Rlt | Rle | Rgt | Rge
 
-let string_of_R_constant kn = 
+let string_of_R_constant kn =
   match Names.repr_con kn with
-    | MPfile dir, sec_dir, id when 
-	sec_dir = empty_dirpath && 
-	string_of_dirpath dir = "Coq.Reals.Rdefinitions" 
+    | MPfile dir, sec_dir, id when
+	sec_dir = empty_dirpath &&
+	string_of_dirpath dir = "Coq.Reals.Rdefinitions"
 	-> string_of_label id
     | _ -> "constant_not_of_R"
 
@@ -94,20 +94,20 @@ let rec rational_of_constr c =
   | Cast (c,_,_) -> (rational_of_constr c)
   | App (c,args) ->
       (match (string_of_R_constr c) with
-	 | "Ropp" -> 
+	 | "Ropp" ->
 	     rop (rational_of_constr args.(0))
-	 | "Rinv" -> 
+	 | "Rinv" ->
 	     rinv (rational_of_constr args.(0))
-	 | "Rmult" -> 
+	 | "Rmult" ->
 	     rmult (rational_of_constr args.(0))
                    (rational_of_constr args.(1))
-	 | "Rdiv" -> 
+	 | "Rdiv" ->
 	     rdiv (rational_of_constr args.(0))
                   (rational_of_constr args.(1))
-	 | "Rplus" -> 
+	 | "Rplus" ->
 	     rplus (rational_of_constr args.(0))
                    (rational_of_constr args.(1))
-	 | "Rminus" -> 
+	 | "Rminus" ->
 	     rminus (rational_of_constr args.(0))
                     (rational_of_constr args.(1))
 	 | _ -> failwith "not a rational")
@@ -125,9 +125,9 @@ let rec flin_of_constr c =
   | Cast (c,_,_) -> (flin_of_constr c)
   | App (c,args) ->
       (match (string_of_R_constr c) with
-	   "Ropp" -> 
+	   "Ropp" ->
              flin_emult (rop r1) (flin_of_constr args.(0))
-	 | "Rplus"-> 
+	 | "Rplus"->
              flin_plus (flin_of_constr args.(0))
 	               (flin_of_constr args.(1))
 	 | "Rminus"->
@@ -138,10 +138,10 @@ let rec flin_of_constr c =
                      try (let b = (rational_of_constr args.(1)) in
 			    (flin_add_cste (flin_zero()) (rmult a b)))
 		     with _-> (flin_add (flin_zero())
-				 args.(1) 
+				 args.(1)
 				 a))
 	      with _-> (flin_add (flin_zero())
-			  args.(0) 
+			  args.(0)
 			  (rational_of_constr args.(1))))
 	 | "Rinv"->
 	     let a=(rational_of_constr args.(0)) in
@@ -151,7 +151,7 @@ let rec flin_of_constr c =
 		try (let a = (rational_of_constr args.(0)) in
 		       (flin_add_cste (flin_zero()) (rdiv a b)))
 		with _-> (flin_add (flin_zero())
-		            args.(0) 
+		            args.(0)
                             (rinv b)))
          |_->assert false)
   | Const c ->
@@ -254,19 +254,19 @@ let ineq1_of_constr (h,t) =
 (* Applique la méthode de Fourier à une liste d'hypothèses (type hineq)
 *)
 
-let fourier_lineq lineq1 = 
+let fourier_lineq lineq1 =
    let nvar=ref (-1) in
    let hvar=Hashtbl.create 50 in (* la table des variables des inéquations *)
    List.iter (fun f ->
 		Hashtbl.iter (fun x _ -> if not (Hashtbl.mem hvar x) then begin
-				nvar:=(!nvar)+1; 
+				nvar:=(!nvar)+1;
 				Hashtbl.add hvar x (!nvar)
 			      end)
                   f.hflin.fhom)
              lineq1;
    let sys= List.map (fun h->
                let v=Array.create ((!nvar)+1) r0 in
-               Hashtbl.iter (fun x c -> v.(Hashtbl.find hvar x)<-c) 
+               Hashtbl.iter (fun x c -> v.(Hashtbl.find hvar x)<-c)
                   h.hflin.fhom;
                ((Array.to_list v)@[rop h.hflin.fcste],h.hstrict))
              lineq1 in
@@ -346,7 +346,7 @@ let is_int x = (x.den)=1
 (* fraction = couple (num,den) *)
 let rec rational_to_fraction x= (x.num,x.den)
 ;;
-    
+
 (* traduction -3 -> (Ropp (Rplus R1 (Rplus R1 R1)))
 *)
 let int_to_real n =
@@ -371,7 +371,7 @@ let rational_to_real x =
 let tac_zero_inf_pos gl (n,d) =
    let tacn=ref (apply (get coq_Rlt_zero_1)) in
    let tacd=ref (apply (get coq_Rlt_zero_1)) in
-   for i=1 to n-1 do 
+   for i=1 to n-1 do
        tacn:=(tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacn); done;
    for i=1 to d-1 do
        tacd:=(tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacd); done;
@@ -381,18 +381,18 @@ let tac_zero_inf_pos gl (n,d) =
 (* preuve que 0<=n*1/d
 *)
 let tac_zero_infeq_pos gl (n,d)=
-   let tacn=ref (if n=0 
+   let tacn=ref (if n=0
                  then (apply (get coq_Rle_zero_zero))
                  else (apply (get coq_Rle_zero_1))) in
    let tacd=ref (apply (get coq_Rlt_zero_1)) in
-   for i=1 to n-1 do 
+   for i=1 to n-1 do
        tacn:=(tclTHEN (apply (get coq_Rle_zero_pos_plus1)) !tacn); done;
    for i=1 to d-1 do
        tacd:=(tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacd); done;
    (tclTHENS (apply (get coq_Rle_mult_inv_pos)) [!tacn;!tacd])
 ;;
-  
-(* preuve que 0<(-n)*(1/d) => False 
+
+(* preuve que 0<(-n)*(1/d) => False
 *)
 let tac_zero_inf_false gl (n,d) =
     if n=0 then (apply (get coq_Rnot_lt0))
@@ -401,7 +401,7 @@ let tac_zero_inf_false gl (n,d) =
 	      (tac_zero_infeq_pos gl (-n,d)))
 ;;
 
-(* preuve que 0<=(-n)*(1/d) => False 
+(* preuve que 0<=(-n)*(1/d) => False
 *)
 let tac_zero_infeq_false gl (n,d) =
      (tclTHEN (apply (get coq_Rlt_not_le_frac_opp))
@@ -409,7 +409,7 @@ let tac_zero_infeq_false gl (n,d) =
 ;;
 
 let create_meta () = mkMeta(Evarutil.new_meta());;
-   
+
 let my_cut c gl=
      let concl = pf_concl gl in
        apply_type (mkProd(Anonymous,c,concl)) [create_meta()] gl
@@ -467,22 +467,22 @@ let rec fourier gl=
      match (kind_of_term goal) with
       App (f,args) ->
       (match (string_of_R_constr f) with
-	     "Rlt" -> 
+	     "Rlt" ->
 	       (tclTHEN
 	         (tclTHEN (apply (get coq_Rfourier_not_ge_lt))
 			  (intro_using  fhyp))
 		 fourier)
-	    |"Rle" -> 
+	    |"Rle" ->
 	     (tclTHEN
 	      (tclTHEN (apply (get coq_Rfourier_not_gt_le))
 		       (intro_using  fhyp))
 			fourier)
-	    |"Rgt" -> 
+	    |"Rgt" ->
 	     (tclTHEN
 	      (tclTHEN (apply (get coq_Rfourier_not_le_gt))
 		       (intro_using  fhyp))
 	      fourier)
-	    |"Rge" -> 
+	    |"Rge" ->
 	     (tclTHEN
 	      (tclTHEN (apply (get coq_Rfourier_not_lt_ge))
 		       (intro_using  fhyp))
@@ -490,7 +490,7 @@ let rec fourier gl=
 	    |_->assert false)
         |_->assert false
       in tac gl)
-     with _ -> 
+     with _ ->
     (* les hypothèses *)
     let hyps = List.map (fun (h,t)-> (mkVar h,t))
                         (list_of_sign (pf_hyps gl)) in
@@ -511,12 +511,12 @@ let rec fourier gl=
        qui donnent 0<cres ou 0<=cres selon sres *)
 	(*print_string "Fourier's method can prove the goal...";flush stdout;*)
           let lutil=ref [] in
-	  List.iter 
+	  List.iter
             (fun (h,c) ->
 			  if c<>r0
         		  then (lutil:=(h,c)::(!lutil)(*;
 				print_rational(c);print_string " "*)))
-                    (List.combine (!lineq) lc); 
+                    (List.combine (!lineq) lc);
        (* on construit la combinaison linéaire des inéquation *)
              (match (!lutil) with
           (h1,c1)::lutil ->
@@ -545,7 +545,7 @@ let rec fourier gl=
 			      !t2 |] in
 	   let tc=rational_to_real cres in
        (* puis sa preuve *)
-           let tac1=ref (if h1.hstrict 
+           let tac1=ref (if h1.hstrict
                          then (tclTHENS (apply (get coq_Rfourier_lt))
                                  [tac_use h1;
                                   tac_zero_inf_pos  gl
@@ -555,24 +555,24 @@ let rec fourier gl=
 				  tac_zero_inf_pos  gl
                                       (rational_to_fraction c1)])) in
            s:=h1.hstrict;
-           List.iter (fun (h,c)-> 
+           List.iter (fun (h,c)->
              (if (!s)
 	      then (if h.hstrict
 	            then tac1:=(tclTHENS (apply (get coq_Rfourier_lt_lt))
-			       [!tac1;tac_use h; 
+			       [!tac1;tac_use h;
 			        tac_zero_inf_pos  gl
                                       (rational_to_fraction c)])
 	            else tac1:=(tclTHENS (apply (get coq_Rfourier_lt_le))
-			       [!tac1;tac_use h; 
+			       [!tac1;tac_use h;
 			        tac_zero_inf_pos  gl
                                       (rational_to_fraction c)]))
 	      else (if h.hstrict
 	            then tac1:=(tclTHENS (apply (get coq_Rfourier_le_lt))
-			       [!tac1;tac_use h; 
+			       [!tac1;tac_use h;
 			        tac_zero_inf_pos  gl
                                       (rational_to_fraction c)])
 	            else tac1:=(tclTHENS (apply (get coq_Rfourier_le_le))
-			       [!tac1;tac_use h; 
+			       [!tac1;tac_use h;
 			        tac_zero_inf_pos  gl
                                       (rational_to_fraction c)])));
 	     s:=(!s)||(h.hstrict))
@@ -581,7 +581,7 @@ let rec fourier gl=
                       then tac_zero_inf_false gl (rational_to_fraction cres)
                       else tac_zero_infeq_false gl (rational_to_fraction cres)
            in
-           tac:=(tclTHENS (my_cut ineq) 
+           tac:=(tclTHENS (my_cut ineq)
                      [tclTHEN (change_in_concl None
 			       (mkAppL [| get coq_not; ineq|]
 				       ))
@@ -594,17 +594,17 @@ let rec fourier gl=
 		 	       [tac2;
                                 (tclTHENS
 				  (Equality.replace
-				    (mkApp (get coq_Rinv, 
+				    (mkApp (get coq_Rinv,
 				      [|get coq_R1|]))
 				    (get coq_R1))
-(* en attendant Field, ça peut aider Ring de remplacer 1/1 par 1 ... *)	
+(* en attendant Field, ça peut aider Ring de remplacer 1/1 par 1 ... *)
 
       			        [tclORELSE
                                    (Ring.polynom [])
                                    tclIDTAC;
 					  (tclTHEN (apply (get coq_sym_eqT))
 						(apply (get coq_Rinv_1)))]
-                               
+
 					 )
 				]));
                        !tac1]);
@@ -614,7 +614,7 @@ let rec fourier gl=
       |_-> assert false) |_-> assert false
 	  );
 (*    ((tclTHEN !tac (tclFAIL 1 (* 1 au hasard... *))) gl) *)
-      (!tac gl) 
+      (!tac gl)
 (*      ((tclABSTRACT None !tac) gl) *)
 
 ;;

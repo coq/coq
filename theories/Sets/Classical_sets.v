@@ -56,7 +56,7 @@ Section Ensembles_classical.
     forall X Y:Ensemble U,
       Included U X Y -> ~ Included U Y X -> Inhabited U (Setminus U Y X).
   Proof.
-    intros X Y I NI. 
+    intros X Y I NI.
     elim (not_all_ex_not U (fun x:U => In U Y x -> In U X x) NI).
     intros x YX.
     apply Inhabited_intro with x.
@@ -78,7 +78,7 @@ Section Ensembles_classical.
     unfold Subtract at 1 in |- *; auto with sets.
   Qed.
   Hint Resolve Subtract_intro : sets.
-  
+
   Lemma Subtract_inv :
     forall (A:Ensemble U) (x y:U), In U (Subtract U A x) y -> In U A y /\ x <> y.
   Proof.

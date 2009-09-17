@@ -27,9 +27,9 @@ let absurd c gls =
     (Evd.create_goal_evar_defs sigma) (Retyping.get_judgment_of env sigma c) in
   let c = j.Environ.utj_val in
   (tclTHENS
-     (tclTHEN (elim_type (build_coq_False ())) (cut c)) 
+     (tclTHEN (elim_type (build_coq_False ())) (cut c))
      ([(tclTHENS
-          (cut (applist(build_coq_not (),[c]))) 
+          (cut (applist(build_coq_not (),[c])))
 	  ([(tclTHEN intros
 	       ((fun gl ->
 		   let ida = pf_nth_hyp_id gl 1
@@ -59,7 +59,7 @@ let contradiction_context gl =
 	else match kind_of_term typ with
 	  | Prod (na,t,u) when is_empty_type u ->
 	      (try
-		filter_hyp (fun typ -> pf_conv_x_leq gl typ t) 
+		filter_hyp (fun typ -> pf_conv_x_leq gl typ t)
 		  (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
 		  gl
 	      with Not_found -> seek_neg rest gl)

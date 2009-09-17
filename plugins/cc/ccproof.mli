@@ -18,12 +18,12 @@ type rule=
   | Refl of term
   | Trans of proof*proof
   | Congr of proof*proof
-  | Inject of proof*constructor*int*int 
-and proof = 
+  | Inject of proof*constructor*int*int
+and proof =
     private {p_lhs:term;p_rhs:term;p_rule:rule}
 
-val build_proof : 
-  forest -> 
+val build_proof :
+  forest ->
   [ `Discr of int * pa_constructor * int * pa_constructor
   | `Prove of int * int ] -> proof
 

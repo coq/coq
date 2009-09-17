@@ -6,7 +6,7 @@ Require Import BinList.
 Require Import InitialRing.
 Require Import Quote.
 Declare ML Module "newring_plugin".
-  
+
 
 (* adds a definition t' on the normal form of t and an hypothesis id
    stating that t = t' (tries to produces a proof as small as possible) *)
@@ -58,8 +58,8 @@ Ltac OnMainSubgoal H ty :=
 Ltac ProveLemmaHyp lemma :=
   match type of lemma with
     forall x', ?x = x' -> _ =>
-      (fun kont => 
-        let x' := fresh "res" in 
+      (fun kont =>
+        let x' := fresh "res" in
         let H := fresh "res_eq" in
         compute_assertion H x' x;
         let lemma' := constr:(lemma x' H) in
@@ -72,8 +72,8 @@ Ltac ProveLemmaHyp lemma :=
 Ltac ProveLemmaHyps lemma :=
   match type of lemma with
     forall x', ?x = x' -> _ =>
-      (fun kont => 
-        let x' := fresh "res" in 
+      (fun kont =>
+        let x' := fresh "res" in
         let H := fresh "res_eq" in
         compute_assertion H x' x;
         let lemma' := constr:(lemma x' H) in
@@ -134,7 +134,7 @@ Ltac ReflexiveRewriteTactic
      FV_tac SYN_tac LEMMA_tac MAIN_tac fv terms :=
   (* extend the atom list *)
   let fv := list_fold_left FV_tac fv terms in
-  let RW_tac lemma := 
+  let RW_tac lemma :=
      let fcons term CONT_tac :=
       let expr := SYN_tac term fv in
       (ApplyLemmaThenAndCont lemma expr MAIN_tac CONT_tac) in
@@ -154,8 +154,8 @@ Ltac FV_hypo_tac mkFV req lH :=
   list_fold_right FV_hypo_r_tac fv lH.
 
 Ltac mkHyp_tac C req Reify lH :=
-  let mkHyp h res := 
-   match h with 
+  let mkHyp h res :=
+   match h with
    | @mkhypo (req ?r1 ?r2) _ =>
      let pe1 := Reify r1 in
      let pe2 := Reify r2 in
@@ -173,9 +173,9 @@ Ltac proofHyp_tac lH :=
     match l with
     | nil => constr:(I)
     | cons ?h nil => get_proof h
-    | cons ?h ?tl => 
+    | cons ?h ?tl =>
       let l := get_proof h in
-      let r := bh tl in  
+      let r := bh tl in
       constr:(conj l r)
     end in
   bh lH.
@@ -213,22 +213,22 @@ Ltac FV Cst CstPow add mul sub opp pow t fv :=
  in TFV t fv.
 
  (* syntaxification of ring expressions *)
-Ltac mkPolexpr C Cst CstPow radd rmul rsub ropp rpow t fv := 
+Ltac mkPolexpr C Cst CstPow radd rmul rsub ropp rpow t fv :=
  let rec mkP t :=
     let f :=
     match Cst t with
     | InitialRing.NotConstant =>
-        match t with 
-        | (radd ?t1 ?t2) => 
+        match t with
+        | (radd ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
           let e2 := mkP t2 in constr:(PEadd e1 e2)
-        | (rmul ?t1 ?t2) => 
+        | (rmul ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
           let e2 := mkP t2 in constr:(PEmul e1 e2)
-        | (rsub ?t1 ?t2) => 
-          fun _ => 
+        | (rsub ?t1 ?t2) =>
+          fun _ =>
           let e1 := mkP t1 in
           let e2 := mkP t2 in constr:(PEsub e1 e2)
         | (ropp ?t1) =>
@@ -236,7 +236,7 @@ Ltac mkPolexpr C Cst CstPow radd rmul rsub ropp rpow t fv :=
           let e1 := mkP t1 in constr:(PEopp e1)
         | (rpow ?t1 ?n) =>
           match CstPow n with
-          | InitialRing.NotConstant => 
+          | InitialRing.NotConstant =>
             fun _ => let p := Find_at t fv in constr:(PEX C p)
           | ?c => fun _ => let e1 := mkP t1 in constr:(PEpow e1 c)
           end
@@ -311,7 +311,7 @@ Ltac get_RingHypTac RNG :=
 (* ring tactics *)
 
 Definition ring_subst_niter := (10*10*10)%nat.
- 
+
 Ltac Ring RNG lemma lH :=
   let req := get_Eq RNG in
   OnEquation req ltac:(fun lhs rhs =>
@@ -343,7 +343,7 @@ Ltac Ring_norm_gen f RNG lemma lH rl :=
   let mkHyp := get_RingHypTac RNG in
   let mk_monpol := get_MonPol lemma in
   let fv := FV_hypo_tac mkFV ltac:(get_Eq RNG) lH in
-  let lemma_tac fv kont := 
+  let lemma_tac fv kont :=
     let lpe := mkHyp fv lH in
     let vlpe := fresh "list_hyp" in
     let vlmp := fresh "list_hyp_norm" in
@@ -390,25 +390,25 @@ Ltac Ring_simplify_gen f RNG lH rl :=
     end in
   let Heq := fresh "Heq" in
   intros Heq;clear Heq l;
-  Ring_norm_gen f RNG (lemma ring_subst_niter) lH rl; 
+  Ring_norm_gen f RNG (lemma ring_subst_niter) lH rl;
   get_Post RNG ().
 
 Ltac Ring_simplify := Ring_simplify_gen ltac:(fun H => rewrite H).
 
-Tactic Notation (at level 0) "ring_simplify" constr_list(rl) := 
+Tactic Notation (at level 0) "ring_simplify" constr_list(rl) :=
   let G := Get_goal in
   ring_lookup (PackRing Ring_simplify) [] rl G.
 
-Tactic Notation (at level 0) 
+Tactic Notation (at level 0)
   "ring_simplify" "[" constr_list(lH) "]" constr_list(rl) :=
   let G := Get_goal in
   ring_lookup (PackRing Ring_simplify) [lH] rl G.
 
 (* MON DIEU QUE C'EST MOCHE !!!!!!!!!!!!! *)
 
-Tactic Notation "ring_simplify" constr_list(rl) "in" hyp(H):=   
+Tactic Notation "ring_simplify" constr_list(rl) "in" hyp(H):=
   let G := Get_goal in
-  let t := type of H in   
+  let t := type of H in
   let g := fresh "goal" in
   set (g:= G);
   generalize H;clear H;
@@ -416,10 +416,10 @@ Tactic Notation "ring_simplify" constr_list(rl) "in" hyp(H):=
   intro H;
   unfold g;clear g.
 
-Tactic Notation 
-  "ring_simplify" "["constr_list(lH)"]" constr_list(rl) "in" hyp(H):=   
+Tactic Notation
+  "ring_simplify" "["constr_list(lH)"]" constr_list(rl) "in" hyp(H):=
   let G := Get_goal in
-  let t := type of H in   
+  let t := type of H in
   let g := fresh "goal" in
   set (g:= G);
   generalize H;clear H;

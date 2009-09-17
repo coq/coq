@@ -40,14 +40,14 @@ let set_strategy_one ref l  =
         let cb = Global.lookup_constant sp in
         if cb.const_body <> None & cb.const_opaque then
           errorlabstrm "set_transparent_const"
-            (str "Cannot make" ++ spc () ++ 
+            (str "Cannot make" ++ spc () ++
             Nametab.pr_global_env Idset.empty (ConstRef sp) ++
             spc () ++ str "transparent because it was declared opaque.");
         Csymtable.set_transparent_const sp
     | _ -> ()
 
 let cache_strategy (_,str) =
-  List.iter 
+  List.iter
     (fun (lev,ql) -> List.iter (fun q -> set_strategy_one q lev) ql)
     str
 
@@ -62,7 +62,7 @@ let subst_strategy (_,subs,(local,obj)) =
 
 let map_strategy f l =
   let l'  = List.fold_right
-    (fun (lev,ql) str -> 
+    (fun (lev,ql) str ->
       let ql' = List.fold_right
         (fun q ql ->
           match f q with
@@ -77,12 +77,12 @@ let export_strategy (local,obj) =
       EvalVarRef _ -> None
     | EvalConstRef _ as q -> Some q) obj
 
-let classify_strategy (local,_ as obj) = 
+let classify_strategy (local,_ as obj) =
   if local then Dispose else Substitute obj
 
 let disch_ref ref =
   match ref with
-      EvalConstRef c -> 
+      EvalConstRef c ->
         let c' = Lib.discharge_con c in
         if c==c' then Some ref else Some (EvalConstRef c')
     | _ -> Some ref
@@ -104,7 +104,7 @@ let (inStrategy,outStrategy) =
 let set_strategy local str =
   Lib.add_anonymous_leaf (inStrategy (local,str))
 
-let _ = 
+let _ =
   Summary.declare_summary "Transparent constants and variables"
     { Summary.freeze_function = Conv_oracle.freeze;
       Summary.unfreeze_function = Conv_oracle.unfreeze;
@@ -139,13 +139,13 @@ let make_flag f =
 	  f.rConst red
   in red
 
-let is_reference c = 
+let is_reference c =
   try let _ref = global_of_constr c in true with _ -> false
 
 let red_expr_tab = ref Stringmap.empty
 
 let declare_red_expr s f =
-  try 
+  try
     let _ = Stringmap.find s !red_expr_tab in
     error ("There is already a reduction expression of name "^s)
   with Not_found ->
@@ -159,8 +159,8 @@ let out_with_occurrences ((b,l),c) =
   ((b,List.map out_arg l), c)
 
 let reduction_of_red_expr = function
-  | Red internal -> 
-      if internal then (try_red_product,DEFAULTcast) 
+  | Red internal ->
+      if internal then (try_red_product,DEFAULTcast)
       else (red_product,DEFAULTcast)
   | Hnf -> (hnf_constr,DEFAULTcast)
   | Simpl (Some (_,c as lp)) ->

@@ -29,14 +29,14 @@ open Genarg
 
 type orientation = bool
 
-type conditions = 
+type conditions =
   | Naive (* Only try the first occurence of the lemma (default) *)
   | FirstSolved (* Use the first match whose side-conditions are solved *)
   | AllMatches (* Rewrite all matches whose side-conditions are solved *)
-      
-val general_rewrite_bindings : 
+
+val general_rewrite_bindings :
   orientation -> occurrences -> ?tac:(tactic * conditions) -> constr with_bindings -> evars_flag -> tactic
-val general_rewrite : 
+val general_rewrite :
   orientation -> occurrences -> ?tac:(tactic * conditions) -> constr -> tactic
 
 (* Equivalent to [general_rewrite l2r] *)
@@ -50,18 +50,18 @@ val register_general_rewrite_clause :
     occurrences -> open_constr with_bindings -> new_goals:constr list -> tactic) -> unit
 val register_is_applied_rewrite_relation : (env -> evar_defs -> rel_context -> constr -> open_constr option) -> unit
 
-val general_rewrite_ebindings_clause : identifier option -> 
+val general_rewrite_ebindings_clause : identifier option ->
   orientation -> occurrences -> ?tac:(tactic * conditions) -> open_constr with_bindings -> evars_flag -> tactic
 
-val general_rewrite_bindings_in : 
+val general_rewrite_bindings_in :
   orientation -> occurrences -> ?tac:(tactic * conditions) -> identifier -> constr with_bindings -> evars_flag -> tactic
 val general_rewrite_in          :
   orientation -> occurrences -> ?tac:(tactic * conditions) -> identifier -> constr -> evars_flag -> tactic
 
 val general_multi_rewrite :
   orientation -> evars_flag -> ?tac:(tactic * conditions) -> open_constr with_bindings -> clause -> tactic
-val general_multi_multi_rewrite : 
-  evars_flag -> (bool * multi * open_constr with_bindings) list -> clause -> 
+val general_multi_multi_rewrite :
+  evars_flag -> (bool * multi * open_constr with_bindings) list -> clause ->
   (tactic * conditions) option -> tactic
 
 val replace_in_clause_maybe_by : constr -> constr -> clause -> tactic option -> tactic
@@ -75,11 +75,11 @@ val discrConcl   : tactic
 val discrClause  : evars_flag -> clause -> tactic
 val discrHyp     : identifier -> tactic
 val discrEverywhere : evars_flag -> tactic
-val discr_tac    : evars_flag -> 
+val discr_tac    : evars_flag ->
   constr with_ebindings induction_arg option -> tactic
 val inj          : intro_pattern_expr located list -> evars_flag ->
   constr with_ebindings -> tactic
-val injClause    : intro_pattern_expr located list -> evars_flag -> 
+val injClause    : intro_pattern_expr located list -> evars_flag ->
   constr with_ebindings induction_arg option -> tactic
 val injHyp       : identifier -> tactic
 val injConcl     : tactic
@@ -87,7 +87,7 @@ val injConcl     : tactic
 val dEq : evars_flag -> constr with_ebindings induction_arg option -> tactic
 val dEqThen : evars_flag -> (int -> tactic) -> constr with_ebindings induction_arg option -> tactic
 
-val make_iterated_tuple : 
+val make_iterated_tuple :
   env -> evar_map -> constr -> (constr * types) -> constr * constr * constr
 
 (* The family cutRewriteIn expect an equality statement *)
@@ -132,7 +132,7 @@ val subst : identifier list -> tactic
 val subst_all : ?strict:bool -> tactic
 
 (* Replace term *)
-(* [replace_multi_term dir_opt c cl] 
+(* [replace_multi_term dir_opt c cl]
    perfoms replacement of [c] by the first value found in context
    (according to [dir] if given to get the rewrite direction)  in the clause [cl]
 *)

@@ -30,12 +30,12 @@ Unboxed Definition Zmin (n m:Z) :=
 
 (** * Characterization of the minimum on binary integer numbers *)
 
-Lemma Zmin_case_strong : forall (n m:Z) (P:Z -> Type), 
+Lemma Zmin_case_strong : forall (n m:Z) (P:Z -> Type),
   (n<=m -> P n) -> (m<=n -> P m) -> P (Zmin n m).
 Proof.
   intros n m P H1 H2; unfold Zmin, Zle, Zge in *.
   rewrite <- (Zcompare_antisym n m) in H2.
-  destruct (n ?= m); (apply H1|| apply H2); discriminate. 
+  destruct (n ?= m); (apply H1|| apply H2); discriminate.
 Qed.
 
 Lemma Zmin_case : forall (n m:Z) (P:Z -> Type), P n -> P m -> P (Zmin n m).
@@ -43,7 +43,7 @@ Proof.
   intros n m P H1 H2; unfold Zmin in |- *; case (n ?= m); auto with arith.
 Qed.
 
-Lemma Zmin_spec : forall x y:Z, 
+Lemma Zmin_spec : forall x y:Z,
   x <= y /\ Zmin x y = x  \/
   x > y /\ Zmin x y = y.
 Proof.
@@ -93,7 +93,7 @@ Qed.
 
 Lemma Zmin_assoc : forall n m p:Z, Zmin n (Zmin m p) = Zmin (Zmin n m) p.
 Proof.
-  intros n m p; repeat apply Zmin_case_strong; intros; 
+  intros n m p; repeat apply Zmin_case_strong; intros;
     reflexivity || (try apply Zle_antisym); eauto with zarith.
 Qed.
 
@@ -118,7 +118,7 @@ Qed.
 
 (** * Operations preserving min *)
 
-Lemma Zsucc_min_distr : 
+Lemma Zsucc_min_distr :
   forall n m:Z, Zsucc (Zmin n m) = Zmin (Zsucc n) (Zsucc m).
 Proof.
   intros n m; unfold Zmin in |- *; rewrite (Zcompare_succ_compat n m);

@@ -41,7 +41,7 @@ Definition Str_nth (n:nat) (s:Stream) : A := hd (Str_nth_tl n s).
 Lemma unfold_Stream :
  forall x:Stream, x = match x with
                       | Cons a s => Cons a s
-                      end. 
+                      end.
 Proof.
   intro x.
   case x.
@@ -223,7 +223,7 @@ Variable f: A -> B -> C.
 CoFixpoint zipWith (a:Stream A) (b:Stream B) : Stream C :=
 Cons (f (hd a) (hd b)) (zipWith (tl a) (tl b)).
 
-Lemma Str_nth_tl_zipWith : forall n (a:Stream A) (b:Stream B), 
+Lemma Str_nth_tl_zipWith : forall n (a:Stream A) (b:Stream B),
  Str_nth_tl n (zipWith a b)= zipWith (Str_nth_tl n a) (Str_nth_tl n b).
 Proof.
 induction n.

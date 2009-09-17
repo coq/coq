@@ -40,7 +40,7 @@ let rec make_rawwit loc = function
   | List0ArgType t -> <:expr< Genarg.wit_list0 $make_rawwit loc t$ >>
   | List1ArgType t -> <:expr< Genarg.wit_list1 $make_rawwit loc t$ >>
   | OptArgType t -> <:expr< Genarg.wit_opt $make_rawwit loc t$ >>
-  | PairArgType (t1,t2) -> 
+  | PairArgType (t1,t2) ->
       <:expr< Genarg.wit_pair $make_rawwit loc t1$ $make_rawwit loc t2$ >>
   | ExtraArgType s -> <:expr< $lid:"rawwit_"^s$ >>
 
@@ -65,7 +65,7 @@ let rec make_globwit loc = function
   | List0ArgType t -> <:expr< Genarg.wit_list0 $make_globwit loc t$ >>
   | List1ArgType t -> <:expr< Genarg.wit_list1 $make_globwit loc t$ >>
   | OptArgType t -> <:expr< Genarg.wit_opt $make_globwit loc t$ >>
-  | PairArgType (t1,t2) -> 
+  | PairArgType (t1,t2) ->
       <:expr< Genarg.wit_pair $make_globwit loc t1$ $make_globwit loc t2$ >>
   | ExtraArgType s -> <:expr< $lid:"globwit_"^s$ >>
 
@@ -90,7 +90,7 @@ let rec make_wit loc = function
   | List0ArgType t -> <:expr< Genarg.wit_list0 $make_wit loc t$ >>
   | List1ArgType t -> <:expr< Genarg.wit_list1 $make_wit loc t$ >>
   | OptArgType t -> <:expr< Genarg.wit_opt $make_wit loc t$ >>
-  | PairArgType (t1,t2) -> 
+  | PairArgType (t1,t2) ->
       <:expr< Genarg.wit_pair $make_wit loc t1$ $make_wit loc t2$ >>
   | ExtraArgType s -> <:expr< $lid:"wit_"^s$ >>
 
@@ -100,7 +100,7 @@ let make_act loc act pil =
     | GramNonTerminal (_,t,_,Some p) :: tl ->
 	let p = Names.string_of_id p in
 	<:expr<
-          Gramext.action 
+          Gramext.action
             (fun $lid:p$ ->
                let _ = Genarg.in_gen $make_rawwit loc t$ $lid:p$ in $make tl$)
         >>
@@ -131,14 +131,14 @@ let declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr cl =
                (Genarg.in_gen $make_rawwit loc rawtyp$ x)) >>
     | Some f -> <:expr< $lid:f$>> in
   let interp = match f with
-    | None -> 
+    | None ->
 	<:expr< fun ist gl x ->
           out_gen $make_wit loc typ$
             (Tacinterp.interp_genarg ist gl
                (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
     | Some f -> <:expr< $lid:f$>> in
   let substitute = match h with
-    | None -> 
+    | None ->
 	<:expr< fun s x ->
           out_gen $make_globwit loc globtyp$
 	    (Tacinterp.subst_genarg s
@@ -163,7 +163,7 @@ let declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr cl =
           (Genarg.in_gen $wit$ ($interp$ ist gl (out_gen $globwit$ x)))),
         (fun subst x ->
           (Genarg.in_gen $globwit$ ($substitute$ subst (out_gen $globwit$ x)))));
-      Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.Entry.e 'a) None 
+      Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.Entry.e 'a) None
         [(None, None, $rules$)];
       Pptactic.declare_extra_genarg_pprule
         ($rawwit$, $lid:rawpr$)
@@ -189,7 +189,7 @@ let declare_vernac_argument loc s pr cl =
              ($lid:"globwit_"^s$:Genarg.abstract_argument_type unit Genarg.glevel),
               $lid:"rawwit_"^s$) = Genarg.create_arg $se$;
       value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$;
-      Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.Entry.e 'a) None 
+      Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.Entry.e 'a) None
         [(None, None, $rules$)];
       Pptactic.declare_extra_genarg_pprule
         ($rawwit$, $pr_rules$)
@@ -213,10 +213,10 @@ EXTEND
         h = OPT [ "SUBSTITUTED"; "BY"; f = LIDENT -> f ];
         rawtyppr =
         (* Necessary if the globalized type is different from the final type *)
-          OPT [ "RAW_TYPED"; "AS"; t = argtype; 
+          OPT [ "RAW_TYPED"; "AS"; t = argtype;
                 "RAW_PRINTED"; "BY"; pr = LIDENT -> (t,pr) ];
         globtyppr =
-          OPT [ "GLOB_TYPED"; "AS"; t = argtype; 
+          OPT [ "GLOB_TYPED"; "AS"; t = argtype;
                 "GLOB_PRINTED"; "BY"; pr = LIDENT -> (t,pr) ];
         OPT "|"; l = LIST1 argrule SEP "|";
         "END" ->
@@ -232,7 +232,7 @@ EXTEND
          declare_vernac_argument loc s pr l ] ]
   ;
   argtype:
-    [ "2" 
+    [ "2"
       [ e1 = argtype; "*"; e2 = argtype -> PairArgType (e1, e2) ]
     | "1"
       [ e = argtype; LIDENT "list" -> List0ArgType e

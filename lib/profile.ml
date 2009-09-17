@@ -113,12 +113,12 @@ let ajoute_to_list ((name,n) as e) l =
   with Not_found -> e::l
 
 let magic = 1249
-  
+
 let merge_profile filename (curr_table, curr_outside, curr_total as new_data) =
   let (old_table, old_outside, old_total) =
-    try 
+    try
       let c = open_in filename in
-      if input_binary_int c <> magic 
+      if input_binary_int c <> magic
       then Printf.printf "Incompatible recording file: %s\n" filename;
       let old_data = input_value c in
       close_in c;
@@ -134,7 +134,7 @@ let merge_profile filename (curr_table, curr_outside, curr_total as new_data) =
   begin
     (try
        let c =
-	 open_out_gen 
+	 open_out_gen
            [Open_creat;Open_wronly;Open_trunc;Open_binary] 0o644 filename in
        output_binary_int c magic;
        output_value c updated_data;
@@ -186,7 +186,7 @@ overheadA|        ...
      real 2' |        ...
     ----------        end 2nd f2
     overheadC|        ...
-    ---------- [2'w2]  2nd call to get_time for 2nd f2 
+    ---------- [2'w2]  2nd call to get_time for 2nd f2
   overheadD|        ...
   ----------        end profile for f2
    real 1  |        ...
@@ -242,7 +242,7 @@ let time_overhead_A_D () =
       ajoute_totalloc p (e.totalloc-.totalloc0);
       p.intcount <- p.intcount + e.intcount - intcount0 + 1;
       p.immcount <- p.immcount + 1;
-      if not (p==e) then 
+      if not (p==e) then
 	(match !dummy_stack with [] -> assert false | _::s -> stack := s);
       dummy_last_alloc := get_alloc ()
   done;
@@ -279,7 +279,7 @@ let compute_alloc lo = lo /. (float_of_int word_length)
 
 let format_profile (table, outside, total) =
   print_newline ();
-  Printf.printf 
+  Printf.printf
     "%-23s  %9s %9s %10s %10s %10s\n"
     "Function name" "Own time" "Tot. time" "Own alloc" "Tot. alloc" "Calls ";
   let l = Sort.list (fun (_,{tottime=p}) (_,{tottime=p'}) -> p > p') table in
@@ -293,7 +293,7 @@ let format_profile (table, outside, total) =
       e.owncount e.intcount)
     l;
   Printf.printf "%-23s %9.2f %9.2f %10.0f %10.0f        %6d\n"
-    "others" 
+    "others"
     (float_of_time outside.owntime) (float_of_time outside.tottime)
     (compute_alloc outside.ownalloc)
     (compute_alloc outside.totalloc)
@@ -305,7 +305,7 @@ let format_profile (table, outside, total) =
     (compute_alloc total.ownalloc)
     (compute_alloc total.totalloc);
   Printf.printf
-    "Time in seconds and allocation in words (1 word = %d bytes)\n" 
+    "Time in seconds and allocation in words (1 word = %d bytes)\n"
     word_length
 
 let recording_file = ref ""
@@ -319,7 +319,7 @@ let adjust_time ov_bc ov_ad e =
      tottime = e.tottime - int_of_float (abcd_all +. bc_imm);
      owntime = e.owntime - int_of_float (ad_imm +. bc_imm) }
 
-let close_profile print = 
+let close_profile print =
   let dw = spent_alloc () in
   let t = get_time () in
   match !stack with
@@ -390,7 +390,7 @@ let profile1 e f a =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
@@ -404,7 +404,7 @@ let profile1 e f a =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     raise exn
@@ -432,7 +432,7 @@ let profile2 e f a b =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
@@ -446,7 +446,7 @@ let profile2 e f a b =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     raise exn
@@ -474,7 +474,7 @@ let profile3 e f a b c =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
@@ -488,7 +488,7 @@ let profile3 e f a b c =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     raise exn
@@ -516,7 +516,7 @@ let profile4 e f a b c d =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
@@ -530,7 +530,7 @@ let profile4 e f a b c d =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     raise exn
@@ -558,7 +558,7 @@ let profile5 e f a b c d g =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
@@ -572,7 +572,7 @@ let profile5 e f a b c d g =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     raise exn
@@ -600,7 +600,7 @@ let profile6 e f a b c d g h =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
@@ -614,7 +614,7 @@ let profile6 e f a b c d g h =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     raise exn
@@ -642,7 +642,7 @@ let profile7 e f a b c d g h i =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
@@ -656,7 +656,7 @@ let profile7 e f a b c d g h i =
     ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
-    if not (p==e) then 
+    if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     raise exn
@@ -695,9 +695,9 @@ let obj_stats a =
   (!c, !s + !b, !m)
 
 module H = Hashtbl.Make(
-  struct 
-    type t = Obj.t 
-    let equal = (==) 
+  struct
+    type t = Obj.t
+    let equal = (==)
     let hash o = Hashtbl.hash (magic o : int)
   end)
 

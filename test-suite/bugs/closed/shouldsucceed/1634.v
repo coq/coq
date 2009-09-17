@@ -18,7 +18,7 @@ Add Parametric Relation a : (S a) Seq
 
 Goal forall (a : A) (x y : S a), Seq x y -> Seq x y.
   intros a x y H.
-  setoid_replace x with y. 
+  setoid_replace x with y.
   reflexivity.
   trivial.
 Qed.

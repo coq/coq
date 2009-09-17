@@ -24,7 +24,7 @@ val inv_gen :
   bool -> inversion_kind -> inversion_status ->
     intro_pattern_expr located option -> quantified_hypothesis -> tactic
 val invIn_gen :
-  inversion_kind -> intro_pattern_expr located option -> identifier list -> 
+  inversion_kind -> intro_pattern_expr located option -> identifier list ->
     quantified_hypothesis -> tactic
 
 val inv_clause :

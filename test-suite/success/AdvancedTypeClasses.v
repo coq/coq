@@ -2,7 +2,7 @@ Open Scope type_scope.
 
 Section type_reification.
 
-Inductive term :Type := 
+Inductive term :Type :=
    Fun : term -> term -> term
  | Prod : term -> term -> term
  | Bool : term
@@ -11,19 +11,19 @@ Inductive term :Type :=
  | TYPE :term
  | Var : Type -> term.
 
-Fixpoint interp (t:term) := 
-  match t with 
+Fixpoint interp (t:term) :=
+  match t with
     Bool => bool
   | SET => Set
   | PROP => Prop
-  | TYPE => Type   
+  | TYPE => Type
   | Fun a b => interp a -> interp b
   | Prod a b => interp a * interp b
   | Var x => x
 end.
 
 Class interp_pair (abs : Type) :=
- { repr : term; 
+ { repr : term;
   link: abs = interp repr }.
 
 Implicit Arguments repr [[interp_pair]].
@@ -52,7 +52,7 @@ Instance ProdCan `(interp_pair a, interp_pair b) : interp_pair (a * b) :=
 Instance FunCan `(interp_pair a, interp_pair b) : interp_pair (a -> b) :=
   { link := fun_interp }.
 
-Instance BoolCan : interp_pair bool := 
+Instance BoolCan : interp_pair bool :=
   { repr := Bool ; link := refl_equal _ }.
 
 Instance VarCan : interp_pair x | 10 := { repr := Var x ; link := refl_equal _ }.

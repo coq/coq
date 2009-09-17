@@ -3,7 +3,7 @@ Require Import Program.
 Equations neg (b : bool) : bool :=
 neg true := false ;
 neg false := true.
- 
+
 Eval compute in neg.
 
 Require Import Coq.Lists.List.
@@ -30,7 +30,7 @@ app' A (cons a v) l := cons a (app' v l).
 
 Equations app (l l' : list nat) : list nat :=
   [] ++ l       := l ;
-  (a :: v) ++ l := a :: (v ++ l) 
+  (a :: v) ++ l := a :: (v ++ l)
 
 where " x ++ y " := (app x y).
 
@@ -73,7 +73,7 @@ Require Import Bvector.
 Implicit Arguments Vnil [[A]].
 Implicit Arguments Vcons [[A] [n]].
 
-Equations vhead {A n} (v : vector A (S n)) : A := 
+Equations vhead {A n} (v : vector A (S n)) : A :=
 vhead A n (Vcons a v) := a.
 
 Equations vmap {A B} (f : A -> B) {n} (v : vector A n) : (vector B n) :=
@@ -109,7 +109,7 @@ Fixpoint Below_vector (P : Π A n, vector A n -> Type) A n (v : vector A n) : Ty
 Equations below_vector (P : Π A n, vector A n -> Type) A n (v : vector A n)
   (step : Π A n (v : vector A n), Below_vector P A n v -> P A n v) : Below_vector P A n v :=
 below_vector P A ?(0) Vnil step := tt ;
-below_vector P A ?(S n) (Vcons a v) step := 
+below_vector P A ?(S n) (Vcons a v) step :=
   let rest := below_vector P A n v step in
     (step A n v rest, rest).
 
@@ -125,7 +125,7 @@ Definition rec_vector (P : Π A n, vector A n -> Type) A n v
   (step : Π A n (v : vector A n), Below_vector P A n v -> P A n v) : P A n v :=
   step A n v (below_vector P A n v step).
 
-Class Recursor (A : Type) (BP : BelowPack A) := 
+Class Recursor (A : Type) (BP : BelowPack A) :=
   { rec_type : Π x : A, Type ; rec : Π x : A, rec_type x }.
 
 Instance nat_Recursor : Recursor nat nat_BelowPack :=
@@ -159,7 +159,7 @@ Notation " x ~= y " := (@JMeq _ x _ y) (at level 70, no associativity).
 Section Image.
   Context {S T : Type}.
   Variable f : S -> T.
-  
+
   Inductive Imf : T -> Type := imf (s : S) : Imf (f s).
 
   Equations inv (t : T) (im : Imf t) : S :=
@@ -173,7 +173,7 @@ Section Univ.
   | ubool | unat | uarrow (from:univ) (to:univ).
 
   Equations interp (u : univ) : Type :=
-  interp ubool := bool ; interp unat := nat ; 
+  interp ubool := bool ; interp unat := nat ;
   interp (uarrow from to) := interp from -> interp to.
 
   Equations foo (u : univ) (el : interp u) : interp u :=
@@ -238,7 +238,7 @@ Lemma vlast_equation2 A n a v : @vlast' A (S n) (Vcons a v) = vlast' v.
 Proof. intros. simplify_equations ; reflexivity. Qed.
 
 Print Assumptions vlast'.
-Print Assumptions nth. 
+Print Assumptions nth.
 Print Assumptions tabulate.
 
 Extraction vlast.

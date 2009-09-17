@@ -1,4 +1,4 @@
-Program Definition test (a b : nat) : { x : nat | x = a + b } := 
+Program Definition test (a b : nat) : { x : nat | x = a + b } :=
   ((a + b) : { x : nat | x = a + b }).
 Proof.
 intros.

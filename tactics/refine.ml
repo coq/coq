@@ -16,7 +16,7 @@
  *  où les trous sont typés -- et que les sous-buts correspondants
  *  soient engendrés pour finir la preuve.
  *
- *  Exemple : 
+ *  Exemple :
  *    J'ai le but
  *        (x:nat) { y:nat | (minus y x) = x }
  *    et je donne la preuve incomplète
@@ -70,12 +70,12 @@ let rec pp_th (TH(c,mm,sg)) =
 			      (* pp_mm mm ++ fnl () ++ *)
 			   pp_sg sg) ++ str "]")
 and pp_mm l =
-  hov 0 (prlist_with_sep (fun _ -> (fnl ())) 
+  hov 0 (prlist_with_sep (fun _ -> (fnl ()))
 	   (fun (n,c) -> (int n ++ str" --> " ++ pr_lconstr c)) l)
 and pp_sg sg =
   hov 0 (prlist_with_sep (fun _ -> (fnl ()))
 	   (function None -> (str"None") | Some th -> (pp_th th)) sg)
-     
+
 (*  compute_metamap : constr -> 'a evar_map -> term_with_holes
  *  réalise le 2. ci-dessus
  *
@@ -84,7 +84,7 @@ and pp_sg sg =
  *  par un terme de preuve incomplet (Some c).
  *
  *  On a donc l'INVARIANT suivant : le terme c rendu est "de niveau 1"
- *  -- i.e. à plat -- et la meta_map contient autant d'éléments qu'il y 
+ *  -- i.e. à plat -- et la meta_map contient autant d'éléments qu'il y
  *  a de meta-variables dans c. On suppose de plus que l'ordre dans la
  *  meta_map correspond à celui des buts qui seront engendrés par le refine.
  *)
@@ -108,7 +108,7 @@ let replace_by_meta env sigma = function
 	(*
 	| Fix ((_,j),(v,_,_)) ->
 	    v.(j) (* en pleine confiance ! *)
-	| _ -> invalid_arg "Tcc.replace_by_meta (TO DO)" 
+	| _ -> invalid_arg "Tcc.replace_by_meta (TO DO)"
         *)
       in
       mkCast (m,DEFAULTcast, ty),[n,ty],[Some th]
@@ -120,13 +120,13 @@ let replace_in_array keep_length env sigma a =
     raise NoMeta;
   let a' = Array.map (function
 			| (TH (c,mm,[])) when not keep_length -> c,mm,[]
-			| th -> replace_by_meta env sigma th) a 
+			| th -> replace_by_meta env sigma th) a
   in
   let v' = Array.map pi1 a' in
   let mm = Array.fold_left (@) [] (Array.map pi2 a') in
   let sgp = Array.fold_left (@) [] (Array.map pi3 a') in
   v',mm,sgp
-    
+
 let fresh env n =
   let id = match n with Name x -> x | _ -> id_of_string "_H" in
   next_global_ident_away true id (ids_of_named_context (named_context env))
@@ -134,14 +134,14 @@ let fresh env n =
 let rec compute_metamap env sigma c = match kind_of_term c with
   (* le terme est directement une preuve *)
   | (Const _ | Evar _ | Ind _ | Construct _ |
-    Sort _ | Var _ | Rel _) -> 
+    Sort _ | Var _ | Rel _) ->
       TH (c,[],[])
 
   (* le terme est une mv => un but *)
   | Meta n ->
       TH (c,[],[None])
 
-  | Cast (m,_, ty) when isMeta m -> 
+  | Cast (m,_, ty) when isMeta m ->
       TH (c,[destMeta m,ty],[None])
 
 
@@ -154,7 +154,7 @@ let rec compute_metamap env sigma c = match kind_of_term c with
       begin match compute_metamap env' sigma (subst1 (mkVar v) c2) with
 	(* terme de preuve complet *)
 	| TH (_,_,[]) -> TH (c,[],[])
-	(* terme de preuve incomplet *)    
+	(* terme de preuve incomplet *)
 	| th ->
 	    let m,mm,sgp = replace_by_meta env' sigma th in
 	    TH (mkLambda (Name v,c1,m), mm, sgp)
@@ -168,13 +168,13 @@ let rec compute_metamap env sigma c = match kind_of_term c with
       begin match th1,th2 with
 	(* terme de preuve complet *)
 	| TH (_,_,[]), TH (_,_,[]) -> TH (c,[],[])
-	(* terme de preuve incomplet *)    
+	(* terme de preuve incomplet *)
 	| TH (c1,mm1,sgp1), TH (c2,mm2,sgp2) ->
 	    let m1,mm1,sgp1 =
-              if sgp1=[] then (c1,mm1,[]) 
+              if sgp1=[] then (c1,mm1,[])
               else replace_by_meta env sigma th1 in
 	    let m2,mm2,sgp2 =
-              if sgp2=[] then (c2,mm2,[]) 
+              if sgp2=[] then (c2,mm2,[])
               else replace_by_meta env' sigma th2 in
 	    TH (mkNamedLetIn v m1 t1 m2, mm1@mm2, sgp1@sgp2)
       end
@@ -213,7 +213,7 @@ let rec compute_metamap env sigma c = match kind_of_term c with
       let env' = push_named_rec_types (fi',ai,v) env in
       let a = Array.map
 		(compute_metamap env' sigma)
-		(Array.map (substl (List.map mkVar (Array.to_list vi))) v) 
+		(Array.map (substl (List.map mkVar (Array.to_list vi))) v)
       in
       begin
 	try
@@ -223,12 +223,12 @@ let rec compute_metamap env sigma c = match kind_of_term c with
 	with NoMeta ->
 	  TH (c,[],[])
       end
-	      
+
   (* Cast. Est-ce bien exact ? *)
   | Cast (c,_,t) -> compute_metamap env sigma c
       (*let TH (c',mm,sgp) = compute_metamap sign c in
 	TH (mkCast (c',t),mm,sgp) *)
-      
+
   (* Produit. Est-ce bien exact ? *)
   | Prod (_,_,_) ->
       if occur_meta c then
@@ -243,7 +243,7 @@ let rec compute_metamap env sigma c = match kind_of_term c with
       let env' = push_named_rec_types (fi',ai,v) env in
       let a = Array.map
 		(compute_metamap env' sigma)
-		(Array.map (substl (List.map mkVar (Array.to_list vi))) v) 
+		(Array.map (substl (List.map mkVar (Array.to_list vi))) v)
       in
       begin
 	try
@@ -256,7 +256,7 @@ let rec compute_metamap env sigma c = match kind_of_term c with
 
 
 (*  tcc_aux : term_with_holes -> tactic
- * 
+ *
  *  Réalise le 3. ci-dessus
  *)
 
@@ -269,11 +269,11 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 
     | Cast (c,_,_), _ when isMeta c ->
 	tclIDTAC gl
-	  
+
     (* terme pur => refine *)
     | _,[] ->
 	refine c gl
-	
+
     (* abstraction => intro *)
     | Lambda (Name id,_,m), _ ->
 	assert (isMeta (strip_outer_cast m));
@@ -292,7 +292,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 	  | [Some th] ->
               tclTHEN
                 intro
-                (onLastHypId (fun id -> 
+                (onLastHypId (fun id ->
                   tclTHEN
                     (clear [id])
                     (tcc_aux (mkVar (*dummy*) id::subst) th))) gl
@@ -303,25 +303,25 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
     | LetIn (Name id,c1,t1,c2), _ when not (isMeta (strip_outer_cast c1)) ->
 	let c = pf_concl gl in
 	let newc = mkNamedLetIn id c1 t1 c in
-	tclTHEN 
-	  (change_in_concl None newc) 
-	  (match sgp with 
+	tclTHEN
+	  (change_in_concl None newc)
+	  (match sgp with
 	     | [None] -> introduction id
 	     | [Some th] ->
                  tclTHEN (introduction id)
                    (onLastHypId (fun id -> tcc_aux (mkVar id::subst) th))
-	     | _ -> assert false) 
+	     | _ -> assert false)
 	  gl
 
     (* let in with holes in the body => unable to handle dependency
        because of evars limitation, use non dependent assert instead *)
     | LetIn (Name id,c1,t1,c2), _ ->
 	tclTHENS
-          (assert_tac (Name id) t1) 
-	  [(match List.hd sgp with 
+          (assert_tac (Name id) t1)
+	  [(match List.hd sgp with
 	     | None -> tclIDTAC
 	     | Some th -> onLastHypId (fun id -> tcc_aux (mkVar id::subst) th));
-           (match List.tl sgp with 
+           (match List.tl sgp with
 	     | [] -> refine (subst1 (mkVar id) c2)  (* a complete proof *)
 	     | [None] -> tclIDTAC                   (* a meta *)
 	     | [Some th] ->                         (* a partial proof *)
@@ -340,7 +340,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 	tclTHENS
 	  (mutual_fix (out_name fi.(j)) (succ ni.(j)) (firsts@List.tl lasts) j)
 	  (List.map (function
-		       | None -> tclIDTAC 
+		       | None -> tclIDTAC
 		       | Some th -> tcc_aux subst th) sgp)
 	  gl
 
@@ -355,7 +355,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 	tclTHENS
 	  (mutual_cofix (out_name fi.(j)) (firsts@List.tl lasts) j)
 	  (List.map (function
-		       | None -> tclIDTAC 
+		       | None -> tclIDTAC
 		       | Some th -> tcc_aux subst th) sgp)
 	  gl
 
@@ -375,7 +375,7 @@ let refine (evd,c) gl =
   let evd = Typeclasses.resolve_typeclasses ~onlyargs:true (pf_env gl) evd in
   let c = Evarutil.nf_evar evd c in
   let (evd,c) = Evarutil.evars_to_metas sigma (evd,c) in
-  (* Relies on Cast's put on Meta's by evars_to_metas, because it is otherwise 
+  (* Relies on Cast's put on Meta's by evars_to_metas, because it is otherwise
      complicated to update meta types when passing through a binder *)
   let th = compute_metamap (pf_env gl) evd c in
   tclTHEN (Refiner.tclEVARS evd) (tcc_aux [] th) gl

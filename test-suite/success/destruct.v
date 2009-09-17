@@ -5,7 +5,7 @@ Axiom X : A -> B -> C /\ D.
 
 Lemma foo : A -> B -> C.
 Proof.
-intros. 
+intros.
 destruct X. (* Should find axiom X and should handle arguments of X *)
 assumption.
 assumption.

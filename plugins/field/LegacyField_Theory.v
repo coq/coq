@@ -13,7 +13,7 @@ Require Import Peano_dec.
 Require Import LegacyRing.
 Require Import LegacyField_Compl.
 
-Record Field_Theory : Type := 
+Record Field_Theory : Type :=
   {A : Type;
    Aplus : A -> A -> A;
    Amult : A -> A -> A;
@@ -59,7 +59,7 @@ Proof.
   right; red in |- *; intro; inversion H1; auto.
   elim (eq_nat_dec n n0); intro y.
   left; rewrite y; auto.
-  right; red in |- *; intro; inversion H; auto. 
+  right; red in |- *; intro; inversion H; auto.
 Defined.
 
 Definition eq_nat_dec := Eval compute in eq_nat_dec.
@@ -149,7 +149,7 @@ Proof.
   repeat rewrite AplusT_assoc; rewrite <- H; reflexivity.
   legacy ring.
 Qed.
- 
+
 Lemma r_AmultT_mult :
  forall r r1 r2:AT, AmultT r r1 = AmultT r r2 -> r <> AzeroT -> r1 = r2.
 Proof.
@@ -164,22 +164,22 @@ Lemma AmultT_Or : forall r:AT, AmultT r AzeroT = AzeroT.
 Proof.
   intro; legacy ring.
 Qed.
- 
+
 Lemma AmultT_Ol : forall r:AT, AmultT AzeroT r = AzeroT.
 Proof.
   intro; legacy ring.
 Qed.
- 
+
 Lemma AmultT_1r : forall r:AT, AmultT r AoneT = r.
 Proof.
   intro; legacy ring.
 Qed.
- 
+
 Lemma AinvT_r : forall r:AT, r <> AzeroT -> AmultT r (AinvT r) = AoneT.
 Proof.
   intros; rewrite AmultT_comm; apply Th_inv_defT; auto.
 Qed.
- 
+
 Lemma Rmult_neq_0_reg :
  forall r1 r2:AT, AmultT r1 r2 <> AzeroT -> r1 <> AzeroT /\ r2 <> AzeroT.
 Proof.
@@ -298,7 +298,7 @@ Lemma assoc_mult_correct1 :
 Proof.
 simple induction e1; auto; intros.
 rewrite <- (H e0 lvar); simpl in |- *; rewrite merge_mult_correct;
- simpl in |- *; rewrite merge_mult_correct; simpl in |- *; 
+ simpl in |- *; rewrite merge_mult_correct; simpl in |- *;
  auto.
 Qed.
 
@@ -318,7 +318,7 @@ simpl in |- *; rewrite merge_mult_correct; simpl in |- *;
  rewrite <- assoc_mult_correct1 in H1; unfold interp_ExprA at 3 in H1;
  fold interp_ExprA in H1; rewrite (H0 lvar) in H1;
  rewrite (AmultT_comm (interp_ExprA lvar e3) (interp_ExprA lvar e1));
- rewrite <- AmultT_assoc; rewrite H1; rewrite AmultT_assoc; 
+ rewrite <- AmultT_assoc; rewrite H1; rewrite AmultT_assoc;
  legacy ring.
 simpl in |- *; rewrite (H0 lvar); auto.
 simpl in |- *; rewrite (H0 lvar); auto.
@@ -365,7 +365,7 @@ Lemma assoc_plus_correct :
 Proof.
 simple induction e1; auto; intros.
 rewrite <- (H e0 lvar); simpl in |- *; rewrite merge_plus_correct;
- simpl in |- *; rewrite merge_plus_correct; simpl in |- *; 
+ simpl in |- *; rewrite merge_plus_correct; simpl in |- *;
  auto.
 Qed.
 
@@ -388,7 +388,7 @@ simpl in |- *; rewrite merge_plus_correct; simpl in |- *;
         (interp_ExprA lvar e1))); rewrite <- AplusT_assoc;
  rewrite
   (AplusT_comm (interp_ExprA lvar (assoc e1)) (interp_ExprA lvar (assoc e2)))
-  ; rewrite assoc_plus_correct; rewrite H1; simpl in |- *; 
+  ; rewrite assoc_plus_correct; rewrite H1; simpl in |- *;
  rewrite (H0 lvar);
  rewrite <-
   (AplusT_assoc (AplusT (interp_ExprA lvar e2) (interp_ExprA lvar e1))
@@ -402,13 +402,13 @@ simpl in |- *; rewrite merge_plus_correct; simpl in |- *;
   (AplusT_assoc (interp_ExprA lvar e2) (interp_ExprA lvar e3)
      (interp_ExprA lvar e1)); apply AplusT_comm.
 unfold assoc in |- *; fold assoc in |- *; unfold interp_ExprA in |- *;
- fold interp_ExprA in |- *; rewrite assoc_mult_correct; 
+ fold interp_ExprA in |- *; rewrite assoc_mult_correct;
  rewrite (H0 lvar); simpl in |- *; auto.
 simpl in |- *; rewrite (H0 lvar); auto.
 simpl in |- *; rewrite (H0 lvar); auto.
 simpl in |- *; rewrite (H0 lvar); auto.
 unfold assoc in |- *; fold assoc in |- *; unfold interp_ExprA in |- *;
- fold interp_ExprA in |- *; rewrite assoc_mult_correct; 
+ fold interp_ExprA in |- *; rewrite assoc_mult_correct;
  simpl in |- *; auto.
 Qed.
 
@@ -466,7 +466,7 @@ Proof.
 simple induction e1; try intros; simpl in |- *.
 rewrite AmultT_Ol; rewrite distrib_mult_right_correct; simpl in |- *;
  apply AmultT_Or.
-rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_comm. 
+rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_comm.
 rewrite AmultT_comm;
  rewrite
   (AmultT_AplusT_distr (interp_ExprA lvar e2) (interp_ExprA lvar e)
@@ -629,7 +629,7 @@ Lemma monom_simplif_correct :
 Proof.
 simple induction e; intros; auto.
 simpl in |- *; case (eqExprA a e0); intros.
-rewrite <- e2; apply monom_simplif_rem_correct; auto. 
+rewrite <- e2; apply monom_simplif_rem_correct; auto.
 simpl in |- *; trivial.
 Qed.
 

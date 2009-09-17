@@ -11,17 +11,17 @@
 (* Méthode d'élimination de Fourier *)
 (* Référence:
 Auteur(s) : Fourier, Jean-Baptiste-Joseph
- 
+
 Titre(s) : Oeuvres de Fourier [Document électronique]. Tome second. Mémoires publiés dans divers recueils / publ. par les soins de M. Gaston Darboux,...
- 
+
 Publication : Numérisation BnF de l'édition de Paris : Gauthier-Villars, 1890
- 
+
 Pages: 326-327
 
 http://gallica.bnf.fr/
 *)
 
-(* Un peu de calcul sur les rationnels... 
+(* Un peu de calcul sur les rationnels...
 Les opérations rendent des rationnels normalisés,
 i.e. le numérateur et le dénominateur sont premiers entre eux.
 *)
@@ -45,7 +45,7 @@ let rnorm x = let x = (if x.den<0 then {num=(-x.num);den=(-x.den)} else x) in
               else (let d=pgcd x.num x.den in
 		    let d= (if d<0 then -d else d) in
                     {num=(x.num)/d;den=(x.den)/d});;
- 
+
 let rop x = rnorm {num=(-x.num);den=x.den};;
 
 let rplus x y = rnorm {num=x.num*y.den + y.num*x.den;den=x.den*y.den};;
@@ -72,7 +72,7 @@ type ineq = {coef:rational list;
 
 let pop x l = l:=x::(!l);;
 
-(* sépare la liste d'inéquations s selon que leur premier coefficient est 
+(* sépare la liste d'inéquations s selon que leur premier coefficient est
 négatif, nul ou positif. *)
 let partitionne s =
    let lpos=ref [] in
@@ -98,7 +98,7 @@ let partitionne s =
 let add_hist le =
    let n = List.length le in
    let i=ref 0 in
-   List.map (fun (ie,s) -> 
+   List.map (fun (ie,s) ->
               let h =ref [] in
               for k=1 to (n-(!i)-1) do pop r0 h; done;
               pop r1 h;
@@ -107,7 +107,7 @@ let add_hist le =
               {coef=ie;hist=(!h);strict=s})
              le
 ;;
-(* additionne deux inéquations *)      
+(* additionne deux inéquations *)
 let ie_add ie1 ie2 = {coef=List.map2 rplus ie1.coef ie2.coef;
                       hist=List.map2 rplus ie1.hist ie2.hist;
 		      strict=ie1.strict || ie2.strict}
@@ -142,7 +142,7 @@ let deduce_add lneg lpos =
 opération qu'on itère dans l'algorithme de Fourier.
 *)
 let deduce1 s =
-    match (partitionne s) with 
+    match (partitionne s) with
       [lneg;lnul;lpos] ->
     let lnew = deduce_add lneg lpos in
     (List.map ie_tl lnul)@lnew
@@ -172,7 +172,7 @@ let unsolvable lie =
    (try (List.iter (fun e ->
          match e with
            {coef=[c];hist=lc;strict=s} ->
-		  if (rinf c r0 && (not s)) || (rinfeq c r0 && s) 
+		  if (rinf c r0 && (not s)) || (rinfeq c r0 && s)
                   then (res := [c,s,lc];
 			raise (Failure "contradiction found"))
           |_->assert false)

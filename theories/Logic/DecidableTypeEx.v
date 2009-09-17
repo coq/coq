@@ -14,7 +14,7 @@ Unset Strict Implicit.
 
 (** * Examples of Decidable Type structures. *)
 
-(** A particular case of [DecidableType] where 
+(** A particular case of [DecidableType] where
     the equality is the usual one of Coq. *)
 
 Module Type UsualDecidableType.
@@ -32,13 +32,13 @@ Module UDT_to_DT (U:UsualDecidableType) <: DecidableType := U.
 
 (** an shortcut for easily building a UsualDecidableType *)
 
-Module Type MiniDecidableType. 
+Module Type MiniDecidableType.
  Parameter Inline t : Type.
  Parameter eq_dec : forall x y:t, { x=y }+{ x<>y }.
-End MiniDecidableType. 
+End MiniDecidableType.
 
 Module Make_UDT (M:MiniDecidableType) <: UsualDecidableType.
- Definition t:=M.t. 
+ Definition t:=M.t.
  Definition eq := @eq t.
  Definition eq_refl := @refl_equal t.
  Definition eq_sym := @sym_eq t.
@@ -57,7 +57,7 @@ Module Positive_as_DT <: UsualDecidableType := Positive_as_OT.
 Module N_as_DT <: UsualDecidableType := N_as_OT.
 Module Z_as_DT <: UsualDecidableType := Z_as_OT.
 
-(** From two decidable types, we can build a new DecidableType 
+(** From two decidable types, we can build a new DecidableType
    over their cartesian product. *)
 
 Module PairDecidableType(D1 D2:DecidableType) <: DecidableType.
@@ -67,17 +67,17 @@ Module PairDecidableType(D1 D2:DecidableType) <: DecidableType.
  Definition eq x y := D1.eq (fst x) (fst y) /\ D2.eq (snd x) (snd y).
 
  Lemma eq_refl : forall x : t, eq x x.
- Proof. 
+ Proof.
  intros (x1,x2); red; simpl; auto.
  Qed.
 
  Lemma eq_sym : forall x y : t, eq x y -> eq y x.
- Proof. 
+ Proof.
  intros (x1,x2) (y1,y2); unfold eq; simpl; intuition.
  Qed.
 
  Lemma eq_trans : forall x y z : t, eq x y -> eq y z -> eq x z.
- Proof. 
+ Proof.
  intros (x1,x2) (y1,y2) (z1,z2); unfold eq; simpl; intuition eauto.
  Qed.
 
@@ -99,10 +99,10 @@ Module PairUsualDecidableType(D1 D2:UsualDecidableType) <: UsualDecidableType.
  Definition eq_trans := @trans_eq t.
  Definition eq_dec : forall x y, { eq x y }+{ ~eq x y }.
  Proof.
- intros (x1,x2) (y1,y2); 
- destruct (D1.eq_dec x1 y1); destruct (D2.eq_dec x2 y2); 
- unfold eq, D1.eq, D2.eq in *; simpl; 
- (left; f_equal; auto; fail) || 
+ intros (x1,x2) (y1,y2);
+ destruct (D1.eq_dec x1 y1); destruct (D2.eq_dec x2 y2);
+ unfold eq, D1.eq, D2.eq in *; simpl;
+ (left; f_equal; auto; fail) ||
  (right; intro H; injection H; auto).
  Defined.
 

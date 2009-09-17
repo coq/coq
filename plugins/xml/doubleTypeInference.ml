@@ -69,12 +69,12 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
        T.Meta n ->
         Util.error
          "DoubleTypeInference.double_type_of: found a non-instanciated goal"
- 
+
      | T.Evar ((n,l) as ev) ->
         let ty = Unshare.unshare (Evd.existential_type sigma ev) in
         let jty = execute env sigma ty None in
         let jty = assumption_of_judgment env sigma jty in
-        let evar_context = 
+        let evar_context =
 	  E.named_context_of_val (Evd.find sigma n).Evd.evar_hyps in
          let rec iter actual_args evar_context =
           match actual_args,evar_context with
@@ -96,25 +96,25 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
           (* for side effects only *)
           iter (List.rev (Array.to_list l)) (List.rev evar_context) ;
           E.make_judge cstr jty
-	
-     | T.Rel n -> 
+
+     | T.Rel n ->
         Typeops.judge_of_relative env n
 
-     | T.Var id -> 
+     | T.Var id ->
         Typeops.judge_of_variable env id
-	  
+
      | T.Const c ->
         E.make_judge cstr (Typeops.type_of_constant env c)
-	  
+
      | T.Ind ind ->
         E.make_judge cstr (Inductiveops.type_of_inductive env ind)
-	  
-     | T.Construct cstruct -> 
+
+     | T.Construct cstruct ->
         E.make_judge cstr (Inductiveops.type_of_constructor env cstruct)
-	  
+
      | T.Case (ci,p,c,lf) ->
         let expectedtype =
-         Reduction.whd_betadeltaiota env (Retyping.get_type_of env sigma c) in 
+         Reduction.whd_betadeltaiota env (Retyping.get_type_of env sigma c) in
         let cj = execute env sigma c (Some expectedtype) in
         let pj = execute env sigma p None in
         let (expectedtypes,_,_) =
@@ -126,18 +126,18 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
           (Array.map (function x -> Some x) expectedtypes) in
         let (j,_) = Typeops.judge_of_case env ci pj cj lfj in
          j
-  
+
      | T.Fix ((vn,i as vni),recdef) ->
         let (_,tys,_ as recdef') = execute_recdef env sigma recdef in
         let fix = (vni,recdef') in
         E.make_judge (T.mkFix fix) tys.(i)
-	  
+
      | T.CoFix (i,recdef) ->
         let (_,tys,_ as recdef') = execute_recdef env sigma recdef in
         let cofix = (i,recdef') in
         E.make_judge (T.mkCoFix cofix) tys.(i)
-	  
-     | T.Sort (T.Prop c) -> 
+
+     | T.Sort (T.Prop c) ->
         Typeops.judge_of_prop_contents c
 
      | T.Sort (T.Type u) ->
@@ -153,8 +153,8 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
 )
 
      | T.App (f,args) ->
-        let expected_head = 
-         Reduction.whd_betadeltaiota env (Retyping.get_type_of env sigma f) in 
+        let expected_head =
+         Reduction.whd_betadeltaiota env (Retyping.get_type_of env sigma f) in
         let j = execute env sigma f (Some expected_head) in
         let expected_args =
          let rec aux typ =
@@ -172,8 +172,8 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
         let jl = execute_array env sigma args expected_args in
         let (j,_) = Typeops.judge_of_apply env j jl in
          j
-	    
-     | T.Lambda (name,c1,c2) -> 
+
+     | T.Lambda (name,c1,c2) ->
         let j = execute env sigma c1 None in
         let var = type_judgment env sigma j in
         let env1 = E.push_rel (name,None,var.E.utj_val) env in
@@ -186,9 +186,9 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
                   Some (Reductionops.nf_beta sigma expected_target_type)
                | _ -> assert false
         in
-        let j' = execute env1 sigma c2 expectedc2type in 
+        let j' = execute env1 sigma c2 expectedc2type in
          Typeops.judge_of_abstraction env1 name var j'
-	  
+
      | T.Prod (name,c1,c2) ->
         let j = execute env sigma c1 None in
         let varj = type_judgment env sigma j in
@@ -212,7 +212,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
         in
          let j3 = execute env1 sigma c3 None in
           Typeops.judge_of_letin env name j1 j2 j3
-  
+
      | T.Cast (c,k,t) ->
         let cj = execute env sigma c (Some (Reductionops.nf_beta sigma t)) in
         let tj = execute env sigma t None in

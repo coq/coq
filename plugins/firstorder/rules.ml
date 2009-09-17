@@ -31,17 +31,17 @@ let wrap n b continue seq gls=
   let nc=pf_hyps gls in
   let env=pf_env gls in
   let rec aux i nc ctx=
-    if i<=0 then seq else 
+    if i<=0 then seq else
       match nc with
 	  []->anomaly "Not the expected number of hyps"
-	| ((id,_,typ) as nd)::q->  
-	    if occur_var env id (pf_concl gls) || 
+	| ((id,_,typ) as nd)::q->
+	    if occur_var env id (pf_concl gls) ||
 	      List.exists (occur_var_in_decl env id) ctx then
 		(aux (i-1) q (nd::ctx))
 	    else
 	      add_formula Hyp (VarRef id) typ (aux (i-1) q (nd::ctx)) gls in
   let seq1=aux n nc [] in
-  let seq2=if b then 
+  let seq2=if b then
     add_formula Concl dummy_id (pf_concl gls) seq1 gls else seq1 in
     continue seq2 gls
 
@@ -52,24 +52,24 @@ let basename_of_global=function
 let clear_global=function
     VarRef id->clear [id]
   | _->tclIDTAC
-      
+
 
 (* connection rules *)
 
 let axiom_tac t seq=
-  try exact_no_check (constr_of_global (find_left t seq)) 
+  try exact_no_check (constr_of_global (find_left t seq))
   with Not_found->tclFAIL 0 (Pp.str "No axiom link")
 
-let ll_atom_tac a backtrack id continue seq= 
+let ll_atom_tac a backtrack id continue seq=
   tclIFTHENELSE
-    (try 
+    (try
       tclTHENLIST
 	[generalize [mkApp(constr_of_global id,
 			   [|constr_of_global (find_left a seq)|])];
 	 clear_global id;
 	 intro]
     with Not_found->tclFAIL 0 (Pp.str "No link"))
-    (wrap 1 false continue seq) backtrack 
+    (wrap 1 false continue seq) backtrack
 
 (* right connectives rules *)
 
@@ -77,7 +77,7 @@ let and_tac backtrack continue seq=
   tclIFTHENELSE simplest_split (wrap 0 true continue seq) backtrack
 
 let or_tac backtrack continue seq=
-  tclORELSE 
+  tclORELSE
     (any_constructor false (Some (tclCOMPLETE (wrap 0 true continue seq))))
     backtrack
 
@@ -89,17 +89,17 @@ let arrow_tac backtrack continue seq=
 (* left connectives rules *)
 
 let left_and_tac ind backtrack id continue seq gls=
- let n=(construct_nhyps ind gls).(0) in  
+ let n=(construct_nhyps ind gls).(0) in
    tclIFTHENELSE
-     (tclTHENLIST 
+     (tclTHENLIST
       [simplest_elim (constr_of_global id);
-       clear_global id; 
+       clear_global id;
        tclDO n intro])
      (wrap n false continue seq)
      backtrack gls
 
 let left_or_tac ind backtrack id continue seq gls=
-  let v=construct_nhyps ind gls in  
+  let v=construct_nhyps ind gls in
   let f n=
     tclTHENLIST
       [clear_global id;
@@ -117,10 +117,10 @@ let left_false_tac id=
 
 (* We use this function for false, and, or, exists *)
 
-let ll_ind_tac ind largs backtrack id continue seq gl= 
+let ll_ind_tac ind largs backtrack id continue seq gl=
      let rcs=ind_hyps 0 ind largs gl in
      let vargs=Array.of_list largs in
-	     (* construire le terme  H->B, le generaliser etc *)   
+	     (* construire le terme  H->B, le generaliser etc *)
      let myterm i=
        let rc=rcs.(i) in
        let p=List.length rc in
@@ -132,7 +132,7 @@ let ll_ind_tac ind largs backtrack id continue seq gl=
        let lp=Array.length rcs in
        let newhyps=list_tabulate myterm lp in
 	 tclIFTHENELSE
-	   (tclTHENLIST 
+	   (tclTHENLIST
 	      [generalize newhyps;
 	       clear_global id;
 	       tclDO lp intro])
@@ -149,9 +149,9 @@ let ll_arrow_tac a b c backtrack id continue seq=
 	    [introf;
 	     clear_global id;
 	     wrap 1 false continue seq];
-	  tclTHENS (cut cc) 
-            [exact_no_check (constr_of_global id); 
-	     tclTHENLIST 
+	  tclTHENS (cut cc)
+            [exact_no_check (constr_of_global id);
+	     tclTHENLIST
 	       [generalize [d];
 		clear_global id;
 		introf;
@@ -167,21 +167,21 @@ let forall_tac backtrack continue seq=
        (tclORELSE
 	  (tclTHEN introf (tclCOMPLETE (wrap 0 true continue seq)))
 	  backtrack))
-    (if !qflag then 
+    (if !qflag then
        tclFAIL 0 (Pp.str "reversible in 1st order mode")
      else
        backtrack)
 
 let left_exists_tac ind backtrack id continue seq gls=
-  let n=(construct_nhyps ind gls).(0) in  
+  let n=(construct_nhyps ind gls).(0) in
     tclIFTHENELSE
       (simplest_elim (constr_of_global id))
       (tclTHENLIST [clear_global id;
                     tclDO n intro;
-                    (wrap (n-1) false continue seq)]) 
-      backtrack 
+                    (wrap (n-1) false continue seq)])
+      backtrack
       gls
-	
+
 let ll_forall_tac prod backtrack id continue seq=
   tclORELSE
     (tclTHENS (cut prod)
@@ -190,7 +190,7 @@ let ll_forall_tac prod backtrack id continue seq=
 	   (fun gls->
 	      let id0=pf_nth_hyp_id gls 1 in
 	      let term=mkApp((constr_of_global id),[|mkVar(id0)|]) in
-		tclTHEN (generalize [term]) (clear [id0]) gls);  
+		tclTHEN (generalize [term]) (clear [id0]) gls);
 	   clear_global id;
 	   intro;
 	   tclCOMPLETE (wrap 1 false continue (deepen seq))];
@@ -209,7 +209,7 @@ let defined_connectives=lazy
 
 let normalize_evaluables=
   onAllHypsAndConcl
-    (function 
+    (function
 	 None->unfold_in_concl (Lazy.force defined_connectives)
-       | Some id -> 
+       | Some id ->
 	   unfold_in_hyp (Lazy.force defined_connectives) (id,InHypTypeOnly))

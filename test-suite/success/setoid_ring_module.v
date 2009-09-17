@@ -11,11 +11,11 @@ Parameters (Coef:Set)(c0 c1 : Coef)
 (ceq_refl : forall x, ceq x x).
 
 
-Add Relation Coef ceq 
+Add Relation Coef ceq
   reflexivity proved by ceq_refl symmetry proved by ceq_sym
   transitivity proved by ceq_trans
   as ceq_relation.
-  
+
 Add Morphism cadd with signature ceq ==> ceq ==> ceq as cadd_Morphism.
 Admitted.
 

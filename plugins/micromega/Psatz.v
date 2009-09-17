@@ -26,20 +26,20 @@ Declare ML Module "micromega_plugin".
 
 Ltac xpsatz dom d :=
   let tac := lazymatch dom with
-  | Z => 
+  | Z =>
     (sos_Z || psatz_Z d) ;
-    intros __wit __varmap __ff ; 
-    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ; 
+    intros __wit __varmap __ff ;
+    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
     apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | R =>
     (sos_R || psatz_R d) ;
-    intros __wit __varmap __ff ; 
-    change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ; 
+    intros __wit __varmap __ff ;
+    change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
     apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | Q =>
       (sos_Q || psatz_Q d) ;
-    intros __wit __varmap __ff ; 
-    change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ; 
+    intros __wit __varmap __ff ;
+    change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
     apply (QTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | _ => fail "Unsupported domain"
   end in tac.
@@ -52,27 +52,27 @@ Ltac psatzl dom :=
   | Z =>
     psatzl_Z ;
     intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ; 
+    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
     apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | Q =>
-    psatzl_Q ; 
-    intros __wit __varmap __ff ; 
-    change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ; 
+    psatzl_Q ;
+    intros __wit __varmap __ff ;
+    change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
     apply (QTautoChecker_sound __ff __wit); vm_compute ; reflexivity
-  | R => 
+  | R =>
     psatzl_R ;
     intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ; 
+    change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
     apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | _ => fail "Unsupported domain"
   end in tac.
 
 
 
-Ltac lia := 
+Ltac lia :=
   xlia ;
   intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ; 
+    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
       apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
 
 

@@ -1,7 +1,7 @@
 Coq_config
 
 Profile
-Pp_control 
+Pp_control
 Pp
 Compat
 Flags
@@ -49,7 +49,7 @@ Nametab
 Libobject
 Lib
 Goptions
-Decl_kinds 
+Decl_kinds
 Global
 Termops
 Evd
@@ -68,7 +68,7 @@ Vernacexpr
 Extrawit
 Pcoq
 Q_util
-Q_coqast 
+Q_coqast
 
 Egrammar
 Argextend

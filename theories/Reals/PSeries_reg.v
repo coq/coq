@@ -19,13 +19,13 @@ Open Local Scope R_scope.
 Definition Boule (x:R) (r:posreal) (y:R) : Prop := Rabs (y - x) < r.
 
 (** Uniform convergence *)
-Definition CVU (fn:nat -> R -> R) (f:R -> R) (x:R) 
+Definition CVU (fn:nat -> R -> R) (f:R -> R) (x:R)
   (r:posreal) : Prop :=
   forall eps:R,
     0 < eps ->
     exists N : nat,
       (forall (n:nat) (y:R),
-        (N <= n)%nat -> Boule x r y -> Rabs (f y - fn n y) < eps). 
+        (N <= n)%nat -> Boule x r y -> Rabs (f y - fn n y) < eps).
 
 (** Normal convergence *)
 Definition CVN_r (fn:nat -> R -> R) (r:posreal) : Type :=
@@ -37,7 +37,7 @@ Definition CVN_r (fn:nat -> R -> R) (r:posreal) : Type :=
 Definition CVN_R (fn:nat -> R -> R) : Type := forall r:posreal, CVN_r fn r.
 
 Definition SFL (fn:nat -> R -> R)
-  (cv:forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l }) 
+  (cv:forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l })
   (y:R) : R := let (a,_) := cv y in a.
 
 (** In a complete space, normal convergence implies uniform convergence *)
@@ -94,7 +94,7 @@ Lemma CVU_continuity :
     forall y:R, Boule x r y -> continuity_pt f y.
 Proof.
   intros; unfold continuity_pt in |- *; unfold continue_in in |- *;
-    unfold limit1_in in |- *; unfold limit_in in |- *; 
+    unfold limit1_in in |- *; unfold limit_in in |- *;
       simpl in |- *; unfold R_dist in |- *; intros.
   unfold CVU in H.
   cut (0 < eps / 3);
@@ -219,11 +219,11 @@ Proof.
   intros; apply (H n y).
   apply H1.
   unfold Boule in |- *; simpl in |- *; rewrite Rminus_0_r;
-    pattern (Rabs x) at 1 in |- *; rewrite <- Rplus_0_r; 
+    pattern (Rabs x) at 1 in |- *; rewrite <- Rplus_0_r;
       apply Rplus_lt_compat_l; apply Rlt_0_1.
 Qed.
 
-(** As R is complete, normal convergence implies that (fn) is simply-uniformly convergent *) 
+(** As R is complete, normal convergence implies that (fn) is simply-uniformly convergent *)
 Lemma CVN_R_CVS :
   forall fn:nat -> R -> R,
     CVN_R fn -> forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l }.
@@ -256,7 +256,7 @@ Proof.
   intro; apply Rle_trans with (Rabs (An n)).
   apply Rabs_pos.
   unfold An in |- *; apply H4; unfold Boule in |- *; simpl in |- *;
-    rewrite Rminus_0_r; pattern (Rabs x) at 1 in |- *; 
+    rewrite Rminus_0_r; pattern (Rabs x) at 1 in |- *;
       rewrite <- Rplus_0_r; apply Rplus_lt_compat_l; apply Rlt_0_1.
   apply Rplus_le_lt_0_compat; [ apply Rabs_pos | apply Rlt_0_1 ].
 Qed.

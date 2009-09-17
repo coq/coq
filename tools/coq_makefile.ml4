@@ -42,7 +42,7 @@ let rec print_list sep = function
 let list_iter_i f =
   let rec aux i = function [] -> () | a::l -> f i a; aux (i+1) l in aux 1
 
-let best_ocamlc = 
+let best_ocamlc =
   if Coq_config.best = "opt" then "ocamlc.opt" else "ocamlc"
 let best_ocamlopt =
   if Coq_config.best = "opt" then "ocamlopt.opt" else "ocamlopt"
@@ -85,7 +85,7 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml] ... [-custom
 [-impredicative-set]: compile with option -impredicative-set of coq
 [-no-install]: build a makefile with no install target
 [-f file]: take the contents of file as arguments
-[-o file]: output should go in file file 
+[-o file]: output should go in file file
 [-h]: print this usage summary
 [--help]: equivalent to [-h]\n";
   exit 1
@@ -215,7 +215,7 @@ let clean sds sps =
     print "\trm -f $(CMOFILES) $(MLFILES:.ml=.cmi) $(MLFILES:.ml=.ml.d) $(MLFILES:.ml=.cmx) $(MLFILES:.ml=.o)\n";
   print "\t- rm -rf html\n";
   List.iter
-    (fun (file,_,_) -> 
+    (fun (file,_,_) ->
        if not (is_genrule file) then
 	 (print "\t- rm -f "; print file; print "\n"))
     sps;
@@ -233,8 +233,8 @@ let clean sds sps =
   print "\t@echo CAMLP4LIB =\t$(CAMLP4LIB)\n\n"
 
 let header_includes () = ()
-  
-let footer_includes () = 
+
+let footer_includes () =
   if !some_vfile then print "-include $(VFILES:.v=.v.d)\n.SECONDARY: $(VFILES:.v=.v.d)\n\n";
   if !some_mlfile then print "-include $(MLFILES:.ml=.ml.d)\n.SECONDARY: $(MLFILES:.ml=.ml.d)\n\n"
 
@@ -267,7 +267,7 @@ let variables defs =
   let var_aux (v,def) = print v; print "="; print def; print "\n" in
     section "Variables definitions.";
     print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n";
-    if !opt = "-byte" then 
+    if !opt = "-byte" then
       print "override OPT:=-byte\n"
     else
       print "OPT:=\n";
@@ -297,8 +297,8 @@ let parameters () =
   print "# This Makefile may take 3 arguments passed as environment variables:\n";
   print "#   - COQBIN to specify the directory where Coq binaries resides;\n";
   print "#   - CAMLBIN and CAMLP4BIN to give the path for the OCaml and Camlp4/5 binaries.\n";
-  print "COQLIB:=$(shell $(COQBIN)coqtop -where | sed -e 's/\\\\/\\\\\\\\/g')\n"; 
-  print "CAMLP4:=\"$(shell $(COQBIN)coqtop -config | awk -F = '/CAMLP4=/{print $$2}')\"\n"; 
+  print "COQLIB:=$(shell $(COQBIN)coqtop -where | sed -e 's/\\\\/\\\\\\\\/g')\n";
+  print "CAMLP4:=\"$(shell $(COQBIN)coqtop -config | awk -F = '/CAMLP4=/{print $$2}')\"\n";
   print "ifndef CAMLP4BIN\n  CAMLP4BIN:=$(CAMLBIN)\nendif\n\n";
   print "CAMLP4LIB:=$(shell $(CAMLP4BIN)$(CAMLP4) -where)\n\n"
 
@@ -329,7 +329,7 @@ let rec special = function
   | [] -> []
   | Special (file,deps,com) :: r -> (file,deps,com) :: (special r)
   | _ :: r -> special r
-      
+
 let custom sps =
   let pr_path (file,dependencies,com) =
     print file; print ": "; print dependencies; print "\n";
@@ -347,7 +347,7 @@ let subdirs sds =
     section "Special targets.";
     print ".PHONY: ";
     print_list " "
-      ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install" 
+      ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install"
 	:: "depend" :: "html" :: sds);
     print "\n\n"
 
@@ -356,7 +356,7 @@ let rec split_arguments = function
       let (v,m,o,s),i,d = split_arguments r in ((canonize n::v,m,o,s),i,d)
   | ML n :: r ->
       let (v,m,o,s),i,d = split_arguments r in ((v,canonize n::m,o,s),i,d)
-  | Special (n,dep,c) :: r -> 
+  | Special (n,dep,c) :: r ->
       let (v,m,o,s),i,d = split_arguments r in ((v,m,(n,dep,c)::o,s),i,d)
   | Subdir n :: r ->
       let (v,m,o,s),i,d = split_arguments r in ((v,m,o,n::s),i,d)
@@ -364,7 +364,7 @@ let rec split_arguments = function
       let t,(i,r),d = split_arguments r in (t,((p,absolute_dir p)::i,r),d)
   | RInclude (p,l) :: r ->
       let t,(i,r),d = split_arguments r in (t,(i,(p,l,absolute_dir p)::r),d)
-  | Def (v,def) :: r -> 
+  | Def (v,def) :: r ->
       let t,i,d = split_arguments r in (t,i,(v,def)::d)
   | [] -> ([],[],[],[]),([],[]),[]
 
@@ -397,15 +397,15 @@ let main_targets vfiles mlfiles other_targets inc =
     if !some_mlfile then print "$(CMOFILES) ";
     if Coq_config.has_natdynlink && !some_mlfile then print "$(CMXSFILES) ";
     print_list "\\\n  " other_targets; print "\n";
-    if !some_vfile then 
+    if !some_vfile then
       begin
 	print "spec: $(VIFILES)\n\n";
 	print "gallina: $(GFILES)\n\n";
 	print "html: $(GLOBFILES) $(VFILES)\n";
-	print "\t- mkdir html\n"; 
+	print "\t- mkdir html\n";
 	print "\t$(COQDOC) -toc -html $(COQDOCLIBS) -d html $(VFILES)\n\n";
 	print "gallinahtml: $(GLOBFILES) $(VFILES)\n";
-	print "\t- mkdir html\n"; 
+	print "\t- mkdir html\n";
 	print "\t$(COQDOC) -toc -html -g $(COQDOCLIBS) -d html $(VFILES)\n\n";
 	print "all.ps: $(VFILES)\n";
 	print "\t$(COQDOC) -toc -ps $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
@@ -425,20 +425,20 @@ let all_target (vfiles, mlfiles, sps, sds) inc =
   main_targets vfiles mlfiles other_targets inc;
   custom sps;
   subdirs sds
-      
+
 let parse f =
-  let rec string = parser 
+  let rec string = parser
     | [< '' ' | '\n' | '\t' >] -> ""
     | [< 'c; s >] -> (String.make 1 c)^(string s)
     | [< >] -> ""
-  and string2 = parser 
+  and string2 = parser
     | [< ''"' >] -> ""
     | [< 'c; s >] -> (String.make 1 c)^(string2 s)
-  and skip_comment = parser 
+  and skip_comment = parser
     | [< ''\n'; s >] -> s
     | [< 'c; s >] -> skip_comment s
     | [< >] -> [< >]
-  and args = parser 
+  and args = parser
     | [< '' ' | '\n' | '\t'; s >] -> args s
     | [< ''#'; s >] -> args (skip_comment s)
     | [< ''"'; str = string2; s >] -> ("" ^ str) :: args s
@@ -451,13 +451,13 @@ let parse f =
     res
 
 let rec process_cmd_line = function
-  | [] -> 
+  | [] ->
       some_file := !some_file or !some_mlfile or !some_vfile; []
-  | ("-h"|"--help") :: _ -> 
+  | ("-h"|"--help") :: _ ->
       usage ()
-  | ("-no-opt"|"-byte") :: r -> 
+  | ("-no-opt"|"-byte") :: r ->
       opt := "-byte"; process_cmd_line r
-  | ("-full"|"-opt") :: r -> 
+  | ("-full"|"-opt") :: r ->
       opt := "-opt"; process_cmd_line r
   | "-impredicative-set" :: r ->
       impredicative_set := true; process_cmd_line r
@@ -476,32 +476,32 @@ let rec process_cmd_line = function
       Include d :: (process_cmd_line r)
   | "-R" :: p :: l :: r ->
       RInclude (p,l) :: (process_cmd_line r)
-  | ("-I"|"-custom") :: _ -> 
+  | ("-I"|"-custom") :: _ ->
       usage ()
-  | "-f" :: file :: r -> 
+  | "-f" :: file :: r ->
       make_name := file;
       process_cmd_line ((parse file)@r)
-  | ["-f"] -> 
+  | ["-f"] ->
       usage ()
-  | "-o" :: file :: r -> 
+  | "-o" :: file :: r ->
       makefile_name := file;
       output_channel := (open_out file);
       (process_cmd_line r)
-  | v :: "=" :: def :: r -> 
+  | v :: "=" :: def :: r ->
       Def (v,def) :: (process_cmd_line r)
   | f :: r ->
       if Filename.check_suffix f ".v" then begin
-          some_vfile := true; 
+          some_vfile := true;
 	  V f :: (process_cmd_line r)
 	end else if (Filename.check_suffix f ".ml") || (Filename.check_suffix f ".ml4") then begin
-          some_mlfile := true; 
+          some_mlfile := true;
 	  ML f :: (process_cmd_line r)
 	end else if (Filename.check_suffix f ".mli") then begin
 	  Printf.eprintf "Warning: no need for .mli files, skipped %s\n" f;
 	  process_cmd_line r
 	end else
           Subdir f :: (process_cmd_line r)
-	      
+
 let banner () =
   print (Printf.sprintf
 "##########################################################################
@@ -518,23 +518,23 @@ let warning () =
   print "# This Makefile has been automagically generated\n";
   print "# Edit at your own risks !\n";
   print "#\n# END OF WARNING\n\n"
-    
+
 let print_list l = List.iter (fun x -> print x; print " ") l
-  
+
 let command_line args =
   print "#\n# This Makefile was generated by the command line :\n";
   print "# coq_makefile ";
   print_list args;
   print "\n#\n\n"
-    
+
 let directories_deps l =
-  let print_dep f dep = 
+  let print_dep f dep =
     if dep <> [] then begin print f; print ": "; print_list dep; print "\n" end
   in
   let rec iter ((dirs,before) as acc) = function
-    | [] -> 
+    | [] ->
 	()
-    | (Subdir d) :: l -> 
+    | (Subdir d) :: l ->
 	print_dep d before; iter (d :: dirs, d :: before) l
     | (ML f) :: l ->
 	print_dep f dirs; iter (dirs, f :: before) l
@@ -542,7 +542,7 @@ let directories_deps l =
 	print_dep f dirs; iter (dirs, f :: before) l
     | (Special (f,_,_)) :: l ->
 	print_dep f dirs; iter (dirs, f :: before) l
-    | _ :: l -> 
+    | _ :: l ->
 	iter acc l
   in
     iter ([],[]) l
@@ -560,7 +560,7 @@ let warn_install_at_root_directory (vfiles,mlfiles,_,_) (inc_i,inc_r) =
   if not !no_install &&
     List.exists (fun f -> List.mem_assoc (Filename.dirname f) inc_top) files
   then
-    Printf.eprintf "Warning: install target will copy files at the first level of the coq contributions installation directory; option -R %sis recommended\n" 
+    Printf.eprintf "Warning: install target will copy files at the first level of the coq contributions installation directory; option -R %sis recommended\n"
       (if inc_r_top = [] then "" else "with non trivial logical root ")
 
 let check_overlapping_include (inc_i,inc_r) =
@@ -575,7 +575,7 @@ let check_overlapping_include (inc_i,inc_r) =
 	    Printf.eprintf "Warning: in options -R, %s and %s overlap\n" pdir pdir') l;
 	List.iter (fun (pdir',abspdir') ->
 	  if is_prefix abspdir abspdir' or is_prefix abspdir' abspdir then
-	    Printf.eprintf "Warning: in option -I, %s overlap with %s in option -R\n" pdir' pdir) inc_i 
+	    Printf.eprintf "Warning: in option -I, %s overlap with %s in option -R\n" pdir' pdir) inc_i
   in aux inc_r
 
 let do_makefile args =
@@ -602,12 +602,12 @@ let do_makefile args =
   warning ();
   if not (!output_channel == stdout) then close_out !output_channel;
   exit 0
-	  
+
 let main () =
   let args =
     if Array.length Sys.argv = 1 then usage ();
     List.tl (Array.to_list Sys.argv)
   in
     do_makefile args
-      
+
 let _ = Printexc.catch main ()

@@ -12,7 +12,7 @@ Require Import Ring_normalize.
 
 Open Scope R_scope.
 
-Lemma yplus_minus : forall x y, 
+Lemma yplus_minus : forall x y,
   0 = x + y -> 0 =  x -y -> 0 = x /\ 0 = y.
 Proof.
   intros.
@@ -34,7 +34,7 @@ Proof.
 Qed.
 
 
-Lemma vcgen_25 : forall   
+Lemma vcgen_25 : forall
   (n : R)
   (m : R)
   (jt : R)

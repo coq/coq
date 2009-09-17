@@ -26,20 +26,20 @@ let spe = sphs "";;
 let spb = sps " ";;
 let spr = sps "Retour chariot pour Show proof";;
 
-let spnb n = 
+let spnb n =
    let s = ref "" in
    for i=1 to n do s:=(!s)^" "; done; sps !s
 ;;
 
 
 let rec spclean l =
-  match l with 
+  match l with
     [] -> []
    |x::l -> if x=spe then (spclean l) else x::(spclean l)
 ;;
 
 
-let spnb n = 
+let spnb n =
    let s = ref "" in
    for i=1 to n do s:=(!s)^" "; done; sps !s
 ;;
@@ -62,13 +62,13 @@ let root_of_text_proof t=
   CT_text_op [ct_text "root_of_text_proof";
               t]
     ;;
-    
+
 let spshrink info t =
   CT_text_op [ct_text "shrink";
 	      CT_text_op [ct_text info;
                           t]]
 ;;
-			 
+
 let spuselemma intro x y =
   CT_text_op [ct_text "uselemma";
               ct_text intro;
@@ -105,7 +105,7 @@ let spv l =
    let l= spclean l in
    CT_text_v l
 ;;
-     
+
 let sph l =
    let l= spclean l in
    CT_text_h l
@@ -118,12 +118,12 @@ let sphv l =
 ;;
 
 let rec prlist_with_sep f g l =
-    match l with 
+    match l with
       [] -> hov 0 (mt ())
      |x::l1 -> hov 0 ((g x) ++ (f ()) ++ (prlist_with_sep f g l1))
 ;;
-   
-let rec sp_print x = 
+
+let rec sp_print x =
    match x with
      | CT_coerce_ID_to_TEXT (CT_ident s)
        -> (match s with
@@ -162,7 +162,7 @@ let rec sp_print x =
                          (CT_coerce_INT_to_SIGNED_INT
 			      (CT_int x)) -> x
 		       | _ -> raise (Failure "sp_print")) p) in
-      h 0 (sp_print g ++ spc () ++ str "<i>(" ++ str hyp ++ str ")</i>")   
+      h 0 (sp_print g ++ spc () ++ str "<i>(" ++ str hyp ++ str ")</i>")
 
   | CT_text_h l ->
       h 0 (prlist_with_sep (fun () -> mt ())
@@ -178,7 +178,7 @@ let rec sp_print x =
                    h 0 (str ("("^info^": ") ++ sp_print t ++ str ")")
   | CT_text_op [CT_coerce_ID_to_TEXT (CT_ident "root_of_text_proof");
               t]->
-                    sp_print t 
+                    sp_print t
   | _ -> str "..."
 ;;
-  
+

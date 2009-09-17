@@ -7,7 +7,7 @@ exists y; auto.
 Save test1.
 
 Goal exists x : nat, x = 0.
- refine (let y := 0 + 0 in ex_intro _ (y + y) _).  
+ refine (let y := 0 + 0 in ex_intro _ (y + y) _).
 auto.
 Save test2.
 
@@ -79,7 +79,7 @@ Abort.
 (* Used to failed with error not clean *)
 
 Definition div :
-  forall x:nat, (forall y:nat, forall n:nat, {q:nat | y = q*n}) -> 
+  forall x:nat, (forall y:nat, forall n:nat, {q:nat | y = q*n}) ->
      forall n:nat, {q:nat | x = q*n}.
 refine
   (fun m div_rec n =>
@@ -94,7 +94,7 @@ Abort.
 
 Goal
   forall f : forall a (H:a=a), Prop,
- (forall a (H:a = a :> nat), f a H -> True /\ True) -> 
+ (forall a (H:a = a :> nat), f a H -> True /\ True) ->
   True.
 intros.
 refine (@proj1 _ _ (H 0 _ _)).
@@ -105,13 +105,13 @@ Abort.
 
 Require Import Peano_dec.
 
-Definition fact_F : 
+Definition fact_F :
   forall (n:nat),
   (forall m, m<n -> nat) ->
   nat.
-refine 
+refine
   (fun n fact_rec =>
-     if eq_nat_dec n 0 then 
+     if eq_nat_dec n 0 then
         1
      else
 	let fn := fact_rec (n-1) _ in

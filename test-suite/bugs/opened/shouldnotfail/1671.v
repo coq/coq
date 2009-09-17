@@ -6,7 +6,7 @@ CoInductive hdlist : unit -> Type :=
 Variable P : forall bo, hdlist bo -> Prop.
 Variable all : forall bo l, P bo l.
 
-Definition F (l:hdlist tt) : P tt l := 
+Definition F (l:hdlist tt) : P tt l :=
 match l in hdlist u return P u l with
 | cons (cons l') => all tt _
 end.

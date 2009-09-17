@@ -8,7 +8,7 @@
 
 (* $Id$ *)
 
-open Term 
+open Term
 open Proof_type
 
 val proof_tac: Ccproof.proof -> Proof_type.tactic

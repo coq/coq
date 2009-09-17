@@ -45,7 +45,7 @@ Section DoubleMul.
  (*   (xh*B+xl) (yh*B + yl)
    xh*yh         = hh  = |hhh|hhl|B2
    xh*yl +xl*yh  = cc  =     |cch|ccl|B
-   xl*yl         = ll  =         |llh|lll 
+   xl*yl         = ll  =         |llh|lll
   *)
 
  Definition double_mul_c (cross:w->w->w->w->zn2z w -> zn2z w -> w*zn2z w) x y :=
@@ -56,7 +56,7 @@ Section DoubleMul.
     let hh := w_mul_c xh yh in
     let ll := w_mul_c xl yl in
     let (wc,cc) := cross xh xl yh yl hh ll in
-    match cc with 
+    match cc with
     | W0 => WW (ww_add hh (w_W0 wc)) ll
     | WW cch ccl =>
       match ww_add_c (w_W0 ccl) ll with
@@ -67,8 +67,8 @@ Section DoubleMul.
   end.
 
  Definition ww_mul_c :=
-  double_mul_c 
-    (fun xh xl yh yl hh ll=> 
+  double_mul_c
+    (fun xh xl yh yl hh ll=>
       match ww_add_c (w_mul_c xh yl) (w_mul_c xl yh) with
       | C0 cc => (w_0, cc)
       | C1 cc => (w_1, cc)
@@ -77,11 +77,11 @@ Section DoubleMul.
  Definition w_2 := w_add w_1 w_1.
 
  Definition kara_prod xh xl yh yl hh ll :=
-    match ww_add_c hh ll with 
+    match ww_add_c hh ll with
       C0 m =>
          match w_compare xl xh with
            Eq => (w_0, m)
-         | Lt => 
+         | Lt =>
            match w_compare yl yh with
              Eq => (w_0, m)
            | Lt => (w_0, ww_sub m (w_mul_c (w_sub xh xl) (w_sub yh yl)))
@@ -89,7 +89,7 @@ Section DoubleMul.
                       C1 m1 => (w_1, m1) | C0 m1 => (w_0, m1)
                    end
            end
-         | Gt => 
+         | Gt =>
            match w_compare yl yh with
              Eq => (w_0, m)
            | Lt => match ww_add_c m (w_mul_c (w_sub xl xh)  (w_sub yh yl)) with
@@ -101,17 +101,17 @@ Section DoubleMul.
     | C1 m =>
          match w_compare xl xh with
            Eq => (w_1, m)
-         | Lt => 
+         | Lt =>
            match w_compare yl yh with
              Eq => (w_1, m)
            | Lt => match ww_sub_c m (w_mul_c (w_sub xh xl) (w_sub yh yl)) with
                     C0 m1 => (w_1, m1) | C1 m1 => (w_0, m1)
-                   end 
+                   end
            | Gt => match ww_add_c m (w_mul_c (w_sub xh xl) (w_sub yl yh)) with
                       C1 m1 => (w_2, m1) | C0 m1 => (w_1, m1)
                    end
            end
-         | Gt => 
+         | Gt =>
            match w_compare yl yh with
              Eq => (w_1, m)
            | Lt => match ww_add_c m (w_mul_c (w_sub xl xh) (w_sub yh yl)) with
@@ -129,8 +129,8 @@ Section DoubleMul.
  Definition ww_mul x y :=
   match x, y with
   | W0, _ => W0
-  | _, W0 => W0  
-  | WW xh xl, WW yh yl => 
+  | _, W0 => W0
+  | WW xh xl, WW yh yl =>
     let ccl := w_add (w_mul xh yl) (w_mul xl yh) in
     ww_add (w_W0 ccl) (w_mul_c xl yl)
   end.
@@ -161,9 +161,9 @@ Section DoubleMul.
   Variable w_mul_add : w -> w -> w -> w * w.
 
   Fixpoint double_mul_add_n1 (n:nat) : word w n -> w -> w -> w * word w n :=
-   match n return word w n -> w -> w -> w * word w n with 
-   | O => w_mul_add 
-   | S n1 => 
+   match n return word w n -> w -> w -> w * word w n with
+   | O => w_mul_add
+   | S n1 =>
      let mul_add := double_mul_add_n1 n1 in
      fun x y r =>
      match x with
@@ -183,11 +183,11 @@ Section DoubleMul.
   Variable wn_0W : wn -> zn2z wn.
   Variable wn_WW : wn -> wn -> zn2z wn.
   Variable w_mul_add_n1 : wn -> w -> w -> w*wn.
-  Fixpoint double_mul_add_mn1 (m:nat) : 
+  Fixpoint double_mul_add_mn1 (m:nat) :
 	word wn m -> w -> w -> w*word wn m :=
-   match m return word wn m -> w -> w -> w*word wn m with 
-   | O => w_mul_add_n1 
-   | S m1 => 
+   match m return word wn m -> w -> w -> w*word wn m with
+   | O => w_mul_add_n1
+   | S m1 =>
      let mul_add := double_mul_add_mn1 m1 in
      fun x y r =>
      match x with
@@ -207,11 +207,11 @@ Section DoubleMul.
   | WW h l =>
     match w_add_c l r with
     | C0 lr => (h,lr)
-    | C1 lr => (w_succ h, lr) 
+    | C1 lr => (w_succ h, lr)
     end
   end.
 
-  
+
  (*Section DoubleProof. *)
   Variable w_digits : positive.
   Variable w_to_Z : w -> Z.
@@ -225,11 +225,11 @@ Section DoubleMul.
    (interp_carry (-1) wB w_to_Z c) (at level 0, x at level 99).
 
   Notation "[[ x ]]" := (ww_to_Z w_digits w_to_Z x)(at level 0, x at level 99).
-  Notation "[+[ c ]]" := 
-   (interp_carry 1 wwB (ww_to_Z w_digits w_to_Z) c) 
+  Notation "[+[ c ]]" :=
+   (interp_carry 1 wwB (ww_to_Z w_digits w_to_Z) c)
    (at level 0, x at level 99).
-  Notation "[-[ c ]]" := 
-   (interp_carry (-1) wwB (ww_to_Z w_digits w_to_Z) c) 
+  Notation "[-[ c ]]" :=
+   (interp_carry (-1) wwB (ww_to_Z w_digits w_to_Z) c)
    (at level 0, x at level 99).
 
   Notation "[|| x ||]" :=
@@ -269,8 +269,8 @@ Section DoubleMul.
 	 forall x y, [[ww_add_carry x y]] = ([[x]] + [[y]] + 1) mod wwB.
   Variable spec_ww_sub : forall x y, [[ww_sub x y]] = ([[x]] - [[y]]) mod wwB.
   Variable spec_ww_sub_c : forall x y, [-[ww_sub_c x y]] = [[x]] - [[y]].
- 
- 
+
+
   Lemma spec_ww_to_Z : forall x, 0 <= [[x]] < wwB.
   Proof. intros x;apply spec_ww_to_Z;auto. Qed.
 
@@ -281,21 +281,21 @@ Section DoubleMul.
   Ltac zarith := auto with zarith mult.
 
   Lemma wBwB_lex: forall a b c d,
-      a * wB^2 + [[b]] <= c * wB^2 + [[d]] -> 
+      a * wB^2 + [[b]] <= c * wB^2 + [[d]] ->
       a <= c.
-  Proof.   
+  Proof.
    intros a b c d H; apply beta_lex with [[b]] [[d]] (wB^2);zarith.
   Qed.
 
-  Lemma wBwB_lex_inv: forall a b c d, 
-      a < c -> 
-      a * wB^2 + [[b]] < c * wB^2 + [[d]]. 
+  Lemma wBwB_lex_inv: forall a b c d,
+      a < c ->
+      a * wB^2 + [[b]] < c * wB^2 + [[d]].
   Proof.
    intros a b c d H; apply beta_lex_inv; zarith.
   Qed.
 
   Lemma sum_mul_carry : forall xh xl yh yl wc cc,
-   [|wc|]*wB^2 + [[cc]] = [|xh|] * [|yl|] + [|xl|] * [|yh|] -> 
+   [|wc|]*wB^2 + [[cc]] = [|xh|] * [|yl|] + [|xl|] * [|yh|] ->
    0 <= [|wc|] <= 1.
   Proof.
    intros.
@@ -303,14 +303,14 @@ Section DoubleMul.
    apply wB_pos.
   Qed.
 
-  Theorem mult_add_ineq: forall xH yH crossH, 
+  Theorem mult_add_ineq: forall xH yH crossH,
                0 <= [|xH|] * [|yH|] + [|crossH|] < wwB.
   Proof.
    intros;rewrite wwB_wBwB;apply mult_add_ineq;zarith.
   Qed.
- 
+
   Hint Resolve mult_add_ineq : mult.
- 
+
   Lemma spec_mul_aux : forall xh xl yh yl wc (cc:zn2z w) hh ll,
    [[hh]] = [|xh|] * [|yh|] ->
    [[ll]] = [|xl|] * [|yl|] ->
@@ -325,9 +325,9 @@ Section DoubleMul.
       end||] = ([|xh|] * wB + [|xl|]) * ([|yh|] * wB + [|yl|]).
   Proof.
    intros;assert (U1 := wB_pos w_digits).
-   replace (([|xh|] * wB + [|xl|]) * ([|yh|] * wB + [|yl|])) with 
+   replace (([|xh|] * wB + [|xl|]) * ([|yh|] * wB + [|yl|])) with
    ([|xh|]*[|yh|]*wB^2 + ([|xh|]*[|yl|] + [|xl|]*[|yh|])*wB + [|xl|]*[|yl|]).
-   2:ring. rewrite <- H1;rewrite <- H;rewrite <- H0.  
+   2:ring. rewrite <- H1;rewrite <- H;rewrite <- H0.
    assert (H2 := sum_mul_carry _ _ _ _ _ _ H1).
    destruct cc as [ | cch ccl]; simpl zn2z_to_Z; simpl ww_to_Z.
    rewrite spec_ww_add;rewrite spec_w_W0;rewrite Zmod_small;
@@ -346,7 +346,7 @@ Section DoubleMul.
      rewrite <- Zmult_plus_distr_l.
     assert (((2 * wB - 4) + 2)*wB <= ([|wc|] * wB + [|cch|])*wB).
      apply Zmult_le_compat;zarith.
-    rewrite Zmult_plus_distr_l in H3. 
+    rewrite Zmult_plus_distr_l in H3.
     intros. assert (U2 := spec_to_Z ccl);omega.
    generalize (spec_ww_add_c (w_W0 ccl) ll);destruct (ww_add_c (w_W0 ccl) ll)
    as [l|l];unfold interp_carry;rewrite spec_w_W0;try rewrite Zmult_1_l;
@@ -363,8 +363,8 @@ Section DoubleMul.
      (forall xh xl yh yl hh ll,
         [[hh]] = [|xh|]*[|yh|] ->
         [[ll]] = [|xl|]*[|yl|] ->
-        let (wc,cc) :=  cross xh xl yh yl hh ll in 
-        [|wc|]*wwB + [[cc]] = [|xh|]*[|yl|] + [|xl|]*[|yh|]) -> 
+        let (wc,cc) :=  cross xh xl yh yl hh ll in
+        [|wc|]*wwB + [[cc]] = [|xh|]*[|yl|] + [|xl|]*[|yh|]) ->
      forall x y, [||double_mul_c cross x y||] = [[x]] * [[y]].
   Proof.
    intros cross Hcross x y;destruct x as [ |xh xl];simpl;trivial.
@@ -376,7 +376,7 @@ Section DoubleMul.
    rewrite <- wwB_wBwB;trivial.
   Qed.
 
-  Lemma spec_ww_mul_c : forall x y, [||ww_mul_c x y||] = [[x]] * [[y]]. 
+  Lemma spec_ww_mul_c : forall x y, [||ww_mul_c x y||] = [[x]] * [[y]].
   Proof.
    intros x y;unfold ww_mul_c;apply spec_double_mul_c.
    intros xh xl yh yl hh ll H1 H2.
@@ -402,9 +402,9 @@ Section DoubleMul.
    let (wc,cc) := kara_prod xh xl yh yl hh ll in
    [|wc|]*wwB + [[cc]] = [|xh|]*[|yl|] + [|xl|]*[|yh|].
   Proof.
-   intros xh xl yh yl hh ll H H0; rewrite <- kara_prod_aux; 
+   intros xh xl yh yl hh ll H H0; rewrite <- kara_prod_aux;
      rewrite <- H; rewrite <- H0; unfold kara_prod.
-   assert (Hxh := (spec_to_Z xh)); assert (Hxl := (spec_to_Z xl)); 
+   assert (Hxh := (spec_to_Z xh)); assert (Hxl := (spec_to_Z xl));
      assert (Hyh := (spec_to_Z yh)); assert (Hyl := (spec_to_Z yl)).
    generalize (spec_ww_add_c hh ll); case (ww_add_c hh ll);
      intros z Hz; rewrite <- Hz; unfold interp_carry; assert (Hz1 := (spec_ww_to_Z z)).
@@ -412,7 +412,7 @@ Section DoubleMul.
     try rewrite Hxlh; try rewrite spec_w_0; try (ring; fail).
    generalize (spec_w_compare yl yh); case (w_compare yl yh); intros Hylh.
    rewrite Hylh; rewrite spec_w_0; try (ring; fail).
-   rewrite spec_w_0; try (ring; fail). 
+   rewrite spec_w_0; try (ring; fail).
    repeat (rewrite spec_ww_sub || rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    split; auto with zarith.
@@ -508,8 +508,8 @@ Section DoubleMul.
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
   Qed.
 
-  Lemma sub_carry : forall xh xl yh yl z, 
-    0 <= z -> 
+  Lemma sub_carry : forall xh xl yh yl z,
+    0 <= z ->
     [|xh|]*[|yl|] + [|xl|]*[|yh|] = wwB + z ->
     z < wwB.
   Proof.
@@ -519,7 +519,7 @@ Section DoubleMul.
    generalize (Zmult_lt_b _ _ _ (spec_to_Z xl) (spec_to_Z yh)).
    rewrite <- wwB_wBwB;intros H1 H2.
    assert (H3 := wB_pos w_digits).
-   assert (2*wB <= wwB). 
+   assert (2*wB <= wwB).
     rewrite wwB_wBwB; rewrite Zpower_2; apply Zmult_le_compat;zarith.
    omega.
   Qed.
@@ -528,7 +528,7 @@ Section DoubleMul.
    let H:= fresh "H" in
    assert (H:= spec_ww_to_Z x).
 
-  Ltac Zmult_lt_b x y := 
+  Ltac Zmult_lt_b x y :=
    let H := fresh "H" in
    assert (H := Zmult_lt_b _ _ _ (spec_to_Z x) (spec_to_Z y)).
 
@@ -582,7 +582,7 @@ Section DoubleMul.
    Variable w_mul_add : w -> w -> w -> w * w.
    Variable spec_w_mul_add : forall x y r,
     let (h,l):= w_mul_add x y r in
-    [|h|]*wB+[|l|] = [|x|]*[|y|] + [|r|]. 
+    [|h|]*wB+[|l|] = [|x|]*[|y|] + [|r|].
 
    Lemma spec_double_mul_add_n1 : forall n x y r,
      let (h,l) := double_mul_add_n1 w_mul_add n x y r in
@@ -590,7 +590,7 @@ Section DoubleMul.
    Proof.
     induction n;intros x y r;trivial.
     exact (spec_w_mul_add x y r).
-    unfold double_mul_add_n1;destruct x as[ |xh xl]; 
+    unfold double_mul_add_n1;destruct x as[ |xh xl];
      fold(double_mul_add_n1 w_mul_add).
     rewrite spec_w_0;rewrite spec_extend;simpl;trivial.
     assert(H:=IHn xl y r);destruct (double_mul_add_n1 w_mul_add n xl y r)as(rl,l).
@@ -599,13 +599,13 @@ Section DoubleMul.
     rewrite Zmult_plus_distr_l;rewrite <- Zplus_assoc;rewrite <- H.
     rewrite Zmult_assoc;rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l.
     rewrite U;ring.
-   Qed. 
- 
+   Qed.
+
   End DoubleMulAddn1Proof.
 
-  Lemma spec_w_mul_add : forall x y r, 
+  Lemma spec_w_mul_add : forall x y r,
     let (h,l):= w_mul_add x y r in
-    [|h|]*wB+[|l|] = [|x|]*[|y|] + [|r|]. 
+    [|h|]*wB+[|l|] = [|x|]*[|y|] + [|r|].
   Proof.
    intros x y r;unfold w_mul_add;assert (H:=spec_w_mul_c x y);
    destruct (w_mul_c x y) as [ |h l];simpl;rewrite <- H.

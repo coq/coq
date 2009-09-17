@@ -37,7 +37,7 @@ Proof.
 Qed.
 
 Lemma Zpower_pos_0_l: forall p, Zpower_pos 0 p = 0.
-Proof. 
+Proof.
   induction p.
   change (xI p) with (1 + (xO p))%positive.
   rewrite Zpower_pos_is_exp, Zpower_pos_1_r; auto.
@@ -133,7 +133,7 @@ Proof.
   apply Zle_ge; replace 0 with (0 * r1); try apply Zmult_le_compat_r; auto.
 Qed.
 
-Theorem Zpower_le_monotone: forall a b c, 
+Theorem Zpower_le_monotone: forall a b c,
  0 < a -> 0 <= b <= c -> a^b <= a^c.
 Proof.
   intros a b c H (H1, H2).
@@ -145,7 +145,7 @@ Proof.
   apply Zlt_le_weak; apply Zpower_gt_0; auto with zarith.
 Qed.
 
-Theorem Zpower_lt_monotone: forall a b c, 
+Theorem Zpower_lt_monotone: forall a b c,
  1 < a -> 0 <= b < c -> a^b < a^c.
 Proof.
   intros a b c H (H1, H2).
@@ -160,7 +160,7 @@ Proof.
   apply Zpower_le_monotone; auto with zarith.
 Qed.
 
-Theorem Zpower_gt_1 : forall x y, 
+Theorem Zpower_gt_1 : forall x y,
   1 < x -> 0 < y -> 1 < x^y.
 Proof.
   intros x y H1 H2.
@@ -168,14 +168,14 @@ Proof.
   apply Zpower_lt_monotone; auto with zarith.
 Qed.
 
-Theorem Zpower_ge_0: forall x y, 0 <= x -> 0 <= x^y. 
+Theorem Zpower_ge_0: forall x y, 0 <= x -> 0 <= x^y.
 Proof.
   intros x y; case y; auto with zarith.
   simpl ; auto with zarith.
   intros p H1; assert (H: 0 <= Zpos p); auto with zarith.
   generalize H; pattern (Zpos p); apply natlike_ind; auto with zarith.
-  intros p1 H2 H3 _; unfold Zsucc; rewrite Zpower_exp; simpl; auto with zarith. 
-  apply Zmult_le_0_compat; auto with zarith.  
+  intros p1 H2 H3 _; unfold Zsucc; rewrite Zpower_exp; simpl; auto with zarith.
+  apply Zmult_le_0_compat; auto with zarith.
   generalize H1; case x; compute; intros; auto; try discriminate.
 Qed.
 
@@ -195,7 +195,7 @@ Proof.
   destruct b;trivial;unfold Zgt in z;discriminate z.
 Qed.
 
-Theorem Zmult_power: forall p q r, 0 <= r -> 
+Theorem Zmult_power: forall p q r, 0 <= r ->
   (p*q)^r = p^r * q^r.
 Proof.
   intros p q r H1; generalize H1; pattern r; apply natlike_ind; auto.
@@ -206,7 +206,7 @@ Qed.
 
 Hint Resolve Zpower_ge_0 Zpower_gt_0: zarith.
 
-Theorem Zpower_le_monotone3: forall a b c, 
+Theorem Zpower_le_monotone3: forall a b c,
  0 <= c -> 0 <= a <= b -> a^c <= b^c.
 Proof.
   intros a b c H (H1, H2).
@@ -216,7 +216,7 @@ Proof.
   apply Zle_trans with (a^x * b); auto with zarith.
 Qed.
 
-Lemma Zpower_le_monotone_inv: forall a b c, 
+Lemma Zpower_le_monotone_inv: forall a b c,
   1 < a -> 0 < b -> a^b <= a^c -> b <= c.
 Proof.
   intros a b c H H0 H1.
@@ -227,14 +227,14 @@ Proof.
    apply Zpower_le_monotone;auto with zarith.
    apply Zpower_le_monotone3;auto with zarith.
   assert (c > 0).
-  destruct (Z_le_gt_dec 0 c);trivial. 
+  destruct (Z_le_gt_dec 0 c);trivial.
   destruct (Zle_lt_or_eq _ _ z0);auto with zarith.
   rewrite <- H3 in H1;simpl in H1; elimtype False;omega.
   destruct c;try discriminate z0. simpl in H1. elimtype False;omega.
   assert (H4 := Zpower_lt_monotone a c b H). elimtype False;omega.
 Qed.
 
-Theorem Zpower_nat_Zpower: forall p q, 0 <= q -> 
+Theorem Zpower_nat_Zpower: forall p q, 0 <= q ->
  p^q = Zpower_nat p (Zabs_nat q).
 Proof.
   intros p1 q1; case q1; simpl.
@@ -262,7 +262,7 @@ Proof.
   intros; apply Zlt_le_weak; apply Zpower2_lt_lin; auto.
 Qed.
 
-Lemma Zpower2_Psize : 
+Lemma Zpower2_Psize :
   forall n p, Zpos p < 2^(Z_of_nat n) <-> (Psize p <= n)%nat.
 Proof.
   induction n.
@@ -311,14 +311,14 @@ Fixpoint Zpow_mod_pos (a: Z)(m: positive)(n : Z) {struct m} : Z :=
       end
   end.
 
-Definition Zpow_mod a m n := 
-  match m with 
-   | 0 => 1 
-   | Zpos p => Zpow_mod_pos a p n 
-   | Zneg p => 0 
+Definition Zpow_mod a m n :=
+  match m with
+   | 0 => 1
+   | Zpos p => Zpow_mod_pos a p n
+   | Zneg p => 0
   end.
 
-Theorem Zpow_mod_pos_correct: forall a m n, 0 < n -> 
+Theorem Zpow_mod_pos_correct: forall a m n, 0 < n ->
  Zpow_mod_pos a m n = (Zpower_pos a m) mod n.
 Proof.
   intros a m; elim m; simpl; auto.
@@ -327,12 +327,12 @@ Proof.
   repeat rewrite Rec; auto.
   rewrite Zpower_pos_1_r.
   repeat rewrite (fun x => (Zmult_mod x a)); auto with zarith.
-  rewrite (Zmult_mod (Zpower_pos a p)); auto with zarith. 
+  rewrite (Zmult_mod (Zpower_pos a p)); auto with zarith.
   case (Zpower_pos a p mod n); auto.
   intros p Rec n H1; rewrite <- Pplus_diag; auto.
   repeat rewrite Zpower_pos_is_exp; auto.
   repeat rewrite Rec; auto.
-  rewrite (Zmult_mod (Zpower_pos a p)); auto with zarith. 
+  rewrite (Zmult_mod (Zpower_pos a p)); auto with zarith.
   case (Zpower_pos a p mod n); auto.
   unfold Zpower_pos; simpl; rewrite Zmult_1_r; auto with zarith.
 Qed.
@@ -354,7 +354,7 @@ Proof.
   pattern p at 3; rewrite <- (Zpower_1_r p); rewrite <- Zpower_exp; try f_equal; auto with zarith.
 Qed.
 
-Theorem rel_prime_Zpower_r: forall i p q, 0 < i -> 
+Theorem rel_prime_Zpower_r: forall i p q, 0 < i ->
  rel_prime p q -> rel_prime p (q^i).
 Proof.
   intros i p q Hi Hpq; generalize Hi; pattern i; apply natlike_ind; auto with zarith; clear i Hi.
@@ -365,7 +365,7 @@ Proof.
   rewrite Zpower_0_r; apply rel_prime_sym; apply rel_prime_1.
 Qed.
 
-Theorem rel_prime_Zpower: forall i j p q, 0 <= i ->  0 <= j -> 
+Theorem rel_prime_Zpower: forall i j p q, 0 <= i ->  0 <= j ->
  rel_prime p q -> rel_prime (p^i) (q^j).
 Proof.
   intros i j p q Hi; generalize Hi j p q; pattern i; apply natlike_ind; auto with zarith; clear i Hi j p q.
@@ -379,7 +379,7 @@ Proof.
   rewrite Zpower_0_r; apply rel_prime_sym; apply rel_prime_1.
 Qed.
 
-Theorem prime_power_prime: forall p q n, 0 <= n -> 
+Theorem prime_power_prime: forall p q n, 0 <= n ->
  prime p -> prime q -> (p | q^n)  -> p = q.
 Proof.
   intros p q n Hn Hp Hq; pattern n; apply natlike_ind; auto; clear n Hn.
@@ -442,15 +442,15 @@ Fixpoint Psquare (p: positive): positive :=
   end.
 
 Definition Zsquare p :=
-  match p with 
-   | Z0 => Z0 
-   | Zpos p => Zpos (Psquare p) 
+  match p with
+   | Z0 => Z0
+   | Zpos p => Zpos (Psquare p)
    | Zneg p => Zpos (Psquare p)
   end.
 
 Theorem Psquare_correct: forall p, Psquare p = (p * p)%positive.
 Proof.
-  induction p; simpl; auto; f_equal; rewrite IHp.  
+  induction p; simpl; auto; f_equal; rewrite IHp.
   apply trans_equal with (xO p + xO (p*p))%positive; auto.
   rewrite (Pplus_comm (xO p)); auto.
   rewrite Pmult_xI_permute_r; rewrite Pplus_assoc.

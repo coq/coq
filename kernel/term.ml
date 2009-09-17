@@ -42,7 +42,7 @@ type contents = Pos | Null
 type sorts =
   | Prop of contents                      (* proposition types *)
   | Type of universe
-      
+
 let prop_sort = Prop Null
 let set_sort = Prop Pos
 let type1_sort = Type type1_univ
@@ -58,7 +58,7 @@ let family_of_sort = function
 (*       Constructions as implemented                               *)
 (********************************************************************)
 
-type cast_kind = VMcast | DEFAULTcast 
+type cast_kind = VMcast | DEFAULTcast
 
 (* [constr array] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
@@ -93,7 +93,7 @@ type ('constr, 'types) kind_of_term =
 (* Experimental *)
 type ('constr, 'types) kind_of_type =
   | SortType   of sorts
-  | CastType   of 'types * 'types 
+  | CastType   of 'types * 'types
   | ProdType   of name * 'types * 'types
   | LetInType  of name * 'constr * 'types * 'types
   | AtomicType of 'constr * 'constr array
@@ -118,7 +118,7 @@ type fixpoint = (int array * int) * rec_declaration
 type cofixpoint = int * rec_declaration
 
 (***************************)
-(* hash-consing functions  *)                         
+(* hash-consing functions  *)
 (***************************)
 
 let comp_term t1 t2 =
@@ -211,7 +211,7 @@ let mkVar id = Var id
 let mkSort s = Sort s
 
 (* Constructs the term t1::t2, i.e. the term t1 casted with the type t2 *)
-(* (that means t2 is declared as the type of t1) 
+(* (that means t2 is declared as the type of t1)
    [s] is the strategy to use when *)
 let mkCast (t1,k2,t2) =
   match t1 with
@@ -230,14 +230,14 @@ let mkLetIn (x,c1,t,c2) = LetIn (x,c1,t,c2)
 (* If lt = [t1; ...; tn], constructs the application (t1 ... tn) *)
 (* We ensure applicative terms have at least one argument and the
    function is not itself an applicative term *)
-let mkApp (f, a) = 
+let mkApp (f, a) =
   if Array.length a = 0 then f else
     match f with
       | App (g, cl) -> App (g, Array.append cl a)
       | _ -> App (f, a)
 
 
-(* Constructs a constant *) 
+(* Constructs a constant *)
 (* The array of terms correspond to the variables introduced in the section *)
 let mkConst c = Const c
 
@@ -248,7 +248,7 @@ let mkEvar e = Evar e
 (* The array of terms correspond to the variables introduced in the section *)
 let mkInd m = Ind m
 
-(* Constructs the jth constructor of the ith (co)inductive type of the 
+(* Constructs the jth constructor of the ith (co)inductive type of the
    block named kn. The array of terms correspond to the variables
    introduced in the section *)
 let mkConstruct c = Construct c
@@ -285,7 +285,7 @@ type hnftype =
 (*          Non primitive term destructors                            *)
 (**********************************************************************)
 
-(* Destructor operations : partial functions 
+(* Destructor operations : partial functions
    Raise invalid_arg "dest*" if the const has not the expected form *)
 
 (* Destructs a DeBrujin index *)
@@ -349,12 +349,12 @@ let same_kind c1 c2 = (isprop c1 & isprop c2) or (is_Type c1 & is_Type c2)
 (* Tests if an evar *)
 let isEvar c = match kind_of_term c with Evar _ -> true | _ -> false
 
-let isEvar_or_Meta c = match kind_of_term c with 
+let isEvar_or_Meta c = match kind_of_term c with
   | Evar _ | Meta _ -> true
   | _ -> false
 
 (* Destructs a casted term *)
-let destCast c = match kind_of_term c with 
+let destCast c = match kind_of_term c with
   | Cast (t1,k,t2) -> (t1,k,t2)
   | _ -> invalid_arg "destCast"
 
@@ -371,22 +371,22 @@ let isVar c = match kind_of_term c with Var _ -> true | _ -> false
 let isInd c = match kind_of_term c with Ind _ -> true | _ -> false
 
 (* Destructs the product (x:t1)t2 *)
-let destProd c = match kind_of_term c with 
-  | Prod (x,t1,t2) -> (x,t1,t2) 
+let destProd c = match kind_of_term c with
+  | Prod (x,t1,t2) -> (x,t1,t2)
   | _ -> invalid_arg "destProd"
 
 let isProd c = match kind_of_term c with | Prod _ -> true | _ -> false
 
 (* Destructs the abstraction [x:t1]t2 *)
-let destLambda c = match kind_of_term c with 
-  | Lambda (x,t1,t2) -> (x,t1,t2) 
+let destLambda c = match kind_of_term c with
+  | Lambda (x,t1,t2) -> (x,t1,t2)
   | _ -> invalid_arg "destLambda"
 
 let isLambda c = match kind_of_term c with | Lambda _ -> true | _ -> false
 
 (* Destructs the let [x:=b:t1]t2 *)
-let destLetIn c = match kind_of_term c with 
-  | LetIn (x,b,t1,t2) -> (x,b,t1,t2) 
+let destLetIn c = match kind_of_term c with
+  | LetIn (x,b,t1,t2) -> (x,b,t1,t2)
   | _ -> invalid_arg "destProd"
 
 let isLetIn c =  match kind_of_term c with LetIn _ -> true | _ -> false
@@ -435,13 +435,13 @@ let destCase c = match kind_of_term c with
 
 let isCase c =  match kind_of_term c with Case _ -> true | _ -> false
 
-let destFix c = match kind_of_term c with 
+let destFix c = match kind_of_term c with
   | Fix fix -> fix
   | _ -> invalid_arg "destFix"
 
 let isFix c =  match kind_of_term c with Fix _ -> true | _ -> false
 
-let destCoFix c = match kind_of_term c with 
+let destCoFix c = match kind_of_term c with
   | CoFix cofix -> cofix
   | _ -> invalid_arg "destCoFix"
 
@@ -471,7 +471,7 @@ let rec under_casts f c = match kind_of_term c with
 
 (* flattens application lists throwing casts in-between *)
 let rec collapse_appl c = match kind_of_term c with
-  | App (f,cl) -> 
+  | App (f,cl) ->
       let rec collapse_rec f cl2 =
         match kind_of_term (strip_outer_cast f) with
 	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
@@ -487,12 +487,12 @@ let decompose_app c =
 
 (* strips head casts and flattens head applications *)
 let rec strip_head_cast c = match kind_of_term c with
-  | App (f,cl) -> 
+  | App (f,cl) ->
       let rec collapse_rec f cl2 = match kind_of_term f with
 	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
 	| Cast (c,_,_) -> collapse_rec c cl2
 	| _ -> if Array.length cl2 = 0 then f else mkApp (f,cl2)
-      in 
+      in
       collapse_rec f cl
   | Cast (c,_,_) -> strip_head_cast c
   | _ -> c
@@ -555,7 +555,7 @@ let iter_constr_with_binders g f n c = match kind_of_term c with
   | App (c,l) -> f n c; Array.iter (f n) l
   | Evar (_,l) -> Array.iter (f n) l
   | Case (_,p,c,bl) -> f n p; f n c; Array.iter (f n) bl
-  | Fix (_,(_,tl,bl)) -> 
+  | Fix (_,(_,tl,bl)) ->
       Array.iter (f n) tl;
       Array.iter (f (iterate g (Array.length tl) n)) bl
   | CoFix (_,(_,tl,bl)) ->
@@ -624,7 +624,7 @@ let compare_constr f t1 t2 =
       if Array.length l1 = Array.length l2 then
         f c1 c2 & array_for_all2 f l1 l2
       else
-        let (h1,l1) = decompose_app t1 in        
+        let (h1,l1) = decompose_app t1 in
         let (h2,l2) = decompose_app t2 in
         if List.length l1 = List.length l2 then
           f h1 h2 & List.for_all2 f l1 l2
@@ -647,7 +647,7 @@ let compare_constr f t1 t2 =
 
 type types = constr
 
-type strategy = types option 
+type strategy = types option
 
 type named_declaration = identifier * constr option * types
 type rel_declaration = name * constr option * types
@@ -699,11 +699,11 @@ exception LocalOccur
 (* (closedn n M) raises FreeVar if a variable of height greater than n
    occurs in M, returns () otherwise *)
 
-let closedn n c = 
+let closedn n c =
   let rec closed_rec n c = match kind_of_term c with
     | Rel m -> if m>n then raise LocalOccur
     | _ -> iter_constr_with_binders succ closed_rec n c
-  in 
+  in
   try closed_rec n c; true with LocalOccur -> false
 
 (* [closed0 M] is true iff [M] is a (deBruijn) closed term *)
@@ -712,21 +712,21 @@ let closed0 = closedn 0
 
 (* (noccurn n M) returns true iff (Rel n) does NOT occur in term M  *)
 
-let noccurn n term = 
+let noccurn n term =
   let rec occur_rec n c = match kind_of_term c with
     | Rel m -> if m = n then raise LocalOccur
     | _ -> iter_constr_with_binders succ occur_rec n c
-  in 
+  in
   try occur_rec n term; true with LocalOccur -> false
 
-(* (noccur_between n m M) returns true iff (Rel p) does NOT occur in term M 
+(* (noccur_between n m M) returns true iff (Rel p) does NOT occur in term M
   for n <= p < n+m *)
 
-let noccur_between n m term = 
+let noccur_between n m term =
   let rec occur_rec n c = match kind_of_term c with
     | Rel(p) -> if n<=p && p<n+m then raise LocalOccur
     | _        -> iter_constr_with_binders succ occur_rec n c
-  in 
+  in
   try occur_rec n term; true with LocalOccur -> false
 
 (* Checking function for terms containing existential variables.
@@ -736,7 +736,7 @@ let noccur_between n m term =
  which may contain the CoFix variables. These occurrences of CoFix variables
  are not considered *)
 
-let noccur_with_meta n m term = 
+let noccur_with_meta n m term =
   let rec occur_rec n c = match kind_of_term c with
     | Rel p -> if n<=p & p<n+m then raise LocalOccur
     | App(f,cl) ->
@@ -761,18 +761,18 @@ let rec exliftn el c = match kind_of_term c with
 
 (* Lifting the binding depth across k bindings *)
 
-let liftn k n = 
+let liftn k n =
   match el_liftn (pred n) (el_shft k ELID) with
     | ELID -> (fun c -> c)
     | el -> exliftn el
- 
+
 let lift k = liftn k 1
 
 (*********************)
 (*   Substituting    *)
 (*********************)
 
-(* (subst1 M c) substitutes M for Rel(1) in c 
+(* (subst1 M c) substitutes M for Rel(1) in c
    we generalise it to (substl [M1,...,Mn] c) which substitutes in parallel
    M1,...,Mn for respectively Rel(1),...,Rel(n) in c *)
 
@@ -792,15 +792,15 @@ let rec lift_substituend depth s =
 let make_substituend c = { sinfo=Unknown; sit=c }
 
 let substn_many lamv n c =
-  let lv = Array.length lamv in 
+  let lv = Array.length lamv in
   if lv = 0 then c
-  else 
+  else
     let rec substrec depth c = match kind_of_term c with
       | Rel k     ->
           if k<=depth then c
           else if k-depth <= lv then lift_substituend depth lamv.(k-depth-1)
           else mkRel (k-lv)
-      | _ -> map_constr_with_binders succ substrec depth c in 
+      | _ -> map_constr_with_binders succ substrec depth c in
     substrec n c
 
 (*
@@ -824,21 +824,21 @@ let substl_named_decl = substl_decl
 
 let rec thin_val = function
   | [] -> []
-  | (((id,{ sit = v }) as s)::tl) when isVar v -> 
+  | (((id,{ sit = v }) as s)::tl) when isVar v ->
       if id = destVar v then thin_val tl else s::(thin_val tl)
   | h::tl -> h::(thin_val tl)
 
 (* (replace_vars sigma M) applies substitution sigma to term M *)
-let replace_vars var_alist = 
+let replace_vars var_alist =
   let var_alist =
     List.map (fun (str,c) -> (str,make_substituend c)) var_alist in
-  let var_alist = thin_val var_alist in 
+  let var_alist = thin_val var_alist in
   let rec substrec n c = match kind_of_term c with
     | Var x ->
         (try lift_substituend n (List.assoc x var_alist)
          with Not_found -> c)
     | _ -> map_constr_with_binders succ substrec n c
-  in 
+  in
   if var_alist = [] then (function x -> x) else substrec 0
 
 (*
@@ -943,7 +943,7 @@ let mkAppA v =
   if l=0 then anomaly "mkAppA received an empty array"
   else mkApp (v.(0), Array.sub v 1 (Array.length v -1))
 
-(* Constructs a constant *) 
+(* Constructs a constant *)
 (* The array of terms correspond to the variables introduced in the section *)
 let mkConst = mkConst
 
@@ -954,7 +954,7 @@ let mkEvar = mkEvar
 (* The array of terms correspond to the variables introduced in the section *)
 let mkInd = mkInd
 
-(* Constructs the jth constructor of the ith (co)inductive type of the 
+(* Constructs the jth constructor of the ith (co)inductive type of the
    block named kn. The array of terms correspond to the variables
    introduced in the section *)
 let mkConstruct = mkConstruct
@@ -963,15 +963,15 @@ let mkConstruct = mkConstruct
 let mkCase = mkCase
 let mkCaseL (ci, p, c, ac) = mkCase (ci, p, c, Array.of_list ac)
 
-(* If recindxs = [|i1,...in|] 
+(* If recindxs = [|i1,...in|]
       funnames = [|f1,...fn|]
       typarray = [|t1,...tn|]
       bodies   = [|b1,...bn|]
-   then    
+   then
 
       mkFix ((recindxs,i),(funnames,typarray,bodies))
-   
-   constructs the ith function of the block  
+
+   constructs the ith function of the block
 
     Fixpoint f1 [ctx1] : t1 := b1
     with     f2 [ctx2] : t2 := b2
@@ -986,12 +986,12 @@ let mkFix = mkFix
 (* If funnames = [|f1,...fn|]
       typarray = [|t1,...tn|]
       bodies   = [|b1,...bn|]
-   then 
+   then
 
       mkCoFix (i,(funnames,typsarray,bodies))
 
-   constructs the ith function of the block  
-   
+   constructs the ith function of the block
+
     CoFixpoint f1 : t1 := b1
     with       f2 : t2 := b2
     ...
@@ -1017,7 +1017,7 @@ let prodn n env b =
     | (0, env, b)        -> b
     | (n, ((v,t)::l), b) -> prodrec (n-1,  l, mkProd (v,t,b))
     | _ -> assert false
-  in 
+  in
   prodrec (n,env,b)
 
 (* compose_prod [xn:Tn;..;x1:T1] b = (x1:T1)..(xn:Tn)b *)
@@ -1029,7 +1029,7 @@ let lamn n env b =
     | (0, env, b)        -> b
     | (n, ((v,t)::l), b) -> lamrec (n-1,  l, mkLambda (v,t,b))
     | _ -> assert false
-  in 
+  in
   lamrec (n,env,b)
 
 (* compose_lam [xn:Tn;..;x1:T1] b = [x1:T1]..[xn:Tn]b *)
@@ -1040,29 +1040,29 @@ let applist (f,l) = mkApp (f, Array.of_list l)
 let applistc f l = mkApp (f, Array.of_list l)
 
 let appvect = mkApp
-	    
+
 let appvectc f l = mkApp (f,l)
-		     
+
 (* to_lambda n (x1:T1)...(xn:Tn)T =
  * [x1:T1]...[xn:Tn]T *)
 let rec to_lambda n prod =
-  if n = 0 then 
-    prod 
-  else 
-    match kind_of_term prod with 
+  if n = 0 then
+    prod
+  else
+    match kind_of_term prod with
       | Prod (na,ty,bd) -> mkLambda (na,ty,to_lambda (n-1) bd)
       | Cast (c,_,_) -> to_lambda n c
-      | _   -> errorlabstrm "to_lambda" (mt ())                      
+      | _   -> errorlabstrm "to_lambda" (mt ())
 
 let rec to_prod n lam =
-  if n=0 then 
+  if n=0 then
     lam
-  else   
-    match kind_of_term lam with 
+  else
+    match kind_of_term lam with
       | Lambda (na,ty,bd) -> mkProd (na,ty,to_prod (n-1) bd)
       | Cast (c,_,_) -> to_prod n c
-      | _   -> errorlabstrm "to_prod" (mt ())                      
-	    
+      | _   -> errorlabstrm "to_prod" (mt ())
+
 (* pseudo-reduction rule:
  * [prod_app  s (Prod(_,B)) N --> B[N]
  * with an strip_outer_cast on the first argument to produce a product *)
@@ -1090,123 +1090,123 @@ let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)
 
 (* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
-let decompose_prod = 
+let decompose_prod =
   let rec prodec_rec l c = match kind_of_term c with
     | Prod (x,t,c) -> prodec_rec ((x,t)::l) c
     | Cast (c,_,_)   -> prodec_rec l c
     | _              -> l,c
-  in 
+  in
   prodec_rec []
 
 (* Transforms a lambda term [x1:T1]..[xn:Tn]T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a lambda *)
-let decompose_lam = 
+let decompose_lam =
   let rec lamdec_rec l c = match kind_of_term c with
     | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) c
     | Cast (c,_,_)     -> lamdec_rec l c
     | _                -> l,c
-  in 
+  in
   lamdec_rec []
 
-(* Given a positive integer n, transforms a product term (x1:T1)..(xn:Tn)T 
+(* Given a positive integer n, transforms a product term (x1:T1)..(xn:Tn)T
    into the pair ([(xn,Tn);...;(x1,T1)],T) *)
 let decompose_prod_n n =
   if n < 0 then error "decompose_prod_n: integer parameter must be positive";
-  let rec prodec_rec l n c = 
-    if n=0 then l,c 
-    else match kind_of_term c with 
+  let rec prodec_rec l n c =
+    if n=0 then l,c
+    else match kind_of_term c with
       | Prod (x,t,c) -> prodec_rec ((x,t)::l) (n-1) c
       | Cast (c,_,_)   -> prodec_rec l n c
       | _ -> error "decompose_prod_n: not enough products"
-  in 
-  prodec_rec [] n 
+  in
+  prodec_rec [] n
 
-(* Given a positive integer n, transforms a lambda term [x1:T1]..[xn:Tn]T 
+(* Given a positive integer n, transforms a lambda term [x1:T1]..[xn:Tn]T
    into the pair ([(xn,Tn);...;(x1,T1)],T) *)
 let decompose_lam_n n =
   if n < 0 then error "decompose_lam_n: integer parameter must be positive";
-  let rec lamdec_rec l n c = 
-    if n=0 then l,c 
-    else match kind_of_term c with 
+  let rec lamdec_rec l n c =
+    if n=0 then l,c
+    else match kind_of_term c with
       | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) (n-1) c
       | Cast (c,_,_)     -> lamdec_rec l n c
       | _ -> error "decompose_lam_n: not enough abstractions"
-  in 
-  lamdec_rec [] n 
+  in
+  lamdec_rec [] n
 
 (* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
-let decompose_prod_assum = 
+let decompose_prod_assum =
   let rec prodec_rec l c =
     match kind_of_term c with
     | Prod (x,t,c)    -> prodec_rec (add_rel_decl (x,None,t) l) c
     | LetIn (x,b,t,c) -> prodec_rec (add_rel_decl (x,Some b,t) l) c
     | Cast (c,_,_)      -> prodec_rec l c
     | _               -> l,c
-  in 
+  in
   prodec_rec empty_rel_context
 
 (* Transforms a lambda term [x1:T1]..[xn:Tn]T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a lambda *)
-let decompose_lam_assum = 
+let decompose_lam_assum =
   let rec lamdec_rec l c =
     match kind_of_term c with
     | Lambda (x,t,c)  -> lamdec_rec (add_rel_decl (x,None,t) l) c
     | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) c
     | Cast (c,_,_)      -> lamdec_rec l c
     | _               -> l,c
-  in 
+  in
   lamdec_rec empty_rel_context
 
-(* Given a positive integer n, transforms a product term (x1:T1)..(xn:Tn)T 
+(* Given a positive integer n, transforms a product term (x1:T1)..(xn:Tn)T
    into the pair ([(xn,Tn);...;(x1,T1)],T) *)
 let decompose_prod_n_assum n =
   if n < 0 then
     error "decompose_prod_n_assum: integer parameter must be positive";
-  let rec prodec_rec l n c = 
+  let rec prodec_rec l n c =
     if n=0 then l,c
-    else match kind_of_term c with 
+    else match kind_of_term c with
     | Prod (x,t,c)    -> prodec_rec (add_rel_decl (x,None,t) l) (n-1) c
     | LetIn (x,b,t,c) -> prodec_rec (add_rel_decl (x,Some b,t) l) (n-1) c
     | Cast (c,_,_)      -> prodec_rec l n c
     | c -> error "decompose_prod_n_assum: not enough assumptions"
-  in 
+  in
   prodec_rec empty_rel_context n
 
-(* Given a positive integer n, transforms a lambda term [x1:T1]..[xn:Tn]T 
+(* Given a positive integer n, transforms a lambda term [x1:T1]..[xn:Tn]T
    into the pair ([(xn,Tn);...;(x1,T1)],T)
    Lets in between are not expanded but turn into local definitions,
    but n is the actual number of destructurated lambdas.  *)
 let decompose_lam_n_assum n =
   if n < 0 then
     error "decompose_lam_n_assum: integer parameter must be positive";
-  let rec lamdec_rec l n c = 
-    if n=0 then l,c 
-    else match kind_of_term c with 
+  let rec lamdec_rec l n c =
+    if n=0 then l,c
+    else match kind_of_term c with
     | Lambda (x,t,c)  -> lamdec_rec (add_rel_decl (x,None,t) l) (n-1) c
     | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) n c
     | Cast (c,_,_)      -> lamdec_rec l n c
     | c -> error "decompose_lam_n_assum: not enough abstractions"
-  in 
-  lamdec_rec empty_rel_context n 
+  in
+  lamdec_rec empty_rel_context n
 
 (* (nb_lam [na1:T1]...[nan:Tan]c) where c is not an abstraction
  * gives n (casts are ignored) *)
-let nb_lam = 
+let nb_lam =
   let rec nbrec n c = match kind_of_term c with
     | Lambda (_,_,c) -> nbrec (n+1) c
     | Cast (c,_,_) -> nbrec n c
     | _ -> n
-  in 
+  in
   nbrec 0
-    
+
 (* similar to nb_lam, but gives the number of products instead *)
-let nb_prod = 
+let nb_prod =
   let rec nbrec n c = match kind_of_term c with
     | Prod (_,_,c) -> nbrec (n+1) c
     | Cast (c,_,_) -> nbrec n c
     | _ -> n
-  in 
+  in
   nbrec 0
 
 let prod_assum t = fst (decompose_prod_assum t)
@@ -1230,7 +1230,7 @@ let strip_lam_n n t = snd (decompose_lam_n n t)
 
 type arity = rel_context * sorts
 
-let destArity = 
+let destArity =
   let rec prodec_rec l c =
     match kind_of_term c with
     | Prod (x,t,c)    -> prodec_rec ((x,None,t)::l) c
@@ -1238,7 +1238,7 @@ let destArity =
     | Cast (c,_,_)      -> prodec_rec l c
     | Sort s          -> l,s
     | _               -> anomaly "destArity: not an arity"
-  in 
+  in
   prodec_rec []
 
 let mkArity (sign,s) = it_mkProd_or_LetIn (mkSort s) sign
@@ -1252,19 +1252,19 @@ let rec isArity c =
   | _               -> false
 
 (*******************************)
-(*  alpha conversion functions *)                         
+(*  alpha conversion functions *)
 (*******************************)
 
 (* alpha conversion : ignore print names and casts *)
 
-let rec eq_constr m n = 
+let rec eq_constr m n =
   (m==n) or
   compare_constr eq_constr m n
 
 let eq_constr m n = eq_constr m n (* to avoid tracing a recursive fun *)
 
 (*******************)
-(*  hash-consing   *)                         
+(*  hash-consing   *)
 (*******************)
 
 module Htype =

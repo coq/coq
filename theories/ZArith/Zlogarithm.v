@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 (**********************************************************************)
-(** The integer logarithms with base 2. 
+(** The integer logarithms with base 2.
 
     There are three logarithms,
     depending on the rounding of the real 2-based logarithm:
@@ -27,7 +27,7 @@ Require Import Zpower.
 Open Local Scope Z_scope.
 
 Section Log_pos. (* Log of positive integers *)
-  
+
   (** First we build [log_inf] and [log_sup] *)
 
   Fixpoint log_inf (p:positive) : Z :=
@@ -43,12 +43,12 @@ Section Log_pos. (* Log of positive integers *)
       | xO n => Zsucc (log_sup n) (* 2n *)
       | xI n => Zsucc (Zsucc (log_inf n))	(* 2n+1 *)
     end.
-  
+
   Hint Unfold log_inf log_sup.
-  
-  (** Then we give the specifications of [log_inf] and [log_sup] 
+
+  (** Then we give the specifications of [log_inf] and [log_sup]
     and prove their validity *)
-  
+
   Hint Resolve Zle_trans: zarith.
 
   Theorem log_inf_correct :
@@ -100,11 +100,11 @@ Section Log_pos. (* Log of positive integers *)
 	  [ left; simpl in |- *;
 	    rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
 	      rewrite (two_p_S (log_sup p0) (log_sup_correct1 p0));
-		rewrite <- (proj1 Hif); rewrite <- (proj2 Hif); 
+		rewrite <- (proj1 Hif); rewrite <- (proj2 Hif);
 		  auto
 	    | right; simpl in |- *;
 	      rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
-		rewrite BinInt.Zpos_xO; unfold Zsucc in |- *; 
+		rewrite BinInt.Zpos_xO; unfold Zsucc in |- *;
 		  omega ]
 	| left; auto ].
   Qed.
@@ -141,7 +141,7 @@ Section Log_pos. (* Log of positive integers *)
       | xI xH => 2
       | xO y => Zsucc (log_near y)
       | xI y => Zsucc (log_near y)
-    end.    
+    end.
 
   Theorem log_near_correct1 : forall p:positive, 0 <= log_near p.
   Proof.
@@ -186,7 +186,7 @@ End Log_pos.
 Section divers.
 
   (** Number of significative digits. *)
-  
+
   Definition N_digits (x:Z) :=
     match x with
       | Zpos p => log_inf p

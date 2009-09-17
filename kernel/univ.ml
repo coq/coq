@@ -71,7 +71,7 @@ let make_univ (m,n) = Atom (Level (m,n))
 let pr_uni_level u = str (string_of_univ_level u)
 
 let pr_uni = function
-  | Atom u -> 
+  | Atom u ->
       pr_uni_level u
   | Max ([],[u]) ->
       str "(" ++ pr_uni_level u ++ str ")+1"
@@ -86,7 +86,7 @@ let pr_uni = function
 (* Returns the formal universe that lies juste above the universe variable u.
    Used to type the sort u. *)
 let super = function
-  | Atom u -> 
+  | Atom u ->
       Max ([],[u])
   | Max _ ->
       anomaly ("Cannot take the successor of a non variable universe:\n"^
@@ -165,14 +165,14 @@ let initial_universes = UniverseLMap.empty
 
 (* repr : universes -> universe_level -> canonical_arc *)
 (* canonical representative : we follow the Equiv links *)
-let repr g u = 
+let repr g u =
   let rec repr_rec u =
     let a =
       try UniverseLMap.find u g
       with Not_found -> anomalylabstrm "Univ.repr"
-	  (str"Universe " ++ pr_uni_level u ++ str" undefined") 
+	  (str"Universe " ++ pr_uni_level u ++ str" undefined")
     in
-    match a with 
+    match a with
       | Equiv(_,v) -> repr_rec v
       | Canonical arc -> arc
   in
@@ -189,16 +189,16 @@ let collect g arcu =
   let rec coll_rec lt le = function
     | [],[] -> (lt, list_subtractq le lt)
     | arcv::lt', le' ->
-	if List.memq arcv lt then 
+	if List.memq arcv lt then
 	  coll_rec lt le (lt',le')
 	else
           coll_rec (arcv::lt) le ((can g (arcv.lt@arcv.le))@lt',le')
-    | [], arcw::le' -> 
-	if (List.memq arcw lt) or (List.memq arcw le) then 
+    | [], arcw::le' ->
+	if (List.memq arcw lt) or (List.memq arcw le) then
 	  coll_rec lt le ([],le')
 	else
           coll_rec lt (arcw::le) (can g arcw.lt, (can g arcw.le)@le')
-  in 
+  in
   coll_rec [] [] ([],[arcu])
 
 (* reprleq : canonical_arc -> canonical_arc list *)
@@ -208,19 +208,19 @@ let reprleq g arcu =
     | [] -> w
     | v :: vl ->
 	let arcv = repr g v in
-        if List.memq arcv w || arcu==arcv then 
+        if List.memq arcv w || arcu==arcv then
 	  searchrec w vl
-        else 
+        else
 	  searchrec (arcv :: w) vl
-  in 
+  in
   searchrec [] arcu.le
 
 
 (* between : universe_level -> canonical_arc -> canonical_arc list *)
-(* between u v = {w|u<=w<=v, w canonical}          *)     
+(* between u v = {w|u<=w<=v, w canonical}          *)
 (* between is the most costly operation *)
 
-let between g u arcv = 
+let between g u arcv =
   (* good are all w | u <= w <= v  *)
   (* bad are all w | u <= w ~<= v *)
     (* find good and bad nodes in {w | u <= w} *)
@@ -230,50 +230,50 @@ let between g u arcv =
       (good, bad, true) (* b or true *)
     else if List.memq arcu bad then
       input    (* (good, bad, b or false) *)
-    else 
-      let leq = reprleq g arcu in 
+    else
+      let leq = reprleq g arcu in
 	(* is some universe >= u good ? *)
-      let good, bad, b_leq = 
+      let good, bad, b_leq =
 	List.fold_left explore (good, bad, false) leq
       in
 	if b_leq then
 	  arcu::good, bad, true (* b or true *)
-	else 
+	else
 	  good, arcu::bad, b    (* b or false *)
   in
   let good,_,_ = explore ([arcv],[],false) (repr g u) in
     good
-      
+
 (* We assume  compare(u,v) = LE with v canonical (see compare below).
    In this case List.hd(between g u v) = repr u
-   Otherwise, between g u v = [] 
+   Otherwise, between g u v = []
  *)
 
 
 type order = EQ | LT | LE | NLE
 
 (* compare : universe_level -> universe_level -> order *)
-let compare g u v = 
-  let arcu = repr g u 
+let compare g u v =
+  let arcu = repr g u
   and arcv = repr g v in
-  if arcu==arcv then 
+  if arcu==arcv then
     EQ
-  else 
+  else
     let (lt,leq) = collect g arcu in
-    if List.memq arcv lt then 
+    if List.memq arcv lt then
       LT
-    else if List.memq arcv leq then 
+    else if List.memq arcv leq then
       LE
-    else 
+    else
       NLE
 
 (* Invariants : compare(u,v) = EQ <=> compare(v,u) = EQ
                 compare(u,v) = LT or LE => compare(v,u) = NLE
                 compare(u,v) = NLE => compare(v,u) = NLE or LE or LT
 
-   Adding u>=v is consistent iff compare(v,u) # LT 
+   Adding u>=v is consistent iff compare(v,u) # LT
     and then it is redundant iff compare(u,v) # NLE
-   Adding u>v is consistent iff compare(v,u) = NLE 
+   Adding u>v is consistent iff compare(v,u) = NLE
     and then it is redundant iff compare(u,v) = LT *)
 
 let compare_eq g u v =
@@ -285,7 +285,7 @@ let compare_eq g u v =
 type check_function = universes -> universe -> universe -> bool
 
 let incl_list cmp l1 l2 =
-  List.for_all (fun x1 -> List.exists (fun x2 -> cmp x1 x2) l2) l1 
+  List.for_all (fun x1 -> List.exists (fun x2 -> cmp x1 x2) l2) l1
 
 let compare_list cmp l1 l2 =
   incl_list cmp l1 l2 && incl_list cmp l2 l1
@@ -358,7 +358,7 @@ let merge g u v =
                  (* redirected to it *)
 	let redirect (g,w,w') arcv =
  	  let g' = enter_equiv_arc arcv.univ arcu.univ g in
- 	  (g',list_unionq arcv.lt w,arcv.le@w') 
+ 	  (g',list_unionq arcv.lt w,arcv.le@w')
 	in
 	let (g',w,w') = List.fold_left redirect (g,[],[]) v in
 	let g'' = List.fold_left (fun g -> setlt_if g arcu.univ) g' w in
@@ -392,7 +392,7 @@ let enforce_univ_leq u v g =
   let g = declare_univ u g in
   let g = declare_univ v g in
   match compare g u v with
-    | NLE -> 
+    | NLE ->
 	(match compare g v u with
            | LT -> error_inconsistency Le u v
            | LE -> merge g v u
@@ -409,7 +409,7 @@ let enforce_univ_eq u v g =
     | EQ -> g
     | LT -> error_inconsistency Eq u v
     | LE -> merge g u v
-    | NLE -> 
+    | NLE ->
 	(match compare g v u with
            | LT -> error_inconsistency Eq u v
            | LE -> merge g v u
@@ -424,13 +424,13 @@ let enforce_univ_lt u v g =
     | LT -> g
     | LE -> setlt g u v
     | EQ -> error_inconsistency Lt u v
-    | NLE -> 
+    | NLE ->
 	(match compare g v u with
            | NLE -> setlt g u v
            | _ -> error_inconsistency Lt u v)
 
 (*
-let enforce_univ_relation g = function 
+let enforce_univ_relation g = function
   | Equiv (u,v) -> enforce_univ_eq u v g
   | Canonical {univ=u; lt=lt; le=le} ->
       let g' = List.fold_right (enforce_univ_lt u) lt g in
@@ -458,14 +458,14 @@ let enforce_constraint cst g =
 
 
 module Constraint = Set.Make(
-  struct 
-    type t = univ_constraint 
-    let compare = Pervasives.compare 
+  struct
+    type t = univ_constraint
+    let compare = Pervasives.compare
   end)
-		      
+
 type constraints = Constraint.t
 
-type constraint_function = 
+type constraint_function =
     universe -> universe -> constraints -> constraints
 
 let constraint_add_leq v u c =
@@ -512,17 +512,17 @@ let is_direct_constraint u = function
   | Atom u' -> u = u'
   | Max (le,lt) -> List.mem u le
 
-(* 
+(*
    Solve a system of universe constraint of the form
 
    u_s11, ..., u_s1p1, w1 <= u1
    ...
    u_sn1, ..., u_snpn, wn <= un
 
-where 
+where
 
   - the ui (1 <= i <= n) are universe variables,
-  - the sjk select subsets of the ui for each equations, 
+  - the sjk select subsets of the ui for each equations,
   - the wi are arbitrary complex universes that do not mention the ui.
 *)
 
@@ -531,7 +531,7 @@ let is_direct_sort_constraint s v = match s with
   | None -> false
 
 let solve_constraints_system levels level_bounds =
-  let levels = 
+  let levels =
     Array.map (Option.map (function Atom u -> u | _ -> anomaly "expects Atom"))
       levels in
   let v = Array.copy level_bounds in
@@ -550,7 +550,7 @@ let solve_constraints_system levels level_bounds =
   v
 
 let subst_large_constraint u u' v =
-  match u with 
+  match u with
   | Atom u ->
       if is_direct_constraint u v then sup u' (remove_large_constraint u v)
       else v
@@ -576,8 +576,8 @@ let num_edges g =
     | Canonical {lt=lt;le=le} -> List.length lt + List.length le
   in
   UniverseLMap.fold (fun _ a n -> n + (reln_len a)) g 0
-    
-let pr_arc = function 
+
+let pr_arc = function
   | Canonical {univ=u; lt=[]; le=[]} ->
       mt ()
   | Canonical {univ=u; lt=lt; le=le} ->
@@ -587,43 +587,43 @@ let pr_arc = function
 	 (if lt <> [] & le <> [] then spc () else mt()) ++
          prlist_with_sep pr_spc (fun v -> str "<= " ++ pr_uni_level v) le) ++
       fnl ()
-  | Equiv (u,v) -> 
+  | Equiv (u,v) ->
       pr_uni_level u  ++ str " = " ++ pr_uni_level v ++ fnl ()
 
 let pr_universes g =
   let graph = UniverseLMap.fold (fun k a l -> (k,a)::l) g [] in
   prlist (function (_,a) -> pr_arc a) graph
-    
+
 let pr_constraints c =
-  Constraint.fold (fun (u1,op,u2) pp_std -> 
-		     let op_str = match op with 
+  Constraint.fold (fun (u1,op,u2) pp_std ->
+		     let op_str = match op with
 		       | Lt -> " < "
 		       | Leq -> " <= "
 		       | Eq -> " = "
 		     in pp_std ++  pr_uni_level u1 ++ str op_str ++
 			  pr_uni_level u2 ++ fnl () )  c (str "")
-    
+
 (* Dumping constrains to a file *)
 
-let dump_universes output g = 
+let dump_universes output g =
   let dump_arc _ = function
-    | Canonical {univ=u; lt=lt; le=le} -> 
+    | Canonical {univ=u; lt=lt; le=le} ->
 	let u_str = string_of_univ_level u in
-	  List.iter 
-	    (fun v -> 
+	  List.iter
+	    (fun v ->
 	       Printf.fprintf output "%s < %s ;\n" u_str
-		 (string_of_univ_level v)) 
+		 (string_of_univ_level v))
 	    lt;
-	  List.iter 
-	    (fun v -> 
+	  List.iter
+	    (fun v ->
 	       Printf.fprintf output "%s <= %s ;\n" u_str
-		 (string_of_univ_level v)) 
+		 (string_of_univ_level v))
 	    le
     | Equiv (u,v) ->
 	Printf.fprintf output "%s = %s ;\n"
 	  (string_of_univ_level u) (string_of_univ_level v)
   in
-    UniverseLMap.iter dump_arc g 
+    UniverseLMap.iter dump_arc g
 
 (* Hash-consing *)
 

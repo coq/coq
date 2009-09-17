@@ -28,17 +28,17 @@ Section MakeBinList.
   | xH => hd default l
   | xO p => nth p (jump p l)
   | xI p => nth p (jump p (tail l))
-  end. 
+  end.
 
  Lemma jump_tl : forall j l, tail (jump j l) = jump j (tail l).
- Proof. 
+ Proof.
   induction j;simpl;intros.
   repeat rewrite IHj;trivial.
   repeat rewrite IHj;trivial.
   trivial.
  Qed.
 
- Lemma jump_Psucc : forall j l, 
+ Lemma jump_Psucc : forall j l,
   (jump (Psucc j) l) = (jump 1 (jump j l)).
  Proof.
   induction j;simpl;intros.
@@ -47,7 +47,7 @@ Section MakeBinList.
   trivial.
  Qed.
 
- Lemma jump_Pplus : forall i j l, 
+ Lemma jump_Pplus : forall i j l,
   (jump (i + j) l) = (jump i (jump j l)).
  Proof.
   induction i;intros.
@@ -69,7 +69,7 @@ Section MakeBinList.
   trivial.
  Qed.
 
- 
+
  Lemma nth_jump : forall p l, nth p (tail l) = hd default (jump p l).
  Proof.
   induction p;simpl;intros.

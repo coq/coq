@@ -32,7 +32,7 @@ let load_rcfile() =
   if !load_rc then
     try
       if !rcfile_specified then
-        if file_readable_p !rcfile then 
+        if file_readable_p !rcfile then
           Vernac.load_vernac false !rcfile
         else raise (Sys_error ("Cannot read rcfile: "^ !rcfile))
       else if file_readable_p (!rcfile^"."^Coq_config.version) then
@@ -48,7 +48,7 @@ let load_rcfile() =
     with e ->
       (msgnl (str"Load of rcfile failed.");
        raise e)
-  else 
+  else
     Flags.if_verbose msgnl (str"Skipping rcfile loading.")
 
 (* Puts dir in the path of ML and in the LoadPath *)
@@ -64,24 +64,24 @@ let push_rec_include (s, alias) = includes := (s,alias,true) :: !includes
 (* The list of all theories in the standard library /!\ order does matter *)
 let theories_dirs_map = [
     "theories/Unicode", "Unicode" ;
-    "theories/Classes", "Classes" ; 
-    "theories/Program", "Program" ; 
-    "theories/FSets", "FSets" ; 
-    "theories/Reals", "Reals" ; 
-    "theories/Strings", "Strings" ; 
-    "theories/Sorting", "Sorting" ; 
-    "theories/Setoids", "Setoids" ; 
-    "theories/Sets", "Sets" ; 
-    "theories/Lists", "Lists" ; 
-    "theories/Wellfounded", "Wellfounded" ; 
-    "theories/Relations", "Relations" ; 
-    "theories/Numbers", "Numbers" ; 
-    "theories/QArith", "QArith" ; 
-    "theories/NArith", "NArith" ; 
-    "theories/ZArith", "ZArith" ; 
-    "theories/Arith", "Arith" ; 
-    "theories/Bool", "Bool" ; 
-    "theories/Logic", "Logic" ; 
+    "theories/Classes", "Classes" ;
+    "theories/Program", "Program" ;
+    "theories/FSets", "FSets" ;
+    "theories/Reals", "Reals" ;
+    "theories/Strings", "Strings" ;
+    "theories/Sorting", "Sorting" ;
+    "theories/Setoids", "Setoids" ;
+    "theories/Sets", "Sets" ;
+    "theories/Lists", "Lists" ;
+    "theories/Wellfounded", "Wellfounded" ;
+    "theories/Relations", "Relations" ;
+    "theories/Numbers", "Numbers" ;
+    "theories/QArith", "QArith" ;
+    "theories/NArith", "NArith" ;
+    "theories/ZArith", "ZArith" ;
+    "theories/Arith", "Arith" ;
+    "theories/Bool", "Bool" ;
+    "theories/Logic", "Logic" ;
     "theories/Init", "Init"
   ]
 
@@ -91,24 +91,24 @@ let init_load_path () =
   let user_contrib = coqlib/"user-contrib" in
   let dirs = ["states";"plugins"] in
     (* first user-contrib *)
-    if Sys.file_exists user_contrib then 
+    if Sys.file_exists user_contrib then
       Mltop.add_rec_path user_contrib Nameops.default_root_prefix;
     (* then states, theories and dev *)
     List.iter (fun s -> coq_add_rec_path (coqlib/s)) dirs;
     (* developer specific directory to open *)
     if Coq_config.local then coq_add_path (coqlib/"dev") "dev";
     (* then standard library *)
-    List.iter 
-      (fun (s,alias) -> Mltop.add_rec_path (coqlib/s) (Names.make_dirpath [Names.id_of_string alias; Nameops.coq_root])) 
+    List.iter
+      (fun (s,alias) -> Mltop.add_rec_path (coqlib/s) (Names.make_dirpath [Names.id_of_string alias; Nameops.coq_root]))
       theories_dirs_map;
     (* then current directory *)
     Mltop.add_path "." Nameops.default_root_prefix;
     (* additional loadpath, given with -I -include -R options *)
-    List.iter 
+    List.iter
       (fun (s,alias,reci) ->
 	if reci then Mltop.add_rec_path s alias else Mltop.add_path s alias)
       (List.rev !includes)
-      
+
 let init_library_roots () =
   includes := []
 
@@ -116,11 +116,11 @@ let init_library_roots () =
    find the "include" file in the *source* directory *)
 let init_ocaml_path () =
   let coqsrc = Coq_config.coqsrc in
-  let add_subdir dl = 
-    Mltop.add_ml_dir (List.fold_left (/) coqsrc dl) 
+  let add_subdir dl =
+    Mltop.add_ml_dir (List.fold_left (/) coqsrc dl)
   in
-    Mltop.add_ml_dir (Envars.coqlib ()); 
+    Mltop.add_ml_dir (Envars.coqlib ());
     List.iter add_subdir
-      [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ]; 
+      [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ];
 	[ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];
 	[ "tactics" ]; [ "toplevel" ]; [ "translate" ]; [ "ide" ] ]

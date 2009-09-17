@@ -144,7 +144,7 @@ Proof.
   induction  l as [| r0 l Hrecl0].
   simpl in |- *; left; reflexivity.
   change (In (Rmax r (MaxRlist (cons r0 l))) (cons r (cons r0 l))) in |- *;
-    unfold Rmax in |- *; case (Rle_dec r (MaxRlist (cons r0 l))); 
+    unfold Rmax in |- *; case (Rle_dec r (MaxRlist (cons r0 l)));
       intro.
   right; apply Hrecl; exists r0; left; reflexivity.
   left; reflexivity.
@@ -395,8 +395,8 @@ Lemma RList_P7 :
     ordered_Rlist l -> In x l -> x <= pos_Rl l (pred (Rlength l)).
 Proof.
   intros; assert (H1 := RList_P6 l); elim H1; intros H2 _; assert (H3 := H2 H);
-    clear H1 H2; assert (H1 := RList_P3 l x); elim H1; 
-      clear H1; intros; assert (H4 := H1 H0); elim H4; clear H4; 
+    clear H1 H2; assert (H1 := RList_P3 l x); elim H1;
+      clear H1; intros; assert (H4 := H1 H0); elim H4; clear H4;
         intros; elim H4; clear H4; intros; rewrite H4;
           assert (H6 : Rlength l = S (pred (Rlength l))).
   apply S_pred with 0%nat; apply neq_O_lt; red in |- *; intro;
@@ -468,7 +468,7 @@ Proof.
   simple induction l1;
     [ intro; reflexivity
       | intros; simpl in |- *; rewrite (H (insert l2 r)); rewrite RList_P10;
-        apply INR_eq; rewrite S_INR; do 2 rewrite plus_INR; 
+        apply INR_eq; rewrite S_INR; do 2 rewrite plus_INR;
           rewrite S_INR; ring ].
 Qed.
 
@@ -495,7 +495,7 @@ Proof.
   reflexivity.
   change
     (pos_Rl (mid_Rlist (cons r1 r2) r) (S i) =
-      (pos_Rl (cons r1 r2) i + pos_Rl (cons r1 r2) (S i)) / 2) 
+      (pos_Rl (cons r1 r2) i + pos_Rl (cons r1 r2) (S i)) / 2)
     in |- *; apply H0; simpl in |- *; apply lt_S_n; assumption.
 Qed.
 
@@ -528,7 +528,7 @@ Proof.
           In (pos_Rl (cons_ORlist (cons r l1) l2) 0) (cons_ORlist (cons r l1) l2));
         [ elim
           (RList_P3 (cons_ORlist (cons r l1) l2)
-            (pos_Rl (cons_ORlist (cons r l1) l2) 0)); 
+            (pos_Rl (cons_ORlist (cons r l1) l2) 0));
           intros; apply H3; exists 0%nat; split;
             [ reflexivity | rewrite RList_P11; simpl in |- *; apply lt_O_Sn ]
           | elim (RList_P9 (cons r l1) l2 (pos_Rl (cons_ORlist (cons r l1) l2) 0));
@@ -547,7 +547,7 @@ Lemma RList_P16 :
 Proof.
   intros; apply Rle_antisym.
   induction  l1 as [| r l1 Hrecl1].
-  simpl in |- *; simpl in H1; right; symmetry  in |- *; assumption. 
+  simpl in |- *; simpl in H1; right; symmetry  in |- *; assumption.
   assert
     (H2 :
       In
@@ -557,13 +557,13 @@ Proof.
     [ elim
       (RList_P3 (cons_ORlist (cons r l1) l2)
         (pos_Rl (cons_ORlist (cons r l1) l2)
-          (pred (Rlength (cons_ORlist (cons r l1) l2))))); 
+          (pred (Rlength (cons_ORlist (cons r l1) l2)))));
       intros; apply H3; exists (pred (Rlength (cons_ORlist (cons r l1) l2)));
         split; [ reflexivity | rewrite RList_P11; simpl in |- *; apply lt_n_Sn ]
       | elim
         (RList_P9 (cons r l1) l2
           (pos_Rl (cons_ORlist (cons r l1) l2)
-            (pred (Rlength (cons_ORlist (cons r l1) l2))))); 
+            (pred (Rlength (cons_ORlist (cons r l1) l2)))));
         intros; assert (H5 := H3 H2); elim H5; intro;
           [ apply RList_P7; assumption | rewrite H1; apply RList_P7; assumption ] ].
   induction  l1 as [| r l1 Hrecl1].
@@ -576,19 +576,19 @@ Proof.
           In (pos_Rl (cons r l1) (pred (Rlength (cons r l1)))) (cons r l1) \/
           In (pos_Rl (cons r l1) (pred (Rlength (cons r l1)))) l2);
         [ left; change (In (pos_Rl (cons r l1) (Rlength l1)) (cons r l1)) in |- *;
-          elim (RList_P3 (cons r l1) (pos_Rl (cons r l1) (Rlength l1))); 
+          elim (RList_P3 (cons r l1) (pos_Rl (cons r l1) (Rlength l1)));
             intros; apply H5; exists (Rlength l1); split;
               [ reflexivity | simpl in |- *; apply lt_n_Sn ]
           | assert (H5 := H3 H4); apply RList_P7;
             [ apply RList_P2; assumption
               | elim
                 (RList_P9 (cons r l1) l2
-                  (pos_Rl (cons r l1) (pred (Rlength (cons r l1))))); 
+                  (pos_Rl (cons r l1) (pred (Rlength (cons r l1)))));
                 intros; apply H7; left;
                   elim
                     (RList_P3 (cons r l1)
-                      (pos_Rl (cons r l1) (pred (Rlength (cons r l1))))); 
-                    intros; apply H9; exists (pred (Rlength (cons r l1))); 
+                      (pos_Rl (cons r l1) (pred (Rlength (cons r l1)))));
+                    intros; apply H9; exists (pred (Rlength (cons r l1)));
                       split; [ reflexivity | simpl in |- *; apply lt_n_Sn ] ] ].
 Qed.
 
@@ -643,7 +643,7 @@ Lemma RList_P20 :
   forall l:Rlist,
     (2 <= Rlength l)%nat ->
     exists r : R,
-      (exists r1 : R, (exists l' : Rlist, l = cons r (cons r1 l'))). 
+      (exists r1 : R, (exists l' : Rlist, l = cons r (cons r1 l'))).
 Proof.
   intros; induction  l as [| r l Hrecl];
     [ simpl in H; elim (le_Sn_O _ H)
@@ -720,7 +720,7 @@ Proof.
   simpl in |- *; apply (H1 0%nat); simpl in |- *; apply lt_O_Sn.
   change
     (pos_Rl (cons_Rlist (cons r1 r2) l2) i <=
-      pos_Rl (cons_Rlist (cons r1 r2) l2) (S i)) in |- *; 
+      pos_Rl (cons_Rlist (cons r1 r2) l2) (S i)) in |- *;
     apply (H i); simpl in |- *; apply lt_S_n; assumption.
 Qed.
 

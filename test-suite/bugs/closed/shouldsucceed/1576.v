@@ -13,8 +13,8 @@ End TC.
 Module Type TD.
 
 Declare Module B: TB .
-Declare Module C: TC 
-    with Module B := B  . 
+Declare Module C: TC
+    with Module B := B  .
 End TD.
 
 Module Type TE.
@@ -25,7 +25,7 @@ Module Type TF.
 Declare Module E:  TE.
 End TF.
 
-Module G (D: TD). 
+Module G (D: TD).
 Module B' := D.C.B.
 End G.
 

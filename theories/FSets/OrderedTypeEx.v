@@ -6,8 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* Finite sets library.  
- * Authors: Pierre Letouzey and Jean-Christophe Filliâtre 
+(* Finite sets library.
+ * Authors: Pierre Letouzey and Jean-Christophe Filliâtre
  * Institution: LRI, CNRS UMR 8623 - Université Paris Sud
  *              91405 Orsay, France *)
 
@@ -21,7 +21,7 @@ Require Import Compare_dec.
 
 (** * Examples of Ordered Type structures. *)
 
-(** First, a particular case of [OrderedType] where 
+(** First, a particular case of [OrderedType] where
     the equality is the usual one of Coq. *)
 
 Module Type UsualOrderedType.
@@ -80,7 +80,7 @@ Open Local Scope Z_scope.
 Module Z_as_OT <: UsualOrderedType.
 
   Definition t := Z.
-  Definition eq := @eq Z. 
+  Definition eq := @eq Z.
   Definition eq_refl := @refl_equal t.
   Definition eq_sym := @sym_eq t.
   Definition eq_trans := @trans_eq t.
@@ -105,7 +105,7 @@ Module Z_as_OT <: UsualOrderedType.
 
 End Z_as_OT.
 
-(** [positive] is an ordered type with respect to the usual order on natural numbers. *) 
+(** [positive] is an ordered type with respect to the usual order on natural numbers. *)
 
 Open Local Scope positive_scope.
 
@@ -117,9 +117,9 @@ Module Positive_as_OT <: UsualOrderedType.
   Definition eq_trans := @trans_eq t.
 
   Definition lt p q:= (p ?= q) Eq = Lt.
- 
+
   Lemma lt_trans : forall x y z : t, lt x y -> lt y z -> lt x z.
-  Proof. 
+  Proof.
   unfold lt; intros x y z.
   change ((Zpos x < Zpos y)%Z -> (Zpos y < Zpos z)%Z -> (Zpos x < Zpos z)%Z).
   omega.
@@ -149,7 +149,7 @@ Module Positive_as_OT <: UsualOrderedType.
 End Positive_as_OT.
 
 
-(** [N] is an ordered type with respect to the usual order on natural numbers. *) 
+(** [N] is an ordered type with respect to the usual order on natural numbers. *)
 
 Open Local Scope positive_scope.
 
@@ -180,7 +180,7 @@ Module N_as_OT <: UsualOrderedType.
 End N_as_OT.
 
 
-(** From two ordered types, we can build a new OrderedType 
+(** From two ordered types, we can build a new OrderedType
    over their cartesian product, using the lexicographic order. *)
 
 Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
@@ -188,29 +188,29 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
  Module MO2:=OrderedTypeFacts(O2).
 
  Definition t := prod O1.t O2.t.
-  
+
  Definition eq x y := O1.eq (fst x) (fst y) /\ O2.eq (snd x) (snd y).
 
- Definition lt x y := 
-    O1.lt (fst x) (fst y) \/ 
+ Definition lt x y :=
+    O1.lt (fst x) (fst y) \/
     (O1.eq (fst x) (fst y) /\ O2.lt (snd x) (snd y)).
 
  Lemma eq_refl : forall x : t, eq x x.
- Proof. 
+ Proof.
  intros (x1,x2); red; simpl; auto.
  Qed.
 
  Lemma eq_sym : forall x y : t, eq x y -> eq y x.
- Proof. 
+ Proof.
  intros (x1,x2) (y1,y2); unfold eq; simpl; intuition.
  Qed.
 
  Lemma eq_trans : forall x y z : t, eq x y -> eq y z -> eq x z.
- Proof. 
+ Proof.
  intros (x1,x2) (y1,y2) (z1,z2); unfold eq; simpl; intuition eauto.
  Qed.
- 
- Lemma lt_trans : forall x y z : t, lt x y -> lt y z -> lt x z. 
+
+ Lemma lt_trans : forall x y z : t, lt x y -> lt y z -> lt x z.
  Proof.
  intros (x1,x2) (y1,y2) (z1,z2); unfold eq, lt; simpl; intuition.
  left; eauto.

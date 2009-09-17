@@ -30,14 +30,14 @@ let cut_ident skip_quote s =
   let slen = String.length s in
   (* [n'] is the position of the first non nullary digit *)
   let rec numpart n n' =
-    if n = 0 then 
+    if n = 0 then
       (* ident made of _ and digits only [and ' if skip_quote]: don't cut it *)
       slen
-    else 
+    else
       let c = Char.code (String.get s (n-1)) in
-      if c = code_of_0 && n <> slen then 
-	numpart (n-1) n' 
-      else if code_of_0 <= c && c <= code_of_9 then 
+      if c = code_of_0 && n <> slen then
+	numpart (n-1) n'
+      else if code_of_0 <= c && c <= code_of_9 then
 	numpart (n-1) (n-1)
       else if skip_quote & (c = Char.code '\'' || c = Char.code '_') then
 	numpart (n-1) (n-1)
@@ -50,14 +50,14 @@ let repr_ident s =
   let numstart = cut_ident false s in
   let s = string_of_id s in
   let slen = String.length s in
-  if numstart = slen then 
+  if numstart = slen then
     (s, None)
   else
     (String.sub s 0 numstart,
      Some (int_of_string (String.sub s numstart (slen - numstart))))
 
 let make_ident sa = function
-  | Some n -> 
+  | Some n ->
       let c = Char.code (String.get sa (String.length sa -1)) in
       let s =
         if c < code_of_0 or c > code_of_9 then sa ^ (string_of_int n)
@@ -116,21 +116,21 @@ let atompart_of_id id = fst (repr_ident id)
 
 let lift_ident = lift_subscript
 
-let next_ident_away id avoid = 
+let next_ident_away id avoid =
   if List.mem id avoid then
-    let id0 = if not (has_subscript id) then id else 
-    (* Ce serait sans doute mieux avec quelque chose inspiré de 
+    let id0 = if not (has_subscript id) then id else
+    (* Ce serait sans doute mieux avec quelque chose inspiré de
        *** make_ident id (Some 0) *** mais ça brise la compatibilité... *)
     forget_subscript id in
     let rec name_rec id =
-      if List.mem id avoid then name_rec (lift_ident id) else id in 
+      if List.mem id avoid then name_rec (lift_ident id) else id in
     name_rec id0
   else id
 
-let next_ident_away_from id avoid = 
+let next_ident_away_from id avoid =
   let rec name_rec id =
-    if List.mem id avoid then name_rec (lift_ident id) else id in 
-  name_rec id 
+    if List.mem id avoid then name_rec (lift_ident id) else id in
+  name_rec id
 
 (* Names *)
 
@@ -147,7 +147,7 @@ let name_iter f na = name_fold (fun x () -> f x) na ()
 
 let name_cons na l =
   match na with
-  | Anonymous -> l 
+  | Anonymous -> l
   | Name id -> id::l
 
 let name_app f = function
@@ -158,7 +158,7 @@ let name_fold_map f e = function
   | Name id -> let (e,id) = f e id in (e,Name id)
   | Anonymous -> e,Anonymous
 
-let next_name_away_with_default default name l = 
+let next_name_away_with_default default name l =
   match name with
     | Name str  -> next_ident_away str l
     | Anonymous -> next_ident_away (id_of_string default) l

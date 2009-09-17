@@ -49,7 +49,7 @@ TACTIC EXTEND admit
   [ "admit"    ] -> [ Tactics.admit_as_an_axiom ]
 END
 
-VERNAC COMMAND EXTEND Dp_hint 
+VERNAC COMMAND EXTEND Dp_hint
   [ "Dp_hint" ne_global_list(l) ] -> [ dp_hint l ]
 END
 

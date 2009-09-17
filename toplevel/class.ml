@@ -50,7 +50,7 @@ let explain_coercion_error g = function
   | NotAFunction ->
       (Printer.pr_global g ++ str" is not a function")
   | NoSource (Some cl) ->
-      (str "Cannot recognize " ++ pr_class cl ++ str " as a source class of " 
+      (str "Cannot recognize " ++ pr_class cl ++ str " as a source class of "
        ++ Printer.pr_global g)
   | NoSource None ->
       (str ": cannot find the source class of " ++ Printer.pr_global g)
@@ -91,24 +91,24 @@ let check_target clt = function
 
 (* condition d'heritage uniforme *)
 
-let uniform_cond nargs lt = 
+let uniform_cond nargs lt =
   let rec aux = function
     | (0,[]) -> true
     | (n,t::l) -> (strip_outer_cast t = mkRel n) & (aux ((n-1),l))
     | _ -> false
-  in 
+  in
   aux (nargs,lt)
 
 let class_of_global = function
   | ConstRef sp -> CL_CONST sp
   | IndRef sp -> CL_IND sp
   | VarRef id -> CL_SECVAR id
-  | ConstructRef _ as c -> 
+  | ConstructRef _ as c ->
       errorlabstrm "class_of_global"
-	(str "Constructors, such as " ++ Printer.pr_global c ++ 
+	(str "Constructors, such as " ++ Printer.pr_global c ++
 	   str ", cannot be used as a class.")
 
-(* 
+(*
 lp est la liste (inverse'e) des arguments de la coercion
 ids est le nom de la classe source
 sps_opt est le sp de la classe source dans le cas des structures
@@ -127,13 +127,13 @@ let get_source lp source =
           match lp with
 	    | [] -> raise Not_found
             | t1::_ -> find_class_type (Global.env()) Evd.empty t1
-        in 
+        in
 	(cl1,lv1,1)
     | Some cl ->
 	let rec aux = function
 	  | [] -> raise Not_found
 	  | t1::lt ->
-	      try 
+	      try
 		let cl1,lv1 = find_class_type (Global.env()) Evd.empty t1 in
 		if cl = cl1 then cl1,lv1,(List.length lt+1)
 		else raise Not_found
@@ -141,20 +141,20 @@ let get_source lp source =
 	in aux (List.rev lp)
 
 let get_target t ind =
-  if (ind > 1) then 
+  if (ind > 1) then
     CL_FUN
-  else 
+  else
     fst (find_class_type (Global.env()) Evd.empty t)
 
-let prods_of t = 
+let prods_of t =
   let rec aux acc d = match kind_of_term d with
     | Prod (_,c1,c2) -> aux (c1::acc) c2
     | Cast (c,_,_) -> aux acc c
     | _ -> (d,acc)
-  in 
+  in
   aux [] t
 
-let strength_of_cl = function 
+let strength_of_cl = function
   | CL_CONST kn -> Global
   | CL_SECVAR id -> Local
   | _ -> Global
@@ -200,7 +200,7 @@ let build_id_coercion idf_opt source =
       lams
   in
   (* juste pour verification *)
-  let _ = 
+  let _ =
     if not
       (Reductionops.is_conv_leq env Evd.empty
 	(Typing.type_of env Evd.empty val_f) typ_f)
@@ -229,7 +229,7 @@ let check_source = function
 | Some (CL_FUN|CL_SORT as s) -> raise (CoercionError (ForbiddenSourceClass s))
 | _ -> ()
 
-(* 
+(*
 nom de la fonction coercion
 strength de f
 nom de la classe source (optionnel)
@@ -248,7 +248,7 @@ let add_new_coercion_core coef stre source target isid =
   let llp = List.length lp in
   if llp = 0 then raise (CoercionError NotAFunction);
   let (cls,lvs,ind) =
-    try 
+    try
       get_source lp source
     with Not_found ->
       raise (CoercionError (NoSource source))
@@ -258,7 +258,7 @@ let add_new_coercion_core coef stre source target isid =
     raise (CoercionError NotUniform);
   let clt =
     try
-      get_target tg ind 
+      get_target tg ind
     with Not_found ->
       raise (CoercionError NoTarget)
   in
@@ -291,7 +291,7 @@ let try_add_new_identity_coercion id stre ~source ~target =
 let try_add_new_coercion_with_source ref stre ~source =
   try_add_new_coercion_core ref stre (Some source) None false
 
-let add_coercion_hook stre ref = 
+let add_coercion_hook stre ref =
   try_add_new_coercion ref stre;
   Flags.if_verbose message
     (string_of_qualid (shortest_qualid_of_global Idset.empty ref)

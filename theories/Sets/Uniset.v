@@ -90,10 +90,10 @@ Qed.
 Definition union (m1 m2:uniset) :=
   Charac (fun a:A => orb (charac m1 a) (charac m2 a)).
 
-Lemma union_empty_left : forall x:uniset, seq x (union Emptyset x).  
-Proof.  
-unfold seq in |- *; unfold union in |- *; simpl in |- *; auto.  
-Qed. 
+Lemma union_empty_left : forall x:uniset, seq x (union Emptyset x).
+Proof.
+unfold seq in |- *; unfold union in |- *; simpl in |- *; auto.
+Qed.
 Hint Resolve union_empty_left.
 
 Lemma union_empty_right : forall x:uniset, seq x (union x Emptyset).
@@ -203,7 +203,7 @@ apply uniset_twist2.
 Qed.
 
 
-(*i theory of minter to do similarly 
+(*i theory of minter to do similarly
 Require Min.
 (* uniset intersection *)
 Definition minter := [m1,m2:uniset]

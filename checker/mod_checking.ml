@@ -31,7 +31,7 @@ let check_constant_declaration env kn cb =
   (match cb.const_type with
       NonPolymorphicType ty ->
         let ty, cu = refresh_arity ty in
-        let envty = add_constraints cu env' in 
+        let envty = add_constraints cu env' in
         let _ = infer_type envty ty in
         (match cb.const_body with
           | Some bd ->
@@ -58,9 +58,9 @@ let rec list_split_assoc k rev_before = function
   | (k',b)::after when k=k' -> rev_before,b,after
   | h::tail -> list_split_assoc k (h::rev_before) tail
 
-let rec list_fold_map2 f e = function 
+let rec list_fold_map2 f e = function
   |  []  -> (e,[],[])
-  |  h::t -> 
+  |  h::t ->
        let e',h1',h2' = f e h in
        let e'',t1',t2' = list_fold_map2 f e' t in
 	 e'',h1'::t1',h2'::t2'
@@ -70,7 +70,7 @@ let check_alias (s1:substitution) s2 =
   if s1 <> s2 then failwith "Incorrect alias"
 
 let check_definition_sub env cb1 cb2 =
-  let check_type env t1 t2 = 
+  let check_type env t1 t2 =
 
     (* If the type of a constant is generated, it may mention
        non-variable algebraic universes that the general conversion
@@ -81,7 +81,7 @@ let check_definition_sub env cb1 cb2 =
        Gamma |- A |> T, Gamma |- A' |> T' and Gamma |- A=A' then T <= T').
        Hence they don't have to be checked again *)
 
-    let t1,t2 = 
+    let t1,t2 =
       if isArity t2 then
         let (ctx2,s2) = destArity t2 in
         match s2 with
@@ -136,21 +136,21 @@ let lookup_modtype mp env =
     failwith ("Unknown module type: "^string_of_mp mp)
 
 
-let rec check_with env mtb with_decl = 
+let rec check_with env mtb with_decl =
   match with_decl with
-    | With_definition_body _ -> 
+    | With_definition_body _ ->
 	check_with_aux_def env mtb with_decl;
 	empty_subst
-    | With_module_body _ -> 
+    | With_module_body _ ->
 	check_with_aux_mod env mtb with_decl
 
-and check_with_aux_def env mtb with_decl = 
-  let msid,sig_b = match (eval_struct env mtb) with 
+and check_with_aux_def env mtb with_decl =
+  let msid,sig_b = match (eval_struct env mtb) with
     | SEBstruct(msid,sig_b) ->
 	msid,sig_b
     | _ -> error_signature_expected mtb
   in
-  let id,idl = match with_decl with 
+  let id,idl = match with_decl with
     | With_definition_body (id::idl,_) | With_module_body (id::idl,_,_,_) ->
                                            id,idl
     | With_definition_body ([],_) | With_module_body ([],_,_,_) -> assert false
@@ -162,11 +162,11 @@ and check_with_aux_def env mtb with_decl =
       let env' = Modops.add_signature (MPself msid) before env in
 	match with_decl with
           | With_definition_body ([],_) -> assert false
-	  | With_definition_body ([id],c) -> 
+	  | With_definition_body ([id],c) ->
 	      let cb = match spec with
 		  SFBconst cb -> cb
 		| _ -> error_not_a_constant l
-	      in 
+	      in
               check_definition_sub env' c cb
 	  | With_definition_body (_::_,_) ->
 	      let old = match spec with
@@ -180,7 +180,7 @@ and check_with_aux_def env mtb with_decl =
 			    With_definition_body (_,c) ->
                               With_definition_body (idl,c)
 			  | With_module_body (_,c,t,cst) ->
-                              With_module_body (idl,c,t,cst) in 
+                              With_module_body (idl,c,t,cst) in
 			  check_with_aux_def env' (type_of_mb env old) new_with_decl
                     | Some msb ->
 			error_a_generative_module_expected l
@@ -190,14 +190,14 @@ and check_with_aux_def env mtb with_decl =
 	Not_found -> error_no_such_label l
       | Reduction.NotConvertible -> error_with_incorrect l
 
-and check_with_aux_mod env mtb with_decl = 
+and check_with_aux_mod env mtb with_decl =
   let initmsid,msid,sig_b =
-    match eval_struct env mtb with 
+    match eval_struct env mtb with
     | SEBstruct(msid,sig_b) ->
         let msid'=(refresh_msid msid) in
 	msid,msid',(subst_signature_msid msid (MPself(msid')) sig_b)
     | _ -> error_signature_expected mtb in
-  let id,idl = match with_decl with 
+  let id,idl = match with_decl with
     | With_definition_body (id::idl,_) | With_module_body (id::idl,_,_,_) ->
         id,idl
     | With_definition_body ([],_) | With_module_body ([],_,_,_) -> assert false
@@ -209,7 +209,7 @@ and check_with_aux_mod env mtb with_decl =
       let rec mp_rec = function
 	| [] -> MPself initmsid
 	| i::r -> MPdot(mp_rec r,label_of_id i)
-      in 
+      in
       let env' = Modops.add_signature (MPself msid) before env in
 	match with_decl with
           | With_module_body ([],_,_,_) -> assert false
@@ -229,7 +229,7 @@ and check_with_aux_mod env mtb with_decl =
 		      anomaly "Mod_typing:no implementation and no alias"
 	      in
 		join (map_mp (mp_rec [id]) mp) mtb'.typ_alias
-        | With_module_body (_::_,mp,_,_) -> 
+        | With_module_body (_::_,mp,_,_) ->
 	    let old = match spec with
 		SFBmodule msb -> msb
 	      | _ -> error_not_a_module l
@@ -238,12 +238,12 @@ and check_with_aux_mod env mtb with_decl =
 		match old.mod_expr with
                     None ->
                       let new_with_decl = match with_decl with
-			  With_definition_body (_,c) -> 
+			  With_definition_body (_,c) ->
 			    With_definition_body (idl,c)
 			| With_module_body (_,c,t,cst) ->
                             With_module_body (idl,c,t,cst) in
 		      let sub =
-			check_with_aux_mod env' 
+			check_with_aux_mod env'
 			  (type_of_mb env old) new_with_decl in
 		      join (map_mp (mp_rec idl) mp) sub
                   | Some msb ->
@@ -263,15 +263,15 @@ and check_module_type env mty =
 and check_module env mb =
   let sub =
     match mb.mod_expr, mb.mod_type with
-      | None, None -> 
+      | None, None ->
 	  anomaly "Mod_typing.translate_module: empty type and expr in module entry"
       | None, Some mtb -> check_modexpr env mtb
 
-      | Some mexpr, _ -> 
+      | Some mexpr, _ ->
 	  let sub1 = check_modexpr env mexpr in
 	  (match mb.mod_type with
 	    | None ->  sub1
-	    | Some mte -> 
+	    | Some mte ->
 		let sub2 = check_modexpr env mte in
                 check_subtypes env
 		  {typ_expr = mexpr;
@@ -333,8 +333,8 @@ and check_modexpr env mse = match mse with
       let mtb = lookup_modtype mp env in
       check_subtypes env mtb farg_b;
       let sub2 = match eval_struct env m with
-	| SEBstruct (msid,sign) -> 
-	    join_alias 
+	| SEBstruct (msid,sign) ->
+	    join_alias
 	      (subst_key (map_msid msid mp) mtb.typ_alias)
 	      (map_msid msid mp)
 	| _ -> mtb.typ_alias in
@@ -356,12 +356,12 @@ and check_modexpr env mse = match mse with
 let rec add_struct_expr_constraints env = function
   | SEBident _ -> env
 
-  | SEBfunctor (_,mtb,meb) -> 
-      add_struct_expr_constraints 
+  | SEBfunctor (_,mtb,meb) ->
+      add_struct_expr_constraints
 	(add_modtype_constraints env mtb) meb
 
   | SEBstruct (_,structure_body) ->
-      List.fold_left 
+      List.fold_left
         (fun env (l,item) -> add_struct_elem_constraints env item)
         env
         structure_body
@@ -369,20 +369,20 @@ let rec add_struct_expr_constraints env = function
   | SEBapply (meb1,meb2,cst) ->
 (*  let g = Univ.merge_constraints cst Univ.initial_universes in
 msgnl(str"ADDING FUNCTOR APPLICATION CONSTRAINTS:"++fnl()++
-      Univ.pr_universes g++str"============="++fnl());      
+      Univ.pr_universes g++str"============="++fnl());
 *)
-      Environ.add_constraints cst 
-        (add_struct_expr_constraints 
-	  (add_struct_expr_constraints env meb1) 
+      Environ.add_constraints cst
+        (add_struct_expr_constraints
+	  (add_struct_expr_constraints env meb1)
 	  meb2)
   | SEBwith(meb,With_definition_body(_,cb))->
       Environ.add_constraints cb.const_constraints
 	(add_struct_expr_constraints env meb)
   | SEBwith(meb,With_module_body(_,_,cst))->
       Environ.add_constraints cst
-	(add_struct_expr_constraints env meb)	
-		
-and add_struct_elem_constraints env = function 
+	(add_struct_expr_constraints env meb)
+
+and add_struct_elem_constraints env = function
   | SFBconst cb -> Environ.add_constraints cb.const_constraints env
   | SFBmind mib -> Environ.add_constraints mib.mind_constraints env
   | SFBmodule mb -> add_module_constraints env mb
@@ -390,18 +390,18 @@ and add_struct_elem_constraints env = function
   | SFBalias (mp,None) -> env
   | SFBmodtype mtb -> add_modtype_constraints env mtb
 
-and add_module_constraints env mb = 
+and add_module_constraints env mb =
   let env = match mb.mod_expr with
     | None -> env
     | Some meb -> add_struct_expr_constraints env meb
   in
   let env = match mb.mod_type with
     | None -> env
-    | Some mtb -> 
+    | Some mtb ->
 	add_struct_expr_constraints env mtb
   in
     Environ.add_constraints mb.mod_constraints env
 
-and add_modtype_constraints env mtb = 
+and add_modtype_constraints env mtb =
   add_struct_expr_constraints env mtb.typ_expr
 *)

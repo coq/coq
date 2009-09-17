@@ -32,10 +32,10 @@ let compare_char c1 c2 = match norm_char c1, norm_char c2 with
   | _, 'A'..'Z' -> 1
   | c1, c2 -> compare c1 c2
 
-let compare_string s1 s2 = 
+let compare_string s1 s2 =
   let n1 = String.length s1 in
   let n2 = String.length s2 in
-  let rec cmp i = 
+  let rec cmp i =
     if i == n1 || i == n2 then
       n1 - n2
     else

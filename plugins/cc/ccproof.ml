@@ -8,30 +8,30 @@
 
 (* $Id$ *)
 
-(* This file uses the (non-compressed) union-find structure to generate *) 
+(* This file uses the (non-compressed) union-find structure to generate *)
 (* proof-trees that will be transformed into proof-terms in cctac.ml4   *)
 
 open Util
 open Names
 open Term
 open Ccalgo
-  
+
 type rule=
     Ax of constr
   | SymAx of constr
   | Refl of term
   | Trans of proof*proof
   | Congr of proof*proof
-  | Inject of proof*constructor*int*int 
-and proof = 
+  | Inject of proof*constructor*int*int
+and proof =
     {p_lhs:term;p_rhs:term;p_rule:rule}
 
 let prefl t = {p_lhs=t;p_rhs=t;p_rule=Refl t}
 
-let pcongr p1 p2 = 
-  match p1.p_rule,p2.p_rule with 
+let pcongr p1 p2 =
+  match p1.p_rule,p2.p_rule with
     Refl t1, Refl t2 -> prefl (Appli (t1,t2))
-  | _, _ -> 
+  | _, _ ->
       {p_lhs=Appli (p1.p_lhs,p2.p_lhs);
        p_rhs=Appli (p1.p_rhs,p2.p_rhs);
        p_rule=Congr (p1,p2)}
@@ -44,25 +44,25 @@ let rec ptrans p1 p3=
     | Congr(p1,p2), Congr(p3,p4) ->pcongr (ptrans p1 p3) (ptrans p2 p4)
     | Congr(p1,p2), Trans({p_rule=Congr(p3,p4)},p5) ->
 	ptrans (pcongr (ptrans p1 p3) (ptrans p2 p4)) p5
-  | _, _ -> 
-      if p1.p_rhs = p3.p_lhs then 
+  | _, _ ->
+      if p1.p_rhs = p3.p_lhs then
 	{p_lhs=p1.p_lhs;
 	 p_rhs=p3.p_rhs;
 	 p_rule=Trans (p1,p3)}
       else anomaly "invalid cc transitivity"
-	
-let rec psym p = 
-  match p.p_rule with 
-      Refl _ -> p 
+
+let rec psym p =
+  match p.p_rule with
+      Refl _ -> p
     | SymAx s ->
 	{p_lhs=p.p_rhs;
 	 p_rhs=p.p_lhs;
 	 p_rule=Ax s}
-    | Ax s->      
+    | Ax s->
 	{p_lhs=p.p_rhs;
 	 p_rhs=p.p_lhs;
 	 p_rule=SymAx s}
-  | Inject (p0,c,n,a)-> 
+  | Inject (p0,c,n,a)->
       {p_lhs=p.p_rhs;
        p_rhs=p.p_lhs;
        p_rule=Inject (psym p0,c,n,a)}
@@ -82,9 +82,9 @@ let psymax axioms s =
      p_rule=SymAx s}
 
 let rec nth_arg t n=
-  match t with 
-      Appli (t1,t2)-> 
-	if n>0 then 
+  match t with
+      Appli (t1,t2)->
+	if n>0 then
 	  nth_arg t1 (n-1)
 	else t2
     | _ -> anomaly "nth_arg: not enough args"
@@ -99,23 +99,23 @@ let build_proof uf=
   let axioms = axioms uf in
 
   let rec equal_proof i j=
-    if i=j then prefl (term uf i) else 
+    if i=j then prefl (term uf i) else
       let (li,lj)=join_path uf i j in
 	ptrans (path_proof i li) (psym (path_proof j lj))
-  
+
   and edge_proof ((i,j),eq)=
     let pi=equal_proof i eq.lhs in
     let pj=psym (equal_proof j eq.rhs) in
     let pij=
-      match eq.rule with 
+      match eq.rule with
 	  Axiom (s,reversed)->
-	    if reversed then psymax axioms s 
+	    if reversed then psymax axioms s
 	    else pax axioms s
 	| Congruence ->congr_proof eq.lhs eq.rhs
 	| Injection (ti,ipac,tj,jpac,k) ->
 	    let p=ind_proof ti ipac tj jpac in
 	    let cinfo= get_constructor_info uf ipac.cnode in
-	      pinject p cinfo.ci_constr cinfo.ci_nhyps k	
+	      pinject p cinfo.ci_constr cinfo.ci_nhyps k
     in  ptrans (ptrans pi pij) pj
 
   and constr_proof i t ipac=
@@ -133,15 +133,15 @@ let build_proof uf=
   and path_proof i=function
       [] -> prefl (term uf i)
     | x::q->ptrans (path_proof (snd (fst x)) q) (edge_proof x)
-  
+
   and congr_proof i j=
     let (i1,i2) = subterms uf i
-    and (j1,j2) = subterms uf j in   
+    and (j1,j2) = subterms uf j in
       pcongr (equal_proof i1 j1) (equal_proof i2 j2)
-	
+
   and ind_proof i ipac j jpac=
-    let p=equal_proof i j 
-    and p1=constr_proof i i ipac 
+    let p=equal_proof i j
+    and p1=constr_proof i i ipac
     and p2=constr_proof j j jpac in
       ptrans (psym p1) (ptrans p p2)
   in

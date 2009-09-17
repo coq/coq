@@ -46,7 +46,7 @@ type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
 
 type 'a explicit_bindings = (loc * quantified_hypothesis * 'a) list
 
-type 'a bindings = 
+type 'a bindings =
   | ImplicitBindings of 'a list
   | ExplicitBindings of 'a explicit_bindings
   | NoBindings
@@ -57,7 +57,7 @@ type 'a cast_type =
   | CastConv of cast_kind * 'a
   | CastCoerce (* Cast to a base type (eg, an underlying inductive type) *)
 
-type rawconstr = 
+type rawconstr =
   | RRef of (loc * global_reference)
   | RVar of (loc * identifier)
   | REvar of loc * existential_key * rawconstr list option
@@ -67,7 +67,7 @@ type rawconstr =
   | RProd of loc * name * binding_kind * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
   | RCases of loc * case_style * rawconstr option * tomatch_tuples * cases_clauses
-  | RLetTuple of loc * name list * (name * rawconstr option) * 
+  | RLetTuple of loc * name list * (name * rawconstr option) *
       rawconstr * rawconstr
   | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
   | RRec of loc * fix_kind * identifier array * rawdecl list array *
@@ -100,7 +100,7 @@ val cases_predicate_names : tomatch_tuples -> name list
 
 (*i - if PRec (_, names, arities, bodies) is in env then arities are
    typed in env too and bodies are typed in env enriched by the
-   arities incrementally lifted 
+   arities incrementally lifted
 
   [On pourrait plutot mettre les arités aves le type qu'elles auront
    dans le contexte servant à typer les body ???]
@@ -112,7 +112,7 @@ i*)
 val map_rawconstr : (rawconstr -> rawconstr) -> rawconstr -> rawconstr
 
 (*i
-val map_rawconstr_with_binders_loc : loc -> 
+val map_rawconstr_with_binders_loc : loc ->
   (identifier -> 'a -> identifier * 'a) ->
   ('a -> rawconstr -> rawconstr) -> 'a -> rawconstr -> rawconstr
 i*)

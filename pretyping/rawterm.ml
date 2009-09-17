@@ -42,7 +42,7 @@ type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
 
 type 'a explicit_bindings = (loc * quantified_hypothesis * 'a) list
 
-type 'a bindings = 
+type 'a bindings =
   | ImplicitBindings of 'a list
   | ExplicitBindings of 'a explicit_bindings
   | NoBindings
@@ -53,7 +53,7 @@ type 'a cast_type =
   | CastConv of cast_kind * 'a
   | CastCoerce (* Cast to a base type (eg, an underlying inductive type) *)
 
-type rawconstr = 
+type rawconstr =
   | RRef of (loc * global_reference)
   | RVar of (loc * identifier)
   | REvar of loc * existential_key * rawconstr list option
@@ -63,7 +63,7 @@ type rawconstr =
   | RProd of loc * name * binding_kind * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
   | RCases of loc * case_style * rawconstr option * tomatch_tuples * cases_clauses
-  | RLetTuple of loc * name list * (name * rawconstr option) * 
+  | RLetTuple of loc * name list * (name * rawconstr option) *
       rawconstr * rawconstr
   | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
   | RRec of loc * fix_kind * identifier array * rawdecl list array *
@@ -99,7 +99,7 @@ let cases_predicate_names tml =
 
 (*i - if PRec (_, names, arities, bodies) is in env then arities are
    typed in env too and bodies are typed in env enriched by the
-   arities incrementally lifted 
+   arities incrementally lifted
 
   [On pourrait plutot mettre les arités aves le type qu'elles auront
    dans le contexte servant à typer les body ???]
@@ -127,7 +127,7 @@ let map_rawconstr f = function
             Array.map f tyl,Array.map f bv)
   | RCast (loc,c,k) -> RCast (loc,f c, match k with CastConv (k,t) -> CastConv (k, f t) | x -> x)
   | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) as x -> x
-  
+
 
 (*
 let name_app f e = function
@@ -178,10 +178,10 @@ let occur_rawconstr id =
 	(occur_option rtntypopt)
         or (List.exists (fun (tm,_) -> occur tm) tml)
 	or (List.exists occur_pattern pl)
-    | RLetTuple (loc,nal,rtntyp,b,c) -> 
+    | RLetTuple (loc,nal,rtntyp,b,c) ->
 	occur_return_type rtntyp id
         or (occur b) or (not (List.mem (Name id) nal) & (occur c))
-    | RIf (loc,c,rtntyp,b1,b2) -> 
+    | RIf (loc,c,rtntyp,b1,b2) ->
 	occur_return_type rtntyp id or (occur c) or (occur b1) or (occur b2)
     | RRec (loc,fk,idl,bl,tyl,bv) ->
         not (array_for_all4 (fun fid bl ty bd ->
@@ -207,67 +207,67 @@ let occur_rawconstr id =
   in occur
 
 
-let add_name_to_ids set na = 
-  match na with 
-    | Anonymous -> set 
-    | Name id -> Idset.add id set 
+let add_name_to_ids set na =
+  match na with
+    | Anonymous -> set
+    | Name id -> Idset.add id set
 
 let free_rawvars  =
   let rec vars bounded vs = function
     | RVar (loc,id') -> if Idset.mem id' bounded then vs else Idset.add id' vs
     | RApp (loc,f,args) -> List.fold_left (vars bounded) vs (f::args)
-    | RLambda (loc,na,_,ty,c) | RProd (loc,na,_,ty,c) | RLetIn (loc,na,ty,c) -> 
-	let vs' = vars bounded vs ty in 
-	let bounded' = add_name_to_ids bounded na in 
+    | RLambda (loc,na,_,ty,c) | RProd (loc,na,_,ty,c) | RLetIn (loc,na,ty,c) ->
+	let vs' = vars bounded vs ty in
+	let bounded' = add_name_to_ids bounded na in
        vars bounded' vs' c
     | RCases (loc,sty,rtntypopt,tml,pl) ->
-	let vs1 = vars_option bounded vs rtntypopt in 
-	let vs2 = List.fold_left (fun vs (tm,_) -> vars bounded vs tm) vs1 tml in 
+	let vs1 = vars_option bounded vs rtntypopt in
+	let vs2 = List.fold_left (fun vs (tm,_) -> vars bounded vs tm) vs1 tml in
 	List.fold_left (vars_pattern bounded) vs2 pl
     | RLetTuple (loc,nal,rtntyp,b,c) ->
-	let vs1 = vars_return_type bounded vs rtntyp in 
-	let vs2 = vars bounded vs1 b in 
+	let vs1 = vars_return_type bounded vs rtntyp in
+	let vs2 = vars bounded vs1 b in
 	let bounded' = List.fold_left add_name_to_ids bounded nal in
 	vars bounded' vs2 c
-    | RIf (loc,c,rtntyp,b1,b2) -> 
-	let vs1 = vars_return_type bounded vs rtntyp in 
-	let vs2 = vars bounded vs1 c in 
-	let vs3 = vars bounded vs2 b1 in 
+    | RIf (loc,c,rtntyp,b1,b2) ->
+	let vs1 = vars_return_type bounded vs rtntyp in
+	let vs2 = vars bounded vs1 c in
+	let vs3 = vars bounded vs2 b1 in
 	vars bounded vs3 b2
     | RRec (loc,fk,idl,bl,tyl,bv) ->
-	let bounded' = Array.fold_right Idset.add idl bounded in 
-	let vars_fix i vs fid = 
-	  let vs1,bounded1 = 
-	    List.fold_left 
-	      (fun (vs,bounded) (na,k,bbd,bty) -> 
-		 let vs' = vars_option bounded vs bbd in 
+	let bounded' = Array.fold_right Idset.add idl bounded in
+	let vars_fix i vs fid =
+	  let vs1,bounded1 =
+	    List.fold_left
+	      (fun (vs,bounded) (na,k,bbd,bty) ->
+		 let vs' = vars_option bounded vs bbd in
 		 let vs'' = vars bounded vs' bty in
-		 let bounded' = add_name_to_ids bounded na in 
+		 let bounded' = add_name_to_ids bounded na in
 		 (vs'',bounded')
 	      )
 	      (vs,bounded')
 	      bl.(i)
 	  in
-	  let vs2 = vars bounded1 vs1 tyl.(i) in 
+	  let vs2 = vars bounded1 vs1 tyl.(i) in
 	  vars bounded1 vs2 bv.(i)
 	in
 	array_fold_left_i vars_fix vs idl
-    | RCast (loc,c,k) -> let v = vars bounded vs c in 
+    | RCast (loc,c,k) -> let v = vars bounded vs c in
 	(match k with CastConv (_,t) -> vars bounded v t | _ -> v)
     | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> vs
 
-  and vars_pattern bounded vs (loc,idl,p,c) = 
-    let bounded' = List.fold_right Idset.add idl bounded  in 
+  and vars_pattern bounded vs (loc,idl,p,c) =
+    let bounded' = List.fold_right Idset.add idl bounded  in
     vars bounded' vs c
 
   and vars_option bounded vs = function None -> vs | Some p -> vars bounded vs p
 
-  and vars_return_type bounded vs (na,tyopt) = 
-    let bounded' = add_name_to_ids bounded na in 
+  and vars_return_type bounded vs (na,tyopt) =
+    let bounded' = add_name_to_ids bounded na in
     vars_option bounded' vs tyopt
-  in 
-  fun rt -> 
-    let vs = vars Idset.empty Idset.empty rt in 
+  in
+  fun rt ->
+    let vs = vars Idset.empty Idset.empty rt in
     Idset.elements vs
 
 

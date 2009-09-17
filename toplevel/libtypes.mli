@@ -12,8 +12,8 @@
 open Term
 (*i*)
 
-(* 
- * Persistent library of all declared object, 
+(*
+ * Persistent library of all declared object,
  * indexed by their types (uses Dnets)
  *)
 
@@ -24,7 +24,7 @@ type result = Libnames.global_reference * (constr*existential_key) * Termops.sub
 (* this is the reduction function used in the indexing process *)
 val reduce : types -> types
 
-(* The different types of search available. 
+(* The different types of search available.
  * See term_dnet.mli for more explanations *)
 val search_pattern : types -> result list
 val search_concl : types -> result list

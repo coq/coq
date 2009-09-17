@@ -20,14 +20,14 @@ Set Implicit Arguments.
 
 
   Inductive BFormula (A:Type) : Type :=
-  | TT   : BFormula A 
+  | TT   : BFormula A
   | FF   : BFormula A
   | X : Prop -> BFormula A
-  | A : A -> BFormula A 
+  | A : A -> BFormula A
   | Cj  : BFormula A -> BFormula A -> BFormula A
   | D   : BFormula A-> BFormula A -> BFormula A
   | N  : BFormula A -> BFormula A
-  | I : BFormula A-> BFormula A-> BFormula A. 
+  | I : BFormula A-> BFormula A-> BFormula A.
 
   Fixpoint eval_f (A:Type)  (ev:A -> Prop ) (f:BFormula A) {struct f}: Prop :=
     match f with
@@ -42,7 +42,7 @@ Set Implicit Arguments.
     end.
 
 
-  Lemma map_simpl : forall A B f l, @map A B f l = match l with 
+  Lemma map_simpl : forall A B f l, @map A B f l = match l with
                                                  | nil => nil
                                                  | a :: l=> (f a) :: (@map A B f l)
                                                end.
@@ -57,7 +57,7 @@ Set Implicit Arguments.
     Variable Env   : Type.
     Variable Term  : Type.
     Variable eval  : Env -> Term -> Prop.
-    Variable Term' : Type.  
+    Variable Term' : Type.
     Variable eval'  : Env -> Term' -> Prop.
 
 
@@ -78,17 +78,17 @@ Set Implicit Arguments.
 
     Definition or_clause_cnf (t:clause) (f:cnf) : cnf :=
       List.map (fun x => (t++x)) f.
-    
+
     Fixpoint or_cnf (f : cnf) (f' : cnf) {struct f}: cnf :=
       match f with
         | nil => tt
         | e :: rst => (or_cnf rst f') ++ (or_clause_cnf e f')
       end.
-    
+
 
     Definition and_cnf (f1 : cnf) (f2 : cnf) : cnf :=
       f1 ++ f2.
-    
+
     Fixpoint xcnf (pol : bool) (f : BFormula Term)  {struct f}: cnf :=
       match f with
         | TT => if pol then tt else ff
@@ -96,14 +96,14 @@ Set Implicit Arguments.
         | X p => if pol then ff else ff (* This is not complete - cannot negate any proposition *)
         | A x => if pol then normalise x else negate x
         | N e  => xcnf (negb pol) e
-        | Cj e1 e2 => 
+        | Cj e1 e2 =>
           (if pol then and_cnf else or_cnf) (xcnf pol e1) (xcnf pol e2)
         | D e1 e2  => (if pol then or_cnf else and_cnf) (xcnf pol e1) (xcnf pol e2)
         | I e1 e2 => (if pol then or_cnf else and_cnf) (xcnf (negb pol) e1) (xcnf pol e2)
       end.
 
   Definition eval_cnf (env : Term' -> Prop) (f:cnf) := make_conj  (fun cl => ~ make_conj  env cl) f.
-  
+
 
   Lemma eval_cnf_app : forall env x y, eval_cnf (eval' env) (x++y) -> eval_cnf (eval' env) x /\ eval_cnf (eval' env) y.
   Proof.
@@ -111,7 +111,7 @@ Set Implicit Arguments.
     intros.
     rewrite make_conj_app in H ; auto.
   Qed.
-    
+
 
   Lemma or_clause_correct : forall env t f, eval_cnf (eval' env) (or_clause_cnf t f) -> (~ make_conj  (eval' env) t) \/ (eval_cnf (eval' env) f).
   Proof.
@@ -258,8 +258,8 @@ Set Implicit Arguments.
     unfold and_cnf in H.
     simpl in H.
     destruct (eval_cnf_app _ _ _ H).
-    generalize (IHf1 _ _ H0).    
-    generalize (IHf2 _ _ H1).    
+    generalize (IHf1 _ _ H0).
+    generalize (IHf2 _ _ H1).
     simpl.
     tauto.
   Qed.
@@ -267,13 +267,13 @@ Set Implicit Arguments.
 
   Variable Witness : Type.
   Variable checker : list Term' -> Witness -> bool.
-  
+
   Variable checker_sound : forall t  w, checker t w = true -> forall env, make_impl (eval' env)  t False.
 
   Fixpoint cnf_checker (f : cnf) (l : list Witness)  {struct f}: bool :=
     match f with
       | nil => true
-      | e::f => match l with 
+      | e::f => match l with
                   | nil => false
                   | c::l => match checker e c with
                               | true => cnf_checker f l

@@ -30,7 +30,7 @@ Require Export Ensembles.
 
 Section Ensembles_facts.
   Variable U : Type.
-  
+
   Lemma Extension : forall B C:Ensemble U, B = C -> Same_set U B C.
   Proof.
     intros B C H'; rewrite H'; auto with sets.
@@ -52,7 +52,7 @@ Section Ensembles_facts.
   Proof.
     unfold Add at 1 in |- *; auto with sets.
   Qed.
-  
+
   Lemma Add_intro2 : forall (A:Ensemble U) (x:U), In U (Add U A x) x.
   Proof.
     unfold Add at 1 in |- *; auto with sets.
@@ -98,15 +98,15 @@ Section Ensembles_facts.
   Proof.
     intros B C x H'; elim H'; auto with sets.
   Qed.
-  
+
   Lemma Add_inv :
     forall (A:Ensemble U) (x y:U), In U (Add U A x) y -> In U A y \/ x = y.
   Proof.
-    intros A x y H'; induction H'. 
+    intros A x y H'; induction H'.
       left; assumption.
       right; apply Singleton_inv; assumption.
   Qed.
-  
+
   Lemma Intersection_inv :
     forall (B C:Ensemble U) (x:U),
       In U (Intersection U B C) x -> In U B x /\ In U C x.
@@ -125,7 +125,7 @@ Section Ensembles_facts.
   Proof.
     unfold Setminus at 1 in |- *; red in |- *; auto with sets.
   Qed.
- 
+
   Lemma Strict_Included_intro :
     forall X Y:Ensemble U, Included U X Y /\ X <> Y -> Strict_Included U X Y.
   Proof.

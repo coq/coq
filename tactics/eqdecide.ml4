@@ -49,8 +49,8 @@ open Coqlib
       then analyse one by one the corresponding pairs of arguments.
       If they are equal, rewrite one into the other. If they are
       not, derive a contradiction from the injectiveness of the
-      constructor. 
-   4. Once all the arguments have been rewritten, solve the remaining half 
+      constructor.
+   4. Once all the arguments have been rewritten, solve the remaining half
       of the disjunction by reflexivity.
 
    Eduardo Gimenez (30/3/98).
@@ -58,12 +58,12 @@ open Coqlib
 
 let clear_last = (onLastHyp (fun c -> (clear [destVar c])))
 
-let choose_eq eqonleft = 
+let choose_eq eqonleft =
   if eqonleft then h_simplest_left else h_simplest_right
 let choose_noteq eqonleft =
   if eqonleft then h_simplest_right else h_simplest_left
 
-let mkBranches c1 c2 = 
+let mkBranches c1 c2 =
   tclTHENSEQ
     [generalize [c2];
      h_simplest_elim c1;
@@ -72,18 +72,18 @@ let mkBranches c1 c2 =
      clear_last;
      intros]
 
-let solveNoteqBranch side = 
+let solveNoteqBranch side =
   tclTHEN (choose_noteq side)
     (tclTHEN introf
       (onLastHypId (fun id -> Extratactics.h_discrHyp id)))
 
 let h_solveNoteqBranch side =
-  Refiner.abstract_extended_tactic "solveNoteqBranch" [] 
+  Refiner.abstract_extended_tactic "solveNoteqBranch" []
     (solveNoteqBranch side)
 
 (* Constructs the type {c1=c2}+{~c1=c2} *)
 
-let mkDecideEqGoal eqonleft op rectype c1 c2 g = 
+let mkDecideEqGoal eqonleft op rectype c1 c2 g =
   let equality    = mkApp(build_coq_eq(), [|rectype; c1; c2|]) in
   let disequality = mkApp(build_coq_not (), [|equality|]) in
   if eqonleft then mkApp(op, [|equality; disequality |])
@@ -92,24 +92,24 @@ let mkDecideEqGoal eqonleft op rectype c1 c2 g =
 
 (* Constructs the type (x1,x2:R){x1=x2}+{~x1=x2} *)
 
-let mkGenDecideEqGoal rectype g = 
-  let hypnames = pf_ids_of_hyps g in 
+let mkGenDecideEqGoal rectype g =
+  let hypnames = pf_ids_of_hyps g in
   let xname    = next_ident_away (id_of_string "x") hypnames
   and yname    = next_ident_away (id_of_string "y") hypnames in
-  (mkNamedProd xname rectype 
-     (mkNamedProd yname rectype 
+  (mkNamedProd xname rectype
+     (mkNamedProd yname rectype
         (mkDecideEqGoal true (build_coq_sumbool ())
           rectype (mkVar xname) (mkVar yname) g)))
 
-let eqCase tac = 
-  (tclTHEN intro  
+let eqCase tac =
+  (tclTHEN intro
   (tclTHEN (onLastHyp Equality.rewriteLR)
-  (tclTHEN clear_last 
+  (tclTHEN clear_last
   tac)))
 
 let diseqCase eqonleft =
   let diseq  = id_of_string "diseq" in
-  let absurd = id_of_string "absurd" in 
+  let absurd = id_of_string "absurd" in
   (tclTHEN (intro_using diseq)
   (tclTHEN (choose_noteq eqonleft)
   (tclTHEN  red_in_concl
@@ -118,11 +118,11 @@ let diseqCase eqonleft =
   (tclTHEN  (Extratactics.h_injHyp absurd)
             (full_trivial [])))))))
 
-let solveArg eqonleft op a1 a2 tac g = 
+let solveArg eqonleft op a1 a2 tac g =
   let rectype = pf_type_of g a1 in
   let decide  = mkDecideEqGoal eqonleft op rectype a1 a2 g in
-  let subtacs = 
-    if eqonleft then [eqCase tac;diseqCase eqonleft;default_auto] 
+  let subtacs =
+    if eqonleft then [eqCase tac;diseqCase eqonleft;default_auto]
     else [diseqCase eqonleft;eqCase tac;default_auto] in
   (tclTHENS (h_elim_type decide) subtacs) g
 
@@ -133,8 +133,8 @@ let solveEqBranch rectype g =
     let nparams   = mib.mind_nparams in
     let getargs l = list_skipn nparams (snd (decompose_app l)) in
     let rargs   = getargs rhs
-    and largs   = getargs lhs in 
-    List.fold_right2 
+    and largs   = getargs lhs in
+    List.fold_right2
       (solveArg eqonleft op) largs rargs
       (tclTHEN (choose_eq eqonleft) h_reflexivity) g
   with PatternMatchingFailure -> error "Unexpected conclusion!"
@@ -163,19 +163,19 @@ let decideGralEquality g =
 
 let decideEqualityGoal = tclTHEN intros decideGralEquality
 
-let decideEquality c1 c2 g = 
-  let rectype = (pf_type_of g c1) in     
-  let decide  = mkGenDecideEqGoal rectype g in  
+let decideEquality c1 c2 g =
+  let rectype = (pf_type_of g c1) in
+  let decide  = mkGenDecideEqGoal rectype g in
   (tclTHENS (cut decide) [default_auto;decideEqualityGoal]) g
 
 
 (* The tactic Compare *)
 
-let compare c1 c2 g = 
+let compare c1 c2 g =
   let rectype = pf_type_of g c1 in
-  let decide  = mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 g in  
-  (tclTHENS (cut decide) 
-            [(tclTHEN  intro 
+  let decide  = mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 g in
+  (tclTHENS (cut decide)
+            [(tclTHEN  intro
              (tclTHEN (onLastHyp simplest_case)
                        clear_last));
              decideEquality c1 c2]) g

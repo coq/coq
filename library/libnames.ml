@@ -33,10 +33,10 @@ let destIndRef = function IndRef ind -> ind | _ -> failwith "destIndRef"
 let destConstructRef = function ConstructRef ind -> ind | _ -> failwith "destConstructRef"
 
 let subst_constructor subst ((kn,i),j as ref) =
-  let kn' = subst_kn subst kn in 
+  let kn' = subst_kn subst kn in
     if kn==kn' then ref, mkConstruct ref
     else ((kn',i),j), mkConstruct ((kn',i),j)
-      
+
 let subst_global subst ref = match ref with
   | VarRef var -> ref, mkVar var
   | ConstRef kn ->
@@ -125,12 +125,12 @@ let parse_dir s =
     if n >= len then dirs else
     let pos =
       try
-	String.index_from s n '.' 
+	String.index_from s n '.'
       with Not_found -> len
     in
     if pos = n then error (s ^ " is an invalid path.");
     let dir = String.sub s n (pos-n) in
-    decoupe_dirs ((id_of_string dir)::dirs) (pos+1)	  
+    decoupe_dirs ((id_of_string dir)::dirs) (pos+1)
   in
     decoupe_dirs [] 0
 
@@ -184,7 +184,7 @@ let path_of_string s =
   with
     | Invalid_argument _ -> invalid_arg "path_of_string"
 
-let pr_path sp = str (string_of_path sp) 
+let pr_path sp = str (string_of_path sp)
 
 let restrict_path n sp =
   let dir, s = repr_path sp in
@@ -195,17 +195,17 @@ let encode_kn dir id = make_kn (MPfile dir) empty_dirpath (label_of_id id)
 
 let encode_con dir id = make_con (MPfile dir) empty_dirpath (label_of_id id)
 
-let decode_kn kn = 
+let decode_kn kn =
   let rec dirpath_of_module = function
     | MPfile dir -> repr_dirpath dir
-    | MPbound mbid -> 
+    | MPbound mbid ->
 	let _,_,dp = repr_mbid mbid in
 	let id = id_of_mbid mbid in
 	  id::(repr_dirpath dp)
-    | MPself msid -> 
+    | MPself msid ->
 	let _,_,dp = repr_msid msid in
 	let id = id_of_msid msid in
-	  id::(repr_dirpath dp) 
+	  id::(repr_dirpath dp)
     | MPdot(mp,l) -> (id_of_label l)::(dirpath_of_module mp)
   in
   let mp,sec_dir,l = repr_kn kn in
@@ -214,7 +214,7 @@ let decode_kn kn =
     else
       anomaly "Section part should be empty!"
 
-let decode_con kn = 
+let decode_con kn =
   let mp,sec_dir,l = repr_con kn in
     match mp,(repr_dirpath sec_dir) with
 	MPfile dir,[] -> (dir,id_of_label l)
@@ -234,7 +234,7 @@ let qualid_of_string = path_of_string
 
 let qualid_of_path sp = sp
 let qualid_of_ident id = make_qualid empty_dirpath id
-let qualid_of_dirpath dir = 
+let qualid_of_dirpath dir =
   let (l,a) = split_dirpath dir in
   make_qualid l a
 
@@ -242,11 +242,11 @@ type object_name = full_path * kernel_name
 
 type object_prefix = dir_path * (module_path * dir_path)
 
-let make_oname (dirpath,(mp,dir)) id = 
+let make_oname (dirpath,(mp,dir)) id =
   make_path dirpath id, make_kn mp dir (label_of_id id)
 
 (* to this type are mapped dir_path's in the nametab *)
-type global_dir_reference = 
+type global_dir_reference =
   | DirOpenModule of object_prefix
   | DirOpenModtype of object_prefix
   | DirOpenSection of object_prefix
@@ -262,7 +262,7 @@ type global_dir_reference =
           ModTypeRef kn'
 *)
 
-type reference = 
+type reference =
   | Qualid of qualid located
   | Ident of identifier located
 
@@ -274,7 +274,7 @@ let string_of_reference = function
   | Qualid (loc,qid) -> string_of_qualid qid
   | Ident (loc,id) -> string_of_id id
 
-let pr_reference = function 
+let pr_reference = function
   | Qualid (_,qid) -> pr_qualid qid
   | Ident (_,id) -> pr_id id
 

@@ -34,7 +34,7 @@ let my_int_of_string loc s =
     Util.user_err_loc (loc,"",Pp.str "Cannot support a so large number.")
 
 GEXTEND Gram
-  GLOBAL: 
+  GLOBAL:
     bigint natural integer identref name ident var preident
     fullyqualid qualid reference dirpath
     ne_string string pattern_ident pattern_identref by_notation smart_global;
@@ -95,7 +95,7 @@ GEXTEND Gram
     [ [ qid = basequalid -> loc, qid ] ]
   ;
   ne_string:
-    [ [ s = STRING -> 
+    [ [ s = STRING ->
         if s="" then Util.user_err_loc(loc,"",Pp.str"Empty string."); s
     ] ]
   ;

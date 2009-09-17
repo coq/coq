@@ -63,7 +63,7 @@ Proof.
 Defined.
 
 (* Value of [exp 0] *)
-Lemma exp_0 : exp 0 = 1. 
+Lemma exp_0 : exp 0 = 1.
 Proof.
   cut (exp_in 0 (exp 0)).
   cut (exp_in 0 1).
@@ -96,7 +96,7 @@ Qed.
 Definition cos_n (n:nat) : R := (-1) ^ n / INR (fact (2 * n)).
 
 Lemma simpl_cos_n :
-  forall n:nat, cos_n (S n) / cos_n n = - / INR (2 * S n * (2 * n + 1)). 
+  forall n:nat, cos_n (S n) / cos_n n = - / INR (2 * S n * (2 * n + 1)).
 Proof.
   intro; unfold cos_n in |- *; replace (S n) with (n + 1)%nat; [ idtac | ring ].
   rewrite pow_add; unfold Rdiv in |- *; rewrite Rinv_mult_distr.
@@ -176,7 +176,7 @@ Proof.
   assert (H0 := archimed_cor1 eps H).
   elim H0; intros; exists x.
   intros; rewrite simpl_cos_n; unfold R_dist in |- *; unfold Rminus in |- *;
-    rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu; 
+    rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu;
       rewrite Rabs_Ropp; rewrite Rabs_right.
   rewrite mult_INR; rewrite Rinv_mult_distr.
   cut (/ INR (2 * S n) < 1).
@@ -250,7 +250,7 @@ Definition cos (x:R) : R := let (a,_) := exist_cos (Rsqr x) in a.
 Definition sin_n (n:nat) : R := (-1) ^ n / INR (fact (2 * n + 1)).
 
 Lemma simpl_sin_n :
-  forall n:nat, sin_n (S n) / sin_n n = - / INR ((2 * S n + 1) * (2 * S n)). 
+  forall n:nat, sin_n (S n) / sin_n n = - / INR ((2 * S n + 1) * (2 * S n)).
 Proof.
   intro; unfold sin_n in |- *; replace (S n) with (n + 1)%nat; [ idtac | ring ].
   rewrite pow_add; unfold Rdiv in |- *; rewrite Rinv_mult_distr.
@@ -300,7 +300,7 @@ Proof.
   unfold Un_cv in |- *; intros; assert (H0 := archimed_cor1 eps H).
   elim H0; intros; exists x.
   intros; rewrite simpl_sin_n; unfold R_dist in |- *; unfold Rminus in |- *;
-    rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu; 
+    rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu;
       rewrite Rabs_Ropp; rewrite Rabs_right.
   rewrite mult_INR; rewrite Rinv_mult_distr.
   cut (/ INR (2 * S n) < 1).
@@ -382,7 +382,7 @@ Qed.
 Lemma sin_antisym : forall x:R, sin (- x) = - sin x.
 Proof.
   intro; unfold sin in |- *; replace (Rsqr (- x)) with (Rsqr x);
-    [ idtac | apply Rsqr_neg ]. 
+    [ idtac | apply Rsqr_neg ].
   case (exist_sin (Rsqr x)); intros; ring.
 Qed.
 

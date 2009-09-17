@@ -61,7 +61,7 @@ End Inverse_Image.
 
 Section Burali_Forti_Paradox.
 
-  Definition morphism (A : Type) (R : A -> A -> Prop) 
+  Definition morphism (A : Type) (R : A -> A -> Prop)
     (B : Type) (S : B -> B -> Prop) (f : A -> B) :=
     forall x y : A, R x y -> S (f x) (f y).
 
@@ -69,7 +69,7 @@ Section Burali_Forti_Paradox.
      assumes there exists an universal system of notations, i.e:
       - A type A0
       - An injection i0 from relations on any type into A0
-      - The proof that i0 is injective modulo morphism 
+      - The proof that i0 is injective modulo morphism
    *)
   Variable A0 : Type.                     (* Type_i *)
   Variable i0 : forall X : Type, (X -> X -> Prop) -> A0. (* X: Type_j *)
@@ -82,7 +82,7 @@ Section Burali_Forti_Paradox.
   (* Embedding of x in y: x and y are images of 2 well founded relations
      R1 and R2, the ordinal of R2 being strictly greater than that of R1.
    *)
-  Record emb (x y : A0) : Prop := 
+  Record emb (x y : A0) : Prop :=
     {X1 : Type;
      R1 : X1 -> X1 -> Prop;
      eqx : x = i0 X1 R1;
@@ -166,7 +166,7 @@ Defined.
 End Subsets.
 
 
-  Definition fsub (a b : A0) (H : emb a b) (x : sub a) : 
+  Definition fsub (a b : A0) (H : emb a b) (x : sub a) :
     sub b := Build_sub _ (witness _ x) (emb_trans _ _ _ (emb_wit _ x) H).
 
   (* F is a morphism: a < b => F(a) < F(b)

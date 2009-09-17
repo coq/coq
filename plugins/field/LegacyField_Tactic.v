@@ -29,17 +29,17 @@ Ltac mem_assoc var lvar :=
       end
   end.
 
-Ltac number lvar := 
+Ltac number lvar :=
   let rec number_aux lvar cpt :=
     match constr:lvar with
     | (@nil ?X1) => constr:(@nil (prod X1 nat))
     | ?X2 :: ?X3 =>
         let l2 := number_aux X3 (S cpt) in
-        constr:((X2,cpt) :: l2) 
+        constr:((X2,cpt) :: l2)
     end
   in number_aux lvar 0.
 
-Ltac build_varlist FT trm := 
+Ltac build_varlist FT trm :=
   let rec seek_var lvar trm :=
     let AT := get_component A FT
     with AzeroT := get_component Azero FT
@@ -244,11 +244,11 @@ Ltac inverse_test FT :=
 
 Ltac apply_simplif sfun :=
   match goal with
-  |  |- (interp_ExprA ?X1 ?X2 ?X3 = interp_ExprA _ _ _) => 
+  |  |- (interp_ExprA ?X1 ?X2 ?X3 = interp_ExprA _ _ _) =>
   sfun X1 X2 X3
   end;
    match goal with
-   |  |- (interp_ExprA _ _ _ = interp_ExprA ?X1 ?X2 ?X3) => 
+   |  |- (interp_ExprA _ _ _ = interp_ExprA ?X1 ?X2 ?X3) =>
    sfun X1 X2 X3
    end.
 

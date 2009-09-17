@@ -40,7 +40,7 @@ let sig_ref = make_ref "Init.Specif.sig"
 let proj1_sig_ref = make_ref "Init.Specif.proj1_sig"
 let proj2_sig_ref = make_ref "Init.Specif.proj2_sig"
 
-let build_sig () = 
+let build_sig () =
   { proj1 = init_constant ["Init"; "Specif"] "proj1_sig";
     proj2 = init_constant ["Init"; "Specif"] "proj2_sig";
     elim = init_constant ["Init"; "Specif"] "sig_rec";
@@ -67,13 +67,13 @@ let eqdep_rec = lazy (init_constant ["Logic";"Eqdep"] "eq_dep_rec")
 let eqdep_ind_ref = lazy (init_reference [ "Logic";"Eqdep"] "eq_dep")
 let eqdep_intro_ref = lazy (init_reference [ "Logic";"Eqdep"] "eq_dep_intro")
 
-let jmeq_ind =   
-  lazy (check_required_library ["Coq";"Logic";"JMeq"]; 
+let jmeq_ind =
+  lazy (check_required_library ["Coq";"Logic";"JMeq"];
 	init_constant ["Logic";"JMeq"] "JMeq")
-let jmeq_rec = 
-  lazy (check_required_library ["Coq";"Logic";"JMeq"]; 
+let jmeq_rec =
+  lazy (check_required_library ["Coq";"Logic";"JMeq"];
 	init_constant ["Logic";"JMeq"] "JMeq_rec")
-let jmeq_refl = 
+let jmeq_refl =
   lazy (check_required_library ["Coq";"Logic";"JMeq"];
 	init_constant ["Logic";"JMeq"] "JMeq_refl")
 
@@ -88,7 +88,7 @@ let sumboolind = lazy (init_constant ["Init"; "Specif"] "sumbool")
 let natind = lazy (init_constant ["Init"; "Datatypes"] "nat")
 let intind = lazy (init_constant ["ZArith"; "binint"] "Z")
 let existSind = lazy (init_constant ["Init"; "Specif"] "sigS")
-  
+
 let existS = lazy (build_sigma_type ())
 
 let prod = lazy (build_prod ())
@@ -120,20 +120,20 @@ let debug_level = 2
 
 let debug_on = true
 
-let debug n s = 
+let debug n s =
   if debug_on then
     if !Flags.debug && n >= debug_level then
       msgnl s
     else ()
   else ()
 
-let debug_msg n s = 
+let debug_msg n s =
   if debug_on then
     if !Flags.debug  && n >= debug_level then s
     else mt ()
   else mt ()
 
-let trace s = 
+let trace s =
   if debug_on then
     if !Flags.debug  && debug_level > 0 then msgnl s
     else ()
@@ -145,28 +145,28 @@ let rec pp_list f = function
 
 let wf_relations = Hashtbl.create 10
 
-let std_relations () = 
+let std_relations () =
   let add k v = Hashtbl.add wf_relations k v in
     add (init_constant ["Init"; "Peano"] "lt")
       (lazy (init_constant ["Arith"; "Wf_nat"] "lt_wf"))
-      
+
 let std_relations = Lazy.lazy_from_fun std_relations
 
 type binders = Topconstr.local_binder list
 
-let app_opt c e = 
+let app_opt c e =
   match c with
       Some constr -> constr e
-    | None -> e	
+    | None -> e
 
-let print_args env args = 
+let print_args env args =
   Array.fold_right (fun a acc -> my_print_constr env a ++ spc () ++ acc) args (str "")
 
 let make_existential loc ?(opaque = Define true) env isevars c =
   let evar = Evarutil.e_new_evar isevars env ~src:(loc, QuestionMark opaque) c in
   let (key, args) = destEvar evar in
     (try trace (str "Constructed evar " ++ int key ++ str " applied to args: " ++
-		  print_args env args ++ str " for type: "++ 
+		  print_args env args ++ str " for type: "++
 		  my_print_constr env c) with _ -> ());
     evar
 
@@ -186,29 +186,29 @@ let string_of_hole_kind = function
   | GoalEvar -> "GoalEvar"
   | ImpossibleCase -> "ImpossibleCase"
 
-let evars_of_term evc init c = 
+let evars_of_term evc init c =
   let rec evrec acc c =
     match kind_of_term c with
     | Evar (n, _) when Evd.mem evc n -> Evd.add acc n (Evd.find evc n)
     | Evar (n, _) -> assert(false)
     | _ -> fold_constr evrec acc c
-  in 
+  in
     evrec init c
 
 let non_instanciated_map env evd evm =
-  List.fold_left 
-    (fun evm (key, evi) -> 
+  List.fold_left
+    (fun evm (key, evi) ->
        let (loc,k) = evar_source key !evd in
-	 debug 2 (str "evar " ++ int key ++ str " has kind " ++ 
+	 debug 2 (str "evar " ++ int key ++ str " has kind " ++
 		    str (string_of_hole_kind k));
-	 match k with 
+	 match k with
 	 | QuestionMark _ -> Evd.add evm key evi
 	 | ImplicitArg (_,_,false) -> Evd.add evm key evi
 	 | _ ->
 	     debug 2 (str " and is an implicit");
 	     Pretype_errors.error_unsolvable_implicit loc env evm (Evarutil.nf_evar_info evm evi) k None)
     Evd.empty (Evarutil.non_instantiated evm)
-    
+
 let global_kind = Decl_kinds.IsDefinition Decl_kinds.Definition
 let goal_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Definition
 
@@ -222,7 +222,7 @@ open Tactics
 open Tacticals
 
 let id x = x
-let filter_map f l = 
+let filter_map f l =
   let rec aux acc = function
       hd :: tl -> (match f hd with Some t -> aux (t :: acc) tl
 		     | None -> aux acc tl)
@@ -237,36 +237,36 @@ let build_dependent_sum l =
 	  (try trace (str " assert: " ++ my_print_constr (Global.env ()) hyptype)
 	   with _ -> ());
 	let tac = assert_tac (Name n) hyptype in
-	let conttac = 
-	  (fun cont -> 
+	let conttac =
+	  (fun cont ->
 	     conttac
 	     (tclTHENS tac
 		([intros;
-		  (tclTHENSEQ 
-		     [constructor_tac false (Some 1) 1 
+		  (tclTHENSEQ
+		     [constructor_tac false (Some 1) 1
 			(Rawterm.ImplicitBindings [inj_open (mkVar n)]);
 		      cont]);
 		 ])))
 	in
-	let conttype = 
-	  (fun typ -> 
+	let conttype =
+	  (fun typ ->
 	     let tex = mkLambda (Name n, t, typ) in
 	       conttype
 		 (mkApp (Lazy.force ex_ind, [| t; tex |])))
 	in
 	  aux (mkVar n :: names) conttac conttype tl
-    | (n, t) :: [] -> 
+    | (n, t) :: [] ->
 	(conttac intros, conttype t)
     | [] -> raise (Invalid_argument "build_dependent_sum")
-  in aux [] id id (List.rev l)       
-	  
+  in aux [] id id (List.rev l)
+
 open Proof_type
 open Tacexpr
 
-let mkProj1 a b c = 
+let mkProj1 a b c =
   mkApp (Lazy.force proj1, [| a; b; c |])
 
-let mkProj2 a b c = 
+let mkProj2 a b c =
   mkApp (Lazy.force proj2, [| a; b; c |])
 
 let mk_ex_pi1 a b c =
@@ -274,8 +274,8 @@ let mk_ex_pi1 a b c =
 
 let mk_ex_pi2 a b c =
   mkApp (Lazy.force ex_pi2, [| a; b; c |])
-    
-let mkSubset name typ prop = 
+
+let mkSubset name typ prop =
   mkApp ((Lazy.force sig_).typ,
 	 [| typ; mkLambda (name, typ, prop) |])
 
@@ -300,22 +300,22 @@ let mk_not c =
     mkApp (notc, [| c |])
 
 let and_tac l hook =
-  let andc = Coqlib.build_coq_and () in      
+  let andc = Coqlib.build_coq_and () in
   let rec aux ((accid, goal, tac, extract) as acc) = function
     | [] -> (* Singleton *) acc
-	
+
     | (id, x, elgoal, eltac) :: tl ->
 	let tac' = tclTHEN simplest_split (tclTHENLIST [tac; eltac]) in
 	let proj = fun c -> mkProj2 goal elgoal c in
 	let extract = List.map (fun (id, x, y, f) -> (id, x, y, (fun c -> f (mkProj1 goal elgoal c)))) extract in
-	  aux ((string_of_id id) ^ "_" ^ accid, mkApp (andc, [| goal; elgoal |]), tac', 
+	  aux ((string_of_id id) ^ "_" ^ accid, mkApp (andc, [| goal; elgoal |]), tac',
 	       (id, x, elgoal, proj) :: extract) tl
 
   in
-  let and_proof_id, and_goal, and_tac, and_extract = 
+  let and_proof_id, and_goal, and_tac, and_extract =
     match l with
       | [] -> raise (Invalid_argument "and_tac: empty list of goals")
-      | (hdid, x, hdg, hdt) :: tl -> 
+      | (hdid, x, hdg, hdt) :: tl ->
 	  aux (string_of_id hdid, hdg, hdt, [hdid, x, hdg, (fun c -> c)]) tl
   in
   let and_proofid = id_of_string (and_proof_id ^ "_and_proof") in
@@ -324,20 +324,20 @@ let and_tac l hook =
     trace (str "Started and proof");
     Pfedit.by and_tac;
     trace (str "Applied and tac")
-      
 
-let destruct_ex ext ex = 
-  let rec aux c acc = 
+
+let destruct_ex ext ex =
+  let rec aux c acc =
     match kind_of_term c with
 	App (f, args) ->
 	  (match kind_of_term f with
 	       Ind i when i = Term.destInd (Lazy.force ex_ind) && Array.length args = 2 ->
-		 let (dom, rng) = 
+		 let (dom, rng) =
 		   try (args.(0), args.(1))
 		   with _ -> assert(false)
 		 in
 		 let pi1 = (mk_ex_pi1 dom rng acc) in
-		 let rng_body = 
+		 let rng_body =
 		   match kind_of_term rng with
 		       Lambda (_, _, t) -> subst1 pi1 t
 		     | t -> rng
@@ -348,14 +348,14 @@ let destruct_ex ext ex =
   in aux ex ext
 
 open Rawterm
-	
+
 let id_of_name = function
     Name n -> n
   | Anonymous -> raise (Invalid_argument "id_of_name")
 
 let definition_message id =
   Nameops.pr_id id ++ str " is defined"
-    
+
 let recursive_message v =
   match Array.length v with
     | 0 -> error "no recursive definition"
@@ -398,7 +398,7 @@ let rec string_of_list sep f = function
   | x :: [] -> f x
   | x :: ((y :: _) as tl) -> f x ^ sep ^ string_of_list sep f tl
 
-let string_of_intset d = 
+let string_of_intset d =
   string_of_list "," string_of_int (Intset.elements d)
 
 (**********************************************************)
@@ -416,20 +416,20 @@ let pr_meta_map evd =
     | _ -> mt() in
   let pr_meta_binding = function
     | (mv,Cltyp (na,b)) ->
-      	hov 0 
+      	hov 0
 	  (pr_meta mv ++ pr_name na ++ str " : " ++
            print_constr b.rebus ++ fnl ())
     | (mv,Clval(na,b,_)) ->
-      	hov 0 
+      	hov 0
 	  (pr_meta mv ++ pr_name na ++ str " := " ++
              print_constr (fst b).rebus ++ fnl ())
   in
-  prlist pr_meta_binding ml    
+  prlist pr_meta_binding ml
 
 let pr_idl idl = prlist_with_sep pr_spc pr_id idl
 
 let pr_evar_info evi =
-  let phyps = 
+  let phyps =
     (*pr_idl (List.rev (ids_of_named_context (evar_context evi))) *)
     Printer.pr_named_context (Global.env()) (evar_context evi)
   in
@@ -442,7 +442,7 @@ let pr_evar_info evi =
   hov 2 (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]")
 
 let pr_evar_defs sigma =
-  h 0 
+  h 0
     (prlist_with_sep pr_fnl
       (fun (ev,evi) ->
         h 0 (str(string_of_existential ev)++str"=="++ pr_evar_info evi))
@@ -454,7 +454,7 @@ let pr_constraints pbs =
       print_constr t1 ++ spc() ++
       str (match pbty with
 	| Reduction.CONV -> "=="
-	| Reduction.CUMUL -> "<=") ++ 
+	| Reduction.CUMUL -> "<=") ++
       spc() ++ print_constr t2) pbs)
 
 let pr_evar_defs evd =

@@ -19,7 +19,7 @@ Section defs.
   Variable eqA : relation A.
 
   Let gtA (x y:A) := ~ leA x y.
-  
+
   Hypothesis leA_dec : forall x y:A, {leA x y} + {leA y x}.
   Hypothesis eqA_dec : forall x y:A, {eqA x y} + {~ eqA x y}.
   Hypothesis leA_refl : forall x y:A, eqA x y -> leA x y.
@@ -112,7 +112,7 @@ Section defs.
 
     (* 2 (leA a0 a) *)
     elim X0; simpl in |- *; intros.
-    apply merge_exist with (a0 :: l3); simpl in |- *; 
+    apply merge_exist with (a0 :: l3); simpl in |- *;
       auto using cons_sort, cons_leA with datatypes.
     apply meq_trans with
       (munion (singletonBag a0)

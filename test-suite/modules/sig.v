@@ -18,8 +18,8 @@ Module Type SPRYT.
   End N.
 End SPRYT.
 
-Module K : SPRYT := N.  
-Module K' : SPRYT := M.  
+Module K : SPRYT := N.
+Module K' : SPRYT := M.
 
 Module Type SIG.
   Definition T : Set := M.N.T.

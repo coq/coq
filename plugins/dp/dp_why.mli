@@ -7,7 +7,7 @@ val output_file : string -> query -> unit
 
 (* table to translate the proofs back to Coq (used in dp_zenon) *)
 
-type proof = 
+type proof =
   | Immediate of Term.constr
   | Fun_def of string * (string * typ) list * typ * term
 

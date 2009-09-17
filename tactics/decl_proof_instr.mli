@@ -23,7 +23,7 @@ val automation_tac : tactic
 
 val daimon_subtree: pftreestate -> pftreestate
 
-val concl_refiner: 
+val concl_refiner:
   Termops.meta_type_map -> constr -> Proof_type.goal sigma -> constr
 
 val do_instr: Decl_expr.raw_proof_instr -> pftreestate -> pftreestate
@@ -42,11 +42,11 @@ val execute_cases :
     (Names.Idset.elt * (Term.constr option * Term.constr list) list) list ->
     Term.constr list -> int -> Decl_mode.split_tree -> Proof_type.tactic
 
-val tree_of_pats : 
+val tree_of_pats :
   identifier * int -> (Rawterm.cases_pattern*recpath) list list ->
   split_tree
 
-val add_branch : 
+val add_branch :
   identifier * int -> (Rawterm.cases_pattern*recpath) list list ->
   split_tree -> split_tree
 
@@ -65,7 +65,7 @@ val build_dep_clause :   Term.types Decl_expr.statement list ->
     (Term.types Decl_expr.statement, Term.types Decl_expr.or_thesis)
     Decl_expr.hyp list -> Proof_type.goal Tacmach.sigma -> Term.types
 
-val register_dep_subcase :    
+val register_dep_subcase :
     Names.identifier * int ->
     Environ.env ->
     Decl_mode.per_info ->
@@ -77,27 +77,27 @@ val thesis_for :     Term.constr ->
 val close_previous_case : pftreestate -> pftreestate
 
 val pop_stacks :
-  (Names.identifier * 
-     (Term.constr option * Term.constr list) list) list -> 
-  (Names.identifier * 
+  (Names.identifier *
+     (Term.constr option * Term.constr list) list) list ->
+  (Names.identifier *
      (Term.constr option * Term.constr list) list) list
 
 val push_head :   Term.constr ->
   Names.Idset.t ->
-  (Names.identifier * 
+  (Names.identifier *
      (Term.constr option * Term.constr list) list) list ->
-  (Names.identifier * 
+  (Names.identifier *
      (Term.constr option * Term.constr list) list) list
 
 val push_arg : Term.constr ->
-  (Names.identifier * 
+  (Names.identifier *
      (Term.constr option * Term.constr list) list) list ->
-  (Names.identifier * 
+  (Names.identifier *
      (Term.constr option * Term.constr list) list) list
 
-val hrec_for: 
+val hrec_for:
     Names.identifier ->
-    Decl_mode.per_info -> Proof_type.goal Tacmach.sigma -> 
+    Decl_mode.per_info -> Proof_type.goal Tacmach.sigma ->
     Names.identifier -> Term.constr
 
 val consider_match :

@@ -67,10 +67,10 @@ Section Retracts.
 
 Variables A B : Prop.
 
-Record retract : Prop := 
+Record retract : Prop :=
   {i : A -> B; j : B -> A; inv : forall a:A, j (i a) = a}.
 
-Record retract_cond : Prop := 
+Record retract_cond : Prop :=
   {i2 : A -> B; j2 : B -> A; inv2 : retract -> forall a:A, j2 (i2 a) = a}.
 
 
@@ -94,7 +94,7 @@ Proof.
 intros A B.
 destruct (EM (retract (pow A) (pow B))) as [(f0,g0,e) | hf].
   exists f0 g0; trivial.
-  exists (fun (x:pow A) (y:B) => F) (fun (x:pow B) (y:A) => F); intros; 
+  exists (fun (x:pow A) (y:B) => F) (fun (x:pow B) (y:A) => F); intros;
     destruct hf; auto.
 Qed.
 

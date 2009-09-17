@@ -24,7 +24,7 @@ val poly_of_term : term -> poly
 
 val term_of_poly : poly -> term
 
-val term_of_sos : positivstellensatz * (Num.num * poly) list -> 
+val term_of_sos : positivstellensatz * (Num.num * poly) list ->
      positivstellensatz
 
 val string_of_poly : poly -> string

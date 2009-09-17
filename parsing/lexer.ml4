@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4use: "pr_o.cmo pa_macro.cmo" i*) 
+(*i camlp4use: "pr_o.cmo pa_macro.cmo" i*)
 (* Add pr_o.cmo to circumvent a useless-warning bug when preprocessed with
  * ast-based camlp4 *)
 
@@ -21,7 +21,7 @@ open Token
 
 module CharMap = Map.Make (struct type t = char let compare = compare end)
 
-type ttree = { 
+type ttree = {
   node : string option;
   branch : ttree CharMap.t }
 
@@ -29,7 +29,7 @@ let empty_ttree = { node = None; branch = CharMap.empty }
 
 let ttree_add ttree str =
   let rec insert tt i =
-    if i == String.length str then 
+    if i == String.length str then
       {node = Some str; branch = tt.branch}
     else
       let c = str.[i] in
@@ -42,7 +42,7 @@ let ttree_add ttree str =
               CharMap.add c (insert tt' (i + 1)) tt.branch
       in
       { node = tt.node; branch = br }
-  in 
+  in
   insert ttree 0
 
 (* Search a string in a dictionary: raises [Not_found]
@@ -52,14 +52,14 @@ let ttree_find ttree str =
   let rec proc_rec tt i =
     if i == String.length str then tt
     else proc_rec (CharMap.find str.[i] tt.branch) (i+1)
-  in 
+  in
   proc_rec ttree 0
 
 (* Removes a string from a dictionary: returns an equal dictionary
    if the word not present. *)
 let ttree_remove ttree str =
   let rec remove tt i =
-    if i == String.length str then 
+    if i == String.length str then
       {node = None; branch = tt.branch}
     else
       let c = str.[i] in
@@ -70,7 +70,7 @@ let ttree_remove ttree str =
           | None -> tt.branch
       in
       { node = tt.node; branch = br }
-  in 
+  in
   remove ttree 0
 
 
@@ -114,7 +114,7 @@ let check_utf8_trailing_byte cs c =
 (* but don't certify full utf8 compliance (e.g. no emptyness check) *)
 let lookup_utf8_tail c cs =
   let c1 = Char.code c in
-  if c1 land 0x40 = 0 or c1 land 0x38 = 0x38 then error_utf8 cs 
+  if c1 land 0x40 = 0 or c1 land 0x38 = 0x38 then error_utf8 cs
   else
     let n, unicode =
       if c1 land 0x20 = 0 then
@@ -127,20 +127,20 @@ let lookup_utf8_tail c cs =
       match Stream.npeek 3 cs with
       | [_;c2;c3] ->
 	  check_utf8_trailing_byte cs c2; check_utf8_trailing_byte cs c3;
-	  3, (c1 land 0x0F) lsl 12 + (Char.code c2 land 0x3F) lsl 6 + 
+	  3, (c1 land 0x0F) lsl 12 + (Char.code c2 land 0x3F) lsl 6 +
 	  (Char.code c3 land 0x3F)
       | _ -> error_utf8 cs
       else match Stream.npeek 4 cs with
       | [_;c2;c3;c4] ->
 	  check_utf8_trailing_byte cs c2; check_utf8_trailing_byte cs c3;
-	  check_utf8_trailing_byte cs c4; 
+	  check_utf8_trailing_byte cs c4;
 	  4, (c1 land 0x07) lsl 18 + (Char.code c2 land 0x3F) lsl 12 +
 	  (Char.code c3 land 0x3F) lsl 6 + (Char.code c4 land 0x3F)
       | _ -> error_utf8 cs
     in
     try classify_unicode unicode, n
     with UnsupportedUtf8 -> error_unsupported_unicode_character n cs
-	
+
 let lookup_utf8 cs =
   match Stream.peek cs with
     | Some ('\x00'..'\x7F') -> AsciiChar
@@ -177,15 +177,15 @@ let check_keyword str =
 (* Keyword and symbol dictionary *)
 let token_tree = ref empty_ttree
 
-let is_keyword s = 
-  try match (ttree_find !token_tree s).node with None -> false | Some _ -> true 
+let is_keyword s =
+  try match (ttree_find !token_tree s).node with None -> false | Some _ -> true
   with Not_found -> false
 
 let add_keyword str =
   check_keyword str;
   token_tree := ttree_add !token_tree str
 
-let remove_keyword str = 
+let remove_keyword str =
   token_tree := ttree_remove !token_tree str
 
 (* Adding a new token (keyword or special token). *)
@@ -248,13 +248,13 @@ let rec string in_comments bp len = parser
       if esc then string in_comments bp (store len '"') s else len
   | [< ''*'; s >] ->
       (parser
-        | [< '')'; s >] -> 
+        | [< '')'; s >] ->
 	    if in_comments then
 	      warning "Not interpreting \"*)\" as the end of current non-terminated comment because it occurs in a non-terminated string of the comment.";
-	    string in_comments bp (store (store len '*') ')') s 
+	    string in_comments bp (store (store len '*') ')') s
         | [< >] ->
 	    string in_comments bp (store len '*') s) s
-  | [< 'c; s >] -> string in_comments bp (store len c) s 
+  | [< 'c; s >] -> string in_comments bp (store len c) s
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
 
 (* Hook for exporting comment into xml theory files *)
@@ -270,8 +270,8 @@ let between_com = ref true
 
 type com_state = int option * string * bool
 let restore_com_state (o,s,b) =
-  comment_begin := o; 
-  Buffer.clear current; Buffer.add_string current s; 
+  comment_begin := o;
+  Buffer.clear current; Buffer.add_string current s;
   between_com := b
 let dflt_com = (None,"",true)
 let com_state () =
@@ -326,13 +326,13 @@ let rec comm_string bp = parser
                  | [< >] -> real_push_char '\\'); s >]
      -> comm_string bp s
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
-  | [< 'c; s >] -> real_push_char c; comm_string bp s 
+  | [< 'c; s >] -> real_push_char c; comm_string bp s
 
 let rec comment bp = parser bp2
   | [< ''(';
        _ = (parser
               | [< ''*'; s >] -> push_string "(*"; comment bp s
-              | [< >] -> push_string "(" ); 
+              | [< >] -> push_string "(" );
        s >] -> comment bp s
   | [< ''*';
        _ = parser
@@ -356,7 +356,7 @@ let rec progress_further last nj tt cs =
 and update_longest_valid_token last nj tt cs =
   match tt.node with
   | Some _ as last' ->
-      for i=1 to nj do Stream.junk cs done; 
+      for i=1 to nj do Stream.junk cs done;
       progress_further last' 0 tt cs
   | None ->
       progress_further last nj tt cs
@@ -374,7 +374,7 @@ and progress_utf8 last nj n c tt cs =
 	 List.iter (check_utf8_trailing_byte cs) l;
 	 let tt = List.fold_left (fun tt c -> CharMap.find c tt.branch) tt l in
 	 update_longest_valid_token last (nj+n) tt cs
-      | _ -> 
+      | _ ->
 	  error_utf8 cs
   with Not_found ->
     last
@@ -404,7 +404,7 @@ let process_chars bp c cs =
 
 let parse_after_dollar bp =
   parser
-  | [< ' ('a'..'z' | 'A'..'Z' | '_' as c); len = ident_tail (store 0 c) >] -> 
+  | [< ' ('a'..'z' | 'A'..'Z' | '_' as c); len = ident_tail (store 0 c) >] ->
       ("METAIDENT", get_buff len)
   | [< s >] ->
       match lookup_utf8 s with
@@ -419,9 +419,9 @@ let parse_after_dot bp c =
       ("FIELD", get_buff len)
   | [< s >] ->
       match lookup_utf8 s with
-      | Utf8Token (UnicodeLetter, n) -> 
+      | Utf8Token (UnicodeLetter, n) ->
 	  ("FIELD", get_buff (ident_tail (nstore n 0 s) s))
-      | AsciiChar | Utf8Token _ | EmptyStream -> 
+      | AsciiChar | Utf8Token _ | EmptyStream ->
 	  fst (process_chars bp c s)
 
 (* Parse what follows a question mark *)
@@ -449,7 +449,7 @@ let rec next_token = parser bp
       let t = parse_after_qmark bp s in comment_stop bp; (t, (ep, bp))
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
        len = ident_tail (store 0 c); s >] ep ->
-      let id = get_buff len in 
+      let id = get_buff len in
       comment_stop bp;
       (try ("", find_keyword id s) with Not_found -> ("IDENT", id)), (bp, ep)
   | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
@@ -475,7 +475,7 @@ let rec next_token = parser bp
 	    let ep = Stream.count s in
 	    comment_stop bp;
 	    (try ("",find_keyword id s) with Not_found -> ("IDENT",id)), (bp, ep)
-	| AsciiChar | Utf8Token ((UnicodeSymbol | UnicodeIdentPart), _) -> 
+	| AsciiChar | Utf8Token ((UnicodeSymbol | UnicodeIdentPart), _) ->
 	    let t = process_chars bp (Stream.next s) s in
 	    comment_stop bp; t
 	| EmptyStream ->
@@ -540,7 +540,7 @@ let token_text = function
   | ("STRING", "") -> "string"
   | ("EOI", "") -> "end of input"
   | (con, "") -> con
-  | (con, prm) -> con ^ " \"" ^ prm ^ "\"" 
+  | (con, prm) -> con ^ " \"" ^ prm ^ "\""
 
 (* The lexer of Coq *)
 
@@ -552,7 +552,7 @@ let token_text = function
    we unfreeze the state of the lexer. This restores the behaviour of the
    lexer. B.B. *)
 
-IFDEF CAMLP5 THEN 
+IFDEF CAMLP5 THEN
 
 let lexer = {
   Token.tok_func = func;
@@ -562,7 +562,7 @@ let lexer = {
   Token.tok_comm = None;
   Token.tok_text = token_text }
 
-ELSE 
+ELSE
 
 let lexer = {
   Token.func = func;
@@ -582,7 +582,7 @@ let is_ident_not_keyword s =
 
 let is_number s =
   let rec aux i =
-    String.length s = i or 
+    String.length s = i or
     match s.[i] with '0'..'9' -> aux (i+1) | _ -> false
   in aux 0
 

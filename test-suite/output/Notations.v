@@ -64,26 +64,26 @@ Open Scope nat_scope.
 
 Inductive znat : Set := Zpos (n : nat) | Zneg (m : nat).
 Coercion Zpos: nat >-> znat.
- 
+
 Delimit Scope znat_scope with znat.
 Open Scope znat_scope.
- 
+
 Variable addz : znat -> znat -> znat.
 Notation "z1 + z2" := (addz z1 z2) : znat_scope.
 
   (* Check that "3+3", where 3 is in nat and the coercion to znat is implicit,
-     is printed the same way, and not "S 2 + S 2" as if numeral printing was 
+     is printed the same way, and not "S 2 + S 2" as if numeral printing was
      only tested with coercion still present *)
 
 Check (3+3).
 
 (**********************************************************************)
 (* Check recursive notations                                          *)
- 
+
 Require Import List.
 Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..).
 Check [1;2;4].
-  
+
 Reserved Notation "( x ; y , .. , z )" (at level 0).
 Notation "( x ; y , .. , z )" := (pair .. (pair x y) .. z).
 Check (1;2,4).
@@ -102,7 +102,7 @@ Check (pred 3).
 Check (fun n => match n with 0 => 0 | S n => n end).
 Check (fun n => match n with S p as x => p | y => 0 end).
 
-Notation "'ifn' x 'is' 'succ' n 'then' t 'else' u" := 
+Notation "'ifn' x 'is' 'succ' n 'then' t 'else' u" :=
   (match x with O => u | S n => t end) (at level 0, u at level 0).
 Check fun x => ifn x is succ n then n else 0.
 

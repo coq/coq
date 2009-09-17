@@ -72,7 +72,7 @@ val pattern_of_constr : constr -> constr_pattern
    a pattern; variables bound in [l] are replaced by the pattern to which they
     are bound *)
 
-val pattern_of_rawconstr : rawconstr -> 
+val pattern_of_rawconstr : rawconstr ->
       patvar list * constr_pattern
 
 val instantiate_pattern :

@@ -25,20 +25,20 @@ type 'a t = (global_reference,constr_pattern,'a) Dn.t
 
 (*If we have: f a b c ..., decomp gives: (f,[a;b;c;...])*)
 
-let decomp = 
+let decomp =
   let rec decrec acc c = match kind_of_term c with
     | App (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
     | Cast (c1,_,_) -> decrec acc c1
     | _ -> (c,acc)
-  in 
+  in
   decrec []
 
-let decomp_pat = 
+let decomp_pat =
   let rec decrec acc = function
     | PApp (f,args) -> decrec (Array.to_list args @ acc) f
     | c -> (c,acc)
-  in 
-  decrec []   
+  in
+  decrec []
 
 let constr_pat_discr t =
   if not (occur_meta_pattern t) then
@@ -54,7 +54,7 @@ let constr_pat_discr_st (idpred,cpred) t =
   match decomp_pat t with
   | PRef ((IndRef _) as ref), args
   | PRef ((ConstructRef _ ) as ref), args -> Some (ref,args)
-  | PRef ((VarRef v) as ref), args when not (Idpred.mem v idpred) -> 
+  | PRef ((VarRef v) as ref), args when not (Idpred.mem v idpred) ->
       Some(ref,args)
   | PVar v, args when not (Idpred.mem v idpred) ->
       Some(VarRef v,args)
@@ -64,7 +64,7 @@ let constr_pat_discr_st (idpred,cpred) t =
 
 open Dn
 
-let constr_val_discr t =  
+let constr_val_discr t =
   let c, l = decomp t in
     match kind_of_term c with
     | Ind ind_sp -> Label(IndRef ind_sp,l)
@@ -72,8 +72,8 @@ let constr_val_discr t =
     | Var id -> Label(VarRef id,l)
     | Const _ -> Everything
     | _ -> Nothing
-	
-let constr_val_discr_st (idpred,cpred) t =  
+
+let constr_val_discr_st (idpred,cpred) t =
   let c, l = decomp t in
     match kind_of_term c with
     | Const c -> if Cpred.mem c cpred then Everything else Label(ConstRef c,l)
@@ -83,12 +83,12 @@ let constr_val_discr_st (idpred,cpred) t =
     | Evar _ -> Everything
     | _ -> Nothing
 
-let create = Dn.create 
+let create = Dn.create
 
 let add dn st = Dn.add dn (constr_pat_discr_st st)
 
 let rmv dn st = Dn.rmv dn (constr_pat_discr_st st)
 
 let lookup dn st t = Dn.lookup dn (constr_val_discr_st st) t
-  
+
 let app f dn = Dn.app f dn

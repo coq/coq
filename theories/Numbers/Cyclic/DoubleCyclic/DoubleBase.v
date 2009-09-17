@@ -29,8 +29,8 @@ Section DoubleBase.
  Variable w_zdigits: w.
  Variable w_add: w -> w -> zn2z w.
  Variable w_to_Z   : w -> Z.
- Variable w_compare : w -> w -> comparison. 
- 
+ Variable w_compare : w -> w -> comparison.
+
  Definition ww_digits := xO w_digits.
 
  Definition ww_zdigits := w_add w_zdigits w_zdigits.
@@ -46,7 +46,7 @@ Section DoubleBase.
   | W0, W0 => W0
   | _, _ => WW xh xl
   end.
- 
+
  Definition ww_W0 h : zn2z (zn2z w) :=
   match h with
   | W0 => W0
@@ -58,10 +58,10 @@ Section DoubleBase.
   | W0 => W0
   | _ => WW W0 l
   end.
- 
- Definition double_WW (n:nat) := 
-  match n return word w n -> word w n -> word w (S n) with 
-  | O => w_WW 
+
+ Definition double_WW (n:nat) :=
+  match n return word w n -> word w n -> word w (S n) with
+  | O => w_WW
   | S n =>
     fun (h l : zn2z (word w n)) =>
      match h, l with
@@ -70,8 +70,8 @@ Section DoubleBase.
      end
   end.
 
- Fixpoint double_digits (n:nat) : positive := 
-  match n with 
+ Fixpoint double_digits (n:nat) : positive :=
+  match n with
   | O => w_digits
   | S n => xO (double_digits n)
   end.
@@ -80,7 +80,7 @@ Section DoubleBase.
 
  Fixpoint double_to_Z (n:nat) : word w n -> Z :=
   match n return word w n -> Z with
-  | O => w_to_Z 
+  | O => w_to_Z
   | S n => zn2z_to_Z (double_wB n) (double_to_Z n)
   end.
 
@@ -98,21 +98,21 @@ Section DoubleBase.
   end.
 
  Definition double_0 n : word w n :=
-   match n return word w n with 
+   match n return word w n with
    | O => w_0
    | S _ => W0
    end.
- 
+
  Definition double_split (n:nat) (x:zn2z (word w n)) :=
-  match x with 
-  | W0 => 
-    match n return word w n * word w n with 
+  match x with
+  | W0 =>
+    match n return word w n * word w n with
     | O => (w_0,w_0)
     | S _ => (W0, W0)
     end
   | WW h l => (h,l)
   end.
- 
+
  Definition ww_compare x y :=
   match x, y with
   | W0, W0 => Eq
@@ -148,15 +148,15 @@ Section DoubleBase.
       end
   end.
 
-  
+
  Section DoubleProof.
   Notation wB  := (base w_digits).
   Notation wwB := (base ww_digits).
   Notation "[| x |]" := (w_to_Z x)  (at level 0, x at level 99).
   Notation "[[ x ]]" := (ww_to_Z x)  (at level 0, x at level 99).
-  Notation "[+[ c ]]" := 
+  Notation "[+[ c ]]" :=
    (interp_carry 1 wwB ww_to_Z c) (at level 0, x at level 99).
-  Notation "[-[ c ]]" := 
+  Notation "[-[ c ]]" :=
    (interp_carry (-1) wwB ww_to_Z c) (at level 0, x at level 99).
   Notation "[! n | x !]" := (double_to_Z n x) (at level 0, x at level 99).
 
@@ -188,7 +188,7 @@ Section DoubleBase.
   Proof. simpl;rewrite spec_w_Bm1;rewrite wwB_wBwB;ring. Qed.
 
   Lemma lt_0_wB : 0 < wB.
-  Proof. 
+  Proof.
    unfold base;apply Zpower_gt_0. unfold Zlt;reflexivity.
    unfold Zle;intros H;discriminate H.
   Qed.
@@ -197,25 +197,25 @@ Section DoubleBase.
   Proof. rewrite wwB_wBwB; rewrite Zpower_2; apply Zmult_lt_0_compat;apply lt_0_wB. Qed.
 
   Lemma wB_pos: 1 < wB.
-  Proof. 
+  Proof.
    unfold base;apply Zlt_le_trans with (2^1).  unfold Zlt;reflexivity.
    apply Zpower_le_monotone.  unfold Zlt;reflexivity.
    split;unfold Zle;intros H. discriminate H.
    clear spec_w_0W w_0W spec_w_Bm1 spec_to_Z spec_w_WW w_WW.
    destruct w_digits; discriminate H.
   Qed.
- 
-  Lemma wwB_pos: 1 < wwB. 
+
+  Lemma wwB_pos: 1 < wwB.
   Proof.
    assert (H:= wB_pos);rewrite wwB_wBwB;rewrite <-(Zmult_1_r 1).
    rewrite Zpower_2.
    apply Zmult_lt_compat2;(split;[unfold Zlt;reflexivity|trivial]).
-   apply Zlt_le_weak;trivial. 
+   apply Zlt_le_weak;trivial.
   Qed.
 
   Theorem wB_div_2:  2 * (wB / 2) = wB.
   Proof.
-   clear spec_w_0 w_0 spec_w_1 w_1 spec_w_Bm1 w_Bm1 spec_w_WW spec_w_0W 
+   clear spec_w_0 w_0 spec_w_1 w_1 spec_w_Bm1 w_Bm1 spec_w_WW spec_w_0W
     spec_to_Z;unfold base.
    assert (2 ^ Zpos w_digits = 2 * (2 ^ (Zpos w_digits - 1))).
    pattern 2 at 2; rewrite <- Zpower_1_r.
@@ -228,7 +228,7 @@ Section DoubleBase.
 
   Theorem wwB_div_2 : wwB / 2 = wB / 2 * wB.
   Proof.
-   clear spec_w_0 w_0 spec_w_1 w_1 spec_w_Bm1 w_Bm1 spec_w_WW spec_w_0W 
+   clear spec_w_0 w_0 spec_w_1 w_1 spec_w_Bm1 w_Bm1 spec_w_WW spec_w_0W
     spec_to_Z.
    rewrite wwB_wBwB; rewrite Zpower_2.
    pattern wB at 1; rewrite <- wB_div_2; auto.
@@ -236,11 +236,11 @@ Section DoubleBase.
    repeat (rewrite (Zmult_comm 2); rewrite Z_div_mult); auto with zarith.
   Qed.
 
-  Lemma mod_wwB : forall z x, 
+  Lemma mod_wwB : forall z x,
    (z*wB + [|x|]) mod wwB = (z mod wB)*wB + [|x|].
   Proof.
    intros z x.
-   rewrite Zplus_mod. 
+   rewrite Zplus_mod.
    pattern wwB at 1;rewrite wwB_wBwB; rewrite Zpower_2.
    rewrite Zmult_mod_distr_r;try apply lt_0_wB.
    rewrite (Zmod_small [|x|]).
@@ -260,8 +260,8 @@ Section DoubleBase.
    destruct (spec_to_Z x);trivial.
   Qed.
 
-  Lemma wB_div_plus : forall x y p, 
-   0 <= p -> 
+  Lemma wB_div_plus : forall x y p,
+   0 <= p ->
    ([|x|]*wB + [|y|]) / 2^(Zpos w_digits + p) = [|x|] / 2^p.
   Proof.
    clear spec_w_0 spec_w_1 spec_w_Bm1 w_0 w_1 w_Bm1.
@@ -277,7 +277,7 @@ Section DoubleBase.
    assert (0 < Zpos w_digits). compute;reflexivity.
    unfold ww_digits;rewrite Zpos_xO;auto with zarith.
   Qed.
- 
+
   Lemma w_to_Z_wwB : forall x, x < wB -> x < wwB.
   Proof.
    intros x H;apply Zlt_trans with wB;trivial;apply lt_wB_wwB.
@@ -298,7 +298,7 @@ Section DoubleBase.
   Proof.
    intros n;unfold double_wB;simpl.
    unfold base;rewrite (Zpos_xO (double_digits n)).
-   replace  (2 * Zpos (double_digits n)) with 
+   replace  (2 * Zpos (double_digits n)) with
      (Zpos (double_digits n) + Zpos (double_digits n)).
    symmetry; apply Zpower_exp;intro;discriminate.
    ring.
@@ -327,7 +327,7 @@ Section DoubleBase.
   unfold base; auto with zarith.
   Qed.
 
-  Lemma spec_double_to_Z : 
+  Lemma spec_double_to_Z :
    forall n (x:word w n), 0 <= [!n | x!] < double_wB n.
   Proof.
   clear spec_w_0 spec_w_1 spec_w_Bm1 w_0 w_1 w_Bm1.
@@ -347,7 +347,7 @@ Section DoubleBase.
   Qed.
 
   Lemma spec_get_low:
-  forall n x, 
+  forall n x,
      [!n | x!] < wB ->  [|get_low n x|] = [!n | x!].
   Proof.
   clear spec_w_1 spec_w_Bm1.
@@ -380,19 +380,19 @@ Section DoubleBase.
   Qed.
 
   Lemma spec_extend_aux : forall n x, [!S n|extend_aux n x!] = [[x]].
-  Proof. induction n;simpl;trivial. Qed. 
+  Proof. induction n;simpl;trivial. Qed.
 
   Lemma spec_extend : forall n x, [!S n|extend n x!] = [|x|].
-  Proof. 
+  Proof.
    intros n x;assert (H:= spec_w_0W x);unfold extend.
-   destruct (w_0W x);simpl;trivial. 
+   destruct (w_0W x);simpl;trivial.
    rewrite <- H;exact (spec_extend_aux n (WW w0 w1)).
   Qed.
 
   Lemma spec_double_0 : forall n, [!n|double_0 n!] = 0.
   Proof. destruct n;trivial. Qed.
 
-  Lemma spec_double_split : forall n x, 
+  Lemma spec_double_split : forall n x,
    let (h,l) := double_split n x in
    [!S n|x!] = [!n|h!] * double_wB n + [!n|l!].
   Proof.
@@ -401,9 +401,9 @@ Section DoubleBase.
    rewrite spec_w_0;trivial.
   Qed.
 
-  Lemma wB_lex_inv: forall a b c d, 
-      a < c -> 
-      a * wB + [|b|] < c  * wB + [|d|]. 
+  Lemma wB_lex_inv: forall a b c d,
+      a < c ->
+      a * wB + [|b|] < c  * wB + [|d|].
   Proof.
    intros a b c d H1; apply beta_lex_inv with (1 := H1); auto.
   Qed.
@@ -420,7 +420,7 @@ Section DoubleBase.
     intros H;rewrite spec_w_0 in H.
    rewrite <- H;simpl;rewrite <- spec_w_0;apply spec_w_compare.
    change 0 with (0*wB+0);pattern 0 at 2;rewrite <- spec_w_0.
-   apply wB_lex_inv;trivial. 
+   apply wB_lex_inv;trivial.
    absurd (0 <= [|yh|]). apply Zgt_not_le;trivial.
    destruct (spec_to_Z yh);trivial.
    generalize (spec_w_compare xh w_0);destruct (w_compare xh w_0);
@@ -429,8 +429,8 @@ Section DoubleBase.
    absurd (0 <= [|xh|]). apply Zgt_not_le;apply Zlt_gt;trivial.
    destruct (spec_to_Z xh);trivial.
    apply Zlt_gt;change 0 with (0*wB+0);pattern 0 at 2;rewrite <- spec_w_0.
-   apply wB_lex_inv;apply Zgt_lt;trivial. 
-  
+   apply wB_lex_inv;apply Zgt_lt;trivial.
+
    generalize (spec_w_compare xh yh);destruct (w_compare xh yh);intros H.
    rewrite H;generalize (spec_w_compare xl yl);destruct (w_compare xl yl);
    intros H1;[rewrite H1|apply Zplus_lt_compat_l|apply Zplus_gt_compat_l];
@@ -439,7 +439,7 @@ Section DoubleBase.
    apply Zlt_gt;apply wB_lex_inv;apply Zgt_lt;trivial.
   Qed.
 
-   
+
  End DoubleProof.
 
 End DoubleBase.

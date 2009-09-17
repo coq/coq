@@ -23,30 +23,30 @@ let pr_tactic = function
   | TacArg (Tacexp t) ->
       (*top tactic from tacinterp*)
       Pptactic.pr_glob_tactic (Global.env()) t
-  | t -> 
+  | t ->
       Pptactic.pr_tactic (Global.env()) t
 
-let pr_proof_instr instr = 
+let pr_proof_instr instr =
     Ppdecl_proof.pr_proof_instr (Global.env()) instr
 
 let pr_rule = function
   | Prim r -> hov 0 (pr_prim_rule r)
   | Nested(cmpd,_) ->
       begin
-	match cmpd with 
+	match cmpd with
 	  | Tactic (texp,_) -> hov 0 (pr_tactic texp)
 	  | Proof_instr (_,instr) -> hov 0 (pr_proof_instr instr)
       end
   | Daimon -> str "<Daimon>"
-  | Decl_proof _ -> str "proof" 
+  | Decl_proof _ -> str "proof"
 
 let uses_default_tac = function
   | Nested(Tactic(_,dflt),_) -> dflt
   | _ -> false
 
 (* Does not print change of evars *)
-let pr_rule_dot = function 
-  | Prim Change_evars ->str "PC: ch_evars" ++  mt () 
+let pr_rule_dot = function
+  | Prim Change_evars ->str "PC: ch_evars" ++  mt ()
       (* PC: this might be redundant *)
   | r ->
       pr_rule r ++ if uses_default_tac r then str "..." else str"."
@@ -66,7 +66,7 @@ exception Different
 let thin_sign osign sign =
   Sign.fold_named_context
     (fun (id,c,ty as d) sign ->
-       try 
+       try
 	 if Sign.lookup_named id osign = (id,c,ty) then sign
 	 else raise Different
        with Not_found | Different -> Environ.push_named_context_val d sign)
@@ -76,17 +76,17 @@ let rec print_proof _sigma osign pf =
   let hyps = Environ.named_context_of_val pf.goal.evar_hyps in
   let hyps' = thin_sign osign hyps in
   match pf.ref with
-    | None -> 
+    | None ->
 	hov 0 (pr_goal {pf.goal with evar_hyps=hyps'})
     | Some(r,spfl) ->
-    	hov 0 
+    	hov 0
 	  (hov 0 (pr_goal {pf.goal with evar_hyps=hyps'}) ++
 	   spc () ++ str" BY " ++
 	   hov 0 (pr_rule r) ++ fnl () ++
 	   str"  " ++
 	   hov 0 (prlist_with_sep pr_fnl (print_proof _sigma hyps) spfl))
-	  
-let pr_change gl = 
+
+let pr_change gl =
   str"change " ++
   pr_lconstr_env (Global.env_of_context gl.evar_hyps) gl.evar_concl ++ str"."
 
@@ -94,9 +94,9 @@ let print_decl_script tac_printer ?(nochange=true) sigma pf =
   let rec print_prf pf =
   match pf.ref with
     | None ->
-	(if nochange then 
+	(if nochange then
 	   (str"<Your Proof Text here>")
-	 else 
+	 else
 	   pr_change pf.goal)
 	++ fnl ()
     | Some (Daimon,[]) -> str "(* Some proof has been skipped here *)"
@@ -114,17 +114,17 @@ let print_decl_script tac_printer ?(nochange=true) sigma pf =
 	      (if opened then mt () else str "end claim." ++ fnl ()) ++
 	      print_prf cont
 	  | Pfocus _,[body;cont] ->
-	      hov 2 (pr_rule_dot_fnl rule ++ print_prf body) ++ 
+	      hov 2 (pr_rule_dot_fnl rule ++ print_prf body) ++
 	      fnl () ++
 	      (if opened then mt () else str "end focus." ++ fnl ()) ++
 	      print_prf cont
 	  | (Psuppose _ |Pcase (_,_,_)),[body;cont] ->
 	      hov 2 (pr_rule_dot_fnl rule ++ print_prf body) ++ fnl () ++
-	      print_prf cont 
+	      print_prf cont
 	  | _,[next] ->
 	      pr_rule_dot_fnl rule ++ print_prf next
 	  | _,[] ->
-	      pr_rule_dot rule		
+	      pr_rule_dot rule
 	  | _,_ -> anomaly "unknown branching instruction"
 	end
     | _ -> anomaly "Not Applicable" in
@@ -134,19 +134,19 @@ let print_script ?(nochange=true) sigma pf =
   let rec print_prf pf =
   match pf.ref with
     | None ->
-        (if nochange then 
-	   (str"<Your Tactic Text here>") 
-	 else 
+        (if nochange then
+	   (str"<Your Tactic Text here>")
+	 else
 	   pr_change pf.goal)
 	++ fnl ()
     | Some(Decl_proof opened,script) ->
 	assert (List.length script = 1);
 	begin
-	  if nochange then (mt ()) else (pr_change pf.goal ++ fnl ()) 
+	  if nochange then (mt ()) else (pr_change pf.goal ++ fnl ())
 	end ++
 	  begin
-	    hov 0 (str "proof." ++ fnl () ++ 
-		     print_decl_script print_prf 
+	    hov 0 (str "proof." ++ fnl () ++
+		     print_decl_script print_prf
 		     ~nochange sigma (List.hd script))
 	  end ++ fnl () ++
 	  begin
@@ -167,7 +167,7 @@ let print_treescript ?(nochange=true) sigma pf =
   let rec print_prf pf =
     match pf.ref with
     | None ->
-        if nochange then 
+        if nochange then
 	  if pf.goal.evar_extra=None then str"<Your Tactic Text here>"
 	  else str"<Your Proof Text here>"
 	else pr_change pf.goal
@@ -176,10 +176,10 @@ let print_treescript ?(nochange=true) sigma pf =
 	begin
 	  if nochange then mt () else pr_change pf.goal ++ fnl ()
 	end ++
-	hov 0 
+	hov 0
 	  begin str "proof." ++ fnl () ++
-	    print_decl_script print_prf ~nochange sigma (List.hd script) 
-	  end ++ fnl () ++ 
+	    print_decl_script print_prf ~nochange sigma (List.hd script)
+	  end ++ fnl () ++
 	begin
 	  if opened then mt () else (str "end proof." ++ fnl ())
 	end
@@ -197,27 +197,27 @@ let rec print_info_script sigma osign pf =
   match pf.ref with
     | None -> (mt ())
     | Some(r,spfl) ->
-        (pr_rule r ++ 
+        (pr_rule r ++
            match spfl with
              | [pf1] ->
-                 if pf1.ref = None then 
+                 if pf1.ref = None then
 		   (str "." ++ fnl ())
-                 else 
+                 else
 		   (str";" ++ brk(1,3) ++
-		      print_info_script sigma 
+		      print_info_script sigma
 		      (Environ.named_context_of_val sign) pf1)
              | _ -> (str"." ++ fnl () ++
                        prlist_with_sep pr_fnl
-                         (print_info_script sigma 
+                         (print_info_script sigma
 			    (Environ.named_context_of_val sign)) spfl))
 
-let format_print_info_script sigma osign pf = 
+let format_print_info_script sigma osign pf =
   hov 0 (print_info_script sigma osign pf)
-    
-let print_subscript sigma sign pf = 
-  if is_tactic_proof pf then 
+
+let print_subscript sigma sign pf =
+  if is_tactic_proof pf then
     format_print_info_script sigma sign (subproof_of_proof pf)
-  else 
+  else
     format_print_info_script sigma sign pf
 
 let _ = Refiner.set_info_printer print_subscript

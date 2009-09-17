@@ -14,14 +14,14 @@ open Sign
 
 
 val subst_in_constr : (object_name*substitution*(inductive*constr))
-                     -> (inductive*constr) 
+                     -> (inductive*constr)
 
 val compute_bl_goal : inductive -> rel_context -> int -> types
-val compute_bl_tact : inductive -> rel_context -> int -> unit 
-val compute_lb_goal : inductive -> rel_context -> int -> types 
-val compute_lb_tact : inductive -> rel_context -> int -> unit 
+val compute_bl_tact : inductive -> rel_context -> int -> unit
+val compute_lb_goal : inductive -> rel_context -> int -> types
+val compute_lb_tact : inductive -> rel_context -> int -> unit
 val compute_dec_goal : inductive -> rel_context -> int -> types
-val compute_dec_tact : inductive -> rel_context -> int -> unit 
+val compute_dec_tact : inductive -> rel_context -> int -> unit
 
 
 val make_eq_scheme :mutual_inductive -> types array

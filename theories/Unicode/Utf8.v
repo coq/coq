@@ -19,11 +19,11 @@ Notation "∀ x y z u , P" := (forall x y z u , P)
   : type_scope.
 Notation "∀ x : t , P" := (forall x : t , P)
   (at level 200, x ident, right associativity) : type_scope.
-Notation "∀ x y : t , P" := (forall x y : t , P) 
+Notation "∀ x y : t , P" := (forall x y : t , P)
   (at level 200, x ident, y ident, right associativity) : type_scope.
 Notation "∀ x y z : t , P" := (forall x y z : t , P)
   (at level 200, x ident, y ident, z ident, right associativity) : type_scope.
-Notation "∀ x y z u : t , P" := (forall x y z u : t , P) 
+Notation "∀ x y z u : t , P" := (forall x y z u : t , P)
   (at level 200, x ident, y ident, z ident, u ident, right associativity)
   : type_scope.
 

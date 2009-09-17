@@ -44,7 +44,7 @@ type definition_object_kind =
 
 type assumption_object_kind = Definitional | Logical | Conjectural
 
-(* [assumption_kind] 
+(* [assumption_kind]
 
                 |  Local      | Global
    ------------------------------------

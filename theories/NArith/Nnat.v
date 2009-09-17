@@ -39,7 +39,7 @@ Definition N_of_nat (n:nat) :=
 Lemma N_of_nat_of_N : forall a:N, N_of_nat (nat_of_N a) = a.
 Proof.
   destruct a as [| p]. reflexivity.
-  simpl in |- *. elim (ZL4 p). intros n H. rewrite H. simpl in |- *. 
+  simpl in |- *. elim (ZL4 p). intros n H. rewrite H. simpl in |- *.
   rewrite <- nat_of_P_o_P_of_succ_nat_eq_succ in H.
   rewrite nat_of_P_inj with (1 := H). reflexivity.
 Qed.
@@ -66,14 +66,14 @@ Proof.
   apply N_of_nat_of_N.
 Qed.
 
-Lemma nat_of_Ndouble_plus_one : 
+Lemma nat_of_Ndouble_plus_one :
   forall a, nat_of_N (Ndouble_plus_one a) = S (2*(nat_of_N a)).
 Proof.
   destruct a; simpl nat_of_N; auto.
   apply nat_of_P_xI.
 Qed.
 
-Lemma N_of_double_plus_one : 
+Lemma N_of_double_plus_one :
   forall n, N_of_nat (S (2*n)) = Ndouble_plus_one (N_of_nat n).
 Proof.
   intros.
@@ -97,14 +97,14 @@ Proof.
   apply N_of_nat_of_N.
 Qed.
 
-Lemma nat_of_Nplus : 
+Lemma nat_of_Nplus :
   forall a a', nat_of_N (Nplus a a') = (nat_of_N a)+(nat_of_N a').
 Proof.
   destruct a; destruct a'; simpl; auto.
   apply nat_of_P_plus_morphism.
 Qed.
 
-Lemma N_of_plus : 
+Lemma N_of_plus :
   forall n n', N_of_nat (n+n') = Nplus (N_of_nat n) (N_of_nat n').
 Proof.
   intros.
@@ -138,14 +138,14 @@ Proof.
   apply N_of_nat_of_N.
 Qed.
 
-Lemma nat_of_Nmult : 
+Lemma nat_of_Nmult :
   forall a a', nat_of_N (Nmult a a') = (nat_of_N a)*(nat_of_N a').
 Proof.
   destruct a; destruct a'; simpl; auto.
   apply nat_of_P_mult_morphism.
 Qed.
 
-Lemma N_of_mult : 
+Lemma N_of_mult :
   forall n n', N_of_nat (n*n') = Nmult (N_of_nat n) (N_of_nat n').
 Proof.
   intros.
@@ -155,7 +155,7 @@ Proof.
   apply N_of_nat_of_N.
 Qed.
 
-Lemma nat_of_Ndiv2 : 
+Lemma nat_of_Ndiv2 :
   forall a, nat_of_N (Ndiv2 a) = div2 (nat_of_N a).
 Proof.
   destruct a; simpl in *; auto.
@@ -164,9 +164,9 @@ Proof.
   rewrite div2_double_plus_one; auto.
   rewrite nat_of_P_xO.
   rewrite div2_double; auto.
-Qed.  
+Qed.
 
-Lemma N_of_div2 : 
+Lemma N_of_div2 :
   forall n, N_of_nat (div2 n) = Ndiv2 (N_of_nat n).
 Proof.
   intros.
@@ -175,7 +175,7 @@ Proof.
   apply N_of_nat_of_N.
 Qed.
 
-Lemma nat_of_Ncompare : 
+Lemma nat_of_Ncompare :
  forall a a', Ncompare a a' = nat_compare (nat_of_N a) (nat_of_N a').
 Proof.
   destruct a; destruct a'; simpl.
@@ -187,7 +187,7 @@ Proof.
   apply nat_of_P_compare_morphism.
 Qed.
 
-Lemma N_of_nat_compare : 
+Lemma N_of_nat_compare :
  forall n n', nat_compare n n' = Ncompare (N_of_nat n) (N_of_nat n').
 Proof.
   intros.
@@ -321,17 +321,17 @@ Qed.
 Lemma Z_of_N_of_nat : forall n:nat, Z_of_N (N_of_nat n) = Z_of_nat n.
 Proof.
  destruct n; simpl; auto.
-Qed. 
+Qed.
 
 Lemma Z_of_N_pos : forall p:positive, Z_of_N (Npos p) = Zpos p.
 Proof.
  destruct p; simpl; auto.
-Qed. 
+Qed.
 
 Lemma Z_of_N_abs : forall z:Z, Z_of_N (Zabs_N z) = Zabs z.
 Proof.
  destruct z; simpl; auto.
-Qed. 
+Qed.
 
 Lemma Z_of_N_le_0 : forall n, (0 <= Z_of_N n)%Z.
 Proof.
@@ -348,22 +348,22 @@ Proof.
  destruct n; destruct m; auto.
 Qed.
 
-Lemma Z_of_N_minus : forall n m:N, Z_of_N (n-m) = Zmax 0 (Z_of_N n - Z_of_N m). 
+Lemma Z_of_N_minus : forall n m:N, Z_of_N (n-m) = Zmax 0 (Z_of_N n - Z_of_N m).
 Proof.
  intros; do 3 rewrite <- Z_of_nat_of_N; rewrite nat_of_Nminus; apply inj_minus.
 Qed.
 
-Lemma Z_of_N_succ : forall n:N, Z_of_N (Nsucc n) = Zsucc (Z_of_N n). 
+Lemma Z_of_N_succ : forall n:N, Z_of_N (Nsucc n) = Zsucc (Z_of_N n).
 Proof.
  intros; do 2 rewrite <- Z_of_nat_of_N; rewrite nat_of_Nsucc; apply inj_S.
 Qed.
 
-Lemma Z_of_N_min : forall n m:N, Z_of_N (Nmin n m) = Zmin (Z_of_N n) (Z_of_N m). 
+Lemma Z_of_N_min : forall n m:N, Z_of_N (Nmin n m) = Zmin (Z_of_N n) (Z_of_N m).
 Proof.
  intros; do 3 rewrite <- Z_of_nat_of_N; rewrite nat_of_Nmin; apply inj_min.
 Qed.
 
-Lemma Z_of_N_max : forall n m:N, Z_of_N (Nmax n m) = Zmax (Z_of_N n) (Z_of_N m). 
+Lemma Z_of_N_max : forall n m:N, Z_of_N (Nmax n m) = Zmax (Z_of_N n) (Z_of_N m).
 Proof.
  intros; do 3 rewrite <- Z_of_nat_of_N; rewrite nat_of_Nmax; apply inj_max.
 Qed.

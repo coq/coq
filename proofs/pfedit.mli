@@ -78,7 +78,7 @@ val get_undo : unit -> int option
     systematically apply at initialization time (e.g. to start the
     proof of mutually dependent theorems) *)
 
-val start_proof : 
+val start_proof :
   identifier -> goal_kind -> named_context_val -> constr ->
     ?init_tac:tactic -> ?compute_guard:bool -> declaration_hook -> unit
 
@@ -107,7 +107,7 @@ val suspend_proof : unit -> unit
     it fails if there is no current proof of if it is not completed;
     it also tells if the guardness condition has to be inferred. *)
 
-val cook_proof : (Refiner.pftreestate -> unit) -> 
+val cook_proof : (Refiner.pftreestate -> unit) ->
   identifier * (Entries.definition_entry * bool * goal_kind * declaration_hook)
 
 (* To export completed proofs to xml *)

@@ -21,7 +21,7 @@ let info s =
 (**********************************************************************
   Listes
 *)
-	
+
 (* appartenance à une liste , on donne l'égalité *)
 let rec list_mem_eq eq x l =
   match l with
@@ -32,13 +32,13 @@ let rec list_mem_eq eq x l =
 let set_of_list_eq eq l =
    let res = ref [] in
    List.iter (fun x -> if not (list_mem_eq eq x (!res)) then res:=x::(!res)) l;
-   List.rev !res 
+   List.rev !res
 
 
 (***********************************************************************
  Un outil pour faire une mémo-fonction:
  fonction est la fonction(!)
- memoire est une référence au graphe déjà calculé 
+ memoire est une référence au graphe déjà calculé
     (liste de couples, c'est une variable globale)
  egal est l'égalité sur les arguments
  valeur est une valeur possible de la fonction (sert uniquement pour le typage)
@@ -56,9 +56,9 @@ let memo memoire egal valeur fonction x =
    with _ -> !res
 
 
-(* un autre plus efficace, 
+(* un autre plus efficace,
    utilisant une fonction intermediaire (utile si on n'a pas
-   l'égalité = sur les arguments de fonction) 
+   l'égalité = sur les arguments de fonction)
    s chaîne imprimée s'il n'y a pas calcul *)
 
 let memos s memoire print fonction x =
@@ -71,8 +71,8 @@ let memos s memoire print fonction x =
 
 (**********************************************************************
   Eléments minimaux pour un ordre partiel de division.
-  E est un ensemble, avec une multiplication 
-  et une division partielle div (la fonction div peut échouer), 
+  E est un ensemble, avec une multiplication
+  et une division partielle div (la fonction div peut échouer),
   constant est un prédicat qui définit un sous-ensemble C de E.
 *)
 (*
@@ -128,7 +128,7 @@ let factorise_tableau div zero c f l1 =
       let r = ref p in
       let li = ref [] in
       if not (zero p)
-      then 
+      then
       Array.iteri (fun j q ->
 	              try (while true do
                                let rr = div !r q in
@@ -140,12 +140,12 @@ let factorise_tableau div zero c f l1 =
       res.(i)<-(!r,!li))
      f;
     (l1,res)
-   
+
 
 (* exemples:
 
 let l =  [1;2;6;24;720]
-and div1 = (fun a b -> if a mod b =0 then a/b else failwith "div") 
+and div1 = (fun a b -> if a mod b =0 then a/b else failwith "div")
 and constant = (fun x -> x<2)
 and zero = (fun x -> x=0)
 

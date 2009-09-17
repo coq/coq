@@ -46,7 +46,7 @@ val scope_is_open : scope_name -> bool
 
 (* Open scope *)
 
-val open_close_scope : 
+val open_close_scope :
   (* locality *) bool * (* open *) bool * scope_name -> unit
 
 (* Extend a list of scopes *)
@@ -66,7 +66,7 @@ val find_delimiters_scope : loc -> delimiters -> scope_name
    an appropriate error message *)
 
 type notation_location = dir_path * string
-type required_module = full_path * string list 
+type required_module = full_path * string list
 type cases_pattern_status = bool (* true = use prim token in patterns *)
 
 type 'a prim_token_interpreter =
@@ -86,18 +86,18 @@ val declare_string_interpreter : scope_name -> required_module ->
 
 val interp_prim_token : loc -> prim_token -> local_scopes ->
   rawconstr * (notation_location * scope_name option)
-val interp_prim_token_cases_pattern : loc -> prim_token -> name -> 
+val interp_prim_token_cases_pattern : loc -> prim_token -> name ->
   local_scopes -> cases_pattern * (notation_location * scope_name option)
 
 (* Return the primitive token associated to a [term]/[cases_pattern];
    raise [No_match] if no such token *)
 
-val uninterp_prim_token : 
+val uninterp_prim_token :
   rawconstr -> scope_name * prim_token
-val uninterp_prim_token_cases_pattern : 
+val uninterp_prim_token_cases_pattern :
   cases_pattern -> name * scope_name * prim_token
 
-val availability_of_prim_token : 
+val availability_of_prim_token :
   scope_name -> local_scopes -> delimiters option option
 
 (*s Declare and interpret back and forth a notation *)
@@ -125,7 +125,7 @@ val uninterp_cases_pattern_notations : cases_pattern ->
 (* Test if a notation is available in the scopes *)
 (* context [scopes]; if available, the result is not None; the first *)
 (* argument is itself not None if a delimiters is needed *)
-val availability_of_notation : scope_name option * notation -> local_scopes -> 
+val availability_of_notation : scope_name option * notation -> local_scopes ->
   (scope_name option * delimiters option) option
 
 (*s Declare and test the level of a (possibly uninterpreted) notation *)
@@ -135,7 +135,7 @@ val level_of_notation : notation -> level (* raise [Not_found] if no level *)
 
 (*s** Miscellaneous *)
 
-val interp_notation_as_global_reference : loc -> (global_reference -> bool) -> 
+val interp_notation_as_global_reference : loc -> (global_reference -> bool) ->
       notation -> delimiters option -> global_reference
 
 (* Checks for already existing notations *)
@@ -143,7 +143,7 @@ val exists_notation_in_scope : scope_name option -> notation ->
       interpretation -> bool
 
 (* Declares and looks for scopes associated to arguments of a global ref *)
-val declare_arguments_scope : 
+val declare_arguments_scope :
   bool (* true=local *) -> global_reference -> scope_name option list -> unit
 
 val find_arguments_scope : global_reference -> scope_name option list
@@ -167,7 +167,7 @@ val decompose_notation_key : notation -> symbol list
 (* Prints scopes (expect a pure aconstr printer *)
 val pr_scope : (rawconstr -> std_ppcmds) -> scope_name -> std_ppcmds
 val pr_scopes : (rawconstr -> std_ppcmds) -> std_ppcmds
-val locate_notation : (rawconstr -> std_ppcmds) -> notation -> 
+val locate_notation : (rawconstr -> std_ppcmds) -> notation ->
       scope_name option -> std_ppcmds
 
 val pr_visibility: (rawconstr -> std_ppcmds) -> scope_name option -> std_ppcmds

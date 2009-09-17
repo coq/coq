@@ -111,7 +111,7 @@ Proof.
     (Rsum_abs
       (fun l:nat =>
 	(-1) ^ S (l + n) / INR (fact (2 * S (l + n))) * x ^ (2 * S (l + n)) *
-	((-1) ^ (N - l) / INR (fact (2 * (N - l)))) * 
+	((-1) ^ (N - l) / INR (fact (2 * (N - l)))) *
 	y ^ (2 * (N - l))) (pred (N - n))).
   apply Rle_trans with
     (sum_f_R0
@@ -745,42 +745,42 @@ Proof.
   exact H.
 Qed.
 
-Theorem cos_plus : forall x y:R, cos (x + y) = cos x * cos y - sin x * sin y. 
+Theorem cos_plus : forall x y:R, cos (x + y) = cos x * cos y - sin x * sin y.
 Proof.
-  intros. 
-  cut (Un_cv (C1 x y) (cos x * cos y - sin x * sin y)). 
-  cut (Un_cv (C1 x y) (cos (x + y))). 
-  intros. 
-  apply UL_sequence with (C1 x y); assumption. 
-  apply C1_cvg. 
-  unfold Un_cv in |- *; unfold R_dist in |- *. 
-  intros. 
-  assert (H0 := A1_cvg x). 
-  assert (H1 := A1_cvg y). 
-  assert (H2 := B1_cvg x). 
-  assert (H3 := B1_cvg y). 
-  assert (H4 := CV_mult _ _ _ _ H0 H1). 
-  assert (H5 := CV_mult _ _ _ _ H2 H3). 
+  intros.
+  cut (Un_cv (C1 x y) (cos x * cos y - sin x * sin y)).
+  cut (Un_cv (C1 x y) (cos (x + y))).
+  intros.
+  apply UL_sequence with (C1 x y); assumption.
+  apply C1_cvg.
+  unfold Un_cv in |- *; unfold R_dist in |- *.
+  intros.
+  assert (H0 := A1_cvg x).
+  assert (H1 := A1_cvg y).
+  assert (H2 := B1_cvg x).
+  assert (H3 := B1_cvg y).
+  assert (H4 := CV_mult _ _ _ _ H0 H1).
+  assert (H5 := CV_mult _ _ _ _ H2 H3).
   assert (H6 := reste_cv_R0 x y).
   unfold Un_cv in H4; unfold Un_cv in H5; unfold Un_cv in H6.
-  unfold R_dist in H4; unfold R_dist in H5; unfold R_dist in H6. 
+  unfold R_dist in H4; unfold R_dist in H5; unfold R_dist in H6.
   cut (0 < eps / 3);
     [ intro
       | unfold Rdiv in |- *; apply Rmult_lt_0_compat;
-	[ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ]. 
-  elim (H4 (eps / 3) H7); intros N1 H8. 
-  elim (H5 (eps / 3) H7); intros N2 H9. 
+	[ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
+  elim (H4 (eps / 3) H7); intros N1 H8.
+  elim (H5 (eps / 3) H7); intros N2 H9.
   elim (H6 (eps / 3) H7); intros N3 H10.
-  set (N := S (S (max (max N1 N2) N3))). 
-  exists N. 
-  intros. 
-  cut (n = S (pred n)). 
-  intro; rewrite H12. 
-  rewrite <- cos_plus_form. 
-  rewrite <- H12. 
+  set (N := S (S (max (max N1 N2) N3))).
+  exists N.
+  intros.
+  cut (n = S (pred n)).
+  intro; rewrite H12.
+  rewrite <- cos_plus_form.
+  rewrite <- H12.
   apply Rle_lt_trans with
     (Rabs (A1 x n * A1 y n - cos x * cos y) +
-      Rabs (sin x * sin y - B1 x (pred n) * B1 y (pred n) + Reste x y (pred n))). 
+      Rabs (sin x * sin y - B1 x (pred n) * B1 y (pred n) + Reste x y (pred n))).
   replace
     (A1 x n * A1 y n - B1 x (pred n) * B1 y (pred n) + Reste x y (pred n) -
       (cos x * cos y - sin x * sin y)) with
@@ -788,28 +788,28 @@ Proof.
       (sin x * sin y - B1 x (pred n) * B1 y (pred n) + Reste x y (pred n)));
     [ apply Rabs_triang | ring ].
   replace eps with (eps / 3 + (eps / 3 + eps / 3)).
-  apply Rplus_lt_compat. 
-  apply H8. 
-  unfold ge in |- *; apply le_trans with N. 
-  unfold N in |- *. 
-  apply le_trans with (max N1 N2). 
-  apply le_max_l. 
+  apply Rplus_lt_compat.
+  apply H8.
+  unfold ge in |- *; apply le_trans with N.
+  unfold N in |- *.
+  apply le_trans with (max N1 N2).
+  apply le_max_l.
   apply le_trans with (max (max N1 N2) N3).
   apply le_max_l.
   apply le_trans with (S (max (max N1 N2) N3)); apply le_n_Sn.
-  assumption. 
+  assumption.
   apply Rle_lt_trans with
     (Rabs (sin x * sin y - B1 x (pred n) * B1 y (pred n)) +
       Rabs (Reste x y (pred n))).
   apply Rabs_triang.
   apply Rplus_lt_compat.
-  rewrite <- Rabs_Ropp. 
-  rewrite Ropp_minus_distr. 
-  apply H9. 
-  unfold ge in |- *; apply le_trans with (max N1 N2). 
-  apply le_max_r. 
-  apply le_S_n. 
-  rewrite <- H12. 
+  rewrite <- Rabs_Ropp.
+  rewrite Ropp_minus_distr.
+  apply H9.
+  unfold ge in |- *; apply le_trans with (max N1 N2).
+  apply le_max_r.
+  apply le_S_n.
+  rewrite <- H12.
   apply le_trans with N.
   unfold N in |- *.
   apply le_n_S.
@@ -843,11 +843,11 @@ Proof.
   replace (S (pred N)) with N.
   assumption.
   unfold N in |- *; simpl in |- *; reflexivity.
-  cut (0 < N)%nat. 
-  intro. 
-  cut (0 < n)%nat. 
-  intro. 
+  cut (0 < N)%nat.
+  intro.
+  cut (0 < n)%nat.
+  intro.
   apply S_pred with 0%nat; assumption.
-  apply lt_le_trans with N; assumption. 
+  apply lt_le_trans with N; assumption.
   unfold N in |- *; apply lt_O_Sn.
 Qed.

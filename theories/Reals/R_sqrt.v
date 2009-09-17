@@ -40,7 +40,7 @@ Qed.
 
 Lemma sqrt_0 : sqrt 0 = 0.
 Proof.
-  apply Rsqr_eq_0; unfold Rsqr in |- *; apply sqrt_sqrt; right; reflexivity. 
+  apply Rsqr_eq_0; unfold Rsqr in |- *; apply sqrt_sqrt; right; reflexivity.
 Qed.
 
 Lemma sqrt_1 : sqrt 1 = 1.
@@ -48,7 +48,7 @@ Proof.
   apply (Rsqr_inj (sqrt 1) 1);
     [ apply sqrt_positivity; left
       | left
-      | unfold Rsqr in |- *; rewrite sqrt_sqrt; [ ring | left ] ]; 
+      | unfold Rsqr in |- *; rewrite sqrt_sqrt; [ ring | left ] ];
     apply Rlt_0_1.
 Qed.
 
@@ -108,7 +108,7 @@ Proof.
       (Rsqr_inj (sqrt (x * y)) (sqrt x * sqrt y)
         (sqrt_positivity (x * y) (Rmult_le_pos x y H1 H2))
         (Rmult_le_pos (sqrt x) (sqrt y) (sqrt_positivity x H1)
-          (sqrt_positivity y H2))); rewrite Rsqr_mult; 
+          (sqrt_positivity y H2))); rewrite Rsqr_mult;
       repeat rewrite Rsqr_sqrt;
         [ ring | assumption | assumption | apply (Rmult_le_pos x y H1 H2) ].
 Qed.
@@ -132,7 +132,7 @@ Proof.
       | apply (Rmult_le_pos (sqrt x) (/ sqrt y));
         [ apply (sqrt_positivity x H1)
           | generalize (sqrt_lt_R0 y H2); clear H2; intro H2;
-            generalize (Rinv_0_lt_compat (sqrt y) H2); clear H2; 
+            generalize (Rinv_0_lt_compat (sqrt y) H2); clear H2;
               intro H2; left; assumption ]
       | rewrite Rsqr_div; repeat rewrite Rsqr_sqrt;
         [ reflexivity
@@ -193,7 +193,7 @@ Qed.
 Lemma sqrt_less : forall x:R, 0 <= x -> 1 < x -> sqrt x < x.
 Proof.
   intros x H1 H2; generalize (sqrt_lt_1 1 x (Rlt_le 0 1 Rlt_0_1) H1 H2);
-    intro H3; rewrite sqrt_1 in H3; generalize (Rmult_ne (sqrt x)); 
+    intro H3; rewrite sqrt_1 in H3; generalize (Rmult_ne (sqrt x));
       intro H4; elim H4; intros H5 H6; rewrite <- H5; pattern x at 2 in |- *;
         rewrite <- (sqrt_def x H1);
           apply
@@ -204,8 +204,8 @@ Qed.
 Lemma sqrt_more : forall x:R, 0 < x -> x < 1 -> x < sqrt x.
 Proof.
   intros x H1 H2;
-    generalize (sqrt_lt_1 x 1 (Rlt_le 0 x H1) (Rlt_le 0 1 Rlt_0_1) H2); 
-      intro H3; rewrite sqrt_1 in H3; generalize (Rmult_ne (sqrt x)); 
+    generalize (sqrt_lt_1 x 1 (Rlt_le 0 x H1) (Rlt_le 0 1 Rlt_0_1) H2);
+      intro H3; rewrite sqrt_1 in H3; generalize (Rmult_ne (sqrt x));
         intro H4; elim H4; intros H5 H6; rewrite <- H5; pattern x at 1 in |- *;
           rewrite <- (sqrt_def x (Rlt_le 0 x H1));
             apply (Rmult_lt_compat_l (sqrt x) (sqrt x) 1 (sqrt_lt_R0 x H1) H3).
@@ -338,7 +338,7 @@ Proof.
   (b * (- b * (/ 2 * / a)) + c).
   repeat rewrite <- Rplus_assoc; replace (b * b + b * b) with (2 * (b * b)).
   rewrite Rmult_plus_distr_r; repeat rewrite Rmult_assoc;
-    rewrite (Rmult_comm 2); repeat rewrite Rmult_assoc; 
+    rewrite (Rmult_comm 2); repeat rewrite Rmult_assoc;
       rewrite <- Rinv_l_sym.
   rewrite Ropp_mult_distr_l_reverse; repeat rewrite Rmult_assoc.
   rewrite (Rmult_comm 2); repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.

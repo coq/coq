@@ -33,7 +33,7 @@ Ltac inv H := inversion H ; try subst ; clear H.
 Require Import EnvRing.
 
 Open Scope Z_scope.
-  
+
 Lemma Zsor : SOR 0 1 Zplus Zmult Zminus Zopp (@eq Z) Zle Zlt.
 Proof.
   constructor ; intros ; subst ; try (intuition (auto  with zarith)).
@@ -100,7 +100,7 @@ match o with
 | OpGt => Zgt
 end.
 
-Definition Zeval_formula (env : PolEnv Z) (f : Formula Z):=   
+Definition Zeval_formula (env : PolEnv Z) (f : Formula Z):=
   let (lhs, op, rhs) := f in
     (Zeval_op2 op) (Zeval_expr env lhs) (Zeval_expr env rhs).
 
@@ -109,16 +109,16 @@ Definition Zeval_formula' :=
 
 Lemma Zeval_formula_compat : forall env f, Zeval_formula env f <-> Zeval_formula' env f.
 Proof.
-  destruct f ; simpl. 
+  destruct f ; simpl.
   rewrite Zeval_expr_compat. rewrite Zeval_expr_compat.
   unfold eval_expr.
-  generalize (eval_pexpr Zplus Zmult Zminus Zopp (fun x : Z => x) 
+  generalize (eval_pexpr Zplus Zmult Zminus Zopp (fun x : Z => x)
         (fun x : N => x) (pow_N 1 Zmult) env Flhs).
-  generalize ((eval_pexpr Zplus Zmult Zminus Zopp (fun x : Z => x) 
+  generalize ((eval_pexpr Zplus Zmult Zminus Zopp (fun x : Z => x)
         (fun x : N => x) (pow_N 1 Zmult) env Frhs)).
   destruct Fop ; simpl; intros ; intuition (auto with zarith).
 Qed.
-  
+
 
 Definition eval_nformula :=
   eval_nformula 0 Zplus Zmult  (@eq Z) Zle Zlt (fun x => x) .
@@ -131,7 +131,7 @@ match o with
 | NonStrict => fun x : Z => 0 <= x
 end.
 
-  
+
 Lemma Zeval_nformula_dec : forall env d, (eval_nformula env d) \/ ~ (eval_nformula env d).
 Proof.
   intros.
@@ -179,13 +179,13 @@ Proof.
   intros.
   apply (eval_pol_norm Zsor ZSORaddon).
 Qed.
-  
+
 Definition xnormalise (t:Formula Z) : list (NFormula Z)  :=
   let (lhs,o,rhs) := t in
     let lhs := norm lhs in
       let rhs := norm rhs in
     match o with
-      | OpEq => 
+      | OpEq =>
         ((psub lhs (padd  rhs (Pc 1))),NonStrict)::((psub rhs (padd lhs (Pc 1))),NonStrict)::nil
       | OpNEq => (psub lhs rhs,Equal) :: nil
       | OpGt   => (psub rhs lhs,NonStrict) :: nil
@@ -218,7 +218,7 @@ Proof.
     intuition (auto with zarith).
   Transparent padd.
 Qed.
-  
+
 Definition xnegate (t:RingMicromega.Formula Z) : list (NFormula Z)  :=
   let (lhs,o,rhs) := t in
     let lhs := norm lhs in
@@ -331,11 +331,11 @@ Definition makeLbCut (v:PExprC Z) (q:Q) : NFormula Z :=
 Definition neg_nformula (f : NFormula Z) :=
   let (e,o) := f in
     (PEopp (PEadd e (PEc 1%Z)), o).
-    
+
 Lemma neg_nformula_sound : forall env f, snd f = NonStrict ->( ~ (Zeval_nformula env (neg_nformula f)) <-> Zeval_nformula env f).
 Proof.
   unfold neg_nformula.
-  destruct f. 
+  destruct f.
   simpl.
   intros ; subst ; simpl in *.
   split;  auto with zarith.
@@ -346,9 +346,9 @@ Qed.
    - b is the constant
    - a is the gcd of the other coefficient.
 *)
-Require Import Znumtheory. 
+Require Import Znumtheory.
 
-Definition isZ0 (x:Z) := 
+Definition isZ0 (x:Z) :=
   match x with
     | Z0 => true
     | _  => false
@@ -371,7 +371,7 @@ Fixpoint Zgcd_pol (p : PolC Z) : (Z * Z) :=
   match p with
     | Pc c => (0,c)
     | Pinj _ p => Zgcd_pol p
-    | PX p _ q => 
+    | PX p _ q =>
       let (g1,c1) := Zgcd_pol p in
         let (g2,c2) := Zgcd_pol q in
           (ZgcdM (ZgcdM g1 c1) g2 , c2)
@@ -393,7 +393,7 @@ Inductive Zdivide_pol (x:Z): PolC Z -> Prop :=
 | Zdiv_PX   : forall p q, Zdivide_pol x p -> Zdivide_pol x q -> forall j, Zdivide_pol x (PX p j q).
 
 
-Lemma Zdiv_pol_correct : forall a p, 0 < a -> Zdivide_pol a p  -> 
+Lemma Zdiv_pol_correct : forall a p, 0 < a -> Zdivide_pol a p  ->
   forall env, eval_pol env p =  a * eval_pol env (Zdiv_pol p a).
 Proof.
   intros until 2.
@@ -441,7 +441,7 @@ Proof.
   constructor. auto.
   constructor ; auto.
 Qed.
-  
+
 Lemma Zdivide_pol_one : forall p, Zdivide_pol 1 p.
 Proof.
   induction p ; constructor ; auto.
@@ -458,15 +458,15 @@ Proof.
   rewrite <- Hq, Hb, Ha. ring.
 Qed.
 
-Lemma Zdivide_pol_sub : forall p a b, 
-  0 < Zgcd a b -> 
-  Zdivide_pol a (PsubC Zminus p b) -> 
+Lemma Zdivide_pol_sub : forall p a b,
+  0 < Zgcd a b ->
+  Zdivide_pol a (PsubC Zminus p b) ->
    Zdivide_pol (Zgcd a b) p.
 Proof.
   induction p.
   simpl.
   intros. inversion H0.
-  constructor. 
+  constructor.
   apply Zgcd_minus ; auto.
   intros.
   constructor.
@@ -480,8 +480,8 @@ Proof.
   apply IHp2 ; assumption.
 Qed.
 
-Lemma Zdivide_pol_sub_0 : forall p a, 
-  Zdivide_pol a (PsubC Zminus p 0) -> 
+Lemma Zdivide_pol_sub_0 : forall p a,
+  Zdivide_pol a (PsubC Zminus p 0) ->
    Zdivide_pol a p.
 Proof.
   induction p.
@@ -499,7 +499,7 @@ Proof.
 Qed.
 
 
-Lemma Zgcd_pol_div : forall p g c, 
+Lemma Zgcd_pol_div : forall p g c,
   Zgcd_pol p = (g, c) -> Zdivide_pol g (PsubC Zminus p c).
 Proof.
   induction p ; simpl.
@@ -541,7 +541,7 @@ Proof.
 Qed.
 
 
-  
+
 
 Lemma Zgcd_pol_correct_lt : forall p env g c, Zgcd_pol p = (g,c) -> 0 < g -> eval_pol env p = g * (eval_pol env (Zdiv_pol (PsubC Zminus p c) g))  + c.
 Proof.
@@ -555,9 +555,9 @@ Qed.
 
 
 
-Definition makeCuttingPlane (p : PolC Z) : PolC  Z * Z := 
+Definition makeCuttingPlane (p : PolC Z) : PolC  Z * Z :=
   let (g,c) := Zgcd_pol p in
-    if Zgt_bool g Z0 
+    if Zgt_bool g Z0
       then (Zdiv_pol (PsubC Zminus p c) g , Zopp (ceiling (Zopp c) g))
       else (p,Z0).
 
@@ -594,7 +594,7 @@ Proof.
   destruct z ; try discriminate.
   reflexivity.
 Qed.
-  
+
 
 
 
@@ -609,37 +609,37 @@ Definition check_inconsistent := check_inconsistent 0 Zeq_bool Zle_bool.
 
 Fixpoint ZChecker (l:list (NFormula Z)) (pf : ZArithProof)  {struct pf} : bool :=
   match pf with
-    | DoneProof => false 
-    | RatProof w pf => 
+    | DoneProof => false
+    | RatProof w pf =>
       match eval_Psatz l w  with
         | None => false
-        | Some f => 
+        | Some f =>
           if check_inconsistent f then true
             else ZChecker (f::l) pf
       end
-    | CutProof w pf => 
+    | CutProof w pf =>
       match eval_Psatz l w with
         | None => false
-        | Some f => 
+        | Some f =>
           match genCuttingPlane f with
             | None => true
             | Some cp => ZChecker (nformula_of_cutting_plane cp::l) pf
           end
       end
-    | EnumProof w1 w2 pf => 
+    | EnumProof w1 w2 pf =>
       match eval_Psatz l w1 , eval_Psatz l w2 with
-        |  Some f1 , Some f2 => 
+        |  Some f1 , Some f2 =>
           match genCuttingPlane f1 , genCuttingPlane f2 with
-            |Some (e1,z1,op1) , Some (e2,z2,op2) => 
+            |Some (e1,z1,op1) , Some (e2,z2,op2) =>
               match op1 , op2 with
-                | NonStrict , NonStrict => 
+                | NonStrict , NonStrict =>
                   if is_pol_Z0 (padd e1 e2)
                     then
                       (fix label (pfs:list ZArithProof) :=
-                        fun lb ub => 
+                        fun lb ub =>
                           match pfs with
                             | nil => if Zgt_bool lb ub then true else false
-                            | pf::rsr => andb (ZChecker  ((psub e1 (Pc lb), Equal) :: l) pf) (label rsr (Zplus lb 1%Z) ub) 
+                            | pf::rsr => andb (ZChecker  ((psub e1 (Pc lb), Equal) :: l) pf) (label rsr (Zplus lb 1%Z) ub)
                           end)
                       pf (Zopp z1)  z2
                     else false
@@ -693,18 +693,18 @@ Proof.
 Qed.
 
 
-Lemma eval_Psatz_sound : forall env w l f', 
-  make_conj (eval_nformula env) l -> 
+Lemma eval_Psatz_sound : forall env w l f',
+  make_conj (eval_nformula env) l ->
   eval_Psatz l w  = Some f' ->  eval_nformula env f'.
 Proof.
   intros.
   apply (eval_Psatz_Sound Zsor ZSORaddon) with (l:=l) (e:= w) ; auto.
-  apply make_conj_in ; auto.  
+  apply make_conj_in ; auto.
 Qed.
 
-Lemma makeCuttingPlane_sound : forall env e e' c, 
-  eval_nformula env (e, NonStrict) -> 
-  makeCuttingPlane e = (e',c) -> 
+Lemma makeCuttingPlane_sound : forall env e e' c,
+  eval_nformula env (e, NonStrict) ->
+  makeCuttingPlane e = (e',c) ->
   eval_nformula env (nformula_of_cutting_plane (e', c, NonStrict)).
 Proof.
   unfold nformula_of_cutting_plane.
@@ -728,10 +728,10 @@ Proof.
   (* g <= 0 *)
   intros. inv H2. auto with zarith.
 Qed.
-  
 
-Lemma cutting_plane_sound : forall env f p, 
-  eval_nformula env f -> 
+
+Lemma cutting_plane_sound : forall env f p,
+  eval_nformula env f ->
   genCuttingPlane f = Some p ->
    eval_nformula env (nformula_of_cutting_plane p).
 Proof.
@@ -758,25 +758,25 @@ Proof.
   rewrite (RingMicromega.eval_pol_add Zsor ZSORaddon).
   simpl. auto with zarith.
   (* Strict *)
-  destruct p as [[e' z] op].  
+  destruct p as [[e' z] op].
   case_eq (makeCuttingPlane (PsubC Zminus e 1)).
   intros.
   inv H1.
   apply makeCuttingPlane_sound with (env:=env) (2:= H).
   simpl in *.
-  rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).  
+  rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
   auto with zarith.
   (* NonStrict *)
-  destruct p as [[e' z] op].  
+  destruct p as [[e' z] op].
   case_eq (makeCuttingPlane e).
   intros.
   inv H1.
   apply makeCuttingPlane_sound with (env:=env) (2:= H).
   assumption.
-Qed.  
+Qed.
 
-Lemma  genCuttingPlaneNone : forall env f, 
-  genCuttingPlane f = None -> 
+Lemma  genCuttingPlaneNone : forall env f,
+  genCuttingPlane f = None ->
   eval_nformula env f -> False.
 Proof.
   unfold genCuttingPlane.
@@ -784,7 +784,7 @@ Proof.
   destruct o.
   case_eq (Zgcd_pol p) ; intros g c.
   case_eq (Zgt_bool g 0 && (Zgt_bool c 0 && negb (Zeq_bool (Zgcd g c) g))).
-  intros. 
+  intros.
   flatten_bool.
   rewrite negb_true_iff in H5.
   apply Zeq_bool_neq in H5.
@@ -805,7 +805,7 @@ Proof.
   destruct (makeCuttingPlane p) ; discriminate.
 Qed.
 
-  
+
 Lemma ZChecker_sound : forall w l, ZChecker l w = true -> forall env, make_impl  (eval_nformula env)  l False.
 Proof.
   induction w    using (well_founded_ind (well_founded_ltof _ bdepth)).
@@ -815,7 +815,7 @@ Proof.
   (* RatProof *)
   simpl.
   intro l. case_eq (eval_Psatz l w) ; [| discriminate].
-  intros f Hf. 
+  intros f Hf.
   case_eq (check_inconsistent f).
   intros.
   apply (checker_nf_sound Zsor ZSORaddon l w).
@@ -831,7 +831,7 @@ Proof.
   rewrite <- make_conj_impl in H2.
   rewrite make_conj_cons in H2.
   rewrite <- make_conj_impl.
-  intro. 
+  intro.
   apply H2.
   split ; auto.
   apply eval_Psatz_sound with (2:= Hf) ; assumption.
@@ -840,7 +840,7 @@ Proof.
   intro l.
   case_eq (eval_Psatz l w) ; [ | discriminate].
   intros f' Hlc.
-  case_eq (genCuttingPlane f'). 
+  case_eq (genCuttingPlane f').
   intros.
   assert (make_impl (eval_nformula env) (nformula_of_cutting_plane p::l) False).
    eapply (H pf) ; auto.
@@ -850,7 +850,7 @@ Proof.
   rewrite <- make_conj_impl in H2.
   rewrite make_conj_cons in H2.
   rewrite <- make_conj_impl.
-  intro. 
+  intro.
   apply H2.
   split ; auto.
   apply eval_Psatz_sound with (env:=env) in Hlc.
@@ -887,7 +887,7 @@ Proof.
    unfold RingMicromega.eval_nformula in H4.
    change (RingMicromega.eval_pol 0 Zplus Zmult (fun x : Z => x)) with eval_pol in H4.
    unfold eval_op1 in H4.
-   rewrite eval_pol_add in H4. simpl in H4. 
+   rewrite eval_pol_add in H4. simpl in H4.
    auto with zarith.
    (**)
    apply is_pol_Z0_eval_pol with (env := env) in H0.
@@ -900,7 +900,7 @@ Proof.
    unfold RingMicromega.eval_nformula in H3.
    change (RingMicromega.eval_pol 0 Zplus Zmult (fun x : Z => x)) with eval_pol in H3.
    unfold eval_op1 in H3.
-   rewrite eval_pol_add in H3. simpl in H3. 
+   rewrite eval_pol_add in H3. simpl in H3.
    omega.
   revert H5.
   set (FF := (fix label (pfs : list ZArithProof) (lb ub : Z) {struct pfs} : bool :=
@@ -911,7 +911,7 @@ Proof.
           label rsr (lb + 1)%Z ub)%bool
     end)).
   intros.
-  assert (HH :forall x, -z1 <= x <= z2 -> exists pr, 
+  assert (HH :forall x, -z1 <= x <= z2 -> exists pr,
     (In pr pf /\
       ZChecker  ((PsubC Zminus p1 x,Equal) :: l) pr = true)%Z).
   clear H.
@@ -972,7 +972,7 @@ Fixpoint xhyps_of_pt (base:nat) (acc : list nat) (pt:ZArithProof)  : list nat :=
     | DoneProof => acc
     | RatProof c pt => xhyps_of_pt (S base ) (xhyps_of_psatz base acc c) pt
     | CutProof c pt => xhyps_of_pt (S base ) (xhyps_of_psatz base acc c) pt
-    | EnumProof c1 c2 l => 
+    | EnumProof c1 c2 l =>
       let acc := xhyps_of_psatz base (xhyps_of_psatz base acc c2) c1 in
         List.fold_left (xhyps_of_pt (S base)) l acc
   end.
@@ -989,7 +989,7 @@ Definition hyps_of_pt (pt : ZArithProof) : list nat := xhyps_of_pt 0 nil pt.
 
 Open Scope Z_scope.
 
-  
+
 (** To ease bindings from ml code **)
 (*Definition varmap := Quote.varmap.*)
 Definition make_impl := Refl.make_impl.
@@ -1019,5 +1019,5 @@ Definition n_of_Z (z:Z) : BinNat.N :=
 (* Local Variables: *)
 (* coding: utf-8 *)
 (* End: *)
- 
+
 

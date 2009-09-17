@@ -13,7 +13,7 @@ Definition decidable (P:Prop) := P \/ ~ P.
 
 Theorem dec_not_not : forall P:Prop, decidable P -> (~ P -> False) -> P.
 Proof.
-unfold decidable; tauto. 
+unfold decidable; tauto.
 Qed.
 
 Theorem dec_True : decidable True.
@@ -29,27 +29,27 @@ Qed.
 Theorem dec_or :
  forall A B:Prop, decidable A -> decidable B -> decidable (A \/ B).
 Proof.
-unfold decidable; tauto. 
+unfold decidable; tauto.
 Qed.
 
 Theorem dec_and :
  forall A B:Prop, decidable A -> decidable B -> decidable (A /\ B).
 Proof.
-unfold decidable; tauto. 
+unfold decidable; tauto.
 Qed.
 
 Theorem dec_not : forall A:Prop, decidable A -> decidable (~ A).
 Proof.
-unfold decidable; tauto. 
+unfold decidable; tauto.
 Qed.
 
 Theorem dec_imp :
  forall A B:Prop, decidable A -> decidable B -> decidable (A -> B).
 Proof.
-unfold decidable; tauto. 
+unfold decidable; tauto.
 Qed.
 
-Theorem dec_iff : 
+Theorem dec_iff :
  forall A B:Prop, decidable A -> decidable B -> decidable (A<->B).
 Proof.
 unfold decidable; tauto.
@@ -67,7 +67,7 @@ Qed.
 
 Theorem not_and : forall A B:Prop, decidable A -> ~ (A /\ B) -> ~ A \/ ~ B.
 Proof.
-unfold decidable; tauto. 
+unfold decidable; tauto.
 Qed.
 
 Theorem not_imp : forall A B:Prop, decidable A -> ~ (A -> B) -> A /\ ~ B.
@@ -80,16 +80,16 @@ Proof.
 unfold decidable; tauto.
 Qed.
 
-Theorem not_iff : 
-  forall A B:Prop, decidable A -> decidable B -> 
+Theorem not_iff :
+  forall A B:Prop, decidable A -> decidable B ->
     ~ (A <-> B) -> (A /\ ~ B) \/ (~ A /\ B).
 Proof.
 unfold decidable; tauto.
 Qed.
 
-(** Results formulated with iff, used in FSetDecide. 
-    Negation are expanded since it is unclear whether setoid rewrite 
-    will always perform conversion. *)    
+(** Results formulated with iff, used in FSetDecide.
+    Negation are expanded since it is unclear whether setoid rewrite
+    will always perform conversion. *)
 
 (** We begin with lemmas that, when read from left to right,
     can be understood as ways to eliminate uses of [not]. *)

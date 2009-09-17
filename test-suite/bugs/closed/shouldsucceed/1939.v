@@ -14,6 +14,6 @@ Require Import Setoid Program.Basics.
  Goal forall x y, R x y -> P y -> P x.
  Proof.
    intros x y H1 H2.
-   rewrite H1. 
+   rewrite H1.
    auto.
  Qed.

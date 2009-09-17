@@ -7,7 +7,7 @@ Set Implicit Arguments.
 Section Accessors.
   Variable A : Set.
 
-  Program Definition myhd : forall (l : list A | length l <> 0), A :=  
+  Program Definition myhd : forall (l : list A | length l <> 0), A :=
     fun l =>
       match l with
         | nil => !
@@ -34,22 +34,22 @@ Section app.
     match l with
       | nil => l'
       | hd :: tl => hd :: (tl ++ l')
-    end 
+    end
     where "x ++ y" := (app x y).
 
   Next Obligation.
     intros.
     destruct_call app ; program_simpl.
   Defined.
-  
+
   Program Lemma app_id_l : forall l : list A, l = nil ++ l.
   Proof.
     simpl ; auto.
   Qed.
-  
+
   Program Lemma app_id_r : forall l : list A, l = l ++ nil.
   Proof.
-    induction l ; simpl in * ; auto. 
+    induction l ; simpl in * ; auto.
     rewrite <- IHl ; auto.
   Qed.
 
@@ -61,7 +61,7 @@ Section Nth.
 
   Variable A : Set.
 
-  Program Fixpoint nth (l : list A) (n : nat | n < length l) { struct l } : A := 
+  Program Fixpoint nth (l : list A) (n : nat | n < length l) { struct l } : A :=
     match n, l with
       | 0, hd :: _ => hd
       | S n', _ :: tl => nth tl n'
@@ -70,7 +70,7 @@ Section Nth.
 
   Next Obligation.
   Proof.
-    simpl in *. auto with arith. 
+    simpl in *. auto with arith.
   Defined.
 
   Next Obligation.
@@ -78,7 +78,7 @@ Section Nth.
     inversion H.
   Qed.
 
-  Program Fixpoint nth' (l : list A) (n : nat | n < length l) { struct l } : A := 
+  Program Fixpoint nth' (l : list A) (n : nat | n < length l) { struct l } : A :=
     match l, n with
       | hd :: _, 0 => hd
       | _ :: tl, S n' => nth' tl n'
@@ -86,7 +86,7 @@ Section Nth.
     end.
   Next Obligation.
   Proof.
-    simpl in *. auto with arith. 
+    simpl in *. auto with arith.
   Defined.
 
   Next Obligation.

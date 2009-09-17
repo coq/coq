@@ -19,13 +19,13 @@ open Entries
 open Typeops
 (*i*)
 
-val translate_local_def : env -> constr * types option -> 
+val translate_local_def : env -> constr * types option ->
   constr * types * Univ.constraints
 
 val translate_local_assum : env -> types ->
   types * Univ.constraints
 
-val infer_declaration : env -> constant_entry -> 
+val infer_declaration : env -> constant_entry ->
    constr_substituted option * constant_type * constraints * bool * bool * bool
 
 val build_constant_declaration : env -> 'a ->
@@ -34,8 +34,8 @@ val build_constant_declaration : env -> 'a ->
 
 val translate_constant : env -> constant -> constant_entry -> constant_body
 
-val translate_mind : 
+val translate_mind :
   env -> mutual_inductive_entry -> mutual_inductive_body
 
-val translate_recipe : 
+val translate_recipe :
   env -> constant -> Cooking.recipe -> constant_body

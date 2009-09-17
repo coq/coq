@@ -12,7 +12,7 @@ open Names
 open Util
 open Tacexpr
 
-type 'it statement = 
+type 'it statement =
     {st_label:name;
      st_it:'it}
 
@@ -41,12 +41,12 @@ type ('it,'constr,'tac) cut =
      cut_by: 'constr list option;
      cut_using: 'tac option}
 
-type ('var,'constr) hyp = 
-    Hvar of 'var 
+type ('var,'constr) hyp =
+    Hvar of 'var
   | Hprop of 'constr statement
 
-type ('constr,'tac) casee = 
-    Real of 'constr 
+type ('constr,'tac) casee =
+    Real of 'constr
   | Virtual of ('constr statement,'constr,'tac) cut
 
 type ('hyp,'constr,'pat,'tac) bare_proof_instr =
@@ -64,9 +64,9 @@ type ('hyp,'constr,'pat,'tac) bare_proof_instr =
   | Pfocus of 'constr statement
   | Pdefine of identifier * 'hyp list * 'constr
   | Pcast of identifier or_thesis * 'constr
-  | Psuppose of ('hyp,'constr) hyp list 
-  | Pcase of 'hyp list*'pat*(('hyp,'constr or_thesis) hyp list) 
-  | Ptake of 'constr list 
+  | Psuppose of ('hyp,'constr) hyp list
+  | Pcase of 'hyp list*'pat*(('hyp,'constr or_thesis) hyp list)
+  | Ptake of 'constr list
   | Pper of elim_type * ('constr,'tac) casee
   | Pend of block_type
   | Pescape
@@ -86,11 +86,11 @@ type raw_proof_instr =
 
 type glob_proof_instr =
     ((identifier*(Genarg.rawconstr_and_expr option)) located,
-     Genarg.rawconstr_and_expr,  
+     Genarg.rawconstr_and_expr,
      Topconstr.cases_pattern_expr,
      Tacexpr.glob_tactic_expr) gen_proof_instr
 
-type proof_pattern = 
+type proof_pattern =
     {pat_vars: Term.types statement list;
      pat_aliases: (Term.constr*Term.types) statement list;
      pat_constr: Term.constr;
@@ -100,6 +100,6 @@ type proof_pattern =
 
 type proof_instr =
     (Term.constr statement,
-     Term.constr, 
+     Term.constr,
      proof_pattern,
      Tacexpr.glob_tactic_expr) gen_proof_instr

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 (* Typeclass-based setoids, tactics and standard instances.
- 
+
    Author: Matthieu Sozeau
    Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
    91405 Orsay, France *)
@@ -55,7 +55,7 @@ Existing Instance setoid_trans.
 (* Program Instance eq_setoid : Setoid A := *)
 (*   equiv := eq ; setoid_equiv := eq_equivalence. *)
 
-Program Instance iff_setoid : Setoid Prop := 
+Program Instance iff_setoid : Setoid Prop :=
   { equiv := iff ; setoid_equiv := iff_equivalence }.
 
 (** Overloaded notations for setoid equivalence and inequivalence. Not to be confused with [eq] and [=]. *)
@@ -69,7 +69,7 @@ Notation " x =/= y " := (complement equiv x y) (at level 70, no associativity) :
 
 (** Use the [clsubstitute] command which substitutes an equality in every hypothesis. *)
 
-Ltac clsubst H := 
+Ltac clsubst H :=
   match type of H with
     ?x == ?y => substitute H ; clear H x
   end.
@@ -79,7 +79,7 @@ Ltac clsubst_nofail :=
     | [ H : ?x == ?y |- _ ] => clsubst H ; clsubst_nofail
     | _ => idtac
   end.
-  
+
 (** [subst*] will try its best at substituting every equality in the goal. *)
 
 Tactic Notation "clsubst" "*" := clsubst_nofail.
@@ -94,7 +94,7 @@ Qed.
 
 Lemma equiv_nequiv_trans : forall `{Setoid A} (x y z : A), x == y -> y =/= z -> x =/= z.
 Proof.
-  intros; intro. 
+  intros; intro.
   assert(y == x) by (symmetry ; auto).
   assert(y == z) by (transitivity x ; eauto).
   contradiction.
@@ -127,7 +127,7 @@ Program Instance setoid_partial_app_morphism `(sa : Setoid A) (x : A) : Proper (
 
 (** Partial setoids don't require reflexivity so we can build a partial setoid on the function space. *)
 
-Class PartialSetoid (A : Type) := 
+Class PartialSetoid (A : Type) :=
   { pequiv : relation A ; pequiv_prf :> PER pequiv }.
 
 (** Overloaded notation for partial setoid equivalence. *)

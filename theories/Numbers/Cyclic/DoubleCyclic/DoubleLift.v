@@ -61,13 +61,13 @@ Section DoubleLift.
 
 
   (* 0 < p < ww_digits *)
- Definition ww_add_mul_div p x y := 
+ Definition ww_add_mul_div p x y :=
   let zdigits := w_0W w_zdigits in
   match x, y with
   | W0, W0 => W0
   | W0, WW yh yl =>
     match ww_compare p zdigits with
-    | Eq => w_0W yh 
+    | Eq => w_0W yh
     | Lt => w_0W (w_add_mul_div (low p) w_0 yh)
     | Gt =>
       let n := low (ww_sub p zdigits) in
@@ -75,15 +75,15 @@ Section DoubleLift.
     end
   | WW xh xl, W0 =>
     match ww_compare p zdigits with
-    | Eq => w_W0 xl 
+    | Eq => w_W0 xl
     | Lt => w_WW (w_add_mul_div (low p) xh xl) (w_add_mul_div (low p) xl w_0)
     | Gt =>
       let n := low (ww_sub p zdigits) in
-      w_W0 (w_add_mul_div n xl w_0) 
+      w_W0 (w_add_mul_div n xl w_0)
     end
   | WW xh xl, WW yh yl =>
     match ww_compare p zdigits with
-    | Eq => w_WW xl yh 
+    | Eq => w_WW xl yh
     | Lt => w_WW (w_add_mul_div (low p) xh xl) (w_add_mul_div (low p) xl yh)
     | Gt =>
       let n := low (ww_sub p zdigits) in
@@ -93,7 +93,7 @@ Section DoubleLift.
 
  Section DoubleProof.
   Variable w_to_Z : w -> Z.
- 
+
   Notation wB  := (base w_digits).
   Notation wwB := (base (ww_digits w_digits)).
   Notation "[| x |]" := (w_to_Z x)  (at level 0, x at level 99).
@@ -122,21 +122,21 @@ Section DoubleLift.
   Variable spec_w_head0  : forall x,  0 < [|x|] ->
 	 wB/ 2 <= 2 ^ ([|w_head0 x|]) * [|x|] < wB.
   Variable spec_w_tail00  : forall x, [|x|] = 0 -> [|w_tail0 x|] = Zpos w_digits.
-  Variable spec_w_tail0 : forall x, 0 < [|x|] -> 
+  Variable spec_w_tail0 : forall x, 0 < [|x|] ->
          exists y, 0 <= y /\ [|x|] = (2* y + 1) * (2 ^ [|w_tail0 x|]).
   Variable spec_w_add_mul_div : forall x y p,
        [|p|] <= Zpos w_digits ->
        [| w_add_mul_div p x y |] =
          ([|x|] * (2 ^ [|p|]) +
           [|y|] / (2 ^ ((Zpos w_digits) - [|p|]))) mod wB.
- Variable spec_w_add: forall x y, 
+ Variable spec_w_add: forall x y,
    [[w_add x y]] = [|x|] + [|y|].
- Variable spec_ww_sub: forall x y, 
+ Variable spec_ww_sub: forall x y,
    [[ww_sub x y]] = ([[x]] - [[y]]) mod wwB.
 
  Variable spec_zdigits : [| w_zdigits |] = Zpos w_digits.
  Variable spec_low: forall x, [| low x|] = [[x]] mod wB.
- 
+
  Variable spec_ww_zdigits : [[ww_zdigits]] = Zpos ww_Digits.
 
   Hint Resolve div_le_0 div_lt w_to_Z_wwB: lift.
@@ -168,7 +168,7 @@ Section DoubleLift.
   rewrite spec_w_0; auto with zarith.
   rewrite spec_w_0; auto with zarith.
   Qed.
-   
+
   Lemma spec_ww_head0  : forall x,  0 < [[x]] ->
 	 wwB/ 2 <= 2 ^ [[ww_head0 x]] * [[x]] < wwB.
   Proof.
@@ -179,7 +179,7 @@ Section DoubleLift.
    assert (H0 := spec_compare w_0 xh);rewrite spec_w_0 in H0.
    destruct (w_compare w_0 xh).
    rewrite <- H0. simpl Zplus. rewrite <- H0 in H;simpl in H.
-   case (spec_to_Z w_zdigits); 
+   case (spec_to_Z w_zdigits);
      case (spec_to_Z (w_head0 xl)); intros HH1 HH2 HH3 HH4.
    rewrite spec_w_add.
    rewrite spec_zdigits; rewrite Zpower_exp; auto with zarith.
@@ -209,7 +209,7 @@ Section DoubleLift.
    rewrite <- Zmult_assoc; apply Zmult_lt_compat_l; zarith.
    rewrite <- (Zplus_0_r (2^(Zpos w_digits - p)*wB));apply beta_lex_inv;zarith.
    apply Zmult_lt_reg_r with (2 ^ p); zarith.
-   rewrite <- Zpower_exp;zarith. 
+   rewrite <- Zpower_exp;zarith.
    rewrite Zmult_comm;ring_simplify (Zpos w_digits - p + p);fold wB;zarith.
    assert (H1 := spec_to_Z xh);zarith.
   Qed.
@@ -293,8 +293,8 @@ Section DoubleLift.
   Qed.
 
   Hint Rewrite Zdiv_0_l Zmult_0_l Zplus_0_l Zmult_0_r Zplus_0_r
-    spec_w_W0 spec_w_0W spec_w_WW spec_w_0  
-    (wB_div w_digits w_to_Z spec_to_Z) 
+    spec_w_W0 spec_w_0W spec_w_WW spec_w_0
+    (wB_div w_digits w_to_Z spec_to_Z)
     (wB_div_plus w_digits w_to_Z spec_to_Z) : w_rewrite.
   Ltac w_rewrite := autorewrite with w_rewrite;trivial.
 
@@ -303,12 +303,12 @@ Section DoubleLift.
     [[p]] <= Zpos (xO w_digits) ->
       [[match ww_compare p zdigits with
         | Eq => w_WW xl yh
-        | Lt => w_WW (w_add_mul_div (low p) xh xl) 
+        | Lt => w_WW (w_add_mul_div (low p) xh xl)
                      (w_add_mul_div (low p) xl yh)
         | Gt =>
               let n := low (ww_sub p zdigits) in
             w_WW (w_add_mul_div n xl yh) (w_add_mul_div n yh yl)
-        end]] =  
+        end]] =
       ([[WW xh xl]] * (2^[[p]]) +
        [[WW yh yl]] / (2^(Zpos (xO w_digits) - [[p]]))) mod wwB.
   Proof.
@@ -317,7 +317,7 @@ Section DoubleLift.
    case (spec_to_w_Z p); intros Hv1 Hv2.
    replace (Zpos (xO w_digits)) with (Zpos w_digits + Zpos w_digits).
    2 : rewrite Zpos_xO;ring.
-   replace (Zpos w_digits + Zpos w_digits - [[p]]) with 
+   replace (Zpos w_digits + Zpos w_digits - [[p]]) with
      (Zpos w_digits + (Zpos w_digits - [[p]])). 2:ring.
    intros Hp; assert (Hxh := spec_to_Z xh);assert (Hxl:=spec_to_Z xl);
    assert (Hx := spec_ww_to_Z w_digits w_to_Z spec_to_Z (WW xh xl));
@@ -330,7 +330,7 @@ Section DoubleLift.
    fold wB.
    rewrite Zmult_plus_distr_l;rewrite <- Zmult_assoc;rewrite <- Zplus_assoc.
    rewrite <- Zpower_2.
-   rewrite <- wwB_wBwB;apply Zmod_unique with [|xh|]. 
+   rewrite <- wwB_wBwB;apply Zmod_unique with [|xh|].
    exact (spec_ww_to_Z w_digits w_to_Z spec_to_Z (WW xl yh)). ring.
    simpl ww_to_Z; w_rewrite;zarith.
    assert (HH0: [|low p|] = [[p]]).
@@ -353,7 +353,7 @@ Section DoubleLift.
    rewrite Zmult_plus_distr_l.
    pattern ([|xl|] * 2 ^ [[p]]) at 2;
    rewrite shift_unshift_mod with (n:= Zpos w_digits);fold wB;zarith.
-   replace ([|xh|] * wB * 2^[[p]]) with ([|xh|] * 2^[[p]] * wB). 2:ring. 
+   replace ([|xh|] * wB * 2^[[p]]) with ([|xh|] * 2^[[p]] * wB). 2:ring.
    rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l. rewrite <- Zplus_assoc.
    unfold base at 5;rewrite <- Zmod_shift_r;zarith.
    unfold base;rewrite Zmod_shift_r with (b:= Zpos (ww_digits w_digits));
@@ -387,8 +387,8 @@ Section DoubleLift.
    lazy zeta; simpl ww_to_Z; w_rewrite;zarith.
    repeat rewrite spec_w_add_mul_div;zarith.
    rewrite HH0.
-   pattern wB at 5;replace wB with 
-    (2^(([[p]] - Zpos w_digits) 
+   pattern wB at 5;replace wB with
+    (2^(([[p]] - Zpos w_digits)
          + (Zpos w_digits - ([[p]] - Zpos w_digits)))).
    rewrite Zpower_exp;zarith. rewrite Zmult_assoc.
    rewrite Z_div_plus_l;zarith.
@@ -401,28 +401,28 @@ Section DoubleLift.
    repeat rewrite <- Zplus_assoc.
    unfold base;rewrite Zmod_shift_r with (b:= Zpos (ww_digits w_digits));
    fold wB;fold wwB;zarith.
-   unfold base;rewrite Zmod_shift_r with (a:= Zpos w_digits) 
+   unfold base;rewrite Zmod_shift_r with (a:= Zpos w_digits)
    (b:= Zpos w_digits);fold wB;fold wwB;zarith.
    rewrite wwB_wBwB; rewrite Zpower_2; rewrite  Zmult_mod_distr_r;zarith.
    rewrite Zmult_plus_distr_l.
-   replace ([|xh|] * wB * 2 ^ u) with 
+   replace ([|xh|] * wB * 2 ^ u) with
      ([|xh|]*2^u*wB). 2:ring.
-   repeat rewrite <- Zplus_assoc. 
+   repeat rewrite <- Zplus_assoc.
    rewrite (Zplus_comm ([|xh|] * 2 ^ u * wB)).
    rewrite Z_mod_plus;zarith. rewrite Z_mod_mult;zarith.
    unfold base;rewrite <- Zmod_shift_r;zarith. fold base;apply Z_mod_lt;zarith.
-   unfold u; split;zarith. 
+   unfold u; split;zarith.
    split;zarith. unfold u; apply Zdiv_lt_upper_bound;zarith.
    rewrite <- Zpower_exp;zarith.
-   fold u. 
-   ring_simplify (u + (Zpos w_digits - u)); fold 
+   fold u.
+   ring_simplify (u + (Zpos w_digits - u)); fold
    wB;zarith. unfold ww_digits;rewrite Zpos_xO;zarith.
    unfold base;rewrite <- Zmod_shift_r;zarith. fold base;apply Z_mod_lt;zarith.
    unfold u; split;zarith.
    unfold u; split;zarith.
    apply Zdiv_lt_upper_bound;zarith.
    rewrite <- Zpower_exp;zarith.
-   fold u. 
+   fold u.
    ring_simplify (u + (Zpos w_digits - u)); fold wB; auto with zarith.
    unfold u;zarith.
    unfold u;zarith.
@@ -446,7 +446,7 @@ Section DoubleLift.
     clear H1;w_rewrite);simpl ww_add_mul_div.
    replace [[WW w_0 w_0]] with 0;[w_rewrite|simpl;w_rewrite;trivial].
    intros Heq;rewrite <- Heq;clear Heq; auto.
-   generalize (spec_ww_compare p (w_0W w_zdigits)); 
+   generalize (spec_ww_compare p (w_0W w_zdigits));
      case ww_compare; intros H1; w_rewrite.
    rewrite (spec_w_add_mul_div w_0 w_0);w_rewrite;zarith.
    generalize H1; w_rewrite; rewrite spec_zdigits; clear H1; intros H1.
@@ -459,7 +459,7 @@ Section DoubleLift.
    rewrite HH0; auto with zarith.
    replace [[WW w_0 w_0]] with 0;[w_rewrite|simpl;w_rewrite;trivial].
    intros Heq;rewrite <- Heq;clear Heq.
-   generalize (spec_ww_compare p (w_0W w_zdigits)); 
+   generalize (spec_ww_compare p (w_0W w_zdigits));
      case ww_compare; intros H1; w_rewrite.
    rewrite (spec_w_add_mul_div w_0 w_0);w_rewrite;zarith.
    rewrite Zpos_xO in H;zarith.

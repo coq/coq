@@ -32,10 +32,10 @@ open Declarations
    is an inductive but non-recursive type, a general conjuction, a
    general disjunction, or a type with no constructors.
 
-   They are more general than matching with or_term, and_term, etc, 
-   since they do not depend on the name of the type. Hence, they 
+   They are more general than matching with or_term, and_term, etc,
+   since they do not depend on the name of the type. Hence, they
    also work on ad-hoc disjunctions introduced by the user.
-  
+
   -- Eduardo (6/8/97). *)
 
 type 'a matching_function = constr -> 'a option
@@ -50,16 +50,16 @@ let meta4 = mkmeta 4
 
 let op2bool = function Some _ -> true | None -> false
 
-let match_with_non_recursive_type t = 
-  match kind_of_term t with 
-    | App _ -> 
+let match_with_non_recursive_type t =
+  match kind_of_term t with
+    | App _ ->
         let (hdapp,args) = decompose_app t in
         (match kind_of_term hdapp with
-           | Ind ind -> 
-               if not (Global.lookup_mind (fst ind)).mind_finite then 
-		 Some (hdapp,args) 
-	       else 
-		 None 
+           | Ind ind ->
+               if not (Global.lookup_mind (fst ind)).mind_finite then
+		 Some (hdapp,args)
+	       else
+		 None
            | _ -> None)
     | _ -> None
 
@@ -69,34 +69,34 @@ let is_non_recursive_type t = op2bool (match_with_non_recursive_type t)
 
 let rec has_nodep_prod_after n c =
   match kind_of_term c with
-    | Prod (_,_,b) -> 
-	( n>0 || not (dependent (mkRel 1) b)) 
+    | Prod (_,_,b) ->
+	( n>0 || not (dependent (mkRel 1) b))
 	&& (has_nodep_prod_after (n-1) b)
     | _            -> true
-	  
+
 let has_nodep_prod = has_nodep_prod_after 0
 
-(* A general conjunctive type is a non-recursive with-no-indices inductive 
+(* A general conjunctive type is a non-recursive with-no-indices inductive
    type with only one constructor and no dependencies between argument;
-   it is strict if it has the form 
+   it is strict if it has the form
    "Inductive I A1 ... An := C (_:A1) ... (_:An)" *)
 
 (* style: None = record; Some false = conjunction; Some true = strict conj *)
 
 let match_with_one_constructor style allow_rec t =
-  let (hdapp,args) = decompose_app t in 
+  let (hdapp,args) = decompose_app t in
   match kind_of_term hdapp with
-  | Ind ind -> 
+  | Ind ind ->
       let (mib,mip) = Global.lookup_inductive ind in
       if (Array.length mip.mind_consnames = 1)
 	&& (allow_rec or not (mis_is_recursive (ind,mib,mip)))
         && (mip.mind_nrealargs = 0)
       then
 	if style = Some true (* strict conjunction *) then
-	  let ctx = 
-	    (prod_assum (snd 
+	  let ctx =
+	    (prod_assum (snd
 	      (decompose_prod_n_assum mib.mind_nparams mip.mind_nf_lc.(0)))) in
-	  if 
+	  if
 	    List.for_all
 	      (fun (_,b,c) -> b=None && c = mkRel mib.mind_nparams) ctx
 	  then
@@ -126,7 +126,7 @@ let is_conjunction ?(strict=false) t =
 let is_record t =
   op2bool (match_with_record t)
 
-let match_with_tuple t = 
+let match_with_tuple t =
   let t = match_with_one_constructor None true t in
   Option.map (fun (hd,l) ->
     let ind = destInd hd in
@@ -137,9 +137,9 @@ let match_with_tuple t =
 let is_tuple t =
   op2bool (match_with_tuple t)
 
-(* A general disjunction type is a non-recursive with-no-indices inductive 
+(* A general disjunction type is a non-recursive with-no-indices inductive
    type with of which all constructors have a single argument;
-   it is strict if it has the form 
+   it is strict if it has the form
    "Inductive I A1 ... An := C1 (_:A1) | ... | Cn : (_:An)" *)
 
 let test_strict_disjunction n lc =
@@ -149,7 +149,7 @@ let test_strict_disjunction n lc =
     | _ -> false) 0 lc
 
 let match_with_disjunction ?(strict=false) t =
-  let (hdapp,args) = decompose_app t in 
+  let (hdapp,args) = decompose_app t in
   match kind_of_term hdapp with
   | Ind ind  ->
       let car = mis_constr_nargs ind in
@@ -167,7 +167,7 @@ let match_with_disjunction ?(strict=false) t =
 	    Array.map (fun ar -> pi2 (destProd (prod_applist ar args)))
 	      mip.mind_nf_lc in
 	  Some (hdapp,Array.to_list cargs)
-      else 
+      else
 	None
   | _ -> None
 
@@ -180,12 +180,12 @@ let is_disjunction ?(strict=false) t =
 let match_with_empty_type t =
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
-    | Ind ind -> 
+    | Ind ind ->
         let (mib,mip) = Global.lookup_inductive ind in
-        let nconstr = Array.length mip.mind_consnames in  
+        let nconstr = Array.length mip.mind_consnames in
 	if nconstr = 0 then Some hdapp else None
     | _ ->  None
-	  
+
 let is_empty_type t = op2bool (match_with_empty_type t)
 
 (* This filters inductive types with one constructor with no arguments;
@@ -194,14 +194,14 @@ let is_empty_type t = op2bool (match_with_empty_type t)
 let match_with_unit_or_eq_type t =
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
-    | Ind ind  -> 
+    | Ind ind  ->
         let (mib,mip) = Global.lookup_inductive ind in
-        let constr_types = mip.mind_nf_lc in 
+        let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
-        let zero_args c = nb_prod c = mib.mind_nparams in  
-	if nconstr = 1 && zero_args constr_types.(0) then 
+        let zero_args c = nb_prod c = mib.mind_nparams in
+	if nconstr = 1 && zero_args constr_types.(0) then
 	  Some hdapp
-	else 
+	else
 	  None
     | _ -> None
 
@@ -249,7 +249,7 @@ let match_with_equation t =
 	HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
       else
         let (mib,mip) = Global.lookup_inductive ind in
-        let constr_types = mip.mind_nf_lc in 
+        let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
 	if nconstr = 1 then
           if is_matching coq_refl_leibniz1_pattern constr_types.(0) then
@@ -265,13 +265,13 @@ let match_with_equation t =
 let match_with_equality_type t =
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
-    | Ind ind when args <> [] -> 
+    | Ind ind when args <> [] ->
         let (mib,mip) = Global.lookup_inductive ind in
         let nconstr = Array.length mip.mind_consnames in
 	if nconstr = 1 && constructor_nrealargs (Global.env()) (ind,1) = 0
-        then 
+        then
 	  Some (hdapp,args)
-        else 
+        else
 	  None
     | _ -> None
 
@@ -282,34 +282,34 @@ let coq_arrow_pattern = PATTERN [ ?X1 -> ?X2 ]
 let match_arrow_pattern t =
   match matches coq_arrow_pattern t with
     | [(m1,arg);(m2,mind)] -> assert (m1=meta1 & m2=meta2); (arg, mind)
-    | _ -> anomaly "Incorrect pattern matching" 
+    | _ -> anomaly "Incorrect pattern matching"
 
 let match_with_nottype t =
   try
     let (arg,mind) = match_arrow_pattern t in
     if is_empty_type mind then Some (mind,arg) else None
-  with PatternMatchingFailure -> None  
+  with PatternMatchingFailure -> None
 
 let is_nottype t = op2bool (match_with_nottype t)
-		     
+
 let match_with_forall_term c=
   match kind_of_term c with
     | Prod (nam,a,b) -> Some (nam,a,b)
     | _            -> None
 
-let is_forall_term c = op2bool (match_with_forall_term c) 
+let is_forall_term c = op2bool (match_with_forall_term c)
 
 let match_with_imp_term c=
   match kind_of_term c with
     | Prod (_,a,b) when not (dependent (mkRel 1) b) ->Some (a,b)
     | _              -> None
 
-let is_imp_term c = op2bool (match_with_imp_term c) 
+let is_imp_term c = op2bool (match_with_imp_term c)
 
 let match_with_nodep_ind t =
   let (hdapp,args) = decompose_app t in
     match (kind_of_term hdapp) with
-      | Ind ind  -> 
+      | Ind ind  ->
           let (mib,mip) = Global.lookup_inductive ind in
 	    if Array.length (mib.mind_packets)>1 then None else
 	      let nodep_constr = has_nodep_prod_after mib.mind_nparams in
@@ -318,24 +318,24 @@ let match_with_nodep_ind t =
 		    if mip.mind_nrealargs=0 then args else
 		      fst (list_chop mib.mind_nparams args) in
 		    Some (hdapp,params,mip.mind_nrealargs)
-		else 
+		else
 		  None
       | _ -> None
-	  
+
 let is_nodep_ind t=op2bool (match_with_nodep_ind t)
 
 let match_with_sigma_type t=
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
-    | Ind ind  -> 
+    | Ind ind  ->
         let (mib,mip) = Global.lookup_inductive ind in
           if (Array.length (mib.mind_packets)=1) &&
 	    (mip.mind_nrealargs=0) &&
 	    (Array.length mip.mind_consnames=1) &&
 	    has_nodep_prod_after (mib.mind_nparams+1) mip.mind_nf_lc.(0) then
-	      (*allowing only 1 existential*) 
+	      (*allowing only 1 existential*)
 	      Some (hdapp,args)
-	  else 
+	  else
 	    None
     | _ -> None
 
@@ -377,7 +377,7 @@ let find_eq_data eqn = (* fails with PatternMatchingFailure *)
   first_match (match_eq eqn) equalities
 
 let extract_eq_args gl = function
-  | MonomorphicLeibnizEq (e1,e2) -> 
+  | MonomorphicLeibnizEq (e1,e2) ->
       let t = Tacmach.pf_type_of gl e1 in (t,e1,e2)
   | PolymorphicLeibnizEq (t,e1,e2) -> (t,e1,e2)
   | HeterogenousEq (t1,e1,t2,e2) ->
@@ -389,13 +389,13 @@ let find_eq_data_decompose gl eqn =
   (lbeq,extract_eq_args gl eq_args)
 
 let find_this_eq_data_decompose gl eqn =
-  let (lbeq,eq_args) = 
+  let (lbeq,eq_args) =
     try find_eq_data eqn
     with PatternMatchingFailure ->
       errorlabstrm "" (str "No primitive equality found.") in
   let eq_args =
     try extract_eq_args gl eq_args
-    with PatternMatchingFailure -> 
+    with PatternMatchingFailure ->
       error "Don't know what to do with JMeq on arguments not of same type." in
   (lbeq,eq_args)
 
@@ -430,7 +430,7 @@ let match_sigma ex ex_pat =
 	anomaly "match_sigma: a successful sigma pattern should match 4 terms"
 
 let find_sigma_data_decompose ex = (* fails with PatternMatchingFailure *)
-  first_match (match_sigma ex) 
+  first_match (match_sigma ex)
     [coq_existT_pattern, build_sigma_type]
 
 (* Pattern "(sig ?1 ?2)" *)
@@ -468,14 +468,14 @@ let op_sum = coq_sumbool_ref
 let match_eqdec t =
   let eqonleft,op,subst =
     try true,op_sum,matches (Lazy.force coq_eqdec_inf_pattern) t
-    with PatternMatchingFailure -> 
+    with PatternMatchingFailure ->
     try false,op_sum,matches (Lazy.force coq_eqdec_inf_rev_pattern) t
-    with PatternMatchingFailure -> 
+    with PatternMatchingFailure ->
     try true,op_or,matches (Lazy.force coq_eqdec_pattern) t
-    with PatternMatchingFailure -> 
+    with PatternMatchingFailure ->
         false,op_or,matches (Lazy.force coq_eqdec_rev_pattern) t in
   match subst with
-  | [(_,typ);(_,c1);(_,c2)] -> 
+  | [(_,typ);(_,c1);(_,c2)] ->
       eqonleft, Libnames.constr_of_global (Lazy.force op), c1, c2, typ
   | _ -> anomaly "Unexpected pattern"
 

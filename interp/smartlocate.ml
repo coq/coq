@@ -24,7 +24,7 @@ open Topconstr
 
 let global_of_extended_global = function
   | TrueGlobal ref -> ref
-  | SynDef kn -> 
+  | SynDef kn ->
   match search_syntactic_definition dummy_loc kn with
   | [],ARef ref -> ref
   | _ -> raise Not_found
@@ -33,7 +33,7 @@ let locate_global_with_alias (loc,qid) =
   let ref = Nametab.locate_extended qid in
   try global_of_extended_global ref
   with Not_found ->
-    user_err_loc (loc,"",pr_qualid qid ++ 
+    user_err_loc (loc,"",pr_qualid qid ++
       str " is bound to a notation that does not denote a reference")
 
 let global_inductive_with_alias r =

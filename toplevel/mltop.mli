@@ -8,9 +8,9 @@
 
 (*i $Id$ i*)
 
-(* If there is a toplevel under Coq, it is described by the following 
+(* If there is a toplevel under Coq, it is described by the following
    record. *)
-type toplevel = { 
+type toplevel = {
   load_obj : string -> unit;
   use_file : string -> unit;
   add_dir  : string -> unit;

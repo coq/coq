@@ -20,7 +20,7 @@ open Entries
   typed before being added.
 
   We also add [open_structure] and [close_section], [close_module] to
-  provide functionnality for sections and interactive modules 
+  provide functionnality for sections and interactive modules
 *)
 
 type safe_environment
@@ -39,35 +39,35 @@ val push_named_def :
     Univ.constraints * safe_environment
 
 (* Adding global axioms or definitions *)
-type global_declaration = 
+type global_declaration =
   | ConstantEntry of constant_entry
   | GlobalRecipe of Cooking.recipe
 
-val add_constant : 
-  dir_path -> label -> global_declaration -> safe_environment -> 
+val add_constant :
+  dir_path -> label -> global_declaration -> safe_environment ->
       constant * safe_environment
 
 (* Adding an inductive type *)
-val add_mind : 
+val add_mind :
   dir_path -> label -> mutual_inductive_entry -> safe_environment ->
     mutual_inductive * safe_environment
 
 (* Adding a module *)
 val add_module :
-  label -> module_entry -> safe_environment 
+  label -> module_entry -> safe_environment
     -> module_path * safe_environment
 
 (* Adding a module alias*)
 val add_alias :
-  label -> module_path -> safe_environment 
+  label -> module_path -> safe_environment
     -> module_path * safe_environment
 (* Adding a module type *)
 val add_modtype :
-  label -> module_struct_entry -> safe_environment 
+  label -> module_struct_entry -> safe_environment
     -> module_path * safe_environment
 
 (* Adding universe constraints *)
-val add_constraints : 
+val add_constraints :
   Univ.constraints -> safe_environment -> safe_environment
 
 (* Settin the strongly constructive or classical logical engagement *)
@@ -75,11 +75,11 @@ val set_engagement : engagement -> safe_environment -> safe_environment
 
 
 (*s Interactive module functions *)
-val start_module : 
+val start_module :
   label -> safe_environment -> module_path * safe_environment
 val end_module :
-  label -> module_struct_entry option 
-      -> safe_environment -> module_path * safe_environment 
+  label -> module_struct_entry option
+      -> safe_environment -> module_path * safe_environment
 
 val add_module_parameter :
   mod_bound_id -> module_struct_entry -> safe_environment -> safe_environment
@@ -102,13 +102,13 @@ val current_msid : safe_environment -> mod_self_id
 (* exporting and importing modules *)
 type compiled_library
 
-val start_library : dir_path -> safe_environment 
+val start_library : dir_path -> safe_environment
       -> module_path * safe_environment
 
-val export : safe_environment -> dir_path  
+val export : safe_environment -> dir_path
       -> mod_self_id * compiled_library
 
-val import : compiled_library -> Digest.t -> safe_environment 
+val import : compiled_library -> Digest.t -> safe_environment
       -> module_path * safe_environment
 
 (* Remove the body of opaque constants *)

@@ -10,7 +10,7 @@ Definition nexists (P:nat -> nat -> Prop) : nat -> Prop :=
 
 Goal forall a A m,
   True ->
-  (pl A (nexists (fun x => (nexists 
+  (pl A (nexists (fun x => (nexists
     (fun y => pl (pair a (S x)) (pair a (S y))))))) m.
 Proof.
   intros.

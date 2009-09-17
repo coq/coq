@@ -9,7 +9,7 @@
 (* $Id$ *)
 
 (* Chet's comments about this tactic :
- 
+
  Programmable destruction of hypotheses and conclusions.
 
    The idea here is that we are going to store patterns.  These
@@ -136,7 +136,7 @@ open Libnames
 
 (* two patterns - one for the type, and one for the type of the type *)
 type destructor_pattern = {
-  d_typ: constr_pattern; 
+  d_typ: constr_pattern;
   d_sort: constr_pattern }
 
 let subst_destructor_pattern subst { d_typ = t; d_sort = s } =
@@ -151,7 +151,7 @@ type located_destructor_pattern =
    destructor_pattern) location
 
 let subst_located_destructor_pattern subst = function
-  | HypLocation (b,d,d') -> 
+  | HypLocation (b,d,d') ->
       HypLocation
         (b,subst_destructor_pattern subst d, subst_destructor_pattern subst d')
   | ConclLocation d ->
@@ -179,29 +179,29 @@ let add (na,dd) =
   let pat = match dd.d_pat with
     | HypLocation(_,p,_) -> p.d_typ
     | ConclLocation p -> p.d_typ
-  in 
+  in
   if Nbtermdn.in_dn tactab na then begin
-    msgnl (str "Warning [Overriding Destructor Entry " ++ 
+    msgnl (str "Warning [Overriding Destructor Entry " ++
              str (string_of_id na) ++ str"]");
     Nbtermdn.remap tactab na (pat,dd)
-  end else 
+  end else
     Nbtermdn.add tactab (na,(pat,dd))
 
-let _ = 
+let _ =
   Summary.declare_summary "destruct-hyp-concl"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init }
 
-let forward_subst_tactic = 
+let forward_subst_tactic =
   ref (fun _ -> failwith "subst_tactic is not installed for DHyp")
 
 let cache_dd (_,(_,na,dd)) =
-  try 
+  try
     add (na,dd)
-  with _ -> 
+  with _ ->
     anomalylabstrm "Dhyp.add"
-      (str"The code which adds destructor hints broke;" ++ spc () ++ 
+      (str"The code which adds destructor hints broke;" ++ spc () ++
 	 str"this is not supposed to happen")
 
 let classify_dd (local,_,_ as o) =
@@ -212,7 +212,7 @@ let export_dd (local,_,_ as x) = if local then None else Some x
 let subst_dd (_,subst,(local,na,dd)) =
   (local,na,
   { d_pat = subst_located_destructor_pattern subst dd.d_pat;
-    d_pri = dd.d_pri; 
+    d_pri = dd.d_pri;
     d_code = !forward_subst_tactic subst dd.d_code })
 
 let (inDD,_) =
@@ -225,7 +225,7 @@ let (inDD,_) =
 
 let catch_all_sort_pattern = PMeta(Some (id_of_string "SORT"))
 let catch_all_type_pattern = PMeta(Some (id_of_string "TYPE"))
-    
+
 let add_destructor_hint local na loc (_,pat) pri code =
   let code =
     begin match loc, code with
@@ -273,7 +273,7 @@ let match_dpat dp cls gls =
         then error "No match."
     | _ -> error "ApplyDestructor"
 
-let forward_interp_tactic = 
+let forward_interp_tactic =
   ref (fun _ -> failwith "interp_tactic is not installed for DHyp")
 
 let set_extern_interp f = forward_interp_tactic := f
@@ -284,7 +284,7 @@ let applyDestructor cls discard dd gls =
   let tacl =
     List.map (fun cl ->
       match cl, dd.d_code with
-        | Some id, (Some x, tac) -> 
+        | Some id, (Some x, tac) ->
 	    let arg =
               ConstrMayEval(ConstrTerm (RRef(dummy_loc,VarRef id),None)) in
             TacLetIn (false, [(dummy_loc, x), arg], tac)
@@ -337,15 +337,15 @@ let rec search n =
   tclFIRST
     [intros;
      assumption;
-     (tclTHEN  
-        (Tacticals.tryAllHypsAndConcl 
-           (function 
+     (tclTHEN
+        (Tacticals.tryAllHypsAndConcl
+           (function
               | Some id -> (dHyp id)
               | None    ->  dConcl ))
         (search (n-1)))]
-    
+
 let auto_tdb n = tclTRY (tclCOMPLETE (search n))
-   
+
 let search_depth_tdb = ref(5)
 
 let depth_tdb = function

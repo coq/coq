@@ -9,7 +9,7 @@ Definition k1 := k0 -> k0.
 (** iterating X n times *)
 Fixpoint Pow (X:k1)(k:nat){struct k}:k1:=
   match k with 0 => fun X => X
-             |  S k' => fun A => X (Pow X k' A)   
+             |  S k' => fun A => X (Pow X k' A)
   end.
 
 Parameter Bush: k1.

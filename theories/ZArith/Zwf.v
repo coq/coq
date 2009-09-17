@@ -15,7 +15,7 @@ Open Local Scope Z_scope.
 
 (** Well-founded relations on Z. *)
 
-(** We define the following family of relations on [Z x Z]: 
+(** We define the following family of relations on [Z x Z]:
 
     [x (Zwf c) y]   iff   [x < y & c <= y]
  *)

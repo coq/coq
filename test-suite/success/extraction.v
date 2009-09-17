@@ -9,10 +9,10 @@
 Require Import Arith.
 Require Import List.
 
-(**** A few tests for the extraction mechanism ****) 
+(**** A few tests for the extraction mechanism ****)
 
-(* Ideally, we should monitor the extracted output 
-   for changes, but this is painful. For the moment, 
+(* Ideally, we should monitor the extracted output
+   for changes, but this is painful. For the moment,
    we just check for failures of this script. *)
 
 (*** STANDARD EXAMPLES *)
@@ -23,7 +23,7 @@ Definition idnat (x:nat) := x.
 Extraction idnat.
 (* let idnat x = x *)
 
-Definition id (X:Type) (x:X) := x.      
+Definition id (X:Type) (x:X) := x.
 Extraction id. (* let id x = x *)
 Definition id' := id Set nat.
 Extraction id'. (* type id' = nat *)
@@ -47,7 +47,7 @@ Extraction test5.
 Definition cf (x:nat) (_:x <= 0) := S x.
 Extraction NoInline cf.
 Definition test6 := cf 0 (le_n 0).
-Extraction test6.  
+Extraction test6.
 (* let test6 = cf O *)
 
 Definition test7 := (fun (X:Set) (x:X) => x) nat.
@@ -60,9 +60,9 @@ Definition d2 := d Set.
 Extraction d2. (* type d2 = __ d *)
 Definition d3 (x:d Set) := 0.
 Extraction d3. (* let d3 _ = O *)
-Definition d4 := d nat. 
+Definition d4 := d nat.
 Extraction d4. (* type d4 = nat d *)
-Definition d5 := (fun x:d Type => 0) Type.  
+Definition d5 := (fun x:d Type => 0) Type.
 Extraction d5.  (* let d5 = O *)
 Definition d6 (x:d Type) := x.
 Extraction d6.  (* type 'x d6 = 'x *)
@@ -80,7 +80,7 @@ Definition test11 := let n := 0 in let p := S n in S p.
 Extraction test11. (* let test11 = S (S O) *)
 
 Definition test12 := forall x:forall X:Type, X -> X, x Type Type.
-Extraction test12. 
+Extraction test12.
 (* type test12 = (__ -> __ -> __) -> __ *)
 
 
@@ -115,14 +115,14 @@ Extraction test20.
 (** Simple inductive type and recursor. *)
 
 Extraction nat.
-(* 
-type nat = 
-  | O 
-  | S of nat 
+(*
+type nat =
+  | O
+  | S of nat
 *)
 
 Extraction sumbool_rect.
-(* 
+(*
 let sumbool_rect f f0 = function
   |  Left -> f __
   | Right -> f0 __
@@ -134,7 +134,7 @@ Inductive c (x:nat) : nat -> Set :=
   | refl : c x x
   | trans : forall y z:nat, c x y -> y <= z -> c x z.
 Extraction c.
-(* 
+(*
 type c =
   | Refl
   | Trans of nat * nat * c
@@ -150,7 +150,7 @@ Inductive Finite (U:Type) : Ensemble U -> Type :=
       forall A:Ensemble U,
         Finite U A -> forall x:U, ~ A x -> Finite U (Add U A x).
 Extraction Finite.
-(* 
+(*
 type 'u finite =
   | Empty_is_finite
   | Union_is_finite of 'u finite * 'u
@@ -166,7 +166,7 @@ with forest : Set :=
   | Cons : tree -> forest -> forest.
 
 Extraction tree.
-(* 
+(*
 type tree =
   | Node of nat * forest
 and forest =
@@ -178,7 +178,7 @@ Fixpoint tree_size (t:tree) : nat :=
   match t with
   | Node a f => S (forest_size f)
   end
- 
+
  with forest_size (f:forest) : nat :=
   match f with
   | Leaf b => 1
@@ -186,7 +186,7 @@ Fixpoint tree_size (t:tree) : nat :=
   end.
 
 Extraction tree_size.
-(* 
+(*
 let rec tree_size = function
   | Node (a, f) -> S (forest_size f)
 and forest_size = function
@@ -203,13 +203,13 @@ Definition test14 := tata 0.
 Extraction test14.
 (* let test14 x x0 x1 = Tata (O, x, x0, x1) *)
 Definition test15 := tata 0 1.
-Extraction test15. 
+Extraction test15.
 (* let test15 x x0 = Tata (O, (S O), x, x0) *)
 
 Inductive eta : Type :=
     eta_c : nat -> Prop -> nat -> Prop -> eta.
 Extraction eta_c.
-(* 
+(*
 type eta =
   | Eta_c of nat * nat
 *)
@@ -220,15 +220,15 @@ Definition test17 := eta_c 0 True.
 Extraction test17.
 (* let test17 x = Eta_c (O, x) *)
 Definition test18 := eta_c 0 True 0.
-Extraction test18. 
+Extraction test18.
 (* let test18 _ = Eta_c (O, O) *)
 
 
 (** Example of singleton inductive type *)
 
 Inductive bidon (A:Prop) (B:Type) : Type :=
-    tb : forall (x:A) (y:B), bidon A B. 
-Definition fbidon (A B:Type) (f:A -> B -> bidon True nat) 
+    tb : forall (x:A) (y:B), bidon A B.
+Definition fbidon (A B:Type) (f:A -> B -> bidon True nat)
   (x:A) (y:B) := f x y.
 Extraction bidon.
 (* type 'b bidon = 'b *)
@@ -252,11 +252,11 @@ Extraction fbidon2.
 Inductive test_0 : Prop :=
     ctest0 : test_0
 with test_1 : Set :=
-    ctest1 : test_0 -> test_1.  
+    ctest1 : test_0 -> test_1.
 Extraction test_0.
 (* test0 : logical inductive *)
-Extraction test_1. 
-(* 
+Extraction test_1.
+(*
 type test1 =
   | Ctest1
 *)
@@ -277,19 +277,19 @@ Inductive tp1 : Type :=
 with tp2 : Type :=
     T' : tp1 -> tp2.
 Extraction tp1.
-(* 
+(*
 type tp1 =
   | T of __ * tp2
 and tp2 =
   | T' of tp1
-*) 
+*)
 
 Inductive tp1bis : Type :=
     Tbis : tp2bis -> tp1bis
 with tp2bis : Type :=
     T'bis : forall (C:Set) (c:C), tp1bis -> tp2bis.
 Extraction tp1bis.
-(* 
+(*
 type tp1bis =
   | Tbis of tp2bis
 and tp2bis =
@@ -344,8 +344,8 @@ intros.
 exact n.
 Qed.
 Extraction oups.
-(* 
-let oups h0 = 
+(*
+let oups h0 =
   match Obj.magic h0 with
     | Nil -> h0
     | Cons0 (n, l) -> n
@@ -357,7 +357,7 @@ let oups h0 =
 Definition horibilis (b:bool) :=
   if b as b return (if b then Type else nat) then Set else 0.
 Extraction horibilis.
-(* 
+(*
 let horibilis = function
   | True -> Obj.magic __
   | False -> Obj.magic O
@@ -370,8 +370,8 @@ Definition natbool (b:bool) := if b then nat else bool.
 Extraction natbool. (* type natbool = __ *)
 
 Definition zerotrue (b:bool) := if b as x return natbool x then 0 else true.
-Extraction zerotrue. 
-(* 
+Extraction zerotrue.
+(*
 let zerotrue = function
   | True -> Obj.magic O
   | False -> Obj.magic True
@@ -383,7 +383,7 @@ Definition natTrue (b:bool) := if b return Type then nat else True.
 
 Definition zeroTrue (b:bool) := if b as x return natProp x then 0 else True.
 Extraction zeroTrue.
-(* 
+(*
 let zeroTrue = function
   | True -> Obj.magic O
   | False -> Obj.magic __
@@ -393,7 +393,7 @@ Definition natTrue2 (b:bool) := if b return Type then nat else True.
 
 Definition zeroprop (b:bool) := if b as x return natTrue x then 0 else I.
 Extraction zeroprop.
-(* 
+(*
 let zeroprop = function
   | True -> Obj.magic O
   | False -> Obj.magic __
@@ -410,8 +410,8 @@ Extraction test21.
 Definition test22 :=
   (fun f:forall X:Type, X -> X => (f nat 0, f bool true))
     (fun (X:Type) (x:X) => x).
-Extraction test22. 
-(* let test22 = 
+Extraction test22.
+(* let test22 =
   let f = fun x -> x in Pair ((f O), (f True)) *)
 
 (* still ok via optim beta -> let *)
@@ -461,8 +461,8 @@ Extraction f_normal.
 (* inductive with magic needed *)
 
 Inductive Boite : Set :=
-    boite : forall b:bool, (if b then nat else (nat * nat)%type) -> Boite. 
-Extraction Boite. 
+    boite : forall b:bool, (if b then nat else (nat * nat)%type) -> Boite.
+Extraction Boite.
 (*
 type boite =
   | Boite of bool * __
@@ -482,8 +482,8 @@ Definition test_boite (B:Boite) :=
   | boite true n => n
   | boite false n => fst n + snd n
   end.
-Extraction test_boite. 
-(* 
+Extraction test_boite.
+(*
 let test_boite = function
   | Boite (b0, n) ->
       (match b0 with
@@ -494,23 +494,23 @@ let test_boite = function
 (* singleton inductive with magic needed *)
 
 Inductive Box : Type :=
-    box : forall A:Set, A -> Box. 
+    box : forall A:Set, A -> Box.
 Extraction Box.
 (* type box = __ *)
 
-Definition box1 := box nat 0. 
+Definition box1 := box nat 0.
 Extraction box1. (* let box1 = Obj.magic O *)
 
 (* applied constant, magic needed *)
 
 Definition idzarb (b:bool) (x:if b then nat else bool) := x.
 Definition zarb := idzarb true 0.
-Extraction NoInline idzarb. 
-Extraction zarb. 
+Extraction NoInline idzarb.
+Extraction zarb.
 (* let zarb = Obj.magic idzarb True (Obj.magic O) *)
 
 (** function of variable arity. *)
-(** Fun n = nat -> nat -> ... -> nat *)  
+(** Fun n = nat -> nat -> ... -> nat *)
 
 Fixpoint Fun (n:nat) : Set :=
   match n with
@@ -532,20 +532,20 @@ Fixpoint proj (k n:nat) {struct n} : Fun n :=
       | O => fun x => Const x n
       | S k => fun x => proj k n
       end
-  end. 
+  end.
 
 Definition test_proj := proj 2 4 0 1 2 3.
 
-Eval compute in test_proj. 
+Eval compute in test_proj.
 
-Recursive Extraction test_proj. 
+Recursive Extraction test_proj.
 
 
 
-(*** TO SUM UP: ***) 
+(*** TO SUM UP: ***)
 
 (* Was previously producing a "test_extraction.ml" *)
-Recursive Extraction 
+Recursive Extraction
   idnat id id' test2 test3 test4 test5 test6 test7 d d2
   d3 d4 d5 d6 test8 id id' test9 test10 test11 test12
   test13 test19 test20 nat sumbool_rect c Finite tree
@@ -581,7 +581,7 @@ Recursive Extraction
  zerotrue zeroTrue zeroprop test21 test22 test23 f f_prop
  f_arity f_normal Boite boite1 boite2 test_boite Box box1
  zarb test_proj.
-                     
+
 
 (*** Finally, a test more focused on everyday's life situations ***)
 

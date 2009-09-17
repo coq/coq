@@ -51,12 +51,12 @@ let make_red_flag =
 	if red.rConst <> [] & not red.rDelta then
 	  error
 	    "Cannot set both constants to unfold and constants not to unfold";
-        add_flag 
+        add_flag
 	  { red with rConst = list_union red.rConst l; rDelta = true }
 	  lf
   in
   add_flag
-    {rBeta = false; rIota = false; rZeta = false; rDelta = false; rConst = []} 
+    {rBeta = false; rIota = false; rZeta = false; rDelta = false; rConst = []}
 
 type 'a raw_hyp_location = 'a with_occurrences * Termops.hyp_location_flag
 
@@ -85,7 +85,7 @@ type inversion_kind =
   | FullInversionClear
 
 type ('c,'id) inversion_strength =
-  | NonDepInversion of 
+  | NonDepInversion of
       inversion_kind * 'id list * intro_pattern_expr located option
   | DepInversion of
       inversion_kind * 'c option * intro_pattern_expr located option
@@ -115,12 +115,12 @@ let goal_location_of = function
 | _ ->
     error "Not a simple \"in\" clause (one hypothesis or the conclusion)"
 
-type ('constr,'id) induction_clause = 
-    ('constr with_bindings induction_arg list * 'constr with_bindings option * 
+type ('constr,'id) induction_clause =
+    ('constr with_bindings induction_arg list * 'constr with_bindings option *
      (intro_pattern_expr located option * intro_pattern_expr located option) *
      'id gclause option)
 
-type multi = 
+type multi =
   | Precisely of int
   | UpTo of int
   | RepeatStar
@@ -150,15 +150,15 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacExact of 'constr
   | TacExactNoCheck of 'constr
   | TacVmCastNoCheck of 'constr
-  | TacApply of advanced_flag * evars_flag * 'constr with_bindings list * 
+  | TacApply of advanced_flag * evars_flag * 'constr with_bindings list *
       ('id * intro_pattern_expr located option) option
-  | TacElim of evars_flag * 'constr with_bindings * 
+  | TacElim of evars_flag * 'constr with_bindings *
       'constr with_bindings option
   | TacElimType of 'constr
   | TacCase of evars_flag * 'constr with_bindings
   | TacCaseType of 'constr
   | TacFix of identifier option * int
-  | TacMutualFix of hidden_flag * identifier * int * (identifier * int * 
+  | TacMutualFix of hidden_flag * identifier * int * (identifier * int *
       'constr) list
   | TacCofix of identifier option
   | TacMutualCofix of hidden_flag * identifier * (identifier * 'constr) list
@@ -211,10 +211,10 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacTransitivity of 'constr option
 
   (* Equality and inversion *)
-  | TacRewrite of 
+  | TacRewrite of
       evars_flag * (bool * multi * 'constr with_bindings) list * 'id gclause * 'tac option
   | TacInversion of ('constr,'id) inversion_strength * quantified_hypothesis
-      
+
   (* For ML extensions *)
   | TacExtend of loc * string * 'constr generic_argument list
 
@@ -225,11 +225,11 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
 
 and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr =
   | TacAtom of loc * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr
-  | TacThen of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr * 
+  | TacThen of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr *
 	('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr array *
 	('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr *
 	('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr array
-  | TacThens of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr * 
+  | TacThens of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr *
 	('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr list
   | TacFirst of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr list
   | TacComplete of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
@@ -263,7 +263,7 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg =
   | Integer        of int
   | TacCall        of loc *
       'ref * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg list
-  | TacExternal of loc * string * string * 
+  | TacExternal of loc * string * string *
       ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg list
   | TacFreshId     of string or_var list
   | Tacexp of 'tac

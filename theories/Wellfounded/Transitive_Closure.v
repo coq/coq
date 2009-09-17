@@ -18,7 +18,7 @@ Section Wf_Transitive_Closure.
   Variable R : relation A.
 
   Notation trans_clos := (clos_trans A R).
- 
+
   Lemma incl_clos_trans : inclusion A R trans_clos.
     red in |- *; auto with sets.
   Qed.

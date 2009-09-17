@@ -38,7 +38,7 @@ type constr_substituted = constr substituted
 
 let from_val = from_val
 
-let force = force subst_mps 
+let force = force subst_mps
 
 let subst_constr_subst = subst_substituted
 
@@ -49,7 +49,7 @@ type constant_body = {
     const_body_code : Cemitcodes.to_patch_substituted;
    (* const_type_code : Cemitcodes.to_patch; *)
     const_constraints : constraints;
-    const_opaque : bool; 
+    const_opaque : bool;
     const_inline : bool}
 
 (*s Inductive types (internal representation with redundant
@@ -62,9 +62,9 @@ let subst_rel_declaration sub (id,copt,t as x) =
 
 let subst_rel_context sub = list_smartmap (subst_rel_declaration sub)
 
-type recarg = 
-  | Norec 
-  | Mrec of int 
+type recarg =
+  | Norec
+  | Mrec of int
   | Imbr of inductive
 
 let subst_recarg sub r = match r with
@@ -86,7 +86,7 @@ let dest_subterms p =
   let (_,cstrs) = Rtree.dest_node p in
   Array.map (fun t -> Array.to_list (snd (Rtree.dest_node t))) cstrs
 
-let recarg_length p j = 
+let recarg_length p j =
   let (_,cstrs) = Rtree.dest_node p in
   Array.length (snd (Rtree.dest_node cstrs.(j-1)))
 
@@ -105,7 +105,7 @@ type monomorphic_inductive_arity = {
   mind_sort : sorts;
 }
 
-type inductive_arity = 
+type inductive_arity =
 | Monomorphic of monomorphic_inductive_arity
 | Polymorphic of polymorphic_arity
 
@@ -158,7 +158,7 @@ type one_inductive_body = {
  (* number of no constant constructor *)
     mind_nb_args : int;
 
-    mind_reloc_tbl :  Cbytecodes.reloc_table; 
+    mind_reloc_tbl :  Cbytecodes.reloc_table;
   }
 
 type mutual_inductive_body = {
@@ -207,7 +207,7 @@ let subst_const_body sub cb = {
     (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
     const_constraints = cb.const_constraints;
     const_opaque = cb.const_opaque;
-    const_inline = cb.const_inline} 
+    const_inline = cb.const_inline}
 
 let subst_arity sub = function
 | Monomorphic s ->
@@ -217,7 +217,7 @@ let subst_arity sub = function
     }
 | Polymorphic s as x -> x
 
-let subst_mind_packet sub mbp = 
+let subst_mind_packet sub mbp =
   { mind_consnames = mbp.mind_consnames;
     mind_consnrealdecls = mbp.mind_consnrealdecls;
     mind_typename = mbp.mind_typename;
@@ -228,20 +228,20 @@ let subst_mind_packet sub mbp =
     mind_nrealargs = mbp.mind_nrealargs;
     mind_nrealargs_ctxt = mbp.mind_nrealargs_ctxt;
     mind_kelim = mbp.mind_kelim;
-    mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*); 
+    mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*);
     mind_nb_constant = mbp.mind_nb_constant;
     mind_nb_args = mbp.mind_nb_args;
     mind_reloc_tbl = mbp.mind_reloc_tbl }
 
 
-let subst_mind sub mib = 
-  { mind_record = mib.mind_record ; 
+let subst_mind sub mib =
+  { mind_record = mib.mind_record ;
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
     mind_hyps = (assert (mib.mind_hyps=[]); []) ;
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
-    mind_params_ctxt = 
+    mind_params_ctxt =
       map_rel_context (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = array_smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_constraints = mib.mind_constraints ;
@@ -251,11 +251,11 @@ let subst_mind sub mib =
 (*s Modules: signature component specifications, module types, and
   module declarations *)
 
-type structure_field_body = 
+type structure_field_body =
   | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
   | SFBmodule of module_body
-  | SFBalias of module_path * struct_expr_body option 
+  | SFBalias of module_path * struct_expr_body option
       * constraints option
   | SFBmodtype of module_type_body
 
@@ -263,25 +263,25 @@ and structure_body = (label * structure_field_body) list
 
 and struct_expr_body =
   | SEBident of module_path
-  | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body 
+  | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body
   | SEBstruct of mod_self_id * structure_body
   | SEBapply of struct_expr_body * struct_expr_body
       * constraints
   | SEBwith of struct_expr_body * with_declaration_body
 
 and with_declaration_body =
-    With_module_body of identifier list * module_path 
+    With_module_body of identifier list * module_path
       * struct_expr_body option  * constraints
   | With_definition_body of  identifier list * constant_body
-        
-and module_body = 
+
+and module_body =
     { mod_expr : struct_expr_body option;
       mod_type : struct_expr_body option;
       mod_constraints : constraints;
       mod_alias : substitution;
       mod_retroknowledge : Retroknowledge.action list}
 
-and module_type_body = 
+and module_type_body =
     { typ_expr : struct_expr_body;
       typ_strength : module_path option;
       typ_alias : substitution}

@@ -4,12 +4,12 @@
 open Format
 open Fol
 
-type proof = 
+type proof =
   | Immediate of Term.constr
   | Fun_def of string * (string * typ) list * typ * term
 
 let proofs = Hashtbl.create 97
-let proof_name = 
+let proof_name =
   let r = ref 0 in fun () -> incr r; "dp_axiom__" ^ string_of_int !r
 
 let add_proof pr = let n = proof_name () in Hashtbl.add proofs n pr; n
@@ -24,9 +24,9 @@ let rec print_list sep print fmt = function
 let space fmt () = fprintf fmt "@ "
 let comma fmt () = fprintf fmt ",@ "
 
-let is_why_keyword = 
+let is_why_keyword =
   let h = Hashtbl.create 17 in
-  List.iter 
+  List.iter
     (fun s -> Hashtbl.add h s ())
     ["absurd"; "and"; "array"; "as"; "assert"; "axiom"; "begin";
      "bool"; "do"; "done"; "else"; "end"; "exception"; "exists";
@@ -34,7 +34,7 @@ let is_why_keyword =
      "if"; "in"; "int"; "invariant"; "label"; "let"; "logic"; "not";
      "of"; "or"; "parameter"; "predicate"; "prop"; "raise"; "raises";
      "reads"; "real"; "rec"; "ref"; "returns"; "then"; "true"; "try";
-     "type"; "unit"; "variant"; "void"; "while"; "with"; "writes" ]; 
+     "type"; "unit"; "variant"; "void"; "while"; "with"; "writes" ];
   Hashtbl.mem h
 
 let ident fmt s =
@@ -49,9 +49,9 @@ let rec print_typ fmt = function
   | Tid (x,tl) -> fprintf fmt "(%a) %a" (print_list comma print_typ) tl ident x
 
 let rec print_term fmt = function
-  | Cst n -> 
+  | Cst n ->
       fprintf fmt "%s" (Big_int.string_of_big_int n)
-  | RCst s -> 
+  | RCst s ->
       fprintf fmt "%s.0" (Big_int.string_of_big_int s)
   | Power2 n ->
       fprintf fmt "0x1p%s" (Big_int.string_of_big_int n)
@@ -64,17 +64,17 @@ let rec print_term fmt = function
   | Div (a, b) ->
       fprintf fmt "@[(%a /@ %a)@]" print_term a print_term b
   | Opp (a) ->
-      fprintf fmt "@[(-@ %a)@]" print_term a 
+      fprintf fmt "@[(-@ %a)@]" print_term a
   | App (id, []) ->
       fprintf fmt "%a" ident id
   | App (id, tl) ->
       fprintf fmt "@[%a(%a)@]" ident id print_terms tl
 
-and print_terms fmt tl = 
+and print_terms fmt tl =
   print_list comma print_term fmt tl
 
-let rec print_predicate fmt p = 
-  let pp = print_predicate in 
+let rec print_predicate fmt p =
+  let pp = print_predicate in
   match p with
   | True ->
       fprintf fmt "true"
@@ -90,9 +90,9 @@ let rec print_predicate fmt p =
       fprintf fmt "@[(%a >=@ %a)@]" print_term a print_term b
   | Fatom (Gt (a, b)) ->
       fprintf fmt "@[(%a >@ %a)@]" print_term a print_term b
-  | Fatom (Pred (id, [])) -> 
+  | Fatom (Pred (id, [])) ->
       fprintf fmt "%a" ident id
-  | Fatom (Pred (id, tl)) -> 
+  | Fatom (Pred (id, tl)) ->
       fprintf fmt "@[%a(%a)@]" ident id print_terms tl
   | Imp (a, b) ->
       fprintf fmt "@[(%a ->@ %a)@]" pp a pp b
@@ -104,9 +104,9 @@ let rec print_predicate fmt p =
       fprintf fmt "@[(%a or@ %a)@]" pp a pp b
   | Not a ->
       fprintf fmt "@[(not@ %a)@]" pp a
-  | Forall (id, t, p) -> 
+  | Forall (id, t, p) ->
       fprintf fmt "@[(forall %a:%a.@ %a)@]" ident id print_typ t pp p
-  | Exists (id, t, p) -> 
+  | Exists (id, t, p) ->
       fprintf fmt "@[(exists %a:%a.@ %a)@]" ident id print_typ t pp p
 
 let print_query fmt (decls,concl) =
@@ -117,7 +117,7 @@ let print_query fmt (decls,concl) =
 	fprintf fmt "@[type 'a %a@]@\n@\n" ident id
     | DeclType (id, n) ->
 	fprintf fmt "@[type (";
-	for i = 1 to n do 
+	for i = 1 to n do
 	  fprintf fmt "'a%d" i; if i < n then fprintf fmt ", "
 	done;
 	fprintf fmt ") %a@]@\n@\n" ident id
@@ -128,18 +128,18 @@ let print_query fmt (decls,concl) =
     | DeclFun (id, _, [], t) ->
 	fprintf fmt "@[logic %a : -> %a@]@\n@\n" ident id print_typ t
     | DeclFun (id, _, l, t) ->
-	fprintf fmt "@[logic %a : %a -> %a@]@\n@\n" 
+	fprintf fmt "@[logic %a : %a -> %a@]@\n@\n"
 	  ident id (print_list comma print_typ) l print_typ t
     | DeclPred (id, _, []) ->
 	fprintf fmt "@[logic %a : -> prop @]@\n@\n" ident id
-    | DeclPred (id, _, l) -> 
-	fprintf fmt "@[logic %a : %a -> prop@]@\n@\n" 
+    | DeclPred (id, _, l) ->
+	fprintf fmt "@[logic %a : %a -> prop@]@\n@\n"
 	  ident id (print_list comma print_typ) l
     | DeclType _ | Axiom _ ->
 	()
   in
   let print_assert = function
-    | Axiom (id, f)  -> 
+    | Axiom (id, f)  ->
 	fprintf fmt "@[<hov 2>axiom %a:@ %a@]@\n@\n" ident id print_predicate f
     | DeclType _ | DeclFun _ | DeclPred _ ->
 	()

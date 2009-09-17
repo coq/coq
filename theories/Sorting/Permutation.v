@@ -10,9 +10,9 @@
 
 Require Import Relations List Multiset Arith.
 
-(** This file define a notion of permutation for lists, based on multisets: 
-    there exists a permutation between two lists iff every elements have 
-    the same multiplicity in the two lists. 
+(** This file define a notion of permutation for lists, based on multisets:
+    there exists a permutation between two lists iff every elements have
+    the same multiplicity in the two lists.
 
     Unlike [List.Permutation], the present notion of permutation
     requires the domain to be equipped with a decidable equality. This
@@ -22,10 +22,10 @@ Require Import Relations List Multiset Arith.
     The present file contains basic results, obtained without any particular
     assumption on the decidable equality used.
 
-    File [PermutSetoid] contains additional results about permutations 
-    with respect to an setoid equality (i.e. an equivalence relation). 
+    File [PermutSetoid] contains additional results about permutations
+    with respect to an setoid equality (i.e. an equivalence relation).
 
-    Finally, file [PermutEq] concerns Coq equality : this file is similar 
+    Finally, file [PermutEq] concerns Coq equality : this file is similar
     to the previous one, but proves in addition that [List.Permutation]
     and [permutation] are equivalent in this context.
 *)
@@ -62,9 +62,9 @@ Section defs.
       auto with datatypes.
   Qed.
 
-  
+
   (** * [permutation]: definition and basic properties *)
-  
+
   Definition permutation (l m:list A) :=
     meq (list_contents l) (list_contents m).
 
@@ -72,42 +72,42 @@ Section defs.
   Proof.
     unfold permutation in |- *; auto with datatypes.
   Qed.
-  
+
   Lemma permut_sym :
     forall l1 l2 : list A, permutation l1 l2 -> permutation l2 l1.
   Proof.
     unfold permutation, meq; intros; apply sym_eq; trivial.
   Qed.
-  
+
   Lemma permut_tran :
     forall l m n:list A, permutation l m -> permutation m n -> permutation l n.
   Proof.
     unfold permutation in |- *; intros.
     apply meq_trans with (list_contents m); auto with datatypes.
   Qed.
-  
+
   Lemma permut_cons :
     forall l m:list A,
       permutation l m -> forall a:A, permutation (a :: l) (a :: m).
   Proof.
     unfold permutation in |- *; simpl in |- *; auto with datatypes.
   Qed.
-  
+
   Lemma permut_app :
     forall l l' m m':list A,
       permutation l l' -> permutation m m' -> permutation (l ++ m) (l' ++ m').
   Proof.
     unfold permutation in |- *; intros.
-    apply meq_trans with (munion (list_contents l) (list_contents m)); 
+    apply meq_trans with (munion (list_contents l) (list_contents m));
       auto using permut_cons, list_contents_app with datatypes.
-    apply meq_trans with (munion (list_contents l') (list_contents m')); 
+    apply meq_trans with (munion (list_contents l') (list_contents m'));
       auto using permut_cons, list_contents_app with datatypes.
     apply meq_trans with (munion (list_contents l') (list_contents m));
       auto using permut_cons, list_contents_app with datatypes.
   Qed.
 
   Lemma permut_add_inside :
-    forall a l1 l2 l3 l4, 
+    forall a l1 l2 l3 l4,
       permutation (l1 ++ l2) (l3 ++ l4) ->
       permutation (l1 ++ a :: l2) (l3 ++ a :: l4).
   Proof.
@@ -118,9 +118,9 @@ Section defs.
     destruct (eqA_dec a a0); simpl; auto with arith.
     do 2 rewrite <- plus_n_Sm; f_equal; auto.
   Qed.
-  
+
   Lemma permut_add_cons_inside :
-    forall a l l1 l2, 
+    forall a l l1 l2,
       permutation l (l1 ++ l2) ->
       permutation (a :: l) (l1 ++ a :: l2).
   Proof.
@@ -134,17 +134,17 @@ Section defs.
   Proof.
     intros; apply permut_add_cons_inside; auto using permut_sym, permut_refl.
   Qed.
-  
+
   Lemma permut_sym_app :
     forall l1 l2, permutation (l1 ++ l2) (l2 ++ l1).
   Proof.
     intros l1 l2;
-      unfold permutation, meq; 
-	intro a; do 2 rewrite list_contents_app; simpl; 
+      unfold permutation, meq;
+	intro a; do 2 rewrite list_contents_app; simpl;
 	  auto with arith.
   Qed.
 
-  Lemma permut_rev : 
+  Lemma permut_rev :
     forall l, permutation l (rev l).
   Proof.
     induction l.
@@ -162,7 +162,7 @@ Section defs.
       generalize (H a); apply plus_reg_l.
   Qed.
 
-  Lemma permut_app_inv1 : 
+  Lemma permut_app_inv1 :
     forall l l1 l2, permutation (l1 ++ l) (l2 ++ l) -> permutation l1 l2.
   Proof.
     intros l l1 l2; unfold permutation, meq; simpl;
@@ -174,7 +174,7 @@ Section defs.
     trivial.
   Qed.
 
-  Lemma permut_app_inv2 : 
+  Lemma permut_app_inv2 :
     forall l l1 l2, permutation (l ++ l1) (l ++ l2) -> permutation l1 l2.
   Proof.
     intros l l1 l2; unfold permutation, meq; simpl;
@@ -186,7 +186,7 @@ Section defs.
   Qed.
 
   Lemma permut_remove_hd :
-    forall l l1 l2 a,   
+    forall l l1 l2 a,
       permutation (a :: l) (l1 ++ a :: l2) -> permutation l (l1 ++ l2).
   Proof.
     intros l l1 l2 a; unfold permutation, meq; simpl; intros H a0; generalize (H a0); clear H.
@@ -200,6 +200,6 @@ Section defs.
 
 End defs.
 
-(** For compatibilty *) 
+(** For compatibilty *)
 Notation permut_right := permut_cons.
 Unset Implicit Arguments.

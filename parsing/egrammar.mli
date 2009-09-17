@@ -22,7 +22,7 @@ open Mod_subst
 (*i*)
 
 (** Mapping of grammar productions to camlp4 actions
-    Used for Coq-level Notation and Tactic Notation, 
+    Used for Coq-level Notation and Tactic Notation,
     and for ML-level tactic and vernac extensions
  *)
 
@@ -32,14 +32,14 @@ type grammar_constr_prod_item =
   | GramConstrTerminal of Token.pattern
   | GramConstrNonTerminal of constr_prod_entry_key * identifier option
 
-type notation_grammar = 
+type notation_grammar =
     int * Gramext.g_assoc option * notation * grammar_constr_prod_item list
 
 (* For tactic and vernac notations *)
 
 type grammar_prod_item =
   | GramTerminal of string
-  | GramNonTerminal of loc * argument_type * 
+  | GramNonTerminal of loc * argument_type *
       Gram.te prod_entry_key * identifier option
 
 (* Adding notations *)

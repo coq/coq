@@ -266,8 +266,8 @@ let rec same_raw c d =
   | r1, RCast(_,c2,_) -> same_raw r1 c2
   | RDynamic(_,d1), RDynamic(_,d2) -> if d1<>d2 then failwith"RDynamic"
   | _ -> failwith "same_raw"
-     
-let same_rawconstr c d = 
+
+let same_rawconstr c d =
   try same_raw c d; true
   with Failure _ | Invalid_argument _ -> false
 
@@ -292,12 +292,12 @@ let expand_curly_brackets loc mknot ntn (l,ll) =
     function
     | [] -> []
     | a::l ->
-        let a' = 
+        let a' =
           let p = List.nth (wildcards !ntn' 0) i - 2 in
           if p>=0 & p+5 <= String.length !ntn' & String.sub !ntn' p 5 = "{ _ }"
           then begin
-            ntn' := 
-              String.sub !ntn' 0 p ^ "_" ^ 
+            ntn' :=
+              String.sub !ntn' 0 p ^ "_" ^
               String.sub !ntn' (p+5) (String.length !ntn' -p-5);
             mknot (loc,"{ _ }",([a],[])) end
           else a in
@@ -316,7 +316,7 @@ let make_notation_gen loc ntn mknot mkprim destprim l =
     (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
     | "- _", [Some (Numeral p)],[] when Bigint.is_strictly_pos p ->
         mknot (loc,ntn,([mknot (loc,"( _ )",l)],[]))
-    | _ -> 
+    | _ ->
 	match decompose_notation_key ntn, l with
 	| [Terminal "-"; Terminal x], ([],[]) ->
 	    (try mkprim (loc, Numeral (Bigint.neg (Bigint.of_string x)))
@@ -374,14 +374,14 @@ let match_aconstr_cases_pattern c ((metas_scl,metaslist_scl),pat) =
   let subst,substlist = match_cases_pattern vars ([],[]) c pat in
   (* Reorder canonically the substitution *)
   let find x subst =
-    try List.assoc x subst 
+    try List.assoc x subst
     with Not_found -> anomaly "match_aconstr_cases_pattern" in
   List.map (fun (x,scl) -> (find x subst,scl)) metas_scl,
   List.map (fun (x,scl) -> (find x substlist,scl)) metaslist_scl
 
  (* Better to use extern_rawconstr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
-  try 
+  try
     if !Flags.raw_print or !print_no_symbol then raise No_match;
     let (na,sc,p) = uninterp_prim_token_cases_pattern pat in
     match availability_of_prim_token sc scopes with
@@ -390,20 +390,20 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
       let loc = cases_pattern_loc pat in
       insert_pat_alias loc (insert_pat_delimiters loc (CPatPrim(loc,p)) key) na
   with No_match ->
-  try 
+  try
     if !Flags.raw_print or !print_no_symbol then raise No_match;
     extern_symbol_pattern scopes vars pat
       (uninterp_cases_pattern_notations pat)
   with No_match ->
   match pat with
   | PatVar (loc,Name id) -> CPatAtom (loc,Some (Ident (loc,id)))
-  | PatVar (loc,Anonymous) -> CPatAtom (loc, None) 
+  | PatVar (loc,Anonymous) -> CPatAtom (loc, None)
   | PatCstr(loc,cstrsp,args,na) ->
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
       let p = CPatCstr
         (loc,extern_reference loc vars (ConstructRef cstrsp),args) in
       insert_pat_alias loc p na
-	
+
 and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
@@ -434,7 +434,7 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 		      let subscope = (scopt,scl@scopes') in
 		      List.map (extern_cases_pattern_in_scope subscope vars) c)
                       substlist in
-		  insert_pat_delimiters loc 
+		  insert_pat_delimiters loc
 		    (make_pat_notation loc ntn (l,ll)) key)
           | SynDefRule kn ->
 	      let qid = shortest_qualid_of_syndef vars kn in
@@ -443,7 +443,7 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
       with
 	  No_match -> extern_symbol_pattern allscopes vars t rules
 
-let extern_cases_pattern vars p = 
+let extern_cases_pattern vars p =
   extern_cases_pattern_in_scope (None,[]) vars p
 
 (**********************************************************************)
@@ -456,7 +456,7 @@ let occur_name na aty =
 
 let is_projection nargs = function
   | Some r when not !Flags.raw_print & !print_projections ->
-      (try 
+      (try
 	let n = Recordops.find_projection_nparams r + 1 in
 	if n <= nargs then Some n else None
       with Not_found -> None)
@@ -476,13 +476,13 @@ let explicitize loc inctx impl (cf,f) args =
         let tail = exprec (q+1) (args,impl) in
         let visible =
           !Flags.raw_print or
-          (!print_implicits & !print_implicits_explicit_args) or 
+          (!print_implicits & !print_implicits_explicit_args) or
 	  (!print_implicits_defensive &
 	   is_significant_implicit a impl tail &
 	   not (is_inferable_implicit inctx n imp))
 	in
-        if visible then 
-	  (a,Some (dummy_loc, ExplByName (name_of_implicit imp))) :: tail 
+        if visible then
+	  (a,Some (dummy_loc, ExplByName (name_of_implicit imp))) :: tail
 	else
 	  tail
     | a::args, _::impl -> (a,None) :: exprec (q+1) (args,impl)
@@ -499,7 +499,7 @@ let explicitize loc inctx impl (cf,f) args =
 	  let args1 = exprec 1 (args1,impl1) in
 	  let args2 = exprec (i+1) (args2,impl2) in
 	  CApp (loc,(Some (List.length args1),f),args1@args2)
-    | None -> 
+    | None ->
 	let args = exprec 1 (args,impl) in
 	if args = [] then f else CApp (loc, (None, f), args)
 
@@ -513,11 +513,11 @@ let extern_app loc inctx impl (cf,f) args =
   if args = [] (* maybe caused by a hidden coercion *) then
     extern_global loc impl f
   else
-  if 
+  if
     ((!Flags.raw_print or
       (!print_implicits & not !print_implicits_explicit_args)) &
      List.exists is_status_implicit impl)
-  then 
+  then
     CAppExpl (loc, (is_projection (List.length args) cf, f), args)
   else
     explicitize loc inctx impl (cf,CRef f) args
@@ -538,7 +538,7 @@ let rec remove_coercions inctx = function
       let nargs = List.length args in
       (try match Classops.hide_coercion r with
 	  | Some n when n < nargs && (inctx or n+1 < nargs) ->
-	      (* We skip a coercion *) 
+	      (* We skip a coercion *)
 	      let l = list_skipn n args in
 	      let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
               (* Recursively remove the head coercions *)
@@ -591,11 +591,11 @@ let extern_rawsort = function
 
 let rec extern inctx scopes vars r =
   let r' = remove_coercions inctx r in
-  try 
+  try
     if !Flags.raw_print or !print_no_symbol then raise No_match;
     extern_optimal_prim_token scopes r r'
   with No_match ->
-  try 
+  try
     if !Flags.raw_print or !print_no_symbol then raise No_match;
     extern_symbol scopes vars r' (uninterp_notations r')
   with No_match -> match r' with
@@ -622,7 +622,7 @@ let rec extern inctx scopes vars r =
 	     extern_app loc inctx (implicits_of_global ref)
                (Some ref,extern_reference rloc vars ref)
 	       args
-	 | _       -> 
+	 | _       ->
 	     explicitize loc inctx [] (None,sub_extern false scopes vars f)
                (List.map (sub_extern true scopes vars) args))
 
@@ -643,15 +643,15 @@ let rec extern inctx scopes vars r =
       let t = extern_typ scopes vars (anonymize_if_reserved na t) in
       let (idl,c) = factorize_lambda inctx scopes (add_vname vars na) t c in
       CLambdaN (loc,[(dummy_loc,na)::idl,Default bk,t],c)
-	
+
   | RCases (loc,sty,rtntypopt,tml,eqns) ->
-      let vars' = 
+      let vars' =
 	List.fold_right (name_fold Idset.add)
 	  (cases_predicate_names tml) vars in
       let rtntypopt' = Option.map (extern_typ scopes vars') rtntypopt in
       let tml = List.map (fun (tm,(na,x)) ->
         let na' = match na,tm with
-            Anonymous, RVar (_,id) when 
+            Anonymous, RVar (_,id) when
               rtntypopt<>None & occur_rawconstr id (Option.get rtntypopt)
               -> Some Anonymous
           | Anonymous, _ -> None
@@ -662,11 +662,11 @@ let rec extern inctx scopes vars r =
 	  let params = list_tabulate
 	    (fun _ -> RHole (dummy_loc,Evd.InternalHole)) n in
 	  let args = List.map (function
-	    | Anonymous -> RHole (dummy_loc,Evd.InternalHole) 
+	    | Anonymous -> RHole (dummy_loc,Evd.InternalHole)
 	    | Name id -> RVar (dummy_loc,id)) nal in
 	  let t = RApp (dummy_loc,RRef (dummy_loc,IndRef ind),params@args) in
 	  (extern_typ scopes vars t)) x))) tml in
-      let eqns = List.map (extern_eqn inctx scopes vars) eqns in 
+      let eqns = List.map (extern_eqn inctx scopes vars) eqns in
       CCases (loc,sty,rtntypopt',tml,eqns)
 
   | RLetTuple (loc,nal,(na,typopt),tm,b) ->
@@ -686,23 +686,23 @@ let rec extern inctx scopes vars r =
       let vars' = Array.fold_right Idset.add idv vars in
       (match fk with
 	 | RFix (nv,n) ->
-	     let listdecl = 
+	     let listdecl =
 	       Array.mapi (fun i fi ->
                  let (bl,ty,def) = blv.(i), tyv.(i), bv.(i) in
                  let (ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = List.fold_right (name_fold Idset.add) ids vars in
                  let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
-		 let n = 
+		 let n =
 		   match fst nv.(i) with
 		     | None -> None
 		     | Some x -> Some (dummy_loc, out_name (List.nth ids x))
-		 in 
+		 in
 		 let ro = extern_recursion_order scopes vars (snd nv.(i)) in
 		 ((dummy_loc, fi), (n, ro), bl, extern_typ scopes vars0 ty,
                   extern false scopes vars1 def)) idv
-	     in 
+	     in
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)
-	 | RCoFix n -> 
+	 | RCoFix n ->
 	     let listdecl =
                Array.mapi (fun i fi ->
                  let (ids,bl) = extern_local_binder scopes vars blv.(i) in
@@ -724,13 +724,13 @@ let rec extern inctx scopes vars r =
 
   | RDynamic (loc,d) -> CDynamic (loc,d)
 
-and extern_typ (_,scopes) = 
+and extern_typ (_,scopes) =
   extern true (Some Notation.type_scope,scopes)
 
 and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 
 and factorize_prod scopes vars aty c =
-  try 
+  try
     if !Flags.raw_print or !print_no_symbol then raise No_match;
     ([],extern_symbol scopes vars c (uninterp_notations c))
   with No_match -> match c with
@@ -742,7 +742,7 @@ and factorize_prod scopes vars aty c =
   | c -> ([],extern_typ scopes vars c)
 
 and factorize_lambda inctx scopes vars aty c =
-  try 
+  try
     if !Flags.raw_print or !print_no_symbol then raise No_match;
     ([],extern_symbol scopes vars c (uninterp_notations c))
   with No_match -> match c with
@@ -761,7 +761,7 @@ and extern_local_binder scopes vars = function
         extern_local_binder scopes (name_fold Idset.add na vars) l in
       (na::ids,
        LocalRawDef((dummy_loc,na), extern false scopes vars bd) :: l)
-      
+
   | (na,bk,None,ty)::l ->
       let ty = extern_typ scopes vars (anonymize_if_reserved na ty) in
       (match extern_local_binder scopes (name_fold Idset.add na vars) l with
@@ -822,7 +822,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 		  subst in
               let a = CRef (Qualid (loc, shortest_qualid_of_syndef vars kn)) in
 	      if l = [] then a else CApp (loc,(None,a),l) in
- 	if args = [] then e 
+ 	if args = [] then e
 	else
 	  (* TODO: compute scopt for the extra args, in case, head is a ref *)
 	  explicitize loc false [] (None,e)
@@ -833,7 +833,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 and extern_recursion_order scopes vars = function
     RStructRec -> CStructRec
   | RWfRec c -> CWfRec (extern true scopes vars c)
-  | RMeasureRec (m,r) -> CMeasureRec (extern true scopes vars m, 
+  | RMeasureRec (m,r) -> CMeasureRec (extern true scopes vars m,
 				     Option.map (extern true scopes vars) r)
 
 
@@ -895,7 +895,7 @@ let rec raw_of_pat env = function
   | PLambda (na,t,c) ->
       RLambda (loc,na,Explicit,raw_of_pat env t, raw_of_pat (na::env) c)
   | PIf (c,b1,b2) ->
-      RIf (loc, raw_of_pat env c, (Anonymous,None), 
+      RIf (loc, raw_of_pat env c, (Anonymous,None),
            raw_of_pat env b1, raw_of_pat env b2)
   | PCase ((LetStyle,[|n|],ind,None),PMeta None,tm,[|b|]) ->
       let nal,b = it_destRLambda_or_LetIn_names n (raw_of_pat env b) in
@@ -910,7 +910,7 @@ let rec raw_of_pat env = function
       let mat = simple_cases_matrix_of_branches ind brns brs in
       let indnames,rtn =
 	if p = PMeta None then (Anonymous,None),None
-	else 
+	else
 	  let nparams,n = Option.get ind_nargs in
 	  return_type_of_predicate ind nparams n (raw_of_pat env p) in
       RCases (loc,RegularStyle,rtn,[raw_of_pat env tm,indnames],mat)
@@ -926,22 +926,22 @@ and raw_of_eqn env constr construct_nargs branch =
   in
   let rec buildrec ids patlist env n b =
     if n=0 then
-      (dummy_loc, ids, 
+      (dummy_loc, ids,
        [PatCstr(dummy_loc, constr, List.rev patlist,Anonymous)],
        raw_of_pat env b)
     else
       match b with
-	| PLambda (x,_,b) -> 
+	| PLambda (x,_,b) ->
 	    let pat,new_env,new_ids = make_pat x env b ids in
             buildrec new_ids (pat::patlist) new_env (n-1) b
 
-	| PLetIn (x,_,b) -> 
+	| PLetIn (x,_,b) ->
 	    let pat,new_env,new_ids = make_pat x env b ids in
             buildrec new_ids (pat::patlist) new_env (n-1) b
 
 	| _ ->
 	    error "Unsupported branch in case-analysis while printing pattern."
-  in 
+  in
   buildrec [] [] env construct_nargs branch
 
 let extern_constr_pattern env pat =

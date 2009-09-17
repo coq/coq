@@ -131,7 +131,7 @@ Proof.
   apply SFL_continuity; assumption.
   unfold continuity in |- *; unfold continuity_pt in |- *;
     unfold continue_in in |- *; unfold limit1_in in |- *;
-      unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *; 
+      unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *;
         intros.
   elim (H1 x _ H2); intros.
   exists x0; intros.
@@ -172,7 +172,7 @@ Proof.
   unfold continuity_pt in H0; unfold continue_in in H0; unfold limit1_in in H0;
     unfold limit_in in H0; simpl in H0; unfold R_dist in H0;
       unfold continuity_pt in |- *; unfold continue_in in |- *;
-        unfold limit1_in in |- *; unfold limit_in in |- *; 
+        unfold limit1_in in |- *; unfold limit_in in |- *;
           simpl in |- *; unfold R_dist in |- *; intros.
   elim (H0 _ H); intros.
   exists x0; intros.
@@ -186,7 +186,7 @@ Proof.
   trivial.
   red in |- *; intro; unfold D_x, no_cond in H5; elim H5; intros _ H8; elim H8;
     rewrite <- (Ropp_involutive x); rewrite <- (Ropp_involutive x1);
-      apply Ropp_eq_compat; apply Rplus_eq_reg_l with (PI / 2); 
+      apply Ropp_eq_compat; apply Rplus_eq_reg_l with (PI / 2);
         apply H7.
   replace (PI / 2 - x1 - (PI / 2 - x)) with (x - x1); [ idtac | ring ];
   rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr'; apply H6.
@@ -420,7 +420,7 @@ Proof.
   elim H9; intros; assumption.
   cut (Rabs (h / 2) < del).
   intro; cut (h / 2 <> 0).
-  intro; assert (H11 := H2 _ H10 H9). 
+  intro; assert (H11 := H2 _ H10 H9).
   rewrite Rplus_0_l in H11; rewrite sin_0 in H11.
   rewrite Rminus_0_r in H11; apply H11.
   unfold Rdiv in |- *; apply prod_neq_R0.
@@ -436,7 +436,7 @@ Proof.
   unfold delta in |- *; simpl in |- *; apply Rmin_l.
   apply Rle_ge; left; apply Rinv_0_lt_compat; prove_sup0.
   rewrite <- (Rplus_0_r (del / 2)); pattern del at 1 in |- *;
-    rewrite (double_var del); apply Rplus_lt_compat_l; 
+    rewrite (double_var del); apply Rplus_lt_compat_l;
       unfold Rdiv in |- *; apply Rmult_lt_0_compat.
   apply (cond_pos del).
   apply Rinv_0_lt_compat; prove_sup0.

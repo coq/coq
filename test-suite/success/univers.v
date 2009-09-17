@@ -29,9 +29,9 @@ Inductive dep_eq : forall X : Type, X -> X -> Prop :=
       forall (A : Type) (B : A -> Type),
       let T := forall x : A, B x in
       forall (f g : T) (x : A), dep_eq (B x) (f x) (g x) -> dep_eq T f g.
-                                                                                
+
 Require Import Relations.
-                                                                                
+
 Theorem dep_eq_trans : forall X : Type, transitive X (dep_eq X).
 Proof.
   unfold transitive in |- *.
@@ -51,7 +51,7 @@ Abort.
 
    Especially, universe refreshing was not done for "set/pose" *)
 
-Lemma ind_unsec : forall Q : nat -> Type, True. 
+Lemma ind_unsec : forall Q : nat -> Type, True.
 intro.
 set (C := forall m, Q m -> Q m).
 exact I.

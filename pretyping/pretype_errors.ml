@@ -25,7 +25,7 @@ type pretype_error =
   (* Unification *)
   | OccurCheck of existential_key * constr
   | NotClean of existential_key * constr * Evd.hole_kind
-  | UnsolvableImplicit of Evd.evar_info * Evd.hole_kind * 
+  | UnsolvableImplicit of Evd.evar_info * Evd.hole_kind *
       Evd.unsolvability_explanation option
   | CannotUnify of constr * constr
   | CannotUnifyLocal of constr * constr * constr
@@ -47,7 +47,7 @@ let precatchable_exception = function
   | _ -> false
 
 let nf_evar = Reductionops.nf_evar
-let j_nf_evar sigma j = 
+let j_nf_evar sigma j =
   { uj_val = nf_evar sigma j.uj_val;
     uj_type = nf_evar sigma j.uj_type }
 let jl_nf_evar sigma jl = List.map (j_nf_evar sigma) jl
@@ -76,7 +76,7 @@ let contract env lc =
       | Some c' when isRel c' ->
 	  l := (substl !l c') :: !l;
 	  env
-      | _ -> 
+      | _ ->
 	  let t' = substl !l t in
 	  let c' = Option.map (substl !l) c in
 	  let na' = named_hd env t' na in
@@ -161,7 +161,7 @@ let error_unsolvable_implicit loc env sigma evi e explain =
 let error_cannot_unify env sigma (m,n) =
   raise (PretypeError (env_ise sigma env,CannotUnify (m,n)))
 
-let error_cannot_unify_local env sigma (m,n,sn) = 
+let error_cannot_unify_local env sigma (m,n,sn) =
   raise (PretypeError (env_ise sigma env,CannotUnifyLocal (m,n,sn)))
 
 let error_cannot_coerce env sigma (m,n) =

@@ -30,7 +30,7 @@ Open Scope Z_scope.
 
 (** In Coq, we need to control the number of iteration of modulo.
    For that, we use an explicit measure in [nat], and we prove later
-   that using [2*d] is enough, where [d] is the number of binary 
+   that using [2*d] is enough, where [d] is the number of binary
    digits of the first argument. *)
 
  Fixpoint Zgcdn (n:nat) : Z -> Z -> Z := fun a b =>
@@ -43,17 +43,17 @@ Open Scope Z_scope.
   	      end
    end.
 
- Definition Zgcd_bound (a:Z) := 
+ Definition Zgcd_bound (a:Z) :=
    match a with
      | Z0 => S O
      | Zpos p => let n := Psize p in (n+n)%nat
      | Zneg p => let n := Psize p in (n+n)%nat
    end.
- 
+
  Definition Zgcd_alt a b := Zgcdn (Zgcd_bound a) a b.
- 
+
  (** A first obvious fact : [Zgcd a b] is positive. *)
- 
+
  Lemma Zgcdn_pos : forall n a b,
    0 <= Zgcdn n a b.
  Proof.
@@ -61,16 +61,16 @@ Open Scope Z_scope.
    simpl; auto with zarith.
    destruct a; simpl; intros; auto with zarith; auto.
  Qed.
- 
+
  Lemma Zgcd_alt_pos : forall a b, 0 <= Zgcd_alt a b.
  Proof.
    intros; unfold Zgcd; apply Zgcdn_pos; auto.
  Qed.
- 
+
  (** We now prove that Zgcd is indeed a gcd. *)
- 
+
  (** 1) We prove a weaker & easier bound. *)
- 
+
  Lemma Zgcdn_linear_bound : forall n a b,
    Zabs a < Z_of_nat n -> Zis_gcd a b (Zgcdn n a b).
  Proof.
@@ -93,17 +93,17 @@ Open Scope Z_scope.
    apply Zis_gcd_minus; apply Zis_gcd_sym.
    apply Zis_gcd_for_euclid2; auto.
  Qed.
-  	 
+
  (** 2) For Euclid's algorithm, the worst-case situation corresponds
     to Fibonacci numbers. Let's define them: *)
- 
+
  Fixpoint fibonacci (n:nat) : Z :=
    match n with
      | O => 1
      | S O => 1
      | S (S n as p) => fibonacci p + fibonacci n
    end.
-  	 
+
  Lemma fibonacci_pos : forall n, 0 <= fibonacci n.
  Proof.
    cut (forall N n, (n<N)%nat -> 0<=fibonacci n).
@@ -118,7 +118,7 @@ Open Scope Z_scope.
    change (0 <= fibonacci (S n) + fibonacci n).
    generalize (IHN n) (IHN (S n)); omega.
  Qed.
- 
+
  Lemma fibonacci_incr :
    forall n m, (n<=m)%nat -> fibonacci n <= fibonacci m.
  Proof.
@@ -131,11 +131,11 @@ Open Scope Z_scope.
    change (fibonacci (S m) <= fibonacci (S m)+fibonacci m).
    generalize (fibonacci_pos m); omega.
  Qed.
- 
+
  (** 3) We prove that fibonacci numbers are indeed worst-case:
     for a given number [n], if we reach a conclusion about [gcd(a,b)] in
     exactly [n+1] loops, then [fibonacci (n+1)<=a /\ fibonacci(n+2)<=b] *)
- 
+
  Lemma Zgcdn_worst_is_fibonacci : forall n a b,
    0 < a < b ->
    Zis_gcd a b (Zgcdn (S n) a b) ->
@@ -192,9 +192,9 @@ Open Scope Z_scope.
    simpl in H5.
    elim H5; auto.
  Qed.
-  	 
+
  (** 3b) We reformulate the previous result in a more positive way. *)
- 
+
  Lemma Zgcdn_ok_before_fibonacci : forall n a b,
    0 < a < b -> a < fibonacci (S n) ->
    Zis_gcd a b (Zgcdn n a b).
@@ -224,32 +224,32 @@ Open Scope Z_scope.
    replace (Zgcdn n (Zpos p) b) with (Zgcdn (S n) (Zpos p) b); auto.
    generalize (H2 H3); clear H2 H3; omega.
  Qed.
- 
+
  (** 4) The proposed bound leads to a fibonacci number that is big enough. *)
- 
+
  Lemma Zgcd_bound_fibonacci :
    forall a, 0 < a -> a < fibonacci (Zgcd_bound a).
  Proof.
    destruct a; [omega| | intro H; discriminate].
    intros _.
-   induction p; [ | | compute; auto ]; 
+   induction p; [ | | compute; auto ];
     simpl Zgcd_bound in *;
-    rewrite plus_comm; simpl plus; 
+    rewrite plus_comm; simpl plus;
     set (n:= (Psize p+Psize p)%nat) in *; simpl;
     assert (n <> O) by (unfold n; destruct p; simpl; auto).
-   
+
    destruct n as [ |m]; [elim H; auto| ].
    generalize (fibonacci_pos m); rewrite Zpos_xI; omega.
 
    destruct n as [ |m]; [elim H; auto| ].
    generalize (fibonacci_pos m); rewrite Zpos_xO; omega.
  Qed.
-  	 
+
  (* 5) the end: we glue everything together and take care of
     situations not corresponding to [0<a<b]. *)
 
  Lemma Zgcdn_is_gcd :
-   forall n a b, (Zgcd_bound a <= n)%nat -> 
+   forall n a b, (Zgcd_bound a <= n)%nat ->
      Zis_gcd a b (Zgcdn n a b).
  Proof.
    destruct a; intros.
@@ -261,7 +261,7 @@ Open Scope Z_scope.
    simpl Zgcd_bound in *.
    remember (Psize p+Psize p)%nat as m.
    assert (1 < m)%nat.
-     rewrite Heqm; destruct p; simpl; rewrite 1? plus_comm; 
+     rewrite Heqm; destruct p; simpl; rewrite 1? plus_comm;
        auto with arith.
    destruct m as [ |m]; [inversion H0; auto| ].
    destruct n as [ |n]; [inversion H; auto| ].
@@ -285,7 +285,7 @@ Open Scope Z_scope.
    simpl Zgcd_bound in *.
    remember (Psize p+Psize p)%nat as m.
    assert (1 < m)%nat.
-     rewrite Heqm; destruct p; simpl; rewrite 1? plus_comm; 
+     rewrite Heqm; destruct p; simpl; rewrite 1? plus_comm;
        auto with arith.
    destruct m as [ |m]; [inversion H0; auto| ].
    destruct n as [ |n]; [inversion H; auto| ].
@@ -307,7 +307,7 @@ Open Scope Z_scope.
    destruct n as [ |n]; [elimtype False; omega| ].
    simpl; apply Zis_gcd_sym; apply Zis_gcd_0.
  Qed.
- 
+
  Lemma Zgcd_is_gcd :
    forall a b, Zis_gcd a b (Zgcd_alt a b).
  Proof.

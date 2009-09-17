@@ -45,7 +45,7 @@ let constr_to_xml obj sigma env =
   let rel_context = Sign.push_named_to_rel_context named_context' [] in
   let rel_env =
    Environ.push_rel_context rel_context
-    (Environ.reset_with_named_context 
+    (Environ.reset_with_named_context
 	(Environ.val_of_named_context real_named_context) env) in
   let obj' =
    Term.subst_vars (List.map (function (i,_,_) -> i) named_context') obj in
@@ -149,7 +149,7 @@ Pp.ppnl (Pp.(++) (Pp.str
          Proof2aproof.ProofTreeHash.find proof_tree_to_flattened_proof_tree node
         in begin
         match tactic_expr with
-        | T.TacArg (T.Tacexp _) -> 
+        | T.TacArg (T.Tacexp _) ->
             (* We don't need to keep the level of abstraction introduced at *)
             (* user-level invocation of tactic... (see Tacinterp.hide_interp)*)
             aux flat_proof old_hyps
@@ -189,7 +189,7 @@ Pp.ppnl (Pp.(++) (Pp.str
         end
 
      | {PT.ref=Some((PT.Nested(PT.Proof_instr (_,_),_)|PT.Decl_proof _),nodes)} ->
-         Util.anomaly "Not Implemented" 
+         Util.anomaly "Not Implemented"
 
      | {PT.ref=Some(PT.Daimon,_)} ->
          X.xml_empty "Hidden_open_goal" of_attribute

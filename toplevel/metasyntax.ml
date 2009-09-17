@@ -115,14 +115,14 @@ let print_grammar = function
       Gram.Entry.print Pcoq.Constr.operconstr;
   | "pattern" ->
       Gram.Entry.print Pcoq.Constr.pattern
-  | "tactic" -> 
+  | "tactic" ->
       msgnl (str "Entry tactic_expr is");
       Gram.Entry.print Pcoq.Tactic.tactic_expr;
       msgnl (str "Entry binder_tactic is");
       Gram.Entry.print Pcoq.Tactic.binder_tactic;
       msgnl (str "Entry simple_tactic is");
       Gram.Entry.print Pcoq.Tactic.simple_tactic;
-  | "vernac" -> 
+  | "vernac" ->
       msgnl (str "Entry vernac is");
       Gram.Entry.print Pcoq.Vernac_.vernac;
       msgnl (str "Entry command is");
@@ -174,7 +174,7 @@ let parse_format (loc,str) =
       (* Parse " // " *)
       | '/' when i <= String.length str & str.[i+1] = '/' ->
           (* We forget the useless n spaces... *)
-	  push_token (UnpCut PpFnl) 
+	  push_token (UnpCut PpFnl)
             (parse_token (close_quotation (i+2)))
       (* Parse " .. / .. " *)
       | '/' when i <= String.length str ->
@@ -244,10 +244,10 @@ let split_notation_string str =
   let push_token beg i l =
     if beg = i then l else
       let s = String.sub str beg (i - beg) in
-      String s :: l 
+      String s :: l
   in
   let push_whitespace beg i l =
-    if beg = i then l else WhiteSpace (i-beg) :: l 
+    if beg = i then l else WhiteSpace (i-beg) :: l
   in
   let rec loop beg i =
     if i < String.length str then
@@ -271,9 +271,9 @@ let split_notation_string str =
 (* Interpret notations with a recursive component *)
 
 let rec find_pattern xl = function
-  | Break n as x :: l, Break n' :: l' when n=n' -> 
+  | Break n as x :: l, Break n' :: l' when n=n' ->
       find_pattern (x::xl) (l,l')
-  | Terminal s as x :: l, Terminal s' :: l' when s = s' -> 
+  | Terminal s as x :: l, Terminal s' :: l' when s = s' ->
       find_pattern (x::xl) (l,l')
   | [NonTerminal x], NonTerminal x' :: l' ->
       (x,x',xl),l'
@@ -281,7 +281,7 @@ let rec find_pattern xl = function
       error ("The token "^s^" occurs on one side of \"..\" but not on the other side.")
   | [NonTerminal _], Break s :: _ | Break s :: _, _ ->
       error ("A break occurs on one side of \"..\" but not on the other side.")
-  | ((SProdList _ | NonTerminal _) :: _ | []), _ -> 
+  | ((SProdList _ | NonTerminal _) :: _ | []), _ ->
       error ("The special symbol \"..\" must occur in a configuration of the form\n\"x symbs .. symbs y\".")
 
 let rec interp_list_parser hd = function
@@ -293,7 +293,7 @@ let rec interp_list_parser hd = function
       (* remove the second copy of it afterwards *)
       (y,x)::yl, x::xl, SProdList (x,sl) :: tl''
   | (Terminal _ | Break _) as s :: tl ->
-      if hd = [] then 
+      if hd = [] then
         let yl,xl,tl' = interp_list_parser [] tl in
         yl, xl, s :: tl'
       else
@@ -328,7 +328,7 @@ let rec raw_analyze_notation_tokens = function
   | WhiteSpace n :: sl ->
       Break n :: raw_analyze_notation_tokens sl
 
-let is_numeral symbs = 
+let is_numeral symbs =
   match List.filter (function Break _ -> false | _ -> true) symbs with
   | ([Terminal "-"; Terminal x] | [Terminal x]) ->
       (try let _ = Bigint.of_string x in true with _ -> false)
@@ -363,10 +363,10 @@ let remove_extravars extrarecvars (vars,recvars) =
 	error
 	 "Two end variables of a recursive notation are not in the same scope."
       else
-	List.remove_assoc x l) 
+	List.remove_assoc x l)
       extrarecvars (List.remove_assoc ldots_var vars) in
   (vars,recvars)
- 
+
 (**********************************************************************)
 (* Build pretty-printing rules                                        *)
 
@@ -457,7 +457,7 @@ let make_hunks etyps symbols from =
 	else if is_operator s then
 	  if ws = CanBreak then
 	    UnpTerminal (" "^s) :: add_break 1 (make NoBreak prods)
-	  else 
+	  else
 	    UnpTerminal s :: add_break 1 (make NoBreak prods)
 	else if is_ident_tail s.[String.length s - 1] then
 	  let sep = if is_prod_ident (List.hd prods) then "" else " " in
@@ -502,14 +502,14 @@ let error_format () = error "The format does not match the notation."
 
 let rec split_format_at_ldots hd = function
   | UnpTerminal s :: fmt when s = string_of_id ldots_var -> List.rev hd, fmt
-  | u :: fmt -> 
+  | u :: fmt ->
       check_no_ldots_in_box u;
       split_format_at_ldots (u::hd) fmt
   | [] -> raise Exit
 
 and check_no_ldots_in_box = function
   | UnpBox (_,fmt) ->
-      (try 
+      (try
         let _ = split_format_at_ldots [] fmt in
         error ("The special symbol \"..\" must occur at the same formatting depth than the variables of which it is the ellipse.")
       with Exit -> ())
@@ -533,7 +533,7 @@ let read_recursive_format sl fmt =
   let slfmt, fmt = get_head fmt in
   slfmt, get_tail (slfmt, fmt)
 
-let hunks_of_format (from,(vars,typs)) symfmt = 
+let hunks_of_format (from,(vars,typs)) symfmt =
   let rec aux = function
   | symbs, (UnpTerminal s' as u) :: fmt
       when s' = String.make (String.length s') ' ' ->
@@ -545,7 +545,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
       let i = list_index s vars in
       let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
       let symbs, l = aux (symbs,fmt) in symbs, UnpMetaVar (i,prec) :: l
-  | symbs, UnpBox (a,b) :: fmt -> 
+  | symbs, UnpBox (a,b) :: fmt ->
       let symbs', b' = aux (symbs,b) in
       let symbs', l = aux (symbs',fmt) in
       symbs', UnpBox (a,b') :: l
@@ -605,7 +605,7 @@ let make_production etyps symbols =
             l
         | SProdList (x,sl) ->
             let sl = List.flatten
-              (List.map (function Terminal s -> [terminal s] 
+              (List.map (function Terminal s -> [terminal s]
                 | Break _ -> []
                 | _ -> anomaly "Found a non terminal token in recursive notation separator") sl) in
 	    let y = match List.assoc x etyps with
@@ -624,7 +624,7 @@ let rec find_symbols c_current c_next c_last = function
       (id, prec) :: (find_symbols c_next c_next c_last sl)
   | Terminal s :: sl -> find_symbols c_next c_next c_last sl
   | Break n :: sl -> find_symbols c_current c_next c_last sl
-  | SProdList (x,_) :: sl' -> 
+  | SProdList (x,_) :: sl' ->
       (x,c_next)::(find_symbols c_next c_next c_last sl')
 
 let border = function
@@ -654,13 +654,13 @@ let pr_level ntn (from,args) =
 
 let error_incompatible_level ntn oldprec prec =
   errorlabstrm ""
-    (str ("Notation "^ntn^" is already defined") ++ spc() ++ 
-    pr_level ntn oldprec ++ 
-    spc() ++ str "while it is now required to be" ++ spc() ++ 
+    (str ("Notation "^ntn^" is already defined") ++ spc() ++
+    pr_level ntn oldprec ++
+    spc() ++ str "while it is now required to be" ++ spc() ++
     pr_level ntn prec ++ str ".")
 
 let cache_one_syntax_extension (prec,ntn,gr,pp) =
-  try 
+  try
     let oldprec = Notation.level_of_notation ntn in
     if prec <> oldprec then error_incompatible_level ntn oldprec prec
   with Not_found ->
@@ -738,13 +738,13 @@ let check_infix_modifiers modifiers =
   if t <> [] then
     error "Explicit entry level or type unexpected in infix notation."
 
-let no_syntax_modifiers modifiers = 
+let no_syntax_modifiers modifiers =
   modifiers = [] or modifiers = [SetOnlyParsing]
 
 (* Compute precedences from modifiers (or find default ones) *)
 
 let set_entry_type etyps (x,typ) =
-  let typ = try 
+  let typ = try
     match List.assoc x etyps, typ with
       | ETConstr (n,()), (_,BorderProd (left,_)) ->
           ETConstr (n,BorderProd (left,None))
@@ -754,7 +754,7 @@ let set_entry_type etyps (x,typ) =
     with Not_found -> ETConstr typ
   in (x,typ)
 
-let check_rule_productivity l = 
+let check_rule_productivity l =
   if List.for_all (function NonTerminal _ -> true | _ -> false) l then
     error "A notation must include at least one symbol.";
   if (match l with SProdList _ :: _ -> true | _ -> false) then
@@ -770,8 +770,8 @@ let find_precedence lev etyps symbols =
       (try match List.assoc x etyps with
 	| ETConstr _ ->
 	    error "The level of the leftmost non-terminal cannot be changed."
-	| ETName | ETBigint | ETReference -> 
-	    if lev = None then 
+	| ETName | ETBigint | ETReference ->
+	    if lev = None then
 	      Flags.if_verbose msgnl (str "Setting notation at level 0.")
 	    else
 	    if lev <> Some 0 then
@@ -782,13 +782,13 @@ let find_precedence lev etyps symbols =
 	      error "Need an explicit level."
 	    else Option.get lev
         | ETConstrList _ -> assert false (* internally used in grammar only *)
-      with Not_found -> 
+      with Not_found ->
 	if lev = None then
 	  error "A left-recursive notation must have an explicit level."
 	else Option.get lev)
   | Terminal _ ::l when
       (match list_last symbols with Terminal _ -> true |_ -> false)
-      -> 
+      ->
       if lev = None then
 	(Flags.if_verbose msgnl (str "Setting notation at level 0."); 0)
       else Option.get lev
@@ -798,18 +798,18 @@ let find_precedence lev etyps symbols =
 
 let check_curly_brackets_notation_exists () =
   try let _ = Notation.level_of_notation "{ _ }" in ()
-  with Not_found -> 
+  with Not_found ->
     error "Notations involving patterns of the form \"{ _ }\" are treated \n\
 specially and require that the notation \"{ _ }\" is already reserved."
 
 (* Remove patterns of the form "{ _ }", unless it is the "{ _ }" notation *)
-let remove_curly_brackets l = 
+let remove_curly_brackets l =
   let rec next = function
     | Break _ :: l -> next l
     | l -> l in
   let rec aux deb = function
   | [] -> []
-  | Terminal "{" as t1 :: l -> 
+  | Terminal "{" as t1 :: l ->
       (match next l with
         | NonTerminal _ as x :: l' as l0 ->
             (match next l' with
@@ -898,17 +898,17 @@ let contract_notation ntn =
     if i <= String.length ntn - 5 then
       let ntn' =
         if String.sub ntn i 5 = "{ _ }" then
-          String.sub ntn 0 i ^ "_" ^ 
+          String.sub ntn 0 i ^ "_" ^
           String.sub ntn (i+5) (String.length ntn -i-5)
         else ntn in
-      aux ntn' (i+1) 
+      aux ntn' (i+1)
     else ntn in
   aux ntn 0
 
 exception NoSyntaxRule
 
 let recover_syntax ntn =
-  try 
+  try
     let prec = Notation.level_of_notation ntn in
     let pprule,_ = Notation.find_notation_printing_rule ntn in
     let gr = Egrammar.recover_notation_grammar ntn prec in
@@ -926,7 +926,7 @@ let recover_notation_syntax rawntn =
 
 (**********************************************************************)
 (* Main entry point for building parsing and printing rules           *)
- 
+
 let make_pa_rule (n,typs,symbols,_) ntn =
   let assoc = recompute_assoc typs in
   let prod = make_production typs symbols in
@@ -1035,12 +1035,12 @@ let cache_scope_command o =
   open_scope_command 1 o
 
 let subst_scope_command (_,subst,(scope,o as x)) = match o with
-  | ScopeClasses cl -> 
+  | ScopeClasses cl ->
       let cl' = Classops.subst_cl_typ subst cl in if cl'==cl then x else
       scope, ScopeClasses cl'
   | _ -> x
 
-let (inScopeCommand,outScopeCommand) = 
+let (inScopeCommand,outScopeCommand) =
   declare_object {(default_object "DELIMITERS") with
       cache_function = cache_scope_command;
       open_function = open_scope_command;
@@ -1052,5 +1052,5 @@ let (inScopeCommand,outScopeCommand) =
 let add_delimiters scope key =
   Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeDelim key))
 
-let add_class_scope scope cl = 
+let add_class_scope scope cl =
   Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeClasses cl))

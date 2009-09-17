@@ -10,27 +10,27 @@ Require Import Ring_tac BinList Ring_polynom InitialRing.
 Require Export Field_theory.
 
  (* syntaxification *)
- Ltac mkFieldexpr C Cst CstPow radd rmul rsub ropp rdiv rinv rpow t fv := 
+ Ltac mkFieldexpr C Cst CstPow radd rmul rsub ropp rdiv rinv rpow t fv :=
  let rec mkP t :=
     let f :=
     match Cst t with
     | InitialRing.NotConstant =>
-        match t with 
-        | (radd ?t1 ?t2) => 
+        match t with
+        | (radd ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
           let e2 := mkP t2 in constr:(FEadd e1 e2)
-        | (rmul ?t1 ?t2) => 
+        | (rmul ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
           let e2 := mkP t2 in constr:(FEmul e1 e2)
-        | (rsub ?t1 ?t2) => 
-          fun _ => 
+        | (rsub ?t1 ?t2) =>
+          fun _ =>
           let e1 := mkP t1 in
           let e2 := mkP t2 in constr:(FEsub e1 e2)
         | (ropp ?t1) =>
           fun _ => let e1 := mkP t1 in constr:(FEopp e1)
-        | (rdiv ?t1 ?t2) => 
+        | (rdiv ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
           let e2 := mkP t2 in constr:(FEdiv e1 e2)
@@ -38,7 +38,7 @@ Require Export Field_theory.
           fun _ => let e1 := mkP t1 in constr:(FEinv e1)
         | (rpow ?t1 ?n) =>
           match CstPow n with
-          | InitialRing.NotConstant => 
+          | InitialRing.NotConstant =>
             fun _ =>
             let p := Find_at t fv in
             constr:(@FEX C p)
@@ -74,7 +74,7 @@ Ltac FFV Cst CstPow add mul sub opp div inv pow t fv :=
       | _ => AddFvTail t fv
       end
   | _ => fv
-  end 
+  end
  in TFV t fv.
 
 (* packaging the field structure *)
@@ -83,7 +83,7 @@ Ltac FFV Cst CstPow add mul sub opp div inv pow t fv :=
 Ltac PackField F req Cst_tac Pow_tac L1 L2 L3 L4 cond_ok pre post :=
   let FLD :=
     match type of L1 with
-    | context [req (@FEeval ?R ?rO ?radd ?rmul ?rsub ?ropp ?rdiv ?rinv 
+    | context [req (@FEeval ?R ?rO ?radd ?rmul ?rsub ?ropp ?rdiv ?rinv
                                       ?C ?phi ?Cpow ?Cp_phi ?rpow _ _) _ ] =>
         (fun proj =>
            proj Cst_tac Pow_tac pre post
@@ -245,9 +245,9 @@ Ltac Field_norm_gen f n FLD lH rl :=
   ReflexiveRewriteTactic mkFFV mkFE lemma_tac main_tac fv0 rl;
   try simpl_PCond FLD.
 
-Ltac Field_simplify_gen f FLD lH rl := 
+Ltac Field_simplify_gen f FLD lH rl :=
   get_FldPre FLD ();
-  Field_norm_gen f ring_subst_niter FLD lH rl; 
+  Field_norm_gen f ring_subst_niter FLD lH rl;
   get_FldPost FLD ().
 
 Ltac Field_simplify :=
@@ -257,14 +257,14 @@ Tactic Notation (at level 0) "field_simplify" constr_list(rl) :=
   let G := Get_goal in
   field_lookup (PackField Field_simplify) [] rl G.
 
-Tactic Notation (at level 0) 
+Tactic Notation (at level 0)
   "field_simplify" "[" constr_list(lH) "]" constr_list(rl) :=
   let G := Get_goal in
   field_lookup (PackField Field_simplify) [lH] rl G.
 
-Tactic Notation "field_simplify" constr_list(rl) "in" hyp(H):=   
+Tactic Notation "field_simplify" constr_list(rl) "in" hyp(H):=
   let G := Get_goal in
-  let t := type of H in   
+  let t := type of H in
   let g := fresh "goal" in
   set (g:= G);
   revert H;
@@ -272,10 +272,10 @@ Tactic Notation "field_simplify" constr_list(rl) "in" hyp(H):=
   intro H;
   unfold g;clear g.
 
-Tactic Notation "field_simplify" 
-    "["constr_list(lH) "]" constr_list(rl) "in" hyp(H):=   
+Tactic Notation "field_simplify"
+    "["constr_list(lH) "]" constr_list(rl) "in" hyp(H):=
   let G := Get_goal in
-  let t := type of H in   
+  let t := type of H in
   let g := fresh "goal" in
   set (g:= G);
   revert H;
@@ -284,15 +284,15 @@ Tactic Notation "field_simplify"
   unfold g;clear g.
 
 (*
-Ltac Field_simplify_in hyp:= 
+Ltac Field_simplify_in hyp:=
    Field_simplify_gen ltac:(fun H => rewrite H in hyp).
 
-Tactic Notation (at level 0) 
+Tactic Notation (at level 0)
   "field_simplify" constr_list(rl) "in" hyp(h) :=
   let t := type of h in
   field_lookup (Field_simplify_in h) [] rl t.
 
-Tactic Notation (at level 0) 
+Tactic Notation (at level 0)
   "field_simplify" "[" constr_list(lH) "]" constr_list(rl) "in" hyp(h) :=
   let t := type of h in
   field_lookup (Field_simplify_in h) [lH] rl t.
@@ -317,10 +317,10 @@ Ltac Field_Scheme Simpl_tac n lemma FLD lH :=
     pose (vlpe := lpe);
     let nlemma := fresh "field_lemma" in
     (assert (nlemma := lemma n fv vlpe fe1 fe2 prh)
-     || fail "field anomaly:failed to build lemma"); 
+     || fail "field anomaly:failed to build lemma");
     ProveLemmaHyps nlemma
       ltac:(fun ilemma =>
-              apply ilemma 
+              apply ilemma
                || fail "field anomaly: failed in applying lemma";
               [ Simpl_tac | simpl_PCond FLD]);
     clear nlemma;
@@ -333,11 +333,11 @@ Ltac Field_Scheme Simpl_tac n lemma FLD lH :=
 Ltac FIELD FLD lH rl :=
   let Simpl := vm_compute; reflexivity || fail "not a valid field equation" in
   let lemma := get_L1 FLD in
-  get_FldPre FLD (); 
+  get_FldPre FLD ();
   Field_Scheme Simpl Ring_tac.ring_subst_niter lemma FLD lH;
   try exact I;
   get_FldPost FLD().
- 
+
 Tactic Notation (at level 0) "field" :=
   let G := Get_goal in
   field_lookup (PackField FIELD) [] G.
@@ -351,15 +351,15 @@ Tactic Notation (at level 0) "field" "[" constr_list(lH) "]" :=
 Ltac FIELD_SIMPL FLD lH rl :=
   let Simpl := (protect_fv "field") in
   let lemma := get_SimplifyEqLemma FLD in
-  get_FldPre FLD (); 
+  get_FldPre FLD ();
   Field_Scheme Simpl Ring_tac.ring_subst_niter lemma FLD lH;
   get_FldPost FLD ().
 
-Tactic Notation (at level 0) "field_simplify_eq" :=  
+Tactic Notation (at level 0) "field_simplify_eq" :=
   let G := Get_goal in
   field_lookup (PackField FIELD_SIMPL) [] G.
 
-Tactic Notation (at level 0) "field_simplify_eq" "[" constr_list(lH) "]" :=  
+Tactic Notation (at level 0) "field_simplify_eq" "[" constr_list(lH) "]" :=
   let G := Get_goal in
   field_lookup FIELD_SIMPL [lH] G.
 
@@ -372,7 +372,7 @@ Ltac Field_simplify_eq n FLD lH :=
   let mkFE := get_Meta FLD in
   let lemma := get_L4 FLD in
   let hyp := fresh "hyp" in
-  intro hyp;   
+  intro hyp;
   OnEquationHyp req hyp ltac:(fun t1 t2 =>
       let fv := FV_hypo_tac mkFV req lH in
       let fv := mkFFV t1 fv in
@@ -385,16 +385,16 @@ Ltac Field_simplify_eq n FLD lH :=
       ProveLemmaHyps (lemma n fv lpe fe1 fe2 prh)
          ltac:(fun ilemma =>
              match type of ilemma with
-             | req _ _ ->  _ -> ?EQ => 
+             | req _ _ ->  _ -> ?EQ =>
                let tmp := fresh "tmp" in
                assert (tmp : EQ);
                [ apply ilemma; [ exact hyp | simpl_PCond_BEURK FLD]
                | protect_fv "field" in tmp; revert tmp ];
-               clear hyp  
+               clear hyp
              end)).
 
 Ltac FIELD_SIMPL_EQ FLD lH rl :=
-  get_FldPre FLD (); 
+  get_FldPre FLD ();
   Field_simplify_eq Ring_tac.ring_subst_niter FLD lH;
   get_FldPost().
 
@@ -406,15 +406,15 @@ Tactic Notation (at level 0) "field_simplify_eq" "in" hyp(H) :=
   | clear H;intro H].
 
 
-Tactic Notation (at level 0) 
-  "field_simplify_eq" "[" constr_list(lH) "]"  "in" hyp(H) :=  
+Tactic Notation (at level 0)
+  "field_simplify_eq" "[" constr_list(lH) "]"  "in" hyp(H) :=
   let t := type of H in
   generalize H;
   field_lookup (PackField FIELD_SIMPL_EQ) [lH] t;
   [ try exact I
   |clear H;intro H].
- 
-(* More generic tactics to build variants of field *) 
+
+(* More generic tactics to build variants of field *)
 
 (* This tactic reifies c and pass to F:
    - the FLD structure gathering all info in the field DB
@@ -489,13 +489,13 @@ Ltac reduce_field_expr ope kont FLD fv expr :=
 (* Hack to let a Ltac return a term in the context of a primitive tactic *)
 Ltac return_term x := generalize (refl_equal x).
 Ltac get_term :=
-  match goal with 
+  match goal with
   | |- ?x = _ -> _ => x
   end.
 
 (* Turn an operation on field expressions (FExpr) into a reduction
    on terms (in the field carrier). Because of field_lookup,
-   the tactic cannot return a term directly, so it is returned 
+   the tactic cannot return a term directly, so it is returned
    via the conclusion of the goal (return_term). *)
 Ltac reduce_field_ope ope c :=
   gen_with_field ltac:(reduce_field_expr ope return_term) c.
@@ -526,7 +526,7 @@ Ltac field_elements set ext fspec pspec sspec dspec rk :=
 Ltac field_lemmas set ext inv_m fspec pspec sspec dspec rk :=
   let get_lemma :=
     match pspec with None => fun x y => x | _ => fun x y => y end in
-  let simpl_eq_lemma := get_lemma 
+  let simpl_eq_lemma := get_lemma
        Field_simplify_eq_correct       Field_simplify_eq_pow_correct in
   let simpl_eq_in_lemma := get_lemma
        Field_simplify_eq_in_correct   Field_simplify_eq_pow_in_correct in
@@ -538,27 +538,27 @@ Ltac field_lemmas set ext inv_m fspec pspec sspec dspec rk :=
      | _ =>
        let field_ok1 := constr:(Field_correct set ext_r inv_m afth morph) in
        match p_spec with
-       | mkhypo ?pp_spec =>  
+       | mkhypo ?pp_spec =>
          let field_ok2 := constr:(field_ok1 _ _ _ pp_spec) in
          match s_spec with
-         | mkhypo ?ss_spec => 
+         | mkhypo ?ss_spec =>
            let field_ok3 := constr:(field_ok2 _ ss_spec) in
            match d_spec with
-           | mkhypo ?dd_spec => 
+           | mkhypo ?dd_spec =>
              let field_ok := constr:(field_ok3 _ dd_spec) in
-             let mk_lemma lemma :=     
-              constr:(lemma _ _ _  _ _ _  _ _ _ _ 
-                   set ext_r inv_m afth 
-                   _ _ _  _ _ _  _ _ _ morph 
-                   _ _ _ pp_spec _ ss_spec _ dd_spec) in 
+             let mk_lemma lemma :=
+              constr:(lemma _ _ _  _ _ _  _ _ _ _
+                   set ext_r inv_m afth
+                   _ _ _  _ _ _  _ _ _ morph
+                   _ _ _ pp_spec _ ss_spec _ dd_spec) in
              let field_simpl_eq_ok := mk_lemma simpl_eq_lemma  in
              let field_simpl_ok := mk_lemma rw_lemma in
              let field_simpl_eq_in := mk_lemma simpl_eq_in_lemma in
-             let cond1_ok := 
+             let cond1_ok :=
                 constr:(Pcond_simpl_gen set ext_r afth morph pp_spec dd_spec) in
-             let cond2_ok := 
+             let cond2_ok :=
                constr:(Pcond_simpl_complete set ext_r afth morph pp_spec dd_spec) in
-             (fun f => 
+             (fun f =>
                f afth ext_r morph field_ok field_simpl_ok field_simpl_eq_ok field_simpl_eq_in
                   cond1_ok cond2_ok)
            | _ => fail 4 "field: bad coefficiant division specification"
@@ -566,6 +566,6 @@ Ltac field_lemmas set ext inv_m fspec pspec sspec dspec rk :=
          | _ => fail 3 "field: bad sign specification"
          end
        | _ => fail 2 "field: bad power specification"
-       end  
+       end
      | _ => fail 1 "field internal error : field_lemmas, please report"
      end).

@@ -34,7 +34,7 @@ Require Import PartSum.
 Require Import SeqSeries.
 Require Import RiemannInt.
 Require Import Fourier.
- 
+
 Section Arithmetical_dec.
 
 Variable P : nat -> Prop.
@@ -108,7 +108,7 @@ rewrite Rabs_pos_eq.
    intro i.
    unfold f, g.
    elim (HP i); intro; ring_simplify; auto with *.
-  cut (sum_f_R0 g m <= sum_f_R0 g n). 
+  cut (sum_f_R0 g m <= sum_f_R0 g n).
    intro; fourier.
   apply (ge_fun_sums_ge m n g Hnm).
   intro. unfold g.

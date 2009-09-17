@@ -16,11 +16,11 @@
    [declare_int_option], [declare_bool_option], ... functions.
 
    Each table/option is uniquely identified by a key of type [option_name]
-   which consists in a list of strings. Note that for parsing constraints, 
+   which consists in a list of strings. Note that for parsing constraints,
    table names must not be made of more than 2 strings while option names
    can be of arbitrary length.
 
-   The declaration of a table, say of name [["Toto";"Titi"]] 
+   The declaration of a table, say of name [["Toto";"Titi"]]
    automatically makes available the following vernacular commands:
 
       Add Toto Titi foo.
@@ -116,18 +116,18 @@ module MakeRefTable :
 (*s Options. *)
 
 (* These types and function are for declaring a new option of name [key]
-   and access functions [read] and [write]; the parameter [name] is the option name 
+   and access functions [read] and [write]; the parameter [name] is the option name
    used when printing the option value (command "Print Toto Titi." *)
 
 type 'a option_sig = {
-  optsync    : bool; 
+  optsync    : bool;
   optname    : string;
   optkey     : option_name;
   optread    : unit -> 'a;
   optwrite   : 'a -> unit
 }
 
-(* When an option is declared synchronous ([optsync] is [true]), the output is 
+(* When an option is declared synchronous ([optsync] is [true]), the output is
    a synchronous write function. Otherwise it is [optwrite] *)
 
 type 'a write_function = 'a -> unit

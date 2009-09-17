@@ -20,9 +20,9 @@ val make_resolver :  (constant * constr option) list -> resolver
 
 val empty_subst : substitution
 
-val add_msid : 
+val add_msid :
   mod_self_id -> module_path -> substitution -> substitution
-val add_mbid : 
+val add_mbid :
   mod_bound_id -> module_path -> resolver option -> substitution -> substitution
 val add_mp :
   module_path -> module_path -> substitution -> substitution
@@ -34,7 +34,7 @@ val map_mbid :
 val map_mp :
   module_path -> module_path -> substitution
 
-(* sequential composition: 
+(* sequential composition:
    [substitute (join sub1 sub2) t = substitute sub2 (substitute sub1 t)]
 *)
 val join : substitution -> substitution -> substitution
@@ -50,10 +50,10 @@ val debug_pr_subst : substitution -> Pp.std_ppcmds
 (*i*)
 
 (* [subst_mp sub mp] guarantees that whenever the result of the
-   substitution is structutally equal [mp], it is equal by pointers 
-   as well [==] *) 
+   substitution is structutally equal [mp], it is equal by pointers
+   as well [==] *)
 
-val subst_mp : 
+val subst_mp :
   substitution -> module_path -> module_path
 
 val subst_kn :
@@ -77,7 +77,7 @@ val replace_mp_in_con : module_path -> module_path -> constant -> constant
    names appearing in [c] *)
 val subst_mps : substitution -> constr -> constr
 
-(* [occur_*id id sub] returns true iff [id] occurs in [sub] 
+(* [occur_*id id sub] returns true iff [id] occurs in [sub]
    on either side *)
 
 val occur_msid : mod_self_id -> substitution -> bool

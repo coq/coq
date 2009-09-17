@@ -8,8 +8,8 @@ Set Implicit Arguments.
 Variable choose : forall(P : bool -> Prop)(H : exists x, P x), bool.
 
 Variable H : exists x : bool, True.
- 
+
 Definition coef :=
 match Some true	with
-  Some _ => @choose _ H |_ => true 
-end .      
+  Some _ => @choose _ H |_ => true
+end .

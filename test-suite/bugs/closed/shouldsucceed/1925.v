@@ -3,14 +3,14 @@
 
 Require Import List.
 
-Definition compose (A B C : Type) (g : B -> C) (f : A -> B) : A -> C := 
+Definition compose (A B C : Type) (g : B -> C) (f : A -> B) : A -> C :=
   fun x : A => g(f x).
 
-Definition map_fuse' : 
-  forall (A B C : Type) (g : B -> C) (f : A -> B) (xs : list A), 
-    (map g (map f xs)) = map (compose _ _ _ g f) xs 
+Definition map_fuse' :
+  forall (A B C : Type) (g : B -> C) (f : A -> B) (xs : list A),
+    (map g (map f xs)) = map (compose _ _ _ g f) xs
     :=
-    fun A B C g f => 
+    fun A B C g f =>
       (fix loop (ys : list A) {struct ys} :=
         match ys as ys return (map g (map f ys)) = map (compose _ _ _ g f) ys
         with

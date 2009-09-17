@@ -17,31 +17,31 @@ Require Import ZSig.
 
 Open Scope Z_scope.
 
-(** * ZMake 
- 
-  A generic transformation from a structure of natural numbers 
+(** * ZMake
+
+  A generic transformation from a structure of natural numbers
   [NSig.NType] to a structure of integers [ZSig.ZType].
 *)
 
 Module Make (N:NType) <: ZType.
- 
- Inductive t_ := 
+
+ Inductive t_ :=
   | Pos : N.t -> t_
   | Neg : N.t -> t_.
- 
+
  Definition t := t_.
 
  Definition zero := Pos N.zero.
  Definition one  := Pos N.one.
  Definition minus_one := Neg N.one.
 
- Definition of_Z x := 
+ Definition of_Z x :=
   match x with
   | Zpos x => Pos (N.of_N (Npos x))
   | Z0 => zero
   | Zneg x => Neg (N.of_N (Npos x))
   end.
- 
+
  Definition to_Z x :=
   match x with
   | Pos nx => N.to_Z nx
@@ -99,13 +99,13 @@ Module Make (N:NType) <: ZType.
   unfold compare, to_Z; intros x y; case x; case y; clear x y;
     intros x y; auto; generalize (N.spec_pos x) (N.spec_pos y).
   generalize (N.spec_compare y x); case N.compare; auto with zarith.
-  generalize (N.spec_compare y N.zero); case N.compare; 
+  generalize (N.spec_compare y N.zero); case N.compare;
      try rewrite N.spec_0; auto with zarith.
   generalize (N.spec_compare x N.zero); case N.compare;
    rewrite N.spec_0; auto with zarith.
   generalize (N.spec_compare x N.zero); case N.compare;
    rewrite N.spec_0; auto with zarith.
-  generalize (N.spec_compare N.zero y); case N.compare; 
+  generalize (N.spec_compare N.zero y); case N.compare;
      try rewrite N.spec_0; auto with zarith.
   generalize (N.spec_compare N.zero x); case N.compare;
    rewrite N.spec_0; auto with zarith.
@@ -114,7 +114,7 @@ Module Make (N:NType) <: ZType.
   generalize (N.spec_compare x y); case N.compare; auto with zarith.
   Qed.
 
- Definition eq_bool x y := 
+ Definition eq_bool x y :=
   match compare x y with
   | Eq => true
   | _ => false
@@ -128,9 +128,9 @@ Module Make (N:NType) <: ZType.
 
  Definition cmp_sign x y :=
   match x, y with
-  | Pos nx, Neg ny => 
-    if N.eq_bool ny N.zero then Eq else Gt 
-  | Neg nx, Pos ny => 
+  | Pos nx, Neg ny =>
+    if N.eq_bool ny N.zero then Eq else Gt
+  | Neg nx, Pos ny =>
     if N.eq_bool nx N.zero then Eq else Lt
   | _, _ => Eq
   end.
@@ -150,7 +150,7 @@ Module Make (N:NType) <: ZType.
   rewrite N.spec_0; unfold to_Z.
   generalize (N.spec_pos x) (N.spec_pos y); auto with zarith.
   Qed.
- 
+
  Definition to_N x :=
   match x with
   | Pos nx => nx
@@ -164,9 +164,9 @@ Module Make (N:NType) <: ZType.
     simpl; rewrite Zabs_eq; auto.
  simpl; rewrite Zabs_non_eq; simpl; auto with zarith.
  Qed.
- 
- Definition opp x := 
-  match x with 
+
+ Definition opp x :=
+  match x with
   | Pos nx => Neg nx
   | Neg nx => Pos nx
   end.
@@ -174,7 +174,7 @@ Module Make (N:NType) <: ZType.
  Theorem spec_opp: forall x, to_Z (opp x) = - to_Z x.
  intros x; case x; simpl; auto with zarith.
  Qed.
-    
+
  Definition succ x :=
   match x with
   | Pos n => Pos (N.succ n)
@@ -188,7 +188,7 @@ Module Make (N:NType) <: ZType.
  Theorem spec_succ: forall n, to_Z (succ n) = to_Z n + 1.
  intros x; case x; clear x; intros x.
    exact (N.spec_succ x).
- simpl; generalize (N.spec_compare N.zero x); case N.compare; 
+ simpl; generalize (N.spec_compare N.zero x); case N.compare;
    rewrite N.spec_0; simpl.
   intros HH; rewrite <- HH; rewrite N.spec_1; ring.
   intros HH; rewrite N.spec_pred; auto with zarith.
@@ -212,7 +212,7 @@ Module Make (N:NType) <: ZType.
     end
   | Neg nx, Neg ny => Neg (N.add nx ny)
   end.
-  
+
  Theorem spec_add: forall x y, to_Z (add x y) = to_Z x +  to_Z y.
  unfold add, to_Z; intros [x | x] [y | y].
    exact (N.spec_add x y).
@@ -239,7 +239,7 @@ Module Make (N:NType) <: ZType.
 
  Theorem spec_pred: forall x, to_Z (pred x) = to_Z x - 1.
  unfold pred, to_Z, minus_one; intros [x | x].
-   generalize (N.spec_compare N.zero x); case N.compare; 
+   generalize (N.spec_compare N.zero x); case N.compare;
      rewrite N.spec_0; try rewrite N.spec_1; auto with zarith.
    intros H; exact (N.spec_pred _ H).
  generalize (N.spec_pos x); auto with zarith.
@@ -248,7 +248,7 @@ Module Make (N:NType) <: ZType.
 
  Definition sub x y :=
   match x, y with
-  | Pos nx, Pos ny => 
+  | Pos nx, Pos ny =>
     match N.compare nx ny with
     | Gt => Pos (N.sub nx ny)
     | Eq => zero
@@ -256,7 +256,7 @@ Module Make (N:NType) <: ZType.
     end
   | Pos nx, Neg ny => Pos (N.add nx ny)
   | Neg nx, Pos ny => Neg (N.add nx ny)
-  | Neg nx, Neg ny => 
+  | Neg nx, Neg ny =>
     match N.compare nx ny with
     | Gt => Neg (N.sub nx ny)
     | Eq => zero
@@ -278,7 +278,7 @@ Module Make (N:NType) <: ZType.
  intros; rewrite N.spec_sub; try ring; auto with zarith.
  Qed.
 
- Definition mul x y := 
+ Definition mul x y :=
   match x, y with
   | Pos nx, Pos ny => Pos (N.mul nx ny)
   | Pos nx, Neg ny => Neg (N.mul nx ny)
@@ -291,7 +291,7 @@ Module Make (N:NType) <: ZType.
  unfold mul, to_Z; intros [x | x] [y | y]; rewrite N.spec_mul; ring.
  Qed.
 
- Definition square x := 
+ Definition square x :=
   match x with
   | Pos nx => Pos (N.square nx)
   | Neg nx => Pos (N.square nx)
@@ -304,7 +304,7 @@ Module Make (N:NType) <: ZType.
  Definition power_pos x p :=
   match x with
   | Pos nx => Pos (N.power_pos nx p)
-  | Neg nx => 
+  | Neg nx =>
     match p with
     | xH => x
     | xO _ => Pos (N.power_pos nx p)
@@ -315,7 +315,7 @@ Module Make (N:NType) <: ZType.
  Theorem spec_power_pos: forall x n, to_Z (power_pos x n) = to_Z x ^ Zpos n.
  assert (F0: forall x, (-x)^2 = x^2).
    intros x; rewrite Zpower_2; ring.
- unfold power_pos, to_Z; intros [x | x] [p | p |]; 
+ unfold power_pos, to_Z; intros [x | x] [p | p |];
    try rewrite N.spec_power_pos; try ring.
  assert (F: 0 <= 2 * Zpos p).
   assert (0 <= Zpos p); auto with zarith.
@@ -336,7 +336,7 @@ Module Make (N:NType) <: ZType.
   end.
 
 
- Theorem spec_sqrt: forall x, 0 <= to_Z x -> 
+ Theorem spec_sqrt: forall x, 0 <= to_Z x ->
    to_Z (sqrt x) ^ 2 <= to_Z x < (to_Z (sqrt x) + 1) ^ 2.
  unfold to_Z, sqrt; intros [x | x] H.
    exact (N.spec_sqrt x).
@@ -381,7 +381,7 @@ Module Make (N:NType) <: ZType.
    generalize (N.spec_pos y); auto with zarith.
  generalize (N.spec_div_eucl x y HH); case N.div_eucl; auto.
  intros q r; generalize (N.spec_pos x) HH; unfold Zdiv_eucl;
-   case_eq (N.to_Z x); case_eq (N.to_Z y); 
+   case_eq (N.to_Z x); case_eq (N.to_Z y);
      try (intros; apply False_ind; auto with zarith; fail).
  intros p He1 He2 _ _ H1; injection H1; intros H2 H3.
  generalize (N.spec_compare N.zero r); case N.compare;
@@ -407,13 +407,13 @@ Module Make (N:NType) <: ZType.
  assert (N.to_Z r = (Zpos p1 mod (Zpos p))).
    unfold Zmod, Zdiv_eucl; rewrite <- H3; auto.
  case (Z_mod_lt (Zpos p1) (Zpos p)); auto with zarith.
- rewrite N.spec_0; intros H2; generalize (N.spec_pos r); 
+ rewrite N.spec_0; intros H2; generalize (N.spec_pos r);
    intros; apply False_ind; auto with zarith.
  assert (HH: 0 < N.to_Z y).
    generalize (N.spec_pos y); auto with zarith.
  generalize (N.spec_div_eucl x y HH); case N.div_eucl; auto.
  intros q r; generalize (N.spec_pos x) HH; unfold Zdiv_eucl;
-   case_eq (N.to_Z x); case_eq (N.to_Z y); 
+   case_eq (N.to_Z x); case_eq (N.to_Z y);
      try (intros; apply False_ind; auto with zarith; fail).
  intros p He1 He2 _ _ H1; injection H1; intros H2 H3.
  generalize (N.spec_compare N.zero r); case N.compare;
@@ -443,7 +443,7 @@ Module Make (N:NType) <: ZType.
    generalize (N.spec_pos y); auto with zarith.
  generalize (N.spec_div_eucl x y H1); case N.div_eucl; auto.
  intros q r; generalize (N.spec_pos x) H1; unfold Zdiv_eucl;
-   case_eq (N.to_Z x); case_eq (N.to_Z y); 
+   case_eq (N.to_Z x); case_eq (N.to_Z y);
      try (intros; apply False_ind; auto with zarith; fail).
  change (-0) with 0; lazy iota beta; auto.
  intros p _ _ _ _ H2; injection H2.
@@ -478,7 +478,7 @@ Module Make (N:NType) <: ZType.
   | Pos nx, Pos ny => Pos (N.gcd nx ny)
   | Pos nx, Neg ny => Pos (N.gcd nx ny)
   | Neg nx, Pos ny => Pos (N.gcd nx ny)
-  | Neg nx, Neg ny => Pos (N.gcd nx ny) 
+  | Neg nx, Neg ny => Pos (N.gcd nx ny)
   end.
 
  Theorem spec_gcd: forall a b, to_Z (gcd a b) = Zgcd (to_Z a) (to_Z b).

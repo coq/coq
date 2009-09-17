@@ -44,7 +44,7 @@ let print_term ids_to_inner_sorts =
          X.xml_empty "VAR" ["uri", uri ; "id",id ; "sort",sort]
      | A.AEvar (id,n,l) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
-         X.xml_nempty "META" 
+         X.xml_nempty "META"
 	   ["no",(export_existential n) ; "id",id ; "sort",sort]
           (List.fold_left
             (fun i t ->

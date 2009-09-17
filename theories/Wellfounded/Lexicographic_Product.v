@@ -14,7 +14,7 @@ Require Import Eqdep.
 Require Import Relation_Operators.
 Require Import Transitive_Closure.
 
-(**  From : Constructing Recursion Operators in Type Theory            
+(**  From : Constructing Recursion Operators in Type Theory
      L. Paulson  JSC (1986) 2, 325-355 *)
 
 Section WfLexicographic_Product.
@@ -24,7 +24,7 @@ Section WfLexicographic_Product.
   Variable leB : forall x:A, B x -> B x -> Prop.
 
   Notation LexProd := (lexprod A B leA leB).
-  
+
   Lemma acc_A_B_lexprod :
     forall x:A,
       Acc leA x ->
@@ -41,16 +41,16 @@ Section WfLexicographic_Product.
     intros.
     apply H2.
     apply t_trans with x2; auto with sets.
-    
+
     red in H2.
     apply H2.
     auto with sets.
-    
+
     injection H1.
     destruct 2.
     injection H3.
     destruct 2; auto with sets.
-    
+
     rewrite <- H1.
     injection H3; intros _ Hx1.
     subst x1.
@@ -105,7 +105,7 @@ End Wf_Symmetric_Product.
 
 
 Section Swap.
-  
+
   Variable A : Type.
   Variable R : A -> A -> Prop.
 
@@ -121,13 +121,13 @@ Section Swap.
     inversion_clear H; inversion_clear H1; apply H0.
     apply sp_swap.
     apply right_sym; auto with sets.
-    
+
     apply sp_swap.
     apply left_sym; auto with sets.
-    
+
     apply sp_noswap.
     apply right_sym; auto with sets.
-    
+
     apply sp_noswap.
     apply left_sym; auto with sets.
   Qed.
@@ -147,20 +147,20 @@ Section Swap.
     destruct y; intro H5.
     inversion_clear H5.
     inversion_clear H0; auto with sets.
-    
+
     apply swap_Acc.
     inversion_clear H0; auto with sets.
-    
+
     intros.
     apply IHAcc1; auto with sets; intros.
     apply Acc_inv with (y0, x1); auto with sets.
     apply sp_noswap.
     apply right_sym; auto with sets.
-    
+
     auto with sets.
   Qed.
 
-  
+
   Lemma wf_swapprod : well_founded R -> well_founded SwapProd.
   Proof.
     red in |- *.

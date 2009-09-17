@@ -1,14 +1,14 @@
 Definition f  (n:nat) := n = n.
 
 Lemma f_refl : forall n , f n.
-intros. reflexivity. 
+intros. reflexivity.
 Qed.
 
 Definition f'  (x:nat) (n:nat) := n = n.
 
 Lemma f_refl' : forall n , f' n n.
 Proof.
- intros. reflexivity. 
+ intros. reflexivity.
 Qed.
 
 Require Import ZArith.

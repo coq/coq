@@ -93,7 +93,7 @@ val ifOnHyp     : (identifier * types -> bool) ->
                   (identifier -> tactic) -> (identifier -> tactic) ->
 		   identifier -> tactic
 
-val onHyps      : (goal sigma -> named_context) -> 
+val onHyps      : (goal sigma -> named_context) ->
                   (named_context -> tactic) -> tactic
 
 (*s Tacticals applying to goal components *)
@@ -158,7 +158,7 @@ val concrete_clause_of : clause -> goal sigma -> concrete_clause
 
 (*s Elimination tacticals. *)
 
-type branch_args = { 
+type branch_args = {
   ity        : inductive;   (* the type we were eliminating on *)
   largs      : constr list; (* its arguments *)
   branchnum  : int;         (* the branch number *)
@@ -175,15 +175,15 @@ type branch_assumptions = {
 (* [check_disjunctive_pattern_size loc pats n] returns an appropriate *)
 (* error message if |pats| <> n *)
 val check_or_and_pattern_size :
-  Util.loc -> or_and_intro_pattern_expr -> int -> unit 
+  Util.loc -> or_and_intro_pattern_expr -> int -> unit
 
 (* Tolerate "[]" to mean a disjunctive pattern of any length *)
-val fix_empty_or_and_pattern : int -> or_and_intro_pattern_expr -> 
+val fix_empty_or_and_pattern : int -> or_and_intro_pattern_expr ->
   or_and_intro_pattern_expr
 
 (* Useful for [as intro_pattern] modifier *)
-val compute_induction_names : 
-  int -> intro_pattern_expr located option -> 
+val compute_induction_names :
+  int -> intro_pattern_expr located option ->
     intro_pattern_expr located list array
 
 val elimination_sort_of_goal : goal sigma -> sorts_family
@@ -192,30 +192,30 @@ val elimination_sort_of_clause : identifier option -> goal sigma -> sorts_family
 
 val general_elim_then_using :
   (inductive -> goal sigma -> constr) -> rec_flag ->
-  intro_pattern_expr located option -> (branch_args -> tactic) -> 
+  intro_pattern_expr located option -> (branch_args -> tactic) ->
     constr option -> (arg_bindings * arg_bindings) -> inductive -> clausenv ->
     tactic
-	  
+
 val elimination_then_using :
-  (branch_args -> tactic) -> constr option -> 
+  (branch_args -> tactic) -> constr option ->
     (arg_bindings * arg_bindings) -> constr -> tactic
 
 val elimination_then :
-  (branch_args -> tactic) -> 
+  (branch_args -> tactic) ->
     (arg_bindings * arg_bindings) -> constr -> tactic
 
 val case_then_using :
-  intro_pattern_expr located option -> (branch_args -> tactic) -> 
+  intro_pattern_expr located option -> (branch_args -> tactic) ->
     constr option -> (arg_bindings * arg_bindings) ->
       inductive -> clausenv -> tactic
 
 val case_nodep_then_using :
-  intro_pattern_expr located option -> (branch_args -> tactic) -> 
-    constr option -> (arg_bindings * arg_bindings) -> 
+  intro_pattern_expr located option -> (branch_args -> tactic) ->
+    constr option -> (arg_bindings * arg_bindings) ->
       inductive -> clausenv -> tactic
 
 val simple_elimination_then :
   (branch_args -> tactic) -> constr -> tactic
 
-val elim_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic 
-val case_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic 
+val elim_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
+val case_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic

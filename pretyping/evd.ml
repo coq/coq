@@ -27,7 +27,7 @@ let string_of_existential evk = "?" ^ string_of_int evk
 let existential_of_int evk = evk
 
 type evar_body =
-  | Evar_empty 
+  | Evar_empty
   | Evar_defined of constr
 
 type evar_info = {
@@ -51,15 +51,15 @@ let evar_context evi = named_context_of_val evi.evar_hyps
 let evar_body evi = evi.evar_body
 let evar_filter evi = evi.evar_filter
 let evar_unfiltered_env evi = Global.env_of_context evi.evar_hyps
-let evar_filtered_context evi = 
+let evar_filtered_context evi =
   snd (list_filter2 (fun b c -> b) (evar_filter evi,evar_context evi))
-let evar_env evi = 
+let evar_env evi =
   List.fold_right push_named (evar_filtered_context evi)
     (reset_context (Global.env()))
 
 let eq_evar_info ei1 ei2 =
-  ei1 == ei2 || 
-    eq_constr ei1.evar_concl ei2.evar_concl && 
+  ei1 == ei2 ||
+    eq_constr ei1.evar_concl ei2.evar_concl &&
     eq_named_context_val (ei1.evar_hyps) (ei2.evar_hyps) &&
     ei1.evar_body = ei2.evar_body
 
@@ -73,7 +73,7 @@ let eq_evar_info ei1 ei2 =
 module ExistentialMap = Intmap
 module ExistentialSet = Intset
 
-(* This exception is raised by *.existential_value *)	
+(* This exception is raised by *.existential_value *)
 exception NotInstantiatedEvar
 
 module EvarInfoMap = struct
@@ -82,7 +82,7 @@ module EvarInfoMap = struct
   let empty = ExistentialMap.empty
 
   let to_list evc = (* Workaround for change in Map.fold behavior *)
-    let l = ref [] in 
+    let l = ref [] in
     ExistentialMap.iter (fun evk x -> l := (evk,x)::!l) evc;
     !l
 
@@ -96,7 +96,7 @@ module EvarInfoMap = struct
 
   let equal = ExistentialMap.equal
 
-  let define evd evk body = 
+  let define evd evk body =
     let oldinfo =
       try find evd evk
       with Not_found -> error "Evd.define: cannot define undeclared evar" in
@@ -110,7 +110,7 @@ module EvarInfoMap = struct
   let is_evar sigma evk = mem sigma evk
 
   let is_defined sigma evk =
-    let info = find sigma evk in 
+    let info = find sigma evk in
       not (info.evar_body = Evar_empty)
 
 
@@ -131,7 +131,7 @@ module EvarInfoMap = struct
       | ([],[])                        -> []
       | ([],_) | (_,[]) ->
 	  anomaly "Signature and its instance do not match"
-    in 
+    in
       instrec (sign,args)
 
   let instantiate_evar sign c args =
@@ -247,7 +247,7 @@ let set_leq_sort (u1,(leq1,geq1)) (u2,(leq2,geq2)) scstr =
       match UniverseMap.find u1 scstr with
           EqSort u1' -> search_rec (is_b,betw,not_betw) u1'
         | SortVar(leq,_) ->
-            let (is_b',betw',not_betw') = 
+            let (is_b',betw',not_betw') =
               List.fold_left search_rec (false,betw,not_betw) leq in
             if is_b' then (true, u1::betw', not_betw')
             else (false, betw', not_betw')
@@ -317,9 +317,9 @@ module EvarMap = struct
       UniverseMap.equal (=) (snd x) (snd y))
 
   let merge e e' = fold (fun n v sigma -> add sigma n v) e' e
-  
+
 end
- 
+
 (*******************************************************************)
 (* Metamaps *)
 
@@ -391,16 +391,16 @@ let clb_name = function
   | Clval (na,_,_) -> (na,true)
 
 (***********************)
-                                                                               
+
 module Metaset = Intset
-                                                                               
+
 let meta_exists p s = Metaset.fold (fun x b -> b || (p x)) s false
 
 module Metamap = Intmap
 
 let metamap_to_list m =
   Metamap.fold (fun n v l -> (n,v)::l) m []
- 
+
 (*************************)
 (* Unification state *)
 
@@ -430,7 +430,7 @@ type evar_map = evar_defs
 (* spiwack: this function seems to be used only for the definition of the progress
     tactical. I would recommand not using it in other places. *)
 let eq_evar_map d1 d2 =
-  EvarMap.eq_evar_map d1.evars d2.evars 
+  EvarMap.eq_evar_map d1.evars d2.evars
 
 (* spiwack: tentative. It might very well not be the semantics we want
      for merging evar_defs *)
@@ -450,7 +450,7 @@ let mem d e = EvarMap.mem d.evars e
 (* spiwack: this function loses information from the original evar_defs
    it might be an idea not to export it. *)
 let to_list d = EvarMap.to_list d.evars
-(* spiwack: not clear what folding over an evar_defs, for now we shall 
+(* spiwack: not clear what folding over an evar_defs, for now we shall
     simply fold over the inner evar_map. *)
 let fold f d a = EvarMap.fold f d.evars a
 let is_evar d e = EvarMap.is_evar d.evars e
@@ -463,14 +463,14 @@ let existential_opt_value d e = EvarMap.existential_opt_value d.evars e
 (*** /Lifting... ***)
 
 (* evar_defs are considered empty disregarding histories *)
-let is_empty d = 
+let is_empty d =
   d.evars = EvarMap.empty &&
   d.conv_pbs = [] &&
   Metamap.is_empty d.metas
 
 let subst_named_context_val s = map_named_val (subst_mps s)
 
-let subst_evar_info s evi = 
+let subst_evar_info s evi =
   let subst_evb = function Evar_empty -> Evar_empty
     | Evar_defined c -> Evar_defined (subst_mps s c) in
   { evi with
@@ -494,12 +494,12 @@ let create_evar_defs sigma = { sigma with
 (* spiwack: tentatively deprecated *)
 let create_goal_evar_defs sigma = { sigma with
    conv_pbs=[]; last_mods=ExistentialSet.empty; metas=Metamap.empty }
-let empty =  { 
-  evars=EvarMap.empty; 
-  conv_pbs=[]; 
-  last_mods = ExistentialSet.empty; 
-  history=[]; 
-  metas=Metamap.empty 
+let empty =  {
+  evars=EvarMap.empty;
+  conv_pbs=[];
+  last_mods = ExistentialSet.empty;
+  history=[];
+  metas=Metamap.empty
 }
 
 let evars_reset_evd evd d = {d with evars = evd.evars}
@@ -512,7 +512,7 @@ let evar_source evk d =
 let define evk body evd =
   { evd with
     evars = EvarMap.define evd.evars evk body;
-    last_mods = 
+    last_mods =
         match evd.conv_pbs with
 	| [] ->  evd.last_mods
         | _ -> ExistentialSet.add evk evd.last_mods }
@@ -542,23 +542,23 @@ let is_undefined_evar evd c = match kind_of_term c with
   | Evar ev -> not (is_defined_evar evd ev)
   | _ -> false
 
-let undefined_evars evd = 
-  let evars = 
-    EvarMap.fold (fun evk evi sigma -> if evi.evar_body = Evar_empty then 
-	    EvarMap.add sigma evk evi else sigma) 
+let undefined_evars evd =
+  let evars =
+    EvarMap.fold (fun evk evi sigma -> if evi.evar_body = Evar_empty then
+	    EvarMap.add sigma evk evi else sigma)
       evd.evars EvarMap.empty
-  in 
+  in
     { evd with evars = evars }
 
 (* extracts conversion problems that satisfy predicate p *)
 (* Note: conv_pbs not satisying p are stored back in reverse order *)
 let extract_conv_pbs evd p =
-  let (pbs,pbs1) = 
+  let (pbs,pbs1) =
     List.fold_left
       (fun (pbs,pbs1) pb ->
-    	 if p pb then 
+    	 if p pb then
 	   (pb::pbs,pbs1)
-         else 
+         else
 	   (pbs,pb::pbs1))
       ([],[])
       evd.conv_pbs
@@ -604,7 +604,7 @@ let undefined_metas evd =
     | (n,Cltyp (_,typ))  -> n)
     (meta_list evd))
 
-let metas_of evd = 
+let metas_of evd =
   List.map (function
     | (n,Clval(_,_,typ)) -> (n,typ.rebus)
     | (n,Cltyp (_,typ))  -> (n,typ.rebus))
@@ -612,8 +612,8 @@ let metas_of evd =
 
 let map_metas_fvalue f evd =
   { evd with metas =
-      Metamap.map 
-        (function 
+      Metamap.map
+        (function
           | Clval(id,(c,s),typ) -> Clval(id,(mk_freelisted (f c.rebus),s),typ)
           | x -> x) evd.metas }
 
@@ -633,7 +633,7 @@ let try_meta_fvalue evd mv =
     | Cltyp _ -> raise Not_found
 
 let meta_fvalue evd mv =
-  try try_meta_fvalue evd mv 
+  try try_meta_fvalue evd mv
   with Not_found -> anomaly "meta_fvalue: meta has no value"
 
 let meta_value evd mv =
@@ -645,10 +645,10 @@ let meta_ftype evd mv =
     | Clval(_,_,b) -> b
 
 let meta_type evd mv = (meta_ftype evd mv).rebus
- 
+
 let meta_declare mv v ?(name=Anonymous) evd =
   { evd with metas = Metamap.add mv (Cltyp(name,mk_freelisted v)) evd.metas }
-  
+
 let meta_assign mv (v,pb) evd =
   match Metamap.find mv evd.metas with
   | Cltyp(na,ty) ->
@@ -680,12 +680,12 @@ let meta_with_name evd id =
         else l)
       evd.metas ([],[]) in
   match mvnodef, mvl with
-    | _,[]  -> 
+    | _,[]  ->
 	errorlabstrm "Evd.meta_with_name"
           (str"No such bound variable " ++ pr_id id ++ str".")
-    | ([n],_|_,[n]) -> 
+    | ([n],_|_,[n]) ->
 	n
-    | _  -> 
+    | _  ->
 	errorlabstrm "Evd.meta_with_name"
           (str "Binder name \"" ++ pr_id id ++
            strbrk "\" occurs more than once in clause.")
@@ -694,14 +694,14 @@ let meta_with_name evd id =
 (* spiwack: we should try and replace this List.fold_left by a Metamap.fold.  *)
 let meta_merge evd1 evd2 =
   {evd2 with
-    metas = List.fold_left (fun m (n,v) -> Metamap.add n v m) 
+    metas = List.fold_left (fun m (n,v) -> Metamap.add n v m)
       evd2.metas (metamap_to_list evd1.metas) }
 
 type metabinding = metavariable * constr * instance_status
 
 let retract_coercible_metas evd =
-  let mc,ml = 
-    Metamap.fold (fun n v (mc,ml) -> 
+  let mc,ml =
+    Metamap.fold (fun n v (mc,ml) ->
       match v with
 	| Clval (na,(b,(UserGiven,CoerceToType as s)),typ) ->
 	    (n,b.rebus,s)::mc, Metamap.add n (Cltyp (na,typ)) ml
@@ -714,7 +714,7 @@ let rec list_assoc_in_triple x = function
     [] -> raise Not_found
   | (a,b,_)::l -> if compare a x = 0 then b else list_assoc_in_triple x l
 
-let subst_defined_metas bl c = 
+let subst_defined_metas bl c =
   let rec substrec c = match kind_of_term c with
     | Meta i -> substrec (list_assoc_in_triple i bl)
     | _ -> map_constr substrec c
@@ -729,7 +729,7 @@ type open_constr = evar_map * constr
 type 'a sigma = {
   it : 'a ;
   sigma : evar_map}
- 
+
 let sig_it x = x.it
 let sig_sig x = x.sigma
 
@@ -761,13 +761,13 @@ let pr_meta_map mmap =
     | _ -> mt() in
   let pr_meta_binding = function
     | (mv,Cltyp (na,b)) ->
-      	hov 0 
+      	hov 0
 	  (pr_meta mv ++ pr_name na ++ str " : " ++
            print_constr b.rebus ++ fnl ())
     | (mv,Clval(na,(b,s),t)) ->
-      	hov 0 
+      	hov 0
 	  (pr_meta mv ++ pr_name na ++ str " := " ++
-           print_constr b.rebus ++ 
+           print_constr b.rebus ++
 	   str " : " ++ print_constr t.rebus ++
 	   spc () ++ pr_instance_status s ++ fnl ())
   in
@@ -776,7 +776,7 @@ let pr_meta_map mmap =
 let pr_decl ((id,b,_),ok) =
   match b with
   | None -> if ok then pr_id id else (str "{" ++ pr_id id ++ str "}")
-  | Some c -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++ 
+  | Some c -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
       print_constr c ++ str (if ok then ")" else "}")
 
 let pr_evar_info evi =
@@ -791,7 +791,7 @@ let pr_evar_info evi =
   hov 2 (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]")
 
 let pr_evar_defs_t (evars,cstrs as sigma) =
-  let evs = 
+  let evs =
     if evars = EvarInfoMap.empty then mt ()
     else
       str"EVARS:"++brk(0,1)++
@@ -801,7 +801,7 @@ let pr_evar_defs_t (evars,cstrs as sigma) =
 		(EvarMap.to_list sigma))++fnl()
   and cs =
     if cstrs = UniverseMap.empty then mt ()
-    else pr_sort_cstrs cstrs++fnl() 
+    else pr_sort_cstrs cstrs++fnl()
   in evs ++ cs
 
 let pr_constraints pbs =
@@ -810,7 +810,7 @@ let pr_constraints pbs =
       print_constr t1 ++ spc() ++
       str (match pbty with
 	| Reduction.CONV -> "=="
-	| Reduction.CUMUL -> "<=") ++ 
+	| Reduction.CUMUL -> "<=") ++
       spc() ++ print_constr t2) pbs)
 
 let pr_evar_defs evd =
@@ -825,5 +825,5 @@ let pr_evar_defs evd =
       str"METAS:"++brk(0,1)++pr_meta_map evd.metas in
   v 0 (pp_evm ++ cstrs ++ pp_met)
 
-let pr_metaset metas = 
+let pr_metaset metas =
   str "[" ++ prlist_with_sep spc pr_meta (Metaset.elements metas) ++ str "]"

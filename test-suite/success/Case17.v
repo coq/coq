@@ -11,7 +11,7 @@ Variables (l0 : list bool)
   (rec :
      forall l' : list bool,
      length l' <= S (length l0) ->
-     {l'' : list bool & 
+     {l'' : list bool &
      {t : nat | parse_rel l' l'' t /\ length l'' <= length l'}} +
      {(forall (l'' : list bool) (t : nat), ~ parse_rel l' l'' t)}).
 
@@ -25,17 +25,17 @@ Check
    | inleft (existS _ _) => inright _ (HHH _)
    | inright Hnp => inright _ (HHH _)
    end
-   :{l'' : list bool & 
+   :{l'' : list bool &
     {t : nat | parse_rel (true :: l0) l'' t /\ length l'' <= S (length l0)}} +
     {(forall (l'' : list bool) (t : nat), ~ parse_rel (true :: l0) l'' t)}).
- 
+
 (* The same but with relative links to l0 and rec *)
- 
+
 Check
   (fun (l0 : list bool)
      (rec : forall l' : list bool,
             length l' <= S (length l0) ->
-            {l'' : list bool & 
+            {l'' : list bool &
             {t : nat | parse_rel l' l'' t /\ length l'' <= length l'}} +
             {(forall (l'' : list bool) (t : nat), ~ parse_rel l' l'' t)}) =>
    match rec l0 (HHH _) with
@@ -45,6 +45,6 @@ Check
    | inleft (existS _ _) => inright _ (HHH _)
    | inright Hnp => inright _ (HHH _)
    end
-   :{l'' : list bool & 
+   :{l'' : list bool &
     {t : nat | parse_rel (true :: l0) l'' t /\ length l'' <= S (length l0)}} +
     {(forall (l'' : list bool) (t : nat), ~ parse_rel (true :: l0) l'' t)}).

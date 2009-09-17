@@ -75,15 +75,15 @@ let add_binders na1 na2 (names,terms as subst) =
          ((id1,id2)::names,terms));
   | _ -> subst
 
-let build_lambda toabstract stk (m : constr) = 
-  let rec buildrec m p_0 p_1 = match p_0,p_1 with 
+let build_lambda toabstract stk (m : constr) =
+  let rec buildrec m p_0 p_1 = match p_0,p_1 with
     | (_, []) -> m
-    | (n, (na,t)::tl) -> 
+    | (n, (na,t)::tl) ->
 	if List.mem n toabstract then
           buildrec (mkLambda (na,t,m)) (n+1) tl
-        else 
+        else
 	  buildrec (lift (-1) m) (n+1) tl
-  in 
+  in
   buildrec m 1 stk
 
 let memb_metavars m n =
@@ -98,7 +98,7 @@ let same_case_structure (_,cs1,ind,_) ci2 br1 br2 =
   | Some ind -> ind = ci2.ci_ind
   | None -> cs1 = ci2.ci_cstr_nargs
 
-let matches_core convert allow_partial_app pat c = 
+let matches_core convert allow_partial_app pat c =
   let conv = match convert with
     | None -> eq_constr
     | Some (env,sigma) -> is_conv env sigma in
@@ -127,7 +127,7 @@ let matches_core convert allow_partial_app pat c =
 	    let frels = Intset.elements (free_rels cT) in
             if List.for_all (fun i -> i > depth) frels then
 	      constrain (n,lift (-depth) cT) subst
-            else 
+            else
 	      raise PatternMatchingFailure
 
       | PMeta None, m -> subst
@@ -195,7 +195,7 @@ let matches_core convert allow_partial_app pat c =
 
       | PCase (ci1,p1,a1,br1), Case (ci2,p2,a2,br2) ->
 	  if same_case_structure ci1 ci2 br1 br2 then
-  	    array_fold_left2 (sorec stk) 
+  	    array_fold_left2 (sorec stk)
 	      (sorec stk (sorec stk subst a1 a2) p1 p2) br1 br2
           else
             raise PatternMatchingFailure
@@ -216,7 +216,7 @@ let special_meta = (-1)
 
 (* Tells if it is an authorized occurrence and if the instance is closed *)
 let authorized_occ partial_app closed pat c mk_ctx next =
-  try 
+  try
     let sigma = matches_core None partial_app pat c in
     if closed && not (List.for_all (fun (_,c) -> closed0 c) (snd sigma))
     then next ()
@@ -251,7 +251,7 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
           if topdown then
             let lc1 = Array.sub lc 0 (Array.length lc - 1) in
             let app = mkApp (c1,lc1) in
-            let mk_ctx = function 
+            let mk_ctx = function
               | [app';c] -> mk_ctx (mkApp (app',[|c|]))
               | _ -> assert false in
 	    try_aux [app;array_last lc] mk_ctx next
@@ -274,7 +274,7 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
 	  try_aux (c1::Array.to_list lc) mk_ctx next)
   | Case (ci,hd,c1,lc) ->
       authorized_occ partial_app closed pat c mk_ctx (fun () ->
-        let mk_ctx le = 
+        let mk_ctx le =
           mk_ctx (mkCase (ci,hd,List.hd le,Array.of_list (List.tl le))) in
         try_aux (c1::Array.to_list lc) mk_ctx next)
   | Construct _ | Fix _ | Ind _|CoFix _ |Evar _|Const _

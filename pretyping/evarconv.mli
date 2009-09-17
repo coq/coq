@@ -20,7 +20,7 @@ open Evd
 val the_conv_x     : env -> constr -> constr -> evar_defs -> evar_defs
 val the_conv_x_leq : env -> constr -> constr -> evar_defs -> evar_defs
 
-(* The same function resolving evars by side-effect and 
+(* The same function resolving evars by side-effect and
    catching the exception *)
 val e_conv  : env -> evar_defs ref -> constr -> constr -> bool
 val e_cumul : env -> evar_defs ref -> constr -> constr -> bool
@@ -28,7 +28,7 @@ val e_cumul : env -> evar_defs ref -> constr -> constr -> bool
 (*i For debugging *)
 val evar_conv_x :
   env -> evar_defs -> conv_pb -> constr -> constr -> evar_defs * bool
-val evar_eqappr_x : 
+val evar_eqappr_x :
   env -> evar_defs ->
     conv_pb -> constr * constr list -> constr * constr list ->
       evar_defs * bool
@@ -39,5 +39,5 @@ val consider_remaining_unif_problems : env -> evar_defs -> evar_defs * bool
 val check_conv_record : constr * types list -> constr * types list ->
   constr * constr list * (constr list * constr list) *
     (constr list * types list) *
-    (constr list * types list) * constr * 
+    (constr list * types list) * constr *
     (int * constr)

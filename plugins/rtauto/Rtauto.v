@@ -23,7 +23,7 @@ Inductive form:Set:=
   Atom : positive -> form
 | Arrow : form -> form -> form
 | Bot
-| Conjunct : form -> form -> form 
+| Conjunct : form -> form -> form
 | Disjunct : form -> form -> form.
 
 Notation "[ n ]":=(Atom n).
@@ -39,7 +39,7 @@ match m with
   xI mm => match n with xI nn => pos_eq mm nn | _ => false end
 | xO mm => match n with xO nn => pos_eq mm nn | _ => false end
 | xH => match n with xH => true | _ => false end
-end. 
+end.
 
 Theorem pos_eq_refl : forall m n, pos_eq m n = true -> m = n.
 induction m;simpl;destruct n;congruence ||
@@ -49,32 +49,32 @@ Qed.
 Fixpoint form_eq (p q:form) {struct p} :bool :=
 match p with
   Atom m => match q with Atom n => pos_eq m n | _ => false end
-| Arrow p1 p2 => 
-match q with 
-  Arrow q1 q2 => form_eq p1 q1 && form_eq p2 q2 
+| Arrow p1 p2 =>
+match q with
+  Arrow q1 q2 => form_eq p1 q1 && form_eq p2 q2
 | _ => false end
 | Bot => match q with Bot => true | _ => false end
-| Conjunct p1 p2 => 
-match q with 
-  Conjunct q1 q2 => form_eq p1 q1 && form_eq p2 q2 
-| _ => false 
+| Conjunct p1 p2 =>
+match q with
+  Conjunct q1 q2 => form_eq p1 q1 && form_eq p2 q2
+| _ => false
 end
-| Disjunct p1 p2 => 
-match q with 
-  Disjunct q1 q2 => form_eq p1 q1 && form_eq p2 q2 
-| _ => false 
+| Disjunct p1 p2 =>
+match q with
+  Disjunct q1 q2 => form_eq p1 q1 && form_eq p2 q2
+| _ => false
 end
-end. 
+end.
 
 Theorem form_eq_refl: forall p q, form_eq p q = true -> p = q.
 induction p;destruct q;simpl;clean.
 intro h;generalize (pos_eq_refl _ _ h);congruence.
 caseq (form_eq p1 q1);clean.
-intros e1 e2;generalize (IHp1 _ e1) (IHp2 _ e2);congruence. 
+intros e1 e2;generalize (IHp1 _ e1) (IHp2 _ e2);congruence.
 caseq (form_eq p1 q1);clean.
-intros e1 e2;generalize (IHp1 _ e1) (IHp2 _ e2);congruence. 
+intros e1 e2;generalize (IHp1 _ e1) (IHp2 _ e2);congruence.
 caseq (form_eq p1 q1);clean.
-intros e1 e2;generalize (IHp1 _ e1) (IHp2 _ e2);congruence. 
+intros e1 e2;generalize (IHp1 _ e1) (IHp2 _ e2);congruence.
 Qed.
 
 Implicit Arguments form_eq_refl [p q].
@@ -102,16 +102,16 @@ end.
 
 Require Export BinPos.
 
-Ltac wipe := intros;simpl;constructor.  
+Ltac wipe := intros;simpl;constructor.
 
-Lemma compose0 : 
+Lemma compose0 :
 forall hyps F (A:Prop),
- A -> 
+ A ->
  (interp_ctx hyps F A).
 induction F;intros A H;simpl;auto.
 Qed.
 
-Lemma compose1 : 
+Lemma compose1 :
 forall hyps F (A B:Prop),
  (A -> B) ->
  (interp_ctx hyps F A) ->
@@ -120,9 +120,9 @@ induction F;intros A B H;simpl;auto.
 apply IHF;auto.
 Qed.
 
-Theorem compose2 : 
+Theorem compose2 :
 forall hyps F (A B C:Prop),
- (A -> B -> C) -> 
+ (A -> B -> C) ->
  (interp_ctx hyps F A) ->
  (interp_ctx hyps F B) ->
  (interp_ctx hyps F C).
@@ -130,10 +130,10 @@ induction F;intros A B C H;simpl;auto.
 apply IHF;auto.
 Qed.
 
-Theorem compose3 : 
+Theorem compose3 :
 forall hyps F (A B C D:Prop),
- (A -> B -> C -> D) -> 
- (interp_ctx hyps F A) -> 
+ (A -> B -> C -> D) ->
+ (interp_ctx hyps F A) ->
  (interp_ctx hyps F B) ->
  (interp_ctx hyps F C) ->
  (interp_ctx hyps F D).
@@ -148,7 +148,7 @@ induction F;simpl;intros;auto.
 apply compose1 with ([[a]]-> G);auto.
 Qed.
 
-Theorem project_In : forall hyps F g, 
+Theorem project_In : forall hyps F g,
 In g hyps F ->
 interp_ctx hyps F [[g]].
 induction F;simpl.
@@ -158,7 +158,7 @@ subst;apply compose0;simpl;trivial.
 apply compose1 with [[g]];auto.
 Qed.
 
-Theorem project : forall hyps F p g, 
+Theorem project : forall hyps F p g,
 get  p hyps = PSome g->
 interp_ctx hyps F [[g]].
 intros hyps F p g e; apply project_In.
@@ -186,23 +186,23 @@ Notation "hyps \ A" := (push A hyps) (at level 72,left associativity).
 
 Fixpoint check_proof (hyps:ctx) (gl:form) (P:proof) {struct P}: bool :=
  match P with
-   Ax i => 
+   Ax i =>
      match get i hyps with
          PSome F => form_eq F gl
  | _ => false
-    end 
+    end
 | I_Arrow p =>
    match gl with
       A  =>> B  => check_proof (hyps \ A) B p
-   | _ => false        
-    end 
+   | _ => false
+    end
 | E_Arrow i j p =>
    match get i hyps,get j hyps with
        PSome A,PSome (B =>>C) =>
          form_eq A B && check_proof (hyps \ C) (gl) p
     | _,_ => false
     end
-| D_Arrow i p1 p2 => 
+| D_Arrow i p1 p2 =>
    match get i hyps with
       PSome  ((A =>>B)=>>C) =>
      (check_proof ( hyps \ B =>> C \ A) B p1) && (check_proof (hyps \ C) gl p2)
@@ -219,12 +219,12 @@ Fixpoint check_proof (hyps:ctx) (gl:form) (P:proof) {struct P}: bool :=
       check_proof hyps A p1 && check_proof hyps B p2
       | _ => false
       end
-| E_And i p => 
+| E_And i p =>
    match get i hyps with
       PSome  (A //\\ B) => check_proof (hyps \ A \ B) gl p
     | _=> false
    end
-| D_And i p => 
+| D_And i p =>
    match get i hyps with
       PSome  (A //\\ B =>> C) => check_proof (hyps \ A=>>B=>>C) gl p
     | _=> false
@@ -245,7 +245,7 @@ Fixpoint check_proof (hyps:ctx) (gl:form) (P:proof) {struct P}: bool :=
   check_proof (hyps \ A) gl p1 && check_proof (hyps \ B) gl p2
   | _=> false
   end
-| D_Or i p => 
+| D_Or i p =>
    match get i hyps with
       PSome  (A \\// B =>> C) =>
       (check_proof (hyps \ A=>>C \ B=>>C) gl p)
@@ -253,10 +253,10 @@ Fixpoint check_proof (hyps:ctx) (gl:form) (P:proof) {struct P}: bool :=
    end
 | Cut A p1 p2 =>
   check_proof hyps A p1 && check_proof (hyps \ A) gl p2
-end. 
+end.
 
-Theorem interp_proof: 
-forall p hyps F gl, 
+Theorem interp_proof:
+forall p hyps F gl,
 check_proof hyps gl p = true -> interp_ctx hyps F [[gl]].
 
 induction p;intros hyps F gl.
@@ -281,7 +281,7 @@ intros f ef;caseq (get p0 hyps);clean.
 intros f0 ef0;destruct f0;clean.
 caseq (form_eq f f0_1);clean.
 simpl;intros e check_p1.
-generalize  (project  F ef) (project  F ef0) 
+generalize  (project  F ef) (project  F ef0)
 (IHp (hyps \ f0_2) (F_push f0_2 hyps F) gl check_p1);
 clear check_p1 IHp p p0 p1 ef ef0.
 simpl.
@@ -297,7 +297,7 @@ destruct f1;clean.
 caseq (check_proof (hyps \ f1_2 =>> f2 \ f1_1) f1_2 p2);clean.
 intros check_p1 check_p2.
 generalize (project F ef)
-(IHp1 (hyps \ f1_2 =>> f2 \ f1_1)   
+(IHp1 (hyps \ f1_2 =>> f2 \ f1_1)
 (F_push f1_1 (hyps \ f1_2 =>> f2)
  (F_push (f1_2 =>> f2) hyps F)) f1_2 check_p1)
 (IHp2 (hyps \ f2) (F_push f2 hyps F) gl check_p2).
@@ -331,7 +331,7 @@ simpl;caseq (get p hyps);clean.
 intros f ef;destruct f;clean.
 destruct f1;clean.
 intro H;generalize  (project F ef)
-(IHp (hyps \ f1_1 =>> f1_2 =>> f2)  
+(IHp (hyps \ f1_1 =>> f1_2 =>> f2)
 (F_push (f1_1 =>> f1_2 =>> f2) hyps F) gl H);clear H;simpl.
 apply compose2;auto.
 
@@ -364,7 +364,7 @@ intros f ef;destruct f;clean.
 destruct f1;clean.
 intro check_p0;generalize (project F ef)
 (IHp (hyps \ f1_1 =>> f2 \ f1_2 =>> f2)
-(F_push (f1_2 =>> f2) (hyps \ f1_1 =>> f2) 
+(F_push (f1_2 =>> f2) (hyps \ f1_1 =>> f2)
  (F_push (f1_1 =>> f2) hyps F)) gl check_p0);simpl.
 apply compose2;auto.
 
@@ -372,7 +372,7 @@ apply compose2;auto.
 Focus 1.
 simpl;caseq (check_proof hyps f p1);clean.
 intros check_p1 check_p2;
-generalize (IHp1 hyps F f check_p1) 
+generalize (IHp1 hyps F f check_p1)
 (IHp2 (hyps\f) (F_push f hyps F) gl check_p2);
 simpl; apply compose2;auto.
 Qed.
@@ -392,8 +392,8 @@ Parameters A B C D:Prop.
 Theorem toto:A /\ (B \/ C) -> (A /\ B) \/ (A /\ C).
 exact (Reflect (empty \ A \ B \ C)
 ([1] //\\ ([2] \\// [3]) =>> [1] //\\ [2] \\// [1] //\\ [3])
-(I_Arrow (E_And 1 (E_Or 3 
-  (I_Or_l (I_And (Ax 2) (Ax 4))) 
+(I_Arrow (E_And 1 (E_Or 3
+  (I_Or_l (I_And (Ax 2) (Ax 4)))
   (I_Or_r (I_And (Ax 2) (Ax 4))))))).
 Qed.
 Print toto.

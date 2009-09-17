@@ -17,7 +17,7 @@ Qed.
 Lemma l3 :
  forall x y : nat,
  existS (fun n : nat => {n = n} + {n = n}) x (left _ (refl_equal x)) =
- existS (fun n : nat => {n = n} + {n = n}) y (left _ (refl_equal y)) -> 
+ existS (fun n : nat => {n = n} + {n = n}) y (left _ (refl_equal y)) ->
  x = y.
 intros x y H.
  injection H.

@@ -41,20 +41,20 @@ let meta_succ m = m+1
 
 let rec nb_prod_after n c=
   match kind_of_term c with
-    | Prod (_,_,b) ->if n>0 then nb_prod_after (n-1) b else 
+    | Prod (_,_,b) ->if n>0 then nb_prod_after (n-1) b else
 	1+(nb_prod_after 0 b)
     | _ -> 0
 
 let construct_nhyps ind gls =
   let nparams = (fst (Global.lookup_inductive ind)).mind_nparams in
-  let constr_types = Inductiveops.arities_of_constructors (pf_env gls) ind in 
-  let hyp = nb_prod_after nparams in	
+  let constr_types = Inductiveops.arities_of_constructors (pf_env gls) ind in
+  let hyp = nb_prod_after nparams in
     Array.map hyp constr_types
 
 (* indhyps builds the array of arrays of constructor hyps for (ind largs)*)
-let ind_hyps nevar ind largs gls= 
-  let types= Inductiveops.arities_of_constructors (pf_env gls) ind in 
-  let lp=Array.length types in     
+let ind_hyps nevar ind largs gls=
+  let types= Inductiveops.arities_of_constructors (pf_env gls) ind in
+  let lp=Array.length types in
   let myhyps i=
     let t1=Term.prod_applist types.(i) largs in
     let t2=snd (decompose_prod_n_assum nevar t1) in
@@ -77,7 +77,7 @@ type kind_of_formula=
   | Exists of inductive*constr list
   | Forall of constr*constr
   | Atom of constr
-      
+
 let rec kind_of_formula gl term =
   let normalize=special_nf gl in
   let cciterm=special_whd gl term in
@@ -86,34 +86,34 @@ let rec kind_of_formula gl term =
       |_->
 	 match match_with_forall_term cciterm with
 	     Some (_,a,b)-> Forall(a,b)
-	   |_-> 
+	   |_->
 	      match match_with_nodep_ind cciterm with
 		  Some (i,l,n)->
 		    let ind=destInd i in
 		    let (mib,mip) = Global.lookup_inductive ind in
 		    let nconstr=Array.length mip.mind_consnames in
-		      if nconstr=0 then 
+		      if nconstr=0 then
 			False(ind,l)
 		      else
 			let has_realargs=(n>0) in
 			let is_trivial=
 			  let is_constant c =
-			    nb_prod c = mib.mind_nparams in  
-			    array_exists is_constant mip.mind_nf_lc in 
+			    nb_prod c = mib.mind_nparams in
+			    array_exists is_constant mip.mind_nf_lc in
 			  if Inductiveops.mis_is_recursive (ind,mib,mip) ||
 			    (has_realargs && not is_trivial)
 			  then
-			    Atom cciterm 
+			    Atom cciterm
 			  else
 			    if nconstr=1 then
 			      And(ind,l,is_trivial)
-			    else 
-			      Or(ind,l,is_trivial) 
-		| _ ->  
+			    else
+			      Or(ind,l,is_trivial)
+		| _ ->
 		    match match_with_sigma_type cciterm with
 			Some (i,l)-> Exists((destInd i),l)
 		      |_-> Atom (normalize cciterm)
-  
+
 type atoms = {positive:constr list;negative:constr list}
 
 type side = Hyp | Concl | Hint
@@ -126,7 +126,7 @@ let build_atoms gl metagen side cciterm =
   let trivial =ref false
   and positive=ref []
   and negative=ref [] in
-  let normalize=special_nf gl in 
+  let normalize=special_nf gl in
   let rec build_rec env polarity cciterm=
     match kind_of_formula gl cciterm with
 	False(_,_)->if not polarity then trivial:=true
@@ -134,12 +134,12 @@ let build_atoms gl metagen side cciterm =
 	  build_rec env (not polarity) a;
 	  build_rec env polarity b
       | And(i,l,b) | Or(i,l,b)->
-	  if b then 
+	  if b then
 	    begin
 	      let unsigned=normalize (substnl env 0 cciterm) in
-		if polarity then 
-		  positive:= unsigned :: !positive 
-		else 
+		if polarity then
+		  positive:= unsigned :: !positive
+		else
 		  negative:= unsigned :: !negative
 	    end;
 	  let v = ind_hyps 0 i l gl in
@@ -148,9 +148,9 @@ let build_atoms gl metagen side cciterm =
 	  let f l =
 	    list_fold_left_i g (1-(List.length l)) () l in
 	    if polarity && (* we have a constant constructor *)
-	      array_exists (function []->true|_->false) v 
+	      array_exists (function []->true|_->false) v
 	    then trivial:=true;
-	    Array.iter f v 
+	    Array.iter f v
       | Exists(i,l)->
 	  let var=mkMeta (metagen true) in
 	  let v =(ind_hyps 1 i l gl).(0) in
@@ -163,15 +163,15 @@ let build_atoms gl metagen side cciterm =
       | Atom t->
 	  let unsigned=substnl env 0 t in
 	    if not (isMeta unsigned) then (* discarding wildcard atoms *)
-	      if polarity then 
-		positive:= unsigned :: !positive 
-	      else 
+	      if polarity then
+		positive:= unsigned :: !positive
+	      else
 		negative:= unsigned :: !negative in
     begin
       match side with
 	  Concl    -> build_rec [] true cciterm
 	| Hyp      -> build_rec [] false cciterm
-	| Hint     -> 
+	| Hint     ->
 	    let rels,head=decompose_prod cciterm in
 	    let env=List.rev (List.map (fun _->mkMeta (metagen true)) rels) in
 	      build_rec env false head;trivial:=false (* special for hints *)
@@ -179,15 +179,15 @@ let build_atoms gl metagen side cciterm =
     (!trivial,
      {positive= !positive;
       negative= !negative})
-    
+
 type right_pattern =
     Rarrow
   | Rand
-  | Ror 
+  | Ror
   | Rfalse
   | Rforall
   | Rexists of metavariable*constr*bool
-   
+
 type left_arrow_pattern=
     LLatom
   | LLfalse of inductive*constr list
@@ -198,9 +198,9 @@ type left_arrow_pattern=
   | LLarrow of constr*constr*constr
 
 type left_pattern=
-    Lfalse    
+    Lfalse
   | Land of inductive
-  | Lor of inductive 
+  | Lor of inductive
   | Lforall of metavariable*constr*bool
   | Lexists of inductive
   | LA of constr*left_arrow_pattern
@@ -209,14 +209,14 @@ type t={id:global_reference;
 	constr:constr;
 	pat:(left_pattern,right_pattern) sum;
 	atoms:atoms}
-    
+
 let build_formula side nam typ gl metagen=
   let normalize = special_nf gl in
-    try 
+    try
       let m=meta_succ(metagen false) in
       let trivial,atoms=
-	if !qflag then 
-	  build_atoms gl metagen side typ 
+	if !qflag then
+	  build_atoms gl metagen side typ
 	else no_atoms in
       let pattern=
 	match side with
@@ -227,10 +227,10 @@ let build_formula side nam typ gl metagen=
 		  | Atom a       -> raise (Is_atom a)
 		  | And(_,_,_)        -> Rand
 		  | Or(_,_,_)         -> Ror
-		  | Exists (i,l) -> 
+		  | Exists (i,l) ->
 		      let (_,_,d)=list_last (ind_hyps 0 i l gl).(0) in
 			Rexists(m,d,trivial)
-		  | Forall (_,a) -> Rforall 
+		  | Forall (_,a) -> Rforall
 		  | Arrow (a,b) -> Rarrow in
 		Right pat
 	  | _ ->
@@ -238,7 +238,7 @@ let build_formula side nam typ gl metagen=
 		match kind_of_formula gl typ with
 		    False(i,_)        ->  Lfalse
 		  | Atom a       ->  raise (Is_atom a)
-		  | And(i,_,b)         ->  
+		  | And(i,_,b)         ->
 		      if b then
 			let nftyp=normalize typ in raise (Is_atom nftyp)
 		      else Land i
@@ -246,12 +246,12 @@ let build_formula side nam typ gl metagen=
 		      if b then
 			let nftyp=normalize typ in raise (Is_atom nftyp)
 		      else Lor i
-		  | Exists (ind,_) ->  Lexists ind 
-		  | Forall (d,_) -> 
+		  | Exists (ind,_) ->  Lexists ind
+		  | Forall (d,_) ->
 		      Lforall(m,d,trivial)
 		  | Arrow (a,b) ->
 		      let nfa=normalize a in
-			LA (nfa, 
+			LA (nfa,
 			    match kind_of_formula gl a with
 				False(i,l)-> LLfalse(i,l)
 			      | Atom t->     LLatom

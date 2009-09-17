@@ -45,7 +45,7 @@ Proof.
 Qed.
 
 Lemma Pcompare_Peqb : forall p p', Pcompare p p' Eq = Eq -> Peqb p p' = true.
-Proof. 
+Proof.
 intros; rewrite <- (Pcompare_Eq_eq _ _ H).
 apply Peqb_correct.
 Qed.
@@ -69,7 +69,7 @@ Proof.
 Qed.
 
 Lemma Ncompare_Neqb : forall n n', Ncompare n n' = Eq -> Neqb n n' = true.
-Proof. 
+Proof.
 intros; rewrite <- (Ncompare_Eq_eq _ _ H).
 apply Neqb_correct.
 Qed.
@@ -107,7 +107,7 @@ Lemma Nodd_not_double :
    Nodd a -> forall a0, Neqb (Ndouble a0) a = false.
 Proof.
   intros. elim (sumbool_of_bool (Neqb (Ndouble a0) a)). intro H0.
-  rewrite <- (Neqb_complete _ _ H0) in H. 
+  rewrite <- (Neqb_complete _ _ H0) in H.
   unfold Nodd in H.
   rewrite (Ndouble_bit0 a0) in H. discriminate H.
   trivial.
@@ -128,7 +128,7 @@ Lemma Neven_not_double_plus_one :
    Neven a -> forall a0, Neqb (Ndouble_plus_one a0) a = false.
 Proof.
   intros. elim (sumbool_of_bool (Neqb (Ndouble_plus_one a0) a)). intro H0.
-  rewrite <- (Neqb_complete _ _ H0) in H. 
+  rewrite <- (Neqb_complete _ _ H0) in H.
   unfold Neven in H.
   rewrite (Ndouble_plus_one_bit0 a0) in H.
   discriminate H.
@@ -391,8 +391,8 @@ Lemma Nmin_Nmin' : forall a b, Nmin a b = Nmin' a b.
 Proof.
  unfold Nmin, Nmin', Nleb; intros.
  rewrite nat_of_Ncompare.
- generalize (leb_compare (nat_of_N a) (nat_of_N b)); 
- destruct (nat_compare (nat_of_N a) (nat_of_N b)); 
+ generalize (leb_compare (nat_of_N a) (nat_of_N b));
+ destruct (nat_compare (nat_of_N a) (nat_of_N b));
  destruct (leb (nat_of_N a) (nat_of_N b)); intuition.
  lapply H1; intros; discriminate.
  lapply H1; intros; discriminate.
@@ -421,7 +421,7 @@ Qed.
 Lemma Nmin_le_3 :
  forall a b c, Nleb a (Nmin b c) = true -> Nleb a b = true.
 Proof.
-  intros; rewrite Nmin_Nmin' in *. 
+  intros; rewrite Nmin_Nmin' in *.
   unfold Nmin' in *; elim (sumbool_of_bool (Nleb b c)). intro H0. rewrite H0 in H.
   assumption.
   intro H0. rewrite H0 in H. apply Nltb_leb_weak. apply Nleb_ltb_trans with (b := c); assumption.
@@ -430,7 +430,7 @@ Qed.
 Lemma Nmin_le_4 :
  forall a b c, Nleb a (Nmin b c) = true -> Nleb a c = true.
 Proof.
-  intros; rewrite Nmin_Nmin' in *. 
+  intros; rewrite Nmin_Nmin' in *.
   unfold Nmin' in *; elim (sumbool_of_bool (Nleb b c)). intro H0. rewrite H0 in H.
   apply Nleb_trans with (b := b); assumption.
   intro H0. rewrite H0 in H. assumption.
@@ -447,7 +447,7 @@ Qed.
 Lemma Nmin_lt_3 :
  forall a b c, Nleb (Nmin b c) a = false -> Nleb b a = false.
 Proof.
-  intros; rewrite Nmin_Nmin' in *. 
+  intros; rewrite Nmin_Nmin' in *.
   unfold Nmin' in *. intros. elim (sumbool_of_bool (Nleb b c)). intro H0. rewrite H0 in H.
   assumption.
   intro H0. rewrite H0 in H. apply Nltb_trans with (b := c); assumption.
@@ -456,7 +456,7 @@ Qed.
 Lemma Nmin_lt_4 :
  forall a b c, Nleb (Nmin b c) a = false -> Nleb c a = false.
 Proof.
-  intros; rewrite Nmin_Nmin' in *. 
+  intros; rewrite Nmin_Nmin' in *.
   unfold Nmin' in *. elim (sumbool_of_bool (Nleb b c)). intro H0. rewrite H0 in H.
   apply Nltb_leb_trans with (b := b); assumption.
   intro H0. rewrite H0 in H. assumption.

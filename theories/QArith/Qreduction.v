@@ -35,15 +35,15 @@ Qed.
 (** Simplification of fractions using [Zgcd].
   This version can compute within Coq. *)
 
-Definition Qred (q:Q) := 
-  let (q1,q2) := q in 
-  let (r1,r2) := snd (Zggcd q1 ('q2)) 
+Definition Qred (q:Q) :=
+  let (q1,q2) := q in
+  let (r1,r2) := snd (Zggcd q1 ('q2))
   in r1#(Z2P r2).
 
 Lemma Qred_correct : forall q, (Qred q) == q.
 Proof.
   unfold Qred, Qeq; intros (n,d); simpl.
-  generalize (Zggcd_gcd n ('d)) (Zgcd_is_pos n ('d)) 
+  generalize (Zggcd_gcd n ('d)) (Zgcd_is_pos n ('d))
     (Zgcd_is_gcd n ('d)) (Zggcd_correct_divisors n ('d)).
   destruct (Zggcd n (Zpos d)) as (g,(nn,dd)); simpl.
   Open Scope Z_scope.
@@ -52,7 +52,7 @@ Proof.
   rewrite H3; rewrite H4.
   assert (0 <> g).
   intro; subst g; discriminate.
-  
+
   assert (0 < dd).
   apply Zmult_gt_0_lt_0_reg_r with g.
   omega.
@@ -68,10 +68,10 @@ Proof.
   intros (a,b) (c,d).
   unfold Qred, Qeq in *; simpl in *.
   Open Scope Z_scope.
-  generalize (Zggcd_gcd a ('b)) (Zgcd_is_gcd a ('b)) 
+  generalize (Zggcd_gcd a ('b)) (Zgcd_is_gcd a ('b))
     (Zgcd_is_pos a ('b)) (Zggcd_correct_divisors a ('b)).
   destruct (Zggcd a (Zpos b)) as (g,(aa,bb)).
-  generalize (Zggcd_gcd c ('d)) (Zgcd_is_gcd c ('d)) 
+  generalize (Zggcd_gcd c ('d)) (Zgcd_is_gcd c ('d))
     (Zgcd_is_pos c ('d)) (Zggcd_correct_divisors c ('d)).
   destruct (Zggcd c (Zpos d)) as (g',(cc,dd)).
   simpl.
@@ -136,7 +136,7 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
-Add Morphism Qred : Qred_comp. 
+Add Morphism Qred : Qred_comp.
 Proof.
   intros q q' H.
   rewrite (Qred_correct q); auto.
@@ -144,7 +144,7 @@ Proof.
 Qed.
 
 Definition Qplus' (p q : Q) := Qred (Qplus p q).
-Definition Qmult' (p q : Q) := Qred (Qmult p q). 
+Definition Qmult' (p q : Q) := Qred (Qmult p q).
 Definition Qminus' x y := Qred (Qminus x y).
 
 Lemma Qplus'_correct : forall p q : Q, (Qplus' p q)==(Qplus p q).

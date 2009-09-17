@@ -28,8 +28,8 @@ open Mod_subst
 (* A class is a type constructor, its type is an arity whose number of
    arguments is cl_param (0 for CL_SORT and CL_FUN) *)
 
-type cl_typ = 
-  | CL_SORT 
+type cl_typ =
+  | CL_SORT
   | CL_FUN
   | CL_SECVAR of variable
   | CL_CONST of constant
@@ -82,7 +82,7 @@ let inheritance_graph =
 
 let freeze () = (!class_tab, !coercion_tab, !inheritance_graph)
 
-let unfreeze (fcl,fco,fig) = 
+let unfreeze (fcl,fco,fig) =
   class_tab:=fcl;
   coercion_tab:=fco;
   inheritance_graph:=fig
@@ -93,20 +93,20 @@ let add_new_class cl s =
   if not (Bijint.mem cl !class_tab) then
     class_tab := Bijint.add cl s !class_tab
 
-let add_new_coercion coe s = 
+let add_new_coercion coe s =
   coercion_tab := Gmap.add coe s !coercion_tab
 
 let add_new_path x y =
   inheritance_graph := Gmap.add x y !inheritance_graph
 
 let init () =
-  class_tab:= Bijint.empty; 
+  class_tab:= Bijint.empty;
   add_new_class CL_FUN  { cl_param = 0 };
   add_new_class CL_SORT { cl_param = 0 };
   coercion_tab:= Gmap.empty;
   inheritance_graph:= Gmap.empty
 
-let _ = 
+let _ =
   Summary.declare_summary "inh_graph"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
@@ -151,12 +151,12 @@ let subst_cl_typ subst ct = match ct with
     CL_SORT
   | CL_FUN
   | CL_SECVAR _ -> ct
-  | CL_CONST kn -> 
-      let kn',t = subst_con subst kn in 
+  | CL_CONST kn ->
+      let kn',t = subst_con subst kn in
 	if kn' == kn then ct else
          fst (find_class_type (Global.env()) Evd.empty t)
   | CL_IND (kn,i) ->
-      let kn' = subst_kn subst kn in 
+      let kn' = subst_kn subst kn in
 	if kn' == kn then ct else
 	  CL_IND (kn',i)
 
@@ -166,15 +166,15 @@ let subst_coe_typ subst t = fst (subst_global subst t)
 
 (* class_of : Term.constr -> int *)
 
-let class_of env sigma t = 
-  let (t, n1, i, args) = 
+let class_of env sigma t =
+  let (t, n1, i, args) =
     try
       let (cl,args) = find_class_type env sigma t in
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, args)
     with Not_found ->
       let t = Tacred.hnf_constr env sigma t in
-      let (cl, args) = find_class_type env sigma t in 
+      let (cl, args) = find_class_type env sigma t in
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, args)
   in
@@ -218,7 +218,7 @@ let apply_on_class_of env sigma t cont =
   with Not_found ->
     (* Is it worth to be more incremental on the delta steps? *)
     let t = Tacred.hnf_constr env sigma t in
-    let (cl, args) = find_class_type env sigma t in 
+    let (cl, args) = find_class_type env sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
     if List.length args <> n1 then raise Not_found;
     t, cont i
@@ -233,7 +233,7 @@ let lookup_path_between env sigma (s,t) =
 let lookup_path_to_fun_from env sigma s =
   apply_on_class_of env sigma s lookup_path_to_fun_from_class
 
-let lookup_path_to_sort_from env sigma s = 
+let lookup_path_to_sort_from env sigma s =
   apply_on_class_of env sigma s lookup_path_to_sort_from_class
 
 let get_coercion_constructor coe =
@@ -241,7 +241,7 @@ let get_coercion_constructor coe =
     Reductionops.whd_betadeltaiota_stack (Global.env()) Evd.empty coe.coe_value
   in
   match kind_of_term c with
-  | Construct cstr -> 
+  | Construct cstr ->
       (cstr, Inductiveops.constructor_nrealargs (Global.env()) cstr -1)
   | _ ->
       raise Not_found
@@ -263,14 +263,14 @@ let path_printer = ref (fun _ -> str "<a class path>"
                         : (int * int) * inheritance_path -> std_ppcmds)
 
 let install_path_printer f = path_printer := f
- 
+
 let print_path x = !path_printer x
 
-let message_ambig l = 
+let message_ambig l =
   (str"Ambiguous paths:" ++ spc () ++
    prlist_with_sep pr_fnl (fun ijp -> print_path ijp) l)
 
-(* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit 
+(* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit
                          coercion,source,target *)
 
 let different_class_params i j =
@@ -281,7 +281,7 @@ let add_coercion_in_graph (ic,source,target) =
   let ambig_paths =
     (ref [] : ((cl_index * cl_index) * inheritance_path) list ref) in
   let try_add_new_path (i,j as ij) p =
-    try 
+    try
       if i=j then begin
 	if different_class_params i j then begin
 	  let _ = lookup_path_between_class ij in
@@ -297,26 +297,26 @@ let add_coercion_in_graph (ic,source,target) =
       true
     end
   in
-  let try_add_new_path1 ij p = 
-    let _ = try_add_new_path ij p in () 
+  let try_add_new_path1 ij p =
+    let _ = try_add_new_path ij p in ()
   in
   if try_add_new_path (source,target) [ic] then begin
-    Gmap.iter 
+    Gmap.iter
       (fun (s,t) p ->
          if s<>t then begin
 	   if t = source then begin
              try_add_new_path1 (s,target) (p@[ic]);
              Gmap.iter
 	       (fun (u,v) q ->
-                  if u<>v & (u = target) & (p <> q) then 
+                  if u<>v & (u = target) & (p <> q) then
 		    try_add_new_path1 (s,v) (p@[ic]@q))
                old_inheritance_graph
            end;
            if s = target then try_add_new_path1 (source,t) (ic::p)
 	 end)
-      old_inheritance_graph 
+      old_inheritance_graph
   end;
-  if (!ambig_paths <> []) && is_verbose () then 
+  if (!ambig_paths <> []) && is_verbose () then
     ppnl (message_ambig !ambig_paths)
 
 type coercion = coe_typ * locality * bool * cl_typ * cl_typ * int
@@ -343,7 +343,7 @@ let load_coercion i (_,(coe,stre,isid,cls,clt,ps)) =
   add_class clt;
   let is,_ = class_info cls in
   let it,_ = class_info clt in
-  let xf = 
+  let xf =
     { coe_value = constr_of_global coe;
       coe_type = Global.type_of_global coe;
       coe_strength = stre;
@@ -368,7 +368,7 @@ let discharge_cl = function
   | cl -> cl
 
 let discharge_coercion (_,(coe,stre,isid,cls,clt,ps)) =
-  if stre = Local then None else 
+  if stre = Local then None else
     let n = try Array.length (Lib.section_instance coe) with Not_found -> 0 in
     Some (Lib.discharge_global coe,
           stre,
@@ -378,7 +378,7 @@ let discharge_coercion (_,(coe,stre,isid,cls,clt,ps)) =
           n + ps)
 
 let (inCoercion,_) =
-  declare_object {(default_object "COERCION") with 
+  declare_object {(default_object "COERCION") with
     load_function = load_coercion;
     cache_function = cache_coercion;
     subst_function = subst_coercion;
@@ -401,7 +401,7 @@ let inheritance_graph () = Gmap.to_list !inheritance_graph
 let coercion_of_reference r =
   let ref = Nametab.global r in
   if not (coercion_exists ref) then
-    errorlabstrm "try_add_coercion" 
+    errorlabstrm "try_add_coercion"
       (Nametab.pr_global_env Idset.empty ref ++ str" is not a coercion.");
   ref
 

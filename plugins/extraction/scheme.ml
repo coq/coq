@@ -98,7 +98,7 @@ let rec pp_expr env args =
 	if i = Coinductive then paren (str "delay " ++ st) else st
     | MLcase ((i,_),t, pv) ->
 	let e =
-	  if i <> Coinductive then pp_expr env [] t 
+	  if i <> Coinductive then pp_expr env [] t
 	  else paren (str "force" ++ spc () ++ pp_expr env [] t)
 	in
 	apply (v 3 (paren (str "match " ++ e ++ fnl () ++ pp_pat env pv)))

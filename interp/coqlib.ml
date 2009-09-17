@@ -55,7 +55,7 @@ let gen_constant_in_modules locstr dirs s =
 	" in module"^(if List.length dirs > 1 then "s " else " ")) ++
 	prlist_with_sep pr_coma pr_dirpath dirs)
     | l ->
-	anomalylabstrm "" 
+	anomalylabstrm ""
 	(str (locstr^": found more than once object of name "^s^
 	" in module"^(if List.length dirs > 1 then "s " else " ")) ++
 	prlist_with_sep pr_coma pr_dirpath dirs)
@@ -69,7 +69,7 @@ let check_required_library d =
   if not (Library.library_is_loaded dir) then
 (* Loading silently ...
     let m, prefix = list_sep_last d' in
-    read_library 
+    read_library
      (dummy_loc,make_qualid (make_dirpath (List.rev prefix)) m)
 *)
 (* or failing ...*)
@@ -80,9 +80,9 @@ let check_required_library d =
 
 let init_reference dir s = gen_reference "Coqlib" ("Init"::dir) s
 
-let init_constant dir s = gen_constant "Coqlib" ("Init"::dir) s  
+let init_constant dir s = gen_constant "Coqlib" ("Init"::dir) s
 
-let logic_constant dir s = gen_constant "Coqlib" ("Logic"::dir) s  
+let logic_constant dir s = gen_constant "Coqlib" ("Logic"::dir) s
 
 let arith_dir = ["Coq";"Arith"]
 let arith_modules = [arith_dir]
@@ -101,7 +101,7 @@ let init_modules = [
   init_dir@["Peano"];
   init_dir@["Wf"]
 ]
-  
+
 let coq_id = id_of_string "Coq"
 let init_id = id_of_string "Init"
 let arith_id = id_of_string "Arith"
@@ -178,7 +178,7 @@ type coq_bool_data  = {
 
 type 'a delayed = unit -> 'a
 
-let build_bool_type () = 
+let build_bool_type () =
   { andb =  init_constant ["Datatypes"] "andb";
     andb_prop =  init_constant ["Datatypes"] "andb_prop";
     andb_true_intro =  init_constant ["Datatypes"] "andb_true_intro" }

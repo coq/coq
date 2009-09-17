@@ -16,7 +16,7 @@
    then the associated tactic is applied. Discrimination nets are used
    (only) to implement the tactics Auto, DHyp and Point.
 
-   A discrimination net is a tries structure, that is, a tree structure 
+   A discrimination net is a tries structure, that is, a tree structure
    specially conceived for searching patterns, like for example strings
    --see the file Tlm.ml in the directory lib/util--. Here the tries
    structure are used for looking for term patterns.
@@ -34,67 +34,67 @@
 type ('lbl,'pat) decompose_fun = 'pat -> ('lbl * 'pat list) option
 
 type 'res lookup_res = Label of 'res | Nothing | Everything
-    
+
 type ('lbl,'tree) lookup_fun = 'tree -> ('lbl * 'tree list) lookup_res
 
 type ('lbl,'pat,'inf) t = (('lbl * int) option,'pat * 'inf) Tlm.t
 
 let create () = Tlm.empty
 
-(* [path_of dna pat] returns the list of nodes of the pattern [pat] read in 
+(* [path_of dna pat] returns the list of nodes of the pattern [pat] read in
 prefix ordering, [dna] is the function returning the main node of a pattern *)
 
 let path_of dna =
   let rec path_of_deferred = function
     | [] -> []
     | h::tl -> pathrec tl h
-	    
+
   and pathrec deferred t =
     match dna t with
-    | None -> 
+    | None ->
 	None :: (path_of_deferred deferred)
     | Some (lbl,[]) ->
 	(Some (lbl,0))::(path_of_deferred deferred)
     | Some (lbl,(h::def_subl as v)) ->
 	(Some (lbl,List.length v))::(pathrec (def_subl@deferred) h)
-  in 
+  in
   pathrec []
-    
+
 let tm_of tm lbl =
   try [Tlm.map tm lbl, true] with Not_found -> []
-    
+
 let rec skip_arg n tm =
   if n = 0 then [tm,true]
   else
-    List.flatten 
-      (List.map 
+    List.flatten
+      (List.map
 	  (fun a -> match a with
 	  | None -> skip_arg (pred n) (Tlm.map tm a)
-	  | Some (lbl,m) -> 
-	      skip_arg (pred n + m) (Tlm.map tm a)) 
+	  | Some (lbl,m) ->
+	      skip_arg (pred n + m) (Tlm.map tm a))
 	  (Tlm.dom tm))
-      
+
 let lookup tm dna t =
   let rec lookrec t tm =
     match dna t with
     | Nothing -> tm_of tm None
     | Label(lbl,v) ->
 	tm_of tm None@
-	  (List.fold_left 
-	      (fun l c -> 
+	  (List.fold_left
+	      (fun l c ->
 		List.flatten(List.map (fun (tm, b) ->
 		  if b then lookrec c tm
 		  else [tm,b]) l))
               (tm_of tm (Some(lbl,List.length v))) v)
     | Everything -> skip_arg 1 tm
-  in 
+  in
     List.flatten (List.map (fun (tm,b) -> Tlm.xtract tm) (lookrec t tm))
 
 let add tm dna (pat,inf) =
   let p = path_of dna pat in Tlm.add tm (p,(pat,inf))
-    
+
 let rmv tm dna (pat,inf) =
   let p = path_of dna pat in Tlm.rmv tm (p,(pat,inf))
-    
+
 let app f tm = Tlm.app (fun (_,p) -> f p) tm
 

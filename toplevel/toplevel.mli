@@ -18,7 +18,7 @@ open Pcoq
 (* A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
 
-type input_buffer = { 
+type input_buffer = {
   mutable prompt : unit -> string;
   mutable str : string; (* buffer of already read characters *)
   mutable len : int;    (* number of chars in the buffer *)

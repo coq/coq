@@ -15,7 +15,7 @@ Unset Boxed Definitions.
 
 Open Scope positive_scope.
 
-Ltac clean := try (simpl; congruence). 
+Ltac clean := try (simpl; congruence).
 Ltac caseq t := generalize (refl_equal t); pattern t at -1; case t.
 
 Functional Scheme Pcompare_ind := Induction for Pcompare Sort Prop.
@@ -85,7 +85,7 @@ match m, n with
 | xO mm, xO nn => pos_eq mm nn
 | xH, xH => true
 | _, _ => false
-end. 
+end.
 
 Theorem pos_eq_refl : forall m n, pos_eq m n = true -> m = n.
 induction m;simpl;intro n;destruct n;congruence ||
@@ -120,12 +120,12 @@ Theorem pos_eq_dec_ex : forall m n,
 fix 1;intros [mm|mm|] [nn|nn|];try (simpl;congruence).
 simpl;intro e.
 elim (pos_eq_dec_ex _ _ e).
-intros x ex; rewrite ex. 
+intros x ex; rewrite ex.
 exists (f_equal xI x).
 reflexivity.
 simpl;intro e.
 elim (pos_eq_dec_ex _ _ e).
-intros x ex; rewrite ex. 
+intros x ex; rewrite ex.
 exists (f_equal xO x).
 reflexivity.
 simpl.
@@ -134,7 +134,7 @@ reflexivity.
 Qed.
 
 Fixpoint nat_eq (m n:nat) {struct m}: bool:=
-match m, n with 
+match m, n with
 O,O => true
 | S mm,S nn => nat_eq mm nn
 | _,_ => false
@@ -151,14 +151,14 @@ Defined.
 
 Fixpoint Lget (A:Set) (n:nat) (l:list A) {struct l}:option A :=
 match l with nil => None
-| x::q => 
+| x::q =>
 match n with O => Some x
 | S m => Lget A m q
 end end .
 
 Implicit Arguments Lget [A].
 
-Lemma map_app : forall (A B:Set) (f:A -> B) l m, 
+Lemma map_app : forall (A B:Set) (f:A -> B) l m,
 List.map  f (l ++ m) = List.map  f  l ++ List.map  f  m.
 induction l.
 reflexivity.
@@ -166,16 +166,16 @@ simpl.
 intro m ; apply f_equal with (list B);apply IHl.
 Qed.
 
-Lemma length_map : forall (A B:Set) (f:A -> B) l, 
+Lemma length_map : forall (A B:Set) (f:A -> B) l,
 length (List.map  f l) = length l.
 induction l.
 reflexivity.
 simpl; apply f_equal with nat;apply IHl.
 Qed.
 
-Lemma Lget_map : forall (A B:Set) (f:A -> B) i l, 
-Lget i (List.map  f l) = 
-match Lget i l with Some a => 
+Lemma Lget_map : forall (A B:Set) (f:A -> B) i l,
+Lget i (List.map  f l) =
+match Lget i l with Some a =>
 Some (f a) | None => None end.
 induction i;intros [ | x l ] ;trivial.
 simpl;auto.
@@ -190,7 +190,7 @@ reflexivity.
 auto.
 Qed.
 
-Lemma Lget_app_Some : forall (A:Set) l delta i (a: A), 
+Lemma Lget_app_Some : forall (A:Set) l delta i (a: A),
 Lget i l = Some a ->
 Lget i (l ++ delta) = Some a.
 induction l;destruct i;simpl;try congruence;auto.
@@ -208,8 +208,8 @@ Inductive Tree : Type :=
    Tempty : Tree
  | Branch0 : Tree -> Tree -> Tree
  | Branch1 : A -> Tree -> Tree -> Tree.
-        
-Fixpoint Tget (p:positive) (T:Tree) {struct p} : Poption := 
+
+Fixpoint Tget (p:positive) (T:Tree) {struct p} : Poption :=
   match T with
     Tempty => PNone
   | Branch0 T1 T2 =>
@@ -226,7 +226,7 @@ Fixpoint Tget (p:positive) (T:Tree) {struct p} : Poption :=
     end
 end.
 
-Fixpoint Tadd (p:positive) (a:A) (T:Tree) {struct p}: Tree := 
+Fixpoint Tadd (p:positive) (a:A) (T:Tree) {struct p}: Tree :=
  match T with
    | Tempty =>
        match p with
@@ -253,13 +253,13 @@ Definition mkBranch0 (T1 T2:Tree) :=
     Tempty ,Tempty => Tempty
   | _,_ => Branch0 T1 T2
   end.
-  
+
 Fixpoint Tremove (p:positive) (T:Tree) {struct p}: Tree :=
    match T with
       | Tempty => Tempty
-      | Branch0 T1 T2 => 
+      | Branch0 T1 T2 =>
         match p with
-        | xI pp => mkBranch0 T1 (Tremove pp T2)                  
+        | xI pp => mkBranch0 T1 (Tremove pp T2)
         | xO pp => mkBranch0 (Tremove pp T1) T2
         | xH => T
         end
@@ -270,8 +270,8 @@ Fixpoint Tremove (p:positive) (T:Tree) {struct p}: Tree :=
         | xH => mkBranch0 T1 T2
         end
       end.
-                                                                                                                        
- 
+
+
 Theorem Tget_Tempty: forall (p : positive), Tget p (Tempty) = PNone.
 destruct p;reflexivity.
 Qed.
@@ -293,7 +293,7 @@ generalize i;clear i;induction j;destruct T;simpl in H|-*;
 destruct i;simpl;try rewrite (IHj _ H);try (destruct i;simpl;congruence);reflexivity|| congruence.
 Qed.
 
-Record Store : Type :=  
+Record Store : Type :=
 mkStore  {index:positive;contents:Tree}.
 
 Definition empty := mkStore xH Tempty.
@@ -317,7 +317,7 @@ intros S W;induction W.
 unfold empty,index,get,contents;intros;apply Tget_Tempty.
 unfold index,get,push;simpl contents.
 intros i e;rewrite Tget_Tadd.
-rewrite (Gt_Psucc _ _ e). 
+rewrite (Gt_Psucc _ _ e).
 unfold get in IHW.
 apply IHW;apply Gt_Psucc;assumption.
 Qed.
@@ -336,8 +336,8 @@ apply get_Full_Gt; auto.
 apply Psucc_Gt.
 Qed.
 
-Theorem get_push_Full : 
-  forall i a S, Full S -> 
+Theorem get_push_Full :
+  forall i a S, Full S ->
   get i (push a S) =
   match (i ?= index S) Eq with
     Eq => PSome a
@@ -359,9 +359,9 @@ apply get_Full_Gt;auto.
 Qed.
 
 Lemma Full_push_compat : forall i a S, Full S ->
-forall x, get i S = PSome x -> 
+forall x, get i S = PSome x ->
  get i (push a S) = PSome x.
-intros i a S F x H. 
+intros i a S F x H.
 caseq ((i ?= index S) Eq);intro test.
 rewrite (Pcompare_Eq_eq _ _ test) in H.
 rewrite (get_Full_Eq _ F) in H;congruence.
@@ -372,7 +372,7 @@ assumption.
 rewrite (get_Full_Gt _ F) in H;congruence.
 Qed.
 
-Lemma Full_index_one_empty : forall S, Full S -> index S = 1 -> S=empty. 
+Lemma Full_index_one_empty : forall S, Full S -> index S = 1 -> S=empty.
 intros [ind cont] F one; inversion F.
 reflexivity.
 simpl index in one;assert (h:=Psucc_not_one (index S)).
@@ -382,7 +382,7 @@ Qed.
 Lemma push_not_empty: forall a S, (push a S) <> empty.
 intros a [ind cont];unfold push,empty.
 simpl;intro H;injection H; intros _ ; apply Psucc_not_one.
-Qed. 
+Qed.
 
 Fixpoint In (x:A) (S:Store) (F:Full S) {struct F}: Prop :=
 match F with
@@ -390,7 +390,7 @@ F_empty => False
 | F_push a SS FF => x=a \/ In x SS FF
 end.
 
-Lemma get_In : forall (x:A) (S:Store) (F:Full S) i , 
+Lemma get_In : forall (x:A) (S:Store) (F:Full S) i ,
 get i S = PSome x -> In x S F.
 induction F.
 intro i;rewrite get_empty; congruence.
@@ -432,7 +432,7 @@ Implicit Arguments F_empty [A].
 Implicit Arguments F_push [A].
 Implicit Arguments In [A].
 
-Section Map. 
+Section Map.
 
 Variables A B:Set.
 
@@ -445,8 +445,8 @@ Tempty => Tempty
 | Branch1 a t1 t2 => Branch1 (f a) (Tmap t1) (Tmap t2)
 end.
 
-Lemma Tget_Tmap: forall T i, 
-Tget i (Tmap T)= match Tget i T with PNone => PNone 
+Lemma Tget_Tmap: forall T i,
+Tget i (Tmap T)= match Tget i T with PNone => PNone
 | PSome a => PSome (f a) end.
 induction T;intro i;case i;simpl;auto.
 Defined.
@@ -459,13 +459,13 @@ Defined.
 Definition map (S:Store A) : Store B :=
 mkStore (index S) (Tmap (contents S)).
 
-Lemma get_map: forall i S, 
-get i (map S)= match get i S with PNone => PNone 
+Lemma get_map: forall i S,
+get i (map S)= match get i S with PNone => PNone
 | PSome a => PSome (f a) end.
 destruct S;unfold get,map,contents,index;apply Tget_Tmap.
 Defined.
 
-Lemma map_push: forall a S, 
+Lemma map_push: forall a S,
 map (push a S) = push (f a) (map S).
 intros a S.
 case S.
@@ -474,7 +474,7 @@ intros;rewrite Tmap_Tadd;reflexivity.
 Defined.
 
 Theorem Full_map : forall S, Full S -> Full (map S).
-intros S F. 
+intros S F.
 induction F.
 exact F_empty.
 rewrite map_push;constructor 2;assumption.

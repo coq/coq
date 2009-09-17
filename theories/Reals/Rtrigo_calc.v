@@ -18,7 +18,7 @@ Open Local Scope R_scope.
 Lemma tan_PI : tan PI = 0.
 Proof.
   unfold tan in |- *; rewrite sin_PI; rewrite cos_PI; unfold Rdiv in |- *;
-    apply Rmult_0_l. 
+    apply Rmult_0_l.
 Qed.
 
 Lemma sin_3PI2 : sin (3 * (PI / 2)) = -1.
@@ -129,7 +129,7 @@ Qed.
 Lemma R1_sqrt2_neq_0 : 1 / sqrt 2 <> 0.
 Proof.
   generalize (Rinv_neq_0_compat (sqrt 2) sqrt2_neq_0); intro H;
-    generalize (prod_neq_R0 1 (/ sqrt 2) R1_neq_R0 H); 
+    generalize (prod_neq_R0 1 (/ sqrt 2) R1_neq_R0 H);
       intro H0; assumption.
 Qed.
 
@@ -163,9 +163,9 @@ Proof.
         | generalize (Rlt_le 0 2 Hyp); intro H1; assert (Hyp2 : 0 < 3);
           [ prove_sup0
             | generalize (Rlt_le 0 3 Hyp2); intro H2;
-              generalize (lt_INR_0 1 (neq_O_lt 1 H0)); 
+              generalize (lt_INR_0 1 (neq_O_lt 1 H0));
                 unfold INR in |- *; intro H3;
-                  generalize (Rplus_lt_compat_l 2 0 1 H3); 
+                  generalize (Rplus_lt_compat_l 2 0 1 H3);
                     rewrite Rplus_comm; rewrite Rplus_0_l; replace (2 + 1) with 3;
                       [ intro H4; generalize (sqrt_lt_1 2 3 H1 H2 H4); clear H3; intro H3;
                         apply (Rlt_trans 0 (sqrt 2) (sqrt 3) Rlt_sqrt2_0 H3)
@@ -303,7 +303,7 @@ Lemma sin_2PI3 : sin (2 * (PI / 3)) = sqrt 3 / 2.
 Proof.
   rewrite double; rewrite sin_plus; rewrite sin_PI3; rewrite cos_PI3;
     unfold Rdiv in |- *; repeat rewrite Rmult_1_l; rewrite (Rmult_comm (/ 2));
-      repeat rewrite <- Rmult_assoc; rewrite double_var; 
+      repeat rewrite <- Rmult_assoc; rewrite double_var;
         reflexivity.
 Qed.
 
@@ -385,7 +385,7 @@ Proof.
       replace (PI + PI / 2) with (3 * (PI / 2)).
   rewrite Rplus_0_r; intro H2; assumption.
   pattern PI at 2 in |- *; rewrite double_var; ring.
-Qed. 
+Qed.
 
 Lemma Rlt_3PI2_2PI : 3 * (PI / 2) < 2 * PI.
 Proof.
@@ -450,7 +450,7 @@ Proof.
   left; apply sin_lb_gt_0; assumption.
   elim H1; intro.
   rewrite <- H2; unfold sin_lb in |- *; unfold sin_approx in |- *;
-    unfold sum_f_R0 in |- *; unfold sin_term in |- *; 
+    unfold sum_f_R0 in |- *; unfold sin_term in |- *;
       repeat rewrite pow_ne_zero.
   unfold Rdiv in |- *; repeat rewrite Rmult_0_l; repeat rewrite Rmult_0_r;
     repeat rewrite Rplus_0_r; right; reflexivity.

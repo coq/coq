@@ -23,7 +23,7 @@ open Typeops
 open Libnames
 open Classops
 open List
-open Recordops 
+open Recordops
 open Evarutil
 open Pretype_errors
 open Rawterm
@@ -54,7 +54,7 @@ type recursion_info = {
   f_fulltype: types; (* Type with argument and wf proof product first *)
 }
 
-let my_print_rec_info env t = 
+let my_print_rec_info env t =
   str "Name: " ++ Nameops.pr_name t.arg_name ++ spc () ++
   str "Arg type: " ++ my_print_constr env t.arg_type ++ spc () ++
   str "Wf relation: " ++ my_print_constr env t.wf_relation ++ spc () ++
@@ -65,10 +65,10 @@ let my_print_rec_info env t =
 (* 	   str " and tycon "++ my_print_tycon env tycon ++ *)
 (* 	   str " in environment: " ++ my_print_env env); *)
 
-let merge_evms x y = 
+let merge_evms x y =
   Evd.fold (fun ev evi evm -> Evd.add evm ev evi) x y
 
-let interp env isevars c tycon = 
+let interp env isevars c tycon =
   let j = pretype tycon env isevars ([],[]) c in
   let _ = isevars := Evarutil.nf_evar_defs !isevars in
   let evd,_ = consider_remaining_unif_problems env !isevars in
@@ -92,7 +92,7 @@ let coqintern_type evd env : Topconstr.constr_expr -> Rawterm.rawconstr = Constr
 
 let env_with_binders env isevars l =
   let rec aux ((env, rels) as acc) = function
-      Topconstr.LocalRawDef ((loc, name), def) :: tl -> 
+      Topconstr.LocalRawDef ((loc, name), def) :: tl ->
 	let rawdef = coqintern_constr !isevars env def in
 	let coqdef, deftyp = interp env isevars rawdef empty_tycon in
 	let reldecl = (name, Some coqdef, deftyp) in
@@ -100,10 +100,10 @@ let env_with_binders env isevars l =
     | Topconstr.LocalRawAssum (bl, k, typ) :: tl ->
 	let rawtyp = coqintern_type !isevars env typ in
 	let coqtyp, typtyp = interp env isevars rawtyp empty_tycon in
-	let acc = 
-	  List.fold_left (fun (env, rels) (loc, name) -> 
+	let acc =
+	  List.fold_left (fun (env, rels) (loc, name) ->
 			    let reldecl = (name, None, coqtyp) in
-			      (push_rel reldecl env, 
+			      (push_rel reldecl env,
 			       reldecl :: rels))
 	    (env, rels) bl
 	in aux acc tl
@@ -112,15 +112,15 @@ let env_with_binders env isevars l =
 
 let subtac_process env isevars id bl c tycon =
   let c = Command.abstract_constr_expr c bl in
-  let tycon = 
+  let tycon =
     match tycon with
 	None -> empty_tycon
-      | Some t -> 
+      | Some t ->
 	  let t = Command.generalize_constr_expr t bl in
 	  let t = coqintern_type !isevars env t in
 	  let coqt, ttyp = interp env isevars t empty_tycon in
 	    mk_tycon coqt
-  in    
+  in
   let c = coqintern_constr !isevars env c in
   let imps = Implicit_quantifiers.implicits_of_rawterm c in
   let coqc, ctyp = interp env isevars c tycon in

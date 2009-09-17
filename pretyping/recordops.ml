@@ -32,7 +32,7 @@ open Reductionops
    projection ou bien une fonction constante (associée à un LetIn) *)
 
 type struc_typ = {
-  s_CONST : constructor; 
+  s_CONST : constructor;
   s_EXPECTEDPARAM : int;
   s_PROJKIND : (name * bool) list;
   s_PROJ : constant option list }
@@ -45,19 +45,19 @@ let load_structure i (_,(ind,id,kl,projs)) =
   let struc =
     { s_CONST = id; s_EXPECTEDPARAM = n; s_PROJ = projs; s_PROJKIND = kl } in
   structure_table := Indmap.add ind struc !structure_table;
-  projection_table := 
+  projection_table :=
     List.fold_right (Option.fold_right (fun proj -> Cmap.add proj struc))
       projs !projection_table
 
 let cache_structure o =
   load_structure 1 o
 
-let subst_structure (_,subst,((kn,i),id,kl,projs as obj)) = 
+let subst_structure (_,subst,((kn,i),id,kl,projs as obj)) =
   let kn' = subst_kn subst kn in
   let projs' =
    (* invariant: struc.s_PROJ is an evaluable reference. Thus we can take *)
    (* the first component of subst_con.                                   *)
-   list_smartmap 
+   list_smartmap
      (Option.smartmap (fun kn -> fst (subst_con subst kn)))
     projs
   in
@@ -65,7 +65,7 @@ let subst_structure (_,subst,((kn,i),id,kl,projs as obj)) =
     if projs' == projs && kn' == kn && id' == id then obj else
       ((kn',i),id',kl,projs')
 
-let discharge_constructor (ind, n) = 
+let discharge_constructor (ind, n) =
   (Lib.discharge_inductive ind, n)
 
 let discharge_structure (_,(ind,id,kl,projs)) =
@@ -73,7 +73,7 @@ let discharge_structure (_,(ind,id,kl,projs)) =
         List.map (Option.map Lib.discharge_con) projs)
 
 let (inStruc,outStruc) =
-  declare_object {(default_object "STRUCTURE") with 
+  declare_object {(default_object "STRUCTURE") with
     cache_function = cache_structure;
     load_function = load_structure;
     subst_function = subst_structure;
@@ -81,7 +81,7 @@ let (inStruc,outStruc) =
     discharge_function = discharge_structure;
     export_function = (function x -> Some x) }
 
-let declare_structure (s,c,kl,pl) = 
+let declare_structure (s,c,kl,pl) =
   Lib.add_anonymous_leaf (inStruc (s,c,kl,pl))
 
 let lookup_structure indsp = Indmap.find indsp !structure_table
@@ -99,21 +99,21 @@ let find_projection = function
 (* Management of a field store : each field + argument of the inferred
  * records are stored in a discrimination tree *)
 
-let subst_id s (gr,ev,evm) = 
+let subst_id s (gr,ev,evm) =
   (fst(subst_global s gr),ev,Evd.subst_evar_map s evm)
 
-module MethodsDnet : Term_dnet.S 
+module MethodsDnet : Term_dnet.S
   with type ident = global_reference * Evd.evar * Evd.evar_map
   = Term_dnet.Make
-  (struct 
+  (struct
      type t = global_reference * Evd.evar * Evd.evar_map
      let compare = Pervasives.compare
      let subst = subst_id
      let constr_of (_,ev,evm) = Evd.evar_concl (Evd.find evm ev)
-   end) 
-  (struct 
-     let reduce c = Reductionops.head_unfold_under_prod 
-       Names.full_transparent_state (Global.env()) Evd.empty c 
+   end)
+  (struct
+     let reduce c = Reductionops.head_unfold_under_prod
+       Names.full_transparent_state (Global.env()) Evd.empty c
      let direction = true
    end)
 
@@ -121,7 +121,7 @@ let meth_dnet = ref MethodsDnet.empty
 
 open Summary
 
-let _ = 
+let _ =
   declare_summary "record-methods-state"
     { freeze_function = (fun () -> !meth_dnet);
       unfreeze_function = (fun m -> meth_dnet := m);
@@ -132,14 +132,14 @@ open Libobject
 let load_method (_,(ty,id)) =
   meth_dnet := MethodsDnet.add ty id !meth_dnet
 
-let (in_method,out_method) = 
+let (in_method,out_method) =
   declare_object
     { (default_object "RECMETHODS") with
 	load_function = (fun _ -> load_method);
 	cache_function = load_method;
 	subst_function = (fun (_,s,(ty,id)) -> Mod_subst.subst_mps s ty,subst_id s id);
 	export_function = (fun x -> Some x);
-	classify_function = (fun x -> Substitute x) 
+	classify_function = (fun x -> Substitute x)
     }
 
 let methods_matching c = MethodsDnet.search_pattern !meth_dnet c
@@ -188,7 +188,7 @@ type cs_pattern =
 
 let object_table = ref (Refmap.empty : (cs_pattern * obj_typ) list Refmap.t)
 
-let canonical_projections () = 
+let canonical_projections () =
   Refmap.fold (fun x -> List.fold_right (fun (y,c) acc -> ((x,y),c)::acc))
     !object_table []
 
@@ -198,19 +198,19 @@ let keep_true_projections projs kinds =
 
 let cs_pattern_of_constr t =
   match kind_of_term t with
-      App (f,vargs) -> 
-	begin 
+      App (f,vargs) ->
+	begin
 	  try  Const_cs (global_of_constr f) , -1, Array.to_list vargs with
-	      _ -> raise Not_found 
-	end 
+	      _ -> raise Not_found
+	end
     | Rel n -> Default_cs, pred n, []
     | Prod (_,a,b) when not (dependent (mkRel 1) b) -> Prod_cs, -1, [a;pop b]
     | Sort s -> Sort_cs (family_of_sort s), -1, []
-    | _ -> 
-	begin 
+    | _ ->
+	begin
 	  try  Const_cs (global_of_constr t) , -1, [] with
-	      _ -> raise Not_found 
-	end 
+	      _ -> raise Not_found
+	end
 
 (* Intended to always succeed *)
 let compute_canonical_projections (con,ind) =
@@ -219,7 +219,7 @@ let compute_canonical_projections (con,ind) =
   let lt,t = Reductionops.splay_lam (Global.env()) Evd.empty c in
   let lt = List.rev (List.map snd lt) in
   let args = snd (decompose_app t) in
-  let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } = 
+  let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } =
     lookup_structure ind in
   let params, projs = list_chop p args in
   let lpj = keep_true_projections lpj kl in
@@ -230,16 +230,16 @@ let compute_canonical_projections (con,ind) =
 	 match spopt with
            | Some proji_sp ->
 	       begin
-		 try 
+		 try
 		   let patt, n , args = cs_pattern_of_constr t in
 		     ((ConstRef proji_sp, patt, n, args) :: l)
-		 with Not_found -> l 
+		 with Not_found -> l
 	       end
 	   | _ -> l)
       [] lps in
   List.map (fun (refi,c,inj,argj) ->
     (refi,c),
-    {o_DEF=v; o_INJ=inj; o_TABS=lt; 
+    {o_DEF=v; o_INJ=inj; o_TABS=lt;
      o_TPARAMS=params; o_NPARAMS=List.length params; o_TCOMPS=argj})
     comp
 
@@ -265,7 +265,7 @@ let discharge_canonical_structure (_,(cst,ind)) =
   Some (Lib.discharge_con cst,Lib.discharge_inductive ind)
 
 let (inCanonStruc,outCanonStruct) =
-  declare_object {(default_object "CANONICAL-STRUCTURE") with 
+  declare_object {(default_object "CANONICAL-STRUCTURE") with
     open_function = open_canonical_structure;
     cache_function = cache_canonical_structure;
     subst_function = subst_canonical_structure;
@@ -309,7 +309,7 @@ let lookup_canonical_conversion (proj,pat) =
   List.assoc pat (Refmap.find proj !object_table)
 
 let is_open_canonical_projection sigma (c,args) =
-  try 
+  try
     let l = Refmap.find (global_of_constr c) !object_table in
     let n = (snd (List.hd l)).o_NPARAMS in
     try isEvar_or_Meta (whd_evar sigma (List.nth args n)) with Failure _ -> false
@@ -318,7 +318,7 @@ let is_open_canonical_projection sigma (c,args) =
 let freeze () =
   !structure_table, !projection_table, !object_table
 
-let unfreeze (s,p,o) = 
+let unfreeze (s,p,o) =
   structure_table := s; projection_table := p; object_table := o
 
 let init () =
@@ -327,7 +327,7 @@ let init () =
 
 let _ = init()
 
-let _ = 
+let _ =
   Summary.declare_summary "objdefs"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;

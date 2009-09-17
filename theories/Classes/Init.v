@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Initialization code for typeclasses, setting up the default tactic 
+(* Initialization code for typeclasses, setting up the default tactic
    for instance search.
 
    Author: Matthieu Sozeau
@@ -25,7 +25,7 @@ Typeclasses Opaque id const flip compose arrow impl iff not all.
 
 Ltac class_apply c := autoapply c using typeclass_instances.
 
-(** The unconvertible typeclass, to test that two objects of the same type are 
+(** The unconvertible typeclass, to test that two objects of the same type are
    actually different. *)
 
 Class Unconvertible (A : Type) (a b : A) := unconvertible : unit.

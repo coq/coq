@@ -24,8 +24,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 
 (** Default relation on a given support. Can be used by tactics
-   to find a sensible default relation on any carrier. Users can 
-   declare an [Instance def : DefaultRelation A RA] anywhere to 
+   to find a sensible default relation on any carrier. Users can
+   declare an [Instance def : DefaultRelation A RA] anywhere to
    declare default relations. *)
 
 Class DefaultRelation A (R : relation A).
@@ -60,80 +60,80 @@ Ltac setoidreplaceat H t occs :=
 Tactic Notation "setoid_replace" constr(x) "with" constr(y) :=
   setoidreplace (default_relation x y) idtac.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "at" int_or_var_list(o) :=
   setoidreplaceat (default_relation x y) idtac o.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "in" hyp(id) :=
   setoidreplacein (default_relation x y) id idtac.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
-  "in" hyp(id) 
+  "in" hyp(id)
   "at" int_or_var_list(o) :=
   setoidreplaceinat (default_relation x y) id idtac o.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "by" tactic3(t) :=
   setoidreplace (default_relation x y) ltac:t.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
-  "at" int_or_var_list(o) 
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
+  "at" int_or_var_list(o)
   "by" tactic3(t) :=
   setoidreplaceat (default_relation x y) ltac:t o.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
-  "in" hyp(id) 
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
+  "in" hyp(id)
   "by" tactic3(t) :=
   setoidreplacein (default_relation x y) id ltac:t.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
-  "in" hyp(id) 
-  "at" int_or_var_list(o) 
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
+  "in" hyp(id)
+  "at" int_or_var_list(o)
   "by" tactic3(t) :=
   setoidreplaceinat (default_relation x y) id ltac:t o.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel) :=
   setoidreplace (rel x y) idtac.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel)
   "at" int_or_var_list(o) :=
   setoidreplaceat (rel x y) idtac o.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
-  "using" "relation" constr(rel) 
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
+  "using" "relation" constr(rel)
   "by" tactic3(t) :=
   setoidreplace (rel x y) ltac:t.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
-  "using" "relation" constr(rel) 
-  "at" int_or_var_list(o)  
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
+  "using" "relation" constr(rel)
+  "at" int_or_var_list(o)
   "by" tactic3(t) :=
   setoidreplaceat (rel x y) ltac:t o.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel)
   "in" hyp(id) :=
   setoidreplacein (rel x y) id idtac.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel)
-  "in" hyp(id) 
+  "in" hyp(id)
   "at" int_or_var_list(o) :=
   setoidreplaceinat (rel x y) id idtac o.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel)
   "in" hyp(id)
   "by" tactic3(t) :=
   setoidreplacein (rel x y) id ltac:t.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
-  "using" "relation" constr(rel) 
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
+  "using" "relation" constr(rel)
   "in" hyp(id)
-  "at" int_or_var_list(o)  
+  "at" int_or_var_list(o)
   "by" tactic3(t) :=
   setoidreplaceinat (rel x y) id ltac:t o.
 

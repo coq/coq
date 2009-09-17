@@ -1,5 +1,5 @@
 Require Import Nnat.
-Require Import ArithRing. 
+Require Import ArithRing.
 Require Export Ring Field.
 Require Import Rdefinitions.
 Require Import Rpow_def.
@@ -99,7 +99,7 @@ rewrite H in |- *; intro.
 apply (Rlt_asym 0 0); trivial.
 Qed.
 
-Lemma Zeq_bool_complete : forall x y, 
+Lemma Zeq_bool_complete : forall x y,
   InitialRing.gen_phiZ 0%R 1%R Rplus Rmult Ropp x =
   InitialRing.gen_phiZ 0%R 1%R Rplus Rmult Ropp y ->
   Zeq_bool x y = true.
@@ -114,21 +114,21 @@ Qed.
 Lemma R_power_theory : power_theory 1%R Rmult (eq (A:=R))  nat_of_N pow.
 Proof.
  constructor. destruct n. reflexivity.
- simpl. induction p;simpl. 
+ simpl. induction p;simpl.
  rewrite ZL6. rewrite Rdef_pow_add;rewrite IHp. reflexivity.
  unfold nat_of_P;simpl;rewrite ZL6;rewrite Rdef_pow_add;rewrite IHp;trivial.
  rewrite Rmult_comm;apply Rmult_1_l.
 Qed.
 
-Ltac Rpow_tac t := 
+Ltac Rpow_tac t :=
   match isnatcst t with
   | false => constr:(InitialRing.NotConstant)
   | _ => constr:(N_of_nat t)
-  end. 
+  end.
 
-Add Field RField : Rfield  
+Add Field RField : Rfield
    (completeness Zeq_bool_complete, power_tac R_power_theory [Rpow_tac]).
 
 
 
- 
+

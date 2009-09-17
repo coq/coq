@@ -10,7 +10,7 @@
 
 (* Parameters of pretty-printing. *)
 
-type pp_global_params = { 
+type pp_global_params = {
   margin : int;
   max_indent : int;
   max_depth : int;
@@ -25,7 +25,7 @@ val get_gp : Format.formatter -> pp_global_params
 
 (*s Output functions of pretty-printing. *)
 
-type 'a pp_formatter_params = { 
+type 'a pp_formatter_params = {
   fp_output : out_channel;
   fp_output_function : string -> int -> int -> unit;
   fp_flush_function : unit -> unit }

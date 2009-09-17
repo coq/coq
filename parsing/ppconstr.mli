@@ -6,7 +6,7 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
- 
+
 (*i $Id$ i*)
 
 open Pp
@@ -28,11 +28,11 @@ val extract_def_binders :
   constr_expr -> constr_expr ->
   local_binder list * constr_expr * constr_expr
 val split_fix :
-  int -> constr_expr -> constr_expr -> 
+  int -> constr_expr -> constr_expr ->
   local_binder list *  constr_expr * constr_expr
 
 val prec_less : int -> int * Ppextend.parenRelation -> bool
- 
+
 val pr_tight_coma : unit -> std_ppcmds
 
 val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
@@ -60,7 +60,7 @@ val pr_red_expr :
   ('a -> std_ppcmds) * ('a -> std_ppcmds) * ('b -> std_ppcmds) ->
     ('a,'b) red_expr_gen -> std_ppcmds
 val pr_may_eval :
-  ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) -> 
+  ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
     ('a,'b) may_eval -> std_ppcmds
 
 val pr_rawsort : rawsort -> std_ppcmds
@@ -82,9 +82,9 @@ type term_pr = {
 val set_term_pr : term_pr -> unit
 val default_term_pr : term_pr
 
-(* The modular constr printer. 
+(* The modular constr printer.
     [modular_constr_pr pr s p t] prints the head of the term [t] and calls
-    [pr] on its subterms. 
+    [pr] on its subterms.
     [s] is typically {!Pp.mt} and [p] is [lsimple] for "constr" printers and [ltop]
     for "lconstr" printers (spiwack: we might need more specification here).
     We can make a new modular constr printer by overriding certain branches,
@@ -92,13 +92,13 @@ val default_term_pr : term_pr
     instead we can proceed as follows:
     let my_modular_constr_pr pr s p = function
       | CSort (_,RProp Null) -> str "Omega"
-      | t -> modular_constr_pr pr s p t 
+      | t -> modular_constr_pr pr s p t
     Which has the same type. We can turn a modular printer into a printer by
     taking its fixpoint. *)
 
 type precedence
 val lsimple : precedence
 val ltop : precedence
-val modular_constr_pr : 
-               ((unit->std_ppcmds) -> precedence -> constr_expr -> std_ppcmds) -> 
+val modular_constr_pr :
+               ((unit->std_ppcmds) -> precedence -> constr_expr -> std_ppcmds) ->
                 (unit->std_ppcmds) -> precedence  -> constr_expr -> std_ppcmds

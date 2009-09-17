@@ -49,7 +49,7 @@ Proof.
       [ tauto
 	| intros H3; right; unfold not in |- *; intros H4; elim H3; rewrite (H2 H4);
 	  intros H5; discriminate H5 ].
-Qed. 
+Qed.
 
 Theorem dec_Zne : forall n m:Z, decidable (Zne n m).
 Proof.
@@ -79,7 +79,7 @@ Proof.
   intros x y; unfold decidable, Zge in |- *; elim (x ?= y);
     [ left; discriminate
       | right; unfold not in |- *; intros H; apply H; trivial with arith
-      | left; discriminate ]. 
+      | left; discriminate ].
 Qed.
 
 Theorem dec_Zlt : forall n m:Z, decidable (n < m).
@@ -96,7 +96,7 @@ Proof.
       | unfold Zlt in |- *; intros H; elim H; intros H1;
 	[ auto with arith
 	  | right; elim (Zcompare_Gt_Lt_antisym x y); auto with arith ] ].
-Qed. 
+Qed.
 
 (** * Relating strict and large orders *)
 
@@ -180,7 +180,7 @@ Proof.
   intros x y. split. intro. apply Zgt_lt. assumption.
   intro. apply Zlt_gt. assumption.
 Qed.
- 
+
 (** * Equivalence and order properties *)
 
 (** Reflexivity *)
@@ -188,7 +188,7 @@ Qed.
 Lemma Zle_refl : forall n:Z, n <= n.
 Proof.
   intros n; unfold Zle in |- *; rewrite (Zcompare_refl n); discriminate.
-Qed. 
+Qed.
 
 Lemma Zeq_le : forall n m:Z, n = m -> n <= m.
 Proof.
@@ -201,7 +201,7 @@ Hint Resolve Zle_refl: zarith.
 
 Lemma Zle_antisym : forall n m:Z, n <= m -> m <= n -> n = m.
 Proof.
-  intros n m H1 H2; destruct (Ztrichotomy n m) as [Hlt| [Heq| Hgt]]. 
+  intros n m H1 H2; destruct (Ztrichotomy n m) as [Hlt| [Heq| Hgt]].
   absurd (m > n); [ apply Zle_not_gt | apply Zlt_gt ]; assumption.
   assumption.
   absurd (n > m); [ apply Zle_not_gt | idtac ]; assumption.
@@ -399,7 +399,7 @@ Qed.
 Lemma Zgt_le_succ : forall n m:Z, m > n -> Zsucc n <= m.
 Proof.
   unfold Zgt, Zle in |- *; intros n p H; elim (Zcompare_Gt_not_Lt p n);
-    intros H1 H2; unfold not in |- *; intros H3; unfold not in H1; 
+    intros H1 H2; unfold not in |- *; intros H3; unfold not in H1;
       apply H1;
 	[ assumption
 	  | elim (Zcompare_Gt_Lt_antisym (n + 1) p); intros H4 H5; apply H4; exact H3 ].
@@ -477,9 +477,9 @@ Hint Resolve Zle_le_succ: zarith.
 Lemma Zgt_succ_pred : forall n m:Z, m > Zsucc n -> Zpred m > n.
 Proof.
   unfold Zgt, Zsucc, Zpred in |- *; intros n p H;
-    rewrite <- (fun x y => Zcompare_plus_compat x y 1); 
+    rewrite <- (fun x y => Zcompare_plus_compat x y 1);
       rewrite (Zplus_comm p); rewrite Zplus_assoc;
-	rewrite (fun x => Zplus_comm x n); simpl in |- *; 
+	rewrite (fun x => Zplus_comm x n); simpl in |- *;
 	  assumption.
 Qed.
 
@@ -562,7 +562,7 @@ Proof.
   assert (Hle : m <= n).
   apply Zgt_succ_le; assumption.
   destruct (Zle_lt_or_eq _ _ Hle) as [Hlt| Heq].
-  left; apply Zlt_gt; assumption.  
+  left; apply Zlt_gt; assumption.
   right; assumption.
 Qed.
 
@@ -679,7 +679,7 @@ Proof.
   rewrite (Zplus_comm p n); rewrite (Zplus_comm p m); trivial.
 Qed.
 
-(** ** Multiplication *) 
+(** ** Multiplication *)
 (** Compatibility of multiplication by a positive wrt to order *)
 
 Lemma Zmult_le_compat_r : forall n m p:Z, n <= m -> 0 <= p -> n * p <= m * p.
@@ -776,7 +776,7 @@ Proof.
   intros a b c d H0 H1 H2 H3.
   apply Zge_trans with (a * d).
   apply Zmult_ge_compat_l; trivial.
-  apply Zge_trans with c; trivial. 
+  apply Zge_trans with c; trivial.
   apply Zmult_ge_compat_r; trivial.
 Qed.
 
@@ -964,17 +964,17 @@ Qed.
 
 Lemma Zeq_plus_swap : forall n m p:Z, n + p = m <-> n = m - p.
 Proof.
-  intros x y z; intros. split. intro. apply Zplus_minus_eq. symmetry  in |- *. rewrite Zplus_comm. 
+  intros x y z; intros. split. intro. apply Zplus_minus_eq. symmetry  in |- *. rewrite Zplus_comm.
   assumption.
-  intro. rewrite H. unfold Zminus in |- *. rewrite Zplus_assoc_reverse. 
+  intro. rewrite H. unfold Zminus in |- *. rewrite Zplus_assoc_reverse.
   rewrite Zplus_opp_l. apply Zplus_0_r.
 Qed.
 
 Lemma Zlt_minus_simpl_swap : forall n m:Z, 0 < m -> n - m < n.
 Proof.
   intros n m H; apply Zplus_lt_reg_l with (p := m); rewrite Zplus_minus;
-    pattern n at 1 in |- *; rewrite <- (Zplus_0_r n); 
-      rewrite (Zplus_comm m n); apply Zplus_lt_compat_l; 
+    pattern n at 1 in |- *; rewrite <- (Zplus_0_r n);
+      rewrite (Zplus_comm m n); apply Zplus_lt_compat_l;
 	assumption.
 Qed.
 
@@ -992,8 +992,8 @@ Qed.
 
 Lemma Zle_minus_le_0 : forall n m:Z, m <= n -> 0 <= n - m.
 Proof.
-  intros n m H; unfold Zminus; apply Zplus_le_reg_r with (p := m); 
-    rewrite <- Zplus_assoc; rewrite Zplus_opp_l; rewrite Zplus_0_r; exact H. 
+  intros n m H; unfold Zminus; apply Zplus_le_reg_r with (p := m);
+    rewrite <- Zplus_assoc; rewrite Zplus_opp_l; rewrite Zplus_0_r; exact H.
 Qed.
 
 Lemma Zmult_lt_compat:
@@ -1011,7 +1011,7 @@ Proof.
   rewrite <- H5; simpl; apply Zmult_lt_0_compat; auto with zarith.
 Qed.
 
-Lemma Zmult_lt_compat2: 
+Lemma Zmult_lt_compat2:
   forall n m p q : Z, 0 < n <= p -> 0 < m < q -> n * m < p * q.
 Proof.
   intros n m p q (H1, H2) (H3, H4).

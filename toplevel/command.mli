@@ -40,17 +40,17 @@ val declare_definition : identifier -> definition_kind ->
   local_binder list -> red_expr option -> constr_expr ->
   constr_expr option -> declaration_hook -> unit
 
-val syntax_definition : identifier -> identifier list * constr_expr -> 
+val syntax_definition : identifier -> identifier list * constr_expr ->
   bool -> bool -> unit
 
 val declare_one_assumption : coercion_flag -> assumption_kind -> Term.types ->
   Impargs.manual_explicitation list ->
   bool (* implicit *) -> bool (* inline *) -> Names.variable located  -> unit
-  
+
 val set_declare_assumption_hook : (types -> unit) -> unit
 
 val declare_assumption : identifier located list ->
-  coercion_flag -> assumption_kind -> local_binder list -> constr_expr -> 
+  coercion_flag -> assumption_kind -> local_binder list -> constr_expr ->
   bool -> bool -> unit
 
 val open_temp_scopes : Topconstr.scope_name option -> unit
@@ -58,7 +58,7 @@ val open_temp_scopes : Topconstr.scope_name option -> unit
 val declare_interning_data : 'a * Constrintern.implicits_env ->
     string * Topconstr.constr_expr * Topconstr.scope_name option -> unit
 
-val compute_interning_datas : Environ.env -> Constrintern.var_internalisation_type -> 
+val compute_interning_datas : Environ.env -> Constrintern.var_internalisation_type ->
   'a list -> 'b list ->
   Term.types list ->Impargs.manual_explicitation list list ->
   'a list *
@@ -69,11 +69,11 @@ val compute_interning_datas : Environ.env -> Constrintern.var_internalisation_ty
 val check_mutuality : Environ.env -> definition_object_kind ->
   (identifier * types) list -> unit
 
-val build_mutual : ((lident * local_binder list * constr_expr option * constructor_expr list) * 
+val build_mutual : ((lident * local_binder list * constr_expr option * constructor_expr list) *
 		                decl_notation) list -> bool -> unit
 
 val declare_mutual_with_eliminations :
-  bool -> Entries.mutual_inductive_entry -> 
+  bool -> Entries.mutual_inductive_entry ->
   (Impargs.manual_explicitation list *
       Impargs.manual_explicitation list list) list ->
   mutual_inductive
@@ -91,7 +91,7 @@ type fixpoint_expr = {
 
 val recursive_message : definition_object_kind ->
   int array option -> identifier list -> Pp.std_ppcmds
-  
+
 val declare_fix : bool -> definition_object_kind -> identifier ->
   constr -> types -> Impargs.manual_explicitation list -> global_reference
 
@@ -113,7 +113,7 @@ val set_start_hook : (types -> unit) -> unit
 val start_proof : identifier -> goal_kind -> types ->
   ?init_tac:Proof_type.tactic -> ?compute_guard:bool -> declaration_hook -> unit
 
-val start_proof_com : goal_kind -> 
+val start_proof_com : goal_kind ->
   (lident option * (local_binder list * constr_expr)) list ->
   declaration_hook -> unit
 

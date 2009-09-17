@@ -39,15 +39,15 @@ Lemma cont_deriv :
     D_in f d D x0 -> continue_in f D x0.
 Proof.
   unfold continue_in in |- *; unfold D_in in |- *; unfold limit1_in in |- *;
-    unfold limit_in in |- *; unfold Rdiv in |- *; simpl in |- *; 
-      intros; elim (H eps H0); clear H; intros; elim H; 
+    unfold limit_in in |- *; unfold Rdiv in |- *; simpl in |- *;
+      intros; elim (H eps H0); clear H; intros; elim H;
         clear H; intros; elim (Req_dec (d x0) 0); intro.
   split with (Rmin 1 x); split.
   elim (Rmin_Rgt 1 x 0); intros a b; apply (b (conj Rlt_0_1 H)).
   intros; elim H3; clear H3; intros;
     generalize (let (H1, H2) := Rmin_Rgt 1 x (R_dist x1 x0) in H1);
-      unfold Rgt in |- *; intro; elim (H5 H4); clear H5; 
-        intros; generalize (H1 x1 (conj H3 H6)); clear H1; 
+      unfold Rgt in |- *; intro; elim (H5 H4); clear H5;
+        intros; generalize (H1 x1 (conj H3 H6)); clear H1;
           intro; unfold D_x in H3; elim H3; intros.
   rewrite H2 in H1; unfold R_dist in |- *; unfold R_dist in H1;
     cut (Rabs (f x1 - f x0) < eps * Rabs (x1 - x0)).
@@ -84,10 +84,10 @@ Proof.
     generalize
       (let (H1, H2) :=
         Rmin_Rgt (Rmin (/ 2) x) (eps * / Rabs (2 * d x0)) (R_dist x1 x0) in
-        H1); unfold Rgt in |- *; intro; elim (H5 H4); clear H5; 
+        H1); unfold Rgt in |- *; intro; elim (H5 H4); clear H5;
       intros; generalize (let (H1, H2) := Rmin_Rgt (/ 2) x (R_dist x1 x0) in H1);
-        unfold Rgt in |- *; intro; elim (H7 H5); clear H7; 
-          intros; clear H4 H5; generalize (H1 x1 (conj H3 H8)); 
+        unfold Rgt in |- *; intro; elim (H7 H5); clear H7;
+          intros; clear H4 H5; generalize (H1 x1 (conj H3 H8));
             clear H1; intro; unfold D_x in H3; elim H3; intros;
               generalize (sym_not_eq H5); clear H5; intro H5;
                 generalize (Rminus_eq_contra x1 x0 H5); intro; generalize H1;
@@ -114,11 +114,11 @@ Proof.
                                               rewrite (Rinv_r (Rabs (x1 - x0)) (Rabs_no_R0 (x1 - x0) H9));
                                                 rewrite
                                                   (let (H1, H2) := Rmult_ne (Rabs (f x1 - f x0 + (x1 - x0) * - d x0)) in H2)
-                                                  ; generalize (Rabs_triang_inv (f x1 - f x0) ((x1 - x0) * d x0)); 
+                                                  ; generalize (Rabs_triang_inv (f x1 - f x0) ((x1 - x0) * d x0));
                                                     intro; rewrite (Rmult_comm (x1 - x0) (- d x0));
                                                       rewrite (Ropp_mult_distr_l_reverse (d x0) (x1 - x0));
                                                         fold (f x1 - f x0 - d x0 * (x1 - x0)) in |- *;
-                                                          rewrite (Rmult_comm (x1 - x0) (d x0)) in H10; clear H1; 
+                                                          rewrite (Rmult_comm (x1 - x0) (d x0)) in H10; clear H1;
                                                             intro;
                                                               generalize
                                                                 (Rle_lt_trans (Rabs (f x1 - f x0) - Rabs (d x0 * (x1 - x0)))
@@ -132,15 +132,15 @@ Proof.
                                                                       rewrite <-
                                                                         (Rplus_assoc (Rabs (d x0 * (x1 - x0))) (- Rabs (d x0 * (x1 - x0)))
                                                                           (Rabs (f x1 - f x0))); rewrite (Rplus_opp_r (Rabs (d x0 * (x1 - x0))));
-                                                                        rewrite (let (H1, H2) := Rplus_ne (Rabs (f x1 - f x0)) in H2); 
+                                                                        rewrite (let (H1, H2) := Rplus_ne (Rabs (f x1 - f x0)) in H2);
                                                                           clear H1; intro; cut (Rabs (d x0 * (x1 - x0)) + Rabs (x1 - x0) * eps < eps).
   intro;
     apply
       (Rlt_trans (Rabs (f x1 - f x0))
-        (Rabs (d x0 * (x1 - x0)) + Rabs (x1 - x0) * eps) eps H1 H11). 
+        (Rabs (d x0 * (x1 - x0)) + Rabs (x1 - x0) * eps) eps H1 H11).
   clear H1 H5 H3 H10; generalize (Rabs_pos_lt (d x0) H2); intro;
     unfold Rgt in H0;
-      generalize (Rmult_lt_compat_l eps (R_dist x1 x0) (/ 2) H0 H7); 
+      generalize (Rmult_lt_compat_l eps (R_dist x1 x0) (/ 2) H0 H7);
         clear H7; intro;
           generalize
             (Rmult_lt_compat_l (Rabs (d x0)) (R_dist x1 x0) (
@@ -164,7 +164,7 @@ Proof.
   intro; rewrite H7 in H5;
     generalize
       (Rplus_lt_compat (Rabs (d x0 * (x1 - x0))) (eps * / 2)
-        (Rabs (x1 - x0) * eps) (eps * / 2) H5 H3); intro; 
+        (Rabs (x1 - x0) * eps) (eps * / 2) H5 H3); intro;
       rewrite eps2 in H10; assumption.
   unfold Rabs in |- *; case (Rcase_abs 2); auto.
   intro; cut (0 < 2).
@@ -180,7 +180,7 @@ Lemma Dconst :
   forall (D:R -> Prop) (y x0:R), D_in (fun x:R => y) (fun x:R => 0) D x0.
 Proof.
   unfold D_in in |- *; intros; unfold limit1_in in |- *;
-    unfold limit_in in |- *; unfold Rdiv in |- *; intros; 
+    unfold limit_in in |- *; unfold Rdiv in |- *; intros;
       simpl in |- *; split with eps; split; auto.
   intros; rewrite (Rminus_diag_eq y y (refl_equal y)); rewrite Rmult_0_l;
     unfold R_dist in |- *; rewrite (Rminus_diag_eq 0 0 (refl_equal 0));
@@ -195,7 +195,7 @@ Lemma Dx :
   forall (D:R -> Prop) (x0:R), D_in (fun x:R => x) (fun x:R => 1) D x0.
 Proof.
   unfold D_in in |- *; unfold Rdiv in |- *; intros; unfold limit1_in in |- *;
-    unfold limit_in in |- *; intros; simpl in |- *; split with eps; 
+    unfold limit_in in |- *; intros; simpl in |- *; split with eps;
       split; auto.
   intros; elim H0; clear H0; intros; unfold D_x in H0; elim H0; intros;
     rewrite (Rinv_r (x - x0) (Rminus_eq_contra x x0 (sym_not_eq H3)));
@@ -204,7 +204,7 @@ Proof.
   absurd (0 < 0); auto.
   red in |- *; intro; apply (Rlt_irrefl 0 r).
   unfold Rgt in H; assumption.
-Qed. 
+Qed.
 
 (*********)
 Lemma Dadd :
@@ -218,9 +218,9 @@ Proof.
       (limit_plus (fun x:R => (f x - f x0) * / (x - x0))
         (fun x:R => (g x - g x0) * / (x - x0)) (D_x D x0) (
           df x0) (dg x0) x0 H H0); clear H H0; unfold limit1_in in |- *;
-      unfold limit_in in |- *; simpl in |- *; intros; elim (H eps H0); 
-        clear H; intros; elim H; clear H; intros; split with x; 
-          split; auto; intros; generalize (H1 x1 H2); clear H1; 
+      unfold limit_in in |- *; simpl in |- *; intros; elim (H eps H0);
+        clear H; intros; elim H; clear H; intros; split with x;
+          split; auto; intros; generalize (H1 x1 H2); clear H1;
             intro; rewrite (Rmult_comm (f x1 - f x0) (/ (x1 - x0))) in H1;
               rewrite (Rmult_comm (g x1 - g x0) (/ (x1 - x0))) in H1;
                 rewrite <- (Rmult_plus_distr_l (/ (x1 - x0)) (f x1 - f x0) (g x1 - g x0))
@@ -239,11 +239,11 @@ Lemma Dmult :
     D_in (fun x:R => f x * g x) (fun x:R => df x * g x + f x * dg x) D x0.
 Proof.
   intros; unfold D_in in |- *; generalize H H0; intros; unfold D_in in H, H0;
-    generalize (cont_deriv f df D x0 H1); unfold continue_in in |- *; 
+    generalize (cont_deriv f df D x0 H1); unfold continue_in in |- *;
       intro;
         generalize
           (limit_mul (fun x:R => (g x - g x0) * / (x - x0)) (
-            fun x:R => f x) (D_x D x0) (dg x0) (f x0) x0 H0 H3); 
+            fun x:R => f x) (D_x D x0) (dg x0) (f x0) x0 H0 H3);
           intro; cut (limit1_in (fun x:R => g x0) (D_x D x0) (g x0) x0).
   intro;
     generalize
@@ -253,11 +253,11 @@ Proof.
         generalize
           (limit_plus (fun x:R => (f x - f x0) * / (x - x0) * g x0)
             (fun x:R => (g x - g x0) * / (x - x0) * f x) (
-              D_x D x0) (df x0 * g x0) (dg x0 * f x0) x0 H H4); 
-          clear H4 H; intro; unfold limit1_in in H; unfold limit_in in H; 
-            simpl in H; unfold limit1_in in |- *; unfold limit_in in |- *; 
-              simpl in |- *; intros; elim (H eps H0); clear H; intros; 
-                elim H; clear H; intros; split with x; split; auto; 
+              D_x D x0) (df x0 * g x0) (dg x0 * f x0) x0 H H4);
+          clear H4 H; intro; unfold limit1_in in H; unfold limit_in in H;
+            simpl in H; unfold limit1_in in |- *; unfold limit_in in |- *;
+              simpl in |- *; intros; elim (H eps H0); clear H; intros;
+                elim H; clear H; intros; split with x; split; auto;
                   intros; generalize (H1 x1 H2); clear H1; intro;
                     rewrite (Rmult_comm (f x1 - f x0) (/ (x1 - x0))) in H1;
                       rewrite (Rmult_comm (g x1 - g x0) (/ (x1 - x0))) in H1;
@@ -275,7 +275,7 @@ Proof.
   ring.
   unfold limit1_in in |- *; unfold limit_in in |- *; simpl in |- *; intros;
     split with eps; split; auto; intros; elim (R_dist_refl (g x0) (g x0));
-      intros a b; rewrite (b (refl_equal (g x0))); unfold Rgt in H; 
+      intros a b; rewrite (b (refl_equal (g x0))); unfold Rgt in H;
         assumption.
 Qed.
 
@@ -287,7 +287,7 @@ Proof.
   intros;
     generalize (Dmult D (fun _:R => 0) df (fun _:R => a) f x0 (Dconst D a x0) H);
       unfold D_in in |- *; intros; rewrite (Rmult_0_l (f x0)) in H0;
-        rewrite (let (H1, H2) := Rplus_ne (a * df x0) in H2) in H0; 
+        rewrite (let (H1, H2) := Rplus_ne (a * df x0) in H2) in H0;
           assumption.
 Qed.
 
@@ -297,9 +297,9 @@ Lemma Dopp :
     D_in f df D x0 -> D_in (fun x:R => - f x) (fun x:R => - df x) D x0.
 Proof.
   intros; generalize (Dmult_const D f df x0 (-1) H); unfold D_in in |- *;
-    unfold limit1_in in |- *; unfold limit_in in |- *; 
-      intros; generalize (H0 eps H1); clear H0; intro; elim H0; 
-        clear H0; intros; elim H0; clear H0; simpl in |- *; 
+    unfold limit1_in in |- *; unfold limit_in in |- *;
+      intros; generalize (H0 eps H1); clear H0; intro; elim H0;
+        clear H0; intros; elim H0; clear H0; simpl in |- *;
           intros; split with x; split; auto.
   intros; generalize (H2 x1 H3); clear H2; intro;
     rewrite Ropp_mult_distr_l_reverse in H2;
@@ -307,7 +307,7 @@ Proof.
         rewrite Ropp_mult_distr_l_reverse in H2;
           rewrite (let (H1, H2) := Rmult_ne (f x1) in H2) in H2;
             rewrite (let (H1, H2) := Rmult_ne (f x0) in H2) in H2;
-              rewrite (let (H1, H2) := Rmult_ne (df x0) in H2) in H2; 
+              rewrite (let (H1, H2) := Rmult_ne (df x0) in H2) in H2;
                 assumption.
 Qed.
 
@@ -319,8 +319,8 @@ Lemma Dminus :
     D_in (fun x:R => f x - g x) (fun x:R => df x - dg x) D x0.
 Proof.
   unfold Rminus in |- *; intros; generalize (Dopp D g dg x0 H0); intro;
-    apply (Dadd D df (fun x:R => - dg x) f (fun x:R => - g x) x0); 
-      assumption. 
+    apply (Dadd D df (fun x:R => - dg x) f (fun x:R => - g x) x0);
+      assumption.
 Qed.
 
 (*********)
@@ -336,8 +336,8 @@ Proof.
     (Dmult D (fun _:R => 1) (fun x:R => INR n0 * x ^ (n0 - 1)) (
       fun x:R => x) (fun x:R => x ^ n0) x0 (Dx D x0) (
         H D x0)); unfold D_in in |- *; unfold limit1_in in |- *;
-    unfold limit_in in |- *; simpl in |- *; intros; elim (H0 eps H1); 
-      clear H0; intros; elim H0; clear H0; intros; split with x; 
+    unfold limit_in in |- *; simpl in |- *; intros; elim (H0 eps H1);
+      clear H0; intros; elim H0; clear H0; intros; split with x;
         split; auto.
   intros; generalize (H2 x1 H3); clear H2 H3; intro;
     rewrite (let (H1, H2) := Rmult_ne (x0 ^ n0) in H2) in H2;
@@ -365,9 +365,9 @@ Proof.
     unfold Rdiv in |- *; intros;
       generalize
         (limit_comp f (fun x:R => (g x - g (f x0)) * / (x - f x0)) (
-          D_x Df x0) (D_x Dg (f x0)) (f x0) (dg (f x0)) x0); 
-        intro; generalize (cont_deriv f df Df x0 H); intro; 
-          unfold continue_in in H4; generalize (H3 H4 H2); clear H3; 
+          D_x Df x0) (D_x Dg (f x0)) (f x0) (dg (f x0)) x0);
+        intro; generalize (cont_deriv f df Df x0 H); intro;
+          unfold continue_in in H4; generalize (H3 H4 H2); clear H3;
             intro;
               generalize
                 (limit_mul (fun x:R => (g (f x) - g (f x0)) * / (f x - f x0))
@@ -381,16 +381,16 @@ Proof.
     generalize
       (limit_mul (fun x:R => (f x - f x0) * / (x - x0)) (
         fun x:R => dg (f x0)) (D_x Df x0) (df x0) (dg (f x0)) x0 H1
-      (limit_free (fun x:R => dg (f x0)) (D_x Df x0) x0 x0)); 
-      intro; unfold limit1_in in |- *; unfold limit_in in |- *; 
+      (limit_free (fun x:R => dg (f x0)) (D_x Df x0) x0 x0));
+      intro; unfold limit1_in in |- *; unfold limit_in in |- *;
         simpl in |- *; unfold limit1_in in H5, H7; unfold limit_in in H5, H7;
-          simpl in H5, H7; intros; elim (H5 eps H8); elim (H7 eps H8); 
-            clear H5 H7; intros; elim H5; elim H7; clear H5 H7; 
+          simpl in H5, H7; intros; elim (H5 eps H8); elim (H7 eps H8);
+            clear H5 H7; intros; elim H5; elim H7; clear H5 H7;
               intros; split with (Rmin x x1); split.
   elim (Rmin_Rgt x x1 0); intros a b; apply (b (conj H9 H5)); clear a b.
   intros; elim H11; clear H11; intros; elim (Rmin_Rgt x x1 (R_dist x2 x0));
-    intros a b; clear b; unfold Rgt in a; elim (a H12); 
-      clear H5 a; intros; unfold D_x, Dgf in H11, H7, H10; 
+    intros a b; clear b; unfold Rgt in a; elim (a H12);
+      clear H5 a; intros; unfold D_x, Dgf in H11, H7, H10;
         clear H12; elim (classic (f x2 = f x0)); intro.
   elim H11; clear H11; intros; elim H11; clear H11; intros;
     generalize (H10 x2 (conj (conj H11 H14) H5)); intro;
@@ -412,12 +412,12 @@ Proof.
                 rewrite (let (H1, H2) := Rmult_ne (/ (x2 - x0)) in H2) in H15;
                   rewrite (Rmult_comm (df x0) (dg (f x0))); assumption.
   clear H5 H3 H4 H2; unfold limit1_in in |- *; unfold limit_in in |- *;
-    simpl in |- *; unfold limit1_in in H1; unfold limit_in in H1; 
-      simpl in H1; intros; elim (H1 eps H2); clear H1; intros; 
-        elim H1; clear H1; intros; split with x; split; auto; 
-          intros; unfold D_x, Dgf in H4, H3; elim H4; clear H4; 
+    simpl in |- *; unfold limit1_in in H1; unfold limit_in in H1;
+      simpl in H1; intros; elim (H1 eps H2); clear H1; intros;
+        elim H1; clear H1; intros; split with x; split; auto;
+          intros; unfold D_x, Dgf in H4, H3; elim H4; clear H4;
             intros; elim H4; clear H4; intros; exact (H3 x1 (conj H4 H5)).
-Qed.   
+Qed.
 
 (*********)
 Lemma D_pow_n :
@@ -430,11 +430,11 @@ Proof.
   intros n D x0 expr dexpr H;
     generalize
       (Dcomp D D dexpr (fun x:R => INR n * x ^ (n - 1)) expr (
-        fun x:R => x ^ n) x0 H (Dx_pow_n n D (expr x0))); 
+        fun x:R => x ^ n) x0 H (Dx_pow_n n D (expr x0)));
       intro; unfold D_in in |- *; unfold limit1_in in |- *;
         unfold limit_in in |- *; simpl in |- *; intros; unfold D_in in H0;
-          unfold limit1_in in H0; unfold limit_in in H0; simpl in H0; 
-            elim (H0 eps H1); clear H0; intros; elim H0; clear H0; 
+          unfold limit1_in in H0; unfold limit_in in H0; simpl in H0;
+            elim (H0 eps H1); clear H0; intros; elim H0; clear H0;
               intros; split with x; split; intros; auto.
   cut
     (dexpr x0 * (INR n * expr x0 ^ (n - 1)) =

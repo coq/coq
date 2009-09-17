@@ -111,7 +111,7 @@ let modifiers_to_string m =
                   ) ^ s)
   in
     iter m ""
-      
+
 let value_to_key v =
   match v with
     Raw.String s -> string_to_key s
@@ -233,7 +233,7 @@ type hotkey_param = {
 
 type modifiers_param = {
     md_label : string ; (** the label of the parameter *)
-    mutable md_value : Gdk.Tags.modifier list ; 
+    mutable md_value : Gdk.Tags.modifier list ;
              (** The value, as a list of modifiers and a key code *)
     md_editable : bool ; (** indicates if the value can be changed *)
     md_f_apply : Gdk.Tags.modifier list -> unit ;
@@ -241,7 +241,7 @@ type modifiers_param = {
     md_help : string option ; (** optional help string *)
     md_expand : bool ; (** expand or not *)
     md_allow : Gdk.Tags.modifier list
-  } 
+  }
 
 
 let mk_custom_text_string_param (a : 'a string_param) : string string_param =

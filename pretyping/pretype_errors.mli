@@ -27,7 +27,7 @@ type pretype_error =
   (* Unification *)
   | OccurCheck of existential_key * constr
   | NotClean of existential_key * constr * Evd.hole_kind
-  | UnsolvableImplicit of Evd.evar_info * Evd.hole_kind * 
+  | UnsolvableImplicit of Evd.evar_info * Evd.hole_kind *
       Evd.unsolvability_explanation option
   | CannotUnify of constr * constr
   | CannotUnifyLocal of constr * constr * constr
@@ -59,22 +59,22 @@ val tj_nf_evar :
 val error_actual_type_loc :
   loc -> env ->  Evd.evar_map -> unsafe_judgment -> constr -> 'b
 
-val error_cant_apply_not_functional_loc : 
+val error_cant_apply_not_functional_loc :
   loc -> env ->  Evd.evar_map ->
       unsafe_judgment -> unsafe_judgment list -> 'b
 
-val error_cant_apply_bad_type_loc : 
-  loc -> env ->  Evd.evar_map -> int * constr * constr -> 
+val error_cant_apply_bad_type_loc :
+  loc -> env ->  Evd.evar_map -> int * constr * constr ->
       unsafe_judgment -> unsafe_judgment list -> 'b
 
 val error_case_not_inductive_loc :
   loc -> env ->  Evd.evar_map -> unsafe_judgment -> 'b
 
-val error_ill_formed_branch_loc : 
+val error_ill_formed_branch_loc :
   loc -> env ->  Evd.evar_map ->
       constr -> int -> constr -> constr -> 'b
 
-val error_number_branches_loc : 
+val error_number_branches_loc :
   loc -> env ->  Evd.evar_map ->
       unsafe_judgment -> int -> 'b
 
@@ -95,7 +95,7 @@ val error_not_clean :
   env -> Evd.evar_map -> existential_key -> constr -> loc * Evd.hole_kind -> 'b
 
 val error_unsolvable_implicit :
-  loc -> env -> Evd.evar_map -> Evd.evar_info -> Evd.hole_kind -> 
+  loc -> env -> Evd.evar_map -> Evd.evar_info -> Evd.hole_kind ->
       Evd.unsolvability_explanation option -> 'b
 
 val error_cannot_unify : env -> Evd.evar_map -> constr * constr -> 'b

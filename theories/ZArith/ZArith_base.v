@@ -9,7 +9,7 @@
 (* $Id$ *)
 
 (** Library for manipulating integers based on binary encoding.
-    These are the basic modules, required by [Omega] and [Ring] for instance. 
+    These are the basic modules, required by [Omega] and [Ring] for instance.
     The full library is [ZArith]. *)
 
 Require Export BinPos.

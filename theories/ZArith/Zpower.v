@@ -20,7 +20,7 @@ Infix "^" := Zpower : Z_scope.
 (** * Definition of powers over [Z]*)
 
 (** [Zpower_nat z n] is the n-th power of [z] when [n] is an unary
-    integer (type [nat]) and [z] a signed integer (type [Z]) *) 
+    integer (type [nat]) and [z] a signed integer (type [Z]) *)
 
 Definition Zpower_nat (z:Z) (n:nat) := iter_nat n Z (fun x:Z => z * x) 1.
 
@@ -83,12 +83,12 @@ Section Powers_of_2.
   (** For the powers of two, that will be widely used, a more direct
       calculus is possible. We will also prove some properties such
       as [(x:positive) x < 2^x] that are true for all integers bigger
-      than 2 but more difficult to prove and useless. *)     
+      than 2 but more difficult to prove and useless. *)
 
   (** [shift n m] computes [2^n * m], or [m] shifted by [n] positions *)
 
-  Definition shift_nat (n:nat) (z:positive) := iter_nat n positive xO z. 
-  Definition shift_pos (n z:positive) := iter_pos n positive xO z. 
+  Definition shift_nat (n:nat) (z:positive) := iter_nat n positive xO z.
+  Definition shift_pos (n z:positive) := iter_pos n positive xO z.
   Definition shift (n:Z) (z:positive) :=
     match n with
       | Z0 => z
@@ -130,7 +130,7 @@ Section Powers_of_2.
     rewrite (shift_nat_correct n).
     omega.
   Qed.
-  
+
   (** Second we show that [two_power_pos] and [two_power_nat] are the same *)
   Lemma shift_pos_nat :
     forall p x:positive, shift_pos p x = shift_nat (nat_of_P p) x.
@@ -181,12 +181,12 @@ Section Powers_of_2.
     apply Zpower_pos_is_exp.
   Qed.
 
-  (** The exponentiation [z -> 2^z] for [z] a signed integer. 
+  (** The exponentiation [z -> 2^z] for [z] a signed integer.
       For convenience, we assume that [2^z = 0] for all [z < 0]
       We could also define a inductive type [Log_result] with
       3 contructors [ Zero | Pos positive -> | minus_infty]
       but it's more complexe and not so useful. *)
-  
+
   Definition two_p (x:Z) :=
     match x with
       | Z0 => 1
@@ -227,7 +227,7 @@ Section Powers_of_2.
 
   Lemma two_p_S : forall x:Z, 0 <= x -> two_p (Zsucc x) = 2 * two_p x.
   Proof.
-    intros; unfold Zsucc in |- *. 
+    intros; unfold Zsucc in |- *.
     rewrite (two_p_is_exp x 1 H (Zorder.Zle_0_pos 1)).
     apply Zmult_comm.
   Qed.
@@ -247,10 +247,10 @@ Section Powers_of_2.
 	    | intro Hx0; rewrite <- Hx0; simpl in |- *; unfold Zlt in |- *;
 	      auto with zarith ]
 	| assumption ].
-  Qed. 
+  Qed.
 
   Lemma Zlt_lt_double : forall x y:Z, 0 <= x < y -> x < 2 * y.
-    intros; omega. Qed. 
+    intros; omega. Qed.
 
   End Powers_of_2.
 
@@ -286,13 +286,13 @@ Section power_div_with_rest.
       let (qr, d) := iter_pos p _ Zdiv_rest_aux (x, 0, 1) in d = two_power_pos p.
   Proof.
     intros x p; rewrite (iter_nat_of_P p _ Zdiv_rest_aux (x, 0, 1));
-      rewrite (two_power_pos_nat p); elim (nat_of_P p); 
+      rewrite (two_power_pos_nat p); elim (nat_of_P p);
 	simpl in |- *;
 	  [ trivial with zarith
 	    | intro n; rewrite (two_power_nat_S n); unfold Zdiv_rest_aux at 2 in |- *;
-	      elim (iter_nat n (Z * Z * Z) Zdiv_rest_aux (x, 0, 1)); 
+	      elim (iter_nat n (Z * Z * Z) Zdiv_rest_aux (x, 0, 1));
 		destruct a; intros; apply f_equal with (f := fun z:Z => 2 * z);
-		  assumption ]. 
+		  assumption ].
   Qed.
 
   Lemma Zdiv_rest_correct2 :
@@ -327,7 +327,7 @@ Section power_div_with_rest.
 		      apply f_equal with (f := fun z:Z => z + r);
 			do 2 rewrite Zmult_plus_distr_l; rewrite Zmult_assoc;
 			  rewrite (Zmult_comm (Zneg p0) 2); rewrite <- Zplus_assoc;
-			    apply f_equal with (f := fun z:Z => 2 * Zneg p0 * d + z); 
+			    apply f_equal with (f := fun z:Z => 2 * Zneg p0 * d + z);
 			      omega
 		      | omega ]
 		  | rewrite BinInt.Zneg_xO; unfold Zminus in |- *; intro; elim H; intros;

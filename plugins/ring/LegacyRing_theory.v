@@ -19,8 +19,8 @@ Variable Aplus : A -> A -> A.
 Variable Amult : A -> A -> A.
 Variable Aone : A.
 Variable Azero : A.
-(* There is also a "weakly decidable" equality on A. That means 
-  that if (A_eq x y)=true then x=y but x=y can arise when 
+(* There is also a "weakly decidable" equality on A. That means
+  that if (A_eq x y)=true then x=y but x=y can arise when
   (A_eq x y)=false. On an abstract ring the function [x,y:A]false
   is a good choice. The proof of A_eq_prop is in this case easy. *)
 Variable Aeq : A -> A -> bool.
@@ -30,7 +30,7 @@ Infix "*" := Amult (at level 40, left associativity).
 Notation "0" := Azero.
 Notation "1" := Aone.
 
-Record Semi_Ring_Theory : Prop := 
+Record Semi_Ring_Theory : Prop :=
   {SR_plus_comm : forall n m:A, n + m = m + n;
    SR_plus_assoc : forall n m p:A, n + (m + p) = n + m + p;
    SR_mult_comm : forall n m:A, n * m = m * n;
@@ -49,7 +49,7 @@ Let plus_assoc := SR_plus_assoc T.
 Let mult_comm := SR_mult_comm T.
 Let mult_assoc := SR_mult_assoc T.
 Let plus_zero_left := SR_plus_zero_left T.
-Let mult_one_left := SR_mult_one_left T. 
+Let mult_one_left := SR_mult_one_left T.
 Let mult_zero_left := SR_mult_zero_left T.
 Let distr_left := SR_distr_left T.
 (*Let plus_reg_left := SR_plus_reg_left T.*)
@@ -58,7 +58,7 @@ Hint Resolve plus_comm plus_assoc mult_comm mult_assoc plus_zero_left
   mult_one_left mult_zero_left distr_left (*plus_reg_left*).
 
 (* Lemmas whose form is x=y are also provided in form y=x because Auto does
-  not symmetry *) 
+  not symmetry *)
 Lemma SR_mult_assoc2 : forall n m p:A, n * m * p = n * (m * p).
 symmetry  in |- *; eauto. Qed.
 
@@ -150,7 +150,7 @@ Notation "0" := Azero.
 Notation "1" := Aone.
 Notation "- x" := (Aopp x).
 
-Record Ring_Theory : Prop := 
+Record Ring_Theory : Prop :=
   {Th_plus_comm : forall n m:A, n + m = m + n;
    Th_plus_assoc : forall n m p:A, n + (m + p) = n + m + p;
    Th_mult_comm : forall n m:A, n * m = m * n;
@@ -168,7 +168,7 @@ Let plus_assoc := Th_plus_assoc T.
 Let mult_comm := Th_mult_comm T.
 Let mult_assoc := Th_mult_assoc T.
 Let plus_zero_left := Th_plus_zero_left T.
-Let mult_one_left := Th_mult_one_left T. 
+Let mult_one_left := Th_mult_one_left T.
 Let opp_def := Th_opp_def T.
 Let distr_left := Th_distr_left T.
 
@@ -176,7 +176,7 @@ Hint Resolve plus_comm plus_assoc mult_comm mult_assoc plus_zero_left
   mult_one_left opp_def distr_left.
 
 (* Lemmas whose form is x=y are also provided in form y=x because Auto does
-  not symmetry *) 
+  not symmetry *)
 Lemma Th_mult_assoc2 : forall n m p:A, n * m * p = n * (m * p).
 symmetry  in |- *; eauto. Qed.
 
@@ -331,7 +331,7 @@ Qed.
 
 Lemma Th_plus_reg_right : forall n m p:A, m + n = p + n -> m = p.
 intros.
-eapply Th_plus_reg_left with n. 
+eapply Th_plus_reg_left with n.
 rewrite (plus_comm n m).
 rewrite (plus_comm n p).
 auto.
@@ -354,7 +354,7 @@ Hint Resolve Th_mult_zero_left (*Th_plus_reg_left*): core.
 Unset Implicit Arguments.
 
 Definition Semi_Ring_Theory_of :
-  forall (A:Type) (Aplus Amult:A -> A -> A) (Aone Azero:A) 
+  forall (A:Type) (Aplus Amult:A -> A -> A) (Aone Azero:A)
     (Aopp:A -> A) (Aeq:A -> A -> bool),
     Ring_Theory Aplus Amult Aone Azero Aopp Aeq ->
     Semi_Ring_Theory Aplus Amult Aone Azero Aeq.

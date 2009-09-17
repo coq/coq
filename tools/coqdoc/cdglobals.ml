@@ -37,7 +37,7 @@ type glob_source_t =
     | DotGlob
     | GlobFile of string
 
-let glob_source = ref DotGlob 
+let glob_source = ref DotGlob
 
 let header_trailer = ref true
 let header_file = ref ""

@@ -96,32 +96,32 @@ Qed.
 Lemma Zeven_Sn : forall n:Z, Zodd n -> Zeven (Zsucc n).
 Proof.
   intro z; destruct z; unfold Zsucc in |- *;
-    [ idtac | destruct p | destruct p ]; simpl in |- *; 
-      trivial. 
+    [ idtac | destruct p | destruct p ]; simpl in |- *;
+      trivial.
   unfold Pdouble_minus_one in |- *; case p; simpl in |- *; auto.
 Qed.
 
 Lemma Zodd_Sn : forall n:Z, Zeven n -> Zodd (Zsucc n).
 Proof.
   intro z; destruct z; unfold Zsucc in |- *;
-    [ idtac | destruct p | destruct p ]; simpl in |- *; 
-      trivial. 
+    [ idtac | destruct p | destruct p ]; simpl in |- *;
+      trivial.
   unfold Pdouble_minus_one in |- *; case p; simpl in |- *; auto.
 Qed.
 
 Lemma Zeven_pred : forall n:Z, Zodd n -> Zeven (Zpred n).
 Proof.
   intro z; destruct z; unfold Zpred in |- *;
-    [ idtac | destruct p | destruct p ]; simpl in |- *; 
-      trivial. 
+    [ idtac | destruct p | destruct p ]; simpl in |- *;
+      trivial.
   unfold Pdouble_minus_one in |- *; case p; simpl in |- *; auto.
 Qed.
 
 Lemma Zodd_pred : forall n:Z, Zeven n -> Zodd (Zpred n).
 Proof.
   intro z; destruct z; unfold Zpred in |- *;
-    [ idtac | destruct p | destruct p ]; simpl in |- *; 
-      trivial. 
+    [ idtac | destruct p | destruct p ]; simpl in |- *;
+      trivial.
   unfold Pdouble_minus_one in |- *; case p; simpl in |- *; auto.
 Qed.
 
@@ -132,7 +132,7 @@ Hint Unfold Zeven Zodd: zarith.
 (** * Definition of [Zdiv2] and properties wrt [Zeven] and [Zodd] *)
 
 (** [Zdiv2] is defined on all [Z], but notice that for odd negative
-    integers it is not the euclidean quotient: in that case we have 
+    integers it is not the euclidean quotient: in that case we have
       [n = 2*(n/2)-1] *)
 
 Definition Zdiv2 (z:Z) :=
@@ -200,7 +200,7 @@ Proof.
   intros x.
   elim (Z_modulo_2 x); intros [y Hy]; rewrite Zmult_comm in Hy;
     rewrite <- Zplus_diag_eq_mult_2 in Hy.
-  exists (y, y); split. 
+  exists (y, y); split.
   assumption.
   left; reflexivity.
   exists (y, (y + 1)%Z); split.
@@ -239,7 +239,7 @@ Proof.
   destruct p; simpl; auto.
 Qed.
 
-Theorem Zeven_plus_Zodd: forall a b, 
+Theorem Zeven_plus_Zodd: forall a b,
  Zeven a -> Zodd b -> Zodd (a + b).
 Proof.
   intros a b H1 H2; case Zeven_ex with (1 := H1); intros x H3; try rewrite H3; auto.
@@ -257,13 +257,13 @@ Proof.
   apply Zmult_plus_distr_r; auto.
 Qed.
 
-Theorem Zodd_plus_Zeven: forall a b, 
+Theorem Zodd_plus_Zeven: forall a b,
  Zodd a -> Zeven b -> Zodd (a + b).
 Proof.
   intros a b H1 H2; rewrite Zplus_comm; apply Zeven_plus_Zodd; auto.
 Qed.
 
-Theorem Zodd_plus_Zodd: forall a b, 
+Theorem Zodd_plus_Zodd: forall a b,
  Zodd a -> Zodd b -> Zeven (a + b).
 Proof.
   intros a b H1 H2; case Zodd_ex with (1 := H1); intros x H3; try rewrite H3; auto.
@@ -276,7 +276,7 @@ Proof.
   repeat rewrite <- Zplus_assoc; auto.
 Qed.
 
-Theorem Zeven_mult_Zeven_l: forall a b, 
+Theorem Zeven_mult_Zeven_l: forall a b,
  Zeven a -> Zeven (a * b).
 Proof.
   intros a b H1; case Zeven_ex with (1 := H1); intros x H3; try rewrite H3; auto.
@@ -285,7 +285,7 @@ Proof.
   apply Zmult_assoc.
 Qed.
 
-Theorem Zeven_mult_Zeven_r: forall a b, 
+Theorem Zeven_mult_Zeven_r: forall a b,
  Zeven b -> Zeven (a * b).
 Proof.
   intros a b H1; case Zeven_ex with (1 := H1); intros x H3; try rewrite H3; auto.
@@ -296,10 +296,10 @@ Proof.
   rewrite (Zmult_comm 2 a); auto.
 Qed.
 
-Hint Rewrite Zmult_plus_distr_r Zmult_plus_distr_l 
+Hint Rewrite Zmult_plus_distr_r Zmult_plus_distr_l
      Zplus_assoc Zmult_1_r Zmult_1_l : Zexpand.
 
-Theorem Zodd_mult_Zodd: forall a b, 
+Theorem Zodd_mult_Zodd: forall a b,
  Zodd a -> Zodd b -> Zodd (a * b).
 Proof.
   intros a b H1 H2; case Zodd_ex with (1 := H1); intros x H3; try rewrite H3; auto.
@@ -308,7 +308,7 @@ Proof.
   (* ring part *)
   autorewrite with Zexpand; f_equal.
   repeat rewrite <- Zplus_assoc; f_equal.
-  repeat rewrite <- Zmult_assoc; f_equal. 
+  repeat rewrite <- Zmult_assoc; f_equal.
   repeat rewrite Zmult_assoc; f_equal; apply Zmult_comm.
 Qed.
 

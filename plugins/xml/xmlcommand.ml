@@ -38,7 +38,7 @@ let print_if_verbose s = if !verbose then print_string s;;
 (* Next exception is used only inside print_coq_object and tag_of_string_tag *)
 exception Uninteresting;;
 
-(* NOT USED anymore, we back to the V6 point of view with global parameters 
+(* NOT USED anymore, we back to the V6 point of view with global parameters
 
 (* Internally, for Coq V7, params of inductive types are associated     *)
 (* not to the whole block of mutual inductive (as it was in V6) but to  *)
@@ -106,7 +106,7 @@ let filter_params pvars hyps =
    aux (Names.repr_dirpath modulepath) (List.rev pvars)
 ;;
 
-type variables_type = 
+type variables_type =
    Definition of string * Term.constr * Term.types
  | Assumption of string * Term.constr
 ;;
@@ -246,7 +246,7 @@ let find_hyps t =
    match T.kind_of_term t with
       T.Var id when not (List.mem id l) ->
        let (_,bo,ty) = Global.lookup_named id in
-        let boids = 
+        let boids =
          match bo with
             Some bo' -> aux l bo'
           | None -> l
@@ -393,7 +393,7 @@ let mk_inductive_obj sp mib packs variables nparams hyps finite =
 (* The current channel for .theory files *)
 let theory_buffer = Buffer.create 4000;;
 
-let theory_output_string ?(do_not_quote = false) s = 
+let theory_output_string ?(do_not_quote = false) s =
   (* prepare for coqdoc post-processing *)
   let s = if do_not_quote then s else "(** #"^s^"\n#*)\n" in
   print_if_verbose s;
@@ -423,7 +423,7 @@ let kind_of_variable id =
     | _ -> Util.anomaly "Unsupported variable kind"
 ;;
 
-let kind_of_constant kn = 
+let kind_of_constant kn =
   let module DK = Decl_kinds in
   match Decls.constant_kind kn with
     | DK.IsAssumption DK.Definitional -> "AXIOM","Declaration"
@@ -432,7 +432,7 @@ let kind_of_constant kn =
         Pp.warning "Conjecture not supported in dtd (used Declaration instead)";
         "AXIOM","Declaration"
     | DK.IsDefinition DK.Definition -> "DEFINITION","Definition"
-    | DK.IsDefinition DK.Example -> 
+    | DK.IsDefinition DK.Example ->
         Pp.warning "Example not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
     | DK.IsDefinition DK.Coercion ->
@@ -461,10 +461,10 @@ let kind_of_constant kn =
         "DEFINITION","Definition"
     | DK.IsDefinition DK.Instance ->
         Pp.warning "Instance not supported in dtd (used Definition instead)";
-        "DEFINITION","Definition" 
+        "DEFINITION","Definition"
     | DK.IsDefinition DK.Method ->
         Pp.warning "Method not supported in dtd (used Definition instead)";
-        "DEFINITION","Definition" 
+        "DEFINITION","Definition"
     | DK.IsProof (DK.Theorem|DK.Lemma|DK.Corollary|DK.Fact|DK.Remark as thm) ->
         "THEOREM",DK.string_of_theorem_kind thm
     | DK.IsProof _ ->
@@ -476,7 +476,7 @@ let kind_of_global r =
   let module Ln = Libnames in
   let module DK = Decl_kinds in
   match r with
-  | Ln.IndRef kn | Ln.ConstructRef (kn,_) -> 
+  | Ln.IndRef kn | Ln.ConstructRef (kn,_) ->
       let isrecord =
 	try let _ = Recordops.lookup_projections kn in true
         with Not_found -> false in
@@ -515,7 +515,7 @@ let print internal glob_ref kind xml_library_root =
    match glob_ref with
       Ln.VarRef id ->
        (* this kn is fake since it is not provided by Coq *)
-       let kn = 
+       let kn =
         let (mod_path,dir_path) = Lib.current_prefix () in
         N.make_kn mod_path dir_path (N.label_of_id id)
        in
@@ -615,13 +615,13 @@ let _ =
    (function (internal,kn) ->
      match !proof_to_export with
         None ->
-          print internal (Libnames.ConstRef kn) (kind_of_constant kn) 
+          print internal (Libnames.ConstRef kn) (kind_of_constant kn)
 	    xml_library_root
       | Some pftreestate ->
          (* It is a proof. Let's export it starting from the proof-tree *)
          (* I saved in the Pfedit.set_xml_cook_proof callback.          *)
         let fn = filename_of_path xml_library_root (Cic2acic.Constant kn) in
-         show_pftreestate internal fn pftreestate 
+         show_pftreestate internal fn pftreestate
 	  (Names.id_of_label (Names.con_label kn)) ;
          proof_to_export := None)
 ;;
@@ -629,7 +629,7 @@ let _ =
 let _ =
   Declare.set_xml_declare_inductive
    (function (isrecord,(sp,kn)) ->
-      print false (Libnames.IndRef (kn,0)) (kind_of_inductive isrecord kn) 
+      print false (Libnames.IndRef (kn,0)) (kind_of_inductive isrecord kn)
         xml_library_root)
 ;;
 
@@ -664,7 +664,7 @@ let _ =
              Buffer.output_buffer ch theory_buffer ;
              close_out ch
        end ;
-       Option.iter 
+       Option.iter
 	(fun fn ->
 	  let coqdoc = Filename.concat (Envars.coqbin ()) ("coqdoc" ^ Coq_config.exec_extension) in
 	  let options = " --html -s --body-only --no-index --latin1 --raw-comments" in
@@ -684,7 +684,7 @@ let _ =
 let _ = Lexer.set_xml_output_comment (theory_output_string ~do_not_quote:true) ;;
 
 let uri_of_dirpath dir =
-  "/" ^ String.concat "/" 
+  "/" ^ String.concat "/"
     (List.map Names.string_of_id (List.rev (Names.repr_dirpath dir)))
 ;;
 
@@ -702,7 +702,7 @@ let _ =
 
 let _ =
   Library.set_xml_require
-    (fun d -> theory_output_string 
+    (fun d -> theory_output_string
       (Printf.sprintf "<b>Require</b> <a helm:helm_link=\"href\" href=\"theory:%s.theory\">%s</a>.<br/>"
        (uri_of_dirpath d) (Names.string_of_dirpath d)))
 ;;

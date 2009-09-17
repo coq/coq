@@ -18,7 +18,7 @@
 (** [has_some x] is [true] if [x] is of the form [Some y] and [false]
     otherwise.  *)
 val has_some : 'a option -> bool
-  
+
 exception IsNone
 
 (** [get x] returns [y] where [x] is [Some y]. It raises IsNone
@@ -37,7 +37,7 @@ val flatten : 'a option option -> 'a option
 
 (** {6 "Iterators"} ***)
 
-(** [iter f x] executes [f y] if [x] equals [Some y]. It does nothing 
+(** [iter f x] executes [f y] if [x] equals [Some y]. It does nothing
     otherwise. *)
 val iter : ('a -> unit) -> 'a option -> unit
 
@@ -77,15 +77,15 @@ val default : 'a -> 'a option -> 'a
 (** [lift] is the same as {!map}. *)
 val lift : ('a -> 'b) -> 'a option -> 'b option
 
-(** [lift_right f a x] is [Some (f a y)] if [x] is [Some y], and 
+(** [lift_right f a x] is [Some (f a y)] if [x] is [Some y], and
     [None] otherwise. *)
 val lift_right : ('a -> 'b -> 'c) -> 'a -> 'b option -> 'c option
 
-(** [lift_left f x a] is [Some (f y a)] if [x] is [Some y], and 
+(** [lift_left f x a] is [Some (f y a)] if [x] is [Some y], and
     [None] otherwise. *)
 val lift_left : ('a -> 'b -> 'c) -> 'a option -> 'b -> 'c option
 
-(** [lift2 f x y] is [Some (f z w)] if [x] equals [Some z] and [y] equals 
+(** [lift2 f x y] is [Some (f z w)] if [x] equals [Some z] and [y] equals
     [Some w]. It is [None] otherwise. *)
 val lift2 : ('a -> 'b -> 'c) -> 'a option -> 'b option -> 'c option
 
@@ -105,8 +105,8 @@ end
 (** {6 Miscelaneous Primitives} *)
 
 module Misc : sig
-  (** [Misc.compare f x y] lifts the equality predicate [f] to 
-      option types. That is, if both [x] and [y] are [None] then 
+  (** [Misc.compare f x y] lifts the equality predicate [f] to
+      option types. That is, if both [x] and [y] are [None] then
       it returns [true], if they are bothe [Some _] then
       [f] is called. Otherwise it returns [false]. *)
    val compare : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool

@@ -19,26 +19,26 @@ Open Local Scope Z_scope.
 (** About parity *)
 
 Lemma two_or_two_plus_one :
-  forall n:Z, {y : Z | n = 2 * y} + {y : Z | n = 2 * y + 1}. 
+  forall n:Z, {y : Z | n = 2 * y} + {y : Z | n = 2 * y + 1}.
 Proof.
   intro x; destruct x.
   left; split with 0; reflexivity.
-  
+
   destruct p.
   right; split with (Zpos p); reflexivity.
-  
+
   left; split with (Zpos p); reflexivity.
-  
+
   right; split with 0; reflexivity.
-  
+
   destruct p.
   right; split with (Zneg (1 + p)).
   rewrite BinInt.Zneg_xI.
   rewrite BinInt.Zneg_plus_distr.
   omega.
-  
+
   left; split with (Zneg p); reflexivity.
-  
+
   right; split with (-1); reflexivity.
 Qed.
 
@@ -64,24 +64,24 @@ Proof.
   trivial.
 Qed.
 
-Lemma floor_ok : forall p:positive, floor p <= Zpos p < 2 * floor p. 
+Lemma floor_ok : forall p:positive, floor p <= Zpos p < 2 * floor p.
 Proof.
   unfold floor in |- *.
   intro a; induction a as [p| p| ].
-  
+
   simpl in |- *.
   repeat rewrite BinInt.Zpos_xI.
-  rewrite (BinInt.Zpos_xO (xO (floor_pos p))). 
+  rewrite (BinInt.Zpos_xO (xO (floor_pos p))).
   rewrite (BinInt.Zpos_xO (floor_pos p)).
   omega.
-  
+
   simpl in |- *.
   repeat rewrite BinInt.Zpos_xI.
   rewrite (BinInt.Zpos_xO (xO (floor_pos p))).
   rewrite (BinInt.Zpos_xO (floor_pos p)).
   rewrite (BinInt.Zpos_xO p).
   omega.
-  
+
   simpl in |- *; omega.
 Qed.
 
@@ -128,7 +128,7 @@ Proof.
   elim (Zabs_dec m); intro eq; rewrite eq; trivial.
 Qed.
 
-(** To do case analysis over the sign of [z] *) 
+(** To do case analysis over the sign of [z] *)
 
 Lemma Zcase_sign :
   forall (n:Z) (P:Prop), (n = 0 -> P) -> (n > 0 -> P) -> (n < 0 -> P) -> P.
@@ -164,7 +164,7 @@ Fixpoint Zlength_aux (acc:Z) (A:Type) (l:list A) {struct l} : Z :=
   match l with
     | nil => acc
     | _ :: l => Zlength_aux (Zsucc acc) A l
-  end. 
+  end.
 
 Definition Zlength := Zlength_aux 0.
 Implicit Arguments Zlength [A].
@@ -177,7 +177,7 @@ Section Zlength_properties.
 
   Lemma Zlength_correct : forall l, Zlength l = Z_of_nat (length l).
   Proof.
-    assert (forall l (acc:Z), Zlength_aux acc A l = acc + Z_of_nat (length l)). 
+    assert (forall l (acc:Z), Zlength_aux acc A l = acc + Z_of_nat (length l)).
     simple induction l.
     simpl in |- *; auto with zarith.
     intros; simpl (length (a :: l0)) in |- *; rewrite Znat.inj_S.

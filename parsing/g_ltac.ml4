@@ -35,7 +35,7 @@ GEXTEND Gram
   tactic_then_last:
     [ [ "|"; lta = LIST0 OPT tactic_expr SEP "|" ->
           Array.map (function None -> TacId [] | Some t -> t) (Array.of_list lta)
-      | -> [||] 
+      | -> [||]
     ] ]
   ;
   tactic_then_gen:
@@ -54,7 +54,7 @@ GEXTEND Gram
       [ ta0 = tactic_expr; ";"; ta1 = binder_tactic -> TacThen (ta0, [||], ta1, [||])
       | ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0,  [||], ta1, [||])
       | ta0 = tactic_expr; ";"; "["; (first,tail) = tactic_then_gen; "]" ->
-	  match tail with 
+	  match tail with
 	  | Some (t,last) -> TacThen (ta0, Array.of_list first, t, last)
 	  | None -> TacThens (ta0,first) ]
     | "3" RIGHTA
@@ -94,7 +94,7 @@ GEXTEND Gram
           TacArg(MetaIdArg (loc,false,id))
       | IDENT "constr"; ":"; c = Constr.constr ->
           TacArg(ConstrMayEval(ConstrTerm c))
-      | IDENT "ipattern"; ":"; ipat = simple_intropattern -> 
+      | IDENT "ipattern"; ":"; ipat = simple_intropattern ->
 	  TacArg(IntroPattern ipat)
       | r = reference; la = LIST0 tactic_arg ->
           TacArg(TacCall (loc,r,la)) ]
@@ -107,7 +107,7 @@ GEXTEND Gram
     [ RIGHTA
       [ "fun"; it = LIST1 input_fun ; "=>"; body = tactic_expr LEVEL "5" ->
           TacFun (it,body)
-      | "let"; isrec = [IDENT "rec" -> true | -> false]; 
+      | "let"; isrec = [IDENT "rec" -> true | -> false];
           llc = LIST1 let_clause SEP "with"; "in";
           body = tactic_expr LEVEL "5" -> TacLetIn (isrec,llc,body)
       | IDENT "info"; tc = tactic_expr LEVEL "5" -> TacInfo tc ] ]
@@ -153,7 +153,7 @@ GEXTEND Gram
     [ [ "match" -> false | "lazymatch" -> true ] ]
   ;
   input_fun:
-    [ [ "_" -> None 
+    [ [ "_" -> None
       | l = ident -> Some l ] ]
   ;
   let_clause:
@@ -172,11 +172,11 @@ GEXTEND Gram
       | pc = Constr.lconstr_pattern -> Term pc ] ]
   ;
   match_hyps:
-    [ [ na = name; ":"; mp =  match_pattern -> Hyp (na, mp) 
-      | na = name; ":="; "["; mpv = match_pattern; "]"; ":"; mpt = match_pattern -> Def (na, mpv, mpt) 
-      | na = name; ":="; mpv = match_pattern -> 
+    [ [ na = name; ":"; mp =  match_pattern -> Hyp (na, mp)
+      | na = name; ":="; "["; mpv = match_pattern; "]"; ":"; mpt = match_pattern -> Def (na, mpv, mpt)
+      | na = name; ":="; mpv = match_pattern ->
 	  let t, ty =
-	    match mpv with 
+	    match mpv with
 	    | Term t -> (match t with
 	      | CCast (loc, t, CastConv (_, ty)) -> Term t, Some (Term ty)
 	      | _ -> mpv, None)
@@ -213,7 +213,7 @@ GEXTEND Gram
     [ [ ":=" -> false
       | "::=" -> true ] ]
   ;
-	
+
   (* Definitions for tactics *)
   tacdef_body:
     [ [ name = Constr.global; it=LIST1 input_fun; redef = ltac_def_kind; body = tactic_expr ->
@@ -224,7 +224,7 @@ GEXTEND Gram
   tactic:
     [ [ tac = tactic_expr -> tac ] ]
   ;
-  Vernac_.command: 
+  Vernac_.command:
     [ [ IDENT "Ltac";
         l = LIST1 tacdef_body SEP "with" ->
           VernacDeclareTacticDefinition (true, l) ] ]

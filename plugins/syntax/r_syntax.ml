@@ -65,7 +65,7 @@ let r_of_posint dloc n =
 
 let r_of_int dloc z =
   if is_strictly_neg z then
-    RApp (dloc, RRef(dloc,glob_Ropp), [r_of_posint dloc (neg z)]) 
+    RApp (dloc, RRef(dloc,glob_Ropp), [r_of_posint dloc (neg z)])
   else
     r_of_posint dloc z
 
@@ -90,7 +90,7 @@ let rec bignat_of_pos = function
       mult_2 (bignat_of_pos b)
   (* 1+(1+1)*b *)
   | RApp (_,RRef (_,p1), [RRef (_,o); RApp (_,RRef (_,p2),[a;b])])
-      when p1 = glob_Rplus & p2 = glob_Rmult & o = glob_R1  -> 
+      when p1 = glob_Rplus & p2 = glob_Rmult & o = glob_R1  ->
       if bignat_of_pos a <> two then raise Non_closed_number;
         add_1 (mult_2 (bignat_of_pos b))
   | _ -> raise Non_closed_number

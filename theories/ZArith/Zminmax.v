@@ -18,32 +18,32 @@ Open Local Scope Z_scope.
 
 Lemma Zmin_max_absorption_r_r : forall n m, Zmax n (Zmin n m) = n.
 Proof.
-  intros; apply Zmin_case_strong; intro; apply Zmax_case_strong; intro; 
+  intros; apply Zmin_case_strong; intro; apply Zmax_case_strong; intro;
     reflexivity || apply Zle_antisym; trivial.
 Qed.
 
 Lemma Zmax_min_absorption_r_r : forall n m, Zmin n (Zmax n m) = n.
 Proof.
-  intros; apply Zmax_case_strong; intro; apply Zmin_case_strong; intro; 
+  intros; apply Zmax_case_strong; intro; apply Zmin_case_strong; intro;
     reflexivity || apply Zle_antisym; trivial.
 Qed.
 
 (** Distributivity *)
 
-Lemma Zmax_min_distr_r : 
+Lemma Zmax_min_distr_r :
   forall n m p, Zmax n (Zmin m p) = Zmin (Zmax n m) (Zmax n p).
 Proof.
   intros.
-  repeat apply Zmax_case_strong; repeat apply Zmin_case_strong; intros; 
+  repeat apply Zmax_case_strong; repeat apply Zmin_case_strong; intros;
     reflexivity ||
       apply Zle_antisym; (assumption || eapply Zle_trans; eassumption).
 Qed.
 
-Lemma Zmin_max_distr_r : 
+Lemma Zmin_max_distr_r :
   forall n m p, Zmin n (Zmax m p) = Zmax (Zmin n m) (Zmin n p).
 Proof.
   intros.
-  repeat apply Zmax_case_strong; repeat apply Zmin_case_strong; intros; 
+  repeat apply Zmax_case_strong; repeat apply Zmin_case_strong; intros;
     reflexivity ||
       apply Zle_antisym; (assumption || eapply Zle_trans; eassumption).
 Qed.

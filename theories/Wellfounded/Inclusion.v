@@ -21,7 +21,7 @@ Section WfInclusion.
     induction 2.
     apply Acc_intro; auto with sets.
   Qed.
-  
+
   Hint Resolve Acc_incl.
 
   Theorem wf_incl : inclusion A R1 R2 -> well_founded R2 -> well_founded R1.

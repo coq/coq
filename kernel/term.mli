@@ -63,13 +63,13 @@ val eq_constr : constr -> constr -> bool
 
 (* [types] is the same as [constr] but is intended to be used for
    documentation to indicate that such or such function specifically works
-   with {\em types} (i.e. terms of type a sort). 
+   with {\em types} (i.e. terms of type a sort).
    (Rem:plurial form since [type] is a reserved ML keyword) *)
 
 type types = constr
 
 (*s Functions for dealing with constr terms.
-  The following functions are intended to simplify and to uniform the 
+  The following functions are intended to simplify and to uniform the
   manipulation of terms. Some of these functions may be overlapped with
   previous ones. *)
 
@@ -96,9 +96,9 @@ val mkType : Univ.universe -> types
 
 
 (* This defines the strategy to use for verifiying a Cast *)
-type cast_kind = VMcast | DEFAULTcast 
+type cast_kind = VMcast | DEFAULTcast
 
-(* Constructs the term [t1::t2], i.e. the term $t_1$ casted with the 
+(* Constructs the term [t1::t2], i.e. the term $t_1$ casted with the
    type $t_2$ (that means t2 is declared as the type of t1). *)
 val mkCast : constr * cast_kind * constr -> constr
 
@@ -122,7 +122,7 @@ val mkNamedLetIn : identifier -> constr -> types -> constr -> constr
    $(f~t_1~\dots~t_n)$. *)
 val mkApp : constr * constr array -> constr
 
-(* Constructs a constant *) 
+(* Constructs a constant *)
 (* The array of terms correspond to the variables introduced in the section *)
 val mkConst : constant -> constr
 
@@ -132,7 +132,7 @@ val mkConst : constant -> constr
 (* The array of terms correspond to the variables introduced in the section *)
 val mkInd : inductive -> constr
 
-(* Constructs the jth constructor of the ith (co)inductive type of the 
+(* Constructs the jth constructor of the ith (co)inductive type of the
    block named kn. The array of terms correspond to the variables
    introduced in the section *)
 val mkConstruct : constructor -> constr
@@ -162,8 +162,8 @@ val mkFix : fixpoint -> constr
       [typarray = [|t1,...tn|]]
       [bodies   = [b1,.....bn]] \par\noindent
    then [mkCoFix (i, (typsarray, funnames, bodies))]
-   constructs the ith function of the block  
-   
+   constructs the ith function of the block
+
     [CoFixpoint f1 = b1
      with       f2 = b2
      ...
@@ -213,7 +213,7 @@ val kind_of_term2 : constr -> ((constr,types) kind_of_term,constr) kind_of_term
 (* Experimental *)
 type ('constr, 'types) kind_of_type =
   | SortType   of sorts
-  | CastType   of 'types * 'types 
+  | CastType   of 'types * 'types
   | ProdType   of name * 'types * 'types
   | LetInType  of name * 'constr * 'types * 'types
   | AtomicType of 'constr * 'constr array
@@ -247,7 +247,7 @@ val is_Type : constr -> bool
 val iskind : constr -> bool
 val is_small : sorts -> bool
 
-(*s Term destructors. 
+(*s Term destructors.
    Destructor operations are partial functions and
    raise [invalid_arg "dest*"] if the term has not the expected form. *)
 
@@ -260,7 +260,7 @@ val destMeta : constr -> metavariable
 (* Destructs a variable *)
 val destVar : constr -> identifier
 
-(* Destructs a sort. [is_Prop] recognizes the sort \textsf{Prop}, whether 
+(* Destructs a sort. [is_Prop] recognizes the sort \textsf{Prop}, whether
    [isprop] recognizes both \textsf{Prop} and \textsf{Set}. *)
 val destSort : constr -> sorts
 
@@ -300,7 +300,7 @@ val destConstruct : constr -> constructor
 (* Destructs a term <p>Case c of lc1 | lc2 .. | lcn end *)
 val destCase : constr -> case_info * constr * constr * constr array
 
-(* Destructs the $i$th function of the block  
+(* Destructs the $i$th function of the block
    $\mathit{Fixpoint} ~ f_1 ~ [ctx_1] = b_1
     \mathit{with}     ~ f_2 ~ [ctx_2] = b_2
     \dots
@@ -366,7 +366,7 @@ val applistc : constr -> constr list -> constr
 val appvect : constr * constr array -> constr
 val appvectc : constr -> constr array -> constr
 
-(* [prodn n l b] = $(x_1:T_1)..(x_n:T_n)b$ 
+(* [prodn n l b] = $(x_1:T_1)..(x_n:T_n)b$
    where $l = [(x_n,T_n);\dots;(x_1,T_1);Gamma]$ *)
 val prodn : int -> (name * constr) list -> constr -> constr
 
@@ -384,12 +384,12 @@ val lamn : int -> (name * constr) list -> constr -> constr
    Inverse of [it_destLam] *)
 val compose_lam : (name * constr) list -> constr -> constr
 
-(* [to_lambda n l] 
+(* [to_lambda n l]
    = $[x_1:T_1]...[x_n:T_n]T$
    where $l = (x_1:T_1)...(x_n:T_n)T$ *)
 val to_lambda : int -> constr -> constr
 
-(* [to_prod n l] 
+(* [to_prod n l]
    = $(x_1:T_1)...(x_n:T_n)T$
    where $l = [x_1:T_1]...[x_n:T_n]T$ *)
 val to_prod : int -> constr -> constr
@@ -414,16 +414,16 @@ val decompose_prod : constr -> (name*constr) list * constr
    $([(x_n,T_n);...;(x_1,T_1)],T)$, where $T$ is not a lambda. *)
 val decompose_lam : constr -> (name*constr) list * constr
 
-(* Given a positive integer n, transforms a product term 
+(* Given a positive integer n, transforms a product term
    $(x_1:T_1)..(x_n:T_n)T$
    into the pair $([(xn,Tn);...;(x1,T1)],T)$. *)
 val decompose_prod_n : int -> constr -> (name * constr) list * constr
 
-(* Given a positive integer $n$, transforms a lambda term 
+(* Given a positive integer $n$, transforms a lambda term
    $[x_1:T_1]..[x_n:T_n]T$ into the pair $([(x_n,T_n);...;(x_1,T_1)],T)$ *)
 val decompose_lam_n : int -> constr -> (name * constr) list * constr
 
-(* Extract the premisses and the conclusion of a term of the form 
+(* Extract the premisses and the conclusion of a term of the form
    "(xi:Ti) ... (xj:=cj:Tj) ..., T" where T is not a product nor a let *)
 val decompose_prod_assum : types -> rel_context * types
 
@@ -599,7 +599,7 @@ val hcons_constr:
   (dir_path -> dir_path) *
   (name -> name) *
   (identifier -> identifier) *
-  (string -> string) 
+  (string -> string)
   ->
     (constr -> constr) *
     (types -> types)

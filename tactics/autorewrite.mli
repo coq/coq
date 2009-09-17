@@ -23,7 +23,7 @@ val add_rew_rules : string -> raw_rew_rule list -> unit
 
 (* The AutoRewrite tactic.
    The optional conditions tell rewrite how to handle matching and side-condition solving.
-   Default is Naive: first match in the clause, don't look at the side-conditions to 
+   Default is Naive: first match in the clause, don't look at the side-conditions to
    tell if the rewrite succeeded. *)
 val autorewrite : ?conds:conditions -> tactic -> string list -> tactic
 val autorewrite_in : ?conds:conditions -> Names.identifier -> tactic -> string list -> tactic

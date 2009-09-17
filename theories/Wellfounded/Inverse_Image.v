@@ -47,8 +47,8 @@ Section Inverse_Image.
     destruct H3.
     apply (IHAcc x1); auto.
   Qed.
-  
-  
+
+
   Theorem wf_inverse_rel : well_founded R -> well_founded RoF.
   Proof.
     red in |- *; constructor; intros.

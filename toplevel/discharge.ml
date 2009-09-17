@@ -36,26 +36,26 @@ let detype_param = function
 *)
 
 let abstract_inductive hyps nparams inds =
-  let ntyp = List.length inds in 
+  let ntyp = List.length inds in
   let nhyp = named_context_length hyps in
   let args = instance_from_named_context (List.rev hyps) in
   let subs = list_tabulate (fun k -> lift nhyp (mkApp(mkRel (k+1),args))) ntyp in
   let inds' =
     List.map
-      (function (tname,arity,cnames,lc) -> 
+      (function (tname,arity,cnames,lc) ->
 	let lc' = List.map (substl subs) lc in
 	let lc'' = List.map (fun b -> Termops.it_mkNamedProd_wo_LetIn b hyps) lc' in
 	let arity' = Termops.it_mkNamedProd_wo_LetIn arity hyps in
         (tname,arity',cnames,lc''))
       	inds in
   let nparams' = nparams + Array.length args in
-(* To be sure to be the same as before, should probably be moved to process_inductive *) 
-  let params' = let (_,arity,_,_) = List.hd inds' in 
+(* To be sure to be the same as before, should probably be moved to process_inductive *)
+  let params' = let (_,arity,_,_) = List.hd inds' in
 		let (params,_) = decompose_prod_n_assum nparams' arity in
 		  List.map detype_param params
   in
-  let ind'' = 
-  List.map 
+  let ind'' =
+  List.map
     (fun (a,arity,c,lc) ->
       let _, short_arity = decompose_prod_n_assum nparams' arity in
       let shortlc =
@@ -70,7 +70,7 @@ let abstract_inductive hyps nparams inds =
 
 let process_inductive sechyps modlist mib =
   let nparams = mib.mind_nparams in
-  let inds = 
+  let inds =
     array_map_to_list
       (fun mip ->
 	 let arity = expmod_constr modlist (Termops.refresh_universes_strict (Inductive.type_of_inductive (Global.env()) (mib,mip))) in

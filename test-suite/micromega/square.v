@@ -20,7 +20,7 @@ Proof.
 intros [n [p [Heq Hnz]]]; pose (n' := Zabs n); pose (p':=Zabs p).
 assert (facts : 0 <= Zabs n /\ 0 <= Zabs p /\ Zabs n^2=n^2
          /\ Zabs p^2 = p^2) by auto.
-assert (H : (0 < n' /\ 0 <= p' /\ n' ^2 = 2* p' ^2)) by 
+assert (H : (0 < n' /\ 0 <= p' /\ n' ^2 = 2* p' ^2)) by
   (destruct facts as [Hf1 [Hf2 [Hf3 Hf4]]]; unfold n', p' ; psatz Z 2).
 generalize p' H; elim n' using (well_founded_ind (Zwf_well_founded 0)); clear.
 intros n IHn p [Hn [Hp Heq]].
@@ -55,7 +55,7 @@ Theorem sqrt2_not_rational : ~exists x:Q, x^2==2#1.
 Proof.
  unfold Qeq; intros [x]; simpl (Qden (2#1)); rewrite Zmult_1_r.
  intros HQeq.
- assert (Heq : (Qnum x ^ 2 = 2 * ' Qden x ^ 2%Q)%Z) by 
+ assert (Heq : (Qnum x ^ 2 = 2 * ' Qden x ^ 2%Q)%Z) by
    (rewrite QnumZpower in HQeq ; rewrite QdenZpower in HQeq ; auto).
  assert (Hnx : (Qnum x <> 0)%Z)
  by (intros Hx; simpl in HQeq; rewrite Hx in HQeq; discriminate HQeq).

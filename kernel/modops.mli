@@ -23,10 +23,10 @@ open Mod_subst
 (* make the environment entry out of type *)
 val module_body_of_type : module_type_body -> module_body
 
-val  module_type_of_module : module_path option -> module_body -> 
-  module_type_body 
+val  module_type_of_module : module_path option -> module_body ->
+  module_type_body
 
-val destr_functor : 
+val destr_functor :
   env -> struct_expr_body -> mod_bound_id * module_type_body * struct_expr_body
 
 val subst_modtype : substitution -> module_type_body -> module_type_body
@@ -35,7 +35,7 @@ val subst_structure : substitution -> structure_body -> structure_body
 val subst_struct_expr :  substitution -> struct_expr_body -> struct_expr_body
 
 val subst_signature_msid :
-  mod_self_id -> module_path -> 
+  mod_self_id -> module_path ->
   structure_body -> structure_body
 
 val subst_structure : substitution -> structure_body -> structure_body
@@ -48,7 +48,7 @@ val type_of_mb : env -> module_body -> struct_expr_body
 (* [add_signature mp sign env] assumes that the substitution [msid]
    $\mapsto$ [mp] has already been performed (or is not necessary, like
    when [mp = MPself msid]) *)
-val add_signature : 
+val add_signature :
   module_path -> structure_body -> env -> env
 
 (* adds a module and its components, but not the constraints *)
@@ -69,13 +69,13 @@ val error_application_to_not_path : module_struct_entry -> 'a
 
 val error_not_a_functor :  module_struct_entry -> 'a
 
-val error_incompatible_modtypes : 
+val error_incompatible_modtypes :
   module_type_body -> module_type_body -> 'a
 
 val error_not_equal : module_path -> module_path -> 'a
 
 val error_not_match : label -> structure_field_body -> 'a
-  
+
 val error_incompatible_labels : label -> label -> 'a
 
 val error_no_such_label : label -> 'a
@@ -84,15 +84,15 @@ val error_result_must_be_signature : unit -> 'a
 
 val error_signature_expected : struct_expr_body -> 'a
 
-val error_no_module_to_end : unit -> 'a 
+val error_no_module_to_end : unit -> 'a
 
 val error_no_modtype_to_end : unit -> 'a
 
-val error_not_a_modtype_loc : loc -> string -> 'a 
+val error_not_a_modtype_loc : loc -> string -> 'a
 
-val error_not_a_module_loc : loc -> string -> 'a 
+val error_not_a_module_loc : loc -> string -> 'a
 
-val error_not_a_module : string -> 'a 
+val error_not_a_module : string -> 'a
 
 val error_not_a_constant : label -> 'a
 
@@ -105,6 +105,6 @@ val error_local_context : label option -> 'a
 val error_no_such_label_sub : label->string->string->'a
 
 val resolver_of_environment :
-  mod_bound_id -> module_type_body -> module_path -> substitution 
+  mod_bound_id -> module_type_body -> module_path -> substitution
   -> env -> resolver
 

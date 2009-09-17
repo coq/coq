@@ -4,7 +4,7 @@ Unset Strict Implicit.
 Module Type SIG.
   Parameter id : forall A : Set, A -> A.
 End SIG.
- 
+
 Module M (X: SIG).
   Definition idid := X.id X.id.
   Definition id := idid X.id.

@@ -11,7 +11,7 @@
 Require Import BinPos.
 
 (**********************************************************************)
-(** Properties of the injection from binary positive numbers to Peano 
+(** Properties of the injection from binary positive numbers to Peano
     natural numbers *)
 
 (** Original development by Pierre Crégut, CNET, Lannion, France *)
@@ -50,7 +50,7 @@ Proof.
 intro x; induction x as [p IHp| p IHp| ]; intro y;
  [ destruct y as [p0| p0| ]
  | destruct y as [p0| p0| ]
- | destruct y as [p| p| ] ]; simpl in |- *; auto with arith; 
+ | destruct y as [p| p| ] ]; simpl in |- *; auto with arith;
  intro m;
  [ rewrite IHp; rewrite plus_assoc; trivial with arith
  | rewrite IHp; rewrite plus_assoc; trivial with arith
@@ -75,11 +75,11 @@ intro x; induction x as [p IHp| p IHp| ]; intro y;
  | destruct y as [p| p| ] ]; simpl in |- *; auto with arith;
  [ intros m; rewrite Pmult_nat_plus_carry_morphism; rewrite IHp;
     rewrite plus_assoc_reverse; rewrite plus_assoc_reverse;
-    rewrite (plus_permute m (Pmult_nat p (m + m))); 
+    rewrite (plus_permute m (Pmult_nat p (m + m)));
     trivial with arith
  | intros m; rewrite IHp; apply plus_assoc
  | intros m; rewrite Pmult_nat_succ_morphism;
-    rewrite (plus_comm (m + Pmult_nat p (m + m))); 
+    rewrite (plus_comm (m + Pmult_nat p (m + m)));
     apply plus_assoc_reverse
  | intros m; rewrite IHp; apply plus_permute
  | intros m; rewrite Pmult_nat_succ_morphism; apply plus_assoc_reverse ].
@@ -110,7 +110,7 @@ Proof.
 intro p; change 2 with (1 + 1) in |- *; rewrite Pmult_nat_r_plus_morphism;
  trivial.
 Qed.
- 
+
 (** [nat_of_P] is a morphism for multiplication *)
 
 Theorem nat_of_P_mult_morphism :
@@ -133,11 +133,11 @@ Proof.
 intro y; induction y as [p H| p H| ];
  [ destruct H as [x H1]; exists (S x + S x); unfold nat_of_P in |- *;
     simpl in |- *; change 2 with (1 + 1) in |- *;
-    rewrite Pmult_nat_r_plus_morphism; unfold nat_of_P in H1; 
+    rewrite Pmult_nat_r_plus_morphism; unfold nat_of_P in H1;
     rewrite H1; auto with arith
  | destruct H as [x H2]; exists (x + S x); unfold nat_of_P in |- *;
     simpl in |- *; change 2 with (1 + 1) in |- *;
-    rewrite Pmult_nat_r_plus_morphism; unfold nat_of_P in H2; 
+    rewrite Pmult_nat_r_plus_morphism; unfold nat_of_P in H2;
     rewrite H2; auto with arith
  | exists 0; auto with arith ].
 Qed.
@@ -182,7 +182,7 @@ intro x; induction x as [p H| p H| ]; intro y; destruct y as [q| q| ];
     apply ZL7; apply H; assumption
  | simpl in |- *; discriminate H2
  | unfold nat_of_P in |- *; simpl in |- *; apply lt_n_S; rewrite ZL6;
-    elim (ZL4 q); intros h H3; rewrite H3; simpl in |- *; 
+    elim (ZL4 q); intros h H3; rewrite H3; simpl in |- *;
     apply lt_O_Sn
  | unfold nat_of_P in |- *; simpl in |- *; rewrite ZL6; elim (ZL4 q);
     intros h H3; rewrite H3; simpl in |- *; rewrite <- plus_n_Sm;
@@ -314,7 +314,7 @@ Proof.
 Qed.
 
 (**********************************************************************)
-(** Properties of the shifted injection from Peano natural numbers to 
+(** Properties of the shifted injection from Peano natural numbers to
     binary positive numbers *)
 
 (** Composition of [P_of_succ_nat] and [nat_of_P] is successor on [nat] *)
@@ -366,7 +366,7 @@ intros; rewrite P_of_succ_nat_o_nat_of_P_eq_succ, Ppred_succ; auto.
 Qed.
 
 (**********************************************************************)
-(** Extra properties of the injection from binary positive numbers to Peano 
+(** Extra properties of the injection from binary positive numbers to Peano
     natural numbers *)
 
 (** [nat_of_P] is a morphism for subtraction on positive numbers *)
@@ -384,14 +384,14 @@ Qed.
 Lemma ZL16 : forall p q:positive, nat_of_P p - nat_of_P q < nat_of_P p.
 Proof.
 intros p q; elim (ZL4 p); elim (ZL4 q); intros h H1 i H2; rewrite H1;
- rewrite H2; simpl in |- *; unfold lt in |- *; apply le_n_S; 
+ rewrite H2; simpl in |- *; unfold lt in |- *; apply le_n_S;
  apply le_minus.
 Qed.
 
 Lemma ZL17 : forall p q:positive, nat_of_P p < nat_of_P (p + q).
 Proof.
 intros p q; rewrite nat_of_P_plus_morphism; unfold lt in |- *; elim (ZL4 q);
- intros k H; rewrite H; rewrite plus_comm; simpl in |- *; 
+ intros k H; rewrite H; rewrite plus_comm; simpl in |- *;
  apply le_n_S; apply le_plus_r.
 Qed.
 
@@ -410,7 +410,7 @@ intros; apply nat_of_P_lt_Lt_compare_complement_morphism;
        [ rewrite plus_comm; apply plus_lt_reg_l with (p := nat_of_P p);
           rewrite plus_assoc; rewrite le_plus_minus_r;
           [ rewrite (plus_comm (nat_of_P p)); apply plus_lt_compat_l;
-             apply nat_of_P_lt_Lt_compare_morphism; 
+             apply nat_of_P_lt_Lt_compare_morphism;
              assumption
           | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism;
              apply ZC1; assumption ]
@@ -454,7 +454,7 @@ intros x y z H; apply nat_of_P_inj; rewrite nat_of_P_mult_morphism;
     [ do 2 rewrite nat_of_P_mult_morphism;
        do 3 rewrite (mult_comm (nat_of_P x)); apply mult_minus_distr_r
     | apply nat_of_P_gt_Gt_compare_complement_morphism;
-       do 2 rewrite nat_of_P_mult_morphism; unfold gt in |- *; 
+       do 2 rewrite nat_of_P_mult_morphism; unfold gt in |- *;
        elim (ZL4 x); intros h H1; rewrite H1; apply mult_S_lt_compat_l;
        exact (nat_of_P_gt_Gt_compare_morphism y z H) ]
  | assumption ].

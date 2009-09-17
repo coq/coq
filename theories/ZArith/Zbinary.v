@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(** Bit vectors interpreted as integers. 
+(** Bit vectors interpreted as integers.
     Contribution by Jean Duprat (ENS Lyon). *)
 
 Require Import Bvector.
@@ -17,7 +17,7 @@ Require Export Zpower.
 Require Import Omega.
 
 (** L'évaluation des vecteurs de booléens se font à la fois en binaire et
-    en complément à  deux. Le nombre appartient à  Z. 
+    en complément à  deux. Le nombre appartient à  Z.
     On utilise donc Omega pour faire les calculs dans Z.
     De plus, on utilise les fonctions 2^n où n est un naturel, ici la longueur.
 	two_power_nat = [n:nat](POS (shift_nat n xH))
@@ -32,10 +32,10 @@ Require Import Omega.
 Section VALUE_OF_BOOLEAN_VECTORS.
 
 (** Les calculs sont effectués dans la convention positive usuelle.
-    Les valeurs correspondent soit à  l'écriture binaire (nat), 
+    Les valeurs correspondent soit à  l'écriture binaire (nat),
     soit au complément à  deux (int).
     On effectue le calcul suivant le schéma de Horner.
-    Le complément à  deux n'a de sens que sur les vecteurs de taille 
+    Le complément à  deux n'a de sens que sur les vecteurs de taille
     supérieure ou égale à  un, le bit de signe étant évalué négativement.
 *)
 
@@ -44,12 +44,12 @@ Section VALUE_OF_BOOLEAN_VECTORS.
       | true => 1%Z
       | false => 0%Z
     end.
-  
+
   Lemma binary_value : forall n:nat, Bvector n -> Z.
   Proof.
     simple induction n; intros.
     exact 0%Z.
-    
+
     inversion H0.
     exact (bit_value a + 2 * H H2)%Z.
   Defined.
@@ -98,19 +98,19 @@ Section ENCODING_VALUE.
   Proof.
     destruct z; simpl in |- *.
     trivial.
-    
+
     destruct p; simpl in |- *; trivial.
-    
+
     destruct p; simpl in |- *.
     destruct p as [p| p| ]; simpl in |- *.
     rewrite <- (Pdouble_minus_one_o_succ_eq_xI p); trivial.
 
     trivial.
-    
+
     trivial.
-    
+
     trivial.
-    
+
     trivial.
   Qed.
 
@@ -118,7 +118,7 @@ Section ENCODING_VALUE.
   Proof.
     simple induction n; intros.
     exact Bnil.
-    
+
     exact (Bcons (Zeven.Zodd_bool H0) n0 (H (Zeven.Zdiv2 H0))).
   Defined.
 
@@ -126,7 +126,7 @@ Section ENCODING_VALUE.
   Proof.
     simple induction n; intros.
     exact (Bcons (Zeven.Zodd_bool H) 0 Bnil).
-    
+
     exact (Bcons (Zeven.Zodd_bool H0) (S n0) (H (Zmod2 H0))).
   Defined.
 
@@ -206,10 +206,10 @@ Section Z_BRIC_A_BRAC.
   Proof.
     destruct z as [| p| p].
     auto.
-    
+
     destruct p; auto.
     simpl in |- *; intros; omega.
-    
+
     intro H; elim H; trivial.
   Qed.
 
@@ -221,11 +221,11 @@ Section Z_BRIC_A_BRAC.
     intros.
     cut (2 * Zeven.Zdiv2 z < 2 * two_power_nat n)%Z; intros.
     omega.
-    
+
     rewrite <- two_power_nat_S.
     destruct (Zeven.Zeven_odd_dec z); intros.
     rewrite <- Zeven.Zeven_div2; auto.
-    
+
     generalize (Zeven.Zodd_div2 z H z0); omega.
   Qed.
 
@@ -236,7 +236,7 @@ Section Z_BRIC_A_BRAC.
   Proof.
     intros; auto.
   Qed.
-  
+
   Lemma Zeven_bit_value :
     forall z:Z, Zeven.Zeven z -> bit_value (Zeven.Zodd_bool z) = 0%Z.
   Proof.
@@ -244,7 +244,7 @@ Section Z_BRIC_A_BRAC.
     destruct p; tauto || (intro H; elim H).
     destruct p; tauto || (intro H; elim H).
   Qed.
-  
+
   Lemma Zodd_bit_value :
     forall z:Z, Zeven.Zodd z -> bit_value (Zeven.Zodd_bool z) = 1%Z.
   Proof.
@@ -253,7 +253,7 @@ Section Z_BRIC_A_BRAC.
     destruct p; tauto || (intros; elim H).
     destruct p; tauto || (intros; elim H).
   Qed.
-  
+
   Lemma Zge_minus_two_power_nat_S :
     forall (n:nat) (z:Z),
       (z >= - two_power_nat (S n))%Z -> (Zmod2 z >= - two_power_nat n)%Z.
@@ -265,7 +265,7 @@ Section Z_BRIC_A_BRAC.
 
     rewrite (Zodd_bit_value z H); intros; omega.
   Qed.
-  
+
   Lemma Zlt_two_power_nat_S :
     forall (n:nat) (z:Z),
       (z < two_power_nat (S n))%Z -> (Zmod2 z < two_power_nat n)%Z.
@@ -282,7 +282,7 @@ End Z_BRIC_A_BRAC.
 
 Section COHERENT_VALUE.
 
-(** On vérifie que dans l'intervalle de définition les fonctions sont 
+(** On vérifie que dans l'intervalle de définition les fonctions sont
     réciproques l'une de l'autre. Elles utilisent les lemmes du bric-a-brac.
 *)
 
@@ -291,26 +291,26 @@ Section COHERENT_VALUE.
   Proof.
     induction bv as [| a n bv IHbv].
     auto.
-    
+
     rewrite binary_value_Sn.
     rewrite Z_to_binary_Sn.
     rewrite IHbv; trivial.
-    
+
     apply binary_value_pos.
   Qed.
-  
+
   Lemma two_compl_to_Z_to_two_compl :
     forall (n:nat) (bv:Bvector n) (b:bool),
       Z_to_two_compl n (two_compl_value n (Bcons b n bv)) = Bcons b n bv.
   Proof.
     induction bv as [| a n bv IHbv]; intro b.
     destruct b; auto.
-    
+
     rewrite two_compl_value_Sn.
     rewrite Z_to_two_compl_Sn.
     rewrite IHbv; trivial.
   Qed.
-  
+
   Lemma Z_to_binary_to_Z :
     forall (n:nat) (z:Z),
       (z >= 0)%Z ->
@@ -318,17 +318,17 @@ Section COHERENT_VALUE.
   Proof.
     induction n as [| n IHn].
     unfold two_power_nat, shift_nat in |- *; simpl in |- *; intros; omega.
-    
+
     intros; rewrite Z_to_binary_Sn_z.
     rewrite binary_value_Sn.
     rewrite IHn.
     apply Z_div2_value; auto.
-    
+
     apply Pdiv2; trivial.
-    
+
     apply Zdiv2_two_power_nat; trivial.
   Qed.
-  
+
   Lemma Z_to_two_compl_to_Z :
     forall (n:nat) (z:Z),
       (z >= - two_power_nat n)%Z ->
@@ -345,7 +345,7 @@ Section COHERENT_VALUE.
     generalize (Zmod2_twice z); omega.
 
     apply Zge_minus_two_power_nat_S; auto.
-    
+
     apply Zlt_two_power_nat_S; auto.
   Qed.
 

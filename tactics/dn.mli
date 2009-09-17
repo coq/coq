@@ -25,11 +25,11 @@ val create : unit -> ('lbl,'pat,'inf) t
 val add : ('lbl,'pat,'inf) t -> ('lbl,'pat) decompose_fun -> 'pat * 'inf
   -> ('lbl,'pat,'inf) t
 
-val rmv : ('lbl,'pat,'inf) t -> ('lbl,'pat) decompose_fun -> 'pat * 'inf 
+val rmv : ('lbl,'pat,'inf) t -> ('lbl,'pat) decompose_fun -> 'pat * 'inf
   -> ('lbl,'pat,'inf) t
 
 type 'res lookup_res = Label of 'res | Nothing | Everything
-    
+
 type ('lbl,'tree) lookup_fun = 'tree -> ('lbl * 'tree list) lookup_res
 
 (* [lookup t f tree] looks for trees (and their associated

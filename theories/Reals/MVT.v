@@ -115,7 +115,7 @@ Proof.
           (derivable_pt_mult _ _ _ (derivable_pt_const (f b - f a) c) (pr2 c P))));
       [ idtac | apply pr_nu ].
   rewrite derive_pt_minus; do 2 rewrite derive_pt_mult;
-    do 2 rewrite derive_pt_const; do 2 rewrite Rmult_0_l; 
+    do 2 rewrite derive_pt_const; do 2 rewrite Rmult_0_l;
       do 2 rewrite Rplus_0_l; reflexivity.
   unfold h in |- *; ring.
   intros; unfold h in |- *;
@@ -180,7 +180,7 @@ Proof.
   cut (derive_pt id x (X2 x x0) = 1).
   cut (derive_pt f x (X0 x x0) = f' x).
   intros; rewrite H4 in H3; rewrite H5 in H3; unfold id in H3;
-    rewrite Rmult_1_r in H3; rewrite Rmult_comm; symmetry  in |- *; 
+    rewrite Rmult_1_r in H3; rewrite Rmult_comm; symmetry  in |- *;
       assumption.
   apply derive_pt_eq_0; apply H0; elim x0; intros; split; left; assumption.
   apply derive_pt_eq_0; apply derivable_pt_lim_id.
@@ -258,7 +258,7 @@ Lemma nonpos_derivative_0 :
     decreasing f -> forall x:R, derive_pt f x (pr x) <= 0.
 Proof.
   intros f pr H x; assert (H0 := H); unfold decreasing in H0;
-    generalize (derivable_derive f x (pr x)); intro; elim H1; 
+    generalize (derivable_derive f x (pr x)); intro; elim H1;
       intros l H2.
   rewrite H2; case (Rtotal_order l 0); intro.
   left; assumption.
@@ -282,7 +282,7 @@ Proof.
   intro.
   generalize
     (Ropp_lt_gt_contravar (- ((f (x + delta / 2) + - f x) / (delta / 2)))
-      (- (l / 2)) H15). 
+      (- (l / 2)) H15).
   repeat rewrite Ropp_involutive.
   intro.
   generalize
@@ -432,7 +432,7 @@ Lemma strictincreasing_strictdecreasing_opp :
   forall f:R -> R, strict_increasing f -> strict_decreasing (- f)%F.
 Proof.
   unfold strict_increasing, strict_decreasing, opp_fct in |- *; intros;
-    generalize (H x y H0); intro; apply Ropp_lt_gt_contravar; 
+    generalize (H x y H0); intro; apply Ropp_lt_gt_contravar;
       assumption.
 Qed.
 
@@ -467,14 +467,14 @@ Qed.
 (**********)
 Lemma null_derivative_0 :
   forall (f:R -> R) (pr:derivable f),
-    constant f -> forall x:R, derive_pt f x (pr x) = 0. 
+    constant f -> forall x:R, derive_pt f x (pr x) = 0.
 Proof.
   intros.
   unfold constant in H.
   apply derive_pt_eq_0.
   intros; exists (mkposreal 1 Rlt_0_1); simpl in |- *; intros.
   rewrite (H x (x + h)); unfold Rminus in |- *; unfold Rdiv in |- *;
-    rewrite Rplus_opp_r; rewrite Rmult_0_l; rewrite Rplus_opp_r; 
+    rewrite Rplus_opp_r; rewrite Rmult_0_l; rewrite Rplus_opp_r;
       rewrite Rabs_R0; assumption.
 Qed.
 
@@ -576,7 +576,7 @@ Lemma derive_increasing_interv_var :
     forall x y:R, a <= x <= b -> a <= y <= b -> x < y -> f x <= f y.
 Proof.
   intros a b f pr H H0 x y H1 H2 H3;
-    generalize (derive_increasing_interv_ax a b f pr H); 
+    generalize (derive_increasing_interv_ax a b f pr H);
       intro; elim H4; intros _ H5; apply (H5 H0 x y H1 H2 H3).
 Qed.
 
@@ -618,7 +618,7 @@ Proof.
   cut (derivable (g - f)).
   intro X.
   cut (forall c:R, a <= c <= b -> derive_pt (g - f) c (X c) <= 0).
-  intro. 
+  intro.
   assert (H2 := IAF (g - f)%F a b 0 X H H1).
   rewrite Rmult_0_l in H2; unfold minus_fct in H2.
   apply Rplus_le_reg_l with (- f b + f a).
@@ -697,11 +697,11 @@ Proof.
     clear H0; intros H0 _; exists (g1 a - g2 a); intros;
       assert (H3 : forall x:R, a <= x <= b -> derivable_pt g1 x).
   intros; unfold derivable_pt in |- *; exists (f x0); elim (H x0 H3);
-    intros; eapply derive_pt_eq_1; symmetry  in |- *; 
+    intros; eapply derive_pt_eq_1; symmetry  in |- *;
       apply H4.
   assert (H4 : forall x:R, a <= x <= b -> derivable_pt g2 x).
   intros; unfold derivable_pt in |- *; exists (f x0);
-    elim (H0 x0 H4); intros; eapply derive_pt_eq_1; symmetry  in |- *; 
+    elim (H0 x0 H4); intros; eapply derive_pt_eq_1; symmetry  in |- *;
       apply H5.
   assert (H5 : forall x:R, a < x < b -> derivable_pt (g1 - g2) x).
   intros; elim H5; intros; apply derivable_pt_minus;
@@ -717,6 +717,6 @@ Proof.
   apply derivable_pt_lim_minus; [ elim (H _ H9) | elim (H0 _ H9) ]; intros;
     eapply derive_pt_eq_1; symmetry  in |- *; apply H10.
   assert (H8 := null_derivative_loc (g1 - g2)%F a b H5 H6 H7);
-    unfold constant_D_eq in H8; assert (H9 := H8 _ H2); 
+    unfold constant_D_eq in H8; assert (H9 := H8 _ H2);
       unfold minus_fct in H9; rewrite <- H9; ring.
 Qed.

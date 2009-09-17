@@ -4,7 +4,7 @@ Open Scope Z_scope.
 (** Test of the zify preprocessor for (R)Omega *)
 
 (* More details in file PreOmega.v
- 
+
    (r)omega with Z        : starts with zify_op
    (r)omega with nat      : starts with zify_nat
    (r)omega with positive : starts with zify_positive

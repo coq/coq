@@ -13,19 +13,19 @@ Require Zdiv.
 
 Open Scope Z_scope.
 
-(** This file provides results about the Round-Toward-Zero Euclidean 
+(** This file provides results about the Round-Toward-Zero Euclidean
   division [ZOdiv_eucl], whose projections are [ZOdiv] and [ZOmod].
-  Definition of this division can be found in file [ZOdiv_def]. 
+  Definition of this division can be found in file [ZOdiv_def].
 
-  This division and the one defined in Zdiv agree only on positive 
-  numbers. Otherwise, Zdiv performs Round-Toward-Bottom. 
+  This division and the one defined in Zdiv agree only on positive
+  numbers. Otherwise, Zdiv performs Round-Toward-Bottom.
 
-  The current approach is compatible with the division of usual 
-  programming languages such as Ocaml. In addition, it has nicer 
+  The current approach is compatible with the division of usual
+  programming languages such as Ocaml. In addition, it has nicer
   properties with respect to opposite and other usual operations.
 *)
 
-(** Since ZOdiv and Zdiv are not meant to be used concurrently, 
+(** Since ZOdiv and Zdiv are not meant to be used concurrently,
    we reuse the same notation. *)
 
 Infix "/" := ZOdiv : Z_scope.
@@ -36,7 +36,7 @@ Infix "mod" := Nmod (at level 40, no associativity) : N_scope.
 
 (** Auxiliary results on the ad-hoc comparison [NPgeb]. *)
 
-Lemma NPgeb_Zge : forall (n:N)(p:positive), 
+Lemma NPgeb_Zge : forall (n:N)(p:positive),
   NPgeb n p = true -> Z_of_N n >= Zpos p.
 Proof.
  destruct n as [|n]; simpl; intros.
@@ -44,7 +44,7 @@ Proof.
  red; simpl; destruct Pcompare; now auto.
 Qed.
 
-Lemma NPgeb_Zlt : forall (n:N)(p:positive), 
+Lemma NPgeb_Zlt : forall (n:N)(p:positive),
   NPgeb n p = false -> Z_of_N n < Zpos p.
 Proof.
  destruct n as [|n]; simpl; intros.
@@ -54,7 +54,7 @@ Qed.
 
 (** * Relation between division on N and on Z. *)
 
-Lemma Ndiv_Z0div : forall a b:N, 
+Lemma Ndiv_Z0div : forall a b:N,
   Z_of_N (a/b) = (Z_of_N a / Z_of_N b).
 Proof.
   intros.
@@ -62,7 +62,7 @@ Proof.
   unfold Ndiv, ZOdiv; simpl; destruct Pdiv_eucl; auto.
 Qed.
 
-Lemma Nmod_Z0mod : forall a b:N, 
+Lemma Nmod_Z0mod : forall a b:N,
   Z_of_N (a mod b) = (Z_of_N a) mod (Z_of_N b).
 Proof.
   intros.
@@ -72,11 +72,11 @@ Qed.
 
 (** * Characterization of this euclidean division. *)
 
-(** First, the usual equation [a=q*b+r]. Notice that [a mod 0] 
+(** First, the usual equation [a=q*b+r]. Notice that [a mod 0]
    has been chosen to be [a], so this equation holds even for [b=0].
 *)
 
-Theorem N_div_mod_eq : forall a b, 
+Theorem N_div_mod_eq : forall a b,
   a = (b * (Ndiv a b) + (Nmod a b))%N.
 Proof.
   intros; generalize (Ndiv_eucl_correct a b).
@@ -84,7 +84,7 @@ Proof.
   intro H; rewrite H; rewrite Nmult_comm; auto.
 Qed.
 
-Theorem ZO_div_mod_eq : forall a b, 
+Theorem ZO_div_mod_eq : forall a b,
   a = b * (ZOdiv a b) + (ZOmod a b).
 Proof.
   intros; generalize (ZOdiv_eucl_correct a b).
@@ -94,8 +94,8 @@ Qed.
 
 (** Then, the inequalities constraining the remainder. *)
 
-Theorem Pdiv_eucl_remainder : forall a b:positive, 
-  Z_of_N (snd (Pdiv_eucl a b)) < Zpos b. 
+Theorem Pdiv_eucl_remainder : forall a b:positive,
+  Z_of_N (snd (Pdiv_eucl a b)) < Zpos b.
 Proof.
   induction a; cbv beta iota delta [Pdiv_eucl]; fold Pdiv_eucl; cbv zeta.
   intros b; generalize (IHa b); case Pdiv_eucl.
@@ -111,7 +111,7 @@ Proof.
   destruct b; simpl; romega with *.
 Qed.
 
-Theorem Nmod_lt : forall (a b:N), b<>0%N -> 
+Theorem Nmod_lt : forall (a b:N), b<>0%N ->
   (a mod b < b)%N.
 Proof.
   destruct b as [ |b]; intro H; try solve [elim H;auto].
@@ -122,20 +122,20 @@ Qed.
 
 (** The remainder is bounded by the divisor, in term of absolute values *)
 
-Theorem ZOmod_lt : forall a b:Z, b<>0 -> 
+Theorem ZOmod_lt : forall a b:Z, b<>0 ->
   Zabs (a mod b) < Zabs b.
 Proof.
-  destruct b as [ |b|b]; intro H; try solve [elim H;auto]; 
-  destruct a as [ |a|a]; try solve [compute;auto]; unfold ZOmod, ZOdiv_eucl; 
-  generalize (Pdiv_eucl_remainder a b); destruct Pdiv_eucl; simpl; 
+  destruct b as [ |b|b]; intro H; try solve [elim H;auto];
+  destruct a as [ |a|a]; try solve [compute;auto]; unfold ZOmod, ZOdiv_eucl;
+  generalize (Pdiv_eucl_remainder a b); destruct Pdiv_eucl; simpl;
   try rewrite Zabs_Zopp; rewrite Zabs_eq; auto; apply Z_of_N_le_0.
 Qed.
 
-(** The sign of the remainder is the one of [a]. Due to the possible 
+(** The sign of the remainder is the one of [a]. Due to the possible
    nullity of [a], a general result is to be stated in the following form:
-*)   
+*)
 
-Theorem ZOmod_sgn : forall a b:Z, 
+Theorem ZOmod_sgn : forall a b:Z,
   0 <= Zsgn (a mod b) * Zsgn a.
 Proof.
   destruct b as [ |b|b]; destruct a as [ |a|a]; simpl; auto with zarith;
@@ -150,16 +150,16 @@ Proof.
  destruct z; simpl; intuition auto with zarith.
 Qed.
 
-Theorem ZOmod_sgn2 : forall a b:Z, 
+Theorem ZOmod_sgn2 : forall a b:Z,
   0 <= (a mod b) * a.
 Proof.
   intros; rewrite <-Zsgn_pos_iff, Zsgn_Zmult; apply ZOmod_sgn.
-Qed.  
+Qed.
 
-(** Reformulation of [ZOdiv_lt] and [ZOmod_sgn] in 2 
+(** Reformulation of [ZOdiv_lt] and [ZOmod_sgn] in 2
   then 4 particular cases. *)
 
-Theorem ZOmod_lt_pos : forall a b:Z, 0<=a -> b<>0 ->   
+Theorem ZOmod_lt_pos : forall a b:Z, 0<=a -> b<>0 ->
   0 <= a mod b < Zabs b.
 Proof.
   intros.
@@ -171,7 +171,7 @@ Proof.
   generalize (ZOmod_lt a b H0); romega with *.
 Qed.
 
-Theorem ZOmod_lt_neg : forall a b:Z, a<=0 -> b<>0 ->   
+Theorem ZOmod_lt_neg : forall a b:Z, a<=0 -> b<>0 ->
   -Zabs b < a mod b <= 0.
 Proof.
   intros.
@@ -209,49 +209,49 @@ Qed.
 
 Theorem ZOdiv_opp_l : forall a b:Z, (-a)/b = -(a/b).
 Proof.
- destruct a; destruct b; simpl; auto; 
+ destruct a; destruct b; simpl; auto;
   unfold ZOdiv, ZOdiv_eucl; destruct Pdiv_eucl; simpl; auto with zarith.
 Qed.
 
 Theorem ZOdiv_opp_r : forall a b:Z, a/(-b) = -(a/b).
 Proof.
- destruct a; destruct b; simpl; auto; 
+ destruct a; destruct b; simpl; auto;
   unfold ZOdiv, ZOdiv_eucl; destruct Pdiv_eucl; simpl; auto with zarith.
 Qed.
 
 Theorem ZOmod_opp_l : forall a b:Z, (-a) mod b = -(a mod b).
 Proof.
- destruct a; destruct b; simpl; auto; 
+ destruct a; destruct b; simpl; auto;
   unfold ZOmod, ZOdiv_eucl; destruct Pdiv_eucl; simpl; auto with zarith.
 Qed.
 
 Theorem ZOmod_opp_r : forall a b:Z, a mod (-b) = a mod b.
 Proof.
- destruct a; destruct b; simpl; auto; 
+ destruct a; destruct b; simpl; auto;
   unfold ZOmod, ZOdiv_eucl; destruct Pdiv_eucl; simpl; auto with zarith.
 Qed.
 
 Theorem ZOdiv_opp_opp : forall a b:Z, (-a)/(-b) = a/b.
 Proof.
- destruct a; destruct b; simpl; auto; 
+ destruct a; destruct b; simpl; auto;
   unfold ZOdiv, ZOdiv_eucl; destruct Pdiv_eucl; simpl; auto with zarith.
 Qed.
 
 Theorem ZOmod_opp_opp : forall a b:Z, (-a) mod (-b) = -(a mod b).
 Proof.
- destruct a; destruct b; simpl; auto; 
+ destruct a; destruct b; simpl; auto;
   unfold ZOmod, ZOdiv_eucl; destruct Pdiv_eucl; simpl; auto with zarith.
 Qed.
 
 (** * Unicity results *)
 
-Definition Remainder a b r := 
+Definition Remainder a b r :=
   (0 <= a /\ 0 <= r < Zabs b) \/ (a <= 0 /\ -Zabs b < r <= 0).
 
-Definition Remainder_alt a b r := 
+Definition Remainder_alt a b r :=
   Zabs r < Zabs b /\ 0 <= r * a.
 
-Lemma Remainder_equiv : forall a b r, 
+Lemma Remainder_equiv : forall a b r,
  Remainder a b r <-> Remainder_alt a b r.
 Proof.
   unfold Remainder, Remainder_alt; intuition.
@@ -259,12 +259,12 @@ Proof.
   romega with *.
   rewrite <-(Zmult_opp_opp).
   apply Zmult_le_0_compat; romega.
-  assert (0 <= Zsgn r * Zsgn a) by (rewrite <-Zsgn_Zmult, Zsgn_pos_iff; auto). 
+  assert (0 <= Zsgn r * Zsgn a) by (rewrite <-Zsgn_Zmult, Zsgn_pos_iff; auto).
   destruct r; simpl Zsgn in *; romega with *.
 Qed.
 
 Theorem ZOdiv_mod_unique_full:
- forall a b q r, Remainder a b r -> 
+ forall a b q r, Remainder a b r ->
    a = b*q + r -> q = a/b /\ r = a mod b.
 Proof.
   destruct 1 as [(H,H0)|(H,H0)]; intros.
@@ -281,30 +281,30 @@ Proof.
   romega with *.
 Qed.
 
-Theorem ZOdiv_unique_full: 
- forall a b q r, Remainder a b r -> 
+Theorem ZOdiv_unique_full:
+ forall a b q r, Remainder a b r ->
   a = b*q + r -> q = a/b.
 Proof.
  intros; destruct (ZOdiv_mod_unique_full a b q r); auto.
 Qed.
 
 Theorem ZOdiv_unique:
- forall a b q r, 0 <= a -> 0 <= r < b -> 
+ forall a b q r, 0 <= a -> 0 <= r < b ->
    a = b*q + r -> q = a/b.
 Proof.
   intros; eapply ZOdiv_unique_full; eauto.
   red; romega with *.
 Qed.
 
-Theorem ZOmod_unique_full: 
- forall a b q r, Remainder a b r -> 
+Theorem ZOmod_unique_full:
+ forall a b q r, Remainder a b r ->
   a = b*q + r -> r = a mod b.
 Proof.
  intros; destruct (ZOdiv_mod_unique_full a b q r); auto.
 Qed.
 
 Theorem ZOmod_unique:
- forall a b q r, 0 <= a -> 0 <= r < b -> 
+ forall a b q r, 0 <= a -> 0 <= r < b ->
    a = b*q + r -> r = a mod b.
 Proof.
   intros; eapply ZOmod_unique_full; eauto.
@@ -345,7 +345,7 @@ Proof.
   rewrite Remainder_equiv; red; simpl; auto with zarith.
 Qed.
 
-Hint Resolve ZOmod_0_l ZOmod_0_r ZOdiv_0_l ZOdiv_0_r ZOdiv_1_r ZOmod_1_r 
+Hint Resolve ZOmod_0_l ZOmod_0_r ZOdiv_0_l ZOdiv_0_r ZOdiv_1_r ZOmod_1_r
  : zarith.
 
 Lemma ZOdiv_1_l: forall a, 1 < a -> 1/a = 0.
@@ -381,7 +381,7 @@ Qed.
 
 Lemma ZO_div_mult : forall a b:Z, b <> 0 -> (a*b)/b = a.
 Proof.
-  intros; symmetry; apply ZOdiv_unique_full with 0; auto with zarith; 
+  intros; symmetry; apply ZOdiv_unique_full with 0; auto with zarith;
    [ red; romega with * | ring].
 Qed.
 
@@ -403,12 +403,12 @@ Proof.
   subst b; rewrite ZOdiv_0_r; auto.
 Qed.
 
-(** As soon as the divisor is greater or equal than 2, 
+(** As soon as the divisor is greater or equal than 2,
     the division is strictly decreasing. *)
 
 Lemma ZO_div_lt : forall a b:Z, 0 < a -> 2 <= b -> a/b < a.
 Proof.
-  intros. 
+  intros.
   assert (Hb : 0 < b) by romega.
   assert (H1 : 0 <= a/b) by (apply ZO_div_pos; auto with zarith).
   assert (H2 : 0 <= a mod b < b) by (apply ZOmod_lt_pos_pos; auto with zarith).
@@ -441,7 +441,7 @@ Lemma ZO_div_monotone_pos : forall a b c:Z, 0<=c -> 0<=a<=b -> a/c <= b/c.
 Proof.
   intros.
   destruct H0.
-  destruct (Zle_lt_or_eq 0 c H); 
+  destruct (Zle_lt_or_eq 0 c H);
    [ clear H | subst c; do 2 rewrite ZOdiv_0_r; auto].
   generalize (ZO_div_mod_eq a c).
   generalize (ZOmod_lt_pos_pos a c H0 H2).
@@ -452,7 +452,7 @@ Proof.
   intro.
   absurd (a - b >= 1).
   omega.
-  replace (a-b) with (c * (a/c-b/c) + a mod c - b mod c) by 
+  replace (a-b) with (c * (a/c-b/c) + a mod c - b mod c) by
     (symmetry; pattern a at 1; rewrite H5; pattern b at 1; rewrite H3; ring).
   assert (c * (a / c - b / c) >= c * 1).
   apply Zmult_ge_compat_l.
@@ -519,7 +519,7 @@ Proof.
   apply ZO_div_pos; auto with zarith.
 Qed.
 
-(** The previous inequalities between [b*(a/b)] and [a] are exact 
+(** The previous inequalities between [b*(a/b)] and [a] are exact
     iff the modulo is zero. *)
 
 Lemma ZO_div_exact_full_1 : forall a b:Z, a = b*(a/b) -> a mod b = 0.
@@ -535,7 +535,7 @@ Qed.
 (** A modulo cannot grow beyond its starting point. *)
 
 Theorem ZOmod_le: forall a b, 0 <= a -> 0 <= b -> a mod b <= a.
-Proof. 
+Proof.
   intros a b H1 H2.
   destruct (Zle_lt_or_eq _ _ H2).
   case (Zle_or_lt b a); intros H3.
@@ -546,7 +546,7 @@ Qed.
 
 (** Some additionnal inequalities about Zdiv. *)
 
-Theorem ZOdiv_le_upper_bound: 
+Theorem ZOdiv_le_upper_bound:
   forall a b q, 0 < b -> a <= q*b -> a/b <= q.
 Proof.
   intros.
@@ -572,21 +572,21 @@ Proof.
   apply ZO_div_monotone; auto with zarith.
 Qed.
 
-Theorem ZOdiv_sgn: forall a b, 
+Theorem ZOdiv_sgn: forall a b,
   0 <= Zsgn (a/b) * Zsgn a * Zsgn b.
 Proof.
-  destruct a as [ |a|a]; destruct b as [ |b|b]; simpl; auto with zarith; 
+  destruct a as [ |a|a]; destruct b as [ |b|b]; simpl; auto with zarith;
   unfold ZOdiv; simpl; destruct Pdiv_eucl; simpl; destruct n; simpl; auto with zarith.
 Qed.
 
 (** * Relations between usual operations and Zmod and Zdiv *)
 
-(** First, a result that used to be always valid with Zdiv, 
-    but must be restricted here. 
+(** First, a result that used to be always valid with Zdiv,
+    but must be restricted here.
     For instance, now (9+(-5)*2) mod 2 = -1 <> 1 = 9 mod 2 *)
 
-Lemma ZO_mod_plus : forall a b c:Z, 
- 0 <= (a+b*c) * a -> 
+Lemma ZO_mod_plus : forall a b c:Z,
+ 0 <= (a+b*c) * a ->
  (a + b * c) mod c = a mod c.
 Proof.
   intros; destruct (Z_eq_dec a 0) as [Ha|Ha].
@@ -605,8 +605,8 @@ Proof.
   generalize (ZO_div_mod_eq a c); romega.
 Qed.
 
-Lemma ZO_div_plus : forall a b c:Z, 
- 0 <= (a+b*c) * a -> c<>0 -> 
+Lemma ZO_div_plus : forall a b c:Z,
+ 0 <= (a+b*c) * a -> c<>0 ->
  (a + b * c) / c = a / c + b.
 Proof.
   intros; destruct (Z_eq_dec a 0) as [Ha|Ha].
@@ -624,17 +624,17 @@ Proof.
   generalize (ZO_div_mod_eq a c); romega.
 Qed.
 
-Theorem ZO_div_plus_l: forall a b c : Z, 
- 0 <= (a*b+c)*c -> b<>0 -> 
+Theorem ZO_div_plus_l: forall a b c : Z,
+ 0 <= (a*b+c)*c -> b<>0 ->
  b<>0 -> (a * b + c) / b = a + c / b.
 Proof.
   intros a b c; rewrite Zplus_comm; intros; rewrite ZO_div_plus;
-  try apply Zplus_comm; auto with zarith. 
+  try apply Zplus_comm; auto with zarith.
 Qed.
 
 (** Cancellations. *)
 
-Lemma ZOdiv_mult_cancel_r : forall a b c:Z, 
+Lemma ZOdiv_mult_cancel_r : forall a b c:Z,
  c<>0 -> (a*c)/(b*c) = a/b.
 Proof.
  intros a b c Hc.
@@ -655,7 +655,7 @@ Proof.
  pattern a at 1; rewrite (ZO_div_mod_eq a b); ring.
 Qed.
 
-Lemma ZOdiv_mult_cancel_l : forall a b c:Z, 
+Lemma ZOdiv_mult_cancel_l : forall a b c:Z,
  c<>0 -> (c*a)/(c*b) = a/b.
 Proof.
   intros.
@@ -663,7 +663,7 @@ Proof.
   apply ZOdiv_mult_cancel_r; auto.
 Qed.
 
-Lemma ZOmult_mod_distr_l: forall a b c, 
+Lemma ZOmult_mod_distr_l: forall a b c,
   (c*a) mod (c*b) = c * (a mod b).
 Proof.
   intros; destruct (Z_eq_dec c 0) as [Hc|Hc].
@@ -678,7 +678,7 @@ Proof.
   ring.
 Qed.
 
-Lemma ZOmult_mod_distr_r: forall a b c, 
+Lemma ZOmult_mod_distr_r: forall a b c,
   (a*c) mod (b*c) = (a mod b) * c.
 Proof.
   intros; repeat rewrite (fun x => (Zmult_comm x c)).
@@ -706,7 +706,7 @@ Proof.
   pattern a at 2 3; rewrite (ZO_div_mod_eq a n); auto with zarith.
   pattern b at 2 3; rewrite (ZO_div_mod_eq b n); auto with zarith.
   set (A:=a mod n); set (B:=b mod n); set (A':=a/n); set (B':=b/n).
-  replace (A*(n*A'+A)*(B*(n*B'+B))) with (((n*A' + A) * (n*B' + B))*(A*B)) 
+  replace (A*(n*A'+A)*(B*(n*B'+B))) with (((n*A' + A) * (n*B' + B))*(A*B))
    by ring.
   replace ((n*A' + A) * (n*B' + B))
    with (A*B + (A'*B+B'*A+n*A'*B')*n) by ring.
@@ -715,15 +715,15 @@ Proof.
 Qed.
 
 (** addition and modulo
-  
-  Generally speaking, unlike with Zdiv, we don't have 
-       (a+b) mod n = (a mod n + b mod n) mod n 
-  for any a and b. 
-  For instance, take (8 + (-10)) mod 3 = -2 whereas 
+
+  Generally speaking, unlike with Zdiv, we don't have
+       (a+b) mod n = (a mod n + b mod n) mod n
+  for any a and b.
+  For instance, take (8 + (-10)) mod 3 = -2 whereas
   (8 mod 3 + (-10 mod 3)) mod 3 = 1. *)
 
 Theorem ZOplus_mod: forall a b n,
- 0 <= a * b -> 
+ 0 <= a * b ->
  (a + b) mod n = (a mod n + b mod n) mod n.
 Proof.
   assert (forall a b n, 0<a -> 0<b ->
@@ -755,16 +755,16 @@ Proof.
   rewrite <-(Zopp_involutive a), <-(Zopp_involutive b).
   rewrite <- Zopp_plus_distr; rewrite ZOmod_opp_l.
   rewrite (ZOmod_opp_l (-a)),(ZOmod_opp_l (-b)).
-  match goal with |- _ = (-?x+-?y) mod n => 
+  match goal with |- _ = (-?x+-?y) mod n =>
    rewrite <-(Zopp_plus_distr x y), ZOmod_opp_l end.
   f_equal; apply H; auto with zarith.
 Qed.
 
-Lemma ZOplus_mod_idemp_l: forall a b n, 
- 0 <= a * b -> 
+Lemma ZOplus_mod_idemp_l: forall a b n,
+ 0 <= a * b ->
  (a mod n + b) mod n = (a + b) mod n.
 Proof.
-  intros. 
+  intros.
   rewrite ZOplus_mod.
   rewrite ZOmod_mod.
   symmetry.
@@ -785,8 +785,8 @@ Proof.
   destruct b; simpl; auto with zarith.
 Qed.
 
-Lemma ZOplus_mod_idemp_r: forall a b n, 
- 0 <= a*b -> 
+Lemma ZOplus_mod_idemp_r: forall a b n,
+ 0 <= a*b ->
  (b + a mod n) mod n = (b + a) mod n.
 Proof.
   intros.
@@ -816,12 +816,12 @@ Proof.
    replace (b * (c * (a / b / c) + (a / b) mod c) + a mod b) with
     ((a / b / c)*(b * c)  + (b * ((a / b) mod c) + a mod b)) by ring.
    assert (b*c<>0).
-    intro H2; 
-    assert (H3: c <> 0) by auto with zarith; 
+    intro H2;
+    assert (H3: c <> 0) by auto with zarith;
     rewrite (Zmult_integral_l _ _ H3 H2) in H0; auto with zarith.
    assert (0<=a/b) by (apply (ZO_div_pos a b); auto with zarith).
    assert (0<=a mod b < b) by (apply ZOmod_lt_pos_pos; auto with zarith).
-   assert (0<=(a/b) mod c < c) by 
+   assert (0<=(a/b) mod c < c) by
     (apply ZOmod_lt_pos_pos; auto with zarith).
    rewrite ZO_div_plus_l; auto with zarith.
    rewrite (ZOdiv_small (b * ((a / b) mod c) + a mod b)).
@@ -846,14 +846,14 @@ Proof.
    intros; destruct b as [ |b|b].
    repeat rewrite ZOdiv_0_r; reflexivity.
    apply H0; auto with zarith.
-   change (Zneg b) with (-Zpos b); 
+   change (Zneg b) with (-Zpos b);
    repeat (rewrite ZOdiv_opp_r || rewrite ZOdiv_opp_l || rewrite <- Zopp_mult_distr_l).
    f_equal; apply H0; auto with zarith.
   (* a b c general *)
   intros; destruct c as [ |c|c].
   rewrite Zmult_0_r; repeat rewrite ZOdiv_0_r; reflexivity.
   apply H1; auto with zarith.
-  change (Zneg c) with (-Zpos c); 
+  change (Zneg c) with (-Zpos c);
   rewrite <- Zopp_mult_distr_r; do 2 rewrite ZOdiv_opp_r.
   f_equal; apply H1; auto with zarith.
 Qed.
@@ -864,11 +864,11 @@ Theorem ZOdiv_mult_le:
  forall a b c, 0<=a -> 0<=b -> 0<=c -> c*(a/b) <= (c*a)/b.
 Proof.
   intros a b c Ha Hb Hc.
-  destruct (Zle_lt_or_eq _ _ Ha); 
+  destruct (Zle_lt_or_eq _ _ Ha);
    [ | subst; rewrite ZOdiv_0_l, Zmult_0_r, ZOdiv_0_l; auto].
-  destruct (Zle_lt_or_eq _ _ Hb); 
+  destruct (Zle_lt_or_eq _ _ Hb);
    [ | subst; rewrite ZOdiv_0_r, ZOdiv_0_r, Zmult_0_r; auto].
-  destruct (Zle_lt_or_eq _ _ Hc); 
+  destruct (Zle_lt_or_eq _ _ Hc);
    [ | subst; rewrite ZOdiv_0_l; auto].
   case (ZOmod_lt_pos_pos a b); auto with zarith; intros Hu1 Hu2.
   case (ZOmod_lt_pos_pos c b); auto with zarith; intros Hv1 Hv2.
@@ -884,14 +884,14 @@ Proof.
   apply (ZOmod_le ((c mod b) * (a mod b)) b); auto with zarith.
   apply Zmult_le_compat_r; auto with zarith.
   apply (ZOmod_le c b); auto.
-  pattern (c * a) at 1; rewrite (ZO_div_mod_eq (c * a) b); try ring; 
+  pattern (c * a) at 1; rewrite (ZO_div_mod_eq (c * a) b); try ring;
     auto with zarith.
   pattern a at 1; rewrite (ZO_div_mod_eq a b); try ring; auto with zarith.
 Qed.
 
 (** ZOmod is related to divisibility (see more in Znumtheory) *)
 
-Lemma ZOmod_divides : forall a b, 
+Lemma ZOmod_divides : forall a b,
  a mod b = 0 <-> exists c, a = b*c.
 Proof.
  split; intros.
@@ -910,7 +910,7 @@ Qed.
 
 (** They agree at least on positive numbers: *)
 
-Theorem ZOdiv_eucl_Zdiv_eucl_pos : forall a b:Z, 0 <= a -> 0 < b -> 
+Theorem ZOdiv_eucl_Zdiv_eucl_pos : forall a b:Z, 0 <= a -> 0 < b ->
   a/b = Zdiv.Zdiv a b /\ a mod b = Zdiv.Zmod a b.
 Proof.
   intros.
@@ -921,7 +921,7 @@ Proof.
   symmetry; apply ZO_div_mod_eq; auto with *.
 Qed.
 
-Theorem ZOdiv_Zdiv_pos : forall a b, 0 <= a -> 0 <= b -> 
+Theorem ZOdiv_Zdiv_pos : forall a b, 0 <= a -> 0 <= b ->
   a/b = Zdiv.Zdiv a b.
 Proof.
  intros a b Ha Hb.
@@ -930,7 +930,7 @@ Proof.
  subst; rewrite ZOdiv_0_r, Zdiv.Zdiv_0_r; reflexivity.
 Qed.
 
-Theorem ZOmod_Zmod_pos : forall a b, 0 <= a -> 0 < b -> 
+Theorem ZOmod_Zmod_pos : forall a b, 0 <= a -> 0 < b ->
   a mod b = Zdiv.Zmod a b.
 Proof.
  intros a b Ha Hb; generalize (ZOdiv_eucl_Zdiv_eucl_pos a b Ha Hb);
@@ -939,9 +939,9 @@ Qed.
 
 (** Modulos are null at the same places *)
 
-Theorem ZOmod_Zmod_zero : forall a b, b<>0 -> 
+Theorem ZOmod_Zmod_zero : forall a b, b<>0 ->
  (a mod b = 0 <-> Zdiv.Zmod a b = 0).
 Proof.
  intros.
  rewrite ZOmod_divides, Zdiv.Zmod_divides; intuition.
-Qed. 
+Qed.

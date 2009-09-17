@@ -10,7 +10,7 @@ Require Import Psatz.
 Require Import QArith.
 Require Import Ring_normalize.
 
-Lemma plus_minus : forall x y, 
+Lemma plus_minus : forall x y,
   0 == x + y -> 0 ==  x -y -> 0 == x /\ 0 == y.
 Proof.
   intros.
@@ -37,7 +37,7 @@ Qed.
 Open Scope Z_scope.
 Open Scope Q_scope.
 
-Lemma vcgen_25 : forall   
+Lemma vcgen_25 : forall
   (n : Q)
   (m : Q)
   (jt : Q)

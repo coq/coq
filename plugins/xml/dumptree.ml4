@@ -42,7 +42,7 @@ let thin_sign osign sign =
 ;;
 
 let pr_tactic_xml = function
-  | TacArg (Tacexp t) -> str "<tactic cmd=\"" ++ xmlstream (Pptactic.pr_glob_tactic (Global.env()) t) ++ str "\"/>" 
+  | TacArg (Tacexp t) -> str "<tactic cmd=\"" ++ xmlstream (Pptactic.pr_glob_tactic (Global.env()) t) ++ str "\"/>"
   | t -> str "<tactic cmd=\"" ++ xmlstream (Pptactic.pr_tactic (Global.env()) t) ++ str "\"/>"
 ;;
 
@@ -68,10 +68,10 @@ let pr_rule_xml pr = function
 let pr_var_decl_xml env (id,c,typ) =
   let ptyp = print_constr_env env typ in
   match c with
-  | None -> 
+  | None ->
       (str "<hyp id=\"" ++ xmlstream (pr_id id) ++ str "\" type=\"" ++ xmlstream ptyp ++ str "\"/>")
   | Some c ->
-      (* Force evaluation *) 
+      (* Force evaluation *)
       let pb = print_constr_env env c in
       (str "<hyp id=\"" ++ xmlstream (pr_id id) ++ str "\" type=\"" ++ xmlstream ptyp ++ str "\" body=\"" ++
          xmlstream pb ++ str "\"/>")
@@ -81,7 +81,7 @@ let pr_rel_decl_xml env (na,c,typ) =
   let pbody = match c with
     | None -> mt ()
     | Some c ->
-	(* Force evaluation *) 
+	(* Force evaluation *)
 	let pb = print_constr_env env c in
 	  (str" body=\"" ++ xmlstream pb ++ str "\"") in
   let ptyp = print_constr_env env typ in
@@ -108,8 +108,8 @@ let pr_context_xml env =
 ;;
 
 let pr_subgoal_metas_xml metas env=
-  let pr_one (meta, typ) = 
-    fnl () ++ str "<meta index=\"" ++ int meta ++ str " type=\"" ++ xmlstream (pr_ltype_env_at_top env typ) ++ 
+  let pr_one (meta, typ) =
+    fnl () ++ str "<meta index=\"" ++ int meta ++ str " type=\"" ++ xmlstream (pr_ltype_env_at_top env typ) ++
       str "\"/>"
   in
   List.fold_left (++) (mt ()) (List.map pr_one metas)
@@ -124,7 +124,7 @@ let pr_goal_xml g =
     (pr_context_xml env)) ++
     fnl () ++ str "</goal>")
   else
-    (hov 2 (str "<goal type=\"declarative\">" ++ 
+    (hov 2 (str "<goal type=\"declarative\">" ++
     (pr_context_xml env)) ++
     fnl () ++ str "</goal>")
 ;;
@@ -140,13 +140,13 @@ let rec print_proof_xml sigma osign pf =
         (List.fold_left (fun x y -> x ++ fnl () ++ y) (mt ()) (List.map (print_proof_xml sigma hyps) spfl))) ++ fnl () ++ str "</tree>"
 ;;
 
-let print_proof_xml () = 
-  let pp = print_proof_xml Evd.empty Sign.empty_named_context 
+let print_proof_xml () =
+  let pp = print_proof_xml Evd.empty Sign.empty_named_context
       (Tacmach.proof_of_pftreestate (Refiner.top_of_tree (Pfedit.get_pftreestate ())))
   in
   msgnl pp
 ;;
 
 VERNAC COMMAND EXTEND DumpTree
-  [ "Dump" "Tree" ] -> [ print_proof_xml () ] 
-END 
+  [ "Dump" "Tree" ] -> [ print_proof_xml () ]
+END

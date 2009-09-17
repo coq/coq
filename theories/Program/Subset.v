@@ -14,7 +14,7 @@ Require Import Coq.Program.Equality.
 
 Open Local Scope program_scope.
 
-(** The following tactics implement a poor-man's solution for proof-irrelevance: it tries to 
+(** The following tactics implement a poor-man's solution for proof-irrelevance: it tries to
    factorize every proof of the same proposition in a goal so that equality of such proofs becomes trivial. *)
 
 Ltac on_subset_proof_aux tac T :=
@@ -27,25 +27,25 @@ Ltac on_subset_proof tac :=
     [ |- ?T ] => on_subset_proof_aux tac T
   end.
 
-Ltac abstract_any_hyp H' p := 
+Ltac abstract_any_hyp H' p :=
   match type of p with
-    ?X => 
-    match goal with 
+    ?X =>
+    match goal with
       | [ H : X |- _ ] => fail 1
       | _ => set (H':=p) ; try (change p with H') ; clearbody H'
     end
   end.
 
-Ltac abstract_subset_proof := 
+Ltac abstract_subset_proof :=
   on_subset_proof ltac:(fun p => let H := fresh "eqH" in abstract_any_hyp H p ; simpl in H).
 
 Ltac abstract_subset_proofs := repeat abstract_subset_proof.
 
 Ltac pi_subset_proof_hyp p :=
   match type of p with
-    ?X => 
-    match goal with 
-      | [ H : X |- _ ] => 
+    ?X =>
+    match goal with
+      | [ H : X |- _ ] =>
         match p with
           | H => fail 2
           | _ => rewrite (proof_irrelevance X p H)
@@ -78,16 +78,16 @@ Proof.
   pi.
 Qed.
 
-(* Somewhat trivial definition, but not unfolded automatically hence we can match on [match_eq ?A ?B ?x ?f] 
+(* Somewhat trivial definition, but not unfolded automatically hence we can match on [match_eq ?A ?B ?x ?f]
    in tactics. *)
 
 Definition match_eq (A B : Type) (x : A) (fn : forall (y : A | y = x), B) : B :=
   fn (exist _ x (refl_equal x)).
 
-(* This is what we want to be able to do: replace the originaly matched object by a new, 
+(* This is what we want to be able to do: replace the originaly matched object by a new,
    propositionally equal one. If [fn] works on [x] it should work on any [y | y = x]. *)
 
-Lemma match_eq_rewrite : forall (A B : Type) (x : A) (fn : forall (y : A | y = x), B) 
+Lemma match_eq_rewrite : forall (A B : Type) (x : A) (fn : forall (y : A | y = x), B)
   (y : A | y = x),
   match_eq A B x fn = fn y.
 Proof.
@@ -103,9 +103,9 @@ Qed.
 (** Now we make a tactic to be able to rewrite a term [t] which is applied to a [match_eq] using an arbitrary
    equality [t = u], and [u] is now the subject of the [match]. *)
 
-Ltac rewrite_match_eq H := 
+Ltac rewrite_match_eq H :=
   match goal with
-    [ |- ?T ] => 
+    [ |- ?T ] =>
     match T with
       context [ match_eq ?A ?B ?t ?f ] =>
       rewrite (match_eq_rewrite A B t f (exist _ _ (sym_eq H)))

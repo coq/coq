@@ -30,7 +30,7 @@ type xml = XmlTag of loc * string * attribute list * xml list
 
 let check_tags loc otag ctag =
   if otag <> ctag then
-    user_err_loc (loc,"",str "closing xml tag " ++ str ctag ++ 
+    user_err_loc (loc,"",str "closing xml tag " ++ str ctag ++
       str "does not match open xml tag " ++ str otag ++ str ".")
 
 let xml_eoi = (Gram.Entry.create "xml_eoi" : xml Gram.Entry.e)
@@ -72,7 +72,7 @@ let nmtoken (loc,a) =
   try int_of_string a
   with Failure _ -> user_err_loc (loc,"",str "nmtoken expected.")
 
-let get_xml_attr s al = 
+let get_xml_attr s al =
   try List.assoc s al
   with Not_found -> error ("No attribute "^s)
 
@@ -143,7 +143,7 @@ let compute_inductive_nargs ind =
 let rec interp_xml_constr = function
   | XmlTag (loc,"REL",al,[]) ->
       RVar (loc, get_xml_ident al)
-  | XmlTag (loc,"VAR",al,[]) -> 
+  | XmlTag (loc,"VAR",al,[]) ->
       error "XML parser: unable to interp free variables"
   | XmlTag (loc,"LAMBDA",al,(_::_ as xl)) ->
       let body,decls = list_sep_last xl in
@@ -200,7 +200,7 @@ let rec interp_xml_constr = function
 
 and interp_xml_tag s = function
   | XmlTag (loc,tag,al,xl) when tag=s -> (loc,al,xl)
-  | XmlTag (loc,tag,_,_) -> user_err_loc (loc, "", 
+  | XmlTag (loc,tag,_,_) -> user_err_loc (loc, "",
     str "Expect tag " ++ str s ++ str " but find " ++ str s ++ str ".")
 
 and interp_xml_constr_alias s x =
@@ -231,14 +231,14 @@ and interp_xml_recursionOrder x =
   let (loc, al, l) = interp_xml_tag "RecursionOrder" x in
   let (locs, s) = get_xml_attr "type" al in
     match s with
-	"Structural" -> 
+	"Structural" ->
 	  (match l with [] -> RStructRec
 	     | _ -> error_expect_no_argument loc)
-      | "WellFounded" -> 
+      | "WellFounded" ->
 	  (match l with
 	       [c] -> RWfRec (interp_xml_type c)
 	     | _ -> error_expect_one_argument loc)
-      | "Measure" -> 
+      | "Measure" ->
 	  (match l with
 	       [m;r] -> RMeasureRec (interp_xml_type m, Some (interp_xml_type r))
 	     | _ -> error_expect_two_arguments loc)
@@ -261,7 +261,7 @@ and interp_xml_CoFixFunction x =
   match interp_xml_tag "CoFixFunction" x with
   | (loc,al,[x1;x2]) ->
       (get_xml_name al, interp_xml_type x1, interp_xml_body x2)
-    | (loc,_,_) -> 
+    | (loc,_,_) ->
 	error_expect_one_argument loc
 
 (* Interpreting tactic argument *)

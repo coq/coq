@@ -32,7 +32,7 @@ open Genarg
 (*****************************************************************************)
 (*
    Arbre de preuve maison:
-   
+
 *)
 
 (* hypotheses *)
@@ -92,9 +92,9 @@ let tactic t =
 ;;
 
 
-(* 
+(*
 un arbre est clos s'il ne contient pas de sous-but non prouves,
-ou bien s'il a un cousin gauche qui n'est pas clos 
+ou bien s'il a un cousin gauche qui n'est pas clos
 ce qui fait qu'on a au plus un sous-but non clos, le premier sous-but.
 *)
 let update_closed nt =
@@ -117,8 +117,8 @@ let update_closed nt =
              t_proof=Proof(tac,lt1)})
   in update nt
     ;;
-    
-      
+
+
 (*
     type complet avec les hypotheses.
 *)
@@ -138,7 +138,7 @@ let long_type_hyp lh t=
 
 let seq_to_lnhyp sign sign' cl =
       let lh= ref (List.map (fun (x,c,t) -> (Name x, t)) sign) in
-      let nh=List.map (fun (id,c,ty) -> 
+      let nh=List.map (fun (id,c,ty) ->
              {hyp_name=id;
               hyp_type=ty;
               hyp_full_type=
@@ -156,7 +156,7 @@ let seq_to_lnhyp sign sign' cl =
 
 let rule_is_complex r =
    match r with
-       Nested (Tactic 
+       Nested (Tactic
 		 ((TacArg (Tacexp _)
 		 |TacAtom (_,(TacAuto _|TacSymmetry _))),_),_) -> true
    |_ -> false
@@ -219,10 +219,10 @@ let  to_nproof sigma osign pf =
   let rec to_nproof_rec sigma osign pf =
     let {evar_hyps=sign;evar_concl=cl} = pf.goal in
     let sign = Environ.named_context_of_val sign in
-    let nsign = new_sign osign sign in 
-    let oldsign = old_sign osign sign in 
+    let nsign = new_sign osign sign in
+    let oldsign = old_sign osign sign in
     match pf.ref with
-      
+
       None -> {t_info="to_prove";
 	      	t_goal=(seq_to_lnhyp oldsign nsign cl);
               	t_proof=Notproved}
@@ -230,7 +230,7 @@ let  to_nproof sigma osign pf =
       	if rule_is_complex r
       	then (
 	  let p1= to_nproof_rec sigma sign (subproof_of_proof pf) in
-          let ntree= fill_unproved p1 
+          let ntree= fill_unproved p1
               (List.map (fun x -> (to_nproof_rec sigma sign x).t_proof)
 		 spfl) in
 	  (match r with
@@ -253,7 +253,7 @@ let  to_nproof sigma osign pf =
   in update_closed (to_nproof_rec sigma osign pf)
     ;;
 
-(* 
+(*
   recupere l'arbre de preuve courant.
 *)
 
@@ -262,7 +262,7 @@ let get_nproof () =
             (Tacmach.proof_of_pftreestate (get_pftreestate()))
 ;;
 
-    
+
 (*****************************************************************************)
 (*
    Pprinter
@@ -273,14 +273,14 @@ let pr_void () = sphs "";;
 let list_rem l = match l with [] -> [] |x::l1->l1;;
 
 (* liste de chaines *)
-let prls l = 
+let prls l =
    let res = ref (sps (List.hd l)) in
-   List.iter (fun s -> 
+   List.iter (fun s ->
      res:= sphv [ !res; spb; sps s]) (list_rem l);
    !res
 ;;
 
-let prphrases f l = 
+let prphrases f l =
    spv (List.map (fun s -> sphv [f s; sps ","]) l)
 ;;
 
@@ -288,13 +288,13 @@ let prphrases f l =
 let spi = spnb 3;;
 
 (* en colonne *)
-let prl f l = 
+let prl f l =
    if l=[] then spe else spv (List.map f l);;
 (*en colonne,  avec indentation *)
-let prli f l =  
+let prli f l =
    if l=[] then spe else sph [spi; spv (List.map f l)];;
 
-(* 
+(*
   Langues.
 *)
 
@@ -377,9 +377,9 @@ let enumerate f ln =
   match ln with
     [] -> []
   | [x] -> [f x]
-  |ln -> 
-  let rec enum_rec f ln = 
-     (match ln with 
+  |ln ->
+  let rec enum_rec f ln =
+     (match ln with
        [x;y] -> [f x; spb; sph [_et ();spb;f y]]
       |x::l -> [sph [(f x);sps ","];spb]@(enum_rec f l)
       | _ -> assert false)
@@ -506,28 +506,28 @@ let reste_a_montrer g =  match !natural_language with
                 spb; spt g; sps ". "]
 |  English -> sph[ (prls ["It remains";"to";
 			   rand ["prove";"show"]]);
-                spb; spt g; sps ". "] 
+                spb; spt g; sps ". "]
 ;;
 
 let discutons_avec_A type_arg  =  match !natural_language with
     French -> sphv [sps "Discutons"; spb; sps "avec"; spb;
-				   spt type_arg; sps ":"] 
+				   spt type_arg; sps ":"]
 |  English -> sphv [sps "Let us discuss"; spb; sps "with"; spb;
-				   spt type_arg; sps ":"] 
+				   spt type_arg; sps ":"]
 ;;
 
 let utilisons_A arg1  =  match !natural_language with
     French -> sphv [sps (rand ["Utilisons";"Avec";"A l'aide de"]);
-		     spb; spt arg1; sps ":"] 
+		     spb; spt arg1; sps ":"]
 |  English -> sphv [sps (rand ["Let us use";"With";"With the help of"]);
-		     spb; spt arg1; sps ":"] 
+		     spb; spt arg1; sps ":"]
 ;;
 
 let selon_les_valeurs_de_A arg1  =  match !natural_language with
     French -> sphv [  (prls ["Selon";"les";"valeurs";"de"]);
-                      spb; spt arg1; sps ":"] 
+                      spb; spt arg1; sps ":"]
 |  English -> sphv [  (prls ["According";"values";"of"]);
-                      spb; spt arg1; sps ":"] 
+                      spb; spt arg1; sps ":"]
 ;;
 
 let de_A_on_a arg1  =  match !natural_language with
@@ -547,9 +547,9 @@ let procedons_par_recurrence_sur_A arg1  =  match !natural_language with
 ;;
 
 
-let calculons_la_fonction_F_de_type_T_par_recurrence_sur_son_argument_A 
+let calculons_la_fonction_F_de_type_T_par_recurrence_sur_son_argument_A
   nfun tfun narg =  match !natural_language with
-    French ->  sphv [  
+    French ->  sphv [
                     sphv [ prls ["Calculons";"la";"fonction"];
                      spb; sps (string_of_id nfun);spb;
                      prls ["de";"type"];
@@ -557,7 +557,7 @@ let calculons_la_fonction_F_de_type_T_par_recurrence_sur_son_argument_A
                      prls ["par";"récurrence";"sur";"son";"argument"];
                      spb; sps (string_of_int narg); sps ":"]
                  ]
-|  English ->  sphv [  
+|  English ->  sphv [
                     sphv [ prls ["Let us compute";"the";"function"];
                      spb; sps (string_of_id nfun);spb;
                      prls ["of";"type"];
@@ -594,7 +594,7 @@ let coq_le_demontre_seul ()  =  match !natural_language with
 		       sps "Fastoche.";
 		     sps "Trop cool"]
 |  English -> 	rand [prls ["Coq";"shows";"it"; "alone."];
-		       sps "Fingers in the nose."]	      
+		       sps "Fingers in the nose."]
 ;;
 
 let de_A_on_deduit_donc_B arg g  =  match !natural_language with
@@ -608,31 +608,31 @@ let de_A_on_deduit_donc_B arg g  =  match !natural_language with
 
 let _A_est_immediat_par_B g arg  =  match !natural_language with
     French -> sph [  spt g;  spb; (prls ["est";"immédiat";"par"]);
-                     spb;  spt arg ] 
+                     spb;  spt arg ]
 |  English -> sph [  spt g;  spb; (prls ["is";"immediate";"from"]);
-                     spb;  spt arg ] 
+                     spb;  spt arg ]
 ;;
 
 let le_resultat_est arg  =  match !natural_language with
     French -> sph [  (prls ["le";"résultat";"est"]);
-                    spb; spt arg ] 
+                    spb; spt arg ]
 |  English -> sph [  (prls ["the";"result";"is"]);
                     spb; spt arg ];;
 
 let on_applique_la_tactique tactic tac =  match !natural_language with
-  French -> sphv 
+  French -> sphv
       [ sps "on applique";spb;sps "la tactique"; spb;tactic;spb;tac]
-|  English -> sphv 
+|  English -> sphv
       [ sps "we apply";spb;sps "the tactic"; spb;tactic;spb;tac]
 ;;
 
 let de_A_il_vient_B arg g  =  match !natural_language with
     French -> sph
-             [  sps "De"; spb; spt arg; spb; 
-               sps "il";spb; sps "vient";spb; spt g; sps ". " ] 
+             [  sps "De"; spb; spt arg; spb;
+               sps "il";spb; sps "vient";spb; spt g; sps ". " ]
 |  English -> sph
-             [  sps "From"; spb; spt arg; spb; 
-               sps "it";spb; sps "comes";spb; spt g; sps ". " ] 
+             [  sps "From"; spb; spt arg; spb;
+               sps "it";spb; sps "comes";spb; spt g; sps ". " ]
 ;;
 
 let ce_qui_est_trivial ()  =  match !natural_language with
@@ -690,12 +690,12 @@ type n_sort=
     | Nfunction
 ;;
 
-   
+
 let sort_of_type t ts =
    let t=(strip_outer_cast t) in
    if is_Prop t
    then Nprop
-   else 
+   else
        match ts with
          Prop(Null) -> Nformula
         |_ -> (match (kind_of_term t) with
@@ -704,11 +704,11 @@ let sort_of_type t ts =
 ;;
 
 let adrel (x,t) e =
-    match x with 
+    match x with
       Name(xid) -> Environ.push_rel (x,None,t) e
     | Anonymous -> Environ.push_rel (x,None,t) e
 
-let rec nsortrec vl x = 
+let rec nsortrec vl x =
      match (kind_of_term x) with
      Prod(n,t,c)->
         let vl = (adrel (n,t) vl) in nsortrec vl c
@@ -722,7 +722,7 @@ let rec nsortrec vl x =
 	  new_sort_in_family (inductive_sort_family mip)
    | Construct(c) ->
           nsortrec vl (mkInd (inductive_of_constructor c))
-   | Case(_,x,t,a) 
+   | Case(_,x,t,a)
         -> nsortrec vl x
    | Cast(x,_, t)-> nsortrec vl t
    | Const c  -> nsortrec vl (Typeops.type_of_constant vl c)
@@ -732,7 +732,7 @@ let nsort x =
     nsortrec  (Global.env()) (strip_outer_cast x)
 ;;
 
-let sort_of_hyp h = 
+let sort_of_hyp h =
   (sort_of_type h.hyp_type (nsort h.hyp_full_type))
 ;;
 
@@ -744,14 +744,14 @@ let rec group_lhyp lh =
     |[h] -> [[h]]
     |h::lh ->
       match group_lhyp lh with
-       (h1::lh1)::lh2 -> 
+       (h1::lh1)::lh2 ->
         if h.hyp_type=h1.hyp_type
           || ((sort_of_hyp h)=(sort_of_hyp h1) && (sort_of_hyp h1)=Nformula)
         then (h::(h1::lh1))::lh2
         else [h]::((h1::lh1)::lh2)
      |_-> assert false
 ;;
-	
+
 (* ln noms des hypotheses, lt leurs types *)
 let natural_ghyp (sort,ln,lt) intro =
   let t=List.hd lt in
@@ -761,13 +761,13 @@ let natural_ghyp (sort,ln,lt) intro =
     Nprop -> soit_A_une_proposition nh ln t
   | Ntype -> soit_X_un_element_de_T nh ln t
   | Nfunction -> soit_F_une_fonction_de_type_T nh ln t
-  | Nformula -> 
+  | Nformula ->
       sphv ((sps intro)::(enumerate (fun (n,t) -> tag_hypt n t)
 			    (List.combine ln lt)))
 ;;
 
 (* Cas d'une hypothese *)
-let natural_hyp h = 
+let natural_hyp h =
    let ns= string_of_id h.hyp_name in
    let t=h.hyp_type in
    let ts= (nsort h.hyp_full_type) in
@@ -782,18 +782,18 @@ let rec pr_ghyp lh intro=
            Nformula -> [natural_ghyp(sort,ln,t) intro; sps ". "]
          | _ -> [natural_ghyp(sort,ln,t) ""; sps ". "])
      | (sort,ln,t)::lh  ->
-       let hp= 
+       let hp=
         ([natural_ghyp(sort,ln,t) intro]
          @(match lh with
            [] -> [sps ". "]
           |(sort1,ln1,t1)::lh1  ->
              match sort1 with
-               Nformula -> 
+               Nformula ->
                  (let nh=List.length ln in
                      match sort with
-                   Nprop -> telle_que nh 
-                  |Nfunction -> telle_que nh 
-                  |Ntype -> tel_que nh 
+                   Nprop -> telle_que nh
+                  |Nfunction -> telle_que nh
+                  |Ntype -> tel_que nh
                   |Nformula -> [sps ". "])
              | _ -> [sps ". "])) in
         (sphv hp)::(pr_ghyp lh "")
@@ -860,7 +860,7 @@ let par_hypothese_de_recurrence () =  match !natural_language with
 
 let  natural_lhyp lh hi =
   match hi with
-    All_subgoals_hyp -> 
+    All_subgoals_hyp ->
         ( match lh with
           [] -> spe
         |_-> prnatural_ghyp (group_lhyp lh) (supposons ()))
@@ -896,21 +896,21 @@ let  natural_lhyp lh hi =
       for i=1 to nlhci do
         let targ=(List.nth lhci (i-1))in
         let nh=(List.nth lh (i-1)) in
-        if targ="arg" || targ="argrec" 
+        if targ="arg" || targ="argrec"
         then
             (s:=(!s)^" "^(string_of_id nh.hyp_name);
 	     lh0:=(!lh0)@[nh])
         else lh1:=(!lh1)@[nh];
       done;
       let introhyprec=
-          (if (!lh1)=[] then spe 
+          (if (!lh1)=[] then spe
            else   par_hypothese_de_recurrence () )
-      in          
+      in
       if a>0 then s:="("^(!s)^")";
       spv [sphv [(if ncase>1
                      then sph[ sps ("-"^(cas ()));spb]
                      else spe);
-                     sps !s; sps ":"]; 
+                     sps !s; sps ":"];
            prnatural_ghyp (group_lhyp !lh0) (supposons ());
            introhyprec;
            prl (natural_hyp) !lh1]
@@ -958,7 +958,7 @@ let rec show_goal lh ig g gs =
     "intros" ->
       if lh = []
       then spe
-      else show_goal lh "standard" g gs 
+      else show_goal lh "standard" g gs
   |"standard" ->
       (match (sort_of_type g gs) with
         Nprop -> donnons_une_proposition ()
@@ -967,7 +967,7 @@ let rec show_goal lh ig g gs =
       | Nfunction ->calculons_une_fonction_de_type g)
   | "apply" -> show_goal lh "" g gs
   | "simpl" ->en_simplifiant_on_obtient g
-  | "rewrite" -> on_obtient g 
+  | "rewrite" -> on_obtient g
   | "equality" -> reste_a_montrer g
   | "trivial_equality" -> reste_a_montrer g
   | "" -> spe
@@ -1002,14 +1002,14 @@ let first_name_hyp_of_ntree {t_goal={newhyp=lh}}=
 ;;
 
 let rec find_type x t=
-    match (kind_of_term (strip_outer_cast t)) with 
+    match (kind_of_term (strip_outer_cast t)) with
       Prod(y,ty,t) ->
 	(match y with
-	  Name y -> 
+	  Name y ->
             if x=(string_of_id y) then ty
             else find_type x t
 	| _ -> find_type x t)
-     |_-> assert false 
+     |_-> assert false
 ;;
 
 (***********************************************************************
@@ -1061,7 +1061,7 @@ let is_equality_tac = function
 
 let equalities_ntree ig ntree =
   let rec equalities_ntree ig ntree =
-  if not (is_equality (concl ntree)) 
+  if not (is_equality (concl ntree))
   then []
   else
     match (proof ntree) with
@@ -1075,8 +1075,8 @@ let equalities_ntree ig ntree =
 		  then res
 		  else (ig,ntree)::res)
 	else  [(ig,ntree)]
-  in 
-  equalities_ntree ig ntree 
+  in
+  equalities_ntree ig ntree
 ;;
 
 let remove_seq_of_terms l =
@@ -1091,7 +1091,7 @@ let remove_seq_of_terms l =
 let  list_to_eq l o=
   let switch = fun h h' -> (if o then h else h') in
    match l with
-      [a] -> spt (fst a) 
+      [a] -> spt (fst a)
    |  (a,h)::(b,h')::l ->
        let rec list_to_eq h l =
 	 match l with
@@ -1100,7 +1100,7 @@ let  list_to_eq l o=
 	     (sph [sps "="; spb; spt b; spb;tag_uselemma (switch h h') spe])
              :: (list_to_eq (switch h' h) l)
        in sph [spt a;  spb;
-		 spv ((sph [sps "="; spb; spt b; spb; 
+		 spv ((sph [sps "="; spb; spt b; spb;
 			     tag_uselemma (switch h h') spe])
 		      ::(list_to_eq (switch h' h) l))]
   | _ -> assert false
@@ -1131,7 +1131,7 @@ let rec natural_ntree ig ntree =
 			    [] ->spe
 			  | [_] -> spe
 			  | _::l -> sphv[sps ": ";
-					  prli (natural_ntree 
+					  prli (natural_ntree
 					    {ihsg=All_subgoals_hyp;
 					      isgintro="standard"})
                             		    l])])
@@ -1157,7 +1157,7 @@ let rec natural_ntree ig ntree =
       spv [(natural_lhyp lh ig.ihsg);
 	    (show_goal2 lh ig g (nsort gf) "");
 	    sph !ltext;
-	    
+
 	    natural_ntree {ihsg=All_subgoals_hyp;
                             isgintro=
 			    let  (t1,t2)= terms_of_equality (concl ntree) in
@@ -1171,13 +1171,13 @@ let rec natural_ntree ig ntree =
       let gs=nsort gf in
       match p with
    	Notproved ->  spv [ (natural_lhyp lh ig.ihsg);
-                            sph [spi; sps (intro_not_proved_goal gs); spb; 
+                            sph [spi; sps (intro_not_proved_goal gs); spb;
                                   tag_toprove g  ]
 			  ]
 
       | Proof (TacId _,ltree) -> natural_ntree ig (List.hd ltree)
-      | Proof (TacAtom (_,tac),ltree) -> 
-	 (let ntext = 
+      | Proof (TacAtom (_,tac),ltree) ->
+	 (let ntext =
 	  match tac with
 (* Pas besoin de l'argument éventuel de la tactique *)
 	    TacIntroPattern _ -> natural_intros ig lh g gs ltree
@@ -1197,9 +1197,9 @@ let rec natural_ntree ig ntree =
 	  | TacAssumption -> natural_trivial ig lh g gs ltree
 	  | TacClear _ -> natural_clear ig lh g gs ltree
 (* Besoin de l'argument de la tactique *)
-	  | TacSimpleInductionDestruct (true,NamedHyp id) -> 
+	  | TacSimpleInductionDestruct (true,NamedHyp id) ->
               natural_induction ig lh g gs ge id ltree false
-	  | TacExtend (_,"InductionIntro",[a]) -> 
+	  | TacExtend (_,"InductionIntro",[a]) ->
               let id=(out_gen wit_ident a) in
               natural_induction ig lh g gs ge id ltree true
 	  | TacApply (_,false,[c,_],None) ->
@@ -1232,7 +1232,7 @@ let rec natural_ntree ig ntree =
           ntext (* spwithtac ntext tactic*)
           )
       | Proof _ -> failwith "Don't know what to do with that"
-    in   
+    in
          if info<>"not_proved"
          then spshrink info ntext
          else ntext
@@ -1241,7 +1241,7 @@ and  natural_generic  ig lh g gs tactic tac ltree =
     [ (natural_lhyp lh ig.ihsg);
       (show_goal2 lh ig g gs "");
       on_applique_la_tactique tactic tac ;
-      (prli(natural_ntree  
+      (prli(natural_ntree
 	      {ihsg=All_subgoals_hyp;
 		isgintro="standard"})
          ltree)
@@ -1258,7 +1258,7 @@ and natural_intros ig lh g gs ltree =
   spv
          [  (natural_lhyp lh ig.ihsg);
             (show_goal2 lh ig g gs "");
-            (prl (natural_ntree  
+            (prl (natural_ntree
                 {ihsg=All_subgoals_hyp;
                  isgintro="intros"})
                             ltree)
@@ -1269,7 +1269,7 @@ and natural_apply ig lh g gs arg ltree =
     [] ->
       spv
         [ (natural_lhyp lh ig.ihsg);
-	  de_A_il_vient_B arg g  
+	  de_A_il_vient_B arg g
         ]
   | [sg]->
       spv
@@ -1280,10 +1280,10 @@ and natural_apply ig lh g gs arg ltree =
 	                              else ""}
 	     g gs "");
           grace_a_A_il_suffit_de_montrer_LA arg [spt sg];
-	  sph [spi ; natural_ntree 
+	  sph [spi ; natural_ntree
 		  {ihsg=All_subgoals_hyp;
 		    isgintro="apply"} (List.hd ltree)]
-	]       
+	]
   | _ ->
       let ln = List.map (fun _ -> new_name()) lg in
       spv
@@ -1298,7 +1298,7 @@ and natural_apply ig lh g gs arg ltree =
 	       lg ln);
 	  sph [spi; spv (List.map2
 			   (fun x n -> sph [sps ("("^n^"):"); spb;
-					     natural_ntree 
+					     natural_ntree
 					       {ihsg=All_subgoals_hyp;
 						 isgintro="apply"} x])
 			   ltree ln)]
@@ -1310,26 +1310,26 @@ and natural_rem_goals ltree =
   | [sg]->
       spv
         [ reste_a_montrer_LA [spt sg];
-	  sph [spi ; natural_ntree 
+	  sph [spi ; natural_ntree
 		  {ihsg=All_subgoals_hyp;
 		    isgintro="apply"} (List.hd ltree)]
-	]       
+	]
   | _ ->
       let ln = List.map (fun _ -> new_name()) lg in
       spv
-        [   reste_a_montrer_LA 
+        [   reste_a_montrer_LA
 	    (List.map2 (fun g n -> sph [sps ("("^n^")"); spb; spt g])
 	       lg ln);
 	  sph [spi; spv (List.map2
 			   (fun x n -> sph [sps ("("^n^"):"); spb;
-					     natural_ntree 
+					     natural_ntree
 					       {ihsg=All_subgoals_hyp;
 						 isgintro="apply"} x])
 			   ltree ln)]
         ]
 and natural_exact ig lh g gs arg ltree =
 spv
-         [  
+         [
              (natural_lhyp lh ig.ihsg);
              (let {ihsg=pi;isgintro=ig}= ig in
                (show_goal2 lh {ihsg=pi;isgintro=""}
@@ -1343,7 +1343,7 @@ and natural_cut ig lh g gs arg ltree =
   spv
          [  (natural_lhyp lh ig.ihsg);
              (show_goal2 lh ig g gs "");
-             (prli(natural_ntree  
+             (prli(natural_ntree
                     {ihsg=All_subgoals_hyp;isgintro="standard"})
                             (List.rev ltree));
              de_A_on_deduit_donc_B arg g
@@ -1353,18 +1353,18 @@ and natural_cutintro ig lh g gs arg ltree =
          [  (natural_lhyp lh ig.ihsg);
              (show_goal2 lh ig g gs "");
              sph [spi;
-                    (natural_ntree  
+                    (natural_ntree
                        {ihsg=All_subgoals_hyp;isgintro=""}
                        (List.nth ltree 1))];
              sph [spi;
-                    (natural_ntree  
+                    (natural_ntree
                        {ihsg=No_subgoals_hyp;isgintro=""}
                        (List.nth ltree 0))]
         ]
 and whd_betadeltaiota x = whd_betaiota Evd.empty x
 and type_of_ast s c = type_of (Global.env()) Evd.empty (constr_of_ast c)
 and prod_head t =
-  match (kind_of_term (strip_outer_cast t)) with 
+  match (kind_of_term (strip_outer_cast t)) with
      Prod(_,_,c) -> prod_head c
 (*    |App(f,a) -> f *)
     | _ -> t
@@ -1386,7 +1386,7 @@ and natural_case ig lh g gs ge arg1 ltree with_intros =
  let type_arg= targ1 (* List.nth targ (mis_index dmi)*)  in
  if  ncti<>1
 (* Zéro ou Plusieurs constructeurs *)
- then (   
+ then (
    spv
          [  (natural_lhyp lh ig.ihsg);
              (show_goal2 lh ig g gs "");
@@ -1404,7 +1404,7 @@ and natural_case ig lh g gs ge arg1 ltree with_intros =
 			      then (arity_of_constr_of_mind env indf !ci)
 		              else 0 in
                       let ici= (!ci) in
-                    sph[ (natural_ntree  
+                    sph[ (natural_ntree
                           {ihsg=
                              (match (nsort targ1) with
                                 Prop(Null) ->
@@ -1420,7 +1420,7 @@ and natural_case ig lh g gs ge arg1 ltree with_intros =
 			  (nhd ltree ((List.length ltree)- ncti)))])
          ] )
 (* Cas d'un seul constructeur *)
-     else (  
+     else (
 
      spv
      [ (natural_lhyp lh ig.ihsg);
@@ -1433,7 +1433,7 @@ and natural_case ig lh g gs ge arg1 ltree with_intros =
          then (arity_of_constr_of_mind env indf 1)
 	 else 0 in
        let _ici= 1 in
-       sph[ (natural_ntree  
+       sph[ (natural_ntree
                {ihsg=
                  (match (nsort targ1) with
                    Prop(Null) ->
@@ -1446,7 +1446,7 @@ and natural_case ig lh g gs ge arg1 ltree with_intros =
           ]);
        (sph [spi; (natural_rem_goals
 		     (nhd ltree ((List.length ltree)- 1)))])
-     ] 
+     ]
      )
 (*    with _ ->natural_generic ig lh g gs (sps "Case")  (spt arg1) ltree *)
 
@@ -1455,7 +1455,7 @@ and natural_case ig lh g gs ge arg1 ltree with_intros =
    Elim
 *)
 and prod_list_var t =
-   match (kind_of_term (strip_outer_cast t)) with 
+   match (kind_of_term (strip_outer_cast t)) with
       Prod(_,t,c) -> t::(prod_list_var c)
      |_ -> []
 and  hd_is_mind t ti =
@@ -1486,7 +1486,7 @@ and mind_ind_info_hyp_constr indf c =
   !lr
 (*
  mind_ind_info_hyp_constr "le" 2;;
-donne  ["arg"; "argrec"] 
+donne  ["arg"; "argrec"]
 mind_ind_info_hyp_constr "le" 1;;
 donne []
  mind_ind_info_hyp_constr "nat" 2;;
@@ -1518,7 +1518,7 @@ and natural_elim ig lh g gs ge arg1 ltree with_intros=
 			then mind_ind_info_hyp_constr indf  !ci
 		      	else [] in
                       let ici= (!ci) in
-                    sph[ (natural_ntree  
+                    sph[ (natural_ntree
                           {ihsg=
                              (match (nsort targ1) with
                                 Prop(Null) ->
@@ -1538,7 +1538,7 @@ and natural_elim ig lh g gs ge arg1 ltree with_intros=
 (*****************************************************************************)
 (*
    InductionIntro n
-*) 
+*)
 and natural_induction ig lh g gs ge arg2 ltree with_intros=
  let env = (gLOB (g_env (List.hd ltree))) in
  let arg1= mkVar arg2 in
@@ -1572,12 +1572,12 @@ and natural_induction ig lh g gs ge arg2 ltree with_intros=
                  (fun treearg -> ci:=!ci+1;
                       let nci=(constr_of_mind mip !ci) in
                       let aci=(arity_of_constr_of_mind env indf !ci) in
-                      let hci= 
+                      let hci=
 			if with_intros
 			then mind_ind_info_hyp_constr indf  !ci
 		      	else [] in
                       let ici= (!ci) in
-                    sph[ (natural_ntree  
+                    sph[ (natural_ntree
                           {ihsg=
                              (match (nsort targ1) with
                                 Prop(Null) ->
@@ -1606,47 +1606,47 @@ and natural_fix ig lh g gs narg ltree =
   spv
          [  (natural_lhyp lh ig.ihsg);
              calculons_la_fonction_F_de_type_T_par_recurrence_sur_son_argument_A  nfun tfun narg;
-             (prli(natural_ntree  
+             (prli(natural_ntree
                    {ihsg=All_subgoals_hyp;isgintro=""})
                             ltree)
         ]
    | _ -> assert false
 and natural_reduce ig lh g gs ge mode la ltree =
   match la with
-    {onhyps=Some[]} when la.concl_occs <> no_occurrences_expr -> 
+    {onhyps=Some[]} when la.concl_occs <> no_occurrences_expr ->
       spv
         [  (natural_lhyp lh ig.ihsg);
-          (show_goal2 lh ig g gs ""); 
-          (prl (natural_ntree 
+          (show_goal2 lh ig g gs "");
+          (prl (natural_ntree
 		  {ihsg=All_subgoals_hyp;isgintro="simpl"})
              ltree)
         ]
   | {onhyps=Some[hyp]} when la.concl_occs = no_occurrences_expr ->
       spv
         [  (natural_lhyp lh ig.ihsg);
-          (show_goal2 lh ig g gs ""); 
-          (prl (natural_ntree 
+          (show_goal2 lh ig g gs "");
+          (prl (natural_ntree
 		  {ihsg=Reduce_hyp;isgintro=""})
              ltree)
         ]
   | _ -> assert false
 and natural_split ig lh g gs ge la ltree =
   match la with
-    [arg] -> 
+    [arg] ->
       let _env= (gLOB ge) in
       let arg1= (*dbize _env*) arg in
       spv
       	[ (natural_lhyp lh ig.ihsg);
-          (show_goal2 lh ig g gs ""); 
+          (show_goal2 lh ig g gs "");
 	  pour_montrer_G_la_valeur_recherchee_est_A  g arg1;
-          (prl (natural_ntree 
+          (prl (natural_ntree
 		  {ihsg=All_subgoals_hyp;isgintro="standard"})
              ltree)
         ]
   | [] ->
       spv
         [ (natural_lhyp lh ig.ihsg);
-          (prli(natural_ntree  
+          (prli(natural_ntree
                   {ihsg=All_subgoals_hyp;isgintro="standard"})
              ltree)
         ]
@@ -1660,9 +1660,9 @@ and natural_generalize ig lh g gs ge la ltree =
 (*      let type_arg=type_of_ast ge arg in*)
       spv
       	[ (natural_lhyp lh ig.ihsg);
-          (show_goal2 lh ig g gs ""); 
+          (show_goal2 lh ig g gs "");
 	  on_se_sert_de_A   arg1;
-          (prl (natural_ntree 
+          (prl (natural_ntree
 		  {ihsg=All_subgoals_hyp;isgintro=""})
              ltree)
         ]
@@ -1670,23 +1670,23 @@ and natural_generalize ig lh g gs ge la ltree =
 and natural_right ig lh g gs ltree =
   spv
          [ (natural_lhyp lh ig.ihsg);
-            (prli(natural_ntree  
+            (prli(natural_ntree
                 {ihsg=All_subgoals_hyp;isgintro="standard"})
-                            ltree); 
-            d_ou_A g  
+                            ltree);
+            d_ou_A g
         ]
 and natural_left ig lh g gs ltree =
   spv
          [ (natural_lhyp lh ig.ihsg);
-            (prli(natural_ntree  
+            (prli(natural_ntree
                 {ihsg=All_subgoals_hyp;isgintro="standard"})
-                            ltree); 
-             d_ou_A g  
+                            ltree);
+             d_ou_A g
         ]
 and natural_auto ig lh g gs ltree =
   match ig.isgintro with
    "trivial_equality" -> spe
-  | _ -> 
+  | _ ->
       if ltree=[]
       then sphv [(natural_lhyp lh ig.ihsg);
 		  (show_goal2 lh ig g gs "");
@@ -1717,7 +1717,7 @@ and natural_trivial ig lh g gs ltree =
 	      ce_qui_est_trivial () ]
   else spv [(natural_lhyp lh ig.ihsg);
 	     (show_goal2 lh ig g gs ". ");
-            (prli(natural_ntree  
+            (prli(natural_ntree
                       {ihsg=All_subgoals_hyp;isgintro="standard"})
                             ltree)]
 and natural_rewrite ig lh g gs arg ltree =
@@ -1725,7 +1725,7 @@ and natural_rewrite ig lh g gs arg ltree =
          [  (natural_lhyp lh ig.ihsg);
              (show_goal2 lh ig g gs "");
              en_utilisant_l_egalite_A arg;
-            (prli(natural_ntree  
+            (prli(natural_ntree
                  {ihsg=All_subgoals_hyp;isgintro="rewrite"})
                             ltree)
         ]
@@ -1768,18 +1768,18 @@ CAMLLIB=/usr/local/lib/ocaml
 CAMLP4LIB=/usr/local/lib/camlp4
 export CAMLLIB
 export COQTOP
-export CAMLP4LIB 
+export CAMLP4LIB
 cd d:/Tools/pcoq/src/text
 d:/Tools/coq-7avril/bin/coqtop.byte.exe -I /cygdrive/D/Tools/pcoq/src/abs_syntax  -I /cygdrive/D/Tools/pcoq/src/text -I /cygdrive/D/Tools/pcoq/src/coq -I /cygdrive/D/Tools/pcoq/src/pbp -I /cygdrive/D/Tools/pcoq/src/dad -I /cygdrive/D/Tools/pcoq/src/history
 
- 
- 
+
+
 Lemma l1: (A, B : Prop) A \/ B -> B ->  A.
 Intros.
 Elim H.
 Auto.
 Qed.
- 
+
 
 Drop.
 
@@ -1806,7 +1806,7 @@ Pp_control.set_depth_boxes 100;;
 #install_printer  pproof;;
 
 ep();;
-let bidon = ref (constr_of_string "O");; 
+let bidon = ref (constr_of_string "O");;
 
 #trace to_nproof;;
 ***********************************************************************)

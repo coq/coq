@@ -9,7 +9,7 @@
 (* $Id$ *)
 
 open Term
-open Util  
+open Util
 open Goptions
 
 type s_info=
@@ -54,12 +54,12 @@ let opt_pruning=
    optread=(fun () -> !pruning);
    optwrite=(fun b -> pruning:=b)}
 
-let _ = declare_bool_option opt_pruning 
+let _ = declare_bool_option opt_pruning
 
 type form=
     Atom of int
   | Arrow of form * form
-  | Bot 
+  | Bot
   | Conjunct of form * form
   | Disjunct of form * form
 
@@ -67,14 +67,14 @@ type tag=int
 
 let decomp_form=function
     Atom i -> Some (i,[])
-  | Arrow (f1,f2) -> Some (-1,[f1;f2]) 
+  | Arrow (f1,f2) -> Some (-1,[f1;f2])
   | Bot -> Some (-2,[])
   | Conjunct (f1,f2) -> Some (-3,[f1;f2])
   | Disjunct (f1,f2) -> Some (-4,[f1;f2])
 
 module Fmap=Map.Make(struct type t=form let compare=compare end)
 
-type sequent = 
+type sequent =
     {rev_hyps: form Intmap.t;
      norev_hyps: form Intmap.t;
      size:int;
@@ -103,14 +103,14 @@ type proof =
   | E_Or of int*proof*proof
   | D_Or of int*proof
   | Pop of int*proof
-      
+
 type rule =
     SAx of int
-  | SI_Arrow 
+  | SI_Arrow
   | SE_Arrow of int*int
   | SD_Arrow of int
   | SE_False of int
-  | SI_And 
+  | SI_And
   | SE_And of int
   | SD_And of int
   | SI_Or_l
@@ -132,9 +132,9 @@ let add_step s sub =
     | SI_Or_r,[p] -> I_Or_r p
     | SE_Or i,[p1;p2] -> E_Or(i,p1,p2)
     | SD_Or i,[p] -> D_Or(i,p)
-    | _,_ -> anomaly "add_step: wrong arity" 
-    
-type 'a with_deps = 
+    | _,_ -> anomaly "add_step: wrong arity"
+
+type 'a with_deps =
     {dep_it:'a;
      dep_goal:bool;
      dep_hyps:Intset.t}
@@ -148,7 +148,7 @@ type slice=
      changes_goal:bool;
      creates_hyps:Intset.t}
 
-type state = 
+type state =
     Complete of proof
   | Incomplete of sequent * slice list
 
@@ -164,15 +164,15 @@ let pop n prf =
     {prf with dep_it = nprf}
 
 let rec fill stack proof =
-  match stack with 
+  match stack with
       [] -> Complete proof.dep_it
     | slice::super ->
-	if 
+	if
 	  !pruning &&
 	  slice.proofs_done=[] &&
 	  not (slice.changes_goal && proof.dep_goal) &&
-	  not (Intset.exists 
-		 (fun i -> Intset.mem i proof.dep_hyps) 
+	  not (Intset.exists
+		 (fun i -> Intset.mem i proof.dep_hyps)
 		 slice.creates_hyps)
 	then
 	  begin
@@ -181,23 +181,23 @@ let rec fill stack proof =
 	    List.length slice.proofs_todo;
 	    let created_here=Intset.cardinal slice.creates_hyps in
 	      s_info.pruned_hyps<-s_info.pruned_hyps+
-	      List.fold_left 
-		(fun sum dseq -> sum + Intset.cardinal dseq.dep_hyps) 
+	      List.fold_left
+		(fun sum dseq -> sum + Intset.cardinal dseq.dep_hyps)
 		created_here slice.proofs_todo;
 	    fill super (pop (Intset.cardinal slice.creates_hyps) proof)
 	  end
 	else
 	  let dep_hyps=
-	    Intset.union slice.needs_hyps 
+	    Intset.union slice.needs_hyps
 	      (Intset.diff proof.dep_hyps slice.creates_hyps) in
 	  let dep_goal=
-	    slice.needs_goal || 
+	    slice.needs_goal ||
 	    ((not slice.changes_goal) && proof.dep_goal) in
 	  let proofs_done=
 	    proof.dep_it::slice.proofs_done in
 	    match slice.proofs_todo with
 		[] ->
-		  fill super {dep_it = 
+		  fill super {dep_it =
 				add_step slice.step (List.rev proofs_done);
 			      dep_goal = dep_goal;
 			      dep_hyps = dep_hyps}
@@ -214,8 +214,8 @@ let rec fill stack proof =
 
 let append stack (step,subgoals) =
   s_info.created_steps<-s_info.created_steps+1;
-  match subgoals with 
-      [] -> 
+  match subgoals with
+      [] ->
 	s_info.branch_successes<-s_info.branch_successes+1;
 	fill stack {dep_it=add_step step.dep_it [];
 		    dep_goal=step.dep_goal;
@@ -239,10 +239,10 @@ let embed seq=
    dep_hyps=Intset.empty}
 
 let change_goal seq gl=
-    {seq with 
+    {seq with
        dep_it={seq.dep_it with gl=gl};
        dep_goal=true}
-	
+
 let add_hyp seqwd f=
   s_info.created_hyps<-s_info.created_hyps+1;
   let seq=seqwd.dep_it in
@@ -256,71 +256,71 @@ let add_hyp seqwd f=
     with Not_found -> seq.cnx,seq.right in
   let nseq=
     match f with
-	Bot -> 
-	  {seq with 
+	Bot ->
+	  {seq with
 	     left=left;
 	     right=right;
 	     size=num;
 	     abs=Some num;
 	     cnx=cnx}
       | Atom _ ->
-	  {seq with 
+	  {seq with
 	     size=num;
 	     left=left;
 	     right=right;
 	     cnx=cnx}
       | Conjunct (_,_) | Disjunct (_,_) ->
 	  {seq with
-	     rev_hyps=Intmap.add num f seq.rev_hyps; 
+	     rev_hyps=Intmap.add num f seq.rev_hyps;
 	     size=num;
 	     left=left;
 	     right=right;
 	     cnx=cnx}
       | Arrow (f1,f2) ->
 	  let ncnx,nright=
-	    try 
-	      let i = Fmap.find f1 seq.left in	  
+	    try
+	      let i = Fmap.find f1 seq.left in
 		(i,num,f1,f2)::cnx,right
 	    with Not_found ->
 	      cnx,(add_one_arrow num f1 f2 right) in
 	    match f1 with
 		Conjunct (_,_) | Disjunct (_,_) ->
 		  {seq with
-		     rev_hyps=Intmap.add num f seq.rev_hyps; 
+		     rev_hyps=Intmap.add num f seq.rev_hyps;
 		     size=num;
 		     left=left;
 		     right=nright;
 		     cnx=ncnx}
 	      | Arrow(_,_) ->
 		  {seq with
-		     norev_hyps=Intmap.add num f seq.norev_hyps; 
+		     norev_hyps=Intmap.add num f seq.norev_hyps;
 		     size=num;
 		     left=left;
 		     right=nright;
 		     cnx=ncnx}
-	      | _ -> 
+	      | _ ->
 		  {seq with
 		     size=num;
 		     left=left;
 		     right=nright;
 		     cnx=ncnx} in
-    {seqwd with 
+    {seqwd with
        dep_it=nseq;
        dep_hyps=Intset.add num seqwd.dep_hyps}
 
 exception Here_is of (int*form)
 
-let choose m= 
-  try 
+let choose m=
+  try
     Intmap.iter (fun i f -> raise (Here_is (i,f))) m;
     raise Not_found
-  with 
+  with
       Here_is (i,f) -> (i,f)
 
 
 let search_or seq=
   match seq.gl with
-      Disjunct (f1,f2) -> 
+      Disjunct (f1,f2) ->
 	[{dep_it = SI_Or_l;
 	  dep_goal = true;
 	  dep_hyps = Intset.empty},
@@ -333,19 +333,19 @@ let search_or seq=
 
 let search_norev seq=
   let goals=ref (search_or seq) in
-  let add_one i f= 
+  let add_one i f=
     match f with
 	Arrow (Arrow (f1,f2),f3) ->
-	  let nseq = 
+	  let nseq =
 	    {seq with norev_hyps=Intmap.remove i seq.norev_hyps} in
 	    goals:=
 	      ({dep_it=SD_Arrow(i);
 		dep_goal=false;
 		dep_hyps=Intset.singleton i},
-	       [add_hyp 
-		  (add_hyp 
-		     (change_goal (embed nseq) f2) 
-		     (Arrow(f2,f3))) 
+	       [add_hyp
+		  (add_hyp
+		     (change_goal (embed nseq) f2)
+		     (Arrow(f2,f3)))
 		  f1;
 		add_hyp (embed nseq) f3]):: !goals
       | _ -> anomaly "search_no_rev: can't happen" in
@@ -353,7 +353,7 @@ let search_norev seq=
     List.rev !goals
 
 let search_in_rev_hyps seq=
-  try 
+  try
     let i,f=choose seq.rev_hyps in
     let make_step step=
       {dep_it=step;
@@ -361,25 +361,25 @@ let search_in_rev_hyps seq=
        dep_hyps=Intset.singleton i} in
     let nseq={seq with rev_hyps=Intmap.remove i seq.rev_hyps} in
       match f with
-	  Conjunct (f1,f2) -> 
+	  Conjunct (f1,f2) ->
 	    [make_step (SE_And(i)),
 	     [add_hyp (add_hyp (embed nseq) f1) f2]]
 	| Disjunct (f1,f2) ->
 	    [make_step (SE_Or(i)),
 	     [add_hyp (embed nseq) f1;add_hyp (embed nseq) f2]]
-	| Arrow (Conjunct (f1,f2),f0) -> 
+	| Arrow (Conjunct (f1,f2),f0) ->
 	    [make_step (SD_And(i)),
 	     [add_hyp (embed nseq) (Arrow (f1,Arrow (f2,f0)))]]
 	| Arrow (Disjunct (f1,f2),f0) ->
 	    [make_step (SD_Or(i)),
 	     [add_hyp (add_hyp (embed nseq) (Arrow(f1,f0))) (Arrow (f2,f0))]]
-	| _ -> anomaly "search_in_rev_hyps: can't happen"	      
+	| _ -> anomaly "search_in_rev_hyps: can't happen"
   with
       Not_found -> search_norev seq
- 
+
 let search_rev seq=
   match seq.cnx with
-      (i,j,f1,f2)::next -> 
+      (i,j,f1,f2)::next ->
 	let nseq=
 	  match f1 with
 	      Conjunct (_,_) | Disjunct (_,_) ->
@@ -394,7 +394,7 @@ let search_rev seq=
 	    dep_goal=false;
 	    dep_hyps=Intset.add i (Intset.singleton j)},
 	   [add_hyp (embed nseq) f2]]
-    | [] -> 
+    | [] ->
 	match seq.gl with
 	    Arrow (f1,f2) ->
 	      [{dep_it=SI_Arrow;
@@ -410,19 +410,19 @@ let search_rev seq=
 
 let search_all seq=
   match seq.abs with
-      Some i -> 
+      Some i ->
 	[{dep_it=SE_False (i);
 	  dep_goal=false;
 	  dep_hyps=Intset.singleton i},[]]
     | None ->
-	try 
+	try
 	  let ax = Fmap.find seq.gl seq.left in
 	    [{dep_it=SAx (ax);
 	      dep_goal=true;
 	      dep_hyps=Intset.singleton ax},[]]
 	with Not_found -> search_rev seq
 
-let bare_sequent = embed 
+let bare_sequent = embed
 		     {rev_hyps=Intmap.empty;
 		      norev_hyps=Intmap.empty;
 		      size=0;
@@ -431,7 +431,7 @@ let bare_sequent = embed
 		      cnx=[];
 		      abs=None;
 		      gl=Bot}
-		     
+
 let init_state hyps gl=
   let init = change_goal bare_sequent gl in
   let goal=List.fold_right (fun (_,f,_) seq ->add_hyp seq f) hyps init in
@@ -448,12 +448,12 @@ let branching = function
       let _ =
 	match successors with
 	    [] -> s_info.branch_failures<-s_info.branch_failures+1
-	  | _::next ->  
+	  | _::next ->
 	      s_info.nd_branching<-s_info.nd_branching+List.length next in
 	List.map (append stack) successors
   | Complete prf -> anomaly "already succeeded"
 
-open Pp 
+open Pp
 
 let rec pp_form =
   function
@@ -470,13 +470,13 @@ and pp_and = function
 and pp_atom= function
     Bot -> str "#"
   | Atom n -> int n
-  | f -> str "(" ++ hv 2 (pp_form f) ++ str ")" 
+  | f -> str "(" ++ hv 2 (pp_form f) ++ str ")"
 
 let pr_form f = msg (pp_form f)
 
-let pp_intmap map = 
-  let pp=ref (str "") in  
-   Intmap.iter (fun i obj -> pp:= (!pp ++ 
+let pp_intmap map =
+  let pp=ref (str "") in
+   Intmap.iter (fun i obj -> pp:= (!pp ++
 		pp_form obj ++ cut ())) map;
     str "{ " ++ v 0 (!pp) ++ str " }"
 
@@ -486,17 +486,17 @@ let pp=ref (str "") in
   str "[ " ++ !pp ++ str "]"
 
 let pp_mapint map =
-  let pp=ref (str "") in  
-   Fmap.iter (fun obj l -> pp:= (!pp ++ 
-		pp_form obj ++ str " => " ++ 
-				 pp_list (fun (i,f) -> pp_form f) l ++ 
+  let pp=ref (str "") in
+   Fmap.iter (fun obj l -> pp:= (!pp ++
+		pp_form obj ++ str " => " ++
+				 pp_list (fun (i,f) -> pp_form f) l ++
 				 cut ()) ) map;
     str "{ " ++ vb 0 ++  (!pp) ++ str " }" ++ close ()
 
 let pp_connect (i,j,f1,f2) = pp_form f1 ++ str " => " ++ pp_form f2
 
 let pp_gl gl= cut () ++
-  str "{ " ++ vb 0 ++ 
+  str "{ " ++ vb 0 ++
 	      begin
 		match gl.abs with
 		    None -> str ""
@@ -504,38 +504,38 @@ let pp_gl gl= cut () ++
 	      end ++
   str "rev   =" ++ pp_intmap gl.rev_hyps ++ cut () ++
   str "norev =" ++ pp_intmap gl.norev_hyps ++ cut () ++
-  str "arrows=" ++ pp_mapint gl.right ++ cut () ++ 
-  str "cnx   =" ++ pp_list pp_connect gl.cnx ++ cut () ++ 
+  str "arrows=" ++ pp_mapint gl.right ++ cut () ++
+  str "cnx   =" ++ pp_list pp_connect gl.cnx ++ cut () ++
   str "goal  =" ++ pp_form gl.gl ++ str " }" ++ close ()
 
-let pp = 
+let pp =
   function
       Incomplete(gl,ctx) -> msgnl (pp_gl gl)
     | _ -> msg (str "<complete>")
 
-let pp_info () = 
-  let count_info = 
+let pp_info () =
+  let count_info =
     if !pruning then
-	str "Proof steps : " ++ 
-	int s_info.created_steps ++ str " created / " ++ 
+	str "Proof steps : " ++
+	int s_info.created_steps ++ str " created / " ++
 	int s_info.pruned_steps ++ str " pruned" ++ fnl () ++
-	str "Proof branches : " ++ 
-	int s_info.created_branches ++ str " created / " ++ 
+	str "Proof branches : " ++
+	int s_info.created_branches ++ str " created / " ++
 	int s_info.pruned_branches ++ str " pruned" ++ fnl () ++
-	str "Hypotheses : " ++ 
-	int s_info.created_hyps ++ str " created / " ++ 
+	str "Hypotheses : " ++
+	int s_info.created_hyps ++ str " created / " ++
 	int s_info.pruned_hyps ++ str " pruned" ++ fnl ()
     else
 	str "Pruning is off" ++ fnl () ++
-	str "Proof steps : " ++ 
+	str "Proof steps : " ++
 	int s_info.created_steps ++ str " created" ++ fnl () ++
-	str "Proof branches : " ++ 
+	str "Proof branches : " ++
 	int s_info.created_branches ++ str " created" ++ fnl () ++
-	str "Hypotheses : " ++ 
+	str "Hypotheses : " ++
 	int s_info.created_hyps ++ str " created" ++ fnl () in
     msgnl
       ( str "Proof-search statistics :" ++ fnl () ++
-	count_info ++ 
+	count_info ++
 	str "Branch ends: " ++
 	int s_info.branch_successes ++ str " successes / " ++
 	int s_info.branch_failures ++ str " failures" ++ fnl () ++
@@ -543,4 +543,4 @@ let pp_info () =
 	int s_info.nd_branching ++ str " branches")
 
 
- 
+

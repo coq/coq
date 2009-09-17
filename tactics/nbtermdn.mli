@@ -34,5 +34,5 @@ val dnet_depth : int ref
 val freeze : ('na,'a) t -> ('na,'a) frozen_t
 val unfreeze : ('na,'a) frozen_t -> ('na,'a) t -> unit
 val empty : ('na,'a) t -> unit
-val to2lists : ('na,'a) t -> ('na * (constr_pattern * 'a)) list * 
+val to2lists : ('na,'a) t -> ('na * (constr_pattern * 'a)) list *
                              (global_reference option * 'a Btermdn.t) list

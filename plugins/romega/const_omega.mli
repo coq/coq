@@ -168,7 +168,7 @@ module type Int =
     val parse_term : Term.constr -> parse_term
     (* parsing a relation expression, including = < <= >= > *)
     val parse_rel : Proof_type.goal Tacmach.sigma -> Term.constr -> parse_rel
-    (* Is a particular term only made of numbers and + * - ? *) 
+    (* Is a particular term only made of numbers and + * - ? *)
     val is_scalar : Term.constr -> bool
   end
 

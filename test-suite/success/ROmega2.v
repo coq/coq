@@ -6,7 +6,7 @@ Open Scope Z_scope.
 
 
 (* First a simplified version used during debug of romega on Test46 *)
-Lemma Test46_simplified : 
+Lemma Test46_simplified :
 forall v1 v2 v5 : Z,
 0 = v2 + v5 ->
 0 < v5 ->
@@ -18,7 +18,7 @@ Qed.
 
 
 (* The complete problem *)
-Lemma Test46 : 
+Lemma Test46 :
 forall v1 v2 v3 v4 v5 : Z,
 ((2 * v4) + (5)) + (8 * v2) <= ((4 * v4) + (3 * v4)) + (5 * v4) ->
 9 * v4 > (1 * v4) + ((2 * v1) + (0 * v2)) ->

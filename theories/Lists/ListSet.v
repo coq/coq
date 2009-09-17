@@ -47,7 +47,7 @@ Section first_definitions.
         | right _ => set_mem a x1
         end
     end.
- 
+
   (** If [a] belongs to [x], removes [a] from [x]. If not, does nothing *)
   Fixpoint set_remove (a:A) (x:set) {struct x} : set :=
     match x with
@@ -72,7 +72,7 @@ Section first_definitions.
     | nil => x
     | a1 :: y1 => set_add a1 (set_union x y1)
     end.
-        
+
   (** returns the set of all els of [x] that does not belong to [y] *)
   Fixpoint set_diff (x y:set) {struct x} : set :=
     match x with
@@ -80,7 +80,7 @@ Section first_definitions.
     | a1 :: x1 =>
         if set_mem a1 y then set_diff x1 y else set_add a1 (set_diff x1 y)
     end.
-   
+
 
   Definition set_In : A -> set -> Prop := In (A:=A).
 
@@ -123,7 +123,7 @@ Section first_definitions.
     case H3; auto.
   Qed.
 
- 
+
   Lemma set_mem_correct1 :
    forall (a:A) (x:set), set_mem a x = true -> set_In a x.
   Proof.
@@ -191,11 +191,11 @@ Section first_definitions.
 
   Lemma set_add_intro :
    forall (a b:A) (x:set), a = b \/ set_In a x -> set_In a (set_add b x).
-  
+
   Proof.
     intros a b x [H1| H2]; auto with datatypes.
   Qed.
- 
+
   Lemma set_add_elim :
    forall (a b:A) (x:set), set_In a (set_add b x) -> a = b \/ set_In a x.
 
@@ -225,7 +225,7 @@ Section first_definitions.
     simple induction x; simpl in |- *.
     discriminate.
     intros; elim (Aeq_dec a a0); intros; discriminate.
-  Qed.   
+  Qed.
 
 
   Lemma set_union_intro1 :
@@ -289,7 +289,7 @@ Section first_definitions.
     elim (set_mem a y); simpl in |- *; intros.
     auto with datatypes.
     absurd (set_In a y); auto with datatypes.
-    elim (set_mem a0 y); [ right; auto with datatypes | auto with datatypes ].     
+    elim (set_mem a0 y); [ right; auto with datatypes | auto with datatypes ].
   Qed.
 
   Lemma set_inter_elim1 :
@@ -324,7 +324,7 @@ Section first_definitions.
      set_In a (set_inter x y) -> set_In a x /\ set_In a y.
   Proof.
     eauto with datatypes.
-  Qed. 
+  Qed.
 
   Lemma set_diff_intro :
    forall (a:A) (x y:set),
@@ -354,7 +354,7 @@ Section first_definitions.
    forall (a:A) (x y:set), set_In a (set_diff x y) -> ~ set_In a y.
   intros a x y; elim x; simpl in |- *.
   intros; contradiction.
-  intros a0 l Hrec. 
+  intros a0 l Hrec.
   apply set_mem_ind2; auto.
   intros H1 H2; case (set_add_elim _ _ _ H2); intros; auto.
   rewrite H; trivial.
@@ -387,10 +387,10 @@ Section other_definitions.
   Definition set_fold_left : (B -> A -> B) -> set A -> B -> B :=
     fold_left (A:=B) (B:=A).
 
-  Definition set_fold_right (f:A -> B -> B) (x:set A) 
+  Definition set_fold_right (f:A -> B -> B) (x:set A)
     (b:B) : B := fold_right f b x.
 
- 
+
 End other_definitions.
 
 Unset Implicit Arguments.

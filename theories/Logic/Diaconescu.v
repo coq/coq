@@ -59,7 +59,7 @@ Definition PredicateExtensionality :=
 Require Import ClassicalFacts.
 
 Variable pred_extensionality : PredicateExtensionality.
-  
+
 Lemma prop_ext : forall A B:Prop, (A <-> B) -> A = B.
 Proof.
   intros A B H.
@@ -99,11 +99,11 @@ Lemma AC_bool_subset_to_bool :
       (exists b : bool, P b) ->
        exists b : bool, P b /\ R P b /\ (forall b':bool, R P b' -> b = b')).
 Proof.
-  destruct (guarded_rel_choice _ _ 
+  destruct (guarded_rel_choice _ _
    (fun Q:bool -> Prop =>  exists y : _, Q y)
    (fun (Q:bool -> Prop) (y:bool) => Q y)) as (R,(HRsub,HR)).
     exact (fun _ H => H).
-  exists R; intros P HP. 
+  exists R; intros P HP.
   destruct (HR P HP) as (y,(Hy,Huni)).
   exists y; firstorder.
 Qed.
@@ -190,7 +190,7 @@ Lemma projT1_injective : a1=a2 -> a1'=a2'.
 Proof.
   intro Heq ; unfold a1', a2', A'.
   rewrite Heq.
-  replace (or_introl (a2=a2) (refl_equal a2)) 
+  replace (or_introl (a2=a2) (refl_equal a2))
      with (or_intror (a2=a2) (refl_equal a2)).
   reflexivity.
   apply proof_irrelevance.
@@ -210,10 +210,10 @@ Qed.
 
 Theorem proof_irrel_rel_choice_imp_eq_dec : a1=a2 \/ ~a1=a2.
 Proof.
-  destruct 
-    (rel_choice A' bool 
+  destruct
+    (rel_choice A' bool
        (fun x y =>  projT1 x = a1 /\ y = true \/ projT1 x = a2 /\ y = false))
-    as (R,(HRsub,HR)). 
+    as (R,(HRsub,HR)).
     apply decide.
   destruct (HR a1') as (b1,(Ha1'b1,_Huni1)).
   destruct (HRsub a1' b1 Ha1'b1) as [(_, Hb1true)|(Ha1a2, _Hb1false)].
@@ -235,18 +235,18 @@ Declare Implicit Tactic auto.
 
 Lemma proof_irrel_rel_choice_imp_eq_dec' : a1=a2 \/ ~a1=a2.
 Proof.
-  assert (decide: forall x:A, x=a1 \/ x=a2 -> 
+  assert (decide: forall x:A, x=a1 \/ x=a2 ->
                 exists y:bool, x=a1 /\ y=true \/ x=a2 /\ y=false).
     intros a [Ha1|Ha2]; [exists true | exists false]; auto.
-  assert (guarded_rel_choice := 
-          rel_choice_and_proof_irrel_imp_guarded_rel_choice 
-	  rel_choice 
+  assert (guarded_rel_choice :=
+          rel_choice_and_proof_irrel_imp_guarded_rel_choice
+	  rel_choice
 	  proof_irrelevance).
-  destruct 
-    (guarded_rel_choice A bool 
+  destruct
+    (guarded_rel_choice A bool
       (fun x => x=a1 \/ x=a2)
       (fun x y => x=a1 /\ y=true \/ x=a2 /\ y=false))
-      as (R,(HRsub,HR)). 
+      as (R,(HRsub,HR)).
       apply decide.
   destruct (HR a1) as (b1,(Ha1b1,_Huni1)). left; reflexivity.
   destruct (HRsub a1 b1 Ha1b1) as [(_, Hb1true)|(Ha1a2, _Hb1false)].
@@ -273,8 +273,8 @@ Section ExtensionalEpsilon_imp_EM.
 
 Variable epsilon : forall A : Type, inhabited A -> (A -> Prop) -> A.
 
-Hypothesis epsilon_spec : 
-  forall (A:Type) (i:inhabited A) (P:A->Prop), 
+Hypothesis epsilon_spec :
+  forall (A:Type) (i:inhabited A) (P:A->Prop),
   (exists x, P x) -> P (epsilon A i P).
 
 Hypothesis epsilon_extensionality :
@@ -288,9 +288,9 @@ Proof.
   intro P.
   pose (B := fun y => y=false \/ P).
   pose (C := fun y => y=true  \/ P).
-  assert (B (eps B)) as [Hfalse|HP] 
+  assert (B (eps B)) as [Hfalse|HP]
     by (apply epsilon_spec; exists false; left; reflexivity).
-  assert (C (eps C)) as [Htrue|HP] 
+  assert (C (eps C)) as [Htrue|HP]
     by (apply epsilon_spec; exists true; left; reflexivity).
     right; intro HP.
     assert (forall y, B y <-> C y) by (intro y; split; intro; right; assumption).

@@ -22,7 +22,7 @@ type constr_ast =
       (string * binder list * constr_ast * string option * constr_ast) list *
       string
 | Match of case_item list * constr_ast option *
-           (pattern list * constr_ast) list 
+           (pattern list * constr_ast) list
 
 and red_fun = Simpl
 
@@ -34,7 +34,7 @@ and fix_kind = Fix | CoFix
 
 and case_item = constr_ast * (string option * constr_ast option)
 
-and pattern = 
+and pattern =
   PatAs of pattern * string
 | PatType of pattern * constr_ast
 | PatConstr of string * pattern list

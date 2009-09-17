@@ -1,8 +1,8 @@
 Definition le_trans := 0.
 
 
-Module Test_Read.     
-  Module M.  
+Module Test_Read.
+  Module M.
     Require Le.        (* Reading without importing *)
 
     Check Le.le_trans.
@@ -12,7 +12,7 @@ Module Test_Read.
     Qed.
   End M.
 
-  Check Le.le_trans. 
+  Check Le.le_trans.
 
   Lemma th0 : le_trans = 0.
     reflexivity.
@@ -32,84 +32,84 @@ Definition le_decide := 1.  (* from Arith/Compare *)
 Definition min := 0.            (* from Arith/Min *)
 
 Module Test_Require.
-  
+
   Module M.
     Require Import Compare.              (* Imports Min as well *)
-  
+
     Lemma th1 : le_decide = le_decide.
       reflexivity.
     Qed.
-  
+
     Lemma th2 : min = min.
       reflexivity.
     Qed.
-  
+
   End M.
-  
+
   (* Checks that Compare and List are loaded *)
   Check Compare.le_decide.
   Check Min.min.
-  
-  
+
+
   (* Checks that Compare and List are _not_ imported *)
   Lemma th1 : le_decide = 1.
     reflexivity.
   Qed.
-  
+
   Lemma th2 : min = 0.
     reflexivity.
   Qed.
-  
+
   (* It should still be the case after Import M *)
   Import M.
-  
+
   Lemma th3 : le_decide = 1.
     reflexivity.
   Qed.
-  
+
   Lemma th4 : min = 0.
     reflexivity.
   Qed.
 
-End Test_Require.  
+End Test_Require.
 
 (****************************************************************)
 
 Module Test_Import.
   Module M.
     Import Compare.              (* Imports Min as well *)
-  
+
     Lemma th1 : le_decide = le_decide.
       reflexivity.
     Qed.
-  
+
     Lemma th2 : min = min.
       reflexivity.
     Qed.
-  
+
   End M.
-  
+
   (* Checks that Compare and List are loaded *)
   Check Compare.le_decide.
   Check Min.min.
-  
-  
+
+
   (* Checks that Compare and List are _not_ imported *)
   Lemma th1 : le_decide = 1.
     reflexivity.
   Qed.
-  
+
   Lemma th2 : min = 0.
     reflexivity.
   Qed.
-  
+
   (* It should still be the case after Import M *)
   Import M.
-  
+
   Lemma th3 : le_decide = 1.
     reflexivity.
   Qed.
-  
+
   Lemma th4 : min = 0.
     reflexivity.
   Qed.

@@ -48,12 +48,12 @@ Module Type QType.
  Definition max n m := match compare n m with Lt => m | _ => n end.
 
  Parameter eq_bool : t -> t -> bool.
- 
- Parameter spec_eq_bool : forall x y, 
+
+ Parameter spec_eq_bool : forall x y,
   if eq_bool x y then [x]==[y] else ~([x]==[y]).
 
  Parameter red : t -> t.
- 
+
  Parameter spec_red : forall x, [red x] == [x].
  Parameter strong_spec_red : forall x, [red x] = Qred [x].
 

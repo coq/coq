@@ -159,14 +159,14 @@ val tclNOTSAMEGOAL   : tactic -> tactic
 val tclINFO          : tactic -> tactic
 
 (* [tclIFTHENELSE tac1 tac2 tac3 gls] first applies [tac1] to [gls] then,
-   if it succeeds, applies [tac2] to the resulting subgoals, 
+   if it succeeds, applies [tac2] to the resulting subgoals,
    and if not applies [tac3] to the initial goal [gls] *)
 val tclIFTHENELSE    : tactic -> tactic -> tactic -> tactic
 val tclIFTHENSELSE   : tactic -> tactic list -> tactic ->tactic
 val tclIFTHENSVELSE   : tactic -> tactic array -> tactic ->tactic
 
 (* [tclIFTHENTRYELSEMUST tac1 tac2 gls] applies [tac1] then [tac2]. If [tac1]
-   has been successful, then [tac2] may fail. Otherwise, [tac2] must succeed. 
+   has been successful, then [tac2] may fail. Otherwise, [tac2] must succeed.
    Equivalent to [(tac1;try tac2)||tac2] *)
 
 val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
@@ -199,7 +199,7 @@ val top_goal_of_pftreestate : pftreestate -> goal sigma
 val nth_goal_of_pftreestate : int -> pftreestate -> goal sigma
 
 val traverse : int -> pftreestate -> pftreestate
-val map_pftreestate : 
+val map_pftreestate :
   (evar_map ref -> proof_tree -> proof_tree) -> pftreestate -> pftreestate
 val solve_nth_pftreestate : int -> tactic -> pftreestate -> pftreestate
 val solve_pftreestate : tactic -> pftreestate -> pftreestate
@@ -221,12 +221,12 @@ val next_unproven : pftreestate -> pftreestate
 val prev_unproven : pftreestate -> pftreestate
 val top_of_tree : pftreestate -> pftreestate
 val match_rule : (rule -> bool) -> pftreestate -> bool
-val up_until_matching_rule : (rule -> bool) -> 
+val up_until_matching_rule : (rule -> bool) ->
   pftreestate -> pftreestate
-val up_to_matching_rule : (rule -> bool) -> 
+val up_to_matching_rule : (rule -> bool) ->
   pftreestate -> pftreestate
 val change_rule : (rule -> rule) -> pftreestate -> pftreestate
-val change_constraints_pftreestate 
+val change_constraints_pftreestate
   : evar_map -> pftreestate -> pftreestate
 
 

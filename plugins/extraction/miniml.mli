@@ -85,7 +85,7 @@ type equiv =
 
 type ml_ind = {
   ind_info : inductive_info;
-  ind_nparams : int; 
+  ind_nparams : int;
   ind_packets : ml_ind_packet array;
   ind_equiv : equiv
 }

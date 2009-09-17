@@ -36,7 +36,7 @@ Proof.
   intros P H0 H1 Hn.
   cut (forall n, P n /\ P (S n)).
   intros H'n n. elim (H'n n). auto with arith.
-  
+
   induction n. auto with arith.
   intros. elim IHn; auto with arith.
 Qed.
@@ -150,7 +150,7 @@ Proof fun n => proj2 (proj2 (even_odd_double n)).
 
 Hint Resolve even_double double_even odd_double double_odd: arith.
 
-(** Application: 
+(** Application:
     - if [n] is even then there is a [p] such that [n = 2p]
     - if [n] is odd  then there is a [p] such that [n = 2p+1]
 

@@ -23,7 +23,7 @@ Parameter Inline NZadd : NZ -> NZ -> NZ.
 Parameter Inline NZsub : NZ -> NZ -> NZ.
 Parameter Inline NZmul : NZ -> NZ -> NZ.
 
-(* Unary subtraction (opp) is not defined on natural numbers, so we have 
+(* Unary subtraction (opp) is not defined on natural numbers, so we have
    it for integers only *)
 
 Axiom NZeq_equiv : equiv NZ NZeq.

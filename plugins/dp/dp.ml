@@ -1,7 +1,7 @@
 (* Authors: Nicolas Ayache and Jean-Christophe Filliâtre *)
 (* Tactics to call decision procedures *)
 
-(* Works in two steps: 
+(* Works in two steps:
 
    - first the Coq context and the current goal are translated in
      Polymorphic First-Order Logic (see fol.mli in this directory)
@@ -36,27 +36,27 @@ let set_trace b = trace := b
 let timeout = ref 10
 let set_timeout n = timeout := n
 
-let (dp_timeout_obj,_) = 
-  declare_object 
-    {(default_object "Dp_timeout") with  
+let (dp_timeout_obj,_) =
+  declare_object
+    {(default_object "Dp_timeout") with
        cache_function = (fun (_,x) -> set_timeout x);
        load_function = (fun _ (_,x) -> set_timeout x);
        export_function = (fun x -> Some x)}
 
 let dp_timeout x = Lib.add_anonymous_leaf (dp_timeout_obj x)
 
-let (dp_debug_obj,_) = 
-  declare_object 
-    {(default_object "Dp_debug") with  
+let (dp_debug_obj,_) =
+  declare_object
+    {(default_object "Dp_debug") with
        cache_function = (fun (_,x) -> set_debug x);
        load_function = (fun _ (_,x) -> set_debug x);
        export_function = (fun x -> Some x)}
 
 let dp_debug x = Lib.add_anonymous_leaf (dp_debug_obj x)
 
-let (dp_trace_obj,_) = 
-  declare_object 
-    {(default_object "Dp_trace") with  
+let (dp_trace_obj,_) =
+  declare_object
+    {(default_object "Dp_trace") with
        cache_function = (fun (_,x) -> set_trace x);
        load_function = (fun _ (_,x) -> set_trace x);
        export_function = (fun x -> Some x)}
@@ -67,7 +67,7 @@ let logic_dir = ["Coq";"Logic";"Decidable"]
 let coq_modules =
   init_modules @ [logic_dir] @ arith_modules @ zarith_base_modules
     @ [["Coq"; "ZArith"; "BinInt"];
-       ["Coq"; "Reals"; "Rdefinitions"]; 
+       ["Coq"; "Reals"; "Rdefinitions"];
        ["Coq"; "Reals"; "Raxioms";];
        ["Coq"; "Reals"; "Rbasic_fun";];
        ["Coq"; "Reals"; "R_sqrt";];
@@ -123,36 +123,36 @@ let global_names = Hashtbl.create 97
 let used_names = Hashtbl.create 97
 
 let rename_global r =
-  try 
+  try
     Hashtbl.find global_names r
   with Not_found ->
-    let rec loop id = 
-      if Hashtbl.mem used_names id then 
+    let rec loop id =
+      if Hashtbl.mem used_names id then
 	loop (lift_ident id)
-      else begin 
+      else begin
 	Hashtbl.add used_names id ();
 	let s = string_of_id id in
-	Hashtbl.add global_names r s; 
+	Hashtbl.add global_names r s;
 	s
       end
     in
     loop (Nametab.basename_of_global r)
 
 let foralls =
-  List.fold_right 
+  List.fold_right
     (fun (x,t) p -> Forall (x, t, p))
 
 let fresh_var = function
   | Anonymous -> rename_global (VarRef (id_of_string "x"))
   | Name x -> rename_global (VarRef x)
 
-(* coq_rename_vars env [(x1,t1);...;(xn,tn)] renames the xi outside of 
-   env names, and returns the new variables together with the new 
+(* coq_rename_vars env [(x1,t1);...;(xn,tn)] renames the xi outside of
+   env names, and returns the new variables together with the new
    environment *)
 let coq_rename_vars env vars =
   let avoid = ref (ids_of_named_context (Environ.named_context env)) in
   List.fold_right
-    (fun (na,t) (newvars, newenv) -> 
+    (fun (na,t) (newvars, newenv) ->
        let id = next_name_away na !avoid in
        avoid := id :: !avoid;
        id :: newvars, Environ.push_named (id, None, t) newenv)
@@ -162,9 +162,9 @@ let coq_rename_vars env vars =
    type_quantifiers env (A1:Set)...(Ak:Set)t = A1...An, (env+Ai), t *)
 let decomp_type_quantifiers env t =
   let rec loop vars t = match kind_of_term t with
-    | Prod (n, a, t) when is_Set a || is_Type a -> 
+    | Prod (n, a, t) when is_Set a || is_Type a ->
 	loop ((n,a) :: vars) t
-    | _ -> 
+    | _ ->
 	let vars, env = coq_rename_vars env vars in
 	let t = substl (List.map mkVar vars) t in
 	List.rev vars, env, t
@@ -174,21 +174,21 @@ let decomp_type_quantifiers env t =
 (* same thing with lambda binders (for axiomatize body) *)
 let decomp_type_lambdas env t =
   let rec loop vars t = match kind_of_term t with
-    | Lambda (n, a, t) when is_Set a || is_Type a -> 
+    | Lambda (n, a, t) when is_Set a || is_Type a ->
 	loop ((n,a) :: vars) t
-    | _ -> 
+    | _ ->
 	let vars, env = coq_rename_vars env vars in
 	let t = substl (List.map mkVar vars) t in
 	List.rev vars, env, t
   in
   loop [] t
 
-let decompose_arrows = 
+let decompose_arrows =
   let rec arrows_rec l c = match kind_of_term c with
     | Prod (_,t,c) when not (dependent (mkRel 1) c) -> arrows_rec (t :: l) c
     | Cast (c,_,_) -> arrows_rec l c
     | _ -> List.rev l, c
-  in 
+  in
   arrows_rec []
 
 let rec eta_expanse t vars env i =
@@ -203,7 +203,7 @@ let rec eta_expanse t vars env i =
 	  let env' = Environ.push_named (id, None, a) env in
 	  let t' = mkApp (t, [| mkVar id |]) in
 	  eta_expanse t' (id :: vars) env' (pred i)
-      | _ -> 
+      | _ ->
 	  assert false
 
 let rec skip_k_args k cl = match k, cl with
@@ -222,7 +222,7 @@ let globals_stack = ref []
 let () =
   Summary.declare_summary "Dp globals"
     { Summary.freeze_function = (fun () -> !globals, !globals_stack);
-      Summary.unfreeze_function = 
+      Summary.unfreeze_function =
 	(fun (g,s) -> globals := g; globals_stack := s);
       Summary.init_function = (fun () -> ()) }
 
@@ -238,7 +238,7 @@ let lookup_local r =  match Hashtbl.find locals r with
   | Gnot_fo -> raise NotFO
   | Gfo d -> d
 
-let iter_all_constructors i f =  
+let iter_all_constructors i f =
   let _, oib = Global.lookup_inductive i in
   Array.iteri
     (fun j tj -> f j (mkConstruct (i, j+1)))
@@ -246,7 +246,7 @@ let iter_all_constructors i f =
 
 
 (* injection c [t1,...,tn] adds the injection axiom
-     forall x1:t1,...,xn:tn,y1:t1,...,yn:tn. 
+     forall x1:t1,...,xn:tn,y1:t1,...,yn:tn.
        c(x1,...,xn)=c(y1,...,yn) -> x1=y1 /\ ... /\ xn=yn *)
 
 let injection c l =
@@ -255,8 +255,8 @@ let injection c l =
   let xl = List.map (fun t -> rename_global (VarRef (var "x")), t) l in
   i := 0;
   let yl = List.map (fun t -> rename_global (VarRef (var "y")), t) l in
-  let f = 
-    List.fold_right2 
+  let f =
+    List.fold_right2
       (fun (x,_) (y,_) p -> And (Fatom (Eq (App (x,[]),App (y,[]))), p))
       xl yl True
   in
@@ -267,14 +267,14 @@ let injection c l =
   let ax = Axiom ("injection_" ^ c, f) in
   globals_stack := ax :: !globals_stack
 
-(* rec_names_for c [|n1;...;nk|] builds the list of constant names for 
+(* rec_names_for c [|n1;...;nk|] builds the list of constant names for
    identifiers n1...nk with the same path as c, if they exist; otherwise
    raises Not_found *)
 let rec_names_for c =
   let mp,dp,_ = Names.repr_con c in
   array_map_to_list
-    (function 
-       | Name id -> 
+    (function
+       | Name id ->
 	   let c' = Names.make_con mp dp (label_of_id id) in
 	   ignore (Global.lookup_constant c');
 	   msgnl (Printer.pr_constr (mkConst c'));
@@ -286,7 +286,7 @@ let rec_names_for c =
 
 let term_abstractions = Hashtbl.create 97
 
-let new_abstraction = 
+let new_abstraction =
   let r = ref 0 in fun () -> incr r; "abstraction_" ^ string_of_int !r
 
 (* Arithmetic constants *)
@@ -345,14 +345,14 @@ let rec tr_arith_constant t = match kind_of_term t with
       tr_powerRZ a b
   | Term.Cast (t, _, _) ->
       tr_arith_constant t
-  | _ -> 
+  | _ ->
       raise NotArithConstant
 
 (* translates a constant of the form (powerRZ 2 int_constant) *)
 and tr_powerRZ a b =
   (* checking first that a is (R1 + R1) *)
   match kind_of_term a with
-  | Term.App (f, [|c;d|]) when f = Lazy.force coq_Rplus -> 
+  | Term.App (f, [|c;d|]) when f = Lazy.force coq_Rplus ->
       begin
       match kind_of_term c,kind_of_term d with
         | Term.Const _, Term.Const _
@@ -371,9 +371,9 @@ and tr_powerRZ a b =
    tv = list of type variables *)
 and tr_type tv env t =
   let t = Reductionops.nf_betadeltaiota env Evd.empty t in
-  if t = Lazy.force coq_Z then 
+  if t = Lazy.force coq_Z then
     Tid ("int", [])
-  else if t = Lazy.force coq_R then 
+  else if t = Lazy.force coq_R then
     Tid ("real", [])
   else match kind_of_term t with
     | Var x when List.mem x tv ->
@@ -383,15 +383,15 @@ and tr_type tv env t =
 	begin try
 	  let r = global_of_constr f in
 	  match tr_global env r with
-	    | DeclType (id, k) -> 
+	    | DeclType (id, k) ->
 		assert (k = List.length cl); (* since t:Set *)
 		Tid (id, List.map (tr_type tv env) cl)
-	    | _ -> 
+	    | _ ->
 		raise NotFO
-	with 
+	with
 	  | Not_found ->
 	      raise NotFO
-	  | NotFO -> 
+	  | NotFO ->
 	      (* we need to abstract some part of (f cl) *)
 	      (*TODO*)
 	      raise NotFO
@@ -403,8 +403,8 @@ and make_term_abstraction tv env c =
   match tr_decl env id ty with
     | DeclFun (id,_,_,_) as _d ->
         raise NotFO
-        (* [CM 07/09/2009] deactivated because it generates 
-           unbound identifiers 'abstraction_<number>' 
+        (* [CM 07/09/2009] deactivated because it generates
+           unbound identifiers 'abstraction_<number>'
 	begin try
 	  Hashtbl.find term_abstractions c
 	with Not_found ->
@@ -428,7 +428,7 @@ and tr_decl env id ty =
     DeclType (id, List.length tv)
   else if is_Prop t then
     DeclPred (id, List.length tv, [])
-  else 
+  else
     let s = Typing.type_of env Evd.empty t in
     if is_Prop s then
       Axiom (id, tr_formula tv [] env t)
@@ -437,11 +437,11 @@ and tr_decl env id ty =
       let l = List.map (tr_type tv env) l in
       if is_Prop t then
 	DeclPred(id, List.length tv, l)
-      else 
+      else
 	let s = Typing.type_of env Evd.empty t in
-	if is_Set s || is_Type s then 
+	if is_Set s || is_Type s then
 	  DeclFun (id, List.length tv, l, tr_type tv env t)
-	else 
+	else
 	  raise NotFO
 
 (* tr_global(r) = tr_decl(id(r),typeof(r)) + a cache mechanism *)
@@ -457,7 +457,7 @@ and tr_global env r = match r with
 	  let id = rename_global r in
 	  let d = tr_decl env id ty in
 	  (* r can be already declared if it is a constructor *)
-	  if not (mem_global r) then begin 
+	  if not (mem_global r) then begin
 	    add_global r (Gfo d);
 	    globals_stack := d :: !globals_stack
 	  end;
@@ -468,7 +468,7 @@ and tr_global env r = match r with
 	  raise NotFO
 
 and axiomatize_body env r id d = match r with
-  | VarRef _ -> 
+  | VarRef _ ->
       assert false
   | ConstRef c ->
       begin match (Global.lookup_constant c).const_body with
@@ -488,7 +488,7 @@ and axiomatize_body env r id d = match r with
 		     (*Format.eprintf "axiomatize_body %S@." id;*)
 		     let b = match kind_of_term b with
 		       (* a single recursive function *)
-		       | Fix (_, (_,_,[|b|])) -> 
+		       | Fix (_, (_,_,[|b|])) ->
 			   subst1 (mkConst c) b
                        (* mutually recursive functions *)
 		       | Fix ((_,i), (names,_,bodies)) ->
@@ -499,7 +499,7 @@ and axiomatize_body env r id d = match r with
 			   with Not_found ->
 			     b
 			   end
-		       | _ -> 
+		       | _ ->
 			   b
 		     in
 		     let tv, env, b = decomp_type_lambdas env b in
@@ -521,9 +521,9 @@ and axiomatize_body env r id d = match r with
 			   begin match kind_of_term t with
 			     | Case (ci, _, e, br) ->
 				 equations_for_case env id vars tv bv ci e br
-			     | _ -> 
+			     | _ ->
 				 let t = tr_term tv bv env t in
-				 let ax = 
+				 let ax =
 				   add_proof (Fun_def (id, vars, ty, t))
 				 in
 				 let p = Fatom (Eq (App (id, fol_vars), t)) in
@@ -542,7 +542,7 @@ and axiomatize_body env r id d = match r with
 	    in
 	    let axioms = List.map (fun (id,ax) -> Axiom (id, ax)) axioms in
 	    globals_stack := axioms @ !globals_stack
-	| None -> 
+	| None ->
 	    () (* Coq axiom *)
       end
   | IndRef i ->
@@ -597,12 +597,12 @@ and equations_for_case env id vars tv bv ci e br = match kind_of_term e with
 		     | (y, t)::l' -> if y = string_of_id e then l'
 		       else (y, t)::(remove l' e) in
 		   let vars = remove vars x in
-		   let p = 
-		     Fatom (Eq (App (id, fol_vars), 
+		   let p =
+		     Fatom (Eq (App (id, fol_vars),
 				tr_term tv bv env b))
 		   in
 		   eqs := (id ^ "_" ^ idc, foralls vars p) :: !eqs
-	       | _ -> 
+	       | _ ->
 		   assert false end
 	   with NotFO ->
 	     ());
@@ -611,30 +611,30 @@ and equations_for_case env id vars tv bv ci e br = match kind_of_term e with
       raise NotFO
 
 (* assumption: t:T:Set *)
-and tr_term tv bv env t = 
+and tr_term tv bv env t =
       try
 	tr_arith_constant t
       with NotArithConstant ->
   match kind_of_term t with
     (* binary operations on integers *)
-  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zplus -> 
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zplus ->
       Plus (tr_term tv bv env a, tr_term tv bv env b)
-  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zminus -> 
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zminus ->
       Moins (tr_term tv bv env a, tr_term tv bv env b)
-  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zmult -> 
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zmult ->
       Mult (tr_term tv bv env a, tr_term tv bv env b)
-  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zdiv -> 
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zdiv ->
       Div (tr_term tv bv env a, tr_term tv bv env b)
-  | Term.App (f, [|a|]) when f = Lazy.force coq_Zopp -> 
+  | Term.App (f, [|a|]) when f = Lazy.force coq_Zopp ->
       Opp (tr_term tv bv env a)
     (* binary operations on reals *)
-  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rplus -> 
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rplus ->
       Plus (tr_term tv bv env a, tr_term tv bv env b)
-  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rminus -> 
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rminus ->
       Moins (tr_term tv bv env a, tr_term tv bv env b)
-  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rmult -> 
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rmult ->
       Mult (tr_term tv bv env a, tr_term tv bv env b)
-  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rdiv -> 
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Rdiv ->
       Div (tr_term tv bv env a, tr_term tv bv env b)
   | Term.Var id when List.mem id bv ->
       App (string_of_id id, [])
@@ -643,12 +643,12 @@ and tr_term tv bv env t =
 	begin try
 	  let r = global_of_constr f in
 	  match tr_global env r with
-	    | DeclFun (s, k, _, _) -> 
+	    | DeclFun (s, k, _, _) ->
 		let cl = skip_k_args k cl in
 		Fol.App (s, List.map (tr_term tv bv env) cl)
-	    | _ -> 
+	    | _ ->
 		raise NotFO
-	with 
+	with
 	  | Not_found ->
 	      raise NotFO
 	  | NotFO -> (* we need to abstract some part of (f cl) *)
@@ -663,7 +663,7 @@ and tr_term tv bv env t =
 		      abstract (applist (app, [x])) l
 		    end
 	      in
-	      let app,l = match cl with 
+	      let app,l = match cl with
 		| x :: l -> applist (f, [x]), l | [] -> raise NotFO
 	      in
 	      abstract app l
@@ -681,14 +681,14 @@ and quantifiers n a b tv bv env =
 and tr_formula tv bv env f =
   let c, args = decompose_app f in
   match kind_of_term c, args with
-    | Var id, [] -> 
+    | Var id, [] ->
 	Fatom (Pred (rename_global (VarRef id), []))
     | _, [t;a;b] when c = build_coq_eq () ->
 	let ty = Typing.type_of env Evd.empty t in
 	if is_Set ty || is_Type ty then
 	  let _ = tr_type tv env t in
 	  Fatom (Eq (tr_term tv bv env a, tr_term tv bv env b))
-	else 
+	else
 	  raise NotFO
           (* comparisons on integers *)
     | _, [a;b] when c = Lazy.force coq_Zle ->
@@ -731,7 +731,7 @@ and tr_formula tv bv env f =
 	  | Lambda(n, a, b) ->
 	      let id, t, bv, env, b = quantifiers n a b tv bv env in
 	      Exists (string_of_id id, t, tr_formula tv bv env b)
-	  | _ -> 
+	  | _ ->
 	      (* unusual case of the shape (ex p) *)
 	      raise NotFO (* TODO: we could eta-expanse *)
 	end
@@ -739,10 +739,10 @@ and tr_formula tv bv env f =
 	begin try
 	  let r = global_of_constr c in
 	  match tr_global env r with
-	    | DeclPred (s, k, _) -> 
+	    | DeclPred (s, k, _) ->
 		let args = skip_k_args k args in
 		Fatom (Pred (s, List.map (tr_term tv bv env) args))
-	    | _ -> 
+	    | _ ->
 		raise NotFO
 	with Not_found ->
 	  raise NotFO
@@ -751,7 +751,7 @@ and tr_formula tv bv env f =
 
 let tr_goal gl =
   Hashtbl.clear locals;
-  let tr_one_hyp (id, ty) = 
+  let tr_one_hyp (id, ty) =
     try
       let s = rename_global (VarRef id) in
       let d = tr_decl (pf_env gl) s ty in
@@ -762,7 +762,7 @@ let tr_goal gl =
       raise NotFO
   in
   let hyps =
-    List.fold_right 
+    List.fold_right
       (fun h acc -> try tr_one_hyp h :: acc with NotFO -> acc)
       (pf_hyps_types gl) []
   in
@@ -781,9 +781,9 @@ let file_contents f =
   let buf = Buffer.create 1024 in
   try
     let c = open_in f in
-    begin try 
-      while true do 
-	let s = input_line c in Buffer.add_string buf s; 
+    begin try
+      while true do
+	let s = input_line c in Buffer.add_string buf s;
 	Buffer.add_char buf '\n'
       done;
       assert false
@@ -791,7 +791,7 @@ let file_contents f =
       close_in c;
       Buffer.contents buf
     end
-  with _ -> 
+  with _ ->
     sprintf "(cannot open %s)" f
 
 let timeout_sys_command cmd =
@@ -799,24 +799,24 @@ let timeout_sys_command cmd =
   let out = Filename.temp_file "out" "" in
   let cmd = sprintf "why-cpulimit %d %s > %s 2>&1" !timeout cmd out in
   let ret = Sys.command cmd in
-  if !debug then 
+  if !debug then
     Format.eprintf "Output file %s:@.%s@." out (file_contents out);
   ret, out
 
 let timeout_or_failure c cmd out =
-  if c = 152 then 
-    Timeout 
+  if c = 152 then
+    Timeout
   else
-    Failure 
+    Failure
       (sprintf "command %s failed with output:\n%s " cmd (file_contents out))
 
 let prelude_files = ref ([] : string list)
 
 let set_prelude l = prelude_files := l
 
-let (dp_prelude_obj,_) = 
-  declare_object 
-    {(default_object "Dp_prelude") with  
+let (dp_prelude_obj,_) =
+  declare_object
+    {(default_object "Dp_prelude") with
        cache_function = (fun (_,x) -> set_prelude x);
        load_function = (fun _ (_,x) -> set_prelude x);
        export_function = (fun x -> Some x)}
@@ -826,18 +826,18 @@ let dp_prelude x = Lib.add_anonymous_leaf (dp_prelude_obj x)
 let why_files f = String.concat " " (!prelude_files @ [f])
 
 let call_simplify fwhy =
-  let cmd = 
-    sprintf "why --simplify %s" (why_files fwhy) 
+  let cmd =
+    sprintf "why --simplify %s" (why_files fwhy)
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fsx = Filename.chop_suffix fwhy ".why" ^ "_why.sx" in
-  let cmd = 
-    sprintf "why-cpulimit %d Simplify %s > out 2>&1 && grep -q -w Valid out" 
+  let cmd =
+    sprintf "why-cpulimit %d Simplify %s > out 2>&1 && grep -q -w Valid out"
       !timeout fsx
   in
   let out = Sys.command cmd in
-  let r = 
-    if out = 0 then Valid None else if out = 1 then Invalid else Timeout 
+  let r =
+    if out = 0 then Valid None else if out = 1 then Invalid else Timeout
   in
   if not !debug then remove_files [fwhy; fsx];
   r
@@ -847,15 +847,15 @@ let call_ergo fwhy =
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fwhy = Filename.chop_suffix fwhy ".why" ^ "_why.why" in
   let ftrace = Filename.temp_file "ergo_trace" "" in
-  let cmd = 
+  let cmd =
     if !trace then
       sprintf "alt-ergo -cctrace %s %s" ftrace fwhy
     else
       sprintf "alt-ergo %s" fwhy
   in
   let ret,out = timeout_sys_command cmd in
-  let r = 
-    if ret <> 0 then 
+  let r =
+    if ret <> 0 then
       timeout_or_failure ret cmd out
     else if Sys.command (sprintf "grep -q -w Valid %s" out) = 0 then
       Valid (if !trace then Some ftrace else None)
@@ -871,18 +871,18 @@ let call_ergo fwhy =
 
 
 let call_zenon fwhy =
-  let cmd = 
+  let cmd =
     sprintf "why --no-prelude --no-zenon-prelude --zenon %s" (why_files fwhy)
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fznn = Filename.chop_suffix fwhy ".why" ^ "_why.znn" in
   let out = Filename.temp_file "dp_out" "" in
-  let cmd = 
-    sprintf "timeout %d zenon -ocoqterm %s > %s 2>&1" !timeout fznn out 
+  let cmd =
+    sprintf "timeout %d zenon -ocoqterm %s > %s 2>&1" !timeout fznn out
   in
   let c = Sys.command cmd in
   if not !debug then remove_files [fwhy; fznn];
-  if c = 137 then 
+  if c = 137 then
     Timeout
   else begin
     if c <> 0 then anomaly ("command failed: " ^ cmd);
@@ -893,58 +893,58 @@ let call_zenon fwhy =
   end
 
 let call_yices fwhy =
-  let cmd = 
+  let cmd =
     sprintf "why -smtlib --encoding sstrat %s" (why_files fwhy)
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fsmt = Filename.chop_suffix fwhy ".why" ^ "_why.smt" in
-  let cmd = 
-    sprintf "why-cpulimit %d yices -pc 0 -smt %s > out 2>&1 && grep -q -w unsat out" 
+  let cmd =
+    sprintf "why-cpulimit %d yices -pc 0 -smt %s > out 2>&1 && grep -q -w unsat out"
       !timeout fsmt
   in
   let out = Sys.command cmd in
-  let r = 
-    if out = 0 then Valid None else if out = 1 then Invalid else Timeout 
+  let r =
+    if out = 0 then Valid None else if out = 1 then Invalid else Timeout
   in
   if not !debug then remove_files [fwhy; fsmt];
   r
 
 let call_cvc3 fwhy =
-  let cmd = 
+  let cmd =
     sprintf "why -smtlib --encoding sstrat %s" (why_files fwhy)
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fsmt = Filename.chop_suffix fwhy ".why" ^ "_why.smt" in
-  let cmd = 
-    sprintf "why-cpulimit %d cvc3 -lang smt %s > out 2>&1 && grep -q -w unsat out" 
+  let cmd =
+    sprintf "why-cpulimit %d cvc3 -lang smt %s > out 2>&1 && grep -q -w unsat out"
       !timeout fsmt
   in
   let out = Sys.command cmd in
-  let r = 
-    if out = 0 then Valid None else if out = 1 then Invalid else Timeout 
+  let r =
+    if out = 0 then Valid None else if out = 1 then Invalid else Timeout
   in
   if not !debug then remove_files [fwhy; fsmt];
   r
 
 let call_cvcl fwhy =
-  let cmd = 
+  let cmd =
     sprintf "why --cvcl --encoding sstrat %s" (why_files fwhy)
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fcvc = Filename.chop_suffix fwhy ".why" ^ "_why.cvc" in
-  let cmd = 
-    sprintf "timeout %d cvcl < %s > out 2>&1 && grep -q -w Valid out" 
+  let cmd =
+    sprintf "timeout %d cvcl < %s > out 2>&1 && grep -q -w Valid out"
       !timeout fcvc
   in
   let out = Sys.command cmd in
-  let r = 
-    if out = 0 then Valid None else if out = 1 then Invalid else Timeout 
+  let r =
+    if out = 0 then Valid None else if out = 1 then Invalid else Timeout
   in
   if not !debug then remove_files [fwhy; fcvc];
   r
 
 let call_harvey fwhy =
-  let cmd = 
+  let cmd =
     sprintf "why --harvey --encoding strat %s" (why_files fwhy)
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
@@ -953,15 +953,15 @@ let call_harvey fwhy =
   if out <> 0 then anomaly ("call to rvc -e -t " ^ frv ^ " failed");
   let f = Filename.chop_suffix frv ".rv" ^ "-0.baf" in
   let outf = Filename.temp_file "rv" ".out" in
-  let out = 
-    Sys.command (sprintf "timeout %d rv -e\"-T 2000\" %s > %s 2>&1" 
-		   !timeout f outf) 
+  let out =
+    Sys.command (sprintf "timeout %d rv -e\"-T 2000\" %s > %s 2>&1"
+		   !timeout f outf)
   in
   let r =
-    if out <> 0 then 
+    if out <> 0 then
       Timeout
     else
-      let cmd = 
+      let cmd =
 	sprintf "grep \"Proof obligation in\" %s | grep -q \"is valid\"" outf
       in
       if Sys.command cmd = 0 then Valid None else Invalid
@@ -1000,12 +1000,12 @@ let call_prover prover q =
     | CVCLite -> call_cvcl fwhy
     | Harvey -> call_harvey fwhy
     | Gwhy -> call_gwhy fwhy
-  
+
 let dp prover gl =
   Coqlib.check_required_library ["Coq";"ZArith";"ZArith"];
   let concl_type = pf_type_of gl (pf_concl gl) in
   if not (is_Prop concl_type) then error "Conclusion is not a Prop";
-  try 
+  try
     let q = tr_goal gl in
     begin match call_prover prover q with
       | Valid (Some f) when prover = Zenon -> Dp_zenon.proof_from_file f gl
@@ -1019,7 +1019,7 @@ let dp prover gl =
     end
   with NotFO ->
     error "Not a first order goal"
-      
+
 
 let simplify = tclTHEN intros (dp Simplify)
 let ergo = tclTHEN intros (dp Ergo)
@@ -1032,7 +1032,7 @@ let gwhy = tclTHEN intros (dp Gwhy)
 
 let dp_hint l =
   let env = Global.env () in
-  let one_hint (qid,r) = 
+  let one_hint (qid,r) =
     if not (mem_global r) then begin
       let ty = Global.type_of_global r in
       let s = Typing.type_of env Evd.empty ty in
@@ -1046,7 +1046,7 @@ let dp_hint l =
 	with NotFO ->
 	  add_global r Gnot_fo;
 	  msg_warning
-	    (pr_reference qid ++ 
+	    (pr_reference qid ++
 	     str " ignored (not a first order proposition)")
 	else begin
 	  add_global r Gnot_fo;
@@ -1057,9 +1057,9 @@ let dp_hint l =
   in
   List.iter one_hint (List.map (fun qid -> qid, Nametab.global qid) l)
 
-let (dp_hint_obj,_) = 
-  declare_object 
-    {(default_object "Dp_hint") with  
+let (dp_hint_obj,_) =
+  declare_object
+    {(default_object "Dp_hint") with
        cache_function = (fun (_,l) -> dp_hint l);
        load_function = (fun _ (_,l) -> dp_hint l);
        export_function = (fun x -> Some x)}
@@ -1075,7 +1075,7 @@ let dp_predefined qid s =
     let d = match tr_decl env id ty with
       | DeclType (_, n) -> DeclType (s, n)
       | DeclFun (_, n, tyl, ty) -> DeclFun (s, n, tyl, ty)
-      | DeclPred (_, n, tyl) -> DeclPred (s, n, tyl) 
+      | DeclPred (_, n, tyl) -> DeclPred (s, n, tyl)
       | Axiom _ as d -> d
     in
     match d with
@@ -1084,22 +1084,22 @@ let dp_predefined qid s =
   with NotFO ->
     msg_warning (str " ignored (not a first order declaration)")
 
-let (dp_predefined_obj,_) = 
-  declare_object 
-    {(default_object "Dp_predefined") with  
+let (dp_predefined_obj,_) =
+  declare_object
+    {(default_object "Dp_predefined") with
        cache_function = (fun (_,(id,s)) -> dp_predefined id s);
        load_function = (fun _ (_,(id,s)) -> dp_predefined id s);
        export_function = (fun x -> Some x)}
 
 let dp_predefined id s = Lib.add_anonymous_leaf (dp_predefined_obj (id,s))
 
-let _ = declare_summary "Dp options" 
-	  { freeze_function = 
+let _ = declare_summary "Dp options"
+	  { freeze_function =
 	      (fun () -> !debug, !trace, !timeout, !prelude_files);
-	    unfreeze_function = 
-	      (fun (d,tr,tm,pr) -> 
+	    unfreeze_function =
+	      (fun (d,tr,tm,pr) ->
 		debug := d; trace := tr; timeout := tm; prelude_files := pr);
-	    init_function = 
-	      (fun () -> 
-		debug := false; trace := false; timeout := 10; 
-		prelude_files := []) }  
+	    init_function =
+	      (fun () ->
+		debug := false; trace := false; timeout := 10;
+		prelude_files := []) }

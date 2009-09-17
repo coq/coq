@@ -25,12 +25,12 @@ open Vernacinterp
 (* Code to hook Coq into the ML toplevel -- depends on having the
    objective-caml compiler mostly visible. The functions implemented here are:
    \begin{itemize}
-   \item [dir_ml_load name]: Loads the ML module fname from the current ML 
-     path. 
+   \item [dir_ml_load name]: Loads the ML module fname from the current ML
+     path.
    \item [dir_ml_use]: Directive #use of Ocaml toplevel
    \item [add_ml_dir]: Directive #directory of Ocaml toplevel
    \end{itemize}
- 
+
    How to build an ML module interface with these functions.
    The idea is that the ML directory path is like the Coq directory
    path.  So we can maintain the two in parallel.
@@ -53,13 +53,13 @@ let keep_copy_mlpath path =
   coq_mlpath_copy := path :: List.filter filter !coq_mlpath_copy
 
 (* If there is a toplevel under Coq *)
-type toplevel = { 
+type toplevel = {
   load_obj : string -> unit;
   use_file : string -> unit;
   add_dir  : string -> unit;
   ml_loop  : unit -> unit }
 
-(* Determines the behaviour of Coq with respect to ML files (compiled 
+(* Determines the behaviour of Coq with respect to ML files (compiled
    or not) *)
 type kind_load =
   | WithTop of toplevel
@@ -93,7 +93,7 @@ let ocaml_toploop () =
     | _ -> ()
 
 (* Dynamic loading of .cmo/.cma *)
-let dir_ml_load s = 
+let dir_ml_load s =
   match !load with
     | WithTop t ->
       (try t.load_obj s
@@ -133,7 +133,7 @@ let add_ml_dir s =
     | _ -> ()
 
 (* For Rec Add ML Path *)
-let add_rec_ml_dir dir = 
+let add_rec_ml_dir dir =
   List.iter (fun (lp,_) -> add_ml_dir lp) (all_subdirs dir)
 
 (* Adding files to Coq and ML loadpath *)
@@ -149,8 +149,8 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
 
 let convert_string d =
   try Names.id_of_string d
-  with _ -> 
-    if_verbose warning 
+  with _ ->
+    if_verbose warning
       ("Directory "^d^" cannot be used as a Coq identifier (skipped)");
     flush_all ();
     failwith "caught"
@@ -169,14 +169,14 @@ let add_rec_path ~unix_path:dir ~coq_root:coq_dirpath =
   else
     msg_warning (str ("Cannot open " ^ dir))
 
-(* convertit un nom quelconque en nom de fichier ou de module *) 
+(* convertit un nom quelconque en nom de fichier ou de module *)
 let mod_of_name name =
   let base =
     if Filename.check_suffix name ".cmo" then
       Filename.chop_suffix name ".cmo"
-    else 
+    else
       name
-  in 
+  in
   String.capitalize base
 
 let get_ml_object_suffix name =
@@ -227,7 +227,7 @@ let file_of_name name =
 let stdlib_use_plugins = Coq_config.has_natdynlink
 
 (* [known_loaded_module] contains the names of the loaded ML modules
- * (linked or loaded with load_object). It is used not to load a 
+ * (linked or loaded with load_object). It is used not to load a
  * module twice. It is NOT the list of ML modules Coq knows. *)
 
 type ml_module_object = { mnames : string list }
@@ -264,13 +264,13 @@ let unfreeze_ml_modules x =
          if has_dynlink then
            let fname = file_of_name mname in
            load_object mname fname
-         else 
+         else
 	   errorlabstrm "Mltop.unfreeze_ml_modules"
              (str"Loading of ML object file forbidden in a native Coq.");
        add_loaded_module mname)
     x
 
-let _ = 
+let _ =
   Summary.declare_summary "ML-MODULES"
     { Summary.freeze_function = (fun () -> List.rev (get_loaded_modules()));
       Summary.unfreeze_function = (fun x -> unfreeze_ml_modules x);
@@ -318,7 +318,7 @@ let print_ml_path () =
           hv 0 (prlist_with_sep pr_fnl pr_str l))
 
 	  (* Printing of loaded ML modules *)
-	  
+
 let print_ml_modules () =
   let l = get_loaded_modules () in
   pp (str"Loaded ML Modules: " ++ pr_vertical_list pr_str l)

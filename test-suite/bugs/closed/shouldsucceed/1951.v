@@ -28,7 +28,7 @@ Inductive sg : Type := Sg. (* single *)
 Definition ipl2 (P : a -> Type) :=   (* in Prop, that means P is true forall *)
 fold_right (fun x => prod (P x)) sg. (* the elements of a given list         *)
 
-Definition ind 
+Definition ind
      : forall S : a -> Type,
        (forall ls : list a, ipl2 S ls -> S (b ls)) -> forall s : a, S s :=
 fun (S : a -> Type)

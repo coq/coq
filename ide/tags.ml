@@ -38,7 +38,7 @@ struct
   let hypothesis = make_tag table ~name:"hypothesis" []
   let goal = make_tag table ~name:"goal" []
 end
-module Message = 
+module Message =
 struct
   let table = GText.tag_table ()
   let error = make_tag table ~name:"error" [`FOREGROUND "red"]

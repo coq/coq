@@ -61,7 +61,7 @@ Definition strict_increasing f : Prop := forall x y:R, x < y -> f x < f y.
 Definition strict_decreasing f : Prop := forall x y:R, x < y -> f y < f x.
 Definition constant f : Prop := forall x y:R, f x = f y.
 
-(**********) 
+(**********)
 Definition no_cond (x:R) : Prop := True.
 
 (**********)
@@ -114,7 +114,7 @@ Qed.
 Lemma continuity_pt_const : forall f (x0:R), constant f -> continuity_pt f x0.
 Proof.
   unfold constant, continuity_pt in |- *; unfold continue_in in |- *;
-    unfold limit1_in in |- *; unfold limit_in in |- *; 
+    unfold limit1_in in |- *; unfold limit_in in |- *;
       intros; exists 1; split;
         [ apply Rlt_0_1
           | intros; generalize (H x x0); intro; rewrite H2; simpl in |- *;
@@ -196,7 +196,7 @@ Proof.
   elim H5; intros; assumption.
 Qed.
 
-(**********) 
+(**********)
 Lemma continuity_plus :
   forall f1 f2, continuity f1 -> continuity f2 -> continuity (f1 + f2).
 Proof.
@@ -322,18 +322,18 @@ Proof.
   prove_sup0.
   rewrite (Rmult_comm 2); rewrite Rmult_assoc; rewrite <- Rinv_l_sym;
     [ idtac | discrR ]; rewrite Rmult_1_r; rewrite double;
-      pattern alp at 1 in |- *; replace alp with (alp + 0); 
+      pattern alp at 1 in |- *; replace alp with (alp + 0);
         [ idtac | ring ]; apply Rplus_lt_compat_l; assumption.
   symmetry  in |- *; apply Rabs_right; left; assumption.
   symmetry  in |- *; apply Rabs_right; left; change (0 < / 2) in |- *;
-    apply Rinv_0_lt_compat; prove_sup0. 
+    apply Rinv_0_lt_compat; prove_sup0.
 Qed.
 
 Lemma uniqueness_step2 :
   forall f (x l:R),
     derivable_pt_lim f x l ->
     limit1_in (fun h:R => (f (x + h) - f x) / h) (fun h:R => h <> 0) l 0.
-Proof. 
+Proof.
   unfold derivable_pt_lim in |- *; intros; unfold limit1_in in |- *;
     unfold limit_in in |- *; intros.
   assert (H1 := H eps H0).
@@ -418,10 +418,10 @@ Proof.
   intros; split.
   unfold D_in in |- *; unfold limit1_in in |- *; unfold limit_in in |- *;
     simpl in |- *; unfold R_dist in |- *; intros.
-  apply derive_pt_eq_0. 
+  apply derive_pt_eq_0.
   unfold derivable_pt_lim in |- *.
   intros; elim (H eps H0); intros alpha H1; elim H1; intros;
-    exists (mkposreal alpha H2); intros; generalize (H3 (x + h)); 
+    exists (mkposreal alpha H2); intros; generalize (H3 (x + h));
       intro; cut (x + h - x = h);
         [ intro; cut (D_x no_cond x (x + h) /\ Rabs (x + h - x) < alpha);
           [ intro; generalize (H6 H8); rewrite H7; intro; assumption
@@ -434,7 +434,7 @@ Proof.
   intro.
   assert (H0 := derive_pt_eq_1 f x (df x) pr H).
   unfold D_in in |- *; unfold limit1_in in |- *; unfold limit_in in |- *;
-    unfold dist in |- *; simpl in |- *; unfold R_dist in |- *; 
+    unfold dist in |- *; simpl in |- *; unfold R_dist in |- *;
       intros.
   elim (H0 eps H1); intros alpha H2; exists (pos alpha); split.
   apply (cond_pos alpha).
@@ -454,7 +454,7 @@ Proof.
     simpl in |- *; unfold R_dist in |- *; intros.
   unfold derivable_pt_lim in |- *.
   intros; elim (H eps H0); intros alpha H1; elim H1; intros;
-    exists (mkposreal alpha H2); intros; generalize (H3 (x + h)); 
+    exists (mkposreal alpha H2); intros; generalize (H3 (x + h));
       intro; cut (x + h - x = h);
         [ intro; cut (D_x no_cond x (x + h) /\ Rabs (x + h - x) < alpha);
           [ intro; generalize (H6 H8); rewrite H7; intro; assumption
@@ -467,7 +467,7 @@ Proof.
   intro.
   unfold derivable_pt_lim in H.
   unfold D_in in |- *; unfold limit1_in in |- *; unfold limit_in in |- *;
-    unfold dist in |- *; simpl in |- *; unfold R_dist in |- *; 
+    unfold dist in |- *; simpl in |- *; unfold R_dist in |- *;
       intros.
   elim (H eps H0); intros alpha H2; exists (pos alpha); split.
   apply (cond_pos alpha).
@@ -548,7 +548,7 @@ Qed.
 
 Lemma derivable_pt_lim_opp :
   forall f (x l:R), derivable_pt_lim f x l -> derivable_pt_lim (- f) x (- l).
-Proof. 
+Proof.
   intros.
   apply uniqueness_step3.
   assert (H1 := uniqueness_step2 _ _ _ H).
@@ -1066,7 +1066,7 @@ Qed.
 
 Lemma pr_nu :
   forall f (x:R) (pr1 pr2:derivable_pt f x),
-    derive_pt f x pr1 = derive_pt f x pr2. 
+    derive_pt f x pr1 = derive_pt f x pr2.
 Proof.
   intros.
   unfold derivable_pt in pr1.
@@ -1141,7 +1141,7 @@ Proof.
           -
           ((f (c + Rmin (delta / 2) ((b + - c) / 2)) + - f c) /
             Rmin (delta / 2) ((b + - c) / 2))) (l / 2) H19);
-      repeat rewrite <- Rplus_assoc; rewrite Rplus_opp_l; 
+      repeat rewrite <- Rplus_assoc; rewrite Rplus_opp_l;
         rewrite Rplus_0_l; replace (- l + l / 2) with (- (l / 2)).
   intro;
     generalize
@@ -1168,7 +1168,7 @@ Proof.
       Rge_le
       ((f (c + Rmin (delta / 2) ((b + - c) / 2)) + - f c) /
         Rmin (delta / 2) ((b + - c) / 2) + - l) 0 r).
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H20 H18)). 
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H20 H18)).
   assumption.
   rewrite <- Ropp_0;
     replace
@@ -1260,7 +1260,7 @@ Proof.
   prove_sup0.
   rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym.
   rewrite Rmult_1_l.
-  replace (2 * delta) with (delta + delta). 
+  replace (2 * delta) with (delta + delta).
   pattern delta at 2 in |- *; rewrite <- (Rplus_0_r delta);
     apply Rplus_lt_compat_l.
   rewrite Rplus_0_r; apply (cond_pos delta).
@@ -1270,7 +1270,7 @@ Proof.
   intro;
     generalize
       (Rmin_stable_in_posreal (mkposreal (delta / 2) H9)
-        (mkposreal ((b - c) / 2) H8)); simpl in |- *; 
+        (mkposreal ((b - c) / 2) H8)); simpl in |- *;
       intro; red in |- *; intro; rewrite H11 in H10; elim (Rlt_irrefl 0 H10).
   unfold Rdiv in |- *; apply Rmult_lt_0_compat;
     [ apply (cond_pos delta) | apply Rinv_0_lt_compat; prove_sup0 ].
@@ -1307,7 +1307,7 @@ Proof.
     cut
       (Rabs
         ((f (c + Rmax (- (delta / 2)) ((a + - c) / 2)) + - f c) /
-          Rmax (- (delta / 2)) ((a + - c) / 2) + - l) < 
+          Rmax (- (delta / 2)) ((a + - c) / 2) + - l) <
         - (l / 2)).
   unfold Rabs in |- *;
     case
@@ -1332,7 +1332,7 @@ Proof.
     generalize
       (Rlt_trans
         ((f (c + Rmax (- (delta / 2)) ((a + - c) / 2)) + - f c) /
-          Rmax (- (delta / 2)) ((a + - c) / 2)) (l / 2) 0 H22 H21); 
+          Rmax (- (delta / 2)) ((a + - c) / 2)) (l / 2) 0 H22 H21);
       intro;
         elim
           (Rlt_irrefl 0
@@ -1369,7 +1369,7 @@ Proof.
   reflexivity.
   unfold Rdiv in H11; assumption.
   generalize (Rplus_lt_compat_l c (Rmax (- (delta / 2)) ((a - c) / 2)) 0 H10);
-    rewrite Rplus_0_r; intro; apply Rlt_trans with c; 
+    rewrite Rplus_0_r; intro; apply Rlt_trans with c;
       assumption.
   generalize (RmaxLess2 (- (delta / 2)) ((a - c) / 2)); intro;
     generalize
@@ -1390,21 +1390,21 @@ Proof.
       generalize (Rge_le (delta / 2) (- Rmax (- (delta / 2)) ((a - c) / 2)) H13);
         intro; apply Rle_lt_trans with (delta / 2).
   assumption.
-  apply Rmult_lt_reg_l with 2. 
+  apply Rmult_lt_reg_l with 2.
   prove_sup0.
   unfold Rdiv in |- *; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
     rewrite <- Rinv_r_sym.
   rewrite Rmult_1_l; rewrite double.
   pattern delta at 2 in |- *; rewrite <- (Rplus_0_r delta);
     apply Rplus_lt_compat_l; rewrite Rplus_0_r; apply (cond_pos delta).
-  discrR. 
+  discrR.
   cut (- (delta / 2) < 0).
   cut ((a - c) / 2 < 0).
   intros;
     generalize
       (Rmax_stable_in_negreal (mknegreal (- (delta / 2)) H13)
-        (mknegreal ((a - c) / 2) H12)); simpl in |- *; 
-      intro; generalize (Rge_le (Rmax (- (delta / 2)) ((a - c) / 2)) 0 r); 
+        (mknegreal ((a - c) / 2) H12)); simpl in |- *;
+      intro; generalize (Rge_le (Rmax (- (delta / 2)) ((a - c) / 2)) 0 r);
         intro;
           elim
             (Rlt_irrefl 0
@@ -1413,7 +1413,7 @@ Proof.
     apply Ropp_lt_gt_contravar; replace (- ((a - c) / 2)) with ((c - a) / 2).
   assumption.
   unfold Rdiv in |- *.
-  rewrite <- Ropp_mult_distr_l_reverse. 
+  rewrite <- Ropp_mult_distr_l_reverse.
   rewrite (Ropp_minus_distr a c).
   reflexivity.
   rewrite <- Ropp_0; apply Ropp_lt_gt_contravar; unfold Rdiv in |- *;
@@ -1435,7 +1435,7 @@ Proof.
     apply Ropp_lt_gt_contravar; replace (- ((a - c) / 2)) with ((c - a) / 2).
   assumption.
   unfold Rdiv in |- *.
-  rewrite <- Ropp_mult_distr_l_reverse. 
+  rewrite <- Ropp_mult_distr_l_reverse.
   rewrite (Ropp_minus_distr a c).
   reflexivity.
   unfold Rdiv in |- *; apply Rmult_lt_0_compat;
@@ -1532,7 +1532,7 @@ Proof.
     generalize (Rplus_le_compat_l (- f x) (f x) (f (x + delta * / 2)) H12);
       rewrite Rplus_opp_l; rewrite Rplus_comm; intro; assumption.
   pattern x at 1 in |- *; rewrite <- (Rplus_0_r x); apply Rplus_le_compat_l;
-    left; assumption. 
+    left; assumption.
   left; apply Rinv_0_lt_compat; assumption.
   split.
   unfold Rdiv in |- *; apply prod_neq_R0.

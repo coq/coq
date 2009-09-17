@@ -43,7 +43,7 @@ val instantiate_type_indrec_scheme : sorts -> int -> constr -> types ->
 
 (** Complex recursion schemes [Scheme] *)
 
-val build_mutual_indrec : 
+val build_mutual_indrec :
   env -> evar_map ->
     (inductive * mutual_inductive_body * one_inductive_body
     * bool * sorts_family) list
@@ -53,7 +53,7 @@ val build_mutual_indrec :
 
 val type_rec_branches : bool -> env -> evar_map -> inductive_type
   -> constr -> constr -> constr array * constr
-val make_rec_branch_arg : 
+val make_rec_branch_arg :
   env -> evar_map ->
     int * ('b * constr) option array * int ->
     constr -> constructor_summary -> wf_paths list -> constr

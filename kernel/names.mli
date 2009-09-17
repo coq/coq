@@ -40,12 +40,12 @@ val empty_dirpath : dir_path
 val string_of_dirpath : dir_path -> string
 
 
-(*s Unique identifier to be used as "self" in structures and 
+(*s Unique identifier to be used as "self" in structures and
   signatures - invisible for users *)
-type label 
+type label
 type mod_self_id
 
-(* The first argument is a file name - to prevent conflict between 
+(* The first argument is a file name - to prevent conflict between
    different files *)
 val make_msid : dir_path -> string -> mod_self_id
 val repr_msid : mod_self_id -> int * string * dir_path
@@ -80,7 +80,7 @@ module Labmap : Map.S with type key = label
 type module_path =
   | MPfile of dir_path
   | MPbound of mod_bound_id
-  | MPself of mod_self_id 
+  | MPself of mod_self_id
   | MPdot of module_path * label
 (*i  | MPapply of module_path * module_path    in the future (maybe) i*)
 
@@ -168,7 +168,7 @@ val hcons_names : unit ->
 type 'a tableKey =
   | ConstKey of constant
   | VarKey of identifier
-  | RelKey of 'a 
+  | RelKey of 'a
 
 type transparent_state = Idpred.t * Cpred.t
 
@@ -178,7 +178,7 @@ val var_full_transparent_state : transparent_state
 val cst_full_transparent_state : transparent_state
 
 type inv_rel_key = int (* index in the [rel_context] part of environment
-			  starting by the end, {\em inverse} 
+			  starting by the end, {\em inverse}
 			  of de Bruijn indice *)
 
 type id_key = inv_rel_key tableKey

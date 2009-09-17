@@ -65,7 +65,7 @@ Qed.
 Hint Resolve plus_assoc: arith v62.
 
 Lemma plus_permute : forall n m p, n + (m + p) = m + (n + p).
-Proof. 
+Proof.
   intros; rewrite (plus_assoc m n p); rewrite (plus_comm m n); auto with arith.
 Qed.
 
@@ -179,7 +179,7 @@ Definition plus_is_one :
 Proof.
   intro m; destruct m as [| n]; auto.
   destruct n; auto.
-  intros. 
+  intros.
   simpl in H. discriminate H.
 Defined.
 
@@ -187,14 +187,14 @@ Defined.
 
 Lemma plus_permute_2_in_4 : forall n m p q, n + m + (p + q) = n + p + (m + q).
 Proof.
-  intros m n p q. 
+  intros m n p q.
   rewrite <- (plus_assoc m n (p + q)). rewrite (plus_assoc n p q).
   rewrite (plus_comm n p). rewrite <- (plus_assoc p n q). apply plus_assoc.
 Qed.
 
 (** * Tail-recursive plus *)
 
-(** [tail_plus] is an alternative definition for [plus] which is 
+(** [tail_plus] is an alternative definition for [plus] which is
     tail-recursive, whereas [plus] is not. This can be useful
     when extracting programs. *)
 
@@ -215,7 +215,7 @@ Lemma succ_plus_discr : forall n m, n <> S (plus m n).
 Proof.
   intros n m; induction n as [|n IHn].
   discriminate.
-  intro H; apply IHn; apply eq_add_S; rewrite H; rewrite <- plus_n_Sm; 
+  intro H; apply IHn; apply eq_add_S; rewrite H; rewrite <- plus_n_Sm;
     reflexivity.
 Qed.
 

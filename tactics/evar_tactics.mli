@@ -13,7 +13,7 @@ open Names
 open Tacexpr
 open Termops
 
-val instantiate : int -> Tacinterp.interp_sign * Rawterm.rawconstr -> 
+val instantiate : int -> Tacinterp.interp_sign * Rawterm.rawconstr ->
   (identifier * hyp_location_flag, unit) location -> tactic
 
 (*i

@@ -12,7 +12,7 @@ open Cdglobals
 
 type loc = int
 
-type entry_type = 
+type entry_type =
   | Library
   | Module
   | Definition
@@ -33,7 +33,7 @@ type entry_type =
 
 val type_name : entry_type -> string
 
-type index_entry = 
+type index_entry =
   | Def of string * entry_type
   | Ref of coq_module * string * entry_type
   | Mod of coq_module * string
@@ -58,14 +58,14 @@ val read_glob : string -> coq_module
 
 (*s Indexes *)
 
-type 'a index = { 
+type 'a index = {
   idx_name : string;
   idx_entries : (char * (string * 'a) list) list;
   idx_size : int }
 
 val current_library : string ref
 
-val all_entries : unit -> 
+val all_entries : unit ->
       (coq_module * entry_type) index *
       (entry_type * coq_module index) list
 

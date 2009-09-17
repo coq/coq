@@ -24,7 +24,7 @@ type discharged_hyps = full_path list
 
 let discharged_hyps_map = ref Spmap.empty
 
-let set_discharged_hyps sp hyps = 
+let set_discharged_hyps sp hyps =
   discharged_hyps_map := Spmap.add sp hyps !discharged_hyps_map
 
 let get_discharged_hyps sp =
@@ -42,7 +42,7 @@ let freeze () = !discharged_hyps_map
 
 let unfreeze dhm = discharged_hyps_map := dhm
 
-let _ = 
+let _ =
   Summary.declare_summary "discharged_hypothesis"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;

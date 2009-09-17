@@ -9,15 +9,15 @@
 (*i camlp4deps: "lib/refutpat.cmo" i*)
 (* NB: The above camlp4 extension adds a let* syntax for refutable patterns *)
 
-(* 
+(*
    Nullstellensatz par calcul de base de Grobner
 
    On utilise une representation creuse des polynomes:
-   un monome est un tableau d'exposants (un par variable), 
+   un monome est un tableau d'exposants (un par variable),
    avec son degre en tete.
    un polynome est une liste de (coefficient,monome).
 
-   L'algorithme de Buchberger a proprement parler est tire du code caml 
+   L'algorithme de Buchberger a proprement parler est tire du code caml
    extrait du code Coq ecrit par L.Thery.
 
  *)
@@ -250,10 +250,10 @@ let string_of_pol zeroP hdP tlP coefterm monterm string_of_coef
       | e -> s:= (!s) @ [((getvar !lvar (i-1)) ^ "^" ^ e)]);
     done;
     (match !s with
-      [] -> if coefone 
+      [] -> if coefone
       then  "1"
       else ""
-    | l -> if coefone 
+    | l -> if coefone
     then  (String.concat "*" l)
     else ( "*" ^
            (String.concat "*" l)))
@@ -267,22 +267,22 @@ let string_of_pol zeroP hdP tlP coefterm monterm string_of_coef
   | "-1" ->( "-" ^" "^(string_of_mon m true))
   | c -> if (String.get c 0)='-'
   then ( "- "^
-         (String.sub c 1 
+         (String.sub c 1
             ((String.length c)-1))^
          (string_of_mon m false))
   else (match start with
     true -> ( c^(string_of_mon m false))
   |false -> ( "+ "^
               c^(string_of_mon m false)))
-  and stringP p start = 
+  and stringP p start =
     if (zeroP p)
-    then (if start 
+    then (if start
     then ("0")
     else "")
     else ((string_of_term (hdP p) start)^
           " "^
           (stringP (tlP p) false))
-  in 
+  in
   (stringP p true)
 
 
@@ -299,12 +299,12 @@ let print_pol zeroP hdP tlP coefterm monterm string_of_coef
       | e -> s:= (!s) @ [((getvar !lvar (i-1)) ^ "^" ^ e)]);
     done;
     (match !s with
-      [] -> if coefone 
+      [] -> if coefone
       then print_string "1"
       else ()
-    | l -> if coefone 
+    | l -> if coefone
     then print_string (String.concat "*" l)
-    else (print_string "*"; 
+    else (print_string "*";
           print_string (String.concat "*" l)))
   and print_term t start = let a = coefterm t and m = monterm t in
   match (string_of_coef a) with
@@ -316,16 +316,16 @@ let print_pol zeroP hdP tlP coefterm monterm string_of_coef
   | "-1" ->(print_string "-";print_space();print_mon m true)
   | c -> if (String.get c 0)='-'
   then (print_string "- ";
-        print_string (String.sub c 1 
+        print_string (String.sub c 1
                         ((String.length c)-1));
         print_mon m false)
   else (match start with
     true -> (print_string c;print_mon m false)
   |false -> (print_string "+ ";
              print_string c;print_mon m false))
-  and printP p start = 
+  and printP p start =
     if (zeroP p)
-    then (if start 
+    then (if start
     then print_string("0")
     else ())
     else (print_term (hdP p) start;
@@ -340,7 +340,7 @@ let print_pol zeroP hdP tlP coefterm monterm string_of_coef
 
 let name_var= ref []
 
-let stringP = string_of_pol 
+let stringP = string_of_pol
     (fun p -> match p with [] -> true | _ -> false)
     (fun p -> match p with (t::p) -> t |_ -> failwith "print_pol dans dansideal")
     (fun p -> match p with (t::p) -> p |_ -> failwith "print_pol dans dansideal")
@@ -362,7 +362,7 @@ let rec lstringP l =
     [] -> ""
   |p::l -> (stringP p)^("\n")^(lstringP l)
 
-let printP = print_pol 
+let printP = print_pol
     (fun p -> match p with [] -> true | _ -> false)
     (fun p -> match p with (t::p) -> t |_ -> failwith "print_pol dans dansideal")
     (fun p -> match p with (t::p) -> p |_ -> failwith "print_pol dans dansideal")
@@ -388,17 +388,17 @@ let zeroP = []
 (* Retourne un polynome constant à d variables *)
 let polconst d c =
   let m = Array.create (d+1) 0 in
-  let m = set_deg d m in 
+  let m = set_deg d m in
   [(c,m)]
 
 
-    
+
 (* somme de polynomes= liste de couples (int,monomes) *)
 let plusP d p q =
   let rec plusP p q =
     match p with
       [] -> q
-    |t::p' -> 
+    |t::p' ->
 	match q with
 	  [] -> p
 	|t'::q' ->
@@ -434,7 +434,7 @@ let rec selectdiv d m l =
 let gen d i =
   let m = Array.create (d+1) 0 in
   m.(i) <- 1;
-  let m = set_deg d m in 
+  let m = set_deg d m in
   [(coef1,m)]
 
 
@@ -503,13 +503,13 @@ let add_hmon m q =
   if !use_hmon then Hashtbl.add hmon m q
 
 let selectdiv_cache d m l =
-  try find_hmon m 
-  with Not_found -> 
+  try find_hmon m
+  with Not_found ->
     match selectdiv d m l with
 	[] -> []
       | q -> add_hmon m q; q
 
-let div_pol d p q a b m = 
+let div_pol d p q a b m =
 (*  info ".";*)
   plusP d (emultP a p) (mult_t_pol d b m q)
 
@@ -532,7 +532,7 @@ let reduce2 d p l =
 	    let (c,r)=(reduce p') in
             (c,((P.multP a c,m)::r))
 	  else (coef1,p)
-      |(b,m')::q' -> 
+      |(b,m')::q' ->
           let c=(pgcdpos a b) in
           let a'= (P.divP b c) in
           let b'=(P.oppP (P.divP a c)) in
@@ -544,7 +544,7 @@ let reduce2 d p l =
 (* trace des divisions *)
 
 (* liste des polynomes de depart *)
-let poldep = ref [] 
+let poldep = ref []
 let poldepcontent = ref []
 
 
@@ -552,7 +552,7 @@ module HashPolPair = Hashtbl.Make
   (struct
      type t = poly * poly
      let equal (p,q) (p',q') = equal p p' && equal q q'
-     let hash (p,q) = 
+     let hash (p,q) =
        let c = List.map fst p @ List.map fst q in
        let m = List.map snd p @ List.map snd q in
        List.fold_left (fun h p -> h * 17 + P.hash p) (Hashtbl.hash m) c
@@ -576,7 +576,7 @@ let initcoefpoldep d lp =
     (fun p -> coefpoldep_set p p (polconst d coef1))
     lp
 
-(* garde la trace dans coefpoldep 
+(* garde la trace dans coefpoldep
    divise sans pseudodivisions *)
 
 let reduce2_trace d p l lcp =
@@ -586,10 +586,10 @@ let reduce2_trace d p l lcp =
       [] -> ([],[])
     |t::p' -> let (a,m)=t in
       let q =
-	(try Hashtbl.find hmon m 
-	with Not_found -> 
+	(try Hashtbl.find hmon m
+	with Not_found ->
 	  let q = selectdiv d m l in
-	  match q with 
+	  match q with
             t'::q' -> (Hashtbl.add hmon m q;q)
           |[] -> q) in
       match q with
@@ -599,7 +599,7 @@ let reduce2_trace d p l lcp =
 	    let (lq,r)=(reduce p') in
             (lq,((a,m)::r))
 	  else ([],p)
-      |(b,m')::q' -> 
+      |(b,m')::q' ->
           let b' = P.oppP (P.divP a b) in
           let m''= div_mon d m m' in
           let p1=plusP d p' (mult_t_pol d b' m'' q') in
@@ -627,7 +627,7 @@ let reduce2_trace d p l lcp =
        c)
      lcp
      !poldep,
-   r)     
+   r)
 
 (***********************************************************************
   Algorithme de Janet (V.P.Gerdt Involutive algorithms...)
@@ -640,7 +640,7 @@ let homogeneous = ref false
 let pol_courant = ref []
 
 
-type pol3 = 
+type pol3 =
    {pol : poly;
     anc : poly;
     nmp : mon}
@@ -697,7 +697,7 @@ let monom_multiplicative d u s =
     then m.(i)<- 1;
   done;
   m
-    
+
 (* mu monome des variables multiplicative de u *)
 let janet_div_mon d u mu v =
   let res = ref true in
@@ -709,7 +709,7 @@ let janet_div_mon d u mu v =
     i:= !i + 1;
   done;
   !res
-    
+
 let find_multiplicative p mg =
   try Hashpol.find mg p.pol
   with Not_found -> (info "\nPROBLEME DANS LA TABLE DES VAR MULT";
@@ -727,7 +727,7 @@ let find_reductor d v lt mt =
     let r =
       List.find
 	(fun q ->
-	  let u = fst_mon q in 
+	  let u = fst_mon q in
 	  let mu =  find_multiplicative q mt in
 	  janet_div_mon d u mu v
 	)
@@ -793,11 +793,11 @@ let criteria d p g lt =
 
 let head_normal_form d p lt mt =
   let h = ref (p.pol) in
-  let res = 
+  let res =
   try (
     let v = snd(List.hd !h) in
     let g = ref (find_reductor d v lt mt) in
-    if snd(List.hd !h) <> lm_anc p && criteria d p !g lt 
+    if snd(List.hd !h) <> lm_anc p && criteria d p !g lt
     then ((* info "=";*) [])
     else (
       while !h <> [] && (!g).pol <> [] do
@@ -848,14 +848,14 @@ let head_reduce d lq lt mt =
   (*info ("temps de head_reduce: "
 	^(Format.sprintf "@[%10.3f@]s\n" ((Unix.gettimeofday ())-.t1)));*)
   !lq
-  
+
 let choose_irreductible d lf =
   List.hd lf
 (* bien plus lent
     (List.sort (fun p q -> compare_mon d (fst_mon p.pol) (fst_mon q.pol)) lf)
 *)
-    
-    
+
+
 let hashtbl_multiplicative d lf =
   let mg = Hashpol.create 51 in
   hashtbl_reductor := Hashtbl.create 51;
@@ -867,10 +867,10 @@ let hashtbl_multiplicative d lf =
   (*info ("temps de hashtbl_multiplicative: "
 	^(Format.sprintf "@[%10.3f@]s\n" ((Unix.gettimeofday ())-.t1)));*)
   mg
-    
+
 let list_diff l x =
   List.filter (fun y -> y <> x) l
-    
+
 let janet2 d lf p0 =
   hashtbl_reductor := Hashtbl.create 51;
   let t1 = Unix.gettimeofday() in
@@ -889,14 +889,14 @@ let janet2 d lf p0 =
   while !lq <> [] && !r <> [] do
     let p = choose_irreductible d !lq in
     lq := list_diff !lq p;
-    if p.pol = p.anc 
+    if p.pol = p.anc
     then ( (* on enleve de lt les pol divisibles par p et on les met dans lq *)
       let m = fst_mon p in
       let lt1 = !lt in
       List.iter
-	(fun q -> 
+	(fun q ->
 	  let m'= fst_mon q in
-	  if div_strict d m m' 
+	  if div_strict d m m'
 	  then (
 	    lq := (!lq) @ [q];
 	    lt := list_diff !lt q))
@@ -916,13 +916,13 @@ let janet2 d lf p0 =
       if !r <> []
       then (
 	List.iter
-	  (fun q -> 
+	  (fun q ->
 	    let mq = find_multiplicative q !mt in
 	    for i=1 to d do
 	      if mq.(i) = 1
 	      then q.nmp.(i)<- 0
 	      else
-		if q.nmp.(i) = 0 
+		if q.nmp.(i) = 0
 		then (
 		  (* info "+";*)
 		  lq := (!lq) @
@@ -945,17 +945,17 @@ let janet2 d lf p0 =
   info ("--- fin Janet2\n");
   info ("temps: "^(Format.sprintf "@[%10.3f@]s\n" ((Unix.gettimeofday ())-.t1)));
   List. map (fun q -> q.pol) !lt
-   
+
 (**********************************************************************
  version 3 *)
 
 let head_normal_form3 d p lt mt =
   let h = ref (p.pol) in
-  let res = 
+  let res =
   try (
     let v = snd(List.hd !h) in
     let g = ref (find_reductor d v lt mt) in
-    if snd(List.hd !h) <> lm_anc p && criteria d p !g lt  
+    if snd(List.hd !h) <> lm_anc p && criteria d p !g lt
     then ((* info "=";*) [])
     else (
       while !h <> [] && (!g).pol <> [] do
@@ -979,7 +979,7 @@ let head_normal_form3 d p lt mt =
 	^(Format.sprintf "@[%10.3f@]s\n" ((Unix.gettimeofday ())-.t1)));*)
   res
 
-    
+
 let janet3 d lf p0 =
   hashtbl_reductor := Hashtbl.create 51;
   let t1 = Unix.gettimeofday() in
@@ -997,14 +997,14 @@ let janet3 d lf p0 =
     let* p::lq1 = !lq in
     lq := lq1;
 (*
-    if p.pol = p.anc 
+    if p.pol = p.anc
     then ( (* on enleve de lt les pol divisibles par p et on les met dans lq *)
       let m = fst_mon (p.pol) in
       let lt1 = !lt in
       List.iter
-	(fun q -> 
+	(fun q ->
 	  let m'= fst_mon (q.pol) in
-	  if div_strict d m m' 
+	  if div_strict d m m'
 	  then (
 	    lq := (!lq) @ [q];
 	    lt := list_diff !lt q))
@@ -1040,7 +1040,7 @@ let janet3 d lf p0 =
 	      if mq.(i) = 1
 	      then q.nmp.(i)<- 0
 	      else
-		if q.nmp.(i) = 0 
+		if q.nmp.(i) = 0
 		then (
 		  (* info "+";*)
 		  lq := (!lq) @
@@ -1116,7 +1116,7 @@ let etrangers d p p'=
   !res
 
 
-(* teste si le monome dominant de p'' 
+(* teste si le monome dominant de p''
    divise le ppcm des monomes dominants de p et p' *)
 
 let div_ppcm d p p' p'' =
@@ -1150,10 +1150,10 @@ let rec slice d i a = function
       else addRes b (slice d i a q1)
 
 let rec addS x l = l @[x]
-			  
+
 let addSugar x l =
   if !sugar_flag
-  then 
+  then
     let sx = sugar x in
     let rec insere l  =
       match l with
@@ -1165,13 +1165,13 @@ let addSugar x l =
     in insere l
   else addS x l
 
-(* ajoute les spolynomes de i avec la liste de polynomes aP, 
+(* ajoute les spolynomes de i avec la liste de polynomes aP,
    a la liste q *)
 
 let rec genPcPf d i aP q =
   match aP with
       [] -> q
-    | a::l1 -> 
+    | a::l1 ->
         (match slice d i a l1 with
              Keep l2 -> addSugar (spol d i a) (genPcPf d i l2 q)
            | DontKeep l2 -> genPcPf d i l2 q)
@@ -1183,7 +1183,7 @@ let rec genOCPf d = function
 let step = ref 0
 
 let infobuch p q =
-  if !step = 0 
+  if !step = 0
   then (info ("[" ^ (string_of_int (List.length p))
               ^ "," ^  (string_of_int (List.length q))
               ^ "]"))
@@ -1266,8 +1266,8 @@ let pbuchf d pq p lp0=
   info "calcul de la base de Groebner\n";
   step:=0;
   Hashtbl.clear hmon;
-  let rec pbuchf lp lpc = 
-      infobuch lp lpc; 
+  let rec pbuchf lp lpc =
+      infobuch lp lpc;
 (*      step:=(!step+1)mod 10;*)
       match lpc with
         [] -> test_dans_ideal d p lp lp0
@@ -1297,7 +1297,7 @@ let pbuchf d pq p lp0=
 		poldepcontent:=addS ct (!poldepcontent);
 		try test_dans_ideal d p (addS a0 lp) lp0
 		with NotInIdeal -> pbuchf (addS a0 lp) (genPcPf d a0 lp lpc2)
-  in pbuchf (fst pq) (snd pq) 
+  in pbuchf (fst pq) (snd pq)
 
 let is_homogeneous p =
   match p with
@@ -1315,8 +1315,8 @@ let is_homogeneous p =
    [a(n+m,n+m-1);...;a(n+m,1)]]
    lc = [qn+m; ... q1]
 
-   tels que 
-   c*p = sum qi*pi 
+   tels que
+   c*p = sum qi*pi
    ou pn+k = a(n+k,n+k-1)*pn+k-1 + ... + a(n+k,1)* p1
  *)
 

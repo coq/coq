@@ -7,11 +7,11 @@ Implicit Arguments snd.
 Module Type PO.
   Parameter T : Set.
   Parameter le : T -> T -> Prop.
-  
+
   Axiom le_refl : forall x : T, le x x.
   Axiom le_trans : forall x y z : T, le x y -> le y z -> le x z.
   Axiom le_antis : forall x y : T, le x y -> le y x -> x = y.
-  
+
   Hint Resolve le_refl le_trans le_antis.
 End PO.
 
@@ -28,10 +28,10 @@ Module Pair (X: PO) (Y: PO) <: PO.
 
   Lemma le_trans : forall p1 p2 p3 : T, le p1 p2 -> le p2 p3 -> le p1 p3.
     unfold le in |- *;  intuition; info  eauto.
-  Qed.    
+  Qed.
 
   Lemma le_antis : forall p1 p2 : T, le p1 p2 -> le p2 p1 -> p1 = p2.
-    destruct p1.  
+    destruct p1.
     destruct p2.
     unfold le in |- *.
      intuition.

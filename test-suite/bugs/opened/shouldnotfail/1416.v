@@ -4,12 +4,12 @@ Record Place (Env A: Type) : Type := {
   read: Env -> A ;
   write: Env -> A -> Env ;
   write_read: forall (e:Env), (write e (read e))=e
-}. 
+}.
 
 Hint Rewrite -> write_read: placeeq.
 
 Record sumPl (Env A B: Type) (vL:(Place Env A)) (vR:(Place Env B)) : Type :=
- { 
+ {
    mkEnv: A -> B -> Env ;
    mkEnv2writeL: forall (e:Env) (x:A), (mkEnv x (read vR e))=(write vL e x)
  }.

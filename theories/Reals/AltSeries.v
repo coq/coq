@@ -69,7 +69,7 @@ Lemma CV_ALT_step2 :
   forall (Un:nat -> R) (N:nat),
     Un_decreasing Un ->
     positivity_seq Un ->
-    sum_f_R0 (fun i:nat => tg_alt Un (S i)) (S (2 * N)) <= 0. 
+    sum_f_R0 (fun i:nat => tg_alt Un (S i)) (S (2 * N)) <= 0.
 Proof.
   intros; induction  N as [| N HrecN].
   simpl in |- *; unfold tg_alt in |- *; simpl in |- *; rewrite Rmult_1_r.
@@ -101,7 +101,7 @@ Qed.
 Lemma CV_ALT_step3 :
   forall (Un:nat -> R) (N:nat),
     Un_decreasing Un ->
-    positivity_seq Un -> sum_f_R0 (fun i:nat => tg_alt Un (S i)) N <= 0. 
+    positivity_seq Un -> sum_f_R0 (fun i:nat => tg_alt Un (S i)) N <= 0.
 Proof.
   intros; induction  N as [| N HrecN].
   simpl in |- *; unfold tg_alt in |- *; simpl in |- *; rewrite Rmult_1_r.
@@ -184,7 +184,7 @@ Proof.
   rewrite H12; apply H7; assumption.
   rewrite Rabs_Ropp; unfold tg_alt in |- *; rewrite Rabs_mult;
     rewrite pow_1_abs; rewrite Rmult_1_l; unfold Rminus in H6;
-      rewrite Ropp_0 in H6; rewrite <- (Rplus_0_r (Un (S n))); 
+      rewrite Ropp_0 in H6; rewrite <- (Rplus_0_r (Un (S n)));
 	apply H6.
   unfold ge in |- *; apply le_trans with n.
   apply le_trans with N; [ unfold N in |- *; apply le_max_r | assumption ].
@@ -246,7 +246,7 @@ Proof.
   apply CV_ALT_step1; assumption.
   assumption.
   unfold Un_cv in |- *; unfold R_dist in |- *; unfold Un_cv in H1;
-    unfold R_dist in H1; intros. 
+    unfold R_dist in H1; intros.
   elim (H1 eps H2); intros.
   exists x; intros.
   apply H3.
@@ -254,20 +254,20 @@ Proof.
   apply le_trans with n.
   assumption.
   assert (H5 := mult_O_le n 2).
-  elim H5; intro. 
+  elim H5; intro.
   cut (0%nat <> 2%nat);
     [ intro; elim H7; symmetry  in |- *; assumption | discriminate ].
   assumption.
   apply le_n_Sn.
   unfold Un_cv in |- *; unfold R_dist in |- *; unfold Un_cv in H1;
-    unfold R_dist in H1; intros. 
+    unfold R_dist in H1; intros.
   elim (H1 eps H2); intros.
   exists x; intros.
   apply H3.
   unfold ge in |- *; apply le_trans with n.
   assumption.
   assert (H5 := mult_O_le n 2).
-  elim H5; intro. 
+  elim H5; intro.
   cut (0%nat <> 2%nat);
     [ intro; elim H7; symmetry  in |- *; assumption | discriminate ].
   assumption.

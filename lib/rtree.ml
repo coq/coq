@@ -53,7 +53,7 @@ let rec subst_rtree_rec depth sub = function
 
 let subst_rtree sub t = subst_rtree_rec 0 [|sub|] t
 
-(* To avoid looping, we must check that every body introduces a node 
+(* To avoid looping, we must check that every body introduces a node
    or a parameter *)
 let rec expand = function
   | Rec(j,defs) ->
@@ -81,17 +81,17 @@ the last one should be accepted
 *)
 
 (* Tree destructors, expanding loops when necessary *)
-let dest_param t = 
+let dest_param t =
   match expand t with
       Param (i,j) -> (i,j)
     | _ -> failwith "Rtree.dest_param"
 
-let dest_node t = 
+let dest_node t =
   match expand t with
       Node (l,sons) -> (l,sons)
     | _ -> failwith "Rtree.dest_node"
 
-let is_node t = 
+let is_node t =
   match expand t with
       Node _ -> true
     | _ -> false
@@ -104,13 +104,13 @@ let rec map f t = match t with
 
 let rec smartmap f t = match t with
     Param _ -> t
-  | Node (a,sons) -> 
+  | Node (a,sons) ->
       let a'=f a and sons' = Util.array_smartmap (map f) sons in
 	if a'==a && sons'==sons then
 	  t
 	else
 	  Node (a',sons')
-  | Rec(j,defs) -> 
+  | Rec(j,defs) ->
       let defs' = Util.array_smartmap (map f) defs in
 	if defs'==defs then
 	  t

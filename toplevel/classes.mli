@@ -43,8 +43,8 @@ val declare_instance_constant :
   Term.constr -> (* body *)
   Term.types -> (* type *)
   Names.identifier
-    
-val new_instance : 
+
+val new_instance :
   ?global:bool -> (* Not global by default. *)
   local_binder list ->
   typeclass_constraint ->
@@ -59,9 +59,9 @@ val new_instance :
 
 val id_of_class : typeclass -> identifier
 
-(* Context command *)    
+(* Context command *)
 
-val context : ?hook:(Libnames.global_reference -> unit) -> 
+val context : ?hook:(Libnames.global_reference -> unit) ->
   local_binder list -> unit
 
 (* Forward ref for refine *)

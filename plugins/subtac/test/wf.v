@@ -29,7 +29,7 @@ Require Import Wf_nat.
 
 Program Fixpoint euclid (a : nat) (b : { b : nat | b <> O }) {wf a lt}  :
   { q : nat & { r : nat | a = b * q + r /\ r < b } } :=
-  if le_lt_dec b a then let (q', r) := euclid (a - b) b in 
+  if le_lt_dec b a then let (q', r) := euclid (a - b) b in
   (S q' & r)
   else (O & a).
 destruct b ; simpl_subtac.

@@ -46,7 +46,7 @@ type clausenv = {
 let cl_env ce = ce.env
 let cl_sigma ce =  ce.evd
 
-let subst_clenv sub clenv = 
+let subst_clenv sub clenv =
   { templval = map_fl (subst_mps sub) clenv.templval;
     templtyp = map_fl (subst_mps sub) clenv.templtyp;
     evd = subst_evar_defs_light sub clenv.evd;
@@ -100,7 +100,7 @@ let clenv_environments evd bound t =
 	    (if dep then (subst1 (mkMeta mv) t2) else t2)
       | (n, LetIn (na,b,_,t)) -> clrec (e,metas) n (subst1 b t)
       | (n, _) -> (e, List.rev metas, t)
-  in 
+  in
   clrec (evd,[]) bound t
 
 (* Instantiate the first [bound] products of [t] with evars (all products if
@@ -118,7 +118,7 @@ let clenv_environments_evars env evd bound t =
 	    (if dep then (subst1 constr t2) else t2)
       | (n, LetIn (na,b,_,t)) -> clrec (e,ts) n (subst1 b t)
       | (n, _) -> (e, List.rev ts, t)
-  in 
+  in
   clrec (evd,[]) bound t
 
 let clenv_conv_leq env sigma t c bound =
@@ -144,7 +144,7 @@ let mk_clenv_from_n gls n (c,cty) =
 
 let mk_clenv_from gls = mk_clenv_from_n gls None
 
-let mk_clenv_rename_from_n gls n (c,t) = 
+let mk_clenv_rename_from_n gls n (c,t) =
   mk_clenv_from_n gls n (c,rename_bound_var (pf_env gls) [] t)
 
 let mk_clenv_type_of gls t = mk_clenv_from gls (t,pf_type_of gls t)
@@ -171,14 +171,14 @@ let error_incompatible_inst clenv mv  =
   match na with
       Name id ->
         errorlabstrm "clenv_assign"
-          (str "An incompatible instantiation has already been found for " ++ 
+          (str "An incompatible instantiation has already been found for " ++
            pr_id id)
     | _ ->
         anomaly "clenv_assign: non dependent metavar already assigned"
 
-(* TODO: replace by clenv_unify (mkMeta mv) rhs ? *)		      
+(* TODO: replace by clenv_unify (mkMeta mv) rhs ? *)
 let clenv_assign mv rhs clenv =
-  let rhs_fls = mk_freelisted rhs in 
+  let rhs_fls = mk_freelisted rhs in
   if meta_exists (mentions clenv mv) rhs_fls.freemetas then
     error "clenv_assign: circularity in unification";
   try
@@ -187,10 +187,10 @@ let clenv_assign mv rhs clenv =
         error_incompatible_inst clenv mv
       else
 	clenv
-    else 
+    else
       let st = (ConvUpToEta 0,TypeNotProcessed) in
       {clenv with evd = meta_assign mv (rhs_fls.rebus,st) clenv.evd}
-  with Not_found -> 
+  with Not_found ->
     error "clenv_assign: undefined meta"
 
 
@@ -216,7 +216,7 @@ let dependent_metas clenv mvs conclmetas =
        Metaset.union deps (clenv_metavars clenv.evd mv))
     mvs conclmetas
 
-let duplicated_metas c = 
+let duplicated_metas c =
   let rec collrec (one,more as acc) c =
     match kind_of_term c with
     | Meta mv -> if List.mem mv one then (one,mv::more) else (mv::one,more)
@@ -259,7 +259,7 @@ let clenv_unique_resolver allow_K ?(flags=default_unify_flags) clenv gl =
  * For each dependent evar in the clause-env which does not have a value,
  * pose a value for it by constructing a fresh evar.  We do this in
  * left-to-right order, so that every evar's type is always closed w.r.t.
- * metas. 
+ * metas.
 
  * Node added 14/4/08 [HH]: before this date, evars were collected in
    clenv_dependent by collect_metas in the fold_constr order which is
@@ -271,7 +271,7 @@ let clenv_unique_resolver allow_K ?(flags=default_unify_flags) clenv gl =
    dependency order when a clenv_fchain occurs (because clenv_fchain
    plugs a term with a list of consecutive metas in place of a - a priori -
    arbitrary metavariable belonging to another sequence of consecutive metas:
-   e.g., clenv_fchain may plug (H ?1 ?2) at the position ?6 of 
+   e.g., clenv_fchain may plug (H ?1 ?2) at the position ?6 of
    (nat_ind ?3 ?4 ?5 ?6), leading to a dependency order 3<4<5<1<2).
    To ensure the dependency order, we check that the type of each meta
    to pose is already meta-free, otherwise we postpone the transformation,
@@ -285,13 +285,13 @@ let clenv_unique_resolver allow_K ?(flags=default_unify_flags) clenv gl =
 let clenv_pose_metas_as_evars clenv dep_mvs =
   let rec fold clenv = function
   | [] -> clenv
-  | mv::mvs -> 
+  | mv::mvs ->
       let ty = clenv_meta_type clenv mv in
       (* Postpone the evar-ization if dependent on another meta *)
       (* This assumes no cycle in the dependencies - is it correct ? *)
       if occur_meta ty then fold clenv (mvs@[mv])
       else
-	let (evd,evar) = 
+	let (evd,evar) =
 	  new_evar clenv.evd (cl_env clenv) ~src:(dummy_loc,GoalEvar) ty in
 	let clenv = clenv_assign mv evar {clenv with evd=evd} in
 	fold clenv mvs in
@@ -315,9 +315,9 @@ let connect_clenv gls clenv =
  * resolution can cause unification of already-existing metavars, and
  * of the fresh ones which get created.  This operation is a composite
  * of operations which pose new metavars, perform unification on
- * terms, and make bindings. 
+ * terms, and make bindings.
 
-   Otherwise said, from 
+   Otherwise said, from
 
      [clenv] = [env;sigma;metas |- c:T]
      [clenv'] = [env';sigma';metas' |- d:U]
@@ -334,7 +334,7 @@ let clenv_fchain ?(allow_K=true) ?(flags=default_unify_flags) mv clenv nextclenv
   let clenv' =
     { templval = clenv.templval;
       templtyp = clenv.templtyp;
-      evd = 
+      evd =
         evar_merge (meta_merge clenv.evd nextclenv.evd) clenv.evd;
       env = nextclenv.env } in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
@@ -346,7 +346,7 @@ let clenv_fchain ?(allow_K=true) ?(flags=default_unify_flags) mv clenv nextclenv
   (* assign the metavar *)
   let clenv''' =
     clenv_assign mv (clenv_term clenv' nextclenv.templval) clenv''
-  in 
+  in
   clenv'''
 
 (***************************************************************)
@@ -368,9 +368,9 @@ let clenv_independent clenv =
 
 let check_bindings bl =
   match list_duplicates (List.map pi2 bl) with
-    | NamedHyp s :: _ -> 
+    | NamedHyp s :: _ ->
 	errorlabstrm ""
-	  (str "The variable " ++ pr_id s ++ 
+	  (str "The variable " ++ pr_id s ++
 	   str " occurs more than once in binding list.");
     | AnonHyp n :: _ ->
 	errorlabstrm ""
@@ -433,7 +433,7 @@ let clenv_match_args bl clenv =
 let clenv_constrain_last_binding c clenv =
   let all_mvs = collect_metas clenv.templval.rebus in
   let k =
-    try list_last all_mvs 
+    try list_last all_mvs
     with Failure _ -> anomaly "clenv_constrain_with_bindings" in
   clenv_assign_binding clenv k (Evd.empty,c)
 
@@ -444,8 +444,8 @@ let clenv_constrain_dep_args hyps_only bl clenv =
     let occlist = clenv_dependent hyps_only clenv in
     if List.length occlist = List.length bl then
       List.fold_left2 clenv_assign_binding clenv occlist bl
-    else 
-      errorlabstrm "" 
+    else
+      errorlabstrm ""
 	(strbrk "Not the right number of missing arguments (expected " ++
 	 int (List.length occlist) ++ str ").")
 

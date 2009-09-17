@@ -75,7 +75,7 @@ module MakeTable =
 
     let t = ref (MySet.empty : MySet.t)
 
-    let _ = 
+    let _ =
       if A.synchronous then
 	let freeze () = !t in
 	let unfreeze c = t := c in
@@ -91,7 +91,7 @@ module MakeTable =
           | GOadd -> t := MySet.add p !t
           | GOrmv -> t := MySet.remove p !t in
         let load_options i o = if i=1 then cache_options o in
-	let subst_options (_,subst,(f,p as obj)) = 
+	let subst_options (_,subst,(f,p as obj)) =
 	  let p' = A.subst subst p in
 	    if p' == p then obj else
 	      (f,p')
@@ -113,8 +113,8 @@ module MakeTable =
          (fun c -> t := MySet.remove c !t))
 
     let print_table table_name printer table =
-      msg (str table_name ++ 
-	   (hov 0 
+      msg (str table_name ++
+	   (hov 0
 	      (if MySet.is_empty table then str "None" ++ fnl ()
                else MySet.fold
 		 (fun a b -> printer a ++ spc () ++ b)
@@ -124,11 +124,11 @@ module MakeTable =
     object
       method add x = add_option (A.encode x)
       method remove x = remove_option (A.encode x)
-      method mem x = 
+      method mem x =
 	let y = A.encode x in
         let answer = MySet.mem y !t in
         msg (A.member_message y answer ++ fnl ())
-      method print = print_table A.title A.printer !t 
+      method print = print_table A.title A.printer !t
     end
 
     let _ = A.table := (nick,new table_of_A ())::!A.table
@@ -181,7 +181,7 @@ sig
   val synchronous : bool
 end
 
-module RefConvert = functor (A : RefConvertArg) -> 
+module RefConvert = functor (A : RefConvertArg) ->
 struct
   type t = A.t
   type key = reference
@@ -208,7 +208,7 @@ type 'a option_sig = {
   optread  : unit -> 'a;
   optwrite : 'a -> unit }
 
-type option_type = bool * (unit -> value) -> (value -> unit) 
+type option_type = bool * (unit -> value) -> (value -> unit)
 
 module OptionMap =
   Map.Make (struct  type t = option_name let compare = compare end)
@@ -219,7 +219,7 @@ let value_tab = ref OptionMap.empty
 
 let get_option key = OptionMap.find key !value_tab
 
-let check_key key = try 
+let check_key key = try
   let _ = get_option key in
   error "Sorry, this option name is already used"
 with Not_found ->
@@ -231,25 +231,25 @@ open Summary
 open Libobject
 open Lib
 
-let declare_option cast uncast 
+let declare_option cast uncast
   { optsync=sync; optname=name; optkey=key; optread=read; optwrite=write } =
   check_key key;
   let default = read() in
   (* spiwack: I use two spaces in the nicknames of "local" and "global" objects.
       That way I shouldn't collide with [nickname key] for any [key]. As [key]-s are
        lists of strings *without* spaces. *)
-  let (write,lwrite,gwrite) = if sync then 
+  let (write,lwrite,gwrite) = if sync then
     let (ldecl_obj,_) = (* "Local": doesn't survive section or modules. *)
       declare_object {(default_object ("L  "^nickname key)) with
 		       cache_function = (fun (_,v) -> write v);
 		       classify_function = (fun _ -> Dispose)}
-    in 
+    in
     let (decl_obj,_) = (* default locality: survives sections but not modules. *)
       declare_object {(default_object (nickname key)) with
 		       cache_function = (fun (_,v) -> write v);
 		       classify_function = (fun _ -> Dispose);
 		       discharge_function = (fun (_,v) -> Some v)}
-    in 
+    in
     let (gdecl_obj,_) = (* "Global": survives section and modules. *)
       declare_object {(default_object ("G  "^nickname key)) with
 		       cache_function = (fun (_,v) -> write v);
@@ -258,28 +258,28 @@ let declare_option cast uncast
 		       load_function = (fun _ (_,v) -> write v);
 		       (* spiwack: I'm unsure whether this function does anyting *)
 		       export_function = (fun v -> Some v)}
-    in 
-    let _ = declare_summary (nickname key) 
+    in
+    let _ = declare_summary (nickname key)
 	     { freeze_function = read;
 	       unfreeze_function = write;
 	       init_function = (fun () -> write default) }
-    in 
+    in
     begin fun v -> add_anonymous_leaf (decl_obj v) end ,
     begin fun v -> add_anonymous_leaf (ldecl_obj v) end ,
     begin fun v -> add_anonymous_leaf (gdecl_obj v) end
   else write,write,write
-  in 
+  in
   let cread () = cast (read ()) in
-  let cwrite v = write (uncast v) in 
-  let clwrite v = lwrite (uncast v) in 
-  let cgwrite v = gwrite (uncast v) in 
-  value_tab := OptionMap.add key (name,(sync,cread,cwrite,clwrite,cgwrite)) !value_tab; 
-  write 
+  let cwrite v = write (uncast v) in
+  let clwrite v = lwrite (uncast v) in
+  let cgwrite v = gwrite (uncast v) in
+  value_tab := OptionMap.add key (name,(sync,cread,cwrite,clwrite,cgwrite)) !value_tab;
+  write
 
 type 'a write_function = 'a -> unit
 
 let declare_int_option =
-  declare_option 
+  declare_option
     (fun v -> IntValue v)
     (function IntValue v -> v | _ -> anomaly "async_option")
 let declare_bool_option =
@@ -310,15 +310,15 @@ let set_option_value locality check_and_cast key v =
 let bad_type_error () = error "Bad type of value for this option"
 
 let set_int_option_value_gen locality = set_option_value  locality
-  (fun v -> function 
+  (fun v -> function
      | (IntValue _) -> IntValue v
      | _ -> bad_type_error ())
 let set_bool_option_value_gen locality = set_option_value locality
-  (fun v -> function 
+  (fun v -> function
      | (BoolValue _) -> BoolValue v
      | _ -> bad_type_error ())
 let set_string_option_value_gen locality = set_option_value locality
- (fun v -> function 
+ (fun v -> function
     | (StringValue _) -> StringValue v
     | _ -> bad_type_error ())
 
@@ -339,10 +339,10 @@ let msg_option_value (name,v) =
 
 let print_option_value key =
   let (name,(_,read,_,_,_)) = get_option key in
-  let s = read () in 
+  let s = read () in
   match s with
-    | BoolValue b -> 
-	msg (str ("The "^name^" mode is "^(if b then "on" else "off")) ++ 
+    | BoolValue b ->
+	msg (str ("The "^name^" mode is "^(if b then "on" else "off")) ++
 	     fnl ())
     | _ ->
 	msg (str ("Current value of "^name^" is ") ++
@@ -352,20 +352,20 @@ let print_option_value key =
 let print_tables () =
   msg
     (str "Synchronous options:" ++ fnl () ++
-     OptionMap.fold 
-       (fun key (name,(sync,read,_,_,_)) p -> 
-	  if sync then 
+     OptionMap.fold
+       (fun key (name,(sync,read,_,_,_)) p ->
+	  if sync then
 	    p ++ str ("  "^(nickname key)^": ") ++
 	    msg_option_value (name,read()) ++ fnl ()
-	  else 
+	  else
 	    p)
        !value_tab (mt ()) ++
      str "Asynchronous options:" ++ fnl () ++
-     OptionMap.fold 
-       (fun key (name,(sync,read,_,_,_)) p -> 
-	  if sync then 
+     OptionMap.fold
+       (fun key (name,(sync,read,_,_,_)) p ->
+	  if sync then
 	    p
-	  else 
+	  else
 	    p ++ str ("  "^(nickname key)^": ") ++
             msg_option_value (name,read()) ++ fnl ())
        !value_tab (mt ()) ++

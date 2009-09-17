@@ -23,7 +23,7 @@ Boxed Fixpoint Dichotomy_lb (x y:R) (P:R -> bool) (N:nat) {struct N} : R :=
         let up := Dichotomy_ub x y P n in
           let z := (down + up) / 2 in if P z then down else z
   end
-  
+
   with Dichotomy_ub (x y:R) (P:R -> bool) (N:nat) {struct N} : R :=
     match N with
       | O => y
@@ -471,8 +471,8 @@ Proof.
   intros.
   cut (x <= y).
   intro.
-  generalize (dicho_lb_cv x y (fun z:R => cond_positivity (f z)) H3). 
-  generalize (dicho_up_cv x y (fun z:R => cond_positivity (f z)) H3). 
+  generalize (dicho_lb_cv x y (fun z:R => cond_positivity (f z)) H3).
+  generalize (dicho_up_cv x y (fun z:R => cond_positivity (f z)) H3).
   intros X X0.
   elim X; intros.
   elim X0; intros.
@@ -667,7 +667,7 @@ Proof.
     apply Ropp_0_gt_lt_contravar; assumption.
 Qed.
 
-(** We can now define the square root function as the reciprocal 
+(** We can now define the square root function as the reciprocal
    transformation of the square root function *)
 Lemma Rsqrt_exists :
   forall y:R, 0 <= y -> { z:R | 0 <= z /\ y = Rsqr z }.
@@ -698,7 +698,7 @@ Proof.
   rewrite Rsqr_1.
   apply Rplus_le_reg_l with y.
   rewrite Rplus_0_r; rewrite Rplus_comm; unfold Rminus in |- *;
-    rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r; 
+    rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r;
       left; assumption.
   exists 1.
   split.

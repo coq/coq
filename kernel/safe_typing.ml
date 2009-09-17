@@ -28,13 +28,13 @@ open Mod_typing
 open Mod_subst
 
 
-type modvariant = 
-  | NONE 
-  | SIG of (* funsig params *) (mod_bound_id * module_type_body) list 
+type modvariant =
+  | NONE
+  | SIG of (* funsig params *) (mod_bound_id * module_type_body) list
   | STRUCT of (* functor params *) (mod_bound_id * module_type_body) list
   | LIBRARY of dir_path
 
-type module_info = 
+type module_info =
     { msid : mod_self_id;
       modpath : module_path;
       seed : dir_path; (* the "seed" of unique identifier generator *)
@@ -42,7 +42,7 @@ type module_info =
       variant : modvariant;
       alias_subst : substitution}
 
-let check_label l labset = 
+let check_label l labset =
   if Labset.mem l labset then error_existing_label l
 
 let set_engagement_opt oeng env =
@@ -52,7 +52,7 @@ let set_engagement_opt oeng env =
 
 type library_info = dir_path * Digest.t
 
-type safe_environment = 
+type safe_environment =
     { old : safe_environment;
       env : env;
       modinfo : module_info;
@@ -76,8 +76,8 @@ type safe_environment =
 
 
 (* a small hack to avoid variants and an unused case in all functions *)
-let rec empty_environment = 
-  { old = empty_environment; 
+let rec empty_environment =
+  { old = empty_environment;
     env = empty_env;
     modinfo = {
       msid = initial_msid;
@@ -103,7 +103,7 @@ let env_of_senv = env_of_safe_env
 
 
 
-let add_constraints cst senv = 
+let add_constraints cst senv =
   {senv with
     env = Environ.add_constraints cst senv.env;
     univ = Univ.Constraint.union cst senv.univ }
@@ -113,7 +113,7 @@ let add_constraints cst senv =
 
 (* terms which are closed under the environnement env, i.e
    terms which only depends on constant who are themselves closed *)
-let closed env term = 
+let closed env term =
   ContextObjectMap.is_empty (assumptions full_transparent_state env term)
 
 (* the set of safe terms in an environement any recursive set of
@@ -126,15 +126,15 @@ let safe =
 
 
 (* universal lifting, used for the "get" operations mostly *)
-let retroknowledge f senv = 
+let retroknowledge f senv =
   Environ.retroknowledge f (env_of_senv senv)
 
-let register senv field value by_clause = 
+let register senv field value by_clause =
   (* todo : value closed, by_clause safe, by_clause of the proper type*)
   (* spiwack : updates the safe_env with the information that the register
      action has to be performed (again) when the environement is imported *)
   {senv with env = Environ.register senv.env field value;
-             local_retroknowledge = 
+             local_retroknowledge =
       Retroknowledge.RKRegister (field,value)::senv.local_retroknowledge
   }
 
@@ -163,7 +163,7 @@ let unregister senv field  =
 let safe_push_named (id,_,_ as d) env =
   let _ =
     try
-      let _ = lookup_named id env in 
+      let _ = lookup_named id env in
       error ("Identifier "^string_of_id id^" already defined.")
     with Not_found -> () in
   Environ.push_named d env
@@ -183,7 +183,7 @@ let push_named_assum (id,t) senv =
 
 (* Insertion of constants and parameters in environment. *)
 
-type global_declaration = 
+type global_declaration =
   | ConstantEntry of constant_entry
   | GlobalRecipe of Cooking.recipe
 
@@ -206,8 +206,8 @@ let hcons_constant_body cb =
 let add_constant dir l decl senv =
   check_label l senv.labset;
   let kn = make_con senv.modinfo.modpath dir l in
-  let cb = 
-    match decl with 
+  let cb =
+    match decl with
       | ConstantEntry ce -> translate_constant senv.env kn ce
       | GlobalRecipe r ->
 	  let cb = translate_recipe senv.env kn r in
@@ -225,20 +225,20 @@ let add_constant dir l decl senv =
 	  imports = senv'.imports;
 	  loads = senv'.loads ;
 	  local_retroknowledge = senv'.local_retroknowledge }
-    
+
 
 (* Insertion of inductive types. *)
 
 let add_mind dir l mie senv =
-  if mie.mind_entry_inds = [] then 
-    anomaly "empty inductive types declaration"; 
+  if mie.mind_entry_inds = [] then
+    anomaly "empty inductive types declaration";
             (* this test is repeated by translate_mind *)
   let id = (List.nth mie.mind_entry_inds 0).mind_entry_typename in
   if l <> label_of_id id then
     anomaly ("the label of inductive packet and its first inductive"^
 	     " type do not match");
-  check_label l senv.labset; 
-    (* TODO: when we will allow reorderings we will have to verify 
+  check_label l senv.labset;
+    (* TODO: when we will allow reorderings we will have to verify
        all labels *)
   let mib = translate_mind senv.env mie in
   let senv' = add_constraints mib.mind_constraints senv in
@@ -257,13 +257,13 @@ let add_mind dir l mie senv =
 
 (* Insertion of module types *)
 
-let add_modtype l mte senv = 
-  check_label l senv.labset; 
+let add_modtype l mte senv =
+  check_label l senv.labset;
   let mtb_expr,sub = translate_struct_entry senv.env mte  in
   let mtb = { typ_expr = mtb_expr;
 	      typ_strength = None;
 	      typ_alias = sub} in
-  let senv' = add_constraints 
+  let senv' = add_constraints
     (struct_expr_constraints mtb_expr) senv in
   let mp = MPdot(senv.modinfo.modpath, l) in
   let env'' = Environ.add_modtype mp mtb senv'.env in
@@ -284,22 +284,22 @@ let full_add_module mp mb senv =
   let senv = add_constraints (module_constraints mb) senv in
   let env = Modops.add_module mp mb senv.env in
     {senv with env = env}
-      
+
 (* Insertion of modules *)
-      
-let add_module l me senv = 
-  check_label l senv.labset; 
+
+let add_module l me senv =
+  check_label l senv.labset;
   let mb = translate_module senv.env me in
   let mp = MPdot(senv.modinfo.modpath, l) in
   let senv' = full_add_module mp mb senv in
   let is_functor,sub = Modops.update_subst senv'.env mb mp in
   mp, { old = senv'.old;
 	env = senv'.env;
-	modinfo = 
+	modinfo =
       if is_functor then
 	senv'.modinfo
       else
-	{senv'.modinfo with 
+	{senv'.modinfo with
 	   alias_subst = join senv'.modinfo.alias_subst sub};
 	labset = Labset.add l senv'.labset;
 	revstruct = (l,SFBmodule mb)::senv'.revstruct;
@@ -308,17 +308,17 @@ let add_module l me senv =
 	imports = senv'.imports;
 	loads = senv'.loads;
         local_retroknowledge = senv'.local_retroknowledge }
-    
+
 let add_alias l mp senv =
-  check_label l senv.labset; 
+  check_label l senv.labset;
   let mp' = MPdot(senv.modinfo.modpath, l) in
   let mp1 = scrape_alias mp senv.env in
-  let typ_opt = 
+  let typ_opt =
     if check_bound_mp mp then
       Some (strengthen senv.env
 	      (lookup_modtype mp senv.env).typ_expr mp)
     else
-      None 
+      None
   in
     (* we get all updated alias substitution {mp1.K\M}  that comes from mp1 *)
   let _,sub = Modops.update_subst senv.env (lookup_module mp1 senv.env) mp1 in
@@ -331,8 +331,8 @@ let add_alias l mp senv =
   let env' = register_alias mp' mp senv.env in
     mp', { old = senv.old;
 	env = env';
-	modinfo = { senv.modinfo with 
-		      alias_subst = join 
+	modinfo = { senv.modinfo with
+		      alias_subst = join
 	    senv.modinfo.alias_subst sub};
 	labset = Labset.add l senv.labset;
 	revstruct = (l,SFBalias (mp,typ_opt,None))::senv.revstruct;
@@ -344,8 +344,8 @@ let add_alias l mp senv =
 
 (* Interactive modules *)
 
-let start_module l senv = 
-  check_label l senv.labset; 
+let start_module l senv =
+  check_label l senv.labset;
   let msid = make_msid senv.modinfo.seed (string_of_label l) in
   let mp = MPself msid in
   let modinfo = { msid = msid;
@@ -367,31 +367,31 @@ let start_module l senv =
 	(* spiwack : not sure, but I hope it's correct *)
         local_retroknowledge = [] }
 
-let end_module l restype senv = 
+let end_module l restype senv =
   let oldsenv = senv.old in
   let modinfo = senv.modinfo in
   let restype = Option.map (translate_struct_entry senv.env) restype in
-  let params,is_functor = 
+  let params,is_functor =
     match modinfo.variant with
       | NONE | LIBRARY _ | SIG _ -> error_no_module_to_end ()
       | STRUCT params -> params, (List.length params > 0)
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
   if not (empty_context senv.env) then error_local_context None;
-  let functorize_struct tb = 
+  let functorize_struct tb =
     List.fold_left
-      (fun mtb (arg_id,arg_b) -> 
+      (fun mtb (arg_id,arg_b) ->
 	SEBfunctor(arg_id,arg_b,mtb))
       tb
       params
   in
-   let auto_tb = 
+   let auto_tb =
      SEBstruct (modinfo.msid, List.rev senv.revstruct)
   in
-  let mod_typ,subst,cst = 
+  let mod_typ,subst,cst =
     match restype with
       | None ->  None,modinfo.alias_subst,Constraint.empty
-      | Some (res_tb,subst) -> 
+      | Some (res_tb,subst) ->
 	  let cst = check_subtypes senv.env
 	    {typ_expr = auto_tb;
 	     typ_strength = None;
@@ -404,7 +404,7 @@ let end_module l restype senv =
   in
   let mexpr = functorize_struct auto_tb in
   let cst = Constraint.union cst senv.univ in
-  let mb = 
+  let mb =
     { mod_expr = Some mexpr;
       mod_type = mod_typ;
       mod_constraints = cst;
@@ -415,24 +415,24 @@ let end_module l restype senv =
   let newenv = oldsenv.env in
   let newenv = set_engagement_opt senv.engagement newenv in
   let senv'= {senv with env=newenv} in
-  let senv' = 
+  let senv' =
     List.fold_left
-      (fun env (mp,mb) -> full_add_module mp mb env) 
+      (fun env (mp,mb) -> full_add_module mp mb env)
       senv'
       (List.rev senv'.loads)
   in
   let newenv = Environ.add_constraints cst senv'.env in
-  let newenv = 
+  let newenv =
     Modops.add_module mp mb newenv
-  in 
+  in
   let is_functor,subst = Modops.update_subst newenv mb mp in
-  let newmodinfo = 
+  let newmodinfo =
     if is_functor then
       oldsenv.modinfo
     else
-      { oldsenv.modinfo with 
-	  alias_subst = join 
-	  oldsenv.modinfo.alias_subst 
+      { oldsenv.modinfo with
+	  alias_subst = join
+	  oldsenv.modinfo.alias_subst
 	  subst };
   in
     mp, { old = oldsenv.old;
@@ -458,7 +458,7 @@ let end_module l restype senv =
    in
    let mp_sup = senv.modinfo.modpath in
    let str1 = subst_signature_msid msid mp_sup str in
-   let add senv (l,elem)  = 
+   let add senv (l,elem)  =
      check_label l senv.labset;
      match elem with
        | SFBconst cb ->
@@ -475,7 +475,7 @@ let end_module l restype senv =
 	       imports = senv'.imports;
 	       loads = senv'.loads ;
 	       local_retroknowledge = senv'.local_retroknowledge }
-	       	     
+
        | SFBmind mib ->
 	   let kn = make_kn mp_sup empty_dirpath l in
 	   let senv' = add_constraints mib.mind_constraints senv in
@@ -483,25 +483,25 @@ let end_module l restype senv =
 	     { old = senv'.old;
 	       env = env'';
 	       modinfo = senv'.modinfo;
-	       labset = Labset.add l senv'.labset;  
+	       labset = Labset.add l senv'.labset;
 	       revstruct = (l,SFBmind mib)::senv'.revstruct;
                univ = senv'.univ;
                engagement = senv'.engagement;
 	       imports = senv'.imports;
 	       loads = senv'.loads;
                local_retroknowledge = senv'.local_retroknowledge }
-	       
+
        | SFBmodule mb ->
 	   let mp = MPdot(senv.modinfo.modpath, l) in
 	   let is_functor,sub = Modops.update_subst senv.env mb mp in
 	   let senv' = full_add_module mp mb senv in
 	     { old = senv'.old;
 	       env = senv'.env;
-	       modinfo = 
+	       modinfo =
 		 if is_functor then
 		   senv'.modinfo
 		 else
-		   {senv'.modinfo with 
+		   {senv'.modinfo with
 		      alias_subst = join senv'.modinfo.alias_subst sub};
 	       labset = Labset.add l senv'.labset;
 	       revstruct = (l,SFBmodule mb)::senv'.revstruct;
@@ -511,7 +511,7 @@ let end_module l restype senv =
 	       loads = senv'.loads;
 	       local_retroknowledge = senv'.local_retroknowledge }
        | SFBalias (mp',typ_opt,cst) ->
-	   let env' = Option.fold_right 
+	   let env' = Option.fold_right
 	     Environ.add_constraints cst senv.env in
 	   let mp = MPdot(senv.modinfo.modpath, l) in
 	   let mp1 = scrape_alias mp' senv.env in
@@ -522,8 +522,8 @@ let end_module l restype senv =
 	   let env' = register_alias mp mp' env' in
 	     { old = senv.old;
 	       env = env';
-	       modinfo =  { senv.modinfo with 
-			      alias_subst = join 
+	       modinfo =  { senv.modinfo with
+			      alias_subst = join
 		   senv.modinfo.alias_subst sub};
 	       labset = Labset.add l senv.labset;
 	       revstruct = (l,SFBalias (mp',typ_opt,cst))::senv.revstruct;
@@ -548,7 +548,7 @@ let end_module l restype senv =
                local_retroknowledge = senv.local_retroknowledge }
    in
      List.fold_left add senv str1
-	   
+
 (* Adding parameters to modules or module types *)
 
 let add_module_parameter mbid mte senv =
@@ -558,12 +558,12 @@ let add_module_parameter mbid mte senv =
   let mtb = {typ_expr = mtb_expr;
 	    typ_strength = None;
 	    typ_alias = sub} in
-  let senv = full_add_module (MPbound mbid) (module_body_of_type mtb) senv 
+  let senv = full_add_module (MPbound mbid) (module_body_of_type mtb) senv
   in
   let new_variant = match senv.modinfo.variant with
     | STRUCT params -> STRUCT ((mbid,mtb) :: params)
     | SIG params -> SIG ((mbid,mtb) :: params)
-    | _ -> 
+    | _ ->
 	anomaly "Module parameters can only be added to modules or signatures"
   in
   { old = senv.old;
@@ -580,8 +580,8 @@ let add_module_parameter mbid mte senv =
 
 (* Interactive module types *)
 
-let start_modtype l senv = 
-  check_label l senv.labset; 
+let start_modtype l senv =
+  check_label l senv.labset;
   let msid = make_msid senv.modinfo.seed (string_of_label l) in
   let mp = MPself msid in
   let modinfo = { msid = msid;
@@ -603,22 +603,22 @@ let start_modtype l senv =
 	(* spiwack: not 100% sure, but I think it should be like that *)
         local_retroknowledge = []}
 
-let end_modtype l senv = 
+let end_modtype l senv =
   let oldsenv = senv.old in
   let modinfo = senv.modinfo in
-  let params = 
+  let params =
     match modinfo.variant with
       | LIBRARY _ | NONE | STRUCT _ -> error_no_modtype_to_end ()
       | SIG params -> params
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
   if not (empty_context senv.env) then error_local_context None;
-  let auto_tb = 
+  let auto_tb =
      SEBstruct (modinfo.msid, List.rev senv.revstruct)
   in
-  let mtb_expr = 
+  let mtb_expr =
     List.fold_left
-      (fun mtb (arg_id,arg_b) -> 
+      (fun mtb (arg_id,arg_b) ->
 	 SEBfunctor(arg_id,arg_b,mtb))
       auto_tb
       params
@@ -630,9 +630,9 @@ let end_modtype l senv =
   let newenv = Environ.add_constraints senv.univ  newenv in
   let newenv = set_engagement_opt senv.engagement newenv in
   let senv = {senv with env=newenv} in
-  let senv = 
+  let senv =
     List.fold_left
-      (fun env (mp,mb) -> full_add_module mp mb env) 
+      (fun env (mp,mb) -> full_add_module mp mb env)
       senv
       (List.rev senv.loads)
   in
@@ -640,9 +640,9 @@ let end_modtype l senv =
   let mtb = {typ_expr = mtb_expr;
 	    typ_strength = None;
 	    typ_alias = subst} in
-  let newenv = 
+  let newenv =
     Environ.add_modtype mp mtb senv.env
-  in 
+  in
     mp, { old = oldsenv.old;
 	  env = newenv;
 	modinfo = oldsenv.modinfo;
@@ -654,9 +654,9 @@ let end_modtype l senv =
 	loads = senv.loads@oldsenv.loads;
         (* spiwack : if there is a bug with retroknowledge in nested modules
                      it's likely to come from here *)
-        local_retroknowledge = 
+        local_retroknowledge =
                    senv.local_retroknowledge@oldsenv.local_retroknowledge}
-  
+
 
 let current_modpath senv = senv.modinfo.modpath
 let current_msid senv = senv.modinfo.msid
@@ -677,10 +677,10 @@ let set_engagement c senv =
 
 (* Libraries = Compiled modules *)
 
-type compiled_library = 
+type compiled_library =
     dir_path * module_body * library_info list * engagement option
 
-(* We check that only initial state Require's were performed before 
+(* We check that only initial state Require's were performed before
    [start_library] was called *)
 
 let is_empty senv =
@@ -691,7 +691,7 @@ let is_empty senv =
 let start_library dir senv =
   if not (is_empty senv) then
     anomaly "Safe_typing.start_library: environment should be empty";
-  let dir_path,l = 
+  let dir_path,l =
     match (repr_dirpath dir) with
 	[] -> anomaly "Empty dirpath in Safe_typing.start_library"
       | hd::tl ->
@@ -719,11 +719,11 @@ let start_library dir senv =
 
 
 
-let export senv dir = 
+let export senv dir =
   let modinfo = senv.modinfo in
   begin
     match modinfo.variant with
-      | LIBRARY dp -> 
+      | LIBRARY dp ->
 	  if dir <> dp then
 	    anomaly "We are not exporting the right library!"
       | _ ->
@@ -731,7 +731,7 @@ let export senv dir =
   end;
   (*if senv.modinfo.params <> [] || senv.modinfo.restype <> None then
     (* error_export_simple *) (); *)
-  let mb = 
+  let mb =
     { mod_expr = Some (SEBstruct (modinfo.msid, List.rev senv.revstruct));
       mod_type = None;
       mod_constraints = senv.univ;
@@ -749,7 +749,7 @@ let check_imports senv needed =
       if stamp <> actual_stamp then
 	error
 	  ("Inconsistent assumptions over module "^(string_of_dirpath id)^".")
-    with Not_found -> 
+    with Not_found ->
       error ("Reference to unknown module "^(string_of_dirpath id)^".")
   in
   List.iter check needed
@@ -768,16 +768,16 @@ environment, and store for the future (instead of just its type)
 loaded by side-effect once and for all (like it is done in OCaml).
 Would this be correct with respect to undo's and stuff ?
 *)
- 
-let import (dp,mb,depends,engmt) digest senv = 
+
+let import (dp,mb,depends,engmt) digest senv =
   check_imports senv depends;
   check_engagement senv.env engmt;
   let mp = MPfile dp in
   let env = senv.env in
   let env = Environ.add_constraints mb.mod_constraints env in
   let env = Modops.add_module mp mb env in
-  mp, { senv with 
-	  env = env; 
+  mp, { senv with
+	  env = env;
 	  imports = (dp,digest)::senv.imports;
 	  loads = (mp,mb)::senv.loads }
 
@@ -788,22 +788,22 @@ let import (dp,mb,depends,engmt) digest senv =
     mod_expr = Option.map lighten_modexpr mb.mod_expr;
     mod_type = Option.map lighten_modexpr mb.mod_type;
   }
-    
-and lighten_struct struc = 
+
+and lighten_struct struc =
   let lighten_body (l,body) = (l,match body with
     | SFBconst ({const_opaque=true} as x) -> SFBconst {x with const_body=None}
     | (SFBconst _ | SFBmind _ | SFBalias _) as x -> x
     | SFBmodule m -> SFBmodule (lighten_module m)
-    | SFBmodtype m -> SFBmodtype 
-	({m with 
+    | SFBmodtype m -> SFBmodtype
+	({m with
 	    typ_expr = lighten_modexpr m.typ_expr}))
   in
     List.map lighten_body struc
 
 and lighten_modexpr = function
   | SEBfunctor (mbid,mty,mexpr) ->
-      SEBfunctor (mbid, 
-		    ({mty with 
+      SEBfunctor (mbid,
+		    ({mty with
 			typ_expr = lighten_modexpr mty.typ_expr}),
 		  lighten_modexpr mexpr)
   | SEBident mp as x -> x
@@ -812,8 +812,8 @@ and lighten_modexpr = function
   | SEBapply (mexpr,marg,u) ->
       SEBapply (lighten_modexpr mexpr,lighten_modexpr marg,u)
   | SEBwith (seb,wdcl) ->
-      SEBwith (lighten_modexpr seb,wdcl) 
- 
+      SEBwith (lighten_modexpr seb,wdcl)
+
 let lighten_library (dp,mb,depends,s) = (dp,lighten_module mb,depends,s)
 
 
@@ -823,5 +823,5 @@ let j_val j = j.uj_val
 let j_type j = j.uj_type
 
 let safe_infer senv = infer (env_of_senv senv)
-    
+
 let typing senv = Typeops.typing (env_of_senv senv)

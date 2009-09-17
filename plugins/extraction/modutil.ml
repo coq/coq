@@ -115,7 +115,7 @@ let decl_iter_references do_term do_cons do_type =
     | Dind (kn,ind) -> ind_iter_references do_term do_cons do_type kn ind
     | Dtype (r,_,t) -> do_type r; type_iter t
     | Dterm (r,a,t) -> do_term r; ast_iter a; type_iter t
-    | Dfix(rv,c,t) -> 
+    | Dfix(rv,c,t) ->
 	Array.iter do_term rv; Array.iter ast_iter c; Array.iter type_iter t
 
 let spec_iter_references do_term do_cons do_type = function

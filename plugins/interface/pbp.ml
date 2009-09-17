@@ -33,8 +33,8 @@ let next_global_ident = next_global_ident_away true
 let get_hyp_by_name g name =
   let evd = project g in
   let env = pf_env g in
-  try (let judgment = 
-         Pretyping.Default.understand_judgment 
+  try (let judgment =
+         Pretyping.Default.understand_judgment
           evd env (RVar(zz, name)) in
        ("hyp",judgment.uj_type))
 (* je sais, c'est pas beau, mais je ne sais pas trop me servir de look_up...
@@ -132,7 +132,7 @@ let (imply_intro2: pbp_rule) = function
           (f (h'::avoid) clear_names clear_flag None (kind_of_term body) path))
   | _ -> None;;
 
-      
+
 (*
 let (imply_intro1: pbp_rule) = function
   avoid, clear_names,
@@ -140,7 +140,7 @@ let (imply_intro1: pbp_rule) = function
    let h' = next_global_ident hyp_radix avoid in
    let str_h' = h' in
      Some(chain_tactics [make_named_intro str_h']
-            (f (h'::avoid) clear_names clear_flag (Some str_h') 
+            (f (h'::avoid) clear_names clear_flag (Some str_h')
 		(kind_of_term prem) path))
   | _ -> None;;
 *)
@@ -162,7 +162,7 @@ let make_pbp_atomic_tactic = function
   | PbpTryAssumption None -> TacTry (TacAtom (zz, TacAssumption))
   | PbpTryAssumption (Some a) ->
       TacTry (TacAtom (zz, TacExact (make_var a)))
-  | PbpExists x -> 
+  | PbpExists x ->
       TacAtom (zz, TacSplit (false,true,[ImplicitBindings [make_pbp_pattern x]]))
   | PbpGeneralize (h,args) ->
       let l = List.map make_pbp_pattern args in
@@ -176,7 +176,7 @@ let make_pbp_atomic_tactic = function
       let bind = List.map (fun s ->(zz,NamedHyp s,make_pbp_pattern s)) names in
       TacAtom
 	(zz, TacElim (false,(make_var hyp_name,ExplicitBindings bind),None))
-  | PbpTryClear l -> 
+  | PbpTryClear l ->
       TacTry (TacAtom (zz, TacClear (false,List.map (fun s -> AI (zz,s)) l)))
   | PbpSplit -> TacAtom (zz, TacSplit (false,false,[NoBindings]));;
 
@@ -188,7 +188,7 @@ let rec make_pbp_tactic = function
 	 List.map make_pbp_tactic tl)
 
 let (forall_elim: pbp_rule) = function
-  avoid, clear_names, clear_flag, 
+  avoid, clear_names, clear_flag,
   Some h, Prod(Name x, _, body), 2::path, f ->
   let h' = next_global_ident hyp_radix avoid in
   let clear_names' = if clear_flag then h::clear_names else clear_names in
@@ -219,7 +219,7 @@ let (imply_elim2: pbp_rule) = function
   Some(PbpThens
 	 ([PbpLApply h],
           [chain_tactics [make_named_intro h']
-              (f (h'::avoid) clear_names' false (Some h') 
+              (f (h'::avoid) clear_names' false (Some h')
 		      (kind_of_term body) path);
            make_clears clear_names]))
   | _ -> None;;
@@ -241,8 +241,8 @@ let notTconstr () = constant ["Logic_Type"] "notT";;
 
 let is_matching_local a b = is_matching (pattern_of_constr a) b;;
 
-let rec (or_and_tree_to_intro_pattern: identifier list -> 
-	   constr -> int list -> 
+let rec (or_and_tree_to_intro_pattern: identifier list ->
+	   constr -> int list ->
 	     intro_pattern_expr * identifier list * identifier *constr
 	     * int list * int * int) =
 fun avoid c path -> match kind_of_term c, path with
@@ -251,19 +251,19 @@ fun avoid c path -> match kind_of_term c, path with
 	  (is_matching_local (prodconstr()) oper)) & (a = 1 or a = 2) ->
       let id2 = next_global_ident hyp_radix avoid in
       let cont_expr = if a = 1 then c1 else c2 in
-      let cont_patt, avoid_names, id, c, path, rank, total_branches = 
+      let cont_patt, avoid_names, id, c, path, rank, total_branches =
 	or_and_tree_to_intro_pattern (id2::avoid) cont_expr path in
-      let patt_list = 
+      let patt_list =
 	if a = 1 then
 	  [zz,cont_patt; zz,IntroIdentifier id2]
 	else
 	  [zz,IntroIdentifier id2; zz,cont_patt] in
-      	(IntroOrAndPattern[patt_list], avoid_names, id, c, path, rank, 
+      	(IntroOrAndPattern[patt_list], avoid_names, id, c, path, rank,
 	 total_branches)
   | (App(oper, [|c1; c2|]), 2::3::path)
     when ((is_matching_local (exconstr()) oper) or
 	  (is_matching_local (sigconstr()) oper)) ->
-      (match (kind_of_term c2) with 
+      (match (kind_of_term c2) with
 	   Lambda (Name x, _, body) ->
 	     let id1 = next_global_ident x avoid in
 	     let cont_patt, avoid_names, id, c, path, rank, total_branches =
@@ -285,13 +285,13 @@ fun avoid c path -> match kind_of_term c, path with
 	  [[zz,cont_patt];[zz,IntroIdentifier id2]]
 	else
 	  [[zz,IntroIdentifier id2];[zz,cont_patt]] in
-	(IntroOrAndPattern patt_list, 
+	(IntroOrAndPattern patt_list,
 	 avoid_names, id, c, path, new_rank, total_branches+1)
   | (_, path) -> let id = next_global_ident hyp_radix avoid in
       (IntroIdentifier id, (id::avoid), id, c, path, 1, 1);;
 
 let auxiliary_goals clear_names clear_flag this_name n_aux others =
-  let clear_cmd = 
+  let clear_cmd =
     make_clears (if clear_flag then (this_name ::clear_names) else clear_names) in
   let rec clear_list = function
       0 -> others
@@ -316,25 +316,25 @@ let (imply_intro3: pbp_rule) = function
 		  (rank - 1)
 		  ((f avoid_names clear_names clear_flag (Some id)
 		      (kind_of_term c) path)::
-		     auxiliary_goals clear_names clear_flag id 
+		     auxiliary_goals clear_names clear_flag id
 		     (total_branches - rank) [])))
   | _ -> None;;
-		 
+
 
 
 let (and_intro: pbp_rule) = function
     avoid, clear_names, clear_flag,
-    None, App(and_oper, [|c1; c2|]), 2::a::path, f 
+    None, App(and_oper, [|c1; c2|]), 2::a::path, f
       ->
       if ((is_matching_local (andconstr()) and_oper) or
           (is_matching_local (prodconstr ()) and_oper)) & (a = 1 or a = 2) then
       	let cont_term = if a = 1 then c1 else c2 in
-      	let cont_cmd = f avoid clear_names false None 
+      	let cont_cmd = f avoid clear_names false None
 			 (kind_of_term cont_term) path in
       	let clear_cmd = make_clears clear_names in
       	let cmds =
-            (if a = 1 
-	    then [cont_cmd;clear_cmd] 
+            (if a = 1
+	    then [cont_cmd;clear_cmd]
 	    else [clear_cmd;cont_cmd]) in
       	Some (PbpThens ([PbpSplit],cmds))
       else None
@@ -342,7 +342,7 @@ let (and_intro: pbp_rule) = function
 
 let exists_from_lambda avoid clear_names clear_flag c2 path f =
   match kind_of_term c2 with
-    Lambda(Name x, _, body) -> 
+    Lambda(Name x, _, body) ->
       Some (PbpThens ([PbpExists x],
 		      [f avoid clear_names false None (kind_of_term body) path]))
   | _ -> None;;
@@ -367,28 +367,28 @@ let (or_intro: pbp_rule) = function
     avoid, clear_names, clear_flag, None,
     App(or_oper, [|c1; c2 |]), 2::a::path, f ->
       if ((is_matching_local (orconstr ()) or_oper) or
-        (is_matching_local (sumboolconstr ()) or_oper) or 
+        (is_matching_local (sumboolconstr ()) or_oper) or
 	(is_matching_local (sumconstr ()) or_oper))
 	  & (a = 1 or a = 2) then
 	let cont_term = if a = 1 then c1 else c2 in
 	let fst_cmd = if a = 1 then PbpLeft else PbpRight in
-	let cont_cmd = f avoid clear_names false None 
+	let cont_cmd = f avoid clear_names false None
 			 (kind_of_term cont_term) path in
 	Some(chain_tactics [fst_cmd] cont_cmd)
       else
 	None
   | _ -> None;;
-	
+
 let dummy_id = id_of_string "Dummy";;
 
 let (not_intro: pbp_rule) = function
     avoid, clear_names, clear_flag, None,
     App(not_oper, [|c1|]), 2::1::path, f ->
-      if(is_matching_local (notconstr ()) not_oper) or 
+      if(is_matching_local (notconstr ()) not_oper) or
 	(is_matching_local (notTconstr ()) not_oper) then
 	let h' = next_global_ident hyp_radix avoid in
 	Some(chain_tactics [make_named_intro h']
-	       (f (h'::avoid) clear_names false (Some h') 
+	       (f (h'::avoid) clear_names false (Some h')
 		  (kind_of_term c1) path))
       else
  	None
@@ -407,7 +407,7 @@ let elim_with_bindings hyp_name names =
    crossed.
    Result is:
      - a list of string indicating the names of universally quantified variables.
-     - a list of integers indicating the positions of the successive 
+     - a list of integers indicating the positions of the successive
        universally quantified variables.
      - an integer indicating the number of non-dependent products.
      - the last constr object encountered during the walk down, and
@@ -421,16 +421,16 @@ let elim_with_bindings hyp_name names =
 *)
 
 
-let rec down_prods: (types, constr) kind_of_term * (int list) * int -> 
+let rec down_prods: (types, constr) kind_of_term * (int list) * int ->
            identifier list * (int list) * int * (types, constr) kind_of_term *
-  (int list) = 
+  (int list) =
    function
      Prod(Name x, _, body), 2::path, k ->
-	let res_sl, res_il, res_i, res_cstr, res_p 
+	let res_sl, res_il, res_i, res_cstr, res_p
 	    = down_prods (kind_of_term body, path, k+1) in
 	x::res_sl, (k::res_il), res_i, res_cstr, res_p
    | Prod(Anonymous, _, body), 2::path, k ->
-        let res_sl, res_il, res_i, res_cstr, res_p 
+        let res_sl, res_il, res_i, res_cstr, res_p
 	    = down_prods (kind_of_term body, path, k+1) in
 	res_sl, res_il, res_i+1, res_cstr, res_p
    | cstr, path, _ -> [], [], 0, cstr, path;;
@@ -444,7 +444,7 @@ exception Pbp_internal of int list;;
 
    The knowledge I have on constr structures is incomplete.
 *)
-let (check_apply: (types, constr) kind_of_term -> (int list) -> bool) = 
+let (check_apply: (types, constr) kind_of_term -> (int list) -> bool) =
    function c -> function l ->
    let rec delete n = function
      | [] -> []
@@ -464,7 +464,7 @@ let (check_apply: (types, constr) kind_of_term -> (int list) -> bool) =
        else
 	 result
    | _ -> raise (Pbp_internal l) in
-   try 
+   try
      (check_rec l c) = []
    with Pbp_internal l -> l = [];;
 
@@ -475,12 +475,12 @@ let (mk_db_indices: int list -> int -> int list) =
      [] -> []
    | a::l -> (total - a)::(mk_db_aux l) in
    mk_db_aux int_list;;
-     
+
 
 (* This proof-by-pointing rule is quite complicated, as it attempts to foresee
    usages of head tactics.  A first operation is to follow the path as far
    as possible while staying on the spine of products (function down_prods)
-   and then to check whether the next step will be an elim step.  If the 
+   and then to check whether the next step will be an elim step.  If the
    answer is true, then the built command takes advantage of the power of
    head tactics.  *)
 
@@ -497,37 +497,37 @@ let (head_tactic_patt: pbp_rule) = function
 				   let x' = next_global_ident x avoid in
 				   let cont_body =
 				     Prod(Name x', c1,
-					    mkProd(Anonymous, body, 
+					    mkProd(Anonymous, body,
 						   mkVar(dummy_id))) in
-				   let cont_tac 
+				   let cont_tac
 				       = f avoid (h::clear_names) false None
 				       cont_body (2::1::path) in
 				   cont_tac::(auxiliary_goals
 						       clear_names clear_flag
 						       h nprems [])))
 		     | _ -> None)
-    | (str_list, _, nprems, 
-       App(oper,[|c1|]), 2::1::path) 
+    | (str_list, _, nprems,
+       App(oper,[|c1|]), 2::1::path)
       	when
  	  (is_matching_local (notconstr ()) oper) or
  	  (is_matching_local (notTconstr ()) oper) ->
 	 Some(chain_tactics [elim_with_bindings h str_list]
 		 (f avoid clear_names false None (kind_of_term c1) path))
-    | (str_list, _, nprems, 
-       App(oper, [|c1; c2|]), 2::a::path) 
+    | (str_list, _, nprems,
+       App(oper, [|c1; c2|]), 2::a::path)
       when ((is_matching_local (andconstr()) oper) or
 	    (is_matching_local (prodconstr()) oper)) & (a = 1 or a = 2) ->
 	let h1 = next_global_ident hyp_radix avoid in
 	let h2 = next_global_ident hyp_radix (h1::avoid) in
 	Some(PbpThens
                   ([elim_with_bindings h str_list],
-		    let cont_body = 
+		    let cont_body =
 		      if a = 1 then c1 else c2 in
-		    let cont_tac = 
-		      f (h2::h1::avoid) (h::clear_names) 
+		    let cont_tac =
+		      f (h2::h1::avoid) (h::clear_names)
                         false (Some (if 1 = a then h1 else h2))
                         (kind_of_term cont_body) path in
-		      (chain_tactics 
+		      (chain_tactics
 			 [make_named_intro h1; make_named_intro h2]
 			 cont_tac)::
 	       (auxiliary_goals clear_names clear_flag h nprems [])))
@@ -540,9 +540,9 @@ let (head_tactic_patt: pbp_rule) = function
 				   let x' = next_global_ident x avoid in
 				   let cont_body =
 				     Prod(Name x', c1,
-					    mkProd(Anonymous, body, 
+					    mkProd(Anonymous, body,
 						   mkVar(dummy_id))) in
-				   let cont_tac 
+				   let cont_tac
 				       = f avoid (h::clear_names) false None
 				       cont_body (2::1::path) in
 				   cont_tac::(auxiliary_goals
@@ -561,26 +561,26 @@ let (head_tactic_patt: pbp_rule) = function
                       (* h' is the name for the new intro *)
 		      let h' = next_global_ident hyp_radix avoid in
 		      let cont_tac =
-                        chain_tactics 
+                        chain_tactics
 			  [make_named_intro h']
-			  (f 
+			  (f
 			     (* h' should not be used again *)
 			     (h'::avoid)
 			     (* the disjunct itself can be discarded *)
 			     (h::clear_names) false (Some h')
                              (kind_of_term cont_body) path) in
-		      let snd_tac = 
+		      let snd_tac =
 			chain_tactics
 			   [make_named_intro h']
 			   (make_clears (h::clear_names)) in
-		      let tacs1 = 
+		      let tacs1 =
 			if a = 1 then
 			  [cont_tac; snd_tac]
 		      	else
 			  [snd_tac; cont_tac] in
 		      tacs1@(auxiliary_goals (h::clear_names)
 				   false dummy_id nprems [])))
-    | (str_list, int_list, nprems, c, []) 
+    | (str_list, int_list, nprems, c, [])
         when  (check_apply c (mk_db_indices int_list nprems)) &
               (match c with Prod(_,_,_) -> false
               |  _ -> true) &
@@ -588,7 +588,7 @@ let (head_tactic_patt: pbp_rule) = function
           Some(add_clear_names_if_necessary (PbpThen [PbpApply h]) clear_names)
     | _ -> None)
   | _ -> None;;
-      
+
 
 let pbp_rules = ref [rem_cast;head_tactic_patt;forall_intro;imply_intro2;
                       forall_elim; imply_intro3; imply_elim1; imply_elim2;
@@ -622,7 +622,7 @@ let default_ast optname constr path = PbpThen [PbpTryAssumption optname]
 
 let rec pbpt final_cmd avoid clear_names clear_flag opt_name constr path =
   let rec try_all_rules rl =
-      match rl with 
+      match rl with
          f::tl ->
            (match f (avoid, clear_names, clear_flag,
                      opt_name, constr, path, pbpt final_cmd) with
@@ -674,7 +674,7 @@ let rec optim3_aux str_list = function
       (match cleanup_clears str_list names with
 	  [] -> other
 	| l -> (PbpTryClear l)::other)
-  | a::l -> a::(optim3_aux str_list l) 
+  | a::l -> a::(optim3_aux str_list l)
   | [] -> [];;
 
 let rec optim3 str_list = function
@@ -694,8 +694,8 @@ let rec tactic_args_to_ints = function
   | _ -> failwith "expecting only numbers";;
 
 (*
-let pbp_tac display_function = function 
-            (Identifier a)::l -> 
+let pbp_tac display_function = function
+            (Identifier a)::l ->
                  (function g ->
                     let str = (string_of_id a) in
 		    let (ou,tstr) = (get_hyp_by_name g str) in
@@ -711,7 +711,7 @@ let pbp_tac display_function = function
                         (tactic_args_to_ints l) in
                     (display_function (optim exp_ast);
                         tclIDTAC g))
-          | ((Integer n)::_) as l -> 
+          | ((Integer n)::_) as l ->
                  (function g ->
                     let exp_ast =
                        (pbpt default_ast (pf_ids_of_hyps g) [] false

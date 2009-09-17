@@ -12,7 +12,7 @@
  * JCF, 16/1/98
  * adapted from caml-tex (perl script written by Xavier Leroy)
  *
- * Perl isn't as portable as it pretends to be, and is quite difficult 
+ * Perl isn't as portable as it pretends to be, and is quite difficult
  * to read and maintain... Let us rewrite the stuff in Caml! *)
 
 let _ =
@@ -64,10 +64,10 @@ let extract texfile inputv =
       outside ()
   in
   try
-    output_string chan_out 
+    output_string chan_out
       ("Set Printing Width " ^ (string_of_int !linelen) ^".\n");
     outside ()
-  with End_of_file -> 
+  with End_of_file ->
     begin close_in chan_in; close_out chan_out end
 
 (* Second pass: insert the answers of Coq from [coq_output] into the
@@ -89,11 +89,11 @@ let expos   = Str.regexp "^"
 
 let tex_escaped s =
   let rec trans = parser
-    | [< s1 = (parser 
-		 | [< ''_'|'$'|'{'|'}'|'&'|'%'|'#' as c >] -> 
+    | [< s1 = (parser
+		 | [< ''_'|'$'|'{'|'}'|'&'|'%'|'#' as c >] ->
 		     "\\" ^ (String.make 1 c)
-		 | [< ''\\' >] -> "{\\char'134}" 
-		 | [< ''^'  >] -> "{\\char'136}" 
+		 | [< ''\\' >] -> "{\\char'134}"
+		 | [< ''^'  >] -> "{\\char'136}"
 		 | [< ''~'  >] -> "{\\char'176}"
 		 | [< '' '  >] -> "~"
 		 | [< ''<'  >] -> "{<}"
@@ -101,7 +101,7 @@ let tex_escaped s =
 		 | [< 'c >]    -> String.make 1 c);
 	 s2 = trans >] -> s1 ^ s2
     | [< >] -> ""
-  in 
+  in
   trans (Stream.of_string s)
 
 let encapsule sl c_out s =
@@ -109,7 +109,7 @@ let encapsule sl c_out s =
     Printf.fprintf c_out "\\texttt{\\textit{%s}}\\\\\n" (tex_escaped s)
   else
     Printf.fprintf c_out "\\texttt{%s}\\\\\n" (tex_escaped s)
-      
+
 let print_block c_out bl =
   List.iter (fun s -> if s="" then () else encapsule !slanted c_out s) bl
 
@@ -138,7 +138,7 @@ let insert texfile coq_output result =
     let first = !last_read in first :: (read_lines ())
   in
   (* we are just after \end{coq_...} block *)
-  let rec just_after () = 
+  let rec just_after () =
     let s = input_line c_tex in
     if Str.string_match begin_coq_example s 0 then begin
       inside (Str.matched_group 1 s <> "example*")
@@ -149,11 +149,11 @@ let insert texfile coq_output result =
       output_string c_out "\\end{flushleft}\n";
       if !small then output_string c_out "\\end{small}\n";
       if Str.string_match begin_coq_eval s 0 then
-	eval 0     
+	eval 0
       else begin
 	output_string c_out (s ^ "\n");
 	outside ()
-      end	  
+      end
     end
   (* we are outside of a \begin{coq_...} ... \end{coq_...} block *)
   and outside () =
@@ -173,7 +173,7 @@ let insert texfile coq_output result =
   (* we are inside a \begin{coq_example?} ... \end{coq_example?} block
    * show_answers tells what kind of block it is
    * k is the number of lines read until now *)
-  and inside show_answers  show_questions k first_block = 
+  and inside show_answers  show_questions k first_block =
     let s = input_line c_tex in
     if Str.string_match end_coq_example s 0 then begin
       just_after ()
@@ -183,7 +183,7 @@ let insert texfile coq_output result =
       if show_questions then encapsule false c_out ("Coq < " ^ s);
       if has_match dot_end_line s then begin
 	let bl = next_block (succ k) in
-	if !verbose then List.iter print_endline bl; 
+	if !verbose then List.iter print_endline bl;
 	if show_answers then print_block c_out bl;
 	inside show_answers  show_questions 0 false
       end else
@@ -228,14 +228,14 @@ let one_file texfile =
     else if Filename.check_suffix texfile ".tex" then
       (Filename.chop_suffix texfile ".tex") ^ ".v.tex"
     else
-      texfile ^ ".v.tex" 
+      texfile ^ ".v.tex"
   in
   try
     (* 1. extract Coq phrases *)
     extract texfile inputv;
     (* 2. run Coq on input *)
     let _ = Sys.command (Printf.sprintf "%s < %s > %s 2>&1" !image inputv
-			   coq_output) 
+			   coq_output)
     in
     (* 3. insert Coq output into original file *)
     insert texfile coq_output result;
@@ -250,7 +250,7 @@ let one_file texfile =
  * of all the files in the command line, one by one *)
 
 let files = ref []
-      
+
 let parse_cl () =
   Arg.parse
       [ "-o", Arg.String (fun s -> output_specified := true; output := s),

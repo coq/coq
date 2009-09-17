@@ -300,7 +300,7 @@ let pp_decl = function
       else
 	let e = pp_global Term r in
 	e ++ str " :: " ++ pp_type false [] t ++ fnl () ++
-	  if is_custom r then 
+	  if is_custom r then
 	    hov 0 (e ++ str " = " ++ str (find_custom r) ++ fnl2 ())
 	  else
 	    hov 0 (pp_function (empty_env ()) e a ++ fnl2 ())

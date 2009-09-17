@@ -18,7 +18,7 @@ open Sign
 open Libnames
 (*i*)
 
-(*s 
+(*s
  * Automatic detection of (some) record instances
  *)
 
@@ -30,25 +30,25 @@ type signature = global_reference * evar list * evar_map
 
 type instance_decl_function = global_reference -> rel_context -> constr list -> unit
 
-(* 
+(*
  * Search algorithm
- *) 
+ *)
 
-let rec subst_evar evar def n c = 
+let rec subst_evar evar def n c =
   match kind_of_term c with
     | Evar (e,_) when e=evar -> lift n def
     | _ -> map_constr_with_binders (fun n->n+1) (subst_evar evar def) n c
 
-let subst_evar_in_evm evar def evm = 
+let subst_evar_in_evm evar def evm =
   Evd.fold
-    (fun ev evi acc -> 
-       let evar_body = match evi.evar_body with 
+    (fun ev evi acc ->
+       let evar_body = match evi.evar_body with
 	 | Evd.Evar_empty -> Evd.Evar_empty
 	 | Evd.Evar_defined c -> Evd.Evar_defined (subst_evar evar def 0 c) in
        let evar_concl = subst_evar evar def 0 evi.evar_concl in
        Evd.add acc ev {evi with evar_body=evar_body; evar_concl=evar_concl}
     ) evm empty
-    
+
 (* Tries to define ev by c in evd. Fails if ev := c1 and c1 /= c ev :
  * T1, c : T2 and T1 /= T2. Defines recursively all evars instantiated
  * by this definition. *)
@@ -59,7 +59,7 @@ let rec safe_define evm ev c =
   let evi = (Evd.find evm ev) in
   let define_subst evm sigma =
     Util.Intmap.fold
-      ( fun ev (e,c) evm -> 
+      ( fun ev (e,c) evm ->
 	  match kind_of_term c with Evar (i,_) when i=ev -> evm | _ ->
 	    safe_define evm ev (lift (-List.length e) c)
       ) sigma evm in
@@ -72,7 +72,7 @@ let rec safe_define evm ev c =
 	let evm = subst_evar_in_evm ev c evm in
 	define_subst (Evd.define ev c evm) (Termops.filtering [] Reduction.CUMUL t u)
 
-let add_gen_ctx (cl,gen,evm) ctx : signature * constr list = 
+let add_gen_ctx (cl,gen,evm) ctx : signature * constr list =
   let rec really_new_evar () =
     let ev = Evarutil.new_untyped_evar() in
     if Evd.is_evar evm ev then really_new_evar() else ev in
@@ -104,7 +104,7 @@ let complete_evar (cl,gen,evm:signature) (ev,evi) (k:signature -> unit) =
 (*  msgnl(str"cherche "++pr_constr ev_typ++str" pour "++Util.pr_int ev);*)
   let substs = ref SubstSet.empty in
   try List.iter
-    ( fun (gr,(pat,_),s) -> 
+    ( fun (gr,(pat,_),s) ->
 	let (_,genl,_) = Termops.decompose_prod_letin pat in
 	let genl = List.map (fun (_,_,t) -> t) genl in
 	let ((cl,gen,evm),argl) = add_gen_ctx (cl,gen,evm) genl in
@@ -146,7 +146,7 @@ let complete_with_evars_permut (cl,gen,evm:signature) evl c (k:signature -> unit
     ( fun (ctx,ev) ->
 	let tyl = List.map (fun (_,_,t) -> t) ctx in
 	let ((cl,gen,evm),argl) = add_gen_ctx (cl,gen,evm) tyl in
-	let def = applistc c argl in	
+	let def = applistc c argl in
 (*	msgnl(str"trouvé def ?"++Util.pr_int ev++str" := "++pr_constr def++str " dans "++pr_evar_defs evm);*)
 	try
 	  if not (Evd.is_defined evm ev) then
@@ -155,8 +155,8 @@ let complete_with_evars_permut (cl,gen,evm:signature) evl c (k:signature -> unit
 	with Termops.CannotFilter -> ()
     ) evl in
   aux evm
-    
-let new_inst_no = 
+
+let new_inst_no =
   let cnt = ref 0 in
   fun () -> incr cnt; string_of_int !cnt
 
@@ -172,7 +172,7 @@ let new_instance_message ident typ def =
 
 open Entries
 
-let rec deep_refresh_universes c = 
+let rec deep_refresh_universes c =
   match kind_of_term c with
     | Sort (Type _) -> Termops.new_Type()
     | _ -> map_constr deep_refresh_universes c
@@ -182,23 +182,23 @@ let declare_record_instance gr ctx params =
   let def = it_mkLambda_or_LetIn (applistc (constr_of_global gr) params) ctx in
   let def = deep_refresh_universes def in
   let ce = { const_entry_body=def; const_entry_type=None;
-	     const_entry_opaque=false; const_entry_boxed=false } in 
-  let cst = Declare.declare_constant ident 
+	     const_entry_opaque=false; const_entry_boxed=false } in
+  let cst = Declare.declare_constant ident
     (DefinitionEntry ce,Decl_kinds.IsDefinition Decl_kinds.StructureComponent) in
   new_instance_message ident (Typeops.type_of_constant (Global.env()) cst) def
 
-let declare_class_instance gr ctx params = 
+let declare_class_instance gr ctx params =
   let ident = make_instance_ident gr in
   let cl = Typeclasses.class_info gr in
   let (def,typ) = Typeclasses.instance_constructor cl params in
   let (def,typ) = it_mkLambda_or_LetIn def ctx, it_mkProd_or_LetIn typ ctx in
   let def = deep_refresh_universes def in
   let typ = deep_refresh_universes typ in
-  let ce = Entries.DefinitionEntry 
+  let ce = Entries.DefinitionEntry
     {  const_entry_type=Some typ; const_entry_body=def;
-       const_entry_opaque=false; const_entry_boxed=false } in 
+       const_entry_opaque=false; const_entry_boxed=false } in
   try
-  let cst = Declare.declare_constant ident 
+  let cst = Declare.declare_constant ident
     (ce,Decl_kinds.IsDefinition Decl_kinds.Instance) in
   Typeclasses.add_instance (Typeclasses.new_instance cl (Some 100) true cst);
   new_instance_message ident typ def
@@ -217,16 +217,16 @@ let complete_signature_with_def gr deftyp (k:instance_decl_function -> signature
    ('a * 'b * Term.constr) list * Evd.evar)
   Gmapl.t ref) = ref Gmapl.empty in
   iter_under_prod
-    ( fun ctx typ -> 
+    ( fun ctx typ ->
 	List.iter
-	  (fun ((cl,ev,evm),_,_) -> 
+	  (fun ((cl,ev,evm),_,_) ->
 (*	     msgnl(pr_global gr++str" : "++pr_constr typ++str" matche ?"++Util.pr_int ev++str " dans "++pr_evar_defs evm);*)
 	     smap := Gmapl.add (cl,evm) (ctx,ev) !smap)
 	  (Recordops.methods_matching typ)
     ) [] deftyp;
-  Gmapl.iter 
-    ( fun (cl,evm) evl -> 
-	let f = if Typeclasses.is_class cl then 
+  Gmapl.iter
+    ( fun (cl,evm) evl ->
+	let f = if Typeclasses.is_class cl then
 	  declare_class_instance else declare_record_instance in
 	complete_with_evars_permut (cl,[],evm) evl gr_c
 	  (fun sign -> complete_signature (k f) sign)
@@ -239,15 +239,15 @@ let complete_signature_with_def gr deftyp (k:instance_decl_function -> signature
 
 let evar_definition evi = match evar_body evi with
     Evar_empty -> assert false | Evar_defined c -> c
- 
-let gen_sort_topo l evm = 
+
+let gen_sort_topo l evm =
   let iter_evar f ev =
     let rec aux c = match kind_of_term c with
 	Evar (e,_) -> f e
       | _ -> iter_constr aux c in
     aux (Evd.evar_concl (Evd.find evm ev));
     if Evd.is_defined evm ev then aux (evar_definition (Evd.find evm ev)) in
-  let r = ref [] in 
+  let r = ref [] in
   let rec dfs ev = iter_evar dfs ev;
     if not(List.mem ev !r) then r := ev::!r in
   List.iter dfs l; List.rev !r
@@ -258,15 +258,15 @@ let declare_instance (k:global_reference -> rel_context -> constr list -> unit)
   let evm = Evarutil.nf_evars evm in
   let gen = gen_sort_topo gen evm in
   let (evm,gen) = List.fold_right
-    (fun ev (evm,gen) -> 
-       if Evd.is_defined evm ev 
-       then Evd.remove evm ev,gen 
+    (fun ev (evm,gen) ->
+       if Evd.is_defined evm ev
+       then Evd.remove evm ev,gen
        else evm,(ev::gen))
     gen (evm,[]) in
 (*  msgnl(str"instance complète : ["++Util.prlist_with_sep (fun _ -> str";") Util.pr_int gen++str"] : "++spc()++pr_evar_defs evm);*)
   let ngen = List.length gen in
   let (_,ctx,evm) = List.fold_left
-    ( fun (i,ctx,evm) ev -> 
+    ( fun (i,ctx,evm) ev ->
 	let ctx = (Anonymous,None,lift (-i) (Evd.evar_concl(Evd.find evm ev)))::ctx in
 	let evm = subst_evar_in_evm ev (mkRel i) (Evd.remove evm ev) in
 	(i-1,ctx,evm)
@@ -277,7 +277,7 @@ let declare_instance (k:global_reference -> rel_context -> constr list -> unit)
 let autoinstance_opt = ref true
 
 let search_declaration gr =
-  if !autoinstance_opt && 
+  if !autoinstance_opt &&
     not (Lib.is_modtype()) then
     let deftyp = Global.type_of_global gr in
     complete_signature_with_def gr deftyp declare_instance
@@ -301,7 +301,7 @@ let begin_autoinstance () =
   if not !autoinstance_opt then (
     autoinstance_opt := true;
   )
-    
+
 let end_autoinstance () =
   if !autoinstance_opt then (
     autoinstance_opt := false;

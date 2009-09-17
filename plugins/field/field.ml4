@@ -44,12 +44,12 @@ let th_tab = ref (Gmap.empty : (constr,constr) Gmap.t)
 
 let lookup env typ =
   try Gmap.find typ !th_tab
-  with Not_found -> 
+  with Not_found ->
     errorlabstrm "field"
       (str "No field is declared for type" ++ spc() ++
       Printer.pr_lconstr_env env typ)
 
-let _ = 
+let _ =
   let init () = th_tab := Gmap.empty in
   let freeze () = !th_tab in
   let unfreeze fs = th_tab := fs in
@@ -116,7 +116,7 @@ END
 
 (* For the translator, otherwise the code above is OK *)
 open Ppconstr
-let pp_minus_div_arg _prc _prlc _prt (omin,odiv) = 
+let pp_minus_div_arg _prc _prlc _prt (omin,odiv) =
   if omin=None && odiv=None then mt() else
     spc() ++ str "with" ++
     pr_opt (fun c -> str "minus := " ++ _prc c) omin ++
@@ -128,7 +128,7 @@ let () =
     (globwit_minus_div_arg,pp_minus_div_arg)
     (wit_minus_div_arg,pp_minus_div_arg)
 *)
-ARGUMENT EXTEND minus_div_arg 
+ARGUMENT EXTEND minus_div_arg
   TYPED AS constr_opt * constr_opt
   PRINTED BY pp_minus_div_arg
 | [ "with" minusarg(m) divarg_opt(d) ] -> [ Some m, d ]
@@ -137,7 +137,7 @@ ARGUMENT EXTEND minus_div_arg
 END
 
 VERNAC COMMAND EXTEND Field
-  [ "Add" "Legacy" "Field" 
+  [ "Add" "Legacy" "Field"
       constr(a) constr(aplus) constr(amult) constr(aone)
       constr(azero) constr(aopp) constr(aeq)
       constr(ainv) constr(rth) constr(ainv_l) minus_div_arg(md) ]

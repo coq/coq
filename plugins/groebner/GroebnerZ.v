@@ -26,7 +26,7 @@ intros x y H. contradict H. f_equal. assumption.
 Qed.
 
 Ltac groebnerZversR1 :=
- repeat 
+ repeat
   (match goal with
    | H:(@eq Z ?x ?y) |- _ =>
        generalize (@groebnerZhypR _ _ H); clear H; intro H
@@ -68,6 +68,6 @@ Ltac groebnerZ_begin :=
  simpl in *.
  (*cbv beta iota zeta delta [nat_of_P Pmult_nat plus mult] in *.*)
 
-Ltac groebnerZ := 
+Ltac groebnerZ :=
  groebnerZ_begin; (*idtac "groebnerZ_begin;";*)
  groebnerR.

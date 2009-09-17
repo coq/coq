@@ -69,7 +69,7 @@ val map_constr_with_named_binders :
   (name -> 'a -> 'a) ->
   ('a -> constr -> constr) -> 'a -> constr -> constr
 val map_constr_with_binders_left_to_right :
-  (rel_declaration -> 'a -> 'a) -> 
+  (rel_declaration -> 'a -> 'a) ->
   ('a -> constr -> constr) ->
     'a -> constr -> constr
 val map_constr_with_full_binders :
@@ -87,7 +87,7 @@ val fold_constr_with_binders :
   ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
 
 val iter_constr_with_full_binders :
-  (rel_declaration -> 'a -> 'a) -> ('a -> constr -> unit) -> 'a -> 
+  (rel_declaration -> 'a -> 'a) -> ('a -> constr -> unit) -> 'a ->
     constr -> unit
 
 (**********************************************************************)
@@ -113,11 +113,11 @@ val collect_metas : constr -> int list
 val occur_term : constr -> constr -> bool (* Synonymous
  of dependent *)
 (* Substitution of metavariables *)
-type meta_value_map = (metavariable * constr) list 
+type meta_value_map = (metavariable * constr) list
 val subst_meta : meta_value_map -> constr -> constr
 
 (* Type assignment for metavariables *)
-type meta_type_map = (metavariable * types) list 
+type meta_type_map = (metavariable * types) list
 
 (* [pop c] lifts by -1 the positive indexes in [c] *)
 val pop : constr -> constr
@@ -149,7 +149,7 @@ val no_occurrences_in_set : occurrences
 
 (* [subst_term_occ_gen occl n c d] replaces occurrences of [c] at
    positions [occl], counting from [n], by [Rel 1] in [d] *)
-val subst_term_occ_gen : 
+val subst_term_occ_gen :
   occurrences -> int -> constr -> types -> int * types
 
 (* [subst_term_occ occl c d] replaces occurrences of [c] at
@@ -165,7 +165,7 @@ type hyp_location_flag = (* To distinguish body and type of local defs *)
   | InHypValueOnly
 
 val subst_term_occ_decl :
-  occurrences * hyp_location_flag -> constr -> named_declaration -> 
+  occurrences * hyp_location_flag -> constr -> named_declaration ->
       named_declaration
 
 val error_invalid_occurrence : int list -> 'a
@@ -183,7 +183,7 @@ val eta_eq_constr : constr -> constr -> bool
 exception CannotFilter
 
 (* Lightweight first-order filtering procedure. Unification
-   variables ar represented by (untyped) Evars.  
+   variables ar represented by (untyped) Evars.
    [filtering c1 c2] returns the substitution n'th evar ->
    (context,term), or raises [CannotFilter].
    Warning: Outer-kernel sort subtyping are taken into account: c1 has
@@ -245,20 +245,20 @@ val occur_rel : int -> name list -> identifier -> bool
 val occur_id : name list -> identifier -> constr -> bool
 
 type avoid_flags = bool option
- (* Some true = avoid all globals (as in intro); 
+ (* Some true = avoid all globals (as in intro);
     Some false = avoid only global constructors; None = don't avoid globals *)
 
-val next_name_away_in_cases_pattern : 
+val next_name_away_in_cases_pattern :
   name -> identifier list -> identifier
-val next_global_ident_away : 
+val next_global_ident_away :
   (*allow section vars:*) bool -> identifier -> identifier list -> identifier
 val next_name_not_occuring :
   avoid_flags -> name -> identifier list -> name list -> constr -> identifier
 val concrete_name :
-  avoid_flags -> identifier list -> name list -> name -> constr -> 
+  avoid_flags -> identifier list -> name list -> name -> constr ->
     name * identifier list
 val concrete_let_name :
-  avoid_flags -> identifier list -> name list -> name -> constr -> 
+  avoid_flags -> identifier list -> name list -> name -> constr ->
     name * identifier list
 val rename_bound_var : env -> identifier list -> types -> types
 
@@ -271,7 +271,7 @@ val smash_rel_context : rel_context -> rel_context (* expand lets in context *)
 val adjust_subst_to_rel_context : rel_context -> constr list -> constr list
 val map_rel_context_in_env :
   (env -> constr -> constr) -> env -> rel_context -> rel_context
-val map_rel_context_with_binders : 
+val map_rel_context_with_binders :
   (int -> constr -> constr) -> rel_context -> rel_context
 val fold_named_context_both_sides :
   ('a -> named_declaration -> named_declaration list -> 'a) ->

@@ -6,8 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* Finite sets library.  
- * Authors: Pierre Letouzey and Jean-Christophe Filliâtre 
+(* Finite sets library.
+ * Authors: Pierre Letouzey and Jean-Christophe Filliâtre
  * Institution: LRI, CNRS UMR 8623 - Université Paris Sud
  *              91405 Orsay, France *)
 
@@ -19,23 +19,23 @@ Require Import OrderedType.
    inferface. *)
 
 (** NB: [comparison], defined in [Datatypes.v] is [Eq|Lt|Gt]
-whereas [compare], defined in [OrderedType.v] is [EQ _ | LT _ | GT _ ] 
+whereas [compare], defined in [OrderedType.v] is [EQ _ | LT _ | GT _ ]
 *)
 
 Module Type OrderedTypeAlt.
 
  Parameter t : Type.
- 
+
  Parameter compare : t -> t -> comparison.
 
  Infix "?=" := compare (at level 70, no associativity).
 
- Parameter compare_sym : 
+ Parameter compare_sym :
    forall x y, (y?=x) = CompOpp (x?=y).
- Parameter compare_trans : 
+ Parameter compare_trans :
    forall c x y z, (x?=y) = c -> (y?=z) = c -> (x?=z) = c.
 
-End OrderedTypeAlt. 
+End OrderedTypeAlt.
 
 (** From this new presentation to the original one. *)
 
@@ -56,7 +56,7 @@ Module OrderedType_from_Alt (O:OrderedTypeAlt) <: OrderedType.
  Qed.
 
  Lemma eq_sym : forall x y, eq x y -> eq y x.
- Proof. 
+ Proof.
  unfold eq; intros.
  rewrite compare_sym.
  rewrite H; simpl; auto.
@@ -88,7 +88,7 @@ Module OrderedType_from_Alt (O:OrderedTypeAlt) <: OrderedType.
  case (x ?= y); [ left | right | right ]; auto; discriminate.
  Defined.
 
-End OrderedType_from_Alt. 
+End OrderedType_from_Alt.
 
 (** From the original presentation to this alternative one. *)
 
@@ -99,30 +99,30 @@ Module OrderedType_to_Alt (O:OrderedType) <: OrderedTypeAlt.
 
  Definition t := t.
 
- Definition compare x y := match compare x y with 
+ Definition compare x y := match compare x y with
    | LT _ => Lt
    | EQ _ => Eq
    | GT _ => Gt
-  end. 
+  end.
 
  Infix "?=" := compare (at level 70, no associativity).
 
- Lemma compare_sym : 
+ Lemma compare_sym :
    forall x y, (y?=x) = CompOpp (x?=y).
  Proof.
  intros x y; unfold compare.
  destruct O.compare; elim_comp; simpl; auto.
  Qed.
- 
- Lemma compare_trans : 
+
+ Lemma compare_trans :
    forall c x y z, (x?=y) = c -> (y?=z) = c -> (x?=z) = c.
  Proof.
  intros c x y z.
- destruct c; unfold compare; 
- do 2 (destruct O.compare; intros; try discriminate); 
+ destruct c; unfold compare;
+ do 2 (destruct O.compare; intros; try discriminate);
  elim_comp; auto.
  Qed.
 
 End OrderedType_to_Alt.
 
- 
+

@@ -41,9 +41,9 @@ let pr_int_list _prc _prlc _prt l =
   in aux l
 
 ARGUMENT EXTEND int_nelist
-  TYPED AS int list 
+  TYPED AS int list
   PRINTED BY pr_int_list
-  RAW_TYPED AS int list 
+  RAW_TYPED AS int list
   RAW_PRINTED BY pr_int_list
   GLOB_TYPED AS int list
   GLOB_PRINTED BY pr_int_list
@@ -65,11 +65,11 @@ let coerce_to_int = function
 let int_list_of_VList = function
   | VList l -> List.map (fun n -> coerce_to_int n) l
   | _ -> raise Not_found
-      
-let interp_occs ist gl l = 
+
+let interp_occs ist gl l =
   match l with
     | ArgArg x -> x
-    | ArgVar (_,id as locid) -> 
+    | ArgVar (_,id as locid) ->
 	(try int_list_of_VList (List.assoc id ist.lfun)
 	  with Not_found | CannotCoerceTo _ -> [interp_int ist locid])
 
@@ -111,14 +111,14 @@ let subst_raw = Tacinterp.subst_rawconstr_and_expr
 ARGUMENT EXTEND raw
     TYPED AS rawconstr
     PRINTED BY pr_rawc
-     
-     INTERPRETED BY interp_raw	
+
+     INTERPRETED BY interp_raw
      GLOBALIZED BY glob_raw
      SUBSTITUTED BY subst_raw
-     
+
      RAW_TYPED AS constr_expr
      RAW_PRINTED BY pr_gen
-     
+
      GLOB_TYPED AS rawconstr_and_expr
      GLOB_PRINTED BY pr_gen
   [ lconstr(c) ] -> [ c ]
@@ -132,9 +132,9 @@ type place = identifier gen_place
 let pr_gen_place pr_id = function
     ConclLocation () -> Pp.mt ()
   | HypLocation (id,InHyp) -> str "in " ++ pr_id id
-  | HypLocation (id,InHypTypeOnly) -> 
+  | HypLocation (id,InHypTypeOnly) ->
       str "in (Type of " ++ pr_id id ++ str ")"
-  | HypLocation (id,InHypValueOnly) -> 
+  | HypLocation (id,InHypValueOnly) ->
       str "in (Value of " ++ pr_id id ++ str ")"
 
 let pr_loc_place _ _ _ = pr_gen_place (fun (_,id) -> Nameops.pr_id id)
@@ -148,7 +148,7 @@ let interp_place ist gl = function
     ConclLocation () -> ConclLocation ()
   | HypLocation (id,hl) -> HypLocation (interp_hyp ist gl id,hl)
 
-let subst_place subst pl = pl 
+let subst_place subst pl = pl
 
 ARGUMENT EXTEND hloc
     TYPED AS place
@@ -160,17 +160,17 @@ ARGUMENT EXTEND hloc
     RAW_PRINTED BY pr_loc_place
     GLOB_TYPED AS loc_place
     GLOB_PRINTED BY pr_loc_place
-  [ ] -> 
+  [ ] ->
     [ ConclLocation () ]
-  |  [ "in" "|-" "*" ] -> 
+  |  [ "in" "|-" "*" ] ->
     [ ConclLocation () ]
 | [ "in" ident(id) ] ->
     [ HypLocation ((Util.dummy_loc,id),InHyp) ]
-| [ "in" "(" "Type" "of" ident(id) ")" ] -> 
+| [ "in" "(" "Type" "of" ident(id) ")" ] ->
     [ HypLocation ((Util.dummy_loc,id),InHypTypeOnly) ]
-| [ "in" "(" "Value" "of" ident(id) ")" ] -> 
+| [ "in" "(" "Value" "of" ident(id) ")" ] ->
     [ HypLocation ((Util.dummy_loc,id),InHypValueOnly) ]
-   
+
  END
 
 
@@ -181,8 +181,8 @@ ARGUMENT EXTEND hloc
 
 (* Julien: Mise en commun des differentes version de replace with in by *)
 
-let pr_by_arg_tac _prc _prlc prtac opt_c = 
-  match opt_c with 
+let pr_by_arg_tac _prc _prlc prtac opt_c =
+  match opt_c with
     | None -> mt ()
     | Some t -> spc () ++ hov 2 (str "by" ++ spc () ++ prtac (3,Ppextend.E) t)
 
@@ -192,37 +192,37 @@ ARGUMENT EXTEND by_arg_tac
 | [ "by" tactic3(c) ] -> [ Some c ]
 | [ ] -> [ None ]
 END
- 
 
-let pr_in_hyp  pr_id (lo,concl) :  Pp.std_ppcmds = 
-  match lo,concl with 
+
+let pr_in_hyp  pr_id (lo,concl) :  Pp.std_ppcmds =
+  match lo,concl with
     | Some [],true -> mt ()
     | None,true -> str "in" ++ spc () ++ str "*"
-    | None,false -> str "in" ++ spc () ++ str "*" ++ spc () ++ str "|-" 
-    | Some l,_ -> 
-	str "in" ++ spc () ++ 
-	  Util.prlist_with_sep spc pr_id l ++ 
-	  match concl with 
+    | None,false -> str "in" ++ spc () ++ str "*" ++ spc () ++ str "|-"
+    | Some l,_ ->
+	str "in" ++ spc () ++
+	  Util.prlist_with_sep spc pr_id l ++
+	  match concl with
 	    | true -> spc () ++ str "|-" ++ spc () ++ str "*"
 	    | _ -> mt ()
 
 
 let pr_in_arg_hyp _ _ _ = pr_in_hyp (fun (_,id) -> Ppconstr.pr_id id)
 
-let pr_in_arg_hyp_typed  _ _  _  = pr_in_hyp Ppconstr.pr_id 
+let pr_in_arg_hyp_typed  _ _  _  = pr_in_hyp Ppconstr.pr_id
 
 
-let pr_var_list_gen pr_id = Util.prlist_with_sep (fun () -> str ",") pr_id 
+let pr_var_list_gen pr_id = Util.prlist_with_sep (fun () -> str ",") pr_id
 
-let pr_var_list_typed _ _ _ =  pr_var_list_gen Ppconstr.pr_id 
+let pr_var_list_typed _ _ _ =  pr_var_list_gen Ppconstr.pr_id
 
 let pr_var_list _ _ _ = pr_var_list_gen (fun (_,id) -> Ppconstr.pr_id id)
 
 
-ARGUMENT EXTEND comma_var_lne 
-  TYPED AS var list 
+ARGUMENT EXTEND comma_var_lne
+  TYPED AS var list
   PRINTED BY pr_var_list_typed
-  RAW_TYPED AS var list 
+  RAW_TYPED AS var list
   RAW_PRINTED BY pr_var_list
   GLOB_TYPED AS var list
   GLOB_PRINTED BY pr_var_list
@@ -230,10 +230,10 @@ ARGUMENT EXTEND comma_var_lne
 | [ var(x) "," comma_var_lne(l) ] -> [x::l]
 END
 
-ARGUMENT EXTEND comma_var_l 
-  TYPED AS var list 
+ARGUMENT EXTEND comma_var_l
+  TYPED AS var list
   PRINTED BY pr_var_list_typed
-  RAW_TYPED AS var list 
+  RAW_TYPED AS var list
   RAW_PRINTED BY pr_var_list
   GLOB_TYPED AS var list
   GLOB_PRINTED BY pr_var_list
@@ -241,10 +241,10 @@ ARGUMENT EXTEND comma_var_l
 | [] -> [ [] ]
 END
 
-let pr_in_concl _ _ _ = function true -> str "|- " ++ spc () ++ str "*" | _ -> str "|-" 
+let pr_in_concl _ _ _ = function true -> str "|- " ++ spc () ++ str "*" | _ -> str "|-"
 
-ARGUMENT EXTEND inconcl  
-  TYPED AS bool 
+ARGUMENT EXTEND inconcl
+  TYPED AS bool
   PRINTED BY pr_in_concl
 | [ "|-" "*" ] -> [ true ]
 | [ "|-" ] -> [ false ]
@@ -255,24 +255,24 @@ END
 ARGUMENT EXTEND in_arg_hyp
   TYPED AS var list option * bool
   PRINTED BY pr_in_arg_hyp_typed
-  RAW_TYPED AS var list option * bool 
+  RAW_TYPED AS var list option * bool
   RAW_PRINTED BY pr_in_arg_hyp
   GLOB_TYPED AS var list option * bool
   GLOB_PRINTED BY pr_in_arg_hyp
 | [ "in" "*" ] -> [(None,true)]
 | [ "in" "*" inconcl_opt(b) ] -> [let onconcl = match b with Some b -> b | None -> true in (None,onconcl)]
-| [ "in" comma_var_l(l) inconcl_opt(b) ] -> [ let onconcl = match b with Some b -> b | None -> false in 
+| [ "in" comma_var_l(l) inconcl_opt(b) ] -> [ let onconcl = match b with Some b -> b | None -> false in
 					      Some l, onconcl
 					   ]
 | [ ] -> [ (Some [],true) ]
 END
 
 
-let gen_in_arg_hyp_to_clause trad_id (hyps ,concl) : Tacticals.clause = 
+let gen_in_arg_hyp_to_clause trad_id (hyps ,concl) : Tacticals.clause =
   {Tacexpr.onhyps=
-   Option.map 
-     (fun l -> 
-	List.map 
+   Option.map
+     (fun l ->
+	List.map
 	  (fun id -> ( (all_occurrences_expr,trad_id id),InHyp))
 	  l
      )
@@ -280,8 +280,8 @@ let gen_in_arg_hyp_to_clause trad_id (hyps ,concl) : Tacticals.clause =
    Tacexpr.concl_occs = if concl then all_occurrences_expr else no_occurrences_expr}
 
 
-let raw_in_arg_hyp_to_clause = gen_in_arg_hyp_to_clause snd 
-let glob_in_arg_hyp_to_clause = gen_in_arg_hyp_to_clause (fun x -> x) 
+let raw_in_arg_hyp_to_clause = gen_in_arg_hyp_to_clause snd
+let glob_in_arg_hyp_to_clause = gen_in_arg_hyp_to_clause (fun x -> x)
 
 
 (* spiwack argument for the commands of the retroknowledge *)
@@ -297,7 +297,7 @@ let (wit_r_field, globwit_r_field, rawwit_r_field) =
 
 (* spiwack: the print functions are incomplete, but I don't know what they are
 	used for *)
-let pr_r_nat_field _ _ _ natf = 
+let pr_r_nat_field _ _ _ natf =
   str "nat " ++
   match natf with
     | Retroknowledge.NatType -> str "type"
@@ -327,7 +327,7 @@ let pr_r_int31_field _ _ _ i31f =
     | Retroknowledge.Int31PhiInv -> str "phi inv"
     | Retroknowledge.Int31Plus -> str "plus"
     | Retroknowledge.Int31Times -> str "times"
-    | _ -> assert false	
+    | _ -> assert false
 
 let pr_retroknowledge_field _ _ _ f =
   match f with
@@ -335,7 +335,7 @@ let pr_retroknowledge_field _ _ _ f =
   | Retroknowledge.KNat natf -> pr_r_nat_field () () () natf
   | Retroknowledge.KN nf -> pr_r_n_field () () () nf *)
   | Retroknowledge.KInt31 (group, i31f) -> (pr_r_int31_field () () () i31f) ++
-                                           str "in " ++ str group 
+                                           str "in " ++ str group
 
 ARGUMENT EXTEND retroknowledge_nat
 TYPED AS r_nat_field
@@ -347,7 +347,7 @@ END
 
 
 ARGUMENT EXTEND retroknowledge_binary_n
-TYPED AS r_n_field 
+TYPED AS r_n_field
 PRINTED BY pr_r_n_field
 | [ "binary" "N" "positive" ] -> [ Retroknowledge.NPositive ]
 | [ "binary" "N" "type" ] -> [ Retroknowledge.NType ]
@@ -360,7 +360,7 @@ PRINTED BY pr_r_n_field
 END
 
 ARGUMENT EXTEND retroknowledge_int31
-TYPED AS r_int31_field 
+TYPED AS r_int31_field
 PRINTED BY pr_r_int31_field
 | [ "int31" "bits" ] -> [ Retroknowledge.Int31Bits ]
 | [ "int31" "type" ] -> [ Retroknowledge.Int31Type ]
@@ -385,8 +385,8 @@ PRINTED BY pr_r_int31_field
 
 END
 
-ARGUMENT EXTEND retroknowledge_field 
-TYPED AS r_field 
+ARGUMENT EXTEND retroknowledge_field
+TYPED AS r_field
 PRINTED BY pr_retroknowledge_field
 (*| [ "equality" ] -> [ Retroknowledge.KEq ]
 | [ retroknowledge_nat(n)] -> [ Retroknowledge.KNat n ]

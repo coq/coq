@@ -17,21 +17,21 @@ Require Import Coq.Arith.Max.
 Require Import List.
 Set Implicit Arguments.
 
-(* I have addded a Leaf constructor to the varmap data structure (/plugins/ring/Quote.v) 
+(* I have addded a Leaf constructor to the varmap data structure (/plugins/ring/Quote.v)
    -- this is harmless and spares a lot of Empty.
-   This means smaller proof-terms. 
+   This means smaller proof-terms.
    BTW, by dropping the  polymorphism, I get small (yet noticeable) speed-up.
 *)
 
 Section MakeVarMap.
   Variable A : Type.
   Variable default : A.
-  
+
   Inductive t  : Type :=
-  | Empty : t 
-  | Leaf : A -> t 
+  | Empty : t
+  | Leaf : A -> t
   | Node : t  -> A -> t  -> t .
-  
+
   Fixpoint find   (vm : t ) (p:positive) {struct vm} : A :=
     match vm with
       | Empty => default
@@ -49,7 +49,7 @@ Section MakeVarMap.
 
 
 
-  Definition jump  (j:positive) (l:off_map ) := 
+  Definition jump  (j:positive) (l:off_map ) :=
     let (o,m) := l in
       match o with
         | None => (Some j,m)
@@ -74,7 +74,7 @@ Section MakeVarMap.
   Lemma psucc : forall p,  (match p with
                               | xI y' => xO (Psucc y')
                               | xO y' => xI y'
-                              | 1%positive => 2%positive 
+                              | 1%positive => 2%positive
                             end) = (p+1)%positive.
   Proof.
     destruct p.
@@ -84,7 +84,7 @@ Section MakeVarMap.
     reflexivity.
   Qed.
 
-  Lemma jump_Pplus : forall i j l, 
+  Lemma jump_Pplus : forall i j l,
     (jump (i + j) l) = (jump i (jump j l)).
   Proof.
     unfold jump.
@@ -96,7 +96,7 @@ Section MakeVarMap.
   Qed.
 
   Lemma jump_simpl : forall p l,
-    jump p l = 
+    jump p l =
     match p with
       | xH => tail l
       | xO p => jump p (jump p l)
@@ -116,15 +116,15 @@ Section MakeVarMap.
   Qed.
 
   Ltac jump_s :=
-    repeat 
+    repeat
       match goal with
         | |- context [jump xH ?e] => rewrite (jump_simpl xH)
         | |- context [jump (xO ?p) ?e] => rewrite (jump_simpl (xO p))
         | |- context [jump (xI ?p) ?e] => rewrite (jump_simpl (xI p))
       end.
-    
+
   Lemma jump_tl : forall j l, tail (jump j l) = jump j (tail l).
-  Proof. 
+  Proof.
     unfold tail.
     intros.
     repeat rewrite <- jump_Pplus.
@@ -132,7 +132,7 @@ Section MakeVarMap.
     reflexivity.
   Qed.
 
-  Lemma jump_Psucc : forall j l, 
+  Lemma jump_Psucc : forall j l,
     (jump (Psucc j) l) = (jump 1 (jump j l)).
   Proof.
     intros.
@@ -162,14 +162,14 @@ Section MakeVarMap.
     reflexivity.
   Qed.
 
-  
-  Lemma nth_spec : forall p l, 
-    nth p l = 
+
+  Lemma nth_spec : forall p l,
+    nth p l =
     match p with
       | xH => hd  l
       | xO p => nth p (jump p l)
       | xI p => nth p (jump p (tail l))
-    end. 
+    end.
   Proof.
     unfold nth.
     destruct l.

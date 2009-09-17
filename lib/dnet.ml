@@ -10,8 +10,8 @@
 
 (* Generic dnet implementation over non-recursive types *)
 
-module type Datatype = 
-sig 
+module type Datatype =
+sig
   type 'a t
   val map : ('a -> 'b) -> 'a t -> 'b t
   val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
@@ -44,11 +44,11 @@ sig
   val map : (ident -> ident) -> (unit structure -> unit structure) -> t -> t
 end
 
-module Make = 
-  functor (T:Datatype) -> 
-  functor (Ident:Set.OrderedType) -> 
+module Make =
+  functor (T:Datatype) ->
+  functor (Ident:Set.OrderedType) ->
   functor (Meta:Set.OrderedType) ->
-struct 
+struct
 
   type ident = Ident.t
   type meta = Meta.t
@@ -58,7 +58,7 @@ struct
     | Meta of meta
 
   type 'a structure = 'a T.t
- 
+
   module Idset = Set.Make(Ident)
   module Mmap = Map.Make(Meta)
   module Tmap = Map.Make(struct type t = unit structure
@@ -70,7 +70,7 @@ struct
 
 
   (* we store identifiers at the leaf of the dnet *)
-  type node = 
+  type node =
     | Node of t structure
     | Terminal of t structure * idset
 
@@ -85,7 +85,7 @@ struct
 
   (* given a node of the net and a word, returns the subnet with the
      same head as the word (with the rest of the nodes) *)
-  let split l (w:'a structure) : node * node Tmap.t = 
+  let split l (w:'a structure) : node * node Tmap.t =
     let elt : node = Tmap.find (head w) l in
     (elt, Tmap.remove (head w) l)
 
@@ -101,24 +101,24 @@ struct
 	  Nodes ((Tmap.add (head w) new_node tl), m)
 	with Not_found ->
 	  let new_content = T.map (fun p -> add empty p id) w in
-	  let new_node = 
+	  let new_node =
 	    if T.terminal w then
 	      Terminal (new_content, Idset.singleton id)
 	    else Node new_content in
 	  Nodes ((Tmap.add (head w) new_node t), m) )
-      | Meta i -> 
-	  let m = 
+      | Meta i ->
+	  let m =
 	    try Mmap.add i (Idset.add id (Mmap.find i m)) m
 	    with Not_found -> Mmap.add i (Idset.singleton id) m in
 	  Nodes (t, m)
 
   let add t w id = add t w id
-	      
+
   let rec find_all (Nodes (t,m)) : idset =
     Idset.union
       (Mmap.fold (fun _ -> Idset.union) m Idset.empty)
       (Tmap.fold
-	 ( fun _ n acc -> 
+	 ( fun _ n acc ->
 	     let s2 = match n with
 	       | Terminal (_,is) -> is
 	       | Node e -> T.choose find_all e in
@@ -137,44 +137,44 @@ struct
     | (Some s, _ | _, Some s) -> s
     | _ -> raise Not_found
 
-  let fold_pattern ?(complete=true) f acc pat dn = 
+  let fold_pattern ?(complete=true) f acc pat dn =
     let deferred = ref [] in
     let leafs,metas = ref None, ref None in
-    let leaf s = leafs := match !leafs with 
+    let leaf s = leafs := match !leafs with
       | None -> Some s
       | Some s' -> Some (fast_inter s s') in
     let meta s = metas := match !metas with
       | None -> Some s
       | Some s' -> Some (Idset.union s s') in
     let defer c = deferred := c::!deferred in
-    let rec fp_rec (p:term_pattern) (Nodes(t,m) as dn:t) = 
+    let rec fp_rec (p:term_pattern) (Nodes(t,m) as dn:t) =
       Mmap.iter (fun _ -> meta) m; (* TODO: gérer patterns nonlin ici *)
       match p with
 	| Meta m -> defer (m,dn)
-	| Term w -> 
+	| Term w ->
 	    try match select t w with
 	      | Terminal (_,is) -> leaf is
-	      | Node e -> 
+	      | Node e ->
 		  if complete then T.fold2 (fun _ -> fp_rec) () w e else
-		    if T.fold2 
+		    if T.fold2
 		      (fun b p dn -> match p with
 			 | Term _ -> fp_rec p dn; false
 			 | Meta _ -> b
 		      ) true w e
 		    then T.choose (T.choose fp_rec w) e
-	    with Not_found -> 
+	    with Not_found ->
 	      if Mmap.is_empty m then raise Not_found else ()
     in try
       fp_rec pat dn;
-      (try Some (option_any2 Idset.union !leafs !metas) with Not_found -> None), 
+      (try Some (option_any2 Idset.union !leafs !metas) with Not_found -> None),
       List.fold_left (fun acc (m,dn) -> f m dn acc) acc !deferred
     with Not_found | Empty -> None,acc
 
   (* intersection of two dnets. keep only the common pairs *)
   let rec inter (t1:t) (t2:t) : t =
     let inter_map f (Nodes (t1,m1):t) (Nodes (t2,m2):t) : t =
-      Nodes 
-	(Tmap.fold 
+      Nodes
+	(Tmap.fold
 	   ( fun k e acc ->
 	       try Tmap.add k (f e (Tmap.find k t2)) acc
 	       with Not_found -> acc
@@ -193,8 +193,8 @@ struct
       ) t1 t2
 
   let rec union (t1:t) (t2:t) : t =
-    let union_map f (Nodes (t1,m1):t) (Nodes (t2,m2):t) : t = 
-      Nodes 
+    let union_map f (Nodes (t1,m1):t) (Nodes (t2,m2):t) : t =
+      Nodes
 	(Tmap.fold
 	   ( fun k e acc ->
 	       try Tmap.add k (f e (Tmap.find k acc)) acc
@@ -211,12 +211,12 @@ struct
 	 | Terminal (e1,s1), Terminal (_,s2) -> Terminal (e1,Idset.union s1 s2)
 	 | Node e1, Node e2 -> Node (T.map2 union e1 e2)
 	 | _ -> assert false
-      ) t1 t2    
-      
+      ) t1 t2
+
   let find_match (p:term_pattern) (t:t) : idset =
     let metas = ref Mmap.empty in
     let (mset,lset) = fold_pattern ~complete:false
-      (fun m t acc -> 
+      (fun m t acc ->
 (*	 Printf.printf "eval pat %d\n" (Obj.magic m:int);*)
 	 Some (option_any2 fast_inter acc
 	   (Some(let t = try inter t (Mmap.find m !metas) with Not_found -> t in

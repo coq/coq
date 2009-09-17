@@ -37,14 +37,14 @@ Definition iter (n:Z) (A:Type) (f:A -> A) (x:A) :=
 Theorem iter_nat_of_P :
   forall (p:positive) (A:Type) (f:A -> A) (x:A),
     iter_pos p A f x = iter_nat (nat_of_P p) A f x.
-Proof.    
+Proof.
   intro n; induction n as [p H| p H| ];
     [ intros; simpl in |- *; rewrite (H A f x);
-      rewrite (H A f (iter_nat (nat_of_P p) A f x)); 
+      rewrite (H A f (iter_nat (nat_of_P p) A f x));
 	rewrite (ZL6 p); symmetry  in |- *; apply f_equal with (f := f);
 	  apply iter_nat_plus
       | intros; unfold nat_of_P in |- *; simpl in |- *; rewrite (H A f x);
-	rewrite (H A f (iter_nat (nat_of_P p) A f x)); 
+	rewrite (H A f (iter_nat (nat_of_P p) A f x));
 	  rewrite (ZL6 p); symmetry  in |- *; apply iter_nat_plus
       | simpl in |- *; auto with arith ].
 Qed.
@@ -59,7 +59,7 @@ Qed.
 Theorem iter_pos_plus :
   forall (p q:positive) (A:Type) (f:A -> A) (x:A),
     iter_pos (p + q) A f x = iter_pos p A f (iter_pos q A f x).
-Proof.    
+Proof.
   intros n m; intros.
   rewrite (iter_nat_of_P m A f x).
   rewrite (iter_nat_of_P n A f (iter_nat (nat_of_P m) A f x)).
@@ -68,14 +68,14 @@ Proof.
   apply iter_nat_plus.
 Qed.
 
-(** Preservation of invariants : if [f : A->A] preserves the invariant [Inv], 
+(** Preservation of invariants : if [f : A->A] preserves the invariant [Inv],
     then the iterates of [f] also preserve it. *)
 
 Theorem iter_nat_invariant :
   forall (n:nat) (A:Type) (f:A -> A) (Inv:A -> Prop),
     (forall x:A, Inv x -> Inv (f x)) ->
     forall x:A, Inv x -> Inv (iter_nat n A f x).
-Proof.    
+Proof.
   simple induction n; intros;
     [ trivial with arith
       | simpl in |- *; apply H0 with (x := iter_nat n0 A f x); apply H;
@@ -86,6 +86,6 @@ Theorem iter_pos_invariant :
   forall (p:positive) (A:Type) (f:A -> A) (Inv:A -> Prop),
     (forall x:A, Inv x -> Inv (f x)) ->
     forall x:A, Inv x -> Inv (iter_pos p A f x).
-Proof.    
+Proof.
   intros; rewrite iter_nat_of_P; apply iter_nat_invariant; trivial with arith.
 Qed.

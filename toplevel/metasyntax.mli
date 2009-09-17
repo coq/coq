@@ -23,7 +23,7 @@ val add_token_obj : string -> unit
 
 (* Adding a tactic notation in the environment *)
 
-val add_tactic_notation : 
+val add_tactic_notation :
   int * grammar_tactic_prod_item_expr list * raw_tactic_expr -> unit
 
 (* Adding a (constr) notation in the environment*)
@@ -46,7 +46,7 @@ val add_notation_interpretation : string -> Constrintern.implicits_env ->
 
 (* Add only the parsing/printing rule of a notation *)
 
-val add_syntax_extension : 
+val add_syntax_extension :
   locality_flag -> (string * syntax_modifier list) -> unit
 
 (* Print the Camlp4 state of a grammar *)

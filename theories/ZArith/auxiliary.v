@@ -25,7 +25,7 @@ Open Local Scope Z_scope.
 Theorem Zne_left : forall n m:Z, Zne n m -> Zne (n + - m) 0.
 Proof.
   intros x y; unfold Zne in |- *; unfold not in |- *; intros H1 H2; apply H1;
-    apply Zplus_reg_l with (- y); rewrite Zplus_opp_l; 
+    apply Zplus_reg_l with (- y); rewrite Zplus_opp_l;
       rewrite Zplus_comm; trivial with arith.
 Qed.
 
@@ -97,7 +97,7 @@ Proof.
   intros x y z H1 H2 H3; apply Zle_trans with (m := y * x);
     [ apply Zmult_gt_0_le_0_compat; assumption
       | pattern (y * x) at 1 in |- *; rewrite <- Zplus_0_r;
-	apply Zplus_le_compat_l; apply Zlt_le_weak; apply Zgt_lt; 
+	apply Zplus_le_compat_l; apply Zlt_le_weak; apply Zgt_lt;
 	  assumption ].
 Qed.
 

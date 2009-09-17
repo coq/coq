@@ -20,16 +20,16 @@
 open Coq_omega
 open Refiner
 
-let omega_tactic l = 
-  let tacs = List.map 
-    (function  
+let omega_tactic l =
+  let tacs = List.map
+    (function
        | "nat" -> Tacinterp.interp <:tactic<zify_nat>>
        | "positive" -> Tacinterp.interp <:tactic<zify_positive>>
        | "N" -> Tacinterp.interp <:tactic<zify_N>>
        | "Z" -> Tacinterp.interp <:tactic<zify_op>>
        | s -> Util.error ("No Omega knowledge base for type "^s))
     (Util.list_uniquize (List.sort compare l))
-  in 
+  in
   tclTHEN
     (tclREPEAT (tclPROGRESS (tclTHENLIST tacs)))
     omega_solver
@@ -40,7 +40,7 @@ TACTIC EXTEND omega
 END
 
 TACTIC EXTEND omega'
-| [ "omega" "with" ne_ident_list(l) ] -> 
+| [ "omega" "with" ne_ident_list(l) ] ->
     [ omega_tactic (List.map Names.string_of_id l) ]
 | [ "omega" "with" "*" ] -> [ omega_tactic ["nat";"positive";"N";"Z"] ]
 END

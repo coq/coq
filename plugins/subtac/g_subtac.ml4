@@ -7,7 +7,7 @@
 (************************************************************************)
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
-(*i camlp4use: "pa_extend.cmo" i*) 
+(*i camlp4use: "pa_extend.cmo" i*)
 
 
 (*
@@ -45,7 +45,7 @@ struct
 end
 
 open Rawterm
-open SubtacGram 
+open SubtacGram
 open Util
 open Pcoq
 open Prim
@@ -54,14 +54,14 @@ let sigref = mkRefC (Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Init.Spec
 
 GEXTEND Gram
   GLOBAL: subtac_gallina_loc typeclass_constraint Constr.binder subtac_nameopt;
- 
+
   subtac_gallina_loc:
     [ [ g = Vernac.gallina -> loc, g
     | g = Vernac.gallina_ext -> loc, g ] ]
     ;
 
   subtac_nameopt:
-    [ [ "ofb"; id=Prim.ident -> Some (id) 
+    [ [ "ofb"; id=Prim.ident -> Some (id)
       | -> None ] ]
     ;
 
@@ -115,42 +115,42 @@ let admit_obligations e = try_catch_exn Subtac_obligations.admit_obligations e
 VERNAC COMMAND EXTEND Subtac_Obligations
 | [ "Obligation" integer(num) "of" ident(name) ":" lconstr(t) ] -> [ subtac_obligation (num, Some name, Some t) ]
 | [ "Obligation" integer(num) "of" ident(name) ] -> [ subtac_obligation (num, Some name, None) ]
-| [ "Obligation" integer(num) ":" lconstr(t) ] -> [ subtac_obligation (num, None, Some t) ]      
+| [ "Obligation" integer(num) ":" lconstr(t) ] -> [ subtac_obligation (num, None, Some t) ]
 | [ "Obligation" integer(num) ] -> [ subtac_obligation (num, None, None) ]
 | [ "Next" "Obligation" "of" ident(name) ] -> [ next_obligation (Some name) ]
 | [ "Next" "Obligation" ] -> [ next_obligation None ]
 END
 
 VERNAC COMMAND EXTEND Subtac_Solve_Obligation
-| [ "Solve" "Obligation" integer(num) "of" ident(name) "using" tactic(t) ] -> 
+| [ "Solve" "Obligation" integer(num) "of" ident(name) "using" tactic(t) ] ->
     [ try_solve_obligation num (Some name) (Some (Tacinterp.interp t)) ]
-| [ "Solve" "Obligation" integer(num) "using" tactic(t) ] -> 
+| [ "Solve" "Obligation" integer(num) "using" tactic(t) ] ->
     [ try_solve_obligation num None (Some (Tacinterp.interp t)) ]
       END
 
 VERNAC COMMAND EXTEND Subtac_Solve_Obligations
-| [ "Solve" "Obligations" "of" ident(name) "using" tactic(t) ] -> 
+| [ "Solve" "Obligations" "of" ident(name) "using" tactic(t) ] ->
     [ try_solve_obligations (Some name) (Some (Tacinterp.interp t)) ]
-| [ "Solve" "Obligations" "using" tactic(t) ] -> 
+| [ "Solve" "Obligations" "using" tactic(t) ] ->
     [ try_solve_obligations None (Some (Tacinterp.interp t)) ]
-| [ "Solve" "Obligations" ] -> 
+| [ "Solve" "Obligations" ] ->
     [ try_solve_obligations None None ]
       END
 
 VERNAC COMMAND EXTEND Subtac_Solve_All_Obligations
-| [ "Solve" "All" "Obligations" "using" tactic(t) ] -> 
+| [ "Solve" "All" "Obligations" "using" tactic(t) ] ->
     [ solve_all_obligations (Some (Tacinterp.interp t)) ]
-| [ "Solve" "All" "Obligations" ] -> 
+| [ "Solve" "All" "Obligations" ] ->
     [ solve_all_obligations None ]
       END
 
 VERNAC COMMAND EXTEND Subtac_Admit_Obligations
-| [ "Admit" "Obligations" "of" ident(name) ] -> [ admit_obligations (Some name) ] 
-| [ "Admit" "Obligations" ] -> [ admit_obligations None ] 
+| [ "Admit" "Obligations" "of" ident(name) ] -> [ admit_obligations (Some name) ]
+| [ "Admit" "Obligations" ] -> [ admit_obligations None ]
     END
 
 VERNAC COMMAND EXTEND Subtac_Set_Solver
-| [ "Obligation" "Tactic" ":=" tactic(t) ] -> [ 
+| [ "Obligation" "Tactic" ":=" tactic(t) ] -> [
     Subtac_obligations.set_default_tactic (Tacinterp.glob_tactic t) ]
 END
 

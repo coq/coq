@@ -49,7 +49,7 @@ let g = profile gkey g';;
 Before the program quits, you should call "print_profile ();;". It
 produces a result of the following kind:
 
-Function name              Own time Total time  Own alloc Tot. alloc     Calls 
+Function name              Own time Total time  Own alloc Tot. alloc     Calls
 f                            0.28      0.47        116        116      5      4
 h                            0.19      0.19          0          0      4      0
 g                            0.00      0.00          0          0      0      0
@@ -65,7 +65,7 @@ Est. overhead/total          0.00      0.47       2752       3260
   the number of calls to profiled functions inside the scope of the
   current function
 
-Remarks: 
+Remarks:
 
 - If a function has a polymorphic type, you need to supply it with at
   least one argument as in "let f a = profile1 fkey f a;;" (instead of
@@ -103,7 +103,7 @@ val profile6 :
     -> 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g
 val profile7 :
   profile_key ->
-  ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h) 
+  ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h)
     -> 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h
 
 

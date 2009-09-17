@@ -22,7 +22,7 @@ let make_dir l = Names.make_dirpath (List.map Names.id_of_string (List.rev l))
 let make_path dir id = Libnames.make_path (make_dir dir) (Names.id_of_string id)
 
 (* copied on g_zsyntax.ml, where it is said to be a temporary hack*)
-(* takes a path an identifier in the form of a string list and a string, 
+(* takes a path an identifier in the form of a string list and a string,
    returns a kernel_name *)
 let make_kn dir id = Libnames.encode_kn (make_dir dir) (Names.id_of_string id)
 
@@ -50,7 +50,7 @@ let zn2z_WW = ConstructRef ((zn2z_id "zn2z",0),2)
 let bigN_module = ["Coq"; "Numbers"; "Natural"; "BigN"; "BigN" ]
 let bigN_path = make_path (bigN_module@["BigN"]) "t"
 (* big ugly hack *)
-let bigN_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigN_module)), 
+let bigN_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigN_module)),
                              Names.mk_label "BigN")),
               [], Names.id_of_string id) : Names.kernel_name)
 let bigN_scope = "bigN_scope"
@@ -69,7 +69,7 @@ let bigN_constructor =
       else
 	2*(to_int quo)
   in
-  fun i -> 
+  fun i ->
   ConstructRef ((bigN_id "t_",0),
 		if less_than i n_inlined then
 		  (to_int i)+1
@@ -81,7 +81,7 @@ let bigN_constructor =
 let bigZ_module = ["Coq"; "Numbers"; "Integer"; "BigZ"; "BigZ" ]
 let bigZ_path = make_path (bigZ_module@["BigZ"]) "t"
 (* big ugly hack bis *)
-let bigZ_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigZ_module)), 
+let bigZ_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigZ_module)),
                              Names.mk_label "BigZ")),
               [], Names.id_of_string id) : Names.kernel_name)
 let bigZ_scope = "bigZ_scope"
@@ -108,7 +108,7 @@ exception Non_closed
 
 (* parses a *non-negative* integer (from bigint.ml) into an int31
    wraps modulo 2^31 *)
-let int31_of_pos_bigint dloc n = 
+let int31_of_pos_bigint dloc n =
   let ref_construct = RRef (dloc, int31_construct) in
   let ref_0 = RRef (dloc, int31_0) in
   let ref_1 = RRef (dloc, int31_1) in
@@ -124,7 +124,7 @@ let int31_of_pos_bigint dloc n =
 let error_negative dloc =
   Util.user_err_loc (dloc, "interp_int31", Pp.str "int31 are only non-negative numbers.")
 
-let interp_int31 dloc n = 
+let interp_int31 dloc n =
   if is_pos_or_zero n then
     int31_of_pos_bigint dloc n
   else
@@ -132,20 +132,20 @@ let interp_int31 dloc n =
 
 (* Pretty prints an int31 *)
 
-let bigint_of_int31 = 
-  let rec args_parsing args cur = 
-    match args with 
+let bigint_of_int31 =
+  let rec args_parsing args cur =
+    match args with
       | [] -> cur
       | (RRef (_,b))::l when b = int31_0 -> args_parsing l (mult_2 cur)
       | (RRef (_,b))::l when b = int31_1 -> args_parsing l (add_1 (mult_2 cur))
       | _ -> raise Non_closed
   in
-  function 
+  function
   | RApp (_, RRef (_, c), args) when c=int31_construct -> args_parsing args zero
   | _ -> raise Non_closed
 
-let uninterp_int31 i = 
-  try 
+let uninterp_int31 i =
+  try
     Some (bigint_of_int31 i)
   with Non_closed ->
     None
@@ -169,12 +169,12 @@ let rank n = pow base (pow two n)
 (* splits a number bi at height n, that is the rest needs 2^n int31 to be stored
    it is expected to be used only when the quotient would also need 2^n int31 to be
    stored *)
-let split_at n bi = 
+let split_at n bi =
   euclid bi (rank (sub_1 n))
 
 (* search the height of the Coq bigint needed to represent the integer bi *)
 let height bi =
-  let rec height_aux n = 
+  let rec height_aux n =
     if less_than bi (rank n) then
       n
     else
@@ -199,7 +199,7 @@ let word_of_pos_bigint dloc hght n =
 			   decomp (sub_1 hgt) l])
   in
   decomp hght n
-      
+
 let bigN_of_pos_bigint dloc n =
   let ref_constructor i = RRef (dloc, bigN_constructor i) in
   let result h word = RApp (dloc, ref_constructor h, if less_than h n_inlined then
@@ -210,11 +210,11 @@ let bigN_of_pos_bigint dloc n =
   in
   let hght = height n in
   result hght (word_of_pos_bigint dloc hght n)
-  
+
 let bigN_error_negative dloc =
   Util.user_err_loc (dloc, "interp_bigN", Pp.str "bigN are only non-negative numbers.")
 
-let interp_bigN dloc n = 
+let interp_bigN dloc n =
   if is_pos_or_zero n then
     bigN_of_pos_bigint dloc n
   else
@@ -223,13 +223,13 @@ let interp_bigN dloc n =
 
 (* Pretty prints a bigN *)
 
-let bigint_of_word = 
+let bigint_of_word =
   let rec get_height rc =
     match rc with
-    | RApp (_,RRef(_,c), [_;lft;rght]) when c = zn2z_WW -> 
+    | RApp (_,RRef(_,c), [_;lft;rght]) when c = zn2z_WW ->
 	                                  let hleft = get_height lft in
 					  let hright = get_height rght in
-					  add_1 
+					  add_1
 					    (if less_than hleft hright then
 						 hright
 					     else
@@ -248,15 +248,15 @@ let bigint_of_word =
   fun rc ->
     let hght = get_height rc in
     transform hght rc
-    
+
 let bigint_of_bigN rc =
   match rc with
   | RApp (_,_,[one_arg]) -> bigint_of_word one_arg
   | RApp (_,_,[_;second_arg]) -> bigint_of_word second_arg
   | _ -> raise Non_closed
 
-let uninterp_bigN rc = 
-  try 
+let uninterp_bigN rc =
+  try
     Some (bigint_of_bigN rc)
   with Non_closed ->
     None
@@ -266,7 +266,7 @@ let uninterp_bigN rc =
    numeral interpreter *)
 
 let bigN_list_of_constructors =
-  let rec build i = 
+  let rec build i =
     if less_than i (add_1 n_inlined) then
       RRef (Util.dummy_loc, bigN_constructor i)::(build (add_1 i))
     else
@@ -284,7 +284,7 @@ let _ = Notation.declare_numeral_interpreter bigN_scope
 
 
 (*** Parsing for bigZ in digital notation ***)
-let interp_bigZ dloc n = 
+let interp_bigZ dloc n =
   let ref_pos = RRef (dloc, bigZ_pos) in
   let ref_neg = RRef (dloc, bigZ_neg) in
   if is_pos_or_zero n then
@@ -295,8 +295,8 @@ let interp_bigZ dloc n =
 (* pretty printing functions for bigZ *)
 let bigint_of_bigZ = function
   | RApp (_, RRef(_,c), [one_arg]) when c = bigZ_pos -> bigint_of_bigN one_arg
-  | RApp (_, RRef(_,c), [one_arg]) when c = bigZ_neg -> 
-      let opp_val = bigint_of_bigN one_arg in 
+  | RApp (_, RRef(_,c), [one_arg]) when c = bigZ_neg ->
+      let opp_val = bigint_of_bigN one_arg in
       if equal opp_val zero then
 	raise Non_closed
       else
@@ -304,8 +304,8 @@ let bigint_of_bigZ = function
   | _ -> raise Non_closed
 
 
-let uninterp_bigZ rc = 
-  try 
+let uninterp_bigZ rc =
+  try
     Some (bigint_of_bigZ rc)
   with Non_closed ->
     None
@@ -320,7 +320,7 @@ let _ = Notation.declare_numeral_interpreter bigZ_scope
    true)
 
 (*** Parsing for bigQ in digital notation ***)
-let interp_bigQ dloc n = 
+let interp_bigQ dloc n =
   let ref_z = RRef (dloc, bigQ_z) in
   let ref_pos = RRef (dloc, bigZ_pos) in
   let ref_neg = RRef (dloc, bigZ_neg) in

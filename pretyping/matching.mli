@@ -34,7 +34,7 @@ val matches : constr_pattern -> constr -> patvar_map
    in [c] that matches the bound variables in [pat]; if several bound
    variables or metavariables have the same name, the metavariable,
    or else the rightmost bound variable, takes precedence *)
-val extended_matches : 
+val extended_matches :
   constr_pattern -> constr -> bound_ident_map * patvar_map
 
 (* [is_matching pat c] just tells if [c] matches against [pat] *)
@@ -59,14 +59,14 @@ type subterm_matching_result =
 val match_subterm : constr_pattern -> constr -> subterm_matching_result
 
 (* [match_appsubterm pat c] returns the substitution and the context
-   corresponding to the first **closed** subterm of [c] matching [pat], 
+   corresponding to the first **closed** subterm of [c] matching [pat],
    considering application contexts as well. It also returns a
    continuation that looks for the next matching subterm.
    It raises PatternMatchingFailure if no subterm matches the pattern *)
 val match_appsubterm : constr_pattern -> constr -> subterm_matching_result
 
 (* [match_subterm_gen] calls either [match_subterm] or [match_appsubterm] *)
-val match_subterm_gen : bool (* true = with app context *) -> 
+val match_subterm_gen : bool (* true = with app context *) ->
    constr_pattern -> constr -> subterm_matching_result
 
 (* [is_matching_appsubterm pat c] tells if a subterm of [c] matches

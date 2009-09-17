@@ -34,7 +34,7 @@ Proof.
   symmetry ; apply eta_expansion.
 Qed.
 
-Lemma compose_assoc : forall A B C D (f : A -> B) (g : B -> C) (h : C -> D), 
+Lemma compose_assoc : forall A B C D (f : A -> B) (g : B -> C) (h : C -> D),
   h ∘ g ∘ f = h ∘ (g ∘ f).
 Proof.
   intros.

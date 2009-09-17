@@ -16,11 +16,11 @@ Lemma natSRth : semi_ring_theory O (S O) plus mult (@eq nat).
  Proof.
   constructor. exact plus_0_l. exact plus_comm. exact plus_assoc.
   exact mult_1_l. exact mult_0_l. exact mult_comm. exact mult_assoc.
-  exact mult_plus_distr_r. 
+  exact mult_plus_distr_r.
  Qed.
 
-Lemma nat_morph_N : 
-   semi_morph 0 1 plus mult (eq (A:=nat)) 
+Lemma nat_morph_N :
+   semi_morph 0 1 plus mult (eq (A:=nat))
           0%N 1%N Nplus Nmult Neq_bool nat_of_N.
 Proof.
   constructor;trivial.
@@ -46,7 +46,7 @@ Ltac natprering :=
     |- context C [S ?p] =>
     match p with
       O => fail 1 (* avoid replacing 1 with 1+0 ! *)
-    | p => match isnatcst p with 
+    | p => match isnatcst p with
            | true => fail 1
            | false => let v := Ss_to_add p (S 0) in
                          fold v; natprering

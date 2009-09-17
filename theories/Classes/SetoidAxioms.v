@@ -21,7 +21,7 @@ Unset Strict Implicit.
 
 Require Export Coq.Classes.SetoidClass.
 
-(* Application of the extensionality axiom to turn a goal on 
+(* Application of the extensionality axiom to turn a goal on
    Leibniz equality to a setoid equivalence (use with care!). *)
 
 Axiom setoideq_eq : forall `{sa : Setoid a} (x y : a), x == y -> x = y.

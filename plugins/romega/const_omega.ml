@@ -9,7 +9,7 @@
 let module_refl_name = "ReflOmegaCore"
 let module_refl_path = ["Coq"; "romega"; module_refl_name]
 
-type result = 
+type result =
    Kvar of string
  | Kapp of string * Term.constr list
  | Kimp of Term.constr * Term.constr
@@ -38,10 +38,10 @@ let destructurate t =
 
 exception Destruct
 
-let dest_const_apply t = 
-  let f,args = Term.decompose_app t in 
-  let ref = 
-  match Term.kind_of_term f with 
+let dest_const_apply t =
+  let f,args = Term.decompose_app t in
+  let ref =
+  match Term.kind_of_term f with
     | Term.Const sp      -> Libnames.ConstRef sp
     | Term.Construct csp -> Libnames.ConstructRef csp
     | Term.Ind isp       -> Libnames.IndRef isp
@@ -165,15 +165,15 @@ let coq_do_omega = lazy (constant  "do_omega")
 
 (* \subsection{Construction d'expressions} *)
 
-let do_left t = 
+let do_left t =
   if t = Lazy.force coq_c_nop then Lazy.force coq_c_nop
   else Term.mkApp (Lazy.force coq_c_do_left, [|t |] )
 
-let do_right t = 
+let do_right t =
   if t = Lazy.force coq_c_nop then Lazy.force coq_c_nop
   else Term.mkApp (Lazy.force coq_c_do_right, [|t |])
 
-let do_both t1 t2 = 
+let do_both t1 t2 =
   if t1 = Lazy.force coq_c_nop then do_right t2
   else if t2 = Lazy.force coq_c_nop then do_left t1
   else Term.mkApp (Lazy.force coq_c_do_both , [|t1; t2 |])
@@ -182,7 +182,7 @@ let do_seq t1 t2 =
   if t1 = Lazy.force coq_c_nop then t2
   else if t2 = Lazy.force coq_c_nop then t1
   else Term.mkApp (Lazy.force coq_c_do_seq, [|t1; t2 |])
-  
+
 let rec do_list = function
   | [] -> Lazy.force coq_c_nop
   | [x] -> x
@@ -206,7 +206,7 @@ let mk_list typ l =
   let rec loop = function
     | [] ->
 	Term.mkApp (Lazy.force coq_nil, [|typ|])
-    | (step :: l) -> 
+    | (step :: l) ->
 	Term.mkApp (Lazy.force coq_cons, [|typ; step; loop l |]) in
   loop l
 
@@ -215,16 +215,16 @@ let mk_plist l = mk_list Term.mkProp l
 let mk_shuffle_list l = mk_list (Lazy.force coq_t_fusion) l
 
 
-type parse_term = 
-  | Tplus of Term.constr * Term.constr 
+type parse_term =
+  | Tplus of Term.constr * Term.constr
   | Tmult of Term.constr * Term.constr
   | Tminus of Term.constr * Term.constr
   | Topp of Term.constr
   | Tsucc of Term.constr
   | Tnum of Bigint.bigint
-  | Tother 
+  | Tother
 
-type parse_rel = 
+type parse_rel =
   | Req of Term.constr * Term.constr
   | Rne of Term.constr * Term.constr
   | Rlt of Term.constr * Term.constr
@@ -240,12 +240,12 @@ type parse_rel =
   | Riff of Term.constr * Term.constr
   | Rother
 
-let parse_logic_rel c = 
+let parse_logic_rel c =
  try match destructurate c with
    | Kapp("True",[]) -> Rtrue
    | Kapp("False",[]) -> Rfalse
    | Kapp("not",[t]) -> Rnot t
-   | Kapp("or",[t1;t2]) -> Ror (t1,t2) 
+   | Kapp("or",[t1;t2]) -> Ror (t1,t2)
    | Kapp("and",[t1;t2]) -> Rand (t1,t2)
    | Kimp(t1,t2) -> Rimp (t1,t2)
    | Kapp("iff",[t1;t2]) -> Riff (t1,t2)
@@ -255,7 +255,7 @@ let parse_logic_rel c =
 
 module type Int = sig
   val typ : Term.constr Lazy.t
-  val plus : Term.constr Lazy.t 
+  val plus : Term.constr Lazy.t
   val mult : Term.constr Lazy.t
   val opp : Term.constr Lazy.t
   val minus : Term.constr Lazy.t
@@ -264,10 +264,10 @@ module type Int = sig
   val parse_term : Term.constr -> parse_term
   val parse_rel : Proof_type.goal Tacmach.sigma -> Term.constr -> parse_rel
   (* check whether t is built only with numbers and + * - *)
-  val is_scalar : Term.constr -> bool 
+  val is_scalar : Term.constr -> bool
 end
 
-module Z : Int = struct 
+module Z : Int = struct
 
 let typ = lazy (constant "Z")
 let plus = lazy (constant "Zplus")
@@ -297,16 +297,16 @@ let recognize t =
       | "Z0",[] -> Bigint.zero
       | _ -> failwith "not a number";;
 
-let rec mk_positive n = 
-  if n=Bigint.one then Lazy.force coq_xH 
+let rec mk_positive n =
+  if n=Bigint.one then Lazy.force coq_xH
   else
     let (q,r) = Bigint.euclid n Bigint.two in
     Term.mkApp
       ((if r = Bigint.zero then Lazy.force coq_xO else Lazy.force coq_xI),
-       [| mk_positive q |]) 
+       [| mk_positive q |])
 
 let mk_Z n =
-  if n = Bigint.zero then Lazy.force coq_Z0 
+  if n = Bigint.zero then Lazy.force coq_Z0
   else if Bigint.is_strictly_pos n then
     Term.mkApp (Lazy.force coq_Zpos, [| mk_positive n |])
   else
@@ -314,7 +314,7 @@ let mk_Z n =
 
 let mk = mk_Z
 
-let parse_term t = 
+let parse_term t =
   try match destructurate t with
     | Kapp("Zplus",[t1;t2]) -> Tplus (t1,t2)
     | Kapp("Zminus",[t1;t2]) -> Tminus (t1,t2)
@@ -322,21 +322,21 @@ let parse_term t =
     | Kapp("Zopp",[t]) -> Topp t
     | Kapp("Zsucc",[t]) -> Tsucc t
     | Kapp("Zpred",[t]) -> Tplus(t, mk_Z (Bigint.neg Bigint.one))
-    | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> 
+    | Kapp(("Zpos"|"Zneg"|"Z0"),_) ->
 	(try Tnum (recognize t) with _ -> Tother)
     | _ -> Tother
   with e when Logic.catchable_exception e -> Tother
-    
-let parse_rel gl t = 
-  try match destructurate t with 
-    | Kapp("eq",[typ;t1;t2]) 
+
+let parse_rel gl t =
+  try match destructurate t with
+    | Kapp("eq",[typ;t1;t2])
       when destructurate (Tacmach.pf_nf gl typ) = Kapp("Z",[]) -> Req (t1,t2)
     | Kapp("Zne",[t1;t2]) -> Rne (t1,t2)
     | Kapp("Zle",[t1;t2]) -> Rle (t1,t2)
     | Kapp("Zlt",[t1;t2]) -> Rlt (t1,t2)
     | Kapp("Zge",[t1;t2]) -> Rge (t1,t2)
     | Kapp("Zgt",[t1;t2]) -> Rgt (t1,t2)
-    | _ -> parse_logic_rel t 
+    | _ -> parse_logic_rel t
   with e when Logic.catchable_exception e -> Rother
 
 let is_scalar t =

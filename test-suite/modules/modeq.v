@@ -19,4 +19,4 @@ Module Z.
   Module N := M.
 End Z.
 
-Module A : SIG := Z.  
+Module A : SIG := Z.

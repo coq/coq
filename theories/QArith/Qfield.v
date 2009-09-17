@@ -73,15 +73,15 @@ Ltac Qpow_tac t :=
   | _ => NotConstant
   end.
 
-Add Field Qfield : Qsft 
- (decidable Qeq_bool_eq, 
+Add Field Qfield : Qsft
+ (decidable Qeq_bool_eq,
   completeness Qeq_eq_bool,
-  constants [Qcst], 
+  constants [Qcst],
   power_tac Qpower_theory [Qpow_tac]).
 
 (** Exemple of use: *)
 
-Section Examples. 
+Section Examples.
 
 Let ex1 : forall x y z : Q, (x+y)*z ==  (x*z)+(y*z).
   intros.
@@ -89,7 +89,7 @@ Let ex1 : forall x y z : Q, (x+y)*z ==  (x*z)+(y*z).
 Qed.
 
 Let ex2 : forall x y : Q, x+y == y+x.
-  intros. 
+  intros.
   ring.
 Qed.
 

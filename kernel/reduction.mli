@@ -33,7 +33,7 @@ type 'a trans_conversion_function = Names.transparent_state -> env -> 'a -> 'a -
 
 type conv_pb = CONV | CUMUL
 
-val sort_cmp : 
+val sort_cmp :
     conv_pb -> sorts -> sorts -> Univ.constraints -> Univ.constraints
 
 val conv_sort      : sorts conversion_function
@@ -63,10 +63,10 @@ val default_conv_leq : types conversion_function
 
 (************************************************************************)
 
-(* Builds an application node, reducing beta redexes it may produce. *) 
+(* Builds an application node, reducing beta redexes it may produce. *)
 val beta_appvect : constr -> constr array -> constr
 
-(* Builds an application node, reducing the [n] first beta-zeta redexes. *) 
+(* Builds an application node, reducing the [n] first beta-zeta redexes. *)
 val betazeta_appvect : int -> constr -> constr array -> constr
 
 (* Pseudo-reduction rule  Prod(x,A,B) a --> B[x\a] *)

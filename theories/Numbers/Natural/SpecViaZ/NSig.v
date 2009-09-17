@@ -58,7 +58,7 @@ Module Type NType.
 
  Parameter spec_eq_bool: forall x y,
     if eq_bool x y then [x] = [y] else [x] <> [y].
- 
+
  Parameter succ : t -> t.
 
  Parameter spec_succ: forall n, [succ n] = [n] + 1.
@@ -98,7 +98,7 @@ Module Type NType.
  Parameter spec_div_eucl: forall x y,
       0 < [y] ->
       let (q,r) := div_eucl x y in ([q], [r]) = Zdiv_eucl [x] [y].
- 
+
  Parameter div : t -> t -> t.
 
  Parameter spec_div: forall x y, 0 < [y] -> [div x y] = [x] / [y].

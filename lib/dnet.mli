@@ -33,7 +33,7 @@
    symmetric, see term_dnet.ml).
 
    The complexity of the search is (almost) the depth of the term.
-   
+
    To use it, you have to provide a module (Datatype) with the datatype
    parametrized on the recursive argument. example:
 
@@ -70,13 +70,13 @@ end
 module type S =
 sig
   type t
-    
+
   (* provided identifier type *)
   type ident
 
   (* provided metavariable type *)
   type meta
-    
+
   (* provided parametrized datastructure *)
   type 'a structure
 
@@ -92,13 +92,13 @@ sig
   type term_pattern = 'a structure pattern as 'a
 
   val empty : t
-    
+
   (* [add t w i] adds a new association (w,i) in t. *)
   val add : t -> term_pattern -> ident -> t
-    
+
   (* [find_all t] returns all identifiers contained in t. *)
   val find_all : t -> Idset.t
-    
+
   (* [fold_pattern f acc p dn] folds f on each meta of p, passing the
      meta and the sub-dnet under it. The result includes:
      - Some set if identifiers were gathered on the leafs of the term
@@ -118,10 +118,10 @@ sig
   (* apply a function on each identifier and node of terms in a dnet *)
   val map : (ident -> ident) -> (unit structure -> unit structure) -> t -> t
 end
-  
+
 module Make :
-  functor (T:Datatype) -> 
-  functor (Ident:Set.OrderedType) -> 
+  functor (T:Datatype) ->
+  functor (Ident:Set.OrderedType) ->
   functor (Meta:Set.OrderedType) ->
     S with type ident = Ident.t
       and  type meta = Meta.t

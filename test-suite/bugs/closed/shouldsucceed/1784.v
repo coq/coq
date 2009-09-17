@@ -56,16 +56,16 @@ Require Import Program.
 
 Program Fixpoint lt_dec (x y:sv) { struct x } : {slt x y}+{~slt x y} :=
   match x with
-    | I x => 
+    | I x =>
       match y with
         | I y => if (Z_eq_dec x y) then in_left else in_right
         | S ys => in_right
       end
-    | S xs => 
+    | S xs =>
       match y with
         | I y => in_right
         | S ys =>
-          let fix list_in (xs ys:list sv) {struct xs} : 
+          let fix list_in (xs ys:list sv) {struct xs} :
             {slist_in xs ys} + {~slist_in xs ys} :=
             match xs with
               | nil => in_left
@@ -76,8 +76,8 @@ Program Fixpoint lt_dec (x y:sv) { struct x } : {slt x y}+{~slt x y} :=
                     | y::ys => if lt_dec x y then in_left else if elem_in
                       ys then in_left else in_right
                   end
-                in 
-                if elem_in ys then 
+                in
+                if elem_in ys then
                   if list_in xs ys then in_left else in_right
                 else in_right
             end
@@ -90,7 +90,7 @@ Next Obligation. intro H; inversion H. Defined.
 Next Obligation. intro H; inversion H. Defined.
 Next Obligation. intro H; inversion H; subst. Defined.
 Next Obligation.
-  intro H1; contradict H. inversion H1; subst. assumption. 
+  intro H1; contradict H. inversion H1; subst. assumption.
   contradict H0; assumption. Defined.
 Next Obligation.
   intro H1; contradict H0. inversion H1; subst. assumption. Defined.

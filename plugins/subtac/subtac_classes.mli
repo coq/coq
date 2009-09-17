@@ -32,7 +32,7 @@ val type_ctx_instance :     Evd.evar_defs ref ->
     Term.constr list *
     ('a * Term.constr option * Term.constr) list
 
-val new_instance : 
+val new_instance :
   ?global:bool ->
   local_binder list ->
   typeclass_constraint ->

@@ -1,5 +1,5 @@
 let int_list_to_string s l =
-    List.fold_left 
+    List.fold_left
        (fun s -> (fun v -> s ^ " " ^ (string_of_int v)))
        s
        l;;

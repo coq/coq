@@ -7,7 +7,7 @@ Definition Ty := Type (* Top.1 *).
 
 Inductive Q (A:Type (* Top.2 *)) : Prop := q : A -> Q A.
 Inductive T (B:Type (* Top.3 *)) := t : B -> Q (T B) -> T B.
-(* ajoute Top.4 <= Top.2 inutilement: 
+(* ajoute Top.4 <= Top.2 inutilement:
    4 est l'univers utilisé dans le calcul du type polymorphe de T *)
 Definition C := T Ty.
 (* ajoute Top.1 < Top.3 :
@@ -23,7 +23,7 @@ Definition C := T Ty.
 
 Definition f (A:Type (* Top.1 *)) := True.
 Inductive R := r : f R -> R.
-(* ajoute Top.3 <= Top.1 inutilement: 
+(* ajoute Top.3 <= Top.1 inutilement:
    Top.3 est l'univers utilisé dans le calcul du type polymorphe de R *)
 
 (* mais il manque la contrainte que l'univers de R est plus petit que Top.1

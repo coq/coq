@@ -25,26 +25,26 @@ let sprintf = Printf.sprintf
 
 (*s Coq keywords *)
 
-let build_table l = 
+let build_table l =
   let h = Hashtbl.create 101 in
   List.iter (fun key ->Hashtbl.add h  key ()) l;
   function s -> try Hashtbl.find h s; true with Not_found -> false
 
-let is_keyword = 
+let is_keyword =
   build_table
     [ "AddPath"; "Axiom"; "Abort"; "Boxed"; "Chapter"; "Check"; "Coercion"; "CoFixpoint";
-      "CoInductive"; "Corollary"; "Defined"; "Definition"; "End"; "Eval"; "Example"; 
+      "CoInductive"; "Corollary"; "Defined"; "Definition"; "End"; "Eval"; "Example";
       "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Goal"; "Hint";
-      "Hypothesis"; "Hypotheses"; 
-      "Resolve"; "Unfold"; "Immediate"; "Extern"; "Implicit"; "Import"; "Inductive"; 
-      "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Ltac"; 
+      "Hypothesis"; "Hypotheses";
+      "Resolve"; "Unfold"; "Immediate"; "Extern"; "Implicit"; "Import"; "Inductive";
+      "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Ltac";
       "Module"; "Module Type"; "Declare Module"; "Include";
       "Mutual"; "Parameter"; "Parameters"; "Print"; "Proof"; "Proof with"; "Qed";
       "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme";
-      "Induction"; "for"; "Sort"; "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem"; 
+      "Induction"; "for"; "Sort"; "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem";
       "Set"; "Types"; "Undo"; "Unset"; "Variable"; "Variables"; "Context";
       "Notation"; "Reserved Notation"; "Tactic Notation";
-      "Delimit"; "Bind"; "Open"; "Scope"; 
+      "Delimit"; "Bind"; "Open"; "Scope";
       "Boxed"; "Unboxed"; "Inline";
       "Implicit Arguments"; "Add"; "Strict";
       "Typeclasses"; "Instance"; "Global Instance"; "Class"; "Instantiation";
@@ -54,13 +54,13 @@ let is_keyword =
       "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
       "Program Instance"; "Equations"; "Equations_nocomp";
       (*i (* coq terms *) *)
-      "forall"; "match"; "as"; "in"; "return"; "with"; "end"; "let"; "dest"; "fun"; 
+      "forall"; "match"; "as"; "in"; "return"; "with"; "end"; "let"; "dest"; "fun";
       "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="; "where"; "struct"; "wf"; "measure";
       (* Ltac *)
       "before"; "after"
        ]
 
-let is_tactic = 
+let is_tactic =
   build_table
     [ "intro"; "intros"; "apply"; "rewrite"; "refine"; "case"; "clear"; "injection";
       "elimtype"; "progress"; "setoid_rewrite";
@@ -81,14 +81,14 @@ let current_module : (string * string option) ref = ref ("",None)
 
 let get_module withsub =
   let (m,sub) = !current_module in
-  if withsub then 
-    match sub with 
+  if withsub then
+    match sub with
     | None -> m
     | Some sub -> m ^ ": " ^ sub
   else
     m
 
-let set_module m sub = current_module := (m,sub); 
+let set_module m sub = current_module := (m,sub);
                        page_title := get_module true
 
 (*s Common to both LaTeX and HTML *)
@@ -102,15 +102,15 @@ let token_pp = Hashtbl.create 97
 
 let add_printing_token = Hashtbl.replace token_pp
 
-let find_printing_token tok = 
+let find_printing_token tok =
   try Hashtbl.find token_pp tok with Not_found -> None, None
 
 let remove_printing_token = Hashtbl.remove token_pp
 
 (* predefined pretty-prints *)
-let initialize () = 
+let initialize () =
   let if_utf8 = if !Cdglobals.utf8 then fun x -> Some x else fun _ -> None in
-    List.iter 
+    List.iter
       (fun (s,l,l') -> Hashtbl.add token_pp s (Some l, l'))
       [ "*" ,  "\\ensuremath{\\times}", if_utf8 "×";
 	"|", "\\ensuremath{|}", None;
@@ -136,7 +136,7 @@ let initialize () =
 
 (*s Table of contents *)
 
-type toc_entry = 
+type toc_entry =
   | Toc_library of string * string option
   | Toc_section of int * (unit -> unit) * string
 
@@ -172,7 +172,7 @@ module Latex = struct
       Queue.iter (fun s -> printf "%s\n" s) preamble;
       printf "\\begin{document}\n"
     end;
-    output_string 
+    output_string
       "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
     output_string
       "%% This file has been automatically generated with the command\n";
@@ -188,19 +188,19 @@ module Latex = struct
     end
 
   let char c = match c with
-    | '\\' -> 
+    | '\\' ->
 	printf "\\symbol{92}"
-    | '$' | '#' | '%' | '&' | '{' | '}' | '_' -> 
+    | '$' | '#' | '%' | '&' | '{' | '}' | '_' ->
 	output_char '\\'; output_char c
-    | '^' | '~' -> 
+    | '^' | '~' ->
 	output_char '\\'; output_char c; printf "{}"
-    | _ -> 
+    | _ ->
 	output_char c
 
   let label_char c = match c with
     | '\\' | '$' | '#' | '%' | '&' | '{' | '}' | '_'
     | '^' | '~' -> ()
-    | _ -> 
+    | _ ->
 	output_char c
 
   let latex_char = output_char
@@ -215,10 +215,10 @@ module Latex = struct
   let label_ident s =
     for i = 0 to String.length s - 1 do label_char s.[i] done
 
-  let start_module () = 
+  let start_module () =
     let ln = !lib_name in
       if not !short then begin
-        printf "\\coqlibrary{"; 
+        printf "\\coqlibrary{";
         label_ident (get_module false);
         printf "}{";
         if ln <> "" then printf "%s " ln;
@@ -235,22 +235,22 @@ module Latex = struct
 
   let stop_verbatim () = printf "\\end{verbatim}\n"
 
-  let indentation n = 
-    if n == 0 then 
+  let indentation n =
+    if n == 0 then
       printf "\\coqdocnoindent\n"
     else
       let space = 0.5 *. (float n) in
       printf "\\coqdocindent{%2.2fem}\n" space
 
   let with_latex_printing f tok =
-    try 
+    try
       (match Hashtbl.find token_pp tok with
 	 | Some s, _ -> output_string s
 	 | _ -> f tok)
-    with Not_found -> 
+    with Not_found ->
       f tok
 
-  let module_ref m s = 
+  let module_ref m s =
     printf "\\moduleid{%s}{" m; raw_ident s; printf "}"
       (*i
     match find_module m with
@@ -278,16 +278,16 @@ module Latex = struct
     printf "\\coq%s{" (type_name ty); label_ident (m ^ "." ^ id); printf "}{"; raw_ident s; printf "}"
 
   let reference s = function
-    | Def (fullid,typ) -> 
+    | Def (fullid,typ) ->
 	defref (get_module false) fullid typ s
     | Mod (m,s') when s = s' ->
 	module_ref m s
-    | Ref (m,fullid,typ) -> 
+    | Ref (m,fullid,typ) ->
 	ident_ref m fullid typ s
     | Mod _ ->
 	printf "\\coqdocvar{"; raw_ident s; printf "}"
-	  
-  let ident s loc = 
+
+  let ident s loc =
     if is_keyword s then begin
       printf "\\coqdockw{"; raw_ident s; printf "}"
     end else begin
@@ -298,7 +298,7 @@ module Latex = struct
 	  if is_tactic s then begin
 	    printf "\\coqdoctac{"; raw_ident s; printf "}"
 	  end else begin
-	    if !Cdglobals.interpolate && !in_doc (* always a var otherwise *) 
+	    if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
 	    then
 	      try reference s (Index.find_string (get_module false) s)
 	      with _ -> (printf "\\coqdocvar{"; raw_ident s; printf "}")
@@ -307,19 +307,19 @@ module Latex = struct
       end
     end
 
-  let ident s l = 
+  let ident s l =
     if !in_title then (
       printf "\\texorpdfstring{\\protect";
       with_latex_printing (fun s -> ident s l) s;
       printf "}{"; raw_ident s; printf "}")
     else
       with_latex_printing (fun s -> ident s l) s
-    
+
   let symbol s = with_latex_printing raw_ident s
 
   let proofbox () = printf "\\ensuremath{\\Box}"
 
-  let rec reach_item_level n = 
+  let rec reach_item_level n =
     if !item_level < n then begin
       printf "\n\\begin{itemize}\n\\item "; incr item_level;
       reach_item_level n
@@ -397,14 +397,14 @@ end
 (*s HTML output *)
 
 module Html = struct
-    
+
   let header () =
     if !header_trailer then
       if !header_file_spec then
 	let cin = Pervasives.open_in !header_file in
-	  try 
-	    while true do 
-	      let s = Pervasives.input_line cin in 
+	  try
+	    while true do
+	      let s = Pervasives.input_line cin in
 		printf "%s\n" s
 	    done
 	  with End_of_file -> Pervasives.close_in cin
@@ -421,14 +421,14 @@ module Html = struct
 	end
 
   let trailer () =
-    if !index && (get_module false) <> "Index" then 
+    if !index && (get_module false) <> "Index" then
       printf "</div>\n\n<div id=\"footer\">\n<hr/><a href=\"%s.html\">Index</a>" !index_name;
-    if !header_trailer then 
+    if !header_trailer then
       if !footer_file_spec then
 	let cin = Pervasives.open_in !footer_file in
-	  try 
-	    while true do 
-	      let s = Pervasives.input_line cin in 
+	  try
+	    while true do
+	      let s = Pervasives.input_line cin in
 		printf "%s\n" s
 	    done
 	  with End_of_file -> Pervasives.close_in cin
@@ -439,7 +439,7 @@ module Html = struct
 	  printf "</div>\n\n</div>\n\n</body>\n</html>"
 	end
 
-  let start_module () = 
+  let start_module () =
     let ln = !lib_name in
     if not !short then begin
       let (m,sub) = !current_module in
@@ -454,7 +454,7 @@ module Html = struct
 
   let line_break () = printf "<br/>\n"
 
-  let empty_line_of_code () = 
+  let empty_line_of_code () =
     printf "\n<br/>\n"
 
   let char = function
@@ -477,7 +477,7 @@ module Html = struct
   let start_verbatim () = printf "<pre>"
   let stop_verbatim () = printf "</pre>\n"
 
-  let module_ref m s = 
+  let module_ref m s =
     match find_module m with
       | Local ->
 	  printf "<a class=\"modref\" href=\"%s.html\">" m; raw_ident s; printf "</a>"
@@ -491,56 +491,56 @@ module Html = struct
     match find_module m with
     | Local ->
 	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
-	printf "<span class=\"id\" type=\"%s\">" typ; 
+	printf "<span class=\"id\" type=\"%s\">" typ;
 	raw_ident s;
 	printf "</span></a>"
     | Coqlib when !externals ->
 	let m = Filename.concat !coqlib m in
 	  printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
-	  printf "<span class=\"id\" type=\"%s\">" typ; 
+	  printf "<span class=\"id\" type=\"%s\">" typ;
 	  raw_ident s; printf "</span></a>"
     | Coqlib | Unknown ->
 	printf "<span class=\"id\" type=\"%s\">" typ; raw_ident s; printf "</span>"
-	  
-  let reference s r = 
+
+  let reference s r =
     match r with
-    | Def (fullid,ty) -> 
-	  printf "<a name=\"%s\">" fullid; 
-	  printf "<span class=\"id\" type=\"%s\">" (type_name ty); 
+    | Def (fullid,ty) ->
+	  printf "<a name=\"%s\">" fullid;
+	  printf "<span class=\"id\" type=\"%s\">" (type_name ty);
 	  raw_ident s; printf "</span></a>"
     | Mod (m,s') when s = s' ->
 	  module_ref m s
-    | Ref (m,fullid,ty) -> 
+    | Ref (m,fullid,ty) ->
 	  ident_ref m fullid (type_name ty) s
     | Mod _ ->
 	  printf "<span class=\"id\" type=\"mod\">"; raw_ident s ; printf "</span>"
 
-  let ident s loc = 
+  let ident s loc =
     if is_keyword s then begin
-      printf "<span class=\"id\" type=\"keyword\">"; 
-      raw_ident s; 
+      printf "<span class=\"id\" type=\"keyword\">";
+      raw_ident s;
       printf "</span>"
-    end else 
+    end else
       begin
 	  try reference s (Index.find (get_module false) loc)
 	  with Not_found ->
 	    if is_tactic s then
 		(printf "<span class=\"id\" type=\"tactic\">"; raw_ident s; printf "</span>")
 	    else
-		if !Cdglobals.interpolate && !in_doc (* always a var otherwise *) 
+		if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
 		then
 	        try reference s (Index.find_string (get_module false) s)
 	        with _ ->
 		    (printf "<span class=\"id\" type=\"var\">"; raw_ident s ; printf "</span>")
 	    else (printf "<span class=\"id\" type=\"var\">"; raw_ident s ; printf "</span>")
       end
-	  
+
   let with_html_printing f tok =
-    try 
+    try
       (match Hashtbl.find token_pp tok with
 	 | _, Some s -> output_string s
 	 | _ -> f tok)
-    with Not_found -> 
+    with Not_found ->
       f tok
 
   let ident s l =
@@ -551,7 +551,7 @@ module Html = struct
 
   let proofbox () = printf "<font size=-2>&#9744;</font>"
 
-  let rec reach_item_level n = 
+  let rec reach_item_level n =
     if !item_level < n then begin
       printf "<ul>\n<li>"; incr item_level;
       reach_item_level n
@@ -576,11 +576,11 @@ module Html = struct
       printf "\n<div class=\"doc\">\n"
 
   let end_doc () = in_doc := false;
-    stop_item (); 
+    stop_item ();
     if not !raw_comments then printf "\n</div>\n"
 
   let start_emph () = printf "<i>"
-  
+
   let stop_emph () = printf "</i>"
 
   let start_comment () = printf "<span class=\"comment\">(*"
@@ -620,19 +620,19 @@ module Html = struct
     if l <> [] then begin
       let cat = if category && idx <> "global" then "(" ^ idx ^ ")" else "" in
       printf "<a name=\"%s_%c\"></a><h2>%c %s</h2>\n" idx c c cat;
-      List.iter 
-	(fun (id,(text,link)) -> 
+      List.iter
+	(fun (id,(text,link)) ->
 	   printf "<a href=\"%s\">%s</a> %s<br/>\n" link id text) l;
       printf "<br/><br/>"
     end
-		
+
   let all_letters i = List.iter (letter_index false i.idx_name) i.idx_entries
 
   (* Construction d'une liste des index (1 index global, puis 1
      index par catégorie) *)
   let format_global_index =
-    Index.map 
-      (fun s (m,t) -> 
+    Index.map
+      (fun s (m,t) ->
 	 if t = Library then
          let ln = !lib_name in
            if ln <> "" then
@@ -647,16 +647,16 @@ module Html = struct
     | Library, idx ->
 	Index.map (fun id m -> "", m ^ ".html") idx
     | (t,idx) ->
-	Index.map 
-	  (fun s m -> 
+	Index.map
+	  (fun s m ->
 	     let text = sprintf "[in <a href=\"%s.html\">%s</a>]" m m in
 	       (text, sprintf "%s.html#%s" m s)) idx
 
   (* Impression de la table d'index *)
   let print_index_table_item i =
     printf "<tr>\n<td>%s Index</td>\n" (String.capitalize i.idx_name);
-    List.iter 
-      (fun (c,l) -> 
+    List.iter
+      (fun (c,l) ->
 	 if l <> [] then
 	   printf "<td><a href=\"%s\">%c</a></td>\n" (index_ref i c) c
 	 else
@@ -666,11 +666,11 @@ module Html = struct
       printf "<td>(%d %s)</td>\n" n (if n > 1 then "entries" else "entry");
       printf "</tr>\n"
 
-  let print_index_table idxl = 
+  let print_index_table idxl =
     printf "<table>\n";
     List.iter print_index_table_item idxl;
     printf "</table>\n"
-	
+
   let make_one_multi_index prt_tbl i =
     (* Attn: make_one_multi_index créé un nouveau fichier... *)
     let idx = i.idx_name in
@@ -685,16 +685,16 @@ module Html = struct
     in
       List.iter one_letter i.idx_entries
 
-  let make_multi_index () = 
-    let all_index = 
+  let make_multi_index () =
+    let all_index =
       let glob,bt = Index.all_entries () in
 	(format_global_index glob) ::
 	  (List.map format_bytype_index bt) in
     let print_table () = print_index_table all_index in
       List.iter (make_one_multi_index print_table) all_index
-	
+
   let make_index () =
-    let all_index = 
+    let all_index =
       let glob,bt = Index.all_entries () in
 	(format_global_index glob) ::
 	  (List.map format_bytype_index bt) in
@@ -708,16 +708,16 @@ module Html = struct
       set_module "Index" None;
       if !title <> "" then printf "<h1>%s</h1>\n" !title;
       print_table ();
-      if not (!multi_index) then 
+      if not (!multi_index) then
 	begin
 	  List.iter print_one_index all_index;
 	  printf "<hr/>"; print_table ()
 	end
-	    
-    let make_toc () = 
+
+    let make_toc () =
 	let ln = !lib_name in
       let make_toc_entry = function
-        | Toc_library (m,sub) -> 
+        | Toc_library (m,sub) ->
  		stop_item ();
 		let ms = match sub with | None -> m | Some s -> m ^ ": " ^ s in
               if ln = "" then
@@ -725,14 +725,14 @@ module Html = struct
               else
  	          printf "<a href=\"%s.html\"><h2>%s %s</h2></a>\n" m ln ms
         | Toc_section (n, f, r) ->
-  		item n; 
+  		item n;
   		printf "<a href=\"%s\">" r; f (); printf "</a>\n"
       in
         printf "<div id=\"toc\">\n";
         Queue.iter make_toc_entry toc_q;
         stop_item ();
         printf "</div>\n"
-	    
+
 end
 
 
@@ -742,15 +742,15 @@ module TeXmacs = struct
 
   (*s Latex preamble *)
 
-  let (preamble : string Queue.t) = 
+  let (preamble : string Queue.t) =
     in_doc := false; Queue.create ()
 
   let push_in_preamble s = Queue.add s preamble
 
   let header () =
-    output_string 
+    output_string
       "(*i This file has been automatically generated with the command  \n";
-    output_string 
+    output_string
       "    "; Array.iter (fun s -> printf "%s " s) Sys.argv; printf " *)\n"
 
   let trailer () = ()
@@ -785,7 +785,7 @@ module TeXmacs = struct
 
   let indentation n = ()
 
-  let ident_true s = 
+  let ident_true s =
     if is_keyword s then begin
       printf "<kw|"; raw_ident s; printf ">"
     end else begin
@@ -793,8 +793,8 @@ module TeXmacs = struct
     end
 
   let ident s _ = if !in_doc then ident_true s else raw_ident s
- 
-  let symbol_true s = 
+
+  let symbol_true s =
     let ensuremath x = printf "<with|mode|math|\\<%s\\>>" x in
       match s with
 	| "*"  -> ensuremath "times"
@@ -815,7 +815,7 @@ module TeXmacs = struct
 
   let proofbox () = printf "QED"
 
-  let rec reach_item_level n = 
+  let rec reach_item_level n =
     if !item_level < n then begin
       printf "\n<\\itemize>\n<item>"; incr item_level;
       reach_item_level n
@@ -857,7 +857,7 @@ module TeXmacs = struct
 
   let section lev f =
     stop_item ();
-    printf "<"; output_string (section_kind lev); printf "|"; 
+    printf "<"; output_string (section_kind lev); printf "|";
     f (); printf ">\n\n"
 
   let rule () =
@@ -897,7 +897,7 @@ module Raw = struct
   let label_char c = match c with
     | '\\' | '$' | '#' | '%' | '&' | '{' | '}' | '_'
     | '^' | '~' -> ()
-    | _ -> 
+    | _ ->
 	output_char c
 
   let latex_char = output_char
@@ -919,7 +919,7 @@ module Raw = struct
 
   let stop_verbatim () = ()
 
-  let indentation n = 
+  let indentation n =
       for i = 1 to n do printf " " done
 
   let ident s loc = raw_ident s
@@ -947,15 +947,15 @@ module Raw = struct
   let start_code () = end_doc (); start_coq ()
   let end_code () = end_coq (); start_doc ()
 
-  let section_kind = 
+  let section_kind =
     function
       | 1 -> "* "
       | 2 -> "** "
       | 3 -> "*** "
       | 4 -> "**** "
-      | _ -> assert false    
+      | _ -> assert false
 
-  let section lev f = 
+  let section lev f =
     output_string (section_kind lev);
     f ()
 
@@ -972,7 +972,7 @@ module Raw = struct
 
   let make_multi_index () = ()
   let make_index () = ()
-  let make_toc () = () 
+  let make_toc () = ()
 
 end
 
@@ -980,7 +980,7 @@ end
 
 (*s Generic output *)
 
-let select f1 f2 f3 f4 x = 
+let select f1 f2 f3 f4 x =
   match !target_language with LaTeX -> f1 x | HTML -> f2 x | TeXmacs -> f3 x | Raw -> f4 x
 
 let push_in_preamble = Latex.push_in_preamble
@@ -988,7 +988,7 @@ let push_in_preamble = Latex.push_in_preamble
 let header = select Latex.header Html.header TeXmacs.header Raw.header
 let trailer = select Latex.trailer Html.trailer TeXmacs.trailer Raw.trailer
 
-let start_module = 
+let start_module =
   select Latex.start_module Html.start_module TeXmacs.start_module Raw.start_module
 
 let start_doc = select Latex.start_doc Html.start_doc TeXmacs.start_doc Raw.start_doc
@@ -1001,17 +1001,17 @@ let start_coq = select Latex.start_coq Html.start_coq TeXmacs.start_coq Raw.star
 let end_coq = select Latex.end_coq Html.end_coq TeXmacs.end_coq Raw.end_coq
 
 let start_code = select Latex.start_code Html.start_code TeXmacs.start_code Raw.start_code
-let end_code = select Latex.end_code Html.end_code TeXmacs.end_code Raw.end_code 
+let end_code = select Latex.end_code Html.end_code TeXmacs.end_code Raw.end_code
 
-let start_inline_coq = 
+let start_inline_coq =
   select Latex.start_inline_coq Html.start_inline_coq TeXmacs.start_inline_coq Raw.start_inline_coq
-let end_inline_coq = 
+let end_inline_coq =
   select Latex.end_inline_coq Html.end_inline_coq TeXmacs.end_inline_coq Raw.end_inline_coq
 
 let indentation = select Latex.indentation Html.indentation TeXmacs.indentation Raw.indentation
 let paragraph = select Latex.paragraph Html.paragraph TeXmacs.paragraph Raw.paragraph
 let line_break = select Latex.line_break Html.line_break TeXmacs.line_break Raw.line_break
-let empty_line_of_code = select 
+let empty_line_of_code = select
   Latex.empty_line_of_code Html.empty_line_of_code TeXmacs.empty_line_of_code Raw.empty_line_of_code
 
 let section = select Latex.section Html.section TeXmacs.section Raw.section
@@ -1027,10 +1027,10 @@ let symbol = select Latex.symbol Html.symbol TeXmacs.symbol Raw.symbol
 let proofbox = select Latex.proofbox Html.proofbox TeXmacs.proofbox Raw.proofbox
 
 let latex_char = select Latex.latex_char Html.latex_char TeXmacs.latex_char Raw.latex_char
-let latex_string = 
+let latex_string =
   select Latex.latex_string Html.latex_string TeXmacs.latex_string Raw.latex_string
 let html_char = select Latex.html_char Html.html_char TeXmacs.html_char Raw.html_char
-let html_string = 
+let html_string =
   select Latex.html_string Html.html_string TeXmacs.html_string Raw.html_string
 
 let start_emph =
@@ -1038,16 +1038,16 @@ let start_emph =
 let stop_emph =
   select Latex.stop_emph Html.stop_emph TeXmacs.stop_emph Raw.stop_emph
 
-let start_latex_math = 
+let start_latex_math =
   select Latex.start_latex_math Html.start_latex_math TeXmacs.start_latex_math Raw.start_latex_math
-let stop_latex_math = 
+let stop_latex_math =
   select Latex.stop_latex_math Html.stop_latex_math TeXmacs.stop_latex_math Raw.stop_latex_math
 
-let start_verbatim = 
+let start_verbatim =
   select Latex.start_verbatim Html.start_verbatim TeXmacs.start_verbatim Raw.start_verbatim
-let stop_verbatim = 
+let stop_verbatim =
   select Latex.stop_verbatim Html.stop_verbatim TeXmacs.stop_verbatim Raw.stop_verbatim
-let verbatim_char = 
+let verbatim_char =
   select output_char Html.char TeXmacs.char Raw.char
 let hard_verbatim_char = output_char
 

@@ -62,7 +62,7 @@ let cache_variable ((sp,_),o) =
         let cst = Global.push_named_assum (id,ty) in
 	let impl = if impl then Lib.Implicit else Lib.Explicit in
 	impl, true, cst
-    | SectionLocalDef (c,t,opaq) -> 
+    | SectionLocalDef (c,t,opaq) ->
         let cst = Global.push_named_def (id,c,t) in
         Lib.Explicit, opaq, cst in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
@@ -98,7 +98,7 @@ type constant_declaration = constant_entry * logical_kind
 (* section (if Remark or Fact) is needed to access a construction *)
 let load_constant i ((sp,kn),(_,_,kind)) =
   if Nametab.exists_cci sp then
-    errorlabstrm "cache_constant" 
+    errorlabstrm "cache_constant"
       (pr_id (basename sp) ++ str " already exists");
   Nametab.push (Nametab.Until i) sp (ConstRef (constant_of_kn kn));
   add_constant_kind (constant_of_kn kn) kind
@@ -150,7 +150,7 @@ let (inConstant,_) =
     classify_function = classify_constant;
     subst_function = ident_subst_function;
     discharge_function = discharge_constant;
-    export_function = export_constant } 
+    export_function = export_constant }
 
 let hcons_constant_declaration = function
   | DefinitionEntry ce when !Flags.hash_cons_proofs ->
@@ -158,7 +158,7 @@ let hcons_constant_declaration = function
       DefinitionEntry
        { const_entry_body = hcons1_constr ce.const_entry_body;
 	 const_entry_type = Option.map hcons1_constr ce.const_entry_type;
-         const_entry_opaque = ce.const_entry_opaque; 
+         const_entry_opaque = ce.const_entry_opaque;
          const_entry_boxed = ce.const_entry_boxed }
   | cd -> cd
 
@@ -190,14 +190,14 @@ let declare_inductive_argument_scopes kn mie =
 
 let inductive_names sp kn mie =
   let (dp,_) = repr_path sp in
-  let names, _ = 
+  let names, _ =
     List.fold_left
       (fun (names, n) ind ->
 	 let ind_p = (kn,n) in
 	 let names, _ =
 	   List.fold_left
 	     (fun (names, p) l ->
-		let sp = 
+		let sp =
 		  Libnames.make_path dp l
 		in
 		  ((sp, ConstructRef (ind_p,p)) :: names, p+1))
@@ -262,14 +262,14 @@ let dummy_inductive_entry (_,m) = ([],{
 let export_inductive x = Some (dummy_inductive_entry x)
 
 let (inInductive,_) =
-  declare_object {(default_object "INDUCTIVE") with 
+  declare_object {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
     load_function = load_inductive;
     open_function = open_inductive;
     classify_function = (fun a -> Substitute (dummy_inductive_entry a));
     subst_function = ident_subst_function;
     discharge_function = discharge_inductive;
-    export_function = export_inductive } 
+    export_function = export_inductive }
 
 (* for initial declaration *)
 let declare_mind isrecord mie =

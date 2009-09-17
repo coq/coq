@@ -12,8 +12,8 @@ Require Import Omega Relations Multiset Permutation SetoidList.
 
 Set Implicit Arguments.
 
-(** This file contains additional results about permutations 
-     with respect to a setoid equality (i.e. an equivalence relation). 
+(** This file contains additional results about permutations
+     with respect to a setoid equality (i.e. an equivalence relation).
 *)
 
 Section Perm.
@@ -33,7 +33,7 @@ Variable eqA_trans : forall x y z, eqA x y -> eqA y z -> eqA x z.
 
 (** we can use [multiplicity] to define [InA] and [NoDupA]. *)
 
-Lemma multiplicity_InA : 
+Lemma multiplicity_InA :
   forall l a, InA eqA a l <-> 0 < multiplicity (list_contents l) a.
 Proof.
   induction l.
@@ -54,7 +54,7 @@ Qed.
 Lemma multiplicity_InA_O :
   forall l a, ~ InA eqA a l -> multiplicity (list_contents l) a = 0.
 Proof.
-  intros l a; rewrite multiplicity_InA; 
+  intros l a; rewrite multiplicity_InA;
     destruct (multiplicity (list_contents l) a); auto with arith.
   destruct 1; auto with arith.
 Qed.
@@ -65,7 +65,7 @@ Proof.
   intros l a; rewrite multiplicity_InA; auto with arith.
 Qed.
 
-Lemma multiplicity_NoDupA : forall l, 
+Lemma multiplicity_NoDupA : forall l,
   NoDupA eqA l <-> (forall a, multiplicity (list_contents l) a <= 1).
 Proof.
   induction l.
@@ -83,7 +83,7 @@ Proof.
   generalize (H a).
   destruct (eqA_dec a a) as [H0|H0].
   destruct (multiplicity (list_contents l) a); auto with arith.
-  simpl; inversion 1. 
+  simpl; inversion 1.
   inversion H3.
   destruct H0; auto.
   rewrite IHl; intros.
@@ -140,7 +140,7 @@ Proof.
   apply permut_length_1.
   red; red; intros.
   generalize (P a); clear P; simpl.
-  destruct (eqA_dec a1 a) as [H2|H2]; 
+  destruct (eqA_dec a1 a) as [H2|H2];
     destruct (eqA_dec a2 a) as [H3|H3]; auto.
   destruct H3; apply eqA_trans with a1; auto.
   destruct H2; apply eqA_trans with a2; auto.
@@ -150,7 +150,7 @@ Proof.
   apply permut_length_1.
   red; red; intros.
   generalize (P a); clear P; simpl.
-  destruct (eqA_dec a1 a) as [H2|H2]; 
+  destruct (eqA_dec a1 a) as [H2|H2];
     destruct (eqA_dec b2 a) as [H3|H3]; auto.
   simpl; rewrite <- plus_n_Sm; inversion 1; auto.
   destruct H3; apply eqA_trans with a1; auto.
@@ -174,19 +174,19 @@ Proof.
   apply permut_tran with (a::l1); auto.
   revert H1; unfold Permutation.permutation, meq; simpl.
   intros; f_equal; auto.
-  destruct (eqA_dec b a0) as [H2|H2]; 
+  destruct (eqA_dec b a0) as [H2|H2];
     destruct (eqA_dec a a0) as [H3|H3]; auto.
   destruct H3; apply eqA_trans with b; auto.
   destruct H2; apply eqA_trans with a; auto.
 Qed.
 
-Lemma NoDupA_equivlistA_permut : 
-  forall l l', NoDupA eqA l -> NoDupA eqA l' -> 
+Lemma NoDupA_equivlistA_permut :
+  forall l l', NoDupA eqA l -> NoDupA eqA l' ->
     equivlistA eqA l l' -> permutation l l'.
 Proof.
   intros.
   red; unfold meq; intros.
-  rewrite multiplicity_NoDupA in H, H0. 
+  rewrite multiplicity_NoDupA in H, H0.
   generalize (H a) (H0 a) (H1 a); clear H H0 H1.
   do 2 rewrite multiplicity_InA.
   destruct 3; omega.
@@ -195,15 +195,15 @@ Qed.
 
 Variable B : Type.
 Variable eqB : B->B->Prop.
-Variable eqB_dec : forall x y:B, { eqB x y }+{ ~eqB x y }. 
+Variable eqB_dec : forall x y:B, { eqB x y }+{ ~eqB x y }.
 Variable eqB_trans : forall x y z, eqB x y -> eqB y z -> eqB x z.
 
 (** Permutation is compatible with map. *)
 
 Lemma permut_map :
-  forall f, 
+  forall f,
     (forall x y, eqA x y -> eqB (f x) (f y)) ->
-    forall l1 l2, permutation l1 l2 -> 
+    forall l1 l2, permutation l1 l2 ->
       Permutation.permutation _ eqB_dec (map f l1) (map f l2).
 Proof.
   intros f; induction l1.
@@ -218,7 +218,7 @@ Proof.
   apply permut_tran with (f b :: map f l1).
   revert H1; unfold Permutation.permutation, meq; simpl.
   intros; f_equal; auto.
-  destruct (eqB_dec (f b) a0) as [H2|H2]; 
+  destruct (eqB_dec (f b) a0) as [H2|H2];
     destruct (eqB_dec (f a) a0) as [H3|H3]; auto.
   destruct H3; apply eqB_trans with (f b); auto.
   destruct H2; apply eqB_trans with (f a); auto.
@@ -229,7 +229,7 @@ Proof.
   apply permut_tran with (a::l1); auto.
   revert H1; unfold Permutation.permutation, meq; simpl.
   intros; f_equal; auto.
-  destruct (eqA_dec b a0) as [H2|H2]; 
+  destruct (eqA_dec b a0) as [H2|H2];
     destruct (eqA_dec a a0) as [H3|H3]; auto.
   destruct H3; apply eqA_trans with b; auto.
   destruct H2; apply eqA_trans with a; auto.

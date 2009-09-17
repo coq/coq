@@ -42,15 +42,15 @@ val reset_initial : unit -> unit
 val reset_to : reset_mark -> unit
 val reset_to_mod : identifier -> unit
 
-val init : unit -> string list 
+val init : unit -> string list
 val interp : bool -> string -> reset_info * (Util.loc * Vernacexpr.vernac_expr)
 val interp_last : Util.loc * Vernacexpr.vernac_expr -> unit
-val interp_and_replace : string -> 
+val interp_and_replace : string ->
       (reset_info * (Util.loc * Vernacexpr.vernac_expr)) * string
 
 (* type hyp = (identifier * constr option * constr) * string *)
 
-type hyp = env * evar_map * 
+type hyp = env * evar_map *
            ((identifier*string) * constr option * constr) * (string * string)
 type meta = env * evar_map * string
 type concl = env * evar_map * constr * string
@@ -74,7 +74,7 @@ val is_in_loadpath : string -> bool
 val make_cases : string -> string list list
 
 
-type tried_tactic = 
+type tried_tactic =
   | Interrupted
   | Success of int (* nb of goals after *)
   | Failed

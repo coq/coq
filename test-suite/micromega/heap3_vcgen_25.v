@@ -11,7 +11,7 @@ Require Import Psatz.
 
 Open Scope Z_scope.
 
-Lemma vcgen_25 : forall   
+Lemma vcgen_25 : forall
   (n : Z)
   (m : Z)
   (jt : Z)

@@ -72,7 +72,7 @@ Section Finite_sets_facts.
   Proof.
     intros X Y H; induction H as [|A Fin_A Hind x].
     rewrite (Empty_set_zero U Y). trivial.
-    intros. 
+    intros.
     rewrite (Union_commutative U (Add U A x) Y).
     rewrite <- (Union_add U Y A x).
     rewrite (Union_commutative U Y A).
@@ -98,7 +98,7 @@ Section Finite_sets_facts.
   Proof.
     intros A H' X; apply Finite_downward_closed with A; auto with sets.
   Qed.
-  
+
   Lemma cardinalO_empty :
     forall X:Ensemble U, cardinal U X 0 -> X = Empty_set U.
   Proof.
@@ -212,7 +212,7 @@ Section Finite_sets_facts.
   Proof.
     intros; apply cardinal_is_functional with X X; auto with sets.
   Qed.
-  
+
   Lemma card_Add_gen :
     forall (A:Ensemble U) (x:U) (n n':nat),
       cardinal U A n -> cardinal U (Add U A x) n' -> n' <= S n.
@@ -279,7 +279,7 @@ Section Finite_sets_facts.
     intro E; rewrite E; auto with sets arith.
     apply cardinal_unicity with X; auto with sets arith.
   Qed.
-  
+
   Lemma G_aux :
     forall P:Ensemble U -> Prop,
       (forall X:Ensemble U,

@@ -16,7 +16,7 @@ open Environ
 open Nametab
 (*i*)
 
-(*s Implicit arguments. Here we store the implicit arguments. Notice that we 
+(*s Implicit arguments. Here we store the implicit arguments. Notice that we
     are outside the kernel, which knows nothing about implicit arguments. *)
 
 val make_implicit_args : bool -> unit
@@ -66,11 +66,11 @@ val positions_of_implicits : implicits_list -> int list
 val compute_implicits : env -> types -> implicits_list
 
 (* A [manual_explicitation] is a tuple of a positional or named explicitation with
-   maximal insertion, force inference and force usage flags. Forcing usage makes 
+   maximal insertion, force inference and force usage flags. Forcing usage makes
    the argument implicit even if the automatic inference considers it not inferable. *)
 type manual_explicitation = Topconstr.explicitation * (bool * bool * bool)
 
-val compute_implicits_with_manual : env -> types -> bool -> 
+val compute_implicits_with_manual : env -> types -> bool ->
   manual_explicitation list -> implicits_list
 
 (*s Computation of implicits (done using the global environment). *)
@@ -109,6 +109,6 @@ type implicit_discharge_request =
   | ImplLocal
   | ImplConstant of constant * implicits_flags
   | ImplMutualInductive of kernel_name * implicits_flags
-  | ImplInteractive of global_reference * implicits_flags * 
+  | ImplInteractive of global_reference * implicits_flags *
       implicit_interactive_request
 

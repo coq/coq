@@ -17,7 +17,7 @@ Open Local Scope nat_scope.
 Implicit Types m n : nat.
 
 
-(** * Definition of [even] and [odd], and basic facts *) 
+(** * Definition of [even] and [odd], and basic facts *)
 
 Inductive even : nat -> Prop :=
   | even_O : even 0
@@ -52,9 +52,9 @@ Qed.
 
 (** * Facts about [even] & [odd] wrt. [plus] *)
 
-Lemma even_plus_split : forall n m, 
+Lemma even_plus_split : forall n m,
   (even (n + m) -> even n /\ even m \/ odd n /\ odd m)
-with odd_plus_split : forall n m, 
+with odd_plus_split : forall n m,
   odd (n + m) -> odd n /\ even m \/ even n /\ odd m.
 Proof.
 intros. clear even_plus_split. destruct n; simpl in *.
@@ -95,7 +95,7 @@ Proof.
   intros n m H; destruct (even_plus_split n m) as [[]|[]]; auto.
   intro; destruct (not_even_and_odd n); auto.
 Qed.
- 
+
 Lemma even_plus_even_inv_l : forall n m, even (n + m) -> even m -> even n.
 Proof.
   intros n m H; destruct (even_plus_split n m) as [[]|[]]; auto.
@@ -120,13 +120,13 @@ Proof.
   intros n m H; destruct (odd_plus_split n m) as [[]|[]]; auto.
   intro; destruct (not_even_and_odd m); auto.
 Qed.
- 
+
 Lemma odd_plus_even_inv_r : forall n m, odd (n + m) -> odd n -> even m.
 Proof.
   intros n m H; destruct (odd_plus_split n m) as [[]|[]]; auto.
   intro; destruct (not_even_and_odd n); auto.
 Qed.
- 
+
 Lemma odd_plus_odd_inv_l : forall n m, odd (n + m) -> even m -> odd n.
 Proof.
   intros n m H; destruct (odd_plus_split n m) as [[]|[]]; auto.
@@ -203,7 +203,7 @@ Proof.
   intros n m; case (even_mult_aux n m); auto.
   intros H H0; case H0; auto.
 Qed.
- 
+
 Lemma even_mult_r : forall n m, even m -> even (n * m).
 Proof.
   intros n m; case (even_mult_aux n m); auto.
@@ -219,7 +219,7 @@ Proof.
   intros H'3; elim H'3; auto.
   intros H; case (not_even_and_odd n); auto.
 Qed.
- 
+
 Lemma even_mult_inv_l : forall n m, even (n * m) -> odd m -> even n.
 Proof.
   intros n m H' H'0.
@@ -228,13 +228,13 @@ Proof.
   intros H'3; elim H'3; auto.
   intros H; case (not_even_and_odd m); auto.
 Qed.
- 
+
 Lemma odd_mult : forall n m, odd n -> odd m -> odd (n * m).
 Proof.
   intros n m; case (even_mult_aux n m); intros H; case H; auto.
 Qed.
 Hint Resolve even_mult_l even_mult_r odd_mult: arith.
- 
+
 Lemma odd_mult_inv_l : forall n m, odd (n * m) -> odd n.
 Proof.
   intros n m H'.

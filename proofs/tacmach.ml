@@ -55,10 +55,10 @@ let pf_nth_hyp_id gls n = let (id,c,t) = List.nth (pf_hyps gls) (n-1) in id
 
 let pf_last_hyp gl = List.hd (pf_hyps gl)
 
-let pf_get_hyp gls id = 
-  try 
+let pf_get_hyp gls id =
+  try
     Sign.lookup_named id (pf_hyps gls)
-  with Not_found -> 
+  with Not_found ->
     error ("No such hypothesis: " ^ (string_of_id id))
 
 let pf_get_hyp_typ gls id =
@@ -67,7 +67,7 @@ let pf_get_hyp_typ gls id =
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
 
-let pf_get_new_id id gls = 
+let pf_get_new_id id gls =
   next_ident_away id (pf_ids_of_hyps gls)
 
 let pf_get_new_ids ids gls =
@@ -77,19 +77,19 @@ let pf_get_new_ids ids gls =
     ids []
 
 let pf_interp_constr gls c =
-  let evc = project gls in 
+  let evc = project gls in
   Constrintern.interp_constr evc (pf_env gls) c
 
 let pf_interp_type gls c =
-  let evc = project gls in 
+  let evc = project gls in
   Constrintern.interp_type evc (pf_env gls) c
 
 let pf_global gls id = Constrintern.construct_reference (pf_hyps gls) id
 
 let pf_parse_const gls = compose (pf_global gls) id_of_string
 
-let pf_reduction_of_red_expr gls re c = 
-  (fst (reduction_of_red_expr re)) (pf_env gls) (project gls) c 
+let pf_reduction_of_red_expr gls re c =
+  (fst (reduction_of_red_expr re)) (pf_env gls) (project gls) c
 
 let pf_apply f gls = f (pf_env gls) (project gls)
 let pf_reduce = pf_apply
@@ -113,7 +113,7 @@ let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
 let pf_hnf_type_of gls = compose (pf_whd_betadeltaiota gls) (pf_get_type_of gls)
 
-let pf_check_type gls c1 c2 = 
+let pf_check_type gls c1 c2 =
   ignore (pf_type_of gls (mkCast (c1, DEFAULTcast, c2)))
 
 let pf_is_matching              = pf_apply Matching.is_matching_conv
@@ -179,16 +179,16 @@ let refiner = refiner
 let introduction_no_check id =
   refiner (Prim (Intro id))
 
-let internal_cut_no_check replace id t gl = 
+let internal_cut_no_check replace id t gl =
   refiner (Prim (Cut (true,replace,id,t))) gl
 
-let internal_cut_rev_no_check replace id t gl = 
+let internal_cut_rev_no_check replace id t gl =
   refiner (Prim (Cut (false,replace,id,t))) gl
 
-let refine_no_check c gl = 
+let refine_no_check c gl =
   refiner (Prim (Refine c)) gl
 
-let convert_concl_no_check c sty gl = 
+let convert_concl_no_check c sty gl =
   refiner (Prim (Convert_concl (c,sty))) gl
 
 let convert_hyp_no_check d gl =
@@ -202,16 +202,16 @@ let thin_no_check ids gl =
 let thin_body_no_check ids gl =
   if ids = [] then tclIDTAC gl else refiner (Prim (ThinBody ids)) gl
 
-let move_hyp_no_check with_dep id1 id2 gl = 
+let move_hyp_no_check with_dep id1 id2 gl =
   refiner (Prim (Move (with_dep,id1,id2))) gl
 
 let order_hyps idl gl =
   refiner (Prim (Order idl)) gl
 
-let rec rename_hyp_no_check l gl = match l with 
-  | [] -> tclIDTAC gl 
-  | (id1,id2)::l -> 
-      tclTHEN (refiner (Prim (Rename (id1,id2)))) 
+let rec rename_hyp_no_check l gl = match l with
+  | [] -> tclIDTAC gl
+  | (id1,id2)::l ->
+      tclTHEN (refiner (Prim (Rename (id1,id2))))
 	(rename_hyp_no_check l) gl
 
 let mutual_fix f n others j gl =
@@ -219,10 +219,10 @@ let mutual_fix f n others j gl =
 
 let mutual_cofix f others j gl =
   with_check (refiner (Prim (Cofix (f,others,j)))) gl
-    
+
 (* Versions with consistency checks *)
 
-let introduction id    = with_check (introduction_no_check id) 
+let introduction id    = with_check (introduction_no_check id)
 let internal_cut b d t = with_check (internal_cut_no_check b d t)
 let internal_cut_rev b d t = with_check (internal_cut_rev_no_check b d t)
 let refine c           = with_check (refine_no_check c)
@@ -230,7 +230,7 @@ let convert_concl d sty = with_check (convert_concl_no_check d sty)
 let convert_hyp d      = with_check (convert_hyp_no_check d)
 let thin c             = with_check (thin_no_check c)
 let thin_body c        = with_check (thin_body_no_check c)
-let move_hyp b id id'  = with_check (move_hyp_no_check b id id') 
+let move_hyp b id id'  = with_check (move_hyp_no_check b id id')
 let rename_hyp l       = with_check (rename_hyp_no_check l)
 
 (* Pretty-printers *)
@@ -249,4 +249,4 @@ let pr_gls gls =
 let pr_glls glls =
   hov 0 (pr_evar_defs (sig_sig glls) ++ fnl () ++
          prlist_with_sep pr_fnl db_pr_goal (sig_it glls))
-  
+

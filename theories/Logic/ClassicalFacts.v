@@ -111,7 +111,7 @@ Qed.
 (** We successively show that:
 
    [prop_extensionality]
-     implies equality of [A] and [A->A] for inhabited [A], which 
+     implies equality of [A] and [A->A] for inhabited [A], which
      implies the existence of a (trivial) retract from [A->A] to [A]
         (just take the identity), which
      implies the existence of a fixpoint operator in [A]
@@ -128,7 +128,7 @@ Proof.
   apply (Ext (A -> A) A); split; [ exact (fun _ => a) | exact (fun _ _ => a) ].
 Qed.
 
-Record retract (A B:Prop) : Prop := 
+Record retract (A B:Prop) : Prop :=
   {f1 : A -> B; f2 : B -> A; f1_o_f2 : forall x:B, f1 (f2 x) = x}.
 
 Lemma prop_ext_retract_A_A_imp_A :
@@ -140,7 +140,7 @@ Proof.
   reflexivity.
 Qed.
 
-Record has_fixpoint (A:Prop) : Prop := 
+Record has_fixpoint (A:Prop) : Prop :=
   {F : (A -> A) -> A; Fix : forall f:A -> A, F f = f (F f)}.
 
 Lemma ext_prop_fixpoint :
@@ -224,7 +224,7 @@ End Proof_irrelevance_gen.
 *)
 
 Section Proof_irrelevance_Prop_Ext_CC.
-  
+
   Definition BoolP := forall C:Prop, C -> C -> C.
   Definition TrueP : BoolP := fun C c1 c2 => c1.
   Definition FalseP : BoolP := fun C c1 c2 => c2.
@@ -233,10 +233,10 @@ Section Proof_irrelevance_Prop_Ext_CC.
     c1 = BoolP_elim C c1 c2 TrueP := refl_equal c1.
   Definition BoolP_elim_redr (C:Prop) (c1 c2:C) :
     c2 = BoolP_elim C c1 c2 FalseP := refl_equal c2.
-  
+
   Definition BoolP_dep_induction :=
     forall P:BoolP -> Prop, P TrueP -> P FalseP -> forall b:BoolP, P b.
-  
+
   Lemma ext_prop_dep_proof_irrel_cc :
     prop_extensionality -> BoolP_dep_induction -> proof_irrelevance.
   Proof.
@@ -248,7 +248,7 @@ End Proof_irrelevance_Prop_Ext_CC.
 
 (** Remark: [prop_extensionality] can be replaced in lemma
     [ext_prop_dep_proof_irrel_gen] by the weakest property
-    [provable_prop_extensionality].  
+    [provable_prop_extensionality].
 *)
 
 (************************************************************************)
@@ -260,7 +260,7 @@ End Proof_irrelevance_Prop_Ext_CC.
 *)
 
 Section Proof_irrelevance_CIC.
-  
+
   Inductive boolP : Prop :=
     | trueP : boolP
     | falseP : boolP.
@@ -269,7 +269,7 @@ Section Proof_irrelevance_CIC.
   Definition boolP_elim_redr (C:Prop) (c1 c2:C) :
     c2 = boolP_ind C c1 c2 falseP := refl_equal c2.
   Scheme boolP_indd := Induction for boolP Sort Prop.
-  
+
   Lemma ext_prop_dep_proof_irrel_cic : prop_extensionality -> proof_irrelevance.
   Proof.
     exact (fun pe =>
@@ -316,7 +316,7 @@ End Proof_irrelevance_CIC.
 Require Import Hurkens.
 
 Section Proof_irrelevance_EM_CC.
-  
+
   Variable or : Prop -> Prop -> Prop.
   Variable or_introl : forall A B:Prop, A -> or A B.
   Variable or_intror : forall A B:Prop, B -> or A B.
@@ -334,11 +334,11 @@ Section Proof_irrelevance_EM_CC.
     forall (A B:Prop) (P:or A B -> Prop),
       (forall a:A, P (or_introl A B a)) ->
       (forall b:B, P (or_intror A B b)) -> forall b:or A B, P b.
-  
+
   Hypothesis em : forall A:Prop, or A (~ A).
   Variable B : Prop.
   Variables b1 b2 : B.
-  
+
   (** [p2b] and [b2p] form a retract if [~b1=b2] *)
 
   Definition p2b A := or_elim A (~ A) B (fun _ => b1) (fun _ => b2) (em A).
@@ -392,13 +392,13 @@ End Proof_irrelevance_EM_CC.
 Section Proof_irrelevance_CCI.
 
   Hypothesis em : forall A:Prop, A \/ ~ A.
-  
-  Definition or_elim_redl (A B C:Prop) (f:A -> C) (g:B -> C) 
+
+  Definition or_elim_redl (A B C:Prop) (f:A -> C) (g:B -> C)
     (a:A) : f a = or_ind f g (or_introl B a) := refl_equal (f a).
-  Definition or_elim_redr (A B C:Prop) (f:A -> C) (g:B -> C) 
+  Definition or_elim_redr (A B C:Prop) (f:A -> C) (g:B -> C)
     (b:B) : g b = or_ind f g (or_intror A b) := refl_equal (g b).
   Scheme or_indd := Induction for or Sort Prop.
-  
+
   Theorem proof_irrelevance_cci : forall (B:Prop) (b1 b2:B), b1 = b2.
   Proof.
     exact (proof_irrelevance_cc or or_introl or_intror or_ind or_elim_redl
@@ -438,7 +438,7 @@ Definition weak_excluded_middle :=
     [weak_generalized_excluded_middle] is that it holds even in logic
     without a primitive [False] connective (like Gödel-Dummett axiom) *)
 
-Definition weak_generalized_excluded_middle := 
+Definition weak_generalized_excluded_middle :=
   forall A B:Prop, ((A -> B) -> B) \/ (A -> B).
 
 (** ** Gödel-Dummett axiom *)
@@ -473,7 +473,7 @@ Lemma Godel_Dummett_iff_right_distr_implication_over_disjunction :
 Proof.
   split.
     intros GD A B C HCAB.
-    destruct (GD B A) as [HBA|HAB]; [left|right]; intro HC; 
+    destruct (GD B A) as [HBA|HAB]; [left|right]; intro HC;
       destruct (HCAB HC) as [HA|HB]; [ | apply HBA | apply HAB | ]; assumption.
     intros Distr A B.
     destruct (Distr A B (A\/B)) as [HABA|HABB].
@@ -484,7 +484,7 @@ Qed.
 
 (** [(A->B) \/ (B->A)] is stronger than the weak excluded middle *)
 
-Lemma Godel_Dummett_weak_excluded_middle : 
+Lemma Godel_Dummett_weak_excluded_middle :
   GodelDummett -> weak_excluded_middle.
 Proof.
   intros GD A. destruct (GD (~A) A) as [HnotAA|HAnotA].
@@ -539,10 +539,10 @@ Qed.
 (** Independence of general premises is equivalent to the drinker's paradox *)
 
 Definition DrinkerParadox :=
-  forall (A:Type) (P:A -> Prop), 
+  forall (A:Type) (P:A -> Prop),
     inhabited A -> exists x, (exists x, P x) -> P x.
 
-Lemma independence_general_premises_drinker : 
+Lemma independence_general_premises_drinker :
   IndependenceOfGeneralPremises <-> DrinkerParadox.
 Proof.
   split.
@@ -551,14 +551,14 @@ Proof.
       exists x; intro HQ; apply (Hx (H HQ)).
 Qed.
 
-(** Independence of general premises is weaker than (generalized) 
+(** Independence of general premises is weaker than (generalized)
     excluded middle
 
 Remark: generalized excluded middle is preferred here to avoid relying on
 the "ex falso quodlibet" property (i.e. [False -> forall A, A])
 *)
 
-Definition generalized_excluded_middle := 
+Definition generalized_excluded_middle :=
   forall A B:Prop, A \/ (A -> B).
 
 Lemma excluded_middle_independence_general_premises :
@@ -569,4 +569,4 @@ Proof.
     exists x; intro; exact Hx.
     exists x0; exact Hnot.
 Qed.
- 
+

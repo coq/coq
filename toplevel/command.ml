@@ -94,7 +94,7 @@ let definition_message id =
 let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
   let env = Global.env() in
     match comtypopt with
-      None -> 
+      None ->
 	let b = abstract_constr_expr com bl in
 	let b, imps = interp_constr_evars_impls env b in
 	  imps,
@@ -121,7 +121,7 @@ let red_constant_entry bl ce = function
   | None -> ce
   | Some red ->
       let body = ce.const_entry_body in
-      { ce with const_entry_body = 
+      { ce with const_entry_body =
 	under_binders (Global.env()) (fst (reduction_of_red_expr red))
 	  (local_binders_length bl)
 	  body }
@@ -150,9 +150,9 @@ let declare_definition ident (local,boxed,dok) bl red_option c typopt hook =
           SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type,false) in
         let _ = declare_variable ident (Lib.cwd(),c,IsDefinition Definition) in
         definition_message ident;
-        if Pfedit.refining () then 
-          Flags.if_verbose msg_warning 
-	    (str"Local definition " ++ pr_id ident ++ 
+        if Pfedit.refining () then
+          Flags.if_verbose msg_warning
+	    (str"Local definition " ++ pr_id ident ++
              str" is not visible from current goals");
         VarRef ident
     | (Global|Local) ->
@@ -172,12 +172,12 @@ let assumption_message id =
 let declare_one_assumption is_coe (local,kind) c imps impl nl (_,ident) =
   let r = match local with
     | Local when Lib.sections_are_opened () ->
-        let _ = 
-          declare_variable ident 
+        let _ =
+          declare_variable ident
             (Lib.cwd(), SectionLocalAssum (c,impl), IsAssumption kind) in
         assumption_message ident;
-        if is_verbose () & Pfedit.refining () then 
-          msgerrnl (str"Warning: Variable " ++ pr_id ident ++ 
+        if is_verbose () & Pfedit.refining () then
+          msgerrnl (str"Warning: Variable " ++ pr_id ident ++
           str" is not visible from current goals");
         VarRef ident
     | (Global|Local) ->
@@ -197,7 +197,7 @@ let declare_assumption_hook = ref ignore
 let set_declare_assumption_hook = (:=) declare_assumption_hook
 
 let declare_assumption idl is_coe k bl c impl nl =
-  if not (Pfedit.refining ()) then 
+  if not (Pfedit.refining ()) then
     let c = generalize_constr_expr c bl in
     let env = Global.env () in
     let c', imps = interp_type_evars_impls env c in
@@ -213,12 +213,12 @@ open Indrec
 open Inductiveops
 
 
-let non_type_eliminations = 
+let non_type_eliminations =
   [ (InProp,elimination_suffix InProp);
     (InSet,elimination_suffix InSet) ]
 
 let declare_one_elimination ind =
-  let (mib,mip) = Global.lookup_inductive ind in 
+  let (mib,mip) = Global.lookup_inductive ind in
   let mindstr = string_of_id mip.mind_typename in
   let declare s c t =
     let id = id_of_string s in
@@ -227,7 +227,7 @@ let declare_one_elimination ind =
         { const_entry_body = c;
           const_entry_type = t;
           const_entry_opaque = false;
-	  const_entry_boxed = Flags.boxed_definitions() }, 
+	  const_entry_boxed = Flags.boxed_definitions() },
        Decl_kinds.IsDefinition Definition) in
     definition_message id;
     kn
@@ -235,13 +235,13 @@ let declare_one_elimination ind =
   let env = Global.env () in
   let sigma = Evd.empty in
   let elim_scheme = Indrec.build_indrec env sigma ind in
-  let npars = 
+  let npars =
     (* if a constructor of [ind] contains a recursive call, the scheme
        is generalized only wrt recursively uniform parameters *)
-    if (Inductiveops.mis_is_recursive_subset [snd ind] mip.mind_recargs) 
-    then 
+    if (Inductiveops.mis_is_recursive_subset [snd ind] mip.mind_recargs)
+    then
       mib.mind_nparams_rec
-    else 
+    else
       mib.mind_nparams in
   let make_elim s = Indrec.instantiate_indrec_scheme s npars elim_scheme in
   let kelim = elim_sorts (mib,mip) in
@@ -253,22 +253,22 @@ let declare_one_elimination ind =
     let cte = declare (mindstr^(Indrec.elimination_suffix InType)) elim None in
     let c = mkConst cte in
     let t = type_of_constant (Global.env()) cte in
-    List.iter (fun (sort,suff) -> 
-      let (t',c') = 
+    List.iter (fun (sort,suff) ->
+      let (t',c') =
 	Indrec.instantiate_type_indrec_scheme (new_sort_in_family sort)
 	  npars c t in
       let _ = declare (mindstr^suff) c' (Some t') in ())
       non_type_eliminations
    else (* Impredicative or logical inductive definition *)
      List.iter
-    (fun (sort,suff) -> 
+    (fun (sort,suff) ->
        if List.mem sort kelim then
 	 let elim = make_elim (new_sort_in_family sort) in
 	 let _ = declare (mindstr^suff) elim None in ())
        non_type_eliminations
 
 (* bool eq declaration flag && eq dec declaration flag *)
-let eq_flag = ref false 
+let eq_flag = ref false
 let _ =
   declare_bool_option
     { optsync  = true;
@@ -278,14 +278,14 @@ let _ =
       optwrite = (fun b -> eq_flag := b) }
 
 (* boolean equality *)
-let (inScheme,_) =  
-  declare_object {(default_object "EQSCHEME") with 
-                    cache_function = Ind_tables.cache_scheme; 
-                    load_function = (fun _ -> Ind_tables.cache_scheme); 
-                    subst_function = Auto_ind_decl.subst_in_constr; 
-                    export_function = Ind_tables.export_scheme } 
+let (inScheme,_) =
+  declare_object {(default_object "EQSCHEME") with
+                    cache_function = Ind_tables.cache_scheme;
+                    load_function = (fun _ -> Ind_tables.cache_scheme);
+                    subst_function = Auto_ind_decl.subst_in_constr;
+                    export_function = Ind_tables.export_scheme }
 
-let declare_eq_scheme sp = 
+let declare_eq_scheme sp =
   let mib = Global.lookup_mind sp in
   let nb_ind = Array.length mib.mind_packets in
   let eq_array = Auto_ind_decl.make_eq_scheme sp in
@@ -297,7 +297,7 @@ let declare_eq_scheme sp =
       let cst_entry = {const_entry_body = eq_array.(i);
                        const_entry_type = None;
                        const_entry_opaque = false;
-                       const_entry_boxed = Flags.boxed_definitions() } 
+                       const_entry_boxed = Flags.boxed_definitions() }
       in
       let cst_decl =  (DefinitionEntry cst_entry),(IsDefinition Definition)
       in
@@ -305,7 +305,7 @@ let declare_eq_scheme sp =
           Lib.add_anonymous_leaf (inScheme ((sp,i),mkConst cst));
           definition_message nam
     done
-  with Not_found -> 
+  with Not_found ->
     error "Your type contains Parameters without a boolean equality."
 
 (* decidability of eq *)
@@ -349,7 +349,7 @@ let adjust_guardness_conditions const =
 	List.map (fun c ->
 	  interval 0 (List.length ((lam_assum c))))
 	  (Array.to_list fixdefs) in
-      let indexes = search_guard dummy_loc (Global.env()) possible_indexes fixdecls in 
+      let indexes = search_guard dummy_loc (Global.env()) possible_indexes fixdecls in
       { const with const_entry_body = mkFix ((indexes,0),fixdecls) }
   | c -> const
 
@@ -380,12 +380,12 @@ let save_named opacity =
   let const = { const with const_entry_opaque = opacity } in
   save id const do_guard persistence hook
 
-let make_eq_decidability ind = 
+let make_eq_decidability ind =
     (* fetching data *)
     let mib = Global.lookup_mind (fst ind) in
     let nparams = mib.mind_nparams in
     let nparrec = mib.mind_nparams_rec in
-    let lnonparrec,lnamesparrec = 
+    let lnonparrec,lnamesparrec =
       context_chop (nparams-nparrec) mib.mind_params_ctxt in
     let proof_name = (string_of_id(
           Array.get mib.mind_packets (snd ind)).mind_typename)^"_eq_dec" in
@@ -399,24 +399,24 @@ let make_eq_decidability ind =
     else (
       start_proof (id_of_string bl_name)
          (Global,Proof Theorem)
-         (Auto_ind_decl.compute_bl_goal ind lnamesparrec nparrec)  
+         (Auto_ind_decl.compute_bl_goal ind lnamesparrec nparrec)
             (fun _ _ -> ());
       Auto_ind_decl.compute_bl_tact ind lnamesparrec nparrec;
-      save_named true; 
-      Lib.add_anonymous_leaf 
+      save_named true;
+      Lib.add_anonymous_leaf
         (inBoolLeib (ind,mkConst (Lib.make_con (id_of_string bl_name))))
 (*        definition_message (id_of_string bl_name) *)
     );
-    if Ind_tables.check_lb_proof ind 
+    if Ind_tables.check_lb_proof ind
     then (message (lb_name^" is already declared."))
     else (
       start_proof (id_of_string lb_name)
-        (Global,Proof Theorem) 
+        (Global,Proof Theorem)
         (Auto_ind_decl.compute_lb_goal ind lnamesparrec nparrec)
         ( fun _ _ -> ());
       Auto_ind_decl.compute_lb_tact ind lnamesparrec nparrec;
       save_named true;
-      Lib.add_anonymous_leaf 
+      Lib.add_anonymous_leaf
         (inLeibBool (ind,mkConst (Lib.make_con (id_of_string lb_name))))
 (*      definition_message (id_of_string lb_name) *)
     );
@@ -424,12 +424,12 @@ let make_eq_decidability ind =
     then (message (proof_name^" is already declared."))
     else (
       start_proof (id_of_string proof_name)
-        (Global,Proof Theorem) 
+        (Global,Proof Theorem)
         (Auto_ind_decl.compute_dec_goal ind lnamesparrec nparrec)
         ( fun _ _ -> ());
       Auto_ind_decl.compute_dec_tact ind lnamesparrec nparrec;
       save_named true;
-      Lib.add_anonymous_leaf 
+      Lib.add_anonymous_leaf
         (inDec (ind,mkConst (Lib.make_con (id_of_string proof_name))))
 (*      definition_message (id_of_string proof_name) *)
   )
@@ -444,7 +444,7 @@ let declare_eliminations sp =
       declare_one_elimination (sp,i);
       try
         if (!eq_flag) then (make_eq_decidability (sp,i))
-      with _ -> 
+      with _ ->
           Pfedit.delete_current_proof();
           message "Error while computing decidability scheme. Please report."
     done;
@@ -455,9 +455,9 @@ let declare_eliminations sp =
 let compute_interning_datas env ty l nal typl impll =
   let mk_interning_data na typ impls =
     let idl, impl =
-      let impl = 
+      let impl =
 	compute_implicits_with_manual env typ (is_implicit_args ()) impls
-      in 
+      in
       let sub_impl,_ = list_chop (List.length l) impl in
       let sub_impl' = List.filter is_status_implicit sub_impl in
 	(List.map name_of_implicit sub_impl', impl)
@@ -465,15 +465,15 @@ let compute_interning_datas env ty l nal typl impll =
       (na, (ty, idl, impl, compute_arguments_scope typ)) in
   (l, list_map3 mk_interning_data nal typl impll)
 
- 
- (* temporary open scopes during interpretation of mutual families 
-    so that locally defined notations are available 
+
+ (* temporary open scopes during interpretation of mutual families
+    so that locally defined notations are available
  *)
 let open_temp_scopes =  function
   | None -> ()
   | Some sc -> if not (Notation.scope_is_open sc)
      then Notation.open_close_scope (false,true,sc)
- 
+
 let declare_interning_data (_,impls) (df,c,scope) =
   silently (Metasyntax.add_notation_interpretation df impls c) scope
 
@@ -512,7 +512,7 @@ let mk_mltype_data evdref env assums arity indname =
   (is_ml_type,indname,assums)
 
 let prepare_param = function
-  | (na,None,t) -> out_name na, LocalAssum t 
+  | (na,None,t) -> out_name na, LocalAssum t
   | (na,Some b,_) -> out_name na, LocalDef b
 
 let interp_ind_arity evdref env ind =
@@ -526,12 +526,12 @@ let interp_cstrs evdref env impls mldata arity ind =
   let ctyps'', cimpls = List.split (List.map (interp_type_evars_impls ~evdref env ~impls) ctyps') in
     (cnames, ctyps'', cimpls)
 
-let interp_mutual paramsl indl notations finite = 
+let interp_mutual paramsl indl notations finite =
   check_all_names_different indl;
   let env0 = Global.env() in
   let evdref = ref Evd.empty in
-  let (env_params, ctx_params), userimpls = 
-    interp_context_evars ~fail_anonymous:false evdref env0 paramsl 
+  let (env_params, ctx_params), userimpls =
+    interp_context_evars ~fail_anonymous:false evdref env0 paramsl
   in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
 
@@ -552,7 +552,7 @@ let interp_mutual paramsl indl notations finite =
   let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
 
   let constructors =
-    States.with_state_protection (fun () -> 
+    States.with_state_protection (fun () ->
      (* Temporary declaration of notations and scopes *)
      List.iter (fun ((_,_,sc) as x ) ->
        declare_interning_data impls x;
@@ -574,7 +574,7 @@ let interp_mutual paramsl indl notations finite =
   List.iter (fun (_,ctyps,_) ->
     List.iter (check_evars env_ar_params Evd.empty evd) ctyps)
     constructors;
-  
+
   (* Build the inductive entries *)
   let entries = list_map3 (fun ind arity (cnames,ctypes,cimpls) -> {
     mind_entry_typename = ind.ind_name;
@@ -582,17 +582,17 @@ let interp_mutual paramsl indl notations finite =
     mind_entry_consnames = cnames;
     mind_entry_lc = ctypes
   }) indl arities constructors in
-  let impls = 
+  let impls =
     let len = List.length ctx_params in
       List.map2 (fun indimpls (_,_,cimpls) ->
-	indimpls, List.map (fun impls -> 
+	indimpls, List.map (fun impls ->
 	  userimpls @ (lift_implicits len impls)) cimpls) indimpls constructors
   in
   (* Build the mutual inductive entry *)
   { mind_entry_params = List.map prepare_param ctx_params;
-    mind_entry_record = false; 
-    mind_entry_finite = finite; 
-    mind_entry_inds = entries }, 
+    mind_entry_record = false;
+    mind_entry_finite = finite;
+    mind_entry_inds = entries },
     impls
 
 let eq_constr_expr c1 c2 =
@@ -622,13 +622,13 @@ let extract_params indl =
   match paramsl with
   | [] -> anomaly "empty list of inductive types"
   | params::paramsl ->
-      if not (List.for_all (eq_local_binders params) paramsl) then error 
+      if not (List.for_all (eq_local_binders params) paramsl) then error
 	"Parameters should be syntactically the same for each inductive type.";
       params
 
 let prepare_inductive ntnl indl =
   let indl =
-    List.map (fun ((_,indname),_,ar,lc) -> { 
+    List.map (fun ((_,indname),_,ar,lc) -> {
       ind_name = indname;
       ind_arity = Option.cata (fun x -> x) (CSort (dummy_loc, Rawterm.RType None)) ar;
       ind_lc = List.map (fun (_,((_,id),t)) -> (id,t)) lc
@@ -638,7 +638,7 @@ let prepare_inductive ntnl indl =
 
 let elim_flag = ref true
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "automatic declaration of eliminations";
       optkey   = ["Elimination";"Schemes"];
@@ -647,13 +647,13 @@ let _ =
 
 let declare_mutual_with_eliminations isrecord mie impls =
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let (_,kn) = declare_mind isrecord mie in    
-    list_iter_i (fun i (indimpls, constrimpls) -> 
+  let (_,kn) = declare_mind isrecord mie in
+    list_iter_i (fun i (indimpls, constrimpls) ->
       let ind = (kn,i) in
         Autoinstance.search_declaration (IndRef ind);
 	maybe_declare_manual_implicits false (IndRef ind) indimpls;
 	list_iter_i
-	  (fun j impls -> 
+	  (fun j impls ->
 (*	    Autoinstance.search_declaration (ConstructRef (ind,j));*)
 	    maybe_declare_manual_implicits false (ConstructRef (ind, succ j)) impls)
 	  constrimpls)
@@ -677,7 +677,7 @@ let build_mutual l finite =
 
 (* 3c| Fixpoints and co-fixpoints *)
 
-let pr_rank = function 
+let pr_rank = function
   | 0 -> str "1st"
   | 1 -> str "2nd"
   | 2 -> str "3rd"
@@ -686,12 +686,12 @@ let pr_rank = function
 let recursive_message indexes = function
   | [] -> anomaly "no recursive definition"
   | [id] -> pr_id id ++ str " is recursively defined" ++
-      (match indexes with 
+      (match indexes with
 	 | Some [|i|] -> str " (decreasing on "++pr_rank i++str " argument)"
  	 | _ -> mt ())
   | l -> hov 0 (prlist_with_sep pr_coma pr_id l ++
 		  spc () ++ str "are recursively defined" ++
-		  match indexes with 
+		  match indexes with
 		    | Some a -> spc () ++ str "(decreasing respectively on " ++
 			prlist_with_sep pr_coma pr_rank (Array.to_list a) ++
 			str " arguments)"
@@ -703,7 +703,7 @@ let corecursive_message _ = function
   | l -> hov 0 (prlist_with_sep pr_coma pr_id l ++
                     spc () ++ str "are corecursively defined")
 
-let recursive_message isfix = 
+let recursive_message isfix =
   if isfix=Fixpoint then recursive_message else corecursive_message
 
 (* An (unoptimized) function that maps preorders to partial orders...
@@ -728,11 +728,11 @@ let rec partial_order = function
 	  | (z, Inr zge) when List.mem x zge -> (z, Inr (list_union zge xge'))
 	  | r -> r) res in
 	(x,Inr xge')::res
-    | y::xge -> 
-      let rec link y = 
+    | y::xge ->
+      let rec link y =
 	try match List.assoc y res with
 	| Inl z -> link z
-	| Inr yge -> 
+	| Inr yge ->
 	  if List.mem x yge then
 	    let res = List.remove_assoc y res in
 	    let res = List.map (function
@@ -748,13 +748,13 @@ let rec partial_order = function
 	    browse res (list_add_set y (list_union xge' yge)) xge
 	with Not_found -> browse res (list_add_set y xge') xge
       in link y
-    in browse (partial_order rest) [] xge 
+    in browse (partial_order rest) [] xge
 
 let non_full_mutual_message x xge y yge kind rest =
-  let reason = 
-    if List.mem x yge then 
+  let reason =
+    if List.mem x yge then
       string_of_id y^" depends on "^string_of_id x^" but not conversely"
-    else if List.mem y xge then 
+    else if List.mem y xge then
       string_of_id x^" depends on "^string_of_id y^" but not conversely"
     else
       string_of_id y^" and "^string_of_id x^" are not mutually dependent" in
@@ -768,7 +768,7 @@ let non_full_mutual_message x xge y yge kind rest =
 let check_mutuality env kind fixl =
   let names = List.map fst fixl in
   let preorder =
-    List.map (fun (id,def) -> 
+    List.map (fun (id,def) ->
       (id, List.filter (fun id' -> id<>id' & occur_var env id' def) names))
       fixl in
   let po = partial_order preorder in
@@ -813,7 +813,7 @@ let declare_fix boxed kind f def t imps =
   Autoinstance.search_declaration (ConstRef kn);
   maybe_declare_manual_implicits false gr imps;
   gr
-      
+
 let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let defs = List.map (subst_vars (List.rev fixnames)) fixdefs in
   let names = List.map (fun id -> Name id) fixnames in
@@ -821,7 +821,7 @@ let prepare_recursive_declaration fixnames fixtypes fixdefs =
 
 (* Jump over let-bindings. *)
 
-let rel_index n ctx = 
+let rel_index n ctx =
   list_index0 (Name n) (List.rev_map pi1 (List.filter (fun x -> pi2 x = None) ctx))
 
 let rec unfold f b =
@@ -830,16 +830,16 @@ let rec unfold f b =
     | None -> []
 
 let compute_possible_guardness_evidences (n,_) (_, fixctx) fixtype =
-  match n with 
+  match n with
   | Some (loc, n) -> [rel_index n fixctx]
-  | None -> 
+  | None ->
       (* If recursive argument was not given by user, we try all args.
 	 An earlier approach was to look only for inductive arguments,
-	 but doing it properly involves delta-reduction, and it finally 
-         doesn't seem to worth the effort (except for huge mutual 
+	 but doing it properly involves delta-reduction, and it finally
+         doesn't seem to worth the effort (except for huge mutual
 	 fixpoints ?) *)
       let len = List.length fixctx in
-	unfold (function x when x = len -> None 
+	unfold (function x when x = len -> None
 	  | n -> Some (n, succ n)) 0
 
 let interp_recursive fixkind l boxed =
@@ -862,8 +862,8 @@ let interp_recursive fixkind l boxed =
   let notations = List.fold_right Option.List.cons ntnl [] in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
-  let fixdefs = 
-    States.with_state_protection (fun () -> 
+  let fixdefs =
+    States.with_state_protection (fun () ->
       List.iter (fun ((_,_,sc) as x) ->
         declare_interning_data impls x;
         open_temp_scopes sc
@@ -882,12 +882,12 @@ let interp_recursive fixkind l boxed =
 
   (* Build the fix declaration block *)
   let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
-  let indexes, fixdecls = 
+  let indexes, fixdecls =
     match fixkind with
     | IsFixpoint wfl ->
-	let possible_indexes = 
+	let possible_indexes =
 	  list_map3 compute_possible_guardness_evidences wfl fixctxs fixtypes in
-	let indexes = search_guard dummy_loc env possible_indexes fixdecls in 
+	let indexes = search_guard dummy_loc env possible_indexes fixdecls in
 	Some indexes, list_map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 l
     | IsCoFixpoint ->
 	None, list_map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 l
@@ -902,30 +902,30 @@ let interp_recursive fixkind l boxed =
 
 let build_recursive l b =
   let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in
-  let fixl = List.map (fun (((_,id),_,bl,typ,def),ntn) -> 
+  let fixl = List.map (fun (((_,id),_,bl,typ,def),ntn) ->
     ({fix_name = id; fix_binders = bl; fix_body = def; fix_type = typ},ntn))
     l in
   interp_recursive (IsFixpoint g) fixl b
 
 let build_corecursive l b =
-  let fixl = List.map (fun (((_,id),bl,typ,def),ntn) -> 
+  let fixl = List.map (fun (((_,id),bl,typ,def),ntn) ->
     ({fix_name = id; fix_binders = bl; fix_body = def; fix_type = typ},ntn))
     l in
   interp_recursive IsCoFixpoint fixl b
 
 (* 3d| Schemes *)
-let rec split_scheme l = 
+let rec split_scheme l =
  let env = Global.env() in
  match l with
   | [] -> [],[]
-  | (Some id,t)::q -> let l1,l2 = split_scheme q in 
+  | (Some id,t)::q -> let l1,l2 = split_scheme q in
     ( match t with
       | InductionScheme (x,y,z) -> ((id,x,y,z)::l1),l2
       | EqualityScheme  x -> l1,(x::l2)
     )
 (*
  if no name has been provided, we build one from the types of the ind
-requested 
+requested
 *)
   | (None,t)::q ->
        let l1,l2 = split_scheme q in
@@ -963,7 +963,7 @@ in
     )
 
 
-let build_induction_scheme lnamedepindsort = 
+let build_induction_scheme lnamedepindsort =
   let lrecnames = List.map (fun ((_,f),_,_,_) -> f) lnamedepindsort
   and sigma = Evd.empty
   and env0 = Global.env() in
@@ -972,10 +972,10 @@ let build_induction_scheme lnamedepindsort =
       (fun (_,dep,indid,sort) ->
         let ind = smart_global_inductive indid in
         let (mib,mip) = Global.lookup_inductive ind in
-         (ind,mib,mip,dep,interp_elimination_sort sort)) 
+         (ind,mib,mip,dep,interp_elimination_sort sort))
       lnamedepindsort
   in
-  let listdecl = Indrec.build_mutual_indrec env0 sigma lrecspec in 
+  let listdecl = Indrec.build_mutual_indrec env0 sigma lrecspec in
   let rec declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 Evd.empty decl in
     let decltype = refresh_universes decltype in
@@ -985,41 +985,41 @@ let build_induction_scheme lnamedepindsort =
 	       const_entry_boxed = Flags.boxed_definitions() } in
     let kn = declare_constant fi (DefinitionEntry ce, IsDefinition Scheme) in
     ConstRef kn :: lrecref
-  in 
+  in
   let _ = List.fold_right2 declare listdecl lrecnames [] in
   if_verbose ppnl (recursive_message Fixpoint None lrecnames)
 
-let build_scheme l = 
+let build_scheme l =
   let ischeme,escheme = split_scheme l in
 (* we want 1 kind of scheme at a time so we check if the user
 tried to declare different schemes at once *)
-    if (ischeme <> []) && (escheme <> []) 
+    if (ischeme <> []) && (escheme <> [])
     then
       error "Do not declare equality and induction scheme at the same time."
     else (
       if ischeme <> [] then build_induction_scheme ischeme;
-      List.iter ( fun indname -> 
+      List.iter ( fun indname ->
         let ind = smart_global_inductive indname
         in declare_eq_scheme (fst ind);
         try
-           make_eq_decidability ind 
-        with _ -> 
+           make_eq_decidability ind
+        with _ ->
           Pfedit.delete_current_proof();
           message "Error while computing decidability scheme. Please report."
       ) escheme
     )
-	
-let list_split_rev_at index l = 
+
+let list_split_rev_at index l =
   let rec aux i acc = function
       hd :: tl when i = index -> acc, tl
     | hd :: tl -> aux (succ i) (hd :: acc) tl
     | [] -> failwith "list_split_when: Invalid argument"
   in aux 0 [] l
 
-let fold_left' f = function 
+let fold_left' f = function
     [] -> raise (Invalid_argument "fold_right'")
   | hd :: tl -> List.fold_left f hd tl
-      
+
 let build_combined_scheme name schemes =
   let env = Global.env () in
 (*   let nschemes = List.length schemes in *)
@@ -1027,17 +1027,17 @@ let build_combined_scheme name schemes =
     let (ctx, arity) = decompose_prod ty in
     let (_, last) = List.hd ctx in
       match kind_of_term last with
-	| App (ind, args) -> 
+	| App (ind, args) ->
 	    let ind = destInd ind in
 	    let (_,spec) = Inductive.lookup_mind_specif env ind in
 	      ctx, ind, spec.mind_nrealargs
 	| _ -> ctx, destInd last, 0
   in
-  let defs =  
-    List.map (fun x -> 
+  let defs =
+    List.map (fun x ->
 		let refe = Ident x in
 		let qualid = qualid_of_reference refe in
-		let cst = try Nametab.locate_constant (snd qualid) 
+		let cst = try Nametab.locate_constant (snd qualid)
                   with Not_found -> error ((string_of_qualid (snd qualid))^" is not declared.")
                 in
 		let ty = Typeops.type_of_constant env cst in
@@ -1050,18 +1050,18 @@ let build_combined_scheme name schemes =
   let prods = nb_prod t - (nargs + 1) in
   let coqand = Coqlib.build_coq_and () and coqconj = Coqlib.build_coq_conj () in
   let relargs = rel_vect 0 prods in
-  let concls = List.rev_map 
-    (fun (_, cst, t) -> 
+  let concls = List.rev_map
+    (fun (_, cst, t) ->
       mkApp(mkConst cst, relargs),
       snd (decompose_prod_n prods t)) defs in
-  let concl_bod, concl_typ = 
+  let concl_bod, concl_typ =
     fold_left'
-      (fun (accb, acct) (cst, x) -> 
+      (fun (accb, acct) (cst, x) ->
 	mkApp (coqconj, [| x; acct; cst; accb |]),
 	mkApp (coqand, [| x; acct |])) concls
   in
-  let ctx, _ = 
-    list_split_rev_at prods 
+  let ctx, _ =
+    list_split_rev_at prods
       (List.rev_map (fun (x, y) -> x, None, y) ctx) in
   let typ = it_mkProd_wo_LetIn concl_typ ctx in
   let body = it_mkLambda_or_LetIn concl_bod ctx in
@@ -1076,9 +1076,9 @@ let build_combined_scheme name schemes =
 (* 4.1| Support for mutually proved theorems *)
 
 let retrieve_first_recthm = function
-  | VarRef id -> 
+  | VarRef id ->
       (pi2 (Global.lookup_named id),variable_opacity id)
-  | ConstRef cst -> 
+  | ConstRef cst ->
       let {const_body=body;const_opaque=opaq} =	Global.lookup_constant cst in
       (Option.map Declarations.force body,opaq)
   | _ -> assert false
@@ -1094,7 +1094,7 @@ let compute_proof_name = function
   | None ->
       let rec next avoid id =
         let id = next_global_ident_away false id avoid in
-        if Nametab.exists_cci (Lib.make_path id) then next (id::avoid) id 
+        if Nametab.exists_cci (Lib.make_path id) then next (id::avoid) id
         else id
       in
       next (Pfedit.get_all_proof_names ()) default_thm_id
@@ -1124,7 +1124,7 @@ let save_remaining_recthms (local,kind) body opaq i (id,(t_i,imps)) =
 	  let c = SectionLocalDef (body_i, Some t_i, opaq) in
 	  let _ = declare_variable id (Lib.cwd(), c, k) in
           (Local,VarRef id,imps)
-      | Global -> 
+      | Global ->
           let const =
             { const_entry_body = body_i;
               const_entry_type = Some t_i;
@@ -1138,7 +1138,7 @@ let look_for_mutual_statements thms =
     (* More than one statement: we look for a common inductive hyp or a *)
     (* common coinductive conclusion *)
     let n = List.length thms in
-    let inds = List.map (fun (id,(t,_) as x) -> 
+    let inds = List.map (fun (id,(t,_) as x) ->
       let (hyps,ccl) = decompose_prod_assum t in
       let whnf_hyp_hds = map_rel_context_in_env
         (fun env c -> fst (whd_betadeltaiota_stack env Evd.empty c))
@@ -1169,7 +1169,7 @@ let look_for_mutual_statements thms =
     (* (degenerated cartesian product since there is at most one coind ccl) *)
     let same_indccl =
       list_cartesians_filter (fun hyp oks ->
-	if List.for_all (of_same_mutind hyp) oks 
+	if List.for_all (of_same_mutind hyp) oks
 	then Some (hyp::oks) else None) [] ind_ccls in
     let ordered_same_indccl =
       List.filter (list_for_all_i (fun i ((kn,j),_,_) -> i=j) 0) same_indccl in
@@ -1183,7 +1183,7 @@ let look_for_mutual_statements thms =
       | indccl::rest, _ ->
 	  assert (rest=[]);
           (* One occ. of common coind ccls and no common inductive hyps *)
-	  if common_same_indhyp <> [] then 
+	  if common_same_indhyp <> [] then
 	    if_verbose warning "Assuming mutual coinductive statements.";
 	  flush_all ();
           indccl, true
@@ -1271,6 +1271,6 @@ let admit () =
 
 let get_current_context () =
   try Pfedit.get_current_goal_context ()
-  with e when Logic.catchable_exception e -> 
+  with e when Logic.catchable_exception e ->
     (Evd.empty, Global.env())
 

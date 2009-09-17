@@ -40,12 +40,12 @@ Proof.
 	    | destruct ((x' ?= y')%positive Eq); reflexivity || discriminate ] ].
 Qed.
 
-Ltac destr_zcompare := 
- match goal with |- context [Zcompare ?x ?y] => 
-  let H := fresh "H" in 
+Ltac destr_zcompare :=
+ match goal with |- context [Zcompare ?x ?y] =>
+  let H := fresh "H" in
   case_eq (Zcompare x y); intro H;
    [generalize (Zcompare_Eq_eq _ _ H); clear H; intro H |
-    change (x<y)%Z in H | 
+    change (x<y)%Z in H |
     change (x>y)%Z in H ]
  end.
 
@@ -58,7 +58,7 @@ Qed.
 Lemma Zcompare_antisym : forall n m:Z, CompOpp (n ?= m) = (m ?= n).
 Proof.
   intros x y; destruct x; destruct y; simpl in |- *;
-    reflexivity || discriminate H || rewrite Pcompare_antisym; 
+    reflexivity || discriminate H || rewrite Pcompare_antisym;
       reflexivity.
 Qed.
 
@@ -133,7 +133,7 @@ Proof.
     [ reflexivity
       | apply H
       | rewrite (Zcompare_opp x y); rewrite Zcompare_opp;
-	do 2 rewrite Zopp_plus_distr; rewrite Zopp_neg; 
+	do 2 rewrite Zopp_plus_distr; rewrite Zopp_neg;
 	  apply H ].
 Qed.
 
@@ -149,7 +149,7 @@ Proof.
 	  rewrite nat_of_P_minus_morphism;
 	    [ unfold gt in |- *; apply ZL16 | assumption ]
       | intros p; ElimPcompare z p; intros E; auto with arith;
-	apply nat_of_P_gt_Gt_compare_complement_morphism; 
+	apply nat_of_P_gt_Gt_compare_complement_morphism;
 	  unfold gt in |- *; apply ZL17
       | intros p q; ElimPcompare q p; intros E; rewrite E;
 	[ rewrite (Pcompare_Eq_eq q p E); apply Pcompare_refl
@@ -174,7 +174,7 @@ Proof.
 	    [ apply lt_trans with (m := nat_of_P z); [ apply ZL16 | apply ZL17 ]
 	      | assumption ]
       | intros p q; ElimPcompare z q; intros E0; rewrite E0; ElimPcompare z p;
-	intros E1; rewrite E1; ElimPcompare q p; intros E2; 
+	intros E1; rewrite E1; ElimPcompare q p; intros E2;
 	  rewrite E2; auto with arith;
 	    [ absurd ((q ?= p)%positive Eq = Lt);
 	      [ rewrite <- (Pcompare_Eq_eq z q E0);
@@ -277,7 +277,7 @@ Proof.
 			[ rewrite plus_comm; apply plus_lt_reg_l with (p := nat_of_P q);
 			  rewrite plus_assoc; rewrite le_plus_minus_r;
 			    [ rewrite (plus_comm (nat_of_P q)); apply plus_lt_compat_l;
-			      apply nat_of_P_lt_Lt_compare_morphism; 
+			      apply nat_of_P_lt_Lt_compare_morphism;
 				assumption
 			      | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism;
 				apply ZC1; assumption ]
@@ -293,7 +293,7 @@ Proof.
 			[ rewrite plus_comm; apply plus_lt_reg_l with (p := nat_of_P p);
 			  rewrite plus_assoc; rewrite le_plus_minus_r;
 			    [ rewrite (plus_comm (nat_of_P p)); apply plus_lt_compat_l;
-			      apply nat_of_P_lt_Lt_compare_morphism; 
+			      apply nat_of_P_lt_Lt_compare_morphism;
 				apply ZC1; assumption
 			      | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism;
 				apply ZC1; assumption ]
@@ -334,7 +334,7 @@ Qed.
 Lemma Zcompare_succ_Gt : forall n:Z, (Zsucc n ?= n) = Gt.
 Proof.
   intro x; unfold Zsucc in |- *; pattern x at 2 in |- *;
-    rewrite <- (Zplus_0_r x); rewrite Zcompare_plus_compat; 
+    rewrite <- (Zplus_0_r x); rewrite Zcompare_plus_compat;
       reflexivity.
 Qed.
 
@@ -355,7 +355,7 @@ Proof.
 		    apply nat_of_P_lt_Lt_compare_morphism;
 		      change ((Zpos h ?= 1) = Lt) in |- *; rewrite <- H2;
 			rewrite <- (fun m n:Z => Zcompare_plus_compat m n y);
-			  rewrite (Zplus_comm x); rewrite Zplus_assoc; 
+			  rewrite (Zplus_comm x); rewrite Zplus_assoc;
 			    rewrite Zplus_opp_r; simpl in |- *; exact H1 ] ]
 	| intros H1; rewrite H1; discriminate ]
       | intros H; elim_compare x (y + 1);
@@ -373,7 +373,7 @@ Proof.
   intros n m; unfold Zsucc in |- *; do 2 rewrite (fun t:Z => Zplus_comm t 1);
     rewrite Zcompare_plus_compat; auto with arith.
 Qed.
- 
+
 (** * Multiplication and comparison *)
 
 Lemma Zcompare_mult_compat :
@@ -398,7 +398,7 @@ Qed.
 Lemma rename :
   forall (A:Type) (P:A -> Prop) (x:A), (forall y:A, x = y -> P y) -> P x.
 Proof.
-  auto with arith. 
+  auto with arith.
 Qed.
 
 Lemma Zcompare_elim :
@@ -477,7 +477,7 @@ Lemma Zge_compare :
 		| Gt => True
               end.
 Proof.
-  intros x y; unfold Zge in |- *; elim (x ?= y); auto with arith. 
+  intros x y; unfold Zge in |- *; elim (x ?= y); auto with arith.
 Qed.
 
 Lemma Zgt_compare :

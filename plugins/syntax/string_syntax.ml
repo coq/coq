@@ -38,14 +38,14 @@ open Lazy
 
 let interp_string dloc s =
   let le = String.length s in
-  let rec aux n = 
+  let rec aux n =
      if n = le then RRef (dloc, force glob_EmptyString) else
      RApp (dloc,RRef (dloc, force glob_String),
        [interp_ascii dloc (int_of_char s.[n]); aux (n+1)])
   in aux 0
 
 let uninterp_string r =
-  try 
+  try
     let b = Buffer.create 16 in
     let rec aux = function
     | RApp (_,RRef (_,k),[a;s]) when k = force glob_String ->
@@ -57,13 +57,13 @@ let uninterp_string r =
     | _ ->
 	raise Non_closed_string
     in aux r
-  with 
+  with
    Non_closed_string -> None
 
 let _ =
   Notation.declare_string_interpreter "string_scope"
     (string_path,["Coq";"Strings";"String"])
     interp_string
-    ([RRef (dummy_loc,static_glob_String); 
+    ([RRef (dummy_loc,static_glob_String);
       RRef (dummy_loc,static_glob_EmptyString)],
      uninterp_string, true)

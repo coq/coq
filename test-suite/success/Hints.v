@@ -23,11 +23,11 @@ Hint Destruct h8 := 4 Hypothesis (_ <= _) => fun H => apply H.
 
 (* Checks that local names are accepted *)
 Section A.
-  Remark Refl : forall (A : Set) (x : A), x = x. 
+  Remark Refl : forall (A : Set) (x : A), x = x.
   Proof. exact refl_equal. Defined.
   Definition Sym := sym_equal.
   Let Trans := trans_equal.
- 
+
   Hint Resolve Refl: foo.
   Hint Resolve Sym: bar.
   Hint Resolve Trans: foo2.

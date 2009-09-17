@@ -21,11 +21,11 @@ open Nametab
 open Decl_kinds
 (*i*)
 
-(* This module provides the official functions to declare new variables, 
+(* This module provides the official functions to declare new variables,
    parameters, constants and inductive types. Using the following functions
    will add the entries in the global environment (module [Global]), will
    register the declarations in the library (module [Lib]) --- so that the
-   reset works properly --- and will fill some global tables such as 
+   reset works properly --- and will fill some global tables such as
    [Nametab] and [Impargs]. *)
 
 open Nametab

@@ -15,7 +15,7 @@ Section Equiv.
   Qed.
 
   Tactic Notation "simpl" "*" := auto || relation_tac.
-  
+
   Goal eqA x y -> eqA y x /\ True.
     intros H ; clrewrite H.
     split ; simpl*.
@@ -27,13 +27,13 @@ Section Equiv.
   Qed.
 
   Goal eqA x y -> eqA y z -> eqA x y.
-    intros H. 
+    intros H.
     clrewrite H.
     intro. refl.
   Qed.
-        
+
   Goal eqA x y -> eqA z y -> eqA x y.
-    intros H. 
+    intros H.
     clrewrite <- H at 2.
     clrewrite <- H at 1.
     intro. refl.
@@ -54,7 +54,7 @@ Section Equiv.
     clrewrite <- H.
     refl.
   Qed.
-  
+
   Goal eqA x y -> True /\ True /\ False /\ eqA x x -> True /\ True /\ False /\ eqA x y.
   Proof.
     intros.
@@ -70,12 +70,12 @@ Section Trans.
   Variables x y z w : A.
 
   Tactic Notation "simpl" "*" := auto || relation_tac.
-  
+
 (*   Typeclasses eauto := debug. *)
 
   Goal R x y -> R y x -> R y y -> R x x.
   Proof with auto.
-    intros H H' H''. 
+    intros H H' H''.
 
     clrewrite <- H' at 2.
     clrewrite H at 1...
@@ -86,11 +86,11 @@ Section Trans.
     clrewrite H.
     refl.
   Qed.
-        
+
   Goal R x y -> R z y -> R x y.
-    intros H. 
+    intros H.
     clrewrite <- H at 2.
-    intro. 
+    intro.
     clrewrite H at 1.
   Abort.
 

@@ -21,7 +21,7 @@ Require Import DoubleCyclic.
 (* To compute the necessary height *)
 
 Fixpoint plength (p: positive) : positive :=
-  match p with 
+  match p with
     xH => xH
   | xO p1 => Psucc (plength p1)
   | xI p1 => Psucc (plength p1)
@@ -34,10 +34,10 @@ rewrite Zpower_exp; auto with zarith.
 rewrite Zpos_succ_morphism; unfold Zsucc; auto with zarith.
 intros p; elim p; simpl plength; auto.
 intros p1 Hp1; rewrite F; repeat rewrite Zpos_xI.
-assert (tmp: (forall p, 2 * p = p + p)%Z); 
+assert (tmp: (forall p, 2 * p = p + p)%Z);
   try repeat rewrite tmp; auto with zarith.
 intros p1 Hp1; rewrite F; rewrite (Zpos_xO p1).
-assert (tmp: (forall p, 2 * p = p + p)%Z); 
+assert (tmp: (forall p, 2 * p = p + p)%Z);
   try repeat rewrite tmp; auto with zarith.
 rewrite Zpower_1_r; auto with zarith.
 Qed.
@@ -73,7 +73,7 @@ case (Z_mod_lt (Zpos p) (Zpos q) H1); auto with zarith.
 intros q1 H2.
 replace (Zpos p - Zpos q * Zpos q1) with (Zpos p mod Zpos q).
   2: pattern (Zpos p) at 2; rewrite H2; auto with zarith.
-generalize H2 (Z_mod_lt (Zpos p) (Zpos q) H1); clear H2; 
+generalize H2 (Z_mod_lt (Zpos p) (Zpos q) H1); clear H2;
   case Zmod.
   intros HH _; rewrite HH; auto with zarith.
   intros r1 HH (_,HH1); rewrite HH; rewrite Zpos_succ_morphism.
@@ -121,9 +121,9 @@ Definition zn2z_word_comm : forall w n, zn2z (word w n) = word (zn2z w) n.
 Defined.
 
 Fixpoint extend (n:nat) {struct n} : forall w:Type, zn2z w -> word w (S n) :=
- match n return forall w:Type, zn2z w -> word w (S n) with 
+ match n return forall w:Type, zn2z w -> word w (S n) with
  | O => fun w x => x
- | S m => 
+ | S m =>
    let aux := extend m in
    fun w x => WW W0 (aux w x)
  end.
@@ -169,7 +169,7 @@ Fixpoint diff_l (m n : nat) {struct m} : fst (diff m n) + n = max m n :=
       | S n1 =>
           let v := fst (diff m1 n1) + n1 in
           let v1 := fst (diff m1 n1) + S n1 in
-          eq_ind v (fun n => v1 = S n) 
+          eq_ind v (fun n => v1 = S n)
             (eq_ind v1 (fun n => v1 = n) (refl_equal v1) (S v) (plusnS _ _))
             _ (diff_l _ _)
       end
@@ -182,7 +182,7 @@ Fixpoint diff_r (m n: nat) {struct m}: snd (diff m n) + m = max m n :=
       | 0 => refl_equal _
       | S _ => plusn0 _
       end
-  | S m => 
+  | S m =>
       match n return (snd (diff (S m) n) + S m = max (S m) n) with
       | 0 => refl_equal (snd (diff (S m) 0) + S m)
       | S n1 =>
@@ -253,9 +253,9 @@ Section ReduceRec.
     | WW xh xl =>
       match xh with
       | W0 => @reduce_n m xl
-      | _ => @c (S m) x 
+      | _ => @c (S m) x
       end
-    end	
+    end
   end.
 
 End ReduceRec.
@@ -276,14 +276,14 @@ Section CompareRec.
  Variable compare_m : wm -> w -> comparison.
 
  Fixpoint compare0_mn (n:nat) : word wm n -> comparison :=
-  match n return word wm n -> comparison with 
-  | O => compare0_m 
+  match n return word wm n -> comparison with
+  | O => compare0_m
   | S m => fun x =>
     match x with
     | W0 => Eq
-    | WW xh xl => 
+    | WW xh xl =>
       match compare0_mn m xh with
-      | Eq => compare0_mn m xl 
+      | Eq => compare0_mn m xl
       | r  => Lt
       end
     end
@@ -296,7 +296,7 @@ Section CompareRec.
  Variable spec_compare0_m: forall x,
     match compare0_m x with
       Eq => w_to_Z w_0 = wm_to_Z x
-    | Lt => w_to_Z w_0 < wm_to_Z x 
+    | Lt => w_to_Z w_0 < wm_to_Z x
     | Gt => w_to_Z w_0 > wm_to_Z x
     end.
  Variable wm_to_Z_pos: forall x, 0 <= wm_to_Z x < base wm_base.
@@ -341,14 +341,14 @@ Section CompareRec.
   Qed.
 
  Fixpoint compare_mn_1 (n:nat) : word wm n -> w -> comparison :=
-  match n return word wm n -> w -> comparison with 
-  | O => compare_m 
-  | S m => fun x y => 
+  match n return word wm n -> w -> comparison with
+  | O => compare_m
+  | S m => fun x y =>
     match x with
     | W0 => compare w_0 y
-    | WW xh xl => 
+    | WW xh xl =>
       match compare0_mn m xh with
-      | Eq => compare_mn_1 m xl y 
+      | Eq => compare_mn_1 m xl y
       | r  => Gt
       end
     end
@@ -366,7 +366,7 @@ Section CompareRec.
    | Lt => wm_to_Z x < w_to_Z y
    | Gt => wm_to_Z x > w_to_Z y
    end.
- Variable wm_base_lt: forall x, 
+ Variable wm_base_lt: forall x,
    0 <= w_to_Z x < base (wm_base).
 
  Let double_wB_lt: forall n x,
@@ -385,7 +385,7 @@ Section CompareRec.
  unfold Zpower_pos; simpl; ring.
  Qed.
 
- 
+
  Lemma spec_compare_mn_1: forall n x y,
    match compare_mn_1 n x y with
      Eq => double_to_Z n x = w_to_Z y
@@ -434,7 +434,7 @@ Section AddS.
                 | C1 z => match incr hy with
                             C0 z1 => C0 (WW z1 z)
                           | C1 z1 => C1 (WW z1 z)
-                          end  
+                          end
                  end
    end.
 
@@ -458,12 +458,12 @@ End AddS.
 
  Fixpoint length_pos x :=
   match x with xH => O | xO x1 => S (length_pos x1) | xI x1 => S (length_pos x1) end.
- 
+
  Theorem length_pos_lt: forall x y,
    (length_pos x < length_pos y)%nat -> Zpos x < Zpos y.
  Proof.
  intros x; elim x; clear x; [intros x1 Hrec | intros x1 Hrec | idtac];
-   intros y; case y; clear y; intros y1 H || intros H; simpl length_pos; 
+   intros y; case y; clear y; intros y1 H || intros H; simpl length_pos;
    try (rewrite (Zpos_xI x1) || rewrite (Zpos_xO x1));
    try (rewrite (Zpos_xI y1) || rewrite (Zpos_xO y1));
    try (inversion H; fail);
@@ -492,20 +492,20 @@ End AddS.
  Qed.
 
  Theorem make_zop: forall w (x: znz_op w),
-  znz_to_Z (mk_zn2z_op x) = 
-    fun z => match z with 
+  znz_to_Z (mk_zn2z_op x) =
+    fun z => match z with
                 W0 => 0
-             | WW xh xl => znz_to_Z x xh * base (znz_digits x) 
+             | WW xh xl => znz_to_Z x xh * base (znz_digits x)
                                 + znz_to_Z x xl
              end.
  intros ww x; auto.
  Qed.
 
  Theorem make_kzop: forall w (x: znz_op w),
-  znz_to_Z (mk_zn2z_op_karatsuba x) = 
-    fun z => match z with 
+  znz_to_Z (mk_zn2z_op_karatsuba x) =
+    fun z => match z with
                 W0 => 0
-             | WW xh xl => znz_to_Z x xh * base (znz_digits x) 
+             | WW xh xl => znz_to_Z x xh * base (znz_digits x)
                                 + znz_to_Z x xl
              end.
  intros ww x; auto.

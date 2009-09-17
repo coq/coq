@@ -42,7 +42,7 @@ val e_new_evar :
 (* Create a fresh evar in a context different from its definition context:
    [new_evar_instance sign evd ty inst] creates a new evar of context
    [sign] and type [ty], [inst] is a mapping of the evar context to
-   the context where the evar should occur. This means that the terms 
+   the context where the evar should occur. This means that the terms
    of [inst] are typed in the occurrence context and their type (seen
    as a telescope) is [sign] *)
 val new_evar_instance :
@@ -74,7 +74,7 @@ val non_instantiated : evar_map -> (evar * evar_info) list
 
 val is_ground_term :  evar_defs -> constr -> bool
 val is_ground_env  :  evar_defs -> env -> bool
-val solve_refl : 
+val solve_refl :
   (env ->  evar_defs -> conv_pb -> constr -> constr -> evar_defs * bool)
   -> env ->  evar_defs -> existential_key -> constr array -> constr array ->
     evar_defs
@@ -91,7 +91,7 @@ val define_evar_as_product : evar_defs -> existential -> evar_defs * types
 val define_evar_as_lambda : evar_defs -> existential -> evar_defs * types
 val define_evar_as_sort : evar_defs -> existential -> evar_defs * sorts
 
-val is_unification_pattern_evar : env -> existential -> constr list -> 
+val is_unification_pattern_evar : env -> existential -> constr list ->
   constr -> bool
 val is_unification_pattern : env * int -> constr -> constr array ->
   constr -> bool
@@ -120,7 +120,7 @@ val empty_valcon : val_constraint
 val mk_valcon : constr -> val_constraint
 
 val split_tycon :
-  loc -> env ->  evar_defs -> type_constraint -> 
+  loc -> env ->  evar_defs -> type_constraint ->
     evar_defs * (name * type_constraint * type_constraint)
 
 val valcon_of_tycon : type_constraint -> val_constraint
@@ -170,7 +170,7 @@ val whd_castappevar :  evar_map -> constr -> constr
 
 (* Replace the vars and rels that are aliases to other vars and rels by *)
 (* their representative that is most ancient in the context *)
-val expand_vars_in_term : env -> constr -> constr 
+val expand_vars_in_term : env -> constr -> constr
 
 (*********************************************************************)
 (* debug pretty-printer: *)

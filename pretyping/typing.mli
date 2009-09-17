@@ -23,12 +23,12 @@ val type_of : env -> evar_map -> constr -> types
 val sort_of : env -> evar_map -> types -> sorts
 (* Typecheck a term has a given type (assuming the type is OK *)
 val check   : env -> evar_map -> constr -> types -> unit
- 
+
 (* The same but with metas... *)
 val mtype_of : env -> evar_defs -> constr -> types
 val msort_of : env -> evar_defs -> types -> sorts
 val mcheck   : env -> evar_defs -> constr -> types -> unit
 val meta_type : evar_defs -> metavariable -> types
- 
+
 (* unused typing function... *)
 val mtype_of_type : env -> evar_defs -> types -> types

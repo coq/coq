@@ -12,8 +12,8 @@
 
 IFDEF OCAML309 THEN DEFINE OCAML308 END
 
-IFDEF CAMLP5 THEN 
-module M = struct 
+IFDEF CAMLP5 THEN
+module M = struct
 type loc = Stdpp.location
 let dummy_loc = Stdpp.dummy_loc
 let make_loc = Stdpp.make_loc
@@ -39,11 +39,11 @@ let unloc (b,e) =
   loc
 let join_loc loc1 loc2 =
  if loc1 = dummy_loc or loc2 = dummy_loc then dummy_loc
- else (fst loc1, snd loc2) 
+ else (fst loc1, snd loc2)
 type token = Token.t
 type lexer = Token.lexer
 end
-ELSE 
+ELSE
 module M = struct
 type loc = int * int
 let dummy_loc = (0,0)

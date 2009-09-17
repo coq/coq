@@ -13,5 +13,5 @@ open Cooking
 open Declarations
 open Entries
 
-val process_inductive : 
+val process_inductive :
   named_context -> work_list -> mutual_inductive_body -> mutual_inductive_entry

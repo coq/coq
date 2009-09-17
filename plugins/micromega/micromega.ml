@@ -803,7 +803,7 @@ let rec pmul cO cI cadd cmul ceqb p p'' = match p'' with
                      (match q0 with
                         | Pc c -> q0
                         | Pinj (j', q1) -> Pinj ((pplus XH j'), q1)
-                        | PX (p3, p4, p5) -> Pinj (XH, q0)) p')) i' 
+                        | PX (p3, p4, p5) -> Pinj (XH, q0)) p')) i'
                  (p0 cO))
                (mkPX cO ceqb
                  (pmulI cO cI cmul ceqb (fun x x0 ->
@@ -1599,16 +1599,16 @@ let rec zChecker l = function
                                          (match op4 with
                                             | NonStrict ->
                                                 if is_pol_Z0 (padd1 e1 e2)
-                                                then 
+                                                then
                                                   let rec label pfs lb ub =
-                                                    
+
                                                   match pfs with
-                                                    | 
+                                                    |
                                                   [] ->
                                                   if z_gt_dec lb ub
                                                   then true
                                                   else false
-                                                    | 
+                                                    |
                                                   pf1 :: rsr ->
                                                   (&&)
                                                   (zChecker

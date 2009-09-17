@@ -30,7 +30,7 @@ Fixpoint remove_assoc (A:Set)(x:variable)(rho: substitution A){struct rho}
                       : substitution A :=
   match rho with
     | nil => rho
-    | (y,t) :: rho => if var_eq_dec x y then remove_assoc A x rho 
+    | (y,t) :: rho => if var_eq_dec x y then remove_assoc A x rho
                       else (y,t) :: remove_assoc A x rho
   end.
 
@@ -38,7 +38,7 @@ Fixpoint assoc (A:Set)(x:variable)(rho:substitution A){struct rho}
                : option A :=
   match rho with
     | nil => None
-    | (y,t) :: rho => if var_eq_dec x y then Some t 
+    | (y,t) :: rho => if var_eq_dec x y then Some t
                       else assoc A x rho
   end.
 
@@ -126,34 +126,34 @@ Inductive in_context (A:formula) : list formula -> Prop :=
   | OmWeak : forall Gamma B, in_context A Gamma -> in_context A (cons B Gamma).
 
 Inductive prove : list formula -> formula -> Type :=
-  | ProofImplyR : forall A B Gamma, prove (cons A Gamma) B 
+  | ProofImplyR : forall A B Gamma, prove (cons A Gamma) B
     -> prove Gamma (A --> B)
-  | ProofForallR : forall x A Gamma, (forall y, fresh y (A::Gamma) 
+  | ProofForallR : forall x A Gamma, (forall y, fresh y (A::Gamma)
     -> prove Gamma (subst A x (Var y))) -> prove Gamma (Forall x A)
-  | ProofCont : forall A Gamma Gamma' C, context_prefix (A::Gamma) Gamma' 
+  | ProofCont : forall A Gamma Gamma' C, context_prefix (A::Gamma) Gamma'
     -> (prove_stoup Gamma' A C) -> (Gamma' |- C)
 
 where "Gamma |- A" := (prove Gamma A)
 
   with prove_stoup : list formula -> formula -> formula -> Type :=
   | ProofAxiom Gamma C: Gamma ; C |- C
-  | ProofImplyL Gamma C : forall A B, (Gamma |- A) 
+  | ProofImplyL Gamma C : forall A B, (Gamma |- A)
     -> (prove_stoup Gamma B C) -> (prove_stoup Gamma (A --> B) C)
-  | ProofForallL Gamma C : forall x t A, (prove_stoup Gamma (subst A x t) C) 
+  | ProofForallL Gamma C : forall x t A, (prove_stoup Gamma (subst A x t) C)
     -> (prove_stoup Gamma (Forall x A) C)
 
 where " Gamma ; B |- A " := (prove_stoup Gamma B A).
 
-Axiom context_prefix_trans : 
+Axiom context_prefix_trans :
   forall Gamma Gamma' Gamma'',
-    context_prefix Gamma Gamma' 
+    context_prefix Gamma Gamma'
       -> context_prefix Gamma' Gamma''
         -> context_prefix Gamma Gamma''.
 
-Axiom Weakening : 
+Axiom Weakening :
   forall Gamma Gamma' A,
     context_prefix Gamma Gamma' -> Gamma |- A -> Gamma' |- A.
-    
+
 Axiom universal_weakening :
   forall Gamma Gamma', context_prefix Gamma Gamma'
     -> forall P, Gamma |- Atom P -> Gamma' |- Atom P.
@@ -170,20 +170,20 @@ Canonical Structure Universal := Build_Kripke
   universal_weakening.
 
 Axiom subst_commute :
-  forall A rho x t, 
+  forall A rho x t,
     subst_formula ((x,t)::rho) A = subst (subst_formula rho A) x t.
 
 Axiom subst_formula_atom :
-  forall rho p t, 
+  forall rho p t,
     Atom (p, sem _ rho t) = subst_formula rho (Atom (p,t)).
 
 Fixpoint universal_completeness (Gamma:context)(A:formula){struct A}
-  : forall rho:substitution term, 
+  : forall rho:substitution term,
       force _ rho Gamma A -> Gamma |- subst_formula rho A
   :=
-  match A 
-    return forall rho, force _ rho Gamma A 
-      -> Gamma |- subst_formula rho A 
+  match A
+    return forall rho, force _ rho Gamma A
+      -> Gamma |- subst_formula rho A
   with
   | Atom (p,t) => fun rho H => eq_rect _ (fun A => Gamma |- A) H _ (subst_formula_atom rho p t)
   | A --> B => fun rho HImplyAB =>
@@ -192,21 +192,21 @@ Fixpoint universal_completeness (Gamma:context)(A:formula){struct A}
      (HImplyAB (A'::Gamma)(CtxPrefixTrans A' (CtxPrefixRefl Gamma))
        (universal_completeness_stoup A rho (fun C Gamma' Hle p
          => ProofCont Hle p))))
-  | Forall x A => fun rho HForallA 
-    => ProofForallR x (fun y Hfresh 
-      => eq_rect _ _ (universal_completeness Gamma A _ 
+  | Forall x A => fun rho HForallA
+    => ProofForallR x (fun y Hfresh
+      => eq_rect _ _ (universal_completeness Gamma A _
         (HForallA Gamma (CtxPrefixRefl Gamma)(Var y))) _ (subst_commute _ _ _ _ ))
   end
 with universal_completeness_stoup (Gamma:context)(A:formula){struct A}
   : forall rho, (forall C Gamma', context_prefix Gamma Gamma'
     -> Gamma' ; subst_formula rho A |- C -> Gamma' |- C)
       -> force _ rho Gamma A
-  := 
-  match A return forall rho, 
-    (forall C Gamma', context_prefix Gamma Gamma' 
+  :=
+  match A return forall rho,
+    (forall C Gamma', context_prefix Gamma Gamma'
      -> Gamma' ; subst_formula rho A |- C
      -> Gamma' |- C)
-       -> force _ rho Gamma A 
+       -> force _ rho Gamma A
   with
   | Atom (p,t) as C => fun rho H
     => H _ Gamma (CtxPrefixRefl Gamma)(ProofAxiom _ _)

@@ -107,7 +107,7 @@ Proof.
 Qed.
 
 Lemma not_make_conj_app : forall (A:Type) (t:list A) a eval
-  (no_middle_eval : forall d, eval d \/ ~ eval d) , 
+  (no_middle_eval : forall d, eval d \/ ~ eval d) ,
   ~ make_conj  eval (t ++ a) -> (~ make_conj  eval t) \/ (~ make_conj eval a).
 Proof.
   induction t.

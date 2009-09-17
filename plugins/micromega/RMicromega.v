@@ -159,7 +159,7 @@ Definition Rnormalise := @cnf_normalise Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bo
 Definition Rnegate := @cnf_negate Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool.
 
 Definition RTautoChecker (f : BFormula (Formula Z)) (w: list RWitness)  : bool :=
-  @tauto_checker (Formula Z) (NFormula Z) 
+  @tauto_checker (Formula Z) (NFormula Z)
   Rnormalise Rnegate
   RWitness RWeakChecker f w.
 

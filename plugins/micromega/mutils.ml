@@ -14,25 +14,25 @@
 
 let debug = false
 
-let finally f rst = 
-  try 
+let finally f rst =
+  try
     let res = f () in
       rst () ; res
-  with x -> 
-    (try rst () 
+  with x ->
+    (try rst ()
     with _  -> raise x
     ); raise x
 
-let map_option f x = 
+let map_option f x =
   match x with
     | None -> None
     | Some v -> Some (f v)
 
 let from_option = function
   | None -> failwith "from_option"
-  | Some v -> v  
+  | Some v -> v
 
-let rec try_any l x = 
+let rec try_any l x =
  match l with
   | [] -> None
   | (f,s)::l -> match f x with
@@ -40,20 +40,20 @@ let rec try_any l x =
      | x -> x
 
 let iteri f l =
- let rec xiter i l = 
+ let rec xiter i l =
   match l with
    | [] -> ()
    | e::l -> f i e ; xiter (i+1) l in
   xiter 0 l
 
 let mapi f l =
- let rec xmap i l = 
+ let rec xmap i l =
   match l with
    | [] -> []
    | e::l -> (f i e)::xmap (i+1) l in
   xmap 0 l
 
-let rec map3 f l1 l2 l3 = 
+let rec map3 f l1 l2 l3 =
   match l1 , l2 ,l3 with
     | [] , [] , [] -> []
     | e1::l1 , e2::l2 , e3::l3 -> (f e1 e2 e3)::(map3 f l1 l2 l3)
@@ -61,14 +61,14 @@ let rec map3 f l1 l2 l3 =
 
 
 
-let rec is_sublist l1 l2 = 
+let rec is_sublist l1 l2 =
   match l1 ,l2 with
     | [] ,_ -> true
     | e::l1', [] -> false
-    | e::l1' , e'::l2' -> 
+    | e::l1' , e'::l2' ->
 	if e = e' then is_sublist l1' l2'
 	else is_sublist l1 l2'
-		
+
 
 
 let list_try_find f =
@@ -85,16 +85,16 @@ let rec list_fold_right_elements f l =
     | x::l -> f x (aux l) in
   aux l
 
-let interval n m = 
+let interval n m =
   let rec interval_n (l,m) =
     if n > m then l else interval_n (m::l,pred m)
-  in 
+  in
   interval_n ([],m)
 
 open Num
 open Big_int
 
-let ppcm x y = 
+let ppcm x y =
  let g = gcd_big_int x y in
  let x' = div_big_int x g in
  let y' = div_big_int y g in
@@ -115,26 +115,26 @@ let rec ppcm_list c l =
   | [] -> c
   | e::l -> ppcm_list (ppcm c (denominator e)) l
 
-let rec rec_gcd_list c l  = 
+let rec rec_gcd_list c l  =
  match l with
   | [] -> c
   | e::l -> rec_gcd_list (gcd_big_int  c (numerator e)) l
 
-let rec gcd_list l = 
+let rec gcd_list l =
  let res = rec_gcd_list zero_big_int l in
-  if compare_big_int res zero_big_int = 0 
+  if compare_big_int res zero_big_int = 0
   then unit_big_int else res
-   
-   
-   
-let rats_to_ints l = 
+
+
+
+let rats_to_ints l =
  let c = ppcm_list unit_big_int l in
-  List.map (fun x ->  (div_big_int (mult_big_int (numerator x) c) 
+  List.map (fun x ->  (div_big_int (mult_big_int (numerator x) c)
 			(denominator x))) l
-   
+
 (* Nasty reordering of lists - useful to trim certificate down *)
 let mapi f l =
- let rec xmapi i l = 
+ let rec xmapi i l =
   match l with
    | []   -> []
    | e::l ->  (f e i)::(xmapi (i+1) l) in
@@ -146,11 +146,11 @@ let concatMapi f l = List.rev (mapi (fun e i -> (i,f e)) l)
 (* assoc_pos j [a0...an] = [j,a0....an,j+n],j+n+1 *)
 let assoc_pos j l = (mapi (fun e i -> e,i+j) l, j + (List.length l))
 
-let assoc_pos_assoc l = 
+let assoc_pos_assoc l =
  let rec xpos i l =
   match l with
    | [] -> []
-   | (x,l) ::rst -> let (l',j) = assoc_pos i l in 
+   | (x,l) ::rst -> let (l',j) = assoc_pos i l in
 		     (x,l')::(xpos j rst) in
   xpos 0 l
 
@@ -159,7 +159,7 @@ let filter_pos f l =
  let rec xfilter l =
   match l with
    | []  -> []
-   | (x,e)::l -> 
+   | (x,e)::l ->
       if List.exists (fun ee -> List.mem ee f) (List.map snd e)
       then (x,e)::(xfilter l)
       else xfilter l in
@@ -169,11 +169,11 @@ let  select_pos lpos l =
  let rec xselect i lpos l =
   match lpos with
    | [] -> []
-   | j::rpos -> 
+   | j::rpos ->
       match l with
        | []   -> failwith "select_pos"
-       | e::l -> 
-	  if i = j 
+       | e::l ->
+	  if i = j
 	  then e:: (xselect (i+1) rpos l)
 	  else xselect (i+1) lpos l in
   xselect 0 lpos l
@@ -188,7 +188,7 @@ struct
   | S n -> (nat n) + 1
 
 
- let rec positive p = 
+ let rec positive p =
   match p with
    | XH -> 1
    | XI p -> 1+ 2*(positive p)
@@ -208,7 +208,7 @@ struct
    | XO i -> 2*(index i)
 
 
- let z x = 
+ let z x =
   match x with
    | Z0 -> 0
    | Zpos p -> (positive p)
@@ -223,7 +223,7 @@ struct
    | XO p -> (mult_int_big_int 2 (positive_big_int p))
 
 
- let z_big_int x = 
+ let z_big_int x =
   match x with
    | Z0 -> zero_big_int
    | Zpos p -> (positive_big_int p)
@@ -232,9 +232,9 @@ struct
 
  let num x = Num.Big_int (z_big_int x)
 
- let q_to_num {qnum = x ; qden = y} = 
+ let q_to_num {qnum = x ; qden = y} =
   Big_int (z_big_int x) // (Big_int (z_big_int (Zpos y)))
-  
+
 end
 
 
@@ -252,8 +252,8 @@ struct
   else if n land 1 = 1 then XI (positive (n lsr 1))
   else  XO (positive (n lsr 1))
 
- let  n nt = 
-  if nt < 0 
+ let  n nt =
+  if nt < 0
   then assert false
   else if nt = 0 then N0
   else Npos (positive nt)
@@ -264,47 +264,47 @@ struct
   else  XO (index (n lsr 1))
 
 
- let idx n = 
+ let idx n =
   (*a.k.a path_of_int *)
   (* returns the list of digits of n in reverse order with
      initial 1 removed *)
   let rec digits_of_int n =
-   if n=1 then [] 
+   if n=1 then []
    else (n mod 2 = 1)::(digits_of_int (n lsr 1))
   in
-   List.fold_right 
+   List.fold_right
     (fun b c -> (if b then XI c else XO c))
     (List.rev (digits_of_int n))
     (XH)
 
- let z x = 
+ let z x =
   match compare x 0 with
    | 0 -> Z0
    | 1 -> Zpos (positive x)
    | _ -> (* this should be -1 *)
-      Zneg (positive (-x)) 
+      Zneg (positive (-x))
 
  open Big_int
 
- let positive_big_int n = 
-  let two = big_int_of_int 2 in 
-  let rec _pos n = 
+ let positive_big_int n =
+  let two = big_int_of_int 2 in
+  let rec _pos n =
    if eq_big_int n unit_big_int then XH
    else
     let (q,m) = quomod_big_int n two  in
-     if eq_big_int unit_big_int m 
+     if eq_big_int unit_big_int m
      then XI (_pos q)
      else XO (_pos q) in
    _pos n
 
- let bigint x = 
+ let bigint x =
   match sign_big_int x with
    | 0 -> Z0
    | 1 -> Zpos (positive_big_int x)
    | _ -> Zneg (positive_big_int (minus_big_int x))
 
- let q n = 
-  {Micromega.qnum = bigint (numerator n) ; 
+ let q n =
+  {Micromega.qnum = bigint (numerator n) ;
    Micromega.qden = positive_big_int (denominator n)}
 
 end
@@ -312,23 +312,23 @@ end
 module Cmp =
 struct
 
- let rec compare_lexical l = 
+ let rec compare_lexical l =
   match l with
    | [] -> 0 (* Equal *)
-   | f::l -> 
+   | f::l ->
       let cmp = f () in
        if cmp = 0 	then  compare_lexical l else cmp
 
- let rec compare_list cmp l1 l2 = 
+ let rec compare_list cmp l1 l2 =
   match l1 , l2 with
    | []  , [] -> 0
    | []  , _  -> -1
    | _   , [] -> 1
-   | e1::l1 , e2::l2 -> 
+   | e1::l1 , e2::l2 ->
       let c = cmp e1 e2 in
        if c = 0 then compare_list cmp l1 l2 else c
-	
- let hash_list hash l = 
+
+ let hash_list hash l =
   let rec _hash_list l h =
    match l with
     | []  -> h lxor (Hashtbl.hash [])
@@ -373,21 +373,21 @@ let command exe_path args vl =
   let outch = Unix.out_channel_of_descr stdin_write in
     output_value outch vl ;
     flush outch ;
-    
+
   (* Wait for its completion *)
     let _pid,status = Unix.waitpid [] pid in
 
-      finally 
-	(fun () -> 
+      finally
+	(fun () ->
 	  (* Recover the result *)
 	  match status with
-	    | Unix.WEXITED 0 -> 
-		let inch  = Unix.in_channel_of_descr  stdout_read in 
+	    | Unix.WEXITED 0 ->
+		let inch  = Unix.in_channel_of_descr  stdout_read in
 		  begin try Marshal.from_channel inch with x -> failwith (Printf.sprintf "command \"%s\" exited %s" exe_path (Printexc.to_string x)) end
 	    | Unix.WEXITED i -> failwith (Printf.sprintf "command \"%s\" exited %i" exe_path i)
 	    | Unix.WSIGNALED i -> failwith (Printf.sprintf "command \"%s\" killed %i" exe_path i)
 	    | Unix.WSTOPPED  i -> failwith (Printf.sprintf "command \"%s\" stopped %i" exe_path i))
-	(fun () -> 
+	(fun () ->
 	  (* Cleanup  *)
 	  List.iter (fun x -> try Unix.close x with _ -> ()) [stdin_read; stdin_write; stdout_read ; stdout_write ; stderr_read; stderr_write]
 	)

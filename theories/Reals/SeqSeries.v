@@ -25,7 +25,7 @@ Open Local Scope R_scope.
 
 (**********)
 Lemma sum_maj1 :
-  forall (fn:nat -> R -> R) (An:nat -> R) (x l1 l2:R) 
+  forall (fn:nat -> R -> R) (An:nat -> R) (x l1 l2:R)
     (N:nat),
     Un_cv (fun n:nat => SP fn n x) l1 ->
     Un_cv (fun n:nat => sum_f_R0 An n) l2 ->
@@ -92,7 +92,7 @@ Proof.
     (sum_f_R0 (fun l:nat => fn (S N + l)%nat x) n -
       (l1 - sum_f_R0 (fun k:nat => fn k x) N)) with
     (sum_f_R0 (fun k:nat => fn k x) N +
-      sum_f_R0 (fun l:nat => fn (S N + l)%nat x) n - l1); 
+      sum_f_R0 (fun l:nat => fn (S N + l)%nat x) n - l1);
     [ idtac | ring ].
   replace
   (sum_f_R0 (fun k:nat => fn k x) N +
@@ -170,7 +170,7 @@ Proof.
   (sum_f_R0 (fun l:nat => fn (S N + l)%nat x) n -
     (l1 - sum_f_R0 (fun k:nat => fn k x) N)) with
   (sum_f_R0 (fun k:nat => fn k x) N +
-    sum_f_R0 (fun l:nat => fn (S N + l)%nat x) n - l1); 
+    sum_f_R0 (fun l:nat => fn (S N + l)%nat x) n - l1);
   [ idtac | ring ].
   replace
   (sum_f_R0 (fun k:nat => fn k x) N +
@@ -241,13 +241,13 @@ Proof.
   apply Rle_ge; apply cond_pos_sum; intro.
   elim (H (S n + n0)%nat); intros; assumption.
   rewrite b; unfold R_dist in |- *; unfold Rminus in |- *;
-    do 2 rewrite Rplus_opp_r; rewrite Rabs_R0; right; 
+    do 2 rewrite Rplus_opp_r; rewrite Rabs_R0; right;
       reflexivity.
   rewrite (tech2 An m n); [ idtac | assumption ].
   rewrite (tech2 Bn m n); [ idtac | assumption ].
   unfold R_dist in |- *; unfold Rminus in |- *; do 2 rewrite Rplus_assoc;
     rewrite (Rplus_comm (sum_f_R0 An m)); rewrite (Rplus_comm (sum_f_R0 Bn m));
-      do 2 rewrite Rplus_assoc; do 2 rewrite Rplus_opp_l; 
+      do 2 rewrite Rplus_assoc; do 2 rewrite Rplus_opp_l;
         do 2 rewrite Rplus_0_r; repeat rewrite Rabs_right.
   apply sum_Rle; intros.
   elim (H (S m + n0)%nat); intros; apply H8.

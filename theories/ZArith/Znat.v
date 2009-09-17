@@ -57,9 +57,9 @@ Proof.
 	| discriminate H0
 	| discriminate H0
 	| simpl in H0; injection H0;
-	  do 2 rewrite <- nat_of_P_o_P_of_succ_nat_eq_succ; 
+	  do 2 rewrite <- nat_of_P_o_P_of_succ_nat_eq_succ;
 	    intros E; rewrite E; auto with arith ].
-Qed. 
+Qed.
 
 Theorem inj_eq_rev : forall n m:nat, Z_of_nat n = Z_of_nat m -> n = m.
 Proof.
@@ -169,7 +169,7 @@ Proof.
 Qed.
 
 (** Injection and usual operations *)
- 
+
 Theorem inj_plus : forall n m:nat, Z_of_nat (n + m) = Z_of_nat n + Z_of_nat m.
 Proof.
   intro x; induction x as [| n H]; intro y; destruct y as [| m];
@@ -186,7 +186,7 @@ Proof.
   intro x; induction x as [| n H];
     [ simpl in |- *; trivial with arith
       | intro y; rewrite inj_S; rewrite <- Zmult_succ_l_reverse; rewrite <- H;
-	rewrite <- inj_plus; simpl in |- *; rewrite plus_comm; 
+	rewrite <- inj_plus; simpl in |- *; rewrite plus_comm;
 	  trivial with arith ].
 Qed.
 
@@ -195,17 +195,17 @@ Theorem inj_minus1 :
 Proof.
   intros x y H; apply (Zplus_reg_l (Z_of_nat y)); unfold Zminus in |- *;
     rewrite Zplus_permute; rewrite Zplus_opp_r; rewrite <- inj_plus;
-      rewrite <- (le_plus_minus y x H); rewrite Zplus_0_r; 
+      rewrite <- (le_plus_minus y x H); rewrite Zplus_0_r;
         trivial with arith.
 Qed.
- 
+
 Theorem inj_minus2 : forall n m:nat, (m > n)%nat -> Z_of_nat (n - m) = 0.
 Proof.
   intros x y H; rewrite not_le_minus_0;
     [ trivial with arith | apply gt_not_le; assumption ].
 Qed.
 
-Theorem inj_minus : forall n m:nat, 
+Theorem inj_minus : forall n m:nat,
  Z_of_nat (minus n m) = Zmax 0 (Z_of_nat n - Z_of_nat m).
 Proof.
  intros.
@@ -225,7 +225,7 @@ Proof.
  unfold Zminus; rewrite H'; auto.
 Qed.
 
-Theorem inj_min : forall n m:nat, 
+Theorem inj_min : forall n m:nat,
   Z_of_nat (min n m) = Zmin (Z_of_nat n) (Z_of_nat m).
 Proof.
  induction n; destruct m; try (compute; auto; fail).
@@ -234,7 +234,7 @@ Proof.
  rewrite <- Zsucc_min_distr; f_equal; auto.
 Qed.
 
-Theorem inj_max : forall n m:nat, 
+Theorem inj_max : forall n m:nat,
   Z_of_nat (max n m) = Zmax (Z_of_nat n) (Z_of_nat m).
 Proof.
  induction n; destruct m; try (compute; auto; fail).
@@ -269,11 +269,11 @@ Proof.
   intros x; exists (Z_of_nat x); split;
     [ trivial with arith
       | rewrite Zmult_comm; rewrite Zmult_1_l; rewrite Zplus_0_r;
-	unfold Zle in |- *; elim x; intros; simpl in |- *; 
+	unfold Zle in |- *; elim x; intros; simpl in |- *;
           discriminate ].
 Qed.
 
-Lemma Zpos_P_of_succ_nat : forall n:nat, 
+Lemma Zpos_P_of_succ_nat : forall n:nat,
  Zpos (P_of_succ_nat n) = Zsucc (Z_of_nat n).
 Proof.
   intros.

@@ -58,7 +58,7 @@ Module Type ZType.
 
  Parameter spec_eq_bool: forall x y,
     if eq_bool x y then [x] = [y] else [x] <> [y].
- 
+
  Parameter succ : t -> t.
 
  Parameter spec_succ: forall n, [succ n] = [n] + 1.
@@ -93,21 +93,21 @@ Module Type ZType.
 
  Parameter sqrt : t -> t.
 
- Parameter spec_sqrt: forall x, 0 <= [x] -> 
+ Parameter spec_sqrt: forall x, 0 <= [x] ->
    [sqrt x] ^ 2 <= [x] < ([sqrt x] + 1) ^ 2.
 
  Parameter div_eucl : t -> t -> t * t.
 
  Parameter spec_div_eucl: forall x y, [y] <> 0 ->
    let (q,r) := div_eucl x y in ([q], [r]) = Zdiv_eucl [x] [y].
- 
+
  Parameter div : t -> t -> t.
 
  Parameter spec_div: forall x y, [y] <> 0 -> [div x y] = [x] / [y].
 
  Parameter modulo : t -> t -> t.
 
- Parameter spec_modulo: forall x y, [y] <> 0 -> 
+ Parameter spec_modulo: forall x y, [y] <> 0 ->
    [modulo x y] = [x] mod [y].
 
  Parameter gcd : t -> t -> t.

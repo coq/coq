@@ -23,24 +23,24 @@ open Libnames
 open Vernacexpr
 open Mod_subst
 (*i*)
-  
-type auto_tactic = 
+
+type auto_tactic =
   | Res_pf     of constr * clausenv    (* Hint Apply *)
   | ERes_pf    of constr * clausenv    (* Hint EApply *)
-  | Give_exact of constr                  
+  | Give_exact of constr
   | Res_pf_THEN_trivial_fail of constr * clausenv (* Hint Immediate *)
   | Unfold_nth of evaluable_global_reference          (* Hint Unfold *)
   | Extern     of Tacexpr.glob_tactic_expr   (* Hint Extern *)
 
 open Rawterm
 
-type pri_auto_tactic = { 
+type pri_auto_tactic = {
   pri   : int;            (* A number between 0 and 4, 4 = lower priority *)
   pat   : constr_pattern option; (* A pattern for the concl of the Goal *)
   code  : auto_tactic;    (* the tactic to apply when the concl matches pat *)
 }
 
-type stored_data = pri_auto_tactic 
+type stored_data = pri_auto_tactic
 
 type search_entry = stored_data list * stored_data list * stored_data Btermdn.t
 
@@ -74,18 +74,18 @@ type hints_entry =
   | HintsImmediateEntry of constr list
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool
-  | HintsExternEntry of 
+  | HintsExternEntry of
       int * (patvar list * constr_pattern) option * Tacexpr.glob_tactic_expr
-  | HintsDestructEntry of identifier * int * (bool,unit) Tacexpr.location * 
+  | HintsDestructEntry of identifier * int * (bool,unit) Tacexpr.location *
       (patvar list * constr_pattern) * Tacexpr.glob_tactic_expr
 
 val searchtable_map : hint_db_name -> hint_db
 
 val searchtable_add : (hint_db_name * hint_db) -> unit
 
-(* [create_hint_db local name st use_dn]. 
+(* [create_hint_db local name st use_dn].
    [st] is a transparency state for unification using this db
-   [use_dn] switches the use of the discrimination net for all hints 
+   [use_dn] switches the use of the discrimination net for all hints
    and patterns. *)
 
 val create_hint_db : bool -> hint_db_name -> transparent_state -> bool -> unit
@@ -104,7 +104,7 @@ val print_hint_ref : global_reference -> unit
 
 val print_hint_db_by_name : hint_db_name -> unit
 
-(* [make_exact_entry pri (c, ctyp)]. 
+(* [make_exact_entry pri (c, ctyp)].
    [c] is the term given as an exact proof to solve the goal;
    [ctyp] is the type of [c]. *)
 
@@ -112,11 +112,11 @@ val make_exact_entry : int option -> constr * constr -> hint_entry
 
 (* [make_apply_entry (eapply,verbose) pri (c,cty)].
    [eapply] is true if this hint will be used only with EApply;
-   [hnf] should be true if we should expand the head of cty before searching for 
+   [hnf] should be true if we should expand the head of cty before searching for
    products;
    [c] is the term given as an exact proof to solve the goal;
    [cty] is the type of [c]. *)
-  
+
 val make_apply_entry :
   env -> evar_map -> bool * bool * bool -> int option -> constr * constr
       -> hint_entry
@@ -129,7 +129,7 @@ val make_apply_entry :
        has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> bool * bool * bool -> int option -> constr -> 
+  env -> evar_map -> bool * bool * bool -> int option -> constr ->
       hint_entry list
 
 (* [make_resolve_hyp hname htyp].
@@ -137,7 +137,7 @@ val make_resolves :
    Never raises a user exception;
    If the hyp cannot be used as a Hint, the empty list is returned. *)
 
-val make_resolve_hyp : 
+val make_resolve_hyp :
   env -> evar_map -> named_declaration -> hint_entry list
 
 (* [make_extern pri pattern tactic_expr] *)
@@ -175,7 +175,7 @@ val unify_resolve_nodelta : (constr * clausenv) -> tactic
 val unify_resolve : Unification.unify_flags -> (constr * clausenv) -> tactic
 
 (* [ConclPattern concl pat tacast]:
-   if the term concl matches the pattern pat, (in sense of 
+   if the term concl matches the pattern pat, (in sense of
    [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
    right values to build a tactic *)
 
@@ -199,7 +199,7 @@ val full_auto : int -> constr list -> tactic
    and doing delta *)
 val new_full_auto : int -> constr list -> tactic
 
-(* auto with default search depth and with all hint databases 
+(* auto with default search depth and with all hint databases
    except the "v62" compatibility database *)
 val default_full_auto : tactic
 
@@ -228,8 +228,8 @@ val h_dauto : int option * int option -> constr list -> tactic
 (* SuperAuto *)
 
 type autoArguments =
-  | UsingTDB       
-  | Destructing   
+  | UsingTDB
+  | Destructing
 
 (*
 val superauto : int -> (identifier * constr) list -> autoArguments list -> tactic

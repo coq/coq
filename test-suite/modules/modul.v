@@ -6,7 +6,7 @@ Module M.
   Hint Resolve w.
 
   (* <Warning> : Grammar is replaced by Notation *)
-  
+
   Print Hint *.
 
   Lemma w1 : rel 0 1.

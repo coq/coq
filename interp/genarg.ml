@@ -170,7 +170,7 @@ let globwit_constr_may_eval = ConstrMayEvalArgType
 let wit_constr_may_eval = ConstrMayEvalArgType
 
 let rawwit_open_constr_gen b = OpenConstrArgType b
-let globwit_open_constr_gen b = OpenConstrArgType b 
+let globwit_open_constr_gen b = OpenConstrArgType b
 let wit_open_constr_gen b = OpenConstrArgType b
 
 let rawwit_open_constr = rawwit_open_constr_gen false

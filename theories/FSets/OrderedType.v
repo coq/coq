@@ -69,22 +69,22 @@ Module OrderedTypeFacts (Import O: OrderedType).
 
   Lemma lt_antirefl : forall x, ~ lt x x.
   Proof.
-   intros; intro; absurd (eq x x); auto. 
+   intros; intro; absurd (eq x x); auto.
   Qed.
 
   Lemma lt_eq : forall x y z, lt x y -> eq y z -> lt x z.
-  Proof. 
+  Proof.
    intros; destruct (compare x z); auto.
    elim (lt_not_eq H); apply eq_trans with z; auto.
    elim (lt_not_eq (lt_trans l H)); auto.
-  Qed. 
+  Qed.
 
-  Lemma eq_lt : forall x y z, eq x y -> lt y z -> lt x z.    
+  Lemma eq_lt : forall x y z, eq x y -> lt y z -> lt x z.
   Proof.
    intros; destruct (compare x z); auto.
    elim (lt_not_eq H0); apply eq_trans with x; auto.
    elim (lt_not_eq (lt_trans H0 l)); auto.
-  Qed. 
+  Qed.
 
   Lemma le_eq : forall x y z, ~lt x y -> eq y z -> ~lt x z.
   Proof.
@@ -125,23 +125,23 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Qed.
 
   Lemma le_neq : forall x y, ~lt x y -> ~eq x y -> lt y x.
-  Proof. 
+  Proof.
    intros; destruct (compare x y); intuition.
   Qed.
 
   Lemma neq_sym : forall x y, ~eq x y -> ~eq y x.
-  Proof. 
+  Proof.
    intuition.
   Qed.
 
-(* TODO concernant la tactique order: 
+(* TODO concernant la tactique order:
    * propagate_lt n'est sans doute pas complet
    * un propagate_le
    * exploiter les hypotheses negatives restant a la fin
    * faire que ca marche meme quand une hypothese depend d'un eq ou lt.
-*) 
+*)
 
-Ltac abstraction := match goal with 
+Ltac abstraction := match goal with
  (* First, some obvious simplifications *)
  | H : False |- _ => elim H
  | H : lt ?x ?x |- _ => elim (lt_antirefl H)
@@ -151,43 +151,43 @@ Ltac abstraction := match goal with
  | |- eq ?x ?x => exact (eq_refl x)
  | |- lt ?x ?x => elimtype False; abstraction
  | |- ~ _ => intro; abstraction
- | H1: ~lt ?x ?y, H2: ~eq ?x ?y |- _ => 
+ | H1: ~lt ?x ?y, H2: ~eq ?x ?y |- _ =>
      generalize (le_neq H1 H2); clear H1 H2; intro; abstraction
- | H1: ~lt ?x ?y, H2: ~eq ?y ?x |- _ => 
+ | H1: ~lt ?x ?y, H2: ~eq ?y ?x |- _ =>
      generalize (le_neq H1 (neq_sym H2)); clear H1 H2; intro; abstraction
  (* Then, we generalize all interesting facts *)
  | H : ~eq ?x ?y |- _ =>  revert H; abstraction
- | H : ~lt ?x ?y |- _ => revert H; abstraction  
+ | H : ~lt ?x ?y |- _ => revert H; abstraction
  | H : lt ?x ?y |- _ => revert H; abstraction
  | H : eq ?x ?y |- _ =>  revert H; abstraction
  | _ => idtac
 end.
 
-Ltac do_eq a b EQ := match goal with 
- | |- lt ?x ?y -> _ => let H := fresh "H" in 
-     (intro H; 
+Ltac do_eq a b EQ := match goal with
+ | |- lt ?x ?y -> _ => let H := fresh "H" in
+     (intro H;
       (generalize (eq_lt (eq_sym EQ) H); clear H; intro H) ||
-      (generalize (lt_eq H EQ); clear H; intro H) || 
-      idtac); 
+      (generalize (lt_eq H EQ); clear H; intro H) ||
+      idtac);
       do_eq a b EQ
- | |- ~lt ?x ?y -> _ => let H := fresh "H" in 
-     (intro H; 
+ | |- ~lt ?x ?y -> _ => let H := fresh "H" in
+     (intro H;
       (generalize (eq_le (eq_sym EQ) H); clear H; intro H) ||
-      (generalize (le_eq H EQ); clear H; intro H) || 
-      idtac); 
-      do_eq a b EQ 
- | |- eq ?x ?y -> _ => let H := fresh "H" in 
-     (intro H; 
+      (generalize (le_eq H EQ); clear H; intro H) ||
+      idtac);
+      do_eq a b EQ
+ | |- eq ?x ?y -> _ => let H := fresh "H" in
+     (intro H;
       (generalize (eq_trans (eq_sym EQ) H); clear H; intro H) ||
-      (generalize (eq_trans H EQ); clear H; intro H) || 
-      idtac); 
-      do_eq a b EQ 
- | |- ~eq ?x ?y -> _ => let H := fresh "H" in 
-     (intro H; 
+      (generalize (eq_trans H EQ); clear H; intro H) ||
+      idtac);
+      do_eq a b EQ
+ | |- ~eq ?x ?y -> _ => let H := fresh "H" in
+     (intro H;
       (generalize (eq_neq (eq_sym EQ) H); clear H; intro H) ||
-      (generalize (neq_eq H EQ); clear H; intro H) || 
-      idtac); 
-      do_eq a b EQ 
+      (generalize (neq_eq H EQ); clear H; intro H) ||
+      idtac);
+      do_eq a b EQ
  | |- lt a ?y => apply eq_lt with b; [exact EQ|]
  | |- lt ?y a => apply lt_eq with b; [|exact (eq_sym EQ)]
  | |- eq a ?y => apply eq_trans with b; [exact EQ|]
@@ -195,27 +195,27 @@ Ltac do_eq a b EQ := match goal with
  | _ => idtac
  end.
 
-Ltac propagate_eq := abstraction; clear; match goal with 
+Ltac propagate_eq := abstraction; clear; match goal with
  (* the abstraction tactic leaves equality facts in head position...*)
- | |- eq ?a ?b -> _ => 
-     let EQ := fresh "EQ" in (intro EQ; do_eq a b EQ; clear EQ); 
-     propagate_eq 
+ | |- eq ?a ?b -> _ =>
+     let EQ := fresh "EQ" in (intro EQ; do_eq a b EQ; clear EQ);
+     propagate_eq
  | _ => idtac
 end.
 
-Ltac do_lt x y LT := match goal with 
+Ltac do_lt x y LT := match goal with
  (* LT *)
  | |- lt x y -> _ => intros _; do_lt x y LT
- | |- lt y ?z -> _ => let H := fresh "H" in 
+ | |- lt y ?z -> _ => let H := fresh "H" in
      (intro H; generalize (lt_trans LT H); intro); do_lt x y LT
- | |- lt ?z x -> _ => let H := fresh "H" in 
+ | |- lt ?z x -> _ => let H := fresh "H" in
      (intro H; generalize (lt_trans H LT); intro); do_lt x y LT
  | |- lt _ _ -> _ => intro; do_lt x y LT
  (* GE *)
  | |- ~lt y x -> _ => intros _; do_lt x y LT
- | |- ~lt x ?z -> _ => let H := fresh "H" in 
+ | |- ~lt x ?z -> _ => let H := fresh "H" in
      (intro H; generalize (le_lt_trans H LT); intro); do_lt x y LT
- | |- ~lt ?z y -> _ => let H := fresh "H" in 
+ | |- ~lt ?z y -> _ => let H := fresh "H" in
      (intro H; generalize (lt_le_trans LT H); intro); do_lt x y LT
  | |- ~lt _ _ -> _ => intro; do_lt x y LT
  | _ => idtac
@@ -223,21 +223,21 @@ Ltac do_lt x y LT := match goal with
 
 Definition hide_lt := lt.
 
-Ltac propagate_lt := abstraction; match goal with 
+Ltac propagate_lt := abstraction; match goal with
  (* when no [=] remains, the abstraction tactic leaves [<] facts first. *)
- | |- lt ?x ?y -> _ => 
-     let LT := fresh "LT" in (intro LT; do_lt x y LT; 
-     change (hide_lt x y) in LT); 
-     propagate_lt 
+ | |- lt ?x ?y -> _ =>
+     let LT := fresh "LT" in (intro LT; do_lt x y LT;
+     change (hide_lt x y) in LT);
+     propagate_lt
  | _ => unfold hide_lt in *
 end.
 
-Ltac order := 
- intros; 
- propagate_eq; 
- propagate_lt; 
- auto; 
- propagate_lt; 
+Ltac order :=
+ intros;
+ propagate_eq;
+ propagate_lt;
+ auto;
+ propagate_lt;
  eauto.
 
 Ltac false_order := elimtype False; order.
@@ -245,22 +245,22 @@ Ltac false_order := elimtype False; order.
   Lemma gt_not_eq : forall x y, lt y x -> ~ eq x y.
   Proof.
     order.
-  Qed.	
- 
+  Qed.
+
   Lemma eq_not_lt : forall x y : t, eq x y -> ~ lt x y.
-  Proof. 
+  Proof.
     order.
   Qed.
 
   Hint Resolve gt_not_eq eq_not_lt.
 
   Lemma eq_not_gt : forall x y : t, eq x y -> ~ lt y x.
-  Proof. 
+  Proof.
    order.
   Qed.
 
   Lemma lt_not_gt : forall x y : t, lt x y -> ~ lt y x.
-  Proof.  
+  Proof.
    order.
   Qed.
 
@@ -269,44 +269,44 @@ Ltac false_order := elimtype False; order.
   Lemma elim_compare_eq :
    forall x y : t,
    eq x y -> exists H : eq x y, compare x y = EQ _ H.
-  Proof. 
+  Proof.
    intros; case (compare x y); intros H'; try solve [false_order].
-   exists H'; auto.   
+   exists H'; auto.
   Qed.
 
   Lemma elim_compare_lt :
    forall x y : t,
    lt x y -> exists H : lt x y, compare x y = LT _ H.
-  Proof. 
+  Proof.
    intros; case (compare x y); intros H'; try solve [false_order].
-   exists H'; auto. 
+   exists H'; auto.
   Qed.
 
   Lemma elim_compare_gt :
    forall x y : t,
    lt y x -> exists H : lt y x, compare x y = GT _ H.
-  Proof. 
+  Proof.
    intros; case (compare x y); intros H'; try solve [false_order].
-   exists H'; auto.   
+   exists H'; auto.
   Qed.
 
-  Ltac elim_comp := 
-    match goal with 
-      | |- ?e => match e with 
+  Ltac elim_comp :=
+    match goal with
+      | |- ?e => match e with
            | context ctx [ compare ?a ?b ] =>
-                let H := fresh in 
-                (destruct (compare a b) as [H|H|H]; 
+                let H := fresh in
+                (destruct (compare a b) as [H|H|H];
                  try solve [ intros; false_order])
          end
     end.
 
   Ltac elim_comp_eq x y :=
     elim (elim_compare_eq (x:=x) (y:=y));
-     [ intros _1 _2; rewrite _2; clear _1 _2 | auto ]. 
+     [ intros _1 _2; rewrite _2; clear _1 _2 | auto ].
 
   Ltac elim_comp_lt x y :=
     elim (elim_compare_lt (x:=x) (y:=y));
-     [ intros _1 _2; rewrite _2; clear _1 _2 | auto ]. 
+     [ intros _1 _2; rewrite _2; clear _1 _2 | auto ].
 
   Ltac elim_comp_gt x y :=
     elim (elim_compare_gt (x:=x) (y:=y));
@@ -314,7 +314,7 @@ Ltac false_order := elimtype False; order.
 
   (** For compatibility reasons *)
   Definition eq_dec := eq_dec.
- 
+
   Lemma lt_dec : forall x y : t, {lt x y} + {~ lt x y}.
   Proof.
    intros; elim (compare x y); [ left | right | right ]; auto.
@@ -322,8 +322,8 @@ Ltac false_order := elimtype False; order.
 
   Definition eqb x y : bool := if eq_dec x y then true else false.
 
-  Lemma eqb_alt : 
-    forall x y, eqb x y = match compare x y with EQ _ => true | _ => false end. 
+  Lemma eqb_alt :
+    forall x y, eqb x y = match compare x y with EQ _ => true | _ => false end.
   Proof.
   unfold eqb; intros; destruct (eq_dec x y); elim_comp; auto.
   Qed.
@@ -345,20 +345,20 @@ Proof. exact (In_InA eq_refl). Qed.
 
 Lemma Inf_lt : forall l x y, lt x y -> Inf y l -> Inf x l.
 Proof. exact (InfA_ltA lt_trans). Qed.
- 
+
 Lemma Inf_eq : forall l x y, eq x y -> Inf y l -> Inf x l.
 Proof. exact (InfA_eqA eq_lt). Qed.
 
 Lemma Sort_Inf_In : forall l x a, Sort l -> Inf a l -> In x l -> lt a x.
 Proof. exact (SortA_InfA_InA eq_refl eq_sym lt_trans lt_eq eq_lt). Qed.
-  
+
 Lemma ListIn_Inf : forall l x, (forall y, List.In y l -> lt x y) -> Inf x l.
 Proof. exact (@In_InfA t lt). Qed.
 
 Lemma In_Inf : forall l x, (forall y, In y l -> lt x y) -> Inf x l.
 Proof. exact (InA_InfA eq_refl (ltA:=lt)). Qed.
 
-Lemma Inf_alt : 
+Lemma Inf_alt :
  forall l x, Sort l -> (Inf x l <-> (forall y, In y l -> lt x y)).
 Proof. exact (InfA_alt eq_refl eq_sym lt_trans lt_eq eq_lt). Qed.
 
@@ -367,8 +367,8 @@ Proof. exact (SortA_NoDupA eq_refl eq_sym lt_trans lt_not_eq lt_eq eq_lt) . Qed.
 
 End ForNotations.
 
-Hint Resolve ListIn_In Sort_NoDup Inf_lt. 
-Hint Immediate In_eq Inf_lt. 
+Hint Resolve ListIn_In Sort_NoDup Inf_lt.
+Hint Immediate In_eq Inf_lt.
 
 End OrderedTypeFacts.
 
@@ -382,7 +382,7 @@ Module KeyOrderedType(O:OrderedType).
  Notation key:=t.
 
   Definition eqk (p p':key*elt) := eq (fst p) (fst p').
-  Definition eqke (p p':key*elt) := 
+  Definition eqke (p p':key*elt) :=
           eq (fst p) (fst p') /\ (snd p) = (snd p').
   Definition ltk (p p':key*elt) := lt (fst p) (fst p').
 
@@ -390,7 +390,7 @@ Module KeyOrderedType(O:OrderedType).
   Hint Extern 2 (eqke ?a ?b) => split.
 
    (* eqke is stricter than eqk *)
- 
+
    Lemma eqke_eqk : forall x x', eqke x x' -> eqk x x'.
    Proof.
      unfold eqk, eqke; intuition.
@@ -406,7 +406,7 @@ Module KeyOrderedType(O:OrderedType).
    Hint Immediate ltk_right_r ltk_right_l.
 
   (* eqk, eqke are equalities, ltk is a strict order *)
- 
+
   Lemma eqk_refl : forall e, eqk e e.
   Proof. auto. Qed.
 
@@ -431,7 +431,7 @@ Module KeyOrderedType(O:OrderedType).
   Proof. eauto. Qed.
 
   Lemma ltk_not_eqk : forall e e', ltk e e' -> ~ eqk e e'.
-  Proof. unfold eqk, ltk; auto. Qed.  
+  Proof. unfold eqk, ltk; auto. Qed.
 
   Lemma ltk_not_eqke : forall e e', ltk e e' -> ~eqke e e'.
   Proof.
@@ -458,10 +458,10 @@ Module KeyOrderedType(O:OrderedType).
       intros (k,e) (k',e') (k'',e'').
       unfold ltk, eqk; simpl; eauto.
   Qed.
-  Hint Resolve eqk_not_ltk. 
+  Hint Resolve eqk_not_ltk.
   Hint Immediate ltk_eqk eqk_ltk.
 
-  Lemma InA_eqke_eqk : 
+  Lemma InA_eqke_eqk :
      forall x m, InA eqke x m -> InA eqk x m.
   Proof.
     unfold eqke; induction 1; intuition.
@@ -496,7 +496,7 @@ Module KeyOrderedType(O:OrderedType).
   Lemma In_eq : forall l x y, eq x y -> In x l -> In y l.
   Proof.
   destruct 2 as (e,E); exists e; eapply MapsTo_eq; eauto.
-  Qed. 
+  Qed.
 
   Lemma Inf_eq : forall l x x', eqk x x' -> Inf x' l -> Inf x l.
   Proof. exact (InfA_eqA eqk_ltk). Qed.
@@ -507,13 +507,13 @@ Module KeyOrderedType(O:OrderedType).
   Hint Immediate Inf_eq.
   Hint Resolve Inf_lt.
 
-  Lemma Sort_Inf_In : 
+  Lemma Sort_Inf_In :
       forall l p q, Sort l -> Inf q l -> InA eqk p l -> ltk q p.
-  Proof. 
+  Proof.
   exact (SortA_InfA_InA eqk_refl eqk_sym ltk_trans ltk_eqk eqk_ltk).
   Qed.
 
-  Lemma Sort_Inf_NotIn : 
+  Lemma Sort_Inf_NotIn :
       forall l k e, Sort l -> Inf (k,e) l ->  ~In k l.
   Proof.
     intros; red; intros.
@@ -524,7 +524,7 @@ Module KeyOrderedType(O:OrderedType).
   Qed.
 
   Lemma Sort_NoDupA: forall l, Sort l -> NoDupA eqk l.
-  Proof. 
+  Proof.
   exact (SortA_NoDupA eqk_refl eqk_sym ltk_trans ltk_not_eqk ltk_eqk eqk_ltk).
   Qed.
 
@@ -540,7 +540,7 @@ Module KeyOrderedType(O:OrderedType).
     left; apply Sort_In_cons_1 with l; auto.
   Qed.
 
-  Lemma Sort_In_cons_3 : 
+  Lemma Sort_In_cons_3 :
     forall x l k e, Sort ((k,e)::l) -> In x l -> ~eq x k.
   Proof.
     inversion_clear 1; red; intros.
@@ -552,15 +552,15 @@ Module KeyOrderedType(O:OrderedType).
     inversion 1.
     inversion_clear H0; eauto.
     destruct H1; simpl in *; intuition.
-  Qed.      
+  Qed.
 
-  Lemma In_inv_2 : forall k k' e e' l, 
+  Lemma In_inv_2 : forall k k' e e' l,
       InA eqk (k, e) ((k', e') :: l) -> ~ eq k k' -> InA eqk (k, e) l.
-  Proof.  
+  Proof.
    inversion_clear 1; compute in H0; intuition.
   Qed.
 
-  Lemma In_inv_3 : forall x x' l, 
+  Lemma In_inv_3 : forall x x' l,
       InA eqke x (x' :: l) -> ~ eqk x x' -> InA eqke x l.
   Proof.
    inversion_clear 1; compute in H0; intuition.
@@ -573,7 +573,7 @@ Module KeyOrderedType(O:OrderedType).
  Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl.
  Hint Resolve ltk_trans ltk_not_eqk ltk_not_eqke.
  Hint Immediate eqk_sym eqke_sym.
- Hint Resolve eqk_not_ltk. 
+ Hint Resolve eqk_not_ltk.
  Hint Immediate ltk_eqk eqk_ltk.
  Hint Resolve InA_eqke_eqk.
  Hint Unfold MapsTo In.

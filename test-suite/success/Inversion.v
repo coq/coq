@@ -5,13 +5,13 @@ Fixpoint T (n : nat) : Type :=
   match n with
   | O => nat -> Prop
   | S n' => T n'
-  end. 
+  end.
 Inductive R : forall n : nat, T n -> nat -> Prop :=
   | RO : forall (Psi : T 0) (l : nat), Psi l -> R 0 Psi l
   | RS :
-      forall (n : nat) (Psi : T (S n)) (l : nat), R n Psi l -> R (S n) Psi l. 
-Definition Psi00 (n : nat) : Prop := False. 
-Definition Psi0 : T 0 := Psi00. 
+      forall (n : nat) (Psi : T (S n)) (l : nat), R n Psi l -> R (S n) Psi l.
+Definition Psi00 (n : nat) : Prop := False.
+Definition Psi0 : T 0 := Psi00.
 Lemma Inversion_RO : forall l : nat, R 0 Psi0 l -> Psi00 l.
 inversion 1.
 Abort.
@@ -39,14 +39,14 @@ extension I -> Type :=
   | super_add :
       forall r (e' : extension I),
       in_extension r e ->
-      super_extension e e' -> super_extension e (add_rule r e'). 
+      super_extension e e' -> super_extension e (add_rule r e').
 
 
 
 Lemma super_def :
  forall (I : Set) (e1 e2 : extension I),
  super_extension e2 e1 -> forall ru, in_extension ru e1 -> in_extension ru e2.
-Proof.                 
+Proof.
  simple induction 1.
  inversion 1; auto.
  elim magic.
@@ -105,5 +105,5 @@ Abort.
 Inductive foo2 : option nat -> Prop := Foo : forall t, foo2 (Some t).
 Goal forall o, foo2 o -> 0 = 1.
 intros.
-eapply trans_eq. 
+eapply trans_eq.
 inversion H.

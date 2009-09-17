@@ -35,15 +35,15 @@ open Libnames
 (* Most functions in this module fall into one of the following categories:
    \begin{itemize}
    \item [push : visibility -> full_user_name -> object_reference -> unit]
-   
+
    Registers the [object_reference] to be referred to by the
    [full_user_name] (and its suffixes according to [visibility]).
    [full_user_name] can either be a [full_path] or a [dir_path].
 
-   \item [exists : full_user_name -> bool] 
-   
+   \item [exists : full_user_name -> bool]
+
    Is the [full_user_name] already atributed as an absolute user name
-   of some object? 
+   of some object?
 
    \item [locate : qualid -> object_reference]
 
@@ -52,16 +52,16 @@ open Libnames
    \item [full_name : qualid -> full_user_name]
 
    Finds the full user name referred to by [qualid] or raises [Not_found]
-   
+
    \item [shortest_qualid_of : object_reference -> user_name]
 
-   The [user_name] can be for example the shortest non ambiguous [qualid] or 
-   the [full_user_name] or [identifier]. Such a function can also have a 
-   local context argument. 
+   The [user_name] can be for example the shortest non ambiguous [qualid] or
+   the [full_user_name] or [identifier]. Such a function can also have a
+   local context argument.
    \end{itemize}
 *)
-   
-  
+
+
 exception GlobalizationError of qualid
 exception GlobalizationConstantError of qualid
 
@@ -79,7 +79,7 @@ val error_global_constant_not_found_loc : loc -> qualid -> 'a
    object is loaded inside a module -- or
 
    \item for a precise suffix, when the module containing (the module
-   containing ...) the object is opened (imported) 
+   containing ...) the object is opened (imported)
    \end{itemize}
 *)
 

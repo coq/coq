@@ -40,10 +40,10 @@ Require Export Finite_sets_facts.
 
 Section Image.
   Variables U V : Type.
-  
+
   Inductive Im (X:Ensemble U) (f:U -> V) : Ensemble V :=
     Im_intro : forall x:U, In _ X x -> forall y:V, y = f x -> In _ (Im X f) y.
-  
+
   Lemma Im_def :
     forall (X:Ensemble U) (f:U -> V) (x:U), In _ X x -> In _ (Im X f) (f x).
   Proof.
@@ -62,13 +62,13 @@ Section Image.
     rewrite H0.
     elim Add_inv with U X x x1; auto using Im_def with sets.
     destruct 1; auto using Im_def with sets.
-    elim Add_inv with V (Im X f) (f x) x0. 
+    elim Add_inv with V (Im X f) (f x) x0.
     destruct 1 as [x0 H y H0].
     rewrite H0; auto using Im_def with sets.
     destruct 1; auto using Im_def with sets.
     trivial.
   Qed.
-  
+
   Lemma image_empty : forall f:U -> V, Im (Empty_set U) f = Empty_set V.
   Proof.
     intro f; try assumption.
@@ -88,7 +88,7 @@ Section Image.
     rewrite (Im_add A x f); auto with sets.
     apply Add_preserves_Finite; auto with sets.
   Qed.
-  
+
   Lemma Im_inv :
     forall (X:Ensemble U) (f:U -> V) (y:V),
       In _ (Im X f) y ->  exists x : U, In _ X x /\ f x = y.
@@ -97,9 +97,9 @@ Section Image.
     intros x H'0 y0 H'1; rewrite H'1.
     exists x; auto with sets.
   Qed.
-  
+
   Definition injective (f:U -> V) := forall x y:U, f x = f y -> x = y.
-  
+
   Lemma not_injective_elim :
     forall f:U -> V,
       ~ injective f ->  exists x : _, (exists y : _, f x = f y /\ x <> y).
@@ -115,7 +115,7 @@ Section Image.
     destruct 1 as [y D]; exists y.
     apply imply_to_and; trivial with sets.
   Qed.
-  
+
   Lemma cardinal_Im_intro :
     forall (A:Ensemble U) (f:U -> V) (n:nat),
       cardinal _ A n ->  exists p : nat, cardinal _ (Im A f) p.
@@ -124,7 +124,7 @@ Section Image.
     apply finite_cardinal; apply finite_image.
     apply cardinal_finite with n; trivial with sets.
   Qed.
-  
+
   Lemma In_Image_elim :
     forall (A:Ensemble U) (f:U -> V),
       injective f -> forall x:U, In _ (Im A f) (f x) -> In _ A x.
@@ -134,7 +134,7 @@ Section Image.
     intros z C; elim C; intros InAz E.
     elim (H z x E); trivial with sets.
   Qed.
-  
+
   Lemma injective_preserves_cardinal :
     forall (A:Ensemble U) (f:U -> V) (n:nat),
       injective f ->
@@ -158,7 +158,7 @@ Section Image.
     red in |- *; intro; apply H'2.
     apply In_Image_elim with f; trivial with sets.
   Qed.
-  
+
   Lemma cardinal_decreases :
     forall (A:Ensemble U) (f:U -> V) (n:nat),
       cardinal U A n -> forall n':nat, cardinal V (Im A f) n' -> n' <= n.
@@ -188,7 +188,7 @@ Section Image.
     apply injective_preserves_cardinal with (A := A) (f := f) (n := n);
       trivial with sets.
   Qed.
-  
+
   Lemma Pigeonhole_principle :
     forall (A:Ensemble U) (f:U -> V) (n:nat),
       cardinal _ A n ->

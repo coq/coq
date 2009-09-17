@@ -29,7 +29,7 @@ val explain_pretype_error : env -> pretype_error -> std_ppcmds
 
 val explain_inductive_error : inductive_error -> std_ppcmds
 
-val explain_typeclass_error : env -> typeclass_error -> Pp.std_ppcmds 
+val explain_typeclass_error : env -> typeclass_error -> Pp.std_ppcmds
 
 val explain_recursion_scheme_error : recursion_scheme_error -> std_ppcmds
 
@@ -41,6 +41,6 @@ val explain_pattern_matching_error :
 val explain_reduction_tactic_error :
   Tacred.reduction_tactic_error -> std_ppcmds
 
-val explain_ltac_call_trace : 
+val explain_ltac_call_trace :
   int * Proof_type.ltac_call_kind * Proof_type.ltac_trace * Util.loc ->
   std_ppcmds

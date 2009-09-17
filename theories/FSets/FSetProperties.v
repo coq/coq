@@ -11,9 +11,9 @@
 (** * Finite sets library *)
 
 (** This functor derives additional properties from [FSetInterface.S].
-    Contrary to the functor in [FSetEqProperties] it uses 
+    Contrary to the functor in [FSetEqProperties] it uses
     predicates over sets instead of sets operations, i.e.
-    [In x s] instead of [mem x s=true], 
+    [In x s] instead of [mem x s=true],
     [Equal s s'] instead of [equal s s'=true], etc. *)
 
 Require Export FSetInterface.
@@ -47,7 +47,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   fsetdec.
   fsetdec.
   Qed.
-  
+
   Ltac expAdd := repeat rewrite Add_Equal.
 
   Section BasicProperties.
@@ -64,7 +64,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Lemma equal_trans : s1[=]s2 -> s2[=]s3 -> s1[=]s3.
   Proof. fsetdec. Qed.
 
-  Lemma subset_refl : s[<=]s. 
+  Lemma subset_refl : s[<=]s.
   Proof. fsetdec. Qed.
 
   Lemma subset_trans : s1[<=]s2 -> s2[<=]s3 -> s1[<=]s3.
@@ -84,7 +84,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
 
   Lemma subset_diff : s1[<=]s3 -> diff s1 s2 [<=] s3.
   Proof. fsetdec. Qed.
- 
+
   Lemma subset_add_3 : In x s2 -> s1[<=]s2 -> add x s1 [<=] s2.
   Proof. fsetdec. Qed.
 
@@ -93,7 +93,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
 
   Lemma in_subset : In x s1 -> s1[<=]s2 -> In x s2.
   Proof. fsetdec. Qed.
- 
+
   Lemma double_inclusion : s1[=]s2 <-> s1[<=]s2 /\ s2[<=]s1.
   Proof. intuition fsetdec. Qed.
 
@@ -105,7 +105,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
 
   Lemma add_equal : In x s -> add x s [=] s.
   Proof. fsetdec. Qed.
- 
+
   Lemma add_add : add x (add x' s) [=] add x' (add x s).
   Proof. fsetdec. Qed.
 
@@ -149,11 +149,11 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Lemma union_add : union (add x s) s' [=] add x (union s s').
   Proof. fsetdec. Qed.
 
-  Lemma union_remove_add_1 : 
+  Lemma union_remove_add_1 :
    union (remove x s) (add x s') [=] union (add x s) (remove x s').
   Proof. fsetdec. Qed.
 
-  Lemma union_remove_add_2 : In x s -> 
+  Lemma union_remove_add_2 : In x s ->
    union (remove x s) (add x s') [=] union s s'.
   Proof. fsetdec. Qed.
 
@@ -167,10 +167,10 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Proof. fsetdec. Qed.
 
   Lemma union_subset_4 : s[<=]s' -> union s s'' [<=] union s' s''.
-  Proof. fsetdec. Qed. 
+  Proof. fsetdec. Qed.
 
   Lemma union_subset_5 : s[<=]s' -> union s'' s [<=] union s'' s'.
-  Proof. fsetdec. Qed. 
+  Proof. fsetdec. Qed.
 
   Lemma empty_union_1 : Empty s -> union s s' [=] s'.
   Proof. fsetdec. Qed.
@@ -178,7 +178,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Lemma empty_union_2 : Empty s -> union s' s [=] s'.
   Proof. fsetdec. Qed.
 
-  Lemma not_in_union : ~In x s -> ~In x s' -> ~In x (union s s'). 
+  Lemma not_in_union : ~In x s -> ~In x s' -> ~In x (union s s').
   Proof. fsetdec. Qed.
 
   Lemma inter_sym : inter s s' [=] inter s' s.
@@ -224,7 +224,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
    s''[<=]s -> s''[<=]s' -> s''[<=] inter s s'.
   Proof. fsetdec. Qed.
 
-  Lemma empty_diff_1 : Empty s -> Empty (diff s s'). 
+  Lemma empty_diff_1 : Empty s -> Empty (diff s s').
   Proof. fsetdec. Qed.
 
   Lemma empty_diff_2 : Empty s -> diff s' s [=] s'.
@@ -240,7 +240,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
    remove x s [=] diff s (singleton x).
   Proof. fsetdec. Qed.
 
-  Lemma diff_inter_empty : inter (diff s s') (inter s s') [=] empty. 
+  Lemma diff_inter_empty : inter (diff s s') (inter s s') [=] empty.
   Proof. fsetdec. Qed.
 
   Lemma diff_inter_all : union (diff s s') (inter s s') [=] s.
@@ -249,19 +249,19 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Lemma Add_add : Add x s (add x s).
   Proof. expAdd; fsetdec. Qed.
 
-  Lemma Add_remove : In x s -> Add x (remove x s) s. 
+  Lemma Add_remove : In x s -> Add x (remove x s) s.
   Proof. expAdd; fsetdec. Qed.
 
   Lemma union_Add : Add x s s' -> Add x (union s s'') (union s' s'').
-  Proof. expAdd; fsetdec. Qed. 
+  Proof. expAdd; fsetdec. Qed.
 
   Lemma inter_Add :
    In x s'' -> Add x s s' -> Add x (inter s s'') (inter s' s'').
-  Proof. expAdd; fsetdec. Qed. 
+  Proof. expAdd; fsetdec. Qed.
 
   Lemma union_Equal :
    In x s'' -> Add x s s' -> union s s'' [=] union s' s''.
-  Proof. expAdd; fsetdec. Qed. 
+  Proof. expAdd; fsetdec. Qed.
 
   Lemma inter_Add_2 :
    ~In x s'' -> Add x s s' -> inter s s'' [=] inter s' s''.
@@ -270,16 +270,16 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   End BasicProperties.
 
   Hint Immediate equal_sym add_remove remove_add union_sym inter_sym: set.
-  Hint Resolve equal_refl equal_trans subset_refl subset_equal subset_antisym 
-    subset_trans subset_empty subset_remove_3 subset_diff subset_add_3 
+  Hint Resolve equal_refl equal_trans subset_refl subset_equal subset_antisym
+    subset_trans subset_empty subset_remove_3 subset_diff subset_add_3
     subset_add_2 in_subset empty_is_empty_1 empty_is_empty_2 add_equal
-    remove_equal singleton_equal_add union_subset_equal union_equal_1 
-    union_equal_2 union_assoc add_union_singleton union_add union_subset_1 
+    remove_equal singleton_equal_add union_subset_equal union_equal_1
+    union_equal_2 union_assoc add_union_singleton union_add union_subset_1
     union_subset_2 union_subset_3 inter_subset_equal inter_equal_1 inter_equal_2
     inter_assoc union_inter_1 union_inter_2 inter_add_1 inter_add_2
-    empty_inter_1 empty_inter_2 empty_union_1 empty_union_2 empty_diff_1 
-    empty_diff_2 union_Add inter_Add union_Equal inter_Add_2 not_in_union 
-    inter_subset_1 inter_subset_2 inter_subset_3 diff_subset diff_subset_equal 
+    empty_inter_1 empty_inter_2 empty_union_1 empty_union_2 empty_diff_1
+    empty_diff_2 union_Add inter_Add union_Equal inter_Add_2 not_in_union
+    inter_subset_1 inter_subset_2 inter_subset_3 diff_subset diff_subset_equal
     remove_diff_singleton diff_inter_empty diff_inter_all Add_add Add_remove
     Equal_remove add_add : set.
 
@@ -504,7 +504,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   generalize H H2; clear H H2; case l; simpl; intros.
   reflexivity.
   elim (H e).
-  elim (H2 e); intuition. 
+  elim (H2 e); intuition.
   Qed.
 
   Lemma fold_2 :
@@ -514,17 +514,17 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
    transpose eqA f ->
    ~ In x s -> Add x s s' -> eqA (fold f s' i) (f x (fold f s i)).
   Proof.
-  intros; destruct (fold_0 s i f) as (l,(Hl, (Hl1, Hl2))); 
+  intros; destruct (fold_0 s i f) as (l,(Hl, (Hl1, Hl2)));
     destruct (fold_0 s' i f) as (l',(Hl', (Hl'1, Hl'2))).
   rewrite Hl2; rewrite Hl'2; clear Hl2 Hl'2.
   apply fold_right_add with (eqA:=E.eq)(eqB:=eqA); auto.
   eauto.
   rewrite <- Hl1; auto.
-  intros a; rewrite InA_cons; rewrite <- Hl1; rewrite <- Hl'1; 
+  intros a; rewrite InA_cons; rewrite <- Hl1; rewrite <- Hl'1;
    rewrite (H2 a); intuition.
   Qed.
 
-  (** In fact, [fold] on empty sets is more than equivalent to 
+  (** In fact, [fold] on empty sets is more than equivalent to
       the initial element, it is Leibniz-equal to it. *)
 
   Lemma fold_1b :
@@ -541,7 +541,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Variables (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA).
   Variables (f:elt->A->A)(Comp:compat_op E.eq eqA f)(Ass:transpose eqA f).
 
-  Lemma fold_commutes : forall i s x, 
+  Lemma fold_commutes : forall i s x,
    eqA (fold f s (f x i)) (f x (fold f s i)).
   Proof.
   intros.
@@ -552,15 +552,15 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
 
   (** ** Fold is a morphism *)
 
-  Lemma fold_init : forall i i' s, eqA i i' -> 
+  Lemma fold_init : forall i i' s, eqA i i' ->
    eqA (fold f s i) (fold f s i').
   Proof.
   intros. apply fold_rel with (R:=eqA); auto.
   Qed.
 
-  Lemma fold_equal : 
+  Lemma fold_equal :
    forall i s s', s[=]s' -> eqA (fold f s i) (fold f s' i).
-  Proof. 
+  Proof.
   intros i s; pattern s; apply set_induction; clear s; intros.
   transitivity i.
   apply fold_1; auto.
@@ -576,23 +576,23 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   (** ** Fold and other set operators *)
 
   Lemma fold_empty : forall i, fold f empty i = i.
-  Proof. 
+  Proof.
   intros i; apply fold_1b; auto with set.
   Qed.
 
-  Lemma fold_add : forall i s x, ~In x s -> 
+  Lemma fold_add : forall i s x, ~In x s ->
    eqA (fold f (add x s) i) (f x (fold f s i)).
-  Proof. 
+  Proof.
   intros; apply fold_2 with (eqA := eqA); auto with set.
   Qed.
 
-  Lemma add_fold : forall i s x, In x s -> 
+  Lemma add_fold : forall i s x, In x s ->
    eqA (fold f (add x s) i) (fold f s i).
   Proof.
   intros; apply fold_equal; auto with set.
   Qed.
 
-  Lemma remove_fold_1: forall i s x, In x s -> 
+  Lemma remove_fold_1: forall i s x, In x s ->
    eqA (f x (fold f (remove x s) i)) (fold f s i).
   Proof.
   intros.
@@ -600,7 +600,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   apply fold_2 with (eqA:=eqA); auto with set.
   Qed.
 
-  Lemma remove_fold_2: forall i s x, ~In x s -> 
+  Lemma remove_fold_2: forall i s x, ~In x s ->
    eqA (fold f (remove x s) i) (fold f s i).
   Proof.
   intros.
@@ -620,7 +620,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   symmetry; apply fold_1; auto.
   rename s'0 into s''.
   destruct (In_dec x s').
-  (* In x s' *)   
+  (* In x s' *)
   transitivity (fold f (union s'' s') (f x (fold f (inter s s') i))); auto with set.
   apply fold_init; auto.
   apply fold_2 with (eqA:=eqA); auto with set.
@@ -646,7 +646,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   symmetry; apply fold_2 with (eqA:=eqA); auto.
   Qed.
 
-  Lemma fold_diff_inter : forall i s s', 
+  Lemma fold_diff_inter : forall i s s',
    eqA (fold f (diff s s') (fold f (inter s s') i)) (fold f s i).
   Proof.
   intros.
@@ -659,7 +659,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   apply fold_1; auto with set.
   Qed.
 
-  Lemma fold_union: forall i s s', 
+  Lemma fold_union: forall i s s',
    (forall x, ~(In x s/\In x s')) ->
    eqA (fold f (union s s') i) (fold f s (fold f s' i)).
   Proof.
@@ -696,9 +696,9 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Lemma cardinal_0 :
      forall s, exists l : list elt,
         NoDupA E.eq l /\
-        (forall x : elt, In x s <-> InA E.eq x l) /\ 
+        (forall x : elt, In x s <-> InA E.eq x l) /\
         cardinal s = length l.
-  Proof. 
+  Proof.
   intros; exists (elements s); intuition; apply cardinal_1.
   Qed.
 
@@ -724,32 +724,32 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   destruct (elements s); intuition; discriminate.
   Qed.
 
-  Lemma cardinal_inv_1 : forall s, cardinal s = 0 -> Empty s. 
+  Lemma cardinal_inv_1 : forall s, cardinal s = 0 -> Empty s.
   Proof.
-  intros; rewrite cardinal_Empty; auto. 
+  intros; rewrite cardinal_Empty; auto.
   Qed.
   Hint Resolve cardinal_inv_1.
- 
+
   Lemma cardinal_inv_2 :
    forall s n, cardinal s = S n -> { x : elt | In x s }.
-  Proof. 
+  Proof.
   intros; rewrite M.cardinal_1 in H.
   generalize (elements_2 (s:=s)).
-  destruct (elements s); try discriminate. 
+  destruct (elements s); try discriminate.
   exists e; auto.
   Qed.
 
   Lemma cardinal_inv_2b :
    forall s, cardinal s <> 0 -> { x : elt | In x s }.
   Proof.
-  intro; generalize (@cardinal_inv_2 s); destruct cardinal; 
+  intro; generalize (@cardinal_inv_2 s); destruct cardinal;
    [intuition|eauto].
   Qed.
 
   (** ** Cardinal is a morphism *)
 
   Lemma Equal_cardinal : forall s s', s[=]s' -> cardinal s = cardinal s'.
-  Proof. 
+  Proof.
   symmetry.
   remember (cardinal s) as n; symmetry in Heqn; revert s s' Heqn H.
   induction n; intros.
@@ -794,8 +794,8 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   apply fold_diff_inter with (eqA:=@Logic.eq nat); auto.
   Qed.
 
-  Lemma union_cardinal: 
-   forall s s', (forall x, ~(In x s/\In x s')) -> 
+  Lemma union_cardinal:
+   forall s s', (forall x, ~(In x s/\In x s')) ->
    cardinal (union s s')=cardinal s+cardinal s'.
   Proof.
   intros; do 3 rewrite cardinal_fold.
@@ -803,7 +803,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   apply fold_union; auto.
   Qed.
 
-  Lemma subset_cardinal : 
+  Lemma subset_cardinal :
    forall s s', s[<=]s' -> cardinal s <= cardinal s' .
   Proof.
   intros.
@@ -812,9 +812,9 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   rewrite (inter_subset_equal H); auto with arith.
   Qed.
 
-  Lemma subset_cardinal_lt : 
+  Lemma subset_cardinal_lt :
    forall s s' x, s[<=]s' -> In x s' -> ~In x s -> cardinal s < cardinal s'.
-  Proof. 
+  Proof.
   intros.
   rewrite <- (diff_inter_cardinal s' s).
   rewrite (inter_sym s' s).
@@ -826,7 +826,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   intros _.
   change (0 + cardinal s < S n + cardinal s).
   apply Plus.plus_lt_le_compat; auto with arith.
-  Qed. 
+  Qed.
 
   Theorem union_inter_cardinal :
    forall s s', cardinal (union s s') + cardinal (inter s s')  = cardinal s  + cardinal s' .
@@ -837,7 +837,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   apply fold_union_inter with (eqA:=@Logic.eq nat); auto.
   Qed.
 
-  Lemma union_cardinal_inter : 
+  Lemma union_cardinal_inter :
    forall s s', cardinal (union s s') = cardinal s + cardinal s' - cardinal (inter s s').
   Proof.
   intros.
@@ -846,17 +846,17 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   auto with arith.
   Qed.
 
-  Lemma union_cardinal_le : 
+  Lemma union_cardinal_le :
    forall s s', cardinal (union s s') <= cardinal s  + cardinal s'.
   Proof.
    intros; generalize (union_inter_cardinal s s').
    intros; rewrite <- H; auto with arith.
   Qed.
 
-  Lemma add_cardinal_1 : 
+  Lemma add_cardinal_1 :
    forall s x, In x s -> cardinal (add x s) = cardinal s.
   Proof.
-  auto with set.  
+  auto with set.
   Qed.
 
   Lemma add_cardinal_2 :
@@ -877,9 +877,9 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   apply remove_fold_1 with (eqA:=@Logic.eq nat); auto.
   Qed.
 
-  Lemma remove_cardinal_2 : 
+  Lemma remove_cardinal_2 :
    forall s x, ~In x s -> cardinal (remove x s) = cardinal s.
-  Proof. 
+  Proof.
   auto with set.
   Qed.
 
@@ -950,7 +950,7 @@ Module OrdProperties (M:S).
   Qed.
   Hint Resolve gtb_compat leb_compat.
 
-  Lemma elements_split : forall x s, 
+  Lemma elements_split : forall x s,
    elements s = elements_lt x s ++ elements_ge x s.
   Proof.
   unfold elements_lt, elements_ge, leb; intros.
@@ -964,8 +964,8 @@ Module OrdProperties (M:S).
   ME.order.
   Qed.
 
-  Lemma elements_Add : forall s s' x, ~In x s -> Add x s s' -> 
-    eqlistA E.eq (elements s') (elements_lt x s ++ x :: elements_ge x s). 
+  Lemma elements_Add : forall s s' x, ~In x s -> Add x s s' ->
+    eqlistA E.eq (elements s') (elements_lt x s ++ x :: elements_ge x s).
   Proof.
   intros; unfold elements_ge, elements_lt.
   apply sort_equivlistA_eqlistA; auto with set.
@@ -1003,8 +1003,8 @@ Module OrdProperties (M:S).
   Definition Above x s := forall y, In y s -> E.lt y x.
   Definition Below x s := forall y, In y s -> E.lt x y.
 
-  Lemma elements_Add_Above : forall s s' x, 
-   Above x s -> Add x s s' -> 
+  Lemma elements_Add_Above : forall s s' x,
+   Above x s -> Add x s s' ->
      eqlistA E.eq (elements s') (elements s ++ x::nil).
   Proof.
   intros.
@@ -1020,8 +1020,8 @@ Module OrdProperties (M:S).
   do 2 rewrite <- elements_iff; rewrite (H0 a); intuition.
   Qed.
 
-  Lemma elements_Add_Below : forall s s' x, 
-   Below x s -> Add x s s' -> 
+  Lemma elements_Add_Below : forall s s' x,
+   Below x s -> Add x s s' ->
      eqlistA E.eq (elements s') (x::elements s).
   Proof.
   intros.
@@ -1038,7 +1038,7 @@ Module OrdProperties (M:S).
   do 2 rewrite <- elements_iff; rewrite (H0 a); intuition.
   Qed.
 
-  (** Two other induction principles on sets: we can be more restrictive 
+  (** Two other induction principles on sets: we can be more restrictive
       on the element we add at each step.  *)
 
   Lemma set_induction_max :
@@ -1119,15 +1119,15 @@ Module OrdProperties (M:S).
   apply elements_Add_Below; auto.
   Qed.
 
-  (** The following results have already been proved earlier, 
+  (** The following results have already been proved earlier,
     but we can now prove them with one hypothesis less:
     no need for [(transpose eqA f)]. *)
 
-  Section FoldOpt. 
+  Section FoldOpt.
   Variables (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA).
   Variables (f:elt->A->A)(Comp:compat_op E.eq eqA f).
 
-  Lemma fold_equal : 
+  Lemma fold_equal :
    forall i s s', s[=]s' -> eqA (fold f s i) (fold f s' i).
   Proof.
   intros; do 2 rewrite M.fold_1.
@@ -1138,13 +1138,13 @@ Module OrdProperties (M:S).
   red; intro a; do 2 rewrite <- elements_iff; auto.
   Qed.
 
-  Lemma add_fold : forall i s x, In x s -> 
+  Lemma add_fold : forall i s x, In x s ->
    eqA (fold f (add x s) i) (fold f s i).
   Proof.
   intros; apply fold_equal; auto with set.
   Qed.
 
-  Lemma remove_fold_2: forall i s x, ~In x s -> 
+  Lemma remove_fold_2: forall i s x, ~In x s ->
    eqA (fold f (remove x s) i) (fold f s i).
   Proof.
   intros.
@@ -1155,16 +1155,16 @@ Module OrdProperties (M:S).
 
   (** An alternative version of [choose_3] *)
 
-  Lemma choose_equal : forall s s', Equal s s' -> 
-    match choose s, choose s' with  
+  Lemma choose_equal : forall s s', Equal s s' ->
+    match choose s, choose s' with
       | Some x, Some x' => E.eq x x'
       | None, None => True
       | _, _ => False
      end.
   Proof.
-  intros s s' H; 
+  intros s s' H;
   generalize (@choose_1 s)(@choose_2 s)
-             (@choose_1 s')(@choose_2 s')(@choose_3 s s'); 
+             (@choose_1 s')(@choose_2 s')(@choose_3 s s');
   destruct (choose s); destruct (choose s'); simpl; intuition.
   apply H5 with e; rewrite <-H; auto.
   apply H5 with e; rewrite H; auto.

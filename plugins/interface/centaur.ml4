@@ -74,17 +74,17 @@ let pcoq_history = ref true;;
 let assert_pcoq_history f a =
   if !pcoq_history then f a else error "Pcoq-style history tracking deactivated";;
 
-let current_proof_name () = 
-  try 
+let current_proof_name () =
+  try
     string_of_id (get_current_proof_name ())
   with
       UserError("Pfedit.get_proof", _) -> "";;
 
 let current_goal_index = ref 0;;
 
-let guarded_force_eval_stream (s : std_ppcmds) = 
+let guarded_force_eval_stream (s : std_ppcmds) =
   let l = ref [] in
-  let f elt = l:= elt :: !l in 
+  let f elt = l:= elt :: !l in
   (try  Stream.iter f s with
   | _ -> f (Stream.next (str "error guarded_force_eval_stream")));
   Stream.of_list (List.rev !l);;
@@ -118,7 +118,7 @@ type vtp_tree =
   | P_text of ct_TEXT
   | P_ids of ct_ID_LIST;;
 
-let print_tree t = 
+let print_tree t =
   (match t with
   | P_rl x -> fRULE_LIST x
   | P_r x -> fRULE x
@@ -138,10 +138,10 @@ let ctf_header message_name request_id =
  int request_id ++ fnl();;
 
 let ctf_acknowledge_command request_id command_count opt_exn =
-  let goal_count, goal_index = 
+  let goal_count, goal_index =
     if refining() then
       let g_count =
-        List.length 
+        List.length
           (fst (frontier (proof_of_pftreestate (get_pftreestate ())))) in
         g_count, !current_goal_index
     else
@@ -192,7 +192,7 @@ let ctf_AbortedAllMessage () =
   fnl() ++ str "message" ++ fnl() ++ str "aborted_all" ++ fnl();;
 
 let ctf_AbortedMessage request_id na =
-  ctf_header "aborted_proof" request_id ++ str na ++ fnl () ++ 
+  ctf_header "aborted_proof" request_id ++ str na ++ fnl () ++
   str "E-n-d---M-e-s-s-a-g-e" ++ fnl ();;
 
 let ctf_UserErrorMessage request_id stream =
@@ -256,7 +256,7 @@ let show_nth n =
 		    ++ pr_nth_open_subgoal n)
       None
   with
-  | Invalid_argument s -> 
+  | Invalid_argument s ->
        error "No focused proof (No proof-editing in progress)";;
 
 let show_subgoals () =
@@ -265,7 +265,7 @@ let show_subgoals () =
 		    ++ pr_open_subgoals ())
       None
   with
-  | Invalid_argument s -> 
+  | Invalid_argument s ->
        error "No focused proof (No proof-editing in progress)";;
 
 (* The rest of the file contains commands that are changed from the plain
@@ -280,11 +280,11 @@ let filter_by_module_from_varg_list l =
 *)
 
 let add_search (global_reference:global_reference) assumptions cstr =
-  try 
+  try
   let id_string =
     string_of_qualid (Nametab.shortest_qualid_of_global Idset.empty
 			global_reference) in
-  let ast = 
+  let ast =
     try
       CT_premise (CT_ident id_string, translate_constr false assumptions cstr)
     with Not_found ->
@@ -324,20 +324,20 @@ let ct_print_eval red_fun env evmap ast judg =
 		translate_constr false env ntyp)]));;
 
 let pbp_tac_pcoq =
-    pbp_tac (function (x:raw_tactic_expr) -> 
+    pbp_tac (function (x:raw_tactic_expr) ->
       output_results
         (ctf_header "pbp_results" !global_request_id)
        (Some (P_t(xlate_tactic x))));;
 
 let blast_tac_pcoq =
-    blast_tac (function (x:raw_tactic_expr) -> 
+    blast_tac (function (x:raw_tactic_expr) ->
       output_results
 	(ctf_header "pbp_results" !global_request_id)
        (Some (P_t(xlate_tactic x))));;
 
-(* <\cpa> 
+(* <\cpa>
 let dad_tac_pcoq =
-  dad_tac(function x -> 
+  dad_tac(function x ->
     output_results
     (ctf_header "pbp_results" !global_request_id)
     (Some (P_t(xlate_tactic x))));;
@@ -368,7 +368,7 @@ Caution, this is in the middle of what looks like dead code. ;
 	  e ->
 	    match !the_goal with
 	      None -> raise e
-	    | Some g -> 
+	    | Some g ->
                 (output_results
 		   (ctf_Location !global_request_id)
 		   (Some (P_s_int
@@ -376,7 +376,7 @@ Caution, this is in the middle of what looks like dead code. ;
                                (List.map
                                   (fun n -> CT_coerce_INT_to_SIGNED_INT
                                                  (CT_int n))
-                                  (clean_path tac 
+                                  (clean_path tac
 					       (List.rev !the_path)))))));
 	    	(output_results
 		   (ctf_OtherGoal !global_request_id)
@@ -417,7 +417,7 @@ let inspect n =
 			 add_search2 (Nametab.locate (qualid_of_path sp))
 			   (Pretyping.Default.understand Evd.empty (Global.env())
 			      (RRef(dummy_loc, IndRef(kn,0))))
-		     | _ -> failwith ("unexpected value 1 for "^ 
+		     | _ -> failwith ("unexpected value 1 for "^
 				      (string_of_id (basename (fst oname)))))
               | _ -> failwith "unexpected value")
 	 with e -> ())
@@ -427,7 +427,7 @@ let inspect n =
       (Some
          (P_pl (CT_premises_list (List.rev !ctv_SEARCH_LIST))));;
 
-let ct_int_to_TARG n = 
+let ct_int_to_TARG n =
 	CT_coerce_FORMULA_OR_INT_to_TARG
 	  (CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
 	     (CT_coerce_INT_to_ID_OR_INT (CT_int n)));;
@@ -561,7 +561,7 @@ let pcoq_search s l =
    *)
   ctv_SEARCH_LIST:=[];
   begin match s with
-  | SearchAbout sl -> 
+  | SearchAbout sl ->
       raw_search_about (filter_by_module_from_list l) add_search
 	(List.map (on_snd interp_search_about_item) sl)
   | SearchPattern c ->
@@ -580,7 +580,7 @@ let pcoq_search s l =
 let rec hyp_pattern_filter pat name a c =
   let _c1 = strip_outer_cast c in
     match kind_of_term c with
-      | Prod(_, hyp, c2) -> 
+      | Prod(_, hyp, c2) ->
 	  (try
 (*	     let _ = msgnl ((str "WHOLE ") ++ (Printer.pr_lconstr c)) in
              let _ = msgnl ((str "PAT ") ++ (Printer.pr_constr_pattern pat)) in *)
@@ -605,7 +605,7 @@ let hyp_search_pattern c l =
       (Some
 	 (P_pl (CT_premises_list (List.rev !ctv_SEARCH_LIST))));;
 let pcoq_print_name ref =
-  output_results 
+  output_results
     (fnl () ++ str "message" ++ fnl () ++ str "PRINT_VALUE" ++ fnl () ++ print_name ref )
     None
 
@@ -665,8 +665,8 @@ let pcoq_print_object_template object_to_ast_list sp =
 (* This function mirror what print_check does *)
 
 let pcoq_print_typed_value_in_env env (value, typ) =
- let value_ct_ast = 
-     (try translate_constr false (Global.env()) value 
+ let value_ct_ast =
+     (try translate_constr false (Global.env()) value
       with UserError(f,str) ->
            raise(UserError(f,Printer.pr_lconstr value ++
 			      fnl () ++ str ))) in
@@ -797,7 +797,7 @@ let start_depends_dumps () = gen_start_depends_dumps output_depends output_depen
 let start_depends_dumps_debug () = gen_start_depends_dumps print_depends print_depends print_depends print_depends
 
 TACTIC EXTEND pbp
-| [ "pbp" ident_opt(idopt) natural_list(nl) ] -> 
+| [ "pbp" ident_opt(idopt) natural_list(nl) ] ->
     [ if_pcoq pbp_tac_pcoq idopt nl ]
 END
 
@@ -810,10 +810,10 @@ TACTIC EXTEND ct_debugtac2
 END
 
 
-let start_pcoq_mode debug = 
+let start_pcoq_mode debug =
   begin
     pcoq_started := Some debug;
-(* <\cpa> 
+(* <\cpa>
     start_dad();
 </cpa> *)
 (* The following ones are added to enable rich comments in pcoq *)
@@ -830,7 +830,7 @@ let start_pcoq_mode debug =
 *)
     set_pcoq_hook pcoq_hook;
     start_pcoq_objects();
-    Flags.print_emacs := false; Pp.make_pp_nonemacs(); 
+    Flags.print_emacs := false; Pp.make_pp_nonemacs();
   end;;
 
 

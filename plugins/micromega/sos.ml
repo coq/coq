@@ -318,16 +318,16 @@ let string_of_vname (v:vname): string = (v: string);;
 let rec string_of_term t =
   match t with
   Opp t1 -> "(- " ^ string_of_term t1 ^ ")"
-| Add (t1, t2) -> 
+| Add (t1, t2) ->
    "(" ^ (string_of_term t1) ^ " + " ^ (string_of_term t2) ^ ")"
-| Sub (t1, t2) -> 
+| Sub (t1, t2) ->
    "(" ^ (string_of_term t1) ^ " - " ^ (string_of_term t2) ^ ")"
-| Mul (t1, t2) -> 
+| Mul (t1, t2) ->
    "(" ^ (string_of_term t1) ^ " * " ^ (string_of_term t2) ^ ")"
 | Inv t1 -> "(/ " ^ string_of_term t1 ^ ")"
-| Div (t1, t2) -> 
+| Div (t1, t2) ->
    "(" ^ (string_of_term t1) ^ " / " ^ (string_of_term t2) ^ ")"
-| Pow (t1, n1) -> 
+| Pow (t1, n1) ->
    "(" ^ (string_of_term t1) ^ " ^ " ^ (string_of_int n1) ^ ")"
 | Zero -> "0"
 | Var v -> "x" ^ (string_of_vname v)
@@ -384,11 +384,11 @@ let print_poly m = Format.print_string(string_of_poly m);;
 (* ------------------------------------------------------------------------- *)
 
 let rec poly_of_term t = match t with
-  Zero -> poly_0 
+  Zero -> poly_0
 | Const n -> poly_const n
 | Var x -> poly_var x
 | Opp t1 -> poly_neg (poly_of_term t1)
-| Inv t1 -> 
+| Inv t1 ->
       let p = poly_of_term t1 in
       if poly_isconst p then poly_const(Int 1 // eval undefined p)
       else failwith "poly_of_term: inverse of non-constant polyomial"

@@ -7,26 +7,26 @@
 (************************************************************************)
 
 (*i $Id$ i*)
-  
+
 {
 
-  open Filename 
+  open Filename
   open Lexing
-   
+
   type mL_token = Use_module of string
 
   type spec = bool
-		
-  type coq_token = 
+
+  type coq_token =
     | Require of string list list
     | RequireString of string
     | Declare of string list
     | Load of string
 
   let comment_depth = ref 0
- 
+
   exception Fin_fichier
-    
+
   let module_current_name = ref []
   let module_names = ref []
   let ml_module_name = ref ""
@@ -62,10 +62,10 @@ rule coq_action = parse
   | "\""
       { string lexbuf; coq_action lexbuf}
   | "(*" (* "*)" *)
-      { comment_depth := 1; comment lexbuf; coq_action lexbuf }  
-  | eof 
-      { raise Fin_fichier} 
-  | _   
+      { comment_depth := 1; comment lexbuf; coq_action lexbuf }
+  | eof
+      { raise Fin_fichier}
+  | _
       { coq_action lexbuf }
 
 and caml_action = parse
@@ -132,7 +132,7 @@ and comment = parse
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { comment lexbuf }
   | eof
-      { raise Fin_fichier } 
+      { raise Fin_fichier }
   | _ { comment lexbuf }
 
 and string = parse
@@ -157,7 +157,7 @@ and load_file = parse
 	Load (if check_suffix f ".v" then chop_suffix f ".v" else f) }
   | coq_ident
       { let s = lexeme lexbuf in skip_to_dot lexbuf; Load s }
-  | eof	
+  | eof
       { raise Fin_fichier }
   | _
       { load_file lexbuf }
@@ -196,7 +196,7 @@ and opened_file_fields = parse
                 { module_current_name :=
                     field_name (Lexing.lexeme lexbuf) :: !module_current_name;
                   opened_file_fields lexbuf }
-  | coq_ident   { module_names := 
+  | coq_ident   { module_names :=
                     List.rev !module_current_name :: !module_names;
                   module_current_name := [Lexing.lexeme lexbuf];
                   opened_file_fields lexbuf }
@@ -211,10 +211,10 @@ and modules = parse
   | "(*" (* "*)" *)	{ comment_depth := 1; comment lexbuf;
       	       	       	  modules lexbuf }
   | '"' [^'"']* '"'
-        { let lex = (Lexing.lexeme lexbuf) in 
+        { let lex = (Lexing.lexeme lexbuf) in
 	  let str = String.sub lex 1 (String.length lex - 2) in
 	    mllist := str :: !mllist; modules lexbuf}
-  | _   { (Declare (List.rev !mllist)) }   
+  | _   { (Declare (List.rev !mllist)) }
 
 and qual_id = parse
   | '.' [^ '.' '(' '['] {

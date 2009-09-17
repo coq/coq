@@ -72,7 +72,7 @@ let show_proof () =
   msgnl (str"LOC: " ++
     prlist_with_sep pr_spc pr_int (List.rev cursor) ++ fnl () ++
     str"Subgoals" ++ fnl () ++
-    prlist (fun (mv,ty) -> Nameops.pr_meta mv ++ str" -> " ++ 
+    prlist (fun (mv,ty) -> Nameops.pr_meta mv ++ str" -> " ++
       pr_ltype ty ++ fnl ())
       meta_types
     ++ str"Proof: " ++ pr_lconstr (Evarutil.nf_evar evc pfterm))
@@ -90,7 +90,7 @@ let show_node () =
 		 str"  " ++
 		   hov 0 (prlist_with_sep pr_fnl pr_goal
 			    (List.map goal_of_proof spfl)))))
-    
+
 let show_script () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
@@ -101,9 +101,9 @@ let show_thesis () =
      msgnl (anomaly "TODO" )
 
 let show_top_evars () =
-  let pfts = get_pftreestate () in 
-  let gls = top_goal_of_pftreestate pfts in 
-  let sigma = project gls in 
+  let pfts = get_pftreestate () in
+  let gls = top_goal_of_pftreestate pfts in
+  let sigma = project gls in
   msg (pr_evars_int 1 (Evarutil.non_instantiated sigma))
 
 let show_prooftree () =
@@ -120,38 +120,38 @@ let show_intro all =
   let pf = get_pftreestate() in
   let gl = nth_goal_of_pftreestate 1 pf in
   let l,_= decompose_prod_assum (strip_outer_cast (pf_concl gl)) in
-  if all 
-  then 
-    let lid = Tactics.find_intro_names l gl in 
+  if all
+  then
+    let lid = Tactics.find_intro_names l gl in
     msgnl (hov 0 (prlist_with_sep  spc pr_id lid))
-  else  
-    try  
+  else
+    try
       let n = list_last l in
       msgnl (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
     with Failure "list_last" -> message ""
 
-let id_of_name = function 
-  | Names.Anonymous -> id_of_string "x" 
+let id_of_name = function
+  | Names.Anonymous -> id_of_string "x"
   | Names.Name x -> x
 
 
 (* Building of match expression *)
 (* From ide/coq.ml *)
-let make_cases s = 
+let make_cases s =
   let qualified_name = Libnames.qualid_of_string s in
   let glob_ref = Nametab.locate qualified_name in
   match glob_ref with
-    | Libnames.IndRef i -> 
+    | Libnames.IndRef i ->
 	let {Declarations.mind_nparams = np}
-	    , {Declarations.mind_consnames = carr ; Declarations.mind_nf_lc = tarr } 
+	    , {Declarations.mind_consnames = carr ; Declarations.mind_nf_lc = tarr }
 	      = Global.lookup_inductive i in
-	Util.array_fold_right2 
-	  (fun n t l ->  
+	Util.array_fold_right2
+	  (fun n t l ->
 	     let (al,_) = Term.decompose_prod t in
 	     let al,_ = Util.list_chop (List.length al - np) al in
-	     let rec rename avoid = function 
+	     let rec rename avoid = function
 	       | [] -> []
-	       | (n,_)::l -> 
+	       | (n,_)::l ->
 		   let n' = Termops.next_global_ident_away true (id_of_name n) avoid in
 		   string_of_id n' :: rename (n'::avoid) l in
 	     let al' = rename [] (List.rev al) in
@@ -160,18 +160,18 @@ let make_cases s =
     | _ -> raise Not_found
 
 
-let show_match id = 
+let show_match id =
   try
     let s = string_of_id (snd id) in
     let patterns = make_cases s in
-    let cases = 
-      List.fold_left 
-	(fun acc x -> 
+    let cases =
+      List.fold_left
+	(fun acc x ->
 	  match x with
 	    | [] -> assert false
 	    | [x] -> "| "^ x  ^ " => \n" ^ acc
-	    | x::l -> 
-		"| (" ^ List.fold_left (fun acc s ->  acc ^ " " ^ s) x l ^ ")" 
+	    | x::l ->
+		"| (" ^ List.fold_left (fun acc s ->  acc ^ " " ^ s) x l ^ ")"
 		^ " => \n" ^ acc)
 	"end" patterns in
     msg (str ("match # with\n" ^ cases))
@@ -196,7 +196,7 @@ let print_modules () =
   and loaded = Library.loaded_libraries () in
   let loaded_opened = list_intersect loaded opened
   and only_loaded = list_subtract loaded opened in
-  str"Loaded and imported library files: " ++ 
+  str"Loaded and imported library files: " ++
   pr_vertical_list pr_dirpath loaded_opened ++ fnl () ++
   str"Loaded and not imported library files: " ++
   pr_vertical_list pr_dirpath only_loaded
@@ -213,7 +213,7 @@ let print_module r =
   with
       Not_found -> msgnl (str"Unknown Module " ++ pr_qualid qid)
 
-let print_modtype r = 
+let print_modtype r =
   let (loc,qid) = qualid_of_reference r in
   try
     let kn = Nametab.locate_modtype qid in
@@ -226,7 +226,7 @@ let dump_universes s =
   try
     Univ.dump_universes output (Global.universes ());
     close_out output;
-    msgnl (str ("Universes written to file \""^s^"\".")) 
+    msgnl (str ("Universes written to file \""^s^"\"."))
   with
       e -> close_out output; raise e
 
@@ -237,7 +237,7 @@ let locate_file f =
   try
     let _,file = System.where_in_path ~warn:false (Library.get_load_paths ()) f in
     msgnl (str file)
-  with Not_found -> 
+  with Not_found ->
     msgnl (hov 0 (str"Can't find file" ++ spc () ++ str f ++ spc () ++
 		  str"on loadpath"))
 
@@ -256,7 +256,7 @@ let msg_notfound_library loc qid = function
         strbrk "Cannot find a physical path bound to logical path " ++
            pr_dirpath dir ++ str".")
   | Library.LibNotFound ->
-      msgnl (hov 0 
+      msgnl (hov 0
 	(strbrk "Unable to locate library " ++ pr_qualid qid ++ str"."))
   | e -> assert false
 
@@ -265,18 +265,18 @@ let print_located_library r =
   try msg_found_library (Library.locate_qualified_library false qid)
   with e -> msg_notfound_library loc qid e
 
-let print_located_module r = 
+let print_located_module r =
   let (loc,qid) = qualid_of_reference r in
   let msg =
-    try 
+    try
       let dir = Nametab.full_name_module qid in
       str "Module " ++ pr_dirpath dir
     with Not_found ->
       (if fst (repr_qualid qid) = empty_dirpath then
 	str "No module is referred to by basename "
-      else 
+      else
 	str "No module is referred to by name ") ++ pr_qualid qid
-  in msgnl msg  
+  in msgnl msg
 
 let smart_global r =
   let gr = Smartlocate.smart_global r in
@@ -290,7 +290,7 @@ let vernac_syntax_extension = Metasyntax.add_syntax_extension
 
 let vernac_delimiters = Metasyntax.add_delimiters
 
-let vernac_bind_scope sc cll = 
+let vernac_bind_scope sc cll =
   List.iter (fun cl -> Metasyntax.add_class_scope sc (cl_of_qualid cl)) cll
 
 let vernac_open_close_scope = Notation.open_close_scope
@@ -319,19 +319,19 @@ let vernac_definition (local,_,_ as k) (loc,id as lid) def hook =
  	    (str "Proof editing mode not supported in module types.")
  	else
  	  let hook _ _ = () in
- 	    start_proof_and_print (local,DefinitionBody Definition) 
+ 	    start_proof_and_print (local,DefinitionBody Definition)
 	      [Some lid, (bl,t)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
  	let red_option = match red_option with
           | None -> None
-          | Some r -> 
+          | Some r ->
  	      let (evc,env)= Command.get_current_context () in
  		Some (interp_redexp env evc r) in
  	  declare_definition id k bl red_option c typ_opt hook)
- 	      
+
 let vernac_start_proof kind l lettop hook =
   if Dumpglob.dump () then
-    List.iter (fun (id, _) -> 
+    List.iter (fun (id, _) ->
       match id with
 	| Some lid -> Dumpglob.dump_definition lid false "prf"
 	| None -> ()) l;
@@ -365,18 +365,18 @@ let vernac_exact_proof c =
     else
       errorlabstrm "Vernacentries.ExactProof"
 	(strbrk "Command 'Proof ...' can only be used at the beginning of the proof.")
-  	
+
 let vernac_assumption kind l nl=
   let global = fst kind = Global in
-    List.iter (fun (is_coe,(idl,c)) -> 
+    List.iter (fun (is_coe,(idl,c)) ->
       if Dumpglob.dump () then
-	List.iter (fun lid -> 
-	  if global then Dumpglob.dump_definition lid false "ax" 
+	List.iter (fun lid ->
+	  if global then Dumpglob.dump_definition lid false "ax"
 	  else Dumpglob.dump_definition lid true "var") idl;
       declare_assumption idl is_coe kind [] c false nl) l
-	  
+
 let vernac_record k finite infer struc binders sort nameopt cfs =
-  let const = match nameopt with 
+  let const = match nameopt with
     | None -> add_prefix "Build_" (snd (snd struc))
     | Some (_,id as lid) ->
 	Dumpglob.dump_definition lid false "constr"; id in
@@ -387,11 +387,11 @@ let vernac_record k finite infer struc binders sort nameopt cfs =
 	| Vernacexpr.AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
 	| _ -> ()) cfs);
     ignore(Record.definition_structure (k,finite,infer,struc,binders,cfs,const,sort))
-      
-let vernac_inductive finite infer indl = 
+
+let vernac_inductive finite infer indl =
   if Dumpglob.dump () then
     List.iter (fun (((coe,lid), _, _, _, cstrs), _) ->
-      match cstrs with 
+      match cstrs with
 	| Constructors cstrs ->
 	    Dumpglob.dump_definition lid false "ind";
 	    List.iter (fun (_, (lid, _)) ->
@@ -399,28 +399,28 @@ let vernac_inductive finite infer indl =
 	| _ -> () (* dumping is done by vernac_record (called below) *) )
       indl;
   match indl with
-  | [ ( id , bl , c , b, RecordDecl (oc,fs) ), None ] -> 
+  | [ ( id , bl , c , b, RecordDecl (oc,fs) ), None ] ->
       vernac_record (match b with Class true -> Class false | _ -> b)
 	finite infer id bl c oc fs
-  | [ ( id , bl , c , Class true, Constructors [l]), _ ] -> 
-      let f = 
+  | [ ( id , bl , c , Class true, Constructors [l]), _ ] ->
+      let f =
 	let (coe, ((loc, id), ce)) = l in
 	  ((coe, AssumExpr ((loc, Name id), ce)), None)
       in vernac_record (Class true) finite infer id bl c None [f]
-  | [ ( id , bl , c , Class true, _), _ ] -> 
+  | [ ( id , bl , c , Class true, _), _ ] ->
       Util.error "Definitional classes must have a single method"
   | [ ( id , bl , c , Class false, Constructors _), _ ] ->
       Util.error "Inductive classes not supported"
-  | [ ( _ , _ , _ , _, RecordDecl _ ) , _ ] -> 
+  | [ ( _ , _ , _ , _, RecordDecl _ ) , _ ] ->
       Util.error "where clause not supported for (co)inductive records"
-  | _ -> let unpack = function 
+  | _ -> let unpack = function
       | ( (_, id) , bl , c , _ , Constructors l ) , ntn  -> ( id , bl , c , l ) , ntn
       | _ -> Util.error "Cannot handle mutually (co)inductive records."
     in
     let indl = List.map unpack indl in
       Command.build_mutual indl (recursivity_flag_of_kind finite)
 
-let vernac_fixpoint l b = 
+let vernac_fixpoint l b =
   if Dumpglob.dump () then
     List.iter (fun ((lid, _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   build_recursive l b
@@ -438,13 +438,13 @@ let vernac_combined_scheme = build_combined_scheme
 (* Modules            *)
 
 let vernac_import export refl =
-  let import ref = 
+  let import ref =
     Library.import_module export (qualid_of_reference ref)
   in
     List.iter import refl;
     Lib.add_frozen_state ()
 
-let vernac_declare_module export (loc, id) binders_ast mty_ast_o = 
+let vernac_declare_module export (loc, id) binders_ast mty_ast_o =
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
   if Lib.sections_are_opened () then
@@ -456,15 +456,15 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast_o =
        "Remove the \"Export\" and \"Import\" keywords from every functor " ^
        "argument.")
      else (idl,ty)) binders_ast in
-  let mp = Declaremods.declare_module 
+  let mp = Declaremods.declare_module
     Modintern.interp_modtype Modintern.interp_modexpr
     id binders_ast (Some mty_ast_o) None
-  in 
+  in
     Dumpglob.dump_moddef loc mp "mod";
     if_verbose message ("Module "^ string_of_id id ^" is declared");
     Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
 
-let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_o = 
+let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_o =
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
   if Lib.sections_are_opened () then
@@ -478,10 +478,10 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_o =
            (idl,ty)::args, (List.map (fun (_,i) -> export,i)idl)@argsexport) binders_ast
              ([],[]) in
        let mp = Declaremods.start_module Modintern.interp_modtype export
-	 id binders_ast mty_ast_o 
+	 id binders_ast mty_ast_o
        in
 	 Dumpglob.dump_moddef loc mp "mod";
-	 if_verbose message 
+	 if_verbose message
 	   ("Interactive Module "^ string_of_id id ^" started") ;
          List.iter
            (fun (export,id) ->
@@ -496,12 +496,12 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_o =
                   " the definition is interactive. Remove the \"Export\" and " ^
                   "\"Import\" keywords from every functor argument.")
           else (idl,ty)) binders_ast in
-       let mp =	Declaremods.declare_module 
+       let mp =	Declaremods.declare_module
 	  Modintern.interp_modtype Modintern.interp_modexpr
-	  id binders_ast mty_ast_o mexpr_ast_o 
+	  id binders_ast mty_ast_o mexpr_ast_o
        in
 	 Dumpglob.dump_moddef loc mp "mod";
-	 if_verbose message 
+	 if_verbose message
 	   ("Module "^ string_of_id id ^" is defined");
          Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)])
            export
@@ -515,7 +515,7 @@ let vernac_end_module export (loc,id as lid) =
 let vernac_declare_module_type (loc,id) binders_ast mty_ast_o =
   if Lib.sections_are_opened () then
     error "Modules and Module Types are not allowed inside sections.";
-  
+
   match mty_ast_o with
     | None ->
        check_no_pending_proofs ();
@@ -526,14 +526,14 @@ let vernac_declare_module_type (loc,id) binders_ast mty_ast_o =
              ([],[]) in
        let mp = Declaremods.start_modtype Modintern.interp_modtype id binders_ast in
         Dumpglob.dump_moddef loc mp "modtype";
-	if_verbose message 
+	if_verbose message
 	  ("Interactive Module Type "^ string_of_id id ^" started");
         List.iter
          (fun (export,id) ->
            Option.iter
             (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
          ) argsexport
-	  
+
     | Some base_mty ->
 	let binders_ast = List.map
           (fun (export,idl,ty) ->
@@ -542,23 +542,23 @@ let vernac_declare_module_type (loc,id) binders_ast mty_ast_o =
 			" the definition is interactive. Remove the \"Export\" " ^
 			"and \"Import\" keywords from every functor argument.")
             else (idl,ty)) binders_ast in
-	let mp = Declaremods.declare_modtype Modintern.interp_modtype 
+	let mp = Declaremods.declare_modtype Modintern.interp_modtype
 	  id binders_ast base_mty in
           Dumpglob.dump_moddef loc mp "modtype";
-	  if_verbose message 
+	  if_verbose message
 	    ("Module Type "^ string_of_id id ^" is defined")
 
 let vernac_end_modtype (loc,id) =
   let mp = Declaremods.end_modtype () in
   Dumpglob.dump_modref loc mp "modtype";
   if_verbose message ("Module Type "^ string_of_id id ^" is defined")
-	  
+
 let vernac_include = function
   | CIMTE mty_ast ->
       Declaremods.declare_include Modintern.interp_modtype mty_ast false
   | CIME mexpr_ast ->
       Declaremods.declare_include Modintern.interp_modexpr mexpr_ast true
-	  
+
 (**********************)
 (* Gallina extensions *)
 
@@ -570,7 +570,7 @@ let vernac_begin_section (_, id as lid) =
   Lib.open_section id
 
 let vernac_end_section (loc,_) =
-  Dumpglob.dump_reference loc 
+  Dumpglob.dump_reference loc
     (string_of_dirpath (Lib.current_dirpath true)) "<>" "sec";
   Lib.close_section ()
 
@@ -611,7 +611,7 @@ let vernac_identity_coercion stre id qids qidt =
   Class.try_add_new_identity_coercion id stre source target
 
 (* Type classes *)
- 
+
 let vernac_instance glob sup inst props pri =
   Dumpglob.dump_constraint inst false "inst";
   ignore(Classes.new_instance ~global:glob sup inst props pri)
@@ -631,12 +631,12 @@ let vernac_solve n tcom b =
     error "Unknown command of the non proof-editing mode.";
   Decl_mode.check_not_proof_mode "Unknown proof instruction";
   begin
-    if b then 
+    if b then
       solve_nth n (Tacinterp.hide_interp tcom (get_end_tac ()))
     else solve_nth n (Tacinterp.hide_interp tcom None)
   end;
-  (* in case a strict subtree was completed, 
-     go back to the top of the prooftree *) 
+  (* in case a strict subtree was completed,
+     go back to the top of the prooftree *)
   if subtree_solved () then begin
     Flags.if_verbose msgnl (str "Subgoal proved");
     make_focus 0;
@@ -648,9 +648,9 @@ let vernac_solve n tcom b =
   (* A command which should be a tactic. It has been
      added by Christine to patch an error in the design of the proof
      machine, and enables to instantiate existential variables when
-     there are no more goals to solve. It cannot be a tactic since 
+     there are no more goals to solve. It cannot be a tactic since
      all tactics fail if there are no further goals to prove. *)
-  
+
 let vernac_solve_existential = instantiate_nth_evar_com
 
 let vernac_set_end_tac tac =
@@ -662,9 +662,9 @@ let vernac_set_end_tac tac =
 (***********************)
 (* Proof Language Mode *)
 
-let vernac_decl_proof () = 
+let vernac_decl_proof () =
   check_not_proof_mode "Already in Proof Mode";
-  if tree_solved () then 
+  if tree_solved () then
     error "Nothing left to prove here."
   else
     begin
@@ -672,17 +672,17 @@ let vernac_decl_proof () =
       print_subgoals ()
     end
 
-let vernac_return () = 
+let vernac_return () =
   match get_current_mode () with
       Mode_tactic ->
 	Decl_proof_instr.return_from_tactic_mode ();
 	print_subgoals ()
-    | Mode_proof -> 
+    | Mode_proof ->
 	error "\"return\" is only used after \"escape\"."
-    | Mode_none -> 
-	error "There is no proof to end." 
+    | Mode_none ->
+	error "There is no proof to end."
 
-let vernac_proof_instr instr = 
+let vernac_proof_instr instr =
   Decl_proof_instr.proof_instr instr;
   print_subgoals ()
 
@@ -753,7 +753,7 @@ let vernac_backto n = Lib.reset_label n
 
 let vernac_declare_tactic_definition = Tacinterp.add_tacdef
 
-let vernac_create_hintdb local id b = 
+let vernac_create_hintdb local id b =
   Auto.create_hint_db local id full_transparent_state b
 
 let vernac_hints local lb h = Auto.add_hints local lb (Auto.interp_hints h)
@@ -761,12 +761,12 @@ let vernac_hints local lb h = Auto.add_hints local lb (Auto.interp_hints h)
 let vernac_syntactic_definition lid =
   Dumpglob.dump_definition lid false "syndef";
   Command.syntax_definition (snd lid)
-  
+
 let vernac_declare_implicits local r = function
   | Some imps ->
       Impargs.declare_manual_implicits local (smart_global r) ~enriching:false
 	(List.map (fun (ex,b,f) -> ex, (b,true,f)) imps)
-  | None -> 
+  | None ->
       Impargs.declare_implicits local (smart_global r)
 
 let vernac_reserve idl c =
@@ -775,12 +775,12 @@ let vernac_reserve idl c =
   List.iter (fun id -> Reserve.declare_reserved_type id t) idl
 
 let make_silent_if_not_pcoq b =
-  if !pcoq <> None then 
+  if !pcoq <> None then
     error "Turning on/off silent flag is not supported in Pcoq mode."
   else make_silent b
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = false;
       optname  = "silent";
       optkey   = ["Silent"];
@@ -788,7 +788,7 @@ let _ =
       optwrite = make_silent_if_not_pcoq }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "implicit arguments";
       optkey   = ["Implicit";"Arguments"];
@@ -796,7 +796,7 @@ let _ =
       optwrite = Impargs.make_implicit_args }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "strict implicit arguments";
       optkey   = ["Strict";"Implicit"];
@@ -804,7 +804,7 @@ let _ =
       optwrite = Impargs.make_strict_implicit_args }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "strong strict implicit arguments";
       optkey   = ["Strongly";"Strict";"Implicit"];
@@ -812,7 +812,7 @@ let _ =
       optwrite = Impargs.make_strongly_strict_implicit_args }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "contextual implicit arguments";
       optkey   = ["Contextual";"Implicit"];
@@ -828,7 +828,7 @@ let _ =
 (*       optwrite = Impargs.make_forceable_implicit_args } *)
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "implicit status of reversible patterns";
       optkey   = ["Reversible";"Pattern";"Implicit"];
@@ -836,7 +836,7 @@ let _ =
       optwrite = Impargs.make_reversible_pattern_implicit_args }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "maximal insertion of implicit";
       optkey   = ["Maximal";"Implicit";"Insertion"];
@@ -844,7 +844,7 @@ let _ =
       optwrite = Impargs.make_maximal_implicit_args }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "coercion printing";
       optkey   = ["Printing";"Coercions"];
@@ -852,14 +852,14 @@ let _ =
       optwrite = (fun b ->  Constrextern.print_coercions := b) }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "printing of existential variable instances";
       optkey   = ["Printing";"Existential";"Instances"];
       optread  = (fun () -> !Constrextern.print_evar_arguments);
       optwrite = (:=) Constrextern.print_evar_arguments }
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "implicit arguments printing";
       optkey   = ["Printing";"Implicit"];
@@ -867,7 +867,7 @@ let _ =
       optwrite = (fun b ->  Constrextern.print_implicits := b) }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "implicit arguments defensive printing";
       optkey   = ["Printing";"Implicit";"Defensive"];
@@ -875,7 +875,7 @@ let _ =
       optwrite = (fun b ->  Constrextern.print_implicits_defensive := b) }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "projection printing using dot notation";
       optkey   = ["Printing";"Projections"];
@@ -883,7 +883,7 @@ let _ =
       optwrite = (fun b ->  Constrextern.print_projections := b) }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "notations printing";
       optkey   = ["Printing";"Notations"];
@@ -891,7 +891,7 @@ let _ =
       optwrite = (fun b ->  Constrextern.print_no_symbol := not b) }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "raw printing";
       optkey   = ["Printing";"All"];
@@ -899,7 +899,7 @@ let _ =
       optwrite = (fun b -> Flags.raw_print := b) }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "use of virtual machine inside the kernel";
       optkey   = ["Virtual";"Machine"];
@@ -907,20 +907,20 @@ let _ =
       optwrite = (fun b -> Vconv.set_use_vm b) }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "use of boxed definitions";
       optkey   = ["Boxed";"Definitions"];
       optread  = Flags.boxed_definitions;
-      optwrite = (fun b -> Flags.set_boxed_definitions b) } 
+      optwrite = (fun b -> Flags.set_boxed_definitions b) }
 
 let _ =
-  declare_bool_option 
+  declare_bool_option
     { optsync  = true;
       optname  = "use of boxed values";
       optkey   = ["Boxed";"Values"];
       optread  = (fun _ -> not (Vm.transp_values ()));
-      optwrite = (fun b -> Vm.set_transp_values (not b)) } 
+      optwrite = (fun b -> Vm.set_transp_values (not b)) }
 
 let _ =
   declare_int_option
@@ -1061,7 +1061,7 @@ let vernac_print = function
   | PrintModuleType qid -> print_modtype qid
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
-  | PrintName qid -> 
+  | PrintName qid ->
       if !pcoq <> None then (Option.get !pcoq).print_name qid
       else msg (print_name qid)
   | PrintGraph -> ppnl (Prettyp.print_graph())
@@ -1098,7 +1098,7 @@ let vernac_print = function
 let global_module r =
   let (loc,qid) = qualid_of_reference r in
   try Nametab.full_name_module qid
-  with Not_found -> 
+  with Not_found ->
     user_err_loc (loc, "global_module",
       str "Module/section " ++ pr_qualid qid ++ str " not found.")
 
@@ -1117,12 +1117,12 @@ let interp_search_about_item = function
   | SearchString (s,None) when is_ident s ->
       GlobSearchString s
   | SearchString (s,sc) ->
-      try 
+      try
 	let ref =
 	  Notation.interp_notation_as_global_reference dummy_loc
 	    (fun _ -> true) s sc in
 	GlobSearchSubPattern (Pattern.PRef ref)
-      with UserError _ -> 
+      with UserError _ ->
 	error ("Unable to interp \""^s^"\" either as a reference or
           	as an identifier component")
 
@@ -1162,7 +1162,7 @@ let vernac_goal = function
         let unnamed_kind = Lemma (* Arbitrary *) in
         start_proof_com (Global, Proof unnamed_kind) [None,c] (fun _ _ ->());
 	print_subgoals ()
-      end else 
+      end else
 	error "repeated Goal not permitted in refining mode."
 
 let vernac_abort = function
@@ -1207,14 +1207,14 @@ let vernac_backtrack snum pnum naborts =
   Pp.flush_all();
   (* there may be no proof in progress, even if no abort *)
   (try print_subgoals () with UserError _ -> ())
-  
+
 
 let vernac_focus gln =
   check_not_proof_mode "No focussing or Unfocussing in Proof Mode.";
-  match gln with 
+  match gln with
     | None -> traverse_nth_goal 1; print_subgoals ()
     | Some n -> traverse_nth_goal n; print_subgoals ()
-	
+
   (* Reset the focus to the top of the tree *)
 let vernac_unfocus () =
   check_not_proof_mode "No focussing or Unfocussing in Proof Mode.";
@@ -1231,7 +1231,7 @@ let apply_subproof f occ =
   let evc = evc_of_pftreestate pts in
   let rec aux pts = function
     | [] -> pts
-    | (n::l) -> aux (Tacmach.traverse n pts) occ in 
+    | (n::l) -> aux (Tacmach.traverse n pts) occ in
   let pts = aux pts (occ@[-1]) in
   let pf = proof_of_pftreestate pts in
   f evc (Global.named_context()) pf
@@ -1270,14 +1270,14 @@ let vernac_check_guard () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts in
   let (pfterm,_) = extract_open_pftreestate pts in
-  let message = 
-    try 
+  let message =
+    try
       Inductiveops.control_only_guard (Evd.evar_env (goal_of_proof pf))
-	pfterm; 
+	pfterm;
       (str "The condition holds up to here")
-    with UserError(_,s) -> 
+    with UserError(_,s) ->
       (str ("Condition violated: ") ++s)
-  in 
+  in
   msgnl message
 
 let interp c = match c with
@@ -1308,11 +1308,11 @@ let interp c = match c with
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
 
   (* Modules *)
-  | VernacDeclareModule (export,lid,bl,mtyo) -> 
+  | VernacDeclareModule (export,lid,bl,mtyo) ->
       vernac_declare_module export lid bl mtyo
-  | VernacDefineModule (export,lid,bl,mtyo,mexpro) -> 
+  | VernacDefineModule (export,lid,bl,mtyo,mexpro) ->
       vernac_define_module export lid bl mtyo mexpro
-  | VernacDeclareModuleType (lid,bl,mtyo) -> 
+  | VernacDeclareModuleType (lid,bl,mtyo) ->
       vernac_declare_module_type lid bl mtyo
   | VernacInclude (in_ast) ->
       vernac_include in_ast
@@ -1340,7 +1340,7 @@ let interp c = match c with
 
   | VernacDeclProof -> vernac_decl_proof ()
   | VernacReturn -> vernac_return ()
-  | VernacProofInstr stp -> vernac_proof_instr stp 
+  | VernacProofInstr stp -> vernac_proof_instr stp
 
   (* /MMode *)
 

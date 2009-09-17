@@ -58,7 +58,7 @@ let check_imports f caller env needed =
     try
       let actual_stamp = lookup_digest env dp in
       if stamp <> actual_stamp then report_clash f caller dp
-    with Not_found -> 
+    with Not_found ->
       error ("Reference to unknown module " ^ (string_of_dirpath dp))
   in
   List.iter check needed
@@ -72,21 +72,21 @@ let rec lighten_module mb =
     mod_expr = Option.map lighten_modexpr mb.mod_expr;
     mod_type = Option.map lighten_modexpr mb.mod_type }
 
-and lighten_struct struc = 
+and lighten_struct struc =
   let lighten_body (l,body) = (l,match body with
     | SFBconst ({const_opaque=true} as x) -> SFBconst {x with const_body=None}
     | (SFBconst _ | SFBmind _ | SFBalias _) as x -> x
     | SFBmodule m -> SFBmodule (lighten_module m)
-    | SFBmodtype m -> SFBmodtype 
-	({m with 
+    | SFBmodtype m -> SFBmodtype
+	({m with
 	    typ_expr = lighten_modexpr m.typ_expr}))
   in
     List.map lighten_body struc
 
 and lighten_modexpr = function
   | SEBfunctor (mbid,mty,mexpr) ->
-      SEBfunctor (mbid, 
-		    ({mty with 
+      SEBfunctor (mbid,
+		    ({mty with
 			typ_expr = lighten_modexpr mty.typ_expr}),
 		  lighten_modexpr mexpr)
   | SEBident mp as x -> x
@@ -95,17 +95,17 @@ and lighten_modexpr = function
   | SEBapply (mexpr,marg,u) ->
       SEBapply (lighten_modexpr mexpr,lighten_modexpr marg,u)
   | SEBwith (seb,wdcl) ->
-      SEBwith (lighten_modexpr seb,wdcl) 
- 
+      SEBwith (lighten_modexpr seb,wdcl)
+
 let lighten_library (dp,mb,depends,s) = (dp,lighten_module mb,depends,s)
 
 
-type compiled_library = 
+type compiled_library =
     dir_path *
     module_body *
     (dir_path * Digest.t) list *
     engagement option
- 
+
 open Validate
 let val_deps = val_list (val_tuple"dep"[|val_dp;no_val|])
 let val_vo = val_tuple "vo" [|val_dp;val_module;val_deps;val_opt val_eng|]
@@ -119,7 +119,7 @@ let stamp_library file digest = ()
 
 (* When the module is checked, digests do not need to match, but a
    warning is issued in case of mismatch *)
-let import file (dp,mb,depends,engmt as vo) digest = 
+let import file (dp,mb,depends,engmt as vo) digest =
   Validate.apply !Flags.debug val_vo vo;
   Flags.if_verbose msgnl (str "*** vo structure validated ***");
   let env = !genv in
@@ -132,7 +132,7 @@ let import file (dp,mb,depends,engmt as vo) digest =
   full_add_module dp mb digest
 
 (* When the module is admitted, digests *must* match *)
-let unsafe_import file (dp,mb,depends,engmt) digest = 
+let unsafe_import file (dp,mb,depends,engmt) digest =
   let env = !genv in
   check_imports (errorlabstrm"unsafe_import") dp env depends;
   check_engagement env engmt;

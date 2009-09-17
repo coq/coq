@@ -55,7 +55,7 @@ module Gram : Grammar.S with type te = Compat.token
       [GramConstrNonTerminal (ETConstr (NextLevel,(BorderProd Left,LeftA)),
                               Some "x");
        GramConstrTerminal ("","+");
-       GramConstrNonTerminal (ETConstr (NextLevel,(BorderProd Right,LeftA)), 
+       GramConstrNonTerminal (ETConstr (NextLevel,(BorderProd Right,LeftA)),
                               Some "y")]
        : grammar_constr_prod_item list
         |
@@ -75,7 +75,7 @@ module Gram : Grammar.S with type te = Compat.token
         |
         | Metasyntax.interp_prod_item
         V
-      [GramTerminal "f"; 
+      [GramTerminal "f";
        GramNonTerminal (ConstrArgType, Aentry ("constr","constr"), Some "x")]
       : grammar_prod_item list
         |
@@ -110,7 +110,7 @@ type camlp4_entry_rules =
 
 (* Add one extension at some camlp4 position of some camlp4 entry *)
 val grammar_extend :
-  grammar_object Gram.Entry.e -> Gramext.position option -> 
+  grammar_object Gram.Entry.e -> Gramext.position option ->
    (* for reinitialization if ever needed: *) Gramext.g_assoc option ->
      camlp4_entry_rules list -> unit
 
@@ -211,7 +211,7 @@ module Constr :
     val appl_arg : (constr_expr * explicitation located option) Gram.Entry.e
   end
 
-module Module : 
+module Module :
   sig
     val module_expr : module_ast Gram.Entry.e
     val module_type : module_type_ast Gram.Entry.e
@@ -257,16 +257,16 @@ val main_entry : (loc * vernac_expr) option Gram.Entry.e
 
 (* Binding constr entry keys to entries and symbols *)
 
-val interp_constr_entry_key : bool (* true for cases_pattern *) -> 
+val interp_constr_entry_key : bool (* true for cases_pattern *) ->
   constr_entry_key -> grammar_object Gram.Entry.e * int option
 
-val symbol_of_constr_prod_entry_key : Gramext.g_assoc option -> 
-  constr_entry_key -> bool -> constr_prod_entry_key -> 
+val symbol_of_constr_prod_entry_key : Gramext.g_assoc option ->
+  constr_entry_key -> bool -> constr_prod_entry_key ->
     Compat.token Gramext.g_symbol
 
 (* Binding general entry keys to symbols *)
 
-val symbol_of_prod_entry_key : 
+val symbol_of_prod_entry_key :
   Gram.te prod_entry_key -> Gram.te Gramext.g_symbol
 
 (**********************************************************************)
@@ -278,10 +278,10 @@ val interp_entry_name : bool (* true to fail on unknown entry *) ->
 (**********************************************************************)
 (* Registering/resetting the level of a constr entry                  *)
 
-val find_position : 
+val find_position :
   bool (* true if for creation in pattern entry; false if in constr entry *) ->
   Gramext.g_assoc option -> int option ->
-    Gramext.position option * Gramext.g_assoc option * string option * 
+    Gramext.position option * Gramext.g_assoc option * string option *
     (* for reinitialization: *) Gramext.g_assoc option
 
 val synchronize_level_positions : unit -> unit
@@ -290,4 +290,4 @@ val register_empty_levels : bool -> int list ->
     (Gramext.position option * Gramext.g_assoc option *
      string option * Gramext.g_assoc option) list
 
-val remove_levels : int -> unit 
+val remove_levels : int -> unit

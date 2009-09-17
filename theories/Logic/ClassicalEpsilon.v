@@ -22,11 +22,11 @@ Require Import ChoiceFacts.
 Set Implicit Arguments.
 
 Axiom constructive_indefinite_description :
-  forall (A : Type) (P : A->Prop), 
+  forall (A : Type) (P : A->Prop),
     (exists x, P x) -> { x : A | P x }.
 
 Lemma constructive_definite_description :
-  forall (A : Type) (P : A->Prop), 
+  forall (A : Type) (P : A->Prop),
     (exists! x, P x) -> { x : A | P x }.
 Proof.
   intros; apply constructive_indefinite_description; firstorder.
@@ -34,18 +34,18 @@ Qed.
 
 Theorem excluded_middle_informative : forall P:Prop, {P} + {~ P}.
 Proof.
-  apply 
-    (constructive_definite_descr_excluded_middle 
+  apply
+    (constructive_definite_descr_excluded_middle
       constructive_definite_description classic).
 Qed.
 
-Theorem classical_indefinite_description : 
+Theorem classical_indefinite_description :
   forall (A : Type) (P : A->Prop), inhabited A ->
     { x : A | (exists x, P x) -> P x }.
 Proof.
   intros A P i.
   destruct (excluded_middle_informative (exists x, P x)) as [Hex|HnonP].
-  apply constructive_indefinite_description 
+  apply constructive_indefinite_description
     with (P:= fun x => (exists x, P x) -> P x).
   destruct Hex as (x,Hx).
     exists x; intros _; exact Hx.
@@ -60,7 +60,7 @@ Defined.
 Definition epsilon (A : Type) (i:inhabited A) (P : A->Prop) : A
   := proj1_sig (classical_indefinite_description P i).
 
-Definition epsilon_spec (A : Type) (i:inhabited A) (P : A->Prop) : 
+Definition epsilon_spec (A : Type) (i:inhabited A) (P : A->Prop) :
   (exists x, P x) -> P (epsilon i P)
   := proj2_sig (classical_indefinite_description P i).
 
@@ -76,7 +76,7 @@ Definition epsilon_spec (A : Type) (i:inhabited A) (P : A->Prop) :
     the actual proof that the domain of [P] is inhabited
     (proof idea kindly provided by Pierre Castéran) *)
 
-Lemma epsilon_inh_irrelevance : 
+Lemma epsilon_inh_irrelevance :
    forall (A:Type) (i j : inhabited A) (P:A->Prop),
    (exists x, P x) -> epsilon i P = epsilon j P.
 Proof.

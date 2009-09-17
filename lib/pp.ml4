@@ -19,7 +19,7 @@ let print_emacs = ref false
 let make_pp_emacs() = print_emacs:=true
 let make_pp_nonemacs() = print_emacs:=false
 
-(* The different kinds of blocks are: 
+(* The different kinds of blocks are:
    \begin{description}
    \item[hbox:] Horizontal block no line breaking;
    \item[vbox:] Vertical block each break leads to a new line;
@@ -31,9 +31,9 @@ let make_pp_nonemacs() = print_emacs:=false
       (except if no mark yet on the reste of the line)
    \end{description}
  *)
- 
+
 let comments = ref []
-  
+
 let rec split_com comacc acc pos = function
     [] -> comments := List.rev acc; comacc
   | ((b,e),c as com)::coms ->
@@ -132,7 +132,7 @@ let real r = str (string_of_float r)
 let bool b = str (string_of_bool b)
 let strbrk s =
   let rec aux p n =
-    if n < String.length s then 
+    if n < String.length s then
       if s.[n] = ' ' then
 	if p=n then [< spc (); aux (n+1) (n+1) >]
 	else [< str (String.sub s p (n-p)); spc (); aux (n+1) (n+1) >]
@@ -224,13 +224,13 @@ let rec pr_com ft s =
     | None -> ()
 
 (* pretty printing functions *)
-let pp_dirs ft = 
+let pp_dirs ft =
   let pp_open_box = function
     | Pp_hbox n   -> Format.pp_open_hbox ft ()
     | Pp_vbox n   -> Format.pp_open_vbox ft n
     | Pp_hvbox n  -> Format.pp_open_hvbox ft n
     | Pp_hovbox n -> Format.pp_open_hovbox ft n
-    | Pp_tbox     -> Format.pp_open_tbox ft () 
+    | Pp_tbox     -> Format.pp_open_tbox ft ()
   in
   let rec pp_cmd = function
     | Ppcmd_print(n,s)        ->
@@ -264,12 +264,12 @@ let pp_dirs ft =
     | Ppdir_ppcmds cmdstream -> Stream.iter pp_cmd cmdstream
     | Ppdir_print_newline    ->
         com_brk ft; Format.pp_print_newline ft ()
-    | Ppdir_print_flush      -> Format.pp_print_flush ft () 
+    | Ppdir_print_flush      -> Format.pp_print_flush ft ()
   in
   fun dirstream ->
-    try  
+    try
       Stream.iter pp_dir dirstream; com_brk ft
-    with 
+    with
       | e -> Format.pp_print_flush ft () ; raise e
 
 
@@ -284,10 +284,10 @@ let ppcmds x = Ppdir_ppcmds x
 let emacs_warning_start_string = String.make 1 (Char.chr 254)
 let emacs_warning_end_string = String.make 1 (Char.chr 255)
 
-let warnstart() = 
+let warnstart() =
   if not !print_emacs then mt() else str emacs_warning_start_string
 
-let warnend() = 
+let warnend() =
   if not !print_emacs then mt() else str emacs_warning_end_string
 
 let warnbody strm =

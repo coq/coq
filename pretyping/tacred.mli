@@ -19,7 +19,7 @@ open Rawterm
 open Termops
 (*i*)
 
-type reduction_tactic_error = 
+type reduction_tactic_error =
     InvalidAbstraction of env * constr * (env * Type_errors.type_error)
 
 exception ReductionTacticError of reduction_tactic_error
@@ -47,7 +47,7 @@ val red_product : reduction_function
 val try_red_product : reduction_function
 
 (* Simpl *)
-val simpl : reduction_function 
+val simpl : reduction_function
 
 (* Simpl only at the head *)
 val whd_simpl : reduction_function
@@ -57,7 +57,7 @@ val whd_simpl : reduction_function
 val hnf_constr : reduction_function
 
 (* Unfold *)
-val unfoldn : 
+val unfoldn :
   (occurrences * evaluable_global_reference) list ->  reduction_function
 
 (* Fold *)

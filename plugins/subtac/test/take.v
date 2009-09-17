@@ -11,7 +11,7 @@ Print cons.
 Program Fixpoint take (A : Set) (l : list A) (n : nat | n <= length l) { struct l } : { l' : list A | length l' = n } :=
   match n with
   | 0 => nil
-  | S p => 
+  | S p =>
     match l with
     | cons hd tl => let rest := take tl p in cons hd rest
     | nil => !

@@ -13,7 +13,7 @@ Require Import List.
 Definition assoc_2nd :=
   (fix assoc_2nd_rec (A:Type) (B:Set)
                      (eq_dec:forall e1 e2:B, {e1 = e2} + {e1 <> e2})
-                     (lst:list (prod A B)) {struct lst} : 
+                     (lst:list (prod A B)) {struct lst} :
    B -> A -> A :=
      fun (key:B) (default:A) =>
        match lst with
@@ -26,7 +26,7 @@ Definition assoc_2nd :=
        end).
 
 Definition mem :=
-  (fix mem (A:Set) (eq_dec:forall e1 e2:A, {e1 = e2} + {e1 <> e2}) 
+  (fix mem (A:Set) (eq_dec:forall e1 e2:A, {e1 = e2} + {e1 <> e2})
            (a:A) (l:list A) {struct l} : bool :=
      match l with
      | nil => false

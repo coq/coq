@@ -107,7 +107,7 @@ Qed.
 
 Theorem not_lt : forall n m, ~ n < m -> n >= m.
 Proof.
-  intros x y H; exact (not_gt y x H). 
+  intros x y H; exact (not_gt y x H).
 Qed.
 
 

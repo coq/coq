@@ -27,7 +27,7 @@ Infix "-" := Z.sub : IntScope.
 Infix "*" := Z.mul : IntScope.
 Notation "- x" := (Z.opp x) : IntScope.
 
-Hint Rewrite 
+Hint Rewrite
  Z.spec_0 Z.spec_1 Z.spec_add Z.spec_sub Z.spec_pred Z.spec_succ
  Z.spec_mul Z.spec_opp Z.spec_of_Z : Zspec.
 
@@ -91,7 +91,7 @@ Section Induction.
 Variable A : Z.t -> Prop.
 Hypothesis A_wd : predicate_wd Z.eq A.
 Hypothesis A0 : A 0.
-Hypothesis AS : forall n, A n <-> A (Z.succ n). 
+Hypothesis AS : forall n, A n <-> A (Z.succ n).
 
 Add Morphism A with signature Z.eq ==> iff as A_morph.
 Proof. apply A_wd. Qed.
@@ -214,7 +214,7 @@ Proof.
 Qed.
 
 Add Morphism Z.compare with signature Z.eq ==> Z.eq ==> (@eq comparison) as compare_wd.
-Proof. 
+Proof.
 intros x x' Hx y y' Hy.
 rewrite 2 spec_compare_alt; unfold Z.eq in *; rewrite Hx, Hy; intuition.
 Qed.

@@ -42,7 +42,7 @@ Abort.
 
 (************************************************************************)
 
-Lemma T : nat. 
+Lemma T : nat.
 
  refine (S _).
 
@@ -95,7 +95,7 @@ Abort.
 
 
 (************************************************************************)
-Parameter f : nat * nat -> nat -> nat. 
+Parameter f : nat * nat -> nat -> nat.
 
 Lemma essai : nat.
 
@@ -175,10 +175,10 @@ Restart.
     | S p => _
     end).
 
-exists 1. trivial. 
+exists 1. trivial.
 elim (f0 p).
  refine
- (fun (x : nat) (h : x = S p) => exist (fun x : nat => x = S (S p)) (S x) _). 
+ (fun (x : nat) (h : x = S p) => exist (fun x : nat => x = S (S p)) (S x) _).
  rewrite h. auto.
 Qed.
 

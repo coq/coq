@@ -13,7 +13,7 @@
    and to backtrack (undo) those operations. It provides also the section
    mechanism (at a low level; discharge is not known at this step). *)
 
-type node = 
+type node =
   | Leaf of Libobject.obj
   | CompilingLibrary of Libnames.object_prefix
   | OpenedModule of bool option * Libnames.object_prefix * Summary.frozen
@@ -40,7 +40,7 @@ val load_and_subst_objects : int -> Libnames.object_prefix -> Mod_subst.substitu
    to their answers to the [classify_object] function in three groups:
    [Substitute], [Keep], [Anticipate] respectively.  The order of each
    returned list is the same as in the input list. *)
-val classify_segment : 
+val classify_segment :
   library_segment -> lib_objects * lib_objects * Libobject.obj list
 
 (* [segment_of_objects prefix objs] forms a list of Leafs *)
@@ -69,7 +69,7 @@ val current_command_label : unit -> int
    registered after it. *)
 val reset_label : int -> unit
 
-(*s The function [contents_after] returns the current library segment, 
+(*s The function [contents_after] returns the current library segment,
   starting from a given section path. If not given, the entire segment
   is returned. *)
 
@@ -102,12 +102,12 @@ val find_opening_node : Names.identifier -> node
 
 (*s Modules and module types *)
 
-val start_module : 
+val start_module :
   bool option -> Names.module_ident -> Names.module_path -> Summary.frozen -> Libnames.object_prefix
 val end_module : unit
   -> Libnames.object_name * Libnames.object_prefix * Summary.frozen * library_segment
 
-val start_modtype : 
+val start_modtype :
   Names.module_ident -> Names.module_path -> Summary.frozen -> Libnames.object_prefix
 val end_modtype : unit
   -> Libnames.object_name * Libnames.object_prefix * Summary.frozen * library_segment
@@ -144,7 +144,7 @@ val reset_to_state : Libnames.object_name -> unit
 
 val has_top_frozen_state : unit -> Libnames.object_name option
 
-(* [back n] resets to the place corresponding to the $n$-th call of 
+(* [back n] resets to the place corresponding to the $n$-th call of
    [mark_end_of_command] (counting backwards) *)
 val back : int -> unit
 

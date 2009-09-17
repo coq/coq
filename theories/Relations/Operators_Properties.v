@@ -24,7 +24,7 @@ Section Properties.
   Variable R : relation A.
 
   Let incl (R1 R2:relation A) : Prop := forall x y:A, R1 x y -> R2 x y.
-  
+
   Section Clos_Refl_Trans.
 
     (** Correctness of the reflexive-transitive closure operator *)
@@ -33,7 +33,7 @@ Section Properties.
     Proof.
       apply Build_preorder.
       exact (rt_refl A R).
-      
+
       exact (rt_trans A R).
     Qed.
 
@@ -114,7 +114,7 @@ Section Properties.
       apply t1n_trans; auto.
     Qed.
 
-    Lemma t1n_trans_equiv : forall x y, 
+    Lemma t1n_trans_equiv : forall x y,
         clos_trans A R x y <-> clos_trans_1n A R x y.
     Proof.
       split.
@@ -144,7 +144,7 @@ Section Properties.
       right with y0; auto.
     Qed.
 
-    Lemma tn1_trans_equiv : forall x y, 
+    Lemma tn1_trans_equiv : forall x y,
         clos_trans A R x y <-> clos_trans_n1 A R x y.
     Proof.
       split.
@@ -152,7 +152,7 @@ Section Properties.
       apply tn1_trans.
     Qed.
 
-    (** Direct reflexive-transitive closure is equivalent to 
+    (** Direct reflexive-transitive closure is equivalent to
         transitivity by left-step extension *)
 
     Lemma R_rt1n : forall x y, R x y -> clos_refl_trans_1n A R x y.
@@ -167,7 +167,7 @@ Section Properties.
       right with x;[assumption|left].
     Qed.
 
-    Lemma rt1n_trans : forall x y, 
+    Lemma rt1n_trans : forall x y,
         clos_refl_trans_1n A R x y -> clos_refl_trans A R x y.
     Proof.
       induction 1.
@@ -176,7 +176,7 @@ Section Properties.
       constructor 1; auto.
     Qed.
 
-    Lemma trans_rt1n : forall x y, 
+    Lemma trans_rt1n : forall x y,
         clos_refl_trans A R x y -> clos_refl_trans_1n A R x y.
     Proof.
       induction 1.
@@ -190,7 +190,7 @@ Section Properties.
       apply rt1n_trans; auto.
     Qed.
 
-    Lemma rt1n_trans_equiv : forall x y, 
+    Lemma rt1n_trans_equiv : forall x y,
       clos_refl_trans A R x y <-> clos_refl_trans_1n A R x y.
     Proof.
       split.
@@ -198,7 +198,7 @@ Section Properties.
       apply rt1n_trans.
     Qed.
 
-    (** Direct reflexive-transitive closure is equivalent to 
+    (** Direct reflexive-transitive closure is equivalent to
         transitivity by right-step extension *)
 
     Lemma rtn1_trans : forall x y,
@@ -210,7 +210,7 @@ Section Properties.
       constructor 1; assumption.
     Qed.
 
-    Lemma trans_rtn1 :  forall x y, 
+    Lemma trans_rtn1 :  forall x y,
         clos_refl_trans A R x y -> clos_refl_trans_n1 A R x y.
     Proof.
       induction 1.
@@ -221,7 +221,7 @@ Section Properties.
       right with y0; auto.
     Qed.
 
-    Lemma rtn1_trans_equiv : forall x y, 
+    Lemma rtn1_trans_equiv : forall x y,
         clos_refl_trans A R x y <-> clos_refl_trans_n1 A R x y.
     Proof.
       split.
@@ -240,7 +240,7 @@ Section Properties.
       revert H H0.
       induction H1; intros; auto with sets.
       apply H1 with x; auto with sets.
-      
+
       apply IHclos_refl_trans2.
       apply IHclos_refl_trans1; auto with sets.
 
@@ -270,10 +270,10 @@ Section Properties.
       eauto.
     Qed.
 
-    (** Direct reflexive-symmetric-transitive closure is equivalent to 
+    (** Direct reflexive-symmetric-transitive closure is equivalent to
         transitivity by symmetric left-step extension *)
 
-    Lemma rts1n_rts  : forall x y, 
+    Lemma rts1n_rts  : forall x y,
       clos_refl_sym_trans_1n A R x y -> clos_refl_sym_trans A R x y.
     Proof.
       induction 1.
@@ -283,7 +283,7 @@ Section Properties.
     Qed.
 
     Lemma rts_1n_trans : forall x y, clos_refl_sym_trans_1n A R x y ->
-      forall z, clos_refl_sym_trans_1n A R y z -> 
+      forall z, clos_refl_sym_trans_1n A R y z ->
         clos_refl_sym_trans_1n A R x z.
       induction 1.
       auto.
@@ -301,7 +301,7 @@ Section Properties.
       left.
     Qed.
 
-    Lemma rts_rts1n  : forall x y, 
+    Lemma rts_rts1n  : forall x y,
       clos_refl_sym_trans A R x y -> clos_refl_sym_trans_1n A R x y.
       induction 1.
       constructor 2 with y; auto.
@@ -311,7 +311,7 @@ Section Properties.
       eapply rts_1n_trans; eauto.
     Qed.
 
-    Lemma rts_rts1n_equiv : forall x y, 
+    Lemma rts_rts1n_equiv : forall x y,
       clos_refl_sym_trans A R x y <-> clos_refl_sym_trans_1n A R x y.
     Proof.
       split.
@@ -319,10 +319,10 @@ Section Properties.
       apply rts1n_rts.
     Qed.
 
-    (** Direct reflexive-symmetric-transitive closure is equivalent to 
+    (** Direct reflexive-symmetric-transitive closure is equivalent to
         transitivity by symmetric right-step extension *)
 
-    Lemma rtsn1_rts : forall x y, 
+    Lemma rtsn1_rts : forall x y,
       clos_refl_sym_trans_n1 A R x y -> clos_refl_sym_trans A R x y.
     Proof.
       induction 1.
@@ -332,7 +332,7 @@ Section Properties.
     Qed.
 
     Lemma rtsn1_trans : forall y z, clos_refl_sym_trans_n1 A R y z->
-      forall x, clos_refl_sym_trans_n1 A R x y -> 
+      forall x, clos_refl_sym_trans_n1 A R x y ->
         clos_refl_sym_trans_n1 A R x z.
     Proof.
       induction 1.
@@ -352,7 +352,7 @@ Section Properties.
       left.
     Qed.
 
-    Lemma rts_rtsn1 : forall x y, 
+    Lemma rts_rtsn1 : forall x y,
       clos_refl_sym_trans A R x y -> clos_refl_sym_trans_n1 A R x y.
     Proof.
       induction 1.
@@ -363,7 +363,7 @@ Section Properties.
       eapply rtsn1_trans; eauto.
     Qed.
 
-    Lemma rts_rtsn1_equiv : forall x y, 
+    Lemma rts_rtsn1_equiv : forall x y,
       clos_refl_sym_trans A R x y <-> clos_refl_sym_trans_n1 A R x y.
     Proof.
       split.

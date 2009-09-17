@@ -11,14 +11,14 @@
 Section Relation_Definition.
 
   Variable A : Type.
-  
+
   Definition relation := A -> A -> Prop.
 
   Variable R : relation.
-   
+
 
   Section General_Properties_of_Relations.
-    
+
     Definition reflexive : Prop := forall x:A, R x x.
     Definition transitive : Prop := forall x y z:A, R x y -> R y z -> R x z.
     Definition symmetric : Prop := forall x y:A, R x y -> R y x.
@@ -32,33 +32,33 @@ Section Relation_Definition.
 
 
   Section Sets_of_Relations.
-    
-    Record preorder : Prop := 
+
+    Record preorder : Prop :=
       { preord_refl : reflexive; preord_trans : transitive}.
-    
-    Record order : Prop := 
+
+    Record order : Prop :=
       { ord_refl : reflexive;
 	ord_trans : transitive;
 	ord_antisym : antisymmetric}.
-    
-    Record equivalence : Prop := 
+
+    Record equivalence : Prop :=
       { equiv_refl : reflexive;
 	equiv_trans : transitive;
 	equiv_sym : symmetric}.
-    
+
     Record PER : Prop :=  {per_sym : symmetric; per_trans : transitive}.
 
   End Sets_of_Relations.
 
 
   Section Relations_of_Relations.
-    
+
     Definition inclusion (R1 R2:relation) : Prop :=
       forall x y:A, R1 x y -> R2 x y.
-    
+
     Definition same_relation (R1 R2:relation) : Prop :=
       inclusion R1 R2 /\ inclusion R2 R1.
-    
+
     Definition commut (R1 R2:relation) : Prop :=
       forall x y:A,
 	R1 y x -> forall z:A, R2 z y ->  exists2 y' : A, R2 y' x & R1 z y'.

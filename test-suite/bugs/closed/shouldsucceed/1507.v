@@ -8,10 +8,10 @@
                rational intervals.
 *)
 
-Definition associative (A:Type)(op:A->A->A) := 
+Definition associative (A:Type)(op:A->A->A) :=
   forall x y z:A, op (op x y) z = op x (op y z).
 
-Definition commutative (A:Type)(op:A->A->A) := 
+Definition commutative (A:Type)(op:A->A->A) :=
   forall x y:A, op x y = op y x.
 
 Definition trichotomous (A:Type)(R:A->A->Prop) :=
@@ -19,7 +19,7 @@ Definition trichotomous (A:Type)(R:A->A->Prop) :=
 
 Definition relation (A:Type) := A -> A -> Prop.
 Definition reflexive (A:Type)(R:relation A) := forall x:A, R x x.
-Definition transitive (A:Type)(R:relation A) := 
+Definition transitive (A:Type)(R:relation A) :=
   forall x y z:A, R x y -> R y z -> R x z.
 Definition symmetric (A:Type)(R:relation A) := forall x y:A, R x y -> R y x.
 
@@ -52,7 +52,7 @@ Record I (grnd:Set)(le:grnd->grnd->Prop) : Type := Imake {
   Iplus_opp_r    : forall x:Icar, Ic (Iplus x (Iopp x)) (Izero);
   Imult_inv_r    : forall x:Icar, ~(Ic x Izero) -> Ic (Imult x (Iinv x)) Ione;
   (* distributive laws *)
-  Imult_plus_distr_l : forall x x' y y' z z' z'', 
+  Imult_plus_distr_l : forall x x' y y' z z' z'',
     Ic x x' -> Ic y y' -> Ic z z' -> Ic z z'' ->
     Ic (Imult (Iplus x y) z) (Iplus (Imult x' z') (Imult y' z''));
   (* order and lattice structure *)
@@ -70,7 +70,7 @@ Record I (grnd:Set)(le:grnd->grnd->Prop) : Type := Imake {
   Ic_sym    : symmetric _ Ic
 }.
 
-Definition interval_set (X:Set)(le:X->X->Prop) := 
+Definition interval_set (X:Set)(le:X->X->Prop) :=
   (interval X le) -> Prop. (* can be Set as well *)
 Check interval_set.
 Check Ic.
@@ -101,7 +101,7 @@ Record N (grnd:Set)(le:grnd->grnd->Prop)(grndI:I grnd le) : Type := Nmake {
   Nplus_opp_r    : forall x:Ncar, Nc (Nplus x (Nopp x)) (Nzero);
   Nmult_inv_r    : forall x:Ncar, ~(Nc x Nzero) -> Nc (Nmult x (Ninv x)) None;
   (* distributive laws *)
-  Nmult_plus_distr_l : forall x x' y y' z z' z'', 
+  Nmult_plus_distr_l : forall x x' y y' z z' z'',
     Nc x x' -> Nc y y' -> Nc z z' -> Nc z z'' ->
     Nc (Nmult (Nplus x y) z) (Nplus (Nmult x' z') (Nmult y' z''));
   (* order and lattice structure *)

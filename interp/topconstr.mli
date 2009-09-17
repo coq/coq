@@ -39,7 +39,7 @@ type aconstr =
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
   | AIf of aconstr * (name * aconstr option) * aconstr * aconstr
   | ARec of fix_kind * identifier array *
-      (name * aconstr option * aconstr) list array * aconstr array * 
+      (name * aconstr option * aconstr) list array * aconstr array *
       aconstr array
   | ASort of rawsort
   | AHole of Evd.hole_kind
@@ -48,7 +48,7 @@ type aconstr =
 
 (**********************************************************************)
 (* Translate a rawconstr into a notation given the list of variables  *)
-(* bound by the notation; also interpret recursive patterns           *) 
+(* bound by the notation; also interpret recursive patterns           *)
 
 val aconstr_of_rawconstr : identifier list -> rawconstr -> aconstr
 
@@ -61,7 +61,7 @@ val eq_rawconstr : rawconstr -> rawconstr -> bool
 (**********************************************************************)
 (* Re-interpret a notation as a rawconstr, taking care of binders     *)
 
-val rawconstr_of_aconstr_with_binders : loc -> 
+val rawconstr_of_aconstr_with_binders : loc ->
   ('a -> name -> 'a * name) ->
   ('a -> aconstr -> rawconstr) -> 'a -> aconstr -> rawconstr
 
@@ -97,9 +97,9 @@ val subst_interpretation : substitution -> interpretation -> interpretation
 type notation = string
 
 type explicitation = ExplByPos of int * identifier option | ExplByName of identifier
-  
-type binder_kind = 
-  | Default of binding_kind 
+
+type binder_kind =
+  | Default of binding_kind
   | Generalized of binding_kind * binding_kind * bool
       (* Inner binding, outer bindings, typeclass-specific flag
 	 for implicit generalization of superclasses *)
@@ -131,7 +131,7 @@ type constr_expr =
   | CLambdaN of loc * (name located list * binder_kind * constr_expr) list * constr_expr
   | CLetIn of loc * name located * constr_expr * constr_expr
   | CAppExpl of loc * (proj_flag * reference) * constr_expr list
-  | CApp of loc * (proj_flag * constr_expr) * 
+  | CApp of loc * (proj_flag * constr_expr) *
       (constr_expr * explicitation located option) list
   | CRecord of loc * constr_expr option * (identifier located * constr_expr) list
   | CCases of loc * case_style * constr_expr option *
@@ -158,7 +158,7 @@ and fixpoint_expr =
 and cofixpoint_expr =
     identifier located * local_binder list * constr_expr * constr_expr
 
-and recursion_order_expr = 
+and recursion_order_expr =
   | CStructRec
   | CWfRec of constr_expr
   | CMeasureRec of constr_expr * constr_expr option (* measure, relation *)
@@ -167,7 +167,7 @@ and recursion_order_expr =
 and local_binder =
   | LocalRawDef of name located * constr_expr
   | LocalRawAssum of name located list * binder_kind * constr_expr
-      
+
 type typeclass_constraint = name located * binding_kind * constr_expr
 
 and typeclass_context = typeclass_constraint list
@@ -240,16 +240,16 @@ val map_constr_expr_with_binders :
 (**********************************************************************)
 (* Concrete syntax for modules and module types                       *)
 
-type with_declaration_ast = 
+type with_declaration_ast =
   | CWith_Module of identifier list located * qualid located
   | CWith_Definition of identifier list located * constr_expr
 
 
-type module_ast = 
+type module_ast =
   | CMEident of qualid located
   | CMEapply of module_ast * module_ast
 
-type module_type_ast = 
+type module_type_ast =
   | CMTEident of qualid located
   | CMTEapply of module_type_ast * module_ast
   | CMTEwith of module_type_ast * with_declaration_ast

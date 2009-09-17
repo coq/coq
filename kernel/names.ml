@@ -23,7 +23,7 @@ let string_of_id id = String.copy id
 
 (* Hash-consing of identifier *)
 module Hident = Hashcons.Make(
-  struct 
+  struct
     type t = string
     type u = string -> string
     let hash_sub hstr id = hstr id
@@ -31,7 +31,7 @@ module Hident = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
-module IdOrdered = 
+module IdOrdered =
   struct
     type t = identifier
     let compare = id_ord
@@ -47,7 +47,7 @@ type name = Name of identifier | Anonymous
 
 (* Dirpaths are lists of module identifiers. The actual representation
    is reversed to optimise sharing: Coq.A.B is ["B";"A";"Coq"] *)
- 
+
 type module_ident = identifier
 type dir_path = module_ident list
 
@@ -63,16 +63,16 @@ let string_of_dirpath = function
   | sl -> String.concat "." (List.map string_of_id (List.rev sl))
 
 
-let u_number = ref 0 
+let u_number = ref 0
 type uniq_ident = int * string * dir_path
 let make_uid dir s = incr u_number;(!u_number,String.copy s,dir)
  let debug_string_of_uid (i,s,p) =
  "<"(*^string_of_dirpath p ^"#"^*) ^ s ^"#"^ string_of_int i^">"
-let string_of_uid (i,s,p) = 
+let string_of_uid (i,s,p) =
   string_of_dirpath p ^"."^s
 
-module Umap = Map.Make(struct 
-			 type t = uniq_ident 
+module Umap = Map.Make(struct
+			 type t = uniq_ident
 			 let compare = Pervasives.compare
 		       end)
 
@@ -108,7 +108,7 @@ module Labmap = Idmap
 type module_path =
   | MPfile of dir_path
   | MPbound of mod_bound_id
-  | MPself of mod_self_id 
+  | MPself of mod_self_id
   | MPdot of module_path * label
 
 let rec check_bound_mp = function
@@ -124,7 +124,7 @@ let rec string_of_mp = function
 
 (* we compare labels first if both are MPdots *)
 let rec mp_ord mp1 mp2 = match (mp1,mp2) with
-    MPdot(mp1,l1), MPdot(mp2,l2) -> 
+    MPdot(mp1,l1), MPdot(mp2,l2) ->
       let c = Pervasives.compare l1 l2 in
 	if c<>0 then
 	  c
@@ -147,28 +147,28 @@ type kernel_name = module_path * dir_path * label
 let make_kn mp dir l = (mp,dir,l)
 let repr_kn kn = kn
 
-let modpath kn = 
+let modpath kn =
   let mp,_,_ = repr_kn kn in mp
 
-let label kn = 
+let label kn =
   let _,_,l = repr_kn kn in l
 
-let string_of_kn (mp,dir,l) = 
+let string_of_kn (mp,dir,l) =
   string_of_mp mp ^ "#" ^ string_of_dirpath dir ^ "#" ^ string_of_label l
 
 let pr_kn kn = str (string_of_kn kn)
 
 
-let kn_ord kn1 kn2 = 
+let kn_ord kn1 kn2 =
     let mp1,dir1,l1 = kn1 in
     let mp2,dir2,l2 = kn2 in
     let c = Pervasives.compare l1 l2 in
       if c <> 0 then
 	c
-      else 
+      else
 	let c = Pervasives.compare dir1 dir2 in
 	  if c<>0 then
-	    c 
+	    c
 	  else
 	    MPord.compare mp1 mp2
 
@@ -217,7 +217,7 @@ let index_of_constructor (ind,i) = i
 
 module InductiveOrdered = struct
   type t = inductive
-  let compare (spx,ix) (spy,iy) = 
+  let compare (spx,ix) (spy,iy) =
     let c = ix - iy in if c = 0 then KNord.compare spx spy else c
 end
 
@@ -225,7 +225,7 @@ module Indmap = Map.Make(InductiveOrdered)
 
 module ConstructorOrdered = struct
   type t = constructor
-  let compare (indx,ix) (indy,iy) = 
+  let compare (indx,ix) (indy,iy) =
     let c = ix - iy in if c = 0 then InductiveOrdered.compare indx indy else c
 end
 
@@ -238,7 +238,7 @@ type evaluable_global_reference =
 
 (* Hash-consing of name objects *)
 module Hname = Hashcons.Make(
-  struct 
+  struct
     type t = name
     type u = identifier -> identifier
     let hash_sub hident = function
@@ -253,7 +253,7 @@ module Hname = Hashcons.Make(
   end)
 
 module Hdir = Hashcons.Make(
-  struct 
+  struct
     type t = dir_path
     type u = identifier -> identifier
     let hash_sub hident d = List.map hident d
@@ -265,7 +265,7 @@ module Hdir = Hashcons.Make(
   end)
 
 module Huniqid = Hashcons.Make(
-  struct 
+  struct
     type t = uniq_ident
     type u = (string -> string) * (dir_path -> dir_path)
     let hash_sub (hstr,hdir) (n,s,dir) = (n,hstr s,hdir dir)
@@ -274,7 +274,7 @@ module Huniqid = Hashcons.Make(
   end)
 
 module Hmod = Hashcons.Make(
-  struct 
+  struct
     type t = module_path
     type u = (dir_path -> dir_path) * (uniq_ident -> uniq_ident) *
 	(string -> string)
@@ -293,7 +293,7 @@ module Hmod = Hashcons.Make(
   end)
 
 module Hkn = Hashcons.Make(
-  struct 
+  struct
     type t = kernel_name
     type u = (module_path -> module_path)
 	* (dir_path -> dir_path) * (string -> string)
@@ -326,11 +326,11 @@ let cst_full_transparent_state = (Idpred.empty, Cpred.full)
 type 'a tableKey =
   | ConstKey of constant
   | VarKey of identifier
-  | RelKey of 'a 
+  | RelKey of 'a
 
 
 type inv_rel_key = int (* index in the [rel_context] part of environment
-			  starting by the end, {\em inverse} 
+			  starting by the end, {\em inverse}
 			  of de Bruijn indice *)
 
 type id_key = inv_rel_key tableKey

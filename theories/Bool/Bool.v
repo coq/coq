@@ -39,7 +39,7 @@ Qed.
 Hint Resolve diff_true_false : bool v62.
 
 Lemma diff_false_true : false <> true.
-Proof. 
+Proof.
   red in |- *; intros H; apply diff_true_false.
   symmetry  in |- *.
 assumption.
@@ -129,7 +129,7 @@ Qed.
 (************************)
 (** * A synonym of [if] on [bool] *)
 (************************)
- 
+
 Definition ifb (b1 b2 b3:bool) : bool :=
   match b1 with
     | true => b2
@@ -186,7 +186,7 @@ Proof.
   trivial with bool.
   trivial with bool.
 Qed.
- 
+
 Lemma eqb_negb2 : forall b:bool, eqb b (negb b) = false.
 Proof.
   destruct b.
@@ -318,7 +318,7 @@ Hint Resolve orb_comm orb_assoc: bool v62.
 (** * Properties of [andb]     *)
 (*******************************)
 
-Lemma andb_true_iff : 
+Lemma andb_true_iff :
   forall b1 b2:bool, b1 && b2 = true <-> b1 = true /\ b2 = true.
 Proof.
  destruct b1; destruct b2; intuition.
@@ -382,7 +382,7 @@ Hint Resolve andb_false_elim: bool v62.
 Lemma andb_negb_r : forall b:bool, b && negb b = false.
 Proof.
   destruct b; reflexivity.
-Qed.   
+Qed.
 Hint Resolve andb_negb_r: bool v62.
 
 Notation andb_neg_b := andb_negb_r (only parsing).
@@ -542,8 +542,8 @@ Qed.
 
 (** Lemmas about the [b = true] embedding of [bool] to [Prop] *)
 
-Lemma eq_true_iff_eq : forall b1 b2, (b1 = true <-> b2 = true) -> b1 = b2. 
-Proof. 
+Lemma eq_true_iff_eq : forall b1 b2, (b1 = true <-> b2 = true) -> b1 = b2.
+Proof.
   intros b1 b2; case b1; case b2; intuition.
 Qed.
 
@@ -556,7 +556,7 @@ Qed.
 
 Notation bool_3 := eq_true_negb_classical (only parsing). (* Compatibility *)
 
-Lemma eq_true_not_negb : forall b:bool, b <> true -> negb b = true.  
+Lemma eq_true_not_negb : forall b:bool, b <> true -> negb b = true.
 Proof.
   destruct b; intuition.
 Qed.
@@ -628,7 +628,7 @@ Qed.
 
 (** [Is_true] and connectives *)
 
-Lemma orb_prop_elim : 
+Lemma orb_prop_elim :
   forall a b:bool, Is_true (a || b) -> Is_true a \/ Is_true b.
 Proof.
   destruct a; destruct b; simpl; tauto.
@@ -636,7 +636,7 @@ Qed.
 
 Notation orb_prop2 := orb_prop_elim (only parsing).
 
-Lemma orb_prop_intro : 
+Lemma orb_prop_intro :
   forall a b:bool, Is_true a \/ Is_true b -> Is_true (a || b).
 Proof.
   destruct a; destruct b; simpl; tauto.
@@ -663,16 +663,16 @@ Hint Resolve andb_prop_elim: bool v62.
 
 Notation andb_prop2 := andb_prop_elim (only parsing).
 
-Lemma eq_bool_prop_intro : 
-  forall b1 b2, (Is_true b1 <-> Is_true b2) -> b1 = b2. 
-Proof. 
+Lemma eq_bool_prop_intro :
+  forall b1 b2, (Is_true b1 <-> Is_true b2) -> b1 = b2.
+Proof.
   destruct b1; destruct b2; simpl in *; intuition.
 Qed.
 
 Lemma eq_bool_prop_elim : forall b1 b2, b1 = b2 -> (Is_true b1 <-> Is_true b2).
-Proof. 
+Proof.
   intros b1 b2; case b1; case b2; intuition.
-Qed. 
+Qed.
 
 Lemma negb_prop_elim : forall b, Is_true (negb b) -> ~ Is_true b.
 Proof.
@@ -696,26 +696,26 @@ Qed.
 
 (** Rewrite rules about andb, orb and if (used in romega) *)
 
-Lemma andb_if : forall (A:Type)(a a':A)(b b' : bool), 
-  (if b && b' then a else a') = 
+Lemma andb_if : forall (A:Type)(a a':A)(b b' : bool),
+  (if b && b' then a else a') =
   (if b then if b' then a else a' else a').
 Proof.
  destruct b; destruct b'; auto.
 Qed.
 
-Lemma negb_if : forall (A:Type)(a a':A)(b:bool), 
- (if negb b then a else a') = 
+Lemma negb_if : forall (A:Type)(a a':A)(b:bool),
+ (if negb b then a else a') =
  (if b then a' else a).
 Proof.
  destruct b; auto.
 Qed.
 
 (*****************************************)
-(** * Alternative versions of [andb] and [orb] 
+(** * Alternative versions of [andb] and [orb]
     with lazy behavior (for vm_compute)  *)
 (*****************************************)
 
-Notation "a &&& b" := (if a then b else false) 
+Notation "a &&& b" := (if a then b else false)
  (at level 40, left associativity) : lazy_bool_scope.
 Notation "a ||| b" := (if a then true else b)
  (at level 50, left associativity) : lazy_bool_scope.

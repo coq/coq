@@ -24,7 +24,7 @@ Lemma omega_nightmare : forall x y, 27 <= 11 * x + 13 * y <= 45 ->  -10 <= 7 * x
 Proof.
   intros ; intuition auto.
   lia.
-Qed.  
+Qed.
 
 Lemma compact_proof : forall z,
  (z < 0) ->
@@ -32,5 +32,5 @@ Lemma compact_proof : forall z,
   (0 >= z \/ 0 < z) -> False.
 Proof.
  intros.
- lia. 
+ lia.
 Qed.

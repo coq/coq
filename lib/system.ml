@@ -15,7 +15,7 @@ open Unix
 (* Expanding shell variables and home-directories *)
 
 let safe_getenv_def var def =
-  try 
+  try
     Sys.getenv var
   with Not_found ->
     warning ("Environment variable "^var^" not found: using '"^def^"' .");
@@ -38,7 +38,7 @@ let rec expand_macros s i =
   let l = String.length s in
   if i=l then s else
     match s.[i] with
-      | '$' -> 
+      | '$' ->
 	  let n = expand_atom s (i+1) in
 	  let v = safe_getenv (String.sub s (i+1) (n-i-1)) in
 	  let s = (String.sub s 0 i)^v^(String.sub s n (l-n)) in
@@ -64,7 +64,7 @@ let physical_path_of_string s = s
 let string_of_physical_path p = p
 
 (* Hints to partially detects if two paths refer to the same repertory *)
-let rec remove_path_dot p = 
+let rec remove_path_dot p =
   let curdir = Filename.concat Filename.current_dir_name "" in (* Unix: "./" *)
   let n = String.length curdir in
   if String.length p > n && String.sub p 0 n = curdir then
@@ -82,7 +82,7 @@ let strip_path p =
 
 let canonical_path_name p =
   let current = Sys.getcwd () in
-  try 
+  try
     Sys.chdir p;
     let p' = Sys.getcwd () in
     Sys.chdir current;
@@ -100,7 +100,7 @@ let skipped_dirnames = ref ["CVS"; "_darcs"]
 
 let exclude_search_in_dirname f = skipped_dirnames := f :: !skipped_dirnames
 
-let ok_dirname f = 
+let ok_dirname f =
   f <> "" && f.[0] <> '.' && not (List.mem f !skipped_dirnames) &&
   try ignore (check_ident f); true with _ -> false
 
@@ -114,7 +114,7 @@ let all_subdirs ~unix_path:root =
 	let f = readdir dirh in
 	if ok_dirname f then
 	  let file = Filename.concat dir f in
-	  try 
+	  try
 	    if (stat file).st_kind = S_DIR then begin
 	      let newrel = rel@[f] in
 	      add file newrel;
@@ -132,14 +132,14 @@ let where_in_path ?(warn=true) path filename =
   let rec search = function
     | lpe :: rem ->
 	let f = Filename.concat lpe filename in
-	  if Sys.file_exists f 
+	  if Sys.file_exists f
 	  then (lpe,f) :: search rem
 	  else search rem
     | [] -> [] in
   let rec check_and_warn l =
     match l with
       | [] -> raise Not_found
-      | (lpe, f) :: l' -> 
+      | (lpe, f) :: l' ->
 	  if warn & l' <> [] then
 	    msg_warning
 	      (str filename ++ str " has been found in" ++ spc () ++
@@ -159,11 +159,11 @@ let find_file_in_path ?(warn=true) paths filename =
     else
       errorlabstrm "System.find_file_in_path"
 	(hov 0 (str "Can't find file" ++ spc () ++ str filename))
-  else 
+  else
     try where_in_path ~warn paths filename
     with Not_found ->
       errorlabstrm "System.find_file_in_path"
-	(hov 0 (str "Can't find file" ++ spc () ++ str filename ++ spc () ++ 
+	(hov 0 (str "Can't find file" ++ spc () ++ str filename ++ spc () ++
 		str "on loadpath"))
 
 let is_in_path lpath filename =
@@ -192,40 +192,40 @@ let marshal_in ch =
 exception Bad_magic_number of string
 
 let raw_extern_intern magic suffix =
-  let extern_state name = 
+  let extern_state name =
     let filename = make_suffix name suffix in
     let channel = open_trapping_failure filename in
     output_binary_int channel magic;
     filename,channel
-  and intern_state filename = 
+  and intern_state filename =
     let channel = open_in_bin filename in
     if input_binary_int channel <> magic then
       raise (Bad_magic_number filename);
     channel
-  in 
+  in
   (extern_state,intern_state)
 
 let extern_intern ?(warn=true) magic suffix =
   let (raw_extern,raw_intern) = raw_extern_intern magic suffix in
-  let extern_state name val_0 = 
+  let extern_state name val_0 =
     try
       let (filename,channel) = raw_extern name in
       try
         marshal_out channel val_0;
         close_out channel
-      with e -> 
+      with e ->
 	begin try_remove filename; raise e end
     with Sys_error s -> error ("System error: " ^ s)
-  and intern_state paths name = 
+  and intern_state paths name =
     try
       let _,filename = find_file_in_path ~warn paths (make_suffix name suffix) in
       let channel = raw_intern filename in
       let v = marshal_in channel in
-      close_in channel; 
+      close_in channel;
       v
-    with Sys_error s -> 
+    with Sys_error s ->
       error("System error: " ^ s)
-  in 
+  in
   (extern_state,intern_state)
 
 (* Communication through files with another executable *)
@@ -237,14 +237,14 @@ let connect writefun readfun com =
   let ch_to_in,ch_to_out =
     try open_in tmp_to, open_out tmp_to
     with Sys_error s -> error ("Cannot set connection to "^com^"("^s^")") in
-  let ch_from_in,ch_from_out = 
+  let ch_from_in,ch_from_out =
     try open_in tmp_from, open_out tmp_from
     with Sys_error s ->
-      close_out ch_to_out; close_in ch_to_in; 
+      close_out ch_to_out; close_in ch_to_in;
       error ("Cannot set connection from "^com^"("^s^")") in
   writefun ch_to_out;
   close_out ch_to_out;
-  let pid = 
+  let pid =
     let ch_to' = Unix.descr_of_in_channel ch_to_in in
     let ch_from' = Unix.descr_of_out_channel ch_from_out in
     try Unix.create_process com [|com|] ch_to' ch_from' Unix.stdout
@@ -272,15 +272,15 @@ let run_command converter f c =
   let n = ref 0 in
   let ne = ref 0 in
 
-  while n:= input cin buff 0 127 ; ne := input cerr buffe 0 127 ; 
+  while n:= input cin buff 0 127 ; ne := input cerr buffe 0 127 ;
     !n+ !ne <> 0
-  do 
-    let r = converter (String.sub buff 0 !n) in 
+  do
+    let r = converter (String.sub buff 0 !n) in
     f r;
     Buffer.add_string result r;
-    let r = converter (String.sub buffe 0 !ne) in 
+    let r = converter (String.sub buffe 0 !ne) in
     f r;
-    Buffer.add_string result r 
+    Buffer.add_string result r
   done;
   (Unix.close_process_full (cin,cout,cerr),  Buffer.contents result)
 
@@ -288,16 +288,16 @@ let run_command converter f c =
 
 type time = float * float * float
 
-let process_time () = 
+let process_time () =
   let t = times ()  in
   (t.tms_utime, t.tms_stime)
 
-let get_time () = 
+let get_time () =
   let t = times ()  in
   (time(), t.tms_utime, t.tms_stime)
 
 let time_difference (t1,_,_) (t2,_,_) = t2 -. t1
-			      
+
 let fmt_time_difference (startreal,ustart,sstart) (stopreal,ustop,sstop) =
   real (stopreal -. startreal) ++ str " secs " ++
   str "(" ++

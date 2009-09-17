@@ -15,13 +15,13 @@
 
 Ltac show_goal := match goal with [ |- ?T ] => idtac T end.
 
-Ltac show_hyp id := 
-  match goal with 
-    | [ H := ?b : ?T |- _ ] => 
+Ltac show_hyp id :=
+  match goal with
+    | [ H := ?b : ?T |- _ ] =>
       match H with
         | id => idtac id ":=" b ":" T
       end
-    | [ H : ?T |- _ ] => 
+    | [ H : ?T |- _ ] =>
       match H with
         | id => idtac id  ":"  T
       end
@@ -77,7 +77,7 @@ Ltac destruct_exists := repeat (destruct_one_ex).
 
 Ltac destruct_conjs := repeat (destruct_one_pair || destruct_one_ex).
 
-(** Destruct an existential hypothesis [t] keeping its name for the first component 
+(** Destruct an existential hypothesis [t] keeping its name for the first component
    and using [Ht] for the second *)
 
 Tactic Notation "destruct" "exist" ident(t) ident(Ht) := destruct t as [t Ht].
@@ -96,7 +96,7 @@ Ltac discriminates :=
 
 (** Revert the last hypothesis. *)
 
-Ltac revert_last := 
+Ltac revert_last :=
   match goal with
     [ H : _ |- _ ] => revert H
   end.
@@ -108,8 +108,8 @@ Ltac reverse := repeat revert_last.
 (** Clear duplicated hypotheses *)
 
 Ltac clear_dup :=
-  match goal with 
-    | [ H : ?X |- _ ] => 
+  match goal with
+    | [ H : ?X |- _ ] =>
       match goal with
         | [ H' : ?Y |- _ ] =>
           match H with
@@ -124,7 +124,7 @@ Ltac clear_dups := repeat clear_dup.
 (** A non-failing subst that substitutes as much as possible. *)
 
 Ltac subst_no_fail :=
-  repeat (match goal with 
+  repeat (match goal with
             [ H : ?X = ?Y |- _ ] => subst X || subst Y
           end).
 
@@ -139,13 +139,13 @@ Ltac on_application f tac T :=
     | context [f ?x ?y ?z ?w ?v] => tac (f x y z w v)
     | context [f ?x ?y ?z ?w] => tac (f x y z w)
     | context [f ?x ?y ?z] => tac (f x y z)
-    | context [f ?x ?y] => tac (f x y) 
+    | context [f ?x ?y] => tac (f x y)
     | context [f ?x] => tac (f x)
   end.
 
 (** A variant of [apply] using [refine], doing as much conversion as necessary. *)
 
-Ltac rapply p := 
+Ltac rapply p :=
   refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
   refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
   refine (p _ _ _ _ _ _ _ _ _ _ _ _ _) ||
@@ -162,7 +162,7 @@ Ltac rapply p :=
   refine (p _ _) ||
   refine (p _) ||
   refine p.
-  
+
 (** Tactical [on_call f tac] applies [tac] on any application of [f] in the hypothesis or goal. *)
 
 Ltac on_call f tac :=
@@ -195,15 +195,15 @@ Tactic Notation "destruct_call" constr(f) := destruct_call f.
 
 (** Permit to name the results of destructing the call to [f]. *)
 
-Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) := 
+Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) :=
   destruct_call_as f l.
 
 (** Specify the hypothesis in which the call occurs as well. *)
 
-Tactic Notation "destruct_call" constr(f) "in" hyp(id) := 
+Tactic Notation "destruct_call" constr(f) "in" hyp(id) :=
   destruct_call_in f id.
 
-Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) "in" hyp(id) := 
+Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) "in" hyp(id) :=
   destruct_call_as_in f l id.
 
 (** A marker for prototypes to destruct. *)
@@ -215,7 +215,7 @@ Ltac destruct_rec_calls :=
     | [ H : fix_proto _ |- _ ] => destruct_calls H ; clear H
   end.
 
-Ltac destruct_all_rec_calls := 
+Ltac destruct_all_rec_calls :=
   repeat destruct_rec_calls ; unfold fix_proto in *.
 
 (** Try to inject any potential constructor equality hypothesis. *)
@@ -237,23 +237,23 @@ Ltac destruct_nondep H := let H0 := fresh "H" in assert(H0 := H); destruct H0.
 
 Ltac bang :=
   match goal with
-    | |- ?x => 
+    | |- ?x =>
       match x with
         | context [False_rect _ ?p] => elim p
       end
   end.
- 
+
 (** A tactic to show contradiction by first asserting an automatically provable hypothesis. *)
-Tactic Notation "contradiction" "by" constr(t) := 
+Tactic Notation "contradiction" "by" constr(t) :=
   let H := fresh in assert t as H by auto with * ; contradiction.
 
 (** A tactic that adds [H:=p:typeof(p)] to the context if no hypothesis of the same type appears in the goal.
    Useful to do saturation using tactics. *)
 
-Ltac add_hypothesis H' p := 
+Ltac add_hypothesis H' p :=
   match type of p with
-    ?X => 
-    match goal with 
+    ?X =>
+    match goal with
       | [ H : X |- _ ] => fail 1
       | _ => set (H':=p) ; try (change p with H') ; clearbody H'
     end
@@ -281,11 +281,11 @@ Ltac refine_hyp c :=
     end.
 
 (** The default simplification tactic used by Program is defined by [program_simpl], sometimes [auto]
-   is not enough, better rebind using [Obligation Tactic := tac] in this case, 
+   is not enough, better rebind using [Obligation Tactic := tac] in this case,
    possibly using [program_simplify] to use standard goal-cleaning tactics. *)
 
 Ltac program_simplify :=
-  simpl in |- *; intros ; destruct_all_rec_calls ; repeat (destruct_conjs; simpl proj1_sig in *); 
+  simpl in |- *; intros ; destruct_all_rec_calls ; repeat (destruct_conjs; simpl proj1_sig in *);
   subst*; autoinjections ; try discriminates ;
     try (solve [ red ; intros ; destruct_conjs ; autoinjections ; discriminates ]).
 

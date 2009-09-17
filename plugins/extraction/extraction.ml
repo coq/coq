@@ -620,7 +620,7 @@ and extract_cst_app env mle mlt kn args =
 	else mla
       with _ -> mla
     else mla
-  in 
+  in
   (* Different situations depending of the number of arguments: *)
   if ls = 0 then put_magic_if magic2 head
   else if List.mem Keep s then

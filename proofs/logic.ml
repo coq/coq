@@ -28,7 +28,7 @@ open Type_errors
 open Retyping
 open Evarutil
 open Tacexpr
- 
+
 type refiner_error =
 
   (* Errors raised by the refiner *)
@@ -50,7 +50,7 @@ open Pretype_errors
 let rec catchable_exception = function
   | Stdpp.Exc_located(_,e) -> catchable_exception e
   | LtacLocated(_,e) -> catchable_exception e
-  | Util.UserError _ | TypeError _ 
+  | Util.UserError _ | TypeError _
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)
   (* unification errors *)
@@ -58,7 +58,7 @@ let rec catchable_exception = function
 		   |NoOccurrenceFound _|CannotUnifyBindingType _|NotClean _
 		   |CannotFindWellTypedAbstraction _
 		   |UnsolvableImplicit _)) -> true
-  | Typeclasses_errors.TypeClassError 
+  | Typeclasses_errors.TypeClassError
       (_, Typeclasses_errors.UnsatisfiableConstraints _) -> true
   | _ -> false
 
@@ -73,19 +73,19 @@ let with_check = Flags.with_option check
 (* [apply_to_hyp sign id f] splits [sign] into [tail::[id,_,_]::head] and
    returns [tail::(f head (id,_,_) (rev tail))] *)
 let apply_to_hyp sign id f =
-  try apply_to_hyp sign id f 
-  with Hyp_not_found -> 
+  try apply_to_hyp sign id f
+  with Hyp_not_found ->
     if !check then error "No such assumption."
     else sign
 
 let apply_to_hyp_and_dependent_on sign id f g =
-  try apply_to_hyp_and_dependent_on sign id f g 
-  with Hyp_not_found -> 
+  try apply_to_hyp_and_dependent_on sign id f g
+  with Hyp_not_found ->
     if !check then error "No such assumption."
     else sign
 
 let check_typability env sigma c =
-  if !check then let _ = type_of env sigma c in () 
+  if !check then let _ = type_of env sigma c in ()
 
 (************************************************************************)
 (************************************************************************)
@@ -111,7 +111,7 @@ let recheck_typability (what,id) env sigma t =
       | Some id -> "hypothesis "^(string_of_id id) in
     error
       ("The correctness of "^s^" relies on the body of "^(string_of_id id))
-  
+
 let remove_hyp_body env sigma id =
   let sign =
     apply_to_hyp_and_dependent_on (named_context_val env) id
@@ -121,7 +121,7 @@ let remove_hyp_body env sigma id =
 	| Some c ->(id,None,t))
       (fun (id',c,t as d) sign ->
 	(if !check then
-	  begin 
+	  begin
 	    let env = reset_with_named_context sign env in
 	    match c with
 	    | None ->  recheck_typability (Some id',id) env sigma t
@@ -130,7 +130,7 @@ let remove_hyp_body env sigma id =
 		recheck_typability (Some id',id) env sigma b'
 	  end;d))
   in
-  reset_with_named_context sign env 
+  reset_with_named_context sign env
 
 (* Reordering of the context *)
 
@@ -138,7 +138,7 @@ let remove_hyp_body env sigma id =
 (* sous-ordre du resultat. Par exemple, 2 hyps non mentionnee ne sont *)
 (* pas echangees. Choix: les hyps mentionnees ne peuvent qu'etre *)
 (* reculees par rapport aux autres (faire le contraire!) *)
- 
+
 let mt_q = (Idmap.empty,[])
 let push_val y = function
     (_,[] as q) -> q
@@ -211,8 +211,8 @@ let check_decl_position env sign (x,_,_ as d) =
 (* Auxiliary functions for primitive MOVE tactic
  *
  * [move_hyp with_dep toleft (left,(hfrom,typfrom),right) hto] moves
- * hyp [hfrom] at location [hto] which belongs to the hyps on the 
- * left side [left] of the full signature if [toleft=true] or to the hyps 
+ * hyp [hfrom] at location [hto] which belongs to the hyps on the
+ * left side [left] of the full signature if [toleft=true] or to the hyps
  * on the right side [right] if [toleft=false].
  * If [with_dep] then dependent hypotheses are moved accordingly. *)
 
@@ -228,17 +228,17 @@ let split_sign hfrom hto l =
   let rec splitrec left toleft = function
     | [] -> error_no_such_hypothesis hfrom
     | (hyp,c,typ) as d :: right ->
-      	if hyp = hfrom then 
+      	if hyp = hfrom then
 	  (left,right,d, toleft or hto = MoveToEnd true)
       	else
-	  splitrec (d::left) 
+	  splitrec (d::left)
 	    (toleft or hto = MoveAfter hyp or hto = MoveBefore hyp)
 	    right
-  in 
+  in
     splitrec [] false l
 
 let hyp_of_move_location = function
-  | MoveAfter id -> id 
+  | MoveAfter id -> id
   | MoveBefore id -> id
   | _ -> assert false
 
@@ -258,12 +258,12 @@ let move_hyp with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
 	List.rev first @ List.rev middle @ right
     | (hyp,_,_) as d :: right ->
 	let (first',middle') =
-      	  if List.exists (test_dep d) middle then 
-	    if with_dep & hto <> MoveAfter hyp then 
+      	  if List.exists (test_dep d) middle then
+	    if with_dep & hto <> MoveAfter hyp then
 	      (first, d::middle)
-            else 
+            else
 	      errorlabstrm "" (str "Cannot move " ++ pr_id idfrom ++
-	        pr_move_location pr_id hto ++ 
+	        pr_move_location pr_id hto ++
 	        str (if toleft then ": it occurs in " else ": it depends on ")
 	        ++ pr_id hyp ++ str ".")
           else
@@ -271,16 +271,16 @@ let move_hyp with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
 	in
       	if hto = MoveAfter hyp then
 	  List.rev first' @ List.rev middle' @ right
-      	else 
+      	else
 	  moverec first' middle' right
   in
-  if toleft then 
-    let right = 
+  if toleft then
+    let right =
       List.fold_right push_named_context_val right empty_named_context_val in
     List.fold_left (fun sign d -> push_named_context_val d sign)
-      right (moverec [] [declfrom] left) 
-  else 
-    let right = 
+      right (moverec [] [declfrom] left)
+  else
+    let right =
       List.fold_right push_named_context_val
 	(moverec [] [declfrom] right) empty_named_context_val in
     List.fold_left (fun sign d -> push_named_context_val d sign)
@@ -295,7 +295,7 @@ let rename_hyp id1 id2 sign =
 (************************************************************************)
 (* Implementation of the logical rules *)
 
-(* Will only be used on terms given to the Refine rule which have meta 
+(* Will only be used on terms given to the Refine rule which have meta
 variables only in Application and Case *)
 
 let error_unsupported_deep_meta c =
@@ -303,7 +303,7 @@ let error_unsupported_deep_meta c =
     strbrk "form contains metavariables deep inside the term is not " ++
     strbrk "supported; try \"refine\" instead.")
 
-let collect_meta_variables c = 
+let collect_meta_variables c =
   let rec collrec deep acc c = match kind_of_term c with
     | Meta mv -> if deep then error_unsupported_deep_meta () else mv::acc
     | Cast(c,_,_) -> collrec deep acc c
@@ -312,12 +312,12 @@ let collect_meta_variables c =
   in
   List.rev (collrec false [] c)
 
-let check_meta_variables c = 
+let check_meta_variables c =
   if not (list_distinct (collect_meta_variables c)) then
     raise (RefinerError (NonLinearProof c))
 
 let check_conv_leq_goal env sigma arg ty conclty =
-  if !check & not (is_conv_leq env sigma ty conclty) then 
+  if !check & not (is_conv_leq env sigma ty conclty) then
     raise (RefinerError (BadType (arg,ty,conclty)))
 
 let goal_type_of env sigma c =
@@ -329,7 +329,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
   let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
 (*
    if  not (occur_meta trm) then
-    let t'ty = (unsafe_machine env sigma trm).uj_type in 	
+    let t'ty = (unsafe_machine env sigma trm).uj_type in
     let _ = conv_leq_goal env sigma trm t'ty conclty in
       (goalacc,t'ty)
   else
@@ -352,9 +352,9 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	    | Ind _ | Const _
 		when (isInd f or has_polymorphic_type (destConst f)) ->
 		(* Sort-polymorphism of definition and inductive types *)
-		goalacc, 
+		goalacc,
                 type_of_global_reference_knowing_conclusion env sigma f conclty
-	    | _ -> 
+	    | _ ->
 		mk_hdgoals sigma goal goalacc f
 	in
 	let (acc'',conclty') =
@@ -365,14 +365,14 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
     | Case (_,p,c,lf) ->
 	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
 	check_conv_leq_goal env sigma trm conclty' conclty;
-	let acc'' = 
+	let acc'' =
 	  array_fold_left2
             (fun lacc ty fi -> fst (mk_refgoals sigma goal lacc ty fi))
-            acc' lbrty lf 
+            acc' lbrty lf
 	in
 	(acc'',conclty')
 
-    | _ -> 
+    | _ ->
 	if occur_meta trm then
 	  anomaly "refiner called with a meta in non app/case subterm";
 
@@ -397,8 +397,8 @@ and mk_hdgoals sigma goal goalacc trm =
 	mk_refgoals sigma goal goalacc ty t
 
     | App (f,l) ->
-	let (acc',hdty) = 
-	  if isInd f or isConst f 
+	let (acc',hdty) =
+	  if isInd f or isConst f
 	     & not (array_exists occur_meta l) (* we could be finer *)
 	  then
 	    (goalacc,type_of_global_reference_knowing_parameters env sigma f l)
@@ -408,10 +408,10 @@ and mk_hdgoals sigma goal goalacc trm =
 
     | Case (_,p,c,lf) ->
 	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
-	let acc'' = 
+	let acc'' =
 	  array_fold_left2
             (fun lacc ty fi -> fst (mk_refgoals sigma goal lacc ty fi))
-            acc' lbrty lf 
+            acc' lbrty lf
 	in
 	(acc'',conclty')
 
@@ -434,7 +434,7 @@ and mk_arggoals sigma goal goalacc funty = function
 
 and mk_casegoals sigma goal goalacc p c =
   let env = evar_env goal in
-  let (acc',ct) = mk_hdgoals sigma goal goalacc c in 
+  let (acc',ct) = mk_hdgoals sigma goal goalacc c in
   let (acc'',pt) = mk_hdgoals sigma goal acc' p in
   let indspec =
     try find_mrectype env sigma ct
@@ -466,7 +466,7 @@ let norm_goal sigma gl =
   let red_fun = Evarutil.nf_evar sigma in
   let ncl = red_fun gl.evar_concl in
   let ngl =
-    { gl with 
+    { gl with
 	evar_concl = ncl;
 	evar_hyps = map_named_val red_fun gl.evar_hyps } in
     if Evd.eq_evar_info ngl gl then None else Some ngl
@@ -499,7 +499,7 @@ let prim_refiner r sigma goal =
 	       ([sg], sigma)
 	   | _ ->
 	       raise (RefinerError IntroNeedsProduct))
-	
+
     | Cut (b,replace,id,t) ->
         let sg1 = mk_goal sign (nf_betaiota sigma t) in
 	let sign,cl,sigma =
@@ -517,52 +517,52 @@ let prim_refiner r sigma goal =
         if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 
     | FixRule (f,n,rest,j) ->
-     	let rec check_ind env k cl = 
-          match kind_of_term (strip_outer_cast cl) with 
-            | Prod (na,c1,b) -> 
-            	if k = 1 then 
-		  try 
+     	let rec check_ind env k cl =
+          match kind_of_term (strip_outer_cast cl) with
+            | Prod (na,c1,b) ->
+            	if k = 1 then
+		  try
 		    fst (find_inductive env sigma c1)
-		  with Not_found -> 
+		  with Not_found ->
 		    error "Cannot do a fixpoint on a non inductive type."
-            	else 
+            	else
 		  check_ind (push_rel (na,None,c1) env) (k-1) b
             | _ -> error "Not enough products."
 	in
 	let (sp,_) = check_ind env n cl in
 	let firsts,lasts = list_chop j rest in
 	let all = firsts@(f,n,cl)::lasts in
-     	let rec mk_sign sign = function 
+     	let rec mk_sign sign = function
 	  | (f,n,ar)::oth ->
-	      let (sp',_)  = check_ind env n ar in 
-	      if not (sp=sp') then 
-		error ("Fixpoints should be on the same " ^ 
+	      let (sp',_)  = check_ind env n ar in
+	      if not (sp=sp') then
+		error ("Fixpoints should be on the same " ^
 		       "mutual inductive declaration.");
 	      if !check && mem_named_context f (named_context_of_val sign) then
 		error
 		  ("Name "^string_of_id f^" already used in the environment");
 	      mk_sign (push_named_context_val (f,None,ar) sign) oth
-	  | [] -> 
+	  | [] ->
 	      List.map (fun (_,_,c) -> mk_goal sign c) all
-	in 
+	in
 	  (mk_sign sign all, sigma)
-	
+
     | Cofix (f,others,j) ->
-     	let rec check_is_coind env cl = 
+     	let rec check_is_coind env cl =
 	  let b = whd_betadeltaiota env sigma cl in
           match kind_of_term b with
             | Prod (na,c1,b) -> check_is_coind (push_rel (na,None,c1) env) b
-            | _ -> 
-		try 
+            | _ ->
+		try
 		  let _ = find_coinductive env sigma b in ()
-                with Not_found -> 
+                with Not_found ->
 		  error ("All methods must construct elements " ^
 			  "in coinductive types.")
 	in
 	let firsts,lasts = list_chop j others in
 	let all = firsts@(f,cl)::lasts in
      	List.iter (fun (_,c) -> check_is_coind env c) all;
-        let rec mk_sign sign = function 
+        let rec mk_sign sign = function
           | (f,ar)::oth ->
 	      (try
                 (let _ = lookup_named_val f sign in
@@ -571,7 +571,7 @@ let prim_refiner r sigma goal =
               |	Not_found ->
                   mk_sign (push_named_context_val (f,None,ar) sign) oth)
 	  | [] -> List.map (fun (_,c) -> mk_goal sign c) all
-     	in 
+     	in
 	  (mk_sign sign all, sigma)
 
     | Refine c ->
@@ -586,17 +586,17 @@ let prim_refiner r sigma goal =
 	if (not !check) || is_conv_leq env sigma cl' cl then
           let sg = mk_goal sign cl' in
           ([sg], sigma)
-	else 
+	else
 	  error "convert-concl rule passed non-converting term"
 
     | Convert_hyp (id,copt,ty) ->
 	([mk_goal (convert_hyp sign sigma (id,copt,ty)) cl], sigma)
 
     (* And now the structural rules *)
-    | Thin ids -> 
+    | Thin ids ->
 	let (hyps,concl,nsigma) = clear_hyps sigma ids sign cl in
 	  ([mk_goal hyps concl], nsigma)
-	
+
     | ThinBody ids ->
 	let clear_aux env id =
           let env' = remove_hyp_body env sigma id in
@@ -608,9 +608,9 @@ let prim_refiner r sigma goal =
      	  ([sg], sigma)
 
     | Move (withdep, hfrom, hto) ->
-  	let (left,right,declfrom,toleft) = 
+  	let (left,right,declfrom,toleft) =
 	  split_sign hfrom hto (named_context_of_val sign) in
-  	let hyps' = 
+  	let hyps' =
 	  move_hyp withdep toleft (left,declfrom,right) hto in
   	  ([mk_goal hyps' cl], sigma)
 
@@ -641,7 +641,7 @@ type variable_proof_status = ProofVar | SectionVar of identifier
 
 type proof_variable = name * variable_proof_status
 
-let subst_proof_vars = 
+let subst_proof_vars =
   let rec aux p vars =
     let _,subst =
       List.fold_left (fun (n,l) var ->
@@ -652,22 +652,22 @@ let subst_proof_vars =
         (n+1,t)) (p,[]) vars
     in replace_vars (List.rev subst)
   in aux 1
-         
+
 let rec rebind id1 id2 = function
   | [] -> [Name id2,SectionVar id1]
-  | (na,k as x)::l -> 
+  | (na,k as x)::l ->
       if na = Name id1 then (Name id2,k)::l else
         let l' = rebind id1 id2 l in
         if na = Name id2 then (Anonymous,k)::l' else x::l'
 
 let add_proof_var id vl = (Name id,ProofVar)::vl
 
-let proof_variable_index x = 
+let proof_variable_index x =
   let rec aux n = function
     | (Name id,ProofVar)::l when x = id -> n
     | _::l ->  aux (n+1) l
     | [] -> raise Not_found
-  in 
+  in
   aux 1
 
 let prim_extractor subfun vl pft =
@@ -683,7 +683,7 @@ let prim_extractor subfun vl pft =
 		let cty = subst_proof_vars vl ty in
 		  mkLetIn (Name id, cb, cty, subfun (add_proof_var id vl) spf)
 	    | _ -> error "Incomplete proof!")
-	    
+
       | Some (Prim (Cut (b,_,id,t)),[spf1;spf2]) ->
           let spf1, spf2 = if b then spf1, spf2 else spf2, spf1 in
 	    mkLetIn (Name id,subfun vl spf1,subst_proof_vars vl t,
@@ -698,7 +698,7 @@ let prim_extractor subfun vl pft =
 	  let newvl = List.fold_left (fun vl (id,_,_) -> add_proof_var id vl)
             (add_proof_var f vl) others in
 	  let lfix = Array.map (subfun newvl) (Array.of_list spfl) in
-	    mkFix ((vn,j),(names,lcty,lfix))	
+	    mkFix ((vn,j),(names,lcty,lfix))
 
       | Some (Prim (Cofix (f,others,j)),spfl) ->
 	  let firsts,lasts = list_chop j others in
@@ -706,14 +706,14 @@ let prim_extractor subfun vl pft =
 	  let lcty = Array.map (fun (_,ar) -> subst_proof_vars vl ar) all in
 	  let names  = Array.map (fun (f,_) -> Name f) all in
 	  let newvl = List.fold_left (fun vl (id,_)-> add_proof_var id vl)
-            (add_proof_var f vl) others in 
+            (add_proof_var f vl) others in
 	  let lfix = Array.map (subfun newvl) (Array.of_list spfl) in
 	    mkCoFix (j,(names,lcty,lfix))
-	      
+
       | Some (Prim (Refine c),spfl) ->
 	  let mvl = collect_meta_variables c in
 	  let metamap = List.combine mvl (List.map (subfun vl) spfl) in
-	  let cc = subst_proof_vars vl c in 
+	  let cc = subst_proof_vars vl c in
 	    plain_instance metamap cc
 
       (* Structural and conversion rules do not produce any proof *)
@@ -726,10 +726,10 @@ let prim_extractor subfun vl pft =
       | Some (Prim (Thin _),[pf]) ->
 	  (* No need to make ids Anon in vl: subst_proof_vars take the most recent*)
 	  subfun vl pf
-	    
+
       | Some (Prim (ThinBody _),[pf]) ->
 	  subfun vl pf
-	    
+
       | Some (Prim (Move _|Order _),[pf]) ->
 	  subfun vl pf
 
@@ -742,4 +742,4 @@ let prim_extractor subfun vl pft =
       | Some _ -> anomaly "prim_extractor"
 
       | None-> error "prim_extractor handed incomplete proof"
-	  
+

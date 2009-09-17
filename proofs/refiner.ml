@@ -49,7 +49,7 @@ let descend n p =
     | None        -> error "It is a leaf."
     | Some(r,pfl) ->
     	if List.length pfl >= n then
-	  (match list_chop (n-1) pfl with 
+	  (match list_chop (n-1) pfl with
 	     | left,(wanted::right) ->
 		 (wanted,
 		  (fun pfl' ->
@@ -58,11 +58,11 @@ let descend n p =
                     let pf'       = List.hd pfl' in
                     let spfl      = left@(pf'::right) in
                     let newstatus = and_status (List.map pf_status spfl) in
-                    { p with 
+                    { p with
 			open_subgoals = newstatus;
 			ref           = Some(r,spfl) }))
 	     | _ -> assert false)
-    	else 
+    	else
 	  error "Too few subproofs"
 
 
@@ -72,28 +72,28 @@ let descend n p =
    (vk [ p_(l1+...+l(k-1)+1) ... p_(l1+...lk) ]) ]
  *)
 
-let rec mapshape nl (fl : (proof_tree list -> proof_tree) list) 
+let rec mapshape nl (fl : (proof_tree list -> proof_tree) list)
                     (l : proof_tree list) =
   match nl with
     | [] -> []
     | h::t ->
-	let m,l = list_chop h l in 
+	let m,l = list_chop h l in
 	(List.hd fl m) :: (mapshape t (List.tl fl) l)
 
 (* [frontier : proof_tree -> goal list * validation]
    given a proof [p], [frontier p] gives [(l,v)] where [l] is the list of goals
-   to be solved to complete the proof, and [v] is the corresponding 
+   to be solved to complete the proof, and [v] is the corresponding
    validation *)
-   
+
 let rec frontier p =
   match p.ref with
-    | None -> 
+    | None ->
 	([p.goal],
-	 (fun lp' -> 
+	 (fun lp' ->
 	    let p' = List.hd lp' in
-            if Evd.eq_evar_info p'.goal p.goal then 
+            if Evd.eq_evar_info p'.goal p.goal then
 	      p'
-            else 
+            else
 	      errorlabstrm "Refiner.frontier"
                 (str"frontier was handed back a ill-formed proof.")))
     | Some(r,pfl) ->
@@ -115,14 +115,14 @@ let set_solve_hook = (:=) solve_hook
 let rec frontier_map_rec f n p =
   if n < 1 || n > p.open_subgoals then p else
   match p.ref with
-    | None -> 
+    | None ->
         let p' = f p in
         if Evd.eq_evar_info p'.goal p.goal then
 	  begin
 	    !solve_hook p';
 	    p'
 	  end
-        else 
+        else
 	  errorlabstrm "Refiner.frontier_map"
             (str"frontier_map was handed back a ill-formed proof.")
     | Some(r,pfl) ->
@@ -139,20 +139,20 @@ let frontier_map f n p =
   let nmax = p.open_subgoals in
   let n = if n < 0 then nmax + n + 1 else n in
   if n < 1 || n > nmax then
-    errorlabstrm "Refiner.frontier_map" (str "No such subgoal"); 
+    errorlabstrm "Refiner.frontier_map" (str "No such subgoal");
   frontier_map_rec f n p
 
 let rec frontier_mapi_rec f i p =
   if p.open_subgoals = 0 then p else
   match p.ref with
-    | None -> 
+    | None ->
         let p' = f i p in
         if Evd.eq_evar_info p'.goal p.goal then
 	  begin
 	    !solve_hook p';
 	    p'
 	  end
-        else 
+        else
 	  errorlabstrm "Refiner.frontier_mapi"
             (str"frontier_mapi was handed back a ill-formed proof.")
     | Some(r,pfl) ->
@@ -161,7 +161,7 @@ let rec frontier_mapi_rec f i p =
             (fun (n,acc) p -> (n+p.open_subgoals,frontier_mapi_rec f n p::acc))
             (i,[]) pfl in
         let pfl' = List.rev rpfl' in
-        { p with 
+        { p with
 	    open_subgoals = and_status (List.map pf_status pfl');
             ref = Some(r,pfl')}
 
@@ -176,7 +176,7 @@ let rec nb_unsolved_goals pf = pf.open_subgoals
 
 (* leaf g is the canonical incomplete proof of a goal g *)
 
-let leaf g = 
+let leaf g =
   { open_subgoals = 1;
     goal = g;
     ref = None }
@@ -197,20 +197,20 @@ let abstract_operation syntax semantics gls =
       ref = Some(Nested(syntax,hidden_proof),spfl)})
 
 let abstract_tactic_expr ?(dflt=false) te tacfun gls =
-  abstract_operation (Tactic(te,dflt)) tacfun gls	
+  abstract_operation (Tactic(te,dflt)) tacfun gls
 
 let abstract_tactic ?(dflt=false) te =
   !abstract_tactic_box := Some te;
   abstract_tactic_expr ~dflt (Tacexpr.TacAtom (dummy_loc,te))
 
-let abstract_extended_tactic ?(dflt=false) s args = 
+let abstract_extended_tactic ?(dflt=false) s args =
   abstract_tactic ~dflt (Tacexpr.TacExtend (dummy_loc, s, args))
 
 let refiner = function
   | Prim pr as r ->
       let prim_fun = prim_refiner pr in
 	(fun goal_sigma ->
-          let (sgl,sigma') = prim_fun goal_sigma.sigma goal_sigma.it in 
+          let (sgl,sigma') = prim_fun goal_sigma.sigma goal_sigma.it in
 	    ({it=sgl; sigma = sigma'},
             (fun spfl ->
 	      assert (check_subproof_connection sgl spfl);
@@ -219,15 +219,15 @@ let refiner = function
 		ref = Some(r,spfl) })))
 
 
-  | Nested (_,_) | Decl_proof _ -> 
+  | Nested (_,_) | Decl_proof _ ->
       failwith "Refiner: should not occur"
-      
+
 	(* Daimon is a canonical unfinished proof *)
 
-  | Daimon -> 
-      fun gls -> 
-	({it=[];sigma=gls.sigma},  
-	 fun spfl -> 
+  | Daimon ->
+      fun gls ->
+	({it=[];sigma=gls.sigma},
+	 fun spfl ->
 	   assert (spfl=[]);
 	   { open_subgoals = 0;
              goal = gls.it;
@@ -250,10 +250,10 @@ let norm_evar_proof sigma pf =
    Their proof should be completed in order to complete the initial proof *)
 
 let extract_open_proof sigma pf =
-  let next_meta = 
+  let next_meta =
     let meta_cnt = ref 0 in
     let rec f () =
-      incr meta_cnt; 
+      incr meta_cnt;
       if Evd.mem sigma (existential_of_int !meta_cnt) then f ()
       else !meta_cnt
     in f
@@ -261,14 +261,14 @@ let extract_open_proof sigma pf =
   let open_obligations = ref [] in
   let rec proof_extractor vl = function
     | {ref=Some(Prim _,_)} as pf -> prim_extractor proof_extractor vl pf
-	  
+
     | {ref=Some(Nested(_,hidden_proof),spfl)} ->
 	let sgl,v = frontier hidden_proof in
 	let flat_proof = v spfl in
 	proof_extractor vl flat_proof
- 
+
     | {ref=Some(Decl_proof _,[pf])} -> (proof_extractor vl) pf
-	  
+
     | {ref=(None|Some(Daimon,[]));goal=goal} ->
 	let visible_rels =
           map_succeed
@@ -287,13 +287,13 @@ let extract_open_proof sigma pf =
         let inst = List.filter (fun (_,(_,b,_)) -> b = None) sorted_env in
         let meta = next_meta () in
 	open_obligations := (meta,abs_concl):: !open_obligations;
-	applist (mkMeta meta, List.map (fun (n,_) -> mkRel n) inst) 
-	  
+	applist (mkMeta meta, List.map (fun (n,_) -> mkRel n) inst)
+
     | _ -> anomaly "Bug: a case has been forgotten in proof_extractor"
   in
   let pfterm = proof_extractor [] pf in
   (pfterm, List.rev !open_obligations)
-  
+
 (*********************)
 (*   Tacticals       *)
 (*********************)
@@ -301,7 +301,7 @@ let extract_open_proof sigma pf =
 (* unTAC : tactic -> goal sigma -> proof sigma *)
 
 let unTAC tac g =
-  let (gl_sigma,v) = tac g in 
+  let (gl_sigma,v) = tac g in
   { it = v (List.map leaf gl_sigma.it); sigma = gl_sigma.sigma }
 
 let unpackage glsig = (ref (glsig.sigma)),glsig.it
@@ -309,8 +309,8 @@ let unpackage glsig = (ref (glsig.sigma)),glsig.it
 let repackage r v = {it=v;sigma = !r}
 
 let apply_sig_tac r tac g =
-  check_for_interrupt (); (* Breakpoint *) 
-  let glsigma,v = tac (repackage r g) in 
+  check_for_interrupt (); (* Breakpoint *)
+  let glsigma,v = tac (repackage r g) in
   r := glsigma.sigma;
   (glsigma.it,v)
 
@@ -328,7 +328,7 @@ let tclNORMEVAR = norm_evar_tac
 let tclIDTAC gls = (goal_goal_list gls, idtac_valid)
 
 (* the message printing identity tactic *)
-let tclIDTAC_MESSAGE s gls = 
+let tclIDTAC_MESSAGE s gls =
   msg (hov 0 s); tclIDTAC gls
 
 (* General failure tactic *)
@@ -356,7 +356,7 @@ let thens3parts_tac tacfi tac tacli (sigr,gs,p) =
   if ng<nf+nl then errorlabstrm "Refiner.thensn_tac" (str "Not enough subgoals.");
   let gll,pl =
     List.split
-      (list_map_i (fun i -> 
+      (list_map_i (fun i ->
         apply_sig_tac sigr (if i<nf then tacfi.(i) else if i>=ng-nl then tacli.(nl-ng+i) else tac))
 	0 gs) in
   (sigr, List.flatten gll,
@@ -390,7 +390,7 @@ let theni_tac i tac ((_,gl,_) as subgoals) =
     thensf_tac
       (Array.init k (fun i -> if i+1 = k then tac else tclIDTAC)) tclIDTAC
       subgoals
-  else non_existent_goal k 
+  else non_existent_goal k
 
 (* [tclTHENS3PARTS tac1 [|t1 ; ... ; tn|] tac2 [|t'1 ; ... ; t'm|] gls]
    applies the tactic [tac1] to [gls] then, applies [t1], ..., [tn] to
@@ -448,17 +448,17 @@ let rec tclTHENLIST = function
   | t1::tacl -> tclTHEN t1 (tclTHENLIST tacl)
 
 (* [tclMAP f [x1..xn]] builds [(f x1);(f x2);...(f xn)] *)
-let tclMAP tacfun l = 
+let tclMAP tacfun l =
   List.fold_right (fun x -> (tclTHEN (tacfun x))) l tclIDTAC
 
 (* various progress criterions *)
-let same_goal gl subgoal = 
+let same_goal gl subgoal =
   eq_constr (conclusion subgoal) (conclusion gl) &&
   eq_named_context_val (hypotheses subgoal) (hypotheses gl)
 
 
 let weak_progress gls ptree =
-  (List.length gls.it <> 1) || 
+  (List.length gls.it <> 1) ||
   (not (same_goal (List.hd gls.it) ptree.it))
 
 let progress gls ptree =
@@ -473,7 +473,7 @@ let tclPROGRESS tac ptree =
   if progress (fst rslt) ptree then rslt
   else errorlabstrm "Refiner.PROGRESS" (str"Failed to progress.")
 
-(* weak_PROGRESS tac ptree applies tac to the goal ptree and fails 
+(* weak_PROGRESS tac ptree applies tac to the goal ptree and fails
    if tac leaves the goal unchanged, possibly modifying sigma *)
 let tclWEAK_PROGRESS tac ptree =
   let rslt = tac ptree in
@@ -487,14 +487,14 @@ let tclNOTSAMEGOAL (tac : tactic) goal =
   let rslt = tac goal in
   let gls = (fst rslt).it in
   if List.exists (same_goal goal.it) gls
-  then errorlabstrm "Refiner.tclNOTSAMEGOAL" 
+  then errorlabstrm "Refiner.tclNOTSAMEGOAL"
       (str"Tactic generated a subgoal identical to the original goal.")
   else rslt
 
 let catch_failerror e =
   if catchable_exception e then check_for_interrupt ()
   else match e with
-  | FailError (0,_) | Stdpp.Exc_located(_, FailError (0,_)) 
+  | FailError (0,_) | Stdpp.Exc_located(_, FailError (0,_))
   | Stdpp.Exc_located(_, LtacLocated (_,FailError (0,_)))  ->
       check_for_interrupt ()
   | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
@@ -507,18 +507,18 @@ let catch_failerror e =
 
 (* ORELSE0 t1 t2 tries to apply t1 and if it fails, applies t2 *)
 let tclORELSE0 t1 t2 g =
-  try 
+  try
     t1 g
   with (* Breakpoint *)
     | e -> catch_failerror e; t2 g
 
-(* ORELSE t1 t2 tries to apply t1 and if it fails or does not progress, 
+(* ORELSE t1 t2 tries to apply t1 and if it fails or does not progress,
    then applies t2 *)
 let tclORELSE t1 t2 = tclORELSE0 (tclPROGRESS t1) t2
 
 (* applies t1;t2then if t1 succeeds or t2else if t1 fails
    t2* are called in terminal position (unless t1 produces more than
-   1 subgoal!) *) 
+   1 subgoal!) *)
 let tclORELSE_THEN t1 t2then t2else gls =
   match
     try Some(tclPROGRESS t1 gls)
@@ -526,7 +526,7 @@ let tclORELSE_THEN t1 t2then t2else gls =
   with
     | None -> t2else gls
     | Some (sgl,v) ->
-        let (sigr,gl) = unpackage sgl in 
+        let (sigr,gl) = unpackage sgl in
         finish_tac (then_tac t2then  (sigr,gl,v))
 
 (* TRY f tries to apply f, and if it fails, leave the goal unchanged *)
@@ -546,16 +546,16 @@ let ite_gen tcal tac_if continue tac_else gl=
     let result=tac_if gl in
       success:=true;result in
   let tac_else0 e gl=
-    if !success then 
-      raise e 
-    else 
+    if !success then
+      raise e
+    else
       tac_else gl in
-    try 
+    try
       tcal tac_if0 continue gl
     with (* Breakpoint *)
       | e -> catch_failerror e; tac_else0 e gl
 
-(* Try the first tactic and, if it succeeds, continue with 
+(* Try the first tactic and, if it succeeds, continue with
    the second one, and if it fails, use the third one *)
 
 let tclIFTHENELSE=ite_gen tclTHEN
@@ -566,7 +566,7 @@ let tclIFTHENSELSE=ite_gen tclTHENS
 
 let tclIFTHENSVELSE=ite_gen tclTHENSV
 
-let tclIFTHENTRYELSEMUST tac1 tac2 gl = 
+let tclIFTHENTRYELSEMUST tac1 tac2 gl =
   tclIFTHENELSE tac1 (tclTRY tac2) tac2 gl
 
 (* Fails if a tactic did not solve the goal *)
@@ -575,17 +575,17 @@ let tclCOMPLETE tac = tclTHEN tac (tclFAIL_s "Proof is not complete.")
 (* Try the first thats solves the current goal *)
 let tclSOLVE tacl = tclFIRST (List.map tclCOMPLETE tacl)
 
-			   
+
 (* Iteration tacticals *)
 
-let tclDO n t = 
-  let rec dorec k = 
+let tclDO n t =
+  let rec dorec k =
     if k < 0 then errorlabstrm "Refiner.tclDO"
       (str"Wrong argument : Do needs a positive integer.");
     if k = 0 then tclIDTAC
     else if k = 1 then t else (tclTHEN t (dorec (k-1)))
-  in 
-  dorec n 
+  in
+  dorec n
 
 
 (* Beware: call by need of CAML, g is needed *)
@@ -612,52 +612,52 @@ let tclIDTAC_list gls = (gls, fun x -> x)
 
 (* first_goal : goal list sigma -> goal sigma *)
 
-let first_goal gls = 
-  let gl = gls.it and sig_0 = gls.sigma in 
-  if gl = [] then error "first_goal"; 
+let first_goal gls =
+  let gl = gls.it and sig_0 = gls.sigma in
+  if gl = [] then error "first_goal";
   { it = List.hd gl; sigma = sig_0 }
 
 (* goal_goal_list : goal sigma -> goal list sigma *)
 
-let goal_goal_list gls = 
+let goal_goal_list gls =
   let gl = gls.it and sig_0 = gls.sigma in { it = [gl]; sigma = sig_0 }
 
 (* tactic -> tactic_list : Apply a tactic to the first goal in the list *)
 
-let apply_tac_list tac glls = 
+let apply_tac_list tac glls =
   let (sigr,lg) = unpackage glls in
   match lg with
   | (g1::rest) ->
       let (gl,p) = apply_sig_tac sigr tac g1 in
-      let n = List.length gl in 
-      (repackage sigr (gl@rest), 
+      let n = List.length gl in
+      (repackage sigr (gl@rest),
        fun pfl -> let (pfg,pfrest) = list_chop n pfl in (p pfg)::pfrest)
   | _ -> error "apply_tac_list"
-	  
-let then_tactic_list tacl1 tacl2 glls = 
+
+let then_tactic_list tacl1 tacl2 glls =
   let (glls1,pl1) = tacl1 glls in
   let (glls2,pl2) = tacl2 glls1 in
   (glls2, compose pl1 pl2)
 
 (* Transform a tactic_list into a tactic *)
 
-let tactic_list_tactic tac gls = 
+let tactic_list_tactic tac gls =
     let (glres,vl) = tac (goal_goal_list gls) in
     (glres, compose idtac_valid vl)
 
 
 
-(* The type of proof-trees state and a few utilities 
+(* The type of proof-trees state and a few utilities
    A proof-tree state is built from a proof-tree, a set of global
    constraints, and a stack which allows to navigate inside the
    proof-tree remembering how to rebuild the global proof-tree
    possibly after modification of one of the focused children proof-tree.
-   The number in the stack corresponds to 
+   The number in the stack corresponds to
    either the selected subtree and the validation is a function from a
    proof-tree list consisting only of one proof-tree to the global
-   proof-tree 
+   proof-tree
    or -1 when the move is done behind a registered tactic in which
-   case the validation corresponds to a constant function giving back 
+   case the validation corresponds to a constant function giving back
    the original proof-tree. *)
 
 type pftreestate = {
@@ -666,11 +666,11 @@ type pftreestate = {
   tstack   : (int * validation) list }
 
 let proof_of_pftreestate pts = pts.tpf
-let is_top_pftreestate pts = pts.tstack = [] 
+let is_top_pftreestate pts = pts.tstack = []
 let cursor_of_pftreestate pts = List.map fst pts.tstack
 let evc_of_pftreestate pts = pts.tpfsigma
 
-let top_goal_of_pftreestate pts = 
+let top_goal_of_pftreestate pts =
   { it = goal_of_proof pts.tpf; sigma = pts.tpfsigma }
 
 let nth_goal_of_pftreestate n pts =
@@ -678,7 +678,7 @@ let nth_goal_of_pftreestate n pts =
   try {it = List.nth goals (n-1); sigma = pts.tpfsigma }
   with Invalid_argument _ | Failure _ -> non_existent_goal n
 
-let traverse n pts = match n with 
+let traverse n pts = match n with
   | 0 -> (* go to the parent *)
       (match  pts.tstack with
 	 | [] -> error "traverse: no ancestors"
@@ -691,13 +691,13 @@ let traverse n pts = match n with
   | -1 -> (* go to the hidden tactic-proof, if any, otherwise fail *)
       (match pts.tpf.ref with
 	 | Some (Nested (_,spf),_) ->
-	     let v = (fun pfl -> pts.tpf) in 
+	     let v = (fun pfl -> pts.tpf) in
 	     { tpf = spf;
                tstack = (-1,v)::pts.tstack;
                tpfsigma = pts.tpfsigma }
 	 | _ -> error "traverse: not a tactic-node")
   | n -> (* when n>0, go to the nth child *)
-      let (npf,v) = descend n pts.tpf in 
+      let (npf,v) = descend n pts.tpf in
       { tpf = npf;
         tpfsigma = pts.tpfsigma;
         tstack = (n,v):: pts.tstack }
@@ -723,9 +723,9 @@ let map_pftreestate f pts =
 (* solve the nth subgoal with tactic tac *)
 
 let solve_nth_pftreestate n tac =
-  map_pftreestate 
+  map_pftreestate
     (fun sigr pt -> frontier_map (app_tac sigr tac) n pt)
- 
+
 let solve_pftreestate = solve_nth_pftreestate 1
 
 (* This function implements a poor man's undo at the current goal.
@@ -771,78 +771,78 @@ let extract_pftreestate pts =
 (* Focus on the first leaf proof in a proof-tree state *)
 
 let rec first_unproven pts =
-  let pf = (proof_of_pftreestate pts) in 
+  let pf = (proof_of_pftreestate pts) in
   if is_complete_proof pf then
     errorlabstrm "first_unproven" (str"No unproven subgoals");
   if is_leaf_proof pf then
     pts
   else
     let childnum =
-      list_try_find_i 
-	(fun n pf -> 
+      list_try_find_i
+	(fun n pf ->
 	   if not(is_complete_proof pf) then n else failwith "caught")
 	1 (children_of_proof pf)
-    in 
+    in
     first_unproven (traverse childnum pts)
 
 (* Focus on the last leaf proof in a proof-tree state *)
 
 let rec last_unproven pts =
-  let pf = proof_of_pftreestate pts in 
+  let pf = proof_of_pftreestate pts in
   if is_complete_proof pf then
     errorlabstrm "last_unproven" (str"No unproven subgoals");
   if is_leaf_proof pf then
     pts
-  else 
+  else
     let children = (children_of_proof pf) in
     let nchilds = List.length children in
     let childnum =
-      list_try_find_i 
+      list_try_find_i
         (fun n pf ->
            if not(is_complete_proof pf) then n else failwith "caught")
         1 (List.rev children)
-    in 
+    in
     last_unproven (traverse (nchilds-childnum+1) pts)
-      
+
 let rec nth_unproven n pts =
-  let pf = proof_of_pftreestate pts in 
+  let pf = proof_of_pftreestate pts in
   if is_complete_proof pf then
     errorlabstrm "nth_unproven" (str"No unproven subgoals");
   if is_leaf_proof pf then
-    if n = 1 then 
-      pts 
+    if n = 1 then
+      pts
     else
       errorlabstrm "nth_unproven" (str"Not enough unproven subgoals")
-  else 
+  else
     let children = children_of_proof pf in
     let rec process i k = function
-      | [] -> 
+      | [] ->
 	  errorlabstrm "nth_unproven" (str"Not enough unproven subgoals")
-      | pf1::rest -> 
-	  let k1 = nb_unsolved_goals pf1 in 
-	  if k1 < k then 
+      | pf1::rest ->
+	  let k1 = nb_unsolved_goals pf1 in
+	  if k1 < k then
 	    process (i+1) (k-k1) rest
-	  else 
+	  else
 	    nth_unproven k (traverse i pts)
-    in 
+    in
     process 1 n children
 
 let rec node_prev_unproven loc pts =
-  let pf = proof_of_pftreestate pts in 
+  let pf = proof_of_pftreestate pts in
   match cursor_of_pftreestate pts with
     | [] -> last_unproven pts
     | n::l ->
 	if is_complete_proof pf or loc = 1 then
           node_prev_unproven n (traverse 0 pts)
-	else 
+	else
 	  let child = List.nth (children_of_proof pf) (loc - 2) in
 	  if is_complete_proof child then
 	    node_prev_unproven (loc - 1) pts
-	  else 
+	  else
 	    first_unproven (traverse (loc - 1) pts)
 
 let rec node_next_unproven loc pts =
-  let pf = proof_of_pftreestate pts in 
+  let pf = proof_of_pftreestate pts in
   match cursor_of_pftreestate pts with
     | [] -> first_unproven pts
     | n::l ->
@@ -851,35 +851,35 @@ let rec node_next_unproven loc pts =
              node_next_unproven n (traverse 0 pts)
 	else if is_complete_proof (List.nth (children_of_proof pf) loc) then
 	  node_next_unproven (loc + 1) pts
-	else 
+	else
 	  last_unproven(traverse (loc + 1) pts)
 
 let next_unproven pts =
-  let pf = proof_of_pftreestate pts in 
+  let pf = proof_of_pftreestate pts in
   if is_leaf_proof pf then
     match cursor_of_pftreestate pts with
       | [] -> error "next_unproven"
       | n::_ -> node_next_unproven n (traverse 0 pts)
-  else 
+  else
     node_next_unproven (List.length (children_of_proof pf)) pts
 
 let prev_unproven pts =
-  let pf = proof_of_pftreestate pts in 
+  let pf = proof_of_pftreestate pts in
   if is_leaf_proof pf then
     match cursor_of_pftreestate pts with
       | [] -> error "prev_unproven"
       | n::_ -> node_prev_unproven n (traverse 0 pts)
-  else 
+  else
     node_prev_unproven 1 pts
 
-let rec top_of_tree pts = 
+let rec top_of_tree pts =
   if is_top_pftreestate pts then pts else top_of_tree(traverse 0 pts)
 
 (* FIXME: cette fonction n'est (as of October 2007) appelée nulle part *)
 let change_rule f pts =
   let mark_top _ pt =
     match pt.ref with
-	Some (oldrule,l) -> 
+	Some (oldrule,l) ->
 	  {pt with ref=Some (f oldrule,l)}
       | _ -> invalid_arg "change_rule" in
     map_pftreestate mark_top pts
@@ -889,21 +889,21 @@ let match_rule p pts =
       Some (r,_) -> p r
     | None -> false
 
-let rec up_until_matching_rule p pts = 
-  if is_top_pftreestate pts then 
+let rec up_until_matching_rule p pts =
+  if is_top_pftreestate pts then
     raise Not_found
   else
     let one_up = traverse 0 pts in
-      if match_rule p one_up then 
+      if match_rule p one_up then
 	pts
       else
 	up_until_matching_rule p one_up
 
-let rec up_to_matching_rule p pts = 
-  if match_rule p pts then 
+let rec up_to_matching_rule p pts =
+  if match_rule p pts then
     pts
   else
-    if is_top_pftreestate pts then 
+    if is_top_pftreestate pts then
       raise Not_found
     else
       let one_up = traverse 0 pts in
@@ -917,14 +917,14 @@ let tclEVARS sigma gls = tclIDTAC {gls with sigma=sigma}
 let pp_info = ref (fun _ _ _ -> assert false)
 let set_info_printer f = pp_info := f
 
-let tclINFO (tac : tactic) gls = 
-  let (sgl,v) as res = tac gls in 
-  begin try 
+let tclINFO (tac : tactic) gls =
+  let (sgl,v) as res = tac gls in
+  begin try
     let pf = v (List.map leaf (sig_it sgl)) in
     let sign = named_context_of_val (sig_it gls).evar_hyps in
     msgnl (hov 0 (str" == " ++
                   !pp_info (project gls) sign pf))
-  with e when catchable_exception e -> 
+  with e when catchable_exception e ->
     msgnl (hov 0 (str "Info failed to apply validation"))
   end;
   res
@@ -935,7 +935,7 @@ let set_proof_printer f = pp_proof := f
 let print_pftreestate {tpf = pf; tpfsigma = sigma; tstack = stack } =
   (if stack = []
    then str "Rooted proof tree is:"
-   else (str "Proof tree at occurrence [" ++ 
+   else (str "Proof tree at occurrence [" ++
          prlist_with_sep (fun () -> str ";") (fun (n,_) -> int n)
            (List.rev stack) ++ str "] is:")) ++ fnl() ++
   !pp_proof sigma (Global.named_context()) pf ++

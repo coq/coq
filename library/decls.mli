@@ -27,7 +27,7 @@ open Decl_kinds
 
 (** Registration and access to the table of variable *)
 
-type variable_data = 
+type variable_data =
     dir_path * bool (* opacity *) * Univ.constraints * logical_kind
 
 val add_variable_data : variable -> variable_data -> unit

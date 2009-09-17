@@ -170,10 +170,10 @@ let (p, op) := f in eval_op1 op (eval_pol env p).
 Definition OpMult (o o' : Op1) : option Op1 :=
 match o with
 | Equal => Some Equal
-| NonStrict => 
+| NonStrict =>
   match o' with
     | Equal => Some Equal
-    | NonEqual  => None 
+    | NonEqual  => None
     | Strict    => Some NonStrict
     | NonStrict => Some NonStrict
   end
@@ -203,20 +203,20 @@ Definition OpAdd (o o': Op1) : option Op1 :=
                 end
     | NonEqual => match o' with
                     | Equal  => Some NonEqual
-                    | _      => None   
+                    | _      => None
                   end
   end.
 
 
 Lemma OpMult_sound :
-  forall (o o' om: Op1) (x y : R), 
+  forall (o o' om: Op1) (x y : R),
     eval_op1 o x -> eval_op1 o' y -> OpMult o o' = Some om -> eval_op1 om (x * y).
 Proof.
 unfold eval_op1; destruct o; simpl; intros o' om x y H1 H2 H3.
 (* x == 0 *)
 inversion H3. rewrite H1. now rewrite (Rtimes_0_l sor).
 (* x ~= 0 *)
-destruct o' ; inversion H3.  
+destruct o' ; inversion H3.
  (* y == 0 *)
  rewrite H2. now rewrite (Rtimes_0_r sor).
  (* y ~= 0 *)
@@ -240,7 +240,7 @@ destruct o' ; inversion H3.
 Qed.
 
 Lemma OpAdd_sound :
-  forall (o o' oa : Op1) (e e' : R), 
+  forall (o o' oa : Op1) (e e' : R),
     eval_op1 o e -> eval_op1 o' e' -> OpAdd o o' = Some oa -> eval_op1 oa (e + e').
 Proof.
 unfold eval_op1; destruct o; simpl; intros o' oa e e' H1 H2 Hoa.
@@ -298,7 +298,7 @@ Inductive Psatz : Type :=
 (** Given a list [l] of NFormula and an extended polynomial expression
    [e], if [eval_Psatz l e] succeeds (= Some f) then [f] is a
    logic consequence of the conjunction of the formulae in l.
-   Moreover, the polynomial expression is obtained by replacing the (PsatzIn n) 
+   Moreover, the polynomial expression is obtained by replacing the (PsatzIn n)
    by the nth polynomial expression in [l] and the sign is computed by the "rule of sign" *)
 
 (* Might be defined elsewhere *)
@@ -310,12 +310,12 @@ Definition map_option (A B:Type) (f : A -> option B) (o : option A) : option B :
 
 Implicit Arguments map_option [A B].
 
-Definition map_option2 (A B C : Type) (f : A -> B -> option C) 
-  (o: option A) (o': option B) : option C := 
-  match o , o' with 
-    | None , _ => None 
-    | _ , None => None 
-    | Some x , Some x' => f x x' 
+Definition map_option2 (A B C : Type) (f : A -> B -> option C)
+  (o: option A) (o': option B) : option C :=
+  match o , o' with
+    | None , _ => None
+    | _ , None => None
+    | Some x , Some x' => f x x'
   end.
 
 Implicit Arguments map_option2 [A B C].
@@ -344,51 +344,51 @@ Definition nformula_times_nformula (f1 f2 : NFormula) : option NFormula :=
 
 
 Fixpoint eval_Psatz (l : list NFormula) (e : Psatz) {struct e} : option NFormula :=
-  match e with 
+  match e with
     | PsatzIn n => Some (nth n l (Pc cO, Equal))
     | PsatzSquare e => Some (Psquare cO cI cplus ctimes ceqb e  , NonStrict)
     | PsatzMulC re e => map_option (pexpr_times_nformula re) (eval_Psatz l e)
     | PsatzMulE f1 f2 => map_option2 nformula_times_nformula  (eval_Psatz l f1) (eval_Psatz l f2)
     | PsatzAdd f1 f2  => map_option2 nformula_plus_nformula  (eval_Psatz l f1) (eval_Psatz l f2)
-    | PsatzC  c  => if cltb cO c then Some (Pc c, Strict) else None 
+    | PsatzC  c  => if cltb cO c then Some (Pc c, Strict) else None
 (* This could be 0, or <> 0 -- but these cases are useless *)
     | PsatzZ     => Some (Pc cO, Equal) (* Just to make life easier *)
   end.
 
 Lemma pexpr_times_nformula_correct : forall (env: PolEnv) (e: PolC) (f f' : NFormula),
-  eval_nformula env f -> pexpr_times_nformula e f = Some f' -> 
+  eval_nformula env f -> pexpr_times_nformula e f = Some f' ->
    eval_nformula env f'.
 Proof.
   unfold pexpr_times_nformula.
   destruct f.
   intros. destruct o ; inversion H0 ; try discriminate.
-  simpl in *.    unfold eval_pol in *.   
-  rewrite (Pmul_ok sor.(SORsetoid) Rops_wd 
+  simpl in *.    unfold eval_pol in *.
+  rewrite (Pmul_ok sor.(SORsetoid) Rops_wd
     (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt))  addon.(SORrm)).
   rewrite H. apply (Rtimes_0_r sor).
 Qed.
-  
+
 Lemma nformula_times_nformula_correct : forall (env:PolEnv)
-  (f1 f2 f : NFormula), 
-  eval_nformula env f1 -> eval_nformula env f2 -> 
-  nformula_times_nformula f1 f2 = Some f  -> 
+  (f1 f2 f : NFormula),
+  eval_nformula env f1 -> eval_nformula env f2 ->
+  nformula_times_nformula f1 f2 = Some f  ->
    eval_nformula env f.
 Proof.
   unfold nformula_times_nformula.
   destruct f1 ; destruct f2.
   case_eq (OpMult o o0) ; simpl ; try discriminate.
   intros. inversion H2 ; simpl.
-  unfold eval_pol. 
+  unfold eval_pol.
   destruct o1; simpl;
-  rewrite (Pmul_ok sor.(SORsetoid) Rops_wd 
+  rewrite (Pmul_ok sor.(SORsetoid) Rops_wd
     (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt))  addon.(SORrm));
   apply OpMult_sound with (3:= H);assumption.
 Qed.
 
 Lemma nformula_plus_nformula_correct : forall (env:PolEnv)
-  (f1 f2 f : NFormula), 
-  eval_nformula env f1 -> eval_nformula env f2 -> 
-  nformula_plus_nformula f1 f2 = Some f  -> 
+  (f1 f2 f : NFormula),
+  eval_nformula env f1 -> eval_nformula env f2 ->
+  nformula_plus_nformula f1 f2 = Some f  ->
    eval_nformula env f.
 Proof.
   unfold nformula_plus_nformula.
@@ -397,15 +397,15 @@ Proof.
   intros. inversion H2 ; simpl.
   unfold eval_pol.
   destruct o1; simpl;
-  rewrite (Padd_ok sor.(SORsetoid) Rops_wd 
+  rewrite (Padd_ok sor.(SORsetoid) Rops_wd
     (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt))  addon.(SORrm));
   apply OpAdd_sound with (3:= H);assumption.
 Qed.
 
-Lemma eval_Psatz_Sound : 
+Lemma eval_Psatz_Sound :
   forall (l : list NFormula) (env : PolEnv),
     (forall (f : NFormula), In f l -> eval_nformula env f) ->
-      forall (e : Psatz) (f : NFormula), eval_Psatz l e = Some f -> 
+      forall (e : Psatz) (f : NFormula), eval_Psatz l e = Some f ->
         eval_nformula env f.
 Proof.
   induction e.
@@ -416,17 +416,17 @@ Proof.
   apply H ; congruence.
   (* index is out-of-bounds *)
   inversion H0.
-  rewrite e. simpl.  
+  rewrite e. simpl.
   now apply  addon.(SORrm).(morph0).
   (* PsatzSquare *)
   simpl. intros. inversion H0.
   simpl. unfold eval_pol.
-  rewrite (Psquare_ok sor.(SORsetoid) Rops_wd 
+  rewrite (Psquare_ok sor.(SORsetoid) Rops_wd
     (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt))  addon.(SORrm));
   now apply (Rtimes_square_nonneg sor).
   (* PsatzMulC *)
   simpl.
-  intro. 
+  intro.
   case_eq  (eval_Psatz l e) ; simpl ; intros.
   apply IHe in H0.
   apply pexpr_times_nformula_correct with (1:=H0) (2:= H1).
@@ -441,7 +441,7 @@ Proof.
   (* PsatzAdd *)
   simpl ; intro.
   case_eq (eval_Psatz l e1) ; simpl ; try discriminate.
-  case_eq (eval_Psatz l e2) ; simpl ; try discriminate.  
+  case_eq (eval_Psatz l e2) ; simpl ; try discriminate.
   intros.
   apply IHe1 in H1. apply IHe2 in H0.
   apply (nformula_plus_nformula_correct env n0 n) ; assumption.
@@ -457,14 +457,14 @@ Proof.
 Qed.
 
 Fixpoint ge_bool (n m  : nat) : bool :=
- match n with 
-   | O   => match m with 
+ match n with
+   | O   => match m with
             |  O => true
             | S _ => false
           end
-   | S n  => match m with 
+   | S n  => match m with
                | O => true
-               | S m => ge_bool n m 
+               | S m => ge_bool n m
              end
    end.
 
@@ -483,7 +483,7 @@ Qed.
 
 
 Fixpoint xhyps_of_psatz (base:nat) (acc : list nat) (prf : Psatz)  : list nat :=
-  match prf with 
+  match prf with
     | PsatzC _ | PsatzZ | PsatzSquare _ => acc
     | PsatzMulC _ prf => xhyps_of_psatz base acc prf
     | PsatzAdd e1 e2 | PsatzMulE e1 e2 => xhyps_of_psatz base (xhyps_of_psatz base acc e2) e1
@@ -495,7 +495,7 @@ Fixpoint xhyps_of_psatz (base:nat) (acc : list nat) (prf : Psatz)  : list nat :=
   forall env p, eval_pexpr env p == eval_pol env (normalise_pexpr p) *)
 
 (*****)
-Definition paddC := PaddC cplus. 
+Definition paddC := PaddC cplus.
 Definition psubC := PsubC cminus.
 
 Definition PsubC_ok : forall c P env, eval_pol env (psubC  P c) == eval_pol env P - [c] :=
@@ -536,7 +536,7 @@ Lemma check_inconsistent_sound :
     check_inconsistent (p, op) = true -> forall env, ~ eval_op1 op (eval_pol env p).
 Proof.
 intros p op H1 env. unfold check_inconsistent in H1.
-destruct op; simpl ; 
+destruct op; simpl ;
 (*****)
 destruct p ; simpl; try discriminate H1;
 try rewrite <- addon.(SORrm).(morph0); trivial.
@@ -547,7 +547,7 @@ apply cltb_sound in H1. now apply -> (Rlt_nge sor).
 Qed.
 
 Definition check_normalised_formulas : list NFormula -> Psatz -> bool :=
-  fun l cm => 
+  fun l cm =>
     match eval_Psatz l cm with
       | None => false
       | Some f => check_inconsistent f
@@ -640,14 +640,14 @@ let (lhs, op, rhs) := f in
 Lemma eval_pol_sub : forall env lhs rhs, eval_pol env (psub  lhs rhs) == eval_pol env lhs - eval_pol env rhs.
 Proof.
   intros.
-  apply (Psub_ok  sor.(SORsetoid) Rops_wd 
+  apply (Psub_ok  sor.(SORsetoid) Rops_wd
     (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt)) addon.(SORrm)).
 Qed.
 
 Lemma eval_pol_add : forall env lhs rhs, eval_pol env (padd  lhs rhs) == eval_pol env lhs + eval_pol env rhs.
 Proof.
   intros.
-  apply (Padd_ok  sor.(SORsetoid) Rops_wd 
+  apply (Padd_ok  sor.(SORsetoid) Rops_wd
     (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt)) addon.(SORrm)).
 Qed.
 
@@ -656,7 +656,7 @@ Proof.
   intros.
   apply  (norm_aux_spec sor.(SORsetoid) Rops_wd   (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt)) addon.(SORrm) addon.(SORpower) ).
 Qed.
-  
+
 
 Theorem normalise_sound :
   forall (env : PolEnv) (f : Formula),
@@ -694,7 +694,7 @@ Definition xnormalise (t:Formula) : list (NFormula)  :=
   let lhs := norm lhs in
     let rhs := norm rhs in
     match o with
-      | OpEq => 
+      | OpEq =>
         (psub lhs  rhs, Strict)::(psub rhs lhs , Strict)::nil
       | OpNEq => (psub lhs rhs,Equal) :: nil
       | OpGt   => (psub rhs lhs,NonStrict) :: nil
@@ -716,7 +716,7 @@ Proof.
   unfold cnf_normalise, xnormalise ; simpl ; intros env t.
   unfold eval_cnf.
   destruct t as [lhs o rhs]; case_eq o ; simpl;
-    repeat rewrite eval_pol_sub ; repeat rewrite <- eval_pol_norm in * ; 
+    repeat rewrite eval_pol_sub ; repeat rewrite <- eval_pol_norm in * ;
     generalize (eval_pexpr  env lhs);
       generalize (eval_pexpr  env rhs) ; intros z1 z2 ; intros.
   (**)
@@ -751,7 +751,7 @@ Proof.
   unfold cnf_negate, xnegate ; simpl ; intros env t.
   unfold eval_cnf.
   destruct t as [lhs o rhs]; case_eq o ; simpl;
-    repeat rewrite eval_pol_sub ; repeat rewrite <- eval_pol_norm in * ; 
+    repeat rewrite eval_pol_sub ; repeat rewrite <- eval_pol_norm in * ;
     generalize (eval_pexpr  env lhs);
       generalize (eval_pexpr  env rhs) ; intros z1 z2 ; intros ; intuition.
   (**)
@@ -774,7 +774,7 @@ Proof.
   intros.
   destruct d ; simpl.
   generalize (eval_pol env p); intros.
-  destruct o ; simpl. 
+  destruct o ; simpl.
   apply (Req_em sor r 0).
   destruct (Req_em sor r 0) ; tauto.
   rewrite <- (Rle_ngt sor r 0). generalize (Rle_gt_cases sor r 0). tauto.
@@ -787,7 +787,7 @@ Fixpoint xdenorm (jmp : positive) (p: Pol C) : PExpr C :=
   match p with
     | Pc c => PEc c
     | Pinj j p => xdenorm  (Pplus j jmp ) p
-    | PX p j q   => PEadd 
+    | PX p j q   => PEadd
       (PEmul (xdenorm jmp p) (PEpow (PEX _  jmp) (Npos j)))
       (xdenorm (Psucc jmp) q)
   end.
@@ -802,7 +802,7 @@ Proof.
   intros.
   rewrite Pplus_succ_permute_r.
   rewrite <- IHp.
-  symmetry. 
+  symmetry.
   rewrite Pplus_comm.
   rewrite Pjump_Pplus. reflexivity.
   (* PX *)
@@ -821,7 +821,7 @@ Proof.
 Qed.
 
 Definition denorm (p : Pol C)  := xdenorm xH p.
-  
+
 Lemma denorm_correct : forall p env, eval_pol env p == eval_pexpr env (denorm p).
 Proof.
   unfold denorm.
@@ -836,25 +836,25 @@ Proof.
   unfold Env.tail.
   rewrite xdenorm_correct.
   change (Psucc xH) with 2%positive.
-  rewrite addon.(SORpower).(rpow_pow_N).  
+  rewrite addon.(SORpower).(rpow_pow_N).
   simpl. reflexivity.
 Qed.
-  
+
 
 (** Some syntactic simplifications of expressions  *)
 
 
 Definition simpl_cone (e:Psatz) : Psatz :=
   match e with
-    | PsatzSquare t => 
+    | PsatzSquare t =>
                     match t with
                       | Pc c   => if ceqb cO c then PsatzZ else PsatzC (ctimes c c)
                       | _ => PsatzSquare t
                     end
-    | PsatzMulE t1 t2 => 
+    | PsatzMulE t1 t2 =>
       match t1 , t2 with
-        | PsatzZ      , x        => PsatzZ 
-        |    x     , PsatzZ      => PsatzZ 
+        | PsatzZ      , x        => PsatzZ
+        |    x     , PsatzZ      => PsatzZ
         | PsatzC c ,  PsatzC c' => PsatzC (ctimes c c')
         | PsatzC p1 , PsatzMulE (PsatzC p2)  x => PsatzMulE (PsatzC (ctimes p1 p2)) x
         | PsatzC p1 , PsatzMulE x (PsatzC p2)  => PsatzMulE (PsatzC (ctimes p1 p2)) x
@@ -865,7 +865,7 @@ Definition simpl_cone (e:Psatz) : Psatz :=
         | _ ,  PsatzC c        => if ceqb cI c then t1 else PsatzMulE t1 t2
         |     _     , _   => e
       end
-    | PsatzAdd t1 t2 => 
+    | PsatzAdd t1 t2 =>
       match t1 ,  t2 with
         | PsatzZ     , x => x
         |   x     , PsatzZ => x

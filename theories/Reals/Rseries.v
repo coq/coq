@@ -71,7 +71,7 @@ Section sequence.
     forall x:R, (forall n:nat, Un n <= x) -> is_upper_bound EUn x.
   Proof.
     intros; unfold is_upper_bound in |- *; intros; unfold EUn in H0; elim H0;
-      clear H0; intros; generalize (H x1); intro; rewrite <- H0 in H1; 
+      clear H0; intros; generalize (H x1); intro; rewrite <- H0 in H1;
         trivial.
   Qed.
 
@@ -106,11 +106,11 @@ Section sequence.
   Lemma Un_cv_crit : Un_growing -> bound EUn ->  exists l : R, Un_cv l.
   Proof.
     unfold Un_growing, Un_cv in |- *; intros;
-      generalize (completeness_weak EUn H0 EUn_noempty); 
-        intro; elim H1; clear H1; intros; split with x; intros; 
+      generalize (completeness_weak EUn H0 EUn_noempty);
+        intro; elim H1; clear H1; intros; split with x; intros;
           unfold is_lub in H1; unfold bound in H0; unfold is_upper_bound in H0, H1;
-            elim H0; clear H0; intros; elim H1; clear H1; intros; 
-              generalize (H3 x0 H0); intro; cut (forall n:nat, Un n <= x); 
+            elim H0; clear H0; intros; elim H1; clear H1; intros;
+              generalize (H3 x0 H0); intro; cut (forall n:nat, Un n <= x);
                 intro.
     cut (exists N : nat, x - eps < Un N).
     intro; elim H6; clear H6; intros; split with x1.
@@ -131,10 +131,10 @@ Section sequence.
         apply (Rnot_lt_ge (x - eps) (Un N) (H7 N)).
     red in |- *; intro; cut (forall N:nat, Un N <= x - eps).
     intro; generalize (Un_bound_imp (x - eps) H7); intro;
-      unfold is_upper_bound in H8; generalize (H3 (x - eps) H8); 
+      unfold is_upper_bound in H8; generalize (H3 (x - eps) H8);
         intro; generalize (Rle_minus x (x - eps) H9); unfold Rminus in |- *;
           rewrite Ropp_plus_distr; rewrite <- Rplus_assoc; rewrite Rplus_opp_r;
-            rewrite (let (H1, H2) := Rplus_ne (- - eps) in H2); 
+            rewrite (let (H1, H2) := Rplus_ne (- - eps) in H2);
               rewrite Ropp_involutive; intro; unfold Rgt in H2;
                 generalize (Rgt_not_le eps 0 H2); intro; auto.
     intro; elim (H6 N); intro; unfold Rle in |- *.
@@ -151,7 +151,7 @@ Section sequence.
     split with (Un 0); intros; rewrite (le_n_O_eq n H);
       apply (Req_le (Un n) (Un n) (refl_equal (Un n))).
     elim HrecN; clear HrecN; intros; split with (Rmax (Un (S N)) x); intros;
-      elim (Rmax_Rle (Un (S N)) x (Un n)); intros; clear H1; 
+      elim (Rmax_Rle (Un (S N)) x (Un n)); intros; clear H1;
         inversion H0.
     rewrite <- H1; rewrite <- H1 in H2;
       apply
@@ -163,21 +163,21 @@ Section sequence.
   Lemma cauchy_bound : Cauchy_crit -> bound EUn.
   Proof.
     unfold Cauchy_crit, bound in |- *; intros; unfold is_upper_bound in |- *;
-      unfold Rgt in H; elim (H 1 Rlt_0_1); clear H; intros; 
+      unfold Rgt in H; elim (H 1 Rlt_0_1); clear H; intros;
         generalize (H x); intro; generalize (le_dec x); intro;
-          elim (finite_greater x); intros; split with (Rmax x0 (Un x + 1)); 
-            clear H; intros; unfold EUn in H; elim H; clear H; 
+          elim (finite_greater x); intros; split with (Rmax x0 (Un x + 1));
+            clear H; intros; unfold EUn in H; elim H; clear H;
               intros; elim (H1 x2); clear H1; intro y.
     unfold ge in H0; generalize (H0 x2 (le_n x) y); clear H0; intro;
       rewrite <- H in H0; unfold R_dist in H0; elim (Rabs_def2 (Un x - x1) 1 H0);
-        clear H0; intros; elim (Rmax_Rle x0 (Un x + 1) x1); 
+        clear H0; intros; elim (Rmax_Rle x0 (Un x + 1) x1);
           intros; apply H4; clear H3 H4; right; clear H H0 y;
             apply (Rlt_le x1 (Un x + 1)); generalize (Rlt_minus (-1) (Un x - x1) H1);
               clear H1; intro; apply (Rminus_lt x1 (Un x + 1));
                 cut (-1 - (Un x - x1) = x1 - (Un x + 1));
                   [ intro; rewrite H0 in H; assumption | ring ].
     generalize (H2 x2 y); clear H2 H0; intro; rewrite <- H in H0;
-      elim (Rmax_Rle x0 (Un x + 1) x1); intros; clear H1; 
+      elim (Rmax_Rle x0 (Un x + 1) x1); intros; clear H1;
         apply H2; left; assumption.
   Qed.
 
@@ -248,7 +248,7 @@ Proof.
   cut
     (Rabs x * (eps * (Rabs (1 - x) * Rabs (/ x))) =
       Rabs x * Rabs (/ x) * (eps * Rabs (1 - x))).
-  clear H8; intros; rewrite H8; rewrite <- Rabs_mult; rewrite Rinv_r.  
+  clear H8; intros; rewrite H8; rewrite <- Rabs_mult; rewrite Rinv_r.
   rewrite Rabs_R1; cut (1 * (eps * Rabs (1 - x)) = Rabs (1 - x) * eps).
   intros; rewrite H9; unfold Rle in |- *; right; reflexivity.
   ring.

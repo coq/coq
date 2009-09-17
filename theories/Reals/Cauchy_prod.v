@@ -47,7 +47,7 @@ Theorem cauchy_finite :
     sum_f_R0
     (fun k:nat =>
       sum_f_R0 (fun l:nat => An (S (l + k)) * Bn (N - l)%nat)
-      (pred (N - k))) (pred N). 
+      (pred (N - k))) (pred N).
 Proof.
   intros; induction  N as [| N HrecN].
   elim (lt_irrefl _ H).
@@ -124,7 +124,7 @@ Proof.
       (fun k:nat =>
 	sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
         (pred (pred (N - k)))) (pred (pred N)));
-    set (Z2 := sum_f_R0 (fun i:nat => Bn (S i)) (pred N)); 
+    set (Z2 := sum_f_R0 (fun i:nat => Bn (S i)) (pred N));
       ring.
   rewrite
     (sum_N_predN

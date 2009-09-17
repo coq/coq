@@ -15,7 +15,7 @@ open Pcaml
     This small camlp4 extension creates a "let*" variant of the "let"
     syntax that allow the use of a non-exhaustive pattern. The typical
     usage is:
-        
+
       let* x::l = foo in ...
 
     when foo is already known to be non-empty. This way, no warnings by ocamlc.

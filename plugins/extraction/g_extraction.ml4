@@ -28,7 +28,7 @@ open Table
 open Extract_env
 
 let pr_language = function
-  | Ocaml -> str "Ocaml" 
+  | Ocaml -> str "Ocaml"
   | Haskell -> str "Haskell"
   | Scheme -> str "Scheme"
 

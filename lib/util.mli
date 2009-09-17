@@ -128,7 +128,7 @@ val list_map_filter : ('a -> 'b option) -> 'a list -> 'b list
 val list_smartmap : ('a -> 'a) -> 'a list -> 'a list
 val list_map_left : ('a -> 'b) -> 'a list -> 'b list
 val list_map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
-val list_map2_i : 
+val list_map2_i :
   (int -> 'a -> 'b -> 'c) -> int -> 'a list -> 'b list -> 'c list
 val list_map3 :
   ('a -> 'b -> 'c -> 'd) -> 'a list -> 'b list -> 'c list -> 'd list
@@ -139,7 +139,7 @@ val list_filter_i :
 (* [list_index] returns the 1st index of an element in a list (counting from 1) *)
 val list_index : 'a -> 'a list -> int
 (* [list_unique_index x l] returns [Not_found] if [x] doesn't occur exactly once *)
-val list_unique_index : 'a -> 'a list -> int 
+val list_unique_index : 'a -> 'a list -> int
 (* [list_index0] behaves as [list_index] except that it starts counting at 0 *)
 val list_index0 : 'a -> 'a list -> int
 val list_iter3 : ('a -> 'b -> 'c -> unit) -> 'a list -> 'b list -> 'c list -> unit
@@ -169,7 +169,7 @@ val list_partition_by : ('a -> 'a -> bool) -> 'a list -> 'a list list
 val list_firstn : int -> 'a list -> 'a list
 val list_last : 'a list -> 'a
 val list_lastn : int -> 'a list -> 'a list
-val list_skipn : int -> 'a list -> 'a list 
+val list_skipn : int -> 'a list -> 'a list
 val list_addn : int -> 'a -> 'a list -> 'a list
 val list_prefix_of : 'a list -> 'a list -> bool
 (* [list_drop_prefix p l] returns [t] if [l=p++t] else return [l] *)
@@ -186,11 +186,11 @@ val list_share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
 val list_fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
 val list_fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
 val list_map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
-(* A generic cartesian product: for any operator (**), 
-   [list_cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]], 
+(* A generic cartesian product: for any operator (**),
+   [list_cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]],
    and so on if there are more elements in the lists. *)
 val list_cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-(* [list_cartesians] is an n-ary cartesian product: it iterates 
+(* [list_cartesians] is an n-ary cartesian product: it iterates
    [list_cartesian] over a list of lists.  *)
 val list_cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
 (* list_combinations [[a;b];[c;d]] returns [[a;c];[a;d];[b;c];[b;d]] *)
@@ -219,14 +219,14 @@ val array_tl : 'a array -> 'a array
 val array_last : 'a array -> 'a
 val array_cons : 'a -> 'a array -> 'a array
 val array_rev : 'a array -> unit
-val array_fold_right_i : 
+val array_fold_right_i :
   (int -> 'b -> 'a -> 'a) -> 'b array -> 'a -> 'a
 val array_fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b array -> 'a
 val array_fold_right2 :
   ('a -> 'b -> 'c -> 'c) -> 'a array -> 'b array -> 'c -> 'c
-val array_fold_left2 : 
+val array_fold_left2 :
   ('a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
-val array_fold_left2_i : 
+val array_fold_left2_i :
   (int -> 'a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
 val array_fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
 val array_fold_right_from : int -> ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
@@ -237,7 +237,7 @@ val array_chop : int -> 'a array -> 'a array * 'a array
 val array_smartmap : ('a -> 'a) -> 'a array -> 'a array
 val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val array_map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
-val array_map3 : 
+val array_map3 :
   ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
 val array_map_left : ('a -> 'b) -> 'a array -> 'b array
 val array_map_left_pair : ('a -> 'b) -> 'a array -> ('c -> 'd) -> 'c array ->

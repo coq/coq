@@ -20,21 +20,21 @@ Fixpoint iter (n : nat) : (A -> A) -> A -> A :=
 End Iter.
 
 Theorem SSplus_lt : forall p p' : nat, p < S (S (p + p')).
-  intro p; intro p'; change (S p <= S (S (p + p'))); 
-    apply le_S; apply Gt.gt_le_S; change (p < S (p + p')); 
+  intro p; intro p'; change (S p <= S (S (p + p')));
+    apply le_S; apply Gt.gt_le_S; change (p < S (p + p'));
     apply Lt.le_lt_n_Sm; apply Plus.le_plus_l.
 Qed.
- 
+
 
 Theorem Splus_lt : forall p p' : nat, p' < S (p + p').
-  intro p; intro p'; change (S p' <= S (p + p')); 
+  intro p; intro p'; change (S p' <= S (p + p'));
     apply Gt.gt_le_S; change (p' < S (p + p')); apply Lt.le_lt_n_Sm;
        apply Plus.le_plus_r.
 Qed.
 
 Theorem le_lt_SS : forall x y, x <= y -> x < S (S y).
-intro x; intro y; intro H; change (S x <= S (S y)); 
-    apply le_S; apply Gt.gt_le_S; change (x < S y); 
+intro x; intro y; intro H; change (S x <= S (S y));
+    apply le_S; apply Gt.gt_le_S; change (x < S y);
     apply Lt.le_lt_n_Sm; exact H.
 Qed.
 

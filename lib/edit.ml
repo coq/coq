@@ -16,7 +16,7 @@ type ('a,'b,'c) t = {
   mutable last_focused_stk : 'a list;
   buf : ('a, 'b Bstack.t * 'c) Hashtbl.t }
 
-let empty () = { 
+let empty () = {
   focus = None;
   last_focused_stk = [];
   buf = Hashtbl.create 17 }
@@ -38,7 +38,7 @@ let unfocus e =
 	  e.last_focused_stk <- foc::(list_except foc e.last_focused_stk);
 	  e.focus <- None
 	end
-    
+
 let last_focused e =
   match e.last_focused_stk with
     | [] -> None
@@ -48,7 +48,7 @@ let restore_last_focus e =
   match e.last_focused_stk with
     | [] -> ()
     | f::_ -> focus e f
-			     
+
 let focusedp e =
   match e.focus with
     | None -> false
@@ -96,8 +96,8 @@ let depth e =
 (* Undo focused proof of [e] to reach depth [n] *)
 let undo_todepth e n =
   match e.focus with
-    | None -> 
-	if n <> 0 
+    | None ->
+	if n <> 0
 	then errorlabstrm "Edit.undo_todepth" (str"No proof in progress")
 	else () (* if there is no proof in progress, then n must be zero *)
     | Some d ->
@@ -109,7 +109,7 @@ let undo_todepth e n =
 
 let create e (d,b,c,usize) =
   if Hashtbl.mem e.buf d then
-    errorlabstrm "Edit.create" 
+    errorlabstrm "Edit.create"
       (str"Already editing something of that name");
   let bs = Bstack.create usize b in
   Hashtbl.add e.buf d (bs,c)
@@ -123,11 +123,11 @@ let delete e d =
     | Some d' -> if d = d' then (e.focus <- None ; (restore_last_focus e))
     | None -> ()
 
-let dom e = 
+let dom e =
   let l = ref [] in
   Hashtbl.iter (fun x _ -> l := x :: !l) e.buf;
   !l
-	      
+
 let clear e =
   e.focus <- None;
   e.last_focused_stk <- [];

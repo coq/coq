@@ -1,9 +1,9 @@
 Definition T := Type.
 Definition U := Type.
 
-Module Type MT. 
+Module Type MT.
   Parameter t : T.
-End MT. 
+End MT.
 
 Module Type MU.
   Parameter t : U.

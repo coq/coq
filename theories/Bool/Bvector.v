@@ -16,7 +16,7 @@ Require Import Arith.
 
 Open Local Scope nat_scope.
 
-(** 
+(**
 On s'inspire de List.v pour fabriquer les vecteurs de bits.
 La dimension du vecteur est un paramètre trop important pour
 se contenter de la fonction "length".
@@ -27,22 +27,22 @@ La seconde idée est de faire un type dépendant dans lequel la
 longueur est un paramètre de construction. Cela complique un
 peu les inductions structurelles et dans certains cas on
 utilisera un terme de preuve comme définition, car le
-mécanisme d'inférence du type du filtrage n'est pas toujours 
+mécanisme d'inférence du type du filtrage n'est pas toujours
 aussi puissant que celui implanté par les tactiques d'élimination.
 *)
 
 Section VECTORS.
 
-(** 
+(**
 Un vecteur est une liste de taille n d'éléments d'un ensemble A.
-Si la taille est non nulle, on peut extraire la première composante et 
-le reste du vecteur, la dernière composante ou rajouter ou enlever 
+Si la taille est non nulle, on peut extraire la première composante et
+le reste du vecteur, la dernière composante ou rajouter ou enlever
 une composante (carry) ou repeter la dernière composante en fin de vecteur.
 On peut aussi tronquer le vecteur de ses p dernières composantes ou
 au contraire l'étendre (concaténer) d'un vecteur de longueur p.
 Une fonction unaire sur A génère une fonction des vecteurs de taille n
 dans les vecteurs de taille n en appliquant f terme à terme.
-Une fonction binaire sur A génère une fonction des couples de vecteurs 
+Une fonction binaire sur A génère une fonction des couples de vecteurs
 de taille n dans les vecteurs de taille n en appliquant f terme à terme.
 *)
 
@@ -93,7 +93,7 @@ Lemma Vshiftin : forall n:nat, A -> vector n -> vector (S n).
 Proof.
   induction n as [| n f]; intros a v.
   exact (Vcons a 0 v).
-  
+
   inversion v as [| a0 n0 H0 H1 ].
   exact (Vcons a (S n) (f a H0)).
 Defined.
@@ -103,7 +103,7 @@ Proof.
   induction n as [| n f]; intro v.
   inversion v.
   exact (Vcons a 1 v).
-  
+
   inversion v as [| a n0 H0 H1 ].
   exact (Vcons a (S (S n)) (f H0)).
 Defined.
@@ -113,9 +113,9 @@ Proof.
   induction p as [| p f]; intros H v.
   rewrite <- minus_n_O.
   exact v.
-  
+
   apply (Vshiftout (n - S p)).
-  
+
   rewrite minus_Sn_m.
   apply f.
   auto with *.
@@ -147,7 +147,7 @@ Lemma Vbinary : forall n:nat, vector n -> vector n -> vector n.
 Proof.
   induction n as [| n h]; intros v v0.
   exact Vnil.
-  
+
   inversion v as [| a n0 H0 H1]; inversion v0 as [| a0 n1 H2 H3].
   exact (Vcons (g a a0) n (h H0 H2)).
 Defined.
@@ -180,7 +180,7 @@ Qed.
 
 End VECTORS.
 
-(* suppressed: incompatible with Coq-Art book 
+(* suppressed: incompatible with Coq-Art book
 Implicit Arguments Vnil [A].
 Implicit Arguments Vcons [A n].
 *)
@@ -188,12 +188,12 @@ Implicit Arguments Vcons [A n].
 Section BOOLEAN_VECTORS.
 
 (**
-Un vecteur de bits est un vecteur sur l'ensemble des booléens de longueur fixe. 
+Un vecteur de bits est un vecteur sur l'ensemble des booléens de longueur fixe.
 ATTENTION : le stockage s'effectue poids FAIBLE en tête.
 On en extrait le bit  de poids faible (head) et la fin du vecteur (tail).
 On calcule la négation d'un vecteur, le et, le ou et le xor bit à bit de 2 vecteurs.
 On calcule les décalages d'une position vers la gauche (vers les poids forts, on
-utilise donc Vshiftout, vers la droite (vers les poids faibles, on utilise Vshiftin) en 
+utilise donc Vshiftout, vers la droite (vers les poids faibles, on utilise Vshiftin) en
 insérant un bit 'carry' (logique) ou en répétant le bit de poids fort (arithmétique).
 ATTENTION : Tous les décalages prennent la taille moins un comme paramètre
 (ils ne travaillent que sur des vecteurs au moins de longueur un).

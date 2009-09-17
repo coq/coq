@@ -11,12 +11,12 @@ Module OrderedPair (X:OrderedType) (Y:OrderedType) <: OrderedType with
 Definition t := (X.t * Y.t)%type.
   Definition t := (X.t * Y.t)%type.
 
-  Definition eq (xy1:t) (xy2:t) := 
+  Definition eq (xy1:t) (xy2:t) :=
     let (x1,y1) := xy1 in
       let (x2,y2) := xy2 in
         (X.eq x1 x2) /\ (Y.eq y1 y2).
 
-  Definition lt (xy1:t) (xy2:t) := 
+  Definition lt (xy1:t) (xy2:t) :=
     let (x1,y1) := xy1 in
       let (x2,y2) := xy2 in
         (X.lt x1 x2) \/ ((X.eq x1 x2) /\ (Y.lt y1 y2)).
@@ -101,7 +101,7 @@ Definition t := (X.t * Y.t)%type.
   Defined.
 
   Hint Immediate eq_sym.
-  Hint Resolve eq_refl eq_trans lt_not_eq lt_trans. 
+  Hint Resolve eq_refl eq_trans lt_not_eq lt_trans.
 End OrderedPair.
 
 Module MessageSpi.
@@ -189,8 +189,8 @@ n)->(hedge_synthesis_relation h m n).
 
   Fixpoint hedge_in_synthesis (h:hedge) (m:MessageSpi.message)
 (n:MessageSpi.message) {struct m} : bool :=
-    if H.mem (m,n) h 
-      then true 
+    if H.mem (m,n) h
+      then true
       else false.
 
   Definition hedge_synthesis_spec (h:hedge) := hedge_synthesis_relation
@@ -221,8 +221,8 @@ n).
 
   Fixpoint hedge_in_synthesis (h:hedge) (m:MessageSpi.t) (n:MessageSpi.t)
 {struct m} : bool :=
-    if H.mem (m,n) h 
-      then true 
+    if H.mem (m,n) h
+      then true
       else false.
 
   Definition hedge_synthesis_spec (h:hedge) := hedge_synthesis_relation
@@ -235,7 +235,7 @@ n).
     induction m;simpl;intro.
     elim (Bool_elim_bool (H.mem (MessageSpi.MNam n,n0) h));intros.
     apply SynInc;apply H.mem_2;trivial.
-    
+
     rewrite H in H0. (* !! impossible here !! *)
     discriminate H0.
   Qed.

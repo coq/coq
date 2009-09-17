@@ -22,7 +22,7 @@ Require Import DoubleMul.
 Require Import DoubleSqrt.
 Require Import DoubleLift.
 Require Import DoubleDivn1.
-Require Import DoubleDiv. 
+Require Import DoubleDiv.
 Require Import CyclicAxioms.
 
 Open Local Scope Z_scope.
@@ -80,7 +80,7 @@ Section Z_2nZ.
  Let w_gcd_gt      := w_op.(znz_gcd_gt).
  Let w_gcd         := w_op.(znz_gcd).
 
- Let w_add_mul_div := w_op.(znz_add_mul_div). 
+ Let w_add_mul_div := w_op.(znz_add_mul_div).
 
  Let w_pos_mod := w_op.(znz_pos_mod).
 
@@ -93,7 +93,7 @@ Section Z_2nZ.
  Let wB := base w_digits.
 
  Let w_Bm2 := w_pred w_Bm1.
- 
+
  Let ww_1 := ww_1 w_0 w_1.
  Let ww_Bm1 := ww_Bm1 w_Bm1.
 
@@ -112,16 +112,16 @@ Section Z_2nZ.
  Let ww_of_pos p :=
   match w_of_pos p with
   | (N0, l) => (N0, WW w_0 l)
-  | (Npos ph,l) => 
+  | (Npos ph,l) =>
     let (n,h) := w_of_pos ph in (n, w_WW h l)
   end.
 
  Let head0 :=
-  Eval lazy beta delta [ww_head0] in 
+  Eval lazy beta delta [ww_head0] in
   ww_head0 w_0 w_0W w_compare w_head0 w_add2 w_zdigits _ww_zdigits.
 
  Let tail0 :=
-  Eval lazy beta delta [ww_tail0] in 
+  Eval lazy beta delta [ww_tail0] in
   ww_tail0 w_0 w_0W w_compare w_tail0 w_add2 w_zdigits _ww_zdigits.
 
  Let ww_WW := Eval lazy beta delta [ww_WW] in (@ww_WW w).
@@ -132,7 +132,7 @@ Section Z_2nZ.
  Let compare :=
   Eval lazy beta delta[ww_compare] in ww_compare w_0 w_compare.
 
- Let eq0 (x:zn2z w) := 
+ Let eq0 (x:zn2z w) :=
   match x with
   | W0 => true
   | _ => false
@@ -147,7 +147,7 @@ Section Z_2nZ.
 
  Let opp_carry :=
   Eval lazy beta delta [ww_opp_carry] in ww_opp_carry w_WW ww_Bm1 w_opp_carry.
-  
+
  (* ** Additions ** *)
 
  Let succ_c :=
@@ -157,16 +157,16 @@ Section Z_2nZ.
   Eval lazy beta delta [ww_add_c] in ww_add_c w_WW w_add_c w_add_carry_c.
 
  Let add_carry_c :=
-  Eval lazy beta iota delta [ww_add_carry_c ww_succ_c] in 
+  Eval lazy beta iota delta [ww_add_carry_c ww_succ_c] in
   ww_add_carry_c w_0 w_WW ww_1 w_succ_c w_add_c w_add_carry_c.
 
- Let succ := 
+ Let succ :=
   Eval lazy beta delta [ww_succ] in ww_succ w_W0 ww_1 w_succ_c w_succ.
 
  Let add :=
   Eval lazy beta delta [ww_add] in ww_add w_add_c w_add w_add_carry.
 
- Let add_carry := 
+ Let add_carry :=
   Eval lazy beta iota delta [ww_add_carry ww_succ] in
   ww_add_carry w_W0 ww_1 w_succ_c w_add_carry_c w_succ w_add w_add_carry.
 
@@ -174,9 +174,9 @@ Section Z_2nZ.
 
  Let pred_c :=
   Eval lazy beta delta [ww_pred_c] in ww_pred_c w_Bm1 w_WW ww_Bm1 w_pred_c.
- 
+
  Let sub_c :=
-  Eval lazy beta iota delta [ww_sub_c ww_opp_c] in 
+  Eval lazy beta iota delta [ww_sub_c ww_opp_c] in
   ww_sub_c w_0 w_WW w_opp_c w_opp_carry w_sub_c w_sub_carry_c.
 
  Let sub_carry_c :=
@@ -186,8 +186,8 @@ Section Z_2nZ.
  Let pred :=
   Eval lazy beta delta [ww_pred] in ww_pred w_Bm1 w_WW ww_Bm1 w_pred_c w_pred.
 
- Let sub := 
-  Eval lazy beta iota delta [ww_sub ww_opp] in 
+ Let sub :=
+  Eval lazy beta iota delta [ww_sub ww_opp] in
   ww_sub w_0 w_WW w_opp_c w_opp_carry w_sub_c w_opp w_sub w_sub_carry.
 
  Let sub_carry :=
@@ -204,7 +204,7 @@ Section Z_2nZ.
 
  Let karatsuba_c :=
   Eval lazy beta iota delta [ww_karatsuba_c double_mul_c kara_prod] in
-  ww_karatsuba_c w_0 w_1 w_WW w_W0 w_compare w_add w_sub w_mul_c 
+  ww_karatsuba_c w_0 w_1 w_WW w_W0 w_compare w_add w_sub w_mul_c
     add_c add add_carry sub_c sub.
 
  Let mul :=
@@ -219,7 +219,7 @@ Section Z_2nZ.
 
  Let div32 :=
    Eval lazy beta iota delta [w_div32] in
-   w_div32 w_0 w_Bm1 w_Bm2 w_WW w_compare w_add_c w_add_carry_c 
+   w_div32 w_0 w_Bm1 w_Bm2 w_WW w_compare w_add_c w_add_carry_c
    w_add w_add_carry w_pred w_sub w_mul_c w_div21 sub_c.
 
  Let div21 :=
@@ -234,40 +234,40 @@ Section Z_2nZ.
 
  Let div_gt :=
   Eval lazy beta delta [ww_div_gt] in
-  ww_div_gt w_0 w_WW w_0W w_compare w_eq0 w_opp_c w_opp 
+  ww_div_gt w_0 w_WW w_0W w_compare w_eq0 w_opp_c w_opp
   w_opp_carry w_sub_c w_sub w_sub_carry
   w_div_gt w_add_mul_div w_head0 w_div21 div32 _ww_zdigits ww_1 add_mul_div w_zdigits.
 
  Let div :=
   Eval lazy beta delta [ww_div] in ww_div ww_1 compare div_gt.
-  
+
  Let mod_gt :=
   Eval lazy beta delta [ww_mod_gt] in
   ww_mod_gt w_0 w_WW w_0W w_compare w_eq0 w_opp_c w_opp w_opp_carry w_sub_c w_sub w_sub_carry
   w_mod_gt w_add_mul_div w_head0 w_div21 div32 _ww_zdigits add_mul_div w_zdigits.
 
- Let mod_ := 
+ Let mod_ :=
   Eval lazy beta delta [ww_mod] in ww_mod compare mod_gt.
 
- Let pos_mod := 
-  Eval lazy beta delta [ww_pos_mod] in 
+ Let pos_mod :=
+  Eval lazy beta delta [ww_pos_mod] in
     ww_pos_mod w_0 w_zdigits w_WW w_pos_mod compare w_0W low sub _ww_zdigits.
 
- Let is_even := 
+ Let is_even :=
   Eval lazy beta delta [ww_is_even] in ww_is_even w_is_even.
 
- Let sqrt2 := 
+ Let sqrt2 :=
   Eval lazy beta delta [ww_sqrt2] in
     ww_sqrt2 w_is_even w_compare w_0 w_1 w_Bm1 w_0W w_sub w_square_c
     w_div21 w_add_mul_div w_zdigits w_add_c w_sqrt2 w_pred pred_c
     pred add_c add sub_c add_mul_div.
 
- Let sqrt := 
+ Let sqrt :=
   Eval lazy beta delta [ww_sqrt] in
     ww_sqrt w_is_even w_0 w_sub w_add_mul_div w_zdigits
      _ww_zdigits w_sqrt2 pred add_mul_div head0 compare low.
 
- Let gcd_gt_fix := 
+ Let gcd_gt_fix :=
   Eval cbv beta delta [ww_gcd_gt_aux ww_gcd_gt_body] in
   ww_gcd_gt_aux w_0 w_WW w_0W w_compare w_opp_c w_opp w_opp_carry
       w_sub_c w_sub w_sub_carry w_gcd_gt
@@ -278,7 +278,7 @@ Section Z_2nZ.
   Eval lazy beta delta [gcd_cont] in gcd_cont ww_1 w_1 w_compare.
 
  Let gcd_gt :=
-  Eval lazy beta delta [ww_gcd_gt] in 
+  Eval lazy beta delta [ww_gcd_gt] in
   ww_gcd_gt w_0 w_eq0 w_gcd_gt _ww_digits gcd_gt_fix gcd_cont.
 
  Let gcd :=
@@ -286,18 +286,18 @@ Section Z_2nZ.
   ww_gcd compare w_0 w_eq0 w_gcd_gt _ww_digits gcd_gt_fix gcd_cont.
 
  (* ** Record of operators on 2 words *)
-   
- Definition mk_zn2z_op := 
+
+ Definition mk_zn2z_op :=
   mk_znz_op _ww_digits _ww_zdigits
     to_Z ww_of_pos head0 tail0
     W0 ww_1 ww_Bm1
     compare eq0
     opp_c opp opp_carry
-    succ_c add_c add_carry_c 
-    succ add add_carry 
-    pred_c sub_c sub_carry_c 
+    succ_c add_c add_carry_c
+    succ add add_carry
+    pred_c sub_c sub_carry_c
     pred sub sub_carry
-    mul_c mul square_c   
+    mul_c mul square_c
     div21 div_gt div
     mod_gt mod_
     gcd_gt gcd
@@ -307,17 +307,17 @@ Section Z_2nZ.
     sqrt2
     sqrt.
 
- Definition mk_zn2z_op_karatsuba := 
+ Definition mk_zn2z_op_karatsuba :=
    mk_znz_op _ww_digits _ww_zdigits
     to_Z ww_of_pos head0 tail0
     W0 ww_1 ww_Bm1
     compare eq0
     opp_c opp opp_carry
-    succ_c add_c add_carry_c 
-    succ add add_carry 
-    pred_c sub_c sub_carry_c 
+    succ_c add_c add_carry_c
+    succ add add_carry
+    pred_c sub_c sub_carry_c
     pred sub sub_carry
-    karatsuba_c mul square_c   
+    karatsuba_c mul square_c
     div21 div_gt div
     mod_gt mod_
     gcd_gt gcd
@@ -330,7 +330,7 @@ Section Z_2nZ.
  (* Proof *)
  Variable op_spec : znz_spec w_op.
 
- Hint Resolve 
+ Hint Resolve
     (spec_to_Z op_spec)
     (spec_of_pos op_spec)
     (spec_0 op_spec)
@@ -358,13 +358,13 @@ Section Z_2nZ.
     (spec_square_c op_spec)
     (spec_div21 op_spec)
     (spec_div_gt op_spec)
-    (spec_div op_spec)    
+    (spec_div op_spec)
     (spec_mod_gt op_spec)
-    (spec_mod op_spec)      
+    (spec_mod op_spec)
     (spec_gcd_gt op_spec)
-    (spec_gcd op_spec) 
-    (spec_head0 op_spec) 
-    (spec_tail0 op_spec) 
+    (spec_gcd op_spec)
+    (spec_head0 op_spec)
+    (spec_tail0 op_spec)
     (spec_add_mul_div op_spec)
     (spec_pos_mod)
     (spec_is_even)
@@ -417,20 +417,20 @@ Section Z_2nZ.
  Let spec_ww_Bm1 : [|ww_Bm1|] = wwB - 1.
  Proof. refine (spec_ww_Bm1 w_Bm1 w_digits w_to_Z _);auto. Qed.
 
- Let spec_ww_compare : 
+ Let spec_ww_compare :
      forall x y,
        match compare x y with
        | Eq => [|x|] = [|y|]
        | Lt => [|x|] < [|y|]
        | Gt => [|x|] > [|y|]
        end.
- Proof. 
-  refine (spec_ww_compare w_0 w_digits w_to_Z w_compare _ _ _);auto. 
-  exact (spec_compare op_spec). 
+ Proof.
+  refine (spec_ww_compare w_0 w_digits w_to_Z w_compare _ _ _);auto.
+  exact (spec_compare op_spec).
  Qed.
 
  Let spec_ww_eq0 : forall x, eq0 x = true -> [|x|] = 0.
- Proof. destruct x;simpl;intros;trivial;discriminate. Qed. 
+ Proof. destruct x;simpl;intros;trivial;discriminate. Qed.
 
  Let spec_ww_opp_c : forall x, [-|opp_c x|] = -[|x|].
  Proof.
@@ -440,7 +440,7 @@ Section Z_2nZ.
 
  Let spec_ww_opp : forall x, [|opp x|] = (-[|x|]) mod wwB.
  Proof.
-  refine(spec_ww_opp w_0 w_0 W0 w_opp_c w_opp_carry w_opp 
+  refine(spec_ww_opp w_0 w_0 W0 w_opp_c w_opp_carry w_opp
    w_digits w_to_Z _ _ _ _ _);
   auto.
  Qed.
@@ -480,25 +480,25 @@ Section Z_2nZ.
 
  Let spec_ww_add_carry : forall x y, [|add_carry x y|]=([|x|]+[|y|]+1)mod wwB.
  Proof.
-  refine (spec_ww_add_carry w_W0 ww_1 w_succ_c w_add_carry_c w_succ 
+  refine (spec_ww_add_carry w_W0 ww_1 w_succ_c w_add_carry_c w_succ
   w_add w_add_carry w_digits w_to_Z _ _ _ _ _ _ _ _);wwauto.
  Qed.
 
  Let spec_ww_pred_c : forall x, [-|pred_c x|] = [|x|] - 1.
  Proof.
-  refine (spec_ww_pred_c w_0 w_Bm1 w_WW ww_Bm1 w_pred_c w_digits w_to_Z 
+  refine (spec_ww_pred_c w_0 w_Bm1 w_WW ww_Bm1 w_pred_c w_digits w_to_Z
    _ _ _ _ _);wwauto.
  Qed.
 
  Let spec_ww_sub_c : forall x y, [-|sub_c x y|] = [|x|] - [|y|].
  Proof.
-  refine (spec_ww_sub_c w_0 w_0 w_WW W0 w_opp_c w_opp_carry w_sub_c 
+  refine (spec_ww_sub_c w_0 w_0 w_WW W0 w_opp_c w_opp_carry w_sub_c
    w_sub_carry_c w_digits w_to_Z _ _ _ _ _ _ _);wwauto.
  Qed.
 
  Let spec_ww_sub_carry_c : forall x y, [-|sub_carry_c x y|] = [|x|]-[|y|]-1.
  Proof.
-  refine (spec_ww_sub_carry_c w_0 w_Bm1 w_WW ww_Bm1 w_opp_carry w_pred_c 
+  refine (spec_ww_sub_carry_c w_0 w_Bm1 w_WW ww_Bm1 w_opp_carry w_pred_c
    w_sub_c w_sub_carry_c w_digits w_to_Z _ _ _ _ _ _ _ _);wwauto.
  Qed.
 
@@ -533,17 +533,17 @@ Section Z_2nZ.
           _ _ _ _ _ _ _ _ _ _ _ _); wwauto.
   unfold w_digits; apply spec_more_than_1_digit; auto.
   exact (spec_compare op_spec).
- Qed. 
+ Qed.
 
  Let spec_ww_mul : forall x y, [|mul x y|] = ([|x|] * [|y|]) mod wwB.
  Proof.
   refine (spec_ww_mul w_W0 w_add w_mul_c w_mul add w_digits w_to_Z _ _ _ _ _);
-  wwauto. 
+  wwauto.
  Qed.
 
  Let spec_ww_square_c : forall x, [[square_c x]] = [|x|] * [|x|].
  Proof.
-  refine (spec_ww_square_c w_0 w_1 w_WW w_W0 w_mul_c w_square_c add_c add 
+  refine (spec_ww_square_c w_0 w_1 w_WW w_W0 w_mul_c w_square_c add_c add
    add_carry w_digits w_to_Z _ _ _ _ _ _ _ _ _ _);wwauto.
  Qed.
 
@@ -574,7 +574,7 @@ Section Z_2nZ.
       0 <= [|r|] < [|b|].
  Proof.
   refine (spec_ww_div21 w_0 w_0W div32 ww_1 compare sub w_digits w_to_Z
-   _ _ _ _ _ _ _);wwauto. 
+   _ _ _ _ _ _ _);wwauto.
  Qed.
 
  Let spec_add2: forall x y,
@@ -602,7 +602,7 @@ Section Z_2nZ.
   unfold wB, base; auto with zarith.
  Qed.
 
- Let spec_ww_digits: 
+ Let spec_ww_digits:
   [|_ww_zdigits|] = Zpos (xO w_digits).
  Proof.
  unfold w_to_Z, _ww_zdigits.
@@ -615,7 +615,7 @@ Section Z_2nZ.
 
  Let spec_ww_head00  : forall x,  [|x|] = 0 -> [|head0 x|] = Zpos _ww_digits.
  Proof.
- refine (spec_ww_head00 w_0 w_0W 
+ refine (spec_ww_head00 w_0 w_0W
                 w_compare w_head0 w_add2 w_zdigits _ww_zdigits
                 w_to_Z _ _ _ (refl_equal _ww_digits) _ _ _ _); auto.
  exact (spec_compare op_spec).
@@ -626,8 +626,8 @@ Section Z_2nZ.
  Let spec_ww_head0  : forall x,  0 < [|x|] ->
 	 wwB/ 2 <= 2 ^ [|head0 x|] * [|x|] < wwB.
  Proof.
-  refine (spec_ww_head0 w_0 w_0W w_compare w_head0 
-           w_add2 w_zdigits _ww_zdigits 
+  refine (spec_ww_head0 w_0 w_0W w_compare w_head0
+           w_add2 w_zdigits _ww_zdigits
    w_to_Z _ _ _ _ _ _ _);wwauto.
   exact (spec_compare op_spec).
   exact (spec_zdigits op_spec).
@@ -635,7 +635,7 @@ Section Z_2nZ.
 
  Let spec_ww_tail00  : forall x,  [|x|] = 0 -> [|tail0 x|] = Zpos _ww_digits.
  Proof.
- refine (spec_ww_tail00 w_0 w_0W 
+ refine (spec_ww_tail00 w_0 w_0W
                 w_compare w_tail0 w_add2 w_zdigits _ww_zdigits
                 w_to_Z _ _ _ (refl_equal _ww_digits) _ _ _ _); wwauto.
  exact (spec_compare op_spec).
@@ -647,7 +647,7 @@ Section Z_2nZ.
  Let spec_ww_tail0  : forall x,  0 < [|x|] ->
   exists y, 0 <= y /\ [|x|] = (2 * y + 1) * 2 ^ [|tail0 x|].
  Proof.
-  refine (spec_ww_tail0 (w_digits := w_digits) w_0 w_0W w_compare w_tail0 
+  refine (spec_ww_tail0 (w_digits := w_digits) w_0 w_0W w_compare w_tail0
            w_add2 w_zdigits _ww_zdigits w_to_Z _ _ _ _ _ _ _);wwauto.
   exact (spec_compare op_spec).
   exact (spec_zdigits op_spec).
@@ -659,19 +659,19 @@ Section Z_2nZ.
          ([|x|] * (2 ^ [|p|]) +
           [|y|] / (2 ^ ((Zpos _ww_digits) - [|p|]))) mod wwB.
  Proof.
- refine (@spec_ww_add_mul_div w w_0 w_WW w_W0 w_0W compare w_add_mul_div 
+ refine (@spec_ww_add_mul_div w w_0 w_WW w_W0 w_0W compare w_add_mul_div
               sub w_digits w_zdigits low w_to_Z
            _ _ _ _ _ _ _ _ _ _ _);wwauto.
   exact (spec_zdigits op_spec).
  Qed.
 
- Let spec_ww_div_gt : forall a b, 
+ Let spec_ww_div_gt : forall a b,
       [|a|] > [|b|] -> 0 < [|b|] ->
       let (q,r) := div_gt a b in
       [|a|] = [|q|] * [|b|] + [|r|] /\ 0 <= [|r|] < [|b|].
  Proof.
-refine 
-(@spec_ww_div_gt w w_digits w_0 w_WW w_0W w_compare w_eq0 
+refine
+(@spec_ww_div_gt w w_digits w_0 w_WW w_0W w_compare w_eq0
    w_opp_c w_opp w_opp_carry w_sub_c w_sub w_sub_carry w_div_gt
    w_add_mul_div w_head0 w_div21 div32 _ww_zdigits ww_1 add_mul_div w_zdigits w_to_Z
  _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
@@ -707,14 +707,14 @@ refine
   refine (spec_ww_div w_digits ww_1 compare div_gt w_to_Z _ _ _ _);auto.
  Qed.
 
- Let spec_ww_mod_gt : forall a b, 
+ Let spec_ww_mod_gt : forall a b,
       [|a|] > [|b|] -> 0 < [|b|] ->
       [|mod_gt a b|] = [|a|] mod [|b|].
  Proof.
-  refine (@spec_ww_mod_gt w w_digits w_0 w_WW w_0W w_compare w_eq0 
+  refine (@spec_ww_mod_gt w w_digits w_0 w_WW w_0W w_compare w_eq0
    w_opp_c w_opp w_opp_carry w_sub_c w_sub w_sub_carry w_div_gt w_mod_gt
-   w_add_mul_div w_head0 w_div21 div32 _ww_zdigits ww_1 add_mul_div 
-   w_zdigits w_to_Z 
+   w_add_mul_div w_head0 w_div21 div32 _ww_zdigits ww_1 add_mul_div
+   w_zdigits w_to_Z
    _ _ _ _ _   _ _ _ _ _   _ _ _ _ _   _ _ _ _ _ _ _);wwauto.
   exact (spec_compare op_spec).
   exact (spec_div_gt op_spec).
@@ -731,12 +731,12 @@ refine
  Let spec_ww_gcd_gt : forall a b, [|a|] > [|b|] ->
       Zis_gcd [|a|] [|b|] [|gcd_gt a b|].
  Proof.
-  refine (@spec_ww_gcd_gt w w_digits W0 w_to_Z _ 
+  refine (@spec_ww_gcd_gt w w_digits W0 w_to_Z _
     w_0 w_0 w_eq0 w_gcd_gt _ww_digits
   _ gcd_gt_fix _ _ _ _ gcd_cont _);auto.
   refine (@spec_ww_gcd_gt_aux w w_digits w_0 w_WW w_0W w_compare w_opp_c w_opp
    w_opp_carry w_sub_c w_sub w_sub_carry w_gcd_gt w_add_mul_div w_head0
-   w_div21 div32 _ww_zdigits ww_1 add_mul_div w_zdigits w_to_Z 
+   w_div21 div32 _ww_zdigits ww_1 add_mul_div w_zdigits w_to_Z
    _ _ _ _ _   _ _ _ _ _   _ _ _ _ _   _ _ _ _ _);wwauto.
   exact (spec_compare op_spec).
   exact (spec_div21 op_spec).
@@ -753,7 +753,7 @@ refine
   _ww_digits _ gcd_gt_fix _ _ _ _ gcd_cont _);auto.
   refine (@spec_ww_gcd_gt_aux w w_digits w_0 w_WW w_0W w_compare w_opp_c w_opp
    w_opp_carry w_sub_c w_sub w_sub_carry w_gcd_gt w_add_mul_div w_head0
-   w_div21 div32 _ww_zdigits ww_1 add_mul_div w_zdigits w_to_Z 
+   w_div21 div32 _ww_zdigits ww_1 add_mul_div w_zdigits w_to_Z
    _ _ _ _ _   _ _ _ _ _   _ _ _ _ _   _ _ _ _ _);wwauto.
   exact (spec_compare op_spec).
   exact (spec_div21 op_spec).
@@ -798,7 +798,7 @@ refine
  Let spec_ww_sqrt : forall x,
        [|sqrt x|] ^ 2 <= [|x|] < ([|sqrt x|] + 1) ^ 2.
  Proof.
- refine (@spec_ww_sqrt w w_is_even w_0 w_1 w_Bm1 
+ refine (@spec_ww_sqrt w w_is_even w_0 w_1 w_Bm1
            w_sub w_add_mul_div w_digits w_zdigits _ww_zdigits
                w_sqrt2 pred add_mul_div head0 compare
             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _); wwauto.
@@ -814,7 +814,7 @@ refine
   apply mk_znz_spec;auto.
   exact spec_ww_add_mul_div.
 
-  refine (@spec_ww_pos_mod w w_0 w_digits w_zdigits w_WW 
+  refine (@spec_ww_pos_mod w w_0 w_digits w_zdigits w_WW
            w_pos_mod compare w_0W low sub _ww_zdigits w_to_Z
        _ _ _ _ _ _ _ _ _ _ _ _);wwauto.
   exact (spec_pos_mod op_spec).
@@ -828,7 +828,7 @@ refine
  Proof.
   apply mk_znz_spec;auto.
   exact spec_ww_add_mul_div.
-  refine (@spec_ww_pos_mod w w_0 w_digits w_zdigits w_WW 
+  refine (@spec_ww_pos_mod w w_0 w_digits w_zdigits w_WW
            w_pos_mod compare w_0W low sub _ww_zdigits w_to_Z
        _ _ _ _ _ _ _ _ _ _ _ _);wwauto.
   exact (spec_pos_mod op_spec).
@@ -838,10 +838,10 @@ refine
   rewrite <- Zpos_xO; exact spec_ww_digits.
  Qed.
 
-End Z_2nZ. 
- 
+End Z_2nZ.
+
 Section MulAdd.
- 
+
   Variable w: Type.
   Variable op: znz_op w.
   Variable sop: znz_spec op.
@@ -870,7 +870,7 @@ Section MulAdd.
 End MulAdd.
 
 
-(** Modular versions of DoubleCyclic *) 
+(** Modular versions of DoubleCyclic *)
 
 Module DoubleCyclic (C:CyclicType) <: CyclicType.
  Definition w := zn2z C.w.

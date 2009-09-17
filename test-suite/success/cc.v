@@ -22,12 +22,12 @@ intros.
  congruence.
 Qed.
 
-(* Examples that fail due to dependencies *) 
+(* Examples that fail due to dependencies *)
 
 (* yields transitivity problem *)
 
 Theorem dep :
- forall (A : Set) (P : A -> Set) (f g : forall x : A, P x) 
+ forall (A : Set) (P : A -> Set) (f g : forall x : A, P x)
    (x y : A) (e : x = y) (e0 : f y = g y), f x = g x.
 intros;  dependent rewrite e; exact e0.
 Qed.
@@ -42,12 +42,12 @@ intros;  rewrite e; reflexivity.
 Qed.
 
 
-(* example that Congruence. can solve 	
-	(dependent function applied to the same argument)*) 
+(* example that Congruence. can solve
+	(dependent function applied to the same argument)*)
 
 Theorem dep3 :
  forall (A : Set) (P : A -> Set) (f g : forall x : A, P x),
- f = g -> forall x : A, f x = g x.		intros.	
+ f = g -> forall x : A, f x = g x.		intros.
  congruence.
 Qed.
 
@@ -61,7 +61,7 @@ Qed.
 
 Theorem inj2 :
  forall (A : Set) (a c d : A) (f : A -> A * A),
- f = pair (B:=A) a -> Some (f c) = Some (f d) -> c = d.                             
+ f = pair (B:=A) a -> Some (f c) = Some (f d) -> c = d.
 intros.
  congruence.
 Qed.
@@ -80,7 +80,7 @@ Qed.
 
 (* example with implications *)
 
-Theorem arrow : forall (A B: Prop) (C D:Set) , A=B -> C=D  -> 
+Theorem arrow : forall (A B: Prop) (C D:Set) , A=B -> C=D  ->
 (A -> C) = (B -> D).
 congruence.
 Qed.
@@ -101,7 +101,6 @@ Proof.
   congruence.
   auto.
 Qed.
-            
 
-            
-            
+
+

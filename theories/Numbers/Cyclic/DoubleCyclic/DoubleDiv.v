@@ -41,13 +41,13 @@ Section POS_MOD.
  Variable ww_zdigits : zn2z w.
 
 
- Definition ww_pos_mod p x := 
+ Definition ww_pos_mod p x :=
   let zdigits := w_0W w_zdigits in
   match x with
   | W0 => W0
   | WW xh xl =>
     match ww_compare p zdigits with
-    | Eq => w_WW w_0 xl 
+    | Eq => w_WW w_0 xl
     | Lt => w_WW w_0 (w_pos_mod (low p) xl)
     | Gt =>
       match ww_compare p ww_zdigits with
@@ -87,7 +87,7 @@ Section POS_MOD.
        | Lt => [[x]] < [[y]]
        | Gt => [[x]] > [[y]]
        end.
- Variable spec_ww_sub: forall x y, 
+ Variable spec_ww_sub: forall x y,
    [[ww_sub x y]] = ([[x]] - [[y]]) mod wwB.
 
  Variable spec_zdigits : [| w_zdigits |] = Zpos w_digits.
@@ -106,7 +106,7 @@ Section POS_MOD.
  unfold ww_pos_mod; case w1.
  simpl; rewrite Zmod_small; split; auto with zarith.
  intros xh xl; generalize (spec_ww_compare p (w_0W w_zdigits));
-    case ww_compare; 
+    case ww_compare;
     rewrite spec_w_0W; rewrite spec_zdigits; fold wB;
     intros H1.
    rewrite H1; simpl ww_to_Z.
@@ -135,13 +135,13 @@ Section POS_MOD.
    autorewrite with w_rewrite rm10.
    rewrite Zmod_mod; auto with zarith.
 generalize (spec_ww_compare p ww_zdigits);
-    case ww_compare; rewrite spec_ww_zdigits; 
+    case ww_compare; rewrite spec_ww_zdigits;
                      rewrite spec_zdigits; intros H2.
   replace (2^[[p]]) with wwB.
     rewrite Zmod_small; auto with zarith.
   unfold base; rewrite H2.
   rewrite spec_ww_digits; auto.
-  assert (HH0: [|low (ww_sub p (w_0W w_zdigits))|] = 
+  assert (HH0: [|low (ww_sub p (w_0W w_zdigits))|] =
          [[p]] - Zpos w_digits).
     rewrite spec_low.
     rewrite spec_ww_sub.
@@ -152,11 +152,11 @@ generalize (spec_ww_compare p ww_zdigits);
     apply Zlt_le_trans with (Zpos w_digits); auto with zarith.
     unfold base; apply Zpower2_le_lin; auto with zarith.
     exists wB; unfold base; rewrite <- Zpower_exp; auto with zarith.
-    rewrite spec_ww_digits; 
+    rewrite spec_ww_digits;
       apply f_equal with (f := Zpower 2); rewrite Zpos_xO; auto with zarith.
    simpl ww_to_Z; autorewrite with w_rewrite.
    rewrite spec_pos_mod; rewrite HH0.
-   pattern [|xh|] at 2; 
+   pattern [|xh|] at 2;
      rewrite Z_div_mod_eq with (b := 2 ^ ([[p]] - Zpos w_digits));
      auto with zarith.
    rewrite (fun x => (Zmult_comm (2 ^ x))); rewrite Zmult_plus_distr_l.
@@ -196,7 +196,7 @@ generalize (spec_ww_compare p ww_zdigits);
   split; auto with zarith.
   rewrite Zpos_xO; auto with zarith.
  Qed.
-   
+
 End POS_MOD.
 
 Section DoubleDiv32.
@@ -222,24 +222,24 @@ Section DoubleDiv32.
   match w_compare a1 b1 with
   | Lt =>
     let (q,r) := w_div21 a1 a2 b1 in
-    match ww_sub_c (w_WW r a3) (w_mul_c q b2) with 
+    match ww_sub_c (w_WW r a3) (w_mul_c q b2) with
     | C0 r1 => (q,r1)
     | C1 r1 =>
       let q := w_pred q in
-      ww_add_c_cont w_WW w_add_c w_add_carry_c 
+      ww_add_c_cont w_WW w_add_c w_add_carry_c
       (fun r2=>(w_pred q, ww_add w_add_c w_add w_add_carry r2 (WW b1 b2)))
       (fun r2 => (q,r2))
       r1 (WW b1 b2)
     end
   | Eq =>
-    ww_add_c_cont w_WW w_add_c w_add_carry_c 
+    ww_add_c_cont w_WW w_add_c w_add_carry_c
     (fun r => (w_Bm2, ww_add w_add_c w_add w_add_carry r (WW b1 b2)))
     (fun r => (w_Bm1,r))
     (WW (w_sub a2 b2) a3) (WW b1 b2)
   | Gt => (w_0, W0) (* cas absurde *)
   end.
 
- (* Proof *) 
+ (* Proof *)
 
   Variable w_digits      : positive.
   Variable w_to_Z : w -> Z.
@@ -253,8 +253,8 @@ Section DoubleDiv32.
    (interp_carry (-1) wB w_to_Z c) (at level 0, x at level 99).
 
   Notation "[[ x ]]" := (ww_to_Z w_digits w_to_Z x)(at level 0, x at level 99).
-  Notation "[-[ c ]]" := 
-   (interp_carry (-1) wwB (ww_to_Z w_digits w_to_Z) c) 
+  Notation "[-[ c ]]" :=
+   (interp_carry (-1) wwB (ww_to_Z w_digits w_to_Z) c)
    (at level 0, x at level 99).
 
 
@@ -273,7 +273,7 @@ Section DoubleDiv32.
        | Gt => [|x|] > [|y|]
        end.
   Variable spec_w_add_c  : forall x y, [+|w_add_c x y|] = [|x|] + [|y|].
-  Variable spec_w_add_carry_c : 
+  Variable spec_w_add_carry_c :
          forall x y, [+|w_add_carry_c x y|] = [|x|] + [|y|] + 1.
 
   Variable spec_w_add : forall x y, [|w_add x y|] = ([|x|] + [|y|]) mod wB.
@@ -315,8 +315,8 @@ Section DoubleDiv32.
      wB/2 <= [|b1|] ->
      [[WW a1 a2]] < [[WW b1 b2]] ->
      let (q,r) := w_div32 a1 a2 a3 b1 b2 in
-     [|a1|] * wwB + [|a2|] * wB  + [|a3|] = 
-        [|q|] *  ([|b1|] * wB + [|b2|])  + [[r]] /\ 
+     [|a1|] * wwB + [|a2|] * wB  + [|a3|] =
+        [|q|] *  ([|b1|] * wB + [|b2|])  + [[r]] /\
      0 <= [[r]] < [|b1|] * wB + [|b2|].
   Proof.
    intros a1 a2 a3 b1 b2 Hle Hlt.
@@ -327,17 +327,17 @@ Section DoubleDiv32.
     match w_compare a1 b1 with
     | Lt =>
      let (q,r) := w_div21 a1 a2 b1 in
-     match ww_sub_c (w_WW r a3) (w_mul_c q b2) with 
+     match ww_sub_c (w_WW r a3) (w_mul_c q b2) with
      | C0 r1 => (q,r1)
      | C1 r1 =>
       let q := w_pred q in
-      ww_add_c_cont w_WW w_add_c w_add_carry_c 
+      ww_add_c_cont w_WW w_add_c w_add_carry_c
       (fun r2=>(w_pred q, ww_add w_add_c w_add w_add_carry r2 (WW b1 b2)))
       (fun r2 => (q,r2))
       r1 (WW b1 b2)
      end
     | Eq =>
-     ww_add_c_cont w_WW w_add_c w_add_carry_c 
+     ww_add_c_cont w_WW w_add_c w_add_carry_c
      (fun r => (w_Bm2, ww_add w_add_c w_add w_add_carry r (WW b1 b2)))
      (fun r => (w_Bm1,r))
      (WW (w_sub a2 b2) a3) (WW b1 b2)
@@ -360,7 +360,7 @@ Section DoubleDiv32.
      [|q|] * ([|b1|] * wB + [|b2|]) + [[r]] /\
      0 <= [[r]] < [|b1|] * wB + [|b2|]);eauto.
    rewrite H0;intros r.
-   repeat 
+   repeat
     (rewrite spec_ww_add;eauto || rewrite spec_w_Bm1 || rewrite spec_w_Bm2);
    simpl ww_to_Z;try rewrite Zmult_1_l;intros H1.
    assert (0<= ([[r]] + ([|b1|] * wB + [|b2|])) - wwB < [|b1|] * wB + [|b2|]).
@@ -385,7 +385,7 @@ Section DoubleDiv32.
              1 ([[r]] + ([|b1|] * wB + [|b2|]) - wwB));zarith;try (ring;fail).
    split. rewrite H1;rewrite Hcmp;ring. trivial.
    Spec_ww_to_Z (WW b1 b2). simpl in HH4;zarith.
-   rewrite H0;intros r;repeat 
+   rewrite H0;intros r;repeat
     (rewrite spec_w_Bm1 || rewrite spec_w_Bm2);
    simpl ww_to_Z;try rewrite Zmult_1_l;intros H1.
    assert ([[r]]=([|a2|]-[|b2|])*wB+[|a3|]+([|b1|]*wB+[|b2|])). zarith.
@@ -409,7 +409,7 @@ Section DoubleDiv32.
     as [r1|r1];repeat (rewrite spec_w_WW || rewrite spec_mul_c);
     unfold interp_carry;intros H1.
     rewrite H1.
-   split. ring. split. 
+   split. ring. split.
    rewrite <- H1;destruct (spec_ww_to_Z w_digits w_to_Z spec_to_Z r1);trivial.
    apply Zle_lt_trans with ([|r|] * wB + [|a3|]).
    assert ( 0 <= [|q|] * [|b2|]);zarith.
@@ -418,7 +418,7 @@ Section DoubleDiv32.
    rewrite <- H1;ring.
    Spec_ww_to_Z r1; assert (0 <= [|r|]*wB). zarith.
    assert (0 < [|q|] * [|b2|]). zarith.
-   assert (0 < [|q|]). 
+   assert (0 < [|q|]).
     apply Zmult_lt_0_reg_r_2 with [|b2|];zarith.
    eapply spec_ww_add_c_cont with (P :=
      fun (x y:zn2z w) (res:w*zn2z w) =>
@@ -440,18 +440,18 @@ Section DoubleDiv32.
        wwB * 1 +
        ([|r|] * wB + [|a3|] - [|q|] * [|b2|] + 2 * ([|b1|] * wB + [|b2|]))).
    rewrite H7;rewrite H2;ring.
-   assert 
-    ([|r|]*wB + [|a3|] - [|q|]*[|b2|] + 2 * ([|b1|]*wB + [|b2|]) 
+   assert
+    ([|r|]*wB + [|a3|] - [|q|]*[|b2|] + 2 * ([|b1|]*wB + [|b2|])
         < [|b1|]*wB + [|b2|]).
    Spec_ww_to_Z r2;omega.
    Spec_ww_to_Z (WW b1 b2). simpl in HH5.
-   assert 
-    (0 <= [|r|]*wB + [|a3|] - [|q|]*[|b2|] + 2 * ([|b1|]*wB + [|b2|]) 
+   assert
+    (0 <= [|r|]*wB + [|a3|] - [|q|]*[|b2|] + 2 * ([|b1|]*wB + [|b2|])
        < wwB). split;try omega.
    replace (2*([|b1|]*wB+[|b2|])) with ((2*[|b1|])*wB+2*[|b2|]). 2:ring.
    assert (H12:= wB_div2 Hle). assert (wwB <= 2 * [|b1|] * wB).
    rewrite wwB_wBwB; rewrite Zpower_2; zarith. omega.
-   rewrite <- (Zmod_unique 
+   rewrite <- (Zmod_unique
             ([[r2]] + ([|b1|] * wB + [|b2|]))
             wwB
             1
@@ -486,7 +486,7 @@ Section DoubleDiv21.
 
  Definition ww_div21 a1 a2 b :=
   match a1 with
-  | W0 =>  
+  | W0 =>
     match ww_compare a2 b with
     | Gt => (ww_1, ww_sub a2 b)
     | Eq => (ww_1, W0)
@@ -529,8 +529,8 @@ Section DoubleDiv21.
   Notation wwB := (base (ww_digits w_digits)).
   Notation "[| x |]" := (w_to_Z x)  (at level 0, x at level 99).
   Notation "[[ x ]]" := (ww_to_Z w_digits w_to_Z x)(at level 0, x at level 99).
-  Notation "[-[ c ]]" := 
-   (interp_carry (-1) wwB (ww_to_Z w_digits w_to_Z) c) 
+  Notation "[-[ c ]]" :=
+   (interp_carry (-1) wwB (ww_to_Z w_digits w_to_Z) c)
    (at level 0, x at level 99).
 
   Variable spec_w_0   : [|w_0|] = 0.
@@ -540,8 +540,8 @@ Section DoubleDiv21.
      wB/2 <= [|b1|] ->
      [[WW a1 a2]] < [[WW b1 b2]] ->
      let (q,r) := w_div32 a1 a2 a3 b1 b2 in
-     [|a1|] * wwB + [|a2|] * wB  + [|a3|] = 
-        [|q|] *  ([|b1|] * wB + [|b2|])  + [[r]] /\ 
+     [|a1|] * wwB + [|a2|] * wB  + [|a3|] =
+        [|q|] *  ([|b1|] * wB + [|b2|])  + [[r]] /\
      0 <= [[r]] < [|b1|] * wB + [|b2|].
   Variable spec_ww_1 : [[ww_1]] = 1.
   Variable spec_ww_compare :  forall x y,
@@ -591,10 +591,10 @@ Section DoubleDiv21.
    intros Hlt H;  match goal with |-context [w_div32 ?X ?Y ?Z ?T ?U] =>
      generalize (@spec_w_div32 X Y Z T U); case (w_div32 X Y Z T U);
      intros q1 r H0
-   end; (assert (Eq1: wB / 2 <= [|b1|]);[ 
+   end; (assert (Eq1: wB / 2 <= [|b1|]);[
     apply (@beta_lex (wB / 2) 0 [|b1|] [|b2|] wB); auto with zarith;
     autorewrite with rm10;repeat rewrite (Zmult_comm wB);
-    rewrite <- wwB_div_2; trivial 
+    rewrite <- wwB_div_2; trivial
    | generalize (H0 Eq1 Hlt);clear H0;destruct r as [ |r1 r2];simpl;
      try rewrite spec_w_0; try rewrite spec_w_0W;repeat rewrite Zplus_0_r;
      intros (H1,H2) ]).
@@ -611,10 +611,10 @@ Section DoubleDiv21.
    rewrite <- wwB_wBwB;rewrite H1.
    rewrite spec_w_0 in H4;rewrite Zplus_0_r in H4.
    repeat rewrite Zmult_plus_distr_l. rewrite <- (Zmult_assoc [|r1|]).
-   rewrite <- Zpower_2; rewrite <- wwB_wBwB;rewrite H4;simpl;ring. 
+   rewrite <- Zpower_2; rewrite <- wwB_wBwB;rewrite H4;simpl;ring.
    split;[rewrite wwB_wBwB | split;zarith].
-   replace (([|a1h|] * wB + [|a1l|]) * wB^2 + ([|a3|] * wB + [|a4|])) 
-   with (([|a1h|] * wwB + [|a1l|] * wB + [|a3|])*wB+ [|a4|]). 
+   replace (([|a1h|] * wB + [|a1l|]) * wB^2 + ([|a3|] * wB + [|a4|]))
+   with (([|a1h|] * wwB + [|a1l|] * wB + [|a3|])*wB+ [|a4|]).
    rewrite H1;ring. rewrite wwB_wBwB;ring.
    change [|a4|] with (0*wB+[|a4|]);apply beta_lex_inv;zarith.
    assert (1 <= wB/2);zarith.
@@ -624,7 +624,7 @@ Section DoubleDiv21.
      intros q r H0;generalize (H0 Eq1 H3);clear H0;intros (H4,H5) end.
    split;trivial.
    replace (([|a1h|] * wB + [|a1l|]) * wwB + ([|a3|] * wB + [|a4|])) with
-   (([|a1h|] * wwB + [|a1l|] * wB + [|a3|])*wB + [|a4|]); 
+   (([|a1h|] * wwB + [|a1l|] * wB + [|a3|])*wB + [|a4|]);
    [rewrite H1 | rewrite wwB_wBwB;ring].
    replace (([|q1|]*([|b1|]*wB+[|b2|])+([|r1|]*wB+[|r2|]))*wB+[|a4|]) with
    (([|q1|]*([|b1|]*wB+[|b2|]))*wB+([|r1|]*wwB+[|r2|]*wB+[|a4|]));
@@ -666,22 +666,22 @@ Section DoubleDivGt.
   Eval lazy beta iota delta [ww_sub ww_opp] in
     let p := w_head0 bh in
     match w_compare p w_0 with
-    | Gt => 
+    | Gt =>
       let b1 := w_add_mul_div p bh bl in
       let b2 := w_add_mul_div p bl w_0 in
       let a1 := w_add_mul_div p w_0 ah in
       let a2 := w_add_mul_div p ah al in
       let a3 := w_add_mul_div p al w_0 in
       let (q,r) := w_div32 a1 a2 a3 b1 b2 in
-      (WW w_0 q, ww_add_mul_div 
+      (WW w_0 q, ww_add_mul_div
         (ww_sub w_0 w_WW w_opp_c w_opp_carry w_sub_c
             w_opp w_sub w_sub_carry _ww_zdigits (w_0W p)) W0 r)
     | _ => (ww_1, ww_sub w_0 w_WW w_opp_c w_opp_carry w_sub_c
             w_opp w_sub w_sub_carry (WW ah al) (WW bh bl))
     end.
 
- Definition ww_div_gt a b := 
-  Eval lazy beta iota delta [ww_div_gt_aux double_divn1 
+ Definition ww_div_gt a b :=
+  Eval lazy beta iota delta [ww_div_gt_aux double_divn1
   double_divn1_p double_divn1_p_aux double_divn1_0 double_divn1_0_aux
   double_split double_0 double_WW] in
   match a, b with
@@ -691,11 +691,11 @@ Section DoubleDivGt.
     if w_eq0 ah then
      let (q,r) := w_div_gt al bl in
      (WW w_0 q, w_0W r)
-    else 
+    else
      match w_compare w_0 bh with
-     | Eq => 
+     | Eq =>
        let(q,r):=
-        double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 
+        double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21
                   w_compare w_sub 1 a bl in
        (q, w_0W r)
      | Lt => ww_div_gt_aux ah al bh bl
@@ -707,7 +707,7 @@ Section DoubleDivGt.
   Eval lazy beta iota delta [ww_sub ww_opp] in
     let p := w_head0 bh in
     match w_compare p w_0 with
-    | Gt => 
+    | Gt =>
       let b1 := w_add_mul_div p bh bl in
       let b2 := w_add_mul_div p bl w_0 in
       let a1 := w_add_mul_div p w_0 ah in
@@ -716,13 +716,13 @@ Section DoubleDivGt.
       let (q,r) := w_div32 a1 a2 a3 b1 b2 in
       ww_add_mul_div (ww_sub w_0 w_WW w_opp_c w_opp_carry w_sub_c
          w_opp w_sub w_sub_carry _ww_zdigits (w_0W p)) W0 r
-    | _ => 
+    | _ =>
       ww_sub w_0 w_WW w_opp_c w_opp_carry w_sub_c
          w_opp w_sub w_sub_carry (WW ah al) (WW bh bl)
     end.
 
- Definition ww_mod_gt a b := 
-  Eval lazy beta iota delta [ww_mod_gt_aux double_modn1 
+ Definition ww_mod_gt a b :=
+  Eval lazy beta iota delta [ww_mod_gt_aux double_modn1
   double_modn1_p double_modn1_p_aux double_modn1_0 double_modn1_0_aux
   double_split double_0 double_WW snd] in
   match a, b with
@@ -730,10 +730,10 @@ Section DoubleDivGt.
   | _, W0 => W0
   | WW ah al, WW bh bl =>
     if w_eq0 ah then w_0W (w_mod_gt al bl)
-    else 
+    else
      match w_compare w_0 bh with
-     | Eq => 
-       w_0W (double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21 
+     | Eq =>
+       w_0W (double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21
              w_compare w_sub 1 a bl)
      | Lt => ww_mod_gt_aux ah al bh bl
      | Gt => W0 (* cas absurde *)
@@ -741,14 +741,14 @@ Section DoubleDivGt.
   end.
 
   Definition ww_gcd_gt_body (cont: w->w->w->w->zn2z w) (ah al bh bl: w) :=
-   Eval lazy beta iota delta [ww_mod_gt_aux double_modn1 
+   Eval lazy beta iota delta [ww_mod_gt_aux double_modn1
    double_modn1_p double_modn1_p_aux double_modn1_0 double_modn1_0_aux
    double_split double_0 double_WW snd] in
     match w_compare w_0 bh with
     | Eq =>
       match w_compare w_0 bl with
       | Eq => WW ah al (* normalement n'arrive pas si forme normale *)
-      | Lt => 
+      | Lt =>
 	let m := double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21
                    w_compare w_sub 1 (WW ah al) bl in
         WW w_0 (w_gcd_gt bl m)
@@ -757,14 +757,14 @@ Section DoubleDivGt.
     | Lt =>
       let m := ww_mod_gt_aux ah al bh bl in
       match m with
-      | W0 => WW bh bl 
+      | W0 => WW bh bl
       | WW mh ml =>
         match w_compare w_0 mh with
         | Eq =>
           match w_compare w_0 ml with
           | Eq => WW bh bl
-          | _  => 
-            let r := double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21 
+          | _  =>
+            let r := double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21
                       w_compare w_sub 1 (WW bh bl) ml in
             WW w_0 (w_gcd_gt ml r)
           end
@@ -779,18 +779,18 @@ Section DoubleDivGt.
       end
     | Gt => W0 (* absurde *)
     end.
- 
-  Fixpoint ww_gcd_gt_aux 
-     (p:positive) (cont: w -> w -> w -> w -> zn2z w) (ah al bh bl : w) 
+
+  Fixpoint ww_gcd_gt_aux
+     (p:positive) (cont: w -> w -> w -> w -> zn2z w) (ah al bh bl : w)
         {struct p} : zn2z w :=
-    ww_gcd_gt_body 
+    ww_gcd_gt_body
        (fun mh ml rh rl => match p with
         | xH => cont mh ml rh rl
         | xO p => ww_gcd_gt_aux p (ww_gcd_gt_aux p cont) mh ml rh rl
         | xI p => ww_gcd_gt_aux p (ww_gcd_gt_aux p cont) mh ml rh rl
         end) ah al bh bl.
 
- 
+
   (* Proof *)
 
   Variable w_to_Z : w -> Z.
@@ -816,7 +816,7 @@ Section DoubleDivGt.
        | Gt => [|x|] > [|y|]
        end.
   Variable spec_eq0 : forall x, w_eq0 x = true -> [|x|] = 0.
-  
+
   Variable spec_opp_c : forall x, [-|w_opp_c x|] = -[|x|].
   Variable spec_opp : forall x, [|w_opp x|] = (-[|x|]) mod wB.
   Variable spec_opp_carry : forall x, [|w_opp_carry x|] = wB - [|x|] - 1.
@@ -854,8 +854,8 @@ Section DoubleDivGt.
      wB/2 <= [|b1|] ->
      [[WW a1 a2]] < [[WW b1 b2]] ->
      let (q,r) := w_div32 a1 a2 a3 b1 b2 in
-     [|a1|] * wwB + [|a2|] * wB  + [|a3|] = 
-        [|q|] *  ([|b1|] * wB + [|b2|])  + [[r]] /\ 
+     [|a1|] * wwB + [|a2|] * wB  + [|a3|] =
+        [|q|] *  ([|b1|] * wB + [|b2|])  + [[r]] /\
      0 <= [[r]] < [|b1|] * wB + [|b2|].
 
   Variable spec_w_zdigits: [|w_zdigits|] = Zpos w_digits.
@@ -899,14 +899,14 @@ Section DoubleDivGt.
    change
    (let (q, r) := let p := w_head0 bh in
     match w_compare p w_0 with
-    | Gt => 
+    | Gt =>
       let b1 := w_add_mul_div p bh bl in
       let b2 := w_add_mul_div p bl w_0 in
       let a1 := w_add_mul_div p w_0 ah in
       let a2 := w_add_mul_div p ah al in
       let a3 := w_add_mul_div p al w_0 in
       let (q,r) := w_div32 a1 a2 a3 b1 b2 in
-      (WW w_0 q, ww_add_mul_div 
+      (WW w_0 q, ww_add_mul_div
         (ww_sub w_0 w_WW w_opp_c w_opp_carry w_sub_c
             w_opp w_sub w_sub_carry _ww_zdigits (w_0W p)) W0 r)
     | _ => (ww_1, ww_sub w_0 w_WW w_opp_c w_opp_carry w_sub_c
@@ -945,11 +945,11 @@ Section DoubleDivGt.
     (spec_add_mul_div bl w_0  Hb);
    rewrite spec_w_0; repeat rewrite Zmult_0_l;repeat rewrite Zplus_0_l;
    rewrite Zdiv_0_l;repeat rewrite Zplus_0_r.
-   Spec_w_to_Z ah;Spec_w_to_Z bh.    
+   Spec_w_to_Z ah;Spec_w_to_Z bh.
    unfold base;repeat rewrite Zmod_shift_r;zarith.
    assert (H3:=to_Z_div_minus_p ah HHHH);assert(H4:=to_Z_div_minus_p al HHHH);
    assert (H5:=to_Z_div_minus_p bl HHHH).
-   rewrite Zmult_comm in Hh. 
+   rewrite Zmult_comm in Hh.
    assert (2^[|w_head0 bh|] < wB). unfold base;apply Zpower_lt_monotone;zarith.
    unfold base in H0;rewrite Zmod_small;zarith.
    fold wB; rewrite (Zmod_small ([|bh|] * 2 ^ [|w_head0 bh|]));zarith.
@@ -964,15 +964,15 @@ Section DoubleDivGt.
               (w_add_mul_div (w_head0 bh) al w_0)
               (w_add_mul_div (w_head0 bh) bh bl)
               (w_add_mul_div (w_head0 bh) bl w_0)) as (q,r).
-   rewrite V1;rewrite V2. rewrite Zmult_plus_distr_l. 
-   rewrite <- (Zplus_assoc ([|bh|] * 2 ^ [|w_head0 bh|] * wB)). 
+   rewrite V1;rewrite V2. rewrite Zmult_plus_distr_l.
+   rewrite <- (Zplus_assoc ([|bh|] * 2 ^ [|w_head0 bh|] * wB)).
    unfold base;rewrite <- shift_unshift_mod;zarith. fold wB.
    replace ([|bh|] * 2 ^ [|w_head0 bh|] * wB + [|bl|] * 2 ^ [|w_head0 bh|]) with
     ([[WW bh bl]] * 2^[|w_head0 bh|]). 2:simpl;ring.
    fold wwB. rewrite wwB_wBwB. rewrite Zpower_2. rewrite U1;rewrite U2;rewrite U3.
-   rewrite Zmult_assoc. rewrite Zmult_plus_distr_l. 
+   rewrite Zmult_assoc. rewrite Zmult_plus_distr_l.
    rewrite (Zplus_assoc ([|ah|] / 2^(Zpos(w_digits) - [|w_head0 bh|])*wB * wB)).
-   rewrite <- Zmult_plus_distr_l.  rewrite <- Zplus_assoc. 
+   rewrite <- Zmult_plus_distr_l.  rewrite <- Zplus_assoc.
    unfold base;repeat rewrite <- shift_unshift_mod;zarith. fold wB.
    replace ([|ah|] * 2 ^ [|w_head0 bh|] * wB + [|al|] * 2 ^ [|w_head0 bh|]) with
     ([[WW ah al]] * 2^[|w_head0 bh|]). 2:simpl;ring.
@@ -1027,7 +1027,7 @@ Section DoubleDivGt.
       [[a]] = [[q]] * [[b]] + [[r]] /\
       0 <= [[r]] < [[b]].
   Proof.
-   intros a b Hgt Hpos;unfold ww_div_gt. 
+   intros a b Hgt Hpos;unfold ww_div_gt.
    change (let (q,r) :=   match a, b with
   | W0, _ => (W0,W0)
   | _, W0 => (W0,W0)
@@ -1035,23 +1035,23 @@ Section DoubleDivGt.
     if w_eq0 ah then
      let (q,r) := w_div_gt al bl in
      (WW w_0 q, w_0W r)
-    else 
+    else
      match w_compare w_0 bh with
-     | Eq => 
+     | Eq =>
        let(q,r):=
-        double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 
+        double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21
                   w_compare w_sub 1 a bl in
        (q, w_0W r)
      | Lt => ww_div_gt_aux ah al bh bl
      | Gt => (W0,W0) (* cas absurde *)
      end
-  end in [[a]] = [[q]] * [[b]] + [[r]] /\ 0 <= [[r]] < [[b]]). 
+  end in [[a]] = [[q]] * [[b]] + [[r]] /\ 0 <= [[r]] < [[b]]).
    destruct a as [ |ah al]. simpl in Hgt;omega.
    destruct b as [ |bh bl]. simpl in Hpos;omega.
    Spec_w_to_Z ah; Spec_w_to_Z al; Spec_w_to_Z bh; Spec_w_to_Z bl.
    assert (H:=@spec_eq0 ah);destruct (w_eq0 ah).
    simpl ww_to_Z;rewrite H;trivial. simpl in Hgt;rewrite H in Hgt;trivial.
-   assert ([|bh|] <= 0). 
+   assert ([|bh|] <= 0).
    apply beta_lex with (d:=[|al|])(b:=[|bl|]) (beta := wB);zarith.
    assert ([|bh|] = 0);zarith. rewrite H1 in Hgt;rewrite H1;simpl in Hgt.
    simpl. simpl in Hpos;rewrite H1 in Hpos;simpl in Hpos.
@@ -1066,7 +1066,7 @@ Section DoubleDivGt.
     w_div21 w_compare w_sub w_to_Z spec_to_Z spec_w_zdigits spec_w_0 spec_w_WW spec_head0
     spec_add_mul_div spec_div21 spec_compare spec_sub 1 (WW ah al) bl Hpos).
    unfold double_to_Z,double_wB,double_digits in H2.
-   destruct (double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 
+   destruct (double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21
               w_compare w_sub 1
              (WW ah al) bl).
    rewrite spec_w_0W;unfold ww_to_Z;trivial.
@@ -1104,26 +1104,26 @@ Section DoubleDivGt.
    rewrite Zmult_comm in H;destruct H.
    symmetry;apply Zmod_unique with [|q|];trivial.
   Qed.
-  
+
   Lemma spec_ww_mod_gt_eq : forall a b, [[a]] > [[b]] -> 0 < [[b]] ->
       [[ww_mod_gt a b]] = [[snd (ww_div_gt a b)]].
   Proof.
    intros a b Hgt Hpos.
-   change (ww_mod_gt a b) with 
+   change (ww_mod_gt a b) with
    (match a, b with
   | W0, _ => W0
   | _, W0 => W0
   | WW ah al, WW bh bl =>
     if w_eq0 ah then w_0W (w_mod_gt al bl)
-    else 
+    else
      match w_compare w_0 bh with
-     | Eq => 
-       w_0W (double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21 
+     | Eq =>
+       w_0W (double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21
              w_compare w_sub 1 a bl)
      | Lt => ww_mod_gt_aux ah al bh bl
      | Gt => W0 (* cas absurde *)
      end end).
-   change (ww_div_gt a b) with 
+   change (ww_div_gt a b) with
    (match a, b with
   | W0, _ => (W0,W0)
   | _, W0 => (W0,W0)
@@ -1131,11 +1131,11 @@ Section DoubleDivGt.
     if w_eq0 ah then
      let (q,r) := w_div_gt al bl in
      (WW w_0 q, w_0W r)
-    else 
+    else
      match w_compare w_0 bh with
-     | Eq => 
+     | Eq =>
        let(q,r):=
-        double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 
+        double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21
                   w_compare w_sub 1 a bl in
        (q, w_0W r)
      | Lt => ww_div_gt_aux ah al bh bl
@@ -1147,7 +1147,7 @@ Section DoubleDivGt.
    Spec_w_to_Z ah; Spec_w_to_Z al; Spec_w_to_Z bh; Spec_w_to_Z bl.
    assert (H:=@spec_eq0 ah);destruct (w_eq0 ah).
    simpl in Hgt;rewrite H in Hgt;trivial.
-   assert ([|bh|] <= 0). 
+   assert ([|bh|] <= 0).
    apply beta_lex with (d:=[|al|])(b:=[|bl|]) (beta := wB);zarith.
    assert ([|bh|] = 0);zarith. rewrite H1 in Hgt;simpl in Hgt.
    simpl in Hpos;rewrite H1 in Hpos;simpl in Hpos.
@@ -1155,7 +1155,7 @@ Section DoubleDivGt.
    destruct (w_div_gt al bl);simpl;rewrite spec_w_0W;trivial.
    clear H.
    assert (H2 := spec_compare w_0 bh);destruct (w_compare w_0 bh).
-   rewrite (@spec_double_modn1_aux w w_zdigits w_0 w_WW w_head0 w_add_mul_div 
+   rewrite (@spec_double_modn1_aux w w_zdigits w_0 w_WW w_head0 w_add_mul_div
             w_div21 w_compare w_sub w_to_Z spec_w_0 spec_compare 1 (WW ah al) bl).
    destruct (double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 w_compare w_sub 1
              (WW ah al) bl);simpl;trivial.
@@ -1174,7 +1174,7 @@ Section DoubleDivGt.
    rewrite Zmult_comm;trivial.
   Qed.
 
-  Lemma Zis_gcd_mod : forall a b d, 
+  Lemma Zis_gcd_mod : forall a b d,
    0 < b -> Zis_gcd b (a mod b) d -> Zis_gcd a b d.
   Proof.
    intros a b d H H1; apply Zis_gcd_for_euclid with (a/b).
@@ -1182,12 +1182,12 @@ Section DoubleDivGt.
    ring_simplify (b * (a / b) + a mod b - a / b * b);trivial. zarith.
   Qed.
 
-  Lemma spec_ww_gcd_gt_aux_body : 
+  Lemma spec_ww_gcd_gt_aux_body :
    forall ah al bh bl n cont,
-    [[WW bh bl]] <= 2^n -> 
+    [[WW bh bl]] <= 2^n ->
     [[WW ah al]] > [[WW bh bl]] ->
-    (forall xh xl yh yl, 
-     [[WW xh xl]] > [[WW yh yl]] -> [[WW yh yl]] <= 2^(n-1) -> 
+    (forall xh xl yh yl,
+     [[WW xh xl]] > [[WW yh yl]] -> [[WW yh yl]] <= 2^(n-1) ->
      Zis_gcd [[WW xh xl]] [[WW yh yl]] [[cont xh xl yh yl]]) ->
     Zis_gcd [[WW ah al]] [[WW bh bl]] [[ww_gcd_gt_body cont ah al bh bl]].
   Proof.
@@ -1196,7 +1196,7 @@ Section DoubleDivGt.
     | Eq =>
       match w_compare w_0 bl with
       | Eq => WW ah al (* normalement n'arrive pas si forme normale *)
-      | Lt => 
+      | Lt =>
 	let m := double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21
                    w_compare w_sub 1 (WW ah al) bl in
         WW w_0 (w_gcd_gt bl m)
@@ -1205,14 +1205,14 @@ Section DoubleDivGt.
     | Lt =>
       let m := ww_mod_gt_aux ah al bh bl in
       match m with
-      | W0 => WW bh bl 
+      | W0 => WW bh bl
       | WW mh ml =>
         match w_compare w_0 mh with
         | Eq =>
           match w_compare w_0 ml with
           | Eq => WW bh bl
-          | _  => 
-            let r := double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21 
+          | _  =>
+            let r := double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21
                       w_compare w_sub 1 (WW bh bl) ml in
             WW w_0 (w_gcd_gt ml r)
           end
@@ -1227,10 +1227,10 @@ Section DoubleDivGt.
       end
     | Gt => W0 (* absurde *)
     end).
-   assert (Hbh := spec_compare w_0 bh);destruct (w_compare w_0 bh). 
+   assert (Hbh := spec_compare w_0 bh);destruct (w_compare w_0 bh).
    simpl ww_to_Z in *. rewrite spec_w_0 in Hbh;rewrite <- Hbh;
    rewrite Zmult_0_l;rewrite Zplus_0_l.
-   assert (Hbl := spec_compare w_0 bl); destruct (w_compare w_0 bl). 
+   assert (Hbl := spec_compare w_0 bl); destruct (w_compare w_0 bl).
    rewrite spec_w_0 in Hbl;rewrite <- Hbl;apply Zis_gcd_0.
    simpl;rewrite spec_w_0;rewrite Zmult_0_l;rewrite Zplus_0_l.
    rewrite spec_w_0 in Hbl.
@@ -1239,54 +1239,54 @@ Section DoubleDivGt.
    rewrite <- (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW w_head0 w_add_mul_div
     w_div21 w_compare w_sub w_to_Z spec_to_Z spec_w_zdigits spec_w_0 spec_w_WW spec_head0 spec_add_mul_div
     spec_div21 spec_compare spec_sub 1 (WW ah al) bl Hbl).
-   apply spec_gcd_gt. 
-   rewrite  (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW); trivial.   
-   apply Zlt_gt;match goal with | |- ?x mod ?y < ?y => 
+   apply spec_gcd_gt.
+   rewrite  (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW); trivial.
+   apply Zlt_gt;match goal with | |- ?x mod ?y < ?y =>
     destruct (Z_mod_lt x y);zarith end.
    rewrite spec_w_0 in Hbl;Spec_w_to_Z bl;elimtype False;omega.
    rewrite spec_w_0 in Hbh;assert (H:= spec_ww_mod_gt_aux _ _ _ Hgt Hbh).
-   assert (H2 : 0 < [[WW bh bl]]). 
+   assert (H2 : 0 < [[WW bh bl]]).
    simpl;Spec_w_to_Z bl. apply Zlt_le_trans with ([|bh|]*wB);zarith.
    apply Zmult_lt_0_compat;zarith.
    apply Zis_gcd_mod;trivial. rewrite <- H.
    simpl in *;destruct (ww_mod_gt_aux ah al bh bl) as [ |mh ml].
-   simpl;apply Zis_gcd_0;zarith. 
-   assert (Hmh := spec_compare w_0 mh);destruct (w_compare w_0 mh). 
+   simpl;apply Zis_gcd_0;zarith.
+   assert (Hmh := spec_compare w_0 mh);destruct (w_compare w_0 mh).
    simpl;rewrite spec_w_0 in Hmh; rewrite <- Hmh;simpl.
-   assert (Hml := spec_compare w_0 ml);destruct (w_compare w_0 ml). 
+   assert (Hml := spec_compare w_0 ml);destruct (w_compare w_0 ml).
    rewrite <- Hml;rewrite spec_w_0;simpl;apply Zis_gcd_0.
-   simpl;rewrite spec_w_0;simpl. 
+   simpl;rewrite spec_w_0;simpl.
    rewrite spec_w_0 in Hml. apply Zis_gcd_mod;zarith.
    change ([|bh|] * wB + [|bl|]) with (double_to_Z w_digits w_to_Z 1 (WW bh bl)).
    rewrite <- (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW w_head0 w_add_mul_div
    w_div21 w_compare w_sub w_to_Z spec_to_Z spec_w_zdigits spec_w_0 spec_w_WW spec_head0 spec_add_mul_div
    spec_div21 spec_compare spec_sub 1 (WW bh bl) ml Hml).
-   apply spec_gcd_gt. 
-   rewrite  (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW); trivial.   
-   apply Zlt_gt;match goal with | |- ?x mod ?y < ?y => 
+   apply spec_gcd_gt.
+   rewrite  (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW); trivial.
+   apply Zlt_gt;match goal with | |- ?x mod ?y < ?y =>
    destruct (Z_mod_lt x y);zarith end.
    rewrite spec_w_0 in Hml;Spec_w_to_Z ml;elimtype False;omega.
    rewrite spec_w_0 in Hmh. assert ([[WW bh bl]] > [[WW mh ml]]).
-   rewrite H;simpl; apply Zlt_gt;match goal with | |- ?x mod ?y < ?y => 
+   rewrite H;simpl; apply Zlt_gt;match goal with | |- ?x mod ?y < ?y =>
    destruct (Z_mod_lt x y);zarith end.
    assert (H1:= spec_ww_mod_gt_aux _ _ _ H0 Hmh).
-   assert (H3 : 0 < [[WW mh ml]]). 
+   assert (H3 : 0 < [[WW mh ml]]).
    simpl;Spec_w_to_Z ml. apply Zlt_le_trans with ([|mh|]*wB);zarith.
    apply Zmult_lt_0_compat;zarith.
    apply Zis_gcd_mod;zarith. simpl in *;rewrite <- H1.
    destruct (ww_mod_gt_aux bh bl mh ml) as [ |rh rl]. simpl; apply Zis_gcd_0.
    simpl;apply Hcont. simpl in H1;rewrite H1.
-   apply Zlt_gt;match goal with | |- ?x mod ?y < ?y => 
+   apply Zlt_gt;match goal with | |- ?x mod ?y < ?y =>
    destruct (Z_mod_lt x y);zarith end.
-   apply Zle_trans with (2^n/2). 
-   apply Zdiv_le_lower_bound;zarith. 
+   apply Zle_trans with (2^n/2).
+   apply Zdiv_le_lower_bound;zarith.
    apply Zle_trans with ([|bh|] * wB + [|bl|]);zarith.
    assert (H3' := Z_div_mod_eq [[WW bh bl]] [[WW mh ml]] (Zlt_gt _ _ H3)).
    assert (H4' : 0 <= [[WW bh bl]]/[[WW mh ml]]).
    apply Zge_le;apply Z_div_ge0;zarith. simpl in *;rewrite H1.
    pattern ([|bh|] * wB + [|bl|]) at 2;rewrite H3'.
    destruct (Zle_lt_or_eq _ _ H4').
-   assert (H6' : [[WW bh bl]] mod [[WW mh ml]] = 
+   assert (H6' : [[WW bh bl]] mod [[WW mh ml]] =
                   [[WW bh bl]] - [[WW mh ml]] * ([[WW bh bl]]/[[WW mh ml]])).
    simpl;pattern ([|bh|] * wB + [|bl|]) at 2;rewrite H3';ring. simpl in H6'.
    assert ([[WW mh ml]] <= [[WW mh ml]] * ([[WW bh bl]]/[[WW mh ml]])).
@@ -1304,10 +1304,10 @@ Section DoubleDivGt.
    rewrite spec_w_0 in Hbh;Spec_w_to_Z bh;elimtype False;zarith.
   Qed.
 
-  Lemma spec_ww_gcd_gt_aux : 
+  Lemma spec_ww_gcd_gt_aux :
    forall p cont n,
-   (forall xh xl yh yl, 
-     [[WW xh xl]] > [[WW yh yl]] -> 
+   (forall xh xl yh yl,
+     [[WW xh xl]] > [[WW yh yl]] ->
      [[WW yh yl]] <= 2^n ->
       Zis_gcd [[WW xh xl]] [[WW yh yl]] [[cont xh xl yh yl]]) ->
    forall ah al bh bl , [[WW ah al]] > [[WW bh bl]] ->
@@ -1334,7 +1334,7 @@ Section DoubleDivGt.
    apply Zle_trans with (2 ^ (Zpos p + n -1));zarith.
    apply Zpower_le_monotone2;zarith.
    apply Zle_trans with (2 ^ (2*Zpos p + n -1));zarith.
-   apply Zpower_le_monotone2;zarith. 
+   apply Zpower_le_monotone2;zarith.
    apply spec_ww_gcd_gt_aux_body with (n := n+1);trivial.
    rewrite Zplus_comm;trivial.
    ring_simplify (n + 1 - 1);trivial.
@@ -1352,16 +1352,16 @@ Section DoubleDiv.
  Variable ww_div_gt : zn2z w -> zn2z w -> zn2z w * zn2z w.
  Variable ww_mod_gt : zn2z w -> zn2z w -> zn2z w.
 
- Definition ww_div a b := 
-  match ww_compare a b with 
-  | Gt => ww_div_gt a b 
+ Definition ww_div a b :=
+  match ww_compare a b with
+  | Gt => ww_div_gt a b
   | Eq => (ww_1, W0)
   | Lt => (W0, a)
   end.
 
- Definition ww_mod a b := 
-  match ww_compare a b with 
-  | Gt => ww_mod_gt a b 
+ Definition ww_mod a b :=
+  match ww_compare a b with
+  | Gt => ww_mod_gt a b
   | Eq => W0
   | Lt => a
   end.
@@ -1401,7 +1401,7 @@ Section DoubleDiv.
   Proof.
    intros a b Hpos;unfold ww_div.
    assert (H:=spec_ww_compare a b);destruct (ww_compare a b).
-   simpl;rewrite spec_ww_1;split;zarith. 
+   simpl;rewrite spec_ww_1;split;zarith.
    simpl;split;[ring|Spec_ww_to_Z a;zarith].
    apply spec_ww_div_gt;trivial.
   Qed.
@@ -1409,7 +1409,7 @@ Section DoubleDiv.
   Lemma  spec_ww_mod :  forall a b, 0 < [[b]] ->
       [[ww_mod a b]] = [[a]] mod [[b]].
   Proof.
-   intros a b Hpos;unfold ww_mod. 
+   intros a b Hpos;unfold ww_mod.
    assert (H := spec_ww_compare a b);destruct (ww_compare a b).
    simpl;apply Zmod_unique with 1;try rewrite H;zarith.
    Spec_ww_to_Z a;symmetry;apply Zmod_small;zarith.
@@ -1424,8 +1424,8 @@ Section DoubleDiv.
  Variable w_gcd_gt : w -> w -> w.
  Variable _ww_digits : positive.
  Variable spec_ww_digits_ : _ww_digits = xO w_digits.
- Variable ww_gcd_gt_fix : 
-   positive -> (w -> w -> w -> w -> zn2z w) -> 
+ Variable ww_gcd_gt_fix :
+   positive -> (w -> w -> w -> w -> zn2z w) ->
              w -> w -> w -> w -> zn2z w.
 
   Variable spec_w_0   : [|w_0|] = 0.
@@ -1440,10 +1440,10 @@ Section DoubleDiv.
   Variable spec_eq0 : forall x, w_eq0 x = true -> [|x|] = 0.
   Variable spec_gcd_gt : forall a b, [|a|] > [|b|] ->
       Zis_gcd [|a|] [|b|] [|w_gcd_gt a b|].
-  Variable spec_gcd_gt_fix : 
+  Variable spec_gcd_gt_fix :
    forall p cont n,
-   (forall xh xl yh yl, 
-     [[WW xh xl]] > [[WW yh yl]] -> 
+   (forall xh xl yh yl,
+     [[WW xh xl]] > [[WW yh yl]] ->
      [[WW yh yl]] <= 2^n ->
       Zis_gcd [[WW xh xl]] [[WW yh yl]] [[cont xh xl yh yl]]) ->
    forall ah al bh bl , [[WW ah al]] > [[WW bh bl]] ->
@@ -1451,20 +1451,20 @@ Section DoubleDiv.
      Zis_gcd [[WW ah al]] [[WW bh bl]]
         [[ww_gcd_gt_fix p cont ah al bh bl]].
 
- Definition gcd_cont (xh xl yh yl:w) := 
+ Definition gcd_cont (xh xl yh yl:w) :=
   match w_compare w_1 yl with
-  | Eq => ww_1 
+  | Eq => ww_1
   | _ => WW xh xl
   end.
 
-  Lemma spec_gcd_cont : forall xh xl yh yl, 
-     [[WW xh xl]] > [[WW yh yl]] -> 
+  Lemma spec_gcd_cont : forall xh xl yh yl,
+     [[WW xh xl]] > [[WW yh yl]] ->
      [[WW yh yl]] <= 1 ->
       Zis_gcd [[WW xh xl]] [[WW yh yl]] [[gcd_cont xh xl yh yl]].
   Proof.
    intros xh xl yh yl Hgt' Hle. simpl in Hle.
    assert ([|yh|] = 0).
-    change 1 with (0*wB+1) in Hle. 
+    change 1 with (0*wB+1) in Hle.
     assert (0 <= 1 < wB). split;zarith. apply wB_pos.
     assert (H1:= beta_lex _ _ _ _ _ Hle (spec_to_Z yl) H).
     Spec_w_to_Z yh;zarith.
@@ -1478,15 +1478,15 @@ Section DoubleDiv.
    rewrite H0;simpl;apply Zis_gcd_0;trivial.
   Qed.
 
- 
+
   Variable cont : w -> w -> w -> w -> zn2z w.
-  Variable spec_cont : forall xh xl yh yl, 
-     [[WW xh xl]] > [[WW yh yl]] -> 
+  Variable spec_cont : forall xh xl yh yl,
+     [[WW xh xl]] > [[WW yh yl]] ->
      [[WW yh yl]] <= 1 ->
       Zis_gcd [[WW xh xl]] [[WW yh yl]] [[cont xh xl yh yl]].
- 
-  Definition ww_gcd_gt a b := 
-   match a, b with 
+
+  Definition ww_gcd_gt a b :=
+   match a, b with
    | W0, _ => b
    | _, W0 => a
    | WW ah al, WW bh bl =>
@@ -1509,8 +1509,8 @@ Section DoubleDiv.
    destruct a as [ |ah al]. simpl;apply Zis_gcd_sym;apply Zis_gcd_0.
    destruct b as [ |bh bl]. simpl;apply Zis_gcd_0.
    simpl in Hgt. generalize (@spec_eq0 ah);destruct (w_eq0 ah);intros.
-   simpl;rewrite H in Hgt;trivial;rewrite H;trivial;rewrite spec_w_0;simpl.  
-   assert ([|bh|] <= 0). 
+   simpl;rewrite H in Hgt;trivial;rewrite H;trivial;rewrite spec_w_0;simpl.
+   assert ([|bh|] <= 0).
    apply beta_lex with (d:=[|al|])(b:=[|bl|]) (beta := wB);zarith.
    Spec_w_to_Z bh;assert ([|bh|] = 0);zarith. rewrite H1 in Hgt;simpl in Hgt.
    rewrite H1;simpl;auto. clear H.
@@ -1522,7 +1522,7 @@ Section DoubleDiv.
   Lemma spec_ww_gcd : forall a b, Zis_gcd [[a]] [[b]] [[ww_gcd a b]].
   Proof.
    intros a b.
-   change (ww_gcd a b) with  
+   change (ww_gcd a b) with
     (match ww_compare a b with
      | Gt => ww_gcd_gt a b
      | Eq => a

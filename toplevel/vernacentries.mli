@@ -54,4 +54,4 @@ val abort_refine : ('a -> unit) -> 'a -> unit;;
 
 val interp : Vernacexpr.vernac_expr -> unit
 
-val vernac_reset_name : identifier Util.located -> unit 
+val vernac_reset_name : identifier Util.located -> unit

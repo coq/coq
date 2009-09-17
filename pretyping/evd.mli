@@ -44,7 +44,7 @@ val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
     (e.g. the solution [P] to [?X u v = P u v] can be eta-expanded twice)
 *)
 
-type instance_constraint = 
+type instance_constraint =
     IsSuperType | IsSubType | ConvUpToEta of int | UserGiven
 
 (* Status of the unification of the type of an instance against the type of
@@ -80,11 +80,11 @@ val map_clb : (constr -> constr) -> clbinding -> clbinding
 (*** Existential variables and unification states ***)
 
 (* A unification state (of type [evar_defs]) is primarily a finite mapping
-    from existential variables to records containing the type of the evar 
-   ([evar_concl]), the context under which it was introduced ([evar_hyps]) 
-   and its definition ([evar_body]). [evar_extra] is used to add any other 
-   kind of information. 
-   It also contains conversion constraints, debugging information and 
+    from existential variables to records containing the type of the evar
+   ([evar_concl]), the context under which it was introduced ([evar_hyps])
+   and its definition ([evar_body]). [evar_extra] is used to add any other
+   kind of information.
+   It also contains conversion constraints, debugging information and
    information about meta variables. *)
 
 (* Information about existential variables. *)
@@ -94,7 +94,7 @@ val string_of_existential : evar -> string
 val existential_of_int : int -> evar
 
 type evar_body =
-  | Evar_empty 
+  | Evar_empty
   | Evar_defined of constr
 
 type evar_info = {
@@ -197,7 +197,7 @@ type evar_constraint = conv_pb * env * constr * constr
 val add_conv_pb :  evar_constraint -> evar_defs -> evar_defs
 
 module ExistentialSet : Set.S with type elt = existential_key
-val extract_changed_conv_pbs : evar_defs -> 
+val extract_changed_conv_pbs : evar_defs ->
       (ExistentialSet.t -> evar_constraint -> bool) ->
       evar_defs * evar_constraint list
 val extract_all_conv_pbs : evar_defs -> evar_defs * evar_constraint list
@@ -208,7 +208,7 @@ val find_meta : evar_defs -> metavariable -> clbinding
 val meta_list : evar_defs -> (metavariable * clbinding) list
 val meta_defined : evar_defs -> metavariable -> bool
 (* [meta_fvalue] raises [Not_found] if meta not in map or [Anomaly] if
-   meta has no value *)  
+   meta has no value *)
 val meta_value     : evar_defs -> metavariable -> constr
 val meta_fvalue    : evar_defs -> metavariable -> constr freelisted * instance_status
 val meta_opt_fvalue : evar_defs -> metavariable -> (constr freelisted * instance_status) option

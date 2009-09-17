@@ -50,8 +50,8 @@ Qed.
 Parameter nlist: list nat -> Prop.
 
 Lemma poly_1 : forall l,  nlist l -> True.
-intros. 
-simplify. 
+intros.
+simplify.
 Qed.
 
 (* user lists *)
@@ -66,8 +66,8 @@ match l with
 | cons a l1 => cons A a (app A l1 m)
 end.
 
-Lemma entail: (nil Z) = app Z (nil Z) (nil Z) -> True. 
-intros; ergo. 
+Lemma entail: (nil Z) = app Z (nil Z) (nil Z) -> True.
+intros; ergo.
 Qed.
 
 (* polymorphism *)
@@ -81,13 +81,13 @@ Parameter my_nlist: mylist nat -> Prop.
 
  Goal forall l,  my_nlist l -> True.
  intros.
- simplify. 
+ simplify.
 Qed.
 
 (* First example with the 0 and the equality translated *)
 
 Goal 0 = 0.
-simplify. 
+simplify.
 Qed.
 
 (* Examples in the Propositional Calculus
@@ -102,7 +102,7 @@ Qed.
 
 Goal A -> (A \/ C).
 
-simplify. 
+simplify.
 Qed.
 
 
@@ -145,12 +145,12 @@ induction x0; ergo.
 Qed.
 
 
-(* No decision procedure can solve this problem 
+(* No decision procedure can solve this problem
   Goal forall (x a b : Z), a * x + b = 0 -> x = - b/a.
 *)
 
 
-(* Functions definitions *) 
+(* Functions definitions *)
 
 Definition fst (x y : Z) : Z := x.
 
@@ -205,7 +205,7 @@ Axiom add_S : forall (n1 n2 : nat), add (S n1) n2 = S (add n1 n2).
 Dp_hint add_0.
 Dp_hint add_S.
 
-(* Simplify can't prove this goal before the timeout 
+(* Simplify can't prove this goal before the timeout
    unlike zenon *)
 
 Goal forall n : nat, add n 0 = n.
@@ -258,7 +258,7 @@ Qed.
 
 (* sorts issues *)
 
-Parameter foo : Set.         
+Parameter foo : Set.
 Parameter ff : nat -> foo -> foo -> nat.
 Parameter g : foo -> foo.
 Goal (forall x:foo, ff 0 x x = O) -> forall y, ff 0 (g y) (g y) = O.

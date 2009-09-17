@@ -2,8 +2,8 @@
 
 
 (*
-  [build_inductive parametrize funnames funargs returned_types bodies] 
-  constructs and saves the graphs of the functions [funnames] taking [funargs] as arguments 
+  [build_inductive parametrize funnames funargs returned_types bodies]
+  constructs and saves the graphs of the functions [funnames] taking [funargs] as arguments
   and returning [returned_types] using bodies [bodies]
 *)
 

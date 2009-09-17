@@ -2,12 +2,12 @@
 (* (cf bug #1031) *)
 
 Inductive tree : Set :=
-| node : nat -> forest -> tree  
+| node : nat -> forest -> tree
 with forest    : Set :=
-| leaf : forest  
-| cons : tree    -> forest   -> forest  
+| leaf : forest
+| cons : tree    -> forest   -> forest
     .
-Definition copy_of_compute_size_forest := 
+Definition copy_of_compute_size_forest :=
 fix copy_of_compute_size_forest (f:forest) : nat :=
   match f with
   | leaf => 1

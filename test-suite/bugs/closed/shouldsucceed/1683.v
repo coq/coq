@@ -30,7 +30,7 @@ Add Parametric Relation A : (ms_type A) (ms_eq A)
 Hypothesis foobar : forall n, ms_eq CR (IRasCR (foo IR n)) (foo CRasCRing n).
 
 Goal forall (b:ms_type CR),
- ms_eq CR (IRasCR (foo IR O)) b -> 
+ ms_eq CR (IRasCR (foo IR O)) b ->
  ms_eq CR (IRasCR (foo IR O)) b.
 intros b H.
 rewrite foobar.

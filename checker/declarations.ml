@@ -30,15 +30,15 @@ let val_cst_type =
   val_sum "constant_type" 0 [|[|val_constr|];[|val_rctxt;val_pol_arity|]|]
 
 
-type substitution_domain = 
-    MSI of mod_self_id 
+type substitution_domain =
+    MSI of mod_self_id
   | MBI of mod_bound_id
   | MPI of module_path
 
 let val_subst_dom =
   val_sum "substitution_domain" 0 [|[|val_uid|];[|val_uid|];[|val_mp|]|]
 
-module Umap = Map.Make(struct 
+module Umap = Map.Make(struct
 			 type t = substitution_domain
 			 let compare = Pervasives.compare
 		       end)
@@ -79,7 +79,7 @@ let map_mp mp1 mp2 = add_mp mp1 mp2 empty_subst
 let subst_mp0 sub mp = (* 's like subst *)
  let rec aux mp =
   match mp with
-    | MPself sid -> 
+    | MPself sid ->
         let mp',resolve = Umap.find (MSI sid) sub in
          mp',resolve
     | MPbound bid ->
@@ -87,17 +87,17 @@ let subst_mp0 sub mp = (* 's like subst *)
           mp',resolve
     | MPdot (mp1,l) as mp2 ->
 	begin
-	  try  
+	  try
 	    let mp',resolve = Umap.find (MPI mp2) sub in
               mp',resolve
-	  with Not_found ->    
+	  with Not_found ->
 	    let mp1',resolve = aux mp1 in
 	      MPdot (mp1',l),resolve
 	end
     | _ -> raise Not_found
  in
   try
-    Some (aux mp) 
+    Some (aux mp)
   with Not_found -> None
 
 
@@ -148,84 +148,84 @@ let subst_con0 sub con =
 	let con' = make_con mp' dir l in
         Some (Const con')
 
-let rec map_kn f f' c = 
+let rec map_kn f f' c =
   let func = map_kn f f' in
     match c with
-      | Const kn -> 
+      | Const kn ->
 	  (match f' kn with
 	       None -> c
 	     | Some const ->const)
-      | Ind (kn,i) -> 
+      | Ind (kn,i) ->
          (match f kn with
              None -> c
            | Some kn' ->
 	      Ind (kn',i))
-      | Construct ((kn,i),j) -> 
+      | Construct ((kn,i),j) ->
          (match f kn with
              None -> c
            | Some kn' ->
 	       Construct ((kn',i),j))
-      | Case (ci,p,ct,l) -> 
+      | Case (ci,p,ct,l) ->
 	  let ci_ind =
             let (kn,i) = ci.ci_ind in
               (match f kn with None -> ci.ci_ind | Some kn' -> kn',i ) in
 	  let p' = func p in
 	  let ct' = func ct in
 	  let l' = array_smartmap func l in
-	    if (ci.ci_ind==ci_ind && p'==p 
+	    if (ci.ci_ind==ci_ind && p'==p
 		&& l'==l && ct'==ct)then c
-	    else 
+	    else
 	      Case ({ci with ci_ind = ci_ind},
-		     p',ct', l')  
-      | Cast (ct,k,t) -> 
+		     p',ct', l')
+      | Cast (ct,k,t) ->
 	  let ct' = func ct in
 	  let t'= func t in
-	    if (t'==t && ct'==ct) then c 
+	    if (t'==t && ct'==ct) then c
 	    else Cast (ct', k, t')
-      | Prod (na,t,ct) -> 
+      | Prod (na,t,ct) ->
 	  let ct' = func ct in
 	  let t'= func t in
-	    if (t'==t && ct'==ct) then c 
+	    if (t'==t && ct'==ct) then c
 	    else Prod (na, t', ct')
-      | Lambda (na,t,ct) -> 
+      | Lambda (na,t,ct) ->
 	  let ct' = func ct in
 	  let t'= func t in
-	    if (t'==t && ct'==ct) then c 
+	    if (t'==t && ct'==ct) then c
 	    else Lambda (na, t', ct')
-      | LetIn (na,b,t,ct) -> 
+      | LetIn (na,b,t,ct) ->
 	  let ct' = func ct in
 	  let t'= func t in
 	  let b'= func b in
-	    if (t'==t && ct'==ct && b==b') then c 
+	    if (t'==t && ct'==ct && b==b') then c
 	    else LetIn (na, b', t', ct')
-      | App (ct,l) -> 
+      | App (ct,l) ->
 	  let ct' = func ct in
 	  let l' = array_smartmap func l in
 	    if (ct'== ct && l'==l) then c
 	    else App (ct',l')
-      | Evar (e,l) -> 
+      | Evar (e,l) ->
 	  let l' = array_smartmap func l in
 	    if (l'==l) then c
 	    else Evar (e,l')
       | Fix (ln,(lna,tl,bl)) ->
 	  let tl' = array_smartmap func tl in
 	  let bl' = array_smartmap func bl in
-	    if (bl == bl'&& tl == tl') then c  
+	    if (bl == bl'&& tl == tl') then c
 	    else Fix (ln,(lna,tl',bl'))
       | CoFix(ln,(lna,tl,bl)) ->
 	  let tl' = array_smartmap func tl in
 	  let bl' = array_smartmap func bl in
-	    if (bl == bl'&& tl == tl') then c  
+	    if (bl == bl'&& tl == tl') then c
 	    else CoFix (ln,(lna,tl',bl'))
       | _ -> c
 
-let subst_mps sub = 
+let subst_mps sub =
   map_kn (subst_kn0 sub) (subst_con0 sub)
 
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
     | _ when mp = mpfrom -> mpto
-    | MPdot (mp1,l) -> 
+    | MPdot (mp1,l) ->
 	let mp1' = replace_mp_in_mp mpfrom mpto mp1 in
 	  if mp1==mp1' then mp
 	  else MPdot (mp1',l)
@@ -240,18 +240,18 @@ let replace_mp_in_con mpfrom mpto kn =
 type 'a lazy_subst =
   | LSval of 'a
   | LSlazy of substitution * 'a
-	
+
 type 'a substituted = 'a lazy_subst ref
-      
+
 let from_val a = ref (LSval a)
-    
-let force fsubst r = 
+
+let force fsubst r =
   match !r with
   | LSval a -> a
-  | LSlazy(s,a) -> 
+  | LSlazy(s,a) ->
       let a' = fsubst s a in
       r := LSval a';
-      a' 
+      a'
 
 
 
@@ -265,9 +265,9 @@ let join (subst1 : substitution) (subst2 : substitution) =
 
 let subst_key subst1 subst2 =
   let replace_in_key key mp sub=
-    let newkey = 
+    let newkey =
       match key with
-	| MPI mp1 -> 
+	| MPI mp1 ->
 	    begin
 	      match subst_mp0 subst1 mp1 with
 		| None -> None
@@ -283,24 +283,24 @@ let subst_key subst1 subst2 =
 
 let update_subst_alias subst1 subst2 =
  let subst_inv key (mp,_) sub =
-    let newmp = 
-      match key with 
+    let newmp =
+      match key with
 	| MBI msid -> Some (MPbound msid)
 	| MSI msid -> Some (MPself msid)
 	| _ -> None
     in
       match newmp with
 	| None -> sub
-	| Some mpi -> match mp with 
+	| Some mpi -> match mp with
 	    | MPbound mbid -> Umap.add (MBI mbid) (mpi,None) sub
 	    | MPself msid -> Umap.add (MSI msid) (mpi,None) sub
 	    | _ ->  Umap.add (MPI mp) (mpi,None) sub
-  in 
+  in
   let subst_mbi = Umap.fold subst_inv subst2 empty_subst in
   let alias_subst key (mp,_) sub=
-    let newkey = 
+    let newkey =
       match key with
-	| MPI mp1 -> 
+	| MPI mp1 ->
 	    begin
 	      match subst_mp0 subst_mbi mp1 with
 		| None -> None
@@ -319,28 +319,28 @@ let join_alias (subst1 : substitution) (subst2 : substitution) =
       match subst_mp0 sub mp with
 	  None -> mp,None
 	| Some mp' -> mp',None in
-  Umap.mapi (apply_subst subst2) subst1 
+  Umap.mapi (apply_subst subst2) subst1
 
 
 let update_subst subst1 subst2 =
  let subst_inv key (mp,_) l =
-    let newmp = 
-      match key with 
+    let newmp =
+      match key with
 	| MBI msid -> MPbound msid
 	| MSI msid -> MPself msid
 	| MPI mp -> mp
     in
-   match mp with 
+   match mp with
      | MPbound mbid ->  ((MBI mbid),newmp)::l
      | MPself msid ->  ((MSI msid),newmp)::l
      | _ ->   ((MPI mp),newmp)::l
-  in 
+  in
   let subst_mbi = Umap.fold subst_inv subst2 [] in
   let alias_subst key (mp,_) sub=
-    let newsetkey = 
+    let newsetkey =
       match key with
-	| MPI mp1 -> 
-	    let compute_set_newkey l (k,mp') = 
+	| MPI mp1 ->
+	    let compute_set_newkey l (k,mp') =
 	      let mp_from_key = match k with
 		  	| MBI msid -> MPbound msid
 			| MSI msid -> MPself msid
@@ -358,7 +358,7 @@ let update_subst subst1 subst2 =
     in
       match newsetkey with
 	| None -> sub
-	| Some l -> 
+	| Some l ->
 	    List.fold_left (fun s k -> Umap.add k (mp,None) s)
 	      sub l
   in
@@ -372,7 +372,7 @@ let subst_substituted s r =
 	let s'' = join s' s in
 	  ref (LSlazy(s'',a))
 
-let force_constr = force subst_mps 
+let force_constr = force subst_mps
 
 type constr_substituted = constr substituted
 
@@ -390,7 +390,7 @@ type constant_body = {
     const_body_code : to_patch_substituted;
    (* const_type_code : Cemitcodes.to_patch; *)
     const_constraints : Univ.constraints;
-    const_opaque : bool; 
+    const_opaque : bool;
     const_inline : bool}
 
 let val_cb = val_tuple "constant_body"
@@ -405,9 +405,9 @@ let subst_rel_declaration sub (id,copt,t as x) =
 
 let subst_rel_context sub = list_smartmap (subst_rel_declaration sub)
 
-type recarg = 
-  | Norec 
-  | Mrec of int 
+type recarg =
+  | Norec
+  | Mrec of int
   | Imbr of inductive
 let val_recarg = val_sum "recarg" 1 (* Norec *)
   [|[|val_int|] (* Mrec *);[|val_ind|] (* Imbr *)|]
@@ -419,7 +419,7 @@ let subst_recarg sub r = match r with
 
 type wf_paths = recarg Rtree.t
 let val_wfp = val_rec_sum "wf_paths" 0
-  (fun val_wfp -> 
+  (fun val_wfp ->
     [|[|val_int;val_int|]; (* Rtree.Param *)
       [|val_recarg;val_array val_wfp|]; (* Rtree.Node *)
       [|val_int;val_array val_wfp|] (* Rtree.Rec *)
@@ -454,7 +454,7 @@ type monomorphic_inductive_arity = {
 let val_mono_ind_arity =
   val_tuple"monomorphic_inductive_arity"[|val_constr;val_sort|]
 
-type inductive_arity = 
+type inductive_arity =
 | Monomorphic of monomorphic_inductive_arity
 | Polymorphic of polymorphic_arity
 let val_ind_arity = val_sum "inductive_arity" 0
@@ -509,7 +509,7 @@ type one_inductive_body = {
  (* number of no constant constructor *)
     mind_nb_args : int;
 
-    mind_reloc_tbl :  reloc_table; 
+    mind_reloc_tbl :  reloc_table;
   }
 
 let val_one_ind = val_tuple "one_inductive_body"
@@ -568,7 +568,7 @@ let subst_const_body sub cb = {
     (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
     const_constraints = cb.const_constraints;
     const_opaque = cb.const_opaque;
-    const_inline = cb.const_inline} 
+    const_inline = cb.const_inline}
 
 let subst_arity sub = function
 | Monomorphic s ->
@@ -578,7 +578,7 @@ let subst_arity sub = function
     }
 | Polymorphic s as x -> x
 
-let subst_mind_packet sub mbp = 
+let subst_mind_packet sub mbp =
   { mind_consnames = mbp.mind_consnames;
     mind_consnrealdecls = mbp.mind_consnrealdecls;
     mind_typename = mbp.mind_typename;
@@ -589,20 +589,20 @@ let subst_mind_packet sub mbp =
     mind_nrealargs = mbp.mind_nrealargs;
     mind_nrealargs_ctxt = mbp.mind_nrealargs_ctxt;
     mind_kelim = mbp.mind_kelim;
-    mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*); 
+    mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*);
     mind_nb_constant = mbp.mind_nb_constant;
     mind_nb_args = mbp.mind_nb_args;
     mind_reloc_tbl = mbp.mind_reloc_tbl }
 
 
-let subst_mind sub mib = 
-  { mind_record = mib.mind_record ; 
+let subst_mind sub mib =
+  { mind_record = mib.mind_record ;
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
     mind_hyps = (assert (mib.mind_hyps=[]); []) ;
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
-    mind_params_ctxt = 
+    mind_params_ctxt =
       map_rel_context (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = array_smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_constraints = mib.mind_constraints ;
@@ -612,7 +612,7 @@ let subst_mind sub mib =
 
 (* Whenever you change these types, please do update the validation
    functions below *)
-type structure_field_body = 
+type structure_field_body =
   | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
   | SFBmodule of module_body
@@ -623,7 +623,7 @@ and structure_body = (label * structure_field_body) list
 
 and struct_expr_body =
   | SEBident of module_path
-  | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body 
+  | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body
   | SEBstruct of mod_self_id * structure_body
   | SEBapply of struct_expr_body * struct_expr_body
       * Univ.constraints
@@ -633,15 +633,15 @@ and with_declaration_body =
     With_module_body of identifier list * module_path *
       struct_expr_body option * Univ.constraints
   | With_definition_body of  identifier list * constant_body
-        
-and module_body = 
+
+and module_body =
     { mod_expr : struct_expr_body option;
       mod_type : struct_expr_body option;
       mod_constraints : Univ.constraints;
       mod_alias : substitution;
       mod_retroknowledge : action list}
 
-and module_type_body = 
+and module_type_body =
     { typ_expr : struct_expr_body;
       typ_strength : module_path option;
       typ_alias : substitution}
@@ -670,7 +670,7 @@ and val_module o = val_tuple "module_body"
 and val_modtype o = val_tuple "module_type_body"
   [|val_seb;val_opt val_mp;val_subst|] o
 
-	
+
 let rec subst_with_body sub = function
   | With_module_body(id,mp,typ_opt,cst) ->
       With_module_body(id,subst_mp sub mp,
@@ -683,18 +683,18 @@ and subst_modtype sub mtb =
     if typ_expr'==mtb.typ_expr then
       mtb
     else
-      { mtb with 
+      { mtb with
 	  typ_expr = typ_expr'}
-	
-and subst_structure sub sign = 
+
+and subst_structure sub sign =
   let subst_body  = function
-      SFBconst cb -> 
+      SFBconst cb ->
 	SFBconst (subst_const_body sub cb)
-    | SFBmind mib -> 
+    | SFBmind mib ->
 	SFBmind (subst_mind sub mib)
-    | SFBmodule mb -> 
+    | SFBmodule mb ->
 	SFBmodule (subst_module sub mb)
-    | SFBmodtype mtb -> 
+    | SFBmodtype mtb ->
 	SFBmodtype (subst_modtype sub mtb)
  | SFBalias (mp,typ_opt ,cst) ->
 	SFBalias (subst_mp sub mp,
@@ -710,11 +710,11 @@ and subst_module  sub mb =
      M' with some M''. *)
   let me' = Option.smartmap (subst_struct_expr sub) mb.mod_expr in
   let mb_alias = join_alias mb.mod_alias sub in
-    if mtb'==mb.mod_type && mb.mod_expr == me' 
+    if mtb'==mb.mod_type && mb.mod_expr == me'
       && mb_alias == mb.mod_alias
     then mb else
       { mod_expr = me';
-	mod_type=mtb'; 
+	mod_type=mtb';
 	mod_constraints=mb.mod_constraints;
 	mod_alias = mb_alias;
 	mod_retroknowledge=mb.mod_retroknowledge}
@@ -722,7 +722,7 @@ and subst_module  sub mb =
 
 and subst_struct_expr sub = function
     | SEBident mp -> SEBident (subst_mp sub  mp)
-    | SEBfunctor (msid, mtb, meb') -> 
+    | SEBfunctor (msid, mtb, meb') ->
 	SEBfunctor(msid,subst_modtype sub mtb,subst_struct_expr sub meb')
     | SEBstruct (msid,str)->
 	SEBstruct(msid, subst_structure sub str)
@@ -730,10 +730,10 @@ and subst_struct_expr sub = function
 	SEBapply(subst_struct_expr sub meb1,
 		 subst_struct_expr sub meb2,
 		 cst)
-    | SEBwith (meb,wdb)-> 
+    | SEBwith (meb,wdb)->
 	SEBwith(subst_struct_expr sub meb,
 		subst_with_body sub wdb)
- 
 
-let subst_signature_msid msid mp = 
+
+let subst_signature_msid msid mp =
   subst_structure (map_msid msid mp)

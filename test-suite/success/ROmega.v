@@ -22,7 +22,7 @@ Qed.
 Lemma lem3 : forall x y : Z, x = y -> (x + x)%Z = (y + y)%Z.
 Proof.
 intros.
-romega. 
+romega.
 Qed.
 
 (* Proposed by Jean-Christophe Filliâtre: confusion between an Omega *)

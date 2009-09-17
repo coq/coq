@@ -82,7 +82,7 @@ let rec str_stack = function
   | Term (t,s) -> str_stack s ^ " (" ^ str_ast t ^ ")"
   | Oper(ops,lop,t,s) ->
       str_stack (Term(t,s)) ^ " " ^ lop ^ " " ^
-      String.concat " " (List.rev ops) 
+      String.concat " " (List.rev ops)
 
 let pps s = prerr_endline (str_stack s)
 let err s stk = failwith (s^": "^str_stack stk)

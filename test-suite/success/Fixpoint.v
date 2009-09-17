@@ -5,7 +5,7 @@ Inductive listn : nat -> Set :=
 | consn : forall n:nat, nat -> listn n -> listn (S n).
 
 Fixpoint f (n:nat) (m:=pred n) (l:listn m) (p:=S n) {struct l} : nat :=
-   match n with O => p | _ => 
+   match n with O => p | _ =>
      match l with niln => p | consn q _ l => f (S q) l end
    end.
 

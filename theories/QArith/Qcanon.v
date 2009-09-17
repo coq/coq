@@ -13,7 +13,7 @@ Require Import QArith.
 Require Import Znumtheory.
 Require Import Eqdep_dec.
 
-(** [Qc] : A canonical representation of rational numbers. 
+(** [Qc] : A canonical representation of rational numbers.
    based on the setoid representation [Q]. *)
 
 Record Qc : Set := Qcmake { this :> Q ; canon : Qred this = this }.
@@ -23,7 +23,7 @@ Bind Scope Qc_scope with Qc.
 Arguments Scope Qcmake [Q_scope].
 Open Scope Qc_scope.
 
-Lemma Qred_identity : 
+Lemma Qred_identity :
   forall q:Q, Zgcd (Qnum q) (QDen q) = 1%Z -> Qred q = q.
 Proof.
   unfold Qred; intros (a,b); simpl.
@@ -36,7 +36,7 @@ Proof.
   subst; simpl; auto.
 Qed.
 
-Lemma Qred_identity2 : 
+Lemma Qred_identity2 :
   forall q:Q, Qred q = q -> Zgcd (Qnum q) (QDen q) = 1%Z.
 Proof.
   unfold Qred; intros (a,b); simpl.
@@ -50,7 +50,7 @@ Proof.
   destruct g as [|g|g]; destruct bb as [|bb|bb]; simpl in *; try discriminate.
   f_equal.
   apply Pmult_reg_r with bb.
-  injection H2; intros. 
+  injection H2; intros.
   rewrite <- H0.
   rewrite H; simpl; auto.
   elim H1; auto.
@@ -70,7 +70,7 @@ Proof.
   apply Qred_correct.
 Qed.
 
-Definition Q2Qc (q:Q) : Qc := Qcmake (Qred q) (Qred_involutive q). 
+Definition Q2Qc (q:Q) : Qc := Qcmake (Qred q) (Qred_involutive q).
 Arguments Scope Q2Qc [Q_scope].
 Notation " !! " := Q2Qc : Qc_scope.
 
@@ -82,7 +82,7 @@ Proof.
   assert (H0:=Qred_complete _ _ H).
   assert (q = q') by congruence.
   subst q'.
-  assert (proof_q = proof_q'). 
+  assert (proof_q = proof_q').
   apply eq_proofs_unicity; auto; intros.
   repeat decide equality.
   congruence.
@@ -98,8 +98,8 @@ Notation Qcgt := (fun x y : Qc => Qlt y x).
 Notation Qcge := (fun x y : Qc => Qle y x).
 Infix "<" := Qclt : Qc_scope.
 Infix "<=" := Qcle : Qc_scope.
-Infix ">" := Qcgt : Qc_scope. 
-Infix ">=" := Qcge : Qc_scope. 
+Infix ">" := Qcgt : Qc_scope.
+Infix ">=" := Qcge : Qc_scope.
 Notation "x <= y <= z" := (x<=y/\y<=z) : Qc_scope.
 Notation "x < y < z" := (x<y/\y<z) : Qc_scope.
 
@@ -141,9 +141,9 @@ Proof.
   intros.
   destruct (Qeq_dec x y) as [H|H]; auto.
   right; contradict H; subst; auto with qarith.
-Defined. 
+Defined.
 
-(** The addition, multiplication and opposite are defined 
+(** The addition, multiplication and opposite are defined
    in the straightforward way: *)
 
 Definition Qcplus (x y : Qc) := !!(x+y).
@@ -155,9 +155,9 @@ Notation "- x" := (Qcopp x) : Qc_scope.
 Definition Qcminus (x y : Qc) := x+-y.
 Infix "-" := Qcminus : Qc_scope.
 Definition Qcinv (x : Qc) := !!(/x).
-Notation "/ x" := (Qcinv x) : Qc_scope. 
+Notation "/ x" := (Qcinv x) : Qc_scope.
 Definition Qcdiv (x y : Qc) := x*/y.
-Infix "/" := Qcdiv : Qc_scope. 
+Infix "/" := Qcdiv : Qc_scope.
 
 (** [0] and [1] are apart *)
 
@@ -167,8 +167,8 @@ Proof.
   intros H; discriminate H.
 Qed.
 
-Ltac qc := match goal with 
- | q:Qc |- _ => destruct q; qc 
+Ltac qc := match goal with
+ | q:Qc |- _ => destruct q; qc
  | _ => apply Qc_is_canon; simpl; repeat rewrite Qred_correct
 end.
 
@@ -191,7 +191,7 @@ Qed.
 Lemma Qcplus_0_r : forall x, x+0 = x.
 Proof.
   intros; qc; apply Qplus_0_r.
-Qed. 
+Qed.
 
 (** Commutativity of addition: *)
 
@@ -265,13 +265,13 @@ Qed.
 Theorem Qcmult_integral_l : forall x y, ~ x = 0 -> x*y = 0 -> y = 0.
 Proof.
   intros; destruct (Qcmult_integral _ _ H0); tauto.
-Qed. 
+Qed.
 
-(** Inverse and division. *) 
+(** Inverse and division. *)
 
 Theorem Qcmult_inv_r : forall x, x<>0 -> x*(/x) = 1.
 Proof.
-  intros; qc; apply Qmult_inv_r; auto. 
+  intros; qc; apply Qmult_inv_r; auto.
 Qed.
 
 Theorem Qcmult_inv_l : forall x, x<>0 -> (/x)*x = 1.
@@ -436,24 +436,24 @@ Qed.
 Lemma Qcmult_lt_0_le_reg_r : forall x y z, 0 <  z  -> x*z <= y*z -> x <= y.
 Proof.
   unfold Qcmult, Qcle, Qclt; intros; simpl in *.
-  repeat progress rewrite Qred_correct in * |-. 
+  repeat progress rewrite Qred_correct in * |-.
   eapply Qmult_lt_0_le_reg_r; eauto.
 Qed.
 
 Lemma Qcmult_lt_compat_r : forall x y z, 0 < z  -> x < y -> x*z < y*z.
 Proof.
   unfold Qcmult, Qclt; intros; simpl in *.
-  repeat progress rewrite Qred_correct in *. 
+  repeat progress rewrite Qred_correct in *.
   eapply Qmult_lt_compat_r; eauto.
 Qed.
 
 (** Rational to the n-th power *)
 
-Fixpoint Qcpower (q:Qc)(n:nat) { struct n } : Qc := 
-  match n with 
+Fixpoint Qcpower (q:Qc)(n:nat) { struct n } : Qc :=
+  match n with
     | O => 1
     | S n => q * (Qcpower q n)
-  end. 
+  end.
 
 Notation " q ^ n " := (Qcpower q n) : Qc_scope.
 
@@ -467,7 +467,7 @@ Lemma Qcpower_0 : forall n, n<>O -> 0^n = 0.
 Proof.
   destruct n; simpl.
   destruct 1; auto.
-  intros. 
+  intros.
   apply Qc_is_canon.
   simpl.
   compute; auto.
@@ -537,7 +537,7 @@ Proof.
   intros (q, Hq) (q', Hq'); simpl; intros H.
   assert (H1 := H Hq Hq').
   subst q'.
-  assert (Hq = Hq'). 
+  assert (Hq = Hq').
   apply Eqdep_dec.eq_proofs_unicity; auto; intros.
   repeat decide equality.
   congruence.

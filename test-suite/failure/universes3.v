@@ -15,7 +15,7 @@ Inductive I (B:Type (*6*)) := C : B -> impl Prop (I B).
        where Type(7) is the auxiliary level used to infer the type of I
 *)
 
-(* We cannot enforce Type1 < Type(6) while we already have 
+(* We cannot enforce Type1 < Type(6) while we already have
    Type(6) <= Type(7) < Type3 < Type1 *)
 Definition J := I Type1.
 

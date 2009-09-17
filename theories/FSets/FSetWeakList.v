@@ -10,7 +10,7 @@
 
 (** * Finite sets library *)
 
-(** This file proposes an implementation of the non-dependant 
+(** This file proposes an implementation of the non-dependant
     interface [FSetWeakInterface.S] using lists without redundancy. *)
 
 Require Import FSetInterface.
@@ -20,7 +20,7 @@ Unset Strict Implicit.
 (** * Functions over lists
 
    First, we provide sets as lists which are (morally) without redundancy.
-   The specs are proved under the additional condition of no redundancy. 
+   The specs are proved under the additional condition of no redundancy.
    And the functions returning sets are proved to preserve this invariant. *)
 
 Module Raw (X: DecidableType).
@@ -48,7 +48,7 @@ Module Raw (X: DecidableType).
         if X.eq_dec x y then s else y :: add x l
     end.
 
-  Definition singleton (x : elt) : t := x :: nil. 
+  Definition singleton (x : elt) : t := x :: nil.
 
   Fixpoint remove (x : elt) (s : t) {struct s} : t :=
     match s with
@@ -57,42 +57,42 @@ Module Raw (X: DecidableType).
         if X.eq_dec x y then l else y :: remove x l
     end.
 
-  Fixpoint fold (B : Type) (f : elt -> B -> B) (s : t) {struct s} : 
+  Fixpoint fold (B : Type) (f : elt -> B -> B) (s : t) {struct s} :
    B -> B := fun i => match s with
                       | nil => i
                       | x :: l => fold f l (f x i)
-                      end.  
+                      end.
 
   Definition union (s : t) : t -> t := fold add s.
-  
+
   Definition diff (s s' : t) : t := fold remove s' s.
 
-  Definition inter (s s': t) : t := 
+  Definition inter (s s': t) : t :=
     fold (fun x s => if mem x s' then add x s else s) s nil.
 
   Definition subset (s s' : t) : bool := is_empty (diff s s').
 
-  Definition equal (s s' : t) : bool := andb (subset s s') (subset s' s). 
+  Definition equal (s s' : t) : bool := andb (subset s s') (subset s' s).
 
   Fixpoint filter (f : elt -> bool) (s : t) {struct s} : t :=
     match s with
     | nil => nil
     | x :: l => if f x then x :: filter f l else filter f l
-    end.  
+    end.
 
   Fixpoint for_all (f : elt -> bool) (s : t) {struct s} : bool :=
     match s with
     | nil => true
     | x :: l => if f x then for_all f l else false
-    end.  
- 
+    end.
+
   Fixpoint exists_ (f : elt -> bool) (s : t) {struct s} : bool :=
     match s with
     | nil => false
     | x :: l => if f x then true else exists_ f l
     end.
 
-  Fixpoint partition (f : elt -> bool) (s : t) {struct s} : 
+  Fixpoint partition (f : elt -> bool) (s : t) {struct s} :
    t * t :=
     match s with
     | nil => (nil, nil)
@@ -105,14 +105,14 @@ Module Raw (X: DecidableType).
 
   Definition elements (s : t) : list elt := s.
 
-  Definition choose (s : t) : option elt := 
-     match s with 
+  Definition choose (s : t) : option elt :=
+     match s with
       | nil => None
       | x::_ => Some x
      end.
 
   (** ** Proofs of set operation specifications. *)
-  Section ForNotations. 
+  Section ForNotations.
   Notation NoDup := (NoDupA X.eq).
   Notation In := (InA X.eq).
 
@@ -130,7 +130,7 @@ Module Raw (X: DecidableType).
   Hint Immediate In_eq.
 
   Lemma mem_1 :
-   forall (s : t)(x : elt), In x s -> mem x s = true. 
+   forall (s : t)(x : elt), In x s -> mem x s = true.
   Proof.
   induction s; intros.
   inversion H.
@@ -140,7 +140,7 @@ Module Raw (X: DecidableType).
 
   Lemma mem_2 : forall (s : t) (x : elt), mem x s = true -> In x s.
   Proof.
-  induction s. 
+  induction s.
   intros; inversion H.
   intros x; simpl.
   destruct (X.eq_dec x a); firstorder; discriminate.
@@ -149,7 +149,7 @@ Module Raw (X: DecidableType).
   Lemma add_1 :
    forall (s : t) (Hs : NoDup s) (x y : elt), X.eq x y -> In y (add x s).
   Proof.
-  induction s. 
+  induction s.
   simpl; intuition.
   simpl; intros; case (X.eq_dec x a); intuition; inversion_clear Hs;
    firstorder.
@@ -159,7 +159,7 @@ Module Raw (X: DecidableType).
   Lemma add_2 :
    forall (s : t) (Hs : NoDup s) (x y : elt), In y s -> In y (add x s).
   Proof.
-  induction s. 
+  induction s.
   simpl; intuition.
   simpl; intros; case (X.eq_dec x a); intuition.
   inversion_clear Hs; eauto; inversion_clear H; intuition.
@@ -169,18 +169,18 @@ Module Raw (X: DecidableType).
    forall (s : t) (Hs : NoDup s) (x y : elt),
    ~ X.eq x y -> In y (add x s) -> In y s.
   Proof.
-  induction s. 
+  induction s.
   simpl; intuition.
   inversion_clear H0; firstorder; absurd (X.eq x y); auto.
   simpl; intros Hs x y; case (X.eq_dec x a); intros;
-   inversion_clear H0; inversion_clear Hs; firstorder; 
+   inversion_clear H0; inversion_clear Hs; firstorder;
    absurd (X.eq x y); auto.
   Qed.
 
   Lemma add_unique :
    forall (s : t) (Hs : NoDup s)(x:elt), NoDup (add x s).
   Proof.
-  induction s.  
+  induction s.
   simpl; intuition.
   constructor; auto.
   intro H0; inversion H0.
@@ -197,9 +197,9 @@ Module Raw (X: DecidableType).
   Lemma remove_1 :
    forall (s : t) (Hs : NoDup s) (x y : elt), X.eq x y -> ~ In y (remove x s).
   Proof.
-  simple induction s. 
+  simple induction s.
   simpl; red; intros; inversion H0.
-  simpl; intros; case (X.eq_dec x a); intuition; inversion_clear Hs. 
+  simpl; intros; case (X.eq_dec x a); intuition; inversion_clear Hs.
   elim H2.
   apply In_eq with y; eauto.
   inversion_clear H1; eauto.
@@ -209,17 +209,17 @@ Module Raw (X: DecidableType).
    forall (s : t) (Hs : NoDup s) (x y : elt),
    ~ X.eq x y -> In y s -> In y (remove x s).
   Proof.
-  simple induction s. 
+  simple induction s.
   simpl; intuition.
   simpl; intros; case (X.eq_dec x a); intuition; inversion_clear Hs;
-   inversion_clear H1; auto. 
-  absurd (X.eq x y); eauto. 
+   inversion_clear H1; auto.
+  absurd (X.eq x y); eauto.
   Qed.
 
   Lemma remove_3 :
    forall (s : t) (Hs : NoDup s) (x y : elt), In y (remove x s) -> In y s.
   Proof.
-  simple induction s. 
+  simple induction s.
   simpl; intuition.
   simpl; intros a l Hrec Hs x y; case (X.eq_dec x a); intuition.
   inversion_clear Hs; inversion_clear H; firstorder.
@@ -235,7 +235,7 @@ Module Raw (X: DecidableType).
   constructor; auto.
   intro H2; elim H0.
   eapply remove_3; eauto.
-  Qed. 
+  Qed.
 
   Lemma singleton_unique : forall x : elt, NoDup (singleton x).
   Proof.
@@ -246,13 +246,13 @@ Module Raw (X: DecidableType).
   Proof.
   unfold singleton; simpl; intuition.
   inversion_clear H; auto; inversion H0.
-  Qed. 
+  Qed.
 
   Lemma singleton_2 : forall x y : elt, X.eq x y -> In y (singleton x).
   Proof.
   unfold singleton; simpl; intuition.
-  Qed. 
-  
+  Qed.
+
   Lemma empty_unique : NoDup empty.
   Proof.
   unfold empty; constructor.
@@ -261,15 +261,15 @@ Module Raw (X: DecidableType).
   Lemma empty_1 : Empty empty.
   Proof.
   unfold Empty, empty; intuition; inversion H.
-  Qed. 
+  Qed.
 
   Lemma is_empty_1 : forall s : t, Empty s -> is_empty s = true.
   Proof.
   unfold Empty; intro s; case s; simpl; intuition.
   elim (H e); auto.
   Qed.
-  
-  Lemma is_empty_2 : forall s : t, is_empty s = true -> Empty s. 
+
+  Lemma is_empty_2 : forall s : t, is_empty s = true -> Empty s.
   Proof.
   unfold Empty; intro s; case s; simpl; intuition;
    inversion H0.
@@ -281,12 +281,12 @@ Module Raw (X: DecidableType).
   Qed.
 
   Lemma elements_2 : forall (s : t) (x : elt), In x (elements s) -> In x s.
-  Proof. 
+  Proof.
   unfold elements; auto.
   Qed.
- 
-  Lemma elements_3w : forall (s : t) (Hs : NoDup s), NoDup (elements s).  
-  Proof. 
+
+  Lemma elements_3w : forall (s : t) (Hs : NoDup s), NoDup (elements s).
+  Proof.
   unfold elements; auto.
   Qed.
 
@@ -306,7 +306,7 @@ Module Raw (X: DecidableType).
   apply IHs; auto.
   apply add_unique; auto.
   Qed.
-  
+
   Lemma union_1 :
    forall (s s' : t) (Hs : NoDup s) (Hs' : NoDup s') (x : elt),
    In x (union s s') -> In x s \/ In x s'.
@@ -319,7 +319,7 @@ Module Raw (X: DecidableType).
   right; eapply add_3; eauto.
   Qed.
 
-  Lemma union_0 : 
+  Lemma union_0 :
    forall (s s' : t) (Hs : NoDup s) (Hs' : NoDup s') (x : elt),
    In x s \/ In x s' -> In x (union s s').
   Proof.
@@ -355,14 +355,14 @@ Module Raw (X: DecidableType).
   unfold inter; intros s.
   set (acc := nil (A:=elt)).
   assert (NoDup acc) by (unfold acc; auto).
-  clearbody acc; generalize H; clear H; generalize acc; clear acc. 
+  clearbody acc; generalize H; clear H; generalize acc; clear acc.
   induction s; simpl; auto; intros.
   inversion_clear Hs.
   apply IHs; auto.
   destruct (mem a s'); intros; auto.
   apply add_unique; auto.
-  Qed.  
-  
+  Qed.
+
   Lemma inter_0  :
    forall (s s' : t) (Hs : NoDup s) (Hs' : NoDup s') (x : elt),
    In x (inter s s') -> In x s /\ In x s'.
@@ -373,7 +373,7 @@ Module Raw (X: DecidableType).
   cut ((In x s /\ In x s') \/ In x acc).
     destruct 1; auto.
     inversion H1.
-  clearbody acc. 
+  clearbody acc.
   generalize H0 H Hs' Hs; clear H0 H Hs Hs'.
   generalize acc x s'; clear acc x s'.
   induction s; simpl; auto; intros.
@@ -414,7 +414,7 @@ Module Raw (X: DecidableType).
   unfold inter.
   set (acc := nil (A:=elt)) in *.
   assert (NoDup acc) by (unfold acc; auto).
-  clearbody acc. 
+  clearbody acc.
   generalize H Hs' Hs; clear H Hs Hs'.
   generalize acc x s'; clear acc x s'.
   induction s; simpl; auto; intros.
@@ -446,8 +446,8 @@ Module Raw (X: DecidableType).
   inversion_clear Hs'.
   apply IHs'; auto.
   apply remove_unique; auto.
-  Qed.  
-  
+  Qed.
+
   Lemma diff_0 :
    forall (s s' : t) (Hs : NoDup s) (Hs' : NoDup s') (x : elt),
    In x (diff s s') -> In x s /\ ~ In x s'.
@@ -458,7 +458,7 @@ Module Raw (X: DecidableType).
   split; auto; intro H1; inversion H1.
   inversion_clear Hs'.
   destruct (IHs' (remove a s) (remove_unique Hs a) H1 x H).
-  split. 
+  split.
   eapply remove_3; eauto.
   red; intros.
   inversion_clear H4; auto.
@@ -469,14 +469,14 @@ Module Raw (X: DecidableType).
    forall (s s' : t) (Hs : NoDup s) (Hs' : NoDup s') (x : elt),
    In x (diff s s') -> In x s.
   Proof.
-  intros; cut (In x s /\ ~ In x s'); [ intuition | apply diff_0; auto]. 
+  intros; cut (In x s /\ ~ In x s'); [ intuition | apply diff_0; auto].
   Qed.
 
   Lemma diff_2 :
    forall (s s' : t) (Hs : NoDup s) (Hs' : NoDup s') (x : elt),
    In x (diff s s') -> ~ In x s'.
   Proof.
-  intros; cut (In x s /\ ~ In x s'); [ intuition | apply diff_0; auto]. 
+  intros; cut (In x s /\ ~ In x s'); [ intuition | apply diff_0; auto].
   Qed.
 
   Lemma diff_3 :
@@ -489,8 +489,8 @@ Module Raw (X: DecidableType).
   apply IHs'; auto.
   apply remove_unique; auto.
   apply remove_2; auto.
-  Qed.  
-  
+  Qed.
+
   Lemma subset_1 :
    forall (s s' : t) (Hs : NoDup s) (Hs' : NoDup s'),
    Subset s s' -> subset s s' = true.
@@ -504,7 +504,7 @@ Module Raw (X: DecidableType).
   eapply diff_1; eauto.
   Qed.
 
-  Lemma subset_2 : forall (s s' : t)(Hs : NoDup s) (Hs' : NoDup s'), 
+  Lemma subset_2 : forall (s s' : t)(Hs : NoDup s) (Hs' : NoDup s'),
      subset s s' = true -> Subset s s'.
   Proof.
   unfold subset, Subset; intros.
@@ -524,26 +524,26 @@ Module Raw (X: DecidableType).
   apply andb_true_intro; split; apply subset_1; firstorder.
   Qed.
 
-  Lemma equal_2 : forall (s s' : t)(Hs : NoDup s) (Hs' : NoDup s'),  
+  Lemma equal_2 : forall (s s' : t)(Hs : NoDup s) (Hs' : NoDup s'),
      equal s s' = true -> Equal s s'.
   Proof.
   unfold Equal, equal; intros.
   destruct (andb_prop _ _ H); clear H.
   split; apply subset_2; auto.
-  Qed.  
+  Qed.
 
   Definition choose_1 :
     forall (s : t) (x : elt), choose s = Some x -> In x s.
   Proof.
   destruct s; simpl; intros; inversion H; auto.
-  Qed.  
+  Qed.
 
   Definition choose_2 : forall s : t, choose s = None -> Empty s.
   Proof.
   destruct s; simpl; intros.
   intros x H0; inversion H0.
   inversion H.
-  Qed.  
+  Qed.
 
   Lemma cardinal_1 :
    forall (s : t) (Hs : NoDup s), cardinal s = length (elements s).
@@ -567,7 +567,7 @@ Module Raw (X: DecidableType).
 
    Lemma filter_2 :
     forall (s : t) (x : elt) (f : elt -> bool),
-    compat_bool X.eq f -> In x (filter f s) -> f x = true.   
+    compat_bool X.eq f -> In x (filter f s) -> f x = true.
    Proof.
   simple induction s; simpl.
   intros; inversion H0.
@@ -576,10 +576,10 @@ Module Raw (X: DecidableType).
   inversion_clear 2; auto.
   symmetry; auto.
   Qed.
- 
+
   Lemma filter_3 :
    forall (s : t) (x : elt) (f : elt -> bool),
-   compat_bool X.eq f -> In x s -> f x = true -> In x (filter f s).     
+   compat_bool X.eq f -> In x s -> f x = true -> In x (filter f s).
   Proof.
   simple induction s; simpl.
   intros; inversion H0.
@@ -607,9 +607,9 @@ Module Raw (X: DecidableType).
    forall (s : t) (f : elt -> bool),
    compat_bool X.eq f ->
    For_all (fun x => f x = true) s -> for_all f s = true.
-  Proof. 
+  Proof.
   simple induction s; simpl; auto; unfold For_all.
-  intros x l Hrec f Hf. 
+  intros x l Hrec f Hf.
   generalize (Hf x); case (f x); simpl.
   auto.
   intros; rewrite (H x); auto.
@@ -619,11 +619,11 @@ Module Raw (X: DecidableType).
    forall (s : t) (f : elt -> bool),
    compat_bool X.eq f ->
    for_all f s = true -> For_all (fun x => f x = true) s.
-  Proof. 
+  Proof.
   simple induction s; simpl; auto; unfold For_all.
   intros; inversion H1.
-  intros x l Hrec f Hf. 
-  intros A a; intros. 
+  intros x l Hrec f Hf.
+  intros A a; intros.
   assert (f x = true).
    generalize A; case (f x); auto.
   rewrite H0 in A; simpl in A.
@@ -637,9 +637,9 @@ Module Raw (X: DecidableType).
   Proof.
   simple induction s; simpl; auto; unfold Exists.
   intros.
-  elim H0; intuition. 
+  elim H0; intuition.
   inversion H2.
-  intros x l Hrec f Hf. 
+  intros x l Hrec f Hf.
   generalize (Hf x); case (f x); simpl.
   auto.
   destruct 2 as [a (A1,A2)].
@@ -652,7 +652,7 @@ Module Raw (X: DecidableType).
   Lemma exists_2 :
    forall (s : t) (f : elt -> bool),
    compat_bool X.eq f -> exists_ f s = true -> Exists (fun x => f x = true) s.
-  Proof. 
+  Proof.
   simple induction s; simpl; auto; unfold Exists.
   intros; discriminate.
   intros x l Hrec f Hf.
@@ -671,9 +671,9 @@ Module Raw (X: DecidableType).
   intros x l Hrec f Hf.
   generalize (Hrec f Hf); clear Hrec.
   case (partition f l); intros s1 s2; simpl; intros.
-  case (f x); simpl; firstorder; inversion H0; intros; firstorder. 
+  case (f x); simpl; firstorder; inversion H0; intros; firstorder.
   Qed.
-   
+
   Lemma partition_2 :
    forall (s : t) (f : elt -> bool),
    compat_bool X.eq f ->
@@ -681,14 +681,14 @@ Module Raw (X: DecidableType).
   Proof.
   simple induction s; simpl; auto; unfold Equal.
   firstorder.
-  intros x l Hrec f Hf. 
+  intros x l Hrec f Hf.
   generalize (Hrec f Hf); clear Hrec.
   case (partition f l); intros s1 s2; simpl; intros.
-  case (f x); simpl; firstorder; inversion H0; intros; firstorder. 
+  case (f x); simpl; firstorder; inversion H0; intros; firstorder.
   Qed.
 
-  Lemma partition_aux_1 : 
-   forall (s : t) (Hs : NoDup s) (f : elt -> bool)(x:elt), 
+  Lemma partition_aux_1 :
+   forall (s : t) (Hs : NoDup s) (f : elt -> bool)(x:elt),
     In x (fst (partition f s)) -> In x s.
   Proof.
   induction s; simpl; auto; intros.
@@ -696,10 +696,10 @@ Module Raw (X: DecidableType).
   generalize (IHs H1 f x).
   destruct (f a); destruct (partition f s); simpl in *; auto.
   inversion_clear H; auto.
-  Qed. 
-     
-  Lemma partition_aux_2 : 
-   forall (s : t) (Hs : NoDup s) (f : elt -> bool)(x:elt), 
+  Qed.
+
+  Lemma partition_aux_2 :
+   forall (s : t) (Hs : NoDup s) (f : elt -> bool)(x:elt),
     In x (snd (partition f s)) -> In x s.
   Proof.
   induction s; simpl; auto; intros.
@@ -707,8 +707,8 @@ Module Raw (X: DecidableType).
   generalize (IHs H1 f x).
   destruct (f a); destruct (partition f s); simpl in *; auto.
   inversion_clear H; auto.
-  Qed. 
-  
+  Qed.
+
   Lemma partition_unique_1 :
    forall (s : t) (Hs : NoDup s) (f : elt -> bool), NoDup (fst (partition f s)).
   Proof.
@@ -719,7 +719,7 @@ Module Raw (X: DecidableType).
   generalize (Hrec H0 f).
   case (f x); case (partition f l); simpl; auto.
   Qed.
-  
+
   Lemma partition_unique_2 :
    forall (s : t) (Hs : NoDup s) (f : elt -> bool), NoDup (snd (partition f s)).
   Proof.
@@ -733,17 +733,17 @@ Module Raw (X: DecidableType).
 
   Definition eq : t -> t -> Prop := Equal.
 
-  Lemma eq_refl : forall s, eq s s. 
+  Lemma eq_refl : forall s, eq s s.
   Proof. firstorder. Qed.
 
   Lemma eq_sym : forall s s', eq s s' -> eq s' s.
   Proof. firstorder. Qed.
 
-  Lemma eq_trans : 
+  Lemma eq_trans :
    forall s s' s'', eq s s' -> eq s' s'' -> eq s s''.
   Proof. firstorder. Qed.
 
-  Definition eq_dec : forall (s s':t)(Hs:NoDup s)(Hs':NoDup s'), 
+  Definition eq_dec : forall (s s':t)(Hs:NoDup s)(Hs':NoDup s'),
    { eq s s' }+{ ~eq s s' }.
   Proof.
   intros.
@@ -758,18 +758,18 @@ End Raw.
 
 (** * Encapsulation
 
-   Now, in order to really provide a functor implementing [S], we 
+   Now, in order to really provide a functor implementing [S], we
    need to encapsulate everything into a type of lists without redundancy. *)
 
 Module Make (X: DecidableType) <: WS with Module E := X.
 
- Module Raw := Raw X. 
+ Module Raw := Raw X.
  Module E := X.
 
  Record slist := {this :> Raw.t; unique : NoDupA E.eq this}.
- Definition t := slist. 
+ Definition t := slist.
  Definition elt := E.t.
- 
+
  Definition In (x : elt) (s : t) : Prop := InA E.eq x s.(this).
  Definition Equal (s s':t) : Prop := forall a : elt, In a s <-> In a s'.
  Definition Subset (s s':t) : Prop := forall a : elt, In a s -> In a s'.
@@ -783,18 +783,18 @@ Module Make (X: DecidableType) <: WS with Module E := X.
  Definition remove (x : elt)(s : t) : t := Build_slist (Raw.remove_unique (unique s) x).
  Definition singleton (x : elt) : t := Build_slist (Raw.singleton_unique x).
  Definition union (s s' : t) : t :=
-   Build_slist (Raw.union_unique (unique s) (unique s')). 
+   Build_slist (Raw.union_unique (unique s) (unique s')).
  Definition inter (s s' : t) : t :=
-   Build_slist (Raw.inter_unique (unique s) (unique s')). 
+   Build_slist (Raw.inter_unique (unique s) (unique s')).
  Definition diff (s s' : t) : t :=
-   Build_slist (Raw.diff_unique (unique s) (unique s')). 
- Definition equal (s s' : t) : bool := Raw.equal s s'. 
+   Build_slist (Raw.diff_unique (unique s) (unique s')).
+ Definition equal (s s' : t) : bool := Raw.equal s s'.
  Definition subset (s s' : t) : bool := Raw.subset s s'.
  Definition empty : t := Build_slist Raw.empty_unique.
  Definition is_empty (s : t) : bool := Raw.is_empty s.
  Definition elements (s : t) : list elt := Raw.elements s.
  Definition choose (s:t) : option elt := Raw.choose s.
- Definition fold (B : Type) (f : elt -> B -> B) (s : t) : B -> B := Raw.fold (B:=B) f s. 
+ Definition fold (B : Type) (f : elt -> B -> B) (s : t) : B -> B := Raw.fold (B:=B) f s.
  Definition cardinal (s : t) : nat := Raw.cardinal s.
  Definition filter (f : elt -> bool) (s : t) : t :=
    Build_slist (Raw.filter_unique (unique s) f).
@@ -805,18 +805,18 @@ Module Make (X: DecidableType) <: WS with Module E := X.
    (Build_slist (this:=fst p) (Raw.partition_unique_1 (unique s) f),
    Build_slist (this:=snd p) (Raw.partition_unique_2 (unique s) f)).
 
- Section Spec. 
+ Section Spec.
   Variable s s' : t.
   Variable x y : elt.
 
-  Lemma In_1 : E.eq x y -> In x s -> In y s. 
+  Lemma In_1 : E.eq x y -> In x s -> In y s.
   Proof. exact (fun H H' => Raw.In_eq H H'). Qed.
- 
+
   Lemma mem_1 : In x s -> mem x s = true.
   Proof. exact (fun H => Raw.mem_1 H). Qed.
-  Lemma mem_2 : mem x s = true -> In x s. 
+  Lemma mem_2 : mem x s = true -> In x s.
   Proof. exact (fun H => Raw.mem_2 H). Qed.
- 
+
   Lemma equal_1 : Equal s s' -> equal s s' = true.
   Proof. exact (Raw.equal_1 s.(unique) s'.(unique)). Qed.
   Lemma equal_2 : equal s s' = true -> Equal s s'.
@@ -830,16 +830,16 @@ Module Make (X: DecidableType) <: WS with Module E := X.
   Lemma empty_1 : Empty empty.
   Proof. exact Raw.empty_1. Qed.
 
-  Lemma is_empty_1 : Empty s -> is_empty s = true. 
+  Lemma is_empty_1 : Empty s -> is_empty s = true.
   Proof. exact (fun H => Raw.is_empty_1 H). Qed.
   Lemma is_empty_2 : is_empty s = true -> Empty s.
   Proof. exact (fun H => Raw.is_empty_2 H). Qed.
- 
+
   Lemma add_1 : E.eq x y -> In y (add x s).
   Proof. exact (fun H => Raw.add_1 s.(unique) H). Qed.
   Lemma add_2 : In y s -> In y (add x s).
   Proof. exact (fun H => Raw.add_2 s.(unique) x H). Qed.
-  Lemma add_3 : ~ E.eq x y -> In y (add x s) -> In y s. 
+  Lemma add_3 : ~ E.eq x y -> In y (add x s) -> In y s.
   Proof. exact (fun H => Raw.add_3 s.(unique) H). Qed.
 
   Lemma remove_1 : E.eq x y -> ~ In y (remove x s).
@@ -849,14 +849,14 @@ Module Make (X: DecidableType) <: WS with Module E := X.
   Lemma remove_3 : In y (remove x s) -> In y s.
   Proof. exact (fun H => Raw.remove_3 s.(unique) H). Qed.
 
-  Lemma singleton_1 : In y (singleton x) -> E.eq x y. 
+  Lemma singleton_1 : In y (singleton x) -> E.eq x y.
   Proof. exact (fun H => Raw.singleton_1 H). Qed.
-  Lemma singleton_2 : E.eq x y -> In y (singleton x). 
+  Lemma singleton_2 : E.eq x y -> In y (singleton x).
   Proof. exact (fun H => Raw.singleton_2 H). Qed.
 
   Lemma union_1 : In x (union s s') -> In x s \/ In x s'.
   Proof. exact (fun H => Raw.union_1 s.(unique) s'.(unique) H). Qed.
-  Lemma union_2 : In x s -> In x (union s s'). 
+  Lemma union_2 : In x s -> In x (union s s').
   Proof. exact (fun H => Raw.union_2 s.(unique) s'.(unique) H). Qed.
   Lemma union_3 : In x s' -> In x (union s s').
   Proof. exact (fun H => Raw.union_3 s.(unique) s'.(unique) H). Qed.
@@ -868,13 +868,13 @@ Module Make (X: DecidableType) <: WS with Module E := X.
   Lemma inter_3 : In x s -> In x s' -> In x (inter s s').
   Proof. exact (fun H => Raw.inter_3 s.(unique) s'.(unique) H). Qed.
 
-  Lemma diff_1 : In x (diff s s') -> In x s. 
+  Lemma diff_1 : In x (diff s s') -> In x s.
   Proof. exact (fun H => Raw.diff_1 s.(unique) s'.(unique) H). Qed.
   Lemma diff_2 : In x (diff s s') -> ~ In x s'.
   Proof. exact (fun H => Raw.diff_2 s.(unique) s'.(unique) H). Qed.
   Lemma diff_3 : In x s -> ~ In x s' -> In x (diff s s').
   Proof. exact (fun H => Raw.diff_3 s.(unique) s'.(unique) H). Qed.
- 
+
   Lemma fold_1 : forall (A : Type) (i : A) (f : elt -> A -> A),
       fold f s i = fold_left (fun a e => f e a) (elements s) i.
   Proof. exact (Raw.fold_1 s.(unique)). Qed.
@@ -883,12 +883,12 @@ Module Make (X: DecidableType) <: WS with Module E := X.
   Proof. exact (Raw.cardinal_1 s.(unique)). Qed.
 
   Section Filter.
-  
+
   Variable f : elt -> bool.
 
-  Lemma filter_1 : compat_bool E.eq f -> In x (filter f s) -> In x s. 
+  Lemma filter_1 : compat_bool E.eq f -> In x (filter f s) -> In x s.
   Proof. exact (fun H => @Raw.filter_1 s x f). Qed.
-  Lemma filter_2 : compat_bool E.eq f -> In x (filter f s) -> f x = true. 
+  Lemma filter_2 : compat_bool E.eq f -> In x (filter f s) -> f x = true.
   Proof. exact (@Raw.filter_2 s x f). Qed.
   Lemma filter_3 :
       compat_bool E.eq f -> In x s -> f x = true -> In x (filter f s).
@@ -938,20 +938,20 @@ Module Make (X: DecidableType) <: WS with Module E := X.
 
  Definition eq : t -> t -> Prop := Equal.
 
- Lemma eq_refl : forall s, eq s s. 
+ Lemma eq_refl : forall s, eq s s.
  Proof. firstorder. Qed.
 
  Lemma eq_sym : forall s s', eq s s' -> eq s' s.
  Proof. firstorder. Qed.
 
- Lemma eq_trans : 
+ Lemma eq_trans :
   forall s s' s'', eq s s' -> eq s' s'' -> eq s s''.
  Proof. firstorder. Qed.
 
- Definition eq_dec : forall (s s':t), 
+ Definition eq_dec : forall (s s':t),
   { eq s s' }+{ ~eq s s' }.
- Proof. 
-  intros s s'; exact (Raw.eq_dec s.(unique) s'.(unique)). 
+ Proof.
+  intros s s'; exact (Raw.eq_dec s.(unique) s'.(unique)).
  Defined.
 
 End Make.

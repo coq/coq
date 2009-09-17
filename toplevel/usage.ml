@@ -23,7 +23,7 @@ let print_usage_channel co command =
 "  -I dir -as coqdir      map physical dir to logical coqdir
   -I dir                 map directory dir to the empty logical path
   -include dir           (idem)
-  -R dir -as coqdir      recursively map physical dir to logical coqdir 
+  -R dir -as coqdir      recursively map physical dir to logical coqdir
   -R dir coqdir          (idem)
   -top coqdir            set the toplevel name to be coqdir instead of Top
   -notop    r            set the toplevel name to be the empty logical path
@@ -35,10 +35,10 @@ let print_usage_channel co command =
   -outputstate f         write state in file f.coq
   -compat X.Y            provides compatibility support for Coq version X.Y
 
-  -load-ml-object f      load ML object file f 
-  -load-ml-source f      load ML file f 
+  -load-ml-object f      load ML object file f
+  -load-ml-source f      load ML file f
   -load-vernac-source f  load Coq file f.v (Load f.)
-  -l f                   (idem) 
+  -l f                   (idem)
   -load-vernac-source-verbose f  load Coq file f.v (Load Verbose f.)
   -lv f	                 (idem)
   -load-vernac-object f  load Coq object file f.vo
@@ -88,7 +88,7 @@ options are:
 
 (* Print the configuration information *)
 
-let print_config () = 
+let print_config () =
   if Coq_config.local then Printf.printf "LOCAL=1\n" else Printf.printf "LOCAL=0\n";
   Printf.printf "COQLIB=%s/\n" Coq_config.coqlib;
   Printf.printf "COQSRC=%s/\n" Coq_config.coqsrc;

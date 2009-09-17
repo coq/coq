@@ -12,7 +12,7 @@ type prf_info = {
     mutable border : tree list;
     prf_struct : tree};;
 
-let theorem_proofs = ((Hashtbl.create 17): 
+let theorem_proofs = ((Hashtbl.create 17):
 			(string, prf_info) Hashtbl.t);;
 
 
@@ -54,12 +54,12 @@ let push_command s rank ngoals =
     this_tree.sub_proofs <- new_trees
   end;;
 
-let get_tree_for_rank thm_name rank = 
-  let {ranks_and_goals=l;prf_length=n} = 
+let get_tree_for_rank thm_name rank =
+  let {ranks_and_goals=l;prf_length=n} =
          Hashtbl.find theorem_proofs thm_name in
   let rec get_tree_aux = function
       [] ->
- 	failwith 
+ 	failwith
          "inconsistent values for thm_name and rank in get_tree_for_rank"
     | (_,_,({index=i} as tree))::tl ->
 	if i = rank then
@@ -88,9 +88,9 @@ let parent_from_rank thm_name rank =
 
 let first_child_command thm_name rank =
   let {sub_proofs = l} = get_tree_for_rank thm_name rank in
-  let rec first_child_rec = function 
+  let rec first_child_rec = function
       [] -> None
-    | {index=i;is_open=b}::l -> 
+    | {index=i;is_open=b}::l ->
 	if b then
 	  (first_child_rec l)
 	else
@@ -104,7 +104,7 @@ let first_child_command_or_goal thm_name rank =
   let {sub_proofs=l}=get_tree_for_rank thm_name rank in
   match l with
     [] -> None
-  | ({index=i;is_open=b} as t)::_ -> 
+  | ({index=i;is_open=b} as t)::_ ->
       if b then
 	let rec get_rank n = function
 	    [] -> failwith "A goal is lost in first_child_command_or_goal"
@@ -124,12 +124,12 @@ let next_sibling thm_name rank =
   |  Some real_mommy ->
   let {sub_proofs=l}=real_mommy in
   let rec next_sibling_aux b = function
-      (opt_first, []) -> 
+      (opt_first, []) ->
 	if b then
 	  opt_first
 	else
 	  failwith "inconsistency detected in next_sibling"
-    | (opt_first, {is_open=true}::l) -> 
+    | (opt_first, {is_open=true}::l) ->
 	next_sibling_aux b (opt_first, l)
     | (Some(first),({index=i; is_open=false} as t')::l) ->
 	if b then
@@ -149,7 +149,7 @@ let prefix l1 l2 =
 
 let rec remove_all_prefixes p = function
     [] -> []
-  | a::l -> 
+  | a::l ->
       if is_prefix p a then
  	(remove_all_prefixes p l)
       else
@@ -163,8 +163,8 @@ let recompute_border tree =
     else
       List.fold_right recompute_border_aux l acc in
   recompute_border_aux tree [];;
- 
-   
+
+
 let historical_undo thm_name rank =
   let ({ranks_and_goals=l} as proof_info)=
        Hashtbl.find theorem_proofs thm_name in
@@ -180,7 +180,7 @@ let historical_undo thm_name rank =
 	    tree.is_open <- true;
 	    tree.sub_proofs <- [];
 	    proof_info.border <- recompute_border proof_info.prf_struct;
-            this_path_reversed::res 
+            this_path_reversed::res
 	  end
 	else
 	  begin
@@ -208,7 +208,7 @@ let rec logical_undo_on_border the_tree rev_path = function
           (k,tree::res)
     else
           (0, the_tree::tree::tl);;
-   
+
 
 let logical_undo thm_name rank =
   let ({ranks_and_goals=l; border=last_border} as proof_info)=
@@ -223,7 +223,7 @@ let logical_undo thm_name rank =
         let new_rank, new_offset, new_width, kept =
 	  if is_prefix rev_ref_path this_path_rev then
 	    (r + lex_smaller_offset), lex_smaller_offset,
-              (family_width + 1 - n), false 
+              (family_width + 1 - n), false
 	  else if lex_smaller this_path_rev rev_ref_path then
             r, (lex_smaller_offset -  1 + n), family_width, true
           else
@@ -239,14 +239,14 @@ let logical_undo thm_name rank =
 	      begin
 	      	tree.index <- current_rank;
 	    	ranks_undone, ((i,new_rank)::ranks_kept),
-	    	((new_rank, n, tree)::ranks_and_goals), 
+	    	((new_rank, n, tree)::ranks_and_goals),
                 (current_rank + 1)
 	      end
 	    else
 	      ((i,new_rank)::ranks_undone), ranks_kept,
 	      ranks_and_goals, current_rank
 	  end in
-  let number_suffix, new_border = 
+  let number_suffix, new_border =
      logical_undo_on_border ref_tree rev_ref_path last_border in
   let changed_ranks_undone, changed_ranks_kept, new_ranks_and_goals,
     new_length_plus_one = logical_aux 0 number_suffix l in
@@ -265,19 +265,19 @@ let logical_undo thm_name rank =
     proof_info.border <- new_border;
     proof_info.ranks_and_goals <- new_ranks_and_goals;
     proof_info.prf_length <- new_length_plus_one - 1;
-    changed_ranks_undone, changed_ranks_kept, proof_info.prf_length, 
+    changed_ranks_undone, changed_ranks_kept, proof_info.prf_length,
     the_goal_index
   end;;
-	
+
 let start_proof thm_name =
-   let the_tree = 
+   let the_tree =
       {index=0;parent=None;path_to_root=[];is_open=true;sub_proofs=[]} in
    Hashtbl.add theorem_proofs thm_name
      {prf_length=0;
       ranks_and_goals=[];
       border=[the_tree];
       prf_struct=the_tree};;
-      
+
 let dump_sequence chan s =
     match (Hashtbl.find theorem_proofs s) with
     {ranks_and_goals=l}->
@@ -294,7 +294,7 @@ let dump_sequence chan s =
 	output_string chan "end\n"
       end;;
 
-      
+
 let proof_info_as_string s =
   let res = ref "" in
   match (Hashtbl.find theorem_proofs s) with
@@ -307,7 +307,7 @@ let proof_info_as_string s =
          None ->
 	   if op then
 	     res := !res ^  "\"open goal\"\n"
-       | Some {index=j} -> 
+       | Some {index=j} ->
            begin
              res := !res ^  (string_of_int j);
              res := !res ^  " -> ";
@@ -330,7 +330,7 @@ let proof_info_as_string s =
   !res;;
 
 
-let dump_proof_info chan s = 
+let dump_proof_info chan s =
   match (Hashtbl.find theorem_proofs s) with
   {prf_struct=tree} ->
   let open_goal_counter = ref 0 in
@@ -341,7 +341,7 @@ let dump_proof_info chan s =
          None ->
 	   if op then
 	     output_string chan "\"open goal\"\n"
-       | Some {index=j} -> 
+       | Some {index=j} ->
            begin
              output_string chan (string_of_int j);
              output_string chan " -> ";

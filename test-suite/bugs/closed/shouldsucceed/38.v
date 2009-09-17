@@ -6,7 +6,7 @@ Inductive liste : Set :=
 | vide : liste
 | c : A -> liste -> liste.
 
-Inductive e : A -> liste -> Prop := 
+Inductive e : A -> liste -> Prop :=
 | ec : forall (x : A) (l : liste), e x (c x l)
 | ee : forall (x y : A) (l : liste), e x l -> e x (c y l).
 

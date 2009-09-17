@@ -57,7 +57,7 @@ let no_failure = function
     [Report_node(true,_,_)] -> true
   | _ -> false;;
 
-let check_subgoals_count2 
+let check_subgoals_count2
     : card_holder -> int -> bool ref -> (report_holder -> tactic) -> tactic =
   fun card_holder count flag t g ->
     let new_report_holder = ref ([] : report_tree list) in
@@ -96,7 +96,7 @@ let count_subgoals : card_holder -> bool ref -> tactic -> tactic =
       e -> card_holder := Fail;
            flag := false;
            tclIDTAC g;;
-   
+
 let count_subgoals2
     : card_holder -> bool ref -> (report_holder -> tactic) -> tactic =
   fun card_holder flag t g ->
@@ -139,24 +139,24 @@ let rec local_interp : glob_tactic_expr -> report_holder -> tactic = function
    - In case of success of the first tactic, but count mismatch, then
      Mismatch n is added to the report holder. *)
 
-and checked_thens: report_holder -> glob_tactic_expr -> glob_tactic_expr list -> tactic = 
+and checked_thens: report_holder -> glob_tactic_expr -> glob_tactic_expr list -> tactic =
   (fun report_holder t1 l g ->
     let flag = ref true in
     let traceable_t1 = traceable t1 in
     let card_holder = ref Fail in
     let new_holder = ref ([]:report_tree list) in
-    let tac_t1 = 
+    let tac_t1 =
       if traceable_t1 then
 	(check_subgoals_count2 card_holder (List.length l)
            flag (local_interp t1))
       else
 	(check_subgoals_count card_holder (List.length l)
            flag (Tacinterp.eval_tactic t1)) in
-    let (gls, _) as result = 
+    let (gls, _) as result =
       tclTHEN_i tac_t1
 	(fun i ->
 	  if !flag then
-	    (fun g -> 
+	    (fun g ->
               let tac_i = (List.nth l i) in
 	      if traceable tac_i then
                  local_interp tac_i new_holder g
@@ -174,7 +174,7 @@ and checked_thens: report_holder -> glob_tactic_expr -> glob_tactic_expr list ->
 	    tclIDTAC) g in
       let new_goal_list = sig_it gls in
       (if !flag then
-	report_holder := 
+	report_holder :=
 	  (Report_node(collect_status !new_holder,
 		    (List.length new_goal_list),
 		    List.rev !new_holder))::!report_holder
@@ -206,7 +206,7 @@ and checked_then: report_holder -> glob_tactic_expr -> glob_tactic_expr -> tacti
     let new_tree_holder = ref ([] : report_tree list) in
     let (gls, _) as result =
       tclTHEN tac_t1
-	(fun (g:goal sigma) -> 
+	(fun (g:goal sigma) ->
 	  if !flag then
 	    if traceable t2 then
 	      local_interp t2 new_tree_holder g
@@ -273,7 +273,7 @@ let rec select_success n = function
 let rec reconstruct_success_tac (tac:glob_tactic_expr) =
   match tac with
     TacThens (a,l) ->
-      (function 
+      (function
 	  Report_node(true, n, l) -> tac
       	| Report_node(false, n, rl) ->
 	    TacThens (a,List.map2 reconstruct_success_tac l rl)
@@ -292,7 +292,7 @@ let rec reconstruct_success_tac (tac:glob_tactic_expr) =
 	| Failed n -> TacId []
 	| Tree_fail r -> reconstruct_success_tac a r
 	| _ -> error "this error case should not happen in a THEN tactic")
-  | _ -> 
+  | _ ->
       (function
 	  Report_node(true, n, l) -> tac
 	| Failed n -> TacId []
@@ -301,7 +301,7 @@ let rec reconstruct_success_tac (tac:glob_tactic_expr) =
 	      "this error case should not happen on an unknown tactic"
               (str "error in reconstruction with " ++ fnl () ++
 	       (pr_glob_tactic tac)));;
-	  
+
 
 let rec path_to_first_error = function
 | Report_node(true, _, l) ->
@@ -315,14 +315,14 @@ let rec path_to_first_error = function
 
 let debug_tac = function
     [(Tacexp ast)] ->
-      (fun g -> 
+      (fun g ->
       	let report = ref ([] : report_tree list) in
       	let result = local_interp ast report g in
       	let clean_ast = (* expand_tactic *) ast in
       	let report_tree =
           try List.hd !report with
 	    Failure "hd" -> (msgnl (str "report is empty"); Failed 1) in
-      	let success_tac = 
+      	let success_tac =
 	  reconstruct_success_tac clean_ast report_tree in
         let compact_success_tac = (* flatten_then *) success_tac in
       	msgnl (fnl () ++
@@ -339,7 +339,7 @@ add_tactic "DebugTac" debug_tac;;
 
 Tacinterp.add_tactic "OnThen" on_then;;
 
-let rec clean_path tac l = 
+let rec clean_path tac l =
   match tac, l with
   | TacThen (a,[||],b,[||]), fst::tl ->
       fst::(clean_path (if fst = 1 then a else b) tl)
@@ -351,9 +351,9 @@ let rec clean_path tac l =
   | _, _ -> failwith "this case should not happen in clean_path";;
 
 let rec report_error
-    : glob_tactic_expr -> goal sigma option ref -> glob_tactic_expr ref -> int list ref -> 
+    : glob_tactic_expr -> goal sigma option ref -> glob_tactic_expr ref -> int list ref ->
       int list -> tactic =
-  fun tac the_goal the_ast returned_path path -> 
+  fun tac the_goal the_ast returned_path path ->
     match tac with
       TacThens (a,l) ->
       let the_card_holder = ref Fail in
@@ -362,12 +362,12 @@ let rec report_error
       tclTHENS
 	(fun g ->
 	  let result =
-	    check_subgoals_count 
+	    check_subgoals_count
 	      the_card_holder
-	      (List.length l) 
+	      (List.length l)
 	      the_flag
-	      (fun g2 -> 
-		try 
+	      (fun g2 ->
+		try
 		  (report_error a the_goal the_ast returned_path (1::path) g2)
 	  	with
 		  e -> (the_exn := e; raise e))
@@ -376,10 +376,10 @@ let rec report_error
 	    result
 	  else
 	    (match !the_card_holder with
-			Fail -> 
+			Fail ->
 			  the_ast := TacThens (!the_ast, l);
 			  raise !the_exn
-	    | Goals_mismatch p -> 
+	    | Goals_mismatch p ->
 		the_ast := tac;
 		returned_path := path;
 		error ("Wrong number of tactics: expected " ^
@@ -403,7 +403,7 @@ let rec report_error
 		 raise e))
 	  (fun g ->
 	    try
-	      let result = 
+	      let result =
 		report_error b the_goal the_ast returned_path (2::path) g in
 	      the_count := !the_count + 1;
 	      result

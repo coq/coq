@@ -78,7 +78,7 @@ let addQueue q v = q := v :: !q
 let safe_hash_add clq q (k,v) =
   try
     let v2 = Hashtbl.find q k in
-    if v<>v2 then 
+    if v<>v2 then
       let rec add_clash = function
           (k1,l1)::cltl when k=k1 -> (k1,v::l1)::cltl
         | cl::cltl -> cl::add_clash cltl
@@ -88,7 +88,7 @@ let safe_hash_add clq q (k,v) =
 
 (** Files found in the loadpaths.
     For the ML files, the string is the basename without extension.
-    To allow ML source filename to be potentially capitalized, 
+    To allow ML source filename to be potentially capitalized,
     we perform a double search.
 *)
 
@@ -177,16 +177,16 @@ let depend_ML str =
     | None, None -> "", ""
 
 let traite_fichier_ML md ext =
-  try 
-    let chan = open_in (md ^ ext) in 
-    let buf = Lexing.from_channel chan in 
+  try
+    let chan = open_in (md ^ ext) in
+    let buf = Lexing.from_channel chan in
     let deja_vu = ref [md] in
     let a_faire = ref "" in
     let a_faire_opt = ref "" in
-    begin try 
+    begin try
       while true do
 	let (Use_module str) = caml_action buf in
-	if List.mem str !deja_vu then 
+	if List.mem str !deja_vu then
 	  ()
 	else begin
 	  addQueue deja_vu str;
@@ -223,13 +223,13 @@ let canonize f =
     | (f,_) :: _ -> f
     | _ -> f
 
-let traite_fichier_Coq verbose f = 
-  try 
-    let chan = open_in f in 
-    let buf = Lexing.from_channel chan in 
+let traite_fichier_Coq verbose f =
+  try
+    let chan = open_in f in
+    let buf = Lexing.from_channel chan in
     let deja_vu_v = ref ([]: string list list)
     and deja_vu_ml = ref ([] : string list) in
-    try 
+    try
       while true do
       	let tok = coq_action buf in
 	match tok with
@@ -240,18 +240,18 @@ let traite_fichier_Coq verbose f =
                   try
                     let file_str = safe_assoc verbose f str in
                     printf " %s%s" (canonize file_str) !suffixe
-                  with Not_found -> 
+                  with Not_found ->
 		    if verbose && not (Hashtbl.mem coqlibKnown str) then
                       warning_module_notfound f str
        		end) strl
-	  | RequireString s -> 
+	  | RequireString s ->
 	      let str = Filename.basename s in
 	      if not (List.mem [str] !deja_vu_v) then begin
 	        addQueue deja_vu_v [str];
                 try
                   let file_str = Hashtbl.find vKnown [str] in
                   printf " %s%s" (canonize file_str) !suffixe
-                with Not_found -> 
+                with Not_found ->
 		  if not (Hashtbl.mem coqlibKnown [str]) then
 		    warning_notfound f s
        	      end
@@ -273,7 +273,7 @@ let traite_fichier_Coq verbose f =
 			  | None -> warning_declare f str
 		end
 	      in List.iter decl sl
-	  | Load str -> 
+	  | Load str ->
 	      let str = Filename.basename str in
 	      if not (List.mem [str] !deja_vu_v) then begin
 	        addQueue deja_vu_v [str];
@@ -285,11 +285,11 @@ let traite_fichier_Coq verbose f =
       done
     with Fin_fichier -> ();
       close_in chan
-  with Sys_error _ -> () 
+  with Sys_error _ -> ()
 
 
 let mL_dependencies () =
-  List.iter 
+  List.iter
     (fun (name,ext,dirname) ->
        let fullname = file_name name dirname in
        let (dep,dep_opt) = traite_fichier_ML fullname ext in
@@ -344,10 +344,10 @@ let add_known phys_dir log_dir f =
     | (basename,".mllib") -> add_mllib_known basename (Some phys_dir)
     | _ -> ()
 
-(* Visits all the directories under [dir], including [dir], 
+(* Visits all the directories under [dir], including [dir],
    or just [dir] if [recur=false] *)
 
-let rec add_directory recur add_file phys_dir log_dir = 
+let rec add_directory recur add_file phys_dir log_dir =
   let dirh = opendir phys_dir in
   try
     while true do
@@ -366,32 +366,32 @@ let rec add_directory recur add_file phys_dir log_dir =
     done
   with End_of_file -> closedir dirh
 
-let add_dir add_file phys_dir log_dir = 
+let add_dir add_file phys_dir log_dir =
   try add_directory false add_file phys_dir log_dir with Unix_error _ -> ()
 
-let add_rec_dir add_file phys_dir log_dir = 
+let add_rec_dir add_file phys_dir log_dir =
   handle_unix_error (add_directory true add_file phys_dir) log_dir
 
 let rec treat_file old_dirname old_name =
-  let name = Filename.basename old_name 
+  let name = Filename.basename old_name
   and new_dirname = Filename.dirname old_name in
-  let dirname = 
-    match (old_dirname,new_dirname) with 
+  let dirname =
+    match (old_dirname,new_dirname) with
       | (d, ".") -> d
       | (None,d) -> Some d
-      | (Some d1,d2) -> Some (d1//d2) 
+      | (Some d1,d2) -> Some (d1//d2)
   in
   let complete_name = file_name name dirname in
-  match try (stat complete_name).st_kind with _ -> S_BLK with 
+  match try (stat complete_name).st_kind with _ -> S_BLK with
     | S_DIR ->
-	(if name.[0] <> '.' then 
+	(if name.[0] <> '.' then
 	   let dir=opendir complete_name in
-           let newdirname = 
-             match dirname with 
+           let newdirname =
+             match dirname with
                | None -> name
-               | Some d -> d//name 
+               | Some d -> d//name
 	   in
-	   try 
+	   try
 	     while true do treat_file (Some newdirname) (readdir dir) done
 	   with End_of_file -> closedir dir)
     | S_REG ->

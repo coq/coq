@@ -44,7 +44,7 @@ Ltac Subst := apply substcopy;intros;EtaLong.
 Ltac Rigid_aux := fun A => apply A|| Rigid_aux (copyr_fun _ _ _ _ A).
 Ltac Rigid := fun A => apply copyr_atom; Rigid_aux A.
 
-Theorem church0: forall i:Type, exists X:(i->i)->i->i, 
+Theorem church0: forall i:Type, exists X:(i->i)->i->i,
 copy ((i->i)->i->i) (fun f:i->i => fun x:i=>f (X f x)) (fun f:i->i=>fun x:i=>app i i (X f) (f x)).
 intros.
 esplit.

@@ -65,7 +65,7 @@ Section Reflexive_Transitive_Closure.
 
   Inductive clos_refl_trans_1n (x: A) : A -> Prop :=
     | rt1n_refl : clos_refl_trans_1n x x
-    | rt1n_trans (y z:A) : 
+    | rt1n_trans (y z:A) :
          R x y -> clos_refl_trans_1n y z -> clos_refl_trans_1n x z.
 
   (** Alternative definition by transitive extension on the right *)
@@ -82,7 +82,7 @@ End Reflexive_Transitive_Closure.
 Section Reflexive_Symetric_Transitive_Closure.
   Variable A : Type.
   Variable R : relation A.
-  
+
   (** Definition by direct reflexive-symmetric-transitive closure *)
 
   Inductive clos_refl_sym_trans : relation A :=
@@ -104,7 +104,7 @@ Section Reflexive_Symetric_Transitive_Closure.
 
   Inductive clos_refl_sym_trans_n1 (x: A) : A -> Prop :=
     | rtsn1_refl : clos_refl_sym_trans_n1 x x
-    | rtsn1_trans (y z:A) : R y z \/ R z y -> 
+    | rtsn1_trans (y z:A) : R y z \/ R z y ->
          clos_refl_sym_trans_n1 x y -> clos_refl_sym_trans_n1 x z.
 
 End Reflexive_Symetric_Transitive_Closure.
@@ -139,7 +139,7 @@ Inductive le_AsB : A + B -> A + B -> Prop :=
   | le_ab (x:A) (y:B) : le_AsB (inl _ x) (inr _ y)
   | le_bb (x y:B) : leB x y -> le_AsB (inr _ x) (inr _ y).
 
-End Disjoint_Union. 
+End Disjoint_Union.
 
 (** ** Lexicographic order on dependent pairs *)
 
@@ -189,12 +189,12 @@ End Swap.
 
 
 Section Lexicographic_Exponentiation.
-  
+
   Variable A : Set.
   Variable leA : A -> A -> Prop.
   Let Nil := nil (A:=A).
   Let List := list A.
-  
+
   Inductive Ltl : List -> List -> Prop :=
     | Lt_nil (a:A) (x:List) : Ltl Nil (a :: x)
     | Lt_hd (a b:A) : leA a b -> forall x y:list A, Ltl (a :: x) (b :: y)
@@ -207,7 +207,7 @@ Section Lexicographic_Exponentiation.
         leA x y -> Desc (l ++ y :: Nil) -> Desc ((l ++ y :: Nil) ++ x :: Nil).
 
   Definition Pow : Set := sig Desc.
-  
+
   Definition lex_exp (a b:Pow) : Prop := Ltl (proj1_sig a) (proj1_sig b).
 
 End Lexicographic_Exponentiation.

@@ -18,7 +18,7 @@ open Mod_subst
 
    * a caching function specifying how to add the object in the current
      scope;
-     If the object wishes to register its visibility in the Nametab, 
+     If the object wishes to register its visibility in the Nametab,
      it should do so for all possible sufixes.
 
    * a loading function, specifying what to do when the module
@@ -26,9 +26,9 @@ open Mod_subst
      If the object wishes to register its visibility in the Nametab,
      it should do so for all sufixes no shorter than the "int" argument
 
-   * an opening function, specifying what to do when the module 
+   * an opening function, specifying what to do when the module
      containing the object is opened (imported);
-     If the object wishes to register its visibility in the Nametab, 
+     If the object wishes to register its visibility in the Nametab,
      it should do so for the suffix of the length the "int" argument
 
    * a classification function, specifying what to do with the object,
@@ -44,11 +44,11 @@ open Mod_subst
                   and Read markers)
 
      The classification function is also an occasion for a cleanup
-     (if this function returns Keep or Substitute of some object, the 
+     (if this function returns Keep or Substitute of some object, the
      cache method is never called for it)
 
-   * a substitution function, performing the substitution; 
-     this function should be declared for substitutive objects 
+   * a substitution function, performing the substitution;
+     this function should be declared for substitutive objects
      only (see above)
 
    * a discharge function, that is applied at section closing time to
@@ -63,12 +63,12 @@ open Mod_subst
      to disk (.vo). This function is also the opportunity to remove
      redundant information in order to keep .vo size small
 
-     The export function is a little obsolete and will be removed 
-     in the near future... 
+     The export function is a little obsolete and will be removed
+     in the near future...
 
 *)
 
-type 'a substitutivity = 
+type 'a substitutivity =
     Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
 
 type 'a object_declaration = {
@@ -82,7 +82,7 @@ type 'a object_declaration = {
   rebuild_function : 'a -> 'a;
   export_function : 'a -> 'a option }
 
-(* The default object is a "Keep" object with empty methods. 
+(* The default object is a "Keep" object with empty methods.
    Object creators are advised to use the construction
    [{(default_object "MY_OBJECT") with
       cache_function = ...

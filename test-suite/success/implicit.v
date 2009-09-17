@@ -12,7 +12,7 @@ Infix "#" := op (at level 70).
 Check (forall x : A, x # x).
 
 (* Example submitted by Christine *)
-Record stack : Type := 
+Record stack : Type :=
   {type : Set; elt : type; empty : type -> bool; proof : empty elt = true}.
 
 Check
@@ -42,7 +42,7 @@ Inductive P n : nat -> Prop := c : P n n.
 Require Import List.
 
 Fixpoint plus n m {struct n} :=
-  match n with 
+  match n with
   | 0 => m
   | S p => S (plus p m)
   end.

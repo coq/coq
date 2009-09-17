@@ -16,7 +16,7 @@ type 'a summary_declaration = {
   unfreeze_function : 'a -> unit;
   init_function : unit -> unit }
 
-let summaries = 
+let summaries =
   (Hashtbl.create 17 : (string, Dyn.t summary_declaration) Hashtbl.t)
 
 let internal_declare_summary sumname sdecl =
@@ -34,22 +34,22 @@ let internal_declare_summary sumname sdecl =
       (str "Cannot declare a summary twice: " ++ str sumname);
   Hashtbl.add summaries sumname ddecl
 
-let declare_summary sumname decl = 
+let declare_summary sumname decl =
   internal_declare_summary (sumname^"-SUMMARY") decl
 
 type frozen = Dyn.t Stringmap.t
 
 let freeze_summaries () =
   let m = ref Stringmap.empty in
-  Hashtbl.iter 
+  Hashtbl.iter
     (fun id decl -> m := Stringmap.add id (decl.freeze_function()) !m)
     summaries;
   !m
 
 
-let unfreeze_summaries fs = 
+let unfreeze_summaries fs =
   Hashtbl.iter
-    (fun id decl -> 
+    (fun id decl ->
        try decl.unfreeze_function (Stringmap.find id fs)
        with Not_found -> decl.init_function())
     summaries

@@ -309,7 +309,7 @@ Proof NZgt_wf.
 
 Theorem lt_wf_0 : well_founded lt.
 Proof.
-setoid_replace lt with (fun n m : N => 0 <= n /\ n < m) 
+setoid_replace lt with (fun n m : N => 0 <= n /\ n < m)
   using relation (@relations_eq N N).
 apply lt_wf.
 intros x y; split.

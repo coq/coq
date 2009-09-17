@@ -55,12 +55,12 @@ Section MakeRingPol.
  Notation "x - y " := (rsub x y). Notation "- x" := (ropp x).
  Notation "x == y" := (req x y).
 
- (* C notations *)		
+ (* C notations *)
  Notation "x +! y" := (cadd x y). Notation "x *! y " := (cmul x y).
  Notation "x -! y " := (csub x y). Notation "-! x" := (copp x).
  Notation " x ?=! y" := (ceqb x y). Notation "[ x ]" := (phi x).
 
- (* Usefull tactics *)		
+ (* Usefull tactics *)
   Add Setoid R req Rsth as R_set1.
  Ltac rrefl := gen_reflexivity Rsth.
   Add Morphism radd : radd_ext.  exact (Radd_ext Reqe). Qed.
@@ -554,7 +554,7 @@ Section MakeRingPol.
   intros;simpl;apply (morph0 CRmorph).
  Qed.
 
-Lemma env_morph : forall p e1 e2, (forall x, e1 x = e2 x) -> 
+Lemma env_morph : forall p e1 e2, (forall x, e1 x = e2 x) ->
  p @ e1 = p @ e2.
 Proof.
   induction p ; simpl.
@@ -578,7 +578,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma Pjump_xO_tail : forall P p l, 
+Lemma Pjump_xO_tail : forall P p l,
   P @ (jump (xO p) (tail l)) = P @ (jump (xI p) l).
 Proof.
   intros.
@@ -743,9 +743,9 @@ Qed.
    induction P;simpl;intros;try apply (ARadd_comm ARth).
    destruct p2; simpl; try apply (ARadd_comm ARth).
    rewrite Pjump_xO_tail.
-   apply (ARadd_comm ARth).   
+   apply (ARadd_comm ARth).
    rewrite Pjump_Pdouble_minus_one.
-   apply (ARadd_comm ARth).   
+   apply (ARadd_comm ARth).
     assert (H1 := ZPminus_spec p2 k);destruct (ZPminus p2 k);Esimpl2.
     rewrite IHP'1;rsimpl; rewrite H1;add_push (P5 @ (tail l0));rrefl.
     rewrite IHP'1;simpl;Esimpl.
@@ -785,7 +785,7 @@ Qed.
   destruct p0;simpl;Esimpl2.
   rewrite IHP'2;simpl;rsimpl;add_push (P'1@l * (pow_pos rmul (hd 0 l) p));trivial.
   rewrite Pjump_xO_tail.
-  add_push (P @ ((jump (xI p0) l)));rrefl.  
+  add_push (P @ ((jump (xI p0) l)));rrefl.
   rewrite IHP'2;simpl;rewrite Pjump_Pdouble_minus_one;rsimpl.
   add_push (- (P'1 @ l * pow_pos  rmul (hd 0 l) p));rrefl.
   unfold tail.
@@ -931,7 +931,7 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
   rrefl.
  Qed.
 
- Lemma Mphi_morph : forall P env env', (forall x, env x = env' x ) -> 
+ Lemma Mphi_morph : forall P env env', (forall x, env x = env' x ) ->
    Mphi env P = Mphi env' P.
  Proof.
    induction P ; simpl.
@@ -952,7 +952,7 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
    intros. symmetry. apply H.
  Qed.
 
-Lemma Mjump_xO_tail : forall M p l, 
+Lemma Mjump_xO_tail : forall M p l,
   Mphi  (jump (xO p) (tail l)) M = Mphi (jump (xI p) l) M.
 Proof.
   intros.
@@ -1117,7 +1117,7 @@ Qed.
    rewrite Padd_ok; rewrite PmulC_ok; rsimpl.
  intros i P5 H; rewrite H.
    intros HH H1; injection HH; intros; subst; rsimpl.
-   rewrite Padd_ok; rewrite PmulI_ok by (intros;apply Pmul_ok). rewrite H1; rsimpl. 
+   rewrite Padd_ok; rewrite PmulI_ok by (intros;apply Pmul_ok). rewrite H1; rsimpl.
  intros i P5 P6 H1 H2 H3; rewrite H1; rewrite H3.
    assert (P4 = Q1 ++ P3 ** PX i P5 P6).
    injection H2; intros; subst;trivial.
@@ -1385,13 +1385,13 @@ Section POWER.
    intros.
    induction pe;simpl;Esimpl3.
    apply mkX_ok.
-   rewrite IHpe1;rewrite IHpe2;destruct pe1;destruct pe2;Esimpl3. 
+   rewrite IHpe1;rewrite IHpe2;destruct pe1;destruct pe2;Esimpl3.
    rewrite IHpe1;rewrite IHpe2;rrefl.
    rewrite IHpe1;rewrite IHpe2. rewrite Pmul_ok. rrefl.
    rewrite IHpe;rrefl.
-   rewrite Ppow_N_ok by reflexivity. 
+   rewrite Ppow_N_ok by reflexivity.
    rewrite pow_th.(rpow_pow_N). destruct n0;Esimpl3.
-   induction p;simpl;try rewrite IHp;try rewrite IHpe;repeat rewrite Pms_ok; 
+   induction p;simpl;try rewrite IHp;try rewrite IHpe;repeat rewrite Pms_ok;
       repeat rewrite Pmul_ok;rrefl.
   Qed.
 

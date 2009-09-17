@@ -2,7 +2,7 @@
 Goal forall a b c : nat,  a = b -> b = c -> forall d, a+d=c+d.
 intros.
 
-(* "compatibility" mode: specializing a global name 
+(* "compatibility" mode: specializing a global name
    means a kind of generalize *)
 
 specialize trans_equal. intros _.

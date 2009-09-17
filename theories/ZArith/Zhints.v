@@ -40,27 +40,27 @@ Require Import Wf_Z.
 
 (** No subgoal or smaller subgoals                                     *)
 
-Hint Resolve 
+Hint Resolve
   (** ** Reversible simplification lemmas (no loss of information)      *)
   (** Should clearly be declared as hints                               *)
-  
+
   (** Lemmas ending by eq *)
   Zsucc_eq_compat (* :(n,m:Z)`n = m`->`(Zs n) = (Zs m)` *)
-  
+
   (** Lemmas ending by Zgt *)
   Zsucc_gt_compat (* :(n,m:Z)`m > n`->`(Zs m) > (Zs n)` *)
   Zgt_succ (* :(n:Z)`(Zs n) > n` *)
   Zorder.Zgt_pos_0 (* :(p:positive)`(POS p) > 0` *)
   Zplus_gt_compat_l (* :(n,m,p:Z)`n > m`->`p+n > p+m` *)
   Zplus_gt_compat_r (* :(n,m,p:Z)`n > m`->`n+p > m+p` *)
-  
+
   (** Lemmas ending by Zlt *)
   Zlt_succ (* :(n:Z)`n < (Zs n)` *)
   Zsucc_lt_compat (* :(n,m:Z)`n < m`->`(Zs n) < (Zs m)` *)
   Zlt_pred (* :(n:Z)`(Zpred n) < n` *)
   Zplus_lt_compat_l (* :(n,m,p:Z)`n < m`->`p+n < p+m` *)
   Zplus_lt_compat_r (* :(n,m,p:Z)`n < m`->`n+p < m+p` *)
-  
+
   (** Lemmas ending by Zle *)
   Zle_0_nat (* :(n:nat)`0 <= (inject_nat n)` *)
   Zorder.Zle_0_pos (* :(p:positive)`0 <= (POS p)` *)
@@ -73,24 +73,24 @@ Hint Resolve
   Zplus_le_compat_l (* :(n,m,p:Z)`n <= m`->`p+n <= p+m` *)
   Zplus_le_compat_r (* :(a,b,c:Z)`a <= b`->`a+c <= b+c` *)
   Zabs_pos (* :(x:Z)`0 <= |x|` *)
-  
+
   (** ** Irreversible simplification lemmas *)
   (** Probably to be declared as hints, when no other simplification is possible *)
-  
+
   (** Lemmas ending by eq *)
   BinInt.Z_eq_mult (* :(x,y:Z)`y = 0`->`y*x = 0` *)
   Zplus_eq_compat (* :(n,m,p,q:Z)`n = m`->`p = q`->`n+p = m+q` *)
-  
+
   (** Lemmas ending by Zge *)
   Zorder.Zmult_ge_compat_r (* :(a,b,c:Z)`a >= b`->`c >= 0`->`a*c >= b*c` *)
   Zorder.Zmult_ge_compat_l (* :(a,b,c:Z)`a >= b`->`c >= 0`->`c*a >= c*b` *)
   Zorder.Zmult_ge_compat (* :
       (a,b,c,d:Z)`a >= c`->`b >= d`->`c >= 0`->`d >= 0`->`a*b >= c*d` *)
-  
+
   (** Lemmas ending by Zlt *)
   Zorder.Zmult_gt_0_compat (* :(a,b:Z)`a > 0`->`b > 0`->`a*b > 0` *)
   Zlt_lt_succ (* :(n,m:Z)`n < m`->`n < (Zs m)` *)
-  
+
   (** Lemmas ending by Zle *)
   Zorder.Zmult_le_0_compat (* :(x,y:Z)`0 <= x`->`0 <= y`->`0 <= x*y` *)
   Zorder.Zmult_le_compat_r (* :(a,b,c:Z)`a <= b`->`0 <= c`->`a*c <= b*c` *)
@@ -98,9 +98,9 @@ Hint Resolve
   Zplus_le_0_compat (* :(x,y:Z)`0 <= x`->`0 <= y`->`0 <= x+y` *)
   Zle_le_succ (* :(x,y:Z)`x <= y`->`x <= (Zs y)` *)
   Zplus_le_compat (* :(n,m,p,q:Z)`n <= m`->`p <= q`->`n+p <= m+q` *)
-  
+
   : zarith.
-  
+
 (**********************************************************************)
 (** *        Reversible lemmas relating operators                     *)
 (** Probably to be declared as hints but need to define precedences   *)
@@ -108,7 +108,7 @@ Hint Resolve
 (** ** Conversion between comparisons/predicates and arithmetic operators *)
 
 (** Lemmas ending by eq *)
-(** 
+(**
 <<
 Zegal_left: (x,y:Z)`x = y`->`x+(-y) = 0`
 Zabs_eq: (x:Z)`0 <= x`->`|x| = x`
@@ -118,7 +118,7 @@ Zodd_div2: (x:Z)`x >= 0`->(Zodd x)->`x = 2*(Zdiv2 x)+1`
 *)
 
 (** Lemmas ending by Zgt *)
-(** 
+(**
 <<
 Zgt_left_rev: (x,y:Z)`x+(-y) > 0`->`x > y`
 Zgt_left_gt: (x,y:Z)`x > y`->`x+(-y) > 0`
@@ -126,7 +126,7 @@ Zgt_left_gt: (x,y:Z)`x > y`->`x+(-y) > 0`
 *)
 
 (** Lemmas ending by Zlt *)
-(** 
+(**
 <<
 Zlt_left_rev: (x,y:Z)`0 < y+(-x)`->`x < y`
 Zlt_left_lt: (x,y:Z)`x < y`->`0 < y+(-x)`
@@ -135,7 +135,7 @@ Zlt_O_minus_lt: (n,m:Z)`0 < n-m`->`m < n`
 *)
 
 (** Lemmas ending by Zle *)
-(** 
+(**
 <<
 Zle_left: (x,y:Z)`x <= y`->`0 <= y+(-x)`
 Zle_left_rev: (x,y:Z)`0 <= y+(-x)`->`x <= y`
@@ -148,35 +148,35 @@ Zgt_left: (x,y:Z)`x > y`->`0 <= x+(-1)+(-y)`
 (** ** Conversion between nat comparisons and Z comparisons *)
 
 (** Lemmas ending by eq *)
-(** 
+(**
 <<
 inj_eq: (x,y:nat)x=y->`(inject_nat x) = (inject_nat y)`
 >>
 *)
 
 (** Lemmas ending by Zge *)
-(** 
+(**
 <<
 inj_ge: (x,y:nat)(ge x y)->`(inject_nat x) >= (inject_nat y)`
 >>
 *)
 
 (** Lemmas ending by Zgt *)
-(** 
+(**
 <<
 inj_gt: (x,y:nat)(gt x y)->`(inject_nat x) > (inject_nat y)`
 >>
 *)
 
 (** Lemmas ending by Zlt *)
-(** 
+(**
 <<
 inj_lt: (x,y:nat)(lt x y)->`(inject_nat x) < (inject_nat y)`
 >>
 *)
 
 (** Lemmas ending by Zle *)
-(** 
+(**
 <<
 inj_le: (x,y:nat)(le x y)->`(inject_nat x) <= (inject_nat y)`
 >>
@@ -185,7 +185,7 @@ inj_le: (x,y:nat)(le x y)->`(inject_nat x) <= (inject_nat y)`
 (** ** Conversion between comparisons *)
 
 (** Lemmas ending by Zge *)
-(** 
+(**
 <<
 not_Zlt: (x,y:Z)~`x < y`->`x >= y`
 Zle_ge: (m,n:Z)`m <= n`->`n >= m`
@@ -193,7 +193,7 @@ Zle_ge: (m,n:Z)`m <= n`->`n >= m`
 *)
 
 (** Lemmas ending by Zgt *)
-(** 
+(**
 <<
 Zle_gt_S: (n,p:Z)`n <= p`->`(Zs p) > n`
 not_Zle: (x,y:Z)~`x <= y`->`x > y`
@@ -203,7 +203,7 @@ Zle_S_gt: (n,m:Z)`(Zs n) <= m`->`m > n`
 *)
 
 (** Lemmas ending by Zlt *)
-(** 
+(**
 <<
 not_Zge: (x,y:Z)~`x >= y`->`x < y`
 Zgt_lt: (m,n:Z)`m > n`->`n < m`
@@ -212,7 +212,7 @@ Zle_lt_n_Sm: (n,m:Z)`n <= m`->`n < (Zs m)`
 *)
 
 (** Lemmas ending by Zle *)
-(** 
+(**
 <<
 Zlt_ZERO_pred_le_ZERO: (x:Z)`0 < x`->`0 <= (Zpred x)`
 not_Zgt: (x,y:Z)~`x > y`->`x <= y`
@@ -230,7 +230,7 @@ Zle_refl: (n,m:Z)`n = m`->`n <= m`
 (**    useful with clear precedences *)
 
 (** Lemmas ending by Zlt *)
-(** 
+(**
 <<
 Zlt_le_reg :(a,b,c,d:Z)`a < b`->`c <= d`->`a+c < b+d`
 Zle_lt_reg : (a,b,c,d:Z)`a <= b`->`c < d`->`a+c < b+d`
@@ -240,21 +240,21 @@ Zle_lt_reg : (a,b,c,d:Z)`a <= b`->`c < d`->`a+c < b+d`
 (** ** What is decreasing here ? *)
 
 (** Lemmas ending by eq *)
-(** 
+(**
 <<
 Zplus_minus: (n,m,p:Z)`n = m+p`->`p = n-m`
 >>
 *)
 
 (** Lemmas ending by Zgt *)
-(** 
+(**
 <<
 Zgt_pred: (n,p:Z)`p > (Zs n)`->`(Zpred p) > n`
 >>
 *)
 
 (** Lemmas ending by Zlt *)
-(** 
+(**
 <<
 Zlt_pred: (n,p:Z)`(Zs n) < p`->`n < (Zpred p)`
 >>
@@ -266,8 +266,8 @@ Zlt_pred: (n,p:Z)`(Zs n) < p`->`n < (Zpred p)`
 (** ** Bottom-up simplification: should be used *)
 
 (** Lemmas ending by eq *)
-(** 
-<< 
+(**
+<<
 Zeq_add_S: (n,m:Z)`(Zs n) = (Zs m)`->`n = m`
 Zsimpl_plus_l: (n,m,p:Z)`n+m = n+p`->`m = p`
 Zplus_unit_left: (n,m:Z)`n+0 = m`->`n = m`
@@ -276,21 +276,21 @@ Zplus_unit_right: (n,m:Z)`n = m+0`->`n = m`
 *)
 
 (** Lemmas ending by Zgt *)
-(** 
-<< 
+(**
+<<
 Zsimpl_gt_plus_l: (n,m,p:Z)`p+n > p+m`->`n > m`
 Zsimpl_gt_plus_r: (n,m,p:Z)`n+p > m+p`->`n > m`
-Zgt_S_n: (n,p:Z)`(Zs p) > (Zs n)`->`p > n` 
->> 
+Zgt_S_n: (n,p:Z)`(Zs p) > (Zs n)`->`p > n`
+>>
 *)
 
 (** Lemmas ending by Zlt *)
-(** 
-<< 
+(**
+<<
 Zsimpl_lt_plus_l: (n,m,p:Z)`p+n < p+m`->`n < m`
 Zsimpl_lt_plus_r: (n,m,p:Z)`n+p < m+p`->`n < m`
-Zlt_S_n: (n,m:Z)`(Zs n) < (Zs m)`->`n < m` 
->> 
+Zlt_S_n: (n,m:Z)`(Zs n) < (Zs m)`->`n < m`
+>>
 *)
 
 (** Lemmas ending by Zle *)
@@ -301,7 +301,7 @@ Zle_S_n: (n,m:Z)`(Zs m) <= (Zs n)`->`m <= n` >> *)
 (** ** Bottom-up irreversible (syntactic) simplification *)
 
 (** Lemmas ending by Zle *)
-(** 
+(**
 <<
 Zle_trans_S: (n,m:Z)`(Zs n) <= m`->`n <= m`
 >>
@@ -310,78 +310,78 @@ Zle_trans_S: (n,m:Z)`(Zs n) <= m`->`n <= m`
 (** ** Other unclearly simplifying lemmas *)
 
 (** Lemmas ending by Zeq *)
-(** 
-<< 
-Zmult_eq: (x,y:Z)`x <> 0`->`y*x = 0`->`y = 0` 
->> 
+(**
+<<
+Zmult_eq: (x,y:Z)`x <> 0`->`y*x = 0`->`y = 0`
+>>
 *)
 
 (* Lemmas ending by Zgt *)
-(** 
-<< 
+(**
+<<
 Zmult_gt: (x,y:Z)`x > 0`->`x*y > 0`->`y > 0`
 >>
 *)
 
 (* Lemmas ending by Zlt *)
-(** 
-<< 
+(**
+<<
 pZmult_lt: (x,y:Z)`x > 0`->`0 < y*x`->`0 < y`
->> 
+>>
 *)
 
 (* Lemmas ending by Zle *)
-(** 
-<< 
+(**
+<<
 Zmult_le: (x,y:Z)`x > 0`->`0 <= y*x`->`0 <= y`
 OMEGA1: (x,y:Z)`x = y`->`0 <= x`->`0 <= y`
->> 
+>>
 *)
 
 
 (**********************************************************************)
 (** *        Irreversible lemmas with meta-variables                  *)
-(** To be used by EAuto                                               *) 
+(** To be used by EAuto                                               *)
 
 (* Hints Immediate *)
 (** Lemmas ending by eq *)
-(** 
-<< 
+(**
+<<
 Zle_antisym: (n,m:Z)`n <= m`->`m <= n`->`n = m`
 >>
 *)
 
 (** Lemmas ending by Zge *)
-(** 
-<< 
+(**
+<<
 Zge_trans: (n,m,p:Z)`n >= m`->`m >= p`->`n >= p`
->> 
+>>
 *)
 
 (** Lemmas ending by Zgt *)
-(** 
-<< 
+(**
+<<
 Zgt_trans: (n,m,p:Z)`n > m`->`m > p`->`n > p`
 Zgt_trans_S: (n,m,p:Z)`(Zs n) > m`->`m > p`->`n > p`
 Zle_gt_trans: (n,m,p:Z)`m <= n`->`m > p`->`n > p`
 Zgt_le_trans: (n,m,p:Z)`n > m`->`p <= m`->`n > p`
->> 
+>>
 *)
 
 (** Lemmas ending by Zlt *)
-(** 
-<< 
+(**
+<<
 Zlt_trans: (n,m,p:Z)`n < m`->`m < p`->`n < p`
 Zlt_le_trans: (n,m,p:Z)`n < m`->`m <= p`->`n < p`
 Zle_lt_trans: (n,m,p:Z)`n <= m`->`m < p`->`n < p`
->> 
+>>
 *)
 
 (** Lemmas ending by Zle *)
-(** 
-<< 
+(**
+<<
 Zle_trans: (n,m,p:Z)`n <= m`->`m <= p`->`n <= p`
->> 
+>>
 *)
 
 

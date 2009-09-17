@@ -85,7 +85,7 @@ Ltac intro_hyp_glob trm :=
         match goal with
           | _:(forall x0:R, aux x0 <> 0) |- (derivable _) =>
             intro_hyp_glob X1
-          | _:(forall x0:R, aux x0 <> 0) |- (continuity _) => 
+          | _:(forall x0:R, aux x0 <> 0) |- (continuity _) =>
             intro_hyp_glob X1
           |  |- (derivable _) =>
             cut (forall x0:R, aux x0 <> 0);
@@ -277,7 +277,7 @@ Ltac intro_hyp_pt trm pt :=
 Ltac is_diff_pt :=
   match goal with
     |  |- (derivable_pt Rsqr _) =>
-      
+
   (* fonctions de base *)
       apply derivable_pt_Rsqr
     |  |- (derivable_pt id ?X1) => apply (derivable_pt_id X1)
@@ -326,7 +326,7 @@ Ltac is_diff_pt :=
               unfold plus_fct, mult_fct, div_fct, minus_fct, opp_fct, inv_fct,
                 comp, pow_fct, id, fct_cte in |- * ]
     |  |- (derivable_pt (/ ?X1) ?X2) =>
-      
+
        (* INVERSION *)
       apply (derivable_pt_inv X1 X2);
         [ assumption ||
@@ -334,7 +334,7 @@ Ltac is_diff_pt :=
             comp, pow_fct, id, fct_cte in |- *
           | is_diff_pt ]
     |  |- (derivable_pt (comp ?X1 ?X2) ?X3) =>
-      
+
        (* COMPOSITION *)
       apply (derivable_pt_comp X2 X1 X3); is_diff_pt
     | _:(derivable_pt ?X1 ?X2) |- (derivable_pt ?X1 ?X2) =>
@@ -352,7 +352,7 @@ Ltac is_diff_pt :=
 (**********)
 Ltac is_diff_glob :=
   match goal with
-    |  |- (derivable Rsqr) => 
+    |  |- (derivable Rsqr) =>
   (* fonctions de base *)
       apply derivable_Rsqr
     |  |- (derivable id) => apply derivable_id
@@ -392,7 +392,7 @@ Ltac is_diff_glob :=
               unfold plus_fct, mult_fct, div_fct, minus_fct, opp_fct, inv_fct,
                 id, fct_cte, comp, pow_fct in |- * ]
     |  |- (derivable (/ ?X1)) =>
-      
+
        (* INVERSION *)
       apply (derivable_inv X1);
         [ try
@@ -401,7 +401,7 @@ Ltac is_diff_glob :=
               id, fct_cte, comp, pow_fct in |- *
           | is_diff_glob ]
     |  |- (derivable (comp sqrt _)) =>
-      
+
        (* COMPOSITION *)
       unfold derivable in |- *; intro; try is_diff_pt
     |  |- (derivable (comp Rabs _)) =>
@@ -421,7 +421,7 @@ Ltac is_diff_glob :=
 Ltac is_cont_pt :=
   match goal with
     |  |- (continuity_pt Rsqr _) =>
-      
+
        (* fonctions de base *)
       apply derivable_continuous_pt; apply derivable_pt_Rsqr
     |  |- (continuity_pt id ?X1) =>
@@ -475,7 +475,7 @@ Ltac is_cont_pt :=
               unfold plus_fct, mult_fct, div_fct, minus_fct, opp_fct, inv_fct,
                 comp, id, fct_cte, pow_fct in |- * ]
     |  |- (continuity_pt (/ ?X1) ?X2) =>
-      
+
        (* INVERSION *)
       apply (continuity_pt_inv X1 X2);
         [ is_cont_pt
@@ -483,7 +483,7 @@ Ltac is_cont_pt :=
             unfold plus_fct, mult_fct, div_fct, minus_fct, opp_fct, inv_fct,
               comp, id, fct_cte, pow_fct in |- * ]
     |  |- (continuity_pt (comp ?X1 ?X2) ?X3) =>
-      
+
        (* COMPOSITION *)
       apply (continuity_pt_comp X2 X1 X3); is_cont_pt
     | _:(continuity_pt ?X1 ?X2) |- (continuity_pt ?X1 ?X2) =>
@@ -508,7 +508,7 @@ Ltac is_cont_pt :=
 Ltac is_cont_glob :=
   match goal with
     |  |- (continuity Rsqr) =>
-      
+
        (* fonctions de base *)
       apply derivable_continuous; apply derivable_Rsqr
     |  |- (continuity id) => apply derivable_continuous; apply derivable_id
@@ -559,7 +559,7 @@ Ltac is_cont_glob :=
               unfold plus_fct, mult_fct, div_fct, minus_fct, opp_fct, inv_fct,
                 id, fct_cte, pow_fct in |- * ]
     |  |- (continuity (comp sqrt _)) =>
-      
+
        (* COMPOSITION *)
       unfold continuity_pt in |- *; intro; try is_cont_pt
     |  |- (continuity (comp ?X1 ?X2)) =>

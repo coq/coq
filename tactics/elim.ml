@@ -28,12 +28,12 @@ open Genarg
 open Tacexpr
 
 let introElimAssumsThen tac ba =
-  let nassums = 
-    List.fold_left 
-      (fun acc b -> if b then acc+2 else acc+1) 
-      0 ba.branchsign 
-  in 
-  let introElimAssums = tclDO nassums intro in 
+  let nassums =
+    List.fold_left
+      (fun acc b -> if b then acc+2 else acc+1)
+      0 ba.branchsign
+  in
+  let introElimAssums = tclDO nassums intro in
   (tclTHEN introElimAssums (elim_on_ba tac ba))
 
 let introCaseAssumsThen tac ba =
@@ -41,12 +41,12 @@ let introCaseAssumsThen tac ba =
     List.flatten
       (List.map (function b -> if b then [false;true] else [false])
 	ba.branchsign)
-  in 
+  in
   let n1 = List.length case_thin_sign in
   let n2 = List.length ba.branchnames in
   let (l1,l2),l3 =
     if n1 < n2 then list_chop n1 ba.branchnames, []
-    else 
+    else
       (ba.branchnames, []),
        if n1 > n2 then snd (list_chop n2 case_thin_sign) else [] in
   let introCaseAssums =
@@ -93,9 +93,9 @@ and general_decompose_aux recognizer id =
 let tmphyp_name = id_of_string "_TmpHyp"
 let up_to_delta = ref false (* true *)
 
-let general_decompose recognizer c gl = 
-  let typc = pf_type_of gl c in  
-  tclTHENSV (cut typc) 
+let general_decompose recognizer c gl =
+  let typc = pf_type_of gl c in
+  tclTHENSV (cut typc)
     [| tclTHEN (intro_using tmphyp_name)
          (onLastHypId
 	    (ifOnHyp recognizer (general_decompose_aux recognizer)
@@ -110,7 +110,7 @@ let head_in gls indl t =
       else extract_mrectype t
     in List.mem ity indl
   with Not_found -> false
-       
+
 let inductive_of = function
   | IndRef ity -> ity
   | r ->
@@ -118,21 +118,21 @@ let inductive_of = function
         (Printer.pr_global r ++ str " is not an inductive type.")
 
 let decompose_these c l gls =
-  let indl = (*List.map inductive_of*) l in 
+  let indl = (*List.map inductive_of*) l in
   general_decompose (fun (_,t) -> head_in gls indl t) c gls
 
 let decompose_nonrec c gls =
-  general_decompose 
+  general_decompose
     (fun (_,t) -> is_non_recursive_type t)
     c gls
 
-let decompose_and c gls = 
-  general_decompose 
+let decompose_and c gls =
+  general_decompose
     (fun (_,t) -> is_record t)
     c gls
 
-let decompose_or c gls = 
-  general_decompose 
+let decompose_or c gls =
+  general_decompose
     (fun (_,t) -> is_disjunction t)
     c gls
 
@@ -153,7 +153,7 @@ let simple_elimination c gls =
   simple_elimination_then (fun _ -> tclIDTAC) c gls
 
 let induction_trailer abs_i abs_j bargs =
-  tclTHEN 
+  tclTHEN
     (tclDO (abs_j - abs_i) intro)
     (onLastHypId
        (fun id gls ->
@@ -163,7 +163,7 @@ let induction_trailer abs_i abs_j bargs =
 	    (List.tl (nLastDecls (abs_j - abs_i) gls)) @ bargs.assums
           in
 	  let (hyps,_) =
-            List.fold_left 
+            List.fold_left
 	      (fun (bring_ids,leave_ids) (cid,_,cidty as d) ->
                  if not (List.mem cid leave_ids)
                  then (d::bring_ids,leave_ids)
@@ -172,7 +172,7 @@ let induction_trailer abs_i abs_j bargs =
 	  in
           let ids = List.rev (ids_of_named_context hyps) in
 	  (tclTHENSEQ
-            [bring_hyps hyps; tclTRY (clear ids); 
+            [bring_hyps hyps; tclTRY (clear ids);
 	     simple_elimination (mkVar id)])
           gls))
 

@@ -25,7 +25,7 @@ type constant_type =
   | NonPolymorphicType of constr
   | PolymorphicArity of rel_context * polymorphic_arity
 
-type constr_substituted 
+type constr_substituted
 val force_constr : constr_substituted -> constr
 val from_val : constr -> constr_substituted
 
@@ -35,14 +35,14 @@ type constant_body = {
     const_type : constant_type;
     const_body_code : to_patch_substituted;
     const_constraints : Univ.constraints;
-    const_opaque : bool; 
+    const_opaque : bool;
     const_inline : bool}
 
 (* Mutual inductives *)
 
-type recarg = 
-  | Norec 
-  | Mrec of int 
+type recarg =
+  | Norec
+  | Mrec of int
   | Imbr of inductive
 
 type wf_paths = recarg Rtree.t
@@ -56,7 +56,7 @@ type monomorphic_inductive_arity = {
   mind_sort : sorts;
 }
 
-type inductive_arity = 
+type inductive_arity =
 | Monomorphic of monomorphic_inductive_arity
 | Polymorphic of polymorphic_arity
 
@@ -109,7 +109,7 @@ type one_inductive_body = {
  (* number of no constant constructor *)
     mind_nb_args : int;
 
-    mind_reloc_tbl :  reloc_table; 
+    mind_reloc_tbl :  reloc_table;
   }
 
 type mutual_inductive_body = {
@@ -149,7 +149,7 @@ type mutual_inductive_body = {
 
 type substitution
 
-type structure_field_body = 
+type structure_field_body =
   | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
   | SFBmodule of module_body
@@ -160,7 +160,7 @@ and structure_body = (label * structure_field_body) list
 
 and struct_expr_body =
   | SEBident of module_path
-  | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body 
+  | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body
   | SEBstruct of mod_self_id * structure_body
   | SEBapply of struct_expr_body * struct_expr_body
       * Univ.constraints
@@ -170,15 +170,15 @@ and with_declaration_body =
     With_module_body of identifier list * module_path *
       struct_expr_body option * Univ.constraints
   | With_definition_body of  identifier list * constant_body
-        
-and module_body = 
+
+and module_body =
     { mod_expr : struct_expr_body option;
       mod_type : struct_expr_body option;
       mod_constraints : Univ.constraints;
       mod_alias : substitution;
       mod_retroknowledge : action list}
 
-and module_type_body = 
+and module_type_body =
     { typ_expr : struct_expr_body;
       typ_strength : module_path option;
       typ_alias : substitution}

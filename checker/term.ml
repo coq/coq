@@ -81,7 +81,7 @@ let val_fix f =
     [|val_tuple"fix2"[|val_array val_int;val_int|];val_prec f|]
 let val_cofix f = val_tuple"pcofixpoint"[|val_int;val_prec f|]
 
-type cast_kind = VMcast | DEFAULTcast 
+type cast_kind = VMcast | DEFAULTcast
 let val_cast = val_enum "cast_kind" 2
 
 (*s*******************************************************************)
@@ -135,7 +135,7 @@ let rec strip_outer_cast c = match c with
   | _ -> c
 
 let rec collapse_appl c = match c with
-  | App (f,cl) -> 
+  | App (f,cl) ->
       let rec collapse_rec f cl2 =
         match (strip_outer_cast f) with
 	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
@@ -171,7 +171,7 @@ let iter_constr_with_binders g f n c = match c with
   | App (c,l) -> f n c; Array.iter (f n) l
   | Evar (_,l) -> Array.iter (f n) l
   | Case (_,p,c,bl) -> f n p; f n c; Array.iter (f n) bl
-  | Fix (_,(_,tl,bl)) -> 
+  | Fix (_,(_,tl,bl)) ->
       Array.iter (f n) tl;
       Array.iter (f (iterate g (Array.length tl) n)) bl
   | CoFix (_,(_,tl,bl)) ->
@@ -183,11 +183,11 @@ exception LocalOccur
 (* (closedn n M) raises FreeVar if a variable of height greater than n
    occurs in M, returns () otherwise *)
 
-let closedn n c = 
+let closedn n c =
   let rec closed_rec n c = match c with
     | Rel m -> if m>n then raise LocalOccur
     | _ -> iter_constr_with_binders succ closed_rec n c
-  in 
+  in
   try closed_rec n c; true with LocalOccur -> false
 
 (* [closed0 M] is true iff [M] is a (deBruijn) closed term *)
@@ -196,21 +196,21 @@ let closed0 = closedn 0
 
 (* (noccurn n M) returns true iff (Rel n) does NOT occur in term M  *)
 
-let noccurn n term = 
+let noccurn n term =
   let rec occur_rec n c = match c with
     | Rel m -> if m = n then raise LocalOccur
     | _ -> iter_constr_with_binders succ occur_rec n c
-  in 
+  in
   try occur_rec n term; true with LocalOccur -> false
 
-(* (noccur_between n m M) returns true iff (Rel p) does NOT occur in term M 
+(* (noccur_between n m M) returns true iff (Rel p) does NOT occur in term M
   for n <= p < n+m *)
 
-let noccur_between n m term = 
+let noccur_between n m term =
   let rec occur_rec n c = match c with
     | Rel(p) -> if n<=p && p<n+m then raise LocalOccur
     | _        -> iter_constr_with_binders succ occur_rec n c
-  in 
+  in
   try occur_rec n term; true with LocalOccur -> false
 
 (* Checking function for terms containing existential variables.
@@ -220,7 +220,7 @@ let noccur_between n m term =
  which may contain the CoFix variables. These occurrences of CoFix variables
  are not considered *)
 
-let noccur_with_meta n m term = 
+let noccur_with_meta n m term =
   let rec occur_rec n c = match c with
     | Rel p -> if n<=p & p<n+m then raise LocalOccur
     | App(f,cl) ->
@@ -261,18 +261,18 @@ let rec exliftn el c = match c with
 
 (* Lifting the binding depth across k bindings *)
 
-let liftn k n = 
+let liftn k n =
   match el_liftn (pred n) (el_shft k ELID) with
     | ELID -> (fun c -> c)
     | el -> exliftn el
- 
+
 let lift k = liftn k 1
 
 (*********************)
 (*   Substituting    *)
 (*********************)
 
-(* (subst1 M c) substitutes M for Rel(1) in c 
+(* (subst1 M c) substitutes M for Rel(1) in c
    we generalise it to (substl [M1,...,Mn] c) which substitutes in parallel
    M1,...,Mn for respectively Rel(1),...,Rel(n) in c *)
 
@@ -291,15 +291,15 @@ let rec lift_substituend depth s =
 let make_substituend c = { sinfo=Unknown; sit=c }
 
 let substn_many lamv n c =
-  let lv = Array.length lamv in 
+  let lv = Array.length lamv in
   if lv = 0 then c
-  else 
+  else
     let rec substrec depth c = match c with
       | Rel k     ->
           if k<=depth then c
           else if k-depth <= lv then lift_substituend depth lamv.(k-depth-1)
           else Rel (k-lv)
-      | _ -> map_constr_with_binders succ substrec depth c in 
+      | _ -> map_constr_with_binders succ substrec depth c in
     substrec n c
 
 let substnl laml n =
@@ -362,7 +362,7 @@ let extended_rel_list n hyps =
     | (_,None,_) :: hyps -> reln (Rel (n+p) :: l) (p+1) hyps
     | (_,Some _,_) :: hyps -> reln l (p+1) hyps
     | [] -> l
-  in 
+  in
   reln [] 1 hyps
 
 (* Iterate lambda abstractions *)
@@ -372,17 +372,17 @@ let compose_lam l b =
   let rec lamrec = function
     | ([], b)       -> b
     | ((v,t)::l, b) -> lamrec (l, Lambda (v,t,b))
-  in 
+  in
   lamrec (l,b)
 
 (* Transforms a lambda term [x1:T1]..[xn:Tn]T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a lambda *)
-let decompose_lam = 
+let decompose_lam =
   let rec lamdec_rec l c = match c with
     | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) c
     | Cast (c,_,_)     -> lamdec_rec l c
     | _                -> l,c
-  in 
+  in
   lamdec_rec []
 
 (* Decompose lambda abstractions and lets, until finding n
@@ -390,15 +390,15 @@ let decompose_lam =
 let decompose_lam_n_assum n =
   if n < 0 then
     error "decompose_lam_n_assum: integer parameter must be positive";
-  let rec lamdec_rec l n c = 
-    if n=0 then l,c 
-    else match c with 
+  let rec lamdec_rec l n c =
+    if n=0 then l,c
+    else match c with
     | Lambda (x,t,c)  -> lamdec_rec ((x,None,t) :: l) (n-1) c
     | LetIn (x,b,t,c) -> lamdec_rec ((x,Some b,t) :: l) n c
     | Cast (c,_,_)      -> lamdec_rec l n c
     | c -> error "decompose_lam_n_assum: not enough abstractions"
-  in 
-  lamdec_rec empty_rel_context n 
+  in
+  lamdec_rec empty_rel_context n
 
 (* Iterate products, with or without lets *)
 
@@ -410,27 +410,27 @@ let mkProd_or_LetIn (na,body,t) c =
 
 let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)
 
-let decompose_prod_assum = 
+let decompose_prod_assum =
   let rec prodec_rec l c =
     match c with
     | Prod (x,t,c)    -> prodec_rec ((x,None,t) :: l) c
     | LetIn (x,b,t,c) -> prodec_rec ((x,Some b,t) :: l) c
     | Cast (c,_,_)    -> prodec_rec l c
     | _               -> l,c
-  in 
+  in
   prodec_rec empty_rel_context
 
 let decompose_prod_n_assum n =
   if n < 0 then
     error "decompose_prod_n_assum: integer parameter must be positive";
-  let rec prodec_rec l n c = 
+  let rec prodec_rec l n c =
     if n=0 then l,c
-    else match c with 
+    else match c with
     | Prod (x,t,c)    -> prodec_rec ((x,None,t) :: l) (n-1) c
     | LetIn (x,b,t,c) -> prodec_rec ((x,Some b,t) :: l) (n-1) c
     | Cast (c,_,_)    -> prodec_rec l n c
     | c -> error "decompose_prod_n_assum: not enough assumptions"
-  in 
+  in
   prodec_rec empty_rel_context n
 
 
@@ -443,7 +443,7 @@ let val_arity = val_tuple"arity"[|val_rctxt;val_constr|]
 
 let mkArity (sign,s) = it_mkProd_or_LetIn (Sort s) sign
 
-let destArity = 
+let destArity =
   let rec prodec_rec l c =
     match c with
     | Prod (x,t,c)    -> prodec_rec ((x,None,t)::l) c
@@ -451,7 +451,7 @@ let destArity =
     | Cast (c,_,_)    -> prodec_rec l c
     | Sort s          -> l,s
     | _               -> anomaly "destArity: not an arity"
-  in 
+  in
   prodec_rec []
 
 let rec isArity c =
@@ -463,7 +463,7 @@ let rec isArity c =
   | _               -> false
 
 (*******************************)
-(*  alpha conversion functions *)                         
+(*  alpha conversion functions *)
 (*******************************)
 
 (* alpha conversion : ignore print names and casts *)
@@ -483,7 +483,7 @@ let compare_constr f t1 t2 =
       if Array.length l1 = Array.length l2 then
         f c1 c2 & array_for_all2 f l1 l2
       else
-        let (h1,l1) = decompose_app t1 in        
+        let (h1,l1) = decompose_app t1 in
         let (h2,l2) = decompose_app t2 in
         if List.length l1 = List.length l2 then
           f h1 h2 & List.for_all2 f l1 l2
@@ -500,7 +500,7 @@ let compare_constr f t1 t2 =
       ln1 = ln2 & array_for_all2 f tl1 tl2 & array_for_all2 f bl1 bl2
   | _ -> false
 
-let rec eq_constr m n = 
+let rec eq_constr m n =
   (m==n) or
   compare_constr eq_constr m n
 

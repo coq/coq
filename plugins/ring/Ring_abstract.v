@@ -164,7 +164,7 @@ Lemma abstract_varlist_insert_ok :
   trivial.
 
   simpl in |- *; intros.
-  elim (varlist_lt l v); simpl in |- *.  	
+  elim (varlist_lt l v); simpl in |- *.
   eauto.
   rewrite iacs_aux_ok.
   rewrite H; auto.
@@ -175,7 +175,7 @@ Lemma abstract_sum_merge_ok :
  forall x y:abstract_sum,
    interp_acs (abstract_sum_merge x y) = Aplus (interp_acs x) (interp_acs y).
 
-Proof.  
+Proof.
   simple induction x.
   trivial.
   simple induction y; intros.
@@ -240,13 +240,13 @@ End abstract_semi_rings.
 Section abstract_rings.
 
 (* In abstract polynomials there is no constants other
-   than 0 and 1. An abstract ring is a ring whose operations plus, 
+   than 0 and 1. An abstract ring is a ring whose operations plus,
    and mult are not functions but  constructors. In other words,
    when c1 and c2 are closed,  (plus c1 c2) doesn't reduce to a closed
    term. "closed" mean here "without plus and mult". *)
 
 (* this section is not parametrized by a (semi-)ring.
-   Nevertheless, they are two different types for semi-rings and rings 
+   Nevertheless, they are two different types for semi-rings and rings
    and there will be 2 correction theorems *)
 
 Inductive apolynomial : Type :=
@@ -488,7 +488,7 @@ Lemma signed_sum_merge_ok :
   intro Heq; rewrite (Heq I).
   rewrite H.
   repeat rewrite isacs_aux_ok.
-  rewrite (Th_plus_permute T). 
+  rewrite (Th_plus_permute T).
   repeat rewrite (Th_plus_assoc T).
   rewrite
    (Th_plus_comm T (Aopp (interp_vl Amult Aone Azero vm v0))
@@ -509,7 +509,7 @@ Lemma signed_sum_merge_ok :
   intro Heq; rewrite (Heq I).
   rewrite H.
   repeat rewrite isacs_aux_ok.
-  rewrite (Th_plus_permute T). 
+  rewrite (Th_plus_permute T).
   repeat rewrite (Th_plus_assoc T).
   rewrite (Th_opp_def T).
   rewrite (Th_plus_zero_left T).
@@ -701,6 +701,6 @@ Proof.
   intros.
     rewrite signed_sum_opp_ok.
     rewrite H; reflexivity.
-Qed.  
+Qed.
 
 End abstract_rings.

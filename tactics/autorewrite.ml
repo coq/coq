@@ -37,14 +37,14 @@ let subst_hint subst hint =
   let pat' = subst_mps subst hint.rew_pat in
   let t' = Tacinterp.subst_tactic subst hint.rew_tac in
     if hint.rew_lemma == cst' && hint.rew_tac == t' then hint else
-      { hint with 
-	rew_lemma = cst'; rew_type = typ'; 
+      { hint with
+	rew_lemma = cst'; rew_type = typ';
 	rew_pat = pat';	rew_tac = t' }
 
-module HintIdent = 
+module HintIdent =
 struct
   type t = int * rew_rule
-  
+
   let compare (i,t) (i',t') =
     Pervasives.compare i i'
 (*     Pervasives.compare t.rew_lemma t'.rew_lemma *)
@@ -66,7 +66,7 @@ module HintDN = Term_dnet.Make(HintIdent)(HintOpt)
 let rewtab =
   ref (Stringmap.empty : HintDN.t Stringmap.t)
 
-let _ = 
+let _ =
   let init () = rewtab := Stringmap.empty in
   let freeze () = !rewtab in
   let unfreeze fs = rewtab := fs in
@@ -78,11 +78,11 @@ let _ =
 let find_base bas =
  try Stringmap.find bas !rewtab
  with
-  Not_found -> 
-   errorlabstrm "AutoRewrite" 
+  Not_found ->
+   errorlabstrm "AutoRewrite"
      (str ("Rewriting base "^(bas)^" does not exist."))
 
-let find_rewrites bas = 
+let find_rewrites bas =
   List.rev_map snd (HintDN.find_all (find_base bas))
 
 let find_matches bas pat =
@@ -96,10 +96,10 @@ let print_rewrite_hintdb bas =
 	   (fun h ->
 	     str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
 	       Printer.pr_lconstr h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr h.rew_type ++
-	       str " then use tactic " ++ 
+	       str " then use tactic " ++
 	       Pptactic.pr_glob_tactic (Global.env()) h.rew_tac)
 	   (find_rewrites bas))
-    
+
 type raw_rew_rule = loc * constr * bool * raw_tactic_expr
 
 (* Applies all the rules of one base *)
@@ -108,14 +108,14 @@ let one_base general_rewrite_maybe_in tac_main bas =
   let lrul = List.map (fun h -> (h.rew_lemma,h.rew_l2r,Tacinterp.eval_tactic h.rew_tac)) lrul in
     tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
       tclTHEN tac
-        (tclREPEAT_MAIN 
+        (tclREPEAT_MAIN
 	    (tclTHENFIRST (general_rewrite_maybe_in dir csr tc) tac_main)))
       tclIDTAC lrul))
 
 (* The AutoRewrite tactic *)
 let autorewrite ?(conds=Naive) tac_main lbas =
   tclREPEAT_MAIN (tclPROGRESS
-    (List.fold_left (fun tac bas -> 
+    (List.fold_left (fun tac bas ->
        tclTHEN tac
         (one_base (fun dir c tac ->
 	  let tac = tac, conds in
@@ -124,7 +124,7 @@ let autorewrite ?(conds=Naive) tac_main lbas =
       tclIDTAC lbas))
 
 let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas : tactic =
-  fun gl -> 
+  fun gl ->
  (* let's check at once if id exists (to raise the appropriate error) *)
  let _ = List.map (Tacmach.pf_get_hyp gl) idl in
  let general_rewrite_in id =
@@ -161,35 +161,35 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas : tactic =
           | _ -> assert false) (* there must be at least an hypothesis *)
      | _ -> assert false (* rewriting cannot complete a proof *)
  in
- tclMAP (fun id -> 
+ tclMAP (fun id ->
   tclREPEAT_MAIN (tclPROGRESS
-    (List.fold_left (fun tac bas -> 
+    (List.fold_left (fun tac bas ->
        tclTHEN tac (one_base (general_rewrite_in id) tac_main bas)) tclIDTAC lbas)))
    idl gl
 
 let autorewrite_in ?(conds=Naive) id = autorewrite_multi_in ~conds [id]
 
-let gen_auto_multi_rewrite conds tac_main lbas cl = 
-  let try_do_hyps treat_id l = 
+let gen_auto_multi_rewrite conds tac_main lbas cl =
+  let try_do_hyps treat_id l =
     autorewrite_multi_in ~conds (List.map treat_id l) tac_main lbas
-  in 
+  in
   if cl.concl_occs <> all_occurrences_expr &
      cl.concl_occs <> no_occurrences_expr
-  then 
+  then
     error "The \"at\" syntax isn't available yet for the autorewrite tactic."
-  else 
-    let compose_tac t1 t2 = 
-      match cl.onhyps with 
-	| Some [] -> t1 
+  else
+    let compose_tac t1 t2 =
+      match cl.onhyps with
+	| Some [] -> t1
 	| _ ->      tclTHENFIRST t1 t2
     in
     compose_tac
 	(if cl.concl_occs <> no_occurrences_expr then autorewrite ~conds tac_main lbas else tclIDTAC)
-	(match cl.onhyps with 
+	(match cl.onhyps with
 	   | Some l -> try_do_hyps (fun ((_,id),_) -> id) l
-	   | None -> 
-	       fun gl -> 
-		 (* try to rewrite in all hypothesis 
+	   | None ->
+	       fun gl ->
+		 (* try to rewrite in all hypothesis
 		    (except maybe the rewritten one) *)
 		 let ids =  Tacmach.pf_ids_of_hyps gl
 		 in try_do_hyps (fun id -> id)  ids gl)
@@ -198,14 +198,14 @@ let auto_multi_rewrite ?(conds=Naive) = gen_auto_multi_rewrite conds Refiner.tcl
 
 let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl gl =
   let onconcl = cl.Tacexpr.concl_occs <> no_occurrences_expr in
-  match onconcl,cl.Tacexpr.onhyps with 
-    | false,Some [_] | true,Some [] | false,Some [] ->   
-	(* autorewrite with .... in clause using tac n'est sur que 
-	   si clause represente soit le but soit UNE hypothese 
+  match onconcl,cl.Tacexpr.onhyps with
+    | false,Some [_] | true,Some [] | false,Some [] ->
+	(* autorewrite with .... in clause using tac n'est sur que
+	   si clause represente soit le but soit UNE hypothese
 	*)
 	gen_auto_multi_rewrite conds tac_main lbas cl gl
-    | _ -> 
-	    Util.errorlabstrm "autorewrite" 
+    | _ ->
+	    Util.errorlabstrm "autorewrite"
 	      (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")
 
 (* Functions necessary to the library object declaration *)
@@ -217,11 +217,11 @@ let cache_hintrewrite (_,(rbase,lrl)) =
 
 let export_hintrewrite x = Some x
 
-let subst_hintrewrite (_,subst,(rbase,list as node)) = 
+let subst_hintrewrite (_,subst,(rbase,list as node)) =
   let list' = HintDN.subst subst list in
     if list' == list then node else
       (rbase,list')
-      
+
 let classify_hintrewrite x = Libobject.Substitute x
 
 
@@ -249,13 +249,13 @@ type hypinfo = {
 }
 
 let evd_convertible env evd x y =
-  try ignore(Evarconv.the_conv_x env x y evd); true 
+  try ignore(Evarconv.the_conv_x env x y evd); true
   with _ -> false
-  
+
 let decompose_applied_relation metas env sigma c ctype left2right =
-  let find_rel ty = 
+  let find_rel ty =
     let eqclause = Clenv.mk_clenv_from_env env sigma None (c,ty) in
-    let eqclause = 
+    let eqclause =
       if metas then eqclause
       else clenv_pose_metas_as_evars eqclause (Evd.undefined_metas eqclause.evd)
     in
@@ -266,9 +266,9 @@ let decompose_applied_relation metas env sigma c ctype left2right =
 	  let l,res = split_last_two (y::z) in x::l, res
       | _ -> raise Not_found
     in
-      try 
+      try
 	let others,(c1,c2) = split_last_two args in
-	let ty1, ty2 = 
+	let ty1, ty2 =
 	  Typing.mtype_of env eqclause.evd c1, Typing.mtype_of env eqclause.evd c2
 	in
 	  if not (evd_convertible env eqclause.evd ty1 ty2) then None
@@ -280,7 +280,7 @@ let decompose_applied_relation metas env sigma c ctype left2right =
   in
     match find_rel ctype with
     | Some c -> Some c
-    | None -> 
+    | None ->
 	let ctx,t' = Reductionops.splay_prod_assum env sigma ctype in (* Search for underlying eq *)
 	match find_rel (it_mkProd_or_LetIn t' ctx) with
 	| Some c -> Some c
@@ -290,11 +290,11 @@ let find_applied_relation metas loc env sigma c left2right =
   let ctype = Typing.type_of env sigma c in
     match decompose_applied_relation metas env sigma c ctype left2right with
     | Some c -> c
-    | None -> 
-	user_err_loc (loc, "decompose_applied_relation", 
+    | None ->
+	user_err_loc (loc, "decompose_applied_relation",
 		     str"The type" ++ spc () ++ Printer.pr_constr_env env ctype ++
 		       spc () ++ str"of this term does not end with an applied relation.")
-	
+
 (* To add rewriting rules to a base *)
 let add_rew_rules base lrul =
   let counter = ref 0 in
@@ -309,4 +309,4 @@ let add_rew_rules base lrul =
 	in incr counter;
 	  HintDN.add pat (!counter, rul) dn) HintDN.empty lrul
   in Lib.add_anonymous_leaf (inHintRewrite (base,lrul))
-    
+

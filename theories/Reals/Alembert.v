@@ -5,7 +5,7 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
- 
+
 (*i $Id$ i*)
 
 Require Import Rbase.
@@ -198,7 +198,7 @@ Proof.
   replace (Wn (S n) * 2 * / Rabs (An n)) with (2 * / Rabs (An n) * Wn (S n));
     [ idtac | ring ];
     replace (2 * (3 * / 2) * Rabs (An (S n)) * / Rabs (An n)) with
-      (2 * / Rabs (An n) * (3 * / 2 * Rabs (An (S n)))); 
+      (2 * / Rabs (An n) * (3 * / 2 * Rabs (An (S n))));
       [ idtac | ring ]; apply Rmult_le_compat_l.
   left; apply Rmult_lt_0_compat.
   prove_sup0.
@@ -273,7 +273,7 @@ Proof.
   replace (Vn (S n) * 2 * / Rabs (An n)) with (2 * / Rabs (An n) * Vn (S n));
     [ idtac | ring ];
     replace (2 * (3 * / 2) * Rabs (An (S n)) * / Rabs (An n)) with
-      (2 * / Rabs (An n) * (3 * / 2 * Rabs (An (S n)))); 
+      (2 * / Rabs (An n) * (3 * / 2 * Rabs (An (S n))));
       [ idtac | ring ]; apply Rmult_le_compat_l.
   left; apply Rmult_lt_0_compat.
   prove_sup0.
@@ -304,8 +304,8 @@ Proof.
   pattern (Rabs (An n)) at 1 in |- *; rewrite <- Rplus_0_r; rewrite double;
     rewrite Rplus_assoc; apply Rplus_le_compat_l.
   apply Rplus_le_reg_l with (- An n); rewrite Rplus_0_r;
-    rewrite <- (Rplus_comm (An n)); rewrite <- Rplus_assoc; 
-      rewrite Rplus_opp_l; rewrite Rplus_0_l; rewrite <- Rabs_Ropp; 
+    rewrite <- (Rplus_comm (An n)); rewrite <- Rplus_assoc;
+      rewrite Rplus_opp_l; rewrite Rplus_0_l; rewrite <- Rabs_Ropp;
 	apply RRle_abs.
   unfold Vn in |- *; unfold Rdiv in |- *; repeat rewrite <- (Rmult_comm (/ 2));
     repeat rewrite Rmult_assoc; apply Rmult_le_compat_l.
@@ -318,7 +318,7 @@ Proof.
     rewrite <- (Rmult_comm (/ 2)); apply Rmult_lt_compat_l.
   apply Rinv_0_lt_compat; prove_sup0.
   apply Rplus_lt_reg_r with (An n); rewrite Rplus_0_r; unfold Rminus in |- *;
-    rewrite (Rplus_comm (An n)); rewrite Rplus_assoc; 
+    rewrite (Rplus_comm (An n)); rewrite Rplus_assoc;
       rewrite Rplus_opp_l; rewrite Rplus_0_r;
 	apply Rle_lt_trans with (Rabs (An n)).
   apply RRle_abs.
@@ -328,7 +328,7 @@ Proof.
     rewrite <- (Rmult_comm (/ 2)); apply Rmult_lt_compat_l.
   apply Rinv_0_lt_compat; prove_sup0.
   apply Rplus_lt_reg_r with (- An n); rewrite Rplus_0_r; unfold Rminus in |- *;
-    rewrite (Rplus_comm (- An n)); rewrite Rplus_assoc; 
+    rewrite (Rplus_comm (- An n)); rewrite Rplus_assoc;
       rewrite Rplus_opp_r; rewrite Rplus_0_r;
 	apply Rle_lt_trans with (Rabs (An n)).
   rewrite <- Rabs_Ropp; apply RRle_abs.
@@ -352,7 +352,7 @@ Proof.
   unfold Un_cv in |- *; intros; unfold Un_cv in H1; cut (0 < eps / Rabs x).
   intro; elim (H1 (eps / Rabs x) H4); intros.
   exists x0; intros; unfold R_dist in |- *; unfold Rminus in |- *;
-    rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu; 
+    rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu;
       unfold Bn in |- *;
 	replace (An (S n) * x ^ S n / (An n * x ^ n)) with (An (S n) / An n * x).
   rewrite Rabs_mult; apply Rmult_lt_reg_l with (/ Rabs x).
@@ -363,13 +363,13 @@ Proof.
     replace (Rabs (An (S n) / An n)) with (R_dist (Rabs (An (S n) * / An n)) 0).
   apply H5; assumption.
   unfold R_dist in |- *; unfold Rminus in |- *; rewrite Ropp_0;
-    rewrite Rplus_0_r; rewrite Rabs_Rabsolu; unfold Rdiv in |- *; 
+    rewrite Rplus_0_r; rewrite Rabs_Rabsolu; unfold Rdiv in |- *;
       reflexivity.
   apply Rabs_no_R0; assumption.
   replace (S n) with (n + 1)%nat; [ idtac | ring ]; rewrite pow_add;
     unfold Rdiv in |- *; rewrite Rinv_mult_distr.
   replace (An (n + 1)%nat * (x ^ n * x ^ 1) * (/ An n * / x ^ n)) with
-    (An (n + 1)%nat * x ^ 1 * / An n * (x ^ n * / x ^ n)); 
+    (An (n + 1)%nat * x ^ 1 * / An n * (x ^ n * / x ^ n));
     [ idtac | ring ]; rewrite <- Rinv_r_sym.
   simpl in |- *; ring.
   apply pow_nonzero; assumption.
@@ -638,7 +638,7 @@ Lemma Alembert_C6 :
   rewrite Rmult_1_r.
   rewrite Rinv_mult_distr.
   replace (An (n + 1)%nat * (x ^ n * x) * (/ An n * / x ^ n)) with
-    (An (n + 1)%nat * / An n * x * (x ^ n * / x ^ n)); 
+    (An (n + 1)%nat * / An n * x * (x ^ n * / x ^ n));
     [ idtac | ring ].
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_r; reflexivity.
@@ -713,7 +713,7 @@ Lemma Alembert_C6 :
   rewrite Rmult_1_r.
   rewrite Rinv_mult_distr.
   replace (An (n + 1)%nat * (x ^ n * x) * (/ An n * / x ^ n)) with
-    (An (n + 1)%nat * / An n * x * (x ^ n * / x ^ n)); 
+    (An (n + 1)%nat * / An n * x * (x ^ n * / x ^ n));
     [ idtac | ring ].
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_r; reflexivity.

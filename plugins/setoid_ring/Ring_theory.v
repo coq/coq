@@ -39,7 +39,7 @@ Section Power.
  Notation "x * y " := (rmul x y).
  Notation "x == y" := (req x y).
 
- Hypothesis mul_ext : 
+ Hypothesis mul_ext :
    forall x1 x2, x1 == x2 -> forall y1 y2, y1 == y2 -> x1 * y1 == x2 * y2.
  Hypothesis mul_comm : forall x y, x * y == y * x.
  Hypothesis mul_assoc  : forall x y z, x * (y * z) == (x * y) * z.
@@ -79,11 +79,11 @@ Section Power.
    simpl. apply (Seq_refl _ _ Rsth).
  Qed.
 
- Definition pow_N (x:R) (p:N) := 
+ Definition pow_N (x:R) (p:N) :=
   match p with
   | N0 => rI
   | Npos p => pow_pos x p
-  end. 
+  end.
 
  Definition id_phi_N (x:N) : N := x.
 
@@ -109,12 +109,12 @@ Section DEFINITIONS.
     SRadd_comm   : forall n m, n + m == m + n ;
     SRadd_assoc : forall n m p, n + (m + p) == (n + m) + p;
     SRmul_1_l   : forall n, 1*n == n;
-    SRmul_0_l   : forall n, 0*n == 0; 
+    SRmul_0_l   : forall n, 0*n == 0;
     SRmul_comm   : forall n m, n*m == m*n;
     SRmul_assoc : forall n m p, n*(m*p) == (n*m)*p;
     SRdistr_l   : forall n m p, (n + m)*p == n*p + m*p
   }.
-  
+
  (** Almost Ring *)
 (*Almost ring are no ring : Ropp_def is missing **)
  Record almost_ring_theory : Prop := mk_art {
@@ -129,7 +129,7 @@ Section DEFINITIONS.
     ARopp_mul_l : forall x y, -(x * y) == -x * y;
     ARopp_add   : forall x y, -(x + y) == -x + -y;
     ARsub_def   : forall x y, x - y == x + -y
-  }. 
+  }.
 
  (** Ring *)
  Record ring_theory : Prop := mk_rt {
@@ -145,7 +145,7 @@ Section DEFINITIONS.
  }.
 
  (** Equality is extensional *)
-  
+
  Record sring_eq_ext : Prop := mk_seqe {
     (* SRing operators are compatible with equality *)
     SRadd_ext :
@@ -163,12 +163,12 @@ Section DEFINITIONS.
     Ropp_ext : forall x1 x2, x1 == x2 ->  -x1 == -x2
   }.
 
- (** Interpretation morphisms definition*) 
+ (** Interpretation morphisms definition*)
  Section MORPHISM.
  Variable C:Type.
  Variable (cO cI : C) (cadd cmul csub : C->C->C) (copp : C->C).
  Variable ceqb : C->C->bool.
- (* [phi] est un morphisme de [C] dans [R] *) 
+ (* [phi] est un morphisme de [C] dans [R] *)
  Variable phi : C -> R.
  Notation "x +! y" := (cadd x y). Notation "x -! y " := (csub x y).
  Notation "x *! y " := (cmul x y). Notation "-! x" := (copp x).
@@ -180,7 +180,7 @@ Section DEFINITIONS.
     Smorph1 : [cI] == 1;
     Smorph_add : forall x y, [x +! y] == [x]+[y];
     Smorph_mul : forall x y, [x *! y] == [x]*[y];
-    Smorph_eq  : forall x y, x?=!y = true -> [x] == [y] 
+    Smorph_eq  : forall x y, x?=!y = true -> [x] == [y]
   }.
 
 (* for rings*)
@@ -191,7 +191,7 @@ Section DEFINITIONS.
     morph_sub : forall x y, [x -! y] == [x]-[y];
     morph_mul : forall x y, [x *! y] == [x]*[y];
     morph_opp : forall x, [-!x] == -[x];
-    morph_eq  : forall x y, x?=!y = true -> [x] == [y] 
+    morph_eq  : forall x y, x?=!y = true -> [x] == [y]
   }.
 
  Section SIGN.
@@ -213,7 +213,7 @@ Section DEFINITIONS.
   }.
  End DIV.
 
- End MORPHISM. 
+ End MORPHISM.
 
  (** Identity is a morphism *)
  Variable Rsth : Setoid_Theory R req.
@@ -231,8 +231,8 @@ Section DEFINITIONS.
  Section POWER.
   Variable Cpow : Set.
   Variable Cp_phi : N -> Cpow.
-  Variable rpow : R -> Cpow -> R. 
-  
+  Variable rpow : R -> Cpow -> R.
+
   Record power_theory : Prop := mkpow_th {
     rpow_pow_N : forall r n, req (rpow r (Cp_phi n)) (pow_N rI rmul r n)
   }.
@@ -241,7 +241,7 @@ Section DEFINITIONS.
 
  Definition pow_N_th := mkpow_th id_phi_N (pow_N rI rmul) (pow_N_pow_N rI rmul Rsth).
 
- 
+
 End DEFINITIONS.
 
 
@@ -268,7 +268,7 @@ Section ALMOST_RING.
  Variable Rsth : Setoid_Theory R req.
    Add Setoid R req Rsth as R_setoid2.
    Ltac sreflexivity := apply (Seq_refl _ _ Rsth).
- 
+
  Section SEMI_RING.
  Variable SReqe : sring_eq_ext radd rmul req.
    Add Morphism radd : radd_ext1.  exact (SRadd_ext SReqe). Qed.
@@ -278,7 +278,7 @@ Section ALMOST_RING.
  (** Every semi ring can be seen as an almost ring, by taking :
         -x = x and x - y = x + y *)
  Definition SRopp (x:R) := x. Notation "- x" := (SRopp x).
- 
+
  Definition SRsub x y := x + -y. Notation "x - y " := (SRsub x y).
 
  Lemma SRopp_ext : forall x y, x == y -> -x == -y.
@@ -296,7 +296,7 @@ Section ALMOST_RING.
  Lemma SRopp_add : forall x y, -(x + y) == -x + -y.
  Proof. intros;sreflexivity.  Qed.
 
-  
+
  Lemma SRsub_def   : forall x y, x - y == x + -y.
  Proof. intros;sreflexivity. Qed.
 
@@ -306,7 +306,7 @@ Section ALMOST_RING.
     (SRmul_1_l SRth) (SRmul_0_l SRth)
     (SRmul_comm SRth) (SRmul_assoc SRth) (SRdistr_l SRth)
     SRopp_mul_l SRopp_add SRsub_def).
- 
+
  (** Identity morphism for semi-ring equipped with their almost-ring structure*)
  Variable reqb : R->R->bool.
 
@@ -337,12 +337,12 @@ Section ALMOST_RING.
  Qed.
 
  End  SEMI_RING.
- 
+
  Variable Reqe : ring_eq_ext radd rmul ropp req.
    Add Morphism radd : radd_ext2.  exact (Radd_ext Reqe). Qed.
    Add Morphism rmul : rmul_ext2.  exact (Rmul_ext Reqe). Qed.
    Add Morphism ropp : ropp_ext2.  exact (Ropp_ext Reqe). Qed.
- 
+
  Section RING.
  Variable Rth : ring_theory 0 1 radd rmul rsub ropp req.
 
@@ -368,7 +368,7 @@ Section ALMOST_RING.
   rewrite (Rth.(Radd_comm) (-x));rewrite (Ropp_def Rth).
   rewrite Rmul_0_l;rewrite (Radd_0_l Rth);sreflexivity.
  Qed.
- 
+
  Lemma Ropp_add : forall x y, -(x + y) == -x + -y.
  Proof.
   intros x y;rewrite <- ((Radd_0_l Rth) (-(x+y))).
@@ -387,7 +387,7 @@ Section ALMOST_RING.
   rewrite ((Radd_comm Rth) (-x) 0);rewrite (Radd_0_l Rth).
   apply (Radd_comm Rth).
  Qed.
- 
+
  Lemma Ropp_opp : forall x, - -x == x.
  Proof.
   intros x; rewrite <- (Radd_0_l Rth (- -x)).
@@ -402,7 +402,7 @@ Section ALMOST_RING.
     (Rmul_1_l Rth) Rmul_0_l (Rmul_comm Rth) (Rmul_assoc Rth) (Rdistr_l Rth)
     Ropp_mul_l Ropp_add (Rsub_def Rth)).
 
- (** Every semi morphism between two rings is a morphism*) 
+ (** Every semi morphism between two rings is a morphism*)
  Variable C : Type.
  Variable (cO cI : C) (cadd cmul csub: C->C->C) (copp : C -> C).
  Variable (ceq : C -> C -> Prop) (ceqb : C -> C -> bool).
@@ -431,7 +431,7 @@ Section ALMOST_RING.
   rewrite (Smorph0 Smorph).
   rewrite (Radd_comm Rth (-[x])).
   apply (Radd_0_l Rth);sreflexivity.
- Qed. 
+ Qed.
 
  Lemma Smorph_sub : forall x y, [x -! y] == [x] - [y].
  Proof.
@@ -439,11 +439,11 @@ Section ALMOST_RING.
   rewrite (Smorph_add Smorph);rewrite Smorph_opp;sreflexivity.
  Qed.
 
- Lemma Smorph_morph : ring_morph 0 1 radd rmul rsub ropp req 
+ Lemma Smorph_morph : ring_morph 0 1 radd rmul rsub ropp req
                                              cO cI cadd cmul csub copp ceqb phi.
  Proof
   (mkmorph 0 1 radd rmul rsub ropp req cO cI cadd cmul csub copp ceqb phi
-        (Smorph0 Smorph) (Smorph1 Smorph) 
+        (Smorph0 Smorph) (Smorph1 Smorph)
          (Smorph_add Smorph) Smorph_sub (Smorph_mul Smorph) Smorph_opp
          (Smorph_eq Smorph)).
 
@@ -462,7 +462,7 @@ Qed.
       forall x1 x2, x1 == x2 -> forall y1 y2, y1 == y2 -> x1 - y1 == x2 - y2.
  Proof.
   intros.
-  setoid_replace (x1 - y1) with (x1 + -y1). 
+  setoid_replace (x1 - y1) with (x1 + -y1).
   setoid_replace (x2 - y2) with (x2 + -y2).
   rewrite H;rewrite H0;sreflexivity.
   apply (ARsub_def ARth).
@@ -483,10 +483,10 @@ Qed.
      | match goal with
        | |- context [?z * (?x + ?y)] => rewrite ((ARmul_comm ARth) z (x+y))
        end].
- 
+
  Lemma ARadd_0_r : forall x, (x + 0) == x.
  Proof. intros; mrewrite. Qed.
- 
+
  Lemma ARmul_1_r   : forall x, x * 1 == x.
  Proof. intros;mrewrite. Qed.
 
@@ -495,7 +495,7 @@ Qed.
 
  Lemma ARdistr_r : forall x y z, z * (x + y) == z*x + z*y.
  Proof.
-  intros;mrewrite. 
+  intros;mrewrite.
   repeat rewrite (ARth.(ARmul_comm) z);sreflexivity.
  Qed.
 
@@ -516,7 +516,7 @@ Qed.
   intros;rewrite <-((ARmul_assoc ARth) x).
   rewrite ((ARmul_comm ARth) x);sreflexivity.
  Qed.
- 
+
  Lemma ARmul_assoc2 : forall x y z, (y * x) * z == (y * z) * x.
  Proof.
   intros; repeat rewrite <- (ARmul_assoc ARth);
@@ -592,17 +592,17 @@ Ltac gen_srewrite Rsth Reqe ARth :=
 
 Ltac gen_add_push add Rsth Reqe ARth x :=
   repeat (match goal with
-  | |- context [add (add ?y x) ?z] => 
+  | |- context [add (add ?y x) ?z] =>
      progress rewrite (ARadd_assoc2 Rsth Reqe ARth x y z)
-  | |- context [add (add x ?y) ?z] => 
+  | |- context [add (add x ?y) ?z] =>
      progress rewrite (ARadd_assoc1 Rsth ARth x y z)
   end).
 
 Ltac gen_mul_push mul Rsth Reqe ARth x :=
   repeat (match goal with
-  | |- context [mul (mul ?y x) ?z] => 
+  | |- context [mul (mul ?y x) ?z] =>
      progress rewrite (ARmul_assoc2 Rsth Reqe ARth x y z)
-  | |- context [mul (mul x ?y) ?z] => 
+  | |- context [mul (mul x ?y) ?z] =>
      progress rewrite (ARmul_assoc1 Rsth ARth x y z)
   end).
 

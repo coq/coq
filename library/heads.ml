@@ -22,8 +22,8 @@ open Lib
 (** Characterization of the head of a term *)
 
 (* We only compute an approximation to ensure the computation is not
-   arbitrary long (e.g. the head constant of [h] defined to be 
-   [g (fun x -> phi(x))] where [g] is [fun f => g O] does not launch 
+   arbitrary long (e.g. the head constant of [h] defined to be
+   [g (fun x -> phi(x))] where [g] is [fun f => g O] does not launch
    the evaluation of [phi(0)] and the head of [h] is declared unknown). *)
 
 type rigid_head_kind =
@@ -50,7 +50,7 @@ let freeze () = !head_map
 
 let unfreeze hm = head_map := hm
 
-let _ = 
+let _ =
   Summary.declare_summary "Head_decl"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
@@ -63,7 +63,7 @@ let kind_of_head env t =
   let rec aux k l t b = match kind_of_term (Reduction.whd_betaiotazeta t) with
   | Rel n when n > k -> NotImmediatelyComputableHead
   | Rel n -> FlexibleHead (k,k+1-n,List.length l,b)
-  | Var id -> 
+  | Var id ->
       (try on_subterm k l b (variable_head id)
        with Not_found ->
         (* a goal variable *)
@@ -71,7 +71,7 @@ let kind_of_head env t =
         | Some c -> aux k l c b
         | None -> NotImmediatelyComputableHead)
   | Const cst -> on_subterm k l b (constant_head cst)
-  | Construct _ | CoFix _ -> 
+  | Construct _ | CoFix _ ->
       if b then NotImmediatelyComputableHead else ConstructorHead
   | Sort _ | Ind _ | Prod _ -> RigidHead RigidType
   | Cast (c,_,_) -> aux k l c b
@@ -88,7 +88,7 @@ let kind_of_head env t =
   and on_subterm k l with_case = function
   | FlexibleHead (n,i,q,with_subcase) ->
       let m = List.length l in
-      let k',rest,a = 
+      let k',rest,a =
         if n > m then
           (* eta-expansion *)
           let a =
@@ -115,12 +115,12 @@ let compute_head = function
      | Some c -> kind_of_head (Global.env()) c)
 | EvalVarRef id ->
     (match pi2 (Global.lookup_named id) with
-     | Some c when not (Decls.variable_opacity id) -> 
+     | Some c when not (Decls.variable_opacity id) ->
            kind_of_head (Global.env()) c
-     | _ -> 
+     | _ ->
            RigidHead (RigidVar id))
 
-let is_rigid env t = 
+let is_rigid env t =
   match kind_of_head env t with
   | RigidHead _ | ConstructorHead -> true
   | _ -> false
@@ -129,7 +129,7 @@ let is_rigid env t =
 
 let load_head _ (_,(ref,(k:head_approximation))) =
   head_map := Evalrefmap.add ref k !head_map
-  
+
 let cache_head o =
   load_head 1 o
 
@@ -158,7 +158,7 @@ let rebuild_head (ref,k) =
 let export_head o = Some o
 
 let (inHead, _) =
-  declare_object {(default_object "HEAD") with 
+  declare_object {(default_object "HEAD") with
     cache_function = cache_head;
     load_function = load_head;
     subst_function = subst_head;

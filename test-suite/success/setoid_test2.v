@@ -205,7 +205,7 @@ Theorem test6:
  rewrite  H.
  assumption.
 Qed.
-  
+
 Theorem test7:
  forall E1 E2 y y', (eqS1 E1 E2) -> (eqS2 y y') ->
   (f_test6 (g_test6 (h_test6 E2))) ->
@@ -228,7 +228,7 @@ Add Morphism f_test8 : f_compat_test8. Admitted.
 Axiom eqS1_test8': S1_test8 -> S1_test8 -> Prop.
 Axiom SetoidS1_test8' : Setoid_Theory S1_test8 eqS1_test8'.
 Add Setoid S1_test8 eqS1_test8' SetoidS1_test8' as S1_test8setoid'.
-    
+
 (*CSC: for test8 to be significant I want to choose the setoid
   (S1_test8, eqS1_test8'). However this does not happen and
   there is still no syntax for it ;-( *)

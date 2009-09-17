@@ -12,7 +12,7 @@ Require Import Arith.
 
 Definition proj (x y:nat) (P:nat -> Type) (def:P x) (prf:P y) : P y :=
   match eq_nat_dec x y return P y with
-  | left eqprf => 
+  | left eqprf =>
     match eqprf in (_ = z) return (P z) with
     | refl_equal => def
     end

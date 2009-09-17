@@ -17,7 +17,7 @@ Require Export DoubleType.
 
 Unset Boxed Definitions.
 
-(** * 31-bit integers *) 
+(** * 31-bit integers *)
 
 (** This file contains basic definitions of a 31-bit integer
   arithmetic. In fact it is more general than that. The only reason
@@ -36,8 +36,8 @@ Definition size := 31%nat.
 Inductive digits : Type := D0 | D1.
 
 (** The type of 31-bit integers *)
-  
-(** The type [int31] has a unique constructor [I31] that expects 
+
+(** The type [int31] has a unique constructor [I31] that expects
    31 arguments of type [digits]. *)
 
 Inductive int31 : Type := I31 : nfun digits size int31.
@@ -69,26 +69,26 @@ Definition Twon : int31 := Eval compute in (napply_cst _ _ D0 (size-2) I31) D1 D
 (** * Bits manipulation *)
 
 
-(** [sneakr b x] shifts [x] to the right by one bit. 
+(** [sneakr b x] shifts [x] to the right by one bit.
    Rightmost digit is lost while leftmost digit becomes [b].
-   Pseudo-code is 
+   Pseudo-code is
     [ match x with (I31 d0 ... dN) => I31 b d0 ... d(N-1) end ]
 *)
 
 Definition sneakr : digits -> int31 -> int31 := Eval compute in
  fun b => int31_rect _ (napply_except_last _ _ (size-1) (I31 b)).
 
-(** [sneakl b x] shifts [x] to the left by one bit. 
+(** [sneakl b x] shifts [x] to the left by one bit.
    Leftmost digit is lost while rightmost digit becomes [b].
-   Pseudo-code is 
+   Pseudo-code is
     [ match x with (I31 d0 ... dN) => I31 d1 ... dN b end ]
 *)
 
-Definition sneakl : digits -> int31 -> int31 := Eval compute in 
+Definition sneakl : digits -> int31 -> int31 := Eval compute in
  fun b => int31_rect _ (fun _ => napply_then_last _ _ b (size-1) I31).
 
 
-(** [shiftl], [shiftr], [twice] and [twice_plus_one] are direct 
+(** [shiftl], [shiftr], [twice] and [twice_plus_one] are direct
     consequences of [sneakl] and [sneakr]. *)
 
 Definition shiftl := sneakl D0.
@@ -96,31 +96,31 @@ Definition shiftr := sneakr D0.
 Definition twice := sneakl D0.
 Definition twice_plus_one := sneakl D1.
 
-(** [firstl x] returns the leftmost digit of number [x]. 
+(** [firstl x] returns the leftmost digit of number [x].
     Pseudo-code is [ match x with (I31 d0 ... dN) => d0 end ] *)
 
-Definition firstl : int31 -> digits := Eval compute in 
+Definition firstl : int31 -> digits := Eval compute in
  int31_rect _ (fun d => napply_discard _ _ d (size-1)).
 
-(** [firstr x] returns the rightmost digit of number [x]. 
+(** [firstr x] returns the rightmost digit of number [x].
     Pseudo-code is [ match x with (I31 d0 ... dN) => dN end ] *)
 
-Definition firstr : int31 -> digits := Eval compute in 
+Definition firstr : int31 -> digits := Eval compute in
  int31_rect _ (napply_discard _ _ (fun d=>d) (size-1)).
 
-(** [iszero x] is true iff [x = I31 D0 ... D0]. Pseudo-code is 
+(** [iszero x] is true iff [x = I31 D0 ... D0]. Pseudo-code is
     [ match x with (I31 D0 ... D0) => true | _ => false end ] *)
 
-Definition iszero : int31 -> bool := Eval compute in 
- let f d b := match d with D0 => b | D1 => false end 
+Definition iszero : int31 -> bool := Eval compute in
+ let f d b := match d with D0 => b | D1 => false end
  in int31_rect _ (nfold_bis _ _ f true size).
 
-(* NB: DO NOT transform the above match in a nicer (if then else). 
+(* NB: DO NOT transform the above match in a nicer (if then else).
    It seems to work, but later "unfold iszero" takes forever. *)
 
 
-(** [base] is [2^31], obtained via iterations of [Zdouble]. 
-   It can also be seen as the smallest b > 0 s.t. phi_inv b = 0  
+(** [base] is [2^31], obtained via iterations of [Zdouble].
+   It can also be seen as the smallest b > 0 s.t. phi_inv b = 0
    (see below) *)
 
 Definition base := Eval compute in
@@ -140,7 +140,7 @@ Fixpoint recl_aux (n:nat)(A:Type)(case0:A)(caserec:digits->int31->A->A)
              caserec (firstl i) si (recl_aux next A case0 caserec si)
   end.
 
-Fixpoint recr_aux (n:nat)(A:Type)(case0:A)(caserec:digits->int31->A->A) 
+Fixpoint recr_aux (n:nat)(A:Type)(case0:A)(caserec:digits->int31->A->A)
  (i:int31) : A :=
   match n with
   | O => case0
@@ -159,22 +159,22 @@ Definition recr := recr_aux size.
 
 (** From int31 to Z, we simply iterates [Zdouble] or [Zdouble_plus_one]. *)
 
-Definition phi : int31 -> Z := 
+Definition phi : int31 -> Z :=
  recr Z (0%Z)
   (fun b _ => match b with D0 => Zdouble | D1 => Zdouble_plus_one end).
 
-(** From positive to int31. An abstract definition could be :  
-      [ phi_inv (2n) = 2*(phi_inv n) /\ 
+(** From positive to int31. An abstract definition could be :
+      [ phi_inv (2n) = 2*(phi_inv n) /\
         phi_inv 2n+1 = 2*(phi_inv n) + 1 ] *)
 
-Fixpoint phi_inv_positive p := 
+Fixpoint phi_inv_positive p :=
   match p with
     | xI q => twice_plus_one (phi_inv_positive q)
     | xO q => twice (phi_inv_positive q)
     | xH => In
   end.
 
-(** The negative part : 2-complement  *) 
+(** The negative part : 2-complement  *)
 
 Fixpoint complement_negative p :=
   match p with
@@ -186,9 +186,9 @@ Fixpoint complement_negative p :=
 (** A simple incrementation function *)
 
 Definition incr : int31 -> int31 :=
- recr int31 In 
-   (fun b si rec => match b with 
-     | D0 => sneakl D1 si 
+ recr int31 In
+   (fun b si rec => match b with
+     | D0 => sneakl D1 si
      | D1 => sneakl D0 rec end).
 
 (** We can now define the conversion from Z to int31. *)
@@ -196,11 +196,11 @@ Definition incr : int31 -> int31 :=
 Definition phi_inv : Z -> int31 := fun n =>
  match n with
  | Z0 => On
- | Zpos p => phi_inv_positive p 
+ | Zpos p => phi_inv_positive p
  | Zneg p => incr (complement_negative p)
  end.
 
-(** [phi_inv2] is similar to [phi_inv] but returns a double word 
+(** [phi_inv2] is similar to [phi_inv] but returns a double word
     [zn2z int31] *)
 
 Definition phi_inv2 n :=
@@ -211,7 +211,7 @@ Definition phi_inv2 n :=
 
 (** [phi2] is similar to [phi] but takes a double word (two args) *)
 
-Definition phi2 nh nl := 
+Definition phi2 nh nl :=
   ((phi nh)*base+(phi nl))%Z.
 
 (** * Addition *)
@@ -227,11 +227,11 @@ Notation "n + m" := (add31 n m) : int31_scope.
 (* mode, (phi n)+(phi m) is computed twice*)
 (* it may be considered to optimize it *)
 
-Definition add31c (n m : int31) := 
+Definition add31c (n m : int31) :=
   let npm := n+m in
-  match (phi npm ?= (phi n)+(phi m))%Z with 
-  | Eq => C0 npm 
-  | _ => C1 npm                             
+  match (phi npm ?= (phi n)+(phi m))%Z with
+  | Eq => C0 npm
+  | _ => C1 npm
   end.
 Notation "n '+c' m" := (add31c n m) (at level 50, no associativity) : int31_scope.
 
@@ -254,7 +254,7 @@ Notation "n - m" := (sub31 n m) : int31_scope.
 
 (** Subtraction with carry (thus exact) *)
 
-Definition sub31c (n m : int31) := 
+Definition sub31c (n m : int31) :=
   let nmm := n-m in
   match (phi nmm ?= (phi n)-(phi m))%Z with
   | Eq => C0 nmm
@@ -290,13 +290,13 @@ Notation "n '*c' m" := (mul31c n m) (at level 40, no associativity) : int31_scop
 
 (** Division of a double size word modulo [2^31] *)
 
-Definition div3121 (nh nl m : int31) := 
+Definition div3121 (nh nl m : int31) :=
   let (q,r) := Zdiv_eucl (phi2 nh nl) (phi m) in
   (phi_inv q, phi_inv r).
 
 (** Division modulo [2^31] *)
 
-Definition div31 (n m : int31) := 
+Definition div31 (n m : int31) :=
   let (q,r) := Zdiv_eucl (phi n) (phi m) in
   (phi_inv q, phi_inv r).
 Notation "n / m" := (div31 n m) : int31_scope.
@@ -308,12 +308,12 @@ Definition compare31 (n m : int31) := ((phi n)?=(phi m))%Z.
 Notation "n ?= m" := (compare31 n m) (at level 70, no associativity) : int31_scope.
 
 
-(** Computing the [i]-th iterate of a function: 
+(** Computing the [i]-th iterate of a function:
     [iter_int31 i A f = f^i] *)
 
 Definition iter_int31 i A f :=
-  recr (A->A) (fun x => x) 
-   (fun b si rec => match b with 
+  recr (A->A) (fun x => x)
+   (fun b si rec => match b with
       | D0 => fun x => rec (rec x)
       | D1 => fun x => f (rec (rec x))
     end)
@@ -322,9 +322,9 @@ Definition iter_int31 i A f :=
 (** Combining the [(31-p)] low bits of [i] above the [p] high bits of [j]:
     [addmuldiv31 p i j = i*2^p+j/2^(31-p)]  (modulo [2^31]) *)
 
-Definition addmuldiv31 p i j := 
- let (res, _ ) := 
- iter_int31 p (int31*int31) 
+Definition addmuldiv31 p i j :=
+ let (res, _ ) :=
+ iter_int31 p (int31*int31)
   (fun ij => let (i,j) := ij in (sneakl (firstl j) i, shiftl j))
   (i,j)
  in
@@ -346,7 +346,7 @@ Register addmuldiv31 as int31 addmuldiv in "coq_int31" by True.
 
 Definition gcd31 (i j:int31) :=
   (fix euler (guard:nat) (i j:int31) {struct guard} :=
-   match guard with 
+   match guard with
    | O => In
    | S p => match j ?= On with
             | Eq => i
@@ -370,17 +370,17 @@ Eval lazy delta [Twon] in
   | _ =>  j
   end.
 
-Fixpoint iter31_sqrt (n: nat) (rec: int31 -> int31 -> int31) 
+Fixpoint iter31_sqrt (n: nat) (rec: int31 -> int31 -> int31)
           (i j: int31) {struct n} : int31 :=
-  sqrt31_step 
+  sqrt31_step
    (match n with
       O =>  rec
    | S n => (iter31_sqrt n (iter31_sqrt n rec))
    end) i j.
 
-Definition sqrt31 i := 
+Definition sqrt31 i :=
 Eval lazy delta [On In Twon] in
-  match compare31 In i with 
+  match compare31 In i with
     Gt => On
   | Eq => In
   | Lt => iter31_sqrt 31 (fun i j => j) i (fst (i/Twon))
@@ -388,7 +388,7 @@ Eval lazy delta [On In Twon] in
 
 Definition v30 := Eval compute in (addmuldiv31 (phi_inv (Z_of_nat size - 1)) In On).
 
-Definition sqrt312_step (rec: int31 -> int31 -> int31 -> int31) 
+Definition sqrt312_step (rec: int31 -> int31 -> int31 -> int31)
    (ih il j: int31)  :=
 Eval lazy delta [Twon v30] in
   match ih ?= j with Eq => j | Gt => j | _ =>
@@ -401,28 +401,28 @@ Eval lazy delta [Twon v30] in
   | _ =>  j
   end end.
 
-Fixpoint iter312_sqrt (n: nat) 
-          (rec: int31  -> int31 -> int31 -> int31) 
+Fixpoint iter312_sqrt (n: nat)
+          (rec: int31  -> int31 -> int31 -> int31)
           (ih il j: int31) {struct n} : int31 :=
-  sqrt312_step 
+  sqrt312_step
    (match n with
       O =>  rec
    | S n => (iter312_sqrt n (iter312_sqrt n rec))
    end) ih il j.
 
-Definition sqrt312 ih il := 
+Definition sqrt312 ih il :=
 Eval lazy delta [On In] in
   let s := iter312_sqrt 31 (fun ih il j => j) ih il Tn in
            match s *c s with
             W0 => (On, C0 On) (* impossible *)
           | WW ih1 il1 =>
              match il -c il1 with
-                C0 il2 => 
+                C0 il2 =>
                   match ih ?= ih1 with
                     Gt => (s, C1 il2)
                   | _  => (s, C0 il2)
                   end
-              | C1 il2 => 
+              | C1 il2 =>
                   match (ih - In) ?= ih1 with (* we could parametrize ih - 1 *)
                     Gt => (s, C1 il2)
                   | _  => (s, C0 il2)
@@ -431,7 +431,7 @@ Eval lazy delta [On In] in
           end.
 
 
-Fixpoint p2i n p : (N*int31)%type := 
+Fixpoint p2i n p : (N*int31)%type :=
   match n with
     | O => (Npos p, On)
     | S n => match p with
@@ -444,26 +444,26 @@ Fixpoint p2i n p : (N*int31)%type :=
 Definition positive_to_int31 (p:positive) := p2i size p.
 
 (** Constant 31 converted into type int31.
-    It is used as default answer for numbers of zeros 
+    It is used as default answer for numbers of zeros
     in [head0] and [tail0] *)
 
 Definition T31 : int31 := Eval compute in phi_inv (Z_of_nat size).
 
 Definition head031 (i:int31) :=
-  recl _ (fun _ => T31) 
-   (fun b si rec n => match b with 
+  recl _ (fun _ => T31)
+   (fun b si rec n => match b with
      | D0 => rec (add31 n In)
      | D1 => n
     end)
    i On.
 
 Definition tail031 (i:int31) :=
-  recr _ (fun _ => T31) 
-   (fun b si rec n => match b with 
+  recr _ (fun _ => T31)
+   (fun b si rec n => match b with
      | D0 => rec (add31 n In)
      | D1 => n
     end)
    i On.
 
 Register head031 as int31 head0 in "coq_int31" by True.
-Register tail031 as int31 tail0 in "coq_int31" by True. 
+Register tail031 as int31 tail0 in "coq_int31" by True.

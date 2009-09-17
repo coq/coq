@@ -6,15 +6,15 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* 
+(*
  Tactic groebnerR: proofs of polynomials equalities with variables in R.
  Use Hilbert Nullstellensatz and Buchberger algorithm (adapted version of
  L.Thery Coq proven implementation).
  Thanks to B.Gregoire and L.Thery for help on ring tactic.
  Examples at the end of the file.
- 
+
  3 versions:
- 
+
  - groebnerR.
 
  - groebnerRp (a::b::c::nil) : give the list of variables are considered as
@@ -41,7 +41,7 @@ Declare ML Module "groebner_plugin".
 Local Open Scope R_scope.
 
 Lemma psos_r1b: forall x y, x - y = 0 -> x = y.
-intros x y H; replace x with ((x - y) + y);  
+intros x y H; replace x with ((x - y) + y);
   [rewrite H | idtac]; ring.
 Qed.
 
@@ -71,8 +71,8 @@ auto.
 Qed.
 
 
-Ltac equalities_to_goal := 
-  lazymatch goal with 
+Ltac equalities_to_goal :=
+  lazymatch goal with
   |  H: (@eq R ?x 0) |- _ => try revert H
   |  H: (@eq R 0 ?x) |- _ =>
           try generalize (sym_equal H); clear H
@@ -93,17 +93,17 @@ Qed.
 
 (* Removes x<>0 from hypothesis *)
 Ltac groebnerR_not_hyp:=
- match goal with 
+ match goal with
  | H: ?x<>?y |- _ =>
   match y with
-   |0 => 
+   |0 =>
      let H1:=fresh "Hgroebner" in
      let y:=fresh "x" in
      destruct (@groebnerR_not1_0 _ H) as (y,H1); clear H
    |_ => generalize (@groebnerR_diff _ _ H); clear H; intro
   end
  end.
- 
+
 Ltac groebnerR_not_goal :=
  match goal with
  | |- ?x<>?y :> R => red; intro; apply groebnerR_not2
@@ -124,10 +124,10 @@ Definition PEZ := PExpr Z.
 
 Definition P0Z : PolZ := @P0 Z 0%Z.
 
-Definition PolZadd : PolZ -> PolZ -> PolZ := 
+Definition PolZadd : PolZ -> PolZ -> PolZ :=
   @Padd Z 0%Z Zplus Zeq_bool.
 
-Definition PolZmul : PolZ -> PolZ -> PolZ := 
+Definition PolZmul : PolZ -> PolZ -> PolZ :=
   @Pmul Z 0%Z 1%Z Zplus Zmult Zeq_bool.
 
 Definition PolZeq := @Peq Z Zeq_bool.
@@ -143,7 +143,7 @@ Fixpoint mult_l (la : list PEZ) (lp: list PolZ) : PolZ :=
 
 Fixpoint compute_list (lla: list (list PEZ)) (lp:list PolZ) :=
  match lla with
- | List.nil => lp 
+ | List.nil => lp
  | la::lla => compute_list lla ((mult_l la lp)::lp)
  end.
 
@@ -154,10 +154,10 @@ Definition check (lpe:list PEZ) (qe:PEZ) (certif: list (list PEZ) * list PEZ) :=
 
 
 (* Correction *)
-Definition PhiR : list R -> PolZ -> R := 
+Definition PhiR : list R -> PolZ -> R :=
   (Pphi 0 Rplus Rmult (gen_phiZ 0 1 Rplus Rmult Ropp)).
 
-Definition PEevalR : list R -> PEZ -> R := 
+Definition PEevalR : list R -> PEZ -> R :=
    PEeval 0 Rplus Rmult Rminus Ropp (gen_phiZ 0 1 Rplus Rmult Ropp)
          Nnat.nat_of_N pow.
 
@@ -188,20 +188,20 @@ Proof.
 Qed.
 
 Lemma PolZeq_correct : forall P P' l,
-  PolZeq P P' = true -> 
+  PolZeq P P' = true ->
   PhiR l P = PhiR l P'.
 Proof.
- intros;apply 
+ intros;apply
    (Peq_ok Rset Rext (gen_phiZ_morph Rset Rext (F_R Rfield)));trivial.
 Qed.
 
 Fixpoint Cond0 (A:Type) (Interp:A->R) (l:list A) : Prop :=
-  match l with 
+  match l with
   | List.nil => True
   | a::l => Interp a = 0 /\ Cond0 A Interp l
   end.
 
-Lemma mult_l_correct : forall l la lp, 
+Lemma mult_l_correct : forall l la lp,
   Cond0 PolZ (PhiR l) lp ->
   PhiR l (mult_l la lp) = 0.
 Proof.
@@ -220,7 +220,7 @@ Proof.
  apply mult_l_correct;trivial.
 Qed.
 
-Lemma check_correct : 
+Lemma check_correct :
   forall l lpe qe certif,
     check lpe qe certif = true ->
     Cond0 PEZ (PEevalR l) lpe ->
@@ -228,11 +228,11 @@ Lemma check_correct :
 Proof.
  unfold check;intros l lpe qe (lla, lq) H2 H1.
  apply PolZeq_correct with (l:=l) in H2.
- rewrite norm_correct, H2. 
+ rewrite norm_correct, H2.
  apply mult_l_correct.
  apply compute_list_correct.
  clear H2 lq lla qe;induction lpe;simpl;trivial.
- simpl in H1;destruct H1. 
+ simpl in H1;destruct H1.
  rewrite <- norm_correct;auto.
 Qed.
 
@@ -244,7 +244,7 @@ elim (Rmult_integral _ _ H0);intros.
  absurd (c=0);auto.
 
  clear H0; induction r; simpl in *.
-  contradict H1; discrR. 
+  contradict H1; discrR.
 
   elim (Rmult_integral _ _ H1); auto.
 Qed.
@@ -255,10 +255,10 @@ Ltac generalise_eq_hyps:=
     (match goal with
      |h : (?p = ?q)|- _ => revert h
      end).
-  
+
 Ltac lpol_goal t :=
   match t with
-  | ?a = 0 -> ?b => 
+  | ?a = 0 -> ?b =>
     let r:= lpol_goal b in
     constr:(a::r)
   | ?a = 0 => constr:(a::nil)
@@ -274,25 +274,25 @@ Fixpoint IPR p {struct p}: R :=
   end.
 
 Definition IZR1 z :=
-  match z with Z0 => 0 
-             | Zpos p => IPR p 
-             | Zneg p => -(IPR p) 
+  match z with Z0 => 0
+             | Zpos p => IPR p
+             | Zneg p => -(IPR p)
   end.
 
 Fixpoint interpret3 t fv {struct t}: R :=
   match t with
-  | (PEadd t1 t2) => 
+  | (PEadd t1 t2) =>
        let v1  := interpret3 t1 fv in
        let v2  := interpret3 t2 fv in (v1 + v2)
-  | (PEmul t1 t2) => 
+  | (PEmul t1 t2) =>
        let v1  := interpret3 t1 fv in
        let v2  := interpret3 t2 fv in (v1 * v2)
-  | (PEsub t1 t2) => 
+  | (PEsub t1 t2) =>
        let v1  := interpret3 t1 fv in
        let v2  := interpret3 t2 fv in (v1 - v2)
-  | (PEopp t1) => 
+  | (PEopp t1) =>
        let v1  := interpret3 t1 fv in (-v1)
-  | (PEpow t1 t2) => 
+  | (PEpow t1 t2) =>
        let v1  := interpret3 t1 fv in v1 ^(Nnat.nat_of_N t2)
   | (PEc t1) => (IZR1 t1)
   | (PEX n) => List.nth (pred (nat_of_P n)) fv 0
@@ -303,7 +303,7 @@ Fixpoint interpret3 t fv {struct t}: R :=
 Ltac parametres_en_tete fv lp :=
     match fv with
      | (@nil _)          => lp
-     | (@cons _ ?x ?fv1) => 
+     | (@cons _ ?x ?fv1) =>
        let res := AddFvTail x lp in
          parametres_en_tete fv1 res
     end.
@@ -340,7 +340,7 @@ Ltac groebner_call nparam p lp kont :=
         groebner_call_n nparam p n lp kont ||
         let n' := eval compute in (Nsucc n) in try_n n'
     end in
-  try_n 1%N. 
+  try_n 1%N.
 
 
 Ltac groebnerR_gen lparam lvar n RNG lH _rl :=
@@ -351,7 +351,7 @@ Ltac groebnerR_gen lparam lvar n RNG lH _rl :=
   let t := Get_goal in
   let lpol := lpol_goal t in
   intros;
-  let fv := 
+  let fv :=
     match lvar with
     | nil =>
         let fv1 := FV_hypo_tac mkFV ltac:(get_Eq RNG) lH in
@@ -381,7 +381,7 @@ Ltac groebnerR_gen lparam lvar n RNG lH _rl :=
     set (lp21:=lp);
     groebner_call nparam p lp ltac:(fun c r lq lci =>
       set (q := PEmul c (PEpow p21 r));
-      let Hg := fresh "Hg" in 
+      let Hg := fresh "Hg" in
       assert (Hg:check lp21 q (lci,lq) = true);
       [ (vm_compute;reflexivity) || idtac "invalid groebner certificate"
       | let Hg2 := fresh "Hg" in

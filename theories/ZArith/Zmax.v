@@ -30,15 +30,15 @@ Proof.
   intros n m P H1 H2; unfold Zmax in |- *; case (n ?= m); auto with arith.
 Qed.
 
-Lemma Zmax_case_strong : forall (n m:Z) (P:Z -> Type), 
+Lemma Zmax_case_strong : forall (n m:Z) (P:Z -> Type),
   (m<=n -> P n) -> (n<=m -> P m) -> P (Zmax n m).
 Proof.
   intros n m P H1 H2; unfold Zmax, Zle, Zge in *.
   rewrite <- (Zcompare_antisym n m) in H1.
-  destruct (n ?= m); (apply H1|| apply H2); discriminate. 
+  destruct (n ?= m); (apply H1|| apply H2); discriminate.
 Qed.
 
-Lemma Zmax_spec : forall x y:Z, 
+Lemma Zmax_spec : forall x y:Z,
   x >= y /\ Zmax x y = x  \/
   x < y /\ Zmax x y = y.
 Proof.
@@ -90,13 +90,13 @@ Qed.
 
 Lemma Zmax_comm : forall n m:Z, Zmax n m = Zmax m n.
 Proof.
-  intros; do 2 apply Zmax_case_strong; intros; 
+  intros; do 2 apply Zmax_case_strong; intros;
     apply Zle_antisym; auto with zarith.
 Qed.
 
 Lemma Zmax_assoc : forall n m p:Z, Zmax n (Zmax m p) = Zmax (Zmax n m) p.
 Proof.
-  intros n m p; repeat apply Zmax_case_strong; intros; 
+  intros n m p; repeat apply Zmax_case_strong; intros;
     reflexivity || (try apply Zle_antisym); eauto with zarith.
 Qed.
 
@@ -114,7 +114,7 @@ Qed.
 
 (** * Operations preserving max *)
 
-Lemma Zsucc_max_distr : 
+Lemma Zsucc_max_distr :
   forall n m:Z, Zsucc (Zmax n m) = Zmax (Zsucc n) (Zsucc m).
 Proof.
   intros n m; unfold Zmax in |- *; rewrite (Zcompare_succ_compat n m);

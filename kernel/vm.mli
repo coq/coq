@@ -9,11 +9,11 @@ val set_drawinstr : unit -> unit
 val transp_values : unit -> bool
 val set_transp_values : bool -> unit
 (* le code machine *)
-type tcode 
+type tcode
 
 (* Les valeurs ***********)
 
-type vprod 
+type vprod
 type vfun
 type vfix
 type vcofix
@@ -21,7 +21,7 @@ type vblock
 type vswitch
 type arguments
 
-type atom = 
+type atom =
   | Aid of id_key
   | Aiddef of id_key * values
   | Aind of inductive
@@ -39,30 +39,30 @@ type to_up
 
 type whd =
   | Vsort of sorts
-  | Vprod of vprod 
+  | Vprod of vprod
   | Vfun of vfun
   | Vfix of vfix * arguments option
   | Vcofix of vcofix * to_up * arguments option
   | Vconstr_const of int
   | Vconstr_block of vblock
   | Vatom_stk of atom * stack
- 
+
 (** Constructors *)
 val val_of_str_const : structured_constant -> values
 
-val val_of_rel : int -> values 
-val val_of_rel_def : int -> values -> values 
+val val_of_rel : int -> values
+val val_of_rel_def : int -> values -> values
 
 val val_of_named : identifier -> values
 val val_of_named_def : identifier -> values -> values
 
-val val_of_constant : constant -> values 
+val val_of_constant : constant -> values
 val val_of_constant_def : int -> constant -> values -> values
 
 (** Destructors *)
 val whd_val : values -> whd
 
-(* Arguments *)  
+(* Arguments *)
 val nargs : arguments -> int
 val arg : arguments -> int -> values
 
@@ -71,18 +71,18 @@ val dom : vprod -> values
 val codom : vprod -> vfun
 
 (* Function *)
-val body_of_vfun : int -> vfun -> values 
+val body_of_vfun : int -> vfun -> values
 val decompose_vfun2  : int -> vfun -> vfun -> int * values * values
 
 (* Fix *)
 val current_fix : vfix -> int
 val check_fix : vfix -> vfix -> bool
-val rec_args : vfix -> int array 
+val rec_args : vfix -> int array
 val reduce_fix : int -> vfix -> vfun array * values array
                               (* bodies ,  types *)
 
 (* CoFix *)
-val current_cofix : vcofix -> int 
+val current_cofix : vcofix -> int
 val check_cofix : vcofix -> vcofix -> bool
 val reduce_cofix : int -> vcofix -> values array * values array
                                       (* bodies , types *)

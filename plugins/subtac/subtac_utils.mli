@@ -85,7 +85,7 @@ val wf_relations : (constr, constr lazy_t) Hashtbl.t
 type binders = local_binder list
 val app_opt : ('a -> 'a) option -> 'a -> 'a
 val print_args : env -> constr array -> std_ppcmds
-val make_existential : loc -> ?opaque:obligation_definition_status -> 
+val make_existential : loc -> ?opaque:obligation_definition_status ->
   env -> evar_defs ref -> types -> constr
 val make_existential_expr : loc -> 'a -> 'b -> constr_expr
 val string_of_hole_kind : hole_kind -> string
@@ -111,7 +111,7 @@ val mk_conj : types list -> types
 val mk_not : types -> types
 
 val build_dependent_sum : (identifier * types) list -> Proof_type.tactic * types
-val and_tac : (identifier * 'a * constr * Proof_type.tactic) list ->  
+val and_tac : (identifier * 'a * constr * Proof_type.tactic) list ->
   ((constr -> (identifier * 'a * constr * constr) list) -> Tacexpr.declaration_hook) -> unit
 
 val destruct_ex : constr -> constr -> constr list

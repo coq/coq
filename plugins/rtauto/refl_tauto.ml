@@ -18,24 +18,24 @@ open Evd
 open Tacmach
 open Proof_search
 
-let force count lazc = incr count;Lazy.force lazc 
+let force count lazc = incr count;Lazy.force lazc
 
 let step_count = ref 0
 
-let node_count = ref 0  
+let node_count = ref 0
 
-let logic_constant = 
-  Coqlib.gen_constant "refl_tauto" ["Init";"Logic"] 
+let logic_constant =
+  Coqlib.gen_constant "refl_tauto" ["Init";"Logic"]
 
 let li_False = lazy (destInd (logic_constant "False"))
 let li_and = lazy (destInd (logic_constant "and"))
 let li_or =  lazy (destInd (logic_constant "or"))
 
 let data_constant =
-  Coqlib.gen_constant "refl_tauto" ["Init";"Datatypes"] 
+  Coqlib.gen_constant "refl_tauto" ["Init";"Datatypes"]
 
-let l_true_equals_true = 
-  lazy (mkApp(logic_constant "refl_equal", 
+let l_true_equals_true =
+  lazy (mkApp(logic_constant "refl_equal",
         [|data_constant "bool";data_constant "true"|]))
 
 let pos_constant =
@@ -45,7 +45,7 @@ let l_xI = lazy (pos_constant "xI")
 let l_xO = lazy (pos_constant "xO")
 let l_xH = lazy (pos_constant "xH")
 
-let store_constant = 
+let store_constant =
   Coqlib.gen_constant "refl_tauto" ["rtauto";"Bintree"]
 
 let l_empty = lazy (store_constant "empty")
@@ -103,17 +103,17 @@ let rec make_form atom_env gls term =
   let normalize=special_nf gls in
   let cciterm=special_whd gls term  in
     match kind_of_term cciterm with
-	Prod(_,a,b) -> 
-	  if not (dependent (mkRel 1) b) && 
-	    Retyping.get_sort_family_of 
+	Prod(_,a,b) ->
+	  if not (dependent (mkRel 1) b) &&
+	    Retyping.get_sort_family_of
 	    (pf_env gls) (Tacmach.project gls) a = InProp
-	  then 
+	  then
 	    let fa=make_form atom_env gls a in
 	    let fb=make_form atom_env gls b in
 	      Arrow (fa,fb)
 	  else
 	    make_atom atom_env (normalize term)
-      | Cast(a,_,_) -> 
+      | Cast(a,_,_) ->
 	  make_form atom_env gls a
       | Ind ind ->
 	  if ind = Lazy.force li_False then
@@ -122,7 +122,7 @@ let rec make_form atom_env gls term =
 	    make_atom atom_env (normalize term)
       | App(hd,argv) when Array.length argv = 2 ->
 	  begin
-	    try 
+	    try
 	      let ind = destInd hd in
 		if ind = Lazy.force li_and then
 		  let fa=make_form atom_env gls argv.(0) in
@@ -139,103 +139,103 @@ let rec make_form atom_env gls term =
 
 let rec make_hyps atom_env gls lenv = function
     [] -> []
-  | (_,Some body,typ)::rest -> 
-      make_hyps atom_env gls (typ::body::lenv) rest  
+  | (_,Some body,typ)::rest ->
+      make_hyps atom_env gls (typ::body::lenv) rest
   | (id,None,typ)::rest ->
       let hrec=
 	make_hyps atom_env gls (typ::lenv) rest in
-	if List.exists (dependent (mkVar id)) lenv || 
-	  (Retyping.get_sort_family_of 
-	     (pf_env gls) (Tacmach.project gls) typ <> InProp) 
+	if List.exists (dependent (mkVar id)) lenv ||
+	  (Retyping.get_sort_family_of
+	     (pf_env gls) (Tacmach.project gls) typ <> InProp)
 	then
-	  hrec 
+	  hrec
 	else
 	  (id,make_form atom_env gls typ)::hrec
 
 let rec build_pos n =
-  if n<=1 then force node_count l_xH 
-  else if n land 1 = 0 then 
+  if n<=1 then force node_count l_xH
+  else if n land 1 = 0 then
     mkApp (force node_count l_xO,[|build_pos (n asr 1)|])
-  else 
+  else
     mkApp (force node_count l_xI,[|build_pos (n asr 1)|])
 
 let rec build_form = function
     Atom n -> mkApp (force node_count l_Atom,[|build_pos n|])
-  | Arrow (f1,f2) -> 
+  | Arrow (f1,f2) ->
       mkApp (force node_count l_Arrow,[|build_form f1;build_form f2|])
   | Bot -> force node_count l_Bot
-  | Conjunct (f1,f2) -> 
+  | Conjunct (f1,f2) ->
       mkApp (force node_count l_Conjunct,[|build_form f1;build_form f2|])
-  | Disjunct (f1,f2) -> 
+  | Disjunct (f1,f2) ->
       mkApp (force node_count l_Disjunct,[|build_form f1;build_form f2|])
 
-let rec decal k = function 
+let rec decal k = function
     [] -> k
-  | (start,delta)::rest -> 
+  | (start,delta)::rest ->
       if k>start then
 	k - delta
-      else 
+      else
 	decal k rest
 
 let add_pop size d pops=
   match pops with
       [] -> [size+d,d]
-    | (_,sum)::_ -> (size+sum,sum+d)::pops  
+    | (_,sum)::_ -> (size+sum,sum+d)::pops
 
-let rec build_proof pops size = 
+let rec build_proof pops size =
   function
       Ax i ->
 	mkApp (force step_count l_Ax,
 	       [|build_pos (decal i pops)|])
-      | I_Arrow p -> 
+      | I_Arrow p ->
 	  mkApp (force step_count l_I_Arrow,
 		 [|build_proof pops (size + 1) p|])
-      | E_Arrow(i,j,p) -> 
-	  mkApp (force step_count l_E_Arrow, 
+      | E_Arrow(i,j,p) ->
+	  mkApp (force step_count l_E_Arrow,
 		 [|build_pos (decal i pops);
 		   build_pos (decal j pops);
 		   build_proof pops (size + 1) p|])
-      | D_Arrow(i,p1,p2) -> 
-	  mkApp (force step_count l_D_Arrow, 
+      | D_Arrow(i,p1,p2) ->
+	  mkApp (force step_count l_D_Arrow,
 		 [|build_pos (decal i pops);
 		   build_proof pops (size + 2) p1;
 		   build_proof pops (size + 1) p2|])
-      | E_False i -> 
+      | E_False i ->
 	  mkApp (force step_count l_E_False,
 		 [|build_pos (decal i pops)|])
-      | I_And(p1,p2) -> 
-	  mkApp (force step_count l_I_And, 
+      | I_And(p1,p2) ->
+	  mkApp (force step_count l_I_And,
 		 [|build_proof pops size p1;
 		   build_proof pops size p2|])
-      | E_And(i,p) -> 
+      | E_And(i,p) ->
 	  mkApp (force step_count l_E_And,
 		 [|build_pos (decal i pops);
 		   build_proof pops (size + 2) p|])
-      | D_And(i,p) -> 
+      | D_And(i,p) ->
 	  mkApp (force step_count l_D_And,
 		 [|build_pos (decal i pops);
 		   build_proof pops (size + 1) p|])
-      | I_Or_l(p) -> 
+      | I_Or_l(p) ->
 	  mkApp (force step_count l_I_Or_l,
 		 [|build_proof pops size p|])
-      | I_Or_r(p) -> 
+      | I_Or_r(p) ->
 	  mkApp (force step_count l_I_Or_r,
 		 [|build_proof pops size p|])
       | E_Or(i,p1,p2) ->
-	  mkApp (force step_count l_E_Or, 
+	  mkApp (force step_count l_E_Or,
 		 [|build_pos (decal i pops);
 		   build_proof pops (size + 1) p1;
 		   build_proof pops (size + 1) p2|])
-      | D_Or(i,p) -> 
+      | D_Or(i,p) ->
 	  mkApp (force step_count l_D_Or,
 		 [|build_pos (decal i pops);
 		   build_proof pops (size + 2) p|])
       | Pop(d,p) ->
-	  build_proof (add_pop size d pops) size p 
-	    
+	  build_proof (add_pop size d pops) size p
+
 let build_env gamma=
-  List.fold_right (fun (p,_) e -> 
-		     mkApp(force node_count l_push,[|mkProp;p;e|])) 
+  List.fold_right (fun (p,_) e ->
+		     mkApp(force node_count l_push,[|mkProp;p;e|]))
     gamma.env (mkApp (force node_count l_empty,[|mkProp|]))
 
 open Goptions
@@ -249,7 +249,7 @@ let opt_verbose=
    optread=(fun () -> !verbose);
    optwrite=(fun b -> verbose:=b)}
 
-let _ = declare_bool_option opt_verbose 
+let _ = declare_bool_option opt_verbose
 
 let check = ref false
 
@@ -260,7 +260,7 @@ let opt_check=
    optread=(fun () -> !check);
    optwrite=(fun b -> check:=b)}
 
-let _ = declare_bool_option opt_check 
+let _ = declare_bool_option opt_check
 
 open Pp
 
@@ -269,34 +269,34 @@ let rtauto_tac gls=
   let gamma={next=1;env=[]} in
   let gl=gls.it.evar_concl in
   let _=
-    if Retyping.get_sort_family_of 
-      (pf_env gls) (Tacmach.project gls) gl <> InProp 
+    if Retyping.get_sort_family_of
+      (pf_env gls) (Tacmach.project gls) gl <> InProp
     then errorlabstrm "rtauto" (Pp.str "goal should be in Prop") in
   let glf=make_form gamma gls gl in
-  let hyps=make_hyps gamma gls [gl] 
+  let hyps=make_hyps gamma gls [gl]
       (Environ.named_context_of_val gls.it.evar_hyps) in
   let formula=
-    List.fold_left (fun gl (_,f)-> Arrow (f,gl)) glf hyps in  
-  let search_fun = 
+    List.fold_left (fun gl (_,f)-> Arrow (f,gl)) glf hyps in
+  let search_fun =
     if Tacinterp.get_debug()=Tactic_debug.DebugOn 0 then
       Search.debug_depth_first
-    else 
+    else
       Search.depth_first in
-  let _ = 
+  let _ =
     begin
       reset_info ();
       if !verbose then
 	msgnl (str "Starting proof-search ...");
     end in
   let search_start_time = System.get_time () in
-  let prf = 
-    try project (search_fun (init_state [] formula)) 
+  let prf =
+    try project (search_fun (init_state [] formula))
     with Not_found ->
       errorlabstrm "rtauto" (Pp.str "rtauto couldn't find any proof") in
   let search_end_time = System.get_time () in
   let _ = if !verbose then
     begin
-      msgnl (str "Proof tree found in " ++ 
+      msgnl (str "Proof tree found in " ++
 	     System.fmt_time_difference search_start_time search_end_time);
       pp_info ();
       msgnl (str "Building proof term ... ")
@@ -312,10 +312,10 @@ let rtauto_tac gls=
   let build_end_time=System.get_time () in
   let _ = if !verbose then
     begin
-      msgnl (str "Proof term built in " ++ 
+      msgnl (str "Proof term built in " ++
 	     System.fmt_time_difference build_start_time build_end_time ++
 	     fnl () ++
-	     str "Proof size : " ++ int !step_count ++ 
+	     str "Proof size : " ++ int !step_count ++
 	     str " steps" ++ fnl () ++
 	     str "Proof term size : " ++ int (!step_count+ !node_count) ++
 	     str " nodes (constants)" ++ fnl () ++
@@ -323,15 +323,15 @@ let rtauto_tac gls=
     end in
   let tac_start_time = System.get_time () in
   let result=
-    if !check then 
+    if !check then
       Tactics.exact_check term gls
     else
       Tactics.exact_no_check term gls in
   let tac_end_time = System.get_time () in
-  let _ = 
+  let _ =
     if !check then msgnl (str "Proof term type-checking is on");
     if !verbose then
-      msgnl (str "Internal tactic executed in " ++ 
+      msgnl (str "Internal tactic executed in " ++
 	     System.fmt_time_difference tac_start_time tac_end_time) in
     result
 

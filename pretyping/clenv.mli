@@ -60,14 +60,14 @@ val mk_clenv_from_env : env -> evar_map -> int option -> constr * types -> claus
 (* linking of clenvs *)
 
 val connect_clenv : evar_info sigma -> clausenv -> clausenv
-val clenv_fchain : 
+val clenv_fchain :
   ?allow_K:bool -> ?flags:unify_flags -> metavariable -> clausenv -> clausenv -> clausenv
 
 (***************************************************************)
 (* Unification with clenvs *)
 
 (* Unifies two terms in a clenv. The boolean is [allow_K] (see [Unification]) *)
-val clenv_unify : 
+val clenv_unify :
   bool -> ?flags:unify_flags -> conv_pb -> constr -> constr -> clausenv -> clausenv
 
 (* unifies the concl of the goal with the type of the clenv *)

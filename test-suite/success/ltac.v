@@ -3,7 +3,7 @@
 (* Submitted by Pierre Crégut *)
 (* Checks substitution of x *)
 Ltac f x := unfold x in |- *; idtac.
- 
+
 Lemma lem1 : 0 + 0 = 0.
 f plus.
 reflexivity.
@@ -25,7 +25,7 @@ U.
 Qed.
 
 (* Check that Match giving non-tactic arguments are evaluated at Let-time *)
- 
+
 Ltac B := let y := (match goal with
                     | z:_ |- _ => z
                     end) in
@@ -180,8 +180,8 @@ Abort.
 (* Check second-order pattern unification *)
 
 Ltac to_exist :=
-  match goal with 
-  |- forall x y, @?P x y => 
+  match goal with
+  |- forall x y, @?P x y =>
     let Q := eval lazy beta in (exists x, forall y, P x y) in
     assert (Q->Q)
   end.
@@ -202,7 +202,7 @@ Abort.
 
 (* Utilisation de let rec sans arguments *)
 
-Ltac is := 
+Ltac is :=
   let rec i := match goal with |- ?A -> ?B => intro; i | _ => idtac end in
   i.
 

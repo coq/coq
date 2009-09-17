@@ -27,7 +27,7 @@ Definition NotConstant := false.
 
 Lemma Zsth : Setoid_Theory Z (@eq Z).
 Proof (Eqsth Z).
- 
+
 Lemma Zeqe : ring_eq_ext Zplus Zmult Zopp (@eq Z).
 Proof (Eq_ext Zplus Zmult Zopp).
 
@@ -65,7 +65,7 @@ Section ZMORPHISM.
 
  Fixpoint gen_phiPOS (p:positive) : R :=
   match p with
-  | xH => 1 
+  | xH => 1
   | xO xH => (1 + 1)
   | xO p => (1 + 1) * (gen_phiPOS p)
   | xI xH => 1 + (1 +1)
@@ -78,18 +78,18 @@ Section ZMORPHISM.
   | Z0 => 0
   | Zneg p => -(gen_phiPOS1 p)
   end.
- 
- Definition gen_phiZ z := 
+
+ Definition gen_phiZ z :=
   match z with
   | Zpos p => gen_phiPOS p
   | Z0 => 0
   | Zneg p => -(gen_phiPOS p)
   end.
- Notation "[ x ]" := (gen_phiZ x).   
+ Notation "[ x ]" := (gen_phiZ x).
 
  Definition get_signZ z :=
   match z with
-  | Zneg p => Some (Zpos p) 
+  | Zneg p => Some (Zpos p)
   | _ => None
   end.
 
@@ -101,16 +101,16 @@ Section ZMORPHISM.
   simpl. unfold Zeq_bool. rewrite Zcompare_refl. trivial.
  Qed.
 
- 
+
  Section ALMOST_RING.
  Variable ARth : almost_ring_theory 0 1 radd rmul rsub ropp req.
    Add Morphism rsub : rsub_ext3. exact (ARsub_ext Rsth Reqe ARth). Qed.
    Ltac norm := gen_srewrite Rsth Reqe ARth.
    Ltac add_push := gen_add_push radd Rsth Reqe ARth.
- 
+
  Lemma same_gen : forall x, gen_phiPOS1 x == gen_phiPOS x.
  Proof.
-  induction x;simpl. 
+  induction x;simpl.
   rewrite IHx;destruct x;simpl;norm.
   rewrite IHx;destruct x;simpl;norm.
   rrefl.
@@ -155,28 +155,28 @@ Section ZMORPHISM.
    Add Morphism rsub : rsub_ext4. exact (ARsub_ext Rsth Reqe ARth). Qed.
    Ltac norm := gen_srewrite Rsth Reqe ARth.
    Ltac add_push := gen_add_push radd Rsth Reqe ARth.
-  
+
 (*morphisms are extensionaly equal*)
  Lemma same_genZ : forall x, [x] == gen_phiZ1 x.
  Proof.
   destruct x;simpl; try rewrite (same_gen ARth);rrefl.
  Qed.
- 
- Lemma gen_Zeqb_ok : forall x y, 
+
+ Lemma gen_Zeqb_ok : forall x y,
    Zeq_bool x y = true -> [x] == [y].
  Proof.
   intros x y H.
   assert (H1 := Zeq_bool_eq x y H);unfold IDphi in H1.
   rewrite H1;rrefl.
  Qed.
-  
+
  Lemma gen_phiZ1_add_pos_neg : forall x y,
  gen_phiZ1
     match (x ?= y)%positive Eq with
     | Eq => Z0
     | Lt => Zneg (y - x)
     | Gt => Zpos (x - y)
-    end 
+    end
  == gen_phiPOS1 x + -gen_phiPOS1 y.
  Proof.
   intros x y.
@@ -197,7 +197,7 @@ Section ZMORPHISM.
  Qed.
 
  Lemma match_compOpp : forall x (B:Type) (be bl bg:B),
-  match CompOpp x with Eq => be | Lt => bl | Gt => bg end 
+  match CompOpp x with Eq => be | Lt => bl | Gt => bg end
   = match x with Eq => be | Lt => bg | Gt => bl end.
  Proof. destruct x;simpl;intros;trivial. Qed.
 
@@ -209,7 +209,7 @@ Section ZMORPHISM.
   apply gen_phiZ1_add_pos_neg.
   replace Eq with (CompOpp Eq);trivial.
   rewrite <- Pcompare_antisym;simpl.
-  rewrite match_compOpp.    
+  rewrite match_compOpp.
   rewrite (Radd_comm Rth).
   apply gen_phiZ1_add_pos_neg.
   rewrite (ARgen_phiPOS_add ARth); norm.
@@ -227,11 +227,11 @@ Section ZMORPHISM.
  Proof. intros;subst;rrefl. Qed.
 
 (*proof that [.] satisfies morphism specifications*)
- Lemma gen_phiZ_morph : 
-  ring_morph 0 1 radd rmul rsub ropp req Z0 (Zpos xH) 
+ Lemma gen_phiZ_morph :
+  ring_morph 0 1 radd rmul rsub ropp req Z0 (Zpos xH)
    Zplus Zmult Zminus Zopp Zeq_bool gen_phiZ.
- Proof. 
-  assert ( SRmorph : semi_morph 0 1 radd rmul req Z0 (Zpos xH) 
+ Proof.
+  assert ( SRmorph : semi_morph 0 1 radd rmul req Z0 (Zpos xH)
                   Zplus Zmult Zeq_bool gen_phiZ).
    apply mkRmorph;simpl;try rrefl.
    apply gen_phiZ_add.  apply gen_phiZ_mul. apply gen_Zeqb_ok.
@@ -251,7 +251,7 @@ Lemma Nth : semi_ring_theory N0 (Npos xH) Nplus Nmult (@eq N).
 Proof.
  constructor. exact Nplus_0_l. exact Nplus_comm. exact Nplus_assoc.
  exact Nmult_1_l. exact Nmult_0_l. exact Nmult_comm. exact Nmult_assoc.
- exact Nmult_plus_distr_r. 
+ exact Nmult_plus_distr_r.
 Qed.
 
 Definition Nsub := SRsub Nplus.
@@ -260,11 +260,11 @@ Definition Nopp := (@SRopp N).
 Lemma Neqe : ring_eq_ext Nplus Nmult Nopp (@eq N).
 Proof (SReqe_Reqe Nseqe).
 
-Lemma Nath : 
+Lemma Nath :
  almost_ring_theory N0 (Npos xH) Nplus Nmult Nsub Nopp (@eq N).
 Proof (SRth_ARth Nsth Nth).
- 
-Definition Neq_bool (x y:N) := 
+
+Definition Neq_bool (x y:N) :=
   match Ncompare x y with
   | Eq => true
   | _ => false
@@ -273,17 +273,17 @@ Definition Neq_bool (x y:N) :=
 Lemma Neq_bool_ok : forall x y, Neq_bool x y = true -> x = y.
  Proof.
   intros x y;unfold Neq_bool.
-  assert (H:=Ncompare_Eq_eq x y); 
+  assert (H:=Ncompare_Eq_eq x y);
    destruct (Ncompare x y);intros;try discriminate.
-  rewrite H;trivial. 
+  rewrite H;trivial.
  Qed.
 
 Lemma Neq_bool_complete : forall x y, Neq_bool x y = true -> x = y.
  Proof.
   intros x y;unfold Neq_bool.
-  assert (H:=Ncompare_Eq_eq x y); 
+  assert (H:=Ncompare_Eq_eq x y);
    destruct (Ncompare x y);intros;try discriminate.
-  rewrite H;trivial. 
+  rewrite H;trivial.
  Qed.
 
 (**Same as above : definition of two,extensionaly equal, generic morphisms *)
@@ -298,7 +298,7 @@ Section NMORPHISM.
      Add Setoid R req Rsth as R_setoid4.
      Ltac rrefl := gen_reflexivity Rsth.
  Variable SReqe : sring_eq_ext radd rmul req.
- Variable SRth : semi_ring_theory 0 1 radd rmul req. 
+ Variable SRth : semi_ring_theory 0 1 radd rmul req.
  Let ARth := SRth_ARth Rsth SRth.
  Let Reqe := SReqe_Reqe SReqe.
  Let ropp := (@SRopp R).
@@ -315,15 +315,15 @@ Section NMORPHISM.
   match x with
   | N0 => 0
   | Npos x => gen_phiPOS1 1 radd rmul x
-  end. 
+  end.
 
  Definition gen_phiN x :=
   match x with
   | N0 => 0
   | Npos x => gen_phiPOS 1 radd rmul x
-  end. 
- Notation "[ x ]" := (gen_phiN x).   
-  
+  end.
+ Notation "[ x ]" := (gen_phiN x).
+
  Lemma same_genN : forall x, [x] == gen_phiN1 x.
  Proof.
   destruct x;simpl. rrefl.
@@ -336,7 +336,7 @@ Section NMORPHISM.
   destruct x;destruct y;simpl;norm.
   apply (ARgen_phiPOS_add Rsth Reqe ARth).
  Qed.
- 
+
  Lemma gen_phiN_mult : forall x y, [x * y] == [x] * [y].
  Proof.
   intros x y;repeat rewrite same_genN.
@@ -397,7 +397,7 @@ Fixpoint Nw_is0 (w : Nword) : bool :=
   | nil => true
   | 0%N :: w' => Nw_is0 w'
   | _ => false
-  end. 
+  end.
 
 Fixpoint Nweq_bool (w1 w2 : Nword) {struct w1} : bool :=
   match w1, w2 with
@@ -559,7 +559,7 @@ induction x; intros.
 Qed.
 
 (* Proof that [.] satisfies morphism specifications *)
- Lemma gen_phiNword_morph : 
+ Lemma gen_phiNword_morph :
   ring_morph 0 1 radd rmul rsub ropp req
    NwO NwI Nwadd Nwmul Nwsub Nwopp Nweq_bool gen_phiNword.
 constructor.
@@ -585,7 +585,7 @@ Qed.
 End NWORDMORPHISM.
 
 Section GEN_DIV.
-  
+
   Variables  (R : Type) (rO : R) (rI : R) (radd : R -> R -> R)
               (rmul : R -> R -> R) (rsub : R -> R -> R) (ropp : R -> R)
               (req : R -> R -> Prop) (C : Type) (cO : C) (cI : C)
@@ -595,8 +595,8 @@ Section GEN_DIV.
  Variable Reqe : ring_eq_ext radd rmul ropp req.
  Variable ARth : almost_ring_theory rO rI radd rmul rsub ropp req.
  Variable morph : ring_morph rO rI radd rmul rsub ropp req cO cI cadd cmul csub copp ceqb phi.
- 
-  (* Useful tactics *)		  
+
+  (* Useful tactics *)
   Add Setoid R req Rsth as R_set1.
  Ltac rrefl := gen_reflexivity Rsth.
   Add Morphism radd : radd_ext.  exact (Radd_ext Reqe). Qed.
@@ -605,7 +605,7 @@ Section GEN_DIV.
   Add Morphism rsub : rsub_ext. exact (ARsub_ext Rsth Reqe ARth). Qed.
  Ltac rsimpl := gen_srewrite Rsth Reqe ARth.
 
- Definition triv_div x y :=  
+ Definition triv_div x y :=
    if ceqb x y then (cI, cO)
    else (cO, x).
 
@@ -715,7 +715,7 @@ End GEN_DIV.
 (* A simple tactic recognizing only 0 and 1. The inv_gen_phiX above
    are only optimisations that directly returns the reifid constant
    instead of resorting to the constant propagation of the simplification
-   algorithm. *) 
+   algorithm. *)
 Ltac inv_gen_phi rO rI cO cI t :=
   match t with
   | rO => cO
@@ -769,10 +769,10 @@ Ltac gen_ring_sign morph sspec :=
   match sspec with
   | None =>
     match type of morph with
-    | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req  
+    | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req
                Z ?c0 ?c1 ?cadd ?cmul ?csub ?copp ?ceqb ?phi =>
        constr:(@mkhypo (sign_theory copp ceqb get_signZ) get_signZ_th)
-    | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req  
+    | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req
                ?C  ?c0 ?c1 ?cadd ?cmul ?csub ?copp ?ceqb ?phi =>
         constr:(mkhypo (@get_sign_None_th C copp ceqb))
     | _ => fail 2 "ring anomaly : default_sign_spec"
@@ -782,24 +782,24 @@ Ltac gen_ring_sign morph sspec :=
 
 Ltac default_div_spec set reqe arth morph :=
  match type of morph with
- | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req 
+ | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req
                Z ?c0 ?c1 Zplus Zmult ?csub ?copp ?ceq_b ?phi =>
       constr:(mkhypo (Ztriv_div_th set phi))
- | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req 
+ | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req
                N ?c0 ?c1 Nplus Nmult ?csub ?copp ?ceq_b ?phi =>
-      constr:(mkhypo (Ntriv_div_th set phi)) 
- | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req 
+      constr:(mkhypo (Ntriv_div_th set phi))
+ | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req
                ?C ?c0 ?c1 ?cadd ?cmul ?csub ?copp ?ceq_b ?phi =>
       constr:(mkhypo (triv_div_th set reqe arth morph))
- | _ => fail 1 "ring anomaly : default_sign_spec" 
+ | _ => fail 1 "ring anomaly : default_sign_spec"
  end.
 
 Ltac gen_ring_div set reqe arth morph dspec  :=
  match dspec with
- | None => default_div_spec set reqe arth morph   
+ | None => default_div_spec set reqe arth morph
  | Some ?t => constr:(t)
  end.
- 
+
 Ltac ring_elements set ext rspec pspec sspec dspec rk :=
   let arth := coerce_to_almost_ring set ext rspec in
   let ext_r := coerce_to_ring_ext ext in
@@ -813,10 +813,10 @@ Ltac ring_elements set ext rspec pspec sspec dspec rk :=
         | _ => fail 2 "ring anomaly"
         end
     | @Morphism ?m =>
-       match type of m with 
-       | ring_morph _ _ _ _ _ _ _  _ _ _ _ _ _  _ _ => m 
-       | @semi_morph _ _ _ _ _ _  _ _ _ _ _  _ _   => 
-           constr:(SRmorph_Rmorph set m) 
+       match type of m with
+       | ring_morph _ _ _ _ _ _ _  _ _ _ _ _ _  _ _ => m
+       | @semi_morph _ _ _ _ _ _  _ _ _ _ _  _ _   =>
+           constr:(SRmorph_Rmorph set m)
        | _ => fail 2 "ring anomaly"
        end
     | _ => fail 1 "ill-formed ring kind"
@@ -832,27 +832,27 @@ Ltac ring_elements set ext rspec pspec sspec dspec rk :=
  Ltac ring_lemmas set ext rspec pspec sspec dspec rk :=
   let gen_lemma2 :=
     match pspec with
-    | None => constr:(ring_rw_correct) 
+    | None => constr:(ring_rw_correct)
     | Some _ => constr:(ring_rw_pow_correct)
     end in
   ring_elements set ext rspec pspec sspec dspec rk
     ltac:(fun arth ext_r morph p_spec s_spec d_spec =>
        match type of morph with
-       | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req 
+       | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req
                ?C ?c0 ?c1 ?cadd ?cmul ?csub ?copp ?ceq_b ?phi =>
-          let gen_lemma2_0 := 
-              constr:(gen_lemma2 R  r0 rI  radd rmul rsub ropp req set ext_r arth 
+          let gen_lemma2_0 :=
+              constr:(gen_lemma2 R  r0 rI  radd rmul rsub ropp req set ext_r arth
                                 C  c0 c1 cadd cmul csub copp ceq_b phi morph) in
           match p_spec with
-          | @mkhypo (power_theory _ _ _ ?Cp_phi ?rpow) ?pp_spec =>      
+          | @mkhypo (power_theory _ _ _ ?Cp_phi ?rpow) ?pp_spec =>
              let gen_lemma2_1 := constr:(gen_lemma2_0 _ Cp_phi rpow pp_spec) in
              match d_spec with
              | @mkhypo (div_theory _ _ _ _  ?cdiv) ?dd_spec =>
                 let gen_lemma2_2 := constr:(gen_lemma2_1 cdiv dd_spec) in
                 match s_spec with
-                | @mkhypo (sign_theory _ _ ?get_sign) ?ss_spec =>    
-                  let lemma2 := constr:(gen_lemma2_2 get_sign ss_spec) in 
-                  let lemma1 := 
+                | @mkhypo (sign_theory _ _ ?get_sign) ?ss_spec =>
+                  let lemma2 := constr:(gen_lemma2_2 get_sign ss_spec) in
+                  let lemma1 :=
                     constr:(ring_correct set ext_r arth morph pp_spec dd_spec) in
                   fun f => f arth ext_r morph lemma1 lemma2
                 | _ => fail 4 "ring: bad sign specification"
@@ -878,7 +878,7 @@ Ltac isPcst t :=
   | xO ?p => isPcst p
   | xH => constr:true
   (* nat -> positive *)
-  | P_of_succ_nat ?n => isnatcst n 
+  | P_of_succ_nat ?n => isnatcst n
   | _ => constr:false
   end.
 

@@ -124,7 +124,7 @@ Goal forall
   (f : Prop -> Prop)
   (Q : (nat -> Prop) -> Prop)
   (H : forall (h : nat -> Prop), Q (fun x : nat => f (h x)) <-> True)
-  (h:nat -> Prop), 
+  (h:nat -> Prop),
   Q (fun x : nat => f (Q (fun b : nat => f (h x)))) <-> True.
 intros f0 Q H.
 setoid_rewrite H.

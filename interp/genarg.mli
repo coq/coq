@@ -75,7 +75,7 @@ val pr_or_and_intro_pattern : or_and_intro_pattern_expr -> Pp.std_ppcmds
 effective use
 \end{verbatim}
 
-To distinguish between the uninterpreted (raw), globalized and 
+To distinguish between the uninterpreted (raw), globalized and
 interpreted worlds, we annotate the type [generic_argument] by a
 phantom argument which is either [constr_expr], [rawconstr] or
 [constr].
@@ -107,11 +107,11 @@ ExtraArgType of string         '_a                      '_b
 \end{verbatim}
 *)
 
-(* All of [rlevel], [glevel] and [tlevel] must be non convertible 
+(* All of [rlevel], [glevel] and [tlevel] must be non convertible
    to ensure the injectivity of the type inference from type
    ['co generic_argument] to [('a,'co) abstract_argument_type];
    this guarantees that, for 'co fixed, the type of
-   out_gen is monomorphic over 'a, hence type-safe 
+   out_gen is monomorphic over 'a, hence type-safe
 *)
 
 type rlevel = constr_expr
@@ -222,29 +222,29 @@ val wit_pair :
 (* ['a generic_argument] = (Sigma t:type. t[[constr/'a]]) *)
 type 'a generic_argument
 
-val fold_list0 : 
+val fold_list0 :
  ('a generic_argument -> 'c -> 'c) -> 'a generic_argument -> 'c -> 'c
 
-val fold_list1 : 
+val fold_list1 :
  ('a generic_argument -> 'c -> 'c) -> 'a generic_argument -> 'c -> 'c
 
 val fold_opt :
  ('a generic_argument -> 'c) -> 'c -> 'a generic_argument -> 'c
 
 val fold_pair :
- ('a generic_argument -> 'a generic_argument -> 'c) -> 
+ ('a generic_argument -> 'a generic_argument -> 'c) ->
       'a generic_argument -> 'c
 
 (* [app_list0] fails if applied to an argument not of tag [List0 t]
     for some [t]; it's the responsability of the caller to ensure it *)
 
-val app_list0 : ('a generic_argument -> 'b generic_argument) -> 
+val app_list0 : ('a generic_argument -> 'b generic_argument) ->
 'a generic_argument -> 'b generic_argument
 
-val app_list1 : ('a generic_argument -> 'b generic_argument) -> 
+val app_list1 : ('a generic_argument -> 'b generic_argument) ->
 'a generic_argument -> 'b generic_argument
 
-val app_opt : ('a generic_argument -> 'b generic_argument) -> 
+val app_opt : ('a generic_argument -> 'b generic_argument) ->
 'a generic_argument -> 'b generic_argument
 
 val app_pair :
@@ -294,7 +294,7 @@ val unquote : ('a,'co) abstract_argument_type -> argument_type
 val in_gen :
   ('a,'co) abstract_argument_type -> 'a -> 'co generic_argument
 val out_gen :
-  ('a,'co) abstract_argument_type -> 'co generic_argument -> 'a 
+  ('a,'co) abstract_argument_type -> 'co generic_argument -> 'a
 
 
 (* [in_generic] is used in combination with camlp4 [Gramext.action] magic
@@ -308,5 +308,5 @@ val out_gen :
 *)
 type an_arg_of_this_type
 
-val in_generic : 
+val in_generic :
   argument_type -> an_arg_of_this_type -> 'co generic_argument

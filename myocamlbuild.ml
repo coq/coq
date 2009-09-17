@@ -11,7 +11,7 @@ open Scanf
     is progressively added. Tested only on linux + ocaml 3.11 +
     local + natdynlink for now.
 
-    Usage: 
+    Usage:
      ./configure -local -opt
      ./build   (which launches ocamlbuild coq.otarget)
 
@@ -256,7 +256,7 @@ let extra_rules () = begin
   flag_and_dep ["is_ml4"; "p4mod"; "use_constr"] (P qconstr);
   flag_and_dep ["is_ml4"; "p4mod"; "use_refutpat"] (P refutpat);
 
-(** Special case of toplevel/mltop.ml4: 
+(** Special case of toplevel/mltop.ml4:
     - mltop.ml will be the old mltop.optml and be used to obtain mltop.cmx
     - we add a special mltop.ml4 --> mltop.cmo rule, before all the others
 *)
@@ -276,7 +276,7 @@ let extra_rules () = begin
 			 A"-DByte";A"-DHasDynlink";camlp4compat;A"-impl"]);
 	       A"-rectypes"; camlp4incl; incl ml4; A"-impl"; P ml4]));
 
-(** All caml files are compiled with -rectypes and +camlp4/5 
+(** All caml files are compiled with -rectypes and +camlp4/5
     and ide files need +lablgtk2 *)
 
   flag ["compile"; "ocaml"] (S [A"-rectypes"; camlp4incl]);

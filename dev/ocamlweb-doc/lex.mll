@@ -7,7 +7,7 @@
 
  let comment_depth = ref 0
  let print s = output_string !chan_out s
- 
+
  exception Fin_fichier
 
 }
@@ -77,5 +77,5 @@ and comment = parse
   | "(*" (*"*)"*)  { incr comment_depth; comment lexbuf }
   | (*"(*"*) "*)"
       { decr comment_depth; if !comment_depth > 0 then comment lexbuf }
-  | eof   { raise Fin_fichier } 
+  | eof   { raise Fin_fichier }
   | _     { comment lexbuf }

@@ -3,7 +3,7 @@
 Definition Type1 := Type.
 Record R : Type1 := { p:Type1 }. (* was accepted before trunk revision 11619 *)
 
-(* 
+(*
 Remarks:
 
 - The behaviour was inconsistent with the one of Inductive, e.g.
@@ -18,6 +18,6 @@ Remarks:
   Record R : CProp := { ... }.
 
   CoRN may have to change the CProp definition into a notation if the
-  preservation of the former semantics of Record type constraints 
+  preservation of the former semantics of Record type constraints
   turns to be required.
 *)

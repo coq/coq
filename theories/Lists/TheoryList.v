@@ -349,7 +349,7 @@ destruct (TS_dec a) as [[c H1]| ].
 left; exists c.
 exists a; auto.
 auto.
-(* 
+(*
 Realizer try_find.
 *)
 Qed.
@@ -359,7 +359,7 @@ End Find_sec.
 Section Assoc_sec.
 
 Variable B : Type.
-Fixpoint assoc (a:A) (l:list (A * B)) {struct l} : 
+Fixpoint assoc (a:A) (l:list (A * B)) {struct l} :
  Exc B :=
   match l with
   | nil => error

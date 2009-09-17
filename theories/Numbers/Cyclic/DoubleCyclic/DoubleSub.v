@@ -39,7 +39,7 @@ Section DoubleSub.
  Definition ww_opp_c x :=
   match x with
   | W0 => C0 W0
-  | WW xh xl => 
+  | WW xh xl =>
     match w_opp_c xl with
     | C0 _ =>
       match w_opp_c xh with
@@ -53,7 +53,7 @@ Section DoubleSub.
  Definition ww_opp x :=
   match x with
   | W0 => W0
-  | WW xh xl => 
+  | WW xh xl =>
     match w_opp_c xl with
     | C0 _ => WW (w_opp xh) w_0
     | C1 l => WW (w_opp_carry xh) l
@@ -72,14 +72,14 @@ Section DoubleSub.
   | WW xh xl =>
     match w_pred_c xl with
     | C0 l => C0 (w_WW xh l)
-    | C1 _ => 
-      match w_pred_c xh with 
+    | C1 _ =>
+      match w_pred_c xh with
       | C0 h => C0 (WW h w_Bm1)
       | C1 _ => C1 ww_Bm1
       end
     end
   end.
- 
+
  Definition ww_pred x :=
   match x with
   | W0 => ww_Bm1
@@ -89,19 +89,19 @@ Section DoubleSub.
     | C1 l => WW (w_pred xh) w_Bm1
     end
   end.
-     
+
  Definition ww_sub_c x y :=
   match y, x with
   | W0, _ => C0 x
   | WW yh yl, W0 => ww_opp_c (WW yh yl)
   | WW yh yl, WW xh xl =>
     match w_sub_c xl yl with
-    | C0 l => 
+    | C0 l =>
       match w_sub_c xh yh with
       | C0 h => C0 (w_WW h l)
       | C1 h => C1 (WW h l)
       end
-    | C1 l => 
+    | C1 l =>
       match w_sub_carry_c xh yh with
       | C0 h => C0 (WW h l)
       | C1 h => C1 (WW h l)
@@ -109,7 +109,7 @@ Section DoubleSub.
     end
   end.
 
- Definition ww_sub x y := 
+ Definition ww_sub x y :=
   match y, x with
   | W0, _ => x
   | WW yh yl, W0 => ww_opp (WW yh yl)
@@ -127,7 +127,7 @@ Section DoubleSub.
   | WW yh yl, W0 => C1 (ww_opp_carry (WW yh yl))
   | WW yh yl, WW xh xl =>
     match w_sub_carry_c xl yl with
-    | C0 l => 
+    | C0 l =>
       match w_sub_c xh yh with
       | C0 h => C0 (w_WW h l)
       | C1 h => C1 (WW h l)
@@ -155,7 +155,7 @@ Section DoubleSub.
  (*Section DoubleProof.*)
   Variable w_digits : positive.
   Variable w_to_Z : w -> Z.
- 
+
 
   Notation wB  := (base w_digits).
   Notation wwB := (base (ww_digits w_digits)).
@@ -166,13 +166,13 @@ Section DoubleSub.
    (interp_carry (-1) wB w_to_Z c) (at level 0, x at level 99).
 
   Notation "[[ x ]]" := (ww_to_Z w_digits w_to_Z x)(at level 0, x at level 99).
-  Notation "[+[ c ]]" := 
-   (interp_carry 1 wwB (ww_to_Z w_digits w_to_Z) c) 
+  Notation "[+[ c ]]" :=
+   (interp_carry 1 wwB (ww_to_Z w_digits w_to_Z) c)
    (at level 0, x at level 99).
-  Notation "[-[ c ]]" := 
-   (interp_carry (-1) wwB (ww_to_Z w_digits w_to_Z) c) 
+  Notation "[-[ c ]]" :=
+   (interp_carry (-1) wwB (ww_to_Z w_digits w_to_Z) c)
    (at level 0, x at level 99).
-  
+
   Variable spec_w_0   : [|w_0|] = 0.
   Variable spec_w_Bm1   : [|w_Bm1|] = wB - 1.
   Variable spec_ww_Bm1   : [[ww_Bm1]] = wwB - 1.
@@ -187,7 +187,7 @@ Section DoubleSub.
   Variable spec_sub_c : forall x y, [-|w_sub_c x y|] = [|x|] - [|y|].
   Variable spec_sub_carry_c :
    forall x y, [-|w_sub_carry_c x y|] = [|x|] - [|y|] - 1.
-  
+
   Variable spec_pred : forall x, [|w_pred x|] = ([|x|] - 1) mod wB.
   Variable spec_sub : forall x y, [|w_sub x y|] = ([|x|] - [|y|]) mod wB.
   Variable spec_sub_carry :
@@ -197,12 +197,12 @@ Section DoubleSub.
   Lemma spec_ww_opp_c : forall x, [-[ww_opp_c x]] = -[[x]].
   Proof.
    destruct x as [ |xh xl];simpl. reflexivity.
-   rewrite Zopp_plus_distr;generalize (spec_opp_c xl);destruct (w_opp_c xl) 
+   rewrite Zopp_plus_distr;generalize (spec_opp_c xl);destruct (w_opp_c xl)
    as [l|l];intros H;unfold interp_carry in H;rewrite <- H;
-   rewrite Zopp_mult_distr_l. 
+   rewrite Zopp_mult_distr_l.
    assert ([|l|] = 0).
     assert (H1:= spec_to_Z l);assert (H2 := spec_to_Z xl);omega.
-   rewrite H0;generalize (spec_opp_c xh);destruct (w_opp_c xh) 
+   rewrite H0;generalize (spec_opp_c xh);destruct (w_opp_c xh)
    as [h|h];intros H1;unfold interp_carry in *;rewrite <- H1.
    assert ([|h|] = 0).
     assert (H3:= spec_to_Z h);assert (H2 := spec_to_Z xh);omega.
@@ -216,7 +216,7 @@ Section DoubleSub.
   Proof.
    destruct x as [ |xh xl];simpl. reflexivity.
    rewrite Zopp_plus_distr;rewrite Zopp_mult_distr_l.
-   generalize (spec_opp_c xl);destruct (w_opp_c xl) 
+   generalize (spec_opp_c xl);destruct (w_opp_c xl)
    as [l|l];intros H;unfold interp_carry in H;rewrite <- H;simpl ww_to_Z.
    rewrite spec_w_0;rewrite Zplus_0_r;rewrite wwB_wBwB.
    assert ([|l|] = 0).
@@ -247,7 +247,7 @@ Section DoubleSub.
      assert (H1:= spec_to_Z l);assert (H2 := spec_to_Z xl);omega.
    rewrite H0;change ([|xh|] + -1) with ([|xh|] - 1).
    generalize (spec_pred_c xh);destruct (w_pred_c xh) as [h|h];
-   intros H1;unfold interp_carry in H1;rewrite <- H1.  
+   intros H1;unfold interp_carry in H1;rewrite <- H1.
    simpl;rewrite spec_w_Bm1;ring.
    assert ([|h|] = wB - 1).
      assert (H3:= spec_to_Z h);assert (H2 := spec_to_Z xh);omega.
@@ -258,14 +258,14 @@ Section DoubleSub.
   Proof.
    destruct y as [ |yh yl];simpl. ring.
    destruct x as [ |xh xl];simpl. exact (spec_ww_opp_c (WW yh yl)).
-   replace ([|xh|] * wB + [|xl|] - ([|yh|] * wB + [|yl|])) 
+   replace ([|xh|] * wB + [|xl|] - ([|yh|] * wB + [|yl|]))
    with (([|xh|]-[|yh|])*wB + ([|xl|]-[|yl|])). 2:ring.
    generalize (spec_sub_c xl yl);destruct (w_sub_c xl yl) as [l|l];intros H;
    unfold interp_carry in H;rewrite <- H.
    generalize (spec_sub_c xh yh);destruct (w_sub_c xh yh) as [h|h];intros H1;
    unfold interp_carry in H1;rewrite <- H1;unfold interp_carry;
    try rewrite spec_w_WW;simpl ww_to_Z;try rewrite wwB_wBwB;ring.
-   rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l. 
+   rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l.
    change ([|xh|] - [|yh|] + -1) with ([|xh|] - [|yh|] - 1).
    generalize (spec_sub_carry_c xh yh);destruct (w_sub_carry_c xh yh) as [h|h];
    intros H1;unfold interp_carry in *;rewrite <- H1;simpl ww_to_Z;
@@ -275,37 +275,37 @@ Section DoubleSub.
   Lemma spec_ww_sub_carry_c :
      forall x y, [-[ww_sub_carry_c x y]] = [[x]] - [[y]] - 1.
   Proof.
-   destruct y as [ |yh yl];simpl. 
+   destruct y as [ |yh yl];simpl.
    unfold Zminus;simpl;rewrite Zplus_0_r;exact (spec_ww_pred_c x).
    destruct x as [ |xh xl].
    unfold interp_carry;rewrite spec_w_WW;simpl ww_to_Z;rewrite wwB_wBwB;
    repeat rewrite spec_opp_carry;ring.
    simpl ww_to_Z.
-   replace ([|xh|] * wB + [|xl|] - ([|yh|] * wB + [|yl|]) - 1) 
+   replace ([|xh|] * wB + [|xl|] - ([|yh|] * wB + [|yl|]) - 1)
    with (([|xh|]-[|yh|])*wB + ([|xl|]-[|yl|]-1)). 2:ring.
-   generalize (spec_sub_carry_c xl yl);destruct (w_sub_carry_c xl yl) 
+   generalize (spec_sub_carry_c xl yl);destruct (w_sub_carry_c xl yl)
    as [l|l];intros H;unfold interp_carry in H;rewrite <- H.
    generalize (spec_sub_c xh yh);destruct (w_sub_c xh yh) as [h|h];intros H1;
    unfold interp_carry in H1;rewrite <- H1;unfold interp_carry;
    try rewrite spec_w_WW;simpl ww_to_Z;try rewrite wwB_wBwB;ring.
-   rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l. 
+   rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l.
    change ([|xh|] - [|yh|] + -1) with ([|xh|] - [|yh|] - 1).
    generalize (spec_sub_carry_c xh yh);destruct (w_sub_carry_c xh yh) as [h|h];
    intros H1;unfold interp_carry in *;rewrite <- H1;try rewrite spec_w_WW;
    simpl ww_to_Z; try rewrite wwB_wBwB;ring.
-  Qed.  
-  
+  Qed.
+
   Lemma spec_ww_pred : forall x, [[ww_pred x]] = ([[x]] - 1) mod wwB.
   Proof.
-   destruct x as [ |xh xl];simpl. 
+   destruct x as [ |xh xl];simpl.
    apply Zmod_unique with (-1). apply spec_ww_to_Z;trivial.
    rewrite spec_ww_Bm1;ring.
    replace ([|xh|]*wB + [|xl|] - 1) with ([|xh|]*wB + ([|xl|] - 1)). 2:ring.
    generalize (spec_pred_c xl);destruct (w_pred_c xl) as [l|l];intro H;
    unfold interp_carry in H;rewrite <- H;simpl ww_to_Z.
-   rewrite Zmod_small. apply spec_w_WW. 
+   rewrite Zmod_small. apply spec_w_WW.
    exact (spec_ww_to_Z w_digits w_to_Z spec_to_Z (WW xh l)).
-   rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l. 
+   rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l.
    change ([|xh|] + -1) with ([|xh|] - 1).
    assert ([|l|] = wB - 1).
     assert (H1:= spec_to_Z l);assert (H2:= spec_to_Z xl);omega.
@@ -318,7 +318,7 @@ Section DoubleSub.
    destruct y as [ |yh yl];simpl.
    ring_simplify ([[x]] - 0);rewrite Zmod_small;trivial. apply spec_ww_to_Z;trivial.
    destruct x as [ |xh xl];simpl. exact (spec_ww_opp (WW yh yl)).
-   replace ([|xh|] * wB + [|xl|] - ([|yh|] * wB + [|yl|])) 
+   replace ([|xh|] * wB + [|xl|] - ([|yh|] * wB + [|yl|]))
    with (([|xh|] - [|yh|]) * wB + ([|xl|] - [|yl|])). 2:ring.
    generalize (spec_sub_c xl yl);destruct (w_sub_c xl yl)as[l|l];intros H;
    unfold interp_carry in H;rewrite <- H.
@@ -338,7 +338,7 @@ Section DoubleSub.
    apply spec_ww_to_Z;trivial.
    fold (ww_opp_carry (WW yh yl)).
    rewrite (spec_ww_opp_carry (WW yh yl));simpl ww_to_Z;ring.
-   replace ([|xh|] * wB + [|xl|] - ([|yh|] * wB + [|yl|]) - 1) 
+   replace ([|xh|] * wB + [|xl|] - ([|yh|] * wB + [|yl|]) - 1)
    with (([|xh|] - [|yh|]) * wB + ([|xl|] - [|yl|] - 1)). 2:ring.
    generalize (spec_sub_carry_c xl yl);destruct (w_sub_carry_c xl yl)as[l|l];
    intros H;unfold interp_carry in H;rewrite <- H;rewrite spec_w_WW.
@@ -354,4 +354,4 @@ End DoubleSub.
 
 
 
- 
+

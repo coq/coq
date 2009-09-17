@@ -1,4 +1,4 @@
-(* Check that the nested inductive types positivity check avoids recursively 
+(* Check that the nested inductive types positivity check avoids recursively
    non uniform parameters (at least if these parameters break positivity) *)
 
 Inductive t (A:Type) : Type := c : t (A -> A) -> t A.

@@ -37,7 +37,7 @@ val vm_conv : conv_pb -> constr conversion_function
 
 (************************************************************************)
 
-(* Builds an application node, reducing beta redexes it may produce. *) 
+(* Builds an application node, reducing beta redexes it may produce. *)
 val beta_appvect : constr -> constr array -> constr
 
 (* Builds an application node, reducing the [n] first beta-zeta redexes. *)

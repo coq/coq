@@ -17,9 +17,9 @@ Require Import Coq.Arith.Max.
 Require Import List.
 Set Implicit Arguments.
 
-(* I have addded a Leaf constructor to the varmap data structure (/plugins/ring/Quote.v) 
+(* I have addded a Leaf constructor to the varmap data structure (/plugins/ring/Quote.v)
    -- this is harmless and spares a lot of Empty.
-   This means smaller proof-terms. 
+   This means smaller proof-terms.
    BTW, by dropping the  polymorphism, I get small (yet noticeable) speed-up.
 *)
 
@@ -40,7 +40,7 @@ Section S.
   Lemma psucc : forall p,  (match p with
                               | xI y' => xO (Psucc y')
                               | xO y' => xI y'
-                              | 1%positive => 2%positive 
+                              | 1%positive => 2%positive
                             end) = (p+1)%positive.
   Proof.
     destruct p.
@@ -50,7 +50,7 @@ Section S.
     reflexivity.
   Qed.
 
-  Lemma jump_Pplus : forall i j l, 
+  Lemma jump_Pplus : forall i j l,
     forall x, jump (i + j) l x = jump i (jump j l) x.
   Proof.
     unfold jump.
@@ -60,7 +60,7 @@ Section S.
   Qed.
 
   Lemma jump_simpl : forall p l,
-    forall x, jump p l x = 
+    forall x, jump p l x =
     match p with
       | xH => tail l x
       | xO p => jump p (jump p l) x
@@ -80,15 +80,15 @@ Section S.
   Qed.
 
   Ltac jump_s :=
-    repeat 
+    repeat
       match goal with
         | |- context [jump xH ?e] => rewrite (jump_simpl xH)
         | |- context [jump (xO ?p) ?e] => rewrite (jump_simpl (xO p))
         | |- context [jump (xI ?p) ?e] => rewrite (jump_simpl (xI p))
       end.
-    
+
   Lemma jump_tl : forall j l, forall x, tail (jump j l) x = jump j (tail l) x.
-  Proof. 
+  Proof.
     unfold tail.
     intros.
     repeat rewrite <- jump_Pplus.
@@ -96,7 +96,7 @@ Section S.
     reflexivity.
   Qed.
 
-  Lemma jump_Psucc : forall j l, 
+  Lemma jump_Psucc : forall j l,
     forall x, (jump (Psucc j) l x) = (jump 1 (jump j l) x).
   Proof.
     intros.
@@ -129,13 +129,13 @@ Section S.
     reflexivity.
   Qed.
 
-  Lemma nth_spec : forall p l x, 
-    nth p l = 
+  Lemma nth_spec : forall p l x,
+    nth p l =
     match p with
       | xH => hd x l
       | xO p => nth p (jump p l)
       | xI p => nth p (jump p (tail l))
-    end. 
+    end.
   Proof.
     unfold nth.
     destruct p.

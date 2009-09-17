@@ -9,5 +9,5 @@ Eval simpl in (fix plus (n m : nat) {struct n} : nat :=
   | S p => S (p + m)
   end) a a.
 
-Eval hnf in match (plus (S n) O) with S n => n | _ => O end.  
+Eval hnf in match (plus (S n) O) with S n => n | _ => O end.
 

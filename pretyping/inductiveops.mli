@@ -110,7 +110,7 @@ val type_case_branches_with_names :
     types array * types
 val make_case_info : env -> inductive -> case_style -> case_info
 
-(*i Compatibility 
+(*i Compatibility
 val make_default_case_info : env -> case_style -> inductive -> case_info
 i*)
 

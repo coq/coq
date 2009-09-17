@@ -30,14 +30,14 @@ Proof.
   intros.
    legacy field.
 Abort.
- 
+
 (* Example 3 *)
 Goal forall a b : R, (1 / (a * b) * (1 / 1 / b))%R = (1 / a)%R.
 Proof.
   intros.
    legacy field.
 Abort.
- 
+
 (* Example 4 *)
 Goal
 forall a b : R, a <> 0%R -> b <> 0%R -> (1 / (a * b) / 1 / b)%R = (1 / a)%R.
@@ -45,21 +45,21 @@ Proof.
   intros.
    legacy field.
 Abort.
- 
+
 (* Example 5 *)
 Goal forall a : R, 1%R = (1 * (1 / a) * a)%R.
 Proof.
   intros.
    legacy field.
 Abort.
- 
+
 (* Example 6 *)
 Goal forall a b : R, b = (b * / a * a)%R.
 Proof.
   intros.
    legacy field.
 Abort.
- 
+
 (* Example 7 *)
 Goal forall a b : R, b = (b * (1 / a) * a)%R.
 Proof.

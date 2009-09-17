@@ -45,7 +45,7 @@ Require Export Partial_Order.
 Require Export Cpo.
 
 Section Integers_sect.
-  
+
   Inductive Integers : Ensemble nat :=
     Integers_defn : forall x:nat, In nat Integers x.
 
@@ -53,7 +53,7 @@ Section Integers_sect.
   Proof.
     red in |- *; auto with arith.
   Qed.
-  
+
   Lemma le_antisym : Antisymmetric nat le.
   Proof.
     red in |- *; intros x y H H'; rewrite (le_antisym x y); auto.
@@ -63,12 +63,12 @@ Section Integers_sect.
   Proof.
     red in |- *; intros; apply le_trans with y; auto.
   Qed.
-  
+
   Lemma le_Order : Order nat le.
   Proof.
-    split; [exact le_reflexive | exact le_trans | exact le_antisym]. 
+    split; [exact le_reflexive | exact le_trans | exact le_antisym].
   Qed.
-  
+
   Lemma triv_nat : forall n:nat, In nat Integers n.
   Proof.
     exact Integers_defn.
@@ -77,11 +77,11 @@ Section Integers_sect.
   Definition nat_po : PO nat.
     apply Definition_of_PO with (Carrier_of := Integers) (Rel_of := le);
       auto with sets arith.
-    apply Inhabited_intro with (x := 0). 
+    apply Inhabited_intro with (x := 0).
       apply Integers_defn.
       exact le_Order.
   Defined.
-  
+
   Lemma le_total_order : Totally_ordered nat nat_po Integers.
   Proof.
     apply Totally_ordered_definition.
@@ -92,7 +92,7 @@ Section Integers_sect.
     intro H'1; right.
     cut (y <= x); auto with sets arith.
   Qed.
-  
+
   Lemma Finite_subset_has_lub :
     forall X:Ensemble nat,
       Finite nat X ->  exists m : nat, Upper_Bound nat nat_po X m.
@@ -124,7 +124,7 @@ Section Integers_sect.
     apply H'4 with (y := x0). elim H'3; simpl in |- *; auto with sets arith. trivial.
     intros x1 H'4; elim H'4. unfold nat_po; simpl; trivial.
     exists x0.
-    apply Upper_Bound_definition. 
+    apply Upper_Bound_definition.
       unfold nat_po. simpl. apply triv_nat.
     intros y H'1; elim H'1.
     intros x1 H'4; try assumption.
@@ -148,7 +148,7 @@ Section Integers_sect.
     absurd (S x <= x); auto with arith.
     apply triv_nat.
  Qed.
-  
+
   Lemma Integers_infinite : ~ Finite nat Integers.
   Proof.
     generalize Integers_has_no_ub.

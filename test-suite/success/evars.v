@@ -10,7 +10,7 @@ Definition c A (Q : (nat * A -> Prop) -> Prop) P :=
 
 (* What does this test ? *)
 Require Import List.
-Definition list_forall_bool (A : Set) (p : A -> bool) 
+Definition list_forall_bool (A : Set) (p : A -> bool)
   (l : list A) : bool :=
   fold_right (fun a r => if p a then r else false) true l.
 
@@ -109,21 +109,21 @@ Parameter map_avl: forall (elt elt' : Set) (f : elt -> elt') (m : t elt),
    avl m -> avl (map f m).
 Parameter map_bst: forall (elt elt' : Set) (f : elt -> elt') (m : t elt),
    bst m -> bst (map f m).
-Record bbst (elt:Set) : Set := 
+Record bbst (elt:Set) : Set :=
   Bbst {this :> t elt; is_bst : bst this; is_avl: avl this}.
 Definition t' := bbst.
 Section B.
 Variables elt elt': Set.
-Definition map' f (m:t' elt) : t' elt' := 
+Definition map' f (m:t' elt) : t' elt' :=
   Bbst (map_bst f m.(is_bst)) (map_avl f m.(is_avl)).
 End B.
 Unset Implicit Arguments.
 
-(* An example from Lexicographic_Exponentiation that tests the 
+(* An example from Lexicographic_Exponentiation that tests the
    contraction of reducible fixpoints in type inference *)
 
 Require Import List.
-Check (fun (A:Set) (a b x:A) (l:list A) 
+Check (fun (A:Set) (a b x:A) (l:list A)
   (H : l ++ cons x nil = cons b (cons a nil)) =>
   app_inj_tail l (cons b nil) _ _ H).
 
@@ -133,14 +133,14 @@ Parameter h:(nat->nat)->(nat->nat).
 Fixpoint G p cont {struct p} :=
   h (fun n => match p with O => cont | S p => G p cont end n).
 
-(* An example from Bordeaux/Cantor that applies evar restriction 
+(* An example from Bordeaux/Cantor that applies evar restriction
    below  a binder *)
 
 Require Import Relations.
 Parameter lex : forall (A B : Set), (forall (a1 a2:A), {a1=a2}+{a1<>a2})
 -> relation A -> relation B -> A * B -> A * B -> Prop.
-Check 
- forall (A B : Set) eq_A_dec o1 o2, 
+Check
+ forall (A B : Set) eq_A_dec o1 o2,
  antisymmetric A o1 -> transitive A o1 -> transitive B o2 ->
  transitive _ (lex _ _ eq_A_dec o1 o2).
 
@@ -200,7 +200,7 @@ Abort.
 
 (* An example from y-not that was failing in 8.2rc1 *)
 
-Fixpoint filter (A:nat->Set) (l:list (sigT A)) : list (sigT A) := 
+Fixpoint filter (A:nat->Set) (l:list (sigT A)) : list (sigT A) :=
   match l with
   | nil => nil
   | (existT k v)::l' => (existT _ k v):: (filter A l')

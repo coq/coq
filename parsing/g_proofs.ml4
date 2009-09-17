@@ -53,7 +53,7 @@ GEXTEND Gram
       | IDENT "Save"; id = identref ->
 	  VernacEndProof (Proved (true,Some (id,None)))
       | IDENT "Defined" -> VernacEndProof (Proved (false,None))
-      |	IDENT "Defined"; id=identref -> 
+      |	IDENT "Defined"; id=identref ->
 	  VernacEndProof (Proved (false,Some (id,None)))
       | IDENT "Suspend" -> VernacSuspend
       | IDENT "Resume" -> VernacResume None
@@ -82,7 +82,7 @@ GEXTEND Gram
       | IDENT "Show"; IDENT "Thesis" -> VernacShow ShowThesis
       | IDENT "Explain"; IDENT "Proof"; l = LIST0 integer ->
 	  VernacShow (ExplainProof l)
-      | IDENT "Explain"; IDENT "Proof"; IDENT "Tree"; l = LIST0 integer -> 
+      | IDENT "Explain"; IDENT "Proof"; IDENT "Tree"; l = LIST0 integer ->
 	  VernacShow (ExplainTree l)
       | IDENT "Go"; n = natural -> VernacGo (GoTo n)
       | IDENT "Go"; IDENT "top" -> VernacGo GoTop
@@ -90,22 +90,22 @@ GEXTEND Gram
       | IDENT "Go"; IDENT "next" -> VernacGo GoNext
       | IDENT "Guarded" -> VernacCheckGuard
 (* Hints for Auto and EAuto *)
-      | IDENT "Create"; IDENT "HintDb" ; 
+      | IDENT "Create"; IDENT "HintDb" ;
 	  id = IDENT ; b = [ "discriminated" -> true | -> false ] ->
 	    VernacCreateHintDb (use_locality (), id, b)
-      | IDENT "Hint"; local = obsolete_locality; h = hint; 
+      | IDENT "Hint"; local = obsolete_locality; h = hint;
 	  dbnames = opt_hintbases ->
 	  VernacHints (enforce_locality_of local,dbnames, h)
 
-(* Declare "Resolve" directly so as to be able to later extend with 
+(* Declare "Resolve" directly so as to be able to later extend with
    "Resolve ->" and "Resolve <-" *)
-      | IDENT "Hint"; IDENT "Resolve"; lc = LIST1 constr; n = OPT natural; 
+      | IDENT "Hint"; IDENT "Resolve"; lc = LIST1 constr; n = OPT natural;
 	  dbnames = opt_hintbases ->
 	  VernacHints (enforce_locality_of false,dbnames,
 	    HintsResolve (List.map (fun x -> (n, true, x)) lc))
 
 (*This entry is not commented, only for debug*)
-      | IDENT "PrintConstr"; c = constr -> 
+      | IDENT "PrintConstr"; c = constr ->
 	  VernacExtend ("PrintConstr",
 	    [Genarg.in_gen Genarg.rawwit_constr c])
       ] ];
@@ -114,7 +114,7 @@ GEXTEND Gram
     [ [ IDENT "Local" -> true | -> false ] ]
   ;
   hint:
-    [ [ IDENT "Resolve"; lc = LIST1 constr; n = OPT natural -> 
+    [ [ IDENT "Resolve"; lc = LIST1 constr; n = OPT natural ->
           HintsResolve (List.map (fun x -> (n, true, x)) lc)
       | IDENT "Immediate"; lc = LIST1 constr -> HintsImmediate lc
       | IDENT "Transparent"; lc = LIST1 global -> HintsTransparency (lc, true)
@@ -124,7 +124,7 @@ GEXTEND Gram
       | IDENT "Extern"; n = natural; c = OPT constr_pattern ; "=>";
           tac = tactic ->
 	  HintsExtern (n,c,tac)
-      | IDENT "Destruct"; 
+      | IDENT "Destruct";
           id = ident; ":=";
           pri = natural;
           dloc = destruct_location;

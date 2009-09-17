@@ -12,7 +12,7 @@ Module M.
   Module N.
     Definition idid (A : Set) (x : A) := id x.
     (* <Warning> : Grammar is replaced by Notation *)
-    Notation inc := (plus 1). 
+    Notation inc := (plus 1).
   End N.
 
   Definition zero := N.idid 0.

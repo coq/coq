@@ -27,8 +27,8 @@ let apply_opt_resolver resolve kn =
   | Some resolve ->
      try List.assoc kn resolve with Not_found -> None
 
-type substitution_domain = 
-    MSI of mod_self_id 
+type substitution_domain =
+    MSI of mod_self_id
   | MBI of mod_bound_id
   | MPI of module_path
 
@@ -37,7 +37,7 @@ let string_of_subst_domain = function
  | MBI mbid -> debug_string_of_mbid mbid
  | MPI mp -> string_of_mp mp
 
-module Umap = Map.Make(struct 
+module Umap = Map.Make(struct
 			 type t = substitution_domain
 			 let compare = Pervasives.compare
 		       end)
@@ -58,27 +58,27 @@ let map_msid msid mp = add_msid msid mp empty_subst
 let map_mbid mbid mp resolve = add_mbid mbid mp resolve empty_subst
 let map_mp mp1 mp2 = add_mp mp1 mp2 empty_subst
 
-let list_contents sub = 
+let list_contents sub =
   let one_pair uid (mp,_) l =
     (string_of_subst_domain uid, string_of_mp mp)::l
   in
     Umap.fold one_pair sub []
 
-let debug_string_of_subst sub = 
+let debug_string_of_subst sub =
   let l = List.map (fun (s1,s2) -> s1^"|->"^s2) (list_contents sub) in
     "{" ^ String.concat "; " l ^ "}"
 
-let debug_pr_subst sub = 
+let debug_pr_subst sub =
   let l = list_contents sub in
-  let f (s1,s2) = hov 2 (str s1 ++ spc () ++ str "|-> " ++ str s2) 
+  let f (s1,s2) = hov 2 (str s1 ++ spc () ++ str "|-> " ++ str s2)
   in
-    str "{" ++ hov 2 (prlist_with_sep pr_coma f l) ++ str "}" 
+    str "{" ++ hov 2 (prlist_with_sep pr_coma f l) ++ str "}"
 
 
 let subst_mp0 sub mp = (* 's like subst *)
  let rec aux mp =
   match mp with
-    | MPself sid -> 
+    | MPself sid ->
         let mp',resolve = Umap.find (MSI sid) sub in
          mp',resolve
     | MPbound bid ->
@@ -86,17 +86,17 @@ let subst_mp0 sub mp = (* 's like subst *)
           mp',resolve
     | MPdot (mp1,l) as mp2 ->
 	begin
-	  try  
+	  try
 	    let mp',resolve = Umap.find (MPI mp2) sub in
               mp',resolve
-	  with Not_found ->    
+	  with Not_found ->
 	    let mp1',resolve = aux mp1 in
 	      MPdot (mp1',l),resolve
 	end
     | _ -> raise Not_found
  in
   try
-    Some (aux mp) 
+    Some (aux mp)
   with Not_found -> None
 
 let subst_mp sub mp =
@@ -148,84 +148,84 @@ let subst_evaluable_reference subst = function
 
 
 
-let rec map_kn f f' c = 
+let rec map_kn f f' c =
   let func = map_kn f f' in
     match kind_of_term c with
-      | Const kn -> 
+      | Const kn ->
 	  (match f' kn with
 	       None -> c
 	     | Some const ->const)
-      | Ind (kn,i) -> 
+      | Ind (kn,i) ->
          (match f kn with
              None -> c
            | Some kn' ->
 	      mkInd (kn',i))
-      | Construct ((kn,i),j) -> 
+      | Construct ((kn,i),j) ->
          (match f kn with
              None -> c
            | Some kn' ->
 	       mkConstruct ((kn',i),j))
-      | Case (ci,p,ct,l) -> 
+      | Case (ci,p,ct,l) ->
 	  let ci_ind =
             let (kn,i) = ci.ci_ind in
               (match f kn with None -> ci.ci_ind | Some kn' -> kn',i ) in
 	  let p' = func p in
 	  let ct' = func ct in
 	  let l' = array_smartmap func l in
-	    if (ci.ci_ind==ci_ind && p'==p 
+	    if (ci.ci_ind==ci_ind && p'==p
 		&& l'==l && ct'==ct)then c
-	    else 
+	    else
 	      mkCase ({ci with ci_ind = ci_ind},
-		      p',ct', l')  
-      | Cast (ct,k,t) -> 
+		      p',ct', l')
+      | Cast (ct,k,t) ->
 	  let ct' = func ct in
 	  let t'= func t in
-	    if (t'==t && ct'==ct) then c 
+	    if (t'==t && ct'==ct) then c
 	    else mkCast (ct', k, t')
-      | Prod (na,t,ct) -> 
+      | Prod (na,t,ct) ->
 	  let ct' = func ct in
 	  let t'= func t in
-	    if (t'==t && ct'==ct) then c 
+	    if (t'==t && ct'==ct) then c
 	    else mkProd (na, t', ct')
-      | Lambda (na,t,ct) -> 
+      | Lambda (na,t,ct) ->
 	  let ct' = func ct in
 	  let t'= func t in
-	    if (t'==t && ct'==ct) then c 
+	    if (t'==t && ct'==ct) then c
 	    else mkLambda (na, t', ct')
-      | LetIn (na,b,t,ct) -> 
+      | LetIn (na,b,t,ct) ->
 	  let ct' = func ct in
 	  let t'= func t in
 	  let b'= func b in
-	    if (t'==t && ct'==ct && b==b') then c 
+	    if (t'==t && ct'==ct && b==b') then c
 	    else mkLetIn (na, b', t', ct')
-      | App (ct,l) -> 
+      | App (ct,l) ->
 	  let ct' = func ct in
 	  let l' = array_smartmap func l in
 	    if (ct'== ct && l'==l) then c
 	    else mkApp (ct',l')
-      | Evar (e,l) -> 
+      | Evar (e,l) ->
 	  let l' = array_smartmap func l in
 	    if (l'==l) then c
 	    else mkEvar (e,l')
       | Fix (ln,(lna,tl,bl)) ->
 	  let tl' = array_smartmap func tl in
 	  let bl' = array_smartmap func bl in
-	    if (bl == bl'&& tl == tl') then c  
+	    if (bl == bl'&& tl == tl') then c
 	    else mkFix (ln,(lna,tl',bl'))
       | CoFix(ln,(lna,tl,bl)) ->
 	  let tl' = array_smartmap func tl in
 	  let bl' = array_smartmap func bl in
-	    if (bl == bl'&& tl == tl') then c  
+	    if (bl == bl'&& tl == tl') then c
 	    else mkCoFix (ln,(lna,tl',bl'))
       | _ -> c
 
-let subst_mps sub = 
+let subst_mps sub =
   map_kn (subst_kn0 sub) (subst_con0 sub)
 
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
     | _ when mp = mpfrom -> mpto
-    | MPdot (mp1,l) -> 
+    | MPdot (mp1,l) ->
 	let mp1' = replace_mp_in_mp mpfrom mpto mp1 in
 	  if mp1==mp1' then mp
 	  else MPdot (mp1',l)
@@ -282,7 +282,7 @@ let join (subst1 : substitution) (subst2 : substitution) =
 		  let key' =
 		    match key with
 			MSI msid -> MPself msid
-                      | MBI mbid -> MPbound mbid 
+                      | MBI mbid -> MPbound mbid
 		      | MPI mp1 -> mp1 in
 		  let kn' = replace_mp_in_con mp key' kn in
 		    if kn==kn' then
@@ -297,12 +297,12 @@ let join (subst1 : substitution) (subst2 : substitution) =
       mp',resolve'' in
   let subst = Umap.mapi (apply_subst subst2) subst1 in
     (Umap.fold Umap.add subst2 subst)
-      
+
 let subst_key subst1 subst2 =
   let replace_in_key key (mp,resolve) sub=
-    let newkey = 
+    let newkey =
       match key with
-	| MPI mp1 -> 
+	| MPI mp1 ->
 	    begin
 	      match subst_mp0 subst1 mp1 with
 		| None -> None
@@ -318,22 +318,22 @@ let subst_key subst1 subst2 =
 
 let update_subst_alias subst1 subst2 =
  let subst_inv key (mp,resolve) sub =
-    let newmp = 
-      match key with 
+    let newmp =
+      match key with
 	| MBI msid -> MPbound msid
 	| MSI msid -> MPself msid
 	| MPI mp -> mp
     in
-   match mp with 
+   match mp with
      | MPbound mbid -> Umap.add (MBI mbid) (newmp,None) sub
      | MPself msid -> Umap.add (MSI msid) (newmp,None) sub
      | _ ->  Umap.add (MPI mp) (newmp,None) sub
-  in 
+  in
   let subst_mbi = Umap.fold subst_inv subst2 empty_subst in
   let alias_subst key (mp,resolve) sub=
-    let newkey = 
+    let newkey =
       match key with
-	| MPI mp1 -> 
+	| MPI mp1 ->
 	    begin
 	      match subst_mp0 subst_mbi mp1 with
 		| None -> None
@@ -349,23 +349,23 @@ let update_subst_alias subst1 subst2 =
 
 let update_subst subst1 subst2 =
  let subst_inv key (mp,resolve) l =
-    let newmp = 
-      match key with 
+    let newmp =
+      match key with
 	| MBI msid -> MPbound msid
 	| MSI msid -> MPself msid
 	| MPI mp -> mp
     in
-   match mp with 
+   match mp with
      | MPbound mbid ->  ((MBI mbid),newmp,resolve)::l
      | MPself msid ->  ((MSI msid),newmp,resolve)::l
      | _ ->   ((MPI mp),newmp,resolve)::l
-  in 
+  in
   let subst_mbi = Umap.fold subst_inv subst2 [] in
   let alias_subst key (mp,resolve) sub=
-    let newsetkey = 
+    let newsetkey =
       match key with
-	| MPI mp1 -> 
-	    let compute_set_newkey l (k,mp',resolve) = 
+	| MPI mp1 ->
+	    let compute_set_newkey l (k,mp',resolve) =
 	      let mp_from_key = match k with
 		  	| MBI msid -> MPbound msid
 			| MSI msid -> MPself msid
@@ -383,7 +383,7 @@ let update_subst subst1 subst2 =
     in
       match newsetkey with
 	| None -> sub
-	| Some l -> 
+	| Some l ->
 	    List.fold_left (fun s (k,r) -> Umap.add k (mp,r) s)
 	      sub l
   in
@@ -431,7 +431,7 @@ let join_alias (subst1 : substitution) (subst2 : substitution) =
 		  let key' =
 		    match key with
 			MSI msid -> MPself msid
-                      | MBI mbid -> MPbound mbid 
+                      | MBI mbid -> MPbound mbid
 		      | MPI mp1 -> mp1 in
 		  let kn' = replace_mp_in_con mp key' kn in
 		    if kn==kn' then
@@ -444,7 +444,7 @@ let join_alias (subst1 : substitution) (subst2 : substitution) =
 	      Some (changeDom res)
     in
       mp',resolve'' in
-  Umap.mapi (apply_subst subst2) subst1 
+  Umap.mapi (apply_subst subst2) subst1
 
 let remove_alias subst =
   let rec remove key (mp,resolve) sub =
@@ -453,7 +453,7 @@ let remove_alias subst =
       | _ -> Umap.add key (mp,resolve) sub
   in
     Umap.fold remove subst empty_subst
-      
+
 
 let rec occur_in_path uid path =
  match uid,path with
@@ -461,34 +461,34 @@ let rec occur_in_path uid path =
   | MBI bid,MPbound bid' -> bid = bid'
   | _,MPdot (mp1,_) -> occur_in_path uid mp1
   | _ -> false
-    
-let occur_uid uid sub = 
+
+let occur_uid uid sub =
   let check_one uid' (mp,_) =
     if uid = uid' || occur_in_path uid mp then raise Exit
   in
-    try 
+    try
       Umap.iter check_one sub;
       false
     with Exit -> true
 
 let occur_msid uid = occur_uid (MSI uid)
 let occur_mbid uid = occur_uid (MBI uid)
-    
+
 type 'a lazy_subst =
   | LSval of 'a
   | LSlazy of substitution * 'a
-	
+
 type 'a substituted = 'a lazy_subst ref
-      
+
 let from_val a = ref (LSval a)
-    
-let force fsubst r = 
+
+let force fsubst r =
   match !r with
   | LSval a -> a
-  | LSlazy(s,a) -> 
+  | LSlazy(s,a) ->
       let a' = fsubst s a in
       r := LSval a';
-      a' 
+      a'
 
 let subst_substituted s r =
   match !r with
@@ -496,4 +496,4 @@ let subst_substituted s r =
     | LSlazy(s',a) ->
 	let s'' = join s' s in
 	  ref (LSlazy(s'',a))
-	    
+

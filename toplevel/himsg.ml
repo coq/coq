@@ -369,17 +369,17 @@ let explain_typeclass_resolution env evi k =
   match k with
   | GoalEvar | InternalHole | ImplicitArg _ ->
       (match Typeclasses.class_of_constr evi.evar_concl with
-      | Some c -> 
+      | Some c ->
 	  let env = Evd.evar_env evi in
-	    fnl () ++ str "Could not find an instance for " ++ 
-	      pr_lconstr_env env evi.evar_concl ++ 
+	    fnl () ++ str "Could not find an instance for " ++
+	      pr_lconstr_env env evi.evar_concl ++
 	      pr_ne_context_of (str " in environment:"++ fnl ()) (str ".") env
       | None -> mt())
   | _ -> mt()
-      
+
 let explain_unsolvable_implicit env evi k explain =
-  str "Cannot infer " ++ explain_hole_kind env (Some evi) k ++ 
-  explain_unsolvability explain ++ str "." ++ 
+  str "Cannot infer " ++ explain_hole_kind env (Some evi) k ++
+  explain_unsolvability explain ++ str "." ++
   explain_typeclass_resolution env evi k
 
 let explain_var_not_found env id =
@@ -418,7 +418,7 @@ let explain_refiner_cannot_generalize env ty =
 
 let explain_no_occurrence_found env c id =
   str "Found no subterm matching " ++ pr_lconstr_env env c ++
-  str " in " ++ 
+  str " in " ++
     (match id with
       | Some id -> pr_id id
       | None -> str"the current goal") ++ str "."
@@ -431,9 +431,9 @@ let explain_cannot_unify_binding_type env m n =
 
 let explain_cannot_find_well_typed_abstraction env p l =
   str "Abstracting over the " ++
-  str (plural (List.length l) "term") ++ spc () ++ 
+  str (plural (List.length l) "term") ++ spc () ++
   hov 0 (pr_enum (pr_lconstr_env env) l) ++ spc () ++
-  str "leads to a term" ++ spc () ++ pr_lconstr_env env p ++ spc () ++ 
+  str "leads to a term" ++ spc () ++ pr_lconstr_env env p ++ spc () ++
   str "which is ill-typed."
 
 let explain_type_error env err =
@@ -490,24 +490,24 @@ let explain_pretype_error env err =
   | CannotFindWellTypedAbstraction (p,l) ->
       explain_cannot_find_well_typed_abstraction env p l
 
-      
+
 (* Typeclass errors *)
 
 let explain_not_a_class env c =
   pr_constr_env env c ++ str" is not a declared type class."
 
 let explain_unbound_method env cid id =
-  str "Unbound method name " ++ Nameops.pr_id (snd id) ++ spc () ++ str"of class" ++ spc () ++ 
+  str "Unbound method name " ++ Nameops.pr_id (snd id) ++ spc () ++ str"of class" ++ spc () ++
     pr_global cid ++ str "."
 
-let pr_constr_exprs exprs = 
-  hv 0 (List.fold_right 
+let pr_constr_exprs exprs =
+  hv 0 (List.fold_right
 	 (fun d pps -> ws 2 ++ Ppconstr.pr_constr_expr d ++ pps)
          exprs (mt ()))
 
 let explain_no_instance env (_,id) l =
   str "No instance found for class " ++ Nameops.pr_id id ++ spc () ++
-  str "applied to arguments" ++ spc () ++ 
+  str "applied to arguments" ++ spc () ++
     prlist_with_sep pr_spc (pr_lconstr_env env) l
 
 let pr_constraints printenv env evm =
@@ -516,14 +516,14 @@ let pr_constraints printenv env evm =
     if List.for_all (fun (ev', evi') ->
       eq_named_context_val evi.evar_hyps evi'.evar_hyps) l
     then
-      let pe = pr_ne_context_of (str "In environment:") (mt ()) 
+      let pe = pr_ne_context_of (str "In environment:") (mt ())
 	(reset_with_named_context evi.evar_hyps env) in
 	(if printenv then pe ++ fnl () else mt ()) ++
-	  prlist_with_sep (fun () -> fnl ()) 
+	  prlist_with_sep (fun () -> fnl ())
 	  (fun (ev, evi) -> str(string_of_existential ev)++ str " == " ++ pr_constr evi.evar_concl) l
     else
       pr_evar_defs evm
-      
+
 let explain_unsatisfiable_constraints env evd constr =
   let evm = Evarutil.nf_evars evd in
   let undef = Evd.undefined_evars evm in
@@ -531,26 +531,26 @@ let explain_unsatisfiable_constraints env evd constr =
   | None ->
       str"Unable to satisfy the following constraints:" ++ fnl() ++
 	pr_constraints true env evm
-  | Some (ev, k) -> 
+  | Some (ev, k) ->
       explain_unsolvable_implicit env (Evd.find evm ev) k None ++ fnl () ++
 	if List.length (Evd.to_list undef) > 1 then
-	  str"With the following constraints:" ++ fnl() ++ 
+	  str"With the following constraints:" ++ fnl() ++
 	    pr_constraints false env (Evd.remove undef ev)
 	else mt ()
-	
-let explain_mismatched_contexts env c i j = 
+
+let explain_mismatched_contexts env c i j =
   str"Mismatched contexts while declaring instance: " ++ brk (1,1) ++
-    hov 1 (str"Expected:" ++ brk (1, 1) ++ pr_rel_context env j) ++ fnl () ++ brk (1,1) ++ 
+    hov 1 (str"Expected:" ++ brk (1, 1) ++ pr_rel_context env j) ++ fnl () ++ brk (1,1) ++
     hov 1 (str"Found:" ++ brk (1, 1) ++ pr_constr_exprs i)
 
-let explain_typeclass_error env err = 
+let explain_typeclass_error env err =
   match err with
     | NotAClass c -> explain_not_a_class env c
     | UnboundMethod (cid, id) -> explain_unbound_method env cid id
     | NoInstance (id, l) -> explain_no_instance env id l
     | UnsatisfiableConstraints (evd, c) -> explain_unsatisfiable_constraints env evd c
     | MismatchedContextInstance (c, i, j) -> explain_mismatched_contexts env c i j
-	
+
 (* Refiner errors *)
 
 let explain_refiner_bad_type arg ty conclty =
@@ -560,7 +560,7 @@ let explain_refiner_bad_type arg ty conclty =
   str "instead of" ++ brk(1,1) ++ pr_lconstr conclty ++ str "."
 
 let explain_refiner_unresolved_bindings l =
-  str "Unable to find an instance for the " ++ 
+  str "Unable to find an instance for the " ++
   str (plural (List.length l) "variable") ++ spc () ++
   prlist_with_sep pr_coma pr_name l ++ str"."
 
@@ -584,9 +584,9 @@ let explain_non_linear_proof c =
   spc () ++ str "because a metavariable has several occurrences."
 
 let explain_meta_in_type c =
-  str "In refiner, a meta appears in the type " ++ brk(1,1) ++ pr_lconstr c ++ 
+  str "In refiner, a meta appears in the type " ++ brk(1,1) ++ pr_lconstr c ++
   str " of another meta"
-    
+
 let explain_refiner_error = function
   | BadType (arg,ty,conclty) -> explain_refiner_bad_type arg ty conclty
   | UnresolvedBindings t -> explain_refiner_unresolved_bindings t
@@ -615,9 +615,9 @@ let error_ill_formed_constructor env id c v nparams nargs =
   let pv = pr_lconstr_env env v in
   let atomic = (nb_prod c = 0) in
   str "The type of constructor" ++ brk(1,1) ++ pr_id id ++ brk(1,1) ++
-  str "is not valid;" ++ brk(1,1) ++ 
-  strbrk (if atomic then "it must be " else "its conclusion must be ") ++ 
-  pv ++ 
+  str "is not valid;" ++ brk(1,1) ++
+  strbrk (if atomic then "it must be " else "its conclusion must be ") ++
+  pv ++
   (* warning: because of implicit arguments it is difficult to say which
      parameters must be explicitly given *)
   (if nparams<>0 then
@@ -663,7 +663,7 @@ let error_large_non_prop_inductive_not_in_type () =
 
 let error_not_allowed_case_analysis isrec kind i =
   str (if isrec then "Induction" else "Case analysis") ++
-  strbrk " on sort " ++ pr_sort kind ++ 
+  strbrk " on sort " ++ pr_sort kind ++
   strbrk " is not allowed for inductive definition " ++
   pr_inductive (Global.env()) i ++ str "."
 
@@ -801,7 +801,7 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
        | Proof_type.LtacNotationCall s -> quote (str s)
        | Proof_type.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
        | Proof_type.LtacVarCall (id,t) ->
-	   quote (Nameops.pr_id id) ++ strbrk " (bound to " ++ 
+	   quote (Nameops.pr_id id) ++ strbrk " (bound to " ++
 	     Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
        | Proof_type.LtacAtomCall (te,otac) -> quote
 	   (Pptactic.pr_glob_tactic (Global.env())
@@ -821,7 +821,7 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
 	     (if unboundvars <> [] or vars <> [] then
 		strbrk " (with " ++
 		  prlist_with_sep pr_coma
-		  (fun (id,c) -> 
+		  (fun (id,c) ->
 		     pr_id id ++ str ":=" ++ Printer.pr_lconstr c)
 		  (List.rev vars @ unboundvars) ++ str ")"
 	      else mt())) ++
@@ -832,7 +832,7 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
       let kind_of_last_call = match list_last calls with
     | (_,Proof_type.LtacConstrInterp _) -> ", last term evaluation failed."
     | _ -> ", last call failed." in
-    hov 0 (str "In nested Ltac calls to " ++ 
+    hov 0 (str "In nested Ltac calls to " ++
            pr_enum pr_call calls ++ strbrk kind_of_last_call)
   else
     mt ()

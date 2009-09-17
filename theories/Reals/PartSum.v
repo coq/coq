@@ -31,7 +31,7 @@ Lemma tech2 :
   forall (An:nat -> R) (m n:nat),
     (m < n)%nat ->
     sum_f_R0 An n =
-    sum_f_R0 An m + sum_f_R0 (fun i:nat => An (S m + i)%nat) (n - S m). 
+    sum_f_R0 An m + sum_f_R0 (fun i:nat => An (S m + i)%nat) (n - S m).
 Proof.
   intros; induction  n as [| n Hrecn].
   elim (lt_n_O _ H).
@@ -155,7 +155,7 @@ Lemma tech12 :
 Proof.
   intros; unfold Pser in |- *; unfold infinite_sum in |- *; unfold Un_cv in H;
     assumption.
-Qed. 
+Qed.
 
 Lemma scal_sum :
   forall (An:nat -> R) (N:nat) (x:R),
@@ -256,12 +256,12 @@ Qed.
 
 Lemma minus_sum :
   forall (An Bn:nat -> R) (N:nat),
-    sum_f_R0 (fun i:nat => An i - Bn i) N = sum_f_R0 An N - sum_f_R0 Bn N. 
+    sum_f_R0 (fun i:nat => An i - Bn i) N = sum_f_R0 An N - sum_f_R0 Bn N.
 Proof.
-  intros; induction  N as [| N HrecN]. 
-  simpl in |- *; ring. 
-  do 3 rewrite tech5; rewrite HrecN; ring. 
-Qed. 
+  intros; induction  N as [| N HrecN].
+  simpl in |- *; ring.
+  do 3 rewrite tech5; rewrite HrecN; ring.
+Qed.
 
 Lemma sum_decomposition :
   forall (An:nat -> R) (N:nat),
@@ -346,7 +346,7 @@ Qed.
 (**********)
 Lemma Rabs_triang_gen :
   forall (An:nat -> R) (N:nat),
-    Rabs (sum_f_R0 An N) <= sum_f_R0 (fun i:nat => Rabs (An i)) N. 
+    Rabs (sum_f_R0 An N) <= sum_f_R0 (fun i:nat => Rabs (An i)) N.
 Proof.
   intros.
   induction  N as [| N HrecN].

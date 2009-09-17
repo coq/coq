@@ -13,16 +13,16 @@ Definition l4 A (t : someT A) : nat := let 'mkT x y := t in x.
 Print l4.
 Print sigT.
 
-Definition l5 A (B : A -> Type) (t : sigT B) : B (projT1 t) := 
+Definition l5 A (B : A -> Type) (t : sigT B) : B (projT1 t) :=
   let 'existT x y := t return B (projT1 t) in y.
 
-Definition l6 A (B : A -> Type) (t : sigT B) : B (projT1 t) := 
+Definition l6 A (B : A -> Type) (t : sigT B) : B (projT1 t) :=
   let 'existT x y as t' := t return B (projT1 t') in y.
 
-Definition l7 A (B : A -> Type) (t : sigT B) : B (projT1 t) := 
+Definition l7 A (B : A -> Type) (t : sigT B) : B (projT1 t) :=
   let 'existT x y as t' in sigT _ := t return B (projT1 t') in y.
 
-Definition l8 A (B : A -> Type) (t : sigT B) : B (projT1 t) := 
+Definition l8 A (B : A -> Type) (t : sigT B) : B (projT1 t) :=
   match t with
     existT x y => y
   end.
@@ -47,9 +47,9 @@ Definition identity_functor (c : category) : functor c c :=
   let 'A :& homA :& CA := c in
     fun x => x.
 
-Definition functor_composition (a b c : category) : functor a b -> functor b c -> functor a c := 
+Definition functor_composition (a b c : category) : functor a b -> functor b c -> functor a c :=
   let 'A :& homA :& CA := a in
   let 'B :& homB :& CB := b in
   let 'C :& homB :& CB := c in
-    fun f g => 
+    fun f g =>
       fun x => g (f x).

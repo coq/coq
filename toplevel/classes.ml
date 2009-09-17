@@ -35,13 +35,13 @@ open Entries
 let typeclasses_db = "typeclass_instances"
 
 let _ =
-  Typeclasses.register_add_instance_hint 
+  Typeclasses.register_add_instance_hint
     (fun inst pri ->
-      Flags.silently (fun () ->      
-	Auto.add_hints false [typeclasses_db] 
+      Flags.silently (fun () ->
+	Auto.add_hints false [typeclasses_db]
 	  (Auto.HintsResolveEntry
 	      [pri, false, mkConst inst])) ())
-    
+
 let declare_instance_cst glob con =
   let instance = Typeops.type_of_constant (Global.env ()) con in
   let _, r = decompose_prod_assum instance in
@@ -50,13 +50,13 @@ let declare_instance_cst glob con =
       | None -> errorlabstrm "" (Pp.strbrk "Constant does not build instances of a declared type class.")
 
 let declare_instance glob idl =
-  let con = 
+  let con =
     try (match global (Ident idl) with
       | ConstRef x -> x
       | _ -> raise Not_found)
     with _ -> error "Instance definition not found."
   in declare_instance_cst glob con
-	  
+
 let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
 let mismatched_props env n m = mismatched_ctx_inst env Properties n m
 
@@ -68,18 +68,18 @@ let interp_type_evars evdref env ?(impls=([],[])) typ =
   let typ' = intern_gen true ~impls !evdref env typ in
   let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
     imps, Pretyping.Default.understand_tcc_evars evdref env Pretyping.IsType typ'
-    
+
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 
 open Topconstr
-    
+
 let type_ctx_instance evars env ctx inst subst =
-  let (s, _) = 
+  let (s, _) =
     List.fold_left2
       (fun (subst, instctx) (na, b, t) ce ->
 	let t' = substl subst t in
-	let c' = 
-	  match b with 
+	let c' =
+	  match b with
 	  | None -> interp_casted_constr_evars evars env ce t'
 	  | Some b -> substl subst b
 	in
@@ -93,25 +93,25 @@ let refine_ref = ref (fun _ -> assert(false))
 let id_of_class cl =
   match cl.cl_impl with
     | ConstRef kn -> let _,_,l = repr_con kn in id_of_label l
-    | IndRef (kn,i) -> 
+    | IndRef (kn,i) ->
 	let mip = (Environ.lookup_mind kn (Global.env ())).Declarations.mind_packets in
 	  mip.(0).Declarations.mind_typename
     | _ -> assert false
-	
+
 open Pp
 
 let ($$) g f = fun x -> g (f x)
-	
-let instance_hook k pri global imps ?hook cst = 
+
+let instance_hook k pri global imps ?hook cst =
   let inst = Typeclasses.new_instance k pri global cst in
     Impargs.maybe_declare_manual_implicits false (ConstRef cst) ~enriching:false imps;
     Typeclasses.add_instance inst;
     (match hook with Some h -> h cst | None -> ())
 
 let declare_instance_constant k pri global imps ?hook id term termtype =
-  let cdecl = 
+  let cdecl =
     let kind = IsDefinition Instance in
-    let entry = 
+    let entry =
       { const_entry_body   = term;
 	const_entry_type   = Some termtype;
 	const_entry_opaque = false;
@@ -127,13 +127,13 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
     ?(tac:Proof_type.tactic option) ?(hook:(Names.constant -> unit) option) pri =
   let env = Global.env() in
   let evars = ref Evd.empty in
-  let tclass = 
+  let tclass =
     match bk with
     | Implicit ->
 	Implicit_quantifiers.implicit_application Idset.empty ~allow_partial:false
-	  (fun avoid (clname, (id, _, t)) -> 
-	    match clname with 
-	    | Some (cl, b) -> 
+	  (fun avoid (clname, (id, _, t)) ->
+	    match clname with
+	    | Some (cl, b) ->
 		let t = CHole (Util.dummy_loc, None) in
 		  t, avoid
 	    | None -> failwith ("new instance: under-applied typeclass"))
@@ -141,21 +141,21 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
     | Explicit -> cl
   in
   let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
-  let k, ctx', imps, subst = 
+  let k, ctx', imps, subst =
     let c = Command.generalize_constr_expr tclass ctx in
     let imps, c' = interp_type_evars evars env c in
     let ctx, c = decompose_prod_assum c' in
     let cl, args = Typeclasses.dest_class_app (push_rel_context ctx env) c in
       cl, ctx, imps, List.rev args
   in
-  let id = 
+  let id =
     match snd instid with
-	Name id -> 
+	Name id ->
 	  let sp = Lib.make_path id in
 	    if Nametab.exists_cci sp then
 	      errorlabstrm "new_instance" (Nameops.pr_id id ++ Pp.str " already exists.");
 	    id
-      | Anonymous -> 
+      | Anonymous ->
 	  let i = Nameops.add_suffix (id_of_class k) "_instance_0" in
 	    Termops.next_global_ident_away false i (Termops.ids_of_context env)
   in
@@ -167,7 +167,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
     if Lib.is_modtype () then
       begin
 	let _, ty_constr = instance_constructor k (List.rev subst) in
-	let termtype = 
+	let termtype =
 	  let t = it_mkProd_or_LetIn ty_constr ctx' in
 	    Evarutil.nf_isevar !evars t
 	in
@@ -178,49 +178,49 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
       end
     else
       begin
-	let props = 
+	let props =
 	  match props with
-	  | CRecord (loc, _, fs) -> 
-	      if List.length fs > List.length k.cl_props then 
+	  | CRecord (loc, _, fs) ->
+	      if List.length fs > List.length k.cl_props then
 		mismatched_props env' (List.map snd fs) k.cl_props;
 	      fs
-	  | _ -> 
-	      if List.length k.cl_props <> 1 then 
+	  | _ ->
+	      if List.length k.cl_props <> 1 then
 		errorlabstrm "new_instance" (Pp.str "Expected a definition for the instance body")
 	      else [(dummy_loc, Nameops.out_name (pi1 (List.hd k.cl_props))), props]
 	in
-	let subst = 
-	  match k.cl_props with 
-	  | [(na,b,ty)] -> 
-	      let term = match props with [] -> CHole (Util.dummy_loc, None) 
+	let subst =
+	  match k.cl_props with
+	  | [(na,b,ty)] ->
+	      let term = match props with [] -> CHole (Util.dummy_loc, None)
 		| [(_,f)] -> f | _ -> assert false in
 	      let ty' = substl subst ty in
 	      let c = interp_casted_constr_evars evars env' term ty' in
 		c :: subst
 	  | _ ->
-	      let props, rest = 
+	      let props, rest =
 		List.fold_left
-		  (fun (props, rest) (id,b,_) -> 
-		    try 
+		  (fun (props, rest) (id,b,_) ->
+		    try
 		      let ((loc, mid), c) = List.find (fun ((_,id'), c) -> Name id' = id) rest in
 		      let rest' = List.filter (fun ((_,id'), c) -> Name id' <> id) rest in
 			Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
 			c :: props, rest'
-		    with Not_found -> 
+		    with Not_found ->
 		      (CHole (Util.dummy_loc, None) :: props), rest)
 		  ([], props) k.cl_props
 	      in
-		if rest <> [] then 
+		if rest <> [] then
 		  unbound_method env' k.cl_impl (fst (List.hd rest))
 		else
 		  type_ctx_instance evars env' k.cl_props props subst
 	in
-	let subst = List.fold_left2 
+	let subst = List.fold_left2
 	  (fun subst' s (_, b, _) -> if b = None then s :: subst' else subst')
 	  [] subst (k.cl_props @ snd k.cl_context)
 	in
 	let app, ty_constr = instance_constructor k subst in
-	let termtype = 
+	let termtype =
 	  let t = it_mkProd_or_LetIn ty_constr ctx' in
 	    Evarutil.nf_isevar !evars t
 	in
@@ -235,10 +235,10 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	    evars := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env !evars;
 	    let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	      Flags.silently (fun () ->
-		Command.start_proof id kind termtype 
+		Command.start_proof id kind termtype
 		  (fun _ -> function ConstRef cst -> instance_hook k pri global imps ?hook cst
 		    | _ -> assert false);
-		if props <> [] then 
+		if props <> [] then
 		  Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS !evars) *)
 		    (!refine_ref (evm, term));
 		(match tac with Some tac -> Pfedit.by tac | None -> ())) ();
@@ -248,8 +248,8 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
       end
 
 let named_of_rel_context l =
-  let acc, ctx = 
-    List.fold_right 
+  let acc, ctx =
+    List.fold_right
       (fun (na, b, t) (subst, ctx) ->
 	let id = match na with Anonymous -> raise (Invalid_argument "named_of_rel_context") | Name id -> id in
 	let d = (id, Option.map (substl subst) b, substl subst t) in
@@ -272,11 +272,11 @@ let context ?(hook=fun _ -> ()) l =
   let fullctx = Evarutil.nf_rel_context_evar !evars fullctx in
   let ce t = Evarutil.check_evars env Evd.empty !evars t in
   List.iter (fun (n, b, t) -> Option.iter ce b; ce t) fullctx;
-  let ctx = try named_of_rel_context fullctx with _ -> 
+  let ctx = try named_of_rel_context fullctx with _ ->
     error "Anonymous variables not allowed in contexts."
   in
-    List.iter (function (id,_,t) -> 
-      if Lib.is_modtype () then 
+    List.iter (function (id,_,t) ->
+      if Lib.is_modtype () then
 	let cst = Declare.declare_internal_constant id
 	  (ParameterEntry (t,false), IsAssumption Logical)
 	in
@@ -286,8 +286,8 @@ let context ?(hook=fun _ -> ()) l =
 		hook (ConstRef cst)
 	    | None -> ()
       else (
-	let impl = List.exists (fun (x,_) -> 
-	  match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls 
+	let impl = List.exists (fun (x,_) ->
+	  match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
 	in
 	  Command.declare_one_assumption false (Local (* global *), Definitional) t
 	    [] impl (* implicit *) false (* inline *) (dummy_loc, id);

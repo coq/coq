@@ -51,20 +51,20 @@ let rec execute env evd cstr =
 	let jty = execute env evd (nf_evar evd ty) in
 	let jty = assumption_of_judgment env jty in
 	{ uj_val = cstr; uj_type = jty }
-	
-    | Rel n -> 
+
+    | Rel n ->
 	j_nf_evar evd (judge_of_relative env n)
 
-    | Var id -> 
+    | Var id ->
         j_nf_evar evd (judge_of_variable env id)
-	  
+
     | Const c ->
         make_judge cstr (nf_evar evd (type_of_constant env c))
-	  
+
     | Ind ind ->
 	make_judge cstr (nf_evar evd (type_of_inductive env ind))
-	  
-    | Construct cstruct -> 
+
+    | Construct cstruct ->
 	make_judge cstr
           (nf_evar evd (type_of_constructor env cstruct))
 
@@ -74,25 +74,25 @@ let rec execute env evd cstr =
         let lfj = execute_array env evd lf in
         let (j,_) = judge_of_case env ci pj cj lfj in
         j
-  
+
     | Fix ((vn,i as vni),recdef) ->
         let (_,tys,_ as recdef') = execute_recdef env evd recdef in
 	let fix = (vni,recdef') in
         check_fix env fix;
 	make_judge (mkFix fix) tys.(i)
-	  
+
     | CoFix (i,recdef) ->
         let (_,tys,_ as recdef') = execute_recdef env evd recdef in
         let cofix = (i,recdef') in
         check_cofix env cofix;
 	make_judge (mkCoFix cofix) tys.(i)
-	  
-    | Sort (Prop c) -> 
+
+    | Sort (Prop c) ->
 	judge_of_prop_contents c
 
     | Sort (Type u) ->
 	judge_of_type u
-	  
+
     | App (f,args) ->
         let jl = execute_array env evd args in
 	let j =
@@ -102,23 +102,23 @@ let rec execute env evd cstr =
 		make_judge f
 		  (inductive_type_knowing_parameters env ind
 		    (jv_nf_evar evd jl))
-	    | Const cst -> 
+	    | Const cst ->
 		(* Sort-polymorphism of inductive types *)
 		make_judge f
 		  (constant_type_knowing_parameters env cst
 		    (jv_nf_evar evd jl))
-	    | _ -> 
+	    | _ ->
 		execute env evd f
 	in
 	fst (judge_of_apply env j jl)
-	    
-    | Lambda (name,c1,c2) -> 
+
+    | Lambda (name,c1,c2) ->
         let j = execute env evd c1 in
 	let var = type_judgment env j in
 	let env1 = push_rel (name,None,var.utj_val) env in
-        let j' = execute env1 evd c2 in 
+        let j' = execute env1 evd c2 in
         judge_of_abstraction env1 name var j'
-	  
+
     | Prod (name,c1,c2) ->
         let j = execute env evd c1 in
         let varj = type_judgment env j in
@@ -135,7 +135,7 @@ let rec execute env evd cstr =
         let env1 = push_rel (name,Some j1.uj_val,j2.utj_val) env in
         let j3 = execute env1 evd c3 in
         judge_of_letin env name j1 j2 j3
-  
+
     | Cast (c,k,t) ->
         let cj = execute env evd c in
         let tj = execute env evd t in
@@ -163,7 +163,7 @@ let mcheck env evd c t =
     error_actual_type env j (nf_evar sigma t)
 
 (* Type of a constr *)
- 
+
 let mtype_of env evd c =
   let j = execute env evd (nf_evar evd c) in
   (* We are outside the kernel: we take fresh universes *)

@@ -8,7 +8,7 @@ Require Export Setoid.
 Section Essais.
 
 (* Parametrized Setoid *)
-Parameter K : Type -> Type. 
+Parameter K : Type -> Type.
 Parameter equiv : forall A : Type, K A -> K A -> Prop.
 Parameter equiv_refl : forall (A : Type) (x : K A), equiv x x.
 Parameter equiv_sym : forall (A : Type) (x y : K A), equiv x y -> equiv y x.
@@ -40,7 +40,7 @@ Parameter
 
 Hint Resolve equiv_refl equiv_sym equiv_trans: monad.
 
-Add Relation K equiv 
+Add Relation K equiv
  reflexivity proved by (@equiv_refl)
  symmetry proved by (@equiv_sym)
  transitivity proved by (@equiv_trans)
@@ -67,7 +67,7 @@ Proof.
   unfold fequiv; intros; eapply equiv_trans; auto with monad.
 Qed.
 
-Add Relation (fun (A B:Type) => A -> K B) fequiv 
+Add Relation (fun (A B:Type) => A -> K B) fequiv
  reflexivity proved by (@fequiv_refl)
  symmetry proved by (@fequiv_sym)
  transitivity proved by (@fequiv_trans)
@@ -82,12 +82,12 @@ Qed.
 
 Lemma test:
   forall (A B: Type) (m1 m2 m3: K A) (f: A -> A -> K B),
- (equiv m1 m2) -> (equiv m2 m3) -> 
+ (equiv m1 m2) -> (equiv m2 m3) ->
    equiv (bind m1 (fun a => bind m2 (fun a' => f a a')))
          (bind m2 (fun a => bind m3 (fun a' => f a a'))).
 Proof.
-  intros A B m1 m2 m3 f H1 H2. 
+  intros A B m1 m2 m3 f H1 H2.
   setoid_rewrite H1. (* this works *)
   setoid_rewrite H2.
   trivial by equiv_refl.
-Qed. 
+Qed.

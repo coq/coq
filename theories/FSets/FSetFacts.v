@@ -11,8 +11,8 @@
 (** * Finite sets library *)
 
 (** This functor derives additional facts from [FSetInterface.S]. These
-  facts are mainly the specifications of [FSetInterface.S] written using 
-  different styles: equivalence and boolean equalities. 
+  facts are mainly the specifications of [FSetInterface.S] written using
+  different styles: equivalence and boolean equalities.
   Moreover, we prove that [E.Eq] and [Equal] are setoid equalities.
 *)
 
@@ -30,7 +30,7 @@ Definition eqb x y := if eq_dec x y then true else false.
 
 (** * Specifications written using equivalences *)
 
-Section IffSpec. 
+Section IffSpec.
 Variable s s' s'' : t.
 Variable x y z : elt.
 
@@ -50,12 +50,12 @@ rewrite mem_iff; destruct (mem x s); intuition.
 Qed.
 
 Lemma equal_iff : s[=]s' <-> equal s s' = true.
-Proof. 
+Proof.
 split; [apply equal_1|apply equal_2].
 Qed.
 
 Lemma subset_iff : s[<=]s' <-> subset s s' = true.
-Proof. 
+Proof.
 split; [apply subset_1|apply subset_2].
 Qed.
 
@@ -64,8 +64,8 @@ Proof.
 intuition; apply (empty_1 H).
 Qed.
 
-Lemma is_empty_iff : Empty s <-> is_empty s = true. 
-Proof. 
+Lemma is_empty_iff : Empty s <-> is_empty s = true.
+Proof.
 split; [apply is_empty_1|apply is_empty_2].
 Qed.
 
@@ -75,7 +75,7 @@ split; [apply singleton_1|apply singleton_2].
 Qed.
 
 Lemma add_iff : In y (add x s) <-> E.eq x y \/ In y s.
-Proof. 
+Proof.
 split; [ | destruct 1; [apply add_1|apply add_2]]; auto.
 destruct (eq_dec x y) as [E|E]; auto.
 intro H; right; exact (add_3 E H).
@@ -116,8 +116,8 @@ Qed.
 Variable f : elt->bool.
 
 Lemma filter_iff :  compat_bool E.eq f -> (In x (filter f s) <-> In x s /\ f x = true).
-Proof. 
-split; [split; [apply filter_1 with f | apply filter_2 with s] | destruct 1; apply filter_3]; auto. 
+Proof.
+split; [split; [apply filter_1 with f | apply filter_2 with s] | destruct 1; apply filter_3]; auto.
 Qed.
 
 Lemma for_all_iff : compat_bool E.eq f ->
@@ -125,7 +125,7 @@ Lemma for_all_iff : compat_bool E.eq f ->
 Proof.
 split; [apply for_all_1 | apply for_all_2]; auto.
 Qed.
- 
+
 Lemma exists_iff : compat_bool E.eq f ->
   (Exists (fun x => f x = true) s <-> exists_ f s = true).
 Proof.
@@ -133,17 +133,17 @@ split; [apply exists_1 | apply exists_2]; auto.
 Qed.
 
 Lemma elements_iff : In x s <-> InA E.eq x (elements s).
-Proof. 
+Proof.
 split; [apply elements_1 | apply elements_2].
 Qed.
 
 End IffSpec.
 
 (** Useful tactic for simplifying expressions like [In y (add x (union s s'))] *)
-  
-Ltac set_iff := 
+
+Ltac set_iff :=
  repeat (progress (
-  rewrite add_iff || rewrite remove_iff || rewrite singleton_iff 
+  rewrite add_iff || rewrite remove_iff || rewrite singleton_iff
   || rewrite union_iff || rewrite inter_iff || rewrite diff_iff
   || rewrite empty_iff)).
 
@@ -154,7 +154,7 @@ Variable s s' s'' : t.
 Variable x y z : elt.
 
 Lemma mem_b : E.eq x y -> mem x s = mem y s.
-Proof. 
+Proof.
 intros.
 generalize (mem_iff s x) (mem_iff s y)(In_eq_iff s H).
 destruct (mem x s); destruct (mem y s); intuition.
@@ -191,7 +191,7 @@ destruct (mem y s); destruct (mem y (remove x s)); intuition.
 Qed.
 
 Lemma singleton_b : mem y (singleton x) = eqb x y.
-Proof. 
+Proof.
 generalize (mem_iff (singleton x) y)(singleton_iff x y); unfold eqb.
 destruct (eq_dec x y); destruct (mem y (singleton x)); intuition.
 Qed.
@@ -236,7 +236,7 @@ Qed.
 Variable f : elt->bool.
 
 Lemma filter_b : compat_bool E.eq f -> mem x (filter f s) = mem x s && f x.
-Proof. 
+Proof.
 intros.
 generalize (mem_iff (filter f s) x)(mem_iff s x)(filter_iff s x H).
 destruct (mem x s); destruct (mem x (filter f s)); destruct (f x); simpl; intuition.
@@ -264,7 +264,7 @@ rewrite H2.
 rewrite InA_alt; eauto.
 Qed.
 
-Lemma exists_b : compat_bool E.eq f -> 
+Lemma exists_b : compat_bool E.eq f ->
   exists_ f s = existsb f (elements s).
 Proof.
 intros.
@@ -297,20 +297,20 @@ constructor ; red; [apply E.eq_refl|apply E.eq_sym|apply E.eq_trans].
 Qed.
 
 Definition Equal_ST : Equivalence Equal.
-Proof. 
+Proof.
 constructor ; red; [apply eq_refl | apply eq_sym | apply eq_trans].
 Qed.
 
-Add Relation elt E.eq 
- reflexivity proved by E.eq_refl 
+Add Relation elt E.eq
+ reflexivity proved by E.eq_refl
  symmetry proved by E.eq_sym
- transitivity proved by E.eq_trans 
+ transitivity proved by E.eq_trans
  as EltSetoid.
 
-Add Relation t Equal 
- reflexivity proved by eq_refl 
+Add Relation t Equal
+ reflexivity proved by eq_refl
  symmetry proved by eq_sym
- transitivity proved by eq_trans 
+ transitivity proved by eq_trans
  as EqualSetoid.
 
 Add Morphism In with signature E.eq ==> Equal ==> iff as In_m.
@@ -323,7 +323,7 @@ Add Morphism is_empty : is_empty_m.
 Proof.
 unfold Equal; intros s s' H.
 generalize (is_empty_iff s)(is_empty_iff s').
-destruct (is_empty s); destruct (is_empty s'); 
+destruct (is_empty s); destruct (is_empty s');
  unfold Empty; auto; intros.
 symmetry.
 rewrite <- H1; intros a Ha.
@@ -388,14 +388,14 @@ do 2 rewrite diff_iff; rewrite H; rewrite H0; intuition.
 Qed.
 
 Add Morphism Subset with signature Equal ==> Equal ==> iff as  Subset_m.
-Proof. 
+Proof.
 unfold Equal, Subset; firstorder.
 Qed.
 
 Add Morphism subset : subset_m.
 Proof.
 intros s s' H s'' s''' H0.
-generalize (subset_iff s s'') (subset_iff s' s'''). 
+generalize (subset_iff s s'') (subset_iff s' s''').
 destruct (subset s s''); destruct (subset s' s'''); auto; intros.
 rewrite H in H1; rewrite H0 in H1; intuition.
 rewrite H in H1; rewrite H0 in H1; intuition.
@@ -467,7 +467,7 @@ Qed.
 (* [fold], [filter], [for_all], [exists_] and [partition] cannot be proved morphism
    without additional hypothesis on [f]. For instance: *)
 
-Lemma filter_equal : forall f, compat_bool E.eq f -> 
+Lemma filter_equal : forall f, compat_bool E.eq f ->
   forall s s', s[=]s' -> filter f s [=] filter f s'.
 Proof.
 unfold Equal; intros; repeat rewrite filter_iff; auto; rewrite H0; tauto.
@@ -481,7 +481,7 @@ rewrite Hff', Hss'; intuition.
 red; intros; rewrite <- 2 Hff'; auto.
 Qed.
 
-Lemma filter_subset : forall f, compat_bool E.eq f -> 
+Lemma filter_subset : forall f, compat_bool E.eq f ->
   forall s s', s[<=]s' -> filter f s [<=] filter f s'.
 Proof.
 unfold Subset; intros; rewrite filter_iff in *; intuition.

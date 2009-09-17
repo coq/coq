@@ -46,7 +46,7 @@ val record: h_item -> t -> t
 
 val lookup: h_item -> t -> bool
 
-val add_formula : side -> global_reference -> constr -> t -> 
+val add_formula : side -> global_reference -> constr -> t ->
   Proof_type.goal sigma -> t
 
 val re_add_formula_list : Formula.t list -> t -> t
@@ -60,7 +60,7 @@ val empty_seq : int -> t
 val extend_with_ref_list : global_reference list ->
   t -> Proof_type.goal sigma -> t
 
-val extend_with_auto_hints : Auto.hint_db_name list -> 
+val extend_with_auto_hints : Auto.hint_db_name list ->
   t -> Proof_type.goal sigma -> t
 
-val print_cmap: global_reference list CM.t -> unit 
+val print_cmap: global_reference list CM.t -> unit

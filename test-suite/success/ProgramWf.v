@@ -16,7 +16,7 @@ Print merge.
 Require Import ZArith.
 
 
-Print Zlt. 
+Print Zlt.
 Require Import Zwf.
 Print Zwf.
 
@@ -28,7 +28,7 @@ Program Fixpoint Zwfrec (n m : Z) {measure (n + m) (Zwf 0)} : Z :=
     | _ => 0
   end.
 
-Next Obligation. 
+Next Obligation.
   red. Admitted.
 
 Close Scope Z_scope.
@@ -52,7 +52,7 @@ Print merge_one. Eval cbv delta [merge_one] beta zeta in merge_one.
 
 Import WfExtensionality.
 
-Lemma merge_unfold n m : merge n m = 
+Lemma merge_unfold n m : merge n m =
   match n with
     | 0 => 0
     | S n' => merge n' m
@@ -66,7 +66,7 @@ Unset Implicit Arguments.
 
 Time Program Fixpoint check_n  (n : nat) (P : { i | i < n } -> bool) (p : nat)
   (H : forall (i : { i | i < n }), i < p -> P i = true)
-  {measure (n - p)} : 
+  {measure (n - p)} :
   Exc (forall (p : { i | i < n}), P p = true) :=
   match le_lt_dec n p with
   | left _ => value _
@@ -79,14 +79,14 @@ Time Program Fixpoint check_n  (n : nat) (P : { i | i < n } -> bool) (p : nat)
 
 Require Import Omega Setoid.
 
-Next Obligation. 
-  intros ; simpl in *. apply H. 
+Next Obligation.
+  intros ; simpl in *. apply H.
   simpl in * ; omega.
 Qed.
 
-Next Obligation. simpl in *; intros. 
-  revert H0 ; clear_subset_proofs. intros. 
-  case (le_gt_dec p i) ; intro. simpl in *. assert(p = i) by omega. subst. 
+Next Obligation. simpl in *; intros.
+  revert H0 ; clear_subset_proofs. intros.
+  case (le_gt_dec p i) ; intro. simpl in *. assert(p = i) by omega. subst.
   revert H0 ; clear_subset_proofs ; tauto.
 
   apply H. simpl. omega.

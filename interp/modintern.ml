@@ -15,7 +15,7 @@ open Entries
 open Libnames
 open Topconstr
 open Constrintern
- 
+
 let rec make_mp mp = function
     [] -> mp
   | h::tl -> make_mp (MPdot(mp, label_of_id h)) tl
@@ -25,7 +25,7 @@ let rec make_mp mp = function
 the module prefix *)
 exception BadRef
 
-let lookup_qualid (modtype:bool) qid = 
+let lookup_qualid (modtype:bool) qid =
   let rec make_mp mp = function
       [] -> mp
     | h::tl -> make_mp (MPdot(mp, label_of_id h)) tl
@@ -33,13 +33,13 @@ let lookup_qualid (modtype:bool) qid =
   let rec find_module_prefix dir n =
     if n<0 then raise Not_found;
     let dir',dir'' = list_chop n dir in
-    let id',dir''' = 
-      match dir'' with 
-	| hd::tl -> hd,tl 
+    let id',dir''' =
+      match dir'' with
+	| hd::tl -> hd,tl
 	| _ -> anomaly "This list should not be empty!"
     in
     let qid' = make_qualid dir' id' in
-      try 
+      try
 	match Nametab.locate qid' with
 	  | ModRef mp -> mp,dir'''
 	  | _ -> raise BadRef
@@ -47,11 +47,11 @@ let lookup_qualid (modtype:bool) qid =
 	  Not_found -> find_module_prefix dir (pred n)
   in
     try Nametab.locate qid
-    with Not_found -> 
+    with Not_found ->
       let (dir,id) = repr_qualid qid in
       let pref_mp,dir' = find_module_prefix dir (List.length dir - 1) in
-      let mp = 
-	List.fold_left (fun mp id -> MPdot (mp, label_of_id id)) pref_mp dir' 
+      let mp =
+	List.fold_left (fun mp id -> MPdot (mp, label_of_id id)) pref_mp dir'
       in
 	if modtype then
 	  ModTypeRef (make_ln mp (label_of_id id))
@@ -61,7 +61,7 @@ let lookup_qualid (modtype:bool) qid =
 *)
 
 
-(* Search for the head of [qid] in [binders]. 
+(* Search for the head of [qid] in [binders].
    If found, returns the module_path/kernel_name created from the dirpath
    and the basename. Searches Nametab otherwise.
 *)
@@ -71,22 +71,22 @@ let lookup_module (loc,qid) =
       Dumpglob.dump_modref loc mp "modtype"; mp
   with
     | Not_found -> Modops.error_not_a_module_loc loc (string_of_qualid qid)
-	
+
 let lookup_modtype (loc,qid) =
   try
     let mp = Nametab.locate_modtype qid in
       Dumpglob.dump_modref loc mp "mod"; mp
   with
-    | Not_found -> 
+    | Not_found ->
 	Modops.error_not_a_modtype_loc loc (string_of_qualid qid)
 
-let transl_with_decl env = function 
+let transl_with_decl env = function
   | CWith_Module ((_,fqid),qid) ->
       With_Module (fqid,lookup_module qid)
   | CWith_Definition ((_,fqid),c) ->
       With_Definition (fqid,interp_constr Evd.empty env c)
 
-let rec interp_modexpr env = function 
+let rec interp_modexpr env = function
   | CMEident qid ->
       MSEident (lookup_module qid)
   | CMEapply (me1,me2) ->
@@ -94,10 +94,10 @@ let rec interp_modexpr env = function
       let me2 = interp_modexpr env me2 in
 	MSEapply(me1,me2)
 
-let rec interp_modtype env = function 
+let rec interp_modtype env = function
   | CMTEident qid ->
       MSEident (lookup_modtype qid)
-  | CMTEapply (mty1,me) -> 
+  | CMTEapply (mty1,me) ->
       let mty' = interp_modtype env mty1 in
       let me' = interp_modexpr env me in
 	MSEapply(mty',me')

@@ -21,7 +21,7 @@ Inductive Y : Set :=
 Inductive eq1 : forall A:Type, let B:=A in A -> Prop :=
   refl1 : eq1 True I.
 
-Check 
+Check
  fun (P : forall A : Type, let B := A in A -> Type) (f : P True I) (A : Type) =>
    let B := A in
      fun (a : A) (e : eq1 A a) =>

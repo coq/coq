@@ -11,7 +11,7 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import Ranalysis1.
-Require Import R_sqrt. 
+Require Import R_sqrt.
 Open Local Scope R_scope.
 
 (**********)
@@ -104,8 +104,8 @@ Qed.
 Lemma sqrt_continuity_pt_R1 : continuity_pt sqrt 1.
 Proof.
   unfold continuity_pt in |- *; unfold continue_in in |- *;
-    unfold limit1_in in |- *; unfold limit_in in |- *; 
-      unfold dist in |- *; simpl in |- *; unfold R_dist in |- *; 
+    unfold limit1_in in |- *; unfold limit_in in |- *;
+      unfold dist in |- *; simpl in |- *; unfold R_dist in |- *;
         intros.
   set (alpha := Rmin eps 1).
   exists alpha; intros.
@@ -129,8 +129,8 @@ Lemma sqrt_continuity_pt : forall x:R, 0 < x -> continuity_pt sqrt x.
 Proof.
   intros; generalize sqrt_continuity_pt_R1.
   unfold continuity_pt in |- *; unfold continue_in in |- *;
-    unfold limit1_in in |- *; unfold limit_in in |- *; 
-      unfold dist in |- *; simpl in |- *; unfold R_dist in |- *; 
+    unfold limit1_in in |- *; unfold limit_in in |- *;
+      unfold dist in |- *; simpl in |- *; unfold R_dist in |- *;
         intros.
   cut (0 < eps / sqrt x).
   intro; elim (H0 _ H2); intros alp_1 H3.
@@ -153,7 +153,7 @@ Proof.
   unfold Rdiv in H5.
   case (Req_dec x x0); intro.
   rewrite H7; unfold Rminus, Rdiv in |- *; rewrite Rplus_opp_r;
-    rewrite Rmult_0_l; rewrite Rplus_0_r; rewrite Rplus_opp_r; 
+    rewrite Rmult_0_l; rewrite Rplus_0_r; rewrite Rplus_opp_r;
       rewrite Rabs_R0.
   apply Rmult_lt_0_compat.
   assumption.
@@ -238,7 +238,7 @@ Proof.
   intro; cut (g 0 <> 0).
   intro; assert (H2 := continuity_pt_inv g 0 H0 H1).
   unfold derivable_pt_lim in |- *; intros; unfold continuity_pt in H2;
-    unfold continue_in in H2; unfold limit1_in in H2; 
+    unfold continue_in in H2; unfold limit1_in in H2;
       unfold limit_in in H2; simpl in H2; unfold R_dist in H2.
   elim (H2 eps H3); intros alpha H4.
   elim H4; intros.
@@ -333,7 +333,7 @@ Proof.
   apply (sqrt_continuity_pt x H0).
   elim H0; intro.
   unfold continuity_pt in |- *; unfold continue_in in |- *;
-    unfold limit1_in in |- *; unfold limit_in in |- *; 
+    unfold limit1_in in |- *; unfold limit_in in |- *;
       simpl in |- *; unfold R_dist in |- *; intros.
   exists (Rsqr eps); intros.
   split.

@@ -1,4 +1,4 @@
-Require Import Setoid. 
+Require Import Setoid.
 
 Parameter recursion : forall A : Set, A -> (nat -> A -> A) -> nat -> A.
 

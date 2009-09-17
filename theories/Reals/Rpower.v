@@ -7,7 +7,7 @@
 (************************************************************************)
 
 (*i $Id$ i*)
-(*i Due to L.Thery i*) 
+(*i Due to L.Thery i*)
 
 (************************************************************)
 (* Definitions of log and Rpower : R->R->R; main properties *)
@@ -86,7 +86,7 @@ Proof.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   assert (H0 := cv_speed_pow_fact 1); unfold Un_cv in |- *; unfold Un_cv in H0;
-    intros; elim (H0 _ H1); intros; exists x0; intros; 
+    intros; elim (H0 _ H1); intros; exists x0; intros;
       unfold R_dist in H2; unfold R_dist in |- *;
         replace (/ INR (fact n)) with (1 ^ n / INR (fact n)).
   apply (H2 _ H3).
@@ -139,8 +139,8 @@ Qed.
 Lemma exp_ineq1 : forall x:R, 0 < x -> 1 + x < exp x.
 Proof.
   intros; apply Rplus_lt_reg_r with (- exp 0); rewrite <- (Rplus_comm (exp x));
-    assert (H0 := MVT_cor1 exp 0 x derivable_exp H); elim H0; 
-      intros; elim H1; intros; unfold Rminus in H2; rewrite H2; 
+    assert (H0 := MVT_cor1 exp 0 x derivable_exp H); elim H0;
+      intros; elim H1; intros; unfold Rminus in H2; rewrite H2;
         rewrite Ropp_0; rewrite Rplus_0_r;
           replace (derive_pt exp x0 (derivable_exp x0)) with (exp x0).
   rewrite exp_0; rewrite <- Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_l;
@@ -162,7 +162,7 @@ Proof.
   pose proof (IVT_cor f 0 y H2 (Rlt_le _ _ H0) H4) as (t,(_,H7));
     exists t; unfold f in H7; apply Rminus_diag_uniq_sym; exact H7.
   pattern 0 at 2 in |- *; rewrite <- (Rmult_0_r (f y));
-    rewrite (Rmult_comm (f 0)); apply Rmult_le_compat_l; 
+    rewrite (Rmult_comm (f 0)); apply Rmult_le_compat_l;
       assumption.
   unfold f in |- *; apply Rplus_le_reg_l with y; left;
     apply Rlt_trans with (1 + y).
@@ -191,7 +191,7 @@ Proof.
     apply Rmult_eq_reg_l with (exp x / y).
   unfold Rdiv in |- *; rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
   rewrite Rmult_1_r; rewrite <- (Rmult_comm (/ y)); rewrite Rmult_assoc;
-    rewrite <- exp_plus; rewrite Rplus_opp_r; rewrite exp_0; 
+    rewrite <- exp_plus; rewrite Rplus_opp_r; rewrite exp_0;
       rewrite Rmult_1_r; symmetry  in |- *; apply p.
   red in |- *; intro H3; rewrite H3 in H; elim (Rlt_irrefl _ H).
   unfold Rdiv in |- *; apply prod_neq_R0.
@@ -216,7 +216,7 @@ Lemma exp_ln : forall x:R, 0 < x -> exp (ln x) = x.
 Proof.
   intros; unfold ln in |- *; case (Rlt_dec 0 x); intro.
   unfold Rln in |- *;
-    case (ln_exists (mkposreal x r) (cond_pos (mkposreal x r))); 
+    case (ln_exists (mkposreal x r) (cond_pos (mkposreal x r)));
     intros.
   simpl in e; symmetry  in |- *; apply e.
   elim n; apply H.
@@ -248,7 +248,7 @@ Qed.
 Theorem ln_increasing : forall x y:R, 0 < x -> x < y -> ln x < ln y.
 Proof.
   intros x y H H0; apply exp_lt_inv.
-  repeat rewrite exp_ln. 
+  repeat rewrite exp_ln.
   apply H0.
   apply Rlt_trans with x; assumption.
   apply H.
@@ -270,7 +270,7 @@ Theorem ln_lt_inv : forall x y:R, 0 < x -> 0 < y -> ln x < ln y -> x < y.
 Proof.
   intros x y H H0 H1; rewrite <- (exp_ln x); try rewrite <- (exp_ln y).
   apply exp_increasing; apply H1.
-  assumption. 
+  assumption.
   assumption.
 Qed.
 
@@ -299,7 +299,7 @@ Theorem ln_Rinv : forall x:R, 0 < x -> ln (/ x) = - ln x.
 Proof.
   intros x H; apply exp_inv; repeat rewrite exp_ln || rewrite exp_Ropp.
   reflexivity.
-  assumption. 
+  assumption.
   apply Rinv_0_lt_compat; assumption.
 Qed.
 
@@ -325,7 +325,7 @@ Proof.
   unfold dist, R_met, R_dist in |- *; simpl in |- *.
   intros x [[H3 H4] H5].
   cut (y * (x * / y) = x).
-  intro Hxyy. 
+  intro Hxyy.
   replace (ln x - ln y) with (ln (x * / y)).
   case (Rtotal_order x y); [ intros Hxy | intros [Hxy| Hxy] ].
   rewrite Rabs_left.
@@ -580,8 +580,8 @@ Proof.
     (l := ln y) (g := fun x:R => (exp x - exp (ln y)) / (x - ln y)) (f := ln).
   apply ln_continue; auto.
   assert (H0 := derivable_pt_lim_exp (ln y)); unfold derivable_pt_lim in H0;
-    unfold limit1_in in |- *; unfold limit_in in |- *; 
-      simpl in |- *; unfold R_dist in |- *; intros; elim (H0 _ H); 
+    unfold limit1_in in |- *; unfold limit_in in |- *;
+      simpl in |- *; unfold R_dist in |- *; intros; elim (H0 _ H);
         intros; exists (pos x); split.
   apply (cond_pos x).
   intros; pattern y at 3 in |- *; rewrite <- exp_ln.
@@ -589,7 +589,7 @@ Proof.
     [ idtac | ring ].
   apply H1.
   elim H2; intros H3 _; unfold D_x in H3; elim H3; clear H3; intros _ H3;
-    apply Rminus_eq_contra; apply (sym_not_eq (A:=R)); 
+    apply Rminus_eq_contra; apply (sym_not_eq (A:=R));
       apply H3.
   elim H2; clear H2; intros _ H2; apply H2.
   assumption.
@@ -600,7 +600,7 @@ Lemma derivable_pt_lim_ln : forall x:R, 0 < x -> derivable_pt_lim ln x (/ x).
 Proof.
   intros; assert (H0 := Dln x H); unfold D_in in H0; unfold limit1_in in H0;
     unfold limit_in in H0; simpl in H0; unfold R_dist in H0;
-      unfold derivable_pt_lim in |- *; intros; elim (H0 _ H1); 
+      unfold derivable_pt_lim in |- *; intros; elim (H0 _ H1);
         intros; elim H2; clear H2; intros; set (alp := Rmin x0 (x / 2));
           assert (H4 : 0 < alp).
   unfold alp in |- *; unfold Rmin in |- *; case (Rle_dec x0 (x / 2)); intro.

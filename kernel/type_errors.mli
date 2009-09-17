@@ -71,11 +71,11 @@ val error_unbound_var : env -> variable -> 'a
 val error_not_type : env -> unsafe_judgment -> 'a
 
 val error_assumption : env -> unsafe_judgment -> 'a
- 
+
 val error_reference_variables : env -> constr -> 'a
 
-val error_elim_arity : 
-  env -> inductive -> sorts_family list -> constr -> unsafe_judgment -> 
+val error_elim_arity :
+  env -> inductive -> sorts_family list -> constr -> unsafe_judgment ->
       (sorts_family * sorts_family * arity_error) option -> 'a
 
 val error_case_not_inductive : env -> unsafe_judgment -> 'a
@@ -88,11 +88,11 @@ val error_generalization : env -> name * types -> unsafe_judgment -> 'a
 
 val error_actual_type : env -> unsafe_judgment -> types -> 'a
 
-val error_cant_apply_not_functional : 
+val error_cant_apply_not_functional :
   env -> unsafe_judgment -> unsafe_judgment array -> 'a
 
-val error_cant_apply_bad_type : 
-  env -> int * constr * constr -> 
+val error_cant_apply_bad_type :
+  env -> int * constr * constr ->
       unsafe_judgment -> unsafe_judgment array -> 'a
 
 val error_ill_formed_rec_body :

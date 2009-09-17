@@ -48,9 +48,9 @@ Theorem sin_bound :
 Proof.
   intros; case (Req_dec a 0); intro Hyp_a.
   rewrite Hyp_a; rewrite sin_0; split; right; unfold sin_approx in |- *;
-    apply sum_eq_R0 || (symmetry  in |- *; apply sum_eq_R0); 
-      intros; unfold sin_term in |- *; rewrite pow_add; 
-        simpl in |- *; unfold Rdiv in |- *; rewrite Rmult_0_l; 
+    apply sum_eq_R0 || (symmetry  in |- *; apply sum_eq_R0);
+      intros; unfold sin_term in |- *; rewrite pow_add;
+        simpl in |- *; unfold Rdiv in |- *; rewrite Rmult_0_l;
           ring.
   unfold sin_approx in |- *; cut (0 < a).
   intro Hyp_a_pos.
@@ -123,7 +123,7 @@ Proof.
   simpl in |- *; ring.
   ring.
   assert (H3 := cv_speed_pow_fact a); unfold Un in |- *; unfold Un_cv in H3;
-    unfold R_dist in H3; unfold Un_cv in |- *; unfold R_dist in |- *; 
+    unfold R_dist in H3; unfold Un_cv in |- *; unfold R_dist in |- *;
       intros; elim (H3 eps H4); intros N H5.
   exists N; intros; apply H5.
   replace (2 * S n0 + 1)%nat with (S (2 * S n0)).
@@ -138,7 +138,7 @@ Proof.
   assert (X := exist_sin (Rsqr a)); elim X; intros.
   cut (x = sin a / a).
   intro; rewrite H3 in p; unfold sin_in in p; unfold infinite_sum in p;
-    unfold R_dist in p; unfold Un_cv in |- *; unfold R_dist in |- *; 
+    unfold R_dist in p; unfold Un_cv in |- *; unfold R_dist in |- *;
       intros.
   cut (0 < eps / Rabs a).
   intro; elim (p _ H5); intros N H6.
@@ -146,9 +146,9 @@ Proof.
   replace (sum_f_R0 (tg_alt Un) n0) with
   (a * (1 - sum_f_R0 (fun i:nat => sin_n i * Rsqr a ^ i) (S n0))).
   unfold Rminus in |- *; rewrite Rmult_plus_distr_l; rewrite Rmult_1_r;
-    rewrite Ropp_plus_distr; rewrite Ropp_involutive; 
+    rewrite Ropp_plus_distr; rewrite Ropp_involutive;
       repeat rewrite Rplus_assoc; rewrite (Rplus_comm a);
-        rewrite (Rplus_comm (- a)); repeat rewrite Rplus_assoc; 
+        rewrite (Rplus_comm (- a)); repeat rewrite Rplus_assoc;
           rewrite Rplus_opp_l; rewrite Rplus_0_r; apply Rmult_lt_reg_l with (/ Rabs a).
   apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption.
   pattern (/ Rabs a) at 1 in |- *; rewrite <- (Rabs_Rinv a Hyp_a).
@@ -163,7 +163,7 @@ Proof.
   simpl in |- *; rewrite Rmult_1_r; unfold Rminus in |- *;
     rewrite Ropp_plus_distr; rewrite <- Rplus_assoc; rewrite Rplus_opp_r;
       rewrite Rplus_0_l; rewrite Ropp_mult_distr_r_reverse;
-        rewrite <- Ropp_mult_distr_l_reverse; rewrite scal_sum; 
+        rewrite <- Ropp_mult_distr_l_reverse; rewrite scal_sum;
           apply sum_eq.
   intros; unfold sin_n, Un, tg_alt in |- *;
     replace ((-1) ^ S i) with (- (-1) ^ i).
@@ -230,7 +230,7 @@ Lemma cos_bound :
   forall (a:R) (n:nat),
     - PI / 2 <= a ->
     a <= PI / 2 ->
-    cos_approx a (2 * n + 1) <= cos a <= cos_approx a (2 * (n + 1)). 
+    cos_approx a (2 * n + 1) <= cos a <= cos_approx a (2 * (n + 1)).
 Proof.
   cut
     ((forall (a:R) (n:nat),
@@ -318,7 +318,7 @@ Proof.
   simpl in |- *; ring.
   ring.
   assert (H4 := cv_speed_pow_fact a0); unfold Un in |- *; unfold Un_cv in H4;
-    unfold R_dist in H4; unfold Un_cv in |- *; unfold R_dist in |- *; 
+    unfold R_dist in H4; unfold Un_cv in |- *; unfold R_dist in |- *;
       intros; elim (H4 eps H5); intros N H6; exists N; intros.
   apply H6; unfold ge in |- *; apply le_trans with (2 * S N)%nat.
   apply le_trans with (2 * N)%nat.
@@ -328,7 +328,7 @@ Proof.
   assert (X := exist_cos (Rsqr a0)); elim X; intros.
   cut (x = cos a0).
   intro; rewrite H4 in p; unfold cos_in in p; unfold infinite_sum in p;
-    unfold R_dist in p; unfold Un_cv in |- *; unfold R_dist in |- *; 
+    unfold R_dist in p; unfold Un_cv in |- *; unfold R_dist in |- *;
       intros.
   elim (p _ H5); intros N H6.
   exists N; intros.
@@ -336,9 +336,9 @@ Proof.
   (1 - sum_f_R0 (fun i:nat => cos_n i * Rsqr a0 ^ i) (S n1)).
   unfold Rminus in |- *; rewrite Ropp_plus_distr; rewrite Ropp_involutive;
     repeat rewrite Rplus_assoc; rewrite (Rplus_comm 1);
-      rewrite (Rplus_comm (-1)); repeat rewrite Rplus_assoc; 
+      rewrite (Rplus_comm (-1)); repeat rewrite Rplus_assoc;
         rewrite Rplus_opp_l; rewrite Rplus_0_r; rewrite <- Rabs_Ropp;
-          rewrite Ropp_plus_distr; rewrite Ropp_involutive; 
+          rewrite Ropp_plus_distr; rewrite Ropp_involutive;
             unfold Rminus in H6; apply H6.
   unfold ge in |- *; apply le_trans with n1.
   exact H7.
@@ -351,7 +351,7 @@ Proof.
         replace (- sum_f_R0 (fun i:nat => cos_n (S i) * (Rsqr a0 * Rsqr a0 ^ i)) n1)
     with
       (-1 * sum_f_R0 (fun i:nat => cos_n (S i) * (Rsqr a0 * Rsqr a0 ^ i)) n1);
-      [ idtac | ring ]; rewrite scal_sum; apply sum_eq; 
+      [ idtac | ring ]; rewrite scal_sum; apply sum_eq;
         intros; unfold cos_n, Un, tg_alt in |- *.
   replace ((-1) ^ S i) with (- (-1) ^ i).
   replace (a0 ^ (2 * S i)) with (Rsqr a0 * Rsqr a0 ^ i).

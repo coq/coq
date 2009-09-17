@@ -34,7 +34,7 @@ Definition Nplength (a:N) :=
 
 Lemma Nplength_infty : forall a:N, Nplength a = infty -> a = N0.
 Proof.
-  simple induction a; trivial. 
+  simple induction a; trivial.
   unfold Nplength in |- *; intros; discriminate H.
 Qed.
 
@@ -42,7 +42,7 @@ Lemma Nplength_zeros :
  forall (a:N) (n:nat),
    Nplength a = ni n -> forall k:nat, k < n -> Nbit a k = false.
 Proof.
-  simple induction a; trivial. 
+  simple induction a; trivial.
   simple induction p. simple induction n. intros. inversion H1.
   simple induction k. simpl in H1. discriminate H1.
   intros. simpl in H1. discriminate H1.
@@ -116,11 +116,11 @@ Qed.
 Lemma ni_min_assoc :
  forall d d' d'':natinf, ni_min (ni_min d d') d'' = ni_min d (ni_min d' d'').
 Proof.
-  simple induction d; trivial. simple induction d'; trivial. 
+  simple induction d; trivial. simple induction d'; trivial.
   simple induction d''; trivial.
   unfold ni_min in |- *. intro. cut (min (min n n0) n1 = min n (min n0 n1)).
   intro. rewrite H. reflexivity.
-  generalize n0 n1. elim n; trivial. 
+  generalize n0 n1. elim n; trivial.
   simple induction n3; trivial. simple induction n5; trivial.
   intros. simpl in |- *. auto.
 Qed.
@@ -250,10 +250,10 @@ Proof.
 Qed.
 
 
-(** We define an ultrametric distance between [N] numbers: 
-    $d(a,a')=1/2^pd(a,a')$, 
-    where $pd(a,a')$ is the number of identical bits at the beginning 
-    of $a$ and $a'$ (infinity if $a=a'$).  
+(** We define an ultrametric distance between [N] numbers:
+    $d(a,a')=1/2^pd(a,a')$,
+    where $pd(a,a')$ is the number of identical bits at the beginning
+    of $a$ and $a'$ (infinity if $a=a'$).
     Instead of working with $d$, we work with $pd$, namely
     [Npdist]: *)
 
@@ -286,7 +286,7 @@ Qed.
   This follows from the fact that $a ~Ra~|a| = 1/2^{\texttt{Nplength}}(a))$
   is an ultrametric norm, i.e. that $|a-a'| \leq max (|a-a''|, |a''-a'|)$,
   or equivalently that $|a+b|<=max(|a|,|b|)$, i.e. that
-  min $(\texttt{Nplength}(a), \texttt{Nplength}(b)) \leq 
+  min $(\texttt{Nplength}(a), \texttt{Nplength}(b)) \leq
   \texttt{Nplength} (a~\texttt{xor}~ b)$
   (lemma [Nplength_ultra]).
 *)
