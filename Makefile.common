@@ -346,7 +346,7 @@ QARITHVO:=$(addprefix theories/QArith/, \
  Qabs.vo        Qround.vo )
 
 LISTSVO:=$(addprefix theories/Lists/, \
- MonoList.vo  	ListSet.vo   	Streams.vo 	StreamMemo.vo  \
+ ListSet.vo   	Streams.vo 	StreamMemo.vo  \
  TheoryList.vo	List.vo 	SetoidList.vo   ListTactics.vo )
 
 STRINGSVO:=$(addprefix theories/Strings/, \

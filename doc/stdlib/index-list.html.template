@@ -343,7 +343,6 @@ through the <tt>Require Import</tt> command.</p>
   <dd> 
     theories/Lists/List.v
     theories/Lists/ListSet.v
-    theories/Lists/MonoList.v
     theories/Lists/SetoidList.v
     theories/Lists/Streams.v
     theories/Lists/StreamMemo.v

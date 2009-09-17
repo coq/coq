@@ -78,7 +78,6 @@ Init/Wf.vo
 Lists/ListSet.vo
 Lists/ListTactics.vo
 Lists/List.vo
-Lists/MonoList.vo
 Lists/SetoidList.vo
 Lists/StreamMemo.vo
 Lists/Streams.vo
