@@ -109,7 +109,7 @@ let dir_ml_load s =
 	 * in this file, the Makefile dependency logic needs to be updated.
 	 *)
         let warn = Flags.is_verbose() in
-        let _,gname = where_in_path ~warn !coq_mlpath_copy s in
+        let _,gname = find_file_in_path ~warn !coq_mlpath_copy s in
         try
           Dynlink.loadfile gname;
 	with | Dynlink.Error a ->
