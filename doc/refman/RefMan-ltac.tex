@@ -338,10 +338,10 @@ We have a repeat loop with:
 {\tt repeat} {\tacexpr}
 \end{quote}
 {\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
-applied until it fails. Supposing $n>1$, after the first application
-of $v$, $v$ is applied, at least once, to the generated subgoals and
+applied until it fails. After the first application
+of $v$, $v$ is applied to the generated subgoals and
 so on. It stops when it fails for all the generated subgoals. It never
-fails.
+fails itself.
 
 \subsubsection[Error catching]{Error catching\tacindex{try}
 \index{Tacticals!try@{\tt try}}}
