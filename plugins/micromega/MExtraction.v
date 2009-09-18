@@ -20,6 +20,7 @@ Require Import RMicromega.
 Require Import VarMap.
 Require Import RingMicromega.
 Require Import NArith.
+Require Import QArith.
 
 Extract Inductive prod => "( * )" [ "(,)" ].
 Extract Inductive List.list => list [ "[]" "(::)" ].
@@ -39,7 +40,7 @@ Extract Inlined Constant andb => "(&&)".
 
 Extraction "micromega.ml"
   List.map simpl_cone (*map_cone  indexes*)
-  denorm
+  denorm Qpower
   n_of_Z Nnat.N_of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.
 
 (* Local Variables: *)

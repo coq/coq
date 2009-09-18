@@ -408,9 +408,9 @@ let dump_q q =
 	   [| dump_z q.Micromega.qnum ; dump_positive q.Micromega.qden|])
 
 let parse_q term =
- match Term.kind_of_term term with
-  | Term.App(c, args) -> if c = Lazy.force coq_Qmake then
-	{Mc.qnum = parse_z args.(0) ; Mc.qden = parse_positive args.(1) }
+    match Term.kind_of_term term with
+      | Term.App(c, args) -> if c = Lazy.force coq_Qmake then
+	    {Mc.qnum = parse_z args.(0) ; Mc.qden = parse_positive args.(1) }
       else raise ParseError
   |  _ -> raise ParseError
 
@@ -690,8 +690,8 @@ let parse_q term =
 		  begin
 		    try
 		      let (expr,env) = parse_expr env args.(0) in
-		      let exp = (parse_exp args.(1)) in
-			(Mc.PEpow(expr, exp)  , env)
+		      let power = (parse_exp expr args.(1)) in 
+			(power  , env) 
 		    with _ ->   (* if the exponent is a variable *)
 		      let (env,n) = Env.compute_rank_add env term in (Mc.PEX n, env)
 		  end
@@ -753,16 +753,40 @@ let rconstant term =
   |  _ -> raise ParseError
 
 
-let parse_zexpr =
- parse_expr zconstant (fun x -> Mc.n_of_Z (parse_z x))  zop_spec
-let parse_qexpr  =
- parse_expr qconstant (fun x -> Mc.n_of_Z (parse_z x)) qop_spec
-let parse_rexpr =
- parse_expr rconstant  (fun x -> Mc.n_of_nat (parse_nat x)) rop_spec
+let parse_zexpr =  parse_expr 
+   zconstant 
+   (fun expr x -> 
+     let exp = (parse_z x) in
+       match exp with
+	 | Mc.Zneg _ -> Mc.PEc Mc.Z0
+	 |   _     ->  Mc.PEpow(expr, Mc.n_of_Z exp))
+   zop_spec 
+
+let parse_qexpr  =  parse_expr 
+  qconstant 
+   (fun expr x -> 
+     let exp = parse_z x in
+       match exp with
+	 | Mc.Zneg _ -> 
+	     begin
+	       match expr with
+	       | Mc.PEc q -> Mc.PEc (Mc.qpower q exp)
+	       |     _    -> print_string "parse_qexpr parse error" ; flush stdout ; raise ParseError
+	     end
+	 | _     ->  let exp = Mc.n_of_Z  exp in
+		       Mc.PEpow(expr,exp))
+  qop_spec 
+
+let parse_rexpr =  parse_expr 
+  rconstant  
+  (fun expr x -> 
+     let exp = Mc.n_of_nat (parse_nat x) in
+       Mc.PEpow(expr,exp))  
+  rop_spec
 
 
- let  parse_arith parse_op parse_expr env cstr =
-  if debug
+ let  parse_arith parse_op parse_expr env cstr = 
+  if debug 
   then (Pp.pp_flush ();
 	Pp.pp (Pp.str "parse_arith: ");
 	Pp.pp (Printer.prterm  cstr);
@@ -922,9 +946,6 @@ let same_proof sg cl1 cl2 =
    | n::sg -> (try List.nth cl1 n = List.nth cl2 n with _ -> false)
       && (xsame_proof sg ) in
   xsame_proof sg
-
-
-
 
 let tags_of_clause tgs wit clause =
  let rec xtags tgs = function
@@ -1113,8 +1134,6 @@ let abstract_formula hyps f =
       | TT -> TT
 
   in  xabs f
-
-
 
 
 let micromega_order_change spec cert cert_typ env  ff gl =

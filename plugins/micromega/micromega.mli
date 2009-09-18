@@ -61,6 +61,8 @@ type n =
   | N0
   | Npos of positive
 
+val pow_pos : ('a1 -> 'a1 -> 'a1) -> 'a1 -> positive -> 'a1
+
 type z =
   | Z0
   | Zpos of positive
@@ -86,7 +88,7 @@ val zcompare : z -> z -> comparison
 
 val zabs : z -> z
 
-val z_gt_dec : z -> z -> bool
+val zmax : z -> z -> z
 
 val zle_bool : z -> z -> bool
 
@@ -349,6 +351,12 @@ val qopp : q -> q
 
 val qminus : q -> q -> q
 
+val qinv : q -> q
+
+val qpower_positive : q -> positive -> q
+
+val qpower : q -> z -> q
+
 val pgcdn : nat -> positive -> positive -> positive
 
 val pgcd : positive -> positive -> positive
@@ -388,7 +396,7 @@ type zArithProof =
   | CutProof of zWitness * zArithProof
   | EnumProof of zWitness * zWitness * zArithProof list
 
-val isZ0 : z -> bool
+val zgcdM : z -> z -> z
 
 val zgcd_pol : z polC -> z  *  z
 

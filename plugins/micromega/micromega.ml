@@ -220,6 +220,13 @@ type n =
   | N0
   | Npos of positive
 
+(** val pow_pos : ('a1 -> 'a1 -> 'a1) -> 'a1 -> positive -> 'a1 **)
+
+let rec pow_pos rmul x = function
+  | XI i0 -> let p = pow_pos rmul x i0 in rmul x (rmul p p)
+  | XO i0 -> let p = pow_pos rmul x i0 in rmul p p
+  | XH -> x
+
 type z =
   | Z0
   | Zpos of positive
@@ -341,12 +348,12 @@ let zabs = function
   | Zpos p -> Zpos p
   | Zneg p -> Zpos p
 
-(** val z_gt_dec : z -> z -> bool **)
+(** val zmax : z -> z -> z **)
 
-let z_gt_dec x y =
-  match zcompare x y with
-    | Gt -> true
-    | _ -> false
+let zmax m n0 =
+  match zcompare m n0 with
+    | Lt -> n0
+    | _ -> m
 
 (** val zle_bool : z -> z -> bool **)
 
@@ -1349,6 +1356,26 @@ let qopp x =
 let qminus x y =
   qplus x (qopp y)
 
+(** val qinv : q -> q **)
+
+let qinv x =
+  match x.qnum with
+    | Z0 -> { qnum = Z0; qden = XH }
+    | Zpos p -> { qnum = (Zpos x.qden); qden = p }
+    | Zneg p -> { qnum = (Zneg x.qden); qden = p }
+
+(** val qpower_positive : q -> positive -> q **)
+
+let qpower_positive q0 p =
+  pow_pos qmult q0 p
+
+(** val qpower : q -> z -> q **)
+
+let qpower q0 = function
+  | Z0 -> { qnum = (Zpos XH); qden = XH }
+  | Zpos p -> qpower_positive q0 p
+  | Zneg p -> qinv (qpower_positive q0 p)
+
 (** val pgcdn : nat -> positive -> positive -> positive **)
 
 let rec pgcdn n0 a b =
@@ -1486,11 +1513,10 @@ type zArithProof =
   | CutProof of zWitness * zArithProof
   | EnumProof of zWitness * zWitness * zArithProof list
 
-(** val isZ0 : z -> bool **)
+(** val zgcdM : z -> z -> z **)
 
-let isZ0 = function
-  | Z0 -> true
-  | _ -> false
+let zgcdM x y =
+  zmax (zgcd x y) (Zpos XH)
 
 (** val zgcd_pol : z polC -> z  *  z **)
 
@@ -1499,12 +1525,7 @@ let rec zgcd_pol = function
   | Pinj (p2, p3) -> zgcd_pol p3
   | PX (p2, p3, q0) ->
       let g1 , c1 = zgcd_pol p2 in
-      let g2 , c2 = zgcd_pol q0 in
-      if isZ0 g1
-      then Z0 , c2
-      else if isZ0 (zgcd g1 c1)
-           then Z0 , c2
-           else if isZ0 g2 then Z0 , c2 else (zgcd (zgcd g1 c1) g2) , c2
+      let g2 , c2 = zgcd_pol q0 in (zgcdM (zgcdM g1 c1) g2) , c2
 
 (** val zdiv_pol : z polC -> z -> z polC **)
 
@@ -1604,10 +1625,7 @@ let rec zChecker l = function
 
                                                   match pfs with
                                                     |
-                                                  [] ->
-                                                  if z_gt_dec lb ub
-                                                  then true
-                                                  else false
+                                                  [] -> zgt_bool lb ub
                                                     |
                                                   pf1 :: rsr ->
                                                   (&&)
