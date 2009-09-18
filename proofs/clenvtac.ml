@@ -70,7 +70,6 @@ let clenv_pose_dependent_evars with_evars clenv =
       (RefinerError (UnresolvedBindings (List.map (meta_name clenv.evd) dep_mvs)));
   clenv_pose_metas_as_evars clenv dep_mvs
 
-
 let clenv_refine with_evars ?(with_classes=true) clenv gls =
   let clenv = clenv_pose_dependent_evars with_evars clenv in
   let evd' =

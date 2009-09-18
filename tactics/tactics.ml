@@ -837,8 +837,14 @@ let check_evars sigma evm gl =
       evm Evd.empty
   in
   if rest <> Evd.empty then
-    errorlabstrm "apply" (str"Uninstantiated existential variables: " ++
-      fnl () ++ pr_evar_defs rest)
+    errorlabstrm "apply" (str"Uninstantiated existential "++
+      str(plural (List.length (Evd.to_list rest)) "variable")++str": " ++
+      fnl () ++ pr_evar_defs rest);;
+
+let get_bindings_evars = function
+  | ImplicitBindings largs -> List.map fst largs
+  | ExplicitBindings lbind -> List.map (fun x -> fst (pi3 x)) lbind
+  | NoBindings -> []
 
 let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
   let flags =
@@ -847,7 +853,8 @@ let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
   let concl_nprod = nb_prod (pf_concl gl0) in
-  let evm, c = c in
+  let evmc, c = c in
+  let evm = List.fold_left Evd.merge evmc (get_bindings_evars lbind) in
   let rec try_main_apply with_destruct c gl =
     let thm_ty0 = nf_betaiota (project gl) (pf_type_of gl c) in
     let try_apply thm_ty nprod =
@@ -950,6 +957,7 @@ let apply_in_once with_delta with_destruct with_evars id
   (loc,((sigma,d),lbind)) gl0 =
   let flags =
     if with_delta then default_unify_flags else default_no_delta_unify_flags in
+  let sigma = List.fold_left Evd.merge sigma (get_bindings_evars lbind) in
   let t' = pf_get_hyp_typ gl0 id in
   let innerclause = mk_clenv_from_n gl0 (Some 0) (mkVar id,t') in
   let rec aux with_destruct c gl =

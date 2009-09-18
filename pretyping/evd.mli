@@ -187,8 +187,8 @@ val evar_declare :
       ?filter:bool list -> evar_defs -> evar_defs
 val evar_source : existential_key -> evar_defs -> loc * hole_kind
 
-(* spiwack: this function seesm to somewhat break the abstraction. *)
-(* [evar_merge evd evars] extends the evars of [evd] with [evars] *)
+(* spiwack: this function seems to somewhat break the abstraction. *)
+(* [evar_merge evd ev1] extends the evars of [evd] with [evd1] *)
 val evar_merge : evar_defs -> evar_defs -> evar_defs
 
 (* Unification constraints *)

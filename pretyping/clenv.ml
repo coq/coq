@@ -409,7 +409,7 @@ let clenv_unify_binding_type clenv c t u =
 
 let clenv_assign_binding clenv k (sigma,c) =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
-  let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
+  let clenv' = { clenv with evd = Evd.merge clenv.evd sigma} in
   let c_typ = nf_betaiota clenv'.evd (clenv_get_type_of clenv' c) in
   let status,clenv'',c = clenv_unify_binding_type clenv' c c_typ k_typ in
   { clenv'' with evd = meta_assign k (c,(UserGiven,status)) clenv''.evd }
