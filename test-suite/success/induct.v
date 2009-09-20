@@ -32,3 +32,11 @@ Check
 Inductive eq2 (A:Type) (a:A)
   : forall B C:Type, let D:=(A*B*C)%type in D -> Prop :=
   refl2 : eq2 A a unit bool (a,tt,true).
+
+(* Check that induction variables are cleared even with in clause *)
+
+Lemma foo : forall n m : nat, n + m = n + m.
+Proof.
+  intros; induction m as [|m] in n |- *.
+  auto.
+Qed.

@@ -1229,11 +1229,11 @@ and xlate_tac =
 	CT_dauto(xlate_int_or_var_opt_to_int_opt a, xlate_int_opt b)
     | TacDAuto (a, b, _) ->
 	xlate_error "TODO: dauto using"
-    | TacInductionDestruct(true,false,[a,b,(None,c),None]) ->
+    | TacInductionDestruct(true,false,([a,b,(None,c)],None)) ->
 	CT_new_destruct
 	  (List.map  xlate_int_or_constr a, xlate_using b,
 	   xlate_with_names c)
-    | TacInductionDestruct(false,false,[a,b,(None,c),None]) ->
+    | TacInductionDestruct(false,false,([a,b,(None,c)],None)) ->
 	CT_new_induction
 	  (List.map xlate_int_or_constr a, xlate_using b,
 	   xlate_with_names c)

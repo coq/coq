@@ -2919,12 +2919,12 @@ let induct_destruct isrec with_evars (lc,elim,names,cls) =
   else induct_destruct_l isrec with_evars lc elim names cls
 
 let induction_destruct isrec with_evars = function
-  | [] -> tclIDTAC
-  | [a] -> induct_destruct isrec with_evars a
-  | a::l ->
+  | [],_ -> tclIDTAC
+  | [a,b,c],cl -> induct_destruct isrec with_evars (a,b,c,cl)
+  | (a,b,c)::l,cl ->
       tclTHEN
-        (induct_destruct isrec with_evars a)
-        (tclMAP (induct_destruct false with_evars) l)
+        (induct_destruct isrec with_evars (a,b,c,cl))
+        (tclMAP (fun (a,b,c) -> induct_destruct false with_evars (a,b,c,cl)) l)
 
 let new_induct ev lc e idl cls = induct_destruct true ev (lc,e,idl,cls)
 let new_destruct ev lc e idl cls = induct_destruct false ev (lc,e,idl,cls)

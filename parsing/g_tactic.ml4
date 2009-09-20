@@ -148,9 +148,9 @@ let induction_arg_of_constr (c,lbind as clbind) =
   else ElimOnConstr clbind
 
 let mkTacCase with_evar = function
-  | [([ElimOnConstr cl],None,(None,None),None)] ->
+  | [([ElimOnConstr cl],None,(None,None))],None ->
       TacCase (with_evar,cl)
-  | [([ElimOnIdent id],None,(None,None),None)] ->
+  | [([ElimOnIdent id],None,(None,None))],None ->
       TacCase (with_evar,(CRef (Ident id),NoBindings))
   | ic ->
       TacInductionDestruct (false,with_evar,ic)
@@ -462,7 +462,13 @@ GEXTEND Gram
   ;
   induction_clause:
     [ [ lc = LIST1 induction_arg; ipats = with_induction_names;
-        el = OPT eliminator; cl = opt_clause -> (lc,el,ipats,cl) ] ]
+        el = OPT eliminator -> (lc,el,ipats) ] ]
+  ;
+  one_induction_clause:
+    [ [ ic = induction_clause; cl = opt_clause -> ([ic],cl) ] ]
+  ;
+  induction_clause_list:
+    [ [ ic = LIST1 induction_clause SEP ","; cl = opt_clause -> (ic,cl) ] ]
   ;
   move_location:
     [ [ IDENT "after"; id = id_or_meta -> MoveAfter id
@@ -500,8 +506,8 @@ GEXTEND Gram
       | IDENT "eelim"; cl = constr_with_bindings; el = OPT eliminator ->
           TacElim (true,cl,el)
       | IDENT "elimtype"; c = constr -> TacElimType c
-      | IDENT "case"; ic = LIST1 induction_clause SEP "," -> mkTacCase false ic
-      | IDENT "ecase"; ic = LIST1 induction_clause SEP "," -> mkTacCase true ic
+      | IDENT "case"; icl = induction_clause_list -> mkTacCase false icl
+      | IDENT "ecase"; icl = induction_clause_list -> mkTacCase true icl
       | IDENT "casetype"; c = constr -> TacCaseType c
       | "fix"; n = natural -> TacFix (None,n)
       | "fix"; id = ident; n = natural -> TacFix (Some id,n)
@@ -556,18 +562,18 @@ GEXTEND Gram
       (* Derived basic tactics *)
       | IDENT "simple"; IDENT"induction"; h = quantified_hypothesis ->
           TacSimpleInductionDestruct (true,h)
-      | IDENT "induction"; ic = induction_clause ->
-	  TacInductionDestruct (true,false,[ic])
-      | IDENT "einduction"; ic = induction_clause ->
-	  TacInductionDestruct(true,true,[ic])
+      | IDENT "induction"; ic = one_induction_clause ->
+	  TacInductionDestruct (true,false,ic)
+      | IDENT "einduction"; ic = one_induction_clause ->
+	  TacInductionDestruct(true,true,ic)
       | IDENT "double"; IDENT "induction"; h1 = quantified_hypothesis;
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
       | IDENT "simple"; IDENT "destruct"; h = quantified_hypothesis ->
           TacSimpleInductionDestruct (false,h)
-      | IDENT "destruct"; ic = LIST1 induction_clause SEP "," ->
-	  TacInductionDestruct(false,false,ic)
-      | IDENT "edestruct";  ic = LIST1 induction_clause SEP "," ->
-	  TacInductionDestruct(false,true,ic)
+      | IDENT "destruct"; icl = induction_clause_list ->
+	  TacInductionDestruct(false,false,icl)
+      | IDENT "edestruct";  icl = induction_clause_list ->
+	  TacInductionDestruct(false,true,icl)
       | IDENT "decompose"; IDENT "record" ; c = constr -> TacDecomposeAnd c
       | IDENT "decompose"; IDENT "sum"; c = constr -> TacDecomposeOr c
       | IDENT "decompose"; "["; l = LIST1 smart_global; "]"; c = constr

@@ -115,10 +115,12 @@ let goal_location_of = function
 | _ ->
     error "Not a simple \"in\" clause (one hypothesis or the conclusion)"
 
-type ('constr,'id) induction_clause =
-    ('constr with_bindings induction_arg list * 'constr with_bindings option *
-     (intro_pattern_expr located option * intro_pattern_expr located option) *
-     'id gclause option)
+type 'constr induction_clause =
+  ('constr with_bindings induction_arg list * 'constr with_bindings option *
+   (intro_pattern_expr located option * intro_pattern_expr located option))
+
+type ('constr,'id) induction_clause_list =
+    'constr induction_clause list * 'id gclause option
 
 type multi =
   | Precisely of int
@@ -170,7 +172,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
 
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct of rec_flag * quantified_hypothesis
-  | TacInductionDestruct of rec_flag * evars_flag * ('constr,'id) induction_clause list
+  | TacInductionDestruct of rec_flag * evars_flag * ('constr,'id) induction_clause_list
   | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
   | TacDecomposeAnd of 'constr
   | TacDecomposeOr of 'constr

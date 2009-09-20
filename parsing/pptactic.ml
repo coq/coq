@@ -752,14 +752,14 @@ and pr_atom1 = function
   | TacSimpleInductionDestruct (isrec,h) ->
       hov 1 (str "simple " ++ str (if isrec then "induction" else "destruct")
              ++ pr_arg pr_quantified_hypothesis h)
-  | TacInductionDestruct (isrec,ev,l) ->
+  | TacInductionDestruct (isrec,ev,(l,cl)) ->
       hov 1 (str (with_evars ev (if isrec then "induction" else "destruct")) ++
              spc () ++
-             prlist_with_sep pr_coma (fun (h,e,ids,cl) ->
+             prlist_with_sep pr_coma (fun (h,e,ids) ->
 	       prlist_with_sep spc (pr_induction_arg pr_lconstr pr_constr) h ++
 	       pr_with_induction_names ids ++
-               pr_opt pr_eliminator e ++
-               pr_opt_no_spc (pr_clauses pr_ident) cl) l)
+               pr_opt pr_eliminator e) l ++
+               pr_opt_no_spc (pr_clauses pr_ident) cl)
   | TacDoubleInduction (h1,h2) ->
       hov 1
         (str "double induction" ++

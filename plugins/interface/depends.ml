@@ -305,7 +305,7 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
     (* Derived basic tactics *)
     | TacSimpleInductionDestruct _
     | TacDoubleInduction _ -> acc
-    | TacInductionDestruct (_, _, [cwbial, cwbo, _, _]) ->
+    | TacInductionDestruct (_, _, ([cwbial, cwbo, _], _)) ->
 	list_union_map (depends_of_'a_induction_arg depends_of_'constr_with_bindings)
 	  cwbial
 	  (Option.fold_right depends_of_'constr_with_bindings cwbo acc)

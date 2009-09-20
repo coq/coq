@@ -78,8 +78,8 @@ val h_new_destruct    : evars_flag ->
   Tacticals.clause option -> tactic
 val h_induction_destruct : rec_flag -> evars_flag ->
   (constr with_ebindings induction_arg list * constr with_ebindings option *
-   (intro_pattern_expr located option * intro_pattern_expr located option) *
-   Tacticals.clause option) list -> tactic
+   (intro_pattern_expr located option * intro_pattern_expr located option)) list
+    * Tacticals.clause option -> tactic
 
 val h_specialize      : int option -> constr with_ebindings -> tactic
 val h_lapply          : constr -> tactic
