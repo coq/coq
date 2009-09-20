@@ -147,6 +147,14 @@ let induction_arg_of_constr (c,lbind as clbind) =
     with _ -> ElimOnConstr clbind
   else ElimOnConstr clbind
 
+let mkTacCase with_evar = function
+  | [([ElimOnConstr cl],None,(None,None),None)] ->
+      TacCase (with_evar,cl)
+  | [([ElimOnIdent id],None,(None,None),None)] ->
+      TacCase (with_evar,(CRef (Ident id),NoBindings))
+  | ic ->
+      TacInductionDestruct (false,with_evar,ic)
+
 let rec mkCLambdaN_simple_loc loc bll c =
   match bll with
   | ((loc1,_)::_ as idl,bk,t) :: bll ->
@@ -492,8 +500,8 @@ GEXTEND Gram
       | IDENT "eelim"; cl = constr_with_bindings; el = OPT eliminator ->
           TacElim (true,cl,el)
       | IDENT "elimtype"; c = constr -> TacElimType c
-      | IDENT "case"; cl = constr_with_bindings -> TacCase (false,cl)
-      | IDENT "ecase"; cl = constr_with_bindings -> TacCase (true,cl)
+      | IDENT "case"; ic = LIST1 induction_clause SEP "," -> mkTacCase false ic
+      | IDENT "ecase"; ic = LIST1 induction_clause SEP "," -> mkTacCase true ic
       | IDENT "casetype"; c = constr -> TacCaseType c
       | "fix"; n = natural -> TacFix (None,n)
       | "fix"; id = ident; n = natural -> TacFix (Some id,n)
@@ -556,10 +564,10 @@ GEXTEND Gram
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
       | IDENT "simple"; IDENT "destruct"; h = quantified_hypothesis ->
           TacSimpleInductionDestruct (false,h)
-      | IDENT "destruct"; ic = induction_clause ->
-	  TacInductionDestruct(false,false,[ic])
-      | IDENT "edestruct";  ic = induction_clause ->
-	  TacInductionDestruct(false,true,[ic])
+      | IDENT "destruct"; ic = LIST1 induction_clause SEP "," ->
+	  TacInductionDestruct(false,false,ic)
+      | IDENT "edestruct";  ic = LIST1 induction_clause SEP "," ->
+	  TacInductionDestruct(false,true,ic)
       | IDENT "decompose"; IDENT "record" ; c = constr -> TacDecomposeAnd c
       | IDENT "decompose"; IDENT "sum"; c = constr -> TacDecomposeOr c
       | IDENT "decompose"; "["; l = LIST1 smart_global; "]"; c = constr

@@ -29,13 +29,15 @@ Tactics
 - New variant "subst'" of "subst" that supports JMeq.
 - New tactic "decide lemma with hyp" for rewriting decidability lemmas
   when one knows which side is true.
-- Tactic "exists" and "eexists" supports iteration using
-  comma-separated arguments.
+- Tactic "exists", "eexists", "destruct" and "edestruct" supports iteration
+  using comma-separated arguments.
 - Tactic "gappa" has been removed from the Dp plugin.
 - Tactic "firstorder" now supports the combination of its "using" and
   "with" options.
 - An inductive type as argument of the "using" option of "auto/eauto/firstorder"
   is interpreted as using the collection of its constructors.
+- Tactic names "case" and "elim" now support clauses "as" and "in" and become
+  then synonymous of "destruct" and "induction" respectively.
 
 Tactic Language
 
