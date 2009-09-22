@@ -55,6 +55,10 @@ let verbosely f x = without_option silent f x
 let if_silent f x = if !silent then f x
 let if_verbose f x = if not !silent then f x
 
+let auto_intros = ref false
+let make_auto_intros flag = auto_intros := flag
+let is_auto_intros () = !auto_intros
+
 let hash_cons_proofs = ref true
 
 let warn = ref true

@@ -1095,7 +1095,7 @@ let compute_proof_name = function
       in
       next (Pfedit.get_all_proof_names ()) default_thm_id
 
-let save_remaining_recthms (local,kind) body opaq i (id,(t_i,imps)) =
+let save_remaining_recthms (local,kind) body opaq i (id,(t_i,(_,imps))) =
   match body with
   | None ->
       (match local with
@@ -1212,14 +1212,19 @@ let look_for_mutual_statements thms =
 (* 4.2| General support for goals *)
 
 let start_proof_com kind thms hook =
+  let evdref = ref (create_evar_defs Evd.empty) in
+  let env = Global.env () in
   let thms = List.map (fun (sopt,(bl,t)) ->
-    (compute_proof_name sopt,
-     interp_type_evars_impls (Global.env()) (generalize_constr_expr t bl)))
+    let (env, ctx), imps = interp_context_evars evdref env bl in
+    let t', imps' = interp_type_evars_impls ~evdref env t in
+    let len = List.length ctx in
+      (compute_proof_name sopt,
+      (nf_isevar !evdref (it_mkProd_or_LetIn t' ctx), (len, imps @ lift_implicits len imps'))))
     thms in
   let rec_tac,thms = look_for_mutual_statements thms in
   match thms with
   | [] -> anomaly "No proof to start"
-  | (id,(t,imps))::other_thms ->
+  | (id,(t,(len,imps)) as thm)::other_thms ->
       let hook strength ref =
         let other_thms_data =
           if other_thms = [] then [] else
@@ -1230,8 +1235,14 @@ let start_proof_com kind thms hook =
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
 	  hook strength ref) thms_data in
-      start_proof id kind t ?init_tac:rec_tac
-	~compute_guard:(rec_tac<>None) hook
+      let init_tac = 
+	let intro_tac (_, (_, (len, _))) = Refiner.tclDO len Tactics.intro in
+	  if Flags.is_auto_intros () then
+	    match rec_tac with
+ 	    | None -> Some (intro_tac thm)
+	    | Some tac -> Some (Tacticals.tclTHENS tac (List.map intro_tac thms))
+	  else rec_tac
+      in start_proof id kind t ?init_tac hook ~compute_guard:(rec_tac<>None)
 
 let check_anonymity id save_ident =
   if atompart_of_id id <> "Unnamed_thm" then

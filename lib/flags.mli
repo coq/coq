@@ -42,6 +42,9 @@ val verbosely : ('a -> 'b) -> 'a -> 'b
 val if_silent : ('a -> unit) -> 'a -> unit
 val if_verbose : ('a -> unit) -> 'a -> unit
 
+val make_auto_intros : bool -> unit
+val is_auto_intros : unit -> bool
+
 val make_warn : bool -> unit
 val if_warn : ('a -> unit) -> 'a -> unit
 

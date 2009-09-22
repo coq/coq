@@ -1,4 +1,6 @@
 Require Import Arith Program.
+Require Import ZArith Zwf.
+
 Set Implicit Arguments.
 (* Set Printing All. *)
 Print sigT_rect.
@@ -13,11 +15,8 @@ Program Fixpoint merge (n m : nat) {measure (n + m) (lt)} : nat :=
 
 Print merge.
 
-Require Import ZArith.
-
 
 Print Zlt.
-Require Import Zwf.
 Print Zwf.
 
 Open Local Scope Z_scope.
@@ -95,4 +94,3 @@ Qed.
 Program Fixpoint check_n'  (n : nat) (m : nat | m = n) (p : nat) (q : nat | q = p)
   {measure (p - n) p} : nat :=
   _.
-

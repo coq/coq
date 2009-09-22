@@ -842,6 +842,14 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optname  = "automatic introduction of variables";
+      optkey   = ["Automatic";"Introduction"];
+      optread  = Flags.is_auto_intros;
+      optwrite = make_auto_intros }
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
       optname  = "coercion printing";
       optkey   = ["Printing";"Coercions"];
       optread  = (fun () -> !Constrextern.print_coercions);
