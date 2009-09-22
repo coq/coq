@@ -46,6 +46,8 @@ let typeclasses_db = "typeclass_instances"
 let _ = Auto.auto_init := (fun () ->
   Auto.create_hint_db false typeclasses_db full_transparent_state true)
 
+let run_on_evars_forward = ref (fun _ _ _ _ -> assert false)
+
 exception Found of evar_map
 
 let is_dependent ev evm =
@@ -80,7 +82,7 @@ let evars_to_goals p evm =
     else
       let goals = List.rev goals in
 	Some (goals, evm')
-
+	  
 (** Typeclasses instance search tactic / eauto *)
 
 let intersects s t =
@@ -106,6 +108,12 @@ let auto_unif_flags = {
   resolve_evars = false;
   use_evars_pattern_unification = true;
 }
+
+let tac_on_evars p tac gl =
+  let db = searchtable_map typeclasses_db in
+    match !run_on_evars_forward [db] (Hint_db.transparent_state db) p (project gl)  with
+    | None -> tclIDTAC gl
+    | Some evm' -> Refiner.tclEVARS evm' gl
 
 let unify_e_resolve flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv in
@@ -273,7 +281,8 @@ let hints_tac hints =
       in
 	if l = [] && !typeclasses_debug then
 	  msgnl (pr_depth info.auto_depth ++ str": no match for " ++
-		    Printer.pr_constr_env (Evd.evar_env gl) concl ++ int (List.length poss) ++ str" possibilities");
+		    Printer.pr_constr_env (Evd.evar_env gl) concl ++ 
+		    spc () ++ int (List.length poss) ++ str" possibilities");
 	List.map possible_resolve l
     in
     let tacs = List.sort compare tacs in
@@ -354,6 +363,10 @@ let make_resolve_hyp env sigma st flags pri (id, _, cty) =
 let make_autogoal ?(st=full_transparent_state) g =
   let sign = pf_hyps g in
   let hintlist = list_map_append (pf_apply make_resolve_hyp g st (true,false,false) None) sign in
+  let st = List.fold_left (fun (ids, csts) (n, b, t) ->
+    (if b <> None then Idpred.add else Idpred.remove) n ids, csts)
+    st sign
+  in
   let hints = Hint_db.add_list hintlist (Hint_db.empty st true) in
     (g.it, { hints = hints ; auto_depth = []; auto_last_tac = mt() })
 
@@ -373,18 +386,21 @@ let run_on_evars ?(st=full_transparent_state) p evm tac =
 	  with Found evm' ->
 	    Some (Evd.evars_reset_evd evm' evm)
 
+
+let eauto_tac hints = fix (or_tac intro_tac (hints_tac hints)) 
+
+let () = run_on_evars_forward := (fun hints st p evd -> run_on_evars ~st p evd (eauto_tac hints))
+  
 let eauto hints g =
-  let tac = fix (or_tac intro_tac (hints_tac hints)) in
-  let gl = { it = make_autogoal g; sigma = project g } in
-    match run_tac tac gl with
+  let gl = { it = make_autogoal ~st:(Hint_db.transparent_state (List.hd hints)) g; sigma = project g } in
+    match run_tac (eauto_tac hints) gl with
     | None -> raise Not_found
     | Some ({it = goals; sigma = s}, valid) ->
 	{it = List.map fst goals; sigma = s}, valid s
 
 let real_eauto st hints p evd =
-  let tac = fix (or_tac intro_tac (hints_tac hints)) in
   let rec aux evd =
-    match run_on_evars ~st p evd tac with
+    match run_on_evars ~st p evd (eauto_tac hints) with
     | None -> evd
     | Some evd' -> aux evd'
   in aux evd

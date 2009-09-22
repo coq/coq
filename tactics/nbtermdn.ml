@@ -29,11 +29,11 @@ open Libnames
 
 type ('na,'a) t = {
   mutable table : ('na,constr_pattern * 'a) Gmap.t;
-  mutable patterns : (global_reference option,'a Btermdn.t) Gmap.t }
+  mutable patterns : (Termdn.term_label option,'a Btermdn.t) Gmap.t }
 
 type ('na,'a) frozen_t =
     ('na,constr_pattern * 'a) Gmap.t
-    * (global_reference option,'a Btermdn.t) Gmap.t
+    * (Termdn.term_label option,'a Btermdn.t) Gmap.t
 
 let create () =
   { table = Gmap.empty;

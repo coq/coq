@@ -54,7 +54,7 @@ let bounded_constr_val_discr (t,depth) =
       | Dn.Nothing -> Dn.Nothing
       | Dn.Everything -> Dn.Everything
 
-type 'a t = (global_reference,constr_pattern * int,'a) Dn.t
+type 'a t = (term_label,constr_pattern * int,'a) Dn.t
 
 let create = Dn.create
 

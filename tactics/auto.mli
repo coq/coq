@@ -104,6 +104,8 @@ val print_hint_ref : global_reference -> unit
 
 val print_hint_db_by_name : hint_db_name -> unit
 
+val print_hint_db : Hint_db.t -> unit
+
 (* [make_exact_entry pri (c, ctyp)].
    [c] is the term given as an exact proof to solve the goal;
    [ctyp] is the type of [c]. *)

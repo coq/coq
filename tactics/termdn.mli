@@ -48,12 +48,18 @@ val app : ((constr_pattern * 'a) -> unit) -> 'a t -> unit
 (*i*)
 (* These are for Nbtermdn *)
 
-val constr_pat_discr_st : transparent_state ->
-  constr_pattern -> (global_reference * constr_pattern list) option
-val constr_val_discr_st : transparent_state ->
-  constr -> (global_reference * constr list) Dn.lookup_res
+type term_label = 
+  | GRLabel of global_reference
+  | ProdLabel 
+  | LambdaLabel
+  | SortLabel of sorts option
 
-val constr_pat_discr : constr_pattern -> (global_reference * constr_pattern list) option
-val constr_val_discr : constr -> (global_reference * constr list) Dn.lookup_res
+val constr_pat_discr_st : transparent_state ->
+  constr_pattern -> (term_label * constr_pattern list) option
+val constr_val_discr_st : transparent_state ->
+  constr -> (term_label * constr list) Dn.lookup_res
+
+val constr_pat_discr : constr_pattern -> (term_label * constr_pattern list) option
+val constr_val_discr : constr -> (term_label * constr list) Dn.lookup_res
 
 (*i*)
