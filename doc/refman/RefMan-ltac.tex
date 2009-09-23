@@ -145,7 +145,7 @@ is understood as
 & | & {\integer}\\
 & | & {\tt (} {\tacexpr} {\tt )}\\
 \\
-{\messagetoken}\!\!\!\!\!\! & ::= & {\qstring} ~|~ {\term} ~|~ {\integer} \\
+{\messagetoken}\!\!\!\!\!\! & ::= & {\qstring} ~|~ {\ident} ~|~ {\integer} \\
 \end{tabular}
 \end{centerframe}
 \caption{Syntax of the tactic language}
@@ -416,9 +416,7 @@ unchanged but it appears in the proof script.
 \variant {\tt idtac \nelist{\messagetoken}{}}
 
 This prints the given tokens. Strings and integers are printed
-literally. If a term is given, it is printed, its variables being
-interpreted in the current environment. In particular, if a variable
-is given, its value is printed.
+literally. If a (term) variable is given, its contents are printed.
 
 
 \subsubsection[Failing]{Failing\tacindex{fail}
