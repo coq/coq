@@ -96,9 +96,9 @@ To illustrate the working of the tactic, consider we wish to prove the following
   Goal forall x, -x^2 >= 0 -> x - 1 >= 0 -> False.
 \end{coq_example*}
 \begin{coq_eval}
-intro x; psatz Z.
+intro x; psatz Z 2.
 \end{coq_eval}
-Such a goal is solved by {\tt intro x; psatz Z}. The oracle returns the cone expression $2 \times
+Such a goal is solved by {\tt intro x; psatz Z 2}. The oracle returns the cone expression $2 \times
 (\mathbf{x-1}) + \mathbf{x-1}\times\mathbf{x-1} + \mathbf{-x^2}$ (polynomial hypotheses are printed in bold). By construction, this
 expression belongs to $Cone(\{-x^2, x -1\})$.  Moreover, by running {\tt ring} we obtain $-1$. By
 Theorem~\ref{thm:psatz}, the goal is valid.
