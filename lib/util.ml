@@ -20,6 +20,8 @@ exception UserError of string * std_ppcmds (* User errors *)
 let error string = raise (UserError(string, str string))
 let errorlabstrm l pps = raise (UserError(l,pps))
 
+exception AnomalyOnError of string * exn
+
 let todo s = prerr_string ("TODO: "^s^"\n")
 
 exception Timeout

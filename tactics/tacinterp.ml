@@ -2899,7 +2899,8 @@ let add_tacdef isrec tacl =
 (***************************************************************************)
 (* Other entry points *)
 
-let glob_tactic x = intern_tactic (make_empty_glob_sign ()) x
+let glob_tactic x =
+  Flags.with_option strict_check (intern_tactic (make_empty_glob_sign ())) x
 
 let glob_tactic_env l env x =
   Flags.with_option strict_check
@@ -2916,7 +2917,10 @@ let interp_redexp env sigma r =
 (* Embed tactics in raw or glob tactic expr *)
 
 let globTacticIn t = TacArg (TacDynamic (dummy_loc,tactic_in t))
-let tacticIn t = globTacticIn (fun ist -> glob_tactic (t ist))
+let tacticIn t =
+  globTacticIn (fun ist ->
+    try glob_tactic (t ist)
+    with e -> raise (AnomalyOnError ("Incorrect tactic expression", e)))
 
 let tacticOut = function
   | TacArg (TacDynamic (_,d)) ->
