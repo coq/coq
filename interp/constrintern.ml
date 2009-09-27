@@ -240,6 +240,11 @@ let rec subst_aconstr_in_rawconstr loc interp (subst,substlist as sub) infos c =
             (if lassoc then List.rev l else l) termin
       with Not_found ->
           anomaly "Inconsistent substitution of recursive notation")
+  | AHole (Evd.BinderType (Name id as na)) ->
+      let na =
+        try snd (coerce_to_name (fst (List.assoc id subst)))
+        with Not_found -> na in
+      RHole (loc,Evd.BinderType na)
   | t ->
       rawconstr_of_aconstr_with_binders loc (traverse_binder sub)
       (subst_aconstr_in_rawconstr loc interp sub) subinfos t
