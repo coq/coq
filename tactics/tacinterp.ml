@@ -1416,8 +1416,10 @@ let solvable_by_tactic env evi (ev,args) src =
       end
   | _ -> raise Exit
 
-let solve_remaining_evars env initial_sigma evd c =
-  let evdref = ref (Typeclasses.resolve_typeclasses ~fail:true env evd) in
+let solve_remaining_evars fail_evar use_classes env initial_sigma evd c =
+  let evdref =
+    if use_classes then ref (Typeclasses.resolve_typeclasses ~fail:true env evd)
+    else ref evd in
   let rec proc_rec c =
     match kind_of_term (Reductionops.whd_evar !evdref c) with
       | Evar (ev,args as k) when not (Evd.mem initial_sigma ev) ->
@@ -1429,12 +1431,17 @@ let solve_remaining_evars env initial_sigma evd c =
 	      evdref := Evd.define ev c !evdref;
 	      c
 	    with Exit ->
-	      Pretype_errors.error_unsolvable_implicit loc env sigma evi src None)
+              if fail_evar then
+	        Pretype_errors.error_unsolvable_implicit loc env sigma evi src None
+              else
+                c)
       | _ -> map_constr proc_rec c
   in
-  proc_rec (Evarutil.nf_isevar !evdref c)
+  let c = proc_rec (Evarutil.nf_isevar !evdref c) in
+  (* Side-effect *)
+  !evdref,c
 
-let interp_gen kind ist sigma env (c,ce) =
+let interp_gen kind ist fail_evar use_classes sigma env (c,ce) =
   let (ltacvars,unbndltacvars as vars),typs =
     extract_ltac_vars_data ist sigma env in
   let c = match ce with
@@ -1446,31 +1453,30 @@ let interp_gen kind ist sigma env (c,ce) =
       let ltacdata = (List.map fst ltacvars,unbndltacvars) in
       intern_gen (kind = IsType) ~ltacvars:ltacdata sigma env c in
   let trace = push_trace (dloc,LtacConstrInterp (c,vars)) ist.trace in
-  catch_error trace (understand_ltac sigma env (typs,unbndltacvars) kind) c
+  let evd,c =
+    catch_error trace (understand_ltac sigma env (typs,unbndltacvars) kind) c in
+  let evd,c = solve_remaining_evars fail_evar use_classes env sigma evd c in
+  db_constr ist.debug env c;
+  (evd,c)
 
-(* Interprets a constr and solve remaining evars with default tactic *)
-let interp_econstr kind ist sigma env cc =
-  let evars,c = interp_gen kind ist sigma env cc in
-  let csr = solve_remaining_evars env sigma evars c in
-  db_constr ist.debug env csr;
-  csr
+(* Interprets a constr; expects evars to be solved *)
+let interp_constr_gen kind ist sigma env c =
+  snd (interp_gen kind ist true true sigma env c)
+
+let interp_constr = interp_constr_gen (OfType None)
+
+let interp_type = interp_constr_gen IsType
 
 (* Interprets an open constr *)
-let interp_open_constr ccl ist sigma env cc =
-  let evd,c = interp_gen (OfType ccl) ist sigma env cc in
-  (evd,c)
+let interp_open_constr_gen kind ist sigma env c =
+  interp_gen kind ist false false sigma env c
 
-let interp_open_type ccl ist sigma env cc =
-  let evd,c = interp_gen IsType ist sigma env cc in
-  (evd,c)
-
-let interp_constr = interp_econstr (OfType None)
-
-let interp_type = interp_econstr IsType
+let interp_open_constr ccl =
+  interp_open_constr_gen (OfType ccl)
 
 (* Interprets a constr expression casted by the current goal *)
-let pf_interp_casted_constr ist gl cc =
-  interp_econstr (OfType (Some (pf_concl gl))) ist (project gl) (pf_env gl) cc
+let pf_interp_casted_constr ist gl c =
+  interp_constr_gen (OfType (Some (pf_concl gl))) ist (project gl) (pf_env gl) c
 
 (* Interprets an open constr expression *)
 let pf_interp_open_constr casted ist gl cc =
