@@ -39,4 +39,5 @@ Lemma foo : forall n m : nat, n + m = n + m.
 Proof.
   intros; induction m as [|m] in n |- *.
   auto.
+  auto.
 Qed.
