@@ -81,6 +81,11 @@ Proof.
   intros; apply Zmax_case; assumption.
 Qed.
 
+Lemma Zmax_lub_lt : forall n m p:Z, n < p -> m < p -> Zmax n m < p.
+Proof.
+  intros; apply Zmax_case; assumption.
+Qed.
+
 (** * Semi-lattice properties of max *)
 
 Lemma Zmax_idempotent : forall n:Z, Zmax n n = n.

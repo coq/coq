@@ -16,14 +16,7 @@ Lemma Rlt_R0_R2 : 0 < 2.
 change 2 with (INR 2); apply lt_INR_0; apply lt_O_Sn.
 Qed.
 
-Lemma Rplus_lt_pos : forall x y:R, 0 < x -> 0 < y -> 0 < x + y.
-intros.
-apply Rlt_trans with x.
-assumption.
-pattern x at 1 in |- *; rewrite <- Rplus_0_r.
-apply Rplus_lt_compat_l.
-assumption.
-Qed.
+Notation Rplus_lt_pos := Rplus_lt_0_compat (only parsing).
 
 Lemma IZR_eq : forall z1 z2:Z, z1 = z2 -> IZR z1 = IZR z2.
 intros; rewrite H; reflexivity.

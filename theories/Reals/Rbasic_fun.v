@@ -16,7 +16,7 @@
 Require Import Rbase.
 Require Import R_Ifp.
 Require Import Fourier.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Implicit Type r : R.
 
@@ -30,6 +30,13 @@ Definition Rmin (x y:R) : R :=
     | left _ => x
     | right _ => y
   end.
+
+(*********)
+Lemma Rmin_case : forall r1 r2 (P:R -> Type), P r1 -> P r2 -> P (Rmin r1 r2).
+Proof.
+  intros r1 r2 P H1 H2; unfold Rmin in |- *; case (Rle_dec r1 r2);
+    auto with arith.
+Qed.
 
 (*********)
 Lemma Rmin_Rgt_l : forall r1 r2 r, Rmin r1 r2 > r -> r1 > r /\ r2 > r.
@@ -85,6 +92,25 @@ Proof.
   intros; apply Rmin_Rgt_r; split; [ apply (cond_pos x) | apply (cond_pos y) ].
 Qed.
 
+(*********)
+Lemma Rmin_pos : forall x y:R, 0 < x -> 0 < y -> 0 < Rmin x y.
+Proof.
+  intros; unfold Rmin in |- *.
+  case (Rle_dec x y); intro; assumption.
+Qed.
+
+(*********)
+Lemma Rmin_glb : forall a b c:R, a <= b -> a <= c -> a <= Rmin b c.
+Proof.
+  intros; unfold Rmin in |- *; case (Rle_dec b c); intro; assumption.
+Qed.
+
+(*********)
+Lemma Rmin_glb_lt : forall a b c:R, a < b -> a < c -> a < Rmin b c.
+Proof.
+  intros; unfold Rmin in |- *; case (Rle_dec b c); intro; assumption.
+Qed.
+
 (*******************************)
 (** *        Rmax              *)
 (*******************************)
@@ -95,6 +121,13 @@ Definition Rmax (x y:R) : R :=
     | left _ => y
     | right _ => x
   end.
+
+(*********)
+Lemma Rmax_case : forall r1 r2 (P:R -> Type), P r1 -> P r2 -> P (Rmax r1 r2).
+Proof.
+  intros r1 r2 P H1 H2; unfold Rmax in |- *; case (Rle_dec r1 r2);
+    auto with arith.
+Qed.
 
 (*********)
 Lemma Rmax_Rle : forall r1 r2 r, r <= Rmax r1 r2 <-> r <= r1 \/ r <= r2.
@@ -124,8 +157,25 @@ Proof.
     intros H1 H2; apply Rle_antisym; auto with real.
 Qed.
 
+(* begin hide *)
 Notation RmaxSym := Rmax_comm (only parsing).
+(* end hide *)
 
+(*********)
+Lemma Rmax_l : forall x y:R, x <= Rmax x y.
+Proof.
+  intros; unfold Rmax in |- *; case (Rle_dec x y); intro H1;
+    [ assumption | auto with real ].
+Qed.
+
+(*********)
+Lemma Rmax_r : forall x y:R, y <= Rmax x y.
+Proof.
+  intros; unfold Rmax in |- *; case (Rle_dec x y); intro H1;
+    [ right; reflexivity | auto with real ].
+Qed.
+
+(*********)
 Lemma RmaxRmult :
   forall (p q:R) r, 0 <= r -> Rmax (r * p) (r * q) = r * Rmax p q.
 Proof.
@@ -140,11 +190,32 @@ Proof.
   rewrite <- E1; repeat rewrite Rmult_0_l; auto.
 Qed.
 
+(*********)
 Lemma Rmax_stable_in_negreal : forall x y:negreal, Rmax x y < 0.
 Proof.
   intros; unfold Rmax in |- *; case (Rle_dec x y); intro;
     [ apply (cond_neg y) | apply (cond_neg x) ].
 Qed.
+
+(*********)
+Lemma Rmax_lub : forall a b c:R, a <= b -> a <= c -> a <= Rmax b c.
+Proof.
+  intros; unfold Rmax in |- *; case (Rle_dec b c); intro; assumption.
+Qed.
+
+(*********)
+Lemma Rmax_lub_lt : forall a b c:R, a < b -> a < c -> a < Rmax b c.
+Proof.
+  intros; unfold Rmax in |- *; case (Rle_dec b c); intro; assumption.
+Qed.
+
+(*********)
+Lemma Rmax_neg : forall x y:R, x < 0 -> y < 0 -> Rmax x y < 0.
+Proof.
+  intros; unfold Rmax in |- *.
+  case (Rle_dec x y); intro; assumption.
+Qed.
+
 
 (*******************************)
 (** *        Rabsolu           *)

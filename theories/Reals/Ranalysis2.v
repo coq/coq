@@ -51,11 +51,9 @@ Proof.
   apply prod_neq_R0; assumption.
 Qed.
 
-Lemma Rmin_pos : forall x y:R, 0 < x -> 0 < y -> 0 < Rmin x y.
-Proof.
-  intros; unfold Rmin in |- *.
-  case (Rle_dec x y); intro; assumption.
-Qed.
+(* begin hide *)
+Notation Rmin_pos := Rmin_pos (only parsing). (* compat *)
+(* end hide *)
 
 Lemma maj_term1 :
   forall (x h eps l1 alp_f2:R) (eps_f2 alp_f1d:posreal)
@@ -386,10 +384,9 @@ Proof.
   apply Rplus_lt_compat_l; assumption.
 Qed.
 
-Lemma Rmin_2 : forall a b c:R, a < b -> a < c -> a < Rmin b c.
-Proof.
-  intros; unfold Rmin in |- *; case (Rle_dec b c); intro; assumption.
-Qed.
+(* begin hide *)
+Notation Rmin_2 := Rmin_glb_lt (only parsing).
+(* end hide *)
 
 Lemma quadruple : forall x:R, 4 * x = x + x + x + x.
 Proof.

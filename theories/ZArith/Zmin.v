@@ -74,6 +74,11 @@ Proof.
   intros; apply Zmin_case; assumption.
 Qed.
 
+Lemma Zmin_glb_lt : forall n m p:Z, p < n -> p < m -> p < Zmin n m.
+Proof.
+  intros; apply Zmin_case; assumption.
+Qed.
+
 (** * Semi-lattice properties of min *)
 
 Lemma Zmin_idempotent : forall n:Z, Zmin n n = n.
