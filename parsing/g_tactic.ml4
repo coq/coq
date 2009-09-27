@@ -150,9 +150,21 @@ let induction_arg_of_constr (c,lbind as clbind) =
 let mkTacCase with_evar = function
   | [([ElimOnConstr cl],None,(None,None))],None ->
       TacCase (with_evar,cl)
+  (* Reinterpret numbers as a notation for terms *)
+  | [([(ElimOnAnonHyp n)],None,(None,None))],None ->
+      TacCase (with_evar,
+        (CPrim (dummy_loc, Numeral (Bigint.of_string (string_of_int n))),
+	 NoBindings))
+  (* Reinterpret ident as notations for variables in the context *)
+  (* because we don't know if they are quantified or not *)
   | [([ElimOnIdent id],None,(None,None))],None ->
       TacCase (with_evar,(CRef (Ident id),NoBindings))
   | ic ->
+      if List.exists (fun (cl,a,b) -> 
+           List.exists (function ElimOnAnonHyp _ -> true | _ -> false) cl)
+           (fst ic)
+      then
+	error "Use of numbers as direct arguments of 'case' is not supported.";
       TacInductionDestruct (false,with_evar,ic)
 
 let rec mkCLambdaN_simple_loc loc bll c =
