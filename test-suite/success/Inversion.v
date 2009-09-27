@@ -107,3 +107,25 @@ Goal forall o, foo2 o -> 0 = 1.
 intros.
 eapply trans_eq.
 inversion H.
+
+(* Check that the part of "injection" that is called by "inversion"
+   does the same number of intros as the number of equations
+   introduced, even in presence of dependent equalities that
+   "injection" renounces to split *)
+
+Fixpoint prodn (n : nat) :=
+  match n with
+  | O => unit 
+  | (S m) => prod (prodn m) nat
+  end.
+
+Inductive U : forall n : nat, prodn n -> bool -> Prop :=
+| U_intro : U 0 tt true.
+
+Lemma foo3 : forall n (t : prodn n), U n t true -> False.
+Proof.
+(* used to fail because dEqThen thought there were 2 new equations but
+   inject_at_positions actually introduced only one; leading then to
+   an inconsistent state that disturbed "inversion" *)
+intros. inversion H.
+Abort.

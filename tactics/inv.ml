@@ -320,11 +320,11 @@ let projectAndApply thin id eqname names depids gls =
     tclTHENSEQ
       [(if names <> [] then clear [id] else tclIDTAC);
        (tclMAP_i neqns (fun idopt ->
-	 tclTHEN
+	 tclTRY (tclTHEN
 	   (intro_move idopt no_move)
 	   (* try again to substitute and if still not a variable after *)
 	   (* decomposition, arbitrarily try to rewrite RL !? *)
-	   (tclTRY (onLastHypId (substHypIfVariable (subst_hyp false)))))
+	   (tclTRY (onLastHypId (substHypIfVariable (subst_hyp false))))))
 	 names);
        (if names = [] then clear [id] else tclIDTAC)]
   in
@@ -406,7 +406,7 @@ let rewrite_equations othin neqns names ba gl =
   let rewrite_eqns =
     let first_eq = ref no_move in
     match othin with
-      | Some thin -> fun gl ->
+      | Some thin ->
           tclTHENSEQ
             [onHyps (compose List.rev (nLastDecls neqns)) bring_hyps;
              onHyps (nLastDecls neqns) (compose clear ids_of_named_context);
@@ -420,11 +420,11 @@ let rewrite_equations othin neqns names ba gl =
 	     tclMAP (fun (id,_,_) gl ->
 	       intro_move None (if thin then no_move else !first_eq) gl)
 	       nodepids;
-	     tclMAP (fun (id,_,_) -> tclTRY (clear [id])) depids] gl
+	     tclMAP (fun (id,_,_) -> tclTRY (clear [id])) depids]
       | None -> tclIDTAC
   in
   (tclTHENSEQ
-    [(fun gl -> tclDO neqns intro gl);
+    [tclDO neqns intro;
      bring_hyps nodepids;
      clear (ids_of_named_context nodepids);
      rewrite_eqns])

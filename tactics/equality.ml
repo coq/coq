@@ -920,7 +920,7 @@ let simplify_args env sigma t =
     | eq, [t1;c1;t2;c2] -> applist (eq,[t1;nf env sigma c1;t2;nf env sigma c2])
     | _ -> t
 
-let inject_at_positions env sigma (eq,_,(t,t1,t2)) eq_clause posns =
+let inject_at_positions env sigma (eq,_,(t,t1,t2)) eq_clause posns tac =
   let e = next_ident_away eq_baseid (ids_of_context env) in
   let e_env = push_named (e,None,t) env in
   let injectors =
@@ -938,9 +938,11 @@ let inject_at_positions env sigma (eq,_,(t,t1,t2)) eq_clause posns =
       posns in
   if injectors = [] then
     errorlabstrm "Equality.inj" (str "Failed to decompose the equality.");
-  tclMAP
-    (fun (pf,ty) -> tclTHENS (cut ty) [tclIDTAC; refine pf])
-    injectors
+  tclTHEN
+    (tclMAP
+      (fun (pf,ty) -> tclTHENS (cut ty) [tclIDTAC; refine pf])
+      injectors)
+    (tac (List.length injectors))
 
 exception Not_dep_pair
 
@@ -993,9 +995,8 @@ let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
 (* not a dep eq or no decidable type found *)
             ) else (raise Not_dep_pair)
         ) with _ ->
-	tclTHEN
-	  (inject_at_positions env sigma u eq_clause posns)
-	  (intros_pattern no_move ipats)
+	  inject_at_positions env sigma u eq_clause posns
+	    (fun _ -> intros_pattern no_move ipats)
 
 let inj ipats with_evars = onEquality with_evars (injEq ipats)
 
@@ -1016,10 +1017,7 @@ let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause gls =
     | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
         ntac 0 gls
     | Inr posns ->
-	tclTHEN
-	  (inject_at_positions env sigma u clause (List.rev posns))
-	  (ntac (List.length posns))
-	  gls
+	inject_at_positions env sigma u clause (List.rev posns) ntac gls
 
 let dEqThen with_evars ntac = function
   | None -> onNegatedEquality with_evars (decompEqThen ntac)
