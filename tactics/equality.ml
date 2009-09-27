@@ -792,7 +792,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
 	(* the_conv_x had a side-effect on evdref *)
 	dflt
       else
-	error "Cannot solve an unification problem."
+	error "Cannot solve a unification problem."
     else
       let (a,p_i_minus_1) = match whd_beta_stack !evdref p_i with
 	| (_sigS,[a;p]) -> (a,p)

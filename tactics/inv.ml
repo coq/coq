@@ -406,7 +406,7 @@ let rewrite_equations othin neqns names ba gl =
   let rewrite_eqns =
     let first_eq = ref no_move in
     match othin with
-      | Some thin ->
+      | Some thin -> fun gl ->
           tclTHENSEQ
             [onHyps (compose List.rev (nLastDecls neqns)) bring_hyps;
              onHyps (nLastDecls neqns) (compose clear ids_of_named_context);
@@ -420,11 +420,11 @@ let rewrite_equations othin neqns names ba gl =
 	     tclMAP (fun (id,_,_) gl ->
 	       intro_move None (if thin then no_move else !first_eq) gl)
 	       nodepids;
-	     tclMAP (fun (id,_,_) -> tclTRY (clear [id])) depids]
+	     tclMAP (fun (id,_,_) -> tclTRY (clear [id])) depids] gl
       | None -> tclIDTAC
   in
   (tclTHENSEQ
-    [tclDO neqns intro;
+    [(fun gl -> tclDO neqns intro gl);
      bring_hyps nodepids;
      clear (ids_of_named_context nodepids);
      rewrite_eqns])

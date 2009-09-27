@@ -61,3 +61,16 @@ End Properties.
 Goal forall P:(forall n, 0=n -> Prop), forall H: 0=0, P 0 H.
 destruct H.
 Abort.
+
+(* The calls to "destruct" below did not work before revision 12356 *)
+
+Variable A:Type.
+Variable P:A->Type.
+Require Import JMeq.
+Goal forall a b (p:P a) (q:P b), 
+  forall H:a = b, eq_rect a P p b H = q -> JMeq (existT _ a p) (existT _ b q).
+intros.
+destruct H.
+destruct H0.
+reflexivity.
+Qed.

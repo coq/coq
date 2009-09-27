@@ -1732,7 +1732,7 @@ let rec consume_pattern avoid id isdep gl = function
       ((loc,IntroIdentifier (fresh_id avoid id' gl)), names)
   | pat::names -> (pat,names)
 
-let re_intro_dependent_hypotheses tophyp (lstatus,rstatus) =
+let re_intro_dependent_hypotheses (lstatus,rstatus) tophyp =
   let newlstatus = (* if some IH has taken place at the top of hyps *)
     List.map (function (hyp,MoveToEnd true) -> (hyp,tophyp) | x -> x) lstatus
   in
@@ -1744,7 +1744,7 @@ let update destopt tophyp = if destopt = no_move then tophyp else destopt
 
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
-let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
+let induct_discharge destopt avoid' tac (avoid,ra) names gl =
   let avoid = avoid @ avoid' in
   let rec peel_tac ra names tophyp gl =
     match ra with
@@ -1784,7 +1784,7 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
           (peel_tac ra' names tophyp) gl
     | [] ->
         check_unused_names names;
-        re_intro_dependent_hypotheses tophyp statuslists gl
+        tac tophyp gl
   in
   peel_tac ra names no_move gl
 
@@ -1794,7 +1794,7 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
 
 (* Marche pas... faut prendre en compte l'occurrence précise... *)
 
-let atomize_param_of_ind (indref,nparams) hyp0 gl =
+let atomize_param_of_ind (indref,nparams,_) hyp0 gl =
   let tmptyp0 = pf_get_hyp_typ gl hyp0 in
   let typ0 = pf_apply reduce_to_quantified_ref gl indref tmptyp0 in
   let prods, indtyp = decompose_prod typ0 in
@@ -2032,18 +2032,6 @@ let empty_scheme =
     farg_in_concl = false;
   }
 
-
-(* Unification between ((elimc:elimt) ?i ?j ?k ?l ... ?m) and the
-   hypothesis on which the induction is made *)
-let induction_tac with_evars (varname,lbind) typ scheme gl =
-  let elimc,lbindelimc =
-    match scheme.elimc with | Some x -> x | None -> error "No definition of the principle." in
-  let elimt = scheme.elimt in
-  let indclause = make_clenv_binding gl (mkVar varname,typ) lbind  in
-  let elimclause =
-    make_clenv_binding gl
-      (mkCast (elimc,DEFAULTcast, elimt),elimt) lbindelimc in
-  elimination_clause_scheme with_evars true elimclause indclause gl
 
 let make_base n id =
   if n=0 or n=1 then id
@@ -2482,15 +2470,7 @@ let compute_elim_sig ?elimc elimt =
 	  try {!res with indref = Some (global_of_constr indhd) }
 	  with _ -> error "Cannot find the inductive type of the inductive scheme.";;
 
-(* Check that the elimination scheme has a form similar to the
-   elimination schemes built by Coq. Schemes may have the standard
-   form computed from an inductive type OR (feb. 2006) a non standard
-   form. That is: with no main induction argument and with an optional
-   extra final argument of the form (f x y ...) in the conclusion. In
-   the non standard case, naming of generated hypos is slightly
-   different. *)
-let compute_elim_signature elimc elimt names_info ind_type_guess =
-  let scheme = compute_elim_sig ~elimc:elimc elimt in
+let compute_scheme_signature scheme names_info ind_type_guess = 
   let f,l = decompose_app scheme.concl in
   (* Vérifier que les arguments de Qi sont bien les xi. *)
   match scheme.indarg with
@@ -2526,8 +2506,7 @@ let compute_elim_signature elimc elimt names_info ind_type_guess =
 		with Exit-> error_ind_scheme "the branches of")
 	    | (_,Some _,_)::_ -> error_ind_scheme "the branches of"
 	    | [] -> [] in
-	let indsign = Array.of_list (find_branches 0 (List.rev scheme.branches)) in
-	indsign,scheme
+	Array.of_list (find_branches 0 (List.rev scheme.branches))
 
     | Some ( _,None,ind) -> (* Standard scheme from an inductive type *)
 	let indhd,indargs = decompose_app ind in
@@ -2570,37 +2549,93 @@ let compute_elim_signature elimc elimt names_info ind_type_guess =
 		  error_ind_scheme "the conclusion of";
 		[]
 	in
-	let indsign = Array.of_list (find_branches 0 (List.rev scheme.branches)) in
-	indsign,scheme
+	Array.of_list (find_branches 0 (List.rev scheme.branches))
 
+(* Check that the elimination scheme has a form similar to the
+   elimination schemes built by Coq. Schemes may have the standard
+   form computed from an inductive type OR (feb. 2006) a non standard
+   form. That is: with no main induction argument and with an optional
+   extra final argument of the form (f x y ...) in the conclusion. In
+   the non standard case, naming of generated hypos is slightly
+   different. *)
+let compute_elim_signature ((elimc,elimt),ind_type_guess) names_info =
+  let scheme = compute_elim_sig ~elimc:elimc elimt in
+  compute_scheme_signature scheme names_info ind_type_guess, scheme
+
+let guess_elim isrec hyp0 gl =
+  let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
+  let mind,_ = pf_reduce_to_quantified_ind gl tmptyp0 in
+  let s = elimination_sort_of_goal gl in
+  let elimc =
+    if isrec then lookup_eliminator mind s
+    else
+      let case =
+	if dependent_no_evar (mkVar hyp0) (pf_concl gl) then make_case_dep
+	else make_case_gen in
+      pf_apply case gl mind s in
+  let elimt = pf_type_of gl elimc in
+  ((elimc, NoBindings), elimt), mkInd mind
+
+let given_elim hyp0 (elimc,lbind as e) gl =
+  let tmptyp0 = pf_get_hyp_typ gl hyp0 in
+  let ind_type_guess,_ = decompose_app ((strip_prod tmptyp0)) in
+  (e, pf_type_of gl elimc), ind_type_guess
+
+let find_elim isrec elim hyp0 gl =
+  match elim with
+    | None -> guess_elim isrec hyp0 gl
+    | Some e -> given_elim hyp0 e gl
+
+type scheme_signature =
+    (identifier list * (elim_arg_kind * bool * identifier) list) array
+
+type eliminator =
+  | ElimUsing of (constr with_ebindings * constr) * scheme_signature
+  | ElimOver of bool * identifier
+
+let find_induction_type isrec elim hyp0 gl =
+  let scheme,elim = 
+    match elim with
+    | None ->
+	let (elimc,elimt),_ = guess_elim isrec hyp0 gl in
+	let scheme = compute_elim_sig ~elimc elimt in
+	(* We drop the scheme waiting to know if it is dependent *)
+	scheme, ElimOver (isrec,hyp0)
+    | Some e ->
+	let (elimc,elimt as elim),ind_guess = given_elim hyp0 e gl in
+	let scheme = compute_elim_sig ~elimc elimt in
+	if scheme.indarg = None then error "Cannot find induction type";
+	let indsign = compute_scheme_signature scheme hyp0 ind_guess in
+	scheme, ElimUsing (elim,indsign) in
+  Option.get scheme.indref,scheme.nparams, elim
 
 let find_elim_signature isrec elim hyp0 gl =
-  let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
-  let (elimc,elimt),ind = match elim with
-    | None ->
-	let mind,_ = pf_reduce_to_quantified_ind gl tmptyp0 in
-	let s = elimination_sort_of_goal gl in
-	let elimc =
-	  if isrec then lookup_eliminator mind s
-	  else
-	    let case =
-	      if dependent_no_evar (mkVar hyp0) (pf_concl gl) then make_case_dep
-	      else make_case_gen in
-	    pf_apply case gl mind s in
-	let elimt = pf_type_of gl elimc in
-	((elimc, NoBindings), elimt), mkInd mind
-    | Some (elimc,lbind as e) ->
-	let ind_type_guess,_ = decompose_app ((strip_prod tmptyp0)) in
-	(e, pf_type_of gl elimc), ind_type_guess in
-  let indsign,elim_scheme =
-    compute_elim_signature elimc elimt hyp0 ind in
-  (indsign,elim_scheme)
+  compute_elim_signature (find_elim isrec elim hyp0 gl) hyp0
 
+let is_functional_induction elim gl =
+  match elim with
+  | Some elimc ->
+      let scheme = compute_elim_sig ~elimc (pf_type_of gl (fst elimc)) in
+      (* The test is not safe: with non-functional induction on non-standard
+         induction scheme, this may fail *)
+      scheme.indarg = None
+  | None ->
+      false
+
+(* Wait the last moment to guess the eliminator so as to know if we
+   need a dependent one or not *)
+
+let get_eliminator elim gl = match elim with
+  | ElimUsing (elim,indsign) ->
+      (* bugged, should be computed *) true, elim, indsign
+  | ElimOver (isrec,id) ->
+      let elim,_ as elims = guess_elim isrec id gl in
+      isrec, elim, fst (compute_elim_signature elims id)
 
 (* Instantiate all meta variables of elimclause using lid, some elts
    of lid are parameters (first ones), the other are
    arguments. Returns the clause obtained.  *)
-let recolle_clenv scheme lid elimclause gl =
+let recolle_clenv nparams lid elimclause gl =
   let _,arr = destApp elimclause.templval.rebus in
   let lindmv =
     Array.map
@@ -2611,7 +2646,7 @@ let recolle_clenv scheme lid elimclause gl =
               (str "The type of the elimination clause is not well-formed."))
       arr in
   let nmv = Array.length lindmv in
-  let lidparams,lidargs = cut_list (scheme.nparams) lid in
+  let lidparams,lidargs = cut_list nparams lid in
   let nidargs = List.length lidargs in
   (* parameters correspond to first elts of lid. *)
   let clauses_params =
@@ -2622,12 +2657,7 @@ let recolle_clenv scheme lid elimclause gl =
     list_map_i
       (fun i id -> mkVar id , pf_get_hyp_typ gl id , lindmv.(nmv-nidargs+i))
       0 lidargs in
-  let clause_indarg =
-    match scheme.indarg with
-      | None -> []
-      | Some (x,_,typx) -> []
-  in
-  let clauses = clauses_params@clauses_args@clause_indarg in
+  let clauses = clauses_params@clauses_args in
   (* iteration of clenv_fchain with all infos we have. *)
   List.fold_right
     (fun e acc ->
@@ -2645,24 +2675,34 @@ let recolle_clenv scheme lid elimclause gl =
    (elimc ?i ?j ?k...?l). This solves partly meta variables (and may
     produce new ones). Then refine with the resulting term with holes.
 *)
-let induction_tac_felim with_evars indvars scheme gl =
-  let elimt = scheme.elimt in
-  let elimc,lbindelimc =
-    match scheme.elimc with | Some x -> x | None -> error "No definition of the principle." in
+let induction_tac_felim with_evars indvars nparams elim gl =
+  let (elimc,lbindelimc),elimt = elim in
   (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
   let elimclause =
     make_clenv_binding gl (mkCast (elimc,DEFAULTcast, elimt),elimt) lbindelimc in
   (* elimclause' is built from elimclause by instanciating all args and params. *)
-  let elimclause' = recolle_clenv scheme indvars elimclause gl in
+  let elimclause' = recolle_clenv nparams indvars elimclause gl in
   (* one last resolution (useless?) *)
   let resolved = clenv_unique_resolver true elimclause' gl in
   clenv_refine with_evars resolved gl
 
-let apply_induction_in_context isrec hyp0 indsign indvars names induct_tac gl =
-  let env = pf_env gl in
-  let statlists,lhyp0,indhyps,deps = cook_sign hyp0 indvars env in
-  let tmpcl = it_mkNamedProd_or_LetIn (pf_concl gl) deps in
+(* Apply induction "in place" replacing the hypothesis on which
+   induction applies with the induction hypotheses *)
+
+let apply_induction_with_discharge induct_tac elim indhyps destopt avoid names tac gl =
+  let isrec, elim, indsign = get_eliminator elim gl in
   let names = compute_induction_names (Array.length indsign) names in
+  (if isrec then tclTHENFIRSTn else tclTHENLASTn)
+    (tclTHEN (induct_tac elim) (tclTRY (thin indhyps)))
+    (array_map2 (induct_discharge destopt avoid tac) indsign names) gl
+
+(* Apply induction "in place" taking into account dependent
+   hypotheses from the context *)
+
+let apply_induction_in_context hyp0 elim indvars names induct_tac gl =
+  let env = pf_env gl in
+  let statuslists,lhyp0,indhyps,deps = cook_sign hyp0 indvars env in
+  let tmpcl = it_mkNamedProd_or_LetIn (pf_concl gl) deps in
   let dephyps = List.map (fun (id,_,_) -> id) deps in
   let deps_cstr =
     List.fold_left
@@ -2674,16 +2714,15 @@ let apply_induction_in_context isrec hyp0 indsign indvars names induct_tac gl =
       (* clear dependent hyps *)
       thin dephyps;
       (* side-conditions in elim (resp case) schemes come last (resp first) *)
-      (if isrec then tclTHENFIRSTn else tclTHENLASTn)
-        (tclTHEN induct_tac (tclTRY (thin (List.rev indhyps))))
-	(array_map2
-	  (induct_discharge statlists lhyp0 (List.rev dephyps)) indsign names)
+      apply_induction_with_discharge
+	induct_tac elim (List.rev indhyps) lhyp0 (List.rev dephyps) names
+        (re_intro_dependent_hypotheses statuslists)
     ]
     gl
 
 (* Induction with several induction arguments, main differences with
    induction_from_context is that there is no main induction argument,
-   so we chose one to be the positioning reference. On the other hand,
+   so we choose one to be the positioning reference. On the other hand,
    all args and params must be given, so we help a bit the unifier by
    making the "pattern" by hand before calling induction_tac_felim
    FIXME: REUNIF AVEC induction_tac_felim? *)
@@ -2715,48 +2754,48 @@ let induction_from_context_l isrec with_evars elim_info lid names gl =
   let realindvars = (* hyp0 is a real induction arg if it is not the
 		       farg in the conclusion of the induction scheme *)
     List.rev ((if scheme.farg_in_concl then indvars else hyp0::indvars) @ lid_params) in
-  let induct_tac = tclTHENLIST [
+  let induct_tac elim = tclTHENLIST [
     (* pattern to make the predicate appear. *)
     reduce (Pattern (List.map inj_with_occurrences lidcstr)) onConcl;
     (* Induction by "refine (indscheme ?i ?j ?k...)" + resolution of all
        possible holes using arguments given by the user (but the
        functional one). *)
     (* FIXME: Tester ca avec un principe dependant et non-dependant *)
-    induction_tac_felim with_evars realindvars scheme
+    induction_tac_felim with_evars realindvars scheme.nparams elim
   ] in
-  apply_induction_in_context isrec
-    None indsign (hyp0::indvars) names induct_tac gl
+  let elim = ElimUsing ((Option.get scheme.elimc, scheme.elimt), indsign) in
+  apply_induction_in_context
+    None elim (hyp0::indvars) names induct_tac gl
 
-let induction_from_context isrec with_evars elim_info (hyp0,lbind) names
+(* Unification between ((elimc:elimt) ?i ?j ?k ?l ... ?m) and the
+   hypothesis on which the induction is made *)
+let induction_tac isrec with_evars elim (varname,lbind) typ gl =
+  let ((elimc,lbindelimc),elimt) = elim in
+  let indclause = make_clenv_binding gl (mkVar varname,typ) lbind  in
+  let elimclause =
+    make_clenv_binding gl
+      (mkCast (elimc,DEFAULTcast, elimt),elimt) lbindelimc in
+  elimination_clause_scheme with_evars true elimclause indclause gl
+
+let induction_from_context isrec with_evars (indref,nparams,elim) (hyp0,lbind) names
   inhyps gl =
-  let indsign,scheme = elim_info in
-  let indref = match scheme.indref with | None -> assert false | Some x -> x in
   let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
   let typ0 = pf_apply reduce_to_quantified_ref gl indref tmptyp0 in
-  let indvars =
-    find_atomic_param_of_ind scheme.nparams ((strip_prod typ0)) in
-  let induct_tac = tclTHENLIST [
-    induction_tac with_evars (hyp0,lbind) typ0 scheme;
+  let indvars = find_atomic_param_of_ind nparams ((strip_prod typ0)) in
+  let induct_tac elim = tclTHENLIST [
+    induction_tac isrec with_evars elim (hyp0,lbind) typ0;
     tclTRY (unfold_body hyp0);
     thin [hyp0]
   ] in
-  apply_induction_in_context isrec
-    (Some (hyp0,inhyps)) indsign indvars names induct_tac gl
-
-exception TryNewInduct of exn
+  apply_induction_in_context
+    (Some (hyp0,inhyps)) elim indvars names induct_tac gl
 
 let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,lbind) inhyps gl =
-  let (indsign,scheme as elim_info) = find_elim_signature isrec elim hyp0 gl in
-  if scheme.indarg = None then (* This is not a standard induction scheme (the
-				  argument is probably a parameter) So try the
-				  more general induction mechanism. *)
-    induction_from_context_l isrec with_evars elim_info [hyp0] names gl
-  else
-    let indref = match scheme.indref with | None -> assert false | Some x -> x in
-    tclTHEN
-      (atomize_param_of_ind (indref,scheme.nparams) hyp0)
-      (induction_from_context isrec with_evars elim_info
-	(hyp0,lbind) names inhyps) gl
+  let elim_info = find_induction_type isrec elim hyp0 gl in
+  tclTHEN
+    (atomize_param_of_ind elim_info hyp0)
+    (induction_from_context isrec with_evars elim_info
+      (hyp0,lbind) names inhyps) gl
 
 (* Induction on a list of induction arguments. Analyse the elim
    scheme (which is mandatory for multiple ind args), check that all
@@ -2879,44 +2918,45 @@ let new_induct_gen_l isrec with_evars elim (eqname,names) lc gl =
     ]
     gl
 
-
-let induct_destruct_l isrec with_evars lc elim names cls =
-  (* Several induction hyps: induction scheme is mandatory *)
-  let _ =
-    if elim = None
-    then
-      errorlabstrm "" (strbrk "Induction scheme must be given when several induction hypothesis are given.\n" ++
-      str "Example: induction x1 x2 x3 using my_scheme.") in
-  let newlc =
-    List.map
-      (fun x ->
-	match x with (* FIXME: should we deal with ElimOnIdent? *)
-	  | ElimOnConstr (x,NoBindings) -> x
-	  | _ -> error "Don't know where to find some argument.")
-      lc in
-  if cls <> None then
-    error
-      "'in' clause not supported when several induction hypothesis are given.";
-  new_induct_gen_l isrec with_evars elim names newlc
-
 (* Induction either over a term, over a quantified premisse, or over
    several quantified premisses (like with functional induction
    principles).
    TODO: really unify induction with one and induction with several
    args *)
-let induct_destruct isrec with_evars (lc,elim,names,cls) =
+let induct_destruct isrec with_evars (lc,elim,names,cls) gl =
   assert (List.length lc > 0); (* ensured by syntax, but if called inside caml? *)
-  if List.length lc = 1 then (* induction on one arg: use old mechanism *)
-    try
+  if List.length lc = 1 && not (is_functional_induction elim gl) then
+    (* standard induction *)
+    onInductionArg
+      (fun c -> new_induct_gen isrec with_evars elim names c cls)
+      (List.hd lc) gl
+  else begin
+    (* functional induction *)
+    (* Several induction hyps: induction scheme is mandatory *)
+    if elim = None
+    then
+      errorlabstrm "" (strbrk "Induction scheme must be given when several induction hypotheses are given.\n" ++
+      str "Example: induction x1 x2 x3 using my_scheme.");
+    if cls <> None then
+      error "'in' clause not supported here.";
+    if List.length lc = 1 then
+      (* Hook to recover standard induction on non-standard induction schemes *)
+      (* will be removable when is_functional_induction will be more clever *)
       onInductionArg
-	(fun c -> new_induct_gen isrec with_evars elim names c cls)
-	(List.hd lc)
-    with (* If this fails, try with new mechanism but if it fails too,
-	    then the exception is the first one. *)
-      | x ->
-	  (try induct_destruct_l isrec with_evars lc elim names cls
-	   with _  -> raise x)
-  else induct_destruct_l isrec with_evars lc elim names cls
+	(fun (c,lbind) ->
+	  if lbind <> NoBindings then
+	    error "'with' clause not supported here.";
+	  new_induct_gen_l isrec with_evars elim names [c])
+	(List.hd lc) gl
+    else
+      let newlc =
+	List.map (fun x ->
+	  match x with (* FIXME: should we deal with ElimOnIdent? *)
+	  | ElimOnConstr (x,NoBindings) -> x
+	  | _ -> error "Don't know where to find some argument.")
+	  lc in
+      new_induct_gen_l isrec with_evars elim names newlc gl
+  end
 
 let induction_destruct isrec with_evars = function
   | [],_ -> tclIDTAC
