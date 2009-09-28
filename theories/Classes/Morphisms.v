@@ -1,4 +1,4 @@
-(* -*- coq-prog-name: "~/research/coq/trunk/bin/coqtop.byte"; coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.Morphisms"); compile-command: "make -C ../.. TIME='time -p'" -*- *)
+(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -7,11 +7,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Typeclass-based morphism definition and standard, minimal instances.
+(** * Typeclass-based morphism definition and standard, minimal instances
 
    Author: Matthieu Sozeau
-   Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
-   91405 Orsay, France *)
+   Institution: LRI, CNRS UMR 8623 - University Paris Sud
+*)
 
 (* $Id$ *)
 
@@ -26,8 +26,8 @@ Require Export Coq.Classes.RelationClasses.
    These will be used by the [setoid_rewrite] tactic later. *)
 
 (** A morphism for a relation [R] is a proper element of the relation.
-   The relation [R] will be instantiated by [respectful] and [A] by an arrow type
-   for usual morphisms. *)
+   The relation [R] will be instantiated by [respectful] and [A] by an arrow
+   type for usual morphisms. *)
 
 Class Proper {A} (R : relation A) (m : A) : Prop :=
   proper : R m m.

@@ -6,16 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* Finite sets library.
- * Authors: Pierre Letouzey and Jean-Christophe Filliâtre
- * Institution: LRI, CNRS UMR 8623 - Université Paris Sud
- *              91405 Orsay, France *)
-
 (* $Id$ *)
 
-(** * FSetFullAVL
-
-   This file contains some complements to [FSetAVL].
+(** * FSetFullAVL : some complements to FSetAVL
 
    - Functor [AvlProofs] proves that trees of [FSetAVL] are not only
    binary search trees, but moreover well-balanced ones. This is done

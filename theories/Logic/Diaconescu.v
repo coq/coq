@@ -39,7 +39,7 @@
    [Bell93] John L. Bell, Hilbert's epsilon operator and classical
    logic, Journal of Philosophical Logic, 22: 1-18, 1993
 
-   [Carlström04] Jesper Carlström, EM + Ext_ + AC_int <-> AC_ext,
+   [Carlström04] Jesper Carlström, [EM + Ext_ + AC_int <-> AC_ext],
    Mathematical Logic Quaterly, vol 50(3), pp 236-240, 2004.
 *)
 

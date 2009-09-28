@@ -60,7 +60,7 @@ Proof.
   case (Req_dec (f1 x) 0); intro.
   case (Req_dec l1 0); intro.
 (***********************************)
-(*              Cas n° 1           *)
+(*              First case         *)
 (*           (f1 x)=0  l1 =0       *)
 (***********************************)
   cut (0 < Rmin eps_f2 (Rmin alp_f2 alp_f1d));
@@ -118,7 +118,7 @@ Proof.
   apply Rmin_2; assumption.
   right; symmetry  in |- *; apply quadruple_var.
 (***********************************)
-(*              Cas n° 2           *)
+(*           Second case           *)
 (*           (f1 x)=0  l1<>0       *)
 (***********************************)
   assert (H10 := derivable_continuous_pt _ _ X).
@@ -218,7 +218,7 @@ Proof.
   apply Rinv_neq_0_compat; repeat apply prod_neq_R0;
     [ discrR | discrR | discrR | assumption ].
 (***********************************)
-(*              Cas n° 3           *)
+(*        Third case               *)
 (*     (f1 x)<>0  l1=0  l2=0       *)
 (***********************************)
   case (Req_dec l1 0); intro.
@@ -291,7 +291,7 @@ Proof.
   apply (cond_pos alp_f1d).
   apply (cond_pos alp_f2d).
 (***********************************)
-(*              Cas n° 4           *)
+(*      Fourth case                *)
 (*    (f1 x)<>0  l1=0  l2<>0       *)
 (***********************************)
   elim (H0 (Rabs (Rsqr (f2 x) * eps / (8 * f1 x))));
@@ -421,7 +421,7 @@ Proof.
   apply Rinv_neq_0_compat; discrR.
   apply Rinv_neq_0_compat; assumption.
 (***********************************)
-(*              Cas n° 5           *)
+(*         Fifth case              *)
 (*    (f1 x)<>0  l1<>0  l2=0       *)
 (***********************************)
   case (Req_dec l2 0); intro.
@@ -538,7 +538,7 @@ Proof.
         (apply Rinv_neq_0_compat; discrR) ||
           (red in |- *; intro H12; rewrite H12 in H6; elim (Rlt_irrefl _ H6)).
 (***********************************)
-(*              Cas n° 6           *)
+(*       Sixth case                *)
 (*    (f1 x)<>0  l1<>0  l2<>0      *)
 (***********************************)
   elim (H0 (Rabs (Rsqr (f2 x) * eps / (8 * f1 x)))).

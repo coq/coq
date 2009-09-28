@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -6,12 +7,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Typeclass-based relations, tactics and standard instances.
+(** *  Typeclass-based relations, tactics and standard instances
+
    This is the basic theory needed to formalize morphisms and setoids.
 
    Author: Matthieu Sozeau
-   Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
-   91405 Orsay, France *)
+   Institution: LRI, CNRS UMR 8623 - University Paris Sud
+*)
 
 (* $Id$ *)
 

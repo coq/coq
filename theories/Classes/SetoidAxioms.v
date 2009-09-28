@@ -6,11 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Extensionality axioms that can be used when reasoning with setoids.
- *
- * Author: Matthieu Sozeau
- * Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
- *              91405 Orsay, France *)
+(** * Extensionality axioms that can be used when reasoning with setoids.
+
+   Author: Matthieu Sozeau
+   Institution: LRI, CNRS UMR 8623 - University Paris Sud
+*)
 
 (* $Id$ *)
 
@@ -21,7 +21,7 @@ Unset Strict Implicit.
 
 Require Export Coq.Classes.SetoidClass.
 
-(* Application of the extensionality axiom to turn a goal on
+(** Application of the extensionality axiom to turn a goal on
    Leibniz equality to a setoid equivalence (use with care!). *)
 
 Axiom setoideq_eq : forall `{sa : Setoid a} (x y : a), x == y -> x = y.

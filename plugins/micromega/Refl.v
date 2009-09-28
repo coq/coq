@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -8,7 +9,7 @@
 (*                                                                      *)
 (* Micromega: A reflexive tactic using the Positivstellensatz           *)
 (*                                                                      *)
-(*  Frédéric Besson (Irisa/Inria) 2006-2008                             *)
+(*  FrÃ©dÃ©ric Besson (Irisa/Inria) 2006-2008                             *)
 (*                                                                      *)
 (************************************************************************)
 

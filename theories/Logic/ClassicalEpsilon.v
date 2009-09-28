@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -74,7 +75,7 @@ Definition epsilon_spec (A : Type) (i:inhabited A) (P : A->Prop) :
 
 (** A proof that if [P] is inhabited, [epsilon a P] does not depend on
     the actual proof that the domain of [P] is inhabited
-    (proof idea kindly provided by Pierre Castéran) *)
+    (proof idea kindly provided by Pierre CastÃ©ran) *)
 
 Lemma epsilon_inh_irrelevance :
    forall (A:Type) (i j : inhabited A) (P:A->Prop),

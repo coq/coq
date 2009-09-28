@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -25,7 +26,7 @@
   References:
 
   [1] T. Streicher, Semantical Investigations into Intensional Type Theory,
-      Habilitationsschrift, LMU München, 1993.
+      Habilitationsschrift, LMU MÃ¼nchen, 1993.
   [2] M. Hofmann, T. Streicher, The groupoid interpretation of type theory,
       Proceedings of the meeting Twenty-five years of constructive
       type theory, Venice, Oxford University Press, 1998

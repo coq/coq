@@ -6,14 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* Finite sets library.
- * Authors: Pierre Letouzey and Jean-Christophe Filliâtre
- * Institution: LRI, CNRS UMR 8623 - Université Paris Sud
- *              91405 Orsay, France *)
-
 (* $Id$ *)
 
-(** An axiomatization of integers. *)
+(** * An light axiomatization of integers (used in FSetAVL). *)
 
 (** We define a signature for an integer datatype based on [Z].
     The goal is to allow a switch after extraction to ocaml's

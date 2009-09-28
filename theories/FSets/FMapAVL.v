@@ -1,4 +1,3 @@
-
 (***********************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
 (* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)

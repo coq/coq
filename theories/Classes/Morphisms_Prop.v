@@ -6,11 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* [Proper] instances for propositional connectives.
+(** * [Proper] instances for propositional connectives.
 
    Author: Matthieu Sozeau
-   Institution: LRI, CNRS UMR 8623 - Université Paris Sud
-   91405 Orsay, France *)
+   Institution: LRI, CNRS UMR 8623 - University Paris Sud
+*)
 
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.Program.Basics.
@@ -56,11 +56,11 @@ Program Instance ex_iff_morphism {A : Type} : Proper (pointwise_relation A iff =
   Proof.
     unfold pointwise_relation in H.
     split ; intros.
-    destruct H0 as [x₁ H₁].
-    exists x₁. rewrite H in H₁. assumption.
+    destruct H0 as [x1 H1].
+    exists x1. rewrite H in H1. assumption.
 
-    destruct H0 as [x₁ H₁].
-    exists x₁. rewrite H. assumption.
+    destruct H0 as [x1 H1].
+    exists x1. rewrite H. assumption.
   Qed.
 
 Program Instance ex_impl_morphism {A : Type} :

@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -7,11 +8,11 @@
 (************************************************************************)
 (* $Id$ *)
 
-(** Proofs about standard combinators, exports functional extensionality.
+(** * Proofs about standard combinators, exports functional extensionality.
 
    Author: Matthieu Sozeau
-   Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
-   91405 Orsay, France *)
+   Institution: LRI, CNRS UMR 8623 - University Paris Sud
+*)
 
 Require Import Coq.Program.Basics.
 Require Export FunctionalExtensionality.

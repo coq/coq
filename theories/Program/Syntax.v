@@ -10,10 +10,10 @@
 (** Custom notations and implicits for Coq prelude definitions.
 
    Author: Matthieu Sozeau
-   Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
-   91405 Orsay, France *)
+   Institution: LRI, CNRS UMR 8623 - University Paris Sud
+*)
 
-(** Notations for the unit type and value à la Haskell. *)
+(** Haskell-style notations for the unit type and value. *)
 
 Notation " () " := Datatypes.unit : type_scope.
 Notation " () " := tt.

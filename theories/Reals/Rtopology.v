@@ -1598,17 +1598,17 @@ Theorem Heine :
     (forall x:R, X x -> continuity_pt f x) -> uniform_continuity f X.
 Proof.
   intros f0 X H0 H; elim (domain_P1 X); intro Hyp.
-(* X est vide *)
+(* X is empty *)
   unfold uniform_continuity in |- *; intros; exists (mkposreal _ Rlt_0_1);
     intros; elim Hyp; exists x; assumption.
   elim Hyp; clear Hyp; intro Hyp.
-(* X possède un seul élément *)
+(* X has only one element *)
   unfold uniform_continuity in |- *; intros; exists (mkposreal _ Rlt_0_1);
     intros; elim Hyp; clear Hyp; intros; elim H4; clear H4;
       intros; assert (H6 := H5 _ H1); assert (H7 := H5 _ H2);
         rewrite H6; rewrite H7; unfold Rminus in |- *; rewrite Rplus_opp_r;
           rewrite Rabs_R0; apply (cond_pos eps).
-(* X possède au moins deux éléments distincts *)
+(* X has at least two distinct elements *)
   assert
     (X_enc :
       exists m : R, (exists M : R, (forall x:R, X x -> m <= x <= M) /\ m < M)).

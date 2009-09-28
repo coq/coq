@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -6,11 +7,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Decidable setoid equality theory.
- *
- * Author: Matthieu Sozeau
- * Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
- *              91405 Orsay, France *)
+(** * Decidable setoid equality theory.
+
+   Author: Matthieu Sozeau
+   Institution: LRI, CNRS UMR 8623 - University Paris Sud
+*)
 
 (* $Id$ *)
 
@@ -21,21 +22,23 @@ Unset Strict Implicit.
 
 Require Export Coq.Classes.SetoidClass.
 
-(** The [DecidableSetoid] class asserts decidability of a [Setoid]. It can be useful in proofs to reason more
-   classically. *)
+(** The [DecidableSetoid] class asserts decidability of a [Setoid].
+   It can be useful in proofs to reason more classically. *)
 
 Require Import Coq.Logic.Decidable.
 
 Class DecidableSetoid `(S : Setoid A) :=
   setoid_decidable : forall x y : A, decidable (x == y).
 
-(** The [EqDec] class gives a decision procedure for a particular setoid equality. *)
+(** The [EqDec] class gives a decision procedure for a particular setoid
+   equality. *)
 
 Class EqDec `(S : Setoid A) :=
   equiv_dec : forall x y : A, { x == y } + { x =/= y }.
 
-(** We define the [==] overloaded notation for deciding equality. It does not take precedence
-   of [==] defined in the type scope, hence we can have both at the same time. *)
+(** We define the [==] overloaded notation for deciding equality. It does not
+   take precedence of [==] defined in the type scope, hence we can have both
+   at the same time. *)
 
 Notation " x == y " := (equiv_dec (x :>) (y :>)) (no associativity, at level 70).
 
@@ -72,7 +75,8 @@ Infix "<>b" := nequiv_decb (no associativity, at level 70).
 
 Require Import Coq.Arith.Arith.
 
-(** The equiv is burried inside the setoid, but we can recover it by specifying which setoid we're talking about. *)
+(** The equiv is burried inside the setoid, but we can recover
+  it by specifying which setoid we're talking about. *)
 
 Program Instance eq_setoid A : Setoid A | 10 :=
   { equiv := eq ; setoid_equiv := eq_equivalence }.
@@ -105,7 +109,8 @@ Program Instance prod_eqdec `(! EqDec (eq_setoid A), ! EqDec (eq_setoid B)) : Eq
 
   Solve Obligations using unfold complement ; program_simpl.
 
-(** Objects of function spaces with countable domains like bool have decidable equality. *)
+(** Objects of function spaces with countable domains like bool
+  have decidable equality. *)
 
 Program Instance bool_function_eqdec `(! EqDec (eq_setoid A)) : EqDec (eq_setoid (bool -> A)) :=
   λ f g,

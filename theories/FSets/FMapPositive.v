@@ -6,12 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* Finite sets library.
- * Authors: Pierre Letouzey and Jean-Christophe Filliâtre
- * Institution: LRI, CNRS UMR 8623 - Université Paris Sud
- *              91405 Orsay, France *)
-
 (* $Id$ *)
+
+(** * FMapPositive : an implementation of FMapInterface for [positive] keys. *)
 
 Require Import Bool.
 Require Import ZArith.
@@ -20,17 +17,14 @@ Require Import OrderedTypeEx.
 Require Import FMapInterface.
 
 Set Implicit Arguments.
-
 Open Local Scope positive_scope.
-
-(** * An implementation of [FMapInterface.S] for positive keys. *)
 
 (** This file is an adaptation to the [FMap] framework of a work by
   Xavier Leroy and Sandrine Blazy (used for building certified compilers).
   Keys are of type [positive], and maps are binary trees: the sequence
   of binary digits of a positive number corresponds to a path in such a tree.
-  This is quite similar to the [IntMap] library, except that no path compression
-  is implemented, and that the current file is simple enough to be
+  This is quite similar to the [IntMap] library, except that no path
+  compression is implemented, and that the current file is simple enough to be
   self-contained. *)
 
 (** Even if [positive] can be seen as an ordered type with respect to the

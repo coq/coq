@@ -17,33 +17,33 @@ Require Import Arith.
 Open Local Scope nat_scope.
 
 (**
-On s'inspire de List.v pour fabriquer les vecteurs de bits.
-La dimension du vecteur est un paramètre trop important pour
-se contenter de la fonction "length".
-La première idée est de faire un record avec la liste et la longueur.
-Malheureusement, cette verification a posteriori amene a faire
-de nombreux lemmes pour gerer les longueurs.
-La seconde idée est de faire un type dépendant dans lequel la
-longueur est un paramètre de construction. Cela complique un
-peu les inductions structurelles et dans certains cas on
-utilisera un terme de preuve comme définition, car le
-mécanisme d'inférence du type du filtrage n'est pas toujours
-aussi puissant que celui implanté par les tactiques d'élimination.
+We build bit vectors in the spirit of List.v.
+The size of the vector is a parameter which is too important
+to be accessible only via function "length".
+The first idea is to build a record with both the list and the length.
+Unfortunately, this a posteriori verification leads to
+numerous lemmas for handling lengths.
+The second idea is to use a dependent type in which the length
+is a building parameter. This leads to structural induction that
+are slightly more complex and in some cases we will use a proof-term
+as definition, since the type inference mechanism for pattern-matching
+is sometimes weaker that the one implemented for elimination tactiques.
 *)
 
 Section VECTORS.
 
 (**
-Un vecteur est une liste de taille n d'éléments d'un ensemble A.
-Si la taille est non nulle, on peut extraire la première composante et
-le reste du vecteur, la dernière composante ou rajouter ou enlever
-une composante (carry) ou repeter la dernière composante en fin de vecteur.
-On peut aussi tronquer le vecteur de ses p dernières composantes ou
-au contraire l'étendre (concaténer) d'un vecteur de longueur p.
-Une fonction unaire sur A génère une fonction des vecteurs de taille n
-dans les vecteurs de taille n en appliquant f terme à terme.
-Une fonction binaire sur A génère une fonction des couples de vecteurs
-de taille n dans les vecteurs de taille n en appliquant f terme à terme.
+A vector is a list of size n whose elements belongs to a set A.
+If the size is non-zero, we can extract the first component and the
+rest of the vector, as well as the last component, or adding or
+removing a component (carry) or repeating the last component at the
+end of the vector.
+We can also truncate the vector and remove its p last components or
+reciprocally extend the vector by concatenation.
+A unary function over A generates a function on vectors of size n by
+applying f pointwise.
+A binary function over A generates a function on pairs of vectors of
+size n by applying f pointwise.
 *)
 
 Variable A : Type.
@@ -188,15 +188,16 @@ Implicit Arguments Vcons [A n].
 Section BOOLEAN_VECTORS.
 
 (**
-Un vecteur de bits est un vecteur sur l'ensemble des booléens de longueur fixe.
-ATTENTION : le stockage s'effectue poids FAIBLE en tête.
-On en extrait le bit  de poids faible (head) et la fin du vecteur (tail).
-On calcule la négation d'un vecteur, le et, le ou et le xor bit à bit de 2 vecteurs.
-On calcule les décalages d'une position vers la gauche (vers les poids forts, on
-utilise donc Vshiftout, vers la droite (vers les poids faibles, on utilise Vshiftin) en
-insérant un bit 'carry' (logique) ou en répétant le bit de poids fort (arithmétique).
-ATTENTION : Tous les décalages prennent la taille moins un comme paramètre
-(ils ne travaillent que sur des vecteurs au moins de longueur un).
+A bit vector is a vector over booleans.
+Notice that the LEAST significant bit comes first (little-endian representation).
+We extract the least significant bit (head) and the rest of the vector (tail).
+We compute bitwise operation on vector: negation, and, or, xor.
+We compute size-preserving shifts: to the left (towards most significant bits,
+we hence use Vshiftout) and to the right (towards least significant bits,
+we use Vshiftin) by inserting a 'carry' bit (logical shift) or by repeating
+the most significant bit (arithmetical shift).
+NOTA BENE: all shift operations expect predecessor of size as parameter
+(they only work on non-empty vectors).
 *)
 
 Definition Bvector := vector bool.

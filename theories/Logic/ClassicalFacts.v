@@ -31,7 +31,7 @@ Table of contents:
 
 3.1. Weak excluded middle
 
-3.2. Gödel-Dummett axiom and right distributivity of implication over
+3.2. GÃ¶del-Dummett axiom and right distributivity of implication over
      disjunction
 
 3 3. Independence of general premises and drinker's paradox
@@ -290,7 +290,7 @@ End Proof_irrelevance_CIC.
   cannot be refined.
 
   [[Berardi90]] Stefano Berardi, "Type dependence and constructive
-  mathematics", Ph. D. thesis, Dipartimento Matematica, Università di
+  mathematics", Ph. D. thesis, Dipartimento Matematica, UniversitÃ  di
   Torino, 1990.
 *)
 
@@ -417,7 +417,7 @@ End Proof_irrelevance_CCI.
 
 (** We show the following increasing in the strength of axioms:
  - weak excluded-middle
- - right distributivity of implication over disjunction and Gödel-Dummett axiom
+ - right distributivity of implication over disjunction and GÃ¶del-Dummett axiom
  - independence of general premises and drinker's paradox
  - excluded-middle
 *)
@@ -436,20 +436,20 @@ Definition weak_excluded_middle :=
 
 (** The interest in the equivalent variant
     [weak_generalized_excluded_middle] is that it holds even in logic
-    without a primitive [False] connective (like Gödel-Dummett axiom) *)
+    without a primitive [False] connective (like GÃ¶del-Dummett axiom) *)
 
 Definition weak_generalized_excluded_middle :=
   forall A B:Prop, ((A -> B) -> B) \/ (A -> B).
 
-(** ** Gödel-Dummett axiom *)
+(** ** GÃ¶del-Dummett axiom *)
 
-(** [(A->B) \/ (B->A)] is studied in [[Dummett59]] and is based on [[Gödel33]].
+(** [(A->B) \/ (B->A)] is studied in [[Dummett59]] and is based on [[GÃ¶del33]].
 
     [[Dummett59]] Michael A. E. Dummett. "A Propositional Calculus
     with a Denumerable Matrix", In the Journal of Symbolic Logic, Vol
     24 No. 2(1959), pp 97-103.
 
-    [[Gödel33]] Kurt Gödel. "Zum intuitionistischen Aussagenkalkül",
+    [[GÃ¶del33]] Kurt GÃ¶del. "Zum intuitionistischen AussagenkalkÃ¼l",
     Ergeb. Math. Koll. 4 (1933), pp. 34-38.
  *)
 
@@ -500,13 +500,13 @@ Qed.
 
     It is a generalization to predicate logic of the right
     distributivity of implication over disjunction (hence of
-    Gödel-Dummett axiom) whose own constructive form (obtained by a
+    GÃ¶del-Dummett axiom) whose own constructive form (obtained by a
     restricting the third formula to be negative) is called
     Kreisel-Putnam principle [[KreiselPutnam57]].
 
     [[KreiselPutnam57]], Georg Kreisel and Hilary Putnam. "Eine
-    Unableitsbarkeitsbeweismethode für den intuitionistischen
-    Aussagenkalkül". Archiv für Mathematische Logik und
+    Unableitsbarkeitsbeweismethode fÃ¼r den intuitionistischen
+    AussagenkalkÃ¼l". Archiv fÃ¼r Mathematische Logik und
     Graundlagenforschung, 3:74- 78, 1957.
 
     [[Troelstra73]], Anne Troelstra, editor. Metamathematical

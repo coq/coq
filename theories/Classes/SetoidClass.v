@@ -6,11 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Typeclass-based setoids, tactics and standard instances.
+(** * Typeclass-based setoids, tactics and standard instances.
 
    Author: Matthieu Sozeau
-   Institution: LRI, CNRS UMR 8623 - Universit√copyright Paris Sud
-   91405 Orsay, France *)
+   Institution: LRI, CNRS UMR 8623 - University Paris Sud
+*)
 
 (* $Id$ *)
 

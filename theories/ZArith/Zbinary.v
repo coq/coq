@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -16,27 +17,22 @@ Require Import ZArith.
 Require Export Zpower.
 Require Import Omega.
 
-(** L'évaluation des vecteurs de booléens se font à la fois en binaire et
-    en complément à  deux. Le nombre appartient à  Z.
-    On utilise donc Omega pour faire les calculs dans Z.
-    De plus, on utilise les fonctions 2^n où n est un naturel, ici la longueur.
-	two_power_nat = [n:nat](POS (shift_nat n xH))
-     		: nat->Z
-	two_power_nat_S
-	     : (n:nat)`(two_power_nat (S n)) = 2*(two_power_nat n)`
-	Z_lt_ge_dec
-	     : (x,y:Z){`x < y`}+{`x >= y`}
+(** The evaluation of boolean vector is done both in binary and
+    two's complement. The computed number belongs to Z.
+    We hence use Omega to perform computations in Z.
+    Moreover, we use functions [2^n] where [n] is a natural number
+    (here the vector length).
 *)
 
 
 Section VALUE_OF_BOOLEAN_VECTORS.
 
-(** Les calculs sont effectués dans la convention positive usuelle.
-    Les valeurs correspondent soit à  l'écriture binaire (nat),
-    soit au complément à  deux (int).
-    On effectue le calcul suivant le schéma de Horner.
-    Le complément à  deux n'a de sens que sur les vecteurs de taille
-    supérieure ou égale à  un, le bit de signe étant évalué négativement.
+(** Computations are done in the usual convention.
+    The values correspond either to the binary coding (nat) or
+    to the two's complement coding (int).
+    We perform the computation via Horner scheme.
+    The two's complement coding only makes sense on vectors whose
+    size is greater or equal to one (a sign bit should be present).
 *)
 
   Definition bit_value (b:bool) : Z :=
@@ -68,12 +64,12 @@ End VALUE_OF_BOOLEAN_VECTORS.
 
 Section ENCODING_VALUE.
 
-(** On calcule la valeur binaire selon un schema de Horner.
-    Le calcul s'arrete à  la longueur du vecteur sans vérification.
-    On definit une fonction Zmod2 calquee sur Zdiv2 mais donnant le quotient
-    de la division z=2q+r avec 0<=r<=1.
-    La valeur en complément à  deux est calculée selon un schema de Horner
-    avec Zmod2, le paramètre est la taille moins un.
+(** We compute the binary value via a Horner scheme.
+    Computation stops at the vector length without checks.
+    We define a function Zmod2 similar to Zdiv2 returning the
+    quotient of division z=2q+r with 0<=r<=1.
+    The two's complement value is also computed via a Horner scheme
+    with Zmod2, the parameter is the size minus one.
 *)
 
   Definition Zmod2 (z:Z) :=
@@ -134,9 +130,8 @@ End ENCODING_VALUE.
 
 Section Z_BRIC_A_BRAC.
 
-  (** Bibliotheque de lemmes utiles dans la section suivante.
-      Utilise largement ZArith.
-      Mériterait d'être récrite.
+  (** Some auxiliary lemmas used in the next section. Large use of ZArith.
+      Deserve to be properly rewritten.
   *)
 
   Lemma binary_value_Sn :
@@ -282,8 +277,8 @@ End Z_BRIC_A_BRAC.
 
 Section COHERENT_VALUE.
 
-(** On vérifie que dans l'intervalle de définition les fonctions sont
-    réciproques l'une de l'autre. Elles utilisent les lemmes du bric-a-brac.
+(** We check that the functions are reciprocal on the definition interval.
+    This uses earlier library lemmas.
 *)
 
   Lemma binary_to_Z_to_binary :

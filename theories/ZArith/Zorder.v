@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -7,7 +8,7 @@
 (************************************************************************)
 (*i $Id$ i*)
 
-(** Binary Integers (Pierre Crégut (CNET, Lannion, France) *)
+(** Binary Integers (Pierre Crégut, CNET, Lannion, France) *)
 
 Require Import BinPos.
 Require Import BinInt.

@@ -6,11 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Morphism instances for relations.
+(** * Morphism instances for relations.
 
    Author: Matthieu Sozeau
-   Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
-   91405 Orsay, France *)
+   Institution: LRI, CNRS UMR 8623 - University Paris Sud
+*)
 
 Require Import Relation_Definitions.
 Require Import Coq.Classes.Morphisms.
@@ -38,8 +38,8 @@ Lemma predicate_implication_pointwise (l : list Type) :
   Proper (@predicate_implication l ==> pointwise_lifting impl l) id.
 Proof. do 2 red. unfold predicate_implication. auto. Qed.
 
-(** The instanciation at relation allows to rewrite applications of relations [R x y] to [R' x y] *)
-(*    when [R] and [R'] are in [relation_equivalence]. *)
+(** The instanciation at relation allows to rewrite applications of relations
+    [R x y] to [R' x y]  when [R] and [R'] are in [relation_equivalence]. *)
 
 Instance relation_equivalence_pointwise :
   Proper (relation_equivalence ==> pointwise_relation A (pointwise_relation A iff)) id.

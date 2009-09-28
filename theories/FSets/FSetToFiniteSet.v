@@ -6,12 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* Finite sets library.
- * Authors: Pierre Letouzey and Jean-Christophe Filliâtre
- * Institution: LRI, CNRS UMR 8623 - Université Paris Sud
- *              91405 Orsay, France *)
-
 (* $Id$ *)
+
+(** * Finite sets library : conversion to old [Finite_sets] *)
 
 Require Import Ensembles Finite_sets.
 Require Import FSetInterface FSetProperties OrderedTypeEx DecidableTypeEx.

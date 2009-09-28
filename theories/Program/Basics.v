@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -9,11 +10,12 @@
 
 (** Standard functions and combinators.
 
-   Proofs about them require functional extensionality and can be found in [Combinators].
+   Proofs about them require functional extensionality and can be found
+   in [Combinators].
 
    Author: Matthieu Sozeau
-   Institution: LRI, CNRS UMR 8623 - Université Paris Sud
-   91405 Orsay, France *)
+   Institution: LRI, CNRS UMR 8623 - University Paris Sud
+*)
 
 (** The polymorphic identity function is defined in [Datatypes]. *)
 

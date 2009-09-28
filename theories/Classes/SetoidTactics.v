@@ -6,11 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Tactics for typeclass-based setoids.
- *
- * Author: Matthieu Sozeau
- * Institution: LRI, CNRS UMR 8623 - Universit√copyright Paris Sud
- *              91405 Orsay, France *)
+(** * Tactics for typeclass-based setoids.
+
+   Author: Matthieu Sozeau
+   Institution: LRI, CNRS UMR 8623 - University Paris Sud
+*)
 
 (* $Id$ *)
 
@@ -34,12 +34,13 @@ Class DefaultRelation A (R : relation A).
 
 Definition default_relation `{DefaultRelation A R} := R.
 
-(** Every [Equivalence] gives a default relation, if no other is given (lowest priority). *)
+(** Every [Equivalence] gives a default relation, if no other is given
+  (lowest priority). *)
 
 Instance equivalence_default `(Equivalence A R) : DefaultRelation R | 4.
 
-(** The setoid_replace tactics in Ltac, defined in terms of default relations and
-   the setoid_rewrite tactic. *)
+(** The setoid_replace tactics in Ltac, defined in terms of default relations
+  and the setoid_rewrite tactic. *)
 
 Ltac setoidreplace H t :=
   let Heq := fresh "Heq" in
@@ -137,9 +138,11 @@ Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "by" tactic3(t) :=
   setoidreplaceinat (rel x y) id ltac:t o.
 
-(** The [add_morphism_tactic] tactic is run at each [Add Morphism] command before giving the hand back
-   to the user to discharge the proof. It essentially amounts to unfold the right amount of [respectful] calls
-   and substitute leibniz equalities. One can redefine it using [Ltac add_morphism_tactic ::= t]. *)
+(** The [add_morphism_tactic] tactic is run at each [Add Morphism]
+   command before giving the hand back to the user to discharge the
+   proof. It essentially amounts to unfold the right amount of
+   [respectful] calls and substitute leibniz equalities. One can
+   redefine it using [Ltac add_morphism_tactic ::= t]. *)
 
 Require Import Coq.Program.Tactics.
 

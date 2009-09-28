@@ -189,14 +189,14 @@ ifdef QUICK
 doc/stdlib/index-body.html:
 	- rm -rf doc/stdlib/html
 	$(MKDIR) doc/stdlib/html
-	$(COQDOC) -q -boot -d doc/stdlib/html --multi-index --html -g \
+	$(COQDOC) -q -boot -d doc/stdlib/html --multi-index --html -g --utf8 \
 	  -R theories Coq $(THEORIESVO:.vo=.v)
 	mv doc/stdlib/html/index.html doc/stdlib/index-body.html
 else
 doc/stdlib/index-body.html: $(COQDOC) $(THEORIESVO)
 	- rm -rf doc/stdlib/html
 	$(MKDIR) doc/stdlib/html
-	$(COQDOC) -q -boot -d doc/stdlib/html --multi-index --html -g \
+	$(COQDOC) -q -boot -d doc/stdlib/html --multi-index --html -g --utf8 \
 	  -R theories Coq $(THEORIESVO:.vo=.v)
 	mv doc/stdlib/html/index.html doc/stdlib/index-body.html
 endif
@@ -213,11 +213,11 @@ doc/stdlib/html/index.html: doc/stdlib/index-list.html doc/stdlib/index-body.htm
 
 ifdef QUICK
 doc/stdlib/Library.coqdoc.tex:
-	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
+	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
             -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
 else
 doc/stdlib/Library.coqdoc.tex: $(COQDOC) $(THEORIESLIGHTVO)
-	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
+	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
             -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
 endif
 

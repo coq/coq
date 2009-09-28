@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -8,7 +9,7 @@
 
 (*i $Id$ i*)
 
-(** Binary Integers (Pierre Crégut, CNET, Lannion, France) *)
+(** Binary Integers (Pierre CrÃ©gut, CNET, Lannion, France) *)
 
 Require Export Arith_base.
 Require Import BinInt.

@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (***********************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
 (* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
@@ -6,16 +7,11 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* Finite sets library.
- * Authors: Pierre Letouzey and Jean-Christophe Filliâtre
- * Institution: LRI, CNRS UMR 8623 - Université Paris Sud
- *              91405 Orsay, France *)
-
 (* $Id$ *)
 
-(** * FSetAVL *)
+(** * FSetAVL : Implementation of FSetInterface via AVL trees *)
 
-(** This module implements sets using AVL trees.
+(** This module implements finite sets using AVL trees.
     It follows the implementation from Ocaml's standard library,
 
     All operations given here expect and produce well-balanced trees

@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -8,7 +9,7 @@
 
 (* $Id$ *)
 
-(** Contributed by Laurent Théry (INRIA);
+(** Contributed by Laurent ThÃ©ry (INRIA);
     Adapted to Coq V8 by the Coq Development Team *)
 
 Require Import Bool.

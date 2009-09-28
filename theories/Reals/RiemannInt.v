@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -423,7 +424,7 @@ Proof.
 Qed.
 
 (***************************************)
-(** C°([a,b]) is included in L1([a,b]) *)
+(** CÂ°([a,b]) is included in L1([a,b]) *)
 (***************************************)
 
 Lemma maxN :
