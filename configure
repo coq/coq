@@ -339,7 +339,7 @@ if [ "$MAKE" != "" ]; then
       OK="no"
       if [ -x ./make ]; then
 	  MAKEVERSION=`./make -v | head -1`
-	  if [ "$MAKEVERSION" == "GNU Make 3.81" ]; then OK="yes"; fi
+	  if [ "$MAKEVERSION" = "GNU Make 3.81" ]; then OK="yes"; fi
       fi
       if [ $OK = "no" ]; then
 	  echo "GNU Make >= 3.81 is needed"
@@ -417,10 +417,6 @@ fi
 case $ARCH in
     win32) CAMLBIN=`cygpath -m ${CAMLBIN}`;;
 esac
-
-# this fixes a camlp4 bug under FreeBSD
-# ("native-code program cannot do a dynamic load")
-if [ `uname -s` = "FreeBSD" ]; then camlp4oexec=$camlp4oexec.byte; fi
 
 CAMLVERSION=`"$bytecamlc" -version`
 

@@ -66,8 +66,6 @@
 # but doesn't care if this build fails. This can be quite surprising,
 # see in particular the -include in Makefile.stage*
 
-export SHELL:=/bin/bash
-
 # !! Before using FIND_VCS_CLAUSE, please read how you should in the !!
 # !! FIND_VCS_CLAUSE section of dev/doc/build-system.dev.txt         !!
 export FIND_VCS_CLAUSE:='(' \
