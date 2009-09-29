@@ -800,7 +800,8 @@ let rec pr_vernac = function
   | VernacRemoveLoadPath s -> str"Remove LoadPath" ++ qs s
   | VernacAddMLPath (fl,s) ->
       str"Add" ++ (if fl then str" Rec " else spc()) ++ str"ML Path" ++ qs s
-  | VernacDeclareMLModule l ->
+  | VernacDeclareMLModule (local, l) ->
+      pr_locality local ++
       hov 2 (str"Declare ML Module" ++ spc() ++ prlist_with_sep sep qs l)
   | VernacChdir s -> str"Cd" ++ pr_opt qs s
 

@@ -373,6 +373,9 @@ and fCOMMAND = function
 | CT_ml_declare_modules(x1) ->
    fSTRING_NE_LIST x1 ++
    fNODE "ml_declare_modules" 1
+| CT_local_ml_declare_modules(x1) ->
+   fSTRING_NE_LIST x1 ++
+   fNODE "local_ml_declare_modules" 1
 | CT_ml_print_modules -> fNODE "ml_print_modules" 0
 | CT_ml_print_path -> fNODE "ml_print_path" 0
 | CT_module(x1, x2, x3, x4) ->

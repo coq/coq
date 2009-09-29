@@ -276,7 +276,7 @@ type vernac_expr =
   | VernacAddLoadPath of rec_flag * lstring * dir_path option
   | VernacRemoveLoadPath of lstring
   | VernacAddMLPath of rec_flag * lstring
-  | VernacDeclareMLModule of lstring list
+  | VernacDeclareMLModule of locality_flag * lstring list
   | VernacChdir of lstring option
 
   (* State management *)

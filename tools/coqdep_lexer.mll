@@ -55,7 +55,7 @@ rule coq_action = parse
       { module_names := []; opened_file lexbuf}
   | "Require" space+ "Import" space+
       { module_names := []; opened_file lexbuf}
-  | "Declare" space+ "ML" space+ "Module" space+
+  | "Local"? "Declare" space+ "ML" space+ "Module" space+
       { mllist := []; modules lexbuf}
   | "Load" space+
       { load_file lexbuf }

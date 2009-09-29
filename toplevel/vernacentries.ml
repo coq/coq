@@ -706,8 +706,8 @@ let vernac_add_ml_path isrec path =
   (if isrec then Mltop.add_rec_ml_dir else Mltop.add_ml_dir)
     (System.expand_path_macros path)
 
-let vernac_declare_ml_module l =
-  Mltop.declare_ml_modules (List.map System.expand_path_macros l)
+let vernac_declare_ml_module local l =
+  Mltop.declare_ml_modules local (List.map System.expand_path_macros l)
 
 let vernac_chdir = function
   | None -> message (Sys.getcwd())
@@ -1353,7 +1353,7 @@ let interp c = match c with
   | VernacAddLoadPath (isrec,s,alias) -> vernac_add_loadpath isrec s alias
   | VernacRemoveLoadPath s -> vernac_remove_loadpath s
   | VernacAddMLPath (isrec,s) -> vernac_add_ml_path isrec s
-  | VernacDeclareMLModule l -> vernac_declare_ml_module l
+  | VernacDeclareMLModule (local, l) -> vernac_declare_ml_module local l
   | VernacChdir s -> vernac_chdir s
 
   (* State management *)

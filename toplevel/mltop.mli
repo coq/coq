@@ -59,11 +59,14 @@ val add_loaded_module : string -> unit
 val init_ml_modules : unit -> unit
 val unfreeze_ml_modules : string list -> unit
 
-type ml_module_object = { mnames: string list }
+type ml_module_object = {
+  mlocal: Vernacexpr.locality_flag;
+  mnames: string list;
+}
 val inMLModule : ml_module_object -> Libobject.obj
 val outMLModule : Libobject.obj -> ml_module_object
 
-val declare_ml_modules : string list -> unit
+val declare_ml_modules : Vernacexpr.locality_flag -> string list -> unit
 
 val print_ml_path : unit -> unit
 

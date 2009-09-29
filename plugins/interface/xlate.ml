@@ -1671,10 +1671,13 @@ let rec xlate_vernac =
       (*ML commands *)
     | VernacAddMLPath (false,str) -> CT_ml_add_path (CT_string str)
     | VernacAddMLPath (true,str) -> CT_rec_ml_add_path (CT_string str)
-    | VernacDeclareMLModule [] -> failwith ""
-    | VernacDeclareMLModule (str :: l) ->
-      CT_ml_declare_modules
-       (CT_string_ne_list (CT_string str, List.map (fun x -> CT_string x) l))
+    | VernacDeclareMLModule (_, []) -> failwith ""
+    | VernacDeclareMLModule (local, (str :: l)) ->
+        let x = CT_string_ne_list (CT_string str, List.map (fun x -> CT_string x) l) in
+        if local then
+          CT_local_ml_declare_modules x
+        else
+          CT_ml_declare_modules x
     | VernacGoal c ->
 	CT_coerce_THEOREM_GOAL_to_COMMAND (CT_goal (xlate_formula c))
     | VernacAbort (Some (_,id)) ->

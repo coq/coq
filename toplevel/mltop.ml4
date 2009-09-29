@@ -230,7 +230,10 @@ let stdlib_use_plugins = Coq_config.has_natdynlink
  * (linked or loaded with load_object). It is used not to load a
  * module twice. It is NOT the list of ML modules Coq knows. *)
 
-type ml_module_object = { mnames : string list }
+type ml_module_object = {
+  mlocal : Vernacexpr.locality_flag;
+  mnames : string list
+}
 
 let known_loaded_modules = ref Stringset.empty
 
@@ -299,15 +302,18 @@ let cache_ml_module_object (_,{mnames=mnames}) =
 	      error ("Dynamic link not supported (module "^name^")")))
     mnames
 
+let classify_ml_module_object ({mlocal=mlocal} as o) =
+  if mlocal then Dispose else Substitute o
+
 let (inMLModule,outMLModule) =
   declare_object {(default_object "ML-MODULE") with
                     load_function = (fun _ -> cache_ml_module_object);
                     cache_function = cache_ml_module_object;
                     subst_function = (fun (_,_,o) -> o);
-                    classify_function = (fun o -> Substitute o) }
+                    classify_function = classify_ml_module_object }
 
-let declare_ml_modules l =
-  Lib.add_anonymous_leaf (inMLModule {mnames=l})
+let declare_ml_modules local l =
+  Lib.add_anonymous_leaf (inMLModule {mlocal=local; mnames=l})
 
 let print_ml_path () =
   let l = !coq_mlpath_copy in

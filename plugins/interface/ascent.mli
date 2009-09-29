@@ -107,6 +107,7 @@ and ct_COMMAND =
   | CT_mind_decl of ct_CO_IND * ct_IND_SPEC_LIST
   | CT_ml_add_path of ct_STRING
   | CT_ml_declare_modules of ct_STRING_NE_LIST
+  | CT_local_ml_declare_modules of ct_STRING_NE_LIST
   | CT_ml_print_modules
   | CT_ml_print_path
   | CT_module of ct_ID * ct_MODULE_BINDER_LIST * ct_MODULE_TYPE_CHECK * ct_MODULE_EXPR

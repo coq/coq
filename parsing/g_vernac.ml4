@@ -582,7 +582,7 @@ GEXTEND Gram
 	s = [ s = ne_string -> s | s = IDENT -> s ] ->
 	  VernacLoad (verbosely, s)
       | IDENT "Declare"; IDENT "ML"; IDENT "Module"; l = LIST1 ne_string ->
-	  VernacDeclareMLModule l
+	  VernacDeclareMLModule (use_locality (), l)
 
       | IDENT "Dump"; IDENT "Universes"; fopt = OPT ne_string ->
 	  error "This command is deprecated, use Print Universes"
