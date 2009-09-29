@@ -449,9 +449,6 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
 let classify_autohint ((local,name,hintlist) as obj) =
   if local or hintlist = (AddTactic []) then Dispose else Substitute obj
 
-let export_autohint ((local,name,hintlist) as obj) =
-  if local then None else Some obj
-
 let (inAutoHint,_) =
   declare_object {(default_object "AUTOHINT") with
                     cache_function = cache_autohint;

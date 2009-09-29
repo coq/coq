@@ -207,8 +207,6 @@ let cache_dd (_,(_,na,dd)) =
 let classify_dd (local,_,_ as o) =
   if local then Dispose else Substitute o
 
-let export_dd (local,_,_ as x) = if local then None else Some x
-
 let subst_dd (_,subst,(local,na,dd)) =
   (local,na,
   { d_pat = subst_located_destructor_pattern subst dd.d_pat;

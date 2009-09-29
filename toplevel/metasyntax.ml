@@ -683,9 +683,6 @@ let subst_syntax_extension (_,subst,(local,sy)) =
 let classify_syntax_definition (local,_ as o) =
   if local then Dispose else Substitute o
 
-let export_syntax_definition (local,_ as o) =
-  if local then None else Some o
-
 let (inSyntaxExtension, outSyntaxExtension) =
   declare_object {(default_object "SYNTAX-EXTENSION") with
        open_function = (fun i o -> if i=1 then cache_syntax_extension o);
@@ -873,9 +870,6 @@ let subst_notation (_,subst,(lc,scope,pat,b,ndf)) =
 
 let classify_notation (local,_,_,_,_ as o) =
   if local then Dispose else Substitute o
-
-let export_notation (local,_,_,_,_ as o) =
-  if local then None else Some o
 
 let (inNotation, outNotation) =
   declare_object {(default_object "NOTATION") with
