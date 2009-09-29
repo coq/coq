@@ -407,6 +407,41 @@ let interp_and_replace s =
   let msg = read_stdout () in
   result,msg
 
+type bktk_info = { start : GText.mark;
+                   stop : GText.mark;
+                   state_num : int;
+                   pending_proofs : string list;
+                   proof_stack_depth : int;
+}
+
+let record_interp cmd_stk start_of_sentence end_of_sentence (sn,pp,psd) =
+  Stack.push { start = start_of_sentence;
+               stop = end_of_sentence;
+               state_num = sn;
+               pending_proofs = pp;
+               proof_stack_depth = psd;
+  } cmd_stk
+
+let backtrack cmd_stack stop_cond =
+  if Stack.is_empty cmd_stack then 
+    reset_initial () (* reset coq *)
+  else try
+    let current = Stack.top cmd_stack in
+    while not (stop_cond (Stack.top cmd_stack).stop) do
+      ignore (Stack.pop cmd_stack)
+    done;
+    let target = Stack.top cmd_stack in
+    if current != target then
+      let rst = target.state_num in
+      let undo = target.proof_stack_depth in
+      let abrt = List.fold_left
+                   (fun acc e -> if List.mem e target.pending_proofs then acc else succ acc)
+                   0 current.pending_proofs
+      in
+      raw_interp (Printf.sprintf "Backtrack %d %d %d.\n" rst undo abrt)
+      else ()
+  with Stack.Empty -> reset_initial () (* might as well reset coq ... *)
+
 type tried_tactic =
   | Interrupted
   | Success of int (* nb of goals after *)

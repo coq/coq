@@ -44,3 +44,7 @@ val do_vernac : unit -> unit
 (* Main entry point of Coq: read and execute vernac commands. *)
 
 val loop : unit -> unit
+
+(* hack to handle backtracking in CoqIde *)
+
+val current_status_triple : unit -> int * string list * int
