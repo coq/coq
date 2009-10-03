@@ -12,7 +12,7 @@ Require Import Le Plus.
 
 Open Local Scope nat_scope.
 
-Implicit Types m n : nat.
+Implicit Types m n p : nat.
 
 (** * Maximum of two natural numbers *)
 

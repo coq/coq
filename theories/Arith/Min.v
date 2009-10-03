@@ -12,7 +12,7 @@ Require Import Le.
 
 Open Local Scope nat_scope.
 
-Implicit Types m n : nat.
+Implicit Types m n p : nat.
 
 (** * minimum of two natural numbers *)
 
@@ -40,6 +40,28 @@ Proof.
   auto with arith.
 Qed.
 
+(** * [min n m] is equal to [n] or [m] *)
+
+Lemma min_dec : forall n m, {min n m = n} + {min n m = m}.
+Proof.
+  induction n; induction m; simpl in |- *; auto with arith.
+  elim (IHn m); intro H; elim H; auto.
+Qed.
+
+Lemma min_case : forall n m (P:nat -> Type), P n -> P m -> P (min n m).
+Proof.
+  induction n; simpl in |- *; auto with arith.
+  induction m; intros; simpl in |- *; auto with arith.
+  pattern (min n m) in |- *; apply IHn; auto with arith.
+Qed.
+
+(** * Semi-lattice algebraic properties of [min] *)
+
+Lemma min_idempotent : forall n, min n n = n.
+Proof.
+  induction n; simpl; [|rewrite IHn]; trivial.
+Qed.
+
 Lemma min_assoc : forall m n p : nat, min m (min n p) = min (min m n) p.
 Proof.
   induction m; destruct n; destruct p; trivial.
@@ -52,7 +74,7 @@ Proof.
   induction n; induction m; simpl in |- *; auto with arith.
 Qed.
 
-(** * [min] and [le] *)
+(** * Least-upper bound properties of [min] *)
 
 Lemma min_l : forall n m, n <= m -> min n m = n.
 Proof.
@@ -77,19 +99,19 @@ Proof.
 Qed.
 Hint Resolve min_l min_r le_min_l le_min_r: arith v62.
 
-(** * [min n m] is equal to [n] or [m] *)
-
-Lemma min_dec : forall n m, {min n m = n} + {min n m = m}.
+Lemma min_glb_l : forall n m p, p <= min n m -> p <= n.
 Proof.
-  induction n; induction m; simpl in |- *; auto with arith.
-  elim (IHn m); intro H; elim H; auto.
+intros; eapply le_trans; [eassumption|apply le_min_l].
 Qed.
 
-Lemma min_case : forall n m (P:nat -> Type), P n -> P m -> P (min n m).
+Lemma min_glb_r : forall n m p, p <= min n m -> p <= m.
 Proof.
-  induction n; simpl in |- *; auto with arith.
-  induction m; intros; simpl in |- *; auto with arith.
-  pattern (min n m) in |- *; apply IHn; auto with arith.
+intros; eapply le_trans; [eassumption|apply le_min_r].
+Qed.
+
+Lemma min_glb : forall n m p, p <= n -> p <= m -> p <= min n m.
+Proof.
+  intros n m p; apply min_case; auto.
 Qed.
 
 Notation min_case2 := min_case (only parsing).
