@@ -562,14 +562,14 @@ let heq_id = id_of_string "Heq"
 
 let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
   fun g ->
-    let heq_id = pf_get_new_id heq_id g in
     let nb_first_intro = nb_prod - 1 - dyn_infos.nb_rec_hyps in
     tclTHENLIST
       [
 	(* We first introduce the variables *)
 	tclDO nb_first_intro (intro_avoiding dyn_infos.rec_hyps);
 	(* Then the equation itself *)
-	introduction_no_check heq_id;
+	intro_using heq_id;
+	onLastHypId (fun heq_id -> tclTHENLIST [
 	(* Then the new hypothesis *)
 	tclMAP introduction_no_check dyn_infos.rec_hyps;
 	(* observe_tac "after_introduction"  *)(fun g' ->
@@ -599,7 +599,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	   }
 	 in
 	 clean_goal_with_heq ptes_infos continue_tac new_infos  g'
-      )
+      )])
     ]
       g
 
