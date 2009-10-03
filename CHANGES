@@ -12,7 +12,8 @@ Tactics
   source of incompatibilities solvable by redefining "intuition" as
   "unfold iff, not in *; intuition", or by using "Set Intuition Unfolding".)
 - Improved support of dependent goals over objects in dependent types for
-  "destruct" (rare source of incompatibility).
+  "destruct" (rare source of incompatibility that can be avoided by unsetting
+  option "Dependent Propositions Elimination").
 - Tactic "quote" now supports quotation of arbitrary terms (not just the
   goal).
 - Tactic "idtac" now displays its "list" arguments.

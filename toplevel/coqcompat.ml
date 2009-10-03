@@ -21,7 +21,8 @@ let set_compat_options = function
   | "8.2" ->
       set_bool_option_value ["Tactic";"Evars";"Pattern";"Unification"] false;
       set_bool_option_value ["Discriminate";"Introduction"] false;
-      set_bool_option_value ["Intuition";"Iff";"Unfolding"] true
+      set_bool_option_value ["Intuition";"Iff";"Unfolding"] true;
+      set_bool_option_value ["Dependent";"Propositions";"Elimination"] false;
 
   | "8.1" ->
       warning "Compatibility with version 8.1 not supported."

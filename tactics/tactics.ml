@@ -77,6 +77,17 @@ let inj_ebindings = function
 
 let dloc = dummy_loc
 
+(* Option for 8.2 compatibility *)
+open Goptions
+let dependent_propositions_elimination = ref true
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optname  = "dependent-propositions-elimination tactic";
+      optkey   = ["Dependent";"Propositions";"Elimination"];
+      optread  = (fun () -> !dependent_propositions_elimination) ;
+      optwrite = (fun b -> dependent_propositions_elimination := b) }
+
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
@@ -2570,7 +2581,9 @@ let guess_elim isrec hyp0 gl =
     if isrec then lookup_eliminator mind s
     else
       let case =
-	if dependent_no_evar (mkVar hyp0) (pf_concl gl) then make_case_dep
+	if !dependent_propositions_elimination &&
+	   dependent_no_evar (mkVar hyp0) (pf_concl gl) 
+	then make_case_dep
 	else make_case_gen in
       pf_apply case gl mind s in
   let elimt = pf_type_of gl elimc in
