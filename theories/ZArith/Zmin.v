@@ -80,6 +80,18 @@ Proof.
   intros; apply Zmin_case; assumption.
 Qed.
 
+(** * Compatibility with order *)
+
+Lemma Zle_min_compat_r : forall n m p, n <= m -> Zmin n p <= Zmin m p.
+Proof.
+  intros; do 2 (apply Zmin_case_strong; intro); eauto using Zle_trans, Zle_refl.
+Qed.
+
+Lemma Zle_min_compat_l : forall n m p, n <= m -> Zmin p n <= Zmin p m.
+Proof.
+  intros; do 2 (apply Zmin_case_strong; intro); eauto using Zle_trans, Zle_refl.
+Qed.
+
 (** * Semi-lattice properties of min *)
 
 Lemma Zmin_idempotent : forall n:Z, Zmin n n = n.

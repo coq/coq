@@ -34,8 +34,14 @@ Definition Rmin (x y:R) : R :=
 (*********)
 Lemma Rmin_case : forall r1 r2 (P:R -> Type), P r1 -> P r2 -> P (Rmin r1 r2).
 Proof.
-  intros r1 r2 P H1 H2; unfold Rmin in |- *; case (Rle_dec r1 r2);
-    auto with arith.
+  intros r1 r2 P H1 H2; unfold Rmin; case (Rle_dec r1 r2); auto.
+Qed.
+
+(*********)
+Lemma Rmin_case_strong : forall r1 r2 (P:R -> Type), 
+  (r1 <= r2 -> P r1) -> (r2 <= r1 -> P r2) -> P (Rmin r1 r2).
+Proof.
+  intros r1 r2 P H1 H2; unfold Rmin; destruct (Rle_dec r1 r2); auto with real.
 Qed.
 
 (*********)
@@ -80,9 +86,33 @@ Proof.
 Qed.
 
 (*********)
-Lemma Rmin_comm : forall a b:R, Rmin a b = Rmin b a.
+Lemma Rmin_left : forall x y, x <= y -> Rmin x y = x.
 Proof.
-  intros; unfold Rmin in |- *; case (Rle_dec a b); case (Rle_dec b a); intros;
+  intros; apply Rmin_case_strong; auto using Rle_antisym.
+Qed.
+
+(*********)
+Lemma Rmin_right : forall x y, y <= x -> Rmin x y = y.
+Proof.
+  intros; apply Rmin_case_strong; auto using Rle_antisym.
+Qed.
+
+(*********)
+Lemma Rle_min_compat_r : forall x y z, x <= y -> Rmin x z <= Rmin y z.
+Proof.
+  intros; do 2 (apply Rmin_case_strong; intro); eauto using Rle_trans, Rle_refl.
+Qed.
+
+(*********)
+Lemma Rle_min_compat_l : forall x y z, x <= y -> Rmin z x <= Rmin z y.
+Proof.
+  intros; do 2 (apply Rmin_case_strong; intro); eauto using Rle_trans, Rle_refl.
+Qed.
+
+(*********)
+Lemma Rmin_comm : forall x y:R, Rmin x y = Rmin y x.
+Proof.
+  intros; unfold Rmin; case (Rle_dec x y); case (Rle_dec y x); intros;
     try reflexivity || (apply Rle_antisym; assumption || auto with real).
 Qed.
 
@@ -100,15 +130,15 @@ Proof.
 Qed.
 
 (*********)
-Lemma Rmin_glb : forall a b c:R, a <= b -> a <= c -> a <= Rmin b c.
+Lemma Rmin_glb : forall x y z:R, z <= x -> z <= y -> z <= Rmin x y.
 Proof.
-  intros; unfold Rmin in |- *; case (Rle_dec b c); intro; assumption.
+  intros; unfold Rmin in |- *; case (Rle_dec x y); intro; assumption.
 Qed.
 
 (*********)
-Lemma Rmin_glb_lt : forall a b c:R, a < b -> a < c -> a < Rmin b c.
+Lemma Rmin_glb_lt : forall x y z:R, z < x -> z < y -> z < Rmin x y.
 Proof.
-  intros; unfold Rmin in |- *; case (Rle_dec b c); intro; assumption.
+  intros; unfold Rmin in |- *; case (Rle_dec x y); intro; assumption.
 Qed.
 
 (*******************************)
@@ -125,8 +155,14 @@ Definition Rmax (x y:R) : R :=
 (*********)
 Lemma Rmax_case : forall r1 r2 (P:R -> Type), P r1 -> P r2 -> P (Rmax r1 r2).
 Proof.
-  intros r1 r2 P H1 H2; unfold Rmax in |- *; case (Rle_dec r1 r2);
-    auto with arith.
+  intros r1 r2 P H1 H2; unfold Rmax; case (Rle_dec r1 r2); auto.
+Qed.
+
+(*********)
+Lemma Rmax_case_strong : forall r1 r2 (P:R -> Type),
+  (r2 <= r1 -> P r1) -> (r1 <= r2 -> P r2) -> P (Rmax r1 r2).
+Proof.
+  intros r1 r2 P H1 H2; unfold Rmax; case (Rle_dec r1 r2); auto with real.
 Qed.
 
 (*********)
@@ -141,17 +177,7 @@ Proof.
     apply (Rlt_le r r1 (Rle_lt_trans r r2 r1 H H0)).
 Qed.
 
-Lemma RmaxLess1 : forall r1 r2, r1 <= Rmax r1 r2.
-Proof.
-  intros r1 r2; unfold Rmax in |- *; case (Rle_dec r1 r2); auto with real.
-Qed.
-
-Lemma RmaxLess2 : forall r1 r2, r2 <= Rmax r1 r2.
-Proof.
-  intros r1 r2; unfold Rmax in |- *; case (Rle_dec r1 r2); auto with real.
-Qed.
-
-Lemma Rmax_comm : forall p q:R, Rmax p q = Rmax q p.
+Lemma Rmax_comm : forall x y:R, Rmax x y = Rmax y x.
 Proof.
   intros p q; unfold Rmax in |- *; case (Rle_dec p q); case (Rle_dec q p); auto;
     intros H1 H2; apply Rle_antisym; auto with real.
@@ -173,6 +199,35 @@ Lemma Rmax_r : forall x y:R, y <= Rmax x y.
 Proof.
   intros; unfold Rmax in |- *; case (Rle_dec x y); intro H1;
     [ right; reflexivity | auto with real ].
+Qed.
+
+(* begin hide *)
+Notation RmaxLess1 := Rmax_l (only parsing).
+Notation RmaxLess2 := Rmax_r (only parsing).
+(* end hide *)
+
+(*********)
+Lemma Rmax_left : forall x y, y <= x -> Rmax x y = x.
+Proof.
+  intros; apply Rmax_case_strong; auto using Rle_antisym.
+Qed.
+
+(*********)
+Lemma Rmax_right : forall x y, x <= y -> Rmax x y = y.
+Proof.
+  intros; apply Rmax_case_strong; auto using Rle_antisym.
+Qed.
+
+(*********)
+Lemma Rle_max_compat_r : forall x y z, x <= y -> Rmax x z <= Rmax y z.
+Proof.
+  intros; do 2 (apply Rmax_case_strong; intro); eauto using Rle_trans, Rle_refl.
+Qed.
+
+(*********)
+Lemma Rle_max_compat_l : forall x y z, x <= y -> Rmax z x <= Rmax z y.
+Proof.
+  intros; do 2 (apply Rmax_case_strong; intro); eauto using Rle_trans, Rle_refl.
 Qed.
 
 (*********)
@@ -198,15 +253,15 @@ Proof.
 Qed.
 
 (*********)
-Lemma Rmax_lub : forall a b c:R, a <= b -> a <= c -> a <= Rmax b c.
+Lemma Rmax_lub : forall x y z:R, x <= z -> y <= z -> Rmax x y <= z.
 Proof.
-  intros; unfold Rmax in |- *; case (Rle_dec b c); intro; assumption.
+  intros; unfold Rmax; case (Rle_dec x y); intro; assumption.
 Qed.
 
 (*********)
-Lemma Rmax_lub_lt : forall a b c:R, a < b -> a < c -> a < Rmax b c.
+Lemma Rmax_lub_lt : forall x y z:R, x < z -> y < z -> Rmax x y < z.
 Proof.
-  intros; unfold Rmax in |- *; case (Rle_dec b c); intro; assumption.
+  intros; unfold Rmax; case (Rle_dec x y); intro; assumption.
 Qed.
 
 (*********)
@@ -215,7 +270,6 @@ Proof.
   intros; unfold Rmax in |- *.
   case (Rle_dec x y); intro; assumption.
 Qed.
-
 
 (*******************************)
 (** *        Rabsolu           *)

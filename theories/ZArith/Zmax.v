@@ -67,14 +67,18 @@ Proof.
   intros; apply Zmax_case_strong; auto with zarith.
 Qed.
 
+(* begin hide *)
 Notation Zmax1 := Zle_max_l (only parsing).
+(* end hide *)
 
 Lemma Zle_max_r : forall n m:Z, m <= Zmax n m.
 Proof.
   intros; apply Zmax_case_strong; auto with zarith.
 Qed.
 
+(* begin hide *)
 Notation Zmax2 := Zle_max_r (only parsing).
+(* end hide *)
 
 Lemma Zmax_lub : forall n m p:Z, n <= p -> m <= p -> Zmax n m <= p.
 Proof.
@@ -84,6 +88,18 @@ Qed.
 Lemma Zmax_lub_lt : forall n m p:Z, n < p -> m < p -> Zmax n m < p.
 Proof.
   intros; apply Zmax_case; assumption.
+Qed.
+
+(** * Compatibility with order *)
+
+Lemma Zle_max_compat_r : forall n m p, n <= m -> Zmax n p <= Zmax m p.
+Proof.
+  intros; do 2 (apply Zmax_case_strong; intro); eauto using Zle_trans, Zle_refl.
+Qed.
+
+Lemma Zle_max_compat_l : forall n m p, n <= m -> Zmax p n <= Zmax p m.
+Proof.
+  intros; do 2 (apply Zmax_case_strong; intro); eauto using Zle_trans, Zle_refl.
 Qed.
 
 (** * Semi-lattice properties of max *)
