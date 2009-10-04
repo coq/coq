@@ -80,6 +80,11 @@ let dloc = dummy_loc
 (* Option for 8.2 compatibility *)
 open Goptions
 let dependent_propositions_elimination = ref true
+
+let use_dependent_propositions_elimination () =
+  !dependent_propositions_elimination
+  && Flags.version_strictly_greater Flags.V8_2
+
 let _ =
   declare_bool_option
     { optsync  = true;
@@ -2581,8 +2586,8 @@ let guess_elim isrec hyp0 gl =
     if isrec then lookup_eliminator mind s
     else
       let case =
-	if !dependent_propositions_elimination &&
-	   dependent_no_evar (mkVar hyp0) (pf_concl gl)
+	if use_dependent_propositions_elimination () &&
+	   dependent_no_evar (mkVar hyp0) (pf_concl gl) 
 	then make_case_dep
 	else make_case_gen in
       pf_apply case gl mind s in

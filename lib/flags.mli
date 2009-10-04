@@ -29,6 +29,11 @@ val raw_print : bool ref
 
 val unicode_syntax : bool ref
 
+type compat_version = V8_2
+val compat_version : compat_version option ref
+val version_strictly_greater : compat_version -> bool
+val version_less_or_equal : compat_version -> bool
+
 val beautify : bool ref
 val make_beautify : bool -> unit
 val do_beautify : unit -> bool

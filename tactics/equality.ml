@@ -46,7 +46,10 @@ open Evd
 
 (* Options *)
 
-let discr_do_intro = ref true
+let discriminate_introduction = ref true
+
+let discr_do_intro () =
+  !discriminate_introduction && Flags.version_strictly_greater Flags.V8_2
 
 open Goptions
 let _ =
@@ -54,8 +57,8 @@ let _ =
     { optsync  = true;
       optname  = "automatic introduction of hypotheses by discriminate";
       optkey   = ["Discriminate";"Introduction"];
-      optread  = (fun () -> !discr_do_intro);
-      optwrite = (:=) discr_do_intro }
+      optread  = (fun () -> !discriminate_introduction);
+      optwrite = (:=) discriminate_introduction }
 
 (* Rewriting tactics *)
 
@@ -683,7 +686,7 @@ let discrEverywhere with_evars =
 (*
   tclORELSE
 *)
-    (if !discr_do_intro then
+    (if discr_do_intro () then
       (tclTHEN
 	(tclREPEAT introf)
 	(Tacticals.tryAllHyps

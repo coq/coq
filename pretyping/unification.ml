@@ -160,6 +160,7 @@ let default_no_delta_unify_flags = {
 
 let use_evars_pattern_unification flags =
   !global_evars_pattern_unification_flag && flags.use_evars_pattern_unification
+  && Flags.version_strictly_greater Flags.V8_2
 
 let expand_key env = function
   | Some (ConstKey cst) -> constant_opt_value env cst

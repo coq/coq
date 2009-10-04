@@ -49,6 +49,8 @@ let strict_unit = false
 (* Whether inner iff are unfolded *)
 let iff_unfolding = ref false
 
+let unfold_iff () = !iff_unfolding || Flags.version_less_or_equal Flags.V8_2
+
 open Goptions
 let _ =
   declare_bool_option
@@ -256,7 +258,7 @@ let rec tauto_intuit t_reduce solver ist =
    ) >>
 
 let reduction_not _ist =
-  if !iff_unfolding then
+  if unfold_iff () then
     <:tactic< unfold Coq.Init.Logic.not, Coq.Init.Logic.iff in * >>
   else
     <:tactic< unfold Coq.Init.Logic.not in * >>

@@ -121,6 +121,12 @@ let compile_files () =
 	   Vernac.compile v f)
       (List.rev !compile_list)
 
+let set_compat_version = function
+  | "8.2" -> compat_version := Some V8_2
+  | "8.1" -> warning "Compatibility with version 8.1 not supported."
+  | "8.0" -> warning "Compatibility with version 8.0 not supported."
+  | s -> error ("Unknown compatibility version \""^s^"\".")
+
 let re_exec_version = ref ""
 let set_byte () = re_exec_version := "byte"
 let set_opt () = re_exec_version := "opt"
@@ -162,12 +168,6 @@ let set_vm_opt () =
   Vm.set_transp_values (not !boxed_val);
   Flags.set_boxed_definitions !boxed_def;
   Vconv.set_use_vm !use_vm
-
-(*s Compatibility options *)
-
-let compat_version = ref None
-let set_compat_options () =
-  Option.iter Coqcompat.set_compat_options !compat_version
 
 (*s Parsing of the command line.
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
@@ -273,7 +273,7 @@ let parse_args is_ide =
 
     | "-debug" :: rem -> set_debug (); parse rem
 
-    | "-compat" :: v :: rem -> compat_version := Some v; parse rem
+    | "-compat" :: v :: rem -> set_compat_version v; parse rem
     | "-compat" :: []       -> usage ()
 
     | "-vm" :: rem -> use_vm := true; parse rem
@@ -350,7 +350,6 @@ let init is_ide =
       init_load_path ();
       inputstate ();
       set_vm_opt ();
-      set_compat_options ();
       engage ();
       if (not !batch_mode|| !compile_list=[]) && Global.env_is_empty() then
         Option.iter Declaremods.start_library !toplevel_name;

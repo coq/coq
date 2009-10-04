@@ -37,6 +37,14 @@ let raw_print = ref false
 
 let unicode_syntax = ref false
 
+(* Compatibility mode *)
+
+type compat_version = V8_2
+let compat_version = ref None
+let version_strictly_greater v =
+  match !compat_version with None -> true | Some v' -> v'>v
+let version_less_or_equal v = not (version_strictly_greater v)
+
 (* Translate *)
 let beautify = ref false
 let make_beautify f = beautify := f
