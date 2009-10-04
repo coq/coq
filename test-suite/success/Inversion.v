@@ -115,7 +115,7 @@ inversion H.
 
 Fixpoint prodn (n : nat) :=
   match n with
-  | O => unit 
+  | O => unit
   | (S m) => prod (prodn m) nat
   end.
 

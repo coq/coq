@@ -1235,7 +1235,7 @@ let start_proof_com kind thms hook =
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
 	  hook strength ref) thms_data in
-      let init_tac = 
+      let init_tac =
 	let intro_tac (_, (_, (len, _))) = Refiner.tclDO len Tactics.intro in
 	  if Flags.is_auto_intros () then
 	    match rec_tac with

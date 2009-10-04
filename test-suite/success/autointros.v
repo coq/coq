@@ -9,7 +9,7 @@ with odd : nat -> Prop :=
 
 Lemma foo {n : nat} (E : even n) : even (S (S n))
 with bar {n : nat} (O : odd n) : odd (S (S n)).
-Proof. destruct E. constructor. constructor. apply even_odd. apply (bar _ H). 
-  destruct O. repeat constructor. apply odd_even. apply (foo _ H). 
+Proof. destruct E. constructor. constructor. apply even_odd. apply (bar _ H).
+  destruct O. repeat constructor. apply odd_even. apply (foo _ H).
 Defined.
 

@@ -160,7 +160,7 @@ let mkTacCase with_evar = function
   | [([ElimOnIdent id],None,(None,None))],None ->
       TacCase (with_evar,(CRef (Ident id),NoBindings))
   | ic ->
-      if List.exists (fun (cl,a,b) -> 
+      if List.exists (fun (cl,a,b) ->
            List.exists (function ElimOnAnonHyp _ -> true | _ -> false) cl)
            (fst ic)
       then

@@ -82,7 +82,7 @@ let evars_to_goals p evm =
     else
       let goals = List.rev goals in
 	Some (goals, evm')
-	  
+
 (** Typeclasses instance search tactic / eauto *)
 
 let intersects s t =
@@ -281,7 +281,7 @@ let hints_tac hints =
       in
 	if l = [] && !typeclasses_debug then
 	  msgnl (pr_depth info.auto_depth ++ str": no match for " ++
-		    Printer.pr_constr_env (Evd.evar_env gl) concl ++ 
+		    Printer.pr_constr_env (Evd.evar_env gl) concl ++
 		    spc () ++ int (List.length poss) ++ str" possibilities");
 	List.map possible_resolve l
     in
@@ -387,10 +387,10 @@ let run_on_evars ?(st=full_transparent_state) p evm tac =
 	    Some (Evd.evars_reset_evd evm' evm)
 
 
-let eauto_tac hints = fix (or_tac intro_tac (hints_tac hints)) 
+let eauto_tac hints = fix (or_tac intro_tac (hints_tac hints))
 
 let () = run_on_evars_forward := (fun hints st p evd -> run_on_evars ~st p evd (eauto_tac hints))
-  
+
 let eauto hints g =
   let gl = { it = make_autogoal ~st:(Hint_db.transparent_state (List.hd hints)) g; sigma = project g } in
     match run_tac (eauto_tac hints) gl with

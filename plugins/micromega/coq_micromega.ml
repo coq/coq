@@ -690,8 +690,8 @@ let parse_q term =
 		  begin
 		    try
 		      let (expr,env) = parse_expr env args.(0) in
-		      let power = (parse_exp expr args.(1)) in 
-			(power  , env) 
+		      let power = (parse_exp expr args.(1)) in
+			(power  , env)
 		    with _ ->   (* if the exponent is a variable *)
 		      let (env,n) = Env.compute_rank_add env term in (Mc.PEX n, env)
 		  end
@@ -753,21 +753,21 @@ let rconstant term =
   |  _ -> raise ParseError
 
 
-let parse_zexpr =  parse_expr 
-   zconstant 
-   (fun expr x -> 
+let parse_zexpr =  parse_expr
+   zconstant
+   (fun expr x ->
      let exp = (parse_z x) in
        match exp with
 	 | Mc.Zneg _ -> Mc.PEc Mc.Z0
 	 |   _     ->  Mc.PEpow(expr, Mc.n_of_Z exp))
-   zop_spec 
+   zop_spec
 
-let parse_qexpr  =  parse_expr 
-  qconstant 
-   (fun expr x -> 
+let parse_qexpr  =  parse_expr
+  qconstant
+   (fun expr x ->
      let exp = parse_z x in
        match exp with
-	 | Mc.Zneg _ -> 
+	 | Mc.Zneg _ ->
 	     begin
 	       match expr with
 	       | Mc.PEc q -> Mc.PEc (Mc.qpower q exp)
@@ -775,18 +775,18 @@ let parse_qexpr  =  parse_expr
 	     end
 	 | _     ->  let exp = Mc.n_of_Z  exp in
 		       Mc.PEpow(expr,exp))
-  qop_spec 
+  qop_spec
 
-let parse_rexpr =  parse_expr 
-  rconstant  
-  (fun expr x -> 
+let parse_rexpr =  parse_expr
+  rconstant
+  (fun expr x ->
      let exp = Mc.n_of_nat (parse_nat x) in
-       Mc.PEpow(expr,exp))  
+       Mc.PEpow(expr,exp))
   rop_spec
 
 
- let  parse_arith parse_op parse_expr env cstr = 
-  if debug 
+ let  parse_arith parse_op parse_expr env cstr =
+  if debug
   then (Pp.pp_flush ();
 	Pp.pp (Pp.str "parse_arith: ");
 	Pp.pp (Printer.prterm  cstr);

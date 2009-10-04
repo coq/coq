@@ -423,7 +423,7 @@ let record_interp cmd_stk start_of_sentence end_of_sentence (sn,pp,psd) =
   } cmd_stk
 
 let backtrack cmd_stack stop_cond =
-  if Stack.is_empty cmd_stack then 
+  if Stack.is_empty cmd_stack then
     reset_initial () (* reset coq *)
   else try
     let current = Stack.top cmd_stack in

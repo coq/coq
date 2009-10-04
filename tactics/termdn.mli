@@ -48,9 +48,9 @@ val app : ((constr_pattern * 'a) -> unit) -> 'a t -> unit
 (*i*)
 (* These are for Nbtermdn *)
 
-type term_label = 
+type term_label =
   | GRLabel of global_reference
-  | ProdLabel 
+  | ProdLabel
   | LambdaLabel
   | SortLabel of sorts option
 

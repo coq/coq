@@ -2481,7 +2481,7 @@ let compute_elim_sig ?elimc elimt =
 	  try {!res with indref = Some (global_of_constr indhd) }
 	  with _ -> error "Cannot find the inductive type of the inductive scheme.";;
 
-let compute_scheme_signature scheme names_info ind_type_guess = 
+let compute_scheme_signature scheme names_info ind_type_guess =
   let f,l = decompose_app scheme.concl in
   (* Vérifier que les arguments de Qi sont bien les xi. *)
   match scheme.indarg with
@@ -2582,7 +2582,7 @@ let guess_elim isrec hyp0 gl =
     else
       let case =
 	if !dependent_propositions_elimination &&
-	   dependent_no_evar (mkVar hyp0) (pf_concl gl) 
+	   dependent_no_evar (mkVar hyp0) (pf_concl gl)
 	then make_case_dep
 	else make_case_gen in
       pf_apply case gl mind s in
@@ -2607,7 +2607,7 @@ type eliminator =
   | ElimOver of bool * identifier
 
 let find_induction_type isrec elim hyp0 gl =
-  let scheme,elim = 
+  let scheme,elim =
     match elim with
     | None ->
 	let (elimc,elimt),_ = guess_elim isrec hyp0 gl in

@@ -50,7 +50,7 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
   | Anomaly (s,pps) ->
       hov 0 (anomaly_string () ++ where s ++ pps ++ report_fn ())
   | AnomalyOnError (s,exc) ->
-      hov 0 (anomaly_string () ++ str s ++ str ". Received exception is:" ++ 
+      hov 0 (anomaly_string () ++ str s ++ str ". Received exception is:" ++
 	fnl() ++ explain_exn_default_aux anomaly_string report_fn exc)
   | Match_failure(filename,pos1,pos2) ->
       hov 0 (anomaly_string () ++ str "Match failure in file " ++ str (guill filename) ++

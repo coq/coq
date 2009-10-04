@@ -21,9 +21,9 @@ open Nametab
    See the module dn.ml for further explanations.
    Eduardo (5/8/97) *)
 
-type term_label = 
+type term_label =
   | GRLabel of global_reference
-  | ProdLabel 
+  | ProdLabel
   | LambdaLabel
   | SortLabel of sorts option
 
@@ -68,7 +68,7 @@ let constr_pat_discr_st (idpred,cpred) t =
       Some (GRLabel ref, args)
   | PProd (_, d, c), [] -> Some (ProdLabel, [d ; c])
   | PLambda (_, d, c), l -> Some (LambdaLabel, [d ; c] @ l)
-  | PSort s, [] -> 
+  | PSort s, [] ->
       let s' = match s with
 	| RProp c -> Some (Prop c)
 	| RType (Some c) -> Some (Type c)
