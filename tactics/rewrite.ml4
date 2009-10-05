@@ -460,7 +460,8 @@ let resolve_subrelation env sigma car rel rel' res =
 
 let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars =
   let evars, morph_instance, proj, sigargs, m', args, args' =
-    let first = try (array_find args' (fun i b -> b <> None)) with Not_found -> raise (Invalid_argument "resolve_morphism") in
+    let first = try (array_find args' (fun i b -> b <> None)) 
+      with Not_found -> raise (Invalid_argument "resolve_morphism") in
     let morphargs, morphobjs = array_chop first args in
     let morphargs', morphobjs' = array_chop first args' in
     let appm = mkApp(m, morphargs) in
@@ -741,10 +742,10 @@ module Strategies =
       seq s (any s)
 
     let bu (s : strategy) : strategy =
-      fix (fun s' -> seq (choice (all_subterms s') s) (try_ s'))
+      fix (fun s' -> seq (choice (progress (all_subterms s')) s) (try_ s'))
 
     let td (s : strategy) : strategy =
-      fix (fun s' -> seq (choice s (all_subterms s')) (try_ s'))
+      fix (fun s' -> seq (choice s (progress (all_subterms s'))) (try_ s'))
 
     let innermost (s : strategy) : strategy =
       fix (fun ins -> choice (one_subterm ins) s)

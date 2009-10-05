@@ -141,12 +141,15 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
     | Explicit -> cl
   in
   let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
-  let k, ctx', imps, subst =
-    let c = Command.generalize_constr_expr tclass ctx in
-    let imps, c' = interp_type_evars evars env c in
-    let ctx, c = decompose_prod_assum c' in
-    let cl, args = Typeclasses.dest_class_app (push_rel_context ctx env) c in
-      cl, ctx, imps, List.rev args
+  let k, ctx', len, imps, subst =
+    let (env', ctx), imps = interp_context_evars evars env ctx in
+    let c', imps' = interp_type_evars_impls ~evdref:evars env' tclass in
+    let len = List.length ctx in
+    let imps = imps @ Impargs.lift_implicits len imps' in
+    let ctx', c = decompose_prod_assum c' in
+    let ctx' = ctx' @ ctx in
+    let cl, args = Typeclasses.dest_class_app (push_rel_context ctx' env) c in
+      cl, ctx', len, imps, List.rev args
   in
   let id =
     match snd instid with
@@ -227,7 +230,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	let term = Termops.it_mkLambda_or_LetIn app ctx' in
 	evars := Evarutil.nf_evar_defs !evars;
 	let term = Evarutil.nf_isevar !evars term in
-	let evm =  (undefined_evars !evars) in
+	let evm = undefined_evars !evars in
 	Evarutil.check_evars env Evd.empty !evars termtype;
 	  if Evd.is_empty evm then
 	    declare_instance_constant k pri global imps ?hook id term termtype
@@ -238,9 +241,9 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 		Command.start_proof id kind termtype
 		  (fun _ -> function ConstRef cst -> instance_hook k pri global imps ?hook cst
 		    | _ -> assert false);
-		if props <> [] then
-		  Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS !evars) *)
-		    (!refine_ref (evm, term));
+		if props <> [] then Pfedit.by (!refine_ref (evm, term))
+		else if Flags.is_auto_intros () then
+		  Pfedit.by (Refiner.tclDO len Tactics.intro);
 		(match tac with Some tac -> Pfedit.by tac | None -> ())) ();
 	      Flags.if_verbose (msg $$ Printer.pr_open_subgoals) ();
 	      id

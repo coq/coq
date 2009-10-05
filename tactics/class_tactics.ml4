@@ -46,8 +46,6 @@ let typeclasses_db = "typeclass_instances"
 let _ = Auto.auto_init := (fun () ->
   Auto.create_hint_db false typeclasses_db full_transparent_state true)
 
-let run_on_evars_forward = ref (fun _ _ _ _ -> assert false)
-
 exception Found of evar_map
 
 let is_dependent ev evm =
@@ -109,11 +107,23 @@ let auto_unif_flags = {
   use_evars_pattern_unification = true;
 }
 
-let tac_on_evars p tac gl =
-  let db = searchtable_map typeclasses_db in
-    match !run_on_evars_forward [db] (Hint_db.transparent_state db) p (project gl)  with
-    | None -> tclIDTAC gl
-    | Some evm' -> Refiner.tclEVARS evm' gl
+let rec eq_constr_mod_evars x y =
+  match kind_of_term x, kind_of_term y with
+  | Evar (e1, l1), Evar (e2, l2) when e1 <> e2 -> true
+  | _, _ -> compare_constr eq_constr_mod_evars x y
+
+let progress_evars t gl =
+  let concl = pf_concl gl in
+  let check gl' = 
+    let newconcl = pf_concl gl' in
+      if eq_constr_mod_evars concl newconcl 
+      then tclFAIL 0 (str"No progress made (modulo evars)") gl'
+      else tclIDTAC gl'
+  in tclTHEN t check gl
+
+TACTIC EXTEND progress_evars
+  [ "progress_evars" tactic(t) ] -> [ progress_evars (snd t) ]
+END
 
 let unify_e_resolve flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv in
@@ -329,8 +339,11 @@ let then_tac (first : atac) (second : atac) : atac =
 let run_tac (t : 'a tac) (gl : autogoal sigma) : auto_result option =
   t.skft (fun x _ -> Some x) (fun _ -> None) gl
 
-let run_list_tac (t : 'a tac) p goals (gl : autogoal list sigma) : auto_result option =
-  (then_list t (fun x _ -> Some x))
+
+type run_list_res = (auto_result * run_list_res fk) option
+
+let run_list_tac (t : 'a tac) p goals (gl : autogoal list sigma) : run_list_res =
+  (then_list t (fun x fk -> Some (x, fk)))
     (gl, fun s pfs -> valid goals p (ref s) pfs)
     (fun _ -> None)
 
@@ -375,21 +388,23 @@ let make_autogoals ?(st=full_transparent_state) gs evm' =
     let (gl, auto) = make_autogoal ~st {it = snd g; sigma = evm'} in
       (gl, { auto with auto_depth = [i]})) 1 gs; sigma = evm' }
 
+let get_result r = 
+  match r with
+  | None -> None
+  | Some ((gls, v), fk) ->
+      try ignore(v (sig_sig gls) []); assert(false)
+      with Found evm' -> Some (evm', fk)
+	
 let run_on_evars ?(st=full_transparent_state) p evm tac =
   match evars_to_goals p evm with
-  | None -> None
+  | None -> None (* This happens only because there's no evar having p *)
   | Some (goals, evm') ->
-      match run_list_tac tac p goals (make_autogoals ~st goals evm') with
-      | None -> raise Not_found
-      | Some (gls, v) ->
-	  try ignore(v (sig_sig gls) []); assert(false)
-	  with Found evm' ->
-	    Some (Evd.evars_reset_evd evm' evm)
-
+      let res = run_list_tac tac p goals (make_autogoals ~st goals evm') in
+	match get_result res with
+	| None -> raise Not_found
+	| Some (evm', fk) -> Some (Evd.evars_reset_evd evm' evm, fk)
 
 let eauto_tac hints = fix (or_tac intro_tac (hints_tac hints))
-
-let () = run_on_evars_forward := (fun hints st p evd -> run_on_evars ~st p evd (eauto_tac hints))
 
 let eauto hints g =
   let gl = { it = make_autogoal ~st:(Hint_db.transparent_state (List.hd hints)) g; sigma = project g } in
@@ -399,11 +414,20 @@ let eauto hints g =
 	{it = List.map fst goals; sigma = s}, valid s
 
 let real_eauto st hints p evd =
-  let rec aux evd =
-    match run_on_evars ~st p evd (eauto_tac hints) with
-    | None -> evd
-    | Some evd' -> aux evd'
-  in aux evd
+  let rec aux evd fails =
+    let res, fails =
+      try run_on_evars ~st p evd (eauto_tac hints), fails
+      with Not_found ->
+	List.fold_right (fun fk (res, fails) ->
+	  match res with
+	  | Some r -> res, fk :: fails
+	  | None -> get_result (fk ()), fails)
+	  fails (None, [])
+    in
+      match res with
+      | None -> evd
+      | Some (evd', fk) -> aux evd' (fk :: fails)
+  in aux evd []
 
 let resolve_all_evars_once debug (mode, depth) p evd =
   let db = searchtable_map typeclasses_db in

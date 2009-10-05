@@ -358,12 +358,14 @@ Definition relation_disjunction {A} (R : relation A) (R' : relation A) : relatio
 
 (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
 
+Set Automatic Introduction.
+
 Instance relation_equivalence_equivalence (A : Type) :
   Equivalence (@relation_equivalence A).
-Proof. intro A. exact (@predicate_equivalence_equivalence (cons A (cons A nil))). Qed.
+Proof. exact (@predicate_equivalence_equivalence (cons A (cons A nil))). Qed.
 
-Instance relation_implication_preorder : PreOrder (@subrelation A).
-Proof. intro A. exact (@predicate_implication_preorder (cons A (cons A nil))). Qed.
+Instance relation_implication_preorder A : PreOrder (@subrelation A).
+Proof. exact (@predicate_implication_preorder (cons A (cons A nil))). Qed.
 
 (** *** Partial Order.
    A partial order is a preorder which is additionally antisymmetric.
