@@ -224,13 +224,6 @@ let make_prompt () =
   "<"^l'
 *)
 
-let current_status_triple () =
-  let statnum = Lib.current_command_label () in
-  let dpth = Pfedit.current_proof_depth () in
-  let pf_info = if 0 <= dpth then dpth else 0 in
-  let pending = List.map Names.string_of_id (Pfedit.get_all_proof_names ()) in
-  (statnum,pending,pf_info)
-
 (* the coq prompt added to the default one when in emacs mode
    The prompt contains the current state label [n] (for global
    backtracking) and the current proof state [p] (for proof
@@ -240,9 +233,15 @@ let current_status_triple () =
    "n |lem1|lem2|lem3| p < "
 *)
 let make_emacs_prompt() =
-  let statnum,pending,proof_info = current_status_triple () in
-  let pendingprompt = String.concat "|" pending in
-  if !Flags.print_emacs then Printf.sprintf "%d |%s| %d < " statnum pendingprompt proof_info
+  let statnum = string_of_int (Lib.current_command_label ()) in
+  let dpth = Pfedit.current_proof_depth() in
+  let pending = Pfedit.get_all_proof_names() in
+  let pendingprompt =
+    List.fold_left
+      (fun acc x -> acc ^ (if acc <> "" then "|" else "") ^ Names.string_of_id x)
+      "" pending in
+  let proof_info = if dpth >= 0 then string_of_int dpth else "0" in
+  if !Flags.print_emacs then statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < "
   else ""
 
 (* A buffer to store the current command read on stdin. It is

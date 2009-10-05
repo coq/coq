@@ -18,6 +18,13 @@ open Ideutils
 open Coq_driver
    *)
 
+type 'a info = {start:'a;
+                stop:'a;
+                ast:Util.loc * Vernacexpr.vernac_expr;
+                reset_info:Coq.reset_info
+}
+
+
 class type analyzed_views=
 object('self)
   val mutable act_id : GtkSignal.id option
@@ -30,7 +37,7 @@ object('self)
   val message_view : GText.view
   val proof_buffer : GText.buffer
   val proof_view : GText.view
-  val cmd_stack : bktk_info Stack.t
+  val cmd_stack : GText.mark info Stack.t
   val mutable is_active : bool
   val mutable read_only : bool
   val mutable filename : string option
@@ -104,7 +111,7 @@ type viewable_script =
      proof_view : GText.view;
      message_view : GText.view;
      analyzed_view : analyzed_views;
-     command_stack : bktk_info Stack.t;
+     command_stack : GText.mark info Stack.t;
     }
 
 
@@ -165,6 +172,128 @@ let on_active_view f =
   else f (session_notebook#get_nth_term !active_view)
 
 let cb = GData.clipboard Gdk.Atom.primary
+
+
+(** Coq undoing mess **
+ **********************)
+
+exception Size of int
+
+let update_on_end_of_segment cmd_stk id =
+  let lookup_section = function
+    | { reset_info = _,_,r } -> r := false
+  in
+    try Stack.iter lookup_section cmd_stk with Exit -> ()
+
+let push_phrase cmd_stk reset_info start_of_phrase_mark end_of_phrase_mark ast =
+  let x = {start = start_of_phrase_mark;
+           stop = end_of_phrase_mark;
+	   ast = ast;
+	   reset_info = reset_info
+	  } in
+  begin
+    match snd ast with
+    | VernacEndSegment (_,id) ->
+        prerr_endline "Updating on end of segment 1";
+        update_on_end_of_segment cmd_stk id
+    | _ -> ()
+  end;
+  Stack.push x cmd_stk
+
+
+let repush_phrase cmd_stk reset_info x =
+  let x = { x with reset_info = reset_info } in
+  begin
+    match snd x.ast with
+      | VernacEndSegment (_,id) ->
+          prerr_endline "Updating on end of segment 2";
+          update_on_end_of_segment cmd_stk id
+      | _ -> ()
+  end;
+  Stack.push x cmd_stk
+
+type backtrack =
+| BacktrackToNextActiveMark
+| BacktrackToMark of reset_mark
+| NoBacktrack
+
+let add_undo = function (n,a,b,p,l as x) -> if p = 0 then (n+1,a,b,p,l) else x
+let add_abort = function
+  | (n,a,b,0,l) -> (0,a+1,b,0,l)
+  | (n,a,b,p,l) -> (n,a,b,p-1,l)
+let add_qed q (n,a,b,p,l as x) =
+  if q = 0 then x else (n,a,BacktrackToNextActiveMark,p+q,l)
+let add_backtrack (n,a,b,p,l) b' = (n,a,b',p,l)
+
+let update_proofs (n,a,b,p,(cur_lems,ntacsteps)) (prev_lems,prev_ntacsteps) =
+  let ncommon = List.length (Util.list_intersect cur_lems prev_lems) in
+  let openproofs = List.length cur_lems - ncommon in
+  let closedproofs = List.length prev_lems - ncommon in
+  let undos = (n,a,b,p,(prev_lems,prev_ntacsteps)) in
+  let undos = add_qed closedproofs (Util.iterate add_abort openproofs undos) in
+  Util.iterate add_undo (ntacsteps - prev_ntacsteps) undos
+
+let pop_command cmd_stk undos t =
+  let (state_info,undo_info,section_info) = t.reset_info in
+  let undos =
+    if !section_info then
+      let undos = update_proofs undos undo_info in
+      add_backtrack undos (BacktrackToMark state_info)
+    else
+      begin
+        prerr_endline "In section";
+      (* An object inside a closed section *)
+      add_backtrack undos BacktrackToNextActiveMark
+      end in
+  ignore (Stack.pop cmd_stk);
+  undos
+
+
+(* appelle Pfedit.delete_current_proof a fois
+ * utiliser Vernacentries.vernac_abort a la place ? *)
+let apply_aborts a =
+  if a <> 0 then prerr_endline ("Applying "^string_of_int a^" aborts");
+  try Util.repeat a Pfedit.delete_current_proof ()
+  with e -> prerr_endline "WARNING : found a closed environment"; raise e
+
+exception UndoStackExhausted
+
+(* appelle Pfedit.undo n fois
+ * utiliser vernac_undo ? *)
+let apply_tactic_undo n =
+  if n<>0 then
+    (prerr_endline ("Applying "^string_of_int n^" undos");
+     try Pfedit.undo n with _ -> raise UndoStackExhausted)
+
+
+let apply_reset = function
+  | BacktrackToMark mark -> reset_to mark
+  | NoBacktrack -> ()
+  | BacktrackToNextActiveMark -> assert false
+
+let rec apply_undos cmd_stk (n,a,b,p,l as undos) =
+  if p = 0 & b <> BacktrackToNextActiveMark then
+    begin
+      apply_aborts a;
+      try
+	apply_tactic_undo n;
+	apply_reset b
+      with UndoStackExhausted ->
+	apply_undos cmd_stk (n,0,BacktrackToNextActiveMark,p,l)
+    end
+  else
+    (* re-synchronize Coq to the current state of the stack *)
+    if Stack.is_empty cmd_stk then
+      Coq.reset_initial ()
+    else
+      begin
+        let t = Stack.top cmd_stk in
+        apply_undos cmd_stk (pop_command cmd_stk undos t);
+        let reset_info = Coq.compute_reset_info () in
+        interp_last t.ast;
+        repush_phrase cmd_stk reset_info t
+      end
+
 
 
 let last_cb_content = ref ""
@@ -921,13 +1050,13 @@ object(self)
           end;
           let start_of_phrase_mark = `MARK (b#create_mark start) in
           let end_of_phrase_mark = `MARK (b#create_mark stop) in
-          record_interp
-            cmd_stack
-            start_of_phrase_mark
-            end_of_phrase_mark
-            (Toplevel.current_status_triple ());
-          if display_goals then self#show_goals;
-          remove_tag (start,stop) in
+            push_phrase
+              cmd_stack
+              reset_info
+              start_of_phrase_mark
+              end_of_phrase_mark ast;
+            if display_goals then self#show_goals;
+            remove_tag (start,stop) in
       begin
         match sync get_next_phrase () with
             None -> false
@@ -953,11 +1082,7 @@ object(self)
                input_buffer#place_cursor stop;
              let start_of_phrase_mark = `MARK (input_buffer#create_mark start) in
              let end_of_phrase_mark = `MARK (input_buffer#create_mark stop) in
-               record_interp
-                 cmd_stack
-                 start_of_phrase_mark
-                 end_of_phrase_mark
-                 (Toplevel.current_status_triple ());
+               push_phrase cmd_stack reset_info start_of_phrase_mark end_of_phrase_mark ast;
                self#show_goals;
       (*Auto insert save on success...
        try (match Coq.get_current_goals () with
@@ -1048,32 +1173,51 @@ object(self)
   (* backtrack Coq to the phrase preceding iterator [i] *)
   method backtrack_to_no_lock i =
     prerr_endline "Backtracking_to iter starts now.";
-    begin
-      try
-        backtrack cmd_stack (fun b -> i#compare (input_buffer#get_iter_at_mark b) > 0);
-        sync (fun _ ->
-                let start =
-                  if Stack.is_empty cmd_stack then input_buffer#start_iter
-                  else input_buffer#get_iter_at_mark (Stack.top cmd_stack).stop in
-                prerr_endline "Removing (long) processed tag...";
-                input_buffer#remove_tag
-                  Tags.Script.processed
-                  ~start
-                  ~stop:self#get_start_of_input;
-                input_buffer#remove_tag
-                  Tags.Script.unjustified
-                  ~start
-                  ~stop:self#get_start_of_input;
-                prerr_endline "Moving (long) start_of_input...";
-                input_buffer#move_mark ~where:start (`NAME "start_of_input");
-                self#show_goals;
-                clear_stdout ();
-                self#clear_message)
-          ();
-      with _ ->
-        push_info "WARNING: undo failed badly -> Coq might be in an inconsistent state.
-                                                                 Please restart and report NOW.";
-    end
+    (* pop Coq commands until we reach iterator [i] *)
+    let  rec pop_commands done_smthg undos =
+      if Stack.is_empty cmd_stack then
+        done_smthg, undos
+      else
+        let t = Stack.top cmd_stack in
+          if i#compare (input_buffer#get_iter_at_mark t.stop) < 0 then
+            begin
+              prerr_endline "Popped top command";
+              pop_commands true (pop_command cmd_stack undos t)
+            end
+          else
+            done_smthg, undos
+    in
+    let undos = (0,0,NoBacktrack,0,undo_info()) in
+    let done_smthg, undos = pop_commands false undos in
+      prerr_endline "Popped commands";
+      if done_smthg then
+        begin
+          try
+            apply_undos cmd_stack undos;
+            sync (fun _ ->
+                    let start =
+                      if Stack.is_empty cmd_stack then input_buffer#start_iter
+                      else input_buffer#get_iter_at_mark (Stack.top cmd_stack).stop in
+                      prerr_endline "Removing (long) processed tag...";
+                      input_buffer#remove_tag
+                        Tags.Script.processed
+                        ~start
+                        ~stop:self#get_start_of_input;
+                      input_buffer#remove_tag
+                        Tags.Script.unjustified
+                        ~start
+                        ~stop:self#get_start_of_input;
+                      prerr_endline "Moving (long) start_of_input...";
+                      input_buffer#move_mark ~where:start (`NAME "start_of_input");
+                      self#show_goals;
+                      clear_stdout ();
+                      self#clear_message)
+              ();
+          with _ ->
+            push_info "WARNING: undo failed badly -> Coq might be in an inconsistent state.
+                                                                     Please restart and report NOW.";
+        end
+      else prerr_endline "backtrack_to : discarded (...)"
 
   method backtrack_to i =
     if Mutex.try_lock coq_may_stop then
@@ -1113,11 +1257,11 @@ object(self)
             self#show_goals;
             self#clear_message
           in
-          let curr_iter = input_buffer#get_iter_at_mark last_command.stop in
-          backtrack cmd_stack (fun b -> curr_iter#compare (input_buffer#get_iter_at_mark b) > 0);
+          let undo = pop_command cmd_stack (0,0,NoBacktrack,0,undo_info()) last_command in
+            apply_undos cmd_stack undo;
             sync update_input ()
         with
-          | Stack.Empty -> ()
+          | Size 0 -> (* flash_info "Nothing to Undo"*)()
        );
        pop_info ();
        Mutex.unlock coq_may_stop)

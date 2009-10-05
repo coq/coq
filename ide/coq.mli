@@ -29,17 +29,6 @@ type printing_state = {
 
 val printing_state : printing_state
 
-type bktk_info = { start : GText.mark;
-                   stop : GText.mark;
-                   state_num : int;
-                   pending_proofs : string list;
-                   proof_stack_depth : int;
-}
-
-val record_interp : bktk_info Stack.t -> GText.mark -> GText.mark -> (int * string list * int) -> unit
-
-val backtrack : bktk_info Stack.t -> (GText.mark -> bool) -> unit
-
 type reset_mark
 
 type undo_info = identifier list * int
