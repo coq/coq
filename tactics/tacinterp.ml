@@ -281,7 +281,13 @@ let add_interp_genarg id f =
   extragenargtab := Gmap.add id f !extragenargtab
 let lookup_genarg id =
   try Gmap.find id !extragenargtab
-  with Not_found -> failwith ("No interpretation function found for entry "^id)
+  with Not_found ->
+    let msg = "No interpretation function found for entry " ^ id in
+    warning msg;
+    let f = (fun _ _ -> failwith msg), (fun _ _ _ -> failwith msg), (fun _ a -> a) in
+    add_interp_genarg id f;
+    f
+
 
 let lookup_genarg_glob   id = let (f,_,_) = lookup_genarg id in f
 let lookup_interp_genarg id = let (_,f,_) = lookup_genarg id in f

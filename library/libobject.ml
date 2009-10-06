@@ -124,26 +124,30 @@ let declare_object odecl =
 			     dyn_rebuild_function = rebuild };
   (infun,outfun)
 
+let missing_tab = (Hashtbl.create 17 : (string, unit) Hashtbl.t)
+
 (* this function describes how the cache, load, open, and export functions
    are triggered.  In relaxed mode, this function just return a meaningless
    value instead of raising an exception when they fail. *)
 
 let apply_dyn_fun deflt f lobj =
   let tag = object_tag lobj in
-    try
-      let dodecl =
-    	try
-	  Hashtbl.find cache_tab tag
-    	with Not_found ->
-	  if !relax_flag then
-	    failwith "local to_apply_dyn_fun"
-	  else
-	    error
-	      ("Cannot find library functions for an object with tag "^tag^
-	       " (maybe a plugin is missing)") in
-	f dodecl
-    with
-	Failure "local to_apply_dyn_fun" -> deflt;;
+  try
+    let dodecl =
+      try
+        Hashtbl.find cache_tab tag
+      with Not_found ->
+        failwith "local to_apply_dyn_fun" in
+    f dodecl
+  with
+    Failure "local to_apply_dyn_fun" ->
+      if not (!relax_flag || Hashtbl.mem missing_tab tag) then
+        begin
+          Pp.warning ("Cannot find library functions for an object with tag "
+                      ^ tag ^ " (a plugin may be missing)");
+          Hashtbl.add missing_tab tag ()
+        end;
+      deflt
 
 let cache_object ((_,lobj) as node) =
   apply_dyn_fun () (fun d -> d.dyn_cache_function node) lobj
