@@ -210,6 +210,8 @@ CMXA:=$(CMA:.cma=.cmxa)
 LINKCMO:=$(CONFIG) $(CORECMA) $(STATICPLUGINS)
 LINKCMX:=$(CONFIG:.cmo=.cmx) $(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cma=.cmxa)
 
+IDECMA:=ide/ide.cma
+
 # modules known by the toplevel of Coq
 
 OBJSMOD:=Coq_config \
