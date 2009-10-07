@@ -116,7 +116,7 @@ let pr_subgoal_metas_xml metas env=
 ;;
 
 let pr_goal_xml g =
-  let env = try evar_env g with _ -> empty_env in
+  let env = try evar_unfiltered_env g with _ -> empty_env in
   if g.evar_extra = None then
     (hov 2 (str "<goal>" ++ fnl () ++ str "<concl type=\"" ++
     xmlstream (pr_ltype_env_at_top env g.evar_concl) ++
