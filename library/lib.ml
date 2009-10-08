@@ -14,9 +14,6 @@ open Libnames
 open Nameops
 open Libobject
 open Summary
-
-
-
 type node =
   | Leaf of obj
   | CompilingLibrary of object_prefix
@@ -418,10 +415,13 @@ let is_module () =
 
 (* Returns the opening node of a given name *)
 let find_opening_node id =
-  try snd (find_entry_p (is_opened id))
-  with Not_found ->
-  try ignore (find_entry_p is_opening_node); error "There is nothing to end."
-  with Not_found -> error "Nothing to end of this name."
+  try
+    let oname,entry = find_entry_p is_opening_node in
+    let id' = basename (fst oname) in
+    if id <> id' then
+      error ("Last block to end has name "^(Names.string_of_id id')^".");
+    entry
+  with Not_found -> error "There is nothing to end."
 
 (* Discharge tables *)
 
