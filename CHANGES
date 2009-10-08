@@ -39,6 +39,8 @@ Tactics
   is interpreted as using the collection of its constructors.
 - Tactic names "case" and "elim" now support clauses "as" and "in" and become
   then synonymous of "destruct" and "induction" respectively.
+- An new name "exfalso" for the use of 'ex-falso quodlibet' principle.
+  This tactic is simply a shortcut for "elimtype False".
 
 Tactic Language
 

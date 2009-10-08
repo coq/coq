@@ -1191,9 +1191,9 @@ Definition prime_dec_aux:
 Proof.
   intros p m.
   case (Z_lt_dec 1 m); intros H1;
-   [ | left; intros; elimtype False; omega ].
+   [ | left; intros; exfalso; omega ].
   pattern m; apply natlike_rec; auto with zarith.
-  left; intros; elimtype False; omega.
+  left; intros; exfalso; omega.
   intros x Hx IH; destruct IH as [F|E].
   destruct (rel_prime_dec x p) as [Y|N].
   left; intros n [HH1 HH2].

@@ -374,7 +374,7 @@ Ltac simplify_one_dep_elim_term c :=
     | @eq ?A ?t ?u -> ?P => apply (noConfusion (I:=A) P)
     | ?f ?x = ?g ?y -> _ => let H := fresh in progress (intros H ; injection H ; clear H)
     | ?t = ?u -> _ => let hyp := fresh in
-      intros hyp ; elimtype False ; discriminate
+      intros hyp ; exfalso ; discriminate
     | ?x = ?y -> _ => let hyp := fresh in
       intros hyp ; (try (clear hyp ; (* If non dependent, don't clear it! *) fail 1)) ;
         case hyp ; clear hyp
@@ -447,7 +447,7 @@ Ltac try_intros m :=
 (** To solve a goal by inversion on a particular target. *)
 
 Ltac solve_empty target :=
-  do_nat target intro ; elimtype False ; destruct_last ; simplify_dep_elim.
+  do_nat target intro ; exfalso ; destruct_last ; simplify_dep_elim.
 
 Ltac simplify_method tac := repeat (tac || simplify_one_dep_elim) ; reverse_local.
 

@@ -184,7 +184,7 @@ split; intros H H1 H2.
 apply NZlt_le_incl; le_elim H2; [now apply H | now rewrite H2 in H1].
 assert (n <= p) as H3. apply H. assumption. now apply NZlt_le_incl.
 le_elim H3. assumption. rewrite <- H3 in H2.
-elimtype False; now apply (NZlt_asymm n m).
+exfalso; now apply (NZlt_asymm n m).
 Qed.
 
 Theorem NZle_trans : forall n m p : NZ, n <= m -> m <= p -> n <= p.
@@ -209,7 +209,7 @@ Qed.
 Theorem NZle_antisymm : forall n m : NZ, n <= m -> m <= n -> n == m.
 Proof.
 intros n m H1 H2; now (le_elim H1; le_elim H2);
-[elimtype False; apply (NZlt_asymm n m) | | |].
+[exfalso; apply (NZlt_asymm n m) | | |].
 Qed.
 
 Theorem NZlt_1_l : forall n m : NZ, 0 < n -> n < m -> 1 < m.

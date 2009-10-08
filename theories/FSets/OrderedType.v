@@ -149,7 +149,7 @@ Ltac abstraction := match goal with
  | H : eq ?x ?x |- _ => clear H; abstraction
  | H : ~lt ?x ?x |- _ => clear H; abstraction
  | |- eq ?x ?x => exact (eq_refl x)
- | |- lt ?x ?x => elimtype False; abstraction
+ | |- lt ?x ?x => exfalso; abstraction
  | |- ~ _ => intro; abstraction
  | H1: ~lt ?x ?y, H2: ~eq ?x ?y |- _ =>
      generalize (le_neq H1 H2); clear H1 H2; intro; abstraction
@@ -240,7 +240,7 @@ Ltac order :=
  propagate_lt;
  eauto.
 
-Ltac false_order := elimtype False; order.
+Ltac false_order := exfalso; order.
 
   Lemma gt_not_eq : forall x y, lt y x -> ~ eq x y.
   Proof.

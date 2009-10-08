@@ -162,9 +162,9 @@ destruct (Zlt_trichotomy n 0) as [H1 | [H1 | H1]];
 [| rewrite H2 in H; rewrite Zmul_0_r in H; false_hyp H Zlt_irrefl |]);
 try (left; now split); try (right; now split).
 assert (H3 : n * m > 0) by now apply Zmul_neg_neg.
-elimtype False; now apply (Zlt_asymm (n * m) 0).
+exfalso; now apply (Zlt_asymm (n * m) 0).
 assert (H3 : n * m > 0) by now apply Zmul_pos_pos.
-elimtype False; now apply (Zlt_asymm (n * m) 0).
+exfalso; now apply (Zlt_asymm (n * m) 0).
 now apply Zmul_neg_pos. now apply Zmul_pos_neg.
 Qed.
 

@@ -14,6 +14,12 @@ Require Import Specif.
 
 (** * Useful tactics *)
 
+(** Ex falso quodlibet : a tactic for proving False instead of the current goal.
+    This is just a nicer name for tactics such as [elimtype False]
+    and other [cut False]. *)
+
+Ltac exfalso := elimtype False.
+
 (** A tactic for proof by contradiction. With contradict H,
     -   H:~A |-  B    gives       |-  A
     -   H:~A |- ~B    gives  H: B |-  A
@@ -31,7 +37,7 @@ Ltac contradict H :=
   let negneg H := save negpos H
   in
   let pospos H :=
-    let A := type of H in (elimtype False; revert H; try fold (~A))
+    let A := type of H in (exfalso; revert H; try fold (~A))
   in
   let posneg H := save pospos H
   in

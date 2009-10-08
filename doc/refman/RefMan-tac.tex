@@ -1115,6 +1115,15 @@ the following way:
 \item  {\tt H: A $\vd$ $\neg$B} \ becomes \ {\tt H: B $\vd$ $\neg$A}
 \end{itemize}
 
+\subsection{\tt exfalso}
+\label{exfalso}
+\tacindex{exfalso}
+
+This tactic implements the ``ex falso quodlibet'' logical principle:
+an elimination of {\tt False} is performed on the current goal, and the
+user is then required to prove that {\tt False} is indeed provable in
+the current context. This tactic is a macro for {\tt elimtype False}.
+
 \section{Conversion tactics
 \index{Conversion tactics}
 \label{Conversion-tactics}}

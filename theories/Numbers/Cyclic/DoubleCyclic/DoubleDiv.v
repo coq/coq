@@ -931,7 +931,7 @@ Section DoubleDivGt.
    case (spec_to_Z (w_head0 bh)); auto with zarith.
    assert ([|w_head0 bh|] < Zpos w_digits).
     destruct (Z_lt_ge_dec [|w_head0 bh|]  (Zpos w_digits));trivial.
-    elimtype False.
+    exfalso.
     assert (2 ^ [|w_head0 bh|] * [|bh|] >= wB);auto with zarith.
     apply Zle_ge; replace wB with (wB * 1);try ring.
     Spec_w_to_Z bh;apply Zmult_le_compat;zarith.
@@ -1071,7 +1071,7 @@ Section DoubleDivGt.
              (WW ah al) bl).
    rewrite spec_w_0W;unfold ww_to_Z;trivial.
    apply spec_ww_div_gt_aux;trivial. rewrite spec_w_0 in Hcmp;trivial.
-   rewrite spec_w_0 in Hcmp;elimtype False;omega.
+   rewrite spec_w_0 in Hcmp;exfalso;omega.
   Qed.
 
   Lemma spec_ww_mod_gt_aux_eq : forall ah al bh bl,
@@ -1243,7 +1243,7 @@ Section DoubleDivGt.
    rewrite  (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW); trivial.
    apply Zlt_gt;match goal with | |- ?x mod ?y < ?y =>
     destruct (Z_mod_lt x y);zarith end.
-   rewrite spec_w_0 in Hbl;Spec_w_to_Z bl;elimtype False;omega.
+   rewrite spec_w_0 in Hbl;Spec_w_to_Z bl;exfalso;omega.
    rewrite spec_w_0 in Hbh;assert (H:= spec_ww_mod_gt_aux _ _ _ Hgt Hbh).
    assert (H2 : 0 < [[WW bh bl]]).
    simpl;Spec_w_to_Z bl. apply Zlt_le_trans with ([|bh|]*wB);zarith.
@@ -1265,7 +1265,7 @@ Section DoubleDivGt.
    rewrite  (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW); trivial.
    apply Zlt_gt;match goal with | |- ?x mod ?y < ?y =>
    destruct (Z_mod_lt x y);zarith end.
-   rewrite spec_w_0 in Hml;Spec_w_to_Z ml;elimtype False;omega.
+   rewrite spec_w_0 in Hml;Spec_w_to_Z ml;exfalso;omega.
    rewrite spec_w_0 in Hmh. assert ([[WW bh bl]] > [[WW mh ml]]).
    rewrite H;simpl; apply Zlt_gt;match goal with | |- ?x mod ?y < ?y =>
    destruct (Z_mod_lt x y);zarith end.
@@ -1300,8 +1300,8 @@ Section DoubleDivGt.
    rewrite Z_div_mult;zarith.
    assert (2^1 <= 2^n). change (2^1) with 2;zarith.
    assert (H7 := @Zpower_le_monotone_inv 2 1 n);zarith.
-   rewrite spec_w_0 in Hmh;Spec_w_to_Z mh;elimtype False;zarith.
-   rewrite spec_w_0 in Hbh;Spec_w_to_Z bh;elimtype False;zarith.
+   rewrite spec_w_0 in Hmh;Spec_w_to_Z mh;exfalso;zarith.
+   rewrite spec_w_0 in Hbh;Spec_w_to_Z bh;exfalso;zarith.
   Qed.
 
   Lemma spec_ww_gcd_gt_aux :
@@ -1473,7 +1473,7 @@ Section DoubleDiv.
    simpl;rewrite H;simpl;destruct (w_compare w_1 yl).
    rewrite spec_ww_1;rewrite <- Hcmpy;apply Zis_gcd_mod;zarith.
    rewrite <- (Zmod_unique ([|xh|]*wB+[|xl|]) 1 ([|xh|]*wB+[|xl|]) 0);zarith.
-   rewrite H in Hle; elimtype False;zarith.
+   rewrite H in Hle; exfalso;zarith.
    assert ([|yl|] = 0). Spec_w_to_Z yl;zarith.
    rewrite H0;simpl;apply Zis_gcd_0;trivial.
   Qed.

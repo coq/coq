@@ -76,7 +76,7 @@ Open Scope Z_scope.
  Proof.
    induction n.
    simpl; intros.
-   elimtype False; generalize (Zabs_pos a); omega.
+   exfalso; generalize (Zabs_pos a); omega.
    destruct a; intros; simpl;
      [ generalize (Zis_gcd_0_abs b); intuition | | ];
    unfold Zmod;
@@ -199,7 +199,7 @@ Open Scope Z_scope.
    0 < a < b -> a < fibonacci (S n) ->
    Zis_gcd a b (Zgcdn n a b).
  Proof.
-   destruct a; [ destruct 1; elimtype False; omega | | destruct 1; discriminate].
+   destruct a; [ destruct 1; exfalso; omega | | destruct 1; discriminate].
    cut (forall k n b,
      k = (S (nat_of_P p) - n)%nat ->
      0 < Zpos p < b -> Zpos p < fibonacci (S n) ->
@@ -254,7 +254,7 @@ Open Scope Z_scope.
  Proof.
    destruct a; intros.
    simpl in H.
-   destruct n; [elimtype False; omega | ].
+   destruct n; [exfalso; omega | ].
    simpl; generalize (Zis_gcd_0_abs b); intuition.
    (*Zpos*)
    generalize (Zgcd_bound_fibonacci (Zpos p)).
@@ -277,8 +277,8 @@ Open Scope Z_scope.
    apply Zgcdn_ok_before_fibonacci; auto.
    apply Zlt_le_trans with (fibonacci (S m)); [ omega | apply fibonacci_incr; auto].
    subst r; simpl.
-   destruct m as [ |m]; [elimtype False; omega| ].
-   destruct n as [ |n]; [elimtype False; omega| ].
+   destruct m as [ |m]; [exfalso; omega| ].
+   destruct n as [ |n]; [exfalso; omega| ].
    simpl; apply Zis_gcd_sym; apply Zis_gcd_0.
    (*Zneg*)
    generalize (Zgcd_bound_fibonacci (Zpos p)).
@@ -303,8 +303,8 @@ Open Scope Z_scope.
    apply Zgcdn_ok_before_fibonacci; auto.
    apply Zlt_le_trans with (fibonacci (S m)); [ omega | apply fibonacci_incr; auto].
    subst r; simpl.
-   destruct m as [ |m]; [elimtype False; omega| ].
-   destruct n as [ |n]; [elimtype False; omega| ].
+   destruct m as [ |m]; [exfalso; omega| ].
+   destruct n as [ |n]; [exfalso; omega| ].
    simpl; apply Zis_gcd_sym; apply Zis_gcd_0.
  Qed.
 

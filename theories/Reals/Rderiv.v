@@ -168,7 +168,7 @@ Proof.
       rewrite eps2 in H10; assumption.
   unfold Rabs in |- *; case (Rcase_abs 2); auto.
   intro; cut (0 < 2).
-  intro; generalize (Rlt_asym 0 2 H7); intro; elimtype False; auto.
+  intro; generalize (Rlt_asym 0 2 H7); intro; exfalso; auto.
   fourier.
   apply Rabs_no_R0.
   discrR.

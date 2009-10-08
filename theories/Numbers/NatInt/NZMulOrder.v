@@ -219,10 +219,10 @@ intros n m; split.
 intro H; destruct (NZlt_trichotomy n 0) as [H1 | [H1 | H1]];
 destruct (NZlt_trichotomy m 0) as [H2 | [H2 | H2]];
 try (now right); try (now left).
-elimtype False; now apply (NZlt_neq 0 (n * m)); [apply NZmul_neg_neg |].
-elimtype False; now apply (NZlt_neq (n * m) 0); [apply NZmul_neg_pos |].
-elimtype False; now apply (NZlt_neq (n * m) 0); [apply NZmul_pos_neg |].
-elimtype False; now apply (NZlt_neq 0 (n * m)); [apply NZmul_pos_pos |].
+exfalso; now apply (NZlt_neq 0 (n * m)); [apply NZmul_neg_neg |].
+exfalso; now apply (NZlt_neq (n * m) 0); [apply NZmul_neg_pos |].
+exfalso; now apply (NZlt_neq (n * m) 0); [apply NZmul_pos_neg |].
+exfalso; now apply (NZlt_neq 0 (n * m)); [apply NZmul_pos_pos |].
 intros [H | H]. now rewrite H, NZmul_0_l. now rewrite H, NZmul_0_r.
 Qed.
 
@@ -260,9 +260,9 @@ destruct (NZlt_trichotomy n 0) as [H1 | [H1 | H1]];
 [| rewrite H2 in H; rewrite NZmul_0_r in H; false_hyp H NZlt_irrefl |]);
 try (left; now split); try (right; now split).
 assert (H3 : n * m < 0) by now apply NZmul_neg_pos.
-elimtype False; now apply (NZlt_asymm (n * m) 0).
+exfalso; now apply (NZlt_asymm (n * m) 0).
 assert (H3 : n * m < 0) by now apply NZmul_pos_neg.
-elimtype False; now apply (NZlt_asymm (n * m) 0).
+exfalso; now apply (NZlt_asymm (n * m) 0).
 now apply NZmul_pos_pos. now apply NZmul_neg_neg.
 Qed.
 

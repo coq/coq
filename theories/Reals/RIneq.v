@@ -1283,8 +1283,8 @@ Lemma Rmult_lt_reg_l : forall r r1 r2, 0 < r -> r * r1 < r * r2 -> r1 < r2.
 Proof.
   intros z x y H H0.
   case (Rtotal_order x y); intros Eq0; auto; elim Eq0; clear Eq0; intros Eq0.
-  rewrite Eq0 in H0; elimtype False; apply (Rlt_irrefl (z * y)); auto.
-  generalize (Rmult_lt_compat_l z y x H Eq0); intro; elimtype False;
+  rewrite Eq0 in H0; exfalso; apply (Rlt_irrefl (z * y)); auto.
+  generalize (Rmult_lt_compat_l z y x H Eq0); intro; exfalso;
     generalize (Rlt_trans (z * x) (z * y) (z * x) H0 H1);
       intro; apply (Rlt_irrefl (z * x)); auto.
 Qed.
@@ -1619,11 +1619,11 @@ Hint Resolve pos_INR: real.
 Lemma INR_lt : forall n m:nat, INR n < INR m -> (n < m)%nat.
 Proof.
   double induction n m; intros.
-  simpl in |- *; elimtype False; apply (Rlt_irrefl 0); auto.
+  simpl in |- *; exfalso; apply (Rlt_irrefl 0); auto.
   auto with arith.
   generalize (pos_INR (S n0)); intro; cut (INR 0 = 0);
     [ intro H2; rewrite H2 in H0; idtac | simpl in |- *; trivial ].
-  generalize (Rle_lt_trans 0 (INR (S n0)) 0 H1 H0); intro; elimtype False;
+  generalize (Rle_lt_trans 0 (INR (S n0)) 0 H1 H0); intro; exfalso;
     apply (Rlt_irrefl 0); auto.
   do 2 rewrite S_INR in H1; cut (INR n1 < INR n0).
   intro H2; generalize (H0 n0 H2); intro; auto with arith.
@@ -1665,7 +1665,7 @@ Proof.
   intros n m H; case (le_or_lt n m); intros H1.
   case (le_lt_or_eq _ _ H1); intros H2.
   apply Rlt_dichotomy_converse; auto with real.
-  elimtype False; auto.
+  exfalso; auto.
   apply sym_not_eq; apply Rlt_dichotomy_converse; auto with real.
 Qed.
 Hint Resolve not_INR: real.
@@ -1675,10 +1675,10 @@ Proof.
   intros; case (le_or_lt n m); intros H1.
   case (le_lt_or_eq _ _ H1); intros H2; auto.
   cut (n <> m).
-  intro H3; generalize (not_INR n m H3); intro H4; elimtype False; auto.
+  intro H3; generalize (not_INR n m H3); intro H4; exfalso; auto.
   omega.
   symmetry  in |- *; cut (m <> n).
-  intro H3; generalize (not_INR m n H3); intro H4; elimtype False; auto.
+  intro H3; generalize (not_INR m n H3); intro H4; exfalso; auto.
   omega.
 Qed.
 Hint Resolve INR_eq: real.
@@ -1884,7 +1884,7 @@ Lemma IZR_lt : forall n m:Z, (n < m)%Z -> IZR n < IZR m.
 Proof.
   intros m n H; cut (m <= n)%Z.
   intro H0; elim (IZR_le m n H0); intro; auto.
-  generalize (eq_IZR m n H1); intro; elimtype False; omega.
+  generalize (eq_IZR m n H1); intro; exfalso; omega.
   omega.
 Qed.
 

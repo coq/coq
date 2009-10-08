@@ -98,7 +98,7 @@ Ltac avl_nns :=
 Lemma height_0 : forall s, avl s -> height s = 0 -> s = Leaf.
 Proof.
  destruct 1; intuition; simpl in *.
- avl_nns; simpl in *; elimtype False; omega_max.
+ avl_nns; simpl in *; exfalso; omega_max.
 Qed.
 
 (** * Results about [avl] *)
@@ -755,7 +755,7 @@ Proof.
  intros s1 s2 B1 B2.
  generalize (ocaml_compare_Cmp s1 s2)(compare_Cmp s1 s2).
  unfold Cmp.
- destruct ocaml_compare; destruct compare; auto; intros; elimtype False.
+ destruct ocaml_compare; destruct compare; auto; intros; exfalso.
  elim (lt_not_eq B1 B2 H0); auto.
  elim (lt_not_eq B2 B1 H0); auto.
   apply eq_sym; auto.

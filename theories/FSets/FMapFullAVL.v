@@ -108,7 +108,7 @@ Lemma height_0 : forall l, avl l -> height l = 0 ->
  l = Leaf _.
 Proof.
  destruct 1; intuition; simpl in *.
- avl_nns; simpl in *; elimtype False; omega_max.
+ avl_nns; simpl in *; exfalso; omega_max.
 Qed.
 
 

@@ -202,7 +202,7 @@ Section Zlength_properties.
     case l; auto.
     intros x l'; simpl (length (x :: l')) in |- *.
     rewrite Znat.inj_S.
-    intros; elimtype False; generalize (Zle_0_nat (length l')); omega.
+    intros; exfalso; generalize (Zle_0_nat (length l')); omega.
   Qed.
 
 End Zlength_properties.

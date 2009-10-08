@@ -180,7 +180,7 @@ Proof.
   unfold Pminus; rewrite Pminus_mask_diag; auto.
   intros; rewrite Pminus_Lt; auto.
   destruct (Zmax_spec 1 (Zpos p - Zpos q)) as [(H1,H2)|(H1,H2)]; auto.
-  elimtype False; clear H2.
+  exfalso; clear H2.
   assert (H1':=Zlt_trans 0 1 _ Zlt_0_1 H1).
   generalize (Zlt_0_minus_lt _ _ H1').
   unfold Zlt; simpl.

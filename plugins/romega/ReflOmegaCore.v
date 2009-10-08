@@ -583,7 +583,7 @@ Module IntProperties (I:Int).
  Proof.
  intros.
  destruct (lt_eq_lt_dec n 0) as [[Hn|Hn]|Hn]; auto;
-  destruct (lt_eq_lt_dec m 0) as [[Hm|Hm]|Hm]; auto; elimtype False.
+  destruct (lt_eq_lt_dec m 0) as [[Hm|Hm]|Hm]; auto; exfalso.
 
  rewrite lt_0_neg' in Hn.
  rewrite lt_0_neg' in Hm.

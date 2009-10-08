@@ -187,16 +187,16 @@ Qed.
 Theorem succ_pred : forall n : N, n ~= 0 -> S (P n) == n.
 Proof.
 cases n.
-intro H; elimtype False; now apply H.
+intro H; exfalso; now apply H.
 intros; now rewrite pred_succ.
 Qed.
 
 Theorem pred_inj : forall n m : N, n ~= 0 -> m ~= 0 -> P n == P m -> n == m.
 Proof.
 intros n m; cases n.
-intros H; elimtype False; now apply H.
+intros H; exfalso; now apply H.
 intros n _; cases m.
-intros H; elimtype False; now apply H.
+intros H; exfalso; now apply H.
 intros m H2 H3. do 2 rewrite pred_succ in H3. now rewrite H3.
 Qed.
 

@@ -179,7 +179,7 @@ assert (Z:  Un_cv (fun N : nat => sum_f_R0 g N) ((1/2)^n)).
    simpl; unfold g;
    destruct (eq_nat_dec 0 n) as [t|f]; try reflexivity.
    elim f; auto with *.
-  elimtype False; omega.
+  exfalso; omega.
  destruct IHa as [IHa0 IHa1].
  split;
   intros H;
@@ -191,7 +191,7 @@ assert (Z:  Un_cv (fun N : nat => sum_f_R0 g N) ((1/2)^n)).
    ring_simplify.
    apply IHa0.
    omega.
-  elimtype False; omega.
+  exfalso; omega.
  ring_simplify.
  apply IHa1.
  omega.

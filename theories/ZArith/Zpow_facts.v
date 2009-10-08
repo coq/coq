@@ -229,9 +229,9 @@ Proof.
   assert (c > 0).
   destruct (Z_le_gt_dec 0 c);trivial.
   destruct (Zle_lt_or_eq _ _ z0);auto with zarith.
-  rewrite <- H3 in H1;simpl in H1; elimtype False;omega.
-  destruct c;try discriminate z0. simpl in H1. elimtype False;omega.
-  assert (H4 := Zpower_lt_monotone a c b H). elimtype False;omega.
+  rewrite <- H3 in H1;simpl in H1; exfalso;omega.
+  destruct c;try discriminate z0. simpl in H1. exfalso;omega.
+  assert (H4 := Zpower_lt_monotone a c b H). exfalso;omega.
 Qed.
 
 Theorem Zpower_nat_Zpower: forall p q, 0 <= q ->

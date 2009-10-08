@@ -81,7 +81,7 @@ Section sequence.
   Proof.
     double induction n m; intros.
     unfold Rge in |- *; right; trivial.
-    elimtype False; unfold ge in H1; generalize (le_Sn_O n0); intro; auto.
+    exfalso; unfold ge in H1; generalize (le_Sn_O n0); intro; auto.
     cut (n0 >= 0)%nat.
     generalize H0; intros; unfold Un_growing in H0;
       apply
@@ -91,7 +91,7 @@ Section sequence.
     elim (lt_eq_lt_dec n1 n0); intro y.
     elim y; clear y; intro y.
     unfold ge in H2; generalize (le_not_lt n0 n1 (le_S_n n0 n1 H2)); intro;
-      elimtype False; auto.
+      exfalso; auto.
     rewrite y; unfold Rge in |- *; right; trivial.
     unfold ge in H0; generalize (H0 (S n0) H1 (lt_le_S n0 n1 y)); intro;
       unfold Un_growing in H1;

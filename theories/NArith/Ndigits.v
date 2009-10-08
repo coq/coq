@@ -503,7 +503,7 @@ Qed.
 Lemma N0_less_2 : forall a, Nless N0 a = false -> a = N0.
 Proof.
   induction a as [|p]; intro H. trivial.
-  elimtype False. induction p as [|p IHp|]; discriminate || simpl; auto using IHp.
+  exfalso. induction p as [|p IHp|]; discriminate || simpl; auto using IHp.
 Qed.
 
 Lemma Nless_trans :
@@ -692,7 +692,7 @@ Definition Bnth (n:nat)(bv:Bvector n)(p:nat) : p<n -> bool.
 Proof.
  induction 1.
  intros.
- elimtype False; inversion H.
+ exfalso; inversion H.
  intros.
  destruct p.
  exact a.

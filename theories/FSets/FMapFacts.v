@@ -1909,7 +1909,7 @@ Module OrdProperties (M:S).
   rewrite add_mapsto_iff; unfold O.eqke; simpl.
   intuition.
   destruct (E.eq_dec x t0); auto.
-  elimtype False.
+  exfalso.
   assert (In t0 m).
    exists e0; auto.
   generalize (H t0 H1).
@@ -1939,7 +1939,7 @@ Module OrdProperties (M:S).
   rewrite add_mapsto_iff; unfold O.eqke; simpl.
   intuition.
   destruct (E.eq_dec x t0); auto.
-  elimtype False.
+  exfalso.
   assert (In t0 m).
    exists e0; auto.
   generalize (H t0 H1).

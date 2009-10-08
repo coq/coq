@@ -113,7 +113,7 @@ Hint Resolve pow_lt: real.
 Lemma Rlt_pow_R1 : forall (x:R) (n:nat), 1 < x -> (0 < n)%nat -> 1 < x ^ n.
 Proof.
   intros x n; elim n; simpl in |- *; auto with real.
-  intros H' H'0; elimtype False; omega.
+  intros H' H'0; exfalso; omega.
   intros n0; case n0.
   simpl in |- *; rewrite Rmult_1_r; auto.
   intros n1 H' H'0 H'1.
@@ -756,7 +756,7 @@ Proof.
   unfold R_dist in |- *; intros; split_Rabs; try ring.
   generalize (Ropp_gt_lt_0_contravar (y - x) r); intro;
     rewrite (Ropp_minus_distr y x) in H; generalize (Rlt_asym (x - y) 0 r0);
-      intro; unfold Rgt in H; elimtype False; auto.
+      intro; unfold Rgt in H; exfalso; auto.
   generalize (minus_Rge y x r); intro; generalize (minus_Rge x y r0); intro;
     generalize (Rge_antisym x y H0 H); intro; rewrite H1;
       ring.

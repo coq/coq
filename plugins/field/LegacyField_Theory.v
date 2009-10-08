@@ -602,7 +602,7 @@ simpl in |- *; fold AoppT in |- *; case (eqExprA (EAopp e0) (EAinv a));
 unfold monom_remove in |- *; case (eqExprA (EAinv e0) (EAinv a)); intros.
 case (eqExprA e0 a); intros.
 rewrite e2; simpl in |- *; fold AinvT in |- *; rewrite AinvT_r; auto.
-inversion e1; simpl in |- *; elimtype False; auto.
+inversion e1; simpl in |- *; exfalso; auto.
 simpl in |- *; trivial.
 unfold monom_remove in |- *; case (eqExprA (EAvar n) (EAinv a)); intros;
  [ inversion e0 | simpl in |- *; trivial ].

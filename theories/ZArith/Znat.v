@@ -66,7 +66,7 @@ Theorem inj_eq_rev : forall n m:nat, Z_of_nat n = Z_of_nat m -> n = m.
 Proof.
   intros x y H.
   destruct (eq_nat_dec x y) as [H'|H']; auto.
-  elimtype False.
+  exfalso.
   exact (inj_neq _ _ H' H).
 Qed.
 
@@ -111,7 +111,7 @@ Theorem inj_le_rev : forall n m:nat, Z_of_nat n <= Z_of_nat m -> (n <= m)%nat.
 Proof.
   intros x y H.
   destruct (le_lt_dec x y) as [H0|H0]; auto.
-  elimtype False.
+  exfalso.
   assert (H1:=inj_lt _ _ H0).
   red in H; red in H1.
   rewrite <- Zcompare_antisym in H; rewrite H1 in H; auto.
@@ -121,7 +121,7 @@ Theorem inj_lt_rev : forall n m:nat, Z_of_nat n < Z_of_nat m -> (n < m)%nat.
 Proof.
   intros x y H.
   destruct (le_lt_dec y x) as [H0|H0]; auto.
-  elimtype False.
+  exfalso.
   assert (H1:=inj_le _ _ H0).
   red in H; red in H1.
   rewrite <- Zcompare_antisym in H1; rewrite H in H1; auto.
@@ -131,7 +131,7 @@ Theorem inj_ge_rev : forall n m:nat, Z_of_nat n >= Z_of_nat m -> (n >= m)%nat.
 Proof.
   intros x y H.
   destruct (le_lt_dec y x) as [H0|H0]; auto.
-  elimtype False.
+  exfalso.
   assert (H1:=inj_gt _ _ H0).
   red in H; red in H1.
   rewrite <- Zcompare_antisym in H; rewrite H1 in H; auto.
@@ -141,7 +141,7 @@ Theorem inj_gt_rev : forall n m:nat, Z_of_nat n > Z_of_nat m -> (n > m)%nat.
 Proof.
   intros x y H.
   destruct (le_lt_dec x y) as [H0|H0]; auto.
-  elimtype False.
+  exfalso.
   assert (H1:=inj_ge _ _ H0).
   red in H; red in H1.
   rewrite <- Zcompare_antisym in H1; rewrite H in H1; auto.

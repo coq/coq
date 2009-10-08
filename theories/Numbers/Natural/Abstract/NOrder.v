@@ -455,7 +455,7 @@ Qed.
 Theorem lt_pred_l : forall n : N, n ~= 0 -> P n < n.
 Proof.
 cases n.
-intro H; elimtype False; now apply H.
+intro H; exfalso; now apply H.
 intros; rewrite pred_succ;  apply lt_succ_diag_r.
 Qed.
 

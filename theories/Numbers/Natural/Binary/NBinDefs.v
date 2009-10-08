@@ -160,11 +160,11 @@ Theorem NZlt_succ_r : forall n m : NZ, n < (NZsucc m) <-> n <= m.
 Proof.
 intros n m; unfold Nlt, Nle; destruct n as [| p]; destruct m as [| q]; simpl;
 split; intro H; try reflexivity; try discriminate.
-destruct p; simpl; intros; discriminate. elimtype False; now apply H.
+destruct p; simpl; intros; discriminate. exfalso; now apply H.
 apply -> Pcompare_p_Sq in H. destruct H as [H | H].
 now rewrite H. now rewrite H, Pcompare_refl.
 apply <- Pcompare_p_Sq. case_eq ((p ?= q)%positive Eq); intro H1.
-right; now apply Pcompare_Eq_eq. now left. elimtype False; now apply H.
+right; now apply Pcompare_Eq_eq. now left. exfalso; now apply H.
 Qed.
 
 Theorem NZmin_l : forall n m : N, n <= m -> NZmin n m = n.

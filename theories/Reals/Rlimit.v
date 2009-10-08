@@ -95,7 +95,7 @@ Proof.
   elim H0; intro.
   apply Req_le; assumption.
   clear H0; generalize (H r H1); intro; generalize (Rlt_irrefl r); intro;
-    elimtype False; auto.
+    exfalso; auto.
 Qed.
 
 (*********)
@@ -355,7 +355,7 @@ Proof.
   intro; generalize (prop_eps (- (l - l')) H1); intro;
     generalize (Ropp_gt_lt_0_contravar (l - l') r); intro;
       unfold Rgt in H3; generalize (Rgt_not_le (- (l - l')) 0 H3);
-        intro; elimtype False; auto.
+        intro; exfalso; auto.
   intros; cut (eps * / 2 > 0).
   intro; generalize (H0 (eps * / 2) H2); rewrite (Rmult_comm eps (/ 2));
     rewrite <- (Rmult_assoc 2 (/ 2) eps); rewrite (Rinv_r 2).
