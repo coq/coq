@@ -491,6 +491,17 @@ Example: \formula{eq\_true\_neg: \~{} eq\_true b <-> eq\_true (negb b)}.
   Remark: Use \name{Drel\_rel'\_weak} for a strict inclusion ??
 
 %======================================================================
+\section{Relations between properties}
+
+\itemrule{Equivalence of properties \texttt{P} and \texttt{Q}}{P\_Q\_iff}
+{forall x1 .. xn, P <-> Q}
+
+  Remark: Alternatively use \name{P\_iff\_Q} if it is too difficult to
+  recover what pertains to \texttt{P} and what pertains to \texttt{Q}
+  in their concatenation (as e.g. in
+  \texttt{Godel\_Dummett\_iff\_right\_distr\_implication\_over\_disjunction}).
+
+%======================================================================
 \section{Arithmetical conventions}
 
 \begin{minipage}{6in}

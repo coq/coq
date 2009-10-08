@@ -79,7 +79,7 @@ End Reflexive_Transitive_Closure.
 
 (** ** Reflexive-symmetric-transitive closure *)
 
-Section Reflexive_Symetric_Transitive_Closure.
+Section Reflexive_Symmetric_Transitive_Closure.
   Variable A : Type.
   Variable R : relation A.
 
@@ -96,18 +96,18 @@ Section Reflexive_Symetric_Transitive_Closure.
   (** Alternative definition by symmetric-transitive extension on the left *)
 
   Inductive clos_refl_sym_trans_1n (x: A) : A -> Prop :=
-    | rts1n_refl : clos_refl_sym_trans_1n x x
-    | rts1n_trans (y z:A) : R x y \/ R y x ->
+    | rst1n_refl : clos_refl_sym_trans_1n x x
+    | rst1n_trans (y z:A) : R x y \/ R y x ->
          clos_refl_sym_trans_1n y z -> clos_refl_sym_trans_1n x z.
 
   (** Alternative definition by symmetric-transitive extension on the right *)
 
   Inductive clos_refl_sym_trans_n1 (x: A) : A -> Prop :=
-    | rtsn1_refl : clos_refl_sym_trans_n1 x x
-    | rtsn1_trans (y z:A) : R y z \/ R z y ->
+    | rstn1_refl : clos_refl_sym_trans_n1 x x
+    | rstn1_trans (y z:A) : R y z \/ R z y ->
          clos_refl_sym_trans_n1 x y -> clos_refl_sym_trans_n1 x z.
 
-End Reflexive_Symetric_Transitive_Closure.
+End Reflexive_Symmetric_Transitive_Closure.
 
 (** ** Converse of a relation *)
 
@@ -215,3 +215,11 @@ End Lexicographic_Exponentiation.
 Hint Unfold transp union: sets v62.
 Hint Resolve t_step rt_step rt_refl rst_step rst_refl: sets v62.
 Hint Immediate rst_sym: sets v62.
+
+(* begin hide *)
+(* Compatibility *)
+Notation rts1n_refl := rst1n_refl (only parsing).
+Notation rts1n_trans := rst1n_trans (only parsing).
+Notation rtsn1_refl := rstn1_refl (only parsing).
+Notation rtsn1_trans := rstn1_trans (only parsing).
+(* end hide *)

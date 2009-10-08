@@ -89,7 +89,7 @@ Library
 - The function Compare_dec.nat_compare is now defined directly,
   instead of relying on lt_eq_lt_dec. The earlier version is still
   available under the name nat_compare_alt.
-- Lemmas in library Reals have been homogenized a bit.
+- Lemmas in library Relations and Reals have been homogenized a bit.
 - The implicit argument of Logic.eq is now maximally inserted, allowing
   to simply write "eq" instead of "@eq _" in morphism signatures. 
 
