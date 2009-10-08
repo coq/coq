@@ -88,6 +88,8 @@ Library
   instead of relying on lt_eq_lt_dec. The earlier version is still
   available under the name nat_compare_alt.
 - Lemmas in library Reals have been homogenized a bit.
+- The implicit argument of Logic.eq is now maximally inserted, allowing
+  to simply write "eq" instead of "@eq _" in morphism signatures. 
 
 Changes from V8.1 to V8.2
 =========================

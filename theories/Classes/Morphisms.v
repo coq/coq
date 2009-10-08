@@ -148,7 +148,7 @@ Ltac proper_subrelation :=
 Hint Extern 5 (@Proper _ ?H _) => proper_subrelation : typeclass_instances.
 
 Instance proper_subrelation_proper :
-  Proper (subrelation ++> @eq _ ==> impl) (@Proper A).
+  Proper (subrelation ++> eq ==> impl) (@Proper A).
 Proof. reduce. subst. firstorder. Qed.
 
 (** Essential subrelation instances for [iff], [impl] and [pointwise_relation]. *)
@@ -433,7 +433,7 @@ Hint Extern 1 (subrelation _ (flip _)) => class_apply @inverse2 : typeclass_inst
 Lemma eq_subrelation `(Reflexive A R) : subrelation (@eq A) R.
 Proof. simpl_relation. Qed.
 
-(* Hint Extern 3 (subrelation (@eq _) ?R) => not_evar R ; class_apply eq_subrelation : typeclass_instances. *)
+(* Hint Extern 3 (subrelation eq ?R) => not_evar R ; class_apply eq_subrelation : typeclass_instances. *)
 
 (** Once we have normalized, we will apply this instance to simplify the problem. *)
 
@@ -443,7 +443,7 @@ Hint Extern 2 (@Proper _ (flip _) _) => class_apply @proper_inverse_proper : typ
 
 (** Bootstrap !!! *)
 
-Instance proper_proper : Proper (relation_equivalence ==> @eq _ ==> iff) (@Proper A).
+Instance proper_proper : Proper (relation_equivalence ==> eq ==> iff) (@Proper A).
 Proof.
   simpl_relation.
   reduce in H.

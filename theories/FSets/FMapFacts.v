@@ -22,9 +22,6 @@ Unset Strict Implicit.
 
 Hint Extern 1 (Equivalence _) => constructor; congruence.
 
-Notation Leibniz := (@eq _) (only parsing).
-
-
 (** * Facts about weak maps *)
 
 Module WFacts_fun (E:DecidableType)(Import M:WSfun E).
@@ -673,7 +670,7 @@ rewrite (In_iff m Hk), in_find_iff, in_find_iff, Hm; intuition.
 Qed.
 
 Add Parametric Morphism elt : (@MapsTo elt)
- with signature E.eq ==> Leibniz ==> Equal ==> iff as MapsTo_m.
+ with signature E.eq ==> eq ==> Equal ==> iff as MapsTo_m.
 Proof.
 unfold Equal; intros k k' Hk e m m' Hm.
 rewrite (MapsTo_iff m e Hk), find_mapsto_iff, find_mapsto_iff, Hm;
@@ -689,28 +686,28 @@ rewrite Hm in H0; eauto.
 Qed.
 
 Add Parametric Morphism elt : (@is_empty elt)
- with signature Equal ==> Leibniz as is_empty_m.
+ with signature Equal ==> eq as is_empty_m.
 Proof.
 intros m m' Hm.
 rewrite eq_bool_alt, <-is_empty_iff, <-is_empty_iff, Hm; intuition.
 Qed.
 
 Add Parametric Morphism elt : (@mem elt)
- with signature E.eq ==> Equal ==> Leibniz as mem_m.
+ with signature E.eq ==> Equal ==> eq as mem_m.
 Proof.
 intros k k' Hk m m' Hm.
 rewrite eq_bool_alt, <- mem_in_iff, <-mem_in_iff, Hk, Hm; intuition.
 Qed.
 
 Add Parametric Morphism elt : (@find elt)
- with signature E.eq ==> Equal ==> Leibniz as find_m.
+ with signature E.eq ==> Equal ==> eq as find_m.
 Proof.
 intros k k' Hk m m' Hm. rewrite eq_option_alt. intro e.
 rewrite <- 2 find_mapsto_iff, Hk, Hm. split; auto.
 Qed.
 
 Add Parametric Morphism elt : (@add elt)
- with signature E.eq ==> Leibniz ==> Equal ==> Equal as add_m.
+ with signature E.eq ==> eq ==> Equal ==> Equal as add_m.
 Proof.
 intros k k' Hk e m m' Hm y.
 rewrite add_o, add_o; do 2 destruct eq_dec; auto.
@@ -728,7 +725,7 @@ elim n; rewrite Hk; auto.
 Qed.
 
 Add Parametric Morphism elt elt' : (@map elt elt')
- with signature Leibniz ==> Equal ==> Equal as map_m.
+ with signature eq ==> Equal ==> Equal as map_m.
 Proof.
 intros f m m' Hm y.
 rewrite map_o, map_o, Hm; auto.
@@ -1036,7 +1033,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   (** This is more convenient than a [compat_op eqke ...].
       In fact, every [compat_op], [compat_bool], etc, should
       become a [Proper] someday. *)
-  Hypothesis Comp : Proper (E.eq==>Leibniz==>eqA==>eqA) f.
+  Hypothesis Comp : Proper (E.eq==>eq==>eqA==>eqA) f.
 
   Lemma fold_init :
    forall m i i', eqA i i' -> eqA (fold f m i) (fold f m i').
@@ -1189,7 +1186,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
     Equal m m' -> cardinal m = cardinal m'.
   Proof.
   intros; do 2 rewrite cardinal_fold.
-  apply fold_Equal with (eqA:=Leibniz); compute; auto.
+  apply fold_Equal with (eqA:=eq); compute; auto.
   Qed.
 
   Lemma cardinal_1 : forall m : t elt, Empty m -> cardinal m = 0.
@@ -1202,7 +1199,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Proof.
   intros; do 2 rewrite cardinal_fold.
   change S with ((fun _ _ => S) x e).
-  apply fold_Add with (eqA:=Leibniz); compute; auto.
+  apply fold_Add with (eqA:=eq); compute; auto.
   Qed.
 
   Lemma cardinal_inv_1 : forall m : t elt,
@@ -1273,7 +1270,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   Section Specs.
   Variable f : key -> elt -> bool.
-  Hypothesis Hf : Proper (E.eq==>Leibniz==>Leibniz) f.
+  Hypothesis Hf : Proper (E.eq==>eq==>eq) f.
 
   Lemma filter_iff : forall m k e,
    MapsTo k e (filter f m) <-> MapsTo k e m /\ f k e = true.
@@ -1366,7 +1363,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   Section Partition.
   Variable f : key -> elt -> bool.
-  Hypothesis Hf : Proper (E.eq==>Leibniz==>Leibniz) f.
+  Hypothesis Hf : Proper (E.eq==>eq==>eq) f.
 
   Lemma partition_iff_1 : forall m m1 k e,
    m1 = fst (partition f m) ->
@@ -1495,7 +1492,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   Lemma Partition_fold :
    forall (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)(f:key->elt->A->A),
-   Proper (E.eq==>Leibniz==>eqA==>eqA) f ->
+   Proper (E.eq==>eq==>eqA==>eqA) f ->
    transpose_neqkey eqA f ->
    forall m m1 m2 i,
    Partition m m1 m2 ->
@@ -1549,7 +1546,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   setoid_replace (fold f m 0) with (fold f m1 (fold f m2 0)).
   rewrite <- cardinal_fold.
   intros. apply fold_rel with (R:=fun u v => u = v + cardinal m2); simpl; auto.
-  apply Partition_fold with (eqA:=@Logic.eq _); try red; auto.
+  apply Partition_fold with (eqA:=eq); try red; auto.
   compute; auto.
   Qed.
 
@@ -1558,7 +1555,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
    Equal m1 (fst (partition f m)) /\ Equal m2 (snd (partition f m)).
   Proof.
   intros m m1 m2 Hm f.
-  assert (Hf : Proper (E.eq==>Leibniz==>Leibniz) f).
+  assert (Hf : Proper (E.eq==>eq==>eq) f).
    intros k k' Hk e e' _; unfold f; rewrite Hk; auto.
   set (m1':= fst (partition f m)).
   set (m2':= snd (partition f m)).
@@ -1674,7 +1671,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
  End Elt.
 
  Add Parametric Morphism elt : (@cardinal elt)
-   with signature Equal ==> Leibniz as cardinal_m.
+   with signature Equal ==> eq as cardinal_m.
  Proof. intros; apply Equal_cardinal; auto. Qed.
 
  Add Parametric Morphism elt : (@Disjoint elt)
@@ -2151,7 +2148,7 @@ Module OrdProperties (M:S).
 
   Lemma fold_Equal : forall m1 m2 (A:Type)(eqA:A->A->Prop)(st:Equivalence  eqA)
    (f:key->elt->A->A)(i:A),
-   Proper (E.eq==>Leibniz==>eqA==>eqA) f ->
+   Proper (E.eq==>eq==>eqA==>eqA) f ->
    Equal m1 m2 ->
    eqA (fold f m1 i) (fold f m2 i).
   Proof.
@@ -2164,7 +2161,7 @@ Module OrdProperties (M:S).
   Qed.
 
   Lemma fold_Add_Above : forall m1 m2 x e (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)
-   (f:key->elt->A->A)(i:A) (P:Proper (E.eq==>Leibniz==>eqA==>eqA) f),
+   (f:key->elt->A->A)(i:A) (P:Proper (E.eq==>eq==>eqA==>eqA) f),
    Above x m1 -> Add x e m1 m2 ->
    eqA (fold f m2 i) (f x e (fold f m1 i)).
   Proof.
@@ -2180,7 +2177,7 @@ Module OrdProperties (M:S).
   Qed.
 
   Lemma fold_Add_Below : forall m1 m2 x e (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)
-   (f:key->elt->A->A)(i:A) (P:Proper (E.eq==>Leibniz==>eqA==>eqA) f),
+   (f:key->elt->A->A)(i:A) (P:Proper (E.eq==>eq==>eqA==>eqA) f),
    Below x m1 -> Add x e m1 m2 ->
    eqA (fold f m2 i) (fold f m1 (f x e i)).
   Proof.

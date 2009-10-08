@@ -97,7 +97,7 @@ match v with
 | memo_mval m x =>
     match is_eq n m with
     | left H =>
-       match H in (@eq _ _ y) return (A y -> A n) with
+       match H in (eq _ y) return (A y -> A n) with
         | refl_equal => fun v1 : A n => v1
        end
     | right _ => fun _ : A m => f n

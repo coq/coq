@@ -251,6 +251,8 @@ Notation "x = y" := (x = y :>_) : type_scope.
 Notation "x <> y  :> T" := (~ x = y :>T) : type_scope.
 Notation "x <> y" := (x <> y :>_) : type_scope.
 
+Implicit Arguments eq [ [A] ].
+
 Implicit Arguments eq_ind [A].
 Implicit Arguments eq_rec [A].
 Implicit Arguments eq_rect [A].
