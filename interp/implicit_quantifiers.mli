@@ -51,4 +51,4 @@ val combine_params_freevar :
 val implicit_application : Idset.t -> ?allow_partial:bool ->
   (Names.Idset.t -> (global_reference * bool) option * (Names.name * Term.constr option * Term.types) ->
     Topconstr.constr_expr * Names.Idset.t) ->
-  constr_expr -> constr_expr
+  constr_expr -> constr_expr * Idset.t

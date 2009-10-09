@@ -127,7 +127,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
     ?(tac:Proof_type.tactic option) ?(hook:(Names.constant -> unit) option) pri =
   let env = Global.env() in
   let evars = ref Evd.empty in
-  let tclass =
+  let tclass, ids =
     match bk with
     | Implicit ->
 	Implicit_quantifiers.implicit_application Idset.empty ~allow_partial:false
@@ -138,7 +138,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 		  t, avoid
 	    | None -> failwith ("new instance: under-applied typeclass"))
 	  cl
-    | Explicit -> cl
+    | Explicit -> cl, Idset.empty
   in
   let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
   let k, ctx', len, imps, subst =

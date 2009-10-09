@@ -225,7 +225,7 @@ let implicit_application env ?(allow_partial=true) f ty =
     with Not_found -> None
   in
     match is_class with
-    | None -> ty
+    | None -> ty, env
     | Some ((loc, id, par), gr) ->
 	let avoid = Idset.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
 	let c, avoid =
@@ -241,7 +241,7 @@ let implicit_application env ?(allow_partial=true) f ty =
 	  let pars = List.rev (List.combine ci rd) in
 	  let args, avoid = combine_params avoid f par pars in
 	    CAppExpl (loc, (None, id), args), avoid
-	in c
+	in c, avoid
 
 let implicits_of_rawterm l =
   let rec aux i c =

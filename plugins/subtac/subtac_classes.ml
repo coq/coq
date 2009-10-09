@@ -95,7 +95,7 @@ let substitution_of_constrs ctx cstrs =
 let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) pri =
   let env = Global.env() in
   let isevars = ref Evd.empty in
-  let tclass =
+  let tclass, _ =
     match bk with
     | Implicit ->
 	Implicit_quantifiers.implicit_application Idset.empty (* need no avoid *)
@@ -110,7 +110,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 		in t, avoid
 	    | None -> failwith ("new instance: under-applied typeclass"))
 	  cl
-      | Explicit -> cl
+      | Explicit -> cl, Idset.empty
   in
   let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
   let k, ctx', imps, subst =

@@ -697,8 +697,9 @@ let push_loc_name_env ?(fail_anonymous=false) lvar (ids,unb,tmpsc,scopes as env)
 
 let intern_generalized_binder ?(fail_anonymous=false) intern_type lvar
     (ids,unb,tmpsc,sc as env) bl (loc, na) b b' t ty =
-  let ty =
-    if t then ty else
+  let ids = match na with Anonymous -> ids | Name na -> Idset.add na ids in
+  let ty, ids' =
+    if t then ty, ids else
       Implicit_quantifiers.implicit_application ids
 	Implicit_quantifiers.combine_params_freevar ty
   in
@@ -715,7 +716,7 @@ let intern_generalized_binder ?(fail_anonymous=false) intern_type lvar
 	      match ty with
 	      | CApp (_, (_, CRef (Ident (loc,id))), _) -> id
 	      | _ -> id_of_string "H"
-	    in Implicit_quantifiers.make_fresh ids (Global.env ()) id
+	    in Implicit_quantifiers.make_fresh ids' (Global.env ()) id
 	  in Name name
     | _ -> na
   in (push_loc_name_env ~fail_anonymous lvar env' loc na), (na,b',None,ty') :: List.rev bl
