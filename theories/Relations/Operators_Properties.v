@@ -121,7 +121,7 @@ Section Properties.
       right with y; auto.
       right with y; auto.
       eapply IHIHclos_trans1; auto.
-      apply clos_t1n_t; auto.
+      apply clos_t1n_trans; auto.
     Qed.
 
     Lemma clos_trans_t1n_iff : forall x y,
@@ -129,7 +129,7 @@ Section Properties.
     Proof.
       split.
       apply clos_trans_t1n.
-      apply clos_t1n_t.
+      apply clos_t1n_trans.
     Qed.
 
     (** Direct transitive closure vs right-step extension *)
@@ -159,7 +159,7 @@ Section Properties.
     Proof.
       split.
       apply clos_trans_tn1.
-      apply clos_tn1_t.
+      apply clos_tn1_trans.
     Qed.
 
     (** Direct reflexive-transitive closure is equivalent to
