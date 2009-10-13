@@ -65,7 +65,11 @@
   let brackets = ref 0
   let comment_level = ref 0
   let in_proof = ref None
+  let in_emph = ref false
 
+  let start_emph () = in_emph := true; Output.start_emph ()
+  let stop_emph () = if !in_emph then (Output.stop_emph (); in_emph := false)
+    
   let backtrack lexbuf = lexbuf.lex_curr_pos <- lexbuf.lex_start_pos
   let backtrack_past_newline lexbuf =
     let buf = lexeme lexbuf in
@@ -675,7 +679,7 @@ and doc_bol = parse
   | eof
       { true }
   | '_'
-      { Output.start_emph ();
+      { start_emph ();
         doc None lexbuf }
   | _
       { backtrack lexbuf; doc None lexbuf }
@@ -823,10 +827,10 @@ and doc indents = parse
         doc indents lexbuf}
   | nonidentchar '_'
       { Output.char (lexeme_char lexbuf 0);
-        Output.start_emph ();
+        start_emph ();
         doc indents lexbuf }
   | '_' nonidentchar
-      { Output.stop_emph ();
+      { stop_emph ();
         Output.char (lexeme_char lexbuf 1);
         doc indents lexbuf }
   | eof
