@@ -18,18 +18,19 @@ Require Import Relation_Definitions.
 Require Import Relation_Operators.
 Require Import Setoid.
 
-Implicit Arguments clos_refl_trans [A].
-Implicit Arguments clos_refl_trans_1n [A].
-Implicit Arguments clos_refl_trans_n1 [A].
-Implicit Arguments clos_refl_sym_trans [A].
-Implicit Arguments clos_refl_sym_trans_1n [A].
-Implicit Arguments clos_refl_sym_trans_n1 [A].
-Implicit Arguments clos_trans [A].
-Implicit Arguments clos_trans_1n [A].
-Implicit Arguments clos_trans_n1 [A].
-Implicit Arguments inclusion [A].
-
 Section Properties.
+
+  Implicit Arguments clos_refl_trans [A].
+  Implicit Arguments clos_refl_trans_1n [A].
+  Implicit Arguments clos_refl_trans_n1 [A].
+  Implicit Arguments clos_refl_sym_trans [A].
+  Implicit Arguments clos_refl_sym_trans_1n [A].
+  Implicit Arguments clos_refl_sym_trans_n1 [A].
+  Implicit Arguments clos_trans [A].
+  Implicit Arguments clos_trans_1n [A].
+  Implicit Arguments clos_trans_n1 [A].
+  Implicit Arguments inclusion [A].
+  Implicit Arguments preorder [A].
 
   Variable A : Type.
   Variable R : relation A.
@@ -40,7 +41,7 @@ Section Properties.
 
     (** Correctness of the reflexive-transitive closure operator *)
 
-    Lemma clos_rt_is_preorder : preorder A (clos_refl_trans R).
+    Lemma clos_rt_is_preorder : preorder R*.
     Proof.
       apply Build_preorder.
       exact (rt_refl A R).
