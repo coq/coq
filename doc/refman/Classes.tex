@@ -10,7 +10,7 @@
 \label{typeclasses}
 
 \begin{flushleft}
-  \em The status of Type Classes is (extremelly) experimental.
+  \em The status of Type Classes is (extremely) experimental.
 \end{flushleft}
 
 This chapter presents a quick reference of the commands related to type
@@ -64,7 +64,7 @@ Class EqDec (A : Type) := {
 \end{coq_example*}
 
 This class implements a boolean equality test which is compatible with
-leibniz equality on some type. An example implementation is:
+Leibniz equality on some type. An example implementation is:
 
 \begin{coq_example*}
 Instance unit_EqDec : EqDec unit :=
@@ -136,8 +136,8 @@ particular support for type classes:
 
 Implicit quantification is an automatic elaboration of a statement with
 free variables into a closed statement where these variables are
-quantified explicitely. Implicit generalization is done only inside
-binders begining with a backquote \texttt{`} and the codomain of
+quantified explicitly. Implicit generalization is done only inside
+binders beginning with a backquote \texttt{`} and the codomain of
 \texttt{Instance} declarations.
 
 Following the previous example, one can write:
@@ -145,7 +145,7 @@ Following the previous example, one can write:
 Definition neqb_impl `{eqa : EqDec A} (x y : A) := negb (eqb x y).
 \end{coq_example}
 
-Here \texttt{A} is implicitely generalized, and the resulting function
+Here \texttt{A} is implicitly generalized, and the resulting function
 is equivalent to the one above. One must be careful that \emph{all} the
 free variables are generalized, which may result in confusing errors in
 case of typos. In such cases, the context will probably contain some
@@ -176,7 +176,7 @@ These instances are used just as well as lemmas in the instance hint database.
 
 \asection{Sections and contexts}
 \label{SectionContext}
-To ease the parameterisation of developments by type classes, we provide
+To ease the parametrization of developments by type classes, we provide
 a new way to introduce variables into section contexts, compatible with 
 the implicit argument mechanism. 
 The new command works similarly to the \texttt{Variables} vernacular
@@ -210,7 +210,7 @@ About option_eqb.
 \end{coq_example}
 
 Here the \texttt{Global} modifier redeclares the instance at the end of 
-the section, once it has been generalized by the context variabes it uses.
+the section, once it has been generalized by the context variables it uses.
 
 \asection{Building hierarchies}
 
@@ -245,7 +245,7 @@ Definition le_eqb `{Ord A} (x y : A) := andb (le x y) (le y x).
 \end{coq_example*}
 
 In some cases, to be able to specify sharing of structures, one may want to give
-explicitely the superclasses. It is is possible to do it directly in regular
+explicitly the superclasses. It is is possible to do it directly in regular
 binders, and using the \texttt{!} modifier in class binders. For
 example:
 \begin{coq_example*}
