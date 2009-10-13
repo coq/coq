@@ -66,12 +66,14 @@ let theories_dirs_map = [
     "theories/Unicode", "Unicode" ;
     "theories/Classes", "Classes" ;
     "theories/Program", "Program" ;
+    "theories/MSets", "MSets" ;
     "theories/FSets", "FSets" ;
     "theories/Reals", "Reals" ;
     "theories/Strings", "Strings" ;
     "theories/Sorting", "Sorting" ;
     "theories/Setoids", "Setoids" ;
     "theories/Sets", "Sets" ;
+    "theories/Structures", "Structures" ;
     "theories/Lists", "Lists" ;
     "theories/Wellfounded", "Wellfounded" ;
     "theories/Relations", "Relations" ;

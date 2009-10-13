@@ -279,7 +279,7 @@ Program Instance compose_proper A B C R₀ R₁ R₂ :
     unfold compose. apply H. apply H0. apply H1.
   Qed.
 
-(** Coq functions are morphisms for leibniz equality,
+(** Coq functions are morphisms for Leibniz equality,
    applied only if really needed. *)
 
 Instance reflexive_eq_dom_reflexive (A : Type) `(Reflexive B R') :
@@ -488,3 +488,98 @@ Ltac proper_reflexive :=
   end.
 
 Hint Extern 7 (@Proper _ _ _) => proper_reflexive : typeclass_instances.
+
+
+(** When the relation on the domain is symmetric, we can
+    inverse the relation on the codomain. Same for binary functions. *)
+
+Lemma proper_sym_flip
+ `(Symmetric A R1)`(Proper (A->B) (R1==>R2) f) :
+ Proper (R1==>inverse R2) f.
+Proof.
+intros A R1 Sym B R2 f Hf.
+intros x x' Hxx'. apply Hf, Sym, Hxx'.
+Qed.
+
+Lemma proper_sym_flip_2
+ `(Symmetric A R1)`(Symmetric B R2)`(Proper (A->B->C) (R1==>R2==>R3) f) :
+ Proper (R1==>R2==>inverse R3) f.
+Proof.
+intros A R1 Sym1 B R2 Sym2 C R3 f Hf.
+intros x x' Hxx' y y' Hyy'. apply Hf; auto.
+Qed.
+
+(** When the relation on the domain is symmetric, a predicate is
+  compatible with [iff] as soon as it is compatible with [impl].
+  Same with a binary relation. *)
+
+Lemma proper_sym_impl_iff `(Symmetric A R)`(Proper _ (R==>impl) f) :
+ Proper (R==>iff) f.
+Proof.
+intros A R Sym f Hf x x' Hxx'. repeat red in Hf. split; eauto.
+Qed.
+
+Lemma proper_sym_impl_iff_2
+ `(Symmetric A R)`(Symmetric B R')`(Proper _ (R==>R'==>impl) f) :
+ Proper (R==>R'==>iff) f.
+Proof.
+intros A R Sym B R' Sym' f Hf x x' Hxx' y y' Hyy'.
+repeat red in Hf. split; eauto.
+Qed.
+
+(** A [PartialOrder] is compatible with its underlying equivalence. *)
+
+Instance PartialOrder_proper `(PartialOrder A eqA R) :
+  Proper (eqA==>eqA==>iff) R.
+Proof.
+intros.
+apply proper_sym_impl_iff_2; auto with *.
+intros x x' Hx y y' Hy Hr.
+transitivity x.
+generalize (partial_order_equivalence x x'); compute; intuition.
+transitivity y; auto.
+generalize (partial_order_equivalence y y'); compute; intuition.
+Qed.
+
+(** From a [PartialOrder] to the corresponding [StrictOrder]:
+     [lt = le /\ ~eq].
+    If the order is total, we could also say [gt = ~le]. *)
+
+Instance PartialOrder_StrictOrder `(PartialOrder A eqA R) :
+  StrictOrder (relation_conjunction R (complement eqA)).
+Proof.
+split; compute.
+intros x (_,Hx). apply Hx, Equivalence_Reflexive.
+intros x y z (Hxy,Hxy') (Hyz,Hyz'). split.
+apply PreOrder_Transitive with y; assumption.
+intro Hxz.
+apply Hxy'.
+apply partial_order_antisym; auto.
+rewrite Hxz; auto.
+Qed.
+
+(** From a [StrictOrder] to the corresponding [PartialOrder]:
+     [le = lt \/ eq].
+    If the order is total, we could also say [ge = ~lt]. *)
+
+Instance StrictOrder_PreOrder
+ `(Equivalence A eqA, StrictOrder A R, Proper _ (eqA==>eqA==>iff) R) :
+ PreOrder (relation_disjunction R eqA).
+Proof.
+split.
+intros x. right. reflexivity.
+intros x y z [Hxy|Hxy] [Hyz|Hyz].
+left. transitivity y; auto.
+left. rewrite <- Hyz; auto.
+left. rewrite Hxy; auto.
+right. transitivity y; auto.
+Qed.
+
+Instance StrictOrder_PartialOrder
+  `(Equivalence A eqA, StrictOrder A R, Proper _ (eqA==>eqA==>iff) R) :
+  PartialOrder eqA (relation_disjunction R eqA).
+Proof.
+intros. intros x y. compute. intuition.
+elim (StrictOrder_Irreflexive x).
+transitivity y; auto.
+Qed.

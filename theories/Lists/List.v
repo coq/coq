@@ -1874,8 +1874,65 @@ Section NatSeq.
 End NatSeq.
 
 
+(** * Existential and universal predicates over lists *)
 
-  (** * Exporting hints and tactics *)
+Inductive ExistsL {A} (P:A->Prop) : list A -> Prop :=
+ | ExistsL_cons_hd : forall x l, P x -> ExistsL P (x::l)
+ | ExistsL_cons_tl : forall x l, ExistsL P l -> ExistsL P (x::l).
+Hint Constructors ExistsL.
+
+Lemma ExistsL_exists : forall A P (l:list A),
+ ExistsL P l <-> (exists x, In x l /\ P x).
+Proof.
+split.
+induction 1; firstorder.
+induction l; firstorder; subst; auto.
+Qed.
+
+Lemma ExistsL_nil : forall A (P:A->Prop), ExistsL P nil <-> False.
+Proof. split; inversion 1. Qed.
+
+Lemma ExistsL_cons : forall A (P:A->Prop) x l,
+ ExistsL P (x::l) <-> P x \/ ExistsL P l.
+Proof. split; inversion 1; auto. Qed.
+
+
+Inductive ForallL {A} (P:A->Prop) : list A -> Prop :=
+ | ForallL_nil : ForallL P nil
+ | ForallL_cons : forall x l, P x -> ForallL P l -> ForallL P (x::l).
+Hint Constructors ForallL.
+
+Lemma ForallL_forall : forall A P (l:list A),
+ ForallL P l <-> (forall x, In x l -> P x).
+Proof.
+split.
+induction 1; firstorder; subst; auto.
+induction l; firstorder.
+Qed.
+
+
+(** * Inversion of predicates over lists based on head symbol *)
+
+Ltac is_list_constr c :=
+ match c with
+  | nil => idtac
+  | (_::_) => idtac
+  | _ => fail
+ end.
+
+Ltac invlist f :=
+ match goal with
+  | H:f ?l |- _ => is_list_constr l; inversion_clear H; invlist f
+  | H:f _ ?l |- _ => is_list_constr l; inversion_clear H; invlist f
+  | H:f _ _ ?l |- _ => is_list_constr l; inversion_clear H; invlist f
+  | H:f _ _ _ ?l |- _ => is_list_constr l; inversion_clear H; invlist f
+  | H:f _ _ _ _ ?l |- _ => is_list_constr l; inversion_clear H; invlist f
+  | _ => idtac
+ end.
+
+
+
+(** * Exporting hints and tactics *)
 
 
 Hint Rewrite

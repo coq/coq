@@ -308,9 +308,15 @@ LOGICVO:=$(addprefix theories/Logic/, \
  Decidable.vo             JMeq.vo                  ClassicalChoice.vo 	\
  ClassicalDescription.vo  RelationalChoice.vo      Diaconescu.vo 	\
  EqdepFacts.vo            ProofIrrelevanceFacts.vo ClassicalEpsilon.vo 	\
- ClassicalUniqueChoice.vo DecidableType.vo         DecidableTypeEx.vo 	\
+ ClassicalUniqueChoice.vo 	\
  Epsilon.vo               ConstructiveEpsilon.vo   Description.vo 	\
  IndefiniteDescription.vo SetIsType.vo             FunctionalExtensionality.vo )
+
+STRUCTURESVO:=$(addprefix theories/Structures/, \
+ DecidableType.vo         DecidableTypeEx.vo \
+ OrderedType.vo           OrderedTypeEx.vo      OrderedTypeAlt.vo \
+ DecidableType2.vo         DecidableType2Ex.vo \
+ OrderedType2.vo           OrderedType2Ex.vo      OrderedType2Alt.vo )
 
 ARITHVO:=$(addprefix theories/Arith/, \
  Arith.vo	Gt.vo          	Between.vo	Le.vo         	\
@@ -349,7 +355,8 @@ QARITHVO:=$(addprefix theories/QArith/, \
 
 LISTSVO:=$(addprefix theories/Lists/, \
  ListSet.vo   	Streams.vo 	StreamMemo.vo  \
- TheoryList.vo	List.vo 	SetoidList.vo   ListTactics.vo )
+ TheoryList.vo	List.vo 	SetoidList.vo  SetoidList2.vo \
+ ListTactics.vo )
 
 STRINGSVO:=$(addprefix theories/Strings/, \
  Ascii.vo      	String.vo )
@@ -368,7 +375,6 @@ SETSVO:=$(addprefix theories/Sets/, \
  Partial_Order.vo     	Uniset.vo )
 
 FSETSBASEVO:=$(addprefix theories/FSets/, \
- OrderedType.vo		OrderedTypeEx.vo	OrderedTypeAlt.vo	\
  FSetInterface.vo	FSetList.vo 		FSetBridge.vo        	\
  FSetFacts.vo 		FSetProperties.vo	FSetEqProperties.vo 	\
  FSetWeakList.vo 	FSetAVL.vo           	FSetDecide.vo 		\
@@ -385,6 +391,12 @@ FSETS_all:=$(addprefix theories/FSets/, \
 FSETSVO:=$(FSETSBASEVO) $(FSETS_$(FSETS))
 
 ALLFSETS:=$(FSETSBASEVO) $(FSETS_all)
+
+MSETSVO:=$(addprefix theories/MSets/, \
+ MSetInterface.vo	MSetList.vo 		\
+ MSetFacts.vo 		MSetProperties.vo	MSetEqProperties.vo 	\
+ MSetWeakList.vo 	MSetAVL.vo           	MSetDecide.vo 		\
+ MSets.vo )
 
 RELATIONSVO:=$(addprefix theories/Relations/, \
  Operators_Properties.vo	Relation_Definitions.vo \
@@ -511,9 +523,9 @@ PROGRAMVO:=$(addprefix theories/Program/, \
 
 THEORIESVO:=\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \
-  $(SETOIDSVO) $(LISTSVO) $(STRINGSVO) $(SETSVO) $(FSETSVO) \
+  $(SETOIDSVO) $(LISTSVO) $(STRINGSVO) $(SETSVO) $(FSETSVO) $(MSETSVO) \
   $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)  $(SORTINGVO) $(QARITHVO) \
-  $(NUMBERSVO) $(UNICODEVO) $(CLASSESVO) $(PROGRAMVO)
+  $(NUMBERSVO) $(UNICODEVO) $(CLASSESVO) $(PROGRAMVO) $(STRUCTURESVO)
 
 THEORIESLIGHTVO:= $(INITVO) $(LOGICVO) $(ARITHVO)
 

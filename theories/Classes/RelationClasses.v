@@ -47,7 +47,7 @@ Class Reflexive {A} (R : relation A) :=
 Class Irreflexive {A} (R : relation A) :=
   irreflexivity : Reflexive (complement R).
 
-Hint Extern 1 (Reflexive (complement _)) => class_apply @irreflexivity : typeclasses_instances.
+Hint Extern 1 (Reflexive (complement _)) => class_apply @irreflexivity : typeclass_instances.
 
 Class Symmetric {A} (R : relation A) :=
   symmetry : forall x y, R x y -> R y x.
@@ -417,3 +417,30 @@ Instance: RewriteRelation (@relation_equivalence A).
    a rewrite relation. *)
 
 Instance equivalence_rewrite_relation `(Equivalence A eqA) : RewriteRelation eqA.
+
+(** Strict Order *)
+
+Class StrictOrder {A : Type} (R : relation A) := {
+  StrictOrder_Irreflexive :> Irreflexive R ;
+  StrictOrder_Transitive :> Transitive R
+}.
+
+Instance StrictOrder_Asymmetric `(StrictOrder A R) : Asymmetric R.
+Proof.
+  firstorder.
+Qed.
+
+(** Inversing a [StrictOrder] gives another [StrictOrder] *)
+
+Instance StrictOrder_inverse `(StrictOrder A R) : StrictOrder (inverse R).
+
+(** Same for [PartialOrder]. *)
+
+Instance PreOrder_inverse `(PreOrder A R) : PreOrder (inverse R).
+
+Instance PartialOrder_inverse `(PartialOrder A eqA R) :
+ PartialOrder eqA (inverse R).
+Proof.
+firstorder.
+Qed.
+
