@@ -183,10 +183,7 @@ Definition hide_eq := eq.
 
 (** order_eq : replace x by y in all (in)equations thanks
    to equality EQ (where eq has been hidden in order to avoid
-   self-rewriting).
-
-   NB: order_saturate_eq could be written in a shorter way thanks
-   to rewrite, but proof terms would be uglier *)
+   self-rewriting). *)
 
 Ltac order_eq x y EQ :=
  let rewr H t := generalize t; clear H; intro H
@@ -210,54 +207,54 @@ Ltac order_eq x y EQ :=
  | _ => clear EQ
 end.
 
-Ltac order := intros; trivial;
+Ltac order_loop := intros; trivial;
  match goal with
- | |- ~ _ => intro; order
- | H : ?A -> False |- _ => change (~A) in H; order
+ | |- ~ _ => intro; order_loop
+ | H : ?A -> False |- _ => change (~A) in H; order_loop
  (* First, successful situations *)
  | H : ?x < ?x |- _ => elim (lt_antirefl H)
  | H : ~ ?x == ?x |- _ => elim (H (Equivalence_Reflexive x))
  | |- ?x == ?x => apply (Equivalence_Reflexive x)
  (* Second, useless hyps or goal *)
- | H : ?x == ?x |- _ => clear H; order
- | H : ?x <= ?x |- _ => clear H; order
- | |- ?x < ?x => elimtype False; order
+ | H : ?x == ?x |- _ => clear H; order_loop
+ | H : ?x <= ?x |- _ => clear H; order_loop
+ | |- ?x < ?x => exfalso; order_loop
  (* We eliminate equalities *)
  | H : ?x == ?y |- _ =>
-   change (hide_eq x y) in H; order_eq x y H; order
+   change (hide_eq x y) in H; order_eq x y H; order_loop
  (* Simultaneous le and ge is eq *)
  | H1 : ?x <= ?y, H2 : ?y <= ?x |- _ =>
-   generalize (le_antisym H1 H2); clear H1 H2; intro; order
+   generalize (le_antisym H1 H2); clear H1 H2; intro; order_loop
  (* Simultaneous le and ~eq is lt *)
  | H1: ?x <= ?y, H2: ~ ?x == ?y |- _ =>
-     generalize (le_neq H1 H2); clear H1 H2; intro; order
+     generalize (le_neq H1 H2); clear H1 H2; intro; order_loop
  | H1: ?x <= ?y, H2: ~ ?y == ?x |- _ =>
-     generalize (le_neq H1 (neq_sym H2)); clear H1 H2; intro; order
+     generalize (le_neq H1 (neq_sym H2)); clear H1 H2; intro; order_loop
  (* Transitivity of lt and le *)
  | H1 : ?x < ?y, H2 : ?y < ?z |- _ =>
     match goal with
       | H : x < z |- _ => fail 1
-      | _ => generalize (lt_trans H1 H2); intro; order
+      | _ => generalize (lt_trans H1 H2); intro; order_loop
     end
  | H1 : ?x <= ?y, H2 : ?y < ?z |- _ =>
     match goal with
       | H : x < z |- _ => fail 1
-      | _ => generalize (le_lt_trans H1 H2); intro; order
+      | _ => generalize (le_lt_trans H1 H2); intro; order_loop
     end
  | H1 : ?x < ?y, H2 : ?y <= ?z |- _ =>
     match goal with
       | H : x < z |- _ => fail 1
-      | _ => generalize (lt_le_trans H1 H2); intro; order
+      | _ => generalize (lt_le_trans H1 H2); intro; order_loop
     end
  | H1 : ?x <= ?y, H2 : ?y <= ?z |- _ =>
     match goal with
       | H : x <= z |- _ => fail 1
-      | _ => generalize (le_trans H1 H2); intro; order
+      | _ => generalize (le_trans H1 H2); intro; order_loop
     end
  | _ => auto; fail
 end.
 
-Ltac false_order := elimtype False; order.
+Ltac order := order_loop; fail
 
   Lemma gt_not_eq : forall x y, lt y x -> ~ eq x y.
   Proof.

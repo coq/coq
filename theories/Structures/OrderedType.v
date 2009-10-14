@@ -129,118 +129,117 @@ Module OrderedTypeFacts (Import O: OrderedType).
    intros; destruct (compare x y); intuition.
   Qed.
 
+  Lemma le_trans : forall x y z, ~lt y x -> ~lt z y -> ~lt z x.
+  Proof.
+   intros x y z Nyx Nzy Lzx. apply Nyx; clear Nyx.
+   destruct (compare z y).
+   intuition.
+   apply eq_lt with z; auto.
+   apply lt_trans with z; auto.
+  Qed.
+
+  Lemma le_antisym : forall x y, ~lt y x -> ~lt x y -> eq x y.
+  Proof.
+   intros. destruct (compare x y); intuition.
+  Qed.
+
   Lemma neq_sym : forall x y, ~eq x y -> ~eq y x.
   Proof.
    intuition.
   Qed.
 
-(* TODO concernant la tactique order:
-   * propagate_lt n'est sans doute pas complet
-   * un propagate_le
-   * exploiter les hypotheses negatives restant a la fin
-   * faire que ca marche meme quand une hypothese depend d'un eq ou lt.
-*)
+  Infix "==" := eq (at level 70, no associativity) : order.
+  Infix "<" := lt : order.
+  Notation "x <= y" := (~lt y x) : order.
 
-Ltac abstraction := match goal with
- (* First, some obvious simplifications *)
- | H : False |- _ => elim H
- | H : lt ?x ?x |- _ => elim (lt_antirefl H)
- | H : ~eq ?x ?x |- _ => elim (H (eq_refl x))
- | H : eq ?x ?x |- _ => clear H; abstraction
- | H : ~lt ?x ?x |- _ => clear H; abstraction
- | |- eq ?x ?x => exact (eq_refl x)
- | |- lt ?x ?x => exfalso; abstraction
- | |- ~ _ => intro; abstraction
- | H1: ~lt ?x ?y, H2: ~eq ?x ?y |- _ =>
-     generalize (le_neq H1 H2); clear H1 H2; intro; abstraction
- | H1: ~lt ?x ?y, H2: ~eq ?y ?x |- _ =>
-     generalize (le_neq H1 (neq_sym H2)); clear H1 H2; intro; abstraction
- (* Then, we generalize all interesting facts *)
- | H : ~eq ?x ?y |- _ =>  revert H; abstraction
- | H : ~lt ?x ?y |- _ => revert H; abstraction
- | H : lt ?x ?y |- _ => revert H; abstraction
- | H : eq ?x ?y |- _ =>  revert H; abstraction
- | _ => idtac
+  Local Open Scope order.
+
+(** The order tactic *)
+
+(** This tactic is designed to solve systems of (in)equations
+    involving eq and lt and ~eq and ~lt (i.e. ge). All others
+    parts of the goal will be discarded. This tactic is
+    domain-agnostic : it will only use equivalence+order axioms.
+    Moreover it doesn't directly use totality of the order
+    (but uses above lemmas such as le_trans that rely on it).
+    A typical use of this tactic is transitivity problems. *)
+
+Definition hide_eq := eq.
+
+(** order_eq : replace x by y in all (in)equations thanks
+   to equality EQ (where eq has been hidden in order to avoid
+   self-rewriting). *)
+
+Ltac order_eq x y EQ :=
+ let rewr H t := generalize t; clear H; intro H
+ in
+ match goal with
+ | H : x == _ |- _ => rewr H (eq_trans (eq_sym EQ) H); order_eq x y EQ
+ | H : _ == x |- _ => rewr H (eq_trans H EQ); order_eq x y EQ
+ | H : ~x == _ |- _ => rewr H (eq_neq (eq_sym EQ) H); order_eq x y EQ
+ | H : ~_ == x |- _ => rewr H (neq_eq H EQ); order_eq x y EQ
+ | H : x < ?z |- _ => rewr H (eq_lt (eq_sym EQ) H); order_eq x y EQ
+ | H : ?z < x |- _ => rewr H (lt_eq H EQ); order_eq x y EQ
+ | H : x <= ?z |- _ => rewr H (eq_le (eq_sym EQ) H); order_eq x y EQ
+ | H : ?z <= x |- _ => rewr H (le_eq H EQ); order_eq x y EQ
+ (* NB: no negation in the goal, see below *)
+ | |- x == ?z => apply eq_trans with y; [apply EQ| ]; order_eq x y EQ
+ | |- ?z == x => apply eq_trans with y; [ | apply (eq_sym EQ) ];
+    order_eq x y EQ
+ | |- x < ?z => apply eq_lt with y; [apply EQ| ]; order_eq x y EQ
+ | |- ?z < x => apply lt_eq with y; [ | apply (eq_sym EQ) ];
+    order_eq x y EQ
+ | _ => clear EQ
 end.
 
-Ltac do_eq a b EQ := match goal with
- | |- lt ?x ?y -> _ => let H := fresh "H" in
-     (intro H;
-      (generalize (eq_lt (eq_sym EQ) H); clear H; intro H) ||
-      (generalize (lt_eq H EQ); clear H; intro H) ||
-      idtac);
-      do_eq a b EQ
- | |- ~lt ?x ?y -> _ => let H := fresh "H" in
-     (intro H;
-      (generalize (eq_le (eq_sym EQ) H); clear H; intro H) ||
-      (generalize (le_eq H EQ); clear H; intro H) ||
-      idtac);
-      do_eq a b EQ
- | |- eq ?x ?y -> _ => let H := fresh "H" in
-     (intro H;
-      (generalize (eq_trans (eq_sym EQ) H); clear H; intro H) ||
-      (generalize (eq_trans H EQ); clear H; intro H) ||
-      idtac);
-      do_eq a b EQ
- | |- ~eq ?x ?y -> _ => let H := fresh "H" in
-     (intro H;
-      (generalize (eq_neq (eq_sym EQ) H); clear H; intro H) ||
-      (generalize (neq_eq H EQ); clear H; intro H) ||
-      idtac);
-      do_eq a b EQ
- | |- lt a ?y => apply eq_lt with b; [exact EQ|]
- | |- lt ?y a => apply lt_eq with b; [|exact (eq_sym EQ)]
- | |- eq a ?y => apply eq_trans with b; [exact EQ|]
- | |- eq ?y a => apply eq_trans with b; [|exact (eq_sym EQ)]
- | _ => idtac
- end.
-
-Ltac propagate_eq := abstraction; clear; match goal with
- (* the abstraction tactic leaves equality facts in head position...*)
- | |- eq ?a ?b -> _ =>
-     let EQ := fresh "EQ" in (intro EQ; do_eq a b EQ; clear EQ);
-     propagate_eq
- | _ => idtac
+Ltac order_loop := intros; trivial;
+ match goal with
+ | |- ~ _ => intro; order_loop
+ | H : ?A -> False |- _ => change (~A) in H; order_loop
+ (* First, successful situations *)
+ | H : ?x < ?x |- _ => elim (lt_antirefl H)
+ | H : ~ ?x == ?x |- _ => elim (H (eq_refl x))
+ | |- ?x == ?x => apply (eq_refl x)
+ (* Second, useless hyps or goal *)
+ | H : ?x == ?x |- _ => clear H; order_loop
+ | H : ?x <= ?x |- _ => clear H; order_loop
+ | |- ?x < ?x => exfalso; order_loop
+ (* We eliminate equalities *)
+ | H : ?x == ?y |- _ =>
+   change (hide_eq x y) in H; order_eq x y H; order_loop
+ (* Simultaneous le and ge is eq *)
+ | H1 : ?x <= ?y, H2 : ?y <= ?x |- _ =>
+   generalize (le_antisym H1 H2); clear H1 H2; intro; order_loop
+ (* Simultaneous le and ~eq is lt *)
+ | H1: ?x <= ?y, H2: ~ ?x == ?y |- _ =>
+     generalize (le_neq H1 (neq_sym H2)); clear H1 H2; intro; order_loop
+ | H1: ?x <= ?y, H2: ~ ?y == ?x |- _ =>
+     generalize (le_neq H1 H2); clear H1 H2; intro; order_loop
+ (* Transitivity of lt and le *)
+ | H1 : ?x < ?y, H2 : ?y < ?z |- _ =>
+    match goal with
+      | H : x < z |- _ => fail 1
+      | _ => generalize (lt_trans H1 H2); intro; order_loop
+    end
+ | H1 : ?x <= ?y, H2 : ?y < ?z |- _ =>
+    match goal with
+      | H : x < z |- _ => fail 1
+      | _ => generalize (le_lt_trans H1 H2); intro; order_loop
+    end
+ | H1 : ?x < ?y, H2 : ?y <= ?z |- _ =>
+    match goal with
+      | H : x < z |- _ => fail 1
+      | _ => generalize (lt_le_trans H1 H2); intro; order_loop
+    end
+ | H1 : ?x <= ?y, H2 : ?y <= ?z |- _ =>
+    match goal with
+      | H : x <= z |- _ => fail 1
+      | _ => generalize (le_trans H1 H2); intro; order_loop
+    end
+ | _ => auto
 end.
 
-Ltac do_lt x y LT := match goal with
- (* LT *)
- | |- lt x y -> _ => intros _; do_lt x y LT
- | |- lt y ?z -> _ => let H := fresh "H" in
-     (intro H; generalize (lt_trans LT H); intro); do_lt x y LT
- | |- lt ?z x -> _ => let H := fresh "H" in
-     (intro H; generalize (lt_trans H LT); intro); do_lt x y LT
- | |- lt _ _ -> _ => intro; do_lt x y LT
- (* GE *)
- | |- ~lt y x -> _ => intros _; do_lt x y LT
- | |- ~lt x ?z -> _ => let H := fresh "H" in
-     (intro H; generalize (le_lt_trans H LT); intro); do_lt x y LT
- | |- ~lt ?z y -> _ => let H := fresh "H" in
-     (intro H; generalize (lt_le_trans LT H); intro); do_lt x y LT
- | |- ~lt _ _ -> _ => intro; do_lt x y LT
- | _ => idtac
- end.
-
-Definition hide_lt := lt.
-
-Ltac propagate_lt := abstraction; match goal with
- (* when no [=] remains, the abstraction tactic leaves [<] facts first. *)
- | |- lt ?x ?y -> _ =>
-     let LT := fresh "LT" in (intro LT; do_lt x y LT;
-     change (hide_lt x y) in LT);
-     propagate_lt
- | _ => unfold hide_lt in *
-end.
-
-Ltac order :=
- intros;
- propagate_eq;
- propagate_lt;
- auto;
- propagate_lt;
- eauto.
-
-Ltac false_order := exfalso; order.
+Ltac order := order_loop; fail.
 
   Lemma gt_not_eq : forall x y, lt y x -> ~ eq x y.
   Proof.
@@ -270,7 +269,7 @@ Ltac false_order := exfalso; order.
    forall x y : t,
    eq x y -> exists H : eq x y, compare x y = EQ _ H.
   Proof.
-   intros; case (compare x y); intros H'; try solve [false_order].
+   intros; case (compare x y); intros H'; try (exfalso; order).
    exists H'; auto.
   Qed.
 
@@ -278,7 +277,7 @@ Ltac false_order := exfalso; order.
    forall x y : t,
    lt x y -> exists H : lt x y, compare x y = LT _ H.
   Proof.
-   intros; case (compare x y); intros H'; try solve [false_order].
+   intros; case (compare x y); intros H'; try (exfalso; order).
    exists H'; auto.
   Qed.
 
@@ -286,7 +285,7 @@ Ltac false_order := exfalso; order.
    forall x y : t,
    lt y x -> exists H : lt y x, compare x y = GT _ H.
   Proof.
-   intros; case (compare x y); intros H'; try solve [false_order].
+   intros; case (compare x y); intros H'; try (exfalso; order).
    exists H'; auto.
   Qed.
 
@@ -296,7 +295,7 @@ Ltac false_order := exfalso; order.
            | context ctx [ compare ?a ?b ] =>
                 let H := fresh in
                 (destruct (compare a b) as [H|H|H];
-                 try solve [ intros; false_order])
+                 try (intros; exfalso; order))
          end
     end.
 
