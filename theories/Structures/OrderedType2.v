@@ -254,7 +254,7 @@ Ltac order_loop := intros; trivial;
  | _ => auto; fail
 end.
 
-Ltac order := order_loop; fail
+Ltac order := order_loop; fail.
 
   Lemma gt_not_eq : forall x y, lt y x -> ~ eq x y.
   Proof.
