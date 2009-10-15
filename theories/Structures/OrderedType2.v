@@ -251,7 +251,7 @@ Ltac order_loop := intros; trivial;
       | H : x <= z |- _ => fail 1
       | _ => generalize (le_trans H1 H2); intro; order_loop
     end
- | _ => auto; fail
+ | _ => auto
 end.
 
 Ltac order := order_loop; fail.
