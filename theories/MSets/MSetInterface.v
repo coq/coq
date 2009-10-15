@@ -850,9 +850,9 @@ Module MakeSetOrdering (O:OrderedType)(Import M:IN O).
    destruct Disj as [(IN,_)|(IN,_)]; auto. rewrite Hx; auto.
   exists x; split.
   intros z Hz. rewrite (Ad1 z), (Ad2 z).
-  split; intros [U|U]; try order.
-  right; rewrite <- (EQ z); auto.
-  right; rewrite (EQ z); auto.
+  split; intros [U|U]; try (left; order); right.
+  rewrite <- (EQ z); auto.
+  rewrite (EQ z); auto.
   destruct Disj as [(IN,Em)|(IN & y & INy & LTy & Be)].
   left; split; auto.
   rewrite (Ad2 x); auto.
