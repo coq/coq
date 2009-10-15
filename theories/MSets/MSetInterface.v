@@ -431,9 +431,8 @@ End WRawSets.
 
 (** From weak raw sets to weak usual sets *)
 
-Module WRaw2Sets (E:DecidableType)(M:WRawSets E) <: WSets with Module E := E.
+Module WRaw2SetsOn (E:DecidableType)(M:WRawSets E) <: WSetsOn E.
 
- Module E := E.
  Definition elt := E.t.
 
  Record t_ := Mkt {this :> M.t; is_ok : M.Ok this}.
@@ -544,6 +543,11 @@ Module WRaw2Sets (E:DecidableType)(M:WRawSets E) <: WSets with Module E := E.
 
  End Spec.
 
+End WRaw2SetsOn.
+
+Module WRaw2Sets (E:DecidableType)(M:WRawSets E) <: WSets with Module E := E.
+  Module E := E.
+  Include WRaw2SetsOn E M.
 End WRaw2Sets.
 
 (** Same approach for ordered sets *)
@@ -590,8 +594,8 @@ End RawSets.
 
 (** From Raw to usual sets *)
 
-Module Raw2Sets (O:OrderedType)(M:RawSets O) <: S with Module E := O.
-  Include WRaw2Sets O M.
+Module Raw2SetsOn (O:OrderedType)(M:RawSets O) <: SetsOn O.
+  Include WRaw2SetsOn O M.
 
   Definition compare (s s':t) := M.compare s s'.
   Definition min_elt (s:t) := M.min_elt s.
@@ -647,11 +651,16 @@ Module Raw2Sets (O:OrderedType)(M:RawSets O) <: S with Module E := O.
 
   (** Additional specification of [choose] *)
   Lemma choose_spec3 :
-    choose s = Some x -> choose s' = Some y -> Equal s s' -> E.eq x y.
+    choose s = Some x -> choose s' = Some y -> Equal s s' -> O.eq x y.
   Proof. exact (@M.choose_spec3 _ _ _ _ _ _). Qed.
 
   End Spec.
 
+End Raw2SetsOn.
+
+Module Raw2Sets (O:OrderedType)(M:RawSets O) <: Sets with Module E := O.
+  Module E := O.
+  Include Raw2SetsOn O M.
 End Raw2Sets.
 
 
