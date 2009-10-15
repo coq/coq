@@ -72,7 +72,7 @@ let evars_to_goals p evm =
 	if evi.evar_body = Evar_empty
 	  && Typeclasses.is_resolvable evi
 	  (* 	  && not (is_dependent ev evm) *)
-	  && p ev evi then ((ev,evi) :: gls, Evd.add evm' ev (Typeclasses.mark_unresolvable evi)) else
+	  && p evm ev evi then ((ev,evi) :: gls, Evd.add evm' ev (Typeclasses.mark_unresolvable evi)) else
 	  (gls, Evd.add evm' ev evi))
       evm ([], Evd.empty)
   in
@@ -449,7 +449,7 @@ let _ =
 
 let has_undefined p oevd evd =
   Evd.fold (fun ev evi has -> has ||
-    (evi.evar_body = Evar_empty && p ev evi &&
+    (evi.evar_body = Evar_empty && p oevd ev evi &&
 	(try Typeclasses.is_resolvable (Evd.find oevd ev) with _ -> true)))
     evd false
 
@@ -481,7 +481,8 @@ let resolve_all_evars debug m env p oevd do_split fail =
   let oevm =  oevd in
   let split = if do_split then split_evars oevd else [Intset.empty] in
   let p = if do_split then
-    fun comp ev evi -> (Intset.mem ev comp || not (Evd.mem oevm ev)) && p ev evi
+    fun comp evd ev evi -> (Intset.mem ev comp || not (Evd.mem oevm ev)) 
+      && p evd ev evi
     else fun _ -> p
   in
   let rec aux n p evd =
@@ -519,9 +520,9 @@ let resolve_all_evars debug m env p oevd do_split fail =
 let resolve_typeclass_evars d p env evd onlyargs split fail =
   let pred =
     if onlyargs then
-      (fun ev evi -> Typeclasses.is_implicit_arg (snd (Evd.evar_source ev evd)) &&
+      (fun evd ev evi -> Typeclasses.is_implicit_arg (snd (Evd.evar_source ev evd)) &&
 	Typeclasses.is_class_evar evd evi)
-    else (fun ev evi -> Typeclasses.is_class_evar evd evi)
+    else (fun evd ev evi -> Typeclasses.is_class_evar evd evi)
   in resolve_all_evars d p env pred evd split fail
 
 let solve_inst debug mode depth env evd onlyargs split fail =
