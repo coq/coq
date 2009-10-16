@@ -442,7 +442,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   induction2; try rewrite ?InA_cons, ?Hrec, ?Hrec'; intuition; inv; auto;
    try sort_inf_in; try order.
-  right; intuition; inv; order.
+  right; intuition; inv; auto.
   Qed.
 
   Lemma equal_spec :

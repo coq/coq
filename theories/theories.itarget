@@ -78,12 +78,12 @@ Structures/OrderedTypeEx.vo
 Structures/OrderedType.vo
 Structures/DecidableType.vo
 Structures/DecidableTypeEx.vo
-
 Structures/OrderedType2Alt.vo
 Structures/OrderedType2Ex.vo
 Structures/OrderedType2.vo
 Structures/DecidableType2.vo
 Structures/DecidableType2Ex.vo
+Structures/OrderTac.vo
 
 Init/Datatypes.vo
 Init/Logic_Type.vo

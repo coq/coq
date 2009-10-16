@@ -1276,8 +1276,7 @@ Proof.
  try destruct p0 as (x'',e''); try contradiction; auto.
  destruct (X.compare x x');
   destruct (X.compare x' x'');
-   MapS.Raw.MX.elim_comp.
- intuition.
+   MapS.Raw.MX.elim_comp; intuition.
  apply D.eq_trans with e'; auto.
  inversion_clear Hm1; inversion_clear Hm2; inversion_clear Hm3.
  apply (IHm1 H1 (Build_slist H6) (Build_slist H8)); intuition.
@@ -1293,8 +1292,7 @@ Proof.
  try destruct p0 as (x'',e''); try contradiction; auto.
  destruct (X.compare x x');
   destruct (X.compare x' x'');
-   MapS.Raw.MX.elim_comp; auto.
- intuition.
+   MapS.Raw.MX.elim_comp; intuition.
  left; apply D.lt_trans with e'; auto.
  left; apply lt_eq with e'; auto.
  left; apply eq_lt with e'; auto.

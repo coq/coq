@@ -1178,7 +1178,7 @@ Lemma split_in_3 : forall m x, bst m ->
 Proof.
  intros m x; functional induction (split x m); subst; simpl; auto;
   intros; inv bst; try clear e0;
-  destruct X.compare; try (order;fail); rewrite <-IHt, e1; auto.
+  destruct X.compare; try order; trivial; rewrite <- IHt, e1; auto.
 Qed.
 
 Lemma split_bst : forall m x, bst m ->

@@ -865,12 +865,12 @@ Module MakeSetOrdering (O:OrderedType)(Import M:IN O).
   destruct Disj as [(IN,Em)|(IN & y & INy & LTy & Be)].
   left; split; auto.
   rewrite (Ad2 x); auto.
-  intros z. rewrite (Ad1 z); intros [U|U]; try specialize (Ab1 z U); order.
+  intros z. rewrite (Ad1 z); intros [U|U]; try specialize (Ab1 z U); auto; order.
   right; split; auto.
   rewrite (Ad1 x); auto.
   exists y; repeat split; auto.
   rewrite (Ad2 y); auto.
-  intros z. rewrite (Ad2 z). intros [U|U]; try specialize (Ab2 z U); order.
+  intros z. rewrite (Ad2 z). intros [U|U]; try specialize (Ab2 z U); auto; order.
   Qed.
 
 End MakeSetOrdering.

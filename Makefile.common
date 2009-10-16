@@ -313,6 +313,7 @@ LOGICVO:=$(addprefix theories/Logic/, \
  IndefiniteDescription.vo SetIsType.vo             FunctionalExtensionality.vo )
 
 STRUCTURESVO:=$(addprefix theories/Structures/, \
+ OrderTac.vo \
  DecidableType.vo         DecidableTypeEx.vo \
  OrderedType.vo           OrderedTypeEx.vo      OrderedTypeAlt.vo \
  DecidableType2.vo         DecidableType2Ex.vo \

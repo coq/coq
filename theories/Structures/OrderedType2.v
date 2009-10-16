@@ -8,7 +8,7 @@
 
 (* $Id$ *)
 
-Require Export SetoidList2 DecidableType2.
+Require Export SetoidList2 DecidableType2 OrderTac.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -73,6 +73,29 @@ Module OrderedTypeFacts (Import O: OrderedType).
 
   Local Open Scope order.
 
+  Ltac elim_compare x y :=
+   generalize (compare_spec x y); destruct (compare x y);
+   unfold Cmp, flip.
+
+  Module OrderElts : OrderTacSig
+    with Definition t := t
+    with Definition eq := eq
+    with Definition lt := lt.
+  (* Opaque signature is crucial for ltac to work correctly later *)
+  Include O.
+  Definition le x y := x<y \/ x==y.
+  Lemma lt_total : forall x y, x<y \/ x==y \/ y<x.
+  Proof. intros; elim_compare x y; intuition. Qed.
+  Lemma le_lteq : forall x y, le x y <-> lt x y \/ eq x y.
+  Proof. unfold le; intuition. Qed.
+  End OrderElts.
+  Module OrderTac := MakeOrderTac OrderElts.
+
+  Ltac order :=
+    change eq with OrderElts.eq in *;
+    change lt with OrderElts.lt in *;
+    OrderTac.order.
+
   (** The following lemmas are re-phrasing of eq_equiv and lt_strorder.
       Interest: compatibility, simple use (e.g. in tactic order), etc. *)
 
@@ -88,196 +111,29 @@ Module OrderedTypeFacts (Import O: OrderedType).
 
   Definition lt_antirefl (x:t) : ~x<x := StrictOrder_Irreflexive x.
 
-  Lemma lt_not_eq : forall x y, x<y -> ~x==y.
-  Proof.
-   intros x y H H'. rewrite H' in H.
-   apply lt_antirefl with y; auto.
-  Qed.
+  Lemma lt_not_eq x y : x<y -> ~x==y.  Proof. order. Qed.
+  Lemma lt_eq x y z : x<y -> y==z -> x<z. Proof. order. Qed.
+  Lemma eq_lt x y z : x==y -> y<z -> x<z. Proof. order. Qed.
+  Lemma le_eq x y z : x<=y -> y==z -> x<=z. Proof. order. Qed.
+  Lemma eq_le x y z : x==y -> y<=z -> x<=z. Proof. order. Qed.
+  Lemma neq_eq x y z : ~x==y -> y==z -> ~x==z. Proof. order. Qed.
+  Lemma eq_neq x y z : x==y -> ~y==z -> ~x==z. Proof. order. Qed.
 
-  Lemma lt_eq : forall x y z, x<y -> y==z -> x<z.
-  Proof.
-   intros x y z H H'. rewrite <- H'; auto.
-  Qed.
-
-  Lemma eq_lt : forall x y z, x==y -> y<z -> x<z.
-  Proof.
-   intros x y z H H'. rewrite H; auto.
-  Qed.
-
-  Lemma le_eq : forall x y z, x<=y -> y==z -> x<=z.
-  Proof.
-   intros x y z H H' H''. rewrite H' in H; auto.
-  Qed.
-
-  Lemma eq_le : forall x y z, x==y -> y<=z -> x<=z.
-  Proof.
-   intros x y z H H'. rewrite H; auto.
-  Qed.
-
-  Lemma neq_eq : forall x y z, ~x==y -> y==z -> ~x==z.
-  Proof.
-   intros x y z H H'; rewrite <-H'; auto.
-  Qed.
-
-  Lemma eq_neq : forall x y z, x==y -> ~y==z -> ~x==z.
-  Proof.
-   intros x y z H H'; rewrite H; auto.
-  Qed.
+  Lemma le_lt_trans x y z : x<=y -> y<z -> x<z. Proof. order. Qed.
+  Lemma lt_le_trans x y z : x<y -> y<=z -> x<z. Proof. order. Qed.
+  Lemma le_trans x y z : x<=y -> y<=z -> x<=z. Proof. order. Qed.
+  Lemma le_antisym x y : x<=y -> y<=x -> x==y. Proof. order. Qed.
+  Lemma le_neq x y : x<=y -> ~x==y -> x<y. Proof. order. Qed.
+  Lemma neq_sym x y : ~x==y -> ~y==x. Proof. order. Qed.
+  Lemma lt_le x y : x<y -> x<=y. Proof. order. Qed.
+  Lemma gt_not_eq x y : y<x -> ~x==y. Proof. order. Qed.
+  Lemma eq_not_lt x y : x==y -> ~x<y. Proof. order. Qed.
+  Lemma eq_not_gt x y : x==y -> ~ y<x. Proof. order. Qed.
+  Lemma lt_not_gt x y : x<y -> ~ y<x. Proof. order. Qed.
 
   Hint Resolve eq_trans eq_refl lt_trans.
   Hint Immediate eq_sym eq_lt lt_eq le_eq eq_le neq_eq eq_neq.
-
-  Ltac elim_compare x y :=
-   generalize (compare_spec x y); destruct (compare x y);
-   unfold Cmp, flip.
-
-  Lemma le_lt_trans : forall x y z, x<=y -> y<z -> x<z.
-  Proof.
-   intros. elim_compare x y; intro H'.
-   rewrite H'; auto.
-   transitivity y; auto.
-   intuition.
-  Qed.
-
-  Lemma lt_le_trans : forall x y z, x<y -> y<=z -> x<z.
-  Proof.
-   intros. elim_compare y z; intro H'.
-   rewrite <- H'; auto.
-   transitivity y; auto.
-   intuition.
-  Qed.
-
-  Lemma le_trans : forall x y z, x<=y -> y<=z -> x<=z.
-  Proof.
-   intros x y z Hxy Hyz Hzx.
-   apply Hxy.
-   eapply le_lt_trans; eauto.
-  Qed.
-
-  Lemma le_antisym : forall x y, x<=y -> y<=x -> x==y.
-  Proof.
-   intros. elim_compare x y; intuition.
-  Qed.
-
-  Lemma le_neq : forall x y, x<=y -> ~x==y -> x<y.
-  Proof.
-   intros. elim_compare x y; intuition.
-  Qed.
-
-  Lemma neq_sym : forall x y, ~x==y -> ~y==x.
-  Proof.
-   intuition.
-  Qed.
-
-(** The order tactic *)
-
-(** This tactic is designed to solve systems of (in)equations
-    involving eq and lt and ~eq and ~lt (i.e. ge). All others
-    parts of the goal will be discarded. This tactic is
-    domain-agnostic : it will only use equivalence+order axioms.
-    Moreover it doesn't directly use totality of the order
-    (but uses above lemmas such as le_trans that rely on it).
-    A typical use of this tactic is transitivity problems. *)
-
-Definition hide_eq := eq.
-
-(** order_eq : replace x by y in all (in)equations thanks
-   to equality EQ (where eq has been hidden in order to avoid
-   self-rewriting). *)
-
-Ltac order_eq x y EQ :=
- let rewr H t := generalize t; clear H; intro H
- in
- match goal with
- | H : x == _ |- _ => rewr H (eq_trans (eq_sym EQ) H); order_eq x y EQ
- | H : _ == x |- _ => rewr H (eq_trans H EQ); order_eq x y EQ
- | H : ~x == _ |- _ => rewr H (eq_neq (eq_sym EQ) H); order_eq x y EQ
- | H : ~_ == x |- _ => rewr H (neq_eq H EQ); order_eq x y EQ
- | H : x < ?z |- _ => rewr H (eq_lt (eq_sym EQ) H); order_eq x y EQ
- | H : ?z < x |- _ => rewr H (lt_eq H EQ); order_eq x y EQ
- | H : x <= ?z |- _ => rewr H (eq_le (eq_sym EQ) H); order_eq x y EQ
- | H : ?z <= x |- _ => rewr H (le_eq H EQ); order_eq x y EQ
- (* NB: no negation in the goal, see below *)
- | |- x == ?z => apply eq_trans with y; [apply EQ| ]; order_eq x y EQ
- | |- ?z == x => apply eq_trans with y; [ | apply (eq_sym EQ) ];
-    order_eq x y EQ
- | |- x < ?z => apply eq_lt with y; [apply EQ| ]; order_eq x y EQ
- | |- ?z < x => apply lt_eq with y; [ | apply (eq_sym EQ) ];
-    order_eq x y EQ
- | _ => clear EQ
-end.
-
-Ltac order_loop := intros; trivial;
- match goal with
- | |- ~ _ => intro; order_loop
- | H : ?A -> False |- _ => change (~A) in H; order_loop
- (* First, successful situations *)
- | H : ?x < ?x |- _ => elim (lt_antirefl H)
- | H : ~ ?x == ?x |- _ => elim (H (Equivalence_Reflexive x))
- | |- ?x == ?x => apply (Equivalence_Reflexive x)
- (* Second, useless hyps or goal *)
- | H : ?x == ?x |- _ => clear H; order_loop
- | H : ?x <= ?x |- _ => clear H; order_loop
- | |- ?x < ?x => exfalso; order_loop
- (* We eliminate equalities *)
- | H : ?x == ?y |- _ =>
-   change (hide_eq x y) in H; order_eq x y H; order_loop
- (* Simultaneous le and ge is eq *)
- | H1 : ?x <= ?y, H2 : ?y <= ?x |- _ =>
-   generalize (le_antisym H1 H2); clear H1 H2; intro; order_loop
- (* Simultaneous le and ~eq is lt *)
- | H1: ?x <= ?y, H2: ~ ?x == ?y |- _ =>
-     generalize (le_neq H1 H2); clear H1 H2; intro; order_loop
- | H1: ?x <= ?y, H2: ~ ?y == ?x |- _ =>
-     generalize (le_neq H1 (neq_sym H2)); clear H1 H2; intro; order_loop
- (* Transitivity of lt and le *)
- | H1 : ?x < ?y, H2 : ?y < ?z |- _ =>
-    match goal with
-      | H : x < z |- _ => fail 1
-      | _ => generalize (lt_trans H1 H2); intro; order_loop
-    end
- | H1 : ?x <= ?y, H2 : ?y < ?z |- _ =>
-    match goal with
-      | H : x < z |- _ => fail 1
-      | _ => generalize (le_lt_trans H1 H2); intro; order_loop
-    end
- | H1 : ?x < ?y, H2 : ?y <= ?z |- _ =>
-    match goal with
-      | H : x < z |- _ => fail 1
-      | _ => generalize (lt_le_trans H1 H2); intro; order_loop
-    end
- | H1 : ?x <= ?y, H2 : ?y <= ?z |- _ =>
-    match goal with
-      | H : x <= z |- _ => fail 1
-      | _ => generalize (le_trans H1 H2); intro; order_loop
-    end
- | _ => auto
-end.
-
-Ltac order := order_loop; fail.
-
-  Lemma gt_not_eq : forall x y, lt y x -> ~ eq x y.
-  Proof.
-    order.
-  Qed.
-
-  Lemma eq_not_lt : forall x y : t, eq x y -> ~ lt x y.
-  Proof.
-    order.
-  Qed.
-
   Hint Resolve gt_not_eq eq_not_lt.
-
-  Lemma eq_not_gt : forall x y : t, eq x y -> ~ lt y x.
-  Proof.
-   order.
-  Qed.
-
-  Lemma lt_not_gt : forall x y : t, lt x y -> ~ lt y x.
-  Proof.
-   order.
-  Qed.
-
   Hint Resolve eq_not_gt lt_antirefl lt_not_gt.
 
   Lemma compare_eq_iff : forall x y, (x ?= y) = Eq <-> x==y.
