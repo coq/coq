@@ -30,6 +30,7 @@ struct
   let found = make_tag table ~name:"found" [`BACKGROUND "blue"; `FOREGROUND "white"]
   let hidden = make_tag table ~name:"hidden" [`INVISIBLE true; `EDITABLE false]
   let locked = make_tag table ~name:"locked" [`EDITABLE false; `BACKGROUND "light grey"]
+  let paren = make_tag table ~name:"paren" [`BACKGROUND "purple"]
 end
 module Proof =
 struct

@@ -1515,8 +1515,7 @@ object(self)
     ignore (input_buffer#add_selection_clipboard cb);
     ignore (proof_buffer#add_selection_clipboard cb);
     ignore (message_buffer#add_selection_clipboard cb);
-    let paren_highlight_tag = input_buffer#create_tag ~name:"paren" [`BACKGROUND "purple"]  in
-      self#electric_paren paren_highlight_tag;
+      self#electric_paren Tags.Script.paren;
       ignore (input_buffer#connect#after#mark_set
                 ~callback:(fun it (m:Gtk.text_mark) ->
                              !set_location
@@ -1528,7 +1527,7 @@ object(self)
                                    input_buffer#remove_tag
                                      ~start:input_buffer#start_iter
                                      ~stop:input_buffer#end_iter
-                                     paren_highlight_tag;
+                                     Tags.Script.paren;
                                | Some s ->
                                    prerr_endline (s^" moved")
                                | None -> () )

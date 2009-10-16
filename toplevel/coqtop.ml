@@ -374,10 +374,12 @@ let init is_ide =
      exit 0);
   Lib.declare_initial_state ()
 
+let init_toplevel () = init false
+
 let init_ide () = init true; List.rev !ide_args
 
 let start () =
-  init false;
+  init_toplevel ();
   Toplevel.loop();
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
