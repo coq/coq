@@ -859,19 +859,8 @@ Proof. intros; apply add_spec'. Qed.
 
 Instance add_ok s x `(Ok s) : Ok (add x s).
 Proof.
- induct s x; auto; apply bal_ok; auto.
- (* lt_tree -> lt_tree (add ...) *)
- red; red in H3.
- intros.
- rewrite add_spec' in H.
- intuition.
- eauto.
- (* gt_tree -> gt_tree (add ...) *)
- red; red in H3.
- intros.
- rewrite add_spec' in H.
- intuition.
- setoid_replace y with x; auto.
+ induct s x; auto; apply bal_ok; auto;
+  intros y; rewrite add_spec'; intuition; order.
 Qed.
 
 
@@ -1032,7 +1021,7 @@ Proof.
  discriminate.
  intros x y0 U V W.
  inversion V; clear V; subst.
- inv; auto.
+ inv; order.
  intros; inv; auto.
  assert (X.lt x y) by (apply H4; apply min_elt_spec1; auto).
  order.
@@ -1067,7 +1056,7 @@ Proof.
  discriminate.
  intros x y0 U V W.
  inversion V; clear V; subst.
- inv; auto.
+ inv; order.
  intros; inv; auto.
  assert (X.lt y x1) by auto.
  assert (~ X.lt x x1) by auto.

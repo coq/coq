@@ -96,8 +96,9 @@ Module OrderedTypeFacts (Import O: OrderedType).
     change lt with OrderElts.lt in *;
     OrderTac.order.
 
-  (** The following lemmas are re-phrasing of eq_equiv and lt_strorder.
-      Interest: compatibility, simple use (e.g. in tactic order), etc. *)
+  (** The following lemmas are either re-phrasing of [eq_equiv] and
+      [lt_strorder] or immediately provable by [order]. Interest:
+      compatibility, test of order, etc *)
 
   Definition eq_refl (x:t) : x==x := Equivalence_Reflexive x.
 
@@ -109,32 +110,9 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Definition lt_trans (x y z:t) : x<y -> y<z -> x<z :=
    StrictOrder_Transitive x y z.
 
-  Definition lt_antirefl (x:t) : ~x<x := StrictOrder_Irreflexive x.
+  Definition lt_irrefl (x:t) : ~x<x := StrictOrder_Irreflexive x.
 
-  Lemma lt_not_eq x y : x<y -> ~x==y.  Proof. order. Qed.
-  Lemma lt_eq x y z : x<y -> y==z -> x<z. Proof. order. Qed.
-  Lemma eq_lt x y z : x==y -> y<z -> x<z. Proof. order. Qed.
-  Lemma le_eq x y z : x<=y -> y==z -> x<=z. Proof. order. Qed.
-  Lemma eq_le x y z : x==y -> y<=z -> x<=z. Proof. order. Qed.
-  Lemma neq_eq x y z : ~x==y -> y==z -> ~x==z. Proof. order. Qed.
-  Lemma eq_neq x y z : x==y -> ~y==z -> ~x==z. Proof. order. Qed.
-
-  Lemma le_lt_trans x y z : x<=y -> y<z -> x<z. Proof. order. Qed.
-  Lemma lt_le_trans x y z : x<y -> y<=z -> x<z. Proof. order. Qed.
-  Lemma le_trans x y z : x<=y -> y<=z -> x<=z. Proof. order. Qed.
-  Lemma le_antisym x y : x<=y -> y<=x -> x==y. Proof. order. Qed.
-  Lemma le_neq x y : x<=y -> ~x==y -> x<y. Proof. order. Qed.
-  Lemma neq_sym x y : ~x==y -> ~y==x. Proof. order. Qed.
-  Lemma lt_le x y : x<y -> x<=y. Proof. order. Qed.
-  Lemma gt_not_eq x y : y<x -> ~x==y. Proof. order. Qed.
-  Lemma eq_not_lt x y : x==y -> ~x<y. Proof. order. Qed.
-  Lemma eq_not_gt x y : x==y -> ~ y<x. Proof. order. Qed.
-  Lemma lt_not_gt x y : x<y -> ~ y<x. Proof. order. Qed.
-
-  Hint Resolve eq_trans eq_refl lt_trans.
-  Hint Immediate eq_sym eq_lt lt_eq le_eq eq_le neq_eq eq_neq.
-  Hint Resolve gt_not_eq eq_not_lt.
-  Hint Resolve eq_not_gt lt_antirefl lt_not_gt.
+  (** Some more about [compare] *)
 
   Lemma compare_eq_iff : forall x y, (x ?= y) = Eq <-> x==y.
   Proof.
@@ -184,7 +162,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
 
   Lemma lt_dec : forall x y : t, {lt x y} + {~ lt x y}.
   Proof.
-   intros; elim_compare x y; [ right | left | right ]; auto.
+   intros; elim_compare x y; [ right | left | right ]; order.
   Defined.
 
   Definition eqb x y : bool := if eq_dec x y then true else false.
@@ -252,6 +230,36 @@ Hint Resolve ListIn_In Sort_NoDup Inf_lt.
 Hint Immediate In_eq Inf_lt.
 
 End OrderedTypeFacts.
+
+
+(** Some tests of [order] : is it at least capable of
+    proving some basic properties ? *)
+
+Module OrderedTypeTest (O:OrderedType).
+  Module Import MO := OrderedTypeFacts O.
+  Local Open Scope order.
+  Lemma lt_not_eq x y : x<y -> ~x==y.  Proof. order. Qed.
+  Lemma lt_eq x y z : x<y -> y==z -> x<z. Proof. order. Qed.
+  Lemma eq_lt x y z : x==y -> y<z -> x<z. Proof. order. Qed.
+  Lemma le_eq x y z : x<=y -> y==z -> x<=z. Proof. order. Qed.
+  Lemma eq_le x y z : x==y -> y<=z -> x<=z. Proof. order. Qed.
+  Lemma neq_eq x y z : ~x==y -> y==z -> ~x==z. Proof. order. Qed.
+  Lemma eq_neq x y z : x==y -> ~y==z -> ~x==z. Proof. order. Qed.
+  Lemma le_lt_trans x y z : x<=y -> y<z -> x<z. Proof. order. Qed.
+  Lemma lt_le_trans x y z : x<y -> y<=z -> x<z. Proof. order. Qed.
+  Lemma le_trans x y z : x<=y -> y<=z -> x<=z. Proof. order. Qed.
+  Lemma le_antisym x y : x<=y -> y<=x -> x==y. Proof. order. Qed.
+  Lemma le_neq x y : x<=y -> ~x==y -> x<y. Proof. order. Qed.
+  Lemma neq_sym x y : ~x==y -> ~y==x. Proof. order. Qed.
+  Lemma lt_le x y : x<y -> x<=y. Proof. order. Qed.
+  Lemma gt_not_eq x y : y<x -> ~x==y. Proof. order. Qed.
+  Lemma eq_not_lt x y : x==y -> ~x<y. Proof. order. Qed.
+  Lemma eq_not_gt x y : x==y -> ~ y<x. Proof. order. Qed.
+  Lemma lt_not_gt x y : x<y -> ~ y<x. Proof. order. Qed.
+End OrderedTypeTest.
+
+
+(** * Relations over pairs (TO MIGRATE in some TypeClasses file) *)
 
 Definition ProdRel {A B}(RA:relation A)(RB:relation B) : relation (A*B) :=
  fun p p' => RA (fst p) (fst p') /\ RB (snd p) (snd p').
@@ -342,17 +350,6 @@ Module KeyOrderedType(Import O:OrderedType).
 
   Global Instance eqke_eqk : subrelation eqke eqk.
   Proof. unfold eqke, eqk; auto with *. Qed.
-
-(*
-  (* ltk ignore the second components *)
-
-  Lemma ltk_right_r : forall x k e e', ltk x (k,e) -> ltk x (k,e').
-  Proof. auto. Qed.
-
-  Lemma ltk_right_l : forall x k e e', ltk (k,e) x -> ltk (k,e') x.
-  Proof. auto. Qed.
-  Hint Immediate ltk_right_r ltk_right_l.
-*)
 
   (* eqk, eqke are equalities, ltk is a strict order *)
 
@@ -531,3 +528,4 @@ Module KeyOrderedType(Import O:OrderedType).
  Hint Resolve In_inv_2 In_inv_3.
 
 End KeyOrderedType.
+

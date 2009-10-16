@@ -77,7 +77,7 @@ Proof. reflexivity. Qed.
 Lemma le_refl : forall x, x<=x.
 Proof. intros; rewrite le_lteq; right; reflexivity. Qed.
 
-Lemma lt_antirefl : forall x, ~ x<x.
+Lemma lt_irrefl : forall x, ~ x<x.
 Proof. intros; apply StrictOrder_Irreflexive. Qed.
 
 (** Symmetry rules *)
@@ -133,7 +133,7 @@ Proof. eauto using eq_trans, eq_sym. Qed.
 Lemma not_neq_eq : forall x y, ~~x==y -> x==y.
 Proof.
 intros x y H. destruct (lt_total x y) as [H'|[H'|H']]; auto;
- destruct H; intro H; rewrite H in H'; eapply lt_antirefl; eauto.
+ destruct H; intro H; rewrite H in H'; eapply lt_irrefl; eauto.
 Qed.
 
 Lemma not_ge_lt : forall x y, ~y<=x -> x<y.
@@ -208,7 +208,7 @@ Ltac order_prepare :=
 Ltac order_loop :=
  match goal with
  (* First, successful situations *)
- | H : ?x < ?x |- _ => exact (lt_antirefl H)
+ | H : ?x < ?x |- _ => exact (lt_irrefl H)
  | H : ~ ?x == ?x |- _ => exact (H (eq_refl x))
  (* Second, useless hyps *)
  | H : ?x <= ?x |- _ => clear H; order_loop

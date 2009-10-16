@@ -934,32 +934,24 @@ Module OrdProperties (M:Sets).
 
   Lemma gtb_1 : forall x y, gtb x y = true <-> E.lt y x.
   Proof.
-   intros; unfold gtb; ME.elim_compare x y; intuition; try discriminate; ME.order.
+   intros; rewrite <- ME.compare_gt_iff. unfold gtb.
+   destruct E.compare; intuition; try discriminate.
   Qed.
 
   Lemma leb_1 : forall x y, leb x y = true <-> ~E.lt y x.
   Proof.
-   intros; unfold leb, gtb; ME.elim_compare x y; intuition; try discriminate; ME.order.
+   intros; rewrite <- ME.compare_gt_iff. unfold leb, gtb.
+   destruct E.compare; intuition; try discriminate.
   Qed.
 
-  Lemma gtb_compat : forall x, Proper (E.eq==>Logic.eq) (gtb x).
+  Instance gtb_compat x : Proper (E.eq==>Logic.eq) (gtb x).
   Proof.
-   red; intros x a b H.
-   generalize (gtb_1 x a)(gtb_1 x b); destruct (gtb x a); destruct (gtb x b); auto.
-   intros.
-   symmetry; rewrite H1.
-   apply ME.eq_lt with a; auto.
-   rewrite <- H0; auto.
-   intros.
-   rewrite H0.
-   apply ME.eq_lt with b; auto.
-   rewrite <- H1; auto.
+   intros x a b H. unfold gtb. rewrite H; auto.
   Qed.
 
-  Lemma leb_compat : forall x, Proper (E.eq==>Logic.eq) (leb x).
+  Instance leb_compat x : Proper (E.eq==>Logic.eq) (leb x).
   Proof.
-   red; intros x a b H; unfold leb.
-   f_equal; apply gtb_compat; auto.
+   intros x a b H; unfold leb. rewrite H; auto.
   Qed.
   Hint Resolve gtb_compat leb_compat.
 
@@ -1021,10 +1013,9 @@ Module OrdProperties (M:Sets).
   apply sort_equivlistA_eqlistA; auto with set.
   apply (@SortA_app _ E.eq); auto with *.
   intros.
-  inversion_clear H2.
+  invlist InA.
   rewrite <- elements_iff in H1.
-  apply ME.lt_eq with x; auto.
-  inversion H3.
+  setoid_replace y with x; auto.
   red; intros a.
   rewrite InA_app_iff, InA_cons, InA_nil, <-!elements_iff, (H0 a)
    by (auto with *).
@@ -1040,10 +1031,9 @@ Module OrdProperties (M:Sets).
   change (sort E.lt ((x::nil) ++ elements s)).
   apply (@SortA_app _ E.eq); auto with *.
   intros.
-  inversion_clear H1.
+  invlist InA.
   rewrite <- elements_iff in H2.
-  apply ME.eq_lt with x; auto.
-  inversion H3.
+  setoid_replace x0 with x; auto.
   red; intros a.
   rewrite InA_cons, <- !elements_iff, (H0 a); intuition.
   Qed.
