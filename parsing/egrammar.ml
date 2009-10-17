@@ -116,7 +116,10 @@ let make_constr_prod_item univ assoc from forpat = function
       let eobj = symbol_of_constr_prod_entry_key assoc from forpat nt in
       (eobj, Option.map (fun x -> (x,nt)) ovar)
 
-let prepare_empty_levels entry (pos,p4assoc,name,reinit) =
+let prepare_empty_levels forpat (pos,p4assoc,name,reinit) =
+  let entry = 
+    if forpat then weaken_entry Constr.pattern
+    else weaken_entry Constr.operconstr in
   grammar_extend entry pos reinit [(name, p4assoc, [])]
 
 let pure_sublevels level symbs =
@@ -133,7 +136,7 @@ let extend_constr (entry,level) (n,assoc) mkact forpat pt =
   let pure_sublevels = pure_sublevels level symbs in
   let needed_levels = register_empty_levels forpat pure_sublevels in
   let pos,p4assoc,name,reinit = find_position forpat assoc level in
-  List.iter (prepare_empty_levels entry) needed_levels;
+  List.iter (prepare_empty_levels forpat) needed_levels;
   grammar_extend entry pos reinit [(name, p4assoc, [symbs, mkact ntl])]
 
 let extend_constr_notation (n,assoc,ntn,rule) =

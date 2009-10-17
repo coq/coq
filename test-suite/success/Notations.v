@@ -43,3 +43,8 @@ Notation "'exists' x , P" := (x, P)
    (at level 200, x ident, right associativity,	only parsing).
 
 Definition foo P := let '(exists x, Q) := P in x = Q :> nat.
+
+(* Check empty levels when extending binder_constr *)
+
+Notation "'exists' x >= y , P" := (exists x, x >= y /\ P)%nat
+   (at level 200, x ident, right associativity, y at level 69).

@@ -171,15 +171,26 @@ let contract_pat_notation ntn (l,ll) =
 (**********************************************************************)
 (* Remembering the parsing scope of variables in notations            *)
 
-let make_current_scope (tmp_scope,scopes) = Option.List.cons tmp_scope scopes
+let make_current_scope = function
+  | (Some tmp_scope,(sc::_ as scopes)) when sc = tmp_scope -> scopes
+  | (Some tmp_scope,scopes) -> tmp_scope::scopes
+  | None,scopes -> scopes
 
 let set_var_scope loc id (_,_,scopt,scopes) varscopes =
   let idscopes = List.assoc id varscopes in
   if !idscopes <> None &
     make_current_scope (Option.get !idscopes)
     <> make_current_scope (scopt,scopes) then
+      let pr_scope_stack = function
+	| [] -> str "the empty scope stack"
+	| [a] -> str "scope " ++ str a
+	| l -> str "scope stack " ++
+	    str "[" ++ prlist_with_sep pr_coma str l ++ str "]" in
       user_err_loc (loc,"set_var_scope",
-      pr_id id ++ str " already occurs in a different scope.")
+      pr_id id ++ str " is used both in " ++ 
+	pr_scope_stack (make_current_scope (Option.get !idscopes)) ++
+	strbrk " and in " ++
+	pr_scope_stack (make_current_scope (scopt,scopes)))
   else
     idscopes := Some (scopt,scopes)
 
