@@ -10,7 +10,7 @@
 
 Require Export List.
 Require Export Sorting.
-Require Export Setoid.
+Require Export Setoid Basics Morphisms.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -32,27 +32,28 @@ Inductive InA (x : A) : list A -> Prop :=
 
 Hint Constructors InA.
 
+(** TODO: it would be nice to have a generic definition instead
+    of the previous one. Having [InA = ExistsL eqA] raises too
+    many compatibility issues. For now, we only state the equivalence: *)
+
+Lemma InA_altdef : forall x l, InA x l <-> ExistsL (eqA x) l.
+Proof. split; induction 1; auto. Qed.
+
 Lemma InA_cons : forall x y l, InA x (y::l) <-> eqA x y \/ InA x l.
 Proof.
- intuition.
- inversion H; auto.
+ intuition. invlist InA; auto.
 Qed.
 
 Lemma InA_nil : forall x, InA x nil <-> False.
 Proof.
- intuition.
- inversion H.
+ intuition. invlist InA.
 Qed.
 
 (** An alternative definition of [InA]. *)
 
 Lemma InA_alt : forall x l, InA x l <-> exists y, eqA x y /\ In y l.
 Proof.
- induction l; intuition.
- inversion H.
- firstorder.
- inversion H1; firstorder.
- firstorder; subst; auto.
+ intros; rewrite InA_altdef, ExistsL_exists; firstorder.
 Qed.
 
 (** A list without redundancy modulo the equality over [A]. *)
@@ -62,6 +63,9 @@ Inductive NoDupA : list A -> Prop :=
   | NoDupA_cons : forall x l, ~ InA x l -> NoDupA l -> NoDupA (x::l).
 
 Hint Constructors NoDupA.
+
+
+Ltac inv := invlist InA; invlist sort; invlist lelistA; invlist NoDupA.
 
 (** lists with same elements modulo [eqA] *)
 
@@ -76,39 +80,62 @@ Inductive eqlistA : list A -> list A -> Prop :=
 
 Hint Constructors eqlistA.
 
-(** Compatibility of a  boolean function with respect to an equality. *)
-
-Definition compat_bool (f : A->bool) := forall x y, eqA x y -> f x = f y.
-
-(** Compatibility of a function upon natural numbers. *)
-
-Definition compat_nat (f : A->nat) := forall x y, eqA x y -> f x = f y.
-
-(** Compatibility of a predicate with respect to an equality. *)
-
-Definition compat_P (P : A->Prop) := forall x y, eqA x y -> P x -> P y.
-
 (** Results concerning lists modulo [eqA] *)
 
-Hypothesis eqA_refl : forall x, eqA x x.
-Hypothesis eqA_sym : forall x y, eqA x y -> eqA y x.
-Hypothesis eqA_trans : forall x y z, eqA x y -> eqA y z -> eqA x z.
+Hypothesis eqA_equiv : Equivalence eqA.
 
-Hint Resolve eqA_refl eqA_trans.
-Hint Immediate eqA_sym.
+Hint Resolve (@Equivalence_Reflexive _ _ eqA_equiv).
+Hint Resolve (@Equivalence_Transitive _ _ eqA_equiv).
+Hint Immediate (@Equivalence_Symmetric _ _ eqA_equiv).
+
+(** First, the two notions [equivlistA] and [eqlistA] are indeed equivlances *)
+
+Global Instance equivlist_equiv : Equivalence equivlistA.
+Proof.
+ firstorder.
+Qed.
+
+Global Instance eqlistA_equiv : Equivalence eqlistA.
+Proof.
+ constructor; red.
+ induction x; auto.
+ induction 1; auto.
+ intros x y z H; revert z; induction H; auto.
+ inversion 1; subst; auto. invlist eqlistA; eauto with *.
+Qed.
+
+(** Moreover, [eqlistA] implies [equivlistA]. A reverse result
+    will be proved later for sorted list without duplicates. *)
+
+Global Instance eqlistA_equivlistA : subrelation eqlistA equivlistA.
+Proof.
+  intros x x' H. induction H.
+  intuition.
+  red; intros.
+  rewrite 2 InA_cons.
+  rewrite (IHeqlistA x0), H; intuition.
+Qed.
+
+(** InA is compatible with eqA (for its first arg) and with
+    equivlistA (and hence eqlistA) for its second arg *)
+
+Global Instance InA_compat : Proper (eqA==>equivlistA==>iff) InA.
+Proof.
+ intros x x' Hxx' l l' Hll'. rewrite (Hll' x).
+ rewrite 2 InA_alt; firstorder.
+Qed.
+
+(** For compatibility, an immediate consequence of [InA_compat] *)
 
 Lemma InA_eqA : forall l x y, eqA x y -> InA x l -> InA y l.
 Proof.
- intros s x y.
- do 2 rewrite InA_alt.
- intros H (z,(U,V)).
- exists z; split; eauto.
+ intros l x y H H'. rewrite <- H; auto.
 Qed.
 Hint Immediate InA_eqA.
 
 Lemma In_InA : forall l x, In x l -> InA x l.
 Proof.
- simple induction l; simpl in |- *; intuition.
+ simple induction l; simpl; intuition.
  subst; auto.
 Qed.
 Hint Resolve In_InA.
@@ -117,7 +144,7 @@ Lemma InA_split : forall l x, InA x l ->
  exists l1, exists y, exists l2,
  eqA x y /\ l = l1++y::l2.
 Proof.
-induction l; inversion_clear 1.
+induction l; intros; inv.
 exists (@nil A); exists a; exists l; auto.
 destruct (IHl x H0) as (l1,(y,(l2,(H1,H2)))).
 exists (a::l1); exists y; exists l2; auto.
@@ -128,7 +155,7 @@ Lemma InA_app : forall l1 l2 x,
  InA x (l1 ++ l2) -> InA x l1 \/ InA x l2.
 Proof.
  induction l1; simpl in *; intuition.
- inversion_clear H; auto.
+ inv; auto.
  elim (IHl1 l2 x H0); auto.
 Qed.
 
@@ -153,107 +180,16 @@ Proof.
  rewrite <- In_rev; auto.
 Qed.
 
-(** Results concerning lists modulo [eqA] and [ltA] *)
 
-Variable ltA : A -> A -> Prop.
-
-Hypothesis ltA_trans : forall x y z, ltA x y -> ltA y z -> ltA x z.
-Hypothesis ltA_not_eqA : forall x y, ltA x y -> ~ eqA x y.
-Hypothesis ltA_eqA : forall x y z, ltA x y -> eqA y z -> ltA x z.
-Hypothesis eqA_ltA : forall x y z, eqA x y -> ltA y z -> ltA x z.
-
-Hint Resolve ltA_trans.
-Hint Immediate ltA_eqA eqA_ltA.
-
-Notation InfA:=(lelistA ltA).
-Notation SortA:=(sort ltA).
-
-Hint Constructors lelistA sort.
-
-Lemma InfA_ltA :
- forall l x y, ltA x y -> InfA y l -> InfA x l.
-Proof.
- destruct l; constructor; inversion_clear H0;
- eapply ltA_trans; eauto.
-Qed.
-
-Lemma InfA_eqA :
- forall l x y, eqA x y -> InfA y l -> InfA x l.
-Proof.
- intro s; case s; constructor; inversion_clear H0; eauto.
-Qed.
-Hint Immediate InfA_ltA InfA_eqA.
-
-Lemma SortA_InfA_InA :
- forall l x a, SortA l -> InfA a l -> InA x l -> ltA a x.
-Proof.
- simple induction l.
- intros; inversion H1.
- intros.
- inversion_clear H0; inversion_clear H1; inversion_clear H2.
- eapply ltA_eqA; eauto.
- eauto.
-Qed.
-
-Lemma In_InfA :
- forall l x, (forall y, In y l -> ltA x y) -> InfA x l.
-Proof.
- simple induction l; simpl in |- *; intros; constructor; auto.
-Qed.
-
-Lemma InA_InfA :
- forall l x, (forall y, InA y l -> ltA x y) -> InfA x l.
-Proof.
- simple induction l; simpl in |- *; intros; constructor; auto.
-Qed.
-
-(* In fact, this may be used as an alternative definition for InfA: *)
-
-Lemma InfA_alt :
- forall l x, SortA l -> (InfA x l <-> (forall y, InA y l -> ltA x y)).
-Proof.
-split.
-intros; eapply SortA_InfA_InA; eauto.
-apply InA_InfA.
-Qed.
-
-Lemma InfA_app : forall l1 l2 a, InfA a l1 -> InfA a l2 -> InfA a (l1++l2).
-Proof.
- induction l1; simpl; auto.
- inversion_clear 1; auto.
-Qed.
-
-Lemma SortA_app :
- forall l1 l2, SortA l1 -> SortA l2 ->
- (forall x y, InA x l1 -> InA y l2 -> ltA x y) ->
- SortA (l1 ++ l2).
-Proof.
- induction l1; simpl in *; intuition.
- inversion_clear H.
- constructor; auto.
- apply InfA_app; auto.
- destruct l2; auto.
-Qed.
 
 Section NoDupA.
-
-Lemma SortA_NoDupA : forall l, SortA l -> NoDupA l.
-Proof.
- simple induction l; auto.
- intros x l' H H0.
- inversion_clear H0.
- constructor; auto.
- intro.
- assert (ltA x x) by (eapply SortA_InfA_InA; eauto).
- elim (ltA_not_eqA H3); auto.
-Qed.
 
 Lemma NoDupA_app : forall l l', NoDupA l -> NoDupA l' ->
   (forall x, InA x l -> InA x l' -> False) ->
   NoDupA (l++l').
 Proof.
 induction l; simpl; auto; intros.
-inversion_clear H.
+inv.
 constructor.
 rewrite InA_alt; intros (y,(H4,H5)).
 destruct (in_app_or _ _ _ H5).
@@ -274,35 +210,36 @@ Proof.
 induction l.
 simpl; auto.
 simpl; intros.
-inversion_clear H.
+inv.
 apply NoDupA_app; auto.
 constructor; auto.
-intro H2; inversion H2.
+intro; inv.
 intros x.
 rewrite InA_alt.
 intros (x1,(H2,H3)).
-inversion_clear 1.
+intro; inv.
 destruct H0.
-apply InA_eqA with x1; eauto.
+rewrite <- H4, H2.
 apply In_InA.
 rewrite In_rev; auto.
-inversion H4.
 Qed.
 
 Lemma NoDupA_split : forall l l' x, NoDupA (l++x::l') -> NoDupA (l++l').
 Proof.
- induction l; simpl in *; inversion_clear 1; auto.
+ induction l; simpl in *; intros; inv; auto.
  constructor; eauto.
  contradict H0.
- rewrite InA_app_iff in *; rewrite InA_cons; intuition.
+ rewrite InA_app_iff in *.
+ rewrite InA_cons.
+ intuition.
 Qed.
 
 Lemma NoDupA_swap : forall l l' x, NoDupA (l++x::l') -> NoDupA (x::l++l').
 Proof.
- induction l; simpl in *; inversion_clear 1; auto.
+ induction l; simpl in *; intros; inv; auto.
  constructor; eauto.
  assert (H2:=IHl _ _ H1).
- inversion_clear H2.
+ inv.
  rewrite InA_cons.
  red; destruct 1.
  apply H0.
@@ -314,132 +251,148 @@ Proof.
  eapply NoDupA_split; eauto.
 Qed.
 
+Lemma equivlistA_NoDupA_split : forall l l1 l2 x y, eqA x y ->
+ NoDupA (x::l) -> NoDupA (l1++y::l2) ->
+ equivlistA (x::l) (l1++y::l2) -> equivlistA l (l1++l2).
+Proof.
+ intros; intro a.
+ generalize (H2 a).
+ rewrite !InA_app_iff, !InA_cons.
+ inv.
+ assert (SW:=NoDupA_swap H1). inv.
+ rewrite InA_app_iff in H0.
+ split; intros.
+ assert (~eqA a x) by (contradict H3; rewrite <- H3; auto).
+ assert (~eqA a y) by (rewrite <- H; auto).
+ tauto.
+ assert (OR : eqA a x \/ InA a l) by intuition. clear H6.
+ destruct OR as [EQN|INA]; auto.
+ elim H0.
+ rewrite <-H,<-EQN; auto.
+Qed.
+
 End NoDupA.
 
-(** Some results about [eqlistA] *)
 
-Section EqlistA.
-
-Lemma eqlistA_length : forall l l', eqlistA l l' -> length l = length l'.
-Proof.
-induction 1; auto; simpl; congruence.
-Qed.
-
-Lemma eqlistA_app : forall l1 l1' l2 l2',
-   eqlistA l1 l1' -> eqlistA l2 l2' -> eqlistA (l1++l2) (l1'++l2').
-Proof.
-intros l1 l1' l2 l2' H; revert l2 l2'; induction H; simpl; auto.
-Qed.
-
-Lemma eqlistA_rev_app : forall l1 l1',
-   eqlistA l1 l1' -> forall l2 l2', eqlistA l2 l2' ->
-   eqlistA ((rev l1)++l2) ((rev l1')++l2').
-Proof.
-induction 1; auto.
-simpl; intros.
-do 2 rewrite app_ass; simpl; auto.
-Qed.
-
-Lemma eqlistA_rev : forall l1 l1',
-   eqlistA l1 l1' -> eqlistA (rev l1) (rev l1').
-Proof.
-intros.
-rewrite (app_nil_end (rev l1)).
-rewrite (app_nil_end (rev l1')).
-apply eqlistA_rev_app; auto.
-Qed.
-
-Lemma SortA_equivlistA_eqlistA : forall l l',
-   SortA l -> SortA l' -> equivlistA l l' -> eqlistA l l'.
-Proof.
-induction l; destruct l'; simpl; intros; auto.
-destruct (H1 a); assert (H4 : InA a nil) by auto; inversion H4.
-destruct (H1 a); assert (H4 : InA a nil) by auto; inversion H4.
-inversion_clear H; inversion_clear H0.
-assert (forall y, InA y l -> ltA a y).
-intros; eapply SortA_InfA_InA with (l:=l); eauto.
-assert (forall y, InA y l' -> ltA a0 y).
-intros; eapply SortA_InfA_InA with (l:=l'); eauto.
-clear H3 H4.
-assert (eqA a a0).
- destruct (H1 a).
- destruct (H1 a0).
- assert (InA a (a0::l')) by auto.
- inversion_clear H8; auto.
- assert (InA a0 (a::l)) by auto.
- inversion_clear H8; auto.
- elim (@ltA_not_eqA a a); auto.
- apply ltA_trans with a0; auto.
-constructor; auto.
-apply IHl; auto.
-split; intros.
-destruct (H1 x).
-assert (H8 : InA x (a0::l')) by auto; inversion_clear H8; auto.
-elim (@ltA_not_eqA a x); eauto.
-destruct (H1 x).
-assert (H8 : InA x (a::l)) by auto; inversion_clear H8; auto.
-elim (@ltA_not_eqA a0 x); eauto.
-Qed.
-
-End EqlistA.
-
-(** A few things about [filter] *)
-
-Section Filter.
-
-Lemma filter_sort : forall f l, SortA l -> SortA (List.filter f l).
-Proof.
-induction l; simpl; auto.
-inversion_clear 1; auto.
-destruct (f a); auto.
-constructor; auto.
-apply In_InfA; auto.
-intros.
-rewrite filter_In in H; destruct H.
-eapply SortA_InfA_InA; eauto.
-Qed.
-
-Lemma filter_InA : forall f, (compat_bool f) ->
- forall l x, InA x (List.filter f l) <-> InA x l /\ f x = true.
-Proof.
-intros; do 2 rewrite InA_alt; intuition.
-destruct H0 as (y,(H0,H1)); rewrite filter_In in H1; exists y; intuition.
-destruct H0 as (y,(H0,H1)); rewrite filter_In in H1; intuition.
-  rewrite (H _ _ H0); auto.
-destruct H1 as (y,(H0,H1)); exists y; rewrite filter_In; intuition.
-  rewrite <- (H _ _ H0); auto.
-Qed.
-
-Lemma filter_split :
- forall f, (forall x y, f x = true -> f y = false -> ltA x y) ->
- forall l, SortA l -> l = filter f l ++ filter (fun x=>negb (f x)) l.
-Proof.
-induction l; simpl; intros; auto.
-inversion_clear H0.
-pattern l at 1; rewrite IHl; auto.
-case_eq (f a); simpl; intros; auto.
-assert (forall e, In e l -> f e = false).
-  intros.
-  assert (H4:=SortA_InfA_InA H1 H2 (In_InA H3)).
-  case_eq (f e); simpl; intros; auto.
-  elim (@ltA_not_eqA e e); auto.
-  apply ltA_trans with a; eauto.
-replace (List.filter f l) with (@nil A); auto.
-generalize H3; clear; induction l; simpl; auto.
-case_eq (f a); auto; intros.
-rewrite H3 in H; auto; try discriminate.
-Qed.
-
-End Filter.
 
 Section Fold.
 
 Variable B:Type.
 Variable eqB:B->B->Prop.
+Variable st:Equivalence eqB.
+Variable f:A->B->B.
+Variable i:B.
+Variable Comp:Proper (eqA==>eqB==>eqB) f.
 
-(** Compatibility of a two-argument function with respect to two equalities. *)
-Definition compat_op (f : A -> B -> B) :=
-  forall (x x' : A) (y y' : B), eqA x x' -> eqB y y' -> eqB (f x y) (f x' y').
+Lemma fold_right_eqlistA :
+   forall s s', eqlistA s s' ->
+   eqB (fold_right f i s) (fold_right f i s').
+Proof.
+induction 1; simpl; auto with relations.
+apply Comp; auto.
+Qed.
+
+(** [ForallL2] : specifies that a certain binary predicate should
+    always hold when inspecting two different elements of the list. *)
+
+Inductive ForallL2 (R : A -> A -> Prop) : list A -> Prop :=
+  | ForallNil : ForallL2 R nil
+  | ForallCons : forall a l,
+     (forall b, In b l -> R a b) ->
+     ForallL2 R l -> ForallL2 R (a::l).
+Hint Constructors ForallL2.
+
+(** [NoDupA] can be written in terms of [ForallL2] *)
+
+Lemma ForallL2_NoDupA : forall l,
+ ForallL2 (fun a b => ~eqA a b) l <-> NoDupA l.
+Proof.
+ induction l; split; intros; auto.
+ invlist ForallL2. constructor; [ | rewrite <- IHl; auto ].
+ rewrite InA_alt; intros (a',(Haa',Ha')).
+ exact (H0 a' Ha' Haa').
+ invlist NoDupA. constructor; [ | rewrite IHl; auto ].
+ intros b Hb.
+ contradict H0.
+ rewrite InA_alt; exists b; auto.
+Qed.
+
+Lemma ForallL2_impl : forall (R R':A->A->Prop),
+ (forall a b, R a b -> R' a b) ->
+ forall l, ForallL2 R l -> ForallL2 R' l.
+Proof.
+ induction 2; auto.
+Qed.
+
+(** The following definition is easier to use than [ForallL2]. *)
+
+Definition ForallL2_alt (R:A->A->Prop) l :=
+ forall a b, InA a l -> InA b l -> ~eqA a b -> R a b.
+
+Section Restriction.
+Variable R : A -> A -> Prop.
+
+(** [ForallL2] and [ForallL2_alt] are related, but no completely
+    equivalent. For proving one implication, we need to know that the
+    list has no duplicated elements... *)
+
+Lemma ForallL2_equiv1 : forall l, NoDupA l ->
+ ForallL2_alt R l -> ForallL2 R l.
+Proof.
+ induction l; auto.
+ constructor. intros b Hb.
+ inv.
+ apply H0; auto.
+ contradict H1; rewrite H1; auto.
+ apply IHl.
+ inv; auto.
+ intros b c Hb Hc Hneq.
+ apply H0; auto.
+Qed.
+
+(** ... and for proving the other implication, we need to be able
+   to reverse and adapt relation [R] modulo [eqA]. *)
+
+Hypothesis R_sym : Symmetric R.
+Hypothesis R_compat : Proper (eqA==>eqA==>iff) R.
+
+Lemma ForallL2_equiv2 : forall l,
+ ForallL2 R l -> ForallL2_alt R l.
+Proof.
+ induction l.
+ intros _. red. intros a b Ha. inv.
+ inversion_clear 1 as [|? ? H_R Hl].
+ intros b c Hb Hc Hneq.
+ inv.
+ (* b,c = a : impossible *)
+ elim Hneq; eauto.
+ (* b = a, c in l *)
+ rewrite InA_alt in H0; destruct H0 as (d,(Hcd,Hd)).
+ rewrite H, Hcd; auto.
+ (* b in l, c = a *)
+ rewrite InA_alt in H; destruct H as (d,(Hcd,Hd)).
+ rewrite H0, Hcd; auto.
+ (* b,c in l *)
+ apply (IHl Hl); auto.
+Qed.
+
+Lemma ForallL2_equiv : forall l, NoDupA l ->
+ (ForallL2 R l <-> ForallL2_alt R l).
+Proof.
+split; [apply ForallL2_equiv2|apply ForallL2_equiv1]; auto.
+Qed.
+
+Lemma ForallL2_equivlistA : forall l l', NoDupA l' ->
+ equivlistA l l' -> ForallL2 R l -> ForallL2 R l'.
+Proof.
+intros.
+apply ForallL2_equiv1; auto.
+intros a b Ha Hb Hneq.
+red in H0; rewrite <- H0 in Ha,Hb.
+revert a b Ha Hb Hneq.
+change (ForallL2_alt R l).
+apply ForallL2_equiv2; auto.
+Qed.
 
 (** Two-argument functions that allow to reorder their arguments. *)
 Definition transpose (f : A -> B -> B) :=
@@ -449,152 +402,10 @@ Definition transpose (f : A -> B -> B) :=
 Definition transpose_restr (R : A -> A -> Prop)(f : A -> B -> B) :=
   forall (x y : A) (z : B), R x y -> eqB (f x (f y z)) (f y (f x z)).
 
-Variable st:Equivalence eqB.
-Variable f:A->B->B.
-Variable i:B.
-Variable Comp:compat_op f.
-
-Lemma fold_right_eqlistA :
-   forall s s', eqlistA s s' ->
-   eqB (fold_right f i s) (fold_right f i s').
-Proof.
-induction 1; simpl; auto.
-reflexivity.
-Qed.
-
-Lemma equivlistA_NoDupA_split : forall l l1 l2 x y, eqA x y ->
- NoDupA (x::l) -> NoDupA (l1++y::l2) ->
- equivlistA (x::l) (l1++y::l2) -> equivlistA l (l1++l2).
-Proof.
- intros; intro a.
- generalize (H2 a).
- repeat rewrite InA_app_iff.
- do 2 rewrite InA_cons.
- inversion_clear H0.
- assert (SW:=NoDupA_swap H1).
- inversion_clear SW.
- rewrite InA_app_iff in H0.
- split; intros.
- assert (~eqA a x).
-  contradict H3; apply InA_eqA with a; auto.
- assert (~eqA a y).
-  contradict H8; eauto.
- intuition.
- assert (eqA a x \/ InA a l) by intuition.
- destruct H8; auto.
- elim H0.
- destruct H7; [left|right]; eapply InA_eqA; eauto.
-Qed.
-
-(** [ForallList2] : specifies that a certain binary predicate should
-    always hold when inspecting two different elements of the list. *)
-
-Inductive ForallList2 (R : A -> A -> Prop) : list A -> Prop :=
-  | ForallNil : ForallList2 R nil
-  | ForallCons : forall a l,
-     (forall b, In b l -> R a b) ->
-     ForallList2 R l -> ForallList2 R (a::l).
-Hint Constructors ForallList2.
-
-(** [NoDupA] can be written in terms of [ForallList2] *)
-
-Lemma ForallList2_NoDupA : forall l,
- ForallList2 (fun a b => ~eqA a b) l <-> NoDupA l.
-Proof.
- induction l; split; intros; auto.
- inversion_clear H. constructor; [ | rewrite <- IHl; auto ].
- rewrite InA_alt; intros (a',(Haa',Ha')).
- exact (H0 a' Ha' Haa').
- inversion_clear H. constructor; [ | rewrite IHl; auto ].
- intros b Hb.
- contradict H0.
- rewrite InA_alt; exists b; auto.
-Qed.
-
-Lemma ForallList2_impl : forall (R R':A->A->Prop),
- (forall a b, R a b -> R' a b) ->
- forall l, ForallList2 R l -> ForallList2 R' l.
-Proof.
- induction 2; auto.
-Qed.
-
-(** The following definition is easier to use than [ForallList2]. *)
-
-Definition ForallList2_alt (R:A->A->Prop) l :=
- forall a b, InA a l -> InA b l -> ~eqA a b -> R a b.
-
-Section Restriction.
-Variable R : A -> A -> Prop.
-
-(** [ForallList2] and [ForallList2_alt] are related, but no completely
-    equivalent. For proving one implication, we need to know that the
-    list has no duplicated elements... *)
-
-Lemma ForallList2_equiv1 : forall l, NoDupA l ->
- ForallList2_alt R l -> ForallList2 R l.
-Proof.
- induction l; auto.
- constructor. intros b Hb.
- inversion_clear H.
- apply H0; auto.
- contradict H1.
- apply InA_eqA with b; auto.
- apply IHl.
- inversion_clear H; auto.
- intros b c Hb Hc Hneq.
- apply H0; auto.
-Qed.
-
-(** ... and for proving the other implication, we need to be able
-   to reverse and adapt relation [R] modulo [eqA]. *)
-
-Hypothesis R_sym : forall a b, R a b -> R b a.
-Hypothesis R_compat : forall a, compat_P (R a).
-
-Lemma ForallList2_equiv2 : forall l,
- ForallList2 R l -> ForallList2_alt R l.
-Proof.
- induction l.
- intros _. red. intros a b Ha. inversion Ha.
- inversion_clear 1 as [|? ? H_R Hl].
- intros b c Hb Hc Hneq.
- inversion_clear Hb; inversion_clear Hc.
- (* b,c = a : impossible *)
- elim Hneq; eauto.
- (* b = a, c in l *)
- rewrite InA_alt in H0; destruct H0 as (d,(Hcd,Hd)).
- apply R_compat with d; auto.
- apply R_sym; apply R_compat with a; auto.
- (* b in l, c = a *)
- rewrite InA_alt in H; destruct H as (d,(Hcd,Hd)).
- apply R_compat with a; auto.
- apply R_sym; apply R_compat with d; auto.
- (* b,c in l *)
- apply (IHl Hl); auto.
-Qed.
-
-Lemma ForallList2_equiv : forall l, NoDupA l ->
- (ForallList2 R l <-> ForallList2_alt R l).
-Proof.
-split; [apply ForallList2_equiv2|apply ForallList2_equiv1]; auto.
-Qed.
-
-Lemma ForallList2_equivlistA : forall l l', NoDupA l' ->
- equivlistA l l' -> ForallList2 R l -> ForallList2 R l'.
-Proof.
-intros.
-apply ForallList2_equiv1; auto.
-intros a b Ha Hb Hneq.
-red in H0; rewrite <- H0 in Ha,Hb.
-revert a b Ha Hb Hneq.
-change (ForallList2_alt R l).
-apply ForallList2_equiv2; auto.
-Qed.
-
 Variable TraR :transpose_restr R f.
 
 Lemma fold_right_commutes_restr :
-  forall s1 s2 x, ForallList2 R (s1++x::s2) ->
+  forall s1 s2 x, ForallL2 R (s1++x::s2) ->
   eqB (fold_right f i (s1++x::s2)) (f x (fold_right f i (s1++s2))).
 Proof.
 induction s1; simpl; auto; intros.
@@ -602,15 +413,15 @@ reflexivity.
 transitivity (f a (f x (fold_right f i (s1++s2)))).
 apply Comp; auto.
 apply IHs1.
-inversion_clear H; auto.
+invlist ForallL2; auto.
 apply TraR.
-inversion_clear H.
+invlist ForallL2; auto.
 apply H0.
 apply in_or_app; simpl; auto.
 Qed.
 
 Lemma fold_right_equivlistA_restr :
-  forall s s', NoDupA s -> NoDupA s' -> ForallList2 R s ->
+  forall s s', NoDupA s -> NoDupA s' -> ForallL2 R s ->
   equivlistA s s' -> eqB (fold_right f i s) (fold_right f i s').
 Proof.
  simple induction s.
@@ -618,27 +429,26 @@ Proof.
  intros; reflexivity.
  unfold equivlistA; intros.
  destruct (H2 a).
- assert (X : InA a nil); auto; inversion X.
+ assert (InA a nil) by auto; inv.
  intros x l Hrec s' N N' F E; simpl in *.
- assert (InA x s').
-  rewrite <- (E x); auto.
+ assert (InA x s') by (rewrite <- (E x); auto).
  destruct (InA_split H) as (s1,(y,(s2,(H1,H2)))).
  subst s'.
  transitivity (f x (fold_right f i (s1++s2))).
  apply Comp; auto.
  apply Hrec; auto.
- inversion_clear N; auto.
+ inv; auto.
  eapply NoDupA_split; eauto.
- inversion_clear F; auto.
+ invlist ForallL2; auto.
  eapply equivlistA_NoDupA_split; eauto.
  transitivity (f y (fold_right f i (s1++s2))).
  apply Comp; auto. reflexivity.
  symmetry; apply fold_right_commutes_restr.
- apply ForallList2_equivlistA with (x::l); auto.
+ apply ForallL2_equivlistA with (x::l); auto.
 Qed.
 
 Lemma fold_right_add_restr :
-  forall s' s x, NoDupA s -> NoDupA s' -> ForallList2 R s' -> ~ InA x s ->
+  forall s' s x, NoDupA s -> NoDupA s' -> ForallL2 R s' -> ~ InA x s ->
   equivlistA s' (x::s) -> eqB (fold_right f i s') (f x (fold_right f i s)).
 Proof.
  intros; apply (@fold_right_equivlistA_restr s' (x::s)); auto.
@@ -656,6 +466,7 @@ Proof.
 induction s1; simpl; auto; intros.
 reflexivity.
 transitivity (f a (f x (fold_right f i (s1++s2)))); auto.
+apply Comp; auto.
 Qed.
 
 Lemma fold_right_equivlistA :
@@ -663,8 +474,8 @@ Lemma fold_right_equivlistA :
   equivlistA s s' -> eqB (fold_right f i s) (fold_right f i s').
 Proof.
 intros; apply fold_right_equivlistA_restr with (R:=fun _ _ => True);
- try red; auto.
-apply ForallList2_equiv1; try red; auto.
+ repeat red; auto.
+apply ForallL2_equiv1; try red; auto.
 Qed.
 
 Lemma fold_right_add :
@@ -674,6 +485,8 @@ Proof.
  intros; apply (@fold_right_equivlistA s' (x::s)); auto.
 Qed.
 
+End Fold.
+
 Section Remove.
 
 Hypothesis eqA_dec : forall x y : A, {eqA x y}+{~(eqA x y)}.
@@ -682,15 +495,15 @@ Lemma InA_dec : forall x l, { InA x l } + { ~ InA x l }.
 Proof.
 induction l.
 right; auto.
-red; inversion 1.
+intro; inv.
 destruct (eqA_dec x a).
 left; auto.
 destruct IHl.
 left; auto.
-right; red; inversion_clear 1; contradiction.
+right; intro; inv; contradiction.
 Qed.
 
-Fixpoint removeA (x : A) (l : list A){struct l} : list A :=
+Fixpoint removeA (x : A) (l : list A) : list A :=
   match l with
     | nil => nil
     | y::tl => if (eqA_dec x y) then removeA x tl else y::(removeA x tl)
@@ -708,21 +521,21 @@ Lemma removeA_InA : forall l x y, InA y (removeA x l) <-> InA y l /\ ~eqA x y.
 Proof.
 induction l; simpl; auto.
 split.
-inversion_clear 1.
-destruct 1; inversion_clear H.
+intro; inv.
+destruct 1; inv.
 intros.
 destruct (eqA_dec x a); simpl; auto.
 rewrite IHl; split; destruct 1; split; auto.
-inversion_clear H; auto.
-destruct H0; apply eqA_trans with a; auto.
+inv; auto.
+destruct H0; transitivity a; auto.
 split.
-inversion_clear 1.
+intro; inv.
 split; auto.
 contradict n.
-apply eqA_trans with y; auto.
+transitivity y; auto.
 rewrite (IHl x y) in H0; destruct H0; auto.
-destruct 1; inversion_clear H; auto.
-constructor 2; rewrite IHl; auto.
+destruct 1; inv; auto.
+right; rewrite IHl; auto.
 Qed.
 
 Lemma removeA_NoDupA :
@@ -730,7 +543,7 @@ Lemma removeA_NoDupA :
 Proof.
 simple induction s; simpl; intros.
 auto.
-inversion_clear H0.
+inv.
 destruct (eqA_dec x a); simpl; auto.
 constructor; auto.
 rewrite removeA_InA.
@@ -748,24 +561,249 @@ contradict H.
 apply InA_eqA with x0; auto.
 rewrite <- (H0 x0) in H1.
 destruct H1.
-inversion_clear H1; auto.
+inv; auto.
 elim H2; auto.
 Qed.
 
 End Remove.
 
-End Fold.
 
+
+(** Results concerning lists modulo [eqA] and [ltA] *)
+
+Variable ltA : A -> A -> Prop.
+Hypothesis ltA_strorder : StrictOrder ltA.
+Hypothesis ltA_compat : Proper (eqA==>eqA==>iff) ltA.
+
+Hint Resolve (@StrictOrder_Transitive _ _ ltA_strorder).
+
+Notation InfA:=(lelistA ltA).
+Notation SortA:=(sort ltA).
+
+Hint Constructors lelistA sort.
+
+Lemma InfA_ltA :
+ forall l x y, ltA x y -> InfA y l -> InfA x l.
+Proof.
+ destruct l; constructor. inv; eauto.
+Qed.
+
+Global Instance InfA_compat : Proper (eqA==>eqlistA==>iff) InfA.
+Proof.
+ intros x x' Hxx' l l' Hll'.
+ inversion_clear Hll'.
+ intuition.
+ split; intro; inv; constructor.
+ rewrite <- Hxx', <- H; auto.
+ rewrite Hxx', H; auto.
+Qed.
+
+(** For compatibility, can be deduced from [InfA_compat] *)
+Lemma InfA_eqA :
+ forall l x y, eqA x y -> InfA y l -> InfA x l.
+Proof.
+ intros l x y H; rewrite H; auto.
+Qed.
+Hint Immediate InfA_ltA InfA_eqA.
+
+Lemma SortA_InfA_InA :
+ forall l x a, SortA l -> InfA a l -> InA x l -> ltA a x.
+Proof.
+ simple induction l.
+ intros. inv.
+ intros. inv.
+ setoid_replace x with a; auto.
+ eauto.
+Qed.
+
+Lemma In_InfA :
+ forall l x, (forall y, In y l -> ltA x y) -> InfA x l.
+Proof.
+ simple induction l; simpl; intros; constructor; auto.
+Qed.
+
+Lemma InA_InfA :
+ forall l x, (forall y, InA y l -> ltA x y) -> InfA x l.
+Proof.
+ simple induction l; simpl; intros; constructor; auto.
+Qed.
+
+(* In fact, this may be used as an alternative definition for InfA: *)
+
+Lemma InfA_alt :
+ forall l x, SortA l -> (InfA x l <-> (forall y, InA y l -> ltA x y)).
+Proof.
+split.
+intros; eapply SortA_InfA_InA; eauto.
+apply InA_InfA.
+Qed.
+
+Lemma InfA_app : forall l1 l2 a, InfA a l1 -> InfA a l2 -> InfA a (l1++l2).
+Proof.
+ induction l1; simpl; auto.
+ intros; inv; auto.
+Qed.
+
+Lemma SortA_app :
+ forall l1 l2, SortA l1 -> SortA l2 ->
+ (forall x y, InA x l1 -> InA y l2 -> ltA x y) ->
+ SortA (l1 ++ l2).
+Proof.
+ induction l1; simpl in *; intuition.
+ inv.
+ constructor; auto.
+ apply InfA_app; auto.
+ destruct l2; auto.
+Qed.
+
+Lemma SortA_NoDupA : forall l, SortA l -> NoDupA l.
+Proof.
+ simple induction l; auto.
+ intros x l' H H0.
+ inv.
+ constructor; auto.
+ intro.
+ apply (StrictOrder_Irreflexive x).
+ eapply SortA_InfA_InA; eauto.
+Qed.
+
+
+(** Some results about [eqlistA] *)
+
+Section EqlistA.
+
+Lemma eqlistA_length : forall l l', eqlistA l l' -> length l = length l'.
+Proof.
+induction 1; auto; simpl; congruence.
+Qed.
+
+Global Instance app_eqlistA_compat :
+ Proper (eqlistA==>eqlistA==>eqlistA) (@app A).
+Proof.
+ repeat red; induction 1; simpl; auto.
+Qed.
+
+(** For compatibility, can be deduced from app_eqlistA_compat **)
+Lemma eqlistA_app : forall l1 l1' l2 l2',
+   eqlistA l1 l1' -> eqlistA l2 l2' -> eqlistA (l1++l2) (l1'++l2').
+Proof.
+intros l1 l1' l2 l2' H H'; rewrite H, H'; reflexivity.
+Qed.
+
+Lemma eqlistA_rev_app : forall l1 l1',
+   eqlistA l1 l1' -> forall l2 l2', eqlistA l2 l2' ->
+   eqlistA ((rev l1)++l2) ((rev l1')++l2').
+Proof.
+induction 1; auto.
+simpl; intros.
+do 2 rewrite app_ass; simpl; auto.
+Qed.
+
+Global Instance rev_eqlistA_compat : Proper (eqlistA==>eqlistA) (@rev A).
+Proof.
+repeat red. intros.
+rewrite (app_nil_end (rev x)), (app_nil_end (rev y)).
+apply eqlistA_rev_app; auto.
+Qed.
+
+Lemma eqlistA_rev : forall l1 l1',
+   eqlistA l1 l1' -> eqlistA (rev l1) (rev l1').
+Proof.
+apply rev_eqlistA_compat.
+Qed.
+
+Lemma SortA_equivlistA_eqlistA : forall l l',
+   SortA l -> SortA l' -> equivlistA l l' -> eqlistA l l'.
+Proof.
+induction l; destruct l'; simpl; intros; auto.
+destruct (H1 a); assert (InA a nil) by auto; inv.
+destruct (H1 a); assert (InA a nil) by auto; inv.
+inv.
+assert (forall y, InA y l -> ltA a y).
+intros; eapply SortA_InfA_InA with (l:=l); eauto.
+assert (forall y, InA y l' -> ltA a0 y).
+intros; eapply SortA_InfA_InA with (l:=l'); eauto.
+clear H3 H4.
+assert (eqA a a0).
+ destruct (H1 a).
+ destruct (H1 a0).
+ assert (InA a (a0::l')) by auto. inv; auto.
+ assert (InA a0 (a::l)) by auto. inv; auto.
+ elim (StrictOrder_Irreflexive a); eauto.
+constructor; auto.
+apply IHl; auto.
+split; intros.
+destruct (H1 x).
+assert (InA x (a0::l')) by auto. inv; auto.
+rewrite H9,<-H3 in H4. elim (StrictOrder_Irreflexive a); eauto.
+destruct (H1 x).
+assert (InA x (a::l)) by auto. inv; auto.
+rewrite H9,H3 in H4. elim (StrictOrder_Irreflexive a0); eauto.
+Qed.
+
+End EqlistA.
+
+(** A few things about [filter] *)
+
+Section Filter.
+
+Lemma filter_sort : forall f l, SortA l -> SortA (List.filter f l).
+Proof.
+induction l; simpl; auto.
+intros; inv; auto.
+destruct (f a); auto.
+constructor; auto.
+apply In_InfA; auto.
+intros.
+rewrite filter_In in H; destruct H.
+eapply SortA_InfA_InA; eauto.
+Qed.
+
+Implicit Arguments eq [ [A] ].
+
+Lemma filter_InA : forall f, Proper (eqA==>eq) f ->
+ forall l x, InA x (List.filter f l) <-> InA x l /\ f x = true.
+Proof.
+clear ltA ltA_compat ltA_strorder.
+intros; do 2 rewrite InA_alt; intuition.
+destruct H0 as (y,(H0,H1)); rewrite filter_In in H1; exists y; intuition.
+destruct H0 as (y,(H0,H1)); rewrite filter_In in H1; intuition.
+  rewrite (H _ _ H0); auto.
+destruct H1 as (y,(H0,H1)); exists y; rewrite filter_In; intuition.
+  rewrite <- (H _ _ H0); auto.
+Qed.
+
+Lemma filter_split :
+ forall f, (forall x y, f x = true -> f y = false -> ltA x y) ->
+ forall l, SortA l -> l = filter f l ++ filter (fun x=>negb (f x)) l.
+Proof.
+induction l; simpl; intros; auto.
+inv.
+rewrite IHl at 1; auto.
+case_eq (f a); simpl; intros; auto.
+assert (forall e, In e l -> f e = false).
+  intros.
+  assert (H4:=SortA_InfA_InA H1 H2 (In_InA H3)).
+  case_eq (f e); simpl; intros; auto.
+  elim (StrictOrder_Irreflexive e).
+  transitivity a; auto.
+replace (List.filter f l) with (@nil A); auto.
+generalize H3; clear; induction l; simpl; auto.
+case_eq (f a); auto; intros.
+rewrite H3 in H; auto; try discriminate.
+Qed.
+
+End Filter.
 End Type_with_equality.
 
-Hint Unfold compat_bool compat_nat compat_P.
-Hint Constructors InA NoDupA sort lelistA eqlistA.
+
+Hint Constructors InA eqlistA NoDupA sort lelistA.
 
 Section Find.
+
 Variable A B : Type.
 Variable eqA : A -> A -> Prop.
-Hypothesis eqA_sym : forall x y, eqA x y -> eqA y x.
-Hypothesis eqA_trans : forall x y z, eqA x y -> eqA y z -> eqA x z.
+Hypothesis eqA_equiv : Equivalence eqA.
 Hypothesis eqA_dec : forall x y : A, {eqA x y}+{~(eqA x y)}.
 
 Fixpoint findA (f : A -> bool) (l:list (A*B)) : option B :=
@@ -780,32 +818,49 @@ Lemma findA_NoDupA :
  (InA (fun p p' => eqA (fst p) (fst p') /\ snd p = snd p') (a,b) l <->
   findA (fun a' => if eqA_dec a a' then true else false) l = Some b).
 Proof.
-induction l; simpl; intros.
+set (eqk := fun p p' : A*B => eqA (fst p) (fst p')).
+set (eqke := fun p p' : A*B => eqA (fst p) (fst p') /\ snd p = snd p').
+induction l; intros; simpl.
 split; intros; try discriminate.
-inversion H0.
+invlist InA.
 destruct a as (a',b'); rename a0 into a.
-inversion_clear H.
+invlist NoDupA.
 split; intros.
-inversion_clear H.
-simpl in *; destruct H2; subst b'.
+invlist InA.
+compute in H2; destruct H2. subst b'.
 destruct (eqA_dec a a'); intuition.
 destruct (eqA_dec a a'); simpl.
-destruct H0.
-generalize e H2 eqA_trans eqA_sym; clear.
+contradict H0.
+revert e H2; clear - eqA_equiv.
 induction l.
-inversion 2.
-inversion_clear 2; intros; auto.
+intros; invlist InA.
+intros; invlist InA; auto.
 destruct a0.
 compute in H; destruct H.
 subst b.
-constructor 1; auto.
-simpl.
-apply eqA_trans with a; auto.
+left; auto.
+compute.
+transitivity a; auto. symmetry; auto.
 rewrite <- IHl; auto.
 destruct (eqA_dec a a'); simpl in *.
-inversion H; clear H; intros; subst b'; auto.
-constructor 2.
-rewrite IHl; auto.
+left; split; simpl; congruence.
+right. rewrite IHl; auto.
 Qed.
 
 End Find.
+
+
+(** Compatibility aliases. [Proper] is rather to be used directly now.*)
+
+Definition compat_bool {A} (eqA:A->A->Prop)(f:A->bool) :=
+ Proper (eqA==>Logic.eq) f.
+
+Definition compat_nat {A} (eqA:A->A->Prop)(f:A->nat) :=
+ Proper (eqA==>Logic.eq) f.
+
+Definition compat_P {A} (eqA:A->A->Prop)(P:A->Prop) :=
+ Proper (eqA==>impl) P.
+
+Definition compat_op {A B} (eqA:A->A->Prop)(eqB:B->B->Prop)(f:A->B->B) :=
+ Proper (eqA==>eqB==>eqB) f.
+

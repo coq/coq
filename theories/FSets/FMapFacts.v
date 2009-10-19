@@ -571,7 +571,7 @@ Qed.
 (** First, [Equal] is [Equiv] with Leibniz on elements. *)
 
 Lemma Equal_Equiv : forall (m m' : t elt),
-  Equal m m' <-> Equiv (@Logic.eq elt) m m'.
+  Equal m m' <-> Equiv Logic.eq m m'.
 Proof.
 intros. rewrite Equal_mapsto_iff. split; intros.
 split.
@@ -760,6 +760,16 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Notation eqke := (@eq_key_elt elt).
   Notation eqk := (@eq_key elt).
 
+  Instance eqk_equiv : Equivalence eqk.
+  Proof. split; repeat red; eauto. Qed.
+
+  Instance eqke_equiv : Equivalence eqke.
+  Proof.
+   unfold eq_key_elt; split; repeat red; firstorder.
+   eauto with *.
+   congruence.
+  Qed.
+
   (** Complements about InA, NoDupA and findA *)
 
   Lemma InA_eqke_eqk : forall k1 k2 e1 e2 l,
@@ -787,12 +797,12 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   intros. symmetry.
   unfold eqb.
   rewrite <- findA_NoDupA, InA_rev, findA_NoDupA
-   by eauto using NoDupA_rev; eauto.
+   by (eauto using NoDupA_rev with *); eauto.
   case_eq (findA (eqb k) (rev l)); auto.
   intros e.
   unfold eqb.
   rewrite <- findA_NoDupA, InA_rev, findA_NoDupA
-   by eauto using NoDupA_rev.
+   by (eauto using NoDupA_rev with *).
   intro Eq; rewrite Eq; auto.
   Qed.
 
@@ -893,9 +903,9 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   assert (Hstep' : forall k e a m' m'', InA eqke (k,e) l -> ~In k m' ->
              Add k e m' m'' -> P m' a -> P m'' (F (k,e) a)).
    intros k e a m' m'' H ? ? ?; eapply Hstep; eauto.
-   revert H; unfold l; rewrite InA_rev, elements_mapsto_iff; auto.
+   revert H; unfold l; rewrite InA_rev, elements_mapsto_iff; auto with *.
   assert (Hdup : NoDupA eqk l).
-   unfold l. apply NoDupA_rev; try red; unfold eq_key ; eauto.
+   unfold l. apply NoDupA_rev; try red; unfold eq_key ; eauto with *.
    apply elements_3w.
   assert (Hsame : forall k, find k m = findA (eqb k) l).
    intros k. unfold l. rewrite elements_o, findA_rev; auto.
@@ -977,7 +987,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   set (l:=rev (elements m)).
   assert (Rstep' : forall k e a b, InA eqke (k,e) l ->
     R a b -> R (f k e a) (g k e b)) by
-    (intros; apply Rstep; auto; rewrite elements_mapsto_iff, <- InA_rev; auto).
+    (intros; apply Rstep; auto; rewrite elements_mapsto_iff, <- InA_rev; auto with *).
   clearbody l; clear Rstep m.
   induction l; simpl; auto.
   apply Rstep'; auto.
@@ -1087,66 +1097,49 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Lemma fold_Equal : forall m1 m2 i, Equal m1 m2 ->
    eqA (fold f m1 i) (fold f m2 i).
   Proof.
-  assert (eqke_refl : forall p, eqke p p).
-   red; auto.
-  assert (eqke_sym : forall p p', eqke p p' -> eqke p' p).
-   intros (x1,x2) (y1,y2); unfold eq_key_elt; simpl; intuition.
-  assert (eqke_trans : forall p p' p'', eqke p p' -> eqke p' p'' -> eqke p p'').
-   intros (x1,x2) (y1,y2) (z1,z2); unfold eq_key_elt; simpl.
-   intuition; eauto; congruence.
   intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
   apply fold_right_equivlistA_restr with
-    (R:=fun p p' => ~eqk p p') (eqA:=eqke) (eqB:=eqA); auto.
-  intros (k1,e1) (k2,e2) a1 a2 (Hk,He) Ha; simpl in *; apply Comp; auto.
-  unfold eq_key; auto.
-  intros (k1,e1) (k2,e2) (k3,e3). unfold eq_key_elt, eq_key; simpl.
-   intuition eauto.
+    (R:=fun p p' => ~eqk p p') (eqA:=eqke) (eqB:=eqA); auto with *.
+  intros (k1,e1) (k2,e2) (Hk,He) a1 a2 Ha; simpl in *; apply Comp; auto.
+  unfold eq_key, eq_key_elt; repeat red. intuition eauto.
   intros (k,e) (k',e'); unfold eq_key; simpl; auto.
-  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
-  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
-  apply ForallList2_equiv1 with (eqA:=eqk); try red ; unfold eq_key ; eauto.
-  apply NoDupA_rev; try red ; unfold eq_key; eauto. apply elements_3w.
+  apply NoDupA_rev; auto with *; apply NoDupA_eqk_eqke; apply elements_3w.
+  apply NoDupA_rev; auto with *; apply NoDupA_eqk_eqke; apply elements_3w.
+  apply ForallL2_equiv1 with (eqA:=eqk); try red ; unfold eq_key ; eauto with *.
+  apply NoDupA_rev; try red ; unfold eq_key; eauto with *. apply elements_3w.
   red; intros.
-  do 2 rewrite InA_rev.
-  destruct x; do 2 rewrite <- elements_mapsto_iff.
-  do 2 rewrite find_mapsto_iff.
-  rewrite H; split; auto.
+  rewrite 2 InA_rev by auto with *.
+  destruct x; rewrite <- 2 elements_mapsto_iff by auto with *.
+  rewrite 2 find_mapsto_iff by auto with *.
+  rewrite H. split; auto.
   Qed.
 
   Lemma fold_Add : forall m1 m2 k e i, ~In k m1 -> Add k e m1 m2 ->
    eqA (fold f m2 i) (f k e (fold f m1 i)).
   Proof.
-  assert (eqke_refl : forall p, eqke p p).
-   red; auto.
-  assert (eqke_sym : forall p p', eqke p p' -> eqke p' p).
-   intros (x1,x2) (y1,y2); unfold eq_key_elt; simpl; intuition.
-  assert (eqke_trans : forall p p' p'', eqke p p' -> eqke p' p'' -> eqke p p'').
-   intros (x1,x2) (y1,y2) (z1,z2); unfold eq_key_elt; simpl.
-   intuition; eauto; congruence.
   intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
   set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
   change (f k e (fold_right f' i (rev (elements m1))))
    with (f' (k,e) (fold_right f' i (rev (elements m1)))).
   apply fold_right_add_restr with
-    (R:=fun p p'=>~eqk p p')(eqA:=eqke)(eqB:=eqA); auto.
-  intros (k1,e1) (k2,e2) a1 a2 (Hk,He) Ha; unfold f'; simpl in *. apply Comp; auto.
+    (R:=fun p p'=>~eqk p p')(eqA:=eqke)(eqB:=eqA); auto with *.
+  intros (k1,e1) (k2,e2) (Hk,He) a a' Ha; unfold f'; simpl in *. apply Comp; auto.
 
-  unfold eq_key; auto.
-  intros (k1,e1) (k2,e2) (k3,e3). unfold eq_key_elt, eq_key; simpl.
-   intuition eauto.
+  unfold eq_key_elt, eq_key; repeat red; intuition eauto.
   unfold f'; intros (k1,e1) (k2,e2); unfold eq_key; simpl; auto.
-  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
-  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
-  apply ForallList2_equiv1 with (eqA:=eqk); try red; unfold eq_key ; eauto.
-  apply NoDupA_rev; try red; eauto. apply elements_3w.
-  rewrite InA_rev.
+  apply NoDupA_rev; auto with *; apply NoDupA_eqk_eqke; apply elements_3w.
+  apply NoDupA_rev; auto with *; apply NoDupA_eqk_eqke; apply elements_3w.
+  apply ForallL2_equiv1 with (eqA:=eqk); try red; unfold eq_key ; eauto with *.
+  apply NoDupA_rev; try red; eauto with *. apply elements_3w.
+  rewrite InA_rev; auto with *.
   contradict H.
   exists e.
   rewrite elements_mapsto_iff; auto.
   intros a.
-  rewrite InA_cons; do 2 rewrite InA_rev;
-  destruct a as (a,b); do 2 rewrite <- elements_mapsto_iff.
-  do 2 rewrite find_mapsto_iff; unfold eq_key_elt; simpl.
+  destruct a as (a,b).
+  rewrite InA_cons, 2 InA_rev, <- 2 elements_mapsto_iff,
+   2 find_mapsto_iff by (auto with *).
+  unfold eq_key_elt; simpl.
   rewrite H0.
   rewrite add_o.
   destruct (eq_dec k a); intuition.
@@ -1545,9 +1538,8 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   set (f:=fun (_:key)(_:elt)=>S).
   setoid_replace (fold f m 0) with (fold f m1 (fold f m2 0)).
   rewrite <- cardinal_fold.
-  intros. apply fold_rel with (R:=fun u v => u = v + cardinal m2); simpl; auto.
-  apply Partition_fold with (eqA:=eq); try red; auto.
-  compute; auto.
+  apply fold_rel with (R:=fun u v => u = v + cardinal m2); simpl; auto.
+  apply Partition_fold with (eqA:=eq); repeat red; auto.
   Qed.
 
   Lemma Partition_partition : forall m m1 m2, Partition m m1 m2 ->
@@ -1777,8 +1769,7 @@ Module OrdProperties (M:S).
   Lemma sort_equivlistA_eqlistA : forall l l' : list (key*elt),
    sort ltk l -> sort ltk l' -> equivlistA eqke l l' -> eqlistA eqke l l'.
   Proof.
-  apply SortA_equivlistA_eqlistA; eauto;
-  unfold O.eqke, O.ltk; simpl; intuition; eauto.
+  apply SortA_equivlistA_eqlistA; eauto with *.
   Qed.
 
   Ltac clean_eauto := unfold O.eqke, O.ltk; simpl; intuition; eauto.
@@ -1802,7 +1793,7 @@ Module OrdProperties (M:S).
    destruct (E.compare x y); intuition; try discriminate; ME.order.
   Qed.
 
-  Lemma gtb_compat : forall p, compat_bool eqke (gtb p).
+  Lemma gtb_compat : forall p, Proper (eqke==>eq) (gtb p).
   Proof.
    red; intros (x,e) (a,e') (b,e'') H; red in H; simpl in *; destruct H.
    generalize (gtb_1 (x,e) (a,e'))(gtb_1 (x,e) (b,e''));
@@ -1817,7 +1808,7 @@ Module OrdProperties (M:S).
    rewrite <- H2; auto.
   Qed.
 
-  Lemma leb_compat : forall p, compat_bool eqke (leb p).
+  Lemma leb_compat : forall p, Proper (eqke==>eq) (leb p).
   Proof.
    red; intros x a b H.
    unfold leb; f_equal; apply gtb_compat; auto.
@@ -1829,7 +1820,7 @@ Module OrdProperties (M:S).
     elements m = elements_lt p m ++ elements_ge p m.
   Proof.
   unfold elements_lt, elements_ge, leb; intros.
-  apply filter_split with (eqA:=eqk) (ltA:=ltk); eauto with map.
+  apply filter_split with (eqA:=eqk) (ltA:=ltk); eauto with *.
   intros; destruct x; destruct y; destruct p.
   rewrite gtb_1 in H; unfold O.ltk in H; simpl in *.
   assert (~ltk (t1,e0) (k,e1)).
@@ -1843,14 +1834,14 @@ Module OrdProperties (M:S).
                  (elements_lt (x,e) m ++ (x,e):: elements_ge (x,e) m).
   Proof.
   intros; unfold elements_lt, elements_ge.
-  apply sort_equivlistA_eqlistA; auto with map.
-  apply (@SortA_app _ eqke); auto with map.
-  apply (@filter_sort _ eqke); auto with map; clean_eauto.
+  apply sort_equivlistA_eqlistA; auto with *.
+  apply (@SortA_app _ eqke); auto with *.
+  apply (@filter_sort _ eqke); auto with *; clean_eauto.
   constructor; auto with map.
-  apply (@filter_sort _ eqke); auto with map; clean_eauto.
-  rewrite (@InfA_alt _ eqke); auto with map; try (clean_eauto; fail).
+  apply (@filter_sort _ eqke); auto with *; clean_eauto.
+  rewrite (@InfA_alt _ eqke); auto with *; try (clean_eauto; fail).
   intros.
-  rewrite filter_InA in H1; auto with map; destruct H1.
+  rewrite filter_InA in H1; auto with *; destruct H1.
   rewrite leb_1 in H2.
   destruct y; unfold O.ltk in *; simpl in *.
   rewrite <- elements_mapsto_iff in H1.
@@ -1858,24 +1849,22 @@ Module OrdProperties (M:S).
    contradict H.
    exists e0; apply MapsTo_1 with t0; auto.
   ME.order.
-  apply (@filter_sort _ eqke); auto with map; clean_eauto.
+  apply (@filter_sort _ eqke); auto with *; clean_eauto.
   intros.
-  rewrite filter_InA in H1; auto with map; destruct H1.
+  rewrite filter_InA in H1; auto with *; destruct H1.
   rewrite gtb_1 in H3.
   destruct y; destruct x0; unfold O.ltk in *; simpl in *.
   inversion_clear H2.
   red in H4; simpl in *; destruct H4.
   ME.order.
-  rewrite filter_InA in H4; auto with map; destruct H4.
+  rewrite filter_InA in H4; auto with *; destruct H4.
   rewrite leb_1 in H4.
   unfold O.ltk in *; simpl in *; ME.order.
   red; intros a; destruct a.
-  rewrite InA_app_iff; rewrite InA_cons.
-  do 2 (rewrite filter_InA; auto with map).
-  do 2 rewrite <- elements_mapsto_iff.
-  rewrite leb_1; rewrite gtb_1.
-  rewrite find_mapsto_iff; rewrite (H0 t0); rewrite <- find_mapsto_iff.
-  rewrite add_mapsto_iff.
+  rewrite InA_app_iff, InA_cons, 2 filter_InA,
+    <-2 elements_mapsto_iff, leb_1, gtb_1,
+    find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
+    add_mapsto_iff by (auto with *).
   unfold O.eqke, O.ltk; simpl.
   destruct (E.compare t0 x); intuition.
   right; split; auto; ME.order.
@@ -1892,8 +1881,8 @@ Module OrdProperties (M:S).
      eqlistA eqke (elements m') (elements m ++ (x,e)::nil).
   Proof.
   intros.
-  apply sort_equivlistA_eqlistA; auto with map.
-  apply (@SortA_app _ eqke); auto with map.
+  apply sort_equivlistA_eqlistA; auto with *.
+  apply (@SortA_app _ eqke); auto with *.
   intros.
   inversion_clear H2.
   destruct x0; destruct y.
@@ -1903,11 +1892,10 @@ Module OrdProperties (M:S).
   apply H; firstorder.
   inversion H3.
   red; intros a; destruct a.
-  rewrite InA_app_iff; rewrite InA_cons; rewrite InA_nil.
-  do 2 rewrite <- elements_mapsto_iff.
-  rewrite find_mapsto_iff; rewrite (H0 t0); rewrite <- find_mapsto_iff.
-  rewrite add_mapsto_iff; unfold O.eqke; simpl.
-  intuition.
+  rewrite InA_app_iff, InA_cons, InA_nil, <- 2 elements_mapsto_iff,
+   find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
+   add_mapsto_iff by (auto with *).
+  unfold O.eqke; simpl. intuition.
   destruct (E.eq_dec x t0); auto.
   exfalso.
   assert (In t0 m).
@@ -1921,9 +1909,9 @@ Module OrdProperties (M:S).
      eqlistA eqke (elements m') ((x,e)::elements m).
   Proof.
   intros.
-  apply sort_equivlistA_eqlistA; auto with map.
+  apply sort_equivlistA_eqlistA; auto with *.
   change (sort ltk (((x,e)::nil) ++ elements m)).
-  apply (@SortA_app _ eqke); auto with map.
+  apply (@SortA_app _ eqke); auto with *.
   intros.
   inversion_clear H1.
   destruct y; destruct x0.
@@ -1933,11 +1921,10 @@ Module OrdProperties (M:S).
   apply H; firstorder.
   inversion H3.
   red; intros a; destruct a.
-  rewrite InA_cons.
-  do 2 rewrite <- elements_mapsto_iff.
-  rewrite find_mapsto_iff; rewrite (H0 t0); rewrite <- find_mapsto_iff.
-  rewrite add_mapsto_iff; unfold O.eqke; simpl.
-  intuition.
+  rewrite InA_cons, <- 2 elements_mapsto_iff,
+    find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
+    add_mapsto_iff by (auto with *).
+  unfold O.eqke; simpl. intuition.
   destruct (E.eq_dec x t0); auto.
   exfalso.
   assert (In t0 m).
@@ -1950,7 +1937,7 @@ Module OrdProperties (M:S).
    Equal m m' -> eqlistA eqke (elements m) (elements m').
   Proof.
   intros.
-  apply sort_equivlistA_eqlistA; auto with map.
+  apply sort_equivlistA_eqlistA; auto with *.
   red; intros.
   destruct x; do 2 rewrite <- elements_mapsto_iff.
   do 2 rewrite find_mapsto_iff; rewrite H; split; auto.
@@ -2052,11 +2039,8 @@ Module OrdProperties (M:S).
   inversion_clear H1.
   red in H2; destruct H2; simpl in *; ME.order.
   inversion_clear H4.
-  rewrite (@InfA_alt _ eqke) in H3; eauto.
+  rewrite (@InfA_alt _ eqke) in H3; eauto with *.
   apply (H3 (y,x0)); auto.
-  unfold lt_key; simpl; intuition; eauto.
-  intros (x1,x2) (y1,y2) (z1,z2); compute; intuition; eauto.
-  intros (x1,x2) (y1,y2) (z1,z2); compute; intuition; eauto.
   Qed.
 
   Lemma min_elt_MapsTo :
@@ -2156,7 +2140,7 @@ Module OrdProperties (M:S).
   do 2 rewrite fold_1.
   do 2 rewrite <- fold_left_rev_right.
   apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
-  intros (k,e) (k',e') a a' (Hk,He) Ha; simpl in *; apply Hf; auto.
+  intros (k,e) (k',e') (Hk,He) a a' Ha; simpl in *; apply Hf; auto.
   apply eqlistA_rev. apply elements_Equal_eqlistA. auto.
   Qed.
 
@@ -2169,7 +2153,7 @@ Module OrdProperties (M:S).
   set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
   transitivity (fold_right f' i (rev (elements m1 ++ (x,e)::nil))).
   apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
-  intros (k1,e1) (k2,e2) a1 a2 (Hk,He) Ha; unfold f'; simpl in *. apply P; auto.
+  intros (k1,e1) (k2,e2) (Hk,He) a1 a2 Ha; unfold f'; simpl in *. apply P; auto.
   apply eqlistA_rev.
   apply elements_Add_Above; auto.
   rewrite distr_rev; simpl.
@@ -2185,7 +2169,7 @@ Module OrdProperties (M:S).
   set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
   transitivity (fold_right f' i (rev (((x,e)::nil)++elements m1))).
   apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
-  intros (k1,e1) (k2,e2) a1 a2 (Hk,He) Ha; unfold f'; simpl in *; apply P; auto.
+  intros (k1,e1) (k2,e2) (Hk,He) a1 a2 Ha; unfold f'; simpl in *; apply P; auto.
   apply eqlistA_rev.
   simpl; apply elements_Add_Below; auto.
   rewrite distr_rev; simpl.

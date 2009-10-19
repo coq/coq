@@ -96,6 +96,12 @@ Module KeyDecidableType(D:DecidableType).
   Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl.
   Hint Immediate eqk_sym eqke_sym.
 
+  Global Instance eqk_equiv : Equivalence eqk.
+  Proof. split; eauto. Qed.
+
+  Global Instance eqke_equiv : Equivalence eqke.
+  Proof. split; eauto. Qed.
+
   Lemma InA_eqke_eqk :
      forall x m, InA eqke x m -> InA eqk x m.
   Proof.
@@ -105,7 +111,7 @@ Module KeyDecidableType(D:DecidableType).
 
   Lemma InA_eqk : forall p q m, eqk p q -> InA eqk p m -> InA eqk q m.
   Proof.
-   intros; apply InA_eqA with p; auto; apply eqk_trans; auto.
+   intros; apply InA_eqA with p; auto with *.
   Qed.
 
   Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).
@@ -128,7 +134,7 @@ Module KeyDecidableType(D:DecidableType).
 
   Lemma MapsTo_eq : forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.
   Proof.
-  intros; unfold MapsTo in *; apply InA_eqA with (x,e); eauto.
+  intros; unfold MapsTo in *; apply InA_eqA with (x,e); eauto with *.
   Qed.
 
   Lemma In_eq : forall l x y, eq x y -> In x l -> In y l.

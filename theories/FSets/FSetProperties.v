@@ -21,7 +21,7 @@ Require Import DecidableTypeEx FSetFacts FSetDecide.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Hint Unfold transpose compat_op.
+Hint Unfold transpose compat_op Proper respectful.
 Hint Extern 1 (Equivalence _) => constructor; congruence.
 
 (** First, a functor for Weak Sets in functorial version. *)
@@ -358,9 +358,9 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   assert (Pstep' : forall x a s' s'', InA x l -> ~In x s' -> Add x s' s'' ->
            P s' a -> P s'' (f x a)).
    intros; eapply Pstep; eauto.
-   rewrite elements_iff, <- InA_rev; auto.
+   rewrite elements_iff, <- InA_rev; auto with *.
   assert (Hdup : NoDup l) by
-    (unfold l; eauto using elements_3w, NoDupA_rev).
+    (unfold l; eauto using elements_3w, NoDupA_rev with *).
   assert (Hsame : forall x, In x s <-> InA x l) by
     (unfold l; intros; rewrite elements_iff, InA_rev; intuition).
   clear Pstep; clearbody l; revert s Hsame; induction l.
@@ -429,7 +429,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   do 2 rewrite fold_1, <- fold_left_rev_right.
   set (l:=rev (elements s)).
   assert (Rstep' : forall x a b, InA x l -> R a b -> R (f x a) (g x b)) by
-    (intros; apply Rstep; auto; rewrite elements_iff, <- InA_rev; auto).
+    (intros; apply Rstep; auto; rewrite elements_iff, <- InA_rev; auto with *).
   clearbody l; clear Rstep s.
   induction l; simpl; auto.
   Qed.
@@ -481,8 +481,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
         fold f s i = fold_right f i l.
   Proof.
   intros; exists (rev (elements s)); split.
-  apply NoDupA_rev; auto with set.
-  exact E.eq_trans.
+  apply NoDupA_rev; auto with *.
   split; intros.
   rewrite elements_iff; do 2 rewrite InA_alt.
   split; destruct 1; generalize (In_rev (elements s) x0); exists x0; intuition.
@@ -517,8 +516,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   intros; destruct (fold_0 s i f) as (l,(Hl, (Hl1, Hl2)));
     destruct (fold_0 s' i f) as (l',(Hl', (Hl'1, Hl'2))).
   rewrite Hl2; rewrite Hl'2; clear Hl2 Hl'2.
-  apply fold_right_add with (eqA:=E.eq)(eqB:=eqA); auto.
-  eauto.
+  apply fold_right_add with (eqA:=E.eq)(eqB:=eqA); auto with *.
   rewrite <- Hl1; auto.
   intros a; rewrite InA_cons; rewrite <- Hl1; rewrite <- Hl'1;
    rewrite (H2 a); intuition.
@@ -547,7 +545,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   intros.
   apply fold_rel with (R:=fun u v => eqA u (f x v)); intros.
   reflexivity.
-  transitivity (f x0 (f x b)); auto.
+  transitivity (f x0 (f x b)); auto. apply Comp; auto with *.
   Qed.
 
   (** ** Fold is a morphism *)
@@ -556,6 +554,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
    eqA (fold f s i) (fold f s i').
   Proof.
   intros. apply fold_rel with (R:=eqA); auto.
+   intros; apply Comp; auto with *.
   Qed.
 
   Lemma fold_equal :
@@ -910,7 +909,7 @@ Module OrdProperties (M:S).
   Lemma sort_equivlistA_eqlistA : forall l l' : list elt,
    sort E.lt l -> sort E.lt l' -> equivlistA E.eq l l' -> eqlistA E.eq l l'.
   Proof.
-  apply SortA_equivlistA_eqlistA; eauto.
+  apply SortA_equivlistA_eqlistA; eauto with *.
   Qed.
 
   Definition gtb x y := match E.compare x y with GT _ => true | _ => false end.
@@ -929,7 +928,7 @@ Module OrdProperties (M:S).
    intros; unfold leb, gtb; destruct (E.compare x y); intuition; try discriminate; ME.order.
   Qed.
 
-  Lemma gtb_compat : forall x, compat_bool E.eq (gtb x).
+  Lemma gtb_compat : forall x, Proper (E.eq==>Logic.eq) (gtb x).
   Proof.
    red; intros x a b H.
    generalize (gtb_1 x a)(gtb_1 x b); destruct (gtb x a); destruct (gtb x b); auto.
@@ -943,7 +942,7 @@ Module OrdProperties (M:S).
    rewrite <- H1; auto.
   Qed.
 
-  Lemma leb_compat : forall x, compat_bool E.eq (leb x).
+  Lemma leb_compat : forall x, Proper (E.eq==>Logic.eq) (leb x).
   Proof.
    red; intros x a b H; unfold leb.
    f_equal; apply gtb_compat; auto.
@@ -954,8 +953,7 @@ Module OrdProperties (M:S).
    elements s = elements_lt x s ++ elements_ge x s.
   Proof.
   unfold elements_lt, elements_ge, leb; intros.
-  eapply (@filter_split _ E.eq); trivial with set; auto with set.
-   ME.order. ME.order. ME.order.
+  eapply (@filter_split _ E.eq _ E.lt); auto with *.
   intros.
   rewrite gtb_1 in H.
   assert (~E.lt y x).
@@ -969,34 +967,32 @@ Module OrdProperties (M:S).
   Proof.
   intros; unfold elements_ge, elements_lt.
   apply sort_equivlistA_eqlistA; auto with set.
-  apply (@SortA_app _ E.eq); auto.
-  apply (@filter_sort _ E.eq); auto with set; eauto with set.
+  apply (@SortA_app _ E.eq); auto with *.
+  apply (@filter_sort _ E.eq); auto with *.
   constructor; auto.
-  apply (@filter_sort _ E.eq); auto with set; eauto with set.
-  rewrite ME.Inf_alt by (apply (@filter_sort _ E.eq); eauto with set).
+  apply (@filter_sort _ E.eq); auto with *.
+  rewrite ME.Inf_alt by (apply (@filter_sort _ E.eq); eauto with *).
   intros.
-  rewrite filter_InA in H1; auto; destruct H1.
+  rewrite filter_InA in H1; auto with *; destruct H1.
   rewrite leb_1 in H2.
   rewrite <- elements_iff in H1.
   assert (~E.eq x y).
    contradict H; rewrite H; auto.
   ME.order.
   intros.
-  rewrite filter_InA in H1; auto; destruct H1.
+  rewrite filter_InA in H1; auto with *; destruct H1.
   rewrite gtb_1 in H3.
   inversion_clear H2.
   ME.order.
-  rewrite filter_InA in H4; auto; destruct H4.
+  rewrite filter_InA in H4; auto with *; destruct H4.
   rewrite leb_1 in H4.
   ME.order.
   red; intros a.
-  rewrite InA_app_iff; rewrite InA_cons.
-  do 2 (rewrite filter_InA; auto).
-  do 2 rewrite <- elements_iff.
-  rewrite leb_1; rewrite gtb_1.
-  rewrite (H0 a); intuition.
+  rewrite InA_app_iff, InA_cons, !filter_InA, <-elements_iff,
+   leb_1, gtb_1, (H0 a) by auto with *.
+  intuition.
   destruct (E.compare a x); intuition.
-  right; right; split; auto.
+  right; right; split; auto with *.
   ME.order.
   Qed.
 
@@ -1008,15 +1004,15 @@ Module OrdProperties (M:S).
      eqlistA E.eq (elements s') (elements s ++ x::nil).
   Proof.
   intros.
-  apply sort_equivlistA_eqlistA; auto with set.
-  apply (@SortA_app _ E.eq); auto with set.
+  apply sort_equivlistA_eqlistA; auto with *.
+  apply (@SortA_app _ E.eq); auto with *.
   intros.
   inversion_clear H2.
   rewrite <- elements_iff in H1.
   apply ME.lt_eq with x; auto.
   inversion H3.
   red; intros a.
-  rewrite InA_app_iff; rewrite InA_cons; rewrite InA_nil.
+  rewrite InA_app_iff, InA_cons, InA_nil by auto with *.
   do 2 rewrite <- elements_iff; rewrite (H0 a); intuition.
   Qed.
 
@@ -1025,9 +1021,9 @@ Module OrdProperties (M:S).
      eqlistA E.eq (elements s') (x::elements s).
   Proof.
   intros.
-  apply sort_equivlistA_eqlistA; auto with set.
+  apply sort_equivlistA_eqlistA; auto with *.
   change (sort E.lt ((x::nil) ++ elements s)).
-  apply (@SortA_app _ E.eq); auto with set.
+  apply (@SortA_app _ E.eq); auto with *.
   intros.
   inversion_clear H1.
   rewrite <- elements_iff in H2.

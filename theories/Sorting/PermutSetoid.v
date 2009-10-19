@@ -20,18 +20,73 @@ Section Perm.
 
 Variable A : Type.
 Variable eqA : relation A.
+Hypothesis eqA_equiv : Equivalence eqA.
 Hypothesis eqA_dec : forall x y:A, {eqA x y} + {~ eqA x y}.
 
 Notation permutation := (permutation _ eqA_dec).
 Notation list_contents := (list_contents _ eqA_dec).
 
-(** The following lemmas need some knowledge on [eqA] *)
-
-Variable eqA_refl : forall x, eqA x x.
-Variable eqA_sym : forall x y, eqA x y -> eqA y x.
-Variable eqA_trans : forall x y z, eqA x y -> eqA y z -> eqA x z.
-
 (** we can use [multiplicity] to define [InA] and [NoDupA]. *)
+
+Fact if_eqA_then : forall a a' (B:Type)(b b':B),
+ eqA a a' -> (if eqA_dec a a' then b else b') = b.
+Proof.
+  intros. destruct eqA_dec as [_|NEQ]; auto.
+  contradict NEQ; auto.
+Qed.
+
+Fact if_eqA_else : forall a a' (B:Type)(b b':B),
+ ~eqA a a' -> (if eqA_dec a a' then b else b') = b'.
+Proof.
+  intros. decide (eqA_dec a a') with H; auto.
+Qed.
+
+Fact if_eqA_refl : forall a (B:Type)(b b':B),
+ (if eqA_dec a a then b else b') = b.
+Proof.
+  intros; apply (decide_left (eqA_dec a a)); auto with *.
+Qed.
+
+(** PL: Inutilisable dans un rewrite sans un change prealable. *)
+
+Global Instance if_eqA (B:Type)(b b':B) :
+ Proper (eqA==>eqA==>@eq _) (fun x y => if eqA_dec x y then b else b').
+Proof.
+ intros B b b' x x' Hxx' y y' Hyy'.
+ intros; destruct (eqA_dec x y) as [H|H];
+  destruct (eqA_dec x' y') as [H'|H']; auto.
+ contradict H'; transitivity x; auto with *; transitivity y; auto with *.
+ contradict H; transitivity x'; auto with *; transitivity y'; auto with *.
+Qed.
+
+Fact if_eqA_rewrite_l : forall a1 a1' a2 (B:Type)(b b':B),
+ eqA a1 a1' -> (if eqA_dec a1 a2 then b else b') =
+               (if eqA_dec a1' a2 then b else b').
+Proof.
+ intros; destruct (eqA_dec a1 a2) as [A1|A1];
+  destruct (eqA_dec a1' a2) as [A1'|A1']; auto.
+ contradict A1'; transitivity a1; eauto with *.
+ contradict A1; transitivity a1'; eauto with *.
+Qed.
+
+Fact if_eqA_rewrite_r : forall a1 a2 a2' (B:Type)(b b':B),
+ eqA a2 a2' -> (if eqA_dec a1 a2 then b else b') =
+               (if eqA_dec a1 a2' then b else b').
+Proof.
+ intros; destruct (eqA_dec a1 a2) as [A2|A2];
+  destruct (eqA_dec a1 a2') as [A2'|A2']; auto.
+ contradict A2'; transitivity a2; eauto with *.
+ contradict A2; transitivity a2'; eauto with *.
+Qed.
+
+
+Global Instance multiplicity_eqA (l:list A) :
+ Proper (eqA==>@eq _) (multiplicity (list_contents l)).
+Proof.
+  intros l x x' Hxx'.
+  induction l as [|y l Hl]; simpl; auto.
+  rewrite (@if_eqA_rewrite_r y x x'); auto.
+Qed.
 
 Lemma multiplicity_InA :
   forall l a, InA eqA a l <-> 0 < multiplicity (list_contents l) a.
@@ -40,15 +95,10 @@ Proof.
   simpl.
   split; inversion 1.
   simpl.
-  split; intros.
-  inversion_clear H.
-  destruct (eqA_dec a a0) as [_|H1]; auto with arith.
-  destruct H1; auto.
-  destruct (eqA_dec a a0); auto with arith.
-  simpl; rewrite <- IHl; auto.
-  destruct (eqA_dec a a0) as [H0|H0]; auto.
-  simpl in H.
-  constructor 2; rewrite IHl; auto.
+  intros a'; split; intros H. inversion_clear H.
+  apply (decide_left (eqA_dec a a')); auto with *.
+  destruct (eqA_dec a a'); auto with *. simpl; rewrite <- IHl; auto.
+  destruct (eqA_dec a a'); auto with *. right. rewrite IHl; auto.
 Qed.
 
 Lemma multiplicity_InA_O :
@@ -74,21 +124,17 @@ Proof.
   split; simpl.
   inversion_clear 1.
   rewrite IHl in H1.
-  intros; destruct (eqA_dec a a0) as [H2|H2]; simpl; auto.
+  intros; destruct (eqA_dec a a0) as [EQ|NEQ]; simpl; auto with *.
+  rewrite <- EQ.
   rewrite multiplicity_InA_O; auto.
-  contradict H0.
-  apply InA_eqA with a0; auto.
   intros; constructor.
   rewrite multiplicity_InA.
-  generalize (H a).
-  destruct (eqA_dec a a) as [H0|H0].
-  destruct (multiplicity (list_contents l) a); auto with arith.
-  simpl; inversion 1.
-  inversion H3.
-  destruct H0; auto.
+  specialize (H a).
+  rewrite if_eqA_refl in H.
+  clear IHl; omega.
   rewrite IHl; intros.
-  generalize (H a0); auto with arith.
-  destruct (eqA_dec a a0); simpl; auto with arith.
+  specialize (H a0); auto with *.
+  destruct (eqA_dec a a0); simpl; auto with *.
 Qed.
 
 
@@ -105,7 +151,7 @@ Qed.
 Lemma permut_cons_InA :
   forall l1 l2 e, permutation (e :: l1) l2 -> InA eqA e l2.
 Proof.
-  intros; apply (permut_InA_InA (e:=e) H); auto.
+  intros; apply (permut_InA_InA (e:=e) H); auto with *.
 Qed.
 
 (** Permutation of an empty list. *)
@@ -113,7 +159,7 @@ Lemma permut_nil :
   forall l, permutation l nil -> l = nil.
 Proof.
   intro l; destruct l as [ | e l ]; trivial.
-  assert (InA eqA e (e::l)) by auto.
+  assert (InA eqA e (e::l)) by (auto with *).
   intro Abs; generalize (permut_InA_InA Abs H).
   inversion 1.
 Qed.
@@ -123,10 +169,10 @@ Qed.
 Lemma permut_length_1:
   forall a b, permutation (a :: nil) (b :: nil)  -> eqA a b.
 Proof.
-  intros a b; unfold Permutation.permutation, meq; intro P;
-  generalize (P b); clear P; simpl.
-  destruct (eqA_dec b b) as [H|H]; [ | destruct H; auto].
-  destruct (eqA_dec a b); simpl; auto; intros; discriminate.
+  intros a b; unfold Permutation.permutation, meq.
+  intro P; specialize (P b); simpl in *.
+  rewrite if_eqA_refl in *.
+  destruct (eqA_dec a b); simpl; auto; discriminate.
 Qed.
 
 Lemma permut_length_2 :
@@ -139,22 +185,19 @@ Proof.
   left; split; auto.
   apply permut_length_1.
   red; red; intros.
-  generalize (P a); clear P; simpl.
-  destruct (eqA_dec a1 a) as [H2|H2];
-    destruct (eqA_dec a2 a) as [H3|H3]; auto.
-  destruct H3; apply eqA_trans with a1; auto.
-  destruct H2; apply eqA_trans with a2; auto.
+  specialize (P a). simpl in *.
+  rewrite (@if_eqA_rewrite_l a1 a2 a) in P by auto.
+  (** Bug omega: le "set" suivant ne devrait pas etre necessaire *)
+  set (u:= if eqA_dec a2 a then 1 else 0) in *; omega.
   right.
   inversion_clear H0; [|inversion H].
   split; auto.
   apply permut_length_1.
   red; red; intros.
-  generalize (P a); clear P; simpl.
-  destruct (eqA_dec a1 a) as [H2|H2];
-    destruct (eqA_dec b2 a) as [H3|H3]; auto.
-  simpl; rewrite <- plus_n_Sm; inversion 1; auto.
-  destruct H3; apply eqA_trans with a1; auto.
-  destruct H2; apply eqA_trans with b2; auto.
+  specialize (P a); simpl in *.
+  rewrite (@if_eqA_rewrite_l a1 b2 a) in P by auto.
+  (** Bug omega: idem *)
+  set (u:= if eqA_dec b2 a then 1 else 0) in *; omega.
 Qed.
 
 (** Permutation is compatible with length. *)
@@ -174,10 +217,7 @@ Proof.
   apply permut_tran with (a::l1); auto.
   revert H1; unfold Permutation.permutation, meq; simpl.
   intros; f_equal; auto.
-  destruct (eqA_dec b a0) as [H2|H2];
-    destruct (eqA_dec a a0) as [H3|H3]; auto.
-  destruct H3; apply eqA_trans with b; auto.
-  destruct H2; apply eqA_trans with a; auto.
+  rewrite (@if_eqA_rewrite_l a b a0); auto.
 Qed.
 
 Lemma NoDupA_equivlistA_permut :
@@ -196,13 +236,14 @@ Qed.
 Variable B : Type.
 Variable eqB : B->B->Prop.
 Variable eqB_dec : forall x y:B, { eqB x y }+{ ~eqB x y }.
-Variable eqB_trans : forall x y z, eqB x y -> eqB y z -> eqB x z.
+Variable eqB_trans : Transitive eqB.
+
 
 (** Permutation is compatible with map. *)
 
 Lemma permut_map :
   forall f,
-    (forall x y, eqA x y -> eqB (f x) (f y)) ->
+    (Proper (eqA==>eqB) f) ->
     forall l1 l2, permutation l1 l2 ->
       Permutation.permutation _ eqB_dec (map f l1) (map f l2).
 Proof.
@@ -220,8 +261,8 @@ Proof.
   intros; f_equal; auto.
   destruct (eqB_dec (f b) a0) as [H2|H2];
     destruct (eqB_dec (f a) a0) as [H3|H3]; auto.
-  destruct H3; apply eqB_trans with (f b); auto.
-  destruct H2; apply eqB_trans with (f a); auto.
+  destruct H3; transitivity (f b); auto with *.
+  destruct H2; transitivity (f a); auto with *.
   apply permut_add_cons_inside.
   rewrite <- map_app.
   apply IHl1; auto.
@@ -229,10 +270,7 @@ Proof.
   apply permut_tran with (a::l1); auto.
   revert H1; unfold Permutation.permutation, meq; simpl.
   intros; f_equal; auto.
-  destruct (eqA_dec b a0) as [H2|H2];
-    destruct (eqA_dec a a0) as [H3|H3]; auto.
-  destruct H3; apply eqA_trans with b; auto.
-  destruct H2; apply eqA_trans with a; auto.
+  rewrite (@if_eqA_rewrite_l a b a0); auto.
 Qed.
 
 End Perm.

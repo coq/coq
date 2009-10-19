@@ -584,6 +584,10 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
   Definition lt_key (p p':positive*A) := E.lt (fst p) (fst p').
 
+  Global Instance eqk_equiv : Equivalence eq_key.
+  Global Instance eqke_equiv : Equivalence eq_key_elt.
+  Global Instance ltk_strorder : StrictOrder lt_key.
+
   Lemma mem_find :
     forall m x, mem x m = match find x m with None => false | _ => true end.
   Proof.
@@ -764,8 +768,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   simpl; auto.
   destruct o; simpl; intros.
   (* Some *)
-  apply (SortA_app (eqA:=eq_key_elt)); auto.
-  compute; intuition.
+  apply (SortA_app (eqA:=eq_key_elt)); auto with *.
   constructor; auto.
   apply In_InfA; intros.
   destruct y0.
@@ -784,8 +787,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   eapply xelements_bits_lt_1; eauto.
   eapply xelements_bits_lt_2; eauto.
   (* None *)
-  apply (SortA_app (eqA:=eq_key_elt)); auto.
-  compute; intuition.
+  apply (SortA_app (eqA:=eq_key_elt)); auto with *.
   intros x0 y0.
   do 2 rewrite InA_alt.
   intros (y1,(Hy1,H)) (y2,(Hy2,H0)).

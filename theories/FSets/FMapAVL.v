@@ -1325,7 +1325,7 @@ Proof.
  apply Hl; auto.
  constructor.
  apply Hr; eauto.
- apply (InA_InfA (PX.eqke_refl (elt:=elt))); intros (y',e') H6.
+ apply InA_InfA with (eqA:=eqke); auto with *. intros (y',e') H6.
  destruct (elements_aux_mapsto r acc y' e'); intuition.
  red; simpl; eauto.
  red; simpl; eauto.

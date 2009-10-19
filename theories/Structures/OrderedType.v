@@ -218,32 +218,32 @@ Notation Sort:=(sort lt).
 Notation NoDup:=(NoDupA eq).
 
 Lemma In_eq : forall l x y, eq x y -> In x l -> In y l.
-Proof. exact (InA_eqA eq_sym eq_trans). Qed.
+Proof. exact (InA_eqA eq_equiv). Qed.
 
 Lemma ListIn_In : forall l x, List.In x l -> In x l.
-Proof. exact (In_InA eq_refl). Qed.
+Proof. exact (In_InA eq_equiv). Qed.
 
 Lemma Inf_lt : forall l x y, lt x y -> Inf y l -> Inf x l.
-Proof. exact (InfA_ltA lt_trans). Qed.
+Proof. exact (InfA_ltA lt_strorder). Qed.
 
 Lemma Inf_eq : forall l x y, eq x y -> Inf y l -> Inf x l.
-Proof. exact (InfA_eqA eq_lt). Qed.
+Proof. exact (InfA_eqA eq_equiv lt_strorder lt_compat). Qed.
 
 Lemma Sort_Inf_In : forall l x a, Sort l -> Inf a l -> In x l -> lt a x.
-Proof. exact (SortA_InfA_InA eq_refl eq_sym lt_trans lt_eq eq_lt). Qed.
+Proof. exact (SortA_InfA_InA eq_equiv lt_strorder lt_compat). Qed.
 
 Lemma ListIn_Inf : forall l x, (forall y, List.In y l -> lt x y) -> Inf x l.
 Proof. exact (@In_InfA t lt). Qed.
 
 Lemma In_Inf : forall l x, (forall y, In y l -> lt x y) -> Inf x l.
-Proof. exact (InA_InfA eq_refl (ltA:=lt)). Qed.
+Proof. exact (InA_InfA eq_equiv (ltA:=lt)). Qed.
 
 Lemma Inf_alt :
  forall l x, Sort l -> (Inf x l <-> (forall y, In y l -> lt x y)).
-Proof. exact (InfA_alt eq_refl eq_sym lt_trans lt_eq eq_lt). Qed.
+Proof. exact (InfA_alt eq_equiv lt_strorder lt_compat). Qed.
 
 Lemma Sort_NoDup : forall l, Sort l -> NoDup l.
-Proof. exact (SortA_NoDupA eq_refl eq_sym lt_trans lt_not_eq lt_eq eq_lt) . Qed.
+Proof. exact (SortA_NoDupA eq_equiv lt_strorder lt_compat). Qed.
 
 End ForNotations.
 
@@ -323,6 +323,30 @@ Module KeyOrderedType(O:OrderedType).
   Hint Resolve ltk_trans ltk_not_eqk ltk_not_eqke.
   Hint Immediate eqk_sym eqke_sym.
 
+  Global Instance eqk_equiv : Equivalence eqk.
+  Proof. split; eauto. Qed.
+
+  Global Instance eqke_equiv : Equivalence eqke.
+  Proof. split; eauto. Qed.
+
+  Global Instance ltk_strorder : StrictOrder ltk.
+  Proof.
+   split; eauto.
+   intros (x,e); compute; apply (StrictOrder_Irreflexive x).
+  Qed.
+
+  Global Instance ltk_compat : Proper (eqk==>eqk==>iff) ltk.
+  Proof.
+  intros (x,e) (x',e') Hxx' (y,f) (y',f') Hyy'; compute.
+   compute in Hxx'; compute in Hyy'. rewrite Hxx', Hyy'; auto.
+  Qed.
+
+  Global Instance ltk_compat' : Proper (eqke==>eqke==>iff) ltk.
+  Proof.
+  intros (x,e) (x',e') (Hxx',_) (y,f) (y',f') (Hyy',_); compute.
+   compute in Hxx'; compute in Hyy'. rewrite Hxx', Hyy'; auto.
+  Qed.
+
   (* Additionnal facts *)
 
   Lemma eqk_not_ltk : forall x x', eqk x x' -> ~ltk x x'.
@@ -370,7 +394,7 @@ Module KeyOrderedType(O:OrderedType).
 
   Lemma MapsTo_eq : forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.
   Proof.
-  intros; unfold MapsTo in *; apply InA_eqA with (x,e); eauto.
+  intros; unfold MapsTo in *; apply InA_eqA with (x,e); eauto with *.
   Qed.
 
   Lemma In_eq : forall l x y, eq x y -> In x l -> In y l.
@@ -379,10 +403,10 @@ Module KeyOrderedType(O:OrderedType).
   Qed.
 
   Lemma Inf_eq : forall l x x', eqk x x' -> Inf x' l -> Inf x l.
-  Proof. exact (InfA_eqA eqk_ltk). Qed.
+  Proof. exact (InfA_eqA eqk_equiv ltk_strorder ltk_compat). Qed.
 
   Lemma Inf_lt : forall l x x', ltk x x' -> Inf x' l -> Inf x l.
-  Proof. exact (InfA_ltA ltk_trans). Qed.
+  Proof. exact (InfA_ltA ltk_strorder). Qed.
 
   Hint Immediate Inf_eq.
   Hint Resolve Inf_lt.
@@ -390,7 +414,7 @@ Module KeyOrderedType(O:OrderedType).
   Lemma Sort_Inf_In :
       forall l p q, Sort l -> Inf q l -> InA eqk p l -> ltk q p.
   Proof.
-  exact (SortA_InfA_InA eqk_refl eqk_sym ltk_trans ltk_eqk eqk_ltk).
+  exact (SortA_InfA_InA eqk_equiv ltk_strorder ltk_compat).
   Qed.
 
   Lemma Sort_Inf_NotIn :
@@ -405,7 +429,7 @@ Module KeyOrderedType(O:OrderedType).
 
   Lemma Sort_NoDupA: forall l, Sort l -> NoDupA eqk l.
   Proof.
-  exact (SortA_NoDupA eqk_refl eqk_sym ltk_trans ltk_not_eqk ltk_eqk eqk_ltk).
+  exact (SortA_NoDupA eqk_equiv ltk_strorder ltk_compat).
   Qed.
 
   Lemma Sort_In_cons_1 : forall e l e', Sort (e::l) -> InA eqk e' l -> ltk e e'.

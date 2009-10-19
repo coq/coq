@@ -133,7 +133,7 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
    forall (P : elt -> Prop) (Pdec : forall x : elt, {P x} + {~ P x}),
    compat_P E.eq P -> compat_bool E.eq (fdec Pdec).
   Proof.
-    unfold compat_P, compat_bool, fdec in |- *; intros.
+    unfold compat_P, compat_bool, Proper, respectful, fdec in |- *; intros.
     generalize (E.eq_sym H0); case (Pdec x); case (Pdec y); firstorder.
   Qed.
 
@@ -217,7 +217,7 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
     intros s1 s2; simpl in |- *.
     intros; assert (compat_bool E.eq (fdec Pdec)); auto.
     intros; assert (compat_bool E.eq (fun x => negb (fdec Pdec x))).
-    generalize H2; unfold compat_bool in |- *; intuition;
+    generalize H2; unfold compat_bool, Proper, respectful in |- *; intuition;
      apply (f_equal negb); auto.
     intuition.
     generalize H4; unfold For_all, Equal in |- *; intuition.
@@ -662,7 +662,8 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
    forall f : elt -> bool,
    compat_bool E.eq f -> compat_P E.eq (fun x => f x = true).
   Proof.
-     unfold compat_bool, compat_P in |- *; intros; rewrite <- H1; firstorder.
+     unfold compat_bool, compat_P, Proper, respectful, impl; intros;
+      rewrite <- H1; firstorder.
   Qed.
 
   Hint Resolve compat_P_aux.
@@ -768,7 +769,7 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
     intro p; case p; clear p; intros s1 s2 H C.
     generalize (H (compat_P_aux C)); clear H; intro H.
     assert (D : compat_bool E.eq (fun x => negb (f x))).
-    generalize C; unfold compat_bool in |- *; intros; apply (f_equal negb);
+    generalize C; unfold compat_bool, Proper, respectful; intros; apply (f_equal negb);
      auto.
     simpl in |- *; unfold Equal in |- *; intuition.
     apply filter_3; firstorder.

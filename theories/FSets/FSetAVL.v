@@ -1698,9 +1698,9 @@ Lemma L_eq_cons :
 Proof.
  unfold L.eq, L.Equal in |- *; intuition.
  inversion_clear H1; generalize (H0 a); clear H0; intuition.
- apply InA_eqA with x; eauto.
+ apply InA_eqA with x; eauto with *.
  inversion_clear H1; generalize (H0 a); clear H0; intuition.
- apply InA_eqA with y; eauto.
+ apply InA_eqA with y; eauto with *.
 Qed.
 Hint Resolve L_eq_cons.
 
@@ -2000,7 +2000,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  rewrite partition_in_2, filter_in; intuition.
  rewrite H2; auto.
  destruct (f a); auto.
- red; intros; f_equal.
+ repeat red; intros; f_equal.
  rewrite (H _ _ H0); auto.
  Qed.
 

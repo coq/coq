@@ -99,7 +99,6 @@ Lists/ListSet.vo
 Lists/ListTactics.vo
 Lists/List.vo
 Lists/SetoidList.vo
-Lists/SetoidList2.vo
 Lists/StreamMemo.vo
 Lists/Streams.vo
 Lists/TheoryList.vo

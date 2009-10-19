@@ -478,7 +478,7 @@ Lemma filter_ext : forall f f', compat_bool E.eq f -> (forall x, f x = f' x) ->
 Proof.
 intros f f' Hf Hff' s s' Hss' x. do 2 (rewrite filter_iff; auto).
 rewrite Hff', Hss'; intuition.
-red; intros; rewrite <- 2 Hff'; auto.
+repeat red; intros; rewrite <- 2 Hff'; auto.
 Qed.
 
 Lemma filter_subset : forall f, compat_bool E.eq f ->

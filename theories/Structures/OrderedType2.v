@@ -8,7 +8,7 @@
 
 (* $Id$ *)
 
-Require Export SetoidList2 DecidableType2 OrderTac.
+Require Export SetoidList DecidableType2 OrderTac.
 Set Implicit Arguments.
 Unset Strict Implicit.
 

@@ -592,11 +592,11 @@ Section Bool.
 (** Properties of [filter] *)
 
 Variable f:elt->bool.
-Variable Comp: compat_bool E.eq f.
+Variable Comp: Proper (E.eq==>Logic.eq) f.
 
-Let Comp' : compat_bool E.eq (fun x =>negb (f x)).
+Let Comp' : Proper (E.eq==>Logic.eq) (fun x =>negb (f x)).
 Proof.
-unfold compat_bool in *; intros; f_equal; auto.
+repeat red; intros; f_equal; auto.
 Qed.
 
 Lemma filter_mem: forall s x, mem x (filter f s)=mem x s && f x.
@@ -695,7 +695,7 @@ Proof.
 clear Comp' Comp f.
 intros.
 assert (compat_bool E.eq (fun x => orb (f x) (g x))).
-  unfold compat_bool; intros.
+  unfold compat_bool, Proper, respectful; intros.
   rewrite (H x y H1);  rewrite (H0 x y H1); auto.
 unfold Equal; intros; set_iff; repeat rewrite filter_iff; auto.
 assert (f a || g a = true <-> f a = true \/ g a = true).
@@ -785,7 +785,7 @@ Variable Comp: compat_bool E.eq f.
 
 Let Comp' : compat_bool E.eq (fun x =>negb (f x)).
 Proof.
-unfold compat_bool in *; intros; f_equal; auto.
+unfold compat_bool, Proper, respectful in *; intros; f_equal; auto.
 Qed.
 
 Lemma exists_mem_1:
@@ -841,16 +841,16 @@ Notation compat_opL := (compat_op E.eq Logic.eq).
 Notation transposeL := (transpose Logic.eq).
 
 Lemma sum_plus :
-  forall f g, compat_nat E.eq f -> compat_nat E.eq g ->
+  forall f g, Proper (E.eq==>Logic.eq) f -> Proper (E.eq==>Logic.eq) g ->
     forall s, sum (fun x =>f x+g x) s = sum f s + sum g s.
 Proof.
 unfold sum.
 intros f g Hf Hg.
-assert (fc : compat_opL (fun x:elt =>plus (f x))).  auto.
+assert (fc : compat_opL (fun x:elt =>plus (f x))).  red; auto.
 assert (ft : transposeL (fun x:elt =>plus (f x))). red; intros; omega.
-assert (gc : compat_opL (fun x:elt => plus (g x))). auto.
+assert (gc : compat_opL (fun x:elt => plus (g x))). red; auto.
 assert (gt : transposeL (fun x:elt =>plus (g x))). red; intros; omega.
-assert (fgc : compat_opL (fun x:elt =>plus ((f x)+(g x)))). auto.
+assert (fgc : compat_opL (fun x:elt =>plus ((f x)+(g x)))). repeat red; auto.
 assert (fgt : transposeL (fun x:elt=>plus ((f x)+(g x)))). red; intros; omega.
 assert (st : Equivalence (@Logic.eq nat)) by (split; congruence).
 intros s;pattern s; apply set_rec.
@@ -869,8 +869,8 @@ Proof.
 unfold sum; intros f Hf.
 assert (st : Equivalence (@Logic.eq nat)) by (split; congruence).
 assert (cc : compat_opL (fun x => plus (if f x then 1 else 0))).
- red; intros.
- rewrite (Hf x x' H); auto.
+ repeat red; intros.
+ rewrite (Hf _ _ H); auto.
 assert (ct : transposeL (fun x => plus (if f x then 1 else 0))).
  red; intros; omega.
 intros s;pattern s; apply set_rec.
@@ -912,17 +912,18 @@ transitivity (f x (fold f s0 i)).
 apply fold_add with (eqA:=eqA); auto with set.
 transitivity (g x (fold f s0 i)); auto with set.
 transitivity (g x (fold g s0 i)); auto with set.
+apply gc; auto with *.
 symmetry; apply fold_add with (eqA:=eqA); auto.
 do 2 rewrite fold_empty; reflexivity.
 Qed.
 
 Lemma sum_compat :
-  forall f g, compat_nat E.eq f -> compat_nat E.eq g ->
+  forall f g, Proper (E.eq==>Logic.eq) f -> Proper (E.eq==>Logic.eq) g ->
   forall s, (forall x, In x s -> f x=g x) -> sum f s=sum g s.
 intros.
-unfold sum; apply (fold_compat _ (@Logic.eq nat)); auto.
-red; intros; omega.
-red; intros; omega.
+unfold sum; apply (fold_compat _ (@Logic.eq nat)); auto with *.
+intros x x' Hx y y' Hy. rewrite Hx, Hy; auto.
+intros x x' Hx y y' Hy. rewrite Hx, Hy; auto.
 Qed.
 
 End Sum.
