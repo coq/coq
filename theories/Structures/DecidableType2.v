@@ -8,7 +8,7 @@
 
 (* $Id$ *)
 
-Require Export SetoidList2.
+Require Export SetoidList.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
