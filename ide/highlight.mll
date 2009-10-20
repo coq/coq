@@ -48,7 +48,7 @@
 	  "Proposition" ; "Property" ;
           (* Definitions *)
 	  "Definition" ; "Let" ; "Example" ; "SubClass" ;
-          "Fixpoint" ; "CoFixpoint" ; "Scheme" ;
+          "Fixpoint" ; "CoFixpoint" ; "Scheme" ; "Function" ;
           (* Assumptions *)
 	  "Hypothesis" ; "Variable" ; "Axiom" ; "Parameter" ; "Conjecture" ;
 	  "Hypotheses" ; "Variables" ; "Axioms" ; "Parameters";
