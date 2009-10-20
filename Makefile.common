@@ -379,7 +379,7 @@ FSETSBASEVO:=$(addprefix theories/FSets/, \
  FSetInterface.vo	FSetList.vo 		FSetBridge.vo        	\
  FSetFacts.vo 		FSetProperties.vo	FSetEqProperties.vo 	\
  FSetWeakList.vo 	FSetAVL.vo           	FSetDecide.vo 		\
- FSets.vo \
+ FSetCompat.vo          FSets.vo \
  FMapInterface.vo       FMapList.vo		FMapFacts.vo 		\
  FMapWeakList.vo      	FMapPositive.vo		FSetToFiniteSet.vo   	\
  FMaps.vo )            
@@ -387,7 +387,8 @@ FSETSBASEVO:=$(addprefix theories/FSets/, \
 FSETS_basic:=
 
 FSETS_all:=$(addprefix theories/FSets/, \
- FSetFullAVL.vo 	FMapAVL.vo 		FMapFullAVL.vo )
+ FMapAVL.vo 		FMapFullAVL.vo )
+
 
 FSETSVO:=$(FSETSBASEVO) $(FSETS_$(FSETS))
 

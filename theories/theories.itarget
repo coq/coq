@@ -49,12 +49,12 @@ FSets/FMapList.vo
 FSets/FMapPositive.vo
 FSets/FMaps.vo
 FSets/FMapWeakList.vo
+FSets/FSetCompat.vo
 FSets/FSetAVL.vo
 FSets/FSetBridge.vo
 FSets/FSetDecide.vo
 FSets/FSetEqProperties.vo
 FSets/FSetFacts.vo
-FSets/FSetFullAVL.vo
 FSets/FSetInterface.vo
 FSets/FSetList.vo
 FSets/FSetProperties.vo

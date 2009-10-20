@@ -44,16 +44,17 @@ End OrderTacSig.
 
 (** An abstract vision of the predicates. This allows a one-line
     statement for interesting transitivity properties: for instance
-    [trans_ord LE LE = LE] will imply later [le x y -> le y z -> le x z].
- *)
+    [trans_ord OLE OLE = OLE] will imply later
+    [le x y -> le y z -> le x z].
+*)
 
-Inductive ord := EQ | LT | LE.
+Inductive ord := OEQ | OLT | OLE.
 Definition trans_ord o o' :=
  match o, o' with
- | EQ, _ => o'
- | _, EQ => o
- | LE, LE => LE
- | _, _ => LT
+ | OEQ, _ => o'
+ | _, OEQ => o
+ | OLE, OLE => OLE
+ | _, _ => OLT
  end.
 Infix "+" := trans_ord : order.
 
@@ -103,7 +104,7 @@ Ltac subst_eqns :=
  end.
 
 Definition interp_ord o :=
- match o with EQ => eq | LT => lt | LE => le end.
+ match o with OEQ => eq | OLT => lt | OLE => le end.
 Notation "#" := interp_ord : order.
 
 Lemma trans : forall o o' x y z, #o x y -> #o' y z -> #(o+o') x z.
@@ -112,15 +113,15 @@ destruct o, o'; simpl; intros x y z; rewrite ?le_lteq; intuition;
  subst_eqns; eauto using (StrictOrder_Transitive x y z) with *.
 Qed.
 
-Definition eq_trans x y z : x==y -> y==z -> x==z := trans EQ EQ x y z.
-Definition le_trans x y z : x<=y -> y<=z -> x<=z := trans LE LE x y z.
-Definition lt_trans x y z : x<y -> y<z -> x<z := trans LT LT x y z.
-Definition le_lt_trans x y z : x<=y -> y<z -> x<z := trans LE LT x y z.
-Definition lt_le_trans x y z : x<y -> y<=z -> x<z := trans LT LE x y z.
-Definition eq_lt x y z : x==y -> y<z -> x<z := trans EQ LT x y z.
-Definition lt_eq x y z : x<y -> y==z -> x<z := trans LT EQ x y z.
-Definition eq_le x y z : x==y -> y<=z -> x<=z := trans EQ LE x y z.
-Definition le_eq x y z : x<=y -> y==z -> x<=z := trans LE EQ x y z.
+Definition eq_trans x y z : x==y -> y==z -> x==z := trans OEQ OEQ x y z.
+Definition le_trans x y z : x<=y -> y<=z -> x<=z := trans OLE OLE x y z.
+Definition lt_trans x y z : x<y -> y<z -> x<z := trans OLT OLT x y z.
+Definition le_lt_trans x y z : x<=y -> y<z -> x<z := trans OLE OLT x y z.
+Definition lt_le_trans x y z : x<y -> y<=z -> x<z := trans OLT OLE x y z.
+Definition eq_lt x y z : x==y -> y<z -> x<z := trans OEQ OLT x y z.
+Definition lt_eq x y z : x<y -> y==z -> x<z := trans OLT OEQ x y z.
+Definition eq_le x y z : x==y -> y<=z -> x<=z := trans OEQ OLE x y z.
+Definition le_eq x y z : x<=y -> y==z -> x<=z := trans OLE OEQ x y z.
 
 Lemma eq_neq : forall x y z, x==y -> ~y==z -> ~x==z.
 Proof. eauto using eq_trans, eq_sym. Qed.
@@ -176,7 +177,7 @@ end.
 Ltac order_eq x y eqn :=
  match x with
  | y => clear eqn
- | _ => change (#EQ x y) in eqn; order_rewr x eqn
+ | _ => change (#OEQ x y) in eqn; order_rewr x eqn
  end.
 
 (** Goal preparation : We turn all negative hyps into positive ones

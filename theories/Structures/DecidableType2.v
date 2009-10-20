@@ -9,6 +9,8 @@
 (* $Id$ *)
 
 Require Export SetoidList.
+Require DecidableType. (* No Import here, this is on purpose *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -30,6 +32,24 @@ Module Type DecidableType.
   Include Type EqualityType.
   Parameter eq_dec : forall x y : t, { eq x y } + { ~ eq x y }.
 End DecidableType.
+
+(** * Compatibility wrapper from/to the old version of [DecidableType] *)
+
+Module Type DecidableTypeOrig := DecidableType.DecidableType.
+
+Module Backport_DT (E:DecidableType) <: DecidableTypeOrig.
+ Include E.
+ Definition eq_refl := @Equivalence_Reflexive _ _ eq_equiv.
+ Definition eq_sym := @Equivalence_Symmetric _ _ eq_equiv.
+ Definition eq_trans := @Equivalence_Transitive _ _ eq_equiv.
+End Backport_DT.
+
+Module Update_DT (E:DecidableTypeOrig) <: DecidableType.
+ Include E.
+ Instance eq_equiv : Equivalence eq.
+ Proof. exact (Build_Equivalence _ _ eq_refl eq_sym eq_trans). Qed.
+End Update_DT.
+
 
 (** * Additional notions about keys and datas used in FMap *)
 

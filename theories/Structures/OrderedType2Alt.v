@@ -13,42 +13,15 @@
 
 (* $Id$ *)
 
-Require Import OrderedType2.
+Require Import OrderedType OrderedType2.
 Set Implicit Arguments.
-
-(** NB: Instead of [comparison], defined in [Datatypes.v] which is [Eq|Lt|Gt],
-  we used historically the dependent type [compare] which is
-  [EQ _ | LT _ | GT _ ]
-*)
-
-Inductive Compare (X : Type) (lt eq : X -> X -> Prop) (x y : X) : Type :=
-  | LT : lt x y -> Compare lt eq x y
-  | EQ : eq x y -> Compare lt eq x y
-  | GT : lt y x -> Compare lt eq x y.
 
 (** * Some alternative (but equivalent) presentations for an Ordered Type
    inferface. *)
 
 (** ** The original interface *)
 
-Module Type OrderedTypeOrig.
-  Parameter Inline t : Type.
-
-  Parameter Inline eq : t -> t -> Prop.
-  Axiom eq_refl : forall x : t, eq x x.
-  Axiom eq_sym : forall x y : t, eq x y -> eq y x.
-  Axiom eq_trans : forall x y z : t, eq x y -> eq y z -> eq x z.
-
-  Parameter Inline lt : t -> t -> Prop.
-  Axiom lt_trans : forall x y z : t, lt x y -> lt y z -> lt x z.
-  Axiom lt_not_eq : forall x y : t, lt x y -> ~ eq x y.
-
-  Parameter compare : forall x y : t, Compare lt eq x y.
-
-  Hint Immediate eq_sym.
-  Hint Resolve eq_refl eq_trans.
-
-End OrderedTypeOrig.
+Module Type OrderedTypeOrig := OrderedType.OrderedType.
 
 (** ** An interface based on compare *)
 
@@ -69,43 +42,31 @@ End OrderedTypeAlt.
 
 (** ** From OrderedTypeOrig to OrderedType. *)
 
-Module OrderedType_from_Orig (O:OrderedTypeOrig) <: OrderedType.
+Module Update_OT (O:OrderedTypeOrig) <: OrderedType.
 
- Import O.
- Definition t := O.t.
- Definition eq := O.eq.
- Instance eq_equiv : Equivalence eq.
- Proof.
-  split; red; [ apply eq_refl | apply eq_sym | eapply eq_trans ].
- Qed.
+ Include Update_DT O.  (* Provides : t eq eq_equiv eq_dec *)
 
  Definition lt := O.lt.
+
  Instance lt_strorder : StrictOrder lt.
  Proof.
-  split; repeat red; intros.
-  eapply lt_not_eq; eauto.
-  eapply lt_trans; eauto.
- Qed.
-
- Lemma lt_eq : forall x y z, lt x y -> eq y z -> lt x z.
- Proof.
-  intros; destruct (compare x z); auto.
-  elim (@lt_not_eq x y); eauto.
-  elim (@lt_not_eq z y); eauto using lt_trans.
- Qed.
-
- Lemma eq_lt : forall x y z, eq x y -> lt y z -> lt x z.
- Proof.
-  intros; destruct (compare x z); auto.
-  elim (@lt_not_eq y z); eauto.
-  elim (@lt_not_eq y x); eauto using lt_trans.
+  split.
+  intros x Hx. apply (O.lt_not_eq Hx); auto with *.
+  exact O.lt_trans.
  Qed.
 
  Instance lt_compat : Proper (eq==>eq==>iff) lt.
  Proof.
   apply proper_sym_impl_iff_2; auto with *.
-  repeat red; intros.
-  eapply lt_eq; eauto. eapply eq_lt; eauto. symmetry; auto.
+  intros x x' Hx y y' Hy H.
+  assert (H0 : lt x' y).
+   destruct (O.compare x' y) as [H'|H'|H']; auto.
+   elim (O.lt_not_eq H). transitivity x'; auto with *.
+   elim (O.lt_not_eq (O.lt_trans H H')); auto.
+  destruct (O.compare x' y') as [H'|H'|H']; auto.
+  elim (O.lt_not_eq H).
+   transitivity x'; auto with *. transitivity y'; auto with *.
+  elim (O.lt_not_eq (O.lt_trans H' H0)); auto with *.
  Qed.
 
  Definition compare x y :=
@@ -120,31 +81,15 @@ Module OrderedType_from_Orig (O:OrderedTypeOrig) <: OrderedType.
   intros; unfold compare; destruct O.compare; auto.
  Qed.
 
- Definition eq_dec : forall x y, { eq x y } + { ~eq x y }.
- Proof.
-  intros; destruct (O.compare x y).
-  right. apply lt_not_eq; auto.
-  left; auto.
-  right. intro. apply (@lt_not_eq y x); auto.
- Defined.
-
-End OrderedType_from_Orig.
+End Update_OT.
 
 (** ** From OrderedType to OrderedTypeOrig. *)
 
-Module OrderedType_to_Orig (O:OrderedType) <: OrderedTypeOrig.
+Module Backport_OT (O:OrderedType) <: OrderedTypeOrig.
 
- Import O.
- Definition t := t.
- Definition eq := eq.
- Definition lt := lt.
+ Include Backport_DT O. (* Provides : t eq eq_refl eq_sym eq_trans eq_dec *)
 
- Lemma eq_refl : Reflexive eq.
- Proof. auto. Qed.
- Lemma eq_sym : Symmetric eq.
- Proof. apply eq_equiv. Qed.
- Lemma eq_trans : Transitive eq.
- Proof. apply eq_equiv. Qed.
+ Definition lt := O.lt.
 
  Lemma lt_not_eq : forall x y, lt x y -> ~eq x y.
  Proof.
@@ -152,23 +97,20 @@ Module OrderedType_to_Orig (O:OrderedType) <: OrderedTypeOrig.
  Qed.
 
  Lemma lt_trans : Transitive lt.
- Proof. apply lt_strorder. Qed.
+ Proof. apply O.lt_strorder. Qed.
 
  Definition compare : forall x y, Compare lt eq x y.
  Proof.
-  intros. generalize (compare_spec x y); unfold Cmp, flip.
-  destruct (compare x y); [apply EQ|apply LT|apply GT]; auto.
+  intros. generalize (O.compare_spec x y); unfold Cmp, flip.
+  destruct (O.compare x y); [apply EQ|apply LT|apply GT]; auto.
  Defined.
 
- Definition eq_dec := eq_dec.
-
-End OrderedType_to_Orig.
+End Backport_OT.
 
 
 (** ** From OrderedTypeAlt to OrderedType. *)
 
-Module OrderedType_from_Alt (O:OrderedTypeAlt) <: OrderedType.
- Import O.
+Module OT_from_Alt (Import O:OrderedTypeAlt) <: OrderedType.
 
  Definition t := t.
 
@@ -239,12 +181,11 @@ Module OrderedType_from_Alt (O:OrderedTypeAlt) <: OrderedType.
  case (x ?= y); [ left | right | right ]; auto; discriminate.
  Defined.
 
-End OrderedType_from_Alt.
+End OT_from_Alt.
 
 (** From the original presentation to this alternative one. *)
 
-Module OrderedType_to_Alt (O:OrderedType) <: OrderedTypeAlt.
- Import O.
+Module OT_to_Alt (Import O:OrderedType) <: OrderedTypeAlt.
 
  Definition t := t.
  Definition compare := compare.
@@ -294,4 +235,4 @@ Module OrderedType_to_Alt (O:OrderedType) <: OrderedTypeAlt.
  intros; apply StrictOrder_Transitive with y; auto.
  Qed.
 
-End OrderedType_to_Alt.
+End OT_to_Alt.
