@@ -184,7 +184,7 @@ module Hconstr =
       type t = constr
       type u = (constr -> constr) *
                ((sorts -> sorts) * (constant -> constant) *
-               (kernel_name -> kernel_name) * (name -> name) *
+               (mutual_inductive -> mutual_inductive) * (name -> name) *
                (identifier -> identifier))
       let hash_sub = hash_term
       let equal = comp_term
@@ -609,6 +609,7 @@ let map_constr_with_binders g f l c = match kind_of_term c with
    application associativity, binders name and Cases annotations are
    not taken into account *)
 
+
 let compare_constr f t1 t2 =
   match kind_of_term t1, kind_of_term t2 with
   | Rel n1, Rel n2 -> n1 = n2
@@ -630,9 +631,9 @@ let compare_constr f t1 t2 =
           f h1 h2 & List.for_all2 f l1 l2
         else false
   | Evar (e1,l1), Evar (e2,l2) -> e1 = e2 & array_for_all2 f l1 l2
-  | Const c1, Const c2 -> c1 = c2
-  | Ind c1, Ind c2 -> c1 = c2
-  | Construct c1, Construct c2 -> c1 = c2
+  | Const c1, Const c2 -> eq_constant c1 c2
+  | Ind c1, Ind c2 -> eq_ind c1 c2
+  | Construct c1, Construct c2 -> eq_constructor c1 c2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
       f p1 p2 & f c1 c2 & array_for_all2 f bl1 bl2
   | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->

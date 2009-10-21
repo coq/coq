@@ -66,14 +66,20 @@ let gen_constant_in_modules locstr dirs s =
 let check_required_library d =
   let d' = List.map id_of_string d in
   let dir = make_dirpath (List.rev d') in
+  let mp = (fst(Lib.current_prefix())) in
+  let current_dir = match mp with
+    | MPfile dp -> (dir=dp)
+    | _ -> false
+  in
   if not (Library.library_is_loaded dir) then
+    if not current_dir then
 (* Loading silently ...
     let m, prefix = list_sep_last d' in
     read_library
      (dummy_loc,make_qualid (make_dirpath (List.rev prefix)) m)
 *)
 (* or failing ...*)
-    error ("Library "^(string_of_dirpath dir)^" has to be required first.")
+      error ("Library "^(string_of_dirpath dir)^" has to be required first.")
 
 (************************************************************************)
 (* Specific Coq objects *)
@@ -123,7 +129,7 @@ let jmeq_module_name = ["Coq";"Logic";"JMeq"]
 let jmeq_module = make_dir jmeq_module_name
 
 (* TODO: temporary hack *)
-let make_kn dir id = Libnames.encode_kn dir id
+let make_kn dir id = Libnames.encode_mind dir id
 let make_con dir id = Libnames.encode_con dir id
 
 (** Identity *)

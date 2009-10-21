@@ -10,7 +10,7 @@ let ppripos (ri,pos) =
   | Reloc_annot a ->
       let sp,i = a.ci.ci_ind in
       print_string
-	("annot : MutInd("^(string_of_kn sp)^","^(string_of_int i)^")\n")
+	("annot : MutInd("^(string_of_mind sp)^","^(string_of_int i)^")\n")
   | Reloc_const _ ->
       print_string "structured constant\n"
   | Reloc_getglobal kn ->
@@ -62,7 +62,7 @@ and ppatom a =
   | Aid idk -> print_idkey idk
   | Aiddef(idk,_) -> print_string "&";print_idkey idk
   | Aind(sp,i) ->  print_string "Ind(";
-      print_string (string_of_kn sp);
+      print_string (string_of_mind sp);
       print_string ","; print_int i;
       print_string ")"
 

@@ -28,10 +28,13 @@ val isConstRef : global_reference -> bool
 val isIndRef : global_reference -> bool
 val isConstructRef : global_reference -> bool
 
+val eq_gr : global_reference -> global_reference -> bool
+
 val destVarRef : global_reference -> variable
 val destConstRef : global_reference -> constant
 val destIndRef : global_reference -> inductive
 val destConstructRef : global_reference -> constructor
+
 
 val subst_constructor : substitution -> constructor -> constructor * constr
 val subst_global : substitution -> global_reference -> global_reference * constr
@@ -46,6 +49,12 @@ val global_of_constr : constr -> global_reference
 (* Obsolete synonyms for constr_of_global and global_of_constr *)
 val constr_of_reference : global_reference -> constr
 val reference_of_constr : constr -> global_reference
+
+module RefOrdered : sig
+  type t = global_reference
+  val compare : global_reference -> global_reference -> int
+end
+  
 
 module Refset : Set.S with type elt = global_reference
 module Refmap : Map.S with type key = global_reference
@@ -108,8 +117,8 @@ val restrict_path : int -> full_path -> full_path
 
 (*s Temporary function to brutally form kernel names from section paths *)
 
-val encode_kn : dir_path -> identifier -> kernel_name
-val decode_kn : kernel_name -> dir_path * identifier
+val encode_mind : dir_path -> identifier -> mutual_inductive
+val decode_mind : mutual_inductive -> dir_path * identifier
 val encode_con : dir_path -> identifier -> constant
 val decode_con : constant -> dir_path * identifier
 
@@ -170,7 +179,7 @@ val loc_of_reference : reference -> loc
 (*s Popping one level of section in global names *)
 
 val pop_con : constant -> constant
-val pop_kn : kernel_name -> kernel_name
+val pop_kn : mutual_inductive-> mutual_inductive
 val pop_global_reference : global_reference -> global_reference
 
 (* Deprecated synonyms *)

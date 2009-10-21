@@ -89,28 +89,30 @@ let insert v l =
 
 type stored_data = pri_auto_tactic
 
-type search_entry = stored_data list * stored_data list * stored_data Btermdn.t
+module Bounded_net = Btermdn.Make(struct
+				    type t = stored_data
+				    let compare = Pervasives.compare
+				  end)
 
-let empty_se = ([],[],Btermdn.create ())
+type search_entry = stored_data list * stored_data list * Bounded_net.t
+
+let empty_se = ([],[],Bounded_net.create ())
 
 let add_tac pat t st (l,l',dn) =
   match pat with
   | None -> if not (List.mem t l) then (insert t l, l', dn) else (l, l', dn)
-  | Some pat -> if not (List.mem t l') then (l, insert t l', Btermdn.add st dn (pat,t)) else (l, l', dn)
+  | Some pat -> if not (List.mem t l') then (l, insert t l', Bounded_net.add st dn (pat,t)) else (l, l', dn)
 
 let rebuild_dn st (l,l',dn) =
-  (l, l', List.fold_left (fun dn t -> Btermdn.add (Some st) dn (Option.get t.pat, t))
-    (Btermdn.create ()) l')
+  (l, l', List.fold_left (fun dn t -> Bounded_net.add (Some st) dn (Option.get t.pat, t))
+    (Bounded_net.create ()) l')
 
 let lookup_tacs (hdc,c) st (l,l',dn) =
-  let l'  = List.map snd (Btermdn.lookup st dn c) in
+  let l'  = List.map snd (Bounded_net.lookup st dn c) in
   let sl' = Sort.list pri_order l' in
     Sort.merge pri_order l sl'
 
-module Constr_map = Map.Make(struct
-			       type t = global_reference
-			       let compare = Pervasives.compare
-			     end)
+module Constr_map = Map.Make(RefOrdered)
 
 let is_transparent_gr (ids, csts) = function
   | VarRef id -> Idpred.mem id ids
@@ -389,14 +391,8 @@ let forward_subst_tactic =
 
 let set_extern_subst_tactic f = forward_subst_tactic := f
 
-let subst_autohint (_,subst,(local,name,hintlist as obj)) =
+let subst_autohint (subst,(local,name,hintlist as obj)) = 
   let trans_clenv clenv = Clenv.subst_clenv subst clenv in
-  let trans_data data code =
-    { data with
-	pat = Option.smartmap (subst_pattern subst) data.pat ;
-	code = code ;
-    }
-  in
   let subst_key gr =
     let (lab'', elab') = subst_global subst gr in
     let gr' =
@@ -409,29 +405,49 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
     let data' = match data.code with
       | Res_pf (c, clenv) ->
 	  let c' = subst_mps subst c in
-	    if c==c' then data else
-	      trans_data data (Res_pf (c', trans_clenv clenv))
+	  let clenv' = trans_clenv clenv in
+	  let pat' = Option.smartmap (subst_pattern subst) data.pat in
+	    if c==c' && clenv'==clenv && pat'==data.pat then data else
+	      {data with
+		 pat=pat';
+		 code=Res_pf (c', clenv')}
       | ERes_pf (c, clenv) ->
 	  let c' = subst_mps subst c in
-	    if c==c' then data else
-	      trans_data data (ERes_pf (c', trans_clenv clenv))
+	  let clenv' = trans_clenv clenv in
+	  let pat' = Option.smartmap (subst_pattern subst) data.pat in
+	    if c==c' && clenv'==clenv && pat'==data.pat then data else
+	      {data with
+		 pat=pat';
+		 code=ERes_pf (c', clenv')}
       | Give_exact c ->
 	  let c' = subst_mps subst c in
-	    if c==c' then data else
-	      trans_data data (Give_exact c')
+	  let pat' = Option.smartmap (subst_pattern subst) data.pat in
+	    if c==c' && pat'==data.pat then data else
+	      {data with
+		 pat=pat';
+		 code=(Give_exact c')}
       | Res_pf_THEN_trivial_fail (c, clenv) ->
 	  let c' = subst_mps subst c in
-	    if c==c' then data else
-	      let code' = Res_pf_THEN_trivial_fail (c', trans_clenv clenv) in
-		trans_data data code'
+	  let clenv' = trans_clenv clenv in
+	  let pat' = Option.smartmap (subst_pattern subst) data.pat in
+	    if c==c' && clenv'==clenv && pat'==data.pat then data else
+	      {data with
+		 pat=pat';
+		 code=Res_pf_THEN_trivial_fail (c',clenv')}
       | Unfold_nth ref ->
           let ref' = subst_evaluable_reference subst ref in
-           if ref==ref' then data else
-	    trans_data data (Unfold_nth ref')
+	  let pat' = Option.smartmap (subst_pattern subst) data.pat in
+           if ref==ref' && pat'==data.pat then data else
+	     {data with
+		pat=pat';
+		code=(Unfold_nth ref')}
       | Extern tac ->
 	  let tac' = !forward_subst_tactic subst tac in
-	    if tac==tac' then data else
-	      trans_data data (Extern tac')
+	  let pat' = Option.smartmap (subst_pattern subst) data.pat in
+	    if tac==tac' && pat'==data.pat then data else
+	      {data with
+		 pat=pat';
+		 code=(Extern tac')}
     in
       if k' == k && data' == data then hint else
 	(k',data')

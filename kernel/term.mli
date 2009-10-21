@@ -595,7 +595,7 @@ val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
 
 val hcons_constr:
   (constant -> constant) *
-  (kernel_name -> kernel_name) *
+  (mutual_inductive -> mutual_inductive) *
   (dir_path -> dir_path) *
   (name -> name) *
   (identifier -> identifier) *

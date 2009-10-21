@@ -23,11 +23,10 @@ type key = int option ref
 type constant_key = constant_body * key
 
 type globals = {
-  env_constants : constant_key Cmap.t;
-  env_inductives : mutual_inductive_body KNmap.t;
+  env_constants : constant_key Cmap_env.t;
+  env_inductives : mutual_inductive_body Mindmap_env.t;
   env_modules : module_body MPmap.t;
-  env_modtypes : module_type_body MPmap.t;
-  env_alias : module_path MPmap.t }
+  env_modtypes : module_type_body MPmap.t}
 
 type stratification = {
   env_universes : universes;
@@ -58,11 +57,10 @@ let empty_named_context_val = [],[]
 
 let empty_env = {
   env_globals = {
-    env_constants = Cmap.empty;
-    env_inductives = KNmap.empty;
+    env_constants = Cmap_env.empty;
+    env_inductives = Mindmap_env.empty;
     env_modules = MPmap.empty;
-    env_modtypes = MPmap.empty;
-    env_alias = MPmap.empty };
+    env_modtypes = MPmap.empty};
   env_named_context = empty_named_context;
   env_named_vals = [];
   env_rel_context = empty_rel_context;
@@ -123,16 +121,12 @@ let env_of_named id env = env
 (* Global constants *)
 
 let lookup_constant_key kn env =
-  Cmap.find kn env.env_globals.env_constants
+  Cmap_env.find kn env.env_globals.env_constants
 
 let lookup_constant kn env =
-  fst (Cmap.find kn env.env_globals.env_constants)
+  fst (Cmap_env.find kn env.env_globals.env_constants)
 
 (* Mutual Inductives *)
 let lookup_mind kn env =
-  KNmap.find kn env.env_globals.env_inductives
+  Mindmap_env.find kn env.env_globals.env_inductives
 
-let rec scrape_mind env kn =
-  match (lookup_mind kn env).mind_equiv with
-    | None -> kn
-    | Some kn' -> scrape_mind env kn'

@@ -228,7 +228,7 @@ let judge_of_inductive_knowing_parameters env ind (paramstyp:constr array) =
   let (mib,mip) =
     try lookup_mind_specif env ind
     with Not_found ->
-      failwith ("Cannot find inductive: "^string_of_kn (fst ind)) in
+      failwith ("Cannot find inductive: "^string_of_mind (fst ind)) in
   check_args env c mib.mind_hyps;
   type_of_inductive_knowing_parameters env mip paramstyp
 
@@ -244,7 +244,7 @@ let judge_of_constructor env c =
     let mib =
       try lookup_mind kn env
       with Not_found ->
-        failwith ("Cannot find inductive: "^string_of_kn (fst (fst c))) in
+        failwith ("Cannot find inductive: "^string_of_mind (fst (fst c))) in
     check_args env constr mib.mind_hyps in
   let specif = lookup_mind_specif env (inductive_of_constructor c) in
   type_of_constructor c specif

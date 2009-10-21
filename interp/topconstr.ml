@@ -143,7 +143,7 @@ let has_ldots =
     (function RApp (_,RVar(_,v),_) when v = ldots_var -> true | _ -> false)
 
 let compare_rawconstr f t1 t2 = match t1,t2 with
-  | RRef (_,r1), RRef (_,r2) -> r1 = r2
+  | RRef (_,r1), RRef (_,r2) -> eq_gr r1 r2 
   | RVar (_,v1), RVar (_,v2) -> v1 = v2
   | RApp (_,f1,l1), RApp (_,f2,l2) -> f f1 f2 & List.for_all2 f l1 l2
   | RLambda (_,na1,bk1,ty1,c1), RLambda (_,na2,bk2,ty2,c2) when na1 = na2 && bk1 = bk2 ->
@@ -281,7 +281,7 @@ let rec subst_pat subst pat =
   match pat with
   | PatVar _ -> pat
   | PatCstr (loc,((kn,i),j),cpl,n) ->
-      let kn' = subst_kn subst kn
+      let kn' = subst_ind subst kn
       and cpl' = list_smartmap (subst_pat subst) cpl in
         if kn' == kn && cpl' == cpl then pat else
           PatCstr (loc,((kn',i),j),cpl',n)
@@ -331,7 +331,7 @@ let rec subst_aconstr subst bound raw =
         (fun (a,(n,signopt) as x) ->
 	  let a' = subst_aconstr subst bound a in
 	  let signopt' = Option.map (fun ((indkn,i),n,nal as z) ->
-	    let indkn' = subst_kn subst indkn in
+	    let indkn' = subst_ind subst indkn in
 	    if indkn == indkn' then z else ((indkn',i),n,nal)) signopt in
 	  if a' == a && signopt' == signopt then x else (a',(n,signopt')))
         rl
@@ -485,7 +485,7 @@ let adjust_application_n n loc f l =
 let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | r1, AVar id2 when List.mem id2 metas -> bind_env alp sigma id2 r1
   | RVar (_,id1), AVar id2 when alpha_var id1 id2 alp -> sigma
-  | RRef (_,r1), ARef r2 when r1 = r2 -> sigma
+  | RRef (_,r1), ARef r2 when (eq_gr r1 r2) -> sigma 
   | RPatVar (_,(_,n1)), APatVar n2 when n1=n2 -> sigma
   | RApp (loc,f1,l1), AApp (f2,l2) ->
       let n1 = List.length l1 and n2 = List.length l2 in

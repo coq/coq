@@ -425,7 +425,7 @@ let gallina_print_leaf_entry with_values ((sp,kn as oname),lobj) =
       | (_,"CONSTANT") ->
 	  Some (print_constant with_values sep (constant_of_kn kn))
       | (_,"INDUCTIVE") ->
-	  Some (gallina_print_inductive kn)
+	  Some (gallina_print_inductive (mind_of_kn kn))
       | (_,"MODULE") ->
 	  let (mp,_,l) = repr_kn kn in
 	    Some (print_module with_values (MPdot (mp,l)))
@@ -540,7 +540,7 @@ let print_full_pure_context () =
   | ((_,kn),Lib.Leaf lobj)::rest ->
       let pp = match object_tag lobj with
       | "CONSTANT" ->
-	  let con = constant_of_kn kn in
+	  let con = Global.constant_of_delta (constant_of_kn kn) in
 	  let cb = Global.lookup_constant con in
 	  let val_0 = cb.const_body in
 	  let typ = ungeneralized_type_of_constant_type cb.const_type in
@@ -559,9 +559,10 @@ let print_full_pure_context () =
 		  str "  : " ++ pr_ltype typ ++ cut () ++ str " := " ++
 		  print_body val_0) ++ str "." ++ fnl () ++ fnl ()
       | "INDUCTIVE" ->
-	  let (mib,mip) = Global.lookup_inductive (kn,0) in
+	  let mind = Global.mind_of_delta (mind_of_kn kn) in
+	  let (mib,mip) = Global.lookup_inductive (mind,0) in
 	  let mipv = mib.mind_packets in
-	  let names = list_tabulate (fun x -> (kn,x)) (Array.length mipv) in
+	  let names = list_tabulate (fun x -> (mind,x)) (Array.length mipv) in
 	  pr_mutual_inductive mib.mind_finite names ++ str "." ++
 	  fnl () ++ fnl ()
       | "MODULE" ->

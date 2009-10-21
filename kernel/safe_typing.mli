@@ -13,6 +13,7 @@ open Names
 open Term
 open Declarations
 open Entries
+open Mod_subst
 (*i*)
 
 (*s Safe environments. Since we are now able to type terms, we can
@@ -55,12 +56,8 @@ val add_mind :
 (* Adding a module *)
 val add_module :
   label -> module_entry -> safe_environment
-    -> module_path * safe_environment
+    -> module_path * delta_resolver * safe_environment
 
-(* Adding a module alias*)
-val add_alias :
-  label -> module_path -> safe_environment
-    -> module_path * safe_environment
 (* Adding a module type *)
 val add_modtype :
   label -> module_struct_entry -> safe_environment
@@ -77,12 +74,13 @@ val set_engagement : engagement -> safe_environment -> safe_environment
 (*s Interactive module functions *)
 val start_module :
   label -> safe_environment -> module_path * safe_environment
+
 val end_module :
-  label -> module_struct_entry option
-      -> safe_environment -> module_path * safe_environment
+  label -> module_struct_entry option 
+      -> safe_environment -> module_path * delta_resolver * safe_environment 
 
 val add_module_parameter :
-  mod_bound_id -> module_struct_entry -> safe_environment -> safe_environment
+  mod_bound_id -> module_struct_entry -> safe_environment -> delta_resolver * safe_environment
 
 val start_modtype :
   label -> safe_environment -> module_path * safe_environment
@@ -91,12 +89,11 @@ val end_modtype :
   label -> safe_environment -> module_path * safe_environment
 
 val add_include :
-  module_struct_entry -> safe_environment -> safe_environment
+  module_struct_entry -> bool -> safe_environment -> delta_resolver * safe_environment
 
 val current_modpath : safe_environment -> module_path
-val current_msid : safe_environment -> mod_self_id
-
-
+val delta_of_senv : safe_environment -> delta_resolver*delta_resolver
+  
 (* Loading and saving compilation units *)
 
 (* exporting and importing modules *)
@@ -106,7 +103,7 @@ val start_library : dir_path -> safe_environment
       -> module_path * safe_environment
 
 val export : safe_environment -> dir_path
-      -> mod_self_id * compiled_library
+      -> module_path * compiled_library
 
 val import : compiled_library -> Digest.t -> safe_environment
       -> module_path * safe_environment

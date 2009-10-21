@@ -171,8 +171,6 @@ type mutual_inductive_body = {
   (* Universes constraints enforced by the inductive declaration *)
     mind_constraints : constraints;
 
-  (* Source of the inductive block when aliased in a module *)
-    mind_equiv : kernel_name option
   }
 
 val subst_mind : substitution -> mutual_inductive_body -> mutual_inductive_body
@@ -185,8 +183,6 @@ type structure_field_body =
   | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
   | SFBmodule of module_body
-  | SFBalias of module_path * struct_expr_body option
-      * constraints option
   | SFBmodtype of module_type_body
 
 and structure_body = (label * structure_field_body) list
@@ -194,24 +190,38 @@ and structure_body = (label * structure_field_body) list
 and struct_expr_body =
   | SEBident of module_path
   | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body
-  | SEBstruct of mod_self_id * structure_body
-  | SEBapply of struct_expr_body * struct_expr_body
-      * constraints
+  | SEBapply of struct_expr_body * struct_expr_body * constraints
+  | SEBstruct of structure_body
   | SEBwith of struct_expr_body * with_declaration_body
 
 and with_declaration_body =
     With_module_body of identifier list * module_path
-      * struct_expr_body option  * constraints
   | With_definition_body of  identifier list * constant_body
 
 and module_body =
-    { mod_expr : struct_expr_body option;
-      mod_type : struct_expr_body option;
+    {  (*absolute path of the module*)
+      mod_mp : module_path;
+      (* Implementation *)
+      mod_expr : struct_expr_body option; 
+      (* Signature *)
+      mod_type : struct_expr_body;
+      (* algebraic structure expression is kept 
+	 if it's relevant for extraction  *)
+      mod_type_alg : struct_expr_body option; 
+      (* set of all constraint in the module  *)
       mod_constraints : constraints;
-      mod_alias : substitution;
+      (* quotiented set of equivalent constant and inductive name  *)
+      mod_delta : delta_resolver;
       mod_retroknowledge : Retroknowledge.action list}
-
+      
 and module_type_body =
-    { typ_expr : struct_expr_body;
-      typ_strength : module_path option;
-      typ_alias : substitution}
+    { 
+      (*Path of the module type*)
+      typ_mp : module_path;
+      typ_expr : struct_expr_body;
+      (* algebraic structure expression is kept 
+	 if it's relevant for extraction  *)
+      typ_expr_alg : struct_expr_body option ;
+      typ_constraints : constraints;
+      (* quotiented set of equivalent constant and inductive name  *)
+      typ_delta :delta_resolver}

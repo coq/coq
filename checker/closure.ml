@@ -378,7 +378,7 @@ let defined_rels flags env =
       (rel_context env) ~init:(0,[])
 (*  else (0,[])*)
 
-let mind_equiv_infos info = mind_equiv info.i_env
+let mind_equiv_infos info = eq_ind
 
 let create mk_cl flgs env =
   { i_flags = flgs;

@@ -629,7 +629,7 @@ let _ =
 let _ =
   Declare.set_xml_declare_inductive
    (function (isrecord,(sp,kn)) ->
-      print false (Libnames.IndRef (kn,0)) (kind_of_inductive isrecord kn)
+      print false (Libnames.IndRef (Names.mind_of_kn kn,0)) (kind_of_inductive isrecord (Names.mind_of_kn kn))
         xml_library_root)
 ;;
 

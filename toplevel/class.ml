@@ -169,7 +169,7 @@ let ident_key_of_class = function
   | CL_FUN -> "Funclass"
   | CL_SORT -> "Sortclass"
   | CL_CONST sp -> string_of_label (con_label sp)
-  | CL_IND (sp,_) -> string_of_label (label sp)
+  | CL_IND (sp,_) -> string_of_label (mind_label sp)
   | CL_SECVAR id -> string_of_id id
 
 (* coercion identité *)

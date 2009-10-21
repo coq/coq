@@ -16,7 +16,7 @@ open Univ
 
 (*s Cooking the constants. *)
 
-type work_list = identifier array Cmap.t * identifier array KNmap.t
+type work_list = identifier array Cmap.t * identifier array Mindmap.t
 
 type recipe = {
   d_from : constant_body;

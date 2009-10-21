@@ -84,7 +84,7 @@ let rec pp_type par vl t =
     | Tvar i -> (try pr_id (List.nth vl (pred i)) with _ -> (str "a" ++ int i))
     | Tglob (r,[]) -> pp_global Type r
     | Tglob (r,l) ->
-	if r = IndRef (kn_sig,0) then
+	if r = IndRef (mind_of_kn kn_sig,0) then
 	  pp_type true vl (List.hd l)
 	else
 	  pp_par par
@@ -269,8 +269,8 @@ let pp_string_parameters ids = prlist (fun id -> str id ++ str " ")
 
 let pp_decl = function
   | Dind (kn,i) when i.ind_info = Singleton ->
-      pp_singleton kn i.ind_packets.(0) ++ fnl ()
-  | Dind (kn,i) -> hov 0 (pp_ind true kn 0 i)
+      pp_singleton (mind_of_kn kn) i.ind_packets.(0) ++ fnl ()
+  | Dind (kn,i) -> hov 0 (pp_ind true (mind_of_kn kn) 0 i)
   | Dtype (r, l, t) ->
       if is_inline_custom r then mt ()
       else

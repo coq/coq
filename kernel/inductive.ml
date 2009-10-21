@@ -362,20 +362,10 @@ let type_case_branches env (ind,largs) pj c =
 (************************************************************************)
 (* Checking the case annotation is relevent *)
 
-let rec inductive_kn_equiv env kn1 kn2 =
-  match (lookup_mind kn1 env).mind_equiv with
-    | Some kn1' -> inductive_kn_equiv env kn2 kn1'
-    | None -> match (lookup_mind kn2 env).mind_equiv with
-        | Some kn2' -> inductive_kn_equiv env kn2' kn1
-	| None -> false
-
-let inductive_equiv env (kn1,i1) (kn2,i2) =
-  i1=i2 & inductive_kn_equiv env kn1 kn2
-
 let check_case_info env indsp ci =
   let (mib,mip) = lookup_mind_specif env indsp in
   if
-    not (Closure.mind_equiv env indsp ci.ci_ind) or
+    not (eq_ind indsp ci.ci_ind) or
     (mib.mind_nparams <> ci.ci_npar) or
     (mip.mind_consnrealdecls <> ci.ci_cstr_nargs)
   then raise (TypeError(env,WrongCaseInfo(indsp,ci)))

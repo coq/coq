@@ -91,7 +91,7 @@ module MakeTable =
           | GOadd -> t := MySet.add p !t
           | GOrmv -> t := MySet.remove p !t in
         let load_options i o = if i=1 then cache_options o in
-	let subst_options (_,subst,(f,p as obj)) =
+	let subst_options (subst,(f,p as obj)) = 
 	  let p' = A.subst subst p in
 	    if p' == p then obj else
 	      (f,p')

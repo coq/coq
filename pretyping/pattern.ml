@@ -101,7 +101,7 @@ let rec pattern_of_constr t =
     | Prod (na,c,b)   -> PProd (na,pattern_of_constr c,pattern_of_constr b)
     | Lambda (na,c,b) -> PLambda (na,pattern_of_constr c,pattern_of_constr b)
     | App (f,a) -> PApp (pattern_of_constr f,Array.map pattern_of_constr a)
-    | Const sp         -> PRef (ConstRef sp)
+    | Const sp         -> PRef (ConstRef (constant_of_kn(canonical_con sp)))
     | Ind sp        -> PRef (IndRef sp)
     | Construct sp -> PRef (ConstructRef sp)
     | Evar (n,ctxt) -> PEvar (n,Array.map pattern_of_constr ctxt)
@@ -212,8 +212,9 @@ let rec pat_of_raw metas vars = function
        with Not_found -> PVar id)
   | RPatVar (_,(false,n)) ->
       metas := n::!metas; PMeta (Some n)
-  | RRef (_,r) ->
-      PRef r
+  | RRef (_,ConstRef con) ->
+      PRef (ConstRef (constant_of_kn(canonical_con con)))
+  | RRef (_,r) -> PRef r
   (* Hack pour ne pas réécrire une interprétation complète des patterns*)
   | RApp (_, RPatVar (_,(true,n)), cl) ->
       metas := n::!metas; PSoApp (n, List.map (pat_of_raw metas vars) cl)
@@ -295,5 +296,5 @@ and pat_of_raw_branch loc metas vars ind brs i =
 
 let pattern_of_rawconstr c =
   let metas = ref [] in
-  let p = pat_of_raw metas [] c in
+  let p = pat_of_raw metas [] c in	
   (!metas,p)

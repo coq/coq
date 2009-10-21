@@ -574,15 +574,16 @@ let make_elimination_ident id s = add_suffix id (elimination_suffix s)
 
 let lookup_eliminator ind_sp s =
   let kn,i = ind_sp in
-  let mp,dp,l = repr_kn kn in
+  let mp,dp,l = repr_mind kn in
   let ind_id = (Global.lookup_mind kn).mind_packets.(i).mind_typename in
   let id = add_suffix ind_id (elimination_suffix s) in
   (* Try first to get an eliminator defined in the same section as the *)
   (* inductive type *)
   try
-    let cst = make_con mp dp (label_of_id id) in
+    let cst =Global.constant_of_delta
+      (make_con mp dp (label_of_id id)) in
     let _ = Global.lookup_constant cst in
-    mkConst cst
+      mkConst cst
   with Not_found ->
   (* Then try to get a user-defined eliminator in some other places *)
   (* using short name (e.g. for "eq_rec") *)

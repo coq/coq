@@ -20,14 +20,43 @@ open Nametab
 (* Discrimination nets of terms.
    See the module dn.ml for further explanations.
    Eduardo (5/8/97) *)
+module Make =
+  functor (Z : Map.OrderedType) ->
+struct
 
-type term_label =
+  module X = struct
+    type t = constr_pattern
+    let compare = Pervasives.compare
+  end
+
+type term_label = 
   | GRLabel of global_reference
   | ProdLabel
   | LambdaLabel
   | SortLabel of sorts option
 
-type 'a t = (term_label,constr_pattern,'a) Dn.t
+  module Y =  struct 
+     type t = term_label
+        let compare x y = 
+       let make_name n =
+	 match n with
+	 | GRLabel(ConstRef con) -> 
+	     GRLabel(ConstRef(constant_of_kn(canonical_con con)))
+	 | GRLabel(IndRef (kn,i)) ->
+	     GRLabel(IndRef(mind_of_kn(canonical_mind kn),i))
+	 | GRLabel(ConstructRef ((kn,i),j ))->
+	     GRLabel(ConstructRef((mind_of_kn(canonical_mind kn),i),j))
+	 | k -> k
+       in
+	 Pervasives.compare (make_name x) (make_name y)
+  end
+       
+      
+  module Dn = Dn.Make(X)(Y)(Z)
+      
+  type t = Dn.t
+
+  type 'a lookup_res = 'a Dn.lookup_res
 
 (*If we have: f a b c ..., decomp gives: (f,[a;b;c;...])*)
 
@@ -109,3 +138,5 @@ let rmv dn st = Dn.rmv dn (constr_pat_discr_st st)
 let lookup dn st t = Dn.lookup dn (constr_val_discr_st st) t
 
 let app f dn = Dn.app f dn
+
+end

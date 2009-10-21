@@ -60,7 +60,7 @@ let _ =
 
 let load_addfield _ = ()
 let cache_addfield (_,(typ,th)) = th_tab := Gmap.add typ th !th_tab
-let subst_addfield (_,subst,(typ,th as obj)) =
+let subst_addfield (subst,(typ,th as obj)) =
   let typ' = subst_mps subst typ in
   let th' = subst_mps subst th in
     if typ' == typ && th' == th then obj else

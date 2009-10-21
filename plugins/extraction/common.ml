@@ -203,7 +203,7 @@ let pop_visible, push_visible, get_visible, subst_mp =
   and push mp o =
     vis := { mp = mp; content = Hashtbl.create 97 } :: !vis;
     let s = List.hd !sub in
-    let s = match o with None -> s | Some msid -> add_msid msid mp s in
+    let s = match o with None -> s | Some msid -> add_mp msid mp empty_delta_resolver s in
     sub := s :: !sub
   and get () = !vis
   and subst mp = subst_mp (List.hd !sub) mp
@@ -278,7 +278,6 @@ let rec mp_renaming_fun mp = match mp with
       let lmp = mp_renaming mp in
       if lmp = [""] then (modfstlev_rename l)::lmp
       else (modular_rename Mod (id_of_label l))::lmp
-  | MPself msid -> [modular_rename Mod (id_of_msid msid)]
   | MPbound mbid -> [modular_rename Mod (id_of_mbid mbid)]
   | MPfile _ when not (modular ()) -> assert false (* see [at_toplevel] above *)
   | MPfile _ ->

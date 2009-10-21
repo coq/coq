@@ -27,7 +27,7 @@ let rec print_local_modpath locals = function
   | MPbound mbid -> pr_id (List.assoc mbid locals)
   | MPdot(mp,l) ->
       print_local_modpath locals mp ++ str "." ++ pr_lab l
-  | MPself _ | MPfile _ -> raise Not_found
+  | MPfile _ -> raise Not_found
 
 let print_modpath locals mp =
   try (* must be with let because streams are lazy! *)
@@ -58,9 +58,10 @@ let rec print_module name locals with_body mb =
     | true, Some mexpr ->
 	spc () ++ str ":= " ++ print_modexpr locals mexpr
   in
-  let modtype = match mb.mod_type with
-      None -> str ""
-    | Some t -> spc () ++ str": " ++
+
+  let modtype = 
+    match mb.mod_type with
+    | t -> spc () ++ str": " ++ 
 	print_modtype locals t
   in
     hv 2 (str "Module " ++ name ++ modtype ++ body)
@@ -78,8 +79,8 @@ and print_modtype locals mty =
 		 pr_id (id_of_mbid mbid) ++ str " : " ++
 		 print_modtype locals mtb1.typ_expr ++
 		 str ")" ++ spc() ++ print_modtype locals' mtb2)
-  | SEBstruct (msid,sign) ->
-      hv 2 (str "Sig" ++ spc () ++ print_sig locals msid sign ++ brk (1,-2) ++ str "End")
+  | SEBstruct (sign) -> 
+      hv 2 (str "Sig" ++ spc () ++ print_sig locals  sign ++ brk (1,-2) ++ str "End")
   | SEBapply (mexpr,marg,_) ->
       let lapp = flatten_app mexpr [marg] in
       let fapp = List.hd lapp in
@@ -90,31 +91,29 @@ and print_modtype locals mty =
       let s = (String.concat "." (List.map string_of_id idl)) in
       hov 2 (print_modtype locals seb ++ spc() ++ str "with" ++ spc() ++
 	       str "Definition"++ spc() ++ str s ++ spc() ++  str ":="++ spc())
-  | SEBwith(seb,With_module_body(idl,mp,_,_))->
+  | SEBwith(seb,With_module_body(idl,mp))->
       let s =(String.concat "." (List.map string_of_id idl)) in
       hov 2 (print_modtype locals seb ++ spc() ++ str "with" ++ spc() ++
 	       str "Module"++ spc() ++ str s ++ spc() ++ str ":="++ spc())
 
-and print_sig locals msid sign =
+and print_sig locals sign = 
   let print_spec (l,spec) = (match spec with
     | SFBconst {const_body=Some _; const_opaque=false} -> str "Definition "
     | SFBconst {const_body=None}
     | SFBconst {const_opaque=true} -> str "Parameter "
     | SFBmind _ -> str "Inductive "
     | SFBmodule _ -> str "Module "
-    | SFBalias (mp,_,_) -> str "Module "
     | SFBmodtype _ -> str "Module Type ") ++ str (string_of_label l)
   in
     prlist_with_sep spc print_spec sign
 
-and print_struct locals msid struc =
+and print_struct locals struc = 
   let print_body (l,body) = (match body with
     | SFBconst {const_body=Some _; const_opaque=false} -> str "Definition "
     | SFBconst {const_body=Some _; const_opaque=true} -> str "Theorem "
     | SFBconst {const_body=None} -> str "Parameter "
     | SFBmind _ -> str "Inductive "
     | SFBmodule _ -> str "Module "
-    | SFBalias (mp,_,_) -> str "Module "
     | SFBmodtype _ -> str "Module Type ") ++ str (string_of_label l)
   in
     prlist_with_sep spc print_body struc
@@ -128,8 +127,8 @@ and print_modexpr locals mexpr = match mexpr with
       hov 2 (str "Functor" ++ spc() ++ str"(" ++ pr_id(id_of_mbid mbid) ++
 	     str ":" ++ print_modtype locals mty.typ_expr ++
       str ")" ++ spc () ++ print_modexpr locals' mexpr)
-  | SEBstruct (msid, struc) ->
-      hv 2 (str "Struct" ++ spc () ++ print_struct locals msid struc ++ brk (1,-2) ++ str "End")
+  | SEBstruct ( struc) -> 
+      hv 2 (str "Struct" ++ spc () ++ print_struct locals struc ++ brk (1,-2) ++ str "End")
   | SEBapply (mexpr,marg,_) ->
       let lapp = flatten_app mexpr [marg] in
 	hov 3 (str"(" ++ prlist_with_sep spc (print_modexpr locals) lapp ++ str")")

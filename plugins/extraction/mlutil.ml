@@ -649,9 +649,9 @@ let generalizable_list =
   let datatypes = MPfile (dirpath_of_string "Coq.Init.Datatypes")
   and specif = MPfile (dirpath_of_string "Coq.Init.Specif")
   in
-  [ make_kn datatypes empty_dirpath (mk_label "bool");
-    make_kn specif empty_dirpath (mk_label "sumbool");
-    make_kn specif empty_dirpath (mk_label "sumor") ]
+  [ make_mind datatypes empty_dirpath (mk_label "bool");
+    make_mind specif empty_dirpath (mk_label "sumbool");
+    make_mind specif empty_dirpath (mk_label "sumor") ]
 
 let check_generalizable_case unsafe br =
   if not unsafe then

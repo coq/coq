@@ -39,8 +39,20 @@ type head_approximation =
 
 (** Registration as global tables and rollback. *)
 
+module Evalreford = struct
+  type t = evaluable_global_reference
+  let compare x y = 
+     let make_name = function
+      | EvalConstRef con -> 
+	  EvalConstRef(constant_of_kn(canonical_con con))
+      | k -> k
+     in 
+       Pervasives.compare (make_name x) (make_name y)
+end
+
 module Evalrefmap =
-  Map.Make (struct type t = evaluable_global_reference let compare = compare end)
+  Map.Make (Evalreford)
+
 
 let head_map = ref Evalrefmap.empty
 
@@ -144,7 +156,7 @@ let subst_head_approximation subst = function
         kind_of_head (Global.env()) c
   | x -> x
 
-let subst_head (_,subst,(ref,k)) =
+let subst_head (subst,(ref,k)) =
   (subst_evaluable_reference subst ref, subst_head_approximation subst k)
 
 let discharge_head (_,(ref,k)) =

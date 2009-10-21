@@ -13,7 +13,7 @@ open Mod_subst
 open Sign
 
 
-val subst_in_constr : (object_name*substitution*(inductive*constr))
+val subst_in_constr : (substitution*(inductive*constr))
                      -> (inductive*constr)
 
 val compute_bl_goal : inductive -> rel_context -> int -> types

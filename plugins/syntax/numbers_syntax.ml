@@ -24,7 +24,7 @@ let make_path dir id = Libnames.make_path (make_dir dir) (Names.id_of_string id)
 (* copied on g_zsyntax.ml, where it is said to be a temporary hack*)
 (* takes a path an identifier in the form of a string list and a string,
    returns a kernel_name *)
-let make_kn dir id = Libnames.encode_kn (make_dir dir) (Names.id_of_string id)
+let make_kn dir id = Libnames.encode_mind (make_dir dir) (Names.id_of_string id)
 
 
 (* int31 stuff *)
@@ -50,9 +50,10 @@ let zn2z_WW = ConstructRef ((zn2z_id "zn2z",0),2)
 let bigN_module = ["Coq"; "Numbers"; "Natural"; "BigN"; "BigN" ]
 let bigN_path = make_path (bigN_module@["BigN"]) "t"
 (* big ugly hack *)
-let bigN_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigN_module)),
-                             Names.mk_label "BigN")),
-              [], Names.id_of_string id) : Names.kernel_name)
+let bigN_id id = let kn =
+  ((Names.MPdot ((Names.MPfile (make_dir bigN_module)),
+                 Names.mk_label "BigN")),
+   [], Names.id_of_string id) in (Obj.magic (kn,kn) : Names.mutual_inductive)
 let bigN_scope = "bigN_scope"
 
 (* number of inlined level of bigN (actually the level 0 to n_inlined-1 are inlined) *)
@@ -81,9 +82,9 @@ let bigN_constructor =
 let bigZ_module = ["Coq"; "Numbers"; "Integer"; "BigZ"; "BigZ" ]
 let bigZ_path = make_path (bigZ_module@["BigZ"]) "t"
 (* big ugly hack bis *)
-let bigZ_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigZ_module)),
+let bigZ_id id =  let kn = ((Names.MPdot ((Names.MPfile (make_dir bigZ_module)),
                              Names.mk_label "BigZ")),
-              [], Names.id_of_string id) : Names.kernel_name)
+              [], Names.id_of_string id) in (Obj.magic (kn,kn): Names.mutual_inductive)
 let bigZ_scope = "bigZ_scope"
 
 let bigZ_pos = ConstructRef ((bigZ_id "t_",0),1)

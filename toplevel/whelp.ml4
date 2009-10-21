@@ -110,9 +110,9 @@ let uri_of_global ref =
   | ConstRef cst ->
       uri_of_repr_kn ref (repr_con cst); url_string ".con"
   | IndRef (kn,i) ->
-      uri_of_repr_kn ref (repr_kn kn); uri_of_ind_pointer [1;i+1]
+      uri_of_repr_kn ref (repr_mind kn); uri_of_ind_pointer [1;i+1]
   | ConstructRef ((kn,i),j) ->
-      uri_of_repr_kn ref (repr_kn kn); uri_of_ind_pointer [1;i+1;j]
+      uri_of_repr_kn ref (repr_mind kn); uri_of_ind_pointer [1;i+1;j]
 
 let whelm_special = id_of_string "WHELM_ANON_VAR"
 

@@ -52,8 +52,8 @@ let load_structure i (_,(ind,id,kl,projs)) =
 let cache_structure o =
   load_structure 1 o
 
-let subst_structure (_,subst,((kn,i),id,kl,projs as obj)) =
-  let kn' = subst_kn subst kn in
+let subst_structure (subst,((kn,i),id,kl,projs as obj)) = 
+  let kn' = subst_ind subst kn in
   let projs' =
    (* invariant: struc.s_PROJ is an evaluable reference. Thus we can take *)
    (* the first component of subst_con.                                   *)
@@ -136,7 +136,7 @@ let (in_method,out_method) =
     { (default_object "RECMETHODS") with
 	load_function = (fun _ -> load_method);
 	cache_function = load_method;
-	subst_function = (fun (_,s,(ty,id)) -> Mod_subst.subst_mps s ty,subst_id s id);
+	subst_function = (fun (s,(ty,id)) -> Mod_subst.subst_mps s ty,subst_id s id);
 	classify_function = (fun x -> Substitute x)
     }
 
@@ -252,7 +252,7 @@ let open_canonical_structure i (_,o) =
 let cache_canonical_structure o =
   open_canonical_structure 1 o
 
-let subst_canonical_structure (_,subst,(cst,ind as obj)) =
+let subst_canonical_structure (subst,(cst,ind as obj)) =
   (* invariant: cst is an evaluable reference. Thus we can take *)
   (* the first component of subst_con.                                   *)
   let cst' = fst (subst_con subst cst) in

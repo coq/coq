@@ -42,7 +42,7 @@ type pri_auto_tactic = {
 
 type stored_data = pri_auto_tactic
 
-type search_entry = stored_data list * stored_data list * stored_data Btermdn.t
+type search_entry
 
 (* The head may not be bound. *)
 

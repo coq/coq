@@ -30,9 +30,8 @@ let set_engagement c =
 (* full_add_module adds module with universes and constraints *)
 let full_add_module dp mb digest =
   let env = !genv in
-  let mp = MPfile dp in
   let env = add_constraints mb.mod_constraints env in
-  let env = Modops.add_module mp mb env in
+  let env = Modops.add_module mb env in
   genv := add_digest env dp digest
 
 (* Check that the engagement expected by a library matches the initial one *)
@@ -66,16 +65,16 @@ let check_imports f caller env needed =
 
 
 (* Remove the body of opaque constants in modules *)
-(* also remove mod_expr ? *)
+(* also remove mod_expr ? Good idea!*)
 let rec lighten_module mb =
   { mb with
     mod_expr = Option.map lighten_modexpr mb.mod_expr;
-    mod_type = Option.map lighten_modexpr mb.mod_type }
+    mod_type = lighten_modexpr mb.mod_type }
 
 and lighten_struct struc =
   let lighten_body (l,body) = (l,match body with
     | SFBconst ({const_opaque=true} as x) -> SFBconst {x with const_body=None}
-    | (SFBconst _ | SFBmind _ | SFBalias _) as x -> x
+    | (SFBconst _ | SFBmind _ ) as x -> x
     | SFBmodule m -> SFBmodule (lighten_module m)
     | SFBmodtype m -> SFBmodtype
 	({m with
@@ -90,8 +89,8 @@ and lighten_modexpr = function
 			typ_expr = lighten_modexpr mty.typ_expr}),
 		  lighten_modexpr mexpr)
   | SEBident mp as x -> x
-  | SEBstruct (msid, struc) ->
-      SEBstruct (msid, lighten_struct struc)
+  | SEBstruct ( struc) ->
+      SEBstruct ( lighten_struct struc)
   | SEBapply (mexpr,marg,u) ->
       SEBapply (lighten_modexpr mexpr,lighten_modexpr marg,u)
   | SEBwith (seb,wdcl) ->
@@ -125,7 +124,7 @@ let import file (dp,mb,depends,engmt as vo) digest =
   let env = !genv in
   check_imports msg_warning dp env depends;
   check_engagement env engmt;
-  check_module (add_constraints mb.mod_constraints env) mb;
+  check_module (add_constraints mb.mod_constraints env) mb.mod_mp mb;
   stamp_library file digest;
   (* We drop proofs once checked *)
 (*  let mb = lighten_module mb in*)

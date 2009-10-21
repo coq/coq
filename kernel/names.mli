@@ -80,9 +80,9 @@ module Labmap : Map.S with type key = label
 type module_path =
   | MPfile of dir_path
   | MPbound of mod_bound_id
-  | MPself of mod_self_id
+ (* | MPapp of module_path * module_path  very soon *)
   | MPdot of module_path * label
-(*i  | MPapply of module_path * module_path    in the future (maybe) i*)
+
 
 val check_bound_mp : module_path -> bool
 
@@ -122,25 +122,64 @@ module KNmap  : Map.S with type key = kernel_name
 
 type variable = identifier
 type constant
-type mutual_inductive = kernel_name
+type mutual_inductive
 (* Beware: first inductive has index 0 *)
 type inductive = mutual_inductive * int
 (* Beware: first constructor has index 1 *)
 type constructor = inductive * int
 
+(* *_env modules consider an order on user part of names
+   the others consider an order on canonical part of names*)
 module Cmap  : Map.S with type key = constant
+module Cmap_env  : Map.S with type key = constant
 module Cpred  : Predicate.S with type elt = constant
 module Cset  : Set.S with type elt = constant
+module Cset_env  : Set.S with type elt = constant
+module Mindmap : Map.S with type key = mutual_inductive
+module Mindmap_env : Map.S with type key = mutual_inductive
+module Mindset : Set.S with type elt = mutual_inductive
 module Indmap : Map.S with type key = inductive
 module Constrmap : Map.S with type key = constructor
+module Indmap_env : Map.S with type key = inductive
+module Constrmap_env : Map.S with type key = constructor
 
 val constant_of_kn : kernel_name -> constant
+val constant_of_kn_equiv : kernel_name -> kernel_name -> constant
 val make_con : module_path -> dir_path -> label -> constant
+val make_con_equiv : module_path -> module_path -> dir_path 
+  -> label -> constant
+val user_con : constant -> kernel_name
+val canonical_con : constant -> kernel_name
 val repr_con : constant -> module_path * dir_path * label
+val eq_constant : constant -> constant -> bool
+
 val string_of_con : constant -> string
 val con_label : constant -> label
 val con_modpath : constant -> module_path
 val pr_con : constant -> Pp.std_ppcmds
+val debug_pr_con : constant -> Pp.std_ppcmds
+val debug_string_of_con : constant -> string
+
+
+
+val mind_of_kn : kernel_name -> mutual_inductive
+val mind_of_kn_equiv : kernel_name -> kernel_name -> mutual_inductive
+val make_mind : module_path -> dir_path -> label -> mutual_inductive
+val make_mind_equiv : module_path -> module_path -> dir_path 
+  -> label -> mutual_inductive
+val user_mind : mutual_inductive -> kernel_name
+val canonical_mind : mutual_inductive -> kernel_name
+val repr_mind : mutual_inductive -> module_path * dir_path * label
+val eq_mind : mutual_inductive -> mutual_inductive -> bool
+
+val string_of_mind : mutual_inductive -> string
+val mind_label : mutual_inductive -> label
+val mind_modpath : mutual_inductive -> module_path
+val pr_mind : mutual_inductive -> Pp.std_ppcmds
+val debug_pr_mind : mutual_inductive -> Pp.std_ppcmds
+val debug_string_of_mind : mutual_inductive -> string
+
+
 
 val mind_modpath : mutual_inductive -> module_path
 val ind_modpath : inductive -> module_path
@@ -150,16 +189,21 @@ val ith_mutual_inductive : inductive -> int -> inductive
 val ith_constructor_of_inductive : inductive -> int -> constructor
 val inductive_of_constructor : constructor -> inductive
 val index_of_constructor : constructor -> int
+val eq_ind : inductive -> inductive -> bool
+val eq_constructor : constructor -> constructor -> bool
 
 (* Better to have it here that in Closure, since required in grammar.cma *)
 type evaluable_global_reference =
   | EvalVarRef of identifier
   | EvalConstRef of constant
 
+val eq_egr : evaluable_global_reference ->  evaluable_global_reference
+  -> bool
+
 (* Hash-consing *)
 val hcons_names : unit ->
   (constant -> constant) *
-  (kernel_name -> kernel_name) * (dir_path -> dir_path) *
+  (mutual_inductive -> mutual_inductive) * (dir_path -> dir_path) *
   (name -> name) * (identifier -> identifier) * (string -> string)
 
 
@@ -182,3 +226,5 @@ type inv_rel_key = int (* index in the [rel_context] part of environment
 			  of de Bruijn indice *)
 
 type id_key = inv_rel_key tableKey
+
+val eq_id_key : id_key -> id_key -> bool

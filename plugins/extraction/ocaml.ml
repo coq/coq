@@ -122,7 +122,7 @@ let find_projections = function Record l -> l | _ -> raise NoRecord
 
 let kn_sig =
   let specif = MPfile (dirpath_of_string "Coq.Init.Specif") in
-  make_kn specif empty_dirpath (mk_label "sig")
+  make_mind specif empty_dirpath (mk_label "sig")
 
 let rec pp_type par vl t =
   let rec pp_rec par = function
@@ -380,7 +380,7 @@ let pp_Dfix (rv,c,t) =
 let pp_equiv param_list name = function
   | NoEquiv, _ -> mt ()
   | Equiv kn, i ->
-      str " = " ++ pp_parameters param_list ++ pp_global Type (IndRef (kn,i))
+      str " = " ++ pp_parameters param_list ++ pp_global Type (IndRef (mind_of_kn kn,i))
   | RenEquiv ren, _  ->
       str " = " ++ pp_parameters param_list ++ str (ren^".") ++ name
 
@@ -408,7 +408,7 @@ let pp_logical_ind packet =
   fnl ()
 
 let pp_singleton kn packet =
-  let name = pp_global Type (IndRef (kn,0)) in
+  let name = pp_global Type (IndRef (mind_of_kn kn,0)) in
   let l = rename_tvars keywords packet.ip_vars in
   hov 2 (str "type " ++ pp_parameters l ++ name ++ str " =" ++ spc () ++
 	 pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
@@ -416,7 +416,7 @@ let pp_singleton kn packet =
 		     pr_id packet.ip_consnames.(0)))
 
 let pp_record kn projs ip_equiv packet =
-  let name = pp_global Type (IndRef (kn,0)) in
+  let name = pp_global Type (IndRef (mind_of_kn kn,0)) in
   let projnames = List.map (pp_global Term) projs in
   let l = List.combine projnames packet.ip_types.(0) in
   let pl = rename_tvars keywords packet.ip_vars in
@@ -438,20 +438,20 @@ let pp_ind co kn ind =
   let init= ref (str "type ") in
   let names =
     Array.mapi (fun i p -> if p.ip_logical then mt () else
-		  pp_global Type (IndRef (kn,i)))
+		  pp_global Type (IndRef (mind_of_kn kn,i)))
       ind.ind_packets
   in
   let cnames =
     Array.mapi
       (fun i p -> if p.ip_logical then [||] else
-	 Array.mapi (fun j _ -> pp_global Cons (ConstructRef ((kn,i),j+1)))
+	 Array.mapi (fun j _ -> pp_global Cons (ConstructRef ((mind_of_kn kn,i),j+1)))
 	   p.ip_types)
       ind.ind_packets
   in
   let rec pp i =
     if i >= Array.length ind.ind_packets then mt ()
     else
-      let ip = (kn,i) in
+      let ip = (mind_of_kn kn,i) in
       let ip_equiv = ind.ind_equiv, i in
       let p = ind.ind_packets.(i) in
       if is_custom (IndRef ip) then pp (i+1)
@@ -601,12 +601,12 @@ and pp_module_type ol = function
       let name = pp_modname (MPbound mbid) in
       let def = pp_module_type None mt' in
       str "functor (" ++ name ++ str ":" ++ typ ++ str ") ->" ++ fnl () ++ def
-  | MTsig (msid, sign) ->
+  | MTsig (mp1, sign) ->
       let tvm = top_visible_mp () in
-      let mp = match ol with None -> MPself msid | Some l -> MPdot (tvm,l) in
+      let mp = match ol with None -> mp1 | Some l -> MPdot (tvm,l) in
       (* References in [sign] are in short form (relative to [msid]).
 	 In push_visible, [msid-->mp] is added to the current subst. *)
-      push_visible mp (Some msid);
+      push_visible mp (Some mp1);
       let l = map_succeed pp_specif sign in
       pop_visible ();
       str "sig " ++ fnl () ++
@@ -684,9 +684,9 @@ and pp_module_expr ol = function
       str "functor (" ++ name ++ str ":" ++ typ ++ str ") ->" ++ fnl () ++ def
   | MEapply (me, me') ->
       pp_module_expr None me ++ str "(" ++ pp_module_expr None me' ++ str ")"
-  | MEstruct (msid, sel) ->
+  | MEstruct (mp, sel) ->
       let tvm = top_visible_mp () in
-      let mp = match ol with None -> MPself msid | Some l -> MPdot (tvm,l) in
+      let mp = match ol with None -> mp | Some l -> MPdot (tvm,l) in
       (* No need to update the subst with [Some msid] below : names are
 	 already in long form (see [subst_structure] in [Extract_env]). *)
       push_visible mp None;

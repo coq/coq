@@ -488,7 +488,7 @@ let check_and_adjust_constructor env ind cstrs = function
   | PatCstr (loc,((_,i) as cstr),args,alias) as pat ->
       (* Check it is constructor of the right type *)
       let ind' = inductive_of_constructor cstr in
-      if Closure.mind_equiv env ind' ind then
+      if eq_ind ind' ind then
 	(* Check the constructor has the right number of args *)
 	let ci = cstrs.(i-1) in
 	let nb_args_constr = ci.cs_nargs in

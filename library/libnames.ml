@@ -27,13 +27,21 @@ let isConstRef = function ConstRef _ -> true | _ -> false
 let isIndRef = function IndRef _ -> true | _ -> false
 let isConstructRef = function ConstructRef _ -> true | _ -> false
 
+let eq_gr gr1 gr2 =
+  match gr1,gr2 with 
+      ConstRef con1, ConstRef con2 ->
+	eq_constant con1 con2
+    | IndRef kn1,IndRef kn2 -> eq_ind kn1 kn2
+    | ConstructRef kn1,ConstructRef kn2 -> eq_constructor kn1 kn2
+    | _,_ -> gr1=gr2
+
 let destVarRef = function VarRef ind -> ind | _ -> failwith "destVarRef"
 let destConstRef = function ConstRef ind -> ind | _ -> failwith "destConstRef"
 let destIndRef = function IndRef ind -> ind | _ -> failwith "destIndRef"
 let destConstructRef = function ConstructRef ind -> ind | _ -> failwith "destConstructRef"
 
 let subst_constructor subst ((kn,i),j as ref) =
-  let kn' = subst_kn subst kn in
+  let kn' = subst_ind subst kn in
     if kn==kn' then ref, mkConstruct ref
     else ((kn',i),j), mkConstruct ((kn',i),j)
 
@@ -43,7 +51,7 @@ let subst_global subst ref = match ref with
      let kn',t = subst_con subst kn in
       if kn==kn' then ref, mkConst kn else ConstRef kn', t
   | IndRef (kn,i) ->
-      let kn' = subst_kn subst kn in
+      let kn' = subst_ind subst kn in
       if kn==kn' then ref, mkInd (kn,i) else IndRef(kn',i), mkInd (kn',i)
   | ConstructRef ((kn,i),j as c) ->
       let c',t = subst_constructor subst c in
@@ -65,15 +73,25 @@ let constr_of_global = function
 let constr_of_reference = constr_of_global
 let reference_of_constr = global_of_constr
 
-module RefOrdered =
-  struct
-    type t = global_reference
-    let compare = Pervasives.compare
-  end
-
+(* outside of the kernel, names are ordered on their canonical part *)
+module RefOrdered = struct
+  type t = global_reference
+  let compare x y = 
+    let make_name = function
+      | ConstRef con -> 
+	  ConstRef(constant_of_kn(canonical_con con))
+      | IndRef (kn,i) ->
+	  IndRef(mind_of_kn(canonical_mind kn),i)
+      | ConstructRef ((kn,i),j )->
+	  ConstructRef((mind_of_kn(canonical_mind kn),i),j)
+      | VarRef id ->  VarRef id
+    in
+	Pervasives.compare (make_name x) (make_name y)
+end
+  
 module Refset = Set.Make(RefOrdered)
 module Refmap = Map.Make(RefOrdered)
-
+  
 (* Extended global references *)
 
 type syndef_name = kernel_name
@@ -191,26 +209,22 @@ let restrict_path n sp =
   let dir' = list_firstn n (repr_dirpath dir) in
   make_path (make_dirpath dir') s
 
-let encode_kn dir id = make_kn (MPfile dir) empty_dirpath (label_of_id id)
+let encode_mind dir id = make_mind (MPfile dir) empty_dirpath (label_of_id id)
 
 let encode_con dir id = make_con (MPfile dir) empty_dirpath (label_of_id id)
 
-let decode_kn kn =
-  let rec dirpath_of_module = function
+let decode_mind kn =
+  let rec dir_of_mp = function
     | MPfile dir -> repr_dirpath dir
-    | MPbound mbid ->
+    | MPbound mbid -> 
 	let _,_,dp = repr_mbid mbid in
 	let id = id_of_mbid mbid in
 	  id::(repr_dirpath dp)
-    | MPself msid ->
-	let _,_,dp = repr_msid msid in
-	let id = id_of_msid msid in
-	  id::(repr_dirpath dp)
-    | MPdot(mp,l) -> (id_of_label l)::(dirpath_of_module mp)
+    | MPdot(mp,l) -> (id_of_label l)::(dir_of_mp mp)
   in
-  let mp,sec_dir,l = repr_kn kn in
+  let mp,sec_dir,l = repr_mind kn in
     if (repr_dirpath sec_dir) = [] then
-     (make_dirpath (dirpath_of_module mp)),id_of_label l
+     (make_dirpath (dir_of_mp mp)),id_of_label l
     else
       anomaly "Section part should be empty!"
 
@@ -289,8 +303,8 @@ let pop_con con =
   Names.make_con mp (pop_dirpath dir) l
 
 let pop_kn kn =
-  let (mp,dir,l) = repr_kn kn in
-  Names.make_kn mp (pop_dirpath dir) l
+  let (mp,dir,l) = repr_mind kn in
+  Names.make_mind mp (pop_dirpath dir) l
 
 let pop_global_reference = function
   | ConstRef con -> ConstRef (pop_con con)

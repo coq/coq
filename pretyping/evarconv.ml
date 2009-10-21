@@ -428,12 +428,12 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	         evar_conv_x (push_rel (n,None,c) env) i pbty c'1 c'2)]
 
 	| Ind sp1, Ind sp2 ->
-	    if sp1=sp2 then
+	    if eq_ind sp1 sp2 then
               ise_list2 evd (fun i -> evar_conv_x env i CONV) l1 l2
             else (evd, false)
 
 	| Construct sp1, Construct sp2 ->
-	    if sp1=sp2 then
+	    if eq_constructor sp1 sp2 then
               ise_list2 evd (fun i -> evar_conv_x env i CONV) l1 l2
             else (evd, false)
 

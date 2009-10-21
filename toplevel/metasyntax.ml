@@ -65,7 +65,7 @@ let cache_tactic_notation (_,(pa,pp)) =
 let subst_tactic_parule subst (key,n,p,(d,tac)) =
   (key,n,p,(d,Tacinterp.subst_tactic subst tac))
 
-let subst_tactic_notation (_,subst,(pa,pp)) =
+let subst_tactic_notation (subst,(pa,pp)) =
   (subst_tactic_parule subst pa,pp)
 
 let (inTacticGrammar, outTacticGrammar) =
@@ -676,7 +676,7 @@ let subst_parsing_rule subst x = x
 
 let subst_printing_rule subst x = x
 
-let subst_syntax_extension (_,subst,(local,sy)) =
+let subst_syntax_extension (subst,(local,sy)) =
   (local, List.map (fun (prec,ntn,gr,pp) ->
      (prec,ntn, subst_parsing_rule subst gr, subst_printing_rule subst pp)) sy)
 
@@ -865,7 +865,7 @@ let cache_notation o =
   load_notation 1 o;
   open_notation 1 o
 
-let subst_notation (_,subst,(lc,scope,pat,b,ndf)) =
+let subst_notation (subst,(lc,scope,pat,b,ndf)) =
   (lc,scope,subst_interpretation subst pat,b,ndf)
 
 let classify_notation (local,_,_,_,_ as o) =
@@ -1024,7 +1024,7 @@ let cache_scope_command o =
   load_scope_command 1 o;
   open_scope_command 1 o
 
-let subst_scope_command (_,subst,(scope,o as x)) = match o with
+let subst_scope_command (subst,(scope,o as x)) = match o with
   | ScopeClasses cl ->
       let cl' = Classops.subst_cl_typ subst cl in if cl'==cl then x else
       scope, ScopeClasses cl'

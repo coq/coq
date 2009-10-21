@@ -61,7 +61,7 @@ type definition_entry = {
   const_entry_opaque : bool;
   const_entry_boxed  : bool }
 
-type parameter_entry = types*bool  (*inline flag*)
+type parameter_entry = types * bool  (*inline flag*)
 
 type constant_entry =
   | DefinitionEntry of definition_entry
@@ -69,7 +69,14 @@ type constant_entry =
 
 (*s Modules *)
 
-type module_struct_entry =
+
+type specification_entry = 
+    SPEconst of constant_entry
+  | SPEmind of mutual_inductive_entry
+  | SPEmodule of module_entry
+  | SPEmodtype of module_struct_entry
+
+and module_struct_entry =
     MSEident of module_path
   | MSEfunctor of mod_bound_id * module_struct_entry * module_struct_entry
   | MSEwith of module_struct_entry * with_declaration

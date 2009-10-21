@@ -23,11 +23,10 @@ type key = int option ref
 type constant_key = constant_body * key
 
 type globals = {
-  env_constants : constant_key Cmap.t;
-  env_inductives : mutual_inductive_body KNmap.t;
+  env_constants : constant_key Cmap_env.t;
+  env_inductives : mutual_inductive_body Mindmap_env.t;
   env_modules : module_body MPmap.t;
-  env_modtypes : module_type_body MPmap.t;
-  env_alias : module_path MPmap.t }
+  env_modtypes : module_type_body MPmap.t}
 
 type stratification = {
   env_universes : universes;
@@ -80,5 +79,3 @@ val lookup_constant : constant -> env -> constant_body
 (* Mutual Inductives *)
 val lookup_mind : mutual_inductive -> env -> mutual_inductive_body
 
-(* Find the ultimate inductive in the [mind_equiv] chain *)
-val scrape_mind : env -> mutual_inductive -> mutual_inductive

@@ -38,7 +38,7 @@ val info_file : string -> unit
 
 (*s utilities about [module_path] and [kernel_names] and [global_reference] *)
 
-val occur_kn_in_ref : kernel_name -> global_reference -> bool
+val occur_kn_in_ref : mutual_inductive -> global_reference -> bool
 val modpath_of_r : global_reference -> module_path
 val label_of_r : global_reference -> label
 val current_toplevel : unit -> module_path
@@ -56,6 +56,7 @@ val common_prefix_from_list : module_path -> module_path list -> module_path
 val add_labels_mp : module_path -> label list -> module_path
 val get_nth_label_mp : int -> module_path -> label
 val labels_of_ref : global_reference -> module_path * label list
+val labels_of_ref2 : global_reference -> module_path * label
 
 (*s Some table-related operations *)
 
@@ -65,10 +66,10 @@ val lookup_term : constant -> ml_decl
 val add_type : constant -> ml_schema -> unit
 val lookup_type : constant -> ml_schema
 
-val add_ind : kernel_name -> mutual_inductive_body -> ml_ind -> unit
-val lookup_ind : kernel_name -> mutual_inductive_body * ml_ind
+val add_ind : mutual_inductive -> mutual_inductive_body -> ml_ind -> unit
+val lookup_ind : mutual_inductive -> mutual_inductive_body * ml_ind
 
-val add_recursors : Environ.env -> kernel_name -> unit
+val add_recursors : Environ.env -> mutual_inductive -> unit
 val is_recursor : global_reference -> bool
 
 val add_projection : int -> constant -> unit

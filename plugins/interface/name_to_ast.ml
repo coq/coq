@@ -176,10 +176,11 @@ let inductive_to_ast_list sp =
 
 let leaf_entry_to_ast_list ((sp,kn),lobj) =
   let tag = object_tag lobj in
+  let con = constant_of_kn kn in
   match tag with
   | "VARIABLE" -> variable_to_ast_list (basename sp)
-  | "CONSTANT" -> constant_to_ast_list (constant_of_kn kn)
-  | "INDUCTIVE" -> inductive_to_ast_list kn
+  | "CONSTANT" -> constant_to_ast_list con
+  | "INDUCTIVE" -> inductive_to_ast_list  (mind_of_kn kn)
   | s ->
       errorlabstrm
       	"print" (str ("printing of unrecognized object " ^

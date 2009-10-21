@@ -128,7 +128,7 @@ type ml_specif =
 and ml_module_type =
   | MTident of module_path
   | MTfunsig of mod_bound_id * ml_module_type * ml_module_type
-  | MTsig of mod_self_id * ml_module_sig
+  | MTsig of module_path * ml_module_sig
   | MTwith of ml_module_type * ml_with_declaration
 
 and ml_with_declaration =
@@ -145,7 +145,7 @@ type ml_structure_elem =
 and ml_module_expr =
   | MEident of module_path
   | MEfunctor of mod_bound_id * ml_module_type * ml_module_expr
-  | MEstruct of mod_self_id * ml_module_structure
+  | MEstruct of module_path * ml_module_structure
   | MEapply of ml_module_expr * ml_module_expr
 
 and ml_module_structure = (label * ml_structure_elem) list

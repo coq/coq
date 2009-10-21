@@ -157,35 +157,44 @@ let subst_located_destructor_pattern subst = function
   | ConclLocation d ->
       ConclLocation (subst_destructor_pattern subst d)
 
+
 type destructor_data = {
   d_pat : located_destructor_pattern;
   d_pri : int;
   d_code : identifier option * glob_tactic_expr (* should be of phylum tactic *)
 }
 
-type t = (identifier,destructor_data) Nbtermdn.t
-type frozen_t = (identifier,destructor_data) Nbtermdn.frozen_t
+module Dest_data = struct 
+  type t = destructor_data
+  let compare = Pervasives.compare
+    end
 
-let tactab = (Nbtermdn.create () : t)
+module Nbterm_net = Nbtermdn.Make(Dest_data)
 
-let lookup pat = Nbtermdn.lookup tactab pat
+type t = identifier Nbterm_net.t
+type frozen_t = identifier Nbterm_net.frozen_t
 
-let init () = Nbtermdn.empty tactab
+let tactab = (Nbterm_net.create () : t)
 
-let freeze () = Nbtermdn.freeze tactab
-let unfreeze fs = Nbtermdn.unfreeze fs tactab
+let lookup pat = Nbterm_net.lookup tactab pat
+
+
+let init () = Nbterm_net.empty tactab
+
+let freeze () = Nbterm_net.freeze tactab
+let unfreeze fs = Nbterm_net.unfreeze fs tactab
 
 let add (na,dd) =
   let pat = match dd.d_pat with
     | HypLocation(_,p,_) -> p.d_typ
     | ConclLocation p -> p.d_typ
   in
-  if Nbtermdn.in_dn tactab na then begin
+  if Nbterm_net.in_dn tactab na then begin
     msgnl (str "Warning [Overriding Destructor Entry " ++
              str (string_of_id na) ++ str"]");
-    Nbtermdn.remap tactab na (pat,dd)
+    Nbterm_net.remap tactab na (pat,dd)
   end else
-    Nbtermdn.add tactab (na,(pat,dd))
+    Nbterm_net.add tactab (na,(pat,dd))
 
 let _ =
   Summary.declare_summary "destruct-hyp-concl"
@@ -207,7 +216,7 @@ let cache_dd (_,(_,na,dd)) =
 let classify_dd (local,_,_ as o) =
   if local then Dispose else Substitute o
 
-let subst_dd (_,subst,(local,na,dd)) =
+let subst_dd (subst,(local,na,dd)) =
   (local,na,
   { d_pat = subst_located_destructor_pattern subst dd.d_pat;
     d_pri = dd.d_pri;

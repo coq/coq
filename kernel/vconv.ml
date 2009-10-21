@@ -83,7 +83,7 @@ and conv_whd pb k whd1 whd2 cu =
 and conv_atom pb k a1 stk1 a2 stk2 cu =
   match a1, a2 with
   | Aind (kn1,i1), Aind(kn2,i2) ->
-      if mind_equiv_infos !infos (kn1,i1) (kn2,i2) && compare_stack stk1 stk2
+      if eq_ind (kn1,i1) (kn2,i2) && compare_stack stk1 stk2
       then
 	conv_stack k stk1 stk2 cu
       else raise NotConvertible
@@ -94,7 +94,7 @@ and conv_atom pb k a1 stk1 a2 stk2 cu =
   | Aiddef(ik1,v1), Aiddef(ik2,v2) ->
       begin
 	try
-	  if ik1 = ik2 && compare_stack stk1 stk2 then
+	  if eq_table_key ik1 ik2 && compare_stack stk1 stk2 then
 	    conv_stack k stk1 stk2 cu
 	  else raise NotConvertible
 	with NotConvertible ->
@@ -191,11 +191,11 @@ let rec conv_eq pb t1 t2 cu =
 	if e1 = e2 then conv_eq_vect l1 l2 cu
 	else raise NotConvertible
     | Const c1, Const c2 ->
-	if c1 = c2 then cu else raise NotConvertible
+	if eq_constant c1 c2 then cu else raise NotConvertible
     | Ind c1, Ind c2 ->
-	if c1 = c2 then cu else raise NotConvertible
+	if eq_ind c1 c2 then cu else raise NotConvertible
     | Construct c1, Construct c2 ->
-	if c1 = c2 then cu else raise NotConvertible
+	if eq_constructor c1 c2 then cu else raise NotConvertible
     | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
 	let pcu = conv_eq CONV p1 p2 cu in
 	let ccu = conv_eq CONV c1 c2 pcu in

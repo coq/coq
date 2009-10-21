@@ -317,9 +317,9 @@ let cache_Function (_,finfos) =
 
 let load_Function _  = cache_Function
 let open_Function _ = cache_Function
-let subst_Function (_,subst,finfos) =
+let subst_Function (subst,finfos) =
   let do_subst_con c = fst (Mod_subst.subst_con subst c)
-  and do_subst_ind (kn,i) = (Mod_subst.subst_kn subst kn,i)
+  and do_subst_ind (kn,i) = (Mod_subst.subst_ind subst kn,i)
   in
   let function_constant' = do_subst_con finfos.function_constant in
   let graph_ind' = do_subst_ind finfos.graph_ind in

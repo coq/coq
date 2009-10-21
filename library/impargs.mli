@@ -108,7 +108,7 @@ type implicit_interactive_request =
 type implicit_discharge_request =
   | ImplLocal
   | ImplConstant of constant * implicits_flags
-  | ImplMutualInductive of kernel_name * implicits_flags
+  | ImplMutualInductive of mutual_inductive * implicits_flags
   | ImplInteractive of global_reference * implicits_flags *
       implicit_interactive_request
 

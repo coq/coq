@@ -314,18 +314,26 @@ let the_tacticrevtab = ref (KNmap.empty : knrevtab)
    Parameter but also Remark and Fact) *)
 
 let push_xref visibility sp xref =
-  the_ccitab := SpTab.push visibility sp xref !the_ccitab;
   match visibility with
     | Until _ ->
-	if Globrevtab.mem xref !the_globrevtab then
-	  ()
-	else
-	  the_globrevtab := Globrevtab.add xref sp !the_globrevtab
-    | _ -> ()
+	the_ccitab := SpTab.push visibility sp xref !the_ccitab;
+	the_globrevtab := Globrevtab.add xref sp !the_globrevtab
+    | _ ->
+	begin
+	  if SpTab.exists sp !the_ccitab then
+	    match SpTab.find sp !the_ccitab with
+	      | TrueGlobal( ConstRef _) | TrueGlobal( IndRef _) |
+		    TrueGlobal( ConstructRef _) as xref ->
+		  the_ccitab := SpTab.push visibility sp xref !the_ccitab;
+	      | _ -> 
+		  the_ccitab := SpTab.push visibility sp xref !the_ccitab;
+	    else
+	      the_ccitab := SpTab.push visibility sp xref !the_ccitab;
+	end
 
 let push_cci visibility sp ref =
   push_xref visibility sp (TrueGlobal ref)
-
+    
 (* This is for Syntactic Definitions *)
 let push_syndef visibility sp kn =
   push_xref visibility sp (SynDef kn)

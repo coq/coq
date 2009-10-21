@@ -9,7 +9,8 @@
 open Term
 open Summary
 open Libobject
-
+open Libnames
+open Names
 (*
  * Module construction
  *)
@@ -18,14 +19,16 @@ let reduce c = Reductionops.head_unfold_under_prod
   (Auto.Hint_db.transparent_state (Auto.searchtable_map "typeclass_instances"))
   (Global.env()) Evd.empty c
 
-module TypeDnet = Term_dnet.Make(struct
-				   type t = Libnames.global_reference
-				   let compare = Pervasives.compare
-				   let subst s gr = fst (Libnames.subst_global s gr)
-				   let constr_of = Global.type_of_global
-				 end)
+module TypeDnet = Term_dnet.Make
+  (struct
+     type t = Libnames.global_reference
+     let compare = RefOrdered.compare
+     let subst s gr = fst (Libnames.subst_global s gr)
+     let constr_of = Global.type_of_global
+   end)
   (struct let reduce = reduce
-	  let direction = false end)
+	  let direction = false
+   end)
 
 type result = Libnames.global_reference * (constr*existential_key) * Termops.subst
 
@@ -70,7 +73,7 @@ let (input,output) =
   declare_object
     { (default_object "LIBTYPES") with
 	load_function = (fun _ -> load);
-	subst_function = (fun (_,s,t) -> subst s t);
+	subst_function = (fun (s,t) -> subst s t);
 	classify_function = (fun x -> Substitute x)
     }
 

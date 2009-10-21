@@ -108,7 +108,7 @@ module Labmap = Idmap
 type module_path =
   | MPfile of dir_path
   | MPbound of mod_bound_id
-  | MPself of mod_self_id
+ (* | MPapp of module_path * module_path *)
   | MPdot of module_path * label
 
 let rec check_bound_mp = function
@@ -119,7 +119,9 @@ let rec check_bound_mp = function
 let rec string_of_mp = function
   | MPfile sl -> "MPfile (" ^ string_of_dirpath sl ^ ")"
   | MPbound uid -> string_of_uid uid
-  | MPself uid -> string_of_uid uid
+ (* | MPapp (mp1,mp2) -> 
+      "("^string_of_mp mp ^ " " ^ 
+	string_of_mp mp^")"*)
   | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
 
 (* we compare labels first if both are MPdots *)
@@ -172,6 +174,28 @@ let kn_ord kn1 kn2 =
 	  else
 	    MPord.compare mp1 mp2
 
+(* a constant name is a kernel name couple (kn1,kn2) 
+   where kn1 corresponds to the name used at toplevel
+   (i.e. what the user see) 
+   and kn2 corresponds to the canonical kernel name 
+   i.e. in the environment we have 
+   kn1 \rhd_{\delta}^* kn2 \rhd_{\delta} t *)
+type constant = kernel_name*kernel_name
+
+(* For the environment we distinguish constants by their 
+   user part*)
+module User_ord = struct
+  type t = kernel_name*kernel_name
+  let compare x y= kn_ord (fst x) (fst y)
+end
+
+(* For other uses (ex: non-logical things) it is enough
+   to deal with the canonical part *)
+module Canonical_ord = struct
+  type t = kernel_name*kernel_name
+  let compare x y= kn_ord (snd x) (snd y)
+end
+
 
 module KNord = struct
   type t = kernel_name
@@ -181,47 +205,89 @@ end
 module KNmap = Map.Make(KNord)
 module KNpred = Predicate.Make(KNord)
 module KNset = Set.Make(KNord)
-module Cmap = KNmap
-module Cpred = KNpred
-module Cset = KNset
+
+module Cmap = Map.Make(Canonical_ord)
+module Cmap_env = Map.Make(User_ord)
+module Cpred = Predicate.Make(Canonical_ord)
+module Cset = Set.Make(Canonical_ord)
+module Cset_env = Set.Make(User_ord)
+
+module Mindmap = Map.Make(Canonical_ord)
+module Mindset = Set.Make(Canonical_ord)
+module Mindmap_env = Map.Make(User_ord)
 
 let default_module_name = "If you see this, it's a bug"
 
 let initial_dir = make_dirpath [default_module_name]
 
 let initial_msid = (make_msid initial_dir "If you see this, it's a bug")
-let initial_path = MPself initial_msid
+let initial_path = MPfile initial_dir
 
 type variable = identifier
-type constant = kernel_name
-type mutual_inductive = kernel_name
+
+(* The same thing is done for mutual inductive names 
+   it replaces also the old mind_equiv field of mutual 
+   inductive types*)
+type mutual_inductive = kernel_name*kernel_name
 type inductive = mutual_inductive * int
 type constructor = inductive * int
 
-let constant_of_kn kn = kn
-let make_con mp dir l = (mp,dir,l)
-let repr_con con = con
-let string_of_con = string_of_kn
-let con_label = label
-let pr_con = pr_kn
-let con_modpath = modpath
+let constant_of_kn kn = (kn,kn)
+let constant_of_kn_equiv kn1 kn2 = (kn1,kn2)
+let make_con mp dir l = ((mp,dir,l),(mp,dir,l))
+let make_con_equiv mp1 mp2 dir l = ((mp1,dir,l),(mp2,dir,l))
+let canonical_con con = snd con
+let user_con con = fst con
+let repr_con con = fst con
+let string_of_con con = string_of_kn (fst con)
+let con_label con = label (fst con)
+let pr_con con = pr_kn (fst con)
+let debug_pr_con con = str "("++ pr_kn (fst con) ++ str ","++ pr_kn (snd con)++ str ")"
+let eq_constant (_,kn1) (_,kn2) = kn1=kn2
+let debug_string_of_con con =  string_of_kn (fst con)^"'"^string_of_kn (snd con)
 
-let mind_modpath = modpath
+let con_modpath con = modpath (fst con)
+
+let mind_modpath mind = modpath (fst mind)
 let ind_modpath ind = mind_modpath (fst ind)
 let constr_modpath c = ind_modpath (fst c)
+
+
+let mind_of_kn kn = (kn,kn)
+let mind_of_kn_equiv kn1 kn2 = (kn1,kn2)
+let make_mind mp dir l = ((mp,dir,l),(mp,dir,l))
+let make_mind_equiv mp1 mp2 dir l = ((mp1,dir,l),(mp2,dir,l))
+let canonical_mind mind = snd mind
+let user_mind mind = fst mind
+let repr_mind mind = fst mind
+let string_of_mind mind = string_of_kn (fst mind)
+let mind_label mind= label (fst mind)
+let pr_mind mind = pr_kn (fst mind)
+let debug_pr_mind mind = str "("++ pr_kn (fst mind) ++ str ","++ pr_kn (snd mind)++ str ")"
+let eq_mind (_,kn1) (_,kn2) = kn1=kn2
+let debug_string_of_mind mind =  string_of_kn (fst mind)^"'"^string_of_kn (snd mind)
 
 let ith_mutual_inductive (kn,_) i = (kn,i)
 let ith_constructor_of_inductive ind i = (ind,i)
 let inductive_of_constructor (ind,i) = ind
 let index_of_constructor (ind,i) = i
+let eq_ind (kn1,i1) (kn2,i2) = i1=i2&&eq_mind kn1 kn2
+let eq_constructor (kn1,i1) (kn2,i2) = i1=i2&&eq_ind kn1 kn2
 
 module InductiveOrdered = struct
   type t = inductive
   let compare (spx,ix) (spy,iy) =
-    let c = ix - iy in if c = 0 then KNord.compare spx spy else c
+    let c = ix - iy in if c = 0 then Canonical_ord.compare spx spy else c
+end
+
+module InductiveOrdered_env = struct
+  type t = inductive
+  let compare (spx,ix) (spy,iy) =
+    let c = ix - iy in if c = 0 then User_ord.compare spx spy else c
 end
 
 module Indmap = Map.Make(InductiveOrdered)
+module Indmap_env = Map.Make(InductiveOrdered_env)
 
 module ConstructorOrdered = struct
   type t = constructor
@@ -229,12 +295,23 @@ module ConstructorOrdered = struct
     let c = ix - iy in if c = 0 then InductiveOrdered.compare indx indy else c
 end
 
+module ConstructorOrdered_env = struct
+  type t = constructor
+  let compare (indx,ix) (indy,iy) =
+    let c = ix - iy in if c = 0 then InductiveOrdered_env.compare indx indy else c
+end
+
 module Constrmap = Map.Make(ConstructorOrdered)
+module Constrmap_env = Map.Make(ConstructorOrdered_env)
 
 (* Better to have it here that in closure, since used in grammar.cma *)
 type evaluable_global_reference =
   | EvalVarRef of identifier
   | EvalConstRef of constant
+
+let eq_egr e1 e2 = match e1,e2 with
+    EvalConstRef con1, EvalConstRef con2 -> eq_constant con1 con2
+  | _,_ -> e1 = e2
 
 (* Hash-consing of name objects *)
 module Hname = Hashcons.Make(
@@ -281,24 +358,24 @@ module Hmod = Hashcons.Make(
     let rec hash_sub (hdir,huniqid,hstr as hfuns) = function
       | MPfile dir -> MPfile (hdir dir)
       | MPbound m -> MPbound (huniqid m)
-      | MPself m -> MPself (huniqid m)
       | MPdot (md,l) -> MPdot (hash_sub hfuns md, hstr l)
     let rec equal d1 d2 = match (d1,d2) with
       | MPfile dir1, MPfile dir2 -> dir1 == dir2
       | MPbound m1, MPbound m2 -> m1 == m2
-      | MPself m1, MPself m2 -> m1 == m2
       | MPdot (mod1,l1), MPdot (mod2,l2) -> equal mod1 mod2 & l1 = l2
       | _ -> false
     let hash = Hashtbl.hash
   end)
 
-module Hkn = Hashcons.Make(
-  struct
-    type t = kernel_name
+
+module Hcn = Hashcons.Make(
+  struct 
+    type t = kernel_name*kernel_name
     type u = (module_path -> module_path)
 	* (dir_path -> dir_path) * (string -> string)
-    let hash_sub (hmod,hdir,hstr) (md,dir,l) = (hmod md, hdir dir, hstr l)
-    let equal (mod1,dir1,l1) (mod2,dir2,l2) =
+    let hash_sub (hmod,hdir,hstr) ((md,dir,l),(mde,dire,le)) = 
+      ((hmod md, hdir dir, hstr l),(hmod mde, hdir dire, hstr le))
+    let equal ((mod1,dir1,l1),_) ((mod2,dir2,l2),_) =
       mod1 == mod2 && dir1 == dir2 && l1 == l2
     let hash = Hashtbl.hash
   end)
@@ -310,8 +387,9 @@ let hcons_names () =
   let hdir = Hashcons.simple_hcons Hdir.f hident in
   let huniqid = Hashcons.simple_hcons Huniqid.f (hstring,hdir) in
   let hmod = Hashcons.simple_hcons Hmod.f (hdir,huniqid,hstring) in
-  let hkn = Hashcons.simple_hcons Hkn.f (hmod,hdir,hstring) in
-  (hkn,hkn,hdir,hname,hident,hstring)
+  let hmind = Hashcons.simple_hcons Hcn.f (hmod,hdir,hstring) in
+  let hcn = Hashcons.simple_hcons Hcn.f (hmod,hdir,hstring) in
+  (hcn,hmind,hdir,hname,hident,hstring)
 
 
 (*******)
@@ -335,3 +413,8 @@ type inv_rel_key = int (* index in the [rel_context] part of environment
 
 type id_key = inv_rel_key tableKey
 
+let eq_id_key ik1 ik2 =
+  match ik1,ik2 with
+    ConstKey (_,kn1),
+      ConstKey (_,kn2) -> kn1=kn2
+    | a,b -> a=b

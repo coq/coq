@@ -51,7 +51,7 @@ let cache_strategy (_,str) =
     (fun (lev,ql) -> List.iter (fun q -> set_strategy_one q lev) ql)
     str
 
-let subst_strategy (_,subs,(local,obj)) =
+let subst_strategy (subs,(local,obj)) =
   local,
   list_smartmap
     (fun (k,ql as entry) ->

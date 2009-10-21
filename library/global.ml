@@ -48,14 +48,6 @@ let push_named_def d =
   global_env := env;
   cst
 
-(*let add_thing add kn thing =
-  let _,dir,l = repr_kn kn in
-  let kn',newenv = add dir l thing !global_env in
-    if kn = kn' then
-      global_env := newenv
-    else
-      anomaly "Kernel names do not match."
-*)
 
 let add_thing add dir id thing =
   let kn, newenv = add dir (label_of_id id) thing !global_env in
@@ -65,14 +57,23 @@ let add_thing add dir id thing =
 let add_constant = add_thing add_constant
 let add_mind = add_thing add_mind
 let add_modtype = add_thing (fun _ -> add_modtype) ()
-let add_module = add_thing (fun _ -> add_module) ()
-let add_alias = add_thing (fun _ -> add_alias) ()
+
+
+let add_module id me =
+  let l = label_of_id id in
+  let mp,resolve,new_env = add_module l me !global_env in
+    global_env := new_env;
+    mp,resolve
+    
 
 let add_constraints c = global_env := add_constraints c !global_env
 
 let set_engagement c = global_env := set_engagement c !global_env
 
-let add_include me = global_env := add_include me !global_env
+let add_include me is_module =
+  let resolve,newenv = add_include me is_module !global_env in
+    global_env := newenv;
+    resolve
 
 let start_module id =
   let l = label_of_id id in
@@ -82,15 +83,16 @@ let start_module id =
 
 let end_module fs id mtyo =
   let l = label_of_id id in
-  let mp,newenv = end_module l mtyo !global_env in
+  let mp,resolve,newenv = end_module l mtyo !global_env in
     Summary.unfreeze_summaries fs;
     global_env := newenv;
-    mp
+    mp,resolve
 
 
 let add_module_parameter mbid mte =
-  let newenv = add_module_parameter mbid mte !global_env in
-    global_env := newenv
+  let resolve,newenv = add_module_parameter mbid mte !global_env in
+    global_env := newenv;
+    resolve
 
 
 let start_modtype id =
@@ -117,15 +119,22 @@ let lookup_mind kn = lookup_mind kn (env())
 let lookup_module mp = lookup_module mp (env())
 let lookup_modtype kn = lookup_modtype kn (env())
 
+let constant_of_delta con = 
+  let resolver,resolver_param = (delta_of_senv !global_env) in
+    Mod_subst.constant_of_delta resolver_param
+      (Mod_subst.constant_of_delta resolver con)
 
-
-
+let mind_of_delta mind = 
+  let resolver,resolver_param = (delta_of_senv !global_env) in
+    Mod_subst.mind_of_delta resolver_param
+      (Mod_subst.mind_of_delta resolver mind)
+	
 let start_library dir =
   let mp,newenv = start_library dir !global_env in
     global_env := newenv;
     mp
 
-let export s = snd (export !global_env s)
+let export s = export !global_env s
 
 let import cenv digest =
   let mp,newenv = import cenv digest !global_env in
@@ -161,3 +170,5 @@ let register field value by_clause =
   let entry = kind_of_term value in
   let senv = Safe_typing.register !global_env field entry by_clause in
   global_env := senv
+
+

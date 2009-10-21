@@ -26,7 +26,7 @@ val extract_with_type : env -> constant_body -> ( identifier list * ml_type ) op
 val extract_fixpoint :
   env -> constant array -> (constr, types) prec_declaration -> ml_decl
 
-val extract_inductive : env -> kernel_name -> ml_ind
+val extract_inductive : env -> mutual_inductive -> ml_ind
 
 (*s Is a [ml_decl] or a [ml_spec] logical ? *)
 

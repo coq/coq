@@ -70,7 +70,7 @@ module PrintingCasesMake =
     type t = inductive * int array
     let encode = Test.encode
     let subst subst ((kn,i), ints as obj) =
-      let kn' = subst_kn subst kn in
+      let kn' = subst_ind subst kn in
 	if kn' == kn then obj else
 	  (kn',i), ints
     let printer (ind,_) = pr_global_env Idset.empty (IndRef ind)
@@ -566,7 +566,7 @@ let rec subst_cases_pattern subst pat =
   match pat with
   | PatVar _ -> pat
   | PatCstr (loc,((kn,i),j),cpl,n) ->
-      let kn' = subst_kn subst kn
+      let kn' = subst_ind subst kn
       and cpl' = list_smartmap (subst_cases_pattern subst) cpl in
 	if kn' == kn && cpl' == cpl then pat else
 	  PatCstr (loc,((kn',i),j),cpl',n)
@@ -610,7 +610,7 @@ let rec subst_rawconstr subst raw =
         let (n,topt) = x in
         let topt' = Option.smartmap
           (fun (loc,(sp,i),x,y as t) ->
-            let sp' = subst_kn subst sp in
+            let sp' = subst_ind subst sp in
             if sp == sp' then t else (loc,(sp',i),x,y)) topt in
         if a == a' && topt == topt' then y else (a',(n,topt'))) rl
       and branches' = list_smartmap

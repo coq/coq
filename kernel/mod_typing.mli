@@ -13,13 +13,24 @@ open Declarations
 open Environ
 open Entries
 open Mod_subst
+open Names
 (*i*)
 
 
-val translate_module : env -> module_entry -> module_body
+val translate_module : env -> module_path -> module_entry 
+  -> module_body
 
-val translate_struct_entry : env -> module_struct_entry ->
-  struct_expr_body * substitution
+val translate_module_type : env -> module_path -> module_struct_entry -> 
+  module_type_body
+
+val translate_struct_module_entry : env -> module_path -> module_struct_entry -> 
+  struct_expr_body * struct_expr_body * delta_resolver * Univ.constraints
+
+val translate_struct_type_entry : env  -> module_struct_entry -> 
+  struct_expr_body * struct_expr_body option * delta_resolver * module_path * Univ.constraints
+
+val translate_struct_include_module_entry : env -> module_path 
+  -> module_struct_entry -> struct_expr_body * delta_resolver * Univ.constraints
 
 val add_modtype_constraints : env -> module_type_body -> env
 

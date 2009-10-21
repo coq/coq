@@ -2837,9 +2837,9 @@ let cache_md x = load_md 1 x
 let subst_kind subst id =
   match id with
     | NewTac _ -> id
-    | UpdateTac kn -> UpdateTac (Mod_subst.subst_kn subst kn)
+    | UpdateTac kn -> UpdateTac (subst_kn subst kn)
 
-let subst_md (_,subst,defs) =
+let subst_md (subst,defs) =
   List.map (fun (id,t) -> (subst_kind subst id,subst_tactic subst t)) defs
 
 let (inMD,outMD) =

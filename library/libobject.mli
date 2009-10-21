@@ -70,7 +70,7 @@ type 'a object_declaration = {
   load_function : int -> object_name * 'a -> unit;
   open_function : int -> object_name * 'a -> unit;
   classify_function : 'a -> 'a substitutivity;
-  subst_function : object_name * substitution * 'a -> 'a;
+  subst_function :  substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
   rebuild_function : 'a -> 'a }
 
@@ -86,7 +86,7 @@ type 'a object_declaration = {
 val default_object : string -> 'a object_declaration
 
 (* the identity substitution function *)
-val ident_subst_function : object_name * substitution * 'a -> 'a
+val ident_subst_function : substitution * 'a -> 'a
 
 (*s Given an object declaration, the function [declare_object]
    will hand back two functions, the "injection" and "projection"
@@ -102,7 +102,7 @@ val object_tag : obj -> string
 val cache_object : object_name * obj -> unit
 val load_object : int -> object_name * obj -> unit
 val open_object : int -> object_name * obj -> unit
-val subst_object : object_name * substitution * obj -> obj
+val subst_object : substitution * obj -> obj
 val classify_object : obj -> obj substitutivity
 val discharge_object : object_name * obj -> obj option
 val rebuild_object : obj -> obj

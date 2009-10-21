@@ -80,7 +80,7 @@ let get_uri_of_var v pvars =
 
 type tag =
    Constant of Names.constant
- | Inductive of Names.kernel_name
+ | Inductive of Names.mutual_inductive
  | Variable of Names.kernel_name
 ;;
 
@@ -165,7 +165,7 @@ let token_list_of_kernel_name tag =
        N.id_of_label (N.con_label con),
        Lib.remove_section_part (LN.ConstRef con)
    | Inductive kn ->
-       N.id_of_label (N.label kn),
+       N.id_of_label (N.mind_label kn),
        Lib.remove_section_part (LN.IndRef (kn,0))
  in
  token_list_of_path dir id (etag_of_tag tag)

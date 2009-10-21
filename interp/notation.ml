@@ -109,7 +109,7 @@ let open_scope i (_,(local,op,sc)) =
 let cache_scope o =
   open_scope 1 o
 
-let subst_scope (_,subst,sc) = sc
+let subst_scope (subst,sc) = sc
 
 open Libobject
 
@@ -180,19 +180,29 @@ type key =
 let notations_key_table = ref Gmapl.empty
 let prim_token_key_table = Hashtbl.create 7
 
+
+let make_gr = function
+  | ConstRef con -> 
+      ConstRef(constant_of_kn(canonical_con con))
+  | IndRef (kn,i) ->
+      IndRef(mind_of_kn(canonical_mind kn),i)
+  | ConstructRef ((kn,i),j )->
+      ConstructRef((mind_of_kn(canonical_mind kn),i),j)
+  | VarRef id ->  VarRef id
+      
 let rawconstr_key = function
-  | RApp (_,RRef (_,ref),_) -> RefKey ref
-  | RRef (_,ref) -> RefKey ref
+  | RApp (_,RRef (_,ref),_) -> RefKey (make_gr ref)
+  | RRef (_,ref) -> RefKey (make_gr ref)
   | _ -> Oth
 
 let cases_pattern_key = function
-  | PatCstr (_,ref,_,_) -> RefKey (ConstructRef ref)
+  | PatCstr (_,ref,_,_) -> RefKey (make_gr (ConstructRef ref))
   | _ -> Oth
 
 let aconstr_key = function (* Rem: AApp(ARef ref,[]) stands for @ref *)
-  | AApp (ARef ref,args) -> RefKey ref, Some (List.length args)
-  | AList (_,_,AApp (ARef ref,args),_,_) -> RefKey ref, Some (List.length args)
-  | ARef ref -> RefKey ref, None
+  | AApp (ARef ref,args) -> RefKey(make_gr ref), Some (List.length args)
+  | AList (_,_,AApp (ARef ref,args),_,_) -> RefKey (make_gr ref), Some (List.length args)
+  | ARef ref -> RefKey(make_gr ref), None
   | _ -> Oth, None
 
 (**********************************************************************)
@@ -458,7 +468,7 @@ let load_arguments_scope _ (_,(_,r,scl)) =
 let cache_arguments_scope o =
   load_arguments_scope 1 o
 
-let subst_arguments_scope (_,subst,(req,r,scl)) =
+let subst_arguments_scope (subst,(req,r,scl)) =
   (ArgsScopeNoDischarge,fst (subst_global subst r),scl)
 
 let discharge_arguments_scope (_,(req,r,l)) =

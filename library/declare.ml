@@ -100,12 +100,14 @@ let load_constant i ((sp,kn),(_,_,kind)) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_constant"
       (pr_id (basename sp) ++ str " already exists");
-  Nametab.push (Nametab.Until i) sp (ConstRef (constant_of_kn kn));
-  add_constant_kind (constant_of_kn kn) kind
-
+  let con = Global.constant_of_delta (constant_of_kn kn) in
+    Nametab.push (Nametab.Until i) sp (ConstRef con);
+    add_constant_kind con kind
+      
 (* Opening means making the name without its module qualification available *)
 let open_constant i ((sp,kn),_) =
-  Nametab.push (Nametab.Exactly i) sp (ConstRef (constant_of_kn kn))
+  let con = constant_of_kn kn in
+    Nametab.push (Nametab.Exactly i) sp (ConstRef con)
 
 let cache_constant ((sp,kn),(cdt,dhyps,kind)) =
   let id = basename sp in
@@ -187,6 +189,7 @@ let declare_inductive_argument_scopes kn mie =
 
 let inductive_names sp kn mie =
   let (dp,_) = repr_path sp in
+  let kn = Global.mind_of_delta (mind_of_kn kn) in
   let names, _ =
     List.fold_left
       (fun (names, n) ind ->
@@ -228,17 +231,18 @@ let cache_inductive ((sp,kn),(dhyps,mie)) =
   let id = basename sp in
   let _,dir,_ = repr_kn kn in
   let kn' = Global.add_mind dir id mie in
-  assert (kn'=kn);
-  add_section_kn kn (Global.lookup_mind kn').mind_hyps;
+  assert (kn'= mind_of_kn kn);
+  add_section_kn kn' (Global.lookup_mind kn').mind_hyps;
   Dischargedhypsmap.set_discharged_hyps sp dhyps;
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names;
   List.iter (fun (sp,_) -> !cache_hook sp) (inductive_names sp kn mie)
 
 
 let discharge_inductive ((sp,kn),(dhyps,mie)) =
-  let mie = Global.lookup_mind kn in
+  let mind = (Global.mind_of_delta (mind_of_kn kn)) in
+  let mie = Global.lookup_mind mind in
   let repl = replacement_context () in
-  let sechyps = section_segment_of_mutual_inductive kn in
+  let sechyps = section_segment_of_mutual_inductive mind in
   Some (discharged_hyps kn sechyps,
         Discharge.process_inductive (named_of_variable_context sechyps) repl mie)
 
@@ -271,8 +275,9 @@ let declare_mind isrecord mie =
     | ind::_ -> ind.mind_entry_typename
     | [] -> anomaly "cannot declare an empty list of inductives" in
   let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
-  declare_mib_implicits kn;
-  declare_inductive_argument_scopes kn mie;
+  let mind = (Global.mind_of_delta (mind_of_kn kn)) in
+  declare_mib_implicits mind;
+  declare_inductive_argument_scopes mind mie;
   !xml_declare_inductive (isrecord,oname);
   oname
 

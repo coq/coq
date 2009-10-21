@@ -31,7 +31,7 @@ let make_path dir id = Libnames.make_path (make_dir dir) (id_of_string id)
 let positive_path = make_path positive_module "positive"
 
 (* TODO: temporary hack *)
-let make_kn dir id = Libnames.encode_kn dir id
+let make_kn dir id = Libnames.encode_mind dir id
 
 let positive_kn =
   make_kn (make_dir positive_module) (id_of_string "positive")

@@ -13,26 +13,74 @@
 open Names
 open Term
 
-type resolver
+(* A delta_resolver maps name (constant, inductive, module_path) 
+   to canonical name  *)
+type delta_resolver
+
 type substitution
 
-val make_resolver :  (constant * constr option) list -> resolver
+val empty_delta_resolver : delta_resolver
+
+val add_inline_delta_resolver : constant -> delta_resolver -> delta_resolver
+
+val add_inline_constr_delta_resolver :  constant -> constr -> delta_resolver 
+  -> delta_resolver
+
+val add_constant_delta_resolver : constant -> delta_resolver -> delta_resolver
+
+val add_mind_delta_resolver : mutual_inductive -> delta_resolver -> delta_resolver
+
+val add_mp_delta_resolver : module_path -> module_path -> delta_resolver 
+  -> delta_resolver
+
+val add_delta_resolver : delta_resolver -> delta_resolver -> delta_resolver
+
+(* Apply the substitution on the domain of the resolver  *)
+val subst_dom_delta_resolver : substitution -> delta_resolver -> delta_resolver
+
+(* Apply the substitution on the codomain of the resolver  *)
+val subst_codom_delta_resolver : substitution -> delta_resolver -> delta_resolver
+
+val subst_dom_codom_delta_resolver : 
+  substitution -> delta_resolver -> delta_resolver
+
+(* *_of_delta return the associated name of arg2 in arg1   *)
+val constant_of_delta : delta_resolver -> constant -> constant
+
+val mind_of_delta : delta_resolver -> mutual_inductive -> mutual_inductive
+
+val delta_of_mp : delta_resolver -> module_path -> module_path
+
+(* Extract the set of inlined constant in the resolver *)
+val inline_of_delta : delta_resolver -> kernel_name list
+
+(* remove_mp is used for the computation of a resolver induced by Include P *)
+val remove_mp_delta_resolver : delta_resolver -> module_path -> delta_resolver
+
+
+(* mem tests *)
+val mp_in_delta : module_path -> delta_resolver -> bool
+
+val con_in_delta : constant -> delta_resolver -> bool
+
+val mind_in_delta : mutual_inductive -> delta_resolver -> bool
+
+(*substitution*)
 
 val empty_subst : substitution
 
-val add_msid :
-  mod_self_id -> module_path -> substitution -> substitution
+(* add_* add [arg2/arg1]{arg3} to the substitution with no 
+   sequential composition  *)
 val add_mbid :
-  mod_bound_id -> module_path -> resolver option -> substitution -> substitution
+  mod_bound_id -> module_path -> delta_resolver  -> substitution -> substitution
 val add_mp :
-  module_path -> module_path -> substitution -> substitution
+  module_path -> module_path -> delta_resolver -> substitution -> substitution
 
-val map_msid :
-  mod_self_id -> module_path -> substitution
+(* map_* create a new substitution [arg2/arg1]{arg3} *)
 val map_mbid :
-  mod_bound_id -> module_path -> resolver option -> substitution
+  mod_bound_id -> module_path -> delta_resolver -> substitution
 val map_mp :
-  module_path -> module_path -> substitution
+  module_path -> module_path -> delta_resolver -> substitution
 
 (* sequential composition:
    [substitute (join sub1 sub2) t = substitute sub2 (substitute sub1 t)]
@@ -47,6 +95,8 @@ val subst_substituted : substitution -> 'a substituted -> 'a substituted
 (*i debugging *)
 val debug_string_of_subst : substitution -> string
 val debug_pr_subst : substitution -> Pp.std_ppcmds
+val debug_string_of_delta : delta_resolver -> string
+val debug_pr_delta : delta_resolver -> Pp.std_ppcmds
 (*i*)
 
 (* [subst_mp sub mp] guarantees that whenever the result of the
@@ -56,7 +106,10 @@ val debug_pr_subst : substitution -> Pp.std_ppcmds
 val subst_mp :
   substitution -> module_path -> module_path
 
-val subst_kn :
+val subst_ind :
+  substitution -> mutual_inductive -> mutual_inductive
+
+val subst_kn : 
   substitution -> kernel_name -> kernel_name
 
 val subst_con :
@@ -71,7 +124,7 @@ val subst_evaluable_reference :
   substitution -> evaluable_global_reference -> evaluable_global_reference
 
 (* [replace_mp_in_con mp mp' con] replaces [mp] with [mp'] in [con] *)
-val replace_mp_in_con : module_path -> module_path -> constant -> constant
+val replace_mp_in_kn : module_path -> module_path -> kernel_name -> kernel_name
 
 (* [subst_mps sub c] performs the substitution [sub] on all kernel
    names appearing in [c] *)
@@ -80,15 +133,5 @@ val subst_mps : substitution -> constr -> constr
 (* [occur_*id id sub] returns true iff [id] occurs in [sub]
    on either side *)
 
-val occur_msid : mod_self_id -> substitution -> bool
 val occur_mbid : mod_bound_id -> substitution -> bool
 
-val update_subst_alias : substitution -> substitution -> substitution
-
-val update_subst : substitution -> substitution -> substitution
-
-val subst_key : substitution -> substitution -> substitution
-
-val join_alias : substitution -> substitution -> substitution
-
-val remove_alias : substitution -> substitution

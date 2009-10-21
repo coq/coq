@@ -69,7 +69,7 @@ type recarg =
 
 let subst_recarg sub r = match r with
   | Norec | Mrec _  -> r
-  | Imbr (kn,i) -> let kn' = subst_kn sub kn in
+  | Imbr (kn,i) -> let kn' = subst_ind sub kn in
       if kn==kn' then r else Imbr (kn',i)
 
 type wf_paths = recarg Rtree.t
@@ -190,25 +190,25 @@ type mutual_inductive_body = {
   (* Universes constraints enforced by the inductive declaration *)
     mind_constraints : constraints;
 
-  (* Source of the inductive block when aliased in a module *)
-    mind_equiv : kernel_name option
   }
 
-let subst_arity sub = function
-| NonPolymorphicType s -> NonPolymorphicType (subst_mps sub s)
-| PolymorphicArity (ctx,s) -> PolymorphicArity (subst_rel_context sub ctx,s)
-
+let subst_arity sub arity =
+  if sub = empty_subst then arity
+  else match arity with
+    | NonPolymorphicType s -> NonPolymorphicType (subst_mps sub s)
+    | PolymorphicArity (ctx,s) -> PolymorphicArity (subst_rel_context sub ctx,s)
+	
 (* TODO: should be changed to non-coping after Term.subst_mps *)
 let subst_const_body sub cb = {
-    const_hyps = (assert (cb.const_hyps=[]); []);
-    const_body = Option.map (subst_constr_subst sub) cb.const_body;
-    const_type = subst_arity sub cb.const_type;
-    const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
-    (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
-    const_constraints = cb.const_constraints;
-    const_opaque = cb.const_opaque;
-    const_inline = cb.const_inline}
-
+  const_hyps = (assert (cb.const_hyps=[]); []);
+  const_body = Option.map (subst_constr_subst sub) cb.const_body;
+  const_type = subst_arity sub cb.const_type;
+  const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
+  (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
+  const_constraints = cb.const_constraints;
+  const_opaque = cb.const_opaque;
+  const_inline = cb.const_inline} 
+  
 let subst_arity sub = function
 | Monomorphic s ->
     Monomorphic {
@@ -244,8 +244,7 @@ let subst_mind sub mib =
     mind_params_ctxt =
       map_rel_context (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = array_smartmap (subst_mind_packet sub) mib.mind_packets ;
-    mind_constraints = mib.mind_constraints ;
-    mind_equiv = Option.map (subst_kn sub) mib.mind_equiv }
+    mind_constraints = mib.mind_constraints  }
 
 
 (*s Modules: signature component specifications, module types, and
@@ -255,8 +254,6 @@ type structure_field_body =
   | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
   | SFBmodule of module_body
-  | SFBalias of module_path * struct_expr_body option
-      * constraints option
   | SFBmodtype of module_type_body
 
 and structure_body = (label * structure_field_body) list
@@ -264,24 +261,26 @@ and structure_body = (label * structure_field_body) list
 and struct_expr_body =
   | SEBident of module_path
   | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body
-  | SEBstruct of mod_self_id * structure_body
-  | SEBapply of struct_expr_body * struct_expr_body
-      * constraints
+  | SEBapply of struct_expr_body * struct_expr_body * constraints
+  | SEBstruct of structure_body
   | SEBwith of struct_expr_body * with_declaration_body
 
 and with_declaration_body =
     With_module_body of identifier list * module_path
-      * struct_expr_body option  * constraints
   | With_definition_body of  identifier list * constant_body
 
 and module_body =
-    { mod_expr : struct_expr_body option;
-      mod_type : struct_expr_body option;
+    { mod_mp : module_path;
+      mod_expr : struct_expr_body option; 
+      mod_type : struct_expr_body;
+      mod_type_alg : struct_expr_body option;
       mod_constraints : constraints;
-      mod_alias : substitution;
+      mod_delta : delta_resolver;
       mod_retroknowledge : Retroknowledge.action list}
 
 and module_type_body =
-    { typ_expr : struct_expr_body;
-      typ_strength : module_path option;
-      typ_alias : substitution}
+    { typ_mp : module_path;
+      typ_expr : struct_expr_body;
+      typ_expr_alg : struct_expr_body option ;
+      typ_constraints : constraints;
+      typ_delta :delta_resolver}

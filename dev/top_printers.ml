@@ -28,6 +28,7 @@ open Cerrors
 open Evd
 open Goptions
 open Genarg
+open Mod_subst
 
 
 let _ = Constrextern.print_evar_arguments := true
@@ -44,8 +45,9 @@ let ppmsid msid = pp (str (debug_string_of_msid msid))
 let ppmbid mbid = pp (str (debug_string_of_mbid mbid))
 let ppdir dir = pp (pr_dirpath dir)
 let ppmp mp = pp(str (string_of_mp mp))
-let ppcon con = pp(pr_con con)
+let ppcon con = pp(debug_pr_con con)
 let ppkn kn = pp(pr_kn kn)
+let ppmind kn = pp(debug_pr_mind kn)
 let ppsp sp = pp(pr_path sp)
 let ppqualid qid = pp(pr_qualid qid)
 let ppclindex cl = pp(Classops.pr_cl_index cl)
@@ -72,10 +74,10 @@ let ppidset l = pp (prset pr_id (Idset.elements l))
 let pP s = pp (hov 0 s)
 
 let safe_pr_global = function
-  | ConstRef kn -> pp (str "CONSTREF(" ++ pr_con kn ++ str ")")
-  | IndRef (kn,i) -> pp (str "INDREF(" ++ pr_kn kn ++ str "," ++
+  | ConstRef kn -> pp (str "CONSTREF(" ++ debug_pr_con kn ++ str ")")
+  | IndRef (kn,i) -> pp (str "INDREF(" ++ debug_pr_mind kn ++ str "," ++
 			  int i ++ str ")")
-  | ConstructRef ((kn,i),j) -> pp (str "INDREF(" ++ pr_kn kn ++ str "," ++
+  | ConstructRef ((kn,i),j) -> pp (str "INDREF(" ++ debug_pr_mind kn ++ str "," ++
 				      int i ++ str "," ++ int j ++ str ")")
   | VarRef id -> pp (str "VARREF(" ++ pr_id id ++ str ")")
 
@@ -92,6 +94,7 @@ let genppj f j = let (c,t) = f j in (c ++ str " : " ++ t)
 let ppj j = pp (genppj pr_ljudge j)
 
 let prsubst s = pp (Mod_subst.debug_pr_subst s)
+let prdelta s = pp (Mod_subst.debug_pr_delta s)
 
 let pp_idpred s = pp (pr_idpred s)
 let pp_cpred s = pp (pr_cpred s)
@@ -159,9 +162,9 @@ let constr_display csr =
   | Evar (e,l) -> "Evar("^(string_of_int e)^","^(array_display l)^")"
   | Const c -> "Const("^(string_of_con c)^")"
   | Ind (sp,i) ->
-      "MutInd("^(string_of_kn sp)^","^(string_of_int i)^")"
+      "MutInd("^(string_of_mind sp)^","^(string_of_int i)^")"
   | Construct ((sp,i),j) ->
-      "MutConstruct(("^(string_of_kn sp)^","^(string_of_int i)^"),"
+      "MutConstruct(("^(string_of_mind sp)^","^(string_of_int i)^"),"
       ^(string_of_int j)^")"
   | Case (ci,p,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
@@ -309,7 +312,7 @@ let print_pure_constr csr =
 	| ("Coq"::_::l) -> l
 	| l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
-      print_string (string_of_kn sp)
+      print_string (debug_string_of_mind sp)
   and sp_con_display sp =
 (*    let dir,l = decode_kn sp in
     let ls =
@@ -318,7 +321,7 @@ let print_pure_constr csr =
 	| ("Coq"::_::l) -> l
 	| l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
-      print_string (string_of_con sp)
+      print_string (debug_string_of_con sp)
 
   in
     try
@@ -442,11 +445,11 @@ let raw_string_of_ref loc = function
       let (mp,dir,id) = repr_con cst in
       encode_path loc "CST" (Some (mp,dir)) [] (id_of_label id)
   | IndRef (kn,i) ->
-      let (mp,dir,id) = repr_kn kn in
+      let (mp,dir,id) = repr_mind kn in
       encode_path loc "IND" (Some (mp,dir)) [id_of_label id]
 	(id_of_string ("_"^string_of_int i))
   | ConstructRef ((kn,i),j) ->
-      let (mp,dir,id) = repr_kn kn in
+      let (mp,dir,id) = repr_mind kn in
       encode_path loc "CSTR" (Some (mp,dir))
 	[id_of_label id;id_of_string ("_"^string_of_int i)]
 	(id_of_string ("_"^string_of_int j))
@@ -456,13 +459,13 @@ let raw_string_of_ref loc = function
 let short_string_of_ref loc = function
   | VarRef id -> Ident (loc,id)
   | ConstRef cst -> Ident (loc,id_of_label (pi3 (repr_con cst)))
-  | IndRef (kn,0) -> Ident (loc,id_of_label (pi3 (repr_kn kn)))
+  | IndRef (kn,0) -> Ident (loc,id_of_label (pi3 (repr_mind kn)))
   | IndRef (kn,i) ->
-      encode_path loc "IND" None [id_of_label (pi3 (repr_kn kn))]
+      encode_path loc "IND" None [id_of_label (pi3 (repr_mind kn))]
         (id_of_string ("_"^string_of_int i))
   | ConstructRef ((kn,i),j) ->
       encode_path loc "CSTR" None
-        [id_of_label (pi3 (repr_kn kn));id_of_string ("_"^string_of_int i)]
+        [id_of_label (pi3 (repr_mind kn));id_of_string ("_"^string_of_int i)]
         (id_of_string ("_"^string_of_int j))
 
 let _ = Constrextern.set_debug_global_reference_printer

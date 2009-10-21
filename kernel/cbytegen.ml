@@ -723,7 +723,10 @@ let compile_constant_body env body opaque boxed =
 	BCdefined(true, to_patch)
       else
 	match kind_of_term body with
-	| Const kn' -> BCallias (get_allias env kn')
+	| Const kn' ->
+	    (* we use the canonical name of the constant*)
+	    let con= constant_of_kn (canonical_con kn') in
+	      BCallias (get_allias env con)
 	| _ ->
 	    let res = compile env body in
 	    let to_patch = to_memory res in

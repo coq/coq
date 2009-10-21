@@ -156,7 +156,7 @@ let subst_cl_typ subst ct = match ct with
 	if kn' == kn then ct else
          fst (find_class_type (Global.env()) Evd.empty t)
   | CL_IND (kn,i) ->
-      let kn' = subst_kn subst kn in
+      let kn' = subst_ind subst kn in
 	if kn' == kn then ct else
 	  CL_IND (kn',i)
 
@@ -355,7 +355,7 @@ let load_coercion i (_,(coe,stre,isid,cls,clt,ps)) =
 let cache_coercion o =
   load_coercion 1 o
 
-let subst_coercion (_,subst,(coe,stre,isid,cls,clt,ps as obj)) =
+let subst_coercion (subst,(coe,stre,isid,cls,clt,ps as obj)) =
   let coe' = subst_coe_typ subst coe in
   let cls' = subst_cl_typ subst cls in
   let clt' = subst_cl_typ subst clt in

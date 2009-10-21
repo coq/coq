@@ -489,7 +489,7 @@ let compare_constr f t1 t2 =
           f h1 h2 & List.for_all2 f l1 l2
         else false
   | Evar (e1,l1), Evar (e2,l2) -> e1 = e2 & array_for_all2 f l1 l2
-  | Const c1, Const c2 -> c1 = c2
+  | Const c1, Const c2 -> eq_constant c1 c2
   | Ind c1, Ind c2 -> c1 = c2
   | Construct c1, Construct c2 -> c1 = c2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->

@@ -401,7 +401,7 @@ let cache_transitivity_lemma (_,(left,lem)) =
   else
     transitivity_right_table := lem :: !transitivity_right_table
 
-let subst_transitivity_lemma (_,subst,(b,ref)) = (b,subst_mps subst ref)
+let subst_transitivity_lemma (subst,(b,ref)) = (b,subst_mps subst ref)
 
 let (inTransitivity,_) =
   declare_object {(default_object "TRANSITIVITY-STEPS") with

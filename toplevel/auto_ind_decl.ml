@@ -47,8 +47,8 @@ let rec deconstruct_type t =
   let l,r = decompose_prod t in
     (List.map (fun (_,b) -> b) (List.rev l))@[r]
 
-let subst_in_constr (_,subst,(ind,const)) =
-  let ind' = (subst_kn subst (fst ind)),(snd ind)
+let subst_in_constr (subst,(ind,const)) = 
+  let ind' = (subst_ind subst (fst ind)),(snd ind)
   and const' = subst_mps subst const in
     ind',const'
 
@@ -156,7 +156,7 @@ let make_eq_scheme sp =
         | Var x -> mkVar (id_of_string ("eq_"^(string_of_id x)))
         | Cast (x,_,_) -> aux (kind_of_term x) a
         | App (x,newa) -> aux (kind_of_term x) newa
-        | Ind (sp',i) -> if sp=sp' then mkRel(eqA-nlist-i+nb_ind-1)
+        | Ind (sp',i) -> if eq_mind sp sp' then mkRel(eqA-nlist-i+nb_ind-1)
                         else ( try
                           let eq = find_eq_scheme (sp',i)
                           and eqa = Array.map
@@ -167,7 +167,7 @@ let make_eq_scheme sp =
                             in if args = [||] then eq
                                else mkApp (eq,Array.append
                                       (Array.map (fun x->lift lifti x) a) eqa)
-                         with Not_found -> raise(EqNotFound (string_of_kn sp'))
+                         with Not_found -> raise(EqNotFound (string_of_mind sp'))
                         )
         | Sort _  -> raise (EqUnknown "Sort" )
         | Prod _ -> raise (EqUnknown "Prod" )
@@ -257,7 +257,7 @@ let make_eq_scheme sp =
                      (mkArrow (mkFullInd (sp,i) 1) bb);
         cores.(i) <- make_one_eq i
     done;
-    if (string_of_mp (modpath sp ))="Coq.Init.Logic"
+    if (string_of_mp (mind_modpath sp ))="Coq.Init.Logic"
     then print_string "Logic time, do nothing.\n"
     else (
       for i=0 to (nb_ind-1) do
@@ -451,7 +451,7 @@ let eqI ind l =
                            (List.map (fun (_,seq,_,_)-> mkVar seq) list_id ))
   and  e = try find_eq_scheme ind  with
     Not_found -> error
-        ("The boolean equality on "^(string_of_kn (fst ind))^" is needed.");
+        ("The boolean equality on "^(string_of_mind (fst ind))^" is needed.");
   in (if eA = [||] then e else mkApp(e,eA))
 
 let compute_bl_goal ind lnamesparrec nparrec =
@@ -556,7 +556,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                       | App (c,ca) -> (
                         match (kind_of_term c) with
                         | Ind (i1,i2) ->
-                            if(string_of_label (label i1) = "eq")
+                            if(string_of_label (mind_label i1) = "eq")
                             then (
                               tclTHENSEQ ((do_replace_bl ind gls (!avoid)
                                                       nparrec (ca.(2))

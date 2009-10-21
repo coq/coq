@@ -15,15 +15,19 @@ open Names
 (*i*)
 
 (* Discrimination nets with bounded depth. *)
+module Make :
+  functor (Z : Map.OrderedType) ->
+sig
+  type t
 
-type 'a t
+  val create : unit ->  t
 
-val create : unit -> 'a t
+  val add : transparent_state option -> t -> (constr_pattern * Z.t) -> t
+  val rmv : transparent_state option -> t -> (constr_pattern * Z.t) -> t
 
-val add : transparent_state option -> 'a t -> (constr_pattern * 'a) -> 'a t
-val rmv : transparent_state option -> 'a t -> (constr_pattern * 'a) -> 'a t
-
-val lookup : transparent_state option -> 'a t -> constr -> (constr_pattern * 'a) list
-val app : ((constr_pattern * 'a) -> unit) -> 'a t -> unit
-
+  val lookup : transparent_state option -> t -> constr -> (constr_pattern * Z.t) list
+  val app : ((constr_pattern * Z.t) -> unit) -> t -> unit
+end
+    
 val dnet_depth : int ref
+

@@ -21,11 +21,7 @@ open Mod_subst
 (*S Functions upon ML modules. *)
 
 let rec msid_of_mt = function
-  | MTident mp -> begin
-      match Modops.eval_struct (Global.env()) (SEBident mp) with
-	| SEBstruct(msid,_) -> MPself msid
-	| _ -> anomaly "Extraction:the With can't be applied to a funsig"
-    end
+  | MTident mp -> mp
   | MTwith(mt,_)-> msid_of_mt mt
   | _ -> anomaly "Extraction:the With operator isn't applied to a name"
 
@@ -101,25 +97,26 @@ let ind_iter_references do_term do_cons do_type kn ind =
     do_type (IndRef ip);
     if lang () = Ocaml then
       (match ind.ind_equiv with
-	 | Equiv kne -> do_type (IndRef (kne, snd ip));
+	 | Miniml.Equiv kne -> do_type (IndRef (mind_of_kn kne, snd ip));
 	 | _ -> ());
     Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types
   in
   if lang () = Ocaml then record_iter_references do_term ind.ind_info;
-  Array.iteri (fun i -> packet_iter (kn,i)) ind.ind_packets
+    Array.iteri (fun i -> packet_iter (kn,i)) ind.ind_packets
 
 let decl_iter_references do_term do_cons do_type =
   let type_iter = type_iter_references do_type
   and ast_iter = ast_iter_references do_term do_cons do_type in
   function
-    | Dind (kn,ind) -> ind_iter_references do_term do_cons do_type kn ind
+    | Dind (kn,ind) -> ind_iter_references do_term do_cons do_type 
+	(mind_of_kn kn) ind
     | Dtype (r,_,t) -> do_type r; type_iter t
     | Dterm (r,a,t) -> do_term r; ast_iter a; type_iter t
     | Dfix(rv,c,t) ->
 	Array.iter do_term rv; Array.iter ast_iter c; Array.iter type_iter t
 
 let spec_iter_references do_term do_cons do_type = function
-  | Sind (kn,ind) -> ind_iter_references do_term do_cons do_type kn ind
+  | Sind (kn,ind) -> ind_iter_references do_term do_cons do_type (mind_of_kn kn) ind
   | Stype (r,_,ot) -> do_type r; Option.iter (type_iter_references do_type) ot
   | Sval (r,t) -> do_term r; type_iter_references do_type t
 
@@ -190,7 +187,7 @@ let signature_of_structure s =
 (*s Searching one [ml_decl] in a [ml_structure] by its [global_reference] *)
 
 let get_decl_in_structure r struc =
-  try
+  try 
     let base_mp,ll = labels_of_ref r in
     if not (at_toplevel base_mp) then error_not_visible r;
     let sel = List.assoc base_mp struc in
@@ -311,7 +308,7 @@ let reset_needed, add_needed, found_needed, is_needed =
    (fun r -> Refset.mem (base_r r) !needed))
 
 let declared_refs = function
-  | Dind (kn,_) -> [|IndRef (kn,0)|]
+  | Dind (kn,_) -> [|IndRef (mind_of_kn kn,0)|]
   | Dtype (r,_,_) -> [|r|]
   | Dterm (r,_,_) -> [|r|]
   | Dfix (rv,_,_) -> rv
@@ -322,7 +319,7 @@ let declared_refs = function
 let compute_deps_decl = function
   | Dind (kn,ind) ->
       (* Todo Later : avoid dependencies when Extract Inductive *)
-      ind_iter_references add_needed add_needed add_needed kn ind
+      ind_iter_references add_needed add_needed add_needed (mind_of_kn kn) ind
   | Dtype (r,ids,t) ->
       if not (is_custom r) then type_iter_references add_needed t
   | Dterm (r,u,t) ->

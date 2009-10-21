@@ -155,7 +155,7 @@ let cache (_, (infos, tac)) =
 let load (_, (_, tac)) =
   set_default_tactic tac
 
-let subst (_, s, (infos, tac)) =
+let subst (s, (infos, tac)) =
   (infos, Tacinterp.subst_tactic s tac)
 
 let (input,output) =

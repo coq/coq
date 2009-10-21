@@ -19,15 +19,15 @@ open Reduction
 
 (*s Cooking the constants. *)
 
-type work_list = identifier array Cmap.t * identifier array KNmap.t
+type work_list = identifier array Cmap.t * identifier array Mindmap.t
 
 let pop_dirpath p = match repr_dirpath p with
   | [] -> anomaly "dirpath_prefix: empty dirpath"
   | _::l -> make_dirpath l
 
-let pop_kn kn =
-  let (mp,dir,l) = Names.repr_kn kn in
-  Names.make_kn mp (pop_dirpath dir) l
+let pop_mind kn =
+  let (mp,dir,l) = Names.repr_mind kn in
+  Names.make_mind mp (pop_dirpath dir) l
 
 let pop_con con =
   let (mp,dir,l) = Names.repr_con con in
@@ -48,9 +48,9 @@ let share r (cstl,knl) =
   let f,l =
     match r with
     | IndRef (kn,i) ->
-	mkInd (pop_kn kn,i), KNmap.find kn knl
+	mkInd (pop_mind kn,i), Mindmap.find kn knl
     | ConstructRef ((kn,i),j) ->
-	mkConstruct ((pop_kn kn,i),j), KNmap.find kn knl
+	mkConstruct ((pop_mind kn,i),j), Mindmap.find kn knl
     | ConstRef cst ->
 	mkConst (pop_con cst), Cmap.find cst cstl in
   let c = mkApp (f, Array.map mkVar l) in
@@ -69,7 +69,7 @@ let update_case_info ci modlist =
   with Not_found ->
     ci
 
-let empty_modlist = (Cmap.empty, KNmap.empty)
+let empty_modlist = (Cmap.empty, Mindmap.empty)
 
 let expmod_constr modlist c =
   let rec substrec c =

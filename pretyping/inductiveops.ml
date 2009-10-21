@@ -471,5 +471,5 @@ let control_only_guard env c =
   iter env c
 
 let subst_inductive subst (kn,i as ind) =
-  let kn' = Mod_subst.subst_kn subst kn in
+  let kn' = Mod_subst.subst_ind subst kn in
   if kn == kn' then ind else (kn',i)

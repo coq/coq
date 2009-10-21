@@ -304,13 +304,13 @@ let rec subst_strcst s sc =
   match sc with
   | Const_sorts _ | Const_b0 _ -> sc
   | Const_bn(tag,args) -> Const_bn(tag,Array.map (subst_strcst s) args)
-  | Const_ind(ind) -> let kn,i = ind in Const_ind((subst_kn s kn, i))
+  | Const_ind(ind) -> let kn,i = ind in Const_ind((subst_ind s kn, i))
 
 let subst_patch s (ri,pos) =
   match ri with
   | Reloc_annot a ->
       let (kn,i) = a.ci.ci_ind in
-      let ci = {a.ci with ci_ind = (subst_kn s kn,i)} in
+      let ci = {a.ci with ci_ind = (subst_ind s kn,i)} in
       (Reloc_annot {a with ci = ci},pos)
   | Reloc_const sc -> (Reloc_const (subst_strcst s sc), pos)
   | Reloc_getglobal kn -> (Reloc_getglobal (fst (subst_con s kn)), pos)

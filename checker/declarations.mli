@@ -141,19 +141,18 @@ type mutual_inductive_body = {
   (* Universes constraints enforced by the inductive declaration *)
     mind_constraints : Univ.constraints;
 
-  (* Source of the inductive block when aliased in a module *)
-    mind_equiv : kernel_name option
   }
 
 (* Modules *)
 
 type substitution
+type delta_resolver
+val empty_delta_resolver : delta_resolver
 
 type structure_field_body =
   | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
   | SFBmodule of module_body
-  | SFBalias of module_path * struct_expr_body option * Univ.constraints option
   | SFBmodtype of module_type_body
 
 and structure_body = (label * structure_field_body) list
@@ -161,32 +160,33 @@ and structure_body = (label * structure_field_body) list
 and struct_expr_body =
   | SEBident of module_path
   | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body
-  | SEBstruct of mod_self_id * structure_body
-  | SEBapply of struct_expr_body * struct_expr_body
-      * Univ.constraints
+  | SEBapply of struct_expr_body * struct_expr_body * Univ.constraints
+  | SEBstruct of structure_body
   | SEBwith of struct_expr_body * with_declaration_body
 
 and with_declaration_body =
-    With_module_body of identifier list * module_path *
-      struct_expr_body option * Univ.constraints
+    With_module_body of identifier list * module_path
   | With_definition_body of  identifier list * constant_body
 
 and module_body =
-    { mod_expr : struct_expr_body option;
-      mod_type : struct_expr_body option;
+    { mod_mp : module_path;
+      mod_expr : struct_expr_body option; 
+      mod_type : struct_expr_body;
+      mod_type_alg : struct_expr_body option;
       mod_constraints : Univ.constraints;
-      mod_alias : substitution;
+      mod_delta : delta_resolver;
       mod_retroknowledge : action list}
 
 and module_type_body =
-    { typ_expr : struct_expr_body;
-      typ_strength : module_path option;
-      typ_alias : substitution}
+    { typ_mp : module_path;
+      typ_expr : struct_expr_body;
+      typ_expr_alg : struct_expr_body option ;
+      typ_constraints : Univ.constraints;
+      typ_delta :delta_resolver}
 
 (* Substitutions *)
 
 val fold_subst :
-  (mod_self_id -> module_path -> 'a -> 'a) ->
   (mod_bound_id -> module_path -> 'a -> 'a) ->
   (module_path -> module_path -> 'a -> 'a) ->
   substitution -> 'a -> 'a
@@ -194,10 +194,8 @@ val fold_subst :
 type 'a subst_fun = substitution -> 'a -> 'a
 
 val empty_subst : substitution
-val add_msid : mod_self_id -> module_path -> substitution -> substitution
 val add_mbid : mod_bound_id -> module_path -> substitution -> substitution
 val add_mp   : module_path -> module_path -> substitution -> substitution
-val map_msid : mod_self_id -> module_path -> substitution
 val map_mbid : mod_bound_id -> module_path -> substitution
 val map_mp   : module_path -> module_path -> substitution
 
@@ -206,14 +204,9 @@ val subst_mind : mutual_inductive_body subst_fun
 val subst_modtype : substitution -> module_type_body -> module_type_body
 val subst_struct_expr :  substitution -> struct_expr_body -> struct_expr_body
 val subst_structure : substitution -> structure_body -> structure_body
-val subst_signature_msid :
-  mod_self_id -> module_path -> structure_body -> structure_body
+val subst_module : substitution -> module_body -> module_body
 
 val join : substitution -> substitution -> substitution
-val join_alias : substitution -> substitution -> substitution
-val update_subst_alias : substitution -> substitution -> substitution
-val update_subst : substitution -> substitution -> substitution
-val subst_key : substitution -> substitution -> substitution
 
 (* Validation *)
 val val_eng : Obj.t -> unit

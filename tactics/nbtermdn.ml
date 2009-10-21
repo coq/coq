@@ -26,34 +26,64 @@ open Libnames
 (* The former comments are from Chet.
    See the module dn.ml for further explanations.
    Eduardo (5/8/97) *)
+module Make = 
+  functor (Y:Map.OrderedType) ->
+struct
+  module X = struct
+    type t = constr_pattern*int
+    let compare = Pervasives.compare
+  end
 
-type ('na,'a) t = {
-  mutable table : ('na,constr_pattern * 'a) Gmap.t;
-  mutable patterns : (Termdn.term_label option,'a Btermdn.t) Gmap.t }
+  module Term_dn = Termdn.Make(Y)
+  open Term_dn
+  module Z = struct 
+     type t = Term_dn.term_label
+     let compare x y =  
+       let make_name n =
+	 match n with
+	 | GRLabel(ConstRef con) -> 
+	     GRLabel(ConstRef(constant_of_kn(canonical_con con)))
+	 | GRLabel(IndRef (kn,i)) ->
+	     GRLabel(IndRef(mind_of_kn(canonical_mind kn),i))
+	 | GRLabel(ConstructRef ((kn,i),j ))->
+	     GRLabel(ConstructRef((mind_of_kn(canonical_mind kn),i),j))
+	 | k -> k
+       in
+	 Pervasives.compare (make_name x) (make_name y)
+  end
 
-type ('na,'a) frozen_t =
-    ('na,constr_pattern * 'a) Gmap.t
-    * (Termdn.term_label option,'a Btermdn.t) Gmap.t
+  module Dn = Dn.Make(X)(Z)(Y)
+  module Bounded_net = Btermdn.Make(Y)
+
+    
+type 'na t = {
+  mutable table : ('na,constr_pattern * Y.t) Gmap.t;
+  mutable patterns : (Term_dn.term_label option,Bounded_net.t) Gmap.t }
+
+
+type 'na frozen_t = 
+    ('na,constr_pattern * Y.t) Gmap.t
+    * (Term_dn.term_label option, Bounded_net.t) Gmap.t
 
 let create () =
   { table = Gmap.empty;
     patterns = Gmap.empty }
 
 let get_dn dnm hkey =
-  try Gmap.find hkey dnm with Not_found -> Btermdn.create ()
+  try Gmap.find hkey dnm with Not_found -> Bounded_net.create ()
 
 let add dn (na,(pat,valu)) =
-  let hkey = Option.map fst (Termdn.constr_pat_discr pat) in
+  let hkey = Option.map fst (Term_dn.constr_pat_discr pat) in 
   dn.table <- Gmap.add na (pat,valu) dn.table;
   let dnm = dn.patterns in
-  dn.patterns <- Gmap.add hkey (Btermdn.add None (get_dn dnm hkey) (pat,valu)) dnm
+  dn.patterns <- Gmap.add hkey (Bounded_net.add None (get_dn dnm hkey) (pat,valu)) dnm
 
 let rmv dn na =
   let (pat,valu) = Gmap.find na dn.table in
-  let hkey = Option.map fst (Termdn.constr_pat_discr pat) in
+  let hkey = Option.map fst (Term_dn.constr_pat_discr pat) in 
   dn.table <- Gmap.remove na dn.table;
   let dnm = dn.patterns in
-  dn.patterns <- Gmap.add hkey (Btermdn.rmv None (get_dn dnm hkey) (pat,valu)) dnm
+  dn.patterns <- Gmap.add hkey (Bounded_net.rmv None (get_dn dnm hkey) (pat,valu)) dnm
 
 let in_dn dn na = Gmap.mem na dn.table
 
@@ -61,13 +91,43 @@ let remap ndn na (pat,valu) =
   rmv ndn na;
   add ndn (na,(pat,valu))
 
+let decomp = 
+  let rec decrec acc c = match kind_of_term c with
+    | App (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
+    | Cast (c1,_,_) -> decrec acc c1
+    | _ -> (c,acc)
+  in 
+  decrec []
+
+  let constr_val_discr t =
+  let c, l = decomp t in
+    match kind_of_term c with
+    | Ind ind_sp -> Dn.Label(Term_dn.GRLabel (IndRef ind_sp),l)
+    | Construct cstr_sp -> Dn.Label(Term_dn.GRLabel (ConstructRef cstr_sp),l)
+    | Var id -> Dn.Label(Term_dn.GRLabel (VarRef id),l)
+    | Const _ -> Dn.Everything
+    | _ -> Dn.Nothing
+
+let constr_val_discr_st (idpred,cpred) t =
+  let c, l = decomp t in
+    match kind_of_term c with
+    | Const c -> if Cpred.mem c cpred then Dn.Everything else Dn.Label(Term_dn.GRLabel (ConstRef c),l)
+    | Ind ind_sp -> Dn.Label(Term_dn.GRLabel (IndRef ind_sp),l)
+    | Construct cstr_sp -> Dn.Label(Term_dn.GRLabel (ConstructRef cstr_sp),l)
+    | Var id when not (Idpred.mem id idpred) -> Dn.Label(Term_dn.GRLabel (VarRef id),l)
+    | Prod (n, d, c) -> Dn.Label(Term_dn.ProdLabel, [d; c])
+    | Lambda (n, d, c) -> Dn.Label(Term_dn.LambdaLabel, [d; c] @ l)
+    | Sort s -> Dn.Label(Term_dn.SortLabel (Some s), [])
+    | Evar _ -> Dn.Everything
+    | _ -> Dn.Nothing
+
 let lookup dn valu =
   let hkey =
-    match (Termdn.constr_val_discr valu) with
+    match (constr_val_discr valu) with
     | Dn.Label(l,_) -> Some l
     | _ -> None
   in
-  try Btermdn.lookup None (Gmap.find hkey dn.patterns) valu with Not_found -> []
+  try Bounded_net.lookup None (Gmap.find hkey dn.patterns) valu with Not_found -> []
 
 let app f dn = Gmap.iter f dn.table
 
@@ -85,4 +145,4 @@ let empty dn =
 
 let to2lists dn =
   (Gmap.to_list dn.table, Gmap.to_list dn.patterns)
-
+end

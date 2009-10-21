@@ -11,6 +11,7 @@ install_printer Top_printers.ppdir
 install_printer Top_printers.ppmp
 install_printer Top_printers.ppkn
 install_printer Top_printers.ppcon
+install_printer Top_printers.ppmind
 install_printer Top_printers.ppsp
 install_printer Top_printers.ppqualid
 install_printer Top_printers.ppclindex
@@ -39,5 +40,5 @@ install_printer Top_printers.pptac
 install_printer Top_printers.ppobj
 install_printer Top_printers.pploc
 install_printer Top_printers.prsubst
-                                                  
-
+install_printer Top_printers.prdelta
+install_printer  Top_printers.print_pure_constr

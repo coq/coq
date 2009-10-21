@@ -310,7 +310,15 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
   with Not_found ->
     (* First, if this inductive is aliased via a Module, *)
     (* we process the original inductive. *)
-    Option.iter (fun kn -> ignore (extract_ind env kn)) mib.mind_equiv;
+    let equiv = 
+      if (canonical_mind kn) = (user_mind kn) then
+	NoEquiv
+      else
+	begin
+	  ignore (extract_ind env (mind_of_kn (canonical_mind kn)));
+	  Equiv (canonical_mind kn)
+	end
+    in
     (* Everything concerning parameters. *)
     (* We do that first, since they are common to all the [mib]. *)
     let mip0 = mib.mind_packets.(0) in
@@ -333,13 +341,12 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	     ip_types = t })
 	mib.mind_packets
     in
+
     add_ind kn mib
       {ind_info = Standard;
        ind_nparams = npar;
        ind_packets = packets;
-       ind_equiv = match mib.mind_equiv with
-         | None -> NoEquiv
-	 | Some kn -> Equiv kn
+       ind_equiv = equiv
       };
     (* Second pass: we extract constructors *)
     for i = 0 to mib.mind_ntypes - 1 do
@@ -388,7 +395,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	  list_skipn mib.mind_nparams (names_prod mip0.mind_user_lc.(0)) in
 	assert (List.length field_names = List.length typ);
 	let projs = ref Cset.empty in
-	let mp,d,_ = repr_kn kn in
+	let mp,d,_ = repr_mind kn in
 	let rec select_fields l typs = match l,typs with
 	  | [],[] -> []
 	  | (Name id)::l, typ::typs ->
@@ -424,9 +431,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
     let i = {ind_info = ind_info;
 	     ind_nparams = npar;
 	     ind_packets = packets;
-	     ind_equiv = match mib.mind_equiv with
-	       | None -> NoEquiv
-	       | Some kn -> Equiv kn }
+	     ind_equiv = equiv }
     in
     add_ind kn mib i;
     i

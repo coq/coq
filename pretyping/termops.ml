@@ -65,9 +65,9 @@ let rec pr_constr c = match kind_of_term c with
       (str"Evar#" ++ int e ++ str"{" ++
        prlist_with_sep spc pr_constr (Array.to_list l) ++str"}")
   | Const c -> str"Cst(" ++ pr_con c ++ str")"
-  | Ind (sp,i) -> str"Ind(" ++ pr_path sp ++ str"," ++ int i ++ str")"
+  | Ind (sp,i) -> str"Ind(" ++ pr_mind sp ++ str"," ++ int i ++ str")"
   | Construct ((sp,i),j) ->
-      str"Constr(" ++ pr_path sp ++ str"," ++ int i ++ str"," ++ int j ++ str")"
+      str"Constr(" ++ pr_mind sp ++ str"," ++ int i ++ str"," ++ int j ++ str")"
   | Case (ci,p,c,bl) -> v 0
       (hv 0 (str"<"++pr_constr p++str">"++ cut() ++ str"Case " ++
              pr_constr c ++ str"of") ++ cut() ++
@@ -729,7 +729,7 @@ let hdchar env c =
 	lowercase_first_char (id_of_label (con_label kn))
     | Ind ((kn,i) as x) ->
 	if i=0 then
-	  lowercase_first_char (id_of_label (label kn))
+	  lowercase_first_char (id_of_label (mind_label kn))
 	else
 	  lowercase_first_char (basename_of_global (IndRef x))
     | Construct ((sp,i) as x) ->
@@ -825,15 +825,22 @@ let names_of_rel_context env =
 
 (**** Globality of identifiers *)
 
-let rec is_imported_modpath = function
-  | MPfile dp -> true
-  | p -> false
+let rec is_imported_modpath mp = 
+  let current_mp,_ = Lib.current_prefix() in
+    match mp with
+      | MPfile dp ->
+	  let rec find_prefix = function
+	    |MPfile dp1 -> not (dp1=dp)
+	    |MPdot(mp,_) -> find_prefix mp
+	    |MPbound(_) -> false
+	  in find_prefix current_mp
+      | p -> false
 
 let is_imported_ref = function
   | VarRef _ -> false
   | IndRef (kn,_)
   | ConstructRef ((kn,_),_) ->
-      let (mp,_,_) = repr_kn kn in is_imported_modpath mp
+      let (mp,_,_) = repr_mind kn in is_imported_modpath mp
   | ConstRef kn ->
       let (mp,_,_) = repr_con kn in is_imported_modpath mp
 

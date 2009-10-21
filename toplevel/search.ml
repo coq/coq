@@ -57,22 +57,23 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
 	     fn (VarRef id) env typ
 	 with Not_found -> (* we are in a section *) ())
     | "CONSTANT" ->
-	let cst = constant_of_kn kn in
+	let cst = Global.constant_of_delta(constant_of_kn kn) in
 	let typ = Typeops.type_of_constant env cst in
         if refopt = None
 	  || head_const typ = constr_of_global (Option.get refopt)
 	then
 	  fn (ConstRef cst) env typ
     | "INDUCTIVE" ->
-        let mib = Global.lookup_mind kn in
+	let mind = Global.mind_of_delta(mind_of_kn kn) in
+        let mib = Global.lookup_mind mind in
         (match refopt with
-	  | Some (IndRef ((kn',tyi) as ind)) when kn=kn' ->
+	  | Some (IndRef ((kn',tyi) as ind)) when eq_mind mind kn' ->
 	      print_constructors ind fn env
 	        (Array.length (mib.mind_packets.(tyi).mind_user_lc))
           | Some _ -> ()
 	  | _ ->
               Array.iteri
-	        (fun i mip -> print_constructors (kn,i) fn env
+	        (fun i mip -> print_constructors (mind,i) fn env
 	          (Array.length mip.mind_user_lc)) mib.mind_packets)
     | _ -> ()
   in
@@ -118,7 +119,7 @@ let filter_by_module (module_list:dir_path list) (accept:bool)
   with No_full_path ->
     false
 
-let ref_eq = Libnames.encode_kn Coqlib.logic_module (id_of_string "eq"), 0
+let ref_eq = Libnames.encode_mind Coqlib.logic_module (id_of_string "eq"), 0
 let c_eq = mkInd ref_eq
 let gref_eq = IndRef ref_eq
 

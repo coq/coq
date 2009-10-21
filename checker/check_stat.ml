@@ -33,7 +33,7 @@ let pr_engt = function
       str "Theory: Set is predicative"
 
 let cst_filter f csts =
-  Cmap.fold
+  Cmap_env.fold
     (fun c ce acc -> if f c ce then c::acc else acc)
     csts []
 

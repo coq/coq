@@ -435,7 +435,7 @@ type implicit_interactive_request =
 type implicit_discharge_request =
   | ImplLocal
   | ImplConstant of constant * implicits_flags
-  | ImplMutualInductive of kernel_name * implicits_flags
+  | ImplMutualInductive of mutual_inductive * implicits_flags
   | ImplInteractive of global_reference * implicits_flags *
       implicit_interactive_request
 
@@ -455,7 +455,7 @@ let cache_implicits o =
 let subst_implicits_decl subst (r,imps as o) =
   let r' = fst (subst_global subst r) in if r==r' then o else (r',imps)
 
-let subst_implicits (_,subst,(req,l)) =
+let subst_implicits (subst,(req,l)) =
   (ImplLocal,list_smartmap (subst_implicits_decl subst) l)
 
 let impls_of_context ctx =

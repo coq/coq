@@ -141,7 +141,7 @@ let lookup_constant = lookup_constant
 
 let add_constant kn cs env =
   let new_constants =
-    Cmap.add kn (cs,ref None) env.env_globals.env_constants in
+    Cmap_env.add kn (cs,ref None) env.env_globals.env_constants in
   let new_globals =
     { env.env_globals with
 	env_constants = new_constants } in
@@ -174,11 +174,9 @@ let evaluable_constant cst env =
 
 (* Mutual Inductives *)
 let lookup_mind = lookup_mind
-let scrape_mind = scrape_mind
-
-
+  
 let add_mind kn mib env =
-  let new_inds = KNmap.add kn mib env.env_globals.env_inductives in
+  let new_inds = Mindmap_env.add kn mib env.env_globals.env_inductives in
   let new_globals =
     { env.env_globals with
 	env_inductives = new_inds } in
@@ -276,30 +274,12 @@ let shallow_add_module mp mb env =
 	env_modules = new_mods } in
   { env with env_globals = new_globals }
 
-let rec scrape_alias mp env =
-  try
-    let mp1 = MPmap.find mp env.env_globals.env_alias in
-      scrape_alias mp1 env
-  with
-      Not_found -> mp
-
 let lookup_module mp env =
-  let mp = scrape_alias mp env in
     MPmap.find mp env.env_globals.env_modules
 
-let lookup_modtype ln env =
-  let mp = scrape_alias ln env in
+
+let lookup_modtype mp env = 
   MPmap.find mp env.env_globals.env_modtypes
-
-let register_alias mp1 mp2 env =
-  let new_alias =  MPmap.add mp1 mp2 env.env_globals.env_alias in
-  let new_globals =
-    { env.env_globals with
-	env_alias = new_alias } in
-    { env with env_globals = new_globals }
-
-let lookup_alias mp env =
-  MPmap.find mp env.env_globals.env_alias
 
 (*s Judgments. *)
 

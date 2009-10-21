@@ -37,21 +37,21 @@ let iter_objects f i prefix =
 let load_objects = iter_objects load_object
 let open_objects = iter_objects open_object
 
-let subst_objects prefix subst seg =
+let subst_objects subst seg = 
   let subst_one = fun (id,obj as node) ->
-    let obj' = subst_object (make_oname prefix id, subst, obj) in
+    let obj' = subst_object (subst,obj) in
       if obj' == obj then node else
 	(id, obj')
   in
     list_smartmap subst_one seg
 
-let load_and_subst_objects i prefix subst seg =
+(*let load_and_subst_objects i prefix subst seg =
   List.rev (List.fold_left (fun seg (id,obj as node) ->
     let obj' =  subst_object (make_oname prefix id, subst, obj) in
     let node = if obj == obj' then node else (id, obj') in
     load_object i (make_oname prefix id, obj');
     node :: seg) [] seg)
-
+*)
 let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
@@ -435,13 +435,13 @@ type binding_kind = Explicit | Implicit
 
 type variable_info = Names.identifier * binding_kind * Term.constr option * Term.types
 type variable_context = variable_info list
-type abstr_list = variable_context Names.Cmap.t * variable_context Names.KNmap.t
+type abstr_list = variable_context Names.Cmap.t * variable_context Names.Mindmap.t
 
 let sectab =
   ref ([] : ((Names.identifier * binding_kind) list * Cooking.work_list * abstr_list) list)
 
 let add_section () =
-  sectab := ([],(Names.Cmap.empty,Names.KNmap.empty),(Names.Cmap.empty,Names.KNmap.empty)) :: !sectab
+  sectab := ([],(Names.Cmap.empty,Names.Mindmap.empty),(Names.Cmap.empty,Names.Mindmap.empty)) :: !sectab
 
 let add_section_variable id impl =
   match !sectab with
@@ -474,7 +474,7 @@ let add_section_replacement f g hyps =
     sectab := (vars,f args exps,g sechyps abs)::sl
 
 let add_section_kn kn =
-  let f x (l1,l2) = (l1,Names.KNmap.add kn x l2) in
+  let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
   add_section_replacement f f
 
 let add_section_constant kn =
@@ -489,7 +489,7 @@ let section_segment_of_constant con =
   Names.Cmap.find con (fst (pi3 (List.hd !sectab)))
 
 let section_segment_of_mutual_inductive kn =
-  Names.KNmap.find kn (snd (pi3 (List.hd !sectab)))
+  Names.Mindmap.find kn (snd (pi3 (List.hd !sectab)))
 
 let rec list_mem_assoc x = function
   | [] -> raise Not_found
@@ -502,7 +502,7 @@ let section_instance = function
   | ConstRef con ->
       Names.Cmap.find con (fst (pi2 (List.hd !sectab)))
   | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
-      Names.KNmap.find kn (snd (pi2 (List.hd !sectab)))
+      Names.Mindmap.find kn (snd (pi2 (List.hd !sectab)))
 
 let is_in_section ref =
   try ignore (section_instance ref); true with Not_found -> false
@@ -772,7 +772,7 @@ let mp_of_global ref =
 let rec dp_of_mp modp =
   match modp with
     | Names.MPfile dp -> dp
-    | Names.MPbound _ | Names.MPself _ -> library_dp ()
+    | Names.MPbound _ -> library_dp ()
     | Names.MPdot (mp,_) -> dp_of_mp mp
 
 let rec split_mp mp =
@@ -781,7 +781,6 @@ let rec split_mp mp =
     | Names.MPdot (prfx, lbl) ->
 	let mprec, dprec = split_mp prfx in
 	  mprec, Names.make_dirpath (Names.id_of_string (Names.string_of_label lbl) :: (Names.repr_dirpath dprec))
-    | Names.MPself msid -> let (_, id, dp) = Names.repr_msid msid in  library_dp(), Names.make_dirpath [Names.id_of_string id]
     | Names.MPbound mbid -> let (_, id, dp) = Names.repr_mbid mbid in  library_dp(), Names.make_dirpath [Names.id_of_string id]
 
 let split_modpath mp =
@@ -789,7 +788,6 @@ let split_modpath mp =
     | Names.MPfile dp -> dp, []
     | Names.MPbound mbid ->
 	library_dp (), [Names.id_of_mbid mbid]
-    | Names.MPself msid -> library_dp (), [Names.id_of_msid msid]
     | Names.MPdot (mp,l) -> let (mp', lab) = aux mp in
 			      (mp', Names.id_of_label l :: lab)
   in
@@ -819,8 +817,8 @@ let remove_section_part ref =
 (* Discharging names *)
 
 let pop_kn kn =
-  let (mp,dir,l) = Names.repr_kn kn in
-  Names.make_kn mp (pop_dirpath dir) l
+  let (mp,dir,l) = Names.repr_mind kn in
+  Names.make_mind mp (pop_dirpath dir) l
 
 let pop_con con =
   let (mp,dir,l) = Names.repr_con con in
@@ -831,7 +829,7 @@ let con_defined_in_sec kn =
   dir <> Names.empty_dirpath && fst (split_dirpath dir) = snd (current_prefix ())
 
 let defined_in_sec kn =
-  let _,dir,_ = Names.repr_kn kn in
+  let _,dir,_ = Names.repr_mind kn in
   dir <> Names.empty_dirpath && fst (split_dirpath dir) = snd (current_prefix ())
 
 let discharge_global = function

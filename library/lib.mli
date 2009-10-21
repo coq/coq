@@ -32,8 +32,8 @@ type lib_objects = (Names.identifier * Libobject.obj) list
 
 val open_objects : int -> Libnames.object_prefix -> lib_objects -> unit
 val load_objects : int -> Libnames.object_prefix -> lib_objects -> unit
-val subst_objects : Libnames.object_prefix -> Mod_subst.substitution -> lib_objects -> lib_objects
-val load_and_subst_objects : int -> Libnames.object_prefix -> Mod_subst.substitution -> lib_objects -> lib_objects
+val subst_objects : Mod_subst.substitution -> lib_objects -> lib_objects
+(*val load_and_subst_objects : int -> Libnames.object_prefix -> Mod_subst.substitution -> lib_objects -> lib_objects*)
 
 (* [classify_segment seg] verifies that there are no OpenedThings,
    clears ClosedSections and FrozenStates and divides Leafs according
@@ -183,13 +183,13 @@ val is_in_section : Libnames.global_reference -> bool
 val add_section_variable : Names.identifier -> binding_kind -> unit
 
 val add_section_constant : Names.constant -> Sign.named_context -> unit
-val add_section_kn : Names.kernel_name -> Sign.named_context -> unit
+val add_section_kn : Names.mutual_inductive -> Sign.named_context -> unit
 val replacement_context : unit ->
-  (Names.identifier array Names.Cmap.t * Names.identifier array Names.KNmap.t)
+  (Names.identifier array Names.Cmap.t * Names.identifier array Names.Mindmap.t)
 
 (*s Discharge: decrease the section level if in the current section *)
 
-val discharge_kn :  Names.kernel_name -> Names.kernel_name
+val discharge_kn :  Names.mutual_inductive -> Names.mutual_inductive
 val discharge_con : Names.constant -> Names.constant
 val discharge_global : Libnames.global_reference -> Libnames.global_reference
 val discharge_inductive : Names.inductive -> Names.inductive

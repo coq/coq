@@ -215,7 +215,8 @@ let cache_hintrewrite (_,(rbase,lrl)) =
   let lrl = HintDN.map (fun (i,h) -> (i + max, h)) lrl in
     rewtab:=Stringmap.add rbase (HintDN.union lrl base) !rewtab
 
-let subst_hintrewrite (_,subst,(rbase,list as node)) =
+
+let subst_hintrewrite (subst,(rbase,list as node)) =
   let list' = HintDN.subst subst list in
     if list' == list then node else
       (rbase,list')

@@ -51,7 +51,7 @@ let open_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
 let cache_syntax_constant d =
   load_syntax_constant 1 d
 
-let subst_syntax_constant ((sp,kn),subst,(local,pat,onlyparse)) =
+let subst_syntax_constant (subst,(local,pat,onlyparse)) =
   (local,subst_interpretation subst pat,onlyparse)
 
 let classify_syntax_constant (local,_,_ as o) =

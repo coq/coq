@@ -258,7 +258,7 @@ let subst_theory subst th =
     }
 
 
-let subst_th (_,subst,(c,th as obj)) =
+let subst_th (subst,(c,th as obj)) =
   let c' = subst_mps subst c in
   let th' = subst_theory subst th in
     if c' == c && th' == th then obj else

@@ -111,7 +111,7 @@ let load_class (_, cl) =
 
 let cache_class = load_class
 
-let subst_class (_,subst,cl) =
+let subst_class (subst,cl) =
   let do_subst_con c = fst (Mod_subst.subst_con subst c)
   and do_subst c = Mod_subst.subst_mps subst c
   and do_subst_gr gr = fst (subst_global subst gr) in
@@ -187,8 +187,9 @@ let load_instance (_,inst) =
   instances := Gmap.add inst.is_class insts !instances
 
 let cache_instance = load_instance
-let subst_instance (_,subst,inst) =
-  { inst with
+
+let subst_instance (subst,inst) = 
+  { inst with 
       is_class = fst (subst_global subst inst.is_class);
       is_impl = fst (Mod_subst.subst_con subst inst.is_impl) }
 

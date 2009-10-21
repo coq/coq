@@ -274,7 +274,7 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
     (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
 	(try (* try first intensional equality *)
-	  if fl1 = fl2
+	  if eq_table_key fl1 fl2
           then convert_stacks infos lft1 lft2 v1 v2 cuniv
           else raise NotConvertible
         with NotConvertible ->
@@ -325,13 +325,13 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
 
      | (FInd ind1, FInd ind2) ->
-         if mind_equiv_infos (snd infos) ind1 ind2
+         if eq_ind ind1 ind2
 	 then
            convert_stacks infos lft1 lft2 v1 v2 cuniv
          else raise NotConvertible
 
      | (FConstruct (ind1,j1), FConstruct (ind2,j2)) ->
-	 if j1 = j2 && mind_equiv_infos (snd infos) ind1 ind2
+	 if j1 = j2 && eq_ind ind1 ind2
 	 then
            convert_stacks infos lft1 lft2 v1 v2 cuniv
          else raise NotConvertible
@@ -377,7 +377,7 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
 and convert_stacks infos lft1 lft2 stk1 stk2 cuniv =
   compare_stacks
     (fun (l1,t1) (l2,t2) c -> ccnv CONV infos l1 l2 t1 t2 c)
-    (mind_equiv_infos (snd infos))
+    (eq_ind)
     lft1 stk1 lft2 stk2 cuniv
 
 and convert_vect infos lft1 lft2 v1 v2 cuniv =

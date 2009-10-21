@@ -5,11 +5,10 @@ open Term
 open Declarations
 
 type globals = {
-  env_constants : constant_body Cmap.t;
-  env_inductives : mutual_inductive_body KNmap.t;
+  env_constants : constant_body Cmap_env.t;
+  env_inductives : mutual_inductive_body Mindmap_env.t;
   env_modules : module_body MPmap.t;
-  env_modtypes : module_type_body MPmap.t;
-  env_alias : module_path MPmap.t }
+  env_modtypes : module_type_body MPmap.t}
 
 type stratification = {
   env_universes : universes;
@@ -25,11 +24,10 @@ type env = {
 
 let empty_env = {
   env_globals =
-  { env_constants = Cmap.empty;
-    env_inductives = KNmap.empty;
+  { env_constants = Cmap_env.empty;
+    env_inductives = Mindmap_env.empty;
     env_modules = MPmap.empty;
-    env_modtypes = MPmap.empty;
-    env_alias = MPmap.empty };
+    env_modtypes = MPmap.empty};
   env_named_context = [];
   env_rel_context = [];
   env_stratification =
@@ -108,11 +106,11 @@ let add_constraints c env =
 (* Global constants *)
 
 let lookup_constant kn env =
-  Cmap.find kn env.env_globals.env_constants
+  Cmap_env.find kn env.env_globals.env_constants
 
 let add_constant kn cs env =
   let new_constants =
-    Cmap.add kn cs env.env_globals.env_constants in
+    Cmap_env.add kn cs env.env_globals.env_constants in
   let new_globals =
     { env.env_globals with
 	env_constants = new_constants } in
@@ -145,25 +143,14 @@ let evaluable_constant cst env =
 
 (* Mutual Inductives *)
 let lookup_mind kn env =
-  KNmap.find kn env.env_globals.env_inductives
-
-let rec scrape_mind env kn =
-  match (lookup_mind kn env).mind_equiv with
-    | None -> kn
-    | Some kn' -> scrape_mind env kn'
+  Mindmap_env.find kn env.env_globals.env_inductives
 
 let add_mind kn mib env =
-  let new_inds = KNmap.add kn mib env.env_globals.env_inductives in
+  let new_inds = Mindmap_env.add kn mib env.env_globals.env_inductives in
   let new_globals =
     { env.env_globals with
 	env_inductives = new_inds } in
   { env with env_globals = new_globals }
-
-let rec mind_equiv env (kn1,i1) (kn2,i2) =
-  let rec equiv kn1 kn2 =
-    kn1 = kn2 ||
-    scrape_mind env kn1 = scrape_mind env kn2 in
-  i1 = i2 && equiv kn1 kn2
 
 
 (* Modules *)
@@ -182,19 +169,6 @@ let shallow_add_module mp mb env =
 	env_modules = new_mods } in
   { env with env_globals = new_globals }
 
-let register_alias mp1 mp2 env =
-  let new_alias =  MPmap.add mp1 mp2 env.env_globals.env_alias in
-  let new_globals =
-    { env.env_globals with
-	env_alias = new_alias } in
-    { env with env_globals = new_globals }
-
-let rec scrape_alias mp env =
-  try
-    let mp1 = MPmap.find mp env.env_globals.env_alias in
-      scrape_alias mp1 env
-  with
-      Not_found -> mp
 
 let lookup_module mp env =
   MPmap.find mp env.env_globals.env_modules

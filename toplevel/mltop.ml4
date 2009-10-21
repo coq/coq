@@ -309,7 +309,7 @@ let (inMLModule,outMLModule) =
   declare_object {(default_object "ML-MODULE") with
                     load_function = (fun _ -> cache_ml_module_object);
                     cache_function = cache_ml_module_object;
-                    subst_function = (fun (_,_,o) -> o);
+                    subst_function = (fun (_,o) -> o);
                     classify_function = classify_ml_module_object }
 
 let declare_ml_modules local l =

@@ -34,7 +34,7 @@ type 'a object_declaration = {
   load_function : int -> object_name * 'a -> unit;
   open_function : int -> object_name * 'a -> unit;
   classify_function : 'a -> 'a substitutivity;
-  subst_function : object_name * substitution * 'a -> 'a;
+  subst_function :  substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
   rebuild_function : 'a -> 'a }
 
@@ -63,7 +63,7 @@ let default_object s = {
    This helps introducing new functions in objects.
 *)
 
-let ident_subst_function (_,_,a) = a
+let ident_subst_function (_,a) = a
 
 type obj = Dyn.t (* persistent dynamic objects *)
 
@@ -71,7 +71,7 @@ type dynamic_object_declaration = {
   dyn_cache_function : object_name * obj -> unit;
   dyn_load_function : int -> object_name * obj -> unit;
   dyn_open_function : int -> object_name * obj -> unit;
-  dyn_subst_function : object_name * substitution * obj -> obj;
+  dyn_subst_function : substitution * obj -> obj;
   dyn_classify_function : obj -> obj substitutivity;
   dyn_discharge_function : object_name * obj -> obj option;
   dyn_rebuild_function : obj -> obj }
@@ -93,9 +93,9 @@ let declare_object odecl =
   and opener i (oname,lobj) =
     if Dyn.tag lobj = na then odecl.open_function i (oname,outfun lobj)
     else anomaly "somehow we got the wrong dynamic object in the openfun"
-  and substituter (oname,sub,lobj) =
-    if Dyn.tag lobj = na then
-      infun (odecl.subst_function (oname,sub,outfun lobj))
+  and substituter (sub,lobj) = 
+    if Dyn.tag lobj = na then 
+      infun (odecl.subst_function (sub,outfun lobj))
     else anomaly "somehow we got the wrong dynamic object in the substfun"
   and classifier lobj =
     if Dyn.tag lobj = na then
@@ -158,7 +158,7 @@ let load_object i ((_,lobj) as node) =
 let open_object i ((_,lobj) as node) =
   apply_dyn_fun () (fun d -> d.dyn_open_function i node) lobj
 
-let subst_object ((_,_,lobj) as node) =
+let subst_object ((_,lobj) as node) = 
   apply_dyn_fun lobj (fun d -> d.dyn_subst_function node) lobj
 
 let classify_object lobj =

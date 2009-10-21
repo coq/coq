@@ -400,7 +400,7 @@ let add_entry (sp,_kn) e =
   from_name := Spmap.add sp e !from_name
 
 
-let subst_th (_,subst,th) =
+let subst_th (subst,th) =
   let c' = subst_mps subst th.ring_carrier in
   let eq' = subst_mps subst th.ring_req in
   let set' = subst_mps subst th.ring_setoid in
@@ -980,7 +980,7 @@ let add_field_entry (sp,_kn) e =
   field_from_relation := Cmap.add e.field_req e !field_from_relation;
   field_from_name := Spmap.add sp e !field_from_name
 
-let subst_th (_,subst,th) =
+let subst_th (subst,th) =
   let c' = subst_mps subst th.field_carrier in
   let eq' = subst_mps subst th.field_req in
   let thm1' = subst_mps subst th.field_ok in

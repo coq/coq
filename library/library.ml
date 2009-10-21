@@ -302,7 +302,7 @@ let open_import i (_,(dir,export)) =
 let cache_import obj =
   open_import 1 obj
 
-let subst_import (_,_,o) = o
+let subst_import (_,o) = o
 
 let classify_import (_,export as obj) =
   if export then Substitute obj else Dispose

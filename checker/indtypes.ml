@@ -22,13 +22,11 @@ open Environ
 let rec debug_string_of_mp = function
   | MPfile sl -> string_of_dirpath sl
   | MPbound uid -> "bound("^string_of_mbid uid^")"
-  | MPself uid -> "self("^string_of_msid uid^")"
   | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
 
 let rec string_of_mp = function
   | MPfile sl -> string_of_dirpath sl
   | MPbound uid -> string_of_mbid uid
-  | MPself uid -> string_of_msid uid
   | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
 
 let string_of_mp mp =
@@ -515,7 +513,7 @@ let check_positivity env_ar params nrecp inds =
 (************************************************************************)
 
 let check_inductive env kn mib =
-  Flags.if_verbose msgnl (str "  checking ind: " ++ prkn kn);
+  Flags.if_verbose msgnl (str "  checking ind: " ++ pr_mind kn);
   (* check mind_constraints: should be consistent with env *)
   let env = add_constraints mib.mind_constraints env in
   (* check mind_record : TODO ? check #constructor = 1 ? *)
@@ -540,8 +538,6 @@ let check_inductive env kn mib =
   (* check mind_nparams_rec: positivity condition *)
   check_positivity env_ar params mib.mind_nparams_rec mib.mind_packets;
   (* check mind_equiv... *)
-  if mib.mind_equiv <> None then
-    msg_warning (str"TODO: mind_equiv not checked");
   (* Now we can add the inductive *)
   add_mind kn mib env
 

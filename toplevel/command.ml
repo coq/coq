@@ -644,19 +644,20 @@ let _ =
 let declare_mutual_with_eliminations isrecord mie impls =
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let (_,kn) = declare_mind isrecord mie in
+  let mind =Global.mind_of_delta (mind_of_kn kn) in
     list_iter_i (fun i (indimpls, constrimpls) ->
-      let ind = (kn,i) in
-        Autoinstance.search_declaration (IndRef ind);
-	maybe_declare_manual_implicits false (IndRef ind) indimpls;
-	list_iter_i
-	  (fun j impls ->
+		   let ind = (mind,i) in
+		     Autoinstance.search_declaration (IndRef ind);
+		     maybe_declare_manual_implicits false (IndRef ind) indimpls;
+		     list_iter_i
+		       (fun j impls ->
 (*	    Autoinstance.search_declaration (ConstructRef (ind,j));*)
-	    maybe_declare_manual_implicits false (ConstructRef (ind, succ j)) impls)
-	  constrimpls)
+			  maybe_declare_manual_implicits false (ConstructRef (ind, succ j)) impls)
+		       constrimpls)
       impls;
     if_verbose ppnl (minductive_message names);
-    if !elim_flag then declare_eliminations kn;
-    kn
+    if !elim_flag then declare_eliminations mind;
+    mind
 
 let build_mutual l finite =
   let indl,ntnl = List.split l in

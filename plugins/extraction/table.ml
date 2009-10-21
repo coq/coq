@@ -31,13 +31,13 @@ let occur_kn_in_ref kn = function
 let modpath_of_r = function
   | ConstRef kn -> con_modpath kn
   | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) -> modpath kn
+  | ConstructRef ((kn,_),_) -> mind_modpath kn
   | VarRef _ -> assert false
 
 let label_of_r = function
   | ConstRef kn -> con_label kn
   | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) -> label kn
+  | ConstructRef ((kn,_),_) -> mind_label kn
   | VarRef _ -> assert false
 
 let rec base_mp = function
@@ -93,15 +93,34 @@ let rec parse_labels ll = function
 
 let labels_of_mp mp = parse_labels [] mp
 
+let rec parse_labels2 ll mp1 = function
+  | mp when mp1=mp -> mp,ll
+  | MPdot (mp,l) -> parse_labels (l::ll) mp
+  | mp -> mp,ll
+
 let labels_of_ref r =
- let mp,_,l =
+  let mp_top = fst(Lib.current_prefix()) in
+  let mp,_,l =
+    match r with
+	ConstRef con -> repr_con con
+      | IndRef (kn,_)
+      | ConstructRef ((kn,_),_) -> repr_mind kn
+      | VarRef _ -> assert false
+  in
+  parse_labels2 [l] mp_top mp
+
+
+
+
+let labels_of_ref2 r =
+ let mp1,_,l =
   match r with
      ConstRef con -> repr_con con
    | IndRef (kn,_)
-   | ConstructRef ((kn,_),_) -> repr_kn kn
+   | ConstructRef ((kn,_),_) -> repr_mind kn
    | VarRef _ -> assert false
- in
-  parse_labels [l] mp
+ in mp1,l
+
 
 let rec add_labels_mp mp = function
   | [] -> mp
@@ -127,10 +146,10 @@ let lookup_type kn = Cmap.find kn !types
 
 (*s Inductives table. *)
 
-let inductives = ref (KNmap.empty : (mutual_inductive_body * ml_ind) KNmap.t)
-let init_inductives () = inductives := KNmap.empty
-let add_ind kn mib ml_ind = inductives := KNmap.add kn (mib,ml_ind) !inductives
-let lookup_ind kn = KNmap.find kn !inductives
+let inductives = ref (Mindmap.empty : (mutual_inductive_body * ml_ind) Mindmap.t)
+let init_inductives () = inductives := Mindmap.empty
+let add_ind kn mib ml_ind = inductives := Mindmap.add kn (mib,ml_ind) !inductives
+let lookup_ind kn = Mindmap.find kn !inductives
 
 (*s Recursors table. *)
 
@@ -138,7 +157,7 @@ let recursors = ref Cset.empty
 let init_recursors () = recursors := Cset.empty
 
 let add_recursors env kn =
-  let make_kn id = make_con (modpath kn) empty_dirpath (label_of_id id) in
+  let make_kn id = make_con (mind_modpath kn) empty_dirpath (label_of_id id) in
   let mib = Environ.lookup_mind kn env in
   Array.iter
     (fun mip ->
@@ -305,7 +324,13 @@ let error_record r =
 
 let check_loaded_modfile mp = match base_mp mp with
   | MPfile dp -> if not (Library.library_is_loaded dp) then
-      err (str ("Please load library "^(string_of_dirpath dp^" first.")))
+      let mp1 = (fst(Lib.current_prefix())) in
+      let rec find_prefix = function
+	|MPfile dp1 when dp=dp1 -> ()
+	|MPdot(mp,_) -> find_prefix mp
+	|MPbound(_) -> ()
+	| _ -> err (str ("Please load library "^(string_of_dirpath dp^" first.")))
+      in find_prefix mp1 
   | _ -> ()
 
 let info_file f =
@@ -450,7 +475,7 @@ let (inline_extraction,_) =
        load_function = (fun _ (_,(b,l)) -> add_inline_entries b l);
        classify_function = (fun o -> Substitute o);
        subst_function =
-        (fun (_,s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))
+        (fun (s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))
     }
 
 let _ = declare_summary "Extraction Inline"
@@ -528,7 +553,7 @@ let (blacklist_extraction,_) =
        cache_function = (fun (_,l) -> add_blacklist_entries l);
        load_function = (fun _ (_,l) -> add_blacklist_entries l);
        classify_function = (fun o -> Libobject.Keep o);
-       subst_function = (fun (_,_,x) -> x)
+       subst_function = (fun (_,x) -> x)
     }
 
 let _ = declare_summary "Extraction Blacklist"
@@ -585,7 +610,7 @@ let (in_customs,_) =
        load_function = (fun _ (_,(r,ids,s)) -> add_custom r ids s);
        classify_function = (fun o -> Substitute o);
        subst_function =
-        (fun (_,s,(r,ids,str)) -> (fst (subst_global s r), ids, str))
+        (fun (s,(r,ids,str)) -> (fst (subst_global s r), ids, str))
     }
 
 let _ = declare_summary "ML extractions"
