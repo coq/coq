@@ -440,32 +440,32 @@ Module WRaw2SetsOn (E:DecidableType)(M:WRawSets E) <: WSetsOn E.
  Implicit Arguments Mkt [ [is_ok] ].
  Hint Resolve is_ok : typeclass_instances.
 
- Definition In x s := M.In x s.(this).
- Definition Equal s s' := forall a : elt, In a s <-> In a s'.
- Definition Subset s s' := forall a : elt, In a s -> In a s'.
- Definition Empty s := forall a : elt, ~ In a s.
- Definition For_all (P : elt -> Prop) s := forall x, In x s -> P x.
- Definition Exists (P : elt -> Prop) s := exists x, In x s /\ P x.
+ Definition In (x : elt)(s : t) := M.In x s.(this).
+ Definition Equal (s s' : t) := forall a : elt, In a s <-> In a s'.
+ Definition Subset (s s' : t) := forall a : elt, In a s -> In a s'.
+ Definition Empty (s : t) := forall a : elt, ~ In a s.
+ Definition For_all (P : elt -> Prop)(s : t) := forall x, In x s -> P x.
+ Definition Exists (P : elt -> Prop)(s : t) := exists x, In x s /\ P x.
 
- Definition mem x (s : t) := M.mem x s.
- Definition add x (s : t) := Mkt (M.add x s).
- Definition remove x (s : t) := Mkt (M.remove x s).
- Definition singleton x := Mkt (M.singleton x).
- Definition union (s s' : t) := Mkt (M.union s s').
- Definition inter (s s' : t) := Mkt (M.inter s s').
- Definition diff (s s' : t) := Mkt (M.diff s s').
+ Definition mem (x : elt)(s : t) := M.mem x s.
+ Definition add (x : elt)(s : t) : t := Mkt (M.add x s).
+ Definition remove (x : elt)(s : t) : t := Mkt (M.remove x s).
+ Definition singleton (x : elt) : t := Mkt (M.singleton x).
+ Definition union (s s' : t) : t := Mkt (M.union s s').
+ Definition inter (s s' : t) : t := Mkt (M.inter s s').
+ Definition diff (s s' : t) : t := Mkt (M.diff s s').
  Definition equal (s s' : t) := M.equal s s'.
  Definition subset (s s' : t) := M.subset s s'.
- Definition empty := Mkt M.empty.
+ Definition empty : t := Mkt M.empty.
  Definition is_empty (s : t) := M.is_empty s.
- Definition elements (s : t) := M.elements s.
- Definition choose (s : t) := M.choose s.
- Definition fold (A : Type) f (s : t) : A -> A := M.fold f s.
+ Definition elements (s : t) : list elt := M.elements s.
+ Definition choose (s : t) : option elt := M.choose s.
+ Definition fold (A : Type)(f : elt -> A -> A)(s : t) : A -> A := M.fold f s.
  Definition cardinal (s : t) := M.cardinal s.
- Definition filter f (s : t) := Mkt (M.filter f s).
- Definition for_all f (s : t) := M.for_all f s.
- Definition exists_ f (s : t) := M.exists_ f s.
- Definition partition f (s : t) :=
+ Definition filter (f : elt -> bool)(s : t) : t := Mkt (M.filter f s).
+ Definition for_all (f : elt -> bool)(s : t) := M.for_all f s.
+ Definition exists_ (f : elt -> bool)(s : t) := M.exists_ f s.
+ Definition partition (f : elt -> bool)(s : t) : t * t :=
    let p := M.partition f s in (Mkt (fst p), Mkt (snd p)).
 
  Instance In_compat : Proper (E.eq==>eq==>iff) In.
@@ -598,8 +598,8 @@ Module Raw2SetsOn (O:OrderedType)(M:RawSets O) <: SetsOn O.
   Include WRaw2SetsOn O M.
 
   Definition compare (s s':t) := M.compare s s'.
-  Definition min_elt (s:t) := M.min_elt s.
-  Definition max_elt (s:t) := M.max_elt s.
+  Definition min_elt (s:t) : option elt := M.min_elt s.
+  Definition max_elt (s:t) : option elt := M.max_elt s.
   Definition lt (s s':t) := M.lt s s'.
 
   (** Specification of [lt] *)
