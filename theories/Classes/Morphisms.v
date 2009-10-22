@@ -483,8 +483,7 @@ Proof. intros. apply reflexive_proper. Qed.
 Ltac proper_reflexive :=
   match goal with
     | [ _ : normalization_done |- _ ] => fail 1
-    | [ _ : apply_subrelation |- _ ] => class_apply proper_eq || class_apply @reflexive_proper
-    | _ => class_apply proper_eq
+    | _ => class_apply proper_eq || class_apply @reflexive_proper
   end.
 
 Hint Extern 7 (@Proper _ _ _) => proper_reflexive : typeclass_instances.
@@ -545,7 +544,7 @@ Qed.
      [lt = le /\ ~eq].
     If the order is total, we could also say [gt = ~le]. *)
 
-Instance PartialOrder_StrictOrder `(PartialOrder A eqA R) :
+Lemma PartialOrder_StrictOrder `(PartialOrder A eqA R) :
   StrictOrder (relation_conjunction R (complement eqA)).
 Proof.
 split; compute.
@@ -558,11 +557,14 @@ apply partial_order_antisym; auto.
 rewrite Hxz; auto.
 Qed.
 
+Hint Extern 4 (StrictOrder (relation_conjunction _ _)) => 
+  class_apply PartialOrder_StrictOrder : typeclass_instances.
+
 (** From a [StrictOrder] to the corresponding [PartialOrder]:
      [le = lt \/ eq].
     If the order is total, we could also say [ge = ~lt]. *)
 
-Instance StrictOrder_PreOrder
+Lemma StrictOrder_PreOrder
  `(Equivalence A eqA, StrictOrder A R, Proper _ (eqA==>eqA==>iff) R) :
  PreOrder (relation_disjunction R eqA).
 Proof.
@@ -575,7 +577,10 @@ left. rewrite Hxy; auto.
 right. transitivity y; auto.
 Qed.
 
-Instance StrictOrder_PartialOrder
+Hint Extern 4 (PreOrder (relation_disjunction _ _)) => 
+  class_apply StrictOrder_PreOrder : typeclass_instances.
+
+Lemma StrictOrder_PartialOrder
   `(Equivalence A eqA, StrictOrder A R, Proper _ (eqA==>eqA==>iff) R) :
   PartialOrder eqA (relation_disjunction R eqA).
 Proof.
@@ -583,3 +588,6 @@ intros. intros x y. compute. intuition.
 elim (StrictOrder_Irreflexive x).
 transitivity y; auto.
 Qed.
+
+Hint Extern 4 (PartialOrder _ (relation_disjunction _ _)) => 
+  class_apply StrictOrder_PartialOrder : typeclass_instances.

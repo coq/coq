@@ -426,21 +426,22 @@ Class StrictOrder {A : Type} (R : relation A) := {
 }.
 
 Instance StrictOrder_Asymmetric `(StrictOrder A R) : Asymmetric R.
-Proof.
-  firstorder.
-Qed.
+Proof. firstorder. Qed.
 
 (** Inversing a [StrictOrder] gives another [StrictOrder] *)
 
-Instance StrictOrder_inverse `(StrictOrder A R) : StrictOrder (inverse R).
+Lemma StrictOrder_inverse `(StrictOrder A R) : StrictOrder (inverse R).
+Proof. firstorder. Qed.
 
 (** Same for [PartialOrder]. *)
 
-Instance PreOrder_inverse `(PreOrder A R) : PreOrder (inverse R).
+Lemma PreOrder_inverse `(PreOrder A R) : PreOrder (inverse R).
+Proof. firstorder. Qed.
 
-Instance PartialOrder_inverse `(PartialOrder A eqA R) :
- PartialOrder eqA (inverse R).
-Proof.
-firstorder.
-Qed.
+Hint Extern 3 (StrictOrder (inverse _)) => class_apply StrictOrder_inverse : typeclass_instances.
+Hint Extern 3 (PreOrder (inverse _)) => class_apply PreOrder_inverse : typeclass_instances.
 
+Lemma PartialOrder_inverse `(PartialOrder A eqA R) : PartialOrder eqA (inverse R).
+Proof. firstorder. Qed.
+
+Hint Extern 3 (PartialOrder (inverse _)) => class_apply PartialOrder_inverse : typeclass_instances.
