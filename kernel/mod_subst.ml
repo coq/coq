@@ -596,6 +596,8 @@ let subst_dom_codom_delta_resolver subst resolver =
 let update_delta_resolver resolver1 resolver2 =
  let apply_res key hint res = 
       try
+	if Deltamap.mem key resolver2 then
+	  res else
 	match hint with
 	    Prefix_equiv mp ->
 	      let new_hint =
@@ -621,7 +623,7 @@ let add_delta_resolver resolver1 resolver2 =
       resolver2
 
 let join (subst1 : substitution) (subst2 : substitution) =
-  let apply_subst (sub : substitution) key (mp,resolve) =
+  let apply_subst (sub : substitution) (mp,resolve) =
     let mp',resolve' =
       match subst_mp0 sub mp with
 	  None -> mp, None
@@ -631,13 +633,12 @@ let join (subst1 : substitution) (subst2 : substitution) =
       match resolve' with
           Some res -> 
 	    add_delta_resolver 
-	      (subst_dom_codom_delta_resolver sub resolve)
-	      res
+	      (subst_dom_codom_delta_resolver sub resolve) res
 	| None -> 
 	    subst_codom_delta_resolver sub resolve
     in
       mp',resolve'' in
-  let subst = Umap.mapi (apply_subst subst2) subst1 in
+  let subst = Umap.map (apply_subst subst2) subst1 in
     (Umap.fold Umap.add subst2 subst)   
 
 

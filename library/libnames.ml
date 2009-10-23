@@ -57,6 +57,15 @@ let subst_global subst ref = match ref with
       let c',t = subst_constructor subst c in
 	if c'==c then ref,t else ConstructRef c', t
 
+let canonical_gr = function
+  | ConstRef con -> 
+      ConstRef(constant_of_kn(canonical_con con))
+  | IndRef (kn,i) ->
+      IndRef(mind_of_kn(canonical_mind kn),i)
+  | ConstructRef ((kn,i),j )->
+	  ConstructRef((mind_of_kn(canonical_mind kn),i),j)
+  | VarRef id ->  VarRef id
+
 let global_of_constr c = match kind_of_term c with
   | Const sp -> ConstRef sp
   | Ind ind_sp -> IndRef ind_sp

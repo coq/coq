@@ -102,8 +102,8 @@ let rec pattern_of_constr t =
     | Lambda (na,c,b) -> PLambda (na,pattern_of_constr c,pattern_of_constr b)
     | App (f,a) -> PApp (pattern_of_constr f,Array.map pattern_of_constr a)
     | Const sp         -> PRef (ConstRef (constant_of_kn(canonical_con sp)))
-    | Ind sp        -> PRef (IndRef sp)
-    | Construct sp -> PRef (ConstructRef sp)
+    | Ind sp        -> PRef (canonical_gr (IndRef sp))
+    | Construct sp -> PRef (canonical_gr (ConstructRef sp))
     | Evar (n,ctxt) -> PEvar (n,Array.map pattern_of_constr ctxt)
     | Case (ci,p,a,br) ->
 	let cip = ci.ci_pp_info in
@@ -212,9 +212,8 @@ let rec pat_of_raw metas vars = function
        with Not_found -> PVar id)
   | RPatVar (_,(false,n)) ->
       metas := n::!metas; PMeta (Some n)
-  | RRef (_,ConstRef con) ->
-      PRef (ConstRef (constant_of_kn(canonical_con con)))
-  | RRef (_,r) -> PRef r
+  | RRef (_,gr) ->
+      PRef (canonical_gr gr)
   (* Hack pour ne pas réécrire une interprétation complète des patterns*)
   | RApp (_, RPatVar (_,(true,n)), cl) ->
       metas := n::!metas; PSoApp (n, List.map (pat_of_raw metas vars) cl)

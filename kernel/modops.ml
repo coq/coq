@@ -126,8 +126,8 @@ and subst_modtype sub do_delta mtb=
   let typ_expr' = subst_struct_expr sub do_delta mtb.typ_expr in
   let typ_alg' = 
     Option.smartmap 
-      (subst_struct_expr sub (fun x -> x)) mtb.typ_expr_alg in
-  let mtb_delta = do_delta mtb.typ_delta in
+      (subst_struct_expr sub (fun x y-> x)) mtb.typ_expr_alg in
+  let mtb_delta = do_delta mtb.typ_delta sub in
     if typ_expr'==mtb.typ_expr && 
       typ_alg'==mtb.typ_expr_alg && mp==mtb.typ_mp then
 	mtb
@@ -156,7 +156,7 @@ and subst_module sub do_delta mb =
   let sub = if is_functor mb.mod_type && not(mp=mb.mod_mp) then
     add_mp mb.mod_mp mp
       empty_delta_resolver sub else sub in 
-  let id_delta = (fun x -> x) in
+  let id_delta = (fun x y-> x) in
   let mtb',me' = 
     let mtb = subst_struct_expr sub do_delta mb.mod_type in 
       match mb.mod_expr with
@@ -168,7 +168,7 @@ and subst_module sub do_delta mb =
   in
   let typ_alg' = Option.smartmap 
     (subst_struct_expr sub id_delta) mb.mod_type_alg in
-  let mb_delta = do_delta mb.mod_delta in
+  let mb_delta = do_delta mb.mod_delta sub in
     if mtb'==mb.mod_type && mb.mod_expr == me' 
       && mb_delta == mb.mod_delta && mp == mb.mod_mp
     then mb else
@@ -196,11 +196,11 @@ and subst_struct_expr sub do_delta = function
 
 let subst_signature subst =
   subst_structure subst 
-    (fun resolver -> subst_codom_delta_resolver subst resolver)
+    (fun resolver subst-> subst_codom_delta_resolver subst resolver)
 
 let subst_struct_expr subst = 
   subst_struct_expr subst
-    (fun resolver -> subst_codom_delta_resolver subst resolver)
+    (fun resolver subst-> subst_codom_delta_resolver subst resolver)
 
 (* spiwack: here comes the function which takes care of importing 
    the retroknowledge declared in the library *)
@@ -272,7 +272,6 @@ let strengthen_const env mp_from l cb resolver =
 	  
 
 let rec strengthen_mod env mp_from mp_to mb = 
-  assert(mp_from = mb.mod_mp);
   if mp_in_delta mb.mod_mp mb.mod_delta then
     mb 
   else
@@ -385,7 +384,7 @@ let rec strengthen_and_subst_mod
 	   let mb_is_an_alias = mp_in_delta mb.mod_mp mb.mod_delta in
 	   if mb_is_an_alias then 
 	     subst_module subst 
-	       (fun resolver -> subst_dom_delta_resolver subst resolver) mb 
+	       (fun resolver subst-> subst_dom_delta_resolver subst resolver) mb 
 	   else
 	     let resolver,new_sig = 
 	       strengthen_and_subst_struct str subst env
@@ -397,8 +396,10 @@ let rec strengthen_and_subst_mod
 		  mod_type = SEBstruct(new_sig);
 		  mod_delta = add_mp_delta_resolver mp_to mp_from resolver}
        | SEBfunctor(arg_id,arg_b,body) ->
+	   let subst = add_mp mb.mod_mp mp_to empty_delta_resolver subst in
 	   subst_module subst 
-	     (fun resolver -> subst_dom_delta_resolver subst resolver) mb 
+	     (fun resolver subst-> subst_dom_codom_delta_resolver subst resolver) mb  
+	
        | _ -> anomaly "Modops:the evaluation of the structure failed "
 	   
 and strengthen_and_subst_struct 
@@ -439,7 +440,7 @@ and strengthen_and_subst_struct
 	let mp_to' = MPdot(mp_to,l) in
 	let mb_out = if alias then 
 	  subst_module subst 
-	  (fun resolver -> subst_dom_delta_resolver subst resolver) mb 
+	  (fun resolver subst -> subst_dom_delta_resolver subst resolver) mb 
 	else
 	  strengthen_and_subst_mod
 	    mb subst env mp_from' mp_to' env resolver
@@ -449,14 +450,16 @@ and strengthen_and_subst_struct
 	let resolve_out,rest' = 
 	  strengthen_and_subst_struct rest subst env' 
 	    mp_alias mp_from mp_to alias incl resolver in
-	  add_delta_resolver resolve_out mb_out.mod_delta,
+	  if  is_functor mb_out.mod_type then (add_mp_delta_resolver 
+	     mp_to' mp_to' resolve_out),item':: rest' else
+	    add_delta_resolver resolve_out mb_out.mod_delta,
 	item':: rest'
     | (l,SFBmodtype mty) :: rest -> 
 	let mp_from' = MPdot (mp_from,l) in
 	let mp_to' = MPdot(mp_to,l) in
 	let subst' = add_mp mp_from' mp_to' empty_delta_resolver subst in
 	let mty = subst_modtype subst' 
-	  (fun resolver -> subst_dom_codom_delta_resolver subst' resolver) mty in
+	  (fun resolver subst -> subst_dom_codom_delta_resolver subst' resolver) mty in
 	let env' = add_modtype mp_from' mty env	in
 	let resolve_out,rest' = strengthen_and_subst_struct rest subst env' 
 	    mp_alias mp_from mp_to alias incl resolver in
@@ -491,7 +494,7 @@ let strengthen_and_subst_mb mb mp env include_b =
       | SEBfunctor(arg_id,argb,body) ->
 	  let subst = map_mp mb.mod_mp mp empty_delta_resolver in
 	  subst_module subst 
-	    (fun resolver -> subst_dom_codom_delta_resolver subst resolver) mb 
+	    (fun resolver subst -> subst_dom_codom_delta_resolver subst resolver) mb 
       | _ -> anomaly "Modops:the evaluation of the structure failed "
 
 
@@ -500,4 +503,4 @@ let subst_modtype_and_resolver mtb mp env =
   let new_delta = subst_dom_codom_delta_resolver subst mtb.typ_delta in 
   let full_subst = (map_mp mtb.typ_mp mp new_delta) in
     subst_modtype full_subst
-      (fun resolver -> subst_dom_codom_delta_resolver subst resolver) mtb
+      (fun resolver subst -> subst_dom_codom_delta_resolver subst resolver) mtb

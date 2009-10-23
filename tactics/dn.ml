@@ -15,15 +15,19 @@ struct
       match x,y with
 	  None,None -> 0
 	| Some (l,n),Some (l',n') -> 
-	    if (Y.compare l l') = 0 && n = n' then 0 
-	    else Pervasives.compare x y
-	| a,b -> Pervasives.compare a b 
+	    let m = Y.compare l l' in
+	    if m = 0 then
+	      n-n' 
+	    else m
+	| Some(l,n),None -> 1
+	| None, Some(l,n) -> -1
   end
   module X_tries = struct
     type t = X.t * Z.t
     let compare (x1,x2) (y1,y2) = 
-	    if (X.compare x1 y1) = 0 && (Z.compare x2 y2)=0 then 0 
-	    else Pervasives.compare (x1,x2) (y1,y2)
+      let m = (X.compare x1 y1) in
+      if m = 0 then (Z.compare x2 y2) else 
+	m
   end
 
   module T = Tries.Make(X_tries)(Y_tries)

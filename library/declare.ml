@@ -163,7 +163,7 @@ let hcons_constant_declaration = function
 
 let declare_constant_common id dhyps (cd,kind) =
   let (sp,kn) = add_leaf id (inConstant (cd,dhyps,kind)) in
-  let c = constant_of_kn kn in
+  let c = Global.constant_of_delta (constant_of_kn kn) in
   declare_constant_implicits c;
   Heads.declare_head (EvalConstRef c);
   Notation.declare_ref_arguments_scope (ConstRef c);

@@ -29,6 +29,7 @@ val isIndRef : global_reference -> bool
 val isConstructRef : global_reference -> bool
 
 val eq_gr : global_reference -> global_reference -> bool
+val canonical_gr : global_reference -> global_reference
 
 val destVarRef : global_reference -> variable
 val destConstRef : global_reference -> constant
