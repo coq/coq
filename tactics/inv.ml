@@ -291,7 +291,7 @@ let generalizeRewriteIntros tac depids id gls =
 let rec tclMAP_i n tacfun = function
   | [] -> tclDO n (tacfun None)
   | a::l -> 
-      if n=0 then error "Too much names."
+      if n=0 then error "Too many names."
       else tclTHEN (tacfun (Some a)) (tclMAP_i (n-1) tacfun l)
 
 let remember_first_eq id x = if !x = no_move then x := MoveAfter id
