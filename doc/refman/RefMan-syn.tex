@@ -747,13 +747,16 @@ to these arguments.
 
 This behaves like {\tt Arguments Scope} {\qualid} {\tt [
 \nelist{\optscope}{} ]} but survives when a section is closed instead
-of stopping working at section closing.
+of stopping working at section closing. Without the {\tt Global} modifier,
+the effect of the command stops when the section it belongs to ends.
 
 \item {\tt Local Arguments Scope} {\qualid} {\tt [ \nelist{\optscope}{} ]}
 
-This is a synonym of {\tt Arguments Scope} {\qualid} {\tt [
-\nelist{\optscope}{} ]}: if in a section, the effect of the command
-stops when the section it belongs to ends.
+This behaves like {\tt Arguments Scope} {\qualid} {\tt [
+    \nelist{\optscope}{} ]} but does not survive modules and files.
+Without the {\tt Local} modifier, the effect of the command is
+visible from within other modules or files.
+
 \end{Variants}
 
 

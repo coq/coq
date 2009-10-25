@@ -1286,7 +1286,7 @@ let matx_of_eqns env tomatchl eqns =
 
    We then look for a type U(..a1jk..b1 .. ..amjk..bm) so that
    T = U(..v1jk..t1 .. ..vmjk..tm). This a higher-order matching
-   problem with a priori different solution (one of them if T itself!).
+   problem with a priori different solutions (one of them if T itself!).
 
    We finally invert the uij and the ti and build the return clause
 

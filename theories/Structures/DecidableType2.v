@@ -64,8 +64,8 @@ Module KeyDecidableType(D:DecidableType).
   Definition eqke (p p':key*elt) :=
           eq (fst p) (fst p') /\ (snd p) = (snd p').
 
-  Global Hint Unfold eqk eqke.
-  Global Hint Extern 2 (eqke ?a ?b) => split.
+  Hint Unfold eqk eqke.
+  Hint Extern 2 (eqke ?a ?b) => split.
 
    (* eqke is stricter than eqk *)
 
@@ -88,19 +88,19 @@ Module KeyDecidableType(D:DecidableType).
    red; unfold eqke; intuition; [ eauto | congruence ].
   Qed.
 
-  Global Hint Resolve (@Equivalence_Reflexive _ _ eqk_equiv).
-  Global Hint Resolve (@Equivalence_Transitive _ _ eqk_equiv).
-  Global Hint Immediate (@Equivalence_Symmetric _ _ eqk_equiv).
-  Global Hint Resolve (@Equivalence_Reflexive _ _ eqke_equiv).
-  Global Hint Resolve (@Equivalence_Transitive _ _ eqke_equiv).
-  Global Hint Immediate (@Equivalence_Symmetric _ _ eqke_equiv).
+  Hint Resolve (@Equivalence_Reflexive _ _ eqk_equiv).
+  Hint Resolve (@Equivalence_Transitive _ _ eqk_equiv).
+  Hint Immediate (@Equivalence_Symmetric _ _ eqk_equiv).
+  Hint Resolve (@Equivalence_Reflexive _ _ eqke_equiv).
+  Hint Resolve (@Equivalence_Transitive _ _ eqke_equiv).
+  Hint Immediate (@Equivalence_Symmetric _ _ eqke_equiv).
 
   Lemma InA_eqke_eqk :
      forall x m, InA eqke x m -> InA eqk x m.
   Proof.
     unfold eqke; induction 1; intuition.
   Qed.
-  Global Hint Resolve InA_eqke_eqk.
+  Hint Resolve InA_eqke_eqk.
 
   Lemma InA_eqk : forall p q m, eqk p q -> InA eqk p m -> InA eqk q m.
   Proof.
@@ -110,7 +110,7 @@ Module KeyDecidableType(D:DecidableType).
   Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).
   Definition In k m := exists e:elt, MapsTo k e m.
 
-  Global Hint Unfold MapsTo In.
+  Hint Unfold MapsTo In.
 
   (* An alternative formulation for [In k l] is [exists e, InA eqk (k,e) l] *)
 

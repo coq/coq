@@ -521,6 +521,9 @@ let rebuild_implicits (req,l) =
 	  let l' = merge_impls auto m in [ref,l']
   in (req,l')
 
+let classify_implicits (req,_ as obj) =
+  if req = ImplLocal then None else Some obj
+
 let (inImplicits, _) =
   declare_object {(default_object "IMPLICITS") with
     cache_function = cache_implicits;

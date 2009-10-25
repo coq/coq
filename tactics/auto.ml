@@ -465,6 +465,16 @@ let subst_autohint (subst,(local,name,hintlist as obj)) =
 let classify_autohint ((local,name,hintlist) as obj) =
   if local or hintlist = (AddTactic []) then Dispose else Substitute obj
 
+let discharge_autohint (_,(local,name,hintlist as obj)) =
+  if local then None else
+    match hintlist with
+    | CreateDB _ ->
+	(* We assume that the transparent state is either empty or full *)
+	Some obj
+    | AddTransparency _ | AddTactic _ ->
+	(* Needs the adequate code here to support Global Hints in sections *)
+	None
+
 let (inAutoHint,_) =
   declare_object {(default_object "AUTOHINT") with
                     cache_function = cache_autohint;
@@ -560,7 +570,7 @@ let interp_hints h =
       HintsTransparencyEntry (List.map fr lhints, b)
   | HintsConstructors lqid ->
       let constr_hints_of_ind qid =
-        let ind = global_inductive qid in
+        let ind = global_inductive_with_alias qid in
         list_tabulate (fun i -> None, true, mkConstruct (ind,i+1))
 	  (nconstructors ind) in
 	HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))

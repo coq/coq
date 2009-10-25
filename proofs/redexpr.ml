@@ -79,7 +79,7 @@ let disch_ref ref =
       EvalConstRef c ->
         let c' = Lib.discharge_con c in
         if c==c' then Some ref else Some (EvalConstRef c')
-    | _ -> Some ref
+    | EvalVarRef id -> if Lib.is_in_section (VarRef id) then None else Some ref
 
 let discharge_strategy (_,(local,obj)) =
   if local then None else

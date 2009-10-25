@@ -812,7 +812,7 @@ GEXTEND Gram
 
      | IDENT "Arguments"; IDENT "Scope"; qid = smart_global;
        "["; scl = LIST0 opt_scope; "]" ->
-	 VernacArgumentsScope (use_non_locality (),qid,scl)
+	 VernacArgumentsScope (use_section_non_locality (),qid,scl)
 
      | IDENT "Infix"; local = obsolete_locality;
 	 op = ne_string; ":="; p = constr;

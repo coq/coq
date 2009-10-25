@@ -132,6 +132,7 @@ type specif_flag    = bool (* true = Specification; false = Implementation *)
 type inductive_flag = Decl_kinds.recursivity_kind
 type onlyparsing_flag = bool (* true = Parse only;  false = Print also     *)
 type infer_flag     = bool (* true = try to Infer record; false = nothing  *)
+type full_locality_flag = bool option (* true = Local; false = Global      *)
 
 type option_value =
   | StringValue of string
@@ -302,8 +303,8 @@ type vernac_expr =
   | VernacReserve of lident list * constr_expr
   | VernacSetOpacity of
       locality_flag * (Conv_oracle.level * reference or_by_notation list) list
-  | VernacUnsetOption of bool option * Goptions.option_name
-  | VernacSetOption of bool option * Goptions.option_name * option_value
+  | VernacUnsetOption of full_locality_flag * Goptions.option_name
+  | VernacSetOption of full_locality_flag * Goptions.option_name * option_value
   | VernacAddOption of Goptions.option_name * option_ref_value list
   | VernacRemoveOption of Goptions.option_name * option_ref_value list
   | VernacMemOption of Goptions.option_name * option_ref_value list
@@ -376,6 +377,9 @@ let use_section_locality () =
 let use_non_locality () =
   match use_locality_full () with Some false -> false | _ -> true
 
+let use_section_non_locality () =
+  match use_locality_full () with Some b -> b | None -> Lib.sections_are_opened ()
+
 let enforce_locality () =
   let local =
     match !locality_flag with
@@ -388,9 +392,12 @@ let enforce_locality () =
   locality_flag := None;
   local
 
+(* [enforce_locality_exp] supports Local (with effect in section) but not
+   Global in section *)
+
 let enforce_locality_exp () = local_of_bool (enforce_locality ())
 
-let enforce_locality_of local =
+let enforce_full_locality_of local =
   let local =
     match !locality_flag with
     | Some false when local ->
@@ -398,10 +405,24 @@ let enforce_locality_of local =
     | Some true when local ->
 	error "Use only prefix \"Local\"."
     | None ->
-	if local then
+	if local then begin
 	  Flags.if_verbose
 	    Pp.warning "Obsolete syntax: use \"Local\" as a prefix.";
-	local
-    | Some b -> b in
+	  Some true
+	end else
+	None
+    | Some _ as b -> b in
   locality_flag := None;
   local
+
+(* [enforce_locality_of] supports Local (with effect if not in
+   section) but not Global in section *)
+
+let enforce_locality_of local =
+  match enforce_full_locality_of local with
+    | Some false ->
+	if Lib.sections_are_opened () then
+	  error "This command does not support the Global option in sections.";
+	false
+    | Some true -> true 
+    | None -> false

@@ -475,6 +475,9 @@ let discharge_arguments_scope (_,(req,r,l)) =
   if req = ArgsScopeNoDischarge or (isVarRef r & Lib.is_in_section r) then None
   else Some (req,Lib.discharge_global r,l)
 
+let classify_arguments_scope (req,_,_ as obj) =
+  if req = ArgsScopeNoDischarge then Dispose else Substitute obj
+
 let rebuild_arguments_scope (req,r,l) =
   match req with
     | ArgsScopeNoDischarge -> assert false
@@ -492,7 +495,7 @@ let (inArgumentsScope,outArgumentsScope) =
       cache_function = cache_arguments_scope;
       load_function = load_arguments_scope;
       subst_function = subst_arguments_scope;
-      classify_function = (fun o -> Substitute o);
+      classify_function = classify_arguments_scope;
       discharge_function = discharge_arguments_scope;
       rebuild_function = rebuild_arguments_scope }
 

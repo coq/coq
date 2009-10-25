@@ -377,12 +377,15 @@ let discharge_coercion (_,(coe,stre,isid,cls,clt,ps)) =
 	  discharge_cl clt,
           n + ps)
 
+let classify_coercion (coe,stre,isid,cls,clt,ps as obj) =
+  if stre = Local then Dispose else Substitute obj
+
 let (inCoercion,_) =
   declare_object {(default_object "COERCION") with
     load_function = load_coercion;
     cache_function = cache_coercion;
     subst_function = subst_coercion;
-    classify_function = (fun x -> Substitute x);
+    classify_function = classify_coercion;
     discharge_function = discharge_coercion }
 
 let declare_coercion coef stre ~isid ~src:cls ~target:clt ~params:ps =
