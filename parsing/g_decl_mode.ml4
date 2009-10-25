@@ -220,7 +220,7 @@ GLOBAL: proof_instr;
   intro_step:
     [[ IDENT "suppose" ; h=assume_clause -> Psuppose h
      | IDENT "suppose" ; IDENT "it"; IDENT "is" ; c=pattern LEVEL "0" ;
-       po=OPT[ IDENT "with"; p=LIST1 hyp -> p ] ; 
+       po=OPT[ "with"; p=LIST1 hyp SEP ","-> p  ] ; 
        ho=OPT[ IDENT "and" ; h=suppose_clause -> h ] -> 
 	 Pcase (none_is_empty po,c,none_is_empty ho)
      | "let" ; v=let_vars -> Plet v	 
