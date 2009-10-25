@@ -262,7 +262,7 @@ let move_hyp with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
 	    if with_dep & hto <> MoveAfter hyp then
 	      (first, d::middle)
             else
-	      errorlabstrm "" (str "Cannot move " ++ pr_id idfrom ++
+	      errorlabstrm "move_hyp" (str "Cannot move " ++ pr_id idfrom ++
 	        pr_move_location pr_id hto ++
 	        str (if toleft then ": it occurs in " else ": it depends on ")
 	        ++ pr_id hyp ++ str ".")

@@ -284,3 +284,15 @@ Proof.
 eexists; intros x H.
 apply H.
 Qed.
+
+(* Check that "as" clause applies to main premise only and leave the
+   side conditions away *)
+
+Lemma side_condition : 
+  forall (A:Type) (B:Prop) x, (True -> B -> x=0) -> B -> x=x.
+Proof.
+intros.
+apply H in H0 as ->.
+reflexivity.
+exact I.
+Qed.

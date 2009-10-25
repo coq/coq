@@ -1320,7 +1320,7 @@ let rec intros_patterns b avoid thin destopt = function
         (intro_gen loc (IntroAvoid(avoid@explicit_intro_names l))
 	  no_move true false)
         (onLastHypId (fun id ->
-	  tclTHEN
+	  tclTHENLAST (* Skip the side conditions of the rewriting step *)
 	    (rewrite_hyp l2r id)
 	    (intros_patterns b avoid thin destopt l)))
   | [] -> clear_wildcards thin
@@ -1393,7 +1393,7 @@ let as_tac id ipat = match ipat with
   | None -> tclIDTAC
 
 let general_apply_in with_delta with_destruct with_evars id lemmas ipat gl =
-  tclTHEN
+  tclTHENFIRST (* Skip the side conditions of the applied lemma *)
     (tclMAP (apply_in_once with_delta with_destruct with_evars id) lemmas)
     (as_tac id ipat)
     gl
@@ -1758,6 +1758,15 @@ let re_intro_dependent_hypotheses (lstatus,rstatus) tophyp =
 
 let update destopt tophyp = if destopt = no_move then tophyp else destopt
 
+let safe_dest_intros_patterns avoid dest pat gl =
+  try intros_patterns true avoid [] dest pat gl
+  with UserError ("move_hyp",_) ->
+    (* May happen if the lemma has dependent arguments that has resolved
+       only after cook_sign is called, e.g. as in 
+       "dec:forall x, {x=0}+{x<>0};  a:A  |- if dec a then True else False"
+       for argument a of dec which will be found only lately *)
+    intros_patterns true avoid [] no_move pat gl
+
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
 let induct_discharge destopt avoid' tac (avoid,ra) names gl =
@@ -1780,23 +1789,23 @@ let induct_discharge destopt avoid' tac (avoid,ra) names gl =
 	  if tophyp=no_move then first_name_buggy avoid gl hyprec else tophyp
 	in
         tclTHENLIST
-	  [ intros_patterns true avoid [] (update destopt tophyp) [recpat];
-	    intros_patterns true avoid [] no_move [hyprec];
+	  [ safe_dest_intros_patterns avoid (update destopt tophyp) [recpat];
+	    safe_dest_intros_patterns avoid no_move [hyprec];
 	    peel_tac ra' names newtophyp] gl
     | (IndArg,dep,hyprecname) :: ra' ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
         let pat,names = consume_pattern avoid hyprecname dep gl names in
-	tclTHEN (intros_patterns true avoid [] (update destopt tophyp) [pat])
+	tclTHEN (safe_dest_intros_patterns avoid (update destopt tophyp) [pat])
           (peel_tac ra' names tophyp) gl
     | (RecArg,dep,recvarname) :: ra' ->
         let pat,names = consume_pattern avoid recvarname dep gl names in
-	tclTHEN (intros_patterns true avoid [] (update destopt tophyp) [pat])
+	tclTHEN (safe_dest_intros_patterns avoid (update destopt tophyp) [pat])
           (peel_tac ra' names tophyp) gl
     | (OtherArg,_,_) :: ra' ->
         let pat,names = match names with
           | [] -> (dloc, IntroAnonymous), []
           | pat::names -> pat,names in
-	tclTHEN (intros_patterns true avoid [] (update destopt tophyp) [pat])
+	tclTHEN (safe_dest_intros_patterns avoid (update destopt tophyp) [pat])
           (peel_tac ra' names tophyp) gl
     | [] ->
         check_unused_names names;
