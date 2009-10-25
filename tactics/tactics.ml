@@ -1392,9 +1392,12 @@ let as_tac id ipat = match ipat with
       user_err_loc (loc,"", str "Disjunctive/conjunctive pattern expected")
   | None -> tclIDTAC
 
+let tclMAPFIRST tacfun l =
+  List.fold_right (fun x -> tclTHENFIRST (tacfun x)) l tclIDTAC
+
 let general_apply_in with_delta with_destruct with_evars id lemmas ipat gl =
   tclTHENFIRST (* Skip the side conditions of the applied lemma *)
-    (tclMAP (apply_in_once with_delta with_destruct with_evars id) lemmas)
+    (tclMAPFIRST (apply_in_once with_delta with_destruct with_evars id) lemmas)
     (as_tac id ipat)
     gl
 

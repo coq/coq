@@ -296,3 +296,14 @@ apply H in H0 as ->.
 reflexivity.
 exact I.
 Qed.
+
+(* Check chaining of "apply in" on the last subgoal (assuming that
+   side conditions come first) *)
+
+Lemma chaining :
+  forall B C D : Prop, (True -> B -> C) -> (C -> D) -> B -> D.
+Proof.
+intros.
+apply H, H0 in H1; auto.
+Qed.
+
