@@ -482,18 +482,16 @@ let classify_arguments_scope (req,_,_ as obj) =
   if req = ArgsScopeNoDischarge then Dispose else Substitute obj
 
 let rebuild_arguments_scope (req,r,l) =
-  let req' =
-    if isVarRef r && Lib.is_in_section r then ArgsScopeNoDischarge else req in
   match req with
     | ArgsScopeNoDischarge -> assert false
     | ArgsScopeAuto ->
-	(req',r,compute_arguments_scope (Global.type_of_global r))
+	(req,r,compute_arguments_scope (Global.type_of_global r))
     | ArgsScopeManual ->
 	(* Add to the manually given scopes the one found automatically
            for the extra parameters of the section *)
 	let l' = compute_arguments_scope (Global.type_of_global r) in
 	let l1,_ = list_chop (List.length l' - List.length l) l' in
-	(req',r,l1@l)
+	(req,r,l1@l)
 
 let (inArgumentsScope,outArgumentsScope) =
   declare_object {(default_object "ARGUMENTS-SCOPE") with
@@ -504,7 +502,7 @@ let (inArgumentsScope,outArgumentsScope) =
       discharge_function = discharge_arguments_scope;
       rebuild_function = rebuild_arguments_scope }
 
-let is_local local ref = local || (isVarRef ref && not (Lib.is_in_section ref))
+let is_local local ref = local || isVarRef ref && Lib.is_in_section ref
 
 let declare_arguments_scope_gen req r scl =
   Lib.add_anonymous_leaf (inArgumentsScope (req,r,scl))

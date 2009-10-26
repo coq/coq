@@ -1,3 +1,5 @@
+(* Testing the behavior of implicit arguments *)
+
 (* Implicit on section variables *)
 
 Set Implicit Arguments.
@@ -19,7 +21,48 @@ Check
   (forall (type : Set) (elt : type) (empty : type -> bool),
    empty elt = true -> stack).
 
+(* Nested sections and manual implicit arguments *)
+
+Variable op' : forall A : Set, A -> A -> Set.
+Variable op'' : forall A : Set, A -> A -> Set.
+
+Section B.
+
+Definition eq1 := fun (A:Type) (x y:A) => x=y.
+Definition eq2 := fun (A:Type) (x y:A) => x=y.
+Definition eq3 := fun (A:Type) (x y:A) => x=y.
+
+Implicit Arguments op' [].
+Global Implicit Arguments op'' [].
+
+Implicit Arguments eq2 [].
+Global Implicit Arguments eq3 [].
+
+Check (op 0 0).
+Check (op' nat 0 0).
+Check (op'' nat 0 0).
+Check (eq1 0 0).
+Check (eq2 nat 0 0).
+Check (eq3 nat 0 0).
+
+End B.
+
+Check (op 0 0).
+Check (op' 0 0).
+Check (op'' nat 0 0).
+Check (eq1 0 0).
+Check (eq2 0 0).
+Check (eq3 nat 0 0).
+
 End Spec.
+
+Check (eq1 0 0).
+Check (eq2 0 0).
+Check (eq3 nat 0 0).
+
+(* Test discharge on automatic implicit arguments *)
+
+Check (op' 0 0).
 
 (* Example submitted by Frédéric (interesting in v8 syntax) *)
 

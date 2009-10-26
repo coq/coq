@@ -473,7 +473,7 @@ let discharge_implicits (_,(req,l)) =
   | ImplLocal -> None
   | ImplInteractive (ref,flags,exp) ->
       let vars = section_segment_of_reference ref in
-      let ref' = pop_global_reference ref in
+      let ref' = if isVarRef ref then ref else pop_global_reference ref in
       let l' = [ref', impls_of_context vars @ snd (List.hd l)] in
       Some (ImplInteractive (ref',flags,exp),l')
   | ImplConstant (con,flags) ->
@@ -483,7 +483,8 @@ let discharge_implicits (_,(req,l)) =
   | ImplMutualInductive (kn,flags) ->
       let l' = List.map (fun (gr, l) ->
 	let vars = section_segment_of_reference gr in
-	  (pop_global_reference gr, impls_of_context vars @ l)) l
+	((if isVarRef gr then gr else pop_global_reference gr),
+	 impls_of_context vars @ l)) l
       in
 	Some (ImplMutualInductive (pop_kn kn,flags),l')
 
@@ -523,18 +524,18 @@ let rebuild_implicits (req,l) =
 	  [ref,l']
 
 let classify_implicits (req,_ as obj) =
-  if req = ImplLocal then None else Some obj
+  if req = ImplLocal then Dispose else Substitute obj
 
 let (inImplicits, _) =
   declare_object {(default_object "IMPLICITS") with
     cache_function = cache_implicits;
     load_function = load_implicits;
     subst_function = subst_implicits;
-    classify_function = (fun x -> Substitute x);
+    classify_function = classify_implicits;
     discharge_function = discharge_implicits;
     rebuild_function = rebuild_implicits }
 
-let is_local local ref = local || (isVarRef ref && not (is_in_section ref))
+let is_local local ref = local || isVarRef ref && is_in_section ref
 
 let declare_implicits_gen req flags ref =
   let imps = compute_global_implicits flags [] ref in
