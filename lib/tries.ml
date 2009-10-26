@@ -12,8 +12,8 @@ module Make =
   functor (X : Set.OrderedType) ->
     functor (Y : Map.OrderedType) ->
 struct
-  module T_dom = Set.Make(X) 
-  module T_codom = Map.Make(Y) 
+  module T_dom = Fset.Make(X) 
+  module T_codom = Fmap.Make(Y) 
 
   type t = Node of T_dom.t * t T_codom.t
 
