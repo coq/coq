@@ -33,7 +33,7 @@ let raise_with_file file exc =
   let (cmdloc,re) =
     match exc with
       | DuringCommandInterp(loc,e)
-      | Stdpp.Exc_located (loc,DuringSyntaxChecking e) -> (loc,e)
+      | DuringSyntaxChecking(loc,e) -> (loc,e)
       | e -> (dummy_loc,e)
   in
   let (inner,inex) =

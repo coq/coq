@@ -275,7 +275,7 @@ let rec is_pervasive_exn = function
   | Error_in_file (_,_,e) -> is_pervasive_exn e
   | Stdpp.Exc_located (_,e) -> is_pervasive_exn e
   | DuringCommandInterp (_,e) -> is_pervasive_exn e
-  | DuringSyntaxChecking e -> is_pervasive_exn e
+  | DuringSyntaxChecking (_,e) -> is_pervasive_exn e
   | _ -> false
 
 (* Toplevel error explanation, dealing with locations, Drop, Ctrl-D
@@ -285,7 +285,7 @@ let print_toplevel_error exc =
   let (dloc,exc) =
     match exc with
       | DuringCommandInterp (loc,ie)
-      | Stdpp.Exc_located (loc, DuringSyntaxChecking ie) ->
+      | DuringSyntaxChecking (loc,ie) ->
           if loc = dummy_loc then (None,ie) else (Some loc, ie)
       | _ -> (None, exc)
   in
@@ -337,7 +337,7 @@ let rec discard_to_dot () =
 
 let process_error = function
   | DuringCommandInterp _
-  | Stdpp.Exc_located (_,DuringSyntaxChecking _) as e -> e
+  | DuringSyntaxChecking _ as e -> e
   | e ->
       if is_pervasive_exn e then
 	e

@@ -83,8 +83,8 @@ GEXTEND Gram
     [ [ prfcom = default_command_entry -> prfcom ] ]
   ;
   locality:
-    [ [ IDENT "Local" -> locality_flag := Some true
-      | IDENT "Global" -> locality_flag := Some false
+    [ [ IDENT "Local" -> locality_flag := Some (loc,true)
+      | IDENT "Global" -> locality_flag := Some (loc,false)
       | -> locality_flag := None ] ]
   ;
   noedit_mode:
@@ -490,19 +490,19 @@ GEXTEND Gram
 	  VernacDefinition ((use_locality_exp (),false,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Coercion"; IDENT "Local"; qid = global; d = def_body ->
            let s = coerce_reference_to_id qid in
-	  VernacDefinition ((enforce_locality_exp (),false,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
+	  VernacDefinition ((enforce_locality_exp true,false,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identref;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr ->
-	   VernacIdentityCoercion (enforce_locality_exp (), f, s, t)
+	   VernacIdentityCoercion (enforce_locality_exp true, f, s, t)
       | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr ->
 	   VernacIdentityCoercion (use_locality_exp (), f, s, t)
       | IDENT "Coercion"; IDENT "Local"; qid = global; ":";
 	 s = class_rawexpr; ">->"; t = class_rawexpr ->
-	  VernacCoercion (enforce_locality_exp (), AN qid, s, t)
+	  VernacCoercion (enforce_locality_exp true, AN qid, s, t)
       | IDENT "Coercion"; IDENT "Local"; ntn = by_notation; ":";
 	 s = class_rawexpr; ">->"; t = class_rawexpr ->
-	  VernacCoercion (enforce_locality_exp (), ByNotation ntn, s, t)
+	  VernacCoercion (enforce_locality_exp true, ByNotation ntn, s, t)
       | IDENT "Coercion"; qid = global; ":"; s = class_rawexpr; ">->";
          t = class_rawexpr ->
 	  VernacCoercion (use_locality_exp (), AN qid, s, t)
@@ -799,10 +799,10 @@ GEXTEND Gram
 
   syntax:
    [ [ IDENT "Open"; local = obsolete_locality; IDENT "Scope"; sc = IDENT ->
-         VernacOpenCloseScope (enforce_locality_of local,true,sc)
+         VernacOpenCloseScope (enforce_section_locality local,true,sc)
 
      | IDENT "Close"; local = obsolete_locality; IDENT "Scope"; sc = IDENT ->
-         VernacOpenCloseScope (enforce_locality_of local,false,sc)
+         VernacOpenCloseScope (enforce_section_locality local,false,sc)
 
      | IDENT "Delimit"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
 	 VernacDelimiters (sc,key)
@@ -812,22 +812,23 @@ GEXTEND Gram
 
      | IDENT "Arguments"; IDENT "Scope"; qid = smart_global;
        "["; scl = LIST0 opt_scope; "]" ->
-	 VernacArgumentsScope (use_section_non_locality (),qid,scl)
+	 VernacArgumentsScope (use_section_locality (),qid,scl)
 
      | IDENT "Infix"; local = obsolete_locality;
 	 op = ne_string; ":="; p = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
-         VernacInfix (enforce_locality_of local,(op,modl),p,sc)
+         VernacInfix (enforce_module_locality local,(op,modl),p,sc)
      | IDENT "Notation"; local = obsolete_locality; id = identref;
 	 idl = LIST0 ident; ":="; c = constr;
 	 b = [ "("; IDENT "only"; IDENT "parsing"; ")" -> true | -> false ] ->
-           VernacSyntacticDefinition (id,(idl,c),enforce_locality_of local,b)
+           VernacSyntacticDefinition
+	     (id,(idl,c),enforce_module_locality local,b)
      | IDENT "Notation"; local = obsolete_locality; s = ne_string; ":=";
 	 c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
-           VernacNotation (enforce_locality_of local,c,(s,modl),sc)
+           VernacNotation (enforce_module_locality local,c,(s,modl),sc)
 
      | IDENT "Tactic"; IDENT "Notation"; n = tactic_level;
 	 pil = LIST1 production_item; ":="; t = Tactic.tactic
@@ -836,12 +837,12 @@ GEXTEND Gram
      | IDENT "Reserved"; IDENT "Infix"; s = ne_string;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ] ->
 	   Metasyntax.check_infix_modifiers l;
-	   VernacSyntaxExtension (use_locality (),("x '"^s^"' y",l))
+	   VernacSyntaxExtension (use_module_locality (),("x '"^s^"' y",l))
 
      | IDENT "Reserved"; IDENT "Notation"; local = obsolete_locality;
 	 s = ne_string;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
-	 -> VernacSyntaxExtension (enforce_locality_of local,(s,l))
+	 -> VernacSyntaxExtension (enforce_module_locality local,(s,l))
 
      (* "Print" "Grammar" should be here but is in "command" entry in order
         to factorize with other "Print"-based vernac entries *)

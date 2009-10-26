@@ -2809,7 +2809,7 @@ let replace (kn,td) = mactab := Gmap.add kn td (Gmap.remove kn !mactab)
 type tacdef_kind = | NewTac of identifier
 		   | UpdateTac of ltac_constant
 
-let load_md i ((sp,kn),defs) =
+let load_md i ((sp,kn),(local,defs)) =
   let dp,_ = repr_path sp in
   let mp,dir,_ = repr_kn kn in
   List.iter (fun (id,t) ->
@@ -2821,7 +2821,7 @@ let load_md i ((sp,kn),defs) =
 	    add (kn,t)
       | UpdateTac kn -> replace (kn,t)) defs
 
-let open_md i((sp,kn),defs) =
+let open_md i ((sp,kn),(local,defs)) =
   let dp,_ = repr_path sp in
   let mp,dir,_ = repr_kn kn in
   List.iter (fun (id,t) ->
@@ -2839,8 +2839,12 @@ let subst_kind subst id =
     | NewTac _ -> id
     | UpdateTac kn -> UpdateTac (subst_kn subst kn)
 
-let subst_md (subst,defs) =
-  List.map (fun (id,t) -> (subst_kind subst id,subst_tactic subst t)) defs
+let subst_md (subst,(local,defs)) =
+  (local,
+   List.map (fun (id,t) -> (subst_kind subst id,subst_tactic subst t)) defs)
+
+let classify_md (local,defs as o) =
+  if local then Dispose else Substitute o
 
 let (inMD,outMD) =
   declare_object {(default_object "TAC-DEFINITION") with
@@ -2848,7 +2852,7 @@ let (inMD,outMD) =
      load_function   = load_md;
      open_function   = open_md;
      subst_function = subst_md;
-     classify_function = (fun o -> Substitute o)}
+     classify_function = classify_md}
 
 let print_ltac id =
  try
@@ -2885,7 +2889,7 @@ let make_absolute_name ident repl =
     user_err_loc (loc,"Tacinterp.add_tacdef",
 		 str "There is no Ltac named " ++ pr_reference ident ++ str".")
 
-let add_tacdef isrec tacl =
+let add_tacdef local isrec tacl =
   let rfun = List.map (fun (ident, b, _) -> make_absolute_name ident b) tacl in
   let ist =
     {(make_empty_glob_sign()) with ltacrecvars =
@@ -2899,8 +2903,9 @@ let add_tacdef isrec tacl =
 	(k, t))
       tacl rfun in
   let id0 = fst (List.hd rfun) in
-  let _ = match id0 with Some id0 -> ignore(Lib.add_leaf id0 (inMD gtacl))
-    | _ -> Lib.add_anonymous_leaf (inMD gtacl) in
+  let _ = match id0 with
+    | Some id0 -> ignore(Lib.add_leaf id0 (inMD (local,gtacl)))
+    | _ -> Lib.add_anonymous_leaf (inMD (local,gtacl)) in
   List.iter
     (fun (id,b,_) ->
       Flags.if_verbose msgnl (Libnames.pr_reference id ++

@@ -56,6 +56,8 @@ Vernacular commands
   referring to the constant by a notation string.
 - Added "Reserved Infix" as a specific shortcut of the corresponding
   "Reserved Notation".
+- Open/Close Scope command supports Global option in sections.
+- Ltac definitions support Local option for non-export outside modules.
 
 Tools
 

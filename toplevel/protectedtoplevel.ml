@@ -132,7 +132,7 @@ let rec parse_one_command_group input_channel =
 		       | Some(rank, e) ->
 			   (match e with
                     	     | DuringCommandInterp(a,e1)
-			     | Stdpp.Exc_located (a,DuringSyntaxChecking e1) ->
+			     | DuringSyntaxChecking(a,e1) ->
 				  output_results_nl
 				    (acknowledge_command
 				       !global_request_id rank (Some e1))
@@ -167,7 +167,7 @@ let protected_loop input_chan =
       | DuringCommandInterp(loc, Vernacexpr.Quit) -> raise Vernacexpr.Quit
       | DuringCommandInterp(loc, Vernacexpr.Drop) -> raise Vernacexpr.Drop
       | DuringCommandInterp(loc, e)
-      | Stdpp.Exc_located (loc,DuringSyntaxChecking e) ->
+      | DuringSyntaxChecking(loc, e) ->
 	  explain_and_restart e
       | e -> explain_and_restart e in
     begin

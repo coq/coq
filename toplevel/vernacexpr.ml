@@ -293,7 +293,7 @@ type vernac_expr =
 
   (* Commands *)
   | VernacDeclareTacticDefinition of
-      rec_flag * (reference * bool * raw_tactic_expr) list
+      (locality_flag * rec_flag * (reference * bool * raw_tactic_expr) list)
   | VernacCreateHintDb of locality_flag * lstring * bool
   | VernacHints of locality_flag * lstring list * hints_expr
   | VernacSyntacticDefinition of identifier located * (identifier list * constr_expr) *
@@ -344,65 +344,41 @@ and located_vernac_expr = loc * vernac_expr
 (* Locating errors raised just after the dot is parsed but before the
    interpretation phase *)
 
-exception DuringSyntaxChecking of exn
+exception DuringSyntaxChecking of exn located
 
-let syntax_checking_error s =
-  raise (DuringSyntaxChecking (UserError ("",Pp.str s)))
+let syntax_checking_error loc s =
+  raise (DuringSyntaxChecking (loc,UserError ("",Pp.str s)))
 
+(**********************************************************************)
 (* Managing locality *)
 
 let locality_flag = ref None
 
 let local_of_bool = function true -> Local | false -> Global
 
+let is_true = function Some (_,b) -> b | _ -> false
+let is_false = function Some (_,b) -> not b | _ -> false
+
 let check_locality () =
-  if !locality_flag = Some true then
-    syntax_checking_error "This command does not support the \"Local\" prefix.";
-  if !locality_flag = Some false then
-    syntax_checking_error "This command does not support the \"Global\" prefix."
+  match !locality_flag with
+  | Some (loc,true) -> 
+      syntax_checking_error loc
+	"This command does not support the \"Local\" prefix.";
+  | Some (loc,false) -> 
+      syntax_checking_error loc
+	"This command does not support the \"Global\" prefix."
+  | None -> ()
 
-let use_locality_full () =
-  let r = !locality_flag in
-  locality_flag := None;
-   r
+(** Extracting the locality flag *)
 
-let use_locality () =
-  match use_locality_full () with Some true -> true | _ -> false
+(* Commands which supported an inlined Local flag *)
 
-let use_locality_exp () = local_of_bool (use_locality ())
-
-let use_section_locality () =
-  match use_locality_full () with Some b -> b | None -> Lib.sections_are_opened ()
-
-let use_non_locality () =
-  match use_locality_full () with Some false -> false | _ -> true
-
-let use_section_non_locality () =
-  match use_locality_full () with Some b -> b | None -> Lib.sections_are_opened ()
-
-let enforce_locality () =
+let enforce_locality_full local =
   let local =
     match !locality_flag with
-    | Some false ->
+    | Some (_,false) when local ->
 	error "Cannot be simultaneously Local and Global."
-    | _ ->
-	Flags.if_verbose
-	  Pp.warning "Obsolete syntax: use \"Local\" as a prefix.";
-	true in
-  locality_flag := None;
-  local
-
-(* [enforce_locality_exp] supports Local (with effect in section) but not
-   Global in section *)
-
-let enforce_locality_exp () = local_of_bool (enforce_locality ())
-
-let enforce_full_locality_of local =
-  let local =
-    match !locality_flag with
-    | Some false when local ->
-	error "Cannot be simultaneously Local and Global."
-    | Some true when local ->
+    | Some (_,true) when local ->
 	error "Use only prefix \"Local\"."
     | None ->
 	if local then begin
@@ -411,18 +387,75 @@ let enforce_full_locality_of local =
 	  Some true
 	end else
 	None
-    | Some _ as b -> b in
+    | Some (_,b) -> Some b in
   locality_flag := None;
   local
 
-(* [enforce_locality_of] supports Local (with effect if not in
-   section) but not Global in section *)
+(* Commands which did not supported an inlined Local flag (synonym of
+   [enforce_locality_full false]) *)
 
-let enforce_locality_of local =
-  match enforce_full_locality_of local with
-    | Some false ->
-	if Lib.sections_are_opened () then
-	  error "This command does not support the Global option in sections.";
-	false
-    | Some true -> true 
-    | None -> false
+let use_locality_full () =
+  let r = Option.map snd !locality_flag in
+  locality_flag := None;
+   r
+
+(** Positioning locality for commands supporting discharging and export
+     outside of modules *)
+
+(* For commands whose default is to discharge and export:
+   Global is the default and is neutral;
+   Local in a section deactivate discharge, 
+   Local not in a section deactivates export *)
+
+let make_locality = function Some true -> true | _ -> false
+
+let use_locality () = make_locality (use_locality_full ())
+
+let use_locality_exp () = local_of_bool (use_locality ())
+
+let enforce_locality local = make_locality (enforce_locality_full local)
+
+let enforce_locality_exp local = local_of_bool (enforce_locality local)
+
+(* For commands whose default is not to discharge and not to export:
+   Global forces discharge and export;
+   Local is the default and is neutral *)
+
+let use_non_locality () =
+  match use_locality_full () with Some false -> false | _ -> true
+
+(* For commands whose default is to not discharge but to export:
+   Global in sections forces discharge, Global not in section is the default;
+   Local in sections is the default, Local not in section forces non-export *)
+
+let make_section_locality =
+  function Some b -> b | None -> Lib.sections_are_opened ()
+
+let use_section_locality () =
+  make_section_locality (use_locality_full ())
+
+let enforce_section_locality local =
+  make_section_locality (enforce_locality_full local)
+
+(** Positioning locality for commands supporting export but not discharge *)
+
+(* For commands whose default is to export (if not in section):
+   Global in sections is forbidden, Global not in section is neutral;
+   Local in sections is the default, Local not in section forces non-export *)
+
+let make_module_locality = function
+  | Some false ->
+      if Lib.sections_are_opened () then
+	error "This command does not support the Global option in sections.";
+      false
+  | Some true -> true
+  | None -> false
+
+let use_module_locality () =
+  make_module_locality (use_locality_full ())
+
+let enforce_module_locality local =
+  make_module_locality (enforce_locality_full local)
+
+(**********************************************************************)
+

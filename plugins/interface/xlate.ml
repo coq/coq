@@ -1632,7 +1632,7 @@ let rec xlate_module_expr = function
 
 let rec xlate_vernac =
  function
-   | VernacDeclareTacticDefinition (true, tacs) ->
+   | VernacDeclareTacticDefinition (false, true, tacs) ->
        (match List.map
 	 (function
 	      (id, _, body) ->
@@ -1642,8 +1642,10 @@ let rec xlate_vernac =
 	   | fst::tacs1 ->
 	       CT_tactic_definition
 		 (CT_tac_def_ne_list(fst, tacs1)))
-   | VernacDeclareTacticDefinition(false, _) ->
-       xlate_error "obsolete tactic definition not handled"
+    | VernacDeclareTacticDefinition(_, false, _) ->
+	xlate_error "obsolete tactic definition not handled"
+    | VernacDeclareTacticDefinition(true, _, _) ->
+	xlate_error "TODO: Local keyword"
     | VernacLoad (verbose,s) ->
       CT_load (
        (match verbose with

@@ -67,7 +67,8 @@ val get_debug : unit -> debug_info
 
 (* Adds a definition for tactics in the table *)
 val add_tacdef :
-  bool -> (Libnames.reference * bool * raw_tactic_expr) list -> unit
+  Vernacexpr.locality_flag -> bool ->
+  (Libnames.reference * bool * raw_tactic_expr) list -> unit
 val add_primitive_tactic : string -> glob_tactic_expr -> unit
 
 (* Tactic extensions *)

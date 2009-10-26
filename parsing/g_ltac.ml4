@@ -227,6 +227,6 @@ GEXTEND Gram
   Vernac_.command:
     [ [ IDENT "Ltac";
         l = LIST1 tacdef_body SEP "with" ->
-          VernacDeclareTacticDefinition (true, l) ] ]
+          VernacDeclareTacticDefinition (use_module_locality (), true, l) ] ]
   ;
   END

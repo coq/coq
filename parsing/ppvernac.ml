@@ -155,6 +155,10 @@ let pr_locality_full = function
   | Some false -> str"Global "
 let pr_locality local = if local then str "Local " else str ""
 let pr_non_locality local = if local then str "" else str "Global "
+let pr_section_locality local =
+  if Lib.sections_are_opened () && not local then str "Global "
+  else if not (Lib.sections_are_opened ()) && local then str "Local "
+  else mt ()
 
 let pr_explanation (e,b,f) =
   let a = match e with
@@ -499,7 +503,8 @@ let rec pr_vernac = function
   (* Syntax *)
   | VernacTacticNotation (n,r,e) -> pr_grammar_tactic_rule n ("",r,e)
   | VernacOpenCloseScope (local,opening,sc) ->
-      str (if opening then "Open " else "Close ") ++ pr_locality local ++
+      pr_section_locality local ++ 
+      str (if opening then "Open " else "Close ") ++
       str "Scope" ++ spc() ++ str sc
   | VernacDelimiters (sc,key) ->
       str"Delimit Scope" ++ spc () ++ str sc ++
@@ -510,11 +515,11 @@ let rec pr_vernac = function
   | VernacArgumentsScope (local,q,scl) -> let pr_opt_scope = function
       |	None -> str"_"
       |	Some sc -> str sc in
-    str"Arguments Scope" ++ spc() ++ pr_non_locality local ++
+    pr_section_locality local ++ str"Arguments Scope" ++ spc() ++ 
     pr_smart_global q
     ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
   | VernacInfix (local,(s,mv),q,sn) -> (* A Verifier *)
-      hov 0 (hov 0 (str"Infix " ++ pr_locality local
+      hov 0 (hov 0 (pr_locality local ++ str"Infix "
       ++ qs s ++ str " :=" ++ pr_constrarg q) ++
       pr_syntax_modifiers mv ++
       (match sn with
@@ -528,13 +533,13 @@ let rec pr_vernac = function
           let s' = String.sub s 1 (n-2) in
           if String.contains s' '\'' then qs s else str s'
 	else qs s in
-      hov 2 (str"Notation" ++ spc() ++ pr_locality local ++ ps ++
+      hov 2 (pr_locality local ++ str"Notation" ++ spc() ++ ps ++
       str " :=" ++ pr_constrarg c ++ pr_syntax_modifiers l ++
       (match opt with
         | None -> mt()
         | Some sc -> str" :" ++ spc() ++ str sc))
   | VernacSyntaxExtension (local,(s,l)) ->
-      str"Reserved Notation" ++ spc() ++ pr_locality local ++ qs s ++
+      pr_locality local ++ str"Reserved Notation" ++ spc() ++ qs s ++
       pr_syntax_modifiers l
 
   (* Gallina *)
@@ -806,7 +811,7 @@ let rec pr_vernac = function
   | VernacChdir s -> str"Cd" ++ pr_opt qs s
 
   (* Commands *)
-  | VernacDeclareTacticDefinition (rc,l) ->
+  | VernacDeclareTacticDefinition (local,rc,l) ->
       let pr_tac_body (id, redef, body) =
         let idl, body =
           match body with
@@ -823,21 +828,22 @@ let rec pr_vernac = function
 	  (Global.env())
 	  body in
       hov 1
-        ((str "Ltac ") ++
+        (pr_locality local ++ str "Ltac " ++
         prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
   | VernacCreateHintDb (local,dbname,b) ->
-      hov 1 (str "Create " ++ pr_locality local ++ str "HintDb " ++ str dbname ++ (if b then str" discriminated" else mt ()))
+      hov 1 (pr_locality local ++ str "Create " ++ str "HintDb " ++ str dbname ++ (if b then str" discriminated" else mt ()))
   | VernacHints (local,dbnames,h) ->
       pr_hints local dbnames h pr_constr pr_constr_pattern_expr
   | VernacSyntacticDefinition (id,(ids,c),local,onlyparsing) ->
       hov 2
-        (str"Notation " ++ pr_locality local ++ pr_lident id ++
+        (pr_locality local ++ str"Notation " ++ pr_lident id ++
 	 prlist_with_sep spc pr_id ids ++ str" :=" ++ pr_constrarg c ++
          pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
   | VernacDeclareImplicits (local,q,None) ->
-      hov 2 (str"Implicit Arguments" ++ spc() ++ pr_smart_global q)
+      hov 2 (pr_section_locality local ++ str"Implicit Arguments" ++ spc() ++ 
+	pr_smart_global q)
   | VernacDeclareImplicits (local,q,Some imps) ->
-      hov 1 (str"Implicit Arguments " ++ pr_non_locality local ++
+      hov 1 (pr_section_locality local ++ str"Implicit Arguments " ++ 
 	spc() ++ pr_smart_global q ++ spc() ++
 	str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
   | VernacReserve (idl,c) ->
@@ -860,7 +866,7 @@ let rec pr_vernac = function
       let pr_line (l,q) =
         hov 2 (pr_lev l ++ spc() ++
                str"[" ++ prlist_with_sep sep pr_smart_global q ++ str"]") in
-      hov 1 (pr_locality local ++ str"Strategy" ++ spc() ++
+      hov 1 (pr_non_locality local ++ str"Strategy" ++ spc() ++
              hv 0 (prlist_with_sep sep pr_line l))
   | VernacUnsetOption (l,na) ->
       hov 1 (pr_locality_full l ++ str"Unset" ++ spc() ++ pr_printoption na None)

@@ -700,6 +700,13 @@ exported to the modules that import the module where they occur.
 These variants are not exported to the modules that import the module
 where they occur, even if outside a section.
 
+\item {\tt Global Open Scope} {\scope}.
+
+\item {\tt Global Close Scope} {\scope}.
+
+These variants survive sections. They behave as if {\tt Global} were
+absent when not inside a section.
+
 \end{Variants}
 
 \subsection{Local interpretation rules for notations}

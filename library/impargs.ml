@@ -488,12 +488,12 @@ let discharge_implicits (_,(req,l)) =
 	Some (ImplMutualInductive (pop_kn kn,flags),l')
 
 let rebuild_implicits (req,l) =
-  let l' = match req with
+  match req with
   | ImplLocal -> assert false
   | ImplConstant (con,flags) ->
       let oldimpls = snd (List.hd l) in
       let newimpls = compute_constant_implicits flags [] con in
-      [ConstRef con, merge_impls oldimpls newimpls]
+      req, [ConstRef con, merge_impls oldimpls newimpls]
   | ImplMutualInductive (kn,flags) ->
       let newimpls = compute_all_mib_implicits flags [] kn in
       let rec aux olds news =
@@ -502,9 +502,10 @@ let rebuild_implicits (req,l) =
 	    (gr, merge_impls oldimpls newimpls) :: aux old tl
 	| [], [] -> []
 	| _, _ -> assert false
-      in aux l newimpls
+      in req, aux l newimpls
 
   | ImplInteractive (ref,flags,o) ->
+      (if isVarRef ref && is_in_section ref then ImplLocal else req),
       match o with
       | ImplAuto ->
 	  let oldimpls = snd (List.hd l) in
@@ -518,8 +519,8 @@ let rebuild_implicits (req,l) =
 		merge_impls oldimpls newimpls
 	    else oldimpls
 	  in
-	  let l' = merge_impls auto m in [ref,l']
-  in (req,l')
+	  let l' = merge_impls auto m in
+	  [ref,l']
 
 let classify_implicits (req,_ as obj) =
   if req = ImplLocal then None else Some obj
@@ -533,6 +534,8 @@ let (inImplicits, _) =
     discharge_function = discharge_implicits;
     rebuild_function = rebuild_implicits }
 
+let is_local local ref = local || (isVarRef ref && not (is_in_section ref))
+
 let declare_implicits_gen req flags ref =
   let imps = compute_global_implicits flags [] ref in
   add_anonymous_leaf (inImplicits (req,[ref,imps]))
@@ -540,7 +543,7 @@ let declare_implicits_gen req flags ref =
 let declare_implicits local ref =
   let flags = { !implicit_args with auto = true } in
   let req =
-    if local then ImplLocal else ImplInteractive(ref,flags,ImplAuto) in
+    if is_local local ref then ImplLocal else ImplInteractive(ref,flags,ImplAuto) in
     declare_implicits_gen req flags ref
 
 let declare_var_implicits id =
@@ -572,7 +575,7 @@ let declare_manual_implicits local ref ?enriching l =
   let enriching = Option.default flags.auto enriching in
   let l' = compute_manual_implicits env flags t enriching l in
   let req =
-    if local or isVarRef ref then ImplLocal
+    if is_local local ref then ImplLocal
     else ImplInteractive(ref,flags,ImplManual l')
   in
     add_anonymous_leaf (inImplicits (req,[ref,l']))

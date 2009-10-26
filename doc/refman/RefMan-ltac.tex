@@ -186,7 +186,7 @@ is understood as
 \begin{figure}[ht]
 \begin{centerframe}
 \begin{tabular}{lcl}
-\nterm{top} & ::= & {\tt Ltac} \nelist{\nterm{ltac\_def}} {\tt with} \\
+\nterm{top} & ::= & \zeroone{\tt Local} {\tt Ltac} \nelist{\nterm{ltac\_def}} {\tt with} \\
 \\
 \nterm{ltac\_def} & ::= & {\ident} \sequence{\ident}{} {\tt :=}
 {\tacexpr}\\
@@ -863,6 +863,9 @@ using the syntax:
 A previous definition of \qualid must exist in the environment.
 The new definition will always be used instead of the old one and
 it goes accross module boundaries.
+
+If preceded by the keyword {\tt Local} the tactic definition will not
+be exported outside the current module.
 
 \subsection[Printing {\ltac} tactics]{Printing {\ltac} tactics\comindex{Print Ltac}}
 
