@@ -8,7 +8,7 @@
 (* Test le Hint Unfold sur des var locales *)
 
 Section toto.
-Let EQ := eq.
+Let EQ := @eq.
 Goal EQ nat 0 0.
 Hint Unfold EQ.
 auto.
