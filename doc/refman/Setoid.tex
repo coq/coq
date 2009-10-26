@@ -470,10 +470,11 @@ See the documentation on type classes \ref{typeclasses} and
 the theories files in \texttt{Classes} for further explanations. 
 
 One can inform the rewrite tactic about morphisms and relations just by
-using the typeclass metchanism to declare them using \texttt{Instance}
+using the typeclass mechanism to declare them using \texttt{Instance}
 and \texttt{Context} vernacular commands.
-Any object of type \texttt{Morphism} in the local context will also be
-automatically used by the rewriting tactic to solve constraints.
+Any object of type \texttt{Proper} (the type of morphism declarations)
+in the local context will also be automatically used by the rewriting 
+tactic to solve constraints.
 
 Other representations of first class setoids and morphisms can also
 be handled by encoding them as records. In the following example,
@@ -545,9 +546,9 @@ the first tactic argument with the second one. If omitted, it defaults
 to the \texttt{DefaultRelation} instance on the type of the objects.
 By default, it means the most recent \texttt{Equivalence} instance in
 the environment, but it can be customized by declaring new
-\texttt{DefaultRelation} instances. As leiniz equality is a declared
+\texttt{DefaultRelation} instances. As Leibniz equality is a declared
 equivalence, it will fall back to it if no other relation is declared on
-a type.
+a given type.
 
 Every derived tactic that is based on the unprefixed forms of the tactics
 considered above will also work up to user defined relations. For instance,
@@ -561,7 +562,8 @@ The \texttt{Print Instances} command can be used to show the list of
 currently registered \texttt{Reflexive} (using \texttt{Print Instances Reflexive}),
 \texttt{Symmetric} or \texttt{Transitive} relations,
 \texttt{Equivalence}s, \texttt{PreOrder}s, \texttt{PER}s, and
-\texttt{Morphism}s. When the rewriting tactics refuse to replace a term in a context
+Morphisms (implemented as \texttt{Proper} instances). When
+ the rewriting tactics refuse to replace a term in a context
 because the latter is not a composition of morphisms, the \texttt{Print Instances}
 commands can be useful to understand what additional morphisms should be
 registered.
@@ -620,11 +622,11 @@ morphism for logical equivalence:
 
 \begin{coq_eval}
 Reset Initial.
-Require Import Setoid.
+Require Import Setoid Morphisms.
 \end{coq_eval}
 \begin{coq_example}
 Instance all_iff_morphism (A : Type) :
-  Morphism (pointwise_relation A iff ==> iff) (@all A).
+  Proper (pointwise_relation A iff ==> iff) (@all A).
 Proof. simpl_relation. 
 \end{coq_example}
 \begin{coq_eval}
@@ -641,7 +643,7 @@ Indeed, when rewriting under a lambda, binding variable $x$, say from
 $P~x$ to $Q~x$ using the relation \texttt{iff}, the tactic will generate
 a proof of \texttt{pointwise\_relation A iff (fun x => P x) (fun x => Q
 x)} from the proof of \texttt{iff (P x) (Q x)} and a constraint of the
-form \texttt{Morphism (pointwise\_relation A iff ==> ?) m} will be
+form \texttt{Proper (pointwise\_relation A iff ==> ?) m} will be
 generated for the surrounding morphism \texttt{m}.
 
 Hence, one can add higher-order combinators as morphisms by providing
@@ -659,7 +661,7 @@ Inductive list_equiv {A:Type} (eqA : relation A) : relation (list A) :=
 \end{coq_eval}
 \begin{coq_example*}
 Instance map_morphism `{Equivalence A eqA, Equivalence B eqB} :
-  Morphism ((eqA ==> eqB) ==> list_equiv eqA ==> list_equiv eqB) 
+  Proper ((eqA ==> eqB) ==> list_equiv eqA ==> list_equiv eqB) 
      (@map A B).
 \end{coq_example*}
 
@@ -688,8 +690,8 @@ of signatures for a particular constant. By default, the only declared
 subrelation is \texttt{iff}, which is a subrelation of \texttt{impl}
 and \texttt{inverse impl} (the dual of implication). That's why we can
 declare only two morphisms for conjunction:
-\texttt{Morphism (impl ==> impl ==> impl) and} and 
-\texttt{Morphism (iff ==> iff ==> iff) and}. This is sufficient to satisfy
+\texttt{Proper (impl ==> impl ==> impl) and} and 
+\texttt{Proper (iff ==> iff ==> iff) and}. This is sufficient to satisfy
 any rewriting constraints arising from a rewrite using \texttt{iff},
 \texttt{impl} or \texttt{inverse impl} through \texttt{and}.
 
@@ -700,7 +702,7 @@ prime example of a mostly user-space extension of the algorithm.
 
 The resolution tactic is based on type classes and hence regards user-defined 
 constants as transparent by default. This may slow down the resolution
-due to a lot of unifications (all the declared \texttt{Morphism}
+due to a lot of unifications (all the declared \texttt{Proper}
 instances are tried at each node of the search tree).
 To speed it up, declare your constant as rigid for proof search
 using the command \texttt{Typeclasses Opaque} (see \S \ref{TypeclassesTransparency}).
