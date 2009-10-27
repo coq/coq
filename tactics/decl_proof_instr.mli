@@ -65,13 +65,8 @@ val build_dep_clause :   Term.types Decl_expr.statement list ->
     (Term.types Decl_expr.statement, Term.types Decl_expr.or_thesis)
     Decl_expr.hyp list -> Proof_type.goal Tacmach.sigma -> Term.types
 
-<<<<<<< HEAD:tactics/decl_proof_instr.mli
-val register_dep_subcase :
-    Names.identifier * int ->
-=======
 val register_dep_subcase :    
     Names.identifier * (int * int) ->
->>>>>>> ada3fb4... fixed czar bug with parametric inductives:tactics/decl_proof_instr.mli
     Environ.env ->
     Decl_mode.per_info ->
     Rawterm.cases_pattern -> Decl_mode.elim_kind -> Decl_mode.elim_kind
