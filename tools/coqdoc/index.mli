@@ -44,9 +44,13 @@ val find_string : coq_module -> string -> index_entry
 
 val add_module : coq_module -> unit
 
-type module_kind = Local | Coqlib | Unknown
+type module_kind = Local | External of coq_module | Unknown
 
 val find_module : coq_module -> module_kind
+
+val init_coqlib_library : unit -> unit
+
+val add_external_library : string -> coq_module -> unit
 
 (*s Scan identifiers introductions from a file *)
 

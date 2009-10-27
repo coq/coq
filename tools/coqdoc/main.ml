@@ -56,6 +56,7 @@ let usage () =
   prerr_endline "  --quiet              quiet mode (default)";
   prerr_endline "  --verbose            verbose mode";
   prerr_endline "  --no-externals       no links to Coq standard library";
+  prerr_endline "  --external <url> <d> set URL for external library d";
   prerr_endline "  --coqlib <url>       set URL for Coq standard library";
   prerr_endline ("                       (default is " ^ Coq_config.wwwstdlib ^ ")");
   prerr_endline "  --boot               run in boot mode";
@@ -349,6 +350,8 @@ let parse () =
 	usage ()
     | ("--no-externals" | "-no-externals" | "-noexternals") :: rem ->
 	Cdglobals.externals := false; parse_rec rem
+    | ("--external" | "-external") :: u :: logicalpath :: rem ->
+	Index.add_external_library logicalpath u; parse_rec rem
     | ("--coqlib" | "-coqlib") :: u :: rem ->
 	Cdglobals.coqlib := u; parse_rec rem
     | ("--coqlib" | "-coqlib") :: [] ->
@@ -568,6 +571,7 @@ let produce_output fl =
 
 let main () =
   let files = parse () in
+    Index.init_coqlib_library ();
     if not !quiet then banner ();
     if files <> [] then produce_output files
 

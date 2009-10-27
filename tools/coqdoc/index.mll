@@ -150,17 +150,32 @@ let add_module m =
   Hashtbl.add modules id m;
   Hashtbl.add local_modules m ()
 
-type module_kind = Local | Coqlib | Unknown
+type module_kind = Local | External of string | Unknown
 
-let coq_module m = String.length m >= 4 && String.sub m 0 4 = "Coq."
+let external_libraries = ref []
+
+let add_external_library logicalpath url =
+  external_libraries := (logicalpath,url) :: !external_libraries
+
+let find_external_library logicalpath =
+  let rec aux = function
+    | [] -> raise Not_found
+    | (l,u)::rest ->
+        Printf.eprintf "Looking for %s in %s\n%!" l logicalpath;
+        if String.length logicalpath > String.length l &
+          String.sub logicalpath 0 (String.length l + 1) = l ^"."
+        then u
+        else aux rest
+  in aux !external_libraries
+
+let init_coqlib_library () = add_external_library "Coq" !coqlib
 
 let find_module m =
   if Hashtbl.mem local_modules m then
     Local
-  else if coq_module m then
-    Coqlib
   else
-    Unknown
+    try External (Filename.concat (find_external_library m) m)
+    with Not_found -> Unknown
 
 
 (* Building indexes *)

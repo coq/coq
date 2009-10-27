@@ -83,6 +83,7 @@ Coqdoc
 - New option "--plain-comments" to disable interpretation inside comments.
 - New option "--interpolate" to try and typeset identifiers in Coq escapings
   using the available globalization information.
+- New option "--external url root" to refer to external libraries.
 
 Library
 

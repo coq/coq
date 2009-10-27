@@ -256,10 +256,9 @@ module Latex = struct
     match find_module m with
     | Local ->
 	printf "<a href=\"%s.html\">" m; raw_ident s; printf "</a>"
-    | Coqlib when !externals ->
-	let m = Filename.concat !coqlib m in
+    | External m when !externals ->
 	printf "<a href=\"%s.html\">" m; raw_ident s; printf "</a>"
-    | Coqlib | Unknown ->
+    | External _ | Unknown ->
 	raw_ident s
     i*)
 
@@ -268,10 +267,9 @@ module Latex = struct
     match find_module m with
       | Local ->
 	  printf "\\coq%sref{" (type_name typ); label_ident id; printf "}{"; raw_ident s; printf "}"
-      | Coqlib when !externals ->
-	  let _m = Filename.concat !coqlib m in
-	    printf "\\coq%sref{" (type_name typ); label_ident id; printf "}{"; raw_ident s; printf "}"
-      | Coqlib | Unknown ->
+      | External _ when !externals ->
+	  printf "\\coq%sref{" (type_name typ); label_ident id; printf "}{"; raw_ident s; printf "}"
+      | External _ | Unknown ->
 	  printf "\\coq%sref{" (type_name typ); label_ident id; printf "}{"; raw_ident s; printf "}"
 
   let defref m id ty s =
@@ -481,10 +479,9 @@ module Html = struct
     match find_module m with
       | Local ->
 	  printf "<a class=\"modref\" href=\"%s.html\">" m; raw_ident s; printf "</a>"
-      | Coqlib when !externals ->
-	  let m = Filename.concat !coqlib m in
+      | External m when !externals ->
 	    printf "<a class=\"modref\" href=\"%s.html\">" m; raw_ident s; printf "</a>"
-      | Coqlib | Unknown ->
+      | External _ | Unknown ->
 	  raw_ident s
 
   let ident_ref m fid typ s =
@@ -494,12 +491,11 @@ module Html = struct
 	printf "<span class=\"id\" type=\"%s\">" typ;
 	raw_ident s;
 	printf "</span></a>"
-    | Coqlib when !externals ->
-	let m = Filename.concat !coqlib m in
+    | External m when !externals ->
 	  printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
 	  printf "<span class=\"id\" type=\"%s\">" typ;
 	  raw_ident s; printf "</span></a>"
-    | Coqlib | Unknown ->
+    | External _ | Unknown ->
 	printf "<span class=\"id\" type=\"%s\">" typ; raw_ident s; printf "</span>"
 
   let reference s r =
