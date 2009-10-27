@@ -29,12 +29,12 @@ struct
     let compare = Pervasives.compare
   end
 
-type term_label = 
-  | GRLabel of global_reference
-  | ProdLabel
-  | LambdaLabel
-  | SortLabel of sorts option
-
+  type term_label = 
+    | GRLabel of global_reference
+    | ProdLabel 
+    | LambdaLabel
+    | SortLabel of sorts option
+	
   module Y =  struct 
      type t = term_label
         let compare x y = 
@@ -97,11 +97,11 @@ let constr_pat_discr_st (idpred,cpred) t =
       Some (GRLabel ref, args)
   | PProd (_, d, c), [] -> Some (ProdLabel, [d ; c])
   | PLambda (_, d, c), l -> Some (LambdaLabel, [d ; c] @ l)
-  | PSort s, [] ->
+  | PSort s, [] -> 
       let s' = match s with
 	| RProp c -> Some (Prop c)
-	| RType (Some c) -> Some (Type c)
-	| RType None -> None
+	| RType _ -> None 
+	    (* Don't try to be clever about type levels here *)
       in Some (SortLabel s', [])
   | _ -> None
 
@@ -125,7 +125,8 @@ let constr_val_discr_st (idpred,cpred) t =
     | Var id when not (Idpred.mem id idpred) -> Label(GRLabel (VarRef id),l)
     | Prod (n, d, c) -> Label(ProdLabel, [d; c])
     | Lambda (n, d, c) -> Label(LambdaLabel, [d; c] @ l)
-    | Sort s -> Label(SortLabel (Some s), [])
+    | Sort s when is_small s -> Label(SortLabel (Some s), [])
+    | Sort _ -> Label (SortLabel None, [])
     | Evar _ -> Everything
     | _ -> Nothing
 

@@ -53,7 +53,7 @@ type instance = {
   (* Sections where the instance should be redeclared,
      -1 for discard, 0 for none, mutable to avoid redeclarations
      when multiple rebuild_object happen. *)
-  is_global: int ref;
+  is_global: int;
   is_impl: constant;
 }
 
@@ -63,14 +63,12 @@ let instance_impl is = is.is_impl
 
 let new_instance cl pri glob impl =
   let global =
-    if Lib.sections_are_opened () then
-      if glob then Lib.sections_depth ()
-      else -1
-    else 0
+    if glob then Lib.sections_depth ()
+    else -1
   in
     { is_class = cl.cl_impl;
       is_pri = pri ;
-      is_global = ref global ;
+      is_global = global ;
       is_impl = impl }
 
 (*
@@ -194,15 +192,20 @@ let subst_instance (subst,inst) =
       is_impl = fst (Mod_subst.subst_con subst inst.is_impl) }
 
 let discharge_instance (_,inst) =
-  { inst with
+  if inst.is_global <= 0 then None
+  else Some 
+    { inst with 
+      is_global = pred inst.is_global;
       is_class = Lib.discharge_global inst.is_class;
-      is_impl = Lib.discharge_con inst.is_impl}
-
+      is_impl = Lib.discharge_con inst.is_impl }
+    
 let rebuild_instance inst =
-  match !(inst.is_global) with
-    | -1 | 0 -> inst (* TODO : probably a bug here *)
-    | n -> add_instance_hint inst.is_impl inst.is_pri;
-	inst.is_global := pred n; inst
+  add_instance_hint inst.is_impl inst.is_pri;
+  inst
+
+let classify_instance inst =
+  if inst.is_global = -1 then Dispose
+  else Substitute inst
 
 let (instance_input,instance_output) =
   declare_object
@@ -210,8 +213,8 @@ let (instance_input,instance_output) =
       cache_function = cache_instance;
       load_function = (fun _ -> load_instance);
       open_function = (fun _ -> load_instance);
-      classify_function = (fun x -> Substitute x);
-      discharge_function = (fun a -> Some (discharge_instance a));
+      classify_function = classify_instance;
+      discharge_function = discharge_instance;
       rebuild_function = rebuild_instance;
       subst_function = subst_instance }
 

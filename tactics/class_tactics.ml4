@@ -69,11 +69,12 @@ let evars_to_goals p evm =
   let goals, evm' =
     Evd.fold
       (fun ev evi (gls, evm') ->
-	if evi.evar_body = Evar_empty
-	  && Typeclasses.is_resolvable evi
-	  (* 	  && not (is_dependent ev evm) *)
-	  && p evm ev evi then ((ev,evi) :: gls, Evd.add evm' ev (Typeclasses.mark_unresolvable evi)) else
-	  (gls, Evd.add evm' ev evi))
+	if evi.evar_body = Evar_empty then
+	  let evi', goal = p evm ev evi in
+	    if goal then 
+	      ((ev,evi) :: gls, Evd.add evm' ev evi')
+	    else (gls, Evd.add evm' ev evi')
+	else (gls, Evd.add evm' ev evi))
       evm ([], Evd.empty)
   in
     if goals = [] then None
@@ -449,8 +450,7 @@ let _ =
 
 let has_undefined p oevd evd =
   Evd.fold (fun ev evi has -> has ||
-    (evi.evar_body = Evar_empty && p oevd ev evi &&
-	(try Typeclasses.is_resolvable (Evd.find oevd ev) with _ -> true)))
+    (evi.evar_body = Evar_empty && snd (p oevd ev evi)))
     evd false
 
 let rec merge_deps deps = function
@@ -478,25 +478,33 @@ let select_evars evs evm =
     evm Evd.empty
 
 let resolve_all_evars debug m env p oevd do_split fail =
-  let oevm =  oevd in
   let split = if do_split then split_evars oevd else [Intset.empty] in
   let p = if do_split then
-    fun comp evd ev evi -> (Intset.mem ev comp || not (Evd.mem oevm ev)) 
-      && p evd ev evi
-    else fun _ -> p
+    fun comp evd ev evi -> 
+      (try let oevi = Evd.find oevd ev in
+	     if Typeclasses.is_resolvable oevi then
+	       Typeclasses.mark_unresolvable evi, (Intset.mem ev comp &&
+						      p evd ev evi)
+	     else evi, false
+	with Not_found ->
+	  Typeclasses.mark_unresolvable evi, p evd ev evi)
+    else fun _ evd ev evi -> 
+      try let oevi = Evd.find oevd ev in
+	    if Typeclasses.is_resolvable oevi then
+	      Typeclasses.mark_unresolvable evi, p evd ev evi
+	    else evi, false
+      with Not_found ->
+	Typeclasses.mark_unresolvable evi, p evd ev evi
   in
-  let rec aux n p evd =
-    if has_undefined p oevm evd then
-      if n > 0 then
-	let evd' = resolve_all_evars_once debug m p evd in
-	  aux (pred n) p evd'
-      else None
-    else Some evd
+  let rec aux p evd =
+    let evd' = resolve_all_evars_once debug m p evd in
+      if has_undefined p oevd evd' then None
+      else Some evd'
   in
   let rec docomp evd = function
     | [] -> evd
     | comp :: comps ->
-	let res = try aux 1 (p comp) evd with Not_found -> None in
+	let res = try aux (p comp) evd with Not_found -> None in
 	  match res with
 	  | None ->
 	      if fail then
