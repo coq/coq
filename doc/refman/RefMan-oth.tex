@@ -912,6 +912,7 @@ This command displays the current nesting depth used for display.
 %Not yet documented.
 
 \section{Controlling the reduction strategies and the conversion algorithm}
+\label{Controlling reduction strategy}
 
 {\Coq} provides reduction strategies that the tactics can invoke and
 two different algorithms to check the convertibility of types.
@@ -1032,6 +1033,69 @@ activated. The default behavior is to have the bytecode-based
 conversion algorithm deactivated.
 
 \SeeAlso sections~\ref{vmcompute} and~\ref{vmoption}.
+
+\section{Controlling the locality of commands}
+
+\subsection{{\tt Local}, {\tt Global}
+\comindex{Local}
+\comindex{Global}
+}
+
+Some commands support a {\tt Local} or {\tt Global} prefix modifier to
+control the scope of their effect. There are four kinds of commands:
+
+\begin{itemize}
+\item Commands whose default is to extend their effect both outside the
+  section and the module or library file they occur in.
+
+  For these commands, the {\tt Local} modifier limits the effect of
+  the command to the current section or module it occurs in.
+
+  As an example, the {\tt Coercion} (see Section~\ref{Coercions})
+  and {\tt Strategy} (see Section~\ref{Strategy})
+  commands belong to this category.
+
+\item Commands whose default behavior is to stop their effect at the
+  end of the section they occur in but to extent their effect outside
+  the module or library file they occur in.
+
+  For these commands, the {\tt Local} modifier limits the effect of
+  the command to the current module if the command does not occur in a
+  section and the {\tt Global} modifier extends the effect outside the
+  current sections and current module if the command occurs in a
+  section.
+
+  As an example, the {\tt Implicit Arguments} (see
+  Section~\ref{Implicit Arguments}), {\tt Ltac} (see
+  Chapter~\ref{TacticLanguage}) or {\tt Notation} (see
+  Section~\ref{Notation}) commands belong to this category.
+
+  Notice that a subclass of these commands do not support extension of
+  their scope outside sections at all and the {\tt Global} is not
+  applicable to them.
+
+\item Commands whose default behavior is to stop their effect at the
+  end of the section or module they occur in.
+
+  For these commands, the {\tt Global} modifier extends their effect
+  outside the sections and modules they occurs in.
+
+  The {\tt Transparent} and {\tt Opaque} (see
+  Section~\ref{Controlling reduction strategy}) commands belong to
+  this category.
+
+\item Commands whose default behavior is to extend their effect
+  outside sections but not outside modules when they occur in a
+  section and to extend their effect outside the module or library
+  file they occur in when no section contains them.
+
+  For these commands, the {\tt Local} modifier limits the effect to
+  the current section or module while the {\tt Global} modifier extends
+  the effect outside the module even when the command occurs in a section.
+
+  The {\tt Set} and {\tt Unset} commands belong to this category.
+\end{itemize}
+
 
 % $Id$ 
 

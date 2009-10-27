@@ -404,7 +404,7 @@ let use_locality_full () =
 
 (* For commands whose default is to discharge and export:
    Global is the default and is neutral;
-   Local in a section deactivate discharge, 
+   Local in a section deactivates discharge, 
    Local not in a section deactivates export *)
 
 let make_locality = function Some true -> true | _ -> false
