@@ -17,6 +17,8 @@
 Require Import Coq.Classes.RelationClasses.
 Require Import Coq.Classes.Morphisms.
 
+Generalizable Variables A B eqA eqB RA RB f.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 

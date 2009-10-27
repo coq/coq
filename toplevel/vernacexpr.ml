@@ -301,6 +301,7 @@ type vernac_expr =
   | VernacDeclareImplicits of locality_flag * reference or_by_notation *
       (explicitation * bool * bool) list option
   | VernacReserve of lident list * constr_expr
+  | VernacGeneralizable of locality_flag * (lident list) option
   | VernacSetOpacity of
       locality_flag * (Conv_oracle.level * reference or_by_notation list) list
   | VernacUnsetOption of full_locality_flag * Goptions.option_name

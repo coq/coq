@@ -19,6 +19,8 @@ Require Import Coq.Program.Program.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Generalizable Variables a.
+
 Require Export Coq.Classes.SetoidClass.
 
 (** Application of the extensionality axiom to turn a goal on

@@ -402,10 +402,10 @@ let main_targets vfiles mlfiles other_targets inc =
 	print "spec: $(VIFILES)\n\n";
 	print "gallina: $(GFILES)\n\n";
 	print "html: $(GLOBFILES) $(VFILES)\n";
-	print "\t- mkdir html\n";
+	print "\t- mkdir -p html\n";
 	print "\t$(COQDOC) -toc -html $(COQDOCLIBS) -d html $(VFILES)\n\n";
 	print "gallinahtml: $(GLOBFILES) $(VFILES)\n";
-	print "\t- mkdir html\n";
+	print "\t- mkdir -p html\n";
 	print "\t$(COQDOC) -toc -html -g $(COQDOCLIBS) -d html $(VFILES)\n\n";
 	print "all.ps: $(VFILES)\n";
 	print "\t$(COQDOC) -toc -ps $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";

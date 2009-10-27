@@ -831,7 +831,8 @@ let rec pr_vernac = function
         (pr_locality local ++ str "Ltac " ++
         prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
   | VernacCreateHintDb (local,dbname,b) ->
-      hov 1 (pr_locality local ++ str "Create " ++ str "HintDb " ++ str dbname ++ (if b then str" discriminated" else mt ()))
+      hov 1 (pr_locality local ++ str "Create " ++ str "HintDb " ++ 
+		str dbname ++ (if b then str" discriminated" else mt ()))
   | VernacHints (local,dbnames,h) ->
       pr_hints local dbnames h pr_constr pr_constr_pattern_expr
   | VernacSyntacticDefinition (id,(ids,c),local,onlyparsing) ->
@@ -851,6 +852,14 @@ let rec pr_vernac = function
         str (if List.length idl > 1 then "s " else " ") ++
         prlist_with_sep spc pr_lident idl ++ str " :" ++ spc () ++
         pr_lconstr c)
+  | VernacGeneralizable (local, g) ->
+      hov 1 (pr_locality local ++ str"Generalizable Variable" ++
+		match g with
+		| None -> str "s none"
+		| Some [] -> str "s all"
+		| Some idl ->
+		    str (if List.length idl > 1 then "s " else " ") ++
+		      prlist_with_sep spc pr_lident idl)
   | VernacSetOpacity(b,[k,l]) when k=Conv_oracle.transparent ->
       hov 1 (str"Transparent" ++ pr_non_locality b ++
              spc() ++ prlist_with_sep sep pr_smart_global l)

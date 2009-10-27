@@ -2183,6 +2183,7 @@ let rec xlate_vernac =
 			       List.map (fun (_,x) -> xlate_ident x) l),
 		 xlate_formula f)
   | VernacReserve([], _) -> assert false
+  | VernacGeneralizable (_, _) -> xlate_error "TODO: Generalizable"
   | VernacLocate(LocateTerm id) -> CT_locate(loc_smart_global_to_ct_ID id)
   | VernacLocate(LocateLibrary id) -> CT_locate_lib(reference_to_ct_ID id)
   | VernacLocate(LocateModule _) -> xlate_error "TODO: Locate Module"

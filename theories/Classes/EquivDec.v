@@ -26,6 +26,8 @@ Require Import Coq.Bool.Bool.
 Require Import Coq.Arith.Peano_dec.
 Require Import Coq.Program.Program.
 
+Generalizable Variables A B R.
+
 Open Scope equiv_scope.
 
 Class DecidableEquivalence `(equiv : Equivalence A) :=

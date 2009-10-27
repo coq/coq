@@ -771,6 +771,8 @@ let vernac_reserve idl c =
   let t = Detyping.detype false [] [] t in
   List.iter (fun id -> Reserve.declare_reserved_type id t) idl
 
+let vernac_generalizable = Implicit_quantifiers.declare_generalizable
+
 let make_silent_if_not_pcoq b =
   if !pcoq <> None then
     error "Turning on/off silent flag is not supported in Pcoq mode."
@@ -1375,6 +1377,7 @@ let interp c = match c with
   | VernacSyntacticDefinition (id,c,l,b) ->vernac_syntactic_definition id c l b
   | VernacDeclareImplicits (local,qid,l) ->vernac_declare_implicits local qid l
   | VernacReserve (idl,c) -> vernac_reserve idl c
+  | VernacGeneralizable (local,gen) -> vernac_generalizable local gen
   | VernacSetOpacity (local,qidl) -> vernac_set_opacity local qidl
   | VernacSetOption (locality,key,v) -> vernac_set_option locality key v
   | VernacUnsetOption (locality,key) -> vernac_unset_option locality key

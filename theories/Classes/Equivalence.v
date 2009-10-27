@@ -25,6 +25,8 @@ Require Import Coq.Classes.Morphisms.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Generalizable Variables A R eqA B S eqB.
+
 Open Local Scope signature_scope.
 
 Definition equiv `{Equivalence A R} : relation A := R.

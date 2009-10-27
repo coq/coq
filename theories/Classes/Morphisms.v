@@ -20,6 +20,8 @@ Require Import Coq.Program.Tactics.
 Require Import Coq.Relations.Relation_Definitions.
 Require Export Coq.Classes.RelationClasses.
 
+Generalizable Variables all.
+
 (** * Morphisms.
 
    We now turn to the definition of [Proper] and declare standard instances.

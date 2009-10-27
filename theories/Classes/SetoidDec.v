@@ -18,6 +18,8 @@
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Generalizable Variables A B .
+
 (** Export notations. *)
 
 Require Export Coq.Classes.SetoidClass.

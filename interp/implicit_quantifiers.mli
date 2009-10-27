@@ -24,6 +24,8 @@ open Libnames
 open Typeclasses
 (*i*)
 
+val declare_generalizable : Vernacexpr.locality_flag -> (identifier located) list option -> unit
+
 val ids_of_list : identifier list -> Idset.t
 val destClassApp : constr_expr -> loc * reference * constr_expr list
 val destClassAppExpl : constr_expr -> loc * reference * (constr_expr * explicitation located option) list

@@ -274,6 +274,7 @@ let rec attribute_of_vernac_command = function
   | VernacSyntacticDefinition _ -> []
   | VernacDeclareImplicits _ -> []
   | VernacReserve _ -> []
+  | VernacGeneralizable _ -> []
   | VernacSetOpacity _ -> []
   | VernacSetOption (_,["Ltac";"Debug"], _) -> [DebugCommand]
   | VernacSetOption (_,o,BoolValue true) | VernacUnsetOption (_,o) ->

@@ -489,6 +489,8 @@ Qed.
 (* [fold], [filter], [for_all], [exists_] and [partition] requires
   some knowledge on [f] in order to be known as morphisms. *)
 
+Generalizable Variables f.
+
 Instance filter_equal `(Proper _ (E.eq==>Logic.eq) f) :
  Proper (Equal==>Equal) (filter f).
 Proof.

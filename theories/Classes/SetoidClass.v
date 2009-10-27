@@ -17,6 +17,8 @@
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Generalizable Variables A.
+
 Require Import Coq.Program.Program.
 
 Require Import Relation_Definitions.

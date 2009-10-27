@@ -518,7 +518,7 @@ GEXTEND Gram
 	 pri = OPT [ "|"; i = natural -> i ] ;
 	 props = [ ":="; "{"; r = record_declaration; "}" -> r |
 	     ":="; c = lconstr -> c | -> CRecord (loc, None, []) ] ->
-	   VernacInstance (not (use_non_locality ()), [], ((loc,Anonymous), expl, t), props, pri)
+	   VernacInstance (not (use_section_locality ()), [], ((loc,Anonymous), expl, t), props, pri)
 
       | IDENT "Instance"; name = identref; sup = OPT binders_let; ":";
 	 expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
@@ -545,7 +545,12 @@ GEXTEND Gram
 	   VernacDeclareImplicits (use_section_locality (),qid,pos)
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
-	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c) ] ]
+	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c)
+
+      | IDENT "Generalizable"; ["Variable" | IDENT "Variables"];
+           gen = [ IDENT "none" -> None | IDENT "all" -> Some [] | 
+	       idl = LIST1 identref -> Some idl ] ->
+	     VernacGeneralizable (use_section_locality (), gen) ] ]
   ;
   implicit_name:
     [ [ "!"; id = ident -> (id, false, true)

@@ -270,6 +270,8 @@ Definition FstRel {A B}(R:relation A) : relation (A*B) :=
 Definition SndRel {A B}(R:relation B) : relation (A*B) :=
  fun p p' => R (snd p) (snd p').
 
+Generalizable Variables A B RA RB Ri Ro.
+
 Instance ProdRel_equiv {A B} `(Equivalence A RA)`(Equivalence B RB) :
  Equivalence (ProdRel RA RB).
 Proof. firstorder. Qed.

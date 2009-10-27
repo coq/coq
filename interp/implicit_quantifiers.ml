@@ -24,7 +24,48 @@ open Libnames
 open Typeclasses
 open Typeclasses_errors
 open Pp
+open Libobject
+open Nameops
 (*i*)
+
+let generalizable_table = ref Idpred.empty
+
+let _ =
+  Summary.declare_summary "generalizable-ident"
+    { Summary.freeze_function = (fun () -> !generalizable_table);
+      Summary.unfreeze_function = (fun r -> generalizable_table := r);
+      Summary.init_function = (fun () -> generalizable_table := Idpred.empty) }
+
+let declare_generalizable_ident table (loc,id) =
+  if id <> root_of_id id then
+    user_err_loc(loc,"declare_generalizable_ident",
+    (pr_id id ++ str
+      " is not declarable as generalizable identifier: it must have no trailing digits, quote, or _"));
+  if Idpred.mem id table then
+    user_err_loc(loc,"declare_generalizable_ident",
+		(pr_id id++str" is already declared as a generalizable identifier"))
+  else Idpred.add id table
+
+let add_generalizable gen table =
+  match gen with
+  | None -> Idpred.empty
+  | Some [] -> Idpred.full
+  | Some l -> List.fold_left (fun table lid -> declare_generalizable_ident table lid)
+      table l
+
+let cache_generalizable_type (_,(local,cmd)) =
+  generalizable_table := add_generalizable cmd !generalizable_table
+    
+let (in_generalizable, _) =
+  declare_object {(default_object "GENERALIZED-IDENT") with
+    cache_function = cache_generalizable_type;
+    classify_function = (fun (local, _ as obj) -> if local then Dispose else Keep obj)
+  }
+    
+let declare_generalizable local gen =
+ Lib.add_anonymous_leaf (in_generalizable (local, gen))
+
+let find_generalizable_ident id = Idpred.mem (root_of_id id) !generalizable_table
 
 let ids_of_list l =
   List.fold_right Idset.add l Idset.empty
@@ -51,13 +92,16 @@ let is_freevar ids env x =
 (* Auxilliary functions for the inference of implicitly quantified variables. *)
 
 let free_vars_of_constr_expr c ?(bound=Idset.empty) l =
-  let found id bdvars l =
+  let found loc id bdvars l =
     if List.mem id l then l
-    else if not (is_freevar bdvars (Global.env ()) id)
-    then l else id :: l
+    else if is_freevar bdvars (Global.env ()) id
+    then
+      if find_generalizable_ident id then id :: l
+      else user_err_loc (loc, "Generalization", str "Unbound and ungeneralizable variable " ++ pr_id id)
+    else l
   in
   let rec aux bdvars l c = match c with
-    | CRef (Ident (_,id)) -> found id bdvars l
+    | CRef (Ident (loc,id)) -> found loc id bdvars l
     | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id)) :: _, [])) when not (Idset.mem id bdvars) ->
 	fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux (Idset.add id bdvars) l c
     | c -> fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux bdvars l c
@@ -204,14 +248,14 @@ let combine_params_freevar =
 
 let destClassApp cl =
   match cl with
-    | CApp (loc, (None,CRef ref), l) -> loc, ref, List.map fst l
+    | CApp (loc, (None, CRef ref), l) -> loc, ref, List.map fst l
     | CAppExpl (loc, (None, ref), l) -> loc, ref, l
     | CRef ref -> loc_of_reference ref, ref, []
     | _ -> raise Not_found
 
 let destClassAppExpl cl =
   match cl with
-    | CApp (loc, (None,CRef ref), l) -> loc, ref, l
+    | CApp (loc, (None, CRef ref), l) -> loc, ref, l
     | CRef ref -> loc_of_reference ref, ref, []
     | _ -> raise Not_found
 

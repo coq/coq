@@ -18,6 +18,8 @@ Require Import Coq.Classes.Morphisms Coq.Classes.Morphisms_Prop.
 Require Export Coq.Classes.RelationClasses Coq.Relations.Relation_Definitions.
 Require Import Coq.Classes.Equivalence Coq.Program.Basics.
 
+Generalizable Variables A R.
+
 Export ProperNotations.
 
 Set Implicit Arguments.
@@ -177,3 +179,5 @@ Ltac default_add_morphism_tactic :=
 Ltac add_morphism_tactic := default_add_morphism_tactic.
 
 Obligation Tactic := program_simpl.
+
+(* Notation "'Morphism' s t " := (@Proper _ (s%signature) t) (at level 10, s at next level, t at next level). *)
