@@ -45,7 +45,7 @@ type split_tree=
   | Split_patt of Idset.t * inductive * 
 		(bool array * (Idset.t * split_tree) option) array
   | Close_patt of split_tree
-  | End_patt of (identifier * int)
+  | End_patt of (identifier * (int * int))
 
 type elim_kind =
     EK_dep of split_tree
@@ -124,3 +124,4 @@ let get_last env =
   try 
     let (id,_,_) =  List.hd (Environ.named_context env) in id
   with Invalid_argument _ -> error "no previous statement to use"
+

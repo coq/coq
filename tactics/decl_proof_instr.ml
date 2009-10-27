@@ -1161,7 +1161,7 @@ let case_tac params pat_info hyps gls0 =
   let clause = build_dep_clause params pat_info per_info hyps gls0 in
   let ninfo1 = {pm_stack=Suppose_case::info.pm_stack} in
   let nek = 
-    register_dep_subcase (id,List.length hyps) (pf_env gls0) per_info 
+    register_dep_subcase (id,(List.length params,List.length hyps)) (pf_env gls0) per_info 
       pat_info.pat_pat ek in  
   let ninfo2 = {pm_stack=Per(et,per_info,nek,id::old_clauses)::rest} in
     tclTHENS (assert_postpone id clause) 
@@ -1227,6 +1227,7 @@ let hrec_for fix_id per_info gls obj_id =
   let hd2 = applist (mkVar fix_id,args@[obj]) in 
     compose_lam rc (whd_beta gls.sigma hd2)
 
+
 let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
   match tree, objs  with
       Close_patt t,_ ->  
@@ -1235,16 +1236,19 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
     | Skip_patt (_,t),skipped::next_objs -> 
 	let args0 = push_arg skipped args in
 	  execute_cases fix_name per_info tacnext args0 next_objs nhrec t gls
-    | End_patt (id,nhyps),[] -> 
+    | End_patt (id,(nparams,nhyps)),[] -> 
 	begin
 	  match List.assoc id args with
 	      [None,br_args] -> 
-		let metas = 
-		  list_tabulate (fun n -> mkMeta (succ n)) nhyps in
+		let all_metas = 
+		  list_tabulate (fun n -> mkMeta (succ n)) (nparams + nhyps)  in
+		let param_metas,hyp_metas = list_chop nparams all_metas in
 		  tclTHEN
 		    (tclDO nhrec introf)
 		    (tacnext 
-		       (applist (mkVar id,List.rev_append br_args metas))) gls
+		       (applist (mkVar id,
+				 List.append param_metas 
+				   (List.rev_append br_args hyp_metas)))) gls
 	    | _ -> anomaly "wrong stack size"
 	end
     | Split_patt (ids,ind,br), casee::next_objs ->
@@ -1318,7 +1322,19 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
     | End_patt (_,_) , _ :: _  -> 
 	anomaly "execute_cases : End of branch with garbage left"
 
+let understand_my_constr c gls =
+  let env = pf_env gls in
+  let nc = names_of_rel_context env in
+  let rawc = Detyping.detype false [] nc c in
+  let rec frob = function REvar _ -> RHole (dummy_loc,QuestionMark Expand) | rc ->  map_rawconstr frob rc in
+    Pretyping.Default.understand_tcc (sig_sig gls) env ~expected_type:(pf_concl gls) (frob rawc)
 
+let set_refine,my_refine =
+let refine = ref (fun (_:open_constr) -> (assert false : tactic) ) in
+((fun tac -> refine:= tac),
+(fun c gls -> 
+   let oc = understand_my_constr c gls in
+     !refine oc gls))
 
 (* end focus/claim *)
 		
@@ -1361,7 +1377,7 @@ let end_tac et2 gls =
 	  | ET_Case_analysis,EK_dep tree ->
 		 execute_cases Anonymous pi 
 		   (fun c -> tclTHENLIST 
-		      [refine c;
+		      [my_refine c;
 		       clear clauses;
 		       justification assumption])
 		   (initial_instance_stack clauses) [pi.per_casee] 0 tree
@@ -1382,7 +1398,7 @@ let end_tac et2 gls =
 			     (fun c ->
 				tclTHENLIST 
 				  [clear [fix_id];
-				   refine c;
+				   my_refine c;
 				   clear clauses;
 				   justification assumption])
 			     (initial_instance_stack clauses) 

@@ -334,7 +334,7 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
       if List.length params <> expected then
 	errorlabstrm "suppose it is" 
 	  (str "Wrong number of extra arguments: " ++ 
-	     (if expected = 0 then str "none" else int expected) ++ 
+	     (if expected = 0 then str "none" else int expected) ++ spc () ++
 	     str "expected.") in
   let app_ind =
     let rind = RRef (dummy_loc,Libnames.IndRef pinfo.per_ind) in
