@@ -9,7 +9,6 @@
 (*i $Id$ i*)
 
 (*i*)
-open Dyn
 open Pp
 open Util
 open Names

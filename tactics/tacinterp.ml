@@ -13,7 +13,6 @@ open Closure
 open RedFlags
 open Declarations
 open Entries
-open Dyn
 open Libobject
 open Pattern
 open Matching
@@ -141,15 +140,15 @@ let constr_of_id env id =
 (* To embed tactics *)
 let ((tactic_in : (interp_sign -> glob_tactic_expr) -> Dyn.t),
      (tactic_out : Dyn.t -> (interp_sign -> glob_tactic_expr))) =
-  create "tactic"
+  Dyn.create "tactic"
 
 let ((value_in : value -> Dyn.t),
-     (value_out : Dyn.t -> value)) = create "value"
+     (value_out : Dyn.t -> value)) = Dyn.create "value"
 
 let valueIn t = TacDynamic (dummy_loc,value_in t)
 let valueOut = function
   | TacDynamic (_,d) ->
-    if (tag d) = "value" then
+    if (Dyn.tag d) = "value" then
       value_out d
     else
       anomalylabstrm "valueOut" (str "Dynamic tag should be value")
@@ -894,7 +893,7 @@ and intern_tacarg strict ist = function
   | TacFreshId x -> TacFreshId (List.map (intern_or_var ist) x)
   | Tacexp t -> Tacexp (intern_tactic ist t)
   | TacDynamic(loc,t) as x ->
-      (match tag t with
+      (match Dyn.tag t with
 	| "tactic" | "value" | "constr" -> x
 	| s -> anomaly_loc (loc, "",
                  str "Unknown dynamic: <" ++ str s ++ str ">"))
@@ -1864,7 +1863,7 @@ and interp_tacarg ist gl = function
       VIntroPattern (IntroIdentifier id)
   | Tacexp t -> val_interp ist gl t
   | TacDynamic(_,t) ->
-      let tg = (tag t) in
+      let tg = (Dyn.tag t) in
       if tg = "tactic" then
         val_interp ist gl (tactic_out t ist)
       else if tg = "value" then
@@ -2727,7 +2726,7 @@ and subst_tacarg subst = function
   | (TacVoid | IntroPattern _ | Integer _ | TacFreshId _) as x -> x
   | Tacexp t -> Tacexp (subst_tactic subst t)
   | TacDynamic(the_loc,t) as x ->
-      (match tag t with
+      (match Dyn.tag t with
 	| "tactic" | "value" -> x
         | "constr" ->
           TacDynamic(the_loc, constr_in (subst_mps subst (constr_out t)))
@@ -2941,7 +2940,7 @@ let tacticIn t =
 
 let tacticOut = function
   | TacArg (TacDynamic (_,d)) ->
-    if (tag d) = "tactic" then
+    if (Dyn.tag d) = "tactic" then
       tactic_out d
     else
       anomalylabstrm "tacticOut" (str "Dynamic tag should be tactic")

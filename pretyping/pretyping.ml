@@ -29,7 +29,6 @@ open Pretype_errors
 open Rawterm
 open Evarconv
 open Pattern
-open Dyn
 
 type typing_constraint = OfType of types option | IsType
 type var_map = (identifier * unsafe_judgment) list
@@ -73,7 +72,7 @@ let search_guard loc env possible_indexes fixdefs =
 
 (* To embed constr in rawconstr *)
 let ((constr_in : constr -> Dyn.t),
-     (constr_out : Dyn.t -> constr)) = create "constr"
+     (constr_out : Dyn.t -> constr)) = Dyn.create "constr"
 
 (** Miscellaneous interpretation functions *)
 
@@ -622,7 +621,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	in inh_conv_coerce_to_tycon loc env evdref cj tycon
 
     | RDynamic (loc,d) ->
-	if (tag d) = "constr" then
+	if (Dyn.tag d) = "constr" then
 	  let c = constr_out d in
 	  let j = (Retyping.get_judgment_of env !evdref c) in
 	    j

@@ -29,7 +29,6 @@ open Pretype_errors
 open Rawterm
 open Evarconv
 open Pattern
-open Dyn
 
 open Subtac_coercion
 open Subtac_utils

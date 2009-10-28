@@ -30,7 +30,6 @@ open Pretype_errors
 open Rawterm
 open Evarconv
 open Pattern
-open Dyn
 open Pretyping
 
 (************************************************************************)
@@ -530,7 +529,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  inh_conv_coerce_to_tycon loc env evdref cj tycon
 
     | RDynamic (loc,d) ->
-	if (tag d) = "constr" then
+	if (Dyn.tag d) = "constr" then
 	  let c = constr_out d in
 	  let j = (Retyping.get_judgment_of env ( !evdref) c) in
 	    j
