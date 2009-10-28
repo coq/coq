@@ -18,17 +18,17 @@
  *
  *  Exemple :
  *    J'ai le but
- *        (x:nat) { y:nat | (minus y x) = x }
+ *        forall (x:nat), { y:nat | (minus y x) = x }
  *    et je donne la preuve incomplète
- *        [x:nat](exist nat [y:nat]((minus y x)=x) (plus x x) ?)
+ *        fun (x:nat) => exist nat [y:nat]((minus y x)=x) (plus x x) ?
  *    ce qui engendre le but
- *        (minus (plus x x) x)=x
+ *        (minus (plus x x) x) = x
  *)
 
 (*  Pour cela, on procède de la manière suivante :
  *
  *  1. Un terme de preuve incomplet est un terme contenant des variables
- *     existentielles Evar i.e. "?" en syntaxe concrète.
+ *     existentielles Evar i.e. "_" en syntaxe concrète.
  *     La résolution de ces variables n'est plus nécessairement totale
  *     (ise_resolve called with fail_evar=false) et les variables
  *     existentielles restantes sont remplacées par des méta-variables
@@ -38,8 +38,10 @@
  *  2. On met ensuite le terme "à plat" i.e. on n'autorise des MV qu'au
  *     permier niveau et pour chacune d'elles, si nécessaire, on donne
  *     à son tour un terme de preuve incomplet pour la résoudre.
- *     Exemple: le terme (f a ? [x:nat](e ?)) donne
- *         (f a ?1 ?2) avec ?2 => [x:nat]?3 et ?3 => (e ?4)
+ *     Exemple: le terme (f a _ (fun (x:nat) => e _)) donne
+ *         (f a ?1 ?2) avec:
+ *           - ?2 := fun (x:nat) => ?3
+ *           - ?3 := e ?4
  *         ?1 et ?4 donneront des buts
  *
  *  3. On écrit ensuite une tactique tcc qui engendre les sous-buts
