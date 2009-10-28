@@ -919,8 +919,8 @@ let try_delta_expand env sigma t =
 let simplify_args env sigma t =
   (* Quick hack to reduce in arguments of eq only *)
   match decompose_app t with
-    | eq, [t;c1;c2] -> applist (eq,[t;nf env sigma c1;nf env sigma c2])
-    | eq, [t1;c1;t2;c2] -> applist (eq,[t1;nf env sigma c1;t2;nf env sigma c2])
+    | eq, [t;c1;c2] -> applist (eq,[t;simpl env sigma c1;simpl env sigma c2])
+    | eq, [t1;c1;t2;c2] -> applist (eq,[t1;simpl env sigma c1;t2;simpl env sigma c2])
     | _ -> t
 
 let inject_at_positions env sigma (eq,_,(t,t1,t2)) eq_clause posns tac =

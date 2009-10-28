@@ -94,8 +94,3 @@ val reduce_to_atomic_ref :
 
 val contextually : bool -> occurrences * constr -> reduction_function
   -> reduction_function
-
-(* Compatibility *)
-(* use [simpl] instead of [nf] *)
-val nf :  reduction_function
-

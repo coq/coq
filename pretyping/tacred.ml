@@ -730,8 +730,6 @@ let whd_simpl env sigma c =
 
 let simpl env sigma c = strong whd_simpl env sigma c
 
-let nf = simpl (* Compatibility *)
-
 (* Reduction at specific subterms *)
 
 let is_head c t =
