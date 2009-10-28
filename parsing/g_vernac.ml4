@@ -452,7 +452,7 @@ GEXTEND Gram
   ;
   module_type:
     [ [ qid = qualid -> CMTEident qid
-(* ... *)
+      | "("; mt = module_type; ")" -> mt
       | mty = module_type; me = module_expr_atom -> CMTEapply (mty,me)
       | mty = module_type; "with"; decl = with_declaration -> CMTEwith (mty,decl)
       ] ]

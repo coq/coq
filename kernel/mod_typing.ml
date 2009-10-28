@@ -50,14 +50,18 @@ let rec rebuild_mp mp l =
     | i::r -> rebuild_mp (MPdot(mp,i)) r 
 	
 let rec check_with env sign with_decl alg_sign mp equiv = 
-  match with_decl with
+  let sign,wd,equiv,cst= match with_decl with
     | With_Definition (id,_) ->
 	let sign,cb,cst = check_with_aux_def env sign with_decl mp equiv in
-	  sign,Some (SEBwith(alg_sign,With_definition_body(id,cb))),equiv,cst
+	  sign,With_definition_body(id,cb),equiv,cst
     | With_Module (id,mp1) -> 
 	let sign,equiv,cst = 
 	  check_with_aux_mod env sign with_decl mp equiv in
-	  sign,Some (SEBwith(alg_sign,With_module_body(id,mp1))),equiv,cst
+	  sign,With_module_body(id,mp1),equiv,cst in
+    if alg_sign = None then
+      sign,None,equiv,cst
+    else
+      sign,Some (SEBwith(Option.get(alg_sign),wd)),equiv,cst
 	    
 and check_with_aux_def env sign with_decl mp equiv = 
   let sig_b = match sign with 
@@ -299,7 +303,7 @@ and translate_struct_module_entry env mp mse  = match mse with
       Univ.Constraint.union cst1 cst
   | MSEwith(mte, with_decl) ->
       let sign,alg,resolve,cst1 = translate_struct_module_entry env mp mte in
-      let sign,alg,resolve,cst2 = check_with env sign with_decl alg mp resolve in
+      let sign,alg,resolve,cst2 = check_with env sign with_decl (Some alg) mp resolve in
 	sign,Option.get alg,resolve,Univ.Constraint.union cst1 cst2
 	  
 and translate_struct_type_entry env mse  = match mse with
@@ -335,7 +339,7 @@ and translate_struct_type_entry env mse  = match mse with
   | MSEwith(mte, with_decl) ->
       let sign,alg,resolve,mp_from,cst = translate_struct_type_entry env mte in
       let sign,alg,resolve,cst1 = 
-	check_with env sign with_decl (Option.get alg) mp_from resolve in
+	check_with env sign with_decl alg mp_from resolve in
 	sign,alg,resolve,mp_from,Univ.Constraint.union cst cst1    
 
 and translate_module_type env mp mte =
