@@ -62,26 +62,27 @@ struct
       decrec []
 
   let constr_val_discr t =
-  let c, l = decomp t in
-    match kind_of_term c with
-    | Ind ind_sp -> Dn.Label(Term_dn.GRLabel (IndRef ind_sp),l)
-    | Construct cstr_sp -> Dn.Label(Term_dn.GRLabel (ConstructRef cstr_sp),l)
-    | Var id -> Dn.Label(Term_dn.GRLabel (VarRef id),l)
-    | Const _ -> Dn.Everything
-    | _ -> Dn.Nothing
-
-let constr_val_discr_st (idpred,cpred) t =
-  let c, l = decomp t in
-    match kind_of_term c with
-    | Const c -> if Cpred.mem c cpred then Dn.Everything else Dn.Label(Term_dn.GRLabel (ConstRef c),l)
-    | Ind ind_sp -> Dn.Label(Term_dn.GRLabel (IndRef ind_sp),l)
-    | Construct cstr_sp -> Dn.Label(Term_dn.GRLabel (ConstructRef cstr_sp),l)
-    | Var id when not (Idpred.mem id idpred) -> Dn.Label(Term_dn.GRLabel (VarRef id),l)
-    | Prod (n, d, c) -> Dn.Label(Term_dn.ProdLabel, [d; c])
-    | Lambda (n, d, c) -> Dn.Label(Term_dn.LambdaLabel, [d; c] @ l)
-    | Sort s -> Dn.Label(Term_dn.SortLabel (Some s), [])
-    | Evar _ -> Dn.Everything
-    | _ -> Dn.Nothing
+    let c, l = decomp t in
+      match kind_of_term c with
+      | Ind ind_sp -> Dn.Label(Term_dn.GRLabel (IndRef ind_sp),l)
+      | Construct cstr_sp -> Dn.Label(Term_dn.GRLabel (ConstructRef cstr_sp),l)
+      | Var id -> Dn.Label(Term_dn.GRLabel (VarRef id),l)
+      | Const _ -> Dn.Everything
+      | _ -> Dn.Nothing
+	
+  let constr_val_discr_st (idpred,cpred) t =
+    let c, l = decomp t in
+      match kind_of_term c with
+      | Const c -> if Cpred.mem c cpred then Dn.Everything else Dn.Label(Term_dn.GRLabel (ConstRef c),l)
+      | Ind ind_sp -> Dn.Label(Term_dn.GRLabel (IndRef ind_sp),l)
+      | Construct cstr_sp -> Dn.Label(Term_dn.GRLabel (ConstructRef cstr_sp),l)
+      | Var id when not (Idpred.mem id idpred) -> Dn.Label(Term_dn.GRLabel (VarRef id),l)
+      | Prod (n, d, c) -> Dn.Label(Term_dn.ProdLabel, [d; c])
+      | Lambda (n, d, c) -> Dn.Label(Term_dn.LambdaLabel, [d; c] @ l)
+      | Sort s when is_small s -> Dn.Label(Term_dn.SortLabel (Some s), [])
+      | Sort _ -> Dn.Label(Term_dn.SortLabel None, [])
+      | Evar _ -> Dn.Everything
+      | _ -> Dn.Nothing
 
   let bounded_constr_pat_discr_st st (t,depth) =
     if depth = 0 then 
