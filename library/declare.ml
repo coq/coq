@@ -101,9 +101,10 @@ let load_constant i ((sp,kn),(_,_,kind)) =
     errorlabstrm "cache_constant"
       (pr_id (basename sp) ++ str " already exists");
   let con = Global.constant_of_delta (constant_of_kn kn) in
-    Nametab.push (Nametab.Until i) sp (ConstRef con);
-    add_constant_kind con kind
-      
+  Nametab.push (Nametab.Until i) sp (ConstRef con);
+  add_constant_kind con kind;
+  !cache_hook sp
+
 (* Opening means making the name without its module qualification available *)
 let open_constant i ((sp,kn),_) =
   let con = constant_of_kn kn in
@@ -219,7 +220,8 @@ let check_exists_inductive (sp,_) =
 let load_inductive i ((sp,kn),(_,mie)) =
   let names = inductive_names sp kn mie in
   List.iter check_exists_inductive names;
-  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until i) sp ref ) names
+  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until i) sp ref ) names;
+  List.iter (fun (sp,_) -> !cache_hook sp) (inductive_names sp kn mie)
 
 let open_inductive i ((sp,kn),(_,mie)) =
   let names = inductive_names sp kn mie in
