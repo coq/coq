@@ -923,7 +923,14 @@ let iter_all_segments f =
   let _ =
     MPmap.iter
       (fun _ (prefix,objects) ->
-	 let apply_obj (id,obj) = f (make_oname prefix id) obj in
+	 let apply_obj (id,obj) = match object_tag obj with 
+	   | "INCLUDE" -> 
+	       let (_,(_,mp,objs)) =  out_include obj in 
+	       let apply_include (id,obj) =
+		 f (make_oname prefix id) obj in
+		 List.iter apply_include objs
+		   
+	   | _ -> f (make_oname prefix id) obj in
 	   List.iter apply_obj objects)
       !modtab_objects
   in
