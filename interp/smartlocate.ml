@@ -37,11 +37,13 @@ let locate_global_with_alias (loc,qid) =
       str " is bound to a notation that does not denote a reference")
 
 let global_inductive_with_alias r =
-  match locate_global_with_alias (qualid_of_reference r) with
+  let (loc,qid as lqid) = qualid_of_reference r in
+  try match locate_global_with_alias lqid with
   | IndRef ind -> ind
   | ref ->
       user_err_loc (loc_of_reference r,"global_inductive",
         pr_reference r ++ spc () ++ str "is not an inductive type")
+  with Not_found -> Nametab.error_global_not_found_loc loc qid
 
 let global_with_alias r =
   let (loc,qid as lqid) = qualid_of_reference r in
