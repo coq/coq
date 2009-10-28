@@ -46,6 +46,11 @@ Tactic Language
 
 - Support for parsing non-empty lists with separators in tactic notations.
 
+Language
+
+- Notations to names now behave like the names they refer to wrt implicit
+  arguments and interpretation scopes.
+
 Vernacular commands
 
 - New command "Timeout <n> <command>." interprets a command and a timeout

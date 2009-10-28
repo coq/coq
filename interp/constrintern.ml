@@ -358,7 +358,9 @@ let intern_qualid loc qid intern env args =
       RRef (loc, ref), args
   | SynDef sp ->
       Dumpglob.add_glob_kn loc sp;
-      let (ids,c) = Syntax_def.search_syntactic_definition loc sp in
+      match Syntax_def.search_syntactic_definition loc sp with
+      | [],ARef ref -> RRef (loc, ref), args
+      | (ids,c) ->
       let nids = List.length ids in
       if List.length args < nids then error_not_enough_arguments loc;
       let args1,args2 = list_chop nids args in
@@ -949,6 +951,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	  let args = List.map (fun a -> (a,None)) args in
 	  intern_applied_reference intern env lvar args ref in
 	check_projection isproj (List.length args) f;
+	if args = [] then f else
 	RApp (loc, f, intern_args env args_scopes (List.map fst args))
     | CApp (loc, (isproj,f), args) ->
         let isproj,f,args = match f with
