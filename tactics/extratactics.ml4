@@ -478,10 +478,24 @@ END
 (* sozeau: abs/gen for induction on instantiated dependent inductives, using "Ford" induction as
   defined by Conor McBride *)
 TACTIC EXTEND generalize_eqs
-| ["generalize_eqs" hyp(id) ] -> [ abstract_generalize id ~generalize_vars:false ]
+| ["generalize_eqs" hyp(id) ] -> [ abstract_generalize ~generalize_vars:false id ]
+END
+TACTIC EXTEND dep_generalize_eqs
+| ["dependent" "generalize_eqs" hyp(id) ] -> [ abstract_generalize ~generalize_vars:false ~force_dep:true id ]
 END
 TACTIC EXTEND generalize_eqs_vars
-| ["generalize_eqs_vars" hyp(id) ] -> [ abstract_generalize id ~generalize_vars:true ]
+| ["generalize_eqs_vars" hyp(id) ] -> [ abstract_generalize ~generalize_vars:true id ]
+END
+TACTIC EXTEND dep_generalize_eqs_vars
+| ["dependent" "generalize_eqs_vars" hyp(id) ] -> [ abstract_generalize ~force_dep:true ~generalize_vars:true id ]
+END
+
+(** Tactic to automatically simplify hypotheses of the form [Π Δ, x_i = t_i -> T] 
+    where [t_i] is closed w.r.t. Δ. Such hypotheses are automatically generated
+    during dependent induction. *)
+
+TACTIC EXTEND specialize_hyp
+[ "specialize_hypothesis" hyp(id) ] -> [ specialize_hypothesis id ]
 END
 
 TACTIC EXTEND dependent_pattern

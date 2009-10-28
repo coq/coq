@@ -200,7 +200,7 @@ let declare_class_instance gr ctx params =
   try
   let cst = Declare.declare_constant ident
     (ce,Decl_kinds.IsDefinition Decl_kinds.Instance) in
-  Typeclasses.add_instance (Typeclasses.new_instance cl (Some 100) true cst);
+  Typeclasses.add_instance (Typeclasses.new_instance cl (Some 100) true (ConstRef cst));
   new_instance_message ident typ def
   with e -> msgnl (str"Error defining instance := "++pr_constr def++str" : "++pr_constr typ++str"  "++Cerrors.explain_exn e)
 

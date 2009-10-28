@@ -191,3 +191,6 @@ exception ClearDependencyError of identifier * clear_dependency_error
 
 val clear_hyps_in_evi : evar_defs ref -> named_context_val -> types ->
   identifier list -> named_context_val * types
+
+val push_rel_context_to_named_context : Environ.env -> types -> 
+  named_context_val * types * constr list

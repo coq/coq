@@ -21,6 +21,9 @@ let ppwarn cmd = Pp.warn (str"Program:" ++ cmd)
 let pperror cmd = Util.errorlabstrm "Program" cmd
 let error s = pperror (str s)
 
+let reduce =
+  Reductionops.clos_norm_flags Closure.betaiotazeta (Global.env ()) Evd.empty
+
 exception NoObligations of identifier option
 
 let explain_no_obligations = function
@@ -28,17 +31,17 @@ let explain_no_obligations = function
   | None -> str "No obligations remaining"
 
 type obligation_info = (Names.identifier * Term.types * loc * obligation_definition_status * Intset.t
-			 * Tacexpr.raw_tactic_expr option) array
+			 * tactic option) array
 
 type obligation =
-    { obl_name : identifier;
-      obl_type : types;
-      obl_location : loc;
-      obl_body : constr option;
-      obl_status : obligation_definition_status;
-      obl_deps : Intset.t;
-      obl_tac : Tacexpr.raw_tactic_expr option;
-    }
+  { obl_name : identifier;
+    obl_type : types;
+    obl_location : loc;
+    obl_body : constr option;
+    obl_status : obligation_definition_status;
+    obl_deps : Intset.t;
+    obl_tac : tactic option;
+  }
 
 type obligations = (obligation array * int)
 
@@ -105,7 +108,7 @@ let subst_deps expand obls deps t =
     Term.replace_vars subst t
 
 let subst_deps_obl obls obl =
-  let t' = subst_deps false obls obl.obl_deps obl.obl_type in
+  let t' = subst_deps true obls obl.obl_deps obl.obl_type in
     { obl with obl_type = t' }
 
 module ProgMap = Map.Make(struct type t = identifier let compare = compare end)
@@ -148,15 +151,14 @@ let _ =
 
 let progmap_union = ProgMap.fold ProgMap.add
 
-let cache (_, (infos, tac)) =
-  from_prg := infos;
+let cache (_, tac) =
   set_default_tactic tac
 
-let load (_, (_, tac)) =
+let load (_, tac) =
   set_default_tactic tac
 
-let subst (s, (infos, tac)) =
-  (infos, Tacinterp.subst_tactic s tac)
+let subst (s, tac) =
+  Tacinterp.subst_tactic s tac
 
 let (input,output) =
   declare_object
@@ -164,17 +166,16 @@ let (input,output) =
       cache_function = cache;
       load_function = (fun _ -> load);
       open_function = (fun _ -> load);
-      classify_function = (fun (infos, tac) ->
-	if not (ProgMap.is_empty infos) then
+      classify_function = (fun tac ->
+	if not (ProgMap.is_empty !from_prg) then
 	  errorlabstrm "Program" (str "Unsolved obligations when closing module:" ++ spc () ++
 				   prlist_with_sep spc (fun x -> Nameops.pr_id x)
-				   (map_keys infos));
-	Substitute (ProgMap.empty, tac));
+				   (map_keys !from_prg));
+	Substitute tac);
       subst_function = subst}
 
 let update_state () =
-(*   msgnl (str "Updating obligations info"); *)
-  Lib.add_anonymous_leaf (input (!from_prg, !default_tactic_expr))
+  Lib.add_anonymous_leaf (input !default_tactic_expr)
 
 let set_default_tactic t =
   set_default_tactic t; update_state ()
@@ -195,7 +196,7 @@ let subst_body expand prg =
   subst_deps expand obls ints (Termops.refresh_universes prg.prg_type)
 
 let declare_definition prg =
-  let body, typ = subst_body false prg in
+  let body, typ = subst_body true prg in
     (try trace (str "Declaring: " ++ Ppconstr.pr_id prg.prg_name ++ spc () ++
 		  my_print_constr (Global.env()) body ++ str " : " ++
 		  my_print_constr (Global.env()) prg.prg_type);
@@ -229,8 +230,8 @@ let declare_definition prg =
 	  if Impargs.is_implicit_args () || prg.prg_implicits <> [] then
 	    Impargs.declare_manual_implicits false gr prg.prg_implicits;
 	  print_message (Subtac_utils.definition_message prg.prg_name);
-	  prg.prg_hook local gr;
 	  progmap_remove prg; update_state ();
+	  prg.prg_hook local gr;
 	  gr
 
 open Pp
@@ -256,17 +257,16 @@ let compute_possible_guardness_evidences (n,_) fixbody fixtype =
       let ctx = fst (decompose_prod_n_assum m fixtype) in
 	list_map_i (fun i _ -> i) 0 ctx
 
-let reduce_fix =
-  Reductionops.clos_norm_flags Closure.betaiotazeta (Global.env ()) Evd.empty
-
 let declare_mutual_definition l =
   let len = List.length l in
   let first = List.hd l in
   let fixdefs, fixtypes, fiximps =
     list_split3
-      (List.map (fun x ->
-	let subs, typ = (subst_body false x) in
-	  (strip_lam_n len subs), snd (decompose_prod_n len typ), x.prg_implicits) l)
+      (List.map (fun x -> 
+	let subs, typ = (subst_body true x) in
+	let term = snd (Reductionops.splay_lam_n (Global.env ()) Evd.empty len subs) in
+	let typ = snd (Reductionops.splay_prod_n (Global.env ()) Evd.empty len typ) in
+	  reduce term, reduce typ, x.prg_implicits) l)
   in
 (*   let fixdefs = List.map reduce_fix fixdefs in *)
   let fixkind = Option.get first.prg_fixkind in
@@ -295,36 +295,48 @@ let declare_mutual_definition l =
       first.prg_hook local gr;
       List.iter progmap_remove l;
       update_state (); kn
-
-let declare_obligation obl body =
+      
+let declare_obligation prg obl body =
+  let body = reduce body in
+  let ty = reduce obl.obl_type in
   match obl.obl_status with
   | Expand -> { obl with obl_body = Some body }
   | Define opaque ->
-      let ce =
+      let opaque = if get_proofs_transparency () then false else opaque in
+      let ce = 
 	{ const_entry_body = body;
-	  const_entry_type = Some obl.obl_type;
-	  const_entry_opaque =
-	    (if get_proofs_transparency () then false
-	      else opaque) ;
-	  const_entry_boxed = false}
+	  const_entry_type = Some ty;
+	  const_entry_opaque = opaque;
+	  const_entry_boxed = false} 
       in
       let constant = Declare.declare_constant obl.obl_name
 	(DefinitionEntry ce,IsProof Property)
       in
+	if not opaque then
+	  Auto.add_hints false [string_of_id prg.prg_name]
+	    (Auto.HintsUnfoldEntry [EvalConstRef constant]);
 	print_message (Subtac_utils.definition_message obl.obl_name);
 	{ obl with obl_body = Some (mkConst constant) }
 
 let red = Reductionops.nf_betaiota Evd.empty
 
 let init_prog_info n b t deps fixkind notations obls impls kind hook =
-  let obls' =
-    Array.mapi
-      (fun i (n, t, l, o, d, tac) ->
-	 debug 2 (str "Adding obligation " ++ int i ++ str " with deps : " ++ str (string_of_intset d));
-         { obl_name = n ; obl_body = None;
-	   obl_location = l; obl_type = red t; obl_status = o;
-	   obl_deps = d; obl_tac = tac })
-      obls
+  let obls', b = 
+    match b with
+    | None ->
+	assert(obls = [||]);
+	let n = Nameops.add_suffix n "_obligation" in
+	  [| { obl_name = n; obl_body = None;
+	       obl_location = dummy_loc; obl_type = t;
+	       obl_status = Expand; obl_deps = Intset.empty; obl_tac = None } |],
+	mkVar n
+    | Some b ->
+	Array.mapi
+	  (fun i (n, t, l, o, d, tac) ->
+            { obl_name = n ; obl_body = None; 
+	      obl_location = l; obl_type = red t; obl_status = o;
+	      obl_deps = d; obl_tac = tac })
+	  obls, b
   in
     { prg_name = n ; prg_body = b; prg_type = red t; prg_obligations = (obls', Array.length obls');
       prg_deps = deps; prg_fixkind = fixkind ; prg_notations = notations ;
@@ -348,6 +360,9 @@ let get_prog_err n =
 
 let obligations_solved prg = (snd prg.prg_obligations) = 0
 
+let all_programs () =
+  ProgMap.fold (fun k p l -> p :: l) !from_prg []
+
 type progress =
     | Remain of int
     | Dependent
@@ -364,13 +379,14 @@ let obligations_message rem =
 
 let update_obls prg obls rem =
   let prg' = { prg with prg_obligations = (obls, rem) } in
-    from_prg := map_replace prg.prg_name prg' !from_prg;
+    from_prg := map_replace prg.prg_name prg' !from_prg; update_state ();
     obligations_message rem;
     if rem > 0 then Remain rem
     else (
       match prg'.prg_deps with
       | [] ->
 	  let kn = declare_definition prg' in
+	    progmap_remove prg';
 	    Defined kn
       | l ->
 	  let progs = List.map (fun x -> ProgMap.find x !from_prg) prg'.prg_deps in
@@ -432,7 +448,11 @@ let rec solve_obligation prg num =
 		    | Define opaque ->
 			if not opaque && not transparent then error_not_transp ()
 			else Libnames.constr_of_global gr
-		  in { obl with obl_body = Some body }
+		  in
+		    if transparent then
+		      Auto.add_hints true [string_of_id prg.prg_name]
+			(Auto.HintsUnfoldEntry [EvalConstRef cst]);
+		    { obl with obl_body = Some body }
 		in
 		let obls = Array.copy obls in
 		let _ = obls.(num) <- obl in
@@ -476,11 +496,11 @@ and solve_obligation_by_tac prg obls i tac =
 	      | Some t -> t
 	      | None ->
 		  match obl.obl_tac with
-		  | Some t -> Tacinterp.interp t
+		  | Some t -> t
 		  | None -> !default_tactic
 	    in
 	    let t = Subtac_utils.solve_by_tac (evar_of_obligation obl) tac in
-	      obls.(i) <- declare_obligation obl t;
+	      obls.(i) <- declare_obligation prg obl t;
 	      true
 	  else false
 	with
@@ -524,8 +544,7 @@ and auto_solve_obligations n tac : progress =
   try solve_prg_obligations (get_prog_err n) tac with NoObligations _ -> Dependent
 
 open Pp
-let show_obligations ?(msg=true) n =
-  let prg = get_prog_err n in
+let show_obligations_of_prg ?(msg=true) prg =
   let n = prg.prg_name in
   let obls, rem = prg.prg_obligations in
   let showed = ref 5 in
@@ -541,6 +560,14 @@ let show_obligations ?(msg=true) n =
 		   | Some _ -> ())
       obls
 
+let show_obligations ?(msg=true) n =
+  let progs = match n with
+    | None -> all_programs ()
+    | Some n ->
+	try [ProgMap.find n !from_prg]
+	with Not_found -> raise (NoObligations (Some n))
+  in List.iter (show_obligations_of_prg ~msg) progs
+
 let show_term n =
   let prg = get_prog_err n in
   let n = prg.prg_name in
@@ -548,14 +575,13 @@ let show_term n =
 	      my_print_constr (Global.env ()) prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
 	    ++ my_print_constr (Global.env ()) prg.prg_body)
 
-let add_definition n b t ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic ?(hook=fun _ _ -> ()) obls =
+let add_definition n ?term t ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic ?(hook=fun _ _ -> ()) obls =
   Flags.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
-  let prg = init_prog_info n b t [] None [] obls implicits kind hook in
+  let prg = init_prog_info n term t [] None [] obls implicits kind hook in
   let obls,_ = prg.prg_obligations in
   if Array.length obls = 0 then (
     Flags.if_verbose ppnl (str ".");
     let cst = declare_definition prg in
-      from_prg := ProgMap.remove prg.prg_name !from_prg;
       Defined cst)
   else (
     let len = Array.length obls in
@@ -570,7 +596,7 @@ let add_mutual_definitions l ?tactic ?(kind=Global,false,Definition) ?(hook=fun 
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
   let upd = List.fold_left
       (fun acc (n, b, t, imps, obls) ->
-	let prg = init_prog_info n b t deps (Some fixkind) notations obls imps kind hook in
+	let prg = init_prog_info n (Some b) t deps (Some fixkind) notations obls imps kind hook in
 	  ProgMap.add n prg acc)
       !from_prg l
   in
@@ -589,14 +615,17 @@ let add_mutual_definitions l ?tactic ?(kind=Global,false,Definition) ?(hook=fun 
 let admit_obligations n =
   let prg = get_prog_err n in
   let obls, rem = prg.prg_obligations in
-    Array.iteri (fun i x ->
-		 match x.obl_body with
-		     None ->
-                       let x = subst_deps_obl obls x in
-		       let kn = Declare.declare_constant x.obl_name (ParameterEntry (x.obl_type,false), IsAssumption Conjectural) in
-			 assumption_message x.obl_name;
-			 obls.(i) <- { x with obl_body = Some (mkConst kn) }
-		   | Some _ -> ())
+    Array.iteri 
+      (fun i x ->
+	match x.obl_body with
+	| None ->
+            let x = subst_deps_obl obls x in
+	    let kn = Declare.declare_constant x.obl_name (ParameterEntry (x.obl_type,false), 
+							 IsAssumption Conjectural) 
+	    in
+	      assumption_message x.obl_name;
+	      obls.(i) <- { x with obl_body = Some (mkConst kn) }
+	| Some _ -> ())
       obls;
     ignore(update_obls prg obls 0)
 

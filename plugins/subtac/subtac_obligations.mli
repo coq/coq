@@ -6,26 +6,26 @@ open Proof_type
 
 type obligation_info =
   (identifier * Term.types * loc *
-      obligation_definition_status * Intset.t * Tacexpr.raw_tactic_expr option) array
+      obligation_definition_status * Intset.t * tactic option) array
     (* ident, type, location, (opaque or transparent, expand or define),
        dependencies, tactic to solve it *)
 
 type progress = (* Resolution status of a program *)
-    | Remain of int  (* n obligations remaining *)
-    | Dependent (* Dependent on other definitions *)
-    | Defined of global_reference (* Defined as id *)
-
+  | Remain of int  (* n obligations remaining *)
+  | Dependent (* Dependent on other definitions *)
+  | Defined of global_reference (* Defined as id *)
+      
 val set_default_tactic : Tacexpr.glob_tactic_expr -> unit
 val default_tactic : unit -> Proof_type.tactic
 
 val set_proofs_transparency : bool -> unit (* true = All transparent, false = Opaque if possible *)
 val get_proofs_transparency : unit -> bool
 
-val add_definition : Names.identifier ->  Term.constr -> Term.types ->
+val add_definition : Names.identifier -> ?term:Term.constr -> Term.types -> 
   ?implicits:(Topconstr.explicitation * (bool * bool * bool)) list ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:Proof_type.tactic ->
-  ?hook:Tacexpr.declaration_hook -> obligation_info -> progress
+  ?hook:(Tacexpr.declaration_hook) -> obligation_info -> progress
 
 type notations = (string * Topconstr.constr_expr * Topconstr.scope_name option) list
 

@@ -1012,6 +1012,14 @@ let array_for_all_i f i v =
   let rec allrec i n = n = Array.length v || f i v.(n) && allrec (i+1) (n+1) in
   allrec i 0
 
+exception Found of int
+
+let array_find_i (pred: int -> 'a -> bool) (arr: 'a array) : int option =
+  try
+    for i=0 to Array.length arr - 1 do if pred i (arr.(i)) then raise (Found i) done;
+    None
+  with Found i -> Some i
+
 let array_hd v =
   match Array.length v with
     | 0 -> failwith "array_hd"

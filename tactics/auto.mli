@@ -63,6 +63,8 @@ module Hint_db :
     val use_dn : t -> bool
     val transparent_state : t -> transparent_state
     val set_transparent_state : t -> transparent_state -> t
+
+    val unfolds : t -> Idset.t * Cset.t
   end
 
 type hint_db_name = string

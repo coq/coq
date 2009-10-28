@@ -201,8 +201,8 @@ let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a option)
 	      if obj = None then evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
 	      else error "build_signature: no constraint can apply on a dependent argument"
 	  else
-	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
 	    let ty = Reductionops.nf_betaiota (fst evars) ty in
+	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
 	    let evars, relty = mk_relty evars env ty obj in
 	    let newarg = mkApp (Lazy.force respectful, [| ty ; b' ; relty ; arg |]) in
 	      evars, mkProd(na, ty, b), newarg, (ty, Some relty) :: cstrs
@@ -1279,8 +1279,8 @@ let add_morphism_infer glob m n =
       let cst = Declare.declare_internal_constant instance_id
 				(Entries.ParameterEntry (instance,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
-				add_instance (Typeclasses.new_instance (Lazy.force proper_class) None glob cst);
-				declare_projection n instance_id (ConstRef cst)
+	add_instance (Typeclasses.new_instance (Lazy.force proper_class) None glob (ConstRef cst));
+	declare_projection n instance_id (ConstRef cst)
     else
       let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	Flags.silently
@@ -1289,7 +1289,7 @@ let add_morphism_infer glob m n =
 	      (fun _ -> function
 		Libnames.ConstRef cst ->
 		  add_instance (Typeclasses.new_instance (Lazy.force proper_class) None
-				   glob cst);
+				   glob (ConstRef cst));
 		  declare_projection n instance_id (ConstRef cst)
 		| _ -> assert false);
 	    Pfedit.by (Tacinterp.interp <:tactic< Coq.Classes.SetoidTactics.add_morphism_tactic>>)) ();
@@ -1306,8 +1306,7 @@ let add_morphism glob binders m s n =
   in
   let tac = Tacinterp.interp <:tactic<add_morphism_tactic>> in
     ignore(new_instance ~global:glob binders instance (CRecord (dummy_loc,None,[]))
-	      ~generalize:false ~tac
-	      ~hook:(fun cst -> declare_projection n instance_id (ConstRef cst)) None)
+	      ~generalize:false ~tac ~hook:(declare_projection n instance_id) None)
 
 VERNAC COMMAND EXTEND AddSetoid1
    [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->

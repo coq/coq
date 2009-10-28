@@ -49,7 +49,11 @@ val all_instances : unit -> instance list
 
 val add_class : typeclass -> unit
 
-val new_instance : typeclass -> int option -> bool -> constant -> instance
+val add_constant_class : constant -> unit
+
+val add_inductive_class : inductive -> unit
+
+val new_instance : typeclass -> int option -> bool -> global_reference -> instance
 val add_instance : instance -> unit
 
 val class_info : global_reference -> typeclass (* raises a UserError if not a class *)
@@ -60,8 +64,8 @@ val dest_class_app : env -> constr -> typeclass * constr list
 
 (* Just return None if not a class *)
 val class_of_constr : constr -> typeclass option
-
-val instance_impl : instance -> constant
+  
+val instance_impl : instance -> global_reference
 
 val is_class : global_reference -> bool
 val is_instance : global_reference -> bool
@@ -86,8 +90,11 @@ val resolve_typeclasses : ?onlyargs:bool -> ?split:bool -> ?fail:bool ->
   env -> evar_defs -> evar_defs
 val resolve_one_typeclass : env -> evar_map -> types -> open_constr
 
-val register_add_instance_hint : (constant -> int option -> unit) -> unit
-val add_instance_hint : constant -> int option -> unit
+val register_set_typeclass_transparency : (evaluable_global_reference -> bool -> unit) -> unit
+val set_typeclass_transparency : evaluable_global_reference -> bool -> unit
+
+val register_add_instance_hint : (global_reference -> int option -> unit) -> unit
+val add_instance_hint : global_reference -> int option -> unit
 
 val solve_instanciations_problem : (env -> evar_defs -> bool -> bool -> bool -> evar_defs) ref
 val solve_instanciation_problem : (env -> evar_map -> types -> open_constr) ref

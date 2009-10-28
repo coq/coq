@@ -2145,8 +2145,8 @@ let rec xlate_vernac =
       CT_coercion (local_opt, id_opt, xlate_ident id1,
         xlate_class id2, xlate_class id3)
 
-    (* Type Classes *)
-   | VernacDeclareInstance _|VernacContext _|
+    (* Type Classes *) 
+   | VernacDeclareInstance _ | VernacDeclareClass _ | VernacContext _ |
 	 VernacInstance (_, _, _, _, _) ->
 	   xlate_error "TODO: Type Classes commands"
 

@@ -27,6 +27,18 @@ open Retyping
 open Coercion.Default
 open Recordops
 
+let occur_meta_or_undefined_evar evd c =
+  let rec occrec c = match kind_of_term c with
+    | Meta _ -> raise Occur
+    | Evar (ev,args) ->
+        (match evar_body (Evd.find evd ev) with
+        | Evar_defined c ->
+            occrec c; Array.iter occrec args
+        | Evar_empty -> raise Occur)
+    | Sort s when is_sort_variable evd s -> raise Occur
+    | _ -> iter_constr occrec c
+  in try occrec c; false with Occur | Not_found -> true
+
 (* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
    gives [x1:A1]..[xn:An]c' such that c converts to ([x1:A1]..[xn:An]c' l) *)
 
@@ -192,15 +204,16 @@ let oracle_order env cf1 cf2 =
 let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flags m n =
   let trivial_unify curenv pb (sigma,metasubst,_) m n =
     let subst = if flags.use_metas_eagerly then metasubst else ms in
-    match subst_defined_metas subst m with
-    | Some m1 ->
-	if (match flags.modulo_conv_on_closed_terms with
-	    Some flags ->
+    match subst_defined_metas subst m, subst_defined_metas subst n with
+    | Some m1, Some n1 ->
+	let evd = (create_evar_defs sigma) in
+          if (occur_meta_or_undefined_evar evd m1 || occur_meta_or_undefined_evar evd n1)
+	  then false
+	  else if (match flags.modulo_conv_on_closed_terms with
+	  | Some flags ->
 	      is_trans_fconv (conv_pb_of pb) flags env sigma m1 n
-	  | None -> false) then true else
-        if (not (is_ground_term (create_evar_defs sigma) m1))
-            || occur_meta_or_existential n then false else
-               error_cannot_unify curenv sigma (m, n)
+	  | None -> false) then true 
+	  else error_cannot_unify curenv sigma (m, n)
     | _ -> false in
   let rec unirec_rec (curenv,nb as curenvnb) pb b ((sigma,metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_castappevar sigma curm
@@ -370,22 +383,20 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       unirec_rec curenvnb pb b substn c1 (applist (c,(List.rev ks)))
 
   in
-    if (if occur_meta m then false else
-       if (match flags.modulo_conv_on_closed_terms with
-	  Some flags ->
-	    is_trans_fconv (conv_pb_of cv_pb) flags env sigma m n
-	| None -> constr_cmp (conv_pb_of cv_pb) m n) then true else
-      if (not (is_ground_term (create_evar_defs sigma) m))
-          || occur_meta_or_existential n then false else
-      if (match flags.modulo_conv_on_closed_terms, flags.modulo_delta with
+  let evd = create_evar_defs sigma in
+    if (if occur_meta_or_undefined_evar evd m || occur_meta_or_undefined_evar evd n then false 
+      else if (match flags.modulo_conv_on_closed_terms with
+      | Some flags ->
+	  is_trans_fconv (conv_pb_of cv_pb) flags env sigma m n
+      | None -> constr_cmp (conv_pb_of cv_pb) m n) then true 
+      else if (match flags.modulo_conv_on_closed_terms, flags.modulo_delta with
             | Some (cv_id, cv_k), (dl_id, dl_k) ->
                 Idpred.subset dl_id cv_id && Cpred.subset dl_k cv_k
             | None,(dl_id, dl_k) ->
                 Idpred.is_empty dl_id && Cpred.is_empty dl_k)
       then error_cannot_unify env sigma (m, n) else false)
     then subst
-    else
-      unirec_rec (env,0) cv_pb conv_at_top subst m n
+    else unirec_rec (env,0) cv_pb conv_at_top subst m n
 
 let unify_0 env sigma = unify_0_with_initial_metas (sigma,[],[]) true env
 

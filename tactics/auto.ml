@@ -123,6 +123,7 @@ module Hint_db = struct
 
   type t = {
     hintdb_state : Names.transparent_state;
+    hintdb_unfolds : Idset.t * Cset.t;
     use_dn : bool;
     hintdb_map : search_entry Constr_map.t;
     (* A list of unindexed entries starting with an unfoldable constant
@@ -131,6 +132,7 @@ module Hint_db = struct
   }
 
   let empty st use_dn = { hintdb_state = st;
+			  hintdb_unfolds = (Idset.empty, Cset.empty);
 			  use_dn = use_dn;
 			  hintdb_map = Constr_map.empty;
 			  hintdb_nopat = [] }
@@ -179,14 +181,17 @@ module Hint_db = struct
       List.fold_left (fun db (gr,v) -> addkv gr v db) db' db.hintdb_nopat
 
   let add_one (k,v) db =
-    let st',rebuild =
+    let st',db,rebuild =
       match v.code with
       | Unfold_nth egr ->
-	  let (ids,csts) = db.hintdb_state in
-	    (match egr with
-	    | EvalVarRef id -> (Idpred.add id ids, csts)
-	    | EvalConstRef cst -> (ids, Cpred.add cst csts)), true
-      | _ -> db.hintdb_state, false
+	  let addunf (ids,csts) (ids',csts') =
+	    match egr with
+	    | EvalVarRef id -> (Idpred.add id ids, csts), (Idset.add id ids', csts')
+	    | EvalConstRef cst -> (ids, Cpred.add cst csts), (ids', Cset.add cst csts')
+	  in 
+	  let state, unfs = addunf db.hintdb_state db.hintdb_unfolds in
+	    state, { db with hintdb_unfolds = unfs }, true
+      | _ -> db.hintdb_state, db, false
     in
     let db = if db.use_dn && rebuild then rebuild_db st' db else db
     in addkv k v db
@@ -202,6 +207,8 @@ module Hint_db = struct
   let set_transparent_state db st =
     if db.use_dn then rebuild_db st db
     else { db with hintdb_state = st }
+
+  let unfolds db = db.hintdb_unfolds
 
   let use_dn db = db.use_dn
 
@@ -356,17 +363,18 @@ open Vernacexpr
 
 (* If the database does not exist, it is created *)
 (* TODO: should a warning be printed in this case ?? *)
-let add_hint dbname hintlist =
-  try
-    let db = searchtable_map dbname in
-    let db' = Hint_db.add_list hintlist db in
+
+let get_db dbname =
+  try searchtable_map dbname
+  with Not_found -> Hint_db.empty empty_transparent_state false
+
+let add_hint dbname hintlist = 
+  let db = get_db dbname in
+  let db' = Hint_db.add_list hintlist db in
     searchtable_add (dbname,db')
-  with Not_found ->
-    let db = Hint_db.add_list hintlist (Hint_db.empty empty_transparent_state false) in
-    searchtable_add (dbname,db)
 
 let add_transparency dbname grs b =
-  let db = searchtable_map dbname in
+  let db = get_db dbname in
   let st = Hint_db.transparent_state db in
   let st' =
     List.fold_left (fun (ids, csts) gr ->
@@ -882,7 +890,7 @@ and tac_of_hint db_list local_db concl (flags, {pat=p; code=t}) =
       tclTHEN
         (unify_resolve_gen flags (term,cl))
         (trivial_fail_db (flags <> None) db_list local_db)
-  | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
+  | Unfold_nth c -> tclPROGRESS (unfold_in_concl [all_occurrences,c])
   | Extern tacast -> conclPattern concl p tacast
 
 and trivial_resolve mod_delta db_list local_db cl =

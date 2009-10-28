@@ -1,4 +1,4 @@
-(* -*- compile-command: "make -C ../.. bin/coqtop.byte" -*- *)
+(* -*- compile-command: "make -C ../.. plugins/subtac/subtac_plugin.cma" -*- *)
 (**
    - Get types of existentials ;
    - Flatten dependency tree (prefix order) ;
@@ -30,13 +30,13 @@ type oblinfo =
     ev_chop: int option;
     ev_loc: Util.loc;
     ev_typ: types;
-    ev_tac: Tacexpr.raw_tactic_expr option;
+    ev_tac: tactic option;
     ev_deps: Intset.t }
 
 (** Substitute evar references in t using De Bruijn indices,
   where n binders were passed through. *)
 
-let subst_evar_constr evs n t =
+let subst_evar_constr evs n idf t = 
   let seen = ref Intset.empty in
   let transparent = ref Idset.empty in
   let evar_info id = List.assoc id evs in
@@ -70,7 +70,7 @@ let subst_evar_constr evs n t =
 	in
 	  if List.exists (fun x -> match kind_of_term x with Rel n -> List.mem n fixrels | _ -> false) args then
 	    transparent := Idset.add idstr !transparent;
-	  mkApp (mkVar idstr, Array.of_list args)
+	  mkApp (idf idstr, Array.of_list args)
     | Fix _ ->
 	map_constr_with_binders succfix substrec (depth, 1 :: fixrels) c
     | _ -> map_constr_with_binders succfix substrec (depth, fixrels) c
@@ -96,14 +96,14 @@ let subst_vars acc n t =
 let etype_of_evar evs hyps concl =
   let rec aux acc n = function
       (id, copt, t) :: tl ->
-	let t', s, trans = subst_evar_constr evs n t in
+	let t', s, trans = subst_evar_constr evs n mkVar t in
 	let t'' = subst_vars acc 0 t' in
 	let rest, s', trans' = aux (id :: acc) (succ n) tl in
 	let s' = Intset.union s s' in
 	let trans' = Idset.union trans trans' in
 	  (match copt with
-	      Some c ->
-		let c', s'', trans'' = subst_evar_constr evs n c in
+	      Some c -> 
+		let c', s'', trans'' = subst_evar_constr evs n mkVar c in
 		let c' = subst_vars acc 0 c' in
 		  mkNamedProd_or_LetIn (id, Some c', t'') rest,
 		Intset.union s'' s',
@@ -111,7 +111,7 @@ let etype_of_evar evs hyps concl =
 	    | None ->
 		mkNamedProd_or_LetIn (id, None, t'') rest, s', trans')
     | [] ->
-	let t', s, trans = subst_evar_constr evs n concl in
+	let t', s, trans = subst_evar_constr evs n mkVar concl in
 	  subst_vars acc 0 t', s, trans
   in aux [] 0 (rev hyps)
 
@@ -143,13 +143,33 @@ let evar_dependencies evm ev =
   in aux (Intset.singleton ev)
 
 let sort_dependencies evl =
-  List.sort (fun (_, _, deps) (_, _, deps') ->
-    if Intset.subset deps deps' then (* deps' depends on deps *) -1
-    else if Intset.subset deps' deps then 1
-    else Intset.compare deps deps')
-    evl
+  let one_step deps ine oute =
+    List.fold_left (fun (ine, oute, acc) (id, _, deps' as d) -> 
+      if not (Intset.mem id deps) then
+	if Intset.subset deps' (Intset.add id deps) then
+	  (d :: ine, oute, Intset.add id acc)
+	else (ine, d :: oute, acc)
+      else (ine, oute, acc))
+      (ine, [], deps) oute
+  in
+  let rec aux deps evsin evsout =
+    let (evsin, evsout, deps') = one_step deps evsin evsout in
+      if evsout = [] then List.rev evsin
+      else aux deps' evsin evsout
+  in aux Intset.empty [] evl
 
-let eterm_obligations env name isevars evm fs ?status t ty =
+let map_evar_body f = function
+  | Evar_empty -> Evar_empty
+  | Evar_defined c -> Evar_defined (f c)
+
+open Environ
+      
+let map_evar_info f evi =
+  { evi with evar_hyps = val_of_named_context (map_named_context f (named_context_of_val evi.evar_hyps));
+    evar_concl = f evi.evar_concl;
+    evar_body = map_evar_body f evi.evar_body }
+    
+let eterm_obligations env name isevars evm fs ?status t ty = 
   (* 'Serialize' the evars *)
   let nc = Environ.named_context env in
   let nc_len = Sign.named_context_length nc in
@@ -188,7 +208,8 @@ let eterm_obligations env name isevars evm fs ?status t ty =
 	 let tac = match ev.evar_extra with
 	   | Some t ->
 	       if Dyn.tag t = "tactic" then
-		 Some (Tacinterp.globTacticIn (Tacinterp.tactic_out t))
+		 Some (Tacinterp.interp 
+			  (Tacinterp.globTacticIn (Tacinterp.tactic_out t)))
 	       else None
 	   | None -> None
 	 in
@@ -199,11 +220,11 @@ let eterm_obligations env name isevars evm fs ?status t ty =
       evn []
   in
   let t', _, transparent = (* Substitute evar refs in the term by variables *)
-    subst_evar_constr evts 0 t
+    subst_evar_constr evts 0 mkVar t 
   in
-  let ty, _, _ = subst_evar_constr evts 0 ty in
-  let evars =
-    List.map (fun (_, info) ->
+  let ty, _, _ = subst_evar_constr evts 0 mkVar ty in
+  let evars = 
+    List.map (fun (ev, info) ->
       let { ev_name = (_, name); ev_status = status;
 	    ev_loc = loc; ev_typ = typ; ev_deps = deps; ev_tac = tac } = info
       in
@@ -211,8 +232,9 @@ let eterm_obligations env name isevars evm fs ?status t ty =
 	| Define true when Idset.mem name transparent -> Define false
 	| _ -> status
       in name, typ, loc, status, deps, tac) evts
-  in Array.of_list (List.rev evars), t', ty
+  in
+  let evnames = List.map (fun (ev, info) -> ev, snd info.ev_name) evts in
+  let evmap f c = pi1 (subst_evar_constr evts 0 f c) in
+    Array.of_list (List.rev evars), (evnames, evmap), t', ty
 
 let mkMetas n = list_tabulate (fun _ -> Evarutil.mk_new_meta ()) n
-
-let etermtac (evm, t) = assert(false) (*eterm evm t None *)

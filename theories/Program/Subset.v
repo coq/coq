@@ -82,7 +82,7 @@ Qed.
    in tactics. *)
 
 Definition match_eq (A B : Type) (x : A) (fn : forall (y : A | y = x), B) : B :=
-  fn (exist _ x (refl_equal x)).
+  fn (exist _ x eq_refl).
 
 (* This is what we want to be able to do: replace the originaly matched object by a new,
    propositionally equal one. If [fn] works on [x] it should work on any [y | y = x]. *)

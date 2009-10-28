@@ -234,11 +234,6 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   let argtyp, letbinders, make = telescope binders_rel in
   let argname = id_of_string "recarg" in
   let arg = (Name argname, None, argtyp) in
-  let wrapper x =
-    if List.length binders_rel > 1 then
-      it_mkLambda_or_LetIn (mkApp (x, [|make|])) binders_rel
-    else x
-  in
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
   let rel = interp_constr isevars env r in
@@ -310,22 +305,46 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   in
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
   let prop = mkLambda (Name argname, argtyp, top_arity_let) in
-  let fix_def =
+  let def =
     mkApp (constr_of_global (Lazy.force fix_sub_ref),
 	  [| argtyp ; wf_rel ;
 	     make_existential dummy_loc ~opaque:(Define false) env isevars wf_proof ;
 	     prop ; intern_body_lam |])
   in
-  let def = wrapper fix_def in
-  let typ = it_mkProd_or_LetIn top_arity binders_rel in
+  let hook, recname, typ = 
+    if List.length binders_rel > 1 then
+      let name = add_suffix recname "_func" in
+      let hook l gr = 
+	let body = it_mkLambda_or_LetIn (mkApp (constr_of_global gr, [|make|])) binders_rel in
+	let ty = it_mkProd_or_LetIn top_arity binders_rel in
+	let ce =
+	  { const_entry_body = body;
+	    const_entry_type = Some ty;
+	    const_entry_opaque = false;
+	    const_entry_boxed = false} 
+	in 
+	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
+	let gr = ConstRef c in
+	  if Impargs.is_implicit_args () || impls <> [] then
+	    Impargs.declare_manual_implicits false gr impls
+      in
+      let typ = it_mkProd_or_LetIn top_arity binders in
+	hook, name, typ
+    else 
+      let typ = it_mkProd_or_LetIn top_arity binders_rel in
+      let hook l gr = 
+	if Impargs.is_implicit_args () || impls <> [] then
+	  Impargs.declare_manual_implicits false gr impls
+      in hook, recname, typ
+  in
   let _ = isevars := Evarutil.nf_evar_defs !isevars in
   let fullcoqc = Evarutil.nf_isevar !isevars def in
   let fullctyp = Evarutil.nf_isevar !isevars typ in
   let evm = evars_of_term !isevars Evd.empty fullctyp in
   let evm = evars_of_term !isevars evm fullcoqc in
   let evm = non_instanciated_map env isevars evm in
-  let evars, evars_def, evars_typ = Eterm.eterm_obligations env recname !isevars evm 0 fullcoqc fullctyp in
-    Subtac_obligations.add_definition recname evars_def evars_typ ~implicits:impls evars
+  let evars, _, evars_def, evars_typ = Eterm.eterm_obligations env recname !isevars evm 0 fullcoqc fullctyp in
+    Subtac_obligations.add_definition recname ~term:evars_def evars_typ evars ~hook
 
 let nf_evar_context isevars ctx =
   List.map (fun (n, b, t) ->
@@ -454,7 +473,7 @@ let interp_recursive fixkind l boxed =
     in
     let evm' = Subtac_utils.evars_of_term evm Evd.empty def in
     let evm' = Subtac_utils.evars_of_term evm evm' typ in
-    let evars, def, typ = Eterm.eterm_obligations env id isevars evm' recdefs def typ in
+    let evars, _, def, typ = Eterm.eterm_obligations env id isevars evm' recdefs def typ in
       (id, def, typ, imps, evars)
   in
   let defs = list_map4 collect_evars fixnames fixdefs fixtypes fiximps in

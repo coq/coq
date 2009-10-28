@@ -29,7 +29,7 @@ Section Wf_Transitive_Closure.
     intros y H2.
     induction H2; auto with sets.
     apply Acc_inv with y; auto with sets.
-  Qed.
+  Defined.
 
   Hint Resolve Acc_clos_trans.
 
@@ -42,6 +42,6 @@ Section Wf_Transitive_Closure.
   Theorem wf_clos_trans : well_founded R -> well_founded trans_clos.
   Proof.
     unfold well_founded in |- *; auto with sets.
-  Qed.
+  Defined.
 
 End Wf_Transitive_Closure.

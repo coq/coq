@@ -46,6 +46,13 @@ Notation " [ ] " := nil : list_scope.
 Notation " [ x ] " := (cons x nil) : list_scope.
 Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) : list_scope.
 
+(** Implicit arguments for vectors. *)
+
+Require Import Bvector.
+
+Implicit Arguments Vnil [[A]].
+Implicit Arguments Vcons [[A] [n]].
+
 (** Treating n-ary exists *)
 
 Notation " 'exists' x y , p" := (ex (fun x => (ex (fun y => p))))

@@ -151,11 +151,6 @@ let showind (id:identifier) =
 exception Found of int
 
 (* Array scanning *)
-let array_find (arr: 'a array) (pred: int -> 'a -> bool): int option =
-  try
-    for i=0 to Array.length arr - 1 do if pred i (arr.(i)) then raise (Found i) done;
-    None
-  with Found i -> Some i
 
 let array_prfx (arr: 'a array) (pred: int -> 'a -> bool): int =
   try
@@ -941,7 +936,7 @@ let merge (id1:identifier) (id2:identifier) (args1:identifier array)
                  as above: vars may be linked inside args2?? *)
     Array.mapi
       (fun i c ->
-        match array_find args1 (fun i x -> x=c) with
+        match array_find_i (fun i x -> x=c) args1 with
           | Some j -> Linked j
           | None -> Unlinked)
       args2 in

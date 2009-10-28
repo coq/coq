@@ -24,6 +24,17 @@ open Typeclasses_errors
 open Libobject
 (*i*)
 
+
+let add_instance_hint_ref = ref (fun id pri -> assert false)
+let register_add_instance_hint =
+  (:=) add_instance_hint_ref
+let add_instance_hint id = !add_instance_hint_ref id
+
+let set_typeclass_transparency_ref = ref (fun id pri -> assert false)
+let register_set_typeclass_transparency =
+  (:=) set_typeclass_transparency_ref
+let set_typeclass_transparency gr c = !set_typeclass_transparency_ref gr c
+
 let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
 (* let mismatched_defs env n m = mismatched_ctx_inst env Definitions n m *)
 let mismatched_props env n m = mismatched_ctx_inst env Properties n m
@@ -54,10 +65,10 @@ type instance = {
      -1 for discard, 0 for none, mutable to avoid redeclarations
      when multiple rebuild_object happen. *)
   is_global: int;
-  is_impl: constant;
+  is_impl: global_reference; 
 }
 
-type instances = (global_reference, instance Cmap.t) Gmap.t
+type instances = (global_reference, (global_reference, instance) Gmap.t) Gmap.t
 
 let instance_impl is = is.is_impl
 
@@ -94,11 +105,6 @@ let _ =
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init }
-
-let add_instance_hint_ref = ref (fun id pri -> assert false)
-let register_add_instance_hint =
-  (:=) add_instance_hint_ref
-let add_instance_hint id = !add_instance_hint_ref id
 
 (*
  * classes persistent object
@@ -177,11 +183,11 @@ let add_class cl =
  * instances persistent object
  *)
 
-let load_instance (_,inst) =
-  let insts =
-    try Gmap.find inst.is_class !instances
-    with Not_found -> Cmap.empty in
-  let insts = Cmap.add inst.is_impl inst insts in
+let load_instance (_,inst) = 
+  let insts = 
+    try Gmap.find inst.is_class !instances 
+    with Not_found -> Gmap.empty in
+  let insts = Gmap.add inst.is_impl inst insts in
   instances := Gmap.add inst.is_class insts !instances
 
 let cache_instance = load_instance
@@ -189,7 +195,7 @@ let cache_instance = load_instance
 let subst_instance (subst,inst) = 
   { inst with 
       is_class = fst (subst_global subst inst.is_class);
-      is_impl = fst (Mod_subst.subst_con subst inst.is_impl) }
+      is_impl = fst (subst_global subst inst.is_impl) }
 
 let discharge_instance (_,inst) =
   if inst.is_global <= 0 then None
@@ -197,7 +203,7 @@ let discharge_instance (_,inst) =
     { inst with 
       is_global = pred inst.is_global;
       is_class = Lib.discharge_global inst.is_class;
-      is_impl = Lib.discharge_con inst.is_impl }
+      is_impl = Lib.discharge_global inst.is_impl }
     
 let rebuild_instance inst =
   add_instance_hint inst.is_impl inst.is_pri;
@@ -222,6 +228,36 @@ let add_instance i =
   Lib.add_anonymous_leaf (instance_input i);
   add_instance_hint i.is_impl i.is_pri
 
+open Declarations
+
+let add_constant_class cst =
+  let ty = Typeops.type_of_constant (Global.env ()) cst in
+  let ctx, arity = decompose_prod_assum ty in
+  let tc = 
+    { cl_impl = ConstRef cst;
+      cl_context = ([], ctx);
+      cl_props = [(Anonymous, None, arity)];
+      cl_projs = []
+    }
+  in add_class tc;
+    set_typeclass_transparency (EvalConstRef cst) false
+      
+let add_inductive_class ind =
+  let mind, oneind = Global.lookup_inductive ind in
+  let k =
+    let ty = Inductive.type_of_inductive_knowing_parameters
+      (push_rel_context oneind.mind_arity_ctxt (Global.env ()))
+	  oneind (Termops.rel_vect 1 (List.length oneind.mind_arity_ctxt))
+    in
+      { cl_impl = IndRef ind;
+	cl_context = [], oneind.mind_arity_ctxt;
+	cl_props = [Anonymous, None, ty];
+	cl_projs = [] }
+  in add_class k;
+    Array.iteri (fun i _ -> 
+      add_instance (new_instance k None true (ConstructRef (ind, succ i))))
+      oneind.mind_consnames 
+      
 (*
  * interface functions
  *)
@@ -243,25 +279,24 @@ let typeclasses () = Gmap.fold (fun _ l c -> l :: c) !classes []
 let cmapl_add x y m =
   try
     let l = Gmap.find x m in
-    Gmap.add x (Cmap.add y.is_impl y l) m
+    Gmap.add x (Gmap.add y.is_impl y l) m
   with Not_found ->
-    Gmap.add x (Cmap.add y.is_impl y Cmap.empty) m
+    Gmap.add x (Gmap.add y.is_impl y Gmap.empty) m
 
-let cmap_elements c = Cmap.fold (fun k v acc -> v :: acc) c []
+let cmap_elements c = Gmap.fold (fun k v acc -> v :: acc) c []
 
 let instances_of c =
   try cmap_elements (Gmap.find c.cl_impl !instances) with Not_found -> []
 
-let all_instances () =
-  Gmap.fold (fun k v acc ->
-    Cmap.fold (fun k v acc -> v :: acc) v acc)
+let all_instances () = 
+  Gmap.fold (fun k v acc -> 
+    Gmap.fold (fun k v acc -> v :: acc) v acc)
     !instances []
 
-let instances r =
-  let cl = class_info r in instances_of cl
-
-
-let is_class gr =
+let instances r = 
+  let cl = class_info r in instances_of cl    
+      
+let is_class gr = 
   Gmap.fold (fun k v acc -> acc || v.cl_impl = gr) !classes false
 
 let is_instance = function
@@ -273,6 +308,8 @@ let is_instance = function
       (match Decls.variable_kind v with
       | IsDefinition Instance -> true
       | _ -> false)
+  | ConstructRef (ind,_) -> 
+      is_class (IndRef ind)
   | _ -> false
 
 let is_implicit_arg k =

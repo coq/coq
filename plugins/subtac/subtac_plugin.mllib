@@ -1,6 +1,5 @@
 Subtac_utils
 Eterm
-G_eterm
 Subtac_errors
 Subtac_coercion
 Subtac_obligations
@@ -11,5 +10,4 @@ Subtac_command
 Subtac_classes
 Subtac
 G_subtac
-Equations
 Subtac_plugin_mod

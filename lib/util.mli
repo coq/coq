@@ -216,6 +216,7 @@ val array_for_all3 : ('a -> 'b -> 'c -> bool) ->
 val array_for_all4 : ('a -> 'b -> 'c -> 'd -> bool) ->
   'a array -> 'b array -> 'c array -> 'd array -> bool
 val array_for_all_i : (int -> 'a -> bool) -> int -> 'a array -> bool
+val array_find_i : (int -> 'a -> bool) -> 'a array -> int option
 val array_hd : 'a array -> 'a
 val array_tl : 'a array -> 'a array
 val array_last : 'a array -> 'a

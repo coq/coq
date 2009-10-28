@@ -34,26 +34,36 @@ open Entries
 
 let typeclasses_db = "typeclass_instances"
 
+let set_typeclass_transparency c b = 
+  Auto.add_hints false [typeclasses_db] 
+    (Auto.HintsTransparencyEntry ([c], b))
+    
 let _ =
   Typeclasses.register_add_instance_hint
     (fun inst pri ->
       Flags.silently (fun () ->
 	Auto.add_hints false [typeclasses_db]
 	  (Auto.HintsResolveEntry
-	      [pri, false, mkConst inst])) ())
-
-let declare_instance_cst glob con =
-  let instance = Typeops.type_of_constant (Global.env ()) con in
+	      [pri, false, constr_of_global inst])) ());
+  Typeclasses.register_set_typeclass_transparency set_typeclass_transparency
+    
+let declare_class glob idl =
+  match global (Ident idl) with
+  | ConstRef x -> Typeclasses.add_constant_class x
+  | IndRef x -> Typeclasses.add_inductive_class x
+  | _ -> user_err_loc (fst idl, "declare_class", 
+		      Pp.str"Unsupported class type, only constants and inductives are allowed")
+    
+let declare_instance_cst glob c =
+  let instance = Typing.type_of (Global.env ()) Evd.empty (constr_of_global c) in
   let _, r = decompose_prod_assum instance in
     match class_of_constr r with
-      | Some tc -> add_instance (new_instance tc None glob con)
+      | Some tc -> add_instance (new_instance tc None glob c)
       | None -> errorlabstrm "" (Pp.strbrk "Constant does not build instances of a declared type class.")
 
 let declare_instance glob idl =
-  let con =
-    try (match global (Ident idl) with
-      | ConstRef x -> x
-      | _ -> raise Not_found)
+  let con = 
+    try global (Ident idl)
     with _ -> error "Instance definition not found."
   in declare_instance_cst glob con
 
@@ -104,7 +114,7 @@ let ($$) g f = fun x -> g (f x)
 
 let instance_hook k pri global imps ?hook cst =
   let inst = Typeclasses.new_instance k pri global cst in
-    Impargs.maybe_declare_manual_implicits false (ConstRef cst) ~enriching:false imps;
+    Impargs.maybe_declare_manual_implicits false cst ~enriching:false imps;
     Typeclasses.add_instance inst;
     (match hook with Some h -> h cst | None -> ())
 
@@ -120,11 +130,11 @@ let declare_instance_constant k pri global imps ?hook id term termtype =
   in
   let kn = Declare.declare_constant id cdecl in
     Flags.if_verbose Command.definition_message id;
-    instance_hook k pri global imps ?hook kn;
+    instance_hook k pri global imps ?hook (ConstRef kn);
     id
 
 let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
-    ?(tac:Proof_type.tactic option) ?(hook:(Names.constant -> unit) option) pri =
+    ?(tac:Proof_type.tactic option) ?(hook:(global_reference -> unit) option) pri =
   let env = Global.env() in
   let evars = ref Evd.empty in
   let tclass, ids =
@@ -177,7 +187,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	Evarutil.check_evars env Evd.empty !evars termtype;
 	let cst = Declare.declare_internal_constant id
 	  (Entries.ParameterEntry (termtype,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
-	in instance_hook k None false imps ?hook cst; id
+	in instance_hook k None false imps ?hook (ConstRef cst); id
       end
     else
       begin
@@ -238,10 +248,10 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	    evars := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env !evars;
 	    let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	      Flags.silently (fun () ->
-		Command.start_proof id kind termtype
-		  (fun _ -> function ConstRef cst -> instance_hook k pri global imps ?hook cst
-		    | _ -> assert false);
-		if props <> [] then Pfedit.by (!refine_ref (evm, term))
+		Command.start_proof id kind termtype (fun _ -> instance_hook k pri global imps ?hook);
+		if props <> [] then 
+		  Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS ( !isevars)) *)
+		    (!refine_ref (evm, term))
 		else if Flags.is_auto_intros () then
 		  Pfedit.by (Refiner.tclDO len Tactics.intro);
 		(match tac with Some tac -> Pfedit.by tac | None -> ())) ();
@@ -249,7 +259,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	      id
 	  end
       end
-
+	
 let named_of_rel_context l =
   let acc, ctx =
     List.fold_right
@@ -285,7 +295,7 @@ let context ?(hook=fun _ -> ()) l =
 	in
 	  match class_of_constr t with
 	    | Some tc ->
-		add_instance (Typeclasses.new_instance tc None false cst);
+		add_instance (Typeclasses.new_instance tc None false (ConstRef cst));
 		hook (ConstRef cst)
 	    | None -> ()
       else (

@@ -538,6 +538,8 @@ GEXTEND Gram
 
       | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is
 
+      | IDENT "Existing"; IDENT "Class"; is = identref -> VernacDeclareClass is
+
       (* Implicit *)
       | IDENT "Implicit"; IDENT "Arguments"; qid = smart_global;
 	   pos = OPT [ "["; l = LIST0 implicit_name; "]" ->

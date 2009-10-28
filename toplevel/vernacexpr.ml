@@ -251,6 +251,9 @@ type vernac_expr =
   | VernacDeclareInstance of
       lident (* instance name *)
 
+  | VernacDeclareClass of
+      lident (* inductive or definition name *)
+
   (* Modules and Module Types *)
   | VernacDeclareModule of bool option * lident *
       module_binder list * (module_type_ast * bool)

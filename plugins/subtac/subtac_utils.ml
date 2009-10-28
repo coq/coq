@@ -50,6 +50,10 @@ let build_sig () =
 let sig_ = lazy (build_sig ())
 
 let fix_proto = lazy (init_constant tactics_module "fix_proto")
+let fix_proto_ref () = 
+  match Nametab.global (make_ref "Program.Tactics.fix_proto") with
+  | ConstRef c -> c
+  | _ -> assert false
 
 let eq_ind = lazy (init_constant ["Init"; "Logic"] "eq")
 let eq_rec = lazy (init_constant ["Init"; "Logic"] "eq_rec")
@@ -374,7 +378,10 @@ let solve_by_tac evi t =
     (fun _ _ -> ());
     Pfedit.by (tclCOMPLETE t);
     let _,(const,_,_,_) = Pfedit.cook_proof ignore in
-      Pfedit.delete_current_proof (); const.Entries.const_entry_body
+      Pfedit.delete_current_proof (); 
+      Inductiveops.control_only_guard (Global.env ())
+	const.Entries.const_entry_body;
+      const.Entries.const_entry_body
   with e ->
     Pfedit.delete_current_proof();
     raise e

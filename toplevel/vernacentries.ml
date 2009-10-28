@@ -620,6 +620,10 @@ let vernac_declare_instance id =
   Dumpglob.dump_definition id false "inst";
   Classes.declare_instance false id
 
+let vernac_declare_class id =
+  Dumpglob.dump_definition id false "class";
+  Classes.declare_class false id
+
 (***********)
 (* Solving *)
 let vernac_solve n tcom b =
@@ -1338,6 +1342,7 @@ let interp c = match c with
   | VernacInstance (glob, sup, inst, props, pri) -> vernac_instance glob sup inst props pri
   | VernacContext sup -> vernac_context sup
   | VernacDeclareInstance id -> vernac_declare_instance id
+  | VernacDeclareClass id -> vernac_declare_class id
 
   (* Solving *)
   | VernacSolve (n,tac,b) -> vernac_solve n tac b

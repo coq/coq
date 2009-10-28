@@ -256,6 +256,9 @@ let firstchar =
   '\194' '\185' |
   (* utf-8 latin 1 supplement *)
   '\195' ['\128'-'\191'] |
+  (* utf-8 letterlike symbols *) 
+  (* '\206' ([ '\145' - '\183'] | '\187') | *)
+  (* '\xCF' [ '\x00' - '\xCE' ] |  *)
   (* utf-8 letterlike symbols *)
   '\206' ('\160' | [ '\177'-'\183'] | '\187') |
   '\226' ('\130' [ '\128'-'\137' ] (* subscripts *)

@@ -79,7 +79,7 @@ module Default = struct
       | [] -> { uj_val = applist (j_val funj,argl);
 		uj_type = typ }
       | h::restl ->
-	  (* On devrait pouvoir s'arranger pour qu'on n'ait pas à faire hnf_constr *)
+	  (* On devrait pouvoir s'arranger pour qu'on n'ait pas Ã  faire hnf_constr *)
   	  match kind_of_term (whd_betadeltaiota env Evd.empty typ) with
 	    | Prod (_,c1,c2) ->
 		(* Typage garanti par l'appel à app_coercion*)

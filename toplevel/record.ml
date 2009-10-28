@@ -287,20 +287,14 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map pi1 ctx)))
 
-let typeclasses_db = "typeclass_instances"
-
-let qualid_of_con c =
+let qualid_of_con c = 
   Qualid (dummy_loc, shortest_qualid_of_global Idset.empty (ConstRef c))
-
-let set_rigid c =
-  Auto.add_hints false [typeclasses_db]
-    (Auto.HintsTransparencyEntry ([EvalConstRef c], false))
 
 let declare_instance_cst glob con =
   let instance = Typeops.type_of_constant (Global.env ()) con in
   let _, r = decompose_prod_assum instance in
     match class_of_constr r with
-      | Some tc -> add_instance (new_instance tc None glob con)
+      | Some tc -> add_instance (new_instance tc None glob (ConstRef con))
       | None -> errorlabstrm "" (Pp.strbrk "Constant does not build instances of a declared type class.")
 
 let declare_class finite def infer id idbuild paramimpls params arity fieldimpls fields
@@ -340,7 +334,7 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	let cref = ConstRef cst in
 	Impargs.declare_manual_implicits false cref paramimpls;
 	Impargs.declare_manual_implicits false (ConstRef proj_cst) (List.hd fieldimpls);
-	set_rigid cst; (* set_rigid proj_cst; *)
+	Classes.set_typeclass_transparency (EvalConstRef cst) false;
 	if infer then Evd.fold (fun ev evi _ -> Recordops.declare_method (ConstRef cst) ev sign) sign ();
 	cref, [proj_name, Some proj_cst]
     | _ ->

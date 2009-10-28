@@ -89,13 +89,10 @@ let intersects s t =
 
 open Auto
 
-let e_give_exact flags c gl =
-  let t1 = (pf_type_of gl c) and t2 = pf_concl gl in
-    if occur_existential t1 or occur_existential t2 then
-      tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl
-    else exact_check c gl
-(*   let t1 = (pf_type_of gl c) in *)
-(*     tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl *)
+let e_give_exact flags c gl = 
+  let t1 = (pf_type_of gl c) in
+    tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl
+
 let assumption flags id = e_give_exact flags (mkVar id)
 
 open Unification
@@ -129,12 +126,12 @@ END
 let unify_e_resolve flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv in
   let clenv' = clenv_unique_resolver false ~flags clenv' gls in
-    Clenvtac.clenv_refine true ~with_classes:false clenv' gls
+    tclPROGRESS (Clenvtac.clenv_refine true ~with_classes:false clenv') gls
 
 let unify_resolve flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv in
   let clenv' = clenv_unique_resolver false ~flags clenv' gls in
-    Clenvtac.clenv_refine false ~with_classes:false clenv' gls
+    tclPROGRESS (Clenvtac.clenv_refine false ~with_classes:false clenv') gls
 
 (** Hack to properly solve dependent evars that are typeclasses *)
 
@@ -151,9 +148,9 @@ let rec e_trivial_fail_db db_list local_db goal =
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
           (e_trivial_fail_db db_list
 	      (Hint_db.add_list hintl local_db) g'))) ::
-    (List.map pi1 (e_trivial_resolve db_list local_db (pf_concl goal)) )
-  in
-  tclFIRST (List.map tclCOMPLETE tacl) goal
+    (List.map (fun (x,_,_,_) -> x) (e_trivial_resolve db_list local_db (pf_concl goal)))
+  in 
+  tclFIRST (List.map tclCOMPLETE tacl) goal 
 
 and e_my_find_search db_list local_db hdc concl =
   let hdc = head_of_constr_reference hdc in
@@ -178,12 +175,13 @@ and e_my_find_search db_list local_db hdc concl =
 	  | Res_pf_THEN_trivial_fail (term,cl) ->
               tclTHEN (unify_e_resolve flags (term,cl))
 		(e_trivial_fail_db db_list local_db)
-	  | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
+	  | Unfold_nth c -> tclWEAK_PROGRESS (unfold_in_concl [all_occurrences,c])
 	  | Extern tacast -> conclPattern concl p tacast
       in
-	(tac,b,pr_autotactic t)
-  in
-    List.map tac_of_hint hintl
+	match t with
+	| Extern _ -> (tac,b,true,pr_autotactic t)
+	| _ -> (tac,b,false,pr_autotactic t)
+  in List.map tac_of_hint hintl
 
 and e_trivial_resolve db_list local_db gl =
   try
@@ -228,7 +226,7 @@ type validation = evar_map -> proof_tree list -> proof_tree
 
 let pr_depth l = prlist_with_sep (fun () -> str ".") pr_int (List.rev l)
 
-type autoinfo = { hints : Auto.hint_db; auto_depth: int list; auto_last_tac: std_ppcmds }
+type autoinfo = { hints : Auto.hint_db; only_classes: bool; auto_depth: int list; auto_last_tac: std_ppcmds }
 type autogoal = goal * autoinfo
 type 'ans fk = unit -> 'ans
 type ('a,'ans) sk = 'a -> 'ans fk -> 'ans
@@ -238,6 +236,26 @@ type auto_result = autogoal list sigma * validation
 
 type atac = auto_result tac
 
+let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
+  let cty = Evarutil.nf_evar sigma cty in
+  let keep = not only_classes || 
+    let ctx, ar = decompose_prod cty in
+      match kind_of_term (fst (decompose_app ar)) with
+      | Const c -> is_class (ConstRef c)
+      | Ind i -> is_class (IndRef i)
+      | _ -> false
+  in
+    if keep then let c = mkVar id in
+      map_succeed 
+	(fun f -> try f (c,cty) with UserError _ -> failwith "") 
+	[make_exact_entry pri; make_apply_entry env sigma flags pri]
+    else []
+
+let make_autogoal_hints only_classes ?(st=full_transparent_state) g =
+  let sign = pf_hyps g in
+  let hintlist = list_map_append (pf_apply make_resolve_hyp g st (true,false,false) only_classes None) sign in
+    Hint_db.add_list hintlist (Hint_db.empty st true)
+  
 let lift_tactic tac (f : goal list sigma -> autoinfo -> autogoal list sigma) : 'a tac =
   { skft = fun sk fk {it = gl,hints; sigma=s} ->
     let res = try Some (tac {it=gl; sigma=s}) with e when catchable e -> None in
@@ -251,7 +269,8 @@ let intro_tac : atac =
       let gls' =
 	List.map (fun g' ->
 	  let env = evar_env g' in
-	  let hint = make_resolve_hyp env s (List.hd (evar_context g')) in
+	  let hint = make_resolve_hyp env s (Hint_db.transparent_state info.hints) 
+	    (true,false,false) info.only_classes None (List.hd (evar_context g')) in
 	  let ldb = Hint_db.add_list hint info.hints in
 	    (g', { info with hints = ldb; auto_last_tac = str"intro" })) gls
       in {it = gls'; sigma = s})
@@ -261,7 +280,7 @@ let id_tac : atac =
     sk ({it = [gl]; sigma = s}, fun _ pfs -> List.hd pfs) fk }
 
 (* Ordering of states is lexicographic on the number of remaining goals. *)
-let compare (pri, _, (res, _)) (pri', _, (res', _)) =
+let compare (pri, _, _, (res, _)) (pri', _, _, (res', _)) =
   let nbgoals s =
     List.length (sig_it s) + nb_empty_evars (sig_sig s)
   in
@@ -277,17 +296,17 @@ let solve_tac (x : 'a tac) : 'a tac =
 
 let hints_tac hints =
   { skft = fun sk fk {it = gl,info; sigma = s} ->
-(*     if !typeclasses_debug then msgnl (str"depth=" ++ int info.auto_depth ++ str": " ++ info.auto_last_tac *)
-(* 					 ++ spc () ++ str "->" ++ spc () ++ pr_ev s gl); *)
-    let possible_resolve ((lgls,v) as res, pri, pp) =
-      (pri, pp, res)
+    let possible_resolve ((lgls,v) as res, pri, b, pp) =
+      (pri, pp, b, res)
     in
+    let ({it = normalized; sigma = s}, valid) = tclNORMEVAR {it = gl; sigma = s} in
+    let gl = List.hd normalized in
     let tacs =
       let concl = Evarutil.nf_evar s gl.evar_concl in
       let poss = e_possible_resolve hints info.hints concl in
       let l =
-	Util.list_map_append (fun (tac, pri, pptac) ->
-	  try [tac {it = gl; sigma = s}, pri, pptac] with e when catchable e -> [])
+	Util.list_map_append (fun (tac, pri, b, pptac) ->
+	  try [(tclTHEN tclNORMEVAR tac) {it = gl; sigma = s}, pri, b, pptac] with e when catchable e -> [])
 	  poss
       in
 	if l = [] && !typeclasses_debug then
@@ -298,16 +317,24 @@ let hints_tac hints =
     in
     let tacs = List.sort compare tacs in
     let rec aux i = function
-      | (_, pp, ({it = gls; sigma = s}, v)) :: tl ->
+      | (_, pp, b, ({it = gls; sigma = s}, v)) :: tl ->
 	  if !typeclasses_debug then msgnl (pr_depth (i :: info.auto_depth) ++ str": " ++ pp
 					       ++ str" on" ++ spc () ++ pr_ev s gl);
 	  let fk =
 	    (fun () -> (* if !typeclasses_debug then msgnl (str"backtracked after " ++ pp); *)
 	    aux (succ i) tl)
 	  in
-	  let glsv = {it = list_map_i (fun j g -> g,
-	    { info with auto_depth = j :: i :: info.auto_depth;
-	      auto_last_tac = pp }) 1 gls; sigma = s}, fun _ -> v in
+	  let gls' = list_map_i (fun j g -> 
+	    let info = 
+	      { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp;
+		hints = 
+		  if b && g.evar_hyps <> gl.evar_hyps 
+		  then make_autogoal_hints info.only_classes
+		    ~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s}
+		  else info.hints }
+	    in g, info) 1 gls in
+	  let glsvalid _ pfs = valid [v pfs] in
+	  let glsv = {it = gls'; sigma = s}, glsvalid in
 	    sk glsv fk
       | [] -> fk ()
     in aux 1 tacs }
@@ -351,42 +378,13 @@ let run_list_tac (t : 'a tac) p goals (gl : autogoal list sigma) : run_list_res 
 let rec fix (t : 'a tac) : 'a tac =
   then_tac t { skft = fun sk fk -> (fix t).skft sk fk }
 
-
-(* A special one for getting everything into a dnet. *)
-
-let is_transparent_gr (ids, csts) = function
-  | VarRef id -> Idpred.mem id ids
-  | ConstRef cst -> Cpred.mem cst csts
-  | IndRef _ | ConstructRef _ -> false
-
-let make_resolve_hyp env sigma st flags pri (id, _, cty) =
-  let cty = Evarutil.nf_evar sigma cty in
-  let ctx, ar = decompose_prod cty in
-  let keep =
-    match kind_of_term (fst (decompose_app ar)) with
-    | Const c -> is_class (ConstRef c)
-    | Ind i -> is_class (IndRef i)
-    | _ -> false
-  in
-    if keep then let c = mkVar id in
-      map_succeed
-	(fun f -> f (c,cty))
-	[make_exact_entry pri; make_apply_entry env sigma flags pri]
-    else []
-
-let make_autogoal ?(st=full_transparent_state) g =
-  let sign = pf_hyps g in
-  let hintlist = list_map_append (pf_apply make_resolve_hyp g st (true,false,false) None) sign in
-  let st = List.fold_left (fun (ids, csts) (n, b, t) ->
-    (if b <> None then Idpred.add else Idpred.remove) n ids, csts)
-    st sign
-  in
-  let hints = Hint_db.add_list hintlist (Hint_db.empty st true) in
-    (g.it, { hints = hints ; auto_depth = []; auto_last_tac = mt() })
-
-let make_autogoals ?(st=full_transparent_state) gs evm' =
-  { it = list_map_i (fun i g ->
-    let (gl, auto) = make_autogoal ~st {it = snd g; sigma = evm'} in
+let make_autogoal ?(only_classes=true) ?(st=full_transparent_state) g =
+  let hints = make_autogoal_hints only_classes ~st g in
+    (g.it, { hints = hints ; only_classes = only_classes; auto_depth = []; auto_last_tac = mt() })
+      
+let make_autogoals ?(only_classes=true) ?(st=full_transparent_state) gs evm' =
+  { it = list_map_i (fun i g -> 
+    let (gl, auto) = make_autogoal ~only_classes ~st {it = snd g; sigma = evm'} in
       (gl, { auto with auto_depth = [i]})) 1 gs; sigma = evm' }
 
 let get_result r = 
@@ -395,20 +393,20 @@ let get_result r =
   | Some ((gls, v), fk) ->
       try ignore(v (sig_sig gls) []); assert(false)
       with Found evm' -> Some (evm', fk)
-	
-let run_on_evars ?(st=full_transparent_state) p evm tac =
+
+let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm tac =
   match evars_to_goals p evm with
   | None -> None (* This happens only because there's no evar having p *)
   | Some (goals, evm') ->
-      let res = run_list_tac tac p goals (make_autogoals ~st goals evm') in
+      let res = run_list_tac tac p goals (make_autogoals ~only_classes ~st goals evm') in
 	match get_result res with
 	| None -> raise Not_found
 	| Some (evm', fk) -> Some (Evd.evars_reset_evd evm' evm, fk)
-
+	    
 let eauto_tac hints = fix (or_tac intro_tac (hints_tac hints))
-
-let eauto hints g =
-  let gl = { it = make_autogoal ~st:(Hint_db.transparent_state (List.hd hints)) g; sigma = project g } in
+  
+let eauto ?(only_classes=true) ?st hints g =
+  let gl = { it = make_autogoal ~only_classes ?st g; sigma = project g } in
     match run_tac (eauto_tac hints) gl with
     | None -> raise Not_found
     | Some ({it = goals; sigma = s}, valid) ->
@@ -477,6 +475,27 @@ let select_evars evs evm =
     if Intset.mem ev evs then Evd.add acc ev evi else acc)
     evm Evd.empty
 
+let is_inference_forced p ev evd =
+  try
+    let evi = Evd.find evd ev in
+      if evi.evar_body = Evar_empty then
+	if Typeclasses.is_resolvable evi
+	  && snd (p ev evi)
+	then
+	  let (loc, k) = evar_source ev evd in
+	    match k with
+	    | ImplicitArg (_, _, b) -> b
+	    | QuestionMark _ -> false
+	    | _ -> true
+	else true
+      else false
+  with Not_found -> true
+
+let is_optional p comp evd =
+  Intset.fold (fun ev acc ->
+    acc && not (is_inference_forced p ev evd))
+    comp true
+
 let resolve_all_evars debug m env p oevd do_split fail =
   let split = if do_split then split_evars oevd else [Intset.empty] in
   let p = if do_split then
@@ -506,10 +525,10 @@ let resolve_all_evars debug m env p oevd do_split fail =
     | comp :: comps ->
 	let res = try aux (p comp) evd with Not_found -> None in
 	  match res with
-	  | None ->
-	      if fail then
+	  | None -> 
+	      if fail && (not do_split || not (is_optional (p comp evd) comp evd)) then
+		(* Unable to satisfy the constraints. *)		
 		let evd = Evarutil.nf_evars evd in
-		(* Unable to satisfy the constraints. *)
 		let evm = if do_split then select_evars comp evd else evd in
 		let _, ev = Evd.fold
 		  (fun ev evi (b,acc) ->
@@ -540,19 +559,20 @@ let _ =
   Typeclasses.solve_instanciations_problem :=
     solve_inst false true default_eauto_depth
 
+let set_transparency cl b =
+  List.iter (fun r -> 
+    let gr = Smartlocate.global_with_alias r in
+    let ev = Tacred.evaluable_of_global_reference (Global.env ()) gr in
+      Classes.set_typeclass_transparency ev b) cl
 
 VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings
 | [ "Typeclasses" "Transparent" reference_list(cl) ] -> [
-    add_hints false [typeclasses_db]
-      (interp_hints (Vernacexpr.HintsTransparency (cl, true)))
-  ]
+    set_transparency cl true ]
 END
 
 VERNAC COMMAND EXTEND Typeclasses_Rigid_Settings
 | [ "Typeclasses" "Opaque" reference_list(cl) ] -> [
-    add_hints false [typeclasses_db]
-      (interp_hints (Vernacexpr.HintsTransparency (cl, false)))
-  ]
+    set_transparency cl false ]
 END
 
 open Genarg
@@ -596,10 +616,16 @@ VERNAC COMMAND EXTEND Typeclasses_Settings
    ]
 END
 
+let typeclasses_eauto ?(st=full_transparent_state) dbs gl =
+  try 
+    let dbs = list_map_filter (fun db -> try Some (Auto.searchtable_map db) with _ -> None) dbs in
+    let st = match dbs with [x] -> Hint_db.transparent_state x | _ -> st in
+	eauto ~only_classes:false ~st dbs gl
+  with Not_found -> tclFAIL 0 (str" typeclasses eauto failed") gl
+
 TACTIC EXTEND typeclasses_eauto
-| [ "typeclasses" "eauto" ] -> [ fun gl ->
-    try eauto [Auto.searchtable_map typeclasses_db] gl
-    with Not_found -> tclFAIL 0 (str" typeclasses eauto failed") gl ]
+| [ "typeclasses" "eauto" "with" ne_preident_list(l) ] -> [ typeclasses_eauto l ]
+| [ "typeclasses" "eauto" ] -> [ typeclasses_eauto [typeclasses_db] ]
 END
 
 let _ = Classes.refine_ref := Refine.refine

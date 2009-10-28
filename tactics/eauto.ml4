@@ -394,6 +394,18 @@ TACTIC EXTEND dfs_eauto
     [ gen_eauto false (true, make_depth p) lems db ]
 END
 
+let cons a l = a :: l
+
+let autounfold db cl =
+  let unfolds = List.concat (List.map (fun dbname -> 
+    let db = try searchtable_map dbname 
+      with Not_found -> errorlabstrm "autounfold" (str "Unknown database " ++ str dbname)
+    in
+    let (ids, csts) = Hint_db.unfolds db in
+      Cset.fold (fun cst -> cons (all_occurrences, EvalConstRef cst)) csts
+	(Idset.fold (fun id -> cons (all_occurrences, EvalVarRef id)) ids [])) db)
+  in unfold_option unfolds cl
+
 let autosimpl db cl =
   let unfold_of_elts constr (b, elts) =
     if not b then
@@ -407,13 +419,95 @@ let autosimpl db cl =
       unfold_of_elts (fun x -> EvalVarRef x) (Idpred.elements ids)) db)
   in unfold_option unfolds cl
 
-TACTIC EXTEND autosimpl
-| [ "autosimpl" hintbases(db) ] ->
-    [ autosimpl (match db with None -> ["core"] | Some x -> "core"::x) None ]
+TACTIC EXTEND autounfold
+| [ "autounfold" hintbases(db) "in" hyp(id) ] ->
+    [ autounfold (match db with None -> ["core"] | Some x -> "core"::x) (Some (id, InHyp)) ]
+| [ "autounfold" hintbases(db) ] ->
+    [ autounfold (match db with None -> ["core"] | Some x -> "core"::x) None ]
+      END
+
+let unfold_head env (ids, csts) c = 
+  let rec aux c = 
+    match kind_of_term c with
+    | Var id when Idset.mem id ids ->
+	(match Environ.named_body id env with
+	| Some b -> true, b
+	| None -> false, c)
+    | Const cst when Cset.mem cst csts ->
+	true, Environ.constant_value env cst
+    | App (f, args) ->
+	(match aux f with
+	| true, f' -> true, Reductionops.whd_betaiota Evd.empty (mkApp (f', args))
+	| false, _ -> 
+	    let done_, args' = 
+	      array_fold_left_i (fun i (done_, acc) arg -> 
+		if done_ then done_, arg :: acc 
+		else match aux arg with
+		| true, arg' -> true, arg' :: acc
+		| false, arg' -> false, arg :: acc)
+		(false, []) args
+	    in 
+	      if done_ then true, mkApp (f, Array.of_list (List.rev args'))
+	      else false, c)
+    | _ -> 
+	let done_ = ref false in
+	let c' = map_constr (fun c -> 
+	  if !done_ then c else 
+	    let x, c' = aux c in
+	      done_ := x; c') c
+	in !done_, c'
+  in aux c
+
+let autounfold_one db cl gl =
+  let st =
+    List.fold_left (fun (i,c) dbname -> 
+      let db = try searchtable_map dbname 
+	with Not_found -> errorlabstrm "autounfold" (str "Unknown database " ++ str dbname)
+      in
+      let (ids, csts) = Hint_db.unfolds db in
+	(Idset.union ids i, Cset.union csts c)) (Idset.empty, Cset.empty) db
+  in
+  let did, c' = unfold_head (pf_env gl) st (match cl with Some (id, _) -> pf_get_hyp_typ gl id | None -> pf_concl gl) in
+    if did then
+      match cl with
+      | Some hyp -> change_in_hyp None c' hyp gl
+      | None -> convert_concl_no_check c' DEFAULTcast gl
+    else tclFAIL 0 (str "Nothing to unfold") gl
+
+(* 	  Cset.fold (fun cst -> cons (all_occurrences, EvalConstRef cst)) csts *)
+(* 	    (Idset.fold (fun id -> cons (all_occurrences, EvalVarRef id)) ids [])) db) *)
+(*       in unfold_option unfolds cl *)
+
+(*       let db = try searchtable_map dbname  *)
+(* 	with Not_found -> errorlabstrm "autounfold" (str "Unknown database " ++ str dbname) *)
+(*       in *)
+(*       let (ids, csts) = Hint_db.unfolds db in *)
+(* 	Cset.fold (fun cst -> tclORELSE (unfold_option [(occ, EvalVarRef id)] cst)) csts *)
+(* 	  (Idset.fold (fun id -> tclORELSE (unfold_option [(occ, EvalVarRef id)] cl) ids acc))) *)
+(*       (tclFAIL 0 (mt())) db *)
+      
+TACTIC EXTEND autounfold_one
+| [ "autounfold_one" hintbases(db) "in" hyp(id) ] ->
+    [ autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) (Some (id, InHyp)) ]
+| [ "autounfold_one" hintbases(db) ] ->
+    [ autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) None ]
+      END
+
+TACTIC EXTEND autounfoldify
+| [ "autounfoldify" constr(x) ] -> [
+    let db = match kind_of_term x with
+      | Const c -> string_of_label (con_label c)
+      | _ -> assert false
+    in autounfold ["core";db] None ]
 END
 
 TACTIC EXTEND unify
 | ["unify" constr(x) constr(y) ] -> [ unify x y ]
 | ["unify" constr(x) constr(y) "with" preident(base)  ] -> [
     unify ~state:(Hint_db.transparent_state (searchtable_map base)) x y ]
+END
+
+
+TACTIC EXTEND convert_concl_no_check
+| ["convert_concl_no_check" constr(x) ] -> [ convert_concl_no_check x DEFAULTcast ]
 END

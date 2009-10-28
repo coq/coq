@@ -35,6 +35,7 @@ val build_sig : unit -> coq_sigma_data
 val sig_ : coq_sigma_data lazy_t
 
 val fix_proto : constr lazy_t
+val fix_proto_ref : unit -> constant
 
 val eq_ind : constr lazy_t
 val eq_rec : constr lazy_t

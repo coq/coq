@@ -741,7 +741,10 @@ let rec pr_vernac = function
 
 
  | VernacDeclareInstance id ->
-     hov 1 (str"Instance" ++ spc () ++ pr_lident id)
+     hov 1 (str"Existing" ++ spc () ++ str"Instance" ++ spc () ++ pr_lident id)
+
+ | VernacDeclareClass id ->
+     hov 1 (str"Existing" ++ spc () ++ str"Class" ++ spc () ++ pr_lident id)
 
   (* Modules and Module Types *)
   | VernacDefineModule (export,m,bl,ty,bd) ->

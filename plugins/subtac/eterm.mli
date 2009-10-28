@@ -22,11 +22,13 @@ val sort_dependencies : (int * evar_info * Intset.t) list -> (int * evar_info * 
 
 (* env, id, evars, number of function prototypes to try to clear from
    evars contexts, object and type *)
-val eterm_obligations : env -> identifier -> evar_defs -> evar_map -> int ->
-  ?status:obligation_definition_status -> constr -> types ->
-  (identifier * types * loc * obligation_definition_status * Intset.t *
-      Tacexpr.raw_tactic_expr option) array * constr * types
-    (* Obl. name, type as product, location of the original evar, associated tactic,
+val eterm_obligations : env -> identifier -> evar_defs -> evar_map -> int -> 
+  ?status:obligation_definition_status -> constr -> types -> 
+  (identifier * types * loc * obligation_definition_status * Intset.t * 
+      tactic option) array
+    (* Existential key, obl. name, type as product, location of the original evar, associated tactic,
        status and dependencies as indexes into the array *)
-
-val etermtac : open_constr -> tactic
+  * ((existential_key * identifier) list * ((identifier -> constr) -> constr -> constr)) * constr * types
+    (* Translations from existential identifiers to obligation identifiers 
+       and for terms with existentials to closed terms, given a 
+       translation from obligation identifiers to constrs, new term, new type *)

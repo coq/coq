@@ -238,6 +238,7 @@ let rec attribute_of_vernac_command = function
   | VernacInstance _ -> []
   | VernacContext _ -> []
   | VernacDeclareInstance _ -> []
+  | VernacDeclareClass _ -> []
 
   (* Solving *)
   | VernacSolve _ -> [SolveCommand]

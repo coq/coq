@@ -247,7 +247,9 @@ type hypinfo = {
 }
 
 let evd_convertible env evd x y =
-  try ignore(Evarconv.the_conv_x env x y evd); true
+  try
+    ignore(Unification.w_unify true env Reduction.CONV x y evd); true 
+  (* try ignore(Evarconv.the_conv_x env x y evd); true *)
   with _ -> false
 
 let decompose_applied_relation metas env sigma c ctype left2right =
@@ -269,8 +271,8 @@ let decompose_applied_relation metas env sigma c ctype left2right =
 	let ty1, ty2 =
 	  Typing.mtype_of env eqclause.evd c1, Typing.mtype_of env eqclause.evd c2
 	in
-	  if not (evd_convertible env eqclause.evd ty1 ty2) then None
-	  else
+(* 	  if not (evd_convertible env eqclause.evd ty1 ty2) then None *)
+(* 	  else *)
 	    Some { hyp_cl=eqclause; hyp_prf=(Clenv.clenv_value eqclause); hyp_ty = ty;
 		   hyp_car=ty1; hyp_rel=mkApp (equiv, Array.of_list others);
 		   hyp_l2r=left2right; hyp_left=c1; hyp_right=c2; }

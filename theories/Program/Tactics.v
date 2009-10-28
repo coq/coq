@@ -43,7 +43,7 @@ Ltac do_nat n tac :=
 (** Do something on the last hypothesis, or fail *)
 
 Ltac on_last_hyp tac :=
-  match goal with [ H : _ |- _ ] => tac H || fail 1 end.
+  match goal with [ H : _ |- _ ] => first [ tac H | fail 1 ] end.
 
 (** Destructs one pair, without care regarding naming. *)
 
@@ -105,6 +105,15 @@ Ltac revert_last :=
 
 Ltac reverse := repeat revert_last.
 
+(** Reverse everything up to hypothesis id (not included). *)
+
+Ltac revert_until id :=
+  on_last_hyp ltac:(fun id' =>
+    match id' with
+      | id => idtac
+      | _ => revert id' ; revert_until id
+    end).
+
 (** Clear duplicated hypotheses *)
 
 Ltac clear_dup :=
@@ -120,6 +129,16 @@ Ltac clear_dup :=
   end.
 
 Ltac clear_dups := repeat clear_dup.
+
+(** Try to clear everything except some hyp *)
+
+Ltac clear_except hyp := 
+  repeat match goal with [ H : _ |- _ ] =>
+           match H with
+             | hyp => fail 1
+             | _ => clear H
+           end
+         end.
 
 (** A non-failing subst that substitutes as much as possible. *)
 

@@ -29,6 +29,10 @@ val mismatched_params : env -> constr_expr list -> rel_context -> 'a
 
 val mismatched_props : env -> constr_expr list -> rel_context -> 'a
 
+(* Post-hoc class declaration. *)
+
+val declare_class : bool -> identifier located -> unit
+
 (* Instance declaration *)
 
 val declare_instance : bool -> identifier located -> unit
@@ -38,7 +42,7 @@ val declare_instance_constant :
   int option -> (* priority *)
   bool -> (* globality *)
   Impargs.manual_explicitation list -> (* implicits *)
-  ?hook:(Names.constant -> unit) ->
+  ?hook:(Libnames.global_reference -> unit) ->
   identifier -> (* name *)
   Term.constr -> (* body *)
   Term.types -> (* type *)
@@ -51,9 +55,13 @@ val new_instance :
   constr_expr ->
   ?generalize:bool ->
   ?tac:Proof_type.tactic  ->
-  ?hook:(constant -> unit) ->
+  ?hook:(Libnames.global_reference -> unit) ->
   int option ->
   identifier
+
+(* Setting opacity *)
+
+val set_typeclass_transparency : evaluable_global_reference -> bool -> unit
 
 (* For generation on names based on classes only *)
 

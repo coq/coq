@@ -35,3 +35,5 @@ val eauto_with_bases :
   bool ->
   bool * int ->
   Term.constr list -> Auto.hint_db list -> Proof_type.tactic
+
+val autounfold : hint_db_name list -> Tacticals.goal_location -> tactic
