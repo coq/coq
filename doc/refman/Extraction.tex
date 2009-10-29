@@ -50,8 +50,8 @@ one monolithic file or one file per \Coq\ library.
       \qualid$_1$ \dots\ \qualid$_n$. ~\par
   Recursive extraction of all the globals (or modules) \qualid$_1$ \dots\
   \qualid$_n$ and all their dependencies in one monolithic file {\em file}.
-  Global and local identifiers are renamed according to the choosen ML
-  language to fullfill its syntactic conventions, keeping original
+  Global and local identifiers are renamed according to the chosen ML
+  language to fulfill its syntactic conventions, keeping original
   names as much as possible.
   
 \item {\tt Extraction Library} \ident. ~\par 
@@ -115,7 +115,7 @@ All these optimizations are controled by the following \Coq\ options:
 {\tt Unset Extraction Optimize.}
 
 Default is Set. This control all optimizations made on the ML terms 
-(mostly reduction of dummy beta/iota redexes, but also simplications on 
+(mostly reduction of dummy beta/iota redexes, but also simplifications on
 Cases, etc). Put this option to Unset if you want a ML term as close as 
 possible to the Coq term.
 
@@ -158,7 +158,7 @@ Puts the table recording the custom inlinings back to empty.
 
 \paragraph{Inlining and printing of a constant declaration.}
 
-A user can explicitely asks a constant to be extracted by two means: 
+A user can explicitly ask for a constant to be extracted by two means:
 \begin{itemize}
 \item by mentioning it on the extraction command line
 \item by extracting the whole \Coq\ module of this constant.
@@ -169,11 +169,11 @@ But this same constant may or may not be inlined in the following
 terms, depending on the automatic/custom inlining mechanism.  
 
 
-For the constants non-explicitely required but needed for dependancy
+For the constants non-explicitly required but needed for dependency
 reasons, there are two cases: 
 \begin{itemize}
-\item If an inlining decision is taken, wether automatically or not, 
-all occurences of this constant are replaced by its extracted body, and
+\item If an inlining decision is taken, whether automatically or not,
+all occurrences of this constant are replaced by its extracted body, and
 this constant is not declared in the generated file.
 \item If no inlining decision is taken, the constant is normally
   declared in the produced file. 
@@ -184,7 +184,7 @@ this constant is not declared in the generated file.
 Extraction will fail if it encounters an informative
 axiom not realized (see Section~\ref{extraction:axioms}). 
 A warning will be issued if it encounters an logical axiom, to remind 
-user that inconsistant logical axioms may lead to incorrect or 
+user that inconsistent logical axioms may lead to incorrect or
 non-terminating extracted terms. 
 
 It is possible to assume some axioms while developing a proof. Since
@@ -207,12 +207,12 @@ what ML term corresponds to a given axiom.
 Note that the {\tt Extract Inlined Constant} command is sugar
 for an {\tt Extract Constant} followed by a {\tt Extraction Inline}. 
 Hence a {\tt Reset Extraction Inline} will have an effect on the
-realized and inlined xaxiom. 
+realized and inlined axiom.
 
-Of course, it is the responsability of the user to ensure that the ML
+Of course, it is the responsibility of the user to ensure that the ML
 terms given to realize the axioms do have the expected types.  In
 fact, the strings containing realizing code are just copied in the
-extracted files. The extraction recognize whether the realized axiom
+extracted files. The extraction recognizes whether the realized axiom
 should become a ML type constant or a ML object declaration.
 
 \Example
@@ -243,12 +243,12 @@ Realizing an axiom via {\tt Extract Constant} is only useful in the
 case of an informative axiom (of sort Type or Set). A logical axiom
 have no computational content and hence will not appears in extracted
 terms. But a warning is nonetheless issued if extraction encounters a
-logical axiom. This warning reminds user that inconsistant logical
+logical axiom. This warning reminds user that inconsistent logical
 axioms may lead to incorrect or non-terminating extracted terms.
 
 If an informative axiom has not been realized before an extraction, a
 warning is also issued and the definition of the axiom is filled with
-an exception labelled {\tt AXIOM TO BE REALIZED}. The user must then
+an exception labeled {\tt AXIOM TO BE REALIZED}. The user must then
 search these exceptions inside the extracted file and replace them by
 real code.
 

@@ -14,7 +14,7 @@ equivalences (e.g. rewriting systems).
 This documentation is adapted from the previous setoid documentation by
 Claudio Sacerdoti Coen (based on previous work by Cl\'ement Renard).
 The new implementation is a drop-in replacement for the old one \footnote{Nicolas
-Tabareau helped with the glueing}, hence most of the documentation still applies.
+Tabareau helped with the gluing}, hence most of the documentation still applies.
 
 The work is a complete rewrite of the previous implementation, based on
 the type class infrastructure. It also improves on and generalizes
@@ -203,7 +203,7 @@ have a type convertible to \texttt{reflexive (A $t_1$ \ldots $t_n$) (Aeq $t'_1$ 
   $t'_n$)}. Each proof may refer to the introduced variables as well. 
 
 \begin{cscexample}[Parametric relation]
-For leibniz equality, we may declare:
+For Leibniz equality, we may declare:
 \texttt{Add Parametric Relation (A : Type) :} \texttt{A (@eq A)}\\
 ~\zeroone{\texttt{reflexivity proved by} \texttt{@refl\_equal A}}\\
 \ldots
@@ -392,7 +392,7 @@ Contrary to the previous implementation, no specific error message will
 be raised when trying to replace a term that occurs in the wrong
 position. It will only fail because the rewriting constraints are not
 satisfiable. However it is possible to use the \texttt{at} modifier to
-specify which occurences should be rewritten.
+specify which occurrences should be rewritten.
 
 As expected, composing morphisms together propagates the variance annotations by
 switching the variance every time a contravariant position is traversed.
@@ -637,7 +637,7 @@ One then has to show that if two predicates are equivalent at every
 point, their universal quantifications are equivalent. Once we have
 declared such a morphism, it will be used by the setoid rewriting tactic
 each time we try to rewrite under an \texttt{all} application (products
-in \Prop{} are implicitely translated to such applications).
+in \Prop{} are implicitly translated to such applications).
 
 Indeed, when rewriting under a lambda, binding variable $x$, say from
 $P~x$ to $Q~x$ using the relation \texttt{iff}, the tactic will generate

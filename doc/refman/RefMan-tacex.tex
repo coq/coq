@@ -630,7 +630,7 @@ generalize_eqs H.
 
 The index {\tt S n} gets abstracted by a variable here, but a
 corresponding equality is added under the abstract instance so that no
-information is actually lost. The goal is now almost ammenable to do induction
+information is actually lost. The goal is now almost amenable to do induction
 or case analysis. One should indeed first move {\tt n} into the goal to
 strengthen it before doing induction, or {\tt n} will be fixed in
 the inductive hypotheses (this does not matter for case analysis). 
@@ -665,7 +665,7 @@ substitute the equalities back into the instance to get the right
 assumptions. Sometimes injection of constructors will also be needed to
 recover the needed equalities. Also, some subgoals should be directly
 solved because of inconsistent contexts arising from the constraints on 
- indices. The nice thing is that we can make a tactic based on
+indexes. The nice thing is that we can make a tactic based on
 discriminate, injection and variants of substitution to automatically 
 do such simplifications (which may involve the K axiom). 
 This is what the {\tt simplify\_dep\_elim} tactic from
@@ -683,7 +683,7 @@ induction p ; simplify_dep_elim.
 
 The higher-order tactic {\tt do\_depind} defined in {\tt
   Coq.Program.Equality} takes a tactic and combines the
-building blocks we've seen with it: generalizing by equalities 
+building blocks we have seen with it: generalizing by equalities
 calling the given tactic with the
 generalized induction hypothesis as argument and cleaning the subgoals
 with respect to equalities. Its most important instantiations are
@@ -803,7 +803,7 @@ With this proper separation of the index from the instance and the right
 induction loading (putting {\tt G} and {\tt D} after the inducted-on
 hypothesis), the proof will go through, but it is a very tedious
 process. One is also forced to make a wrapper lemma to get back the
-more natural statement. The \depind tactic aleviates this trouble by
+more natural statement. The \depind tactic alleviates this trouble by
 doing all of this plumbing of generalizing and substituting back automatically.
 Indeed we can simply write:
 
@@ -820,7 +820,7 @@ variables appearing in the instance that should be generalized in the
 goal, so that they can vary in the induction hypotheses. By default, all
 variables appearing inside constructors (except in a parameter position)
 of the instantiated hypothesis will be generalized automatically but
-one can always give the list explicitely.
+one can always give the list explicitly.
 
 \begin{coq_example}
   Show.
@@ -829,7 +829,7 @@ one can always give the list explicitely.
 The {\tt simpl\_depind} tactic includes an automatic tactic that tries
 to simplify equalities appearing at the beginning of induction
 hypotheses, generally using trivial applications of
-reflexiviy. In cases where the equality is not between constructor
+reflexivity. In cases where the equality is not between constructor
 forms though, one must help the automation by giving
 some arguments, using the {\tt specialize} tactic.
 
@@ -949,7 +949,7 @@ Inductive formula : Type :=
   | f_or : formula -> formula -> formula
   | f_not : formula -> formula (* unary constructor *)
   | f_true : formula (* 0-ary constructor *)
-  | f_const : Prop -> formula (* contructor for constants *).
+  | f_const : Prop -> formula (* constructor for constants *).
 Fixpoint interp_f (f:
                    formula) : Prop :=
   match f with
