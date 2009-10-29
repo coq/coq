@@ -233,21 +233,20 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
         match names.(j) with
             Name id -> pr_id id
           | Anonymous -> str "the " ++ nth i ++ str " definition" in
+      let pr_db x = quote (pr_db env x) in
       let vars =
         match (lt,le) with
             ([],[]) -> assert false
-          | ([],[x]) ->
-              str "a subterm of " ++ pr_db env x
-          | ([],_) ->
-              str "a subterm of the following variables: " ++
-              prlist_with_sep pr_spc (pr_db env) le
-          | ([x],_) -> pr_db env x
+          | ([],[x]) -> str "a subterm of " ++ pr_db x
+          | ([],_) -> str "a subterm of the following variables: " ++
+              prlist_with_sep pr_spc pr_db le
+          | ([x],_) -> pr_db x
           | _ ->
               str "one of the following variables: " ++
-              prlist_with_sep pr_spc (pr_db env) lt in
+              prlist_with_sep pr_spc pr_db lt in
       str "Recursive call to " ++ called ++ spc () ++
-      str "has principal argument equal to" ++ spc () ++
-      pr_lconstr_env env arg ++ fnl () ++ str "instead of " ++ vars
+      strbrk "has principal argument equal to" ++ spc () ++
+      pr_lconstr_env env arg ++ strbrk " instead of " ++ vars
 
   | NotEnoughArgumentsForFixCall j ->
       let called =
