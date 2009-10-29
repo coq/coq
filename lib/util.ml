@@ -850,7 +850,7 @@ let list_lastn n l =
 
 let rec list_skipn n l = match n,l with
   | 0, _ -> l
-  | _, [] -> failwith "list_fromn"
+  | _, [] -> failwith "list_skipn"
   | n, _::l -> list_skipn (pred n) l
 
 let rec list_addn n x l =

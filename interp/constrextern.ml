@@ -785,13 +785,22 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
       let loc = Rawterm.loc_of_rawconstr t in
       try
 	(* Adjusts to the number of arguments expected by the notation *)
-	let (t,args) = match t,n with
-	  | RApp (_,(RRef _ as f),args), Some n when List.length args >= n ->
+	let (t,args,argsscopes,argsimpls) = match t,n with
+	  | RApp (_,(RRef (_,ref) as f),args), Some n
+	      when List.length args >= n ->
 	      let args1, args2 = list_chop n args in
-	      (if n = 0 then f else RApp (dummy_loc,f,args1)), args2
-	  | RApp (_,(RRef _ as f),args), None -> f, args
-	  | RRef _, Some 0 -> RApp (dummy_loc,t,[]), []
-          | _, None -> t,[]
+	      let subscopes =
+		try list_skipn n (find_arguments_scope ref) with _ -> [] in
+	      let impls =
+		try list_skipn n (implicits_of_global ref) with _ -> [] in
+	      (if n = 0 then f else RApp (dummy_loc,f,args1)),
+	      args2, subscopes, impls
+	  | RApp (_,(RRef (_,ref) as f),args), None ->
+	      let subscopes = find_arguments_scope ref in
+	      let impls = implicits_of_global ref in
+	      f, args, subscopes, impls
+	  | RRef _, Some 0 -> RApp (dummy_loc,t,[]), [], [], []
+          | _, None -> t, [], [], []
           | _ -> raise No_match in
 	(* Try matching ... *)
 	let subst,substlist = match_aconstr t pat in
@@ -824,9 +833,8 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 	      if l = [] then a else CApp (loc,(None,a),l) in
  	if args = [] then e
 	else
-	  (* TODO: compute scopt for the extra args, in case, head is a ref *)
-	  explicitize loc false [] (None,e)
-	  (List.map (extern true allscopes vars) args)
+	  let args = extern_args (extern true) scopes vars args argsscopes in
+	  explicitize loc false argsimpls (None,e) args
       with
 	  No_match -> extern_symbol allscopes vars t rules
 

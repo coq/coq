@@ -14,6 +14,7 @@ Infix "#" := op (at level 70).
 Check (forall x : A, x # x).
 
 (* Example submitted by Christine *)
+
 Record stack : Type :=
   {type : Set; elt : type; empty : type -> bool; proof : empty elt = true}.
 
@@ -21,7 +22,7 @@ Check
   (forall (type : Set) (elt : type) (empty : type -> bool),
    empty elt = true -> stack).
 
-(* Nested sections and manual implicit arguments *)
+(* Nested sections and manual/automatic implicit arguments *)
 
 Variable op' : forall A : Set, A -> A -> Set.
 Variable op'' : forall A : Set, A -> A -> Set.
@@ -59,10 +60,6 @@ End Spec.
 Check (eq1 0 0).
 Check (eq2 0 0).
 Check (eq3 nat 0 0).
-
-(* Test discharge on automatic implicit arguments *)
-
-Check (op' 0 0).
 
 (* Example submitted by Frédéric (interesting in v8 syntax) *)
 
