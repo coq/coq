@@ -105,7 +105,7 @@ sig
      - None if the pattern contains no leaf (only Metas at the leafs).
   *)
   val fold_pattern :
-    (meta -> t -> 'a -> 'a) -> 'a -> term_pattern -> t -> Idset.t option * 'a
+    ('a -> (Idset.t * meta * t) -> 'a) -> 'a -> term_pattern -> t -> Idset.t option * 'a
 
   (* [find_match p t] returns identifiers of all terms matching p in
      t. *)

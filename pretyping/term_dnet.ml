@@ -309,11 +309,11 @@ struct
 	 let up = it_mkProd_or_LetIn up ctx in
 	 let wc,whole_c = if Opt.direction then whole_c,wc else wc,whole_c in
 	 try (id,(up,plug),Termops.filtering ctx Reduction.CUMUL wc whole_c)::acc
-	 with Termops.CannotFilter -> acc
+	 with Termops.CannotFilter -> (* msgnl(str"recon "++Termops.print_constr_env (Global.env()) wc); *) acc
       ) (TDnet.find_match dpat dn) []
 
   let fold_pattern_neutral f =
-    fold_pattern (fun m dn acc -> if m=neutral_meta then acc else f m dn acc)
+    fold_pattern (fun acc (mset,m,dn) -> if m=neutral_meta then acc else f m dn acc)
 
   let fold_pattern_nonlin f =
     let defined = ref Gmap.empty in

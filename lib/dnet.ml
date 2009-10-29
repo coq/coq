@@ -37,7 +37,7 @@ sig
   val add : t -> term_pattern -> ident -> t
   val find_all : t -> Idset.t
   val fold_pattern :
-    (meta -> t -> 'a -> 'a) -> 'a -> term_pattern -> t -> Idset.t option * 'a
+    ('a -> (Idset.t * meta * t) -> 'a) -> 'a -> term_pattern -> t -> Idset.t option * 'a
   val find_match : term_pattern -> t -> Idset.t
   val inter : t -> t -> t
   val union : t -> t -> t
@@ -125,50 +125,106 @@ struct
 	     Idset.union acc s2
 	 ) t Idset.empty)
 
-  exception Empty
+(*   (\* optimization hack: Not_found is catched in fold_pattern *\) *)
+(*   let fast_inter s1 s2 = *)
+(*     if Idset.is_empty s1 || Idset.is_empty s2 then raise Not_found *)
+(*     else Idset.inter s1 s2 *)
 
-  (* optimization hack: Not_found is catched in fold_pattern *)
-  let fast_inter s1 s2 =
-    if Idset.is_empty s1 || Idset.is_empty s2 then raise Empty
-    else Idset.inter s1 s2
+(*   let option_any2 f s1 s2 = match s1,s2 with *)
+(*     | Some s1, Some s2 -> f s1 s2 *)
+(*     | (Some s, _ | _, Some s) -> s *)
+(*     | _ -> raise Not_found *)
 
-  let option_any2 f s1 s2 = match s1,s2 with
-    | Some s1, Some s2 -> f s1 s2
-    | (Some s, _ | _, Some s) -> s
-    | _ -> raise Not_found
+(*   let fold_pattern ?(complete=true) f acc pat dn = *)
+(*     let deferred = ref [] in *)
+(*     let leafs,metas = ref None, ref None in *)
+(*     let leaf s = leafs := match !leafs with *)
+(*       | None -> Some s *)
+(*       | Some s' -> Some (fast_inter s s') in *)
+(*     let meta s = metas := match !metas with *)
+(*       | None -> Some s *)
+(*       | Some s' -> Some (Idset.union s s') in *)
+(*     let defer c = deferred := c::!deferred in *)
+(*     let rec fp_rec (p:term_pattern) (Nodes(t,m) as dn:t) = *)
+(*       Mmap.iter (fun _ -> meta) m; (\* TODO: gérer patterns nonlin ici *\) *)
+(*       match p with *)
+(* 	| Meta m -> defer (m,dn) *)
+(* 	| Term w -> *)
+(* 	    try match select t w with *)
+(* 	      | Terminal (_,is) -> leaf is *)
+(* 	      | Node e -> *)
+(* 		  if complete then T.fold2 (fun _ -> fp_rec) () w e else *)
+(* 		    if T.fold2 *)
+(* 		      (fun b p dn -> match p with *)
+(* 			 | Term _ -> fp_rec p dn; false *)
+(* 			 | Meta _ -> b *)
+(* 		      ) true w e *)
+(* 		    then T.choose (T.choose fp_rec w) e *)
+(* 	    with Not_found -> *)
+(* 	      if Mmap.is_empty m then raise Not_found else () *)
+(*     in try *)
+(*       fp_rec pat dn; *)
+(*       (try Some (option_any2 Idset.union !leafs !metas) with Not_found -> None), *)
+(*       List.fold_left (fun acc (m,dn) -> f m dn acc) acc !deferred *)
+(*     with Not_found -> None,acc *)
+
+  (* Sets with a neutral element for inter *)
+  module OSet (S:Set.S) = struct
+    type t = S.t option
+    let union s1 s2 = match s1,s2 with
+      | (None, _ | _, None) -> None
+      | Some a, Some b -> Some (S.union a b)
+    let inter s1 s2 = match s1,s2 with
+      | (None, a | a, None) -> a
+      | Some a, Some b -> Some (S.inter a b)
+    let is_empty = function 
+      | None -> false
+      | Some s -> S.is_empty s
+    (* optimization hack: Not_found is catched in fold_pattern *)
+    let fast_inter s1 s2 =
+      if is_empty s1 || is_empty s2 then raise Not_found
+      else let r = inter s1 s2 in 
+      if is_empty r then raise Not_found else r
+    let full = None
+    let empty = Some S.empty
+  end
+
+  module OIdset = OSet(Idset)
 
   let fold_pattern ?(complete=true) f acc pat dn =
     let deferred = ref [] in
-    let leafs,metas = ref None, ref None in
-    let leaf s = leafs := match !leafs with
-      | None -> Some s
-      | Some s' -> Some (fast_inter s s') in
-    let meta s = metas := match !metas with
-      | None -> Some s
-      | Some s' -> Some (Idset.union s s') in
     let defer c = deferred := c::!deferred in
-    let rec fp_rec (p:term_pattern) (Nodes(t,m) as dn:t) =
-      Mmap.iter (fun _ -> meta) m; (* TODO: gérer patterns nonlin ici *)
-      match p with
-	| Meta m -> defer (m,dn)
+
+    let rec fp_rec metas p (Nodes(t,m) as dn:t) =
+      (* TODO gérer les dnets non-linéaires *)
+      let metas = Mmap.fold (fun _ -> Idset.union) m metas in
+      match p with 
+	| Meta m -> defer (metas,m,dn); OIdset.full
 	| Term w ->
+	    let curm = Mmap.fold (fun _ -> Idset.union) m Idset.empty in
 	    try match select t w with
-	      | Terminal (_,is) -> leaf is
-	      | Node e ->
-		  if complete then T.fold2 (fun _ -> fp_rec) () w e else
-		    if T.fold2
-		      (fun b p dn -> match p with
-			 | Term _ -> fp_rec p dn; false
-			 | Meta _ -> b
-		      ) true w e
-		    then T.choose (T.choose fp_rec w) e
-	    with Not_found ->
-	      if Mmap.is_empty m then raise Not_found else ()
-    in try
-      fp_rec pat dn;
-      (try Some (option_any2 Idset.union !leafs !metas) with Not_found -> None),
-      List.fold_left (fun acc (m,dn) -> f m dn acc) acc !deferred
-    with Not_found | Empty -> None,acc
+	      | Terminal (_,is) -> Some (Idset.union curm is)
+	      | Node e -> 
+		  let ids = if complete then T.fold2
+		    (fun acc w e ->
+		       OIdset.fast_inter acc (fp_rec metas w e)
+		    ) OIdset.full w e 
+		  else
+		    let (all_metas, res) = T.fold2
+		      (fun (b,acc) w e -> match w with
+			 | Term _ -> false, OIdset.fast_inter acc (fp_rec metas w e)
+			 | Meta _ -> b, acc
+		      ) (true,OIdset.full) w e in
+		    if all_metas then T.choose (T.choose (fp_rec metas) w) e
+		    else res in
+		  OIdset.union ids (Some curm)
+	    with Not_found -> 
+	      if Idset.is_empty metas then raise Not_found else Some curm in
+    let cand = 
+      try fp_rec Idset.empty pat dn
+      with Not_found -> OIdset.empty in
+    let res = List.fold_left f acc !deferred in
+    cand, res
 
   (* intersection of two dnets. keep only the common pairs *)
   let rec inter (t1:t) (t2:t) : t =
@@ -216,15 +272,14 @@ struct
   let find_match (p:term_pattern) (t:t) : idset =
     let metas = ref Mmap.empty in
     let (mset,lset) = fold_pattern ~complete:false
-      (fun m t acc ->
-(*	 Printf.printf "eval pat %d\n" (Obj.magic m:int);*)
-	 Some (option_any2 fast_inter acc
+      (fun acc (mset,m,t) ->
+	 let all = OIdset.fast_inter acc
 	   (Some(let t = try inter t (Mmap.find m !metas) with Not_found -> t in
 		 metas := Mmap.add m t !metas;
-		 find_all t)))
+		 find_all t)) in
+	 OIdset.union (Some mset) all
       ) None p t in
-    try option_any2 Idset.inter mset lset
-    with Not_found -> Idset.empty
+    Option.get (OIdset.inter mset lset)
 
   let fold_pattern f acc p dn = fold_pattern ~complete:true f acc p dn
 
