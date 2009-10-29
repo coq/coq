@@ -1102,11 +1102,11 @@ Section Map.
 
   (** [flat_map] *)
 
-  Fixpoint flat_map (f:A -> list B) (l:list A) {struct l} :
-    list B :=
+  Definition flat_map (f:A -> list B) :=
+    fix flat_map (l:list A) {struct l} : list B :=
     match l with
       | nil => nil
-      | cons x t => (f x)++(flat_map f t)
+      | cons x t => (f x)++(flat_map t)
     end.
 
   Lemma in_flat_map : forall (f:A->list B)(l:list A)(y:B),
