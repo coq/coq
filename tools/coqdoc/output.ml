@@ -54,7 +54,7 @@ let is_keyword =
       "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
       "Program Instance"; "Equations"; "Equations_nocomp";
       (*i (* coq terms *) *)
-      "forall"; "match"; "as"; "in"; "return"; "with"; "end"; "let"; "dest"; "fun";
+      "forall"; "match"; "as"; "in"; "return"; "with"; "end"; "let"; "fun";
       "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="; "where"; "struct"; "wf"; "measure";
       (* Ltac *)
       "before"; "after"

@@ -34,7 +34,7 @@
     let h = Hashtbl.create 97 in
       List.iter (fun s -> Hashtbl.add h s ())
 	[ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "for";
-	  "end"; "as"; "let"; "in"; "dest"; "if"; "then"; "else"; "return";
+	  "end"; "as"; "let"; "in"; "if"; "then"; "else"; "return";
 	  "Prop"; "Set"; "Type" ];
       Hashtbl.mem h
 

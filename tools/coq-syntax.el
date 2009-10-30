@@ -775,7 +775,7 @@ Used by `coq-goal-command-p'"
      "False" "True" "after" "as" "cofix" "fix" "forall" "fun" "match"
      "return" "struct" "else" "end" "if" "in" "into" "let" "then"
      "using" "with" "beta" "delta" "iota" "zeta" "after" "until"
-     "at" "Sort" "Time" "dest"))
+     "at" "Sort" "Time"))
   "Reserved keywords of Coq.")
 
 
