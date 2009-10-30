@@ -98,6 +98,11 @@ let multiword_command =
 | "Implicit" space+ "Arguments"
 | "Implicit" space+ ("Type"|"Types")
 | "Combined" space+ "Scheme"
+| "Extraction" space+ (("Language" space+ ("Ocaml"|"Haskell"|"Scheme"|"Toplevel"))|
+    ("Library"|"Inline"|"NoInline"|"Blacklist"))
+| "Recursive" space+ "Extraction" (space+ "Library")?
+| ("Print"|"Reset") space+ "Extraction" space+ ("Inline"|"Blacklist")
+| "Extract" space+ (("Inlined" space+) "Constant"| "Inductive")
 
 (* At least still missing: "Inline" + decl, variants of "Identity
   Coercion", variants of Print, Add, ... *)
