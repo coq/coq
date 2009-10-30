@@ -1000,13 +1000,15 @@ let is_ground_env evd env =
    structures *)
 let is_ground_env = memo1_2 is_ground_env
 
+exception NoHeadEvar
+
 let head_evar =
   let rec hrec c = match kind_of_term c with
     | Evar (evk,_)   -> evk
     | Case (_,_,c,_) -> hrec c
     | App (c,_)      -> hrec c
     | Cast (c,_,_)   -> hrec c
-    | _              -> failwith "headconstant"
+    | _              -> raise NoHeadEvar
   in
   hrec
 
@@ -1107,10 +1109,10 @@ let solve_pattern_eqn env l1 c =
  *)
 
 let status_changed lev (pbty,_,t1,t2) =
-  try
-    ExistentialSet.mem (head_evar t1) lev or ExistentialSet.mem (head_evar t2) lev
-  with Failure _ ->
-    try ExistentialSet.mem (head_evar t2) lev with Failure _ -> false
+  try ExistentialSet.mem (head_evar t1) lev
+  with NoHeadEvar ->
+  try ExistentialSet.mem (head_evar t2) lev
+  with NoHeadEvar -> false
 
 (* Solve pbs (?i x1..xn) = (?i y1..yn) which arises often in fixpoint
  * definitions. We try to unify the xi with the yi pairwise. The pairs

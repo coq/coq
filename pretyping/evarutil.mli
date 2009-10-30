@@ -72,6 +72,9 @@ val non_instantiated : evar_map -> (evar * evar_info) list
 (***********************************************************)
 (* Unification utils *)
 
+exception NoHeadEvar
+val head_evar : constr -> existential_key (* may raise NoHeadEvar *)
+
 val is_ground_term :  evar_defs -> constr -> bool
 val is_ground_env  :  evar_defs -> env -> bool
 val solve_refl :
