@@ -213,10 +213,11 @@ Goal True.
 set (p:=fun j => j (or_intror _ (fun a:True => j (or_introl _ a)))) || idtac.
 Abort.
 
-(* remark: the following example does not succeed any longer in 8.2 because,
-   the algorithm is more general and does exclude a solution that it should
-   exclude for typing reason. Handling of types and backtracking is still to
-   be done
+(* Remark: the following example stopped succeeding at some time in
+   the development of 8.2 but it works again (this was because 8.2
+   algorithm was more general and did not exclude a solution that it
+   should have excluded for typing reason; handling of types and
+   backtracking is still to be done) *)
 
 Section S.
 Variables A B : nat -> Prop.
@@ -224,4 +225,16 @@ Goal forall x : nat, A x -> B x.
 refine (fun x H => proj2 (_ x H) _).
 Abort.
 End S.
-*)
+
+(* Check that constraints are taken into account by tactics that instantiate *)
+
+Lemma inj : forall n m, S n = S m -> n = m.
+intros n m H.
+eapply f_equal with (* should fail because ill-typed *)
+  (f := fun n =>
+        match n return match n with S _ => nat | _ => unit end with
+        | S n => n
+        | _ => tt
+        end) in H
+|| injection H.
+Abort.
