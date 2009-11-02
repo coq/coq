@@ -226,6 +226,35 @@ Qed.
 Definition ID := forall A:Type, A -> A.
 Definition id : ID := fun A x => x.
 
+(** Polymorphic lists and some operations *)
+
+Inductive list (A : Type) : Type :=
+ | nil : list A
+ | cons : A -> list A -> list A.
+
+Implicit Arguments nil [A].
+Infix "::" := cons (at level 60, right associativity) : list_scope.
+Delimit Scope list_scope with list.
+Bind Scope list_scope with list.
+
+Local Open Scope list_scope.
+
+Fixpoint length (A : Type) (l:list A) : nat :=
+  match l with
+   | nil => O
+   | _ :: l' => S (length l')
+  end.
+
+(** Concatenation of two lists *)
+
+Fixpoint app (A : Type) (l m:list A) : list A :=
+  match l with
+   | nil => m
+   | a :: l1 => a :: app l1 m
+  end.
+
+Infix "++" := app (right associativity, at level 60) : list_scope.
+
 (* begin hide *)
 
 (* Compatibility *)

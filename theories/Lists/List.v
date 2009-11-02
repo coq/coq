@@ -17,78 +17,42 @@ Set Implicit Arguments.
 (** * Basics: definition of polymorphic lists and some operations *)
 (******************************************************************)
 
-(** ** Definitions *)
+(** The definition of [list] is now in [Init/Datatypes],
+    as well as the definitions of [length] and [app] *)
+
+Open Scope list_scope.
 
 Section Lists.
 
   Variable A : Type.
 
-  Inductive list : Type :=
-    | nil : list
-    | cons : A -> list -> list.
-
-  Infix "::" := cons (at level 60, right associativity) : list_scope.
-
-  Open Scope list_scope.
-
   (** Head and tail        *)
-  Definition head (l:list) :=
+  Definition head (l:list A) :=
     match l with
       | nil => error
       | x :: _ => value x
     end.
 
- Definition hd (default:A) (l:list) :=
+ Definition hd (default:A) (l:list A) :=
    match l with
      | nil => default
      | x :: _ => x
    end.
 
-  Definition tail (l:list) : list :=
+  Definition tail (l:list A) : list A :=
     match l with
       | nil => nil
       | a :: m => m
     end.
 
-  (** Length of lists                *)
-  Fixpoint length (l:list) : nat :=
-    match l with
-      | nil => 0
-      | _ :: m => S (length m)
-    end.
-
   (** The [In] predicate *)
-  Fixpoint In (a:A) (l:list) {struct l} : Prop :=
+  Fixpoint In (a:A) (l:list A) : Prop :=
     match l with
       | nil => False
       | b :: m => b = a \/ In a m
     end.
 
-
-  (** Concatenation of two lists *)
-  Fixpoint app (l m:list) {struct l} : list :=
-    match l with
-      | nil => m
-      | a :: l1 => a :: app l1 m
-    end.
-
-  Infix "++" := app (right associativity, at level 60) : list_scope.
-
 End Lists.
-
-(** Exporting list notations and tactics *)
-
-Implicit Arguments nil [A].
-Infix "::" := cons (at level 60, right associativity) : list_scope.
-Infix "++" := app (right associativity, at level 60) : list_scope.
-
-Open Scope list_scope.
-
-Delimit Scope list_scope with list.
-
-Bind Scope list_scope with list.
-
-Arguments Scope list [type_scope].
 
 (** ** Facts about lists *)
 
@@ -1950,7 +1914,19 @@ Ltac simpl_list := autorewrite with list.
 Ltac ssimpl_list := autorewrite with list using simpl.
 
 (* begin hide *)
-(* Compatibility *)
+(* Compatibility notations after the migration of [list] to [Datatypes] *)
+Notation list := list (only parsing).
+Notation list_rect := list_rect (only parsing).
+Notation list_rec := list_rec (only parsing).
+Notation list_ind := list_ind (only parsing).
+Notation nil := @nil (only parsing).
+Notation cons := @cons (only parsing).
+Notation length := @length (only parsing).
+Notation app := @app (only parsing).
+(* We hide these compatibility notations behind the true definitions
+   that are in [Datatypes]: *)
+Export Datatypes.
+(* Compatibility Names *)
 Notation ass_app := app_assoc (only parsing).
 Notation app_ass := app_assoc_reverse (only parsing).
 Hint Resolve app_nil_end : datatypes v62.

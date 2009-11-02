@@ -203,12 +203,10 @@ Program Instance iff_equivalence : Equivalence iff.
    The resulting theory can be applied to homogeneous binary relations but also to
    arbitrary n-ary predicates. *)
 
-Require Import Coq.Lists.List.
+Local Open Scope list_scope.
 
 (* Notation " [ ] " := nil : list_scope. *)
 (* Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) (at level 1) : list_scope. *)
-
-(* Open Local Scope list_scope. *)
 
 (** A compact representation of non-dependent arities, with the codomain singled-out. *)
 
@@ -220,9 +218,9 @@ Fixpoint arrows (l : list Type) (r : Type) : Type :=
 
 (** We can define abbreviations for operation and relation types based on [arrows]. *)
 
-Definition unary_operation A := arrows (cons A nil) A.
-Definition binary_operation A := arrows (cons A (cons A nil)) A.
-Definition ternary_operation A := arrows (cons A (cons A (cons A nil))) A.
+Definition unary_operation A := arrows (A::nil) A.
+Definition binary_operation A := arrows (A::A::nil) A.
+Definition ternary_operation A := arrows (A::A::A::nil) A.
 
 (** We define n-ary [predicate]s as functions into [Prop]. *)
 
@@ -230,11 +228,11 @@ Notation predicate l := (arrows l Prop).
 
 (** Unary predicates, or sets. *)
 
-Definition unary_predicate A := predicate (cons A nil).
+Definition unary_predicate A := predicate (A::nil).
 
 (** Homogeneous binary relations, equivalent to [relation A]. *)
 
-Definition binary_relation A := predicate (cons A (cons A nil)).
+Definition binary_relation A := predicate (A::A::nil).
 
 (** We can close a predicate by universal or existential quantification. *)
 
@@ -345,18 +343,18 @@ Program Instance predicate_implication_preorder :
    from the general ones. *)
 
 Definition relation_equivalence {A : Type} : relation (relation A) :=
-  @predicate_equivalence (cons _ (cons _ nil)).
+  @predicate_equivalence (_::_::nil).
 
 Class subrelation {A:Type} (R R' : relation A) : Prop :=
-  is_subrelation : @predicate_implication (cons A (cons A nil)) R R'.
+  is_subrelation : @predicate_implication (A::A::nil) R R'.
 
 Implicit Arguments subrelation [[A]].
 
 Definition relation_conjunction {A} (R : relation A) (R' : relation A) : relation A :=
-  @predicate_intersection (cons A (cons A nil)) R R'.
+  @predicate_intersection (A::A::nil) R R'.
 
 Definition relation_disjunction {A} (R : relation A) (R' : relation A) : relation A :=
-  @predicate_union (cons A (cons A nil)) R R'.
+  @predicate_union (A::A::nil) R R'.
 
 (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
 
@@ -364,10 +362,10 @@ Set Automatic Introduction.
 
 Instance relation_equivalence_equivalence (A : Type) :
   Equivalence (@relation_equivalence A).
-Proof. exact (@predicate_equivalence_equivalence (cons A (cons A nil))). Qed.
+Proof. exact (@predicate_equivalence_equivalence (A::A::nil)). Qed.
 
 Instance relation_implication_preorder A : PreOrder (@subrelation A).
-Proof. exact (@predicate_implication_preorder (cons A (cons A nil))). Qed.
+Proof. exact (@predicate_implication_preorder (A::A::nil)). Qed.
 
 (** *** Partial Order.
    A partial order is a preorder which is additionally antisymmetric.

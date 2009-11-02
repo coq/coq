@@ -147,18 +147,23 @@ let delimiters_map = ref Gmap.empty
 
 let declare_delimiters scope key =
   let sc = find_scope scope in
-  if sc.delimiters <> None && Flags.is_verbose () then begin
-    let old = Option.get sc.delimiters in
-    Flags.if_verbose
-      warning ("Overwritting previous delimiting key "^old^" in scope "^scope)
+  let newsc = { sc with delimiters = Some key } in
+  begin match sc.delimiters with
+    | None -> scope_map := Gmap.add scope newsc !scope_map
+    | Some oldkey when oldkey = key -> ()
+    | Some oldkey ->
+	Flags.if_verbose warning
+	  ("Overwritting previous delimiting key "^oldkey^" in scope "^scope);
+	scope_map := Gmap.add scope newsc !scope_map
   end;
-  let sc = { sc with delimiters = Some key } in
-  scope_map := Gmap.add scope sc !scope_map;
-  if Gmap.mem key !delimiters_map then begin
-    let oldsc = Gmap.find key !delimiters_map in
-    Flags.if_verbose warning ("Hiding binding of key "^key^" to "^oldsc)
-  end;
-  delimiters_map := Gmap.add key scope !delimiters_map
+  try
+    let oldscope = Gmap.find key !delimiters_map in
+    if oldscope = scope then ()
+    else begin
+      Flags.if_verbose warning ("Hiding binding of key "^key^" to "^oldscope);
+      delimiters_map := Gmap.add key scope !delimiters_map
+    end
+  with Not_found -> delimiters_map := Gmap.add key scope !delimiters_map
 
 let find_delimiters_scope loc key =
   try Gmap.find key !delimiters_map
