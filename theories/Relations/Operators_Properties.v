@@ -16,7 +16,6 @@
 
 Require Import Relation_Definitions.
 Require Import Relation_Operators.
-Require Import Setoid.
 
 Section Properties.
 
@@ -274,10 +273,12 @@ Section Properties.
       P z ->
       (forall x y, R x y -> P y -> clos_refl_trans R y z -> P x) ->
       forall x, clos_refl_trans R x z -> P x.
-      intros.
-      rewrite clos_rt_rt1n_iff in H1.
-      elim H1 using rt1n_ind_right; auto.
-      intros; rewrite  <- clos_rt_rt1n_iff in *.
+      intros P z Hz IH x Hxz.
+      apply clos_rt_rt1n_iff in Hxz.
+      elim Hxz using rt1n_ind_right; auto.
+      clear x Hxz.
+      intros x y Hxy Hyz Hy.
+      apply clos_rt_rt1n_iff in Hyz.
       eauto.
     Qed.
 
