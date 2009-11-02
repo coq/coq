@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Import Relations List Multiset Arith.
+Require Import Relations List Multiset Plus.
 
 (** This file define a notion of permutation for lists, based on multisets:
     there exists a permutation between two lists iff every elements have
