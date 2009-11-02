@@ -1109,10 +1109,8 @@ let solve_pattern_eqn env l1 c =
  *)
 
 let status_changed lev (pbty,_,t1,t2) =
-  try ExistentialSet.mem (head_evar t1) lev
-  with NoHeadEvar ->
-  try ExistentialSet.mem (head_evar t2) lev
-  with NoHeadEvar -> false
+  (try ExistentialSet.mem (head_evar t1) lev with NoHeadEvar -> false) or
+  (try ExistentialSet.mem (head_evar t2) lev with NoHeadEvar -> false)
 
 (* Solve pbs (?i x1..xn) = (?i y1..yn) which arises often in fixpoint
  * definitions. We try to unify the xi with the yi pairwise. The pairs
