@@ -33,10 +33,10 @@ Inductive InA (x : A) : list A -> Prop :=
 Hint Constructors InA.
 
 (** TODO: it would be nice to have a generic definition instead
-    of the previous one. Having [InA = ExistsL eqA] raises too
+    of the previous one. Having [InA = Exists eqA] raises too
     many compatibility issues. For now, we only state the equivalence: *)
 
-Lemma InA_altdef : forall x l, InA x l <-> ExistsL (eqA x) l.
+Lemma InA_altdef : forall x l, InA x l <-> Exists (eqA x) l.
 Proof. split; induction 1; auto. Qed.
 
 Lemma InA_cons : forall x y l, InA x (y::l) <-> eqA x y \/ InA x l.
@@ -53,7 +53,7 @@ Qed.
 
 Lemma InA_alt : forall x l, InA x l <-> exists y, eqA x y /\ In y l.
 Proof.
- intros; rewrite InA_altdef, ExistsL_exists; firstorder.
+ intros; rewrite InA_altdef, Exists_exists; firstorder.
 Qed.
 
 (** A list without redundancy modulo the equality over [A]. *)
@@ -64,11 +64,22 @@ Inductive NoDupA : list A -> Prop :=
 
 Hint Constructors NoDupA.
 
+(** An alternative definition of [NoDupA] based on [ForallOrdPairs] *)
 
-Ltac inv := invlist InA; invlist sort; invlist lelistA; invlist NoDupA.
+Lemma NoDupA_altdef : forall l,
+ NoDupA l <-> ForallOrdPairs (complement eqA) l.
+Proof.
+ split; induction 1; constructor; auto.
+ rewrite Forall_forall. intros b Hb.
+ intro Eq; elim H. rewrite InA_alt. exists b; auto.
+ rewrite InA_alt; intros (a' & Haa' & Ha').
+ rewrite Forall_forall in H. exact (H a' Ha' Haa').
+Qed.
+
 
 (** lists with same elements modulo [eqA] *)
 
+Definition inclA l l' := forall x, InA x l -> InA x l'.
 Definition equivlistA l l' := forall x, InA x l <-> InA x l'.
 
 (** lists with same elements modulo [eqA] at the same place *)
@@ -80,6 +91,11 @@ Inductive eqlistA : list A -> list A -> Prop :=
 
 Hint Constructors eqlistA.
 
+(** We could also have written [eqlistA = Forall2 eqA]. *)
+
+Lemma eqlistA_altdef : forall l l', eqlistA l l' <-> Forall2 eqA l l'.
+Proof. split; induction 1; auto. Qed.
+
 (** Results concerning lists modulo [eqA] *)
 
 Hypothesis eqA_equiv : Equivalence eqA.
@@ -87,6 +103,8 @@ Hypothesis eqA_equiv : Equivalence eqA.
 Hint Resolve (@Equivalence_Reflexive _ _ eqA_equiv).
 Hint Resolve (@Equivalence_Transitive _ _ eqA_equiv).
 Hint Immediate (@Equivalence_Symmetric _ _ eqA_equiv).
+
+Ltac inv := invlist InA; invlist sort; invlist lelistA; invlist NoDupA.
 
 (** First, the two notions [equivlistA] and [eqlistA] are indeed equivlances *)
 
@@ -292,107 +310,76 @@ induction 1; simpl; auto with relations.
 apply Comp; auto.
 Qed.
 
-(** [ForallL2] : specifies that a certain binary predicate should
-    always hold when inspecting two different elements of the list. *)
+(** Fold with restricted [transpose] hypothesis. *)
 
-Inductive ForallL2 (R : A -> A -> Prop) : list A -> Prop :=
-  | ForallNil : ForallL2 R nil
-  | ForallCons : forall a l,
-     (forall b, In b l -> R a b) ->
-     ForallL2 R l -> ForallL2 R (a::l).
-Hint Constructors ForallL2.
-
-(** [NoDupA] can be written in terms of [ForallL2] *)
-
-Lemma ForallL2_NoDupA : forall l,
- ForallL2 (fun a b => ~eqA a b) l <-> NoDupA l.
-Proof.
- induction l; split; intros; auto.
- invlist ForallL2. constructor; [ | rewrite <- IHl; auto ].
- rewrite InA_alt; intros (a',(Haa',Ha')).
- exact (H0 a' Ha' Haa').
- invlist NoDupA. constructor; [ | rewrite IHl; auto ].
- intros b Hb.
- contradict H0.
- rewrite InA_alt; exists b; auto.
-Qed.
-
-Lemma ForallL2_impl : forall (R R':A->A->Prop),
- (forall a b, R a b -> R' a b) ->
- forall l, ForallL2 R l -> ForallL2 R' l.
-Proof.
- induction 2; auto.
-Qed.
-
-(** The following definition is easier to use than [ForallL2]. *)
-
-Definition ForallL2_alt (R:A->A->Prop) l :=
- forall a b, InA a l -> InA b l -> ~eqA a b -> R a b.
-
-Section Restriction.
+Section Fold_With_Restriction.
 Variable R : A -> A -> Prop.
+Hypothesis R_sym : Symmetric R.
+Hypothesis R_compat : Proper (eqA==>eqA==>iff) R.
 
-(** [ForallL2] and [ForallL2_alt] are related, but no completely
+
+(*
+
+(** [ForallOrdPairs R] is compatible with [equivlistA] over the
+    lists without duplicates, as long as the relation [R]
+    is symmetric and compatible with [eqA]. To prove this fact,
+    we use an auxiliary notion: "forall distinct pairs, ...".
+*)
+
+Definition ForallNeqPairs :=
+ ForallPairs (fun a b => ~eqA a b -> R a b).
+
+(** [ForallOrdPairs] and [ForallNeqPairs] are related, but not completely
     equivalent. For proving one implication, we need to know that the
     list has no duplicated elements... *)
 
-Lemma ForallL2_equiv1 : forall l, NoDupA l ->
- ForallL2_alt R l -> ForallL2 R l.
+Lemma ForallNeqPairs_ForallOrdPairs : forall l, NoDupA l ->
+ ForallNeqPairs l -> ForallOrdPairs R l.
 Proof.
  induction l; auto.
- constructor. intros b Hb.
- inv.
- apply H0; auto.
+ constructor. inv.
+ rewrite Forall_forall; intros b Hb.
+ apply H0; simpl; auto.
  contradict H1; rewrite H1; auto.
  apply IHl.
  inv; auto.
  intros b c Hb Hc Hneq.
- apply H0; auto.
+ apply H0; simpl; auto.
 Qed.
 
 (** ... and for proving the other implication, we need to be able
-   to reverse and adapt relation [R] modulo [eqA]. *)
+   to reverse relation [R]. *)
 
-Hypothesis R_sym : Symmetric R.
-Hypothesis R_compat : Proper (eqA==>eqA==>iff) R.
-
-Lemma ForallL2_equiv2 : forall l,
- ForallL2 R l -> ForallL2_alt R l.
+Lemma ForallOrdPairs_ForallNeqPairs : forall l,
+ ForallOrdPairs R l -> ForallNeqPairs l.
 Proof.
- induction l.
- intros _. red. intros a b Ha. inv.
- inversion_clear 1 as [|? ? H_R Hl].
- intros b c Hb Hc Hneq.
- inv.
- (* b,c = a : impossible *)
- elim Hneq; eauto.
- (* b = a, c in l *)
- rewrite InA_alt in H0; destruct H0 as (d,(Hcd,Hd)).
- rewrite H, Hcd; auto.
- (* b in l, c = a *)
- rewrite InA_alt in H; destruct H as (d,(Hcd,Hd)).
- rewrite H0, Hcd; auto.
- (* b,c in l *)
- apply (IHl Hl); auto.
+ intros l Hl x y Hx Hy N.
+ destruct (ForallOrdPairs_In Hl x y Hx Hy) as [H|[H|H]].
+ subst; elim N; auto.
+ assumption.
+ apply R_sym; assumption.
 Qed.
 
-Lemma ForallL2_equiv : forall l, NoDupA l ->
- (ForallL2 R l <-> ForallL2_alt R l).
+*)
+
+(** Compatibility of [ForallOrdPairs] with respect to [inclA]. *)
+
+Lemma ForallOrdPairs_inclA : forall l l',
+ NoDupA l' -> inclA l' l -> ForallOrdPairs R l -> ForallOrdPairs R l'.
 Proof.
-split; [apply ForallL2_equiv2|apply ForallL2_equiv1]; auto.
+induction l' as [|x l' IH].
+constructor.
+intros ND Incl FOP. apply FOP_cons; inv; unfold inclA in *; auto.
+rewrite Forall_forall; intros y Hy.
+assert (Ix : InA x (x::l')) by (rewrite InA_cons; auto).
+ apply Incl in Ix. rewrite InA_alt in Ix. destruct Ix as (x' & Hxx' & Hx').
+assert (Iy : InA y (x::l')) by (apply In_InA; simpl; auto).
+ apply Incl in Iy. rewrite InA_alt in Iy. destruct Iy as (y' & Hyy' & Hy').
+rewrite Hxx', Hyy'.
+destruct (ForallOrdPairs_In FOP x' y' Hx' Hy') as [E|[?|?]]; auto.
+absurd (InA x l'); auto. rewrite Hxx', E, <- Hyy'; auto.
 Qed.
 
-Lemma ForallL2_equivlistA : forall l l', NoDupA l' ->
- equivlistA l l' -> ForallL2 R l -> ForallL2 R l'.
-Proof.
-intros.
-apply ForallL2_equiv1; auto.
-intros a b Ha Hb Hneq.
-red in H0; rewrite <- H0 in Ha,Hb.
-revert a b Ha Hb Hneq.
-change (ForallL2_alt R l).
-apply ForallL2_equiv2; auto.
-Qed.
 
 (** Two-argument functions that allow to reorder their arguments. *)
 Definition transpose (f : A -> B -> B) :=
@@ -405,7 +392,7 @@ Definition transpose_restr (R : A -> A -> Prop)(f : A -> B -> B) :=
 Variable TraR :transpose_restr R f.
 
 Lemma fold_right_commutes_restr :
-  forall s1 s2 x, ForallL2 R (s1++x::s2) ->
+  forall s1 s2 x, ForallOrdPairs R (s1++x::s2) ->
   eqB (fold_right f i (s1++x::s2)) (f x (fold_right f i (s1++s2))).
 Proof.
 induction s1; simpl; auto; intros.
@@ -413,15 +400,15 @@ reflexivity.
 transitivity (f a (f x (fold_right f i (s1++s2)))).
 apply Comp; auto.
 apply IHs1.
-invlist ForallL2; auto.
+invlist ForallOrdPairs; auto.
 apply TraR.
-invlist ForallL2; auto.
-apply H0.
+invlist ForallOrdPairs; auto.
+rewrite Forall_forall in H0; apply H0.
 apply in_or_app; simpl; auto.
 Qed.
 
 Lemma fold_right_equivlistA_restr :
-  forall s s', NoDupA s -> NoDupA s' -> ForallL2 R s ->
+  forall s s', NoDupA s -> NoDupA s' -> ForallOrdPairs R s ->
   equivlistA s s' -> eqB (fold_right f i s) (fold_right f i s').
 Proof.
  simple induction s.
@@ -439,22 +426,23 @@ Proof.
  apply Hrec; auto.
  inv; auto.
  eapply NoDupA_split; eauto.
- invlist ForallL2; auto.
+ invlist ForallOrdPairs; auto.
  eapply equivlistA_NoDupA_split; eauto.
  transitivity (f y (fold_right f i (s1++s2))).
  apply Comp; auto. reflexivity.
  symmetry; apply fold_right_commutes_restr.
- apply ForallL2_equivlistA with (x::l); auto.
+ apply ForallOrdPairs_inclA with (x::l); auto.
+  red; intros; rewrite E; auto.
 Qed.
 
 Lemma fold_right_add_restr :
-  forall s' s x, NoDupA s -> NoDupA s' -> ForallL2 R s' -> ~ InA x s ->
+  forall s' s x, NoDupA s -> NoDupA s' -> ForallOrdPairs R s' -> ~ InA x s ->
   equivlistA s' (x::s) -> eqB (fold_right f i s') (f x (fold_right f i s)).
 Proof.
  intros; apply (@fold_right_equivlistA_restr s' (x::s)); auto.
 Qed.
 
-End Restriction.
+End Fold_With_Restriction.
 
 (** we now state similar results, but without restriction on transpose. *)
 
@@ -475,7 +463,7 @@ Lemma fold_right_equivlistA :
 Proof.
 intros; apply fold_right_equivlistA_restr with (R:=fun _ _ => True);
  repeat red; auto.
-apply ForallL2_equiv1; try red; auto.
+apply ForallPairs_ForallOrdPairs; try red; auto.
 Qed.
 
 Lemma fold_right_add :

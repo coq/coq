@@ -408,23 +408,23 @@ Module KeyOrderedType(Import O:OrderedType).
   exists e; auto.
   Qed.
 
-  Lemma In_alt2 : forall k l, In k l <-> ExistsL (fun p => eq k (fst p)) l.
+  Lemma In_alt2 : forall k l, In k l <-> Exists (fun p => eq k (fst p)) l.
   Proof.
   unfold In, MapsTo.
-  setoid_rewrite ExistsL_exists; setoid_rewrite InA_alt.
+  setoid_rewrite Exists_exists; setoid_rewrite InA_alt.
   firstorder.
   exists (snd x), x; auto.
   Qed.
 
   Lemma In_nil : forall k, In k nil <-> False.
   Proof.
-  intros; rewrite In_alt2; apply ExistsL_nil.
+  intros; rewrite In_alt2; apply Exists_nil.
   Qed.
 
   Lemma In_cons : forall k p l,
    In k (p::l) <-> eq k (fst p) \/ In k l.
   Proof.
-  intros; rewrite !In_alt2, ExistsL_cons; intuition.
+  intros; rewrite !In_alt2, Exists_cons; intuition.
   Qed.
 
   Global Instance MapsTo_compat :

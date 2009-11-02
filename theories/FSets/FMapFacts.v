@@ -1094,24 +1094,23 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   contradict Hnotin; rewrite <- Hnotin; exists e0; auto.
   Qed.
 
+  Hint Resolve NoDupA_eqk_eqke NoDupA_rev elements_3w : map.
+
   Lemma fold_Equal : forall m1 m2 i, Equal m1 m2 ->
    eqA (fold f m1 i) (fold f m2 i).
   Proof.
   intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
-  apply fold_right_equivlistA_restr with
-    (R:=fun p p' => ~eqk p p') (eqA:=eqke) (eqB:=eqA); auto with *.
+  assert (NoDupA eqk (rev (elements m1))) by (auto with *).
+  assert (NoDupA eqk (rev (elements m2))) by (auto with *).
+  apply fold_right_equivlistA_restr with (R:=complement eqk)(eqA:=eqke);
+   auto with *.
   intros (k1,e1) (k2,e2) (Hk,He) a1 a2 Ha; simpl in *; apply Comp; auto.
-  unfold eq_key, eq_key_elt; repeat red. intuition eauto.
+  unfold complement, eq_key, eq_key_elt; repeat red. intuition eauto.
   intros (k,e) (k',e'); unfold eq_key; simpl; auto.
-  apply NoDupA_rev; auto with *; apply NoDupA_eqk_eqke; apply elements_3w.
-  apply NoDupA_rev; auto with *; apply NoDupA_eqk_eqke; apply elements_3w.
-  apply ForallL2_equiv1 with (eqA:=eqk); try red ; unfold eq_key ; eauto with *.
-  apply NoDupA_rev; try red ; unfold eq_key; eauto with *. apply elements_3w.
-  red; intros.
-  rewrite 2 InA_rev by auto with *.
-  destruct x; rewrite <- 2 elements_mapsto_iff by auto with *.
-  rewrite 2 find_mapsto_iff by auto with *.
-  rewrite H. split; auto.
+  rewrite <- NoDupA_altdef; auto.
+  intros (k,e).
+  rewrite 2 InA_rev, <- 2 elements_mapsto_iff, 2 find_mapsto_iff, H;
+   auto with *.
   Qed.
 
   Lemma fold_Add : forall m1 m2 k e i, ~In k m1 -> Add k e m1 m2 ->
@@ -1121,33 +1120,27 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
   change (f k e (fold_right f' i (rev (elements m1))))
    with (f' (k,e) (fold_right f' i (rev (elements m1)))).
+  assert (NoDupA eqk (rev (elements m1))) by (auto with *).
+  assert (NoDupA eqk (rev (elements m2))) by (auto with *).
   apply fold_right_add_restr with
-    (R:=fun p p'=>~eqk p p')(eqA:=eqke)(eqB:=eqA); auto with *.
+   (R:=complement eqk)(eqA:=eqke)(eqB:=eqA); auto with *.
   intros (k1,e1) (k2,e2) (Hk,He) a a' Ha; unfold f'; simpl in *. apply Comp; auto.
-
-  unfold eq_key_elt, eq_key; repeat red; intuition eauto.
+  unfold complement, eq_key_elt, eq_key; repeat red; intuition eauto.
   unfold f'; intros (k1,e1) (k2,e2); unfold eq_key; simpl; auto.
-  apply NoDupA_rev; auto with *; apply NoDupA_eqk_eqke; apply elements_3w.
-  apply NoDupA_rev; auto with *; apply NoDupA_eqk_eqke; apply elements_3w.
-  apply ForallL2_equiv1 with (eqA:=eqk); try red; unfold eq_key ; eauto with *.
-  apply NoDupA_rev; try red; eauto with *. apply elements_3w.
-  rewrite InA_rev; auto with *.
-  contradict H.
-  exists e.
-  rewrite elements_mapsto_iff; auto.
-  intros a.
-  destruct a as (a,b).
+  rewrite <- NoDupA_altdef; auto.
+  rewrite InA_rev, <- elements_mapsto_iff by (auto with *). firstorder.
+  intros (a,b).
   rewrite InA_cons, 2 InA_rev, <- 2 elements_mapsto_iff,
    2 find_mapsto_iff by (auto with *).
   unfold eq_key_elt; simpl.
   rewrite H0.
   rewrite add_o.
-  destruct (eq_dec k a); intuition.
-  inversion H1; auto.
-  f_equal; auto.
-  elim H.
-  exists b; apply MapsTo_1 with a; auto with map.
-  elim n; auto.
+  destruct (eq_dec k a) as [EQ|NEQ]; split; auto.
+  intros EQ'; inversion EQ'; auto.
+  intuition; subst; auto.
+  elim H. exists b; rewrite EQ; auto with map.
+  intuition.
+  elim NEQ; auto.
   Qed.
 
   Lemma fold_add : forall m k e i, ~In k m ->
