@@ -20,13 +20,19 @@ Definition sqrt (x:R) : R :=
     | right a => Rsqrt (mknonnegreal x (Rge_le _ _ a))
   end.
 
+Lemma sqrt_pos : forall x : R, 0 <= sqrt x.
+Proof.
+  intros x.
+  unfold sqrt.
+  destruct (Rcase_abs x) as [H|H].
+  apply Rle_refl.
+  apply Rsqrt_positivity.
+Qed.
+
 Lemma sqrt_positivity : forall x:R, 0 <= x -> 0 <= sqrt x.
 Proof.
-  intros.
-  unfold sqrt in |- *.
-  case (Rcase_abs x); intro.
-  elim (Rlt_irrefl _ (Rlt_le_trans _ _ _ r H)).
-  apply Rsqrt_positivity.
+  intros x _.
+  apply sqrt_pos.
 Qed.
 
 Lemma sqrt_sqrt : forall x:R, 0 <= x -> sqrt x * sqrt x = x.
@@ -100,17 +106,41 @@ Proof.
   intros x H1; unfold Rsqr in |- *; apply (sqrt_sqrt x H1).
 Qed.
 
+Lemma sqrt_mult_alt :
+  forall x y : R, 0 <= x -> sqrt (x * y) = sqrt x * sqrt y.
+Proof.
+  intros x y Hx.
+  unfold sqrt at 3.
+  destruct (Rcase_abs y) as [Hy|Hy].
+  rewrite Rmult_0_r.
+  destruct Hx as [Hx'|Hx'].
+  unfold sqrt.
+  destruct (Rcase_abs (x * y)) as [Hxy|Hxy].
+  apply eq_refl.
+  elim Rge_not_lt with (1 := Hxy).
+  rewrite <- (Rmult_0_r x).
+  now apply Rmult_lt_compat_l.
+  rewrite <- Hx', Rmult_0_l.
+  exact sqrt_0.
+  apply Rsqr_inj.
+  apply sqrt_pos.
+  apply Rmult_le_pos.
+  apply sqrt_pos.
+  apply Rsqrt_positivity.
+  rewrite Rsqr_mult, 2!Rsqr_sqrt.
+  unfold Rsqr.
+  now rewrite Rsqrt_Rsqrt.
+  exact Hx.
+  apply Rmult_le_pos.
+  exact Hx.
+  now apply Rge_le.
+Qed.
+
 Lemma sqrt_mult :
   forall x y:R, 0 <= x -> 0 <= y -> sqrt (x * y) = sqrt x * sqrt y.
 Proof.
-  intros x y H1 H2;
-    apply
-      (Rsqr_inj (sqrt (x * y)) (sqrt x * sqrt y)
-        (sqrt_positivity (x * y) (Rmult_le_pos x y H1 H2))
-        (Rmult_le_pos (sqrt x) (sqrt y) (sqrt_positivity x H1)
-          (sqrt_positivity y H2))); rewrite Rsqr_mult;
-      repeat rewrite Rsqr_sqrt;
-        [ ring | assumption | assumption | apply (Rmult_le_pos x y H1 H2) ].
+  intros x y Hx _.
+  now apply sqrt_mult_alt.
 Qed.
 
 Lemma sqrt_lt_R0 : forall x:R, 0 < x -> 0 < sqrt x.
@@ -121,46 +151,90 @@ Proof.
       | apply (sqrt_positivity x (Rlt_le 0 x H1)) ].
 Qed.
 
+Lemma sqrt_div_alt :
+  forall x y : R, 0 < y -> sqrt (x / y) = sqrt x / sqrt y.
+Proof.
+  intros x y Hy.
+  unfold sqrt at 2.
+  destruct (Rcase_abs x) as [Hx|Hx].
+  unfold Rdiv.
+  rewrite Rmult_0_l.
+  unfold sqrt.
+  destruct (Rcase_abs (x * / y)) as [Hxy|Hxy].
+  apply eq_refl.
+  elim Rge_not_lt with (1 := Hxy).
+  apply Rmult_lt_reg_r with y.
+  exact Hy.
+  rewrite Rmult_assoc, Rinv_l, Rmult_1_r, Rmult_0_l.
+  exact Hx.
+  now apply Rgt_not_eq.
+  set (Hx' := Rge_le x 0 Hx).
+  clearbody Hx'. clear Hx.
+  apply Rsqr_inj.
+  apply sqrt_pos.
+  apply Fourier_util.Rle_mult_inv_pos.
+  apply Rsqrt_positivity.
+  now apply sqrt_lt_R0.
+  rewrite Rsqr_div, 2!Rsqr_sqrt.
+  unfold Rsqr.
+  now rewrite Rsqrt_Rsqrt.
+  now apply Rlt_le.
+  now apply Fourier_util.Rle_mult_inv_pos.
+  apply Rgt_not_eq.
+  now apply sqrt_lt_R0.
+Qed.
+
 Lemma sqrt_div :
   forall x y:R, 0 <= x -> 0 < y -> sqrt (x / y) = sqrt x / sqrt y.
 Proof.
-  intros x y H1 H2; apply Rsqr_inj;
-    [ apply sqrt_positivity; apply (Rmult_le_pos x (/ y));
-      [ assumption
-        | generalize (Rinv_0_lt_compat y H2); clear H2; intro H2; left;
-          assumption ]
-      | apply (Rmult_le_pos (sqrt x) (/ sqrt y));
-        [ apply (sqrt_positivity x H1)
-          | generalize (sqrt_lt_R0 y H2); clear H2; intro H2;
-            generalize (Rinv_0_lt_compat (sqrt y) H2); clear H2;
-              intro H2; left; assumption ]
-      | rewrite Rsqr_div; repeat rewrite Rsqr_sqrt;
-        [ reflexivity
-          | left; assumption
-          | assumption
-          | generalize (Rinv_0_lt_compat y H2); intro H3;
-            generalize (Rlt_le 0 (/ y) H3); intro H4;
-              apply (Rmult_le_pos x (/ y) H1 H4)
-          | red in |- *; intro H3; generalize (Rlt_le 0 y H2); intro H4;
-            generalize (sqrt_eq_0 y H4 H3); intro H5; rewrite H5 in H2;
-              elim (Rlt_irrefl 0 H2) ] ].
+  intros x y _ H.
+  now apply sqrt_div_alt.
+Qed.
+
+Lemma sqrt_lt_0_alt :
+  forall x y : R, sqrt x < sqrt y -> x < y.
+Proof.
+  intros x y.
+  unfold sqrt at 2.
+  destruct (Rcase_abs y) as [Hy|Hy].
+  intros Hx.
+  elim Rlt_not_le with (1 := Hx).
+  apply sqrt_pos.
+  set (Hy' := Rge_le y 0 Hy).
+  clearbody Hy'. clear Hy.
+  unfold sqrt.
+  destruct (Rcase_abs x) as [Hx|Hx].
+  intros _.
+  now apply Rlt_le_trans with R0.
+  intros Hxy.
+  apply Rsqr_incrst_1 in Hxy ; try apply Rsqrt_positivity.
+  unfold Rsqr in Hxy.
+  now rewrite 2!Rsqrt_Rsqrt in Hxy.
 Qed.
 
 Lemma sqrt_lt_0 : forall x y:R, 0 <= x -> 0 <= y -> sqrt x < sqrt y -> x < y.
 Proof.
-  intros x y H1 H2 H3;
-    generalize
-      (Rsqr_incrst_1 (sqrt x) (sqrt y) H3 (sqrt_positivity x H1)
-        (sqrt_positivity y H2)); intro H4; rewrite (Rsqr_sqrt x H1) in H4;
-      rewrite (Rsqr_sqrt y H2) in H4; assumption.
+  intros x y _ _.
+  apply sqrt_lt_0_alt.
+Qed.
+
+Lemma sqrt_lt_1_alt :
+  forall x y : R, 0 <= x < y -> sqrt x < sqrt y.
+Proof.
+  intros x y (Hx, Hxy).
+  apply Rsqr_incrst_0 ; try apply sqrt_pos.
+  rewrite 2!Rsqr_sqrt.
+  exact Hxy.
+  apply Rlt_le.
+  now apply Rle_lt_trans with x.
+  exact Hx.
 Qed.
 
 Lemma sqrt_lt_1 : forall x y:R, 0 <= x -> 0 <= y -> x < y -> sqrt x < sqrt y.
 Proof.
-  intros x y H1 H2 H3; apply Rsqr_incrst_0;
-    [ rewrite (Rsqr_sqrt x H1); rewrite (Rsqr_sqrt y H2); assumption
-      | apply (sqrt_positivity x H1)
-      | apply (sqrt_positivity y H2) ].
+  intros x y Hx _ Hxy.
+  apply sqrt_lt_1_alt.
+  now split.
 Qed.
 
 Lemma sqrt_le_0 :
@@ -173,13 +247,27 @@ Proof.
       rewrite (Rsqr_sqrt y H2) in H4; assumption.
 Qed.
 
+Lemma sqrt_le_1_alt :
+  forall x y : R, x <= y -> sqrt x <= sqrt y.
+Proof.
+  intros x y [Hxy|Hxy].
+  destruct (Rle_or_lt 0 x) as [Hx|Hx].
+  apply Rlt_le.
+  apply sqrt_lt_1_alt.
+  now split.
+  unfold sqrt at 1.
+  destruct (Rcase_abs x) as [Hx'|Hx'].
+  apply sqrt_pos.
+  now elim Rge_not_lt with (1 := Hx').
+  rewrite Hxy.
+  apply Rle_refl.
+Qed.
+
 Lemma sqrt_le_1 :
   forall x y:R, 0 <= x -> 0 <= y -> x <= y -> sqrt x <= sqrt y.
 Proof.
-  intros x y H1 H2 H3; apply Rsqr_incr_0;
-    [ rewrite (Rsqr_sqrt x H1); rewrite (Rsqr_sqrt y H2); assumption
-      | apply (sqrt_positivity x H1)
-      | apply (sqrt_positivity y H2) ].
+  intros x y _ _ Hxy.
+  now apply sqrt_le_1_alt.
 Qed.
 
 Lemma sqrt_inj : forall x y:R, 0 <= x -> 0 <= y -> sqrt x = sqrt y -> x = y.
@@ -190,15 +278,23 @@ Proof.
   rewrite H1; reflexivity.
 Qed.
 
+Lemma sqrt_less_alt :
+  forall x : R, 1 < x -> sqrt x < x.
+Proof.
+  intros x Hx.
+  assert (Hx1 := Rle_lt_trans _ _ _ Rle_0_1 Hx).
+  assert (Hx2 := Rlt_le _ _ Hx1).
+  apply Rsqr_incrst_0 ; trivial.
+  rewrite Rsqr_sqrt ; trivial.
+  rewrite <- (Rmult_1_l x) at 1.
+  now apply Rmult_lt_compat_r.
+  apply sqrt_pos.
+Qed.
+
 Lemma sqrt_less : forall x:R, 0 <= x -> 1 < x -> sqrt x < x.
 Proof.
-  intros x H1 H2; generalize (sqrt_lt_1 1 x (Rlt_le 0 1 Rlt_0_1) H1 H2);
-    intro H3; rewrite sqrt_1 in H3; generalize (Rmult_ne (sqrt x));
-      intro H4; elim H4; intros H5 H6; rewrite <- H5; pattern x at 2 in |- *;
-        rewrite <- (sqrt_def x H1);
-          apply
-            (Rmult_lt_compat_l (sqrt x) 1 (sqrt x)
-              (sqrt_lt_R0 x (Rlt_trans 0 1 x Rlt_0_1 H2)) H3).
+  intros x _.
+  apply sqrt_less_alt.
 Qed.
 
 Lemma sqrt_more : forall x:R, 0 < x -> x < 1 -> x < sqrt x.
