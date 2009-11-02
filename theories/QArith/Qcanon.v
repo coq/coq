@@ -449,7 +449,7 @@ Qed.
 
 (** Rational to the n-th power *)
 
-Fixpoint Qcpower (q:Qc)(n:nat) { struct n } : Qc :=
+Fixpoint Qcpower (q:Qc)(n:nat) : Qc :=
   match n with
     | O => 1
     | S n => q * (Qcpower q n)

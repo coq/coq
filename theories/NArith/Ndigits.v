@@ -17,7 +17,7 @@ Require Import BinNat.
 
 (** [xor] *)
 
-Fixpoint Pxor (p1 p2:positive) {struct p1} : N :=
+Fixpoint Pxor (p1 p2:positive) : N :=
   match p1, p2 with
   | xH, xH => N0
   | xH, xO p2 => Npos (xI p2)
@@ -409,7 +409,7 @@ Qed.
 
 (** a lexicographic order on bits, starting from the lowest bit *)
 
-Fixpoint Nless_aux (a a':N) (p:positive) {struct p} : bool :=
+Fixpoint Nless_aux (a a':N) (p:positive) : bool :=
   match p with
   | xO p' => Nless_aux (Ndiv2 a) (Ndiv2 a') p'
   | _ => andb (negb (Nbit0 a)) (Nbit0 a')
@@ -579,7 +579,7 @@ Definition N2Bv (n:N) : Bvector (Nsize n) :=
     | Npos p => P2Bv p
   end.
 
-Fixpoint Bv2N (n:nat)(bv:Bvector n) {struct bv} : N :=
+Fixpoint Bv2N (n:nat)(bv:Bvector n) : N :=
   match bv with
     | Vnil => N0
     | Vcons false n bv => Ndouble (Bv2N n bv)
@@ -629,7 +629,7 @@ Qed.
 (** To state nonetheless a second result about composition of
  conversions, we define a conversion on a given number of bits : *)
 
-Fixpoint N2Bv_gen (n:nat)(a:N) { struct n } : Bvector n :=
+Fixpoint N2Bv_gen (n:nat)(a:N) : Bvector n :=
  match n return Bvector n with
    | 0 => Bnil
    | S n => match a with

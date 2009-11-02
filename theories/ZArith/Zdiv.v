@@ -35,8 +35,7 @@ Open Local Scope Z_scope.
 
 *)
 
-Unboxed Fixpoint Zdiv_eucl_POS (a:positive) (b:Z) {struct a} :
-  Z * Z :=
+Unboxed Fixpoint Zdiv_eucl_POS (a:positive) (b:Z) : Z * Z :=
   match a with
     | xH => if Zge_bool b 2 then (0, 1) else (1, 0)
     | xO a' =>
@@ -1071,7 +1070,7 @@ Qed.
 
 (** * A direct way to compute Zmod *)
 
-Fixpoint Zmod_POS (a : positive) (b : Z) {struct a} : Z  :=
+Fixpoint Zmod_POS (a : positive) (b : Z) : Z  :=
   match a with
    | xI a' =>
       let r := Zmod_POS a' b in

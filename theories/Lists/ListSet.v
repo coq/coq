@@ -27,7 +27,7 @@ Section first_definitions.
 
   Definition empty_set : set := nil.
 
-  Fixpoint set_add (a:A) (x:set) {struct x} : set :=
+  Fixpoint set_add (a:A) (x:set) : set :=
     match x with
     | nil => a :: nil
     | a1 :: x1 =>
@@ -38,7 +38,7 @@ Section first_definitions.
     end.
 
 
-  Fixpoint set_mem (a:A) (x:set) {struct x} : bool :=
+  Fixpoint set_mem (a:A) (x:set) : bool :=
     match x with
     | nil => false
     | a1 :: x1 =>
@@ -49,7 +49,7 @@ Section first_definitions.
     end.
 
   (** If [a] belongs to [x], removes [a] from [x]. If not, does nothing *)
-  Fixpoint set_remove (a:A) (x:set) {struct x} : set :=
+  Fixpoint set_remove (a:A) (x:set) : set :=
     match x with
     | nil => empty_set
     | a1 :: x1 =>
@@ -67,14 +67,14 @@ Section first_definitions.
           if set_mem a1 y then a1 :: set_inter x1 y else set_inter x1 y
     end.
 
-  Fixpoint set_union (x y:set) {struct y} : set :=
+  Fixpoint set_union (x y:set) : set :=
     match y with
     | nil => x
     | a1 :: y1 => set_add a1 (set_union x y1)
     end.
 
   (** returns the set of all els of [x] that does not belong to [y] *)
-  Fixpoint set_diff (x y:set) {struct x} : set :=
+  Fixpoint set_diff (x y:set) : set :=
     match x with
     | nil => nil
     | a1 :: x1 =>

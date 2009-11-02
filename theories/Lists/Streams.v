@@ -29,7 +29,7 @@ Definition tl (x:Stream) := match x with
                             end.
 
 
-Fixpoint Str_nth_tl (n:nat) (s:Stream) {struct n} : Stream :=
+Fixpoint Str_nth_tl (n:nat) (s:Stream) : Stream :=
   match n with
   | O => s
   | S m => Str_nth_tl m (tl s)

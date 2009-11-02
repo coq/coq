@@ -294,7 +294,7 @@ Qed.
 
 (** A direct way to compute Zpower modulo **)
 
-Fixpoint Zpow_mod_pos (a: Z)(m: positive)(n : Z) {struct m} : Z :=
+Fixpoint Zpow_mod_pos (a: Z)(m: positive)(n : Z) : Z :=
   match m with
    | xH => a mod n
    | xO m' =>

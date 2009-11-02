@@ -892,7 +892,7 @@ Qed.
 
 Open Scope positive_scope.
 
-Fixpoint Pgcdn (n: nat) (a b : positive) { struct n } : positive :=
+Fixpoint Pgcdn (n: nat) (a b : positive) : positive :=
   match n with
     | O => 1
     | S n =>
@@ -1255,7 +1255,7 @@ Qed.
 
 Open Scope positive_scope.
 
-Fixpoint Pggcdn (n: nat) (a b : positive) { struct n } : (positive*(positive*positive)) :=
+Fixpoint Pggcdn (n: nat) (a b : positive) : (positive*(positive*positive)) :=
   match n with
     | O => (1,(a,b))
     | S n =>

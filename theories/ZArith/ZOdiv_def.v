@@ -17,7 +17,7 @@ Definition NPgeb (a:N)(b:positive) :=
    | Npos na => match Pcompare na b Eq with Lt => false | _ => true end
   end.
 
-Fixpoint Pdiv_eucl (a b:positive) {struct a} : N * N :=
+Fixpoint Pdiv_eucl (a b:positive) : N * N :=
   match a with
     | xH =>
        match b with xH => (1, 0)%N | _ => (0, 1)%N end

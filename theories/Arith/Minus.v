@@ -10,7 +10,7 @@
 
 (** [minus] (difference between two natural numbers) is defined in [Init/Peano.v] as:
 <<
-Fixpoint minus (n m:nat) {struct n} : nat :=
+Fixpoint minus (n m:nat) : nat :=
   match n, m with
   | O, _ => n
   | S k, O => S k

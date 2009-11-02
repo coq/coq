@@ -27,7 +27,7 @@ Section Well_founded.
 
   Variable F_sub : forall x:A, (forall y: { y : A | R y x }, P (proj1_sig y)) -> P x.
 
-  Fixpoint Fix_F_sub (x : A) (r : Acc R x) {struct r} : P x :=
+  Fixpoint Fix_F_sub (x : A) (r : Acc R x) : P x :=
     F_sub x (fun y: { y : A | R y x}  => Fix_F_sub (proj1_sig y)
       (Acc_inv r (proj2_sig y))).
 

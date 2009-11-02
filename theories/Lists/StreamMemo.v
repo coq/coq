@@ -80,7 +80,7 @@ Variable f: forall n, A n.
 Inductive memo_val: Type :=
   memo_mval: forall n, A n -> memo_val.
 
-Fixpoint is_eq (n m : nat) {struct n}: {n = m} + {True} :=
+Fixpoint is_eq (n m : nat) : {n = m} + {True} :=
   match n, m return {n = m} + {True} with
   | 0, 0 =>left True (refl_equal 0)
   | 0, S m1 => right (0 = S m1) I

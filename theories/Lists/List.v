@@ -445,7 +445,7 @@ Section Elts.
 
     Hypothesis eq_dec : forall x y : A, {x = y}+{x <> y}.
 
-    Fixpoint remove (x : A) (l : list A){struct l} : list A :=
+    Fixpoint remove (x : A) (l : list A) : list A :=
       match l with
 	| nil => nil
 	| y::tl => if (eq_dec x y) then remove x tl else y::(remove x tl)
@@ -470,7 +470,7 @@ Section Elts.
   (** [last l d] returns the last element of the list [l],
     or the default value [d] if [l] is empty. *)
 
-  Fixpoint last (l:list A) (d:A)  {struct l} : A :=
+  Fixpoint last (l:list A) (d:A) : A :=
   match l with
     | nil => d
     | a :: nil => a
@@ -479,7 +479,7 @@ Section Elts.
 
   (** [removelast l] remove the last element of [l] *)
 
-  Fixpoint removelast (l:list A) {struct l} : list A :=
+  Fixpoint removelast (l:list A) : list A :=
     match l with
       | nil =>  nil
       | a :: nil => nil
@@ -530,7 +530,7 @@ Section Elts.
 
   Hypotheses eqA_dec : forall x y : A, {x = y}+{x <> y}.
 
-  Fixpoint count_occ (l : list A) (x : A){struct l} : nat :=
+  Fixpoint count_occ (l : list A) (x : A) : nat :=
     match l with
       | nil => 0
       | y :: tl =>
@@ -686,7 +686,7 @@ Section ListOps.
 
   (**  An alternative tail-recursive definition for reverse *)
 
-  Fixpoint rev_append (l l': list A) {struct l} : list A :=
+  Fixpoint rev_append (l l': list A) : list A :=
     match l with
       | nil => l'
       | a::l => rev_append l (a::l')
@@ -1015,9 +1015,7 @@ Section Map.
   Lemma in_map :
     forall (l:list A) (x:A), In x l -> In (f x) (map l).
   Proof.
-    induction l as [| a l IHl]; simpl in |- *;
-      [ auto
-	| destruct 1; [ left; apply f_equal with (f := f); assumption | auto ] ].
+    induction l; firstorder (subst; auto).
   Qed.
 
   Lemma in_map_iff : forall l y, In y (map l) <-> exists x, f x = y /\ In x l.
@@ -1067,7 +1065,7 @@ Section Map.
   (** [flat_map] *)
 
   Definition flat_map (f:A -> list B) :=
-    fix flat_map (l:list A) {struct l} : list B :=
+    fix flat_map (l:list A) : list B :=
     match l with
       | nil => nil
       | cons x t => (f x)++(flat_map t)
@@ -1121,7 +1119,7 @@ Section Fold_Left_Recursor.
   Variables A B : Type.
   Variable f : A -> B -> A.
 
-  Fixpoint fold_left (l:list B) (a0:A) {struct l} : A :=
+  Fixpoint fold_left (l:list B) (a0:A) : A :=
     match l with
       | nil => a0
       | cons b t => fold_left t (f a0 b)
@@ -1214,7 +1212,7 @@ End Fold_Right_Recursor.
   (** [(list_power x y)] is [y^x], or the set of sequences of elts of [y]
       indexed by elts of [x], sorted in lexicographic order. *)
 
-  Fixpoint list_power (A B:Type)(l:list A) (l':list B) {struct l} :
+  Fixpoint list_power (A B:Type)(l:list A) (l':list B) :
     list (list (A * B)) :=
     match l with
       | nil => cons nil nil
@@ -1235,7 +1233,7 @@ End Fold_Right_Recursor.
   (** find whether a boolean function can be satisfied by an
        elements of the list. *)
 
-    Fixpoint existsb (l:list A) {struct l}: bool :=
+    Fixpoint existsb (l:list A) : bool :=
       match l with
 	| nil => false
 	| a::l => f a || existsb l
@@ -1275,7 +1273,7 @@ End Fold_Right_Recursor.
   (** find whether a boolean function is satisfied by
     all the elements of a list. *)
 
-    Fixpoint forallb (l:list A) {struct l} : bool :=
+    Fixpoint forallb (l:list A) : bool :=
       match l with
 	| nil => true
 	| a::l => f a && forallb l
@@ -1326,7 +1324,7 @@ End Fold_Right_Recursor.
 
   (** [partition] *)
 
-    Fixpoint partition (l:list A) {struct l} : list A * list A :=
+    Fixpoint partition (l:list A) : list A * list A :=
       match l with
 	| nil => (nil, nil)
 	| x :: tl => let (g,d) := partition tl in
@@ -1347,7 +1345,7 @@ End Fold_Right_Recursor.
 
   (** [split] derives two lists from a list of pairs *)
 
-    Fixpoint split  (l:list (A*B)) { struct l }: list A * list B :=
+    Fixpoint split (l:list (A*B)) : list A * list B :=
       match l with
 	| nil => (nil, nil)
 	| (x,y) :: tl => let (g,d) := split tl in (x::g, y::d)
@@ -1402,7 +1400,7 @@ End Fold_Right_Recursor.
       Lists given to [combine] are meant to be of same length.
       If not, [combine] stops on the shorter list *)
 
-    Fixpoint combine (l : list A) (l' : list B){struct l} : list (A*B) :=
+    Fixpoint combine (l : list A) (l' : list B) : list (A*B) :=
       match l,l' with
 	| x::tl, y::tl' => (x,y)::(combine tl tl')
 	| _, _ => nil
@@ -1470,7 +1468,7 @@ End Fold_Right_Recursor.
      [combine], it adds every possible pairs, not only those at the
      same position. *)
 
-    Fixpoint list_prod (l:list A) (l':list B) {struct l} :
+    Fixpoint list_prod (l:list A) (l':list B) :
       list (A * B) :=
       match l with
 	| nil => nil
@@ -1661,7 +1659,7 @@ Section Cutting.
 
   Variable A : Type.
 
-  Fixpoint firstn (n:nat)(l:list A) {struct n} : list A :=
+  Fixpoint firstn (n:nat)(l:list A) : list A :=
     match n with
       | 0 => nil
       | S n => match l with
@@ -1670,7 +1668,7 @@ Section Cutting.
 	       end
     end.
 
-  Fixpoint skipn (n:nat)(l:list A) { struct n } : list A :=
+  Fixpoint skipn (n:nat)(l:list A) : list A :=
     match n with
       | 0 => l
       | S n => match l with
@@ -1804,7 +1802,7 @@ Section NatSeq.
   (** [seq] computes the sequence of [len] contiguous integers
       that starts at [start]. For instance, [seq 2 3] is [2::3::4::nil]. *)
 
-  Fixpoint seq (start len:nat) {struct len} : list nat :=
+  Fixpoint seq (start len:nat) : list nat :=
     match len with
       | 0 => nil
       | S len => start :: seq (S start) len

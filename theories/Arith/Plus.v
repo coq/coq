@@ -10,7 +10,7 @@
 
 (** Properties of addition. [add] is defined in [Init/Peano.v] as:
 <<
-Fixpoint plus (n m:nat) {struct n} : nat :=
+Fixpoint plus (n m:nat) : nat :=
   match n with
   | O => m
   | S p => S (p + m)
@@ -198,7 +198,7 @@ Qed.
     tail-recursive, whereas [plus] is not. This can be useful
     when extracting programs. *)
 
-Fixpoint tail_plus n m {struct n} : nat :=
+Fixpoint tail_plus n m : nat :=
   match n with
     | O => m
     | S n => tail_plus n (S m)

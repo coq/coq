@@ -38,7 +38,7 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
   Definition eq_sym := @sym_eq t.
   Definition eq_trans := @trans_eq t.
 
-  Fixpoint bits_lt (p q:positive) { struct p } : Prop :=
+  Fixpoint bits_lt (p q:positive) : Prop :=
    match p, q with
    | xH, xI _ => True
    | xH, _ => False
@@ -117,7 +117,7 @@ End PositiveOrderedTypeBits.
 
 (** Other positive stuff *)
 
-Fixpoint append (i j : positive) {struct i} : positive :=
+Fixpoint append (i j : positive) : positive :=
     match i with
       | xH => j
       | xI ii => xI (append ii j)
@@ -177,14 +177,14 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
   Definition empty : t A := Leaf.
 
-  Fixpoint is_empty (m : t A) {struct m} : bool :=
+  Fixpoint is_empty (m : t A) : bool :=
    match m with
     | Leaf => true
     | Node l None r => (is_empty l) && (is_empty r)
     | _ => false
    end.
 
-  Fixpoint find (i : positive) (m : t A) {struct i} : option A :=
+  Fixpoint find (i : positive) (m : t A) : option A :=
     match m with
     | Leaf => None
     | Node l o r =>
@@ -195,7 +195,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
         end
     end.
 
-  Fixpoint mem (i : positive) (m : t A) {struct i} : bool :=
+  Fixpoint mem (i : positive) (m : t A) : bool :=
     match m with
     | Leaf => false
     | Node l o r =>
@@ -206,7 +206,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
         end
     end.
 
-  Fixpoint add (i : positive) (v : A) (m : t A) {struct i} : t A :=
+  Fixpoint add (i : positive) (v : A) (m : t A) : t A :=
     match m with
     | Leaf =>
         match i with
@@ -222,7 +222,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
         end
     end.
 
-  Fixpoint remove (i : positive) (m : t A) {struct i} : t A :=
+  Fixpoint remove (i : positive) (m : t A) : t A :=
     match i with
     | xH =>
         match m with
@@ -254,8 +254,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
   (** [elements] *)
 
-    Fixpoint xelements (m : t A) (i : positive) {struct m}
-             : list (positive * A) :=
+    Fixpoint xelements (m : t A) (i : positive) : list (positive * A) :=
       match m with
       | Leaf => nil
       | Node l None r =>
@@ -381,7 +380,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
     exact (xelements_correct m i xH H).
   Qed.
 
-  Fixpoint xfind (i j : positive) (m : t A) {struct j} : option A :=
+  Fixpoint xfind (i j : positive) (m : t A) : option A :=
       match i, j with
       | _, xH => find i m
       | xO ii, xO jj => xfind ii jj m
@@ -394,7 +393,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       xfind i (append j (xO xH)) m1 = Some v -> xfind i j (Node m1 o m2) = Some v.
     Proof.
       induction j; intros; destruct i; simpl; simpl in H; auto; try congruence.
-      destruct i; congruence.
+      destruct i; simpl in *; auto.
     Qed.
 
     Lemma xelements_ii :
@@ -821,7 +820,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
     Variable f : positive -> A -> B.
 
-    Fixpoint xmapi (m : t A) (i : positive) {struct m} : t B :=
+    Fixpoint xmapi (m : t A) (i : positive) : t B :=
        match m with
         | Leaf => @Leaf B
         | Node l o r => Node (xmapi l (append i (xO xH)))
@@ -906,7 +905,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
   Implicit Arguments Leaf [A].
 
-  Fixpoint xmap2_l (m : t A) {struct m} : t C :=
+  Fixpoint xmap2_l (m : t A) : t C :=
       match m with
       | Leaf => Leaf
       | Node l o r => Node (xmap2_l l) (f o None) (xmap2_l r)
@@ -918,7 +917,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       induction i; intros; destruct m; simpl; auto.
     Qed.
 
-  Fixpoint xmap2_r (m : t B) {struct m} : t C :=
+  Fixpoint xmap2_r (m : t B) : t C :=
       match m with
       | Leaf => Leaf
       | Node l o r => Node (xmap2_r l) (f None o) (xmap2_r r)
@@ -930,7 +929,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       induction i; intros; destruct m; simpl; auto.
     Qed.
 
-  Fixpoint _map2 (m1 : t A)(m2 : t B) {struct m1} : t C :=
+  Fixpoint _map2 (m1 : t A)(m2 : t B) : t C :=
     match m1 with
     | Leaf => xmap2_r m2
     | Node l1 o1 r1 =>
@@ -1028,7 +1027,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
     rewrite xfoldi_1; reflexivity.
   Qed.
 
-  Fixpoint equal (A:Type)(cmp : A -> A -> bool)(m1 m2 : t A) {struct m1} : bool :=
+  Fixpoint equal (A:Type)(cmp : A -> A -> bool)(m1 m2 : t A) : bool :=
     match m1, m2 with
       | Leaf, _ => is_empty m2
       | _, Leaf => is_empty m1

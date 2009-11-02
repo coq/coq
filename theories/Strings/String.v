@@ -38,7 +38,7 @@ Defined.
 
 Reserved Notation "x ++ y" (right associativity, at level 60).
 
-Fixpoint append (s1 s2 : string) {struct s1} : string :=
+Fixpoint append (s1 s2 : string) : string :=
   match s1 with
   | EmptyString => s2
   | String c s1' => String c (s1' ++ s2)
@@ -122,7 +122,7 @@ Qed.
     at position [n] and of length [m];
     if this does not make sense it returns [""] *)
 
-Fixpoint substring (n m : nat) (s : string) {struct s} : string :=
+Fixpoint substring (n m : nat) (s : string) : string :=
   match n, m, s with
   | 0, 0, _ => EmptyString
   | 0, S m', EmptyString => s
@@ -205,7 +205,7 @@ Qed.
 (** Test if, starting at position [n], [s1] occurs in [s2]; if
     so it returns the position *)
 
-Fixpoint index (n : nat) (s1 s2 : string) {struct s2} : option nat :=
+Fixpoint index (n : nat) (s1 s2 : string) : option nat :=
   match s2, n with
   | EmptyString, 0 =>
       match s1 with

@@ -89,7 +89,7 @@ Hint Resolve n_Sn: core.
 
 (** Addition *)
 
-Fixpoint plus (n m:nat) {struct n} : nat :=
+Fixpoint plus (n m:nat) : nat :=
   match n with
   | O => m
   | S p => S (p + m)
@@ -129,7 +129,7 @@ Notation plus_succ_r_reverse := plus_n_Sm (only parsing).
 
 (** Multiplication *)
 
-Fixpoint mult (n m:nat) {struct n} : nat :=
+Fixpoint mult (n m:nat) : nat :=
   match n with
   | O => 0
   | S p => m + p * m
@@ -160,7 +160,7 @@ Notation mult_succ_r_reverse := mult_n_Sm (only parsing).
 
 (** Truncated subtraction: [m-n] is [0] if [n>=m] *)
 
-Fixpoint minus (n m:nat) {struct n} : nat :=
+Fixpoint minus (n m:nat) : nat :=
   match n, m with
   | O, _ => n
   | S k, O => n

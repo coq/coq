@@ -455,13 +455,13 @@ Variable elt':Type.
 
 (** * [map] and [mapi] *)
 
-Fixpoint map (f:elt -> elt') (m:t elt) {struct m} : t elt' :=
+Fixpoint map (f:elt -> elt') (m:t elt) : t elt' :=
   match m with
    | nil => nil
    | (k,e)::m' => (k,f e) :: map f m'
   end.
 
-Fixpoint mapi (f: key -> elt -> elt') (m:t elt) {struct m} : t elt' :=
+Fixpoint mapi (f: key -> elt -> elt') (m:t elt) : t elt' :=
   match m with
    | nil => nil
    | (k,e)::m' => (k,f k e) :: mapi f m'

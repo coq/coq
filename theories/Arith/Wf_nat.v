@@ -262,7 +262,7 @@ Unset Implicit Arguments.
 
 (** [n]th iteration of the function [f] *)
 
-Fixpoint iter_nat (n:nat) (A:Type) (f:A -> A) (x:A) {struct n} : A :=
+Fixpoint iter_nat (n:nat) (A:Type) (f:A -> A) (x:A) : A :=
   match n with
     | O => x
     | S n' => f (iter_nat n' A f x)

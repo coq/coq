@@ -160,7 +160,7 @@ Qed.
 
 Require Import List.
 
-Fixpoint Zlength_aux (acc:Z) (A:Type) (l:list A) {struct l} : Z :=
+Fixpoint Zlength_aux (acc:Z) (A:Type) (l:list A) : Z :=
   match l with
     | nil => acc
     | _ :: l => Zlength_aux (Zsucc acc) A l

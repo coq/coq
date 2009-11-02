@@ -16,7 +16,7 @@ Inductive Rlist : Type :=
 | nil : Rlist
 | cons : R -> Rlist -> Rlist.
 
-Fixpoint In (x:R) (l:Rlist) {struct l} : Prop :=
+Fixpoint In (x:R) (l:Rlist) : Prop :=
   match l with
     | nil => False
     | cons a l' => x = a \/ In x l'
@@ -70,7 +70,7 @@ Proof.
   reflexivity.
 Qed.
 
-Fixpoint AbsList (l:Rlist) (x:R) {struct l} : Rlist :=
+Fixpoint AbsList (l:Rlist) (x:R) : Rlist :=
   match l with
     | nil => nil
     | cons a l' => cons (Rabs (a - x) / 2) (AbsList l' x)
@@ -150,7 +150,7 @@ Proof.
   left; reflexivity.
 Qed.
 
-Fixpoint pos_Rl (l:Rlist) (i:nat) {struct l} : R :=
+Fixpoint pos_Rl (l:Rlist) (i:nat) : R :=
   match l with
     | nil => 0
     | cons a l' => match i with
@@ -221,7 +221,7 @@ Qed.
 Definition ordered_Rlist (l:Rlist) : Prop :=
   forall i:nat, (i < pred (Rlength l))%nat -> pos_Rl l i <= pos_Rl l (S i).
 
-Fixpoint insert (l:Rlist) (x:R) {struct l} : Rlist :=
+Fixpoint insert (l:Rlist) (x:R) : Rlist :=
   match l with
     | nil => cons x nil
     | cons a l' =>
@@ -231,25 +231,25 @@ Fixpoint insert (l:Rlist) (x:R) {struct l} : Rlist :=
       end
   end.
 
-Fixpoint cons_Rlist (l k:Rlist) {struct l} : Rlist :=
+Fixpoint cons_Rlist (l k:Rlist) : Rlist :=
   match l with
     | nil => k
     | cons a l' => cons a (cons_Rlist l' k)
   end.
 
-Fixpoint cons_ORlist (k l:Rlist) {struct k} : Rlist :=
+Fixpoint cons_ORlist (k l:Rlist) : Rlist :=
   match k with
     | nil => l
     | cons a k' => cons_ORlist k' (insert l a)
   end.
 
-Fixpoint app_Rlist (l:Rlist) (f:R -> R) {struct l} : Rlist :=
+Fixpoint app_Rlist (l:Rlist) (f:R -> R) : Rlist :=
   match l with
     | nil => nil
     | cons a l' => cons (f a) (app_Rlist l' f)
   end.
 
-Fixpoint mid_Rlist (l:Rlist) (x:R) {struct l} : Rlist :=
+Fixpoint mid_Rlist (l:Rlist) (x:R) : Rlist :=
   match l with
     | nil => nil
     | cons a l' => cons ((x + a) / 2) (mid_Rlist l' a)

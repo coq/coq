@@ -97,7 +97,7 @@ Qed.
 (****************************************)
 
 (* length is defined in List *)
-Fixpoint Length_l (l:list A) (n:nat) {struct l} : nat :=
+Fixpoint Length_l (l:list A) (n:nat) : nat :=
   match l with
   | nil => n
   | _ :: m => Length_l m (S n)
@@ -146,7 +146,7 @@ Hint Resolve allS_nil allS_cons.
 
 Hypothesis eqA_dec : forall a b:A, {a = b} + {a <> b}.
 
-Fixpoint mem (a:A) (l:list A) {struct l} : bool :=
+Fixpoint mem (a:A) (l:list A) : bool :=
   match l with
   | nil => false
   | b :: m => if eqA_dec a b then true else mem a m
@@ -201,7 +201,7 @@ Lemma nth_le_length :
 induction 1; simpl in |- *; auto with arith.
 Qed.
 
-Fixpoint Nth_func (l:list A) (n:nat) {struct l} : Exc A :=
+Fixpoint Nth_func (l:list A) (n:nat) : Exc A :=
   match l, n with
   | a :: _, S O => value a
   | _ :: l', S (S p) => Nth_func l' (S p)
@@ -237,7 +237,7 @@ Qed.
 Require Import Minus.
 Require Import DecBool.
 
-Fixpoint index_p (a:A) (l:list A) {struct l} : nat -> Exc nat :=
+Fixpoint index_p (a:A) (l:list A) : nat -> Exc nat :=
   match l with
   | nil => fun p => error
   | b :: m => fun p => ifdec (eqA_dec a b) (value p) (index_p a m (S p))
@@ -359,7 +359,7 @@ End Find_sec.
 Section Assoc_sec.
 
 Variable B : Type.
-Fixpoint assoc (a:A) (l:list (A * B)) {struct l} :
+Fixpoint assoc (a:A) (l:list (A * B)) :
  Exc B :=
   match l with
   | nil => error

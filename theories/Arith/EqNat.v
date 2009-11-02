@@ -16,7 +16,7 @@ Implicit Types m n x y : nat.
 
 (** * Propositional equality  *)
 
-Fixpoint eq_nat n m {struct n} : Prop :=
+Fixpoint eq_nat n m : Prop :=
   match n, m with
     | O, O => True
     | O, S _ => False
@@ -68,7 +68,7 @@ Defined.
 
 (** * Boolean equality on [nat] *)
 
-Fixpoint beq_nat n m {struct n} : bool :=
+Fixpoint beq_nat n m : bool :=
   match n, m with
     | O, O => true
     | O, S _ => false

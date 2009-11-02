@@ -466,7 +466,7 @@ Proof.
                       elim (Rlt_irrefl _ H7) ] ].
 Qed.
 
-Fixpoint SubEquiN (N:nat) (x y:R) (del:posreal) {struct N} : Rlist :=
+Fixpoint SubEquiN (N:nat) (x y:R) (del:posreal) : Rlist :=
   match N with
     | O => cons y nil
     | S p => cons x (SubEquiN p (x + del) y del)

@@ -130,7 +130,7 @@ Require Import List.
 
 Program Instance list_eqdec `(eqa : EqDec A eq) : ! EqDec (list A) eq :=
   { equiv_dec :=
-    fix aux (x : list A) y { struct x } :=
+    fix aux (x y : list A) :=
     match x, y with
       | nil, nil => in_left
       | cons hd tl, cons hd' tl' =>

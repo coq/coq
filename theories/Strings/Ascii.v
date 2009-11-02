@@ -59,7 +59,7 @@ Defined.
    looking at the last n bits, ie z mod 2^n *)
 
 Fixpoint ascii_of_pos_aux (res acc : ascii) (z : positive)
-  (n : nat) {struct n} : ascii :=
+  (n : nat) : ascii :=
   match n with
     | O => res
     | S n1 =>

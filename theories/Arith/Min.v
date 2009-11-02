@@ -16,7 +16,7 @@ Implicit Types m n p : nat.
 
 (** * minimum of two natural numbers *)
 
-Fixpoint min n m {struct n} : nat :=
+Fixpoint min n m : nat :=
   match n, m with
     | O, _ => 0
     | S n', O => 0

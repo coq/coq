@@ -20,7 +20,7 @@ Open Local Scope Z_scope.
 
 (** [n]th iteration of the function [f] *)
 
-Fixpoint iter_pos (n:positive) (A:Type) (f:A -> A) (x:A) {struct n} : A :=
+Fixpoint iter_pos (n:positive) (A:Type) (f:A -> A) (x:A) : A :=
   match n with
     | xH => f x
     | xO n' => iter_pos n' A f (iter_pos n' A f x)

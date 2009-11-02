@@ -223,7 +223,7 @@ Qed.
     tail-recursive, whereas [mult] is not. This can be useful
     when extracting programs. *)
 
-Fixpoint mult_acc (s:nat) m n {struct n} : nat :=
+Fixpoint mult_acc (s:nat) m n : nat :=
   match n with
     | O => s
     | S p => mult_acc (tail_plus m s) m p

@@ -357,7 +357,7 @@ Qed.
 
 (** * [equal] *)
 
-Function equal (cmp:elt->elt->bool)(m m' : t elt) { struct m } : bool :=
+Function equal (cmp:elt->elt->bool)(m m' : t elt) {struct m} : bool :=
   match m, m' with
    | nil, nil => true
    | (x,e)::l, (x',e')::l' =>
@@ -518,13 +518,13 @@ Variable elt':Type.
 
 (** * [map] and [mapi] *)
 
-Fixpoint map (f:elt -> elt') (m:t elt) {struct m} : t elt' :=
+Fixpoint map (f:elt -> elt') (m:t elt) : t elt' :=
   match m with
    | nil => nil
    | (k,e)::m' => (k,f e) :: map f m'
   end.
 
-Fixpoint mapi (f: key -> elt -> elt') (m:t elt) {struct m} : t elt' :=
+Fixpoint mapi (f: key -> elt -> elt') (m:t elt) : t elt' :=
   match m with
    | nil => nil
    | (k,e)::m' => (k,f k e) :: mapi f m'
@@ -1171,7 +1171,7 @@ Definition t := MapS.t D.t.
 
 Definition cmp e e' := match D.compare e e' with EQ _ => true | _ => false end.
 
-Fixpoint eq_list (m m' : list (X.t * D.t)) { struct m } : Prop :=
+Fixpoint eq_list (m m' : list (X.t * D.t)) : Prop :=
   match m, m' with
    | nil, nil => True
    | (x,e)::l, (x',e')::l' =>
@@ -1184,7 +1184,7 @@ Fixpoint eq_list (m m' : list (X.t * D.t)) { struct m } : Prop :=
 
 Definition eq m m' := eq_list m.(this) m'.(this).
 
-Fixpoint lt_list (m m' : list (X.t * D.t)) {struct m} : Prop :=
+Fixpoint lt_list (m m' : list (X.t * D.t)) : Prop :=
   match m, m' with
    | nil, nil => False
    | nil, _  => True

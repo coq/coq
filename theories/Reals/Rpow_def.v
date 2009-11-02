@@ -10,7 +10,7 @@
 
 Require Import Rdefinitions.
 
-Fixpoint pow (r:R) (n:nat) {struct n} : R :=
+Fixpoint pow (r:R) (n:nat) : R :=
   match n with
     | O => R1
     | S n => Rmult r (pow r n)

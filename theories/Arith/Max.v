@@ -16,7 +16,7 @@ Implicit Types m n p : nat.
 
 (** * Maximum of two natural numbers *)
 
-Fixpoint max n m {struct n} : nat :=
+Fixpoint max n m : nat :=
   match n, m with
     | O, _ => m
     | S n', O => n

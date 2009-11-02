@@ -233,22 +233,19 @@ Definition BshiftRl (n:nat) (bv:Bvector (S n)) (carry:bool) :=
 Definition BshiftRa (n:nat) (bv:Bvector (S n)) :=
   Bhigh (S n) (Vshiftrepeat bool n bv).
 
-Fixpoint BshiftL_iter (n:nat) (bv:Bvector (S n)) (p:nat) {struct p} :
-  Bvector (S n) :=
+Fixpoint BshiftL_iter (n:nat) (bv:Bvector (S n)) (p:nat) : Bvector (S n) :=
   match p with
     | O => bv
     | S p' => BshiftL n (BshiftL_iter n bv p') false
   end.
 
-Fixpoint BshiftRl_iter (n:nat) (bv:Bvector (S n)) (p:nat) {struct p} :
-  Bvector (S n) :=
+Fixpoint BshiftRl_iter (n:nat) (bv:Bvector (S n)) (p:nat) : Bvector (S n) :=
   match p with
     | O => bv
     | S p' => BshiftRl n (BshiftRl_iter n bv p') false
   end.
 
-Fixpoint BshiftRa_iter (n:nat) (bv:Bvector (S n)) (p:nat) {struct p} :
-  Bvector (S n) :=
+Fixpoint BshiftRa_iter (n:nat) (bv:Bvector (S n)) (p:nat) : Bvector (S n) :=
   match p with
     | O => bv
     | S p' => BshiftRa n (BshiftRa_iter n bv p')
