@@ -28,14 +28,7 @@ Definition NZadd := plus.
 Definition NZsub := minus.
 Definition NZmul := mult.
 
-Theorem NZeq_equiv : equiv nat NZeq.
-Proof (eq_equiv nat).
-
-Add Relation nat NZeq
- reflexivity proved by (proj1 NZeq_equiv)
- symmetry proved by (proj2 (proj2 NZeq_equiv))
- transitivity proved by (proj1 (proj2 NZeq_equiv))
-as NZeq_rel.
+Instance NZeq_equiv : Equivalence NZeq.
 
 (* If we say "Add Relation nat (@eq nat)" instead of "Add Relation nat NZeq"
 then the theorem generated for succ_wd below is forall x, succ x = succ x,
@@ -189,13 +182,11 @@ Proof.
 reflexivity.
 Qed.
 
-Theorem recursion_wd : forall (A : Type) (Aeq : relation A),
-  forall a a' : A, Aeq a a' ->
-    forall f f' : nat -> A -> A, fun2_eq (@eq nat) Aeq Aeq f f' ->
-      forall n n' : nat, n = n' ->
-        Aeq (recursion a f n) (recursion a' f' n').
+Instance recursion_wd (A : Type) (Aeq : relation A) :
+ Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) (@recursion A).
 Proof.
-unfold fun2_eq; induction n; intros n' Enn'; rewrite <- Enn' in *; simpl; auto.
+intros A Aeq a a' Ha f f' Hf n n' Hn. subst n'.
+induction n; simpl; auto. apply Hf; auto.
 Qed.
 
 Theorem recursion_0 :
@@ -206,10 +197,10 @@ Qed.
 
 Theorem recursion_succ :
   forall (A : Type) (Aeq : relation A) (a : A) (f : nat -> A -> A),
-    Aeq a a -> fun2_wd (@eq nat) Aeq Aeq f ->
+    Aeq a a -> Proper (eq==>Aeq==>Aeq) f ->
       forall n : nat, Aeq (recursion a f (S n)) (f n (recursion a f n)).
 Proof.
-induction n; simpl; auto.
+unfold Proper, respectful in *; induction n; simpl; auto.
 Qed.
 
 End NPeanoAxiomsMod.

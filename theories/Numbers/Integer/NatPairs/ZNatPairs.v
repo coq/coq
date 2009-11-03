@@ -125,16 +125,10 @@ stepr ((fst p + snd n) + (fst m + snd m)) in H3 by ring.
 now apply -> add_cancel_r in H3.
 Qed.
 
-Theorem NZeq_equiv : equiv Z Zeq.
+Instance NZeq_equiv : Equivalence Zeq.
 Proof.
-unfold equiv; repeat split; [apply ZE_refl | apply ZE_trans | apply ZE_sym].
+split; [apply ZE_refl | apply ZE_sym | apply ZE_trans].
 Qed.
-
-Add Relation Z Zeq
- reflexivity proved by (proj1 NZeq_equiv)
- symmetry proved by (proj2 (proj2 NZeq_equiv))
- transitivity proved by (proj1 (proj2 NZeq_equiv))
-as NZeq_rel.
 
 Add Morphism (@pair N N) with signature NE ==> NE ==> Zeq as Zpair_wd.
 Proof.

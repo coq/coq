@@ -46,13 +46,13 @@ Theorem pred_0 : P 0 == 0.
 Proof pred_0.
 
 Theorem Neq_refl : forall n : N, n == n.
-Proof (proj1 NZeq_equiv).
+Proof (@Equivalence_Reflexive _ _ NZeq_equiv).
 
 Theorem Neq_sym : forall n m : N, n == m -> m == n.
-Proof (proj2 (proj2 NZeq_equiv)).
+Proof (@Equivalence_Symmetric _ _ NZeq_equiv).
 
 Theorem Neq_trans : forall n m p : N, n == m -> m == p -> n == p.
-Proof (proj1 (proj2 NZeq_equiv)).
+Proof (@Equivalence_Transitive _ _ NZeq_equiv).
 
 Theorem neq_sym : forall n m : N, n ~= m -> m ~= n.
 Proof NZneq_sym.
@@ -81,10 +81,10 @@ function (by recursion) that maps 0 to false and the successor to true *)
 Definition if_zero (A : Set) (a b : A) (n : N) : A :=
   recursion a (fun _ _ => b) n.
 
-Add Parametric Morphism (A : Set) : (if_zero A) with signature (eq ==> eq ==> Neq ==> eq) as if_zero_wd.
+Instance if_zero_wd (A : Set) : Proper (eq ==> eq ==> Neq ==> eq) (if_zero A).
 Proof.
-intros; unfold if_zero. apply recursion_wd with (Aeq := (@eq A)).
-reflexivity. unfold fun2_eq; now intros. assumption.
+intros; unfold if_zero.
+repeat red; intros. apply recursion_wd; auto. repeat red; auto.
 Qed.
 
 Theorem if_zero_0 : forall (A : Set) (a b : A), if_zero A a b 0 = a.
@@ -95,7 +95,7 @@ Qed.
 Theorem if_zero_succ : forall (A : Set) (a b : A) (n : N), if_zero A a b (S n) = b.
 Proof.
 intros; unfold if_zero.
-now rewrite (@recursion_succ A (@eq A)); [| | unfold fun2_wd; now intros].
+now rewrite (@recursion_succ A (@eq A)).
 Qed.
 
 Implicit Arguments if_zero [A].

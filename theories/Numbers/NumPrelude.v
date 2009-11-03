@@ -10,7 +10,7 @@
 
 (*i $Id$ i*)
 
-Require Export Setoid.
+Require Export Setoid Morphisms RelationPairs.
 
 Set Implicit Arguments.
 (*
@@ -104,53 +104,43 @@ Variable Ceq : relation C.
 
 (* "wd" stands for "well-defined" *)
 
-Definition fun_wd (f : A -> B) := forall x y : A, Aeq x y -> Beq (f x) (f y).
+Definition fun_wd (f : A -> B) := Proper (Aeq==>Beq) f.
 
-Definition fun2_wd (f : A -> B -> C) :=
-  forall x x' : A, Aeq x x' -> forall y y' : B, Beq y y' -> Ceq (f x y) (f x' y').
+Definition fun2_wd (f : A -> B -> C) := Proper (Aeq==>Beq==>Ceq) f.
 
-Definition fun_eq : relation (A -> B) :=
-  fun f f' => forall x x' : A, Aeq x x' -> Beq (f x) (f' x').
+Definition fun_eq : relation (A -> B) := (Aeq==>Beq)%signature.
 
 (* Note that reflexivity of fun_eq means that every function
 is well-defined w.r.t. Aeq and Beq, i.e.,
 forall x x' : A, Aeq x x' -> Beq (f x) (f x') *)
 
-Definition fun2_eq (f f' : A -> B -> C) :=
-  forall x x' : A, Aeq x x' -> forall y y' : B, Beq y y' -> Ceq (f x y) (f' x' y').
+Definition fun2_eq (f f' : A -> B -> C) := (Aeq==>Beq==>Ceq)%signature f f'.
 
 End ExtensionalProperties.
 
 (* The following definitions instantiate Beq or Ceq to iff; therefore, they
 have to be outside the ExtensionalProperties section *)
 
-Definition predicate_wd (A : Type) (Aeq : relation A) := fun_wd Aeq iff.
+Definition predicate_wd (A : Type) (Aeq : relation A) := Proper (Aeq==>iff).
 
 Definition relation_wd (A B : Type) (Aeq : relation A) (Beq : relation B) :=
-  fun2_wd Aeq Beq iff.
+  Proper (Aeq==>Beq==>iff).
 
 Definition relations_eq (A B : Type) (R1 R2 : A -> B -> Prop) :=
   forall (x : A) (y : B), R1 x y <-> R2 x y.
 
-Theorem relations_eq_equiv :
-  forall (A B : Type), equiv (A -> B -> Prop) (@relations_eq A B).
+Instance relation_eq_equiv A B : Equivalence (@relations_eq A B).
 Proof.
-intros A B; unfold equiv. split; [| split];
-unfold reflexive, symmetric, transitive, relations_eq.
+intros A B; split;
+unfold Reflexive, Symmetric, Transitive, relations_eq.
 reflexivity.
-intros R1 R2 R3 H1 H2 x y; rewrite H1; apply H2.
 now symmetry.
+intros R1 R2 R3 H1 H2 x y; rewrite H1; apply H2.
 Qed.
 
-Add Parametric Relation (A B : Type) : (A -> B -> Prop) (@relations_eq A B)
-  reflexivity proved by (proj1 (relations_eq_equiv A B))
-  symmetry proved by (proj2 (proj2 (relations_eq_equiv A B)))
-  transitivity proved by (proj1 (proj2 (relations_eq_equiv A B)))
-as relations_eq_rel.
-
-Add Parametric Morphism (A : Type) : (@well_founded A) with signature (@relations_eq A A) ==> iff as well_founded_wd.
+Instance well_founded_wd A : Proper (@relations_eq A A ==> iff) (@well_founded A).
 Proof.
-unfold relations_eq, well_founded; intros R1 R2 H;
+unfold relations_eq, well_founded; intros A R1 R2 H.
 split; intros H1 a; induction (H1 a) as [x H2 H3]; constructor;
 intros y H4; apply H3; [now apply <- H | now apply -> H].
 Qed.
@@ -200,37 +190,10 @@ Variables A B : Set.
 Variable Aeq : relation A.
 Variable Beq : relation B.
 
-Hypothesis EA_equiv : equiv A Aeq.
-Hypothesis EB_equiv : equiv B Beq.
+Definition prod_rel : relation (A * B) := (Aeq * Beq)%signature.
 
-Definition prod_rel : relation (A * B) :=
-  fun p1 p2 => Aeq (fst p1) (fst p2) /\ Beq (snd p1) (snd p2).
-
-Lemma prod_rel_refl : reflexive (A * B) prod_rel.
-Proof.
-unfold reflexive, prod_rel.
-destruct x; split; [apply (proj1 EA_equiv) | apply (proj1 EB_equiv)]; simpl.
-Qed.
-
-Lemma prod_rel_sym : symmetric (A * B) prod_rel.
-Proof.
-unfold symmetric, prod_rel.
-destruct x; destruct y;
-split; [apply (proj2 (proj2 EA_equiv)) | apply (proj2 (proj2 EB_equiv))]; simpl in *; tauto.
-Qed.
-
-Lemma prod_rel_trans : transitive (A * B) prod_rel.
-Proof.
-unfold transitive, prod_rel.
-destruct x; destruct y; destruct z; simpl.
-intros; split; [apply (proj1 (proj2 EA_equiv)) with (y := a0) |
-apply (proj1 (proj2 EB_equiv)) with (y := b0)]; tauto.
-Qed.
-
-Theorem prod_rel_equiv : equiv (A * B) prod_rel.
-Proof.
-unfold equiv; split; [exact prod_rel_refl | split; [exact prod_rel_trans | exact prod_rel_sym]].
-Qed.
+Instance prod_rel_equiv `(Equivalence _ Aeq, Equivalence _ Beq) :
+ Equivalence prod_rel.
 
 End RelationOnProduct.
 
@@ -253,15 +216,4 @@ Proof.
 destruct x; destruct y; simpl; split; now intro.
 Qed.*)
 
-Lemma eq_equiv : forall A : Set, equiv A (@eq A).
-Proof.
-intro A; unfold equiv, reflexive, symmetric, transitive.
-repeat split; [exact (@trans_eq A) | exact (@sym_eq A)].
-(* It is interesting how the tactic split proves reflexivity *)
-Qed.
 
-(*Add Relation (fun A : Set => A) LE_Set
- reflexivity proved by (fun A : Set => (proj1 (eq_equiv A)))
- symmetry proved by (fun A : Set => (proj2 (proj2 (eq_equiv A))))
- transitivity proved by (fun A : Set => (proj1 (proj2 (eq_equiv A))))
-as EA_rel.*)

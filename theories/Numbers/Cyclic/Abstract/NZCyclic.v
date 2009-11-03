@@ -43,17 +43,7 @@ Definition NZadd := w_op.(znz_add).
 Definition NZsub := w_op.(znz_sub).
 Definition NZmul := w_op.(znz_mul).
 
-Theorem NZeq_equiv : equiv NZ NZeq.
-Proof.
-unfold equiv, reflexive, symmetric, transitive, NZeq; repeat split; intros; auto.
-now transitivity [| y |].
-Qed.
-
-Add Relation NZ NZeq
- reflexivity proved by (proj1 NZeq_equiv)
- symmetry proved by (proj2 (proj2 NZeq_equiv))
- transitivity proved by (proj1 (proj2 NZeq_equiv))
-as NZeq_rel.
+Instance NZeq_equiv : Equivalence NZeq.
 
 Add Morphism NZsucc with signature NZeq ==> NZeq as NZsucc_wd.
 Proof.

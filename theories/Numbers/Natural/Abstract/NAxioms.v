@@ -50,18 +50,15 @@ Implicit Arguments recursion [A].
 
 Axiom pred_0 : P 0 == 0.
 
-Axiom recursion_wd : forall (A : Type) (Aeq : relation A),
-  forall a a' : A, Aeq a a' ->
-    forall f f' : N -> A -> A, fun2_eq Neq Aeq Aeq f f' ->
-      forall x x' : N, x == x' ->
-        Aeq (recursion a f x) (recursion a' f' x').
+Instance recursion_wd (A : Type) (Aeq : relation A) :
+ Proper (Aeq ==> (Neq==>Aeq==>Aeq) ==> Neq ==> Aeq) (@recursion A).
 
 Axiom recursion_0 :
   forall (A : Type) (a : A) (f : N -> A -> A), recursion a f 0 = a.
 
 Axiom recursion_succ :
   forall (A : Type) (Aeq : relation A) (a : A) (f : N -> A -> A),
-    Aeq a a -> fun2_wd Neq Aeq Aeq f ->
+    Aeq a a -> Proper (Neq==>Aeq==>Aeq) f ->
       forall n : N, Aeq (recursion a f (S n)) (f n (recursion a f n)).
 
 (*Axiom dep_rec :

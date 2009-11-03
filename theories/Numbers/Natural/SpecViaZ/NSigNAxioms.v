@@ -39,16 +39,7 @@ Definition NZadd := N.add.
 Definition NZsub := N.sub.
 Definition NZmul := N.mul.
 
-Theorem NZeq_equiv : equiv N.t N.eq.
-Proof.
-repeat split; repeat red; intros; auto; congruence.
-Qed.
-
-Add Relation N.t N.eq
- reflexivity proved by (proj1 NZeq_equiv)
- symmetry proved by (proj2 (proj2 NZeq_equiv))
- transitivity proved by (proj1 (proj2 NZeq_equiv))
- as NZeq_rel.
+Instance NZeq_equiv : Equivalence N.eq.
 
 Add Morphism NZsucc with signature N.eq ==> N.eq as NZsucc_wd.
 Proof.
@@ -297,14 +288,10 @@ Definition recursion (A : Type) (a : A) (f : N.t -> A -> A) (n : N.t) :=
   Nrect (fun _ => A) a (fun n a => f (N.of_N n) a) (N.to_N n).
 Implicit Arguments recursion [A].
 
-Theorem recursion_wd :
-forall (A : Type) (Aeq : relation A),
-  forall a a' : A, Aeq a a' ->
-    forall f f' : N.t -> A -> A, fun2_eq N.eq Aeq Aeq f f' ->
-      forall x x' : N.t, x == x' ->
-        Aeq (recursion a f x) (recursion a' f' x').
+Instance recursion_wd (A : Type) (Aeq : relation A) :
+ Proper (Aeq ==> (N.eq==>Aeq==>Aeq) ==> N.eq ==> Aeq) (@recursion A).
 Proof.
-unfold fun2_wd, N.eq, fun2_eq.
+unfold N.eq.
 intros A Aeq a a' Eaa' f f' Eff' x x' Exx'.
 unfold recursion.
 unfold N.to_N.
@@ -312,7 +299,7 @@ rewrite <- Exx'; clear x' Exx'.
 replace (Zabs_N [x]) with (N_of_nat (Zabs_nat [x])).
 induction (Zabs_nat [x]).
 simpl; auto.
-rewrite N_of_S, 2 Nrect_step; auto.
+rewrite N_of_S, 2 Nrect_step; auto. apply Eff'; auto.
 destruct [x]; simpl; auto.
 change (nat_of_P p) with (nat_of_N (Npos p)); apply N_of_nat_of_N.
 change (nat_of_P p) with (nat_of_N (Npos p)); apply N_of_nat_of_N.

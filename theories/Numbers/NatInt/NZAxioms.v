@@ -26,18 +26,12 @@ Parameter Inline NZmul : NZ -> NZ -> NZ.
 (* Unary subtraction (opp) is not defined on natural numbers, so we have
    it for integers only *)
 
-Axiom NZeq_equiv : equiv NZ NZeq.
-Add Relation NZ NZeq
- reflexivity proved by (proj1 NZeq_equiv)
- symmetry proved by (proj2 (proj2 NZeq_equiv))
- transitivity proved by (proj1 (proj2 NZeq_equiv))
-as NZeq_rel.
-
-Add Morphism NZsucc with signature NZeq ==> NZeq as NZsucc_wd.
-Add Morphism NZpred with signature NZeq ==> NZeq as NZpred_wd.
-Add Morphism NZadd with signature NZeq ==> NZeq ==> NZeq as NZadd_wd.
-Add Morphism NZsub with signature NZeq ==> NZeq ==> NZeq as NZsub_wd.
-Add Morphism NZmul with signature NZeq ==> NZeq ==> NZeq as NZmul_wd.
+Instance NZeq_equiv : Equivalence NZeq.
+Instance NZsucc_wd : Proper (NZeq ==> NZeq) NZsucc.
+Instance NZpred_wd : Proper (NZeq ==> NZeq) NZpred.
+Instance NZadd_wd : Proper (NZeq ==> NZeq ==> NZeq) NZadd.
+Instance NZsub_wd : Proper (NZeq ==> NZeq ==> NZeq) NZsub.
+Instance NZmul_wd : Proper (NZeq ==> NZeq ==> NZeq) NZmul.
 
 Delimit Scope NatIntScope with NatInt.
 Open Local Scope NatIntScope.
@@ -54,7 +48,7 @@ Notation "x * y" := (NZmul x y) : NatIntScope.
 Axiom NZpred_succ : forall n : NZ, P (S n) == n.
 
 Axiom NZinduction :
-  forall A : NZ -> Prop, predicate_wd NZeq A ->
+  forall A : NZ -> Prop, Proper (NZeq==>iff) A ->
     A 0 -> (forall n : NZ, A n <-> A (S n)) -> forall n : NZ, A n.
 
 Axiom NZadd_0_l : forall n : NZ, 0 + n == n.
@@ -77,10 +71,10 @@ Parameter Inline NZle : NZ -> NZ -> Prop.
 Parameter Inline NZmin : NZ -> NZ -> NZ.
 Parameter Inline NZmax : NZ -> NZ -> NZ.
 
-Add Morphism NZlt with signature NZeq ==> NZeq ==> iff as NZlt_wd.
-Add Morphism NZle with signature NZeq ==> NZeq ==> iff as NZle_wd.
-Add Morphism NZmin with signature NZeq ==> NZeq ==> NZeq as NZmin_wd.
-Add Morphism NZmax with signature NZeq ==> NZeq ==> NZeq as NZmax_wd.
+Instance NZlt_wd : Proper (NZeq ==> NZeq ==> iff) NZlt.
+Instance NZle_wd : Proper (NZeq ==> NZeq ==> iff) NZle.
+Instance NZmin_wd : Proper (NZeq ==> NZeq ==> NZeq) NZmin.
+Instance NZmax_wd : Proper (NZeq ==> NZeq ==> NZeq) NZmax.
 
 Notation "x < y" := (NZlt x y) : NatIntScope.
 Notation "x <= y" := (NZle x y) : NatIntScope.

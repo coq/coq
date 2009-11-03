@@ -109,12 +109,12 @@ recursion
 
 Infix Local "<<" := def_ltb (at level 70, no associativity).
 
-Lemma lt_base_wd : fun_wd Neq (@eq bool) (if_zero false true).
+Lemma lt_base_wd : Proper (Neq==>eq) (if_zero false true).
 unfold fun_wd; intros; now apply if_zero_wd.
 Qed.
 
 Lemma lt_step_wd :
-fun2_wd Neq (fun_eq Neq (@eq bool)) (fun_eq Neq (@eq bool))
+ fun2_wd Neq (fun_eq Neq (@eq bool)) (fun_eq Neq (@eq bool))
   (fun _ f => fun n => recursion false (fun n' _ => f n') n).
 Proof.
 unfold fun2_wd, fun_eq.

@@ -48,7 +48,7 @@ Parameter Zopp : Z -> Z.
 (*Notation "- 1" := (Zopp 1) : IntScope.
 Check (-1).*)
 
-Add Morphism Zopp with signature Zeq ==> Zeq as Zopp_wd.
+Instance Zopp_wd : Proper (Zeq==>Zeq) Zopp.
 
 Notation "- x" := (Zopp x) (at level 35, right associativity) : IntScope.
 Notation "- 1" := (Zopp (NZsucc NZ0)) : IntScope.

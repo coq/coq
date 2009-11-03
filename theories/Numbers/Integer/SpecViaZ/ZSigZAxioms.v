@@ -45,16 +45,7 @@ Definition NZadd := Z.add.
 Definition NZsub := Z.sub.
 Definition NZmul := Z.mul.
 
-Theorem NZeq_equiv : equiv Z.t Z.eq.
-Proof.
-repeat split; repeat red; intros; auto; congruence.
-Qed.
-
-Add Relation Z.t Z.eq
- reflexivity proved by (proj1 NZeq_equiv)
- symmetry proved by (proj2 (proj2 NZeq_equiv))
- transitivity proved by (proj1 (proj2 NZeq_equiv))
- as NZeq_rel.
+Instance NZeq_equiv : Equivalence Z.eq.
 
 Add Morphism NZsucc with signature Z.eq ==> Z.eq as NZsucc_wd.
 Proof.

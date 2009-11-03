@@ -28,16 +28,7 @@ Definition NZadd := Zplus.
 Definition NZsub := Zminus.
 Definition NZmul := Zmult.
 
-Theorem NZeq_equiv : equiv Z NZeq.
-Proof.
-exact (@eq_equiv Z).
-Qed.
-
-Add Relation Z NZeq
- reflexivity proved by (proj1 NZeq_equiv)
- symmetry proved by (proj2 (proj2 NZeq_equiv))
- transitivity proved by (proj1 (proj2 NZeq_equiv))
-as NZeq_rel.
+Instance NZeq_equiv : Equivalence NZeq.
 
 Add Morphism NZsucc with signature NZeq ==> NZeq as NZsucc_wd.
 Proof.

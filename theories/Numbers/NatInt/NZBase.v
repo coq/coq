@@ -27,7 +27,7 @@ Qed.
 
 Declare Left Step NZE_stepl.
 (* The right step lemma is just the transitivity of NZeq *)
-Declare Right Step (proj1 (proj2 NZeq_equiv)).
+Declare Right Step (@Equivalence_Transitive _ _ NZeq_equiv).
 
 Theorem NZsucc_inj : forall n1 n2 : NZ, S n1 == S n2 -> n1 == n2.
 Proof.
