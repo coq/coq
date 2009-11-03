@@ -1663,7 +1663,7 @@ induction n.
 
   This behaves as {\tt induction {\term$_1$}} but using {\term$_2$} as
   induction scheme. It does not expect the conclusion of the type of
-  {\term} to be inductive.
+  {\term$_1$} to be inductive.
 
 \item {\tt induction {\term$_1$} using {\term$_2$} with {\bindinglist}}
 
@@ -1960,18 +1960,19 @@ introduction pattern $p$:
   Section~\ref{intro};
 \item introduction over a disjunction of list of patterns {\tt
   [$p_{11}$ {\ldots} $p_{1m_1}$ | {\ldots} | $p_{11}$ {\ldots}
-  $p_{nm_n}$]} expects the product to be over an inductive type whose
-  number of constructors is $n$ (or over a statement of conclusion a
-  similar inductive type ): it destructs the introduced hypothesis as
-  {\tt destruct} (see Section~\ref{destruct}) would and applies on
-  each generated subgoal the corresponding tactic;
+    $p_{nm_n}$]} expects the product to be over an inductive type
+  whose number of constructors is $n$ (or more generally over a type
+  of conclusion an inductive type built from $n$ constructors,
+  e.g. {\tt C -> A$\backslash$/B if $n=2$}): it destructs the introduced
+  hypothesis as {\tt destruct} (see Section~\ref{destruct}) would and
+  applies on each generated subgoal the corresponding tactic;
   \texttt{intros}~$p_{i1}$ {\ldots} $p_{im_i}$; if the disjunctive
   pattern is part of a sequence of patterns and is not the last
   pattern of the sequence, then {\Coq} completes the pattern so as all
   the argument of the constructors of the inductive type are
-  introduced (for instance, the list of patterns {\tt [$\;$|$\;$] H} applied
-  on goal {\tt forall x:nat, x=0 -> 0=x} behaves the same as the list
-  of patterns {\tt [$\,$|$\,$?$\,$] H});
+  introduced (for instance, the list of patterns {\tt [$\;$|$\;$] H}
+  applied on goal {\tt forall x:nat, x=0 -> 0=x} behaves the same as
+  the list of patterns {\tt [$\,$|$\,$?$\,$] H});
 \item introduction over a conjunction of patterns {\tt ($p_1$, \ldots,
   $p_n$)} expects the goal to be a product over an inductive type $I$ with a
   single constructor that itself has at least $n$ arguments: it
@@ -2044,9 +2045,10 @@ This tactic applies to any goal. If the variables {\ident$_1$} and
 performs double induction on these variables.  For instance, if the
 current goal is \verb+forall n m:nat, P n m+ then, {\tt double induction n
   m} yields the four cases with their respective inductive hypotheses.
-In particular the case for \verb+(P (S n) (S m))+ with the induction
-hypotheses \verb+(P (S n) m)+ and \verb+(m:nat)(P n m)+ (hence
-\verb+(P n m)+ and \verb+(P n (S m))+).
+
+In particular, for proving \verb+(P (S n) (S m))+, the generated induction
+hypotheses are \verb+(P (S n) m)+ and \verb+(m:nat)(P n m)+ (of the latter, 
+\verb+(P n m)+ and \verb+(P n (S m))+ are derivable).
 
 \Rem When the induction hypothesis \verb+(P (S n) m)+ is not
 needed, {\tt induction \ident$_1$; destruct \ident$_2$} produces
@@ -2240,7 +2242,7 @@ details.
  (see Section~\ref{Tac-induction}), allows to give explicitly the
  induction principle and the values of dependent premises of the
  elimination scheme, including \emph{predicates} for mutual induction
- when {\qualid} is mutually recursive.
+ when {\qualid} is part of a mutually recursive definition.
 
 \item {\tt functional induction (\qualid\ \term$_1$ \dots\ \term$_n$)
     using \term$_{m+1}$ with {\vref$_1$} := {\term$_{n+1}$} \dots\
@@ -2271,7 +2273,7 @@ implicit type of $t$ and $u$.
 This tactic applies to any goal. The type of {\term}
 must have the form
 
-\texttt{(x$_1$:A$_1$) \dots\ (x$_n$:A$_n$)}\texttt{eq} \term$_1$ \term$_2$. 
+\texttt{forall (x$_1$:A$_1$) \dots\ (x$_n$:A$_n$)}\texttt{eq} \term$_1$ \term$_2$. 
 
 \noindent where \texttt{eq} is the Leibniz equality or a registered
 setoid equality.
@@ -3648,7 +3650,7 @@ Performs, in the same way, all the rewritings of the bases {\tt \ident$_1$ $...$
 \item \texttt{autorewrite with {\ident$_1$} \dots \ident$_n$ in {\qualid}}
 
   Performs all the rewritings in hypothesis {\qualid}.
-\item \texttt{autorewrite with {\ident$_1$} \dots \ident$_n$ in {\qualid}}
+\item \texttt{autorewrite with {\ident$_1$} \dots \ident$_n$ in {\qualid} using \tac}
 
   Performs all  the rewritings  in hypothesis {\qualid}  applying {\tt
     \tac} to the main subgoal after each rewriting step.
@@ -3694,16 +3696,21 @@ will be automatically created.
 \texttt{Create HintDb} {\ident} [\texttt{discriminated}]
 \medskip
 
-This command creates a new database named \ident. There are two
-implementations of hint databases available. One uses a
-discrimination network which is parameterized by transparency information
-for all hints and all goals, including those that contain
-existential variables, the other one uses the discrimination net only on
-goals without existentials, for non-Immediate hints and do not make
-use of transparency hints (the default).
-The performance of discriminated hint databases can be improved by
-adding transparency hints that make the network more constrained
-(c.f. \ref{HintTransparency}).
+This command creates a new database named \ident.
+The database is implemented by a Discrimination Tree (DT) that serves as
+an index of all the lemmas. The DT can use transparency information to decide
+if a constant should be indexed or not (c.f. \ref{HintTransparency}),
+making the retrieval more efficient.
+The legacy implementation (the default one for new databases) uses the
+DT only on goals without existentials (i.e., auto goals), for non-Immediate
+hints and do not make use of transparency hints, putting more work on the
+unification that is run after retrieval (it keeps a list of the lemmas
+in case the DT is not used). The new implementation enabled by
+the {\tt discriminated} option makes use of DTs in all cases and takes
+transparency information into account. However, the order in which hints
+are retrieved from the DT may differ from the order in which they were
+inserted, making this implementation observationaly different from the
+legacy one. 
 
 \begin{Variants}
 \item\texttt{Local Hint} \textsl{hint\_definition} \texttt{:}

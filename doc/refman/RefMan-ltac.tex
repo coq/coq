@@ -337,11 +337,11 @@ We have a repeat loop with:
 \begin{quote}
 {\tt repeat} {\tacexpr}
 \end{quote}
-{\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
-applied until it fails. After the first application
-of $v$, $v$ is applied to the generated subgoals and
-so on. It stops when it fails for all the generated subgoals. It never
-fails itself.
+{\tacexpr} is evaluated to $v$. If $v$ denotes a tactic, this tactic
+is applied to the goal. If the application fails, the tactic is
+applied recursively to all the generated subgoals until it eventually
+fails.  The recursion stops in a subgoal when the tactic has failed.
+The tactic {\tt repeat {\tacexpr}} itself never fails.
 
 \subsubsection[Error catching]{Error catching\tacindex{try}
 \index{Tacticals!try@{\tt try}}}
