@@ -406,7 +406,7 @@ Module Update_Sets
     | GT _ => Gt
    end.
 
-  Lemma compare_spec : forall s s', Cmp eq lt s s' (compare s s').
+  Lemma compare_spec : forall s s', CompSpec eq lt s s' (compare s s').
   Proof. intros; unfold compare; destruct M.compare; auto. Qed.
 
 End Update_Sets.

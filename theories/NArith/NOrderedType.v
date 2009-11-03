@@ -39,23 +39,12 @@ Module N_as_OT <: OrderedTypeFull.
  Instance lt_compat : Proper (Logic.eq==>Logic.eq==>iff) Nlt.
  Proof. repeat red; intros; subst; auto. Qed.
 
- Lemma le_lteq : forall x y, x <= y <-> x < y \/ x=y.
- Proof.
- unfold Nle, Nlt; intros. rewrite <- Ncompare_eq_correct.
- destruct (x ?= y); intuition; discriminate.
- Qed.
-
- Lemma compare_spec : forall x y, Cmp eq lt x y (Ncompare x y).
- Proof.
- intros.
- destruct (Ncompare x y) as [ ]_eqn; constructor; auto.
- apply Ncompare_Eq_eq; auto.
- apply Ngt_Nlt; auto.
- Qed.
+ Definition le_lteq := Nle_lteq.
+ Definition compare_spec := Ncompare_spec.
 
 End N_as_OT.
 
-(* Note that [N_as_OT] can also be seen as a [UsualOrderedType]
+(** Note that [N_as_OT] can also be seen as a [UsualOrderedType]
    and a [OrderedType] (and also as a [DecidableType]). *)
 
 

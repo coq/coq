@@ -257,6 +257,13 @@ Proof.
       | absurd (n > m); [ apply Zle_not_gt | idtac ]; assumption ].
 Qed.
 
+Lemma Zle_lt_or_eq_iff : forall n m, n <= m <-> n < m \/ n = m.
+Proof.
+  unfold Zle, Zlt. intros.
+  generalize (Zcompare_Eq_iff_eq n m).
+  destruct (n ?= m); intuition; discriminate.
+Qed.
+
 (** Dichotomy *)
 
 Lemma Zle_or_lt : forall n m:Z, n <= m \/ m < n.

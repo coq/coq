@@ -144,6 +144,13 @@ Proof.
   induction 1; auto with arith.
 Qed.
 
+Theorem le_lt_or_eq_iff : forall n m, n <= m <-> n < m \/ n = m.
+Proof.
+  split.
+  intros; apply le_lt_or_eq; auto.
+  destruct 1; subst; auto with arith.
+Qed.
+
 Theorem lt_le_weak : forall n m, n < m -> n <= m.
 Proof.
   auto with arith.

@@ -254,7 +254,7 @@ Proof. intros; unfold le, lt, flip. rewrite O.le_lteq; intuition. Qed.
 
 Definition compare := flip O.compare.
 
-Lemma compare_spec : forall x y, Cmp eq lt x y (compare x y).
+Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
 Proof.
 intros; unfold compare, eq, lt, flip.
 destruct (O.compare_spec y x); auto.

@@ -77,7 +77,7 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
    | Gt => Gt
   end.
 
- Lemma compare_spec : forall x y, Cmp eq lt x y (compare x y).
+ Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
  Proof.
  intros (x1,x2) (y1,y2); unfold compare; simpl.
  destruct (O1.compare_spec x1 y1); try (constructor; compute; auto).

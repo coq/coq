@@ -87,6 +87,19 @@ Qed.
 Hint Unfold Qeq Qlt Qle : qarith.
 Hint Extern 5 (?X1 <> ?X2) => intro; discriminate: qarith.
 
+Lemma Qcompare_antisym : forall x y, CompOpp (x ?= y) = (y ?= x).
+Proof.
+ unfold "?=". intros. apply Zcompare_antisym.
+Qed.
+
+Lemma Qcompare_spec : forall x y, CompSpec Qeq Qlt x y (x ?= y).
+Proof.
+ intros.
+ destruct (x ?= y) as [ ]_eqn:H; constructor; auto.
+ rewrite Qeq_alt; auto.
+ rewrite Qlt_alt, <- Qcompare_antisym, H; auto.
+Qed.
+
 (** * Properties of equality. *)
 
 Theorem Qeq_refl : forall x, x == x.

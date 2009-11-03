@@ -221,6 +221,17 @@ Proof.
   split; intros; apply CompOpp_inj; rewrite CompOpp_involutive; auto.
 Qed.
 
+(** The [CompSpec] inductive will be used to relate a [compare] function
+    (returning a comparison answer) and some equality and order predicates.
+    Interest: [CompSpec] behave nicely with [destruct]. *)
+
+Inductive CompSpec {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Prop :=
+ | CompEq : eq x y -> CompSpec eq lt x y Eq
+ | CompLt : lt x y -> CompSpec eq lt x y Lt
+ | CompGt : lt y x -> CompSpec eq lt x y Gt.
+Hint Constructors CompSpec.
+
+
 (** Identity *)
 
 Definition ID := forall A:Type, A -> A.

@@ -1752,27 +1752,27 @@ Hint Unfold flip.
 
 (** Correctness of this comparison *)
 
-Definition LCmp c x y := Cmp L.eq L.lt x y c.
+Definition Cmp c x y := CompSpec L.eq L.lt x y c.
 
-Hint Unfold LCmp.
+Hint Unfold Cmp.
 
 Lemma compare_end_Cmp :
- forall e2, LCmp (compare_end e2) nil (flatten_e e2).
+ forall e2, Cmp (compare_end e2) nil (flatten_e e2).
 Proof.
  destruct e2; simpl; constructor; auto. reflexivity.
 Qed.
 
 Lemma compare_more_Cmp : forall x1 cont x2 r2 e2 l,
-  LCmp (cont (cons r2 e2)) l (elements r2 ++ flatten_e e2) ->
-   LCmp (compare_more x1 cont (More x2 r2 e2)) (x1::l)
+  Cmp (cont (cons r2 e2)) l (elements r2 ++ flatten_e e2) ->
+   Cmp (compare_more x1 cont (More x2 r2 e2)) (x1::l)
       (flatten_e (More x2 r2 e2)).
 Proof.
  simpl; intros; elim_compare x1 x2; simpl; auto.
 Qed.
 
 Lemma compare_cont_Cmp : forall s1 cont e2 l,
- (forall e, LCmp (cont e) l (flatten_e e)) ->
- LCmp (compare_cont s1 cont e2) (elements s1 ++ l) (flatten_e e2).
+ (forall e, Cmp (cont e) l (flatten_e e)) ->
+ Cmp (compare_cont s1 cont e2) (elements s1 ++ l) (flatten_e e2).
 Proof.
  induction s1 as [|l1 Hl1 x1 r1 Hr1 h1]; simpl; intros; auto.
  rewrite <- elements_node; simpl.
@@ -1783,7 +1783,7 @@ Proof.
 Qed.
 
 Lemma compare_Cmp : forall s1 s2,
- LCmp (compare s1 s2) (elements s1) (elements s2).
+ Cmp (compare s1 s2) (elements s1) (elements s2).
 Proof.
  intros; unfold compare.
  rewrite (app_nil_end (elements s1)).
@@ -1795,7 +1795,7 @@ Proof.
 Qed.
 
 Lemma compare_spec : forall s1 s2 `{Ok s1, Ok s2},
- Cmp eq lt s1 s2 (compare s1 s2).
+ CompSpec eq lt s1 s2 (compare s1 s2).
 Proof.
  intros.
  destruct (compare_Cmp s1 s2); constructor.

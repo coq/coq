@@ -42,19 +42,7 @@ Module Q_as_OT <: OrderedTypeFull.
  Proof. auto with *. Qed.
 
  Definition le_lteq := Qle_lteq.
-
- Lemma Qcompare_antisym : forall x y, CompOpp (x ?= y) = (y ?= x).
- Proof.
- unfold "?=". intros. apply Zcompare_antisym.
- Qed.
-
- Lemma compare_spec : forall x y, Cmp Qeq Qlt x y (Qcompare x y).
- Proof.
- intros.
- destruct (x ?= y) as [ ]_eqn:H; constructor; auto.
- rewrite Qeq_alt; auto.
- rewrite Qlt_alt, <- Qcompare_antisym, H; auto.
- Qed.
+ Definition compare_spec := Qcompare_spec.
 
 End Q_as_OT.
 

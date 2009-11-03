@@ -39,24 +39,12 @@ Module Z_as_OT <: OrderedTypeFull.
  Instance lt_compat : Proper (Logic.eq==>Logic.eq==>iff) Zlt.
  Proof. repeat red; intros; subst; auto. Qed.
 
- Lemma le_lteq : forall x y, x <= y <-> x < y \/ x=y.
- Proof.
- unfold le, lt, Zle, Zlt. intros.
- rewrite <- Zcompare_Eq_iff_eq.
- destruct (x ?= y); intuition; discriminate.
- Qed.
-
- Lemma compare_spec : forall x y, Cmp eq lt x y (Zcompare x y).
- Proof.
- intros; unfold compare.
- destruct (Zcompare x y) as [ ]_eqn; constructor; auto.
- apply Zcompare_Eq_eq; auto.
- apply Zgt_lt; auto.
- Qed.
+ Definition le_lteq := Zle_lt_or_eq_iff.
+ Definition compare_spec := Zcompare_spec.
 
 End Z_as_OT.
 
-(* Note that [Z_as_OT] can also be seen as a [UsualOrderedType]
+(** Note that [Z_as_OT] can also be seen as a [UsualOrderedType]
    and a [OrderedType] (and also as a [DecidableType]). *)
 
 

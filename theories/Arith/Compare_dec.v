@@ -171,7 +171,17 @@ Proof.
    apply -> nat_compare_lt; auto.
 Qed.
 
-(** Some projections of the above equivalences, used in OrderedTypeEx. *)
+Lemma nat_compare_spec : forall x y, CompSpec eq lt x y (nat_compare x y).
+Proof.
+ intros.
+ destruct (nat_compare x y) as [ ]_eqn; constructor.
+ apply nat_compare_eq; auto.
+ apply <- nat_compare_lt; auto.
+ apply <- nat_compare_gt; auto.
+Qed.
+
+
+(** Some projections of the above equivalences. *)
 
 Lemma nat_compare_Lt_lt : forall n m, nat_compare n m = Lt -> n<m.
 Proof.

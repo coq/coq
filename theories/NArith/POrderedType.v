@@ -39,25 +39,12 @@ Module Positive_as_OT <: OrderedTypeFull.
  Instance lt_compat : Proper (Logic.eq==>Logic.eq==>iff) Plt.
  Proof. repeat red; intros; subst; auto. Qed.
 
- Lemma le_lteq : forall x y, x <= y <-> x < y \/ x=y.
- Proof.
- unfold Ple, Plt. intros.
- rewrite <- Pcompare_eq_iff.
- destruct (Pcompare x y Eq); intuition; discriminate.
- Qed.
-
- Lemma compare_spec : forall x y, Cmp eq lt x y (compare x y).
- Proof.
- intros; unfold compare.
- destruct (Pcompare x y Eq) as [ ]_eqn; constructor.
- apply Pcompare_Eq_eq; auto.
- auto.
- apply ZC1; auto.
- Qed.
+ Definition le_lteq := Ple_lteq.
+ Definition compare_spec := Pcompare_spec.
 
 End Positive_as_OT.
 
-(* Note that [Positive_as_OT] can also be seen as a [UsualOrderedType]
+(** Note that [Positive_as_OT] can also be seen as a [UsualOrderedType]
    and a [OrderedType] (and also as a [DecidableType]). *)
 
 

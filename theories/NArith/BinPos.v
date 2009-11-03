@@ -857,6 +857,15 @@ Proof.
   symmetry; apply Pcompare_antisym.
 Qed.
 
+Lemma Pcompare_spec : forall p q, CompSpec eq Plt p q ((p ?= q) Eq).
+Proof.
+  intros. destruct ((p ?= q) Eq) as [ ]_eqn; constructor.
+  apply Pcompare_Eq_eq; auto.
+  auto.
+  apply ZC1; auto.
+Qed.
+
+
 (** Comparison and the successor *)
 
 Lemma Pcompare_p_Sp : forall p : positive, (p ?= Psucc p) Eq = Lt.
@@ -931,6 +940,14 @@ Proof.
   elim (Plt_1 _ H).
   destruct (Pcompare_p_Sq n m) as (H',_); destruct (H' H); subst; auto.
 Qed.
+
+Lemma Ple_lteq : forall p q, p <= q <-> p < q \/ p = q.
+Proof.
+  unfold Ple, Plt. intros.
+  generalize (Pcompare_eq_iff p q).
+  destruct ((p ?= q) Eq); intuition; discriminate.
+Qed.
+
 
 (**********************************************************************)
 (** Properties of subtraction on binary positive numbers *)

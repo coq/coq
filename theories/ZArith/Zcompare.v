@@ -72,6 +72,15 @@ Proof.
   intros; f_equal; auto.
 Qed.
 
+Lemma Zcompare_spec : forall n m, CompSpec eq Zlt n m (n ?= m).
+Proof.
+  intros.
+  destruct (n?=m) as [ ]_eqn:H; constructor; auto.
+  apply Zcompare_Eq_eq; auto.
+  red; rewrite <- Zcompare_antisym, H; auto.
+Qed.
+
+
 (** * Transitivity of comparison *)
 
 Lemma Zcompare_Lt_trans :

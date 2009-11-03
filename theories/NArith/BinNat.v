@@ -427,6 +427,21 @@ pose proof (Pcompare_p_Sq p q) as (_,?);
 assert (p = q <-> Npos p = Npos q); [split; congruence | tauto].
 Qed.
 
+Lemma Nle_lteq : forall x y, x <= y <-> x < y \/ x=y.
+Proof.
+unfold Nle, Nlt; intros.
+generalize (Ncompare_eq_correct x y).
+destruct (x ?= y); intuition; discriminate.
+Qed.
+
+Lemma Ncompare_spec : forall x y, CompSpec eq Nlt x y (Ncompare x y).
+Proof.
+intros.
+destruct (Ncompare x y) as [ ]_eqn; constructor; auto.
+apply Ncompare_Eq_eq; auto.
+apply Ngt_Nlt; auto.
+Qed.
+
 (** 0 is the least natural number *)
 
 Theorem Ncompare_0 : forall n : N, Ncompare n N0 <> Lt.

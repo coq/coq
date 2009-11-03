@@ -14,14 +14,6 @@ Unset Strict Implicit.
 
 (** * Ordered types *)
 
-Inductive Cmp {A} (eq lt:relation A)(x y : A) : comparison -> Prop :=
-| Cmp_eq : eq x y -> Cmp eq lt x y Eq
-| Cmp_lt : lt x y -> Cmp eq lt x y Lt
-| Cmp_gt : lt y x -> Cmp eq lt x y Gt.
-
-Hint Constructors Cmp.
-
-
 Module Type MiniOrderedType.
   Include Type EqualityType.
 
@@ -29,8 +21,8 @@ Module Type MiniOrderedType.
   Instance lt_strorder : StrictOrder lt.
   Instance lt_compat : Proper (eq==>eq==>iff) lt.
 
-  Parameter compare : t -> t -> comparison.
-  Axiom compare_spec : forall x y, Cmp eq lt x y (compare x y).
+  Parameter Inline compare : t -> t -> comparison.
+  Axiom compare_spec : forall x y, CompSpec eq lt x y (compare x y).
 
 End MiniOrderedType.
 
@@ -76,8 +68,8 @@ Module Type UsualOrderedType.
     for subtyping... *)
  Instance lt_compat : Proper (eq==>eq==>iff) lt.
 
- Parameter compare : t -> t -> comparison.
- Axiom compare_spec : forall x y, Cmp eq lt x y (compare x y).
+ Parameter Inline compare : t -> t -> comparison.
+ Axiom compare_spec : forall x y, CompSpec eq lt x y (compare x y).
 
 End UsualOrderedType.
 

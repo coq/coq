@@ -76,7 +76,7 @@ Module Update_OT (O:OrderedTypeOrig) <: OrderedType.
     | GT _ => Gt
   end.
 
- Lemma compare_spec : forall x y, Cmp eq lt x y (compare x y).
+ Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
  Proof.
   intros; unfold compare; destruct O.compare; auto.
  Qed.
@@ -169,11 +169,11 @@ Module OT_from_Alt (Import O:OrderedTypeAlt) <: OrderedType.
 
  Definition compare := O.compare.
 
- Lemma compare_spec : forall x y, Cmp eq lt x y (compare x y).
+ Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
  Proof.
   unfold eq, lt, compare; intros.
   destruct (O.compare x y) as [ ]_eqn:H; auto.
-  apply Cmp_gt.
+  apply CompGt.
   rewrite compare_sym, H; auto.
  Qed.
 

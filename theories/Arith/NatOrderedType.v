@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Peano_dec Compare_dec
+Require Import Lt Peano_dec Compare_dec
  DecidableType2 OrderedType2 OrderedType2Facts.
 
 
@@ -33,26 +33,17 @@ Module Nat_as_OT <: OrderedTypeFull.
  Definition compare := nat_compare.
 
  Instance lt_strorder : StrictOrder lt.
- Proof. split; [ exact Lt.lt_irrefl | exact Lt.lt_trans ]. Qed.
+ Proof. split; [ exact lt_irrefl | exact lt_trans ]. Qed.
 
  Instance lt_compat : Proper (Logic.eq==>Logic.eq==>iff) lt.
  Proof. repeat red; intros; subst; auto. Qed.
 
- Lemma le_lteq : forall x y, x <= y <-> x < y \/ x=y.
- Proof. intuition; subst; auto using Lt.le_lt_or_eq. Qed.
-
- Lemma compare_spec : forall x y, Cmp eq lt x y (compare x y).
- Proof.
- intros; unfold compare.
- destruct (nat_compare x y) as [ ]_eqn; constructor.
- apply nat_compare_eq; auto.
- apply nat_compare_Lt_lt; auto.
- apply nat_compare_Gt_gt; auto.
- Qed.
+ Definition le_lteq := le_lt_or_eq_iff.
+ Definition compare_spec := nat_compare_spec.
 
 End Nat_as_OT.
 
-(* Note that [Nat_as_OT] can also be seen as a [UsualOrderedType]
+(** Note that [Nat_as_OT] can also be seen as a [UsualOrderedType]
    and a [OrderedType] (and also as a [DecidableType]). *)
 
 

@@ -227,7 +227,7 @@ Module Type SetsOn (E : OrderedType).
   Variable s s': t.
   Variable x y : elt.
 
-  Parameter compare_spec : Cmp eq lt s s' (compare s s').
+  Parameter compare_spec : CompSpec eq lt s s' (compare s s').
 
   (** Additional specification of [elements] *)
   Parameter elements_spec2 : sort E.lt (elements s).
@@ -570,7 +570,7 @@ Module Type RawSets (E : OrderedType).
   Variable x y : elt.
 
   (** Specification of [compare] *)
-  Parameter compare_spec : forall `{Ok s, Ok s'}, Cmp eq lt s s' (compare s s').
+  Parameter compare_spec : forall `{Ok s, Ok s'}, CompSpec eq lt s s' (compare s s').
 
   (** Additional specification of [elements] *)
   Parameter elements_spec2 : forall `{Ok s}, sort E.lt (elements s).
@@ -619,7 +619,7 @@ Module Raw2SetsOn (O:OrderedType)(M:RawSets O) <: SetsOn O.
   Variable s s' s'' : t.
   Variable x y : elt.
 
-  Lemma compare_spec : Cmp eq lt s s' (compare s s').
+  Lemma compare_spec : CompSpec eq lt s s' (compare s s').
   Proof.
    assert (H:=@M.compare_spec s s' _ _).
    unfold compare; destruct M.compare; inversion_clear H; auto.
@@ -940,11 +940,11 @@ Module MakeListOrdering (O:OrderedType).
  Qed.
  Hint Resolve eq_cons.
 
- Lemma cons_Cmp : forall c x1 x2 l1 l2, O.eq x1 x2 ->
-  Cmp eq lt l1 l2 c -> Cmp eq lt (x1::l1) (x2::l2) c.
+ Lemma cons_CompSpec : forall c x1 x2 l1 l2, O.eq x1 x2 ->
+  CompSpec eq lt l1 l2 c -> CompSpec eq lt (x1::l1) (x2::l2) c.
  Proof.
   destruct c; simpl; inversion_clear 2; auto.
  Qed.
- Hint Resolve cons_Cmp.
+ Hint Resolve cons_CompSpec.
 
 End MakeListOrdering.
