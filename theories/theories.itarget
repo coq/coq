@@ -290,6 +290,8 @@ Reals/SeqSeries.vo
 Reals/SplitAbsolu.vo
 Reals/SplitRmult.vo
 Reals/Sqrt_reg.vo
+Reals/ROrderedType.vo
+Reals/Rminmax.vo
 
 Relations/Operators_Properties.vo
 Relations/Relation_Definitions.vo

@@ -431,7 +431,7 @@ REALS_all:=$(addprefix theories/Reals/, \
  R_sqrt.vo	Rtrigo_calc.vo  Rgeom.vo	Sqrt_reg.vo     \
  Ranalysis4.vo	Rpower.vo       Ranalysis.vo	NewtonInt.vo    \
  RiemannInt_SF.vo		RiemannInt.vo   Integration.vo 	\
- Rlogic.vo	Reals.vo )
+ Rlogic.vo	Reals.vo        ROrderedType.vo Rminmax.vo )
 
 REALSVO:=$(REALSBASEVO) $(REALS_$(REALS))
 
