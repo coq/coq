@@ -19,6 +19,8 @@ Arith/Mult.vo
 Arith/Peano_dec.vo
 Arith/Plus.vo
 Arith/Wf_nat.vo
+Arith/NatOrderedType.vo
+Arith/MinMax.vo
 
 Bool/BoolEq.vo
 Bool/Bool.vo
@@ -81,8 +83,11 @@ Structures/DecidableTypeEx.vo
 Structures/OrderedType2Alt.vo
 Structures/OrderedType2Ex.vo
 Structures/OrderedType2.vo
+Structures/OrderedType2Facts.vo
+Structures/OrderedType2Lists.vo
 Structures/DecidableType2.vo
 Structures/DecidableType2Ex.vo
+Structures/DecidableType2Facts.vo
 Structures/OrderTac.vo
 
 Init/Datatypes.vo
@@ -140,6 +145,10 @@ NArith/Ndigits.vo
 NArith/Ndist.vo
 NArith/Nnat.vo
 NArith/Pnat.vo
+NArith/POrderedType.vo
+NArith/Pminmax.vo
+NArith/NOrderedType.vo
+NArith/Nminmax.vo
 
 Numbers/BigNumPrelude.vo
 Numbers/Cyclic/Abstract/CyclicAxioms.vo
@@ -363,3 +372,4 @@ ZArith/Zpower.vo
 ZArith/Zpow_facts.vo
 ZArith/Zsqrt.vo
 ZArith/Zwf.vo
+ZArith/ZOrderedType.vo

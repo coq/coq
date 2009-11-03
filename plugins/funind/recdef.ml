@@ -236,6 +236,10 @@ let coq_constant s =
   Coqlib.gen_constant_in_modules "RecursiveDefinition"
     (Coqlib.init_modules @ Coqlib.arith_modules) s;;
 
+let coq_base_constant s =
+  Coqlib.gen_constant_in_modules "RecursiveDefinition"
+    (Coqlib.init_modules @ [["Coq";"Arith";"Le"];["Coq";"Arith";"Lt"]]) s;;
+
 let constant sl s =
   constr_of_global
     (locate (make_qualid(Names.make_dirpath
@@ -250,23 +254,23 @@ let find_reference sl s =
 let delayed_force f = f ()
 
 let le_lt_SS = function () -> (constant ["Recdef"] "le_lt_SS")
-let le_lt_n_Sm = function () -> (coq_constant "le_lt_n_Sm")
+let le_lt_n_Sm = function () -> (coq_base_constant "le_lt_n_Sm")
 
-let le_trans = function () -> (coq_constant "le_trans")
-let le_lt_trans = function () -> (coq_constant "le_lt_trans")
-let lt_S_n = function () -> (coq_constant "lt_S_n")
-let le_n = function () -> (coq_constant "le_n")
-let refl_equal = function () -> (coq_constant "refl_equal")
-let eq = function () -> (coq_constant "eq")
-let ex = function () -> (coq_constant "ex")
+let le_trans = function () -> (coq_base_constant "le_trans")
+let le_lt_trans = function () -> (coq_base_constant "le_lt_trans")
+let lt_S_n = function () -> (coq_base_constant "lt_S_n")
+let le_n = function () -> (coq_base_constant "le_n")
+let refl_equal = function () -> (coq_base_constant "eq_refl")
+let eq = function () -> (coq_base_constant "eq")
+let ex = function () -> (coq_base_constant "ex")
 let coq_sig_ref = function () -> (find_reference ["Coq";"Init";"Specif"] "sig")
-let coq_sig = function () -> (coq_constant "sig")
-let coq_O = function () -> (coq_constant "O")
-let coq_S = function () -> (coq_constant "S")
+let coq_sig = function () -> (coq_base_constant "sig")
+let coq_O = function () -> (coq_base_constant "O")
+let coq_S = function () -> (coq_base_constant "S")
 
 let gt_antirefl = function () -> (coq_constant "gt_irrefl")
-let lt_n_O = function () -> (coq_constant "lt_n_O")
-let lt_n_Sn = function () -> (coq_constant "lt_n_Sn")
+let lt_n_O = function () -> (coq_base_constant "lt_n_O")
+let lt_n_Sn = function () -> (coq_base_constant "lt_n_Sn")
 
 let f_equal = function () -> (coq_constant "f_equal")
 let well_founded_induction = function () -> (coq_constant "well_founded_induction")
@@ -284,8 +288,8 @@ let coq_conj = function () -> find_reference ["Coq";"Init";"Logic"] "conj"
 
 (* These are specific to experiments in nat with lt as well_founded_relation, *)
 (*    but this should be made more general. *)
-let nat = function () -> (coq_constant "nat")
-let lt = function () -> (coq_constant "lt")
+let nat = function () -> (coq_base_constant "nat")
+let lt = function () -> (coq_base_constant "lt")
 
 (* This is simply an implementation of the case_eq tactic.  this code
   should be replaced with the tactic defined in Ltac in Init/Tactics.v *)

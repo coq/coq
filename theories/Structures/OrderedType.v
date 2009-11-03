@@ -103,7 +103,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Lemma lt_total : forall x y, lt x y \/ eq x y \/ lt y x.
   Proof. intros; destruct (compare x y); auto. Qed.
 
-  Module OrderElts : OrderTacSig
+  Module OrderElts : OrderSig
     with Definition t := t
     with Definition eq := eq
     with Definition lt := lt.

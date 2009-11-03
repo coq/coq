@@ -27,7 +27,7 @@ Set Implicit Arguments.
    a strict order [lt] total and compatible with [eq], and
    a larger order [le] synonym of [lt\/eq]. *)
 
-Module Type OrderTacSig.
+Module Type OrderSig.
 
 Parameter Inline t : Type.
 Parameters eq lt le : t -> t -> Prop.
@@ -37,7 +37,7 @@ Instance lt_compat : Proper (eq==>eq==>iff) lt.
 Parameter lt_total : forall x y, lt x y \/ eq x y \/ lt y x.
 Parameter le_lteq : forall x y, le x y <-> lt x y \/ eq x y.
 
-End OrderTacSig.
+End OrderSig.
 
 (** NB : we should _not_ use "Inline" for these predicates,
    otherwise the ltac matching will not work properly later. *)
@@ -60,7 +60,7 @@ Infix "+" := trans_ord : order.
 
 (** ** [MakeOrderTac] : The functor providing the order tactic. *)
 
-Module MakeOrderTac(Import O:OrderTacSig).
+Module MakeOrderTac(Import O:OrderSig).
 
 Local Open Scope order.
 
@@ -249,7 +249,8 @@ end.
 
 (** The complete tactic. *)
 
-Ltac order := intros; order_prepare; order_loop; fail.
+Ltac order :=
+ intros; order_prepare; order_loop; fail "Order tactic unsuccessful".
 
 End MakeOrderTac.
 

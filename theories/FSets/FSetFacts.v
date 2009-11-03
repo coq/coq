@@ -291,35 +291,23 @@ End BoolSpec.
 
 (** * [E.eq] and [Equal] are setoid equalities *)
 
-Definition E_ST : Equivalence E.eq.
+Instance E_ST : Equivalence E.eq.
 Proof.
 constructor ; red; [apply E.eq_refl|apply E.eq_sym|apply E.eq_trans].
 Qed.
 
-Definition Equal_ST : Equivalence Equal.
+Instance Equal_ST : Equivalence Equal.
 Proof.
 constructor ; red; [apply eq_refl | apply eq_sym | apply eq_trans].
 Qed.
 
-Add Relation elt E.eq
- reflexivity proved by E.eq_refl
- symmetry proved by E.eq_sym
- transitivity proved by E.eq_trans
- as EltSetoid.
-
-Add Relation t Equal
- reflexivity proved by eq_refl
- symmetry proved by eq_sym
- transitivity proved by eq_trans
- as EqualSetoid.
-
-Add Morphism In with signature E.eq ==> Equal ==> iff as In_m.
+Instance In_m : Proper (E.eq ==> Equal ==> iff) In.
 Proof.
 unfold Equal; intros x y H s s' H0.
 rewrite (In_eq_iff s H); auto.
 Qed.
 
-Add Morphism is_empty : is_empty_m.
+Instance is_empty_m : Proper (Equal==> Logic.eq) is_empty.
 Proof.
 unfold Equal; intros s s' H.
 generalize (is_empty_iff s)(is_empty_iff s').
@@ -336,12 +324,12 @@ destruct H1 as (_,H1).
 exact (H1 (refl_equal true) _ Ha).
 Qed.
 
-Add Morphism Empty with signature Equal ==> iff as Empty_m.
+Instance Empty_m : Proper (Equal ==> iff) Empty.
 Proof.
-intros; do 2 rewrite is_empty_iff; rewrite H; intuition.
+repeat red; intros; do 2 rewrite is_empty_iff; rewrite H; intuition.
 Qed.
 
-Add Morphism mem : mem_m.
+Instance mem_m : Proper (E.eq ==> Equal ==> Logic.eq) mem.
 Proof.
 unfold Equal; intros x y H s s' H0.
 generalize (H0 x); clear H0; rewrite (In_eq_iff s' H).
@@ -349,7 +337,7 @@ generalize (mem_iff s x)(mem_iff s' y).
 destruct (mem x s); destruct (mem y s'); intuition.
 Qed.
 
-Add Morphism singleton : singleton_m.
+Instance singleton_m : Proper (E.eq ==> Equal) singleton.
 Proof.
 unfold Equal; intros x y H a.
 do 2 rewrite singleton_iff; split; intros.
@@ -357,42 +345,42 @@ apply E.eq_trans with x; auto.
 apply E.eq_trans with y; auto.
 Qed.
 
-Add Morphism add : add_m.
+Instance add_m : Proper (E.eq==>Equal==>Equal) add.
 Proof.
 unfold Equal; intros x y H s s' H0 a.
 do 2 rewrite add_iff; rewrite H; rewrite H0; intuition.
 Qed.
 
-Add Morphism remove : remove_m.
+Instance remove_m : Proper (E.eq==>Equal==>Equal) remove.
 Proof.
 unfold Equal; intros x y H s s' H0 a.
 do 2 rewrite remove_iff; rewrite H; rewrite H0; intuition.
 Qed.
 
-Add Morphism union : union_m.
+Instance union_m : Proper (Equal==>Equal==>Equal) union.
 Proof.
 unfold Equal; intros s s' H s'' s''' H0 a.
 do 2 rewrite union_iff; rewrite H; rewrite H0; intuition.
 Qed.
 
-Add Morphism inter : inter_m.
+Instance inter_m : Proper (Equal==>Equal==>Equal) inter.
 Proof.
 unfold Equal; intros s s' H s'' s''' H0 a.
 do 2 rewrite inter_iff; rewrite H; rewrite H0; intuition.
 Qed.
 
-Add Morphism diff : diff_m.
+Instance diff_m : Proper (Equal==>Equal==>Equal) diff.
 Proof.
 unfold Equal; intros s s' H s'' s''' H0 a.
 do 2 rewrite diff_iff; rewrite H; rewrite H0; intuition.
 Qed.
 
-Add Morphism Subset with signature Equal ==> Equal ==> iff as  Subset_m.
+Instance Subset_m : Proper (Equal==>Equal==>iff) Subset.
 Proof.
 unfold Equal, Subset; firstorder.
 Qed.
 
-Add Morphism subset : subset_m.
+Instance subset_m : Proper (Equal ==> Equal ==> Logic.eq) subset.
 Proof.
 intros s s' H s'' s''' H0.
 generalize (subset_iff s s'') (subset_iff s' s''').
@@ -401,7 +389,7 @@ rewrite H in H1; rewrite H0 in H1; intuition.
 rewrite H in H1; rewrite H0 in H1; intuition.
 Qed.
 
-Add Morphism equal : equal_m.
+Instance equal_m : Proper (Equal ==> Equal ==> Logic.eq) equal.
 Proof.
 intros s s' H s'' s''' H0.
 generalize (equal_iff s s'') (equal_iff s' s''').

@@ -13,7 +13,7 @@
 (** This file proposes an implementation of the non-dependant
     interface [MSetInterface.S] using strictly ordered list. *)
 
-Require Export MSetInterface.
+Require Export MSetInterface OrderedType2Facts OrderedType2Lists.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -206,6 +206,7 @@ End Ops.
 
 Module MakeRaw (X: OrderedType) <: RawSets X.
   Module Import MX := OrderedTypeFacts X.
+  Module Import ML := OrderedTypeLists X.
 
   Include Ops X.
 
@@ -291,7 +292,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   induction s; intros; inv; simpl.
   intuition. discriminate. inv.
-  elim_compare x a; intros; rewrite InA_cons; intuition; try order.
+  elim_compare x a; rewrite InA_cons; intuition; try order.
   discriminate.
   sort_inf_in. order.
   rewrite <- IHs; auto.
@@ -303,7 +304,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   simple induction s; simpl.
   intuition.
-  intros; elim_compare x a; intros; inv; intuition.
+  intros; elim_compare x a; inv; intuition.
   Qed.
   Hint Resolve add_inf.
 
@@ -311,7 +312,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   simple induction s; simpl.
   intuition.
-  intros; elim_compare x a; intros; inv; auto.
+  intros; elim_compare x a; inv; auto.
   Qed.
 
   Lemma add_spec :
@@ -320,7 +321,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   induction s; simpl; intros.
   intuition. inv; auto.
-  elim_compare x a; intros; inv; rewrite !InA_cons, ?IHs; intuition.
+  elim_compare x a; inv; rewrite !InA_cons, ?IHs; intuition.
   left; order.
   Qed.
 
@@ -329,7 +330,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   induction s; simpl.
   intuition.
-  intros; elim_compare x a; intros; inv; auto.
+  intros; elim_compare x a; inv; auto.
   apply Inf_lt with a; auto.
   Qed.
   Hint Resolve remove_inf.
@@ -338,7 +339,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   induction s; simpl.
   intuition.
-  intros; elim_compare x a; intros; inv; auto.
+  intros; elim_compare x a; inv; auto.
   Qed.
 
   Lemma remove_spec :
@@ -347,7 +348,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   induction s; simpl; intros.
   intuition; inv; auto.
-  elim_compare x a; intros; inv; rewrite !InA_cons, ?IHs; intuition;
+  elim_compare x a; inv; rewrite !InA_cons, ?IHs; intuition;
    try sort_inf_in; try order.
   Qed.
 
@@ -454,7 +455,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   split; intros H. discriminate. assert (In x' nil) by (rewrite H; auto). inv.
   split; intros H. discriminate. assert (In x nil) by (rewrite <-H; auto). inv.
   inv.
-  elim_compare x x'; intros C; try discriminate.
+  elim_compare x x' as C; try discriminate.
   (* x=x' *)
   rewrite IH; auto.
   split; intros E y; specialize (E y).
@@ -479,7 +480,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   split; try red; intros; auto.
   split; intros H. discriminate. assert (In x nil) by (apply H; auto). inv.
   split; try red; intros; auto. inv.
-  inv. elim_compare x x'; intros C.
+  inv. elim_compare x x' as C.
   (* x=x' *)
   rewrite IH; auto.
   split; intros S y; specialize (S y).
@@ -750,51 +751,6 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Instance In_compat : Proper (X.eq==>eq==> iff) In.
   Proof. repeat red; intros; rewrite H, H0; auto. Qed.
 
-(*
-  Module IN <: IN X.
-   Definition t := t.
-   Definition In := In.
-   Instance In_compat : Proper (X.eq==>eq==>iff) In.
-   Proof.
-   intros x x' Ex s s' Es. subst. rewrite Ex; intuition.
-   Qed.
-   Definition Equal := Equal.
-   Definition Empty := Empty.
-  End IN.
-  Include MakeSetOrdering X IN.
-
-  Lemma Ok_Above_Add : forall x s, Ok (x::s) -> Above x s /\ Add x s (x::s).
-  Proof.
-  intros.
-  inver Ok.
-  split.
-  intros y Hy. eapply Sort_Inf_In; eauto.
-  red. intuition. inver In; auto. rewrite <- H2; left; auto.
-  right; auto.
-  Qed.
-
-  Lemma compare_spec :
-   forall (s s' : t) (Hs : Ok s) (Hs' : Ok s'), Cmp eq lt (compare s s') s s'.
-  Proof.
-  induction s as [|x s IH]; intros [|x' s'] Hs Hs'; simpl; intuition.
-  destruct (Ok_Above_Add Hs').
-  eapply lt_empty_l; eauto. intros y Hy. inver InA.
-  destruct (Ok_Above_Add Hs).
-  eapply lt_empty_l; eauto. intros y Hy. inver InA.
-  destruct (Ok_Above_Add Hs); destruct (Ok_Above_Add Hs').
-  inver Ok. unfold Ok in IH. specialize (IH s').
-  elim_compare x x'; intros.
-  destruct (compare s s'); unfold Cmp, flip in IH; auto.
-  intro y; split; intros; inver InA; try (left; order).
-  right; rewrite <- IH; auto.
-  right; rewrite IH; auto.
-  eapply (@lt_add_eq x x'); eauto.
-  eapply (@lt_add_eq x' x); eauto.
-  eapply (@lt_add_lt x x'); eauto.
-  eapply (@lt_add_lt x' x); eauto.
-  Qed.
-*)
-
   Module L := MakeListOrdering X.
   Definition eq := L.eq.
   Definition eq_equiv := L.eq_equiv.
@@ -834,24 +790,20 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
    split; auto. transitivity s4; auto.
   Qed.
 
-  Lemma compare_spec_aux : forall s s', Cmp eq L.lt (compare s s') s s'.
+  Lemma compare_spec_aux : forall s s', Cmp eq L.lt s s' (compare s s').
   Proof.
   induction s as [|x s IH]; intros [|x' s']; simpl; intuition.
-  red; auto.
-  elim_compare x x'; intros; auto.
-  specialize (IH s').
-  destruct (compare s s'); unfold Cmp, flip, eq in IH; auto.
-  apply L.eq_cons; auto.
+  elim_compare x x'; auto.
   Qed.
 
   Lemma compare_spec : forall s s', Ok s -> Ok s' ->
-   Cmp eq lt (compare s s') s s'.
+   Cmp eq lt s s' (compare s s').
   Proof.
   intros s s' Hs Hs'.
   generalize (compare_spec_aux s s').
-  destruct (compare s s'); unfold Cmp, flip in *; auto.
-  exists s, s'; repeat split; auto using @ok.
-  exists s', s; repeat split; auto using @ok.
+  destruct (compare s s'); inversion_clear 1; auto.
+  apply Cmp_lt. exists s, s'; repeat split; auto using @ok.
+  apply Cmp_gt. exists s', s; repeat split; auto using @ok.
   Qed.
 
 End MakeRaw.

@@ -209,11 +209,10 @@ Module Backport_Sets
   Qed.
   Definition compare : forall s s', Compare lt eq s s'.
   Proof.
-   intros s s'. generalize (M.compare_spec s s').
-   destruct (M.compare s s'); simpl; intros.
-   constructor 2; auto.
-   constructor 1; auto.
-   constructor 3; auto.
+   intros s s'.
+   assert (H := M.compare_spec s s').
+   destruct (M.compare s s'); [ apply EQ | apply LT | apply GT ];
+    inversion H; auto.
   Defined.
 
 End Backport_Sets.
@@ -407,7 +406,7 @@ Module Update_Sets
     | GT _ => Gt
    end.
 
-  Lemma compare_spec : forall s s', Cmp eq lt (compare s s') s s'.
+  Lemma compare_spec : forall s s', Cmp eq lt s s' (compare s s').
   Proof. intros; unfold compare; destruct M.compare; auto. Qed.
 
 End Update_Sets.

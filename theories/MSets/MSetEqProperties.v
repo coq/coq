@@ -858,8 +858,7 @@ intros.
 rewrite <- (fold_equal _ _ _ _ fc ft 0 _ _ H).
 rewrite <- (fold_equal _ _ _ _ gc gt 0 _ _ H).
 rewrite <- (fold_equal _ _ _ _ fgc fgt 0 _ _ H); auto.
-intros; do 3 (rewrite (fold_add _ _ _);auto).
-rewrite H0;simpl;omega.
+intros; do 3 (rewrite fold_add; auto with *).
 do 3 rewrite fold_empty;auto.
 Qed.
 

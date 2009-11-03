@@ -52,4 +52,4 @@ Qed.
 
 Require Export Wf_nat.
 
-Require Export Min.
+Require Export Min Max.

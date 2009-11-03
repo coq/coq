@@ -751,6 +751,13 @@ Proof.
   destruct (Pcompare_not_Eq p q) as (_,H'); elim H'; auto.
 Qed.
 
+Lemma Pcompare_eq_iff : forall p q:positive, (p ?= q) Eq = Eq <-> p = q.
+Proof.
+  split.
+  apply Pcompare_Eq_eq.
+  intros; subst; apply Pcompare_refl.
+Qed.
+
 Lemma Pcompare_Gt_Lt :
   forall p q:positive, (p ?= q) Gt = Lt -> (p ?= q) Eq = Lt.
 Proof.

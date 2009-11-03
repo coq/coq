@@ -17,7 +17,7 @@
     [Equal s s'] instead of [equal s s'=true], etc. *)
 
 Require Export MSetInterface.
-Require Import DecidableTypeEx MSetFacts MSetDecide.
+Require Import DecidableTypeEx OrderedType2Lists MSetFacts MSetDecide.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -762,7 +762,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   rewrite (cardinal_2 (s:=remove x s') (s':=s') (x:=x)); eauto with set.
   Qed.
 
-  Add Morphism cardinal : cardinal_m.
+  Instance cardinal_m : Proper (Equal==>Logic.eq) cardinal.
   Proof.
   exact Equal_cardinal.
   Qed.
@@ -908,7 +908,8 @@ Module Properties := WProperties.
     invalid for Weak Sets. *)
 
 Module OrdProperties (M:Sets).
-  Module ME:=OrderedTypeFacts(M.E).
+  Module Import ME:=OrderedTypeFacts(M.E).
+  Module Import ML:=OrderedTypeLists(M.E).
   Module Import P := Properties M.
   Import FM.
   Import M.E.
@@ -934,13 +935,13 @@ Module OrdProperties (M:Sets).
 
   Lemma gtb_1 : forall x y, gtb x y = true <-> E.lt y x.
   Proof.
-   intros; rewrite <- ME.compare_gt_iff. unfold gtb.
+   intros; rewrite <- compare_gt_iff. unfold gtb.
    destruct E.compare; intuition; try discriminate.
   Qed.
 
   Lemma leb_1 : forall x y, leb x y = true <-> ~E.lt y x.
   Proof.
-   intros; rewrite <- ME.compare_gt_iff. unfold leb, gtb.
+   intros; rewrite <- compare_gt_iff. unfold leb, gtb.
    destruct E.compare; intuition; try discriminate.
   Qed.
 
@@ -963,9 +964,9 @@ Module OrdProperties (M:Sets).
   intros.
   rewrite gtb_1 in H.
   assert (~E.lt y x).
-   unfold gtb in *; ME.elim_compare x y; intuition;
-   try discriminate; ME.order.
-  ME.order.
+   unfold gtb in *; elim_compare x y; intuition;
+   try discriminate; order.
+  order.
   Qed.
 
   Lemma elements_Add : forall s s' x, ~In x s -> Add x s s' ->
@@ -977,29 +978,29 @@ Module OrdProperties (M:Sets).
   apply (@filter_sort _ E.eq); auto with *; eauto with *.
   constructor; auto.
   apply (@filter_sort _ E.eq); auto with *; eauto with *.
-  rewrite ME.Inf_alt by (apply (@filter_sort _ E.eq); eauto with *).
+  rewrite Inf_alt by (apply (@filter_sort _ E.eq); eauto with *).
   intros.
   rewrite filter_InA in H1; auto with *; destruct H1.
   rewrite leb_1 in H2.
   rewrite <- elements_iff in H1.
   assert (~E.eq x y).
    contradict H; rewrite H; auto.
-  ME.order.
+  order.
   intros.
   rewrite filter_InA in H1; auto with *; destruct H1.
   rewrite gtb_1 in H3.
   inversion_clear H2.
-  ME.order.
+  order.
   rewrite filter_InA in H4; auto with *; destruct H4.
   rewrite leb_1 in H4.
-  ME.order.
+  order.
   red; intros a.
   rewrite InA_app_iff, InA_cons, !filter_InA, <-!elements_iff,
    leb_1, gtb_1, (H0 a) by (auto with *).
   intuition.
-  ME.elim_compare a x; intuition.
+  elim_compare a x; intuition.
   right; right; split; auto.
-  ME.order.
+  order.
   Qed.
 
   Definition Above x s := forall y, In y s -> E.lt y x.
@@ -1056,7 +1057,7 @@ Module OrdProperties (M:Sets).
   inversion H0; auto.
   red; intros.
   rewrite remove_iff in H0; destruct H0.
-  generalize (@max_elt_spec2 s e y H H0); ME.order.
+  generalize (@max_elt_spec2 s e y H H0); order.
 
   assert (H0:=max_elt_spec3 H).
   rewrite cardinal_Empty in H0; rewrite H0 in Heqn; inversion Heqn.
@@ -1077,7 +1078,7 @@ Module OrdProperties (M:Sets).
   inversion H0; auto.
   red; intros.
   rewrite remove_iff in H0; destruct H0.
-  generalize (@min_elt_spec2 s e y H H0); ME.order.
+  generalize (@min_elt_spec2 s e y H H0); order.
 
   assert (H0:=min_elt_spec3 H).
   rewrite cardinal_Empty in H0; auto; rewrite H0 in Heqn; inversion Heqn.

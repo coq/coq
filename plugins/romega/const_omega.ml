@@ -56,17 +56,19 @@ let coq_modules =
     @ [module_refl_path]
     @ [module_refl_path@["ZOmega"]]
 
+
+let init_constant = Coqlib.gen_constant_in_modules "Omega" Coqlib.init_modules
 let constant = Coqlib.gen_constant_in_modules "Omega" coq_modules
 
 (* Logic *)
-let coq_eq = lazy(constant  "eq")
-let coq_refl_equal = lazy(constant  "refl_equal")
-let coq_and = lazy(constant "and")
-let coq_not = lazy(constant "not")
-let coq_or = lazy(constant "or")
-let coq_True = lazy(constant "True")
-let coq_False = lazy(constant "False")
-let coq_I = lazy(constant "I")
+let coq_eq = lazy(init_constant  "eq")
+let coq_refl_equal = lazy(init_constant  "eq_refl")
+let coq_and = lazy(init_constant "and")
+let coq_not = lazy(init_constant "not")
+let coq_or = lazy(init_constant "or")
+let coq_True = lazy(init_constant "True")
+let coq_False = lazy(init_constant "False")
+let coq_I = lazy(init_constant "I")
 
 (* ReflOmegaCore/ZOmega *)
 

@@ -128,7 +128,7 @@ let def_of_const t =
 
 let coq_constant s =
   Coqlib.gen_constant_in_modules "RecursiveDefinition"
-    (Coqlib.init_modules @ Coqlib.arith_modules) s;;
+    Coqlib.init_modules s;;
 
 let constant sl s =
   constr_of_global
@@ -142,7 +142,7 @@ let find_reference sl s =
 	       (id_of_string s)));;
 
 let eq = lazy(coq_constant "eq")
-let refl_equal = lazy(coq_constant "refl_equal")
+let refl_equal = lazy(coq_constant "eq_refl")
 
 (*****************************************************************)
 (* Copy of the standart save mechanism but without the much too  *)

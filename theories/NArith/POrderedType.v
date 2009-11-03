@@ -1,0 +1,73 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+Require Import BinPos
+ DecidableType2 OrderedType2 OrderedType2Facts.
+
+Local Open Scope positive_scope.
+
+(** * DecidableType structure for [positive] numbers *)
+
+Module Positive_as_MiniDT <: MiniDecidableType.
+ Definition t := positive.
+ Definition eq_dec := positive_eq_dec.
+End Positive_as_MiniDT.
+
+Module Positive_as_DT <: UsualDecidableType := Make_UDT Positive_as_MiniDT.
+
+(** Note that [Positive_as_DT] can also be seen as a [DecidableType]
+    and a [DecidableTypeOrig]. *)
+
+
+
+(** * OrderedType structure for [positive] numbers *)
+
+Module Positive_as_OT <: OrderedTypeFull.
+ Include Positive_as_DT.
+ Definition lt := Plt.
+ Definition le := Ple.
+ Definition compare p q := Pcompare p q Eq.
+
+ Instance lt_strorder : StrictOrder Plt.
+ Proof. split; [ exact Plt_irrefl | exact Plt_trans ]. Qed.
+
+ Instance lt_compat : Proper (Logic.eq==>Logic.eq==>iff) Plt.
+ Proof. repeat red; intros; subst; auto. Qed.
+
+ Lemma le_lteq : forall x y, x <= y <-> x < y \/ x=y.
+ Proof.
+ unfold Ple, Plt. intros.
+ rewrite <- Pcompare_eq_iff.
+ destruct (Pcompare x y Eq); intuition; discriminate.
+ Qed.
+
+ Lemma compare_spec : forall x y, Cmp eq lt x y (compare x y).
+ Proof.
+ intros; unfold compare.
+ destruct (Pcompare x y Eq) as [ ]_eqn; constructor.
+ apply Pcompare_Eq_eq; auto.
+ auto.
+ apply ZC1; auto.
+ Qed.
+
+End Positive_as_OT.
+
+(* Note that [Positive_as_OT] can also be seen as a [UsualOrderedType]
+   and a [OrderedType] (and also as a [DecidableType]). *)
+
+
+
+(** * An [order] tactic for positive numbers *)
+
+Module PositiveOrder := OTF_to_OrderTac Positive_as_OT.
+Ltac p_order :=
+ change (@eq positive) with PositiveOrder.OrderElts.eq in *;
+ PositiveOrder.order.
+
+(** Note that [p_order] is domain-agnostic: it will not prove
+    [1<=2] or [x<=x+x], but rather things like [x<=y -> y<=x -> x=y]. *)

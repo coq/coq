@@ -570,7 +570,7 @@ Fixpoint isok s :=
 (** * Correctness proofs *)
 
 (* Module Proofs. *)
- Module MX := OrderedTypeFacts X.
+ Module Import MX := OrderedTypeFacts X.
  Hint Resolve MX.lt_trans.
 
 (** * Automation and dedicated tactics *)
@@ -631,7 +631,7 @@ Lemma ltb_tree_iff : forall x s, lt_tree x s <-> ltb_tree x s = true.
 Proof.
  induction s as [|l IHl y r IHr h]; simpl.
  unfold lt_tree; intuition_in.
- MX.elim_compare x y; intros.
+ elim_compare x y.
  split; intros; try discriminate. assert (X.lt y x) by auto. order.
  split; intros; try discriminate. assert (X.lt y x) by auto. order.
  rewrite !andb_true_iff, <-IHl, <-IHr.
@@ -642,7 +642,7 @@ Lemma gtb_tree_iff : forall x s, gt_tree x s <-> gtb_tree x s = true.
 Proof.
  induction s as [|l IHl y r IHr h]; simpl.
  unfold gt_tree; intuition_in.
- MX.elim_compare x y; intros.
+ elim_compare x y.
  split; intros; try discriminate. assert (X.lt x y) by auto. order.
  rewrite !andb_true_iff, <-IHl, <-IHr.
   unfold gt_tree; intuition_in; order.
@@ -753,7 +753,7 @@ Functional Scheme union_ind := Induction for union Sort Prop.
 
 Ltac induct s x :=
  induction s as [|l IHl x' r IHr h]; simpl; intros;
- [|MX.elim_compare x x'; intros; inv].
+ [|elim_compare x x'; intros; inv].
 
 
 (** * Notations and helper lemma about pairs and triples *)
@@ -794,7 +794,7 @@ Qed.
 Lemma mem_spec : forall s x `{Ok s}, mem x s = true <-> InT x s.
 Proof.
  split.
- induct s x; auto; discriminate.
+ induct s x; auto; try discriminate.
  induct s x; intuition_in; order.
 Qed.
 
@@ -1098,7 +1098,7 @@ Proof.
  assert (~X.lt x' x).
   apply min_elt_spec2 with s; auto.
   rewrite H; auto using min_elt_spec1.
- MX.elim_compare x x'; intuition.
+ elim_compare x x'; intuition.
 Qed.
 
 
@@ -1274,7 +1274,7 @@ Proof.
  intuition_in.
  factornode _x0 _x1 _x2 _x3 as s2; destruct_split; inv.
  rewrite join_spec, IHt0, IHt1, split_spec1, split_spec2; auto with *.
- MX.elim_compare y x1; intuition_in.
+ elim_compare y x1; intuition_in.
 Qed.
 
 Instance union_ok s1 s2 `(Ok s1, Ok s2) : Ok (union s1 s2).
@@ -1316,7 +1316,8 @@ Proof.
  apply Hl; auto.
  constructor.
  apply Hr; auto.
- apply MX.In_Inf; intros.
+ eapply InA_InfA; eauto with *.
+ intros.
  destruct (elements_spec1' r acc y0); intuition.
  intros.
  inversion_clear H.
@@ -1333,7 +1334,7 @@ Hint Resolve elements_spec2.
 
 Lemma elements_spec2w : forall s `(Ok s), NoDupA X.eq (elements s).
 Proof.
- auto.
+ intros. eapply SortA_NoDupA; eauto with *.
 Qed.
 
 Lemma elements_aux_cardinal :
@@ -1586,7 +1587,7 @@ Proof.
  specialize (IHl2 H).
  specialize (IHr2 H).
  inv.
- MX.elim_compare x1 x2; intros.
+ elim_compare x1 x2.
 
  rewrite H1 by auto; clear H1 IHl2 IHr2.
  unfold Subset. intuition_in.
@@ -1617,7 +1618,7 @@ Proof.
  specialize (IHl2 H).
  specialize (IHr2 H).
  inv.
- MX.elim_compare x1 x2; intros.
+ elim_compare x1 x2.
 
  rewrite H1 by auto; clear H1 IHl2 IHr2.
  unfold Subset. intuition_in.
@@ -1645,7 +1646,7 @@ Proof.
  unfold Subset; intuition_in; try discriminate.
  assert (H': InT x1 Leaf) by auto; inversion H'.
  inv.
- MX.elim_compare x1 x2; intros.
+ elim_compare x1 x2.
 
  rewrite <-andb_lazy_alt, andb_true_iff, IHl1, IHr1 by auto.
  clear IHl1 IHr1.
@@ -1751,12 +1752,14 @@ Hint Unfold flip.
 
 (** Correctness of this comparison *)
 
-Definition LCmp := Cmp L.eq L.lt.
+Definition LCmp c x y := Cmp L.eq L.lt x y c.
+
+Hint Unfold LCmp.
 
 Lemma compare_end_Cmp :
  forall e2, LCmp (compare_end e2) nil (flatten_e e2).
 Proof.
- destruct e2; simpl; auto. reflexivity.
+ destruct e2; simpl; constructor; auto. reflexivity.
 Qed.
 
 Lemma compare_more_Cmp : forall x1 cont x2 r2 e2 l,
@@ -1764,8 +1767,7 @@ Lemma compare_more_Cmp : forall x1 cont x2 r2 e2 l,
    LCmp (compare_more x1 cont (More x2 r2 e2)) (x1::l)
       (flatten_e (More x2 r2 e2)).
 Proof.
- simpl; intros; MX.elim_compare x1 x2; simpl; auto.
- intros; apply L.cons_Cmp; auto.
+ simpl; intros; elim_compare x1 x2; simpl; auto.
 Qed.
 
 Lemma compare_cont_Cmp : forall s1 cont e2 l,
@@ -1793,11 +1795,10 @@ Proof.
 Qed.
 
 Lemma compare_spec : forall s1 s2 `{Ok s1, Ok s2},
- Cmp eq lt (compare s1 s2) s1 s2.
+ Cmp eq lt s1 s2 (compare s1 s2).
 Proof.
  intros.
- generalize (compare_Cmp s1 s2).
- destruct (compare s1 s2); unfold LCmp, Cmp, flip; auto.
+ destruct (compare_Cmp s1 s2); constructor.
  rewrite eq_Leq; auto.
  intros; exists s1, s2; repeat split; auto.
  intros; exists s2, s1; repeat split; auto.
@@ -1810,10 +1811,10 @@ Lemma equal_spec : forall s1 s2 `{Ok s1, Ok s2},
  equal s1 s2 = true <-> eq s1 s2.
 Proof.
 unfold equal; intros s1 s2 B1 B2.
-generalize (@compare_spec s1 s2 B1 B2).
-destruct (compare s1 s2); simpl; split; intros E; auto; try discriminate.
-rewrite E in H. elim (StrictOrder_Irreflexive s2); auto.
-rewrite E in H. elim (StrictOrder_Irreflexive s2); auto.
+destruct (@compare_spec s1 s2 B1 B2) as [H|H|H];
+ split; intros H'; auto; try discriminate.
+rewrite H' in H. elim (StrictOrder_Irreflexive s2); auto.
+rewrite H' in H. elim (StrictOrder_Irreflexive s2); auto.
 Qed.
 
 End MakeRaw.

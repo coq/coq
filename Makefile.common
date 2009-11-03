@@ -316,8 +316,9 @@ STRUCTURESVO:=$(addprefix theories/Structures/, \
  OrderTac.vo \
  DecidableType.vo         DecidableTypeEx.vo \
  OrderedType.vo           OrderedTypeEx.vo      OrderedTypeAlt.vo \
- DecidableType2.vo         DecidableType2Ex.vo \
- OrderedType2.vo           OrderedType2Ex.vo      OrderedType2Alt.vo )
+ DecidableType2.vo        DecidableType2Ex.vo   DecidableType2Facts.vo \
+ OrderedType2.vo          OrderedType2Ex.vo     OrderedType2Alt.vo \
+ OrderedType2Facts.vo     OrderedType2Lists.vo  GenericMinMax.vo )
 
 ARITHVO:=$(addprefix theories/Arith/, \
  Arith.vo	Gt.vo          	Between.vo	Le.vo         	\
@@ -325,7 +326,7 @@ ARITHVO:=$(addprefix theories/Arith/, \
  Div2.vo	Minus.vo       	Mult.vo		Even.vo       	\
  EqNat.vo	Peano_dec.vo   	Euclid.vo	Plus.vo		\
  Wf_nat.vo  	Max.vo		Bool_nat.vo	Factorial.vo	\
- Arith_base.vo )
+ Arith_base.vo  MinMax.vo       NatOrderedType.vo )
 
 SORTINGVO:=$(addprefix theories/Sorting/, \
  Heap.vo 	Permutation.vo	Sorting.vo 	PermutSetoid.vo \
@@ -337,7 +338,8 @@ BOOLVO:=$(addprefix theories/Bool/, \
 
 NARITHVO:=$(addprefix theories/NArith/, \
  BinPos.vo	Pnat.vo      	BinNat.vo   	NArith.vo 	\
- Nnat.vo	Ndigits.vo   	Ndec.vo	 	Ndist.vo 	)
+ Nnat.vo	Ndigits.vo   	Ndec.vo	 	Ndist.vo 	\
+ POrderedType.vo Pminmax.vo     NOrderedType.vo Nminmax.vo )
 
 ZARITHVO:=$(addprefix theories/ZArith/, \
  BinInt.vo      Wf_Z.vo 	ZArith.vo      	ZArith_dec.vo 	\
@@ -347,7 +349,7 @@ ZARITHVO:=$(addprefix theories/ZArith/, \
  Zpower.vo 	Zcomplements.vo Zdiv.vo		Zsqrt.vo 	\
  Zwf.vo		ZArith_base.vo 	Zbool.vo	Zbinary.vo 	\
  Znumtheory.vo  Int.vo 		Zpow_def.vo	Zpow_facts.vo 	\
- ZOdiv_def.vo   ZOdiv.vo 	Zgcd_alt.vo )
+ ZOdiv_def.vo   ZOdiv.vo 	Zgcd_alt.vo     ZOrderedType.vo )
 
 QARITHVO:=$(addprefix theories/QArith/, \
  QArith_base.vo Qreduction.vo 	Qring.vo	Qreals.vo 	\
@@ -517,7 +519,8 @@ UNICODEVO:=$(addprefix theories/Unicode/, \
 CLASSESVO:=$(addprefix theories/Classes/, \
  Init.vo	RelationClasses.vo	Morphisms.vo	Morphisms_Prop.vo \
  Morphisms_Relations.vo	Functions.vo 	Equivalence.vo  SetoidTactics.vo  \
- SetoidClass.vo 	SetoidAxioms.vo EquivDec.vo 	SetoidDec.vo )
+ SetoidClass.vo 	SetoidAxioms.vo EquivDec.vo 	SetoidDec.vo \
+ RelationPairs.vo )
 
 PROGRAMVO:=$(addprefix theories/Program/, \
  Tactics.vo 	Equality.vo 	Subset.vo	Utils.vo 	\

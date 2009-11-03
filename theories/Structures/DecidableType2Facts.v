@@ -6,24 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
-
-Require Export SetoidList.
-Require DecidableType2. (* No Import here, this is on purpose. *)
-
-Set Implicit Arguments.
-Unset Strict Implicit.
+Require Import DecidableType2 SetoidList.
 
 
-(** * Types with Equalities, and nothing more (for subtyping purpose) *)
-
-Module Type EqualityType := DecidableType2.EqualityTypeOrig.
-
-(** * Types with decidable Equalities (but no ordering) *)
-
-Module Type DecidableType := DecidableType2.DecidableTypeOrig.
-
-(** * Additional notions about keys and datas used in FMap *)
+(** * Keys and datas used in FMap *)
 
 Module KeyDecidableType(D:DecidableType).
  Import D.
@@ -48,34 +34,24 @@ Module KeyDecidableType(D:DecidableType).
 
   (* eqk, eqke are equalities *)
 
-  Lemma eqk_refl : forall e, eqk e e.
-  Proof. auto. Qed.
-
-  Lemma eqke_refl : forall e, eqke e e.
-  Proof. auto. Qed.
-
-  Lemma eqk_sym : forall e e', eqk e e' -> eqk e' e.
-  Proof. auto. Qed.
-
-  Lemma eqke_sym : forall e e', eqke e e' -> eqke e' e.
-  Proof. unfold eqke; intuition. Qed.
-
-  Lemma eqk_trans : forall e e' e'', eqk e e' -> eqk e' e'' -> eqk e e''.
-  Proof. eauto. Qed.
-
-  Lemma eqke_trans : forall e e' e'', eqke e e' -> eqke e' e'' -> eqke e e''.
+  Instance eqk_equiv : Equivalence eqk.
   Proof.
-    unfold eqke; intuition; [ eauto | congruence ].
+   constructor; eauto.
   Qed.
 
-  Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl.
-  Hint Immediate eqk_sym eqke_sym.
+  Instance eqke_equiv : Equivalence eqke.
+  Proof.
+   constructor. auto.
+   red; unfold eqke; intuition.
+   red; unfold eqke; intuition; [ eauto | congruence ].
+  Qed.
 
-  Global Instance eqk_equiv : Equivalence eqk.
-  Proof. split; eauto. Qed.
-
-  Global Instance eqke_equiv : Equivalence eqke.
-  Proof. split; eauto. Qed.
+  Hint Resolve (@Equivalence_Reflexive _ _ eqk_equiv).
+  Hint Resolve (@Equivalence_Transitive _ _ eqk_equiv).
+  Hint Immediate (@Equivalence_Symmetric _ _ eqk_equiv).
+  Hint Resolve (@Equivalence_Reflexive _ _ eqke_equiv).
+  Hint Resolve (@Equivalence_Transitive _ _ eqke_equiv).
+  Hint Immediate (@Equivalence_Symmetric _ _ eqke_equiv).
 
   Lemma InA_eqke_eqk :
      forall x m, InA eqke x m -> InA eqk x m.
@@ -86,7 +62,7 @@ Module KeyDecidableType(D:DecidableType).
 
   Lemma InA_eqk : forall p q m, eqk p q -> InA eqk p m -> InA eqk q m.
   Proof.
-   intros; apply InA_eqA with p; auto with *.
+   intros. rewrite <- H; auto.
   Qed.
 
   Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).
@@ -107,14 +83,32 @@ Module KeyDecidableType(D:DecidableType).
   exists e; auto.
   Qed.
 
+  Global Instance MapsTo_compat :
+    Proper (eq==>Logic.eq==>Logic.eq==>iff) MapsTo.
+  Proof.
+  intros x x' Hxx' e e' Hee' l l' Hll'; subst.
+  unfold MapsTo.
+  assert (EQN : eqke (x,e') (x',e')) by (compute;auto).
+  rewrite EQN; intuition.
+  Qed.
+
   Lemma MapsTo_eq : forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.
   Proof.
-  intros; unfold MapsTo in *; apply InA_eqA with (x,e); eauto with *.
+  intros; rewrite <- H; auto.
+  Qed.
+
+  Global Instance In_compat : Proper (eq==>Logic.eq==>iff) In.
+  Proof.
+  intros x x' Hxx' l l' Hll'; subst l.
+  unfold In.
+  split; intros (e,He); exists e.
+  rewrite <- Hxx'; auto.
+  rewrite Hxx'; auto.
   Qed.
 
   Lemma In_eq : forall l x y, eq x y -> In x l -> In y l.
   Proof.
-  destruct 2 as (e,E); exists e; eapply MapsTo_eq; eauto.
+  intros; rewrite <- H; auto.
   Qed.
 
   Lemma In_inv : forall k k' e l, In k ((k',e) :: l) -> eq k k' \/ In k l.
@@ -138,17 +132,10 @@ Module KeyDecidableType(D:DecidableType).
 
  End Elt.
 
- Hint Unfold eqk eqke.
- Hint Extern 2 (eqke ?a ?b) => split.
- Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl.
- Hint Immediate eqk_sym eqke_sym.
- Hint Resolve InA_eqke_eqk.
- Hint Unfold MapsTo In.
  Hint Resolve In_inv_2 In_inv_3.
+ (* TODO: (re-)populate with more hints after failed attempt of Global Hint *)
 
 End KeyDecidableType.
-
-
 
 
 

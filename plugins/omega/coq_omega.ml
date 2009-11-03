@@ -162,12 +162,11 @@ let hide_constr,find_constr,clear_tables,dump_tables =
 open Coqlib
 
 let logic_dir = ["Coq";"Logic";"Decidable"]
-let init_arith_modules = init_modules @ arith_modules
 let coq_modules =
-  init_arith_modules @ [logic_dir] @ zarith_base_modules
+  init_modules @arith_modules @ [logic_dir] @ zarith_base_modules
     @ [["Coq"; "omega"; "OmegaLemmas"]]
 
-let init_arith_constant = gen_constant_in_modules "Omega" init_arith_modules
+let init_constant = gen_constant_in_modules "Omega" init_modules
 let constant = gen_constant_in_modules "Omega" coq_modules
 
 (* Zarith *)
@@ -268,17 +267,17 @@ let coq_Zge = lazy (constant "Zge")
 let coq_Zlt = lazy (constant "Zlt")
 
 (* Peano/Datatypes *)
-let coq_le = lazy (init_arith_constant "le")
-let coq_lt = lazy (init_arith_constant "lt")
-let coq_ge = lazy (init_arith_constant "ge")
-let coq_gt = lazy (init_arith_constant "gt")
-let coq_minus = lazy (init_arith_constant "minus")
-let coq_plus = lazy (init_arith_constant "plus")
-let coq_mult = lazy (init_arith_constant "mult")
-let coq_pred = lazy (init_arith_constant "pred")
-let coq_nat = lazy (init_arith_constant "nat")
-let coq_S = lazy (init_arith_constant "S")
-let coq_O = lazy (init_arith_constant "O")
+let coq_le = lazy (init_constant "le")
+let coq_lt = lazy (init_constant "lt")
+let coq_ge = lazy (init_constant "ge")
+let coq_gt = lazy (init_constant "gt")
+let coq_minus = lazy (init_constant "minus")
+let coq_plus = lazy (init_constant "plus")
+let coq_mult = lazy (init_constant "mult")
+let coq_pred = lazy (init_constant "pred")
+let coq_nat = lazy (init_constant "nat")
+let coq_S = lazy (init_constant "S")
+let coq_O = lazy (init_constant "O")
 
 (* Compare_dec/Peano_dec/Minus *)
 let coq_pred_of_minus = lazy (constant "pred_of_minus")

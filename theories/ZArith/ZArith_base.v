@@ -18,9 +18,9 @@ Require Export BinInt.
 Require Export Zcompare.
 Require Export Zorder.
 Require Export Zeven.
+Require Export Zminmax.
 Require Export Zmin.
 Require Export Zmax.
-Require Export Zminmax.
 Require Export Zabs.
 Require Export Znat.
 Require Export auxiliary.

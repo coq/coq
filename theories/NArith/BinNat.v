@@ -140,6 +140,14 @@ Definition Nmax (n n' : N) := match Ncompare n n' with
  | Gt => n
  end.
 
+(** Decidability of equality. *)
+
+Definition N_eq_dec : forall n m : N, { n = m } + { n <> m }.
+Proof.
+ decide equality.
+ apply positive_eq_dec.
+Defined.
+
 (** convenient induction principles *)
 
 Lemma N_ind_double :

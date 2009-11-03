@@ -29,7 +29,8 @@
     [RawSets] via the use of a subset type (see (W)Raw2Sets below).
 *)
 
-Require Export Bool OrderedType2 DecidableType2.
+Require Export Bool SetoidList RelationClasses Morphisms
+ RelationPairs DecidableType2 OrderedType2 OrderedType2Facts.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -226,7 +227,7 @@ Module Type SetsOn (E : OrderedType).
   Variable s s': t.
   Variable x y : elt.
 
-  Parameter compare_spec : Cmp eq lt (compare s s') s s'.
+  Parameter compare_spec : Cmp eq lt s s' (compare s s').
 
   (** Additional specification of [elements] *)
   Parameter elements_spec2 : sort E.lt (elements s).
@@ -569,7 +570,7 @@ Module Type RawSets (E : OrderedType).
   Variable x y : elt.
 
   (** Specification of [compare] *)
-  Parameter compare_spec : forall `{Ok s, Ok s'}, Cmp eq lt (compare s s') s s'.
+  Parameter compare_spec : forall `{Ok s, Ok s'}, Cmp eq lt s s' (compare s s').
 
   (** Additional specification of [elements] *)
   Parameter elements_spec2 : forall `{Ok s}, sort E.lt (elements s).
@@ -604,11 +605,6 @@ Module Raw2SetsOn (O:OrderedType)(M:RawSets O) <: SetsOn O.
 
   (** Specification of [lt] *)
   Instance lt_strorder : StrictOrder lt.
-  Proof.
-  unfold lt; split; repeat red.
-  intros s; eapply StrictOrder_Irreflexive; eauto.
-  intros s s' s''; eapply StrictOrder_Transitive; eauto.
-  Qed.
 
   Instance lt_compat : Proper (eq==>eq==>iff) lt.
   Proof.
@@ -623,10 +619,10 @@ Module Raw2SetsOn (O:OrderedType)(M:RawSets O) <: SetsOn O.
   Variable s s' s'' : t.
   Variable x y : elt.
 
-  Lemma compare_spec : Cmp eq lt (compare s s') s s'.
+  Lemma compare_spec : Cmp eq lt s s' (compare s s').
   Proof.
-   generalize (@M.compare_spec s s' _ _).
-   unfold compare; destruct M.compare; auto.
+   assert (H:=@M.compare_spec s s' _ _).
+   unfold compare; destruct M.compare; inversion_clear H; auto.
   Qed.
 
   (** Additional specification of [elements] *)
@@ -752,7 +748,7 @@ Module MakeSetOrdering (O:OrderedType)(Import M:IN O).
   left; split; auto.
   rewrite <- (EQ' x); auto.
   (* 2) Pre / Lex *)
-  elim_compare x x'; intros Hxx'.
+  elim_compare x x'.
   (* 2a) x=x' --> Pre *)
   destruct Lex' as (y & INy & LT & Be).
   exists y; split.
@@ -781,16 +777,17 @@ Module MakeSetOrdering (O:OrderedType)(Import M:IN O).
   rewrite <- (EQ' y); auto.
   intros z Hz LTz; apply Be; auto. rewrite (EQ' z); auto; order.
   (* 4) Lex / Lex *)
-  elim_compare x x'; intros Hxx'.
+  elim_compare x x'.
   (* 4a) x=x' --> impossible *)
   destruct Lex as (y & INy & LT & Be).
-  rewrite Hxx' in LT; specialize (Be x' IN' LT); order.
+  setoid_replace x with x' in LT; auto.
+  specialize (Be x' IN' LT); order.
   (* 4b) x<x' --> Lex *)
   exists x; split.
   intros z Hz. rewrite <- (EQ' z) by order; auto.
   right; split; auto.
   destruct Lex as (y & INy & LT & Be).
-  elim_compare y x'; intros Hyx'.
+  elim_compare y x'.
    (* 4ba *)
    destruct Lex' as (y' & Iny' & LT' & Be').
    exists y'; repeat split; auto. order.
@@ -802,7 +799,7 @@ Module MakeSetOrdering (O:OrderedType)(Import M:IN O).
    rewrite <- (EQ' y); auto.
    intros z Hz LTz. apply Be; auto. rewrite (EQ' z); auto; order.
    (* 4bc*)
-   specialize (Be x' IN' Hyx'); order.
+   assert (O.lt x' x) by auto. order.
   (* 4c) x>x' --> Lex *)
   exists x'; split.
   intros z Hz. rewrite (EQ z) by order; auto.
@@ -879,8 +876,8 @@ End MakeSetOrdering.
 Module MakeListOrdering (O:OrderedType).
  Module MO:=OrderedTypeFacts O.
 
- Notation t := (list O.t).
- Notation In := (InA O.eq).
+ Local Notation t := (list O.t).
+ Local Notation In := (InA O.eq).
 
  Definition eq s s' := forall x, In x s <-> In x s'.
 
@@ -944,9 +941,9 @@ Module MakeListOrdering (O:OrderedType).
  Hint Resolve eq_cons.
 
  Lemma cons_Cmp : forall c x1 x2 l1 l2, O.eq x1 x2 ->
-  Cmp eq lt c l1 l2 -> Cmp eq lt c (x1::l1) (x2::l2).
+  Cmp eq lt l1 l2 c -> Cmp eq lt (x1::l1) (x2::l2) c.
  Proof.
-  destruct c; simpl; unfold flip; auto.
+  destruct c; simpl; inversion_clear 2; auto.
  Qed.
  Hint Resolve cons_Cmp.
 

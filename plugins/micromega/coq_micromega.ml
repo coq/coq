@@ -136,22 +136,23 @@ struct
      ["Coq";"Reals" ; "Rpow_def"];
      ["LRing_normalise"]]
 
+ let init_constant = gen_constant_in_modules "ZMicromega" init_modules
  let constant = gen_constant_in_modules "ZMicromega" coq_modules
 
- let coq_and = lazy (constant "and")
- let coq_or = lazy (constant "or")
- let coq_not = lazy (constant "not")
- let coq_iff = lazy (constant "iff")
- let coq_True = lazy (constant "True")
- let coq_False = lazy (constant "False")
+ let coq_and = lazy (init_constant "and")
+ let coq_or = lazy (init_constant "or")
+ let coq_not = lazy (init_constant "not")
+ let coq_iff = lazy (init_constant "iff")
+ let coq_True = lazy (init_constant "True")
+ let coq_False = lazy (init_constant "False")
 
  let coq_cons = lazy (constant "cons")
  let coq_nil = lazy (constant "nil")
  let coq_list = lazy (constant "list")
 
- let coq_O = lazy (constant "O")
- let coq_S = lazy (constant "S")
- let coq_nat = lazy (constant "nat")
+ let coq_O = lazy (init_constant "O")
+ let coq_S = lazy (init_constant "S")
+ let coq_nat = lazy (init_constant "nat")
 
  let coq_NO = lazy
   (gen_constant_in_modules "N" [ ["Coq";"NArith";"BinNat" ]]  "N0")
@@ -205,7 +206,7 @@ struct
  let coq_Zge = lazy (constant "Zge")
  let coq_Zle = lazy (constant "Zle")
  let coq_Zlt = lazy (constant "Zlt")
- let coq_Eq  = lazy (constant "eq")
+ let coq_Eq  = lazy (init_constant "eq")
 
  let coq_Zplus = lazy (constant "Zplus")
  let coq_Zminus = lazy (constant "Zminus")
