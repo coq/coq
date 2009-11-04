@@ -30,6 +30,11 @@ type struc_typ = {
 val declare_structure :
   inductive * constructor * (name * bool) list * constant option list -> unit
 
+(* [lookup_structure isp] returns the struc_typ associated to the
+   inductive path [isp] if it corresponds to a structure, otherwise
+   it fails with [Not_found] *)
+val lookup_structure : inductive -> struc_typ
+
 (* [lookup_projections isp] returns the projections associated to the
    inductive path [isp] if it corresponds to a structure, otherwise
    it fails with [Not_found] *)

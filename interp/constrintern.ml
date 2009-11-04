@@ -47,6 +47,38 @@ let for_grammar f x =
     a
 
 (**********************************************************************)
+(* Locating reference, possibly via an abbreviation *)
+
+let locate_reference qid =
+  match Nametab.locate_extended qid with
+    | TrueGlobal ref -> ref
+    | SynDef kn ->
+	match Syntax_def.search_syntactic_definition dummy_loc kn with
+	  | [],ARef ref -> ref
+	  | _ -> raise Not_found
+
+let is_global id =
+  try
+    let _ = locate_reference (qualid_of_ident id) in true
+  with Not_found ->
+    false
+
+let global_reference_of_reference ref =
+  locate_reference (snd (qualid_of_reference ref))
+
+let global_reference id =
+  constr_of_global (locate_reference (qualid_of_ident id))
+
+let construct_reference ctx id =
+  try
+    Term.mkVar (let _ = Sign.lookup_named id ctx in id)
+  with Not_found ->
+    global_reference id
+
+let global_reference_in_absolute_module dir id =
+  constr_of_global (Nametab.global_of_path (Libnames.make_path dir id))
+
+(**********************************************************************)
 (* Internalisation errors                                             *)
 
 type internalisation_error =
@@ -607,12 +639,105 @@ let mustbe_constructor loc ref f aliases patl scopes =
   with (Environ.NotEvaluableConst _ | Not_found) ->
     raise (InternalisationError (loc,NotAConstructor ref))
 
+let sort_fields mode loc l completer =
+(*mode=false if pattern and true if constructor*)
+  match l with
+    | [] -> None
+    | (refer, value)::rem ->
+	let (nparams,          (* the number of parameters *)
+	     base_constructor, (* the reference constructor of the record *)
+	     (max,             (* number of params *)
+	      (first_index,    (* index of the first field of the record *)
+	       list_proj)))    (* list of projections *)
+	  =
+	  let record =
+	    try Recordops.find_projection
+	      (global_reference_of_reference refer)
+	    with Not_found ->
+	      user_err_loc (loc, "intern", str"Not a projection")
+	    in
+	  (* elimination of the first field from the projections *)
+	  let rec build_patt l m i acc =
+	    match l with
+	      | [] -> (i, acc)
+	      | (Some name) :: b->
+		 (match m with
+		    | [] -> anomaly "Number of projections mismatch"
+		    | (_, regular)::tm ->
+		       let boolean = not regular in
+		       if ConstRef name = global_reference_of_reference refer
+		       then
+			 if boolean && mode then
+			   user_err_loc (loc, "", str"No local fields allowed in a record construction.")
+			 else build_patt b tm (i + 1) (i, snd acc) (* we found it *)
+		       else
+			  build_patt b tm (if boolean&&mode then i else i + 1)
+			    (if boolean && mode then acc
+			     else fst acc, (i, ConstRef name) :: snd acc))
+	      | None :: b-> (* we don't want anonymous fields *)
+		 if mode then
+		   user_err_loc (loc, "", str "This record contains anonymous fields.")
+		 else build_patt b m (i+1) acc
+		   (* anonymous arguments don't appear in m *)
+	    in
+	  let ind = record.Recordops.s_CONST in
+	  try (* insertion of Constextern.reference_global *)
+	    (record.Recordops.s_EXPECTEDPARAM,
+	     Qualid (loc, shortest_qualid_of_global Idset.empty (ConstructRef ind)),
+	     build_patt record.Recordops.s_PROJ record.Recordops.s_PROJKIND 1 (0,[]))
+	  with Not_found -> anomaly "Environment corruption for records."
+	  in
+	(* now we want to have all fields of the pattern indexed by their place in
+	   the constructor *)
+	let rec sf patts accpatt =
+	  match patts with
+	    | [] -> accpatt
+	    | p::q->
+	       let refer, patt = p in
+	       let rec add_patt l acc =
+		 match l with
+		   | [] ->
+		       user_err_loc
+			 (loc, "",
+			  str "This record contains fields of different records.")
+		   | (i, a) :: b->
+		       if global_reference_of_reference refer = a
+		       then (i,List.rev_append acc l)
+		       else add_patt b ((i,a)::acc)
+	         in
+	       let (index, projs) = add_patt (snd accpatt) [] in
+		 sf q ((index, patt)::fst accpatt, projs) in
+	let (unsorted_indexed_pattern, remainings) =
+	  sf rem ([first_index, value], list_proj) in
+	(* we sort them *)
+	let sorted_indexed_pattern =
+	  List.sort (fun (i, _) (j, _) -> compare i j) unsorted_indexed_pattern in
+	(* a function to complete with wildcards *)
+	let rec complete_list n l =
+	  if n <= 1 then l else complete_list (n-1) (completer n l) in
+	(* a function to remove indice *)
+	let rec clean_list l i acc =
+	  match l with
+	    | [] -> complete_list (max - i) acc
+	    | (k, p)::q-> clean_list q k (p::(complete_list (k - i) acc))
+	  in
+	Some (nparams, base_constructor,
+	  List.rev (clean_list sorted_indexed_pattern 0 []))
+
 let rec intern_cases_pattern genv scopes (ids,asubst as aliases) tmp_scope pat=
   let intern_pat = intern_cases_pattern genv in
   match pat with
   | CPatAlias (loc, p, id) ->
       let aliases' = merge_aliases aliases id in
       intern_pat scopes aliases' tmp_scope p
+    | CPatRecord (loc, l) ->
+	let sorted_fields = sort_fields false loc l (fun _ l -> (CPatAtom (loc, None))::l) in
+	let self_patt =
+	  match sorted_fields with
+	    | None -> CPatAtom (loc, None)
+	    | Some (_, head, pl) -> CPatCstr(loc, head, pl)
+	  in
+	intern_pat scopes aliases tmp_scope self_patt
   | CPatCstr (loc, head, pl) ->
       let c,idslpl1,pl2 = mustbe_constructor loc head intern_pat aliases pl scopes in
       check_constructor_length genv loc c idslpl1 pl2;
@@ -973,39 +1098,19 @@ let internalise sigma globalenv env allow_patvar lvar c =
           (* Now compact "(f args') args" *)
 	  | RApp (loc', f', args') -> RApp (join_loc loc' loc, f',args'@args)
 	  | _ -> RApp (loc, c, args))
-    | CRecord (loc, w, fs) ->
-	let id, _ = List.hd fs in
-	let record =
-	  let (id,_,_,_),_ = intern_applied_reference intern env lvar [] (Ident id) in
-	    match id with
-	    | RRef (loc, ref) ->
-		(try Recordops.find_projection ref
-		  with Not_found -> user_err_loc (loc, "intern", str"Not a projection"))
-	    | c -> user_err_loc (loc_of_rawconstr id, "intern", str"Not a projection")
-	in
-	let args =
-	  let pars = list_make record.Recordops.s_EXPECTEDPARAM (CHole (loc, None)) in
-	  let fields, rest =
-	    List.fold_left (fun (args, rest as acc) (na, b) ->
-	      if b then
-		try
-		  let id = out_name na in
-		  let _, t = List.assoc id rest in
-		    t :: args, List.remove_assoc id rest
-		with _ -> CHole (loc, Some (Evd.QuestionMark (Evd.Define true))) :: args, rest
-	      else acc) ([], List.map (fun ((loc, id), t) -> id, (loc, t)) fs) record.Recordops.s_PROJKIND
+    | CRecord (loc, _, fs) ->
+	let cargs =
+	  sort_fields true loc fs
+	    (fun k l -> CHole (loc, Some (Evd.QuestionMark (Evd.Define true))) :: l)
 	  in
-	    if rest <> [] then
-	      let id, (loc, t) = List.hd rest in
-		user_err_loc (loc,"intern",(str "Unknown field name " ++ pr_id id))
-	    else pars @ List.rev fields
-	in
-	let constrname =
-	  Qualid (loc, shortest_qualid_of_global Idset.empty (ConstructRef record.Recordops.s_CONST))
-	in
-	let app = CAppExpl (loc, (None, constrname), args) in
+	begin
+	  match cargs with
+	    | None -> user_err_loc (loc, "intern", str"No constructor inference.")
+	    | Some (n, constrname, args) ->
+		let pars = list_make n (CHole (loc, None)) in
+		let app = CAppExpl (loc, (None, constrname), List.rev_append pars args) in
 	  intern env app
-
+	end
     | CCases (loc, sty, rtnpo, tms, eqns) ->
         let tms,env' = List.fold_right
           (fun citm (inds,env) ->
@@ -1372,33 +1477,3 @@ let interp_context_evars ?(fail_anonymous=false) evdref env params =
   let bl = intern_context fail_anonymous !evdref env params in
     interp_context_gen (fun env t -> Default.understand_tcc_evars evdref env IsType t)
       (Default.understand_judgment_tcc evdref) env bl
-
-(**********************************************************************)
-(* Locating reference, possibly via an abbreviation *)
-
-let locate_reference qid =
-  match Nametab.locate_extended qid with
-    | TrueGlobal ref -> ref
-    | SynDef kn ->
-	match Syntax_def.search_syntactic_definition dummy_loc kn with
-	  | [],ARef ref -> ref
-	  | _ -> raise Not_found
-
-let is_global id =
-  try
-    let _ = locate_reference (qualid_of_ident id) in true
-  with Not_found ->
-    false
-
-let global_reference id =
-  constr_of_global (locate_reference (qualid_of_ident id))
-
-let construct_reference ctx id =
-  try
-    Term.mkVar (let _ = Sign.lookup_named id ctx in id)
-  with Not_found ->
-    global_reference id
-
-let global_reference_in_absolute_module dir id =
-  constr_of_global (Nametab.global_of_path (Libnames.make_path dir id))
-

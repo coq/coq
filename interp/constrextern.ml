@@ -400,8 +400,25 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
   | PatVar (loc,Anonymous) -> CPatAtom (loc, None)
   | PatCstr(loc,cstrsp,args,na) ->
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
-      let p = CPatCstr
-        (loc,extern_reference loc vars (ConstructRef cstrsp),args) in
+      let p =
+	try
+	  let projs = Recordops.lookup_projections (fst cstrsp) in
+	  let rec ip projs args acc =
+	    match projs with
+	      | [] -> acc
+	      | None :: q -> ip q args acc
+	      | Some c :: q ->
+		  match args with
+		    | [] -> raise No_match
+		    | CPatAtom(_, None) :: tail -> ip q tail acc
+			(* we don't want to have 'x = _' in our patterns *)
+		    | head :: tail -> ip q tail
+		        ((extern_reference loc Idset.empty (ConstRef c), head) :: acc)
+	    in
+	  CPatRecord(loc, List.rev (ip projs args []))
+	with
+	  Not_found | No_match ->
+	    CPatCstr (loc, extern_reference loc vars (ConstructRef cstrsp), args) in
       insert_pat_alias loc p na
 
 and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
@@ -619,9 +636,38 @@ let rec extern inctx scopes vars r =
 	     let subscopes = find_arguments_scope ref in
 	     let args =
 	       extern_args (extern true) (snd scopes) vars args subscopes in
-	     extern_app loc inctx (implicits_of_global ref)
-               (Some ref,extern_reference rloc vars ref)
-	       args
+	     begin
+	       try
+		 let cstrsp = match ref with ConstructRef c -> c | _ -> raise Not_found in
+		 let struc = Recordops.lookup_structure (fst cstrsp) in
+		 let projs = struc.Recordops.s_PROJ in
+		 let locals = struc.Recordops.s_PROJKIND in
+		 let rec cut args n =
+		   if n = 0 then args else cut (List.tl args) (n - 1) in
+		 let args = cut args struc.Recordops.s_EXPECTEDPARAM in
+		 let rec ip projs locs args acc =
+		   match projs with
+		     | [] -> acc
+		     | None :: q -> raise No_match
+		     | Some c :: q ->
+		         match locs with
+			   | [] -> anomaly "projections corruption [Constrextern.extern]"
+			   | (_, false) :: locs' ->
+			       (* we don't want to print locals *)
+			       ip q locs' args acc
+			   | (_, true) :: locs' ->
+			       match args with
+				 | [] -> raise No_match
+				     (* we give up since the constructor is not complete *)
+				 | head :: tail -> ip q locs' tail
+				     ((extern_reference loc Idset.empty (ConstRef c), head) :: acc)
+		   in
+		 CRecord (loc, None, List.rev (ip projs locals args []))
+	       with
+		 | Not_found | No_match ->
+		     extern_app loc inctx (implicits_of_global ref)
+		       (Some ref,extern_reference rloc vars ref) args
+	     end
 	 | _       ->
 	     explicitize loc inctx [] (None,sub_extern false scopes vars f)
                (List.map (sub_extern true scopes vars) args))

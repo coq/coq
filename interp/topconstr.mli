@@ -120,6 +120,7 @@ type cases_pattern_expr =
   | CPatOr of loc * cases_pattern_expr list
   | CPatNotation of loc * notation * cases_pattern_expr notation_substitution
   | CPatPrim of loc * prim_token
+  | CPatRecord of Util.loc * (reference * cases_pattern_expr) list
   | CPatDelimiters of loc * string * cases_pattern_expr
 
 type constr_expr =
@@ -133,7 +134,7 @@ type constr_expr =
   | CAppExpl of loc * (proj_flag * reference) * constr_expr list
   | CApp of loc * (proj_flag * constr_expr) *
       (constr_expr * explicitation located option) list
-  | CRecord of loc * constr_expr option * (identifier located * constr_expr) list
+  | CRecord of loc * constr_expr option * (reference * constr_expr) list
   | CCases of loc * case_style * constr_expr option *
       (constr_expr * (name option * constr_expr option)) list *
       (loc * cases_pattern_expr list located list * constr_expr) list

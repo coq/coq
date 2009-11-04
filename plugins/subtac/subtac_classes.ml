@@ -146,7 +146,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
       | _ ->
 	  if List.length k.cl_props <> 1 then
 	    errorlabstrm "new_instance" (Pp.str "Expected a definition for the instance body")
-	  else [(dummy_loc, Nameops.out_name (pi1 (List.hd k.cl_props))), props]
+	  else [Ident (dummy_loc, Nameops.out_name (pi1 (List.hd k.cl_props))), props]
     in
       match k.cl_props with
       | [(na,b,ty)] ->
@@ -155,19 +155,35 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	  let c = interp_casted_constr_evars isevars env' term ty' in
 	    c :: subst
       | _ ->
+	  let get_id (idref, c) =
+	    match idref with
+	      | Ident id' -> id'
+	      | _ ->
+		  errorlabstrm "new_instance"
+		    (Pp.str "only local structures are managed")
+	  in
 	  let props, rest =
 	    List.fold_left
 	      (fun (props, rest) (id,_,_) ->
-		try
-		  let ((loc, mid), c) = List.find (fun ((_,id'), c) -> Name id' = id) rest in
-		  let rest' = List.filter (fun ((_,id'), c) -> Name id' <> id) rest in
-		    Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
-		    c :: props, rest'
-		with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
+		 try
+		   let (loc_mid, c) =
+		     List.find (fun elt -> Name (snd (get_id elt)) = id) rest
+		   in
+		   let rest' =
+		     List.filter (fun elt -> Name (snd (get_id elt)) <> id) rest
+		   in
+		   match loc_mid with
+		     | Ident (loc, mid) ->
+			 Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
+			 c :: props, rest'
+		     | _ -> errorlabstrm "new_instance"
+			 (Pp.str "only local structures are managed")
+		 with Not_found ->
+		   (CHole (Util.dummy_loc, None) :: props), rest)
 	      ([], props) k.cl_props
 	  in
 	    if rest <> [] then
-	      unbound_method env' k.cl_impl (fst (List.hd rest))
+	      unbound_method env' k.cl_impl (get_id (List.hd rest))
 	    else
 	      fst (type_ctx_instance isevars env' k.cl_props props subst)
   in

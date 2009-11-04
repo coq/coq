@@ -626,7 +626,10 @@ let rec add_args id new_args b =
       CCast(loc,add_args id new_args b1,CastConv(ck,add_args id new_args b2))
   | CCast(loc,b1,CastCoerce) ->
       CCast(loc,add_args id new_args b1,CastCoerce)
-  | CRecord _ -> anomaly "add_args : CRecord"
+  | CRecord (loc, w, pars) ->
+      CRecord (loc,
+	       (match w with Some w -> Some (add_args id new_args w) | _ -> None),
+	       List.map (fun (e,o) -> e, add_args id new_args o) pars)
   | CNotation _ -> anomaly "add_args : CNotation"
   | CGeneralization _ -> anomaly "add_args : CGeneralization"
   | CPrim _ -> b

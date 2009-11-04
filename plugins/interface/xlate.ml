@@ -273,6 +273,7 @@ let rec xlate_match_pattern =
      CT_pattern_as
       (xlate_match_pattern pattern, CT_coerce_ID_to_ID_OPT (xlate_ident id))
     | CPatOr (_,l) -> xlate_error "CPatOr: TODO"
+    | CPatRecord _ -> xlate_error "CPAtRecord: TODO"
     | CPatDelimiters(_, key, p) ->
 	CT_pattern_delimitors(CT_num_type key, xlate_match_pattern p)
     | CPatPrim (_,Numeral n) ->

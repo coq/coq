@@ -182,6 +182,38 @@ of the chapter devoted to coercions.
 
 \Rem {\tt Structure} is a synonym of the keyword {\tt Record}.
 
+\Rem Creation of an object of record type can be done by calling {\ident$_0$}
+and passing arguments in the correct order.
+
+\begin{coq_example}
+Record point := { x : nat; y : nat }.
+Definition a := Build_point 5 3.
+\end{coq_example}
+
+The following syntax allows to create objects by using named fields. The
+fields do not have to be in any particular order, nor do they have to be all
+present if the missing ones can be inferred or prompted for (see
+Section~\ref{Program}).
+
+\begin{coq_example}
+Definition b := {| x := 5; y := 3 |}.
+Definition c := {| y := 3; x := 5 |}.
+\end{coq_example}
+
+This syntax can also be used for pattern matching.
+
+\begin{coq_example}
+Eval compute in (
+  match b with
+  | {| y := S n |} => n
+  | _ => 0
+  end).
+\end{coq_example}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
 \Rem An experimental syntax for projections based on a dot notation is
 available. The command to activate it is
 \begin{quote}

@@ -239,7 +239,7 @@ GEXTEND Gram
     ] ]
   ;
   record_field_declaration:
-    [ [ id = identref; params = LIST0 identref; ":="; c = lconstr ->
+    [ [ id = global; params = LIST0 identref; ":="; c = lconstr ->
       (id, Topconstr.abstract_constr_expr c (binders_of_lidents params)) ] ]
   ;
   binder_constr:
@@ -342,6 +342,9 @@ GEXTEND Gram
     [ [ pll = LIST1 mult_pattern SEP "|";
         "=>"; rhs = lconstr -> (loc,pll,rhs) ] ]
   ;
+  recordpattern:
+    [ [ id = global; ":="; pat = pattern -> (id, pat) ] ]
+  ;
   pattern:
     [ "200" RIGHTA [ ]
     | "100" RIGHTA
@@ -360,6 +363,7 @@ GEXTEND Gram
       [ c = pattern; "%"; key=IDENT -> CPatDelimiters (loc,key,c) ]
     | "0"
       [ r = Prim.reference -> CPatAtom (loc,Some r)
+      | "{|"; pat = LIST0 recordpattern SEP ";" ; "|}" -> CPatRecord (loc, pat)
       | "_" -> CPatAtom (loc,None)
       | "("; p = pattern LEVEL "200"; ")" ->
           (match p with

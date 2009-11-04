@@ -200,7 +200,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	  | _ ->
 	      if List.length k.cl_props <> 1 then
 		errorlabstrm "new_instance" (Pp.str "Expected a definition for the instance body")
-	      else [(dummy_loc, Nameops.out_name (pi1 (List.hd k.cl_props))), props]
+	      else [Ident (dummy_loc, Nameops.out_name (pi1 (List.hd k.cl_props))), props]
 	in
 	let subst =
 	  match k.cl_props with
@@ -211,12 +211,18 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	      let c = interp_casted_constr_evars evars env' term ty' in
 		c :: subst
 	  | _ ->
+	      let get_id =
+		function
+		  | Ident id' -> id'
+		  | _ -> errorlabstrm "new_instance" (Pp.str "Only local structures are handled")
+	        in
 	      let props, rest =
 		List.fold_left
 		  (fun (props, rest) (id,b,_) ->
 		    try
-		      let ((loc, mid), c) = List.find (fun ((_,id'), c) -> Name id' = id) rest in
-		      let rest' = List.filter (fun ((_,id'), c) -> Name id' <> id) rest in
+		      let (loc_mid, c) = List.find (fun (id', _) -> Name (snd (get_id id')) = id) rest in
+		      let rest' = List.filter (fun (id', _) -> Name (snd (get_id id')) <> id) rest in
+		      let (loc, mid) = get_id loc_mid in
 			Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
 			c :: props, rest'
 		    with Not_found ->
@@ -224,7 +230,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 		  ([], props) k.cl_props
 	      in
 		if rest <> [] then
-		  unbound_method env' k.cl_impl (fst (List.hd rest))
+		  unbound_method env' k.cl_impl (get_id (fst (List.hd rest)))
 		else
 		  type_ctx_instance evars env' k.cl_props props subst
 	in

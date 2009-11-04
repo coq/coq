@@ -50,6 +50,7 @@ Language
 
 - Notations to names now behave like the names they refer to wrt implicit
   arguments and interpretation scopes.
+- Record syntax "{|x=...; y=...|}" now works inside patterns too.
 
 Vernacular commands
 

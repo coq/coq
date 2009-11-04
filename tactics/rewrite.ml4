@@ -1035,17 +1035,17 @@ let require_library dirpath =
 let declare_instance_refl binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
   in anew_instance binders instance
-       [((dummy_loc,id_of_string "reflexivity"),lemma)]
+       [(Ident (dummy_loc,id_of_string "reflexivity"),lemma)]
 
 let declare_instance_sym binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Symmetric") "Coq.Classes.RelationClasses.Symmetric"
   in anew_instance binders instance
-       [((dummy_loc,id_of_string "symmetry"),lemma)]
+       [(Ident (dummy_loc,id_of_string "symmetry"),lemma)]
 
 let declare_instance_trans binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Transitive") "Coq.Classes.RelationClasses.Transitive"
   in anew_instance binders instance
-       [((dummy_loc,id_of_string "transitivity"),lemma)]
+       [(Ident (dummy_loc,id_of_string "transitivity"),lemma)]
 
 let constr_tac = Tacinterp.interp (Tacexpr.TacAtom (dummy_loc, Tacexpr.TacAnyConstructor (false,None)))
 
@@ -1070,16 +1070,16 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PreOrder"
 	in ignore(
 	    anew_instance binders instance
-	      [((dummy_loc,id_of_string "PreOrder_Reflexive"), lemma1);
-	       ((dummy_loc,id_of_string "PreOrder_Transitive"),lemma3)])
+	      [(Ident (dummy_loc,id_of_string "PreOrder_Reflexive"), lemma1);
+	       (Ident (dummy_loc,id_of_string "PreOrder_Transitive"),lemma3)])
     | (None, Some lemma2, Some lemma3) ->
 	let _lemma_sym = declare_instance_sym binders a aeq n lemma2 in
 	let _lemma_trans = declare_instance_trans binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PER"
 	in ignore(
 	    anew_instance binders instance
-	      [((dummy_loc,id_of_string "PER_Symmetric"), lemma2);
-	       ((dummy_loc,id_of_string "PER_Transitive"),lemma3)])
+	      [(Ident (dummy_loc,id_of_string "PER_Symmetric"), lemma2);
+	       (Ident (dummy_loc,id_of_string "PER_Transitive"),lemma3)])
      | (Some lemma1, Some lemma2, Some lemma3) ->
 	let _lemma_refl = declare_instance_refl binders a aeq n lemma1 in
 	let _lemma_sym = declare_instance_sym binders a aeq n lemma2 in
@@ -1087,9 +1087,9 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
 	in ignore(
 	  anew_instance binders instance
-	    [((dummy_loc,id_of_string "Equivalence_Reflexive"), lemma1);
-	     ((dummy_loc,id_of_string "Equivalence_Symmetric"), lemma2);
-	     ((dummy_loc,id_of_string "Equivalence_Transitive"), lemma3)])
+	    [(Ident (dummy_loc,id_of_string "Equivalence_Reflexive"), lemma1);
+	     (Ident (dummy_loc,id_of_string "Equivalence_Symmetric"), lemma2);
+	     (Ident (dummy_loc,id_of_string "Equivalence_Transitive"), lemma3)])
 
 type 'a binders_let_argtype = (local_binder list, 'a) Genarg.abstract_argument_type
 
@@ -1267,9 +1267,9 @@ let add_setoid binders a aeq t n =
   let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
   in ignore(
     anew_instance binders instance
-      [((dummy_loc,id_of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
-       ((dummy_loc,id_of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
-       ((dummy_loc,id_of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])])
+      [(Ident (dummy_loc,id_of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
+       (Ident (dummy_loc,id_of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
+       (Ident (dummy_loc,id_of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])])
 
 let add_morphism_infer glob m n =
   init_setoid ();

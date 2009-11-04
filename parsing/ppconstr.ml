@@ -171,9 +171,14 @@ let pr_evar pr n l =
 
 let las = lapp
 let lpator = 100
+let lpatrec = 0
 
 let rec pr_patt sep inh p =
   let (strm,prec) = match p with
+  | CPatRecord (_, l) ->
+      let pp (c, p) =
+	pr_reference c ++ spc() ++ str ":=" ++ pr_patt spc (lpatrec, Any) p in
+      str "{| " ++ prlist_with_sep pr_semicolon pp l ++ str " |}", lpatrec
   | CPatAlias (_,p,id) ->
       pr_patt mt (las,E) p ++ str " as " ++ pr_id id, las
   | CPatCstr (_,c,[]) -> pr_reference c, latom
@@ -565,10 +570,10 @@ let pr pr sep inherited a =
 	| None -> spc ()
 	| Some t -> spc () ++ pr spc ltop t ++ spc () ++ str"with" ++ spc ()
       in
-	hv 0 (str"{" ++ beg ++
-		 prlist_with_sep (fun () -> spc () ++ str";" ++ spc ())
-		 (fun ((_,id), c) -> pr_id id ++ spc () ++ str":=" ++ spc () ++ pr spc ltop c)
-		 l), latom
+	hv 0 (str"{|" ++ beg ++
+	      prlist_with_sep pr_semicolon
+		(fun (id, c) -> h 1 (pr_reference id ++ spc () ++ str":=" ++ pr spc ltop c)) l
+	      ++ str" |}"), latom
 
   | CCases (_,LetPatternStyle,rtntypopt,[c,asin],[(_,[(loc,[p])],b)]) ->
       hv 0 (
