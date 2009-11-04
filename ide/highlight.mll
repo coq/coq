@@ -98,7 +98,7 @@ let multiword_command =
 | "Implicit" space+ "Arguments"
 | "Implicit" space+ ("Type"|"Types")
 | "Combined" space+ "Scheme"
-| "Extraction" space+ (("Language" space+ ("Ocaml"|"Haskell"|"Scheme"|"Toplevel"))|
+| "Extraction" space+ (("Language" space+ ("Ocaml"|"Haskell"|"Scheme"))|
     ("Library"|"Inline"|"NoInline"|"Blacklist"))
 | "Recursive" space+ "Extraction" (space+ "Library")?
 | ("Print"|"Reset") space+ "Extraction" space+ ("Inline"|"Blacklist")
