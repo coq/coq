@@ -163,7 +163,7 @@ let install_include_by_root var files (_,inc_r) =
     let ldir = List.assoc "." (List.map (fun (p,l,_) -> (p,l)) inc_r) in
     let pdir = physical_dir_of_logical_dir ldir in
     printf "\t(for i in $(%s); do \\\n" var;
-    printf "\t install -D $$i $(COQLIB)/user-contrib/%s/$$i; \\\n" pdir;
+    printf "\t install -d `dirname $(COQLIB)/user-contrib/%s/$$i`; \\\n\t install $$i $(COQLIB)/user-contrib/%s/$$i; \\\n" pdir pdir;
     printf "\t done)\n"
   with Not_found ->
     (* Files in the scope of a -R option (assuming they are disjoint) *)
@@ -172,12 +172,12 @@ let install_include_by_root var files (_,inc_r) =
 	begin
 	  let pdir' = physical_dir_of_logical_dir ldir in
 	  printf "\t(cd %s; for i in $(%s%d); do \\\n" pdir var i;
-	  printf "\t install -D $$i $(COQLIB)/user-contrib/%s/$$i; \\\n" pdir';
+	  printf "\t install -d `dirname $(COQLIB)/user-contrib/%s/$$i`; \\\n\t install $$i $(COQLIB)/user-contrib/%s/$$i; \\\n" pdir' pdir';
 	  printf "\t done)\n"
 	end) inc_r;
     (* Files not in the scope of a -R option *)
     printf "\t(for i in $(%s0); do \\\n" var;
-    printf "\t install -D $$i $(COQLIB)/user-contrib/$(INSTALLDEFAULTROOT)/$$i; \\\n";
+    printf "\t install -d `dirname $(COQLIB)/user-contrib/$(INSTALLDEFAULTROOT)/$$i`; \\\n\t install $$i $(COQLIB)/user-contrib/$(INSTALLDEFAULTROOT)/$$i; \\\n";
     printf "\t done)\n"
 
 let install (vfiles,mlfiles,_,sds) inc =
