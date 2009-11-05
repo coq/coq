@@ -1,5 +1,5 @@
 
-            INSTALLATION PROCEDURES FOR THE COQ V8.1 SYSTEM
+            INSTALLATION PROCEDURES FOR THE COQ V8.3 SYSTEM
             -----------------------------------------------
 
 
@@ -41,7 +41,7 @@ WHAT DO YOU NEED ?
 
    Should you need or prefer to compile Coq V8.2 yourself, you need:
 
-     - Objective Caml version 3.07 or later
+     - Objective Caml version 3.09.3 or later
        (available at http://caml.inria.fr/)
 
        For Ocaml version >= 3.10.0, you also need to install camlp5
@@ -89,7 +89,7 @@ QUICK INSTALLATION PROCEDURE.
 INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 =================================================
 
-1- Check that you have the Objective Caml compiler version 3.07 (or later)
+1- Check that you have the Objective Caml compiler version 3.09.3 (or later)
    installed on your computer and that "ocamlmktop" and "ocamlc" (or
    its native code version "ocamlc.opt") lie in a directory which is present
    in your $PATH environment variable. 
