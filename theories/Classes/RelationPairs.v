@@ -110,10 +110,21 @@ Instance SndRel_sub {A B} (RA:relation A)(RB:relation B):
  subrelation (RA*RB) (RB @@ snd).
 Proof. firstorder. Qed.
 
-Instance pair_compat { A B } (RA:relation A)(RB : relation B) :
+Instance pair_compat { A B } (RA:relation A)(RB:relation B) :
  Proper (RA==>RB==> RA*RB) pair.
 Proof. firstorder. Qed.
 
+Instance fst_compat { A B } (RA:relation A)(RB:relation B) :
+ Proper (RA*RB ==> RA) fst.
+Proof.
+intros A B RA RB (x,y) (x',y') (Hx,Hy); compute in *; auto.
+Qed.
+
+Instance snd_compat { A B } (RA:relation A)(RB:relation B) :
+ Proper (RA*RB ==> RB) snd.
+Proof.
+intros A B RA RB (x,y) (x',y') (Hx,Hy); compute in *; auto.
+Qed.
 
 Instance RelCompFun_compat {A B}(f:A->B)(R : relation B)
  `(Proper _ (Ri==>Ri==>Ro) R) :

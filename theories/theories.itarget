@@ -192,12 +192,12 @@ Numbers/Natural/Abstract/NAddOrder.vo
 Numbers/Natural/Abstract/NAdd.vo
 Numbers/Natural/Abstract/NAxioms.vo
 Numbers/Natural/Abstract/NBase.vo
-#Numbers/Natural/Abstract/NDefOps.vo
+Numbers/Natural/Abstract/NDefOps.vo
 Numbers/Natural/Abstract/NIso.vo
 Numbers/Natural/Abstract/NMulOrder.vo
 Numbers/Natural/Abstract/NMul.vo
 Numbers/Natural/Abstract/NOrder.vo
-#Numbers/Natural/Abstract/NStrongRec.vo
+Numbers/Natural/Abstract/NStrongRec.vo
 Numbers/Natural/Abstract/NSub.vo
 Numbers/Natural/BigN/BigN.vo
 Numbers/Natural/BigN/Nbasic.vo

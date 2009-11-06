@@ -21,101 +21,188 @@ Open Local Scope NatScope.
 
 Section StrongRecursion.
 
-Variable A : Set.
+Variable A : Type.
 Variable Aeq : relation A.
+Context (Aeq_equiv : Equivalence Aeq).
 
-Notation Local "x ==A y" := (Aeq x y) (at level 70, no associativity).
+(** [strong_rec] allows to define a recursive function [phi] given by
+    an equation [phi(n) = F(phi)(n)] where recursive calls to [phi]
+    in [F] are made on strictly lower numbers than [n].
 
-Instance Aeq_equiv : Equivalence Aeq.
+    For [strong_rec a F n]:
+    - Parameter [a:A] is a default value used internally, it has no
+      effect on the final result.
+    - Parameter [F:(N->A)->N->A] is the step function:
+      [F f n] should return [phi(n)] when [f] is a function
+      that coincide with [phi] for numbers strictly less than [n].
+*)
 
-Definition strong_rec (a : A) (f : N -> (N -> A) -> A) (n : N) : A :=
-recursion
-  (fun _ : N => a)
-  (fun (m : N) (p : N -> A) (k : N) => f k p)
-  (S n)
-  n.
+Definition strong_rec (a : A) (f : (N -> A) -> N -> A) (n : N) : A :=
+ recursion (fun _ => a) (fun _ => f) (S n) n.
 
-Theorem strong_rec_wd :
- Proper (Aeq ==> (Neq ==> (Neq ==>Aeq) ==> Aeq) ==> Neq ==> Aeq) strong_rec.
+(** For convenience, we use in proofs an intermediate definition
+    between [recursion] and [strong_rec]. *)
+
+Definition strong_rec0 (a : A) (f : (N -> A) -> N -> A) : N -> N -> A :=
+ recursion (fun _ => a) (fun _ => f).
+
+Lemma strong_rec_alt : forall a f n,
+ strong_rec a f n = strong_rec0 a f (S n) n.
+Proof.
+reflexivity.
+Qed.
+
+(** We need a result similar to [f_equal], but for setoid equalities. *)
+Lemma f_equiv : forall f g x y,
+ (Neq==>Aeq)%signature f g -> Neq x y -> Aeq (f x) (g y).
+Proof.
+auto.
+Qed.
+
+Instance strong_rec0_wd :
+ Proper (Aeq ==> ((Neq ==> Aeq) ==> Neq ==> Aeq) ==> Neq ==> Neq ==> Aeq)
+  strong_rec0.
+Proof.
+unfold strong_rec0.
+repeat red; intros.
+apply f_equiv; auto.
+apply recursion_wd; try red; auto.
+Qed.
+
+Instance strong_rec_wd :
+ Proper (Aeq ==> ((Neq ==> Aeq) ==> Neq ==> Aeq) ==> Neq ==> Aeq) strong_rec.
 Proof.
 intros a a' Eaa' f f' Eff' n n' Enn'.
-(* First we prove that recursion (which is on type N -> A) returns
-extensionally equal functions, and then we use the fact that n == n' *)
-assert (H : fun_eq Neq Aeq
-  (recursion
-    (fun _ : N => a)
-    (fun (m : N) (p : N -> A) (k : N) => f k p)
-    (S n))
-  (recursion
-    (fun _ : N => a')
-    (fun (m : N) (p : N -> A) (k : N) => f' k p)
-    (S n'))).
-apply recursion_wd with (Aeq := fun_eq Neq Aeq).
-unfold fun_eq; now intros.
-unfold fun2_eq. intros y y' Eyy' p p' Epp'. unfold fun_eq. auto.
+rewrite !strong_rec_alt.
+apply strong_rec0_wd; auto.
 now rewrite Enn'.
-unfold strong_rec.
-now apply H.
 Qed.
 
-(*Section FixPoint.
+Section FixPoint.
 
-Variable a : A.
-Variable f : N -> (N -> A) -> A.
+Variable f : (N -> A) -> N -> A.
+Context (f_wd : Proper ((Neq==>Aeq)==>Neq==>Aeq) f).
 
-Hypothesis f_wd : fun2_wd Neq (fun_eq Neq Aeq) Aeq f.
-
-Let g (n : N) : A := strong_rec a f n.
-
-Add Morphism g with signature Neq ==> Aeq as g_wd.
+Lemma strong_rec0_0 : forall a m,
+ (strong_rec0 a f 0 m) = a.
 Proof.
-intros n1 n2 H. unfold g. now apply strong_rec_wd.
+intros. unfold strong_rec0. rewrite recursion_0; auto.
 Qed.
 
-Theorem NtoA_eq_sym : symmetric (N -> A) (fun_eq Neq Aeq).
+Lemma strong_rec0_succ : forall a n m,
+ Aeq (strong_rec0 a f (S n) m) (f (strong_rec0 a f n) m).
 Proof.
-apply fun_eq_sym.
-exact (proj2 (proj2 NZeq_equiv)).
-exact (proj2 (proj2 Aeq_equiv)).
-Qed.
-
-Theorem NtoA_eq_trans : transitive (N -> A) (fun_eq Neq Aeq).
-Proof.
-apply fun_eq_trans.
-exact (proj1 NZeq_equiv).
-exact (proj1 (proj2 NZeq_equiv)).
-exact (proj1 (proj2 Aeq_equiv)).
-Qed.
-
-Add Relation (N -> A) (fun_eq Neq Aeq)
- symmetry proved by NtoA_eq_sym
- transitivity proved by NtoA_eq_trans
-as NtoA_eq_rel.
-
-Add Morphism f with signature Neq ==> (fun_eq Neq Aeq) ==> Aeq as f_morph.
-Proof.
+intros. unfold strong_rec0.
+apply f_equiv; auto with *.
+rewrite recursion_succ; try (repeat red; auto with *; fail).
 apply f_wd.
+apply recursion_wd; try red; auto with *.
 Qed.
 
-(* We need an assumption saying that for every n, the step function (f n h)
+Lemma strong_rec_0 : forall a,
+ Aeq (strong_rec a f 0) (f (fun _ => a) 0).
+Proof.
+intros. rewrite strong_rec_alt, strong_rec0_succ.
+apply f_wd; auto with *.
+red; intros; rewrite strong_rec0_0; auto with *.
+Qed.
+
+(* We need an assumption saying that for every n, the step function (f h n)
 calls h only on the segment [0 ... n - 1]. This means that if h1 and h2
-coincide on values < n, then (f n h1) coincides with (f n h2) *)
+coincide on values < n, then (f h1 n) coincides with (f h2 n) *)
 
 Hypothesis step_good :
   forall (n : N) (h1 h2 : N -> A),
-    (forall m : N, m < n -> Aeq (h1 m) (h2 m)) -> Aeq (f n h1) (f n h2).
+    (forall m : N, m < n -> Aeq (h1 m) (h2 m)) -> Aeq (f h1 n) (f h2 n).
 
-(* Todo:
-Theorem strong_rec_fixpoint : forall n : N, Aeq (g n) (f n g).
+Lemma strong_rec0_more_steps : forall a k n m, m < n ->
+ Aeq (strong_rec0 a f n m) (strong_rec0 a f (n+k) m).
 Proof.
-apply induction.
-unfold predicate_wd, fun_wd.
-intros x y H. rewrite H. unfold fun_eq; apply g_wd.
-reflexivity.
-unfold g, strong_rec.
+ intros a k n. pattern n.
+ apply induction; clear n.
+
+ intros n n' Hn; setoid_rewrite Hn; auto with *.
+
+ intros m Hm. destruct (nlt_0_r _ Hm).
+
+ intros n IH m Hm.
+ rewrite lt_succ_r in Hm.
+ rewrite add_succ_l.
+ rewrite 2 strong_rec0_succ.
+ apply step_good.
+ intros m' Hm'.
+ apply IH.
+ apply lt_le_trans with m; auto.
+Qed.
+
+Lemma strong_rec0_fixpoint : forall (a : A) (n : N),
+ Aeq (strong_rec0 a f (S n) n) (f (fun n => strong_rec0 a f (S n) n) n).
+Proof.
+intros.
+rewrite strong_rec0_succ.
+apply step_good.
+intros m Hm.
+symmetry.
+setoid_replace n with (S m + (n - S m)).
+apply strong_rec0_more_steps.
+apply lt_succ_diag_r.
+rewrite add_comm.
+symmetry.
+apply sub_add.
+rewrite le_succ_l; auto.
+Qed.
+
+Theorem strong_rec_fixpoint : forall (a : A) (n : N),
+ Aeq (strong_rec a f n) (f (strong_rec a f) n).
+Proof.
+intros.
+transitivity (f (fun n => strong_rec0 a f (S n) n) n).
+rewrite strong_rec_alt.
+apply strong_rec0_fixpoint.
+apply f_wd; auto with *.
+intros x x' Hx; rewrite strong_rec_alt, Hx; auto with *.
+Qed.
+
+(** NB: without the [step_good] hypothesis, we have proved that
+    [strong_rec a f 0] is [f (fun _ => a) 0]. Now we can prove
+    that the first argument of [f] is arbitrary in this case...
 *)
 
-End FixPoint.*)
+Theorem strong_rec_0_any : forall (a : A)(any : N->A),
+ Aeq (strong_rec a f 0) (f any 0).
+Proof.
+intros.
+rewrite strong_rec_fixpoint.
+apply step_good.
+intros m Hm. destruct (nlt_0_r _ Hm).
+Qed.
+
+(** ... and that first argument of [strong_rec] is always arbitrary. *)
+
+Lemma strong_rec_any_fst_arg : forall a a' n,
+ Aeq (strong_rec a f n) (strong_rec a' f n).
+Proof.
+intros a a' n.
+generalize (le_refl n).
+set (k:=n) at -2. clearbody k. revert k. pattern n.
+apply induction; clear n.
+(* compat *)
+intros n n' Hn. setoid_rewrite Hn; auto with *.
+(* 0 *)
+intros k Hk. rewrite le_0_r in Hk.
+rewrite Hk, strong_rec_0. symmetry. apply strong_rec_0_any.
+(* S *)
+intros n IH k Hk.
+rewrite 2 strong_rec_fixpoint.
+apply step_good.
+intros m Hm.
+apply IH.
+rewrite succ_le_mono.
+apply le_trans with k; auto.
+rewrite le_succ_l; auto.
+Qed.
+
+End FixPoint.
 End StrongRecursion.
 
 Implicit Arguments strong_rec [A].

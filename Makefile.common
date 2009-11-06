@@ -464,7 +464,7 @@ NATINTVO:=$(addprefix theories/Numbers/NatInt/, \
 NATURALABSTRACTVO:=$(addprefix theories/Numbers/Natural/Abstract/, \
  NAxioms.vo 	NBase.vo 	NAdd.vo 	NMul.vo 	\
  NOrder.vo 	NAddOrder.vo	NMulOrder.vo 	NSub.vo	\
- NIso.vo )
+ NIso.vo        NStrongRec.vo   NDefOps.vo)
 
 NATURALPEANOVO:=$(addprefix theories/Numbers/Natural/Peano/, \
  NPeano.vo )

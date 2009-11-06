@@ -197,12 +197,16 @@ End NBinaryAxiomsMod.
 
 Module Export NBinarySubPropMod := NSubPropFunct NBinaryAxiomsMod.
 
+(*
+Require Import NDefOps.
+Module Import NBinaryDefOpsMod := NdefOpsPropFunct NBinaryAxiomsMod.
+
 (* Some fun comparing the efficiency of the generic log defined
 by strong (course-of-value) recursion and the log defined by recursion
 on notation *)
-(* Time Eval compute in (log 100000). *) (* 98 sec *)
 
-(*
+Time Eval vm_compute in (log 500000). (* 11 sec *)
+
 Fixpoint binposlog (p : positive) : N :=
 match p with
 | xH => 0
@@ -215,6 +219,8 @@ match n with
 | 0 => 0
 | Npos p => binposlog p
 end.
-*)
-(* Eval compute in (binlog 1000000000000000000). *) (* Works very fast *)
 
+Time Eval vm_compute in (binlog 500000). (* 0 sec *)
+Time Eval vm_compute in (binlog 1000000000000000000000000000000). (* 0 sec *)
+
+*)

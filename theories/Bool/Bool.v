@@ -54,21 +54,22 @@ Qed.
 
 Lemma not_true_is_false : forall b:bool, b <> true -> b = false.
 Proof.
-  destruct b.
-  intros.
-  red in H; elim H.
-  reflexivity.
-  intros abs.
-  reflexivity.
+  destruct b; intuition.
 Qed.
 
 Lemma not_false_is_true : forall b:bool, b <> false -> b = true.
 Proof.
-  destruct b.
-  intros.
-  reflexivity.
-  intro H; red in H; elim H.
-  reflexivity.
+  destruct b; intuition.
+Qed.
+
+Lemma not_true_iff_false : forall b, b <> true <-> b = false.
+Proof.
+  destruct b; intuition.
+Qed.
+
+Lemma not_false_iff_true : forall b, b <> false <-> b = true.
+Proof.
+  destruct b; intuition.
 Qed.
 
 (**********************)
@@ -545,6 +546,13 @@ Qed.
 Lemma eq_true_iff_eq : forall b1 b2, (b1 = true <-> b2 = true) -> b1 = b2.
 Proof.
   intros b1 b2; case b1; case b2; intuition.
+Qed.
+
+Lemma eq_iff_eq_true : forall b1 b2, b1 = b2 <-> (b1 = true <-> b2 = true).
+Proof.
+  split.
+  intros; subst; intuition.
+  apply eq_true_iff_eq.
 Qed.
 
 Notation bool_1 := eq_true_iff_eq (only parsing). (* Compatibility *)
