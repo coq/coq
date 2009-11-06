@@ -350,9 +350,7 @@ Qed.
 Section PosNeg.
 
 Variable P : Z -> Prop.
-Hypothesis P_wd : predicate_wd Zeq P.
-
-Add Morphism P with signature Zeq ==> iff as P_morph. Proof. exact P_wd. Qed.
+Hypothesis P_wd : Proper (Zeq ==> iff) P.
 
 Theorem Z0_pos_neg :
   P 0 -> (forall n : Z, 0 < n -> P n /\ P (- n)) -> forall n : Z, P n.

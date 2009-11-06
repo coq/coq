@@ -41,26 +41,26 @@ Definition NZmul := N.mul.
 
 Instance NZeq_equiv : Equivalence N.eq.
 
-Add Morphism NZsucc with signature N.eq ==> N.eq as NZsucc_wd.
+Instance NZsucc_wd : Proper (N.eq==>N.eq) NZsucc.
 Proof.
-unfold N.eq; intros; rewrite 2 N.spec_succ; f_equal; auto.
+unfold N.eq; repeat red; intros; rewrite 2 N.spec_succ; f_equal; auto.
 Qed.
 
-Add Morphism NZpred with signature N.eq ==> N.eq as NZpred_wd.
+Instance NZpred_wd : Proper (N.eq==>N.eq) NZpred.
 Proof.
-unfold N.eq; intros.
+unfold N.eq; repeat red; intros.
 generalize (N.spec_pos y) (N.spec_pos x) (N.spec_eq_bool x 0).
 destruct N.eq_bool; rewrite N.spec_0; intros.
 rewrite 2 N.spec_pred0; congruence.
 rewrite 2 N.spec_pred; f_equal; auto; try omega.
 Qed.
 
-Add Morphism NZadd with signature N.eq ==> N.eq ==> N.eq as NZadd_wd.
+Instance NZadd_wd : Proper (N.eq==>N.eq==>N.eq) NZadd.
 Proof.
-unfold N.eq; intros; rewrite 2 N.spec_add; f_equal; auto.
+unfold N.eq; repeat red; intros; rewrite 2 N.spec_add; f_equal; auto.
 Qed.
 
-Add Morphism NZsub with signature N.eq ==> N.eq ==> N.eq as NZsub_wd.
+Instance NZsub_wd : Proper (N.eq==>N.eq==>N.eq) NZsub.
 Proof.
 unfold N.eq; intros x x' Hx y y' Hy.
 destruct (Z_lt_le_dec [x] [y]).
@@ -68,14 +68,14 @@ rewrite 2 N.spec_sub0; f_equal; congruence.
 rewrite 2 N.spec_sub; f_equal; congruence.
 Qed.
 
-Add Morphism NZmul with signature N.eq ==> N.eq ==> N.eq as NZmul_wd.
+Instance NZmul_wd : Proper (N.eq==>N.eq==>N.eq) NZmul.
 Proof.
-unfold N.eq; intros; rewrite 2 N.spec_mul; f_equal; auto.
+unfold N.eq; repeat red; intros; rewrite 2 N.spec_mul; f_equal; auto.
 Qed.
 
 Theorem NZpred_succ : forall n, N.pred (N.succ n) == n.
 Proof.
-unfold N.eq; intros.
+unfold N.eq; repeat red; intros.
 rewrite N.spec_pred; rewrite N.spec_succ.
 omega.
 generalize (N.spec_pos n); omega.
@@ -86,12 +86,9 @@ Definition N_of_Z z := N.of_N (Zabs_N z).
 Section Induction.
 
 Variable A : N.t -> Prop.
-Hypothesis A_wd : predicate_wd N.eq A.
+Hypothesis A_wd : Proper (N.eq==>iff) A.
 Hypothesis A0 : A 0.
 Hypothesis AS : forall n, A n <-> A (N.succ n).
-
-Add Morphism A with signature N.eq ==> iff as A_morph.
-Proof. apply A_wd. Qed.
 
 Let B (z : Z) := A (N_of_Z z).
 
@@ -211,30 +208,30 @@ Proof.
  rewrite spec_compare_alt; destruct Zcompare; auto.
 Qed.
 
-Add Morphism N.compare with signature N.eq ==> N.eq ==> (@eq comparison) as compare_wd.
+Instance compare_wd : Proper (N.eq ==> N.eq ==> eq) N.compare.
 Proof.
 intros x x' Hx y y' Hy.
 rewrite 2 spec_compare_alt. unfold N.eq in *. rewrite Hx, Hy; intuition.
 Qed.
 
-Add Morphism N.lt with signature N.eq ==> N.eq ==> iff as NZlt_wd.
+Instance NZlt_wd : Proper (N.eq ==> N.eq ==> iff) N.lt.
 Proof.
 intros x x' Hx y y' Hy; unfold N.lt; rewrite Hx, Hy; intuition.
 Qed.
 
-Add Morphism N.le with signature N.eq ==> N.eq ==> iff as NZle_wd.
+Instance NZle_wd : Proper (N.eq ==> N.eq ==> iff) N.le.
 Proof.
 intros x x' Hx y y' Hy; unfold N.le; rewrite Hx, Hy; intuition.
 Qed.
 
-Add Morphism N.min with signature N.eq ==> N.eq ==> N.eq as NZmin_wd.
+Instance NZmin_wd : Proper (N.eq ==> N.eq ==> N.eq) N.min.
 Proof.
-intros; red; rewrite 2 spec_min; congruence.
+repeat red; intros; rewrite 2 spec_min; congruence.
 Qed.
 
-Add Morphism N.max with signature N.eq ==> N.eq ==> N.eq as NZmax_wd.
+Instance NZmax_wd : Proper (N.eq ==> N.eq ==> N.eq) N.max.
 Proof.
-intros; red; rewrite 2 spec_max; congruence.
+repeat red; intros; rewrite 2 spec_max; congruence.
 Qed.
 
 Theorem NZlt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
@@ -313,10 +310,10 @@ Qed.
 
 Theorem recursion_succ :
   forall (A : Type) (Aeq : relation A) (a : A) (f : N.t -> A -> A),
-    Aeq a a -> fun2_wd N.eq Aeq Aeq f ->
+    Aeq a a -> Proper (N.eq==>Aeq==>Aeq) f ->
       forall n, Aeq (recursion a f (N.succ n)) (f n (recursion a f n)).
 Proof.
-unfold N.eq, recursion, fun2_wd; intros A Aeq a f EAaa f_wd n.
+unfold N.eq, recursion; intros A Aeq a f EAaa f_wd n.
 replace (N.to_N (N.succ n)) with (Nsucc (N.to_N n)).
 rewrite Nrect_step.
 apply f_wd; auto.

@@ -56,10 +56,7 @@ Section CentralInduction.
 
 Variable A : predicate NZ.
 
-Hypothesis A_wd : predicate_wd NZeq A.
-
-Add Morphism A with signature NZeq ==> iff as A_morph.
-Proof. apply A_wd. Qed.
+Hypothesis A_wd : Proper (NZeq==>iff) A.
 
 Theorem NZcentral_induction :
   forall z : NZ, A z ->

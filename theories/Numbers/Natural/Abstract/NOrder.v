@@ -201,21 +201,21 @@ Proof NZneq_succ_iter_l.
 in the induction step *)
 
 Theorem right_induction :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     forall z : N, A z ->
       (forall n : N, z <= n -> A n -> A (S n)) ->
         forall n : N, z <= n -> A n.
 Proof NZright_induction.
 
 Theorem left_induction :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     forall z : N, A z ->
       (forall n : N, n < z -> A (S n) -> A n) ->
         forall n : N, n <= z -> A n.
 Proof NZleft_induction.
 
 Theorem right_induction' :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     forall z : N,
       (forall n : N, n <= z -> A n) ->
       (forall n : N, z <= n -> A n -> A (S n)) ->
@@ -223,7 +223,7 @@ Theorem right_induction' :
 Proof NZright_induction'.
 
 Theorem left_induction' :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     forall z : N,
     (forall n : N, z <= n -> A n) ->
     (forall n : N, n < z -> A (S n) -> A n) ->
@@ -231,21 +231,21 @@ Theorem left_induction' :
 Proof NZleft_induction'.
 
 Theorem strong_right_induction :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     forall z : N,
     (forall n : N, z <= n -> (forall m : N, z <= m -> m < n -> A m) -> A n) ->
        forall n : N, z <= n -> A n.
 Proof NZstrong_right_induction.
 
 Theorem strong_left_induction :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     forall z : N,
       (forall n : N, n <= z -> (forall m : N, m <= z -> S n <= m -> A m) -> A n) ->
         forall n : N, n <= z -> A n.
 Proof NZstrong_left_induction.
 
 Theorem strong_right_induction' :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     forall z : N,
       (forall n : N, n <= z -> A n) ->
       (forall n : N, z <= n -> (forall m : N, z <= m -> m < n -> A m) -> A n) ->
@@ -253,7 +253,7 @@ Theorem strong_right_induction' :
 Proof NZstrong_right_induction'.
 
 Theorem strong_left_induction' :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     forall z : N,
     (forall n : N, z <= n -> A n) ->
     (forall n : N, n <= z -> (forall m : N, m <= z -> S n <= m -> A m) -> A n) ->
@@ -261,7 +261,7 @@ Theorem strong_left_induction' :
 Proof NZstrong_left_induction'.
 
 Theorem order_induction :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     forall z : N, A z ->
       (forall n : N, z <= n -> A n -> A (S n)) ->
       (forall n : N, n < z  -> A (S n) -> A n) ->
@@ -269,7 +269,7 @@ Theorem order_induction :
 Proof NZorder_induction.
 
 Theorem order_induction' :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     forall z : N, A z ->
       (forall n : N, z <= n -> A n -> A (S n)) ->
       (forall n : N, n <= z -> A n -> A (P n)) ->
@@ -282,7 +282,7 @@ ZOrder) since they boil down to regular induction *)
 (** Elimintation principle for < *)
 
 Theorem lt_ind :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     forall n : N,
       A (S n) ->
       (forall m : N, n < m -> A m -> A (S m)) ->
@@ -292,7 +292,7 @@ Proof NZlt_ind.
 (** Elimintation principle for <= *)
 
 Theorem le_ind :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     forall n : N,
       A n ->
       (forall m : N, n <= m -> A m -> A (S m)) ->
@@ -309,8 +309,7 @@ Proof NZgt_wf.
 
 Theorem lt_wf_0 : well_founded lt.
 Proof.
-setoid_replace lt with (fun n m : N => 0 <= n /\ n < m)
-  using relation (@relations_eq N N).
+setoid_replace lt with (fun n m : N => 0 <= n /\ n < m).
 apply lt_wf.
 intros x y; split.
 intro H; split; [apply le_0_l | assumption]. now intros [_ H].
@@ -400,13 +399,8 @@ Qed.
 
 Section RelElim.
 
-(* FIXME: Variable R : relation N. -- does not work *)
-
-Variable R : N -> N -> Prop.
-Hypothesis R_wd : relation_wd Neq Neq R.
-
-Add Morphism R with signature Neq ==> Neq ==> iff as R_morph2.
-Proof. apply R_wd. Qed.
+Variable R : relation N.
+Hypothesis R_wd : Proper (Neq==>Neq==>iff) R.
 
 Theorem le_ind_rel :
    (forall m : N, R 0 m) ->

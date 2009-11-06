@@ -44,7 +44,7 @@ Qed.
 
 Add Ring NSR : Nsemi_ring.
 
-(* The definitios of functions (NZadd, NZmul, etc.) will be unfolded by
+(* The definitions of functions (NZadd, NZmul, etc.) will be unfolded by
 the properties functor. Since we don't want Zadd_comm to refer to unfolded
 definitions of equality: fun p1 p2 : NZ => (fst p1 + snd p2) = (fst p2 + snd p1),
 we will provide an extra layer of definitions. *)
@@ -130,24 +130,24 @@ Proof.
 split; [apply ZE_refl | apply ZE_sym | apply ZE_trans].
 Qed.
 
-Add Morphism (@pair N N) with signature NE ==> NE ==> Zeq as Zpair_wd.
+Instance Zpair_wd : Proper (NE==>NE==>Zeq) (@pair N N).
 Proof.
 intros n1 n2 H1 m1 m2 H2; unfold Zeq; simpl; rewrite H1; now rewrite H2.
 Qed.
 
-Add Morphism NZsucc with signature Zeq ==> Zeq as NZsucc_wd.
+Instance NZsucc_wd : Proper (Zeq ==> Zeq) NZsucc.
 Proof.
 unfold NZsucc, Zeq; intros n m H; simpl.
 do 2 rewrite add_succ_l; now rewrite H.
 Qed.
 
-Add Morphism NZpred with signature Zeq ==> Zeq as NZpred_wd.
+Instance NZpred_wd : Proper (Zeq ==> Zeq) NZpred.
 Proof.
 unfold NZpred, Zeq; intros n m H; simpl.
 do 2 rewrite add_succ_r; now rewrite H.
 Qed.
 
-Add Morphism NZadd with signature Zeq ==> Zeq ==> Zeq as NZadd_wd.
+Instance NZadd_wd : Proper (Zeq ==> Zeq ==> Zeq) NZadd.
 Proof.
 unfold Zeq, NZadd; intros n1 m1 H1 n2 m2 H2; simpl.
 assert (H3 : (fst n1 + snd m1) + (fst n2 + snd m2) == (fst m1 + snd n1) + (fst m2 + snd n2))
@@ -156,7 +156,7 @@ stepl (fst n1 + snd m1 + (fst n2 + snd m2)) by ring.
 now stepr (fst m1 + snd n1 + (fst m2 + snd n2)) by ring.
 Qed.
 
-Add Morphism NZsub with signature Zeq ==> Zeq ==> Zeq as NZsub_wd.
+Instance NZsub_wd : Proper (Zeq ==> Zeq ==> Zeq) NZsub.
 Proof.
 unfold Zeq, NZsub; intros n1 m1 H1 n2 m2 H2; simpl.
 symmetry in H2.
@@ -166,7 +166,7 @@ stepl (fst n1 + snd m1 + (fst m2 + snd n2)) by ring.
 now stepr (fst m1 + snd n1 + (fst n2 + snd m2)) by ring.
 Qed.
 
-Add Morphism NZmul with signature Zeq ==> Zeq ==> Zeq as NZmul_wd.
+Instance NZmul_wd : Proper (Zeq ==> Zeq ==> Zeq) NZmul.
 Proof.
 unfold NZmul, Zeq; intros n1 m1 H1 n2 m2 H2; simpl.
 stepl (fst n1 * fst n2 + (snd n1 * snd n2 + fst m1 * snd m2 + snd m1 * fst m2)) by ring.
@@ -189,17 +189,13 @@ Qed.
 Section Induction.
 Open Scope NatScope. (* automatically closes at the end of the section *)
 Variable A : Z -> Prop.
-Hypothesis A_wd : predicate_wd Zeq A.
-
-Add Morphism A with signature Zeq ==> iff as A_morph.
-Proof.
-exact A_wd.
-Qed.
+Hypothesis A_wd : Proper (Zeq==>iff) A.
 
 Theorem NZinduction :
-  A 0 -> (forall n : Z, A n <-> A (Zsucc n)) -> forall n : Z, A n. (* 0 is interpreted as in Z due to "Bind" directive *)
+  A 0 -> (forall n : Z, A n <-> A (Zsucc n)) -> forall n : Z, A n.
+  (* 0 is interpreted as in Z due to "Bind" directive *)
 Proof.
-intros A0 AS n; unfold NZ0, Zsucc, predicate_wd, fun_wd, Zeq in *.
+intros A0 AS n; unfold NZ0, Zsucc, Zeq in *.
 destruct n as [n m].
 cut (forall p : N, A (p, 0)); [intro H1 |].
 cut (forall p : N, A (0, p)); [intro H2 |].
@@ -266,7 +262,7 @@ Definition NZle := Zle.
 Definition NZmin := Zmin.
 Definition NZmax := Zmax.
 
-Add Morphism NZlt with signature Zeq ==> Zeq ==> iff as NZlt_wd.
+Instance NZlt_wd : Proper (Zeq ==> Zeq ==> iff) NZlt.
 Proof.
 unfold NZlt, Zlt, Zeq; intros n1 m1 H1 n2 m2 H2; simpl. split; intro H.
 stepr (snd m1 + fst m2) by apply add_comm.
@@ -285,7 +281,7 @@ now stepl (fst m1 + snd m2) by apply add_comm.
 stepl (fst n2 + snd m2) by apply add_comm. now stepr (fst m2 + snd n2) by apply add_comm.
 Qed.
 
-Add Morphism NZle with signature Zeq ==> Zeq ==> iff as NZle_wd.
+Instance NZle_wd : Proper (Zeq ==> Zeq ==> iff) NZle.
 Proof.
 unfold NZle, Zle, Zeq; intros n1 m1 H1 n2 m2 H2; simpl.
 do 2 rewrite lt_eq_cases. rewrite (NZlt_wd n1 m1 H1 n2 m2 H2). fold (m1 < m2)%Int.
@@ -293,7 +289,7 @@ fold (n1 == n2)%Int (m1 == m2)%Int; fold (n1 == m1)%Int in H1; fold (n2 == m2)%I
 now rewrite H1, H2.
 Qed.
 
-Add Morphism NZmin with signature Zeq ==> Zeq ==> Zeq as NZmin_wd.
+Instance NZmin_wd : Proper (Zeq ==> Zeq ==> Zeq) NZmin.
 Proof.
 intros n1 m1 H1 n2 m2 H2; unfold NZmin, Zeq; simpl.
 destruct (le_ge_cases (fst n1 + snd n2) (fst n2 + snd n1)) as [H | H].
@@ -309,7 +305,7 @@ stepl ((fst n2 + snd m2) + (snd n1 + snd m1)) by ring.
 unfold Zeq in H2. rewrite H2. ring.
 Qed.
 
-Add Morphism NZmax with signature Zeq ==> Zeq ==> Zeq as NZmax_wd.
+Instance NZmax_wd : Proper (Zeq ==> Zeq ==> Zeq) NZmax.
 Proof.
 intros n1 m1 H1 n2 m2 H2; unfold NZmax, Zeq; simpl.
 destruct (le_ge_cases (fst n1 + snd n2) (fst n2 + snd n1)) as [H | H].
@@ -372,7 +368,7 @@ Definition Zopp (n : Z) : Z := (snd n, fst n).
 
 Notation "- x" := (Zopp x) : IntScope.
 
-Add Morphism Zopp with signature Zeq ==> Zeq as Zopp_wd.
+Instance Zopp_wd : Proper (Zeq ==> Zeq) Zopp.
 Proof.
 unfold Zeq; intros n m H; simpl. symmetry.
 stepl (fst n + snd m) by apply add_comm.

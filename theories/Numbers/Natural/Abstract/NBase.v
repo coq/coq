@@ -129,7 +129,7 @@ symmetry in H; false_hyp H neq_succ_0.
 Qed.
 
 Theorem induction :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     A 0 -> (forall n : N, A n -> A (S n)) -> forall n : N, A n.
 Proof.
 intros A A_wd A0 AS n; apply NZright_induction with 0; try assumption.
@@ -146,7 +146,7 @@ from NZ. *)
 Ltac induct n := induction_maker n ltac:(apply induction).
 
 Theorem case_analysis :
-  forall A : N -> Prop, predicate_wd Neq A ->
+  forall A : N -> Prop, Proper (Neq==>iff) A ->
     A 0 -> (forall n : N, A (S n)) -> forall n : N, A n.
 Proof.
 intros; apply induction; auto.
@@ -206,12 +206,7 @@ Fibonacci numbers *)
 Section PairInduction.
 
 Variable A : N -> Prop.
-Hypothesis A_wd : predicate_wd Neq A.
-
-Add Morphism A with signature Neq ==> iff as A_morph.
-Proof.
-exact A_wd.
-Qed.
+Hypothesis A_wd : Proper (Neq==>iff) A.
 
 Theorem pair_induction :
   A 0 -> A 1 ->
@@ -230,12 +225,7 @@ End PairInduction.
 Section TwoDimensionalInduction.
 
 Variable R : N -> N -> Prop.
-Hypothesis R_wd : relation_wd Neq Neq R.
-
-Add Morphism R with signature Neq ==> Neq ==> iff as R_morph.
-Proof.
-exact R_wd.
-Qed.
+Hypothesis R_wd : Proper (Neq==>Neq==>iff) R.
 
 Theorem two_dim_induction :
    R 0 0 ->
@@ -260,12 +250,7 @@ End TwoDimensionalInduction.
 Section DoubleInduction.
 
 Variable R : N -> N -> Prop.
-Hypothesis R_wd : relation_wd Neq Neq R.
-
-Add Morphism R with signature Neq ==> Neq ==> iff as R_morph1.
-Proof.
-exact R_wd.
-Qed.
+Hypothesis R_wd : Proper (Neq==>Neq==>iff) R.
 
 Theorem double_induction :
    (forall m : N, R 0 m) ->

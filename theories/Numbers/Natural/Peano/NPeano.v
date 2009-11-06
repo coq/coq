@@ -29,38 +29,14 @@ Definition NZsub := minus.
 Definition NZmul := mult.
 
 Instance NZeq_equiv : Equivalence NZeq.
-
-(* If we say "Add Relation nat (@eq nat)" instead of "Add Relation nat NZeq"
-then the theorem generated for succ_wd below is forall x, succ x = succ x,
-which does not match the axioms in NAxiomsSig *)
-
-Add Morphism NZsucc with signature NZeq ==> NZeq as NZsucc_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZpred with signature NZeq ==> NZeq as NZpred_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZadd with signature NZeq ==> NZeq ==> NZeq as NZadd_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZsub with signature NZeq ==> NZeq ==> NZeq as NZsub_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZmul with signature NZeq ==> NZeq ==> NZeq as NZmul_wd.
-Proof.
-congruence.
-Qed.
+Program Instance NZsucc_wd : Proper (eq==>eq) NZsucc.
+Program Instance NZpred_wd : Proper (eq==>eq) NZpred.
+Program Instance NZadd_wd : Proper (eq==>eq==>eq) NZadd.
+Program Instance NZsub_wd : Proper (eq==>eq==>eq) NZsub.
+Program Instance NZmul_wd : Proper (eq==>eq==>eq) NZmul.
 
 Theorem NZinduction :
-  forall A : nat -> Prop, predicate_wd (@eq nat) A ->
+  forall A : nat -> Prop, Proper (eq==>iff) A ->
     A 0 -> (forall n : nat, A n <-> A (S n)) -> forall n : nat, A n.
 Proof.
 intros A A_wd A0 AS. apply nat_ind. assumption. intros; now apply -> AS.
@@ -108,25 +84,10 @@ Definition NZle := le.
 Definition NZmin := min.
 Definition NZmax := max.
 
-Add Morphism NZlt with signature NZeq ==> NZeq ==> iff as NZlt_wd.
-Proof.
-unfold NZeq; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
-Qed.
-
-Add Morphism NZle with signature NZeq ==> NZeq ==> iff as NZle_wd.
-Proof.
-unfold NZeq; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
-Qed.
-
-Add Morphism NZmin with signature NZeq ==> NZeq ==> NZeq as NZmin_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZmax with signature NZeq ==> NZeq ==> NZeq as NZmax_wd.
-Proof.
-congruence.
-Qed.
+Program Instance NZlt_wd : Proper (eq==>eq==>iff) NZlt.
+Program Instance NZle_wd : Proper (eq==>eq==>iff) NZle.
+Program Instance NZmin_wd : Proper (eq==>eq==>eq) NZmin.
+Program Instance NZmax_wd : Proper (eq==>eq==>eq) NZmax.
 
 Theorem NZlt_eq_cases : forall n m : nat, n <= m <-> n < m \/ n = m.
 Proof.

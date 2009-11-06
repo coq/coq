@@ -45,29 +45,29 @@ Definition NZmul := w_op.(znz_mul).
 
 Instance NZeq_equiv : Equivalence NZeq.
 
-Add Morphism NZsucc with signature NZeq ==> NZeq as NZsucc_wd.
+Instance NZsucc_wd : Proper (NZeq ==> NZeq) NZsucc.
 Proof.
 unfold NZeq; intros n m H. do 2 rewrite w_spec.(spec_succ). now rewrite H.
 Qed.
 
-Add Morphism NZpred with signature NZeq ==> NZeq as NZpred_wd.
+Instance NZpred_wd : Proper (NZeq ==> NZeq) NZpred.
 Proof.
 unfold NZeq; intros n m H. do 2 rewrite w_spec.(spec_pred). now rewrite H.
 Qed.
 
-Add Morphism NZadd with signature NZeq ==> NZeq ==> NZeq as NZadd_wd.
+Instance NZadd_wd : Proper (NZeq ==> NZeq ==> NZeq) NZadd.
 Proof.
 unfold NZeq; intros n1 n2 H1 m1 m2 H2. do 2 rewrite w_spec.(spec_add).
 now rewrite H1, H2.
 Qed.
 
-Add Morphism NZsub with signature NZeq ==> NZeq ==> NZeq as NZsub_wd.
+Instance NZsub_wd : Proper (NZeq ==> NZeq ==> NZeq) NZsub.
 Proof.
 unfold NZeq; intros n1 n2 H1 m1 m2 H2. do 2 rewrite w_spec.(spec_sub).
 now rewrite H1, H2.
 Qed.
 
-Add Morphism NZmul with signature NZeq ==> NZeq ==> NZeq as NZmul_wd.
+Instance NZmul_wd : Proper (NZeq ==> NZeq ==> NZeq) NZmul.
 Proof.
 unfold NZeq; intros n1 n2 H1 m1 m2 H2. do 2 rewrite w_spec.(spec_mul).
 now rewrite H1, H2.
@@ -135,12 +135,9 @@ Qed.
 Section Induction.
 
 Variable A : NZ -> Prop.
-Hypothesis A_wd : predicate_wd NZeq A.
+Hypothesis A_wd : Proper (NZeq ==> iff) A.
 Hypothesis A0 : A 0.
 Hypothesis AS : forall n : NZ, A n <-> A (S n). (* Below, we use only -> direction *)
-
-Add Morphism A with signature NZeq ==> iff as A_morph.
-Proof. apply A_wd. Qed.
 
 Let B (n : Z) := A (Z_to_NZ n).
 

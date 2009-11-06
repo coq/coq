@@ -221,21 +221,21 @@ Proof NZneq_succ_iter_l.
 in the induction step *)
 
 Theorem Zright_induction :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     forall z : Z, A z ->
       (forall n : Z, z <= n -> A n -> A (S n)) ->
         forall n : Z, z <= n -> A n.
 Proof NZright_induction.
 
 Theorem Zleft_induction :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     forall z : Z, A z ->
       (forall n : Z, n < z -> A (S n) -> A n) ->
         forall n : Z, n <= z -> A n.
 Proof NZleft_induction.
 
 Theorem Zright_induction' :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     forall z : Z,
       (forall n : Z, n <= z -> A n) ->
       (forall n : Z, z <= n -> A n -> A (S n)) ->
@@ -243,7 +243,7 @@ Theorem Zright_induction' :
 Proof NZright_induction'.
 
 Theorem Zleft_induction' :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     forall z : Z,
     (forall n : Z, z <= n -> A n) ->
     (forall n : Z, n < z -> A (S n) -> A n) ->
@@ -251,21 +251,21 @@ Theorem Zleft_induction' :
 Proof NZleft_induction'.
 
 Theorem Zstrong_right_induction :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     forall z : Z,
     (forall n : Z, z <= n -> (forall m : Z, z <= m -> m < n -> A m) -> A n) ->
        forall n : Z, z <= n -> A n.
 Proof NZstrong_right_induction.
 
 Theorem Zstrong_left_induction :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     forall z : Z,
       (forall n : Z, n <= z -> (forall m : Z, m <= z -> S n <= m -> A m) -> A n) ->
         forall n : Z, n <= z -> A n.
 Proof NZstrong_left_induction.
 
 Theorem Zstrong_right_induction' :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     forall z : Z,
       (forall n : Z, n <= z -> A n) ->
       (forall n : Z, z <= n -> (forall m : Z, z <= m -> m < n -> A m) -> A n) ->
@@ -273,7 +273,7 @@ Theorem Zstrong_right_induction' :
 Proof NZstrong_right_induction'.
 
 Theorem Zstrong_left_induction' :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     forall z : Z,
     (forall n : Z, z <= n -> A n) ->
     (forall n : Z, n <= z -> (forall m : Z, m <= z -> S n <= m -> A m) -> A n) ->
@@ -281,7 +281,7 @@ Theorem Zstrong_left_induction' :
 Proof NZstrong_left_induction'.
 
 Theorem Zorder_induction :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     forall z : Z, A z ->
     (forall n : Z, z <= n -> A n -> A (S n)) ->
     (forall n : Z, n < z -> A (S n) -> A n) ->
@@ -289,7 +289,7 @@ Theorem Zorder_induction :
 Proof NZorder_induction.
 
 Theorem Zorder_induction' :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     forall z : Z, A z ->
     (forall n : Z, z <= n -> A n -> A (S n)) ->
     (forall n : Z, n <= z -> A n -> A (P n)) ->
@@ -297,7 +297,7 @@ Theorem Zorder_induction' :
 Proof NZorder_induction'.
 
 Theorem Zorder_induction_0 :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     A 0 ->
     (forall n : Z, 0 <= n -> A n -> A (S n)) ->
     (forall n : Z, n < 0 -> A (S n) -> A n) ->
@@ -305,7 +305,7 @@ Theorem Zorder_induction_0 :
 Proof NZorder_induction_0.
 
 Theorem Zorder_induction'_0 :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     A 0 ->
     (forall n : Z, 0 <= n -> A n -> A (S n)) ->
     (forall n : Z, n <= 0 -> A n -> A (P n)) ->
@@ -317,7 +317,7 @@ Ltac Zinduct n := induction_maker n ltac:(apply Zorder_induction_0).
 (** Elimintation principle for < *)
 
 Theorem Zlt_ind :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     forall n : Z, A (S n) ->
       (forall m : Z, n < m -> A m -> A (S m)) -> forall m : Z, n < m -> A m.
 Proof NZlt_ind.
@@ -325,7 +325,7 @@ Proof NZlt_ind.
 (** Elimintation principle for <= *)
 
 Theorem Zle_ind :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
+  forall A : Z -> Prop, Proper (Zeq==>iff) A ->
     forall n : Z, A n ->
       (forall m : Z, n <= m -> A m -> A (S m)) -> forall m : Z, n <= m -> A m.
 Proof NZle_ind.

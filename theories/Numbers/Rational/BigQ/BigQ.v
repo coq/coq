@@ -62,40 +62,42 @@ Open Scope bigQ_scope.
 
 (** [BigQ] is a setoid *)
 
-Add Relation BigQ.t BigQ.eq
- reflexivity proved by (fun x => Qeq_refl [x])
- symmetry proved by (fun x y => Qeq_sym [x] [y])
- transitivity proved by (fun x y z => Qeq_trans [x] [y] [z])
-as BigQeq_rel.
+Instance BigQeq_rel : Equivalence BigQ.eq.
 
-Add Morphism BigQ.add with signature BigQ.eq ==> BigQ.eq ==> BigQ.eq as BigQadd_wd.
+Instance BigQadd_wd : Proper (BigQ.eq==>BigQ.eq==>BigQ.eq) BigQ.add.
 Proof.
- unfold BigQ.eq; intros; rewrite !BigQ.spec_add; rewrite H, H0; apply Qeq_refl.
+ do 3 red. unfold BigQ.eq; intros.
+ rewrite !BigQ.spec_add, H, H0. reflexivity.
 Qed.
 
-Add Morphism BigQ.opp with signature BigQ.eq ==> BigQ.eq as BigQopp_wd.
+Instance BigQopp_wd : Proper (BigQ.eq==>BigQ.eq) BigQ.opp.
 Proof.
- unfold BigQ.eq; intros; rewrite !BigQ.spec_opp; rewrite H; apply Qeq_refl.
+ do 2 red. unfold BigQ.eq; intros.
+ rewrite !BigQ.spec_opp, H; reflexivity.
 Qed.
 
-Add Morphism BigQ.sub with signature BigQ.eq ==> BigQ.eq ==> BigQ.eq as BigQsub_wd.
+Instance BigQsub_wd : Proper (BigQ.eq==>BigQ.eq==>BigQ.eq) BigQ.sub.
 Proof.
- unfold BigQ.eq; intros; rewrite !BigQ.spec_sub; rewrite H, H0; apply Qeq_refl.
+ do 3 red. unfold BigQ.eq; intros.
+ rewrite !BigQ.spec_sub, H, H0; reflexivity.
 Qed.
 
-Add Morphism BigQ.mul with signature BigQ.eq ==> BigQ.eq ==> BigQ.eq as BigQmul_wd.
+Instance BigQmul_wd : Proper (BigQ.eq==>BigQ.eq==>BigQ.eq) BigQ.mul.
 Proof.
- unfold BigQ.eq; intros; rewrite !BigQ.spec_mul; rewrite H, H0; apply Qeq_refl.
+ do 3 red. unfold BigQ.eq; intros.
+ rewrite !BigQ.spec_mul, H, H0; reflexivity.
 Qed.
 
-Add Morphism BigQ.inv with signature BigQ.eq ==> BigQ.eq as BigQinv_wd.
+Instance BigQinv_wd : Proper (BigQ.eq==>BigQ.eq) BigQ.inv.
 Proof.
- unfold BigQ.eq; intros; rewrite !BigQ.spec_inv; rewrite H; apply Qeq_refl.
+ do 2 red; unfold BigQ.eq; intros.
+ rewrite !BigQ.spec_inv, H; reflexivity.
 Qed.
 
-Add Morphism BigQ.div with signature BigQ.eq ==> BigQ.eq ==> BigQ.eq as BigQdiv_wd.
+Instance BigQdiv_wd : Proper (BigQ.eq==>BigQ.eq==>BigQ.eq) BigQ.div.
 Proof.
- unfold BigQ.eq; intros; rewrite !BigQ.spec_div; rewrite H, H0; apply Qeq_refl.
+ do 3 red; unfold BigQ.eq; intros.
+ rewrite !BigQ.spec_div, H, H0; reflexivity.
 Qed.
 
 (* TODO : fix this. For the moment it's useless (horribly slow)

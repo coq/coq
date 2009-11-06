@@ -32,6 +32,7 @@ Hint Rewrite
  Z.spec_mul Z.spec_opp Z.spec_of_Z : Zspec.
 
 Ltac zsimpl := unfold Z.eq in *; autorewrite with Zspec.
+Ltac zcongruence := repeat red; intros; zsimpl; congruence.
 
 Module Export NZOrdAxiomsMod <: NZOrdAxiomsSig.
 Module Export NZAxiomsMod <: NZAxiomsSig.
@@ -47,30 +48,13 @@ Definition NZmul := Z.mul.
 
 Instance NZeq_equiv : Equivalence Z.eq.
 
-Add Morphism NZsucc with signature Z.eq ==> Z.eq as NZsucc_wd.
-Proof.
-intros; zsimpl; f_equal; assumption.
-Qed.
+Obligation Tactic := zcongruence.
 
-Add Morphism NZpred with signature Z.eq ==> Z.eq as NZpred_wd.
-Proof.
-intros; zsimpl; f_equal; assumption.
-Qed.
-
-Add Morphism NZadd with signature Z.eq ==> Z.eq ==> Z.eq as NZadd_wd.
-Proof.
-intros; zsimpl; f_equal; assumption.
-Qed.
-
-Add Morphism NZsub with signature Z.eq ==> Z.eq ==> Z.eq as NZsub_wd.
-Proof.
-intros; zsimpl; f_equal; assumption.
-Qed.
-
-Add Morphism NZmul with signature Z.eq ==> Z.eq ==> Z.eq as NZmul_wd.
-Proof.
-intros; zsimpl; f_equal; assumption.
-Qed.
+Program Instance NZsucc_wd : Proper (Z.eq ==> Z.eq) NZsucc.
+Program Instance NZpred_wd : Proper (Z.eq ==> Z.eq) NZpred.
+Program Instance NZadd_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) NZadd.
+Program Instance NZsub_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) NZsub.
+Program Instance NZmul_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) NZmul.
 
 Theorem NZpred_succ : forall n, Z.pred (Z.succ n) == n.
 Proof.
@@ -80,12 +64,9 @@ Qed.
 Section Induction.
 
 Variable A : Z.t -> Prop.
-Hypothesis A_wd : predicate_wd Z.eq A.
+Hypothesis A_wd : Proper (Z.eq==>iff) A.
 Hypothesis A0 : A 0.
 Hypothesis AS : forall n, A n <-> A (Z.succ n).
-
-Add Morphism A with signature Z.eq ==> iff as A_morph.
-Proof. apply A_wd. Qed.
 
 Let B (z : Z) := A (Z.of_Z z).
 
@@ -204,30 +185,30 @@ Proof.
  rewrite spec_compare_alt; destruct Zcompare; auto.
 Qed.
 
-Add Morphism Z.compare with signature Z.eq ==> Z.eq ==> (@eq comparison) as compare_wd.
+Instance compare_wd : Proper (Z.eq ==> Z.eq ==> eq) Z.compare.
 Proof.
 intros x x' Hx y y' Hy.
 rewrite 2 spec_compare_alt; unfold Z.eq in *; rewrite Hx, Hy; intuition.
 Qed.
 
-Add Morphism Z.lt with signature Z.eq ==> Z.eq ==> iff as NZlt_wd.
+Instance NZlt_wd : Proper (Z.eq ==> Z.eq ==> iff) Z.lt.
 Proof.
 intros x x' Hx y y' Hy; unfold Z.lt; rewrite Hx, Hy; intuition.
 Qed.
 
-Add Morphism Z.le with signature Z.eq ==> Z.eq ==> iff as NZle_wd.
+Instance NZle_wd : Proper (Z.eq ==> Z.eq ==> iff) Z.le.
 Proof.
 intros x x' Hx y y' Hy; unfold Z.le; rewrite Hx, Hy; intuition.
 Qed.
 
-Add Morphism Z.min with signature Z.eq ==> Z.eq ==> Z.eq as NZmin_wd.
+Instance NZmin_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) Z.min.
 Proof.
-intros; red; rewrite 2 spec_min; congruence.
+repeat red; intros; rewrite 2 spec_min; congruence.
 Qed.
 
-Add Morphism Z.max with signature Z.eq ==> Z.eq ==> Z.eq as NZmax_wd.
+Instance NZmax_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) Z.max.
 Proof.
-intros; red; rewrite 2 spec_max; congruence.
+repeat red; intros; rewrite 2 spec_max; congruence.
 Qed.
 
 Theorem NZlt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
@@ -274,10 +255,7 @@ End NZOrdAxiomsMod.
 
 Definition Zopp := Z.opp.
 
-Add Morphism Z.opp with signature Z.eq ==> Z.eq as Zopp_wd.
-Proof.
-intros; zsimpl; auto with zarith.
-Qed.
+Program Instance Zopp_wd : Proper (Z.eq ==> Z.eq) Z.opp.
 
 Theorem Zsucc_pred : forall n, Z.succ (Z.pred n) == n.
 Proof.

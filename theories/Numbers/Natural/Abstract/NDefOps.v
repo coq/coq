@@ -24,7 +24,7 @@ Definition def_add (x y : N) := recursion y (fun _ p => S p) x.
 
 Infix Local "++" := def_add (at level 50, left associativity).
 
-Add Morphism def_add with signature Neq ==> Neq ==> Neq as def_add_wd.
+Instance def_add_wd : Proper (Neq ==> Neq ==> Neq) as def_add.
 Proof.
 unfold def_add.
 intros x x' Exx' y y' Eyy'.
@@ -72,7 +72,7 @@ Proof.
 unfold fun2_eq; intros; apply def_add_wd; assumption.
 Qed.
 
-Add Morphism def_mul with signature Neq ==> Neq ==> Neq as def_mul_wd.
+Instance def_mul_wd : Proper (Neq ==> Neq ==> Neq) def_mul.
 Proof.
 unfold def_mul.
 intros x x' Exx' y y' Eyy'.
@@ -136,7 +136,7 @@ apply lt_step_wd.
 assumption.
 Qed.
 
-Add Morphism def_ltb with signature Neq ==> Neq ==> (@eq bool) as def_ltb_wd.
+Instance def_ltb_wd : Proper (Neq ==> Neq ==> eq) def_ltb.
 Proof.
 intros; now apply lt_curry_wd.
 Qed.

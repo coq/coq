@@ -32,34 +32,14 @@ Definition NZsub := Nminus.
 Definition NZmul := Nmult.
 
 Instance NZeq_equiv : Equivalence NZeq.
-
-Add Morphism NZsucc with signature NZeq ==> NZeq as NZsucc_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZpred with signature NZeq ==> NZeq as NZpred_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZadd with signature NZeq ==> NZeq ==> NZeq as NZadd_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZsub with signature NZeq ==> NZeq ==> NZeq as NZsub_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZmul with signature NZeq ==> NZeq ==> NZeq as NZmul_wd.
-Proof.
-congruence.
-Qed.
+Program Instance NZsucc_wd : Proper (eq==>eq) NZsucc.
+Program Instance NZpred_wd : Proper (eq==>eq) NZpred.
+Program Instance NZadd_wd : Proper (eq==>eq==>eq) NZadd.
+Program Instance NZsub_wd : Proper (eq==>eq==>eq) NZsub.
+Program Instance NZmul_wd : Proper (eq==>eq==>eq) NZmul.
 
 Theorem NZinduction :
-  forall A : NZ -> Prop, predicate_wd NZeq A ->
+  forall A : NZ -> Prop, Proper (NZeq==>iff) A ->
     A N0 -> (forall n, A n <-> A (NZsucc n)) -> forall n : NZ, A n.
 Proof.
 intros A A_wd A0 AS. apply Nrect. assumption. intros; now apply -> AS.
@@ -117,25 +97,10 @@ Definition NZle := Nle.
 Definition NZmin := Nmin.
 Definition NZmax := Nmax.
 
-Add Morphism NZlt with signature NZeq ==> NZeq ==> iff as NZlt_wd.
-Proof.
-unfold NZeq; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
-Qed.
-
-Add Morphism NZle with signature NZeq ==> NZeq ==> iff as NZle_wd.
-Proof.
-unfold NZeq; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
-Qed.
-
-Add Morphism NZmin with signature NZeq ==> NZeq ==> NZeq as NZmin_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZmax with signature NZeq ==> NZeq ==> NZeq as NZmax_wd.
-Proof.
-congruence.
-Qed.
+Program Instance NZlt_wd : Proper (eq==>eq==>iff) NZlt.
+Program Instance NZle_wd : Proper (eq==>eq==>iff) NZle.
+Program Instance NZmin_wd : Proper (eq==>eq==>eq) NZmin.
+Program Instance NZmax_wd : Proper (eq==>eq==>eq) NZmax.
 
 Theorem NZlt_eq_cases : forall n m : N, n <= m <-> n < m \/ n = m.
 Proof.
@@ -199,14 +164,9 @@ Proof.
 reflexivity.
 Qed.
 
-Theorem recursion_wd :
-forall (A : Type) (Aeq : relation A),
-  forall a a' : A, Aeq a a' ->
-    forall f f' : N -> A -> A, fun2_eq NZeq Aeq Aeq f f' ->
-      forall x x' : N, x = x' ->
-        Aeq (recursion a f x) (recursion a' f' x').
+Instance recursion_wd A (Aeq : relation A) :
+ Proper (Aeq==>(eq==>Aeq==>Aeq)==>eq==>Aeq) (@recursion A).
 Proof.
-unfold fun2_wd, NZeq, fun2_eq.
 intros A Aeq a a' Eaa' f f' Eff'.
 intro x; pattern x; apply Nrect.
 intros x' H; now rewrite <- H.
@@ -224,10 +184,10 @@ Qed.
 
 Theorem recursion_succ :
   forall (A : Type) (Aeq : relation A) (a : A) (f : N -> A -> A),
-    Aeq a a -> fun2_wd NZeq Aeq Aeq f ->
+    Aeq a a -> Proper (eq==>Aeq==>Aeq) f ->
       forall n : N, Aeq (recursion a f (Nsucc n)) (f n (recursion a f n)).
 Proof.
-unfold NZeq, recursion, fun2_wd; intros A Aeq a f EAaa f_wd n; pattern n; apply Nrect.
+unfold recursion; intros A Aeq a f EAaa f_wd n; pattern n; apply Nrect.
 rewrite Nrect_step; rewrite Nrect_base; now apply f_wd.
 clear n; intro n; do 2 rewrite Nrect_step; intro IH. apply f_wd; [reflexivity|].
 now rewrite Nrect_step.

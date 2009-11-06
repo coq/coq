@@ -26,13 +26,7 @@ Variable Aeq : relation A.
 
 Notation Local "x ==A y" := (Aeq x y) (at level 70, no associativity).
 
-Hypothesis Aeq_equiv : equiv A Aeq.
-
-Add Relation A Aeq
- reflexivity proved by (proj1 Aeq_equiv)
- symmetry proved by (proj2 (proj2 Aeq_equiv))
- transitivity proved by (proj1 (proj2 Aeq_equiv))
-as Aeq_rel.
+Instance Aeq_equiv : Equivalence Aeq.
 
 Definition strong_rec (a : A) (f : N -> (N -> A) -> A) (n : N) : A :=
 recursion
@@ -42,10 +36,7 @@ recursion
   n.
 
 Theorem strong_rec_wd :
-forall a a' : A, a ==A a' ->
-  forall f f', fun2_eq Neq (fun_eq Neq Aeq) Aeq f f' ->
-    forall n n', n == n' ->
-      strong_rec a f n ==A strong_rec a' f' n'.
+ Proper (Aeq ==> (Neq ==> (Neq ==>Aeq) ==> Aeq) ==> Neq ==> Aeq) strong_rec.
 Proof.
 intros a a' Eaa' f f' Eff' n n' Enn'.
 (* First we prove that recursion (which is on type N -> A) returns

@@ -64,7 +64,7 @@ Theorem Zeq_dne : forall n m : Z, ~ ~ n == m <-> n == m.
 Proof NZeq_dne.
 
 Theorem Zcentral_induction :
-forall A : Z -> Prop, predicate_wd Zeq A ->
+forall A : Z -> Prop, Proper (Zeq==>iff) A ->
   forall z : Z, A z ->
     (forall n : Z, A n <-> A (S n)) ->
       forall n : Z, A n.

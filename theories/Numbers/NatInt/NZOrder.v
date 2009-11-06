@@ -394,10 +394,7 @@ in the induction step *)
 Section Induction.
 
 Variable A : NZ -> Prop.
-Hypothesis A_wd : predicate_wd NZeq A.
-
-Add Morphism A with signature NZeq ==> iff as A_morph.
-Proof. apply A_wd. Qed.
+Hypothesis A_wd : Proper (NZeq==>iff) A.
 
 Section Center.
 
@@ -557,8 +554,7 @@ Theorem NZorder_induction' :
 Proof.
 intros Az AS AP n; apply NZorder_induction; try assumption.
 intros m H1 H2. apply AP in H2; [| now apply <- NZle_succ_l].
-unfold predicate_wd, fun_wd in A_wd; apply -> (A_wd (P (S m)) m);
-[assumption | apply NZpred_succ].
+apply -> (A_wd (P (S m)) m); [assumption | apply NZpred_succ].
 Qed.
 
 End Center.
@@ -615,26 +611,24 @@ Variable z : NZ.
 Let Rlt (n m : NZ) := z <= n /\ n < m.
 Let Rgt (n m : NZ) := m < n /\ n <= z.
 
-Add Morphism Rlt with signature NZeq ==> NZeq ==> iff as Rlt_wd.
+Instance Rlt_wd : Proper (NZeq ==> NZeq ==> iff) Rlt.
 Proof.
-intros x1 x2 H1 x3 x4 H2; unfold Rlt; rewrite H1; now rewrite H2.
+intros x1 x2 H1 x3 x4 H2; unfold Rlt. rewrite H1; now rewrite H2.
 Qed.
 
-Add Morphism Rgt with signature NZeq ==> NZeq ==> iff as Rgt_wd.
+Instance Rgt_wd : Proper (NZeq ==> NZeq ==> iff) Rgt.
 Proof.
 intros x1 x2 H1 x3 x4 H2; unfold Rgt; rewrite H1; now rewrite H2.
 Qed.
 
-Lemma NZAcc_lt_wd : predicate_wd NZeq (Acc Rlt).
+Instance NZAcc_lt_wd : Proper (NZeq==>iff) (Acc Rlt).
 Proof.
-unfold predicate_wd, fun_wd.
 intros x1 x2 H; split; intro H1; destruct H1 as [H2];
 constructor; intros; apply H2; now (rewrite H || rewrite <- H).
 Qed.
 
-Lemma NZAcc_gt_wd : predicate_wd NZeq (Acc Rgt).
+Instance NZAcc_gt_wd : Proper (NZeq==>iff) (Acc Rgt).
 Proof.
-unfold predicate_wd, fun_wd.
 intros x1 x2 H; split; intro H1; destruct H1 as [H2];
 constructor; intros; apply H2; now (rewrite H || rewrite <- H).
 Qed.

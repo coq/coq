@@ -32,13 +32,13 @@ Definition homomorphism (f : N1 -> N2) : Prop :=
 Definition natural_isomorphism : N1 -> N2 :=
   NAxiomsMod1.recursion O2 (fun (n : N1) (p : N2) => S2 p).
 
-Add Morphism natural_isomorphism with signature Eq1 ==> Eq2 as natural_isomorphism_wd.
+Instance natural_isomorphism_wd : Proper (Eq1 ==> Eq2) natural_isomorphism.
 Proof.
 unfold natural_isomorphism.
 intros n m Eqxy.
 apply NAxiomsMod1.recursion_wd with (Aeq := Eq2).
 reflexivity.
-unfold fun2_eq. intros _ _ _ y' y'' H. now apply NBasePropMod2.succ_wd.
+intros _ _ _ y' y'' H. now apply NBasePropMod2.succ_wd.
 assumption.
 Qed.
 

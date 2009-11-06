@@ -29,31 +29,11 @@ Definition NZsub := Zminus.
 Definition NZmul := Zmult.
 
 Instance NZeq_equiv : Equivalence NZeq.
-
-Add Morphism NZsucc with signature NZeq ==> NZeq as NZsucc_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZpred with signature NZeq ==> NZeq as NZpred_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZadd with signature NZeq ==> NZeq ==> NZeq as NZadd_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZsub with signature NZeq ==> NZeq ==> NZeq as NZsub_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZmul with signature NZeq ==> NZeq ==> NZeq as NZmul_wd.
-Proof.
-congruence.
-Qed.
+Program Instance NZsucc_wd : Proper (eq==>eq) NZsucc.
+Program Instance NZpred_wd : Proper (eq==>eq) NZpred.
+Program Instance NZadd_wd : Proper (eq==>eq==>eq) NZadd.
+Program Instance NZsub_wd : Proper (eq==>eq==>eq) NZsub.
+Program Instance NZmul_wd : Proper (eq==>eq==>eq) NZmul.
 
 Theorem NZpred_succ : forall n : Z, NZpred (NZsucc n) = n.
 Proof.
@@ -61,7 +41,7 @@ exact Zpred'_succ'.
 Qed.
 
 Theorem NZinduction :
-  forall A : Z -> Prop, predicate_wd NZeq A ->
+  forall A : Z -> Prop, Proper (NZeq ==> iff) A ->
     A 0 -> (forall n : Z, A n <-> A (NZsucc n)) -> forall n : Z, A n.
 Proof.
 intros A A_wd A0 AS n; apply Zind; clear n.
@@ -108,25 +88,10 @@ Definition NZle := Zle.
 Definition NZmin := Zmin.
 Definition NZmax := Zmax.
 
-Add Morphism NZlt with signature NZeq ==> NZeq ==> iff as NZlt_wd.
-Proof.
-unfold NZeq. intros n1 n2 H1 m1 m2 H2; rewrite H1; now rewrite H2.
-Qed.
-
-Add Morphism NZle with signature NZeq ==> NZeq ==> iff as NZle_wd.
-Proof.
-unfold NZeq. intros n1 n2 H1 m1 m2 H2; rewrite H1; now rewrite H2.
-Qed.
-
-Add Morphism NZmin with signature NZeq ==> NZeq ==> NZeq as NZmin_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism NZmax with signature NZeq ==> NZeq ==> NZeq as NZmax_wd.
-Proof.
-congruence.
-Qed.
+Program Instance NZlt_wd : Proper (eq==>eq==>iff) NZlt.
+Program Instance NZle_wd : Proper (eq==>eq==>iff) NZle.
+Program Instance NZmin_wd : Proper (eq==>eq==>eq) NZmin.
+Program Instance NZmax_wd : Proper (eq==>eq==>eq) NZmax.
 
 Theorem NZlt_eq_cases : forall n m : Z, n <= m <-> n < m \/ n = m.
 Proof.
@@ -182,10 +147,7 @@ match x with
 | Zneg x => Zpos x
 end.
 
-Add Morphism Zopp with signature NZeq ==> NZeq as Zopp_wd.
-Proof.
-congruence.
-Qed.
+Program Instance Zopp_wd : Proper (eq==>eq) Zopp.
 
 Theorem Zsucc_pred : forall n : Z, NZsucc (NZpred n) = n.
 Proof.
