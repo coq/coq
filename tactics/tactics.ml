@@ -2291,6 +2291,7 @@ let abstract_args gl generalize_vars dep id =
 	      List.hd rel, c
 	  in
 	  let argty = pf_type_of gl arg in
+	  let argty = if isSort argty then new_Type () else argty in
 	  let liftargty = lift (List.length ctx) argty in
 	  let convertible = Reductionops.is_conv_leq ctxenv sigma liftargty ty in
 	    match kind_of_term arg with

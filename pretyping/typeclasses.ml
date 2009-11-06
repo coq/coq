@@ -132,6 +132,7 @@ let subst_class (subst,cl) =
     cl_projs = do_subst_projs cl.cl_projs; }
 
 let discharge_class (_,cl) =
+  let repl = Lib.replacement_context () in
   let rel_of_variable_context ctx = List.fold_right
     ( fun (n,_,b,t) (ctx', subst) ->
 	let decl = (Name n, Option.map (substn_vars 1 subst) b, substn_vars 1 subst t) in
@@ -143,7 +144,8 @@ let discharge_class (_,cl) =
 	(fun (id, b, t) (ctx, k) ->
 	   (id, Option.smartmap (substn_vars k subst) b, substn_vars k subst t) :: ctx, succ k)
 	rel ([], n)
-    in ctx in
+    in map_rel_context (Cooking.expmod_constr repl) ctx
+  in
   let abs_context cl =
     match cl.cl_impl with
       | VarRef _ | ConstructRef _ -> assert false
@@ -157,9 +159,11 @@ let discharge_class (_,cl) =
   if cl_impl' == cl.cl_impl then cl else
     let ctx = abs_context cl in
     let ctx, subst = rel_of_variable_context ctx in
+    let context = discharge_context ctx subst cl.cl_context in
+    let props = discharge_rel_context subst (succ (List.length (fst cl.cl_context))) cl.cl_props in
     { cl_impl = cl_impl';
-      cl_context = discharge_context ctx subst cl.cl_context;
-      cl_props = discharge_rel_context subst (succ (List.length (fst cl.cl_context))) cl.cl_props;
+      cl_context = context;
+      cl_props = props;
       cl_projs = list_smartmap (fun (x, y) -> x, Option.smartmap Lib.discharge_con y) cl.cl_projs }
 
 let rebuild_class cl = cl
