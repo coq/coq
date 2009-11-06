@@ -252,28 +252,25 @@ module Latex = struct
 
   let module_ref m s =
     printf "\\moduleid{%s}{" m; raw_ident s; printf "}"
-      (*i
-    match find_module m with
-    | Local ->
-	printf "<a href=\"%s.html\">" m; raw_ident s; printf "</a>"
-    | External m when !externals ->
-	printf "<a href=\"%s.html\">" m; raw_ident s; printf "</a>"
-    | External _ | Unknown ->
-	raw_ident s
-    i*)
 
   let ident_ref m fid typ s =
     let id = if fid <> "" then (m ^ "." ^ fid) else m in
     match find_module m with
-      | Local ->
-	  printf "\\coq%sref{" (type_name typ); label_ident id; printf "}{"; raw_ident s; printf "}"
-      | External _ when !externals ->
-	  printf "\\coq%sref{" (type_name typ); label_ident id; printf "}{"; raw_ident s; printf "}"
+      | Local -> 
+	  if typ = Variable then (printf "\\coqdoc%s{" (type_name typ); raw_ident s; printf "}")
+	  else
+	    (printf "\\coqref{"; label_ident id; printf "}{\\coqdoc%s{" (type_name typ);
+	     raw_ident s; printf "}}")
+      | External m when !externals ->
+	  printf "\\coqexternalref{"; label_ident m; printf "}{";
+	  label_ident fid; printf "}{\\coqdoc%s{" (type_name typ); raw_ident s; printf "}}"
       | External _ | Unknown ->
-	  printf "\\coq%sref{" (type_name typ); label_ident id; printf "}{"; raw_ident s; printf "}"
+	  (* printf "\\coqref{"; label_ident id; printf "}{" *)
+	  printf "\\coqdoc%s{" (type_name typ); raw_ident s; printf "}"
 
   let defref m id ty s =
-    printf "\\coq%s{" (type_name ty); label_ident (m ^ "." ^ id); printf "}{"; raw_ident s; printf "}"
+    printf "\\coqdef{"; label_ident (m ^ "." ^ id); printf "}{"; raw_ident s; printf "}{";
+    printf "\\coqdoc%s{" (type_name ty); raw_ident s; printf "}}"
 
   let reference s = function
     | Def (fullid,typ) ->
@@ -286,24 +283,18 @@ module Latex = struct
 	printf "\\coqdocvar{"; raw_ident s; printf "}"
 
   let ident s loc =
-    if is_keyword s then begin
-      printf "\\coqdockw{"; raw_ident s; printf "}"
-    end else begin
-      begin
-	try
-	  reference s (Index.find (get_module false) loc)
-	with Not_found ->
-	  if is_tactic s then begin
-	    printf "\\coqdoctac{"; raw_ident s; printf "}"
-	  end else begin
-	    if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
-	    then
-	      try reference s (Index.find_string (get_module false) s)
-	      with _ -> (printf "\\coqdocvar{"; raw_ident s; printf "}")
-	    else (printf "\\coqdocvar{"; raw_ident s; printf "}")
-	  end
-      end
-    end
+    try
+      reference s (Index.find (get_module false) loc)
+    with Not_found ->
+      if is_tactic s then
+	(printf "\\coqdoctac{"; raw_ident s; printf "}")
+      else if is_keyword s then
+	(printf "\\coqdockw{"; raw_ident s; printf "}")
+      else if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
+      then
+	try reference s (Index.find_string (get_module false) s)
+	with _ -> (printf "\\coqdocvar{"; raw_ident s; printf "}")
+      else (printf "\\coqdocvar{"; raw_ident s; printf "}")
 
   let ident s l =
     if !in_title then (
@@ -378,6 +369,10 @@ module Latex = struct
   let line_break () = printf "\\coqdoceol\n"
 
   let empty_line_of_code () = printf "\\coqdocemptyline\n"
+
+  let start_inline_coq_block () = line_break (); empty_line_of_code ()
+
+  let end_inline_coq_block () = empty_line_of_code ()
 
   let start_inline_coq () = ()
 
@@ -590,6 +585,10 @@ module Html = struct
   let start_inline_coq () = printf "<span class=\"inlinecode\">"
 
   let end_inline_coq () = printf "</span>"
+
+  let start_inline_coq_block () = line_break (); start_inline_coq ()
+
+  let end_inline_coq_block () = end_inline_coq ()
 
   let paragraph () = printf "\n<br/> <br/>\n"
 
@@ -871,6 +870,10 @@ module TeXmacs = struct
 
   let end_inline_coq () = printf "]>"
 
+  let start_inline_coq_block () = line_break (); start_inline_coq ()
+
+  let end_inline_coq_block () = end_inline_coq ()
+
   let make_multi_index () = ()
 
   let make_index () = ()
@@ -966,6 +969,9 @@ module Raw = struct
   let start_inline_coq () = ()
   let end_inline_coq () = ()
 
+  let start_inline_coq_block () = line_break (); start_inline_coq ()
+  let end_inline_coq_block () = end_inline_coq ()
+
   let make_multi_index () = ()
   let make_index () = ()
   let make_toc () = ()
@@ -1003,6 +1009,12 @@ let start_inline_coq =
   select Latex.start_inline_coq Html.start_inline_coq TeXmacs.start_inline_coq Raw.start_inline_coq
 let end_inline_coq =
   select Latex.end_inline_coq Html.end_inline_coq TeXmacs.end_inline_coq Raw.end_inline_coq
+
+let start_inline_coq_block =
+  select Latex.start_inline_coq_block Html.start_inline_coq_block 
+    TeXmacs.start_inline_coq_block Raw.start_inline_coq_block
+let end_inline_coq_block =
+  select Latex.end_inline_coq_block Html.end_inline_coq_block TeXmacs.end_inline_coq_block Raw.end_inline_coq_block
 
 let indentation = select Latex.indentation Html.indentation TeXmacs.indentation Raw.indentation
 let paragraph = select Latex.paragraph Html.paragraph TeXmacs.paragraph Raw.paragraph

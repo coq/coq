@@ -552,7 +552,7 @@ GEXTEND Gram
       | IDENT "Generalizable"; ["Variable" | IDENT "Variables"];
            gen = [ IDENT "none" -> None | IDENT "all" -> Some [] | 
 	       idl = LIST1 identref -> Some idl ] ->
-	     VernacGeneralizable (use_section_locality (), gen) ] ]
+	     VernacGeneralizable (use_non_locality (), gen) ] ]
   ;
   implicit_name:
     [ [ "!"; id = ident -> (id, false, true)

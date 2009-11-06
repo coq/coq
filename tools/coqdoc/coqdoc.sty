@@ -65,6 +65,25 @@
 % macro for typesetting tactic identifiers
 \newcommand{\coqdoctac}[1]{\texttt{#1}}
 
+% These are the real macros used by coqdoc, their typesetting is 
+% based on the above macros by default.
+
+\newcommand{\coqdoclibrary}[1]{\coqdoccst{#1}}
+\newcommand{\coqdocinductive}[1]{\coqdocind{#1}}
+\newcommand{\coqdocdefinition}[1]{\coqdoccst{#1}}
+\newcommand{\coqdocvariable}[1]{\coqdocvar{#1}}
+\newcommand{\coqdocconstructor}[1]{\coqdocconstr{#1}}
+\newcommand{\coqdoclemma}[1]{\coqdoccst{#1}}
+\newcommand{\coqdocclass}[1]{\coqdocind{#1}}
+\newcommand{\coqdocinstance}[1]{\coqdoccst{#1}}
+\newcommand{\coqdocmethod}[1]{\coqdoccst{#1}}
+\newcommand{\coqdocabbreviation}[1]{\coqdoccst{#1}}
+\newcommand{\coqdocrecord}[1]{\coqdocind{#1}}
+\newcommand{\coqdocprojection}[1]{\coqdoccst{#1}}
+\newcommand{\coqdocnotation}[1]{\coqdockw{#1}}
+\newcommand{\coqdocsection}[1]{\coqdoccst{#1}}
+\newcommand{\coqdocaxiom}[1]{\coqdocax{#1}}
+\newcommand{\coqdocmoduleid}[1]{\coqdocmod{#1}}
 
 % Environment encompassing code fragments
 % !!! CAUTION: This environment may have empty contents
@@ -102,12 +121,15 @@
 
   \newcommand{\coqdef}[3]{\phantomsection\hypertarget{coq:#1}{#3}}
   \newcommand{\coqref}[2]{\hyperlink{coq:#1}{#2}}
+  \newcommand{\coqexternalref}[3]{\href{#1.html\##2}{#3}}
+
   \newcommand{\identref}[2]{\hyperlink{coq:#1}{\textsf {#2}}}
   \newcommand{\coqlibrary}[3]{\cleardoublepage\phantomsection
     \hypertarget{coq:#1}{\chapter{#2\texorpdfstring{\coqdoccst}{}{#3}}}}
 \else
   \newcommand{\coqdef}[3]{#3}
   \newcommand{\coqref}[2]{#2}
+  \newcommand{\coqexternalref}[3]{#3}
   \newcommand{\texorpdfstring}[2]{#1}
   \newcommand{\identref}[2]{\textsf{#2}}
   \newcommand{\coqlibrary}[3]{\cleardoublepage\chapter{#2\coqdoccst{#3}}}
@@ -146,55 +168,5 @@
 \def\coqdocax#1{{{\color{\coqdocaxcolor}{\textsl{\textrm{#1}}}}}}
 \def\coqdoctac#1{{\color{\coqdoctaccolor}{\texttt{#1}}}}
 \fi
-
-\newcommand{\coqdefinition}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
-\newcommand{\coqdefinitionref}[2]{\coqref{#1}{\coqdoccst{#2}}}
-
-\newcommand{\coqvariable}[2]{\coqdocvar{#2}}
-\newcommand{\coqvariableref}[2]{\coqref{#1}{\coqdocvar{#2}}}
-
-\newcommand{\coqinductive}[2]{\coqdef{#1}{#2}{\coqdocind{#2}}}
-\newcommand{\coqinductiveref}[2]{\coqref{#1}{\coqdocind{#2}}}
-
-\newcommand{\coqconstructor}[2]{\coqdef{#1}{#2}{\coqdocconstr{#2}}}
-\newcommand{\coqconstructorref}[2]{\coqref{#1}{\coqdocconstr{#2}}}
-
-\newcommand{\coqlemma}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
-\newcommand{\coqlemmaref}[2]{\coqref{#1}{\coqdoccst{#2}}}
-
-\newcommand{\coqclass}[2]{\coqdef{#1}{#2}{\coqdocind{#2}}}
-\newcommand{\coqclassref}[2]{\coqref{#1}{\coqdocind{#2}}}
-
-\newcommand{\coqinstance}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
-\newcommand{\coqinstanceref}[2]{\coqref{#1}{\coqdoccst{#2}}}
-
-\newcommand{\coqmethod}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
-\newcommand{\coqmethodref}[2]{\coqref{#1}{\coqdoccst{#2}}}
-
-\newcommand{\coqabbreviation}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
-\newcommand{\coqabbreviationref}[2]{\coqref{#1}{\coqdoccst{#2}}}
-
-\newcommand{\coqrecord}[2]{\coqdef{#1}{#2}{\coqdocind{#2}}}
-\newcommand{\coqrecordref}[2]{\coqref{#1}{\coqdocind{#2}}}
-
-\newcommand{\coqprojection}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
-\newcommand{\coqprojectionref}[2]{\coqref{#1}{\coqdoccst{#2}}}
-
-\newcommand{\coqnotationref}[2]{\coqref{#1}{\coqdockw{#2}}}
-
-\newcommand{\coqsection}[2]{\coqdef{sec:#1}{#2}{\coqdoccst{#2}}}
-\newcommand{\coqsectionref}[2]{\coqref{sec:#1}{\coqdoccst{#2}}}
-
-%\newcommand{\coqlibrary}[2]{\chapter{Library \coqdoccst{#2}}\label{coq:#1}}
-  
-%\newcommand{\coqlibraryref}[2]{\ref{coq:#1}}
-
-\newcommand{\coqlibraryref}[2]{\coqref{#1}{\coqdoccst{#2}}}
-
-\newcommand{\coqaxiom}[2]{\coqdef{#1}{#2}{\coqdocax{#2}}}
-\newcommand{\coqaxiomref}[2]{\coqref{#1}{\coqdocax{#2}}}
-
-\newcommand{\coqmodule}[2]{\coqdef{mod:#1}{#2}{\coqdocmod{#2}}}
-\newcommand{\coqmoduleref}[2]{\coqref{mod:#1}{\coqdocmod{#2}}}
 
 \endinput

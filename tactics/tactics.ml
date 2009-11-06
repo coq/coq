@@ -2160,7 +2160,7 @@ let lift_together l = lift_togethern 0 l
 
 let lift_list l = List.map (lift 1) l
 
-let ids_of_constr vars c =
+let ids_of_constr ?(all=false) vars c =
   let rec aux vars c =
     match kind_of_term c with
     | Var id -> Idset.add id vars
@@ -2169,7 +2169,8 @@ let ids_of_constr vars c =
 	| Construct (ind,_)
 	| Ind ind ->
             let (mib,mip) = Global.lookup_inductive ind in
-	      array_fold_left_from mib.Declarations.mind_nparams
+	      array_fold_left_from
+		(if all then 0 else mib.Declarations.mind_nparams)
 		aux vars args
 	| _ -> fold_constr aux vars c)
     | _ -> fold_constr aux vars c
@@ -2248,6 +2249,23 @@ let hyps_of_vars env sign nogen hyps =
         sign 
     in lh
 
+exception Seen
+
+let linear vars args = 
+  let seen = ref vars in
+    try 
+      Array.iter (fun i -> 
+	let rels = ids_of_constr ~all:true Idset.empty i in
+	let seen' = 
+	  Idset.fold (fun id acc ->
+	    if Idset.mem id acc then raise Seen
+	    else Idset.add id acc)
+	    rels !seen
+	in seen := seen')
+	args;
+      true
+    with Seen -> false
+
 let abstract_args gl generalize_vars dep id = 
   let c = pf_get_hyp_typ gl id in
   let sigma = project gl in
@@ -2299,7 +2317,8 @@ let abstract_args gl generalize_vars dep id =
 	in 
 	let f', args' = decompose_indapp f args in
 	let dogen, f', args' =
-	  if not (array_distinct args) then true, f', args'
+	  let parvars = ids_of_constr ~all:true Idset.empty f' in
+	  if not (linear parvars args') then true, f, args
 	  else
 	    match array_find_i (fun i x -> not (isVar x)) args' with
 	    | None -> false, f', args'
@@ -2389,6 +2408,11 @@ let specialize_hypothesis id gl =
 	(exact_no_check (refresh_universes_strict acc')) gl
     else tclFAIL 0 (str "Nothing to do in hypothesis " ++ pr_id id) gl
       
+
+let specialize_hypothesis id gl =
+  if occur_id [] id (pf_concl gl) then
+    tclFAIL 0 (str "Specialization not allowed on dependent hypotheses") gl 
+  else specialize_hypothesis id gl
 
 let dependent_pattern c gl =
   let cty = pf_type_of gl c in

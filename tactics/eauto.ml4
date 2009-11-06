@@ -421,9 +421,9 @@ let autosimpl db cl =
 
 TACTIC EXTEND autounfold
 | [ "autounfold" hintbases(db) "in" hyp(id) ] ->
-    [ autounfold (match db with None -> ["core"] | Some x -> "core"::x) (Some (id, InHyp)) ]
+    [ autounfold (match db with None -> ["core"] | Some x -> x) (Some (id, InHyp)) ]
 | [ "autounfold" hintbases(db) ] ->
-    [ autounfold (match db with None -> ["core"] | Some x -> "core"::x) None ]
+    [ autounfold (match db with None -> ["core"] | Some x -> x) None ]
       END
 
 let unfold_head env (ids, csts) c = 

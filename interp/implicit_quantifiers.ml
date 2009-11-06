@@ -55,9 +55,13 @@ let add_generalizable gen table =
 
 let cache_generalizable_type (_,(local,cmd)) =
   generalizable_table := add_generalizable cmd !generalizable_table
+
+let load_generalizable_type _ (_,(local,cmd)) =
+  generalizable_table := add_generalizable cmd !generalizable_table
     
 let (in_generalizable, _) =
   declare_object {(default_object "GENERALIZED-IDENT") with
+    load_function = load_generalizable_type;
     cache_function = cache_generalizable_type;
     classify_function = (fun (local, _ as obj) -> if local then Dispose else Keep obj)
   }

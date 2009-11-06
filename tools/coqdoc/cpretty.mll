@@ -70,7 +70,9 @@
   let start_emph () = in_emph := true; Output.start_emph ()
   let stop_emph () = if !in_emph then (Output.stop_emph (); in_emph := false)
     
-  let backtrack lexbuf = lexbuf.lex_curr_pos <- lexbuf.lex_start_pos
+  let backtrack lexbuf = lexbuf.lex_curr_pos <- lexbuf.lex_start_pos;
+    lexbuf.lex_curr_p <- lexbuf.lex_start_p
+
   let backtrack_past_newline lexbuf =
     let buf = lexeme lexbuf in
     let splits = Str.bounded_split_delim (Str.regexp "['\n']") buf 2 in
@@ -435,7 +437,9 @@ let end_verb = "(*" space* "end" space+ "verb" space* "*)"
 
 rule coq_bol = parse
   | space* nl+
-      { if not (!in_proof <> None && (!Cdglobals.gallina || !Cdglobals.light)) then Output.empty_line_of_code (); coq_bol lexbuf }
+      { if not (!in_proof <> None && (!Cdglobals.gallina || !Cdglobals.light)) 
+        then Output.empty_line_of_code (); 
+        coq_bol lexbuf }
   | space* "(**" space_nl
       { Output.end_coq (); Output.start_doc ();
 	let eol = doc_bol lexbuf in
@@ -707,10 +711,9 @@ and doc_list_bol indents = parse
         doc_list_bol indents lexbuf }
   | "[[" nl
       { formatted := true;
-        Output.paragraph ();
-        Output.start_inline_coq ();
+        Output.start_inline_coq_block ();
         ignore(body_bol lexbuf);
-        Output.end_inline_coq ();
+        Output.end_inline_coq_block ();
         formatted := false;
         doc_list_bol indents lexbuf }
   | space* nl space* '-'
@@ -779,9 +782,9 @@ and doc indents = parse
       { if !Cdglobals.plain_comments
         then (Output.char '['; Output.char '['; doc indents lexbuf)
         else (formatted := true;
-              Output.line_break (); Output.start_inline_coq ();
+              Output.start_inline_coq_block ();
 	      let eol = body_bol lexbuf in
-	        Output.end_inline_coq (); formatted := false;
+	        Output.end_inline_coq_block (); formatted := false;
 	        if eol then
 		  match indents with
 		  | Some ls -> doc_list_bol ls lexbuf
@@ -931,9 +934,9 @@ and comment = parse
       if !Cdglobals.parse_comments then
         if !Cdglobals.plain_comments then (Output.char '['; Output.char '[')
         else (formatted := true;
-              Output.line_break (); Output.start_inline_coq ();
+              Output.start_inline_coq_block ();
               let _ = body_bol lexbuf in
-                Output.end_inline_coq (); formatted := false);
+                Output.end_inline_coq_block (); formatted := false);
       comment lexbuf}
   | "$"
       { if !Cdglobals.parse_comments then
@@ -986,7 +989,7 @@ and body_bol = parse
   | _ { backtrack lexbuf; Output.indentation 0; body lexbuf }
 
 and body = parse
-  | nl {Output.line_break(); body_bol lexbuf}
+  | nl {Output.line_break(); Lexing.new_line lexbuf; body_bol lexbuf}
   | nl+ space* "]]" space* nl
       { if not !formatted then
           begin
