@@ -250,7 +250,8 @@ Bind Scope list_scope with list.
 
 Local Open Scope list_scope.
 
-Fixpoint length (A : Type) (l:list A) : nat :=
+Definition length (A : Type) : list A -> nat :=
+  fix length l :=
   match l with
    | nil => O
    | _ :: l' => S (length l')
@@ -258,7 +259,8 @@ Fixpoint length (A : Type) (l:list A) : nat :=
 
 (** Concatenation of two lists *)
 
-Fixpoint app (A : Type) (l m:list A) : list A :=
+Definition app (A : Type) : list A -> list A -> list A :=
+  fix app l m :=
   match l with
    | nil => m
    | a :: l1 => a :: app l1 m
