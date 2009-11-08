@@ -38,9 +38,11 @@ val free_vars_of_constr_expr : constr_expr -> ?bound:Idset.t ->
 val free_vars_of_binders :
   ?bound:Idset.t -> Names.identifier list -> local_binder list -> Idset.t * Names.identifier list
 
-(* Returns the free ids in left-to-right order with the location of their first occurence *)
+(* Returns the generalizable free ids in left-to-right
+   order with the location of their first occurence *)
 
-val free_vars_of_rawconstr : ?bound:Idset.t -> rawconstr -> (Names.identifier * loc) list
+val generalizable_vars_of_rawconstr : ?bound:Idset.t -> ?allowed:Idset.t ->
+  rawconstr -> (Names.identifier * loc) list
 
 val make_fresh : Names.Idset.t -> Environ.env -> identifier -> identifier
 

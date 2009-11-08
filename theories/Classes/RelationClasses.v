@@ -74,7 +74,7 @@ Hint Extern 4 => solve_relation : relations.
 
 (** We can already dualize all these properties. *)
 
-Generalizable Variables A B C D R S T U eqA eqB eqC eqD.
+Generalizable Variables A B C D R S T U l eqA eqB eqC eqD.
 
 Program Lemma flip_Reflexive `(Reflexive A R) : Reflexive (flip R).
 Proof. tauto. Qed.

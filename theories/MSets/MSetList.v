@@ -225,7 +225,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Hint Resolve @ok.
   Hint Constructors Ok.
 
-  Instance Sort_Ok `(Hs : Sort s) : Ok s := Hs.
+  Instance Sort_Ok s `(Hs : Sort s) : Ok s := Hs.
 
   Ltac inv_ok := match goal with
    | H:Ok (_ :: _) |- _ => apply @ok in H; inversion_clear H; inv_ok
@@ -276,7 +276,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   constructor; intuition.
   Qed.
 
-  Global Instance isok_Ok `(isok s = true) : Ok s | 10.
+  Global Instance isok_Ok s `(isok s = true) : Ok s | 10.
   Proof.
   intros. apply <- isok_iff. auto.
   Qed.

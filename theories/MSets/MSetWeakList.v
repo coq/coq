@@ -126,7 +126,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   Hint Constructors Ok.
   Hint Resolve @ok.
 
-  Instance NoDup_Ok `(nd : NoDup s) : Ok s := nd.
+  Instance NoDup_Ok s (nd : NoDup s) : Ok s := nd.
 
   Ltac inv_ok := match goal with
    | H:Ok (_ :: _) |- _ => apply @ok in H; inversion_clear H; inv_ok
@@ -179,7 +179,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   rewrite <- mem_spec; auto; congruence.
   Qed.
 
-  Global Instance isok_Ok `(isok l = true) : Ok l | 10.
+  Global Instance isok_Ok l : isok l = true -> Ok l | 10.
   Proof.
   intros. apply <- isok_iff; auto.
   Qed.

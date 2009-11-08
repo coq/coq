@@ -16,6 +16,8 @@ Require Import Relation_Definitions.
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.Program.Program.
 
+Generalizable Variables A l.
+
 (** Morphisms for relations *)
 
 Instance relation_conjunction_morphism : Proper (relation_equivalence (A:=A) ==>

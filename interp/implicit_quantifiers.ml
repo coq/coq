@@ -95,13 +95,17 @@ let is_freevar ids env x =
 
 (* Auxilliary functions for the inference of implicitly quantified variables. *)
 
+let ungeneralizable loc id =
+  user_err_loc (loc, "Generalization", 
+	       str "Unbound and ungeneralizable variable " ++ pr_id id)
+
 let free_vars_of_constr_expr c ?(bound=Idset.empty) l =
   let found loc id bdvars l =
     if List.mem id l then l
     else if is_freevar bdvars (Global.env ()) id
     then
       if find_generalizable_ident id then id :: l
-      else user_err_loc (loc, "Generalization", str "Unbound and ungeneralizable variable " ++ pr_id id)
+      else ungeneralizable loc id
     else l
   in
   let rec aux bdvars l c = match c with
@@ -134,7 +138,7 @@ let add_name_to_ids set na =
   | Anonymous -> set
   | Name id -> Idset.add id set
 
-let free_vars_of_rawconstr ?(bound=Idset.empty) =
+let generalizable_vars_of_rawconstr ?(bound=Idset.empty) ?(allowed=Idset.empty) =
   let rec vars bound vs = function
     | RVar (loc,id) ->
 	if is_freevar bound (Global.env ()) id then
@@ -191,14 +195,15 @@ let free_vars_of_rawconstr ?(bound=Idset.empty) =
   and vars_return_type bound vs (na,tyopt) =
     let bound' = add_name_to_ids bound na in
     vars_option bound' vs tyopt
-  in
-  fun rt -> List.rev (vars bound [] rt)
+  in fun rt -> 
+    let vars = List.rev (vars bound [] rt) in
+      List.iter (fun (id, loc) ->
+	if not (Idset.mem id allowed || find_generalizable_ident id) then 
+	  ungeneralizable loc id) vars;
+      vars
 
 let rec make_fresh ids env x =
   if is_freevar ids env x then x else make_fresh ids env (Nameops.lift_ident x)
-
-let fre_ids env ids =
-  List.filter (is_freevar env (Global.env())) ids
 
 let next_ident_away_from id avoid = make_fresh avoid (Global.env ()) id
 

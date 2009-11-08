@@ -842,7 +842,7 @@ let intern_generalized_binder ?(fail_anonymous=false) intern_type lvar
 	Implicit_quantifiers.combine_params_freevar ty
   in
   let ty' = intern_type (ids,true,tmpsc,sc) ty in
-  let fvs = Implicit_quantifiers.free_vars_of_rawconstr ~bound:ids ty' in
+  let fvs = Implicit_quantifiers.generalizable_vars_of_rawconstr ~bound:ids ~allowed:ids' ty' in
   let env' = List.fold_left (fun env (x, l) -> push_loc_name_env ~fail_anonymous lvar env l (Name x)) env fvs in
   let bl = List.map (fun (id, loc) -> (Name id, b, None, RHole (loc, Evd.BinderType (Name id)))) fvs in
   let na = match na with
@@ -879,7 +879,7 @@ let intern_local_binder_aux ?(fail_anonymous=false) intern intern_type lvar ((id
 
 let intern_generalization intern (ids,unb,tmp_scope,scopes as env) lvar loc bk ak c =
   let c = intern (ids,true,tmp_scope,scopes) c in
-  let fvs = Implicit_quantifiers.free_vars_of_rawconstr ~bound:ids c in
+  let fvs = Implicit_quantifiers.generalizable_vars_of_rawconstr ~bound:ids c in
   let env', c' =
     let abs =
       let pi =

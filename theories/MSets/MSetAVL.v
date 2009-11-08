@@ -538,7 +538,7 @@ Definition IsOk := bst.
 
 Class Ok (s:t) : Prop := { ok : bst s }.
 
-Instance bst_Ok `(Hs : bst s) : Ok s := Hs.
+Instance bst_Ok s (Hs : bst s) : Ok s := Hs.
 
 Fixpoint ltb_tree x s :=
  match s with
@@ -657,7 +657,7 @@ Proof.
  intuition_in.
 Qed.
 
-Instance isok_Ok `(isok s = true) : Ok s | 10.
+Instance isok_Ok s : isok s = true -> Ok s | 10.
 Proof. intros; apply <- isok_iff; auto. Qed.
 
 
