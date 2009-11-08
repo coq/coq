@@ -2,6 +2,34 @@
 = CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
 =========================================
 
+** Cleaning in commmand.ml
+
+Functions about starting/ending a lemma are in lemmas.ml
+Functions about inductive schemes are in indschemes.ml
+
+Functions renamed:
+
+declare_one_assumption -> declare_assumption
+declare_assumption -> declare_assumptions
+Command.syntax_definition -> Metasyntax.add_syntactic_definition
+declare_interning_data merged with add_notation_interpretation
+compute_interning_datas -> compute_full_internalization_env
+implicits_env -> internalization_env
+full_implicits_env -> full_internalization_env
+build_mutual -> do_mutual_inductive
+build_recursive -> do_fixpoint
+build_corecursive -> do_cofixpoint
+build_induction_scheme -> build_mutual_induction_scheme
+build_indrec -> build_induction_scheme
+instantiate_type_indrec_scheme -> weaken_sort_scheme
+instantiate_indrec_scheme -> modify_sort_scheme
+make_case_dep, make_case_nodep -> build_case_analysis_scheme
+make_case_gen -> build_case_analysis_scheme_default
+
+Types:
+
+decl_notation -> decl_notation option
+
 ** Cleaning in libnames/nametab interfaces
 
 Functions:

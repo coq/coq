@@ -377,10 +377,12 @@ let gl_make_elim ind gl =
   Indrec.lookup_eliminator ind (elimination_sort_of_goal gl)
 
 let gl_make_case_dep ind gl =
-  pf_apply Indrec.make_case_dep gl ind (elimination_sort_of_goal gl)
+  pf_apply Indrec.build_case_analysis_scheme gl ind true
+    (elimination_sort_of_goal gl)
 
 let gl_make_case_nodep ind gl =
-  pf_apply Indrec.make_case_nodep gl ind (elimination_sort_of_goal gl)
+  pf_apply Indrec.build_case_analysis_scheme gl ind false
+    (elimination_sort_of_goal gl)
 
 let elimination_then_using tac predicate bindings c gl =
   let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in

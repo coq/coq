@@ -150,7 +150,7 @@ let rec abstract_rawconstr c = function
 
 let interp_casted_constr_with_implicits sigma env impls c  =
 (*   Constrintern.interp_rawconstr_with_implicits sigma env [] impls c *)
-  Constrintern.intern_gen false sigma env ~impls:([],impls)
+  Constrintern.intern_gen false sigma env ~impls
     ~allow_patvar:false  ~ltacvars:([],[]) c
 
 
@@ -166,15 +166,12 @@ let build_newrecursive
   let (rec_sign,rec_impls) =
     List.fold_left
       (fun (env,impls) ((_,recname),_,bl,arityc,_) ->
-        let arityc = Command.generalize_constr_expr arityc bl in
+        let arityc = Topconstr.prod_constr_expr arityc bl in
         let arity = Constrintern.interp_type sigma env0 arityc in
-	let impl =
-	  if Impargs.is_implicit_args()
-	  then Impargs.compute_implicits  env0 arity
-	  else [] in
-	let impls' =(recname,(Constrintern.Recursive,[],impl,Notation.compute_arguments_scope arity))::impls in
-        (Environ.push_named (recname,None,arity) env, impls'))
+	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity [] in
+        (Environ.push_named (recname,None,arity) env, (recname,impl) :: impls))
       (env0,[]) lnameargsardef in
+  let rec_impls = Constrintern.set_internalization_env_params rec_impls [] in
   let recdef =
     (* Declare local notations *)
     let fs = States.freeze() in
@@ -367,16 +364,15 @@ let generate_principle  on_error
 let register_struct is_rec fixpoint_exprl =
   match fixpoint_exprl with
     | [((_,fname),_,bl,ret_type,body),_] when not is_rec ->
+	let ce,imps =
+	  Command.interp_definition
+	    (Flags.boxed_definitions ()) bl None body (Some ret_type)
+	in
 	Command.declare_definition
-	  fname
-	  (Decl_kinds.Global,Flags.boxed_definitions (),Decl_kinds.Definition)
-	  bl
-	  None
-  	  body
-	  (Some ret_type)
-	  (fun _ _ -> ())
+	  fname (Decl_kinds.Global,Decl_kinds.Definition)
+	  ce imps (fun _ _ -> ())
     | _ ->
-	Command.build_recursive fixpoint_exprl (Flags.boxed_definitions())
+	Command.do_fixpoint fixpoint_exprl (Flags.boxed_definitions())
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref
     is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
@@ -389,7 +385,7 @@ let generate_correction_proof_wf f_ref tcc_lemma_ref
 let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas args ret_type body
     pre_hook
     =
-  let type_of_f = Command.generalize_constr_expr ret_type args in
+  let type_of_f = Topconstr.prod_constr_expr ret_type args in
   let rec_arg_num =
     let names =
       List.map
@@ -420,7 +416,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
     Topconstr.CApp (dummy_loc,(None,Topconstr.mkRefC (Qualid (dummy_loc,(qualid_of_string "Logic.eq")))),
 		    [(f_app_args,None);(body,None)])
   in
-  let eq = Command.generalize_constr_expr unbounded_eq args in
+  let eq = Topconstr.prod_constr_expr unbounded_eq args in
   let hook f_ref tcc_lemma_ref functional_ref eq_ref rec_arg_num rec_arg_type
       nb_args relation =
     try
@@ -531,7 +527,7 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
 			 raise (UserError("",str "Cannot find argument " ++
 					    Ppconstr.pr_id id))
 		     in
- 		     (name,annot,args,types,body),(None:Vernacexpr.decl_notation)
+		     (name,annot,args,types,body),(None:Vernacexpr.decl_notation option)
 		 | (name,None,args,types,body),recdef ->
 		     let names =  (Topconstr.names_of_local_assums args) in
 		     if  is_one_rec recdef  && List.length names > 1 then
@@ -541,7 +537,7 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
 		     else
 		       let loc, na = List.hd names in
 			 (name,(Some (loc, Nameops.out_name na), Topconstr.CStructRec),args,types,body),
-		     (None:Vernacexpr.decl_notation)
+		     (None:Vernacexpr.decl_notation option)
 		 | (_,Some (Wf _),_,_,_),_ | (_,Some (Mes _),_,_,_),_->
 		     error
 		       ("Cannot use mutual definition with well-founded recursion or measure")

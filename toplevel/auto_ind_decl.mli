@@ -11,17 +11,31 @@ open Names
 open Libnames
 open Mod_subst
 open Sign
+open Proof_type
+open Ind_tables
 
+(* Build boolean equality of a block of mutual inductive types *)
 
-val subst_in_constr : (substitution*(inductive*constr))
-                     -> (inductive*constr)
+exception EqNotFound of inductive * inductive
+exception EqUnknown of string
+exception UndefinedCst of string
+exception InductiveWithProduct
+exception InductiveWithSort
+exception ParameterWithoutEquality of constant
+exception NonSingletonProp of inductive
 
-val compute_bl_goal : inductive -> rel_context -> int -> types
-val compute_bl_tact : inductive -> rel_context -> int -> unit
-val compute_lb_goal : inductive -> rel_context -> int -> types
-val compute_lb_tact : inductive -> rel_context -> int -> unit
-val compute_dec_goal : inductive -> rel_context -> int -> types
-val compute_dec_tact : inductive -> rel_context -> int -> unit
+val beq_scheme_kind : mutual scheme_kind
+val build_beq_scheme : mutual_inductive -> constr array
 
+(* Build equivalence between boolean equality and Leibniz equality *)
 
-val make_eq_scheme :mutual_inductive -> types array
+val lb_scheme_kind : mutual scheme_kind
+val make_lb_scheme : mutual_inductive -> constr array
+
+val bl_scheme_kind : mutual scheme_kind
+val make_bl_scheme : mutual_inductive -> constr array
+
+(* Build decidability of equality *)
+
+val eq_dec_scheme_kind : mutual scheme_kind
+val make_eq_decidability : mutual_inductive -> constr array

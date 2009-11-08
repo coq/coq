@@ -80,9 +80,9 @@ intros A x P H y H'; case JMeq_eq with (1 := JMeq_sym H'); trivial.
 Qed.
 
 Lemma JMeq_congr :
- forall (A B:Type) (f:A->B) (x y:A), JMeq x y -> JMeq (f x) (f y).
+ forall (A:Type) (x:A) (B:Type) (f:A->B) (y:A), JMeq x y -> f x = f y.
 Proof.
-intros A B f x y H; case JMeq_eq with (1 := H); trivial.
+intros A x B f y H; case JMeq_eq with (1 := H); trivial.
 Qed.
 
 (** [JMeq] is equivalent to [eq_dep Type (fun X => X)] *)

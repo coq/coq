@@ -335,3 +335,22 @@ let reset_top_of_script () =
 	 up_until_matching_rule is_proof_instr pts
 	with Not_found -> top_of_tree pts)
 
+(**********************************************************************)
+(* Shortcut to build a term using tactics *)
+
+open Decl_kinds
+
+let next = let n = ref 0 in fun () -> incr n; !n
+
+let build_by_tactic typ tac =
+  let id = id_of_string ("temporary_proof"^string_of_int (next())) in
+  let sign = Decls.clear_proofs (Global.named_context ()) in
+  start_proof id (Global,Proof Theorem) sign typ (fun _ _ -> ());
+  try
+    by tac;
+    let _,(const,_,_,_) = cook_proof (fun _ -> ()) in
+    delete_current_proof ();
+    const.const_entry_body
+  with e ->
+    delete_current_proof ();
+    raise e

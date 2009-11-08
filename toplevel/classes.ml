@@ -74,7 +74,7 @@ type binder_list = (identifier located * bool * constr_expr) list
 
 (* Calls to interpretation functions. *)
 
-let interp_type_evars evdref env ?(impls=([],[])) typ =
+let interp_type_evars evdref env ?(impls=empty_internalization_env) typ =
   let typ' = intern_gen true ~impls !evdref env typ in
   let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
     imps, Pretyping.Default.understand_tcc_evars evdref env Pretyping.IsType typ'
@@ -129,7 +129,7 @@ let declare_instance_constant k pri global imps ?hook id term termtype =
     in DefinitionEntry entry, kind
   in
   let kn = Declare.declare_constant id cdecl in
-    Flags.if_verbose Command.definition_message id;
+    Declare.definition_message id;
     instance_hook k pri global imps ?hook (ConstRef kn);
     id
 
@@ -254,7 +254,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	    evars := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env !evars;
 	    let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	      Flags.silently (fun () ->
-		Command.start_proof id kind termtype (fun _ -> instance_hook k pri global imps ?hook);
+		Lemmas.start_proof id kind termtype (fun _ -> instance_hook k pri global imps ?hook);
 		if props <> [] then 
 		  Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS ( !isevars)) *)
 		    (!refine_ref (evm, term))
@@ -308,7 +308,7 @@ let context ?(hook=fun _ -> ()) l =
 	let impl = List.exists (fun (x,_) ->
 	  match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
 	in
-	  Command.declare_one_assumption false (Local (* global *), Definitional) t
+	  Command.declare_assumption false (Local (* global *), Definitional) t
 	    [] impl (* implicit *) false (* inline *) (dummy_loc, id);
 	  match class_of_constr t with
 	  | None -> ()

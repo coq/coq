@@ -1364,7 +1364,7 @@ let do_build_inductive
 (*   in *)
   let _time2 = System.get_time () in
   try
-    with_full_print (Flags.silently (Command.build_mutual rel_inds)) true
+    with_full_print (Flags.silently (Command.do_mutual_inductive rel_inds)) true
   with
     | UserError(s,msg) as e ->
 	let _time3 = System.get_time () in

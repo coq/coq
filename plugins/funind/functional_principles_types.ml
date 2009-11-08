@@ -303,7 +303,7 @@ let pp_dur time time' =
 (* let qed () = save_named true  *)
 let defined () =
   try
-    Command.save_named false
+    Lemmas.save_named false
   with
     | UserError("extract_proof",msg) ->
 	Util.errorlabstrm
@@ -333,7 +333,7 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
     next_global_ident_away true (id_of_string "___________princ_________") []
   in
   begin
-    Command.start_proof
+    Lemmas.start_proof
       new_princ_name
       (Decl_kinds.Global,(Decl_kinds.Proof Decl_kinds.Theorem))
       new_principle_type
@@ -529,15 +529,14 @@ let make_scheme (fas : (constant*Rawterm.rawsort) list) : Entries.definition_ent
     List.map
       (fun (idx) ->
 	 let ind = first_fun_kn,idx in
-	 let (mib,mip) = Global.lookup_inductive ind in
-	 ind,mib,mip,true,prop_sort
+	 ind,true,prop_sort
       )
       funs_indexes
   in
   let l_schemes =
     List.map
       (Typing.type_of env sigma)
-      (Indrec.build_mutual_indrec env sigma ind_list)
+      (Indrec.build_mutual_induction_scheme env sigma ind_list)
   in
   let i = ref (-1) in
   let sorts =
@@ -712,7 +711,7 @@ let build_case_scheme fa =
 	 let ind = first_fun_kn,funs_indexes in
 	 ind,prop_sort
   in
-  let scheme_type =  (Typing.type_of env sigma ) ((fun (ind,sf) -> Indrec.make_case_gen env sigma ind sf)  ind_fun) in
+  let scheme_type =  (Typing.type_of env sigma ) ((fun (ind,sf) -> Indrec.build_case_analysis_scheme_default env sigma ind sf)  ind_fun) in
   let sorts =
     (fun (_,_,x) ->
        Termops.new_sort_in_family (Pretyping.interp_elimination_sort x)

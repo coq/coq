@@ -8,6 +8,10 @@
 
 (* $Id$ *)
 
+(* File initially created by Christine Paulin, 1996 *)
+
+(* This file builds various inductive schemes *)
+
 open Pp
 open Util
 open Names
@@ -27,6 +31,8 @@ open Safe_typing
 open Nametab
 open Sign
 
+type dep_flag = bool
+
 (* Errors related to recursors building *)
 type recursion_scheme_error =
   | NotAllowedCaseAnalysis of (*isrec:*) bool * sorts * inductive
@@ -43,16 +49,10 @@ let mkLambda_string s t c = mkLambda (Name (id_of_string s), t, c)
 
 (**********************************************************************)
 (* Building case analysis schemes *)
-(* Nouvelle version, plus concise mais plus coûteuse à cause de
-   lift_constructor et lift_inductive_family qui ne se contentent pas de
-   lifter les paramètres globaux *)
+(* Christine Paulin, 1996 *)
 
-let mis_make_case_com depopt env sigma ind (mib,mip as specif) kind =
+let mis_make_case_com dep env sigma ind (mib,mip as specif) kind =
   let lnamespar = mib.mind_params_ctxt in
-  let dep = match depopt with
-    | None -> inductive_sort_family mip <> InProp
-    | Some d -> d
-  in
   if not (List.mem kind (elim_sorts specif)) then
     raise
       (RecursionSchemeError
@@ -108,6 +108,7 @@ let mis_make_case_com depopt env sigma ind (mib,mip as specif) kind =
 
 (**********************************************************************)
 (* Building the recursive elimination *)
+(* Christine Paulin, 1996 *)
 
 (*
  * t is the type of the constructor co and recargs is the information on
@@ -428,7 +429,7 @@ let mis_make_indrec env sigma listdepkind mib =
 	  it_mkLambda_or_LetIn_name env (put_arity env' 0 listdepkind)
 	    lnamesparrec
       else
-	mis_make_case_com (Some dep) env sigma indi (mibi,mipi) kind
+	mis_make_case_com dep env sigma indi (mibi,mipi) kind
   in
     (* Body of mis_make_indrec *)
     list_tabulate make_one_rec nrec
@@ -436,17 +437,18 @@ let mis_make_indrec env sigma listdepkind mib =
 (**********************************************************************)
 (* This builds elimination predicate for Case tactic *)
 
-let make_case_com depopt env sigma ity kind =
+let build_case_analysis_scheme env sigma ity dep kind =
   let (mib,mip) = lookup_mind_specif env ity in
-    mis_make_case_com depopt env sigma ity (mib,mip) kind
+  mis_make_case_com dep env sigma ity (mib,mip) kind
 
-let make_case_dep env   = make_case_com (Some true) env
-let make_case_nodep env = make_case_com (Some false) env
-let make_case_gen env   = make_case_com None env
+let build_case_analysis_scheme_default env sigma ity kind =
+  let (mib,mip) = lookup_mind_specif env ity in
+  let dep = inductive_sort_family mip <> InProp in
+  mis_make_case_com dep env sigma ity (mib,mip) kind
 
 
 (**********************************************************************)
-(* [instantiate_indrec_scheme s rec] replace the sort of the scheme
+(* [modify_sort_scheme s rec] replaces the sort of the scheme
    [rec] by [s] *)
 
 let change_sort_arity sort =
@@ -460,7 +462,7 @@ let change_sort_arity sort =
     drec
 
 (* [npar] is the number of expected arguments (then excluding letin's) *)
-let instantiate_indrec_scheme sort =
+let modify_sort_scheme sort =
   let rec drec npar elim =
     match kind_of_term elim with
       | Lambda (n,t,c) ->
@@ -469,13 +471,13 @@ let instantiate_indrec_scheme sort =
 	  else
 	    mkLambda (n, t, drec (npar-1) c)
       | LetIn (n,b,t,c) -> mkLetIn (n,b,t,drec npar c)
-      | _ -> anomaly "instantiate_indrec_scheme: wrong elimination type"
+      | _ -> anomaly "modify_sort_scheme: wrong elimination type"
   in
   drec
 
 (* Change the sort in the type of an inductive definition, builds the
    corresponding eta-expanded term *)
-let instantiate_type_indrec_scheme sort npars term =
+let weaken_sort_scheme sort npars term =
   let rec drec np elim =
     match kind_of_term elim with
       | Prod (n,t,c) ->
@@ -488,7 +490,7 @@ let instantiate_type_indrec_scheme sort npars term =
 	    mkProd (n, t, c'), mkLambda (n, t, term')
       | LetIn (n,b,t,c) -> let c',term' = drec np c in
            mkLetIn (n,b,t,c'), mkLetIn (n,b,t,term')
-      | _ -> anomaly "instantiate_type_indrec_scheme: wrong elimination type"
+      | _ -> anomaly "weaken_sort_scheme: wrong elimination type"
   in
   drec npars
 
@@ -510,56 +512,29 @@ let check_arities listdepkind =
 	    [] listdepkind
   in true
 
-let build_mutual_indrec env sigma = function
-  | (mind,mib,mip,dep,s)::lrecspec ->
+let build_mutual_induction_scheme env sigma = function
+  | (mind,dep,s)::lrecspec ->
+      let (mib,mip) = Global.lookup_inductive mind in
       let (sp,tyi) = mind in
       let listdepkind =
-    	(mind,mib,mip, dep,s)::
+	(mind,mib,mip,dep,s)::
     	(List.map
-	   (function (mind',mibi',mipi',dep',s') ->
+	   (function (mind',dep',s') ->
 	      let (sp',_) = mind' in
 	      if sp=sp' then
                 let (mibi',mipi') = lookup_mind_specif env mind' in
 		(mind',mibi',mipi',dep',s')
 	      else
-		  raise (RecursionSchemeError (NotMutualInScheme (mind,mind'))))
+		raise (RecursionSchemeError (NotMutualInScheme (mind,mind'))))
 	   lrecspec)
       in
       let _ = check_arities listdepkind in
       mis_make_indrec env sigma listdepkind mib
-  | _ -> anomaly "build_indrec expects a non empty list of inductive types"
+  | _ -> anomaly "build_induction_scheme expects a non empty list of inductive types"
 
-let build_indrec env sigma ind =
+let build_induction_scheme env sigma ind dep kind =
   let (mib,mip) = lookup_mind_specif env ind in
-  let kind = inductive_sort_family mip in
-  let dep = kind <> InProp in
-    List.hd (mis_make_indrec env sigma [(ind,mib,mip,dep,kind)] mib)
-
-(**********************************************************************)
-(* To handle old Case/Match syntax in Pretyping                       *)
-
-(*****************************************)
-(* To interpret Case and Match operators *)
-(* Expects a dependent predicate *)
-
-let type_rec_branches recursive env sigma indt p c =
-  let IndType (indf,realargs) = indt in
-  let (ind,params) = dest_ind_family indf in
-  let (mib,mip) = lookup_mind_specif env ind in
-  let recargs = mip.mind_recargs in
-  let tyi = snd ind in
-  let init_depPvec i = if i = tyi then Some(true,p) else None in
-  let depPvec = Array.init mib.mind_ntypes init_depPvec in
-  let constructors = get_constructors env indf in
-  let lft =
-    array_map2
-      (type_rec_branch recursive true env sigma (params,depPvec,0) tyi)
-      constructors (dest_subterms recargs) in
-  (lft,Reduction.beta_appvect p (Array.of_list (realargs@[c])))
-(* Non recursive case. Pb: does not deal with unification
-    let (p,ra,_) = type_case_branches env (ind,params@realargs) pj c in
-    (p,ra)
-*)
+  List.hd (mis_make_indrec env sigma [(ind,mib,mip,dep,kind)] mib)
 
 (*s Eliminations. *)
 
@@ -567,6 +542,8 @@ let elimination_suffix = function
   | InProp -> "_ind"
   | InSet  -> "_rec"
   | InType -> "_rect"
+
+let case_suffix = "_case"
 
 let make_elimination_ident id s = add_suffix id (elimination_suffix s)
 
@@ -595,59 +572,3 @@ let lookup_eliminator ind_sp s =
        pr_global_env Idset.empty (IndRef ind_sp) ++
        strbrk " on sort " ++ pr_sort_family s ++
        strbrk " is probably not allowed.")
-
-(* Build the congruence lemma associated to an inductive type
-   I p1..pn a1..am with one constructor C : I q1..qn b1..bm *)
-
-(* TODO: extend it to types with more than one index *)
-
-let build_congr env (eq,refl) ind (mib,mip) =
-  if Array.length mib.mind_packets <> 1 or Array.length mip.mind_nf_lc <> 1 then
-    error "Not an inductive type with a single constructor.";
-  if mip.mind_nrealargs <> 1 then
-    error "Expect an inductive type with one predicate parameter.";
-  let i = 1 in
-  let realsign,_ = list_chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
-  if List.exists (fun (_,b,_) -> b <> None) realsign then
-    error "Inductive equalities with local definitions in arity not supported";
-  let env_with_arity = push_rel_context mip.mind_arity_ctxt env in
-  let (_,_,ty) = lookup_rel (mip.mind_nrealargs - i + 1) env_with_arity in
-  let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
-  let _,constrargs = decompose_app ccl in
-  if rel_context_length constrsign<>rel_context_length mib.mind_params_ctxt then
-    error "Constructor must have no arguments";
-  let c = List.nth constrargs (i + mib.mind_nparams - 1) in
-  let varB = id_of_string "B" in
-  let varH = id_of_string "H" in
-  let varf = id_of_string "f" in
-  let ci = make_case_info (Global.env()) ind RegularStyle in
-  let my_it_mkLambda_or_LetIn s c = it_mkLambda_or_LetIn ~init:c s in
-  let my_it_mkLambda_or_LetIn_name s c = it_mkLambda_or_LetIn_name env c s in
-  my_it_mkLambda_or_LetIn mib.mind_params_ctxt
-     (mkNamedLambda varB (new_Type ())
-     (mkNamedLambda varf (mkArrow (lift 1 ty) (mkVar varB))
-     (my_it_mkLambda_or_LetIn_name (lift_rel_context 2 realsign)
-     (mkNamedLambda varH
-        (applist
-           (mkInd ind,
-	    extended_rel_list (mip.mind_nrealargs+2) mib.mind_params_ctxt @
-	    extended_rel_list 0 realsign))
-     (mkCase (ci,
-       my_it_mkLambda_or_LetIn_name
-	 (lift_rel_context (mip.mind_nrealargs+3) realsign)
-         (mkLambda
-           (Anonymous,
-            applist
-             (mkInd ind,
-	        extended_rel_list (2*mip.mind_nrealargs_ctxt+3)
-		  mib.mind_params_ctxt
-	        @ extended_rel_list 0 realsign),
-            mkApp (eq,
-	      [|mkVar varB;
-                mkApp (mkVar varf, [|lift (2*mip.mind_nrealargs_ctxt+4) c|]);
-		mkApp (mkVar varf, [|mkRel (mip.mind_nrealargs - i + 2)|])|]))),
-       mkVar varH,
-       [|mkApp (refl,
-          [|mkVar varB;
-	    mkApp (mkVar varf, [|lift (mip.mind_nrealargs+3) c|])|])|]))))))
-

@@ -25,6 +25,7 @@ open Tacexpr
 open Termops
 open Rawterm
 open Genarg
+open Ind_tables
 (*i*)
 
 type orientation = bool
@@ -137,3 +138,5 @@ val subst_all : ?strict:bool -> tactic
    (according to [dir] if given to get the rewrite direction)  in the clause [cl]
 *)
 val replace_multi_term : bool option -> constr -> clause -> tactic
+
+val set_eq_dec_scheme_kind : mutual scheme_kind -> unit

@@ -110,12 +110,12 @@ let env_with_binders env isevars l =
   in aux (env, []) l
 
 let subtac_process env isevars id bl c tycon =
-  let c = Command.abstract_constr_expr c bl in
+  let c = Topconstr.abstract_constr_expr c bl in
   let tycon =
     match tycon with
 	None -> empty_tycon
       | Some t ->
-	  let t = Command.generalize_constr_expr t bl in
+	  let t = Topconstr.prod_constr_expr t bl in
 	  let t = coqintern_type !isevars env t in
 	  let coqt, ttyp = interp env isevars t empty_tycon in
 	    mk_tycon coqt

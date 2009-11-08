@@ -968,7 +968,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
 	)
       ]
   in
-  Command.start_proof
+  Lemmas.start_proof
     (*i The next call to mk_equation_id is valid since we are constructing the lemma
       Ensures by: obvious
       i*)
@@ -977,7 +977,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
     lemma_type
     (fun _ _ -> ());
   Pfedit.by (prove_replacement);
-  Command.save_named false
+  Lemmas.save_named false
 
 
 

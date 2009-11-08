@@ -36,6 +36,7 @@ open Topconstr
 open Pretyping
 open Redexpr
 open Syntax_def
+open Lemmas
 
 (* Pcoq hooks *)
 
@@ -306,7 +307,7 @@ let start_proof_and_print k l hook =
   print_subgoals ();
   if !pcoq <> None then (Option.get !pcoq).start_proof ()
 
-let vernac_definition (local,_,_ as k) (loc,id as lid) def hook =
+let vernac_definition (local,boxed,k) (loc,id as lid) def hook =
   Dumpglob.dump_definition lid false "def";
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
@@ -321,9 +322,10 @@ let vernac_definition (local,_,_ as k) (loc,id as lid) def hook =
  	let red_option = match red_option with
           | None -> None
           | Some r ->
- 	      let (evc,env)= Command.get_current_context () in
+	      let (evc,env)= get_current_context () in
  		Some (interp_redexp env evc r) in
- 	  declare_definition id k bl red_option c typ_opt hook)
+	let ce,imps = interp_definition boxed bl red_option c typ_opt in
+	declare_definition id (local,k) ce imps hook)
 
 let vernac_start_proof kind l lettop hook =
   if Dumpglob.dump () then
@@ -363,13 +365,17 @@ let vernac_exact_proof c =
 	(strbrk "Command 'Proof ...' can only be used at the beginning of the proof.")
 
 let vernac_assumption kind l nl=
+  if Pfedit.refining () then
+    errorlabstrm ""
+      (str "Cannot declare an assumption while in proof editing mode.");
   let global = fst kind = Global in
     List.iter (fun (is_coe,(idl,c)) ->
       if Dumpglob.dump () then
 	List.iter (fun lid ->
 	  if global then Dumpglob.dump_definition lid false "ax"
 	  else Dumpglob.dump_definition lid true "var") idl;
-      declare_assumption idl is_coe kind [] c false nl) l
+      let t,imps = interp_assumption [] c in
+      declare_assumptions idl is_coe kind t imps false nl) l
 
 let vernac_record k finite infer struc binders sort nameopt cfs =
   let const = match nameopt with
@@ -414,21 +420,21 @@ let vernac_inductive finite infer indl =
       | _ -> Util.error "Cannot handle mutually (co)inductive records."
     in
     let indl = List.map unpack indl in
-      Command.build_mutual indl (recursivity_flag_of_kind finite)
+    do_mutual_inductive indl (recursivity_flag_of_kind finite)
 
 let vernac_fixpoint l b =
   if Dumpglob.dump () then
     List.iter (fun ((lid, _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  build_recursive l b
+  do_fixpoint l b
 
 let vernac_cofixpoint l b =
   if Dumpglob.dump () then
     List.iter (fun ((lid, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  build_corecursive l b
+  do_cofixpoint l b
 
-let vernac_scheme = build_scheme
+let vernac_scheme = Indschemes.do_scheme
 
-let vernac_combined_scheme = build_combined_scheme
+let vernac_combined_scheme = Indschemes.do_combined_scheme
 
 (**********************)
 (* Modules            *)
@@ -761,7 +767,7 @@ let vernac_hints local lb h = Auto.add_hints local lb (Auto.interp_hints h)
 
 let vernac_syntactic_definition lid =
   Dumpglob.dump_definition lid false "syndef";
-  Command.syntax_definition (snd lid)
+  Metasyntax.add_syntactic_definition (snd lid)
 
 let vernac_declare_implicits local r = function
   | Some imps ->

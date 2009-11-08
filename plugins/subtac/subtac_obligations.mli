@@ -29,6 +29,10 @@ val add_definition : Names.identifier -> ?term:Term.constr -> Term.types ->
 
 type notations = (string * Topconstr.constr_expr * Topconstr.scope_name option) list
 
+type fixpoint_kind =
+  | IsFixpoint of (identifier located option * Topconstr.recursion_order_expr) list
+  | IsCoFixpoint
+
 val add_mutual_definitions :
   (Names.identifier * Term.constr * Term.types *
       (Topconstr.explicitation * (bool * bool * bool)) list * obligation_info) list ->
@@ -36,7 +40,7 @@ val add_mutual_definitions :
   ?kind:Decl_kinds.definition_kind ->
   ?hook:Tacexpr.declaration_hook ->
   notations ->
-  Command.fixpoint_kind -> unit
+  fixpoint_kind -> unit
 
 val subtac_obligation : int * Names.identifier option * Topconstr.constr_expr option -> unit
 

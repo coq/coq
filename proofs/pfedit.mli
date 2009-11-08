@@ -190,5 +190,11 @@ val traverse_prev_unproven : unit -> unit
 
 (* These two functions make it possible to implement more elaborate
    proof and goal management, as it is done, for instance in pcoq *)
+
 val traverse_to : int list -> unit
 val mutate : (pftreestate -> pftreestate) -> unit
+
+
+(* [build_by_tactic typ tac] returns a term of type [typ] by calling [tac] *)
+
+val build_by_tactic : types -> tactic -> constr

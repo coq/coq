@@ -114,7 +114,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
   in
   let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
   let k, ctx', imps, subst =
-    let c = Command.generalize_constr_expr tclass ctx in
+    let c = Topconstr.prod_constr_expr tclass ctx in
     let c', imps = interp_type_evars_impls ~evdref:isevars env c in
     let ctx, c = decompose_prod_assum c' in
     let cl, args = Typeclasses.dest_class_app (push_rel_context ctx env) c in

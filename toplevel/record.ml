@@ -31,33 +31,27 @@ open Topconstr
 
 (********** definition d'un record (structure) **************)
 
-let interp_evars evdref env ?(impls=([],[])) k typ =
+let interp_evars evdref env impls k typ =
+  let impls = set_internalization_env_params impls [] in
   let typ' = intern_gen true ~impls !evdref env typ in
   let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
     imps, Pretyping.Default.understand_tcc_evars evdref env k typ'
 
-let mk_interning_data env na impls typ =
-  let impl = Impargs.compute_implicits_with_manual env typ (Impargs.is_implicit_args()) impls
-  in (na, (Constrintern.Method, [], impl, Notation.compute_arguments_scope typ))
-
 let interp_fields_evars evars env nots l =
   List.fold_left2
     (fun (env, uimpls, params, impls) no ((loc, i), b, t) ->
-      let impl, t' = interp_evars evars env ~impls Pretyping.IsType t in
-      let b' = Option.map (fun x -> snd (interp_evars evars env ~impls (Pretyping.OfType (Some t')) x)) b in
+      let impl, t' = interp_evars evars env impls Pretyping.IsType t in
+      let b' = Option.map (fun x -> snd (interp_evars evars env impls (Pretyping.OfType (Some t')) x)) b in
       let impls =
 	match i with
 	| Anonymous -> impls
-	| Name na -> (fst impls, mk_interning_data env na impl t' :: snd impls)
+	| Name id -> (id, compute_internalization_data env Constrintern.Method t' impl) :: impls
       in
       let d = (i,b',t') in
-	(* Temporary declaration of notations and scopes *)
-	Option.iter (fun ((_,_,sc) as x) ->
-          declare_interning_data impls x;
-          open_temp_scopes sc
-        ) no;
-	(push_rel d env, impl :: uimpls, d::params, impls))
-    (env, [], [], ([], [])) nots l
+      let impls' = set_internalization_env_params impls [] in
+      Option.iter (Metasyntax.set_notation_for_interpretation impls') no;
+      (push_rel d env, impl :: uimpls, d::params, impls))
+    (env, [], [], []) nots l
 
 let binder_of_decl = function
   | Vernacexpr.AssumExpr(n,t) -> (n,None,t)
@@ -267,7 +261,7 @@ let declare_structure finite infer id idbuild paramimpls params arity fieldimpls
       mind_entry_record = true;
       mind_entry_finite = recursivity_flag_of_kind finite;
       mind_entry_inds = [mie_ind] } in
-  let kn = Command.declare_mutual_with_eliminations true mie [(paramimpls,[])] in
+  let kn = Command.declare_mutual_inductive_with_eliminations true mie [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in
   let kinds,sp_projs = declare_projections rsp ~kind ?name coers fieldimpls fields in
@@ -343,7 +337,6 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	  params (Option.cata (fun x -> x) (new_Type ()) arity) fieldimpls fields
 	  ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields) sign
 	in
-	  (* List.iter (Option.iter (declare_interning_data ((),[]))) notations; *)
 	  IndRef ind, (List.map2 (fun (id, _, _) y -> (Nameops.out_name id, y))
 			     (List.rev fields) (Recordops.lookup_projections ind))
   in

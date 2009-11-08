@@ -43,6 +43,8 @@ open Printer
 open Clenv
 open Clenvtac
 open Evd
+open Ind_tables
+open Eqschemes
 
 (* Options *)
 
@@ -173,27 +175,44 @@ let register_is_applied_rewrite_relation = (:=) is_applied_rewrite_relation
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. *)
 
-let find_elim hdcncl lft2rgt cls gl =
-  let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
-  let hdcncls = string_of_inductive hdcncl ^ suffix in
-  let rwr_thm = if lft2rgt = (cls = None) then hdcncls^"_r" else hdcncls in
-  try pf_global gl (id_of_string rwr_thm)
-  with Not_found -> error ("Cannot find rewrite principle "^rwr_thm^".")
+let find_elim hdcncl lft2rgt dep cls =
+  let scheme_name = match dep, lft2rgt, (cls = None) with
+    | false, true, true | false, false, false -> rew_l2r_scheme_kind
+    | false, false, true | false, true, false -> rew_r2l_scheme_kind
+    | true, true, true -> rew_l2r_dep_scheme_kind
+    | true, true, false -> rew_r2l_forward_dep_scheme_kind
+    | true, false, true -> rew_r2l_dep_scheme_kind
+    | true, false, false -> rew_l2r_forward_dep_scheme_kind
+  in
+  match kind_of_term hdcncl with
+  | Ind ind -> mkConst (find_scheme scheme_name ind)
+  | _ -> assert false
+
+let type_of_clause gl = function
+  | None -> pf_concl gl
+  | Some id -> pf_get_hyp_typ gl id
 
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars gl hdcncl =
-  let elim = find_elim hdcncl lft2rgt cls gl in
-  general_elim_clause with_evars tac cls sigma c t l lft2rgt (elim,NoBindings) gl
+  let dep = occur_term c (type_of_clause gl cls) in
+  let elim = find_elim hdcncl lft2rgt dep cls in
+  general_elim_clause with_evars tac cls sigma c t l lft2rgt
+    {elimindex = None; elimbody = (elim,NoBindings)} gl
 
 let adjust_rewriting_direction args lft2rgt =
-  if List.length args = 1 then
+  if List.length args = 1 then begin
     (* equality to a constant, like in eq_true *)
     (* more natural to see -> as the rewriting to the constant *)
+    if not lft2rgt then
+      error "Rewriting non-symmetric equality not allowed from right-to-left.";
     not lft2rgt
+  end
   else
     (* other equality *)
     lft2rgt
 
 let rewrite_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
+
+(* Main function for dispatching which kind of rewriting it is about *)
 
 let general_rewrite_ebindings_clause cls lft2rgt occs ?tac
     ((c,l) : open_constr with_bindings) with_evars gl =
@@ -206,7 +225,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs ?tac
     let ctype = get_type_of env sigma c' in
     let rels, t = decompose_prod_assum (whd_betaiotazeta sigma ctype) in
       match match_with_equality_type t with
-      | Some (hdcncl,args) -> (* Fast path: direct leibniz rewrite *)
+      | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
 	  let lft2rgt = adjust_rewriting_direction args lft2rgt in
           leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c' (it_mkProd_or_LetIn t rels)
 	    l with_evars gl hdcncl
@@ -949,6 +968,8 @@ let inject_at_positions env sigma (eq,_,(t,t1,t2)) eq_clause posns tac =
 
 exception Not_dep_pair
 
+let eq_dec_scheme_kind_name = ref (fun _ -> failwith "eq_dec_scheme undefined")
+let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
 
 let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
@@ -980,7 +1001,7 @@ let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
 (* and compare the fst arguments of the dep pair *)
         let new_eq_args = [|type_of env sigma (ar1.(3));ar1.(3);ar2.(3)|] in
         if ( (eqTypeDest = sigTconstr()) &&
-             (Ind_tables.check_dec_proof ind=true) &&
+             (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) ind=true) &&
              (is_conv env sigma (ar1.(2)) (ar2.(2)) = true))
               then (
 (* Require Import Eqdec_dec copied from vernac_require in vernacentries.ml*)
@@ -991,7 +1012,7 @@ let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
               tclTHENS (cut (mkApp (ceq,new_eq_args)) )
                [tclIDTAC; tclTHEN (apply (
                   mkApp(inj2,
-                        [|ar1.(0);Ind_tables.find_eq_dec_proof ind;
+                        [|ar1.(0);mkConst (find_scheme (!eq_dec_scheme_kind_name()) ind);
                           ar1.(1);ar1.(2);ar1.(3);ar2.(3)|])
                   )) (Auto.trivial [] [])
                 ]
@@ -1048,7 +1069,7 @@ let swapEquandsInConcl gls =
 
 let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
   (* find substitution scheme *)
-  let eq_elim = find_elim lbeq.eq false None gls in
+  let eq_elim = find_elim lbeq.eq false false None in
   (* build substitution predicate *)
   let p = lambda_create (pf_env gls) (t,body) in
   (* apply substitution scheme *)

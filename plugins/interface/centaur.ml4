@@ -787,9 +787,9 @@ let output_depends compute_depends ptree =
 
 let gen_start_depends_dumps print_depends print_depends' print_depends'' print_depends''' =
   Command.set_declare_definition_hook (print_depends' (Depends.depends_of_definition_entry ~acc:[]));
-  Command.set_declare_assumption_hook (print_depends  (fun (c:types) -> Depends.depends_of_constr c []));
-  Command.set_start_hook (print_depends    (fun c -> Depends.depends_of_constr c []));
-  Command.set_save_hook  (print_depends''  (Depends.depends_of_pftreestate Depends.depends_of_pftree));
+  Command.set_declare_assumptions_hook (print_depends  (fun (c:types) -> Depends.depends_of_constr c []));
+  Lemmas.set_start_hook (print_depends    (fun c -> Depends.depends_of_constr c []));
+  Lemmas.set_save_hook  (print_depends''  (Depends.depends_of_pftreestate Depends.depends_of_pftree));
   Refiner.set_solve_hook (print_depends''' (fun pt -> Depends.depends_of_pftree_head pt []))
 
 let start_depends_dumps () = gen_start_depends_dumps output_depends output_depends output_depends output_depends

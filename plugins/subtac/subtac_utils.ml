@@ -323,7 +323,7 @@ let and_tac l hook =
 	  aux (string_of_id hdid, hdg, hdt, [hdid, x, hdg, (fun c -> c)]) tl
   in
   let and_proofid = id_of_string (and_proof_id ^ "_and_proof") in
-    Command.start_proof and_proofid goal_kind and_goal
+    Lemmas.start_proof and_proofid goal_kind and_goal
       (hook (fun c -> List.map (fun (id, x, t, f) -> (id, x, t, f c)) and_extract));
     trace (str "Started and proof");
     Pfedit.by and_tac;

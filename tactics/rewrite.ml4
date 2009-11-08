@@ -1285,7 +1285,7 @@ let add_morphism_infer glob m n =
       let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	Flags.silently
 	  (fun () ->
-	    Command.start_proof instance_id kind instance
+	    Lemmas.start_proof instance_id kind instance
 	      (fun _ -> function
 		Libnames.ConstRef cst ->
 		  add_instance (Typeclasses.new_instance (Lazy.force proper_class) None

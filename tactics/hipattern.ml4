@@ -262,18 +262,16 @@ let match_with_equation t =
         else raise NoEquationFound
     | _ -> raise NoEquationFound
 
+let is_inductive_equality ind =
+  let (mib,mip) = Global.lookup_inductive ind in
+  let nconstr = Array.length mip.mind_consnames in
+  nconstr = 1 && constructor_nrealargs (Global.env()) (ind,1) = 0
+
 let match_with_equality_type t =
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
-    | Ind ind when args <> [] ->
-        let (mib,mip) = Global.lookup_inductive ind in
-        let nconstr = Array.length mip.mind_consnames in
-	if nconstr = 1 && constructor_nrealargs (Global.env()) (ind,1) = 0
-        then
-	  Some (hdapp,args)
-        else
-	  None
-    | _ -> None
+  | Ind ind when is_inductive_equality ind -> Some (hdapp,args)
+  | _ -> None
 
 let is_equality_type t = op2bool (match_with_equality_type t)
 
@@ -356,6 +354,7 @@ let coq_eq_pattern_gen eq = lazy PATTERN [ %eq ?X1 ?X2 ?X3 ]
 let coq_eq_pattern = coq_eq_pattern_gen coq_eq_ref
 let coq_identity_pattern = coq_eq_pattern_gen coq_identity_ref
 let coq_jmeq_pattern = lazy PATTERN [ %coq_jmeq_ref ?X1 ?X2 ?X3 ?X4 ]
+let coq_eq_true_pattern = lazy PATTERN [ %coq_eq_true_ref ?X1 ]
 
 let match_eq eqn eq_pat =
   let pat = try Lazy.force eq_pat with _ -> raise PatternMatchingFailure in
@@ -388,9 +387,16 @@ let find_eq_data_decompose gl eqn =
   let (lbeq,eq_args) = find_eq_data eqn in
   (lbeq,extract_eq_args gl eq_args)
 
+let inversible_equalities =
+  [coq_eq_pattern, build_coq_inversion_eq_data;
+   coq_jmeq_pattern, build_coq_inversion_jmeq_data;
+   coq_identity_pattern, build_coq_inversion_identity_data;
+   coq_eq_true_pattern, build_coq_inversion_eq_true_data]
+
 let find_this_eq_data_decompose gl eqn =
   let (lbeq,eq_args) =
-    try find_eq_data eqn
+    try (*first_match (match_eq eqn) inversible_equalities*)
+      find_eq_data eqn
     with PatternMatchingFailure ->
       errorlabstrm "" (str "No primitive equality found.") in
   let eq_args =

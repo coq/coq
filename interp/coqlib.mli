@@ -58,6 +58,9 @@ val check_required_library : string list -> unit
 val logic_module : dir_path
 val logic_type_module : dir_path
 
+val datatypes_module_name : string list
+val logic_module_name : string list
+
 (* Natural numbers *)
 val nat_path : full_path
 val glob_nat : global_reference
@@ -119,9 +122,22 @@ val build_coq_identity_data : coq_eq_data delayed
 val build_coq_jmeq_data : coq_eq_data delayed
 
 val build_coq_eq       : constr delayed (* = [(build_coq_eq_data()).eq] *)
+val build_coq_eq_refl  : constr delayed (* = [(build_coq_eq_data()).refl] *)
 val build_coq_eq_sym   : constr delayed (* = [(build_coq_eq_data()).sym] *)
 val build_coq_f_equal2 : constr delayed
 
+(* Data needed for discriminate and injection *)
+
+type coq_inversion_data = {
+  inv_eq   : constr; (* : forall params, t -> Prop *)
+  inv_ind  : constr; (* : forall params P y, eq params y -> P y *)
+  inv_congr: constr  (* : forall params B (f:t->B) y, eq params y -> f c=f y *)
+}
+
+val build_coq_inversion_eq_data : coq_inversion_data delayed
+val build_coq_inversion_identity_data : coq_inversion_data delayed
+val build_coq_inversion_jmeq_data : coq_inversion_data delayed
+val build_coq_inversion_eq_true_data : coq_inversion_data delayed
 
 (* Specif *)
 val build_coq_sumbool : constr delayed
@@ -154,6 +170,7 @@ val build_coq_ex : constr delayed
 val coq_eq_ref : global_reference lazy_t
 val coq_identity_ref : global_reference lazy_t
 val coq_jmeq_ref : global_reference lazy_t
+val coq_eq_true_ref : global_reference lazy_t
 val coq_existS_ref : global_reference lazy_t
 val coq_existT_ref : global_reference lazy_t
 val coq_not_ref : global_reference lazy_t

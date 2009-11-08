@@ -11,25 +11,41 @@ open Names
 open Libnames
 open Mod_subst
 open Sign
+open Declarations
 
+(* This module provides support for registering inductive scheme builders,
+   declaring schemes and generating schemes on demand *)
 
-val cache_scheme :(object_name*(Indmap.key*constr)) -> unit
+(* A scheme is either a "mutual scheme_kind" or an "individual scheme_kind" *)
 
-val find_eq_scheme : Indmap.key -> constr
-val check_eq_scheme : Indmap.key -> bool
+type mutual
+type individual
+type 'a scheme_kind
 
-val cache_bl: (object_name*(Indmap.key*constr)) -> unit
-val cache_lb: (object_name*(Indmap.key*constr)) -> unit
-val cache_dec : (object_name*(Indmap.key*constr)) -> unit
+type mutual_scheme_object_function = mutual_inductive -> constr array
+type individual_scheme_object_function = inductive -> constr
 
-val find_bl_proof : Indmap.key -> constr
-val find_lb_proof : Indmap.key -> constr
-val find_eq_dec_proof : Indmap.key -> constr
+(* Main functions to register a scheme builder *)
 
-val check_bl_proof: Indmap.key -> bool
-val check_lb_proof: Indmap.key -> bool
-val check_dec_proof: Indmap.key -> bool
+val declare_mutual_scheme_object : string -> ?aux:string ->
+  mutual_scheme_object_function -> mutual scheme_kind
 
+val declare_individual_scheme_object : string -> ?aux:string ->
+  individual_scheme_object_function -> individual scheme_kind
 
+(*
+val declare_scheme : 'a scheme_kind -> (inductive * constant) array -> unit
+*)
 
+(* Force generation of a (mutually) scheme with possibly user-level names *)
 
+val define_individual_scheme : individual scheme_kind -> bool (* internal *) ->
+  identifier option -> inductive -> constant
+
+val define_mutual_scheme : mutual scheme_kind -> bool (* internal *) ->
+  (int * identifier) list -> mutual_inductive -> constant array
+
+(* Main function to retrieve a scheme in the cache or to generate it *)
+val find_scheme : 'a scheme_kind -> inductive -> constant
+
+val check_scheme : 'a scheme_kind -> inductive -> bool

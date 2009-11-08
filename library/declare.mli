@@ -59,10 +59,20 @@ val declare_internal_constant :
    the whole block (boolean must be true iff it is a record) *)
 val declare_mind : bool -> mutual_inductive_entry -> object_name
 
-(* hooks for XML output *)
+(* Hooks for XML output *)
 val set_xml_declare_variable : (object_name -> unit) -> unit
 val set_xml_declare_constant : (bool * constant -> unit) -> unit
 val set_xml_declare_inductive : (bool * object_name -> unit) -> unit
 
-(* hook for the cache function of constants and inductives *)
+(* Hook for the cache function of constants and inductives *)
 val add_cache_hook : (full_path -> unit) -> unit
+
+(* Declaration messages *)
+
+val definition_message : identifier -> unit
+val assumption_message : identifier -> unit
+val fixpoint_message : int array option -> identifier list -> unit
+val cofixpoint_message : identifier list -> unit
+val recursive_message : bool (* true = fixpoint *) ->
+  int array option -> identifier list -> unit
+

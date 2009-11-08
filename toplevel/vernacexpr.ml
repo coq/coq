@@ -155,11 +155,11 @@ type local_decl_expr =
   | DefExpr of lname * constr_expr * constr_expr option
 
 type inductive_kind = Inductive_kw | CoInductive | Record | Structure | Class of bool (* true = definitional, false = inductive *)
-type decl_notation = (string * constr_expr * scope_name option) option
+type decl_notation = string * constr_expr * scope_name option
 type simple_binder = lident list  * constr_expr
 type class_binder = lident * constr_expr list
 type 'a with_coercion = coercion_flag * 'a
-type 'a with_notation = 'a * decl_notation
+type 'a with_notation = 'a * decl_notation option
 type constructor_expr = (lident * constr_expr) with_coercion
 type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
@@ -167,6 +167,9 @@ type constructor_list_or_record_decl_expr =
 type inductive_expr =
   lident with_coercion * local_binder list * constr_expr option * inductive_kind *
     constructor_list_or_record_decl_expr
+
+type one_inductive_expr =
+  lident * local_binder list * constr_expr option * constructor_expr list
 
 type module_binder = bool option * lident list * module_type_ast
 
@@ -220,9 +223,9 @@ type vernac_expr =
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of assumption_kind * bool * simple_binder with_coercion list
-  | VernacInductive of inductive_flag * infer_flag * (inductive_expr * decl_notation) list
-  | VernacFixpoint of (fixpoint_expr * decl_notation) list * bool
-  | VernacCoFixpoint of (cofixpoint_expr * decl_notation) list * bool
+  | VernacInductive of inductive_flag * infer_flag * (inductive_expr * decl_notation option) list
+  | VernacFixpoint of (fixpoint_expr * decl_notation option) list * bool
+  | VernacCoFixpoint of (cofixpoint_expr * decl_notation option) list * bool
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
 
@@ -387,7 +390,7 @@ let enforce_locality_full local =
     | None ->
 	if local then begin
 	  Flags.if_verbose
-	    Pp.warning "Obsolete syntax: use \"Local\" as a prefix.";
+	   Pp.msg_warning (Pp.str"Obsolete syntax: use \"Local\" as a prefix.");
 	  Some true
 	end else
 	None

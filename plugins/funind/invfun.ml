@@ -734,7 +734,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 
 
 
-let do_save () = Command.save_named false
+let do_save () = Lemmas.save_named false
 
 
 (* [derive_correctness make_scheme functional_induction funs graphs] create correctness and completeness
@@ -786,7 +786,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
     Array.iteri
       (fun i f_as_constant ->
 	 let f_id = id_of_label (con_label f_as_constant) in
-	 Command.start_proof
+	 Lemmas.start_proof
 	   (*i The next call to mk_correct_id is valid since we are constructing the lemma
 	     Ensures by: obvious
 	     i*)
@@ -823,10 +823,10 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
     let  mib,mip = Global.lookup_inductive graph_ind in
     let schemes =
       Array.of_list
-	(Indrec.build_mutual_indrec (Global.env ()) Evd.empty
+	(Indrec.build_mutual_induction_scheme (Global.env ()) Evd.empty
 	   (Array.to_list
 	      (Array.mapi
-		 (fun i mip -> (kn,i),mib,mip,true,InType)
+		 (fun i _ -> (kn,i),true,InType)
 		 mib.Declarations.mind_packets
 	      )
 	   )
@@ -838,7 +838,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
     Array.iteri
       (fun i f_as_constant ->
 	 let f_id = id_of_label (con_label f_as_constant) in
-	 Command.start_proof
+	 Lemmas.start_proof
 	   (*i The next call to mk_complete_id is valid since we are constructing the lemma
 	     Ensures by: obvious
 	     i*)

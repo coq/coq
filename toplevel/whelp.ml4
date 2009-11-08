@@ -185,7 +185,7 @@ let whelp_constr req c =
   send_whelp req (make_string uri_of_constr c)
 
 let whelp_constr_expr req c =
-  let (sigma,env)= get_current_context () in
+  let (sigma,env)= Lemmas.get_current_context () in
   let _,c = interp_open_constr sigma env c in
   whelp_constr req c
 

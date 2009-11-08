@@ -904,7 +904,10 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
     } in *)
   let indexpr = rawterm_list_to_inductive_expr prms1 prms2 mib1 mib2 shift_prm rawlist in
   (* Declare inductive *)
-  Command.build_mutual [(indexpr,None)] true (* means: not coinductive *)
+  let indl,_,_ = Command.extract_mutual_inductive_declaration_components [(indexpr,None)] in
+  let mie,impls = Command.interp_mutual_inductive indl [] true (* means: not coinductive *) in
+  (* Declare the mutual inductive block with its associated schemes *)
+  ignore (Command.declare_mutual_inductive_with_eliminations false mie impls)
 
 
 (* Find infos on identifier id. *)

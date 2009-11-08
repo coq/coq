@@ -75,10 +75,10 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
  	  (Pfedit.get_all_proof_names ())
   in
   let evm, c, typ, imps =
-    Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr t bl) None
+    Subtac_pretyping.subtac_process env isevars id [] (Topconstr.prod_constr_expr t bl) None
   in
   let c = solve_tccs_in_type env id isevars evm c typ in
-    Command.start_proof id kind c (fun loc gr ->
+    Lemmas.start_proof id kind c (fun loc gr ->
       Impargs.declare_manual_implicits (loc = Local) gr ~enriching:true imps;
       hook loc gr)
 
@@ -93,14 +93,14 @@ let _ = Detyping.set_detype_anonymous (fun loc n -> RVar (loc, id_of_string ("An
 let assumption_message id =
   Flags.if_verbose message ((string_of_id id) ^ " is assumed")
 
-let declare_assumption env isevars idl is_coe k bl c nl =
+let declare_assumptions env isevars idl is_coe k bl c nl =
   if not (Pfedit.refining ()) then
     let id = snd (List.hd idl) in
     let evm, c, typ, imps =
-      Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr c bl) None
+      Subtac_pretyping.subtac_process env isevars id [] (Topconstr.prod_constr_expr c bl) None
     in
     let c = solve_tccs_in_type env id isevars evm c typ in
-      List.iter (Command.declare_one_assumption is_coe k c imps false nl) idl
+      List.iter (Command.declare_assumption is_coe k c imps false nl) idl
   else
     errorlabstrm "Command.Assumption"
 	(str "Cannot declare an assumption while in proof editing mode.")
@@ -119,7 +119,7 @@ let vernac_assumption env isevars kind l nl =
 	List.iter (fun lid ->
 	  if global then Dumpglob.dump_definition lid (not global) "ax"
 	  else dump_variable lid) idl;
-      declare_assumption env isevars idl is_coe kind [] c nl) l
+      declare_assumptions env isevars idl is_coe kind [] c nl) l
 
 let check_fresh (loc,id) =
   if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then

@@ -24,15 +24,32 @@ open Nametab
 open Notation
 open Inductiveops
 
-(* To interpret implicits and arg scopes of recursive variables in
-   inductive types and recursive definitions *)
-type var_internalisation_type = Inductive | Recursive | Method
+(* To interpret implicits and arg scopes of variables in inductive
+   types and recursive definitions and of projection names in records *)
 
-type var_internalisation_data =
-  var_internalisation_type * identifier list * Impargs.implicits_list * scope_name option list
+type var_internalization_type = Inductive | Recursive | Method
 
-type implicits_env = (identifier * var_internalisation_data) list
-type full_implicits_env = identifier list * implicits_env
+type var_internalization_data =
+    (* type of the "free" variable, for coqdoc, e.g. while typing the
+       constructor of JMeq, "JMeq" behaves as a variable of type Inductive *)
+    var_internalization_type *
+    (* impargs to automatically add to the variable, e.g. for "JMeq A a B b"
+       in implicit mode, this is [A;B] and this adds (A:=A) and (B:=B) *)
+    identifier list *
+    (* signature of impargs of the variable *)
+    Impargs.implicits_list *
+    (* subscopes of the args of the variable *)
+    scope_name option list
+
+type internalization_env =
+    (identifier * var_internalization_data) list
+
+type full_internalization_env =
+    (* a superset of the list of variables that may be automatically
+       inserted and that must not occur as binders *)
+    identifier list *
+    (* mapping of the variables to their internalization data *)
+    internalization_env
 
 type raw_binder = (name * binding_kind * rawconstr option * rawconstr)
 
@@ -153,6 +170,35 @@ let error_inductive_parameter_not_implicit loc =
   user_err_loc (loc,"", str
    ("The parameters of inductive types do not bind in\n"^
     "the 'return' clauses; they must be replaced by '_' in the 'in' clauses."))
+
+(**********************************************************************)
+(* Pre-computing the implicit arguments and arguments scopes needed   *)
+(* for interpretation *)
+
+let empty_internalization_env = ([],[])
+
+let set_internalization_env_params ienv params =
+  let nparams = List.length params in
+  if nparams = 0 then
+    ([],ienv)
+  else
+    let ienv_with_implicit_params =
+      List.map (fun (id,(ty,_,impl,scopes)) ->
+	let sub_impl,_ = list_chop nparams impl in
+	let sub_impl' = List.filter is_status_implicit sub_impl in
+	(id,(ty,List.map name_of_implicit sub_impl',impl,scopes))) ienv in
+    (params, ienv_with_implicit_params)
+
+let compute_internalization_data env ty typ impls =
+  let impl = compute_implicits_with_manual env typ (is_implicit_args()) impls in
+  (ty, [], impl, compute_arguments_scope typ)
+
+let compute_full_internalization_env env ty params idl typl impll =
+  set_internalization_env_params
+    (list_map3
+      (fun id typ impl -> (id,compute_internalization_data env ty typ impl))
+      idl typl impll)
+    params
 
 (**********************************************************************)
 (* Contracting "{ _ }" in notations *)
@@ -368,7 +414,7 @@ let intern_var (env,unbound_vars,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) l
 	(* [id] a goal variable *)
 	RVar (loc,id), [], [], []
 
-let find_appl_head_data (_,_,_,(_,impls)) = function
+let find_appl_head_data _ = function
   | RRef (_,ref) as x -> x,implicits_of_global ref,find_arguments_scope ref,[]
   | x -> x,[],[],[]
 
@@ -1405,12 +1451,12 @@ let intern_constr_pattern sigma env ?(as_type=false) ?(ltacvars=([],[])) c =
   let c = intern_gen as_type ~allow_patvar:true ~ltacvars sigma env c in
   pattern_of_rawconstr c
 
-let interp_aconstr impls (vars,varslist) a =
+let interp_aconstr ?(impls=([],[])) (vars,varslist) a =
   let env = Global.env () in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = List.map (fun id -> (id,ref None)) (vars@varslist) in
   let c = internalise Evd.empty (Global.env()) (extract_ids env, false, None, [])
-    false (([],[]),Environ.named_context env,vl,([],impls)) a in
+    false (([],[]),Environ.named_context env,vl,impls) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a = aconstr_of_rawconstr vars c in
   (* Returns [a] and the ordered list of variables with their scopes *)

@@ -8,6 +8,9 @@
 
 (*i $Id$ i*)
 
+(* This file is about the automatic generation of schemes about
+   decidable equality, created by Vincent Siles, Oct 2007 *)
+
 open Tacmach
 open Util
 open Flags
@@ -28,7 +31,8 @@ open Tactics
 open Tacticals
 open Ind_tables
 
-(* boolean equality *)
+(**********************************************************************)
+(* Generic synthesis of boolean equality *)
 
 let quick_chop n l =
   let rec kick_last = function
@@ -47,13 +51,13 @@ let rec deconstruct_type t =
   let l,r = decompose_prod t in
     (List.map (fun (_,b) -> b) (List.rev l))@[r]
 
-let subst_in_constr (subst,(ind,const)) = 
-  let ind' = (subst_ind subst (fst ind)),(snd ind)
-  and const' = subst_mps subst const in
-    ind',const'
-
-exception EqNotFound of string
+exception EqNotFound of inductive * inductive
 exception EqUnknown of string
+exception UndefinedCst of string
+exception InductiveWithProduct
+exception InductiveWithSort
+exception ParameterWithoutEquality of constant
+exception NonSingletonProp of inductive
 
 let dl = dummy_loc
 
@@ -88,11 +92,18 @@ let mkFullInd ind n =
       Array.of_list(extended_rel_list (nparrec+n) lnamesparrec))
     else mkInd ind
 
-let make_eq_scheme sp =
+let check_bool_is_defined () =
+  try let _ = Global.type_of_global Coqlib.glob_bool in ()
+  with _ -> raise (UndefinedCst "bool")
+
+let beq_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
+
+let build_beq_scheme kn =
+  check_bool_is_defined ();
   (* fetching global env *)
   let env = Global.env() in
   (* fetching the mutual inductive body *)
-  let mib = Global.lookup_mind sp in
+  let mib = Global.lookup_mind kn in
   (* number of inductives in the mutual *)
   let nb_ind = Array.length mib.mind_packets in
   (* number of params in the type *)
@@ -135,7 +146,7 @@ let make_eq_scheme sp =
                 t  a) eq_input lnamesparrec
  in
  let make_one_eq cur =
-  let ind = sp,cur in
+  let ind = kn,cur in
   (* current inductive we are working on *)
   let cur_packet = mib.mind_packets.(snd ind) in
   (* Inductive toto : [rettyp] := *)
@@ -151,31 +162,34 @@ let make_eq_scheme sp =
     *)
     let compute_A_equality rel_list nlist eqA ndx t =
       let lifti = ndx in
-      let rec aux c a = match c with
+      let rec aux c =
+	let (c,a) = Reductionops.whd_betaiota_stack Evd.empty c in
+	match kind_of_term c with
         | Rel x -> mkRel (x-nlist+ndx)
         | Var x -> mkVar (id_of_string ("eq_"^(string_of_id x)))
-        | Cast (x,_,_) -> aux (kind_of_term x) a
-        | App (x,newa) -> aux (kind_of_term x) newa
-        | Ind (sp',i) -> if eq_mind sp sp' then mkRel(eqA-nlist-i+nb_ind-1)
+        | Cast (x,_,_) -> aux (applist (x,a))
+        | App _ -> assert false
+        | Ind (kn',i as ind') -> if eq_mind kn kn' then mkRel(eqA-nlist-i+nb_ind-1)
                         else ( try
-                          let eq = find_eq_scheme (sp',i)
-                          and eqa = Array.map
-                                (fun x -> aux (kind_of_term x) [||] ) a
-                          in
+			  let a = Array.of_list a in
+                          let eq = mkConst (find_scheme (!beq_scheme_kind_aux()) (kn',i))
+                          and eqa = Array.map aux a
+			  in
                             let args = Array.append
                                 (Array.map (fun x->lift lifti x) a) eqa
                             in if args = [||] then eq
                                else mkApp (eq,Array.append
                                       (Array.map (fun x->lift lifti x) a) eqa)
-                         with Not_found -> raise(EqNotFound (string_of_mind sp'))
+                         with Not_found -> raise(EqNotFound (ind',ind))
                         )
-        | Sort _  -> raise (EqUnknown "Sort" )
-        | Prod _ -> raise (EqUnknown "Prod" )
+        | Sort _  -> raise InductiveWithSort
+        | Prod _ -> raise InductiveWithProduct
         | Lambda _-> raise (EqUnknown "Lambda")
         | LetIn _ -> raise (EqUnknown "LetIn")
-        | Const kn -> let mp,dir,lbl= repr_con kn in
-                  mkConst (make_con mp dir (
-                                mk_label ("eq_"^(string_of_label lbl))))
+        | Const kn ->
+	    (match Environ.constant_opt_value env kn with
+	      | None -> raise (ParameterWithoutEquality kn)
+	      | Some c -> aux (applist (c,a)))
         | Construct _ -> raise (EqUnknown "Construct")
         | Case _ -> raise (EqUnknown "Case")
         | CoFix _ -> raise (EqUnknown "CoFix")
@@ -183,7 +197,7 @@ let make_eq_scheme sp =
         | Meta _  -> raise (EqUnknown "Meta")
         | Evar _  -> raise (EqUnknown "Evar")
     in
-      aux t [||]
+      aux t
   in
   (* construct the predicate for the Case part*)
   let do_predicate rel_list n =
@@ -217,7 +231,7 @@ let make_eq_scheme sp =
                                           nparrec
                                           (nparrec+3+2*nb_cstr_args)
                                           (nb_cstr_args+ndx+1)
-                                          (kind_of_term cc)
+                                          cc
                           in
                           Array.set eqs ndx
                               (mkApp (eqA,
@@ -245,40 +259,39 @@ let make_eq_scheme sp =
         mkNamedLambda (id_of_string "X") (mkFullInd ind (nb_ind-1+1))  (
           mkNamedLambda (id_of_string "Y") (mkFullInd ind (nb_ind-1+2))  (
  	    mkCase (ci, do_predicate rel_list 0,mkVar (id_of_string "X"),ar)))
-    in (* make_eq_scheme *)
-    try
+    in (* build_beq_scheme *)
     let names = Array.make nb_ind Anonymous and
         types = Array.make nb_ind mkSet and
         cores = Array.make nb_ind mkSet and
         res   = Array.make nb_ind mkSet in
     for i=0 to (nb_ind-1) do
         names.(i) <- Name (id_of_string (rec_name i));
-    	types.(i) <- mkArrow (mkFullInd (sp,i) 0)
-                     (mkArrow (mkFullInd (sp,i) 1) bb);
+	types.(i) <- mkArrow (mkFullInd (kn,i) 0)
+                     (mkArrow (mkFullInd (kn,i) 1) bb);
         cores.(i) <- make_one_eq i
     done;
-    if (string_of_mp (mind_modpath sp ))="Coq.Init.Logic"
+    if (string_of_mp (mind_modpath kn))="Coq.Init.Logic"
     then print_string "Logic time, do nothing.\n"
     else (
       for i=0 to (nb_ind-1) do
       let cpack = Array.get mib.mind_packets i in
-      if check_eq_scheme (sp,i)
+      if check_scheme (!beq_scheme_kind_aux()) (kn,i)
       then  message ("Boolean equality is already defined on "^
              (string_of_id cpack.mind_typename)^".")
       else (
+	let kelim = Inductive.elim_sorts (mib,mib.mind_packets.(i)) in
+	if not (List.mem InSet kelim) then
+	  raise (NonSingletonProp (kn,i));
         let fix = mkFix (((Array.make nb_ind 0),i),(names,types,cores)) in
           res.(i) <- create_input fix
         )
         done;
       );
       res
-      with
-        | EqUnknown s -> error ("Type unexpected ("^s^
-                  ") during boolean eq computation, please report.")
-        | EqNotFound s  -> error ("Boolean equality on "^s^
-          " is missing, equality will not be defined.")
-        | _ -> error ("Unknown exception during boolean equality creation,"^
-                      " the equality will not be defined.")
+
+let beq_scheme_kind = declare_mutual_scheme_object "_beq" build_beq_scheme
+
+let _ = beq_scheme_kind_aux := fun () -> beq_scheme_kind
 
 (* This function tryies to get the [inductive] between a constr
   the constr should be Ind i or App(Ind i,[|args|])
@@ -291,7 +304,7 @@ let destruct_ind c =
             indc,[||]
 
 (*
-  In the followind, avoid is the list of names to avoid.
+  In the following, avoid is the list of names to avoid.
   If the args of the Inductive type are A1 ... An
   then avoid should be
  [| lb_An ... lb _A1  (resp. bl_An ... bl_A1)
@@ -299,7 +312,7 @@ let destruct_ind c =
 so from Ai we can find the the correct eq_Ai bl_ai or lb_ai
 *)
 (* used in the leib -> bool side*)
-let do_replace_lb aavoid narg gls p q =
+let do_replace_lb lb_scheme_key aavoid narg gls p q =
   let avoid = Array.of_list aavoid in
   let do_arg v offset =
   try
@@ -325,7 +338,7 @@ let do_replace_lb aavoid narg gls p q =
   let type_of_pq = pf_type_of gls p in
     let u,v = destruct_ind type_of_pq
     in let lb_type_of_p =
-        try find_lb_proof u
+        try mkConst (find_scheme lb_scheme_key u)
         with Not_found ->
           (* spiwack: the format of this error message should probably
 	              be improved. *)
@@ -346,9 +359,8 @@ let do_replace_lb aavoid narg gls p q =
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
             in [Equality.replace p q ; apply app ; Auto.default_auto]
 
-
 (* used in the bool -> leib side *)
-let do_replace_bl ind gls aavoid narg lft rgt =
+let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
   let avoid = Array.of_list aavoid in
   let do_arg v offset =
   try
@@ -384,7 +396,7 @@ let do_replace_bl ind gls aavoid narg lft rgt =
              then (Equality.replace t1 t2)::(Auto.default_auto)::(aux q1 q2)
              else (
                let bl_t1 =
-               try find_bl_proof u
+               try mkConst (find_scheme bl_scheme_key u)
                with Not_found ->
 		 (* spiwack: the format of this error message should probably
 	                     be improved. *)
@@ -449,10 +461,13 @@ let eqI ind l =
   let list_id = list_id l in
   let eA = Array.of_list((List.map (fun (s,_,_,_) -> mkVar s) list_id)@
                            (List.map (fun (_,seq,_,_)-> mkVar seq) list_id ))
-  and  e = try find_eq_scheme ind  with
+  and  e = try mkConst (find_scheme beq_scheme_kind ind) with
     Not_found -> error
         ("The boolean equality on "^(string_of_mind (fst ind))^" is needed.");
   in (if eA = [||] then e else mkApp(e,eA))
+
+(**********************************************************************)
+(* Boolean->Leibniz *)
 
 let compute_bl_goal ind lnamesparrec nparrec =
   let eqI = eqI ind lnamesparrec in
@@ -481,8 +496,8 @@ let compute_bl_goal ind lnamesparrec nparrec =
                 (match n with Name s -> s | Anonymous ->  id_of_string "A")
                 t  a) eq_input lnamesparrec
     in
-      let n = id_of_string "n" and
-          m = id_of_string "m" in
+      let n = id_of_string "x" and
+          m = id_of_string "y" in
      create_input (
         mkNamedProd n (mkFullInd ind nparrec) (
           mkNamedProd m (mkFullInd ind (nparrec+1)) (
@@ -491,10 +506,9 @@ let compute_bl_goal ind lnamesparrec nparrec =
               (mkApp(eq,[|mkFullInd ind (nparrec+3);mkVar n;mkVar m|]))
         )))
 
-let compute_bl_tact ind lnamesparrec nparrec  =
+let compute_bl_tact bl_scheme_key ind lnamesparrec nparrec gsig =
   let list_id = list_id lnamesparrec in
   let avoid = ref [] in
-    let gsig = top_goal_of_pftreestate (Pfedit.get_pftreestate()) in
       let first_intros =
         ( List.map (fun (s,_,_,_) -> s ) list_id ) @
         ( List.map (fun (_,seq,_,_ ) -> seq) list_id ) @
@@ -503,14 +517,13 @@ let compute_bl_tact ind lnamesparrec nparrec  =
       let fresh_first_intros = List.map ( fun s ->
         let fresh = fresh_id (!avoid) s gsig in
         avoid := fresh::(!avoid); fresh ) first_intros in
-      let freshn = fresh_id (!avoid) (id_of_string "n") gsig in
+      let freshn = fresh_id (!avoid) (id_of_string "x") gsig in
       let freshm = avoid := freshn::(!avoid);
-            fresh_id (!avoid) (id_of_string "m") gsig in
+            fresh_id (!avoid) (id_of_string "y") gsig in
       let freshz = avoid := freshm::(!avoid);
             fresh_id (!avoid) (id_of_string "Z") gsig in
   (* try with *)
       avoid := freshz::(!avoid);
-      Pfedit.by (
       tclTHENSEQ [ intros_using fresh_first_intros;
                      intro_using freshn ;
                      new_induct false [ (Tacexpr.ElimOnConstr ((mkVar freshn),
@@ -555,10 +568,11 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                       match (kind_of_term gl) with
                       | App (c,ca) -> (
                         match (kind_of_term c) with
-                        | Ind (i1,i2) ->
-                            if(string_of_label (mind_label i1) = "eq")
+                        | Ind indeq ->
+                            if IndRef indeq = Coqlib.glob_eq
                             then (
-                              tclTHENSEQ ((do_replace_bl ind gls (!avoid)
+                              tclTHENSEQ ((do_replace_bl bl_scheme_key ind gls
+				                      (!avoid)
                                                       nparrec (ca.(2))
                               (ca.(1)))@[Auto.default_auto]) gls
                             )
@@ -568,8 +582,30 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                       )
                       | _ -> error "Failure while solving Boolean->Leibniz."
 
-                    ]
-      )
+                    ] gsig
+
+let bl_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
+
+let make_bl_scheme mind =
+  let mib = Global.lookup_mind mind in
+  if Array.length mib.mind_packets <> 1 then
+    errorlabstrm ""
+      (str "Automatic building of boolean->Leibniz lemmas not supported");
+  let ind = (mind,0) in
+  let nparams = mib.mind_nparams in
+  let nparrec = mib.mind_nparams_rec in
+  let lnonparrec,lnamesparrec =
+    context_chop (nparams-nparrec) mib.mind_params_ctxt in
+  [|Pfedit.build_by_tactic
+    (compute_bl_goal ind lnamesparrec nparrec)
+    (compute_bl_tact (!bl_scheme_kind_aux()) ind lnamesparrec nparrec)|]
+
+let bl_scheme_kind = declare_mutual_scheme_object "_dec_bl" make_bl_scheme
+
+let _ = bl_scheme_kind_aux := fun () -> bl_scheme_kind
+
+(**********************************************************************)
+(* Leibniz->Boolean *)
 
 let compute_lb_goal ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
@@ -598,8 +634,8 @@ let compute_lb_goal ind lnamesparrec nparrec =
                 (match n with Name s -> s | Anonymous ->  id_of_string "A")
                 t  a) eq_input lnamesparrec
     in
-      let n = id_of_string "n" and
-          m = id_of_string "m" in
+      let n = id_of_string "x" and
+          m = id_of_string "y" in
       create_input (
         mkNamedProd n (mkFullInd ind nparrec) (
           mkNamedProd m (mkFullInd ind (nparrec+1)) (
@@ -608,10 +644,9 @@ let compute_lb_goal ind lnamesparrec nparrec =
               (mkApp(eq,[|bb;mkApp(eqI,[|mkVar n;mkVar m|]);tt|]))
         )))
 
-let compute_lb_tact ind lnamesparrec nparrec =
+let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec gsig =
   let list_id = list_id lnamesparrec in
     let avoid = ref [] in
-    let gsig = top_goal_of_pftreestate (Pfedit.get_pftreestate()) in
       let first_intros =
         ( List.map (fun (s,_,_,_) -> s ) list_id ) @
         ( List.map (fun (_,seq,_,_) -> seq) list_id ) @
@@ -620,14 +655,13 @@ let compute_lb_tact ind lnamesparrec nparrec =
       let fresh_first_intros = List.map ( fun s ->
         let fresh = fresh_id (!avoid) s gsig in
         avoid := fresh::(!avoid); fresh ) first_intros in
-      let freshn = fresh_id (!avoid) (id_of_string "n") gsig in
+      let freshn = fresh_id (!avoid) (id_of_string "x") gsig in
       let freshm = avoid := freshn::(!avoid);
-            fresh_id (!avoid) (id_of_string "m") gsig in
+            fresh_id (!avoid) (id_of_string "y") gsig in
       let freshz = avoid := freshm::(!avoid);
             fresh_id (!avoid) (id_of_string "Z") gsig in
   (* try with *)
       avoid := freshz::(!avoid);
-      Pfedit.by (
       tclTHENSEQ [ intros_using fresh_first_intros;
                      intro_using freshn ;
                      new_induct false [Tacexpr.ElimOnConstr
@@ -659,7 +693,8 @@ let compute_lb_tact ind lnamesparrec nparrec =
                           | App(c,ca) -> (match (kind_of_term ca.(1)) with
                               | App(c',ca') ->
                                   let n = Array.length ca' in
-                                    tclTHENSEQ (do_replace_lb (!avoid)
+                                    tclTHENSEQ (do_replace_lb lb_scheme_key
+				                (!avoid)
                                                 nparrec gls
                                                 ca'.(n-2) ca'.(n-1)) gls
                               | _ -> error
@@ -667,11 +702,37 @@ let compute_lb_tact ind lnamesparrec nparrec =
                             )
                           | _ -> error
                                   "Failure while solving Leibniz->Boolean."
-                    ]
-            )
+                    ] gsig
+
+let lb_scheme_kind_aux = ref (fun () -> failwith "Undefined")
+
+let make_lb_scheme mind =
+  let mib = Global.lookup_mind mind in
+  if Array.length mib.mind_packets <> 1 then
+    errorlabstrm ""
+      (str "Automatic building of Leibniz->boolean lemmas not supported");
+  let ind = (mind,0) in
+  let nparams = mib.mind_nparams in
+  let nparrec = mib.mind_nparams_rec in
+  let lnonparrec,lnamesparrec =
+    context_chop (nparams-nparrec) mib.mind_params_ctxt in
+  [|Pfedit.build_by_tactic
+    (compute_lb_goal ind lnamesparrec nparrec)
+    (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)|]
+
+let lb_scheme_kind = declare_mutual_scheme_object "_dec_lb" make_lb_scheme
+
+let _ = lb_scheme_kind_aux := fun () -> lb_scheme_kind
+
+(**********************************************************************)
+(* Decidable equality *)
+
+let check_not_is_defined () =
+  try ignore (Coqlib.build_coq_not ()) with _ -> raise (UndefinedCst "not")
 
 (* {n=m}+{n<>m}  part  *)
 let compute_dec_goal ind lnamesparrec nparrec =
+  check_not_is_defined ();
   let list_id = list_id lnamesparrec in
     let create_input c =
       let x = id_of_string "x" and
@@ -710,8 +771,8 @@ let compute_dec_goal ind lnamesparrec nparrec =
                 (match n with Name s -> s | Anonymous ->  id_of_string "A")
                 t  a) eq_input lnamesparrec
     in
-      let n = id_of_string "n" and
-          m = id_of_string "m" in
+      let n = id_of_string "x" and
+          m = id_of_string "y" in
         let eqnm = mkApp(eq,[|mkFullInd ind (2*nparrec+2);mkVar n;mkVar m|]) in
         create_input (
           mkNamedProd n (mkFullInd ind (2*nparrec)) (
@@ -721,93 +782,116 @@ let compute_dec_goal ind lnamesparrec nparrec =
         )
       )
 
-let compute_dec_tact ind lnamesparrec nparrec =
+let compute_dec_tact ind lnamesparrec nparrec gsig =
   let list_id = list_id lnamesparrec in
   let eqI = eqI ind lnamesparrec in
-    let avoid = ref [] in
-    let gsig = top_goal_of_pftreestate (Pfedit.get_pftreestate()) in
-    let eqtrue x = mkApp(eq,[|bb;x;tt|]) in
-    let eqfalse x = mkApp(eq,[|bb;x;ff|]) in
-      let first_intros =
-        ( List.map (fun (s,_,_,_) -> s ) list_id ) @
-        ( List.map (fun (_,seq,_,_) -> seq) list_id ) @
-        ( List.map (fun (_,_,sbl,_) -> sbl) list_id ) @
-        ( List.map (fun (_,_,_,slb) -> slb) list_id )
-      in
-      let fresh_first_intros = List.map ( fun s ->
-        let fresh = fresh_id (!avoid) s gsig in
-        avoid := fresh::(!avoid); fresh ) first_intros in
-      let freshn = fresh_id (!avoid) (id_of_string "n") gsig in
-      let freshm = avoid := freshn::(!avoid);
-            fresh_id (!avoid) (id_of_string "m") gsig in
-      let freshH = avoid := freshm::(!avoid);
-            fresh_id (!avoid) (id_of_string "H") gsig in
-      let eqbnm = mkApp(eqI,[|mkVar freshn;mkVar freshm|]) in
-      avoid := freshH::(!avoid);
-      Pfedit.by ( tclTHENSEQ [
-                        intros_using fresh_first_intros;
-                        intros_using [freshn;freshm];
-                        assert_tac (Name freshH) (
-                        mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
-                  ) ]);
-(*we do this so we don't have to prove the same goal twice *)
-      Pfedit.by (  tclTHEN
-                   (new_destruct false [Tacexpr.ElimOnConstr
-                                  (eqbnm,Rawterm.NoBindings)]
-                                None
-                                (None,None)
-		                None)
-                  Auto.default_auto
-                );
-      Pfedit.by (
-                  let freshH2 = fresh_id (!avoid) (id_of_string "H") gsig in
-                    avoid := freshH2::(!avoid);
-                    new_destruct false [Tacexpr.ElimOnConstr
+  let avoid = ref [] in
+  let eqtrue x = mkApp(eq,[|bb;x;tt|]) in
+  let eqfalse x = mkApp(eq,[|bb;x;ff|]) in
+  let first_intros =
+      ( List.map (fun (s,_,_,_) -> s ) list_id ) @
+      ( List.map (fun (_,seq,_,_) -> seq) list_id ) @
+      ( List.map (fun (_,_,sbl,_) -> sbl) list_id ) @
+      ( List.map (fun (_,_,_,slb) -> slb) list_id )
+  in
+  let fresh_first_intros = List.map ( fun s ->
+    let fresh = fresh_id (!avoid) s gsig in
+    avoid := fresh::(!avoid); fresh ) first_intros in
+  let freshn = fresh_id (!avoid) (id_of_string "x") gsig in
+  let freshm = avoid := freshn::(!avoid);
+    fresh_id (!avoid) (id_of_string "y") gsig in
+  let freshH = avoid := freshm::(!avoid);
+    fresh_id (!avoid) (id_of_string "H") gsig in
+  let eqbnm = mkApp(eqI,[|mkVar freshn;mkVar freshm|]) in
+  avoid := freshH::(!avoid);
+  let arfresh = Array.of_list fresh_first_intros in
+  let xargs = Array.sub arfresh 0 (2*nparrec) in
+  let blI = try mkConst (find_scheme bl_scheme_kind ind) with
+            Not_found -> error (
+              "Error during the decidability part, boolean to leibniz"^
+              " equality is required.")
+  in
+  let lbI = try mkConst (find_scheme lb_scheme_kind ind) with
+            Not_found -> error (
+              "Error during the decidability part, leibniz to boolean"^
+              " equality is required.")
+  in
+  tclTHENSEQ [
+        intros_using fresh_first_intros;
+        intros_using [freshn;freshm];
+	(*we do this so we don't have to prove the same goal twice *)
+        assert_by (Name freshH) (
+          mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
+	)
+	  (tclTHEN
+	    (new_destruct false [Tacexpr.ElimOnConstr
+              (eqbnm,Rawterm.NoBindings)]
+              None
+              (None,None)
+	      None)
+	    Auto.default_auto);
+        (fun gsig ->
+	  let freshH2 = fresh_id (!avoid) (id_of_string "H") gsig in
+          avoid := freshH2::(!avoid);
+	  tclTHENS (
+	    new_destruct false [Tacexpr.ElimOnConstr
                                     ((mkVar freshH),Rawterm.NoBindings)]
                                 None
                                 (None,Some (dl,Genarg.IntroOrAndPattern [
                                     [dl,Genarg.IntroAnonymous];
                                     [dl,Genarg.IntroIdentifier freshH2]])) None
-      );
-      let arfresh = Array.of_list fresh_first_intros in
-        let xargs = Array.sub arfresh 0 (2*nparrec) in
-          let blI = try find_bl_proof ind with
-            Not_found -> error (
-              "Error during the decidability part, boolean to leibniz"^
-              " equality is required.")
-          in
-          let lbI = try find_lb_proof ind  with
-            Not_found -> error (
-              "Error during the decidability part, leibniz to boolean"^
-              " equality is required.")
-          in
-
-      (* left *)
-          Pfedit.by ( tclTHENSEQ [ simplest_left;
-                          apply (mkApp(blI,Array.map(fun x->mkVar x) xargs));
-                          Auto.default_auto
-          ]);
-      (*right *)
-          let freshH3 = fresh_id (!avoid) (id_of_string "H") gsig in
-          avoid := freshH3::(!avoid);
-          Pfedit.by (tclTHENSEQ [ simplest_right ;
-                      unfold_constr (Lazy.force Coqlib.coq_not_ref);
-                      intro;
-                      Equality.subst_all;
-                assert_tac (Name freshH3)
-                (mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|]))
-          ]);
-          Pfedit.by
-            (tclTHENSEQ [apply (mkApp(lbI,Array.map (fun x->mkVar x) xargs));
-                      Auto.default_auto
-            ]);
-         Pfedit.by (Equality.general_rewrite_bindings_in true
+	  ) [
+	    (* left *)
+	    tclTHENSEQ [
+	      simplest_left;
+              apply (mkApp(blI,Array.map(fun x->mkVar x) xargs));
+              Auto.default_auto
+            ];
+	    (*right *)
+            (fun gsig ->
+	    let freshH3 = fresh_id (!avoid) (id_of_string "H") gsig in
+            avoid := freshH3::(!avoid);
+            tclTHENSEQ [
+	      simplest_right ;
+              unfold_constr (Lazy.force Coqlib.coq_not_ref);
+              intro;
+              Equality.subst_all;
+              assert_by (Name freshH3)
+		(mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|]))
+		(tclTHENSEQ [
+		  apply (mkApp(lbI,Array.map (fun x->mkVar x) xargs));
+                  Auto.default_auto
+		]);
+	      Equality.general_rewrite_bindings_in true
 	                      all_occurrences
                               (List.hd !avoid)
                               ((mkVar (List.hd (List.tl !avoid))),
                                 Rawterm.NoBindings
                               )
-                              true);
-        Pfedit.by (Equality.discr_tac false None)
+                              true;
+              Equality.discr_tac false None
+	    ] gsig)
+	  ] gsig)
+  ] gsig
 
+let make_eq_decidability mind =
+  let mib = Global.lookup_mind mind in
+  if Array.length mib.mind_packets <> 1 then
+    anomaly "Decidability lemma for mutual inductive types not supported";
+  let ind = (mind,0) in
+  let nparams = mib.mind_nparams in
+  let nparrec = mib.mind_nparams_rec in
+  let lnonparrec,lnamesparrec =
+    context_chop (nparams-nparrec) mib.mind_params_ctxt in
+  [|Pfedit.build_by_tactic
+    (compute_dec_goal ind lnamesparrec nparrec)
+    (compute_dec_tact ind lnamesparrec nparrec)|]
 
+let eq_dec_scheme_kind =
+  declare_mutual_scheme_object "_eq_dec" make_eq_decidability
+
+(* The eq_dec_scheme proofs depend on the equality and discr tactics
+   but the inj tactics, that comes with discr, depends on the
+   eq_dec_scheme... *)
+
+let _ = Equality.set_eq_dec_scheme_kind eq_dec_scheme_kind

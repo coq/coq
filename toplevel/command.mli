@@ -12,139 +12,146 @@
 open Util
 open Names
 open Term
-open Nametab
-open Declare
-open Library
+open Entries
 open Libnames
-open Nametab
 open Tacexpr
 open Vernacexpr
-open Rawterm
 open Topconstr
 open Decl_kinds
 open Redexpr
+open Constrintern
 (*i*)
 
-(*s Declaration functions. The following functions take ASTs,
-   transform them into [constr] and then call the corresponding
-   functions of [Declare]; they return an absolute reference to the
-   defined object *)
+(*s This file is about the interpretation of raw commands into typed
+    ones and top-level declaration of the main Gallina objects *)
 
-val get_declare_definition_hook : unit -> (Entries.definition_entry -> unit)
-val set_declare_definition_hook : (Entries.definition_entry -> unit) -> unit
+(* Hooks for Pcoq *)
 
-val definition_message : identifier -> unit
-val assumption_message : identifier -> unit
+val set_declare_definition_hook : (definition_entry -> unit) -> unit
+val get_declare_definition_hook : unit -> (definition_entry -> unit)
+val set_declare_assumptions_hook : (types -> unit) -> unit
 
-val declare_definition : identifier -> definition_kind ->
-  local_binder list -> red_expr option -> constr_expr ->
-  constr_expr option -> declaration_hook -> unit
+(*************************************************************************)
+(* Definitions/Let *)
 
-val syntax_definition : identifier -> identifier list * constr_expr ->
+val interp_definition :
+  boxed_flag -> local_binder list -> red_expr option -> constr_expr ->
+  constr_expr option -> definition_entry * manual_implicits
+
+val declare_definition : identifier -> locality * definition_object_kind ->
+  definition_entry -> manual_implicits -> declaration_hook -> unit
+
+(*************************************************************************)
+(* Parameters/Assumptions *)
+
+val interp_assumption :
+  local_binder list -> constr_expr -> types * manual_implicits
+
+val declare_assumption : coercion_flag -> assumption_kind -> types ->
+  manual_implicits ->
+  bool (* implicit *) -> bool (* inline *) -> variable located -> unit
+
+val declare_assumptions : variable located list ->
+  coercion_flag -> assumption_kind -> types -> manual_implicits ->
   bool -> bool -> unit
 
-val declare_one_assumption : coercion_flag -> assumption_kind -> Term.types ->
-  Impargs.manual_explicitation list ->
-  bool (* implicit *) -> bool (* inline *) -> Names.variable located  -> unit
+(*************************************************************************)
+(* Inductive and coinductive types *)
 
-val set_declare_assumption_hook : (types -> unit) -> unit
+(* Extracting the semantical components out of the raw syntax of mutual
+   inductive declarations *)
 
-val declare_assumption : identifier located list ->
-  coercion_flag -> assumption_kind -> local_binder list -> constr_expr ->
-  bool -> bool -> unit
+type structured_one_inductive_expr = {
+  ind_name : identifier;
+  ind_arity : constr_expr;
+  ind_lc : (identifier * constr_expr) list
+}
 
-val open_temp_scopes : Topconstr.scope_name option -> unit
+type structured_inductive_expr =
+  local_binder list * structured_one_inductive_expr list
 
-val declare_interning_data : 'a * Constrintern.implicits_env ->
-    string * Topconstr.constr_expr * Topconstr.scope_name option -> unit
+val extract_mutual_inductive_declaration_components :
+  (one_inductive_expr * decl_notation option) list ->
+    structured_inductive_expr * (*coercions:*) qualid list * decl_notation list
 
-val compute_interning_datas : Environ.env -> Constrintern.var_internalisation_type ->
-  'a list -> 'b list ->
-  Term.types list ->Impargs.manual_explicitation list list ->
-  'a list *
-    ('b * (Constrintern.var_internalisation_type * Names.identifier list * Impargs.implicits_list *
-	      Topconstr.scope_name option list))
-    list
+(* Typing mutual inductive definitions *)
 
-val check_mutuality : Environ.env -> definition_object_kind ->
-  (identifier * types) list -> unit
+type one_inductive_impls =
+  Impargs.manual_explicitation list (* for inds *)*
+  Impargs.manual_explicitation list list (* for constrs *)
 
-val build_mutual : ((lident * local_binder list * constr_expr option * constructor_expr list) *
-		                decl_notation) list -> bool -> unit
+val interp_mutual_inductive :
+  structured_inductive_expr -> decl_notation list -> bool ->
+    mutual_inductive_entry * one_inductive_impls list
 
-val declare_mutual_with_eliminations :
-  bool -> Entries.mutual_inductive_entry ->
-  (Impargs.manual_explicitation list *
-      Impargs.manual_explicitation list list) list ->
+(* Registering a mutual inductive definition together with its
+   associated schemes *)
+
+val declare_mutual_inductive_with_eliminations :
+  bool -> mutual_inductive_entry -> one_inductive_impls list ->
   mutual_inductive
 
-type fixpoint_kind =
-  | IsFixpoint of (identifier located option * recursion_order_expr) list
-  | IsCoFixpoint
+(* Entry points for the vernacular commands Inductive and CoInductive *)
 
-type fixpoint_expr = {
+val do_mutual_inductive :
+  (one_inductive_expr * decl_notation option) list -> bool -> unit
+
+(*************************************************************************)
+(* Fixpoints and cofixpoints *)
+
+type structured_fixpoint_expr = {
   fix_name : identifier;
   fix_binders : local_binder list;
   fix_body : constr_expr;
   fix_type : constr_expr
 }
 
-val recursive_message : definition_object_kind ->
-  int array option -> identifier list -> Pp.std_ppcmds
+(* Extracting the semantical components out of the raw syntax of
+   (co)fixpoints declarations *)
+
+val extract_fixpoint_components :
+  (fixpoint_expr * decl_notation option) list ->
+    structured_fixpoint_expr list * decl_notation list *
+    (* possible structural arg: *) lident option list
+
+val extract_cofixpoint_components :
+  (cofixpoint_expr * decl_notation option) list ->
+    structured_fixpoint_expr list * decl_notation list
+
+(* Typing fixpoints and cofixpoint_expr *)
+
+type recursive_preentry =
+  identifier list * constr list * types list
+
+val interp_fixpoint :
+  structured_fixpoint_expr list -> lident option list -> decl_notation list ->
+    recursive_preentry * manual_implicits list * int array option
+
+val interp_cofixpoint :
+  structured_fixpoint_expr list -> decl_notation list ->
+    recursive_preentry * manual_implicits list
+
+(* Registering fixpoints and cofixpoints in the environment *)
+
+val declare_fixpoint :
+  bool -> recursive_preentry * manual_implicits list * int array option ->
+    decl_notation list -> unit
+
+val declare_cofixpoint :
+  bool -> recursive_preentry * manual_implicits list ->
+    decl_notation list -> unit
+
+(* Entry points for the vernacular commands Fixpoint and CoFixpoint *)
+
+val do_fixpoint :
+  (fixpoint_expr * decl_notation option) list -> bool -> unit
+
+val do_cofixpoint :
+  (cofixpoint_expr * decl_notation option) list -> bool -> unit
+
+(* Utils *)
+
+val check_mutuality : Environ.env -> bool -> (identifier * types) list -> unit
 
 val declare_fix : bool -> definition_object_kind -> identifier ->
   constr -> types -> Impargs.manual_explicitation list -> global_reference
-
-val build_recursive : (Topconstr.fixpoint_expr * decl_notation) list -> bool -> unit
-
-val build_corecursive : (Topconstr.cofixpoint_expr * decl_notation) list -> bool -> unit
-
-val build_scheme : (identifier located option * scheme ) list -> unit
-
-val build_combined_scheme : identifier located -> identifier located list -> unit
-
-val generalize_constr_expr : constr_expr -> local_binder list -> constr_expr
-
-val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
-
-(* A hook start_proof calls on the type of the definition being started *)
-val set_start_hook : (types -> unit) -> unit
-
-val start_proof : identifier -> goal_kind -> types ->
-  ?init_tac:Proof_type.tactic -> ?compute_guard:bool -> declaration_hook -> unit
-
-val start_proof_com : goal_kind ->
-  (lident option * (local_binder list * constr_expr)) list ->
-  declaration_hook -> unit
-
-(* A hook the next three functions pass to cook_proof *)
-val set_save_hook : (Refiner.pftreestate -> unit) -> unit
-
-(*s [save_named b] saves the current completed proof under the name it
-was started; boolean [b] tells if the theorem is declared opaque; it
-fails if the proof is not completed *)
-
-val save_named : bool -> unit
-
-(* [save_anonymous b name] behaves as [save_named] but declares the theorem
-under the name [name] and respects the strength of the declaration *)
-
-val save_anonymous : bool -> identifier -> unit
-
-(* [save_anonymous_with_strength s b name] behaves as [save_anonymous] but
-   declares the theorem under the name [name] and gives it the
-   strength [strength] *)
-
-val save_anonymous_with_strength : theorem_kind -> bool -> identifier -> unit
-
-(* [admit ()] aborts the current goal and save it as an assmumption *)
-
-val admit : unit -> unit
-
-(* [get_current_context ()] returns the evar context and env of the
-   current open proof if any, otherwise returns the empty evar context
-   and the current global env *)
-
-val get_current_context : unit -> Evd.evar_map * Environ.env
-
-

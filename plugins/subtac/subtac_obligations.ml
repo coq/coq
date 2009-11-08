@@ -45,6 +45,10 @@ type obligation =
 
 type obligations = (obligation array * int)
 
+type fixpoint_kind =
+  | IsFixpoint of (identifier located option * Topconstr.recursion_order_expr) list
+  | IsCoFixpoint
+
 type notations = (string * Topconstr.constr_expr * Topconstr.scope_name option) list
 
 type program_info = {
@@ -53,7 +57,7 @@ type program_info = {
   prg_type: constr;
   prg_obligations: obligations;
   prg_deps : identifier list;
-  prg_fixkind : Command.fixpoint_kind option ;
+  prg_fixkind : fixpoint_kind option ;
   prg_implicits : (Topconstr.explicitation * (bool * bool * bool)) list;
   prg_notations : notations ;
   prg_kind : definition_kind;
@@ -288,8 +292,8 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let kns = list_map4 (declare_fix boxed kind) fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
-    List.iter (Command.declare_interning_data ([],[])) first.prg_notations;
-    Flags.if_verbose ppnl (Command.recursive_message kind indexes fixnames);
+    List.iter Metasyntax.add_notation_interpretation first.prg_notations;
+    Declare.recursive_message (fixkind<>IsCoFixpoint) indexes fixnames;
     let gr = List.hd kns in
     let kn = match gr with ConstRef kn -> kn | _ -> assert false in
       first.prg_hook local gr;
@@ -435,7 +439,7 @@ let rec solve_obligation prg num =
       match deps_remaining obls obl.obl_deps with
       | [] ->
 	  let obl = subst_deps_obl obls obl in
-	    Command.start_proof obl.obl_name (kind_of_opacity obl.obl_status) obl.obl_type
+	    Lemmas.start_proof obl.obl_name (kind_of_opacity obl.obl_status) obl.obl_type
 	      (fun strength gr ->
 		let cst = match gr with ConstRef cst -> cst | _ -> assert false in
 		let obl =

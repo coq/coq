@@ -9,6 +9,7 @@
 (* $Id$ *)
 
 open Pp
+open Flags
 open Util
 open Names
 open Topconstr
@@ -766,7 +767,7 @@ let find_precedence lev etyps symbols =
 	    error "The level of the leftmost non-terminal cannot be changed."
 	| ETName | ETBigint | ETReference ->
 	    if lev = None then
-	      Flags.if_verbose msgnl (str "Setting notation at level 0.")
+	      if_verbose msgnl (str "Setting notation at level 0.")
 	    else
 	    if lev <> Some 0 then
 	      error "A notation starting with an atomic expression must be at level 0.";
@@ -784,7 +785,7 @@ let find_precedence lev etyps symbols =
       (match list_last symbols with Terminal _ -> true |_ -> false)
       ->
       if lev = None then
-	(Flags.if_verbose msgnl (str "Setting notation at level 0."); 0)
+	(if_verbose msgnl (str "Setting notation at level 0."); 0)
       else Option.get lev
   | _ ->
       if lev = None then error "Cannot determine the level.";
@@ -946,12 +947,12 @@ let add_notation_in_scope local df c mods scope =
   Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules));
   (* Declare interpretation *)
   let (onlyparse,extrarecvars,recvars,vars,df') = i_data in
-  let (acvars,ac) = interp_aconstr [] (vars,recvars) c in
+  let (acvars,ac) = interp_aconstr (vars,recvars) c in
   let a = (remove_extravars extrarecvars acvars,ac) in
   let onlyparse = onlyparse or is_not_printable ac in
   Lib.add_anonymous_leaf (inNotation (local,scope,a,onlyparse,df'))
 
-let add_notation_interpretation_core local df names c scope onlyparse =
+let add_notation_interpretation_core local df ?(impls=empty_internalization_env) c scope onlyparse =
   let dfs = split_notation_string df in
   let (extrarecvars,recvars,vars,symbs) = analyze_notation_tokens dfs in
   (* Redeclare pa/pp rules *)
@@ -961,7 +962,7 @@ let add_notation_interpretation_core local df names c scope onlyparse =
   end;
   (* Declare interpretation *)
   let df' = (make_notation_key symbs,(Lib.library_dp(),df)) in
-  let (acvars,ac) = interp_aconstr names (vars,recvars) c in
+  let (acvars,ac) = interp_aconstr ~impls (vars,recvars) c in
   let a = (remove_extravars extrarecvars acvars,ac) in
   let onlyparse = onlyparse or is_not_printable ac in
   Lib.add_anonymous_leaf (inNotation (local,scope,a,onlyparse,df'))
@@ -975,8 +976,12 @@ let add_syntax_extension local mv =
 
 (* Notations with only interpretation *)
 
-let add_notation_interpretation df names c sc =
-  try add_notation_interpretation_core false df names c sc false
+let add_notation_interpretation (df,c,sc) =
+  add_notation_interpretation_core false df c sc false
+
+let set_notation_for_interpretation impls (df,c,sc) =
+  Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc;
+  try silently (add_notation_interpretation_core false df ~impls c sc) false;
   with NoSyntaxRule ->
     error "Parsing rule for this notation has to be previously declared."
 
@@ -986,7 +991,7 @@ let add_notation local c (df,modifiers) sc =
   if no_syntax_modifiers modifiers then
     (* No syntax data: try to rely on a previously declared rule *)
     let onlyparse = modifiers=[SetOnlyParsing] in
-    try add_notation_interpretation_core local df [] c sc onlyparse
+    try add_notation_interpretation_core local df c sc onlyparse
     with NoSyntaxRule ->
       (* Try to determine a default syntax rule *)
       add_notation_in_scope local df c modifiers sc
@@ -1043,3 +1048,9 @@ let add_delimiters scope key =
 
 let add_class_scope scope cl =
   Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeClasses cl))
+
+let add_syntactic_definition ident (vars,c) local onlyparse =
+  let ((vars,_),pat) = interp_aconstr (vars,[]) c in
+  let onlyparse = onlyparse or is_not_printable pat in
+  Syntax_def.declare_syntactic_definition local ident onlyparse (vars,pat)
+

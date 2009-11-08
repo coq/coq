@@ -52,8 +52,8 @@ open Genarg
 let compute_renamed_type gls c =
   rename_bound_var (pf_env gls) [] (pf_type_of gls c)
 
-let qed () = Command.save_named true
-let defined () = Command.save_named false
+let qed () = Lemmas.save_named true
+let defined () = Lemmas.save_named false
 
 let pf_get_new_ids idl g =
   let ids = pf_ids_of_hyps g in
@@ -993,7 +993,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 	       )
       		 g)
 ;
-    Command.save_named opacity;
+    Lemmas.save_named opacity;
   in
   start_proof
     na
@@ -1042,7 +1042,7 @@ let com_terminate
     nb_args
     hook =
   let start_proof (tac_start:tactic) (tac_end:tactic) =
-    let (evmap, env) = Command.get_current_context() in
+    let (evmap, env) = Lemmas.get_current_context() in
     start_proof thm_name
       (Global, Proof Lemma) (Environ.named_context_val env)
       (hyp_terminates nb_args fonctional_ref) hook;
@@ -1322,7 +1322,7 @@ let (com_eqn : identifier ->
 	    else begin match cb.const_body with None -> true | _ -> false end
 	| _ -> anomaly "terminate_lemma: not a constant"
     in
-    let (evmap, env) = Command.get_current_context() in
+    let (evmap, env) = Lemmas.get_current_context() in
     let f_constr = (constr_of_global f_ref) in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
     (start_proof eq_name (Global, Proof Lemma)
@@ -1343,7 +1343,7 @@ let (com_eqn : identifier ->
        );
 (*      (try Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowProof) with _ -> ()); *)
 (*      Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowScript); *)
-     Flags.silently (fun () ->Command.save_named opacity) () ;
+     Flags.silently (fun () -> Lemmas.save_named opacity) () ;
 (*      Pp.msgnl (str "eqn finished"); *)
 
     );;
@@ -1358,7 +1358,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let function_type = interp_constr Evd.empty (Global.env()) type_of_f in
   let env = push_named (function_name,None,function_type) (Global.env()) in
 (*   Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type); *)
-  let equation_lemma_type = interp_gen (OfType None) Evd.empty env ~impls:([],rec_impls) eq in
+  let equation_lemma_type = interp_gen (OfType None) Evd.empty env ~impls:rec_impls eq in
 (*   Pp.msgnl (Printer.pr_lconstr equation_lemma_type); *)
   let res_vars,eq' = decompose_prod equation_lemma_type in
   let env_eq' = Environ.push_rel_context (List.map (fun (x,y) -> (x,None,y)) res_vars) env in

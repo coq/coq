@@ -856,11 +856,16 @@ let occur_var_constr_expr id c = Idset.mem id (free_vars_of_constr_expr c)
 
 let mkIdentC id  = CRef (Ident (dummy_loc, id))
 let mkRefC r     = CRef r
-let mkAppC (f,l) = CApp (dummy_loc, (None,f), List.map (fun x -> (x,None)) l)
 let mkCastC (a,k)  = CCast (dummy_loc,a,k)
 let mkLambdaC (idl,bk,a,b) = CLambdaN (dummy_loc,[idl,bk,a],b)
 let mkLetInC (id,a,b)   = CLetIn (dummy_loc,id,a,b)
 let mkProdC (idl,bk,a,b)   = CProdN (dummy_loc,[idl,bk,a],b)
+
+let mkAppC (f,l) =
+  let l = List.map (fun x -> (x,None)) l in
+  match f with
+  | CApp (_,g,l') -> CApp (dummy_loc, g, l' @ l)
+  | _ -> CApp (dummy_loc, (None, f), l)
 
 let rec mkCProdN loc bll c =
   match bll with

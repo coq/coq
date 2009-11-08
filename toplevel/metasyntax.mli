@@ -10,6 +10,7 @@
 
 (*i*)
 open Util
+open Names
 open Libnames
 open Ppextend
 open Extend
@@ -41,20 +42,26 @@ val add_class_scope : scope_name -> Classops.cl_typ -> unit
 
 (* Add only the interpretation of a notation that already has pa/pp rules *)
 
-val add_notation_interpretation : string -> Constrintern.implicits_env ->
-  constr_expr -> scope_name option -> unit
+val add_notation_interpretation :
+  (string * constr_expr * scope_name option) -> unit
+
+(* Add a notation interpretation for supporting the "where" clause *)
+
+val set_notation_for_interpretation : Constrintern.full_internalization_env ->
+  (string * constr_expr * scope_name option) -> unit
 
 (* Add only the parsing/printing rule of a notation *)
 
 val add_syntax_extension :
   locality_flag -> (string * syntax_modifier list) -> unit
 
+(* Add a syntactic definition (as in "Notation f := ...") *)
+
+val add_syntactic_definition : identifier -> identifier list * constr_expr ->
+  bool -> bool -> unit
+
 (* Print the Camlp4 state of a grammar *)
 
 val print_grammar : string -> unit
-
-(* Evaluate whether a notation is not printable *)
-
-val is_not_printable : aconstr -> bool
 
 val check_infix_modifiers : syntax_modifier list -> unit

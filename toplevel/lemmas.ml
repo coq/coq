@@ -1,0 +1,299 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+(* $Id$ *)
+
+(* Created by Hugo Herbelin from contents related to lemma proofs in
+   file command.ml, Aug 2009 *)
+
+open Util
+open Flags
+open Pp
+open Names
+open Term
+open Declarations
+open Entries
+open Environ
+open Nameops
+open Libnames
+open Decls
+open Decl_kinds
+open Declare
+open Pretyping
+open Termops
+open Evd
+open Evarutil
+open Reductionops
+open Topconstr
+open Constrintern
+open Impargs
+
+(* Support for mutually proved theorems *)
+
+let retrieve_first_recthm = function
+  | VarRef id ->
+      (pi2 (Global.lookup_named id),variable_opacity id)
+  | ConstRef cst ->
+      let {const_body=body;const_opaque=opaq} =	Global.lookup_constant cst in
+      (Option.map Declarations.force body,opaq)
+  | _ -> assert false
+
+let adjust_guardness_conditions const =
+  (* Try all combinations... not optimal *)
+  match kind_of_term const.const_entry_body with
+  | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
+      let possible_indexes =
+	List.map (fun c ->
+	  interval 0 (List.length ((lam_assum c))))
+	  (Array.to_list fixdefs) in
+      let indexes =
+	search_guard dummy_loc (Global.env()) possible_indexes fixdecls in
+      { const with const_entry_body = mkFix ((indexes,0),fixdecls) }
+  | c -> const
+
+let look_for_mutual_statements thms =
+  if List.tl thms <> [] then
+    (* More than one statement: we look for a common inductive hyp or a *)
+    (* common coinductive conclusion *)
+    let n = List.length thms in
+    let inds = List.map (fun (id,(t,_) as x) ->
+      let (hyps,ccl) = decompose_prod_assum t in
+      let whnf_hyp_hds = map_rel_context_in_env
+        (fun env c -> fst (whd_betadeltaiota_stack env Evd.empty c))
+        (Global.env()) hyps in
+      let ind_hyps =
+        List.flatten (list_map_i (fun i (_,b,t) ->
+          match kind_of_term t with
+          | Ind (kn,_ as ind) when
+                let mind = Global.lookup_mind kn in
+                mind.mind_finite & b = None ->
+              [ind,x,i]
+          | _ ->
+              []) 1 (List.rev whnf_hyp_hds)) in
+      let ind_ccl =
+        let cclenv = push_rel_context hyps (Global.env()) in
+        let whnf_ccl,_ = whd_betadeltaiota_stack cclenv Evd.empty ccl in
+        match kind_of_term whnf_ccl with
+        | Ind (kn,_ as ind) when
+              let mind = Global.lookup_mind kn in
+              mind.mind_ntypes = n & not mind.mind_finite ->
+            [ind,x,0]
+        | _ ->
+            [] in
+      ind_hyps,ind_ccl) thms in
+    let inds_hyps,ind_ccls = List.split inds in
+    let of_same_mutind ((kn,_),_,_) = function ((kn',_),_,_) -> kn = kn' in
+    (* Check if all conclusions are coinductive in the same type *)
+    (* (degenerated cartesian product since there is at most one coind ccl) *)
+    let same_indccl =
+      list_cartesians_filter (fun hyp oks ->
+	if List.for_all (of_same_mutind hyp) oks
+	then Some (hyp::oks) else None) [] ind_ccls in
+    let ordered_same_indccl =
+      List.filter (list_for_all_i (fun i ((kn,j),_,_) -> i=j) 0) same_indccl in
+    (* Check if some hypotheses are inductive in the same type *)
+    let common_same_indhyp =
+      list_cartesians_filter (fun hyp oks ->
+	if List.for_all (of_same_mutind hyp) oks
+	then Some (hyp::oks) else None) [] inds_hyps in
+    let ordered_inds,finite =
+      match ordered_same_indccl, common_same_indhyp with
+      | indccl::rest, _ ->
+	  assert (rest=[]);
+          (* One occ. of common coind ccls and no common inductive hyps *)
+	  if common_same_indhyp <> [] then
+	    if_verbose warning "Assuming mutual coinductive statements.";
+	  flush_all ();
+          indccl, true
+      | [], _::_ ->
+	  if same_indccl <> [] &&
+	     list_distinct (List.map pi1 (List.hd same_indccl)) then
+	    if_verbose warn (strbrk "Coinductive statements do not follow the order of definition, assume the proof to be by induction."); flush_all ();
+	  (* assume the largest indices as possible *)
+	  list_last common_same_indhyp, false
+      | _, [] ->
+	  error
+            ("Cannot find common (mutual) inductive premises or coinductive" ^
+             " conclusions in the statements.")
+    in
+    let nl,thms = List.split (List.map (fun (_,x,i) -> (i,x)) ordered_inds) in
+    let rec_tac =
+      if finite then
+        match List.map (fun (id,(t,_)) -> (id,t)) thms with
+        | (id,_)::l -> Hiddentac.h_mutual_cofix true id l
+        | _ -> assert false
+      else
+	(* nl is dummy: it will be recomputed at Qed-time *)
+        match List.map2 (fun (id,(t,_)) n -> (id,n,t)) thms nl with
+        | (id,n,_)::l -> Hiddentac.h_mutual_fix true id n l
+        | _ -> assert false in
+    Some rec_tac,thms
+  else
+    None, thms
+
+(* Saving a goal *)
+
+let save id const do_guard (locality,kind) hook =
+  let const = if do_guard then adjust_guardness_conditions const else const in
+  let {const_entry_body = pft;
+       const_entry_type = tpo;
+       const_entry_opaque = opacity } = const in
+  let k = logical_kind_of_goal_kind kind in
+  let l,r = match locality with
+    | Local when Lib.sections_are_opened () ->
+	let c = SectionLocalDef (pft, tpo, opacity) in
+	let _ = declare_variable id (Lib.cwd(), c, k) in
+	(Local, VarRef id)
+    | Local | Global ->
+        let kn = declare_constant id (DefinitionEntry const, k) in
+	Autoinstance.search_declaration (ConstRef kn);
+	(Global, ConstRef kn) in
+  Pfedit.delete_current_proof ();
+  definition_message id;
+  hook l r
+
+let save_hook = ref ignore
+let set_save_hook f = save_hook := f
+
+let save_named opacity =
+  let id,(const,do_guard,persistence,hook) = Pfedit.cook_proof !save_hook in
+  let const = { const with const_entry_opaque = opacity } in
+  save id const do_guard persistence hook
+
+let default_thm_id = id_of_string "Unnamed_thm"
+
+let compute_proof_name = function
+  | Some (loc,id) ->
+      (* We check existence here: it's a bit late at Qed time *)
+      if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
+        user_err_loc (loc,"",pr_id id ++ str " already exists.");
+      id
+  | None ->
+      let rec next avoid id =
+        let id = next_global_ident_away false id avoid in
+        if Nametab.exists_cci (Lib.make_path id) then next (id::avoid) id
+        else id
+      in
+      next (Pfedit.get_all_proof_names ()) default_thm_id
+
+let save_remaining_recthms (local,kind) body opaq i (id,(t_i,(_,imps))) =
+  match body with
+  | None ->
+      (match local with
+      | Local ->
+          let impl=false in (* copy values from Vernacentries *)
+          let k = IsAssumption Conjectural in
+          let c = SectionLocalAssum (t_i,impl) in
+	  let _ = declare_variable id (Lib.cwd(),c,k) in
+          (Local,VarRef id,imps)
+      | Global ->
+          let k = IsAssumption Conjectural in
+          let kn = declare_constant id (ParameterEntry (t_i,false), k) in
+          (Global,ConstRef kn,imps))
+  | Some body ->
+      let k = logical_kind_of_goal_kind kind in
+      let body_i = match kind_of_term body with
+        | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
+        | CoFix (0,decls) -> mkCoFix (i,decls)
+        | _ -> anomaly "Not a proof by induction" in
+      match local with
+      | Local ->
+	  let c = SectionLocalDef (body_i, Some t_i, opaq) in
+	  let _ = declare_variable id (Lib.cwd(), c, k) in
+          (Local,VarRef id,imps)
+      | Global ->
+          let const =
+            { const_entry_body = body_i;
+              const_entry_type = Some t_i;
+              const_entry_opaque = opaq;
+              const_entry_boxed = false (* copy of what cook_proof does *)} in
+          let kn = declare_constant id (DefinitionEntry const, k) in
+          (Global,ConstRef kn,imps)
+
+(* 4.2| General support for goals *)
+
+let check_anonymity id save_ident =
+  if atompart_of_id id <> "Unnamed_thm" then
+    error "This command can only be used for unnamed theorem."
+(*
+    message("Overriding name "^(string_of_id id)^" and using "^save_ident)
+*)
+
+let save_anonymous opacity save_ident =
+  let id,(const,do_guard,persistence,hook) = Pfedit.cook_proof !save_hook in
+  let const = { const with const_entry_opaque = opacity } in
+  check_anonymity id save_ident;
+  save save_ident const do_guard persistence hook
+
+let save_anonymous_with_strength kind opacity save_ident =
+  let id,(const,do_guard,_,hook) = Pfedit.cook_proof !save_hook in
+  let const = { const with const_entry_opaque = opacity } in
+  check_anonymity id save_ident;
+  (* we consider that non opaque behaves as local for discharge *)
+  save save_ident const do_guard (Global, Proof kind) hook
+
+(* Starting a goal *)
+
+let start_hook = ref ignore
+let set_start_hook = (:=) start_hook
+
+let start_proof id kind c ?init_tac ?(compute_guard=false) hook =
+  let sign = Global.named_context () in
+  let sign = clear_proofs sign in
+  !start_hook c;
+  Pfedit.start_proof id kind sign c ?init_tac ~compute_guard hook
+
+let start_proof_com kind thms hook =
+  let evdref = ref (create_evar_defs Evd.empty) in
+  let env = Global.env () in
+  let thms = List.map (fun (sopt,(bl,t)) ->
+    let (env, ctx), imps = interp_context_evars evdref env bl in
+    let t', imps' = interp_type_evars_impls ~evdref env t in
+    let len = List.length ctx in
+      (compute_proof_name sopt,
+      (nf_isevar !evdref (it_mkProd_or_LetIn t' ctx), (len, imps @ lift_implicits len imps'))))
+    thms in
+  let rec_tac,thms = look_for_mutual_statements thms in
+  match thms with
+  | [] -> anomaly "No proof to start"
+  | (id,(t,(len,imps)) as thm)::other_thms ->
+      let hook strength ref =
+        let other_thms_data =
+          if other_thms = [] then [] else
+            (* there are several theorems defined mutually *)
+            let body,opaq = retrieve_first_recthm ref in
+            list_map_i (save_remaining_recthms kind body opaq) 1 other_thms in
+        let thms_data = (strength,ref,imps)::other_thms_data in
+        List.iter (fun (strength,ref,imps) ->
+	  maybe_declare_manual_implicits false ref imps;
+	  hook strength ref) thms_data in
+      let init_tac =
+       let intro_tac (_, (_, (len, _))) = Refiner.tclDO len Tactics.intro in
+         if Flags.is_auto_intros () then
+           match rec_tac with
+           | None -> Some (intro_tac thm)
+           | Some tac -> Some (Tacticals.tclTHENS tac (List.map intro_tac thms))
+         else rec_tac
+      in start_proof id kind t ?init_tac hook ~compute_guard:(rec_tac<>None)
+
+(* Admitted *)
+
+let admit () =
+  let (id,k,typ,hook) = Pfedit.current_proof_statement () in
+  let kn =
+    declare_constant id (ParameterEntry (typ,false),IsAssumption Conjectural) in
+  Pfedit.delete_current_proof ();
+  assumption_message id;
+  hook Global (ConstRef kn)
+
+(* Miscellaneous *)
+
+let get_current_context () =
+  try Pfedit.get_current_goal_context ()
+  with e when Logic.catchable_exception e ->
+    (Evd.empty, Global.env())

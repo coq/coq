@@ -53,6 +53,7 @@
 open Names
 open Term
 open Typeops
+open Term_typing
 open Univ
 open Inductive
 open Indtypes
@@ -139,10 +140,14 @@ open Refine
 open Tacinterp
 open Tacticals
 open Tactics
+open Eqschemes
 
 open Cerrors
 open Class
 open Command
+open Indschemes
+open Ind_tables
+open Lemmas
 open Coqinit
 open Coqtop
 open Discharge

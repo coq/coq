@@ -230,6 +230,7 @@ type elim_scheme = {
   elimc: constr with_ebindings option;
   elimt: types;
   indref: global_reference option;
+  index: int;              (* index of the elimination type in the scheme *)
   params: rel_context;     (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
   nparams: int;            (* number of parameters *)
   predicates: rel_context; (* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
@@ -250,19 +251,25 @@ type elim_scheme = {
 val compute_elim_sig : ?elimc: constr with_ebindings -> types -> elim_scheme
 val rebuild_elimtype_from_scheme: elim_scheme -> types
 
-val elimination_clause_scheme : evars_flag ->
-  bool -> clausenv -> clausenv -> tactic
+(* elim principle with the index of its inductive arg *)
+type eliminator = {
+  elimindex : int option;  (* None = find it automatically *)
+  elimbody : constr with_ebindings
+}
 
-val elimination_in_clause_scheme : evars_flag -> identifier ->
+val elimination_clause_scheme : evars_flag ->
+  bool -> int -> clausenv -> clausenv -> tactic
+
+val elimination_in_clause_scheme : evars_flag -> identifier -> int ->
   clausenv -> clausenv -> tactic
 
-val general_elim_clause_gen : (Clenv.clausenv -> 'a -> tactic) ->
-  'a -> constr * open_constr bindings -> tactic
+val general_elim_clause_gen : (int -> Clenv.clausenv -> 'a -> tactic) ->
+  'a -> eliminator -> tactic
 
 val general_elim  : evars_flag ->
-  constr with_ebindings -> constr with_ebindings -> ?allow_K:bool -> tactic
+  constr with_ebindings -> eliminator -> ?allow_K:bool -> tactic
 val general_elim_in : evars_flag ->
-  identifier -> constr with_ebindings -> constr with_ebindings -> tactic
+  identifier -> constr with_ebindings -> eliminator -> tactic
 
 val default_elim  : evars_flag -> constr with_ebindings -> tactic
 val simplest_elim : constr -> tactic

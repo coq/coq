@@ -83,6 +83,7 @@ val is_unit_or_eq_type     : testing_function
 val is_unit_type           : testing_function
 
 (* type with only one constructor, no arguments and at least one dependency *)
+val is_inductive_equality  : inductive -> bool
 val match_with_equality_type : (constr * constr list) matching_function
 val is_equality_type       : testing_function
 

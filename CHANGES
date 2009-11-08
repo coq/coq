@@ -39,8 +39,9 @@ Tactics
   is interpreted as using the collection of its constructors.
 - Tactic names "case" and "elim" now support clauses "as" and "in" and become
   then synonymous of "destruct" and "induction" respectively.
-- An new name "exfalso" for the use of 'ex-falso quodlibet' principle.
+- A new tactic name "exfalso" for the use of 'ex-falso quodlibet' principle.
   This tactic is simply a shortcut for "elimtype False".
+- Added support for Leibniz-rewriting of dependent hypotheses.
 
 Tactic Language
 
@@ -64,6 +65,11 @@ Vernacular commands
   "Reserved Notation".
 - Open/Close Scope command supports Global option in sections.
 - Ltac definitions support Local option for non-export outside modules.
+- Made generation of boolean equality automatic for datatypes (use
+  "Unset Boolean Equality Schemes" for deactivation).
+- Made support for automatic generation of case analysis schemes and
+  congruence schemes available to user (governed by options "Unset
+  Case Analysis Schemes" and "Unset Congruence Schemes").
 
 Tools
 

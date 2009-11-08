@@ -294,13 +294,10 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   let lift_lets = Termops.lift_rel_context 1 letbinders in
   let intern_body =
     let ctx = (Name recname, None, pi3 curry_fun) :: binders_rel in
-    let impls = Command.compute_interning_datas env Constrintern.Recursive [] [recname] [full_arity] [impls] in
-    let newimpls =
-      match snd impls with
-      [(p, (r, l, impls, scopes))] ->
-	[(p, (r, l, impls @ [Some (id_of_string "recproof", Impargs.Manual, (true, false))], scopes @ [None]))]
-      | x -> x
-    in interp_casted_constr isevars ~impls:(fst impls,newimpls)
+    let (r, l, impls, scopes) = Constrintern.compute_internalization_data env Constrintern.Recursive full_arity impls in
+    let newimpls = [(recname, (r, l, impls @ [Some (id_of_string "recproof", Impargs.Manual, (true, false))], scopes @ [None]))] in
+    let newimpls = Constrintern.set_internalization_env_params newimpls [] in
+    interp_casted_constr isevars ~impls:newimpls
       (push_rel_context ctx env) body (lift 1 top_arity)
   in
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
@@ -412,7 +409,7 @@ let check_evars env initial_sigma evd c =
 let interp_recursive fixkind l boxed =
   let env = Global.env() in
   let fixl, ntnl = List.split l in
-  let kind = if fixkind <> Command.IsCoFixpoint then Fixpoint else CoFixpoint in
+  let kind = fixkind <> IsCoFixpoint in
   let fixnames = List.map (fun fix -> fix.Command.fix_name) fixl in
 
   (* Interp arities allowing for unresolved types *)
@@ -433,13 +430,13 @@ let interp_recursive fixkind l boxed =
   let env_rec = push_named_context rec_sign env in
 
   (* Get interpretation metadatas *)
-  let impls = Command.compute_interning_datas env Constrintern.Recursive [] fixnames fixtypes fiximps in
+  let impls = Constrintern.compute_full_internalization_env env Constrintern.Recursive [] fixnames fixtypes fiximps in
   let notations = List.fold_right Option.List.cons ntnl [] in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
   let fixdefs =
     States.with_state_protection (fun () ->
-      List.iter (Command.declare_interning_data impls) notations;
+      List.iter (Metasyntax.set_notation_for_interpretation impls) notations;
       list_map3 (interp_fix_body evdref env_rec impls) fixctxs fixl fixccls)
       () in
 
@@ -478,7 +475,7 @@ let interp_recursive fixkind l boxed =
   in
   let defs = list_map4 collect_evars fixnames fixdefs fixtypes fiximps in
     (match fixkind with
-      | Command.IsFixpoint wfl ->
+      | IsFixpoint wfl ->
 	  let possible_indexes =
 	    list_map3 compute_possible_guardness_evidences wfl fixctxs fixtypes in
 	  let fixdecls = Array.of_list (List.map (fun x -> Name x) fixnames),
@@ -487,7 +484,7 @@ let interp_recursive fixkind l boxed =
 	  in
 	  let indexes = Pretyping.search_guard dummy_loc (Global.env ()) possible_indexes fixdecls in
 	    list_iter_i (fun i _ -> Inductive.check_fix env ((indexes,i),fixdecls)) l
-      | Command.IsCoFixpoint -> ());
+      | IsCoFixpoint -> ());
     Subtac_obligations.add_mutual_definitions defs notations fixkind
 
 let out_n = function
@@ -511,7 +508,7 @@ let build_recursive l b =
       | _, _ when List.for_all (fun (n, ro) -> ro = CStructRec) g ->
 	  let fixl = List.map (fun (((_,id),_,bl,typ,def),ntn) ->
 	    ({Command.fix_name = id; Command.fix_binders = bl; Command.fix_body = def; Command.fix_type = typ},ntn)) l
-	  in interp_recursive (Command.IsFixpoint g) fixl b
+	  in interp_recursive (IsFixpoint g) fixl b
       | _, _ ->
 	  errorlabstrm "Subtac_command.build_recursive"
 	    (str "Well-founded fixpoints not allowed in mutually recursive blocks")
@@ -520,4 +517,4 @@ let build_corecursive l b =
   let fixl = List.map (fun (((_,id),bl,typ,def),ntn) ->
     ({Command.fix_name = id; Command.fix_binders = bl; Command.fix_body = def; Command.fix_type = typ},ntn))
     l in
-  interp_recursive Command.IsCoFixpoint fixl b
+  interp_recursive IsCoFixpoint fixl b
