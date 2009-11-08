@@ -162,9 +162,9 @@ let computable p k =
        sinon on perd la réciprocité de la synthèse (qui, lui,
        engendrera un prédicat non dépendant) *)
 
-  (nb_lam p = k+1)
+  let sign,ccl = decompose_lam_assum p in
+  (rel_context_length sign = k+1)
   &&
-  let _,ccl = decompose_lam p in
   noccur_between 1 (k+1) ccl
 
 let avoid_flag isgoal = if isgoal then Some true else None
@@ -683,6 +683,6 @@ let simple_cases_matrix_of_branches ind brns brs =
       (dummy_loc,ids,[p],c))
     0 brns brs
 
-let return_type_of_predicate ind nparams n pred =
-  let nal,p = it_destRLambda_or_LetIn_names (n+1) pred in
+let return_type_of_predicate ind nparams nrealargs_ctxt pred =
+  let nal,p = it_destRLambda_or_LetIn_names (nrealargs_ctxt+1) pred in
   (List.hd nal, Some (dummy_loc, ind, nparams, List.tl nal)), Some p
