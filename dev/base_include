@@ -147,6 +147,7 @@ open Class
 open Command
 open Indschemes
 open Ind_tables
+open Auto_ind_decl
 open Lemmas
 open Coqinit
 open Coqtop

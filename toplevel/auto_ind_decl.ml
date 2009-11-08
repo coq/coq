@@ -262,32 +262,19 @@ let build_beq_scheme kn =
     in (* build_beq_scheme *)
     let names = Array.make nb_ind Anonymous and
         types = Array.make nb_ind mkSet and
-        cores = Array.make nb_ind mkSet and
-        res   = Array.make nb_ind mkSet in
+        cores = Array.make nb_ind mkSet in
     for i=0 to (nb_ind-1) do
         names.(i) <- Name (id_of_string (rec_name i));
 	types.(i) <- mkArrow (mkFullInd (kn,i) 0)
                      (mkArrow (mkFullInd (kn,i) 1) bb);
         cores.(i) <- make_one_eq i
     done;
-    if (string_of_mp (mind_modpath kn))="Coq.Init.Logic"
-    then print_string "Logic time, do nothing.\n"
-    else (
-      for i=0 to (nb_ind-1) do
-      let cpack = Array.get mib.mind_packets i in
-      if check_scheme (!beq_scheme_kind_aux()) (kn,i)
-      then  message ("Boolean equality is already defined on "^
-             (string_of_id cpack.mind_typename)^".")
-      else (
-	let kelim = Inductive.elim_sorts (mib,mib.mind_packets.(i)) in
+    Array.init nb_ind (fun i ->
+      let kelim = Inductive.elim_sorts (mib,mib.mind_packets.(i)) in
 	if not (List.mem InSet kelim) then
 	  raise (NonSingletonProp (kn,i));
         let fix = mkFix (((Array.make nb_ind 0),i),(names,types,cores)) in
-          res.(i) <- create_input fix
-        )
-        done;
-      );
-      res
+        create_input fix)
 
 let beq_scheme_kind = declare_mutual_scheme_object "_beq" build_beq_scheme
 
