@@ -23,6 +23,7 @@ val rew_l2r_forward_dep_scheme_kind : individual scheme_kind
 val rew_r2l_forward_dep_scheme_kind : individual scheme_kind
 val rew_r2l_dep_scheme_kind : individual scheme_kind
 val rew_r2l_scheme_kind : individual scheme_kind
+val rew_asym_scheme_kind : individual scheme_kind
 
 val build_r2l_rew_scheme : bool -> env -> inductive -> sorts_family -> constr
 val build_l2r_rew_scheme : bool -> env -> inductive -> sorts_family -> constr

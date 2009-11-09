@@ -313,24 +313,28 @@ let build_l2r_rew_scheme dep env ind kind =
 	       rel_vect (nrealargs+4) nrealargs;
 	       rel_vect 4 nrealargs;
 	       [|mkRel 2|]])|]]) in
+  let main_body =
+    mkCase (ci,
+      my_it_mkLambda_or_LetIn_name realsign_ind_G applied_PG,
+      applied_sym_C 3,
+      [|mkVar varHC|]) in
   (my_it_mkLambda_or_LetIn mib.mind_params_ctxt
   (my_it_mkLambda_or_LetIn_name realsign
   (mkNamedLambda varP
     (my_it_mkProd_or_LetIn (if dep then realsign_ind_P else realsign_P) s)
   (mkNamedLambda varHC applied_PC
   (mkNamedLambda varH (lift 2 applied_ind)
-  (mkCase (cieq,
-     mkLambda (Name varH,lift 3 applied_ind,
-       mkLambda (Anonymous,
-                 mkApp (eq,[|lift 4 applied_ind;applied_sym_sym;mkRel 1|]),
-                 applied_PR)),
-     (mkApp (sym_involutive,
-       Array.append (extended_rel_vect 3 mip.mind_arity_ctxt) [|mkVar varH|])),
-     [|mkCase (ci,
-        my_it_mkLambda_or_LetIn_name realsign_ind_G applied_PG,
-        applied_sym_C 3,
-        [|mkVar varHC|])|])))))))
-
+  (if dep then (* we need a coercion *)
+     mkCase (cieq,
+       mkLambda (Name varH,lift 3 applied_ind,
+         mkLambda (Anonymous,
+                   mkApp (eq,[|lift 4 applied_ind;applied_sym_sym;mkRel 1|]),
+                   applied_PR)),
+       mkApp (sym_involutive,
+         Array.append (extended_rel_vect 3 mip.mind_arity_ctxt) [|mkVar varH|]),
+       [|main_body|])
+   else
+     main_body))))))
 
 (**********************************************************************)
 (* Build the right-to-left rewriting lemma for hypotheses associated  *)
@@ -529,18 +533,25 @@ let rew_r2l_forward_dep_scheme_kind =
   declare_individual_scheme_object "_rew_fwd_r_dep"
   (fun ind -> build_r2l_forward_rew_scheme true (Global.env()) ind InType)
 
-(* Rewrite from left-to-right in conclusion and left-to-right in hypotheses *)
+(* Rewrite from left-to-right in conclusion and right-to-left in hypotheses *)
 let rew_l2r_scheme_kind =
   declare_individual_scheme_object "_rew_r"
   (fun ind ->
-    (* For the non-dependent case, we have two possible choices: *)
-    (* - build_l2r_forward_rew_scheme is ok even for non symmetric *)
-    (*   equality like eq_true but it introduced a beta-expansion blocked *)
-    (*   by the match and thus, it makes the guard condition fragile *)
-    (*   Moreover, its standard form needs the inductive hypothesis not *)
-    (*   in last position what breaks the order of goals and need a fix! *)
-    (* - build_l2r_rew_scheme uses symmetry and is better for guard *)
-    (*   but it does not work for non-symmetric equalities *)
+    (* We cannot use the simply-proved build_l2r_forward_rew_scheme *)
+    (* because it is introduced a beta-expansion blocked by the match *)
+    (* and may thus block in turn guard condition *)
+    build_l2r_rew_scheme false (Global.env()) ind InType)
+
+(* Asymmetric rewrite in hypotheses *)
+let rew_asym_scheme_kind =
+  declare_individual_scheme_object "_rew_r_asym"
+  (fun ind ->
+    (* For the asymmetrical non-dependent case, we (currently) have only *)
+    (* build_l2r_forward_rew_scheme available, though it may break the   *)
+    (* guard condition due to the introduction of a beta-expansion       *)
+    (* blocked by a match.                                               *)
+    (* Moreover, its standard form needs the inductive hypothesis not    *)
+    (* in last position what breaks the order of goals and need a fix!   *)
     fix_l2r_forward_rew_scheme
       (build_l2r_forward_rew_scheme false (Global.env()) ind InType))
 

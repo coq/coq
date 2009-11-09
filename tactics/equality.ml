@@ -176,13 +176,22 @@ let register_is_applied_rewrite_relation = (:=) is_applied_rewrite_relation
    eliminate lbeq on sort_of_gl. *)
 
 let find_elim hdcncl lft2rgt dep cls =
-  let scheme_name = match dep, lft2rgt, (cls = None) with
-    | false, true, true | false, false, false -> rew_l2r_scheme_kind
-    | false, false, true | false, true, false -> rew_r2l_scheme_kind
-    | true, true, true -> rew_l2r_dep_scheme_kind
-    | true, true, false -> rew_r2l_forward_dep_scheme_kind
-    | true, false, true -> rew_r2l_dep_scheme_kind
-    | true, false, false -> rew_l2r_forward_dep_scheme_kind
+  let inccl = (cls = None) in
+  let scheme_name = match dep, lft2rgt, inccl with
+    (* Non dependent case with symmetric equality *)
+    | false, Some true, true | false, Some false, false -> rew_l2r_scheme_kind
+    | false, Some false, true | false, Some true, false -> rew_r2l_scheme_kind
+    (* Dependent case with symmetric equality *)
+    | true, Some true, true -> rew_l2r_dep_scheme_kind
+    | true, Some true, false -> rew_r2l_forward_dep_scheme_kind
+    | true, Some false, true -> rew_r2l_dep_scheme_kind
+    | true, Some false, false -> rew_l2r_forward_dep_scheme_kind
+    (* Non dependent case with non-symmetric rewriting lemma *)
+    | false, None, true -> rew_r2l_scheme_kind
+    | false, None, false -> rew_asym_scheme_kind
+    (* Dependent case with non-symmetric rewriting lemma *)
+    | true, None, true -> rew_r2l_dep_scheme_kind
+    | true, None, false -> rew_l2r_forward_dep_scheme_kind
   in
   match kind_of_term hdcncl with
   | Ind ind -> mkConst (find_scheme scheme_name ind)
@@ -195,7 +204,8 @@ let type_of_clause gl = function
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars gl hdcncl =
   let dep = occur_term c (type_of_clause gl cls) in
   let elim = find_elim hdcncl lft2rgt dep cls in
-  general_elim_clause with_evars tac cls sigma c t l lft2rgt
+  general_elim_clause with_evars tac cls sigma c t l
+    (match lft2rgt with None -> false | Some b -> b)
     {elimindex = None; elimbody = (elim,NoBindings)} gl
 
 let adjust_rewriting_direction args lft2rgt =
@@ -204,11 +214,11 @@ let adjust_rewriting_direction args lft2rgt =
     (* more natural to see -> as the rewriting to the constant *)
     if not lft2rgt then
       error "Rewriting non-symmetric equality not allowed from right-to-left.";
-    not lft2rgt
+    None
   end
   else
     (* other equality *)
-    lft2rgt
+    Some lft2rgt
 
 let rewrite_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
 
@@ -1069,7 +1079,7 @@ let swapEquandsInConcl gls =
 
 let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
   (* find substitution scheme *)
-  let eq_elim = find_elim lbeq.eq false false None in
+  let eq_elim = find_elim lbeq.eq (Some false) false None in
   (* build substitution predicate *)
   let p = lambda_create (pf_env gls) (t,body) in
   (* apply substitution scheme *)

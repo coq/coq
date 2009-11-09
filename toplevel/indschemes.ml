@@ -194,7 +194,7 @@ let optimize_non_type_induction_scheme kind dep sort ind =
 	mib.mind_nparams in
     snd (weaken_sort_scheme (new_sort_in_family sort) npars c t)
   else
-    build_induction_scheme (Global.env()) Evd.empty ind dep InProp
+    build_induction_scheme (Global.env()) Evd.empty ind dep sort
 
 let build_induction_scheme_in_type dep sort ind =
   build_induction_scheme (Global.env()) Evd.empty ind dep sort
