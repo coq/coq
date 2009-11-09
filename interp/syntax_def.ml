@@ -36,10 +36,7 @@ let load_syntax_constant i ((sp,kn),(local,pat,onlyparse)) =
     errorlabstrm "cache_syntax_constant"
       (pr_id (basename sp) ++ str " already exists");
   add_syntax_constant kn pat;
-  Nametab.push_syndef (Nametab.Until i) sp kn;
-  if not onlyparse then
-    (* Declare it to be used as long name *)
-    Notation.declare_uninterpretation (Notation.SynDefRule kn) pat
+  Nametab.push_syndef (Nametab.Until i) sp kn
 
 let open_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
   Nametab.push_syndef (Nametab.Exactly i) sp kn;
