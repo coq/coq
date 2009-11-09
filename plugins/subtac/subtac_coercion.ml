@@ -166,7 +166,7 @@ module Coercion = struct
 		 | Type x, Type y when x = y -> None (* false *)
 		 | _ -> subco ())
 	  | Prod (name, a, b), Prod (name', a', b') ->
-	      let name' = Name (Nameops.next_ident_away (id_of_string "x") (Termops.ids_of_context env)) in
+	      let name' = Name (Namegen.next_ident_away (id_of_string "x") (Termops.ids_of_context env)) in
 	      let env' = push_rel (name', None, a') env in
 	      let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
 		(* env, x : a' |- c1 : lift 1 a' > lift 1 a *)

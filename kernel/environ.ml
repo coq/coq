@@ -221,13 +221,17 @@ let vars_of_global env constr =
     | Const kn -> lookup_constant_variables kn env
     | Ind ind -> lookup_inductive_variables ind env
     | Construct cstr -> lookup_constructor_variables cstr env
-    | _ -> []
+    | _ -> raise Not_found
 
 let global_vars_set env constr =
   let rec filtrec acc c =
-    let vl = vars_of_global env c in
-    let acc = List.fold_right Idset.add vl acc in
-      fold_constr filtrec acc c
+    let acc =
+      match kind_of_term c with
+      | Var _ | Const _ | Ind _ | Construct _ ->
+	  List.fold_right Idset.add (vars_of_global env c) acc
+      | _ ->
+	  acc in
+    fold_constr filtrec acc c
   in
     filtrec Idset.empty constr
 

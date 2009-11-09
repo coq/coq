@@ -22,6 +22,7 @@ open Nametab
 open Pp
 open Topconstr
 open Termops
+open Namegen
 
 (*s Flags governing the computation of implicit arguments *)
 
@@ -199,20 +200,15 @@ let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
 
 (* calcule la liste des arguments implicites *)
 
-let concrete_name avoid_flags l env_names n all c =
-  if n = Anonymous & noccurn 1 c then
-    (Anonymous,l)
-  else
-    let fresh_id = next_name_not_occuring avoid_flags n l env_names c in
-    let idopt = if not all && noccurn 1 c then Anonymous else Name fresh_id in
-    (idopt, fresh_id::l)
+let find_displayed_name_in all =
+  if all then compute_and_force_displayed_name_in else compute_displayed_name_in
 
 let compute_implicits_gen strict strongly_strict revpat contextual all env t =
   let rec aux env avoid n names t =
     let t = whd_betadeltaiota env t in
     match kind_of_term t with
       | Prod (na,a,b) ->
-	  let na',avoid' = concrete_name None avoid names na all b in
+	  let na',avoid' = find_displayed_name_in all None avoid names na b in
 	  add_free_rels_until strict strongly_strict revpat n env a (Hyp (n+1))
             (aux (push_rel (na',None,a) env) avoid' (n+1) (na'::names) b)
       | _ ->
@@ -224,7 +220,7 @@ let compute_implicits_gen strict strongly_strict revpat contextual all env t =
   in
   match kind_of_term (whd_betadeltaiota env t) with
     | Prod (na,a,b) ->
-	let na',avoid = concrete_name None [] [] na all b in
+	let na',avoid = find_displayed_name_in all None [] [] na b in
 	let v = aux (push_rel (na',None,a) env) avoid 1 [na'] b in
 	Array.to_list v
     | _ -> []

@@ -202,7 +202,7 @@ let rec alpha_pat excluded pat =
     | PatVar(loc,Name id) ->
 	if List.mem id excluded
 	then
-	  let new_id = Nameops.next_ident_away id excluded in
+	  let new_id = Namegen.next_ident_away id excluded in
 	  PatVar(loc,Name new_id),(new_id::excluded),
 	(Idmap.add id new_id Idmap.empty)
 	else pat,excluded,Idmap.empty
@@ -210,7 +210,7 @@ let rec alpha_pat excluded pat =
 	let new_na,new_excluded,map =
 	  match na with
 	    | Name id when List.mem id excluded ->
-		let new_id = Nameops.next_ident_away id excluded in
+		let new_id = Namegen.next_ident_away id excluded in
 		Name new_id,new_id::excluded, Idmap.add id new_id Idmap.empty
 	    | _ -> na,excluded,Idmap.empty
 	in
@@ -264,7 +264,7 @@ let rec alpha_rt excluded rt =
     match rt with
       | RRef _ | RVar _ | REvar _ | RPatVar _ -> rt
       | RLambda(loc,Anonymous,k,t,b) ->
-	  let new_id = Nameops.next_ident_away (id_of_string "_x") excluded in
+	  let new_id = Namegen.next_ident_away (id_of_string "_x") excluded in
 	  let new_excluded = new_id :: excluded in
 	  let new_t = alpha_rt new_excluded t in
 	  let new_b = alpha_rt new_excluded b in
@@ -278,7 +278,7 @@ let rec alpha_rt excluded rt =
 	let new_b = alpha_rt excluded b in
 	RLetIn(loc,Anonymous,new_t,new_b)
     | RLambda(loc,Name id,k,t,b) ->
-	let new_id = Nameops.next_ident_away id excluded in
+	let new_id = Namegen.next_ident_away id excluded in
 	let t,b =
 	  if new_id = id
 	  then t,b
@@ -291,7 +291,7 @@ let rec alpha_rt excluded rt =
 	let new_b = alpha_rt new_excluded b in
 	RLambda(loc,Name new_id,k,new_t,new_b)
     | RProd(loc,Name id,k,t,b) ->
-	let new_id = Nameops.next_ident_away id excluded in
+	let new_id = Namegen.next_ident_away id excluded in
 	let new_excluded = new_id::excluded in
 	let t,b =
 	  if new_id = id
@@ -304,7 +304,7 @@ let rec alpha_rt excluded rt =
 	let new_b = alpha_rt new_excluded b in
 	RProd(loc,Name new_id,k,new_t,new_b)
     | RLetIn(loc,Name id,t,b) ->
-	let new_id = Nameops.next_ident_away id excluded in
+	let new_id = Namegen.next_ident_away id excluded in
 	let t,b =
 	  if new_id = id
 	  then t,b
@@ -325,7 +325,7 @@ let rec alpha_rt excluded rt =
 	       match na with
 		 | Anonymous -> (na::nal,excluded,mapping)
 		 | Name id ->
-		     let new_id = Nameops.next_ident_away id excluded in
+		     let new_id = Namegen.next_ident_away id excluded in
 		     if new_id = id
 		     then
 		       na::nal,id::excluded,mapping

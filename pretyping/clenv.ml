@@ -14,6 +14,7 @@ open Names
 open Nameops
 open Term
 open Termops
+open Namegen
 open Sign
 open Environ
 open Evd
@@ -145,7 +146,7 @@ let mk_clenv_from_n gls n (c,cty) =
 let mk_clenv_from gls = mk_clenv_from_n gls None
 
 let mk_clenv_rename_from_n gls n (c,t) =
-  mk_clenv_from_n gls n (c,rename_bound_var (pf_env gls) [] t)
+  mk_clenv_from_n gls n (c,rename_bound_vars_as_displayed (pf_env gls) [] t)
 
 let mk_clenv_type_of gls t = mk_clenv_from gls (t,pf_type_of gls t)
 

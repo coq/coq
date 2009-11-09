@@ -162,7 +162,7 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
   let r = mkInd indsp in
   let rp = applist (r, extended_rel_list 0 paramdecls) in
   let paramargs = extended_rel_list 1 paramdecls in (*def in [[params;x:rp]]*)
-  let x = match name with Some n -> Name n | None -> Termops.named_hd (Global.env()) r Anonymous in
+  let x = match name with Some n -> Name n | None -> Namegen.named_hd (Global.env()) r Anonymous in
   let fields = instantiate_possibly_recursive_type indsp paramdecls fields in
   let lifted_fields = lift_rel_context 1 fields in
   let (_,kinds,sp_projs,_) =
@@ -332,7 +332,7 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	if infer then Evd.fold (fun ev evi _ -> Recordops.declare_method (ConstRef cst) ev sign) sign ();
 	cref, [proj_name, Some proj_cst]
     | _ ->
-	let idarg = Nameops.next_ident_away (snd id) (ids_of_context (Global.env())) in
+	let idarg = Namegen.next_ident_away (snd id) (ids_of_context (Global.env())) in
 	let ind = declare_structure BiFinite infer (snd id) idbuild paramimpls
 	  params (Option.cata (fun x -> x) (new_Type ()) arity) fieldimpls fields
 	  ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields) sign

@@ -19,7 +19,7 @@ let get_new_id locals id =
       if not (Nametab.exists_module dir) then
 	id
       else
-	get_id (id::l) (Nameops.next_ident_away id l)
+	get_id (id::l) (Namegen.next_ident_away id l)
   in
     get_id (List.map snd locals) id
 

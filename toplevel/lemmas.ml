@@ -26,6 +26,7 @@ open Decl_kinds
 open Declare
 open Pretyping
 open Termops
+open Namegen
 open Evd
 open Evarutil
 open Reductionops
@@ -175,7 +176,7 @@ let compute_proof_name = function
       id
   | None ->
       let rec next avoid id =
-        let id = next_global_ident_away false id avoid in
+        let id = next_global_ident_away id avoid in
         if Nametab.exists_cci (Lib.make_path id) then next (id::avoid) id
         else id
       in

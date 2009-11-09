@@ -16,6 +16,7 @@ open Sign
 open Evd
 open Term
 open Termops
+open Namegen
 open Reductionops
 open Environ
 open Type_errors
@@ -71,7 +72,7 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
           user_err_loc (loc,"start_proof",pr_id id ++ str " already exists");
         id
     | None ->
-	next_global_ident_away false (id_of_string "Unnamed_thm")
+	next_global_ident_away (id_of_string "Unnamed_thm")
  	  (Pfedit.get_all_proof_names ())
   in
   let evm, c, typ, imps =

@@ -15,6 +15,7 @@ open Pp
 open Util
 open Names
 open Nameops
+open Namegen
 open Term
 open Termops
 open Sign

@@ -101,7 +101,6 @@ val occur_existential : types -> bool
 val occur_meta_or_existential : types -> bool
 val occur_const : constant -> types -> bool
 val occur_evar : existential_key -> types -> bool
-val occur_in_global : env -> identifier -> constr -> unit
 val occur_var : env -> identifier -> types -> bool
 val occur_var_in_decl :
   env ->
@@ -194,31 +193,6 @@ val filtering : rel_context -> Reduction.conv_pb -> constr -> constr -> subst
 val decompose_prod_letin : constr -> int * rel_context * constr
 val align_prod_letin : constr -> constr -> rel_context * constr
 
-(* finding "intuitive" names to hypotheses *)
-val lowercase_first_char : identifier -> string
-val sort_hdchar : sorts -> string
-val hdchar : env -> types -> string
-val id_of_name_using_hdchar :
-  env -> types -> name -> identifier
-val named_hd : env -> types -> name -> name
-
-val mkProd_name : env -> name * types * types -> types
-val mkLambda_name : env -> name * types * constr -> constr
-
-(* Deprecated synonyms of [mkProd_name] and [mkLambda_name] *)
-val prod_name : env -> name * types * types -> types
-val lambda_name : env -> name * types * constr -> constr
-
-val prod_create : env -> types * types -> constr
-val lambda_create : env -> types * constr -> constr
-val name_assumption : env -> rel_declaration -> rel_declaration
-val name_context : env -> rel_context -> rel_context
-
-val mkProd_or_LetIn_name : env -> types -> rel_declaration -> types
-val mkLambda_or_LetIn_name : env -> constr -> rel_declaration -> constr
-val it_mkProd_or_LetIn_name   : env -> types -> rel_context -> types
-val it_mkLambda_or_LetIn_name : env -> constr -> rel_context -> constr
-
 (* Get the last arg of a constr intended to be an application *)
 val last_arg : constr -> constr
 
@@ -239,29 +213,6 @@ val context_chop : int -> rel_context -> (rel_context*rel_context)
 val vars_of_env: env -> Idset.t
 val add_vname : Idset.t -> name -> Idset.t
 
-(* sets of free identifiers *)
-type used_idents = identifier list
-val occur_rel : int -> name list -> identifier -> bool
-val occur_id : name list -> identifier -> constr -> bool
-
-type avoid_flags = bool option
- (* Some true = avoid all globals (as in intro);
-    Some false = avoid only global constructors; None = don't avoid globals *)
-
-val next_name_away_in_cases_pattern :
-  name -> identifier list -> identifier
-val next_global_ident_away :
-  (*allow section vars:*) bool -> identifier -> identifier list -> identifier
-val next_name_not_occuring :
-  avoid_flags -> name -> identifier list -> name list -> constr -> identifier
-val concrete_name :
-  avoid_flags -> identifier list -> name list -> name -> constr ->
-    name * identifier list
-val concrete_let_name :
-  avoid_flags -> identifier list -> name list -> name -> constr ->
-    name * identifier list
-val rename_bound_var : env -> identifier list -> types -> types
-
 (* other signature iterators *)
 val process_rel_context : (rel_declaration -> env -> env) -> env -> env
 val assums_of_rel_context : rel_context -> (name * constr) list
@@ -277,7 +228,6 @@ val fold_named_context_both_sides :
   ('a -> named_declaration -> named_declaration list -> 'a) ->
     named_context -> init:'a -> 'a
 val mem_named_context : identifier -> named_context -> bool
-val make_all_name_different : env -> env
 
 val global_vars : env -> constr -> identifier list
 val global_vars_set_of_decl : env -> named_declaration -> Idset.t

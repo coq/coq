@@ -21,6 +21,7 @@ open Sign
 open Rawterm
 open Nameops
 open Termops
+open Namegen
 open Libnames
 open Nametab
 open Evd
@@ -169,16 +170,16 @@ let computable p k =
 
 let avoid_flag isgoal = if isgoal then Some true else None
 
-let lookup_name_as_renamed env t s =
+let lookup_name_as_displayed env t s =
   let rec lookup avoid env_names n c = match kind_of_term c with
     | Prod (name,_,c') ->
-	(match concrete_name (Some true) avoid env_names name c' with
+	(match compute_displayed_name_in (Some true) avoid env_names name c' with
            | (Name id,avoid') ->
 	       if id=s then (Some n)
 	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
 	   | (Anonymous,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
     | LetIn (name,_,_,c') ->
-	(match concrete_name (Some true) avoid env_names name c' with
+	(match compute_displayed_name_in (Some true) avoid env_names name c' with
            | (Name id,avoid') ->
 	       if id=s then (Some n)
 	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
@@ -190,7 +191,7 @@ let lookup_name_as_renamed env t s =
 let lookup_index_as_renamed env t n =
   let rec lookup n d c = match kind_of_term c with
     | Prod (name,_,c') ->
-	  (match concrete_name (Some true) [] empty_names_context name c' with
+	  (match compute_displayed_name_in (Some true) [] empty_names_context name c' with
                (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
 		 if n=0 then
@@ -200,7 +201,7 @@ let lookup_index_as_renamed env t n =
 		 else
 		   lookup (n-1) (d+1) c')
     | LetIn (name,_,_,c') ->
-	  (match concrete_name (Some true) [] empty_names_context name c' with
+	  (match compute_displayed_name_in (Some true) [] empty_names_context name c' with
              | (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
 		 if n=0 then
@@ -229,11 +230,11 @@ let rec decomp_branch n nal b (avoid,env as e) c =
   else
     let na,c,f =
       match kind_of_term (strip_outer_cast c) with
-	| Lambda (na,_,c) -> na,c,concrete_let_name
-	| LetIn (na,_,_,c) -> na,c,concrete_name
+	| Lambda (na,_,c) -> na,c,compute_displayed_let_name_in
+	| LetIn (na,_,_,c) -> na,c,compute_displayed_name_in
 	| _ ->
 	    Name (id_of_string "x"),(applist (lift 1 c, [mkRel 1])),
-	    concrete_name in
+	    compute_displayed_name_in in
     let na',avoid' = f (Some b) avoid env na c in
     decomp_branch (n-1) (na'::nal) b (avoid',add_name na' env) c
 
@@ -294,7 +295,7 @@ let it_destRLambda_or_LetIn_names n c =
       | _ ->
           (* eta-expansion *)
 	  let rec next l =
-	    let x = Nameops.next_ident_away (id_of_string "x") l in
+	    let x = next_ident_away (id_of_string "x") l in
 	    (* Not efficient but unusual and no function to get free rawvars *)
 (* 	    if occur_rawconstr x c then next (x::l) else x in *)
 	    x
@@ -534,9 +535,9 @@ and detype_eqn isgoal avoid env constr construct_nargs branch =
 and detype_binder isgoal bk avoid env na ty c =
   let na',avoid' =
     if bk = BLetIn then
-      concrete_let_name (avoid_flag isgoal) avoid env na c
+      compute_displayed_let_name_in (avoid_flag isgoal) avoid env na c
     else
-      concrete_name (avoid_flag isgoal) avoid env na c in
+      compute_displayed_name_in (avoid_flag isgoal) avoid env na c in
   let r =  detype isgoal avoid' (add_name na' env) c in
   match bk with
   | BProd -> RProd (dl, na',Explicit,detype isgoal avoid env ty, r)
@@ -552,8 +553,8 @@ let rec detype_rel_context where avoid env sign =
 	match where with
 	| None -> na,avoid
 	| Some c ->
-	    if b<>None then concrete_let_name None avoid env na c
-	    else concrete_name None avoid env na c in
+	    if b<>None then compute_displayed_let_name_in None avoid env na c
+	    else compute_displayed_name_in None avoid env na c in
       let b = Option.map (detype false avoid env) b in
       let t = detype false avoid env t in
       (na',Explicit,b,t) :: aux avoid' (add_name na' env) rest

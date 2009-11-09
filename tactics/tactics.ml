@@ -15,6 +15,7 @@ open Nameops
 open Sign
 open Term
 open Termops
+open Namegen
 open Declarations
 open Inductive
 open Inductiveops
@@ -175,11 +176,8 @@ let rename_hyp      = Tacmach.rename_hyp
 (*          Fresh names                                       *)
 (**************************************************************)
 
-let fresh_id_avoid avoid id =
-  next_global_ident_away true id avoid
-
 let fresh_id avoid id gl =
-  fresh_id_avoid (avoid@(pf_ids_of_hyps gl)) id
+  next_ident_away_in_goal id (avoid@(pf_ids_of_hyps gl))
 
 (**************************************************************)
 (*          Fixpoints and CoFixpoints                         *)
@@ -529,7 +527,7 @@ let intro_move idopt hto = match idopt with
 
 let pf_lookup_hypothesis_as_renamed env ccl = function
   | AnonHyp n -> pf_lookup_index_as_renamed env ccl n
-  | NamedHyp id -> pf_lookup_name_as_renamed env ccl id
+  | NamedHyp id -> pf_lookup_name_as_displayed env ccl id
 
 let pf_lookup_hypothesis_as_renamed_gen red h gl =
   let env = pf_env gl in
@@ -2446,7 +2444,7 @@ let specialize_hypothesis id gl =
       
 
 let specialize_hypothesis id gl =
-  if occur_id [] id (pf_concl gl) then
+  if occur_var (pf_env gl) id (pf_concl gl) then
     tclFAIL 0 (str "Specialization not allowed on dependent hypotheses") gl 
   else specialize_hypothesis id gl
 
@@ -3442,7 +3440,7 @@ let interpretable_as_section_decl d1 d2 = match d1,d2 with
   | (_,Some b1,t1), (_,Some b2,t2) -> eq_constr b1 b2 & eq_constr t1 t2
   | (_,None,t1), (_,_,t2) -> eq_constr t1 t2
 
-let abstract_subproof name tac gl =
+let abstract_subproof id tac gl =
   let current_sign = Global.named_context()
   and global_sign = pf_hyps gl in
   let sign,secsign =
@@ -3453,29 +3451,17 @@ let abstract_subproof name tac gl =
         then (s1,push_named_context_val d s2)
 	else (add_named_decl d s1,s2))
       global_sign (empty_named_context,empty_named_context_val) in
-  let na = next_global_ident_away false name (pf_ids_of_hyps gl) in
+  let id = next_global_ident_away id (pf_ids_of_hyps gl) in
   let concl = it_mkNamedProd_or_LetIn (pf_concl gl) sign in
-    if occur_existential concl then
-      error "\"abstract\" cannot handle existentials.";
-    let lemme =
-      start_proof na (Global, Proof Lemma) secsign concl (fun _ _ -> ());
-      let _,(const,_,kind,_) =
-	try
-	  by (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac));
-	  let r = cook_proof ignore in
-	    delete_current_proof (); r
-	with
-	    e ->
-	      (delete_current_proof(); raise e)
-      in   (* Faudrait un peu fonctionnaliser cela *)
-      let cd = Entries.DefinitionEntry const in
-      let con = Declare.declare_internal_constant na (cd,IsProof Lemma) in
-	constr_of_global (ConstRef con)
-    in
-      exact_no_check
-	(applist (lemme,
-		 List.rev (Array.to_list (instance_from_named_context sign))))
-	gl
+  if occur_existential concl then
+    error "\"abstract\" cannot handle existentials.";
+  let const = Pfedit.build_constant_by_tactic secsign concl
+    (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)) in
+  let cd = Entries.DefinitionEntry const in
+  let lem = mkConst (Declare.declare_internal_constant id (cd,IsProof Lemma)) in
+  exact_no_check
+    (applist (lem,List.rev (Array.to_list (instance_from_named_context sign))))
+    gl
 
 let tclABSTRACT name_op tac gl =
   let s = match name_op with
@@ -3497,7 +3483,7 @@ let admit_as_an_axiom gl =
 	 else (add_named_decl d s1,s2))
       global_sign (empty_named_context,empty_named_context) in
   let name = add_suffix (get_current_proof_name ()) "_admitted" in
-  let na = next_global_ident_away false name (pf_ids_of_hyps gl) in
+  let na = next_global_ident_away name (pf_ids_of_hyps gl) in
   let concl = it_mkNamedProd_or_LetIn (pf_concl gl) sign in
   if occur_existential concl then error"\"admit\" cannot handle existentials.";
   let axiom =

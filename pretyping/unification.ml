@@ -14,6 +14,7 @@ open Names
 open Nameops
 open Term
 open Termops
+open Namegen
 open Sign
 open Environ
 open Evd
@@ -49,8 +50,8 @@ let abstract_scheme env c l lname_typ =
 (* [occur_meta ta] test removed for support of eelim/ecase but consequences
    are unclear...
        if occur_meta ta then error "cannot find a type for the generalisation"
-       else *) if occur_meta a then lambda_name env (na,ta,t)
-       else lambda_name env (na,ta,subst_term_occ locc a t))
+       else *) if occur_meta a then mkLambda_name env (na,ta,t)
+       else mkLambda_name env (na,ta,subst_term_occ locc a t))
     c
     (List.rev l)
     lname_typ

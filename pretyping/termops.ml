@@ -488,10 +488,11 @@ let occur_in_global env id constr =
   let vars = vars_of_global env constr in
   if List.mem id vars then raise Occur
 
-let occur_var env s c =
+let occur_var env id c =
   let rec occur_rec c =
-    occur_in_global env s c;
-    iter_constr occur_rec c
+    match kind_of_term c with
+    | Var _ | Const _ | Ind _ | Construct _ -> occur_in_global env id c
+    | _ -> iter_constr occur_rec c
   in
   try occur_rec c; false with Occur -> true
 
@@ -694,11 +695,6 @@ let subst_term_occ_decl ((nowhere_except_in,locs as plocs),hloc) c (id,bodyopt,t
 	  if rest <> [] then error_invalid_occurrence rest;
 	  (id,Some body',t')
 
-(* First character of a constr *)
-
-let lowercase_first_char id =
-  lowercase_first_char_utf8 (string_of_id id)
-
 let vars_of_env env =
   let s =
     Sign.fold_named_context (fun (id,_,_) s -> Idset.add id s)
@@ -710,85 +706,6 @@ let vars_of_env env =
 let add_vname vars = function
     Name id -> Idset.add id vars
   | _ -> vars
-
-let basename_of_global = Nametab.basename_of_global
-
-let sort_hdchar = function
-  | Prop(_) -> "P"
-  | Type(_) -> "T"
-
-let hdchar env c =
-  let rec hdrec k c =
-    match kind_of_term c with
-    | Prod (_,_,c)       -> hdrec (k+1) c
-    | Lambda (_,_,c)     -> hdrec (k+1) c
-    | LetIn (_,_,_,c)    -> hdrec (k+1) c
-    | Cast (c,_,_)         -> hdrec k c
-    | App (f,l)         -> hdrec k f
-    | Const kn       ->
-	lowercase_first_char (id_of_label (con_label kn))
-    | Ind ((kn,i) as x) ->
-	if i=0 then
-	  lowercase_first_char (id_of_label (mind_label kn))
-	else
-	  lowercase_first_char (basename_of_global (IndRef x))
-    | Construct ((sp,i) as x) ->
-	lowercase_first_char (basename_of_global (ConstructRef x))
-    | Var id  -> lowercase_first_char id
-    | Sort s -> sort_hdchar s
-    | Rel n ->
-	(if n<=k then "p" (* the initial term is flexible product/function *)
-	 else
-	   try match Environ.lookup_rel (n-k) env with
-	     | (Name id,_,_)   -> lowercase_first_char id
-	     | (Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
-	   with Not_found -> "y")
-    | Fix ((_,i),(lna,_,_)) ->
-	let id = match lna.(i) with Name id -> id | _ -> assert false in
-	lowercase_first_char id
-    | CoFix (i,(lna,_,_)) ->
-	let id = match lna.(i) with Name id -> id | _ -> assert false in
-	lowercase_first_char id
-    | Meta _|Evar _|Case (_, _, _, _) -> "y"
-  in
-  hdrec 0 c
-
-let id_of_name_using_hdchar env a = function
-  | Anonymous -> id_of_string (hdchar env a)
-  | Name id   -> id
-
-let named_hd env a = function
-  | Anonymous -> Name (id_of_string (hdchar env a))
-  | x         -> x
-
-let mkProd_name   env (n,a,b) = mkProd (named_hd env a n, a, b)
-let mkLambda_name env (n,a,b) = mkLambda (named_hd env a n, a, b)
-
-let lambda_name = mkLambda_name
-let prod_name = mkProd_name
-
-let prod_create   env (a,b) = mkProd (named_hd env a Anonymous, a, b)
-let lambda_create env (a,b) =  mkLambda (named_hd env a Anonymous, a, b)
-
-let name_assumption env (na,c,t) =
-  match c with
-    | None      -> (named_hd env t na, None, t)
-    | Some body -> (named_hd env body na, c, t)
-
-let name_context env hyps =
-  snd
-    (List.fold_left
-       (fun (env,hyps) d ->
-	  let d' = name_assumption env d in (push_rel d' env, d' :: hyps))
-       (env,[]) (List.rev hyps))
-
-let mkProd_or_LetIn_name env b d = mkProd_or_LetIn (name_assumption env d) b
-let mkLambda_or_LetIn_name env b d = mkLambda_or_LetIn (name_assumption env d)b
-
-let it_mkProd_or_LetIn_name env b hyps =
-  it_mkProd_or_LetIn ~init:b (name_context env hyps)
-let it_mkLambda_or_LetIn_name env b hyps =
-  it_mkLambda_or_LetIn ~init:b (name_context env hyps)
 
 (*************************)
 (*   Names environments  *)
@@ -823,62 +740,9 @@ let ids_of_context env =
 let names_of_rel_context env =
   List.map (fun (na,_,_) -> na) (rel_context env)
 
-(**** Globality of identifiers *)
-
-let rec is_imported_modpath mp = 
-  let current_mp,_ = Lib.current_prefix() in
-    match mp with
-      | MPfile dp ->
-	  let rec find_prefix = function
-	    |MPfile dp1 -> not (dp1=dp)
-	    |MPdot(mp,_) -> find_prefix mp
-	    |MPbound(_) -> false
-	  in find_prefix current_mp
-      | p -> false
-
-let is_imported_ref = function
-  | VarRef _ -> false
-  | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) ->
-      let (mp,_,_) = repr_mind kn in is_imported_modpath mp
-  | ConstRef kn ->
-      let (mp,_,_) = repr_con kn in is_imported_modpath mp
-
-let is_global id =
-  try
-    let ref = locate (qualid_of_ident id) in
-    not (is_imported_ref ref)
-  with Not_found ->
-    false
-
-let is_constructor id =
-  try
-    match locate (qualid_of_ident id) with
-      | ConstructRef _ as ref -> not (is_imported_ref ref)
-      | _ -> false
-  with Not_found ->
-    false
-
 let is_section_variable id =
   try let _ = Global.lookup_named id in true
   with Not_found -> false
-
-let next_global_ident_from allow_secvar id avoid =
-  let rec next_rec id =
-    let id = next_ident_away_from id avoid in
-    if (allow_secvar && is_section_variable id) || not (is_global id) then
-      id
-    else
-      next_rec (lift_ident id)
-  in
-  next_rec id
-
-let next_global_ident_away allow_secvar id avoid =
-  let id  = next_ident_away id avoid in
-  if (allow_secvar && is_section_variable id) || not (is_global id) then
-    id
-  else
-    next_global_ident_from allow_secvar (lift_ident id) avoid
 
 let isGlobalRef c =
   match kind_of_term c with
@@ -889,68 +753,6 @@ let has_polymorphic_type c =
   match (Global.lookup_constant c).Declarations.const_type with
   | Declarations.PolymorphicArity _ -> true
   | _ -> false
-
-(* nouvelle version de renommage des variables (DEC 98) *)
-(* This is the algorithm to display distinct bound variables
-
-    - Règle 1 : un nom non anonyme, même non affiché, contribue à la liste
-      des noms à éviter
-    - Règle 2 : c'est la dépendance qui décide si on affiche ou pas
-
-    Exemple :
-    si bool_ind = (P:bool->Prop)(f:(P true))(f:(P false))(b:bool)(P b), alors
-    il est affiché (P:bool->Prop)(P true)->(P false)->(b:bool)(P b)
-    mais f et f0 contribue à la liste des variables à éviter (en supposant
-    que les noms f et f0 ne sont pas déjà pris)
-    Intérêt : noms homogènes dans un but avant et après Intro
-*)
-
-type used_idents = identifier list
-
-let occur_rel p env id =
-  try lookup_name_of_rel p env = Name id
-  with Not_found -> false (* Unbound indice : may happen in debug *)
-
-let occur_id nenv id0 c =
-  let rec occur n c = match kind_of_term c with
-    | Var id when  id=id0 -> raise Occur
-    | Const kn when basename_of_global (ConstRef kn) = id0 -> raise Occur
-    | Ind ind_sp
-	when basename_of_global (IndRef ind_sp) = id0 ->
-        raise Occur
-    | Construct cstr_sp
-	when basename_of_global (ConstructRef cstr_sp) = id0 ->
-        raise Occur
-    | Rel p when p>n & occur_rel (p-n) nenv id0 -> raise Occur
-    | _ -> iter_constr_with_binders succ occur n c
-  in
-  try occur 1 c; false
-  with Occur -> true
-    | Not_found -> false (* Case when a global is not in the env *)
-
-type avoid_flags = bool option
-
-let next_name_not_occuring avoid_flags name l env_names t =
-  let rec next id =
-    if List.mem id l or occur_id env_names id t or
-      (* Further restrictions ? *)
-      match avoid_flags with None -> false | Some not_only_cstr ->
-      (if not_only_cstr then
-	(* To be consistent with the intro mechanism *)
-	is_global id & not (is_section_variable id)
-      else
-	(* To avoid constructors in pattern-matchings *)
-	is_constructor id)
-    then next (lift_ident id)
-    else id
-  in
-  match name with
-    | Name id   -> next id
-    | Anonymous ->
-        (* Normally, an anonymous name is not dependent and will not be *)
-        (* taken into account by the function concrete_name; just in case *)
-        (* invent a valid name *)
-        next (id_of_string "H")
 
 let base_sort_cmp pb s0 s1 =
   match (s0,s1) with
@@ -1129,15 +931,6 @@ let rec mem_named_context id = function
   | _ :: sign -> mem_named_context id sign
   | [] -> false
 
-let make_all_name_different env =
-  let avoid = ref (ids_of_named_context (named_context env)) in
-  process_rel_context
-    (fun (na,c,t) newenv ->
-       let id = next_name_away na !avoid in
-       avoid := id::!avoid;
-       push_rel (Name id,c,t) newenv)
-    env
-
 let global_vars env ids = Idset.elements (global_vars_set env ids)
 
 let global_vars_set_of_decl env = function
@@ -1158,43 +951,6 @@ let dependency_closure env sign hyps =
         ~init:(hyps,[])
         sign in
     List.rev lh
-
-let default_x = id_of_string "x"
-
-let rec next_name_away_in_cases_pattern id avoid =
-  let id = match id with Name id -> id | Anonymous -> default_x in
-  let rec next id =
-    if List.mem id avoid or is_constructor id then next (lift_ident id)
-    else id in
-  next id
-
-(* Remark: Anonymous var may be dependent in Evar's contexts *)
-let concrete_name avoid_flags l env_names n c =
-  if n = Anonymous & noccurn 1 c then
-    (Anonymous,l)
-  else
-    let fresh_id = next_name_not_occuring avoid_flags n l env_names c in
-    let idopt = if noccurn 1 c then Anonymous else Name fresh_id in
-    (idopt, fresh_id::l)
-
-let concrete_let_name avoid_flags l env_names n c =
-  let fresh_id = next_name_not_occuring avoid_flags n l env_names c in
-  (Name fresh_id, fresh_id::l)
-
-let rec rename_bound_var env avoid c =
-  let env_names = names_of_rel_context env in
-  let rec rename avoid c =
-    match kind_of_term c with
-    | Prod (na,c1,c2)  ->
-	let na',avoid' = concrete_name None avoid env_names na c2 in
-	mkProd (na', c1, rename avoid' c2)
-    | LetIn (na,c1,t,c2) ->
-	let na',avoid' = concrete_let_name None avoid env_names na c2 in
-	mkLetIn (na',c1,t, rename avoid' c2)
-    | Cast (c,k,t) -> mkCast (rename avoid c, k,t)
-    | _ -> c
-  in
-  rename avoid c
 
 (* Combinators on judgments *)
 

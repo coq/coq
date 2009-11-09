@@ -14,6 +14,7 @@ open Names
 open Nameops
 open Term
 open Termops
+open Namegen
 open Global
 open Sign
 open Environ

@@ -138,7 +138,7 @@ let apply_args ctxt body args =
   let next_name_away (na:name) (mapping: identifier Idmap.t) (avoid: identifier list) =
     match na with
        | Name id when List.mem id avoid ->
-	   let new_id = Nameops.next_ident_away id avoid in
+	   let new_id = Namegen.next_ident_away id avoid in
 	   Name new_id,Idmap.add id new_id mapping,new_id::avoid
        | _ -> na,mapping,avoid
   in
@@ -168,7 +168,7 @@ let apply_args ctxt body args =
 	    if need_convert_id avoid id
 	    then
 	      let new_avoid =  id::avoid in
-	      let new_id = Nameops.next_ident_away id new_avoid in
+	      let new_id = Namegen.next_ident_away id new_avoid in
 	      let new_avoid' = new_id :: new_avoid in
 	      let mapping = Idmap.add id new_id Idmap.empty in
 	      let new_ctxt' = change_vars_in_binder mapping ctxt' in
@@ -550,7 +550,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 		  match n with
 		    | Name id when List.exists (is_free_in id) args ->
 			(* need to alpha-convert the name *)
-			let new_id = Nameops.next_ident_away id avoid in
+			let new_id = Namegen.next_ident_away id avoid in
 			let new_avoid = id:: avoid in
 			let new_b =
 			  replace_var_by_term

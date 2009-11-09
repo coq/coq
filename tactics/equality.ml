@@ -15,6 +15,7 @@ open Nameops
 open Univ
 open Term
 open Termops
+open Namegen
 open Inductive
 open Inductiveops
 open Environ

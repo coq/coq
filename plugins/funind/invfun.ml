@@ -117,14 +117,12 @@ let generate_type g_to_f f graph i =
   in
   (*i We need to name the vars [res] and [fv] i*)
   let res_id =
-    Termops.next_global_ident_away
-      true
+    Namegen.next_ident_away_in_goal
       (id_of_string "res")
       (map_succeed (function (Name id,_,_) -> id | (Anonymous,_,_) -> failwith "") fun_ctxt)
   in
   let fv_id =
-    Termops.next_global_ident_away
-      true
+    Namegen.next_ident_away_in_goal
       (id_of_string "fv")
       (res_id::(map_succeed (function (Name id,_,_) -> id | (Anonymous,_,_) -> failwith "Anonymous!") fun_ctxt))
   in
@@ -209,7 +207,7 @@ let rec generate_fresh_id x avoid i =
   if i == 0
   then []
   else
-    let id = Termops.next_global_ident_away true x avoid in
+    let id = Namegen.next_ident_away_in_goal x avoid in
     id::(generate_fresh_id x (id::avoid) (pred i))
 
 
@@ -271,7 +269,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
        environement and due to the bug #1174, we will need to pose the principle
        using a name
     *)
-    let principle_id = Termops.next_global_ident_away true (id_of_string "princ") ids in
+    let principle_id = Namegen.next_ident_away_in_goal (id_of_string "princ") ids in
     let ids = principle_id :: ids in
     (* We get the branches of the principle *)
     let branches = List.rev princ_infos.branches in
@@ -425,7 +423,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       let params_bindings,avoid =
 	List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
-	     let id = Nameops.next_ident_away (Nameops.out_name x) avoid in
+	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
 	     (dummy_loc,Rawterm.NamedHyp id,inj_open p)::bindings,id::avoid
 	  )
 	  ([],pf_ids_of_hyps g)
@@ -435,7 +433,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       let lemmas_bindings =
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
-	     let id = Nameops.next_ident_away (Nameops.out_name x) avoid in
+	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
 	     (dummy_loc,Rawterm.NamedHyp id,inj_open (nf_zeta p))::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates

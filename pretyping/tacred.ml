@@ -15,6 +15,7 @@ open Nameops
 open Term
 open Libnames
 open Termops
+open Namegen
 open Declarations
 open Inductive
 open Environ

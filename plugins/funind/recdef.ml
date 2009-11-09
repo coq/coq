@@ -12,6 +12,7 @@
 
 open Term
 open Termops
+open Namegen
 open Environ
 open Declarations
 open Entries
@@ -50,7 +51,7 @@ open Genarg
 
 
 let compute_renamed_type gls c =
-  rename_bound_var (pf_env gls) [] (pf_type_of gls c)
+  rename_bound_vars_as_displayed (pf_env gls) [] (pf_type_of gls c)
 
 let qed () = Lemmas.save_named true
 let defined () = Lemmas.save_named false
@@ -58,7 +59,7 @@ let defined () = Lemmas.save_named false
 let pf_get_new_ids idl g =
   let ids = pf_ids_of_hyps g in
   List.fold_right
-    (fun id acc -> next_global_ident_away false id (acc@ids)::acc)
+    (fun id acc -> next_global_ident_away id (acc@ids)::acc)
     idl
     []
 
@@ -515,11 +516,11 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
       fun g ->
 	let ids = pf_ids_of_hyps g in
 	let s_max = mkApp(delayed_force coq_S, [|bound|]) in
-	let k = next_global_ident_away true k_id ids in
+	let k = next_ident_away_in_goal k_id ids in
         let ids = k::ids in
-	let h' = next_global_ident_away true (h'_id) ids in
+	let h' = next_ident_away_in_goal (h'_id) ids in
         let ids = h'::ids in
-	let def = next_global_ident_away true def_id ids in
+	let def = next_ident_away_in_goal def_id ids in
 	tclTHENLIST
 	  [observe_tac "introduce_all_equalities_final split" (split (ImplicitBindings [s_max]));
 	   observe_tac "introduce_all_equalities_final intro k" (h_intro  k);
@@ -543,15 +544,15 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
   | spec1::specs ->
       fun g ->
 	let ids = ids_of_named_context (pf_hyps g) in
-	let p = next_global_ident_away true p_id ids in
+	let p = next_ident_away_in_goal p_id ids in
         let ids = p::ids in
-	let pmax = next_global_ident_away true pmax_id ids in
+	let pmax = next_ident_away_in_goal pmax_id ids in
         let ids = pmax::ids in
-	let hle1 = next_global_ident_away true hle_id ids in
+	let hle1 = next_ident_away_in_goal hle_id ids in
         let ids = hle1::ids in
-	let hle2 = next_global_ident_away true  hle_id ids in
+	let hle2 = next_ident_away_in_goal  hle_id ids in
 	let ids = hle2::ids in
-	let heq = next_global_ident_away true heq_id ids in
+	let heq = next_ident_away_in_goal heq_id ids in
 	tclTHENLIST
 	  [simplest_elim (mkVar spec1);
 	   list_rewrite true eqs;
@@ -589,9 +590,9 @@ let rec introduce_all_values concl_tac is_mes acc_inv func context_fn
   | arg::args ->
       (fun g ->
 	let ids = ids_of_named_context (pf_hyps g) in
-	let rec_res = next_global_ident_away true rec_res_id ids in
+	let rec_res = next_ident_away_in_goal rec_res_id ids in
         let ids = rec_res::ids in
-	let hspec = next_global_ident_away true hspec_id ids in
+	let hspec = next_ident_away_in_goal hspec_id ids in
 	let tac =
 	  observe_tac "introduce_all_values" (
 	    introduce_all_values concl_tac is_mes acc_inv func context_fn eqs
@@ -722,13 +723,13 @@ let termination_proof_header is_mes input_type ids args_id relation
       in
       let relation = substl pre_rec_args relation in
       let input_type = substl pre_rec_args input_type in
-      let wf_thm = next_global_ident_away true (id_of_string ("wf_R")) ids in
+      let wf_thm = next_ident_away_in_goal (id_of_string ("wf_R")) ids in
       let wf_rec_arg =
-	next_global_ident_away true
+	next_ident_away_in_goal
 	  (id_of_string ("Acc_"^(string_of_id rec_arg_id)))
 	  (wf_thm::ids)
       in
-      let hrec = next_global_ident_away true hrec_id
+      let hrec = next_ident_away_in_goal hrec_id
 	(wf_rec_arg::wf_thm::ids) in
       let acc_inv =
 	  lazy (
@@ -806,7 +807,7 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
       let (f_name, _, body1) = destLambda func_body in
       let f_id =
 	match f_name with
-	  | Name f_id -> next_global_ident_away true f_id ids
+	  | Name f_id -> next_ident_away_in_goal f_id ids
 	  | Anonymous -> anomaly "Anonymous function"
       in
       let n_names_types,_ = decompose_lam_n nb_args body1 in
@@ -815,7 +816,7 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
 	  (fun (n_ids,ids) (n_name,_) ->
 	     match n_name with
 	       | Name id ->
-		   let n_id = next_global_ident_away true id ids in
+		   let n_id = next_ident_away_in_goal id ids in
 		   n_id::n_ids,n_id::ids
 	       | _ -> anomaly "anonymous argument"
 	  )
@@ -906,7 +907,7 @@ let build_new_goal_type () =
     (*
 let prove_with_tcc lemma _ : tactic =
   fun gls ->
-    let hid = next_global_ident_away true h_id (pf_ids_of_hyps gls) in
+    let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
     tclTHENSEQ
       [
 	h_generalize [lemma];
@@ -930,7 +931,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
   in
   let sign = Global.named_context () in
   let sign = clear_proofs sign in
-  let na = next_global_ident_away false name [] in
+  let na = next_global_ident_away name [] in
   if occur_existential gls_type then
     Util.error "\"abstract\" cannot handle existentials";
   let hook _ _ =
@@ -951,7 +952,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
     Flags.silently Vernacentries.interp (Vernacexpr.VernacAbort None);
     build_proof
       (  fun gls ->
-	   let hid = next_global_ident_away true h_id (pf_ids_of_hyps gls) in
+	   let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
 	   tclTHENSEQ
 	     [
 	       h_generalize [lemma];
@@ -1075,7 +1076,7 @@ let (value_f:constr list -> global_reference -> constr) =
       (
 	List.fold_left
 	  (fun x_id_l _ ->
-	     let x_id = next_global_ident_away true x_id x_id_l in
+	     let x_id = next_ident_away_in_goal x_id x_id_l in
 	     x_id::x_id_l
 	  )
 	  []
@@ -1122,7 +1123,7 @@ let (declare_f : identifier -> logical_kind -> constr list -> global_reference -
 
 let rec n_x_id ids n =
   if n = 0 then []
-  else let x = next_global_ident_away true x_id ids in
+  else let x = next_ident_away_in_goal x_id ids in
           x::n_x_id (x::ids) (n-1);;
 
 let start_equation (f:global_reference) (term_f:global_reference)
@@ -1141,12 +1142,12 @@ let start_equation (f:global_reference) (term_f:global_reference)
 
 let base_leaf_eq func eqs f_id g =
   let ids = pf_ids_of_hyps g in
-  let k = next_global_ident_away true k_id ids in
-  let p = next_global_ident_away true p_id (k::ids) in
-  let v = next_global_ident_away true v_id (p::k::ids) in
-  let heq = next_global_ident_away true heq_id (v::p::k::ids) in
-  let heq1 = next_global_ident_away true heq_id (heq::v::p::k::ids) in
-  let hex = next_global_ident_away true hex_id (heq1::heq::v::p::k::ids) in
+  let k = next_ident_away_in_goal k_id ids in
+  let p = next_ident_away_in_goal p_id (k::ids) in
+  let v = next_ident_away_in_goal v_id (p::k::ids) in
+  let heq = next_ident_away_in_goal heq_id (v::p::k::ids) in
+  let heq1 = next_ident_away_in_goal heq_id (heq::v::p::k::ids) in
+  let hex = next_ident_away_in_goal hex_id (heq1::heq::v::p::k::ids) in
     tclTHENLIST [
       h_intros [v; hex];
       simplest_elim (mkVar hex);
@@ -1168,7 +1169,7 @@ let rec introduce_all_values_eq cont_tac functional termine
     f p heq1 pmax bounds le_proofs eqs ids =
   function
       [] ->
-       let heq2 = next_global_ident_away true heq_id ids in
+       let heq2 = next_ident_away_in_goal heq_id ids in
 	tclTHENLIST
 	  [pose_proof (Name heq2)
              (mkApp(mkVar heq1, [|f_S(f_S(mkVar pmax))|]));
@@ -1193,21 +1194,21 @@ let rec introduce_all_values_eq cont_tac functional termine
 	      tclTHENLIST[apply (delayed_force le_lt_SS);
 			compute_le_proofs le_proofs]]]
     | arg::args ->
-	let v' = next_global_ident_away true v_id ids in
+	let v' = next_ident_away_in_goal v_id ids in
         let ids = v'::ids in
-	let hex' = next_global_ident_away true hex_id ids in
+	let hex' = next_ident_away_in_goal hex_id ids in
         let ids = hex'::ids in
-	let p' = next_global_ident_away true p_id ids in
+	let p' = next_ident_away_in_goal p_id ids in
         let ids = p'::ids in
-	let new_pmax = next_global_ident_away true pmax_id ids in
+	let new_pmax = next_ident_away_in_goal pmax_id ids in
         let ids = pmax::ids in
-	let hle1 = next_global_ident_away true hle_id ids in
+	let hle1 = next_ident_away_in_goal hle_id ids in
         let ids = hle1::ids in
-	let hle2 = next_global_ident_away true hle_id ids in
+	let hle2 = next_ident_away_in_goal hle_id ids in
         let ids = hle2::ids in
-	let heq = next_global_ident_away true heq_id ids in
+	let heq = next_ident_away_in_goal heq_id ids in
         let ids = heq::ids in
-	let heq2 = next_global_ident_away true heq_id ids in
+	let heq2 = next_ident_away_in_goal heq_id ids in
         let ids = heq2::ids in
 	tclTHENLIST
 	  [mkCaseEq(mkApp(termine, Array.of_list arg));
@@ -1253,15 +1254,15 @@ let rec introduce_all_values_eq cont_tac functional termine
 
 
 let rec_leaf_eq termine f ids functional eqs expr fn args =
-  let p = next_global_ident_away true p_id ids in
+  let p = next_ident_away_in_goal p_id ids in
   let ids = p::ids in
-  let v = next_global_ident_away true v_id ids in
+  let v = next_ident_away_in_goal v_id ids in
   let ids = v::ids in
-  let hex = next_global_ident_away true hex_id ids in
+  let hex = next_ident_away_in_goal hex_id ids in
   let ids = hex::ids in
-  let heq1 = next_global_ident_away true heq_id ids in
+  let heq1 = next_ident_away_in_goal heq_id ids in
   let ids = heq1::ids in
-  let hle1 = next_global_ident_away true hle_id ids in
+  let hle1 = next_ident_away_in_goal hle_id ids in
   let ids = hle1::ids in
     tclTHENLIST
       [observe_tac "intros v hex" (h_intros [v;hex]);

@@ -20,7 +20,7 @@ open Inductive
 open Termops
 open Inductiveops
 open Recordops
-open Nameops
+open Namegen
 open Summary
 open Libnames
 open Nametab

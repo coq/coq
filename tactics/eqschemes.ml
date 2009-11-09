@@ -53,6 +53,7 @@ open Declarations
 open Environ
 open Inductive
 open Termops
+open Namegen
 open Inductiveops
 open Ind_tables
 open Indrec
@@ -60,7 +61,7 @@ open Indrec
 let hid = id_of_string "H"
 let xid = id_of_string "X"
 let default_id_of_sort = function InProp _ | InSet -> hid | InType _ -> xid
-let fresh env id = next_global_ident_away false id []
+let fresh env id = next_global_ident_away id []
 
 let build_dependent_inductive ind (mib,mip) =
   let realargs,_ = list_chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in

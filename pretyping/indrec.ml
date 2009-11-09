@@ -19,6 +19,7 @@ open Libnames
 open Nameops
 open Term
 open Termops
+open Namegen
 open Declarations
 open Entries
 open Inductive
@@ -40,7 +41,7 @@ type recursion_scheme_error =
 
 exception RecursionSchemeError of recursion_scheme_error
 
-let make_prod_dep dep env = if dep then prod_name env else mkProd
+let make_prod_dep dep env = if dep then mkProd_name env else mkProd
 let mkLambda_string s t c = mkLambda (Name (id_of_string s), t, c)
 
 (*******************************************)
@@ -205,7 +206,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
       match kind_of_term p' with
 	| Prod (n,t,c) ->
 	    let d = (n,None,t) in
-	    lambda_name env (n,t,prec (push_rel d env) (i+1) (d::hyps) c)
+	    mkLambda_name env (n,t,prec (push_rel d env) (i+1) (d::hyps) c)
 	| LetIn (n,b,t,c) ->
 	    let d = (n,Some b,t) in
 	    mkLetIn (n,b,t,prec (push_rel d env) (i+1) (d::hyps) c)
@@ -228,7 +229,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
 	in
         (match optionpos with
            | None ->
-	       lambda_name env
+	       mkLambda_name env
 		 (n,t,process_constr (push_rel d env) (i+1)
 		    (whd_beta Evd.empty (applist (lift 1 f, [(mkRel 1)])))
 		    (cprest,rest))
@@ -236,7 +237,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
 	       let nF = lift (i+1+decF) f_0 in
                let env' = push_rel d env in
 	       let arg = process_pos env' nF (lift 1 t) in
-               lambda_name env
+               mkLambda_name env
 		 (n,t,process_constr env' (i+1)
 		    (whd_beta Evd.empty (applist (lift 1 f, [(mkRel 1); arg])))
 		    (cprest,rest)))

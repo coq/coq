@@ -2,6 +2,7 @@ open Printer
 open Util
 open Term
 open Termops
+open Namegen
 open Names
 open Declarations
 open Pp
@@ -67,7 +68,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     match predicates with
     | [] -> []
     |(Name x,v,t)::predicates ->
-       let id =  Nameops.next_ident_away x avoid in
+       let id =  Namegen.next_ident_away x avoid in
        Hashtbl.add tbl id x;
        (Name id,v,t)::(change_predicates_names (id::avoid) predicates)
     | (Anonymous,_,_)::_ -> anomaly "Anonymous property binder "
@@ -330,7 +331,7 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
   (*    Pp.msgnl (str "computing principle type := " ++ System.fmt_time_difference time1 time2); *)
      observe (str "new_principle_type : " ++ pr_lconstr new_principle_type);
   let new_princ_name =
-    next_global_ident_away true (id_of_string "___________princ_________") []
+    next_ident_away_in_goal (id_of_string "___________princ_________") []
   in
   begin
     Lemmas.start_proof

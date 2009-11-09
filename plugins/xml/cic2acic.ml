@@ -571,7 +571,7 @@ print_endline "PASSATO" ; flush stdout ;
                    N.Anonymous
                   else
                    N.Name
-                    (Nameops.next_name_away n (Termops.ids_of_context env))
+                    (Namegen.next_name_away n (Termops.ids_of_context env))
               in
                Hashtbl.add ids_to_inner_sorts fresh_id''
                 (string_of_sort innertype) ;
@@ -607,7 +607,7 @@ print_endline "PASSATO" ; flush stdout ;
                match n with
                   N.Anonymous -> N.Anonymous
                 | _ ->
-                  N.Name (Nameops.next_name_away n (Termops.ids_of_context env))
+                  N.Name (Namegen.next_name_away n (Termops.ids_of_context env))
               in
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
                let sourcetype = CPropRetyping.get_type_of env evar_map s in
@@ -655,7 +655,7 @@ print_endline "PASSATO" ; flush stdout ;
                  | N.Name id -> id
               in
               let n' =
-               N.Name (Nameops.next_ident_away id (Termops.ids_of_context env))
+               N.Name (Namegen.next_ident_away id (Termops.ids_of_context env))
               in
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
                let sourcesort =
@@ -771,7 +771,7 @@ print_endline "PASSATO" ; flush stdout ;
                   (function
                       N.Anonymous -> Util.error "Anonymous fix function met"
                     | N.Name id as n ->
-                       let res = N.Name (Nameops.next_name_away n !ids) in
+                       let res = N.Name (Namegen.next_name_away n !ids) in
                         ids := id::!ids ;
                         res
                  ) f
@@ -805,7 +805,7 @@ print_endline "PASSATO" ; flush stdout ;
                   (function
                       N.Anonymous -> Util.error "Anonymous fix function met"
                     | N.Name id as n ->
-                       let res = N.Name (Nameops.next_name_away n !ids) in
+                       let res = N.Name (Namegen.next_name_away n !ids) in
                         ids := id::!ids ;
                         res
                  ) f

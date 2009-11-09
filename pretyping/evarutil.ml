@@ -11,10 +11,10 @@
 open Util
 open Pp
 open Names
-open Nameops
 open Univ
 open Term
 open Termops
+open Namegen
 open Sign
 open Pre_env
 open Environ

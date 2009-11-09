@@ -90,6 +90,7 @@ open Evarutil
 open Tacred
 open Evd
 open Termops
+open Namegen
 open Indrec
 open Typing
 open Inductiveops

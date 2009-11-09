@@ -2,6 +2,7 @@ Termops
 Evd
 Reductionops
 Vnorm
+Namegen
 Inductiveops
 Retyping
 Cbv

@@ -22,6 +22,7 @@ open Tacticals
 open Fol
 open Names
 open Nameops
+open Namegen
 open Termops
 open Coqlib
 open Hipattern
@@ -125,7 +126,7 @@ let rename_global r =
   with Not_found ->
     let rec loop id =
       if Hashtbl.mem used_names id then
-	loop (lift_ident id)
+	loop (lift_subscript id)
       else begin
 	Hashtbl.add used_names id ();
 	let s = string_of_id id in

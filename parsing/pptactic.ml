@@ -10,7 +10,7 @@
 
 open Pp
 open Names
-open Nameops
+open Namegen
 open Util
 open Tacexpr
 open Rawterm
@@ -626,7 +626,7 @@ let pr_fix_tac (id,n,c) =
           match list_chop (n-1) nal with
               _, (_,Name id) :: _ -> id, (nal,ty)::bll
             | bef, (loc,Anonymous) :: aft ->
-                let id = next_ident_away_from (id_of_string"y") avoid in
+                let id = next_ident_away (id_of_string"y") avoid in
                 id, ((bef@(loc,Name id)::aft, ty)::bll)
             | _ -> assert false
         else

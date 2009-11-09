@@ -14,6 +14,7 @@ open Names
 open Sign
 open Term
 open Termops
+open Namegen
 open Environ
 open Type_errors
 open Rawterm

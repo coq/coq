@@ -28,6 +28,7 @@ open Tactics
 open Tacticals
 open Term
 open Termops
+open Namegen
 open Reductionops
 open Goptions
 

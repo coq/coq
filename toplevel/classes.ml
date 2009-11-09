@@ -170,7 +170,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	    id
       | Anonymous ->
 	  let i = Nameops.add_suffix (id_of_class k) "_instance_0" in
-	    Termops.next_global_ident_away false i (Termops.ids_of_context env)
+	    Namegen.next_global_ident_away i (Termops.ids_of_context env)
   in
   let env' = push_rel_context ctx' env in
   evars := Evarutil.nf_evar_defs !evars;

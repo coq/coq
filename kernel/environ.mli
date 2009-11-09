@@ -164,7 +164,7 @@ val set_engagement : engagement -> env -> env
 (* [global_vars_set env c] returns the list of [id]'s occurring as
    [VAR id] in [c] *)
 val global_vars_set : env -> constr -> Idset.t
-(* the constr must be an atomic construction *)
+(* the constr must be a global reference *)
 val vars_of_global : env -> constr -> identifier list
 
 val keep_hyps : env -> Idset.t -> section_context

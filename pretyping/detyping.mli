@@ -44,7 +44,7 @@ val detype_rel_context : constr option -> identifier list -> names_context ->
   rel_context -> rawdecl list
 
 (* look for the index of a named var or a nondep var as it is renamed *)
-val lookup_name_as_renamed  : env -> constr -> identifier -> int option
+val lookup_name_as_displayed  : env -> constr -> identifier -> int option
 val lookup_index_as_renamed : env -> constr -> int -> int option
 
 val set_detype_anonymous : (loc -> int -> rawconstr) -> unit

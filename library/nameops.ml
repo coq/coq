@@ -112,25 +112,7 @@ let add_prefix s id = id_of_string (s ^ string_of_id id)
 
 let atompart_of_id id = fst (repr_ident id)
 
-(* Fresh names *)
-
 let lift_ident = lift_subscript
-
-let next_ident_away id avoid =
-  if List.mem id avoid then
-    let id0 = if not (has_subscript id) then id else
-    (* Ce serait sans doute mieux avec quelque chose inspiré de
-       *** make_ident id (Some 0) *** mais ça brise la compatibilité... *)
-    forget_subscript id in
-    let rec name_rec id =
-      if List.mem id avoid then name_rec (lift_ident id) else id in
-    name_rec id0
-  else id
-
-let next_ident_away_from id avoid =
-  let rec name_rec id =
-    if List.mem id avoid then name_rec (lift_ident id) else id in
-  name_rec id
 
 (* Names *)
 
@@ -157,13 +139,6 @@ let name_app f = function
 let name_fold_map f e = function
   | Name id -> let (e,id) = f e id in (e,Name id)
   | Anonymous -> e,Anonymous
-
-let next_name_away_with_default default name l =
-  match name with
-    | Name str  -> next_ident_away str l
-    | Anonymous -> next_ident_away (id_of_string default) l
-
-let next_name_away = next_name_away_with_default "H"
 
 let pr_lab l = str (string_of_label l)
 

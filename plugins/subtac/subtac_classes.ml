@@ -47,7 +47,7 @@ let interp_typeclass_context_evars isevars env avoid l =
     (fun (env, ids, params) (iid, bk, cl) ->
       let t' = interp_binder_evars isevars env (snd iid) cl in
       let i = match snd iid with
-	| Anonymous -> Nameops.next_name_away (Termops.named_hd env t' Anonymous) ids
+	| Anonymous -> Namegen.next_name_away (Namegen.named_hd env t' Anonymous) ids
 	| Name id -> id
       in
       let d = (i,None,t') in
@@ -58,7 +58,7 @@ let interp_constrs_evars isevars env avoid l =
   List.fold_left
     (fun (env, ids, params) t ->
       let t' = interp_binder_evars isevars env Anonymous t in
-      let id = Nameops.next_name_away (Termops.named_hd env t' Anonymous) ids in
+      let id = Namegen.next_name_away (Namegen.named_hd env t' Anonymous) ids in
       let d = (id,None,t') in
 	(push_named d env, id :: ids, d::params))
     (env, avoid, []) l
@@ -129,7 +129,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	  id
     | Anonymous ->
 	let i = Nameops.add_suffix (Classes.id_of_class k) "_instance_0" in
-	  Termops.next_global_ident_away false i (Termops.ids_of_context env)
+	  Namegen.next_global_ident_away i (Termops.ids_of_context env)
   in
   let env' = push_rel_context ctx' env in
   isevars := Evarutil.nf_evar_defs !isevars;

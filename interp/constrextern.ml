@@ -16,6 +16,7 @@ open Names
 open Nameops
 open Term
 open Termops
+open Namegen
 open Inductive
 open Sign
 open Environ

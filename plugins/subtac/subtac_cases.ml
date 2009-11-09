@@ -15,6 +15,7 @@ open Names
 open Nameops
 open Term
 open Termops
+open Namegen
 open Declarations
 open Inductiveops
 open Environ
@@ -1501,7 +1502,7 @@ let make_prime_id name =
 
 let prime avoid name =
   let previd, id = make_prime_id name in
-    previd, next_ident_away_from id avoid
+    previd, next_ident_away id avoid
 
 let make_prime avoid prevname =
   let previd, id = prime !avoid prevname in
@@ -1510,7 +1511,7 @@ let make_prime avoid prevname =
 
 let eq_id avoid id =
   let hid = id_of_string ("Heq_" ^ string_of_id id) in
-  let hid' = next_ident_away_from hid avoid in
+  let hid' = next_ident_away hid avoid in
     hid'
 
 let mk_eq typ x y = mkApp (Lazy.force eq_ind, [| typ; x ; y |])
@@ -1588,7 +1589,7 @@ let constr_of_pat env isevars arsign pat avoid =
 (* shadows functional version *)
 let eq_id avoid id =
   let hid = id_of_string ("Heq_" ^ string_of_id id) in
-  let hid' = next_ident_away_from hid !avoid in
+  let hid' = next_ident_away hid !avoid in
     avoid := hid' :: !avoid;
     hid'
 
@@ -1784,7 +1785,7 @@ let abstract_tomatch env tomatchs tycon =
 	   | _ ->
 	       let tycon = Option.map
 		 (fun t -> subst_term_occ all_occurrences (lift 1 c) (lift 1 t)) tycon in
-	       let name = next_ident_away_from (id_of_string "filtered_var") names in
+	       let name = next_ident_away (id_of_string "filtered_var") names in
 		 (mkRel 1, lift_tomatch_type (succ lenctx) t) :: lift_ctx 1 prev,
 	       (Name name, Some (lift lenctx c), lift lenctx $ type_of_tomatch t) :: ctx,
 	       name :: names, tycon)

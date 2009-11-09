@@ -383,7 +383,7 @@ let rec poseq_list_ids_rec lcstr gl =
 	      let _ = prconstr c in
 	      let _ = prstr "\n" in
 	      let typ = Tacmach.pf_type_of gl c in
-	      let cname = Termops.id_of_name_using_hdchar (Global.env()) typ Anonymous in
+	      let cname = Namegen.id_of_name_using_hdchar (Global.env()) typ Anonymous in
 	      let x = Tactics.fresh_id [] cname gl in
 	      let _ = list_constr_largs:=mkVar x :: !list_constr_largs in
 	      let _ = prstr " list_constr_largs = " in

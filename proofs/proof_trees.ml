@@ -68,8 +68,8 @@ let is_tactic_proof pf = match pf.ref with
   | _ -> false
 
 
-let pf_lookup_name_as_renamed env ccl s =
-  Detyping.lookup_name_as_renamed env ccl s
+let pf_lookup_name_as_displayed env ccl s =
+  Detyping.lookup_name_as_displayed env ccl s
 
 let pf_lookup_index_as_renamed env ccl n =
   Detyping.lookup_index_as_renamed env ccl n

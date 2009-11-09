@@ -13,6 +13,7 @@ open Util
 open Names
 open Term
 open Declarations
+open Namegen
 open Nameops
 open Libnames
 open Table
@@ -92,7 +93,7 @@ type env = identifier list * Idset.t
 (*s Generic renaming issues for local variable names. *)
 
 let rec rename_id id avoid =
-  if Idset.mem id avoid then rename_id (lift_ident id) avoid else id
+  if Idset.mem id avoid then rename_id (lift_subscript id) avoid else id
 
 let rec rename_vars avoid = function
   | [] ->

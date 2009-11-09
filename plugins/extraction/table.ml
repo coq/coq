@@ -12,6 +12,7 @@ open Names
 open Term
 open Declarations
 open Nameops
+open Namegen
 open Summary
 open Libobject
 open Goptions

@@ -21,12 +21,13 @@ open Libnames;;
 open Genarg;;
 open Topconstr;;
 open Termops;;
+open Namegen;;
 
 let zz = Util.dummy_loc;;
 
 let hyp_radix = id_of_string "H";;
 
-let next_global_ident = next_global_ident_away true
+let next_global_ident = next_ident_away_in_goal
 
 (* get_hyp_by_name : goal sigma -> string -> constr,
    looks up for an hypothesis (or a global constant), from its name *)

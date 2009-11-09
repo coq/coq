@@ -2,6 +2,16 @@
 = CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
 =========================================
 
+** Renaming functions renamed
+
+concrete_name -> compute_displayed_name_in
+concrete_let_name -> compute_displayed_let_name_in
+rename_rename_bound_var -> rename_bound_vars_as_displayed
+lookup_name_as_renamed -> lookup_name_as_displayed
+next_global_ident_away true -> next_ident_away_in_goal
+next_global_ident_away false -> next_global_ident_away
+
+
 ** Cleaning in commmand.ml
 
 Functions about starting/ending a lemma are in lemmas.ml

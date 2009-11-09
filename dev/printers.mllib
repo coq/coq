@@ -64,6 +64,7 @@ Goptions
 Decls
 Heads
 Termops
+Namegen
 Evd
 Rawterm
 Reductionops

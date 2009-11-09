@@ -2,6 +2,7 @@ open Printer
 open Util
 open Term
 open Termops
+open Namegen
 open Names
 open Declarations
 open Pp
@@ -1358,7 +1359,7 @@ let prove_with_tcc tcc_lemma_constr eqs : tactic =
     | None -> anomaly "No tcc proof !!"
     | Some lemma ->
 	fun gls ->
-(* 	  let hid = next_global_ident_away true h_id (pf_ids_of_hyps gls) in *)
+(* 	  let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in *)
 (* 	  let ids = hid::pf_ids_of_hyps gls in  *)
 	  tclTHENSEQ
 	    [
@@ -1581,7 +1582,7 @@ let prove_principle_for_gen
   let start_tac gls =
     let hyps = pf_ids_of_hyps gls in
       let hid =
-	next_global_ident_away true
+	next_ident_away_in_goal
 	  (id_of_string "prov")
 	  hyps
       in

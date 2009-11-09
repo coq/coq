@@ -52,6 +52,7 @@ Goptions
 Decl_kinds
 Global
 Termops
+Namegen
 Evd
 Reductionops
 Inductiveops

@@ -153,7 +153,7 @@ let make_cases s =
 	     let rec rename avoid = function
 	       | [] -> []
 	       | (n,_)::l ->
-		   let n' = Termops.next_global_ident_away true (id_of_name n) avoid in
+		   let n' = Namegen.next_ident_away_in_goal (id_of_name n) avoid in
 		   string_of_id n' :: rename (n'::avoid) l in
 	     let al' = rename [] (List.rev al) in
 	     (string_of_id n :: al') :: l)

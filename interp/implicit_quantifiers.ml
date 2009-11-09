@@ -203,7 +203,7 @@ let generalizable_vars_of_rawconstr ?(bound=Idset.empty) ?(allowed=Idset.empty) 
       vars
 
 let rec make_fresh ids env x =
-  if is_freevar ids env x then x else make_fresh ids env (Nameops.lift_ident x)
+  if is_freevar ids env x then x else make_fresh ids env (Nameops.lift_subscript x)
 
 let next_ident_away_from id avoid = make_fresh avoid (Global.env ()) id
 

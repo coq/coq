@@ -77,7 +77,7 @@ let ident_global_exist id =
     global env) with base [id]. *)
 let next_ident_fresh (id:identifier) =
     let res = ref id in
-    while ident_global_exist !res do res := Nameops.lift_ident !res done;
+    while ident_global_exist !res do res := Nameops.lift_subscript !res done;
     !res
 
 

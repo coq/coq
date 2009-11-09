@@ -53,6 +53,7 @@ open Util
 open Names
 open Term
 open Termops
+open Namegen
 open Tacmach
 open Sign
 open Environ
@@ -131,7 +132,7 @@ let replace_in_array keep_length env sigma a =
 
 let fresh env n =
   let id = match n with Name x -> x | _ -> id_of_string "_H" in
-  next_global_ident_away true id (ids_of_named_context (named_context env))
+  next_ident_away_in_goal id (ids_of_named_context (named_context env))
 
 let rec compute_metamap env sigma c = match kind_of_term c with
   (* le terme est directement une preuve *)

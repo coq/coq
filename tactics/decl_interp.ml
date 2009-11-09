@@ -223,7 +223,7 @@ let rec deanonymize ids =
   function
       PatVar (loc,Anonymous) ->
 	let (found,known) = !ids in
-	let new_id=Nameops.next_ident_away dummy_prefix known in
+	let new_id=Namegen.next_ident_away dummy_prefix known in
 	let _= ids:= (loc,new_id) :: found , new_id :: known in
 	  PatVar (loc,Name new_id)
     | PatVar (loc,Name id) as pat ->
