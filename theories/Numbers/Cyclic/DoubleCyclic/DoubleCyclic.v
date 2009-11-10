@@ -25,7 +25,7 @@ Require Import DoubleDivn1.
 Require Import DoubleDiv.
 Require Import CyclicAxioms.
 
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 
 Section Z_2nZ.

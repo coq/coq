@@ -13,7 +13,7 @@
 Set Implicit Arguments.
 
 Require Import ZArith.
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 Definition base digits := Zpower 2 (Zpos digits).
 

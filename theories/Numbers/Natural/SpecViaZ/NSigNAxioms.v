@@ -19,7 +19,7 @@ Module NSig_NAxioms (N:NType) <: NAxiomsSig.
 
 Delimit Scope IntScope with Int.
 Bind Scope IntScope with N.t.
-Open Local Scope IntScope.
+Local Open Scope IntScope.
 Notation "[ x ]" := (N.to_Z x) : IntScope.
 Infix "=="  := N.eq (at level 70) : IntScope.
 Notation "0" := N.zero : IntScope.
@@ -27,26 +27,17 @@ Infix "+" := N.add : IntScope.
 Infix "-" := N.sub : IntScope.
 Infix "*" := N.mul : IntScope.
 
-Module Export NZOrdAxiomsMod <: NZOrdAxiomsSig.
-Module Export NZAxiomsMod <: NZAxiomsSig.
+Hint Rewrite N.spec_0 N.spec_succ N.spec_add N.spec_mul : int.
+Ltac isimpl := autorewrite with int.
 
-Definition NZ := N.t.
-Definition NZeq := N.eq.
-Definition NZ0 := N.zero.
-Definition NZsucc := N.succ.
-Definition NZpred := N.pred.
-Definition NZadd := N.add.
-Definition NZsub := N.sub.
-Definition NZmul := N.mul.
+Instance eq_equiv : Equivalence N.eq.
 
-Instance NZeq_equiv : Equivalence N.eq.
-
-Instance NZsucc_wd : Proper (N.eq==>N.eq) NZsucc.
+Instance succ_wd : Proper (N.eq==>N.eq) N.succ.
 Proof.
-unfold N.eq; repeat red; intros; rewrite 2 N.spec_succ; f_equal; auto.
+unfold N.eq; repeat red; intros; isimpl; f_equal; auto.
 Qed.
 
-Instance NZpred_wd : Proper (N.eq==>N.eq) NZpred.
+Instance pred_wd : Proper (N.eq==>N.eq) N.pred.
 Proof.
 unfold N.eq; repeat red; intros.
 generalize (N.spec_pos y) (N.spec_pos x) (N.spec_eq_bool x 0).
@@ -55,12 +46,12 @@ rewrite 2 N.spec_pred0; congruence.
 rewrite 2 N.spec_pred; f_equal; auto; try omega.
 Qed.
 
-Instance NZadd_wd : Proper (N.eq==>N.eq==>N.eq) NZadd.
+Instance add_wd : Proper (N.eq==>N.eq==>N.eq) N.add.
 Proof.
-unfold N.eq; repeat red; intros; rewrite 2 N.spec_add; f_equal; auto.
+unfold N.eq; repeat red; intros; isimpl; f_equal; auto.
 Qed.
 
-Instance NZsub_wd : Proper (N.eq==>N.eq==>N.eq) NZsub.
+Instance sub_wd : Proper (N.eq==>N.eq==>N.eq) N.sub.
 Proof.
 unfold N.eq; intros x x' Hx y y' Hy.
 destruct (Z_lt_le_dec [x] [y]).
@@ -68,12 +59,12 @@ rewrite 2 N.spec_sub0; f_equal; congruence.
 rewrite 2 N.spec_sub; f_equal; congruence.
 Qed.
 
-Instance NZmul_wd : Proper (N.eq==>N.eq==>N.eq) NZmul.
+Instance mul_wd : Proper (N.eq==>N.eq==>N.eq) N.mul.
 Proof.
-unfold N.eq; repeat red; intros; rewrite 2 N.spec_mul; f_equal; auto.
+unfold N.eq; repeat red; intros; isimpl; f_equal; auto.
 Qed.
 
-Theorem NZpred_succ : forall n, N.pred (N.succ n) == n.
+Theorem pred_succ : forall n, N.pred (N.succ n) == n.
 Proof.
 unfold N.eq; repeat red; intros.
 rewrite N.spec_pred; rewrite N.spec_succ.
@@ -114,7 +105,7 @@ Proof.
 exact (natlike_ind B B0 BS).
 Qed.
 
-Theorem NZinduction : forall n, A n.
+Theorem bi_induction : forall n, A n.
 Proof.
 intro n. setoid_replace n with (N_of_Z (N.to_Z n)).
 apply B_holds. apply N.spec_pos.
@@ -125,23 +116,23 @@ Qed.
 
 End Induction.
 
-Theorem NZadd_0_l : forall n, 0 + n == n.
+Theorem add_0_l : forall n, 0 + n == n.
 Proof.
-intros; red; rewrite N.spec_add, N.spec_0; auto with zarith.
+intros; red; isimpl; auto with zarith.
 Qed.
 
-Theorem NZadd_succ_l : forall n m, (N.succ n) + m == N.succ (n + m).
+Theorem add_succ_l : forall n m, (N.succ n) + m == N.succ (n + m).
 Proof.
-intros; red; rewrite N.spec_add, 2 N.spec_succ, N.spec_add; auto with zarith.
+intros; red; isimpl; auto with zarith.
 Qed.
 
-Theorem NZsub_0_r : forall n, n - 0 == n.
+Theorem sub_0_r : forall n, n - 0 == n.
 Proof.
 intros; red; rewrite N.spec_sub; rewrite N.spec_0; auto with zarith.
 apply N.spec_pos.
 Qed.
 
-Theorem NZsub_succ_r : forall n m, n - (N.succ m) == N.pred (n - m).
+Theorem sub_succ_r : forall n m, n - (N.succ m) == N.pred (n - m).
 Proof.
 intros; red.
 destruct (Z_lt_le_dec [n] [N.succ m]) as [H|H].
@@ -157,24 +148,19 @@ rewrite N.spec_pred, N.spec_sub; auto with zarith.
 rewrite N.spec_sub; auto with zarith.
 Qed.
 
-Theorem NZmul_0_l : forall n, 0 * n == 0.
+Theorem mul_0_l : forall n, 0 * n == 0.
 Proof.
 intros; red.
 rewrite N.spec_mul, N.spec_0; auto with zarith.
 Qed.
 
-Theorem NZmul_succ_l : forall n m, (N.succ n) * m == n * m + m.
+Theorem mul_succ_l : forall n m, (N.succ n) * m == n * m + m.
 Proof.
 intros; red.
 rewrite N.spec_add, 2 N.spec_mul, N.spec_succ; ring.
 Qed.
 
-End NZAxiomsMod.
-
-Definition NZlt := N.lt.
-Definition NZle := N.le.
-Definition NZmin := N.min.
-Definition NZmax := N.max.
+(** Order *)
 
 Infix "<=" := N.le : IntScope.
 Infix "<" := N.lt : IntScope.
@@ -214,67 +200,52 @@ intros x x' Hx y y' Hy.
 rewrite 2 spec_compare_alt. unfold N.eq in *. rewrite Hx, Hy; intuition.
 Qed.
 
-Instance NZlt_wd : Proper (N.eq ==> N.eq ==> iff) N.lt.
+Instance lt_wd : Proper (N.eq ==> N.eq ==> iff) N.lt.
 Proof.
 intros x x' Hx y y' Hy; unfold N.lt; rewrite Hx, Hy; intuition.
 Qed.
 
-Instance NZle_wd : Proper (N.eq ==> N.eq ==> iff) N.le.
-Proof.
-intros x x' Hx y y' Hy; unfold N.le; rewrite Hx, Hy; intuition.
-Qed.
-
-Instance NZmin_wd : Proper (N.eq ==> N.eq ==> N.eq) N.min.
-Proof.
-repeat red; intros; rewrite 2 spec_min; congruence.
-Qed.
-
-Instance NZmax_wd : Proper (N.eq ==> N.eq ==> N.eq) N.max.
-Proof.
-repeat red; intros; rewrite 2 spec_max; congruence.
-Qed.
-
-Theorem NZlt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
+Theorem lt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
 Proof.
 intros.
 unfold N.eq; rewrite spec_lt, spec_le; omega.
 Qed.
 
-Theorem NZlt_irrefl : forall n, ~ n < n.
+Theorem lt_irrefl : forall n, ~ n < n.
 Proof.
 intros; rewrite spec_lt; auto with zarith.
 Qed.
 
-Theorem NZlt_succ_r : forall n m, n < (N.succ m) <-> n <= m.
+Theorem lt_succ_r : forall n m, n < (N.succ m) <-> n <= m.
 Proof.
 intros; rewrite spec_lt, spec_le, N.spec_succ; omega.
 Qed.
 
-Theorem NZmin_l : forall n m, n <= m -> N.min n m == n.
+Theorem min_l : forall n m, n <= m -> N.min n m == n.
 Proof.
 intros n m; unfold N.eq; rewrite spec_le, spec_min.
 generalize (Zmin_spec [n] [m]); omega.
 Qed.
 
-Theorem NZmin_r : forall n m, m <= n -> N.min n m == m.
+Theorem min_r : forall n m, m <= n -> N.min n m == m.
 Proof.
 intros n m; unfold N.eq; rewrite spec_le, spec_min.
 generalize (Zmin_spec [n] [m]); omega.
 Qed.
 
-Theorem NZmax_l : forall n m, m <= n -> N.max n m == n.
+Theorem max_l : forall n m, m <= n -> N.max n m == n.
 Proof.
 intros n m; unfold N.eq; rewrite spec_le, spec_max.
 generalize (Zmax_spec [n] [m]); omega.
 Qed.
 
-Theorem NZmax_r : forall n m, n <= m -> N.max n m == m.
+Theorem max_r : forall n m, n <= m -> N.max n m == m.
 Proof.
 intros n m; unfold N.eq; rewrite spec_le, spec_max.
 generalize (Zmax_spec [n] [m]); omega.
 Qed.
 
-End NZOrdAxiomsMod.
+(** Properties specific to natural numbers, not integers. *)
 
 Theorem pred_0 : N.pred 0 == 0.
 Proof.
@@ -335,5 +306,21 @@ rewrite 2 Zabs_eq; auto.
 generalize (N.spec_pos n); auto with zarith.
 apply N.spec_pos; auto.
 Qed.
+
+(** The instantiation of operations.
+    Placing them at the very end avoids having indirections in above lemmas. *)
+
+Definition t := N.t.
+Definition eq := N.eq.
+Definition zero := N.zero.
+Definition succ := N.succ.
+Definition pred := N.pred.
+Definition add := N.add.
+Definition sub := N.sub.
+Definition mul := N.mul.
+Definition lt := N.lt.
+Definition le := N.le.
+Definition min := N.min.
+Definition max := N.max.
 
 End NSig_NAxioms.

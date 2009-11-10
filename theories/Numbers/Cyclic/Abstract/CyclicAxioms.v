@@ -22,7 +22,7 @@ Require Import Znumtheory.
 Require Import BigNumPrelude.
 Require Import DoubleType.
 
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 (** First, a description via an operator record and a spec record. *)
 

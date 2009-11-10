@@ -15,54 +15,24 @@ Require Export NZAxioms.
 Set Implicit Arguments.
 
 Module Type NAxiomsSig.
-Declare Module Export NZOrdAxiomsMod : NZOrdAxiomsSig.
-
-Delimit Scope NatScope with Nat.
-Notation N := NZ.
-Notation Neq := NZeq.
-Notation N0 := NZ0.
-Notation N1 := (NZsucc NZ0).
-Notation S := NZsucc.
-Notation P := NZpred.
-Notation add := NZadd.
-Notation mul := NZmul.
-Notation sub := NZsub.
-Notation lt := NZlt.
-Notation le := NZle.
-Notation min := NZmin.
-Notation max := NZmax.
-Notation "x == y"  := (Neq x y) (at level 70) : NatScope.
-Notation "x ~= y" := (~ Neq x y) (at level 70) : NatScope.
-Notation "0" := NZ0 : NatScope.
-Notation "1" := (NZsucc NZ0) : NatScope.
-Notation "x + y" := (NZadd x y) : NatScope.
-Notation "x - y" := (NZsub x y) : NatScope.
-Notation "x * y" := (NZmul x y) : NatScope.
-Notation "x < y" := (NZlt x y) : NatScope.
-Notation "x <= y" := (NZle x y) : NatScope.
-Notation "x > y" := (NZlt y x) (only parsing) : NatScope.
-Notation "x >= y" := (NZle y x) (only parsing) : NatScope.
-
-Open Local Scope NatScope.
-
-Parameter Inline recursion : forall A : Type, A -> (N -> A -> A) -> N -> A.
-Implicit Arguments recursion [A].
+Include Type NZOrdAxiomsSig.
+Local Open Scope NumScope.
 
 Axiom pred_0 : P 0 == 0.
 
+Parameter Inline recursion : forall A : Type, A -> (t -> A -> A) -> t -> A.
+Implicit Arguments recursion [A].
+
 Instance recursion_wd (A : Type) (Aeq : relation A) :
- Proper (Aeq ==> (Neq==>Aeq==>Aeq) ==> Neq ==> Aeq) (@recursion A).
+ Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) (@recursion A).
 
 Axiom recursion_0 :
-  forall (A : Type) (a : A) (f : N -> A -> A), recursion a f 0 = a.
+  forall (A : Type) (a : A) (f : t -> A -> A), recursion a f 0 = a.
 
 Axiom recursion_succ :
-  forall (A : Type) (Aeq : relation A) (a : A) (f : N -> A -> A),
-    Aeq a a -> Proper (Neq==>Aeq==>Aeq) f ->
-      forall n : N, Aeq (recursion a f (S n)) (f n (recursion a f n)).
-
-(*Axiom dep_rec :
-  forall A : N -> Type, A 0 -> (forall n : N, A n -> A (S n)) -> forall n : N, A n.*)
+  forall (A : Type) (Aeq : relation A) (a : A) (f : t -> A -> A),
+    Aeq a a -> Proper (eq==>Aeq==>Aeq) f ->
+      forall n, Aeq (recursion a f (S n)) (f n (recursion a f n)).
 
 End NAxiomsSig.
 

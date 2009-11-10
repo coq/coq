@@ -30,7 +30,7 @@ Declare ML Module "numbers_syntax_plugin".
 *)
 
 
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 (* For compatibility of scripts, weaker version of some lemmas of Zdiv *)
 

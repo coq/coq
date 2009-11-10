@@ -11,7 +11,7 @@
 (*i $Id$ i*)
 
 Require Export BigN.
-Require Import ZMulOrder.
+Require Import ZProperties.
 Require Import ZSig.
 Require Import ZSigZAxioms.
 Require Import ZMake.
@@ -21,7 +21,7 @@ Module BigZ <: ZType := ZMake.Make BigN.
 (** Module [BigZ] implements [ZAxiomsSig] *)
 
 Module Export BigZAxiomsMod := ZSig_ZAxioms BigZ.
-Module Export BigZMulOrderPropMod := ZMulOrderPropFunct BigZAxiomsMod.
+Module Export BigZPropMod := ZPropFunct BigZAxiomsMod.
 
 (** Notations about [BigZ] *)
 
@@ -32,7 +32,7 @@ Bind Scope bigZ_scope with bigZ.
 Bind Scope bigZ_scope with BigZ.t.
 Bind Scope bigZ_scope with BigZ.t_.
 
-Notation Local "0" := BigZ.zero : bigZ_scope.
+Local Notation "0" := BigZ.zero : bigZ_scope.
 Infix "+" := BigZ.add : bigZ_scope.
 Infix "-" := BigZ.sub : bigZ_scope.
 Notation "- x" := (BigZ.opp x) : bigZ_scope.
@@ -93,13 +93,13 @@ Lemma BigZring :
  ring_theory BigZ.zero BigZ.one BigZ.add BigZ.mul BigZ.sub BigZ.opp BigZ.eq.
 Proof.
 constructor.
-exact Zadd_0_l.
-exact Zadd_comm.
-exact Zadd_assoc.
-exact Zmul_1_l.
-exact Zmul_comm.
-exact Zmul_assoc.
-exact Zmul_add_distr_r.
+exact add_0_l.
+exact add_comm.
+exact add_assoc.
+exact mul_1_l.
+exact mul_comm.
+exact mul_assoc.
+exact mul_add_distr_r.
 exact sub_opp.
 exact add_opp.
 Qed.

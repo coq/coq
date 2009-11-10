@@ -17,7 +17,7 @@ Require Import BigNumPrelude.
 Require Import DoubleType.
 Require Import DoubleBase.
 
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 Section DoubleMul.
  Variable w : Type.

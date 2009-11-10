@@ -13,83 +13,70 @@
 Require Import Arith.
 Require Import Min.
 Require Import Max.
-Require Import NSub.
+Require Import NAxioms NProperties.
+
+(** * Implementation of [NAxiomsSig] by [nat] *)
 
 Module NPeanoAxiomsMod <: NAxiomsSig.
-Module Export NZOrdAxiomsMod <: NZOrdAxiomsSig.
-Module Export NZAxiomsMod <: NZAxiomsSig.
 
-Definition NZ := nat.
-Definition NZeq := (@eq nat).
-Definition NZ0 := 0.
-Definition NZsucc := S.
-Definition NZpred := pred.
-Definition NZadd := plus.
-Definition NZsub := minus.
-Definition NZmul := mult.
+(** Bi-directional induction. *)
 
-Instance NZeq_equiv : Equivalence NZeq.
-Program Instance NZsucc_wd : Proper (eq==>eq) NZsucc.
-Program Instance NZpred_wd : Proper (eq==>eq) NZpred.
-Program Instance NZadd_wd : Proper (eq==>eq==>eq) NZadd.
-Program Instance NZsub_wd : Proper (eq==>eq==>eq) NZsub.
-Program Instance NZmul_wd : Proper (eq==>eq==>eq) NZmul.
-
-Theorem NZinduction :
+Theorem bi_induction :
   forall A : nat -> Prop, Proper (eq==>iff) A ->
     A 0 -> (forall n : nat, A n <-> A (S n)) -> forall n : nat, A n.
 Proof.
 intros A A_wd A0 AS. apply nat_ind. assumption. intros; now apply -> AS.
 Qed.
 
-Theorem NZpred_succ : forall n : nat, pred (S n) = n.
+(** Basic operations. *)
+
+Instance eq_equiv : Equivalence (@eq nat).
+Program Instance succ_wd : Proper (eq==>eq) S.
+Program Instance pred_wd : Proper (eq==>eq) pred.
+Program Instance add_wd : Proper (eq==>eq==>eq) plus.
+Program Instance sub_wd : Proper (eq==>eq==>eq) minus.
+Program Instance mul_wd : Proper (eq==>eq==>eq) mult.
+
+Theorem pred_succ : forall n : nat, pred (S n) = n.
 Proof.
 reflexivity.
 Qed.
 
-Theorem NZadd_0_l : forall n : nat, 0 + n = n.
+Theorem add_0_l : forall n : nat, 0 + n = n.
 Proof.
 reflexivity.
 Qed.
 
-Theorem NZadd_succ_l : forall n m : nat, (S n) + m = S (n + m).
+Theorem add_succ_l : forall n m : nat, (S n) + m = S (n + m).
 Proof.
 reflexivity.
 Qed.
 
-Theorem NZsub_0_r : forall n : nat, n - 0 = n.
+Theorem sub_0_r : forall n : nat, n - 0 = n.
 Proof.
 intro n; now destruct n.
 Qed.
 
-Theorem NZsub_succ_r : forall n m : nat, n - (S m) = pred (n - m).
+Theorem sub_succ_r : forall n m : nat, n - (S m) = pred (n - m).
 Proof.
-intros n m; induction n m using nat_double_ind; simpl; auto. apply NZsub_0_r.
+intros n m; induction n m using nat_double_ind; simpl; auto. apply sub_0_r.
 Qed.
 
-Theorem NZmul_0_l : forall n : nat, 0 * n = 0.
+Theorem mul_0_l : forall n : nat, 0 * n = 0.
 Proof.
 reflexivity.
 Qed.
 
-Theorem NZmul_succ_l : forall n m : nat, S n * m = n * m + m.
+Theorem mul_succ_l : forall n m : nat, S n * m = n * m + m.
 Proof.
 intros n m; now rewrite plus_comm.
 Qed.
 
-End NZAxiomsMod.
+(** Order on natural numbers *)
 
-Definition NZlt := lt.
-Definition NZle := le.
-Definition NZmin := min.
-Definition NZmax := max.
+Program Instance lt_wd : Proper (eq==>eq==>iff) lt.
 
-Program Instance NZlt_wd : Proper (eq==>eq==>iff) NZlt.
-Program Instance NZle_wd : Proper (eq==>eq==>iff) NZle.
-Program Instance NZmin_wd : Proper (eq==>eq==>eq) NZmin.
-Program Instance NZmax_wd : Proper (eq==>eq==>eq) NZmax.
-
-Theorem NZlt_eq_cases : forall n m : nat, n <= m <-> n < m \/ n = m.
+Theorem lt_eq_cases : forall n m : nat, n <= m <-> n < m \/ n = m.
 Proof.
 intros n m; split.
 apply le_lt_or_eq.
@@ -97,51 +84,46 @@ intro H; destruct H as [H | H].
 now apply lt_le_weak. rewrite H; apply le_refl.
 Qed.
 
-Theorem NZlt_irrefl : forall n : nat, ~ (n < n).
+Theorem lt_irrefl : forall n : nat, ~ (n < n).
 Proof.
 exact lt_irrefl.
 Qed.
 
-Theorem NZlt_succ_r : forall n m : nat, n < S m <-> n <= m.
+Theorem lt_succ_r : forall n m : nat, n < S m <-> n <= m.
 Proof.
 intros n m; split; [apply lt_n_Sm_le | apply le_lt_n_Sm].
 Qed.
 
-Theorem NZmin_l : forall n m : nat, n <= m -> NZmin n m = n.
+Theorem min_l : forall n m : nat, n <= m -> min n m = n.
 Proof.
 exact min_l.
 Qed.
 
-Theorem NZmin_r : forall n m : nat, m <= n -> NZmin n m = m.
+Theorem min_r : forall n m : nat, m <= n -> min n m = m.
 Proof.
 exact min_r.
 Qed.
 
-Theorem NZmax_l : forall n m : nat, m <= n -> NZmax n m = n.
+Theorem max_l : forall n m : nat, m <= n -> max n m = n.
 Proof.
 exact max_l.
 Qed.
 
-Theorem NZmax_r : forall n m : nat, n <= m -> NZmax n m = m.
+Theorem max_r : forall n m : nat, n <= m -> max n m = m.
 Proof.
 exact max_r.
 Qed.
 
-End NZOrdAxiomsMod.
-
-Definition recursion : forall A : Type, A -> (nat -> A -> A) -> nat -> A :=
-  fun A : Type => nat_rect (fun _ => A).
-Implicit Arguments recursion [A].
-
-Theorem succ_neq_0 : forall n : nat, S n <> 0.
-Proof.
-intros; discriminate.
-Qed.
+(** Facts specific to natural numbers, not integers. *)
 
 Theorem pred_0 : pred 0 = 0.
 Proof.
 reflexivity.
 Qed.
+
+Definition recursion (A : Type) : A -> (nat -> A -> A) -> nat -> A :=
+  nat_rect (fun _ => A).
+Implicit Arguments recursion [A].
 
 Instance recursion_wd (A : Type) (Aeq : relation A) :
  Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) (@recursion A).
@@ -164,9 +146,25 @@ Proof.
 unfold Proper, respectful in *; induction n; simpl; auto.
 Qed.
 
+(** The instantiation of operations.
+    Placing them at the very end avoids having indirections in above lemmas. *)
+
+Definition t := nat.
+Definition eq := @eq nat.
+Definition zero := 0.
+Definition succ := S.
+Definition pred := pred.
+Definition add := plus.
+Definition sub := minus.
+Definition mul := mult.
+Definition lt := lt.
+Definition le := le.
+Definition min := min.
+Definition max := max.
+
 End NPeanoAxiomsMod.
 
 (* Now we apply the largest property functor *)
 
-Module Export NPeanoSubPropMod := NSubPropFunct NPeanoAxiomsMod.
+Module Export NPeanoPropMod := NPropFunct NPeanoAxiomsMod.
 

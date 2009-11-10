@@ -36,7 +36,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
 
  (** Specification with respect to [QArith] *)
 
- Open Local Scope Q_scope.
+ Local Open Scope Q_scope.
 
  Definition of_Z x: t := Qz (Z.of_Z x).
 

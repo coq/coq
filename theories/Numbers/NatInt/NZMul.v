@@ -13,67 +13,59 @@
 Require Import NZAxioms.
 Require Import NZAdd.
 
-Module NZMulPropFunct (Import NZAxiomsMod : NZAxiomsSig).
-Module Export NZAddPropMod := NZAddPropFunct NZAxiomsMod.
-Open Local Scope NatIntScope.
+Module NZMulPropFunct (Import NZ : NZAxiomsSig).
+Include NZAddPropFunct NZ.
+Local Open Scope NumScope.
 
-Theorem NZmul_0_r : forall n : NZ, n * 0 == 0.
+Theorem mul_0_r : forall n, n * 0 == 0.
 Proof.
-NZinduct n.
-now rewrite NZmul_0_l.
-intro. rewrite NZmul_succ_l. now rewrite NZadd_0_r.
+nzinduct n; intros; now nzsimpl.
 Qed.
 
-Theorem NZmul_succ_r : forall n m : NZ, n * (S m) == n * m + n.
+Theorem mul_succ_r : forall n m, n * (S m) == n * m + n.
 Proof.
-intros n m; NZinduct n.
-do 2 rewrite NZmul_0_l; now rewrite NZadd_0_l.
-intro n. do 2 rewrite NZmul_succ_l. do 2 rewrite NZadd_succ_r.
-rewrite NZsucc_inj_wd. rewrite <- (NZadd_assoc (n * m) m n).
-rewrite (NZadd_comm m n). rewrite NZadd_assoc.
-now rewrite NZadd_cancel_r.
+intros n m; nzinduct n. now nzsimpl.
+intro n. nzsimpl. rewrite succ_inj_wd, <- add_assoc, (add_comm m n), add_assoc.
+now rewrite add_cancel_r.
 Qed.
 
-Theorem NZmul_comm : forall n m : NZ, n * m == m * n.
+Hint Rewrite mul_0_r mul_succ_r : nz.
+
+Theorem mul_comm : forall n m, n * m == m * n.
 Proof.
-intros n m; NZinduct n.
-rewrite NZmul_0_l; now rewrite NZmul_0_r.
-intro. rewrite NZmul_succ_l; rewrite NZmul_succ_r. now rewrite NZadd_cancel_r.
+intros n m; nzinduct n. now nzsimpl.
+intro. nzsimpl. now rewrite add_cancel_r.
 Qed.
 
-Theorem NZmul_add_distr_r : forall n m p : NZ, (n + m) * p == n * p + m * p.
+Theorem mul_add_distr_r : forall n m p, (n + m) * p == n * p + m * p.
 Proof.
-intros n m p; NZinduct n.
-rewrite NZmul_0_l. now do 2 rewrite NZadd_0_l.
-intro n. rewrite NZadd_succ_l. do 2 rewrite NZmul_succ_l.
-rewrite <- (NZadd_assoc (n * p) p (m * p)).
-rewrite (NZadd_comm p (m * p)). rewrite (NZadd_assoc (n * p) (m * p) p).
-now rewrite NZadd_cancel_r.
+intros n m p; nzinduct n. now nzsimpl.
+intro n. nzsimpl. rewrite <- add_assoc, (add_comm p (m*p)), add_assoc.
+now rewrite add_cancel_r.
 Qed.
 
-Theorem NZmul_add_distr_l : forall n m p : NZ, n * (m + p) == n * m + n * p.
+Theorem mul_add_distr_l : forall n m p, n * (m + p) == n * m + n * p.
 Proof.
 intros n m p.
-rewrite (NZmul_comm n (m + p)). rewrite (NZmul_comm n m).
-rewrite (NZmul_comm n p). apply NZmul_add_distr_r.
+rewrite (mul_comm n (m + p)), (mul_comm n m), (mul_comm n p).
+apply mul_add_distr_r.
 Qed.
 
-Theorem NZmul_assoc : forall n m p : NZ, n * (m * p) == (n * m) * p.
+Theorem mul_assoc : forall n m p, n * (m * p) == (n * m) * p.
 Proof.
-intros n m p; NZinduct n.
-now do 3 rewrite NZmul_0_l.
-intro n. do 2 rewrite NZmul_succ_l. rewrite NZmul_add_distr_r.
-now rewrite NZadd_cancel_r.
+intros n m p; nzinduct n. now nzsimpl.
+intro n. nzsimpl. rewrite mul_add_distr_r.
+now rewrite add_cancel_r.
 Qed.
 
-Theorem NZmul_1_l : forall n : NZ, 1 * n == n.
+Theorem mul_1_l : forall n, 1 * n == n.
 Proof.
-intro n. rewrite NZmul_succ_l; rewrite NZmul_0_l. now rewrite NZadd_0_l.
+intro n. now nzsimpl.
 Qed.
 
-Theorem NZmul_1_r : forall n : NZ, n * 1 == n.
+Theorem mul_1_r : forall n, n * 1 == n.
 Proof.
-intro n; rewrite NZmul_comm; apply NZmul_1_l.
+intro n. now nzsimpl.
 Qed.
 
 End NZMulPropFunct.

@@ -14,80 +14,79 @@ Require Export NumPrelude.
 
 Module Type NZAxiomsSig.
 
-Parameter Inline NZ : Type.
-Parameter Inline NZeq : NZ -> NZ -> Prop.
-Parameter Inline NZ0 : NZ.
-Parameter Inline NZsucc : NZ -> NZ.
-Parameter Inline NZpred : NZ -> NZ.
-Parameter Inline NZadd : NZ -> NZ -> NZ.
-Parameter Inline NZsub : NZ -> NZ -> NZ.
-Parameter Inline NZmul : NZ -> NZ -> NZ.
+Parameter Inline t : Type.
+Parameter Inline eq : t -> t -> Prop.
+Parameter Inline zero : t.
+Parameter Inline succ : t -> t.
+Parameter Inline pred : t -> t.
+Parameter Inline add : t -> t -> t.
+Parameter Inline sub : t -> t -> t.
+Parameter Inline mul : t -> t -> t.
 
 (* Unary subtraction (opp) is not defined on natural numbers, so we have
    it for integers only *)
 
-Instance NZeq_equiv : Equivalence NZeq.
-Instance NZsucc_wd : Proper (NZeq ==> NZeq) NZsucc.
-Instance NZpred_wd : Proper (NZeq ==> NZeq) NZpred.
-Instance NZadd_wd : Proper (NZeq ==> NZeq ==> NZeq) NZadd.
-Instance NZsub_wd : Proper (NZeq ==> NZeq ==> NZeq) NZsub.
-Instance NZmul_wd : Proper (NZeq ==> NZeq ==> NZeq) NZmul.
+Instance eq_equiv : Equivalence eq.
+Instance succ_wd : Proper (eq ==> eq) succ.
+Instance pred_wd : Proper (eq ==> eq) pred.
+Instance add_wd : Proper (eq ==> eq ==> eq) add.
+Instance sub_wd : Proper (eq ==> eq ==> eq) sub.
+Instance mul_wd : Proper (eq ==> eq ==> eq) mul.
 
-Delimit Scope NatIntScope with NatInt.
-Open Local Scope NatIntScope.
-Notation "x == y"  := (NZeq x y) (at level 70) : NatIntScope.
-Notation "x ~= y" := (~ NZeq x y) (at level 70) : NatIntScope.
-Notation "0" := NZ0 : NatIntScope.
-Notation S := NZsucc.
-Notation P := NZpred.
-Notation "1" := (S 0) : NatIntScope.
-Notation "x + y" := (NZadd x y) : NatIntScope.
-Notation "x - y" := (NZsub x y) : NatIntScope.
-Notation "x * y" := (NZmul x y) : NatIntScope.
+Delimit Scope NumScope with Num.
+Local Open Scope NumScope.
+Notation "x == y"  := (eq x y) (at level 70) : NumScope.
+Notation "x ~= y" := (~ eq x y) (at level 70) : NumScope.
+Notation "0" := zero : NumScope.
+Notation S := succ.
+Notation P := pred.
+Notation "1" := (S 0) : NumScope.
+Notation "x + y" := (add x y) : NumScope.
+Notation "x - y" := (sub x y) : NumScope.
+Notation "x * y" := (mul x y) : NumScope.
 
-Axiom NZpred_succ : forall n : NZ, P (S n) == n.
+Axiom pred_succ : forall n, P (S n) == n.
 
-Axiom NZinduction :
-  forall A : NZ -> Prop, Proper (NZeq==>iff) A ->
-    A 0 -> (forall n : NZ, A n <-> A (S n)) -> forall n : NZ, A n.
+Axiom bi_induction :
+  forall A : t -> Prop, Proper (eq==>iff) A ->
+    A 0 -> (forall n, A n <-> A (S n)) -> forall n, A n.
 
-Axiom NZadd_0_l : forall n : NZ, 0 + n == n.
-Axiom NZadd_succ_l : forall n m : NZ, (S n) + m == S (n + m).
+Axiom add_0_l : forall n, 0 + n == n.
+Axiom add_succ_l : forall n m, (S n) + m == S (n + m).
 
-Axiom NZsub_0_r : forall n : NZ, n - 0 == n.
-Axiom NZsub_succ_r : forall n m : NZ, n - (S m) == P (n - m).
+Axiom sub_0_r : forall n, n - 0 == n.
+Axiom sub_succ_r : forall n m, n - (S m) == P (n - m).
 
-Axiom NZmul_0_l : forall n : NZ, 0 * n == 0.
-Axiom NZmul_succ_l : forall n m : NZ, S n * m == n * m + m.
+Axiom mul_0_l : forall n, 0 * n == 0.
+Axiom mul_succ_l : forall n m, S n * m == n * m + m.
 
 End NZAxiomsSig.
 
 Module Type NZOrdAxiomsSig.
-Declare Module Export NZAxiomsMod : NZAxiomsSig.
-Open Local Scope NatIntScope.
+Include Type NZAxiomsSig.
+Local Open Scope NumScope.
 
-Parameter Inline NZlt : NZ -> NZ -> Prop.
-Parameter Inline NZle : NZ -> NZ -> Prop.
-Parameter Inline NZmin : NZ -> NZ -> NZ.
-Parameter Inline NZmax : NZ -> NZ -> NZ.
+Parameter Inline lt : t -> t -> Prop.
+Parameter Inline le : t -> t -> Prop.
 
-Instance NZlt_wd : Proper (NZeq ==> NZeq ==> iff) NZlt.
-Instance NZle_wd : Proper (NZeq ==> NZeq ==> iff) NZle.
-Instance NZmin_wd : Proper (NZeq ==> NZeq ==> NZeq) NZmin.
-Instance NZmax_wd : Proper (NZeq ==> NZeq ==> NZeq) NZmax.
+Notation "x < y" := (lt x y) : NumScope.
+Notation "x <= y" := (le x y) : NumScope.
+Notation "x > y" := (lt y x) (only parsing) : NumScope.
+Notation "x >= y" := (le y x) (only parsing) : NumScope.
 
-Notation "x < y" := (NZlt x y) : NatIntScope.
-Notation "x <= y" := (NZle x y) : NatIntScope.
-Notation "x > y" := (NZlt y x) (only parsing) : NatIntScope.
-Notation "x >= y" := (NZle y x) (only parsing) : NatIntScope.
+Instance lt_wd : Proper (eq ==> eq ==> iff) lt.
+(** Compatibility of [le] can be proved later from [lt_wd] and [lt_eq_cases] *)
 
-Axiom NZlt_eq_cases : forall n m : NZ, n <= m <-> n < m \/ n == m.
-Axiom NZlt_irrefl : forall n : NZ, ~ (n < n).
-Axiom NZlt_succ_r : forall n m : NZ, n < S m <-> n <= m.
+Axiom lt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
+Axiom lt_irrefl : forall n, ~ (n < n).
+Axiom lt_succ_r : forall n m, n < S m <-> n <= m.
 
-Axiom NZmin_l : forall n m : NZ, n <= m -> NZmin n m == n.
-Axiom NZmin_r : forall n m : NZ, m <= n -> NZmin n m == m.
-Axiom NZmax_l : forall n m : NZ, m <= n -> NZmax n m == n.
-Axiom NZmax_r : forall n m : NZ, n <= m -> NZmax n m == m.
+Parameter Inline min : t -> t -> t.
+Parameter Inline max : t -> t -> t.
+(** Compatibility of [min] and [max] can be proved later *)
+Axiom min_l : forall n m, n <= m -> min n m == n.
+Axiom min_r : forall n m, m <= n -> min n m == m.
+Axiom max_l : forall n m, m <= n -> max n m == n.
+Axiom max_r : forall n m, n <= m -> max n m == m.
 
 End NZOrdAxiomsSig.

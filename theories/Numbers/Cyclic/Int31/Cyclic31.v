@@ -1182,11 +1182,11 @@ End Int31_Op.
 
 Section Int31_Spec.
 
- Open Local Scope Z_scope.
+ Local Open Scope Z_scope.
 
  Notation "[| x |]" := (phi x)  (at level 0, x at level 99).
 
- Notation Local wB := (2 ^ (Z_of_nat size)).
+ Local Notation wB := (2 ^ (Z_of_nat size)).
 
  Lemma wB_pos : wB > 0.
  Proof.

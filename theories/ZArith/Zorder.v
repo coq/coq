@@ -446,6 +446,11 @@ Proof.
     [ assumption | apply Zgt_succ ].
 Qed.
 
+Lemma Zlt_succ_r : forall n m, n < Zsucc m <-> n <= m.
+Proof.
+  split; [apply Zlt_succ_le | apply Zle_lt_succ].
+Qed.
+
 (** Weakening order *)
 
 Lemma Zle_succ : forall n:Z, n <= Zsucc n.

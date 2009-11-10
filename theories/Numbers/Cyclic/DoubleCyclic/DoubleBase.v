@@ -16,7 +16,7 @@ Require Import ZArith.
 Require Import BigNumPrelude.
 Require Import DoubleType.
 
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 Section DoubleBase.
  Variable w : Type.

@@ -10,7 +10,7 @@
 
 (*i $Id$ i*)
 
-Open Local Scope type_scope.
+Local Open Scope type_scope.
 
 Require Import List.
 

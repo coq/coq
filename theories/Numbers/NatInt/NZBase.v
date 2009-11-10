@@ -12,41 +12,48 @@
 
 Require Import NZAxioms.
 
-Module NZBasePropFunct (Import NZAxiomsMod : NZAxiomsSig).
-Open Local Scope NatIntScope.
+Module NZBasePropFunct (Import NZ : NZAxiomsSig).
+Local Open Scope NumScope.
 
-Theorem NZneq_sym : forall n m : NZ, n ~= m -> m ~= n.
+Definition eq_refl := @Equivalence_Reflexive _ _ eq_equiv.
+Definition eq_sym := @Equivalence_Symmetric _ _ eq_equiv.
+Definition eq_trans := @Equivalence_Transitive _ _ eq_equiv.
+
+(* TODO: how register ~= (which is just a notation) as a Symmetric relation,
+    hence allowing "symmetry" tac ? *)
+
+Theorem neq_sym : forall n m, n ~= m -> m ~= n.
 Proof.
 intros n m H1 H2; symmetry in H2; false_hyp H2 H1.
 Qed.
 
-Theorem NZE_stepl : forall x y z : NZ, x == y -> x == z -> z == y.
+Theorem eq_stepl : forall x y z, x == y -> x == z -> z == y.
 Proof.
 intros x y z H1 H2; now rewrite <- H1.
 Qed.
 
-Declare Left Step NZE_stepl.
-(* The right step lemma is just the transitivity of NZeq *)
-Declare Right Step (@Equivalence_Transitive _ _ NZeq_equiv).
+Declare Left Step eq_stepl.
+(* The right step lemma is just the transitivity of eq *)
+Declare Right Step (@Equivalence_Transitive _ _ eq_equiv).
 
-Theorem NZsucc_inj : forall n1 n2 : NZ, S n1 == S n2 -> n1 == n2.
+Theorem succ_inj : forall n1 n2, S n1 == S n2 -> n1 == n2.
 Proof.
 intros n1 n2 H.
-apply NZpred_wd in H. now do 2 rewrite NZpred_succ in H.
+apply pred_wd in H. now do 2 rewrite pred_succ in H.
 Qed.
 
 (* The following theorem is useful as an equivalence for proving
 bidirectional induction steps *)
-Theorem NZsucc_inj_wd : forall n1 n2 : NZ, S n1 == S n2 <-> n1 == n2.
+Theorem succ_inj_wd : forall n1 n2, S n1 == S n2 <-> n1 == n2.
 Proof.
 intros; split.
-apply NZsucc_inj.
-apply NZsucc_wd.
+apply succ_inj.
+apply succ_wd.
 Qed.
 
-Theorem NZsucc_inj_wd_neg : forall n m : NZ, S n ~= S m <-> n ~= m.
+Theorem succ_inj_wd_neg : forall n m, S n ~= S m <-> n ~= m.
 Proof.
-intros; now rewrite NZsucc_inj_wd.
+intros; now rewrite succ_inj_wd.
 Qed.
 
 (* We cannot prove that the predecessor is injective, nor that it is
@@ -54,28 +61,27 @@ left-inverse to the successor at this point *)
 
 Section CentralInduction.
 
-Variable A : predicate NZ.
+Variable A : predicate t.
+Hypothesis A_wd : Proper (eq==>iff) A.
 
-Hypothesis A_wd : Proper (NZeq==>iff) A.
-
-Theorem NZcentral_induction :
-  forall z : NZ, A z ->
-    (forall n : NZ, A n <-> A (S n)) ->
-      forall n : NZ, A n.
+Theorem central_induction :
+  forall z, A z ->
+    (forall n, A n <-> A (S n)) ->
+      forall n, A n.
 Proof.
-intros z Base Step; revert Base; pattern z; apply NZinduction.
+intros z Base Step; revert Base; pattern z; apply bi_induction.
 solve_predicate_wd.
-intro; now apply NZinduction.
+intro; now apply bi_induction.
 intro; pose proof (Step n); tauto.
 Qed.
 
 End CentralInduction.
 
-Tactic Notation "NZinduct" ident(n) :=
-  induction_maker n ltac:(apply NZinduction).
+Tactic Notation "nzinduct" ident(n) :=
+  induction_maker n ltac:(apply bi_induction).
 
-Tactic Notation "NZinduct" ident(n) constr(u) :=
-  induction_maker n ltac:(apply NZcentral_induction with (z := u)).
+Tactic Notation "nzinduct" ident(n) constr(u) :=
+  induction_maker n ltac:(apply central_induction with (z := u)).
 
 End NZBasePropFunct.
 

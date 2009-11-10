@@ -15,15 +15,15 @@ and proves its properties *)
 
 Require Export NSub.
 
-Module NStrongRecPropFunct (Import NAxiomsMod : NAxiomsSig).
-Module Export NSubPropMod := NSubPropFunct NAxiomsMod.
-Open Local Scope NatScope.
+Module NStrongRecPropFunct (Import N : NAxiomsSig).
+Include NSubPropFunct N.
+Local Open Scope NumScope.
 
 Section StrongRecursion.
 
 Variable A : Type.
 Variable Aeq : relation A.
-Context (Aeq_equiv : Equivalence Aeq).
+Variable Aeq_equiv : Equivalence Aeq.
 
 (** [strong_rec] allows to define a recursive function [phi] given by
     an equation [phi(n) = F(phi)(n)] where recursive calls to [phi]
@@ -37,13 +37,13 @@ Context (Aeq_equiv : Equivalence Aeq).
       that coincide with [phi] for numbers strictly less than [n].
 *)
 
-Definition strong_rec (a : A) (f : (N -> A) -> N -> A) (n : N) : A :=
+Definition strong_rec (a : A) (f : (N.t -> A) -> N.t -> A) (n : N.t) : A :=
  recursion (fun _ => a) (fun _ => f) (S n) n.
 
 (** For convenience, we use in proofs an intermediate definition
     between [recursion] and [strong_rec]. *)
 
-Definition strong_rec0 (a : A) (f : (N -> A) -> N -> A) : N -> N -> A :=
+Definition strong_rec0 (a : A) (f : (N.t -> A) -> N.t -> A) : N.t -> N.t -> A :=
  recursion (fun _ => a) (fun _ => f).
 
 Lemma strong_rec_alt : forall a f n,
@@ -54,13 +54,13 @@ Qed.
 
 (** We need a result similar to [f_equal], but for setoid equalities. *)
 Lemma f_equiv : forall f g x y,
- (Neq==>Aeq)%signature f g -> Neq x y -> Aeq (f x) (g y).
+ (N.eq==>Aeq)%signature f g -> N.eq x y -> Aeq (f x) (g y).
 Proof.
 auto.
 Qed.
 
 Instance strong_rec0_wd :
- Proper (Aeq ==> ((Neq ==> Aeq) ==> Neq ==> Aeq) ==> Neq ==> Neq ==> Aeq)
+ Proper (Aeq ==> ((N.eq ==> Aeq) ==> N.eq ==> Aeq) ==> N.eq ==> N.eq ==> Aeq)
   strong_rec0.
 Proof.
 unfold strong_rec0.
@@ -70,7 +70,7 @@ apply recursion_wd; try red; auto.
 Qed.
 
 Instance strong_rec_wd :
- Proper (Aeq ==> ((Neq ==> Aeq) ==> Neq ==> Aeq) ==> Neq ==> Aeq) strong_rec.
+ Proper (Aeq ==> ((N.eq ==> Aeq) ==> N.eq ==> Aeq) ==> N.eq ==> Aeq) strong_rec.
 Proof.
 intros a a' Eaa' f f' Eff' n n' Enn'.
 rewrite !strong_rec_alt.
@@ -80,8 +80,8 @@ Qed.
 
 Section FixPoint.
 
-Variable f : (N -> A) -> N -> A.
-Context (f_wd : Proper ((Neq==>Aeq)==>Neq==>Aeq) f).
+Variable f : (N.t -> A) -> N.t -> A.
+Variable f_wd : Proper ((N.eq==>Aeq)==>N.eq==>Aeq) f.
 
 Lemma strong_rec0_0 : forall a m,
  (strong_rec0 a f 0 m) = a.
@@ -112,8 +112,8 @@ calls h only on the segment [0 ... n - 1]. This means that if h1 and h2
 coincide on values < n, then (f h1 n) coincides with (f h2 n) *)
 
 Hypothesis step_good :
-  forall (n : N) (h1 h2 : N -> A),
-    (forall m : N, m < n -> Aeq (h1 m) (h2 m)) -> Aeq (f h1 n) (f h2 n).
+  forall (n : N.t) (h1 h2 : N.t -> A),
+    (forall m : N.t, m < n -> Aeq (h1 m) (h2 m)) -> Aeq (f h1 n) (f h2 n).
 
 Lemma strong_rec0_more_steps : forall a k n m, m < n ->
  Aeq (strong_rec0 a f n m) (strong_rec0 a f (n+k) m).
@@ -135,7 +135,7 @@ Proof.
  apply lt_le_trans with m; auto.
 Qed.
 
-Lemma strong_rec0_fixpoint : forall (a : A) (n : N),
+Lemma strong_rec0_fixpoint : forall (a : A) (n : N.t),
  Aeq (strong_rec0 a f (S n) n) (f (fun n => strong_rec0 a f (S n) n) n).
 Proof.
 intros.
@@ -152,7 +152,7 @@ apply sub_add.
 rewrite le_succ_l; auto.
 Qed.
 
-Theorem strong_rec_fixpoint : forall (a : A) (n : N),
+Theorem strong_rec_fixpoint : forall (a : A) (n : N.t),
  Aeq (strong_rec a f n) (f (strong_rec a f) n).
 Proof.
 intros.
@@ -168,7 +168,7 @@ Qed.
     that the first argument of [f] is arbitrary in this case...
 *)
 
-Theorem strong_rec_0_any : forall (a : A)(any : N->A),
+Theorem strong_rec_0_any : forall (a : A)(any : N.t->A),
  Aeq (strong_rec a f 0) (f any 0).
 Proof.
 intros.

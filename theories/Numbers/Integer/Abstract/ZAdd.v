@@ -12,334 +12,283 @@
 
 Require Export ZBase.
 
-Module ZAddPropFunct (Import ZAxiomsMod : ZAxiomsSig).
-Module Export ZBasePropMod := ZBasePropFunct ZAxiomsMod.
-Open Local Scope IntScope.
+Module ZAddPropFunct (Import Z : ZAxiomsSig).
+Include ZBasePropFunct Z.
+Local Open Scope NumScope.
 
-Theorem Zadd_wd :
-  forall n1 n2 : Z, n1 == n2 -> forall m1 m2 : Z, m1 == m2 -> n1 + m1 == n2 + m2.
-Proof NZadd_wd.
+(** Theorems that are either not valid on N or have different proofs
+    on N and Z *)
 
-Theorem Zadd_0_l : forall n : Z, 0 + n == n.
-Proof NZadd_0_l.
-
-Theorem Zadd_succ_l : forall n m : Z, (S n) + m == S (n + m).
-Proof NZadd_succ_l.
-
-Theorem Zsub_0_r : forall n : Z, n - 0 == n.
-Proof NZsub_0_r.
-
-Theorem Zsub_succ_r : forall n m : Z, n - (S m) == P (n - m).
-Proof NZsub_succ_r.
-
-Theorem Zopp_0 : - 0 == 0.
-Proof Zopp_0.
-
-Theorem Zopp_succ : forall n : Z, - (S n) == P (- n).
-Proof Zopp_succ.
-
-(* Theorems that are valid for both natural numbers and integers *)
-
-Theorem Zadd_0_r : forall n : Z, n + 0 == n.
-Proof NZadd_0_r.
-
-Theorem Zadd_succ_r : forall n m : Z, n + S m == S (n + m).
-Proof NZadd_succ_r.
-
-Theorem Zadd_comm : forall n m : Z, n + m == m + n.
-Proof NZadd_comm.
-
-Theorem Zadd_assoc : forall n m p : Z, n + (m + p) == (n + m) + p.
-Proof NZadd_assoc.
-
-Theorem Zadd_shuffle1 : forall n m p q : Z, (n + m) + (p + q) == (n + p) + (m + q).
-Proof NZadd_shuffle1.
-
-Theorem Zadd_shuffle2 : forall n m p q : Z, (n + m) + (p + q) == (n + q) + (m + p).
-Proof NZadd_shuffle2.
-
-Theorem Zadd_1_l : forall n : Z, 1 + n == S n.
-Proof NZadd_1_l.
-
-Theorem Zadd_1_r : forall n : Z, n + 1 == S n.
-Proof NZadd_1_r.
-
-Theorem Zadd_cancel_l : forall n m p : Z, p + n == p + m <-> n == m.
-Proof NZadd_cancel_l.
-
-Theorem Zadd_cancel_r : forall n m p : Z, n + p == m + p <-> n == m.
-Proof NZadd_cancel_r.
-
-(* Theorems that are either not valid on N or have different proofs on N and Z *)
-
-Theorem Zadd_pred_l : forall n m : Z, P n + m == P (n + m).
+Theorem add_pred_l : forall n m, P n + m == P (n + m).
 Proof.
 intros n m.
-rewrite <- (Zsucc_pred n) at 2.
-rewrite Zadd_succ_l. now rewrite Zpred_succ.
+rewrite <- (succ_pred n) at 2.
+rewrite add_succ_l. now rewrite pred_succ.
 Qed.
 
-Theorem Zadd_pred_r : forall n m : Z, n + P m == P (n + m).
+Theorem add_pred_r : forall n m, n + P m == P (n + m).
 Proof.
-intros n m; rewrite (Zadd_comm n (P m)), (Zadd_comm n m);
-apply Zadd_pred_l.
+intros n m; rewrite (add_comm n (P m)), (add_comm n m);
+apply add_pred_l.
 Qed.
 
-Theorem Zadd_opp_r : forall n m : Z, n + (- m) == n - m.
+Theorem add_opp_r : forall n m, n + (- m) == n - m.
 Proof.
-NZinduct m.
-rewrite Zopp_0; rewrite Zsub_0_r; now rewrite Zadd_0_r.
-intro m. rewrite Zopp_succ, Zsub_succ_r, Zadd_pred_r; now rewrite Zpred_inj_wd.
+nzinduct m.
+rewrite opp_0; rewrite sub_0_r; now rewrite add_0_r.
+intro m. rewrite opp_succ, sub_succ_r, add_pred_r; now rewrite pred_inj_wd.
 Qed.
 
-Theorem Zsub_0_l : forall n : Z, 0 - n == - n.
+Theorem sub_0_l : forall n, 0 - n == - n.
 Proof.
-intro n; rewrite <- Zadd_opp_r; now rewrite Zadd_0_l.
+intro n; rewrite <- add_opp_r; now rewrite add_0_l.
 Qed.
 
-Theorem Zsub_succ_l : forall n m : Z, S n - m == S (n - m).
+Theorem sub_succ_l : forall n m, S n - m == S (n - m).
 Proof.
-intros n m; do 2 rewrite <- Zadd_opp_r; now rewrite Zadd_succ_l.
+intros n m; do 2 rewrite <- add_opp_r; now rewrite add_succ_l.
 Qed.
 
-Theorem Zsub_pred_l : forall n m : Z, P n - m == P (n - m).
+Theorem sub_pred_l : forall n m, P n - m == P (n - m).
 Proof.
-intros n m. rewrite <- (Zsucc_pred n) at 2.
-rewrite Zsub_succ_l; now rewrite Zpred_succ.
+intros n m. rewrite <- (succ_pred n) at 2.
+rewrite sub_succ_l; now rewrite pred_succ.
 Qed.
 
-Theorem Zsub_pred_r : forall n m : Z, n - (P m) == S (n - m).
+Theorem sub_pred_r : forall n m, n - (P m) == S (n - m).
 Proof.
-intros n m. rewrite <- (Zsucc_pred m) at 2.
-rewrite Zsub_succ_r; now rewrite Zsucc_pred.
+intros n m. rewrite <- (succ_pred m) at 2.
+rewrite sub_succ_r; now rewrite succ_pred.
 Qed.
 
-Theorem Zopp_pred : forall n : Z, - (P n) == S (- n).
+Theorem opp_pred : forall n, - (P n) == S (- n).
 Proof.
-intro n. rewrite <- (Zsucc_pred n) at 2.
-rewrite Zopp_succ. now rewrite Zsucc_pred.
+intro n. rewrite <- (succ_pred n) at 2.
+rewrite opp_succ. now rewrite succ_pred.
 Qed.
 
-Theorem Zsub_diag : forall n : Z, n - n == 0.
+Theorem sub_diag : forall n, n - n == 0.
 Proof.
-NZinduct n.
-now rewrite Zsub_0_r.
-intro n. rewrite Zsub_succ_r, Zsub_succ_l; now rewrite Zpred_succ.
+nzinduct n.
+now rewrite sub_0_r.
+intro n. rewrite sub_succ_r, sub_succ_l; now rewrite pred_succ.
 Qed.
 
-Theorem Zadd_opp_diag_l : forall n : Z, - n + n == 0.
+Theorem add_opp_diag_l : forall n, - n + n == 0.
 Proof.
-intro n; now rewrite Zadd_comm, Zadd_opp_r, Zsub_diag.
+intro n; now rewrite add_comm, add_opp_r, sub_diag.
 Qed.
 
-Theorem Zadd_opp_diag_r : forall n : Z, n + (- n) == 0.
+Theorem add_opp_diag_r : forall n, n + (- n) == 0.
 Proof.
-intro n; rewrite Zadd_comm; apply Zadd_opp_diag_l.
+intro n; rewrite add_comm; apply add_opp_diag_l.
 Qed.
 
-Theorem Zadd_opp_l : forall n m : Z, - m + n == n - m.
+Theorem add_opp_l : forall n m, - m + n == n - m.
 Proof.
-intros n m; rewrite <- Zadd_opp_r; now rewrite Zadd_comm.
+intros n m; rewrite <- add_opp_r; now rewrite add_comm.
 Qed.
 
-Theorem Zadd_sub_assoc : forall n m p : Z, n + (m - p) == (n + m) - p.
+Theorem add_sub_assoc : forall n m p, n + (m - p) == (n + m) - p.
 Proof.
-intros n m p; do 2 rewrite <- Zadd_opp_r; now rewrite Zadd_assoc.
+intros n m p; do 2 rewrite <- add_opp_r; now rewrite add_assoc.
 Qed.
 
-Theorem Zopp_involutive : forall n : Z, - (- n) == n.
+Theorem opp_involutive : forall n, - (- n) == n.
 Proof.
-NZinduct n.
-now do 2 rewrite Zopp_0.
-intro n. rewrite Zopp_succ, Zopp_pred; now rewrite Zsucc_inj_wd.
+nzinduct n.
+now do 2 rewrite opp_0.
+intro n. rewrite opp_succ, opp_pred; now rewrite succ_inj_wd.
 Qed.
 
-Theorem Zopp_add_distr : forall n m : Z, - (n + m) == - n + (- m).
+Theorem opp_add_distr : forall n m, - (n + m) == - n + (- m).
 Proof.
-intros n m; NZinduct n.
-rewrite Zopp_0; now do 2 rewrite Zadd_0_l.
-intro n. rewrite Zadd_succ_l; do 2 rewrite Zopp_succ; rewrite Zadd_pred_l.
-now rewrite Zpred_inj_wd.
+intros n m; nzinduct n.
+rewrite opp_0; now do 2 rewrite add_0_l.
+intro n. rewrite add_succ_l; do 2 rewrite opp_succ; rewrite add_pred_l.
+now rewrite pred_inj_wd.
 Qed.
 
-Theorem Zopp_sub_distr : forall n m : Z, - (n - m) == - n + m.
+Theorem opp_sub_distr : forall n m, - (n - m) == - n + m.
 Proof.
-intros n m; rewrite <- Zadd_opp_r, Zopp_add_distr.
-now rewrite Zopp_involutive.
+intros n m; rewrite <- add_opp_r, opp_add_distr.
+now rewrite opp_involutive.
 Qed.
 
-Theorem Zopp_inj : forall n m : Z, - n == - m -> n == m.
+Theorem opp_inj : forall n m, - n == - m -> n == m.
 Proof.
-intros n m H. apply Zopp_wd in H. now do 2 rewrite Zopp_involutive in H.
+intros n m H. apply opp_wd in H. now do 2 rewrite opp_involutive in H.
 Qed.
 
-Theorem Zopp_inj_wd : forall n m : Z, - n == - m <-> n == m.
+Theorem opp_inj_wd : forall n m, - n == - m <-> n == m.
 Proof.
-intros n m; split; [apply Zopp_inj | apply Zopp_wd].
+intros n m; split; [apply opp_inj | apply opp_wd].
 Qed.
 
-Theorem Zeq_opp_l : forall n m : Z, - n == m <-> n == - m.
+Theorem eq_opp_l : forall n m, - n == m <-> n == - m.
 Proof.
-intros n m. now rewrite <- (Zopp_inj_wd (- n) m), Zopp_involutive.
+intros n m. now rewrite <- (opp_inj_wd (- n) m), opp_involutive.
 Qed.
 
-Theorem Zeq_opp_r : forall n m : Z, n == - m <-> - n == m.
+Theorem eq_opp_r : forall n m, n == - m <-> - n == m.
 Proof.
-symmetry; apply Zeq_opp_l.
+symmetry; apply eq_opp_l.
 Qed.
 
-Theorem Zsub_add_distr : forall n m p : Z, n - (m + p) == (n - m) - p.
+Theorem sub_add_distr : forall n m p, n - (m + p) == (n - m) - p.
 Proof.
-intros n m p; rewrite <- Zadd_opp_r, Zopp_add_distr, Zadd_assoc.
-now do 2 rewrite Zadd_opp_r.
+intros n m p; rewrite <- add_opp_r, opp_add_distr, add_assoc.
+now do 2 rewrite add_opp_r.
 Qed.
 
-Theorem Zsub_sub_distr : forall n m p : Z, n - (m - p) == (n - m) + p.
+Theorem sub_sub_distr : forall n m p, n - (m - p) == (n - m) + p.
 Proof.
-intros n m p; rewrite <- Zadd_opp_r, Zopp_sub_distr, Zadd_assoc.
-now rewrite Zadd_opp_r.
+intros n m p; rewrite <- add_opp_r, opp_sub_distr, add_assoc.
+now rewrite add_opp_r.
 Qed.
 
-Theorem sub_opp_l : forall n m : Z, - n - m == - m - n.
+Theorem sub_opp_l : forall n m, - n - m == - m - n.
 Proof.
-intros n m. do 2 rewrite <- Zadd_opp_r. now rewrite Zadd_comm.
+intros n m. do 2 rewrite <- add_opp_r. now rewrite add_comm.
 Qed.
 
-Theorem Zsub_opp_r : forall n m : Z, n - (- m) == n + m.
+Theorem sub_opp_r : forall n m, n - (- m) == n + m.
 Proof.
-intros n m; rewrite <- Zadd_opp_r; now rewrite Zopp_involutive.
+intros n m; rewrite <- add_opp_r; now rewrite opp_involutive.
 Qed.
 
-Theorem Zadd_sub_swap : forall n m p : Z, n + m - p == n - p + m.
+Theorem add_sub_swap : forall n m p, n + m - p == n - p + m.
 Proof.
-intros n m p. rewrite <- Zadd_sub_assoc, <- (Zadd_opp_r n p), <- Zadd_assoc.
-now rewrite Zadd_opp_l.
+intros n m p. rewrite <- add_sub_assoc, <- (add_opp_r n p), <- add_assoc.
+now rewrite add_opp_l.
 Qed.
 
-Theorem Zsub_cancel_l : forall n m p : Z, n - m == n - p <-> m == p.
+Theorem sub_cancel_l : forall n m p, n - m == n - p <-> m == p.
 Proof.
-intros n m p. rewrite <- (Zadd_cancel_l (n - m) (n - p) (- n)).
-do 2 rewrite Zadd_sub_assoc. rewrite Zadd_opp_diag_l; do 2 rewrite Zsub_0_l.
-apply Zopp_inj_wd.
+intros n m p. rewrite <- (add_cancel_l (n - m) (n - p) (- n)).
+do 2 rewrite add_sub_assoc. rewrite add_opp_diag_l; do 2 rewrite sub_0_l.
+apply opp_inj_wd.
 Qed.
 
-Theorem Zsub_cancel_r : forall n m p : Z, n - p == m - p <-> n == m.
-Proof.
-intros n m p.
-stepl (n - p + p == m - p + p) by apply Zadd_cancel_r.
-now do 2 rewrite <- Zsub_sub_distr, Zsub_diag, Zsub_0_r.
-Qed.
-
-(* The next several theorems are devoted to moving terms from one side of
-an equation to the other. The name contains the operation in the original
-equation (add or sub) and the indication whether the left or right term
-is moved. *)
-
-Theorem Zadd_move_l : forall n m p : Z, n + m == p <-> m == p - n.
+Theorem sub_cancel_r : forall n m p, n - p == m - p <-> n == m.
 Proof.
 intros n m p.
-stepl (n + m - n == p - n) by apply Zsub_cancel_r.
-now rewrite Zadd_comm, <- Zadd_sub_assoc, Zsub_diag, Zadd_0_r.
+stepl (n - p + p == m - p + p) by apply add_cancel_r.
+now do 2 rewrite <- sub_sub_distr, sub_diag, sub_0_r.
 Qed.
 
-Theorem Zadd_move_r : forall n m p : Z, n + m == p <-> n == p - m.
+(** The next several theorems are devoted to moving terms from one
+    side of an equation to the other. The name contains the operation
+    in the original equation ([add] or [sub]) and the indication
+    whether the left or right term is moved. *)
+
+Theorem add_move_l : forall n m p, n + m == p <-> m == p - n.
 Proof.
-intros n m p; rewrite Zadd_comm; now apply Zadd_move_l.
+intros n m p.
+stepl (n + m - n == p - n) by apply sub_cancel_r.
+now rewrite add_comm, <- add_sub_assoc, sub_diag, add_0_r.
 Qed.
 
-(* The two theorems above do not allow rewriting subformulas of the form
-n - m == p to n == p + m since subtraction is in the right-hand side of
-the equation. Hence the following two theorems. *)
-
-Theorem Zsub_move_l : forall n m p : Z, n - m == p <-> - m == p - n.
+Theorem add_move_r : forall n m p, n + m == p <-> n == p - m.
 Proof.
-intros n m p; rewrite <- (Zadd_opp_r n m); apply Zadd_move_l.
+intros n m p; rewrite add_comm; now apply add_move_l.
 Qed.
 
-Theorem Zsub_move_r : forall n m p : Z, n - m == p <-> n == p + m.
+(** The two theorems above do not allow rewriting subformulas of the
+    form [n - m == p] to [n == p + m] since subtraction is in the
+    right-hand side of the equation. Hence the following two
+    theorems. *)
+
+Theorem sub_move_l : forall n m p, n - m == p <-> - m == p - n.
 Proof.
-intros n m p; rewrite <- (Zadd_opp_r n m). now rewrite Zadd_move_r, Zsub_opp_r.
+intros n m p; rewrite <- (add_opp_r n m); apply add_move_l.
 Qed.
 
-Theorem Zadd_move_0_l : forall n m : Z, n + m == 0 <-> m == - n.
+Theorem sub_move_r : forall n m p, n - m == p <-> n == p + m.
 Proof.
-intros n m; now rewrite Zadd_move_l, Zsub_0_l.
+intros n m p; rewrite <- (add_opp_r n m). now rewrite add_move_r, sub_opp_r.
 Qed.
 
-Theorem Zadd_move_0_r : forall n m : Z, n + m == 0 <-> n == - m.
+Theorem add_move_0_l : forall n m, n + m == 0 <-> m == - n.
 Proof.
-intros n m; now rewrite Zadd_move_r, Zsub_0_l.
+intros n m; now rewrite add_move_l, sub_0_l.
 Qed.
 
-Theorem Zsub_move_0_l : forall n m : Z, n - m == 0 <-> - m == - n.
+Theorem add_move_0_r : forall n m, n + m == 0 <-> n == - m.
 Proof.
-intros n m. now rewrite Zsub_move_l, Zsub_0_l.
+intros n m; now rewrite add_move_r, sub_0_l.
 Qed.
 
-Theorem Zsub_move_0_r : forall n m : Z, n - m == 0 <-> n == m.
+Theorem sub_move_0_l : forall n m, n - m == 0 <-> - m == - n.
 Proof.
-intros n m. now rewrite Zsub_move_r, Zadd_0_l.
+intros n m. now rewrite sub_move_l, sub_0_l.
 Qed.
 
-(* The following section is devoted to cancellation of like terms. The name
-includes the first operator and the position of the term being canceled. *)
-
-Theorem Zadd_simpl_l : forall n m : Z, n + m - n == m.
+Theorem sub_move_0_r : forall n m, n - m == 0 <-> n == m.
 Proof.
-intros; now rewrite Zadd_sub_swap, Zsub_diag, Zadd_0_l.
+intros n m. now rewrite sub_move_r, add_0_l.
 Qed.
 
-Theorem Zadd_simpl_r : forall n m : Z, n + m - m == n.
+(** The following section is devoted to cancellation of like
+    terms. The name includes the first operator and the position of
+    the term being canceled. *)
+
+Theorem add_simpl_l : forall n m, n + m - n == m.
 Proof.
-intros; now rewrite <- Zadd_sub_assoc, Zsub_diag, Zadd_0_r.
+intros; now rewrite add_sub_swap, sub_diag, add_0_l.
 Qed.
 
-Theorem Zsub_simpl_l : forall n m : Z, - n - m + n == - m.
+Theorem add_simpl_r : forall n m, n + m - m == n.
 Proof.
-intros; now rewrite <- Zadd_sub_swap, Zadd_opp_diag_l, Zsub_0_l.
+intros; now rewrite <- add_sub_assoc, sub_diag, add_0_r.
 Qed.
 
-Theorem Zsub_simpl_r : forall n m : Z, n - m + m == n.
+Theorem sub_simpl_l : forall n m, - n - m + n == - m.
 Proof.
-intros; now rewrite <- Zsub_sub_distr, Zsub_diag, Zsub_0_r.
+intros; now rewrite <- add_sub_swap, add_opp_diag_l, sub_0_l.
 Qed.
 
-(* Now we have two sums or differences; the name includes the two operators
-and the position of the terms being canceled *)
-
-Theorem Zadd_add_simpl_l_l : forall n m p : Z, (n + m) - (n + p) == m - p.
+Theorem sub_simpl_r : forall n m, n - m + m == n.
 Proof.
-intros n m p. now rewrite (Zadd_comm n m), <- Zadd_sub_assoc,
-Zsub_add_distr, Zsub_diag, Zsub_0_l, Zadd_opp_r.
+intros; now rewrite <- sub_sub_distr, sub_diag, sub_0_r.
 Qed.
 
-Theorem Zadd_add_simpl_l_r : forall n m p : Z, (n + m) - (p + n) == m - p.
+(** Now we have two sums or differences; the name includes the two
+    operators and the position of the terms being canceled *)
+
+Theorem add_add_simpl_l_l : forall n m p, (n + m) - (n + p) == m - p.
 Proof.
-intros n m p. rewrite (Zadd_comm p n); apply Zadd_add_simpl_l_l.
+intros n m p. now rewrite (add_comm n m), <- add_sub_assoc,
+sub_add_distr, sub_diag, sub_0_l, add_opp_r.
 Qed.
 
-Theorem Zadd_add_simpl_r_l : forall n m p : Z, (n + m) - (m + p) == n - p.
+Theorem add_add_simpl_l_r : forall n m p, (n + m) - (p + n) == m - p.
 Proof.
-intros n m p. rewrite (Zadd_comm n m); apply Zadd_add_simpl_l_l.
+intros n m p. rewrite (add_comm p n); apply add_add_simpl_l_l.
 Qed.
 
-Theorem Zadd_add_simpl_r_r : forall n m p : Z, (n + m) - (p + m) == n - p.
+Theorem add_add_simpl_r_l : forall n m p, (n + m) - (m + p) == n - p.
 Proof.
-intros n m p. rewrite (Zadd_comm p m); apply Zadd_add_simpl_r_l.
+intros n m p. rewrite (add_comm n m); apply add_add_simpl_l_l.
 Qed.
 
-Theorem Zsub_add_simpl_r_l : forall n m p : Z, (n - m) + (m + p) == n + p.
+Theorem add_add_simpl_r_r : forall n m p, (n + m) - (p + m) == n - p.
 Proof.
-intros n m p. now rewrite <- Zsub_sub_distr, Zsub_add_distr, Zsub_diag,
-Zsub_0_l, Zsub_opp_r.
+intros n m p. rewrite (add_comm p m); apply add_add_simpl_r_l.
 Qed.
 
-Theorem Zsub_add_simpl_r_r : forall n m p : Z, (n - m) + (p + m) == n + p.
+Theorem sub_add_simpl_r_l : forall n m p, (n - m) + (m + p) == n + p.
 Proof.
-intros n m p. rewrite (Zadd_comm p m); apply Zsub_add_simpl_r_l.
+intros n m p. now rewrite <- sub_sub_distr, sub_add_distr, sub_diag,
+sub_0_l, sub_opp_r.
 Qed.
 
-(* Of course, there are many other variants *)
+Theorem sub_add_simpl_r_r : forall n m p, (n - m) + (p + m) == n + p.
+Proof.
+intros n m p. rewrite (add_comm p m); apply sub_add_simpl_r_l.
+Qed.
+
+(** Of course, there are many other variants *)
 
 End ZAddPropFunct.
 

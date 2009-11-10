@@ -10,25 +10,11 @@
 
 (*i $Id$ i*)
 
-Require Export Decidable.
-Require Export ZAxioms.
-Require Import NZProperties.
+Require Export NZAxioms NZMulOrder.
 
-Module ZBasePropFunct (Import Z : ZAxiomsSig).
-Include NZPropFunct Z.
-Local Open Scope NumScope.
+(** This functor summarizes all known facts about NZ.
+    For the moment it is only an alias to [NZMulOrderPropFunct], which
+    subsumes all others.
+*)
 
-(* Theorems that are true for integers but not for natural numbers *)
-
-Theorem pred_inj : forall n m, P n == P m -> n == m.
-Proof.
-intros n m H. apply succ_wd in H. now do 2 rewrite succ_pred in H.
-Qed.
-
-Theorem pred_inj_wd : forall n1 n2, P n1 == P n2 <-> n1 == n2.
-Proof.
-intros n1 n2; split; [apply pred_inj | apply pred_wd].
-Qed.
-
-End ZBasePropFunct.
-
+Module NZPropFunct := NZMulOrderPropFunct.

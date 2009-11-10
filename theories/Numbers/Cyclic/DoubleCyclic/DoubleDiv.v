@@ -20,7 +20,7 @@ Require Import DoubleDivn1.
 Require Import DoubleAdd.
 Require Import DoubleSub.
 
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 Ltac zarith := auto with zarith.
 

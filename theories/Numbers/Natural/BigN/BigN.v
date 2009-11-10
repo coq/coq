@@ -20,14 +20,14 @@ Require Import Cyclic31.
 Require Import NSig.
 Require Import NSigNAxioms.
 Require Import NMake.
-Require Import NSub.
+Require Import NProperties.
 
 Module BigN <: NType := NMake.Make Int31Cyclic.
 
 (** Module [BigN] implements [NAxiomsSig] *)
 
 Module Export BigNAxiomsMod := NSig_NAxioms BigN.
-Module Export BigNSubPropMod := NSubPropFunct BigNAxiomsMod.
+Module Export BigNPropMod := NPropFunct BigNAxiomsMod.
 
 (** Notations about [BigN] *)
 
@@ -38,7 +38,7 @@ Bind Scope bigN_scope with bigN.
 Bind Scope bigN_scope with BigN.t.
 Bind Scope bigN_scope with BigN.t_.
 
-Notation Local "0" := BigN.zero : bigN_scope. (* temporary notation *)
+Local Notation "0" := BigN.zero : bigN_scope. (* temporary notation *)
 Infix "+" := BigN.add : bigN_scope.
 Infix "-" := BigN.sub : bigN_scope.
 Infix "*" := BigN.mul : bigN_scope.
