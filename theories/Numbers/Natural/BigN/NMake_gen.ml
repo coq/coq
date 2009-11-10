@@ -1129,7 +1129,7 @@ let _ =
   pr "  end.";
   pr "";
 
-  pr " Theorem spec_pred: forall x, 0 < [x] -> [pred x] = [x] - 1.";
+  pr " Theorem spec_pred_pos : forall x, 0 < [x] -> [pred x] = [x] - 1.";
   pa " Admitted.";
   pp " Proof.";
   pp " intros x; case x; unfold pred.";
@@ -1172,8 +1172,17 @@ let _ =
   pp " case (spec_to_Z (wn_spec n) y1); intros HH3 HH4; auto with zarith.";
   pp " intros; exact (spec_0 w0_spec).";
   pp " Qed.";
-  pr " ";
+  pr "";
 
+  pr " Lemma spec_pred : forall x, [pred x] = Zmax 0 ([x]-1).";
+  pa " Admitted.";
+  pp " Proof.";
+  pp " intros. destruct (Zle_lt_or_eq _ _ (spec_pos x)).";
+  pp " rewrite Zmax_r; auto with zarith.";
+  pp " apply spec_pred_pos; auto.";
+  pp " rewrite <- H; apply spec_pred0; auto.";
+  pp " Qed.";
+  pr "";
 
   pr " (***************************************************************)";
   pr " (*                                                             *)";
@@ -1238,7 +1247,7 @@ let _ =
   pr "subn).";
   pr "";
 
-  pr " Theorem spec_sub: forall x y, [y] <= [x] -> [sub x y] = [x] - [y].";
+  pr " Theorem spec_sub_pos : forall x y, [y] <= [x] -> [sub x y] = [x] - [y].";
   pa " Admitted.";
   pp " Proof.";
   pp " unfold sub.";
@@ -1285,6 +1294,16 @@ let _ =
   pp " exact spec_wn_sub0.";
   pp " Qed.";
   pr "";
+
+  pr " Lemma spec_sub : forall x y, [sub x y] = Zmax 0 ([x]-[y]).";
+  pa " Admitted.";
+  pp " Proof.";
+  pp " intros. destruct (Zle_or_lt [y] [x]).";
+  pp " rewrite Zmax_r; auto with zarith. apply spec_sub_pos; auto.";
+  pp " rewrite Zmax_l; auto with zarith. apply spec_sub0; auto.";
+  pp " Qed.";
+  pr "";
+
 
 
   pr " (***************************************************************)";

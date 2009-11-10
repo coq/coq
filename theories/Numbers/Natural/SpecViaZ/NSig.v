@@ -69,13 +69,11 @@ Module Type NType.
 
  Parameter pred : t -> t.
 
- Parameter spec_pred: forall x, 0 < [x] -> [pred x] = [x] - 1.
- Parameter spec_pred0: forall x, [x] = 0 -> [pred x] = 0.
+ Parameter spec_pred: forall x, [pred x] = Zmax 0 ([x] - 1).
 
  Parameter sub : t -> t -> t.
 
- Parameter spec_sub: forall x y, [y] <= [x] -> [sub x y] = [x] - [y].
- Parameter spec_sub0: forall x y, [x] < [y]-> [sub x y] = 0.
+ Parameter spec_sub: forall x y, [sub x y] = Zmax 0 ([x] - [y]).
 
  Parameter mul : t -> t -> t.
 

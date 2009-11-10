@@ -17,59 +17,36 @@ Require Import NSig.
 
 Module NSig_NAxioms (N:NType) <: NAxiomsSig.
 
-Delimit Scope IntScope with Int.
-Bind Scope IntScope with N.t.
-Local Open Scope IntScope.
-Notation "[ x ]" := (N.to_Z x) : IntScope.
-Infix "=="  := N.eq (at level 70) : IntScope.
-Notation "0" := N.zero : IntScope.
-Infix "+" := N.add : IntScope.
-Infix "-" := N.sub : IntScope.
-Infix "*" := N.mul : IntScope.
+Delimit Scope NumScope with Num.
+Bind Scope NumScope with N.t.
+Local Open Scope NumScope.
+Notation "[ x ]" := (N.to_Z x) : NumScope.
+Infix "=="  := N.eq (at level 70) : NumScope.
+Notation "0" := N.zero : NumScope.
+Infix "+" := N.add : NumScope.
+Infix "-" := N.sub : NumScope.
+Infix "*" := N.mul : NumScope.
 
-Hint Rewrite N.spec_0 N.spec_succ N.spec_add N.spec_mul : int.
-Ltac isimpl := autorewrite with int.
+Hint Rewrite
+ N.spec_0 N.spec_succ N.spec_add N.spec_mul N.spec_pred N.spec_sub : num.
+Ltac nsimpl := autorewrite with num.
+Ltac ncongruence := unfold N.eq; repeat red; intros; nsimpl; congruence.
+
+Obligation Tactic := ncongruence.
 
 Instance eq_equiv : Equivalence N.eq.
 
-Instance succ_wd : Proper (N.eq==>N.eq) N.succ.
-Proof.
-unfold N.eq; repeat red; intros; isimpl; f_equal; auto.
-Qed.
-
-Instance pred_wd : Proper (N.eq==>N.eq) N.pred.
-Proof.
-unfold N.eq; repeat red; intros.
-generalize (N.spec_pos y) (N.spec_pos x) (N.spec_eq_bool x 0).
-destruct N.eq_bool; rewrite N.spec_0; intros.
-rewrite 2 N.spec_pred0; congruence.
-rewrite 2 N.spec_pred; f_equal; auto; try omega.
-Qed.
-
-Instance add_wd : Proper (N.eq==>N.eq==>N.eq) N.add.
-Proof.
-unfold N.eq; repeat red; intros; isimpl; f_equal; auto.
-Qed.
-
-Instance sub_wd : Proper (N.eq==>N.eq==>N.eq) N.sub.
-Proof.
-unfold N.eq; intros x x' Hx y y' Hy.
-destruct (Z_lt_le_dec [x] [y]).
-rewrite 2 N.spec_sub0; f_equal; congruence.
-rewrite 2 N.spec_sub; f_equal; congruence.
-Qed.
-
-Instance mul_wd : Proper (N.eq==>N.eq==>N.eq) N.mul.
-Proof.
-unfold N.eq; repeat red; intros; isimpl; f_equal; auto.
-Qed.
+Program Instance succ_wd : Proper (N.eq==>N.eq) N.succ.
+Program Instance pred_wd : Proper (N.eq==>N.eq) N.pred.
+Program Instance add_wd : Proper (N.eq==>N.eq==>N.eq) N.add.
+Program Instance sub_wd : Proper (N.eq==>N.eq==>N.eq) N.sub.
+Program Instance mul_wd : Proper (N.eq==>N.eq==>N.eq) N.mul.
 
 Theorem pred_succ : forall n, N.pred (N.succ n) == n.
 Proof.
 unfold N.eq; repeat red; intros.
 rewrite N.spec_pred; rewrite N.spec_succ.
-omega.
-generalize (N.spec_pos n); omega.
+generalize (N.spec_pos n); omega with *.
 Qed.
 
 Definition N_of_Z z := N.of_N (Zabs_N z).
@@ -118,52 +95,38 @@ End Induction.
 
 Theorem add_0_l : forall n, 0 + n == n.
 Proof.
-intros; red; isimpl; auto with zarith.
+intros; red; nsimpl; auto with zarith.
 Qed.
 
 Theorem add_succ_l : forall n m, (N.succ n) + m == N.succ (n + m).
 Proof.
-intros; red; isimpl; auto with zarith.
+intros; red; nsimpl; auto with zarith.
 Qed.
 
 Theorem sub_0_r : forall n, n - 0 == n.
 Proof.
-intros; red; rewrite N.spec_sub; rewrite N.spec_0; auto with zarith.
-apply N.spec_pos.
+intros; red; nsimpl. generalize (N.spec_pos n); omega with *.
 Qed.
 
 Theorem sub_succ_r : forall n m, n - (N.succ m) == N.pred (n - m).
 Proof.
-intros; red.
-destruct (Z_lt_le_dec [n] [N.succ m]) as [H|H].
-rewrite N.spec_sub0; auto.
-rewrite N.spec_succ in H.
-rewrite N.spec_pred0; auto.
-destruct (Z_eq_dec [n] [m]).
-rewrite N.spec_sub; auto with zarith.
-rewrite N.spec_sub0; auto with zarith.
-
-rewrite N.spec_sub, N.spec_succ in *; auto.
-rewrite N.spec_pred, N.spec_sub; auto with zarith.
-rewrite N.spec_sub; auto with zarith.
+intros; red; nsimpl. omega with *.
 Qed.
 
 Theorem mul_0_l : forall n, 0 * n == 0.
 Proof.
-intros; red.
-rewrite N.spec_mul, N.spec_0; auto with zarith.
+intros; red; nsimpl; auto with zarith.
 Qed.
 
 Theorem mul_succ_l : forall n m, (N.succ n) * m == n * m + m.
 Proof.
-intros; red.
-rewrite N.spec_add, 2 N.spec_mul, N.spec_succ; ring.
+intros; red; nsimpl. ring.
 Qed.
 
 (** Order *)
 
-Infix "<=" := N.le : IntScope.
-Infix "<" := N.lt : IntScope.
+Infix "<=" := N.le : NumScope.
+Infix "<" := N.lt : NumScope.
 
 Lemma spec_compare_alt : forall x y, N.compare x y = ([x] ?= [y])%Z.
 Proof.
@@ -223,33 +186,29 @@ Qed.
 
 Theorem min_l : forall n m, n <= m -> N.min n m == n.
 Proof.
-intros n m; unfold N.eq; rewrite spec_le, spec_min.
-generalize (Zmin_spec [n] [m]); omega.
+intros n m; red; rewrite spec_le, spec_min; omega with *.
 Qed.
 
 Theorem min_r : forall n m, m <= n -> N.min n m == m.
 Proof.
-intros n m; unfold N.eq; rewrite spec_le, spec_min.
-generalize (Zmin_spec [n] [m]); omega.
+intros n m; red; rewrite spec_le, spec_min; omega with *.
 Qed.
 
 Theorem max_l : forall n m, m <= n -> N.max n m == n.
 Proof.
-intros n m; unfold N.eq; rewrite spec_le, spec_max.
-generalize (Zmax_spec [n] [m]); omega.
+intros n m; red; rewrite spec_le, spec_max; omega with *.
 Qed.
 
 Theorem max_r : forall n m, n <= m -> N.max n m == m.
 Proof.
-intros n m; unfold N.eq; rewrite spec_le, spec_max.
-generalize (Zmax_spec [n] [m]); omega.
+intros n m; red; rewrite spec_le, spec_max; omega with *.
 Qed.
 
 (** Properties specific to natural numbers, not integers. *)
 
 Theorem pred_0 : N.pred 0 == 0.
 Proof.
-red; rewrite N.spec_pred0; rewrite N.spec_0; auto.
+red; nsimpl; auto.
 Qed.
 
 Definition recursion (A : Type) (a : A) (f : N.t -> A -> A) (n : N.t) :=

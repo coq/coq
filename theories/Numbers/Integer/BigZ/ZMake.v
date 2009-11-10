@@ -191,7 +191,7 @@ Module Make (N:NType) <: ZType.
  simpl; generalize (N.spec_compare N.zero x); case N.compare;
    rewrite N.spec_0; simpl.
   intros HH; rewrite <- HH; rewrite N.spec_1; ring.
-  intros HH; rewrite N.spec_pred; auto with zarith.
+  intros HH; rewrite N.spec_pred, Zmax_r; auto with zarith.
  generalize (N.spec_pos x); auto with zarith.
  Qed.
 
@@ -218,13 +218,13 @@ Module Make (N:NType) <: ZType.
    exact (N.spec_add x y).
  unfold zero; generalize (N.spec_compare x y); case N.compare.
    rewrite N.spec_0; auto with zarith.
- intros; rewrite N.spec_sub; try ring; auto with zarith.
- intros; rewrite N.spec_sub; try ring; auto with zarith.
+ intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
+ intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
  unfold zero; generalize (N.spec_compare x y); case N.compare.
    rewrite N.spec_0; auto with zarith.
- intros; rewrite N.spec_sub; try ring; auto with zarith.
- intros; rewrite N.spec_sub; try ring; auto with zarith.
- intros; rewrite N.spec_add; try ring; auto with zarith.
+ intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
+ intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
+ intros; rewrite N.spec_add; auto with zarith.
  Qed.
 
  Definition pred x :=
@@ -241,7 +241,7 @@ Module Make (N:NType) <: ZType.
  unfold pred, to_Z, minus_one; intros [x | x].
    generalize (N.spec_compare N.zero x); case N.compare;
      rewrite N.spec_0; try rewrite N.spec_1; auto with zarith.
-   intros H; exact (N.spec_pred _ H).
+   intros H; rewrite N.spec_pred, Zmax_r; auto with zarith.
  generalize (N.spec_pos x); auto with zarith.
  rewrite N.spec_succ; ring.
  Qed.
@@ -268,14 +268,14 @@ Module Make (N:NType) <: ZType.
  unfold sub, to_Z; intros [x | x] [y | y].
  unfold zero; generalize (N.spec_compare x y); case N.compare.
    rewrite N.spec_0; auto with zarith.
- intros; rewrite N.spec_sub; try ring; auto with zarith.
- intros; rewrite N.spec_sub; try ring; auto with zarith.
- rewrite N.spec_add; ring.
- rewrite N.spec_add; ring.
+ intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
+ intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
+ rewrite N.spec_add; auto with zarith.
+ rewrite N.spec_add; auto with zarith.
  unfold zero; generalize (N.spec_compare x y); case N.compare.
    rewrite N.spec_0; auto with zarith.
- intros; rewrite N.spec_sub; try ring; auto with zarith.
- intros; rewrite N.spec_sub; try ring; auto with zarith.
+ intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
+ intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
  Qed.
 
  Definition mul x y :=
@@ -398,7 +398,7 @@ Module Make (N:NType) <: ZType.
  rewrite N.spec_0; intros H2.
  change (- Zpos p) with (Zneg p); lazy iota beta.
  intros H3; rewrite <- H3; auto.
- rewrite N.spec_succ; rewrite N.spec_sub.
+ rewrite N.spec_succ; rewrite N.spec_sub, Zmax_r.
  generalize H2; case (N.to_Z r).
  intros; apply False_ind; auto with zarith.
  intros p2 _; rewrite He; auto with zarith.
@@ -430,7 +430,7 @@ Module Make (N:NType) <: ZType.
  rewrite N.spec_0; intros H2.
  change (- Zpos p1) with (Zneg p1); lazy iota beta.
  intros H3; rewrite <- H3; auto.
- rewrite N.spec_succ; rewrite N.spec_sub.
+ rewrite N.spec_succ; rewrite N.spec_sub, Zmax_r.
  generalize H2; case (N.to_Z r).
  intros; apply False_ind; auto with zarith.
  intros p2 _; rewrite He; auto with zarith.
