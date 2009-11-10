@@ -60,7 +60,7 @@ open Indrec
 
 let hid = id_of_string "H"
 let xid = id_of_string "X"
-let default_id_of_sort = function InProp _ | InSet -> hid | InType _ -> xid
+let default_id_of_sort = function InProp | InSet -> hid | InType -> xid
 let fresh env id = next_global_ident_away id []
 
 let build_dependent_inductive ind (mib,mip) =
