@@ -769,7 +769,7 @@ let tr_goal gl =
   hyps, c
 
 
-type prover = Simplify | Ergo | Yices | CVCLite | Harvey | Zenon | Gwhy | CVC3
+type prover = Simplify | Ergo | Yices | CVCLite | Harvey | Zenon | Gwhy | CVC3 | Z3
 
 let remove_files = List.iter (fun f -> try Sys.remove f with _ -> ())
 
@@ -808,6 +808,20 @@ let timeout_or_failure c cmd out =
     Failure
       (sprintf "command %s failed with output:\n%s " cmd (file_contents out))
 
+let call_prover ?(opt="") file =
+  if !debug then Format.eprintf "calling prover on %s@." file;
+  let out = Filename.temp_file "out" "" in
+  let cmd =
+    sprintf "why-dp -timeout %d -batch %s > %s 2>&1" !timeout file out in
+  match Sys.command cmd with
+      0 -> Valid None
+    | 1 -> Failure (sprintf "could not run why-dp\n%s" (file_contents out))
+    | 2 -> Invalid
+    | 3 -> DontKnow
+    | 4 -> Timeout
+    | 5 -> Failure (sprintf "prover failed:\n%s" (file_contents out))
+    | n -> Failure (sprintf "Unknown exit status of why-dp: %d" n)
+
 let prelude_files = ref ([] : string list)
 
 let set_prelude l = prelude_files := l
@@ -828,6 +842,7 @@ let call_simplify fwhy =
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fsx = Filename.chop_suffix fwhy ".why" ^ "_why.sx" in
+(*
   let cmd =
     sprintf "why-cpulimit %d Simplify %s > out 2>&1 && grep -q -w Valid out"
       !timeout fsx
@@ -836,6 +851,8 @@ let call_simplify fwhy =
   let r =
     if out = 0 then Valid None else if out = 1 then Invalid else Timeout
   in
+*)
+  let r = call_prover fsx in
   if not !debug then remove_files [fwhy; fsx];
   r
 
@@ -843,36 +860,27 @@ let call_ergo fwhy =
   let cmd = sprintf "why --alt-ergo %s" (why_files fwhy) in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fwhy = Filename.chop_suffix fwhy ".why" ^ "_why.why" in
-  let ftrace = Filename.temp_file "ergo_trace" "" in
+  (*let ftrace = Filename.temp_file "ergo_trace" "" in*)
+  (*NB: why-dp can't handle -cctrace
   let cmd =
     if !trace then
       sprintf "alt-ergo -cctrace %s %s" ftrace fwhy
+
     else
       sprintf "alt-ergo %s" fwhy
-  in
-  let ret,out = timeout_sys_command cmd in
-  let r =
-    if ret <> 0 then
-      timeout_or_failure ret cmd out
-    else if Sys.command (sprintf "grep -q -w Valid %s" out) = 0 then
-      Valid (if !trace then Some ftrace else None)
-    else if Sys.command (sprintf "grep -q -w \"I don't know\" %s" out) = 0 then
-      DontKnow
-    else if Sys.command (sprintf "grep -q -w \"Invalid\" %s" out) = 0 then
-      Invalid
-    else
-      Failure ("command failed: " ^ cmd)
-  in
-  if not !debug then remove_files [fwhy; out];
+  in*)
+  let r = call_prover fwhy in
+  if not !debug then remove_files [fwhy; (*out*)];
   r
 
 
 let call_zenon fwhy =
   let cmd =
-    sprintf "why --no-prelude --no-zenon-prelude --zenon %s" (why_files fwhy)
+    sprintf "why --no-zenon-prelude --zenon %s" (why_files fwhy)
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fznn = Filename.chop_suffix fwhy ".why" ^ "_why.znn" in
+(*  why-dp won't let us having coqterm...
   let out = Filename.temp_file "dp_out" "" in
   let cmd =
     sprintf "timeout %d zenon -ocoqterm %s > %s 2>&1" !timeout fznn out
@@ -888,7 +896,23 @@ let call_zenon fwhy =
     let c = Sys.command (sprintf "grep -q PROOF-FOUND %s" out) in
     if c = 0 then Valid (Some out) else Invalid
   end
+ *)
+   let r = call_prover fznn in
+   if not !debug then remove_files [fwhy; fznn];
+   r
 
+let call_smt ~smt fwhy =
+  let cmd = 
+    sprintf "why -smtlib --encoding sstrat %s" (why_files fwhy)
+  in
+  if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
+  let fsmt = Filename.chop_suffix fwhy ".why" ^ "_why.smt" in
+  let opt = "-smt-solver " ^ smt in
+  let r = call_prover ~opt fsmt in
+  if not !debug then remove_files [fwhy; fsmt];
+  r
+
+(*
 let call_yices fwhy =
   let cmd =
     sprintf "why -smtlib --encoding sstrat %s" (why_files fwhy)
@@ -922,6 +946,7 @@ let call_cvc3 fwhy =
   in
   if not !debug then remove_files [fwhy; fsmt];
   r
+*)
 
 let call_cvcl fwhy =
   let cmd =
@@ -929,6 +954,7 @@ let call_cvcl fwhy =
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fcvc = Filename.chop_suffix fwhy ".why" ^ "_why.cvc" in
+(*
   let cmd =
     sprintf "timeout %d cvcl < %s > out 2>&1 && grep -q -w Valid out"
       !timeout fcvc
@@ -937,6 +963,8 @@ let call_cvcl fwhy =
   let r =
     if out = 0 then Valid None else if out = 1 then Invalid else Timeout
   in
+*)
+  let r = call_prover fcvc in
   if not !debug then remove_files [fwhy; fcvc];
   r
 
@@ -946,6 +974,7 @@ let call_harvey fwhy =
   in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let frv = Filename.chop_suffix fwhy ".why" ^ "_why.rv" in
+(*
   let out = Sys.command (sprintf "rvc -e -t %s > /dev/null 2>&1" frv) in
   if out <> 0 then anomaly ("call to rvc -e -t " ^ frv ^ " failed");
   let f = Filename.chop_suffix frv ".rv" ^ "-0.baf" in
@@ -964,6 +993,9 @@ let call_harvey fwhy =
       if Sys.command cmd = 0 then Valid None else Invalid
   in
   if not !debug then remove_files [fwhy; frv; outf];
+*)
+  let r = call_prover frv in
+  if not !debug then remove_files [fwhy; frv];
   r
 
 let call_gwhy fwhy =
@@ -991,8 +1023,9 @@ let call_prover prover q =
   match prover with
     | Simplify -> call_simplify fwhy
     | Ergo -> call_ergo fwhy
-    | CVC3 -> call_cvc3 fwhy
-    | Yices -> call_yices fwhy
+    | CVC3 -> call_smt ~smt:"cvc3" fwhy
+    | Yices -> call_smt ~smt:"yices" fwhy
+    | Z3 -> call_smt ~smt:"z3" fwhy
     | Zenon -> call_zenon fwhy
     | CVCLite -> call_cvcl fwhy
     | Harvey -> call_harvey fwhy
@@ -1022,6 +1055,7 @@ let simplify = tclTHEN intros (dp Simplify)
 let ergo = tclTHEN intros (dp Ergo)
 let cvc3 = tclTHEN intros (dp CVC3)
 let yices = tclTHEN intros (dp Yices)
+let z3 = tclTHEN intros (dp Z3)
 let cvc_lite = tclTHEN intros (dp CVCLite)
 let harvey = dp Harvey
 let zenon = tclTHEN intros (dp Zenon)
