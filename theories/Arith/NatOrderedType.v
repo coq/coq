@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Lt Peano_dec Compare_dec
+Require Import Lt Peano_dec Compare_dec EqNat
  DecidableType2 OrderedType2 OrderedType2Facts.
 
 
@@ -17,10 +17,15 @@ Module Nat_as_MiniDT <: MiniDecidableType.
  Definition eq_dec := eq_nat_dec.
 End Nat_as_MiniDT.
 
-Module Nat_as_DT <: UsualDecidableType := Make_UDT Nat_as_MiniDT.
+Module Nat_as_DT <: UsualDecidableType.
+ Include Make_UDT Nat_as_MiniDT.
+ (** The next fields aren't mandatory but allow more subtyping. *)
+ Definition eqb := beq_nat.
+ Definition eqb_eq := beq_nat_true_iff.
+End Nat_as_DT.
 
-(** Note that [Nat_as_DT] can also be seen as a [DecidableType]
-    and a [DecidableTypeOrig]. *)
+(** Note that [Nat_as_DT] can also be seen as a [DecidableType],
+    or a [DecidableTypeOrig] or a [BooleanEqualityType]. *)
 
 
 

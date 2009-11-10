@@ -20,10 +20,14 @@ Module Q_as_DT <: DecidableType.
  Definition eq_dec := Qeq_dec.
 
  (** The next fields are not mandatory, but allow [Q_as_DT] to be
-     also a [DecidableTypeOrig]. *)
+     also a [DecidableTypeOrig] (resp. a [BooleanEqualityType]). *)
  Definition eq_refl := Qeq_refl.
  Definition eq_sym := Qeq_sym.
  Definition eq_trans := eq_trans.
+
+ Definition eqb := Qeq_bool.
+ Definition eqb_eq := Qeq_bool_iff.
+
 End Q_as_DT.
 
 

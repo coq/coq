@@ -13,7 +13,7 @@ Require Export RelationClasses.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-(** * Types with Equalities, and nothing more (for subtyping purpose) *)
+(** * Types with Equality, and nothing more (for subtyping purpose) *)
 
 Module Type EqualityType.
   Parameter Inline t : Type.
@@ -25,7 +25,7 @@ Module Type EqualityType.
   Hint Immediate (@Equivalence_Symmetric _ _ eq_equiv).
 End EqualityType.
 
-(** * Types with decidable Equalities (but no ordering) *)
+(** * Types with decidable Equality (but no ordering) *)
 
 Module Type DecidableType.
   Include Type EqualityType.
@@ -82,6 +82,7 @@ Module Update_DT (E:DecidableTypeOrig) <: DecidableType.
  Definition eq_dec := E.eq_dec.
 End Update_DT.
 
+
 (** * UsualDecidableType
 
    A particular case of [DecidableType] where the equality is
@@ -117,3 +118,35 @@ Module Make_UDT (M:MiniDecidableType) <: UsualDecidableType.
 End Make_UDT.
 
 
+(** * Boolean Equality *)
+
+(** Having [eq_dec] is the same as having a boolean equality plus
+    a correctness proof. *)
+
+Module Type BooleanEqualityType.
+ Include Type EqualityType.
+ Parameter Inline eqb : t -> t -> bool.
+ Parameter eqb_eq : forall x y, eqb x y = true <-> eq x y.
+End BooleanEqualityType.
+
+Module Bool_to_Dec (E:BooleanEqualityType) <: DecidableType.
+ Include E.
+ Lemma eq_dec : forall x y, {eq x y}+{~eq x y}.
+ Proof.
+  intros x y. assert (H:=eqb_eq x y).
+  destruct (eqb x y); [left|right].
+  apply -> H; auto.
+  intro EQ. apply H in EQ. discriminate.
+ Defined.
+End Bool_to_Dec.
+
+Module Dec_to_Bool (E:DecidableType) <: BooleanEqualityType.
+ Include E.
+ Definition eqb x y := if eq_dec x y then true else false.
+ Lemma eqb_eq : forall x y, eqb x y = true <-> eq x y.
+ Proof.
+  intros x y. unfold eqb. destruct eq_dec as [EQ|NEQ].
+  auto with *.
+  split. discriminate. intro EQ; elim NEQ; auto.
+ Qed.
+End Dec_to_Bool.

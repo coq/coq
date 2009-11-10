@@ -226,6 +226,11 @@ Qed.
 
 (** ** Properties of opposite on binary integer numbers *)
 
+Theorem Zopp_0 : Zopp Z0 = Z0.
+Proof.
+  reflexivity.
+Qed.
+
 Theorem Zopp_neg : forall p:positive, - Zneg p = Zpos p.
 Proof.
   reflexivity.

@@ -99,3 +99,18 @@ Lemma beq_nat_false : forall x y, beq_nat x y = false -> x<>y.
 Proof.
  induction x; destruct y; simpl; auto; intros; discriminate.
 Qed.
+
+Lemma beq_nat_true_iff : forall x y, beq_nat x y = true <-> x=y.
+Proof.
+ split. apply beq_nat_true.
+ intros; subst; symmetry; apply beq_nat_refl.
+Qed.
+
+Lemma beq_nat_false_iff : forall x y, beq_nat x y = false <-> x<>y.
+Proof.
+ intros x y.
+ split. apply beq_nat_false.
+ generalize (beq_nat_true_iff x y).
+ destruct beq_nat; auto.
+ intros IFF NEQ. elim NEQ. apply IFF; auto.
+Qed.

@@ -266,6 +266,17 @@ Definition Pmax (p p' : positive) := match Pcompare p p' Eq with
  | Gt => p
  end.
 
+(********************************************************************)
+(** Boolean equality *)
+
+Fixpoint Peqb (x y : positive) : bool :=
+ match x, y with
+ | 1, 1 => true
+ | p~1, q~1 => Peqb p q
+ | p~0, q~0 => Peqb p q
+ | _, _ => false
+ end.
+
 (**********************************************************************)
 (** Decidability of equality on binary positive numbers *)
 
@@ -722,6 +733,29 @@ Lemma Pmult_1_inversion_l : forall p q:positive, p * q = 1 -> p = 1.
 Proof.
   intros [p|p| ] [q|q| ] H; destr_eq H; auto.
 Qed.
+
+(*********************************************************************)
+(** Properties of boolean equality *)
+
+Theorem Peqb_refl : forall x:positive, Peqb x x = true.
+Proof.
+ induction x; auto.
+Qed.
+
+Theorem Peqb_true_eq : forall x y:positive, Peqb x y = true -> x=y.
+Proof.
+ induction x; destruct y; simpl; intros; try discriminate.
+ f_equal; auto.
+ f_equal; auto.
+ reflexivity.
+Qed.
+
+Theorem Peqb_eq : forall x y : positive, Peqb x y = true <-> x=y.
+Proof.
+ split. apply Peqb_true_eq.
+ intros; subst; apply Peqb_refl.
+Qed.
+
 
 (**********************************************************************)
 (** Properties of comparison on binary positive numbers *)

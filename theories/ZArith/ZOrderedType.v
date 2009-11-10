@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import BinInt Zcompare Zorder ZArith_dec
+Require Import BinInt Zcompare Zorder Zbool ZArith_dec
  DecidableType2 OrderedType2 OrderedType2Facts.
 
 Local Open Scope Z_scope.
@@ -18,10 +18,14 @@ Module Z_as_MiniDT <: MiniDecidableType.
  Definition eq_dec := Z_eq_dec.
 End Z_as_MiniDT.
 
-Module Z_as_DT <: UsualDecidableType := Make_UDT Z_as_MiniDT.
+Module Z_as_DT <: UsualDecidableType.
+ Include Make_UDT Z_as_MiniDT.
+ Definition eqb := Zeq_bool.
+ Definition eqb_eq x y := iff_sym (Zeq_is_eq_bool x y).
+End Z_as_DT.
 
 (** Note that [Z_as_DT] can also be seen as a [DecidableType]
-    and a [DecidableTypeOrig]. *)
+    and a [DecidableTypeOrig] and a [BooleanEqualityType] *)
 
 
 

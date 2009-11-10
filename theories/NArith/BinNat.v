@@ -106,6 +106,15 @@ Definition Nmult n m :=
 
 Infix "*" := Nmult : N_scope.
 
+(** Boolean Equality *)
+
+Definition Neqb n m :=
+ match n, m with
+  | N0, N0 => true
+  | Npos n, Npos m => Peqb n m
+  | _,_ => false
+ end.
+
 (** Order *)
 
 Definition Ncompare n m :=
@@ -362,6 +371,15 @@ destruct p; intros Hp H.
 contradiction Hp; reflexivity.
 destruct n; destruct m; reflexivity || (try discriminate H).
 injection H; clear H; intro H; rewrite Pmult_reg_r with (1 := H); reflexivity.
+Qed.
+
+(** Properties of boolean order. *)
+
+Lemma Neqb_eq : forall n m, Neqb n m = true <-> n=m.
+Proof.
+destruct n as [|n], m as [|m]; simpl; split; auto; try discriminate.
+intros; f_equal. apply (Peqb_eq n m); auto.
+intros. apply (Peqb_eq n m). congruence.
 Qed.
 
 (** Properties of comparison *)

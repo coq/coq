@@ -6,7 +6,20 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Require Import DecidableType2 SetoidList.
+Require Import DecidableType2 Bool SetoidList.
+
+(** In a BooleanEqualityType, [eqb] is compatible with [eq] *)
+
+Module BoolEqualityFacts (Import E : BooleanEqualityType).
+
+Instance eqb_compat : Proper (E.eq ==> E.eq ==> Logic.eq) eqb.
+Proof.
+intros x x' Exx' y y' Eyy'.
+apply eq_true_iff_eq.
+rewrite 2 eqb_eq, Exx', Eyy'; auto with *.
+Qed.
+
+End BoolEqualityFacts.
 
 
 (** * Keys and datas used in FMap *)

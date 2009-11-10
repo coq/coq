@@ -18,10 +18,14 @@ Module N_as_MiniDT <: MiniDecidableType.
  Definition eq_dec := N_eq_dec.
 End N_as_MiniDT.
 
-Module N_as_DT <: UsualDecidableType := Make_UDT N_as_MiniDT.
+Module N_as_DT <: UsualDecidableType.
+ Include Make_UDT N_as_MiniDT.
+ Definition eqb := Neqb.
+ Definition eqb_eq := Neqb_eq.
+End N_as_DT.
 
 (** Note that [N_as_DT] can also be seen as a [DecidableType]
-    and a [DecidableTypeOrig]. *)
+    and a [DecidableTypeOrig] and a [BooleanEqualityType] *)
 
 
 

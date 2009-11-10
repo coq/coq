@@ -18,13 +18,23 @@ Proof.
     intuition eauto 3.
 Qed.
 
+Definition Reqb r1 r2 := if Req_dec r1 r2 then true else false.
+Lemma Reqb_eq : forall r1 r2, Reqb r1 r2 = true <-> r1=r2.
+Proof.
+ intros; unfold Reqb; destruct Req_dec as [EQ|NEQ]; auto with *.
+ split; try discriminate. intro EQ; elim NEQ; auto.
+Qed.
 
 Module R_as_MiniDT <: MiniDecidableType.
  Definition t := R.
  Definition eq_dec := Req_dec.
 End R_as_MiniDT.
 
-Module R_as_DT <: UsualDecidableType := Make_UDT R_as_MiniDT.
+Module R_as_DT <: UsualDecidableType.
+ Include Make_UDT R_as_MiniDT.
+ Definition eqb := Reqb.
+ Definition eqb_eq := Reqb_eq.
+End R_as_DT.
 
 (** Note that [R_as_DT] can also be seen as a [DecidableType]
     and a [DecidableTypeOrig]. *)
@@ -79,6 +89,6 @@ Ltac r_order :=
  change (@eq R) with ROrder.OrderElts.eq in *;
  ROrder.order.
 
-(** Note that [z_order] is domain-agnostic: it will not prove
+(** Note that [r_order] is domain-agnostic: it will not prove
     [1<=2] or [x<=x+x], but rather things like [x<=y -> y<=x -> x=y]. *)
 

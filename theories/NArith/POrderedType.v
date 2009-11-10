@@ -18,10 +18,15 @@ Module Positive_as_MiniDT <: MiniDecidableType.
  Definition eq_dec := positive_eq_dec.
 End Positive_as_MiniDT.
 
-Module Positive_as_DT <: UsualDecidableType := Make_UDT Positive_as_MiniDT.
+Module Positive_as_DT <: UsualDecidableType.
+ Include Make_UDT Positive_as_MiniDT.
+ Definition eqb := Peqb.
+ Definition eqb_eq := Peqb_eq.
+End Positive_as_DT.
+
 
 (** Note that [Positive_as_DT] can also be seen as a [DecidableType]
-    and a [DecidableTypeOrig]. *)
+    and a [DecidableTypeOrig] and a [BooleanEqualityType]. *)
 
 
 
