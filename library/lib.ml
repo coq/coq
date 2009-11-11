@@ -168,9 +168,8 @@ let find_split_p p =
 
 let split_lib_gen test =
   let rec collect after equal = function
-    | hd::strict_before as before ->
-      	if test hd then collect after (hd::equal) strict_before else after,equal,before
-    | [] as before -> after,equal,before
+    | hd::before when test hd -> collect after (hd::equal) before
+    | before -> after,equal,before
   in
   let rec findeq after = function
     | hd :: before ->
@@ -191,7 +190,16 @@ let split_lib_gen test =
       | None -> error "no such entry"
       | Some r -> r
 
-let split_lib sp = split_lib_gen (fun x -> (fst x) = sp)
+let split_lib sp = split_lib_gen (fun x -> fst x = sp)
+
+let split_lib_at_opening sp =
+  let a,s,b = split_lib_gen (function
+    | x,(OpenedSection _|OpenedModule _|OpenedModtype _|CompilingLibrary _) ->
+	x = sp
+    | _ ->
+	false) in
+  assert (List.tl s = []);
+  (a,b)
 
 (* Adding operations. *)
 
@@ -289,9 +297,9 @@ let end_module () =
     with Not_found ->
       error "No opened modules."
   in
-  let (after,modopening,before) = split_lib oname in
+  let (after,before) = split_lib_at_opening oname in
   lib_stk := before;
-  add_entry oname (ClosedModule (List.rev_append after (List.rev modopening)));
+  add_entry oname (ClosedModule (List.rev after));
   let prefix = !path_prefix in
   (* LEM: This module business seems more complicated than sections;
           shouldn't a backtrack into a closed module also do something
@@ -324,9 +332,9 @@ let end_modtype () =
     with Not_found ->
       error "no opened module types"
   in
-  let (after,modtypeopening,before) = split_lib oname in
+  let (after,before) = split_lib_at_opening oname in
   lib_stk := before;
-  add_entry oname (ClosedModtype (List.rev_append after (List.rev modtypeopening)));
+  add_entry oname (ClosedModtype (List.rev after));
   let dir = !path_prefix in
   recalc_path_prefix ();
   (* add_frozen_state must be called after processing the module type.
@@ -386,7 +394,7 @@ let end_compilation dir =
 	    ("The current open module has name "^ (Names.string_of_dirpath m) ^
 	       " and not " ^ (Names.string_of_dirpath m));
   in
-  let (after,_,before) = split_lib oname in
+  let (after,before) = split_lib_at_opening oname in
     comp_name := None;
     !path_prefix,after
 
@@ -563,11 +571,11 @@ let close_section () =
     with Not_found ->
       error "No opened section."
   in
-  let (secdecls,secopening,before) = split_lib oname in
+  let (secdecls,before) = split_lib_at_opening oname in
   lib_stk := before;
   let full_olddir = fst !path_prefix in
   pop_path_prefix ();
-  add_entry oname (ClosedSection (List.rev_append secdecls (List.rev secopening)));
+  add_entry oname (ClosedSection (List.rev secdecls));
   if !Flags.xml_export then !xml_close_section (basename (fst oname));
   let newdecls = List.map discharge_item secdecls in
   Summary.unfreeze_summaries fs;
@@ -616,7 +624,7 @@ let reset_to_gen test =
   let (_,_,before) = split_lib_gen test in
   set_lib_stk before
 
-let reset_to sp = reset_to_gen (fun x -> (fst x) = sp)
+let reset_to sp = reset_to_gen (fun x -> fst x = sp)
 
 let reset_to_state sp =
   let (_,eq,before) = split_lib sp in
@@ -643,7 +651,7 @@ let delete_gen test =
  in
   set_lib_stk (List.rev_append (chop_at_dot after) (chop_before_dot before))
 
-let delete sp = delete_gen (fun x -> (fst x) = sp)
+let delete sp = delete_gen (fun x -> fst x = sp)
 
 let reset_name (loc,id) =
   let (sp,_) =
