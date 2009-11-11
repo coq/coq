@@ -55,7 +55,7 @@ let subst_evar_in_evm evar def evm =
 
 let rec safe_define evm ev c =
   if not (closedn (-1) c) then raise Termops.CannotFilter else
-(*  msgnl(str"safe_define "++pr_evar_defs evm++spc()++str" |- ?"++Util.pr_int ev++str" := "++pr_constr c);*)
+(*  msgnl(str"safe_define "++pr_evar_map evm++spc()++str" |- ?"++Util.pr_int ev++str" := "++pr_constr c);*)
   let evi = (Evd.find evm ev) in
   let define_subst evm sigma =
     Util.Intmap.fold
@@ -111,7 +111,7 @@ let complete_evar (cl,gen,evm:signature) (ev,evi) (k:signature -> unit) =
 	let def = applistc (Libnames.constr_of_global gr) argl in
 (*	msgnl(str"essayons  ?"++Util.pr_int ev++spc()++str":="++spc()
 	      ++pr_constr def++spc()++str":"++spc()++pr_constr (Global.type_of_global gr)*)
-	(*++spc()++str"dans"++spc()++pr_evar_defs evm++spc());*)
+	(*++spc()++str"dans"++spc()++pr_evar_map evm++spc());*)
 	try
  	  let evm = safe_define evm ev def in
 	  k (cl,gen,evm);
@@ -147,7 +147,7 @@ let complete_with_evars_permut (cl,gen,evm:signature) evl c (k:signature -> unit
 	let tyl = List.map (fun (_,_,t) -> t) ctx in
 	let ((cl,gen,evm),argl) = add_gen_ctx (cl,gen,evm) tyl in
 	let def = applistc c argl in
-(*	msgnl(str"trouvé def ?"++Util.pr_int ev++str" := "++pr_constr def++str " dans "++pr_evar_defs evm);*)
+(*	msgnl(str"trouvé def ?"++Util.pr_int ev++str" := "++pr_constr def++str " dans "++pr_evar_map evm);*)
 	try
 	  if not (Evd.is_defined evm ev) then
 	    let evm = safe_define evm ev def in
@@ -220,7 +220,7 @@ let complete_signature_with_def gr deftyp (k:instance_decl_function -> signature
     ( fun ctx typ ->
 	List.iter
 	  (fun ((cl,ev,evm),_,_) ->
-(*	     msgnl(pr_global gr++str" : "++pr_constr typ++str" matche ?"++Util.pr_int ev++str " dans "++pr_evar_defs evm);*)
+(*	     msgnl(pr_global gr++str" : "++pr_constr typ++str" matche ?"++Util.pr_int ev++str " dans "++pr_evar_map evm);*)
 	     smap := Gmapl.add (cl,evm) (ctx,ev) !smap)
 	  (Recordops.methods_matching typ)
     ) [] deftyp;
@@ -263,7 +263,7 @@ let declare_instance (k:global_reference -> rel_context -> constr list -> unit)
        then Evd.remove evm ev,gen
        else evm,(ev::gen))
     gen (evm,[]) in
-(*  msgnl(str"instance complète : ["++Util.prlist_with_sep (fun _ -> str";") Util.pr_int gen++str"] : "++spc()++pr_evar_defs evm);*)
+(*  msgnl(str"instance complète : ["++Util.prlist_with_sep (fun _ -> str";") Util.pr_int gen++str"] : "++spc()++pr_evar_map evm);*)
   let ngen = List.length gen in
   let (_,ctx,evm) = List.fold_left
     ( fun (i,ctx,evm) ev ->

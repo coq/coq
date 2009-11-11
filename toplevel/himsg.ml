@@ -522,7 +522,7 @@ let pr_constraints printenv env evm =
 	  prlist_with_sep (fun () -> fnl ())
 	  (fun (ev, evi) -> str(string_of_existential ev)++ str " == " ++ pr_constr evi.evar_concl) l
     else
-      pr_evar_defs evm
+      pr_evar_map evm
 
 let explain_unsatisfiable_constraints env evd constr =
   let evm = Evarutil.nf_evars evd in

@@ -429,7 +429,7 @@ type rewrite_flags = { under_lambdas : bool; on_morphisms : bool }
 
 let default_flags = { under_lambdas = true; on_morphisms = true; }
 
-type evars = evar_defs * evar_defs (* goal evars, constraint evars *)
+type evars = evar_map * evar_map (* goal evars, constraint evars *)
 
 type rewrite_result_info = {
   rew_car : constr;
@@ -442,7 +442,7 @@ type rewrite_result_info = {
 
 type rewrite_result = rewrite_result_info option
 
-type strategy = Environ.env -> evar_defs -> constr -> types ->
+type strategy = Environ.env -> evar_map -> constr -> types ->
   constr option -> evars -> rewrite_result option
 
 let resolve_subrelation env sigma car rel rel' res =
@@ -525,7 +525,7 @@ let apply_rule hypinfo loccs : strategy =
 	| Some (env', (prf, (car, rel, c1, c2))) when is_occ !occ ->
 	    begin
 	      let goalevars = Evd.evar_merge (fst evars)
-		(Evd.undefined_evars (Evarutil.nf_evar_defs env'.evd))
+		(Evd.undefined_evars (Evarutil.nf_evar_map env'.evd))
 	      in
 	      let res = { rew_car = ty; rew_rel = rel; rew_from = c1;
 			  rew_to = c2; rew_prf = prf; rew_evars = goalevars, snd evars }

@@ -69,7 +69,7 @@ val extsort : sorts -> constr_expr
 
 val my_print_constr : env -> constr -> std_ppcmds
 val my_print_constr_expr : constr_expr -> std_ppcmds
-val my_print_evardefs : evar_defs -> std_ppcmds
+val my_print_evardefs : evar_map -> std_ppcmds
 val my_print_context : env -> std_ppcmds
 val my_print_rel_context : env -> rel_context -> std_ppcmds
 val my_print_named_context : env -> std_ppcmds
@@ -87,11 +87,11 @@ type binders = local_binder list
 val app_opt : ('a -> 'a) option -> 'a -> 'a
 val print_args : env -> constr array -> std_ppcmds
 val make_existential : loc -> ?opaque:obligation_definition_status ->
-  env -> evar_defs ref -> types -> constr
+  env -> evar_map ref -> types -> constr
 val make_existential_expr : loc -> 'a -> 'b -> constr_expr
 val string_of_hole_kind : hole_kind -> string
 val evars_of_term : evar_map -> evar_map -> constr -> evar_map
-val non_instanciated_map : env -> evar_defs ref -> evar_map -> evar_map
+val non_instanciated_map : env -> evar_map ref -> evar_map -> evar_map
 val global_kind : logical_kind
 val goal_kind : locality * goal_object_kind
 val global_proof_kind : logical_kind
@@ -129,7 +129,7 @@ val solve_by_tac : evar_info -> Tacmach.tactic -> constr
 val string_of_list : string -> ('a -> string) -> 'a list -> string
 val string_of_intset : Intset.t -> string
 
-val pr_evar_defs : evar_defs -> Pp.std_ppcmds
+val pr_evar_map : evar_map -> Pp.std_ppcmds
 
 val tactics_call : string -> Tacexpr.glob_tactic_arg list -> Tacexpr.glob_tactic_expr
 

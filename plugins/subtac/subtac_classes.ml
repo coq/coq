@@ -132,7 +132,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	  Namegen.next_global_ident_away i (Termops.ids_of_context env)
   in
   let env' = push_rel_context ctx' env in
-  isevars := Evarutil.nf_evar_defs !isevars;
+  isevars := Evarutil.nf_evar_map !isevars;
   isevars := resolve_typeclasses ~onlyargs:false ~fail:true env' !isevars;
   let sigma =  !isevars in
   let subst = List.map (Evarutil.nf_evar sigma) subst in
@@ -192,7 +192,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
     [] subst (k.cl_props @ snd k.cl_context)
   in
   let inst_constr, ty_constr = instance_constructor k subst in
-  isevars := Evarutil.nf_evar_defs !isevars;
+  isevars := Evarutil.nf_evar_map !isevars;
   let term = Evarutil.nf_isevar !isevars (it_mkLambda_or_LetIn inst_constr ctx')
   and termtype = Evarutil.nf_isevar !isevars (it_mkProd_or_LetIn ty_constr ctx')
   in

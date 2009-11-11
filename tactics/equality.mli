@@ -49,7 +49,7 @@ val rewriteRL   : ?tac:(tactic * conditions) -> constr  -> tactic
 val register_general_rewrite_clause :
   (identifier option -> orientation ->
     occurrences -> open_constr with_bindings -> new_goals:constr list -> tactic) -> unit
-val register_is_applied_rewrite_relation : (env -> evar_defs -> rel_context -> constr -> open_constr option) -> unit
+val register_is_applied_rewrite_relation : (env -> evar_map -> rel_context -> constr -> open_constr option) -> unit
 
 val general_rewrite_ebindings_clause : identifier option ->
   orientation -> occurrences -> ?tac:(tactic * conditions) -> open_constr with_bindings -> evars_flag -> tactic

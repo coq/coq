@@ -334,7 +334,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
 	  Impargs.declare_manual_implicits false gr impls
       in hook, recname, typ
   in
-  let _ = isevars := Evarutil.nf_evar_defs !isevars in
+  let _ = isevars := Evarutil.nf_evar_map !isevars in
   let fullcoqc = Evarutil.nf_isevar !isevars def in
   let fullctyp = Evarutil.nf_isevar !isevars typ in
   let evm = evars_of_term !isevars Evd.empty fullctyp in
@@ -445,7 +445,7 @@ let interp_recursive fixkind l boxed =
   let evd = Typeclasses.resolve_typeclasses
     ~onlyargs:true ~split:true ~fail:false env_rec evd
   in
-  let evd = Evarutil.nf_evar_defs evd in
+  let evd = Evarutil.nf_evar_map evd in
   let fixdefs = List.map (nf_evar evd) fixdefs in
   let fixtypes = List.map (nf_evar evd) fixtypes in
   let rec_sign = nf_named_context_evar evd rec_sign in

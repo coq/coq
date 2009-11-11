@@ -79,7 +79,7 @@ val map_clb : (constr -> constr) -> clbinding -> clbinding
 (*********************************************************************)
 (*** Existential variables and unification states ***)
 
-(* A unification state (of type [evar_defs]) is primarily a finite mapping
+(* A unification state (of type [evar_map]) is primarily a finite mapping
     from existential variables to records containing the type of the evar
    ([evar_concl]), the context under which it was introduced ([evar_hyps])
    and its definition ([evar_body]). [evar_extra] is used to add any other
@@ -117,47 +117,47 @@ val evar_unfiltered_env :  evar_info -> env
 val evar_env :  evar_info -> env
 
 (*** Unification state ***)
-type evar_defs
+type evar_map
 
 (* Unification state and existential variables *)
 
 (* spiwack: this function seems to be used only for the definition of the progress
     tactical. I would recommand not using it in other places. *)
-val eq_evar_map : evar_defs -> evar_defs -> bool
+val eq_evar_map : evar_map -> evar_map -> bool
 
-val empty : evar_defs
-val is_empty : evar_defs -> bool
+val empty : evar_map
+val is_empty : evar_map -> bool
 
-val add : evar_defs -> evar -> evar_info -> evar_defs
+val add : evar_map -> evar -> evar_info -> evar_map
 
-val dom : evar_defs -> evar list
-val find : evar_defs -> evar -> evar_info
-val remove : evar_defs -> evar -> evar_defs
-val mem : evar_defs -> evar -> bool
-val to_list : evar_defs -> (evar * evar_info) list
-val fold : (evar -> evar_info -> 'a -> 'a) -> evar_defs -> 'a -> 'a
+val dom : evar_map -> evar list
+val find : evar_map -> evar -> evar_info
+val remove : evar_map -> evar -> evar_map
+val mem : evar_map -> evar -> bool
+val to_list : evar_map -> (evar * evar_info) list
+val fold : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 
-val merge : evar_defs -> evar_defs -> evar_defs
+val merge : evar_map -> evar_map -> evar_map
 
-val define : evar -> constr -> evar_defs -> evar_defs
+val define : evar -> constr -> evar_map -> evar_map
 
-val is_evar : evar_defs -> evar -> bool
+val is_evar : evar_map -> evar -> bool
 
-val is_defined : evar_defs -> evar -> bool
+val is_defined : evar_map -> evar -> bool
 
 (*s [existential_value sigma ev] raises [NotInstantiatedEvar] if [ev] has
     no body and [Not_found] if it does not exist in [sigma] *)
 
 exception NotInstantiatedEvar
-val existential_value : evar_defs -> existential -> constr
-val existential_type : evar_defs -> existential -> types
-val existential_opt_value : evar_defs -> existential -> constr option
+val existential_value : evar_map -> existential -> constr
+val existential_type : evar_map -> existential -> types
+val existential_opt_value : evar_map -> existential -> constr option
 
 (* Assume empty universe constraints in [evar_map] and [conv_pbs] *)
-val subst_evar_defs_light : substitution -> evar_defs -> evar_defs
+val subst_evar_defs_light : substitution -> evar_map -> evar_map
 
 (* spiwack: this function seems to somewhat break the abstraction. *)
-val evars_reset_evd  : evar_defs ->  evar_defs -> evar_defs
+val evars_reset_evd  : evar_map ->  evar_map -> evar_map
 
 
 
@@ -180,81 +180,81 @@ type hole_kind =
 
 (* spiwack: [is_undefined_evar] should be considered a candidate
                    for moving to evarutils *)
-val is_undefined_evar :  evar_defs -> constr -> bool
-val undefined_evars : evar_defs -> evar_defs
+val is_undefined_evar :  evar_map -> constr -> bool
+val undefined_evars : evar_map -> evar_map
 val evar_declare :
   named_context_val -> evar -> types -> ?src:loc * hole_kind ->
-      ?filter:bool list -> evar_defs -> evar_defs
-val evar_source : existential_key -> evar_defs -> loc * hole_kind
+      ?filter:bool list -> evar_map -> evar_map
+val evar_source : existential_key -> evar_map -> loc * hole_kind
 
 (* spiwack: this function seems to somewhat break the abstraction. *)
 (* [evar_merge evd ev1] extends the evars of [evd] with [evd1] *)
-val evar_merge : evar_defs -> evar_defs -> evar_defs
+val evar_merge : evar_map -> evar_map -> evar_map
 
 (* Unification constraints *)
 type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * env * constr * constr
-val add_conv_pb :  evar_constraint -> evar_defs -> evar_defs
+val add_conv_pb :  evar_constraint -> evar_map -> evar_map
 
 module ExistentialSet : Set.S with type elt = existential_key
-val extract_changed_conv_pbs : evar_defs ->
+val extract_changed_conv_pbs : evar_map ->
       (ExistentialSet.t -> evar_constraint -> bool) ->
-      evar_defs * evar_constraint list
-val extract_all_conv_pbs : evar_defs -> evar_defs * evar_constraint list
+      evar_map * evar_constraint list
+val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
 
 
 (* Metas *)
-val find_meta : evar_defs -> metavariable -> clbinding
-val meta_list : evar_defs -> (metavariable * clbinding) list
-val meta_defined : evar_defs -> metavariable -> bool
+val find_meta : evar_map -> metavariable -> clbinding
+val meta_list : evar_map -> (metavariable * clbinding) list
+val meta_defined : evar_map -> metavariable -> bool
 (* [meta_fvalue] raises [Not_found] if meta not in map or [Anomaly] if
    meta has no value *)
-val meta_value     : evar_defs -> metavariable -> constr
-val meta_fvalue    : evar_defs -> metavariable -> constr freelisted * instance_status
-val meta_opt_fvalue : evar_defs -> metavariable -> (constr freelisted * instance_status) option
-val meta_type      : evar_defs -> metavariable -> types
-val meta_ftype     : evar_defs -> metavariable -> types freelisted
-val meta_name      : evar_defs -> metavariable -> name
-val meta_with_name : evar_defs -> identifier -> metavariable
+val meta_value     : evar_map -> metavariable -> constr
+val meta_fvalue    : evar_map -> metavariable -> constr freelisted * instance_status
+val meta_opt_fvalue : evar_map -> metavariable -> (constr freelisted * instance_status) option
+val meta_type      : evar_map -> metavariable -> types
+val meta_ftype     : evar_map -> metavariable -> types freelisted
+val meta_name      : evar_map -> metavariable -> name
+val meta_with_name : evar_map -> identifier -> metavariable
 val meta_declare   :
-  metavariable -> types -> ?name:name -> evar_defs -> evar_defs
-val meta_assign    : metavariable -> constr * instance_status -> evar_defs -> evar_defs
-val meta_reassign  : metavariable -> constr * instance_status -> evar_defs -> evar_defs
+  metavariable -> types -> ?name:name -> evar_map -> evar_map
+val meta_assign    : metavariable -> constr * instance_status -> evar_map -> evar_map
+val meta_reassign  : metavariable -> constr * instance_status -> evar_map -> evar_map
 
 (* [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
-val meta_merge : evar_defs -> evar_defs -> evar_defs
+val meta_merge : evar_map -> evar_map -> evar_map
 
-val undefined_metas : evar_defs -> metavariable list
-val metas_of : evar_defs -> meta_type_map
-val map_metas_fvalue : (constr -> constr) -> evar_defs -> evar_defs
+val undefined_metas : evar_map -> metavariable list
+val metas_of : evar_map -> meta_type_map
+val map_metas_fvalue : (constr -> constr) -> evar_map -> evar_map
 
 type metabinding = metavariable * constr * instance_status
 
-val retract_coercible_metas : evar_defs -> metabinding list * evar_defs
+val retract_coercible_metas : evar_map -> metabinding list * evar_map
 val subst_defined_metas : metabinding list -> constr -> constr option
 
 (**********************************************************)
 (* Sort variables *)
 
-val new_sort_variable : evar_defs -> sorts * evar_defs
-val is_sort_variable : evar_defs -> sorts -> bool
-val whd_sort_variable : evar_defs -> constr -> constr
-val set_leq_sort_variable : evar_defs -> sorts -> sorts -> evar_defs
-val define_sort_variable : evar_defs -> sorts -> sorts -> evar_defs
+val new_sort_variable : evar_map -> sorts * evar_map
+val is_sort_variable : evar_map -> sorts -> bool
+val whd_sort_variable : evar_map -> constr -> constr
+val set_leq_sort_variable : evar_map -> sorts -> sorts -> evar_map
+val define_sort_variable : evar_map -> sorts -> sorts -> evar_map
 
 (*********************************************************************)
 (* constr with holes *)
-type open_constr = evar_defs * constr
+type open_constr = evar_map * constr
 
 (*********************************************************************)
 (* The type constructor ['a sigma] adds an evar map to an object of
   type ['a] *)
 type 'a sigma = {
   it : 'a ;
-  sigma : evar_defs}
+  sigma : evar_map}
 
 val sig_it  : 'a sigma -> 'a
-val sig_sig : 'a sigma -> evar_defs
+val sig_sig : 'a sigma -> evar_map
 
 (**********************************************************)
 (* Failure explanation *)
@@ -265,16 +265,15 @@ type unsolvability_explanation = SeveralInstancesFound of int
 (* debug pretty-printer: *)
 
 val pr_evar_info : evar_info -> Pp.std_ppcmds
-val pr_evar_defs : evar_defs -> Pp.std_ppcmds
-val pr_sort_constraints : evar_defs -> Pp.std_ppcmds
+val pr_evar_map : evar_map -> Pp.std_ppcmds
+val pr_sort_constraints : evar_map -> Pp.std_ppcmds
 val pr_metaset : Metaset.t -> Pp.std_ppcmds
 
 
 (*** /!\Deprecated /!\ ***)
-type evar_map = evar_defs
-(* create an [evar_defs] with empty meta map: *)
-val create_evar_defs      : evar_defs -> evar_defs
-val create_goal_evar_defs : evar_defs -> evar_defs
-val is_defined_evar :  evar_defs -> existential -> bool
-val subst_evar_map : substitution -> evar_defs -> evar_defs
+(* create an [evar_map] with empty meta map: *)
+val create_evar_defs      : evar_map -> evar_map
+val create_goal_evar_defs : evar_map -> evar_map
+val is_defined_evar :  evar_map -> existential -> bool
+val subst_evar_map : substitution -> evar_map -> evar_map
 (*** /Deprecaded ***)

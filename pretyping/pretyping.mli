@@ -44,7 +44,7 @@ sig
     evar_map -> env -> ?expected_type:types -> rawconstr -> open_constr
 
   val understand_tcc_evars : ?fail_evar:bool -> ?resolve_classes:bool ->
-    evar_defs ref -> env -> typing_constraint -> rawconstr -> constr
+    evar_map ref -> env -> typing_constraint -> rawconstr -> constr
 
   (* More general entry point with evars from ltac *)
 
@@ -60,7 +60,7 @@ sig
 
   val understand_ltac :
     evar_map -> env -> var_map * unbound_ltac_var_map ->
-    typing_constraint -> rawconstr -> evar_defs * constr
+    typing_constraint -> rawconstr -> evar_map * constr
 
   (* Standard call to get a constr from a rawconstr, resolving implicit args *)
 
@@ -81,23 +81,23 @@ sig
   val understand_judgment : evar_map -> env -> rawconstr -> unsafe_judgment
 
   (* Idem but do not fail on unresolved evars *)
-  val understand_judgment_tcc : evar_defs ref -> env -> rawconstr -> unsafe_judgment
+  val understand_judgment_tcc : evar_map ref -> env -> rawconstr -> unsafe_judgment
 
   (*i*)
   (* Internal of Pretyping...
    *)
   val pretype :
-    type_constraint -> env -> evar_defs ref ->
+    type_constraint -> env -> evar_map ref ->
     var_map * (identifier * identifier option) list ->
     rawconstr -> unsafe_judgment
 
   val pretype_type :
-    val_constraint -> env -> evar_defs ref ->
+    val_constraint -> env -> evar_map ref ->
     var_map * (identifier * identifier option) list ->
     rawconstr -> unsafe_type_judgment
 
   val pretype_gen :
-    bool -> bool -> evar_defs ref -> env ->
+    bool -> bool -> evar_map ref -> env ->
     var_map * (identifier * identifier option) list ->
     typing_constraint -> rawconstr -> constr
 

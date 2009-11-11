@@ -79,7 +79,7 @@ let nf_evar_info evc info =
 let nf_evars evm = Evd.fold (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
 		     evm Evd.empty
 
-let nf_evar_defs evd = Evd.evars_reset_evd (nf_evars evd) evd
+let nf_evar_map evd = Evd.evars_reset_evd (nf_evars evd) evd
 
 let nf_isevar evd = nf_evar evd
 let j_nf_isevar evd = j_nf_evar evd
@@ -958,7 +958,7 @@ and evar_define ?(choose=false) env (evk,_ as ev) rhs evd =
       with e ->
         pperrnl
           (str "Ill-typed evar instantiation: " ++ fnl() ++
-           pr_evar_defs evd' ++ fnl() ++
+           pr_evar_map evd' ++ fnl() ++
            str "----> " ++ int ev ++ str " := " ++
            print_constr body);
         raise e in*)

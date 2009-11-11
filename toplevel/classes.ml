@@ -173,7 +173,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	    Namegen.next_global_ident_away i (Termops.ids_of_context env)
   in
   let env' = push_rel_context ctx' env in
-  evars := Evarutil.nf_evar_defs !evars;
+  evars := Evarutil.nf_evar_map !evars;
   evars := resolve_typeclasses env !evars;
   let sigma =  !evars in
   let subst = List.map (Evarutil.nf_evar sigma) subst in
@@ -244,7 +244,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	    Evarutil.nf_isevar !evars t
 	in
 	let term = Termops.it_mkLambda_or_LetIn app ctx' in
-	evars := Evarutil.nf_evar_defs !evars;
+	evars := Evarutil.nf_evar_map !evars;
 	let term = Evarutil.nf_isevar !evars term in
 	let evm = undefined_evars !evars in
 	Evarutil.check_evars env Evd.empty !evars termtype;

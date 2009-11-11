@@ -232,7 +232,7 @@ let push_history_pattern n current cont =
 *)
 type pattern_matching_problem =
     { env      : env;
-      isevars  : Evd.evar_defs ref;
+      isevars  : Evd.evar_map ref;
       pred     : predicate_signature option;
       tomatch  : tomatch_stack;
       history  : pattern_continuation;
@@ -1892,8 +1892,8 @@ let liftn_rel_context n k sign =
   in
     liftrec (k + rel_context_length sign) sign
 
-let nf_evars_env evar_defs (env : env) : env =
-  let nf t = nf_isevar evar_defs t in
+let nf_evars_env sigma (env : env) : env =
+  let nf t = nf_isevar sigma t in
   let env0 : env = reset_context env in
   let f e (na, b, t) e' : env =
     Environ.push_named (na, Option.map nf b, nf t) e'

@@ -24,7 +24,7 @@ open Implicit_quantifiers
 open Classes
 (*i*)
 
-val type_ctx_instance :     Evd.evar_defs ref ->
+val type_ctx_instance :     Evd.evar_map ref ->
     Environ.env ->
     ('a * Term.constr option * Term.constr) list ->
     Topconstr.constr_expr list ->

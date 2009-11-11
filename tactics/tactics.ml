@@ -887,7 +887,7 @@ let check_evars sigma evm gl =
   if rest <> Evd.empty then
     errorlabstrm "apply" (str"Uninstantiated existential "++
       str(plural (List.length (Evd.to_list rest)) "variable")++str": " ++
-      fnl () ++ pr_evar_defs rest);;
+      fnl () ++ pr_evar_map rest);;
 
 let get_bindings_evars = function
   | ImplicitBindings largs -> List.map fst largs

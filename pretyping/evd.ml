@@ -67,7 +67,7 @@ let eq_evar_info ei1 ei2 =
       - ExistentialMap ( Maps of existential_keys )
       - EvarInfoMap ( .t = evar_info ExistentialMap.t )
       - EvarMap ( .t = EvarInfoMap.t * sort_constraints )
-      - evar_defs (exported)
+      - evar_map (exported)
 *)
 
 module ExistentialMap = Intmap
@@ -418,7 +418,7 @@ type hole_kind =
 
 type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * Environ.env * constr * constr
-type evar_defs =
+type evar_map =
     { evars : EvarMap.t;
       conv_pbs : evar_constraint list;
       last_mods : ExistentialSet.t;
@@ -426,14 +426,14 @@ type evar_defs =
       metas : clbinding Metamap.t }
 
 (*** Lifting primitive from EvarMap. ***)
-type evar_map = evar_defs
+
 (* spiwack: this function seems to be used only for the definition of the progress
     tactical. I would recommand not using it in other places. *)
 let eq_evar_map d1 d2 =
   EvarMap.eq_evar_map d1.evars d2.evars
 
 (* spiwack: tentative. It might very well not be the semantics we want
-     for merging evar_defs *)
+     for merging evar_map *)
 let merge d1 d2 = {
 (* d1 with evars = EvarMap.merge d1.evars d2.evars*)
   evars = EvarMap.merge d1.evars d2.evars ;
@@ -447,10 +447,10 @@ let remove d e = { d with evars=EvarMap.remove d.evars e }
 let dom d = EvarMap.dom d.evars
 let find d e = EvarMap.find d.evars e
 let mem d e = EvarMap.mem d.evars e
-(* spiwack: this function loses information from the original evar_defs
+(* spiwack: this function loses information from the original evar_map
    it might be an idea not to export it. *)
 let to_list d = EvarMap.to_list d.evars
-(* spiwack: not clear what folding over an evar_defs, for now we shall
+(* spiwack: not clear what folding over an evar_map, for now we shall
     simply fold over the inner evar_map. *)
 let fold f d a = EvarMap.fold f d.evars a
 let is_evar d e = EvarMap.is_evar d.evars e
@@ -462,7 +462,7 @@ let existential_opt_value d e = EvarMap.existential_opt_value d.evars e
 
 (*** /Lifting... ***)
 
-(* evar_defs are considered empty disregarding histories *)
+(* evar_map are considered empty disregarding histories *)
 let is_empty d =
   d.evars = EvarMap.empty &&
   d.conv_pbs = [] &&
@@ -790,7 +790,7 @@ let pr_evar_info evi =
   in
   hov 2 (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]")
 
-let pr_evar_defs_t (evars,cstrs as sigma) =
+let pr_evar_map_t (evars,cstrs as sigma) =
   let evs =
     if evars = EvarInfoMap.empty then mt ()
     else
@@ -813,10 +813,10 @@ let pr_constraints pbs =
 	| Reduction.CUMUL -> "<=") ++
       spc() ++ print_constr t2) pbs)
 
-let pr_evar_defs evd =
+let pr_evar_map evd =
   let pp_evm =
     if evd.evars = EvarMap.empty then mt() else
-      pr_evar_defs_t evd.evars++fnl() in
+      pr_evar_map_t evd.evars++fnl() in
   let cstrs =
     if evd.conv_pbs = [] then mt() else
     str"CONSTRAINTS:"++brk(0,1)++pr_constraints evd.conv_pbs++fnl() in

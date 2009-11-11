@@ -27,23 +27,23 @@ val default_no_delta_unify_flags : unify_flags
 
 (* The "unique" unification fonction *)
 val w_unify :
-  bool -> env -> conv_pb -> ?flags:unify_flags -> constr -> constr -> evar_defs -> evar_defs
+  bool -> env -> conv_pb -> ?flags:unify_flags -> constr -> constr -> evar_map -> evar_map
 
 (* [w_unify_to_subterm env (c,t) m] performs unification of [c] with a
    subterm of [t]. Constraints are added to [m] and the matched
    subterm of [t] is also returned. *)
 val w_unify_to_subterm :
-  env -> ?flags:unify_flags -> constr * constr -> evar_defs -> evar_defs * constr
+  env -> ?flags:unify_flags -> constr * constr -> evar_map -> evar_map * constr
 
 val w_unify_to_subterm_all :
-  env -> ?flags:unify_flags -> constr * constr -> evar_defs -> (evar_defs * constr) list
+  env -> ?flags:unify_flags -> constr * constr -> evar_map -> (evar_map * constr) list
 
-val w_unify_meta_types : env -> ?flags:unify_flags -> evar_defs -> evar_defs
+val w_unify_meta_types : env -> ?flags:unify_flags -> evar_map -> evar_map
 
 (* [w_coerce_to_type env evd c ctyp typ] tries to coerce [c] of type
    [ctyp] so that its gets type [typ]; [typ] may contain metavariables *)
-val w_coerce_to_type : env -> evar_defs -> constr -> types -> types ->
-  evar_defs * constr
+val w_coerce_to_type : env -> evar_map -> constr -> types -> types ->
+  evar_map * constr
 
 (*i This should be in another module i*)
 
@@ -51,4 +51,4 @@ val w_coerce_to_type : env -> evar_defs -> constr -> types -> types ->
 (* abstracts the terms in l over c to get a term of type t *)
 (* (exported for inv.ml) *)
 val abstract_list_all :
-  env -> evar_defs -> constr -> constr -> constr list -> constr
+  env -> evar_map -> constr -> constr -> constr list -> constr

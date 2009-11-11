@@ -40,7 +40,7 @@ let pf_concl gl = gl.it.evar_concl
 
 type clausenv = {
   env      : env;
-  evd      : evar_defs;
+  evd      : evar_map;
   templval : constr freelisted;
   templtyp : constr freelisted }
 
@@ -477,4 +477,4 @@ let pr_clenv clenv =
   h 0
     (str"TEMPL: " ++ print_constr clenv.templval.rebus ++
      str" : " ++ print_constr clenv.templtyp.rebus ++ fnl () ++
-     pr_evar_defs clenv.evd)
+     pr_evar_map clenv.evd)

@@ -939,4 +939,4 @@ let print_pftreestate {tpf = pf; tpfsigma = sigma; tstack = stack } =
          prlist_with_sep (fun () -> str ";") (fun (n,_) -> int n)
            (List.rev stack) ++ str "] is:")) ++ fnl() ++
   !pp_proof sigma (Global.named_context()) pf ++
-  Evd.pr_evar_defs sigma
+  Evd.pr_evar_map sigma

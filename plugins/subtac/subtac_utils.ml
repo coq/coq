@@ -116,7 +116,7 @@ let my_print_context = Termops.print_rel_context
 let my_print_named_context = Termops.print_named_context
 let my_print_env = Termops.print_env
 let my_print_rawconstr = Printer.pr_rawconstr_env
-let my_print_evardefs = Evd.pr_evar_defs
+let my_print_evardefs = Evd.pr_evar_map
 
 let my_print_tycon_type = Evarutil.pr_tycon_type
 
@@ -448,7 +448,7 @@ let pr_evar_info evi =
   in
   hov 2 (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]")
 
-let pr_evar_defs sigma =
+let pr_evar_map sigma =
   h 0
     (prlist_with_sep pr_fnl
       (fun (ev,evi) ->
@@ -464,11 +464,11 @@ let pr_constraints pbs =
 	| Reduction.CUMUL -> "<=") ++
       spc() ++ print_constr t2) pbs)
 
-let pr_evar_defs evd =
+let pr_evar_map evd =
   let pp_evm =
     let evars =  evd in
     if evars = empty then mt() else
-      str"EVARS:"++brk(0,1)++pr_evar_defs evars++fnl() in
+      str"EVARS:"++brk(0,1)++pr_evar_map evars++fnl() in
   let pp_met =
     if meta_list evd = [] then mt() else
       str"METAS:"++brk(0,1)++pr_meta_map evd in

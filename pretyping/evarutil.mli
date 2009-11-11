@@ -34,10 +34,10 @@ val new_untyped_evar : unit -> existential_key
 (***********************************************************)
 (* Creating a fresh evar given their type and context *)
 val new_evar :
-  evar_defs -> env -> ?src:loc * hole_kind -> ?filter:bool list -> types -> evar_defs * constr
+  evar_map -> env -> ?src:loc * hole_kind -> ?filter:bool list -> types -> evar_map * constr
 (* the same with side-effects *)
 val e_new_evar :
-  evar_defs ref -> env -> ?src:loc * hole_kind -> ?filter:bool list -> types -> constr
+  evar_map ref -> env -> ?src:loc * hole_kind -> ?filter:bool list -> types -> constr
 
 (* Create a fresh evar in a context different from its definition context:
    [new_evar_instance sign evd ty inst] creates a new evar of context
@@ -46,7 +46,7 @@ val e_new_evar :
    of [inst] are typed in the occurrence context and their type (seen
    as a telescope) is [sign] *)
 val new_evar_instance :
- named_context_val -> evar_defs -> types -> ?src:loc * hole_kind -> ?filter:bool list -> constr list -> evar_defs * constr
+ named_context_val -> evar_map -> types -> ?src:loc * hole_kind -> ?filter:bool list -> constr list -> evar_map * constr
 
 val make_pure_subst : evar_info -> constr array -> (identifier * constr) list
 
@@ -57,7 +57,7 @@ val make_pure_subst : evar_info -> constr array -> (identifier * constr) list
    possibly solving related unification problems, possibly leaving open
    some problems that cannot be solved in a unique way (except if choose is
    true); fails if the instance is not valid for the given [ev] *)
-val evar_define : ?choose:bool -> env -> existential -> constr -> evar_defs -> evar_defs
+val evar_define : ?choose:bool -> env -> existential -> constr -> evar_map -> evar_map
 
 (***********************************************************)
 (* Evars/Metas switching... *)
@@ -75,24 +75,24 @@ val non_instantiated : evar_map -> (evar * evar_info) list
 exception NoHeadEvar
 val head_evar : constr -> existential_key (* may raise NoHeadEvar *)
 
-val is_ground_term :  evar_defs -> constr -> bool
-val is_ground_env  :  evar_defs -> env -> bool
+val is_ground_term :  evar_map -> constr -> bool
+val is_ground_env  :  evar_map -> env -> bool
 val solve_refl :
-  (env ->  evar_defs -> conv_pb -> constr -> constr -> evar_defs * bool)
-  -> env ->  evar_defs -> existential_key -> constr array -> constr array ->
-    evar_defs
+  (env ->  evar_map -> conv_pb -> constr -> constr -> evar_map * bool)
+  -> env ->  evar_map -> existential_key -> constr array -> constr array ->
+    evar_map
 val solve_simple_eqn :
-  (env ->  evar_defs -> conv_pb -> constr -> constr -> evar_defs * bool)
-  -> ?choose:bool -> env ->  evar_defs -> bool option * existential * constr ->
-    evar_defs * bool
+  (env ->  evar_map -> conv_pb -> constr -> constr -> evar_map * bool)
+  -> ?choose:bool -> env ->  evar_map -> bool option * existential * constr ->
+    evar_map * bool
 
 (* [check_evars env initial_sigma extended_sigma c] fails if some
    new unresolved evar remains in [c] *)
-val check_evars : env -> evar_map -> evar_defs -> constr -> unit
+val check_evars : env -> evar_map -> evar_map -> constr -> unit
 
-val define_evar_as_product : evar_defs -> existential -> evar_defs * types
-val define_evar_as_lambda : evar_defs -> existential -> evar_defs * types
-val define_evar_as_sort : evar_defs -> existential -> evar_defs * sorts
+val define_evar_as_product : evar_map -> existential -> evar_map * types
+val define_evar_as_lambda : evar_map -> existential -> evar_map * types
+val define_evar_as_sort : evar_map -> existential -> evar_map * sorts
 
 val is_unification_pattern_evar : env -> existential -> constr list ->
   constr -> bool
@@ -123,8 +123,8 @@ val empty_valcon : val_constraint
 val mk_valcon : constr -> val_constraint
 
 val split_tycon :
-  loc -> env ->  evar_defs -> type_constraint ->
-    evar_defs * (name * type_constraint * type_constraint)
+  loc -> env ->  evar_map -> type_constraint ->
+    evar_map * (name * type_constraint * type_constraint)
 
 val valcon_of_tycon : type_constraint -> val_constraint
 
@@ -155,16 +155,16 @@ val nf_rel_context_evar : evar_map -> rel_context -> rel_context
 val nf_env_evar : evar_map -> env -> env
 
 (* Same for evar defs *)
-val nf_isevar :  evar_defs -> constr -> constr
-val j_nf_isevar :  evar_defs -> unsafe_judgment -> unsafe_judgment
+val nf_isevar :  evar_map -> constr -> constr
+val j_nf_isevar :  evar_map -> unsafe_judgment -> unsafe_judgment
 val jl_nf_isevar :
-   evar_defs -> unsafe_judgment list -> unsafe_judgment list
+   evar_map -> unsafe_judgment list -> unsafe_judgment list
 val jv_nf_isevar :
-   evar_defs -> unsafe_judgment array -> unsafe_judgment array
+   evar_map -> unsafe_judgment array -> unsafe_judgment array
 val tj_nf_isevar :
-   evar_defs -> unsafe_type_judgment -> unsafe_type_judgment
+   evar_map -> unsafe_type_judgment -> unsafe_type_judgment
 
-val nf_evar_defs : evar_defs -> evar_defs
+val nf_evar_map : evar_map -> evar_map
 
 (* Replacing all evars *)
 exception Uninstantiated_evar of existential_key
@@ -192,7 +192,7 @@ type clear_dependency_error =
 
 exception ClearDependencyError of identifier * clear_dependency_error
 
-val clear_hyps_in_evi : evar_defs ref -> named_context_val -> types ->
+val clear_hyps_in_evi : evar_map ref -> named_context_val -> types ->
   identifier list -> named_context_val * types
 
 val push_rel_context_to_named_context : Environ.env -> types -> 

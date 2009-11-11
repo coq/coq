@@ -22,7 +22,7 @@ val sort_dependencies : (int * evar_info * Intset.t) list -> (int * evar_info * 
 
 (* env, id, evars, number of function prototypes to try to clear from
    evars contexts, object and type *)
-val eterm_obligations : env -> identifier -> evar_defs -> evar_map -> int -> 
+val eterm_obligations : env -> identifier -> evar_map -> evar_map -> int ->
   ?status:obligation_definition_status -> constr -> types -> 
   (identifier * types * loc * obligation_definition_status * Intset.t * 
       tactic option) array

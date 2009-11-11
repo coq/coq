@@ -117,21 +117,21 @@ val interp_casted_constr : evar_map -> env -> ?impls:full_internalization_env ->
 
 (* Accepting evars and giving back the manual implicits in addition. *)
 
-val interp_casted_constr_evars_impls : ?evdref:(evar_defs ref) -> ?fail_evar:bool -> env ->
+val interp_casted_constr_evars_impls : ?evdref:(evar_map ref) -> ?fail_evar:bool -> env ->
   ?impls:full_internalization_env -> constr_expr -> types -> constr * manual_implicits
 
-val interp_type_evars_impls : ?evdref:(evar_defs ref) -> ?fail_evar:bool ->
+val interp_type_evars_impls : ?evdref:(evar_map ref) -> ?fail_evar:bool ->
   env -> ?impls:full_internalization_env ->
   constr_expr -> types * manual_implicits
 
-val interp_constr_evars_impls : ?evdref:(evar_defs ref) -> ?fail_evar:bool ->
+val interp_constr_evars_impls : ?evdref:(evar_map ref) -> ?fail_evar:bool ->
   env -> ?impls:full_internalization_env ->
   constr_expr -> constr * manual_implicits
 
-val interp_casted_constr_evars : evar_defs ref -> env ->
+val interp_casted_constr_evars : evar_map ref -> env ->
   ?impls:full_internalization_env -> constr_expr -> types -> constr
 
-val interp_type_evars : evar_defs ref -> env -> ?impls:full_internalization_env ->
+val interp_type_evars : evar_map ref -> env -> ?impls:full_internalization_env ->
   constr_expr -> types
 
 (*s Build a judgment  *)
@@ -154,7 +154,7 @@ val interp_reference : ltac_sign -> reference -> rawconstr
 
 val interp_binder  : evar_map -> env -> name -> constr_expr -> types
 
-val interp_binder_evars : evar_defs ref -> env -> name -> constr_expr -> types
+val interp_binder_evars : evar_map ref -> env -> name -> constr_expr -> types
 
 (* Interpret contexts: returns extended env and context *)
 
@@ -162,7 +162,7 @@ val interp_context : ?fail_anonymous:bool ->
   evar_map -> env -> local_binder list -> (env * rel_context) * manual_implicits
 
 val interp_context_evars : ?fail_anonymous:bool ->
-  evar_defs ref -> env -> local_binder list -> (env * rel_context) * manual_implicits
+  evar_map ref -> env -> local_binder list -> (env * rel_context) * manual_implicits
 
 (* Locating references of constructions, possibly via a syntactic definition *)
 (* (these functions do not modify the glob file) *)

@@ -217,6 +217,6 @@ val head_unfold_under_prod : transparent_state -> reduction_function
 val whd_betaiota_deltazeta_for_iota_state :  state_reduction_function
 
 (*s Meta-related reduction functions *)
-val meta_instance : evar_defs -> constr freelisted -> constr
-val nf_meta       : evar_defs -> constr -> constr
-val meta_reducible_instance : evar_defs -> constr freelisted -> constr
+val meta_instance : evar_map -> constr freelisted -> constr
+val nf_meta       : evar_map -> constr -> constr
+val meta_reducible_instance : evar_map -> constr freelisted -> constr

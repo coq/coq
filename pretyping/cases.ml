@@ -88,7 +88,7 @@ let coq_unit_judge =
 module type S = sig
   val compile_cases :
     loc -> case_style ->
-    (type_constraint -> env -> evar_defs ref -> rawconstr -> unsafe_judgment) * evar_defs ref ->
+    (type_constraint -> env -> evar_map ref -> rawconstr -> unsafe_judgment) * evar_map ref ->
     type_constraint ->
     env -> rawconstr option * tomatch_tuples * cases_clauses ->
     unsafe_judgment
@@ -291,14 +291,14 @@ let push_history_pattern n current cont =
 
 type 'a pattern_matching_problem =
     { env       : env;
-      evdref    : evar_defs ref;
+      evdref    : evar_map ref;
       pred      : constr;
       tomatch   : tomatch_stack;
       history   : pattern_continuation;
       mat       : 'a matrix;
       caseloc   : loc;
       casestyle : case_style;
-      typing_function: type_constraint -> env -> evar_defs ref -> 'a option -> unsafe_judgment }
+      typing_function: type_constraint -> env -> evar_map ref -> 'a option -> unsafe_judgment }
 
 (*--------------------------------------------------------------------------*
  * A few functions to infer the inductive type from the patterns instead of *

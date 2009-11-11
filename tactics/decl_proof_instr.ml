@@ -327,7 +327,7 @@ type stackd_elt =
  se_type:types;
  se_last_meta:metavariable;
  se_meta_list:(metavariable*types) list;
- se_evd: evar_defs}
+ se_evd: evar_map}
 
 let rec replace_in_list m l = function
     [] -> raise Not_found
