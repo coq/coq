@@ -144,6 +144,10 @@ val intern_constr_pattern :
   evar_map -> env -> ?as_type:bool -> ?ltacvars:ltac_sign ->
     constr_pattern_expr -> patvar list * constr_pattern
 
+(* Raise Not_found if syndef not bound to a name and error if unexisting ref *)
+val intern_reference : reference -> global_reference
+
+(* Expands abbreviations (syndef); raise an error if not existing *)
 val interp_reference : ltac_sign -> reference -> rawconstr
 
 (* Interpret binders *)
@@ -161,8 +165,8 @@ val interp_context_evars : ?fail_anonymous:bool ->
   evar_defs ref -> env -> local_binder list -> (env * rel_context) * manual_implicits
 
 (* Locating references of constructions, possibly via a syntactic definition *)
+(* (these functions do not modify the glob file) *)
 
-val locate_reference : qualid -> global_reference
 val is_global : identifier -> bool
 val construct_reference : named_context -> identifier -> constr
 val global_reference : identifier -> constr

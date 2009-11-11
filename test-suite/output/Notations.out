@@ -46,6 +46,10 @@ fun x : nat => ifn x is succ n then n else 0
      : bool
 -4
      : Z
+SUM (nat * nat) nat
+     : Set
+FST (0; 1)
+     : Z
 Nil
      : forall A : Type, list A
 NIL:list nat
@@ -57,3 +61,34 @@ Defining 'I' as keyword
      : Z * Z * Z * (Z * Z * Z)
 fun f : Z -> Z -> Z -> Z => {|f; 0; 1; 2|}:Z
      : (Z -> Z -> Z -> Z) -> Z
+plus
+     : nat -> nat -> nat
+S
+     : nat -> nat
+mult
+     : nat -> nat -> nat
+le
+     : nat -> nat -> Prop
+plus
+     : nat -> nat -> nat
+succ
+     : nat -> nat
+mult
+     : nat -> nat -> nat
+le
+     : nat -> nat -> Prop
+fun x : option Z => match x with
+                    | SOME x0 => x0
+                    | NONE => 0
+                    end
+     : option Z -> Z
+fun x : option Z => match x with
+                    | SOME2 x0 => x0
+                    | NONE2 => 0
+                    end
+     : option Z -> Z
+fun x : option Z => match x with
+                    | SOME3 x0 => x0
+                    | NONE3 => 0
+                    end
+     : option Z -> Z

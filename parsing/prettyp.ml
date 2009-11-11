@@ -408,7 +408,7 @@ let gallina_print_constant_with_infos sp =
 let gallina_print_syntactic_def kn =
   let sep = " := "
   and qid = Nametab.shortest_qualid_of_syndef Idset.empty kn
-  and (vars,a) = Syntax_def.search_syntactic_definition dummy_loc kn in
+  and (vars,a) = Syntax_def.search_syntactic_definition kn in
   let c = Topconstr.rawconstr_of_aconstr dummy_loc a in
   str "Notation " ++ pr_qualid qid ++
   prlist_with_sep spc pr_id (List.map fst vars) ++ str sep ++

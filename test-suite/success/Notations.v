@@ -49,8 +49,7 @@ Definition foo P := let '(exists x, Q) := P in x = Q :> nat.
 Notation "'exists' x >= y , P" := (exists x, x >= y /\ P)%nat
    (at level 200, x ident, right associativity, y at level 69).
 
-(* Check that notations to atomic references preserve implicit arguments *)
+(* This used to loop at some time before r12491 *)
 
-Notation eq := @eq.
-
-Check (eq 0 0).
+Notation R x := (@pair _ _ x).
+Check (fun x:nat*nat => match x with R x y => (x,y) end).

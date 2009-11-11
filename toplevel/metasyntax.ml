@@ -1049,8 +1049,17 @@ let add_delimiters scope key =
 let add_class_scope scope cl =
   Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeClasses cl))
 
+(* Check if abbreviation to a name and avoid early insertion of
+   maximal implicit arguments *)
+let try_interp_name_alias = function
+  | [], CRef ref -> intern_reference ref
+  | _ -> raise Not_found
+
 let add_syntactic_definition ident (vars,c) local onlyparse =
-  let ((vars,_),pat) = interp_aconstr (vars,[]) c in
+  let vars,pat =
+    try [], ARef (try_interp_name_alias (vars,c))
+    with Not_found -> let (vars,_),pat = interp_aconstr (vars,[]) c in vars,pat
+  in
   let onlyparse = onlyparse or is_not_printable pat in
   Syntax_def.declare_syntactic_definition local ident onlyparse (vars,pat)
 

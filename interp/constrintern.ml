@@ -68,12 +68,7 @@ let for_grammar f x =
 (* Locating reference, possibly via an abbreviation *)
 
 let locate_reference qid =
-  match Nametab.locate_extended qid with
-    | TrueGlobal ref -> ref
-    | SynDef kn ->
-	match Syntax_def.search_syntactic_definition dummy_loc kn with
-	  | [],ARef ref -> ref
-	  | _ -> raise Not_found
+  Smartlocate.global_of_extended_global (Nametab.locate_extended qid)
 
 let is_global id =
   try
@@ -429,25 +424,31 @@ let check_no_explicitation l =
     user_err_loc
      (loc,"",str"Unexpected explicitation of the argument of an abbreviation.")
 
+let dump_extended_global loc = function
+  | TrueGlobal ref -> Dumpglob.add_glob loc ref
+  | SynDef sp -> Dumpglob.add_glob_kn loc sp
+
+let intern_extended_global_of_qualid (loc,qid) =
+  try let r = Nametab.locate_extended qid in dump_extended_global loc r; r
+  with Not_found -> error_global_not_found_loc loc qid
+
+let intern_reference ref =
+  Smartlocate.global_of_extended_global
+    (intern_extended_global_of_qualid (qualid_of_reference ref))
+
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid loc qid intern env args =
-  try match Nametab.locate_extended qid with
+  match intern_extended_global_of_qualid (loc,qid) with
   | TrueGlobal ref ->
-      Dumpglob.add_glob loc ref;
       RRef (loc, ref), args
   | SynDef sp ->
-      Dumpglob.add_glob_kn loc sp;
-      match Syntax_def.search_syntactic_definition loc sp with
-      | [],ARef ref -> RRef (loc, ref), args
-      | (ids,c) ->
+      let (ids,c) = Syntax_def.search_syntactic_definition sp in
       let nids = List.length ids in
       if List.length args < nids then error_not_enough_arguments loc;
       let args1,args2 = list_chop nids args in
       check_no_explicitation args1;
       let subst = List.map2 (fun (id,scl) a -> (id,(fst a,scl))) ids args1 in
       subst_aconstr_in_rawconstr loc intern (subst,[]) ([],env) c, args2
-  with Not_found ->
-    error_global_not_found_loc loc qid
 
 (* Rule out section vars since these should have been found by intern_var *)
 let intern_non_secvar_qualid loc qid intern env args =
@@ -489,8 +490,8 @@ let rec simple_adjust_scopes n = function
 let find_remaining_constructor_scopes pl1 pl2 (ind,j as cstr) =
   let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
   let npar = mib.Declarations.mind_nparams in
-  snd (list_chop (List.length pl1 + npar)
-    (simple_adjust_scopes (npar + List.length pl2)
+  snd (list_chop (npar + List.length pl1)
+    (simple_adjust_scopes (npar + List.length pl1 + List.length pl2)
       (find_arguments_scope (ConstructRef cstr))))
 
 (**********************************************************************)
@@ -564,11 +565,16 @@ let error_invalid_pattern_notation loc =
   user_err_loc (loc,"",str "Invalid notation for pattern.")
 
 let chop_aconstr_constructor loc (ind,k) args =
-  let nparams = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
-  let params,args = list_chop nparams args in
-  List.iter (function AHole _ -> ()
-    | _ -> error_invalid_pattern_notation loc) params;
-  args
+  if List.length args = 0 then (* Tolerance for a @id notation *) args else
+    begin
+      let mib,_ = Global.lookup_inductive ind in
+      let nparams = mib.Declarations.mind_nparams in
+      if nparams > List.length args then error_invalid_pattern_notation loc;
+      let params,args = list_chop nparams args in
+      List.iter (function AHole _ -> ()
+	| _ -> error_invalid_pattern_notation loc) params;
+      args
+    end
 
 let rec subst_pat_iterator y t (subst,p) = match p with
   | PatVar (_,id) as x ->
@@ -637,7 +643,7 @@ let find_constructor ref f aliases pats scopes =
     with Not_found -> raise (InternalisationError (loc,NotAConstructor ref)) in
   match gref with
   | SynDef sp ->
-      let (vars,a) = Syntax_def.search_syntactic_definition loc sp in
+      let (vars,a) = Syntax_def.search_syntactic_definition sp in
       (match a with
        | ARef (ConstructRef cstr) ->
 	   assert (vars=[]);
@@ -1123,7 +1129,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	  let args = List.map (fun a -> (a,None)) args in
 	  intern_applied_reference intern env lvar args ref in
 	check_projection isproj (List.length args) f;
-	if args = [] then f else
+	(* Rem: RApp(_,f,[]) stands for @f *)
 	RApp (loc, f, intern_args env args_scopes (List.map fst args))
     | CApp (loc, (isproj,f), args) ->
         let isproj,f,args = match f with

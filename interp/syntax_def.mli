@@ -24,4 +24,4 @@ type syndef_interpretation = (identifier * subscopes) list * aconstr
 val declare_syntactic_definition : bool -> identifier -> bool ->
   syndef_interpretation -> unit
 
-val search_syntactic_definition : loc -> kernel_name -> syndef_interpretation
+val search_syntactic_definition : kernel_name -> syndef_interpretation

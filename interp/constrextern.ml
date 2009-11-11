@@ -351,7 +351,6 @@ let bind_env (sigma,sigmalist as fullsigma) var v =
 let rec match_cases_pattern metas sigma a1 a2 = match (a1,a2) with
   | r1, AVar id2 when List.mem id2 metas -> bind_env sigma id2 r1
   | PatVar (_,Anonymous), AHole _ -> sigma
-  | a, AHole _ -> sigma
   | PatCstr (loc,(ind,_ as r1),args1,_), _ ->
       let nparams =
 	(fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
@@ -361,7 +360,10 @@ let rec match_cases_pattern metas sigma a1 a2 = match (a1,a2) with
 	  | AApp (ARef (ConstructRef r2),l2)  when r1 = r2 -> l2
           | _ -> raise No_match in
       if List.length l2 <> nparams + List.length args1
-      then raise No_match
+      then
+	(* TODO: revert partially applied notations of the form 
+           "Notation P x := (@pair _ _ x)." *)
+	raise No_match
       else
         let (p2,args2) = list_chop nparams l2 in
         (* All parameters must be _ *)
@@ -425,13 +427,26 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
-      try
-	(* Check the number of arguments expected by the notation *)
-	let loc,na = match t,n with
-	  | PatCstr (_,f,l,_), Some n when List.length l > n ->
-	      raise No_match
-	  | PatCstr (loc,_,_,na),_ -> loc,na
-	  | PatVar (loc,na),_ -> loc,na in
+    try
+      match t,n with
+      | PatCstr (loc,(ind,_),l,na), n when n = Some 0 or n = None or 
+	 n = Some(fst(Global.lookup_inductive ind)).Declarations.mind_nparams ->
+        (* Abbreviation for the constructor name only *)
+	(match keyrule with
+        | NotationRule (sc,ntn) -> raise No_match
+        | SynDefRule kn ->
+	    let p =
+	      let qid = Qualid (loc, shortest_qualid_of_syndef vars kn) in
+	      if l = [] then
+		CPatAtom (loc,Some qid)
+	      else
+		let l =
+		  List.map (extern_cases_pattern_in_scope allscopes vars) l in
+		CPatCstr (loc,qid,l) in
+	    insert_pat_alias loc p na)
+      | PatCstr (_,f,l,_), Some n when List.length l > n ->
+	  raise No_match
+      | PatCstr (loc,_,_,na),_ ->
 	(* Try matching ... *)
 	let subst,substlist = match_aconstr_cases_pattern t pat in
 	(* Try availability of interpretation ... *)
@@ -458,8 +473,10 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 	      let qid = shortest_qualid_of_syndef vars kn in
               CPatAtom (loc,Some (Qualid (loc, qid))) in
 	insert_pat_alias loc p na
-      with
-	  No_match -> extern_symbol_pattern allscopes vars t rules
+      | PatVar (loc,Anonymous),_ -> CPatAtom (loc, None)
+      | PatVar (loc,Name id),_ -> CPatAtom (loc, Some (Ident (loc,id)))
+    with
+	No_match -> extern_symbol_pattern allscopes vars t rules
 
 let extern_cases_pattern vars p =
   extern_cases_pattern_in_scope (None,[]) vars p

@@ -101,6 +101,7 @@ Impargs
 Constrextern
 Syntax_def
 Implicit_quantifiers
+Smartlocate
 Constrintern
 Proof_trees
 Tacexpr

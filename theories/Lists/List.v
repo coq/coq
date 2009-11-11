@@ -1973,13 +1973,10 @@ Notation list := list (only parsing).
 Notation list_rect := list_rect (only parsing).
 Notation list_rec := list_rec (only parsing).
 Notation list_ind := list_ind (only parsing).
-Notation nil := @nil (only parsing).
-Notation cons := @cons (only parsing).
-Notation length := @length (only parsing).
-Notation app := @app (only parsing).
-(* We hide these compatibility notations behind the true definitions
-   that are in [Datatypes]: *)
-Export Datatypes.
+Notation nil := nil (only parsing).
+Notation cons := cons (only parsing).
+Notation length := length (only parsing).
+Notation app := app (only parsing).
 (* Compatibility Names *)
 Notation ass_app := app_assoc (only parsing).
 Notation app_ass := app_assoc_reverse (only parsing).

@@ -38,15 +38,25 @@ let load_syntax_constant i ((sp,kn),(local,pat,onlyparse)) =
   add_syntax_constant kn pat;
   Nametab.push_syndef (Nametab.Until i) sp kn
 
+let is_alias_of_already_visible_name sp = function
+  | _,ARef ref ->
+      let (dir,id) = repr_qualid (shortest_qualid_of_global Idset.empty ref) in
+      dir = empty_dirpath && id = basename sp
+  | _ ->
+      false
+
 let open_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
-  Nametab.push_syndef (Nametab.Exactly i) sp kn;
-  if not onlyparse then
-    (* Redeclare it to be used as (short) name in case an other (distfix)
-       notation was declared inbetween *)
-    Notation.declare_uninterpretation (Notation.SynDefRule kn) pat
+  if not (is_alias_of_already_visible_name sp pat) then begin
+    Nametab.push_syndef (Nametab.Exactly i) sp kn;
+    if not onlyparse then
+      (* Redeclare it to be used as (short) name in case an other (distfix)
+	 notation was declared inbetween *)
+      Notation.declare_uninterpretation (Notation.SynDefRule kn) pat
+  end
 
 let cache_syntax_constant d =
-  load_syntax_constant 1 d
+  load_syntax_constant 1 d;
+  open_syntax_constant 1 d
 
 let subst_syntax_constant (subst,(local,pat,onlyparse)) =
   (local,subst_interpretation subst pat,onlyparse)
@@ -72,5 +82,5 @@ let out_pat ((ids,idsl),ac) = assert (idsl=[]); (ids,ac)
 let declare_syntactic_definition local id onlyparse pat =
   let _ = add_leaf id (in_syntax_constant (local,in_pat pat,onlyparse)) in ()
 
-let search_syntactic_definition loc kn =
+let search_syntactic_definition kn =
   out_pat (KNmap.find kn !syntax_table)

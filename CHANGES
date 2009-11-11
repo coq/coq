@@ -47,11 +47,13 @@ Tactic Language
 
 - Support for parsing non-empty lists with separators in tactic notations.
 
-Language
+Notations
 
-- Notations to names now behave like the names they refer to wrt implicit
-  arguments and interpretation scopes.
 - Record syntax "{|x=...; y=...|}" now works inside patterns too.
+- Abbreviations from non-imported module now invisible at printing time.
+- Abbreviations now use implicit arguments and arguments scopes for printing.
+- Abbreviations to pure names now strictly behave like the name they refer to
+  (make redirections of qualified names easier).
 
 Vernacular commands
 
