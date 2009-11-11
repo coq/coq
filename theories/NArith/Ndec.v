@@ -19,10 +19,8 @@ Require Import Ndigits.
 
 (** A boolean equality over [N] *)
 
-Notation Peqb := BinPos.Peqb (only parsing).
-Notation Neqb := BinNat.Neqb (only parsing).
-
-Import BinPos BinNat.
+Notation Peqb := Peqb (only parsing). (* Now in [BinPos] *)
+Notation Neqb := Neqb (only parsing). (* Now in [BinNat] *)
 
 Notation Peqb_correct := Peqb_refl (only parsing).
 

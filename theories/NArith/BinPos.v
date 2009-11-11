@@ -269,7 +269,7 @@ Definition Pmax (p p' : positive) := match Pcompare p p' Eq with
 (********************************************************************)
 (** Boolean equality *)
 
-Fixpoint Peqb (x y : positive) : bool :=
+Fixpoint Peqb (x y : positive) {struct y} : bool :=
  match x, y with
  | 1, 1 => true
  | p~1, q~1 => Peqb p q
