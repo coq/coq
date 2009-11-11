@@ -450,8 +450,8 @@ let rec simple_adjust_scopes n = function
 let find_remaining_constructor_scopes pl1 pl2 (ind,j as cstr) =
   let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
   let npar = mib.Declarations.mind_nparams in
-  snd (list_chop (List.length pl1 + npar)
-    (simple_adjust_scopes (npar + List.length pl2)
+  snd (list_chop (npar + List.length pl1)
+    (simple_adjust_scopes (npar + List.length pl1 + List.length pl2)
       (find_arguments_scope (ConstructRef cstr))))
 
 (**********************************************************************)
@@ -526,6 +526,7 @@ let error_invalid_pattern_notation loc =
 
 let chop_aconstr_constructor loc (ind,k) args =
   let nparams = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
+  if nparams > List.length args then error_invalid_pattern_notation loc;
   let params,args = list_chop nparams args in
   List.iter (function AHole _ -> ()
     | _ -> error_invalid_pattern_notation loc) params;
