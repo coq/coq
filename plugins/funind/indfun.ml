@@ -527,7 +527,7 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
 			 raise (UserError("",str "Cannot find argument " ++
 					    Ppconstr.pr_id id))
 		     in
-		     (name,annot,args,types,body),(None:Vernacexpr.decl_notation option)
+		     (name,annot,args,types,body),([]:Vernacexpr.decl_notation list)
 		 | (name,None,args,types,body),recdef ->
 		     let names =  (Topconstr.names_of_local_assums args) in
 		     if  is_one_rec recdef  && List.length names > 1 then
@@ -537,7 +537,7 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
 		     else
 		       let loc, na = List.hd names in
 			 (name,(Some (loc, Nameops.out_name na), Topconstr.CStructRec),args,types,body),
-		     (None:Vernacexpr.decl_notation option)
+		     ([]:Vernacexpr.decl_notation list)
 		 | (_,Some (Wf _),_,_,_),_ | (_,Some (Mes _),_,_,_),_->
 		     error
 		       ("Cannot use mutual definition with well-founded recursion or measure")

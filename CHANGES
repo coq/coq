@@ -54,6 +54,7 @@ Notations
 - Abbreviations now use implicit arguments and arguments scopes for printing.
 - Abbreviations to pure names now strictly behave like the name they refer to
   (make redirections of qualified names easier).
+- The "where" clause now supports multiple notations per defined object.
 
 Vernacular commands
 

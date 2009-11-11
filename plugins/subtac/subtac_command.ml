@@ -431,7 +431,7 @@ let interp_recursive fixkind l boxed =
 
   (* Get interpretation metadatas *)
   let impls = Constrintern.compute_full_internalization_env env Constrintern.Recursive [] fixnames fixtypes fiximps in
-  let notations = List.fold_right Option.List.cons ntnl [] in
+  let notations = List.flatten ntnl in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
   let fixdefs =

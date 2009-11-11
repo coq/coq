@@ -167,7 +167,7 @@ GEXTEND Gram
 	cfs = [ ":="; l = constructor_list_or_record_decl -> l
 	  | -> RecordDecl (None, []) ] ->
 	  let (recf,indf) = b in
-	    VernacInductive (indf,infer,[((oc,name),ps,s,recf,cfs),None])
+	    VernacInductive (indf,infer,[((oc,name),ps,s,recf,cfs),[]])
   ] ]
   ;
   typeclass_context:
@@ -236,10 +236,14 @@ GEXTEND Gram
     [ [ IDENT "Eval"; r = Tactic.red_expr; "in" -> Some r
       | -> None ] ]
   ;
+  one_decl_notation:
+    [ [ ntn = ne_string; ":="; c = constr;
+        scopt = OPT [ ":"; sc = IDENT -> sc] -> (ntn,c,scopt) ] ]
+  ;
   decl_notation:
-    [ [ OPT [ "where"; ntn = ne_string; ":="; c = constr;
-         scopt = OPT [ ":"; sc = IDENT -> sc] -> (ntn,c,scopt) ] ] ]
-    ;
+    [ [ "where"; l = LIST1 one_decl_notation SEP IDENT "and" -> l
+    | -> [] ] ]
+  ;
   (* Inductives and records *)
   inductive_definition:
     [ [ id = identref; oc = opt_coercion; indpar = binders_let;

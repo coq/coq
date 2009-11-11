@@ -49,7 +49,7 @@ let interp_fields_evars evars env nots l =
       in
       let d = (i,b',t') in
       let impls' = set_internalization_env_params impls [] in
-      Option.iter (Metasyntax.set_notation_for_interpretation impls') no;
+      List.iter (Metasyntax.set_notation_for_interpretation impls') no;
       (push_rel d env, impl :: uimpls, d::params, impls))
     (env, [], [], []) nots l
 

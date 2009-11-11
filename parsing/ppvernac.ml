@@ -288,10 +288,9 @@ let pr_type_option pr_c = function
   | CHole (loc, k) -> mt()
   | _ as c -> brk(0,2) ++ str":" ++ pr_c c
 
-let pr_decl_notation prc =
-  pr_opt (fun (ntn,c,scopt) -> fnl () ++
-    str "where " ++ qs ntn ++ str " := " ++ prc c ++
-    pr_opt (fun sc -> str ": " ++ str sc) scopt)
+let pr_decl_notation prc (ntn,c,scopt) =
+  fnl () ++ str "where " ++ qs ntn ++ str " := " ++ prc c ++
+  pr_opt (fun sc -> str ": " ++ str sc) scopt
 
 let pr_vbinders l =
   hv 0 (pr_binders l)
@@ -432,7 +431,7 @@ let pr_record_field (x, ntn) =
       | None ->
           hov 1 (pr_lname id ++ str" :=" ++ spc() ++
                     pr_lconstr b)) in
-    prx ++ pr_decl_notation pr_constr ntn
+    prx ++ prlist (pr_decl_notation pr_constr) ntn
 in
 let pr_record_decl b c fs =
     pr_opt pr_lident c ++ str"{"  ++
@@ -617,7 +616,7 @@ let rec pr_vernac = function
               pr_and_type_binders_arg indpar ++ spc() ++
 	      Option.cata (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) (mt()) s ++
 	      str" :=") ++ pr_constructor_list k lc ++
-	    pr_decl_notation pr_constr ntn
+	    prlist (pr_decl_notation pr_constr) ntn
       in
       hov 1 (pr_oneind (if (Decl_kinds.recursivity_flag_of_kind f) then "Inductive" else "CoInductive") (List.hd l))
       ++
@@ -655,7 +654,7 @@ let rec pr_vernac = function
             pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
             ++ str" :=" ++ brk(1,1) ++ pr_lconstr def ++
-	    pr_decl_notation pr_constr ntn
+	    prlist (pr_decl_notation pr_constr) ntn
       in
       let start = if b then "Boxed Fixpoint" else "Fixpoint" in
       hov 1 (str start ++ spc() ++
@@ -670,7 +669,7 @@ let rec pr_vernac = function
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
         spc() ++ pr_lconstr_expr c ++
         str" :=" ++ brk(1,1) ++ pr_lconstr def  ++
-	pr_decl_notation pr_constr ntn
+	prlist (pr_decl_notation pr_constr) ntn
       in
       let start = if b then "Boxed CoFixpoint" else "CoFixpoint" in
       hov 1 (str start ++ spc() ++

@@ -401,13 +401,13 @@ let vernac_inductive finite infer indl =
 	| _ -> () (* dumping is done by vernac_record (called below) *) )
       indl;
   match indl with
-  | [ ( id , bl , c , b, RecordDecl (oc,fs) ), None ] ->
+  | [ ( id , bl , c , b, RecordDecl (oc,fs) ), [] ] ->
       vernac_record (match b with Class true -> Class false | _ -> b)
 	finite infer id bl c oc fs
   | [ ( id , bl , c , Class true, Constructors [l]), _ ] ->
       let f =
 	let (coe, ((loc, id), ce)) = l in
-	  ((coe, AssumExpr ((loc, Name id), ce)), None)
+	  ((coe, AssumExpr ((loc, Name id), ce)), [])
       in vernac_record (Class true) finite infer id bl c None [f]
   | [ ( id , bl , c , Class true, _), _ ] ->
       Util.error "Definitional classes must have a single method"

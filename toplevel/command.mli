@@ -71,7 +71,7 @@ type structured_inductive_expr =
   local_binder list * structured_one_inductive_expr list
 
 val extract_mutual_inductive_declaration_components :
-  (one_inductive_expr * decl_notation option) list ->
+  (one_inductive_expr * decl_notation list) list ->
     structured_inductive_expr * (*coercions:*) qualid list * decl_notation list
 
 (* Typing mutual inductive definitions *)
@@ -94,7 +94,7 @@ val declare_mutual_inductive_with_eliminations :
 (* Entry points for the vernacular commands Inductive and CoInductive *)
 
 val do_mutual_inductive :
-  (one_inductive_expr * decl_notation option) list -> bool -> unit
+  (one_inductive_expr * decl_notation list) list -> bool -> unit
 
 (*************************************************************************)
 (* Fixpoints and cofixpoints *)
@@ -110,12 +110,12 @@ type structured_fixpoint_expr = {
    (co)fixpoints declarations *)
 
 val extract_fixpoint_components :
-  (fixpoint_expr * decl_notation option) list ->
+  (fixpoint_expr * decl_notation list) list ->
     structured_fixpoint_expr list * decl_notation list *
     (* possible structural arg: *) lident option list
 
 val extract_cofixpoint_components :
-  (cofixpoint_expr * decl_notation option) list ->
+  (cofixpoint_expr * decl_notation list) list ->
     structured_fixpoint_expr list * decl_notation list
 
 (* Typing fixpoints and cofixpoint_expr *)
@@ -144,10 +144,10 @@ val declare_cofixpoint :
 (* Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
 val do_fixpoint :
-  (fixpoint_expr * decl_notation option) list -> bool -> unit
+  (fixpoint_expr * decl_notation list) list -> bool -> unit
 
 val do_cofixpoint :
-  (cofixpoint_expr * decl_notation option) list -> bool -> unit
+  (cofixpoint_expr * decl_notation list) list -> bool -> unit
 
 (* Utils *)
 

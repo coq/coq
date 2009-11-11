@@ -1555,13 +1555,14 @@ let xlate_comment = function
 	(CT_coerce_NUM_to_FORMULA(CT_int_encapsulator (string_of_int n)));;
 
 let translate_opt_notation_decl = function
-    None -> CT_coerce_NONE_to_DECL_NOTATION_OPT(CT_none)
-  |  Some(s, f, sc) ->
+    [] -> CT_coerce_NONE_to_DECL_NOTATION_OPT(CT_none)
+  | [s, f, sc] ->
        let tr_sc =
 	 match sc with
 	     None -> ctv_ID_OPT_NONE
 	   | Some id -> CT_coerce_ID_to_ID_OPT (CT_ident id) in
-       CT_decl_notation(CT_string s, xlate_formula f, tr_sc);;
+       CT_decl_notation(CT_string s, xlate_formula f, tr_sc)
+  | _ -> xlate_error "TODO: multiple where clause";;
 
 let xlate_level = function
     Extend.NumLevel n -> CT_coerce_INT_to_INT_OR_NEXT(CT_int n)

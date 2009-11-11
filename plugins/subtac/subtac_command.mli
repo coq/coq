@@ -54,7 +54,7 @@ val build_wellfounded :
            Topconstr.constr_expr -> 'b -> 'c -> Subtac_obligations.progress
 
 val build_recursive :
-  (fixpoint_expr * decl_notation option) list -> bool -> unit
+  (fixpoint_expr * decl_notation list) list -> bool -> unit
 
 val build_corecursive :
-  (cofixpoint_expr * decl_notation option) list -> bool -> unit
+  (cofixpoint_expr * decl_notation list) list -> bool -> unit

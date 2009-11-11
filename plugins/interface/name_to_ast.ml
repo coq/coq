@@ -110,7 +110,7 @@ let convert_one_inductive sp tyi =
   (((false,(dummy_loc,basename sp)),
    convert_env(List.rev params),
    Some (extern_constr true envpar arity), Vernacexpr.Inductive_kw ,
-   Constructors (convert_constructors envpar cstrnames cstrtypes)), None);;
+   Constructors (convert_constructors envpar cstrnames cstrtypes)), []);;
 
 (* This function converts a Mutual inductive definition to a Coqast.t.
    It is obtained directly from print_mutual in pretty.ml.  However, all

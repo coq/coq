@@ -331,7 +331,7 @@ let extract_mutual_inductive_declaration_components indl =
   let params = extract_params indl in
   let coes = extract_coercions indl in
   let indl = extract_inductive indl in
-  (params,indl), coes, List.fold_right Option.List.cons ntnl []
+  (params,indl), coes, List.flatten ntnl
 
 let declare_mutual_inductive_with_eliminations isrecord mie impls =
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
@@ -581,13 +581,13 @@ let extract_fixpoint_components l =
   let wfl = List.map (fun (_,wf,_,_,_) -> fst wf) fixl in
   let fixl = List.map (fun ((_,id),_,bl,typ,def) ->
     {fix_name = id; fix_binders = bl; fix_body = def; fix_type = typ}) fixl in
-  fixl, List.fold_right Option.List.cons ntnl [], wfl
+  fixl, List.flatten ntnl, wfl
 
 let extract_cofixpoint_components l =
   let fixl, ntnl = List.split l in
   List.map (fun ((_,id),bl,typ,def) ->
     {fix_name = id; fix_binders = bl; fix_body = def; fix_type = typ}) fixl,
-  List.fold_right Option.List.cons ntnl []
+  List.flatten ntnl
 
 let do_fixpoint l b =
   let fixl,ntns,wfl = extract_fixpoint_components l in
