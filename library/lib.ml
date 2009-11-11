@@ -171,9 +171,8 @@ let find_split_p p =
 
 let split_lib_gen test = 
   let rec collect after equal = function
-    | hd::strict_before as before ->
-      	if test hd then collect after (hd::equal) strict_before else after,equal,before
-    | [] as before -> after,equal,before
+    | hd::before when test hd -> collect after (hd::equal) before
+    | before -> after,equal,before
   in
   let rec findeq after = function
     | hd :: before ->
@@ -194,7 +193,14 @@ let split_lib_gen test =
       | None -> error "no such entry"
       | Some r -> r
 
-let split_lib sp = split_lib_gen (fun x -> (fst x) = sp)
+let split_lib sp = split_lib_gen (fun x -> fst x = sp)
+
+let split_lib_at_opening sp =
+  split_lib_gen (function
+    | x,(OpenedSection _|OpenedModule _|OpenedModtype _|CompilingLibrary _) ->
+	x = sp
+    | _ ->
+	false)
 
 (* Adding operations. *)
 
@@ -299,7 +305,7 @@ let end_module id =
     with Not_found ->
       error "no opened modules"
   in
-  let (after,modopening,before) = split_lib oname in
+  let (after,modopening,before) = split_lib_at_opening oname in
   lib_stk := before;
   add_entry (make_oname id) (ClosedModule (List.rev_append after (List.rev modopening)));
   let prefix = !path_prefix in
@@ -344,7 +350,7 @@ let end_modtype id =
     with Not_found ->
       error "no opened module types"
   in
-  let (after,modtypeopening,before) = split_lib sp in
+  let (after,modtypeopening,before) = split_lib_at_opening sp in
   lib_stk := before;
   add_entry (make_oname id) (ClosedModtype (List.rev_append after (List.rev modtypeopening)));
   let dir = !path_prefix in
@@ -407,7 +413,7 @@ let end_compilation dir =
 	    ("The current open module has name "^ (Names.string_of_dirpath m) ^ 
 	       " and not " ^ (Names.string_of_dirpath m));
   in
-  let (after,_,before) = split_lib oname in
+  let (after,_,before) = split_lib_at_opening oname in
     comp_name := None;
     !path_prefix,after
 
@@ -587,7 +593,7 @@ let close_section id =
     with Not_found ->
       error "No opened section."
   in
-  let (secdecls,secopening,before) = split_lib oname in
+  let (secdecls,secopening,before) = split_lib_at_opening oname in
   lib_stk := before;
   let full_olddir = fst !path_prefix in
   pop_path_prefix ();
@@ -640,7 +646,7 @@ let reset_to_gen test =
   let (_,_,before) = split_lib_gen test in
   set_lib_stk before
 
-let reset_to sp = reset_to_gen (fun x -> (fst x) = sp)
+let reset_to sp = reset_to_gen (fun x -> fst x = sp)
 
 let reset_to_state sp =
   let (_,eq,before) = split_lib sp in
@@ -667,7 +673,7 @@ let delete_gen test =
  in
   set_lib_stk (List.rev_append (chop_at_dot after) (chop_before_dot before))
 
-let delete sp = delete_gen (fun x -> (fst x) = sp)
+let delete sp = delete_gen (fun x -> fst x = sp)
 
 let reset_name (loc,id) =
   let (sp,_) = 
