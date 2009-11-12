@@ -179,7 +179,7 @@ let register_is_applied_rewrite_relation = (:=) is_applied_rewrite_relation
 
 let find_elim hdcncl lft2rgt dep cls gl =
   let inccl = (cls = None) in
-  if hdcncl = constr_of_reference (Coqlib.glob_eq) then
+  if hdcncl = constr_of_reference (Coqlib.glob_eq) & not dep then
     (* use eq_rect, eq_rect_r, etc for compatibility *)
     let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
     let hdcncls = string_of_inductive hdcncl ^ suffix in
