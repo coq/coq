@@ -37,12 +37,35 @@ Delimit Scope bigN_scope with bigN.
 Bind Scope bigN_scope with bigN.
 Bind Scope bigN_scope with BigN.t.
 Bind Scope bigN_scope with BigN.t_.
+(* Bind Scope has no retroactive effect, let's declare scopes by hand. *)
+Arguments Scope BigN.to_Z [bigN_scope].
+Arguments Scope BigN.succ [bigN_scope].
+Arguments Scope BigN.pred [bigN_scope].
+Arguments Scope BigN.square [bigN_scope].
+Arguments Scope BigN.add [bigN_scope bigN_scope].
+Arguments Scope BigN.sub [bigN_scope bigN_scope].
+Arguments Scope BigN.mul [bigN_scope bigN_scope].
+Arguments Scope BigN.div [bigN_scope bigN_scope].
+Arguments Scope BigN.eq [bigN_scope bigN_scope].
+Arguments Scope BigN.lt [bigN_scope bigN_scope].
+Arguments Scope BigN.le [bigN_scope bigN_scope].
+Arguments Scope BigN.eq [bigN_scope bigN_scope].
+Arguments Scope BigN.compare [bigN_scope bigN_scope].
+Arguments Scope BigN.min [bigN_scope bigN_scope].
+Arguments Scope BigN.max [bigN_scope bigN_scope].
+Arguments Scope BigN.eq_bool [bigN_scope bigN_scope].
+Arguments Scope BigN.power_pos [bigN_scope positive_scope].
+Arguments Scope BigN.sqrt [bigN_scope].
+Arguments Scope BigN.div_eucl [bigN_scope bigN_scope].
+Arguments Scope BigN.modulo [bigN_scope bigN_scope].
+Arguments Scope BigN.gcd [bigN_scope bigN_scope].
 
 Local Notation "0" := BigN.zero : bigN_scope. (* temporary notation *)
 Infix "+" := BigN.add : bigN_scope.
 Infix "-" := BigN.sub : bigN_scope.
 Infix "*" := BigN.mul : bigN_scope.
 Infix "/" := BigN.div : bigN_scope.
+Infix "^" := BigN.power_pos : bigN_scope.
 Infix "?=" := BigN.compare : bigN_scope.
 Infix "==" := BigN.eq (at level 70, no associativity) : bigN_scope.
 Infix "<" := BigN.lt : bigN_scope.

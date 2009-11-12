@@ -193,20 +193,32 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  intros H H'; rewrite H in H'; discriminate.
  Qed.
 
+ (** [check_int] : is a reduced fraction [n/d] in fact a integer ? *)
+
+ Definition check_int n d :=
+  match N.compare N.one d with
+  | Lt => Qq n d
+  | Eq => Qz n
+  | Gt => zero  (* n/0 encodes 0 *)
+  end.
+
+ Theorem strong_spec_check_int : forall n d, [check_int n d] = [Qq n d].
+ Proof.
+ intros; unfold check_int.
+ nzsimpl.
+ destr_zcompare.
+ simpl. rewrite <- H; qsimpl. congruence.
+ reflexivity.
+ qsimpl. exfalso. generalize (N.spec_pos d); romega.
+ Qed.
+
  (** Normalisation function *)
 
  Definition norm n d : t :=
   let gcd := N.gcd (Zabs_N n) d in
   match N.compare N.one gcd with
-  | Lt =>
-    let n := Z.div n (Z_of_N gcd) in
-    let d := N.div d gcd in
-    match N.compare d N.one with
-    | Gt => Qq n d
-    | Eq => Qz n
-    | Lt => zero
-    end
-  | Eq => Qq n d
+  | Lt => check_int (Z.div n (Z_of_N gcd)) (N.div d gcd)
+  | Eq => check_int n d
   | Gt => zero (* gcd = 0 => both numbers are 0 *)
   end.
 
@@ -217,29 +229,19 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  assert (Hq := N.spec_pos q).
  nzsimpl.
  destr_zcompare.
+ (* Eq *)
+ rewrite strong_spec_check_int; reflexivity.
+ (* Lt *)
+ rewrite strong_spec_check_int.
  qsimpl.
-
- simpl_ndiv.
- destr_zcompare.
- qsimpl.
- rewrite H1 in *; rewrite Zdiv_0_l in H0; discriminate.
- rewrite N_to_Z2P; auto.
- simpl_zdiv; nzsimpl.
- rewrite Zgcd_div_swap0, H0; romega.
-
- qsimpl.
- assert (0 < N.to_Z q / Zgcd (Z.to_Z p) (N.to_Z q))%Z.
-  apply Zgcd_div_pos; romega.
- romega.
-
- qsimpl.
- simpl_ndiv in *; nzsimpl; romega.
+ simpl_ndiv in *; nzsimpl.
+ generalize (Zgcd_div_pos (Z.to_Z p) (N.to_Z q)). omega.
  simpl_ndiv in *.
- rewrite H1, Zdiv_0_l in H2; elim H2; auto.
+ rewrite H0 in *. rewrite Zdiv_0_l in H1; elim H1; auto.
  rewrite 2 N_to_Z2P; auto.
  simpl_ndiv; simpl_zdiv; nzsimpl.
  apply Zgcd_div_swap0; romega.
-
+ (* Gt *)
  qsimpl.
  assert (H' : Zgcd (Z.to_Z p) (N.to_Z q) = 0%Z).
   generalize (Zgcd_is_pos (Z.to_Z p) (N.to_Z q)); romega.
@@ -256,28 +258,22 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  assert (Hp := N.spec_pos (Zabs_N p)).
  assert (Hq := N.spec_pos q).
  nzsimpl.
- destr_zcompare.
+ destr_zcompare; rewrite ?strong_spec_check_int.
  (* Eq *)
  simpl.
  destr_neq_bool; nzsimpl; simpl; auto.
  intros.
  rewrite N_to_Z2P; auto.
  (* Lt *)
- simpl_ndiv.
- destr_zcompare.
- qsimpl; auto.
  qsimpl.
- qsimpl.
- simpl_zdiv; nzsimpl.
  rewrite N_to_Z2P; auto.
- clear H1.
- simpl_ndiv; nzsimpl.
+ simpl_zdiv; simpl_ndiv in *; nzsimpl.
  rewrite Zgcd_1_rel_prime.
  destruct (Z_lt_le_dec 0 (N.to_Z q)).
  apply Zis_gcd_rel_prime; auto with zarith.
  apply Zgcd_is_gcd.
  replace (N.to_Z q) with 0%Z in * by romega.
- rewrite Zdiv_0_l in H0; discriminate.
+ simpl in H0; elim H0; auto.
  (* Gt *)
  simpl; auto with zarith.
  Qed.

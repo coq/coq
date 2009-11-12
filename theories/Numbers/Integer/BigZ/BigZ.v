@@ -31,6 +31,31 @@ Delimit Scope bigZ_scope with bigZ.
 Bind Scope bigZ_scope with bigZ.
 Bind Scope bigZ_scope with BigZ.t.
 Bind Scope bigZ_scope with BigZ.t_.
+(* Bind Scope has no retroactive effect, let's declare scopes by hand. *)
+Arguments Scope BigZ.Pos [bigN_scope].
+Arguments Scope BigZ.Neg [bigN_scope].
+Arguments Scope BigZ.to_Z [bigZ_scope].
+Arguments Scope BigZ.succ [bigZ_scope].
+Arguments Scope BigZ.pred [bigZ_scope].
+Arguments Scope BigZ.opp [bigZ_scope].
+Arguments Scope BigZ.square [bigZ_scope].
+Arguments Scope BigZ.add [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.sub [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.mul [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.div [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.eq [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.lt [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.le [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.eq [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.compare [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.min [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.max [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.eq_bool [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.power_pos [bigZ_scope positive_scope].
+Arguments Scope BigZ.sqrt [bigZ_scope].
+Arguments Scope BigZ.div_eucl [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.modulo [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.gcd [bigZ_scope bigZ_scope].
 
 Local Notation "0" := BigZ.zero : bigZ_scope.
 Infix "+" := BigZ.add : bigZ_scope.
@@ -38,6 +63,7 @@ Infix "-" := BigZ.sub : bigZ_scope.
 Notation "- x" := (BigZ.opp x) : bigZ_scope.
 Infix "*" := BigZ.mul : bigZ_scope.
 Infix "/" := BigZ.div : bigZ_scope.
+Infix "^" := BigZ.power_pos : bigZ_scope.
 Infix "?=" := BigZ.compare : bigZ_scope.
 Infix "==" := BigZ.eq (at level 70, no associativity) : bigZ_scope.
 Infix "<" := BigZ.lt : bigZ_scope.

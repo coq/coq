@@ -45,13 +45,37 @@ Delimit Scope bigQ_scope with bigQ.
 Bind Scope bigQ_scope with bigQ.
 Bind Scope bigQ_scope with BigQ.t.
 Bind Scope bigQ_scope with BigQ.t_.
+(* Bind Scope has no retroactive effect, let's declare scopes by hand. *)
+Arguments Scope BigQ.Qz [bigZ_scope].
+Arguments Scope BigQ.Qq [bigZ_scope bigN_scope].
+Arguments Scope BigQ.to_Q [bigQ_scope].
+Arguments Scope BigQ.red [bigQ_scope].
+Arguments Scope BigQ.opp [bigQ_scope].
+Arguments Scope BigQ.inv [bigQ_scope].
+Arguments Scope BigQ.square [bigQ_scope].
+Arguments Scope BigQ.add [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.sub [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.mul [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.div [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.eq [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.lt [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.le [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.eq [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.compare [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.min [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.max [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.eq_bool [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.power_pos [bigQ_scope positive_scope].
+Arguments Scope BigQ.power [bigQ_scope Z_scope].
+Arguments Scope BigQ.inv_norm [bigQ_scope].
+Arguments Scope BigQ.add_norm [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.sub_norm [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.mul_norm [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.div_norm [bigQ_scope bigQ_scope].
+Arguments Scope BigQ.power_norm [bigQ_scope bigQ_scope].
 
-(** BUG: the previous Bind Scope don't seem to work, and idem with BigN/BigZ.
-    For instance "Check (BigQ.opp 10)" fails when bigQ_scope is closed.
-    (whereas "Check (Int31.add31 10 10)" is ok). Something with modules ?
-    Adding an Arguments Scope helps, but this isn't a satisfactory solution.
-*)
-
+(** As in QArith, we use [#] to denote fractions *)
+Notation "p # q" := (BigQ.Qq p q) (at level 55, no associativity) : bigQ_scope.
 Infix "+" := BigQ.add : bigQ_scope.
 Infix "-" := BigQ.sub : bigQ_scope.
 Notation "- x" := (BigQ.opp x) : bigQ_scope.
