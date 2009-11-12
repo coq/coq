@@ -44,6 +44,11 @@ Delimit Scope bigQ_scope with bigQ.
 Bind Scope bigQ_scope with bigQ.
 Bind Scope bigQ_scope with BigQ.t.
 
+(* Allow nice printing of rational numerals, either as (Qz 1234)
+   or as (Qq 1234 5678) *)
+Arguments Scope BigQ.Qz [bigZ_scope].
+Arguments Scope BigQ.Qq [bigZ_scope bigN_scope].			     
+			     
 Infix "+" := BigQ.add : bigQ_scope.
 Infix "-" := BigQ.sub : bigQ_scope.
 Notation "- x" := (BigQ.opp x) : bigQ_scope.

@@ -92,13 +92,15 @@ let bigZ_neg = ConstructRef ((bigZ_id "t_",0),2)
 
 (*bigQ stuff*)
 let bigQ_module = ["Coq"; "Numbers"; "Rational"; "BigQ"; "BigQ"]
-let qmake_module = ["Coq"; "Numbers"; "Rational"; "BigQ"; "QMake_base"]
+let qmake_module = ["Coq"; "Numbers"; "Rational"; "BigQ"; "QMake"]
 let bigQ_path = make_path (bigQ_module@["BigQ"]) "t"
 (* big ugly hack bis *)
-let bigQ_id = make_kn qmake_module
+let bigQ_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigQ_module)), 
+                             Names.mk_label "BigQ")),
+              [], Names.id_of_string id) : Names.kernel_name)
 let bigQ_scope = "bigQ_scope"
 
-let bigQ_z =  ConstructRef ((bigQ_id "q_type",0),1)
+let bigQ_z =  ConstructRef ((bigQ_id "t_",0),1)
 
 
 (*** Definition of the Non_closed exception, used in the pretty printing ***)
