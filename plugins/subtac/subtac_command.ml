@@ -317,7 +317,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
 	     make_existential dummy_loc ~opaque:(Define false) env isevars wf_proof ;
 	     prop ; intern_body_lam |])
   in
-  let _ = isevars := Evarutil.nf_evar_defs !isevars in
+  let _ = isevars := Evarutil.nf_evar_map !isevars in
   let binders_rel = nf_evar_context !isevars binders_rel in
   let binders = nf_evar_context !isevars binders in
   let top_arity = Evarutil.nf_isevar !isevars top_arity in
