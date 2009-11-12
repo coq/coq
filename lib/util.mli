@@ -172,6 +172,7 @@ val list_firstn : int -> 'a list -> 'a list
 val list_last : 'a list -> 'a
 val list_lastn : int -> 'a list -> 'a list
 val list_skipn : int -> 'a list -> 'a list
+val list_skipn_at_least : int -> 'a list -> 'a list
 val list_addn : int -> 'a -> 'a list -> 'a list
 val list_prefix_of : 'a list -> 'a list -> bool
 (* [list_drop_prefix p l] returns [t] if [l=p++t] else return [l] *)

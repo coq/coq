@@ -391,7 +391,6 @@ let intern_var (env,unbound_vars,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) l
   then
     (set_var_scope loc id genv vars3; RVar (loc,id), [], [], [])
   else
-
   (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
   try
     match List.assoc id unbndltacvars with
@@ -410,8 +409,12 @@ let intern_var (env,unbound_vars,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) l
 	(* [id] a goal variable *)
 	RVar (loc,id), [], [], []
 
-let find_appl_head_data _ = function
+let find_appl_head_data = function
   | RRef (_,ref) as x -> x,implicits_of_global ref,find_arguments_scope ref,[]
+  | RApp (_,RRef (_,ref),l) as x when l <> [] ->
+      let n = List.length l in
+      x,list_skipn_at_least n (implicits_of_global ref),
+      list_skipn_at_least n (find_arguments_scope ref),[]
   | x -> x,[],[],[]
 
 let error_not_enough_arguments loc =
@@ -459,14 +462,14 @@ let intern_non_secvar_qualid loc qid intern env args =
 let intern_applied_reference intern (_, unb, _, _ as env) lvar args = function
   | Qualid (loc, qid) ->
       let r,args2 = intern_qualid loc qid intern env args in
-	find_appl_head_data lvar r, args2
+      find_appl_head_data r, args2
   | Ident (loc, id) ->
       try intern_var env lvar loc id, args
       with Not_found ->
       let qid = qualid_of_ident id in
       try
 	let r,args2 = intern_non_secvar_qualid loc qid intern env args in
-	find_appl_head_data lvar r, args2
+	find_appl_head_data r, args2
       with e ->
 	(* Extra allowance for non globalizing functions *)
 	if !interning_grammar || unb then
@@ -982,7 +985,7 @@ let get_implicit_name n imps =
   Some (Impargs.name_of_implicit (List.nth imps (n-1)))
 
 let set_hole_implicit i b = function
-  | RRef (loc,r) -> (loc,Evd.ImplicitArg (r,i,b))
+  | RRef (loc,r) | RApp (_,RRef (loc,r),_) -> (loc,Evd.ImplicitArg (r,i,b))
   | RVar (loc,id) -> (loc,Evd.ImplicitArg (VarRef id,i,b))
   | _ -> anomaly "Only refs have implicits"
 
@@ -1142,7 +1145,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
             | CRef ref -> intern_applied_reference intern env lvar args ref
             | CNotation (loc,ntn,([],[])) ->
                 let c = intern_notation intern env loc ntn ([],[]) in
-                find_appl_head_data lvar c, args
+                find_appl_head_data c, args
             | x -> (intern env f,[],[],[]), args in
 	let args =
 	  intern_impargs c env impargs args_scopes (merge_impargs l args) in

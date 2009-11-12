@@ -853,6 +853,9 @@ let rec list_skipn n l = match n,l with
   | _, [] -> failwith "list_skipn"
   | n, _::l -> list_skipn (pred n) l
 
+let rec list_skipn_at_least n l =
+  try list_skipn n l with Failure _ -> []
+
 let rec list_addn n x l =
   if n = 0 then l else x :: (list_addn (pred n) x l)
 
