@@ -15,6 +15,13 @@
   open Printf
   open Lexing
 
+  (* A function that emulates Lexing.new_line (which does not exist in OCaml < 3.11.0) *)
+  let new_line lexbuf =
+    let pos = lexbuf.lex_curr_p in
+      lexbuf.lex_curr_p <- { pos with 
+	pos_lnum = pos.pos_lnum + 1;
+	pos_bol = pos.pos_cnum }
+
   (* A list function we need *)
   let rec take n ls =
     if n = 0 then [] else
@@ -989,7 +996,7 @@ and body_bol = parse
   | _ { backtrack lexbuf; Output.indentation 0; body lexbuf }
 
 and body = parse
-  | nl {Output.line_break(); Lexing.new_line lexbuf; body_bol lexbuf}
+  | nl {Output.line_break(); new_line lexbuf; body_bol lexbuf}
   | nl+ space* "]]" space* nl
       { if not !formatted then
           begin
