@@ -46,11 +46,11 @@ Notation "x > y" := (BigZ.lt y x)(only parsing) : bigZ_scope.
 Notation "x >= y" := (BigZ.le y x)(only parsing) : bigZ_scope.
 Notation "[ i ]" := (BigZ.to_Z i) : bigZ_scope.
 
-Open Scope bigZ_scope.
+Local Open Scope bigZ_scope.
 
 (** Some additional results about [BigZ] *)
 
-Theorem spec_to_Z: forall n:bigZ,
+Theorem spec_to_Z: forall n : bigZ,
   BigN.to_Z (BigZ.to_N n) = ((Zsgn [n]) * [n])%Z.
 Proof.
 intros n; case n; simpl; intros p;

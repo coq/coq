@@ -10,7 +10,8 @@
 
 (*i $Id$ i*)
 
-Require Import Field Qfield BigN BigZ QSig QMake.
+Require Export BigZ.
+Require Import Field Qfield QSig QMake.
 
 (** We choose for BigQ an implemention with
     multiple representation of 0: 0, 1/0, 2/0 etc.
@@ -43,6 +44,13 @@ Notation bigQ := BigQ.t.
 Delimit Scope bigQ_scope with bigQ.
 Bind Scope bigQ_scope with bigQ.
 Bind Scope bigQ_scope with BigQ.t.
+Bind Scope bigQ_scope with BigQ.t_.
+
+(** BUG: the previous Bind Scope don't seem to work, and idem with BigN/BigZ.
+    For instance "Check (BigQ.opp 10)" fails when bigQ_scope is closed.
+    (whereas "Check (Int31.add31 10 10)" is ok). Something with modules ?
+    Adding an Arguments Scope helps, but this isn't a satisfactory solution.
+*)
 
 Infix "+" := BigQ.add : bigQ_scope.
 Infix "-" := BigQ.sub : bigQ_scope.
@@ -58,7 +66,7 @@ Notation "x > y" := (BigQ.lt y x)(only parsing) : bigQ_scope.
 Notation "x >= y" := (BigQ.le y x)(only parsing) : bigQ_scope.
 Notation "[ q ]" := (BigQ.to_Q q) : bigQ_scope.
 
-Open Scope bigQ_scope.
+Local Open Scope bigQ_scope.
 
 (** [BigQ] is a setoid *)
 

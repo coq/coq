@@ -20,12 +20,12 @@ Module NSig_NAxioms (N:NType) <: NAxiomsSig.
 Delimit Scope NumScope with Num.
 Bind Scope NumScope with N.t.
 Local Open Scope NumScope.
-Notation "[ x ]" := (N.to_Z x) : NumScope.
-Infix "=="  := N.eq (at level 70) : NumScope.
-Notation "0" := N.zero : NumScope.
-Infix "+" := N.add : NumScope.
-Infix "-" := N.sub : NumScope.
-Infix "*" := N.mul : NumScope.
+Local Notation "[ x ]" := (N.to_Z x) : NumScope.
+Local Infix "=="  := N.eq (at level 70) : NumScope.
+Local Notation "0" := N.zero : NumScope.
+Local Infix "+" := N.add : NumScope.
+Local Infix "-" := N.sub : NumScope.
+Local Infix "*" := N.mul : NumScope.
 
 Hint Rewrite
  N.spec_0 N.spec_succ N.spec_add N.spec_mul N.spec_pred N.spec_sub : num.

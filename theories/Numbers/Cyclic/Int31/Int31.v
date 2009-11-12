@@ -40,7 +40,9 @@ Inductive digits : Type := D0 | D1.
 (** The type [int31] has a unique constructor [I31] that expects
    31 arguments of type [digits]. *)
 
-Inductive int31 : Type := I31 : nfun digits size int31.
+Definition digits31 t := Eval compute in nfun digits size t.
+
+Inductive int31 : Type := I31 : digits31 int31.
 
 (* spiwack: Registration of the type of integers, so that the matchs in
    the functions below perform dynamic decompilation (otherwise some segfault
@@ -50,7 +52,7 @@ Register int31 as int31 type in "coq_int31" by True.
 
 Delimit Scope int31_scope with int31.
 Bind Scope int31_scope with int31.
-Open Scope int31_scope.
+Local Open Scope int31_scope.
 
 (** * Constants *)
 

@@ -1,0 +1,56 @@
+I31
+     : digits31 int31
+2
+     : int31
+660865024
+     : int31
+2 + 2
+     : int31
+2 + 2
+     : int31
+     = 4
+     : int31
+     = 710436486
+     : int31
+2
+     : BigN.t_
+1000000000000000000
+     : BigN.t_
+2 + 2
+     : BigN.t_
+2 + 2
+     : BigN.t_
+     = 4
+     : BigN.t_
+     = 37151199385380486
+     : BigN.t_
+2
+     : BigZ.t_
+-1000000000000000000
+     : BigZ.t_
+2 + 2
+     : BigZ.t_
+2 + 2
+     : BigZ.t_
+     = 4
+     : BigZ.t_
+     = 37151199385380486
+     : BigZ.t_
+2
+     : BigQ.t_
+-1000000000000000000
+     : BigQ.t_
+2 + 2
+     : bigQ
+2 + 2
+     : bigQ
+     = 4
+     : bigQ
+     = 37151199385380486
+     : bigQ
+BigQ.Qq 6562%bigZ 456%bigN
+     : BigQ.t_
+     = BigQ.Qq 3281%bigZ 228%bigN
+     : bigQ
+     = BigQ.Qq 1%bigZ 10000%bigN
+     : bigQ

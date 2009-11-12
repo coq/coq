@@ -51,11 +51,11 @@ Notation "x > y" := (BigN.lt y x)(only parsing) : bigN_scope.
 Notation "x >= y" := (BigN.le y x)(only parsing) : bigN_scope.
 Notation "[ i ]" := (BigN.to_Z i) : bigN_scope.
 
-Open Scope bigN_scope.
+Local Open Scope bigN_scope.
 
 (** Example of reasoning about [BigN] *)
 
-Theorem succ_pred: forall q:bigN,
+Theorem succ_pred: forall q : bigN,
   0 < q -> BigN.succ (BigN.pred q) == q.
 Proof.
 intros; apply succ_pred.

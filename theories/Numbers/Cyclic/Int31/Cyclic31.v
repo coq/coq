@@ -24,8 +24,8 @@ Require Import BigNumPrelude.
 Require Import CyclicAxioms.
 Require Import ROmega.
 
-Open Scope nat_scope.
-Open Scope int31_scope.
+Local Open Scope nat_scope.
+Local Open Scope int31_scope.
 
 Section Basics.
 

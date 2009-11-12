@@ -14,23 +14,22 @@ open Bigint
 open Libnames
 open Rawterm
 
-(*** Constants for locating the int31 and bigN ***)
-
-
+(*** Constants for locating int31 / bigN / bigZ / bigQ constructors ***)
 
 let make_dir l = Names.make_dirpath (List.map Names.id_of_string (List.rev l))
 let make_path dir id = Libnames.make_path (make_dir dir) (Names.id_of_string id)
 
-(* copied on g_zsyntax.ml, where it is said to be a temporary hack*)
-(* takes a path an identifier in the form of a string list and a string,
-   returns a kernel_name *)
-let make_kn dir id = Libnames.encode_mind (make_dir dir) (Names.id_of_string id)
+let make_mind mp id = Names.make_mind mp Names.empty_dirpath (Names.mk_label id)
+let make_mind_mpfile dir id = make_mind (Names.MPfile (make_dir dir)) id
+let make_mind_mpdot dir modname id =
+  let mp = Names.MPdot (Names.MPfile (make_dir dir), Names.mk_label modname)
+  in make_mind mp id
 
 
 (* int31 stuff *)
 let int31_module = ["Coq"; "Numbers"; "Cyclic"; "Int31"; "Int31"]
 let int31_path = make_path int31_module "int31"
-let int31_id = make_kn int31_module
+let int31_id = make_mind_mpfile int31_module
 let int31_scope = "int31_scope"
 
 let int31_construct = ConstructRef ((int31_id "int31",0),1)
@@ -42,18 +41,14 @@ let int31_1 = ConstructRef ((int31_id "digits",0),2)
 (* bigN stuff*)
 let zn2z_module = ["Coq"; "Numbers"; "Cyclic"; "DoubleCyclic"; "DoubleType"]
 let zn2z_path = make_path zn2z_module "zn2z"
-let zn2z_id = make_kn zn2z_module
+let zn2z_id = make_mind_mpfile zn2z_module
 
 let zn2z_W0 = ConstructRef ((zn2z_id "zn2z",0),1)
 let zn2z_WW = ConstructRef ((zn2z_id "zn2z",0),2)
 
 let bigN_module = ["Coq"; "Numbers"; "Natural"; "BigN"; "BigN" ]
 let bigN_path = make_path (bigN_module@["BigN"]) "t"
-(* big ugly hack *)
-let bigN_id id = let kn =
-  ((Names.MPdot ((Names.MPfile (make_dir bigN_module)),
-                 Names.mk_label "BigN")),
-   [], Names.id_of_string id) in (Obj.magic (kn,kn) : Names.mutual_inductive)
+let bigN_t = make_mind_mpdot bigN_module "BigN" "t_"
 let bigN_scope = "bigN_scope"
 
 (* number of inlined level of bigN (actually the level 0 to n_inlined-1 are inlined) *)
@@ -71,7 +66,7 @@ let bigN_constructor =
 	2*(to_int quo)
   in
   fun i ->
-  ConstructRef ((bigN_id "t_",0),
+  ConstructRef ((bigN_t,0),
 		if less_than i n_inlined then
 		  (to_int i)+1
 		else
@@ -81,25 +76,20 @@ let bigN_constructor =
 (*bigZ stuff*)
 let bigZ_module = ["Coq"; "Numbers"; "Integer"; "BigZ"; "BigZ" ]
 let bigZ_path = make_path (bigZ_module@["BigZ"]) "t"
-(* big ugly hack bis *)
-let bigZ_id id =  let kn = ((Names.MPdot ((Names.MPfile (make_dir bigZ_module)),
-                             Names.mk_label "BigZ")),
-              [], Names.id_of_string id) in (Obj.magic (kn,kn): Names.mutual_inductive)
+let bigZ_t = make_mind_mpdot bigZ_module "BigZ" "t_"
 let bigZ_scope = "bigZ_scope"
 
-let bigZ_pos = ConstructRef ((bigZ_id "t_",0),1)
-let bigZ_neg = ConstructRef ((bigZ_id "t_",0),2)
+let bigZ_pos = ConstructRef ((bigZ_t,0),1)
+let bigZ_neg = ConstructRef ((bigZ_t,0),2)
 
 
 (*bigQ stuff*)
 let bigQ_module = ["Coq"; "Numbers"; "Rational"; "BigQ"; "BigQ"]
-let qmake_module = ["Coq"; "Numbers"; "Rational"; "BigQ"; "QMake_base"]
 let bigQ_path = make_path (bigQ_module@["BigQ"]) "t"
-(* big ugly hack bis *)
-let bigQ_id = make_kn qmake_module
+let bigQ_t = make_mind_mpdot bigQ_module "BigQ" "t_"
 let bigQ_scope = "bigQ_scope"
 
-let bigQ_z =  ConstructRef ((bigQ_id "q_type",0),1)
+let bigQ_z =  ConstructRef ((bigQ_t,0),1)
 
 
 (*** Definition of the Non_closed exception, used in the pretty printing ***)
@@ -311,7 +301,7 @@ let uninterp_bigZ rc =
   with Non_closed ->
     None
 
-(* Actually declares the interpreter for bigN *)
+(* Actually declares the interpreter for bigZ *)
 let _ = Notation.declare_numeral_interpreter bigZ_scope
   (bigZ_path, bigZ_module)
   interp_bigZ
@@ -323,21 +313,18 @@ let _ = Notation.declare_numeral_interpreter bigZ_scope
 (*** Parsing for bigQ in digital notation ***)
 let interp_bigQ dloc n =
   let ref_z = RRef (dloc, bigQ_z) in
-  let ref_pos = RRef (dloc, bigZ_pos) in
-  let ref_neg = RRef (dloc, bigZ_neg) in
-  if is_pos_or_zero n then
-    RApp (dloc, ref_z,
-       [RApp (dloc, ref_pos, [bigN_of_pos_bigint dloc n])])
-  else
-    RApp (dloc, ref_z,
-       [RApp (dloc, ref_neg, [bigN_of_pos_bigint dloc (neg n)])])
+  RApp (dloc, ref_z, [interp_bigZ dloc n])
 
-let uninterp_bigQ rc = None
-
+let uninterp_bigQ rc =
+  try match rc with
+    | RApp (_, RRef(_,c), [one_arg]) when c = bigQ_z ->
+	Some (bigint_of_bigZ one_arg)
+    | _ -> None (* we don't pretty-print yet fractions *)
+  with Non_closed -> None
 
 (* Actually declares the interpreter for bigQ *)
 let _ = Notation.declare_numeral_interpreter bigQ_scope
   (bigQ_path, bigQ_module)
   interp_bigQ
-  ([], uninterp_bigQ,
+  ([RRef (Util.dummy_loc, bigQ_z)], uninterp_bigQ,
    true)
