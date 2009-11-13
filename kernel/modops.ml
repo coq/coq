@@ -363,17 +363,21 @@ let complete_inline_delta_resolver env mp mbid mtb delta =
 	let kn = replace_mp_in_kn (MPbound mbid) mp kn in
 	let con = constant_of_kn kn in
 	let con' = constant_of_delta delta con in
-	let constant = lookup_constant con' env in
-	  if (not constant.Declarations.const_opaque) then
-	    let constr = Option.map Declarations.force 
-	      constant.Declarations.const_body in
-	      if constr = None then 
-		(make_inline delta r)
+	  try
+	    let constant = lookup_constant con' env in
+	      if (not constant.Declarations.const_opaque) then
+		let constr = Option.map Declarations.force 
+		  constant.Declarations.const_body in
+		  if constr = None then 
+		    (make_inline delta r)
+		  else
+		    add_inline_constr_delta_resolver con (Option.get constr)
+		      (make_inline delta r)
 	      else
-		add_inline_constr_delta_resolver con (Option.get constr)
-		  (make_inline delta r)
-	  else
-	    (make_inline delta r)
+		(make_inline delta r)
+	  with 
+	      Not_found -> error_no_such_label_sub (con_label con) 
+		(string_of_mp (con_modpath con))
   in
     make_inline delta constants
 
