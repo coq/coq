@@ -30,7 +30,6 @@
 #install_printer  (* pftreestate *)  pppftreestate;;
 #install_printer  (* metaset.t *) ppmetas;;
 #install_printer  (* evar_map *)  ppevm;;
-#install_printer  (* evar_defs *)  ppevd;;
 #install_printer  (* clenv *) ppclenv;;
 #install_printer  (* env *) ppenv;;
 
