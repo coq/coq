@@ -77,13 +77,6 @@ class key_cp :
 val string : ?editable: bool -> ?expand: bool -> ?help: string ->
   ?f: (string -> unit) -> string -> string -> parameter_kind
 
-(** Same as {!Configwin.string} but for values which are not strings. *)
-val custom_string : ?editable: bool -> ?expand: bool -> ?help: string ->
-  ?f: ('a -> unit) ->
-    to_string: ('a -> string) ->
-      of_string: (string -> 'a) ->
-	string -> 'a -> parameter_kind
-
 (** [bool label value] creates a boolean parameter.
    @param editable indicate if the value is editable (default is [true]).
    @param help an optional help message.
@@ -184,13 +177,6 @@ val combo : ?editable: bool -> ?expand: bool -> ?help: string ->
 *)
 val text : ?editable: bool -> ?expand: bool -> ?help: string ->
   ?f: (string -> unit) -> string -> string -> parameter_kind
-
-(** Same as {!Configwin.text} but for values which are not strings. *)
-val custom_text : ?editable: bool -> ?expand: bool -> ?help: string ->
-  ?f: ('a -> unit) ->
-    to_string: ('a -> string) ->
-      of_string: (string -> 'a) ->
-	string -> 'a -> parameter_kind
 
 (** Same as {!Configwin.text} but html bindings are available
    in the text widget. Use the [configwin_html_config] utility

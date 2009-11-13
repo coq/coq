@@ -1245,22 +1245,6 @@ let string ?(editable=true) ?(expand=true) ?help ?(f=(fun _ -> ())) label v =
       string_of_string = (fun x -> x) ;
     }
 
-(** Create a custom string param. *)
-let custom_string ?(editable=true) ?(expand=true) ?help ?(f=(fun _ -> ())) ~to_string ~of_string label v =
-  String_param
-    (Configwin_types.mk_custom_text_string_param
-       {
-	 string_label = label ;
-	 string_help = help ;
-	 string_value = v ;
-	 string_editable = editable ;
-	 string_f_apply = f ;
-	 string_expand = expand ;
-	 string_to_string = to_string;
-	 string_of_string = of_string ;
-       }
-    )
-
 (** Create a bool param. *)
 let bool ?(editable=true) ?help ?(f=(fun _ -> ())) label v =
   Bool_param
@@ -1360,22 +1344,6 @@ let text ?(editable=true) ?(expand=true) ?help ?(f=(fun _ -> ())) label v =
       string_to_string = (fun x -> x) ;
       string_of_string = (fun x -> x) ;
     }
-
-(** Create a custom text param. *)
-let custom_text ?(editable=true) ?(expand=true) ?help ?(f=(fun _ -> ())) ~to_string ~of_string label v =
-  Text_param
-    (Configwin_types.mk_custom_text_string_param
-       {
-	 string_label = label ;
-	 string_help = help ;
-	 string_value = v ;
-	 string_editable = editable ;
-	 string_f_apply = f ;
-	 string_expand = expand ;
-	 string_to_string = to_string;
-	 string_of_string = of_string ;
-       }
-    )
 
 (** Create a html param. *)
 let html ?(editable=true) ?(expand=true) ?help ?(f=(fun _ -> ())) label v =

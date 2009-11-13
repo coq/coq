@@ -244,10 +244,6 @@ type modifiers_param = {
   }
 
 
-let mk_custom_text_string_param (a : 'a string_param) : string string_param =
-  Obj.magic a
-
-
 (** This type represents the different kinds of parameters. *)
 type parameter_kind =
     String_param of string string_param

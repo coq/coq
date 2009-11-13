@@ -43,9 +43,7 @@ class key_cp = Configwin_types.key_cp
 
 
 let string = Configwin_ihm.string
-let custom_string = Configwin_ihm.custom_string
 let text = Configwin_ihm.text
-let custom_text = Configwin_ihm.custom_text
 let strings = Configwin_ihm.strings
 let list = Configwin_ihm.list
 let bool = Configwin_ihm.bool
