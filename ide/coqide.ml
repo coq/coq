@@ -3425,7 +3425,8 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 								  let index = session_notebook#append_term session in
 								    activate_input index;
 								end;
-                                  initial_about session_notebook#current_term.proof_view#buffer
+                                  initial_about session_notebook#current_term.proof_view#buffer;
+                                  session_notebook#current_term.script#misc#grab_focus ()
 
 ;;
 
