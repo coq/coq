@@ -13,9 +13,9 @@ Config_lexer
 Utf8_convert
 Preferences
 Ideutils
+CoqLex
 Gtk_parsing
 Undo
-Highlight
 Coq
 Coq_commands
 Coq_tactics

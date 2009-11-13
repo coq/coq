@@ -96,10 +96,6 @@ object('self)
   method undo_last_step : unit
   method help_for_keyword : unit -> unit
   method complete_at_offset : int -> bool
-
-  method toggle_proof_visibility : GText.iter -> unit
-  method hide_proof : GText.iter -> GText.iter -> GText.iter -> unit
-  method unhide_proof : GText.iter -> GText.iter -> GText.iter -> unit
 end
 
 
@@ -522,6 +518,98 @@ let warning msg =
 	     img#coerce)
     msg
 
+let apply_tag (buffer:GText.buffer) orig off_conv from upto sort =
+  let conv_and_apply start stop tag =
+    let start = orig#forward_chars (off_conv from) in
+    let stop = orig#forward_chars (off_conv upto) in
+    buffer#apply_tag ~start ~stop tag
+  in match sort with
+    | CoqLex.Comment ->
+        conv_and_apply from upto Tags.Script.comment
+    | CoqLex.Keyword ->
+        conv_and_apply from upto Tags.Script.kwd
+    | CoqLex.Declaration ->
+        conv_and_apply from upto Tags.Script.decl
+    | CoqLex.ProofDeclaration ->
+        conv_and_apply from upto Tags.Script.proof_decl
+    | CoqLex.Qed ->
+        conv_and_apply from upto Tags.Script.qed
+    | CoqLex.String -> ()
+
+let remove_tags (buffer:GText.buffer) from upto =
+  List.iter (buffer#remove_tag ~start:from ~stop:upto)
+    [ Tags.Script.comment; Tags.Script.kwd; Tags.Script.decl;
+      Tags.Script.proof_decl; Tags.Script.qed; Tags.Script.sentence_end ]
+
+let tag_slice (buffer:GText.buffer) from upto on_fail =
+  remove_tags buffer from upto;
+  buffer#remove_tag ~start:from ~stop:upto Tags.Script.sentence_end;
+  let slice = buffer#get_text ~start:from ~stop:upto () in
+  let rec tag_substring str =
+    let off_conv = byte_offset_to_char_offset str in
+    let slice_len = String.length str in
+    let tag_cnt = CoqLex.find_end_offset (apply_tag buffer from off_conv) str in
+
+    let stop = from#forward_chars (off_conv tag_cnt) in
+    let start = stop#backward_char in
+    buffer#apply_tag ~start ~stop Tags.Script.sentence_end;
+
+    if tag_cnt <> slice_len then begin
+      ignore (from#nocopy#forward_chars (off_conv tag_cnt));
+      tag_substring (String.sub str tag_cnt (slice_len - tag_cnt))
+    end
+  in
+  try tag_substring slice with Not_found -> on_fail buffer from upto
+
+let get_sentence_bounds (iter:GText.iter) =
+  let start = iter#backward_to_tag_toggle (Some Tags.Script.sentence_end) in
+  (if start#has_tag Tags.Script.sentence_end then ignore (
+    start#nocopy#forward_to_tag_toggle (Some Tags.Script.sentence_end)));
+  let stop = start#forward_to_tag_toggle (Some Tags.Script.sentence_end) in
+  (if stop#has_tag Tags.Script.sentence_end then ignore (
+    stop#nocopy#forward_to_tag_toggle (Some Tags.Script.sentence_end)));
+  start,stop
+
+let end_tag_present end_iter =
+  end_iter#backward_char#has_tag Tags.Script.sentence_end
+
+let tag_on_insert =
+  let skip_last = ref (ref true) in (* ref to the mutable flag created on last call *)
+  fun buffer ->
+    let start,stop = get_sentence_bounds (buffer#get_iter_at_mark `INSERT) in
+    let skip_curr = ref true in (* shall the callback be skipped ? by default yes*)
+    let on_tag_fail buffer start _ =
+      skip_curr := false; (* tagging failed, we go to rescue mode *)
+      ignore (Glib.Timeout.add ~ms:1500
+                ~callback:(fun () -> if not !skip_curr then begin
+                             tag_slice buffer start buffer#end_iter (fun _ _ _ -> ());
+                           end; false))
+    in
+    (!skip_last) := true; (* skip the previously created callback *)
+    skip_last := skip_curr;
+    tag_slice buffer start stop on_tag_fail
+
+let force_retag buffer =
+  tag_slice buffer buffer#start_iter buffer#end_iter (fun _ _ _ -> ())
+
+let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
+  (* move back twice if not into proof_decl,
+   * once if into proof_decl and back_char into_proof_decl,
+   * don't move if into proof_decl and back_char not into proof_decl *)
+  if not (cursor#has_tag Tags.Script.proof_decl) then
+    ignore (cursor#nocopy#backward_to_tag_toggle (Some Tags.Script.proof_decl));
+  if cursor#backward_char#has_tag Tags.Script.proof_decl then
+    ignore (cursor#nocopy#backward_to_tag_toggle (Some Tags.Script.proof_decl));
+  let decl_start = cursor in
+  let prf_end = decl_start#forward_to_tag_toggle (Some Tags.Script.qed) in
+  let _,decl_end = get_sentence_bounds decl_start in
+  let _,prf_end = get_sentence_bounds prf_end in
+  if decl_start#has_tag Tags.Script.folded then (
+    buffer#remove_tag ~start:decl_start ~stop:decl_end Tags.Script.folded;
+    buffer#remove_tag ~start:decl_end ~stop:prf_end Tags.Script.hidden)
+  else (
+    buffer#apply_tag ~start:decl_start ~stop:decl_end Tags.Script.folded;
+    buffer#apply_tag ~start:decl_end ~stop:prf_end Tags.Script.hidden)
 
 class analyzed_view (_script:Undo.undoable_view) (_pv:GText.view) (_mv:GText.view) _cs =
 object(self)
@@ -590,7 +678,7 @@ object(self)
                   input_buffer#set_modified false;
                   pop_info ();
                   flash_info "Buffer reverted";
-                  Highlight.highlight_all input_buffer;
+                  force_retag input_buffer;
             with _  ->
               pop_info ();
               flash_info "Warning: could not revert buffer";
@@ -979,11 +1067,10 @@ object(self)
         None
 
   method find_phrase_starting_at (start:GText.iter) =
-    try
-      let end_iter = find_next_sentence start in
+    let _,end_iter = get_sentence_bounds start in
+    if end_tag_present end_iter then
         Some (start,end_iter)
-    with
-      | Not_found -> None
+    else None
 
   method complete_at_offset (offset:int) =
     prerr_endline ("Completion at offset : " ^ string_of_int offset);
@@ -1413,42 +1500,6 @@ object(self)
 
     browse_keyword (self#insert_message) (get_current_word ())
 
-
-
-  method toggle_proof_visibility (cursor:GText.iter) =
-    let start_keywords = ["Theorem";"Lemma";"Corollary";"Remark";"Proposition";"Fact";"Property"] in
-  (*  let has_tag_by_name (it:GText.iter) name =
-      let tt = new GText.tag_table (input_buffer#tag_table) in
-        match tt#lookup name with
-          | Some named_tag -> it#has_tag (new GText.tag named_tag)
-          | _ -> false
-    in*)
-      try
-        let rec find_stmt_start from =
-          let cand_start = find_nearest_backward from start_keywords in
-          let cand_end = find_word_end cand_start in
-          let cand_word = input_buffer#get_text ~start:cand_start ~stop:cand_end () in
-            if List.mem cand_word start_keywords then cand_start else find_stmt_start cand_start
-        in
-        let stmt_start = find_stmt_start cursor in
-        let stmt_end = find_next_sentence stmt_start in
-        let proof_end =
-          find_next_sentence (find_nearest_forward stmt_end ["Qed";"Defined";"Admitted"])
-        in
-          if stmt_start#has_tag Tags.Script.locked
-          then self#unhide_proof stmt_start stmt_end proof_end
-          else self#hide_proof stmt_start stmt_end proof_end
-      with
-          Not_found -> ()
-
-  method hide_proof (stmt_start:GText.iter) (stmt_end:GText.iter) (proof_end:GText.iter) =
-    input_buffer#apply_tag Tags.Script.hidden ~start:stmt_end ~stop:proof_end;
-    input_buffer#apply_tag Tags.Script.locked ~start:stmt_start ~stop:stmt_end
-
-  method unhide_proof (stmt_start:GText.iter) (stmt_end:GText.iter) (proof_end:GText.iter) =
-    input_buffer#remove_tag Tags.Script.hidden ~start:stmt_end ~stop:proof_end;
-    input_buffer#remove_tag Tags.Script.locked ~start:stmt_start ~stop:stmt_end
-
   initializer
     ignore (message_buffer#connect#insert_text
               ~callback:(fun it s -> ignore
@@ -1508,7 +1559,7 @@ object(self)
                                Tags.Script.error
                                ~start:self#get_start_of_input
                                ~stop;
-                             Highlight.highlight_around_current_line
+                             tag_on_insert
                                input_buffer
               )
     );
@@ -1586,23 +1637,6 @@ let create_session () =
     new analyzed_view script proof message stack in
   let _ =
     script#buffer#create_mark ~name:"start_of_input" script#buffer#start_iter in
- (* let _ =
-    List.map (fun (n,p) -> script#buffer#create_tag ~name:n p)
-      ["kwd",[`FOREGROUND "blue"];
-       "decl",[`FOREGROUND "orange red"];
-       "comment",[`FOREGROUND "brown"];
-       "reserved",[`FOREGROUND "dark red"];
-       "error",[`UNDERLINE `DOUBLE ; `FOREGROUND "red"];
-       "to_process",[`BACKGROUND "light blue" ;`EDITABLE false];
-       "processed",[`BACKGROUND "light green" ;`EDITABLE false];
-       "unjustified",[`UNDERLINE `SINGLE; `FOREGROUND "red";
-                      `BACKGROUND "gold";`EDITABLE false];
-       "found",[`BACKGROUND "blue"; `FOREGROUND "white"];
-       "hidden",[`INVISIBLE true; `EDITABLE false];
-       "locked",[`EDITABLE false; `BACKGROUND "light grey"]
-      ] in
-  let _ =
-    message#buffer#create_tag ~name:"error" [`FOREGROUND "red"] in*)
   let _ =
     proof#buffer#create_mark ~name:"end_of_conclusion" proof#buffer#start_iter in
   let _ =
@@ -1876,7 +1910,6 @@ let main files =
 		      prerr_endline ("Loading: switch to view "^ string_of_int index);
 		      session_notebook#goto_page index;
 		      prerr_endline "Loading: highlight";
-		      Highlight.highlight_all input_buffer;
 		      input_buffer#set_modified false;
 		      prerr_endline "Loading: clear undo";
 		      session.script#clear_undo;
@@ -2074,7 +2107,7 @@ let main files =
 		  let rehighlight_m = file_factory#add_item "Reh_ighlight" ~key:GdkKeysyms._L in
 		    ignore (rehighlight_m#connect#activate
 			      (fun () ->
-				 Highlight.highlight_all
+				 force_retag
 				   session_notebook#current_term.script#buffer;
 				 session_notebook#current_term.analyzed_view#recenter_insert));
 
@@ -2548,8 +2581,9 @@ let main files =
                                     ~tooltip:"Hide proof"
                                     ~key:GdkKeysyms._h
                                     ~callback:(fun x ->
-                                                 let cav = session_notebook#current_term.analyzed_view in
-                                                   cav#toggle_proof_visibility cav#get_insert)
+                                                 let sess = session_notebook#current_term in
+                                                 toggle_proof_visibility sess.script#buffer
+                                                   sess.analyzed_view#get_insert)
                                     `MISSING_IMAGE;
 
 				  (* Tactics Menu *)

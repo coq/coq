@@ -20,7 +20,9 @@ module Script =
 struct
   let table = GText.tag_table ()
   let kwd = make_tag table ~name:"kwd" [`FOREGROUND "blue"]
+  let qed = make_tag table ~name:"qed" [`FOREGROUND "blue"]
   let decl = make_tag table ~name:"decl" [`FOREGROUND "orange red"]
+  let proof_decl = make_tag table ~name:"proof_decl" [`FOREGROUND "orange red"]
   let comment = make_tag table ~name:"comment" [`FOREGROUND "brown"]
   let reserved = make_tag table ~name:"reserved" [`FOREGROUND "dark red"]
   let error = make_tag table ~name:"error" [`UNDERLINE `DOUBLE ; `FOREGROUND "red"]
@@ -29,8 +31,9 @@ struct
   let unjustified = make_tag table ~name:"unjustified" [`UNDERLINE `SINGLE; `FOREGROUND "red"; `BACKGROUND "gold";`EDITABLE false]
   let found = make_tag table ~name:"found" [`BACKGROUND "blue"; `FOREGROUND "white"]
   let hidden = make_tag table ~name:"hidden" [`INVISIBLE true; `EDITABLE false]
-  let locked = make_tag table ~name:"locked" [`EDITABLE false; `BACKGROUND "light grey"]
+  let folded = make_tag table ~name:"locked" [`EDITABLE false; `BACKGROUND "light grey"]
   let paren = make_tag table ~name:"paren" [`BACKGROUND "purple"]
+  let sentence_end = make_tag table ~name:"sentence_end" []
 end
 module Proof =
 struct

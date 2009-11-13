@@ -11,9 +11,13 @@
 {
   open Lexing
 
-  type markup =
-    | Keyword of (int*int)
-    | Declaration of (int*int)
+  type token =
+    | Comment
+    | Keyword
+    | Declaration
+    | ProofDeclaration
+    | Qed
+    | String
 
   (* Without this table, the automaton would be too big and
      ocamllex would fail *)
@@ -22,7 +26,7 @@
     List.iter (fun s -> Hashtbl.add h s ())
       [  "Add" ; "Check"; "Eval"; "Extraction" ;
 	 "Load" ; "Undo"; "Goal";
-	 "Proof" ; "Print"; "Qed" ; "Defined" ; "Save" ;
+	 "Proof" ; "Print";"Save" ;
 	 "End" ; "Section"; "Chapter"; "Transparent"; "Opaque"; "Comments"
       ];
     Hashtbl.mem h
@@ -40,10 +44,7 @@
   let is_one_word_declaration =
     let h = Hashtbl.create 97 in
       List.iter (fun s -> Hashtbl.add h s ())
-	[ (* Theorems *)
-          "Theorem" ; "Lemma" ; "Fact" ; "Remark" ; "Corollary" ;
-	  "Proposition" ; "Property" ;
-          (* Definitions *)
+	[ (* Definitions *)
 	  "Definition" ; "Let" ; "Example" ; "SubClass" ;
           "Fixpoint" ; "CoFixpoint" ; "Scheme" ; "Function" ;
           (* Assumptions *)
@@ -56,16 +57,32 @@
 	];
       Hashtbl.mem h
 
-  let starting = ref true
+  let is_proof_declaration =
+    let h = Hashtbl.create 97 in
+    List.iter (fun s -> Hashtbl.add h s ())
+      [ "Theorem" ; "Lemma" ; " Fact" ; "Remark" ; "Corollary" ;
+        "Proposition" ; "Property" ];
+    Hashtbl.mem h
+
+  let is_proof_end =
+    let h = Hashtbl.create 97 in
+    List.iter (fun s -> Hashtbl.add h s ())
+      [ "Qed" ; "Defined" ; "Admitted" ];
+    Hashtbl.mem h
+
+  let start = ref true
 }
 
 let space =
   [' ' '\010' '\013' '\009' '\012']
+
 let firstchar =
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255']
 let identchar =
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let ident = firstchar identchar*
+
+let sentence_sep = '.' [ ' ' '\n' '\t' ]
 
 let multiword_declaration =
   "Module" (space+ "Type")?
@@ -106,53 +123,72 @@ let multiword_command =
 
 rule coq_string = parse
   | "\"\"" { coq_string lexbuf }
-  | "\"" { }
+  | "\"" { Lexing.lexeme_end lexbuf }
+  | eof { Lexing.lexeme_end lexbuf }
   | _ { coq_string lexbuf }
-  | eof { }
 
 and comment = parse
-  | "(*" { comment lexbuf; comment lexbuf }
-  | "*)" { }
-  | "\"" { coq_string lexbuf; comment lexbuf }
+  | "(*" { ignore (comment lexbuf); comment lexbuf }
+  | "\"" { ignore (coq_string lexbuf); comment lexbuf }
+  | "*)" { Lexing.lexeme_end lexbuf }
+  | eof { Lexing.lexeme_end lexbuf }
   | _ { comment lexbuf }
-  | eof { }
 
-and sentence tag_cb = parse
-  | "(*" { comment lexbuf; sentence tag_cb lexbuf }
-  | "\"" { coq_string lexbuf; start := false; sentence tag_cb lexbuf }
-  | space+ { sentence tag_cb lexbuf }
+and sentence stamp = parse
+  | space+ { sentence stamp lexbuf }
+  | "(*" {
+      let comm_start = Lexing.lexeme_start lexbuf in
+      let comm_end = comment lexbuf in
+      stamp comm_start comm_end Comment;
+      sentence stamp lexbuf
+    }
+  | "\"" {
+      let str_start = Lexing.lexeme_start lexbuf in
+      let str_end = coq_string lexbuf in
+      stamp str_start str_end String;
+      start := false;
+      sentence stamp lexbuf
+    }
   | multiword_declaration {
       if !start then begin
         start := false;
-        tag_cb Declaration (lexeme_start lexbuf) (lexeme_end lexbuf)
+        stamp (Lexing.lexeme_start lexbuf) (Lexing.lexeme_end lexbuf) Declaration
       end;
-      inside_sentence lexbuf }
+      sentence stamp lexbuf
+    }
   | multiword_command {
       if !start then begin
         start := false;
-        tag_cb Keyword (lexeme_start lexbuf) (lexeme_end lexbuf)
+        stamp (Lexing.lexeme_start lexbuf) (Lexing.lexeme_end lexbuf) Keyword
       end;
-      sentence tag_cb lexbuf }
+      sentence stamp lexbuf }
   | ident as id {
       if !start then begin
         start := false;
         if id <> "Time" then begin
-            if is_one_word_command id then
-              tag_cb Keyword (lexeme_start lexbuf) (lexeme_end lexbuf)
+            if is_proof_end id then
+              stamp (Lexing.lexeme_start lexbuf) (Lexing.lexeme_end lexbuf) Qed
+            else if is_one_word_command id then
+              stamp (Lexing.lexeme_start lexbuf) (Lexing.lexeme_end lexbuf) Keyword
             else if is_one_word_declaration id then
-              tag_cb Declaration (lexeme_start lexbuf) (lexeme_end lexbuf)
+              stamp (Lexing.lexeme_start lexbuf) (Lexing.lexeme_end lexbuf) Declaration
+            else if is_proof_declaration id then
+              stamp (Lexing.lexeme_start lexbuf) (Lexing.lexeme_end lexbuf) ProofDeclaration
         end
       end else begin
         if is_constr_kw id then
-	  tag_cb Keyword (lexeme_start lexbuf) (lexeme_end lexbuf);
+	  stamp (Lexing.lexeme_start lexbuf) (Lexing.lexeme_end lexbuf) Keyword
       end;
-      sentence tag_cb lexbuf }
-  | _    { sentence tag_cb lexbuf}
-  | eof { }
+      sentence stamp lexbuf }
+  | ".."
+  | _    { sentence stamp lexbuf}
+  | sentence_sep { }
+  | eof { raise Not_found }
 
 {
-  let parse tag_cb slice =
-    let lb = from_string slice in
+  let find_end_offset stamp slice =
+    let lb = Lexing.from_string slice in
     start := true;
-    sentence tag_cb lb
+    sentence stamp lb;
+    Lexing.lexeme_end lb
 }
