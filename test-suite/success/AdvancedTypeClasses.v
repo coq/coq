@@ -1,3 +1,5 @@
+Generalizable Variables all.
+
 Open Scope type_scope.
 
 Section type_reification.

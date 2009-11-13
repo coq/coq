@@ -1,4 +1,4 @@
-Require Import Coq.Program.Program Coq.Program.Equations.
+Require Import Coq.Program.Program Coq.Program.Equality.
 
 Variable A : Set.
 
@@ -49,6 +49,8 @@ Fixpoint conc (Δ Γ : ctx) : ctx :=
 Notation " Γ  ; Δ " := (conc Δ Γ) (at level 25, left associativity) : context_scope.
 
 Reserved Notation " Γ ⊢ τ " (at level 30, no associativity).
+
+Generalizable Variables all.
 
 Inductive term : ctx -> type -> Type :=
 | ax : `(Γ, τ ⊢ τ)
