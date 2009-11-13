@@ -1282,23 +1282,21 @@ let list ?(editable=true) ?help
     label (f_strings : 'a -> string list) v =
   List_param
     (fun tt ->
-      Obj.magic
-	(new list_param_box
-	   {
-	     list_label = label ;
-	     list_help = help ;
-	     list_value = v ;
-	     list_editable = editable ;
-	     list_titles = titles;
-	     list_eq = eq ;
-	     list_strings = f_strings ;
-	     list_color = color ;
-	     list_f_edit = edit ;
-	     list_f_add = add ;
-	     list_f_apply = f ;
-	   }
-	   tt
-	)
+	new list_param_box
+	  {
+	    list_label = label ;
+	    list_help = help ;
+	    list_value = v ;
+	    list_editable = editable ;
+	    list_titles = titles;
+	    list_eq = eq ;
+	    list_strings = f_strings ;
+	    list_color = color ;
+	    list_f_edit = edit ;
+	    list_f_add = add ;
+	    list_f_apply = f ;
+	  }
+	  tt
     )
 
 (** Create a strings param. *)
