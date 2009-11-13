@@ -343,6 +343,8 @@ let val_of_constant_def n c v =
   Obj.set_field res 1 (Obj.repr (Aiddef(ConstKey c, v)));
   val_of_obj res
 
+external val_of_annot_switch : annot_switch -> values = "%identity"
+
 let mkrel_vstack k arity =
   let max = k + arity - 1 in
   Array.init arity (fun i -> val_of_rel (max - i))

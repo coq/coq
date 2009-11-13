@@ -59,6 +59,8 @@ val val_of_named_def : identifier -> values -> values
 val val_of_constant : constant -> values
 val val_of_constant_def : int -> constant -> values -> values
 
+external val_of_annot_switch : annot_switch -> values = "%identity"
+
 (** Destructors *)
 val whd_val : values -> whd
 

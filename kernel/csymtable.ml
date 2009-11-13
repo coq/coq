@@ -102,7 +102,7 @@ let slot_for_str_cst key =
 let slot_for_annot key =
   try Hashtbl.find annot_tbl key
   with Not_found ->
-    let n =  set_global (Obj.magic key) in
+    let n =  set_global (val_of_annot_switch key) in
     Hashtbl.add annot_tbl key n;
     n
 
