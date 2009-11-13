@@ -664,22 +664,20 @@ let profile7 e f a b c d g h i =
 (* Some utilities to compute the logical and physical sizes and depth
    of ML objects *)
 
-open Obj
-
 let c = ref 0
 let s = ref 0
 let b = ref 0
 let m = ref 0
 
 let rec obj_stats d t =
-  if is_int t then m := max d !m
-  else if tag t >= no_scan_tag then
-    if tag t = string_tag then
-      (c := !c + size t; b := !b + 1; m := max d !m)
-    else if tag t = double_tag then
+  if Obj.is_int t then m := max d !m
+  else if Obj.tag t >= Obj.no_scan_tag then
+    if Obj.tag t = Obj.string_tag then
+      (c := !c + Obj.size t; b := !b + 1; m := max d !m)
+    else if Obj.tag t = Obj.double_tag then
       (s := !s + 2; b := !b + 1; m := max d !m)
-    else if tag t = double_array_tag then
-      (s := !s + 2 * size t; b := !b + 1; m := max d !m)
+    else if Obj.tag t = Obj.double_array_tag then
+      (s := !s + 2 * Obj.size t; b := !b + 1; m := max d !m)
     else (b := !b + 1; m := max d !m)
   else
     let n = Obj.size t in
@@ -687,7 +685,7 @@ let rec obj_stats d t =
     block_stats (d + 1) (n - 1) t
 
 and block_stats d i t =
-  if i >= 0 then (obj_stats d (field t i); block_stats d (i-1) t)
+  if i >= 0 then (obj_stats d (Obj.field t i); block_stats d (i-1) t)
 
 let obj_stats a =
   c := 0; s:= 0; b:= 0; m:= 0;
@@ -698,21 +696,21 @@ module H = Hashtbl.Make(
   struct
     type t = Obj.t
     let equal = (==)
-    let hash o = Hashtbl.hash (magic o : int)
+    let hash o = Hashtbl.hash (Obj.magic o : int)
   end)
 
 let tbl = H.create 13
 
 let rec obj_shared_size s t =
-  if is_int t then s
+  if Obj.is_int t then s
   else if H.mem tbl t then s
   else begin
     H.add tbl t ();
     let n = Obj.size t in
-    if tag t >= no_scan_tag then
-      if tag t = string_tag then (c := !c + n; s + 1)
-      else if tag t = double_tag then s + 3
-      else if tag t = double_array_tag then s + 2 * n + 1
+    if Obj.tag t >= Obj.no_scan_tag then
+      if Obj.tag t = Obj.string_tag then (c := !c + n; s + 1)
+      else if Obj.tag t = Obj.double_tag then s + 3
+      else if Obj.tag t = Obj.double_array_tag then s + 2 * n + 1
       else s + 1
     else
       block_shared_size (s + n + 1) (n - 1) t
@@ -720,7 +718,7 @@ let rec obj_shared_size s t =
 
 and block_shared_size s i t =
   if i < 0 then s
-  else block_shared_size (obj_shared_size s (field t i)) (i-1) t
+  else block_shared_size (obj_shared_size s (Obj.field t i)) (i-1) t
 
 let obj_shared_size a =
   H.clear tbl;
