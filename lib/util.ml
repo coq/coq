@@ -810,7 +810,7 @@ let list_split_at index l =
 let list_split_when p =
   let rec split_when_loop x y =
     match y with
-      | []      -> ([],[])
+      | []      -> (List.rev x,[])
       | (a::l)  -> if (p a) then (List.rev x,y) else split_when_loop (a::x) l
   in
   split_when_loop []

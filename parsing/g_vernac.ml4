@@ -553,9 +553,11 @@ GEXTEND Gram
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
 	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c)
 
-      | IDENT "Generalizable"; ["Variable" | IDENT "Variables"];
-           gen = [ IDENT "none" -> None | IDENT "all" -> Some [] | 
-	       idl = LIST1 identref -> Some idl ] ->
+      | IDENT "Generalizable"; 
+	   gen = [IDENT "All"; IDENT "Variables" -> Some []
+	     | IDENT "No"; IDENT "Variables" -> None
+	     | [IDENT "Variable" | IDENT "Variables"];
+		  idl = LIST1 identref -> Some idl ] ->
 	     VernacGeneralizable (use_non_locality (), gen) ] ]
   ;
   implicit_name:

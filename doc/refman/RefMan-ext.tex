@@ -1483,6 +1483,9 @@ but succeeds in
 Check Prop = nat.
 \end{coq_example*}
 
+
+
+
 \subsection{Canonical structures
 \comindex{Canonical Structure}}
 
@@ -1583,6 +1586,72 @@ Lemma cons_inj_bool : forall (m n:bool) l, n :: l = m :: l -> n = m.
 \item {\tt Implicit Type {\ident} : {\type}}\\
 This is useful for declaring the implicit type of a single variable.
 \end{Variants}
+
+
+\subsection{Implicit generalization
+\label{implicit-generalization}
+\comindex{Generalizable Variables}}
+
+Implicit generalization is an automatic elaboration of a statement with
+free variables into a closed statement where these variables are
+quantified explicitly. Implicit generalization is done inside binders
+starting with a \verb|`| and terms delimited by \verb|`{ }| and
+\verb|`( )|, always introducing maximally inserted implicit arguments for
+the generalized variables. Inside implicit generalization
+delimiters, free variables in the current context are automatically
+quantified using a product or a lambda abstraction to generate a closed
+term. In the following statement for example, the variables \texttt{n}
+and \texttt{m} are autamatically generalized and become explicit
+arguments of the lemma as we are using \verb|`( )|:
+
+\begin{coq_example}
+Generalizable All Variables.
+Lemma nat_comm : `(n = n + 0).
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+One can control the set of generalizable identifiers with the
+\texttt{Generalizable} vernacular command to avoid unexpected
+generalizations when mistyping identifiers. There are three variants of
+the command:
+
+\begin{quote}
+{\tt Generalizable (All|No) Variable(s)? ({\ident$_1$ \ident$_n$})?.}
+\end{quote}
+
+\begin{Variants}
+\item {\tt Generalizable All Variables.} All variables are candidate for 
+  generalization if they appear free in the context under a
+  generalization delimiter. This may result in confusing errors in
+  case of typos. In such cases, the context will probably contain some
+  unexpected generalized variable.
+
+\item {\tt Generalizable No Variables.} Disable implicit generalization 
+  entirely. This is the default behavior.
+
+\item {\tt Generalizable Variable(s)? {\ident$_1$ \ident$_n$}.} 
+  Allow generalization of the given identifiers only. Calling this
+  command multiple times adds to the allowed identifiers.
+
+\item {\tt Global Generalizable} Allows to export the choice of
+  generalizable variables.
+\end{Variants}
+
+One can also use implicit generalization for binders, in which case the
+generalized variables are added as binders and set maximally implicit.
+\begin{coq_example*}
+Definition id `(x : A) : A := x.
+\end{coq_example*}
+\begin{coq_example}
+Print id.
+\end{coq_example}
+
+The generalizing binders \verb|`{ }| and \verb|`( )| work similarly to
+their explicit counterparts, only binding the generalized variables
+implicitly, as maximally-inserted arguments. In these binders, the
+binding name for the bound object is optional, whereas the type is
+mandatory, dually to regular binders.
 
 \section{Coercions
 \label{Coercions}

@@ -47,6 +47,7 @@ record syntax of \Coq:
 \end{center}
 \begin{coq_eval}
   Reset Initial.
+  Generalizable All Variables.
 \end{coq_eval}
 
 The $\tele{\alpha_i : \tau_i}$ variables are called the \emph{parameters}
@@ -126,19 +127,13 @@ particular support for type classes:
   class arguments, making derived functions as easy to use as class
   methods. In the example above, \texttt{A} and \texttt{eqa} should be
   set maximally implicit.
-\item They support implicit quantification on class arguments and
-  partialy applied type classes (\S \ref{classes:impl-quant})
-\item They support implicit quantification on superclasses (\S \ref{classes:superclasses})
+\item They support implicit quantification on partialy applied type
+  classes (\S \ref{implicit-generalization}).
+  Any argument not given as part of a type class binder will be
+  automatically generalized.
+\item They also support implicit quantification on superclasses
+  (\S \ref{classes:superclasses})
 \end{itemize}
-
-\subsection{Implicit quantification}
-\label{classes:impl-quant}
-
-Implicit quantification is an automatic elaboration of a statement with
-free variables into a closed statement where these variables are
-quantified explicitly. Implicit generalization is done only inside
-binders beginning with a backquote \texttt{`} and the codomain of
-\texttt{Instance} declarations.
 
 Following the previous example, one can write:
 \begin{coq_example}
@@ -146,16 +141,7 @@ Definition neqb_impl `{eqa : EqDec A} (x y : A) := negb (eqb x y).
 \end{coq_example}
 
 Here \texttt{A} is implicitly generalized, and the resulting function
-is equivalent to the one above. One must be careful that \emph{all} the
-free variables are generalized, which may result in confusing errors in
-case of typos. In such cases, the context will probably contain some
-unexpected generalized variable.
-
-The generalizing binders \verb|`{ }| and \verb|`( )| work similarly to 
-their explicit counterparts, only binding the generalized variables
-implicitly, as maximally-inserted arguments. In these binders, 
-the binding name for the bound object is optional, whereas the type is
-mandatory, dually to regular binders.
+is equivalent to the one above.
 
 \asection{Parameterized Instances}
 
@@ -311,7 +297,7 @@ parameters {\binder$_1$} to {\binder$_n$} and fields {\tt field$_1$} to
   This variant declares a \emph{singleton} class whose only method is
   {\tt \ident$_1$}. This singleton class is a so-called definitional
   class, represented simply as a definition 
-  {\tt \ident \binder$_1$ \ldots \binder$_n$ := \type$_1$} and whose
+  {\tt {\ident} \binder$_1$ \ldots \binder$_n$ := \type$_1$} and whose
   instances are themselves objects of this type. Definitional classes
   are not wrapped inside records, and the trivial projection of an
   instance of such a class is convertible to the instance itself. This can
@@ -340,10 +326,12 @@ priority as for auto hints.
 
 \begin{Variants}
 \item {\tt Instance {\ident} {\binder$_1$ \ldots \binder$_n$} :
+    forall {\binder$_{n+1}$ \ldots \binder$_m$},
     {Class} {t$_1$ \ldots t$_n$} [| \textit{priority}] := \term} 
-  This syntax is used for declaration of singleton class instances. 
-  It does not include curly braces and one need not even mention
-  the unique field name.
+  This syntax is used for declaration of singleton class instances or
+  for directly giving an explicit term of type
+  {\tt forall {\binder$_{n+1}$ \ldots \binder$_m$}, {Class} {t$_1$ \ldots t$_n$}}.
+  One need not even mention the unique field name for singleton classes.
 
 \item {\tt Global Instance} One can use the \texttt{Global} modifier on
   instances declared in a section so that their generalization is automatically
@@ -409,5 +397,4 @@ based on a variant of eauto. The flags semantics are:
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% compile-command: "BIBINPUTS=\".\" make -C ../.. -f Makefile.stage3 doc/refman/Reference-Manual.pdf"
 %%% End: 
