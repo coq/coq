@@ -139,12 +139,13 @@ let discharge_class (_,cl) =
 	(decl :: ctx', n :: subst)
     ) ctx ([], []) in
   let discharge_rel_context subst n rel =
+    let rel = map_rel_context (Cooking.expmod_constr repl) rel in
     let ctx, _ =
       List.fold_right
 	(fun (id, b, t) (ctx, k) ->
 	   (id, Option.smartmap (substn_vars k subst) b, substn_vars k subst t) :: ctx, succ k)
 	rel ([], n)
-    in map_rel_context (Cooking.expmod_constr repl) ctx
+    in ctx
   in
   let abs_context cl =
     match cl.cl_impl with
