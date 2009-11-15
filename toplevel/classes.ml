@@ -151,15 +151,15 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
     | Explicit -> cl, Idset.empty
   in
   let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
-  let k, ctx', len, imps, subst =
+  let k, cty, ctx', ctx, len, imps, subst =
     let (env', ctx), imps = interp_context_evars evars env ctx in
     let c', imps' = interp_type_evars_impls ~evdref:evars env' tclass in
     let len = List.length ctx in
     let imps = imps @ Impargs.lift_implicits len imps' in
     let ctx', c = decompose_prod_assum c' in
-    let ctx' = ctx' @ ctx in
-    let cl, args = Typeclasses.dest_class_app (push_rel_context ctx' env) c in
-      cl, ctx', len, imps, List.rev args
+    let ctx'' = ctx' @ ctx in
+    let cl, args = Typeclasses.dest_class_app (push_rel_context ctx'' env) c in
+      cl, c', ctx', ctx, len, imps, List.rev args
   in
   let id =
     match snd instid with
@@ -172,7 +172,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	  let i = Nameops.add_suffix (id_of_class k) "_instance_0" in
 	    Namegen.next_global_ident_away i (Termops.ids_of_context env)
   in
-  let env' = push_rel_context ctx' env in
+  let env' = push_rel_context ctx env in
   evars := Evarutil.nf_evar_map !evars;
   evars := resolve_typeclasses env !evars;
   let sigma =  !evars in
@@ -181,7 +181,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
       begin
 	let _, ty_constr = instance_constructor k (List.rev subst) in
 	let termtype =
-	  let t = it_mkProd_or_LetIn ty_constr ctx' in
+	  let t = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
 	    Evarutil.nf_isevar !evars t
 	in
 	Evarutil.check_evars env Evd.empty !evars termtype;
@@ -196,26 +196,20 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	  | CRecord (loc, _, fs) ->
 	      if List.length fs > List.length k.cl_props then
 		mismatched_props env' (List.map snd fs) k.cl_props;
-	      fs
-	  | _ ->
-	      if List.length k.cl_props <> 1 then
-		errorlabstrm "new_instance" (Pp.str "Expected a definition for the instance body")
-	      else [Ident (dummy_loc, Nameops.out_name (pi1 (List.hd k.cl_props))), props]
+	      Inl fs
+	  | _ -> Inr props
 	in
 	let subst =
-	  match k.cl_props with
-	  | [(na,b,ty)] ->
-	      let term = match props with [] -> CHole (Util.dummy_loc, None)
-		| [(_,f)] -> f | _ -> assert false in
-	      let ty' = substl subst ty in
-	      let c = interp_casted_constr_evars evars env' term ty' in
-		c :: subst
-	  | _ ->
+	  match props with
+	  | Inr term ->
+	      let c = interp_casted_constr_evars evars env' term cty in
+		Inr (c, subst)
+	  | Inl props ->
 	      let get_id =
 		function
 		  | Ident id' -> id'
 		  | _ -> errorlabstrm "new_instance" (Pp.str "Only local structures are handled")
-	        in
+	      in
 	      let props, rest =
 		List.fold_left
 		  (fun (props, rest) (id,b,_) ->
@@ -232,19 +226,26 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 		if rest <> [] then
 		  unbound_method env' k.cl_impl (get_id (fst (List.hd rest)))
 		else
-		  type_ctx_instance evars env' k.cl_props props subst
-	in
-	let subst = List.fold_left2
-	  (fun subst' s (_, b, _) -> if b = None then s :: subst' else subst')
-	  [] subst (k.cl_props @ snd k.cl_context)
-	in
-	let app, ty_constr = instance_constructor k subst in
-	let termtype =
-	  let t = it_mkProd_or_LetIn ty_constr ctx' in
-	    Evarutil.nf_isevar !evars t
-	in
-	let term = Termops.it_mkLambda_or_LetIn app ctx' in
+		  Inl (type_ctx_instance evars env' k.cl_props props subst)
+	in	  
 	evars := Evarutil.nf_evar_map !evars;
+	let term, termtype =
+	  match subst with
+	  | Inl subst ->
+	      let subst = List.fold_left2
+		(fun subst' s (_, b, _) -> if b = None then s :: subst' else subst')
+		[] subst (k.cl_props @ snd k.cl_context)
+	      in
+	      let app, ty_constr = instance_constructor k subst in
+	      let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
+	      let term = Termops.it_mkLambda_or_LetIn app (ctx' @ ctx) in
+		term, termtype
+	  | Inr (def, subst) ->
+	      let termtype = it_mkProd_or_LetIn cty ctx in
+	      let term = Termops.it_mkLambda_or_LetIn def ctx in
+		term, termtype
+	in
+	let termtype = Evarutil.nf_isevar !evars termtype in
 	let term = Evarutil.nf_isevar !evars term in
 	let evm = undefined_evars !evars in
 	Evarutil.check_evars env Evd.empty !evars termtype;
@@ -255,7 +256,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	    let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	      Flags.silently (fun () ->
 		Lemmas.start_proof id kind termtype (fun _ -> instance_hook k pri global imps ?hook);
-		if props <> [] then 
+		if props <> Inl [] then 
 		  Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS ( !isevars)) *)
 		    (!refine_ref (evm, term))
 		else if Flags.is_auto_intros () then

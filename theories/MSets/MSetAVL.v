@@ -538,7 +538,7 @@ Definition IsOk := bst.
 
 Class Ok (s:t) : Prop := { ok : bst s }.
 
-Instance bst_Ok s (Hs : bst s) : Ok s := Hs.
+Instance bst_Ok s (Hs : bst s) : Ok s := { ok := Hs }.
 
 Fixpoint ltb_tree x s :=
  match s with
@@ -1523,7 +1523,7 @@ Proof.
  destruct (andb_prop _ _ H0); auto.
  (* <- *)
  induction s; simpl; auto.
- intros.
+ intros. red in H0.
  rewrite IHs1; try red; auto.
  rewrite IHs2; try red; auto.
  generalize (H0 t0).

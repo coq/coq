@@ -225,7 +225,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Hint Resolve @ok.
   Hint Constructors Ok.
 
-  Instance Sort_Ok s `(Hs : Sort s) : Ok s := Hs.
+  Instance Sort_Ok s `(Hs : Sort s) : Ok s := { ok := Hs }.
 
   Ltac inv_ok := match goal with
    | H:Ok (_ :: _) |- _ => apply @ok in H; inversion_clear H; inv_ok
