@@ -90,11 +90,11 @@ Proof.
 Qed.
 Hint Immediate lt_S_n: arith v62.
 
-Theorem lt_O_Sn : forall n, 0 < S n.
+Theorem lt_0_Sn : forall n, 0 < S n.
 Proof.
   auto with arith.
 Qed.
-Hint Resolve lt_O_Sn: arith v62.
+Hint Resolve lt_0_Sn: arith v62.
 
 Theorem lt_n_O : forall n, ~ n < 0.
 Proof le_Sn_O.
@@ -175,15 +175,21 @@ Qed.
 
 (** * Comparison to 0 *)
 
-Theorem neq_O_lt : forall n, 0 <> n -> 0 < n.
+Theorem neq_0_lt : forall n, 0 <> n -> 0 < n.
 Proof.
   induction n; auto with arith.
   intros; absurd (0 = 0); trivial with arith.
 Qed.
-Hint Immediate neq_O_lt: arith v62.
+Hint Immediate neq_0_lt: arith v62.
 
-Theorem lt_O_neq : forall n, 0 < n -> 0 <> n.
+Theorem lt_0_neq : forall n, 0 < n -> 0 <> n.
 Proof.
   induction 1; auto with arith.
 Qed.
-Hint Immediate lt_O_neq: arith v62.
+Hint Immediate lt_0_neq: arith v62.
+
+(* begin hide *)
+Notation lt_O_Sn := lt_0_Sn (only parsing).
+Notation neq_O_lt := neq_0_lt (only parsing).
+Notation lt_O_neq := lt_0_neq (only parsing).
+(* end hide *)

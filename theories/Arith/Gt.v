@@ -135,7 +135,7 @@ Hint Resolve gt_trans_S le_gt_trans gt_le_trans: arith v62.
 
 (** * Comparison to 0 *)
 
-Theorem gt_O_eq : forall n, n > 0 \/ 0 = n.
+Theorem gt_0_eq : forall n, n > 0 \/ 0 = n.
 Proof.
   intro n; apply gt_S; auto with arith.
 Qed.
@@ -152,3 +152,7 @@ Proof.
   auto with arith.
 Qed.
 Hint Resolve plus_gt_compat_l: arith v62.
+
+(* begin hide *)
+Notation gt_O_eq := gt_0_eq (only parsing).
+(* end hide *)

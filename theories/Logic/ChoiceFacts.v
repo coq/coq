@@ -7,7 +7,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
+(*i $Id: ChoiceFacts.v 12363 2009-09-28 15:04:07Z letouzey $ i*)
 
 (** Some facts and definitions concerning choice and description in
        intuitionistic logic.
@@ -19,6 +19,8 @@ description principles
             (a "set-theoretic" axiom of choice)
 - AC_fun  = functional form of the (non extensional) axiom of choice
             (a "type-theoretic" axiom of choice)
+- DC_fun  = functional form of the dependent axiom of choice
+- ACw_fun = functional form of the countable axiom of choice
 - AC!     = functional relation reification
             (known as axiom of unique choice in topos theory,
              sometimes called principle of definite description in
@@ -74,6 +76,8 @@ Table of contents
 
 7. Definite description transports classical logic to the computational world
 
+8. Choice -> Dependent choice -> Countable choice
+
 References:
 
 [[Bell]] John L. Bell, Choice principles in intuitionistic set theory,
@@ -116,6 +120,20 @@ Definition FunctionalChoice_on :=
   forall R:A->B->Prop,
     (forall x : A, exists y : B, R x y) ->
     (exists f : A->B, forall x : A, R x (f x)).
+
+(** DC_fun *)
+
+Definition FunctionalDependentChoice_on :=
+  forall (R:A->A->Prop),
+    (forall x, exists y, R x y) -> forall x0,
+    (exists f : nat -> A, f 0 = x0 /\ forall n, R (f n) (f (S n))).
+
+(** ACw_fun *)
+
+Definition FunctionalCountableChoice_on :=
+  forall (R:nat->A->Prop),
+    (forall n, exists y, R n y) ->
+    (exists f : nat -> A, forall n, R n (f n)).
 
 (** AC! or Functional Relation Reification (known as Axiom of Unique Choice
     in topos theory; also called principle of definite description *)
@@ -203,6 +221,10 @@ Notation RelationalChoice :=
   (forall A B, RelationalChoice_on A B).
 Notation FunctionalChoice :=
   (forall A B, FunctionalChoice_on A B).
+Definition FunctionalDependentChoice :=
+  (forall A, FunctionalDependentChoice_on A).
+Definition FunctionalCountableChoice :=
+  (forall A, FunctionalCountableChoice_on A).
 Notation FunctionalChoiceOnInhabitedSet :=
   (forall A B, inhabited B -> FunctionalChoice_on A B).
 Notation FunctionalRelReification :=
@@ -797,4 +819,41 @@ Proof.
   intros FunReify EM C; auto decomp using
     constructive_definite_descr_excluded_middle,
     (relative_non_contradiction_of_definite_descr (C:=C)).
+Qed.
+
+(**********************************************************************)
+(** * Choice => Dependent choice => Countable choice *)
+
+(* The implications below are standard *)
+
+Require Import Arith.
+
+Theorem functional_choice_imp_functional_dependent_choice :
+   FunctionalChoice -> FunctionalDependentChoice.
+Proof.
+  intros FunChoice A R HRfun x0.
+  apply FunChoice in HRfun as (g,Rg).
+  set (f:=fix f n := match n with 0 => x0 | S n' => g (f n') end).
+  exists f; firstorder.
+Qed.
+
+Theorem functional_dependent_choice_imp_functional_countable_choice :
+   FunctionalDependentChoice -> FunctionalCountableChoice.
+Proof.
+  intros H A R H0.
+  set (R' (p q:nat*A) := fst q = S (fst p) /\ R (fst p) (snd q)).
+  destruct (H0 0) as (y0,Hy0).
+  destruct H with (R:=R') (x0:=(0,y0)) as (f,(Hf0,HfS)).
+    intro x; destruct (H0 (fst x)) as (y,Hy).
+    exists (S (fst x),y).
+    red. auto.
+  assert (Heq:forall n, fst (f n) = n).
+    induction n.
+      rewrite Hf0; reflexivity.
+      specialize HfS with n; destruct HfS as (->,_); congruence.
+  exists (fun n => snd (f (S n))).
+  intro n'. specialize HfS with n'.
+  destruct HfS as (_,HR).
+  rewrite Heq in HR.
+  assumption.
 Qed.

@@ -41,25 +41,25 @@ Hint Resolve le_trans: arith v62.
 
 (** Comparison to 0 *)
 
-Theorem le_O_n : forall n, 0 <= n.
+Theorem le_0_n : forall n, 0 <= n.
 Proof.
   induction n; auto.
 Qed.
 
-Theorem le_Sn_O : forall n, ~ S n <= 0.
+Theorem le_Sn_0 : forall n, ~ S n <= 0.
 Proof.
   red in |- *; intros n H.
   change (IsSucc 0) in |- *; elim H; simpl in |- *; auto with arith.
 Qed.
 
-Hint Resolve le_O_n le_Sn_O: arith v62.
+Hint Resolve le_0_n le_Sn_0: arith v62.
 
-Theorem le_n_O_eq : forall n, n <= 0 -> 0 = n.
+Theorem le_n_0_eq : forall n, n <= 0 -> 0 = n.
 Proof.
   induction n; auto with arith.
-  intro; contradiction le_Sn_O with n.
+  intro; contradiction le_Sn_0 with n.
 Qed.
-Hint Immediate le_n_O_eq: arith v62.
+Hint Immediate le_n_0_eq: arith v62.
 
 
 (** [le] and successor *)
@@ -135,3 +135,9 @@ Proof.
   intros m Le.
   elim Le; auto with arith.
 Qed.
+
+(* begin hide *)
+Notation le_O_n := le_0_n (only parsing).
+Notation le_Sn_O := le_Sn_0 (only parsing).
+Notation le_n_O_eq := le_n_0_eq (only parsing).
+(* end hide *)

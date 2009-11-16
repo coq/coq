@@ -148,43 +148,50 @@ Section Choice_lemmas.
   Variables R1 R2 : S -> Prop.
 
   Lemma Choice :
-   (forall x:S, sig (fun y:S' => R x y)) ->
-   sig (fun f:S -> S' => forall z:S, R z (f z)).
+   (forall x:S, {y:S' | R x y}) -> {f:S -> S' | forall z:S, R z (f z)}.
   Proof.
    intro H.
-   exists (fun z:S => match H z with
-                      | exist y _ => y
-                      end).
+   exists (fun z => proj1_sig (H z)).
    intro z; destruct (H z); trivial.
   Qed.
 
   Lemma Choice2 :
-   (forall x:S, sigT (fun y:S' => R' x y)) ->
-   sigT (fun f:S -> S' => forall z:S, R' z (f z)).
+   (forall x:S, {y:S' & R' x y}) -> {f:S -> S' & forall z:S, R' z (f z)}.
   Proof.
     intro H.
-    exists (fun z:S => match H z with
-                       | existT y _ => y
-                       end).
+    exists (fun z => projT1 (H z)).
     intro z; destruct (H z); trivial.
   Qed.
 
   Lemma bool_choice :
    (forall x:S, {R1 x} + {R2 x}) ->
-   sig
-     (fun f:S -> bool =>
-        forall x:S, f x = true /\ R1 x \/ f x = false /\ R2 x).
+     {f:S -> bool | forall x:S, f x = true /\ R1 x \/ f x = false /\ R2 x}.
   Proof.
     intro H.
-    exists
-     (fun z:S => match H z with
-                 | left _ => true
-                 | right _ => false
-                 end).
+    exists (fun z:S => if H z then true else false).
     intro z; destruct (H z); auto.
   Qed.
 
 End Choice_lemmas.
+
+Section Dependent_choice_lemmas.
+
+  Variables X : Set.
+  Variable R : X -> X -> Prop.
+
+  Lemma dependent_choice :
+    (forall x:X, {y | R x y}) ->
+    forall x0, {f : nat -> X | f O = x0 /\ forall n, R (f n) (f (S n))}.
+  Proof.
+    intros H x0.
+    set (f:=fix f n := match n with O => x0 | S n' => proj1_sig (H (f n')) end).
+    exists f.
+    split. reflexivity.
+    induction n; simpl; apply proj2_sig.
+  Qed.
+
+End Dependent_choice_lemmas.
+
 
  (** A result of type [(Exc A)] is either a normal value of type [A] or
      an [error] :

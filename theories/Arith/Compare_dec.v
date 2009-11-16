@@ -56,27 +56,47 @@ Definition le_lt_eq_dec n m : n <= m -> {n < m} + {n = m}.
   intros; absurd (m < n); auto with arith.
 Defined.
 
+Theorem le_dec : forall n m, {n <= m} + {~ n <= m}.
+Proof.
+  intros x y; elim (le_gt_dec x y);
+    [ auto with arith | intro; right; apply gt_not_le; assumption ].
+Qed.
+
+Theorem lt_dec : forall n m, {n < m} + {~ n < m}.
+Proof.
+  intros; apply le_dec.
+Qed.
+
+Theorem gt_dec : forall n m, {n > m} + {~ n > m}.
+Proof.
+  intros; apply lt_dec.
+Qed.
+
+Theorem ge_dec : forall n m, {n >= m} + {~ n >= m}.
+Proof.
+  intros; apply le_dec.
+Qed.
+
 (** Proofs of decidability *)
 
 Theorem dec_le : forall n m, decidable (n <= m).
 Proof.
-  intros x y; unfold decidable in |- *; elim (le_gt_dec x y);
-    [ auto with arith | intro; right; apply gt_not_le; assumption ].
+  intros x y; destruct (le_dec x y); unfold decidable; auto.
 Qed.
 
 Theorem dec_lt : forall n m, decidable (n < m).
 Proof.
-  intros x y; unfold lt in |- *; apply dec_le.
+  intros; apply dec_le.
 Qed.
 
 Theorem dec_gt : forall n m, decidable (n > m).
 Proof.
-  intros x y; unfold gt in |- *; apply dec_lt.
+  intros; apply dec_lt.
 Qed.
 
 Theorem dec_ge : forall n m, decidable (n >= m).
 Proof.
-  intros x y; unfold ge in |- *; apply dec_le.
+  intros; apply dec_le.
 Qed.
 
 Theorem not_eq : forall n m, n <> m -> n < m \/ m < n.
