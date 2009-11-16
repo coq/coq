@@ -663,7 +663,7 @@ let end_modtype () =
   mp
 
 
-let declare_modtype interp_modtype id args mty =
+let declare_modtype_real interp_modtype id args mty =
   let fs = Summary.freeze_summaries () in
 
   try
@@ -824,7 +824,7 @@ let rec update_include (mbids,mp,objs) =
   in
     (mbids,mp,replace_include objs)
 
-let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
+let declare_module_real interp_modtype interp_modexpr id args mty_o mexpr_o =
 
   let fs = Summary.freeze_summaries () in
 
@@ -892,48 +892,42 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
     Summary.unfreeze_summaries fs; raise e
 
 
-let declare_include interp_struct me_ast is_mod is_self =
+let declare_one_include interp_struct me_ast is_mod is_self =
+  let env = Global.env() in
+  let me = interp_struct env me_ast in
+  let mp1,_ = current_prefix () in
+  let compute_objs objs = function
+    | MSEident mp ->
+	let mb_mp = if is_mod then
+	  Environ.lookup_module mp env else
+	    Modops.module_body_of_type mp (Environ.lookup_modtype mp env) in
+	(match objs with
+	   |([],_,_) -> objs
+	   |(mbids,mp_self,objects) ->
+	      let mb = Global.pack_module() in
+	      let rec compute_subst mbids sign  =
+		match mbids with
+		    [] -> empty_subst
+		  | mbid::mbids ->
+		      let farg_id, farg_b, fbody_b =
+			Modops.destr_functor env sign in
+		      let subst=compute_subst mbids fbody_b in
+		      let mp_delta =
+			Modops.complete_inline_delta_resolver env mb.mod_mp
+			  farg_id farg_b mb.mod_delta in
+		      join (map_mbid mbid mb.mod_mp mp_delta) subst
+	      in
+	      let subst = compute_subst mbids mb_mp.mod_type in
+	      ([],mp_self,subst_objects subst objects))
+    | _ -> objs
+  in
 
-  let fs = Summary.freeze_summaries () in
-
-    try
-      let env = Global.env() in
-      let me = interp_struct env me_ast in
-      let mp1,_ = current_prefix () in
-      let compute_objs objs = function
-	| MSEident mp -> 
-	    let mb_mp = if is_mod then 
-	     Environ.lookup_module mp env else  
-	       Modops.module_body_of_type mp (Environ.lookup_modtype mp env) in
-	      (match objs with
-		 |([],_,_) -> objs	  
-		 |(mbids,mp_self,objects) -> 
-		    let mb = Global.pack_module() in
-		    let rec compute_subst mbids sign  =
-		      match mbids with
-			  [] -> empty_subst
-			| mbid::mbids ->
-			    let farg_id, farg_b, fbody_b = 
-			      Modops.destr_functor env sign in
-			    let subst=compute_subst mbids fbody_b in
-			    let mp_delta = 
-			      Modops.complete_inline_delta_resolver env mb.mod_mp 
-				farg_id farg_b mb.mod_delta in
-			      join (map_mbid mbid mb.mod_mp mp_delta) subst
-		    in
-		    let subst = compute_subst mbids mb_mp.mod_type in
-		      ([],mp_self,subst_objects subst objects)
-		 
-	    )
-	| _ -> objs
-      in
-   
       let (mbids,mp,objs)=
 	if is_mod then
 	  get_module_substobjs env mp1 me
 	else
 	  get_modtype_substobjs env mp1 me in
-      let (mbids,mp,objs) = if is_self 
+      let (mbids,mp,objs) = if is_self
       then compute_objs (mbids,mp,objs) me else (mbids,mp,objs) in
       let id = current_mod_id() in
       let resolver =  Global.add_include me is_mod in
@@ -941,9 +935,36 @@ let declare_include interp_struct me_ast is_mod is_self =
 		       subst_objects (map_mp mp mp1 resolver) objs) in
 	ignore (add_leaf id
 		  (in_include ((me,is_mod), substobjs)))
-    with e ->
-      (* Something wrong: undo the whole process *)
-      Summary.unfreeze_summaries fs; raise e
+
+
+let declare_include interp_struct me_ast me_asts is_mod is_self =
+  let fs = Summary.freeze_summaries () in
+  try
+    declare_one_include interp_struct me_ast is_mod is_self;
+    List.iter
+      (fun me -> declare_one_include interp_struct me is_mod true)
+      me_asts
+  with e ->
+    (* Something wrong: undo the whole process *)
+    Summary.unfreeze_summaries fs; raise e
+
+
+let declare_modtype interp_mt id args = function
+  | [] -> assert false
+  | [mty] -> declare_modtype_real interp_mt id args mty
+  | mty :: mty_l ->
+      ignore (start_modtype interp_mt id args);
+      declare_include interp_mt mty mty_l false false;
+      end_modtype ()
+
+let declare_module interp_mt interp_me id args mty_o = function
+  | [] -> declare_module_real interp_mt interp_me id args mty_o None
+  | [me] -> declare_module_real interp_mt interp_me id args mty_o (Some me)
+  | me :: me_l ->
+      ignore (start_module interp_mt None id args mty_o);
+      declare_include interp_me me me_l true false;
+      end_module ()
+
 
 (*s Iterators. *)
 

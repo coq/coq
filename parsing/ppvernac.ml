@@ -751,7 +751,8 @@ let rec pr_vernac = function
       hov 2 (str"Module" ++ spc() ++ pr_require_token export ++
                pr_lident m ++ b ++
                pr_opt (pr_of_module_type pr_lconstr) ty ++
-               pr_opt (fun me -> str ":= " ++ pr_module_expr me) bd)
+	       (if bd = [] then mt () else str ":= ") ++
+	       prlist_with_sep (fun () -> str " <+ ") pr_module_expr bd)
   | VernacDeclareModule (export,id,bl,m1) ->
       let b = pr_module_binders_list bl pr_lconstr in
 	hov 2 (str"Declare Module" ++ spc() ++ pr_require_token export ++
@@ -760,17 +761,17 @@ let rec pr_vernac = function
   | VernacDeclareModuleType (id,bl,m) ->
       let b = pr_module_binders_list bl pr_lconstr in
 	hov 2 (str"Module Type " ++ pr_lident id ++ b ++
-		 pr_opt (fun mt -> str ":= " ++ pr_module_type pr_lconstr mt) m)
-  | VernacInclude (b,in_ast) ->
-      begin
-	match in_ast with
-	  | CIMTE mty ->
-	      hov 2 (str"Include " ++ str (if b then "Self " else "") ++
-		     pr_module_type pr_lconstr mty)
-	  | CIME mexpr ->
-	      hov 2 (str"Include " ++ str (if b then "Self " else "") ++
-		     pr_module_expr mexpr)
-      end
+		 (if m = [] then mt () else str ":= ") ++
+		 prlist_with_sep (fun () -> str " <+ ")
+		                 (pr_module_type pr_lconstr) m)
+  | VernacInclude (b,CIMTE(mty,mtys)) ->
+      let pr_mty = pr_module_type pr_lconstr in
+      hov 2 (str"Include " ++ str (if b then "Self " else "") ++ str "Type " ++
+	     prlist_with_sep (fun () -> str " <+ ") pr_mty (mty::mtys))
+  | VernacInclude (b,CIME(mexpr,mexprs)) ->
+      let pr_me = pr_module_expr in
+      hov 2 (str"Include " ++ str (if b then "Self " else "") ++
+	     prlist_with_sep (fun () -> str " <+ ") pr_me (mexpr::mexprs))
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
       (if i = 1 then mt() else int i ++ str ": ") ++

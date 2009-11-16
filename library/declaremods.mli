@@ -40,7 +40,7 @@ val declare_module :
   (env -> 'modtype -> module_struct_entry) -> (env -> 'modexpr -> module_struct_entry) ->
   identifier ->
   (identifier located list * 'modtype) list -> ('modtype * bool) option ->
-  'modexpr option -> module_path
+  'modexpr list -> module_path
 
 val start_module : (env -> 'modtype -> module_struct_entry) ->
   bool option -> identifier -> (identifier located list * 'modtype) list ->
@@ -53,7 +53,8 @@ val end_module : unit -> module_path
 (*s Module types *)
 
 val declare_modtype : (env -> 'modtype -> module_struct_entry) ->
-  identifier -> (identifier located list * 'modtype) list -> 'modtype -> module_path
+  identifier -> (identifier located list * 'modtype) list ->
+  'modtype list -> module_path
 
 val start_modtype : (env -> 'modtype -> module_struct_entry) ->
   identifier -> (identifier located list * 'modtype) list -> module_path
@@ -100,7 +101,7 @@ val import_module : bool -> module_path -> unit
 (* Include  *)
 
 val declare_include : (env -> 'struct_expr -> module_struct_entry) ->
-  'struct_expr -> bool -> bool -> unit
+  'struct_expr -> 'struct_expr list -> bool -> bool -> unit
 
 (*s [iter_all_segments] iterate over all segments, the modules'
     segments first and then the current segment. Modules are presented

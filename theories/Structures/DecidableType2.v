@@ -22,135 +22,98 @@ End BareEquality.
 
 (** * Specification of the equality by the Type Classe [Equivalence] *)
 
-Module Type Equality_fun (Import E:BareEquality).
+Module Type IsEq (Import E:BareEquality).
   Instance eq_equiv : Equivalence eq.
   Hint Resolve (@Equivalence_Reflexive _ _ eq_equiv).
   Hint Resolve (@Equivalence_Transitive _ _ eq_equiv).
   Hint Immediate (@Equivalence_Symmetric _ _ eq_equiv).
-End Equality_fun.
+End IsEq.
 
 (** * Earlier specification of equality by three separate lemmas. *)
 
-Module Type EqualityOrig_fun(Import E:BareEquality).
+Module Type IsEqOrig (Import E:BareEquality).
   Axiom eq_refl : forall x : t, eq x x.
   Axiom eq_sym : forall x y : t, eq x y -> eq y x.
   Axiom eq_trans : forall x y z : t, eq x y -> eq y z -> eq x z.
   Hint Immediate eq_sym.
   Hint Resolve eq_refl eq_trans.
-End EqualityOrig_fun.
+End IsEqOrig.
 
 (** * Types with decidable equality *)
 
-Module Type Decidable_fun (Import E:BareEquality).
+Module Type HasEqDec (Import E:BareEquality).
   Parameter eq_dec : forall x y : t, { eq x y } + { ~ eq x y }.
-End Decidable_fun.
+End HasEqDec.
 
 (** * Boolean Equality *)
 
 (** Having [eq_dec] is the same as having a boolean equality plus
     a correctness proof. *)
 
-Module Type BoolEq_fun (Import E:BareEquality).
+Module Type HasEqBool (Import E:BareEquality).
   Parameter Inline eqb : t -> t -> bool.
   Parameter eqb_eq : forall x y, eqb x y = true <-> eq x y.
-End BoolEq_fun.
+End HasEqBool.
 
 (** From these basic blocks, we can build many combinations
     of static standalone module types. *)
 
-Module Type EqualityType.
-  Include Type BareEquality.
-  Include Self Type Equality_fun.
-End EqualityType.
+Module Type EqualityType := BareEquality <+ IsEq.
 
-Module Type EqualityTypeOrig.
-  Include Type BareEquality.
-  Include Self Type EqualityOrig_fun.
-End EqualityTypeOrig.
+Module Type EqualityTypeOrig := BareEquality <+ IsEqOrig.
 
-Module Type EqualityTypeBoth. (* <: EqualityType <: EqualityTypeOrig *)
-  Include Type BareEquality.
-  Include Self Type Equality_fun.
-  Include Self Type EqualityOrig_fun.
-End EqualityTypeBoth.
+Module Type EqualityTypeBoth (* <: EqualityType <: EqualityTypeOrig *)
+ := BareEquality <+ IsEq <+ IsEqOrig.
 
-Module Type DecidableType. (* <: EqualityType *)
-  Include Type BareEquality.
-  Include Self Type Equality_fun.
-  Include Self Type Decidable_fun.
-End DecidableType.
+Module Type DecidableType (* <: EqualityType *)
+ := BareEquality <+ IsEq <+ HasEqDec.
 
-Module Type DecidableTypeOrig. (* <: EqualityTypeOrig *)
-  Include Type BareEquality.
-  Include Self Type EqualityOrig_fun.
-  Include Self Type Decidable_fun.
-End DecidableTypeOrig.
+Module Type DecidableTypeOrig (* <: EqualityTypeOrig *)
+ := BareEquality <+ IsEqOrig <+ HasEqDec.
 
-Module Type DecidableTypeBoth. (* <: DecidableType <: DecidableTypeOrig *)
-  Include Type EqualityTypeBoth.
-  Include Self Type Decidable_fun.
-End DecidableTypeBoth.
+Module Type DecidableTypeBoth (* <: DecidableType <: DecidableTypeOrig *)
+ := EqualityTypeBoth <+ HasEqDec.
 
-Module Type BooleanEqualityType. (* <: EqualityType *)
-  Include Type BareEquality.
-  Include Self Type Equality_fun.
-  Include Self Type BoolEq_fun.
-End BooleanEqualityType.
+Module Type BooleanEqualityType (* <: EqualityType *)
+ := BareEquality <+ IsEq <+ HasEqBool.
 
-Module Type BooleanDecidableType. (* <: DecidableType <: BooleanEqualityType *)
-  Include Type BareEquality.
-  Include Self Type Equality_fun.
-  Include Self Type Decidable_fun.
-  Include Self Type BoolEq_fun.
-End BooleanDecidableType.
+Module Type BooleanDecidableType (* <: DecidableType <: BooleanEqualityType *)
+ := BareEquality <+ IsEq <+ HasEqDec <+ HasEqBool.
 
-Module Type DecidableTypeFull. (* <: all previous interfaces *)
-  Include Type BareEquality.
-  Include Self Type Equality_fun.
-  Include Self Type EqualityOrig_fun.
-  Include Self Type Decidable_fun.
-  Include Self Type BoolEq_fun.
-End DecidableTypeFull.
+Module Type DecidableTypeFull (* <: all previous interfaces *)
+ := BareEquality <+ IsEq <+ IsEqOrig <+ HasEqDec <+ HasEqBool.
 
 
 (** * Compatibility wrapper from/to the old version of
       [EqualityType] and [DecidableType] *)
 
-Module Backport_ET_fun (E:BareEquality)(F:Equality_fun E) <: EqualityOrig_fun E.
+Module BackportEq (E:BareEquality)(F:IsEq E) <: IsEqOrig E.
  Definition eq_refl := @Equivalence_Reflexive _ _ F.eq_equiv.
  Definition eq_sym := @Equivalence_Symmetric _ _ F.eq_equiv.
  Definition eq_trans := @Equivalence_Transitive _ _ F.eq_equiv.
-End Backport_ET_fun.
+End BackportEq.
 
-Module Update_ET_fun (E:BareEquality)(F:EqualityOrig_fun E) <: Equality_fun E.
+Module UpdateEq (E:BareEquality)(F:IsEqOrig E) <: IsEq E.
  Instance eq_equiv : Equivalence E.eq.
  Proof. exact (Build_Equivalence _ _ F.eq_refl F.eq_sym F.eq_trans). Qed.
-End Update_ET_fun.
+End UpdateEq.
 
-Module Backport_ET (E:EqualityType) <: EqualityTypeBoth.
- Include E.
- Include Backport_ET_fun E E.
-End Backport_ET.
+Module Backport_ET (E:EqualityType) <: EqualityTypeBoth
+ := E <+ BackportEq E E.
 
-Module Update_ET (E:EqualityTypeOrig) <: EqualityTypeBoth.
- Include E.
- Include Update_ET_fun E E.
-End Update_ET.
+Module Update_ET (E:EqualityTypeOrig) <: EqualityTypeBoth
+ := E <+ UpdateEq E E.
 
-Module Backport_DT (E:DecidableType) <: DecidableTypeBoth.
- Include E.
- Include Backport_ET_fun E E.
-End Backport_DT.
+Module Backport_DT (E:DecidableType) <: DecidableTypeBoth
+ := E <+ BackportEq E E.
 
-Module Update_DT (E:DecidableTypeOrig) <: DecidableTypeBoth.
- Include E.
- Include Update_ET_fun E E.
-End Update_DT.
+Module Update_DT (E:DecidableTypeOrig) <: DecidableTypeBoth
+ := E <+ UpdateEq E E.
 
 
 (** * Having [eq_dec] is equivalent to having [eqb] and its spec. *)
 
-Module Dec2Bool_fun (E:BareEquality)(F:Decidable_fun E) <: BoolEq_fun E.
+Module HasEqDec2Bool (E:BareEquality)(F:HasEqDec E) <: HasEqBool E.
  Definition eqb x y := if F.eq_dec x y then true else false.
  Lemma eqb_eq : forall x y, eqb x y = true <-> E.eq x y.
  Proof.
@@ -158,9 +121,9 @@ Module Dec2Bool_fun (E:BareEquality)(F:Decidable_fun E) <: BoolEq_fun E.
   auto with *.
   split. discriminate. intro EQ; elim NEQ; auto.
  Qed.
-End Dec2Bool_fun.
+End HasEqDec2Bool.
 
-Module Bool2Dec_fun (E:BareEquality)(F:BoolEq_fun E) <: Decidable_fun E.
+Module HasEqBool2Dec (E:BareEquality)(F:HasEqBool E) <: HasEqDec E.
  Lemma eq_dec : forall x y, {E.eq x y}+{~E.eq x y}.
  Proof.
   intros x y. assert (H:=F.eqb_eq x y).
@@ -168,17 +131,13 @@ Module Bool2Dec_fun (E:BareEquality)(F:BoolEq_fun E) <: Decidable_fun E.
   apply -> H; auto.
   intro EQ. apply H in EQ. discriminate.
  Defined.
-End Bool2Dec_fun.
+End HasEqBool2Dec.
 
-Module Dec2Bool (E:DecidableType) <: BooleanDecidableType.
- Include E.
- Include Dec2Bool_fun E E.
-End Dec2Bool.
+Module Dec2Bool (E:DecidableType) <: BooleanDecidableType
+ := E <+ HasEqDec2Bool E E.
 
-Module Bool2Dec (E:BooleanEqualityType) <: BooleanDecidableType.
- Include E.
- Include Bool2Dec_fun E E.
-End Bool2Dec.
+Module Bool2Dec (E:BooleanEqualityType) <: BooleanDecidableType
+ := E <+ HasEqBool2Dec E E.
 
 
 
@@ -192,46 +151,30 @@ Module Type UsualBareEquality. (* <: BareEquality *)
  Definition eq := @eq t.
 End UsualBareEquality.
 
-Module UsualEquality_fun (E:UsualBareEquality) <: Equality_fun E.
+Module UsualIsEq (E:UsualBareEquality) <: IsEq E.
  Program Instance eq_equiv : Equivalence E.eq.
-End UsualEquality_fun.
+End UsualIsEq.
 
-Module UsualEqualityOrig_fun (E:UsualBareEquality) <: EqualityOrig_fun E.
+Module UsualIsEqOrig (E:UsualBareEquality) <: IsEqOrig E.
  Definition eq_refl := @eq_refl E.t.
  Definition eq_sym := @eq_sym E.t.
  Definition eq_trans := @eq_trans E.t.
-End UsualEqualityOrig_fun.
+End UsualIsEqOrig.
 
-Module Type UsualEqualityType. (* <: EqualityType *)
- Include Type UsualBareEquality.
- Include Self Type Equality_fun.
-End UsualEqualityType.
+Module Type UsualEqualityType (* <: EqualityType *)
+ := UsualBareEquality <+ IsEq.
 
-Module Type UsualDecidableType. (* <: DecidableType *)
- Include Type UsualBareEquality.
- Include Self Type Equality_fun.
- Include Self Type Decidable_fun.
-End UsualDecidableType.
+Module Type UsualDecidableType (* <: DecidableType *)
+ := UsualBareEquality <+ IsEq <+ HasEqDec.
 
-Module Type UsualDecidableTypeBoth. (* <: DecidableTypeBoth *)
- Include Type UsualBareEquality.
- Include Self Type Equality_fun.
- Include Self Type EqualityOrig_fun.
- Include Self Type Decidable_fun.
-End UsualDecidableTypeBoth.
+Module Type UsualDecidableTypeBoth (* <: DecidableTypeBoth *)
+ := UsualBareEquality <+ IsEq <+ IsEqOrig <+ HasEqDec.
 
-Module Type UsualBoolEq.
- Include Type UsualBareEquality.
- Include Self Type BoolEq_fun.
-End UsualBoolEq.
+Module Type UsualBoolEq := UsualBareEquality <+ HasEqBool.
 
-Module Type UsualDecidableTypeFull. (* <: DecidableTypeFull *)
- Include Type UsualBareEquality.
- Include Self Type Equality_fun.
- Include Self Type EqualityOrig_fun.
- Include Self Type Decidable_fun.
- Include Self Type BoolEq_fun.
-End UsualDecidableTypeFull.
+Module Type UsualDecidableTypeFull (* <: DecidableTypeFull *)
+ := UsualBareEquality <+ IsEq <+ IsEqOrig <+ HasEqDec <+ HasEqBool.
+
 
 (** a [UsualDecidableType] is in particular an [DecidableType]. *)
 
@@ -247,14 +190,10 @@ End MiniDecidableType.
 Module Make_UDT (M:MiniDecidableType) <: UsualDecidableTypeBoth.
  Include M.
  Definition eq := @eq M.t.
- Include Self UsualEquality_fun.
- Include Self UsualEqualityOrig_fun.
+ Include Self UsualIsEq.
+ Include Self UsualIsEqOrig.
 End Make_UDT.
 
-Module Make_UDTF (M:UsualBoolEq) <: UsualDecidableTypeFull.
- Include M. (* t, eq, eqb, eqb_eq *)
- Include UsualEquality_fun M.
- Include UsualEqualityOrig_fun M.
- Include Bool2Dec_fun M M.
-End Make_UDTF.
+Module Make_UDTF (M:UsualBoolEq) <: UsualDecidableTypeFull
+ := M <+ UsualIsEq <+ UsualIsEqOrig <+ HasEqBool2Dec.
 

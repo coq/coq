@@ -2038,19 +2038,21 @@ let rec xlate_vernac =
       CT_module_type_decl(xlate_ident id,
 			  xlate_module_binder_list bl,
 			  match mty_o with
-			      None ->
+			      [] ->
 				CT_coerce_ID_OPT_to_MODULE_TYPE_OPT
 				  ctv_ID_OPT_NONE
-			    | Some mty1 ->
+			    | [mty1] ->
 				CT_coerce_MODULE_TYPE_to_MODULE_TYPE_OPT
-				  (xlate_module_type mty1))
+				  (xlate_module_type mty1)
+	                    | _ -> failwith "TODO: Include Self")
    | VernacDefineModule(_,(_, id), bl, mty_o, mexpr_o) ->
        CT_module(xlate_ident id,
 		 xlate_module_binder_list bl,
 		 xlate_module_type_check_opt mty_o,
 		 match mexpr_o with
-		     None -> CT_coerce_ID_OPT_to_MODULE_EXPR ctv_ID_OPT_NONE
-		   | Some m -> xlate_module_expr m)
+		     [] -> CT_coerce_ID_OPT_to_MODULE_EXPR ctv_ID_OPT_NONE
+		   | [m] -> xlate_module_expr m
+		   | _ -> failwith "TODO Include Self")
   | VernacDeclareModule(_,(_, id), bl, mty_o) ->
        CT_declare_module(xlate_ident id,
 		 xlate_module_binder_list bl,

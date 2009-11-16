@@ -23,7 +23,7 @@ Local Open Scope NumScope.
     for instance [Z/nZ] (See file [NZDomain for a study of that).
 *)
 
-Module Type NZDomain_fun (Import E : EqualityType).
+Module Type NZDomain (Import E : EqualityType).
  (** [E] provides [t], [eq], [eq_equiv : Equivalence eq] *)
 
 Notation "x == y"  := (eq x y) (at level 70) : NumScope.
@@ -47,21 +47,18 @@ Axiom bi_induction :
   forall A : t -> Prop, Proper (eq==>iff) A ->
     A 0 -> (forall n, A n <-> A (S n)) -> forall n, A n.
 
-End NZDomain_fun.
+End NZDomain.
 
-Module Type NZDomainSig.
- Include Type EqualityType.
- Include Self Type NZDomain_fun.
-End NZDomainSig.
+Module Type NZDomainSig := EqualityType <+ NZDomain.
 
-Module Type NZDecDomainSig.
- Include Type DecidableType.
- Include Self Type NZDomain_fun.
-End NZDecDomainSig.
+(** A version with decidable type *)
+
+Module Type NZDecDomainSig := DecidableType <+ NZDomain.
+
 
 (** Axiomatization of basic operations : [+] [-] [*] *)
 
-Module Type NZBasicFuns_fun (Import NZ : NZDomainSig).
+Module Type NZHasBasicFuns (Import NZ : NZDomainSig).
 
 Parameter Inline add : t -> t -> t.
 Parameter Inline sub : t -> t -> t.
@@ -84,12 +81,10 @@ Axiom sub_succ_r : forall n m, n - (S m) == P (n - m).
 Axiom mul_0_l : forall n, 0 * n == 0.
 Axiom mul_succ_l : forall n m, S n * m == n * m + m.
 
-End NZBasicFuns_fun.
+End NZHasBasicFuns.
 
-Module Type NZBasicFunsSig.
- Include Type NZDomainSig.
- Include Self Type NZBasicFuns_fun.
-End NZBasicFunsSig.
+Module Type NZBasicFunsSig := NZDomainSig <+ NZHasBasicFuns.
+
 
 (** Old name for the same interface: *)
 
@@ -98,7 +93,7 @@ Module Type NZAxiomsSig := NZBasicFunsSig.
 
 (** Axiomatization of order *)
 
-Module Type NZOrd_fun (Import NZ : NZDomainSig).
+Module Type NZHasOrd (Import NZ : NZDomainSig).
 
 Parameter Inline lt : t -> t -> Prop.
 Parameter Inline le : t -> t -> Prop.
@@ -116,17 +111,14 @@ Axiom lt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
 Axiom lt_irrefl : forall n, ~ (n < n).
 Axiom lt_succ_r : forall n m, n < S m <-> n <= m.
 
-End NZOrd_fun.
+End NZHasOrd.
 
-Module Type NZOrdSig.
- Include Type NZDomainSig.
- Include Self Type NZOrd_fun.
-End NZOrdSig.
+Module Type NZOrdSig := NZDomainSig <+ NZHasOrd.
 
 
 (** Axiomatization of minimum and maximum *)
 
-Module Type NZMinMax_fun (Import NZ : NZOrdSig).
+Module Type NZHasMinMax (Import NZ : NZOrdSig).
 
 Parameter Inline min : t -> t -> t.
 Parameter Inline max : t -> t -> t.
@@ -138,11 +130,9 @@ Axiom min_r : forall n m, m <= n -> min n m == m.
 Axiom max_l : forall n m, m <= n -> max n m == n.
 Axiom max_r : forall n m, n <= m -> max n m == m.
 
-End NZMinMax_fun.
+End NZHasMinMax.
 
-Module Type NZOrdAxiomsSig.
- Include Type NZDomainSig.
- Include Self Type NZBasicFuns_fun.
- Include Self Type NZOrd_fun.
- Include Self Type NZMinMax_fun.
-End NZOrdAxiomsSig.
+
+Module Type NZOrdAxiomsSig :=
+ NZDomainSig <+ NZHasBasicFuns <+ NZHasOrd <+ NZHasMinMax.
+

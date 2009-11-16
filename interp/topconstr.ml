@@ -1012,8 +1012,8 @@ type module_type_ast =
   | CMTEwith of module_type_ast * with_declaration_ast
 
 type include_ast =
-  | CIMTE of module_type_ast
-  | CIME of module_ast
+  | CIMTE of module_type_ast * module_type_ast list
+  | CIME of module_ast * module_ast list
 
 let loc_of_notation f loc (args,_) ntn =
   if args=[] or ntn.[0] <> '_' then fst (Util.unloc loc)

@@ -460,19 +460,19 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast_o =
      else (idl,ty)) binders_ast in
   let mp = Declaremods.declare_module
     Modintern.interp_modtype Modintern.interp_modexpr
-    id binders_ast (Some mty_ast_o) None
+    id binders_ast (Some mty_ast_o) []
   in
     Dumpglob.dump_moddef loc mp "mod";
     if_verbose message ("Module "^ string_of_id id ^" is declared");
     Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
 
-let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_o =
+let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
   if Lib.sections_are_opened () then
     error "Modules and Module Types are not allowed inside sections.";
-  match mexpr_ast_o with
-    | None ->
+  match mexpr_ast_l with
+    | [] ->
        check_no_pending_proofs ();
        let binders_ast,argsexport =
         List.fold_right
@@ -490,7 +490,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_o =
              Option.iter
                (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
            ) argsexport
-    | Some _ ->
+    | _::_ ->
        let binders_ast = List.map
         (fun (export,idl,ty) ->
           if export <> None then
@@ -500,7 +500,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_o =
           else (idl,ty)) binders_ast in
        let mp =	Declaremods.declare_module
 	  Modintern.interp_modtype Modintern.interp_modexpr
-	  id binders_ast mty_ast_o mexpr_ast_o
+	  id binders_ast mty_ast_o mexpr_ast_l
        in
 	 Dumpglob.dump_moddef loc mp "mod";
 	 if_verbose message
@@ -514,12 +514,12 @@ let vernac_end_module export (loc,id as lid) =
   if_verbose message ("Module "^ string_of_id id ^" is defined") ;
   Option.iter (fun export -> vernac_import export [Ident lid]) export
 
-let vernac_declare_module_type (loc,id) binders_ast mty_ast_o =
+let vernac_declare_module_type (loc,id) binders_ast mty_ast_l =
   if Lib.sections_are_opened () then
     error "Modules and Module Types are not allowed inside sections.";
 
-  match mty_ast_o with
-    | None ->
+  match mty_ast_l with
+    | [] ->
        check_no_pending_proofs ();
        let binders_ast,argsexport =
         List.fold_right
@@ -536,7 +536,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_ast_o =
             (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
          ) argsexport
 
-    | Some base_mty ->
+    | _ :: _ ->
 	let binders_ast = List.map
           (fun (export,idl,ty) ->
             if export <> None then
@@ -545,7 +545,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_ast_o =
 			"and \"Import\" keywords from every functor argument.")
             else (idl,ty)) binders_ast in
 	let mp = Declaremods.declare_modtype Modintern.interp_modtype
-	  id binders_ast base_mty in
+	  id binders_ast mty_ast_l in
           Dumpglob.dump_moddef loc mp "modtype";
 	  if_verbose message
 	    ("Module Type "^ string_of_id id ^" is defined")
@@ -556,12 +556,12 @@ let vernac_end_modtype (loc,id) =
   if_verbose message ("Module Type "^ string_of_id id ^" is defined")
 
 let vernac_include is_self = function
-  | CIMTE mty_ast ->
+  | CIMTE (mty,mtys) ->
       Declaremods.declare_include
-	Modintern.interp_modtype mty_ast false is_self
-  | CIME mexpr_ast ->
+	Modintern.interp_modtype mty mtys false is_self
+  | CIME (mexpr, mexprs) ->
       Declaremods.declare_include
-	Modintern.interp_modexpr mexpr_ast true is_self
+	Modintern.interp_modexpr mexpr mexprs true is_self
 
 (**********************)
 (* Gallina extensions *)
@@ -1329,12 +1329,12 @@ let interp c = match c with
   (* Modules *)
   | VernacDeclareModule (export,lid,bl,mtyo) ->
       vernac_declare_module export lid bl mtyo
-  | VernacDefineModule (export,lid,bl,mtyo,mexpro) ->
-      vernac_define_module export lid bl mtyo mexpro
+  | VernacDefineModule (export,lid,bl,mtyo,mexprl) ->
+      vernac_define_module export lid bl mtyo mexprl
   | VernacDeclareModuleType (lid,bl,mtyo) ->
       vernac_declare_module_type lid bl mtyo
-  | VernacInclude (is_self,in_ast) ->
-      vernac_include is_self in_ast
+  | VernacInclude (is_self,in_asts) ->
+      vernac_include is_self in_asts
   (* Gallina extensions *)
   | VernacBeginSection lid -> vernac_begin_section lid
 

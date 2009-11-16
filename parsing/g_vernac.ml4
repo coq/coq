@@ -389,13 +389,13 @@ GEXTEND Gram
     [ [ (* Interactive module declaration *)
         IDENT "Module"; export = export_token; id = identref;
 	bl = LIST0 module_binder; mty_o = OPT of_module_type;
-	mexpr_o = OPT is_module_expr ->
-	  VernacDefineModule (export, id, bl, mty_o, mexpr_o)
-
+	o = OPT is_module_expr ->
+	  VernacDefineModule (export, id, bl, mty_o,
+			      match o with None -> [] | Some l -> l)
       | IDENT "Module"; "Type"; id = identref;
-	bl = LIST0 module_binder; mty_o = OPT is_module_type ->
-	  VernacDeclareModuleType (id, bl, mty_o)
-
+	bl = LIST0 module_binder; o = OPT is_module_type ->
+	  VernacDeclareModuleType (id, bl,
+				   match o with None -> [] | Some l -> l)
       | IDENT "Declare"; IDENT "Module"; export = export_token; id = identref;
 	bl = LIST0 module_binder; ":"; mty = module_type ->
 	  VernacDeclareModule (export, id, bl, (mty,true))
@@ -413,28 +413,35 @@ GEXTEND Gram
 	  VernacRequireFrom (export, None, filename)
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)
       | IDENT "Export"; qidl = LIST1 global -> VernacImport (true,qidl)
-      | IDENT "Include"; expr = module_expr -> VernacInclude(false,CIME(expr))
-      | IDENT "Include"; "Type"; expr = module_type ->
-          VernacInclude(false,CIMTE(expr))
-      | IDENT "Include"; "Self"; expr = module_expr ->
-          VernacInclude(true,CIME(expr))
-      | IDENT "Include"; "Self"; "Type"; expr = module_type ->
-          VernacInclude(true,CIMTE(expr)) ] ]
+      | IDENT "Include"; e = module_expr; l = LIST0 ext_module_expr ->
+	  VernacInclude(false,CIME(e,l))
+      | IDENT "Include"; "Type"; e = module_type; l = LIST0 ext_module_type ->
+          VernacInclude(false,CIMTE(e,l))
+      | IDENT "Include"; "Self"; e = module_expr ->
+          VernacInclude(true,CIME(e,[]))
+      | IDENT "Include"; "Self"; "Type"; e = module_type ->
+          VernacInclude(true,CIMTE(e,[])) ] ]
   ;
   export_token:
     [ [ IDENT "Import" -> Some false
       | IDENT "Export" -> Some true
       |  -> None ] ]
   ;
+  ext_module_type:
+    [ [ "<+"; mty = module_type -> mty ] ]
+  ;
+  ext_module_expr:
+    [ [ "<+"; mexpr = module_expr -> mexpr ] ]
+  ;
   of_module_type:
     [ [ ":"; mty = module_type -> (mty, true)
       | "<:"; mty = module_type -> (mty, false) ] ]
   ;
   is_module_type:
-    [ [ ":="; mty = module_type -> mty ] ]
+    [ [ ":="; mty = module_type ; l = LIST0 ext_module_type -> (mty::l) ] ]
   ;
   is_module_expr:
-    [ [ ":="; mexpr = module_expr -> mexpr ] ]
+    [ [ ":="; mexpr = module_expr; l = LIST0 ext_module_expr -> (mexpr::l) ] ]
   ;
 
   (* Module binder  *)

@@ -256,8 +256,8 @@ type module_type_ast =
   | CMTEwith of module_type_ast * with_declaration_ast
 
 type include_ast =
-  | CIMTE of module_type_ast
-  | CIME of module_ast
+  | CIMTE of module_type_ast * module_type_ast list
+  | CIME of module_ast * module_ast list
 
 val ntn_loc : Util.loc -> constr_expr notation_substitution -> string -> int
 val patntn_loc : Util.loc -> cases_pattern_expr notation_substitution -> string -> int
