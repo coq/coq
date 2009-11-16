@@ -52,7 +52,8 @@ val add_mind        :
 
 val add_module      : identifier -> module_entry -> module_path * delta_resolver
 val add_modtype     : identifier -> module_struct_entry -> module_path
-val add_include : module_struct_entry -> bool -> delta_resolver
+val add_include :
+ module_struct_entry -> bool -> delta_resolver
 
 val add_constraints : constraints -> unit
 
@@ -74,7 +75,7 @@ val add_module_parameter : mod_bound_id -> module_struct_entry -> delta_resolver
 
 val start_modtype : identifier -> module_path
 val end_modtype : Summary.frozen -> identifier -> module_path
-
+val pack_module : unit -> module_body
 
 
 (* Queries *)

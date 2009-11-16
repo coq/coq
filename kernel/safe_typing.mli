@@ -89,8 +89,10 @@ val end_modtype :
   label -> safe_environment -> module_path * safe_environment
 
 val add_include :
-  module_struct_entry -> bool -> safe_environment -> delta_resolver * safe_environment
+  module_struct_entry -> bool -> safe_environment ->
+   delta_resolver * safe_environment
 
+val pack_module : safe_environment -> module_body
 val current_modpath : safe_environment -> module_path
 val delta_of_senv : safe_environment -> delta_resolver*delta_resolver
   

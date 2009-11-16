@@ -264,7 +264,7 @@ type vernac_expr =
       module_binder list * (module_type_ast * bool) option * module_ast option
   | VernacDeclareModuleType of lident *
       module_binder list * module_type_ast option
-  | VernacInclude of include_ast
+  | VernacInclude of bool * include_ast
 
   (* Solving *)
 

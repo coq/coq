@@ -100,7 +100,7 @@ val import_module : bool -> module_path -> unit
 (* Include  *)
 
 val declare_include : (env -> 'struct_expr -> module_struct_entry) ->
-  'struct_expr -> bool -> unit
+  'struct_expr -> bool -> bool -> unit
 
 (*s [iter_all_segments] iterate over all segments, the modules'
     segments first and then the current segment. Modules are presented

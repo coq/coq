@@ -750,8 +750,6 @@ let rec get_module_substobjs env mp_from = function
   | MSEwith (mty, With_Definition _) -> get_module_substobjs env mp_from mty
   | MSEwith (mty, With_Module (idl,mp)) -> assert false
 
-
-
 (* Include *)
 
 let rec subst_inc_expr subst me =
@@ -769,7 +767,8 @@ let rec subst_inc_expr subst me =
     | MSEapply (me1,me2) ->
 	MSEapply (subst_inc_expr subst me1,
 		  subst_inc_expr subst me2)
-    | _ -> anomaly "You cannot Include a high-order structure"
+    | MSEfunctor(mbid,me1,me2) ->
+        MSEfunctor (mbid, subst_inc_expr subst me1, subst_inc_expr subst me2)
 
 let lift_oname (sp,kn) =
   let mp,_,_ = Names.repr_kn kn in
@@ -893,19 +892,49 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
     Summary.unfreeze_summaries fs; raise e
 
 
-let declare_include interp_struct me_ast is_mod =
+let declare_include interp_struct me_ast is_mod is_self =
 
   let fs = Summary.freeze_summaries () in
 
     try
       let env = Global.env() in
-      let me = interp_struct env me_ast in 
+      let me = interp_struct env me_ast in
       let mp1,_ = current_prefix () in
-      let (mbids,mp,objs)= 	
+      let compute_objs objs = function
+	| MSEident mp -> 
+	    let mb_mp = if is_mod then 
+	     Environ.lookup_module mp env else  
+	       Modops.module_body_of_type mp (Environ.lookup_modtype mp env) in
+	      (match objs with
+		 |([],_,_) -> objs	  
+		 |(mbids,mp_self,objects) -> 
+		    let mb = Global.pack_module() in
+		    let rec compute_subst mbids sign  =
+		      match mbids with
+			  [] -> empty_subst
+			| mbid::mbids ->
+			    let farg_id, farg_b, fbody_b = 
+			      Modops.destr_functor env sign in
+			    let subst=compute_subst mbids fbody_b in
+			    let mp_delta = 
+			      Modops.complete_inline_delta_resolver env mb.mod_mp 
+				farg_id farg_b mb.mod_delta in
+			      join (map_mbid mbid mb.mod_mp mp_delta) subst
+		    in
+		    let subst = compute_subst mbids mb_mp.mod_type in
+		      ([],mp_self,subst_objects subst objects)
+		 
+	    )
+	| _ -> objs
+      in
+   
+      let (mbids,mp,objs)=
 	if is_mod then
 	  get_module_substobjs env mp1 me
 	else
 	  get_modtype_substobjs env mp1 me in
+      let (mbids,mp,objs) = if is_self 
+      then compute_objs (mbids,mp,objs) me else (mbids,mp,objs) in
       let id = current_mod_id() in
       let resolver =  Global.add_include me is_mod in
       let substobjs = (mbids,mp1,
@@ -915,7 +944,6 @@ let declare_include interp_struct me_ast is_mod =
     with e ->
       (* Something wrong: undo the whole process *)
       Summary.unfreeze_summaries fs; raise e
-
 
 (*s Iterators. *)
 

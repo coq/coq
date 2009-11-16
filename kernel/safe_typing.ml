@@ -431,13 +431,29 @@ let end_module l restype senv =
        let mtb = 
 	 translate_module_type senv.env 
 	   senv.modinfo.modpath me in
-	 mtb.typ_expr,mtb.typ_constraints,mtb.typ_delta
+       mtb.typ_expr,mtb.typ_constraints,mtb.typ_delta
    in
    let senv = add_constraints cst senv in
    let mp_sup = senv.modinfo.modpath in
+     (* Include Self support  *)
+   let rec compute_sign sign mb senv = 
+     match sign with
+     | SEBfunctor(mbid,mtb,str) ->
+	 let cst_sub = check_subtypes senv.env mb mtb in
+	 let senv = add_constraints cst_sub senv in
+	 let mpsup_delta = complete_inline_delta_resolver senv.env mp_sup 
+	   mbid mtb mb.typ_delta in
+	   (compute_sign 
+	     (subst_struct_expr (map_mbid mbid mp_sup mpsup_delta) str) mb senv)
+     | str -> str,senv
+   in
+   let sign,senv = compute_sign sign {typ_mp = mp_sup;
+				      typ_expr = SEBstruct (List.rev senv.revstruct);
+				      typ_expr_alg = None;
+				      typ_constraints = Constraint.empty;
+				      typ_delta = senv.modinfo.resolver} senv in
    let str = match sign with
-     | SEBstruct(str_l) ->
-	 str_l
+     | SEBstruct(str_l) -> str_l
      | _ -> error ("You cannot Include a high-order structure.")
    in
    let senv =
@@ -683,7 +699,15 @@ let start_library dir senv =
 	loads = [];
         local_retroknowledge = [] }
 
-
+let pack_module senv =
+  {mod_mp=senv.modinfo.modpath;
+   mod_expr=None;
+   mod_type= SEBstruct (List.rev senv.revstruct);
+   mod_type_alg=None;
+   mod_constraints=Constraint.empty;
+   mod_delta=senv.modinfo.resolver;
+   mod_retroknowledge=[];
+  }
 
 let export senv dir =
   let modinfo = senv.modinfo in

@@ -108,6 +108,8 @@ let end_modtype fs id =
     global_env := newenv;
     kn
 
+let pack_module () = 
+  pack_module !global_env
 
 
 

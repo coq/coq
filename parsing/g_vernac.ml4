@@ -413,8 +413,13 @@ GEXTEND Gram
 	  VernacRequireFrom (export, None, filename)
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)
       | IDENT "Export"; qidl = LIST1 global -> VernacImport (true,qidl)
-      | IDENT "Include"; expr = module_expr -> VernacInclude(CIME(expr))
-      | IDENT "Include"; "Type"; expr = module_type -> VernacInclude(CIMTE(expr)) ] ]
+      | IDENT "Include"; expr = module_expr -> VernacInclude(false,CIME(expr))
+      | IDENT "Include"; "Type"; expr = module_type ->
+          VernacInclude(false,CIMTE(expr))
+      | IDENT "Include"; "Self"; expr = module_expr ->
+          VernacInclude(true,CIME(expr))
+      | IDENT "Include"; "Self"; "Type"; expr = module_type ->
+          VernacInclude(true,CIMTE(expr)) ] ]
   ;
   export_token:
     [ [ IDENT "Import" -> Some false

@@ -761,15 +761,15 @@ let rec pr_vernac = function
       let b = pr_module_binders_list bl pr_lconstr in
 	hov 2 (str"Module Type " ++ pr_lident id ++ b ++
 		 pr_opt (fun mt -> str ":= " ++ pr_module_type pr_lconstr mt) m)
-  | VernacInclude (in_ast) ->
+  | VernacInclude (b,in_ast) ->
       begin
 	match in_ast with
 	  | CIMTE mty ->
-	      hov 2 (str"Include" ++
-		       (fun mt -> str " " ++ pr_module_type pr_lconstr mt) mty)
+	      hov 2 (str"Include " ++ str (if b then "Self " else "") ++
+		     pr_module_type pr_lconstr mty)
 	  | CIME mexpr ->
-	      hov 2 (str"Include" ++
-		       (fun me -> str " " ++ pr_module_expr me) mexpr)
+	      hov 2 (str"Include " ++ str (if b then "Self " else "") ++
+		     pr_module_expr mexpr)
       end
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
