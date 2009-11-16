@@ -25,16 +25,19 @@ Proof.
  split; try discriminate. intro EQ; elim NEQ; auto.
 Qed.
 
-Module R_as_MiniDT <: MiniDecidableType.
+Module R_as_UBE <: UsualBoolEq.
  Definition t := R.
- Definition eq_dec := Req_dec.
-End R_as_MiniDT.
-
-Module R_as_DT <: UsualDecidableType.
- Include Make_UDT R_as_MiniDT.
+ Definition eq := @eq R.
  Definition eqb := Reqb.
  Definition eqb_eq := Reqb_eq.
-End R_as_DT.
+End R_as_UBE.
+
+Module R_as_DT <: UsualDecidableTypeFull := Make_UDTF R_as_UBE.
+
+(** Note that the last module fulfills by subtyping many other
+    interfaces, such as [DecidableType] or [EqualityType]. *)
+
+
 
 (** Note that [R_as_DT] can also be seen as a [DecidableType]
     and a [DecidableTypeOrig]. *)

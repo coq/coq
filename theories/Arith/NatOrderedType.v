@@ -12,20 +12,17 @@ Require Import Lt Peano_dec Compare_dec EqNat
 
 (** * DecidableType structure for Peano numbers *)
 
-Module Nat_as_MiniDT <: MiniDecidableType.
+Module Nat_as_UBE <: UsualBoolEq.
  Definition t := nat.
- Definition eq_dec := eq_nat_dec.
-End Nat_as_MiniDT.
-
-Module Nat_as_DT <: UsualDecidableType.
- Include Make_UDT Nat_as_MiniDT.
- (** The next fields aren't mandatory but allow more subtyping. *)
+ Definition eq := @eq nat.
  Definition eqb := beq_nat.
  Definition eqb_eq := beq_nat_true_iff.
-End Nat_as_DT.
+End Nat_as_UBE.
 
-(** Note that [Nat_as_DT] can also be seen as a [DecidableType],
-    or a [DecidableTypeOrig] or a [BooleanEqualityType]. *)
+Module Nat_as_DT <: UsualDecidableTypeFull := Make_UDTF Nat_as_UBE.
+
+(** Note that the last module fulfills by subtyping many other
+    interfaces, such as [DecidableType] or [EqualityType]. *)
 
 
 

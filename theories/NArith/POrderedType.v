@@ -13,20 +13,18 @@ Local Open Scope positive_scope.
 
 (** * DecidableType structure for [positive] numbers *)
 
-Module Positive_as_MiniDT <: MiniDecidableType.
+Module Positive_as_UBE <: UsualBoolEq.
  Definition t := positive.
- Definition eq_dec := positive_eq_dec.
-End Positive_as_MiniDT.
-
-Module Positive_as_DT <: UsualDecidableType.
- Include Make_UDT Positive_as_MiniDT.
+ Definition eq := @eq positive.
  Definition eqb := Peqb.
  Definition eqb_eq := Peqb_eq.
-End Positive_as_DT.
+End Positive_as_UBE.
 
+Module Positive_as_DT <: UsualDecidableTypeFull
+ := Make_UDTF Positive_as_UBE.
 
-(** Note that [Positive_as_DT] can also be seen as a [DecidableType]
-    and a [DecidableTypeOrig] and a [BooleanEqualityType]. *)
+(** Note that the last module fulfills by subtyping many other
+    interfaces, such as [DecidableType] or [EqualityType]. *)
 
 
 

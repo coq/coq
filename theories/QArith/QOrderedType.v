@@ -13,22 +13,21 @@ Local Open Scope Q_scope.
 
 (** * DecidableType structure for rational numbers *)
 
-Module Q_as_DT <: DecidableType.
+Module Q_as_DT <: DecidableTypeFull.
  Definition t := Q.
  Definition eq := Qeq.
  Instance eq_equiv : Equivalence Qeq.
- Definition eq_dec := Qeq_dec.
-
- (** The next fields are not mandatory, but allow [Q_as_DT] to be
-     also a [DecidableTypeOrig] (resp. a [BooleanEqualityType]). *)
- Definition eq_refl := Qeq_refl.
- Definition eq_sym := Qeq_sym.
- Definition eq_trans := eq_trans.
-
  Definition eqb := Qeq_bool.
  Definition eqb_eq := Qeq_bool_iff.
 
+ Include Self Backport_ET_fun. (** eq_refl, eq_sym, eq_trans *)
+ Include Self Bool2Dec_fun. (** eq_dec *)
+
 End Q_as_DT.
+
+(** Note that the last module fulfills by subtyping many other
+    interfaces, such as [DecidableType] or [EqualityType]. *)
+
 
 
 (** * OrderedType structure for rational numbers *)

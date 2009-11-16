@@ -13,19 +13,17 @@ Local Open Scope N_scope.
 
 (** * DecidableType structure for [N] binary natural numbers *)
 
-Module N_as_MiniDT <: MiniDecidableType.
+Module N_as_UBE <: UsualBoolEq.
  Definition t := N.
- Definition eq_dec := N_eq_dec.
-End N_as_MiniDT.
-
-Module N_as_DT <: UsualDecidableType.
- Include Make_UDT N_as_MiniDT.
+ Definition eq := @eq N.
  Definition eqb := Neqb.
  Definition eqb_eq := Neqb_eq.
-End N_as_DT.
+End N_as_UBE.
 
-(** Note that [N_as_DT] can also be seen as a [DecidableType]
-    and a [DecidableTypeOrig] and a [BooleanEqualityType] *)
+Module N_as_DT <: UsualDecidableTypeFull := Make_UDTF N_as_UBE.
+
+(** Note that the last module fulfills by subtyping many other
+    interfaces, such as [DecidableType] or [EqualityType]. *)
 
 
 

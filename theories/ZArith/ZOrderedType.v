@@ -13,20 +13,17 @@ Local Open Scope Z_scope.
 
 (** * DecidableType structure for binary integers *)
 
-Module Z_as_MiniDT <: MiniDecidableType.
+Module Z_as_UBE <: UsualBoolEq.
  Definition t := Z.
- Definition eq_dec := Z_eq_dec.
-End Z_as_MiniDT.
-
-Module Z_as_DT <: UsualDecidableType.
- Include Make_UDT Z_as_MiniDT.
+ Definition eq := @eq Z.
  Definition eqb := Zeq_bool.
  Definition eqb_eq x y := iff_sym (Zeq_is_eq_bool x y).
-End Z_as_DT.
+End Z_as_UBE.
 
-(** Note that [Z_as_DT] can also be seen as a [DecidableType]
-    and a [DecidableTypeOrig] and a [BooleanEqualityType] *)
+Module Z_as_DT <: UsualDecidableTypeFull := Make_UDTF Z_as_UBE.
 
+(** Note that the last module fulfills by subtyping many other
+    interfaces, such as [DecidableType] or [EqualityType]. *)
 
 
 (** * OrderedType structure for binary integers *)
