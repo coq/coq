@@ -411,10 +411,8 @@ let clenv_unify_binding_type clenv c t u =
       let evd,c = w_coerce_to_type (cl_env clenv) clenv.evd c t u in
       TypeProcessed, { clenv with evd = evd }, c
     with
-      | Stdpp.Exc_located (_,Type_errors.TypeError (_,Type_errors.ActualType _))
       | PretypeError (_,NotClean _) as e -> raise e
-      | e when precatchable_exception e ->
-      TypeNotProcessed, clenv, c
+      | e when precatchable_exception e -> TypeNotProcessed, clenv, c
 
 let clenv_assign_binding clenv k (sigma,c) =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
