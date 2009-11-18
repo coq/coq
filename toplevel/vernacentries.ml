@@ -311,13 +311,9 @@ let vernac_definition (local,boxed,k) (loc,id as lid) def hook =
   Dumpglob.dump_definition lid false "def";
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
- 	if Lib.is_modtype () then
- 	  errorlabstrm "Vernacentries.VernacDefinition"
- 	    (str "Proof editing mode not supported in module types.")
- 	else
- 	  let hook _ _ = () in
- 	    start_proof_and_print (local,DefinitionBody Definition)
-	      [Some lid, (bl,t)] hook
+	let hook _ _ = () in
+	start_proof_and_print (local,DefinitionBody Definition)
+	  [Some lid, (bl,t)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
  	let red_option = match red_option with
           | None -> None
@@ -337,9 +333,6 @@ let vernac_start_proof kind l lettop hook =
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
 	(str "Let declarations can only be used in proof editing mode.");
-  if Lib.is_modtype () then
-    errorlabstrm "Vernacentries.StartProof"
-      (str "Proof editing mode not supported in module types.");
   start_proof_and_print (Global, Proof kind) l hook
 
 let vernac_end_proof = function
