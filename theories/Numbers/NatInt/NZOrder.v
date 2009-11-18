@@ -10,13 +10,9 @@
 
 (*i $Id$ i*)
 
-Require Import NZAxioms.
-Require Import NZMul.
-Require Import Decidable.
-Require Import OrderTac.
+Require Import NZAxioms NZBase Decidable OrderTac.
 
-Module NZOrderPropFunct (Import NZ : NZOrdAxiomsSig).
-Include NZMulPropFunct NZ. (* In fact only NZBase is used here *)
+Module NZOrderProp (Import NZ : NZOrdSig)(Import NZBase : NZBaseProp NZ).
 Local Open Scope NumScope.
 
 Instance le_wd : Proper (eq==>eq==>iff) le.
@@ -653,6 +649,16 @@ Qed.
 
 End WF.
 
+End NZOrderProp.
+
+Module NZOrderPropFunct (NZ : NZOrdSig) := NZBasePropFunct NZ <+ NZOrderProp NZ.
+
+
+(** To Merge with GenericMinMax ... *)
+
+Module NZMinMaxPropFunct (Import NZ : NZOrdAxiomsSig).
+Include NZOrderPropFunct NZ.
+
 (** * Compatibility of [min] and [max]. *)
 
 Instance min_wd : Proper (eq==>eq==>eq) min.
@@ -671,5 +677,5 @@ rewrite 2 max_r; auto. now rewrite <-Hn,<-Hm.
 rewrite 2 max_l; auto. now rewrite <-Hn,<-Hm.
 Qed.
 
-End NZOrderPropFunct.
+End NZMinMaxPropFunct.
 

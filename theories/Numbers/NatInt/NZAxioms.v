@@ -10,8 +10,7 @@
 
 (*i $Id$ i*)
 
-Require Import DecidableType2 OrderedType2.
-Require Export NumPrelude.
+Require Export DecidableType2 OrderedType2 NumPrelude.
 
 Delimit Scope NumScope with Num.
 Local Open Scope NumScope.

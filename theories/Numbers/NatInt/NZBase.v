@@ -12,12 +12,10 @@
 
 Require Import NZAxioms.
 
-Module NZBasePropFunct (Import NZ : NZAxiomsSig).
+Module Type NZBaseProp (Import NZ : NZDomainSig).
 Local Open Scope NumScope.
 
-Definition eq_refl := @Equivalence_Reflexive _ _ eq_equiv.
-Definition eq_sym := @Equivalence_Symmetric _ _ eq_equiv.
-Definition eq_trans := @Equivalence_Transitive _ _ eq_equiv.
+Include BackportEq NZ NZ. (** eq_refl, eq_sym, eq_trans *)
 
 (* TODO: how register ~= (which is just a notation) as a Symmetric relation,
     hence allowing "symmetry" tac ? *)
@@ -83,5 +81,9 @@ Tactic Notation "nzinduct" ident(n) :=
 Tactic Notation "nzinduct" ident(n) constr(u) :=
   induction_maker n ltac:(apply central_induction with (z := u)).
 
+End NZBaseProp.
+
+Module NZBasePropFunct (NZ : NZDomainSig).
+ Include Type NZBaseProp NZ.
 End NZBasePropFunct.
 

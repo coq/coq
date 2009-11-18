@@ -10,10 +10,12 @@
 
 (*i $Id$ i*)
 
-Require Import NZAxioms NZOrder.
+Require Import NZAxioms NZBase NZMul NZOrder.
 
-Module NZAddOrderPropFunct (Import NZ : NZOrdAxiomsSig).
-Include NZOrderPropFunct NZ.
+Module NZAddOrderProp
+ (Import NZ : NZOrdAxiomsSig)(Import NZBase : NZBaseProp NZ).
+Include NZMulProp NZ NZBase.
+Include NZOrderProp NZ NZBase.
 Local Open Scope NumScope.
 
 Theorem add_lt_mono_l : forall n m p, n < m <-> p + n < p + m.
@@ -150,5 +152,8 @@ Proof.
 intros n m H; apply add_le_cases; now nzsimpl.
 Qed.
 
-End NZAddOrderPropFunct.
+End NZAddOrderProp.
+
+Module NZAddOrderPropFunct (NZ:NZOrdAxiomsSig) :=
+ NZBasePropFunct NZ <+ NZAddOrderProp NZ.
 
