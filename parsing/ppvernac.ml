@@ -253,9 +253,10 @@ and  pr_module_expr = function
       pr_module_expr me1 ++ spc() ++
       hov 1 (str"(" ++ pr_module_expr me2 ++ str")")
 
-let pr_of_module_type prc (mty,b) =
-  str (if b then ":" else "<:") ++
-  pr_module_type prc mty
+let pr_of_module_type prc = function
+  | Enforce mty -> str ":" ++ pr_module_type prc mty
+  | Check mtys ->
+      prlist_strict (fun m -> str "<:" ++ pr_module_type prc m) mtys
 
 let pr_require_token = function
   | Some true -> str "Export "
@@ -746,24 +747,25 @@ let rec pr_vernac = function
      hov 1 (str"Existing" ++ spc () ++ str"Class" ++ spc () ++ pr_lident id)
 
   (* Modules and Module Types *)
-  | VernacDefineModule (export,m,bl,ty,bd) ->
+  | VernacDefineModule (export,m,bl,tys,bd) ->
       let b = pr_module_binders_list bl pr_lconstr in
       hov 2 (str"Module" ++ spc() ++ pr_require_token export ++
                pr_lident m ++ b ++
-               pr_opt (pr_of_module_type pr_lconstr) ty ++
+               pr_of_module_type pr_lconstr tys ++
 	       (if bd = [] then mt () else str ":= ") ++
 	       prlist_with_sep (fun () -> str " <+ ") pr_module_expr bd)
   | VernacDeclareModule (export,id,bl,m1) ->
       let b = pr_module_binders_list bl pr_lconstr in
 	hov 2 (str"Declare Module" ++ spc() ++ pr_require_token export ++
              pr_lident id ++ b ++
-             pr_of_module_type pr_lconstr m1)
-  | VernacDeclareModuleType (id,bl,m) ->
+             pr_module_type pr_lconstr m1)
+  | VernacDeclareModuleType (id,bl,tyl,m) ->
       let b = pr_module_binders_list bl pr_lconstr in
+      let pr_mt = pr_module_type pr_lconstr in
 	hov 2 (str"Module Type " ++ pr_lident id ++ b ++
+		 prlist_strict (fun m -> str " <: " ++ pr_mt m) tyl ++
 		 (if m = [] then mt () else str ":= ") ++
-		 prlist_with_sep (fun () -> str " <+ ")
-		                 (pr_module_type pr_lconstr) m)
+		 prlist_with_sep (fun () -> str " <+ ") pr_mt m)
   | VernacInclude (b,CIMTE(mty,mtys)) ->
       let pr_mty = pr_module_type pr_lconstr in
       hov 2 (str"Include " ++ str (if b then "Self " else "") ++ str "Type " ++

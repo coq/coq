@@ -245,7 +245,6 @@ type with_declaration_ast =
   | CWith_Module of identifier list located * qualid located
   | CWith_Definition of identifier list located * constr_expr
 
-
 type module_ast =
   | CMEident of qualid located
   | CMEapply of module_ast * module_ast
@@ -258,6 +257,10 @@ type module_type_ast =
 type include_ast =
   | CIMTE of module_type_ast * module_type_ast list
   | CIME of module_ast * module_ast list
+
+type 'a module_signature =
+  | Enforce of 'a (* ... : T *)
+  | Check of 'a list (* ... <: T1 <: T2, possibly empty *)
 
 val ntn_loc : Util.loc -> constr_expr notation_substitution -> string -> int
 val patntn_loc : Util.loc -> cases_pattern_expr notation_substitution -> string -> int

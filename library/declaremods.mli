@@ -37,14 +37,16 @@ open Lib
 *)
 
 val declare_module :
-  (env -> 'modtype -> module_struct_entry) -> (env -> 'modexpr -> module_struct_entry) ->
+  (env -> 'modtype -> module_struct_entry) ->
+  (env -> 'modexpr -> module_struct_entry) ->
   identifier ->
-  (identifier located list * 'modtype) list -> ('modtype * bool) option ->
+  (identifier located list * 'modtype) list ->
+  'modtype Topconstr.module_signature ->
   'modexpr list -> module_path
 
 val start_module : (env -> 'modtype -> module_struct_entry) ->
   bool option -> identifier -> (identifier located list * 'modtype) list ->
-   ('modtype * bool) option -> module_path
+  'modtype Topconstr.module_signature -> module_path
 
 val end_module : unit -> module_path
 
@@ -54,10 +56,11 @@ val end_module : unit -> module_path
 
 val declare_modtype : (env -> 'modtype -> module_struct_entry) ->
   identifier -> (identifier located list * 'modtype) list ->
-  'modtype list -> module_path
+  'modtype list -> 'modtype list -> module_path
 
 val start_modtype : (env -> 'modtype -> module_struct_entry) ->
-  identifier -> (identifier located list * 'modtype) list -> module_path
+  identifier -> (identifier located list * 'modtype) list ->
+  'modtype list -> module_path
 
 val end_modtype : unit -> module_path
 

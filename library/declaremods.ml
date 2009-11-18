@@ -77,10 +77,10 @@ let modtab_objects =
 
 (* currently started interactive module (if any) - its arguments (if it
    is a functor) and declared output type *)
-let openmod_info = 
-  ref ((MPfile(initial_dir),[],None,None) 
-	 : module_path *  mod_bound_id list * module_struct_entry option 
-                                          * module_type_body option) 
+let openmod_info =
+  ref ((MPfile(initial_dir),[],None,[])
+	 : module_path *  mod_bound_id list * module_struct_entry option
+                                          * module_type_body list)
 
 (* The library_cache here is needed to avoid recalculations of
    substituted modules object during "reloading" of libraries *)
@@ -101,7 +101,7 @@ let _ = Summary.declare_summary "MODULE-INFO"
 				       modtab_substobjs := MPmap.empty;
 				       modtab_objects := MPmap.empty;
 				       openmod_info := ((MPfile(initial_dir),
-							 [],None,None));
+							 [],None,[]));
 				       library_cache := Dirmap.empty) }
 
 (* auxiliary functions to transform full_path and kernel_name given
@@ -118,17 +118,58 @@ let dir_of_sp sp =
   let dir,id = repr_path sp in
     add_dirpath_suffix dir id
 
+(* Subtyping checks *)
+
+let check_sub mtb sub_mtb_l =
+  (* The constraints are checked and forgot immediately : *)
+  ignore (List.fold_right
+	    (fun sub_mtb env ->
+	       Environ.add_constraints
+		 (Subtyping.check_subtypes env mtb sub_mtb) env)
+	    sub_mtb_l (Global.env()))
 
 (* This function checks if the type calculated for the module [mp] is
-   a subtype of [sub_mtb]. Uses only the global environment. *)
-let check_subtypes mp sub_mtb =
+   a subtype of all signatures in [sub_mtb_l]. Uses only the global
+   environment. *)
+
+let check_subtypes mp sub_mtb_l =
   let env = Global.env () in
   let mb = Environ.lookup_module mp env in
   let mtb = Modops.module_type_of_module env None mb in
-  let _ = Environ.add_constraints 
-    (Subtyping.check_subtypes env mtb sub_mtb) 
-  in
-    ()  (* The constraints are checked and forgot immediately! *)
+  check_sub mtb sub_mtb_l
+
+(* Same for module type [mp] *)
+
+let check_subtypes_mt mp sub_mtb_l =
+  check_sub (Environ.lookup_modtype mp (Global.env())) sub_mtb_l
+
+(* Create a functor type entry *)
+
+let funct_entry args m =
+  List.fold_right
+    (fun (arg_id,arg_t) mte -> MSEfunctor (arg_id,arg_t,mte))
+    args m
+
+(* Prepare the module type list for check of subtypes *)
+
+let build_subtypes interp_modtype mp args mtys =
+  List.map
+    (fun m ->
+       let mte = interp_modtype (Global.env()) m in
+       let mtb = Mod_typing.translate_module_type (Global.env()) mp mte in
+       let funct_mtb =
+	 List.fold_right
+           (fun (arg_id,arg_t) mte ->
+              let arg_t =
+		Mod_typing.translate_module_type (Global.env())
+		  (MPbound arg_id) arg_t
+	      in
+              SEBfunctor(arg_id,arg_t,mte))
+           args mtb.typ_expr
+       in
+       { mtb with typ_expr = funct_mtb })
+    mtys
+
 
 (* These functions register the visibility of the module and iterates
    through its components. They are called by plenty module functions *)
@@ -266,7 +307,7 @@ let modtypetab =
 (* currently started interactive module type. We remember its arguments
    if it is a functor type *)
 let openmodtype_info =
-  ref ([] : mod_bound_id list)
+  ref ([],[] : mod_bound_id list * module_type_body list)
 
 let _ = Summary.declare_summary "MODTYPE-INFO"
 	  { Summary.freeze_function = (fun () ->
@@ -276,30 +317,35 @@ let _ = Summary.declare_summary "MODTYPE-INFO"
 					   openmodtype_info := snd ft);
 	    Summary.init_function = (fun () ->
 				       modtypetab := MPmap.empty;
-				       openmodtype_info := []) }
+				       openmodtype_info := [],[]) }
 
 
-let cache_modtype ((sp,kn),(entry,modtypeobjs)) =
+let cache_modtype ((sp,kn),(entry,modtypeobjs,sub_mty_l)) =
+  let mp = mp_of_kn kn in
+
   let _ =
     match entry with
       | None ->
 	  anomaly "You must not recache interactive module types!"
       | Some mte ->
-	  let mp = Global.add_modtype (basename sp) mte in
-	  if mp <>mp_of_kn kn then
+	  if mp <> Global.add_modtype (basename sp) mte then
 	    anomaly "Kernel and Library names do not match"
   in
+
+  (* Using declare_modtype should lead here, where we check
+     that any given subtyping is indeed accurate *)
+  check_subtypes_mt mp sub_mty_l;
 
   if Nametab.exists_modtype sp then
     errorlabstrm "cache_modtype"
       (pr_path sp ++ str " already exists") ;
 
-  Nametab.push_modtype (Nametab.Until 1) sp (mp_of_kn kn);
+  Nametab.push_modtype (Nametab.Until 1) sp mp;
 
-  modtypetab := MPmap.add (mp_of_kn kn) modtypeobjs !modtypetab
+  modtypetab := MPmap.add mp modtypeobjs !modtypetab
 
 
-let load_modtype i ((sp,kn),(entry,modtypeobjs)) =
+let load_modtype i ((sp,kn),(entry,modtypeobjs,_)) =
   check_empty "load_modtype" entry;
 
   if Nametab.exists_modtype sp then
@@ -311,7 +357,7 @@ let load_modtype i ((sp,kn),(entry,modtypeobjs)) =
   modtypetab := MPmap.add (mp_of_kn kn) modtypeobjs !modtypetab
 
 
-let open_modtype i ((sp,kn),(entry,_)) =
+let open_modtype i ((sp,kn),(entry,_,_)) =
   check_empty "open_modtype" entry;
 
   if
@@ -323,13 +369,13 @@ let open_modtype i ((sp,kn),(entry,_)) =
 
   Nametab.push_modtype (Nametab.Exactly i) sp (mp_of_kn kn)
 
-let subst_modtype (subst,(entry,(mbids,mp,objs))) =
+let subst_modtype (subst,(entry,(mbids,mp,objs),_)) =
   check_empty "subst_modtype" entry;
-  (entry,(mbids,subst_mp subst mp,subst_objects subst objs))
+  (entry,(mbids,subst_mp subst mp,subst_objects subst objs),[])
 
 
-let classify_modtype (_,substobjs) =
-  Substitute (None,substobjs)
+let classify_modtype (_,substobjs,_) =
+  Substitute (None,substobjs,[])
 
 
 let (in_modtype,_) =
@@ -448,36 +494,19 @@ let intern_args interp_modtype (idl,arg) =
 	 (mbid,mty))
     dirs mbids
 
-let start_module interp_modtype export id args res_o =
-  let fs = Summary.freeze_summaries () in
+let start_module_ interp_modtype export id args res fs =
   let mp = Global.start_module id in
   let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
-  let res_entry_o, sub_body_o = match res_o with
-      None -> None, None
-    | Some (res, restricted) ->
-	(* we translate the module here to catch errors as early as possible *)
+  let res_entry_o, sub_body_l = match res with
+    | Topconstr.Enforce res ->
 	let mte = interp_modtype (Global.env()) res in
-	  if restricted then
-	    let _ = Mod_typing.translate_struct_type_entry (Global.env()) mte in
-	      Some mte, None
-	  else
-	    let mtb = Mod_typing.translate_module_type (Global.env())
-	      mp mte in
-	    let funct_mtb = 
-	      List.fold_right 
-		(fun (arg_id,arg_t) mte -> 
-		let arg_t = Mod_typing.translate_module_type (Global.env())
-		  (MPbound arg_id)  arg_t
-		in
-		  SEBfunctor(arg_id,arg_t,mte))
-		arg_entries mtb.typ_expr
-	    in
-	      None, Some {mtb with 
-			 typ_expr = funct_mtb}
+	let _ = Mod_typing.translate_struct_type_entry (Global.env()) mte in
+	Some mte, []
+    | Topconstr.Check resl ->
+	None, build_subtypes interp_modtype mp arg_entries resl
   in
-
   let mbids = List.map fst arg_entries in
-    openmod_info:=(mp,mbids,res_entry_o,sub_body_o);
+  openmod_info:=(mp,mbids,res_entry_o,sub_body_l);
   let prefix = Lib.start_module export id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModule prefix);
   Lib.add_frozen_state (); mp
@@ -486,7 +515,7 @@ let start_module interp_modtype export id args res_o =
 let end_module () =
 
   let oldoname,oldprefix,fs,lib_stack = Lib.end_module () in
-  let mp,mbids, res_o, sub_o = !openmod_info in
+  let mp,mbids, res_o, sub_l = !openmod_info in
   let substitute, keep, special = Lib.classify_segment lib_stack in
 
   let mp_from,substobjs, keep, special = try
@@ -514,10 +543,7 @@ let end_module () =
   let id = basename (fst oldoname) in
   let mp,resolver = Global.end_module fs id res_o in
 
-  begin match sub_o with
-      None -> ()
-    | Some sub_mtb -> check_subtypes mp sub_mtb
-  end;
+  check_subtypes mp sub_l;
 
 (* we substitute objects if the module is 
    sealed by a signature (ie. mp_from != None *)
@@ -581,7 +607,7 @@ let register_library dir cenv objs digest =
 
 let start_library dir =
   let mp = Global.start_library dir in
-  openmod_info:=mp,[],None,None;
+  openmod_info:=mp,[],None,[];
   Lib.start_compilation dir mp;
   Lib.add_frozen_state ()
 
@@ -630,14 +656,13 @@ let import_module export mp =
 
 (************************************************************************)
 (* module types *)
-let start_modtype interp_modtype id args =
-  let fs = Summary.freeze_summaries () in
 
+let start_modtype_ interp_modtype id args mtys fs =
   let mp = Global.start_modtype id in
   let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
-
+  let sub_mty_l = build_subtypes interp_modtype mp arg_entries mtys in
   let mbids = List.map fst arg_entries in
-  openmodtype_info := mbids;
+  openmodtype_info := mbids, sub_mty_l;
   let prefix = Lib.start_modtype id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModtype prefix);
   Lib.add_frozen_state (); mp
@@ -647,11 +672,12 @@ let end_modtype () =
   let oldoname,prefix,fs,lib_stack = Lib.end_modtype () in
   let id = basename (fst oldoname) in
   let substitute, _, special = Lib.classify_segment lib_stack in
-  let mbids = !openmodtype_info in
+  let mbids, sub_mty_l = !openmodtype_info in
   let mp = Global.end_modtype fs id in
-  let modtypeobjs = mbids, mp, substitute in  
-  let oname = Lib.add_leaves id (special@[in_modtype (None, modtypeobjs)]) in
-
+  let modtypeobjs = mbids, mp, substitute in
+  check_subtypes_mt mp sub_mty_l;
+  let oname = Lib.add_leaves id (special@[in_modtype (None, modtypeobjs,[])])
+  in
   if fst oname <> fst oldoname then
     anomaly
       "Section paths generated on start_ and end_modtype do not match";
@@ -663,32 +689,23 @@ let end_modtype () =
   mp
 
 
-let declare_modtype_real interp_modtype id args mty =
-  let fs = Summary.freeze_summaries () in
-
-  try
+let declare_modtype_ interp_modtype id args mtys mty fs =
   let mmp = Global.start_modtype id in
   let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
-
-  let base_mty = interp_modtype (Global.env()) mty in
-  let entry =
-    List.fold_right
-      (fun (arg_id,arg_t) mte -> MSEfunctor(arg_id,arg_t,mte))
-      arg_entries
-      base_mty
-  in
+  let entry = funct_entry arg_entries (interp_modtype (Global.env()) mty) in
+  (* NB: check of subtyping will be done in cache_modtype *)
+  let sub_mty_l = build_subtypes interp_modtype mmp arg_entries mtys in
   let (mbids,mp_from,objs) = get_modtype_substobjs (Global.env()) mmp entry in
-    (* Undo the simulated interactive building of the module type *)
-    (* and declare the module type as a whole *)
+  (* Undo the simulated interactive building of the module type *)
+  (* and declare the module type as a whole *)
 
   let substobjs = (mbids,mmp,
-		   subst_objects (map_mp mp_from mmp empty_delta_resolver) objs) in
-    Summary.unfreeze_summaries fs;
-    ignore (add_leaf id (in_modtype (Some entry, substobjs)));
-    mmp
-  with e ->
-    (* Something wrong: undo the whole process *)
-    Summary.unfreeze_summaries fs; raise e
+		   subst_objects (map_mp mp_from mmp empty_delta_resolver) objs)
+  in
+  Summary.unfreeze_summaries fs;
+  ignore (add_leaf id (in_modtype (Some entry, substobjs, sub_mty_l)));
+  mmp
+
 
 (* Small function to avoid module typing during substobjs retrivial  *)
 let rec get_objs_module_application env = function
@@ -824,36 +841,16 @@ let rec update_include (mbids,mp,objs) =
   in
     (mbids,mp,replace_include objs)
 
-let declare_module_real interp_modtype interp_modexpr id args mty_o mexpr_o =
-
-  let fs = Summary.freeze_summaries () in
-
-  try
+let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
   let mmp = Global.start_module id in
   let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
 
-  let mty_entry_o, mty_sub_o = match mty_o with
-      None -> None, None
-    | (Some (mty, true)) ->
-	Some (List.fold_right
-		(fun (arg_id,arg_t) mte -> MSEfunctor(arg_id,arg_t,mte))
-		arg_entries
-		(interp_modtype (Global.env()) mty)),
-	None
-    | (Some (mty, false)) ->
-	None,
-	Some (List.fold_right
-		(fun (arg_id,arg_t) mte -> MSEfunctor(arg_id,arg_t,mte))
-		arg_entries
-		(interp_modtype (Global.env()) mty))
+  let funct f m = funct_entry arg_entries (f (Global.env ()) m) in
+  let mty_entry_o, mty_sub_l = match res with
+    | Topconstr.Enforce mty -> Some (funct interp_modtype mty), []
+    | Topconstr.Check mtys -> None, List.map (funct interp_modtype) mtys
   in
-  let mexpr_entry_o = match mexpr_o with
-      None -> None
-    | Some mexpr ->
-	Some (List.fold_right
-		(fun (mbid,mte) me -> MSEfunctor(mbid,mte,me))
-		arg_entries
-		(interp_modexpr (Global.env()) mexpr))  in
+  let mexpr_entry_o = Option.map (funct interp_modexpr) mexpr_o in
   let entry =
     {mod_entry_type = mty_entry_o;
      mod_entry_expr = mexpr_entry_o }
@@ -866,30 +863,23 @@ let declare_module_real interp_modtype interp_modexpr id args mty_o mexpr_o =
       | _ -> anomaly "declare_module: No type, no body ..."
   in
   let (mbids,mp_from,objs) = update_include substobjs in
-    (* Undo the simulated interactive building of the module *)
-    (* and declare the module as a whole *)
-    Summary.unfreeze_summaries fs;
-    let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
-    let mp_env,resolver = Global.add_module id entry in
-    let _ = if mp_env <> mp then
-      anomaly "Kernel and Library names do not match";
-      match  mty_sub_o with
-	| None -> ()
-	| Some sub_mte -> 
-	    let sub_mtb = Mod_typing.translate_module_type
-	      env mp sub_mte in
-	      check_subtypes mp_env sub_mtb
-    in
-    let substobjs = (mbids,mp_env,
-		     subst_objects(map_mp mp_from mp_env resolver) objs) in
-      ignore (add_leaf
-		id
-		(in_module (Some (entry, mty_sub_o), substobjs)));
-      mmp
-	
-  with e -> 
-    (* Something wrong: undo the whole process *)
-    Summary.unfreeze_summaries fs; raise e
+  (* Undo the simulated interactive building of the module *)
+  (* and declare the module as a whole *)
+  Summary.unfreeze_summaries fs;
+  let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
+  let mp_env,resolver = Global.add_module id entry in
+
+  if mp_env <> mp then anomaly "Kernel and Library names do not match";
+
+  let subs = List.map (Mod_typing.translate_module_type env mp) mty_sub_l in
+  check_subtypes mp subs;
+
+  let substobjs = (mbids,mp_env,
+		   subst_objects(map_mp mp_from mp_env resolver) objs) in
+  ignore (add_leaf
+	    id
+	    (in_module (Some (entry), substobjs)));
+  mmp
 
 
 let declare_one_include interp_struct me_ast is_mod is_self =
@@ -937,33 +927,53 @@ let declare_one_include interp_struct me_ast is_mod is_self =
 		  (in_include ((me,is_mod), substobjs)))
 
 
-let declare_include interp_struct me_ast me_asts is_mod is_self =
+let declare_include_ interp_struct me_ast me_asts is_mod is_self =
+  declare_one_include interp_struct me_ast is_mod is_self;
+  List.iter
+    (fun me -> declare_one_include interp_struct me is_mod true)
+    me_asts
+
+(** Versions of earlier functions taking care of the freeze/unfreeze
+    of summaries *)
+
+let protect_summaries f =
   let fs = Summary.freeze_summaries () in
-  try
-    declare_one_include interp_struct me_ast is_mod is_self;
-    List.iter
-      (fun me -> declare_one_include interp_struct me is_mod true)
-      me_asts
+  try f fs
   with e ->
     (* Something wrong: undo the whole process *)
     Summary.unfreeze_summaries fs; raise e
 
+let declare_include interp_struct me_ast me_asts is_mod is_self =
+  protect_summaries
+    (fun _ -> declare_include_ interp_struct me_ast me_asts is_mod is_self)
 
-let declare_modtype interp_mt id args = function
-  | [] -> assert false
-  | [mty] -> declare_modtype_real interp_mt id args mty
-  | mty :: mty_l ->
-      ignore (start_modtype interp_mt id args);
-      declare_include interp_mt mty mty_l false false;
-      end_modtype ()
+let declare_modtype interp_mt id args mtys mty_l =
+  let declare_mt fs = match mty_l with
+    | [] -> assert false
+    | [mty] -> declare_modtype_ interp_mt id args mtys mty fs
+    | mty :: mty_l ->
+	ignore (start_modtype_ interp_mt id args mtys fs);
+	declare_include_ interp_mt mty mty_l false false;
+	end_modtype ()
+  in
+  protect_summaries declare_mt
 
-let declare_module interp_mt interp_me id args mty_o = function
-  | [] -> declare_module_real interp_mt interp_me id args mty_o None
-  | [me] -> declare_module_real interp_mt interp_me id args mty_o (Some me)
-  | me :: me_l ->
-      ignore (start_module interp_mt None id args mty_o);
-      declare_include interp_me me me_l true false;
-      end_module ()
+let start_modtype interp_modtype id args mtys =
+  protect_summaries (start_modtype_ interp_modtype id args mtys)
+
+let declare_module interp_mt interp_me id args mtys me_l =
+  let declare_me fs = match me_l with
+    | [] -> declare_module_ interp_mt interp_me id args mtys None fs
+    | [me] -> declare_module_ interp_mt interp_me id args mtys (Some me) fs
+    | me :: me_l ->
+	ignore (start_module_ interp_mt None id args mtys fs);
+	declare_include_ interp_me me me_l true false;
+	end_module ()
+  in
+  protect_summaries declare_me
+
+let start_module interp_modtype export id args res =
+ protect_summaries (start_module_ interp_modtype export id args res)
 
 
 (*s Iterators. *)

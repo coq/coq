@@ -1001,7 +1001,6 @@ type with_declaration_ast =
   | CWith_Module of identifier list located * qualid located
   | CWith_Definition of identifier list located * constr_expr
 
-
 type module_ast =
   | CMEident of qualid located
   | CMEapply of module_ast * module_ast
@@ -1014,6 +1013,10 @@ type module_type_ast =
 type include_ast =
   | CIMTE of module_type_ast * module_type_ast list
   | CIME of module_ast * module_ast list
+
+type 'a module_signature =
+  | Enforce of 'a (* ... : T *)
+  | Check of 'a list (* ... <: T1 <: T2, possibly empty *)
 
 let loc_of_notation f loc (args,_) ntn =
   if args=[] or ntn.[0] <> '_' then fst (Util.unloc loc)

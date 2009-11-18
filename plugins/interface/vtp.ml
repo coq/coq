@@ -1185,9 +1185,9 @@ and fMODULE_TYPE = function
    fNODE "module_type_with_mod" 3
 and fMODULE_TYPE_CHECK = function
 | CT_coerce_MODULE_TYPE_OPT_to_MODULE_TYPE_CHECK x -> fMODULE_TYPE_OPT x
-| CT_only_check(x1) ->
-   fMODULE_TYPE x1 ++
-   fNODE "only_check" 1
+| CT_only_check(l) ->
+   (List.fold_left (++) (mt()) (List.map fMODULE_TYPE l)) ++
+   fNODE "only_check" (List.length l)
 and fMODULE_TYPE_OPT = function
 | CT_coerce_ID_OPT_to_MODULE_TYPE_OPT x -> fID_OPT x
 | CT_coerce_MODULE_TYPE_to_MODULE_TYPE_OPT x -> fMODULE_TYPE x

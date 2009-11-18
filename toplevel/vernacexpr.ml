@@ -259,11 +259,11 @@ type vernac_expr =
 
   (* Modules and Module Types *)
   | VernacDeclareModule of bool option * lident *
-      module_binder list * (module_type_ast * bool)
+      module_binder list * module_type_ast
   | VernacDefineModule of bool option * lident *
-      module_binder list * (module_type_ast * bool) option * module_ast list
+      module_binder list * module_type_ast module_signature * module_ast list
   | VernacDeclareModuleType of lident *
-      module_binder list * module_type_ast list
+      module_binder list * module_type_ast list * module_type_ast list
   | VernacInclude of bool * include_ast
 
   (* Solving *)

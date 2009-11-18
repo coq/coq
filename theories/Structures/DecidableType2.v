@@ -62,25 +62,25 @@ Module Type EqualityType := BareEquality <+ IsEq.
 
 Module Type EqualityTypeOrig := BareEquality <+ IsEqOrig.
 
-Module Type EqualityTypeBoth (* <: EqualityType <: EqualityTypeOrig *)
+Module Type EqualityTypeBoth <: EqualityType <: EqualityTypeOrig
  := BareEquality <+ IsEq <+ IsEqOrig.
 
-Module Type DecidableType (* <: EqualityType *)
+Module Type DecidableType <: EqualityType
  := BareEquality <+ IsEq <+ HasEqDec.
 
-Module Type DecidableTypeOrig (* <: EqualityTypeOrig *)
+Module Type DecidableTypeOrig <: EqualityTypeOrig
  := BareEquality <+ IsEqOrig <+ HasEqDec.
 
-Module Type DecidableTypeBoth (* <: DecidableType <: DecidableTypeOrig *)
+Module Type DecidableTypeBoth <: DecidableType <: DecidableTypeOrig
  := EqualityTypeBoth <+ HasEqDec.
 
-Module Type BooleanEqualityType (* <: EqualityType *)
+Module Type BooleanEqualityType <: EqualityType
  := BareEquality <+ IsEq <+ HasEqBool.
 
-Module Type BooleanDecidableType (* <: DecidableType <: BooleanEqualityType *)
+Module Type BooleanDecidableType <: DecidableType <: BooleanEqualityType
  := BareEquality <+ IsEq <+ HasEqDec <+ HasEqBool.
 
-Module Type DecidableTypeFull (* <: all previous interfaces *)
+Module Type DecidableTypeFull <: DecidableTypeBoth <: BooleanDecidableType
  := BareEquality <+ IsEq <+ IsEqOrig <+ HasEqDec <+ HasEqBool.
 
 
@@ -146,7 +146,7 @@ Module Bool2Dec (E:BooleanEqualityType) <: BooleanDecidableType
    A particular case of [DecidableType] where the equality is
    the usual one of Coq. *)
 
-Module Type UsualBareEquality. (* <: BareEquality *)
+Module Type UsualBareEquality <: BareEquality.
  Parameter Inline t : Type.
  Definition eq := @eq t.
 End UsualBareEquality.
@@ -161,26 +161,22 @@ Module UsualIsEqOrig (E:UsualBareEquality) <: IsEqOrig E.
  Definition eq_trans := @eq_trans E.t.
 End UsualIsEqOrig.
 
-Module Type UsualEqualityType (* <: EqualityType *)
+Module Type UsualEqualityType <: EqualityType
  := UsualBareEquality <+ IsEq.
 
-Module Type UsualDecidableType (* <: DecidableType *)
+Module Type UsualDecidableType <: DecidableType
  := UsualBareEquality <+ IsEq <+ HasEqDec.
 
-Module Type UsualDecidableTypeBoth (* <: DecidableTypeBoth *)
+Module Type UsualDecidableTypeBoth <: DecidableTypeBoth
  := UsualBareEquality <+ IsEq <+ IsEqOrig <+ HasEqDec.
 
 Module Type UsualBoolEq := UsualBareEquality <+ HasEqBool.
 
-Module Type UsualDecidableTypeFull (* <: DecidableTypeFull *)
+Module Type UsualDecidableTypeFull <: DecidableTypeFull
  := UsualBareEquality <+ IsEq <+ IsEqOrig <+ HasEqDec <+ HasEqBool.
 
 
-(** a [UsualDecidableType] is in particular an [DecidableType]. *)
-
-Module UDT_to_DT (U:UsualDecidableType) <: DecidableType := U.
-
-(** Some shortcuts for easily building a UsualDecidableType *)
+(** Some shortcuts for easily building a [UsualDecidableType] *)
 
 Module Type MiniDecidableType.
  Parameter t : Type.
@@ -188,12 +184,9 @@ Module Type MiniDecidableType.
 End MiniDecidableType.
 
 Module Make_UDT (M:MiniDecidableType) <: UsualDecidableTypeBoth.
- Include M.
  Definition eq := @eq M.t.
- Include Self UsualIsEq.
- Include Self UsualIsEqOrig.
+ Include M <+ UsualIsEq <+ UsualIsEqOrig.
 End Make_UDT.
 
 Module Make_UDTF (M:UsualBoolEq) <: UsualDecidableTypeFull
  := M <+ UsualIsEq <+ UsualIsEqOrig <+ HasEqBool2Dec.
-

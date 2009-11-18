@@ -479,7 +479,7 @@ and ct_MODULE_TYPE =
   | CT_module_type_with_mod of ct_MODULE_TYPE * ct_ID_LIST * ct_ID
 and ct_MODULE_TYPE_CHECK =
     CT_coerce_MODULE_TYPE_OPT_to_MODULE_TYPE_CHECK of ct_MODULE_TYPE_OPT
-  | CT_only_check of ct_MODULE_TYPE
+  | CT_only_check of ct_MODULE_TYPE list
 and ct_MODULE_TYPE_OPT =
     CT_coerce_ID_OPT_to_MODULE_TYPE_OPT of ct_ID_OPT
   | CT_coerce_MODULE_TYPE_to_MODULE_TYPE_OPT of ct_MODULE_TYPE

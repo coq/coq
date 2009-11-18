@@ -446,7 +446,7 @@ let vernac_import export refl =
     List.iter import refl;
     Lib.add_frozen_state ()
 
-let vernac_declare_module export (loc, id) binders_ast mty_ast_o =
+let vernac_declare_module export (loc, id) binders_ast mty_ast =
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
   if Lib.sections_are_opened () then
@@ -460,7 +460,7 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast_o =
      else (idl,ty)) binders_ast in
   let mp = Declaremods.declare_module
     Modintern.interp_modtype Modintern.interp_modexpr
-    id binders_ast (Some mty_ast_o) []
+    id binders_ast (Enforce mty_ast) []
   in
     Dumpglob.dump_moddef loc mp "mod";
     if_verbose message ("Module "^ string_of_id id ^" is declared");
@@ -514,7 +514,7 @@ let vernac_end_module export (loc,id as lid) =
   if_verbose message ("Module "^ string_of_id id ^" is defined") ;
   Option.iter (fun export -> vernac_import export [Ident lid]) export
 
-let vernac_declare_module_type (loc,id) binders_ast mty_ast_l =
+let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
   if Lib.sections_are_opened () then
     error "Modules and Module Types are not allowed inside sections.";
 
@@ -526,7 +526,8 @@ let vernac_declare_module_type (loc,id) binders_ast mty_ast_l =
          (fun (export,idl,ty) (args,argsexport) ->
            (idl,ty)::args, List.map (fun (_,i) -> export,i) idl) binders_ast
              ([],[]) in
-       let mp = Declaremods.start_modtype Modintern.interp_modtype id binders_ast in
+       let mp = Declaremods.start_modtype
+	 Modintern.interp_modtype id binders_ast mty_sign in
         Dumpglob.dump_moddef loc mp "modtype";
 	if_verbose message
 	  ("Interactive Module Type "^ string_of_id id ^" started");
@@ -545,7 +546,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_ast_l =
 			"and \"Import\" keywords from every functor argument.")
             else (idl,ty)) binders_ast in
 	let mp = Declaremods.declare_modtype Modintern.interp_modtype
-	  id binders_ast mty_ast_l in
+	  id binders_ast mty_sign mty_ast_l in
           Dumpglob.dump_moddef loc mp "modtype";
 	  if_verbose message
 	    ("Module Type "^ string_of_id id ^" is defined")
@@ -1329,10 +1330,10 @@ let interp c = match c with
   (* Modules *)
   | VernacDeclareModule (export,lid,bl,mtyo) ->
       vernac_declare_module export lid bl mtyo
-  | VernacDefineModule (export,lid,bl,mtyo,mexprl) ->
-      vernac_define_module export lid bl mtyo mexprl
-  | VernacDeclareModuleType (lid,bl,mtyo) ->
-      vernac_declare_module_type lid bl mtyo
+  | VernacDefineModule (export,lid,bl,mtys,mexprl) ->
+      vernac_define_module export lid bl mtys mexprl
+  | VernacDeclareModuleType (lid,bl,mtys,mtyo) ->
+      vernac_declare_module_type lid bl mtys mtyo
   | VernacInclude (is_self,in_asts) ->
       vernac_include is_self in_asts
   (* Gallina extensions *)

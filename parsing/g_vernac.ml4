@@ -388,17 +388,16 @@ GEXTEND Gram
   gallina_ext:
     [ [ (* Interactive module declaration *)
         IDENT "Module"; export = export_token; id = identref;
-	bl = LIST0 module_binder; mty_o = OPT of_module_type;
-	o = OPT is_module_expr ->
-	  VernacDefineModule (export, id, bl, mty_o,
-			      match o with None -> [] | Some l -> l)
+	bl = LIST0 module_binder; sign = of_module_type;
+	body = is_module_expr ->
+	  VernacDefineModule (export, id, bl, sign, body)
       | IDENT "Module"; "Type"; id = identref;
-	bl = LIST0 module_binder; o = OPT is_module_type ->
-	  VernacDeclareModuleType (id, bl,
-				   match o with None -> [] | Some l -> l)
+	bl = LIST0 module_binder; sign = check_module_types;
+	body = is_module_type ->
+	  VernacDeclareModuleType (id, bl, sign, body)
       | IDENT "Declare"; IDENT "Module"; export = export_token; id = identref;
 	bl = LIST0 module_binder; ":"; mty = module_type ->
-	  VernacDeclareModule (export, id, bl, (mty,true))
+	  VernacDeclareModule (export, id, bl, mty)
       (* Section beginning *)
       | IDENT "Section"; id = identref -> VernacBeginSection id
       | IDENT "Chapter"; id = identref -> VernacBeginSection id
@@ -433,15 +432,23 @@ GEXTEND Gram
   ext_module_expr:
     [ [ "<+"; mexpr = module_expr -> mexpr ] ]
   ;
+  check_module_type:
+    [ [ "<:"; mty = module_type -> mty ] ]
+  ;
+  check_module_types:
+    [ [ mtys = LIST0 check_module_type -> mtys ] ]
+  ;
   of_module_type:
-    [ [ ":"; mty = module_type -> (mty, true)
-      | "<:"; mty = module_type -> (mty, false) ] ]
+    [ [ ":"; mty = module_type -> Enforce mty
+      | mtys = check_module_types -> Check mtys ] ]
   ;
   is_module_type:
-    [ [ ":="; mty = module_type ; l = LIST0 ext_module_type -> (mty::l) ] ]
+    [ [ ":="; mty = module_type ; l = LIST0 ext_module_type -> (mty::l)
+      | -> [] ] ]
   ;
   is_module_expr:
-    [ [ ":="; mexpr = module_expr; l = LIST0 ext_module_expr -> (mexpr::l) ] ]
+    [ [ ":="; mexpr = module_expr; l = LIST0 ext_module_expr -> (mexpr::l)
+      | -> [] ] ]
   ;
 
   (* Module binder  *)

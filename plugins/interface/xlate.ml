@@ -1617,14 +1617,13 @@ let xlate_module_binder_list (l:module_binder list) =
 		 CT_module_binder
 		   (CT_id_ne_list(fst, idl2), xlate_module_type mty)) l);;
 
-let xlate_module_type_check_opt = function
-    None -> CT_coerce_MODULE_TYPE_OPT_to_MODULE_TYPE_CHECK
- 	(CT_coerce_ID_OPT_to_MODULE_TYPE_OPT ctv_ID_OPT_NONE)
-  | Some(mty, true) -> CT_only_check(xlate_module_type mty)
-  | Some(mty, false) ->
+let xlate_module_type_check = function
+  | Topconstr.Enforce mty ->
       CT_coerce_MODULE_TYPE_OPT_to_MODULE_TYPE_CHECK
 	(CT_coerce_MODULE_TYPE_to_MODULE_TYPE_OPT
-	   (xlate_module_type mty));;
+	   (xlate_module_type mty))
+  | Topconstr.Check mtys ->
+      CT_only_check (List.map xlate_module_type mtys)
 
 let rec xlate_module_expr = function
     CMEident (_, qid) -> CT_coerce_ID_OPT_to_MODULE_EXPR
@@ -2034,7 +2033,7 @@ let rec xlate_vernac =
        xlate_error"TODO: Local abbreviations and abbreviations with parameters"
   (* Modules and Module Types *)
    | VernacInclude (_) -> xlate_error "TODO : Include "
-   | VernacDeclareModuleType((_, id), bl, mty_o)  ->
+   | VernacDeclareModuleType((_, id), bl, _, mty_o)  ->
       CT_module_type_decl(xlate_ident id,
 			  xlate_module_binder_list bl,
 			  match mty_o with
@@ -2045,18 +2044,18 @@ let rec xlate_vernac =
 				CT_coerce_MODULE_TYPE_to_MODULE_TYPE_OPT
 				  (xlate_module_type mty1)
 	                    | _ -> failwith "TODO: Include Self")
-   | VernacDefineModule(_,(_, id), bl, mty_o, mexpr_o) ->
+   | VernacDefineModule(_,(_, id), bl, mtys, mexpr_o) ->
        CT_module(xlate_ident id,
 		 xlate_module_binder_list bl,
-		 xlate_module_type_check_opt mty_o,
+		 xlate_module_type_check mtys,
 		 match mexpr_o with
 		     [] -> CT_coerce_ID_OPT_to_MODULE_EXPR ctv_ID_OPT_NONE
 		   | [m] -> xlate_module_expr m
 		   | _ -> failwith "TODO Include Self")
-  | VernacDeclareModule(_,(_, id), bl, mty_o) ->
+  | VernacDeclareModule(_,(_, id), bl, mty) ->
        CT_declare_module(xlate_ident id,
 		 xlate_module_binder_list bl,
-		 xlate_module_type_check_opt (Some mty_o),
+		 xlate_module_type_check (Topconstr.Enforce mty),
 		 CT_coerce_ID_OPT_to_MODULE_EXPR ctv_ID_OPT_NONE)
    | VernacRequire (impexp, spec, id::idl) ->
       let ct_impexp, ct_spec = get_require_flags impexp spec in
