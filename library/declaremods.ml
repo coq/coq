@@ -909,6 +909,36 @@ let declare_one_include interp_struct me_ast is_mod is_self =
 	      in
 	      let subst = compute_subst mbids mb_mp.mod_type in
 	      ([],mp_self,subst_objects subst objects))
+    | MSEapply(fexpr, MSEident p) as mexpr ->
+	let _,mb_mp,mp_l = if is_mod then
+	  get_objs_module_application env mexpr
+	else 
+	  let o,mtb_mp,mp_l = get_objs_modtype_application env mexpr in
+	    o,Modops.module_body_of_type mtb_mp.typ_mp mtb_mp,mp_l in
+	let mb_mp =
+	  List.fold_left (fun mb _ -> 
+			    match mb.mod_type with 
+			      |  SEBfunctor(_,_,str) -> {mb with  mod_type = str}
+			      | _ -> error ("Application of a functor with too much arguments."))
+	    mb_mp mp_l in
+	  (match objs with
+	     |([],_,_) -> objs
+	     |(mbids,mp_self,objects) ->
+		let mb = Global.pack_module() in
+		let rec compute_subst mbids sign  =
+		  match mbids with
+		      [] -> empty_subst
+		    | mbid::mbids ->
+			let farg_id, farg_b, fbody_b =
+			  Modops.destr_functor env sign in
+		      let subst=compute_subst mbids fbody_b in
+		      let mp_delta =
+			Modops.complete_inline_delta_resolver env mb.mod_mp
+			  farg_id farg_b mb.mod_delta in
+			join (map_mbid mbid mb.mod_mp mp_delta) subst
+		in
+		let subst = compute_subst mbids mb_mp.mod_type in
+		  ([],mp_self,subst_objects subst objects))
     | _ -> objs
   in
 

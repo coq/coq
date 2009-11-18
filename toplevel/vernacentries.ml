@@ -311,9 +311,9 @@ let vernac_definition (local,boxed,k) (loc,id as lid) def hook =
   Dumpglob.dump_definition lid false "def";
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
-	let hook _ _ = () in
-	start_proof_and_print (local,DefinitionBody Definition)
-	  [Some lid, (bl,t)] hook
+ 	let hook _ _ = () in
+ 	  start_proof_and_print (local,DefinitionBody Definition)
+	    [Some lid, (bl,t)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
  	let red_option = match red_option with
           | None -> None
@@ -514,11 +514,12 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
   match mty_ast_l with
     | [] ->
        check_no_pending_proofs ();
-       let binders_ast,argsexport =
-        List.fold_right
+       let binders_ast,argsexport =       
+	 List.fold_right
          (fun (export,idl,ty) (args,argsexport) ->
-           (idl,ty)::args, List.map (fun (_,i) -> export,i) idl) binders_ast
+           (idl,ty)::args, (List.map (fun (_,i) -> export,i)idl)@argsexport) binders_ast
              ([],[]) in
+       
        let mp = Declaremods.start_modtype
 	 Modintern.interp_modtype id binders_ast mty_sign in
         Dumpglob.dump_moddef loc mp "modtype";
