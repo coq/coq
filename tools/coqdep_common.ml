@@ -217,11 +217,29 @@ let traite_fichier_mllib md ext =
     (!a_faire, !a_faire_opt)
   with Sys_error _ -> ("","")
 
+let escape escaped_chars s =
+  let n = ref 0 in
+    for i = 0 to String.length s - 1 do
+      n := !n +
+        (if List.mem s.[i] escaped_chars then 2 else 1)
+    done;
+    if !n = String.length s then s else 
+      begin
+	let s' = String.create !n in
+          n := 0;
+          for i = 0 to String.length s - 1 do
+            if List.mem s.[i] escaped_chars then begin s'.[!n] <- '\\'; incr n end;
+	    s'.[!n] <- s.[i];
+            incr n
+          done;
+          s'
+      end
+
 let canonize f =
   let f' = absolute_dir (Filename.dirname f) // Filename.basename f in
   match List.filter (fun (_,full) -> f' = full) !vAccu with
-    | (f,_) :: _ -> f
-    | _ -> f
+    | (f,_) :: _ -> escape ['#'] f
+    | _ -> escape ['#'] f
 
 let traite_fichier_Coq verbose f =
   try
