@@ -31,13 +31,30 @@ val printing_state : printing_state
 
 type reset_mark
 
-type undo_info = identifier list * int
-
-val undo_info : unit -> undo_info
-
-type reset_info = reset_mark * undo_info * bool ref
+type reset_info = {
+  state : reset_mark;
+  pending : identifier list;
+  pf_depth : int;
+  mutable segment : bool;
+}
 
 val compute_reset_info : unit -> reset_info
+
+type backtrack =
+  | BacktrackToNextActiveMark
+  | BacktrackToMark of reset_mark
+  | NoBacktrack
+
+type undo_cmds = {
+  n : int;
+  a : int;
+  b : backtrack;
+  p : int;
+  l : (identifier list * int);
+}
+
+val init_undo : unit -> undo_cmds
+
 val reset_initial : unit -> unit
 val reset_to : reset_mark -> unit
 val reset_to_mod : identifier -> unit

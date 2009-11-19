@@ -340,21 +340,41 @@ let is_vernac_goal_printing_command com =
   List.mem GoalStartingCommand attribute or
   List.mem SolveCommand attribute
 
-type undo_info = identifier list * int
-
-let undo_info () = Pfedit.get_all_proof_names (), Pfedit.current_proof_depth()
-
 type reset_mark = Libnames.object_name
 
-type reset_info = reset_mark * undo_info * bool ref
+type reset_info = {
+  state : reset_mark;
+  pending : identifier list;
+  pf_depth : int;
+  mutable segment : bool;
+}
 
 let compute_reset_info () =
-  (match Lib.has_top_frozen_state () with
+  match Lib.has_top_frozen_state () with
     | Some st ->
-	prerr_endline ("On top of state "^Libnames.string_of_path (fst st));
-	st
+        { state = st;
+          pending = Pfedit.get_all_proof_names ();
+          pf_depth = Pfedit.current_proof_depth ();
+          segment = true; }
     | None ->
-	failwith "FATAL ERROR: NO RESET"), undo_info(), ref true
+        failwith "FATAL ERROR: NO RESET"
+
+type backtrack =
+  | BacktrackToNextActiveMark
+  | BacktrackToMark of reset_mark
+  | NoBacktrack
+
+type undo_cmds = {
+  n : int;
+  a : int;
+  b : backtrack;
+  p : int;
+  l : (identifier list * int);
+}
+
+let init_undo u =
+  { n = 0; a = 0; b = NoBacktrack; p = 0;
+    l = (Pfedit.get_all_proof_names u,Pfedit.current_proof_depth u) }
 
 let reset_initial () =
   prerr_endline "Reset initial called"; flush stderr;
@@ -409,41 +429,6 @@ let interp_and_replace s =
   let result = interp false s in
   let msg = read_stdout () in
   result,msg
-
-type bktk_info = { start : GText.mark;
-                   stop : GText.mark;
-                   state_num : int;
-                   pending_proofs : string list;
-                   proof_stack_depth : int;
-}
-
-let record_interp cmd_stk start_of_sentence end_of_sentence (sn,pp,psd) =
-  Stack.push { start = start_of_sentence;
-               stop = end_of_sentence;
-               state_num = sn;
-               pending_proofs = pp;
-               proof_stack_depth = psd;
-  } cmd_stk
-
-let backtrack cmd_stack stop_cond =
-  if Stack.is_empty cmd_stack then
-    reset_initial () (* reset coq *)
-  else try
-    let current = Stack.top cmd_stack in
-    while not (stop_cond (Stack.top cmd_stack).stop) do
-      ignore (Stack.pop cmd_stack)
-    done;
-    let target = Stack.top cmd_stack in
-    if current != target then
-      let rst = target.state_num in
-      let undo = target.proof_stack_depth in
-      let abrt = List.fold_left
-                   (fun acc e -> if List.mem e target.pending_proofs then acc else succ acc)
-                   0 current.pending_proofs
-      in
-      raw_interp (Printf.sprintf "Backtrack %d %d %d.\n" rst undo abrt)
-      else ()
-  with Stack.Empty -> reset_initial () (* might as well reset coq ... *)
 
 type tried_tactic =
   | Interrupted
