@@ -1008,14 +1008,14 @@ and decomp_and_register_decls p kont decls =
 
 exception Uplift of tactic list
 
-let rec search_gen p n mod_delta db_list local_db =
-  let rec search n local_db gl =
-    if n=0 then error "BOUND 2";
-    tclFIRST
-      (assumption ::
-       intros_decomp p (search n) [] local_db 1 ::
-       List.map (fun ntac -> tclTHEN ntac (search (n-1) local_db))
-	(possible_resolve mod_delta db_list local_db (pf_concl gl))) gl
+let search_gen p n mod_delta db_list local_db =
+  let rec search n local_db =
+    if n=0 then (fun gl -> error "BOUND 2") else
+      tclORELSE0 assumption
+	(tclORELSE0 (intros_decomp p (search n) [] local_db 1)
+	   (fun gl -> tclFIRST
+	      (List.map (fun ntac -> tclTHEN ntac (search (n-1) local_db))
+		 (possible_resolve mod_delta db_list local_db (pf_concl gl))) gl))
   in
   search n local_db
 
