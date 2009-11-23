@@ -14,9 +14,6 @@ open Vernacexpr
 open Coq
 open Gtk_parsing
 open Ideutils
-  (*
-open Coq_driver
-   *)
 
 type 'a info = {start:'a;
                 stop:'a;
@@ -547,58 +544,79 @@ let apply_tag (buffer:GText.buffer) orig off_conv from upto sort =
 let remove_tags (buffer:GText.buffer) from upto =
   List.iter (buffer#remove_tag ~start:from ~stop:upto)
     [ Tags.Script.comment; Tags.Script.kwd; Tags.Script.decl;
-      Tags.Script.proof_decl; Tags.Script.qed; Tags.Script.sentence_end ]
+      Tags.Script.proof_decl; Tags.Script.qed ]
 
-let tag_slice (buffer:GText.buffer) from upto on_fail =
+let split_slice_lax (buffer:GText.buffer) from upto =
   remove_tags buffer from upto;
-  buffer#remove_tag ~start:from ~stop:upto Tags.Script.sentence_end;
+  buffer#remove_tag ~start:from ~stop:upto Tags.Script.lax_end;
   let slice = buffer#get_text ~start:from ~stop:upto () in
-  let rec tag_substring str =
+  let slice = slice ^ " " in
+  let rec split_substring str =
     let off_conv = byte_offset_to_char_offset str in
     let slice_len = String.length str in
-    let tag_cnt = CoqLex.find_end_offset (apply_tag buffer from off_conv) str in
+    let sentence_len = CoqLex.find_end_offset (apply_tag buffer from off_conv) str in
 
-    let stop = from#forward_chars (off_conv tag_cnt) in
+    let stop = from#forward_chars (pred (off_conv sentence_len)) in
     let start = stop#backward_char in
-    buffer#apply_tag ~start ~stop Tags.Script.sentence_end;
+    buffer#apply_tag ~start ~stop Tags.Script.lax_end;
 
-    if tag_cnt <> slice_len then begin
-      ignore (from#nocopy#forward_chars (off_conv tag_cnt));
-      tag_substring (String.sub str tag_cnt (slice_len - tag_cnt))
+    if 1 < slice_len - sentence_len then begin (* remember that we added a trailing space *)
+      ignore (from#nocopy#forward_chars (off_conv sentence_len));
+      split_substring (String.sub str sentence_len (slice_len - sentence_len))
     end
   in
-  try tag_substring slice with Not_found -> on_fail buffer from upto
+  split_substring slice
+
+let rec grab_safe_sentence_start (iter:GText.iter) soi =
+  let lax_back = iter#backward_char#has_tag Tags.Script.lax_end in
+  let on_space = List.mem iter#char [0x09;0x0A;0x20] in
+  let full_ending = iter#is_start || (lax_back & on_space) in
+  if full_ending then iter
+  else if iter#compare soi <= 0 then raise Not_found
+  else
+    let prev = iter#backward_to_tag_toggle (Some Tags.Script.lax_end) in
+    (if prev#has_tag Tags.Script.lax_end then
+       ignore (prev#nocopy#backward_to_tag_toggle (Some Tags.Script.lax_end)));
+    grab_safe_sentence_start prev soi
+
+let grab_sentence_end_from (start:GText.iter) =
+  let stop = start#forward_to_tag_toggle (Some Tags.Script.lax_end) in
+  stop#forward_char
 
 let get_sentence_bounds (iter:GText.iter) =
-  let start = iter#backward_to_tag_toggle (Some Tags.Script.sentence_end) in
-  (if start#has_tag Tags.Script.sentence_end then ignore (
-    start#nocopy#forward_to_tag_toggle (Some Tags.Script.sentence_end)));
-  let stop = start#forward_to_tag_toggle (Some Tags.Script.sentence_end) in
-  (if stop#has_tag Tags.Script.sentence_end then ignore (
-    stop#nocopy#forward_to_tag_toggle (Some Tags.Script.sentence_end)));
+  let start = iter#backward_to_tag_toggle (Some Tags.Script.lax_end) in
+  (if start#has_tag Tags.Script.lax_end then ignore (
+    start#nocopy#backward_to_tag_toggle (Some Tags.Script.lax_end)));
+  let stop = start#forward_to_tag_toggle (Some Tags.Script.lax_end) in
+  let stop = stop#forward_char in
   start,stop
 
 let end_tag_present end_iter =
-  end_iter#backward_char#has_tag Tags.Script.sentence_end
+  end_iter#backward_char#has_tag Tags.Script.lax_end
 
 let tag_on_insert =
   let skip_last = ref (ref true) in (* ref to the mutable flag created on last call *)
   fun buffer ->
-    let start,stop = get_sentence_bounds (buffer#get_iter_at_mark `INSERT) in
-    let skip_curr = ref true in (* shall the callback be skipped ? by default yes*)
-    let on_tag_fail buffer start _ =
-      skip_curr := false; (* tagging failed, we go to rescue mode *)
-      ignore (Glib.Timeout.add ~ms:1500
-                ~callback:(fun () -> if not !skip_curr then begin
-                             tag_slice buffer start buffer#end_iter (fun _ _ _ -> ());
-                           end; false))
-    in
-    (!skip_last) := true; (* skip the previously created callback *)
-    skip_last := skip_curr;
-    tag_slice buffer start stop on_tag_fail
+    try 
+      let insert = buffer#get_iter_at_mark `INSERT in
+      let start = grab_safe_sentence_start insert
+                    (buffer#get_iter_at_mark (`NAME "start_of_input")) in 
+      let stop = grab_sentence_end_from insert in
+      let skip_curr = ref true in (* shall the callback be skipped ? by default yes*)
+      (!skip_last) := true; (* skip the previously created callback *)
+      skip_last := skip_curr;
+      try split_slice_lax buffer start stop
+      with Not_found ->
+        skip_curr := false;
+        ignore (Glib.Timeout.add ~ms:1500
+                  ~callback:(fun () -> if not !skip_curr then (
+                    try split_slice_lax buffer start buffer#end_iter with _ -> ()); false))
+    with Not_found ->
+      let err_pos = buffer#get_iter_at_mark (`NAME "start_of_input") in
+      buffer#apply_tag Tags.Script.error ~start:err_pos ~stop:err_pos#forward_char
 
 let force_retag buffer =
-  tag_slice buffer buffer#start_iter buffer#end_iter (fun _ _ _ -> ())
+  try split_slice_lax buffer buffer#start_iter buffer#end_iter with _ -> ()
 
 let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
   (* move back twice if not into proof_decl,
@@ -610,8 +628,9 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
     ignore (cursor#nocopy#backward_to_tag_toggle (Some Tags.Script.proof_decl));
   let decl_start = cursor in
   let prf_end = decl_start#forward_to_tag_toggle (Some Tags.Script.qed) in
-  let _,decl_end = get_sentence_bounds decl_start in
-  let _,prf_end = get_sentence_bounds prf_end in
+  let decl_end = grab_sentence_end_from decl_start in
+  let prf_end = grab_sentence_end_from prf_end in
+  let prf_end = prf_end#forward_char in
   if decl_start#has_tag Tags.Script.folded then (
     buffer#remove_tag ~start:decl_start ~stop:decl_end Tags.Script.folded;
     buffer#remove_tag ~start:decl_end ~stop:prf_end Tags.Script.hidden)
@@ -1075,10 +1094,14 @@ object(self)
         None
 
   method find_phrase_starting_at (start:GText.iter) =
-    let _,end_iter = get_sentence_bounds start in
-    if end_tag_present end_iter then
-        Some (start,end_iter)
-    else None
+    try
+      let start = grab_safe_sentence_start start self#get_start_of_input in
+      let stop = grab_sentence_end_from start in
+      if stop#backward_char#has_tag Tags.Script.lax_end then
+        Some (start,stop)
+      else
+        None
+    with Not_found -> None
 
   method complete_at_offset (offset:int) =
     prerr_endline ("Completion at offset : " ^ string_of_int offset);
@@ -1135,32 +1158,32 @@ object(self)
       end in
     let mark_processed reset_info is_complete (start,stop) ast =
       let b = input_buffer in
-        b#move_mark ~where:stop (`NAME "start_of_input");
-        b#apply_tag
-          (if is_complete then Tags.Script.processed else Tags.Script.unjustified) ~start ~stop;
-        if (self#get_insert#compare) stop <= 0 then
-          begin
-            b#place_cursor stop;
-            self#recenter_insert
-          end;
-          let start_of_phrase_mark = `MARK (b#create_mark start) in
-          let end_of_phrase_mark = `MARK (b#create_mark stop) in
-            push_phrase
-              cmd_stack
-              reset_info
-              start_of_phrase_mark
-              end_of_phrase_mark ast;
-            if display_goals then self#show_goals;
-            remove_tag (start,stop) in
-      begin
-        match sync get_next_phrase () with
-            None -> false
-          | Some (loc,phrase) ->
-              (match self#send_to_coq verbosely false phrase true true true with
-                 | Some (is_complete,(reset_info,ast)) ->
-                     sync (mark_processed reset_info is_complete) loc ast; true
-                 | None -> sync remove_tag loc; false)
-      end
+      b#move_mark ~where:stop (`NAME "start_of_input");
+      b#apply_tag
+        (if is_complete then Tags.Script.processed else Tags.Script.unjustified) ~start ~stop;
+         if (self#get_insert#compare) stop <= 0 then
+           begin
+             b#place_cursor stop;
+             self#recenter_insert
+           end;
+         let start_of_phrase_mark = `MARK (b#create_mark start) in
+         let end_of_phrase_mark = `MARK (b#create_mark stop) in
+         push_phrase
+           cmd_stack
+           reset_info
+           start_of_phrase_mark
+           end_of_phrase_mark ast;
+         if display_goals then self#show_goals;
+         remove_tag (start,stop) in
+    begin
+      match sync get_next_phrase () with
+          None -> false
+        | Some (loc,phrase) ->
+            (match self#send_to_coq verbosely false phrase true true true with
+               | Some (is_complete,(reset_info,ast)) ->
+                   sync (mark_processed reset_info is_complete) loc ast; true
+               | None -> sync remove_tag loc; false)
+    end
 
   method insert_this_phrase_on_success
         show_output show_msg localize coqphrase insertphrase =
@@ -1567,8 +1590,7 @@ object(self)
                                Tags.Script.error
                                ~start:self#get_start_of_input
                                ~stop;
-                             tag_on_insert
-                               input_buffer
+                             tag_on_insert input_buffer
               )
     );
     ignore (input_buffer#add_selection_clipboard cb);
