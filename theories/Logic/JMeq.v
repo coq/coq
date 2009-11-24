@@ -125,6 +125,20 @@ assert (true=false) by (destruct H; reflexivity).
 discriminate.
 Qed.
 
+(** However, when the dependencies are equal, [JMeq (P p) x (P q) y]
+    is as strong as [eq_dep U P p x q y] (this uses [JMeq_eq]) *)
+
+Lemma JMeq_eq_dep : 
+  forall U (P:U->Prop) p q (x:P p) (y:P q), 
+  p = q -> JMeq x y -> eq_dep U P p x q y.
+Proof.
+intros.
+destruct H.
+apply JMeq_eq in H0 as ->.
+reflexivity.
+Qed.
+
+
 (* Compatibility *)
 Notation sym_JMeq := JMeq_sym (only parsing).
 Notation trans_JMeq := JMeq_trans (only parsing).
