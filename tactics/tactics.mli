@@ -373,7 +373,7 @@ val pose_proof : name -> constr -> tactic
 
 val generalize      : constr list -> tactic
 val generalize_gen  : ((occurrences * constr) * name) list -> tactic
-val generalize_dep  : constr  -> tactic
+val generalize_dep  : ?with_let:bool (* Don't lose let bindings *) -> constr  -> tactic
 
 val unify           : ?state:Names.transparent_state -> constr -> constr -> tactic
 val resolve_classes : tactic
@@ -385,7 +385,7 @@ val admit_as_an_axiom : tactic
 val abstract_generalize : ?generalize_vars:bool -> ?force_dep:bool -> identifier -> tactic
 val specialize_hypothesis : identifier -> tactic
 
-val dependent_pattern : constr -> tactic
+val dependent_pattern : ?pattern_term:bool -> constr -> tactic
 
 val register_general_multi_rewrite :
   (bool -> evars_flag -> open_constr with_bindings -> clause -> tactic) -> unit

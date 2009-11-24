@@ -275,6 +275,15 @@ let intro_tac : atac =
 	    (g', { info with hints = ldb; auto_last_tac = str"intro" })) gls
       in {it = gls'; sigma = s})
 
+let normevars_tac : atac = 
+  lift_tactic tclNORMEVAR
+    (fun {it = gls; sigma = s} info ->
+      let gls' =
+	List.map (fun g' ->
+	  (g', { info with auto_last_tac = str"NORMEVAR" })) gls
+      in {it = gls'; sigma = s})
+
+
 let id_tac : atac =
   { skft = fun sk fk {it = gl; sigma = s} ->
     sk ({it = [gl]; sigma = s}, fun _ pfs -> List.hd pfs) fk }
@@ -299,14 +308,13 @@ let hints_tac hints =
     let possible_resolve ((lgls,v) as res, pri, b, pp) =
       (pri, pp, b, res)
     in
-    let ({it = normalized; sigma = s}, valid) = tclNORMEVAR {it = gl; sigma = s} in
-    let gl = List.hd normalized in
     let tacs =
-      let concl = Evarutil.nf_evar s gl.evar_concl in
+      let concl = gl.evar_concl in
       let poss = e_possible_resolve hints info.hints concl in
       let l =
+	let tacgl = {it = gl; sigma = s} in
 	Util.list_map_append (fun (tac, pri, b, pptac) ->
-	  try [(tclTHEN tclNORMEVAR tac) {it = gl; sigma = s}, pri, b, pptac] with e when catchable e -> [])
+	  try [tac tacgl, pri, b, pptac] with e when catchable e -> [])
 	  poss
       in
 	if l = [] && !typeclasses_debug then
@@ -333,8 +341,7 @@ let hints_tac hints =
 		    ~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s}
 		  else info.hints }
 	    in g, info) 1 gls in
-	  let glsvalid _ pfs = valid [v pfs] in
-	  let glsv = {it = gls'; sigma = s}, glsvalid in
+	  let glsv = {it = gls'; sigma = s}, (fun _ -> v) in
 	    sk glsv fk
       | [] -> fk ()
     in aux 1 tacs }
@@ -403,7 +410,8 @@ let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm tac =
 	| None -> raise Not_found
 	| Some (evm', fk) -> Some (Evd.evars_reset_evd evm' evm, fk)
 	    
-let eauto_tac hints = fix (or_tac intro_tac (hints_tac hints))
+let eauto_tac hints = 
+  fix (or_tac intro_tac (then_tac normevars_tac (hints_tac hints)))
   
 let eauto ?(only_classes=true) ?st hints g =
   let gl = { it = make_autogoal ~only_classes ?st g; sigma = project g } in
@@ -616,16 +624,16 @@ VERNAC COMMAND EXTEND Typeclasses_Settings
    ]
 END
 
-let typeclasses_eauto ?(st=full_transparent_state) dbs gl =
+let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs gl =
   try 
     let dbs = list_map_filter (fun db -> try Some (Auto.searchtable_map db) with _ -> None) dbs in
-    let st = match dbs with [x] -> Hint_db.transparent_state x | _ -> st in
-	eauto ~only_classes:false ~st dbs gl
-  with Not_found -> tclFAIL 0 (str" typeclasses eauto failed") gl
-
+    let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
+      eauto ~only_classes ~st dbs gl
+   with Not_found -> tclFAIL 0 (str" typeclasses eauto failed") gl
+ 
 TACTIC EXTEND typeclasses_eauto
 | [ "typeclasses" "eauto" "with" ne_preident_list(l) ] -> [ typeclasses_eauto l ]
-| [ "typeclasses" "eauto" ] -> [ typeclasses_eauto [typeclasses_db] ]
+| [ "typeclasses" "eauto" ] -> [ typeclasses_eauto ~only_classes:true [typeclasses_db] ]
 END
 
 let _ = Classes.refine_ref := Refine.refine

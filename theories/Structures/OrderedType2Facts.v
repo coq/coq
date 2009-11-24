@@ -23,7 +23,10 @@ Module OTF_to_OrderSig (O : OrderedTypeFull) :
  OrderSig with Definition t := O.t
           with Definition eq := O.eq
           with Definition lt := O.lt
-          with Definition le := O.le.
+          with Definition le := O.le
+          with Definition eq_equiv := O.eq_equiv
+          with Definition lt_strorder := O.lt_strorder
+          with Definition lt_compat := O.lt_compat.
  Include O.
  Lemma lt_total : forall x y, O.lt x y \/ O.eq x y \/ O.lt y x.
  Proof. intros; destruct (O.compare_spec x y); auto. Qed.
@@ -156,7 +159,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
 
   Lemma compare_antisym : forall x y, (y ?= x) = CompOpp (x ?= y).
   Proof.
-   intros; elim_compare x y; autorewrite with order; order.
+   intros; elim_compare x y; simpl; autorewrite with order; order.
   Qed.
 
   (** For compatibility reasons *)

@@ -1468,7 +1468,7 @@ let generalize_goal gl i ((occs,c,b),na) cl =
   let na = generalized_name c t (pf_ids_of_hyps gl) cl' na in
     mkProd_or_LetIn (na,b,t) cl'
 
-let generalize_dep c gl =
+let generalize_dep ?(with_let=false) c gl =
   let env = pf_env gl in
   let sign = pf_hyps gl in
   let init_ids = ids_of_named_context (Global.named_context()) in
@@ -1489,10 +1489,17 @@ let generalize_dep c gl =
       | _ -> tothin
   in
   let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
-  let cl'' = generalize_goal gl 0 ((all_occurrences,c,None),Anonymous) cl' in
+  let body = 
+    if with_let then
+      match kind_of_term c with 
+      | Var id -> pi2 (pf_get_hyp gl id)
+      | _ -> None
+    else None
+  in
+  let cl'' = generalize_goal gl 0 ((all_occurrences,c,body),Anonymous) cl' in
   let args = Array.to_list (instance_from_named_context to_quantify_rev) in
   tclTHEN
-    (apply_type cl'' (c::args))
+    (apply_type cl'' (if body = None then c::args else args))
     (thin (List.rev tothin'))
     gl
 
@@ -2225,10 +2232,10 @@ let mk_term_eq env sigma ty t ty' t' =
   else
     mkHEq ty t ty' t', mkHRefl ty' t'
 
-let make_abstract_generalize gl id concl dep ctx c eqs args refls =
+let make_abstract_generalize gl id concl dep ctx body c eqs args refls =
   let meta = Evarutil.new_meta() in
-  let term, typ = mkVar id, pf_get_hyp_typ gl id (* de Bruijn closed! *) in
   let eqslen = List.length eqs in
+  let term, typ = mkVar id, pf_get_hyp_typ gl id in
     (* Abstract by the "generalized" hypothesis equality proof if necessary. *)
   let abshypeq, abshypt =
     if dep then
@@ -2240,7 +2247,7 @@ let make_abstract_generalize gl id concl dep ctx c eqs args refls =
   let eqs = lift_togethern 1 eqs in (* lift together and past genarg *)
   let abseqs = it_mkProd_or_LetIn ~init:(lift eqslen abshypeq) (List.map (fun x -> (Anonymous, None, x)) eqs) in
     (* Abstract by the "generalized" hypothesis. *)
-  let genarg = mkProd (Name id, c, abseqs) in
+  let genarg = mkProd_or_LetIn (Name id, body, c) abseqs in
     (* Abstract by the extension of the context *)
   let genctyp = it_mkProd_or_LetIn ~init:genarg ctx in
     (* The goal will become this product. *)
@@ -2248,7 +2255,7 @@ let make_abstract_generalize gl id concl dep ctx c eqs args refls =
     (* Apply the old arguments giving the proper instantiation of the hyp *)
   let instc = mkApp (genc, Array.of_list args) in
     (* Then apply to the original instanciated hyp. *)
-  let instc = mkApp (instc, [| mkVar id |]) in
+  let instc = Option.cata (fun _ -> instc) (mkApp (instc, [| mkVar id |])) body in
     (* Apply the reflexivity proofs on the indices. *)
   let appeqs = mkApp (instc, Array.of_list refls) in
     (* Finaly, apply the reflexivity proof for the original hyp, to get a term of type gl again. *)
@@ -2299,8 +2306,7 @@ let linear vars args =
       true
     with Seen -> false
 
-let abstract_args gl generalize_vars dep id = 
-  let c = pf_get_hyp_typ gl id in
+let abstract_args gl generalize_vars dep id defined f args =
   let sigma = project gl in
   let env = pf_env gl in
   let concl = pf_concl gl in
@@ -2310,90 +2316,101 @@ let abstract_args gl generalize_vars dep id =
     let id = fresh_id !avoid (match name with Name n -> n | Anonymous -> id_of_string "gen_x") gl in
       avoid := id :: !avoid; id
   in
-    match kind_of_term c with
-    | App (f, args) -> 
-	(* Build application generalized w.r.t. the argument plus the necessary eqs.
-	   From env |- c : forall G, T and args : G we build
-	   (T[G'], G' : ctx, env ; G' |- args' : G, eqs := G'_i = G_i, refls : G' = G, vars to generalize)
-	   
-	   eqs are not lifted w.r.t. each other yet. (* will be needed when going to dependent indexes *)
-	*)
-	let aux (prod, ctx, ctxenv, c, args, eqs, refls, vars, env) arg =
-	  let (name, _, ty), arity =
-	    let rel, c = Reductionops.splay_prod_n env sigma 1 prod in
-	      List.hd rel, c
+    (* Build application generalized w.r.t. the argument plus the necessary eqs.
+       From env |- c : forall G, T and args : G we build
+       (T[G'], G' : ctx, env ; G' |- args' : G, eqs := G'_i = G_i, refls : G' = G, vars to generalize)
+       
+       eqs are not lifted w.r.t. each other yet. (* will be needed when going to dependent indexes *)
+    *)
+  let aux (prod, ctx, ctxenv, c, args, eqs, refls, vars, env) arg =
+    let (name, _, ty), arity =
+      let rel, c = Reductionops.splay_prod_n env sigma 1 prod in
+	List.hd rel, c
+    in
+    let argty = pf_type_of gl arg in
+    let argty = if isSort argty then new_Type () else argty in
+    let liftargty = lift (List.length ctx) argty in
+    let convertible = Reductionops.is_conv_leq ctxenv sigma liftargty ty in
+      match kind_of_term arg with
+      (* 	    | Var id -> *)
+      (* 		let deps = deps_of_var id env in *)
+      (* 		  (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, Idset.union deps vars, env) *)
+      | _ ->
+	  let name = get_id name in
+	  let decl = (Name name, None, ty) in
+	  let ctx = decl :: ctx in
+	  let c' = mkApp (lift 1 c, [|mkRel 1|]) in
+	  let args = arg :: args in
+	  let liftarg = lift (List.length ctx) arg in
+	  let eq, refl =
+	    if convertible then
+	      mkEq (lift 1 ty) (mkRel 1) liftarg, mkRefl argty arg
+	    else
+	      mkHEq (lift 1 ty) (mkRel 1) liftargty liftarg, mkHRefl argty arg
 	  in
-	  let argty = pf_type_of gl arg in
-	  let argty = if isSort argty then new_Type () else argty in
-	  let liftargty = lift (List.length ctx) argty in
-	  let convertible = Reductionops.is_conv_leq ctxenv sigma liftargty ty in
-	    match kind_of_term arg with
-(* 	    | Var id -> *)
-(* 		let deps = deps_of_var id env in *)
-(* 		  (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, Idset.union deps vars, env) *)
-	    | _ ->
-		let name = get_id name in
-		let decl = (Name name, None, ty) in
-		let ctx = decl :: ctx in
-		let c' = mkApp (lift 1 c, [|mkRel 1|]) in
-		let args = arg :: args in
-		let liftarg = lift (List.length ctx) arg in
-		let eq, refl =
-		  if convertible then
-		    mkEq (lift 1 ty) (mkRel 1) liftarg, mkRefl argty arg
-		  else
-		    mkHEq (lift 1 ty) (mkRel 1) liftargty liftarg, mkHRefl argty arg
-		in
-		let eqs = eq :: lift_list eqs in
-		let refls = refl :: refls in
-		let argvars = ids_of_constr vars arg in
-		  (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls, Idset.union argvars vars, env)
-	in 
-	let f', args' = decompose_indapp f args in
-	let dogen, f', args' =
-	  let parvars = ids_of_constr ~all:true Idset.empty f' in
-	  if not (linear parvars args') then true, f, args
-	  else
-	    match array_find_i (fun i x -> not (isVar x)) args' with
-	    | None -> false, f', args'
-	    | Some nonvar ->
-		let before, after = array_chop nonvar args' in
-		  true, mkApp (f', before), after
-	in
-	  if dogen then
-	    let arity, ctx, ctxenv, c', args, eqs, refls, vars, env = 
-	      Array.fold_left aux (pf_type_of gl f',[],env,f',[],[],[],Idset.empty,env) args'
-	    in
-	    let args, refls = List.rev args, List.rev refls in
-	    let vars = 
-	      if generalize_vars then
-		let nogen = Idset.add id Idset.empty in
-		  hyps_of_vars (pf_env gl) (pf_hyps gl) nogen vars
-	      else []
-	    in
-	      Some (make_abstract_generalize gl id concl dep ctx c' eqs args refls,
-		   dep, succ (List.length ctx), vars)
-	  else None
-    | _ -> None
-
+	  let eqs = eq :: lift_list eqs in
+	  let refls = refl :: refls in
+	  let argvars = ids_of_constr vars arg in
+	    (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls, Idset.union argvars vars, env)
+  in 
+  let f', args' = decompose_indapp f args in
+  let dogen, f', args' =
+    let parvars = ids_of_constr ~all:true Idset.empty f' in
+      if not (linear parvars args') then true, f, args
+      else
+	match array_find_i (fun i x -> not (isVar x)) args' with
+	| None -> false, f', args'
+	| Some nonvar ->
+	    let before, after = array_chop nonvar args' in
+	      true, mkApp (f', before), after
+  in
+    if dogen then
+      let arity, ctx, ctxenv, c', args, eqs, refls, vars, env = 
+	Array.fold_left aux (pf_type_of gl f',[],env,f',[],[],[],Idset.empty,env) args'
+      in
+      let args, refls = List.rev args, List.rev refls in
+      let vars = 
+	if generalize_vars then
+	  let nogen = Idset.singleton id in
+	    hyps_of_vars (pf_env gl) (pf_hyps gl) nogen vars
+	else []
+      in
+      let body, c' = if defined then Some c', Retyping.get_type_of ctxenv Evd.empty c' else None, c' in
+	Some (make_abstract_generalize gl id concl dep ctx body c' eqs args refls,
+	     dep, succ (List.length ctx), vars)
+    else None
+      
 let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id gl =
   Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
-  let oldid = pf_get_new_id id gl in
-  let newc = abstract_args gl generalize_vars force_dep id in
-    match newc with
-    | None -> tclIDTAC gl
-    | Some (newc, dep, n, vars) -> 
-	let tac =
-	  if dep then
-	    tclTHENLIST [refine newc; rename_hyp [(id, oldid)]; tclDO n intro; 
-			 generalize_dep (mkVar oldid)]	      
-	  else
-	    tclTHENLIST [refine newc; clear [id]; tclDO n intro]
-	in 
-	  if vars = [] then tac gl
-	  else tclTHEN tac 
-	    (fun gl -> tclFIRST [revert vars ;
-				 tclMAP (fun id -> tclTRY (generalize_dep (mkVar id))) vars] gl) gl
+  let f, args, def, id, oldid = 
+    let oldid = pf_get_new_id id gl in
+    let (_, b, t) = pf_get_hyp gl id in
+      match b with
+      | None -> let f, args = decompose_app t in
+		  f, args, false, id, oldid
+      | Some t -> 
+	  let f, args = decompose_app t in
+	    f, args, true, id, oldid
+  in
+  if args = [] then tclIDTAC gl
+  else 
+    let args = Array.of_list args in
+    let newc = abstract_args gl generalize_vars force_dep id def f args in
+      match newc with
+      | None -> tclIDTAC gl
+      | Some (newc, dep, n, vars) -> 
+	  let tac =
+	    if dep then
+	      tclTHENLIST [refine newc; rename_hyp [(id, oldid)]; tclDO n intro; 
+			   generalize_dep ~with_let:true (mkVar oldid)]	      
+	    else
+	      tclTHENLIST [refine newc; clear [id]; tclDO n intro]
+	  in 
+	    if vars = [] then tac gl
+	    else tclTHEN tac 
+	      (fun gl -> tclFIRST [revert vars ;
+				   tclMAP (fun id -> 
+				     tclTRY (generalize_dep ~with_let:true (mkVar id))) vars] gl) gl
 
 let specialize_hypothesis id gl =
   let env = pf_env gl in
@@ -2444,11 +2461,11 @@ let specialize_hypothesis id gl =
       
 
 let specialize_hypothesis id gl =
-  if occur_var (pf_env gl) id (pf_concl gl) then
+  if try ignore(clear [id] gl); false with _ -> true then
     tclFAIL 0 (str "Specialization not allowed on dependent hypotheses") gl 
   else specialize_hypothesis id gl
 
-let dependent_pattern c gl =
+let dependent_pattern ?(pattern_term=true) c gl =
   let cty = pf_type_of gl c in
   let deps =
     match kind_of_term cty with
@@ -2465,7 +2482,11 @@ let dependent_pattern c gl =
     let conclvar = subst_term_occ all_occurrences c ty in
       mkNamedLambda id cty conclvar
   in
-  let subst = (c, varname c, cty) :: List.rev_map (fun c -> (c, varname c, pf_type_of gl c)) deps in
+  let subst = 
+    let deps = List.rev_map (fun c -> (c, varname c, pf_type_of gl c)) deps in
+      if pattern_term then (c, varname c, cty) :: deps
+      else deps
+  in
   let concllda = List.fold_left mklambda (pf_concl gl) subst in
   let conclapp = applistc concllda (List.rev_map pi1 subst) in
     convert_concl_no_check conclapp DEFAULTcast gl

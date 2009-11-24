@@ -499,7 +499,12 @@ TACTIC EXTEND specialize_hyp
 END
 
 TACTIC EXTEND dependent_pattern
-| ["dependent_pattern" constr(c) ] -> [ dependent_pattern c ]
+| ["dependent" "pattern" constr(c) ] -> [ dependent_pattern c ]
+END
+
+TACTIC EXTEND dependent_pattern_from
+| ["dependent" "pattern" "from" constr(c) ] ->
+    [ dependent_pattern ~pattern_term:false c ]
 END
 
 TACTIC EXTEND resolve_classes
