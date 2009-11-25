@@ -980,10 +980,10 @@ let add_notation_interpretation (df,c,sc) =
   add_notation_interpretation_core false df c sc false
 
 let set_notation_for_interpretation impls (df,c,sc) =
-  Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc;
-  try silently (add_notation_interpretation_core false df ~impls c sc) false;
+  (try silently (add_notation_interpretation_core false df ~impls c sc) false;
   with NoSyntaxRule ->
-    error "Parsing rule for this notation has to be previously declared."
+    error "Parsing rule for this notation has to be previously declared.");
+  Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
 
 (* Main entry point *)
 
