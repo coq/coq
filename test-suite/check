@@ -4,8 +4,10 @@
 
 if [ "$1" = -byte ]; then
   coqtop="../bin/coqtop.byte -boot -q -batch -I prerequisite"
+  bincoqc="../bin/coqc -byte -I prerequisite"
 else
   coqtop="../bin/coqtop -boot -q -batch -I prerequisite"
+  bincoqc="../bin/coqc -I prerequisite"
 fi
 
 command="$coqtop -top Top -load-vernac-source"
@@ -249,6 +251,21 @@ prepare_tests () {
     done
 }
 
+test_misc () {
+    # Non-standard features
+
+    # Test xml compilation
+    printf "    xml..."
+    COQ_XML_LIBRARY_ROOT=misc/xml $bincoqc -xml misc/berardi_test > /dev/null 2>&1
+    if [ ! -d misc/xml ]; then
+        printf "failed\n"
+    else
+        printf "apparently ok\n"
+	nbtestsok=`expr $nbtestsok + 1`
+        rm -r misc/xml
+    fi
+}
+
 # Programme principal
 
 echo "Preparing tests"
@@ -267,6 +284,8 @@ echo "Interactive tests"
 test_interactive interactive
 echo "Micromega tests"
 test_success micromega
+echo "Miscellaneous tests"
+test_misc
 
 # We give a chance to disable the complexity tests which may cause
 # random build failures on build farms
