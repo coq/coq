@@ -662,21 +662,21 @@ let _ =
          | Some fn ->
             let ch = open_out (fn ^ ".v") in
              Buffer.output_buffer ch theory_buffer ;
+             close_out ch;
+            (* dummy glob file *)
+            let ch = open_out (fn ^ ".glob") in
              close_out ch
        end ;
        Option.iter 
 	(fun fn ->
 	  let coqdoc = Filename.concat (Envars.coqbin ()) ("coqdoc" ^ Coq_config.exec_extension) in
 	  let options = " --html -s --body-only --no-index --latin1 --raw-comments" in
-	  let dir = Option.get xml_library_root in
           let command cmd =
            if Sys.command cmd <> 0 then
             Util.anomaly ("Error executing \"" ^ cmd ^ "\"")
           in
-           command (coqdoc^options^" -d "^dir^" "^fn^".v");
-           let dot = if fn.[0]='/' then "." else "" in
-           command ("mv "^dir^"/"^dot^"*.html "^fn^".xml ");
-           command ("rm "^fn^".v");
+           command (coqdoc^options^" -o "^fn^".xml "^fn^".v");
+           command ("rm "^fn^".v "^fn^".glob");
            print_string("\nWriting on file \"" ^ fn ^ ".xml\" was successful\n"))
        ofn)
 ;;
