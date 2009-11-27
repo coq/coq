@@ -226,7 +226,8 @@ type validation = evar_map -> proof_tree list -> proof_tree
 
 let pr_depth l = prlist_with_sep (fun () -> str ".") pr_int (List.rev l)
 
-type autoinfo = { hints : Auto.hint_db; only_classes: bool; auto_depth: int list; auto_last_tac: std_ppcmds }
+type autoinfo = { hints : Auto.hint_db; is_evar: existential_key option;
+		  only_classes: bool; auto_depth: int list; auto_last_tac: std_ppcmds }
 type autogoal = goal * autoinfo
 type 'ans fk = unit -> 'ans
 type ('a,'ans) sk = 'a -> 'ans fk -> 'ans
@@ -272,7 +273,7 @@ let intro_tac : atac =
 	  let hint = make_resolve_hyp env s (Hint_db.transparent_state info.hints) 
 	    (true,false,false) info.only_classes None (List.hd (evar_context g')) in
 	  let ldb = Hint_db.add_list hint info.hints in
-	    (g', { info with hints = ldb; auto_last_tac = str"intro" })) gls
+	    (g', { info with is_evar = None; hints = ldb; auto_last_tac = str"intro" })) gls
       in {it = gls'; sigma = s})
 
 let normevars_tac : atac = 
@@ -280,7 +281,7 @@ let normevars_tac : atac =
     (fun {it = gls; sigma = s} info ->
       let gls' =
 	List.map (fun g' ->
-	  (g', { info with auto_last_tac = str"NORMEVAR" })) gls
+	  (g', { info with is_evar = None; auto_last_tac = str"NORMEVAR" })) gls
       in {it = gls'; sigma = s})
 
 
@@ -335,6 +336,7 @@ let hints_tac hints =
 	  let gls' = list_map_i (fun j g -> 
 	    let info = 
 	      { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp;
+		is_evar = None;
 		hints = 
 		  if b && g.evar_hyps <> gl.evar_hyps 
 		  then make_autogoal_hints info.only_classes
@@ -351,7 +353,17 @@ let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk
     | (gl,info) :: gls ->
 	second.skft (fun ({it=gls';sigma=s'},v') fk' ->
 	  let fk'' = if gls' = [] && Evarutil.is_ground_term s gl.evar_concl then
-	    (if !typeclasses_debug then msgnl (str"no backtrack on" ++ pr_ev s gl); fk) else fk' in
+	    (if !typeclasses_debug then msgnl (str"no backtrack on " ++ pr_ev s gl); fk) else fk' in
+	  let s' = 
+	    if gls' = [] then
+	      match info.is_evar with
+	      | Some ev -> 
+		  let prf = v' s' [] in
+		  let term, _ = Refiner.extract_open_proof s' prf in
+		    Evd.define ev term s'
+	      | None -> s'
+	    else s'
+	  in
 	    aux s' ((gls',v')::acc) fk'' gls) fk {it = (gl,info); sigma = s}
     | [] -> Some (List.rev acc, s, fk)
   in fun ({it = gls; sigma = s},v) fk ->
@@ -385,13 +397,14 @@ let run_list_tac (t : 'a tac) p goals (gl : autogoal list sigma) : run_list_res 
 let rec fix (t : 'a tac) : 'a tac =
   then_tac t { skft = fun sk fk -> (fix t).skft sk fk }
 
-let make_autogoal ?(only_classes=true) ?(st=full_transparent_state) g =
+let make_autogoal ?(only_classes=true) ?(st=full_transparent_state) ev g =
   let hints = make_autogoal_hints only_classes ~st g in
-    (g.it, { hints = hints ; only_classes = only_classes; auto_depth = []; auto_last_tac = mt() })
+    (g.it, { hints = hints ; is_evar = ev; 
+	     only_classes = only_classes; auto_depth = []; auto_last_tac = mt() })
       
 let make_autogoals ?(only_classes=true) ?(st=full_transparent_state) gs evm' =
   { it = list_map_i (fun i g -> 
-    let (gl, auto) = make_autogoal ~only_classes ~st {it = snd g; sigma = evm'} in
+    let (gl, auto) = make_autogoal ~only_classes ~st (Some (fst g)) {it = snd g; sigma = evm'} in
       (gl, { auto with auto_depth = [i]})) 1 gs; sigma = evm' }
 
 let get_result r = 
@@ -414,7 +427,7 @@ let eauto_tac hints =
   fix (or_tac intro_tac (then_tac normevars_tac (hints_tac hints)))
   
 let eauto ?(only_classes=true) ?st hints g =
-  let gl = { it = make_autogoal ~only_classes ?st g; sigma = project g } in
+  let gl = { it = make_autogoal ~only_classes ?st None g; sigma = project g } in
     match run_tac (eauto_tac hints) gl with
     | None -> raise Not_found
     | Some ({it = goals; sigma = s}, valid) ->
