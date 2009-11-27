@@ -1917,7 +1917,7 @@ let rec xlate_vernac =
   | VernacBeginSection (_,id) ->
       CT_coerce_SECTION_BEGIN_to_COMMAND (CT_section (xlate_ident id))
   | VernacEndSegment (_,id) -> CT_section_end (xlate_ident id)
-  | VernacStartTheoremProof (k, [Some (_,s), (bl,c)], _, _) ->
+  | VernacStartTheoremProof (k, [Some (_,s), (bl,c,None)], _, _) ->
       CT_coerce_THEOREM_GOAL_to_COMMAND(
 	CT_theorem_goal (CT_coerce_THM_to_DEFN_OR_THM (xlate_thm k), xlate_ident s,
            xlate_binder_list bl, xlate_formula c))
@@ -1993,9 +1993,10 @@ let rec xlate_vernac =
    | VernacFixpoint ([],_) -> xlate_error "mutual recursive"
    | VernacFixpoint ((lm :: lmi),boxed) ->
       let strip_mutrec (((_,fid), (n, ro), bl, arf, ardef), _ntn) =
+        if ardef = None then xlate_error "Fixpoint proved by tactics";
         let struct_arg = make_fix_struct (n, bl) in
         let arf = xlate_formula arf in
-        let ardef = xlate_formula ardef in
+        let ardef = xlate_formula (Option.get ardef) in
 	match xlate_binder_list bl with
 	  | CT_binder_list (b :: bl) ->
 	      CT_fix_rec (xlate_ident fid, CT_binder_ne_list (b, bl),
@@ -2006,8 +2007,9 @@ let rec xlate_vernac =
    | VernacCoFixpoint ([],boxed) -> xlate_error "mutual corecursive"
    | VernacCoFixpoint ((lm :: lmi),boxed) ->
       let strip_mutcorec (((_,fid), bl, arf, ardef), _ntn) =
+        if ardef = None then xlate_error "Fixpoint proved by tactics";
 	CT_cofix_rec (xlate_ident fid, xlate_binder_list bl,
-                      xlate_formula arf, xlate_formula ardef) in
+                      xlate_formula arf, xlate_formula (Option.get ardef)) in
         CT_cofix_decl
 	  (CT_cofix_rec_list (strip_mutcorec lm, List.map strip_mutcorec lmi))
    | VernacScheme [] -> xlate_error "induction scheme"

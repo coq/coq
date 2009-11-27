@@ -48,3 +48,44 @@ Fixpoint foldrn n bs :=
 
 End folding.
 
+(* Check definition by tactics *)
+
+Inductive even : nat -> Type :=
+  | even_O : even 0
+  | even_S : forall n, odd n -> even (S n)
+with odd : nat -> Type :=
+    odd_S : forall n, even n -> odd (S n).
+
+Fixpoint even_div2 n (H:even n) : nat :=
+  match H with
+  | even_O => 0
+  | even_S n H => S (odd_div2 n H)
+  end
+with odd_div2 n H : nat.
+destruct H.
+apply even_div2 with n.
+assumption.
+Qed.
+
+Fixpoint even_div2' n (H:even n) : nat with odd_div2' n (H:odd n) : nat.
+destruct H.
+exact 0.
+apply odd_div2' with n.
+assumption.
+destruct H.
+apply even_div2' with n.
+assumption.
+Qed.
+
+CoInductive Stream1 (A B:Type) := Cons1 : A -> Stream2 A B -> Stream1 A B
+with Stream2 (A B:Type) := Cons2 : B -> Stream1 A B -> Stream2 A B.
+
+CoFixpoint ex1 (n:nat) (b:bool) : Stream1 nat bool
+with ex2 (n:nat) (b:bool) : Stream2 nat bool.
+apply Cons1.
+exact n.
+apply (ex2 n b).
+apply Cons2.
+exact b.
+apply (ex1 (S n) (negb b)).
+Defined.

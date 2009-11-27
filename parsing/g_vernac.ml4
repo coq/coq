@@ -129,8 +129,8 @@ GEXTEND Gram
     [ [ thm = thm_token; id = identref; bl = binders_let; ":"; c = lconstr;
         l = LIST0
           [ "with"; id = identref; bl = binders_let; ":"; c = lconstr ->
-            (Some id,(bl,c)) ] ->
-          VernacStartTheoremProof (thm,(Some id,(bl,c))::l, false, no_hook)
+            (Some id,(bl,c,None)) ] ->
+          VernacStartTheoremProof (thm,(Some id,(bl,c,None))::l, false, no_hook)
       | stre = assumption_token; nl = inline; bl = assum_list ->
 	  VernacAssumption (stre, nl, bl)
       | stre = assumptions_token; nl = inline; bl = assum_list ->
@@ -275,29 +275,12 @@ GEXTEND Gram
     [ [ id = identref;
 	bl = binders_let_fixannot;
         ty = type_cstr;
-	":="; def = lconstr; ntn = decl_notation ->
-	  let bl, annot = bl in
-          let names = names_of_local_assums bl in
-          let ni =
-            match fst annot with
-                Some (loc, id) ->
-                  (if List.exists (fun (_, id') -> Name id = id') names then
-		    Some (loc, id)
-		    else Util.user_err_loc
-                      (loc,"Fixpoint",
-                       str "No argument named " ++ Nameops.pr_id id ++ str"."))
-              | None ->
-		  (* If there is only one argument, it is the recursive one,
-		     otherwise, we search the recursive index later *)
-		  match names with
-		    | [(loc, Name na)] -> Some (loc, na)
-		    | _ -> None
-	  in
-	  ((id,(ni,snd annot),bl,ty,def),ntn) ] ]
+	def = OPT [":="; def = lconstr -> def]; ntn = decl_notation ->
+	  let bl, annot = bl in ((id,annot,bl,ty,def),ntn) ] ]
   ;
   corec_definition:
-    [ [ id = identref; bl = binders_let; ty = type_cstr; ":=";
-        def = lconstr; ntn = decl_notation ->
+    [ [ id = identref; bl = binders_let; ty = type_cstr; 
+        def = OPT [":="; def = lconstr -> def]; ntn = decl_notation ->
           ((id,bl,ty,def),ntn) ] ]
   ;
   type_cstr:

@@ -302,6 +302,28 @@ let pr_binders_arg =
 let pr_and_type_binders_arg bl =
   pr_binders_arg bl
 
+let names_of_binder = function
+  | LocalRawAssum (nal,_,_) -> nal
+  | LocalRawDef (_,_) -> []
+
+let pr_guard_annot bl (n,ro) =
+  match n with
+  | None -> mt ()
+  | Some (loc, id) ->
+      match (ro : Topconstr.recursion_order_expr) with
+      | CStructRec ->
+          let ids = List.flatten (List.map names_of_binder bl) in
+	  if List.length ids > 1 then
+	    spc() ++ str "{struct " ++ pr_id id ++ str"}"
+	  else mt()
+      | CWfRec c ->
+	  spc() ++ str "{wf " ++ pr_lconstr_expr c ++ spc() ++
+	  pr_id id ++ str"}"
+      | CMeasureRec (m,r) ->
+	  spc() ++ str "{measure " ++ pr_lconstr_expr m ++ spc() ++
+	  pr_id id ++ (match r with None -> mt() | Some r -> str" on " ++
+	    pr_lconstr_expr r) ++ str"}"
+
 let pr_onescheme (idop,schem) =
   match schem with
   | InductionScheme (dep,ind,s) ->
@@ -408,6 +430,14 @@ let pr_paren_reln_or_extern = function
   | Some pprim,Any -> qs pprim
   | Some pprim,Prec p -> qs pprim ++ spc() ++ str":" ++ spc() ++ int p
   | _ -> mt()
+
+let pr_statement head (id,(bl,c,guard)) =
+  assert (id<>None);
+  hov 0
+    (head ++ pr_lident (Option.get id) ++ spc() ++
+    (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
+    pr_opt (pr_guard_annot bl) guard ++
+    str":" ++ pr_spc_lconstr c)
 
 (**************************************)
 (* Pretty printer for vernac commands *)
@@ -567,11 +597,6 @@ let rec pr_vernac = function
         | Some cc -> str" :=" ++ spc() ++ cc))
 
   | VernacStartTheoremProof (ki,l,_,_) ->
-      let pr_statement head (id,(bl,c)) =
-        hov 0
-          (head ++ pr_opt pr_lident id ++ spc() ++
-              (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
-              str":" ++ pr_spc_lconstr c) in
       hov 1 (pr_statement (pr_thm_token ki) (List.hd l) ++
              prlist (pr_statement (spc () ++ str "with")) (List.tl l))
 
@@ -605,75 +630,46 @@ let rec pr_vernac = function
 	    spc() ++
 	    pr_record_decl b c fs in
       let pr_oneind key (((coe,id),indpar,s,k,lc),ntn) =
-	let kw =
-	  str (match k with Record -> "Record" | Structure -> "Structure"
-		 | Inductive_kw -> "Inductive" | CoInductive -> "CoInductive"
-		 | Class b -> if b then "Definitional Class" else "Class")
-	in
-	  hov 0 (
-	    kw ++ spc() ++
-	      (if i then str"Infer" else str"") ++
-              (if coe then str" > " else str" ") ++ pr_lident id ++
+	hov 0 (
+	    str key ++ spc() ++
+	      (if i then str"Infer " else str"") ++
+              (if coe then str"> " else str"") ++ pr_lident id ++
               pr_and_type_binders_arg indpar ++ spc() ++
 	      Option.cata (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) (mt()) s ++
 	      str" :=") ++ pr_constructor_list k lc ++
 	    prlist (pr_decl_notation pr_constr) ntn
       in
-      hov 1 (pr_oneind (if (Decl_kinds.recursivity_flag_of_kind f) then "Inductive" else "CoInductive") (List.hd l))
-      ++
+      let key =
+        let (_,_,_,k,_),_ = List.hd l in
+	match k with Record -> "Record" | Structure -> "Structure"
+	  | Inductive_kw -> "Inductive" | CoInductive -> "CoInductive"
+	  | Class b -> if b then "Definitional Class" else "Class" in
+      hov 1 (pr_oneind key (List.hd l)) ++
       (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
 
 
   | VernacFixpoint (recs,b) ->
-      let name_of_binder = function
-        | LocalRawAssum (nal,_,_) -> nal
-        | LocalRawDef (_,_) -> [] in
       let pr_onerec = function
-        | ((loc,id),(n,ro),bl,type_,def),ntn ->
-            let (bl',def,type_) =
-              if Flags.do_beautify() then extract_def_binders def type_
-              else ([],def,type_) in
-            let bl = bl @ bl' in
-            let ids = List.flatten (List.map name_of_binder bl) in
-            let annot =
-	      match n with
-		| None -> mt ()
-		| Some (loc, id) ->
-		    match (ro : Topconstr.recursion_order_expr) with
-			CStructRec ->
-			  if List.length ids > 1 then
-			    spc() ++ str "{struct " ++ pr_id id ++ str"}"
-			  else mt()
-		      | CWfRec c ->
-			  spc() ++ str "{wf " ++ pr_lconstr_expr c ++ spc() ++
-			    pr_id id ++ str"}"
-		      | CMeasureRec (m,r) ->
-			  spc() ++ str "{measure " ++ pr_lconstr_expr m ++ spc() ++
-			    pr_id id ++ (match r with None -> mt() | Some r -> str" on " ++
-			    pr_lconstr_expr r) ++ str"}"
-	    in
+        | ((loc,id),ro,bl,type_,def),ntn ->
+            let annot = pr_guard_annot bl ro in
             pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
-            ++ str" :=" ++ brk(1,1) ++ pr_lconstr def ++
+            ++ pr_opt (fun def -> str" :=" ++ brk(1,2) ++ pr_lconstr def) def ++
 	    prlist (pr_decl_notation pr_constr) ntn
       in
       let start = if b then "Boxed Fixpoint" else "Fixpoint" in
-      hov 1 (str start ++ spc() ++
-        prlist_with_sep (fun _ -> fnl() ++ fnl() ++ str"with ") pr_onerec recs)
+      hov 0 (str start ++ spc() ++
+        prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onerec recs)
 
   | VernacCoFixpoint (corecs,b) ->
       let pr_onecorec (((loc,id),bl,c,def),ntn) =
-        let (bl',def,c) =
-              if Flags.do_beautify() then extract_def_binders def c
-              else ([],def,c) in
-        let bl = bl @ bl' in
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
         spc() ++ pr_lconstr_expr c ++
-        str" :=" ++ brk(1,1) ++ pr_lconstr def  ++
+        pr_opt (fun def -> str" :=" ++ brk(1,2) ++ pr_lconstr def) def ++
 	prlist (pr_decl_notation pr_constr) ntn
       in
       let start = if b then "Boxed CoFixpoint" else "CoFixpoint" in
-      hov 1 (str start ++ spc() ++
+      hov 0 (str start ++ spc() ++
       prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onecorec corecs)
   | VernacScheme l ->
       hov 2 (str"Scheme" ++ spc() ++

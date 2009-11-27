@@ -230,7 +230,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 
   let pretype_id loc env (lvar,unbndltacvars) id =
     try
-      let (n,typ) = lookup_rel_id id (rel_context env) in
+      let (n,_,typ) = lookup_rel_id id (rel_context env) in
       { uj_val  = mkRel n; uj_type = lift n typ }
     with Not_found ->
     try

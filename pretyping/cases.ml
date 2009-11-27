@@ -1316,7 +1316,7 @@ let adjust_to_extended_env_and_remove_deps env extenv subst t =
     (* d1 ... dn dn+1 ... dn'-p+1 ... dn' *)
     (* \--env-/          (= x:ty)         *)
     (* \--------------extenv------------/ *)
-    let (p,_) = lookup_rel_id x (rel_context extenv) in
+    let (p,_,_) = lookup_rel_id x (rel_context extenv) in
     let rec aux n (_,b,ty) =
       match b with
       | Some c ->

@@ -313,7 +313,7 @@ let vernac_definition (local,boxed,k) (loc,id as lid) def hook =
     | ProveBody (bl,t) ->   (* local binders, typ *)
  	let hook _ _ = () in
  	  start_proof_and_print (local,DefinitionBody Definition)
-	    [Some lid, (bl,t)] hook
+	    [Some lid, (bl,t,None)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
  	let red_option = match red_option with
           | None -> None
@@ -1402,7 +1402,7 @@ let interp c = match c with
   | VernacNop -> ()
 
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof Theorem [None,([],t)] false (fun _ _->())
+  | VernacGoal t -> vernac_start_proof Theorem [None,([],t,None)] false (fun _ _->())
   | VernacAbort id -> vernac_abort id
   | VernacAbortAll -> vernac_abort_all ()
   | VernacRestart -> vernac_restart ()

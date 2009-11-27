@@ -221,7 +221,7 @@ let push_named_rec_types (lna,typarray,_) env =
 let rec lookup_rel_id id sign =
   let rec lookrec = function
     | (n, (Anonymous,_,_)::l) -> lookrec (n+1,l)
-    | (n, (Name id',_,t)::l)  -> if id' = id then (n,t) else lookrec (n+1,l)
+    | (n, (Name id',b,t)::l)  -> if id' = id then (n,b,t) else lookrec (n+1,l)
     | (_, [])                 -> raise Not_found
   in
   lookrec (1,sign)

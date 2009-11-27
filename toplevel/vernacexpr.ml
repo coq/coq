@@ -150,6 +150,12 @@ type definition_expr =
   | DefineBody of local_binder list * raw_red_expr option * constr_expr
       * constr_expr option
 
+type fixpoint_expr =
+    identifier located * (identifier located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr option
+
+type cofixpoint_expr =
+    identifier located * local_binder list * constr_expr * constr_expr option
+
 type local_decl_expr =
   | AssumExpr of lname * constr_expr
   | DefExpr of lname * constr_expr * constr_expr option
@@ -218,7 +224,7 @@ type vernac_expr =
   | VernacDefinition of definition_kind * lident * definition_expr *
       declaration_hook
   | VernacStartTheoremProof of theorem_kind *
-      (lident option * (local_binder list * constr_expr)) list *
+      (lident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)) list *
         bool * declaration_hook
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr

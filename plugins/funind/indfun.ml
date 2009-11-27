@@ -372,6 +372,9 @@ let register_struct is_rec fixpoint_exprl =
 	  fname (Decl_kinds.Global,Decl_kinds.Definition)
 	  ce imps (fun _ _ -> ())
     | _ ->
+        let fixpoint_exprl =
+          List.map (fun ((name,annot,bl,types,body),ntn) ->
+            ((name,annot,bl,types,Some body),ntn)) fixpoint_exprl in
 	Command.do_fixpoint fixpoint_exprl (Flags.boxed_definitions())
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref

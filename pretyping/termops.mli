@@ -39,7 +39,7 @@ val print_env : env -> std_ppcmds
 val push_rel_assum : name * types -> env -> env
 val push_rels_assum : (name * types) list -> env -> env
 val push_named_rec_types : name array * types array * 'a -> env -> env
-val lookup_rel_id : identifier -> rel_context -> int * types
+val lookup_rel_id : identifier -> rel_context -> int * constr option * types
 
 (* builds argument lists matching a block of binders or a context *)
 val rel_vect : int -> int -> constr array

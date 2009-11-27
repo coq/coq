@@ -31,10 +31,12 @@ open Safe_typing
 (* Mainly contributed by C. Murthy                                   *)
 (*********************************************************************)
 
+type lemma_possible_guards = int list list
+
 type proof_topstate = {
   mutable top_end_tac : tactic option;
   top_init_tac : tactic option;
-  top_compute_guard : bool;
+  top_compute_guard : lemma_possible_guards;
   top_goal : goal;
   top_strength : Decl_kinds.goal_kind;
   top_hook : declaration_hook }
@@ -252,7 +254,7 @@ let set_end_tac tac =
 (*              Modifying the current prooftree                      *)
 (*********************************************************************)
 
-let start_proof na str sign concl ?init_tac ?(compute_guard=false) hook =
+let start_proof na str sign concl ?init_tac ?(compute_guard=[]) hook =
   let top_goal = mk_goal sign concl None in
   let ts = {
     top_end_tac = None;

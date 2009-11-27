@@ -406,7 +406,7 @@ Qed.
 
 Lemma inverse_arrow `(NA : Normalizes A R (inverse R'''), NB : Normalizes B R' (inverse R'')) :
   Normalizes (A -> B) (R ==> R') (inverse (R''' ==> R'')%signature).
-Proof. unfold Normalizes. intros.
+Proof. unfold Normalizes in *. intros.
   rewrite NA, NB. firstorder.
 Qed.
 

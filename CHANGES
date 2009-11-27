@@ -42,6 +42,9 @@ Tactics
 - A new tactic name "exfalso" for the use of 'ex-falso quodlibet' principle.
   This tactic is simply a shortcut for "elimtype False".
 - Added support for Leibniz-rewriting of dependent hypotheses.
+- Binders given before ":" in lemmas are now automatically
+  introduced in the context (possible source of incompatibility that can be
+  avoided by unsetting option "Automatic Introduction").
 
 Tactic Language
 
@@ -75,6 +78,7 @@ Vernacular commands
 - Made support for automatic generation of case analysis schemes and
   congruence schemes available to user (governed by options "Unset
   Case Analysis Schemes" and "Unset Congruence Schemes").
+- Fixpoint/CoFixpoint now support building part or all of bodies using tactics.
 
 Tools
 

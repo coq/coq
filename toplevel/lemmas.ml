@@ -33,6 +33,7 @@ open Reductionops
 open Topconstr
 open Constrintern
 open Impargs
+open Tacticals
 
 (* Support for mutually proved theorems *)
 
@@ -44,26 +45,43 @@ let retrieve_first_recthm = function
       (Option.map Declarations.force body,opaq)
   | _ -> assert false
 
-let adjust_guardness_conditions const =
+let adjust_guardness_conditions const = function
+  | [] -> const (* Not a recursive statement *)
+  | possible_indexes ->
   (* Try all combinations... not optimal *)
   match kind_of_term const.const_entry_body with
   | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
-      let possible_indexes =
-	List.map (fun c ->
+(*      let possible_indexes =
+	List.map2 (fun i c -> match i with Some i -> i | None ->
 	  interval 0 (List.length ((lam_assum c))))
-	  (Array.to_list fixdefs) in
+	  lemma_guard (Array.to_list fixdefs) in
+*)
       let indexes =
 	search_guard dummy_loc (Global.env()) possible_indexes fixdecls in
       { const with const_entry_body = mkFix ((indexes,0),fixdecls) }
   | c -> const
 
-let look_for_mutual_statements thms =
-  if List.tl thms <> [] then
-    (* More than one statement: we look for a common inductive hyp or a *)
-    (* common coinductive conclusion *)
+let find_mutually_recursive_statements thms =
     let n = List.length thms in
-    let inds = List.map (fun (id,(t,_) as x) ->
+    let inds = List.map (fun (id,(t,impls,annot)) ->
       let (hyps,ccl) = decompose_prod_assum t in
+      let x = (id,(t,impls)) in
+      match annot with
+      (* Explicit fixpoint decreasing argument is given *)
+      | Some (Some (_,id),CStructRec) ->
+          let i,b,typ = lookup_rel_id id hyps in
+          (match kind_of_term t with
+          | Ind (kn,_ as ind) when
+              let mind = Global.lookup_mind kn in
+              mind.mind_finite & b = None ->
+              [ind,x,i],[]
+          | _ ->
+              error "Decreasing argument is not an inductive assumption.")
+      (* Unsupported cases *)
+      | Some (_,(CWfRec _|CMeasureRec _)) ->
+          error "Only structural decreasing is supported for mutual statements."
+      (* Cofixpoint or fixpoint w/o explicit decreasing argument *)
+      | None | Some (None, CStructRec) ->
       let whnf_hyp_hds = map_rel_context_in_env
         (fun env c -> fst (whd_betadeltaiota_stack env Evd.empty c))
         (Global.env()) hyps in
@@ -75,7 +93,7 @@ let look_for_mutual_statements thms =
                 mind.mind_finite & b = None ->
               [ind,x,i]
           | _ ->
-              []) 1 (List.rev whnf_hyp_hds)) in
+              []) 0 (List.rev whnf_hyp_hds)) in
       let ind_ccl =
         let cclenv = push_rel_context hyps (Global.env()) in
         let whnf_ccl,_ = whd_betadeltaiota_stack cclenv Evd.empty ccl in
@@ -102,7 +120,7 @@ let look_for_mutual_statements thms =
       list_cartesians_filter (fun hyp oks ->
 	if List.for_all (of_same_mutind hyp) oks
 	then Some (hyp::oks) else None) [] inds_hyps in
-    let ordered_inds,finite =
+    let ordered_inds,finite,guard =
       match ordered_same_indccl, common_same_indhyp with
       | indccl::rest, _ ->
 	  assert (rest=[]);
@@ -110,37 +128,36 @@ let look_for_mutual_statements thms =
 	  if common_same_indhyp <> [] then
 	    if_verbose warning "Assuming mutual coinductive statements.";
 	  flush_all ();
-          indccl, true
+          indccl, true, []
       | [], _::_ ->
 	  if same_indccl <> [] &&
 	     list_distinct (List.map pi1 (List.hd same_indccl)) then
 	    if_verbose warn (strbrk "Coinductive statements do not follow the order of definition, assume the proof to be by induction."); flush_all ();
+          let possible_guards = List.map (List.map pi3) inds_hyps in
 	  (* assume the largest indices as possible *)
-	  list_last common_same_indhyp, false
+	  list_last common_same_indhyp, false, possible_guards
       | _, [] ->
 	  error
             ("Cannot find common (mutual) inductive premises or coinductive" ^
              " conclusions in the statements.")
     in
-    let nl,thms = List.split (List.map (fun (_,x,i) -> (i,x)) ordered_inds) in
-    let rec_tac =
-      if finite then
-        match List.map (fun (id,(t,_)) -> (id,t)) thms with
-        | (id,_)::l -> Hiddentac.h_mutual_cofix true id l
-        | _ -> assert false
-      else
-	(* nl is dummy: it will be recomputed at Qed-time *)
-        match List.map2 (fun (id,(t,_)) n -> (id,n,t)) thms nl with
-        | (id,n,_)::l -> Hiddentac.h_mutual_fix true id n l
-        | _ -> assert false in
-    Some rec_tac,thms
-  else
-    None, thms
+    (finite,guard,None), List.map pi2 ordered_inds
+
+let look_for_possibly_mutual_statements = function
+  | [id,(t,impls,None)] ->
+      (* One non recursively proved theorem *)
+      None,[id,(t,impls)]
+  | _::_ as thms ->
+    (* More than one statement and/or an explicit decreasing mark: *)
+    (* we look for a common inductive hyp or a common coinductive conclusion *)
+    let recguard,thms = find_mutually_recursive_statements thms in
+    Some recguard,thms
+  | [] -> anomaly "Empty list of theorems."
 
 (* Saving a goal *)
 
 let save id const do_guard (locality,kind) hook =
-  let const = if do_guard then adjust_guardness_conditions const else const in
+  let const = adjust_guardness_conditions const do_guard in
   let {const_entry_body = pft;
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in
@@ -221,9 +238,6 @@ let save_remaining_recthms (local,kind) body opaq i (id,(t_i,(_,imps))) =
 let check_anonymity id save_ident =
   if atompart_of_id id <> "Unnamed_thm" then
     error "This command can only be used for unnamed theorem."
-(*
-    message("Overriding name "^(string_of_id id)^" and using "^save_ident)
-*)
 
 let save_anonymous opacity save_ident =
   let id,(const,do_guard,persistence,hook) = Pfedit.cook_proof !save_hook in
@@ -243,26 +257,47 @@ let save_anonymous_with_strength kind opacity save_ident =
 let start_hook = ref ignore
 let set_start_hook = (:=) start_hook
 
-let start_proof id kind c ?init_tac ?(compute_guard=false) hook =
+let start_proof id kind c ?init_tac ?(compute_guard=[]) hook =
   let sign = Global.named_context () in
   let sign = clear_proofs sign in
   !start_hook c;
   Pfedit.start_proof id kind sign c ?init_tac ~compute_guard hook
 
-let start_proof_com kind thms hook =
-  let evdref = ref (create_evar_defs Evd.empty) in
-  let env = Global.env () in
-  let thms = List.map (fun (sopt,(bl,t)) ->
-    let (env, ctx), imps = interp_context_evars evdref env bl in
-    let t', imps' = interp_type_evars_impls ~evdref env t in
-    let len = List.length ctx in
-      (compute_proof_name sopt,
-      (nf_isevar !evdref (it_mkProd_or_LetIn t' ctx), (len, imps @ lift_implicits len imps'))))
-    thms in
-  let rec_tac,thms = look_for_mutual_statements thms in
+let rec_tac_initializer finite guard thms =
+  if finite then
+    match List.map (fun (id,(t,_)) -> (id,t)) thms with
+    | (id,_)::l -> Hiddentac.h_mutual_cofix true id l
+    | _ -> assert false
+  else
+    (* nl is dummy: it will be recomputed at Qed-time *)
+    let nl = List.map succ (List.map list_last guard) in
+    match List.map2 (fun (id,(t,_)) n -> (id,n,t)) thms nl with
+    | (id,n,_)::l -> Hiddentac.h_mutual_fix true id n l
+    | _ -> assert false
+
+let start_proof_with_initialization kind recguard thms hook =
+  let intro_tac (_, (_, (len, _))) = Refiner.tclDO len Tactics.intro in
+  let init_tac,guard = match recguard with
+  | Some (finite,guard,init_tac) ->
+      let rec_tac = rec_tac_initializer finite guard thms in
+      Some (match init_tac with
+        | None -> 
+            if Flags.is_auto_intros () then 
+              tclTHENS rec_tac (List.map intro_tac thms)
+            else
+              rec_tac
+        | Some tacl ->
+            tclTHENS rec_tac
+            (if Flags.is_auto_intros () then
+              List.map2 (fun tac thm -> tclTHEN tac (intro_tac thm)) tacl thms
+            else
+              tacl)),guard
+  | None ->
+      assert (List.length thms = 1);
+      (if Flags.is_auto_intros () then Some (intro_tac (List.hd thms)) else None), [] in
   match thms with
   | [] -> anomaly "No proof to start"
-  | (id,(t,(len,imps)) as thm)::other_thms ->
+  | (id,(t,(len,imps)))::other_thms ->
       let hook strength ref =
         let other_thms_data =
           if other_thms = [] then [] else
@@ -273,14 +308,22 @@ let start_proof_com kind thms hook =
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
 	  hook strength ref) thms_data in
-      let init_tac =
-       let intro_tac (_, (_, (len, _))) = Refiner.tclDO len Tactics.intro in
-         if Flags.is_auto_intros () then
-           match rec_tac with
-           | None -> Some (intro_tac thm)
-           | Some tac -> Some (Tacticals.tclTHENS tac (List.map intro_tac thms))
-         else rec_tac
-      in start_proof id kind t ?init_tac hook ~compute_guard:(rec_tac<>None)
+      start_proof id kind t ?init_tac hook ~compute_guard:guard
+
+let start_proof_com kind thms hook =
+  let evdref = ref (create_evar_defs Evd.empty) in
+  let env = Global.env () in
+  let thms = List.map (fun (sopt,(bl,t,guard)) ->
+    let (env, ctx), imps = interp_context_evars evdref env bl in
+    let t', imps' = interp_type_evars_impls ~evdref env t in
+    let len = List.length ctx in
+      (compute_proof_name sopt,
+      (nf_isevar !evdref (it_mkProd_or_LetIn t' ctx),
+       (len, imps @ lift_implicits len imps'),
+       guard)))
+    thms in
+  let recguard,thms = look_for_possibly_mutual_statements thms in
+  start_proof_with_initialization kind recguard thms hook
 
 (* Admitted *)
 

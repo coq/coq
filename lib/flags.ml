@@ -65,7 +65,7 @@ let if_verbose f x = if not !silent then f x
 
 let auto_intros = ref false
 let make_auto_intros flag = auto_intros := flag
-let is_auto_intros () = !auto_intros
+let is_auto_intros () = version_strictly_greater V8_2 && !auto_intros
 
 let hash_cons_proofs = ref true
 

@@ -152,7 +152,9 @@ let subtac (loc, command) =
       let _ = trace (str "Building fixpoint") in
 	ignore(Subtac_command.build_recursive l b)
 
-  | VernacStartTheoremProof (thkind, [Some id, (bl, t)], lettop, hook) ->
+  | VernacStartTheoremProof (thkind, [Some id, (bl,t,guard)], lettop, hook) ->
+      if guard <> None then 
+        error "Do not support building theorems as a fixpoint.";
       Dumpglob.dump_definition id false "prf";
       if not(Pfedit.refining ()) then
 	if lettop then

@@ -3,7 +3,7 @@
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
+(*         *       GNU Lesser General Public License Version 2.fix_expr        *)
 (************************************************************************)
 
 (*i $Id$ i*)
@@ -16,16 +16,23 @@ open Topconstr
 open Tacexpr
 open Vernacexpr
 open Proof_type
+open Pfedit
 (*i*)
 
 (* A hook start_proof calls on the type of the definition being started *)
 val set_start_hook : (types -> unit) -> unit
 
 val start_proof : identifier -> goal_kind -> types ->
-  ?init_tac:tactic -> ?compute_guard:bool -> declaration_hook -> unit
+  ?init_tac:tactic -> ?compute_guard:lemma_possible_guards -> 
+    declaration_hook -> unit
 
 val start_proof_com : goal_kind ->
-  (lident option * (local_binder list * constr_expr)) list ->
+  (lident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)) list ->
+  declaration_hook -> unit
+
+val start_proof_with_initialization : 
+  goal_kind -> (bool * lemma_possible_guards * tactic list option) option ->
+  (identifier * (types * (int * Impargs.manual_explicitation list))) list ->
   declaration_hook -> unit
 
 (* A hook the next three functions pass to cook_proof *)

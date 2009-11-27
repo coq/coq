@@ -20,6 +20,7 @@ open Topconstr
 open Decl_kinds
 open Redexpr
 open Constrintern
+open Pfedit
 (*i*)
 
 (*s This file is about the interpretation of raw commands into typed
@@ -102,7 +103,7 @@ val do_mutual_inductive :
 type structured_fixpoint_expr = {
   fix_name : identifier;
   fix_binders : local_binder list;
-  fix_body : constr_expr;
+  fix_body : constr_expr option;
   fix_type : constr_expr
 }
 
@@ -118,27 +119,27 @@ val extract_cofixpoint_components :
   (cofixpoint_expr * decl_notation list) list ->
     structured_fixpoint_expr list * decl_notation list
 
-(* Typing fixpoints and cofixpoint_expr *)
+(* Typing global fixpoints and cofixpoint_expr *)
 
 type recursive_preentry =
-  identifier list * constr list * types list
+  identifier list * constr option list * types list
 
 val interp_fixpoint :
-  structured_fixpoint_expr list -> lident option list -> decl_notation list ->
-    recursive_preentry * manual_implicits list * int array option
+  structured_fixpoint_expr list -> decl_notation list ->
+    recursive_preentry * (int * manual_implicits) list
 
 val interp_cofixpoint :
   structured_fixpoint_expr list -> decl_notation list ->
-    recursive_preentry * manual_implicits list
+    recursive_preentry * (int * manual_implicits) list
 
 (* Registering fixpoints and cofixpoints in the environment *)
 
 val declare_fixpoint :
-  bool -> recursive_preentry * manual_implicits list * int array option ->
-    decl_notation list -> unit
+  bool -> recursive_preentry * (int * manual_implicits) list -> 
+  lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint :
-  bool -> recursive_preentry * manual_implicits list ->
+  bool -> recursive_preentry * (int * manual_implicits) list ->
     decl_notation list -> unit
 
 (* Entry points for the vernacular commands Fixpoint and CoFixpoint *)

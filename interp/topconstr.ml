@@ -639,8 +639,8 @@ type cases_pattern_expr =
 
 type constr_expr =
   | CRef of reference
-  | CFix of loc * identifier located * fixpoint_expr list
-  | CCoFix of loc * identifier located * cofixpoint_expr list
+  | CFix of loc * identifier located * fix_expr list
+  | CCoFix of loc * identifier located * cofix_expr list
   | CArrow of loc * constr_expr * constr_expr
   | CProdN of loc * (name located list * binder_kind * constr_expr) list * constr_expr
   | CLambdaN of loc * (name located list * binder_kind * constr_expr) list * constr_expr
@@ -667,7 +667,7 @@ type constr_expr =
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
 
-and fixpoint_expr =
+and fix_expr =
     identifier located * (identifier located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr
 
 and local_binder =
@@ -678,7 +678,7 @@ and typeclass_constraint = name located * binding_kind * constr_expr
 
 and typeclass_context = typeclass_constraint list
 
-and cofixpoint_expr =
+and cofix_expr =
     identifier located * local_binder list * constr_expr * constr_expr
 
 and recursion_order_expr =
@@ -918,6 +918,19 @@ let coerce_to_name = function
         (constr_loc a,"coerce_to_name",
          str "This expression should be a name.")
 
+(* Interpret the index of a recursion order annotation *)
+
+let index_of_annot bl na =
+  let names = List.map snd (names_of_local_assums bl) in
+  match na with
+  | None ->
+      if names = [] then error "A fixpoint needs at least one parameter." 
+      else None
+  | Some (loc, id) ->
+      try Some (list_index0 (Name id) names)
+      with Not_found ->
+        user_err_loc(loc,"",
+        str "No parameter named " ++ Nameops.pr_id id ++ str".")
 
 (* Used in correctness and interface *)
 

@@ -22,17 +22,17 @@ Definition zerop n : {n = 0} + {0 < n}.
 Defined.
 
 Definition lt_eq_lt_dec n m : {n < m} + {n = m} + {m < n}.
-  induction n; simple destruct m; auto with arith.
-  intros m0; elim (IHn m0); auto with arith.
-  induction 1; auto with arith.
+  intros; induction n in m |- *; destruct m; auto with arith.
+  destruct (IHn m) as [H|H]; auto with arith.
+  destruct H; auto with arith.
 Defined.
 
 Definition gt_eq_gt_dec n m : {m > n} + {n = m} + {n > m}.
-  exact lt_eq_lt_dec.
+  intros; apply lt_eq_lt_dec; assumption.
 Defined.
 
 Definition le_lt_dec n m : {n <= m} + {m < n}.
-  induction n.
+  intros; induction n in m |- *.
   auto with arith.
   destruct m.
   auto with arith.
@@ -40,7 +40,7 @@ Definition le_lt_dec n m : {n <= m} + {m < n}.
 Defined.
 
 Definition le_le_S_dec n m : {n <= m} + {S m <= n}.
-  exact le_lt_dec.
+  intros; exact (le_lt_dec n m).
 Defined.
 
 Definition le_ge_dec n m : {n <= m} + {n >= m}.
@@ -48,11 +48,11 @@ Definition le_ge_dec n m : {n <= m} + {n >= m}.
 Defined.
 
 Definition le_gt_dec n m : {n <= m} + {n > m}.
-  exact le_lt_dec.
+  intros; exact (le_lt_dec n m).
 Defined.
 
 Definition le_lt_eq_dec n m : n <= m -> {n < m} + {n = m}.
-  intros; elim (lt_eq_lt_dec n m); auto with arith.
+  intros; destruct (lt_eq_lt_dec n m); auto with arith.
   intros; absurd (m < n); auto with arith.
 Defined.
 

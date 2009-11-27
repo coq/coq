@@ -1048,11 +1048,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
         let idl = Array.map
           (fun (id,(n,order),bl,ty,bd) ->
 	     let intern_ro_arg f =
-	       let idx =
-		 match n with
-		     Some (loc, n) -> list_index0 (Name n) (List.map snd (names_of_local_assums bl))
-		   | None -> 0
-	       in
+               let idx = Option.default 0 (index_of_annot bl n) in
 	       let before, after = list_chop idx bl in
 	       let ((ids',_,_,_) as env',rbefore) =
 		 List.fold_left intern_local_binder (env,[]) before in

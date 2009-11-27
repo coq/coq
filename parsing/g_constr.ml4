@@ -10,6 +10,7 @@
 
 (* $Id$ *)
 
+open Pp
 open Pcoq
 open Constr
 open Prim
@@ -43,21 +44,11 @@ let binders_of_lidents l =
     LocalRawAssum ([loc, Name id], Default Rawterm.Explicit,
 		  CHole (loc, Some (Evd.BinderType (Name id))))) l
 
-let rec index_and_rec_order_of_annot loc bl ann =
-  match names_of_local_assums bl,ann with
-    | [loc,Name id], (None, r) -> Some (loc, id), r
-    | lids, (Some (loc, n), ro) ->
-        if List.exists (fun (_, x) -> x = Name n) lids then
-	  Some (loc, n), ro
-        else user_err_loc(loc,"index_of_annot", Pp.str"No such fix variable.")
-    | _, (None, r) -> None, r
-
 let mk_fixb (id,bl,ann,body,(loc,tyc)) =
-  let n,ro = index_and_rec_order_of_annot (fst id) bl ann in
   let ty = match tyc with
       Some ty -> ty
     | None -> CHole (loc, None) in
-  (id,(n,ro),bl,ty,body)
+  (id,ann,bl,ty,body)
 
 let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
   let _ = Option.map (fun (aloc,_) ->
@@ -308,7 +299,8 @@ GEXTEND Gram
   ;
   fix_decl:
     [ [ id=identref; bl=binders_let_fixannot; ty=type_cstr; ":=";
-        c=operconstr LEVEL "200" -> (id,fst bl,snd bl,c,ty) ] ]
+        c=operconstr LEVEL "200" ->
+          (id,fst bl,snd bl,c,ty) ] ]
   ;
   match_constr:
     [ [ "match"; ci=LIST1 case_item SEP ","; ty=OPT case_type; "with";
@@ -402,8 +394,7 @@ GEXTEND Gram
     [ [ id=impl_ident; assum=binder_assum; bl = binders_let_fixannot ->
 	(assum (loc, Name id) :: fst bl), snd bl
     | f = fixannot -> [], f
-    | b = binder_let; bl = binders_let_fixannot ->
-	b @ fst bl, snd bl
+    | b = binder_let; bl = binders_let_fixannot -> b @ fst bl, snd bl
     | -> [], (None, CStructRec)
     ] ]
   ;

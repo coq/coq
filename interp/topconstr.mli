@@ -125,8 +125,8 @@ type cases_pattern_expr =
 
 type constr_expr =
   | CRef of reference
-  | CFix of loc * identifier located * fixpoint_expr list
-  | CCoFix of loc * identifier located * cofixpoint_expr list
+  | CFix of loc * identifier located * fix_expr list
+  | CCoFix of loc * identifier located * cofix_expr list
   | CArrow of loc * constr_expr * constr_expr
   | CProdN of loc * (name located list * binder_kind * constr_expr) list * constr_expr
   | CLambdaN of loc * (name located list * binder_kind * constr_expr) list * constr_expr
@@ -153,10 +153,10 @@ type constr_expr =
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
 
-and fixpoint_expr =
+and fix_expr =
     identifier located * (identifier located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr
 
-and cofixpoint_expr =
+and cofix_expr =
     identifier located * local_binder list * constr_expr * constr_expr
 
 and recursion_order_expr =
@@ -205,6 +205,8 @@ val coerce_reference_to_id : reference -> identifier
 val coerce_to_id : constr_expr -> identifier located
 val coerce_to_name : constr_expr -> name located
 
+val index_of_annot : local_binder list -> identifier located option -> int option
+
 val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
 val prod_constr_expr : constr_expr -> local_binder list -> constr_expr
 
@@ -220,11 +222,11 @@ val local_binders_length : local_binder list -> int
 (* Excludes let binders *)
 val local_assums_length : local_binder list -> int
 
-(* Does not take let binders into account *)
-val names_of_local_assums : local_binder list -> name located list
-
 (* With let binders *)
 val names_of_local_binders : local_binder list -> name located list
+
+(* Does not take let binders into account *)
+val names_of_local_assums : local_binder list -> name located list
 
 (* Used in typeclasses *)
 

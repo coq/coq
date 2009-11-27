@@ -365,8 +365,8 @@ let interp_fix_ccl evdref (env,_) fix =
 
 let interp_fix_body evdref env_rec impls (_,ctx) fix ccl =
   let env = push_rel_context ctx env_rec in
-  let body = interp_casted_constr_evars evdref env ~impls fix.Command.fix_body ccl in
-  it_mkLambda_or_LetIn body ctx
+  let body = Option.map (fun c -> interp_casted_constr_evars evdref env ~impls c ccl) fix.Command.fix_body in
+  Option.map (fun c -> it_mkLambda_or_LetIn c ctx) body
 
 let build_fix_type (_,ctx) ccl = it_mkProd_or_LetIn ccl ctx
 
@@ -416,6 +416,10 @@ let check_evars env initial_sigma evd c =
       | _ -> iter_constr proc_rec c
   in proc_rec c
 
+let out_def = function
+  | Some def -> def
+  | None -> error "Program Fixpoint needs defined bodies."
+
 let interp_recursive fixkind l boxed =
   let env = Global.env() in
   let fixl, ntnl = List.split l in
@@ -451,6 +455,8 @@ let interp_recursive fixkind l boxed =
       List.iter (Metasyntax.set_notation_for_interpretation impls) notations;
       list_map3 (interp_fix_body evdref env_rec impls) fixctxs fixl fixccls)
       () in
+
+  let fixdefs = List.map out_def fixdefs in
 
   (* Instantiate evars and check all are resolved *)
   let evd,_ = Evarconv.consider_remaining_unif_problems env_rec !evdref in
@@ -507,14 +513,14 @@ let build_recursive l b =
   let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in
     match g, l with
 	[(n, CWfRec r)], [(((_,id),_,bl,typ,def),ntn)] ->
-	  ignore(build_wellfounded (id, n, bl, typ, def) r
+	  ignore(build_wellfounded (id, n, bl, typ, out_def def) r
 		    (match n with Some n -> mkIdentC (snd n) | None ->
 		      errorlabstrm "Subtac_command.build_recursive"
 			(str "Recursive argument required for well-founded fixpoints"))
 		    ntn false)
 
       | [(n, CMeasureRec (m, r))], [(((_,id),_,bl,typ,def),ntn)] ->
-	  ignore(build_wellfounded (id, n, bl, typ, def) (Option.default (CRef lt_ref) r)
+	  ignore(build_wellfounded (id, n, bl, typ, out_def def) (Option.default (CRef lt_ref) r)
 		    m ntn false)
 
       | _, _ when List.for_all (fun (n, ro) -> ro = CStructRec) g ->

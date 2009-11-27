@@ -78,9 +78,12 @@ val get_undo : unit -> int option
     systematically apply at initialization time (e.g. to start the
     proof of mutually dependent theorems) *)
 
+type lemma_possible_guards = int list list
+
 val start_proof :
   identifier -> goal_kind -> named_context_val -> constr ->
-    ?init_tac:tactic -> ?compute_guard:bool -> declaration_hook -> unit
+  ?init_tac:tactic -> ?compute_guard:lemma_possible_guards -> 
+  declaration_hook -> unit
 
 (* [restart_proof ()] restarts the current focused proof from the beginning
    or fails if no proof is focused *)
@@ -108,7 +111,9 @@ val suspend_proof : unit -> unit
     it also tells if the guardness condition has to be inferred. *)
 
 val cook_proof : (Refiner.pftreestate -> unit) ->
-  identifier * (Entries.definition_entry * bool * goal_kind * declaration_hook)
+  identifier *
+  (Entries.definition_entry * lemma_possible_guards * goal_kind * 
+   declaration_hook)
 
 (* To export completed proofs to xml *)
 val set_xml_cook_proof : (goal_kind * pftreestate -> unit) -> unit
