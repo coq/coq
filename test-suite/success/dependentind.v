@@ -50,7 +50,7 @@ Notation " Γ  ; Δ " := (conc Δ Γ) (at level 25, left associativity) : contex
 
 Reserved Notation " Γ ⊢ τ " (at level 30, no associativity).
 
-Generalizable Variables all.
+Generalizable All Variables.
 
 Inductive term : ctx -> type -> Type :=
 | ax : `(Γ, τ ⊢ τ)
@@ -79,7 +79,7 @@ Proof with simpl in * ; eqns ; eauto with lambda.
 
   destruct Δ as [|Δ τ'']...
     apply abs.
-    specialize (IHterm Γ (Δ, τ'', τ0) τ'0)...
+    specialize (IHterm Γ (Δ, τ'', τ))...
 
   intro. eapply app...
 Defined.
@@ -100,7 +100,7 @@ Proof with simpl in * ; eqns ; eauto.
     apply weak...
 
   apply abs...
-    specialize (IHterm Γ (Δ, τ0))...
+    specialize (IHterm Γ (Δ, τ))...
 
   eapply app...
 Defined.
@@ -127,5 +127,5 @@ Inductive Ev : forall t, Exp t -> Exp t -> Prop :=
                Ev (Fst e) e1.
 
 Lemma EvFst_inversion : forall t1 t2 (e:Exp (Prod t1 t2)) e1, Ev (Fst e) e1 -> exists e2, Ev e (Pair e1 e2).
-intros t1 t2 e e1 ev. dependent destruction ev. exists e3 ; assumption.
+intros t1 t2 e e1 ev. dependent destruction ev. exists e2 ; assumption.
 Qed.

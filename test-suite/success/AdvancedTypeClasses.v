@@ -1,4 +1,4 @@
-Generalizable Variables all.
+Generalizable All Variables.
 
 Open Scope type_scope.
 
@@ -57,7 +57,7 @@ Instance FunCan `(interp_pair a, interp_pair b) : interp_pair (a -> b) :=
 Instance BoolCan : interp_pair bool :=
   { repr := Bool ; link := refl_equal _ }.
 
-Instance VarCan : interp_pair x | 10 := { repr := Var x ; link := refl_equal _ }.
+Instance VarCan x : interp_pair x | 10 := { repr := Var x ; link := refl_equal _ }.
 Instance SetCan : interp_pair Set := { repr := SET ; link := refl_equal _ }.
 Instance PropCan : interp_pair Prop := { repr := PROP ; link := refl_equal _ }.
 Instance TypeCan : interp_pair Type := { repr := TYPE ; link := refl_equal _ }.

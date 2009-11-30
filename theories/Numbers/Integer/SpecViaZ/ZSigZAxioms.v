@@ -36,6 +36,7 @@ Hint Rewrite
 Ltac zsimpl := unfold Z.eq in *; autorewrite with zspec.
 Ltac zcongruence := repeat red; intros; zsimpl; congruence.
 
+Instance Z_measure: @Measure Z.t Z Z.to_Z.
 Instance eq_equiv : Equivalence Z.eq.
 
 Obligation Tactic := zcongruence.

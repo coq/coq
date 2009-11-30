@@ -348,23 +348,47 @@ let hints_tac hints =
       | [] -> fk ()
     in aux 1 tacs }
 
+let evars_of_term c =
+  let rec evrec acc c =
+    match kind_of_term c with
+    | Evar (n, _) -> Intset.add n acc
+    | _ -> fold_constr evrec acc c
+  in evrec Intset.empty c
+
+exception Found_evar of int
+
+let occur_evars evars c =
+  try
+    let rec evrec c =
+      match kind_of_term c with
+      | Evar (n, _) -> if Intset.mem n evars then raise (Found_evar n) else ()
+      | _ -> iter_constr evrec c
+    in evrec c; false
+  with Found_evar _ -> true
+
+let dependent only_classes evd oev concl =
+  let concl_evars = Intset.union (evars_of_term concl)
+    (Option.cata Intset.singleton Intset.empty oev)
+  in not (Intset.is_empty concl_evars)
+
 let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk =
   let rec aux s (acc : (autogoal list * validation) list) fk = function
     | (gl,info) :: gls ->
 	second.skft (fun ({it=gls';sigma=s'},v') fk' ->
-	  let fk'' = if gls' = [] && Evarutil.is_ground_term s gl.evar_concl then
-	    (if !typeclasses_debug then msgnl (str"no backtrack on " ++ pr_ev s gl); fk) else fk' in
-	  let s' = 
+	  let s', needs_backtrack = 
 	    if gls' = [] then
 	      match info.is_evar with
 	      | Some ev -> 
 		  let prf = v' s' [] in
 		  let term, _ = Refiner.extract_open_proof s' prf in
-		    Evd.define ev term s'
-	      | None -> s'
-	    else s'
+		    Evd.define ev term s', dependent info.only_classes s' (Some ev) gl.evar_concl
+	      | None -> s', dependent info.only_classes s' None gl.evar_concl
+	    else s', true
 	  in
-	    aux s' ((gls',v')::acc) fk'' gls) fk {it = (gl,info); sigma = s}
+	  let fk'' = if not needs_backtrack then
+	    (if !typeclasses_debug then msgnl (str"no backtrack on " ++ pr_ev s gl); fk) else fk' 
+	  in aux s' ((gls',v')::acc) fk'' gls)
+	  fk {it = (gl,info); sigma = s}
     | [] -> Some (List.rev acc, s, fk)
   in fun ({it = gls; sigma = s},v) fk ->
     let rec aux' = function

@@ -605,6 +605,10 @@ Module Raw2SetsOn (O:OrderedType)(M:RawSets O) <: SetsOn O.
 
   (** Specification of [lt] *)
   Instance lt_strorder : StrictOrder lt.
+  Proof. constructor ; unfold lt; red.
+    unfold complement. red. intros. apply (irreflexivity H).
+    intros. transitivity y; auto.
+  Qed.
 
   Instance lt_compat : Proper (eq==>eq==>iff) lt.
   Proof.

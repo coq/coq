@@ -1,4 +1,4 @@
-Generalizable Variables all.
+Generalizable All Variables.
 
 Check `(a = 0).
 Check `(a = 0)%type.

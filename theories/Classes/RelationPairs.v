@@ -21,9 +21,6 @@ Implicit Arguments pair [[A] [B]].
 
 (* /NB *)
 
-
-(* NB: is signature_scope the right one for that ? *)
-
 Arguments Scope relation_conjunction
  [type_scope signature_scope signature_scope].
 Arguments Scope relation_equivalence
@@ -37,7 +34,7 @@ Arguments Scope PER [type_scope signature_scope].
 Arguments Scope Equivalence [type_scope signature_scope].
 Arguments Scope StrictOrder [type_scope signature_scope].
 
-Generalizable Variables A B RA RB Ri Ro.
+Generalizable Variables A B RA RB Ri Ro f.
 
 (** Any function from [A] to [B] allow to obtain a relation over [A]
     out of a relation over [B]. *)
@@ -47,6 +44,16 @@ Definition RelCompFun {A B}(R:relation B)(f:A->B) : relation A :=
 
 Infix "@@" := RelCompFun (at level 30, right associativity) : signature_scope.
 
+(** We declare measures to the system using the [Measure] class. 
+   Otherwise the instances would easily introduce loops, 
+   never instantiating the [f] function.  *)
+
+Class Measure {A B} (f : A -> B).
+
+(** Standard measures. *)
+
+Instance fst_measure : @Measure (A * B) A fst.
+Instance snd_measure : @Measure (A * B) B snd.
 
 (** We define a product relation over [A*B]: each components should
     satisfy the corresponding initial relation. *)
@@ -56,28 +63,32 @@ Definition RelProd {A B}(RA:relation A)(RB:relation B) : relation (A*B) :=
 
 Infix "*" := RelProd : signature_scope.
 
+Section RelCompFun_Instances.
+  Context {A B : Type} (R : relation B).
 
-Instance RelCompFun_Reflexive {A B}(R:relation B)(f:A->B)
- `(Reflexive _ R) : Reflexive (R@@f).
-Proof. firstorder. Qed.
+  Global Instance RelCompFun_Reflexive
+    `(Measure A B f, Reflexive _ R) : Reflexive (R@@f).
+  Proof. firstorder. Qed. 
+    
+  Global Instance RelCompFun_Symmetric
+    `(Measure A B f, Symmetric _ R) : Symmetric (R@@f).
+  Proof. firstorder. Qed.
+      
+  Global Instance RelCompFun_Transitive
+    `(Measure A B f, Transitive _ R) : Transitive (R@@f).
+  Proof. firstorder. Qed.
 
-Instance RelCompFun_Symmetric {A B}(R:relation B)(f:A->B)
- `(Symmetric _ R) : Symmetric (R@@f).
-Proof. firstorder. Qed.
+  Global Instance RelCompFun_Irreflexive
+    `(Measure A B f, Irreflexive _ R) : Irreflexive (R@@f).
+  Proof. firstorder. Qed.
 
-Instance RelCompFun_Transitive {A B}(R:relation B)(f:A->B)
- `(Transitive _ R) : Transitive (R@@f).
-Proof. firstorder. Qed.
+  Global Instance RelCompFun_Equivalence
+    `(Measure A B f, Equivalence _ R) : Equivalence (R@@f).
 
-Instance RelCompFun_Irreflexive {A B}(R:relation B)(f:A->B)
- `(Irreflexive _ R) : Irreflexive (R@@f).
-Proof. firstorder. Qed.
+  Global Instance RelCompFun_StrictOrder
+    `(Measure A B f, StrictOrder _ R) : StrictOrder (R@@f).
 
-Instance RelCompFun_Equivalence {A B}(R:relation B)(f:A->B)
- `(Equivalence _ R) : Equivalence (R@@f).
-
-Instance RelCompFun_StrictOrder {A B}(R:relation B)(f:A->B)
- `(StrictOrder _ R) : StrictOrder (R@@f).
+End RelCompFun_Instances.
 
 Instance RelProd_Reflexive {A B}(RA:relation A)(RB:relation B)
  `(Reflexive _ RA, Reflexive _ RB) : Reflexive (RA*RB).
