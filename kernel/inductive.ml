@@ -491,6 +491,16 @@ let push_fix_renv renv (_,v,_ as recdef) =
     rel_min = renv.rel_min+n;
     genv = iterate (fun ge -> Not_subterm::ge) n renv.genv }
 
+let rec noccur_subterm renv t =
+  let rec noccur renv t =
+    match kind_of_term t with
+      | Rel i ->
+	  if subterm_var i renv <> Not_subterm then failwith "caught"
+      | _ -> iter_constr_with_binders
+	  (fun re -> push_var_renv re (Anonymous,mkProp)) noccur renv t in
+  try noccur renv t; true
+  with Failure _ -> false
+
 
 (******************************)
 (* Computing the recursive subterms of a term (propagation of size
@@ -510,6 +520,9 @@ let push_fix_renv renv (_,v,_ as recdef) =
 let lookup_subterms env ind =
   let (_,mip) = lookup_mind_specif env ind in
   mip.mind_recargs
+
+let is_recursive env ind =
+  Rtree.is_infinite (lookup_subterms env ind)
 
 (*********************************)
 
@@ -549,7 +562,9 @@ let case_branches_specif renv c_spec ind lbr =
 *)
 
 let rec subterm_specif renv t =
-  (* maybe reduction is not always necessary! *)
+  (* If none of the free vars of t are a subterm, then t is not a subterm,
+     and we avoid a potentially costly reduction. *) 
+  if noccur_subterm renv t then Not_subterm else
   let f,l = decompose_app (whd_betadeltaiota renv.env t) in
   match kind_of_term f with
     | Rel k -> subterm_var k renv
@@ -557,11 +572,13 @@ let rec subterm_specif renv t =
     | Case (ci,_,c,lbr) ->
         if Array.length lbr = 0 then Dead_code
         else
-          let c_spec = subterm_specif renv c in
-          let lbr_spec = case_branches_specif renv c_spec ci.ci_ind lbr in
-          let stl  =
-            Array.map (fun (renv',br') -> subterm_specif renv' br')
-              lbr_spec in
+	  let stl =
+	    if is_recursive renv.env ci.ci_ind then
+              let c_spec = subterm_specif renv c in
+              let lbr_spec = case_branches_specif renv c_spec ci.ci_ind lbr in
+              Array.map (fun (renv',br') -> subterm_specif renv' br')
+		lbr_spec
+	    else Array.map (subterm_specif renv) lbr in
           subterm_spec_glb stl
 
     | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
@@ -680,9 +697,12 @@ let check_one_fix renv recpos def =
             List.iter (check_rec_call renv) (c_0::p::l);
             (* compute the recarg information for the arguments of
                each branch *)
-            let c_spec = subterm_specif renv c_0 in
-            let lbr = case_branches_specif renv c_spec ci.ci_ind lrest in
-            Array.iter (fun (renv',br') -> check_rec_call renv' br') lbr
+	    if is_recursive renv.env ci.ci_ind then
+              let c_spec = subterm_specif renv c_0 in
+              let lbr = case_branches_specif renv c_spec ci.ci_ind lrest in
+              Array.iter (fun (renv',br') -> check_rec_call renv' br') lbr
+	    else
+	      Array.iter (check_rec_call renv) lrest
 
         (* Enables to traverse Fixpoint definitions in a more intelligent
            way, ie, the rule :
@@ -696,7 +716,6 @@ let check_one_fix renv recpos def =
                 S+{yp} in e
            then f is guarded with respect to S in (g a1 ... am).
            Eduardo 7/9/98 *)
-
         | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
             List.iter (check_rec_call renv) l;
             Array.iter (check_rec_call renv) typarray;
