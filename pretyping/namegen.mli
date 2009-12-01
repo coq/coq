@@ -61,20 +61,17 @@ val next_name_away_with_default : string -> name -> identifier list ->
 (**********************************************************************)
 (* Making name distinct for displaying *)
 
-type avoid_flags = bool option
- (* Some true = avoid all globals (as in intro);
-    Some false = avoid only global constructors;
-    None = don't avoid globals *)
+type renaming_flags =
+  | RenamingForCasesPattern (* avoid only global constructors *)
+  | RenamingForGoal (* avoid all globals (as in intro) *)
+  | RenamingElsewhereFor of constr
 
 val make_all_name_different : env -> env
 
 val compute_displayed_name_in :
-  avoid_flags -> identifier list -> name list -> name -> constr ->
-    name * identifier list
+  renaming_flags -> identifier list -> name -> constr -> name * identifier list
 val compute_and_force_displayed_name_in :
-  avoid_flags -> identifier list -> name list -> name -> constr ->
-    name * identifier list
+  renaming_flags -> identifier list -> name -> constr -> name * identifier list
 val compute_displayed_let_name_in :
-  avoid_flags -> identifier list -> name list -> name -> constr ->
-    name * identifier list
-val rename_bound_vars_as_displayed : env -> identifier list -> types -> types
+  renaming_flags -> identifier list -> name -> constr -> name * identifier list
+val rename_bound_vars_as_displayed : identifier list -> types -> types

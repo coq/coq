@@ -161,8 +161,9 @@ val set_engagement : engagement -> env -> env
 
 (************************************************************************)
 (* Sets of referred section variables *)
-(* [global_vars_set env c] returns the list of [id]'s occurring as
-   [VAR id] in [c] *)
+(* [global_vars_set env c] returns the list of [id]'s occurring either
+   directly as [Var id] in [c] or indirectly as a section variable
+   dependent in a global reference occurring in [c] *)
 val global_vars_set : env -> constr -> Idset.t
 (* the constr must be a global reference *)
 val vars_of_global : env -> constr -> identifier list

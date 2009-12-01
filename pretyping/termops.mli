@@ -109,6 +109,7 @@ val free_rels : constr -> Intset.t
 val dependent : constr -> constr -> bool
 val dependent_no_evar : constr -> constr -> bool
 val collect_metas : constr -> int list
+val collect_visible_vars : constr -> identifier list
 val occur_term : constr -> constr -> bool (* Synonymous
  of dependent *)
 (* Substitution of metavariables *)

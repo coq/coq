@@ -32,6 +32,7 @@ open Coercion.Default
 (* Abbreviations *)
 
 let pf_env gls = Global.env_of_context gls.it.evar_hyps
+let pf_hyps gls = named_context_of_val gls.it.evar_hyps
 let pf_type_of gls c  = Typing.type_of (pf_env gls) gls.sigma c
 let pf_concl gl = gl.it.evar_concl
 
@@ -146,7 +147,8 @@ let mk_clenv_from_n gls n (c,cty) =
 let mk_clenv_from gls = mk_clenv_from_n gls None
 
 let mk_clenv_rename_from_n gls n (c,t) =
-  mk_clenv_from_n gls n (c,rename_bound_vars_as_displayed (pf_env gls) [] t)
+  let ids = collect_visible_vars t in
+  mk_clenv_from_n gls n (c,rename_bound_vars_as_displayed ids t)
 
 let mk_clenv_type_of gls t = mk_clenv_from gls (t,pf_type_of gls t)
 

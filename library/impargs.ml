@@ -200,15 +200,18 @@ let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
 
 (* calcule la liste des arguments implicites *)
 
-let find_displayed_name_in all =
-  if all then compute_and_force_displayed_name_in else compute_displayed_name_in
+let find_displayed_name_in all avoid na b =
+  if all then
+    compute_and_force_displayed_name_in (RenamingElsewhereFor b) avoid na b
+  else
+    compute_displayed_name_in (RenamingElsewhereFor b) avoid na b
 
 let compute_implicits_gen strict strongly_strict revpat contextual all env t =
   let rec aux env avoid n names t =
     let t = whd_betadeltaiota env t in
     match kind_of_term t with
       | Prod (na,a,b) ->
-	  let na',avoid' = find_displayed_name_in all None avoid names na b in
+	  let na',avoid' = find_displayed_name_in all avoid na b in
 	  add_free_rels_until strict strongly_strict revpat n env a (Hyp (n+1))
             (aux (push_rel (na',None,a) env) avoid' (n+1) (na'::names) b)
       | _ ->
@@ -220,7 +223,7 @@ let compute_implicits_gen strict strongly_strict revpat contextual all env t =
   in
   match kind_of_term (whd_betadeltaiota env t) with
     | Prod (na,a,b) ->
-	let na',avoid = find_displayed_name_in all None [] [] na b in
+	let na',avoid = find_displayed_name_in all [] na b in
 	let v = aux (push_rel (na',None,a) env) avoid 1 [na'] b in
 	Array.to_list v
     | _ -> []

@@ -171,27 +171,23 @@ let computable p k =
 let avoid_flag isgoal = if isgoal then Some true else None
 
 let lookup_name_as_displayed env t s =
-  let rec lookup avoid env_names n c = match kind_of_term c with
+  let rec lookup avoid n c = match kind_of_term c with
     | Prod (name,_,c') ->
-	(match compute_displayed_name_in (Some true) avoid env_names name c' with
-           | (Name id,avoid') ->
-	       if id=s then (Some n)
-	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
-	   | (Anonymous,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
+	(match compute_displayed_name_in RenamingForGoal avoid name c' with
+           | (Name id,avoid') -> if id=s then Some n else lookup avoid' (n+1) c'
+	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | LetIn (name,_,_,c') ->
-	(match compute_displayed_name_in (Some true) avoid env_names name c' with
-           | (Name id,avoid') ->
-	       if id=s then (Some n)
-	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
-	   | (Anonymous,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
-    | Cast (c,_,_) -> lookup avoid env_names n c
+	(match compute_displayed_name_in RenamingForGoal avoid name c' with
+           | (Name id,avoid') -> if id=s then Some n else lookup avoid' (n+1) c'
+	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
+    | Cast (c,_,_) -> lookup avoid n c
     | _ -> None
-  in lookup (ids_of_named_context (named_context env)) empty_names_context 1 t
+  in lookup (ids_of_named_context (named_context env)) 1 t
 
 let lookup_index_as_renamed env t n =
   let rec lookup n d c = match kind_of_term c with
     | Prod (name,_,c') ->
-	  (match compute_displayed_name_in (Some true) [] empty_names_context name c' with
+	  (match compute_displayed_name_in RenamingForGoal [] name c' with
                (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
 		 if n=0 then
@@ -201,7 +197,7 @@ let lookup_index_as_renamed env t n =
 		 else
 		   lookup (n-1) (d+1) c')
     | LetIn (name,_,_,c') ->
-	  (match compute_displayed_name_in (Some true) [] empty_names_context name c' with
+	  (match compute_displayed_name_in RenamingForGoal [] name c' with
              | (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
 		 if n=0 then
@@ -226,6 +222,7 @@ let update_name na ((_,e),c) =
       na
 
 let rec decomp_branch n nal b (avoid,env as e) c =
+  let flag = if b then RenamingForGoal else RenamingForCasesPattern in
   if n=0 then (List.rev nal,(e,c))
   else
     let na,c,f =
@@ -235,7 +232,7 @@ let rec decomp_branch n nal b (avoid,env as e) c =
 	| _ ->
 	    Name (id_of_string "x"),(applist (lift 1 c, [mkRel 1])),
 	    compute_displayed_name_in in
-    let na',avoid' = f (Some b) avoid env na c in
+    let na',avoid' = f flag avoid na c in
     decomp_branch (n-1) (na'::nal) b (avoid',add_name na' env) c
 
 let rec build_tree na isgoal e ci cl =
@@ -533,16 +530,15 @@ and detype_eqn isgoal avoid env constr construct_nargs branch =
   buildrec [] [] avoid env construct_nargs branch
 
 and detype_binder isgoal bk avoid env na ty c =
+  let flag = if isgoal then RenamingForGoal else (RenamingElsewhereFor c) in
   let na',avoid' =
-    if bk = BLetIn then
-      compute_displayed_let_name_in (avoid_flag isgoal) avoid env na c
-    else
-      compute_displayed_name_in (avoid_flag isgoal) avoid env na c in
+    if bk = BLetIn then compute_displayed_let_name_in flag avoid na c
+    else compute_displayed_name_in flag avoid na c in
   let r =  detype isgoal avoid' (add_name na' env) c in
   match bk with
-  | BProd -> RProd (dl, na',Explicit,detype isgoal avoid env ty, r)
-  | BLambda -> RLambda (dl, na',Explicit,detype isgoal avoid env ty, r)
-  | BLetIn -> RLetIn (dl, na',detype isgoal avoid env ty, r)
+  | BProd -> RProd (dl, na',Explicit,detype false avoid env ty, r)
+  | BLambda -> RLambda (dl, na',Explicit,detype false avoid env ty, r)
+  | BLetIn -> RLetIn (dl, na',detype false avoid env ty, r)
 
 let rec detype_rel_context where avoid env sign =
   let where = Option.map (fun c -> it_mkLambda_or_LetIn c sign) where in
@@ -553,8 +549,10 @@ let rec detype_rel_context where avoid env sign =
 	match where with
 	| None -> na,avoid
 	| Some c ->
-	    if b<>None then compute_displayed_let_name_in None avoid env na c
-	    else compute_displayed_name_in None avoid env na c in
+	    if b<>None then
+	      compute_displayed_let_name_in (RenamingElsewhereFor c) avoid na c
+	    else
+	      compute_displayed_name_in (RenamingElsewhereFor c) avoid na c in
       let b = Option.map (detype false avoid env) b in
       let t = detype false avoid env t in
       (na',Explicit,b,t) :: aux avoid' (add_name na' env) rest

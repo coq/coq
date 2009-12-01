@@ -523,6 +523,17 @@ let collect_metas c =
   in
   List.rev (collrec [] c)
 
+(* collects all visible var occurences (does not include indirect
+   dependencies of section variables via global references) *)
+
+let collect_visible_vars c =
+  let rec collrec acc c =
+    match kind_of_term c with
+    | Var id -> list_add_set id acc
+    | _      -> fold_constr collrec acc c
+  in
+  List.rev (collrec [] c)
+
 (* Tests whether [m] is a subterm of [t]:
    [m] is appropriately lifted through abstractions of [t] *)
 
