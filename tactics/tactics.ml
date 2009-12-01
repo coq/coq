@@ -2322,19 +2322,20 @@ let abstract_args gl generalize_vars dep id defined f args =
        
        eqs are not lifted w.r.t. each other yet. (* will be needed when going to dependent indexes *)
     *)
-  let aux (prod, ctx, ctxenv, c, args, eqs, refls, vars, env) arg =
+  let aux (prod, ctx, ctxenv, c, args, eqs, refls, nongenvars, vars, env) arg =
     let (name, _, ty), arity =
       let rel, c = Reductionops.splay_prod_n env sigma 1 prod in
 	List.hd rel, c
     in
     let argty = pf_type_of gl arg in
-    let argty = if isSort argty then new_Type () else argty in
-    let liftargty = lift (List.length ctx) argty in
-    let convertible = Reductionops.is_conv_leq ctxenv sigma liftargty ty in
+    let argty = refresh_universes_strict argty in 
+    let lenctx = List.length ctx in
+    let liftargty = lift lenctx argty in
+    let leq = constr_cmp Reduction.CUMUL liftargty ty in
       match kind_of_term arg with
-      (* 	    | Var id -> *)
-      (* 		let deps = deps_of_var id env in *)
-      (* 		  (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, Idset.union deps vars, env) *)
+      | Var id when leq && not (Idset.mem id nongenvars) ->
+      	  (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls,
+      	  Idset.add id nongenvars, Idset.remove id vars, env)
       | _ ->
 	  let name = get_id name in
 	  let decl = (Name name, None, ty) in
@@ -2343,15 +2344,16 @@ let abstract_args gl generalize_vars dep id defined f args =
 	  let args = arg :: args in
 	  let liftarg = lift (List.length ctx) arg in
 	  let eq, refl =
-	    if convertible then
-	      mkEq (lift 1 ty) (mkRel 1) liftarg, mkRefl argty arg
+	    if leq then
+	      mkEq (lift 1 ty) (mkRel 1) liftarg, mkRefl (lift (-lenctx) ty) arg
 	    else
 	      mkHEq (lift 1 ty) (mkRel 1) liftargty liftarg, mkHRefl argty arg
 	  in
 	  let eqs = eq :: lift_list eqs in
 	  let refls = refl :: refls in
 	  let argvars = ids_of_constr vars arg in
-	    (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls, Idset.union argvars vars, env)
+	    (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls, 
+	    nongenvars, Idset.union argvars vars, env)
   in 
   let f', args' = decompose_indapp f args in
   let dogen, f', args' =
@@ -2365,13 +2367,13 @@ let abstract_args gl generalize_vars dep id defined f args =
 	      true, mkApp (f', before), after
   in
     if dogen then
-      let arity, ctx, ctxenv, c', args, eqs, refls, vars, env = 
-	Array.fold_left aux (pf_type_of gl f',[],env,f',[],[],[],Idset.empty,env) args'
+      let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars, env = 
+	Array.fold_left aux (pf_type_of gl f',[],env,f',[],[],[],Idset.empty,Idset.empty,env) args'
       in
       let args, refls = List.rev args, List.rev refls in
       let vars = 
 	if generalize_vars then
-	  let nogen = Idset.singleton id in
+	  let nogen = Idset.add id nogen in
 	    hyps_of_vars (pf_env gl) (pf_hyps gl) nogen vars
 	else []
       in

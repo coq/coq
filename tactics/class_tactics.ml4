@@ -281,7 +281,7 @@ let normevars_tac : atac =
     (fun {it = gls; sigma = s} info ->
       let gls' =
 	List.map (fun g' ->
-	  (g', { info with is_evar = None; auto_last_tac = str"NORMEVAR" })) gls
+	  (g', { info with auto_last_tac = str"NORMEVAR" })) gls
       in {it = gls'; sigma = s})
 
 
@@ -379,9 +379,13 @@ let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk
 	    if gls' = [] then
 	      match info.is_evar with
 	      | Some ev -> 
-		  let prf = v' s' [] in
-		  let term, _ = Refiner.extract_open_proof s' prf in
-		    Evd.define ev term s', dependent info.only_classes s' (Some ev) gl.evar_concl
+		  let s' = 
+		    if Evd.is_defined s' ev then s' 
+		    else
+		      let prf = v' s' [] in
+		      let term, _ = Refiner.extract_open_proof s' prf in
+			Evd.define ev term s' 
+		  in s', dependent info.only_classes s' (Some ev) gl.evar_concl
 	      | None -> s', dependent info.only_classes s' None gl.evar_concl
 	    else s', true
 	  in
