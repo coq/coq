@@ -182,8 +182,9 @@ let print_usage_channel co command =
   -where                 print Coq's standard library location and exit
   -v                     print Coq version and exit
   -boot                  boot mode
-  -o                     print the list of assumptions
-  -m                     print the maximum heap size
+  -o, --output-context   print the list of assumptions
+  -m, --memoty           print the maximum heap size
+  -silent                disable trace of constants being checked
 
   -impredicative-set     set sort Set impredicative
 
