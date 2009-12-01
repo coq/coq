@@ -452,7 +452,7 @@ let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm tac =
 	| Some (evm', fk) -> Some (Evd.evars_reset_evd evm' evm, fk)
 	    
 let eauto_tac hints = 
-  fix (or_tac intro_tac (then_tac normevars_tac (hints_tac hints)))
+  fix (or_tac (then_tac normevars_tac (hints_tac hints)) intro_tac)
   
 let eauto ?(only_classes=true) ?st hints g =
   let gl = { it = make_autogoal ~only_classes ?st None g; sigma = project g } in

@@ -270,22 +270,20 @@ let dummy_goal =
 
 let make_exact_entry pri (c,cty) =
   let cty = strip_outer_cast cty in
-  match kind_of_term cty with
-    | Prod (_,_,_) ->
-	failwith "make_exact_entry"
-    | _ ->
-        let ce = mk_clenv_from dummy_goal (c,cty) in
-	let c' = clenv_type ce in
-	let pat = Pattern.pattern_of_constr c' in
-	(Some (head_of_constr_reference (fst (head_constr cty))),
-	   { pri=(match pri with Some pri -> pri | None -> 0); pat=Some pat; code=Give_exact c })
+  let pat = Pattern.pattern_of_constr cty in
+  let head = 
+    try head_of_constr_reference (fst (head_constr cty)) 
+    with _ -> failwith "make_exact_entry" 
+  in
+    (Some head,
+    { pri=(match pri with Some pri -> pri | None -> 0); pat=Some pat; code=Give_exact c })
 
 let make_apply_entry env sigma (eapply,hnf,verbose) pri (c,cty) =
   let cty = if hnf then hnf_constr env sigma cty else cty in
     match kind_of_term cty with
     | Prod _ ->
         let ce = mk_clenv_from dummy_goal (c,cty) in
-	let c' = clenv_type ce in
+	let c' = clenv_type (* ~reduce:false *) ce in
 	let pat = Pattern.pattern_of_constr c' in
         let hd = (try head_pattern_bound pat
           with BoundPattern -> failwith "make_apply_entry") in

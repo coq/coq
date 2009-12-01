@@ -184,10 +184,10 @@
   let check_start_list str =
     let n_dashes = count_dashes str in
     let (n_spaces,_) = count_spaces str in
-      if n_dashes >= 4 then
+      if n_dashes >= 4 && not !Cdglobals.plain_comments then
         Rule
       else
-        if n_dashes = 1 then
+        if n_dashes = 1 && not !Cdglobals.plain_comments then
           List n_spaces
         else
           Neither
