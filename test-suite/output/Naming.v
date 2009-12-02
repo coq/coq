@@ -7,7 +7,9 @@ Section A.
 Variable x3:nat.
 Goal forall x x1 x2 x3:nat,
   (forall x x3:nat, x+x1 = x2+x3) -> x+x1 = x2+x3.
+Show.
 intros.
+Show.
 
 (* Remark: in V8.2, this used to be printed
 
@@ -37,10 +39,15 @@ Abort.
 Goal forall x x1 x2 x3:nat,
   (forall x x3:nat, x+x1 = x2+x3 -> foo (S x + x1)) ->
    x+x1 = x2+x3 -> foo (S x).
+Show.
 unfold foo.
+Show.
 do 4 intro. (* --> x, x1, x4, x0, ... *)
+Show.
 do 2 intro.
+Show.
 do 4 intro.
+Show.
 
 (* Remark: in V8.2, this used to be printed
 
@@ -71,3 +78,5 @@ before the intros and
    x5 + S = x6 + x7 + Datatypes.S x
 
 after (note the x5/x0 and the S0/S) *)
+
+Abort.

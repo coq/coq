@@ -147,8 +147,7 @@ let mk_clenv_from_n gls n (c,cty) =
 let mk_clenv_from gls = mk_clenv_from_n gls None
 
 let mk_clenv_rename_from_n gls n (c,t) =
-  let ids = collect_visible_vars t in
-  mk_clenv_from_n gls n (c,rename_bound_vars_as_displayed ids t)
+  mk_clenv_from_n gls n (c,rename_bound_vars_as_displayed [] t)
 
 let mk_clenv_type_of gls t = mk_clenv_from gls (t,pf_type_of gls t)
 

@@ -232,6 +232,7 @@ test_misc () {
     # Non-standard features
 
     # Test xml compilation
+    nbtests=`expr $nbtests + 1`
     printf "    xml..."
     COQ_XML_LIBRARY_ROOT=misc/xml $bincoqc -xml misc/berardi_test > /dev/null 2>&1
     if [ ! -d misc/xml ]; then

@@ -1,20 +1,9 @@
-Welcome to Coq localhost:/home/herbelin/coq/git,namegen (cd25d05cf1d1aa17f9c4f90d999559c2e7570b56)
-Parameter x2:nat.
-x2 is assumed
-Definition foo y := forall x x3 x4 S, x + S = x3 + x4 + y.
-foo is defined
-Section A.
-Variable x3:nat.
-x3 is assumed
-Goal forall x x1 x2 x3:nat,
-  (forall x x3:nat, x+x1 = x2+x3) -> x+x1 = x2+x3.
 1 subgoal
 
   x3 : nat
   ============================
    forall x x1 x4 x0 : nat,
-   (forall x5 x6 : nat, x5 + x1 = x4 + x6) -> x + x1 = x4 + x0
-intros.
+   (forall x2 x5 : nat, x2 + x1 = x4 + x5) -> x + x1 = x4 + x0
 1 subgoal
 
   x3 : nat
@@ -25,30 +14,23 @@ intros.
   H : forall x x3 : nat, x + x1 = x4 + x3
   ============================
    x + x1 = x4 + x0
-Abort.
-Current goal aborted
-Goal forall x x1 x2 x3:nat,
-  (forall x x3:nat, x+x1 = x2+x3 -> foo (S x + x1)) ->
-   x+x1 = x2+x3 -> foo (S x).
 1 subgoal
 
   x3 : nat
   ============================
    forall x x1 x4 x0 : nat,
-   (forall x5 x6 : nat, x5 + x1 = x4 + x6 -> foo (S x5 + x1)) ->
+   (forall x2 x5 : nat, x2 + x1 = x4 + x5 -> foo (S x2 + x1)) ->
    x + x1 = x4 + x0 -> foo (S x)
-unfold foo.
 1 subgoal
 
   x3 : nat
   ============================
    forall x x1 x4 x0 : nat,
-   (forall x5 x6 : nat,
-    x5 + x1 = x4 + x6 ->
-    forall x7 x8 x9 S : nat, x7 + S = x8 + x9 + (Datatypes.S x5 + x1)) ->
+   (forall x2 x5 : nat,
+    x2 + x1 = x4 + x5 ->
+    forall x6 x7 x8 S0 : nat, x6 + S0 = x7 + x8 + (S x2 + x1)) ->
    x + x1 = x4 + x0 ->
    forall x5 x6 x7 S : nat, x5 + S = x6 + x7 + Datatypes.S x
-do 4 intro.
 1 subgoal
 
   x3 : nat
@@ -57,12 +39,11 @@ do 4 intro.
   x4 : nat
   x0 : nat
   ============================
-   (forall x5 x6 : nat,
-    x5 + x1 = x4 + x6 ->
-    forall x7 x8 x9 S : nat, x7 + S = x8 + x9 + (Datatypes.S x5 + x1)) ->
+   (forall x2 x5 : nat,
+    x2 + x1 = x4 + x5 ->
+    forall x6 x7 x8 S0 : nat, x6 + S0 = x7 + x8 + (S x2 + x1)) ->
    x + x1 = x4 + x0 ->
    forall x5 x6 x7 S : nat, x5 + S = x6 + x7 + Datatypes.S x
-do 2 intro.
 1 subgoal
 
   x3 : nat
@@ -76,7 +57,6 @@ do 2 intro.
   H0 : x + x1 = x4 + x0
   ============================
    forall x5 x6 x7 S : nat, x5 + S = x6 + x7 + Datatypes.S x
-do 4 intro.
 1 subgoal
 
   x3 : nat
