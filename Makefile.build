@@ -33,16 +33,16 @@ endif
 
 NOARG: world
 
-# build and install the three subsystems: coq, coqide, pcoq
-world: revision coq coqide pcoq
-install: install-coq install-coqide install-pcoq
+# build and install the three subsystems: coq, coqide
+world: revision coq coqide
+install: install-coq install-coqide
 
 ifeq ($(WITHDOC),all)
 world: doc
 install: install-doc
 endif
 
-#install-manpages: install-coq-manpages install-pcoq-manpages
+#install-manpages: install-coq-manpages
 
 ###########################################################################
 # Compilation options
@@ -337,74 +337,6 @@ install-ide-info:
 	$(INSTALLLIB) ide/FAQ $(FULLIDELIB)
 
 ###########################################################################
-# Pcoq: special binaries for debugging (coq-interface, coq-parser)
-###########################################################################
-
-ifeq ($(HASNATDYNLINK),false)
-
-# old approach, via coqmktop
-
-bin/coq-interface$(EXE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(INTERFACECMA)
-	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -o $@ $(INTERFACECMA)
-
-bin/coq-interface.opt$(EXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(INTERFACECMA:.cma=.cmxa)
-	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) -o $@ $(INTERFACECMA:.cma=.cmxa)
-
-bin/coq-parser$(EXE): $(PARSERREQUIRES)
-	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(COQRUNBYTEFLAGS) -linkall $(BYTEFLAGS) -o $@ \
-	  dynlink.cma str.cma nums.cma $(CMA) $(PARSERREQUIRES)
-
-bin/coq-parser.opt$(EXE): $(LIBCOQRUN) $(PARSERREQUIRESCMX)
-	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) -linkall $(OPTFLAGS) -o $@ \
-	  $(LIBCOQRUN) $(DYNLINKCMXA) str.cmxa nums.cmxa $(CMXA) \
-          $(PARSERREQUIRESCMX)
-
-else 
-
-# HASNATDYNLINK is available :
-# coq-interface and coq-parser are direct calls to coqtop with some dynlink
-
-bin/coq-interface$(EXE):
-	echo "#!/bin/bash" > $@
-	echo 'exec '$(BINDIR)'/coqtop -require CoqInterface' >> $@
-	chmod +x $@
-
-bin/coq-parser$(EXE):
-	echo "#!/bin/bash" > $@
-	echo 'exec '$(BINDIR)'/coqtop -batch -l CoqParser' >> $@
-	chmod +x $@
-
-endif # of HASNATDYNLINK
-
-PCOQFILES:= $(INTERFACEVO) $(INTERFACERC) $(PCOQPLUGINS) $(PCOQPLUGINS:.cma=.cmxs)
-
-# target to build Pcoq
-pcoq: pcoq-binaries pcoq-files
-
-pcoq-binaries:: $(COQINTERFACE)
-
-pcoq-files:: $(PCOQFILES)
-
-# install targets
-install-pcoq:: install-pcoq-binaries install-pcoq-files install-pcoq-manpages
-
-install-pcoq-binaries::
-	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQINTERFACE) $(FULLBINDIR)
-
-install-pcoq-files::
-	$(MKDIR) $(FULLCOQLIB)/plugins/interface
-	$(INSTALLLIB) $(PCOQFILES) $(FULLCOQLIB)/plugins/interface
-
-install-pcoq-manpages:
-	$(MKDIR) $(FULLMANDIR)/man1
-	$(INSTALLLIB) $(PCOQMANPAGES) $(FULLMANDIR)/man1
-
-###########################################################################
 # tests
 ###########################################################################
 
@@ -473,7 +405,7 @@ noreal: logic arith bool zarith qarith lists sets fsets relations \
 	wellfounded setoids sorting
 
 ###########################################################################
-# 3) plugins (interface not included)
+# 3) plugins
 ###########################################################################
 
 plugins: $(PLUGINSVO)

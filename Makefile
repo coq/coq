@@ -193,7 +193,6 @@ cruftclean: ml4clean
 indepclean:
 	rm -f $(GENFILES)
 	rm -f $(COQTOPBYTE) $(COQMKTOPBYTE) $(COQCBYTE) $(CHICKENBYTE)
-	rm -f bin/coq-interface$(EXE) bin/coq-parser$(EXE)
 	find . -name '*~' -o -name '*.cm[ioa]' | xargs rm -f
 	find . -name '*_mod.ml' | xargs rm -f
 	find plugins test-suite -name '*.vo' -o -name '*.glob' | xargs rm -f
@@ -224,7 +223,6 @@ docclean:
 archclean: clean-ide cleantheories
 	rm -f $(COQTOPEXE) $(COQMKTOP) $(COQC) $(CHICKEN) $(COQDEPBOOT)
 	rm -f $(COQTOPOPT) $(COQMKTOPOPT) $(COQCOPT) $(CHICKENOPT)
-	rm -f bin/coq-parser.opt$(EXE) bin/coq-interface.opt$(EXE)
 	find . -name '*.cmx' -o -name '*.cmxs' -o -name '*.cmxa' -o -name '*.[soa]' -o -name '*.so' | xargs rm -f
 	rm -f $(TOOLS) $(CSDPCERT)
 	rm -rf _build myocamlbuild_config.ml

@@ -67,7 +67,7 @@ SRCDIRS:=\
   ide		\
   $(addprefix plugins/, \
     omega	romega 		micromega 	quote		ring	dp \
-    setoid_ring xml 		extraction 	interface 	fourier \
+    setoid_ring xml 		extraction 	fourier \
     cc 		funind 		firstorder 	field 		subtac \
     rtauto 	groebner        syntax)
 
@@ -230,27 +230,6 @@ COQMKTOPCMX:=$(COQMKTOPCMO:.cmo=.cmx)
 
 COQCCMO:=$(COQENVCMO) toplevel/usage.cmo scripts/coqc.cmo
 COQCCMX:=$(COQCCMO:.cmo=.cmx)
-
-## Pcoq tools : coq-interface, coq-parser
-
-COQINTERFACE:=bin/coq-interface$(EXE) bin/coq-parser$(EXE)
-
-INTERFACECMA:=plugins/interface/coqinterface_plugin.cma
-PARSERCMA:=plugins/interface/coqparser_plugin.cma
-
-ifeq ($(HASNATDYNLINK),false)
- ifeq ($(BEST),opt)
-  COQINTERFACE:=$(COQINTERFACE) bin/coq-interface.opt$(EXE) bin/coq-parser.opt$(EXE)
- endif
- INTERFACERC:= plugins/interface/vernacrc
- PCOQPLUGINS:=
-else
- INTERFACERC:= plugins/interface/vernacrc plugins/interface/CoqParser.v
- PCOQPLUGINS:=$(INTERFACECMA) $(PARSERCMA)
-endif
-
-PARSERREQUIRES:=$(LINKCMO) $(LIBCOQRUN) $(PARSERCMA) # Solution de facilité...
-PARSERREQUIRESCMX:=$(LINKCMX) $(PARSERCMA:.cma=.cmxa)
 
 ## Misc
 
@@ -597,16 +576,10 @@ DPVO:=$(addprefix plugins/dp/, \
 RTAUTOVO:=$(addprefix plugins/rtauto/, \
  Bintree.vo	Rtauto.vo )
 
-ifneq ($(HASNATDYNLINK),false)
-INTERFACEVO:=plugins/interface/CoqInterface.vo
-else
-INTERFACEVO:=
-endif
-
 PLUGINSVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
 	    $(XMLVO) $(FOURIERVO) $(CCVO) $(FUNINDVO) \
 	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO) $(QUOTEVO) \
-            $(INTERFACEVO) $(GBVO)
+            $(GBVO)
 
 ALLVO:= $(THEORIESVO) $(PLUGINSVO)
 VFILES:= $(ALLVO:.vo=.v)
@@ -626,8 +599,6 @@ MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \
 	man/coqwc.1 man/coqdoc.1 man/coqide.1 \
 	man/coq_makefile.1 man/coqmktop.1 man/coqchk.1
-
-PCOQMANPAGES:=man/coq-interface.1 man/coq-parser.1
 
 
 ###########################################################################
@@ -671,10 +642,10 @@ DOC_TARGET_PATTERNS:=%.dvi %.ps %.eps %.pdf %.html %.v.tex %.hva
 STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
   interp parsing pretyping highparsing toplevel hightactics \
   coqide-binaries coqide-byte coqide-opt $(COQIDEOPT) $(COQIDEBYTE) $(COQIDE) \
-  pcoq-binaries $(COQINTERFACE) $(CSDPCERT) coqbinaries pcoq $(TOOLS) tools \
+  $(CSDPCERT) coqbinaries $(TOOLS) tools \
   printers debug initplugins plugins \
   world install coqide coqide-files coq coqlib \
-  coqlight states pcoq-files check init theories theories-light \
+  coqlight states check init theories theories-light \
   $(DOC_TARGETS) $(VO_TARGETS) validate \
   %.vo %.glob states/% install-% %.ml4-preprocessed \
   $(DOC_TARGET_PATTERNS)

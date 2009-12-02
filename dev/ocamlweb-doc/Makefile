@@ -7,7 +7,7 @@ LOCALINCLUDES=-I ../../config -I ../../tools -I ../../tools/coqdoc \
               -I ../../plugins/omega -I ../../plugins/romega \
 	      -I ../../plugins/ring -I ../../plugins/dp -I ../../plugins/setoid_ring \
               -I ../../plugins/xml -I ../../plugins/extraction \
-              -I ../../plugins/interface -I ../../plugins/fourier \
+              -I ../../plugins/fourier \
 	      -I ../../plugins/cc \
 	      -I ../../plugins/funind -I ../../plugins/firstorder \
               -I ../../plugins/field -I ../../plugins/subtac -I ../../plugins/rtauto \

@@ -68,29 +68,6 @@ test_output() {
     done
 }
 
-# La fonction suivante teste l'analyseur syntaxique fournit par "coq-parser"
-# Elle fonctionne comme test_output
-test_parser() {
-    if [ -d $1 ]; then
-    for f in $1/*.v; do
-        nbtests=`expr $nbtests + 1`
-        printf "    "$f"..."
-        tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`
-        foutput=`dirname $f`/`basename $f .v`.out
-        echo "parse_file 1 \"$f\"" | ../bin/coq-parser > $tmpoutput 2>&1
-        perl -ne 'if(/Starting.*Parser Loop/){$printit = 1};print if $printit' \
-            $tmpoutput 2>&1 | grep -i error > /dev/null
-        if [ $? = 0 ] ; then
-            echo "Error! (unexpected output)"
-        else
-            echo "Ok"
-            nbtestsok=`expr $nbtestsok + 1`
-        fi
-        rm $tmpoutput
-    done
-    fi
-}
-
 # La fonction suivante teste en interactif 
 test_interactive() {
     for f in $1/*.v; do 
@@ -278,8 +255,6 @@ echo "Bugs tests"
 test_bugs bugs
 echo "Output tests"
 test_output output
-echo "Parser tests"
-test_parser parser
 echo "Interactive tests"
 test_interactive interactive
 echo "Micromega tests"
