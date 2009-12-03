@@ -45,9 +45,8 @@ Tactics
 - Binders given before ":" in lemmas are now automatically
   introduced in the context (possible source of incompatibility that can be
   avoided by unsetting option "Automatic Introduction").
-- Made choice of introduction names compliant with printed names and
-  in particular with "intros until" names (possible source of exceptional
-  incompatibilities).
+- Made quantified hypotheses get the name they would have if introduced in
+  the context (possible but rare source of incompatibilities).
 
 Tactic Language
 

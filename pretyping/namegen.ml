@@ -225,7 +225,7 @@ let make_all_name_different env =
 
 let visibly_occur_id id c =
   let rec occur c = match kind_of_term c with
-    | Const _ | Ind _ | Construct _
+    | Const _ | Ind _ | Construct _ | Var _
 	  when shortest_qualid_of_global Idset.empty (global_of_constr c)
 	    = qualid_of_ident id -> raise Occur
     | _ -> iter_constr occur c

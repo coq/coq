@@ -80,3 +80,12 @@ before the intros and
 after (note the x5/x0 and the S0/S) *)
 
 Abort.
+
+(* Check naming in hypotheses *)
+
+Goal forall a, (a = 0 -> forall a, a = 0) -> a = 0.
+intros.
+Show.
+apply H with (a:=a). (* test compliance with printing *)
+Abort.
+

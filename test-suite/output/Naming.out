@@ -1,11 +1,11 @@
 1 subgoal
-
+  
   x3 : nat
   ============================
    forall x x1 x4 x0 : nat,
    (forall x2 x5 : nat, x2 + x1 = x4 + x5) -> x + x1 = x4 + x0
 1 subgoal
-
+  
   x3 : nat
   x : nat
   x1 : nat
@@ -15,14 +15,14 @@
   ============================
    x + x1 = x4 + x0
 1 subgoal
-
+  
   x3 : nat
   ============================
    forall x x1 x4 x0 : nat,
    (forall x2 x5 : nat, x2 + x1 = x4 + x5 -> foo (S x2 + x1)) ->
    x + x1 = x4 + x0 -> foo (S x)
 1 subgoal
-
+  
   x3 : nat
   ============================
    forall x x1 x4 x0 : nat,
@@ -32,7 +32,7 @@
    x + x1 = x4 + x0 ->
    forall x5 x6 x7 S : nat, x5 + S = x6 + x7 + Datatypes.S x
 1 subgoal
-
+  
   x3 : nat
   x : nat
   x1 : nat
@@ -45,7 +45,7 @@
    x + x1 = x4 + x0 ->
    forall x5 x6 x7 S : nat, x5 + S = x6 + x7 + Datatypes.S x
 1 subgoal
-
+  
   x3 : nat
   x : nat
   x1 : nat
@@ -58,7 +58,7 @@
   ============================
    forall x5 x6 x7 S : nat, x5 + S = x6 + x7 + Datatypes.S x
 1 subgoal
-
+  
   x3 : nat
   x : nat
   x1 : nat
@@ -74,3 +74,10 @@
   S : nat
   ============================
    x5 + S = x6 + x7 + Datatypes.S x
+1 subgoal
+  
+  x3 : nat
+  a : nat
+  H : a = 0 -> forall a : nat, a = 0
+  ============================
+   a = 0
