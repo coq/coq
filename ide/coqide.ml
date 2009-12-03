@@ -172,12 +172,12 @@ let cb = GData.clipboard Gdk.Atom.primary
 
 exception Size of int
 
-(* when pushing a segment end, all the previous sentences have their segment
- * boolean turned to false, causing backtrack to such sentences to be a
- * BackTrackToNextActiveMark *)
-let update_on_end_of_segment cmd_stk = let lookup_section item =
-  item.reset_info.segment <- false in try Stack.iter lookup_section cmd_stk with
-      Exit -> ()
+let update_on_end_of_segment cmd_stk id =
+  let lookup_section = function 
+    | { reset_info = ResetAtSegmentStart id',_,_ } when id = id' -> raise Exit
+    | { reset_info = _,_,r } -> r := false
+  in
+    try Stack.iter lookup_section cmd_stk with Exit -> ()
 
 let push_phrase cmd_stk reset_info start_of_phrase_mark end_of_phrase_mark ast =
   let x = {start = start_of_phrase_mark;
@@ -187,9 +187,9 @@ let push_phrase cmd_stk reset_info start_of_phrase_mark end_of_phrase_mark ast =
 	  } in
   begin
     match snd ast with
-    | VernacEndSegment _ ->
+    | VernacEndSegment (_,id) ->
         prerr_endline "Updating on end of segment 1";
-        update_on_end_of_segment cmd_stk
+        update_on_end_of_segment cmd_stk id
     | _ -> ()
   end;
   Stack.push x cmd_stk
@@ -199,59 +199,63 @@ let repush_phrase cmd_stk reset_info x =
   let x = { x with reset_info = reset_info } in
   begin
     match snd x.ast with
-      | VernacEndSegment _ ->
+      | VernacEndSegment (_,id) ->
           prerr_endline "Updating on end of segment 2";
-          update_on_end_of_segment cmd_stk
+          update_on_end_of_segment cmd_stk id
       | _ -> ()
   end;
   Stack.push x cmd_stk
 
-(* called ($ntacsteps - $prev_ntacsteps) times *)
-let add_undo x =
-  if x.p = 0 then { x with n = x.n + 1 } else x
+type backtrack =
+| BacktrackToNextActiveMark
+| BacktrackToMark of reset_mark
+| BacktrackToModSec of Names.identifier
+| NoBacktrack
 
-(* called $openproofs times *)
-let add_abort x =
-  if x.p = 0 then (*  *)
-    { x with n = 0; a = x.a + 1 }
-  else (* there was a closed proof between S+ and S0, and now there is an open proof between S0 and S- *)
-    { x with p = x.p - 1 }
+let add_undo = function (n,a,b,p,l as x) -> if p = 0 then (n+1,a,b,p,l) else x
+let add_abort = function
+  | (n,a,b,0,l) -> (0,a+1,b,0,l)
+  | (n,a,b,p,l) -> (n,a,b,p-1,l)
+let add_qed q (n,a,b,p,l as x) =
+  if q = 0 then x else (n,a,BacktrackToNextActiveMark,p+q,l)
+let add_backtrack (n,a,b,p,l) b' = (n,a,b',p,l)
 
-(* called at each update_proof call *)
-let add_qed q x =
-  if q = 0 then (* no closed proofs *)
-    x
-  else (* closed proofs *)
-    { x with b = BacktrackToNextActiveMark; p = x.p + q }
-
-let add_backtrack x b' =
-  { x with b = b' }
-
-let update_proofs x (prev_lems,prev_ntacsteps) =
-  let (cur_lems,ntacsteps) = x.l in
+let update_proofs (n,a,b,p,cur_lems) prev_lems =
   let ncommon = List.length (Util.list_intersect cur_lems prev_lems) in
   let openproofs = List.length cur_lems - ncommon in
   let closedproofs = List.length prev_lems - ncommon in
-  let undos = { x with l = (prev_lems,prev_ntacsteps) } in
-  let undos = add_qed closedproofs (Util.iterate add_abort openproofs undos) in
-  Util.iterate add_undo (ntacsteps - prev_ntacsteps) undos
+  let undos = (n,a,b,p,prev_lems) in
+  add_qed closedproofs (Util.iterate add_abort openproofs undos)
 
 let pop_command cmd_stk undos t =
-  let t = t.reset_info in
-  let (state_info,undo_info,section_info) = (t.state,(t.pending,t.pf_depth),t.segment) in
+  let (state_info,undo_info,section_info) = t.reset_info in
   let undos =
-    if section_info then (* segment ouvert, on saute directement au bon état *)
+    if !section_info then
       let undos = update_proofs undos undo_info in
-      add_backtrack undos (BacktrackToMark state_info)
-    else (* segment fermé, il faut sauter au debut du segment *)
+      match state_info with
+      | _ when is_vernac_tactic_command (snd t.ast) ->
+	  (* A tactic, active if not below a Qed *)
+          add_undo undos
+      | ResetAtRegisteredObject mark ->
+          add_backtrack undos (BacktrackToMark mark)
+      | ResetAtSegmentStart id ->
+          add_backtrack undos (BacktrackToModSec id)
+      | _ when is_vernac_state_preserving_command (snd t.ast) ->
+	  undos
+      | _ ->
+          add_backtrack undos BacktrackToNextActiveMark
+    else
       begin
         prerr_endline "In section";
-        (* XXX - all the way to the bottom of the stack *)
-        add_backtrack undos BacktrackToNextActiveMark
+      (* An object inside a closed section *)
+      add_backtrack undos BacktrackToNextActiveMark
       end in
   ignore (Stack.pop cmd_stk);
   undos
 
+
+(* appelle Pfedit.delete_current_proof a fois
+ * utiliser Vernacentries.vernac_abort a la place ? *)
 let apply_aborts a =
   if a <> 0 then prerr_endline ("Applying "^string_of_int a^" aborts");
   try Util.repeat a Pfedit.delete_current_proof ()
@@ -259,6 +263,8 @@ let apply_aborts a =
 
 exception UndoStackExhausted
 
+(* appelle Pfedit.undo n fois
+ * utiliser vernac_undo ? *)
 let apply_tactic_undo n =
   if n<>0 then
     (prerr_endline ("Applying "^string_of_int n^" undos");
@@ -267,20 +273,19 @@ let apply_tactic_undo n =
 
 let apply_reset = function
   | BacktrackToMark mark -> reset_to mark
+  | BacktrackToModSec id -> reset_to_mod id
   | NoBacktrack -> ()
   | BacktrackToNextActiveMark -> assert false
 
-(* XXX - in its current form, it goes all the way to the bottom of the stack. *)
-let rec apply_undos cmd_stk undos =
-  if undos.p = 0 & undos.b <> BacktrackToNextActiveMark then
-    (* pas de preuve fermée et dans un segment ouvert *)
+let rec apply_undos cmd_stk (n,a,b,p,l as undos) =
+  if p = 0 & b <> BacktrackToNextActiveMark then
     begin
-      apply_aborts undos.a;
+      apply_aborts a;
       try
-	apply_tactic_undo undos.n;
-	apply_reset undos.b
+	apply_tactic_undo n;
+	apply_reset b
       with UndoStackExhausted ->
-	apply_undos cmd_stk { undos with a = 0; b = BacktrackToNextActiveMark }
+	apply_undos cmd_stk (n,0,BacktrackToNextActiveMark,p,l)
     end
   else
     (* re-synchronize Coq to the current state of the stack *)
@@ -290,7 +295,7 @@ let rec apply_undos cmd_stk undos =
       begin
         let t = Stack.top cmd_stk in
         apply_undos cmd_stk (pop_command cmd_stk undos t);
-        let reset_info = Coq.compute_reset_info () in
+        let reset_info = Coq.compute_reset_info (snd t.ast) in
         interp_last t.ast;
         repush_phrase cmd_stk reset_info t
       end
@@ -1305,7 +1310,7 @@ object(self)
           else
             done_smthg, undos
     in
-    let undos = Coq.init_undo () in
+    let undos = (0,0,NoBacktrack,0,undo_info()) in
     let done_smthg, undos = pop_commands false undos in
       prerr_endline "Popped commands";
       if done_smthg then
@@ -1375,7 +1380,7 @@ object(self)
             self#show_goals;
             self#clear_message
           in
-          let undo = pop_command cmd_stack (Coq.init_undo ()) last_command in
+          let undo = pop_command cmd_stack (0,0,NoBacktrack,0,undo_info()) last_command in
             apply_undos cmd_stack undo;
             sync update_input ()
         with
@@ -1939,6 +1944,7 @@ let main files =
 		      input_buffer#place_cursor input_buffer#start_iter;
 		      prerr_endline ("Loading: switch to view "^ string_of_int index);
 		      session_notebook#goto_page index;
+		      prerr_endline "Loading: highlight";
 		      input_buffer#set_modified false;
 		      prerr_endline "Loading: clear undo";
 		      session.script#clear_undo;

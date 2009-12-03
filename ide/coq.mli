@@ -29,32 +29,22 @@ type printing_state = {
 
 val printing_state : printing_state
 
-type reset_mark
+type reset_mark =
+  | ResetToId of Names.identifier
+  | ResetToState of Libnames.object_name
 
-type reset_info = {
-  state : reset_mark;
-  pending : identifier list;
-  pf_depth : int;
-  mutable segment : bool;
-}
+type reset_status =
+  | NoReset
+  | ResetAtSegmentStart of Names.identifier
+  | ResetAtRegisteredObject of reset_mark
 
-val compute_reset_info : unit -> reset_info
+type undo_info = identifier list
 
-type backtrack =
-  | BacktrackToNextActiveMark
-  | BacktrackToMark of reset_mark
-  | NoBacktrack
+val undo_info : unit -> undo_info
 
-type undo_cmds = {
-  n : int;
-  a : int;
-  b : backtrack;
-  p : int;
-  l : (identifier list * int);
-}
+type reset_info = reset_status * undo_info * bool ref
 
-val init_undo : unit -> undo_cmds
-
+val compute_reset_info : Vernacexpr.vernac_expr -> reset_info
 val reset_initial : unit -> unit
 val reset_to : reset_mark -> unit
 val reset_to_mod : identifier -> unit
@@ -64,6 +54,11 @@ val interp : bool -> string -> reset_info * (Util.loc * Vernacexpr.vernac_expr)
 val interp_last : Util.loc * Vernacexpr.vernac_expr -> unit
 val interp_and_replace : string ->
       (reset_info * (Util.loc * Vernacexpr.vernac_expr)) * string
+
+val is_vernac_tactic_command : Vernacexpr.vernac_expr -> bool
+val is_vernac_state_preserving_command : Vernacexpr.vernac_expr -> bool
+val is_vernac_goal_starting_command : Vernacexpr.vernac_expr -> bool
+val is_vernac_proof_ending_command : Vernacexpr.vernac_expr -> bool
 
 (* type hyp = (identifier * constr option * constr) * string *)
 

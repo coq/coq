@@ -107,3 +107,70 @@ let rec complete_forward w (it:GText.iter) =
 	    else Some (stop,stop,ne)
 	else complete_forward w stop
 
+
+let find_comment_end (start:GText.iter) =
+  let rec find_nested_comment (search_start:GText.iter) (search_end:GText.iter) (comment_end:GText.iter) =
+    match (search_start#forward_search ~limit:search_end "(*"),(comment_end#forward_search "*)") with
+      | None,_ -> comment_end
+      | Some _, None -> raise Not_found
+      | Some (_,next_search_start),Some (next_search_end,next_comment_end) ->
+          find_nested_comment next_search_start next_search_end next_comment_end
+  in
+    match start#forward_search "*)" with
+      | None -> raise Not_found
+      | Some (search_end,comment_end) -> find_nested_comment start search_end comment_end
+
+
+let rec find_string_end (start:GText.iter) =
+  let dblquote = int_of_char '"' in
+  let rec escaped_dblquote c =
+    (c#char = dblquote) && not (escaped_dblquote c#backward_char)
+  in
+    match start#forward_search "\"" with
+      | None -> raise Not_found
+      | Some (stop,next_start) ->
+          if escaped_dblquote stop#backward_char
+          then find_string_end next_start
+          else next_start
+
+
+let rec find_next_sentence (from:GText.iter) =
+  match (from#forward_search ".") with
+    | None -> raise Not_found
+    | Some (non_vernac_search_end,next_sentence) ->
+        match from#forward_search ~limit:non_vernac_search_end "(*",from#forward_search ~limit:non_vernac_search_end "\"" with
+          | None,None ->
+              if Glib.Unichar.isspace next_sentence#char || next_sentence#compare next_sentence#forward_char == 0
+              then next_sentence else find_next_sentence next_sentence
+          | None,Some (_,string_search_start) -> find_next_sentence (find_string_end string_search_start)
+          | Some (_,comment_search_start),None -> find_next_sentence (find_comment_end comment_search_start)
+          | Some (_,comment_search_start),Some (_,string_search_start) ->
+              find_next_sentence (
+                if comment_search_start#compare string_search_start < 0
+                then find_comment_end comment_search_start
+                else find_string_end string_search_start)
+
+
+let find_nearest_forward (cursor:GText.iter) targets =
+  let fold_targets acc target =
+    match cursor#forward_search target,acc with
+      | Some (t_start,_),Some nearest when (t_start#compare nearest < 0) -> Some t_start
+      | Some (t_start,_),None -> Some t_start
+      | _ -> acc
+  in
+    match List.fold_left fold_targets None targets with
+      | None -> raise Not_found
+      | Some nearest -> nearest
+
+
+let find_nearest_backward (cursor:GText.iter) targets =
+  let fold_targets acc target =
+    match cursor#backward_search target,acc with
+      | Some (t_start,_),Some nearest when (t_start#compare nearest > 0) -> Some t_start
+      | Some (t_start,_),None -> Some t_start
+      | _ -> acc
+  in
+    match List.fold_left fold_targets None targets with
+      | None -> raise Not_found
+      | Some nearest -> nearest
+

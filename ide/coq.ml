@@ -323,6 +323,9 @@ let rec attribute_of_vernac_command = function
   | VernacExtend ("Subtac_Obligations", _) -> [GoalStartingCommand]
   | VernacExtend _ -> []
 
+let is_vernac_goal_starting_command com =
+  List.mem GoalStartingCommand (attribute_of_vernac_command com)
+
 let is_vernac_navigation_command com =
   List.mem NavigationCommand (attribute_of_vernac_command com)
 
@@ -340,49 +343,74 @@ let is_vernac_goal_printing_command com =
   List.mem GoalStartingCommand attribute or
   List.mem SolveCommand attribute
 
-type reset_mark = Libnames.object_name
+let is_vernac_state_preserving_command com =
+  let attribute = attribute_of_vernac_command com in
+  List.mem OtherStatePreservingCommand attribute or
+  List.mem QueryCommand attribute
 
-type reset_info = {
-  state : reset_mark;
-  pending : identifier list;
-  pf_depth : int;
-  mutable segment : bool;
-}
+let is_vernac_tactic_command com =
+  List.mem SolveCommand (attribute_of_vernac_command com)
 
-let compute_reset_info () =
-  match Lib.has_top_frozen_state () with
-    | Some st ->
-        { state = st;
-          pending = Pfedit.get_all_proof_names ();
-          pf_depth = Pfedit.current_proof_depth ();
-          segment = true; }
-    | None ->
-        failwith "FATAL ERROR: NO RESET"
+let is_vernac_proof_ending_command com =
+  List.mem ProofEndingCommand (attribute_of_vernac_command com)
 
-type backtrack =
-  | BacktrackToNextActiveMark
-  | BacktrackToMark of reset_mark
-  | NoBacktrack
+type undo_info = identifier list
 
-type undo_cmds = {
-  n : int;
-  a : int;
-  b : backtrack;
-  p : int;
-  l : (identifier list * int);
-}
+let undo_info () = Pfedit.get_all_proof_names ()
 
-let init_undo u =
-  { n = 0; a = 0; b = NoBacktrack; p = 0;
-    l = (Pfedit.get_all_proof_names u,Pfedit.current_proof_depth u) }
+type reset_mark =
+  | ResetToId of Names.identifier     (* Relying on identifiers only *)
+  | ResetToState of Libnames.object_name (* Relying on states if any *)
+
+type reset_status =
+  | NoReset
+  | ResetAtSegmentStart of Names.identifier
+  | ResetAtRegisteredObject of reset_mark
+
+type reset_info = reset_status * undo_info * bool ref
+
+
+let reset_mark id = match Lib.has_top_frozen_state () with
+  | Some sp -> 
+      prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
+      ResetToState sp
+  | None -> ResetToId id
+
+let compute_reset_info = function 
+  | VernacBeginSection id 
+  | VernacDefineModule (_,id, _, _, _) 
+  | VernacDeclareModule (_,id, _, _)
+  | VernacDeclareModuleType (id, _, _, _) ->
+      ResetAtSegmentStart (snd id), undo_info(), ref true
+
+  | VernacDefinition (_, (_,id), DefineBody _, _)
+  | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
+  | VernacInductive (_,_, (((_,(_,id)),_,_,_,_),_) :: _) ->
+      ResetAtRegisteredObject (reset_mark id), undo_info(), ref true
+
+  | com when is_vernac_proof_ending_command com -> NoReset, undo_info(), ref true
+  | VernacEndSegment _ -> NoReset, undo_info(), ref true
+
+  | com when is_vernac_tactic_command com -> NoReset, undo_info(), ref true
+  | _ ->
+      (match Lib.has_top_frozen_state () with
+      | Some sp -> 
+	  prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
+	  ResetAtRegisteredObject (ResetToState sp)
+      | None -> NoReset), undo_info(), ref true
 
 let reset_initial () =
   prerr_endline "Reset initial called"; flush stderr;
   Vernacentries.abort_refine Lib.reset_initial ()
 
-let reset_to st =
-  prerr_endline ("Reset called with state "^(Libnames.string_of_path (fst st)));
-  Lib.reset_to_state st
+let reset_to = function
+  | ResetToId id ->
+      prerr_endline ("Reset called with "^(string_of_id id));
+      Lib.reset_name (Util.dummy_loc,id)
+  | ResetToState sp ->
+      prerr_endline
+        ("Reset called with state "^(Libnames.string_of_path (fst sp)));
+      Lib.reset_to_state sp
 
 let reset_to_mod id =
   prerr_endline ("Reset called to Mod/Sect with "^(string_of_id id));
@@ -414,7 +442,7 @@ let interp_with_options verbosely options s =
 	if not (is_vernac_goal_printing_command vernac) then
 	  (* Verbose if in small step forward and not a tactic *)
 	  Flags.make_silent (not verbosely);
-	let reset_info = compute_reset_info () in
+	let reset_info = compute_reset_info vernac in
 	List.iter (fun (set_option,_) -> raw_interp set_option) options;
 	raw_interp s;
 	Flags.make_silent true;
@@ -429,6 +457,41 @@ let interp_and_replace s =
   let result = interp false s in
   let msg = read_stdout () in
   result,msg
+
+type bktk_info = { start : GText.mark;
+                   stop : GText.mark;
+                   state_num : int;
+                   pending_proofs : string list;
+                   proof_stack_depth : int;
+}
+
+let record_interp cmd_stk start_of_sentence end_of_sentence (sn,pp,psd) =
+  Stack.push { start = start_of_sentence;
+               stop = end_of_sentence;
+               state_num = sn;
+               pending_proofs = pp;
+               proof_stack_depth = psd;
+  } cmd_stk
+
+let backtrack cmd_stack stop_cond =
+  if Stack.is_empty cmd_stack then
+    reset_initial () (* reset coq *)
+  else try
+    let current = Stack.top cmd_stack in
+    while not (stop_cond (Stack.top cmd_stack).stop) do
+      ignore (Stack.pop cmd_stack)
+    done;
+    let target = Stack.top cmd_stack in
+    if current != target then
+      let rst = target.state_num in
+      let undo = target.proof_stack_depth in
+      let abrt = List.fold_left
+                   (fun acc e -> if List.mem e target.pending_proofs then acc else succ acc)
+                   0 current.pending_proofs
+      in
+      raw_interp (Printf.sprintf "Backtrack %d %d %d.\n" rst undo abrt)
+      else ()
+  with Stack.Empty -> reset_initial () (* might as well reset coq ... *)
 
 type tried_tactic =
   | Interrupted
