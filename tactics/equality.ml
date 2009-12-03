@@ -176,11 +176,12 @@ let register_is_applied_rewrite_relation = (:=) is_applied_rewrite_relation
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. *)
 
-
-let find_elim hdcncl lft2rgt dep cls gl =
+let find_elim hdcncl lft2rgt dep cls args gl =
   let inccl = (cls = None) in
-  if hdcncl = constr_of_reference (Coqlib.glob_eq) & not dep then
-    (* use eq_rect, eq_rect_r, etc for compatibility *)
+  if (hdcncl = constr_of_reference (Coqlib.glob_eq) ||
+      hdcncl = constr_of_reference (Coqlib.glob_jmeq) &&
+      pf_conv_x gl (List.nth args 0) (List.nth args 2)) && not dep then
+    (* use eq_rect, eq_rect_r, JMeq_rect, etc for compatibility *)
     let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
     let hdcncls = string_of_inductive hdcncl ^ suffix in
     let rwr_thm = if lft2rgt = Some (cls=None) then hdcncls^"_r" else hdcncls in
@@ -213,7 +214,7 @@ let type_of_clause gl = function
 
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars gl hdcncl =
   let dep = occur_term c (type_of_clause gl cls) in
-  let elim = find_elim hdcncl lft2rgt dep cls gl in
+  let elim = find_elim hdcncl lft2rgt dep cls (snd (decompose_app t)) gl in
   general_elim_clause with_evars tac cls sigma c t l
     (match lft2rgt with None -> false | Some b -> b)
     {elimindex = None; elimbody = (elim,NoBindings)} gl
@@ -1089,7 +1090,7 @@ let swapEquandsInConcl gls =
 
 let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
   (* find substitution scheme *)
-  let eq_elim = find_elim lbeq.eq (Some false) false None gls in
+  let eq_elim = find_elim lbeq.eq (Some false) false None [e1;e2] gls in
   (* build substitution predicate *)
   let p = lambda_create (pf_env gls) (t,body) in
   (* apply substitution scheme *)
