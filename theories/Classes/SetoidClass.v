@@ -122,10 +122,10 @@ Ltac setoidify := repeat setoidify_tac.
 (** Every setoid relation gives rise to a morphism, in fact every partial setoid does. *)
 
 Program Instance setoid_morphism `(sa : Setoid A) : Proper (equiv ++> equiv ++> iff) equiv :=
-  proper.
+  proper_prf.
 
 Program Instance setoid_partial_app_morphism `(sa : Setoid A) (x : A) : Proper (equiv ++> iff) (equiv x) :=
-  proper.
+  proper_prf.
 
 (** Partial setoids don't require reflexivity so we can build a partial setoid on the function space. *)
 

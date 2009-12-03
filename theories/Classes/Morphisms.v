@@ -32,7 +32,7 @@ Generalizable All Variables.
    type for usual morphisms. *)
 
 Class Proper {A} (R : relation A) (m : A) : Prop :=
-  proper : R m m.
+  proper_prf : R m m.
 
 (** Respectful morphisms. *)
 
