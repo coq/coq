@@ -846,16 +846,19 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
   let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
 
   let funct f m = funct_entry arg_entries (f (Global.env ()) m) in
-  let mty_entry_o, mty_sub_l = match res with
+  let env = Global.env() in
+  let mty_entry_o, subs = match res with
     | Topconstr.Enforce mty -> Some (funct interp_modtype mty), []
-    | Topconstr.Check mtys -> None, List.map (funct interp_modtype) mtys
+    | Topconstr.Check mtys -> None, build_subtypes interp_modtype mmp arg_entries mtys
   in
+ 
+  (*let subs = List.map (Mod_typing.translate_module_type env mmp) mty_sub_l in  *)
   let mexpr_entry_o = Option.map (funct interp_modexpr) mexpr_o in
   let entry =
     {mod_entry_type = mty_entry_o;
      mod_entry_expr = mexpr_entry_o }
   in
-  let env = Global.env() in
+
   let substobjs =
     match entry with
       | {mod_entry_type = Some mte} -> get_modtype_substobjs env mmp mte
@@ -871,7 +874,7 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
 
   if mp_env <> mp then anomaly "Kernel and Library names do not match";
 
-  let subs = List.map (Mod_typing.translate_module_type env mp) mty_sub_l in
+  
   check_subtypes mp subs;
 
   let substobjs = (mbids,mp_env,

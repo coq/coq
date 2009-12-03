@@ -527,10 +527,13 @@ let mp_in_key mp key =
    
 let subset_prefixed_by mp resolver =
   let prefixmp key hint resolv =
-    if mp_in_key mp key then
-      Deltamap.add key hint resolv
-    else 
-      resolv
+    match hint with 
+      | Inline _ -> resolv
+      | _ ->
+	  if mp_in_key mp key then
+	    Deltamap.add key hint resolv
+	  else 
+	    resolv
   in
     Deltamap.fold prefixmp resolver empty_delta_resolver
 
