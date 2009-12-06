@@ -342,17 +342,30 @@ let hints_tac hints =
 	    (fun () -> (* if !typeclasses_debug then msgnl (str"backtracked after " ++ pp); *)
 	    aux (succ i) tl)
 	  in
-	  let gls' = list_map_i (fun j g -> 
+	  let sgls = evars_to_goals (fun evm ev evi ->
+	    if Typeclasses.is_resolvable evi && 
+	      (not info.only_classes || Typeclasses.is_class_evar evm evi) then
+	      Typeclasses.mark_unresolvable evi, true
+	    else evi, false) s
+	  in
+	  let nbgls, newgls, s' =
+	    let gls' = List.map (fun g -> (None, g)) gls in
+	    match sgls with
+	    | None -> List.length gls', gls', s
+	    | Some (evgls, s') ->
+		(List.length gls', gls' @ List.map (fun (ev, x) -> (Some ev, x)) evgls, s')
+	  in
+	  let gls' = list_map_i (fun j (evar, g) -> 
 	    let info = 
 	      { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp;
-		is_evar = None;
+		is_evar = evar;
 		hints = 
 		  if b && g.evar_hyps <> gl.evar_hyps 
 		  then make_autogoal_hints info.only_classes
-		    ~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s}
+		    ~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s'}
 		  else info.hints }
-	    in g, info) 1 gls in
-	  let glsv = {it = gls'; sigma = s}, (fun _ -> v) in
+	    in g, info) 1 newgls in
+	  let glsv = {it = gls'; sigma = s'}, (fun _ pfl -> v (list_firstn nbgls pfl)) in
 	    sk glsv fk
       | [] -> fk ()
     in aux 1 tacs }
@@ -378,7 +391,7 @@ let occur_evars evars c =
 let dependent only_classes evd oev concl =
   let concl_evars = Intset.union (evars_of_term concl)
     (Option.cata Intset.singleton Intset.empty oev)
-  in not (Intset.is_empty concl_evars)
+  in not (Intset.is_empty concl_evars) 
 
 let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk =
   let rec aux s (acc : (autogoal list * validation) list) fk = function
