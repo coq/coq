@@ -334,7 +334,7 @@ let unify_eqn env sigma hypinfo t =
     let env', prf, c1, c2, car, rel =
       match abs with
       | Some (absprf, absprfty) ->
-	  let env' = clenv_unify allowK ~flags:rewrite2_unif_flags CONV left t cl in
+	  let env' = clenv_unify allowK ~flags:rewrite_unif_flags CONV left t cl in
 	    env', prf, c1, c2, car, rel
       | None ->
 	  let env' =
@@ -1370,7 +1370,9 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
       clenv_pose_metas_as_evars cl' mvs
   in
   let nf c = Evarutil.nf_evar ( cl'.evd) (Clenv.clenv_nf_meta cl' c) in
-  let c1 = nf c1 and c2 = nf c2 and car = nf car and rel = nf rel in
+  let c1 = if l2r then nf c' else nf c1
+  and c2 = if l2r then nf c2 else nf c'
+  and car = nf car and rel = nf rel in
   check_evar_map_of_evars_defs cl'.evd;
   let prf = nf (Clenv.clenv_value cl') and prfty = nf (Clenv.clenv_type cl') in
   let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty } in

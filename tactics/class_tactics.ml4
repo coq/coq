@@ -65,14 +65,20 @@ let valid goals p res_sigma l =
       !res_sigma goals l
   in raise (Found evm)
 
+let evar_filter evi =
+  let hyps' = evar_filtered_context evi in
+    { evi with 
+      evar_hyps = Environ.val_of_named_context hyps';
+      evar_filter = List.map (fun _ -> true) hyps' }
+      
 let evars_to_goals p evm =
   let goals, evm' =
     Evd.fold
       (fun ev evi (gls, evm') ->
 	if evi.evar_body = Evar_empty then
 	  let evi', goal = p evm ev evi in
-	    if goal then 
-	      ((ev,evi) :: gls, Evd.add evm' ev evi')
+	    if goal then
+	      ((ev, evi') :: gls, Evd.add evm' ev evi')
 	    else (gls, Evd.add evm' ev evi')
 	else (gls, Evd.add evm' ev evi))
       evm ([], Evd.empty)
@@ -252,8 +258,11 @@ let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
 	[make_exact_entry pri; make_apply_entry env sigma flags pri]
     else []
 
+let pf_filtered_hyps gls = 
+  evar_filtered_context (sig_it gls)
+
 let make_autogoal_hints only_classes ?(st=full_transparent_state) g =
-  let sign = pf_hyps g in
+  let sign = pf_filtered_hyps g in
   let hintlist = list_map_append (pf_apply make_resolve_hyp g st (true,false,false) only_classes None) sign in
     Hint_db.add_list hintlist (Hint_db.empty st true)
   
@@ -549,20 +558,24 @@ let resolve_all_evars debug m env p oevd do_split fail =
   let split = if do_split then split_evars oevd else [Intset.empty] in
   let p = if do_split then
     fun comp evd ev evi -> 
-      (try let oevi = Evd.find oevd ev in
-	     if Typeclasses.is_resolvable oevi then
-	       Typeclasses.mark_unresolvable evi, (Intset.mem ev comp &&
-						      p evd ev evi)
-	     else evi, false
-	with Not_found ->
-	  Typeclasses.mark_unresolvable evi, p evd ev evi)
+      if evi.evar_body = Evar_empty then
+	(try let oevi = Evd.find oevd ev in
+	       if Typeclasses.is_resolvable oevi then
+		 Typeclasses.mark_unresolvable evi, (Intset.mem ev comp &&
+							p evd ev evi)
+	       else evi, false
+	  with Not_found ->
+	    Typeclasses.mark_unresolvable evi, p evd ev evi)
+      else evi, false
     else fun _ evd ev evi -> 
-      try let oevi = Evd.find oevd ev in
-	    if Typeclasses.is_resolvable oevi then
-	      Typeclasses.mark_unresolvable evi, p evd ev evi
-	    else evi, false
-      with Not_found ->
-	Typeclasses.mark_unresolvable evi, p evd ev evi
+      if evi.evar_body = Evar_empty then
+	try let oevi = Evd.find oevd ev in
+	      if Typeclasses.is_resolvable oevi then
+		Typeclasses.mark_unresolvable evi, p evd ev evi
+	      else evi, false
+	with Not_found ->
+	  Typeclasses.mark_unresolvable evi, p evd ev evi
+      else evi, false
   in
   let rec aux p evd =
     let evd' = resolve_all_evars_once debug m p evd in

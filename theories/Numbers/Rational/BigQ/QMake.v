@@ -1193,7 +1193,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  rewrite strong_spec_red.
  symmetry; apply (Qred_complete (x+(-y)%Qc)%Q).
  rewrite spec_sub_norm, ! strong_spec_of_Qc.
- unfold Qcopp, Q2Qc; rewrite Qred_correct; auto with qarith.
+ unfold Qcopp, Q2Qc, this. rewrite Qred_correct ; auto with qarith.
  Qed.
 
  Theorem spec_mulc x y:
@@ -1294,7 +1294,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  rewrite strong_spec_red.
  symmetry; apply (Qred_complete (x*(/y)%Qc)%Q).
  rewrite spec_div_norm, ! strong_spec_of_Qc.
- unfold Qcinv, Q2Qc; rewrite Qred_correct; auto with qarith.
+ unfold Qcinv, Q2Qc, this; rewrite Qred_correct; auto with qarith.
  Qed.
 
  Theorem spec_squarec x: [[square x]] =  [[x]]^2.

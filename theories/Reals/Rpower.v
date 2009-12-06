@@ -470,7 +470,7 @@ Proof.
   apply Rmult_eq_reg_l with (INR 2).
   apply exp_inv.
   fold Rpower in |- *.
-  cut ((x ^R (/ 2)) ^R INR 2 = sqrt x ^R INR 2).
+  cut ((x ^R (/ INR 2)) ^R INR 2 = sqrt x ^R INR 2).
   unfold Rpower in |- *; auto.
   rewrite Rpower_mult.
   rewrite Rinv_l.
