@@ -491,16 +491,6 @@ let push_fix_renv renv (_,v,_ as recdef) =
     rel_min = renv.rel_min+n;
     genv = iterate (fun ge -> Not_subterm::ge) n renv.genv }
 
-let rec noccur_subterm renv t =
-  let rec noccur renv t =
-    match kind_of_term t with
-      | Rel i ->
-	  if subterm_var i renv <> Not_subterm then failwith "caught"
-      | _ -> iter_constr_with_binders
-	  (fun re -> push_var_renv re (Anonymous,mkProp)) noccur renv t in
-  try noccur renv t; true
-  with Failure _ -> false
-
 
 (******************************)
 (* Computing the recursive subterms of a term (propagation of size
@@ -520,9 +510,6 @@ let rec noccur_subterm renv t =
 let lookup_subterms env ind =
   let (_,mip) = lookup_mind_specif env ind in
   mip.mind_recargs
-
-let is_recursive env ind =
-  Rtree.is_infinite (lookup_subterms env ind)
 
 (*********************************)
 
@@ -562,24 +549,17 @@ let case_branches_specif renv c_spec ind lbr =
 *)
 
 let rec subterm_specif renv t =
-  (* If none of the free vars of t are a subterm, then t is not a subterm,
-     and we avoid a potentially costly reduction. *) 
-  if noccur_subterm renv t then Not_subterm else
+  (* maybe reduction is not always necessary! *)
   let f,l = decompose_app (whd_betadeltaiota renv.env t) in
   match kind_of_term f with
     | Rel k -> subterm_var k renv
 
     | Case (ci,_,c,lbr) ->
-        if Array.length lbr = 0 then Dead_code
-        else
-	  let stl =
-	    if is_recursive renv.env ci.ci_ind then
-              let c_spec = subterm_specif renv c in
-              let lbr_spec = case_branches_specif renv c_spec ci.ci_ind lbr in
-              Array.map (fun (renv',br') -> subterm_specif renv' br')
-		lbr_spec
-	    else Array.map (subterm_specif renv) lbr in
-          subterm_spec_glb stl
+        let lbr_spec = case_subterm_specif renv ci c lbr in
+        let stl  =
+          Array.map (fun (renv',br') -> subterm_specif renv' br')
+            lbr_spec in
+        subterm_spec_glb stl
 
     | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
 (* when proving that the fixpoint f(x)=e is less than n, it is enough
@@ -627,7 +607,12 @@ let rec subterm_specif renv t =
     (* Other terms are not subterms *)
     | _ -> Not_subterm
 
-
+and case_subterm_specif renv ci c lbr =
+  if Array.length lbr = 0 then [||]
+  else
+    let c_spec = subterm_specif renv c in
+    case_branches_specif renv c_spec ci.ci_ind lbr
+ 
 (* Check term c can be applied to one of the mutual fixpoints. *)
 let check_is_subterm renv c =
   match subterm_specif renv c with
@@ -697,16 +682,12 @@ let check_one_fix renv recpos def =
             List.iter (check_rec_call renv) (c_0::p::l);
             (* compute the recarg information for the arguments of
                each branch *)
-	    if is_recursive renv.env ci.ci_ind then
-              let c_spec = subterm_specif renv c_0 in
-              let lbr = case_branches_specif renv c_spec ci.ci_ind lrest in
-              Array.iter (fun (renv',br') -> check_rec_call renv' br') lbr
-	    else
-	      Array.iter (check_rec_call renv) lrest
+            let lbr = case_subterm_specif renv ci c_0 lrest in
+            Array.iter (fun (renv',br') -> check_rec_call renv' br') lbr
 
         (* Enables to traverse Fixpoint definitions in a more intelligent
            way, ie, the rule :
-           if - g = Fix g/p := [y1:T1]...[yp:Tp]e &
+           if - g = fix g (y1:T1)...(yp:Tp) {struct yp} := e &
               - f is guarded with respect to the set of pattern variables S
                 in a1 ... am        &
               - f is guarded with respect to the set of pattern variables S
