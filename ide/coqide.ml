@@ -3113,31 +3113,6 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 							   !current.show_toolbar <- not !current.show_toolbar;
 							   !show_toolbar !current.show_toolbar)
 					  in
-					  let _ = configuration_factory#add_item
-					    "Detach _Script Window"
-					    ~callback:
-					    (do_if_not_computing "detach script window" (sync
-											   (fun () ->
-											      let nb = session_notebook in
-												if nb#misc#toplevel#get_oid=w#coerce#get_oid then
-												  begin
-												    let nw = GWindow.window
-												      ~width:(!current.window_width*2/3)
-												      ~height:(!current.window_height*2/3)
-												      ~position:`CENTER
-												      ~wm_name:"CoqIde"
-												      ~wm_class:"CoqIde"
-												      ~title:"Script"
-												      ~show:true () in
-												    let parent = Option.get nb#misc#parent in
-												      ignore (nw#connect#destroy
-														~callback:
-														(fun () -> nb#misc#reparent parent));
-												      nw#add_accel_group accel_group;
-												      nb#misc#reparent nw#coerce
-												  end
-											   )))
-					  in
 					  let _ =
 					    configuration_factory#add_item
 					      "Detach _View"
