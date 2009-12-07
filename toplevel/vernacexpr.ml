@@ -270,7 +270,7 @@ type vernac_expr =
       module_binder list * module_type_ast module_signature * module_ast list
   | VernacDeclareModuleType of lident *
       module_binder list * module_type_ast list * module_type_ast list
-  | VernacInclude of bool * include_ast
+  | VernacInclude of include_ast
 
   (* Solving *)
 

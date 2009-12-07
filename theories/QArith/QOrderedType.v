@@ -20,8 +20,8 @@ Module Q_as_DT <: DecidableTypeFull.
  Definition eqb := Qeq_bool.
  Definition eqb_eq := Qeq_bool_iff.
 
- Include Self Backport_ET_fun. (** eq_refl, eq_sym, eq_trans *)
- Include Self Bool2Dec_fun. (** eq_dec *)
+ Include Backport_ET_fun. (** eq_refl, eq_sym, eq_trans *)
+ Include Bool2Dec_fun. (** eq_dec *)
 
 End Q_as_DT.
 

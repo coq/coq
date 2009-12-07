@@ -1024,8 +1024,8 @@ type module_type_ast =
   | CMTEwith of module_type_ast * with_declaration_ast
 
 type include_ast =
-  | CIMTE of module_type_ast * module_type_ast list
-  | CIME of module_ast * module_ast list
+  | CIMTE of module_type_ast list
+  | CIME of module_ast list
 
 type 'a module_signature =
   | Enforce of 'a (* ... : T *)

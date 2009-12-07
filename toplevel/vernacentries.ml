@@ -550,13 +550,13 @@ let vernac_end_modtype (loc,id) =
   Dumpglob.dump_modref loc mp "modtype";
   if_verbose message ("Module Type "^ string_of_id id ^" is defined")
 
-let vernac_include is_self = function
-  | CIMTE (mty,mtys) ->
+let vernac_include = function
+  | CIMTE mtys ->
       Declaremods.declare_include
-	Modintern.interp_modtype mty mtys false is_self
-  | CIME (mexpr, mexprs) ->
+	Modintern.interp_modtype mtys false
+  | CIME mexprs ->
       Declaremods.declare_include
-	Modintern.interp_modexpr mexpr mexprs true is_self
+	Modintern.interp_modexpr mexprs true
 
 (**********************)
 (* Gallina extensions *)
@@ -1328,8 +1328,8 @@ let interp c = match c with
       vernac_define_module export lid bl mtys mexprl
   | VernacDeclareModuleType (lid,bl,mtys,mtyo) ->
       vernac_declare_module_type lid bl mtys mtyo
-  | VernacInclude (is_self,in_asts) ->
-      vernac_include is_self in_asts
+  | VernacInclude in_asts ->
+      vernac_include in_asts
   (* Gallina extensions *)
   | VernacBeginSection lid -> vernac_begin_section lid
 

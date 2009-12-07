@@ -428,6 +428,22 @@ let rec get_objs_modtype_application env = function
     Modops.error_application_to_not_path mexpr
 | _ -> error "Application of a non-functor."
 
+let rec compute_subst env mbids sign mp_l =
+  match mbids,mp_l with
+    | _,[] -> mbids,empty_subst
+    | [],r -> error "Application of a functor with too few arguments."
+    | mbid::mbids,mp::mp_l ->
+	let farg_id, farg_b, fbody_b = Modops.destr_functor env sign in
+	let mb = Environ.lookup_module mp env in
+	let mbid_left,subst = compute_subst env mbids fbody_b mp_l in
+	match discr_resolver mb with
+	  | None ->
+	      mbid_left,join (map_mbid mbid mp empty_delta_resolver) subst
+	  | Some mp_delta ->
+	      let mp_delta = Modops.complete_inline_delta_resolver env mp
+		farg_id farg_b mp_delta in
+	      mbid_left,join (map_mbid mbid mp mp_delta) subst
+
 let rec get_modtype_substobjs env mp_from= function
     MSEident ln -> 
       MPmap.find ln !modtypetab 
@@ -439,28 +455,13 @@ let rec get_modtype_substobjs env mp_from= function
       let substobjs = get_modtype_substobjs env mp_from mty in
       let modobjs = MPmap.find mp1 !modtab_substobjs in
 	replace_module_object idl substobjs modobjs mp1
-  | MSEapply (fexpr, MSEident mp) ->
-      let (mbids, mp1, objs),mtb_mp1,mp_l =  
-	get_objs_modtype_application env (MSEapply(fexpr, MSEident mp)) in
-      let rec compute_subst mbids sign mp_l =
-	match mbids,mp_l with
-	    [],[] -> [],empty_subst
-	  | mbid,[] -> mbid,empty_subst
-	  | [],r -> error ("Application of a functor with too few arguments.")
-	  | mbid::mbids,mp::mp_l ->
-	      let farg_id, farg_b, fbody_b = Modops.destr_functor env sign in
-	      let mb = Environ.lookup_module mp env in
-	      let mp_delta = discr_resolver mb in
-	      let mbid_left,subst=compute_subst mbids fbody_b mp_l in
-		if mp_delta = None then
-		  mbid_left,join (map_mbid mbid mp empty_delta_resolver) subst 
-		else
-		  let mp_delta = Modops.complete_inline_delta_resolver env mp 
-		    farg_id farg_b (Option.get mp_delta) in
-		    mbid_left,join (map_mbid mbid mp mp_delta) subst
+  | MSEapply (fexpr, MSEident mp) as me ->
+      let (mbids, mp1, objs),mtb_mp1,mp_l =
+	get_objs_modtype_application env me in
+      let mbids_left,subst =
+	compute_subst env mbids mtb_mp1.typ_expr (List.rev mp_l)
       in
-      let mbids_left,subst = compute_subst mbids mtb_mp1.typ_expr (List.rev mp_l) in
-	(mbids_left, mp1,subst_objects subst objs)
+      (mbids_left, mp1,subst_objects subst objs)
   | MSEapply (_,mexpr) ->
       Modops.error_application_to_not_path mexpr
 
@@ -724,46 +725,14 @@ let rec get_module_substobjs env mp_from = function
   | MSEfunctor (mbid,mty,mexpr) ->
        let (mbids, mp, objs) = get_module_substobjs env mp_from mexpr in
 	(mbid::mbids, mp, objs)
-  | MSEapply (fexpr, MSEident mp) ->
-      let (mbids, mp1, objs),mb_mp1,mp_l =  
-	get_objs_module_application env (MSEapply(fexpr, MSEident mp)) in
-      let rec compute_subst mbids sign mp_l =
-	match mbids,mp_l with
-	    [],[] -> [],empty_subst
-	  | mbid,[] -> mbid,empty_subst
-	  | [],r -> error ("Application of a functor with too few arguments.")
-	  | mbid::mbids,mp::mp_l ->
-	      let farg_id, farg_b, fbody_b = Modops.destr_functor env sign in
-	      let mb = Environ.lookup_module mp env in
-	      let mp_delta = discr_resolver mb in
-	      let mbid_left,subst=compute_subst mbids fbody_b mp_l in
-		if mp_delta = None then
-		  mbid_left,join (map_mbid mbid mp empty_delta_resolver) subst 
-		else
-		  let mp_delta = Modops.complete_inline_delta_resolver env mp 
-		    farg_id farg_b (Option.get mp_delta) in
-		    mbid_left,join (map_mbid mbid mp mp_delta) subst
+  | MSEapply (fexpr, MSEident mp) as me ->
+      let (mbids, mp1, objs),mb_mp1,mp_l =
+	get_objs_module_application env me
       in
-      let mbids_left,subst = compute_subst mbids mb_mp1.mod_type (List.rev mp_l) in
-	(mbids_left, mp1,subst_objects subst objs)
-    (*  let sign,alg,equiv,_ = Mod_typing.translate_struct_module_entry env mp_from fexpr in
-      let farg_id, farg_b, fbody_b = Modops.destr_functor env sign in
-      let mb = Environ.lookup_module mp env in
-      let mp_delta = discr_resolver mb in
-      let (mbids, mp1, objs) = get_module_substobjs env mp_from fexpr in
-	(match mbids with
-	   | mbid::mbids ->
-	       if mp_delta = None then
-		 (mbids, mp1,subst_objects (map_mbid mbid mp empty_delta_resolver) objs)
-	       else
-		 let mp_delta = Modops.complete_inline_delta_resolver env mp 
-		   farg_id farg_b (Option.get mp_delta) in
-		    (mbids, mp1,subst_objects (map_mbid mbid mp mp_delta) objs)
-	   | [] -> match fexpr with
-	       | MSEident _  -> error "Application of a non-functor."
-	       | _ -> error "Application of a functor with too few arguments.")*)
-  | MSEapply (_,mexpr) ->
-      Modops.error_application_to_not_path mexpr
+      let mbids_left,subst =
+	compute_subst env mbids mb_mp1.mod_type (List.rev mp_l) in
+      (mbids_left, mp1,subst_objects subst objs)
+  | MSEapply (_,mexpr) -> Modops.error_application_to_not_path mexpr
   | MSEwith (mty, With_Definition _) -> get_module_substobjs env mp_from mty
   | MSEwith (mty, With_Module (idl,mp)) -> assert false
 
@@ -885,85 +854,79 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
   mmp
 
 
-let declare_one_include interp_struct me_ast is_mod is_self =
+let rec include_subst env mb mbids sign =
+  match mbids with
+    | [] -> empty_subst
+    | mbid::mbids ->
+	let farg_id, farg_b, fbody_b = Modops.destr_functor env sign in
+	let subst = include_subst env mb mbids fbody_b in
+	let mp_delta =
+	  Modops.complete_inline_delta_resolver env mb.mod_mp
+	    farg_id farg_b mb.mod_delta in
+	join (map_mbid mbid mb.mod_mp mp_delta) subst
+
+exception NothingToDo
+
+let get_includeself_substobjs env objs me is_mod =
+  try
+    let mb_mp = match me with
+      | MSEident mp ->
+	  if is_mod then
+	    Environ.lookup_module mp env
+	  else
+	    Modops.module_body_of_type mp (Environ.lookup_modtype mp env)
+      | MSEapply(fexpr, MSEident p) as mexpr ->
+	  let _,mb_mp,mp_l =
+	    if is_mod then
+	      get_objs_module_application env mexpr
+	    else
+	      let o,mtb_mp,mp_l = get_objs_modtype_application env mexpr in
+	      o,Modops.module_body_of_type mtb_mp.typ_mp mtb_mp,mp_l
+	  in
+	  List.fold_left
+	    (fun mb _ ->
+	       match mb.mod_type with
+		 |  SEBfunctor(_,_,str) -> {mb with mod_type = str}
+		 | _ -> error "Application of a functor with too much arguments.")
+	    mb_mp mp_l
+      | _ -> raise NothingToDo
+    in
+    let (mbids,mp_self,objects) = objs in
+    let mb = Global.pack_module() in
+    let subst = include_subst env mb mbids mb_mp.mod_type in
+    ([],mp_self,subst_objects subst objects)
+  with NothingToDo -> objs
+
+let id_of_mp = function
+  | MPfile dir -> List.hd (repr_dirpath dir)
+  | MPbound mbid -> id_of_mbid mbid
+  | MPdot (_,l) -> id_of_label l
+
+let declare_one_include interp_struct me_ast is_mod =
   let env = Global.env() in
   let me = interp_struct env me_ast in
   let mp1,_ = current_prefix () in
-  let compute_objs objs = function
-    | MSEident mp ->
-	let mb_mp = if is_mod then
-	  Environ.lookup_module mp env else
-	    Modops.module_body_of_type mp (Environ.lookup_modtype mp env) in
-	(match objs with
-	   |([],_,_) -> objs
-	   |(mbids,mp_self,objects) ->
-	      let mb = Global.pack_module() in
-	      let rec compute_subst mbids sign  =
-		match mbids with
-		    [] -> empty_subst
-		  | mbid::mbids ->
-		      let farg_id, farg_b, fbody_b =
-			Modops.destr_functor env sign in
-		      let subst=compute_subst mbids fbody_b in
-		      let mp_delta =
-			Modops.complete_inline_delta_resolver env mb.mod_mp
-			  farg_id farg_b mb.mod_delta in
-		      join (map_mbid mbid mb.mod_mp mp_delta) subst
-	      in
-	      let subst = compute_subst mbids mb_mp.mod_type in
-	      ([],mp_self,subst_objects subst objects))
-    | MSEapply(fexpr, MSEident p) as mexpr ->
-	let _,mb_mp,mp_l = if is_mod then
-	  get_objs_module_application env mexpr
-	else 
-	  let o,mtb_mp,mp_l = get_objs_modtype_application env mexpr in
-	    o,Modops.module_body_of_type mtb_mp.typ_mp mtb_mp,mp_l in
-	let mb_mp =
-	  List.fold_left (fun mb _ -> 
-			    match mb.mod_type with 
-			      |  SEBfunctor(_,_,str) -> {mb with  mod_type = str}
-			      | _ -> error ("Application of a functor with too much arguments."))
-	    mb_mp mp_l in
-	  (match objs with
-	     |([],_,_) -> objs
-	     |(mbids,mp_self,objects) ->
-		let mb = Global.pack_module() in
-		let rec compute_subst mbids sign  =
-		  match mbids with
-		      [] -> empty_subst
-		    | mbid::mbids ->
-			let farg_id, farg_b, fbody_b =
-			  Modops.destr_functor env sign in
-		      let subst=compute_subst mbids fbody_b in
-		      let mp_delta =
-			Modops.complete_inline_delta_resolver env mb.mod_mp
-			  farg_id farg_b mb.mod_delta in
-			join (map_mbid mbid mb.mod_mp mp_delta) subst
-		in
-		let subst = compute_subst mbids mb_mp.mod_type in
-		  ([],mp_self,subst_objects subst objects))
-    | _ -> objs
-  in
-
-      let (mbids,mp,objs)=
-	if is_mod then
-	  get_module_substobjs env mp1 me
-	else
-	  get_modtype_substobjs env mp1 me in
-      let (mbids,mp,objs) = if is_self
-      then compute_objs (mbids,mp,objs) me else (mbids,mp,objs) in
-      let id = current_mod_id() in
-      let resolver =  Global.add_include me is_mod in
-      let substobjs = (mbids,mp1,
-		       subst_objects (map_mp mp mp1 resolver) objs) in
-	ignore (add_leaf id
-		  (in_include ((me,is_mod), substobjs)))
+  let (mbids,mp,objs)=
+    if is_mod then
+      get_module_substobjs env mp1 me
+    else
+      get_modtype_substobjs env mp1 me in
+  let (mbids,mp,objs) =
+    if mbids <> [] then
+      get_includeself_substobjs env (mbids,mp,objs) me is_mod
+    else
+      (mbids,mp,objs) in
+  let id = current_mod_id() in
+  let resolver =  Global.add_include me is_mod in
+  let substobjs = (mbids,mp1,
+		   subst_objects (map_mp mp mp1 resolver) objs) in
+  ignore (add_leaf id
+	    (in_include ((me,is_mod), substobjs)))
 
 
-let declare_include_ interp_struct me_ast me_asts is_mod is_self =
-  declare_one_include interp_struct me_ast is_mod is_self;
+let declare_include_ interp_struct me_asts is_mod =
   List.iter
-    (fun me -> declare_one_include interp_struct me is_mod true)
+    (fun me -> declare_one_include interp_struct me is_mod)
     me_asts
 
 (** Versions of earlier functions taking care of the freeze/unfreeze
@@ -976,17 +939,17 @@ let protect_summaries f =
     (* Something wrong: undo the whole process *)
     Summary.unfreeze_summaries fs; raise e
 
-let declare_include interp_struct me_ast me_asts is_mod is_self =
+let declare_include interp_struct me_asts is_mod =
   protect_summaries
-    (fun _ -> declare_include_ interp_struct me_ast me_asts is_mod is_self)
+    (fun _ -> declare_include_ interp_struct me_asts is_mod)
 
 let declare_modtype interp_mt id args mtys mty_l =
   let declare_mt fs = match mty_l with
     | [] -> assert false
     | [mty] -> declare_modtype_ interp_mt id args mtys mty fs
-    | mty :: mty_l ->
+    | mty_l ->
 	ignore (start_modtype_ interp_mt id args mtys fs);
-	declare_include_ interp_mt mty mty_l false false;
+	declare_include_ interp_mt mty_l false;
 	end_modtype ()
   in
   protect_summaries declare_mt
@@ -998,9 +961,9 @@ let declare_module interp_mt interp_me id args mtys me_l =
   let declare_me fs = match me_l with
     | [] -> declare_module_ interp_mt interp_me id args mtys None fs
     | [me] -> declare_module_ interp_mt interp_me id args mtys (Some me) fs
-    | me :: me_l ->
+    | me_l ->
 	ignore (start_module_ interp_mt None id args mtys fs);
-	declare_include_ interp_me me me_l true false;
+	declare_include_ interp_me me_l true;
 	end_module ()
   in
   protect_summaries declare_me

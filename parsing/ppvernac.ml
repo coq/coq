@@ -762,14 +762,14 @@ let rec pr_vernac = function
 		 prlist_strict (fun m -> str " <: " ++ pr_mt m) tyl ++
 		 (if m = [] then mt () else str ":= ") ++
 		 prlist_with_sep (fun () -> str " <+ ") pr_mt m)
-  | VernacInclude (b,CIMTE(mty,mtys)) ->
+  | VernacInclude (CIMTE(mtys)) ->
       let pr_mty = pr_module_type pr_lconstr in
-      hov 2 (str"Include " ++ str (if b then "Self " else "") ++ str "Type " ++
-	     prlist_with_sep (fun () -> str " <+ ") pr_mty (mty::mtys))
-  | VernacInclude (b,CIME(mexpr,mexprs)) ->
+      hov 2 (str"Include Type " ++
+	     prlist_with_sep (fun () -> str " <+ ") pr_mty mtys)
+  | VernacInclude (CIME(mexprs)) ->
       let pr_me = pr_module_expr in
-      hov 2 (str"Include " ++ str (if b then "Self " else "") ++
-	     prlist_with_sep (fun () -> str " <+ ") pr_me (mexpr::mexprs))
+      hov 2 (str"Include " ++
+	     prlist_with_sep (fun () -> str " <+ ") pr_me mexprs)
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
       (if i = 1 then mt() else int i ++ str ": ") ++

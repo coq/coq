@@ -99,16 +99,16 @@ Module UpdateEq (E:BareEquality)(F:IsEqOrig E) <: IsEq E.
 End UpdateEq.
 
 Module Backport_ET (E:EqualityType) <: EqualityTypeBoth
- := E <+ BackportEq E E.
+ := E <+ BackportEq.
 
 Module Update_ET (E:EqualityTypeOrig) <: EqualityTypeBoth
- := E <+ UpdateEq E E.
+ := E <+ UpdateEq.
 
 Module Backport_DT (E:DecidableType) <: DecidableTypeBoth
- := E <+ BackportEq E E.
+ := E <+ BackportEq.
 
 Module Update_DT (E:DecidableTypeOrig) <: DecidableTypeBoth
- := E <+ UpdateEq E E.
+ := E <+ UpdateEq.
 
 
 (** * Having [eq_dec] is equivalent to having [eqb] and its spec. *)
@@ -134,10 +134,10 @@ Module HasEqBool2Dec (E:BareEquality)(F:HasEqBool E) <: HasEqDec E.
 End HasEqBool2Dec.
 
 Module Dec2Bool (E:DecidableType) <: BooleanDecidableType
- := E <+ HasEqDec2Bool E E.
+ := E <+ HasEqDec2Bool.
 
 Module Bool2Dec (E:BooleanEqualityType) <: BooleanDecidableType
- := E <+ HasEqBool2Dec E E.
+ := E <+ HasEqBool2Dec.
 
 
 
