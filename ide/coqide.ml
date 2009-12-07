@@ -3436,6 +3436,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 								    activate_input index;
 								end;
                                   initial_about session_notebook#current_term.proof_view#buffer;
+                                  !show_toolbar !current.show_toolbar;
                                   session_notebook#current_term.script#misc#grab_focus ()
 
 ;;
