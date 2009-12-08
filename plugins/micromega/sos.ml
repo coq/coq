@@ -473,14 +473,14 @@ let decimal =
     >> (fun s -> Num.num_of_string(implode s) // pow10 (length s)) in
   let decimalsig =
     decimalint ++ possibly (a "." ++ decimalfrac >> snd)
-    >> (function (h,[]) -> h | (h,[x]) -> h +/ x) in
+    >> (function (h,[x]) -> h +/ x | (h,_) -> h) in
   let signed prs =
        a "-" ++ prs >> ((o) minus_num snd)
     || a "+" ++ prs >> snd
     || prs in
   let exponent = (a "e" || a "E") ++ signed decimalint >> snd in
     signed decimalsig ++ possibly exponent
-    >> (function (h,[]) -> h | (h,[x]) -> h */ power_num (Int 10) x);;
+    >> (function (h,[x]) -> h */ power_num (Int 10) x | (h,_) -> h);;
 
 let mkparser p s =
   let x,rst = p(explode s) in
@@ -496,7 +496,6 @@ let parse_sdpaoutput,parse_csdpoutput =
   let vector =
     token "{" ++ listof decimal (token ",") "decimal" ++ token "}"
                >> (fun ((_,v),_) -> vector_of_list v) in
-  let parse_vector = mkparser vector in
   let rec skipupto dscr prs inp =
       (dscr ++ prs >> snd
     || some (fun c -> true) ++ skipupto dscr prs >> snd) inp in
@@ -520,7 +519,7 @@ let sdpa_run_succeeded =
   let prs = skipupto (word "phase.value" ++ token "=")
                      (possibly (a "p") ++ possibly (a "d") ++
                       (word "OPT" || word "FEAS")) in
-  fun s -> try prs (explode s); true with Noparse -> false;;
+  fun s -> try ignore (prs (explode s)); true with Noparse -> false;;
 
 (* ------------------------------------------------------------------------- *)
 (* The default parameters. Unfortunately this goes to a fixed file.          *)
@@ -593,9 +592,9 @@ let run_sdpa dbg obj mats =
   and params_file = Filename.concat (!temp_path) "param.sdpa" in
   file_of_string input_file (sdpa_of_problem "" obj mats);
   file_of_string params_file sdpa_params;
-  Sys.command("cd "^ !temp_path ^
+  ignore (Sys.command("cd "^ !temp_path ^
               "; sdpa "^input_file ^ " " ^ output_file ^
-              (if dbg then "" else "> /dev/null"));
+              (if dbg then "" else "> /dev/null")));
   let op = string_of_file output_file in
   if not(sdpa_run_succeeded op) then failwith "sdpa: call failed" else
   let res = parse_sdpaoutput op in
@@ -719,7 +718,9 @@ let in_convex_hull pts pt =
 (* ------------------------------------------------------------------------- *)
 
 let minimal_convex_hull =
-  let augment1 (m::ms) = if in_convex_hull ms m then ms else ms@[m] in
+  let augment1 = function
+    | [] -> assert false
+    | (m::ms) -> if in_convex_hull ms m then ms else ms@[m] in
   let augment m ms = funpow 3 augment1 (m::ms) in
   fun mons ->
     let mons' = itlist augment (tl mons) [hd mons] in
@@ -1022,7 +1023,6 @@ let blocks blocksizes bm =
         let m = foldl
           (fun a (b,i,j) c -> if b = b0 then ((i,j) |-> c) a else a)
           undefined bm in
-        let d = foldl (fun a (i,j) c -> max a (max i j)) 0 m in
         (((bs,bs),m):matrix))
       (zip blocksizes (1--length blocksizes));;
 
@@ -1452,8 +1452,8 @@ let run_sdpa dbg obj mats =
   and params_file = Filename.concat (!temp_path) "param.sdpa" in
   file_of_string input_file (sdpa_of_problem "" obj mats);
   file_of_string params_file sdpa_params;
-  Sys.command("cd "^(!temp_path)^"; sdpa "^input_file ^ " " ^ output_file ^
-              (if dbg then "" else "> /dev/null"));
+  ignore (Sys.command("cd "^(!temp_path)^"; sdpa "^input_file ^ " " ^
+              output_file ^(if dbg then "" else "> /dev/null")));
   let op = string_of_file output_file in
   if not(sdpa_run_succeeded op) then failwith "sdpa: call failed" else
   let res = parse_sdpaoutput op in
@@ -1502,11 +1502,6 @@ let sumofsquares_general_symmetry tool pol =
      (fun vars' ->
         is_undefined(poly_sub pol (changevariables (zip vars vars') pol)))
      (allpermutations vars) in
-    let lpps2 = allpairs monomial_mul lpps lpps in
-    let lpp2_classes =
-       setify(map (fun m ->
-         setify(map (fun vars' -> changevariables_monomial (zip vars vars') m)
-                   invariants)) lpps2) in
     let lpns = zip lpps (1--length lpps) in
     let lppcs =
       filter (fun (m,(n1,n2)) -> n1 <= n2)
