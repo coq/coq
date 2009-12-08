@@ -897,11 +897,6 @@ let get_includeself_substobjs env objs me is_mod =
     ([],mp_self,subst_objects subst objects)
   with NothingToDo -> objs
 
-let id_of_mp = function
-  | MPfile dir -> List.hd (repr_dirpath dir)
-  | MPbound mbid -> id_of_mbid mbid
-  | MPdot (_,l) -> id_of_label l
-
 let declare_one_include interp_struct me_ast is_mod =
   let env = Global.env() in
   let me = interp_struct env me_ast in
