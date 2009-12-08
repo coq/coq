@@ -124,18 +124,18 @@ let theoriesv =
   let vo = string_list_of_file "theories/theories.itarget" in
   List.map (fun s -> "theories/"^(Filename.chop_suffix s "o")) vo
 
-let contribv =
+let pluginsv =
   let vo = string_list_of_file "plugins/pluginsvo.itarget" in
   List.map (fun s -> "plugins/"^(Filename.chop_suffix s "o")) vo
 
-let contribmllib =
+let pluginsmllib =
   let cma = string_list_of_file "plugins/pluginsbyte.itarget" in
   List.map (fun s -> "plugins/"^(Filename.chop_suffix s ".cma")^".mllib") cma
 
 (** for correct execution of coqdep_boot, source files should have
     been imported in _build (and NMake.v should have been created). *)
 
-let coqdepdeps = theoriesv @ contribv @ contribmllib
+let coqdepdeps = theoriesv @ pluginsv @ pluginsmllib
 
 let coqtop = "toplevel/coqtop"
 let coqide = "ide/coqide"
@@ -209,9 +209,11 @@ let incl f = Ocaml_utils.ocaml_include_flags f
 let cmd cl = (fun _ _ -> (Cmd (S cl)))
 
 let initial_actions () = begin
-  make_bin_links all_binaries;
-  (** We "pre-create" a few subdirs in _build to please coqtop *)
+  (** We "pre-create" a few subdirs in _build *)
   Shell.mkdir_p (!_build^"/dev");
+  Shell.mkdir_p (!_build^"/bin");
+  Shell.mkdir_p (!_build^"/plugins/micromega");
+  make_bin_links all_binaries;
 end
 
 let extra_rules () = begin

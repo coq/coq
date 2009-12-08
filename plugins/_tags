@@ -3,8 +3,6 @@
 "cc/g_congruence.ml4": use_grammar
 "setoid_ring/newring.ml4": use_grammar
 "dp/g_dp.ml4": use_grammar
-"interface/centaur.ml4": use_grammar
-"interface/debug_tac.ml4": use_grammar
 "quote/g_quote.ml4": use_grammar
 "subtac/equations.ml4": use_grammar, use_extend
 "subtac/g_eterm.ml4": use_grammar
@@ -23,12 +21,10 @@
 "groebner/ideal.ml4": use_refutpat
 "groebner/groebner.ml4": use_grammar
 
-
 "cc": include
 "extraction": include
 "firstorder": include
 "funind": include
-"interface": include
 "micromega": include
 "quote": include
 "romega": include

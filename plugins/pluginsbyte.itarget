@@ -3,8 +3,6 @@ setoid_ring/newring_plugin.cma
 extraction/extraction_plugin.cma
 firstorder/ground_plugin.cma
 rtauto/rtauto_plugin.cma
-interface/coqinterface_plugin.cma
-interface/coqparser_plugin.cma
 fourier/fourier_plugin.cma
 romega/romega_plugin.cma
 omega/omega_plugin.cma

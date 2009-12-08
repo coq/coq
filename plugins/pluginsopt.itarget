@@ -3,8 +3,6 @@ setoid_ring/newring_plugin.cmxa
 extraction/extraction_plugin.cmxa
 firstorder/ground_plugin.cmxa
 rtauto/rtauto_plugin.cmxa
-interface/coqinterface_plugin.cmxa
-interface/coqparser_plugin.cmxa
 fourier/fourier_plugin.cmxa
 romega/romega_plugin.cmxa
 omega/omega_plugin.cmxa

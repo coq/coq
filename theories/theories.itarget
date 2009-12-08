@@ -42,6 +42,7 @@ Classes/SetoidAxioms.vo
 Classes/SetoidClass.vo
 Classes/SetoidDec.vo
 Classes/SetoidTactics.vo
+Classes/RelationPairs.vo
 
 FSets/FMapAVL.vo
 FSets/FMapFacts.vo
@@ -89,6 +90,7 @@ Structures/DecidableType2.vo
 Structures/DecidableType2Ex.vo
 Structures/DecidableType2Facts.vo
 Structures/OrderTac.vo
+Structures/GenericMinMax.vo
 
 Init/Datatypes.vo
 Init/Logic_Type.vo

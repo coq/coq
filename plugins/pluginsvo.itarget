@@ -8,8 +8,6 @@ fourier/Fourier.vo
 funind/Recdef.vo
 groebner/GroebnerR.vo
 groebner/GroebnerZ.vo
-interface/CoqInterface.vo
-#interface/CoqParser.vo  (should not be compiled)
 micromega/CheckerMaker.vo
 micromega/EnvRing.vo
 micromega/Env.vo

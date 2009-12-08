@@ -9,11 +9,15 @@
 <tools/coq_makefile.{native,byte}> : use_str
 <tools/coqdoc/main.{native,byte}> : use_str
 <checker/main.{native,byte}> : use_str, use_unix, use_gramlib
-<plugins/micromega/csdpcert.{native,byte}> : use_nums
+<plugins/micromega/csdpcert.{native,byte}> : use_nums, use_unix
 
 ## tags for ide
 
 <ide/**/*.{ml,mli}>: thread, ide
+
+## tags for grammar.cm*
+
+<parsing/grammar.{cma,cmxa}> : use_unix
 
 ## tags for camlp4 files 
 
