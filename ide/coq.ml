@@ -520,8 +520,6 @@ let print_toplevel_error exc =
   in
   match exc with
     | End_of_input  -> 	str "Please report: End of input",None
-    | Vernacexpr.ProtectedLoop ->
-	str "ProtectedLoop  not allowed by coqide!",None
     | Vernacexpr.Drop ->  str "Drop is not allowed by coqide!",None
     | Vernacexpr.Quit -> str "Quit is not allowed by coqide! Use menus.",None
     | _ ->

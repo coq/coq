@@ -586,7 +586,6 @@ GEXTEND Gram
 
       (* Toplevel control *)
       | IDENT "Drop" -> VernacToplevelControl Drop
-      | IDENT "ProtectedLoop" -> VernacToplevelControl ProtectedLoop
       | IDENT "Quit" -> VernacToplevelControl Quit
 
       | IDENT "Load"; verbosely = [ IDENT "Verbose" -> true | -> false ];

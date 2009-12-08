@@ -18,7 +18,6 @@ open Decl_kinds
 open Ppextend
 
 (* Toplevel control exceptions *)
-exception ProtectedLoop
 exception Drop
 exception Quit
 

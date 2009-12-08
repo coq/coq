@@ -15,7 +15,6 @@ open Cerrors
 open Vernac
 open Vernacexpr
 open Pcoq
-open Protectedtoplevel
 
 (* A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
@@ -307,8 +306,6 @@ let print_toplevel_error exc =
     | Vernacexpr.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise Vernacexpr.Drop;
         (str"Error: There is no ML toplevel." ++ fnl ())
-    | Vernacexpr.ProtectedLoop ->
-	raise Vernacexpr.ProtectedLoop
     | Vernacexpr.Quit ->
 	raise Vernacexpr.Quit
     | _ ->
@@ -369,30 +366,20 @@ let do_vernac () =
  * Ctrl-C will raise the exception Break instead of aborting Coq.
  * Here we catch the exceptions terminating the Coq loop, and decide
  * if we really must quit.
- * The boolean value is used to choose between a protected loop, which
- * we think is more suited for communication with other programs, or
- * plain communication. *)
+ *)
 
-let rec coq_switch b =
+let rec loop () =
   Sys.catch_break true;
   (* ensure we have a command separator object (DOT) so that the first
      command can be reseted. *)
   Lib.mark_end_of_command();
   try
-    if b then begin
-      reset_input_buffer stdin top_buffer;
-      while true do do_vernac() done
-    end else
-      protected_loop stdin
+    reset_input_buffer stdin top_buffer;
+    while true do do_vernac() done
   with
     | Vernacexpr.Drop -> ()
-    | Vernacexpr.ProtectedLoop ->
-	Lib.declare_initial_state();
-	coq_switch false
     | End_of_input -> msgerrnl (mt ()); pp_flush(); exit 0
     | Vernacexpr.Quit -> exit 0
     | e ->
 	msgerrnl (str"Anomaly. Please report.");
-	coq_switch b
-
-let loop () = coq_switch true
+	loop ()

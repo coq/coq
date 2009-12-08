@@ -62,7 +62,6 @@ let call (opn,converted_args) =
     hunk()
   with
     | Drop -> raise Drop
-    | ProtectedLoop -> raise ProtectedLoop
     | e ->
         if !Flags.debug then
 	  msgnl (str"Vernac Interpreter " ++ str !loc);
