@@ -379,7 +379,7 @@ MSETSVO:=$(addprefix theories/MSets/, \
  MSetInterface.vo	MSetList.vo 		\
  MSetFacts.vo 		MSetProperties.vo	MSetEqProperties.vo 	\
  MSetWeakList.vo 	MSetAVL.vo           	MSetDecide.vo 		\
- MSets.vo )
+ MSets.vo 		MSetToFiniteSet.vo)
 
 RELATIONSVO:=$(addprefix theories/Relations/, \
  Operators_Properties.vo	Relation_Definitions.vo \

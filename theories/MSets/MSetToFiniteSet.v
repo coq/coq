@@ -16,8 +16,8 @@ Require Import MSetInterface MSetProperties OrderedType2Ex DecidableType2Ex.
 (** * Going from [MSets] with usual Leibniz equality
     to the good old [Ensembles] and [Finite_sets] theory. *)
 
-Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
- Module MP:= WProperties_fun U M.
+Module WS_to_Finite_set (U:UsualDecidableType)(M: WSetsOn U).
+ Module MP:= WPropertiesOn U M.
  Import M MP FM Ensembles Finite_sets.
 
  Definition mkEns : M.t -> Ensemble M.elt :=
@@ -124,7 +124,7 @@ Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
  Proof.
  intro s; pattern s; apply set_induction; clear s; intros.
  intros; replace (!!s) with (Empty_set elt); auto with sets.
- rewrite cardinal_1; auto with sets.
+ rewrite MP.cardinal_1; auto with sets.
  symmetry; apply Extensionality_Ensembles.
  apply Empty_Empty_set; auto.
  replace (!!s') with (Add _ (!!s) x).
@@ -152,7 +152,7 @@ Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
 End WS_to_Finite_set.
 
 
-Module S_to_Finite_set (U:UsualOrderedType)(M: Sfun U) :=
+Module S_to_Finite_set (U:UsualOrderedType)(M: SetsOn U) :=
   WS_to_Finite_set U M.
 
 
