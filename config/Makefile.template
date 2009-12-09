@@ -135,12 +135,6 @@ COQDOCDIR="COQDOCDIRECTORY"
 # Win32 systems: true (actually strip is bogus)
 STRIP=STRIPCOMMAND
 
-# Options for fsets (all/basic)
-FSETS=FSETSOPT
-
-# Options for reals (all/basic)
-REALS=REALSOPT
-
 # CoqIde (no/byte/opt)
 HASCOQIDE=COQIDEOPT
 

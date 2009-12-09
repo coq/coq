@@ -120,17 +120,22 @@ let makeinitial = "states/MakeInitial.v"
 let nmake = "theories/Numbers/Natural/BigN/NMake.v"
 let nmakegen = "theories/Numbers/Natural/BigN/NMake_gen.ml"
 
-let theoriesv =
-  let vo = string_list_of_file "theories/theories.itarget" in
-  List.map (fun s -> "theories/"^(Filename.chop_suffix s "o")) vo
+let adapt_name (pref,oldsuf,newsuf) f =
+ pref ^ (Filename.chop_suffix f oldsuf) ^ newsuf
 
-let pluginsv =
-  let vo = string_list_of_file "plugins/pluginsvo.itarget" in
-  List.map (fun s -> "plugins/"^(Filename.chop_suffix s "o")) vo
+let get_names (oldsuf,newsuf) s =
+  let pref = Filename.dirname s ^ "/" in
+  List.map (adapt_name (pref,oldsuf,newsuf)) (string_list_of_file s)
 
-let pluginsmllib =
-  let cma = string_list_of_file "plugins/pluginsbyte.itarget" in
-  List.map (fun s -> "plugins/"^(Filename.chop_suffix s ".cma")^".mllib") cma
+let get_vo_itargets f =
+  let vo_itargets = get_names (".otarget",".itarget") f in
+  List.flatten (List.map (get_names (".vo",".v")) vo_itargets)
+
+let theoriesv = get_vo_itargets "theories/theories.itarget"
+
+let pluginsv = get_vo_itargets "plugins/pluginsvo.itarget"
+
+let pluginsmllib = get_names (".cma",".mllib") "plugins/pluginsbyte.itarget"
 
 (** for correct execution of coqdep_boot, source files should have
     been imported in _build (and NMake.v should have been created). *)

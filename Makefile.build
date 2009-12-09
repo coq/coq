@@ -387,18 +387,11 @@ lists: $(LISTSVO)
 strings: $(STRINGSVO)
 sets: $(SETSVO)
 fsets: $(FSETSVO)
-allfsets: $(ALLFSETS)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
-# reals
 reals: $(REALSVO)
-allreals: $(ALLREALS)
 setoids: $(SETOIDSVO)
 sorting: $(SORTINGVO)
-# numbers
-natural: $(NATURALVO)
-integer: $(INTEGERVO)
-rational: $(RATIONALVO)
 numbers: $(NUMBERSVO)
 
 noreal: logic arith bool zarith qarith lists sets fsets relations \
@@ -595,9 +588,6 @@ install-library-light:
 	$(MKDIR) $(FULLCOQLIB)/states
 	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
 	-$(INSTALLLIB) revision $(FULLCOQLIB)
-
-install-allreals::
-	$(INSTALLSH) $(FULLCOQLIB) $(ALLREALS)
 
 install-coq-info: install-coq-manpages install-emacs install-latex
 

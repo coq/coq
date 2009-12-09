@@ -65,9 +65,6 @@ usage () {
     printf "\tSpecifies whether or not to use OCaml *.opt optimized compilers\n"
     echo "-natdynlink (yes|no)"
     printf "\tSpecifies whether or not to use dynamic loading of native code\n"
-    echo "-fsets (all|basic)"
-    echo "-reals (all|basic)"
-    printf "\tSpecifies whether or not to compile full FSets/Reals library\n"
     echo "-coqide (opt|byte|no)"
     printf "\tSpecifies whether or not to compile Coqide\n"
     echo "-browser <command>"
@@ -131,8 +128,6 @@ emacs_spec=no
 camldir_spec=no
 lablgtkdir_spec=no
 coqdocdir_spec=no
-fsets=all
-reals=all
 arch_spec=no
 coqide_spec=no
 browser_spec=no
@@ -208,16 +203,6 @@ while : ; do
                           *) natdynlink=no
                         esac
                         shift;;
-    -fsets|--fsets) case "$2" in
-			yes|all) fsets=all;;
-			*) fsets=basic
-		    esac
-		    shift;;
-    -reals|--reals) case "$2" in
-			yes|all) reals=all;;
-			*) reals=basic
-		    esac
-		    shift;;
     -coqide|--coqide) coqide_spec=yes
 		      case "$2" in
 			  byte|opt) COQIDE=$2;;
@@ -852,16 +837,6 @@ fi
 if test "$COQIDE" != "no"; then
 echo "  Lablgtk2 library in               : $LABLGTKLIB"
 fi
-if test "$fsets" = "all"; then
-echo "  FSets theory                      : All"
-else
-echo "  FSets theory                      : Basic"
-fi
-if test "$reals" = "all"; then
-echo "  Reals theory                      : All"
-else
-echo "  Reals theory                      : Basic"
-fi
 if test "$with_doc" = "all"; then
 echo "  Documentation                     : All"
 else
@@ -1089,8 +1064,6 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|AREXEC|$ar_exec|" \
     -e "s|RANLIBEXEC|$ranlib_exec|" \
     -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
-    -e "s|FSETSOPT|$fsets|" \
-    -e "s|REALSOPT|$reals|" \
     -e "s|COQIDEOPT|$COQIDE|" \
     -e "s|CHECKEDOUTSOURCETREE|$checkedout|" \
     -e "s|WITHDOCOPT|$with_doc|" \

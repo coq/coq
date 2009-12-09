@@ -1,0 +1,10 @@
+LegacyArithRing.vo
+LegacyNArithRing.vo
+LegacyRing_theory.vo
+LegacyRing.vo
+LegacyZArithRing.vo
+Ring_abstract.vo
+Ring_normalize.vo
+Setoid_ring_normalize.vo
+Setoid_ring_theory.vo
+Setoid_ring.vo
