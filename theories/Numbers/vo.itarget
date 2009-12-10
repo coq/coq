@@ -37,6 +37,7 @@ NatInt/NZMulOrder.vo
 NatInt/NZMul.vo
 NatInt/NZOrder.vo
 NatInt/NZProperties.vo
+NatInt/NZDomain.vo
 Natural/Abstract/NAddOrder.vo
 Natural/Abstract/NAdd.vo
 Natural/Abstract/NAxioms.vo

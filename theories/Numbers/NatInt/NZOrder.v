@@ -342,42 +342,6 @@ intros z n H; apply lt_exists_pred_strong with (z := z) (n := n).
 assumption. apply le_refl.
 Qed.
 
-(** A corollary of having an order is that NZ is infinite *)
-
-(** This section about infinity of NZ relies on the type nat and can be
-safely removed *)
-
-Fixpoint of_nat (n : nat) : t :=
- match n with
-  | O => 0
-  | Datatypes.S n' => S (of_nat n')
- end.
-
-Theorem of_nat_S_gt_0 :
-  forall (n : nat), 0 < of_nat (Datatypes.S n).
-Proof.
-intros n; induction n as [| n IH]; simpl in *.
-apply lt_0_1.
-apply lt_trans with 1. apply lt_0_1. now rewrite <- succ_lt_mono.
-Qed.
-
-Theorem of_nat_S_neq_0 :
-  forall (n : nat), 0 ~= of_nat (Datatypes.S n).
-Proof.
-intros. apply lt_neq, of_nat_S_gt_0.
-Qed.
-
-Lemma of_nat_injective : forall n m, of_nat n == of_nat m -> n = m.
-Proof.
-induction n as [|n IH]; destruct m; auto.
-intros H; elim (of_nat_S_neq_0 _ H).
-intros H; symmetry in H; elim (of_nat_S_neq_0 _ H).
-intros. f_equal. apply IH. now rewrite <- succ_inj_wd.
-(* BUG: succ_inj_wd n'est pas vu par SearchAbout *)
-Qed.
-
-(** End of the section about the infinity of NZ *)
-
 (** Stronger variant of induction with assumptions n >= 0 (n < 0)
 in the induction step *)
 
