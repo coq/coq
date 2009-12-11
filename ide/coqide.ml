@@ -15,10 +15,9 @@ open Coq
 open Gtk_parsing
 open Ideutils
 
-type 'a info = {start:'a;
-                stop:'a;
-                ast:Util.loc * Vernacexpr.vernac_expr;
-                reset_info:Coq.reset_info
+type ide_info = {
+  start : GText.mark;
+  stop : GText.mark;
 }
 
 
@@ -34,7 +33,7 @@ object('self)
   val message_view : GText.view
   val proof_buffer : GText.buffer
   val proof_view : GText.view
-  val cmd_stack : GText.mark info Stack.t
+  val cmd_stack : (ide_info * Coq.reset_info) Stack.t
   val mutable is_active : bool
   val mutable read_only : bool
   val mutable filename : string option
@@ -85,7 +84,7 @@ object('self)
   method send_to_coq :
     bool -> bool -> string ->
     bool -> bool -> bool ->
-    (bool*(reset_info*(Util.loc * Vernacexpr.vernac_expr))) option
+    (bool*reset_info) option
   method set_message : string -> unit
   method show_pm_goal : unit
   method show_goals : unit
@@ -104,7 +103,7 @@ type viewable_script =
      proof_view : GText.view;
      message_view : GText.view;
      analyzed_view : analyzed_views;
-     command_stack : GText.mark info Stack.t;
+     command_stack : (ide_info * Coq.reset_info) Stack.t;
     }
 
 
@@ -167,140 +166,7 @@ let on_active_view f =
 let cb = GData.clipboard Gdk.Atom.primary
 
 
-(** Coq undoing mess **
- **********************)
-
 exception Size of int
-
-let update_on_end_of_segment cmd_stk id =
-  let lookup_section = function 
-    | { reset_info = ResetAtSegmentStart id',_,_ } when id = id' -> raise Exit
-    | { reset_info = _,_,r } -> r := false
-  in
-    try Stack.iter lookup_section cmd_stk with Exit -> ()
-
-let push_phrase cmd_stk reset_info start_of_phrase_mark end_of_phrase_mark ast =
-  let x = {start = start_of_phrase_mark;
-           stop = end_of_phrase_mark;
-	   ast = ast;
-	   reset_info = reset_info
-	  } in
-  begin
-    match snd ast with
-    | VernacEndSegment (_,id) ->
-        prerr_endline "Updating on end of segment 1";
-        update_on_end_of_segment cmd_stk id
-    | _ -> ()
-  end;
-  Stack.push x cmd_stk
-
-
-let repush_phrase cmd_stk reset_info x =
-  let x = { x with reset_info = reset_info } in
-  begin
-    match snd x.ast with
-      | VernacEndSegment (_,id) ->
-          prerr_endline "Updating on end of segment 2";
-          update_on_end_of_segment cmd_stk id
-      | _ -> ()
-  end;
-  Stack.push x cmd_stk
-
-type backtrack =
-| BacktrackToNextActiveMark
-| BacktrackToMark of reset_mark
-| BacktrackToModSec of Names.identifier
-| NoBacktrack
-
-let add_undo = function (n,a,b,p,l as x) -> if p = 0 then (n+1,a,b,p,l) else x
-let add_abort = function
-  | (n,a,b,0,l) -> (0,a+1,b,0,l)
-  | (n,a,b,p,l) -> (n,a,b,p-1,l)
-let add_qed q (n,a,b,p,l as x) =
-  if q = 0 then x else (n,a,BacktrackToNextActiveMark,p+q,l)
-let add_backtrack (n,a,b,p,l) b' = (n,a,b',p,l)
-
-let update_proofs (n,a,b,p,cur_lems) prev_lems =
-  let ncommon = List.length (Util.list_intersect cur_lems prev_lems) in
-  let openproofs = List.length cur_lems - ncommon in
-  let closedproofs = List.length prev_lems - ncommon in
-  let undos = (n,a,b,p,prev_lems) in
-  add_qed closedproofs (Util.iterate add_abort openproofs undos)
-
-let pop_command cmd_stk undos t =
-  let (state_info,undo_info,section_info) = t.reset_info in
-  let undos =
-    if !section_info then
-      let undos = update_proofs undos undo_info in
-      match state_info with
-      | _ when is_vernac_tactic_command (snd t.ast) ->
-	  (* A tactic, active if not below a Qed *)
-          add_undo undos
-      | ResetAtRegisteredObject mark ->
-          add_backtrack undos (BacktrackToMark mark)
-      | ResetAtSegmentStart id ->
-          add_backtrack undos (BacktrackToModSec id)
-      | _ when is_vernac_state_preserving_command (snd t.ast) ->
-	  undos
-      | _ ->
-          add_backtrack undos BacktrackToNextActiveMark
-    else
-      begin
-        prerr_endline "In section";
-      (* An object inside a closed section *)
-      add_backtrack undos BacktrackToNextActiveMark
-      end in
-  ignore (Stack.pop cmd_stk);
-  undos
-
-
-(* appelle Pfedit.delete_current_proof a fois
- * utiliser Vernacentries.vernac_abort a la place ? *)
-let apply_aborts a =
-  if a <> 0 then prerr_endline ("Applying "^string_of_int a^" aborts");
-  try Util.repeat a Pfedit.delete_current_proof ()
-  with e -> prerr_endline "WARNING : found a closed environment"; raise e
-
-exception UndoStackExhausted
-
-(* appelle Pfedit.undo n fois
- * utiliser vernac_undo ? *)
-let apply_tactic_undo n =
-  if n<>0 then
-    (prerr_endline ("Applying "^string_of_int n^" undos");
-     try Pfedit.undo n with _ -> raise UndoStackExhausted)
-
-
-let apply_reset = function
-  | BacktrackToMark mark -> reset_to mark
-  | BacktrackToModSec id -> reset_to_mod id
-  | NoBacktrack -> ()
-  | BacktrackToNextActiveMark -> assert false
-
-let rec apply_undos cmd_stk (n,a,b,p,l as undos) =
-  if p = 0 & b <> BacktrackToNextActiveMark then
-    begin
-      apply_aborts a;
-      try
-	apply_tactic_undo n;
-	apply_reset b
-      with UndoStackExhausted ->
-	apply_undos cmd_stk (n,0,BacktrackToNextActiveMark,p,l)
-    end
-  else
-    (* re-synchronize Coq to the current state of the stack *)
-    if Stack.is_empty cmd_stk then
-      Coq.reset_initial ()
-    else
-      begin
-        let t = Stack.top cmd_stk in
-        apply_undos cmd_stk (pop_command cmd_stk undos t);
-        let reset_info = Coq.compute_reset_info (snd t.ast) in
-        interp_last t.ast;
-        repush_phrase cmd_stk reset_info t
-      end
-
-
 
 let last_cb_content = ref ""
 
@@ -1161,7 +1027,7 @@ object(self)
         input_view#set_editable true;
         pop_info ();
       end in
-    let mark_processed reset_info is_complete (start,stop) ast =
+    let mark_processed reset_info is_complete (start,stop) =
       let b = input_buffer in
       b#move_mark ~where:stop (`NAME "start_of_input");
       b#apply_tag
@@ -1171,13 +1037,12 @@ object(self)
              b#place_cursor stop;
              self#recenter_insert
            end;
-         let start_of_phrase_mark = `MARK (b#create_mark start) in
-         let end_of_phrase_mark = `MARK (b#create_mark stop) in
+         let ide_payload = { start = `MARK (b#create_mark start);
+                             stop = `MARK (b#create_mark stop); } in
          push_phrase
            cmd_stack
            reset_info
-           start_of_phrase_mark
-           end_of_phrase_mark ast;
+           ide_payload;
          if display_goals then self#show_goals;
          remove_tag (start,stop) in
     begin
@@ -1185,14 +1050,14 @@ object(self)
           None -> false
         | Some (loc,phrase) ->
             (match self#send_to_coq verbosely false phrase true true true with
-               | Some (is_complete,(reset_info,ast)) ->
-                   sync (mark_processed reset_info is_complete) loc ast; true
+               | Some (is_complete,reset_info) ->
+                   sync (mark_processed reset_info is_complete) loc; true
                | None -> sync remove_tag loc; false)
     end
 
   method insert_this_phrase_on_success
         show_output show_msg localize coqphrase insertphrase =
-    let mark_processed reset_info is_complete ast =
+    let mark_processed reset_info is_complete =
       let stop = self#get_start_of_input in
         if stop#starts_line then
           input_buffer#insert ~iter:stop insertphrase
@@ -1203,9 +1068,9 @@ object(self)
             (if is_complete then Tags.Script.processed else Tags.Script.unjustified) ~start ~stop;
              if (self#get_insert#compare) stop <= 0 then
                input_buffer#place_cursor stop;
-             let start_of_phrase_mark = `MARK (input_buffer#create_mark start) in
-             let end_of_phrase_mark = `MARK (input_buffer#create_mark stop) in
-               push_phrase cmd_stack reset_info start_of_phrase_mark end_of_phrase_mark ast;
+             let ide_payload = { start = `MARK (input_buffer#create_mark start);
+                                 stop = `MARK (input_buffer#create_mark stop); } in
+               push_phrase cmd_stack reset_info ide_payload;
                self#show_goals;
       (*Auto insert save on success...
        try (match Coq.get_current_goals () with
@@ -1233,8 +1098,8 @@ object(self)
        | _ -> ())
        with _ -> ()*) in
       match self#send_to_coq false false coqphrase show_output show_msg localize with
-        | Some (is_complete,(reset_info,ast)) ->
-            sync (mark_processed reset_info is_complete) ast; true
+        | Some (is_complete,reset_info) ->
+            sync (mark_processed reset_info) is_complete; true
         | None ->
             sync
               (fun _ -> self#insert_message ("Unsuccessfully tried: "^coqphrase))
@@ -1279,7 +1144,7 @@ object(self)
   method reset_initial =
     sync (fun _ ->
             Stack.iter
-              (function inf ->
+              (function (inf,_) ->
                  let start = input_buffer#get_iter_at_mark inf.start in
                  let stop = input_buffer#get_iter_at_mark inf.stop in
                    input_buffer#move_mark ~where:start (`NAME "start_of_input");
@@ -1301,16 +1166,16 @@ object(self)
       if Stack.is_empty cmd_stack then
         done_smthg, undos
       else
-        let t = Stack.top cmd_stack in
-          if i#compare (input_buffer#get_iter_at_mark t.stop) < 0 then
+        let (ide_ri,_) = Stack.top cmd_stack in
+          if i#compare (input_buffer#get_iter_at_mark ide_ri.stop) < 0 then
             begin
               prerr_endline "Popped top command";
-              pop_commands true (pop_command cmd_stack undos t)
+              pop_commands true (pop_command cmd_stack undos)
             end
           else
             done_smthg, undos
     in
-    let undos = (0,0,NoBacktrack,0,undo_info()) in
+    let undos = init_undo_cmds () in
     let done_smthg, undos = pop_commands false undos in
       prerr_endline "Popped commands";
       if done_smthg then
@@ -1320,7 +1185,7 @@ object(self)
             sync (fun _ ->
                     let start =
                       if Stack.is_empty cmd_stack then input_buffer#start_iter
-                      else input_buffer#get_iter_at_mark (Stack.top cmd_stack).stop in
+                      else input_buffer#get_iter_at_mark (fst (Stack.top cmd_stack)).stop in
                       prerr_endline "Removing (long) processed tag...";
                       input_buffer#remove_tag
                         Tags.Script.processed
@@ -1359,18 +1224,18 @@ object(self)
     if Mutex.try_lock coq_may_stop then
       (push_info "Undoing last step...";
        (try
-          let last_command = Stack.top cmd_stack in
-          let start = input_buffer#get_iter_at_mark last_command.start in
+          let (ide_ri,_) = Stack.top cmd_stack in
+          let start = input_buffer#get_iter_at_mark ide_ri.start in
           let update_input () =
             prerr_endline "Removing processed tag...";
             input_buffer#remove_tag
               Tags.Script.processed
               ~start
-              ~stop:(input_buffer#get_iter_at_mark last_command.stop);
+              ~stop:(input_buffer#get_iter_at_mark ide_ri.stop);
             input_buffer#remove_tag
               Tags.Script.unjustified
               ~start
-              ~stop:(input_buffer#get_iter_at_mark last_command.stop);
+              ~stop:(input_buffer#get_iter_at_mark ide_ri.stop);
             prerr_endline "Moving start_of_input";
             input_buffer#move_mark
               ~where:start
@@ -1380,7 +1245,7 @@ object(self)
             self#show_goals;
             self#clear_message
           in
-          let undo = pop_command cmd_stack (0,0,NoBacktrack,0,undo_info()) last_command in
+          let undo = pop_command cmd_stack (init_undo_cmds ()) in
             apply_undos cmd_stack undo;
             sync update_input ()
         with

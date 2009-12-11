@@ -42,18 +42,30 @@ type undo_info = identifier list
 
 val undo_info : unit -> undo_info
 
-type reset_info = reset_status * undo_info * bool ref
+type reset_info = {
+ status : reset_status;
+ proofs : undo_info;
+ loc_ast : Util.loc * Vernacexpr.vernac_expr;
+ mutable section : bool;
+}
 
-val compute_reset_info : Vernacexpr.vernac_expr -> reset_info
+val compute_reset_info : Util.loc * Vernacexpr.vernac_expr -> reset_info
 val reset_initial : unit -> unit
 val reset_to : reset_mark -> unit
 val reset_to_mod : identifier -> unit
 
 val init : unit -> string list
-val interp : bool -> string -> reset_info * (Util.loc * Vernacexpr.vernac_expr)
+val interp : bool -> string -> reset_info
 val interp_last : Util.loc * Vernacexpr.vernac_expr -> unit
 val interp_and_replace : string ->
-      (reset_info * (Util.loc * Vernacexpr.vernac_expr)) * string
+      reset_info * string
+
+val push_phrase : ('a * reset_info) Stack.t -> reset_info -> 'a -> unit
+
+type undo_cmds
+val init_undo_cmds : unit -> undo_cmds
+val pop_command : ('a * reset_info) Stack.t -> undo_cmds -> undo_cmds
+val apply_undos : ('a * reset_info) Stack.t -> undo_cmds -> unit
 
 val is_vernac_tactic_command : Vernacexpr.vernac_expr -> bool
 val is_vernac_state_preserving_command : Vernacexpr.vernac_expr -> bool

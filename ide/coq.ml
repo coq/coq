@@ -367,8 +367,12 @@ type reset_status =
   | ResetAtSegmentStart of Names.identifier
   | ResetAtRegisteredObject of reset_mark
 
-type reset_info = reset_status * undo_info * bool ref
-
+type reset_info = {
+  status : reset_status;
+  proofs : identifier list;
+  loc_ast : Util.loc * Vernacexpr.vernac_expr;
+  mutable section : bool;
+}
 
 let reset_mark id = match Lib.has_top_frozen_state () with
   | Some sp -> 
@@ -376,28 +380,32 @@ let reset_mark id = match Lib.has_top_frozen_state () with
       ResetToState sp
   | None -> ResetToId id
 
-let compute_reset_info = function 
-  | VernacBeginSection id 
-  | VernacDefineModule (_,id, _, _, _) 
-  | VernacDeclareModule (_,id, _, _)
-  | VernacDeclareModuleType (id, _, _, _) ->
-      ResetAtSegmentStart (snd id), undo_info(), ref true
-
-  | VernacDefinition (_, (_,id), DefineBody _, _)
-  | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
-  | VernacInductive (_,_, (((_,(_,id)),_,_,_,_),_) :: _) ->
-      ResetAtRegisteredObject (reset_mark id), undo_info(), ref true
-
-  | com when is_vernac_proof_ending_command com -> NoReset, undo_info(), ref true
-  | VernacEndSegment _ -> NoReset, undo_info(), ref true
-
-  | com when is_vernac_tactic_command com -> NoReset, undo_info(), ref true
-  | _ ->
-      (match Lib.has_top_frozen_state () with
-      | Some sp -> 
-	  prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
-	  ResetAtRegisteredObject (ResetToState sp)
-      | None -> NoReset), undo_info(), ref true
+let compute_reset_info loc_ast = 
+  let status = match snd loc_ast with
+    | VernacBeginSection id 
+    | VernacDefineModule (_,id, _, _, _) 
+    | VernacDeclareModule (_,id, _, _)
+    | VernacDeclareModuleType (id, _, _, _) ->
+        ResetAtSegmentStart (snd id)
+    | VernacDefinition (_, (_,id), DefineBody _, _)
+    | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
+    | VernacInductive (_,_, (((_,(_,id)),_,_,_,_),_) :: _) ->
+        ResetAtRegisteredObject (reset_mark id)
+    | com when is_vernac_proof_ending_command com -> NoReset
+    | VernacEndSegment _ -> NoReset
+    | com when is_vernac_tactic_command com -> NoReset
+    | _ ->
+        (match Lib.has_top_frozen_state () with
+           | Some sp -> 
+               prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
+               ResetAtRegisteredObject (ResetToState sp)
+           | None -> NoReset)
+  in
+  { status = status;
+    proofs = Pfedit.get_all_proof_names ();
+    loc_ast = loc_ast; 
+    section = true;
+  }
 
 let reset_initial () =
   prerr_endline "Reset initial called"; flush stderr;
@@ -442,13 +450,13 @@ let interp_with_options verbosely options s =
 	if not (is_vernac_goal_printing_command vernac) then
 	  (* Verbose if in small step forward and not a tactic *)
 	  Flags.make_silent (not verbosely);
-	let reset_info = compute_reset_info vernac in
+	let reset_info = compute_reset_info last in
 	List.iter (fun (set_option,_) -> raw_interp set_option) options;
 	raw_interp s;
 	Flags.make_silent true;
 	List.iter (fun (_,unset_option) -> raw_interp unset_option) options;
 	prerr_endline ("...Done with interp of : "^s);
-	reset_info,last
+	reset_info
 
 let interp verbosely phrase =
   interp_with_options verbosely (make_option_commands ()) phrase
@@ -457,46 +465,6 @@ let interp_and_replace s =
   let result = interp false s in
   let msg = read_stdout () in
   result,msg
-
-type bktk_info = { start : GText.mark;
-                   stop : GText.mark;
-                   state_num : int;
-                   pending_proofs : string list;
-                   proof_stack_depth : int;
-}
-
-let record_interp cmd_stk start_of_sentence end_of_sentence (sn,pp,psd) =
-  Stack.push { start = start_of_sentence;
-               stop = end_of_sentence;
-               state_num = sn;
-               pending_proofs = pp;
-               proof_stack_depth = psd;
-  } cmd_stk
-
-let backtrack cmd_stack stop_cond =
-  if Stack.is_empty cmd_stack then
-    reset_initial () (* reset coq *)
-  else try
-    let current = Stack.top cmd_stack in
-    while not (stop_cond (Stack.top cmd_stack).stop) do
-      ignore (Stack.pop cmd_stack)
-    done;
-    let target = Stack.top cmd_stack in
-    if current != target then
-      let rst = target.state_num in
-      let undo = target.proof_stack_depth in
-      let abrt = List.fold_left
-                   (fun acc e -> if List.mem e target.pending_proofs then acc else succ acc)
-                   0 current.pending_proofs
-      in
-      raw_interp (Printf.sprintf "Backtrack %d %d %d.\n" rst undo abrt)
-      else ()
-  with Stack.Empty -> reset_initial () (* might as well reset coq ... *)
-
-type tried_tactic =
-  | Interrupted
-  | Success of int (* nb of goals after *)
-  | Failed
 
 let rec is_pervasive_exn = function
   | Out_of_memory | Stack_overflow | Sys.Break -> true
@@ -539,6 +507,127 @@ let interp_last last =
     let s,_ = process_exn e in prerr_endline ("Replay during undo failed because: "^s);
     raise e
 
+let update_on_end_of_segment cmd_stk id =
+  let lookup_section (_,elt) =
+    match elt with
+      | { status = ResetAtSegmentStart id' } when id = id' -> raise Exit
+      | _ -> elt.section <- false
+  in
+  try Stack.iter lookup_section cmd_stk with Exit -> ()
+
+let push_phrase cmd_stk reset_info ide_payload =
+  begin
+    match snd (reset_info.loc_ast) with
+      | VernacEndSegment (_,id) ->
+          prerr_endline "Updating on end of segment 1";
+          update_on_end_of_segment cmd_stk id
+      | _ -> ()
+  end;
+  Stack.push (ide_payload,reset_info) cmd_stk
+
+type backtrack =
+  | BacktrackToNextActiveMark
+  | BacktrackToMark of reset_mark
+  | BacktrackToModSec of Names.identifier
+  | NoBacktrack
+
+type undo_cmds = int * int * backtrack * int * identifier list
+
+let init_undo_cmds u =
+  (0,0,NoBacktrack,0,undo_info u)
+
+let add_undo = function (n,a,b,p,l as x) -> if p = 0 then (n+1,a,b,p,l) else x
+let add_abort = function
+  | (n,a,b,0,l) -> (0,a+1,b,0,l)
+  | (n,a,b,p,l) -> (n,a,b,p-1,l)
+let add_qed q (n,a,b,p,l as x) =
+    if q = 0 then x else (n,a,BacktrackToNextActiveMark,p+q,l)
+let add_backtrack (n,a,b,p,l) b' = (n,a,b',p,l)
+
+let update_proofs (n,a,b,p,cur_lems) prev_lems =
+  let ncommon = List.length (Util.list_intersect cur_lems prev_lems) in
+  let openproofs = List.length cur_lems - ncommon in
+  let closedproofs = List.length prev_lems - ncommon in
+  let undos = (n,a,b,p,prev_lems) in
+  add_qed closedproofs (Util.iterate add_abort openproofs undos)
+
+let pop_command cmd_stk undos =
+  let (_,t) = Stack.top cmd_stk in
+  let (state_info,undo_info,section_info) = t.status,t.proofs,t.section in
+  let undos =
+    if section_info then
+      let undos = update_proofs undos undo_info in
+      match state_info with
+        | _ when is_vernac_tactic_command (snd t.loc_ast) ->
+            (* A tactic, active if not * below a Qed *)
+            add_undo undos
+        | ResetAtRegisteredObject mark ->
+            add_backtrack undos (BacktrackToMark mark)
+        | ResetAtSegmentStart id ->
+            add_backtrack undos (BacktrackToModSec id)
+        | _ when is_vernac_state_preserving_command (snd t.loc_ast) ->
+            undos
+        | _ ->
+            add_backtrack undos BacktrackToNextActiveMark
+            else
+              begin
+                prerr_endline "In section";
+                (* An * object * inside * a * closed * section * *)
+                add_backtrack undos BacktrackToNextActiveMark
+              end in
+  ignore (Stack.pop cmd_stk);
+  undos
+
+(* appelle Pfedit.delete_current_proof a fois
+*  * utiliser Vernacentries.vernac_abort a la place ? *)
+let apply_aborts a =
+  if a <> 0 then prerr_endline ("Applying "^string_of_int a^" aborts");
+  try Util.repeat a Pfedit.delete_current_proof ()
+  with e -> prerr_endline "WARNING : found a closed environment"; raise e
+
+exception UndoStackExhausted
+
+(* appelle Pfedit.undo n fois
+ * utiliser vernac_undo ? *)
+let apply_tactic_undo n =
+  if n<>0 then
+    (prerr_endline ("Applying "^string_of_int n^" undos");
+     try Pfedit.undo n with _ -> raise UndoStackExhausted)
+
+
+let apply_reset = function
+  | BacktrackToMark mark -> reset_to mark
+  | BacktrackToModSec id -> reset_to_mod id
+  | NoBacktrack -> ()
+  | BacktrackToNextActiveMark -> assert false
+
+let rec apply_undos cmd_stk (n,a,b,p,l as undos) =
+  if p = 0 & b <> BacktrackToNextActiveMark then
+    begin
+      apply_aborts a;
+      try
+        apply_tactic_undo n;
+        apply_reset b
+      with UndoStackExhausted ->
+        apply_undos cmd_stk (n,0,BacktrackToNextActiveMark,p,l)
+    end
+  else
+    (* re-synchronize Coq to the current state of the stack *)
+    if Stack.is_empty cmd_stk then
+      reset_initial ()
+    else
+      begin
+        let (ide_ri,coq_ri) = Stack.top cmd_stk in
+        apply_undos cmd_stk (pop_command cmd_stk undos);
+        let reset_info = compute_reset_info coq_ri.loc_ast in
+        interp_last coq_ri.loc_ast;
+        push_phrase cmd_stk reset_info ide_ri
+      end
+
+type  tried_tactic =
+  | Interrupted
+  | Success of int (* nb of goals after *)
+  | Failed
 
 type hyp = env * evar_map *
            ((identifier * string) * constr option * constr) *
