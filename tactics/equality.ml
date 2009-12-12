@@ -1088,14 +1088,16 @@ let swapEquandsInConcl gls =
 
 (* Refine from [|- P e2] to [|- P e1] and [|- e1=e2:>t] (body is P (Rel 1)) *)
 
-let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
+let bareRevSubstInConcl lbeq body expected_goal (t,e1,e2) gls =
   (* find substitution scheme *)
   let eq_elim = find_elim lbeq.eq (Some false) false None [e1;e2] gls in
   (* build substitution predicate *)
   let p = lambda_create (pf_env gls) (t,body) in
   (* apply substitution scheme *)
-  refine (applist(eq_elim,[t;e1;p;Evarutil.mk_new_meta();
-                           e2;Evarutil.mk_new_meta()])) gls
+  refine (applist(eq_elim,
+    [t;e1;p;
+     mkCast(Evarutil.mk_new_meta(),DEFAULTcast,expected_goal);
+     e2;Evarutil.mk_new_meta()])) gls
 
 (* [subst_tuple_term dep_pair B]
 
@@ -1103,17 +1105,22 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
 
    (existT e1 (existT e2 ... (existT en en+1) ... ))
 
+   of type {x1:T1 & {x2:T2(x1) & ... {xn:Tn(x1..xn-1) & en+1 } } }
+
    and B might contain instances of the ei, we will return the term:
 
-   ([x1:ty(e1)]...[xn:ty(en)]B
-    (projS1 (mkRel 1))
-    (projS1 (projS2 (mkRel 1)))
-    ... etc ...)
+   ([x1:ty1]...[xn+1:tyn+1]B
+    (projT1 (mkRel 1))
+    (projT1 (projT2 (mkRel 1)))
+    ...
+    (projT1 (projT2^n (mkRel 1)))
+    (projT2 (projT2^n (mkRel 1)))
 
-   That is, we will abstract out the terms e1...en+1 as usual, but
+   That is, we will abstract out the terms e1...en+1 of types
+   t1 (=_beta T1), ..., tn+1 (=_beta Tn+1(e1..en)) as usual, but
    will then produce a term in which the abstraction is on a single
    term - the debruijn index [mkRel 1], which will be of the same type
-   as dep_pair.
+   as dep_pair (note that the abstracted body may not be typable!).
 
    ALGORITHM for abstraction:
 
@@ -1137,13 +1144,18 @@ let decomp_tuple_term env c t =
   in
   List.split (decomprec (mkRel 1) c t)
 
-let subst_tuple_term env sigma dep_pair b =
-  let typ = get_type_of env sigma dep_pair in
-  let e_list,proj_list = decomp_tuple_term env dep_pair typ in
+let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
+  let typ = get_type_of env sigma dep_pair1 in
+  (* We rewrite dep_pair1 ... *)
+  let e1_list,proj_list = decomp_tuple_term env dep_pair1 typ in
   let abst_B =
     List.fold_right
-      (fun (e,t) body -> lambda_create env (t,subst_term e body)) e_list b in
-  beta_applist(abst_B,proj_list)
+      (fun (e,t) body -> lambda_create env (t,subst_term e body)) e1_list b in
+  (* ... and use dep_pair2 to compute the expected goal *)
+  let e2_list,_ = decomp_tuple_term env dep_pair2 typ in
+  let pred_body = beta_applist(abst_B,proj_list) in
+  let expected_goal =  beta_applist(abst_B,List.map fst e2_list) in
+  pred_body,expected_goal
 
 (* Like "replace" but decompose dependent equalities *)
 
@@ -1151,9 +1163,9 @@ exception NothingToRewrite
 
 let cutSubstInConcl_RL eqn gls =
   let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose gls eqn in
-  let body = pf_apply subst_tuple_term gls e2 (pf_concl gls) in
+  let body,expected_goal = pf_apply subst_tuple_term gls e2 e1 (pf_concl gls) in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
-  bareRevSubstInConcl lbeq body eq gls
+  bareRevSubstInConcl lbeq body expected_goal eq gls
 
 (* |- (P e1)
      BY CutSubstInConcl_LR (eq T e1 e2)
@@ -1169,10 +1181,11 @@ let cutSubstInConcl l2r =if l2r then cutSubstInConcl_LR else cutSubstInConcl_RL
 
 let cutSubstInHyp_LR eqn id gls =
   let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose gls eqn in
-  let body = pf_apply subst_tuple_term gls e1 (pf_get_hyp_typ gls id) in
+  let idtyp = pf_get_hyp_typ gls id in
+  let body,expected_goal = pf_apply subst_tuple_term gls e1 e2 idtyp in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
   cut_replacing id (subst1 e2 body)
-    (tclTHENFIRST (bareRevSubstInConcl lbeq body eq)) gls
+    (tclTHENFIRST (bareRevSubstInConcl lbeq body expected_goal eq)) gls
 
 let cutSubstInHyp_RL eqn id gls =
   (tclTHENS (cutSubstInHyp_LR (swap_equands gls eqn) id)
