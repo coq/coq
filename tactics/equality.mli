@@ -28,6 +28,8 @@ open Genarg
 open Ind_tables
 (*i*)
 
+type dep_proof_flag = bool (* true = support rewriting dependent proofs *)
+
 type orientation = bool
 
 type conditions =
@@ -36,13 +38,15 @@ type conditions =
   | AllMatches (* Rewrite all matches whose side-conditions are solved *)
 
 val general_rewrite_bindings :
-  orientation -> occurrences -> ?tac:(tactic * conditions) -> constr with_bindings -> evars_flag -> tactic
+  orientation -> occurrences -> dep_proof_flag ->
+  ?tac:(tactic * conditions) -> constr with_bindings -> evars_flag -> tactic
 val general_rewrite :
-  orientation -> occurrences -> ?tac:(tactic * conditions) -> constr -> tactic
+  orientation -> occurrences -> dep_proof_flag ->
+  ?tac:(tactic * conditions) -> constr -> tactic
 
 (* Equivalent to [general_rewrite l2r] *)
-val rewriteLR   : ?tac:(tactic * conditions) -> constr -> tactic
-val rewriteRL   : ?tac:(tactic * conditions) -> constr  -> tactic
+val rewriteLR : ?tac:(tactic * conditions) -> constr -> tactic
+val rewriteRL : ?tac:(tactic * conditions) -> constr  -> tactic
 
 (* Warning: old [general_rewrite_in] is now [general_rewrite_bindings_in] *)
 
@@ -52,12 +56,15 @@ val register_general_rewrite_clause :
 val register_is_applied_rewrite_relation : (env -> evar_map -> rel_context -> constr -> open_constr option) -> unit
 
 val general_rewrite_ebindings_clause : identifier option ->
-  orientation -> occurrences -> ?tac:(tactic * conditions) -> open_constr with_bindings -> evars_flag -> tactic
+  orientation -> occurrences -> dep_proof_flag -> ?tac:(tactic * conditions) ->
+  open_constr with_bindings -> evars_flag -> tactic
 
 val general_rewrite_bindings_in :
-  orientation -> occurrences -> ?tac:(tactic * conditions) -> identifier -> constr with_bindings -> evars_flag -> tactic
+  orientation -> occurrences -> dep_proof_flag -> ?tac:(tactic * conditions) ->
+  identifier -> constr with_bindings -> evars_flag -> tactic
 val general_rewrite_in          :
-  orientation -> occurrences -> ?tac:(tactic * conditions) -> identifier -> constr -> evars_flag -> tactic
+  orientation -> occurrences -> dep_proof_flag -> ?tac:(tactic * conditions) ->
+  identifier -> constr -> evars_flag -> tactic
 
 val general_multi_rewrite :
   orientation -> evars_flag -> ?tac:(tactic * conditions) -> open_constr with_bindings -> clause -> tactic
@@ -102,26 +109,6 @@ val rewriteInConcl : bool -> constr -> tactic
 (* Expect the proof of an equality; fails with raw internal errors *)
 val substClause : bool -> constr -> identifier option -> tactic
 
-(*
-(* [substHypInConcl l2r id] is obsolete: use [rewriteInConcl l2r (mkVar id)] *)
-val substHypInConcl : bool -> identifier -> tactic
-
-(* [substConcl] is an obsolete synonym for [cutRewriteInConcl] *)
-val substConcl : bool -> constr -> tactic
-
-(* [substHyp] is an obsolete synonym of [cutRewriteInHyp] *)
-val substHyp : bool -> types -> identifier -> tactic
-*)
-
-(* Obsolete, use [rewriteInConcl lr (mkVar id)] in concl
-              or [rewriteInHyp lr (mkVar id) (Some hyp)] in hyp
-   (which, if they fail, raise only UserError, not PatternMatchingFailure)
-   or [substClause lr (mkVar id) None]
-   or [substClause lr (mkVar id) (Some hyp)]
-[val hypSubst_LR : identifier -> clause -> tactic]
-[val hypSubst_RL : identifier -> clause -> tactic]
-*)
-
 val discriminable : env -> evar_map -> constr -> constr -> bool
 val injectable : env -> evar_map -> constr -> constr -> bool
 
@@ -129,8 +116,13 @@ val injectable : env -> evar_map -> constr -> constr -> bool
 
 val unfold_body : identifier -> tactic
 
+type subst_tactic_flags = {
+  only_leibniz : bool;
+  rewrite_dependent_proof : bool
+}
+
 val subst : identifier list -> tactic
-val subst_all : ?strict:bool -> tactic
+val subst_all : ?flags:subst_tactic_flags -> tactic
 
 (* Replace term *)
 (* [replace_multi_term dir_opt c cl]

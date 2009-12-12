@@ -823,9 +823,9 @@ let raw_polynom th op lc gl =
 	      (tclTHENS
 		 (tclORELSE
                    (Equality.general_rewrite true
-		     Termops.all_occurrences c'i_eq_c''i)
+		     Termops.all_occurrences false c'i_eq_c''i)
                    (Equality.general_rewrite false
-		     Termops.all_occurrences c'i_eq_c''i))
+		     Termops.all_occurrences false c'i_eq_c''i))
                  [tac]))
 	 else
            (tclORELSE

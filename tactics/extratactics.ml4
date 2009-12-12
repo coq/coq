@@ -196,7 +196,7 @@ open Extraargs
 
 let rewrite_star clause orient occs c (tac : glob_tactic_expr option) =
   let tac' = Option.map (fun t -> Tacinterp.eval_tactic t, FirstSolved) tac in
-  general_rewrite_ebindings_clause clause orient occs ?tac:tac' (c,NoBindings) true
+  general_rewrite_ebindings_clause clause orient occs ?tac:tac' true (c,NoBindings) true
 
 let occurrences_of = function
   | n::_ as nl when n < 0 -> (false,List.map abs nl)
@@ -335,12 +335,14 @@ END
 
 TACTIC EXTEND subst
 | [ "subst" ne_var_list(l) ] -> [ subst l ]
-| [ "subst" ] -> [ subst_all ~strict:true] (* W/o JMeq *)
-
+| [ "subst" ] -> [ fun gl -> subst_all gl ]
 END
 
-TACTIC EXTEND subst'
-| [ "subst'" ] -> [ subst_all ~strict:false ] (* With JMeq *)
+let simple_subst_tactic_flags =
+  { only_leibniz = true; rewrite_dependent_proof = false }
+
+TACTIC EXTEND simple_subst
+| [ "simple" "subst" ] -> [ subst_all ~flags:simple_subst_tactic_flags ]
 END
 
 open Evar_tactics

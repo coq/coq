@@ -27,7 +27,8 @@ Tactics
   new option "Unset Tactic Evars Pattern Unification" to deactivate it.
 - New tactic "etransitivity".
 - Support of JMeq for "injection" and "discriminate".
-- New variant "subst'" of "subst" that supports JMeq.
+- Tactic "subst" now supports heterogeneous equality and equality
+  proofs that are dependent (use "simple subst" for preserving compatibility).
 - New tactic "decide lemma with hyp" for rewriting decidability lemmas
   when one knows which side is true.
 - Tactic "exists", "eexists", "destruct" and "edestruct" supports iteration

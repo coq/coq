@@ -65,6 +65,8 @@ let _ =
 
 (* Rewriting tactics *)
 
+type dep_proof_flag = bool (* true = support rewriting dependent proofs *)
+
 type orientation = bool
 
 type conditions =
@@ -176,6 +178,12 @@ let register_is_applied_rewrite_relation = (:=) is_applied_rewrite_relation
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. *)
 
+type substitutive_equality_flags = {
+  rewrite_dependent_proof : bool;
+  use_K : bool;
+  with_evars : bool
+}
+
 let find_elim hdcncl lft2rgt dep cls args gl =
   let inccl = (cls = None) in
   if (hdcncl = constr_of_reference (Coqlib.glob_eq) ||
@@ -212,8 +220,8 @@ let type_of_clause gl = function
   | None -> pf_concl gl
   | Some id -> pf_get_hyp_typ gl id
 
-let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars gl hdcncl =
-  let dep = occur_term c (type_of_clause gl cls) in
+let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars dep_proof_ok gl hdcncl =
+  let dep = dep_proof_ok && occur_term c (type_of_clause gl cls) in
   let elim = find_elim hdcncl lft2rgt dep cls (snd (decompose_app t)) gl in
   general_elim_clause with_evars tac cls sigma c t l
     (match lft2rgt with None -> false | Some b -> b)
@@ -235,7 +243,7 @@ let rewrite_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
 
 (* Main function for dispatching which kind of rewriting it is about *)
 
-let general_rewrite_ebindings_clause cls lft2rgt occs ?tac
+let general_rewrite_ebindings_clause cls lft2rgt occs dep_proof_ok ?tac
     ((c,l) : open_constr with_bindings) with_evars gl =
   if occs <> all_occurrences then (
     rewrite_side_tac (!general_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac gl)
@@ -249,7 +257,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs ?tac
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
 	  let lft2rgt = adjust_rewriting_direction args lft2rgt in
           leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c' (it_mkProd_or_LetIn t rels)
-	    l with_evars gl hdcncl
+	    l with_evars dep_proof_ok gl hdcncl
       | None ->
 	  try
 	    rewrite_side_tac (!general_rewrite_clause cls
@@ -261,27 +269,27 @@ let general_rewrite_ebindings_clause cls lft2rgt occs ?tac
 	      | Some (hdcncl,args) ->
 		  let lft2rgt = adjust_rewriting_direction args lft2rgt in
 		    leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c'
-		      (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars gl hdcncl
+		      (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars dep_proof_ok gl hdcncl
 	      | None -> raise e
 		  (* error "The provided term does not end with an equality or a declared rewrite relation." *)
 
 let general_rewrite_ebindings =
   general_rewrite_ebindings_clause None
 
-let general_rewrite_bindings l2r occs ?tac (c,bl) =
-  general_rewrite_ebindings_clause None l2r occs ?tac (inj_open c,inj_ebindings bl)
+let general_rewrite_bindings l2r occs dep_proof_ok ?tac (c,bl) =
+  general_rewrite_ebindings_clause None l2r occs dep_proof_ok ?tac (inj_open c,inj_ebindings bl)
 
-let general_rewrite l2r occs ?tac c =
-  general_rewrite_bindings l2r occs ?tac (c,NoBindings) false
+let general_rewrite l2r occs dep_proof_ok ?tac c =
+  general_rewrite_bindings l2r occs dep_proof_ok ?tac (c,NoBindings) false
 
-let general_rewrite_ebindings_in l2r occs ?tac id =
-  general_rewrite_ebindings_clause (Some id) l2r occs ?tac
+let general_rewrite_ebindings_in l2r occs dep_proof_ok ?tac id =
+  general_rewrite_ebindings_clause (Some id) l2r occs dep_proof_ok ?tac
 
-let general_rewrite_bindings_in l2r occs ?tac id (c,bl) =
-  general_rewrite_ebindings_clause (Some id) l2r occs ?tac (inj_open c,inj_ebindings bl)
+let general_rewrite_bindings_in l2r occs dep_proof_ok ?tac id (c,bl) =
+  general_rewrite_ebindings_clause (Some id) l2r occs dep_proof_ok ?tac (inj_open c,inj_ebindings bl)
 
-let general_rewrite_in l2r occs ?tac id c =
-  general_rewrite_ebindings_clause (Some id) l2r occs ?tac (inj_open c,NoBindings)
+let general_rewrite_in l2r occs dep_proof_ok ?tac id c =
+  general_rewrite_ebindings_clause (Some id) l2r occs dep_proof_ok ?tac (inj_open c,NoBindings)
 
 let general_multi_rewrite l2r with_evars ?tac c cl =
   let occs_of = on_snd (List.fold_left
@@ -297,12 +305,12 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	  | [] -> tclIDTAC
 	  | ((occs,id),_) :: l ->
 	    tclTHENFIRST
-	      (general_rewrite_ebindings_in l2r (occs_of occs) ?tac id c with_evars)
+	      (general_rewrite_ebindings_in l2r (occs_of occs) true ?tac id c with_evars)
 	      (do_hyps l)
 	in
 	if cl.concl_occs = no_occurrences_expr then do_hyps l else
 	  tclTHENFIRST
-	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) ?tac c with_evars)
+	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) true ?tac c with_evars)
 	   (do_hyps l)
     | None ->
 	(* Otherwise, if we are told to rewrite in all hypothesis via the
@@ -311,7 +319,7 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	  | [] -> (fun gl -> error "Nothing to rewrite.")
 	  | id :: l ->
 	    tclIFTHENTRYELSEMUST
-	     (general_rewrite_ebindings_in l2r all_occurrences ?tac id c with_evars)
+	     (general_rewrite_ebindings_in l2r all_occurrences true ?tac id c with_evars)
 	     (do_hyps_atleastonce l)
 	in
 	let do_hyps gl =
@@ -323,7 +331,7 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	in
 	if cl.concl_occs = no_occurrences_expr then do_hyps else
 	  tclIFTHENTRYELSEMUST
-	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) ?tac c with_evars)
+	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) true ?tac c with_evars)
 	   do_hyps
 
 let general_multi_multi_rewrite with_evars l cl tac =
@@ -342,8 +350,8 @@ let general_multi_multi_rewrite with_evars l cl tac =
     | (l2r,m,c)::l -> tclTHENFIRST (doN l2r c m) (loop l)
   in loop l
 
-let rewriteLR = general_rewrite true all_occurrences
-let rewriteRL = general_rewrite false all_occurrences
+let rewriteLR = general_rewrite true all_occurrences true
+let rewriteRL = general_rewrite false all_occurrences true
 
 (* Replacing tactics *)
 
@@ -1218,7 +1226,8 @@ let cutRewriteInConcl l2r eqn = cutRewriteClause l2r eqn None
 
 let substClause l2r c cls gls =
   let eq = pf_apply get_type_of gls c in
-  tclTHENS (cutSubstClause l2r eq cls) [tclIDTAC; exact_no_check c] gls
+  tclTHENS (cutSubstClause l2r eq cls)
+    [tclIDTAC; exact_no_check c] gls
 
 let rewriteClause l2r c cls = try_rewrite (substClause l2r c cls)
 let rewriteInHyp l2r c id = rewriteClause l2r c (Some id)
@@ -1275,7 +1284,7 @@ let is_eq_x gl x (id,_,c) =
   with PatternMatchingFailure ->
     ()
 
-let subst_one x gl =
+let subst_one dep_proof_ok x gl =
   let hyps = pf_hyps gl in
   let (_,xval,_) = pf_get_hyp gl x in
   (* If x has a body, simply replace x with body and clear x *)
@@ -1320,7 +1329,7 @@ let subst_one x gl =
   tclTHENLIST
     ((if need_rewrite then
       [generalize abshyps;
-       (if dir then rewriteLR else rewriteRL) (mkVar hyp);
+       general_rewrite dir all_occurrences dep_proof_ok (mkVar hyp);
        thin dephyps;
        tclMAP introtac depdecls]
     else
@@ -1328,13 +1337,27 @@ let subst_one x gl =
        tclMAP introtac depdecls]) @
      [tclTRY (clear [x;hyp])]) gl
 
-let subst ids = tclTHEN tclNORMEVAR (tclMAP subst_one ids)
+let subst_gen dep_proof_ok ids =
+  tclTHEN tclNORMEVAR (tclMAP (subst_one dep_proof_ok) ids)
 
-let subst_all ?(strict=true) gl =
+let subst = subst_gen true
+
+type subst_tactic_flags = {
+  only_leibniz : bool;
+  rewrite_dependent_proof : bool
+}
+
+let default_subst_tactic_flags () =
+  if Flags.version_strictly_greater Flags.V8_2 then
+    { only_leibniz = false; rewrite_dependent_proof = true }
+  else
+    { only_leibniz = true; rewrite_dependent_proof = false }
+
+let subst_all ?(flags=default_subst_tactic_flags ()) gl =
   let test (_,c) =
     try
       let lbeq,(_,x,y) = find_eq_data_decompose gl c in
-      if strict then restrict_to_eq_and_identity lbeq.eq;
+      if flags.only_leibniz then restrict_to_eq_and_identity lbeq.eq;
       (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
       if eq_constr x y then failwith "caught";
       match kind_of_term x with Var x -> x | _ ->
@@ -1343,8 +1366,7 @@ let subst_all ?(strict=true) gl =
   in
   let ids = map_succeed test (pf_hyps_types gl) in
   let ids = list_uniquize ids in
-  subst ids gl
-
+  subst_gen flags.rewrite_dependent_proof ids gl
 
 (* Rewrite the first assumption for which the condition faildir does not fail
    and gives the direction of the rewrite *)
