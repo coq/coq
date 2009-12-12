@@ -693,16 +693,6 @@ type constr_pattern_expr = constr_expr
 
 let default_binder_kind = Default Explicit
 
-let rec local_binders_length = function
-  | [] -> 0
-  | LocalRawDef _::bl -> 1 + local_binders_length bl
-  | LocalRawAssum (idl,_,_)::bl -> List.length idl + local_binders_length bl
-
-let rec local_assums_length = function
-  | [] -> 0
-  | LocalRawDef _::bl -> local_binders_length bl
-  | LocalRawAssum (idl,_,_)::bl -> List.length idl + local_binders_length bl
-
 let names_of_local_assums bl =
   List.flatten (List.map (function LocalRawAssum(l,_,_)->l|_->[]) bl)
 

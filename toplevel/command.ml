@@ -59,43 +59,43 @@ let rec complete_conclusion a cs = function
 
 (* 1| Constant definitions *)
 
-let red_constant_entry bl ce = function
+let red_constant_entry n ce = function
   | None -> ce
   | Some red ->
       let body = ce.const_entry_body in
       { ce with const_entry_body =
-	under_binders (Global.env()) (fst (reduction_of_red_expr red))
-	  (local_binders_length bl)
-	  body }
+	under_binders (Global.env()) (fst (reduction_of_red_expr red)) n body }
 
 let interp_definition boxed bl red_option c ctypopt =
   let env = Global.env() in
+  let evdref = ref Evd.empty in
+  let (env_bl, ctx), imps1 =
+    interp_context_evars ~fail_anonymous:false evdref env bl in
   let imps,ce =
     match ctypopt with
       None ->
-	let b = abstract_constr_expr c bl in
-	let b, imps = interp_constr_evars_impls env b in
-	  imps,
-	{ const_entry_body = b;
+	let c, imps2 = interp_constr_evars_impls ~evdref ~fail_evar:false env_bl c in
+	let body = nf_isevar !evdref (it_mkLambda_or_LetIn c ctx) in
+	check_evars env Evd.empty !evdref body;
+	imps1@imps2,
+	{ const_entry_body = body;
 	  const_entry_type = None;
           const_entry_opaque = false;
 	  const_entry_boxed = boxed }
     | Some ctyp ->
-	let ty = prod_constr_expr ctyp bl in
-	let b = abstract_constr_expr c bl in
-	let evdref = ref Evd.empty in
-	let ty, impls = interp_type_evars_impls ~evdref ~fail_evar:false env ty in
-	let b, imps = interp_casted_constr_evars_impls ~evdref ~fail_evar:false env b ty in
-	let body, typ = nf_isevar !evdref b, nf_isevar !evdref ty in
-	  check_evars env Evd.empty !evdref body;
-	  check_evars env Evd.empty !evdref typ;
-	  imps,
+	let ty, impls = interp_type_evars_impls ~evdref ~fail_evar:false env_bl ctyp in
+	let c, imps2 = interp_casted_constr_evars_impls ~evdref ~fail_evar:false env_bl c ty in
+	let body = nf_isevar !evdref (it_mkLambda_or_LetIn c ctx) in
+	let typ = nf_isevar !evdref (it_mkProd_or_LetIn ty ctx) in
+	check_evars env Evd.empty !evdref body;
+	check_evars env Evd.empty !evdref typ;
+	imps1@imps2,
 	{ const_entry_body = body;
 	  const_entry_type = Some typ;
           const_entry_opaque = false;
 	  const_entry_boxed = boxed }
   in
-  red_constant_entry bl ce red_option, imps
+  red_constant_entry (rel_context_length ctx) ce red_option, imps
 
 let declare_global_definition ident ce local k imps =
   let kn = declare_constant ident (DefinitionEntry ce,IsDefinition k) in
@@ -484,8 +484,8 @@ let prepare_recursive_declaration fixnames fixtypes fixdefs =
 
 (* Jump over let-bindings. *)
 
-let compute_possible_guardness_evidences n fix =
-  match index_of_annot fix.fix_binders n with
+let compute_possible_guardness_evidences na fix (nb,_) =
+  match index_of_annot fix.fix_binders na with
   | Some i -> [i]
   | None ->
       (* If recursive argument was not given by user, we try all args.
@@ -493,7 +493,7 @@ let compute_possible_guardness_evidences n fix =
 	 but doing it properly involves delta-reduction, and it finally
          doesn't seem to worth the effort (except for huge mutual
 	 fixpoints ?) *)
-      interval 0 (local_assums_length fix.fix_binders - 1)
+      interval 0 (nb - 1)
 
 type recursive_preentry =
   identifier list * constr option list * types list
@@ -608,9 +608,10 @@ let extract_cofixpoint_components l =
 
 let do_fixpoint l b =
   let fixl,ntns,wfl = extract_fixpoint_components l in
+  let fix = interp_fixpoint fixl ntns in
   let possible_indexes =
-      List.map2 compute_possible_guardness_evidences wfl fixl in
-  declare_fixpoint b (interp_fixpoint fixl ntns) possible_indexes ntns
+    list_map3 compute_possible_guardness_evidences wfl fixl (snd fix) in
+  declare_fixpoint b fix possible_indexes ntns
 
 let do_cofixpoint l b =
   let fixl,ntns = extract_cofixpoint_components l in

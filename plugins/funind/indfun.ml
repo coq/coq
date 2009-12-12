@@ -235,8 +235,14 @@ let rec is_rec names =
   in
   lookup names
 
+let rec local_binders_length = function
+  (* Assume that no `{ ... } contexts occur *)
+  | [] -> 0
+  | Topconstr.LocalRawDef _::bl -> 1 + local_binders_length bl
+  | Topconstr.LocalRawAssum (idl,_,_)::bl -> List.length idl + local_binders_length bl
+
 let prepare_body (name,annot,args,types,body) rt =
-  let n = (Topconstr.local_binders_length args) in
+  let n = local_binders_length args in
 (*   Pp.msgnl (str "nb lambda to chop : " ++ str (string_of_int n) ++ fnl () ++Printer.pr_rawconstr rt); *)
   let fun_args,rt' = chop_rlambda_n n rt in
   (fun_args,rt')
