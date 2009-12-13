@@ -48,6 +48,9 @@ Tactics
   avoided by unsetting option "Automatic Introduction").
 - Made quantified hypotheses get the name they would have if introduced in
   the context (possible but rare source of incompatibilities).
+- When applying a component of a conjunctive lemma, "apply in" (and
+  sequences of "apply in") now leave the side conditions of the lemmas
+  uniformly after the main goal (possible source of rare incompatibilities).
 
 Tactic Language
 

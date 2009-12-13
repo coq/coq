@@ -860,7 +860,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
 			mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |])
 		  in
 		    cut_replacing id newt
-		      (fun x -> Tacmach.refine_no_check (mkApp (term, [| mkVar id |])))
+		      (Tacmach.refine_no_check (mkApp (term, [| mkVar id |])))
 	      | None ->
 		  (match abs with
 		  | None ->

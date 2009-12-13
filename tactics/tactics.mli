@@ -359,8 +359,8 @@ val intros_transitivity         : constr option -> tactic
 
 val cut                         : constr -> tactic
 val cut_intro                   : constr -> tactic
-val cut_replacing               :
-  identifier -> constr -> (tactic -> tactic) -> tactic
+val assert_replacing            : identifier -> types -> tactic -> tactic
+val cut_replacing               : identifier -> types -> tactic -> tactic
 val cut_in_parallel             : constr list -> tactic
 
 val assert_as : bool -> intro_pattern_expr located option -> constr -> tactic

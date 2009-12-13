@@ -94,6 +94,21 @@ let _ =
       optread  = (fun () -> !dependent_propositions_elimination) ;
       optwrite = (fun b -> dependent_propositions_elimination := b) }
 
+let apply_in_side_conditions_come_first = ref true
+
+let use_apply_in_side_conditions_come_first () =
+  !apply_in_side_conditions_come_first
+  && Flags.version_strictly_greater Flags.V8_2
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optname  = "apply-in side-conditions coming first";
+      optkey   = ["Side";"Conditions";"First";"For";"apply";"in"];
+      optread  = (fun () -> !dependent_propositions_elimination) ;
+      optwrite = (fun b -> dependent_propositions_elimination := b) }
+
+
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
@@ -646,11 +661,31 @@ let cut c gl =
 
 let cut_intro t = tclTHENFIRST (cut t) intro
 
-(* cut_replacing échoue si l'hypothèse à remplacer apparaît dans le
-   but, ou dans une autre hypothèse *)
-let cut_replacing id t tac =
-  tclTHENLAST (internal_cut_rev_replace id t)
-    (tac (refine_no_check (mkVar id)))
+(* [assert_replacing id T tac] adds the subgoals of the proof of [T]
+   before the current goal
+
+   id:T0                 id:T0    id:T     
+   =====   ------>   tac(=====) + ==== 
+    G                     T        G
+
+   It fails if the hypothesis to replace appears in the goal or in
+   another hypothesis.
+*) 
+
+let assert_replacing id t tac = tclTHENFIRST (internal_cut_replace id t) tac
+
+(* [cut_replacing id T tac] adds the subgoals of the proof of [T]
+   after the current goal
+
+   id:T0             id:T       id:T0
+   =====   ------>   ==== + tac(=====)
+    G                 G          T
+
+   It fails if the hypothesis to replace appears in the goal or in
+   another hypothesis.
+*)
+
+let cut_replacing id t tac = tclTHENLAST (internal_cut_rev_replace id t) tac
 
 let cut_in_parallel l =
   let rec prec = function
@@ -664,7 +699,13 @@ let error_uninstantiated_metas t clenv =
   let id = match na with Name id -> id | _ -> anomaly "unnamed dependent meta"
   in errorlabstrm "" (str "Cannot find an instance for " ++ pr_id id ++ str".")
 
-let clenv_refine_in with_evars ?(with_classes=true) id clenv gl =
+(* For a clenv expressing some lemma [C[?1:T1,...,?n:Tn] : P] and some
+   goal [G], [clenv_refine_in] returns [n+1] subgoals, the [n] last
+   ones (resp [n] first ones if [sidecond_first] is [true]) being the
+   [Ti] and the first one (resp last one) being [G] whose hypothesis
+   [id] is replaced by P using the proof given by [tac] *)
+
+let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) id clenv gl =
   let clenv = clenv_pose_dependent_evars with_evars clenv in
   let clenv =
     if with_classes then
@@ -677,9 +718,8 @@ let clenv_refine_in with_evars ?(with_classes=true) id clenv gl =
   let new_hyp_prf = clenv_value clenv in
   tclTHEN
     (tclEVARS clenv.evd)
-    (cut_replacing id new_hyp_typ
-      (fun x gl -> refine_no_check new_hyp_prf gl)) gl
-
+    ((if sidecond_first then assert_replacing else cut_replacing)
+      id new_hyp_typ (refine_no_check new_hyp_prf)) gl
 
 (********************************************)
 (*       Elimination tactics                *)
@@ -848,15 +888,28 @@ let simplest_case c = general_case_analysis false (c,NoBindings)
 
 (* Apply a tactic below the products of the conclusion of a lemma *)
 
-let descend_in_conjunctions with_evars tac exit c gl =
+let get_named_case_analysis_scheme sidecond_first ind sort gl =
+  if sidecond_first then
+    pf_apply build_case_analysis_scheme_default gl ind sort
+  else
+    let (mib,mip) = Global.lookup_inductive ind in
+    let kind = inductive_sort_family mip in
+    let scheme = match kind, sort with
+    | InProp, InProp -> Elimschemes.case_dep_scheme_kind_from_prop_in_prop
+    | InProp, (InType | InSet) -> Elimschemes.case_dep_scheme_kind_from_prop
+    | _, InProp -> Elimschemes.case_dep_scheme_kind_from_type_in_prop
+    | _, (InType | InSet) -> Elimschemes.case_dep_scheme_kind_from_type
+    in mkConst (Ind_tables.find_scheme scheme ind)
+
+let descend_in_conjunctions sidecond_first with_evars tac exit c gl =
   try
-    let (mind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+    let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
     match match_with_tuple (strip_prod t) with
     | Some (_,_,isrec) ->
-	let n = (mis_constr_nargs mind).(0) in
+	let n = (mis_constr_nargs ind).(0) in
 	let sort = elimination_sort_of_goal gl in
-	let elim = pf_apply build_case_analysis_scheme_default gl mind sort in
-	tclTHENLAST
+	let elim = get_named_case_analysis_scheme sidecond_first ind sort gl in
+	(if sidecond_first then tclTHENLAST else tclTHENFIRST)
 	  (general_elim with_evars (c,NoBindings)
 	     {elimindex = None; elimbody = (elim,NoBindings)})
 	  (tclTHENLIST [
@@ -928,7 +981,7 @@ let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
 	    try if concl_nprod <> 0 then try_apply thm_ty 0 else raise Exit
 	    with PretypeError _|RefinerError _|UserError _|Failure _|Exit ->
 	      if with_destruct then
-                descend_in_conjunctions with_evars
+                descend_in_conjunctions true with_evars
                   try_main_apply (fun _ -> Stdpp.raise_with_loc loc exn) c gl
 	      else
 		Stdpp.raise_with_loc loc exn
@@ -1001,7 +1054,7 @@ let apply_in_once_main flags innerclause (d,lbind) gl =
     with NotExtensibleClause -> raise err in
   aux (make_clenv_binding gl (d,thm) lbind)
 
-let apply_in_once with_delta with_destruct with_evars id
+let apply_in_once sidecond_first with_delta with_destruct with_evars id
   (loc,((sigma,d),lbind)) gl0 =
   let flags =
     if with_delta then default_unify_flags else default_no_delta_unify_flags in
@@ -1011,17 +1064,15 @@ let apply_in_once with_delta with_destruct with_evars id
   let rec aux with_destruct c gl =
     try
       let clause = apply_in_once_main flags innerclause (c,lbind) gl in
-      let res = clenv_refine_in with_evars id clause gl in
+      let res = clenv_refine_in ~sidecond_first with_evars id clause gl in
       if not with_evars then check_evars (fst res).sigma sigma gl0;
       res
     with exn when with_destruct ->
-      descend_in_conjunctions true aux (fun _ -> raise exn) c gl
+      descend_in_conjunctions sidecond_first true aux (fun _ -> raise exn) c gl
   in
     if sigma = Evd.empty then aux with_destruct d gl0
     else
       tclTHEN (tclEVARS (Evd.merge gl0.sigma sigma)) (aux with_destruct d) gl0
-
-
 
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
@@ -1424,16 +1475,29 @@ let as_tac id ipat = match ipat with
       user_err_loc (loc,"", str "Disjunctive/conjunctive pattern expected")
   | None -> tclIDTAC
 
+let tclMAPLAST tacfun l =
+  List.fold_right (fun x -> tclTHENLAST (tacfun x)) l tclIDTAC
+
 let tclMAPFIRST tacfun l =
   List.fold_right (fun x -> tclTHENFIRST (tacfun x)) l tclIDTAC
 
-let general_apply_in with_delta with_destruct with_evars id lemmas ipat gl =
-  tclTHENFIRST (* Skip the side conditions of the applied lemma *)
-    (tclMAPFIRST (apply_in_once with_delta with_destruct with_evars id) lemmas)
-    (as_tac id ipat)
-    gl
+let general_apply_in sidecond_first with_delta with_destruct with_evars 
+    id lemmas ipat =
+  if sidecond_first then
+    (* Skip the side conditions of the applied lemma *)
+    tclTHENLAST
+      (tclMAPLAST
+	(apply_in_once sidecond_first with_delta with_destruct with_evars id) 
+	lemmas)
+      (as_tac id ipat)
+  else 
+    tclTHENFIRST
+      (tclMAPFIRST
+	(apply_in_once sidecond_first with_delta with_destruct with_evars id) 
+	lemmas)
+      (as_tac id ipat)
 
-let apply_in simple with_evars = general_apply_in simple simple with_evars
+let apply_in simple with_evars = general_apply_in false simple simple with_evars
 
 let simple_apply_in id c =
   apply_in false false id [dloc,((Evd.empty,c),NoBindings)] None

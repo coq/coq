@@ -1195,7 +1195,9 @@ let cutSubstInHyp_LR eqn id gls =
   let body,expected_goal = pf_apply subst_tuple_term gls e1 e2 idtyp in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
   cut_replacing id expected_goal
-    (tclTHENFIRST (bareRevSubstInConcl lbeq body eq)) gls
+    (tclTHENFIRST
+      (bareRevSubstInConcl lbeq body eq)
+      (refine_no_check (mkVar id))) gls
 
 let cutSubstInHyp_RL eqn id gls =
   (tclTHENS (cutSubstInHyp_LR (swap_equands gls eqn) id)

@@ -297,13 +297,37 @@ reflexivity.
 exact I.
 Qed.
 
-(* Check chaining of "apply in" on the last subgoal (assuming that
-   side conditions come first) *)
+(* Check that "apply" is chained on the last subgoal of each lemma and
+   that side conditions come first (as it is the case since 8.2) *)
 
-Lemma chaining :
-  forall B C D : Prop, (True -> B -> C) -> (C -> D) -> B -> D.
+Lemma chaining : 
+  forall A B C : Prop,
+  (1=1 -> (2=2 -> A -> B) /\ True) ->
+  (3=3 -> (True /\ (4=4 -> C -> A))) -> C -> B.
 Proof.
 intros.
-apply H, H0 in H1; auto.
+apply H, H0.
+exact (refl_equal 1).
+exact (refl_equal 2).
+exact (refl_equal 3).
+exact (refl_equal 4).
+assumption.
 Qed.
 
+(* Check that the side conditions of "apply in", even when chained and
+   used through conjunctions, come last (as it is the case for single
+   calls to "apply in" w/o destruction of conjunction since 8.2) *)
+
+Lemma chaining_in :
+  forall A B C : Prop, 
+  (1=1 -> True /\ (B -> 2=2 -> 5=0)) ->
+  (3=3 -> (A -> 4=4 -> B) /\ True) -> A -> 0=5.
+Proof.
+intros.
+apply H0, H in H1 as ->.
+exact (refl_equal 0).
+exact (refl_equal 1).
+exact (refl_equal 2).
+exact (refl_equal 3).
+exact (refl_equal 4).
+Qed.

@@ -41,6 +41,7 @@ open Vernacexpr
 open Ind_tables
 open Auto_ind_decl
 open Eqschemes
+open Elimschemes
 
 (* Flags governing automatic synthesis of schemes *)
 
@@ -173,79 +174,20 @@ let try_declare_beq_scheme kn =
 
 let declare_beq_scheme = declare_beq_scheme_with []
 
-(* Induction/recursion schemes *)
+(* Case analysis schemes *)
 
-let optimize_non_type_induction_scheme kind dep sort ind =
-  if check_scheme kind ind then
+let declare_one_case_analysis_scheme ind =
+  let (mib,mip) = Global.lookup_inductive ind in
+  let kind = inductive_sort_family mip in
+  let dep = if kind = InProp then case_scheme_kind_from_prop else case_dep_scheme_kind_from_type in
+  let kelim = elim_sorts (mib,mip) in
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
        apropriate type *)
-    let cte = find_scheme kind ind in
-    let c = mkConst cte in
-    let t = type_of_constant (Global.env()) cte in
-    let (mib,mip) = Global.lookup_inductive ind in
-    let npars =
-      (* if a constructor of [ind] contains a recursive call, the scheme
-	 is generalized only wrt recursively uniform parameters *)
-      if (Inductiveops.mis_is_recursive_subset [snd ind] mip.mind_recargs)
-      then
-	mib.mind_nparams_rec
-      else
-	mib.mind_nparams in
-    snd (weaken_sort_scheme (new_sort_in_family sort) npars c t)
-  else
-    build_induction_scheme (Global.env()) Evd.empty ind dep sort
+  if List.mem InType kelim then
+    ignore (define_individual_scheme dep true None ind)
 
-let build_induction_scheme_in_type dep sort ind =
-  build_induction_scheme (Global.env()) Evd.empty ind dep sort
-
-let rect_scheme_kind_from_type =
-  declare_individual_scheme_object "_rect_nodep"
-    (build_induction_scheme_in_type false InType)
-
-let rect_scheme_kind_from_prop =
-  declare_individual_scheme_object "_rect" ~aux:"_rect_from_prop"
-    (build_induction_scheme_in_type false InType)
-
-let rect_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "_rect" ~aux:"_rect_from_type"
-    (build_induction_scheme_in_type true InType)
-
-let rect_dep_scheme_kind_from_prop =
-  declare_individual_scheme_object "_rect_dep"
-    (build_induction_scheme_in_type true InType)
-
-let ind_scheme_kind_from_type =
-  declare_individual_scheme_object "_ind_nodep"
-  (optimize_non_type_induction_scheme rect_scheme_kind_from_type false InProp)
-
-let ind_scheme_kind_from_prop =
-  declare_individual_scheme_object "_ind" ~aux:"_ind_from_prop"
-  (optimize_non_type_induction_scheme rect_scheme_kind_from_prop false InProp)
-
-let ind_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "_ind" ~aux:"_ind_from_type"
-  (optimize_non_type_induction_scheme rect_dep_scheme_kind_from_type true InProp)
-
-let ind_dep_scheme_kind_from_prop =
-  declare_individual_scheme_object "_ind_dep"
-  (optimize_non_type_induction_scheme rect_dep_scheme_kind_from_prop true InProp)
-
-let rec_scheme_kind_from_type =
-  declare_individual_scheme_object "_rec_nodep"
-  (optimize_non_type_induction_scheme rect_scheme_kind_from_type false InSet)
-
-let rec_scheme_kind_from_prop =
-  declare_individual_scheme_object "_rec" ~aux:"_rec_from_prop"
-  (optimize_non_type_induction_scheme rect_scheme_kind_from_prop false InSet)
-
-let rec_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "_rec" ~aux:"_rec_from_type"
-  (optimize_non_type_induction_scheme rect_dep_scheme_kind_from_type true InSet)
-
-let rec_dep_scheme_kind_from_prop =
-  declare_individual_scheme_object "_rec_dep"
-  (optimize_non_type_induction_scheme rect_dep_scheme_kind_from_prop true InSet)
+(* Induction/recursion schemes *)
 
 let kinds_from_prop =
   [InType,rect_scheme_kind_from_prop;
@@ -268,36 +210,6 @@ let declare_one_induction_scheme ind =
       (if from_prop then kinds_from_prop else kinds_from_type) in
   List.iter (fun kind -> ignore (define_individual_scheme kind true None ind))
     elims
-
-let build_case_analysis_scheme_in_type dep ind =
-  build_case_analysis_scheme (Global.env()) Evd.empty ind dep InType
-
-let case_scheme_kind_from_type =
-  declare_individual_scheme_object "_case_nodep"
-  (build_case_analysis_scheme_in_type false)
-
-let case_scheme_kind_from_prop =
-  declare_individual_scheme_object "_case" ~aux:"_case_from_prop"
-  (build_case_analysis_scheme_in_type false)
-
-let case_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "_case" ~aux:"_case_from_type"
-  (build_case_analysis_scheme_in_type true)
-
-let case_dep_scheme_kind_from_prop =
-  declare_individual_scheme_object "_case_dep"
-  (build_case_analysis_scheme_in_type true)
-
-let declare_one_case_analysis_scheme ind =
-  let (mib,mip) = Global.lookup_inductive ind in
-  let kind = inductive_sort_family mip in
-  let dep = if kind = InProp then case_scheme_kind_from_prop else case_dep_scheme_kind_from_type in
-  let kelim = elim_sorts (mib,mip) in
-    (* in case the inductive has a type elimination, generates only one
-       induction scheme, the other ones share the same code with the
-       apropriate type *)
-  if List.mem InType kelim then
-    ignore (define_individual_scheme dep true None ind)
 
 let declare_induction_schemes kn =
   let mib = Global.lookup_mind kn in

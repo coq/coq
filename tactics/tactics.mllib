@@ -4,13 +4,14 @@ Btermdn
 Nbtermdn
 Tacticals
 Hipattern
+Ind_tables
+Eqschemes
+Elimschemes
 Tactics
 Hiddentac
 Elim
 Dhyp
 Auto
-Ind_tables
-Eqschemes
 Equality
 Contradiction
 Inv
