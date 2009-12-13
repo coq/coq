@@ -426,7 +426,11 @@ let pr_in_hyp_as pr_id = function
   | None -> mt ()
   | Some (id,ipat) -> pr_simple_hyp_clause pr_id [id] ++ pr_as_ipat ipat
 
-let pr_clauses pr_id = function
+let pr_clauses default_is_concl pr_id = function
+  | { onhyps=Some []; concl_occs=occs }
+      when occs = all_occurrences_expr & default_is_concl = Some true -> mt ()
+  | { onhyps=None; concl_occs=occs }
+      when occs = all_occurrences_expr & default_is_concl = Some false -> mt ()
   | { onhyps=None; concl_occs=occs } ->
       if occs = no_occurrences_expr then pr_in (str " * |-")
       else pr_in (pr_with_occurrences (fun () -> str " *") (occs,()))
@@ -737,7 +741,7 @@ and pr_atom1 = function
       hov 1 ((if b then str "set" else str "remember") ++
              (if b then pr_pose pr_lconstr else pr_pose_as_style)
 	        pr_constr na c ++
-             pr_clauses pr_ident cl)
+             pr_clauses (Some b) pr_ident cl)
 (*  | TacInstantiate (n,c,ConclLocation ()) ->
       hov 1 (str "instantiate" ++ spc() ++
              hov 1 (str"(" ++ pr_arg int n ++ str" :=" ++
@@ -759,7 +763,7 @@ and pr_atom1 = function
 	       prlist_with_sep spc (pr_induction_arg pr_lconstr pr_constr) h ++
 	       pr_with_induction_names ids ++
                pr_opt pr_eliminator e) l ++
-               pr_opt_no_spc (pr_clauses pr_ident) cl)
+               pr_opt_no_spc (pr_clauses None pr_ident) cl)
   | TacDoubleInduction (h1,h2) ->
       hov 1
         (str "double induction" ++
@@ -831,7 +835,7 @@ and pr_atom1 = function
   (* Conversion *)
   | TacReduce (r,h) ->
       hov 1 (pr_red_expr r ++
-             pr_clauses pr_ident h)
+             pr_clauses (Some true) pr_ident h)
   | TacChange (occ,c,h) ->
       hov 1 (str "change" ++ brk (1,1) ++
       (match occ with
@@ -839,11 +843,11 @@ and pr_atom1 = function
         | Some occlc ->
 	    pr_with_occurrences_with_trailer pr_constr occlc
 	      (spc () ++ str "with ")) ++
-      pr_constr c ++ pr_clauses pr_ident h)
+      pr_constr c ++ pr_clauses (Some true) pr_ident h)
 
   (* Equivalence relations *)
   | TacReflexivity as x -> pr_atom0 x
-  | TacSymmetry cls -> str "symmetry " ++ pr_clauses pr_ident cls
+  | TacSymmetry cls -> str "symmetry " ++ pr_clauses (Some true) pr_ident cls
   | TacTransitivity (Some c) -> str "transitivity" ++ pr_constrarg c
   | TacTransitivity None -> str "etransitivity"
 
@@ -855,7 +859,7 @@ and pr_atom1 = function
 	     (fun (b,m,c) ->
 		pr_orient b ++ spc() ++ pr_multi m ++ pr_with_bindings c)
 	     l
-	     ++ pr_clauses pr_ident cl
+	     ++ pr_clauses (Some true) pr_ident cl
 	     ++	(match by with Some by -> pr_by_tactic (pr_tac_level ltop) by | None -> mt()))
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       hov 1 (str "dependent " ++ pr_induction_kind k ++ spc () ++

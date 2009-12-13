@@ -405,6 +405,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
       let p =
 	try
+	  if !Flags.raw_print then raise Exit;
 	  let projs = Recordops.lookup_projections (fst cstrsp) in
 	  let rec ip projs args acc =
 	    match projs with
@@ -420,7 +421,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	    in
 	  CPatRecord(loc, List.rev (ip projs args []))
 	with
-	  Not_found | No_match ->
+	  Not_found | No_match | Exit ->
 	    CPatCstr (loc, extern_reference loc vars (ConstructRef cstrsp), args) in
       insert_pat_alias loc p na
 
@@ -656,6 +657,7 @@ let rec extern inctx scopes vars r =
 	       extern_args (extern true) (snd scopes) vars args subscopes in
 	     begin
 	       try
+		 if !Flags.raw_print then raise Exit;
 		 let cstrsp = match ref with ConstructRef c -> c | _ -> raise Not_found in
 		 let struc = Recordops.lookup_structure (fst cstrsp) in
 		 let projs = struc.Recordops.s_PROJ in
@@ -682,7 +684,7 @@ let rec extern inctx scopes vars r =
 		   in
 		 CRecord (loc, None, List.rev (ip projs locals args []))
 	       with
-		 | Not_found | No_match ->
+		 | Not_found | No_match | Exit ->
 		     extern_app loc inctx (implicits_of_global ref)
 		       (Some ref,extern_reference rloc vars ref) args
 	     end
