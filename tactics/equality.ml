@@ -1160,7 +1160,9 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   (* ... and use dep_pair2 to compute the expected goal *)
   let e2_list,_ = decomp_tuple_term env dep_pair2 typ in
   let pred_body = beta_applist(abst_B,proj_list) in
-  let expected_goal =  beta_applist(abst_B,List.map fst e2_list) in
+  let expected_goal = beta_applist (abst_B,List.map fst e2_list) in
+  (* Simulate now the normalisation treatment made by Logic.mk_refgoals *)
+  let expected_goal = nf_betaiota sigma expected_goal in
   pred_body,expected_goal
 
 (* Like "replace" but decompose dependent equalities *)
