@@ -121,7 +121,16 @@ Library
   available under the name nat_compare_alt.
 - Lemmas in library Relations and Reals have been homogenized a bit.
 - The implicit argument of Logic.eq is now maximally inserted, allowing
-  to simply write "eq" instead of "@eq _" in morphism signatures. 
+  to simply write "eq" instead of "@eq _" in morphism signatures.
+- Revision of the Sorting library:
+  - new mergesort of worst-case complexity O(n*ln(n)) made available in 
+    Mergesort.v;
+  - notion of permutation up to setoid from Permutation.v is deprecated and 
+    was moved to PermutSetoid.v;
+  - Permutation.v now contains the notion of permutation that was formerly in 
+    List.v;
+  - heapsort from Heap.v of worst-case complexity O(n*n) is deprecated;
+  - new file Sorted.v for some definitions of being sorted.
 
 Changes from V8.1 to V8.2
 =========================

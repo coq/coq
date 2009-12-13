@@ -8,11 +8,15 @@
 
 (*i $Id$ i*)
 
-(** A development of Treesort on Heap trees *)
+(** This file is deprecated, for a tree on list, use [Mergesort.v]. *)
+
+(** A development of Treesort on Heap trees. It has an average
+    complexity of O(n.log n) but of O(n²) in the worst case (e.g. if
+    the list is already sorted) *)
 
 (* G. Huet 1-9-95 uses Multiset *)
 
-Require Import List Multiset Permutation Relations Sorting.
+Require Import List Multiset PermutSetoid Relations Sorting.
 
 Section defs.
 
@@ -122,6 +126,54 @@ Section defs.
     intros; simpl in |- *; apply leA_trans with b; auto with datatypes.
   Qed.
 
+  (** ** Merging two sorted lists *)
+
+  Inductive merge_lem (l1 l2:list A) : Type :=
+    merge_exist :
+    forall l:list A,
+      Sorted leA l ->
+      meq (list_contents _ eqA_dec l)
+      (munion (list_contents _ eqA_dec l1) (list_contents _ eqA_dec l2)) ->
+      (forall a, HdRel leA a l1 -> HdRel leA a l2 -> HdRel leA a l) ->
+      merge_lem l1 l2.
+
+  Lemma merge :
+    forall l1:list A, Sorted leA l1 ->
+    forall l2:list A, Sorted leA l2 -> merge_lem l1 l2.
+  Proof.
+    simple induction 1; intros.
+    apply merge_exist with l2; auto with datatypes.
+    elim H2; intros.
+    apply merge_exist with (a :: l); simpl in |- *; auto using cons_sort with datatypes.
+    elim (leA_dec a a0); intros.
+
+    (* 1 (leA a a0) *)
+    cut (merge_lem l (a0 :: l0)); auto using cons_sort with datatypes.
+    intros [l3 l3sorted l3contents Hrec].
+    apply merge_exist with (a :: l3); simpl in |- *;
+      auto using cons_sort, cons_leA with datatypes.
+    apply meq_trans with
+      (munion (singletonBag a)
+	(munion (list_contents _ eqA_dec l)
+          (list_contents _ eqA_dec (a0 :: l0)))).
+    apply meq_right; trivial with datatypes.
+    apply meq_sym; apply munion_ass.
+    intros; apply cons_leA.
+    apply (@HdRel_inv _ leA) with l; trivial with datatypes.
+
+    (* 2 (leA a0 a) *)
+    elim X0; simpl in |- *; intros.
+    apply merge_exist with (a0 :: l3); simpl in |- *;
+      auto using cons_sort, cons_leA with datatypes.
+    apply meq_trans with
+      (munion (singletonBag a0)
+	(munion (munion (singletonBag a) (list_contents _ eqA_dec l))
+          (list_contents _ eqA_dec l0))).
+    apply meq_right; trivial with datatypes.
+    apply munion_perm_left.
+    intros; apply cons_leA; apply HdRel_inv with (l:=l0); trivial with datatypes.
+  Qed.
+
 
   (** ** From trees to multisets *)
 
@@ -208,8 +260,8 @@ Section defs.
   Inductive flat_spec (T:Tree) : Type :=
     flat_exist :
     forall l:list A,
-      sort leA l ->
-      (forall a:A, leA_Tree a T -> lelistA leA a l) ->
+      Sorted leA l ->
+      (forall a:A, leA_Tree a T -> HdRel leA a l) ->
       meq (contents T) (list_contents _ eqA_dec l) -> flat_spec T.
 
   Lemma heap_to_list : forall T:Tree, is_heap T -> flat_spec T.
@@ -217,7 +269,7 @@ Section defs.
     intros T h; elim h; intros.
     apply flat_exist with (nil (A:=A)); auto with datatypes.
     elim X; intros l1 s1 i1 m1; elim X0; intros l2 s2 i2 m2.
-    elim (merge _ leA_dec eqA_dec s1 s2); intros.
+    elim (merge _ s1 _ s2); intros.
     apply flat_exist with (a :: l); simpl in |- *; auto with datatypes.
     apply meq_trans with
       (munion (list_contents _ eqA_dec l1)
@@ -234,7 +286,8 @@ Section defs.
   (** * Specification of treesort *)
 
   Theorem treesort :
-    forall l:list A, {m : list A | sort leA m &  permutation _ eqA_dec l m}.
+    forall l:list A,
+    {m : list A | Sorted leA m & permutation _ eqA_dec l m}.
   Proof.
     intro l; unfold permutation in |- *.
     elim (list_to_heap l).

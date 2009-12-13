@@ -10,7 +10,7 @@
 
 (* G. Huet 1-9-95 *)
 
-Require Import Permut.
+Require Import Permut Setoid.
 
 Set Implicit Arguments.
 
@@ -18,6 +18,7 @@ Section multiset_defs.
 
   Variable A : Type.
   Variable eqA : A -> A -> Prop.
+  Hypothesis eqA_equiv : Equivalence eqA.
   Hypothesis Aeq_dec : forall x y:A, {eqA x y} + {~ eqA x y}.
 
   Inductive multiset : Type :=
@@ -167,6 +168,15 @@ Section multiset_defs.
     apply multiset_twist2.
   Qed.
 
+  (** SingletonBag *)
+
+  Lemma meq_singleton : forall a a',
+    eqA a a' -> meq (SingletonBag a) (SingletonBag a').
+  Proof.
+    intros; red; simpl; intro a0.
+    destruct (Aeq_dec a a0) as [Ha|Ha]; rewrite H in Ha;
+      decide (Aeq_dec a' a0) with Ha; reflexivity.
+  Qed.
 
 (*i theory of minter to do similarly
 Require Min.

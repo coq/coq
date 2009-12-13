@@ -93,6 +93,7 @@ doc/stdlib/index-list.html
 doc/RecTutorial/RecTutorial.html
 doc/RecTutorial/RecTutorial.pdf
 doc/RecTutorial/RecTutorial.ps
+dev/doc/naming-conventions.pdf
 _build
 plugins/*/*_mod.ml
 myocamlbuild_config.ml

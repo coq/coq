@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Import Omega Relations Setoid List Multiset Permutation.
+Require Import Relations Setoid SetoidList List Multiset PermutSetoid Permutation.
 
 Set Implicit Arguments.
 
@@ -31,19 +31,9 @@ Section Perm.
   Lemma multiplicity_In :
     forall l a, In a l <-> 0 < multiplicity (list_contents l) a.
   Proof.
-    induction l.
-    simpl.
-    split; inversion 1.
-    simpl.
-    split; intros.
-    inversion_clear H.
-    subst a0.
-    destruct (eq_dec a a) as [_|H]; auto with arith; destruct H; auto.
-    destruct (eq_dec a a0) as [H1|H1]; auto with arith; simpl.
-    rewrite <- IHl; auto.
-    destruct (eq_dec a a0); auto.
-    simpl in H.
-    right; rewrite IHl; auto.
+    intros; split; intro H.
+    eapply In_InA, multiplicity_InA in H; eauto with typeclass_instances.
+    eapply multiplicity_InA, InA_alt in H as (y & -> & H); eauto with typeclass_instances.
   Qed.
 
   Lemma multiplicity_In_O :
@@ -102,7 +92,7 @@ Section Perm.
   Lemma permut_In_In :
     forall l1 l2 e, permutation l1 l2 -> In e l1 -> In e l2.
   Proof.
-    unfold Permutation.permutation, meq; intros l1 l2 e P IN.
+    unfold PermutSetoid.permutation, meq; intros l1 l2 e P IN.
     generalize (P e); clear P.
     destruct (In_dec eq_dec e l2) as [H|H]; auto.
     rewrite (multiplicity_In_O _ _ H).
@@ -141,7 +131,7 @@ Section Perm.
     apply permut_cons; auto.
     change (permutation (y::x::l) ((x::nil)++y::l)).
     apply permut_add_cons_inside; simpl; apply permut_refl.
-    apply permut_tran with l'; auto.
+    apply permut_trans with l'; auto.
     revert l'.
     induction l.
     intros.
@@ -152,7 +142,7 @@ Section Perm.
     subst l'.
     apply Permutation_cons_app.
     apply IHl.
-    apply permut_remove_hd with a; auto.
+    apply permut_remove_hd with a; auto with typeclass_instances.
   Qed.
 
   (** Permutation for short lists. *)
@@ -160,7 +150,7 @@ Section Perm.
   Lemma permut_length_1:
     forall a b, permutation (a :: nil) (b :: nil)  -> a=b.
   Proof.
-    intros a b; unfold Permutation.permutation, meq; intro P;
+    intros a b; unfold PermutSetoid.permutation, meq; intro P;
       generalize (P b); clear P; simpl.
     destruct (eq_dec b b) as [H|H]; [ | destruct H; auto].
     destruct (eq_dec a b); simpl; auto; intros; discriminate.
@@ -206,7 +196,7 @@ Section Perm.
     simpl; rewrite <- plus_n_Sm; f_equal.
     rewrite <- app_length.
     apply IHl1.
-    apply permut_remove_hd with a; auto.
+    apply permut_remove_hd with a; auto with typeclass_instances.
   Qed.
 
   Variable B : Type.
@@ -216,7 +206,7 @@ Section Perm.
 
   Lemma permutation_map :
     forall f l1 l2, permutation l1 l2 ->
-      Permutation.permutation _ eqB_dec (map f l1) (map f l2).
+      PermutSetoid.permutation _ eqB_dec (map f l1) (map f l2).
   Proof.
     intros f; induction l1.
     intros l2 P; rewrite (permut_nil (permut_sym P)); apply permut_refl.
@@ -229,7 +219,7 @@ Section Perm.
     apply permut_add_cons_inside.
     rewrite <- map_app.
     apply IHl1; auto.
-    apply permut_remove_hd with a; auto.
+    apply permut_remove_hd with a; auto with typeclass_instances.
   Qed.
 
 End Perm.

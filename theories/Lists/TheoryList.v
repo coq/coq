@@ -12,6 +12,10 @@
 
 Require Export List.
 Set Implicit Arguments.
+
+Local Notation "[ ]" := nil (at level 0).
+Local Notation "[ a ; .. ; b ]" := (a :: .. (b :: []) ..) (at level 0).
+
 Section Lists.
 
 Variable A : Type.
@@ -23,11 +27,13 @@ Variable A : Type.
 Definition Isnil (l:list A) : Prop := nil = l.
 
 Lemma Isnil_nil : Isnil nil.
+Proof.
 red in |- *; auto.
 Qed.
 Hint Resolve Isnil_nil.
 
 Lemma not_Isnil_cons : forall (a:A) (l:list A), ~ Isnil (a :: l).
+Proof.
 unfold Isnil in |- *.
 intros; discriminate.
 Qed.
@@ -35,6 +41,7 @@ Qed.
 Hint Resolve Isnil_nil not_Isnil_cons.
 
 Lemma Isnil_dec : forall l:list A, {Isnil l} + {~ Isnil l}.
+Proof.
 intro l; case l; auto.
 (*
 Realizer (fun l => match l with
@@ -50,6 +57,7 @@ Qed.
 
 Lemma Uncons :
  forall l:list A, {a : A &  {m : list A | a :: m = l}} + {Isnil l}.
+Proof.
 intro l; case l.
 auto.
 intros a m; intros; left; exists a; exists m; reflexivity.
@@ -67,6 +75,7 @@ Qed.
 
 Lemma Hd :
  forall l:list A, {a : A |  exists m : list A, a :: m = l} + {Isnil l}.
+Proof.
 intro l; case l.
 auto.
 intros a m; intros; left; exists a; exists m; reflexivity.
@@ -81,6 +90,7 @@ Qed.
 Lemma Tl :
  forall l:list A,
    {m : list A | (exists a : A, a :: m = l) \/ Isnil l /\ Isnil m}.
+Proof.
 intro l; case l.
 exists (nil (A:=A)); auto.
 intros a m; intros; exists m; left; exists a; reflexivity.
@@ -105,6 +115,7 @@ Fixpoint Length_l (l:list A) (n:nat) : nat :=
 
 (* A tail recursive version *)
 Lemma Length_l_pf : forall (l:list A) (n:nat), {m : nat | n + length l = m}.
+Proof.
 induction l as [| a m lrec].
 intro n; exists n; simpl in |- *; auto.
 intro n; elim (lrec (S n)); simpl in |- *; intros.
@@ -115,6 +126,7 @@ Realizer Length_l.
 Qed.
 
 Lemma Length : forall l:list A, {m : nat | length l = m}.
+Proof.
 intro l. apply (Length_l_pf l 0).
 (*
 Realizer (fun l -> Length_l_pf l O).
@@ -139,11 +151,6 @@ elim l;
 intros; elim H; auto.
 Qed.
 
-Inductive AllS (P:A -> Prop) : list A -> Prop :=
-  | allS_nil : AllS P nil
-  | allS_cons : forall (a:A) (l:list A), P a -> AllS P l -> AllS P (a :: l).
-Hint Resolve allS_nil allS_cons.
-
 Hypothesis eqA_dec : forall a b:A, {a = b} + {a <> b}.
 
 Fixpoint mem (a:A) (l:list A) : bool :=
@@ -154,7 +161,7 @@ Fixpoint mem (a:A) (l:list A) : bool :=
 
 Hint Unfold In.
 Lemma Mem : forall (a:A) (l:list A), {In a l} + {AllS (fun b:A => b <> a) l}.
-intros a l.
+Proof.
 induction l.
 auto.
 elim (eqA_dec a a0).
@@ -188,16 +195,19 @@ Hint Resolve fst_nth_O fst_nth_S.
 
 Lemma fst_nth_nth :
  forall (l:list A) (n:nat) (a:A), fst_nth_spec l n a -> nth_spec l n a.
+Proof.
 induction 1; auto.
 Qed.
 Hint Immediate fst_nth_nth.
 
 Lemma nth_lt_O : forall (l:list A) (n:nat) (a:A), nth_spec l n a -> 0 < n.
+Proof.
 induction 1; auto.
 Qed.
 
 Lemma nth_le_length :
  forall (l:list A) (n:nat) (a:A), nth_spec l n a -> n <= length l.
+Proof.
 induction 1; simpl in |- *; auto with arith.
 Qed.
 
@@ -211,6 +221,7 @@ Fixpoint Nth_func (l:list A) (n:nat) : Exc A :=
 Lemma Nth :
  forall (l:list A) (n:nat),
    {a : A | nth_spec l n a} + {n = 0 \/ length l < n}.
+Proof.
 induction l as [| a l IHl].
 intro n; case n; simpl in |- *; auto with arith.
 intro n; destruct n as [| [| n1]]; simpl in |- *; auto.
@@ -227,6 +238,7 @@ Qed.
 
 Lemma Item :
  forall (l:list A) (n:nat), {a : A | nth_spec l (S n) a} + {length l <= n}.
+Proof.
 intros l n; case (Nth l (S n)); intro.
 case s; intro a; left; exists a; auto.
 right; case o; intro.
@@ -246,6 +258,7 @@ Fixpoint index_p (a:A) (l:list A) : nat -> Exc nat :=
 Lemma Index_p :
  forall (a:A) (l:list A) (p:nat),
    {n : nat | fst_nth_spec l (S n - p) a} + {AllS (fun b:A => a <> b) l}.
+Proof.
 induction l as [| b m irec].
 auto.
 intro p.
@@ -264,6 +277,7 @@ Lemma Index :
  forall (a:A) (l:list A),
    {n : nat | fst_nth_spec l n a} + {AllS (fun b:A => a <> b) l}.
 
+Proof.
 intros a l; case (Index_p a l 1); auto.
 intros [n P]; left; exists n; auto.
 rewrite (minus_n_O n); trivial.
@@ -287,20 +301,24 @@ Definition InR_inv (l:list A) :=
   end.
 
 Lemma InR_INV : forall l:list A, InR l -> InR_inv l.
+Proof.
 induction 1; simpl in |- *; auto.
 Qed.
 
 Lemma InR_cons_inv : forall (a:A) (l:list A), InR (a :: l) -> R a \/ InR l.
+Proof.
 intros a l H; exact (InR_INV H).
 Qed.
 
 Lemma InR_or_app : forall l m:list A, InR l \/ InR m -> InR (l ++ m).
+Proof.
 intros l m [| ].
 induction 1; simpl in |- *; auto.
 intro. induction l; simpl in |- *; auto.
 Qed.
 
 Lemma InR_app_or : forall l m:list A, InR (l ++ m) -> InR l \/ InR m.
+Proof.
 intros l m; elim l; simpl in |- *; auto.
 intros b l' Hrec IAc; elim (InR_cons_inv IAc); auto.
 intros; elim Hrec; auto.
@@ -315,6 +333,7 @@ Fixpoint find (l:list A) : Exc A :=
   end.
 
 Lemma Find : forall l:list A, {a : A | In a l &  R a} + {AllS P l}.
+Proof.
 induction l as [| a m [[b H1 H2]| H]]; auto.
 left; exists b; auto.
 destruct (RS_dec a).
@@ -342,6 +361,7 @@ Fixpoint try_find (l:list A) : Exc B :=
 
 Lemma Try_find :
  forall l:list A, {c : B |  exists2 a : A, In a l & T a c} + {AllS P l}.
+Proof.
 induction l as [| a m [[b H1]| H]].
 auto.
 left; exists b; destruct H1 as [a' H2 H3]; exists a'; auto.
@@ -383,6 +403,7 @@ Hint Resolve allS_assoc_nil allS_assoc_cons.
 
 Lemma Assoc :
  forall (a:A) (l:list (A * B)), B + {AllS_assoc (fun a':A => a <> a') l}.
+Proof.
 induction l as [| [a' b] m assrec]. auto.
 destruct (eqA_dec a a').
 left; exact b.
@@ -398,6 +419,5 @@ End Assoc_sec.
 
 End Lists.
 
-Hint Resolve Isnil_nil not_Isnil_cons in_hd in_tl in_cons allS_nil allS_cons:
-  datatypes.
+Hint Resolve Isnil_nil not_Isnil_cons in_hd in_tl in_cons : datatypes.
 Hint Immediate fst_nth_nth: datatypes.

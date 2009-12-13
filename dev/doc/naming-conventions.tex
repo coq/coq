@@ -143,6 +143,47 @@ will have a named ended in \texttt{\_dec}. Idem for cotransitivity
 lemmas which are inherently computational that are ended in
 \texttt{\_cotrans}.
 
+\subsection{Inductive types constructor names}
+
+As a general rule, constructor names start with the name of the
+inductive type being defined as in \texttt{Inductive Z := Z0 : Z |
+  Zpos : Z -> Z | Zneg : Z -> Z} to the exception of very standard
+types like \texttt{bool}, \texttt{nat}, \texttt{list}...
+
+For inductive predicates, constructor names also start with the name
+of the notion being defined with one or more suffixes separated with
+\texttt{\_} for discriminating the different cases as e.g. in
+
+\begin{verbatim}
+Inductive even : nat -> Prop :=
+  | even_O : even 0
+  | even_S n : odd n -> even (S n)
+with odd : nat -> Prop :=
+  | odd_S n : even n -> odd (S n).
+\end{verbatim}
+
+As a general rule, inductive predicate names should be lowercase (to
+the exception of notions referring to a proper name, e.g. \texttt{Bezout})
+and multiple words must be separated by ``{\_}''.
+
+As an exception, when extending libraries whose general rule is that
+predicates names start with a capital letter, the convention of this
+library should be kept and the separation between multiple words is
+done by making the initial of each work a capital letter (if one of
+these words is a proper name, then a ``{\_}'' is added to emphasize
+that the capital letter is proper and not an application of the rule
+for marking the change of word).
+
+Inductive predicates that characterize the specification of a function
+should be named after the function it specifies followed by
+\texttt{\_spec} as in:
+
+\begin{verbatim}
+Inductive nth_spec : list A -> nat -> A -> Prop :=
+  | nth_spec_O a l : nth_spec (a :: l) 0 a
+  | nth_spec_S n a b l : nth_spec l n a -> nth_spec (b :: l) (S n) a.
+\end{verbatim}
+
 \section{Equational properties of operations}
 
 \subsection{General conventions}
@@ -205,12 +246,24 @@ If the conclusion is in the other way than listed below, add suffix
 \itemrule{Distributivity of unary operator {\op} over binary op' on domain {\D}}{Dop\_op'\_distr}
 {forall x y:D, op (op' x y) = op' (op x) (op y)}
 
-\itemrule{Left distributivity of unary operator {\op} over binary op' on domain {\D}}{Dop\_op'\_distr\_l}
+\itemrule{Distributivity of unary operator {\op} over binary op' on domain {\D}}{Dop\_op'\_distr}
+{forall x y:D, op (op' x y) = op' (op x) (op y)}
+
+  Remark: For a non commutative operation with inversion of arguments, as in
+  \formula{forall x y z:D, op (op' x y) = op' (op y) (op y z)},
+  we may probably still call the property distributivity since there
+  is no ambiguity.
+
+  Example: \formula{forall n m : Z, -(n+m) = (-n)+(-m)}.
+
+  Example: \formula{forall l l' : list A, rev (l++l') = (rev l)++(rev l')}.
+
+\itemrule{Left extrusion of unary operator {\op} over binary op' on domain {\D}}{Dop\_op'\_distr\_l}
 {forall x y:D, op (op' x y) = op' (op x) y}
 
-  Question: Call it left commutativity ??
+  Question: Call it left commutativity ?? left swap ?
 
-\itemrule{Right distributivity of unary operator {\op} over binary op' on domain {\D}}{Dop\_op'\_distr\_r}
+\itemrule{Right extrusion of unary operator {\op} over binary op' on domain {\D}}{Dop\_op'\_distr\_r}
 {forall x y:D, op (op' x y) = op' x (op y)}
 
 \itemrule{Idempotency of binary operator {\op} on domain {\D}}{Dop\_idempotent}
@@ -309,7 +362,7 @@ argument respectively and their return type identical.
 
 Remark: When the type are heterogeneous, only one extrusion law is possible and it can simply be named {Dop\_op'\_extrusion}.
 
-Example: \formula{app\_cons\_extrusion : forall a l l', (a :: l) ++ l' = a :: (l ++ l')}, in arithmetic
+Example: \formula{app\_cons\_extrusion : forall a l l', (a :: l) ++ l' = a :: (l ++ l')}.
 
 %======================================================================
 %\section{Properties of elements}
@@ -383,6 +436,12 @@ Example: \formula{app\_cons\_extrusion : forall a l l', (a :: l) ++ l' = a :: (l
   How to name it with a symmetric name (use
  \name{Dop\_op'\_rel\_distr\_mon\_l} and
  \name{Dop\_op'\_rel\_distr\_anti\_l})?
+
+\itemrule{Commutativity of binary operator {\op} along (equivalence) relation {\rel} on domain {\D}}{Dop\_op'\_rel\_comm}
+{forall x y z:D, rel (op x y) (op y x)}
+
+  Example:
+\formula{forall l l':list A, Permutation (l++l') (l'++l)}
 
 \itemrule{Irreducibility of binary operator {\op} on domain {\D}}{Dop\_irreducible}
 {forall x y z:D, z = op x y -> z = x $\backslash/$ z = y}
@@ -472,7 +531,8 @@ Example: \formula{eq\_true\_neg: \~{} eq\_true b <-> eq\_true (negb b)}.
 \itemrule{Linearity of relation {\rel} on domain {\D}}{Drel\_trichotomy}
 {forall x y:D, \{rel x y\} + \{x = y\} + \{rel y x\}}
 
-  Questions: Or call it \name{Drel\_total}, or \name{Drel\_linear} use
+  Questions: Or call it \name{Drel\_total}, or \name{Drel\_linear}, or
+  \name{Drel\_connected}? Use
   $\backslash/$ ? or use a ternary sumbool, or a ternary disjunction,
   for nicer elimination.
 
