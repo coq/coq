@@ -378,7 +378,7 @@ let pr_as_ipat = function
 
 let pr_as_name = function
   | Anonymous -> mt ()
-  | Name id -> str "as " ++ pr_lident (dummy_loc,id)
+  | Name id -> str " as " ++ pr_lident (dummy_loc,id)
 
 let pr_pose_as_style prc na c =
   spc() ++ prc c ++ pr_as_name na
