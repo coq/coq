@@ -39,7 +39,7 @@ intros n H.
 rewrite plus_0_l in H.
 Abort.
 
-(* Dependent rewrite from left-to-right *)
+(* Rewrite dependent proofs from left-to-right *)
 
 Lemma l1 :
   forall x y (H:x = y:>nat) (P:forall x y, x=y -> Type), P x y H -> P x y H.
@@ -49,7 +49,7 @@ rewrite H in H0.
 assumption.
 Qed.
 
-(* Dependent rewrite from right-to-left *)
+(* Rewrite dependent proofs from right-to-left *)
 
 Lemma l2 :
   forall x y (H:x = y:>nat) (P:forall x y, x=y -> Type), P x y H -> P x y H.
@@ -59,7 +59,7 @@ rewrite <- H in H0.
 assumption.
 Qed.
 
-(* Check dependent rewriting with non-symmetric equalities *)
+(* Check rewriting dependent proofs with non-symmetric equalities *)
 
 Lemma l3:forall x (H:eq_true x) (P:forall x, eq_true x -> Type), P x H -> P x H.
 intros x H P H0.
@@ -67,4 +67,16 @@ rewrite H.
 rewrite H in H0.
 assumption.
 Qed.
+
+(* Dependent rewrite *)
+
+Require Import JMeq.
+
+Goal forall A B (a:A) (b:B), JMeq a b -> JMeq b a -> True.  
+inversion 1; (* Goal is now [JMeq a a -> True] *) dependent rewrite H3.
+Undo.
+intros; inversion H; dependent rewrite H4 in H0.
+Undo.
+intros; inversion H; dependent rewrite <- H4 in H0.
+Abort.
 

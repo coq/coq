@@ -1096,16 +1096,14 @@ let swapEquandsInConcl gls =
 
 (* Refine from [|- P e2] to [|- P e1] and [|- e1=e2:>t] (body is P (Rel 1)) *)
 
-let bareRevSubstInConcl lbeq body expected_goal (t,e1,e2) gls =
+let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
   (* find substitution scheme *)
   let eq_elim = find_elim lbeq.eq (Some false) false None [e1;e2] gls in
   (* build substitution predicate *)
   let p = lambda_create (pf_env gls) (t,body) in
   (* apply substitution scheme *)
-  refine (applist(eq_elim,
-    [t;e1;p;
-     mkCast(Evarutil.mk_new_meta(),DEFAULTcast,expected_goal);
-     e2;Evarutil.mk_new_meta()])) gls
+  refine (applist(eq_elim,[t;e1;p;Evarutil.mk_new_meta();
+                           e2;Evarutil.mk_new_meta()])) gls
 
 (* [subst_tuple_term dep_pair B]
 
@@ -1173,7 +1171,9 @@ let cutSubstInConcl_RL eqn gls =
   let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose gls eqn in
   let body,expected_goal = pf_apply subst_tuple_term gls e2 e1 (pf_concl gls) in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
-  bareRevSubstInConcl lbeq body expected_goal eq gls
+  tclTHENFIRST
+    (bareRevSubstInConcl lbeq body eq)
+    (convert_concl expected_goal DEFAULTcast) gls
 
 (* |- (P e1)
      BY CutSubstInConcl_LR (eq T e1 e2)
@@ -1192,8 +1192,8 @@ let cutSubstInHyp_LR eqn id gls =
   let idtyp = pf_get_hyp_typ gls id in
   let body,expected_goal = pf_apply subst_tuple_term gls e1 e2 idtyp in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
-  cut_replacing id (subst1 e2 body)
-    (tclTHENFIRST (bareRevSubstInConcl lbeq body expected_goal eq)) gls
+  cut_replacing id expected_goal
+    (tclTHENFIRST (bareRevSubstInConcl lbeq body eq)) gls
 
 let cutSubstInHyp_RL eqn id gls =
   (tclTHENS (cutSubstInHyp_LR (swap_equands gls eqn) id)
