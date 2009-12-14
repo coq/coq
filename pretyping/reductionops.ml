@@ -219,6 +219,7 @@ open RedFlags
 (* Local *)
 let beta = mkflags [fbeta]
 let eta = mkflags [feta]
+let zeta = mkflags [fzeta]
 let betaiota = mkflags [fiota; fbeta]
 let betaiotazeta = mkflags [fiota; fbeta;fzeta]
 
@@ -495,9 +496,13 @@ let whd_betadeltaiota_nolet_stack env =
 let whd_betadeltaiota_nolet env =
   red_of_state_red (whd_betadeltaiota_nolet_state env)
 
-(* 3. Eta reduction Functions *)
+(* 4. Eta reduction Functions *)
 
 let whd_eta c = app_stack (local_whd_state_gen eta Evd.empty (c,empty_stack))
+
+(* 5. Zeta Reduction Functions *)
+
+let whd_zeta c = app_stack (local_whd_state_gen zeta Evd.empty (c,empty_stack))
 
 (****************************************************************************)
 (*                   Reduction Functions                                    *)

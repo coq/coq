@@ -178,12 +178,6 @@ let register_is_applied_rewrite_relation = (:=) is_applied_rewrite_relation
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. *)
 
-type substitutive_equality_flags = {
-  rewrite_dependent_proof : bool;
-  use_K : bool;
-  with_evars : bool
-}
-
 let find_elim hdcncl lft2rgt dep cls args gl =
   let inccl = (cls = None) in
   if (hdcncl = constr_of_reference (Coqlib.glob_eq) ||
@@ -221,7 +215,9 @@ let type_of_clause gl = function
   | Some id -> pf_get_hyp_typ gl id
 
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars dep_proof_ok gl hdcncl =
-  let dep = dep_proof_ok && occur_term c (type_of_clause gl cls) in
+  let isatomic = isProd (whd_zeta hdcncl) in
+  let dep_fun = if isatomic then dependent else dependent_no_evar in
+  let dep = dep_proof_ok && dep_fun c (type_of_clause gl cls) in
   let elim = find_elim hdcncl lft2rgt dep cls (snd (decompose_app t)) gl in
   general_elim_clause with_evars tac cls sigma c t l
     (match lft2rgt with None -> false | Some b -> b)

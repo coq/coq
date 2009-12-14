@@ -136,6 +136,7 @@ val whd_betadeltaiotaeta_state :  state_reduction_function
 val whd_betadeltaiotaeta :  reduction_function
 
 val whd_eta : constr -> constr
+val whd_zeta : constr -> constr
 
 (* Various reduction functions *)
 

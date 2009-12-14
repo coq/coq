@@ -63,8 +63,10 @@ Notations
 - Abbreviations now use implicit arguments and arguments scopes for printing.
 - Abbreviations to pure names now strictly behave like the name they refer to
   (make redirections of qualified names easier).
-- Abbreviations to applied names now propagate the implicit arguments and
-  arguments scope of the underlying reference.
+- Abbreviations for applied constant now propagate the implicit arguments
+  and arguments scope of the underlying reference (possible source of
+  incompatibilities generally solvable by changing such abbreviations from
+  e.g. "Notation foo' := (foo x)" to "Notation foo' y := (foo x (y:=y))").
 - The "where" clause now supports multiple notations per defined object.
 
 Vernacular commands
