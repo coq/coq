@@ -65,18 +65,23 @@ This command is used to start an interactive module named {\ident}.
 \subsubsection{Reserved commands inside an interactive module:
 \comindex{Include}}
 \begin{enumerate}
-\item {\tt Include [Self] {\modexpr}}
+\item {\tt Include {\modexpr}}
 
- Includes the content of {\modexpr} in the current interactive module type. When the keyword Self 
- is used and {\modexpr} is a high-order module expression then the system tries to instanciate {\modexpr}
+ Includes the content of {\modexpr} in the current interactive module type. If {\modexpr} is a high-order module expression then the system tries to instanciate {\modexpr}
  by the current interactive module.
 
-\item {\tt Include Type [Self] {\modtype}}
+\item {\tt Include Type {\modtype}}
 
- Includes the content of {\modtype} in the current interactive module type. When the keyword Self 
- is used and {\modtype} is a high-order module type expression then the system tries to instanciate {\modtype}
+ Includes the content of {\modtype} in the current interactive module type. If  {\modtype} is a high-order module type expression then the system tries to instanciate {\modtype}
  by the current interactive module.
 
+\item {\tt Include {\modexpr$_1$} \verb.<+. $\ldots$ \verb.<+. {\modexpr$_n$}} 
+
+is a shortcut for {\tt Include {\modexpr$_1$}}  $\ldots$ {\tt Include {\modexpr$_n$}}
+
+\item {\tt Include Type {\modtype$_1$} \verb.<+. $\ldots$ \verb.<+. {\modtype$_n$}} 
+
+is a shortcut for {\tt Include Type {\modtype$_1$}}  $\ldots$ {\tt Include Type {\modtype$_n$}}
 \end{enumerate}
 \subsection{\tt End {\ident}
 \comindex{End}}
@@ -125,6 +130,10 @@ This command defines the module identifier {\ident} to be equal to
   Defines a functor with parameters given by {\modbindings} (possibly none) 
   with body {\modexpr}. The body is checked against each {\modtype$_i$}.
 
+\item{\tt Module {\ident} {\modbindings} := {\modexpr$_1$} \verb.<+. $\ldots$ \verb.<+. {\modexpr$_n$}}
+
+  is equivalent to an interactive module where each {\modexpr$_i$} are included.
+
 \end{Variants}
 
 \subsection{\tt Module Type {\ident}
@@ -142,22 +151,27 @@ This command is used to start an interactive module type {\ident}.
 \subsubsection{Reserved commands inside an interactive module type:
 \comindex{Include}\comindex{Inline}}
 \begin{enumerate}
-\item {\tt Include [Self] {\modexpr}}
+\item {\tt Include {\modexpr}}
 
- Includes the content of {\modexpr} in the current interactive module type. When the keyword Self 
- is used and {\modexpr} is a high-order module expression then the system tries to instanciate {\modexpr}
+ Includes the content of {\modexpr} in the current interactive module type. If {\modexpr} is a high-order module expression then the system tries to instanciate {\modexpr}
  by the current interactive module type.
 
-\item {\tt Include Type [Self] {\modtype}}
+\item {\tt Include Type {\modtype}}
 
- Includes the content of {\modtype} in the current interactive module type. When the keyword Self 
- is used and {\modtype} is a high-order module type expression then the system tries to instanciate {\modtype}
+ Includes the content of {\modtype} in the current interactive module type. If {\modtype} is a high-order module type expression then the system tries to instanciate {\modtype}
  by the current interactive module type.
+
+\item {\tt Include {\modexpr$_1$} \verb.<+. $\ldots$ \verb.<+. {\modexpr$_n$}} 
+
+is a shortcut for {\tt Include {\modexpr$_1$}}  $\ldots$ {\tt Include {\modexpr$_n$}}
+
+\item {\tt Include Type {\modtype$_1$} \verb.<+. $\ldots$ \verb.<+. {\modtype$_n$}} 
+
+is a shortcut for {\tt Include Type {\modtype$_1$}}  $\ldots$ {\tt Include Type {\modtype$_n$}}
 
 \item {\tt {\declarationkeyword} Inline {\assums} }
 
  This declaration will be automatically unfolded at functor application.
-
 \end{enumerate}
 \subsection{\tt End {\ident}
 \comindex{End}}
@@ -177,6 +191,11 @@ Defines a module type {\ident} equal to {\modtype}.
 
   Defines a functor type {\ident} specifying functors taking arguments
   {\modbindings} and returning {\modtype}.
+
+\item{\tt Module Type {\ident} {\modbindings} := {\modtype$_1$} \verb.<+. $\ldots$ \verb.<+. {\modtype$_n$}}
+
+  is equivalent to an interactive module type were each {\modtype$_i$} are included.
+
 \end{Variants}
 
 \subsection{\tt Declare Module {\ident} : {\modtype}}

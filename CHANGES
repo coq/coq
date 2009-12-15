@@ -87,8 +87,6 @@ Vernacular commands
   congruence schemes available to user (governed by options "Unset
   Case Analysis Schemes" and "Unset Congruence Schemes").
 - Fixpoint/CoFixpoint now support building part or all of bodies using tactics.
-- New commands for modules and module types "Include Self <module_expr>"  and 
-  "Include Type Self <modtype_expr>".
 
 
 Tools
