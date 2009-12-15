@@ -46,15 +46,15 @@ This command is used to start an interactive module named {\ident}.
   Starts an interactive functor with parameters given by
   {\modbindings}, and output module type {\modtype}.
 
-\item{\tt Module {\ident} \verb.<:. {\modtype}}
+\item{\tt Module {\ident} \verb.<:. {\modtype$_1$} \verb.<:. $\ldots$ \verb.<:.{ \modtype$_n$}}
 
-  Starts an interactive module satisfying {\modtype}. 
+  Starts an interactive module satisfying each {\modtype$_i$}. 
 
-\item{\tt Module {\ident} {\modbindings} \verb.<:. {\modtype}}
+\item{\tt Module {\ident} {\modbindings} \verb.<:. {\modtype$_1$} \verb.<:. $\ldots$ \verb.<:. {\modtype$_n$}}
 
   Starts an interactive functor with parameters given by
-  {\modbindings}. The output module type is verified against the
-  module type {\modtype}.
+  {\modbindings}. The output module type is verified against each
+  module type {\modtype$_i$}.
 
 \item\texttt{Module [Import|Export]}
 
@@ -65,13 +65,17 @@ This command is used to start an interactive module named {\ident}.
 \subsubsection{Reserved commands inside an interactive module:
 \comindex{Include}}
 \begin{enumerate}
-\item {\tt Include {\modexpr}}
+\item {\tt Include [Self] {\modexpr}}
 
- Includes the content of {\modexpr} in the current interactive module.
+ Includes the content of {\modexpr} in the current interactive module type. When the keyword Self 
+ is used and {\modexpr} is a high-order module expression then the system tries to instanciate {\modexpr}
+ by the current interactive module.
 
-\item {\tt Include Type {\modtype}}
+\item {\tt Include Type [Self] {\modtype}}
 
- Includes the content of {\modtype} in the current interactive module.
+ Includes the content of {\modtype} in the current interactive module type. When the keyword Self 
+ is used and {\modtype} is a high-order module type expression then the system tries to instanciate {\modtype}
+ by the current interactive module.
 
 \end{enumerate}
 \subsection{\tt End {\ident}
@@ -115,11 +119,11 @@ This command defines the module identifier {\ident} to be equal to
   Defines a functor with parameters given by {\modbindings} (possibly none),
   and output module type {\modtype}, with body {\modexpr}. 
 
-\item{\tt Module {\ident} {\modbindings} \verb.<:. {\modtype} :=
+\item{\tt Module {\ident} {\modbindings} \verb.<:.  {\modtype$_1$} \verb.<:. $\ldots$ \verb.<:. {\modtype$_n$}:=
     {\modexpr}}
 
   Defines a functor with parameters given by {\modbindings} (possibly none) 
-  with body {\modexpr}. The body is checked against {\modtype}.
+  with body {\modexpr}. The body is checked against each {\modtype$_i$}.
 
 \end{Variants}
 
@@ -138,13 +142,17 @@ This command is used to start an interactive module type {\ident}.
 \subsubsection{Reserved commands inside an interactive module type:
 \comindex{Include}\comindex{Inline}}
 \begin{enumerate}
-\item {\tt Include {\modexpr}}
+\item {\tt Include [Self] {\modexpr}}
 
- Includes the content of {\modexpr} in the current interactive module type.
+ Includes the content of {\modexpr} in the current interactive module type. When the keyword Self 
+ is used and {\modexpr} is a high-order module expression then the system tries to instanciate {\modexpr}
+ by the current interactive module type.
 
-\item {\tt Include Type {\modtype}}
+\item {\tt Include Type [Self] {\modtype}}
 
- Includes the content of {\modtype} in the current interactive module type.
+ Includes the content of {\modtype} in the current interactive module type. When the keyword Self 
+ is used and {\modtype} is a high-order module type expression then the system tries to instanciate {\modtype}
+ by the current interactive module type.
 
 \item {\tt {\declarationkeyword} Inline {\assums} }
 
@@ -211,10 +219,6 @@ Module Type SIG.
   Parameter x : T.
 End SIG.
 \end{coq_example}
-Inside a module type the proof editing mode is not available.
-Consequently commands like \texttt{Definition}\ without body,
-\texttt{Lemma}, \texttt{Theorem} are not allowed.  In order to declare
-constants, use \texttt{Axiom} and \texttt{Parameter}.
 
 Now we can create a new module from \texttt{M}, giving it a less
 precise specification: the \texttt{y} component is dropped as well
@@ -301,8 +305,6 @@ Reset Initial.
 
 \begin{Remarks}
 \item Modules and module types can be nested components of each other.
-\item When a module declaration is started inside a module type,
-  the proof editing mode is still unavailable.
 \item One can have sections inside a module or a module type, but
   not a module or a module type inside a section.
 \item Commands like \texttt{Hint} or \texttt{Notation} can
