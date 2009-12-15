@@ -102,6 +102,11 @@ Notation "x <= y" := (le x y) : NumScope.
 Notation "x > y" := (lt y x) (only parsing) : NumScope.
 Notation "x >= y" := (le y x) (only parsing) : NumScope.
 
+Notation "x < y < z" := (x<y /\ y<z) : NumScope.
+Notation "x <= y <= z" := (x<=y /\ y<=z) : NumScope.
+Notation "x <= y < z" := (x<=y /\ y<z) : NumScope.
+Notation "x < y <= z" := (x<y /\ y<=z) : NumScope.
+
 Instance lt_wd : Proper (eq ==> eq ==> iff) lt.
 (** Compatibility of [le] can be proved later from [lt_wd]
     and [lt_eq_cases] *)

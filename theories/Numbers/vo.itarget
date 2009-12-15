@@ -22,6 +22,9 @@ Integer/Abstract/ZLt.vo
 Integer/Abstract/ZMulOrder.vo
 Integer/Abstract/ZMul.vo
 Integer/Abstract/ZProperties.vo
+Integer/Abstract/ZDivCoq.vo
+Integer/Abstract/ZDivOcaml.vo
+Integer/Abstract/ZDivMath.vo
 Integer/BigZ/BigZ.vo
 Integer/BigZ/ZMake.vo
 Integer/Binary/ZBinary.vo
@@ -38,6 +41,7 @@ NatInt/NZMul.vo
 NatInt/NZOrder.vo
 NatInt/NZProperties.vo
 NatInt/NZDomain.vo
+NatInt/NZDiv.vo
 Natural/Abstract/NAddOrder.vo
 Natural/Abstract/NAdd.vo
 Natural/Abstract/NAxioms.vo
@@ -49,6 +53,7 @@ Natural/Abstract/NOrder.vo
 Natural/Abstract/NStrongRec.vo
 Natural/Abstract/NSub.vo
 Natural/Abstract/NProperties.vo
+Natural/Abstract/NDiv.vo
 Natural/BigN/BigN.vo
 Natural/BigN/Nbasic.vo
 Natural/BigN/NMake.vo

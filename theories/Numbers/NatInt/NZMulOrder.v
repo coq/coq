@@ -202,6 +202,11 @@ Proof.
 intros; rewrite mul_comm; now apply mul_pos_neg.
 Qed.
 
+Theorem mul_nonneg_nonneg : forall n m, 0 <= n -> 0 <= m -> 0 <= n*m.
+Proof.
+intros. rewrite <- (mul_0_l m). apply mul_le_mono_nonneg; order.
+Qed.
+
 Theorem lt_1_mul_pos : forall n m, 1 < n -> 0 < m -> 1 < n * m.
 Proof.
 intros n m H1 H2. apply -> (mul_lt_mono_pos_r m) in H1.

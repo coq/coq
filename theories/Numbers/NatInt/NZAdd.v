@@ -67,18 +67,20 @@ Proof.
 intros n m p. rewrite (add_comm n p), (add_comm m p). apply add_cancel_l.
 Qed.
 
+Theorem add_shuffle0 : forall n m p, n+m+p == n+p+m.
+Proof.
+intros n m p. rewrite <- 2 add_assoc, add_cancel_l. apply add_comm.
+Qed.
+
 Theorem add_shuffle1 : forall n m p q, (n + m) + (p + q) == (n + p) + (m + q).
 Proof.
-intros n m p q.
-rewrite <- (add_assoc n m), <- (add_assoc n p), add_cancel_l.
-rewrite 2 add_assoc, add_cancel_r. now apply add_comm.
+intros n m p q. rewrite 2 add_assoc, add_cancel_r. apply add_shuffle0.
 Qed.
 
 Theorem add_shuffle2 : forall n m p q, (n + m) + (p + q) == (n + q) + (m + p).
 Proof.
 intros n m p q.
-rewrite <- (add_assoc n m), <- (add_assoc n q), add_cancel_l.
-rewrite add_assoc. now apply add_comm.
+rewrite 2 add_assoc, add_shuffle0, add_cancel_r. apply add_shuffle0.
 Qed.
 
 Theorem sub_1_r : forall n, n - 1 == P n.

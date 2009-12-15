@@ -10,10 +10,7 @@
 
 (*i $Id$ i*)
 
-Require Import Arith.
-Require Import Min.
-Require Import Max.
-Require Import NAxioms NProperties.
+Require Import Arith MinMax NAxioms NProperties.
 
 (** * Implementation of [NAxiomsSig] by [nat] *)
 
@@ -164,7 +161,75 @@ Definition max := max.
 
 End NPeanoAxiomsMod.
 
-(* Now we apply the largest property functor *)
+(** Now we apply the largest property functor *)
 
 Module Export NPeanoPropMod := NPropFunct NPeanoAxiomsMod.
 
+
+
+(** Euclidean Division *)
+
+Definition divF div x y := if leb y x then S (div (x-y) y) else 0.
+Definition modF mod x y := if leb y x then mod (x-y) y else x.
+Definition initF (_ _ : nat) := 0.
+
+Fixpoint loop {A} (F:A->A)(i:A) (n:nat) : A :=
+ match n with
+  | 0 => i
+  | S n => F (loop F i n)
+ end.
+
+Definition div x y := loop divF initF x x y.
+Definition modulo x y := loop modF initF x x y.
+Infix "/" := div : nat_scope.
+Infix "mod" := modulo (at level 40, no associativity) : nat_scope.
+
+Lemma div_mod : forall x y, y<>0 -> x = y*(x/y) + x mod y.
+Proof.
+ cut (forall n x y, y<>0 -> x<=n ->
+       x = y*(loop divF initF n x y) + (loop modF initF n x y)).
+ intros H x y Hy. apply H; auto.
+ induction n.
+ simpl; unfold initF; simpl. intros. nzsimpl. auto with arith.
+ simpl; unfold divF at 1, modF at 1.
+ intros.
+ destruct (leb y x) as [ ]_eqn:L;
+  [apply leb_complete in L | apply leb_complete_conv in L].
+ rewrite mul_succ_r, <- add_assoc, (add_comm y), add_assoc.
+ rewrite <- IHn; auto.
+ symmetry; apply sub_add; auto.
+ rewrite <- NPeanoAxiomsMod.lt_succ_r.
+ apply lt_le_trans with x; auto.
+ apply lt_minus; auto. rewrite <- neq_0_lt_0; auto.
+ nzsimpl; auto.
+Qed.
+
+Lemma mod_upper_bound : forall x y, y<>0 -> x mod y < y.
+Proof.
+ cut (forall n x y, y<>0 -> x<=n -> loop modF initF n x y < y).
+ intros H x y Hy. apply H; auto.
+ induction n.
+ simpl; unfold initF. intros. rewrite <- neq_0_lt_0; auto.
+ simpl; unfold modF at 1.
+ intros.
+ destruct (leb y x) as [ ]_eqn:L;
+  [apply leb_complete in L | apply leb_complete_conv in L]; auto.
+ apply IHn; auto.
+ rewrite <- NPeanoAxiomsMod.lt_succ_r.
+ apply lt_le_trans with x; auto.
+ apply lt_minus; auto. rewrite <- neq_0_lt_0; auto.
+Qed.
+
+Require Import NDiv.
+
+Module NDivMod <: NDivSig.
+ Include NPeanoAxiomsMod.
+ Definition div := div.
+ Definition modulo := modulo.
+ Definition div_mod := div_mod.
+ Definition mod_upper_bound := mod_upper_bound.
+ Program Instance div_wd : Proper (eq==>eq==>eq) div.
+ Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
+End NDivMod.
+
+Module Export NDivPropMod := NDivPropFunct NDivMod.

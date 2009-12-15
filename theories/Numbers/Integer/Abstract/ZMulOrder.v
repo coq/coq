@@ -34,12 +34,6 @@ now apply mul_le_mono_nonpos_l.
 apply mul_le_mono_nonpos_r; [now apply le_trans with q | assumption].
 Qed.
 
-Theorem mul_nonneg_nonneg : forall n m, 0 <= n -> 0 <= m -> 0 <= n * m.
-Proof.
-intros n m H1 H2.
-rewrite <- (mul_0_l m). now apply mul_le_mono_nonneg_r.
-Qed.
-
 Theorem mul_nonpos_nonpos : forall n m, n <= 0 -> m <= 0 -> 0 <= n * m.
 Proof.
 intros n m H1 H2.
