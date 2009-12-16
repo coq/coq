@@ -111,6 +111,7 @@ val pr_table : unit -> Pp.std_ppcmds
 
 (* val function_debug : bool ref  *)
 val do_observe : unit -> bool
+val do_rewrite_dependent : unit -> bool
 
 (* To localize pb *)
 exception Building_graph of exn

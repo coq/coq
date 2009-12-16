@@ -483,8 +483,21 @@ let add_Function is_general f =
 let pr_table () = pr_table !from_function
 (*********************************)
 (* Debuging *)
+let functional_induction_rewrite_dependent_proofs = ref true
 let function_debug = ref false
 open Goptions
+
+let functional_induction_rewrite_dependent_proofs_sig = 
+  {
+    optsync = false;
+    optname = "functional induction rewrite dependent";
+    optkey =  ["functional_induction_rewrite_dependent"];
+    optread = (fun () -> !functional_induction_rewrite_dependent_proofs);
+    optwrite = (fun b -> functional_induction_rewrite_dependent_proofs := b)
+  }
+let _ = declare_bool_option functional_induction_rewrite_dependent_proofs_sig
+
+let do_rewrite_dependent () = !functional_induction_rewrite_dependent_proofs = true
 
 let function_debug_sig =
   {

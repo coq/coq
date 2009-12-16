@@ -120,7 +120,7 @@ type subst_tactic_flags = {
   only_leibniz : bool;
   rewrite_dependent_proof : bool
 }
-
+val subst_gen : bool -> identifier list -> tactic
 val subst : identifier list -> tactic
 val subst_all : ?flags:subst_tactic_flags -> tactic
 

@@ -110,7 +110,7 @@ let functional_induction with_clean c princl pat =
 	    }
 	in
 	Tacticals.tclTHEN
-	  (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Equality.subst [id])) idl )
+	  (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Equality.subst_gen (do_rewrite_dependent ()) [id])) idl )
 	  (Hiddentac.h_reduce flag Tacticals.allHypsAndConcl)
 	  g
       else Tacticals.tclIDTAC g
