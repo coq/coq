@@ -490,8 +490,8 @@ open Goptions
 let functional_induction_rewrite_dependent_proofs_sig = 
   {
     optsync = false;
-    optname = "functional induction rewrite dependent";
-    optkey =  ["functional_induction_rewrite_dependent"];
+    optname = "Functional Induction Rewrite Dependent";
+    optkey =  ["Functional";"Induction";"Rewrite";"Dependent"];
     optread = (fun () -> !functional_induction_rewrite_dependent_proofs);
     optwrite = (fun b -> functional_induction_rewrite_dependent_proofs := b)
   }
