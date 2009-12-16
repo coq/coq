@@ -17,6 +17,11 @@ Local Open Scope NumScope.
 
 Include BackportEq NZ NZ. (** eq_refl, eq_sym, eq_trans *)
 
+Lemma eq_sym_iff : forall x y, x==y <-> y==x.
+Proof.
+intros; split; symmetry; auto.
+Qed.
+
 (* TODO: how register ~= (which is just a notation) as a Symmetric relation,
     hence allowing "symmetry" tac ? *)
 

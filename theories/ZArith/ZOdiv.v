@@ -415,7 +415,7 @@ Proof. exact Z.mod_small. Qed.
 (** [Zge] is compatible with a positive division. *)
 
 Lemma ZO_div_monotone : forall a b c, 0<=c -> a<=b -> a/c <= b/c.
-Proof. 
+Proof.
  intros. destruct (Z_eq_dec c 0); subst. rewrite !ZOdiv_0_r; auto.
  apply Z.div_le_mono; auto with zarith.
 Qed.

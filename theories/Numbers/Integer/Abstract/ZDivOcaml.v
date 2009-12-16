@@ -223,11 +223,6 @@ intros; apply max_r. apply le_trans with 0; auto.
 rewrite <- opp_nonneg_nonpos; auto.
 Qed.
 
-Lemma eq_sym_iff : forall x y, x==y <-> y==x.
-Proof.
-intros; split; symmetry; auto.
-Qed.
-
 (** END TODO *)
 
 Lemma div_small_iff : forall a b, b~=0 -> (a/b==0 <-> abs a < abs b).
@@ -295,6 +290,8 @@ Qed.
 
 Lemma mul_succ_div_gt: forall a b, 0<=a -> 0<b -> a < b*(S (a/b)).
 Proof. exact mul_succ_div_gt. Qed.
+
+(*TODO: CAS NEGATIF ... *)
 
 (** Some previous inequalities are exact iff the modulo is zero. *)
 
@@ -520,21 +517,10 @@ Proof. exact div_mul_le. Qed.
 Lemma mod_divides : forall a b, b~=0 ->
  (a mod b == 0 <-> exists c, a == b*c).
 Proof.
- intros.
- pos_or_neg a; pos_or_neg b.
- apply mod_divides; order.
- rewrite <- mod_opp_r, mod_divides by order.
-  split; intros (c,Hc); exists (-c).
-  rewrite mul_opp_r, <- mul_opp_l; auto.
-  rewrite mul_opp_opp; auto.
- rewrite <- opp_inj_wd, opp_0, <- mod_opp_l, mod_divides by order.
-  split; intros (c,Hc); exists (-c).
-  rewrite mul_opp_r, eq_opp_r; auto.
-  rewrite mul_opp_r, opp_inj_wd; auto.
- rewrite <- opp_inj_wd, opp_0, <- mod_opp_opp, mod_divides by order.
-  split; intros (c,Hc); exists c.
-  rewrite <-opp_inj_wd, <- mul_opp_l; auto.
-  rewrite mul_opp_l, opp_inj_wd; auto.
+ intros a b Hb. split.
+ intros Hab. exists (a/b). rewrite (div_mod a b Hb) at 1.
+  rewrite Hab; nzsimpl; auto.
+ intros (c,Hc). rewrite Hc, mul_comm. apply mod_mul; auto.
 Qed.
 
 End ZDivPropFunct.

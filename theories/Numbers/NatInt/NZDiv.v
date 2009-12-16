@@ -373,7 +373,8 @@ Qed.
 Lemma div_add_l: forall a b c, 0<=c -> 0<=a*b+c -> 0<b ->
  (a * b + c) / b == a + c / b.
 Proof.
- intros a b c. rewrite (add_comm _ c), (add_comm a). intros. apply div_add; auto.
+ intros a b c. rewrite (add_comm _ c), (add_comm a).
+ intros. apply div_add; auto.
 Qed.
 
 (** Cancellations. *)
@@ -397,8 +398,7 @@ Qed.
 Lemma div_mul_cancel_l : forall a b c, 0<=a -> 0<b -> 0<c ->
  (c*a)/(c*b) == a/b.
 Proof.
- intros.
- rewrite (mul_comm c a), (mul_comm c b); apply div_mul_cancel_r; auto.
+ intros. rewrite !(mul_comm c); apply div_mul_cancel_r; auto.
 Qed.
 
 Lemma mul_mod_distr_l: forall a b c, 0<=a -> 0<b -> 0<c ->
@@ -410,15 +410,13 @@ Proof.
  rewrite div_mul_cancel_l; auto.
  rewrite <- mul_assoc, <- mul_add_distr_l, mul_cancel_l by order.
  apply div_mod; order.
- intro EQ; symmetry in EQ; revert EQ. apply lt_neq, mul_pos_pos; auto.
+ rewrite <- neq_mul_0; intuition; order.
 Qed.
 
 Lemma mul_mod_distr_r: forall a b c, 0<=a -> 0<b -> 0<c ->
   (a*c) mod (b*c) == (a mod b) * c.
 Proof.
- intros.
- rewrite (mul_comm a c), (mul_comm b c); rewrite mul_mod_distr_l; auto.
- apply mul_comm.
+ intros. rewrite !(mul_comm _ c); rewrite mul_mod_distr_l; auto.
 Qed.
 
 (** Operations modulo. *)
@@ -519,9 +517,8 @@ Lemma mod_divides : forall a b, 0<=a -> 0<b ->
 Proof.
  split.
  intros. exists (a/b). rewrite div_exact; auto.
- intros (c,Hc). symmetry; apply mod_unique with c; auto.
-  split; order.
-  nzsimpl; auto.
+ intros (c,Hc). rewrite Hc, mul_comm. apply mod_mul; auto.
+ rewrite (mul_le_mono_pos_l _ _ b); auto. nzsimpl. order.
 Qed.
 
 End NZDivPropFunct.
