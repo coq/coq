@@ -6,12 +6,22 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Euclidean Division for integers
+(** * Euclidean Division for integers (Trunc convention)
 
-    We use here the convention of Ocaml and many other system (C, ASM, ...),
-    i.e. Round-Toward-Zero :
+    We use here the convention known as Trunc, or Round-Toward-Zero,
+    where [a/b] is the integer with the largest absolute value to
+    be between zero and the exact fraction. It can be summarized by:
 
-    [a = bq+r /\ 0 < |r| < |b| /\ Sign(r) = Sgn(a)]
+    [a = bq+r /\ 0 <= |r| < |b| /\ Sign(r) = Sign(a)]
+
+    This is the convention of Ocaml and many other systems (C, ASM, ...).
+    This convention is named "T" in the following paper:
+
+    R. Boute, "The Euclidean definition of the functions div and mod",
+    ACM Transactions on Programming Languages and Systems,
+    Vol. 14, No.2, pp. 127-144, April 1992.
+
+    See files [ZDivFloor] and [ZDivEucl] for others conventions.
 *)
 
 Require Import ZAxioms ZProperties NZDiv.
@@ -291,9 +301,34 @@ Qed.
 Lemma mul_succ_div_gt: forall a b, 0<=a -> 0<b -> a < b*(S (a/b)).
 Proof. exact mul_succ_div_gt. Qed.
 
-(*TODO: CAS NEGATIF ... *)
+(** Similar results with negative numbers *)
 
-(** Some previous inequalities are exact iff the modulo is zero. *)
+Lemma mul_pred_div_lt: forall a b, a<=0 -> 0<b -> b*(P (a/b)) < a.
+Proof.
+intros.
+rewrite opp_lt_mono, <- mul_opp_r, opp_pred, <- div_opp_l by order.
+apply mul_succ_div_gt; auto.
+rewrite opp_nonneg_nonpos; auto.
+Qed.
+
+Lemma mul_pred_div_gt: forall a b, 0<=a -> b<0 -> a < b*(P (a/b)).
+Proof.
+intros.
+rewrite <- mul_opp_opp, opp_pred, <- div_opp_r by order.
+apply mul_succ_div_gt; auto.
+rewrite opp_pos_neg; auto.
+Qed.
+
+Lemma mul_succ_div_lt: forall a b, a<=0 -> b<0 -> b*(S (a/b)) < a.
+Proof.
+intros.
+rewrite opp_lt_mono, <- mul_opp_l, <- div_opp_opp by order.
+apply mul_succ_div_gt; auto.
+rewrite opp_nonneg_nonpos; auto.
+rewrite opp_pos_neg; auto.
+Qed.
+
+(** Inequality [mul_div_le] is exact iff the modulo is zero. *)
 
 Lemma div_exact : forall a b, b~=0 -> (a == b*(a/b) <-> a mod b == 0).
 Proof.

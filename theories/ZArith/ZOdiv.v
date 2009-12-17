@@ -8,7 +8,7 @@
 
 
 Require Import BinPos BinNat Nnat ZArith_base ROmega ZArithRing
- ZBinary ZDivOcaml Morphisms.
+ ZBinary ZDivTrunc Morphisms.
 Require Export ZOdiv_def.
 Require Zdiv.
 
@@ -245,7 +245,7 @@ Proof.
 Qed.
 
 (** We know enough to prove that [ZOdiv] and [ZOmod] are instances of
-    one of the abstract Euclidean divisions of Numbers. *) 
+    one of the abstract Euclidean divisions of Numbers. *)
 
 Module ZODiv <: ZDiv ZBinAxiomsMod.
  Definition div := ZOdiv.

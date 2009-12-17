@@ -22,9 +22,9 @@ Integer/Abstract/ZLt.vo
 Integer/Abstract/ZMulOrder.vo
 Integer/Abstract/ZMul.vo
 Integer/Abstract/ZProperties.vo
-Integer/Abstract/ZDivCoq.vo
-Integer/Abstract/ZDivOcaml.vo
-Integer/Abstract/ZDivMath.vo
+Integer/Abstract/ZDivFloor.vo
+Integer/Abstract/ZDivTrunc.vo
+Integer/Abstract/ZDivEucl.vo
 Integer/BigZ/BigZ.vo
 Integer/BigZ/ZMake.vo
 Integer/Binary/ZBinary.vo
