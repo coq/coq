@@ -303,7 +303,7 @@ Proof. intros. exact (MPRev.max_spec_le m n). Qed.
 
 Lemma min_case_strong : forall n m (P:O.t -> Type),
  (forall x y, x == y -> P x -> P y) ->
- (m<=n -> P m) -> (n<=m -> P n) -> P (min n m).
+ (n<=m -> P n) -> (m<=n -> P m) -> P (min n m).
 Proof. intros. apply (MPRev.max_case_strong m n P); auto. Qed.
 
 Lemma min_case : forall n m (P:O.t -> Type),

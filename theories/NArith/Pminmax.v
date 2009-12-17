@@ -61,7 +61,7 @@ Lemma Pmax_monotone: forall f,
 Proof. intros; apply max_monotone; auto. congruence. Qed.
 
 Lemma Pmin_case_strong : forall n m (P:positive -> Type),
-  (m<=n -> P m) -> (n<=m -> P n) -> P (Pmin n m).
+  (n<=m -> P n) -> (m<=n -> P m) -> P (Pmin n m).
 Proof. intros; apply min_case_strong; auto. congruence. Defined.
 
 Lemma Pmin_case : forall n m (P:positive -> Type),
