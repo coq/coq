@@ -192,8 +192,8 @@ let rec do_list = function
 
 (* Nat *)
 
-let coq_S = lazy(constant "S")
-let coq_O = lazy(constant "O")
+let coq_S = lazy(init_constant "S")
+let coq_O = lazy(init_constant "O")
 
 let rec mk_nat = function
   | 0 -> Lazy.force coq_O
