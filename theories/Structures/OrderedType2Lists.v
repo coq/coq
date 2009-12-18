@@ -73,9 +73,9 @@ Module KeyOrderedType(Import O:OrderedType).
 
   Local Open Scope signature_scope.
 
-  Definition eqk : relation (key*elt) := eq @@ fst.
+  Definition eqk : relation (key*elt) := eq @@1.
   Definition eqke : relation (key*elt) := eq * Logic.eq.
-  Definition ltk : relation (key*elt) := lt @@ fst.
+  Definition ltk : relation (key*elt) := lt @@1.
 
   Hint Unfold eqk eqke ltk.
 

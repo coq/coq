@@ -61,8 +61,10 @@ Ltac wsimpl :=
  unfold eq, zero, succ, pred, add, sub, mul; autorewrite with w.
 Ltac wcongruence := repeat red; intros; wsimpl; congruence.
 
-Instance znz_measure: Measure w_op.(znz_to_Z).
 Instance eq_equiv : Equivalence eq.
+Proof.
+unfold eq. firstorder.
+Qed.
 
 Instance succ_wd : Proper (eq ==> eq) succ.
 Proof.

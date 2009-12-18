@@ -12,7 +12,7 @@
 
 
 Require Import ZAxioms ZProperties.
-Require Import ZArith.
+Require Import ZArith_base.
 
 Local Open Scope Z_scope.
 

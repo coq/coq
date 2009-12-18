@@ -11,6 +11,7 @@
 (*i $Id$ i*)
 
 Require Import Bool. (* To get the orb and negb function *)
+Require Import RelationPairs.
 Require Export NStrongRec.
 
 Module NdefOpsPropFunct (Import N : NAxiomsSig).

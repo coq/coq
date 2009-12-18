@@ -34,9 +34,8 @@ Ltac ncongruence := unfold N.eq; repeat red; intros; nsimpl; congruence.
 
 Obligation Tactic := ncongruence.
 
-Instance: @Measure N.t Z N.to_Z.
-
 Instance eq_equiv : Equivalence N.eq.
+Proof. unfold N.eq. firstorder. Qed.
 
 Program Instance succ_wd : Proper (N.eq==>N.eq) N.succ.
 Program Instance pred_wd : Proper (N.eq==>N.eq) N.pred.

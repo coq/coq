@@ -10,7 +10,7 @@
 
 (*i $Id$ i*)
 
-Require Export Setoid Morphisms RelationPairs.
+Require Export Setoid Morphisms.
 
 Set Implicit Arguments.
 (*

@@ -94,8 +94,8 @@ Local Open Scope bigQ_scope.
 
 (** [BigQ] is a setoid *)
 
-Instance bigQ_measure: RelationPairs.Measure BigQ.to_Q.
 Instance BigQeq_rel : Equivalence BigQ.eq.
+Proof. unfold BigQ.eq. split; red; eauto with qarith. Qed.
 
 Instance BigQadd_wd : Proper (BigQ.eq==>BigQ.eq==>BigQ.eq) BigQ.add.
 Proof.

@@ -13,13 +13,16 @@ Require Import Relations Morphisms.
 
 (* NB: This should be system-wide someday, but for that we need to
     fix the simpl tactic, since "simpl fst" would be refused for
-    the moment. *)
+    the moment.
 
 Implicit Arguments fst [[A] [B]].
 Implicit Arguments snd [[A] [B]].
 Implicit Arguments pair [[A] [B]].
 
-(* /NB *)
+/NB *)
+
+Local Notation Fst := (@fst _ _).
+Local Notation Snd := (@snd _ _).
 
 Arguments Scope relation_conjunction
  [type_scope signature_scope signature_scope].
@@ -44,22 +47,25 @@ Definition RelCompFun {A B}(R:relation B)(f:A->B) : relation A :=
 
 Infix "@@" := RelCompFun (at level 30, right associativity) : signature_scope.
 
-(** We declare measures to the system using the [Measure] class. 
-   Otherwise the instances would easily introduce loops, 
+Notation "R @@1" := (R @@ Fst)%signature (at level 30) : signature_scope.
+Notation "R @@2" := (R @@ Snd)%signature (at level 30) : signature_scope.
+
+(** We declare measures to the system using the [Measure] class.
+   Otherwise the instances would easily introduce loops,
    never instantiating the [f] function.  *)
 
 Class Measure {A B} (f : A -> B).
 
 (** Standard measures. *)
 
-Instance fst_measure : @Measure (A * B) A fst.
-Instance snd_measure : @Measure (A * B) B snd.
+Instance fst_measure : @Measure (A * B) A Fst.
+Instance snd_measure : @Measure (A * B) B Snd.
 
 (** We define a product relation over [A*B]: each components should
     satisfy the corresponding initial relation. *)
 
 Definition RelProd {A B}(RA:relation A)(RB:relation B) : relation (A*B) :=
- relation_conjunction (RA @@ fst) (RB @@ snd).
+ relation_conjunction (RA @@1) (RB @@2).
 
 Infix "*" := RelProd : signature_scope.
 
@@ -68,12 +74,12 @@ Section RelCompFun_Instances.
 
   Global Instance RelCompFun_Reflexive
     `(Measure A B f, Reflexive _ R) : Reflexive (R@@f).
-  Proof. firstorder. Qed. 
-    
+  Proof. firstorder. Qed.
+
   Global Instance RelCompFun_Symmetric
     `(Measure A B f, Symmetric _ R) : Symmetric (R@@f).
   Proof. firstorder. Qed.
-      
+
   Global Instance RelCompFun_Transitive
     `(Measure A B f, Transitive _ R) : Transitive (R@@f).
   Proof. firstorder. Qed.
@@ -106,33 +112,33 @@ Instance RelProd_Equivalence {A B}(RA:relation A)(RB:relation B)
  `(Equivalence _ RA, Equivalence _ RB) : Equivalence (RA*RB).
 
 Lemma FstRel_ProdRel {A B}(RA:relation A) :
- relation_equivalence (RA @@ fst) (RA*(fun _ _ : B => True)).
+ relation_equivalence (RA @@1) (RA*(fun _ _ : B => True)).
 Proof. firstorder. Qed.
 
 Lemma SndRel_ProdRel {A B}(RB:relation B) :
- relation_equivalence (RB @@ snd) ((fun _ _ : A =>True) * RB).
+ relation_equivalence (RB @@2) ((fun _ _ : A =>True) * RB).
 Proof. firstorder. Qed.
 
 Instance FstRel_sub {A B} (RA:relation A)(RB:relation B):
- subrelation (RA*RB) (RA @@ fst).
+ subrelation (RA*RB) (RA @@1).
 Proof. firstorder. Qed.
 
 Instance SndRel_sub {A B} (RA:relation A)(RB:relation B):
- subrelation (RA*RB) (RB @@ snd).
+ subrelation (RA*RB) (RB @@2).
 Proof. firstorder. Qed.
 
 Instance pair_compat { A B } (RA:relation A)(RB:relation B) :
- Proper (RA==>RB==> RA*RB) pair.
+ Proper (RA==>RB==> RA*RB) (@pair _ _).
 Proof. firstorder. Qed.
 
 Instance fst_compat { A B } (RA:relation A)(RB:relation B) :
- Proper (RA*RB ==> RA) fst.
+ Proper (RA*RB ==> RA) Fst.
 Proof.
 intros A B RA RB (x,y) (x',y') (Hx,Hy); compute in *; auto.
 Qed.
 
 Instance snd_compat { A B } (RA:relation A)(RB:relation B) :
- Proper (RA*RB ==> RB) snd.
+ Proper (RA*RB ==> RB) Snd.
 Proof.
 intros A B RA RB (x,y) (x',y') (Hx,Hy); compute in *; auto.
 Qed.

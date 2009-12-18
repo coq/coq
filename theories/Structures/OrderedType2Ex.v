@@ -46,7 +46,7 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
  Include PairDecidableType O1 O2.
 
  Definition lt :=
-   (relation_disjunction (O1.lt @@ fst) (O1.eq * O2.lt))%signature.
+   (relation_disjunction (O1.lt @@1) (O1.eq * O2.lt))%signature.
 
  Instance lt_strorder : StrictOrder lt.
  Proof.
