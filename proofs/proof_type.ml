@@ -69,7 +69,8 @@ and tactic_expr =
    inductive,
    ltac_constant,
    identifier,
-   glob_tactic_expr)
+   glob_tactic_expr,
+   tlevel)
      Tacexpr.gen_tactic_expr
 
 and atomic_tactic_expr =
@@ -79,7 +80,8 @@ and atomic_tactic_expr =
    inductive,
    ltac_constant,
    identifier,
-   glob_tactic_expr)
+   glob_tactic_expr,
+   tlevel)
      Tacexpr.gen_atomic_tactic_expr
 
 and tactic_arg =
@@ -89,7 +91,8 @@ and tactic_arg =
    inductive,
    ltac_constant,
    identifier,
-   glob_tactic_expr)
+   glob_tactic_expr,
+   tlevel)
      Tacexpr.gen_tactic_arg
 
 type ltac_call_kind =

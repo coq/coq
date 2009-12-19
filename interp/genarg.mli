@@ -114,9 +114,9 @@ ExtraArgType of string         '_a                      '_b
    out_gen is monomorphic over 'a, hence type-safe
 *)
 
-type rlevel = constr_expr
-type glevel = rawconstr_and_expr
-type tlevel = open_constr
+type rlevel
+type glevel
+type tlevel
 
 type ('a,'co) abstract_argument_type
 

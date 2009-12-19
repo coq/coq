@@ -60,7 +60,7 @@ val pr_raw_generic :
   (constr_expr -> std_ppcmds) ->
   (constr_expr -> std_ppcmds) ->
   (tolerability -> raw_tactic_expr -> std_ppcmds) ->
-  (Libnames.reference -> std_ppcmds) -> constr_expr generic_argument ->
+  (Libnames.reference -> std_ppcmds) -> rlevel generic_argument ->
     std_ppcmds
 
 val pr_raw_extend:

@@ -143,7 +143,7 @@ type ('a,'t) match_rule =
   | Pat of 'a match_context_hyps list * 'a match_pattern * 't
   | All of 't
 
-type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
+type ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr =
   (* Basic tactics *)
   | TacIntroPattern of intro_pattern_expr located list
   | TacIntrosUntil of quantified_hypothesis
@@ -218,44 +218,44 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacInversion of ('constr,'id) inversion_strength * quantified_hypothesis
 
   (* For ML extensions *)
-  | TacExtend of loc * string * 'constr generic_argument list
+  | TacExtend of loc * string * 'lev generic_argument list
 
   (* For syntax extensions *)
   | TacAlias of loc * string *
-      (identifier * 'constr generic_argument) list
+      (identifier * 'lev generic_argument) list
       * (dir_path * glob_tactic_expr)
 
-and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr =
-  | TacAtom of loc * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr
-  | TacThen of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr *
-	('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr array *
-	('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr *
-	('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr array
-  | TacThens of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr *
-	('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr list
-  | TacFirst of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr list
-  | TacComplete of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
-  | TacSolve of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr list
-  | TacTry of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
-  | TacOrelse of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
-  | TacDo of int or_var * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
-  | TacRepeat of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
-  | TacProgress of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
-  | TacAbstract of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr * identifier option
+and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr =
+  | TacAtom of loc * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr
+  | TacThen of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr *
+	('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr array *
+	('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr *
+	('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr array
+  | TacThens of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr *
+	('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr list
+  | TacFirst of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr list
+  | TacComplete of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
+  | TacSolve of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr list
+  | TacTry of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
+  | TacOrelse of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
+  | TacDo of int or_var * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
+  | TacRepeat of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
+  | TacProgress of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
+  | TacAbstract of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr * identifier option
   | TacId of 'id message_token list
   | TacFail of int or_var * 'id message_token list
-  | TacInfo of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
-  | TacLetIn of rec_flag * (identifier located * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg) list * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
-  | TacMatch of lazy_flag * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr * ('pat,('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr) match_rule list
-  | TacMatchGoal of lazy_flag * direction_flag * ('pat,('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr) match_rule list
-  | TacFun of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_fun_ast
-  | TacArg of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg
+  | TacInfo of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
+  | TacLetIn of rec_flag * (identifier located * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg) list * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
+  | TacMatch of lazy_flag * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr * ('pat,('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr) match_rule list
+  | TacMatchGoal of lazy_flag * direction_flag * ('pat,('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr) match_rule list
+  | TacFun of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_fun_ast
+  | TacArg of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg
 
-and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_fun_ast =
-  identifier option list * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
+and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_fun_ast =
+  identifier option list * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
 
   (* These are the possible arguments of a tactic definition *)
-and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg =
+and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg =
   | TacDynamic     of loc * Dyn.t
   | TacVoid
   | MetaIdArg      of loc * bool * string
@@ -264,9 +264,9 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg =
   | Reference      of 'ref
   | Integer        of int
   | TacCall        of loc *
-      'ref * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg list
+      'ref * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg list
   | TacExternal of loc * string * string *
-      ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg list
+      ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg list
   | TacFreshId     of string or_var list
   | Tacexp of 'tac
 
@@ -278,7 +278,8 @@ and glob_tactic_expr =
      inductive or_var,
      ltac_constant located or_var,
      identifier located,
-     glob_tactic_expr) gen_tactic_expr
+     glob_tactic_expr,
+     glevel) gen_tactic_expr
 
 type raw_tactic_expr =
     (constr_expr,
@@ -287,7 +288,8 @@ type raw_tactic_expr =
      reference or_by_notation,
      reference,
      identifier located or_metaid,
-     raw_tactic_expr) gen_tactic_expr
+     raw_tactic_expr,
+     rlevel) gen_tactic_expr
 
 type raw_atomic_tactic_expr =
     (constr_expr,                  (* constr *)
@@ -296,7 +298,8 @@ type raw_atomic_tactic_expr =
      reference or_by_notation,     (* inductive *)
      reference,                    (* ltac reference *)
      identifier located or_metaid, (* identifier *)
-     raw_tactic_expr) gen_atomic_tactic_expr
+     raw_tactic_expr,
+     rlevel) gen_atomic_tactic_expr
 
 type raw_tactic_arg =
     (constr_expr,
@@ -305,9 +308,10 @@ type raw_tactic_arg =
      reference or_by_notation,
      reference,
      identifier located or_metaid,
-     raw_tactic_expr) gen_tactic_arg
+     raw_tactic_expr,
+     rlevel) gen_tactic_arg
 
-type raw_generic_argument = constr_expr generic_argument
+type raw_generic_argument = rlevel generic_argument
 
 type raw_red_expr = (constr_expr, reference or_by_notation) red_expr_gen
 
@@ -318,7 +322,8 @@ type glob_atomic_tactic_expr =
      inductive or_var,
      ltac_constant located or_var,
      identifier located,
-     glob_tactic_expr) gen_atomic_tactic_expr
+     glob_tactic_expr,
+     glevel) gen_atomic_tactic_expr
 
 type glob_tactic_arg =
     (rawconstr_and_expr,
@@ -327,14 +332,15 @@ type glob_tactic_arg =
      inductive or_var,
      ltac_constant located or_var,
      identifier located,
-     glob_tactic_expr) gen_tactic_arg
+     glob_tactic_expr,
+     glevel) gen_tactic_arg
 
-type glob_generic_argument = rawconstr_and_expr generic_argument
+type glob_generic_argument = glevel generic_argument
 
 type glob_red_expr =
     (rawconstr_and_expr, evaluable_global_reference or_var) red_expr_gen
 
-type typed_generic_argument = Evd.open_constr generic_argument
+type typed_generic_argument = tlevel generic_argument
 
 type 'a raw_abstract_argument_type = ('a,rlevel) abstract_argument_type
 

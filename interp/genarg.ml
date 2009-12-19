@@ -65,9 +65,9 @@ type 'a generic_argument = argument_type * Obj.t
 
 let dyntab = ref ([] : string list)
 
-type rlevel = constr_expr
-type glevel = rawconstr_and_expr
-type tlevel = open_constr
+type rlevel
+type glevel
+type tlevel
 
 type ('a,'b) abstract_argument_type = argument_type
 
