@@ -270,13 +270,16 @@ let dummy_goal =
 
 let make_exact_entry pri (c,cty) =
   let cty = strip_outer_cast cty in
-  let pat = Pattern.pattern_of_constr cty in
-  let head = 
-    try head_of_constr_reference (fst (head_constr cty)) 
-    with _ -> failwith "make_exact_entry" 
-  in
-    (Some head,
-    { pri=(match pri with Some pri -> pri | None -> 0); pat=Some pat; code=Give_exact c })
+    match kind_of_term cty with
+    | Prod _ -> failwith "make_exact_entry"
+    | _ ->
+	let pat = Pattern.pattern_of_constr cty in
+	let head = 
+	  try head_of_constr_reference (fst (head_constr cty)) 
+	  with _ -> failwith "make_exact_entry" 
+	in
+          (Some head,
+	  { pri=(match pri with Some pri -> pri | None -> 0); pat=Some pat; code=Give_exact c })
 
 let make_apply_entry env sigma (eapply,hnf,verbose) pri (c,cty) =
   let cty = if hnf then hnf_constr env sigma cty else cty in

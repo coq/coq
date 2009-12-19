@@ -79,6 +79,7 @@ Section Integers_sect.
       auto with sets arith.
     apply Inhabited_intro with (x := 0).
       apply Integers_defn.
+    exact le_Order.
   Defined.
 
   Lemma le_total_order : Totally_ordered nat nat_po Integers.

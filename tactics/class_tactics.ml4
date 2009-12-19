@@ -139,6 +139,20 @@ let unify_resolve flags (c,clenv) gls =
   let clenv' = clenv_unique_resolver false ~flags clenv' gls in
     tclPROGRESS (Clenvtac.clenv_refine false ~with_classes:false clenv') gls
 
+let clenv_of_prods nprods (c, clenv) gls =
+  if nprods = 0 then Some clenv
+  else 
+    let ty = pf_type_of gls c in
+    let diff = nb_prod ty - nprods in
+      if diff >= 0 then
+	Some (mk_clenv_from_n gls (Some diff) (c,ty))
+      else None
+
+let with_prods nprods (c, clenv) f gls =
+  match clenv_of_prods nprods (c, clenv) gls with
+  | None -> tclFAIL 0 (str"Not enough premisses") gls
+  | Some clenv' -> f (c, clenv') gls
+
 (** Hack to properly solve dependent evars that are typeclasses *)
 
 let flags_of_state st =
@@ -160,6 +174,8 @@ let rec e_trivial_fail_db db_list local_db goal =
 
 and e_my_find_search db_list local_db hdc concl =
   let hdc = head_of_constr_reference hdc in
+  let prods, concl = decompose_prod_assum concl in
+  let nprods = List.length prods in
   let hintl =
     list_map_append
       (fun db ->
@@ -175,11 +191,11 @@ and e_my_find_search db_list local_db hdc concl =
     fun (flags, {pri=b; pat = p; code=t}) ->
       let tac =
 	match t with
-	  | Res_pf (term,cl) -> unify_resolve flags (term,cl)
-	  | ERes_pf (term,cl) -> unify_e_resolve flags (term,cl)
+	  | Res_pf (term,cl) -> with_prods nprods (term,cl) (unify_resolve flags)
+	  | ERes_pf (term,cl) -> with_prods nprods (term,cl) (unify_e_resolve flags)
 	  | Give_exact (c) -> e_give_exact flags c
 	  | Res_pf_THEN_trivial_fail (term,cl) ->
-              tclTHEN (unify_e_resolve flags (term,cl))
+              tclTHEN (with_prods nprods (term,cl) (unify_e_resolve flags))
 		(e_trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> tclWEAK_PROGRESS (unfold_in_concl [all_occurrences,c])
 	  | Extern tacast -> conclPattern concl p tacast
