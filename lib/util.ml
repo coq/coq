@@ -167,133 +167,100 @@ type utf8_status = UnicodeLetter | UnicodeIdentPart | UnicodeSymbol
 
 exception UnsupportedUtf8
 
-let classify_unicode unicode =
-    match unicode land 0x1F000 with
-    | 0x0 ->
-    begin match unicode with
-    (* utf-8 Basic Latin underscore *)
-    | x when x = 0x005F -> UnicodeLetter
-    (* utf-8 Basic Latin letters *)
-    | x when 0x0041 <= x & x <= 0x005A -> UnicodeLetter
-    | x when 0x0061 <= x & x <= 0x007A -> UnicodeLetter
-    (* utf-8 Basic Latin digits and quote *)
-    | x when 0x0030 <= x & x <= 0x0039 or x = 0x0027 -> UnicodeIdentPart
-    (* utf-8 Basic Latin symbols *)
-    | x when x <= 0x007F -> UnicodeSymbol
-    (* utf-8 Latin-1 non breaking space U00A0 *)
-    | 0x00A0 -> UnicodeLetter
-    (* utf-8 Latin-1 symbols U00A1-00BF *)
-    | x when 0x00A0 <= x & x <= 0x00BF -> UnicodeSymbol
-    (* utf-8 Latin-1 letters U00C0-00D6 *)
-    | x when 0x00C0 <= x & x <= 0x00D6 -> UnicodeLetter
-    (* utf-8 Latin-1 symbol U00D7 *)
-    | 0x00D7 -> UnicodeSymbol
-    (* utf-8 Latin-1 letters U00D8-00F6 *)
-    | x when 0x00D8 <= x & x <= 0x00F6 -> UnicodeLetter
-    (* utf-8 Latin-1 symbol U00F7 *)
-    | 0x00F7 -> UnicodeSymbol
-    (* utf-8 Latin-1 letters U00F8-00FF *)
-    | x when 0x00F8 <= x & x <= 0x00FF -> UnicodeLetter
-    (* utf-8 Latin Extended A U0100-017F and Latin Extended B U0180-U0241 *)
-    | x when 0x0100 <= x & x <= 0x0241 -> UnicodeLetter
-    (* utf-8 Phonetic letters U0250-02AF *)
-    | x when 0x0250 <= x & x <= 0x02AF -> UnicodeLetter
-    (* utf-8 what do to with diacritics U0300-U036F ? *)
-    (* utf-8 Greek letters U0380-03FF *)
-    | x when 0x0380 <= x & x <= 0x03FF -> UnicodeLetter
-    (* utf-8 Cyrillic letters U0400-0481 *)
-    | x when 0x0400 <= x & x <= 0x0481 -> UnicodeLetter
-    (* utf-8 Cyrillic symbol U0482 *)
-    | 0x0482 -> UnicodeSymbol
-    (* utf-8 what do to with diacritics U0483-U0489 \ U0487 ? *)
-    (* utf-8 Cyrillic letters U048A-U4F9 (Warning: 04CF) *)
-    | x when 0x048A <= x & x <= 0x04F9 -> UnicodeLetter
-    (* utf-8 Cyrillic supplement letters U0500-U050F *)
-    | x when 0x0500 <= x & x <= 0x050F -> UnicodeLetter
-    (* utf-8 Hebrew letters U05D0-05EA *)
-    | x when 0x05D0 <= x & x <= 0x05EA -> UnicodeLetter
-    (* utf-8 Arabic letters U0621-064A *)
-    | x when 0x0621 <= x & x <= 0x064A -> UnicodeLetter
-    (* utf-8 Arabic supplement letters U0750-076D *)
-    | x when 0x0750 <= x & x <= 0x076D -> UnicodeLetter
-    | _ -> raise UnsupportedUtf8
-    end
-    | 0x1000 ->
-    begin match unicode with
-    (* utf-8 Georgian U10A0-10FF (has holes) *)
-    | x when 0x10A0 <= x & x <= 0x10FF -> UnicodeLetter
-    (* utf-8 Hangul Jamo U1100-11FF (has holes) *)
-    | x when 0x1100 <= x & x <= 0x11FF -> UnicodeLetter
-    (* utf-8 Latin additional letters U1E00-1E9B and U1EA0-1EF9 *)
-    | x when 0x1E00 <= x & x <= 0x1E9B -> UnicodeLetter
-    | x when 0x1EA0 <= x & x <= 0x1EF9 -> UnicodeLetter
-    | _ -> raise UnsupportedUtf8
-    end
-    | 0x2000 ->
-    begin match unicode with
-    (* utf-8 general punctuation U2080-2089 *)
-    (* Hyphens *)
-    | x when 0x2010 <= x & x <= 0x2011 -> UnicodeLetter
-    (* Dashes and other symbols *)
-    | x when 0x2012 <= x & x <= 0x2027 -> UnicodeSymbol
-    (* Per mille and per ten thousand signs *)
-    | x when 0x2030 <= x & x <= 0x2031 -> UnicodeSymbol
-    (* Prime letters *)
-    | x when 0x2032 <= x & x <= 0x2034 or x = 0x2057 -> UnicodeIdentPart
-    (* Miscellaneous punctuation *)
-    | x when 0x2039 <= x & x <= 0x2056 -> UnicodeSymbol
-    | x when 0x2058 <= x & x <= 0x205E -> UnicodeSymbol
-    (* Invisible mathematical operators *)
-    | x when 0x2061 <= x & x <= 0x2063 -> UnicodeSymbol
-    (* utf-8 superscript U2070-207C *)
-    | x when 0x2070 <= x & x <= 0x207C -> UnicodeSymbol
-    (* utf-8 subscript U2080-2089 *)
-    | x when 0x2080 <= x & x <= 0x2089 -> UnicodeIdentPart
-    (* utf-8 letter-like U2100-214F *)
-    | x when 0x2100 <= x & x <= 0x214F -> UnicodeLetter
-    (* utf-8 number-forms U2153-2183 *)
-    | x when 0x2153 <= x & x <= 0x2183 -> UnicodeSymbol
-    (* utf-8 arrows A U2190-21FF *)
-    (* utf-8 mathematical operators U2200-22FF *)
-    (* utf-8 miscellaneous technical U2300-23FF *)
-    | x when 0x2190 <= x & x <= 0x23FF -> UnicodeSymbol
-    (* utf-8 box drawing U2500-257F has ceiling, etc. *)
-    (* utf-8 block elements U2580-259F *)
-    (* utf-8 geom. shapes U25A0-25FF (has triangles, losange, etc) *)
-    (* utf-8 miscellaneous symbols U2600-26FF *)
-    | x when 0x2500 <= x & x <= 0x26FF -> UnicodeSymbol
-    (* utf-8 arrows B U2900-297F *)
-    | x when 0x2900 <= x & x <= 0x297F -> UnicodeSymbol
-    (* utf-8 mathematical operators U2A00-2AFF *)
-    | x when 0x2A00 <= x & x <= 0x2AFF -> UnicodeSymbol
-    (* utf-8 bold symbols U2768-U2775 *)
-    | x when 0x2768 <= x & x <= 0x2775 -> UnicodeSymbol
-    (* utf-8 arrows and brackets U27E0-U27FF *)
-    | x when 0x27E0 <= x & x <= 0x27FF -> UnicodeSymbol
-    (* utf-8 brackets, braces and parentheses *)
-    | x when 0x2980 <= x & x <= 0x29FF -> UnicodeSymbol
-    (* utf-8 miscellaneous including double-plus U29F0-U29FF *)
-    | x when 0x29F0 <= x & x <= 0x29FF -> UnicodeSymbol
-    | _ -> raise UnsupportedUtf8
-    end
-    | _ ->
-    begin match unicode with
-    (* utf-8 CJC Symbols and Punctuation  *)
-    | x when 0x3008 <= x & x <= 0x3020 -> UnicodeSymbol
-    (* utf-8 Hiragana U3040-309F and Katakana U30A0-30FF *)
-    | x when 0x3040 <= x & x <= 0x30FF -> UnicodeLetter
-    (* utf-8 Unified CJK Ideographs U4E00-9FA5 *)
-    | x when 0x4E00 <= x & x <= 0x9FA5 -> UnicodeLetter
-    (* utf-8 Hangul syllables UAC00-D7AF *)
-    | x when 0xAC00 <= x & x <= 0xD7AF -> UnicodeLetter
-    (* utf-8 Gothic U10330-1034A *)
-    | x when 0x10330 <= x & x <= 0x1034A -> UnicodeLetter
-    (* utf-8 Math Alphanumeric Symbols U1D400-1D7FF (letters) (has holes) *)
-    | x when 0x1D400 <= x & x <= 0x1D7CB -> UnicodeLetter
-    (* utf-8 Math Alphanumeric Symbols U1D400-1D7FF (digits) *)
-    | x when 0x1D7CE <= x & x <= 0x1D7FF -> UnicodeIdentPart
-    | _ -> raise UnsupportedUtf8
-    end
+(* The following table stores classes of Unicode characters that
+   are used by the lexer. There are 3 different classes so 2 bits are
+   allocated for each character. We only use 16 bits over the 31 bits
+   to simplify the masking process. (This choice seems to be a good
+   trade-off between speed and space after some benchmarks.) *)
+
+(* A 256ko table, initially filled with zeros. *)
+let table = Array.create (1 lsl 17) 0
+
+(* Associate a 2-bit pattern to each status at position [i]. 
+   Only the 3 lowest bits of [i] are taken into account to 
+   define the position of the pattern in the word. 
+   Notice that pattern "00" means "undefined". *)
+let mask i = function
+  | UnicodeLetter    -> 1 lsl ((i land 7) lsl 1) (* 01 *)
+  | UnicodeIdentPart -> 2 lsl ((i land 7) lsl 1) (* 10 *)
+  | UnicodeSymbol    -> 3 lsl ((i land 7) lsl 1) (* 11 *)
+
+(* Helper to reset 2 bits in a word. *)
+let reset_mask i =
+  lnot (3 lsl ((i land 7) lsl 1))
+
+(* Initialize the lookup table from a list of segments, assigning
+   a status to every character of each segment. The order of these
+   assignments is relevant: it is possible to assign status [s] to
+   a segment [(c1, c2)] and later assign [s'] to [c] even if [c] is
+   between [c1] and [c2]. *)
+let mk_lookup_table_from_unicode_tables_for status tables =
+  List.iter
+    (List.iter
+       (fun (c1, c2) ->
+          for i = c1 to c2 do
+            table.(i lsr 3) <-
+              (table.(i lsr 3) land (reset_mask i)) lor (mask i status)
+          done))
+    tables
+
+(* Look up into the table and interpret the found pattern. *)
+let lookup x =
+  let v = (table.(x lsr 3) lsr ((x land 7) lsl 1)) land 3 in
+    if      v = 1 then UnicodeLetter
+    else if v = 2 then UnicodeIdentPart
+    else if v = 3 then UnicodeSymbol
+    else raise UnsupportedUtf8
+
+(* [classify_unicode] discriminates between 3 different kinds of
+   symbols based on the standard unicode classification (extracted from
+   Camomile). *)
+let classify_unicode =
+  let single c = [ (c, c) ] in
+    (* General tables. *)
+    mk_lookup_table_from_unicode_tables_for UnicodeSymbol
+      [
+        Unicodetable.sm;           (* Symbol, maths.             *)
+        Unicodetable.sc;           (* Symbol, currency.          *)
+        Unicodetable.so;           (* Symbol, modifier.          *)
+        Unicodetable.pd;           (* Punctation, dash.          *)
+        Unicodetable.pc;           (* Punctation, connector.     *)
+        Unicodetable.pe;           (* Punctation, open.          *)
+        Unicodetable.ps;           (* Punctation, close.         *)
+        Unicodetable.pi;           (* Punctation, initial quote. *)
+        Unicodetable.pf;           (* Punctation, final quote.   *)
+        Unicodetable.po;           (* Punctation, other.         *)
+      ];
+    mk_lookup_table_from_unicode_tables_for UnicodeLetter
+      [
+        Unicodetable.lu;           (* Letter, uppercase.         *)
+        Unicodetable.ll;           (* Letter, lowercase.         *)
+        Unicodetable.lt;           (* Letter, titlecase.         *)
+        Unicodetable.lo;           (* Letter, others.            *)
+      ];
+    mk_lookup_table_from_unicode_tables_for UnicodeIdentPart
+      [
+        Unicodetable.nd;           (* Number, decimal digits.    *)
+        Unicodetable.nl;           (* Number, letter.            *)
+        Unicodetable.no;           (* Number, other.             *)
+      ];
+    (* Exceptions (from a previous version of this function). *)
+    mk_lookup_table_from_unicode_tables_for UnicodeSymbol
+      [
+        single 0x000B2;            (* Squared.                   *)
+        single 0x0002E;            (* Dot.                       *)
+      ];
+    mk_lookup_table_from_unicode_tables_for UnicodeLetter
+      [
+        single 0x005F;             (* Underscore.                *)
+        single 0x00A0;             (* Non breaking space.        *)
+      ];
+    mk_lookup_table_from_unicode_tables_for UnicodeIdentPart
+      [
+        single 0x0027;             (* Special space.             *)
+      ];
+    (* Lookup *)
+    lookup
 
 exception End_of_input
 
@@ -1524,4 +1491,3 @@ let heap_size_kb () = (heap_size () + 1023) / 1024
 let interrupt = ref false
 let check_for_interrupt () =
   if !interrupt then begin interrupt := false; raise Sys.Break end
-

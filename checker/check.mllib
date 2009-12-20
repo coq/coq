@@ -3,6 +3,7 @@ Pp_control
 Pp
 Compat
 Flags
+Unicodetable
 Util
 Option
 Hashcons

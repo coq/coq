@@ -4,6 +4,7 @@ Pp_control
 Pp
 Compat
 Flags
+Unicodetable
 Util
 Bigint
 Hashcons
