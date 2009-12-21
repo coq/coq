@@ -113,10 +113,10 @@ As your script grows bigger and bigger, it might be useful to hide the proofs
 of your theorems and lemmas.
 
 This feature is toggled via the \texttt{Hide} entry of the \texttt{Navigation}
-menu, or with a mouse right-click. The proof shall be enclosed between \texttt{Proof.}
-and \texttt{Qed.}, both with their final dots. The proof that shall be hidden
-or revealed is the first one whose beginning statement (such as \texttt{Theorem})
-precedes the insertion cursor.
+menu. The proof shall be enclosed between \texttt{Proof.} and \texttt{Qed.},
+both with their final dots. The proof that shall be hidden or revealed is the
+first one whose beginning statement (such as \texttt{Theorem}) precedes the
+insertion cursor.
  
 \section{Vernacular commands, templates}
 
@@ -261,17 +261,38 @@ CONTROL and the SHIFT keys, and type the hexadecimal code of the
 symbol required, for example \verb|2200| for the $\forall$ symbol.
 A list of symbol codes is available at \url{http://www.unicode.org}. 
 
-Of course, this method is painful for symbols you use often. There is
-always the possibility to copy-paste a symbol already typed in.
-Another method is to bind some key combinations for frequently used
-symbols. For example, to bind keys \verb|F11| and \verb|F12| to
-$\forall$ and $\exists$ respectively, you may add
-\begin{quote}\tt
-  bind "F11" {"insert-at-cursor" ("$\forall$")}\\
-  bind "F12" {"insert-at-cursor" ("$\exists$")}
-\end{quote}
-to your \verb|binding "text"| section in \verb|.coqide-gtk2rc|.
+This method obviously doesn't scale, that's why the preferred alternative is to
+use an Input Method Editor. On POSIX systems (Linux distros, BSD variants and
+MacOS X), you can use \texttt{uim} and patch it to support \LaTeX{}-style
+edition. To do this, you must have \texttt{uim} and the \texttt{ELatin} Input
+Method installed on your system. Then, issue the following commands as the root
+user:
 
+\begin{verbatim}
+# cd $COQIDE_SRC
+# AUTOON=yes ide/uim/patch-uim.sh
+\end{verbatim}
+
+The AUTOON variable set to yes tells our script to patch ELatin behaviour so
+that the IM is active by default. If you do not want ELatin to be active by
+default, don't set this variable to yes. The script will modify a few files in
+uim's installation directory (most of the time it is \texttt{/usr/share/uim}),
+and save the originals with a \texttt{.orig} suffix.
+
+If everything went right, execute \texttt{uim-pref-gtk} as your regular user
+and in the "Global Settings" menu set the default Input Method to "ELatin", and
+in the "ELatin" menu set the layout to "latin-ltx". You can now execute CoqIDE
+with the following commands (assuming you use a Bourne-style shell):
+
+\begin{verbatim}
+$ export GTK_IM_MODULE=uim
+$ coqide
+\end{verbatim}
+
+If you then type the sequence "\verb=\Gamma=", you will see the sequence being
+replaced by $\Gamma$ as soon as you  type the second "a". The correspondance
+table is stored in the \texttt{elatin-rules.scm} file on uim's installation
+directory.
 
 %  such a binding is system-dependent. We
 % give here a solution for X11:
