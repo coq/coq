@@ -15,3 +15,4 @@ val h_injHyp : Names.identifier -> tactic
 
 val refine_tac : Evd.open_constr -> tactic
 
+val onSomeWithHoles : ('a option -> tactic) -> 'a Evd.sigma option -> tactic

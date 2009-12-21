@@ -756,7 +756,7 @@ let unify_resolve_nodelta (c,clenv) gl =
 let unify_resolve flags (c,clenv) gl =
   let clenv' = connect_clenv gl clenv in
   let _ = clenv_unique_resolver false ~flags clenv' gl in
-  h_apply true false [dummy_loc,(inj_open c,NoBindings)] gl
+  h_apply true false [dummy_loc,(c,NoBindings)] gl
 
 let unify_resolve_gen = function
   | None -> unify_resolve_nodelta
@@ -932,7 +932,7 @@ let gen_trivial lems = function
 let inj_open c = (Evd.empty,c)
 
 let h_trivial lems l =
-  Refiner.abstract_tactic (TacTrivial (List.map inj_open lems,l))
+  Refiner.abstract_tactic (TacTrivial (lems,l))
     (gen_trivial lems l)
 
 (**************************************************************************)
@@ -1062,7 +1062,7 @@ let gen_auto n lems dbnames =
 let inj_or_var = Option.map (fun n -> ArgArg n)
 
 let h_auto n lems l =
-  Refiner.abstract_tactic (TacAuto (inj_or_var n,List.map inj_open lems,l))
+  Refiner.abstract_tactic (TacAuto (inj_or_var n,lems,l))
     (gen_auto n lems l)
 
 (**************************************************************************)
@@ -1091,7 +1091,7 @@ let dauto (n,p) lems =
 let default_dauto = dauto (None,None) []
 
 let h_dauto (n,p) lems =
-  Refiner.abstract_tactic (TacDAuto (inj_or_var n,p,List.map inj_open lems))
+  Refiner.abstract_tactic (TacDAuto (inj_or_var n,p,lems))
     (dauto (n,p) lems)
 
 (***************************************)

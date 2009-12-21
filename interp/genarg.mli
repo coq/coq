@@ -195,11 +195,11 @@ val wit_casted_open_constr : (open_constr,tlevel) abstract_argument_type
 
 val rawwit_constr_with_bindings : (constr_expr with_bindings,rlevel) abstract_argument_type
 val globwit_constr_with_bindings : (rawconstr_and_expr with_bindings,glevel) abstract_argument_type
-val wit_constr_with_bindings : (constr with_ebindings,tlevel) abstract_argument_type
+val wit_constr_with_bindings : (constr with_bindings sigma,tlevel) abstract_argument_type
 
 val rawwit_bindings : (constr_expr bindings,rlevel) abstract_argument_type
 val globwit_bindings : (rawconstr_and_expr bindings,glevel) abstract_argument_type
-val wit_bindings : (open_constr bindings,tlevel) abstract_argument_type
+val wit_bindings : (constr bindings sigma,tlevel) abstract_argument_type
 
 val rawwit_red_expr : ((constr_expr,reference or_by_notation) red_expr_gen,rlevel) abstract_argument_type
 val globwit_red_expr : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var) red_expr_gen,glevel) abstract_argument_type

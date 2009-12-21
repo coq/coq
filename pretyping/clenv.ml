@@ -354,7 +354,7 @@ let clenv_fchain ?(allow_K=true) ?(flags=default_unify_flags) mv clenv nextclenv
 (***************************************************************)
 (* Bindings *)
 
-type arg_bindings = open_constr explicit_bindings
+type arg_bindings = constr explicit_bindings
 
 (* [clenv_independent clenv]
  * returns a list of metavariables which appear in the term cval,
@@ -411,12 +411,11 @@ let clenv_unify_binding_type clenv c t u =
       | e when precatchable_exception e ->
 	  TypeNotProcessed, clenv, c
 
-let clenv_assign_binding clenv k (sigma,c) =
+let clenv_assign_binding clenv k c =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
-  let clenv' = { clenv with evd = Evd.merge clenv.evd sigma} in
-  let c_typ = nf_betaiota clenv'.evd (clenv_get_type_of clenv' c) in
-  let status,clenv'',c = clenv_unify_binding_type clenv' c c_typ k_typ in
-  { clenv'' with evd = meta_assign k (c,(UserGiven,status)) clenv''.evd }
+  let c_typ = nf_betaiota clenv.evd (clenv_get_type_of clenv c) in
+  let status,clenv',c = clenv_unify_binding_type clenv c c_typ k_typ in
+  { clenv' with evd = meta_assign k (c,(UserGiven,status)) clenv'.evd }
 
 let clenv_match_args bl clenv =
   if bl = [] then
@@ -425,13 +424,13 @@ let clenv_match_args bl clenv =
     let mvs = clenv_independent clenv in
     check_bindings bl;
     List.fold_left
-      (fun clenv (loc,b,(sigma,c as sc)) ->
+      (fun clenv (loc,b,c) ->
 	let k = meta_of_binder clenv loc mvs b in
         if meta_defined clenv.evd k then
           if eq_constr (fst (meta_fvalue clenv.evd k)).rebus c then clenv
           else error_already_defined b
         else
-	  clenv_assign_binding clenv k sc)
+	  clenv_assign_binding clenv k c)
       clenv bl
 
 let clenv_constrain_last_binding c clenv =
@@ -439,7 +438,7 @@ let clenv_constrain_last_binding c clenv =
   let k =
     try list_last all_mvs
     with Failure _ -> anomaly "clenv_constrain_with_bindings" in
-  clenv_assign_binding clenv k (Evd.empty,c)
+  clenv_assign_binding clenv k c
 
 let clenv_constrain_dep_args hyps_only bl clenv =
   if bl = [] then

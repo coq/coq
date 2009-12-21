@@ -98,7 +98,7 @@ and tactic = goal sigma -> (goal list sigma * validation)
 and validation = (proof_tree list -> proof_tree)
 
 and tactic_expr =
-  (open_constr,
+  (constr,
    constr_pattern,
    evaluable_global_reference,
    inductive,
@@ -109,7 +109,7 @@ and tactic_expr =
      Tacexpr.gen_tactic_expr
 
 and atomic_tactic_expr =
-  (open_constr,
+  (constr,
    constr_pattern,
    evaluable_global_reference,
    inductive,
@@ -120,7 +120,7 @@ and atomic_tactic_expr =
      Tacexpr.gen_atomic_tactic_expr
 
 and tactic_arg =
-  (open_constr,
+  (constr,
    constr_pattern,
    evaluable_global_reference,
    inductive,

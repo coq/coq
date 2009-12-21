@@ -78,6 +78,7 @@ let clenv_refine with_evars ?(with_classes=true) clenv gls =
 	clenv.env clenv.evd
     else clenv.evd
   in
+  let clenv = { clenv with evd = evd' } in
   tclTHEN
     (tclEVARS evd')
     (refine (clenv_cast_meta clenv (clenv_value clenv)))

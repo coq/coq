@@ -17,4 +17,4 @@ open Genarg
 (*i*)
 
 val absurd                      : constr -> tactic
-val contradiction               : constr with_ebindings option -> tactic
+val contradiction               : constr with_bindings option -> tactic

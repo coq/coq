@@ -86,7 +86,7 @@ val clenv_pose_metas_as_evars : clausenv -> metavariable list -> clausenv
 (***************************************************************)
 (* Bindings *)
 
-type arg_bindings = open_constr explicit_bindings
+type arg_bindings = constr explicit_bindings
 
 (* bindings where the key is the position in the template of the
    clenv (dependent or not). Positions can be negative meaning to
@@ -107,10 +107,10 @@ val clenv_unify_meta_types : ?flags:unify_flags -> clausenv -> clausenv
 (* the optional int tells how many prods of the lemma have to be used *)
 (* use all of them if None *)
 val make_clenv_binding_apply :
-  evar_info sigma -> int option -> constr * constr -> open_constr bindings ->
+  evar_info sigma -> int option -> constr * constr -> constr bindings ->
    clausenv
 val make_clenv_binding :
-  evar_info sigma -> constr * constr -> open_constr bindings -> clausenv
+  evar_info sigma -> constr * constr -> constr bindings -> clausenv
 
 (* [clenv_environments sigma n t] returns [sigma',lmeta,ccl] where
    [lmetas] is a list of metas to be applied to a proof of [t] so that

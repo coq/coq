@@ -19,26 +19,17 @@ open Tacexpr
 open Tactics
 open Util
 
-let inj_id id = (dummy_loc,id)
-let inj_open c = (Evd.empty,c)
-let inj_open_wb (c,b) = ((Evd.empty,c),b)
-let inj_ia = function
-  | ElimOnConstr c -> ElimOnConstr (inj_open_wb c)
-  | ElimOnIdent id -> ElimOnIdent id
-  | ElimOnAnonHyp n -> ElimOnAnonHyp n
-let inj_occ (occ,c) = (occ,inj_open c)
-
 (* Basic tactics *)
 let h_intro_move x y =
   abstract_tactic (TacIntroMove (x, y)) (intro_move x y)
 let h_intro x        = h_intro_move (Some x) no_move
 let h_intros_until x = abstract_tactic (TacIntrosUntil x) (intros_until x)
 let h_assumption     = abstract_tactic TacAssumption assumption
-let h_exact c        = abstract_tactic (TacExact (inj_open c)) (exact_check c)
+let h_exact c        = abstract_tactic (TacExact c) (exact_check c)
 let h_exact_no_check c =
-  abstract_tactic (TacExactNoCheck (inj_open c)) (exact_no_check c)
+  abstract_tactic (TacExactNoCheck c) (exact_no_check c)
 let h_vm_cast_no_check c =
-  abstract_tactic (TacVmCastNoCheck (inj_open c)) (vm_cast_no_check c)
+  abstract_tactic (TacVmCastNoCheck c) (vm_cast_no_check c)
 let h_apply simple ev cb =
   abstract_tactic (TacApply (simple,ev,List.map snd cb,None))
     (apply_with_ebindings_gen simple ev cb)
@@ -46,35 +37,35 @@ let h_apply_in simple ev cb (id,ipat as inhyp) =
   abstract_tactic (TacApply (simple,ev,List.map snd cb,Some inhyp))
     (apply_in simple ev id cb ipat)
 let h_elim ev cb cbo    =
-  abstract_tactic (TacElim (ev,inj_open_wb cb,Option.map inj_open_wb cbo))
+  abstract_tactic (TacElim (ev,cb,cbo))
     (elim ev cb cbo)
-let h_elim_type c    = abstract_tactic (TacElimType (inj_open c)) (elim_type c)
-let h_case ev cb     = abstract_tactic (TacCase (ev,inj_open_wb cb)) (general_case_analysis ev cb)
-let h_case_type c    = abstract_tactic (TacCaseType (inj_open c)) (case_type c)
+let h_elim_type c    = abstract_tactic (TacElimType c) (elim_type c)
+let h_case ev cb     = abstract_tactic (TacCase (ev,cb)) (general_case_analysis ev cb)
+let h_case_type c    = abstract_tactic (TacCaseType c) (case_type c)
 let h_fix ido n      = abstract_tactic (TacFix (ido,n)) (fix ido n)
 let h_mutual_fix b id n l =
   abstract_tactic
-    (TacMutualFix (b,id,n,List.map (fun (id,n,c) -> (id,n,inj_open c)) l))
+    (TacMutualFix (b,id,n,l))
     (mutual_fix id n l 0)
 
 let h_cofix ido      = abstract_tactic (TacCofix ido) (cofix ido)
 let h_mutual_cofix b id l =
   abstract_tactic
-    (TacMutualCofix (b,id,List.map (fun (id,c) -> (id,inj_open c)) l))
+    (TacMutualCofix (b,id,l))
     (mutual_cofix id l 0)
 
-let h_cut c          = abstract_tactic (TacCut (inj_open c)) (cut c)
+let h_cut c          = abstract_tactic (TacCut c) (cut c)
 let h_generalize_gen cl =
-  abstract_tactic (TacGeneralize (List.map (on_fst inj_occ) cl))
+  abstract_tactic (TacGeneralize cl)
     (generalize_gen (List.map (on_fst Redexpr.out_with_occurrences) cl))
 let h_generalize cl =
   h_generalize_gen (List.map (fun c -> ((all_occurrences_expr,c),Names.Anonymous))
     cl)
 let h_generalize_dep c =
-  abstract_tactic (TacGeneralizeDep (inj_open c))(generalize_dep c)
+  abstract_tactic (TacGeneralizeDep c) (generalize_dep c)
 let h_let_tac b na c cl =
   let with_eq = if b then None else Some (true,(dummy_loc,IntroAnonymous)) in
-  abstract_tactic (TacLetTac (na,inj_open c,cl,b)) (letin_tac with_eq na c None cl)
+  abstract_tactic (TacLetTac (na,c,cl,b)) (letin_tac with_eq na c None cl)
 
 (* Derived basic tactics *)
 let h_simple_induction_destruct isrec h =
@@ -83,15 +74,14 @@ let h_simple_induction_destruct isrec h =
 let h_simple_induction = h_simple_induction_destruct true
 let h_simple_destruct = h_simple_induction_destruct false
 
-let h_induction_destruct isrec ev (l,cl) =
-  abstract_tactic (TacInductionDestruct (isrec,ev,(List.map (fun (c,e,idl) ->
-    List.map inj_ia c,Option.map inj_open_wb e,idl) l,cl)))
-    (induction_destruct ev isrec (l,cl))
+let h_induction_destruct isrec ev lcl =
+  abstract_tactic (TacInductionDestruct (isrec,ev,lcl))
+    (induction_destruct ev isrec lcl)
 let h_new_induction ev c e idl cl = h_induction_destruct ev true ([c,e,idl],cl)
 let h_new_destruct ev c e idl cl = h_induction_destruct ev false ([c,e,idl],cl)
 
-let h_specialize n d = abstract_tactic (TacSpecialize (n,inj_open_wb d)) (specialize n d)
-let h_lapply c = abstract_tactic (TacLApply (inj_open c)) (cut_and_apply c)
+let h_specialize n d = abstract_tactic (TacSpecialize (n,d)) (specialize n d)
+let h_lapply c = abstract_tactic (TacLApply c) (cut_and_apply c)
 
 (* Context management *)
 let h_clear b l = abstract_tactic (TacClear (b,l))
@@ -113,26 +103,27 @@ let h_any_constructor t =
 *)
 let h_constructor ev n l =
   abstract_tactic (TacConstructor(ev,AI n,l))(constructor_tac ev None n l)
-let h_one_constructor n = h_constructor false n NoBindings
+let h_one_constructor n =
+  abstract_tactic (TacConstructor(false,AI n,NoBindings)) (one_constructor n NoBindings)
 let h_simplest_left   = h_left false NoBindings
 let h_simplest_right  = h_right false NoBindings
 
 (* Conversion *)
 let h_reduce r cl  =
-  abstract_tactic (TacReduce (inj_red_expr r,cl)) (reduce r cl)
+  abstract_tactic (TacReduce (r,cl)) (reduce r cl)
 let h_change oc c cl =
-  abstract_tactic (TacChange (Option.map inj_occ oc,inj_open c,cl))
+  abstract_tactic (TacChange (oc,c,cl))
     (change (Option.map Redexpr.out_with_occurrences oc) c cl)
 
 (* Equivalence relations *)
 let h_reflexivity    = abstract_tactic TacReflexivity intros_reflexivity
 let h_symmetry c     = abstract_tactic (TacSymmetry c) (intros_symmetry c)
 let h_transitivity c =
-  abstract_tactic (TacTransitivity (Option.map inj_open c))
+  abstract_tactic (TacTransitivity c)
     (intros_transitivity c)
 
-let h_simplest_apply c = h_apply false false [dummy_loc,(inj_open c,NoBindings)]
-let h_simplest_eapply c = h_apply false true [dummy_loc,(inj_open c,NoBindings)]
+let h_simplest_apply c = h_apply false false [dummy_loc,(c,NoBindings)]
+let h_simplest_eapply c = h_apply false true [dummy_loc,(c,NoBindings)]
 let h_simplest_elim c   = h_elim false (c,NoBindings) None
 let h_simplest_case   c = h_case false (c,NoBindings)
 

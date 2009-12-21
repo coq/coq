@@ -158,7 +158,7 @@ let is_applied_rewrite_relation env sigma rels t =
 	      let evd, evar = Evarutil.new_evar sigma env' (new_Type ()) in
 	      let inst = mkApp (Lazy.force rewrite_relation_class, [| evar; mkApp (c, params) |]) in
 	      let _ = Typeclasses.resolve_one_typeclass env' evd inst in
-		Some (sigma, it_mkProd_or_LetIn t rels)
+		Some (it_mkProd_or_LetIn t rels)
 	  with _ -> None)
   | _ -> None
 
@@ -758,6 +758,8 @@ module Strategies =
       List.fold_left (fun tac (l,l2r) ->
 	choice tac (apply_lemma l l2r (false,[])))
 	fail cs
+
+    let inj_open c = (Evd.empty,c)
 
     let old_hints (db : string) : strategy =
       let rules = Autorewrite.find_rewrites db in
@@ -1378,17 +1380,16 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
   let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty } in
     {cl=cl'; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
 
-let get_hyp gl evars (evm,c) clause l2r =
+let get_hyp gl evars c clause l2r =
   let hi = decompose_applied_relation (pf_env gl) evars c l2r in
   let but = match clause with Some id -> pf_get_hyp_typ gl id | None -> pf_concl gl in
     unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl
 
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = false }
 
-let apply_lemma gl (evm,c) cl l2r occs =
+let apply_lemma gl c cl l2r occs =
   let sigma = project gl in
-  let evars = Evd.merge sigma evm in
-  let hypinfo = ref (get_hyp gl evars (evm,c) cl l2r) in
+  let hypinfo = ref (get_hyp gl sigma c cl l2r) in
   let app = apply_rule hypinfo occs in
   let rec aux () =
     Strategies.choice app (subterm true general_rewrite_flags (fun env -> aux () env))
@@ -1397,7 +1398,10 @@ let apply_lemma gl (evm,c) cl l2r occs =
 let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
   let meta = Evarutil.new_meta() in
   let hypinfo, strat = apply_lemma gl c cl l2r occs in
-    try cl_rewrite_clause_aux ~abs:hypinfo.abs strat meta cl gl
+    try
+      tclTHEN
+        (Refiner.tclEVARS hypinfo.cl.evd)
+        (cl_rewrite_clause_aux ~abs:hypinfo.abs strat meta cl) gl
     with Not_found ->
       let {l2r=l2r; c1=x; c2=y} = hypinfo in
 	raise (Pretype_errors.PretypeError

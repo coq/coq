@@ -59,23 +59,6 @@ let rec nb_prod x =
 
 let inj_with_occurrences e = (all_occurrences_expr,e)
 
-let inj_open c = (Evd.empty,c)
-
-let inj_occ (occ,c) = (occ,inj_open c)
-
-let inj_red_expr = function
-  | Simpl lo -> Simpl (Option.map inj_occ lo)
-  | Fold l -> Fold (List.map inj_open l)
-  | Pattern l -> Pattern (List.map inj_occ l)
-  | (ExtraRedExpr _ | CbvVm | Red _ | Hnf | Cbv _ | Lazy _ | Unfold _ as c)
-    -> c
-
-let inj_ebindings = function
-  | NoBindings -> NoBindings
-  | ImplicitBindings l -> ImplicitBindings (List.map inj_open l)
-  | ExplicitBindings l ->
-      ExplicitBindings (List.map (fun (l,id,c) -> (l,id,inj_open c)) l)
-
 let dloc = dummy_loc
 
 (* Option for 8.2 compatibility *)
@@ -191,8 +174,11 @@ let rename_hyp      = Tacmach.rename_hyp
 (*          Fresh names                                       *)
 (**************************************************************)
 
+let fresh_id_in_env avoid id env =
+  next_ident_away_in_goal id (avoid@ids_of_named_context (named_context env))
+
 let fresh_id avoid id gl =
-  next_ident_away_in_goal id (avoid@(pf_ids_of_hyps gl))
+  fresh_id_in_env avoid id (pf_env gl)
 
 (**************************************************************)
 (*          Fixpoints and CoFixpoints                         *)
@@ -776,7 +762,7 @@ let elimination_clause_scheme with_evars allow_K i elimclause indclause gl =
 
 type eliminator = {
   elimindex : int option;  (* None = find it automatically *)
-  elimbody : constr with_ebindings
+  elimbody : constr with_bindings
 }
 
 let general_elim_clause_gen elimtac indclause elim gl =
@@ -927,26 +913,6 @@ let descend_in_conjunctions sidecond_first with_evars tac exit c gl =
 (*            Resolution tactics                    *)
 (****************************************************)
 
-(* Resolution with missing arguments *)
-
-let check_evars sigma evm gl =
-  let origsigma = gl.sigma in
-  let rest =
-    Evd.fold (fun ev evi acc ->
-      if not (Evd.mem origsigma ev) && not (Evd.is_defined sigma ev)
-      then Evd.add acc ev evi else acc)
-      evm Evd.empty
-  in
-  if rest <> Evd.empty then
-    errorlabstrm "apply" (str"Uninstantiated existential "++
-      str(plural (List.length (Evd.to_list rest)) "variable")++str": " ++
-      fnl () ++ pr_evar_map rest);;
-
-let get_bindings_evars = function
-  | ImplicitBindings largs -> List.map fst largs
-  | ExplicitBindings lbind -> List.map (fun x -> fst (pi3 x)) lbind
-  | NoBindings -> []
-
 let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
   let flags =
     if with_delta then default_unify_flags else default_no_delta_unify_flags in
@@ -954,17 +920,13 @@ let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
   let concl_nprod = nb_prod (pf_concl gl0) in
-  let evmc, c = c in
-  let evm = List.fold_left Evd.merge evmc (get_bindings_evars lbind) in
   let rec try_main_apply with_destruct c gl =
     let thm_ty0 = nf_betaiota (project gl) (pf_type_of gl c) in
     let try_apply thm_ty nprod =
       let n = nb_prod thm_ty - nprod in
 	if n<0 then error "Applied theorem has not enough premisses.";
 	let clause = make_clenv_binding_apply gl (Some n) (c,thm_ty) lbind in
-	let res = Clenvtac.res_pf clause ~with_evars:with_evars ~flags:flags gl in
-	  if not with_evars then check_evars (fst res).sigma evm gl0;
-	  res
+	Clenvtac.res_pf clause ~with_evars:with_evars ~flags:flags gl
     in
       try try_apply thm_ty0 concl_nprod
       with PretypeError _|RefinerError _|UserError _|Failure _ as exn ->
@@ -987,33 +949,27 @@ let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
 		Stdpp.raise_with_loc loc exn
 	in try_red_apply thm_ty0
   in
-    if evm = Evd.empty then try_main_apply with_destruct c gl0
-    else
-      tclTHEN
-	(tclEVARS (Evd.merge gl0.sigma evm))
-	(try_main_apply with_destruct c) gl0
+  try_main_apply with_destruct c gl0
 
 let rec apply_with_ebindings_gen b e = function
-  | [] ->
-      tclIDTAC
+  | [] -> tclIDTAC
   | [cb] -> general_apply b b e cb
   | cb::cbl ->
       tclTHENLAST (general_apply b b e cb) (apply_with_ebindings_gen b e cbl)
 
-let apply_with_ebindings cb = apply_with_ebindings_gen false false [dloc,cb]
-let eapply_with_ebindings cb = apply_with_ebindings_gen false true [dloc,cb]
+let apply_with_ebindings cb =
+  apply_with_ebindings_gen false false [dloc,cb]
 
-let apply_with_bindings (c,bl) =
-  apply_with_ebindings (inj_open c,inj_ebindings bl)
+let eapply_with_ebindings cb =
+  apply_with_ebindings_gen false true [dloc,cb]
 
-let eapply_with_bindings (c,bl) =
-  apply_with_ebindings_gen false true [dloc,(inj_open c,inj_ebindings bl)]
+let apply_with_bindings cb = apply_with_ebindings_gen false false [dloc,cb]
 
-let apply c =
-  apply_with_ebindings (inj_open c,NoBindings)
+let eapply_with_bindings cb = apply_with_ebindings_gen false true [dloc,cb]
 
-let eapply c =
-  eapply_with_ebindings (inj_open c,NoBindings)
+let apply c = apply_with_ebindings_gen false false [dloc,(c,NoBindings)]
+
+let eapply c = apply_with_ebindings_gen false true [dloc,(c,NoBindings)]
 
 let apply_list = function
   | c::l -> apply_with_bindings (c,ImplicitBindings l)
@@ -1055,25 +1011,19 @@ let apply_in_once_main flags innerclause (d,lbind) gl =
   aux (make_clenv_binding gl (d,thm) lbind)
 
 let apply_in_once sidecond_first with_delta with_destruct with_evars id
-  (loc,((sigma,d),lbind)) gl0 =
+  (loc,(d,lbind)) gl0 =
   let flags =
     if with_delta then default_unify_flags else default_no_delta_unify_flags in
-  let sigma = List.fold_left Evd.merge sigma (get_bindings_evars lbind) in
   let t' = pf_get_hyp_typ gl0 id in
   let innerclause = mk_clenv_from_n gl0 (Some 0) (mkVar id,t') in
   let rec aux with_destruct c gl =
     try
       let clause = apply_in_once_main flags innerclause (c,lbind) gl in
-      let res = clenv_refine_in ~sidecond_first with_evars id clause gl in
-      if not with_evars then check_evars (fst res).sigma sigma gl0;
-      res
+      clenv_refine_in ~sidecond_first with_evars id clause gl
     with exn when with_destruct ->
       descend_in_conjunctions sidecond_first true aux (fun _ -> raise exn) c gl
   in
-    if sigma = Evd.empty then aux with_destruct d gl0
-    else
-      tclTHEN (tclEVARS (Evd.merge gl0.sigma sigma)) (aux with_destruct d) gl0
-
+  aux with_destruct d gl0
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
    |- B -> C and |- A
@@ -1176,13 +1126,12 @@ let rec intros_clearing = function
 (* Modifying/Adding an hypothesis  *)
 
 let specialize mopt (c,lbind) g =
-  let evars, term =
-    if lbind = NoBindings then None, c
+  let term =
+    if lbind = NoBindings then c
     else
       let clause = make_clenv_binding g (c,pf_type_of g c) lbind in
       let clause = clenv_unify_meta_types clause in
-      let (thd,tstack) =
-        whd_stack clause.evd (clenv_value clause) in
+      let (thd,tstack) = whd_stack clause.evd (clenv_value clause) in
       let nargs = List.length tstack in
       let tstack = match mopt with
 	| Some m ->
@@ -1193,24 +1142,21 @@ let specialize mopt (c,lbind) g =
 	      | t::l -> if occur_meta t then [] else t :: chk l
 	    in chk tstack
       in
-      let term = applist(thd,tstack) in
+      let term = applist(thd,List.map (nf_evar clause.evd) tstack) in
       if occur_meta term then
 	errorlabstrm "" (str "Cannot infer an instance for " ++
           pr_name (meta_name clause.evd (List.hd (collect_metas term))) ++
 	  str ".");
-      Some clause.evd, term
+      term
   in
-  tclTHEN
-    (match evars with Some e -> tclEVARS e | _ -> tclIDTAC)
-    (match kind_of_term (fst(decompose_app (snd(decompose_lam_assum c)))) with
+  match kind_of_term (fst(decompose_app (snd(decompose_lam_assum c)))) with
        | Var id when List.mem id (pf_ids_of_hyps g) ->
 	     tclTHENFIRST
 	       (fun g -> internal_cut_replace id (pf_type_of g term) g)
-	       (exact_no_check term)
+	       (exact_no_check term) g
        | _ -> tclTHENLAST
                  (fun g -> cut (pf_type_of g term) g)
-                 (exact_no_check term))
-    g
+                 (exact_no_check term) g
 
 (* Keeping only a few hypotheses *)
 
@@ -1248,12 +1194,11 @@ let constructor_tac with_evars expctdnumopt i lbind gl =
     Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
   check_number_of_constructors expctdnumopt i nconstr;
   let cons = mkConstruct (ith_constructor_of_inductive mind i) in
-  let apply_tac =
-    general_apply true false with_evars (dloc,(inj_open cons,lbind)) in
+  let apply_tac = general_apply true false with_evars (dloc,(cons,lbind)) in
   (tclTHENLIST
      [convert_concl_no_check redcl DEFAULTcast; intros; apply_tac]) gl
 
-let one_constructor i = constructor_tac false None i
+let one_constructor i lbind = constructor_tac false None i lbind
 
 (* Try to apply the constructor of the inductive definition followed by
    a tactic t given as an argument.
@@ -1273,18 +1218,17 @@ let any_constructor with_evars tacopt gl =
 
 let left_with_ebindings  with_evars = constructor_tac with_evars (Some 2) 1
 let right_with_ebindings with_evars = constructor_tac with_evars (Some 2) 2
-let split_with_ebindings with_evars =
-  tclMAP (constructor_tac with_evars (Some 1) 1)
+let split_with_ebindings with_evars l =
+  tclMAP (constructor_tac with_evars (Some 1) 1) l
 
-let left l             = left_with_ebindings false (inj_ebindings l)
-let simplest_left      = left NoBindings
+let left           = left_with_ebindings false
+let simplest_left  = left NoBindings
 
-let right l            = right_with_ebindings false (inj_ebindings l)
-let simplest_right     = right NoBindings
+let right          = right_with_ebindings false
+let simplest_right = right NoBindings
 
-let split l            = split_with_ebindings false [inj_ebindings l]
-let simplest_split     = split NoBindings
-
+let split          = constructor_tac false (Some 1) 1
+let simplest_split = split NoBindings
 
 (*****************************)
 (* Decomposing introductions *)
@@ -1328,7 +1272,7 @@ let intro_or_and_pattern loc b ll l' tac id gl =
 
 let rewrite_hyp l2r id gl =
   let rew_on l2r =
-    !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings) in
+    !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) in
   let clear_var_and_eq c =
     tclTRY (tclTHEN (clear [id]) (tclTRY (clear [destVar c]))) in
   let t = pf_whd_betadeltaiota gl (pf_type_of gl (mkVar id)) in
@@ -1431,7 +1375,7 @@ let prepare_intros s ipat gl = match ipat with
   | IntroWildcard -> let id = make_id s gl in id, clear_wildcards [dloc,id]
   | IntroRewrite l2r ->
       let id = make_id s gl in
-      id, !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings) allHypsAndConcl
+      id, !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
   | IntroOrAndPattern ll -> make_id s gl,
       onLastHypId
 	(intro_or_and_pattern loc true ll []
@@ -1465,7 +1409,7 @@ let assert_tac na = assert_as true (ipat_of_name na)
 
 let as_tac id ipat = match ipat with
   | Some (loc,IntroRewrite l2r) ->
-      !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings) allHypsAndConcl
+      !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
   | Some (loc,IntroOrAndPattern ll) ->
       intro_or_and_pattern loc true ll [] (intros_patterns true [] [] no_move)
         id
@@ -1497,10 +1441,11 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
 	lemmas)
       (as_tac id ipat)
 
-let apply_in simple with_evars = general_apply_in false simple simple with_evars
+let apply_in simple with_evars id lemmas ipat =
+  general_apply_in false simple simple with_evars id lemmas ipat
 
 let simple_apply_in id c =
-  apply_in false false id [dloc,((Evd.empty,c),NoBindings)] None
+  general_apply_in false false false false id [dloc,(c,NoBindings)] None
 
 (**************************)
 (*   Generalize tactics   *)
@@ -2137,7 +2082,7 @@ let cook_sign hyp0_opt indvars env =
 (* [rel_contexts] and [rel_declaration] actually contain triples, and
    lists are actually in reverse order to fit [compose_prod]. *)
 type elim_scheme = {
-  elimc: constr with_ebindings option;
+  elimc: constr with_bindings option;
   elimt: types;
   indref: global_reference option;
   index: int;              (* index of the elimination type in the scheme *)

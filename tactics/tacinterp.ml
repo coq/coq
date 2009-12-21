@@ -1169,18 +1169,19 @@ let coerce_to_ident fresh env = function
       destVar c
   | v -> raise (CannotCoerceTo "a fresh identifier")
 
-let interp_ident_gen fresh ist gl id =
-  let env = pf_env gl in
+let interp_ident_gen fresh ist env id =
   try try_interp_ltac_var (coerce_to_ident fresh env) ist (Some env) (dloc,id)
   with Not_found -> id
 
 let interp_ident = interp_ident_gen false
 let interp_fresh_ident = interp_ident_gen true
+let pf_interp_ident id gl = interp_ident_gen false id (pf_env gl)
+let pf_interp_fresh_ident id gl = interp_ident_gen true id (pf_env gl)
 
 (* Interprets an optional identifier which must be fresh *)
-let interp_fresh_name ist gl = function
+let interp_fresh_name ist env = function
   | Anonymous -> Anonymous
-  | Name id -> Name (interp_fresh_ident ist gl id)
+  | Name id -> Name (interp_fresh_ident ist env id)
 
 let coerce_to_intro_pattern env = function
   | VIntroPattern ipat -> ipat
@@ -1367,7 +1368,7 @@ let rec extract_ids ids = function
 
 let default_fresh_id = id_of_string "H"
 
-let interp_fresh_id ist gl l =
+let interp_fresh_id ist env l =
   let ids = map_succeed (function ArgVar(_,id) -> id | _ -> failwith "") l in
   let avoid = (extract_ids ids ist.lfun) @ ist.avoid_ids in
   let id =
@@ -1376,10 +1377,12 @@ let interp_fresh_id ist gl l =
       let s =
 	String.concat "" (List.map (function
 	  | ArgArg s -> s
-	  | ArgVar (_,id) -> string_of_id (interp_ident ist gl id)) l) in
+	  | ArgVar (_,id) -> string_of_id (interp_ident ist env id)) l) in
       let s = if Lexer.is_keyword s then s^"0" else s in
       id_of_string s in
-  Tactics.fresh_id avoid id gl
+  Tactics.fresh_id_in_env avoid id env
+
+let pf_interp_fresh_id ist gl = interp_fresh_id ist (pf_env gl)
 
 (* To retype a list of key*constr with undefined key *)
 let retype_list sigma env lst =
@@ -1446,7 +1449,7 @@ let solve_remaining_evars fail_evar use_classes env initial_sigma evd c =
   (* Side-effect *)
   !evdref,c
 
-let interp_gen kind ist fail_evar use_classes sigma env (c,ce) =
+let interp_gen kind ist fail_evar use_classes env sigma (c,ce) =
   let (ltacvars,unbndltacvars as vars),typs =
     extract_ltac_vars_data ist sigma env in
   let c = match ce with
@@ -1465,90 +1468,58 @@ let interp_gen kind ist fail_evar use_classes sigma env (c,ce) =
   (evd,c)
 
 (* Interprets a constr; expects evars to be solved *)
-let interp_constr_gen kind ist sigma env c =
-  snd (interp_gen kind ist true true sigma env c)
+let interp_constr_gen kind ist env sigma c =
+  snd (interp_gen kind ist true true env sigma c)
 
 let interp_constr = interp_constr_gen (OfType None)
 
 let interp_type = interp_constr_gen IsType
 
 (* Interprets an open constr *)
-let interp_open_constr_gen kind ist sigma env c =
-  interp_gen kind ist false false sigma env c
+let interp_open_constr_gen kind ist = interp_gen kind ist false false
 
 let interp_open_constr ccl =
   interp_open_constr_gen (OfType ccl)
 
 (* Interprets a constr expression casted by the current goal *)
 let pf_interp_casted_constr ist gl c =
-  interp_constr_gen (OfType (Some (pf_concl gl))) ist (project gl) (pf_env gl) c
-
-(* Interprets an open constr expression *)
-let pf_interp_open_constr casted ist gl cc =
-  let cl = if casted then Some (pf_concl gl) else None in
-  interp_open_constr cl ist (project gl) (pf_env gl) cc
+  interp_constr_gen (OfType (Some (pf_concl gl))) ist (pf_env gl) (project gl) c
 
 (* Interprets a constr expression *)
 let pf_interp_constr ist gl =
-  interp_constr ist (project gl) (pf_env gl)
+  interp_constr ist (pf_env gl) (project gl)
 
 let constr_list_of_VList env = function
   | VList l -> List.map (constr_of_value env) l
   | _ -> raise Not_found
 
-let pf_interp_constr_in_compound_list inj_fun dest_fun interp_fun ist gl l =
-  let env = pf_env gl in
-  let try_expand_ltac_var x =
+let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
+  let try_expand_ltac_var sigma x =
     try match dest_fun x with
-    | RVar (_,id), _ ->
-	List.map inj_fun (constr_list_of_VList env (List.assoc id ist.lfun))
+    | RVar (_,id), _ ->	
+        sigma,
+        List.map inj_fun (constr_list_of_VList env (List.assoc id ist.lfun))
     | _ ->
-	raise Not_found
+        raise Not_found
     with Not_found ->
       (*all of dest_fun, List.assoc, constr_list_of_VList may raise Not_found*)
-      [interp_fun ist gl x] in
-  List.flatten (List.map try_expand_ltac_var l)
+      let sigma, c = interp_fun ist env sigma x in
+      sigma, [c] in
+  let sigma, l = list_fold_map try_expand_ltac_var sigma l in
+  sigma, List.flatten l
 
-let pf_interp_constr_list =
-  pf_interp_constr_in_compound_list (fun x -> x) (fun x -> x)
-    (fun ist gl -> interp_constr ist (project gl) (pf_env gl))
-
-(*
-let pf_interp_constr_list_as_list ist gl (c,_ as x) =
-  match c with
-    | RVar (_,id) ->
-        (try constr_list_of_VList (pf_env gl) (List.assoc id ist.lfun)
-        with Not_found -> [])
-    | _ -> [interp_constr ist (project gl) (pf_env gl) x]
-
-let pf_interp_constr_list ist gl l =
-  List.flatten (List.map (pf_interp_constr_list_as_list ist gl) l)
-*)
+let interp_constr_list ist env sigma c =
+  snd (interp_constr_in_compound_list (fun x -> x) (fun x -> x) (fun ist env sigma c -> (Evd.empty, interp_constr ist env sigma c)) ist env sigma c)
 
 let inj_open c = (Evd.empty,c)
 
-let pf_interp_open_constr_list =
-  pf_interp_constr_in_compound_list inj_open (fun x -> x)
-    (fun ist gl -> interp_open_constr None ist (project gl) (pf_env gl))
-
-(*
-let pf_interp_open_constr_list_as_list ist gl (c,_ as x) =
-  match c with
-    | RVar (_,id) ->
-        (try List.map inj_open
-	       (constr_list_of_VList (pf_env gl) (List.assoc id ist.lfun))
-        with Not_found ->
-	  [interp_open_constr None ist (project gl) (pf_env gl) x])
-    | _ ->
-	[interp_open_constr None ist (project gl) (pf_env gl) x]
-
-let pf_interp_open_constr_list ist gl l =
-  List.flatten (List.map (pf_interp_open_constr_list_as_list ist gl) l)
-*)
+let interp_open_constr_list =
+  interp_constr_in_compound_list (fun x -> x) (fun x -> x)
+    (interp_open_constr None)
 
 (* Interprets a type expression *)
 let pf_interp_type ist gl =
-  interp_type ist (project gl) (pf_env gl)
+  interp_type ist (pf_env gl) (project gl)
 
 (* Interprets a reduction expression *)
 let interp_unfold ist env (occs,qid) =
@@ -1561,24 +1532,24 @@ let interp_pattern ist sigma env (occs,c) =
   (interp_occurrences ist occs, interp_constr ist sigma env c)
 
 let pf_interp_constr_with_occurrences ist gl =
-  interp_pattern ist (project gl) (pf_env gl)
+  interp_pattern ist (pf_env gl) (project gl)
 
-let pf_interp_constr_with_occurrences_and_name_as_list =
-  pf_interp_constr_in_compound_list
+let interp_constr_with_occurrences_and_name_as_list =
+  interp_constr_in_compound_list
     (fun c -> ((all_occurrences_expr,c),Anonymous))
     (function ((occs,c),Anonymous) when occs = all_occurrences_expr -> c
       | _ -> raise Not_found)
-    (fun ist gl (occ_c,na) ->
-      (interp_pattern ist (project gl) (pf_env gl) occ_c,
-       interp_fresh_name ist gl na))
+    (fun ist env sigma (occ_c,na) ->
+      sigma, (interp_pattern ist env sigma occ_c,
+       interp_fresh_name ist env na))
 
 let interp_red_expr ist sigma env = function
   | Unfold l -> Unfold (List.map (interp_unfold ist env) l)
-  | Fold l -> Fold (List.map (interp_constr ist sigma env) l)
+  | Fold l -> Fold (List.map (interp_constr ist env sigma) l)
   | Cbv f -> Cbv (interp_flag ist env f)
   | Lazy f -> Lazy (interp_flag ist env f)
-  | Pattern l -> Pattern (List.map (interp_pattern ist sigma env) l)
-  | Simpl o -> Simpl (Option.map (interp_pattern ist sigma env) o)
+  | Pattern l -> Pattern (List.map (interp_pattern ist env sigma) l)
+  | Simpl o -> Simpl (Option.map (interp_pattern ist env sigma) o)
   | (Red _ |  Hnf | ExtraRedExpr _ | CbvVm as r) -> r
 
 let pf_interp_red_expr ist gl = interp_red_expr ist (project gl) (pf_env gl)
@@ -1619,12 +1590,6 @@ let interp_constr_may_eval ist gl c =
     csr
   end
 
-let inj_may_eval = function
-  | ConstrTerm c -> ConstrTerm (inj_open c)
-  | ConstrEval (r,c) -> ConstrEval (Tactics.inj_red_expr r,inj_open c)
-  | ConstrContext (id,c) -> ConstrContext (id,inj_open c)
-  | ConstrTypeOf c -> ConstrTypeOf (inj_open c)
-
 let rec message_of_value = function
   | VVoid -> str "()"
   | VInteger n -> int n
@@ -1661,7 +1626,7 @@ let rec interp_intro_pattern ist gl = function
   | loc, IntroIdentifier id ->
       loc, interp_intro_pattern_var loc ist (pf_env gl) id
   | loc, IntroFresh id ->
-      loc, IntroFresh (interp_fresh_ident ist gl id)
+      loc, IntroFresh (interp_fresh_ident ist (pf_env gl) id)
   | loc, (IntroWildcard | IntroAnonymous | IntroRewrite _ | IntroForthcoming _)
       as x -> x
 
@@ -1717,37 +1682,53 @@ let interp_declared_or_quantified_hypothesis ist gl = function
 	    (coerce_to_decl_or_quant_hyp env) ist (Some env) (dloc,id)
       with Not_found -> NamedHyp id
 
-let interp_binding ist gl (loc,b,c) =
-  (loc,interp_binding_name ist b,pf_interp_open_constr false ist gl c)
+let interp_binding ist env sigma (loc,b,c) =
+  let sigma, c = interp_open_constr None ist env sigma c in
+  sigma, (loc,interp_binding_name ist b,c)
 
-let interp_bindings ist gl = function
-| NoBindings -> NoBindings
-| ImplicitBindings l -> ImplicitBindings (pf_interp_open_constr_list ist gl l)
-| ExplicitBindings l -> ExplicitBindings (List.map (interp_binding ist gl) l)
+let interp_bindings ist env sigma = function
+| NoBindings ->
+    sigma, NoBindings
+| ImplicitBindings l ->
+    let sigma, l = interp_open_constr_list ist env sigma l in   
+    sigma, ImplicitBindings l
+| ExplicitBindings l ->
+    let sigma, l = list_fold_map (interp_binding ist env) sigma l in
+    sigma, ExplicitBindings l
 
-let interp_constr_with_bindings ist gl (c,bl) =
-  (pf_interp_constr ist gl c, interp_bindings ist gl bl)
+let interp_constr_with_bindings ist env sigma (c,bl) =
+  let sigma, bl = interp_bindings ist env sigma bl in
+  let sigma, c = interp_open_constr None ist env sigma c in
+  sigma, (c,bl)
 
-let interp_open_constr_with_bindings ist gl (c,bl) =
-  (pf_interp_open_constr false ist gl c, interp_bindings ist gl bl)
+let interp_open_constr_with_bindings ist env sigma (c,bl) =
+  let sigma, bl = interp_bindings ist env sigma bl in
+  let sigma, c = interp_open_constr None ist env sigma c in
+  sigma, (c, bl)
 
 let loc_of_bindings = function
 | NoBindings -> dummy_loc
 | ImplicitBindings l -> loc_of_rawconstr (fst (list_last l))
 | ExplicitBindings l -> pi1 (list_last l)
 
-let interp_open_constr_with_bindings_loc ist gl ((c,_),bl as cb) =
+let interp_open_constr_with_bindings_loc ist env sigma ((c,_),bl as cb) =
   let loc1 = loc_of_rawconstr c in
   let loc2 = loc_of_bindings bl in
   let loc = if loc2 = dummy_loc then loc1 else join_loc loc1 loc2 in
-  (loc,interp_open_constr_with_bindings ist gl cb)
+  let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
+  sigma, (loc,cb)
 
-let interp_induction_arg ist gl = function
-  | ElimOnConstr c -> ElimOnConstr (interp_constr_with_bindings ist gl c)
-  | ElimOnAnonHyp n as x -> x
+let interp_induction_arg ist gl sigma arg =
+  let env = pf_env gl in
+  match arg with
+  | ElimOnConstr c ->
+      let sigma, c = interp_constr_with_bindings ist env sigma c in
+      sigma, ElimOnConstr c
+  | ElimOnAnonHyp n as x -> sigma, x
   | ElimOnIdent (loc,id) ->
       try
-	match List.assoc id ist.lfun with
+	sigma,
+        match List.assoc id ist.lfun with
 	| VInteger n -> ElimOnAnonHyp n
 	| VIntroPattern (IntroIdentifier id) -> ElimOnIdent (loc,id)
 	| VConstr c -> ElimOnConstr (c,NoBindings)
@@ -1756,14 +1737,17 @@ let interp_induction_arg ist gl = function
 	      strbrk " neither to a quantified hypothesis nor to a term.")
       with Not_found ->
 	(* Interactive mode *)
-	if Tactics.is_quantified_hypothesis id gl then ElimOnIdent (loc,id)
-	else ElimOnConstr
-	  (pf_interp_constr ist gl (RVar (loc,id),Some (CRef (Ident (loc,id)))),
-	  NoBindings)
+	if Tactics.is_quantified_hypothesis id gl then
+          sigma, ElimOnIdent (loc,id)
+	else
+          let c = interp_constr ist env sigma (RVar (loc,id),Some (CRef (Ident (loc,id)))) in
+          sigma, ElimOnConstr (c,NoBindings)
 
 let mk_constr_value ist gl c = VConstr (pf_interp_constr ist gl c)
 let mk_hyp_value ist gl c = VConstr (mkVar (interp_hyp ist gl c))
 let mk_int_or_var_value ist c = VInteger (interp_int_or_var ist c)
+
+let pack_sigma (sigma,c) = {it=c;sigma=sigma}
 
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist gl (tac:glob_tactic_expr) =
@@ -1802,7 +1786,7 @@ and eval_tactic ist = function
   | TacProgress tac -> tclPROGRESS (interp_tactic ist tac)
   | TacAbstract (tac,ido) ->
       fun gl -> Tactics.tclABSTRACT
-        (Option.map (interp_ident ist gl) ido) (interp_tactic ist tac) gl
+        (Option.map (pf_interp_ident ist gl) ido) (interp_tactic ist tac) gl
   | TacThen (t1,tf,t,tl) ->
       tclTHENS3PARTS (interp_tactic ist t1)
 	(Array.map (interp_tactic ist) tf) (interp_tactic ist t) (Array.map (interp_tactic ist) tl)
@@ -1859,7 +1843,7 @@ and interp_tacarg ist gl = function
   | TacExternal (loc,com,req,la) ->
       interp_external loc ist gl com req (List.map (interp_tacarg ist gl) la)
   | TacFreshId l ->
-      let id = interp_fresh_id ist gl l in
+      let id = pf_interp_fresh_id ist gl l in
       VIntroPattern (IntroIdentifier id)
   | Tacexp t -> val_interp ist gl t
   | TacDynamic(_,t) ->
@@ -2054,7 +2038,7 @@ and interp_genarg ist gl x =
         (interp_intro_pattern ist gl (out_gen globwit_intro_pattern x))
   | IdentArgType b ->
       in_gen (wit_ident_gen b)
-        (interp_fresh_ident ist gl (out_gen (globwit_ident_gen b) x))
+        (pf_interp_fresh_ident ist gl (out_gen (globwit_ident_gen b) x))
   | VarArgType ->
       in_gen wit_var (interp_hyp ist gl (out_gen globwit_var x))
   | RefArgType ->
@@ -2076,14 +2060,16 @@ and interp_genarg ist gl x =
       in_gen wit_red_expr (pf_interp_red_expr ist gl (out_gen globwit_red_expr x))
   | OpenConstrArgType casted ->
       in_gen (wit_open_constr_gen casted)
-        (pf_interp_open_constr casted ist gl
+        (interp_open_constr (if casted then Some (pf_concl gl) else None)
+          ist (pf_env gl) (project gl)
           (snd (out_gen (globwit_open_constr_gen casted) x)))
   | ConstrWithBindingsArgType ->
       in_gen wit_constr_with_bindings
-        (interp_constr_with_bindings ist gl (out_gen globwit_constr_with_bindings x))
+        (pack_sigma (interp_constr_with_bindings ist (pf_env gl) (project gl)
+          (out_gen globwit_constr_with_bindings x)))
   | BindingsArgType ->
       in_gen wit_bindings
-        (interp_bindings ist gl (out_gen globwit_bindings x))
+        (pack_sigma (interp_bindings ist (pf_env gl) (project gl) (out_gen globwit_bindings x)))
   | List0ArgType ConstrArgType -> interp_genarg_constr_list0 ist gl x
   | List1ArgType ConstrArgType -> interp_genarg_constr_list1 ist gl x
   | List0ArgType VarArgType -> interp_genarg_var_list0 ist gl x
@@ -2104,12 +2090,12 @@ and interp_genarg ist gl x =
 
 and interp_genarg_constr_list0 ist gl x =
   let lc = out_gen (wit_list0 globwit_constr) x in
-  let lc = pf_interp_constr_list ist gl lc in
+  let lc = pf_apply (interp_constr_list ist) gl lc in
   in_gen (wit_list0 wit_constr) lc
 
 and interp_genarg_constr_list1 ist gl x =
   let lc = out_gen (wit_list1 globwit_constr) x in
-  let lc = pf_interp_constr_list ist gl lc in
+  let lc = pf_apply (interp_constr_list ist) gl lc in
   in_gen (wit_list1 wit_constr) lc
 
 and interp_genarg_var_list0 ist gl x =
@@ -2227,59 +2213,68 @@ and interp_tactic ist tac gl =
   tactic_of_value ist (val_interp ist gl tac) gl
 
 (* Interprets a primitive tactic *)
-and interp_atomic ist gl = function
+and interp_atomic ist gl tac =
+  let env = pf_env gl and sigma = project gl in
+  match tac with
   (* Basic tactics *)
   | TacIntroPattern l ->
       h_intro_patterns (interp_intro_pattern_list_as_list ist gl l)
   | TacIntrosUntil hyp ->
       h_intros_until (interp_quantified_hypothesis ist hyp)
   | TacIntroMove (ido,hto) ->
-      h_intro_move (Option.map (interp_fresh_ident ist gl) ido)
+      h_intro_move (Option.map (interp_fresh_ident ist env) ido)
                    (interp_move_location ist gl hto)
   | TacAssumption -> h_assumption
   | TacExact c -> h_exact (pf_interp_casted_constr ist gl c)
   | TacExactNoCheck c -> h_exact_no_check (pf_interp_constr ist gl c)
   | TacVmCastNoCheck c -> h_vm_cast_no_check (pf_interp_constr ist gl c)
-  | TacApply (a,ev,cb,None) ->
-      h_apply a ev (List.map (interp_open_constr_with_bindings_loc ist gl) cb)
-  | TacApply (a,ev,cb,Some cl) ->
-      h_apply_in a ev (List.map (interp_open_constr_with_bindings_loc ist gl) cb)
-        (interp_in_hyp_as ist gl cl)
+  | TacApply (a,ev,cb,cl) ->
+      let sigma, l =
+        list_fold_map (interp_open_constr_with_bindings_loc ist env) sigma cb
+      in
+      let tac = match cl with
+        | None -> h_apply a ev
+        | Some cl ->
+            (fun l -> h_apply_in a ev l (interp_in_hyp_as ist gl cl)) in
+      tclWITHHOLES ev tac sigma l
   | TacElim (ev,cb,cbo) ->
-      h_elim ev (interp_constr_with_bindings ist gl cb)
-                (Option.map (interp_constr_with_bindings ist gl) cbo)
+      let sigma, cb = interp_constr_with_bindings ist env sigma cb in
+      let sigma, cbo = Option.fold_map (interp_constr_with_bindings ist env) sigma cbo in
+      tclWITHHOLES ev (h_elim ev cb) sigma cbo
   | TacElimType c -> h_elim_type (pf_interp_type ist gl c)
-  | TacCase (ev,cb) -> h_case ev (interp_constr_with_bindings ist gl cb)
+  | TacCase (ev,cb) ->
+      let sigma, cb = interp_constr_with_bindings ist env sigma cb in
+      tclWITHHOLES ev (h_case ev) sigma cb
   | TacCaseType c -> h_case_type (pf_interp_type ist gl c)
-  | TacFix (idopt,n) -> h_fix (Option.map (interp_fresh_ident ist gl) idopt) n
+  | TacFix (idopt,n) -> h_fix (Option.map (interp_fresh_ident ist env) idopt) n
   | TacMutualFix (b,id,n,l) ->
-      let f (id,n,c) = (interp_fresh_ident ist gl id,n,pf_interp_type ist gl c)
-      in h_mutual_fix b (interp_fresh_ident ist gl id) n (List.map f l)
-  | TacCofix idopt -> h_cofix (Option.map (interp_fresh_ident ist gl) idopt)
+      let f (id,n,c) = (interp_fresh_ident ist env id,n,pf_interp_type ist gl c)
+      in h_mutual_fix b (interp_fresh_ident ist env id) n (List.map f l)
+  | TacCofix idopt -> h_cofix (Option.map (interp_fresh_ident ist env) idopt)
   | TacMutualCofix (b,id,l) ->
-      let f (id,c) = (interp_fresh_ident ist gl id,pf_interp_type ist gl c) in
-      h_mutual_cofix b (interp_fresh_ident ist gl id) (List.map f l)
+      let f (id,c) = (interp_fresh_ident ist env id,pf_interp_type ist gl c) in
+      h_mutual_cofix b (interp_fresh_ident ist env id) (List.map f l)
   | TacCut c -> h_cut (pf_interp_type ist gl c)
   | TacAssert (t,ipat,c) ->
-      let c = (if t=None then interp_constr else interp_type) ist (project gl) (pf_env gl) c in
-      abstract_tactic (TacAssert (t,ipat,inj_open c))
+      let c = (if t=None then interp_constr else interp_type) ist env sigma c in
+      abstract_tactic (TacAssert (t,ipat,c))
         (Tactics.forward (Option.map (interp_tactic ist) t)
 	  (Option.map (interp_intro_pattern ist gl) ipat) c)
   | TacGeneralize cl ->
-      h_generalize_gen
-        (pf_interp_constr_with_occurrences_and_name_as_list ist gl cl)
+      let sigma, cl = interp_constr_with_occurrences_and_name_as_list ist env sigma cl in
+      tclWITHHOLES false (h_generalize_gen) sigma cl
   | TacGeneralizeDep c -> h_generalize_dep (pf_interp_constr ist gl c)
   | TacLetTac (na,c,clp,b) ->
       let clp = interp_clause ist gl clp in
-      h_let_tac b (interp_fresh_name ist gl na) (pf_interp_constr ist gl c) clp
+      h_let_tac b (interp_fresh_name ist env na) (pf_interp_constr ist gl c) clp
 
   (* Automation tactics *)
   | TacTrivial (lems,l) ->
-      Auto.h_trivial (pf_interp_constr_list ist gl lems)
+      Auto.h_trivial (interp_constr_list ist env sigma lems)
 	(Option.map (List.map (interp_hint_base ist)) l)
   | TacAuto (n,lems,l) ->
       Auto.h_auto (Option.map (interp_int_or_var ist) n)
-      (pf_interp_constr_list ist gl lems)
+      (interp_constr_list ist env sigma lems)
       (Option.map (List.map (interp_hint_base ist)) l)
   | TacAutoTDB n -> Dhyp.h_auto_tdb n
   | TacDestructHyp (b,id) -> Dhyp.h_destructHyp b (interp_hyp ist gl id)
@@ -2287,19 +2282,23 @@ and interp_atomic ist gl = function
   | TacSuperAuto (n,l,b1,b2) -> Auto.h_superauto n l b1 b2
   | TacDAuto (n,p,lems) ->
       Auto.h_dauto (Option.map (interp_int_or_var ist) n,p)
-      (pf_interp_constr_list ist gl lems)
+      (interp_constr_list ist env sigma lems)
 
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct (isrec,h) ->
       h_simple_induction_destruct isrec (interp_quantified_hypothesis ist h)
   | TacInductionDestruct (isrec,ev,(l,cls)) ->
-      h_induction_destruct ev isrec
-      (List.map (fun (lc,cbo,(ipato,ipats)) ->
-	(List.map (interp_induction_arg ist gl) lc,
-         Option.map (interp_constr_with_bindings ist gl) cbo,
-         (Option.map (interp_intro_pattern ist gl) ipato,
-	  Option.map (interp_intro_pattern ist gl) ipats))) l,
-         Option.map (interp_clause ist gl) cls)
+      let sigma, l =
+        list_fold_map (fun sigma (lc,cbo,(ipato,ipats)) ->
+          let sigma,lc =
+            list_fold_map (interp_induction_arg ist gl) sigma lc in
+	  let sigma,cbo =
+            Option.fold_map (interp_constr_with_bindings ist env) sigma cbo in
+          (sigma,(lc,cbo,
+            (Option.map (interp_intro_pattern ist gl) ipato,
+	     Option.map (interp_intro_pattern ist gl) ipats)))) sigma l in
+      let cls = Option.map (interp_clause ist gl) cls in
+      tclWITHHOLES ev (h_induction_destruct ev isrec) sigma (l,cls)
   | TacDoubleInduction (h1,h2) ->
       let h1 = interp_quantified_hypothesis ist h1 in
       let h2 = interp_quantified_hypothesis ist h2 in
@@ -2309,8 +2308,9 @@ and interp_atomic ist gl = function
   | TacDecompose (l,c) ->
       let l = List.map (interp_inductive ist) l in
       Elim.h_decompose l (pf_interp_constr ist gl c)
-  | TacSpecialize (n,l) ->
-      h_specialize n (interp_constr_with_bindings ist gl l)
+  | TacSpecialize (n,cb) ->
+      let sigma, cb = interp_constr_with_bindings ist env sigma cb in
+      tclWITHHOLES false (h_specialize n) sigma cb
   | TacLApply c -> h_lapply (pf_interp_constr ist gl c)
 
   (* Context management *)
@@ -2321,18 +2321,25 @@ and interp_atomic ist gl = function
   | TacRename l ->
       h_rename (List.map (fun (id1,id2) ->
 			    interp_hyp ist gl id1,
-			    interp_fresh_ident ist gl (snd id2)) l)
+			    interp_fresh_ident ist env (snd id2)) l)
   | TacRevert l -> h_revert (interp_hyp_list ist gl l)
 
   (* Constructors *)
-  | TacLeft (ev,bl) -> h_left ev (interp_bindings ist gl bl)
-  | TacRight (ev,bl) -> h_right ev (interp_bindings ist gl bl)
-  | TacSplit (ev,_,bll) -> h_split ev (List.map (interp_bindings ist gl) bll)
+  | TacLeft (ev,bl) ->
+      let sigma, bl = interp_bindings ist env sigma bl in
+      tclWITHHOLES ev (h_left ev) sigma bl
+  | TacRight (ev,bl) ->
+      let sigma, bl = interp_bindings ist env sigma bl in
+      tclWITHHOLES ev (h_right ev) sigma bl
+  | TacSplit (ev,_,bll) ->
+      let sigma, bll = list_fold_map (interp_bindings ist env) sigma bll in
+      tclWITHHOLES ev (h_split ev) sigma bll
   | TacAnyConstructor (ev,t) ->
       abstract_tactic (TacAnyConstructor (ev,t))
         (Tactics.any_constructor ev (Option.map (interp_tactic ist) t))
   | TacConstructor (ev,n,bl) ->
-      h_constructor ev (skip_metaid n) (interp_bindings ist gl bl)
+      let sigma, bl = interp_bindings ist env sigma bl in
+      tclWITHHOLES ev (h_constructor ev (skip_metaid n)) sigma bl
 
   (* Conversion *)
   | TacReduce (r,cl) ->
@@ -2353,10 +2360,13 @@ and interp_atomic ist gl = function
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
-      Equality.general_multi_multi_rewrite ev
-	(List.map (fun (b,m,c) -> (b,m,interp_open_constr_with_bindings ist gl c)) l)
-	(interp_clause ist gl cl)
-	(Option.map (fun by -> tclCOMPLETE (interp_tactic ist by), Equality.Naive) by)
+      let l = List.map (fun (b,m,c) ->
+        let sigma',c = interp_open_constr_with_bindings ist env sigma c in
+        let _,sigma' = Evarutil.subtract_evars sigma sigma' in
+        (b,m,{it=c;sigma=sigma'})) l in
+      let cl = interp_clause ist gl cl in
+      Equality.general_multi_multi_rewrite ev l cl
+        (Option.map (fun by -> tclCOMPLETE (interp_tactic ist by), Equality.Naive) by)
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       Inv.dinv k (Option.map (pf_interp_constr ist gl) c)
         (Option.map (interp_intro_pattern ist gl) ids)
@@ -2388,7 +2398,7 @@ and interp_atomic ist gl = function
 	VIntroPattern
 	  (snd (interp_intro_pattern ist gl (out_gen globwit_intro_pattern x)))
     | IdentArgType b ->
-	value_of_ident (interp_fresh_ident ist gl
+	value_of_ident (interp_fresh_ident ist env
 	  (out_gen (globwit_ident_gen b) x))
     | VarArgType ->
         mk_hyp_value ist gl (out_gen globwit_var x)
@@ -2420,7 +2430,7 @@ and interp_atomic ist gl = function
         VList (List.map (mk_int_or_var_value ist) (out_gen wit x))
     | List0ArgType (IdentArgType b) ->
         let wit = wit_list0 (globwit_ident_gen b) in
-	let mk_ident x = value_of_ident (interp_fresh_ident ist gl x) in
+	let mk_ident x = value_of_ident (interp_fresh_ident ist env x) in
         VList (List.map mk_ident (out_gen wit x))
     | List0ArgType IntroPatternArgType ->
         let wit = wit_list0 globwit_intro_pattern in
@@ -2440,7 +2450,7 @@ and interp_atomic ist gl = function
         VList (List.map (mk_int_or_var_value ist) (out_gen wit x))
     | List1ArgType (IdentArgType b) ->
         let wit = wit_list1 (globwit_ident_gen b) in
-	let mk_ident x = value_of_ident (interp_fresh_ident ist gl x) in
+	let mk_ident x = value_of_ident (interp_fresh_ident ist env x) in
         VList (List.map mk_ident (out_gen wit x))
     | List1ArgType IntroPatternArgType ->
         let wit = wit_list1 globwit_intro_pattern in

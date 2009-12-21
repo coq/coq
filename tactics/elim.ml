@@ -139,13 +139,13 @@ let decompose_or c gls =
 let inj_open c = (Evd.empty,c)
 
 let h_decompose l c =
-  Refiner.abstract_tactic (TacDecompose (l,inj_open c)) (decompose_these c l)
+  Refiner.abstract_tactic (TacDecompose (l,c)) (decompose_these c l)
 
 let h_decompose_or c =
-  Refiner.abstract_tactic (TacDecomposeOr (inj_open c)) (decompose_or c)
+  Refiner.abstract_tactic (TacDecomposeOr c) (decompose_or c)
 
 let h_decompose_and c =
-  Refiner.abstract_tactic (TacDecomposeAnd (inj_open c)) (decompose_and c)
+  Refiner.abstract_tactic (TacDecomposeAnd c) (decompose_and c)
 
 (* The tactic Double performs a double induction *)
 

@@ -185,6 +185,11 @@ val then_tactic_list   : tactic_list -> tactic_list -> tactic_list
 val tactic_list_tactic : tactic_list -> tactic
 val goal_goal_list     : 'a sigma -> 'a list sigma
 
+(* [tclWITHHOLES solve_holes tac (sigma,c)] applies [tac] to [c] which
+   may have unresolved holes; if [solve_holes] these holes must be
+   resolved after application of the tactic; [sigma] must be an
+   extension of the sigma of the goal *)
+val tclWITHHOLES : bool -> ('a -> tactic) -> evar_map -> 'a -> tactic
 
 (*s Functions for handling the state of the proof editor. *)
 

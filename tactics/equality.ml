@@ -240,19 +240,18 @@ let rewrite_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
 (* Main function for dispatching which kind of rewriting it is about *)
 
 let general_rewrite_ebindings_clause cls lft2rgt occs dep_proof_ok ?tac
-    ((c,l) : open_constr with_bindings) with_evars gl =
+    ((c,l) : constr with_bindings) with_evars gl =
   if occs <> all_occurrences then (
     rewrite_side_tac (!general_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac gl)
   else
     let env = pf_env gl in
-    let sigma, c' = c in
-    let sigma = Evd.merge sigma (project gl) in
-    let ctype = get_type_of env sigma c' in
+    let sigma = project gl in
+    let ctype = get_type_of env sigma c in
     let rels, t = decompose_prod_assum (whd_betaiotazeta sigma ctype) in
       match match_with_equality_type t with
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
 	  let lft2rgt = adjust_rewriting_direction args lft2rgt in
-          leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c' (it_mkProd_or_LetIn t rels)
+          leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c (it_mkProd_or_LetIn t rels)
 	    l with_evars dep_proof_ok gl hdcncl
       | None ->
 	  try
@@ -264,7 +263,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs dep_proof_ok ?tac
 	      match match_with_equality_type t' with
 	      | Some (hdcncl,args) ->
 		  let lft2rgt = adjust_rewriting_direction args lft2rgt in
-		    leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c'
+		    leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c
 		      (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars dep_proof_ok gl hdcncl
 	      | None -> raise e
 		  (* error "The provided term does not end with an equality or a declared rewrite relation." *)
@@ -273,7 +272,7 @@ let general_rewrite_ebindings =
   general_rewrite_ebindings_clause None
 
 let general_rewrite_bindings l2r occs dep_proof_ok ?tac (c,bl) =
-  general_rewrite_ebindings_clause None l2r occs dep_proof_ok ?tac (inj_open c,inj_ebindings bl)
+  general_rewrite_ebindings_clause None l2r occs dep_proof_ok ?tac (c,bl)
 
 let general_rewrite l2r occs dep_proof_ok ?tac c =
   general_rewrite_bindings l2r occs dep_proof_ok ?tac (c,NoBindings) false
@@ -282,10 +281,10 @@ let general_rewrite_ebindings_in l2r occs dep_proof_ok ?tac id =
   general_rewrite_ebindings_clause (Some id) l2r occs dep_proof_ok ?tac
 
 let general_rewrite_bindings_in l2r occs dep_proof_ok ?tac id (c,bl) =
-  general_rewrite_ebindings_clause (Some id) l2r occs dep_proof_ok ?tac (inj_open c,inj_ebindings bl)
+  general_rewrite_ebindings_clause (Some id) l2r occs dep_proof_ok ?tac (c,bl)
 
 let general_rewrite_in l2r occs dep_proof_ok ?tac id c =
-  general_rewrite_ebindings_clause (Some id) l2r occs dep_proof_ok ?tac (inj_open c,NoBindings)
+  general_rewrite_ebindings_clause (Some id) l2r occs dep_proof_ok ?tac (c,NoBindings)
 
 let general_multi_rewrite l2r with_evars ?tac c cl =
   let occs_of = on_snd (List.fold_left
@@ -321,7 +320,7 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	let do_hyps gl =
 	  (* If the term to rewrite uses an hypothesis H, don't rewrite in H *)
 	  let ids =
-	    let ids_in_c = Environ.global_vars_set (Global.env()) (snd (fst c)) in
+	    let ids_in_c = Environ.global_vars_set (Global.env()) (fst c) in
 	      Idset.fold (fun id l -> list_remove id l) ids_in_c (pf_ids_of_hyps gl)
 	  in do_hyps_atleastonce ids gl
 	in
@@ -331,7 +330,10 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	   do_hyps
 
 let general_multi_multi_rewrite with_evars l cl tac =
-  let do1 l2r c = general_multi_rewrite l2r with_evars ?tac c cl in
+  let do1 l2r c gl =
+    Refiner.tclWITHHOLES with_evars
+      (general_multi_rewrite l2r with_evars ?tac c.it)
+      (Evd.merge (project gl) c.sigma) cl gl in
   let rec doN l2r c = function
     | Precisely n when n <= 0 -> tclIDTAC
     | Precisely 1 -> do1 l2r c
@@ -372,7 +374,7 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt gl =
     tclTHENS (assert_as false None eq)
       [onLastHypId (fun id ->
 	tclTHEN
-	  (tclTRY (general_multi_rewrite false false (inj_open (mkVar id),NoBindings) clause))
+	  (tclTRY (general_multi_rewrite false false (mkVar id,NoBindings) clause))
 	  (clear [id]));
        tclFIRST
 	 [assumption;
@@ -1398,7 +1400,7 @@ let rewrite_multi_assumption_cond cond_eq_term cl gl =
 	begin
 	  try
 	    let dir = cond_eq_term t gl in
-	    general_multi_rewrite dir false (inj_open (mkVar id),NoBindings) cl gl
+	    general_multi_rewrite dir false (mkVar id,NoBindings) cl gl
 	  with | Failure _ | UserError _ -> arec rest
 	end
   in

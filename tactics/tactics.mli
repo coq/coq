@@ -30,10 +30,6 @@ open Rawterm
 open Termops
 (*i*)
 
-val inj_open : constr -> open_constr
-val inj_red_expr : red_expr -> (open_constr, evaluable_global_reference) red_expr_gen
-val inj_ebindings : constr bindings -> open_constr bindings
-
 (* Main tactics. *)
 
 (*s General functions. *)
@@ -60,6 +56,7 @@ val cofix           : identifier option -> tactic
 
 (*s Introduction tactics. *)
 
+val fresh_id_in_env : identifier list -> identifier -> env -> identifier
 val fresh_id : identifier list -> identifier -> goal sigma -> identifier
 val find_intro_names : rel_context -> goal sigma -> identifier list
 
@@ -103,8 +100,8 @@ val try_intros_until :
    or a term with bindings *)
 
 val onInductionArg :
-  (constr with_ebindings -> tactic) ->
-    constr with_ebindings induction_arg -> tactic
+  (constr with_bindings -> tactic) ->
+    constr with_bindings induction_arg -> tactic
 
 (*s Introduction tactics with eliminations. *)
 
@@ -163,7 +160,7 @@ val clear         : identifier list -> tactic
 val clear_body    : identifier list -> tactic
 val keep          : identifier list -> tactic
 
-val specialize    : int option -> constr with_ebindings -> tactic
+val specialize    : int option -> constr with_bindings -> tactic
 
 val move_hyp      : bool -> identifier -> identifier move_location -> tactic
 val rename_hyp    : (identifier * identifier) list -> tactic
@@ -180,21 +177,20 @@ val apply                 : constr -> tactic
 val eapply                : constr -> tactic
 
 val apply_with_ebindings_gen :
-  advanced_flag -> evars_flag -> open_constr with_ebindings located list ->
-    tactic
+  advanced_flag -> evars_flag -> constr with_bindings located list -> tactic
 
 val apply_with_bindings   : constr with_bindings -> tactic
 val eapply_with_bindings  : constr with_bindings -> tactic
 
-val apply_with_ebindings  : open_constr with_ebindings -> tactic
-val eapply_with_ebindings : open_constr with_ebindings -> tactic
+val apply_with_ebindings  : constr with_bindings -> tactic
+val eapply_with_ebindings : constr with_bindings -> tactic
 
 val cut_and_apply         : constr -> tactic
 
 val apply_in :
-  advanced_flag -> evars_flag -> identifier ->
-  open_constr with_ebindings located list ->
-  intro_pattern_expr located option -> tactic
+  advanced_flag -> evars_flag -> identifier -> 
+    constr with_bindings located list ->
+    intro_pattern_expr located option -> tactic
 
 val simple_apply_in : identifier -> constr -> tactic
 
@@ -227,7 +223,7 @@ val simple_apply_in : identifier -> constr -> tactic
 (* [rel_contexts] and [rel_declaration] actually contain triples, and
    lists are actually in reverse order to fit [compose_prod]. *)
 type elim_scheme = {
-  elimc: constr with_ebindings option;
+  elimc: constr with_bindings option;
   elimt: types;
   indref: global_reference option;
   index: int;              (* index of the elimination type in the scheme *)
@@ -248,13 +244,13 @@ type elim_scheme = {
 }
 
 
-val compute_elim_sig : ?elimc: constr with_ebindings -> types -> elim_scheme
+val compute_elim_sig : ?elimc: constr with_bindings -> types -> elim_scheme
 val rebuild_elimtype_from_scheme: elim_scheme -> types
 
 (* elim principle with the index of its inductive arg *)
 type eliminator = {
   elimindex : int option;  (* None = find it automatically *)
-  elimbody : constr with_ebindings
+  elimbody : constr with_bindings
 }
 
 val elimination_clause_scheme : evars_flag ->
@@ -267,38 +263,38 @@ val general_elim_clause_gen : (int -> Clenv.clausenv -> 'a -> tactic) ->
   'a -> eliminator -> tactic
 
 val general_elim  : evars_flag ->
-  constr with_ebindings -> eliminator -> ?allow_K:bool -> tactic
+  constr with_bindings -> eliminator -> ?allow_K:bool -> tactic
 val general_elim_in : evars_flag ->
-  identifier -> constr with_ebindings -> eliminator -> tactic
+  identifier -> constr with_bindings -> eliminator -> tactic
 
-val default_elim  : evars_flag -> constr with_ebindings -> tactic
+val default_elim  : evars_flag -> constr with_bindings -> tactic
 val simplest_elim : constr -> tactic
 val elim :
-  evars_flag -> constr with_ebindings -> constr with_ebindings option -> tactic
+  evars_flag -> constr with_bindings -> constr with_bindings option -> tactic
 
 val simple_induct : quantified_hypothesis -> tactic
 
-val new_induct : evars_flag -> constr with_ebindings induction_arg list ->
-  constr with_ebindings option ->
+val new_induct : evars_flag -> constr with_bindings induction_arg list ->
+  constr with_bindings option ->
     intro_pattern_expr located option * intro_pattern_expr located option ->
       clause option -> tactic
 
 (*s Case analysis tactics. *)
 
-val general_case_analysis : evars_flag -> constr with_ebindings ->  tactic
+val general_case_analysis : evars_flag -> constr with_bindings ->  tactic
 val simplest_case         : constr -> tactic
 
 val simple_destruct          : quantified_hypothesis -> tactic
-val new_destruct : evars_flag -> constr with_ebindings induction_arg list ->
-  constr with_ebindings option ->
+val new_destruct : evars_flag -> constr with_bindings induction_arg list ->
+  constr with_bindings option ->
     intro_pattern_expr located option * intro_pattern_expr located option ->
       clause option -> tactic
 
 (*s Generic case analysis / induction tactics. *)
 
 val induction_destruct : rec_flag -> evars_flag ->
-  (constr with_ebindings induction_arg list *
-  constr with_ebindings option *
+  (constr with_bindings induction_arg list *
+  constr with_bindings option *
   (intro_pattern_expr located option * intro_pattern_expr located option))
   list *
   clause option -> tactic
@@ -321,17 +317,17 @@ val dorE : bool -> clause ->tactic
 (*s Introduction tactics. *)
 
 val constructor_tac      : evars_flag -> int option -> int ->
-  open_constr bindings  -> tactic
+  constr bindings -> tactic
 val any_constructor      : evars_flag -> tactic option -> tactic
-val one_constructor      : int -> open_constr bindings  -> tactic
+val one_constructor      : int -> constr bindings  -> tactic
 
 val left                 : constr bindings -> tactic
 val right                : constr bindings -> tactic
 val split                : constr bindings -> tactic
 
-val left_with_ebindings  : evars_flag -> open_constr bindings -> tactic
-val right_with_ebindings : evars_flag -> open_constr bindings -> tactic
-val split_with_ebindings : evars_flag -> open_constr bindings list -> tactic
+val left_with_ebindings  : evars_flag -> constr bindings -> tactic
+val right_with_ebindings : evars_flag -> constr bindings -> tactic
+val split_with_ebindings : evars_flag -> constr bindings list -> tactic
 
 val simplest_left        : tactic
 val simplest_right       : tactic
@@ -388,4 +384,4 @@ val specialize_hypothesis : identifier -> tactic
 val dependent_pattern : ?pattern_term:bool -> constr -> tactic
 
 val register_general_multi_rewrite :
-  (bool -> evars_flag -> open_constr with_bindings -> clause -> tactic) -> unit
+  (bool -> evars_flag -> constr with_bindings -> clause -> tactic) -> unit

@@ -52,12 +52,12 @@ val rewriteRL : ?tac:(tactic * conditions) -> constr  -> tactic
 
 val register_general_rewrite_clause :
   (identifier option -> orientation ->
-    occurrences -> open_constr with_bindings -> new_goals:constr list -> tactic) -> unit
-val register_is_applied_rewrite_relation : (env -> evar_map -> rel_context -> constr -> open_constr option) -> unit
+    occurrences -> constr with_bindings -> new_goals:constr list -> tactic) -> unit
+val register_is_applied_rewrite_relation : (env -> evar_map -> rel_context -> constr -> constr option) -> unit
 
 val general_rewrite_ebindings_clause : identifier option ->
   orientation -> occurrences -> dep_proof_flag -> ?tac:(tactic * conditions) ->
-  open_constr with_bindings -> evars_flag -> tactic
+  constr with_bindings -> evars_flag -> tactic
 
 val general_rewrite_bindings_in :
   orientation -> occurrences -> dep_proof_flag -> ?tac:(tactic * conditions) ->
@@ -67,9 +67,9 @@ val general_rewrite_in          :
   identifier -> constr -> evars_flag -> tactic
 
 val general_multi_rewrite :
-  orientation -> evars_flag -> ?tac:(tactic * conditions) -> open_constr with_bindings -> clause -> tactic
+  orientation -> evars_flag -> ?tac:(tactic * conditions) -> constr with_bindings -> clause -> tactic
 val general_multi_multi_rewrite :
-  evars_flag -> (bool * multi * open_constr with_bindings) list -> clause ->
+  evars_flag -> (bool * multi * constr with_bindings sigma) list -> clause ->
   (tactic * conditions) option -> tactic
 
 val replace_in_clause_maybe_by : constr -> constr -> clause -> tactic option -> tactic
@@ -78,22 +78,22 @@ val replace_in : identifier -> constr -> constr -> tactic
 val replace_by : constr -> constr -> tactic -> tactic
 val replace_in_by : identifier -> constr -> constr -> tactic -> tactic
 
-val discr        : evars_flag -> constr with_ebindings -> tactic
+val discr        : evars_flag -> constr with_bindings -> tactic
 val discrConcl   : tactic
 val discrClause  : evars_flag -> clause -> tactic
 val discrHyp     : identifier -> tactic
 val discrEverywhere : evars_flag -> tactic
 val discr_tac    : evars_flag ->
-  constr with_ebindings induction_arg option -> tactic
+  constr with_bindings induction_arg option -> tactic
 val inj          : intro_pattern_expr located list -> evars_flag ->
-  constr with_ebindings -> tactic
+  constr with_bindings -> tactic
 val injClause    : intro_pattern_expr located list -> evars_flag ->
-  constr with_ebindings induction_arg option -> tactic
+  constr with_bindings induction_arg option -> tactic
 val injHyp       : identifier -> tactic
 val injConcl     : tactic
 
-val dEq : evars_flag -> constr with_ebindings induction_arg option -> tactic
-val dEqThen : evars_flag -> (int -> tactic) -> constr with_ebindings induction_arg option -> tactic
+val dEq : evars_flag -> constr with_bindings induction_arg option -> tactic
+val dEqThen : evars_flag -> (int -> tactic) -> constr with_bindings induction_arg option -> tactic
 
 val make_iterated_tuple :
   env -> evar_map -> constr -> (constr * types) -> constr * constr * constr

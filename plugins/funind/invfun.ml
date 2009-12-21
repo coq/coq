@@ -24,13 +24,13 @@ open Hiddentac
 
 let pr_binding prc  =
   function
-    | loc, Rawterm.NamedHyp id, (_,c) -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ Pp.cut () ++ prc c)
-    | loc, Rawterm.AnonHyp n, (_,c) -> hov 1 (int n ++ str " := " ++ Pp.cut () ++ prc c)
+    | loc, Rawterm.NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ Pp.cut () ++ prc c)
+    | loc, Rawterm.AnonHyp n, c -> hov 1 (int n ++ str " := " ++ Pp.cut () ++ prc c)
 
 let pr_bindings prc prlc = function
   | Rawterm.ImplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
-      Util.prlist_with_sep spc (fun (_,c) -> prc c) l
+      Util.prlist_with_sep spc prc l
   | Rawterm.ExplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
         Util.prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
@@ -424,7 +424,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
-	     (dummy_loc,Rawterm.NamedHyp id,inj_open p)::bindings,id::avoid
+	     (dummy_loc,Rawterm.NamedHyp id,p)::bindings,id::avoid
 	  )
 	  ([],pf_ids_of_hyps g)
 	  princ_infos.params
@@ -434,7 +434,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
-	     (dummy_loc,Rawterm.NamedHyp id,inj_open (nf_zeta p))::bindings,id::avoid)
+	     (dummy_loc,Rawterm.NamedHyp id,(nf_zeta p))::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates
 	  (lemmas)))

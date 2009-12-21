@@ -1241,6 +1241,15 @@ let check_evars env initial_sigma evd c =
       | _ -> iter_constr proc_rec c
   in proc_rec c
 
+(* This returns the evars of [sigma] that are not in [sigma0] and
+   [sigma] minus these evars *)
+
+let subtract_evars sigma0 sigma =
+  Evd.fold (fun evk ev (sigma,sigma' as acc) ->
+    if Evd.mem sigma0 evk || Evd.mem sigma' evk then acc else
+      (Evd.remove sigma evk,Evd.add sigma' evk ev))
+    sigma (sigma,Evd.empty)
+
 (* Operations on value/type constraints *)
 
 type type_constraint_type = (int * int) option * constr
@@ -1376,4 +1385,3 @@ let pr_tycon_type env (abs, t) =
 let pr_tycon env = function
     None -> str "None"
   | Some t -> pr_tycon_type env t
-

@@ -97,6 +97,12 @@ let fold_right f x a =
   | Some y -> f y a
   | _ -> a
 
+(** [fold_map f a x] is [a, f y] if [x] is [Some y], and [a] otherwise. *)
+let fold_map f a x =
+  match x with
+  | Some y -> let a, z = f a y in a, Some z
+  | _ -> a, None
+
 (** [cata f a x] is [a] if [x] is [None] and [f y] if [x] is [Some y]. *)
 let cata f a = function
   | Some c -> f c

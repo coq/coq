@@ -703,9 +703,9 @@ let plain_instance s c =
      empty map).
  *)
 
-let instance s c =
+let instance sigma s c =
   (* if s = [] then c else *)
-  local_strong whd_betaiota Evd.empty (plain_instance s c)
+  local_strong whd_betaiota sigma (plain_instance s c)
 
 (* pseudo-reduction rule:
  * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
@@ -902,21 +902,21 @@ let meta_value evd mv =
   let rec valrec mv =
     match meta_opt_fvalue evd mv with
     | Some (b,_) ->
-      instance
+      instance evd
         (List.map (fun mv' -> (mv',valrec mv')) (Metaset.elements b.freemetas))
         b.rebus
     | None -> mkMeta mv
   in
   valrec mv
 
-let meta_instance env b =
+let meta_instance sigma b =
   let c_sigma =
     List.map
-      (fun mv -> (mv,meta_value env mv)) (Metaset.elements b.freemetas)
+      (fun mv -> (mv,meta_value sigma mv)) (Metaset.elements b.freemetas)
   in
-  if c_sigma = [] then b.rebus else instance c_sigma b.rebus
+  if c_sigma = [] then b.rebus else instance sigma c_sigma b.rebus
 
-let nf_meta env c = meta_instance env (mk_freelisted c)
+let nf_meta sigma c = meta_instance sigma (mk_freelisted c)
 
 (* Instantiate metas that create beta/iota redexes *)
 
@@ -924,7 +924,7 @@ let meta_value evd mv =
   let rec valrec mv =
     match meta_opt_fvalue evd mv with
     | Some (b,_) ->
-      instance
+      instance evd
         (List.map (fun mv' -> (mv',valrec mv')) (Metaset.elements b.freemetas))
         b.rebus
     | None -> mkMeta mv

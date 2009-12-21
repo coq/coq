@@ -246,10 +246,10 @@ let rec pr_generic prc prlc prtac x =
       pr_red_expr (prc,prlc,pr_evaluable_reference) (out_gen wit_red_expr x)
   | OpenConstrArgType b -> prc (snd (out_gen (wit_open_constr_gen b) x))
   | ConstrWithBindingsArgType ->
-      let (c,b) = out_gen wit_constr_with_bindings x in
-      pr_with_bindings prc prlc (c,out_bindings b)
+      let (c,b) = (out_gen wit_constr_with_bindings x).Evd.it in
+      pr_with_bindings prc prlc (c,b)
   | BindingsArgType ->
-      pr_bindings_no_with prc prlc (out_bindings (out_gen wit_bindings x))
+      pr_bindings_no_with prc prlc (out_gen wit_bindings x).Evd.it
   | List0ArgType _ ->
       hov 0 (pr_sequence (pr_generic prc prlc prtac)
 	(fold_list0 (fun a l -> a::l) x []))
@@ -288,7 +288,7 @@ let pr_raw_extend prc prlc prtac =
 let pr_glob_extend prc prlc prtac =
   pr_extend_gen (pr_glob_generic prc prlc prtac)
 let pr_extend prc prlc prtac =
-  pr_extend_gen (pr_generic (fun c -> prc (Evd.empty,c)) (fun c -> prlc (Evd.empty,c)) prtac)
+  pr_extend_gen (pr_generic prc prlc prtac)
 
 (**********************************************************************)
 (* The tactic printer                                                 *)
@@ -1008,12 +1008,12 @@ let strip_prod_binders_rawterm n (ty,_) =
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 
-let strip_prod_binders_constr n (sigma,ty) =
+let strip_prod_binders_constr n ty =
   let rec strip_ty acc n ty =
-    if n=0 then (List.rev acc, (sigma,ty)) else
+    if n=0 then (List.rev acc, ty) else
       match Term.kind_of_term ty with
           Term.Prod(na,a,b) ->
-            strip_ty (([dummy_loc,na],(sigma,a))::acc) (n-1) b
+            strip_ty (([dummy_loc,na],a)::acc) (n-1) b
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 
@@ -1059,8 +1059,8 @@ and pr_glob_match_rule env t =
 
 let typed_printers =
     (pr_glob_tactic_level,
-     pr_open_constr_env,
-     pr_open_lconstr_env,
+     pr_constr_env,
+     pr_lconstr_env,
      pr_lconstr_pattern,
      pr_evaluable_reference_env,
      pr_inductive,

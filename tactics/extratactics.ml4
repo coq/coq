@@ -21,6 +21,7 @@ open Rawterm
 open Tactics
 open Util
 open Termops
+open Evd
 
 (* Equality *)
 open Equality
@@ -54,9 +55,13 @@ let induction_arg_of_quantified_hyp = function
    ElimOnAnonHyp and not as a "constr", and "id" is interpreted as a
    ElimOnIdent and not as "constr" *)
 
+let elimOnConstrWithHoles tac with_evars c =
+  Refiner.tclWITHHOLES with_evars (tac with_evars) 
+    c.sigma (Some (ElimOnConstr c.it))
+
 TACTIC EXTEND simplify_eq_main
 | [ "simplify_eq" constr_with_bindings(c) ] ->
-    [ dEq false (Some (ElimOnConstr c)) ]
+    [ elimOnConstrWithHoles dEq false c ]
 END
 TACTIC EXTEND simplify_eq
   [ "simplify_eq" ] -> [ dEq false None ]
@@ -65,7 +70,7 @@ TACTIC EXTEND simplify_eq
 END
 TACTIC EXTEND esimplify_eq_main
 | [ "esimplify_eq" constr_with_bindings(c) ] ->
-    [ dEq true (Some (ElimOnConstr c)) ]
+    [ elimOnConstrWithHoles dEq true c ]
 END
 TACTIC EXTEND esimplify_eq
 | [ "esimplify_eq" ] -> [ dEq true None ]
@@ -75,7 +80,7 @@ END
 
 TACTIC EXTEND discriminate_main
 | [ "discriminate" constr_with_bindings(c) ] ->
-    [ discr_tac false (Some (ElimOnConstr c)) ]
+    [ elimOnConstrWithHoles discr_tac false c ]
 END
 TACTIC EXTEND discriminate
 | [ "discriminate" ] -> [ discr_tac false None ]
@@ -84,7 +89,7 @@ TACTIC EXTEND discriminate
 END
 TACTIC EXTEND ediscriminate_main
 | [ "ediscriminate" constr_with_bindings(c) ] ->
-    [ discr_tac true (Some (ElimOnConstr c)) ]
+    [ elimOnConstrWithHoles discr_tac true c ]
 END
 TACTIC EXTEND ediscriminate
 | [ "ediscriminate" ] -> [ discr_tac true None ]
@@ -92,11 +97,12 @@ TACTIC EXTEND ediscriminate
     [ discr_tac true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 
-let h_discrHyp id = h_discriminate_main (Term.mkVar id,NoBindings)
+let h_discrHyp id gl =
+  h_discriminate_main {it = Term.mkVar id,NoBindings; sigma = Refiner.project gl} gl
 
 TACTIC EXTEND injection_main
 | [ "injection" constr_with_bindings(c) ] ->
-    [ injClause [] false (Some (ElimOnConstr c)) ]
+    [ elimOnConstrWithHoles (injClause []) false c ]
 END
 TACTIC EXTEND injection
 | [ "injection" ] -> [ injClause [] false None ]
@@ -105,7 +111,7 @@ TACTIC EXTEND injection
 END
 TACTIC EXTEND einjection_main
 | [ "einjection" constr_with_bindings(c) ] ->
-    [ injClause [] true (Some (ElimOnConstr c)) ]
+    [ elimOnConstrWithHoles (injClause []) true c ]
 END
 TACTIC EXTEND einjection
 | [ "einjection" ] -> [ injClause [] true None ]
@@ -113,7 +119,7 @@ TACTIC EXTEND einjection
 END
 TACTIC EXTEND injection_as_main
 | [ "injection" constr_with_bindings(c) "as" simple_intropattern_list(ipat)] ->
-    [ injClause ipat false (Some (ElimOnConstr c)) ]
+    [ elimOnConstrWithHoles (injClause ipat) false c ]
 END
 TACTIC EXTEND injection_as
 | [ "injection" "as" simple_intropattern_list(ipat)] ->
@@ -123,7 +129,7 @@ TACTIC EXTEND injection_as
 END
 TACTIC EXTEND einjection_as_main
 | [ "einjection" constr_with_bindings(c) "as" simple_intropattern_list(ipat)] ->
-    [ injClause ipat true (Some (ElimOnConstr c)) ]
+    [ elimOnConstrWithHoles (injClause ipat) true c ]
 END
 TACTIC EXTEND einjection_as
 | [ "einjection" "as" simple_intropattern_list(ipat)] ->
@@ -132,7 +138,8 @@ TACTIC EXTEND einjection_as
     [ injClause ipat true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 
-let h_injHyp id = h_injection_main (Term.mkVar id,NoBindings)
+let h_injHyp id gl =
+  h_injection_main { it = Term.mkVar id,NoBindings; sigma = Refiner.project gl } gl
 
 TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
@@ -153,8 +160,13 @@ TACTIC EXTEND absurd
  [ "absurd" constr(c) ] -> [ absurd c ]
 END
 
+let onSomeWithHoles tac = function
+  | None -> tac None
+  | Some c -> Refiner.tclWITHHOLES false tac c.sigma (Some c.it)
+
 TACTIC EXTEND contradiction
- [ "contradiction" constr_with_bindings_opt(c) ] -> [ contradiction c ]
+ [ "contradiction" constr_with_bindings_opt(c) ] ->
+    [ onSomeWithHoles contradiction c ]
 END
 
 (* AutoRewrite *)
@@ -194,9 +206,10 @@ END
 
 open Extraargs
 
-let rewrite_star clause orient occs c (tac : glob_tactic_expr option) =
+let rewrite_star clause orient occs (sigma,c) (tac : glob_tactic_expr option) =
   let tac' = Option.map (fun t -> Tacinterp.eval_tactic t, FirstSolved) tac in
-  general_rewrite_ebindings_clause clause orient occs ?tac:tac' true (c,NoBindings) true
+  Refiner. tclWITHHOLES false
+    (general_rewrite_ebindings_clause clause orient occs ?tac:tac' true (c,NoBindings)) sigma true
 
 let occurrences_of = function
   | n::_ as nl when n < 0 -> (false,List.map abs nl)

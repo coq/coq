@@ -36,7 +36,7 @@ let pr_with_bindings prc prlc (c,bl) =
 let pr_fun_ind_using  prc prlc _ opt_c =
   match opt_c with
     | None -> mt ()
-    | Some (p,b) -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings prc prlc (p,b))
+    | Some b -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings prc prlc b)
 
 (* Duplication of printing functions because "'a with_bindings" is
    (internally) not uniform in 'a: indeed constr_with_bindings at the
@@ -46,12 +46,12 @@ let pr_fun_ind_using  prc prlc _ opt_c =
 
 let pr_with_bindings_typed prc prlc (c,bl) =
   prc c ++
-  hv 0 (pr_bindings (fun c -> prc (snd c)) (fun c -> prlc (snd c))  bl)
+  hv 0 (pr_bindings prc prlc bl)
 
 let pr_fun_ind_using_typed prc prlc _ opt_c =
   match opt_c with
     | None -> mt ()
-    | Some (p,b) -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed prc prlc (p,b))
+    | Some b -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed prc prlc b.Evd.it)
 
 
 ARGUMENT EXTEND fun_ind_using
@@ -96,7 +96,7 @@ TACTIC EXTEND newfunind
 	 | [c] -> c
 	 | c::cl -> applist(c,cl)
        in
-       functional_induction true c  princl pat ]
+       Extratactics.onSomeWithHoles (fun x -> functional_induction true c x pat) princl ]
 END
 (***** debug only ***)
 TACTIC EXTEND snewfunind
@@ -107,7 +107,7 @@ TACTIC EXTEND snewfunind
 	 | [c] -> c
 	 | c::cl -> applist(c,cl)
        in
-       functional_induction false c princl pat ]
+       Extratactics.onSomeWithHoles (fun x -> functional_induction false c x pat) princl ]
 END
 
 

@@ -38,15 +38,15 @@ val h_exact_no_check  : constr -> tactic
 val h_vm_cast_no_check  : constr -> tactic
 
 val h_apply           : advanced_flag -> evars_flag ->
-  open_constr with_bindings located list -> tactic
+  constr with_bindings located list -> tactic
 val h_apply_in        : advanced_flag -> evars_flag ->
-  open_constr with_bindings located list ->
+  constr with_bindings located list ->
   identifier * intro_pattern_expr located option -> tactic
 
-val h_elim            : evars_flag -> constr with_ebindings ->
-                        constr with_ebindings option -> tactic
+val h_elim            : evars_flag -> constr with_bindings ->
+                        constr with_bindings option -> tactic
 val h_elim_type       : constr -> tactic
-val h_case            : evars_flag -> constr with_ebindings -> tactic
+val h_case            : evars_flag -> constr with_bindings -> tactic
 val h_case_type       : constr -> tactic
 
 val h_mutual_fix      : hidden_flag -> identifier -> int ->
@@ -69,19 +69,19 @@ val h_simple_induction   : quantified_hypothesis -> tactic
 val h_simple_destruct    : quantified_hypothesis -> tactic
 val h_simple_induction_destruct : rec_flag -> quantified_hypothesis -> tactic
 val h_new_induction   : evars_flag ->
-  constr with_ebindings induction_arg list -> constr with_ebindings option ->
+  constr with_bindings induction_arg list -> constr with_bindings option ->
   intro_pattern_expr located option * intro_pattern_expr located option ->
   Tacticals.clause option -> tactic
 val h_new_destruct    : evars_flag ->
-  constr with_ebindings induction_arg list -> constr with_ebindings option ->
+  constr with_bindings induction_arg list -> constr with_bindings option ->
   intro_pattern_expr located option * intro_pattern_expr located option ->
   Tacticals.clause option -> tactic
 val h_induction_destruct : rec_flag -> evars_flag ->
-  (constr with_ebindings induction_arg list * constr with_ebindings option *
+  (constr with_bindings induction_arg list * constr with_bindings option *
    (intro_pattern_expr located option * intro_pattern_expr located option)) list
     * Tacticals.clause option -> tactic
 
-val h_specialize      : int option -> constr with_ebindings -> tactic
+val h_specialize      : int option -> constr with_bindings -> tactic
 val h_lapply          : constr -> tactic
 
 (* Automation tactic : see Auto *)
@@ -95,10 +95,10 @@ val h_rename          : (identifier*identifier) list -> tactic
 val h_revert          : identifier list -> tactic
 
 (* Constructors *)
-val h_constructor     : evars_flag -> int -> open_constr bindings -> tactic
-val h_left            : evars_flag -> open_constr bindings -> tactic
-val h_right           : evars_flag -> open_constr bindings -> tactic
-val h_split           : evars_flag -> open_constr bindings list -> tactic
+val h_constructor     : evars_flag -> int -> constr bindings -> tactic
+val h_left            : evars_flag -> constr bindings -> tactic
+val h_right           : evars_flag -> constr bindings -> tactic
+val h_split           : evars_flag -> constr bindings list -> tactic
 
 val h_one_constructor : int -> tactic
 val h_simplest_left   : tactic

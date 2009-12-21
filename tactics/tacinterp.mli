@@ -134,8 +134,7 @@ val interp_tac_gen : (identifier * value) list -> identifier list ->
 
 val interp_hyp :  interp_sign -> goal sigma -> identifier located -> identifier
 
-val interp_bindings : interp_sign -> goal sigma -> rawconstr_and_expr Rawterm.bindings ->
-  Evd.open_constr Rawterm.bindings
+val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map -> rawconstr_and_expr Rawterm.bindings -> Evd.evar_map * constr Rawterm.bindings
 
 (* Initial call for interpretation *)
 val glob_tactic : raw_tactic_expr -> glob_tactic_expr
