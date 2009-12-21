@@ -462,7 +462,7 @@ let weak_progress gls ptree =
   (not (same_goal (List.hd gls.it) ptree.it))
 
 let progress gls ptree =
-  (not (eq_evar_map ptree.sigma gls.sigma)) ||
+  (progress_evar_map ptree.sigma gls.sigma) ||
   (weak_progress gls ptree)
 
 
@@ -940,3 +940,25 @@ let print_pftreestate {tpf = pf; tpfsigma = sigma; tstack = stack } =
            (List.rev stack) ++ str "] is:")) ++ fnl() ++
   !pp_proof sigma (Global.named_context()) pf ++
   Evd.pr_evar_map sigma
+
+(* Check that holes in arguments have been resolved *)
+
+let check_evars sigma evm gl =
+  let origsigma = gl.sigma in
+  let rest =
+    Evd.fold (fun ev evi acc ->
+      if not (Evd.mem origsigma ev) && not (Evd.is_defined sigma ev)
+      then Evd.add acc ev evi else acc)
+      evm Evd.empty
+  in
+  if rest <> Evd.empty then
+    errorlabstrm "apply" (str"Uninstantiated existential "++
+      str(plural (List.length (Evd.to_list rest)) "variable")++str": " ++
+      fnl () ++ pr_evar_map rest);;
+
+let tclWITHHOLES accept_unresolved_holes tac sigma c gl =
+  if sigma == project gl then tac c gl
+  else
+    let res = tclTHEN (tclEVARS sigma) (tac c) gl in
+    if not accept_unresolved_holes then check_evars (fst res).sigma sigma gl;
+    res

@@ -452,11 +452,13 @@ let rec check_and_clear_in_constr evdref err ids c =
 	      with ClearDependencyError (rid,err) ->
 		raise (ClearDependencyError (List.assoc rid rids,err)) in
 
-	    let env = Sign.fold_named_context push_named nhyps ~init:(empty_env) in
-	    let ev'= e_new_evar evdref env ~src:(evar_source evk !evdref) nconcl in
+            if rids = [] then c else begin
+	      let env = Sign.fold_named_context push_named nhyps ~init:(empty_env) in
+	      let ev'= e_new_evar evdref env ~src:(evar_source evk !evdref) nconcl in
 	      evdref := Evd.define evk ev' !evdref;
 	      let (evk',_) = destEvar ev' in
-		mkEvar(evk', Array.of_list nargs)
+	      mkEvar(evk', Array.of_list nargs)
+            end
 
       | _ -> map_constr (check_and_clear_in_constr evdref err ids) c
 

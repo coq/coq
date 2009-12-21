@@ -91,6 +91,7 @@ module EvarInfoMap = struct
   let remove evc k = ExistentialMap.remove k evc
   let mem evc k = ExistentialMap.mem k evc
   let fold = ExistentialMap.fold
+  let exists evc f = ExistentialMap.fold (fun k v b -> b || f k v) evc false
 
   let add evd evk newinfo =  ExistentialMap.add evk newinfo evd
 
@@ -312,9 +313,11 @@ module EvarMap = struct
   let existential_value (sigma,_) = EvarInfoMap.existential_value sigma
   let existential_type (sigma,_) = EvarInfoMap.existential_type sigma
   let existential_opt_value (sigma,_) = EvarInfoMap.existential_opt_value sigma
-  let eq_evar_map x y = x == y ||
-    (EvarInfoMap.equal eq_evar_info (fst x) (fst y) &&
-      UniverseMap.equal (=) (snd x) (snd y))
+  let progress_evar_map (sigma1,sm1 as x) (sigma2,sm2 as y) = not (x == y) &&
+    (EvarInfoMap.exists sigma1
+      (fun k v -> v.evar_body = Evar_empty &&
+        (EvarInfoMap.find sigma2 k).evar_body <> Evar_empty)
+    || not (UniverseMap.equal (=) sm1 sm2))
 
   let merge e e' = fold (fun n v sigma -> add sigma n v) e' e
 
@@ -427,10 +430,9 @@ type evar_map =
 
 (*** Lifting primitive from EvarMap. ***)
 
-(* spiwack: this function seems to be used only for the definition of the progress
-    tactical. I would recommand not using it in other places. *)
-let eq_evar_map d1 d2 =
-  EvarMap.eq_evar_map d1.evars d2.evars
+(* HH: The progress tactical now uses this function. *)
+let progress_evar_map d1 d2 =
+  EvarMap.progress_evar_map d1.evars d2.evars
 
 (* spiwack: tentative. It might very well not be the semantics we want
      for merging evar_map *)

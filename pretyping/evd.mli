@@ -121,9 +121,9 @@ type evar_map
 
 (* Unification state and existential variables *)
 
-(* spiwack: this function seems to be used only for the definition of the progress
-    tactical. I would recommand not using it in other places. *)
-val eq_evar_map : evar_map -> evar_map -> bool
+(* Assuming that the second map extends the first one, this says if
+   some existing evar has been refined *)
+val progress_evar_map : evar_map -> evar_map -> bool
 
 val empty : evar_map
 val is_empty : evar_map -> bool
