@@ -36,7 +36,8 @@ let is_bind = function
 let mk_goal hyps cl extra =
   { evar_hyps = hyps; evar_concl = cl;
     evar_filter = List.map (fun _ -> true) (named_context_of_val hyps);
-    evar_body = Evar_empty; evar_extra = extra }
+    evar_body = Evar_empty; evar_source = (dummy_loc,GoalEvar); 
+    evar_extra = extra }
 
 (* Functions on proof trees *)
 

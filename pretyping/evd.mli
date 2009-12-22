@@ -77,6 +77,25 @@ val map_clb : (constr -> constr) -> clbinding -> clbinding
 
 
 (*********************************************************************)
+(*** Kinds of existential variables ***)
+
+(* Should the obligation be defined (opaque or transparent (default)) or
+   defined transparent and expanded in the term? *)
+
+type obligation_definition_status = Define of bool | Expand
+
+(* Evars *)
+type hole_kind =
+  | ImplicitArg of global_reference * (int * identifier option) * bool (* Force inference *)
+  | BinderType of name
+  | QuestionMark of obligation_definition_status
+  | CasesType
+  | InternalHole
+  | TomatchTypeParameter of inductive * int
+  | GoalEvar
+  | ImpossibleCase
+
+(*********************************************************************)
 (*** Existential variables and unification states ***)
 
 (* A unification state (of type [evar_map]) is primarily a finite mapping
@@ -102,6 +121,7 @@ type evar_info = {
   evar_hyps : named_context_val;
   evar_body : evar_body;
   evar_filter : bool list;
+  evar_source : hole_kind located;
   evar_extra : Dyn.t option}
 
 val eq_evar_info : evar_info -> evar_info -> bool
@@ -159,24 +179,6 @@ val subst_evar_defs_light : substitution -> evar_map -> evar_map
 (* spiwack: this function seems to somewhat break the abstraction. *)
 val evars_reset_evd  : evar_map ->  evar_map -> evar_map
 
-
-
-
-(* Should the obligation be defined (opaque or transparent (default)) or
-   defined transparent and expanded in the term? *)
-
-type obligation_definition_status = Define of bool | Expand
-
-(* Evars *)
-type hole_kind =
-  | ImplicitArg of global_reference * (int * identifier option) * bool (* Force inference *)
-  | BinderType of name
-  | QuestionMark of obligation_definition_status
-  | CasesType
-  | InternalHole
-  | TomatchTypeParameter of inductive * int
-  | GoalEvar
-  | ImpossibleCase
 
 (* spiwack: [is_undefined_evar] should be considered a candidate
                    for moving to evarutils *)

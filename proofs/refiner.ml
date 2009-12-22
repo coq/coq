@@ -943,7 +943,7 @@ let print_pftreestate {tpf = pf; tpfsigma = sigma; tstack = stack } =
 
 (* Check that holes in arguments have been resolved *)
 
-let check_evars sigma evm gl =
+let check_evars env sigma evm gl =
   let origsigma = gl.sigma in
   let rest =
     Evd.fold (fun ev evi acc ->
@@ -952,13 +952,15 @@ let check_evars sigma evm gl =
       evm Evd.empty
   in
   if rest <> Evd.empty then
-    errorlabstrm "apply" (str"Uninstantiated existential "++
-      str(plural (List.length (Evd.to_list rest)) "variable")++str": " ++
-      fnl () ++ pr_evar_map rest);;
+    let (evk,evi) = List.hd (Evd.to_list rest) in
+    let (loc,k) = evar_source evk rest in
+    let evi = Evarutil.nf_evar_info sigma evi in
+    Pretype_errors.error_unsolvable_implicit loc env sigma evi k None
 
 let tclWITHHOLES accept_unresolved_holes tac sigma c gl =
   if sigma == project gl then tac c gl
   else
     let res = tclTHEN (tclEVARS sigma) (tac c) gl in
-    if not accept_unresolved_holes then check_evars (fst res).sigma sigma gl;
+    if not accept_unresolved_holes then
+      check_evars (pf_env gl) (fst res).sigma sigma gl;
     res

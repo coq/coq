@@ -19,6 +19,20 @@ open Environ
 open Libnames
 open Mod_subst
 
+(* The kinds of existential variable *)
+
+type obligation_definition_status = Define of bool | Expand
+
+type hole_kind =
+  | ImplicitArg of global_reference * (int * identifier option) * bool
+  | BinderType of name
+  | QuestionMark of obligation_definition_status
+  | CasesType
+  | InternalHole
+  | TomatchTypeParameter of inductive * int
+  | GoalEvar
+  | ImpossibleCase
+
 (* The type of mappings for existential variables *)
 
 type evar = existential_key
@@ -35,6 +49,7 @@ type evar_info = {
   evar_hyps : named_context_val;
   evar_body : evar_body;
   evar_filter : bool list;
+  evar_source : hole_kind located;
   evar_extra : Dyn.t option}
 
 let make_evar hyps ccl = {
@@ -42,6 +57,7 @@ let make_evar hyps ccl = {
   evar_hyps = hyps;
   evar_body = Evar_empty;
   evar_filter = List.map (fun _ -> true) (named_context_of_val hyps);
+  evar_source = (dummy_loc,InternalHole);
   evar_extra = None
 }
 
@@ -407,25 +423,12 @@ let metamap_to_list m =
 (*************************)
 (* Unification state *)
 
-type obligation_definition_status = Define of bool | Expand
-
-type hole_kind =
-  | ImplicitArg of global_reference * (int * identifier option) * bool
-  | BinderType of name
-  | QuestionMark of obligation_definition_status
-  | CasesType
-  | InternalHole
-  | TomatchTypeParameter of inductive * int
-  | GoalEvar
-  | ImpossibleCase
-
 type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * Environ.env * constr * constr
 type evar_map =
     { evars : EvarMap.t;
       conv_pbs : evar_constraint list;
       last_mods : ExistentialSet.t;
-      history : (existential_key * (loc * hole_kind)) list;
       metas : clbinding Metamap.t }
 
 (*** Lifting primitive from EvarMap. ***)
@@ -441,7 +444,6 @@ let merge d1 d2 = {
   evars = EvarMap.merge d1.evars d2.evars ;
   conv_pbs = List.rev_append d1.conv_pbs d2.conv_pbs ;
   last_mods = ExistentialSet.union d1.last_mods d2.last_mods ;
-  history = List.rev_append d1.history d2.history ;
   metas = Metamap.fold (fun k m r -> Metamap.add k m r) d2.metas d1.metas
 }
 let add d e i = { d with evars=EvarMap.add d.evars e i }
@@ -492,7 +494,7 @@ let subst_evar_map = subst_evar_defs_light
 
 (* spiwack: deprecated *)
 let create_evar_defs sigma = { sigma with
-  conv_pbs=[]; last_mods=ExistentialSet.empty; history=[]; metas=Metamap.empty }
+  conv_pbs=[]; last_mods=ExistentialSet.empty; metas=Metamap.empty }
 (* spiwack: tentatively deprecated *)
 let create_goal_evar_defs sigma = { sigma with
    conv_pbs=[]; last_mods=ExistentialSet.empty; metas=Metamap.empty }
@@ -500,15 +502,12 @@ let empty =  {
   evars=EvarMap.empty;
   conv_pbs=[];
   last_mods = ExistentialSet.empty;
-  history=[];
   metas=Metamap.empty
 }
 
 let evars_reset_evd evd d = {d with evars = evd.evars}
 let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
-let evar_source evk d =
-  try List.assoc evk d.history
-  with Not_found -> (dummy_loc, InternalHole)
+let evar_source evk d = (EvarMap.find d.evars evk).evar_source
 
 (* define the existential of section path sp as the constr body *)
 let define evk body evd =
@@ -534,8 +533,8 @@ let evar_declare hyps evk ty ?(src=(dummy_loc,InternalHole)) ?filter evd =
        evar_concl = ty;
        evar_body = Evar_empty;
        evar_filter = filter;
-       evar_extra = None};
-    history = (evk,src)::evd.history }
+       evar_source = src;
+       evar_extra = None} }
 
 let is_defined_evar evd (evk,_) = EvarMap.is_defined evd.evars evk
 
