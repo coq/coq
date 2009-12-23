@@ -974,144 +974,6 @@ and intern_genarg ist x =
 (***************************************************************************)
 (* Evaluation/interpretation *)
 
-(* Associates variables with values and gives the remaining variables and
-   values *)
-let head_with_value (lvar,lval) =
-  let rec head_with_value_rec lacc = function
-    | ([],[]) -> (lacc,[],[])
-    | (vr::tvr,ve::tve) ->
-      (match vr with
-      |	None -> head_with_value_rec lacc (tvr,tve)
-      | Some v -> head_with_value_rec ((v,ve)::lacc) (tvr,tve))
-    | (vr,[]) -> (lacc,vr,[])
-    | ([],ve) -> (lacc,[],ve)
-  in
-    head_with_value_rec [] (lvar,lval)
-
-(* Gives a context couple if there is a context identifier *)
-let give_context ctxt = function
-  | None -> []
-  | Some id -> [id,VConstr_context ctxt]
-
-(* Reads a pattern by substituting vars of lfun *)
-let eval_pattern lfun c =
-  let lvar = List.map (fun (id,c) -> (id,lazy(pattern_of_constr c))) lfun in
-  instantiate_pattern lvar c
-
-let read_pattern lfun = function
-  | Subterm (b,ido,pc) -> Subterm (b,ido,eval_pattern lfun pc)
-  | Term pc -> Term (eval_pattern lfun pc)
-
-(* Reads the hypotheses of a Match Context rule *)
-let cons_and_check_name id l =
-  if List.mem id l then
-    user_err_loc (dloc,"read_match_goal_hyps",
-      strbrk ("Hypothesis pattern-matching variable "^(string_of_id id)^
-      " used twice in the same pattern."))
-  else id::l
-
-let rec read_match_goal_hyps lfun lidh = function
-  | (Hyp ((loc,na) as locna,mp))::tl ->
-      let lidh' = name_fold cons_and_check_name na lidh in
-      Hyp (locna,read_pattern lfun mp)::
-	(read_match_goal_hyps lfun lidh' tl)
-  | (Def ((loc,na) as locna,mv,mp))::tl ->
-      let lidh' = name_fold cons_and_check_name na lidh in
-      Def (locna,read_pattern lfun mv, read_pattern lfun mp)::
-	(read_match_goal_hyps lfun lidh' tl)
-  | [] -> []
-
-(* Reads the rules of a Match Context or a Match *)
-let rec read_match_rule lfun = function
-  | (All tc)::tl -> (All tc)::(read_match_rule lfun tl)
-  | (Pat (rl,mp,tc))::tl ->
-      Pat (read_match_goal_hyps lfun [] rl, read_pattern lfun mp,tc)
-      :: read_match_rule lfun tl
-  | [] -> []
-
-(* For Match Context and Match *)
-exception Not_coherent_metas
-exception Eval_fail of std_ppcmds
-
-let is_match_catchable = function
-  | PatternMatchingFailure | Eval_fail _ -> true
-  | e -> Logic.catchable_exception e
-
-(* Verifies if the matched list is coherent with respect to lcm *)
-(* While non-linear matching is modulo eq_constr in matches, merge of *)
-(* different instances of the same metavars is here modulo conversion... *)
-let verify_metas_coherence gl (ln1,lcm) (ln,lm) =
-  let rec aux = function
-  | (num,csr)::tl ->
-    if (List.for_all (fun (a,b) -> a<>num or pf_conv_x gl b csr) lcm) then
-      (num,csr)::aux tl
-    else
-      raise Not_coherent_metas
-  | [] -> lcm in
-  (ln@ln1,aux lm)
-
-(* Tries to match one hypothesis pattern with a list of hypotheses *)
-let apply_one_mhyp_context ist env gl lmatch (hypname,patv,pat) lhyps =
-  let get_id_couple id = function
-    | Name idpat -> [idpat,VConstr (mkVar id)]
-    | Anonymous -> [] in
-  let match_pat lmatch hyp pat =
-    match pat with
-    | Term t ->
-        let lmeta = extended_matches t hyp in
-        (try
-            let lmeta = verify_metas_coherence gl lmatch lmeta in
-            ([],lmeta,(fun () -> raise PatternMatchingFailure))
-          with
-            | Not_coherent_metas -> raise PatternMatchingFailure);
-    | Subterm (b,ic,t) ->
-        let rec match_next_pattern find_next () =
-          let (lmeta,ctxt,find_next') = find_next () in
-          try
-            let lmeta = verify_metas_coherence gl lmatch lmeta in
-            (give_context ctxt ic,lmeta,match_next_pattern find_next')
-          with
-            | Not_coherent_metas -> match_next_pattern find_next' () in
-        match_next_pattern(fun () -> match_subterm_gen b t hyp) () in
-  let rec apply_one_mhyp_context_rec = function
-    | (id,b,hyp as hd)::tl ->
-	(match patv with
-	| None ->
-            let rec match_next_pattern find_next () =
-              try
-                let (ids, lmeta, find_next') = find_next () in
-		(get_id_couple id hypname@ids, lmeta, hd,
-                 match_next_pattern find_next')
-              with
-                | PatternMatchingFailure -> apply_one_mhyp_context_rec tl in
-            match_next_pattern (fun () -> match_pat lmatch hyp pat) ()
-	| Some patv ->
-	    match b with
-	    | Some body ->
-                let rec match_next_pattern_in_body next_in_body () =
-                  try
-                    let (ids,lmeta,next_in_body') = next_in_body() in
-                    let rec match_next_pattern_in_typ next_in_typ () =
-                      try
-                        let (ids',lmeta',next_in_typ') = next_in_typ() in
-		        (get_id_couple id hypname@ids@ids', lmeta', hd,
-                         match_next_pattern_in_typ next_in_typ')
-                      with
-                        | PatternMatchingFailure ->
-                            match_next_pattern_in_body next_in_body' () in
-                    match_next_pattern_in_typ
-                      (fun () -> match_pat lmeta hyp pat) ()
-                  with PatternMatchingFailure -> apply_one_mhyp_context_rec tl
-                in
-                match_next_pattern_in_body
-                  (fun () -> match_pat lmatch body patv) ()
-            | None -> apply_one_mhyp_context_rec tl)
-    | [] ->
-        db_hyp_pattern_failure ist.debug env (hypname,pat);
-        raise PatternMatchingFailure
-  in
-    apply_one_mhyp_context_rec lhyps
-
 let constr_to_id loc = function
   | VConstr c when isVar c -> destVar c
   | _ -> invalid_arg_loc (loc, "Not an identifier")
@@ -1429,7 +1291,8 @@ let solve_remaining_evars fail_evar use_classes env initial_sigma evd c =
     if use_classes then ref (Typeclasses.resolve_typeclasses ~fail:true env evd)
     else ref evd in
   let rec proc_rec c =
-    match kind_of_term (Reductionops.whd_evar !evdref c) with
+    let c = Reductionops.whd_evar !evdref c in
+    match kind_of_term c with
       | Evar (ev,args as k) when not (Evd.mem initial_sigma ev) ->
             let (loc,src) = evar_source ev !evdref in
 	    let sigma =  !evdref in
@@ -1445,7 +1308,7 @@ let solve_remaining_evars fail_evar use_classes env initial_sigma evd c =
                 c)
       | _ -> map_constr proc_rec c
   in
-  let c = proc_rec (Evarutil.nf_isevar !evdref c) in
+  let c = proc_rec c in
   (* Side-effect *)
   !evdref,c
 
@@ -1742,6 +1605,146 @@ let interp_induction_arg ist gl sigma arg =
 	else
           let c = interp_constr ist env sigma (RVar (loc,id),Some (CRef (Ident (loc,id)))) in
           sigma, ElimOnConstr (c,NoBindings)
+
+(* Associates variables with values and gives the remaining variables and
+   values *)
+let head_with_value (lvar,lval) =
+  let rec head_with_value_rec lacc = function
+    | ([],[]) -> (lacc,[],[])
+    | (vr::tvr,ve::tve) ->
+      (match vr with
+      |	None -> head_with_value_rec lacc (tvr,tve)
+      | Some v -> head_with_value_rec ((v,ve)::lacc) (tvr,tve))
+    | (vr,[]) -> (lacc,vr,[])
+    | ([],ve) -> (lacc,[],ve)
+  in
+    head_with_value_rec [] (lvar,lval)
+
+(* Gives a context couple if there is a context identifier *)
+let give_context ctxt = function
+  | None -> []
+  | Some id -> [id,VConstr_context ctxt]
+
+(* Reads a pattern by substituting vars of lfun *)
+let eval_pattern lfun c =
+  let lvar = List.map (fun (id,c) -> (id,lazy(pattern_of_constr c))) lfun in
+  instantiate_pattern lvar c
+
+let read_pattern lfun = function
+  | Subterm (b,ido,pc) -> Subterm (b,ido,eval_pattern lfun pc)
+  | Term pc -> Term (eval_pattern lfun pc)
+
+(* Reads the hypotheses of a Match Context rule *)
+let cons_and_check_name id l =
+  if List.mem id l then
+    user_err_loc (dloc,"read_match_goal_hyps",
+      strbrk ("Hypothesis pattern-matching variable "^(string_of_id id)^
+      " used twice in the same pattern."))
+  else id::l
+
+let rec read_match_goal_hyps lfun lidh = function
+  | (Hyp ((loc,na) as locna,mp))::tl ->
+      let lidh' = name_fold cons_and_check_name na lidh in
+      Hyp (locna,read_pattern lfun mp)::
+	(read_match_goal_hyps lfun lidh' tl)
+  | (Def ((loc,na) as locna,mv,mp))::tl ->
+      let lidh' = name_fold cons_and_check_name na lidh in
+      Def (locna,read_pattern lfun mv, read_pattern lfun mp)::
+	(read_match_goal_hyps lfun lidh' tl)
+  | [] -> []
+
+(* Reads the rules of a Match Context or a Match *)
+let rec read_match_rule lfun = function
+  | (All tc)::tl -> (All tc)::(read_match_rule lfun tl)
+  | (Pat (rl,mp,tc))::tl ->
+      Pat (read_match_goal_hyps lfun [] rl, read_pattern lfun mp,tc)
+      :: read_match_rule lfun tl
+  | [] -> []
+
+(* For Match Context and Match *)
+exception Not_coherent_metas
+exception Eval_fail of std_ppcmds
+
+let is_match_catchable = function
+  | PatternMatchingFailure | Eval_fail _ -> true
+  | e -> Logic.catchable_exception e
+
+(* Verifies if the matched list is coherent with respect to lcm *)
+(* While non-linear matching is modulo eq_constr in matches, merge of *)
+(* different instances of the same metavars is here modulo conversion... *)
+let verify_metas_coherence gl (ln1,lcm) (ln,lm) =
+  let rec aux = function
+  | (num,csr)::tl ->
+    if (List.for_all (fun (a,b) -> a<>num or pf_conv_x gl b csr) lcm) then
+      (num,csr)::aux tl
+    else
+      raise Not_coherent_metas
+  | [] -> lcm in
+  (ln@ln1,aux lm)
+
+(* Tries to match one hypothesis pattern with a list of hypotheses *)
+let apply_one_mhyp_context ist env gl lmatch (hypname,patv,pat) lhyps =
+  let get_id_couple id = function
+    | Name idpat -> [idpat,VConstr (mkVar id)]
+    | Anonymous -> [] in
+  let match_pat lmatch hyp pat =
+    match pat with
+    | Term t ->
+        let lmeta = extended_matches t hyp in
+        (try
+            let lmeta = verify_metas_coherence gl lmatch lmeta in
+            ([],lmeta,(fun () -> raise PatternMatchingFailure))
+          with
+            | Not_coherent_metas -> raise PatternMatchingFailure);
+    | Subterm (b,ic,t) ->
+        let rec match_next_pattern find_next () =
+          let (lmeta,ctxt,find_next') = find_next () in
+          try
+            let lmeta = verify_metas_coherence gl lmatch lmeta in
+            (give_context ctxt ic,lmeta,match_next_pattern find_next')
+          with
+            | Not_coherent_metas -> match_next_pattern find_next' () in
+        match_next_pattern(fun () -> match_subterm_gen b t hyp) () in
+  let rec apply_one_mhyp_context_rec = function
+    | (id,b,hyp as hd)::tl ->
+	(match patv with
+	| None ->
+            let rec match_next_pattern find_next () =
+              try
+                let (ids, lmeta, find_next') = find_next () in
+		(get_id_couple id hypname@ids, lmeta, hd,
+                 match_next_pattern find_next')
+              with
+                | PatternMatchingFailure -> apply_one_mhyp_context_rec tl in
+            match_next_pattern (fun () -> match_pat lmatch hyp pat) ()
+	| Some patv ->
+	    match b with
+	    | Some body ->
+                let rec match_next_pattern_in_body next_in_body () =
+                  try
+                    let (ids,lmeta,next_in_body') = next_in_body() in
+                    let rec match_next_pattern_in_typ next_in_typ () =
+                      try
+                        let (ids',lmeta',next_in_typ') = next_in_typ() in
+		        (get_id_couple id hypname@ids@ids', lmeta', hd,
+                         match_next_pattern_in_typ next_in_typ')
+                      with
+                        | PatternMatchingFailure ->
+                            match_next_pattern_in_body next_in_body' () in
+                    match_next_pattern_in_typ
+                      (fun () -> match_pat lmeta hyp pat) ()
+                  with PatternMatchingFailure -> apply_one_mhyp_context_rec tl
+                in
+                match_next_pattern_in_body
+                  (fun () -> match_pat lmatch body patv) ()
+            | None -> apply_one_mhyp_context_rec tl)
+    | [] ->
+        db_hyp_pattern_failure ist.debug env (hypname,pat);
+        raise PatternMatchingFailure
+  in
+    apply_one_mhyp_context_rec lhyps
+
+(* misc *)
 
 let mk_constr_value ist gl c = VConstr (pf_interp_constr ist gl c)
 let mk_hyp_value ist gl c = VConstr (mkVar (interp_hyp ist gl c))
