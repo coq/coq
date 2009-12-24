@@ -215,9 +215,9 @@ let compute_rhs bodyi index_of_f =
           let i = destRel (array_last args) in
 	  PMeta (Some (coerce_meta_in i))
       | App (f,args) ->
-          PApp (pattern_of_constr Evd.empty f, Array.map aux args)
+          PApp (snd (pattern_of_constr Evd.empty f), Array.map aux args)
       | Cast (c,_,_) -> aux c
-      | _ -> pattern_of_constr Evd.empty c
+      | _ -> snd (pattern_of_constr Evd.empty c)
   in
   aux bodyi
 

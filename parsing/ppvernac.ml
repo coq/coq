@@ -69,7 +69,7 @@ let pr_gen env t =
   pr_raw_generic
     pr_constr_expr
     pr_lconstr_expr
-    (pr_raw_tactic_level env) pr_reference t
+    (pr_raw_tactic_level env) pr_constr_expr pr_reference t
 
 let pr_raw_tactic tac = pr_raw_tactic (Global.env()) tac
 
@@ -579,7 +579,7 @@ let rec pr_vernac = function
         | None -> mt()
         | Some r ->
             str"Eval" ++ spc() ++
-            pr_red_expr (pr_constr, pr_lconstr, pr_smart_global) r ++
+            pr_red_expr (pr_constr, pr_lconstr, pr_smart_global, pr_constr) r ++
             str" in" ++ spc() in
       let pr_def_body = function
         | DefineBody (bl,red,body,d) ->
@@ -890,7 +890,7 @@ let rec pr_vernac = function
       let pr_mayeval r c = match r with
       | Some r0 ->
           hov 2 (str"Eval" ++ spc() ++
-          pr_red_expr (pr_constr,pr_lconstr,pr_smart_global) r0 ++
+          pr_red_expr (pr_constr,pr_lconstr,pr_smart_global, pr_constr) r0 ++
           spc() ++ str"in" ++ spc () ++ pr_constr c)
       | None -> hov 2 (str"Check" ++ spc() ++ pr_constr c)
       in

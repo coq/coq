@@ -204,8 +204,8 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr =
   | TacConstructor of evars_flag * int or_metaid * 'constr bindings
 
   (* Conversion *)
-  | TacReduce of ('constr,'cst) red_expr_gen * 'id gclause
-  | TacChange of 'constr with_occurrences option * 'constr * 'id gclause
+  | TacReduce of ('constr,'cst,'pat) red_expr_gen * 'id gclause
+  | TacChange of 'pat with_occurrences option * 'constr * 'id gclause
 
   (* Equivalence relations *)
   | TacReflexivity
@@ -259,7 +259,7 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg =
   | TacDynamic     of loc * Dyn.t
   | TacVoid
   | MetaIdArg      of loc * bool * string
-  | ConstrMayEval  of ('constr,'cst) may_eval
+  | ConstrMayEval  of ('constr,'cst,'pat) may_eval
   | IntroPattern   of intro_pattern_expr located
   | Reference      of 'ref
   | Integer        of int
@@ -313,7 +313,8 @@ type raw_tactic_arg =
 
 type raw_generic_argument = rlevel generic_argument
 
-type raw_red_expr = (constr_expr, reference or_by_notation) red_expr_gen
+type raw_red_expr =
+    (constr_expr, reference or_by_notation, constr_expr) red_expr_gen
 
 type glob_atomic_tactic_expr =
     (rawconstr_and_expr,
@@ -338,7 +339,8 @@ type glob_tactic_arg =
 type glob_generic_argument = glevel generic_argument
 
 type glob_red_expr =
-    (rawconstr_and_expr, evaluable_global_reference or_var) red_expr_gen
+    (rawconstr_and_expr, evaluable_global_reference or_var, constr_pattern)
+    red_expr_gen
 
 type typed_generic_argument = tlevel generic_argument
 

@@ -57,11 +57,11 @@ val pr_with_occurrences :
 val pr_with_occurrences_with_trailer :
   ('a -> std_ppcmds) -> 'a with_occurrences -> std_ppcmds -> std_ppcmds
 val pr_red_expr :
-  ('a -> std_ppcmds) * ('a -> std_ppcmds) * ('b -> std_ppcmds) ->
-    ('a,'b) red_expr_gen -> std_ppcmds
+  ('a -> std_ppcmds) * ('a -> std_ppcmds) * ('b -> std_ppcmds) * ('c -> std_ppcmds) ->
+    ('a,'b,'c) red_expr_gen -> std_ppcmds
 val pr_may_eval :
   ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
-    ('a,'b) may_eval -> std_ppcmds
+  ('c -> std_ppcmds) -> ('a,'b,'c) may_eval -> std_ppcmds
 
 val pr_rawsort : rawsort -> std_ppcmds
 

@@ -17,6 +17,7 @@ open Reductionops
 open Closure
 open Rawterm
 open Termops
+open Pattern
 (*i*)
 
 type reduction_tactic_error =
@@ -92,5 +93,5 @@ val reduce_to_quantified_ref :
 val reduce_to_atomic_ref :
   env ->  evar_map -> Libnames.global_reference -> types -> types
 
-val contextually : bool -> occurrences * constr -> reduction_function
-  -> reduction_function
+val contextually : bool -> occurrences * constr_pattern ->
+  (patvar_map -> reduction_function) -> reduction_function

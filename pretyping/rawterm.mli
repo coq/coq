@@ -155,10 +155,10 @@ val no_occurrences_expr : occurrences_expr
 
 type 'a with_occurrences = occurrences_expr * 'a
 
-type ('a,'b) red_expr_gen =
+type ('a,'b,'c) red_expr_gen =
   | Red of bool
   | Hnf
-  | Simpl of 'a with_occurrences option
+  | Simpl of 'c with_occurrences option
   | Cbv of 'b raw_red_flag
   | Lazy of 'b raw_red_flag
   | Unfold of 'b with_occurrences list
@@ -167,8 +167,8 @@ type ('a,'b) red_expr_gen =
   | ExtraRedExpr of string
   | CbvVm
 
-type ('a,'b) may_eval =
+type ('a,'b,'c) may_eval =
   | ConstrTerm of 'a
-  | ConstrEval of ('a,'b) red_expr_gen * 'a
+  | ConstrEval of ('a,'b,'c) red_expr_gen * 'a
   | ConstrContext of (loc * identifier) * 'a
   | ConstrTypeOf of 'a

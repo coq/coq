@@ -575,13 +575,27 @@ let intern_flag ist red =
 
 let intern_constr_with_occurrences ist (l,c) = (l,intern_constr ist c)
 
+let intern_constr_pattern ist ltacvars pc =
+  let metas,pat =
+    Constrintern.intern_constr_pattern ist.gsigma ist.genv ~ltacvars pc in
+  let c = intern_constr_gen true false ist pc in
+  metas,(c,pat)
+
+let intern_typed_pattern_with_occurrences ist (l,p) =
+  let c = intern_constr_gen true false ist p in
+  (* we cannot ensure in non strict mode that the pattern is closed *)
+  (* keeping a constr_expr copy is too complicated and we want anyway to *)
+  (* type it, so we remember the pattern as a rawconstr only *)
+  let dummy_pat = PRel 0 in
+  (l,(c,dummy_pat))
+
 let intern_red_expr ist = function
   | Unfold l -> Unfold (List.map (intern_unfold ist) l)
   | Fold l -> Fold (List.map (intern_constr ist) l)
   | Cbv f -> Cbv (intern_flag ist f)
   | Lazy f -> Lazy (intern_flag ist f)
   | Pattern l -> Pattern (List.map (intern_constr_with_occurrences ist) l)
-  | Simpl o -> Simpl (Option.map (intern_constr_with_occurrences ist) o)
+  | Simpl o -> Simpl (Option.map (intern_typed_pattern_with_occurrences ist) o)
   | (Red _ | Hnf | ExtraRedExpr _ | CbvVm as r ) -> r
 
 let intern_in_hyp_as ist lf (id,ipat) =
@@ -607,14 +621,12 @@ let intern_hyp_location ist (((b,occs),id),hl) =
 let intern_pattern ist ?(as_type=false) lfun = function
   | Subterm (b,ido,pc) ->
       let ltacvars = (lfun,[]) in
-      let (metas,pat) = intern_constr_pattern ist.gsigma ist.genv ~ltacvars pc in
-      let c = intern_constr_gen true false ist pc in
-      ido, metas, Subterm (b,ido,(c,pat))
+      let (metas,pc) = intern_constr_pattern ist ltacvars pc in
+      ido, metas, Subterm (b,ido,pc)
   | Term pc ->
       let ltacvars = (lfun,[]) in
-      let (metas,pat) = intern_constr_pattern ist.gsigma ist.genv ~as_type ~ltacvars pc in
-      let c = intern_constr_gen true false ist pc in
-      None, metas, Term (c,pat)
+      let (metas,pc) = intern_constr_pattern ist ltacvars pc in
+      None, metas, Term pc
 
 let intern_constr_may_eval ist = function
   | ConstrEval (r,c) -> ConstrEval (intern_red_expr ist r,intern_constr ist c)
@@ -782,12 +794,16 @@ let rec intern_atomic lf ist x =
   (* Conversion *)
   | TacReduce (r,cl) ->
       TacReduce (intern_red_expr ist r, clause_app (intern_hyp_location ist) cl)
-  | TacChange (occl,c,cl) ->
-      TacChange (Option.map (intern_constr_with_occurrences ist) occl,
-        (if occl = None & (cl.onhyps = None or cl.onhyps = Some []) &
+  | TacChange (None,c,cl) ->
+      TacChange (None,
+        (if (cl.onhyps = None or cl.onhyps = Some []) &
 	    (cl.concl_occs = all_occurrences_expr or
 	     cl.concl_occs = no_occurrences_expr)
          then intern_type ist c else intern_constr ist c),
+	clause_app (intern_hyp_location ist) cl)
+  | TacChange (Some occl,c,cl) ->
+      let occl = intern_typed_pattern_with_occurrences ist occl in
+      TacChange (Some occl,intern_constr ist c,
 	clause_app (intern_hyp_location ist) cl)
 
   (* Equivalence relations *)
@@ -1314,7 +1330,7 @@ let solve_remaining_evars fail_evar use_classes env initial_sigma evd c =
   (* Side-effect *)
   !evdref,c
 
-let interp_gen kind ist expand_evar fail_evar use_classes env sigma (c,ce) =
+let interp_gen kind ist allow_patvar expand_evar fail_evar use_classes env sigma (c,ce) =
   let (ltacvars,unbndltacvars as vars),typs =
     extract_ltac_vars_data ist sigma env in
   let c = match ce with
@@ -1324,7 +1340,8 @@ let interp_gen kind ist expand_evar fail_evar use_classes env sigma (c,ce) =
        intros/lettac/inversion hypothesis names *)
   | Some c ->
       let ltacdata = (List.map fst ltacvars,unbndltacvars) in
-      intern_gen (kind = IsType) ~ltacvars:ltacdata sigma env c in
+      intern_gen (kind = IsType) ~allow_patvar ~ltacvars:ltacdata sigma env c
+  in
   let trace = push_trace (dloc,LtacConstrInterp (c,vars)) ist.trace in
   let evd,c =
     catch_error trace
@@ -1339,20 +1356,22 @@ let interp_gen kind ist expand_evar fail_evar use_classes env sigma (c,ce) =
 
 (* Interprets a constr; expects evars to be solved *)
 let interp_constr_gen kind ist env sigma c =
-  snd (interp_gen kind ist true true true env sigma c)
+  snd (interp_gen kind ist false true true true env sigma c)
 
 let interp_constr = interp_constr_gen (OfType None)
 
 let interp_type = interp_constr_gen IsType
 
 (* Interprets an open constr *)
-let interp_open_constr_gen kind ist = interp_gen kind ist true false false
+let interp_open_constr_gen kind ist =
+  interp_gen kind ist false true false false
 
 let interp_open_constr ccl =
   interp_open_constr_gen (OfType ccl)
 
 let interp_typed_pattern ist env sigma c =
-  let sigma, c = interp_gen (OfType None) ist false false false env sigma c in
+  let sigma, c =
+    interp_gen (OfType None) ist true false false false env sigma c in
   pattern_of_constr sigma c
 
 (* Interprets a constr expression casted by the current goal *)
@@ -1402,11 +1421,15 @@ let interp_unfold ist env (occs,qid) =
 let interp_flag ist env red =
   { red with rConst = List.map (interp_evaluable ist env) red.rConst }
 
-let interp_pattern ist sigma env (occs,c) =
+let interp_constr_with_occurrences ist sigma env (occs,c) =
   (interp_occurrences ist occs, interp_constr ist sigma env c)
 
-let pf_interp_constr_with_occurrences ist gl =
-  interp_pattern ist (pf_env gl) (project gl)
+let interp_typed_pattern_with_occurrences ist env sigma (occs,(c,_)) =
+  let sign,p = interp_typed_pattern ist env sigma c in
+  sign, (interp_occurrences ist occs, p)
+
+let interp_closed_typed_pattern_with_occurrences ist env sigma occl =
+  snd (interp_typed_pattern_with_occurrences ist env sigma occl)
 
 let interp_constr_with_occurrences_and_name_as_list =
   interp_constr_in_compound_list
@@ -1414,7 +1437,7 @@ let interp_constr_with_occurrences_and_name_as_list =
     (function ((occs,c),Anonymous) when occs = all_occurrences_expr -> c
       | _ -> raise Not_found)
     (fun ist env sigma (occ_c,na) ->
-      sigma, (interp_pattern ist env sigma occ_c,
+      sigma, (interp_constr_with_occurrences ist env sigma occ_c,
        interp_fresh_name ist env na))
 
 let interp_red_expr ist sigma env = function
@@ -1422,8 +1445,10 @@ let interp_red_expr ist sigma env = function
   | Fold l -> Fold (List.map (interp_constr ist env sigma) l)
   | Cbv f -> Cbv (interp_flag ist env f)
   | Lazy f -> Lazy (interp_flag ist env f)
-  | Pattern l -> Pattern (List.map (interp_pattern ist env sigma) l)
-  | Simpl o -> Simpl (Option.map (interp_pattern ist env sigma) o)
+  | Pattern l ->
+      Pattern (List.map (interp_constr_with_occurrences ist env sigma) l)
+  | Simpl o ->
+      Simpl(Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
   | (Red _ |  Hnf | ExtraRedExpr _ | CbvVm as r) -> r
 
 let pf_interp_red_expr ist gl = interp_red_expr ist (project gl) (pf_env gl)
@@ -1641,9 +1666,9 @@ let use_types = false
 
 let eval_pattern lfun ist env sigma (c,pat) =
   if use_types then
-    interp_typed_pattern ist env sigma c
+    snd (interp_typed_pattern ist env sigma c)
   else
-    let lvar = List.map (fun (id,c) -> (id,lazy(pattern_of_constr Evd.empty c))) lfun in
+    let lvar = List.map (fun (id,c) -> (id,lazy(snd (pattern_of_constr Evd.empty c)))) lfun in
     instantiate_pattern lvar pat
 
 let read_pattern lfun ist env sigma = function
@@ -1767,6 +1792,12 @@ let mk_hyp_value ist gl c = VConstr (mkVar (interp_hyp ist gl c))
 let mk_int_or_var_value ist c = VInteger (interp_int_or_var ist c)
 
 let pack_sigma (sigma,c) = {it=c;sigma=sigma}
+
+let extend_gl_hyps gl sign =
+ { gl with
+   it = { gl.it with
+     evar_hyps = 
+     List.fold_right Environ.push_named_context_val sign gl.it.evar_hyps } }
 
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist gl (tac:glob_tactic_expr) =
@@ -2363,13 +2394,19 @@ and interp_atomic ist gl tac =
   (* Conversion *)
   | TacReduce (r,cl) ->
       h_reduce (pf_interp_red_expr ist gl r) (interp_clause ist gl cl)
-  | TacChange (occl,c,cl) ->
-      h_change (Option.map (pf_interp_constr_with_occurrences ist gl) occl)
-        (if occl = None & (cl.onhyps = None or cl.onhyps = Some []) &
+  | TacChange (None,c,cl) ->
+      h_change None
+        (if (cl.onhyps = None or cl.onhyps = Some []) &
 	    (cl.concl_occs = all_occurrences_expr or
 	     cl.concl_occs = no_occurrences_expr)
 	 then pf_interp_type ist gl c
 	 else pf_interp_constr ist gl c)
+        (interp_clause ist gl cl)
+  | TacChange (Some occl,c,cl) ->
+      let sign,occl =
+        interp_typed_pattern_with_occurrences ist env sigma occl in
+      h_change (Some occl)
+        (pf_interp_constr ist (extend_gl_hyps gl sign) c)
         (interp_clause ist gl cl)
 
   (* Equivalence relations *)
@@ -2589,13 +2626,16 @@ let subst_flag subst red =
 
 let subst_constr_with_occurrences subst (l,c) = (l,subst_rawconstr subst c)
 
+let subst_pattern_with_occurrences subst (l,(c,p)) =
+  (l,(subst_rawconstr subst c,subst_pattern subst p))
+
 let subst_redexp subst = function
   | Unfold l -> Unfold (List.map (subst_unfold subst) l)
   | Fold l -> Fold (List.map (subst_rawconstr subst) l)
   | Cbv f -> Cbv (subst_flag subst f)
   | Lazy f -> Lazy (subst_flag subst f)
   | Pattern l -> Pattern (List.map (subst_constr_with_occurrences subst) l)
-  | Simpl o -> Simpl (Option.map (subst_constr_with_occurrences subst) o)
+  | Simpl o -> Simpl (Option.map (subst_pattern_with_occurrences subst) o)
   | (Red _ | Hnf | ExtraRedExpr _ | CbvVm as r) -> r
 
 let subst_raw_may_eval subst = function
@@ -2687,7 +2727,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Conversion *)
   | TacReduce (r,cl) -> TacReduce (subst_redexp subst r, cl)
   | TacChange (occl,c,cl) ->
-      TacChange (Option.map (subst_constr_with_occurrences subst) occl,
+      TacChange (Option.map (subst_pattern_with_occurrences subst) occl,
         subst_rawconstr subst c, cl)
 
   (* Equivalence relations *)

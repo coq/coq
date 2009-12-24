@@ -23,6 +23,8 @@ open Closure
 open Reductionops
 open Cbv
 open Rawterm
+open Pattern
+open Matching
 
 (* Errors *)
 
@@ -733,10 +735,10 @@ let simpl env sigma c = strong whd_simpl env sigma c
 
 (* Reduction at specific subterms *)
 
-let is_head c t =
+let matches_head c t =
   match kind_of_term t with
-    | App (f,_) -> f = c
-    | _ -> false
+    | App (f,_) -> matches c f
+    | _ -> raise PatternMatchingFailure
 
 let contextually byhead ((nowhere_except_in,locs),c) f env sigma t =
   let maxocc = List.fold_right max locs 0 in
@@ -744,22 +746,23 @@ let contextually byhead ((nowhere_except_in,locs),c) f env sigma t =
   let rec traverse (env,c as envc) t =
     if nowhere_except_in & (!pos > maxocc) then t
     else
-    if (not byhead & eq_constr c t) or (byhead & is_head c t) then
+    try
+      let subst = if byhead then matches_head c t else matches c t in
       let ok =
 	if nowhere_except_in then List.mem !pos locs
 	else not (List.mem !pos locs) in
       incr pos;
       if ok then
-	f env sigma t
+	f subst env sigma t
       else if byhead then
 	(* find other occurrences of c in t; TODO: ensure left-to-right *)
         let (f,l) = destApp t in
 	mkApp (f, array_map_left (traverse envc) l)
       else
 	t
-    else
+    with PatternMatchingFailure ->
       map_constr_with_binders_left_to_right
-	(fun d (env,c) -> (push_rel d env,lift 1 c))
+	(fun d (env,c) -> (push_rel d env,lift_pattern 1 c))
         traverse envc t
   in
   let t' = traverse (env,c) t in

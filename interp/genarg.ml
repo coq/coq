@@ -57,6 +57,8 @@ type rawconstr_and_expr = rawconstr * constr_expr option
 type open_constr_expr = unit * constr_expr
 type open_rawconstr = unit * rawconstr_and_expr
 
+type rawconstr_pattern_and_expr = rawconstr_and_expr * Pattern.constr_pattern
+
 type 'a with_ebindings = 'a * open_constr bindings
 
 (* Dynamics but tagged by a type expression *)

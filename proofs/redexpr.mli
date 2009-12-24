@@ -11,12 +11,13 @@
 open Names
 open Term
 open Closure
+open Pattern
 open Rawterm
 open Reductionops
 open Termops
 
-
-type red_expr = (constr, evaluable_global_reference) red_expr_gen
+type red_expr =
+    (constr, evaluable_global_reference, constr_pattern) red_expr_gen
 
 val out_with_occurrences : 'a with_occurrences -> occurrences * 'a
 

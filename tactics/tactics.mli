@@ -27,6 +27,7 @@ open Genarg
 open Tacexpr
 open Nametab
 open Rawterm
+open Pattern
 open Termops
 (*i*)
 
@@ -125,8 +126,9 @@ type tactic_reduction = env -> evar_map -> constr -> constr
 val reduct_in_hyp     : tactic_reduction -> hyp_location -> tactic
 val reduct_option     : tactic_reduction * cast_kind -> goal_location -> tactic
 val reduct_in_concl   : tactic_reduction * cast_kind -> tactic
-val change_in_concl   : (occurrences * constr) option -> constr -> tactic
-val change_in_hyp     : (occurrences * constr) option -> constr ->
+val change_in_concl   : (occurrences * constr_pattern) option -> constr -> 
+                        tactic
+val change_in_hyp     : (occurrences * constr_pattern) option -> constr ->
                         hyp_location -> tactic
 val red_in_concl      : tactic
 val red_in_hyp        : hyp_location -> tactic
@@ -148,7 +150,7 @@ val unfold_in_hyp     :
 val unfold_option     :
   (occurrences * evaluable_global_reference) list -> goal_location -> tactic
 val change            :
-  (occurrences * constr) option -> constr -> clause -> tactic
+  (occurrences * constr_pattern) option -> constr -> clause -> tactic
 val pattern_option    :
   (occurrences * constr) list -> goal_location -> tactic
 val reduce            : red_expr -> clause -> tactic

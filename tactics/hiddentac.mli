@@ -108,7 +108,8 @@ val h_simplest_right  : tactic
 (* Conversion *)
 val h_reduce          : Redexpr.red_expr -> Tacticals.clause -> tactic
 val h_change          :
-  constr with_occurrences option -> constr -> Tacticals.clause -> tactic
+  Pattern.constr_pattern with_occurrences option -> constr -> 
+    Tacticals.clause -> tactic
 
 (* Equivalence relations *)
 val h_reflexivity     : tactic

@@ -78,6 +78,8 @@ Evarutil
 Term_dnet
 Recordops
 Evarconv
+Pattern
+Matching
 Tacred
 Classops
 Typeclasses_errors
@@ -89,7 +91,6 @@ Unification
 Cases
 Pretyping
 Clenv
-Pattern
 
 Lexer
 Ppextend

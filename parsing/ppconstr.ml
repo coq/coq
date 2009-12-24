@@ -727,10 +727,10 @@ open Genarg
 
 let pr_metaid id = str"?" ++ pr_id id
 
-let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
+let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) = function
   | Red false -> str "red"
   | Hnf -> str "hnf"
-  | Simpl o -> str "simpl" ++ pr_opt (pr_with_occurrences pr_constr) o
+  | Simpl o -> str "simpl" ++ pr_opt (pr_with_occurrences pr_pattern) o
   | Cbv f ->
       if f = {rBeta=true;rIota=true;rZeta=true;rDelta=true;rConst=[]} then
 	str "compute"
@@ -750,11 +750,11 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
   | ExtraRedExpr s -> str s
   | CbvVm -> str "vm_compute"
 
-let rec pr_may_eval test prc prlc pr2 = function
+let rec pr_may_eval test prc prlc pr2 pr3 = function
   | ConstrEval (r,c) ->
       hov 0
         (str "eval" ++ brk (1,1) ++
-         pr_red_expr (prc,prlc,pr2) r ++
+         pr_red_expr (prc,prlc,pr2,pr3) r ++
 	 str " in" ++ spc() ++ prc c)
   | ConstrContext ((_,id),c) ->
       hov 0

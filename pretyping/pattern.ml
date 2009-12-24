@@ -92,6 +92,7 @@ let head_of_constr_reference c = match kind_of_term c with
 open Evd
 
 let pattern_of_constr sigma t =
+  let ctx = ref [] in
   let rec pattern_of_constr t =
   match kind_of_term t with
     | Rel n  -> PRel n
@@ -106,9 +107,11 @@ let pattern_of_constr sigma t =
     | App (f,a) ->
         (match 
           match kind_of_term f with
-            Evar (evk,args) ->
+            Evar (evk,args as ev) ->
               (match snd (Evd.evar_source evk sigma) with
-                  MatchingVar (true,n) -> Some n
+                  MatchingVar (true,id) ->
+                    ctx := (id,None,existential_type sigma ev)::!ctx;
+                    Some id
                 | _ -> None)
             | _ -> None
           with
@@ -117,9 +120,11 @@ let pattern_of_constr sigma t =
     | Const sp         -> PRef (ConstRef (constant_of_kn(canonical_con sp)))
     | Ind sp        -> PRef (canonical_gr (IndRef sp))
     | Construct sp -> PRef (canonical_gr (ConstructRef sp))
-    | Evar (evk,ctxt) ->
+    | Evar (evk,ctxt as ev) ->
         (match snd (Evd.evar_source evk sigma) with
-          | MatchingVar (b,n) -> assert (not b); PMeta (Some n)
+          | MatchingVar (b,id) ->
+              ctx := (id,None,existential_type sigma ev)::!ctx;
+              assert (not b); PMeta (Some id)
           | GoalEvar -> PEvar (evk,Array.map pattern_of_constr ctxt)
           | _ -> PMeta None)
     | Case (ci,p,a,br) ->
@@ -129,8 +134,11 @@ let pattern_of_constr sigma t =
 	       pattern_of_constr p,pattern_of_constr a,
 	       Array.map pattern_of_constr br)
     | Fix f -> PFix f
-    | CoFix f -> PCoFix f
-  in pattern_of_constr t
+    | CoFix f -> PCoFix f in
+  let p = pattern_of_constr t in
+  (* side-effect *)
+  (* Warning: the order of dependencies in ctx is not ensured *)
+  (!ctx,p)
 
 (* To process patterns, we need a translation without typing at all. *)
 
@@ -167,7 +175,7 @@ let rec subst_pattern subst pat =
   | PRef ref ->
       let ref',t = subst_global subst ref in
 	if ref' == ref then pat else
-	 pattern_of_constr Evd.empty t
+	 snd (pattern_of_constr Evd.empty t)
   | PVar _
   | PEvar _
   | PRel _ -> pat

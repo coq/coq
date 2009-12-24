@@ -311,7 +311,9 @@ let change_and_check cv_pb t env sigma c =
 (* Use cumulativity only if changing the conclusion not a subterm *)
 let change_on_subterm cv_pb t = function
   | None -> change_and_check cv_pb t
-  | Some occl -> contextually false occl (change_and_check Reduction.CONV t)
+  | Some occl ->
+      contextually false occl
+        (fun subst -> change_and_check Reduction.CONV (replace_vars subst t))
 
 let change_in_concl occl t =
   reduct_in_concl ((change_on_subterm Reduction.CUMUL t occl),DEFAULTcast)

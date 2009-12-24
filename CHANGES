@@ -51,6 +51,7 @@ Tactics
 - When applying a component of a conjunctive lemma, "apply in" (and
   sequences of "apply in") now leave the side conditions of the lemmas
   uniformly after the main goal (possible source of rare incompatibilities).
+- In "simpl c" and "change c with d", c can be a pattern.
 
 Tactic Language
 

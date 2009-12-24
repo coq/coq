@@ -1345,7 +1345,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
   with
       InternalisationError (loc,e) ->
 	user_err_loc (loc,"internalize",
-	  explain_internalisation_error e ++ str ".")
+	  explain_internalisation_error e)
 
 (**************************************************************************)
 (* Functions to translate constr_expr into rawconstr                       *)

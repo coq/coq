@@ -11,6 +11,9 @@ Typing
 Evarutil
 Term_dnet
 Recordops
+Rawterm
+Pattern
+Matching
 Tacred
 Evarconv
 Typeclasses_errors
@@ -19,11 +22,8 @@ Classops
 Coercion
 Unification
 Clenv
-Rawterm
-Pattern
 Detyping
 Indrec
 Cases
 Pretyping
-Matching
 

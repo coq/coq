@@ -224,7 +224,7 @@ module Tactic :
     val casted_open_constr : open_constr_expr Gram.Entry.e
     val constr_with_bindings : constr_expr with_bindings Gram.Entry.e
     val bindings : constr_expr bindings Gram.Entry.e
-    val constr_may_eval : (constr_expr,reference or_by_notation) may_eval Gram.Entry.e
+    val constr_may_eval : (constr_expr,reference or_by_notation,constr_expr) may_eval Gram.Entry.e
     val quantified_hypothesis : quantified_hypothesis Gram.Entry.e
     val int_or_var : int or_var Gram.Entry.e
     val red_expr : raw_red_expr Gram.Entry.e

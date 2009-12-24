@@ -15,6 +15,7 @@ open Term
 open Declarations
 open Libnames
 open Rawterm
+open Pattern
 open Reductionops
 open Tacred
 open Closure
@@ -106,8 +107,8 @@ let _ =
 
 (* Generic reduction: reduction functions used in reduction tactics *)
 
-type red_expr = (constr, evaluable_global_reference) red_expr_gen
-
+type red_expr =
+    (constr, evaluable_global_reference, constr_pattern) red_expr_gen
 
 let make_flag_constant = function
   | EvalVarRef id -> fVAR id
@@ -132,8 +133,7 @@ let make_flag f =
 	  f.rConst red
   in red
 
-let is_reference c =
-  try let _ref = global_of_constr c in true with _ -> false
+let is_reference = function PRef _ | PVar _ -> true | _ -> false
 
 let red_expr_tab = ref Stringmap.empty
 
@@ -157,7 +157,8 @@ let reduction_of_red_expr = function
       else (red_product,DEFAULTcast)
   | Hnf -> (hnf_constr,DEFAULTcast)
   | Simpl (Some (_,c as lp)) ->
-    (contextually (is_reference c) (out_with_occurrences lp) simpl,DEFAULTcast)
+    (contextually (is_reference c) (out_with_occurrences lp)
+      (fun _ -> simpl),DEFAULTcast)
   | Simpl None -> (simpl,DEFAULTcast)
   | Cbv f -> (cbv_norm_flags (make_flag f),DEFAULTcast)
   | Lazy f -> (clos_norm_flags (make_flag f),DEFAULTcast)

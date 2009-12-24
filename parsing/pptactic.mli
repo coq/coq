@@ -15,6 +15,7 @@ open Pretyping
 open Proof_type
 open Topconstr
 open Rawterm
+open Pattern
 open Ppextend
 open Environ
 open Evd
@@ -60,22 +61,26 @@ val pr_raw_generic :
   (constr_expr -> std_ppcmds) ->
   (constr_expr -> std_ppcmds) ->
   (tolerability -> raw_tactic_expr -> std_ppcmds) ->
+  (constr_expr -> std_ppcmds) ->
   (Libnames.reference -> std_ppcmds) -> rlevel generic_argument ->
     std_ppcmds
 
 val pr_raw_extend:
   (constr_expr -> std_ppcmds) -> (constr_expr -> std_ppcmds) ->
-  (tolerability -> raw_tactic_expr -> std_ppcmds) -> int ->
+  (tolerability -> raw_tactic_expr -> std_ppcmds) ->
+  (constr_expr -> std_ppcmds) -> int ->
     string -> raw_generic_argument list -> std_ppcmds
 
 val pr_glob_extend:
   (rawconstr_and_expr -> std_ppcmds) -> (rawconstr_and_expr -> std_ppcmds) ->
-  (tolerability -> glob_tactic_expr -> std_ppcmds) -> int ->
+  (tolerability -> glob_tactic_expr -> std_ppcmds) ->
+  (rawconstr_pattern_and_expr -> std_ppcmds) -> int ->
     string -> glob_generic_argument list -> std_ppcmds
 
 val pr_extend :
   (Term.constr -> std_ppcmds) -> (Term.constr -> std_ppcmds) ->
-  (tolerability -> glob_tactic_expr -> std_ppcmds) -> int ->
+  (tolerability -> glob_tactic_expr -> std_ppcmds) ->
+  (constr_pattern -> std_ppcmds) -> int ->
     string -> typed_generic_argument list -> std_ppcmds
 
 val pr_ltac_constant : Nametab.ltac_constant -> std_ppcmds

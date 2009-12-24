@@ -13,6 +13,7 @@ open Names
 open Term
 open Libnames
 open Rawterm
+open Pattern
 open Topconstr
 open Term
 open Evd
@@ -32,6 +33,8 @@ type rawconstr_and_expr = rawconstr * constr_expr option
 
 type open_constr_expr = unit * constr_expr
 type open_rawconstr = unit * rawconstr_and_expr
+
+type rawconstr_pattern_and_expr = rawconstr_and_expr * constr_pattern
 
 type 'a with_ebindings = 'a * open_constr bindings
 
@@ -177,8 +180,8 @@ val rawwit_constr : (constr_expr,rlevel) abstract_argument_type
 val globwit_constr : (rawconstr_and_expr,glevel) abstract_argument_type
 val wit_constr : (constr,tlevel) abstract_argument_type
 
-val rawwit_constr_may_eval : ((constr_expr,reference or_by_notation) may_eval,rlevel) abstract_argument_type
-val globwit_constr_may_eval : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var) may_eval,glevel) abstract_argument_type
+val rawwit_constr_may_eval : ((constr_expr,reference or_by_notation,constr_expr) may_eval,rlevel) abstract_argument_type
+val globwit_constr_may_eval : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var,rawconstr_pattern_and_expr) may_eval,glevel) abstract_argument_type
 val wit_constr_may_eval : (constr,tlevel) abstract_argument_type
 
 val rawwit_open_constr_gen : bool -> (open_constr_expr,rlevel) abstract_argument_type
@@ -201,9 +204,9 @@ val rawwit_bindings : (constr_expr bindings,rlevel) abstract_argument_type
 val globwit_bindings : (rawconstr_and_expr bindings,glevel) abstract_argument_type
 val wit_bindings : (constr bindings sigma,tlevel) abstract_argument_type
 
-val rawwit_red_expr : ((constr_expr,reference or_by_notation) red_expr_gen,rlevel) abstract_argument_type
-val globwit_red_expr : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var) red_expr_gen,glevel) abstract_argument_type
-val wit_red_expr : ((constr,evaluable_global_reference) red_expr_gen,tlevel) abstract_argument_type
+val rawwit_red_expr : ((constr_expr,reference or_by_notation,constr_expr) red_expr_gen,rlevel) abstract_argument_type
+val globwit_red_expr : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var,rawconstr_pattern_and_expr) red_expr_gen,glevel) abstract_argument_type
+val wit_red_expr : ((constr,evaluable_global_reference,constr_pattern) red_expr_gen,tlevel) abstract_argument_type
 
 val wit_list0 :
   ('a,'co) abstract_argument_type -> ('a list,'co) abstract_argument_type
