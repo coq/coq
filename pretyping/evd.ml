@@ -32,6 +32,7 @@ type hole_kind =
   | TomatchTypeParameter of inductive * int
   | GoalEvar
   | ImpossibleCase
+  | MatchingVar of bool * identifier
 
 (* The type of mappings for existential variables *)
 

@@ -112,7 +112,7 @@ val print_hint_db : Hint_db.t -> unit
    [c] is the term given as an exact proof to solve the goal;
    [ctyp] is the type of [c]. *)
 
-val make_exact_entry : int option -> constr * constr -> hint_entry
+val make_exact_entry : evar_map -> int option -> constr * constr -> hint_entry
 
 (* [make_apply_entry (eapply,verbose) pri (c,cty)].
    [eapply] is true if this hint will be used only with EApply;

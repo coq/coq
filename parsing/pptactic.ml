@@ -1043,7 +1043,7 @@ let rec glob_printers =
     (pr_glob_tactic_level,
      (fun env -> pr_and_constr_expr (pr_rawconstr_env env)),
      (fun env -> pr_and_constr_expr (pr_lrawconstr_env env)),
-     (fun c -> pr_lconstr_pattern_env (Global.env()) c),
+     (fun (_,c) -> pr_lconstr_pattern_env (Global.env()) c),
      (fun env -> pr_or_var (pr_and_short_name (pr_evaluable_reference_env env))),
      (fun env -> pr_or_var (pr_inductive env)),
      pr_ltac_or_var (pr_located pr_ltac_constant),
@@ -1083,7 +1083,8 @@ let _ = Tactic_debug.set_match_pattern_printer
 
 let _ = Tactic_debug.set_match_rule_printer
   (fun rl ->
-    pr_match_rule false (pr_glob_tactic (Global.env())) pr_constr_pattern rl)
+    pr_match_rule false (pr_glob_tactic (Global.env())) 
+      (fun (_,p) -> pr_constr_pattern p) rl)
 
 open Extrawit
 

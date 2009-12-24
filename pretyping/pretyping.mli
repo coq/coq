@@ -51,15 +51,16 @@ sig
   (* Generic call to the interpreter from rawconstr to constr, failing
      unresolved holes in the rawterm cannot be instantiated.
 
-     In [understand_ltac sigma env ltac_env constraint c],
+     In [understand_ltac expand_evars sigma env ltac_env constraint c],
 
+     expand_evars : expand inferred evars by their value if any
      sigma : initial set of existential variables (typically dependent subgoals)
      ltac_env : partial substitution of variables (used for the tactic language)
      constraint : tell if interpreted as a possibly constrained term or a type
   *)
 
   val understand_ltac :
-    evar_map -> env -> var_map * unbound_ltac_var_map ->
+    bool -> evar_map -> env -> var_map * unbound_ltac_var_map ->
     typing_constraint -> rawconstr -> evar_map * constr
 
   (* Standard call to get a constr from a rawconstr, resolving implicit args *)
@@ -97,7 +98,7 @@ sig
     rawconstr -> unsafe_type_judgment
 
   val pretype_gen :
-    bool -> bool -> evar_map ref -> env ->
+    bool -> bool -> bool -> evar_map ref -> env ->
     var_map * (identifier * identifier option) list ->
     typing_constraint -> rawconstr -> constr
 

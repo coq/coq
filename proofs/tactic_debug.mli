@@ -24,7 +24,7 @@ val set_tactic_printer : (glob_tactic_expr ->Pp.std_ppcmds) -> unit
 val set_match_pattern_printer :
   (env -> constr_pattern match_pattern -> Pp.std_ppcmds) -> unit
 val set_match_rule_printer :
-  ((constr_pattern,glob_tactic_expr) match_rule -> Pp.std_ppcmds) ->
+  ((Genarg.rawconstr_and_expr * constr_pattern,glob_tactic_expr) match_rule -> Pp.std_ppcmds) ->
     unit
 
 (* Debug information *)
@@ -41,7 +41,7 @@ val db_constr : debug_info -> env -> constr -> unit
 
 (* Prints the pattern rule *)
 val db_pattern_rule :
-  debug_info -> int -> (constr_pattern,glob_tactic_expr) match_rule -> unit
+  debug_info -> int -> (Genarg.rawconstr_and_expr * constr_pattern,glob_tactic_expr) match_rule -> unit
 
 (* Prints a matched hypothesis *)
 val db_matched_hyp :

@@ -94,6 +94,7 @@ type hole_kind =
   | TomatchTypeParameter of inductive * int
   | GoalEvar
   | ImpossibleCase
+  | MatchingVar of bool * identifier
 
 (*********************************************************************)
 (*** Existential variables and unification states ***)

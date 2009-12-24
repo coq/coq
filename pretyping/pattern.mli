@@ -66,7 +66,7 @@ val head_of_constr_reference : Term.constr -> global_reference
    a pattern; currently, no destructor (Cases, Fix, Cofix) and no
    existential variable are allowed in [c] *)
 
-val pattern_of_constr : constr -> constr_pattern
+val pattern_of_constr : Evd.evar_map -> constr -> constr_pattern
 
 (* [pattern_of_rawconstr l c] translates a term [c] with metavariables into
    a pattern; variables bound in [l] are replaced by the pattern to which they

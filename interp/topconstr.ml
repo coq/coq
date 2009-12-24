@@ -381,7 +381,7 @@ let rec subst_aconstr subst bound raw =
 	  AHole (Evd.InternalHole)
   | AHole (Evd.BinderType _ | Evd.QuestionMark _ | Evd.CasesType
     | Evd.InternalHole | Evd.TomatchTypeParameter _ | Evd.GoalEvar
-    | Evd.ImpossibleCase) -> raw
+    | Evd.ImpossibleCase | Evd.MatchingVar _) -> raw
 
   | ACast (r1,k) ->
       match k with

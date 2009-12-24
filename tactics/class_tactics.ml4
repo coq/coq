@@ -271,7 +271,7 @@ let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
     if keep then let c = mkVar id in
       map_succeed 
 	(fun f -> try f (c,cty) with UserError _ -> failwith "") 
-	[make_exact_entry pri; make_apply_entry env sigma flags pri]
+	[make_exact_entry sigma pri; make_apply_entry env sigma flags pri]
     else []
 
 let pf_filtered_hyps gls = 

@@ -350,6 +350,8 @@ let explain_hole_kind env evi = function
       str "an existential variable"
   | ImpossibleCase ->
       str "the type of an impossible pattern-matching clause"
+  | MatchingVar _ ->
+      assert false
 
 let explain_not_clean env ev t k =
   let env = make_all_name_different env in

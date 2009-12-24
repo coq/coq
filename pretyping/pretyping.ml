@@ -108,15 +108,16 @@ sig
   (* Generic call to the interpreter from rawconstr to constr, failing
      unresolved holes in the rawterm cannot be instantiated.
 
-     In [understand_ltac sigma env ltac_env constraint c],
+     In [understand_ltac expand_evars sigma env ltac_env constraint c],
 
+     expand_evars : expand inferred evars by their value if any
      sigma : initial set of existential variables (typically dependent subgoals)
      ltac_env : partial substitution of variables (used for the tactic language)
      constraint : tell if interpreted as a possibly constrained term or a type
   *)
 
   val understand_ltac :
-    evar_map -> env -> var_map * unbound_ltac_var_map ->
+    bool -> evar_map -> env -> var_map * unbound_ltac_var_map ->
     typing_constraint -> rawconstr -> evar_map * constr
 
   (* Standard call to get a constr from a rawconstr, resolving implicit args *)
@@ -156,7 +157,7 @@ sig
     rawconstr -> unsafe_type_judgment
 
   val pretype_gen :
-    bool -> bool -> evar_map ref -> env ->
+    bool -> bool -> bool -> evar_map ref -> env ->
     var_map * (identifier * identifier option) list ->
     typing_constraint -> rawconstr -> constr
 
@@ -307,7 +308,13 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  inh_conv_coerce_to_tycon loc env evdref j tycon
 
     | RPatVar (loc,(someta,n)) ->
-	anomaly "Found a pattern variable in a rawterm to type"
+	let ty =
+          match tycon with
+            | Some (None, ty) -> ty
+            | None | Some _ ->
+		e_new_evar evdref env ~src:(loc,InternalHole) (new_Type ()) in
+        let k = MatchingVar (someta,n) in
+	{ uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
 
     | RHole (loc,k) ->
 	let ty =
@@ -418,7 +425,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	          let sigma =  !evdref in
 		  let c = mkApp (f,Array.map (whd_evar sigma) args) in
 	          let t = Retyping.get_type_of env sigma c in
-		  make_judge c t
+		  make_judge c (* use this for keeping evars: resj.uj_val *) t
               | _ -> resj end
 	  | _ -> resj in
 	inh_conv_coerce_to_tycon loc env evdref resj tycon
@@ -661,7 +668,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		  error_unexpected_type_loc
                     (loc_of_rawconstr c) env !evdref tj.utj_val v
 
-  let pretype_gen fail_evar resolve_classes evdref env lvar kind c =
+  let pretype_gen expand_evar fail_evar resolve_classes evdref env lvar kind c =
     let c' = match kind with
       | OfType exptyp ->
 	  let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
@@ -673,7 +680,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
       evdref :=
         Typeclasses.resolve_typeclasses ~onlyargs:false
 	  ~split:true ~fail:fail_evar env !evdref;
-    let c = nf_evar !evdref c' in
+    let c = if expand_evar then nf_evar !evdref c' else c' in
     if fail_evar then check_evars env Evd.empty !evdref c;
     c
 
@@ -701,30 +708,30 @@ module Pretyping_F (Coercion : Coercion.S) = struct
      fail on unresolved evars; the unsafe_judgment list allows us to
      extend env with some bindings *)
 
-  let ise_pretype_gen fail_evar resolve_classes sigma env lvar kind c =
+  let ise_pretype_gen expand_evar fail_evar resolve_classes sigma env lvar kind c =
     let evdref = ref (Evd.create_evar_defs sigma) in
-    let c = pretype_gen fail_evar resolve_classes evdref env lvar kind c in
+    let c = pretype_gen expand_evar fail_evar resolve_classes evdref env lvar kind c in
     !evdref, c
 
   (** Entry points of the high-level type synthesis algorithm *)
 
   let understand_gen kind sigma env c =
-    snd (ise_pretype_gen true true sigma env ([],[]) kind c)
+    snd (ise_pretype_gen true true true sigma env ([],[]) kind c)
 
   let understand sigma env ?expected_type:exptyp c =
-    snd (ise_pretype_gen true true sigma env ([],[]) (OfType exptyp) c)
+    snd (ise_pretype_gen true true true sigma env ([],[]) (OfType exptyp) c)
 
   let understand_type sigma env c =
-    snd (ise_pretype_gen true true sigma env ([],[]) IsType c)
+    snd (ise_pretype_gen true true true sigma env ([],[]) IsType c)
 
-  let understand_ltac sigma env lvar kind c =
-    ise_pretype_gen false false sigma env lvar kind c
+  let understand_ltac expand_evar sigma env lvar kind c =
+    ise_pretype_gen expand_evar false false sigma env lvar kind c
 
   let understand_tcc ?(resolve_classes=true) sigma env ?expected_type:exptyp c =
-    ise_pretype_gen false resolve_classes sigma env ([],[]) (OfType exptyp) c
+    ise_pretype_gen true false resolve_classes sigma env ([],[]) (OfType exptyp) c
 
   let understand_tcc_evars ?(fail_evar=false) ?(resolve_classes=true) evdref env kind c =
-    pretype_gen fail_evar resolve_classes evdref env ([],[]) kind c
+    pretype_gen true fail_evar resolve_classes evdref env ([],[]) kind c
 end
 
 module Default : S = Pretyping_F(Coercion.Default)

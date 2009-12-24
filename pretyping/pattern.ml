@@ -89,7 +89,10 @@ let head_of_constr_reference c = match kind_of_term c with
   | Var id -> VarRef id
   | _ -> anomaly "Not a rigid reference"
 
-let rec pattern_of_constr t =
+open Evd
+
+let pattern_of_constr sigma t =
+  let rec pattern_of_constr t =
   match kind_of_term t with
     | Rel n  -> PRel n
     | Meta n -> PMeta (Some (id_of_string ("META" ^ string_of_int n)))
@@ -100,11 +103,25 @@ let rec pattern_of_constr t =
     | LetIn (na,c,_,b) -> PLetIn (na,pattern_of_constr c,pattern_of_constr b)
     | Prod (na,c,b)   -> PProd (na,pattern_of_constr c,pattern_of_constr b)
     | Lambda (na,c,b) -> PLambda (na,pattern_of_constr c,pattern_of_constr b)
-    | App (f,a) -> PApp (pattern_of_constr f,Array.map pattern_of_constr a)
+    | App (f,a) ->
+        (match 
+          match kind_of_term f with
+            Evar (evk,args) ->
+              (match snd (Evd.evar_source evk sigma) with
+                  MatchingVar (true,n) -> Some n
+                | _ -> None)
+            | _ -> None
+          with
+            | Some n -> PSoApp (n,Array.to_list (Array.map pattern_of_constr a))
+            | None -> PApp (pattern_of_constr f,Array.map (pattern_of_constr) a))
     | Const sp         -> PRef (ConstRef (constant_of_kn(canonical_con sp)))
     | Ind sp        -> PRef (canonical_gr (IndRef sp))
     | Construct sp -> PRef (canonical_gr (ConstructRef sp))
-    | Evar (n,ctxt) -> PEvar (n,Array.map pattern_of_constr ctxt)
+    | Evar (evk,ctxt) ->
+        (match snd (Evd.evar_source evk sigma) with
+          | MatchingVar (b,n) -> assert (not b); PMeta (Some n)
+          | GoalEvar -> PEvar (evk,Array.map pattern_of_constr ctxt)
+          | _ -> PMeta None)
     | Case (ci,p,a,br) ->
 	let cip = ci.ci_pp_info in
 	let no = Some (ci.ci_npar,cip.ind_nargs) in
@@ -113,6 +130,7 @@ let rec pattern_of_constr t =
 	       Array.map pattern_of_constr br)
     | Fix f -> PFix f
     | CoFix f -> PCoFix f
+  in pattern_of_constr t
 
 (* To process patterns, we need a translation without typing at all. *)
 
@@ -144,11 +162,12 @@ let rec liftn_pattern k n = function
 
 let lift_pattern k = liftn_pattern k 1
 
-let rec subst_pattern subst pat = match pat with
+let rec subst_pattern subst pat =
+  match pat with
   | PRef ref ->
       let ref',t = subst_global subst ref in
 	if ref' == ref then pat else
-	 pattern_of_constr t
+	 pattern_of_constr Evd.empty t
   | PVar _
   | PEvar _
   | PRel _ -> pat

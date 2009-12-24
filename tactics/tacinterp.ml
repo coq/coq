@@ -497,15 +497,15 @@ let intern_binding_name ist x =
      and if a term w/o ltac vars, check the name is indeed quantified *)
   x
 
-let intern_constr_gen isarity {ltacvars=lfun; gsigma=sigma; genv=env} c =
+let intern_constr_gen allow_patvar isarity {ltacvars=lfun; gsigma=sigma; genv=env} c =
   let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
   let c' =
-    warn (Constrintern.intern_gen isarity ~ltacvars:(fst lfun,[]) sigma env) c
+    warn (Constrintern.intern_gen isarity ~allow_patvar ~ltacvars:(fst lfun,[]) sigma env) c
   in
   (c',if !strict_check then None else Some c)
 
-let intern_constr = intern_constr_gen false
-let intern_type = intern_constr_gen true
+let intern_constr = intern_constr_gen false false
+let intern_type = intern_constr_gen false true
 
 (* Globalize bindings *)
 let intern_binding ist (loc,b,c) =
@@ -604,15 +604,17 @@ let intern_hyp_location ist (((b,occs),id),hl) =
   (((b,List.map (intern_or_var ist) occs),intern_hyp_or_metaid ist id), hl)
 
 (* Reads a pattern *)
-let intern_pattern sigma env ?(as_type=false) lfun = function
+let intern_pattern ist ?(as_type=false) lfun = function
   | Subterm (b,ido,pc) ->
       let ltacvars = (lfun,[]) in
-      let (metas,pat) = intern_constr_pattern sigma env ~ltacvars pc in
-      ido, metas, Subterm (b,ido,pat)
+      let (metas,pat) = intern_constr_pattern ist.gsigma ist.genv ~ltacvars pc in
+      let c = intern_constr_gen true false ist pc in
+      ido, metas, Subterm (b,ido,(c,pat))
   | Term pc ->
       let ltacvars = (lfun,[]) in
-      let (metas,pat) = intern_constr_pattern sigma env ~as_type ~ltacvars pc in
-      None, metas, Term pat
+      let (metas,pat) = intern_constr_pattern ist.gsigma ist.genv ~as_type ~ltacvars pc in
+      let c = intern_constr_gen true false ist pc in
+      None, metas, Term (c,pat)
 
 let intern_constr_may_eval ist = function
   | ConstrEval (r,c) -> ConstrEval (intern_red_expr ist r,intern_constr ist c)
@@ -649,16 +651,16 @@ let extend_values_with_bindings (ln,lm) lfun =
   lmatch@lfun@lnames
 
 (* Reads the hypotheses of a "match goal" rule *)
-let rec intern_match_goal_hyps sigma env lfun = function
+let rec intern_match_goal_hyps ist lfun = function
   | (Hyp ((_,na) as locna,mp))::tl ->
-      let ido, metas1, pat = intern_pattern sigma env ~as_type:true lfun mp in
-      let lfun, metas2, hyps = intern_match_goal_hyps sigma env lfun tl in
+      let ido, metas1, pat = intern_pattern ist ~as_type:true lfun mp in
+      let lfun, metas2, hyps = intern_match_goal_hyps ist lfun tl in
       let lfun' = name_cons na (Option.List.cons ido lfun) in
       lfun', metas1@metas2, Hyp (locna,pat)::hyps
   | (Def ((_,na) as locna,mv,mp))::tl ->
-      let ido, metas1, patv = intern_pattern sigma env ~as_type:false lfun mv in
-      let ido', metas2, patt = intern_pattern sigma env ~as_type:true lfun mp in
-      let lfun, metas3, hyps = intern_match_goal_hyps sigma env lfun tl in
+      let ido, metas1, patv = intern_pattern ist ~as_type:false lfun mv in
+      let ido', metas2, patt = intern_pattern ist ~as_type:true lfun mp in
+      let lfun, metas3, hyps = intern_match_goal_hyps ist lfun tl in
       let lfun' = name_cons na (Option.List.cons ido' (Option.List.cons ido lfun)) in
       lfun', metas1@metas2@metas3, Def (locna,patv,patt)::hyps
   | [] -> lfun, [], []
@@ -714,7 +716,7 @@ let rec intern_atomic lf ist x =
   | TacAssert (otac,ipat,c) ->
       TacAssert (Option.map (intern_tactic ist) otac,
                  Option.map (intern_intro_pattern lf ist) ipat,
-                 intern_constr_gen (otac<>None) ist c)
+                 intern_constr_gen false (otac<>None) ist c)
   | TacGeneralize cl ->
       TacGeneralize (List.map (fun (c,na) ->
 	               intern_constr_with_occurrences ist c,
@@ -904,8 +906,8 @@ and intern_match_rule ist = function
       All (intern_tactic ist tc) :: (intern_match_rule ist tl)
   | (Pat (rl,mp,tc))::tl ->
       let {ltacvars=(lfun,l2); gsigma=sigma; genv=env} = ist in
-      let lfun',metas1,hyps = intern_match_goal_hyps sigma env lfun rl in
-      let ido,metas2,pat = intern_pattern sigma env lfun mp in
+      let lfun',metas1,hyps = intern_match_goal_hyps ist lfun rl in
+      let ido,metas2,pat = intern_pattern ist lfun mp in
       let metas = list_uniquize (metas1@metas2) in
       let ist' = { ist with ltacvars = (metas@(Option.List.cons ido lfun'),l2) } in
       Pat (hyps,pat,intern_tactic ist' tc) :: (intern_match_rule ist tl)
@@ -1312,7 +1314,7 @@ let solve_remaining_evars fail_evar use_classes env initial_sigma evd c =
   (* Side-effect *)
   !evdref,c
 
-let interp_gen kind ist fail_evar use_classes env sigma (c,ce) =
+let interp_gen kind ist expand_evar fail_evar use_classes env sigma (c,ce) =
   let (ltacvars,unbndltacvars as vars),typs =
     extract_ltac_vars_data ist sigma env in
   let c = match ce with
@@ -1325,24 +1327,33 @@ let interp_gen kind ist fail_evar use_classes env sigma (c,ce) =
       intern_gen (kind = IsType) ~ltacvars:ltacdata sigma env c in
   let trace = push_trace (dloc,LtacConstrInterp (c,vars)) ist.trace in
   let evd,c =
-    catch_error trace (understand_ltac sigma env (typs,unbndltacvars) kind) c in
-  let evd,c = solve_remaining_evars fail_evar use_classes env sigma evd c in
+    catch_error trace
+      (understand_ltac expand_evar sigma env (typs,unbndltacvars) kind) c in
+  let evd,c =
+    if expand_evar then
+      solve_remaining_evars fail_evar use_classes env sigma evd c
+    else
+      evd,c in
   db_constr ist.debug env c;
   (evd,c)
 
 (* Interprets a constr; expects evars to be solved *)
 let interp_constr_gen kind ist env sigma c =
-  snd (interp_gen kind ist true true env sigma c)
+  snd (interp_gen kind ist true true true env sigma c)
 
 let interp_constr = interp_constr_gen (OfType None)
 
 let interp_type = interp_constr_gen IsType
 
 (* Interprets an open constr *)
-let interp_open_constr_gen kind ist = interp_gen kind ist false false
+let interp_open_constr_gen kind ist = interp_gen kind ist true false false
 
 let interp_open_constr ccl =
   interp_open_constr_gen (OfType ccl)
+
+let interp_typed_pattern ist env sigma c =
+  let sigma, c = interp_gen (OfType None) ist false false false env sigma c in
+  pattern_of_constr sigma c
 
 (* Interprets a constr expression casted by the current goal *)
 let pf_interp_casted_constr ist gl c =
@@ -1626,13 +1637,18 @@ let give_context ctxt = function
   | Some id -> [id,VConstr_context ctxt]
 
 (* Reads a pattern by substituting vars of lfun *)
-let eval_pattern lfun c =
-  let lvar = List.map (fun (id,c) -> (id,lazy(pattern_of_constr c))) lfun in
-  instantiate_pattern lvar c
+let use_types = false
 
-let read_pattern lfun = function
-  | Subterm (b,ido,pc) -> Subterm (b,ido,eval_pattern lfun pc)
-  | Term pc -> Term (eval_pattern lfun pc)
+let eval_pattern lfun ist env sigma (c,pat) =
+  if use_types then
+    interp_typed_pattern ist env sigma c
+  else
+    let lvar = List.map (fun (id,c) -> (id,lazy(pattern_of_constr Evd.empty c))) lfun in
+    instantiate_pattern lvar pat
+
+let read_pattern lfun ist env sigma = function
+  | Subterm (b,ido,c) -> Subterm (b,ido,eval_pattern lfun ist env sigma c)
+  | Term c -> Term (eval_pattern lfun ist env sigma c)
 
 (* Reads the hypotheses of a Match Context rule *)
 let cons_and_check_name id l =
@@ -1642,23 +1658,23 @@ let cons_and_check_name id l =
       " used twice in the same pattern."))
   else id::l
 
-let rec read_match_goal_hyps lfun lidh = function
+let rec read_match_goal_hyps lfun ist env sigma lidh = function
   | (Hyp ((loc,na) as locna,mp))::tl ->
       let lidh' = name_fold cons_and_check_name na lidh in
-      Hyp (locna,read_pattern lfun mp)::
-	(read_match_goal_hyps lfun lidh' tl)
+      Hyp (locna,read_pattern lfun ist env sigma mp)::
+	(read_match_goal_hyps lfun ist env sigma lidh' tl)
   | (Def ((loc,na) as locna,mv,mp))::tl ->
       let lidh' = name_fold cons_and_check_name na lidh in
-      Def (locna,read_pattern lfun mv, read_pattern lfun mp)::
-	(read_match_goal_hyps lfun lidh' tl)
+      Def (locna,read_pattern lfun ist env sigma mv, read_pattern lfun ist env sigma mp)::
+	(read_match_goal_hyps lfun ist env sigma lidh' tl)
   | [] -> []
 
 (* Reads the rules of a Match Context or a Match *)
-let rec read_match_rule lfun = function
-  | (All tc)::tl -> (All tc)::(read_match_rule lfun tl)
+let rec read_match_rule lfun ist env sigma = function
+  | (All tc)::tl -> (All tc)::(read_match_rule lfun ist env sigma tl)
   | (Pat (rl,mp,tc))::tl ->
-      Pat (read_match_goal_hyps lfun [] rl, read_pattern lfun mp,tc)
-      :: read_match_rule lfun tl
+      Pat (read_match_goal_hyps lfun ist env sigma [] rl, read_pattern lfun ist env sigma mp,tc)
+      :: read_match_rule lfun ist env sigma tl
   | [] -> []
 
 (* For Match Context and Match *)
@@ -1989,7 +2005,7 @@ and interp_match_goal ist goal lz lr lmr =
 		       else mt()) ++ str"."))
     end in
     apply_match_goal ist env goal 0 lmr
-      (read_match_rule (fst (constr_list ist env)) lmr)
+      (read_match_rule (fst (constr_list ist env)) ist env (project goal) lmr)
 
 (* Tries to match the hypotheses in a Match Context *)
 and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =
@@ -2158,7 +2174,7 @@ and interp_match ist g lz constr lmr =
         debugging_exception_step ist true e
           (fun () -> str "evaluation of the matched expression");
         raise e in
-  let ilr = read_match_rule (fst (constr_list ist (pf_env g))) lmr in
+  let ilr = read_match_rule (fst (constr_list ist (pf_env g))) ist (pf_env g) (project g) lmr in
   let res =
      try apply_match ist csr ilr with e ->
        debugging_exception_step ist true e (fun () -> str "match expression");
@@ -2589,8 +2605,8 @@ let subst_raw_may_eval subst = function
   | ConstrTerm c -> ConstrTerm (subst_rawconstr subst c)
 
 let subst_match_pattern subst = function
-  | Subterm (b,ido,pc) -> Subterm (b,ido,subst_pattern subst pc)
-  | Term pc -> Term (subst_pattern subst pc)
+  | Subterm (b,ido,(c,pc)) -> Subterm (b,ido,(subst_rawconstr subst c,subst_pattern subst pc))
+  | Term (c,pc) -> Term (subst_rawconstr subst c,subst_pattern subst pc)
 
 let rec subst_match_goal_hyps subst = function
   | Hyp (locs,mp) :: tl ->
