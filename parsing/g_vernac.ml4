@@ -538,9 +538,10 @@ GEXTEND Gram
 	   in
 	     VernacInstance (not (use_non_locality ()), sup, (n, expl, t), props, pri)
 
-      | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is
+      | IDENT "Existing"; IDENT "Instance"; is = global -> 
+	  VernacDeclareInstance (not (use_section_locality ()), is)
 
-      | IDENT "Existing"; IDENT "Class"; is = identref -> VernacDeclareClass is
+      | IDENT "Existing"; IDENT "Class"; is = global -> VernacDeclareClass is
 
       (* Implicit *)
       | IDENT "Implicit"; IDENT "Arguments"; qid = smart_global;

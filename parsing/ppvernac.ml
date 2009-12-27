@@ -736,11 +736,12 @@ let rec pr_vernac = function
 	 pr_and_type_binders_arg l ++ spc () ++ str "]")
 
 
- | VernacDeclareInstance id ->
-     hov 1 (str"Existing" ++ spc () ++ str"Instance" ++ spc () ++ pr_lident id)
+ | VernacDeclareInstance (glob, id) ->
+     hov 1 (pr_non_locality (not glob) ++
+	       str"Existing" ++ spc () ++ str"Instance" ++ spc () ++ pr_reference id)
 
  | VernacDeclareClass id ->
-     hov 1 (str"Existing" ++ spc () ++ str"Class" ++ spc () ++ pr_lident id)
+     hov 1 (str"Existing" ++ spc () ++ str"Class" ++ spc () ++ pr_reference id)
 
   (* Modules and Module Types *)
   | VernacDefineModule (export,m,bl,tys,bd) ->

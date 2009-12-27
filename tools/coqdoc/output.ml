@@ -262,7 +262,7 @@ module Latex = struct
 	    (printf "\\coqref{"; label_ident id; printf "}{\\coqdoc%s{" (type_name typ);
 	     raw_ident s; printf "}}")
       | External m when !externals ->
-	  printf "\\coqexternalref{"; label_ident m; printf "}{";
+	  printf "\\coqexternalref{"; raw_ident m; printf "}{";
 	  label_ident fid; printf "}{\\coqdoc%s{" (type_name typ); raw_ident s; printf "}}"
       | External _ | Unknown ->
 	  (* printf "\\coqref{"; label_ident id; printf "}{" *)

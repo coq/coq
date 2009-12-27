@@ -21,6 +21,7 @@ open Topconstr
 open Util
 open Typeclasses
 open Implicit_quantifiers
+open Libnames
 (*i*)
 
 (* Errors *)
@@ -31,11 +32,11 @@ val mismatched_props : env -> constr_expr list -> rel_context -> 'a
 
 (* Post-hoc class declaration. *)
 
-val declare_class : bool -> identifier located -> unit
+val declare_class : reference -> unit
 
 (* Instance declaration *)
 
-val declare_instance : bool -> identifier located -> unit
+val declare_instance : bool -> reference -> unit
 
 val declare_instance_constant :
   typeclass ->

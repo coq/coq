@@ -619,13 +619,11 @@ let vernac_context l =
   List.iter (fun x -> Dumpglob.dump_local_binder x true "var") l;
   Classes.context l
 
-let vernac_declare_instance id =
-  Dumpglob.dump_definition id false "inst";
-  Classes.declare_instance false id
+let vernac_declare_instance glob id =
+  Classes.declare_instance glob id
 
 let vernac_declare_class id =
-  Dumpglob.dump_definition id false "class";
-  Classes.declare_class false id
+  Classes.declare_class id
 
 (***********)
 (* Solving *)
@@ -1344,7 +1342,7 @@ let interp c = match c with
   (* Type classes *)
   | VernacInstance (glob, sup, inst, props, pri) -> vernac_instance glob sup inst props pri
   | VernacContext sup -> vernac_context sup
-  | VernacDeclareInstance id -> vernac_declare_instance id
+  | VernacDeclareInstance (glob, id) -> vernac_declare_instance glob id
   | VernacDeclareClass id -> vernac_declare_class id
 
   (* Solving *)

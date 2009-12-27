@@ -825,6 +825,9 @@ let merge_evars (goal,cstr) = Evd.merge goal cstr
 let solve_constraints env evars =
   Typeclasses.resolve_typeclasses env ~split:false ~fail:true (merge_evars evars)
 
+let nf_zeta =
+  Reductionops.clos_norm_flags (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
+
 let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
   let concl, is_hyp =
     match clause with
@@ -848,6 +851,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
 	    let cstrevars = !evars in
 	    let evars = solve_constraints env cstrevars in
 	    let p = Evarutil.nf_isevar evars p in
+	    let p = nf_zeta env evars p in
 	    let newt = Evarutil.nf_isevar evars newt in
 	    let abs = Option.map (fun (x, y) ->
 	      Evarutil.nf_isevar evars x, Evarutil.nf_isevar evars y) abs in

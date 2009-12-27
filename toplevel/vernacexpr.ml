@@ -257,10 +257,9 @@ type vernac_expr =
   | VernacContext of local_binder list
 
   | VernacDeclareInstance of
-      lident (* instance name *)
+      bool (* global *) * reference (* instance name *)
 
-  | VernacDeclareClass of
-      lident (* inductive or definition name *)
+  | VernacDeclareClass of reference (* inductive or definition name *)
 
   (* Modules and Module Types *)
   | VernacDeclareModule of bool option * lident *

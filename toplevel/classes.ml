@@ -47,25 +47,21 @@ let _ =
 	      [pri, false, constr_of_global inst])) ());
   Typeclasses.register_set_typeclass_transparency set_typeclass_transparency
     
-let declare_class glob idl =
-  match global (Ident idl) with
+let declare_class g =
+  match global g with
   | ConstRef x -> Typeclasses.add_constant_class x
   | IndRef x -> Typeclasses.add_inductive_class x
-  | _ -> user_err_loc (fst idl, "declare_class", 
+  | _ -> user_err_loc (loc_of_reference g, "declare_class", 
 		      Pp.str"Unsupported class type, only constants and inductives are allowed")
     
-let declare_instance_cst glob c =
+let declare_instance glob g =
+  let c = global g in
   let instance = Typing.type_of (Global.env ()) Evd.empty (constr_of_global c) in
   let _, r = decompose_prod_assum instance in
     match class_of_constr r with
       | Some tc -> add_instance (new_instance tc None glob c)
-      | None -> errorlabstrm "" (Pp.strbrk "Constant does not build instances of a declared type class.")
-
-let declare_instance glob idl =
-  let con = 
-    try global (Ident idl)
-    with _ -> error "Instance definition not found."
-  in declare_instance_cst glob con
+      | None -> user_err_loc (loc_of_reference g, "declare_instance",
+			     Pp.str "Constant does not build instances of a declared type class.")
 
 let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
 let mismatched_props env n m = mismatched_ctx_inst env Properties n m
