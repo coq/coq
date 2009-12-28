@@ -2417,9 +2417,8 @@ and interp_atomic ist gl tac =
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
       let l = List.map (fun (b,m,c) ->
-        let sigma',c = interp_open_constr_with_bindings ist env sigma c in
-        let _,sigma' = Evarutil.subtract_evars sigma sigma' in
-        (b,m,{it=c;sigma=sigma'})) l in
+        let f env sigma = interp_open_constr_with_bindings ist env sigma c in
+	(b,m,f)) l in
       let cl = interp_clause ist gl cl in
       Equality.general_multi_multi_rewrite ev l cl
         (Option.map (fun by -> tclCOMPLETE (interp_tactic ist by), Equality.Naive) by)

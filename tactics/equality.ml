@@ -329,11 +329,14 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) true ?tac c with_evars)
 	   do_hyps
 
+type delayed_open_constr_with_bindings =
+    env -> evar_map -> evar_map * constr with_bindings
+
 let general_multi_multi_rewrite with_evars l cl tac =
-  let do1 l2r c gl =
+  let do1 l2r f gl =
+    let sigma,c = f (pf_env gl) (project gl) in
     Refiner.tclWITHHOLES with_evars
-      (general_multi_rewrite l2r with_evars ?tac c.it)
-      (Evd.merge (project gl) c.sigma) cl gl in
+      (general_multi_rewrite l2r with_evars ?tac c) sigma cl gl in
   let rec doN l2r c = function
     | Precisely n when n <= 0 -> tclIDTAC
     | Precisely 1 -> do1 l2r c
