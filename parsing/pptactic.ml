@@ -597,6 +597,8 @@ let make_pr_tac
    constr and cst printers; hence we can make some abbreviations *)
 let pr_constr = pr_constr env in
 let pr_lconstr = pr_lconstr env in
+let pr_lpat = pr_pat true in
+let pr_pat = pr_pat false in
 let pr_cst = pr_cst env in
 let pr_ind = pr_ind env in
 let pr_tac_level = pr_tac_level env in
@@ -898,7 +900,7 @@ let rec pr_tac inherited tac =
       hov 0 (pr_lazy lz ++ str "match " ++ pr_tac ltop t ++ str " with"
         ++ prlist
 	  (fun r -> fnl () ++ str "| " ++
-            pr_match_rule true (pr_tac ltop) pr_pat r)
+            pr_match_rule true (pr_tac ltop) pr_lpat r)
 	lrul
         ++ fnl() ++ str "end"),
       lmatch
@@ -907,7 +909,7 @@ let rec pr_tac inherited tac =
 	str (if lr then "match reverse goal with" else "match goal with")
 	++ prlist
 	  (fun r -> fnl () ++ str "| " ++
-            pr_match_rule false (pr_tac ltop) pr_pat r)
+            pr_match_rule false (pr_tac ltop) pr_lpat r)
 	lrul
         ++ fnl() ++ str "end"),
       lmatch
@@ -1021,11 +1023,14 @@ let strip_prod_binders_constr n ty =
 
 let drop_env f _env = f
 
+let pr_constr_or_lconstr_pattern_expr b =
+  if b then pr_lconstr_pattern_expr else pr_constr_pattern_expr
+
 let rec raw_printers =
     (pr_raw_tactic_level,
      drop_env pr_constr_expr,
      drop_env pr_lconstr_expr,
-     pr_lconstr_pattern_expr,
+     pr_constr_or_lconstr_pattern_expr,
      drop_env (pr_or_by_notation pr_reference),
      drop_env (pr_or_by_notation pr_reference),
      pr_reference,
@@ -1041,11 +1046,15 @@ and pr_raw_match_rule env t =
 
 let pr_and_constr_expr pr (c,_) = pr c
 
+let pr_pat_and_constr_expr b (c,_) =
+  pr_and_constr_expr ((if b then pr_lrawconstr_env else pr_rawconstr_env)
+    (Global.env())) c
+
 let rec glob_printers =
     (pr_glob_tactic_level,
      (fun env -> pr_and_constr_expr (pr_rawconstr_env env)),
      (fun env -> pr_and_constr_expr (pr_lrawconstr_env env)),
-     (fun (c,_) -> pr_and_constr_expr (pr_rawconstr_env (Global.env())) c),
+     pr_pat_and_constr_expr,
      (fun env -> pr_or_var (pr_and_short_name (pr_evaluable_reference_env env))),
      (fun env -> pr_or_var (pr_inductive env)),
      pr_ltac_or_var (pr_located pr_ltac_constant),
@@ -1059,11 +1068,14 @@ and pr_glob_tactic_level env n (t:glob_tactic_expr) =
 and pr_glob_match_rule env t =
   snd (make_pr_tac glob_printers env) t
 
+let pr_constr_or_lconstr_pattern b =
+  if b then pr_lconstr_pattern else pr_constr_pattern
+
 let typed_printers =
     (pr_glob_tactic_level,
      pr_constr_env,
      pr_lconstr_env,
-     pr_lconstr_pattern,
+     pr_constr_or_lconstr_pattern,
      pr_evaluable_reference_env,
      pr_inductive,
      pr_ltac_constant,
