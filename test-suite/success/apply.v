@@ -270,13 +270,6 @@ exact O.
 trivial.
 Qed.
 
-(* Test non-regression of (temporary) bug 1980 *)
-
-Goal True.
-try eapply ex_intro.
-trivial.
-Qed.
-
 (* Check pattern-unification on evars in apply unification *)
 
 Lemma evar : exists f : nat -> nat, forall x, f x = 0 -> x = 0.
@@ -330,4 +323,28 @@ exact (refl_equal 1).
 exact (refl_equal 2).
 exact (refl_equal 3).
 exact (refl_equal 4).
+Qed.
+
+(* From 12612, descent in conjunctions is more powerful *)
+(* The following, which was failing badly in bug 1980, is now accepted
+   (even if somehow surprising) *)
+
+Goal True.
+eapply ex_intro.
+instantiate (2:=fun _ :True => True).
+instantiate (1:=I).
+exact I.
+Qed.
+
+(* The following, which were not accepted, are now accepted as
+    expected by descent in conjunctions *)
+
+Goal True.
+eapply (ex_intro (fun _ => True) I).    
+exact I.
+Qed.
+
+Goal True.
+eapply (fun (A:Prop) (x:A) => conj I x).
+exact I.
 Qed.

@@ -876,37 +876,42 @@ let simplest_case c = general_case_analysis false (c,NoBindings)
 
 (* Apply a tactic below the products of the conclusion of a lemma *)
 
-let get_named_case_analysis_scheme sidecond_first ind sort gl =
-  if sidecond_first then
-    pf_apply build_case_analysis_scheme_default gl ind sort
+let make_projection params cstr sign elim i n c =
+  let (na,b,t) = List.nth cstr.cs_args i in
+  let b = match b with None -> mkRel (i+1) | Some b -> b in
+  let branch = it_mkLambda_or_LetIn b cstr.cs_args in
+  if noccur_between 1 (n-i-1) t then
+    let t = lift (i+1-n) t in
+    let args = params@[t;branch;mkApp (c,extended_rel_vect 0 sign)] in
+    let p = it_mkLambda_or_LetIn (beta_applist (elim,args)) sign in
+    let pt = it_mkProd_or_LetIn t sign in
+    Some (p,pt)
   else
-    let (mib,mip) = Global.lookup_inductive ind in
-    let kind = inductive_sort_family mip in
-    let scheme = match kind, sort with
-    | InProp, InProp -> Elimschemes.case_dep_scheme_kind_from_prop_in_prop
-    | InProp, (InType | InSet) -> Elimschemes.case_dep_scheme_kind_from_prop
-    | _, InProp -> Elimschemes.case_dep_scheme_kind_from_type_in_prop
-    | _, (InType | InSet) -> Elimschemes.case_dep_scheme_kind_from_type
-    in mkConst (Ind_tables.find_scheme scheme ind)
+    None
 
-let descend_in_conjunctions sidecond_first with_evars tac exit c gl =
+let descend_in_conjunctions tac exit c gl =
   try
     let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-    match match_with_tuple (strip_prod t) with
+    let sign,ccl = decompose_prod_assum t in
+    match match_with_tuple ccl with
     | Some (_,_,isrec) ->
 	let n = (mis_constr_nargs ind).(0) in
 	let sort = elimination_sort_of_goal gl in
-	let elim = get_named_case_analysis_scheme sidecond_first ind sort gl in
-	(if sidecond_first then tclTHENLAST else tclTHENFIRST)
-	  (general_elim with_evars (c,NoBindings)
-	     {elimindex = None; elimbody = (elim,NoBindings)})
-	  (tclTHENLIST [
-	    tclDO n intro;
-	    onNLastHypsId n (fun l ->
-	      tclFIRST
-		(List.map (fun id ->
-		  tclTHEN (tac (not isrec) (mkVar id)) (thin l)) l))])
-          gl
+	let id = fresh_id [] (id_of_string "H") gl in
+	let IndType (indf,_) = pf_apply find_rectype gl ccl in
+	let params = snd (dest_ind_family indf) in
+	let cstr = (get_constructors (pf_env gl) indf).(0) in
+	let elim = pf_apply build_case_analysis_scheme gl ind false sort in
+	tclFIRST
+	  (list_tabulate (fun i gl ->
+	    match make_projection params cstr sign elim i n c with
+	    | None -> tclFAIL 0 (mt()) gl
+	    | Some (p,pt) ->
+	    tclTHENS
+	      (internal_cut id pt)
+	      [refine_no_check p;
+	       tclTHEN (tac (not isrec) (mkVar id)) (thin [id])] gl) n)
+	  gl
     | None ->
 	raise Exit
   with RefinerError _|UserError _|Exit -> exit ()
@@ -945,7 +950,7 @@ let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
 	    try if concl_nprod <> 0 then try_apply thm_ty 0 else raise Exit
 	    with PretypeError _|RefinerError _|UserError _|Failure _|Exit ->
 	      if with_destruct then
-                descend_in_conjunctions true with_evars
+                descend_in_conjunctions
                   try_main_apply (fun _ -> Stdpp.raise_with_loc loc exn) c gl
 	      else
 		Stdpp.raise_with_loc loc exn
@@ -1023,7 +1028,7 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars id
       let clause = apply_in_once_main flags innerclause (c,lbind) gl in
       clenv_refine_in ~sidecond_first with_evars id clause gl
     with exn when with_destruct ->
-      descend_in_conjunctions sidecond_first true aux (fun _ -> raise exn) c gl
+      descend_in_conjunctions aux (fun _ -> raise exn) c gl
   in
   aux with_destruct d gl0
 
