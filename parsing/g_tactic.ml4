@@ -186,6 +186,34 @@ let map_int_or_var f = function
   | Rawterm.ArgArg x -> Rawterm.ArgArg (f x)
   | Rawterm.ArgVar _ as y -> y
 
+let all_concl_occs_clause = { onhyps=Some[]; concl_occs=all_occurrences_expr }
+
+let has_no_specified_occs cl =
+  (cl.onhyps = None || 
+    List.for_all (fun ((occs,_),_) -> occs = all_occurrences_expr)
+    (Option.get cl.onhyps))
+  && (cl.concl_occs = all_occurrences_expr 
+      || cl.concl_occs = no_occurrences_expr)
+
+let merge_occurrences loc cl = function
+  | None ->
+      if has_no_specified_occs cl then (None, cl)
+      else
+	user_err_loc (loc,"",str "Found an \"at\" clause without \"with\" clause.")
+  | Some (occs,p) ->
+      (Some p,
+      if occs = all_occurrences_expr then cl
+      else if cl = all_concl_occs_clause then { onhyps=Some[]; concl_occs=occs }
+      else match cl.onhyps with
+      | Some [(occs',id),l] when
+	  occs' = all_occurrences_expr && cl.concl_occs = no_occurrences_expr ->
+	  { cl with onhyps=Some[(occs,id),l] }
+      | _ ->
+	  if has_no_specified_occs cl then
+	    user_err_loc (loc,"",str "Unable to interpret the \"at\" clause; move it in the \"in\" clause.")
+	  else
+	    user_err_loc (loc,"",str "Cannot use clause \"at\" twice."))
+
 (* Auxiliary grammar rules *)
 
 GEXTEND Gram
@@ -242,7 +270,7 @@ GEXTEND Gram
 	   all_occurrences_expr_but (List.map (map_int_or_var abs) (n::nl)) ] ]
   ;
   occs:
-    [ [ "at"; occs = occs_nums -> occs | -> all_occurrences_expr_but [] ] ]
+    [ [ "at"; occs = occs_nums -> occs | -> all_occurrences_expr ] ]
   ;
   pattern_occ:
     [ [ c = constr; nl = occs -> (nl,c) ] ]
@@ -374,7 +402,7 @@ GEXTEND Gram
   clause_dft_concl:
     [ [ "in"; cl = in_clause -> cl
       | occs=occs -> {onhyps=Some[]; concl_occs=occs}
-      | -> {onhyps=Some[]; concl_occs=all_occurrences_expr} ] ]
+      | -> all_concl_occs_clause ] ]
   ;
   clause_dft_all:
     [ [ "in"; cl = in_clause -> cl
@@ -673,7 +701,8 @@ GEXTEND Gram
       | r = red_tactic; cl = clause_dft_concl -> TacReduce (r, cl)
       (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
       | IDENT "change"; (oc,c) = conversion; cl = clause_dft_concl ->
-	  TacChange (oc,c,cl)
+	  let p,cl = merge_occurrences loc cl oc in
+	  TacChange (p,c,cl)
     ] ]
   ;
 END;;

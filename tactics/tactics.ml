@@ -229,24 +229,12 @@ let error_illegal_clause () =
 let error_illegal_non_atomic_clause () =
   error "\"at\" clause not supported in presence of a non atomic \"in\" clause."
 
-let error_illegal_non_atomic_effective_clause () =
-  error "Unsupported in presence of a non atomic \"in\" clause."
-
 let error_occurrences_not_unsupported () =
   error "Occurrences not supported for this reduction tactic."
 
-let bind_change_occurrences occs nbcl = function
-  | None ->
-      if nbcl > 1 && occs <> all_occurrences_expr then
-	error_illegal_non_atomic_effective_clause ()
-      else
-	None
-  | Some (occl,c) ->
-      if (nbcl > 1 || occs <> all_occurrences_expr) && occl <> all_occurrences
-      then
-	error_illegal_clause ()
-      else
-	Some (Redexpr.out_with_occurrences (occs,c))
+let bind_change_occurrences occs = function
+  | None -> None
+  | Some c -> Some (Redexpr.out_with_occurrences (occs,c))
 
 let bind_red_expr_occurrences occs nbcl redexp =
   let has_at_clause = function
@@ -327,12 +315,11 @@ let change_option occl t = function
 
 let change chg c cls gl =
   let cls = concrete_clause_of cls gl in
-  let nbcl = List.length cls in
   tclMAP (function
     | OnHyp (id,occs,where) ->
-       change_option (bind_change_occurrences occs nbcl chg) c (Some (id,where))
+       change_option (bind_change_occurrences occs chg) c (Some (id,where))
     | OnConcl occs ->
-       change_option (bind_change_occurrences occs nbcl chg) c None)
+       change_option (bind_change_occurrences occs chg) c None)
     cls gl
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)

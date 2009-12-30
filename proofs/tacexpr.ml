@@ -205,7 +205,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr =
 
   (* Conversion *)
   | TacReduce of ('constr,'cst,'pat) red_expr_gen * 'id gclause
-  | TacChange of 'pat with_occurrences option * 'constr * 'id gclause
+  | TacChange of 'pat option * 'constr * 'id gclause
 
   (* Equivalence relations *)
   | TacReflexivity

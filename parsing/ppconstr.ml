@@ -701,16 +701,13 @@ let pr_cases_pattern_expr = pr_patt ltop
 
 let pr_binders = pr_undelimited_binders (pr ltop)
 
-let pr_with_occurrences_with_trailer pr occs trailer =
+let pr_with_occurrences pr occs =
   match occs with
-    ((false,[]),c) -> pr c ++ trailer
+    ((false,[]),c) -> pr c
   | ((nowhere_except_in,nl),c) ->
       hov 1 (pr c ++ spc() ++ str"at " ++
         (if nowhere_except_in then mt() else str "- ") ++
-        hov 0 (prlist_with_sep spc (pr_or_var int) nl) ++ trailer)
-
-let pr_with_occurrences pr occs =
-  pr_with_occurrences_with_trailer pr occs (mt())
+        hov 0 (prlist_with_sep spc (pr_or_var int) nl))
 
 let pr_red_flag pr r =
   (if r.rBeta then pr_arg str "beta" else mt ()) ++

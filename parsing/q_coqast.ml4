@@ -405,10 +405,10 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacReduce (r,cl) ->
       let l = mlexpr_of_clause cl in
       <:expr< Tacexpr.TacReduce $mlexpr_of_red_expr r$ $l$ >>
-  | Tacexpr.TacChange (occl,c,cl) ->
+  | Tacexpr.TacChange (p,c,cl) ->
       let l = mlexpr_of_clause cl in
-      let g = mlexpr_of_option mlexpr_of_occ_constr in
-      <:expr< Tacexpr.TacChange $g occl$ $mlexpr_of_constr c$ $l$ >>
+      let g = mlexpr_of_option mlexpr_of_constr in
+      <:expr< Tacexpr.TacChange $g p$ $mlexpr_of_constr c$ $l$ >>
 
   (* Equivalence relations *)
   | Tacexpr.TacReflexivity -> <:expr< Tacexpr.TacReflexivity >>

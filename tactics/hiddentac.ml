@@ -111,9 +111,8 @@ let h_simplest_right  = h_right false NoBindings
 (* Conversion *)
 let h_reduce r cl  =
   abstract_tactic (TacReduce (r,cl)) (reduce r cl)
-let h_change oc c cl =
-  abstract_tactic (TacChange (oc,c,cl))
-    (change (Option.map Redexpr.out_with_occurrences oc) c cl)
+let h_change op c cl =
+  abstract_tactic (TacChange (op,c,cl)) (change op c cl)
 
 (* Equivalence relations *)
 let h_reflexivity    = abstract_tactic TacReflexivity intros_reflexivity

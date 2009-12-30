@@ -581,13 +581,15 @@ let intern_constr_pattern ist ltacvars pc =
   let c = intern_constr_gen true false ist pc in
   metas,(c,pat)
 
-let intern_typed_pattern_with_occurrences ist (l,p) =
-  let c = intern_constr_gen true false ist p in
+let intern_typed_pattern ist p =
+  let dummy_pat = PRel 0 in
   (* we cannot ensure in non strict mode that the pattern is closed *)
   (* keeping a constr_expr copy is too complicated and we want anyway to *)
   (* type it, so we remember the pattern as a rawconstr only *)
-  let dummy_pat = PRel 0 in
-  (l,(c,dummy_pat))
+  (intern_constr_gen true false ist p,dummy_pat)
+
+let intern_typed_pattern_with_occurrences ist (l,p) =
+  (l,intern_typed_pattern ist p)
 
 let intern_red_expr ist = function
   | Unfold l -> Unfold (List.map (intern_unfold ist) l)
@@ -801,9 +803,8 @@ let rec intern_atomic lf ist x =
 	     cl.concl_occs = no_occurrences_expr)
          then intern_type ist c else intern_constr ist c),
 	clause_app (intern_hyp_location ist) cl)
-  | TacChange (Some occl,c,cl) ->
-      let occl = intern_typed_pattern_with_occurrences ist occl in
-      TacChange (Some occl,intern_constr ist c,
+  | TacChange (Some p,c,cl) ->
+      TacChange (Some (intern_typed_pattern ist p),intern_constr ist c,
 	clause_app (intern_hyp_location ist) cl)
 
   (* Equivalence relations *)
@@ -1369,7 +1370,7 @@ let interp_open_constr_gen kind ist =
 let interp_open_constr ccl =
   interp_open_constr_gen (OfType ccl)
 
-let interp_typed_pattern ist env sigma c =
+let interp_typed_pattern ist env sigma (c,_) =
   let sigma, c =
     interp_gen (OfType None) ist true false false false env sigma c in
   pattern_of_constr sigma c
@@ -1424,7 +1425,7 @@ let interp_flag ist env red =
 let interp_constr_with_occurrences ist sigma env (occs,c) =
   (interp_occurrences ist occs, interp_constr ist sigma env c)
 
-let interp_typed_pattern_with_occurrences ist env sigma (occs,(c,_)) =
+let interp_typed_pattern_with_occurrences ist env sigma (occs,c) =
   let sign,p = interp_typed_pattern ist env sigma c in
   sign, (interp_occurrences ist occs, p)
 
@@ -1664,7 +1665,7 @@ let give_context ctxt = function
 (* Reads a pattern by substituting vars of lfun *)
 let use_types = false
 
-let eval_pattern lfun ist env sigma (c,pat) =
+let eval_pattern lfun ist env sigma (_,pat as c) =
   if use_types then
     snd (interp_typed_pattern ist env sigma c)
   else
@@ -2402,10 +2403,9 @@ and interp_atomic ist gl tac =
 	 then pf_interp_type ist gl c
 	 else pf_interp_constr ist gl c)
         (interp_clause ist gl cl)
-  | TacChange (Some occl,c,cl) ->
-      let sign,occl =
-        interp_typed_pattern_with_occurrences ist env sigma occl in
-      h_change (Some occl)
+  | TacChange (Some op,c,cl) ->
+      let sign,op = interp_typed_pattern ist env sigma op in
+      h_change (Some op)
         (pf_interp_constr ist (extend_gl_hyps gl sign) c)
         (interp_clause ist gl cl)
 
@@ -2625,8 +2625,11 @@ let subst_flag subst red =
 
 let subst_constr_with_occurrences subst (l,c) = (l,subst_rawconstr subst c)
 
-let subst_pattern_with_occurrences subst (l,(c,p)) =
-  (l,(subst_rawconstr subst c,subst_pattern subst p))
+let subst_rawconstr_or_pattern subst (c,p) =
+  (subst_rawconstr subst c,subst_pattern subst p)
+
+let subst_pattern_with_occurrences subst (l,p) =
+  (l,subst_rawconstr_or_pattern subst p)
 
 let subst_redexp subst = function
   | Unfold l -> Unfold (List.map (subst_unfold subst) l)
@@ -2644,8 +2647,8 @@ let subst_raw_may_eval subst = function
   | ConstrTerm c -> ConstrTerm (subst_rawconstr subst c)
 
 let subst_match_pattern subst = function
-  | Subterm (b,ido,(c,pc)) -> Subterm (b,ido,(subst_rawconstr subst c,subst_pattern subst pc))
-  | Term (c,pc) -> Term (subst_rawconstr subst c,subst_pattern subst pc)
+  | Subterm (b,ido,pc) -> Subterm (b,ido,(subst_rawconstr_or_pattern subst pc))
+  | Term pc -> Term (subst_rawconstr_or_pattern subst pc)
 
 let rec subst_match_goal_hyps subst = function
   | Hyp (locs,mp) :: tl ->
@@ -2725,8 +2728,8 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
 
   (* Conversion *)
   | TacReduce (r,cl) -> TacReduce (subst_redexp subst r, cl)
-  | TacChange (occl,c,cl) ->
-      TacChange (Option.map (subst_pattern_with_occurrences subst) occl,
+  | TacChange (op,c,cl) ->
+      TacChange (Option.map (subst_rawconstr_or_pattern subst) op,
         subst_rawconstr subst c, cl)
 
   (* Equivalence relations *)

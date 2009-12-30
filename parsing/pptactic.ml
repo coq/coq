@@ -841,13 +841,11 @@ and pr_atom1 = function
   | TacReduce (r,h) ->
       hov 1 (pr_red_expr r ++
              pr_clauses (Some true) pr_ident h)
-  | TacChange (occ,c,h) ->
+  | TacChange (op,c,h) ->
       hov 1 (str "change" ++ brk (1,1) ++
-      (match occ with
+      (match op with
           None -> mt()
-        | Some occlc ->
-	    pr_with_occurrences_with_trailer pr_pat occlc
-	      (spc () ++ str "with ")) ++
+        | Some p -> pr_pat p ++ spc () ++ str "with ") ++
       pr_constr c ++ pr_clauses (Some true) pr_ident h)
 
   (* Equivalence relations *)
