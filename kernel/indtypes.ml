@@ -497,7 +497,7 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps i nargs lcnames indlc =
 		  raise (IllFormedInd LocalNotConstructor)
 	      else
 		if not (List.for_all (noccur_between n ntypes) largs)
-              then raise (IllFormedInd (LocalNonPos n));
+		then failwith_non_pos_list n ntypes largs;
 	      (nmr,List.rev lrec)
     in check_constr_rec ienv nmr [] c
   in
