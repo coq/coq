@@ -835,7 +835,7 @@ let rec map_predicate f k ccl = function
   | Abstract _ :: rest ->
       map_predicate f (k+1) ccl rest
 
-let noccurn_predicate = map_predicate noccurn
+let noccur_predicate_between n = map_predicate (noccur_between n)
 
 let liftn_predicate n = map_predicate (liftn n)
 
@@ -1110,13 +1110,16 @@ let build_branch current deps (realnames,dep) pb arsign eqns const_info =
   (* into  "Gamma; typs; curalias |- tms" *)
   let tomatch = lift_tomatch_stack const_info.cs_nargs pb.tomatch in
 
+  let pred_is_not_dep =
+    noccur_predicate_between 1 (List.length realnames + 1) pb.pred tomatch in
+
   let typs'' =
     list_map2_i
       (fun i (na,t) deps ->
 	let dep = match dep with
 	  | Name _ as na',k -> (if na <> Anonymous then na else na'),k
 	  | Anonymous,KnownNotDep ->
-	      if deps = [] && noccurn_predicate 1 pb.pred tomatch then
+	      if deps = [] && pred_is_not_dep then
 		(Anonymous,KnownNotDep)
 	      else
 		(force_name na,KnownDep)
