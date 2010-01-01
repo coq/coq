@@ -80,19 +80,18 @@ let interp_type_evars evdref env ?(impls=empty_internalization_env) typ =
 open Topconstr
 
 let type_ctx_instance evars env ctx inst subst =
-  let (s, _) =
-    List.fold_left2
-      (fun (subst, instctx) (na, b, t) ce ->
-	let t' = substl subst t in
-	let c' =
-	  match b with
-	  | None -> interp_casted_constr_evars evars env ce t'
-	  | Some b -> substl subst b
-	in
-	let d = na, Some c', t' in
-	  c' :: subst, d :: instctx)
-      (subst, []) (List.rev ctx) inst
-  in s
+  let rec aux (subst, instctx) l = function
+    (na, b, t) :: ctx ->
+      let t' = substl subst t in
+      let c', l =
+	match b with
+	| None -> interp_casted_constr_evars evars env (List.hd l) t', List.tl l
+	| Some b -> substl subst b, l
+      in
+      let d = na, Some c', t' in
+	aux (c' :: subst, d :: instctx) l ctx
+    | [] -> subst
+  in aux (subst, []) inst (List.rev ctx)
 
 let refine_ref = ref (fun _ -> assert(false))
 
@@ -155,7 +154,14 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
     let ctx', c = decompose_prod_assum c' in
     let ctx'' = ctx' @ ctx in
     let cl, args = Typeclasses.dest_class_app (push_rel_context ctx'' env) c in
-      cl, c', ctx', ctx, len, imps, List.rev args
+    let _, args = 
+      List.fold_right (fun (na, b, t) (args, args') ->
+	match b with
+	| None -> (List.tl args, List.hd args :: args')
+	| Some b -> (args, b :: args'))
+	(snd cl.cl_context) (args, [])
+    in
+      cl, c', ctx', ctx, len, imps, args
   in
   let id =
     match snd instid with
@@ -209,14 +215,16 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	      let props, rest =
 		List.fold_left
 		  (fun (props, rest) (id,b,_) ->
-		    try
-		      let (loc_mid, c) = List.find (fun (id', _) -> Name (snd (get_id id')) = id) rest in
-		      let rest' = List.filter (fun (id', _) -> Name (snd (get_id id')) <> id) rest in
-		      let (loc, mid) = get_id loc_mid in
-			Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
-			c :: props, rest'
-		    with Not_found ->
-		      (CHole (Util.dummy_loc, None) :: props), rest)
+		    if b = None then
+		      try
+			let (loc_mid, c) = List.find (fun (id', _) -> Name (snd (get_id id')) = id) rest in
+			let rest' = List.filter (fun (id', _) -> Name (snd (get_id id')) <> id) rest in
+			let (loc, mid) = get_id loc_mid in
+			  Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
+			  c :: props, rest'
+		      with Not_found ->
+			(CHole (Util.dummy_loc, None) :: props), rest
+		    else props, rest)
 		  ([], props) k.cl_props
 	      in
 		if rest <> [] then

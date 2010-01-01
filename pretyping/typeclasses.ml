@@ -272,7 +272,8 @@ let class_info c =
   with _ -> not_a_class (Global.env()) (constr_of_global c)
 
 let instance_constructor cl args =
-  let pars = fst (list_chop (List.length (fst cl.cl_context)) args) in
+  let lenpars = List.length (List.filter (fun (na, b, t) -> b = None) (snd cl.cl_context)) in
+  let pars = fst (list_chop lenpars args) in
     match cl.cl_impl with
       | IndRef ind -> applistc (mkConstruct (ind, 1)) args,
 	  applistc (mkInd ind) pars
