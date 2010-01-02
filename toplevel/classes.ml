@@ -158,7 +158,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
       List.fold_right (fun (na, b, t) (args, args') ->
 	match b with
 	| None -> (List.tl args, List.hd args :: args')
-	| Some b -> (args, b :: args'))
+	| Some b -> (args, substl args' b :: args'))
 	(snd cl.cl_context) (args, [])
     in
       cl, c', ctx', ctx, len, imps, args
