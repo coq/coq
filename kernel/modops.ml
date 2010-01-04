@@ -478,14 +478,14 @@ let strengthen_and_subst_mb mb mp env include_b =
 	      (i.e. it is already done)*)
 	  let mp_alias = delta_of_mp mb.mod_delta mb.mod_mp in
 	  let subst_resolver = map_mp mb.mod_mp mp empty_delta_resolver in
-	  let resolver = 
+	  let new_resolver = 
 	    add_mp_delta_resolver mp mp_alias
 	      (subst_dom_delta_resolver subst_resolver mb.mod_delta) in	    
-	  let subst = map_mp mb.mod_mp mp resolver in 
+	  let subst = map_mp mb.mod_mp mp new_resolver in 
 	  let resolver = if mb_is_an_alias && include_b then
 	    remove_mp_delta_resolver mb.mod_delta mb.mod_mp
 	  else mb.mod_delta in
-	  let resolver,new_sig = 
+	  let resolver_out,new_sig = 
 	    strengthen_and_subst_struct str subst env
 	     mp_alias mb.mod_mp mp mb_is_an_alias include_b resolver 
 	  in
@@ -493,8 +493,8 @@ let strengthen_and_subst_mb mb mp env include_b =
 	       mod_mp = mp;
 	       mod_type = SEBstruct(new_sig);
 	       mod_expr = Some (SEBident mb.mod_mp);
-	       mod_delta = if include_b then resolver 
-	       else add_mp_delta_resolver mp mp_alias resolver}
+	       mod_delta = if include_b then resolver_out 
+	       else add_delta_resolver new_resolver resolver_out}
       | SEBfunctor(arg_id,argb,body) ->
 	  let subst = map_mp mb.mod_mp mp empty_delta_resolver in
 	  subst_module subst 
