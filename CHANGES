@@ -126,6 +126,8 @@ Library
 - Lemmas in library Relations and Reals have been homogenized a bit.
 - The implicit argument of Logic.eq is now maximally inserted, allowing
   to simply write "eq" instead of "@eq _" in morphism signatures.
+- Light revision and extension of the List library (possible source
+  of incompatibilities solvable by qualifying names accordingly).
 - Revision of the Sorting library:
   - new mergesort of worst-case complexity O(n*ln(n)) made available in 
     Mergesort.v;

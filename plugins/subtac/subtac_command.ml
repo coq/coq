@@ -52,12 +52,6 @@ open Subtac_obligations
 let evar_nf isevars c =
   Evarutil.nf_isevar !isevars c
 
-let get_undefined_evars evd =
-  Evd.fold (fun ev evi evd' ->
-    if evi.evar_body = Evar_empty then
-      Evd.add evd' ev (nf_evar_info evd evi)
-    else evd') evd Evd.empty
-
 let interp_gen kind isevars env
                ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
