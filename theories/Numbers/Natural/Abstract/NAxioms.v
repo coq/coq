@@ -23,7 +23,7 @@ Axiom pred_0 : P 0 == 0.
 Parameter Inline recursion : forall A : Type, A -> (t -> A -> A) -> t -> A.
 Implicit Arguments recursion [A].
 
-Instance recursion_wd (A : Type) (Aeq : relation A) :
+Declare Instance recursion_wd (A : Type) (Aeq : relation A) :
  Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) (@recursion A).
 
 Axiom recursion_0 :

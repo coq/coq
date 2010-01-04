@@ -50,6 +50,7 @@ let decl_notation = Gram.Entry.create "vernac:decl_notation"
 let typeclass_context = Gram.Entry.create "vernac:typeclass_context"
 let record_field = Gram.Entry.create "vernac:record_field"
 let of_type_with_opt_coercion = Gram.Entry.create "vernac:of_type_with_opt_coercion"
+let instance_name = Gram.Entry.create "vernac:instance_name"
 
 let get_command_entry () =
   match Decl_mode.get_current_mode () with
@@ -463,7 +464,7 @@ END
 
 (* Extensions: implicits, coercions, etc. *)
 GEXTEND Gram
-  GLOBAL: gallina_ext;
+  GLOBAL: gallina_ext instance_name;
 
   gallina_ext:
     [ [ (* Transparent and Opaque *)
@@ -515,28 +516,13 @@ GEXTEND Gram
       | IDENT "Context"; c = binders_let ->
 	  VernacContext c
 
-      | IDENT "Instance"; ":";
+      | IDENT "Instance"; namesup = instance_name; ":";
 	 expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ;
 	 props = [ ":="; "{"; r = record_declaration; "}" -> r |
 	     ":="; c = lconstr -> c | -> CRecord (loc, None, []) ] ->
-	   VernacInstance (not (use_section_locality ()), [], ((loc,Anonymous), expl, t), props, pri)
-
-      | IDENT "Instance"; name = identref; sup = OPT binders_let; ":";
-	 expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
-	 pri = OPT [ "|"; i = natural -> i ] ;
-	 props = [ ":="; "{"; r = record_declaration; "}" -> r |
-	     ":="; c = lconstr -> c | -> CRecord (loc, None, []) ] ->
-	   let sup =
-	     match sup with
-		 None -> []
-	       | Some l -> l
-	   in
-	   let n =
-	     let (loc, id) = name in
-	       (loc, Name id)
-	   in
-	     VernacInstance (not (use_non_locality ()), sup, (n, expl, t), props, pri)
+	   VernacInstance (false, not (use_non_locality ()),
+			   snd namesup, (fst namesup, expl, t), props, pri)
 
       | IDENT "Existing"; IDENT "Instance"; is = global -> 
 	  VernacDeclareInstance (not (use_section_locality ()), is)
@@ -572,6 +558,13 @@ GEXTEND Gram
       | "-"; n=INT -> Conv_oracle.Level (- int_of_string n)
       | IDENT "transparent" -> Conv_oracle.transparent ] ]
   ;
+  instance_name:
+    [ [ name = identref; sup = OPT binders_let ->
+	  (let (loc,id) = name in (loc, Name id)),
+          (Option.default [] sup)
+      | -> (loc, Anonymous), []  ] ]
+  ;
+
 END
 
 GEXTEND Gram
@@ -579,6 +572,14 @@ GEXTEND Gram
 
   command:
     [ [ IDENT "Comments"; l = LIST0 comment -> VernacComments l
+
+      (* Hack! Should be in grammar_ext, but camlp4 factorize badly *)
+      | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
+	 expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
+	 pri = OPT [ "|"; i = natural -> i ] ->
+	   VernacInstance (true, not (use_non_locality ()),
+			   snd namesup, (fst namesup, expl, t),
+			   CRecord (loc, None, []), pri)
 
       (* System directory *)
       | IDENT "Pwd" -> VernacChdir None

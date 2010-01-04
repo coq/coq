@@ -37,8 +37,8 @@ Notation S := succ.
 Notation P := pred.
 Notation "1" := (S 0) : NumScope.
 
-Instance succ_wd : Proper (eq ==> eq) S.
-Instance pred_wd : Proper (eq ==> eq) P.
+Declare Instance succ_wd : Proper (eq ==> eq) S.
+Declare Instance pred_wd : Proper (eq ==> eq) P.
 
 Axiom pred_succ : forall n, P (S n) == n.
 
@@ -67,9 +67,9 @@ Notation "x + y" := (add x y) : NumScope.
 Notation "x - y" := (sub x y) : NumScope.
 Notation "x * y" := (mul x y) : NumScope.
 
-Instance add_wd : Proper (eq ==> eq ==> eq) add.
-Instance sub_wd : Proper (eq ==> eq ==> eq) sub.
-Instance mul_wd : Proper (eq ==> eq ==> eq) mul.
+Declare Instance add_wd : Proper (eq ==> eq ==> eq) add.
+Declare Instance sub_wd : Proper (eq ==> eq ==> eq) sub.
+Declare Instance mul_wd : Proper (eq ==> eq ==> eq) mul.
 
 Axiom add_0_l : forall n, (0 + n) == n.
 Axiom add_succ_l : forall n m, (S n) + m == S (n + m).
@@ -107,7 +107,7 @@ Notation "x <= y <= z" := (x<=y /\ y<=z) : NumScope.
 Notation "x <= y < z" := (x<=y /\ y<z) : NumScope.
 Notation "x < y <= z" := (x<y /\ y<=z) : NumScope.
 
-Instance lt_wd : Proper (eq ==> eq ==> iff) lt.
+Declare Instance lt_wd : Proper (eq ==> eq ==> iff) lt.
 (** Compatibility of [le] can be proved later from [lt_wd]
     and [lt_eq_cases] *)
 

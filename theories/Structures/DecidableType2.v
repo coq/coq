@@ -23,7 +23,7 @@ End BareEquality.
 (** * Specification of the equality by the Type Classe [Equivalence] *)
 
 Module Type IsEq (Import E:BareEquality).
-  Instance eq_equiv : Equivalence eq.
+  Declare Instance eq_equiv : Equivalence eq.
   Hint Resolve (@Equivalence_Reflexive _ _ eq_equiv).
   Hint Resolve (@Equivalence_Transitive _ _ eq_equiv).
   Hint Immediate (@Equivalence_Symmetric _ _ eq_equiv).

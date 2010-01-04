@@ -19,7 +19,7 @@ Include Type NZOrdAxiomsSig.
 Local Open Scope NumScope.
 
 Parameter Inline opp : t -> t.
-Instance opp_wd : Proper (eq==>eq) opp.
+Declare Instance opp_wd : Proper (eq==>eq) opp.
 
 Notation "- x" := (opp x) (at level 35, right associativity) : NumScope.
 Notation "- 1" := (- (1)) : NumScope.

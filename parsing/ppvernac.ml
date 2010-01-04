@@ -719,9 +719,10 @@ let rec pr_vernac = function
 (* 	  prlist_with_sep (fun () -> str";" ++ spc())  *)
 (* 	  (fun (lid,oc,c) -> pr_lident_constr ((if oc then str" :>" else str" :") ++ spc()) (lid,c)) props ) *)
 
- | VernacInstance (glob, sup, (instid, bk, cl), props, pri) ->
+ | VernacInstance (abst,glob, sup, (instid, bk, cl), props, pri) ->
      hov 1 (
        pr_non_locality (not glob) ++
+       (if abst then str"Declare " else mt ()) ++
        str"Instance" ++ spc () ++
 	 pr_and_type_binders_arg sup ++
 	 str"=>" ++ spc () ++

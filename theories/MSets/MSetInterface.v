@@ -128,7 +128,7 @@ Module Type WSetsOn (E : DecidableType).
 
   (** Logical predicates *)
   Parameter In : elt -> t -> Prop.
-  Instance In_compat : Proper (E.eq==>eq==>iff) In.
+  Declare Instance In_compat : Proper (E.eq==>eq==>iff) In.
 
   Definition Equal s s' := forall a : elt, In a s <-> In a s'.
   Definition Subset s s' := forall a : elt, In a s -> In a s'.
@@ -140,7 +140,7 @@ Module Type WSetsOn (E : DecidableType).
   Notation "s  [<=]  t" := (Subset s t) (at level 70, no associativity).
 
   Definition eq : t -> t -> Prop := Equal.
-  Instance eq_equiv : Equivalence eq. (* obvious, for subtyping only *)
+  Declare Instance eq_equiv : Equivalence eq. (* obvious, for subtyping only *)
   Parameter eq_dec : forall s s', { eq s s' } + { ~ eq s s' }.
 
   (** Specifications of set operators *)
@@ -220,8 +220,8 @@ Module Type SetsOn (E : OrderedType).
   Parameter lt : t -> t -> Prop.
 
   (** Specification of [lt] *)
-  Instance lt_strorder : StrictOrder lt.
-  Instance lt_compat : Proper (eq==>eq==>iff) lt.
+  Declare Instance lt_strorder : StrictOrder lt.
+  Declare Instance lt_compat : Proper (eq==>eq==>iff) lt.
 
   Section Spec.
   Variable s s': t.
@@ -342,11 +342,11 @@ Module Type WRawSets (E : DecidableType).
       predicate [Ok]. If [Ok] isn't decidable, [isok] may be the
       always-false function. *)
   Parameter isok : t -> bool.
-  Instance isok_Ok s `(isok s = true) : Ok s | 10.
+  Declare Instance isok_Ok s `(isok s = true) : Ok s | 10.
 
   (** Logical predicates *)
   Parameter In : elt -> t -> Prop.
-  Instance In_compat : Proper (E.eq==>eq==>iff) In.
+  Declare Instance In_compat : Proper (E.eq==>eq==>iff) In.
 
   Definition Equal s s' := forall a : elt, In a s <-> In a s'.
   Definition Subset s s' := forall a : elt, In a s -> In a s'.
@@ -358,20 +358,20 @@ Module Type WRawSets (E : DecidableType).
   Notation "s  [<=]  t" := (Subset s t) (at level 70, no associativity).
 
   Definition eq : t -> t -> Prop := Equal.
-  Instance eq_equiv : Equivalence eq.
+  Declare Instance eq_equiv : Equivalence eq.
 
   (** First, all operations are compatible with the well-formed predicate. *)
 
-  Instance empty_ok : Ok empty.
-  Instance add_ok s x `(Ok s) : Ok (add x s).
-  Instance remove_ok s x `(Ok s) : Ok (remove x s).
-  Instance singleton_ok x : Ok (singleton x).
-  Instance union_ok s s' `(Ok s, Ok s') : Ok (union s s').
-  Instance inter_ok s s' `(Ok s, Ok s') : Ok (inter s s').
-  Instance diff_ok s s' `(Ok s, Ok s') : Ok (diff s s').
-  Instance filter_ok s f `(Ok s) : Ok (filter f s).
-  Instance partition_ok1 s f `(Ok s) : Ok (fst (partition f s)).
-  Instance partition_ok2 s f `(Ok s) : Ok (snd (partition f s)).
+  Declare Instance empty_ok : Ok empty.
+  Declare Instance add_ok s x `(Ok s) : Ok (add x s).
+  Declare Instance remove_ok s x `(Ok s) : Ok (remove x s).
+  Declare Instance singleton_ok x : Ok (singleton x).
+  Declare Instance union_ok s s' `(Ok s, Ok s') : Ok (union s s').
+  Declare Instance inter_ok s s' `(Ok s, Ok s') : Ok (inter s s').
+  Declare Instance diff_ok s s' `(Ok s, Ok s') : Ok (diff s s').
+  Declare Instance filter_ok s f `(Ok s) : Ok (filter f s).
+  Declare Instance partition_ok1 s f `(Ok s) : Ok (fst (partition f s)).
+  Declare Instance partition_ok2 s f `(Ok s) : Ok (snd (partition f s)).
 
   (** Now, the specifications, with constraints on the input sets. *)
 
@@ -562,8 +562,8 @@ Module Type RawSets (E : OrderedType).
   Parameter lt : t -> t -> Prop.
 
   (** Specification of [lt] *)
-  Instance lt_strorder : StrictOrder lt.
-  Instance lt_compat : Proper (eq==>eq==>iff) lt.
+  Declare Instance lt_strorder : StrictOrder lt.
+  Declare Instance lt_compat : Proper (eq==>eq==>iff) lt.
 
   Section Spec.
   Variable s s': t.
@@ -674,7 +674,7 @@ End Raw2Sets.
 Module Type IN (O:OrderedType).
  Parameter Inline t : Type.
  Parameter Inline In : O.t -> t -> Prop.
- Instance In_compat : Proper (O.eq==>eq==>iff) In.
+ Declare Instance In_compat : Proper (O.eq==>eq==>iff) In.
  Definition Equal s s' := forall x, In x s <-> In x s'.
  Definition Empty s := forall x, ~In x s.
 End IN.

@@ -20,8 +20,8 @@ Module Type NDiv (Import N : NAxiomsSig).
  Infix "/" := div : NumScope.
  Infix "mod" := modulo (at level 40, no associativity) : NumScope.
 
- Instance div_wd : Proper (eq==>eq==>eq) div.
- Instance mod_wd : Proper (eq==>eq==>eq) modulo.
+ Declare Instance div_wd : Proper (eq==>eq==>eq) div.
+ Declare Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 
  Axiom div_mod : forall a b, b ~= 0 -> a == b*(a/b) + (a mod b).
  Axiom mod_upper_bound : forall a b, b ~= 0 -> a mod b < b.

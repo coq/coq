@@ -340,6 +340,14 @@ priority as for auto hints.
 \item {\tt Program Instance} \comindex{Program Instance}
   Switches the type-checking to \Program~(chapter \ref{Program})
   and uses the obligation mechanism to manage missing fields.
+
+\item {\tt Declare Instance} \comindex{Declare Instance}
+  In a {\tt Module Type}, this command states that a corresponding
+  concrete instance should exist in any implementation of this
+  {\tt Module Type}. This is similar to the distinction between
+  {\tt Parameter} vs. {\tt Definition}, or between {\tt Declare Module}
+  and {\tt Module}.
+
 \end{Variants}
 
 Besides the {\tt Class} and {\tt Instance} vernacular commands, there

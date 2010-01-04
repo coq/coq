@@ -31,9 +31,9 @@ Module Type OrderSig.
 
 Parameter Inline t : Type.
 Parameters eq lt le : t -> t -> Prop.
-Instance eq_equiv : Equivalence eq.
-Instance lt_strorder : StrictOrder lt.
-Instance lt_compat : Proper (eq==>eq==>iff) lt.
+Declare Instance eq_equiv : Equivalence eq.
+Declare Instance lt_strorder : StrictOrder lt.
+Declare Instance lt_compat : Proper (eq==>eq==>iff) lt.
 Parameter lt_total : forall x y, lt x y \/ eq x y \/ lt y x.
 Parameter le_lteq : forall x y, le x y <-> lt x y \/ eq x y.
 

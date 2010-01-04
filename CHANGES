@@ -88,7 +88,9 @@ Vernacular commands
   congruence schemes available to user (governed by options "Unset
   Case Analysis Schemes" and "Unset Congruence Schemes").
 - Fixpoint/CoFixpoint now support building part or all of bodies using tactics.
-
+- Declaring axiomatic type class instances in Module Type should be now
+  done via new command "Declare Instance", while the syntax "Instance"
+  now always provides a concrete instance, both in and out of Module Type.
 
 Tools
 
@@ -143,7 +145,7 @@ Language
 - New implementation of the module system. The sharing between non-logical
   object and the management of the name-space has been improved by the new 
   \Delta-equivalence on qualified name. The include operator has been extended 
-  to high-order structures (cf. libraries Numbers ans Structures to see examples).
+  to high-order structures (cf. libraries Numbers and Structures to see examples).
   Interactive proofs are now authorized in module type.
 
 Changes from V8.1 to V8.2

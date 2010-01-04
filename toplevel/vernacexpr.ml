@@ -248,6 +248,7 @@ type vernac_expr =
 
   (* Type classes *)
   | VernacInstance of
+      bool * (* abstract instance *)
       bool * (* global *)
       local_binder list * (* super *)
 	typeclass_constraint * (* instance name, class name, params *)

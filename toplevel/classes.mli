@@ -50,6 +50,7 @@ val declare_instance_constant :
   Names.identifier
 
 val new_instance :
+  ?abstract:bool -> (* Not abstract by default. *)
   ?global:bool -> (* Not global by default. *)
   local_binder list ->
   typeclass_constraint ->

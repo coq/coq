@@ -18,8 +18,8 @@ Module Type MiniOrderedType.
   Include Type EqualityType.
 
   Parameter Inline lt : t -> t -> Prop.
-  Instance lt_strorder : StrictOrder lt.
-  Instance lt_compat : Proper (eq==>eq==>iff) lt.
+  Declare Instance lt_strorder : StrictOrder lt.
+  Declare Instance lt_compat : Proper (eq==>eq==>iff) lt.
 
   Parameter Inline compare : t -> t -> comparison.
   Axiom compare_spec : forall x y, CompSpec eq lt x y (compare x y).
@@ -63,10 +63,10 @@ Module Type UsualOrderedType.
  Include Type UsualDecidableType.
 
  Parameter Inline lt : t -> t -> Prop.
- Instance lt_strorder : StrictOrder lt.
+ Declare Instance lt_strorder : StrictOrder lt.
  (* The following is useless since eq is Leibniz, but should be there
     for subtyping... *)
- Instance lt_compat : Proper (eq==>eq==>iff) lt.
+ Declare Instance lt_compat : Proper (eq==>eq==>iff) lt.
 
  Parameter Inline compare : t -> t -> comparison.
  Axiom compare_spec : forall x y, CompSpec eq lt x y (compare x y).

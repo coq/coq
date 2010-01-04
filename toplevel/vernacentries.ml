@@ -611,9 +611,9 @@ let vernac_identity_coercion stre id qids qidt =
 
 (* Type classes *)
 
-let vernac_instance glob sup inst props pri =
+let vernac_instance abst glob sup inst props pri =
   Dumpglob.dump_constraint inst false "inst";
-  ignore(Classes.new_instance ~global:glob sup inst props pri)
+  ignore(Classes.new_instance ~abstract:abst ~global:glob sup inst props pri)
 
 let vernac_context l =
   List.iter (fun x -> Dumpglob.dump_local_binder x true "var") l;
@@ -1340,7 +1340,8 @@ let interp c = match c with
   | VernacIdentityCoercion (str,(_,id),s,t) -> vernac_identity_coercion str id s t
 
   (* Type classes *)
-  | VernacInstance (glob, sup, inst, props, pri) -> vernac_instance glob sup inst props pri
+  | VernacInstance (abst, glob, sup, inst, props, pri) ->
+      vernac_instance abst glob sup inst props pri
   | VernacContext sup -> vernac_context sup
   | VernacDeclareInstance (glob, id) -> vernac_declare_instance glob id
   | VernacDeclareClass id -> vernac_declare_class id

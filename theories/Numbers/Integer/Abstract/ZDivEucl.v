@@ -33,8 +33,8 @@ Module Type ZDiv (Import Z : ZAxiomsSig).
  Infix "/" := div : NumScope.
  Infix "mod" := modulo (at level 40, no associativity) : NumScope.
 
- Instance div_wd : Proper (eq==>eq==>eq) div.
- Instance mod_wd : Proper (eq==>eq==>eq) modulo.
+ Declare Instance div_wd : Proper (eq==>eq==>eq) div.
+ Declare Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 
  Definition abs z := max z (-z).
 

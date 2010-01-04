@@ -169,8 +169,10 @@ let subtac (loc, command) =
   | VernacAssumption (stre,nl,l) ->
       vernac_assumption env isevars stre l nl
 
-  | VernacInstance (glob, sup, is, props, pri) ->
+  | VernacInstance (abst, glob, sup, is, props, pri) ->
       dump_constraint "inst" is;
+      if abst then
+	error "Declare Instance not supported here.";
       ignore(Subtac_classes.new_instance ~global:glob sup is props pri)
 
   | VernacCoFixpoint (l, b) ->
