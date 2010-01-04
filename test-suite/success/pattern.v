@@ -42,3 +42,8 @@ Goal 0=1->1=0->True.
 intros H1 H2.
 pattern 0 at 1, 1 in H1, H2 || exact I.  (* check pattern fails *)
 Qed.
+
+(* Test catching of reduction tactics errors (was not the case in 8.2) *)
+Goal eq_refl 0 = eq_refl 0.
+pattern 0 at 1 || reflexivity.
+Qed.

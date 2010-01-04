@@ -53,6 +53,8 @@ let rec catchable_exception = function
   | Util.UserError _ | TypeError _
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)
+  (* reduction errors *)
+  | Tacred.ReductionTacticError _ 
   (* unification errors *)
   | PretypeError(_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _
 		   |NoOccurrenceFound _|CannotUnifyBindingType _|NotClean _
