@@ -78,9 +78,13 @@ COQ_XML=	# is "-xml" when building XML library
 VM=		# is "-no-vm" to not use the vm"
 UNBOXEDVALUES=	# is "-unboxed-values" to use unboxed values
 COQOPTS=$(COQ_XML) $(VM) $(UNBOXEDVALUES)
-TIME=		# is "'time -p'" to get compilation time of .v 
+TIMECMD=	# is "'time -p'" to get compilation time of .v
 
-BOOTCOQTOP:=$(TIME) $(BESTCOQTOP) -boot $(COQOPTS)
+# NB: variable TIME, if set, is the formatting string for unix command 'time'.
+# For instance:
+# TIME="%C (%U user, %S sys, %e total, %M maxres)"
+
+BOOTCOQTOP:=$(TIMECMD) $(BESTCOQTOP) -boot $(COQOPTS)
 
 ###########################################################################
 # Infrastructure for the rest of the Makefile
