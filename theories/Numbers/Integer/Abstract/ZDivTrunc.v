@@ -498,6 +498,7 @@ Theorem add_mod: forall a b n, n~=0 -> 0 <= a*b ->
  (a+b) mod n == (a mod n + b mod n) mod n.
 Proof.
 intros a b n Hn Hab. rewrite add_mod_idemp_l, add_mod_idemp_r; trivial.
+reflexivity.
 destruct (le_0_mul _ _ Hab) as [(Ha,Hb)|(Ha,Hb)];
  destruct (le_0_mul _ _ (mod_sign b n Hn)) as [(Hb',Hm)|(Hb',Hm)];
  auto using mul_nonneg_nonneg, mul_nonpos_nonpos.

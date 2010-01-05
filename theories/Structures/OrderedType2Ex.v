@@ -58,9 +58,9 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
  (* transitive *)
  intros (x1,x2) (y1,y2) (z1,z2). compute. intuition.
  left; etransitivity; eauto.
- left; rewrite <- H0; auto.
- left; rewrite H; auto.
- right; split; eauto. etransitivity; eauto.
+ left. setoid_replace z1 with y1; auto with relations.
+ left; setoid_replace x1 with y1; auto with relations.
+ right; split; etransitivity; eauto.
  Qed.
 
  Instance lt_compat : Proper (eq==>eq==>iff) lt.
@@ -81,7 +81,7 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
  Proof.
  intros (x1,x2) (y1,y2); unfold compare; simpl.
  destruct (O1.compare_spec x1 y1); try (constructor; compute; auto).
- destruct (O2.compare_spec x2 y2); constructor; compute; auto.
+ destruct (O2.compare_spec x2 y2); constructor; compute; auto with relations.
  Qed.
 
 End PairOrderedType.

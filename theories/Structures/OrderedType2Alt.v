@@ -231,10 +231,10 @@ Module OT_to_Alt (Import O:OrderedType) <: OrderedTypeAlt.
  Proof.
  intros c x y z.
  destruct c; unfold compare.
- rewrite 3 compare_Eq; eauto.
- rewrite 3 compare_Lt. apply StrictOrder_Transitive.
+ rewrite 3 compare_Eq. etransitivity; eauto.
+ rewrite 3 compare_Lt. etransitivity; eauto.
  do 3 (rewrite compare_sym, CompOpp_iff, compare_Lt).
- intros; apply StrictOrder_Transitive with y; auto.
+ etransitivity; eauto.
  Qed.
 
 End OT_to_Alt.

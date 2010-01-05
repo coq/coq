@@ -197,7 +197,7 @@ Module KeyOrderedType(Import O:OrderedType).
     destruct H1 as [e' H2].
     elim (@ltk_not_eqk (k,e) (k,e')).
     eapply Sort_Inf_In; eauto.
-    red; simpl; auto.
+    repeat red; reflexivity.
   Qed.
 
   Lemma Sort_NoDupA: forall l, Sort l -> NoDupA eqk l.
@@ -211,8 +211,8 @@ Module KeyOrderedType(Import O:OrderedType).
   Lemma Sort_In_cons_2 : forall l e e', Sort (e::l) -> InA eqk e' (e::l) ->
       ltk e e' \/ eqk e e'.
   Proof.
-    intros; invlist InA; auto.
-    left; apply Sort_In_cons_1 with l; auto.
+    intros; invlist InA; auto with relations.
+    left; apply Sort_In_cons_1 with l; auto with relations.
   Qed.
 
   Lemma Sort_In_cons_3 :

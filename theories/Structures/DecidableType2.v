@@ -24,9 +24,6 @@ End BareEquality.
 
 Module Type IsEq (Import E:BareEquality).
   Declare Instance eq_equiv : Equivalence eq.
-  Hint Resolve (@Equivalence_Reflexive _ _ eq_equiv).
-  Hint Resolve (@Equivalence_Transitive _ _ eq_equiv).
-  Hint Immediate (@Equivalence_Symmetric _ _ eq_equiv).
 End IsEq.
 
 (** * Earlier specification of equality by three separate lemmas. *)

@@ -50,33 +50,34 @@ Module OrderedTypeFullFacts (Import O:OrderedTypeFull).
 
  Module Order := OTF_to_OrderTac O.
  Ltac order := Order.order.
+ Ltac iorder := intuition order.
 
  Instance le_compat : Proper (eq==>eq==>iff) le.
- Proof. repeat red; intuition; order. Qed.
+ Proof. repeat red; iorder. Qed.
 
  Instance le_preorder : PreOrder le.
  Proof. split; red; order. Qed.
 
  Instance le_order : PartialOrder eq le.
- Proof. compute; intuition; order. Qed.
+ Proof. compute; iorder. Qed.
 
  Instance le_antisym : Antisymmetric _ eq le.
  Proof. apply partial_order_antisym; auto with *. Qed.
 
  Lemma le_not_gt_iff : forall x y, le x y <-> ~lt y x.
- Proof. split; order. Qed.
+ Proof. iorder. Qed.
 
  Lemma lt_not_ge_iff : forall x y, lt x y <-> ~le y x.
- Proof. split; order. Qed.
+ Proof. iorder. Qed.
 
  Lemma le_or_gt : forall x y, le x y \/ lt y x.
  Proof. intros. rewrite le_lteq; destruct (O.compare_spec x y); auto. Qed.
 
  Lemma lt_or_ge : forall x y, lt x y \/ le y x.
- Proof. intros. rewrite le_lteq; destruct (O.compare_spec x y); auto. Qed.
+ Proof. intros. rewrite le_lteq; destruct (O.compare_spec x y); iorder. Qed.
 
  Lemma eq_is_le_ge : forall x y, eq x y <-> le x y /\ le y x.
- Proof. intuition; order. Qed.
+ Proof. iorder. Qed.
 
 End OrderedTypeFullFacts.
 
@@ -260,7 +261,7 @@ Definition compare := flip O.compare.
 Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
 Proof.
 intros; unfold compare, eq, lt, flip.
-destruct (O.compare_spec y x); auto.
+destruct (O.compare_spec y x); auto with relations.
 Qed.
 
 End OrderedTypeRev.

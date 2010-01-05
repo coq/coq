@@ -164,8 +164,8 @@ Hypothesis Initial : initial init.
 Lemma initial_unique : forall m, initial m -> m == init.
 Proof.
 intros m Im. destruct (itersucc_or_itersucc init m) as (p,[H|H]).
-destruct p; simpl in *; auto. destruct (Initial _ H).
-destruct p; simpl in *; auto with *. destruct (Im _ H).
+destruct p. now simpl in *. destruct (Initial _ H).
+destruct p. now simpl in *. destruct (Im _ H).
 Qed.
 
 (** ... then all other points are descendant of it. *)
@@ -287,7 +287,7 @@ Qed.
 
 Lemma ofnat_succ : forall n, [Datatypes.S n] == succ [n].
 Proof.
- unfold ofnat. intros. simpl; auto.
+ now unfold ofnat.
 Qed.
 
 Lemma ofnat_pred : forall n, n<>O -> [Peano.pred n] == P [n].
@@ -336,7 +336,7 @@ Qed.
 
 Lemma ofnat_eq : forall n m, [n]==[m] <-> n = m.
 Proof.
-split. apply ofnat_injective. intros; subst; auto.
+split. apply ofnat_injective. intros; now subst.
 Qed.
 
 (* In addition, we can prove that [ofnat] preserves order. *)
@@ -382,8 +382,8 @@ Qed.
 Lemma ofnat_add : forall n m, [n+m] == [n]+[m].
 Proof.
  intros. rewrite ofnat_add_l.
- induction n; simpl; auto.
- rewrite ofnat_succ. apply succ_wd; auto.
+ induction n; simpl. reflexivity.
+ rewrite ofnat_succ. now apply succ_wd.
 Qed.
 
 Lemma ofnat_mul : forall n m, [n*m] == [n]*[m].
@@ -392,21 +392,21 @@ Proof.
  symmetry. apply mul_0_l.
  rewrite plus_comm.
  rewrite ofnat_succ, ofnat_add, mul_succ_l.
- apply add_wd; auto.
+ now apply add_wd.
 Qed.
 
 Lemma ofnat_sub_r : forall n m, n-[m] == (P^m) n.
 Proof.
  induction m; simpl; intros.
  rewrite ofnat_zero. apply sub_0_r.
- rewrite ofnat_succ, sub_succ_r. apply pred_wd; auto.
+ rewrite ofnat_succ, sub_succ_r. now apply pred_wd.
 Qed.
 
 Lemma ofnat_sub : forall n m, m<=n -> [n-m] == [n]-[m].
 Proof.
  intros n m H. rewrite ofnat_sub_r.
  revert n H. induction m. intros.
- rewrite <- minus_n_O. simpl; auto.
+ rewrite <- minus_n_O. now simpl.
  intros.
  destruct n.
  inversion H.

@@ -47,14 +47,14 @@ Module GenericMinMax (Import O:OrderedTypeFull) <: HasMinMax O.
    (lt x y /\ eq (max x y) y)  \/  (le y x /\ eq (max x y) x).
  Proof.
   intros. rewrite le_lteq. unfold max, gmax.
-  destruct (compare_spec x y); auto.
+  destruct (compare_spec x y); auto with relations.
  Qed.
 
  Lemma min_spec : forall x y,
    (lt x y /\ eq (min x y) x)  \/  (le y x /\ eq (min x y) y).
  Proof.
   intros. rewrite le_lteq. unfold min, gmin.
-  destruct (compare_spec x y); auto.
+  destruct (compare_spec x y); auto with relations.
  Qed.
 
 End GenericMinMax.
@@ -133,7 +133,7 @@ Defined.
 
 Lemma max_dec : forall n m, {max n m == n} + {max n m == m}.
 Proof.
- intros n m. apply max_case; auto.
+ intros n m. apply max_case; auto with relations.
  intros x y H [E|E]; [left|right]; order.
 Defined.
 
@@ -161,21 +161,19 @@ Qed.
 Lemma max_assoc : forall m n p, max m (max n p) == max (max m n) p.
 Proof.
  intros.
- destruct (M.max_spec n p) as [(H,Eq)|(H,Eq)]; rewrite Eq; auto.
- destruct (M.max_spec m n) as [(H',Eq')|(H',Eq')]; rewrite Eq'; auto.
- destruct (max_spec m p); intuition; order.
- destruct (M.max_spec m n) as [(H',Eq')|(H',Eq')]; rewrite Eq'; auto.
+ destruct (M.max_spec n p) as [(H,Eq)|(H,Eq)]; rewrite Eq.
+ destruct (M.max_spec m n) as [(H',Eq')|(H',Eq')]; rewrite Eq'.
+ destruct (max_spec m p); intuition; order. order.
+ destruct (M.max_spec m n) as [(H',Eq')|(H',Eq')]; rewrite Eq'. order.
  destruct (max_spec m p); intuition; order.
 Qed.
 
 Lemma max_comm : forall n m, max n m == max m n.
 Proof.
  intros.
- destruct (M.max_spec n m) as [(H,Eq)|(H,Eq)]; rewrite Eq; auto.
- destruct (M.max_spec m n) as [(H',Eq')|(H',Eq')]; rewrite Eq'; auto.
- order.
- destruct (M.max_spec m n) as [(H',Eq')|(H',Eq')]; rewrite Eq'; auto.
- order.
+ destruct (M.max_spec n m) as [(H,Eq)|(H,Eq)]; rewrite Eq.
+ destruct (M.max_spec m n) as [(H',Eq')|(H',Eq')]; rewrite Eq'; order.
+ destruct (M.max_spec m n) as [(H',Eq')|(H',Eq')]; rewrite Eq'; order.
 Qed.
 
 (** *** Least-upper bound properties of [max] *)
@@ -434,7 +432,7 @@ Lemma max_min_modular : forall n m p,
  max n (min m (max n p)) == min (max n m) (max n p).
 Proof.
  intros. rewrite <- max_min_distr.
- destruct (max_spec n p) as [(C,E)|(C,E)]; rewrite E; auto.
+ destruct (max_spec n p) as [(C,E)|(C,E)]; rewrite E. reflexivity.
  destruct (min_spec m n) as [(C',E')|(C',E')]; rewrite E'.
  rewrite 2 max_l; try OF.order. rewrite min_le_iff; auto.
  rewrite 2 max_l; try OF.order. rewrite min_le_iff; auto.
@@ -444,10 +442,10 @@ Lemma min_max_modular : forall n m p,
  min n (max m (min n p)) == max (min n m) (min n p).
 Proof.
  intros. rewrite <- min_max_distr.
- destruct (min_spec n p) as [(C,E)|(C,E)]; rewrite E; auto.
+ destruct (min_spec n p) as [(C,E)|(C,E)]; rewrite E.
  destruct (max_spec m n) as [(C',E')|(C',E')]; rewrite E'.
  rewrite 2 min_l; try OF.order. rewrite max_le_iff; right; OF.order.
- rewrite 2 min_l; try OF.order. rewrite max_le_iff; auto.
+ rewrite 2 min_l; try OF.order. rewrite max_le_iff; auto. reflexivity.
 Qed.
 
 (** Disassociativity *)

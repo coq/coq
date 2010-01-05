@@ -581,6 +581,10 @@ Hint Unfold lt_tree gt_tree.
 Hint Resolve @ok.
 Hint Constructors Ok.
 
+(* TODO: modify proofs in order to avoid these hints *)
+Hint Resolve MX.eq_refl MX.eq_trans.
+Hint Immediate MX.eq_sym.
+
 Tactic Notation "factornode" ident(l) ident(x) ident(r) ident(h)
  "as" ident(s) :=
  set (s:=Node l x r h) in *; clearbody s; clear l x r h.

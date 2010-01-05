@@ -59,23 +59,23 @@ Lemma is_empty_2 : is_empty s = true -> Empty s.
 Proof. intros; apply -> is_empty_spec; auto. Qed.
 
 Lemma add_1 : E.eq x y -> In y (add x s).
-Proof. intros; apply <- add_spec; auto. Qed.
+Proof. intros; apply <- add_spec. auto with relations. Qed.
 Lemma add_2 : In y s -> In y (add x s).
 Proof. intros; apply <- add_spec; auto. Qed.
 Lemma add_3 : ~ E.eq x y -> In y (add x s) -> In y s.
-Proof. rewrite add_spec. intros H [H'|H']; auto. elim H; auto. Qed.
+Proof. rewrite add_spec. intros H [H'|H']; auto. elim H; auto with relations. Qed.
 
 Lemma remove_1 : E.eq x y -> ~ In y (remove x s).
 Proof. intros; rewrite remove_spec; intuition. Qed.
 Lemma remove_2 : ~ E.eq x y -> In y s -> In y (remove x s).
-Proof. intros; apply <- remove_spec; auto. Qed.
+Proof. intros; apply <- remove_spec; auto with relations. Qed.
 Lemma remove_3 : In y (remove x s) -> In y s.
 Proof. rewrite remove_spec; intuition. Qed.
 
 Lemma singleton_1 : In y (singleton x) -> E.eq x y.
-Proof. rewrite singleton_spec; auto. Qed.
+Proof. rewrite singleton_spec; auto with relations. Qed.
 Lemma singleton_2 : E.eq x y -> In y (singleton x).
-Proof. rewrite singleton_spec; auto. Qed.
+Proof. rewrite singleton_spec; auto with relations. Qed.
 
 Lemma union_1 : In x (union s s') -> In x s \/ In x s'.
 Proof. rewrite union_spec; auto. Qed.
@@ -190,7 +190,7 @@ Lemma add_iff : In y (add x s) <-> E.eq x y \/ In y s.
 Proof. rewrite add_spec; intuition. Qed.
 
 Lemma add_neq_iff : ~ E.eq x y -> (In y (add x s)  <-> In y s).
-Proof. rewrite add_spec; intuition. elim H; auto. Qed.
+Proof. rewrite add_spec; intuition. elim H; auto with relations. Qed.
 
 Lemma remove_iff : In y (remove x s) <-> In y s /\ ~E.eq x y.
 Proof. rewrite remove_spec; intuition. Qed.
@@ -340,7 +340,7 @@ rewrite H0; intros.
 destruct H1 as (_,H1).
 apply H1; auto.
 rewrite H2.
-rewrite InA_alt; eauto.
+rewrite InA_alt. exists x0; split; auto with relations.
 Qed.
 
 Lemma exists_b : Proper (E.eq==>Logic.eq) f ->
@@ -354,7 +354,7 @@ rewrite <- H1; intros.
 destruct H0 as (H0,_).
 destruct H0 as (a,(Ha1,Ha2)); auto.
 exists a; split; auto.
-rewrite H2; rewrite InA_alt; eauto.
+rewrite H2; rewrite InA_alt; exists a; auto with relations.
 symmetry.
 rewrite H0.
 destruct H1 as (_,H1).
@@ -393,13 +393,12 @@ Instance mem_m : Proper (E.eq==>Equal==>Logic.eq) mem.
 Proof.
 intros x x' Hx s s' Hs.
 generalize (mem_iff s x). rewrite Hs, Hx at 1; rewrite mem_iff.
-destruct (mem x s); destruct (mem x' s'); intuition.
+destruct (mem x s), (mem x' s'); intuition.
 Qed.
 
 Instance singleton_m : Proper (E.eq==>Equal) singleton.
 Proof.
-intros x y H a.
-rewrite !singleton_iff; split; intros; etransitivity; eauto.
+intros x y H a. rewrite !singleton_iff, H; intuition.
 Qed.
 
 Instance add_m : Proper (E.eq==>Equal==>Equal) add.

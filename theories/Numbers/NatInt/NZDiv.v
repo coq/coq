@@ -457,7 +457,7 @@ Qed.
 Theorem mul_mod: forall a b n, 0<=a -> 0<=b -> 0<n ->
  (a * b) mod n == ((a mod n) * (b mod n)) mod n.
 Proof.
- intros. rewrite mul_mod_idemp_l, mul_mod_idemp_r; trivial.
+ intros. rewrite mul_mod_idemp_l, mul_mod_idemp_r; trivial. reflexivity.
  now destruct (mod_bound b n).
 Qed.
 
@@ -468,7 +468,7 @@ Proof.
  generalize (add_nonneg_nonneg _ _ Ha Hb).
  rewrite (div_mod a n) at 1 2; [|order].
  rewrite <- add_assoc, add_comm, mul_comm.
- intros. rewrite mod_add; trivial.
+ intros. rewrite mod_add; trivial. reflexivity.
  apply add_nonneg_nonneg; auto. destruct (mod_bound a n); auto.
 Qed.
 
@@ -481,7 +481,7 @@ Qed.
 Theorem add_mod: forall a b n, 0<=a -> 0<=b -> 0<n ->
  (a+b) mod n == (a mod n + b mod n) mod n.
 Proof.
- intros. rewrite add_mod_idemp_l, add_mod_idemp_r; trivial.
+ intros. rewrite add_mod_idemp_l, add_mod_idemp_r; trivial. reflexivity.
  now destruct (mod_bound b n).
 Qed.
 

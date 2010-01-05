@@ -293,7 +293,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
    red; intros.
    apply (H a).
    rewrite elements_iff.
-   rewrite InA_alt; exists a; auto.
+   rewrite InA_alt; exists a; auto with relations.
   destruct (elements s); auto.
   elim (H0 e); simpl; auto.
   red; intros.
@@ -368,7 +368,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   apply Pempty. intro x. rewrite Hsame, InA_nil; intuition.
   (* step *)
   intros s Hsame; simpl.
-  apply Pstep' with (of_list l); auto.
+  apply Pstep' with (of_list l); auto with relations.
    inversion_clear Hdup; rewrite of_list_1; auto.
    red. intros. rewrite Hsame, of_list_1, InA_cons; intuition.
   apply IHl.
@@ -430,7 +430,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   assert (Rstep' : forall x a b, InA x l -> R a b -> R (f x a) (g x b)) by
     (intros; apply Rstep; auto; rewrite elements_iff, <- InA_rev; auto with *).
   clearbody l; clear Rstep s.
-  induction l; simpl; auto.
+  induction l; simpl; auto with relations.
   Qed.
 
   (** From the induction principle on [fold], we can deduce some general
@@ -546,7 +546,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   apply fold_rel with (R:=fun u v => eqA u (f x v)); intros.
   reflexivity.
   transitivity (f x0 (f x b)); auto.
-  apply Comp; auto.
+  apply Comp; auto with relations.
   Qed.
 
   (** ** Fold is a morphism *)
@@ -555,7 +555,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
    eqA (fold f s i) (fold f s i').
   Proof.
   intros. apply fold_rel with (R:=eqA); auto.
-  intros; apply Comp; auto.
+  intros; apply Comp; auto with relations.
   Qed.
 
   Lemma fold_equal :
@@ -597,7 +597,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   Proof.
   intros.
   symmetry.
-  apply fold_2 with (eqA:=eqA); auto with set.
+  apply fold_2 with (eqA:=eqA); auto with set relations.
   Qed.
 
   Lemma remove_fold_2: forall i s x, ~In x s ->
@@ -631,18 +631,18 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   apply equal_sym; apply union_Equal with x; auto with set.
   transitivity (f x (fold f (union s s') (fold f (inter s s') i))).
   apply fold_commutes; auto.
-  apply Comp; auto.
+  apply Comp; auto with relations.
   symmetry; apply fold_2 with (eqA:=eqA); auto.
   (* ~(In x s') *)
   transitivity (f x (fold f (union s s') (fold f (inter s'' s') i))).
   apply fold_2 with (eqA:=eqA); auto with set.
   transitivity (f x (fold f (union s s') (fold f (inter s s') i))).
-  apply Comp;auto.
+  apply Comp;auto with relations.
   apply fold_init;auto.
   apply fold_equal;auto.
   apply equal_sym; apply inter_Add_2 with x; auto with set.
   transitivity (f x (fold f s (fold f s' i))).
-  apply Comp; auto.
+  apply Comp; auto with relations.
   symmetry; apply fold_2 with (eqA:=eqA); auto.
   Qed.
 
@@ -738,7 +738,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   intros; rewrite FM.cardinal_1 in H.
   generalize (elements_2 (s:=s)).
   destruct (elements s); try discriminate.
-  exists e; auto.
+  exists e; auto with relations.
   Qed.
 
   Lemma cardinal_inv_2b :
@@ -758,8 +758,10 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   apply cardinal_1; rewrite <- H; auto.
   destruct (cardinal_inv_2 Heqn) as (x,H2).
   revert Heqn.
-  rewrite (cardinal_2 (s:=remove x s) (s':=s) (x:=x)); auto with set.
-  rewrite (cardinal_2 (s:=remove x s') (s':=s') (x:=x)); eauto with set.
+  rewrite (cardinal_2 (s:=remove x s) (s':=s) (x:=x));
+   auto with set relations.
+  rewrite (cardinal_2 (s:=remove x s') (s':=s') (x:=x));
+   eauto with set relations.
   Qed.
 
   Instance cardinal_m : Proper (Equal==>Logic.eq) cardinal.
@@ -1053,7 +1055,7 @@ Module OrdProperties (M:Sets).
   apply X0 with (remove e s) e; auto with set.
   apply IHn.
   assert (S n = S (cardinal (remove e s))).
-   rewrite Heqn; apply cardinal_2 with e; auto with set.
+   rewrite Heqn; apply cardinal_2 with e; auto with set relations.
   inversion H0; auto.
   red; intros.
   rewrite remove_iff in H0; destruct H0.
@@ -1074,7 +1076,7 @@ Module OrdProperties (M:Sets).
   apply X0 with (remove e s) e; auto with set.
   apply IHn.
   assert (S n = S (cardinal (remove e s))).
-   rewrite Heqn; apply cardinal_2 with e; auto with set.
+   rewrite Heqn; apply cardinal_2 with e; auto with set relations.
   inversion H0; auto.
   red; intros.
   rewrite remove_iff in H0; destruct H0.

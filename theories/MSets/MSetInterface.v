@@ -830,7 +830,7 @@ Module MakeSetOrdering (O:OrderedType)(Import M:IN O).
   rewrite (Ad y) in IN; destruct IN as [EQ|IN]. order.
   specialize (Ab y IN). order.
   left; split.
-  rewrite (Ad x); auto.
+  rewrite (Ad x). now left.
   intros y Hy. elim (Em y Hy).
  Qed.
 
@@ -844,9 +844,9 @@ Module MakeSetOrdering (O:OrderedType)(Import M:IN O).
   split; intros [U|U]; try order.
   specialize (Ab1 y U). order.
   specialize (Ab2 y U). order.
-  rewrite (Ad1 x1); auto.
+  rewrite (Ad1 x1); auto with *.
   exists x2; repeat split; auto.
-  rewrite (Ad2 x2); auto.
+  rewrite (Ad2 x2); now left.
   intros y. rewrite (Ad2 y). intros [U|U]. order.
   specialize (Ab2 y U). order.
   Qed.
@@ -947,7 +947,7 @@ Module MakeListOrdering (O:OrderedType).
  Lemma cons_CompSpec : forall c x1 x2 l1 l2, O.eq x1 x2 ->
   CompSpec eq lt l1 l2 c -> CompSpec eq lt (x1::l1) (x2::l2) c.
  Proof.
-  destruct c; simpl; inversion_clear 2; auto.
+  destruct c; simpl; inversion_clear 2; auto with relations.
  Qed.
  Hint Resolve cons_CompSpec.
 

@@ -89,7 +89,7 @@ Qed.
 
 Lemma add_mem_1: mem x (add x s)=true.
 Proof.
-auto with set.
+auto with set relations.
 Qed.
 
 Lemma add_mem_2: ~E.eq x y -> mem y (add x s)=mem y s.
@@ -99,7 +99,7 @@ Qed.
 
 Lemma remove_mem_1: mem x (remove x s)=false.
 Proof.
-rewrite <- not_mem_iff; auto with set.
+rewrite <- not_mem_iff; auto with set relations.
 Qed.
 
 Lemma remove_mem_2: ~E.eq x y -> mem y (remove x s)=mem y s.
@@ -275,7 +275,7 @@ Qed.
 
 Lemma singleton_mem_1: mem x (singleton x)=true.
 Proof.
-auto with set.
+auto with set relations.
 Qed.
 
 Lemma singleton_mem_2: ~E.eq x y -> mem y (singleton x)=false.
@@ -653,7 +653,7 @@ Lemma filter_add_1 : forall s x, f x = true ->
 Proof.
 red; intros; set_iff; do 2 (rewrite filter_iff; auto); set_iff.
 intuition.
-rewrite <- H; apply Comp; auto.
+rewrite <- H; apply Comp; auto with relations.
 Qed.
 
 Lemma filter_add_2 : forall s x, f x = false ->
@@ -672,7 +672,7 @@ unfold Add, MP.Add; intros.
 repeat rewrite filter_iff; auto.
 rewrite H0; clear H0.
 intuition.
-setoid_replace y with x; auto.
+setoid_replace y with x; auto with relations.
 Qed.
 
 Lemma add_filter_2 : forall s s' x,
@@ -908,9 +908,9 @@ elim  (equal_2 H x); auto with set; intros.
 apply fold_equal with (eqA:=eqA); auto with set.
 transitivity (f x (fold f s0 i)).
 apply fold_add with (eqA:=eqA); auto with set.
-transitivity (g x (fold f s0 i)); auto with set.
-transitivity (g x (fold g s0 i)); auto with set.
-apply gc; auto with set.
+transitivity (g x (fold f s0 i)); auto with set relations.
+transitivity (g x (fold g s0 i)); auto with set relations.
+apply gc; auto with set relations.
 symmetry; apply fold_add with (eqA:=eqA); auto.
 do 2 rewrite fold_empty; reflexivity.
 Qed.

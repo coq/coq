@@ -49,22 +49,24 @@ Module KeyDecidableType(D:DecidableType).
 
   Instance eqk_equiv : Equivalence eqk.
   Proof.
-   constructor; eauto.
+   constructor; unfold eqk; repeat red; intros;
+   [ reflexivity | symmetry; auto | etransitivity; eauto ].
   Qed.
 
   Instance eqke_equiv : Equivalence eqke.
   Proof.
-   constructor. auto.
-   red; unfold eqke; intuition.
-   red; unfold eqke; intuition; [ eauto | congruence ].
+   constructor; unfold eqke; repeat red; intuition; simpl;
+   etransitivity; eauto.
   Qed.
 
+(*
   Hint Resolve (@Equivalence_Reflexive _ _ eqk_equiv).
   Hint Resolve (@Equivalence_Transitive _ _ eqk_equiv).
   Hint Immediate (@Equivalence_Symmetric _ _ eqk_equiv).
   Hint Resolve (@Equivalence_Reflexive _ _ eqke_equiv).
   Hint Resolve (@Equivalence_Transitive _ _ eqke_equiv).
   Hint Immediate (@Equivalence_Symmetric _ _ eqke_equiv).
+*)
 
   Lemma InA_eqke_eqk :
      forall x m, InA eqke x m -> InA eqk x m.

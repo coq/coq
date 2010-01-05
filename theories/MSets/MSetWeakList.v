@@ -119,6 +119,11 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   Notation NoDup := (NoDupA X.eq).
   Notation In := (InA X.eq).
 
+  (* TODO: modify proofs in order to avoid these hints *)
+  Hint Resolve (@Equivalence_Reflexive _ _ X.eq_equiv).
+  Hint Immediate (@Equivalence_Symmetric _ _ X.eq_equiv).
+  Hint Resolve (@Equivalence_Transitive _ _ X.eq_equiv).
+
   Definition IsOk := NoDup.
 
   Class Ok (s:t) : Prop := { ok : NoDup s }.
