@@ -57,7 +57,7 @@ Lemma mod_eq :
 Proof.
 intros.
 rewrite <- add_move_l.
-symmetry. apply div_mod; auto.
+symmetry. now apply div_mod.
 Qed.
 
 Ltac pos_or_neg a :=
@@ -68,24 +68,30 @@ Ltac pos_or_neg a :=
 (*TODO: To migrate later ... *)
 Lemma abs_pos : forall z, 0<=z -> abs z == z.
 Proof.
-intros; apply max_l. apply le_trans with 0; auto.
-rewrite opp_nonpos_nonneg; auto.
+intros; apply max_l. apply le_trans with 0; trivial.
+now rewrite opp_nonpos_nonneg.
 Qed.
 Lemma abs_neg : forall z, 0<=-z -> abs z == -z.
 Proof.
-intros; apply max_r. apply le_trans with 0; auto.
-rewrite <- opp_nonneg_nonpos; auto.
+intros; apply max_r. apply le_trans with 0; trivial.
+now rewrite <- opp_nonneg_nonpos.
+Qed.
+Instance abs_wd : Proper (eq==>eq) abs.
+Proof.
+intros x y EQ. pos_or_neg x.
+rewrite 2 abs_pos; trivial. now rewrite <- EQ.
+rewrite 2 abs_neg; try order. now rewrite opp_inj_wd. rewrite <- EQ; order.
 Qed.
 Lemma abs_opp : forall z, abs (-z) == abs z.
 Proof.
 intros. pos_or_neg z.
-rewrite (abs_pos z), (abs_neg (-z)); try rewrite opp_involutive; auto.
+rewrite (abs_pos z), (abs_neg (-z)); rewrite ? opp_involutive; order.
 rewrite (abs_pos (-z)), (abs_neg z); order.
 Qed.
 Lemma abs_nonneg : forall z, 0<=abs z.
 Proof.
 intros. pos_or_neg z.
-rewrite abs_pos; auto.
+rewrite abs_pos; trivial.
 rewrite <-abs_opp, abs_pos; order.
 Qed.
 Lemma abs_nz : forall z, z~=0 -> 0<abs z.
@@ -96,17 +102,13 @@ rewrite <-abs_opp, abs_pos; order.
 Qed.
 Lemma abs_mul : forall a b, abs (a*b) == abs a * abs b.
 Proof.
-intros. pos_or_neg a; pos_or_neg b.
-rewrite 3 abs_pos; auto using mul_nonneg_nonneg.
-rewrite (abs_pos a), 2 abs_neg; try order.
- rewrite mul_opp_r; auto.
- rewrite <-mul_opp_r; apply mul_nonneg_nonneg; order.
-rewrite (abs_pos b), 2 abs_neg; try order.
- rewrite mul_opp_l; auto.
- rewrite <-mul_opp_l; apply mul_nonneg_nonneg; order.
-rewrite (abs_pos (a*b)), 2 abs_neg; try order.
- rewrite mul_opp_opp; auto.
- rewrite <-mul_opp_opp; apply mul_nonneg_nonneg; order.
+assert (Aux1 : forall a b, 0<=a -> abs (a*b) == a * abs b).
+ intros. pos_or_neg b.
+ rewrite 2 abs_pos; try order. now apply mul_nonneg_nonneg.
+ rewrite 2 abs_neg; try order. now rewrite mul_opp_r.
+  rewrite <-mul_opp_r; apply mul_nonneg_nonneg; order.
+intros. pos_or_neg a. rewrite Aux1, (abs_pos a); order.
+rewrite <- mul_opp_opp, Aux1, abs_opp, (abs_neg a); order.
 Qed.
 (*/TODO *)
 
@@ -118,15 +120,15 @@ Theorem div_mod_unique : forall b q1 q2 r1 r2 : t,
 Proof.
 intros b q1 q2 r1 r2 Hr1 Hr2 EQ.
 pos_or_neg b.
-rewrite abs_pos in *; auto.
-apply div_mod_unique with b; auto.
+rewrite abs_pos in * by trivial.
+apply div_mod_unique with b; trivial.
 rewrite abs_neg in *; try order.
-rewrite eq_sym_iff. apply div_mod_unique with (-b); auto.
+rewrite eq_sym_iff. apply div_mod_unique with (-b); trivial.
 rewrite 2 mul_opp_l.
 rewrite add_move_l, sub_opp_r.
 rewrite <-add_assoc.
 symmetry. rewrite add_move_l, sub_opp_r.
-rewrite (add_comm r2), (add_comm r1); auto.
+now rewrite (add_comm r2), (add_comm r1).
 Qed.
 
 Theorem div_unique:
@@ -137,9 +139,9 @@ assert (Hb : b~=0).
  pos_or_neg b.
  rewrite abs_pos in Hr; intuition; order.
  rewrite <- opp_0, eq_opp_r. rewrite abs_neg in Hr; intuition; order.
-rewrite (div_mod a b Hb) in EQ.
-destruct (div_mod_unique b (a/b) q (a mod b) r); auto.
-apply mod_always_pos.
+destruct (div_mod_unique b q (a/b) r (a mod b)); trivial.
+now apply mod_always_pos.
+now rewrite <- div_mod.
 Qed.
 
 Theorem mod_unique:
@@ -150,9 +152,9 @@ assert (Hb : b~=0).
  pos_or_neg b.
  rewrite abs_pos in Hr; intuition; order.
  rewrite <- opp_0, eq_opp_r. rewrite abs_neg in Hr; intuition; order.
-rewrite (div_mod a b Hb) in EQ.
-destruct (div_mod_unique b (a/b) q (a mod b) r); auto.
-apply mod_always_pos.
+destruct (div_mod_unique b q (a/b) r (a mod b)); trivial.
+now apply mod_always_pos.
+now rewrite <- div_mod.
 Qed.
 
 (** TODO: Provide a [sign] function *)
@@ -171,7 +173,7 @@ Proof.
 intros. symmetry.
 apply div_unique with (a mod b).
 rewrite abs_opp; apply mod_always_pos.
-rewrite mul_opp_opp; apply div_mod; auto.
+rewrite mul_opp_opp; now apply div_mod.
 Qed.
 
 Lemma mod_opp_r : forall a b, b~=0 -> a mod (-b) == a mod b.
@@ -179,7 +181,7 @@ Proof.
 intros. symmetry.
 apply mod_unique with (-(a/b)).
 rewrite abs_opp; apply mod_always_pos.
-rewrite mul_opp_opp; apply div_mod; auto.
+rewrite mul_opp_opp; now apply div_mod.
 Qed.
 
 Lemma div_opp_l_z : forall a b, b~=0 -> a mod b == 0 ->
@@ -189,7 +191,7 @@ intros a b Hb Hab. symmetry.
 apply div_unique with (-(a mod b)).
 rewrite Hab, opp_0. split; [order|].
 pos_or_neg b; [rewrite abs_pos | rewrite abs_neg]; order.
-rewrite mul_opp_r, <-opp_add_distr, <-div_mod; auto.
+now rewrite mul_opp_r, <-opp_add_distr, <-div_mod.
 Qed.
 
 Lemma div_opp_l_nz : forall a b, b~=0 -> a mod b ~= 0 ->
@@ -213,8 +215,8 @@ Lemma mod_opp_l_z : forall a b, b~=0 -> a mod b == 0 ->
 Proof.
 intros a b Hb Hab. symmetry.
 apply mod_unique with (-(a/b)).
-split; [order|apply abs_nz; auto].
-rewrite <-opp_0, <-Hab, mul_opp_r, <-opp_add_distr, <-div_mod; auto.
+split; [order|now apply abs_nz].
+now rewrite <-opp_0, <-Hab, mul_opp_r, <-opp_add_distr, <-div_mod.
 Qed.
 
 Lemma mod_opp_l_nz : forall a b, b~=0 -> a mod b ~= 0 ->
@@ -236,26 +238,26 @@ Qed.
 Lemma div_opp_opp_z : forall a b, b~=0 -> a mod b == 0 ->
  (-a)/(-b) == a/b.
 Proof.
-intros. rewrite div_opp_r, div_opp_l_z, opp_involutive; auto.
+intros. now rewrite div_opp_r, div_opp_l_z, opp_involutive.
 Qed.
 
 Lemma div_opp_opp_nz : forall a b, b~=0 -> a mod b ~= 0 ->
  (-a)/(-b) == a/b + sign(b).
 Proof.
-intros. rewrite div_opp_r, div_opp_l_nz; auto.
-rewrite opp_sub_distr, opp_involutive; auto.
+intros. rewrite div_opp_r, div_opp_l_nz by trivial.
+now rewrite opp_sub_distr, opp_involutive.
 Qed.
 
 Lemma mod_opp_opp_z : forall a b, b~=0 -> a mod b == 0 ->
  (-a) mod (-b) == 0.
 Proof.
-intros. rewrite mod_opp_r, mod_opp_l_z; auto.
+intros. now rewrite mod_opp_r, mod_opp_l_z.
 Qed.
 
 Lemma mod_opp_opp_nz : forall a b, b~=0 -> a mod b ~= 0 ->
  (-a) mod (-b) == abs b - a mod b.
 Proof.
-intros. rewrite mod_opp_r, mod_opp_l_nz; auto.
+intros. now rewrite mod_opp_r, mod_opp_l_nz.
 Qed.
 
 (** A division by itself returns 1 *)
@@ -263,14 +265,14 @@ Qed.
 Lemma div_same : forall a, a~=0 -> a/a == 1.
 Proof.
 intros. symmetry. apply div_unique with 0.
-split; [order|apply abs_nz; auto].
-nzsimpl; auto.
+split; [order|now apply abs_nz].
+now nzsimpl.
 Qed.
 
 Lemma mod_same : forall a, a~=0 -> a mod a == 0.
 Proof.
 intros.
-rewrite mod_eq, div_same; auto. nzsimpl. apply sub_diag.
+rewrite mod_eq, div_same by trivial. nzsimpl. apply sub_diag.
 Qed.
 
 (** A division of a small number by a bigger one yields zero. *)
@@ -288,19 +290,19 @@ Proof. exact mod_small. Qed.
 Lemma div_0_l: forall a, a~=0 -> 0/a == 0.
 Proof.
 intros. pos_or_neg a. apply div_0_l; order.
-apply opp_inj. rewrite <- div_opp_r, opp_0; auto. apply div_0_l; auto.
+apply opp_inj. rewrite <- div_opp_r, opp_0 by trivial. now apply div_0_l.
 Qed.
 
 Lemma mod_0_l: forall a, a~=0 -> 0 mod a == 0.
 Proof.
-intros; rewrite mod_eq, div_0_l; nzsimpl; auto.
+intros; rewrite mod_eq, div_0_l; now nzsimpl.
 Qed.
 
 Lemma div_1_r: forall a, a/1 == a.
 Proof.
 intros. symmetry. apply div_unique with 0.
 assert (H:=lt_0_1); rewrite abs_pos; intuition; order.
-nzsimpl; auto.
+now nzsimpl.
 Qed.
 
 Lemma mod_1_r: forall a, a mod 1 == 0.
@@ -318,13 +320,13 @@ Proof. exact mod_1_l. Qed.
 Lemma div_mul : forall a b, b~=0 -> (a*b)/b == a.
 Proof.
 intros. symmetry. apply div_unique with 0.
-split; [order|apply abs_nz; auto].
+split; [order|now apply abs_nz].
 nzsimpl; apply mul_comm.
 Qed.
 
 Lemma mod_mul : forall a b, b~=0 -> (a*b) mod b == 0.
 Proof.
-intros. rewrite mod_eq, div_mul; auto. rewrite mul_comm; apply sub_diag.
+intros. rewrite mod_eq, div_mul by trivial. rewrite mul_comm; apply sub_diag.
 Qed.
 
 (** * Order results about mod and div *)
@@ -334,7 +336,7 @@ Qed.
 Theorem mod_le: forall a b, 0<=a -> b~=0 -> a mod b <= a.
 Proof.
 intros. pos_or_neg b. apply mod_le; order.
-rewrite <- mod_opp_r; auto. apply mod_le; order.
+rewrite <- mod_opp_r by trivial. apply mod_le; order.
 Qed.
 
 Theorem div_pos : forall a b, 0<=a -> 0<b -> 0<= a/b.
@@ -349,22 +351,21 @@ intros a b Hb.
 split.
 intros EQ.
 rewrite (div_mod a b Hb), EQ; nzsimpl.
-apply mod_always_pos; auto.
+apply mod_always_pos.
 intros. pos_or_neg b.
-apply div_small; auto.
-rewrite <- (abs_pos b); auto.
-apply opp_inj; rewrite opp_0, <- div_opp_r; auto.
-apply div_small; auto.
-rewrite <- (abs_neg b); auto.
-rewrite <-opp_0 in Hb. rewrite eq_opp_r in Hb. order.
+apply div_small.
+now rewrite <- (abs_pos b).
+apply opp_inj; rewrite opp_0, <- div_opp_r by trivial.
+apply div_small.
+rewrite <- (abs_neg b) by order. trivial.
 Qed.
 
 Lemma mod_small_iff : forall a b, b~=0 -> (a mod b == a <-> 0<=a<abs b).
 Proof.
 intros.
-rewrite <- div_small_iff, mod_eq; auto.
+rewrite <- div_small_iff, mod_eq by trivial.
 rewrite sub_move_r, <- (add_0_r a) at 1. rewrite add_cancel_l.
-rewrite eq_sym_iff, eq_mul_0. intuition.
+rewrite eq_sym_iff, eq_mul_0. tauto.
 Qed.
 
 (** As soon as the divisor is strictly greater than 1,
@@ -385,7 +386,7 @@ rewrite (mul_lt_mono_pos_l c) by order.
 nzsimpl.
 rewrite (add_lt_mono_r _ _ (a mod c)).
 rewrite <- div_mod by order.
-apply lt_le_trans with b; auto.
+apply lt_le_trans with b; trivial.
 rewrite (div_mod b c) at 1; [| order].
 rewrite <- add_assoc, <- add_le_mono_l.
 apply le_trans with (c+0).
@@ -405,10 +406,10 @@ Qed.
 Lemma mul_div_le : forall a b, b~=0 -> b*(a/b) <= a.
 Proof.
 intros.
-rewrite (div_mod a b) at 2; auto.
+rewrite (div_mod a b) at 2; trivial.
 rewrite <- (add_0_r (b*(a/b))) at 1.
 rewrite <- add_le_mono_l.
-destruct (mod_always_pos a b); auto.
+now destruct (mod_always_pos a b).
 Qed.
 
 (** Giving a reversed bound is slightly more complex *)
@@ -452,8 +453,8 @@ Theorem div_lt_upper_bound:
   forall a b q, 0<b -> a < b*q -> a/b < q.
 Proof.
 intros.
-rewrite (mul_lt_mono_pos_l b); auto.
-apply le_lt_trans with a; auto.
+rewrite (mul_lt_mono_pos_l b) by trivial.
+apply le_lt_trans with a; trivial.
 apply mul_div_le; order.
 Qed.
 
@@ -462,7 +463,7 @@ Theorem div_le_upper_bound:
 Proof.
 intros.
 rewrite <- (div_mul q b) by order.
-apply div_le_mono; auto. rewrite mul_comm; auto.
+apply div_le_mono; trivial. now rewrite mul_comm.
 Qed.
 
 Theorem div_le_lower_bound:
@@ -470,7 +471,7 @@ Theorem div_le_lower_bound:
 Proof.
 intros.
 rewrite <- (div_mul q b) by order.
-apply div_le_mono; auto. rewrite mul_comm; auto.
+apply div_le_mono; trivial. now rewrite mul_comm.
 Qed.
 
 (** A division respects opposite monotonicity for the divisor *)
@@ -485,10 +486,10 @@ Lemma mod_add : forall a b c, c~=0 ->
 Proof.
 intros.
 symmetry.
-apply mod_unique with (a/c+b); auto.
-apply mod_always_pos; auto.
+apply mod_unique with (a/c+b); trivial.
+now apply mod_always_pos.
 rewrite mul_add_distr_l, add_shuffle0, <- div_mod by order.
-rewrite mul_comm; auto.
+now rewrite mul_comm.
 Qed.
 
 Lemma div_add : forall a b c, c~=0 ->
@@ -499,14 +500,14 @@ apply (mul_cancel_l _ _ c); try order.
 apply (add_cancel_r _ _ ((a+b*c) mod c)).
 rewrite <- div_mod, mod_add by order.
 rewrite mul_add_distr_l, add_shuffle0, <- div_mod by order.
-rewrite mul_comm; auto.
+now rewrite mul_comm.
 Qed.
 
 Lemma div_add_l: forall a b c, b~=0 ->
  (a * b + c) / b == a + c / b.
 Proof.
  intros a b c. rewrite (add_comm _ c), (add_comm a).
- intros. apply div_add; auto.
+ now apply div_add.
 Qed.
 
 (** Cancellations. *)
@@ -522,19 +523,19 @@ symmetry.
 apply div_unique with ((a mod b)*c).
 (* ineqs *)
 rewrite abs_mul, (abs_pos c) by order.
-rewrite <-(mul_0_l c), <-mul_lt_mono_pos_r, <-mul_le_mono_pos_r; auto.
+rewrite <-(mul_0_l c), <-mul_lt_mono_pos_r, <-mul_le_mono_pos_r by trivial.
 apply mod_always_pos.
 (* equation *)
 rewrite (div_mod a b) at 1; [|order].
 rewrite mul_add_distr_r.
 rewrite add_cancel_r.
-rewrite <- 2 mul_assoc. rewrite (mul_comm c); auto.
+rewrite <- 2 mul_assoc. now rewrite (mul_comm c).
 Qed.
 
 Lemma div_mul_cancel_l : forall a b c, b~=0 -> 0<c ->
  (c*a)/(c*b) == a/b.
 Proof.
-intros. rewrite !(mul_comm c); apply div_mul_cancel_r; auto.
+intros. rewrite !(mul_comm c); now apply div_mul_cancel_r.
 Qed.
 
 Lemma mul_mod_distr_l: forall a b c, b~=0 -> 0<c ->
@@ -543,7 +544,7 @@ Proof.
 intros.
 rewrite <- (add_cancel_l _ _ ((c*b)* ((c*a)/(c*b)))).
 rewrite <- div_mod.
-rewrite div_mul_cancel_l; auto.
+rewrite div_mul_cancel_l by trivial.
 rewrite <- mul_assoc, <- mul_add_distr_l, mul_cancel_l by order.
 apply div_mod; order.
 rewrite <- neq_mul_0; intuition; order.
@@ -552,7 +553,7 @@ Qed.
 Lemma mul_mod_distr_r: forall a b c, b~=0 -> 0<c ->
   (a*c) mod (b*c) == (a mod b) * c.
 Proof.
- intros. rewrite !(mul_comm _ c); rewrite mul_mod_distr_l; auto.
+ intros. rewrite !(mul_comm _ c); now rewrite mul_mod_distr_l.
 Qed.
 
 
@@ -561,8 +562,8 @@ Qed.
 Theorem mod_mod: forall a n, n~=0 ->
  (a mod n) mod n == a mod n.
 Proof.
-intros. rewrite mod_small_iff; auto.
-apply mod_always_pos; auto.
+intros. rewrite mod_small_iff by trivial.
+now apply mod_always_pos.
 Qed.
 
 Lemma mul_mod_idemp_l : forall a b n, n~=0 ->
@@ -572,20 +573,20 @@ Proof.
  rewrite (div_mod a n) at 1; [|order].
  rewrite add_comm, (mul_comm n), (mul_comm _ b).
  rewrite mul_add_distr_l, mul_assoc.
- intros. rewrite mod_add; auto.
- rewrite mul_comm; auto.
+ rewrite mod_add by trivial.
+ now rewrite mul_comm.
 Qed.
 
 Lemma mul_mod_idemp_r : forall a b n, n~=0 ->
  (a*(b mod n)) mod n == (a*b) mod n.
 Proof.
- intros. rewrite !(mul_comm a). apply mul_mod_idemp_l; auto.
+ intros. rewrite !(mul_comm a). now apply mul_mod_idemp_l.
 Qed.
 
 Theorem mul_mod: forall a b n, n~=0 ->
  (a * b) mod n == ((a mod n) * (b mod n)) mod n.
 Proof.
- intros. rewrite mul_mod_idemp_l, mul_mod_idemp_r; auto.
+ intros. now rewrite mul_mod_idemp_l, mul_mod_idemp_r.
 Qed.
 
 Lemma add_mod_idemp_l : forall a b n, n~=0 ->
@@ -594,19 +595,19 @@ Proof.
  intros a b n Hn. symmetry.
  rewrite (div_mod a n) at 1; [|order].
  rewrite <- add_assoc, add_comm, mul_comm.
- intros. rewrite mod_add; auto.
+ now rewrite mod_add.
 Qed.
 
 Lemma add_mod_idemp_r : forall a b n, n~=0 ->
  (a+(b mod n)) mod n == (a+b) mod n.
 Proof.
- intros. rewrite !(add_comm a). apply add_mod_idemp_l; auto.
+ intros. rewrite !(add_comm a). now apply add_mod_idemp_l.
 Qed.
 
 Theorem add_mod: forall a b n, n~=0 ->
  (a+b) mod n == (a mod n + b mod n) mod n.
 Proof.
- intros. rewrite add_mod_idemp_l, add_mod_idemp_r; auto.
+ intros. now rewrite add_mod_idemp_l, add_mod_idemp_r.
 Qed.
 
 (** With the current convention, the following result isn't always
@@ -617,17 +618,17 @@ Lemma div_div : forall a b c, 0<b -> 0<c ->
  (a/b)/c == a/(b*c).
 Proof.
  intros a b c Hb Hc.
- apply div_unique with (b*((a/b) mod c) + a mod b); auto.
+ apply div_unique with (b*((a/b) mod c) + a mod b).
  (* begin 0<= ... <abs(b*c) *)
  rewrite abs_mul.
- destruct (mod_always_pos (a/b) c), (mod_always_pos a b); auto using div_pos.
+ destruct (mod_always_pos (a/b) c), (mod_always_pos a b).
  split.
- apply add_nonneg_nonneg; auto.
+ apply add_nonneg_nonneg; trivial.
  apply mul_nonneg_nonneg; order.
  apply lt_le_trans with (b*((a/b) mod c) + abs b).
- rewrite <- add_lt_mono_l; auto.
+ now rewrite <- add_lt_mono_l.
  rewrite (abs_pos b) by order.
- rewrite <- mul_succ_r, <- mul_le_mono_pos_l, le_succ_l; auto.
+ now rewrite <- mul_succ_r, <- mul_le_mono_pos_l, le_succ_l.
  (* end 0<= ... < abs(b*c) *)
  rewrite (div_mod a b) at 1; [|order].
  rewrite add_assoc, add_cancel_r.
@@ -648,10 +649,10 @@ Lemma mod_divides : forall a b, b~=0 ->
 Proof.
 intros a b Hb. split.
 intros Hab. exists (a/b). rewrite (div_mod a b Hb) at 1.
- rewrite Hab; nzsimpl; auto.
+ rewrite Hab; now nzsimpl.
 intros (c,Hc).
 rewrite Hc, mul_comm.
-apply mod_mul; auto.
+now apply mod_mul.
 Qed.
 
 
