@@ -26,21 +26,9 @@ Require Import ZAxioms ZProperties NZDiv.
 Open Scope NumScope.
 
 Module Type ZDiv (Import Z : ZAxiomsSig).
-
- Parameter Inline div : t -> t -> t.
- Parameter Inline modulo : t -> t -> t.
-
- Infix "/" := div : NumScope.
- Infix "mod" := modulo (at level 40, no associativity) : NumScope.
-
- Declare Instance div_wd : Proper (eq==>eq==>eq) div.
- Declare Instance mod_wd : Proper (eq==>eq==>eq) modulo.
-
+ Include Type NZDivCommon Z. (** div, mod, compat with eq, equation a=bq+r *)
  Definition abs z := max z (-z).
-
- Axiom div_mod : forall a b, b ~= 0 -> a == b*(a/b) + (a mod b).
  Axiom mod_always_pos : forall a b, 0 <= a mod b < abs b.
-
 End ZDiv.
 
 Module Type ZDivSig := ZAxiomsSig <+ ZDiv.

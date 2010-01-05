@@ -13,19 +13,8 @@ Require Import NAxioms NProperties NZDiv.
 Open Scope NumScope.
 
 Module Type NDiv (Import N : NAxiomsSig).
-
- Parameter Inline div : t -> t -> t.
- Parameter Inline modulo : t -> t -> t.
-
- Infix "/" := div : NumScope.
- Infix "mod" := modulo (at level 40, no associativity) : NumScope.
-
- Declare Instance div_wd : Proper (eq==>eq==>eq) div.
- Declare Instance mod_wd : Proper (eq==>eq==>eq) modulo.
-
- Axiom div_mod : forall a b, b ~= 0 -> a == b*(a/b) + (a mod b).
+ Include Type NZDivCommon N. (** div, mod, compat with eq, equation a=bq+r *)
  Axiom mod_upper_bound : forall a b, b ~= 0 -> a mod b < b.
-
 End NDiv.
 
 Module Type NDivSig := NAxiomsSig <+ NDiv.

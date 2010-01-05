@@ -12,20 +12,28 @@ Require Import NZAxioms NZMulOrder.
 
 Open Scope NumScope.
 
-Module Type NZDiv (Import NZ : NZOrdAxiomsSig).
+(** This first signature will be common to all divisions over NZ, N and Z *)
 
+Module Type NZDivCommon (Import NZ : NZAxiomsSig).
  Parameter Inline div : t -> t -> t.
  Parameter Inline modulo : t -> t -> t.
-
  Infix "/" := div : NumScope.
  Infix "mod" := modulo (at level 40, no associativity) : NumScope.
-
  Declare Instance div_wd : Proper (eq==>eq==>eq) div.
  Declare Instance mod_wd : Proper (eq==>eq==>eq) modulo.
-
  Axiom div_mod : forall a b, b ~= 0 -> a == b*(a/b) + (a mod b).
- Axiom mod_bound : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
+End NZDivCommon.
 
+(** The different divisions will only differ in the conditions
+    they impose on [modulo]. For NZ, we only describe behavior
+    on positive numbers.
+
+    NB: This axiom would also be true for N and Z, but redundant.
+*)
+
+Module Type NZDiv (Import NZ : NZOrdAxiomsSig).
+ Include Type NZDivCommon NZ.
+ Axiom mod_bound : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
 End NZDiv.
 
 Module Type NZDivSig := NZOrdAxiomsSig <+ NZDiv.
