@@ -38,9 +38,8 @@ End NZDiv.
 
 Module Type NZDivSig := NZOrdAxiomsSig <+ NZDiv.
 
-Module NZDivPropFunct (Import NZ : NZDivSig).
- (* TODO: a transformer un jour en arg funct puis include *)
- Module Import P := NZMulOrderPropFunct NZ.
+Module NZDivPropFunct
+ (Import NZ : NZDivSig)(Import NZP : NZMulOrderPropSig NZ).
 
 (** Uniqueness theorems *)
 

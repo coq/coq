@@ -16,7 +16,7 @@ and proves its properties *)
 Require Export NSub.
 
 Module NStrongRecPropFunct (Import N : NAxiomsSig).
-Include NSubPropFunct N.
+Include Type NSubPropFunct N.
 Local Open Scope NumScope.
 
 Section StrongRecursion.

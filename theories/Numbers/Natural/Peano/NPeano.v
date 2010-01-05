@@ -232,4 +232,4 @@ Module NDivMod <: NDivSig.
  Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 End NDivMod.
 
-Module Export NDivPropMod := NDivPropFunct NDivMod.
+Module Export NDivPropMod := NDivPropFunct NDivMod NPeanoPropMod.

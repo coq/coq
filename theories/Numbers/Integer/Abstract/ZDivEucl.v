@@ -33,9 +33,7 @@ End ZDiv.
 
 Module Type ZDivSig := ZAxiomsSig <+ ZDiv.
 
-Module ZDivPropFunct (Import Z : ZDivSig).
- (* TODO: en faire un arg du foncteur + comprendre le bug de SearchAbout *)
- Module Import ZP := ZPropFunct Z.
+Module ZDivPropFunct (Import Z : ZDivSig)(Import ZP : ZPropSig Z).
 
 (** We benefit from what already exists for NZ *)
 
@@ -48,7 +46,7 @@ Module ZDivPropFunct (Import Z : ZDivSig).
   apply le_trans with 0; [ rewrite opp_nonpos_nonneg |]; order.
   Qed.
  End Z'.
- Module Import NZDivP := NZDivPropFunct Z'.
+ Module Import NZDivP := NZDivPropFunct Z' ZP.
 
 (** Another formulation of the main equation *)
 

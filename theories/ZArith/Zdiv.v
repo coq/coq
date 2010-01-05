@@ -319,7 +319,7 @@ Module ZDivMod := ZBinary.ZBinAxiomsMod <+ ZDiv.
 
 (** We hence benefit from generic results about this abstract division. *)
 
-Module Z := ZDivFloor.ZDivPropFunct ZDivMod.
+Module Z := ZDivFloor.ZDivPropFunct ZDivMod ZBinary.ZBinPropMod.
 
 
 (** Existence theorem *)

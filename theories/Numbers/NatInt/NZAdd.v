@@ -13,7 +13,8 @@
 Require Import NZAxioms.
 Require Import NZBase.
 
-Module NZAddProp (Import NZ : NZAxiomsSig)(Import NZBase : NZBaseProp NZ).
+Module Type NZAddPropSig
+ (Import NZ : NZAxiomsSig)(Import NZBase : NZBasePropSig NZ).
 Local Open Scope NumScope.
 
 Hint Rewrite
@@ -88,6 +89,4 @@ Proof.
 intro n; now nzsimpl.
 Qed.
 
-End NZAddProp.
-
-Module NZAddPropFunct (NZ : NZAxiomsSig) := NZBasePropFunct NZ <+ NZAddProp NZ.
+End NZAddPropSig.

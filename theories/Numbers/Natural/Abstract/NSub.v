@@ -12,7 +12,7 @@
 
 Require Export NMulOrder.
 
-Module NSubPropFunct (Import N : NAxiomsSig).
+Module Type NSubPropFunct (Import N : NAxiomsSig).
 Include NMulOrderPropFunct N.
 Local Open Scope NumScope.
 
@@ -220,7 +220,7 @@ Qed.
 
 Theorem add_dichotomy :
   forall n m, (exists p, p + n == m) \/ (exists p, p + m == n).
-Proof le_alt_dichotomy.
+Proof. exact le_alt_dichotomy. Qed.
 
 End NSubPropFunct.
 

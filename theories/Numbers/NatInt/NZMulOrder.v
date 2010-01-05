@@ -13,8 +13,8 @@
 Require Import NZAxioms.
 Require Import NZAddOrder.
 
-Module NZMulOrderPropFunct (Import NZ : NZOrdAxiomsSig).
-Include NZAddOrderPropFunct NZ.
+Module Type NZMulOrderPropSig (Import NZ : NZOrdAxiomsSig).
+Include Type NZAddOrderPropSig NZ.
 Local Open Scope NumScope.
 
 Theorem mul_lt_pred :
@@ -305,4 +305,4 @@ rewrite !mul_add_distr_r; nzsimpl; now rewrite le_succ_l.
 apply add_pos_pos; now apply lt_0_1.
 Qed.
 
-End NZMulOrderPropFunct.
+End NZMulOrderPropSig.

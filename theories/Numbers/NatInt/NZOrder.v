@@ -12,7 +12,8 @@
 
 Require Import NZAxioms NZBase Decidable OrderTac.
 
-Module NZOrderProp (Import NZ : NZOrdSig)(Import NZBase : NZBaseProp NZ).
+Module Type NZOrderPropSig
+ (Import NZ : NZOrdSig)(Import NZBase : NZBasePropSig NZ).
 Local Open Scope NumScope.
 
 Instance le_wd : Proper (eq==>eq==>iff) le.
@@ -613,9 +614,11 @@ Qed.
 
 End WF.
 
-End NZOrderProp.
+End NZOrderPropSig.
 
-Module NZOrderPropFunct (NZ : NZOrdSig) := NZBasePropFunct NZ <+ NZOrderProp NZ.
+Module NZOrderPropFunct (Import NZ : NZOrdSig).
+ Include Type NZBasePropSig NZ <+ NZOrderPropSig NZ.
+End NZOrderPropFunct.
 
 
 (** To Merge with GenericMinMax ... *)

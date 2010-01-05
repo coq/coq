@@ -12,7 +12,7 @@
 
 Require Export ZAddOrder.
 
-Module ZMulOrderPropFunct (Import Z : ZAxiomsSig).
+Module Type ZMulOrderPropFunct (Import Z : ZAxiomsSig).
 Include ZAddOrderPropFunct Z.
 Local Open Scope NumScope.
 

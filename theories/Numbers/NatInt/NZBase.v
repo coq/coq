@@ -12,7 +12,7 @@
 
 Require Import NZAxioms.
 
-Module Type NZBaseProp (Import NZ : NZDomainSig).
+Module Type NZBasePropSig (Import NZ : NZDomainSig).
 Local Open Scope NumScope.
 
 Include BackportEq NZ NZ. (** eq_refl, eq_sym, eq_trans *)
@@ -86,9 +86,5 @@ Tactic Notation "nzinduct" ident(n) :=
 Tactic Notation "nzinduct" ident(n) constr(u) :=
   induction_maker n ltac:(apply central_induction with (z := u)).
 
-End NZBaseProp.
-
-Module NZBasePropFunct (NZ : NZDomainSig).
- Include Type NZBaseProp NZ.
-End NZBasePropFunct.
+End NZBasePropSig.
 

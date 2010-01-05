@@ -16,7 +16,7 @@ Require Import NZProperties.
 
 Module NBasePropFunct (Import N : NAxiomsSig).
 (** First, we import all known facts about both natural numbers and integers. *)
-Include NZPropFunct N.
+Include Type NZPropFunct N.
 Local Open Scope NumScope.
 
 (** We prove that the successor of a number is not zero by defining a

@@ -7,10 +7,9 @@
 (************************************************************************)
 
 
-Require Import BinPos BinNat Nnat ZArith_base ROmega ZArithRing
- ZBinary ZDivTrunc Morphisms.
+Require Import BinPos BinNat Nnat ZArith_base ROmega ZArithRing Morphisms.
 Require Export ZOdiv_def.
-Require Zdiv.
+Require Zdiv ZBinary ZDivTrunc.
 
 Open Scope Z_scope.
 
@@ -247,7 +246,7 @@ Qed.
 (** We know enough to prove that [ZOdiv] and [ZOmod] are instances of
     one of the abstract Euclidean divisions of Numbers. *)
 
-Module ZODiv <: ZDiv ZBinAxiomsMod.
+Module ZODiv <: ZDivTrunc.ZDiv ZBinary.ZBinAxiomsMod.
  Definition div := ZOdiv.
  Definition modulo := ZOmod.
  Program Instance div_wd : Proper (eq==>eq==>eq) div.
@@ -259,12 +258,12 @@ Module ZODiv <: ZDiv ZBinAxiomsMod.
  Definition mod_opp_r := fun a b (_:b<>0) => ZOmod_opp_r a b.
 End ZODiv.
 
-Module ZODivMod := ZBinAxiomsMod <+ ZODiv.
+Module ZODivMod := ZBinary.ZBinAxiomsMod <+ ZODiv.
 
 (** We hence benefit from generic results about this abstract division. *)
 
 Module Z.
- Include ZDivPropFunct ZODivMod.
+ Include ZDivTrunc.ZDivPropFunct ZODivMod ZBinary.ZBinPropMod.
 End Z.
 
 (** * Unicity results *)
@@ -434,15 +433,15 @@ Proof. intros. zero_or_not b. apply Z.mod_le; auto with zarith. Qed.
 
 Theorem ZOdiv_le_upper_bound:
   forall a b q, 0 < b -> a <= q*b -> a/b <= q.
-Proof. intros a b q; rewrite mul_comm; apply Z.div_le_upper_bound. Qed.
+Proof. intros a b q; rewrite Zmult_comm; apply Z.div_le_upper_bound. Qed.
 
 Theorem ZOdiv_lt_upper_bound:
   forall a b q, 0 <= a -> 0 < b -> a < q*b -> a/b < q.
-Proof. intros a b q; rewrite mul_comm; apply Z.div_lt_upper_bound. Qed.
+Proof. intros a b q; rewrite Zmult_comm; apply Z.div_lt_upper_bound. Qed.
 
 Theorem ZOdiv_le_lower_bound:
   forall a b q, 0 < b -> q*b <= a -> q <= a/b.
-Proof. intros a b q; rewrite mul_comm; apply Z.div_le_lower_bound. Qed.
+Proof. intros a b q; rewrite Zmult_comm; apply Z.div_le_lower_bound. Qed.
 
 Theorem ZOdiv_sgn: forall a b,
   0 <= Zsgn (a/b) * Zsgn a * Zsgn b.

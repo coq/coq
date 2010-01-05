@@ -12,8 +12,9 @@
 
 Require Import NZAxioms NZBase NZAdd.
 
-Module NZMulProp (Import NZ : NZAxiomsSig)(Import NZBase : NZBaseProp NZ).
-Include NZAddProp NZ NZBase.
+Module Type NZMulPropSig
+ (Import NZ : NZAxiomsSig)(Import NZBase : NZBasePropSig NZ).
+Include Type NZAddPropSig NZ NZBase.
 Local Open Scope NumScope.
 
 Theorem mul_0_r : forall n, n * 0 == 0.
@@ -67,6 +68,4 @@ Proof.
 intro n. now nzsimpl.
 Qed.
 
-End NZMulProp.
-
-Module NZMulPropFunct (NZ : NZAxiomsSig) := NZBasePropFunct NZ <+ NZMulProp NZ.
+End NZMulPropSig.

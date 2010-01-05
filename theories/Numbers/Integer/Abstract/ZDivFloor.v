@@ -36,9 +36,7 @@ End ZDiv.
 
 Module Type ZDivSig := ZAxiomsSig <+ ZDiv.
 
-Module ZDivPropFunct (Import Z : ZDivSig).
- (* TODO: en faire un arg du foncteur + comprendre le bug de SearchAbout *)
- Module Import ZP := ZPropFunct Z.
+Module ZDivPropFunct (Import Z : ZDivSig)(Import ZP : ZPropSig Z).
 
 (** We benefit from what already exists for NZ *)
 
@@ -47,7 +45,7 @@ Module ZDivPropFunct (Import Z : ZDivSig).
   Lemma mod_bound : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
   Proof. intros. now apply mod_pos_bound. Qed.
  End Z'.
- Module Import NZDivP := NZDivPropFunct Z'.
+ Module Import NZDivP := NZDivPropFunct Z' ZP.
 
 (** Another formulation of the main equation *)
 

@@ -15,7 +15,7 @@ Require Export ZAxioms.
 Require Import NZProperties.
 
 Module ZBasePropFunct (Import Z : ZAxiomsSig).
-Include NZPropFunct Z.
+Include Type NZPropFunct Z.
 Local Open Scope NumScope.
 
 (* Theorems that are true for integers but not for natural numbers *)

@@ -37,13 +37,11 @@ End ZDiv.
 
 Module Type ZDivSig := ZAxiomsSig <+ ZDiv.
 
-Module ZDivPropFunct (Import Z : ZDivSig).
- (* TODO: en faire un arg du foncteur + comprendre le bug de SearchAbout *)
- Module Import ZP := ZPropFunct Z.
+Module ZDivPropFunct (Import Z : ZDivSig)(Import ZP : ZPropSig Z).
 
 (** We benefit from what already exists for NZ *)
 
- Module Import NZDivP := NZDivPropFunct Z.
+ Module Import NZDivP := NZDivPropFunct Z ZP.
 
 Ltac pos_or_neg a :=
  let LT := fresh "LT" in

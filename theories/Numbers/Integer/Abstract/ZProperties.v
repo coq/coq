@@ -15,4 +15,9 @@ Require Export ZAxioms ZMulOrder.
     subsumes all others.
 *)
 
-Module ZPropFunct := ZMulOrderPropFunct.
+Module Type ZPropSig := ZMulOrderPropFunct.
+
+Module ZPropFunct (Z:ZAxiomsSig) <: ZPropSig Z.
+ Include Type ZPropSig Z.
+End ZPropFunct.
+

@@ -17,4 +17,4 @@ Require Export NZAxioms NZMulOrder.
     subsumes all others.
 *)
 
-Module NZPropFunct := NZMulOrderPropFunct.
+Module Type NZPropFunct := NZMulOrderPropSig.
