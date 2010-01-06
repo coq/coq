@@ -663,7 +663,11 @@ let rec extern inctx scopes vars r =
 		 let projs = struc.Recordops.s_PROJ in
 		 let locals = struc.Recordops.s_PROJKIND in
 		 let rec cut args n =
-		   if n = 0 then args else cut (List.tl args) (n - 1) in
+		   if n = 0 then args
+		   else
+		     match args with
+		     | [] -> raise No_match
+		     | _ :: t -> cut t (n - 1) in
 		 let args = cut args struc.Recordops.s_EXPECTEDPARAM in
 		 let rec ip projs locs args acc =
 		   match projs with
