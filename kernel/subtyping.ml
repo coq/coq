@@ -254,6 +254,8 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
       let con = make_con mp1 empty_dirpath l in
       let cst =
 	if cb2.const_opaque then
+	  (* In this case we compare opaque definitions, we need to bypass
+	     the opacity and do a delta step*)
 	  match cb2.const_body with
             | None -> cst
             | Some lc2 ->
@@ -262,8 +264,11 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 		  | Some lc1 ->
 		      let c = Declarations.force lc1 in
 			begin
-			  match (kind_of_term c) with
-			      Const n ->
+			  match (kind_of_term c),(kind_of_term c2) with
+			      Const n1,Const n2 when (eq_constant n1 n2) -> c
+				(* c1 may have been strenghtened 
+				   we need to unfold it*)
+			    | Const n,_ ->
 				let cb = subst_const_body subst1
 				  (lookup_constant n env) in
 				  (match cb.const_opaque,
@@ -271,7 +276,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 				       | true, Some lc1 ->
 					   Declarations.force lc1
 				       | _,_ -> c)
-			    | _ -> c
+			    | _ ,_-> c
 			end
 		  | None -> mkConst con
 		in
