@@ -247,7 +247,7 @@ intros.
 assert (0 < b) by (apply lt_trans with 1; auto using lt_0_1).
 destruct (lt_ge_cases a b).
 rewrite div_small; try split; order.
-rewrite (div_mod a b) at 2; [|order].
+rewrite (div_mod a b) at 2 by order.
 apply lt_le_trans with (b*(a/b)).
 rewrite <- (mul_1_l (a/b)) at 1.
 rewrite <- mul_lt_mono_pos_r; auto.
@@ -269,7 +269,7 @@ nzsimpl.
 rewrite (add_lt_mono_r _ _ (a mod c)).
 rewrite <- div_mod by order.
 apply lt_le_trans with b; auto.
-rewrite (div_mod b c) at 1; [| order].
+rewrite (div_mod b c) at 1 by order.
 rewrite <- add_assoc, <- add_le_mono_l.
 apply le_trans with (c+0).
 nzsimpl; destruct (mod_bound b c); order.
@@ -289,7 +289,7 @@ Qed.
 Lemma mul_succ_div_gt : forall a b, 0<=a -> 0<b -> a < b*(S (a/b)).
 Proof.
 intros.
-rewrite (div_mod a b) at 1; [|order].
+rewrite (div_mod a b) at 1 by order.
 rewrite (mul_succ_r).
 rewrite <- add_lt_mono_l.
 destruct (mod_bound a b); auto.
@@ -300,7 +300,7 @@ Qed.
 
 Lemma div_exact : forall a b, 0<=a -> 0<b -> (a == b*(a/b) <-> a mod b == 0).
 Proof.
-intros. rewrite (div_mod a b) at 1; [|order].
+intros. rewrite (div_mod a b) at 1 by order.
 rewrite <- (add_0_r (b*(a/b))) at 2.
 apply add_cancel_l.
 Qed.
@@ -344,7 +344,7 @@ Lemma div_le_compat_l: forall p q r, 0<=p -> 0<q<=r ->
 Proof.
  intros p q r Hp (Hq,Hqr).
  apply div_le_lower_bound; auto.
- rewrite (div_mod p r) at 2; [|order].
+ rewrite (div_mod p r) at 2 by order.
  apply le_trans with (r*(p/r)).
  apply mul_le_mono_nonneg_r; try order.
  apply div_pos; order.
@@ -396,7 +396,7 @@ Proof.
  split.
  apply mul_nonneg_nonneg; destruct (mod_bound a b); order.
  rewrite <- mul_lt_mono_pos_r; auto. destruct (mod_bound a b); auto.
- rewrite (div_mod a b) at 1; [|order].
+ rewrite (div_mod a b) at 1 by order.
  rewrite mul_add_distr_r.
  rewrite add_cancel_r.
  rewrite <- 2 mul_assoc. now rewrite (mul_comm c).
@@ -439,7 +439,7 @@ Lemma mul_mod_idemp_l : forall a b n, 0<=a -> 0<=b -> 0<n ->
 Proof.
  intros a b n Ha Hb Hn. symmetry.
  generalize (mul_nonneg_nonneg _ _ Ha Hb).
- rewrite (div_mod a n) at 1 2; [|order].
+ rewrite (div_mod a n) at 1 2 by order.
  rewrite add_comm, (mul_comm n), (mul_comm _ b).
  rewrite mul_add_distr_l, mul_assoc.
  intros. rewrite mod_add; auto.
@@ -465,7 +465,7 @@ Lemma add_mod_idemp_l : forall a b n, 0<=a -> 0<=b -> 0<n ->
 Proof.
  intros a b n Ha Hb Hn. symmetry.
  generalize (add_nonneg_nonneg _ _ Ha Hb).
- rewrite (div_mod a n) at 1 2; [|order].
+ rewrite (div_mod a n) at 1 2 by order.
  rewrite <- add_assoc, add_comm, mul_comm.
  intros. rewrite mod_add; trivial. reflexivity.
  apply add_nonneg_nonneg; auto. destruct (mod_bound a n); auto.
@@ -498,7 +498,7 @@ Proof.
  rewrite <- add_lt_mono_l; auto.
  rewrite <- mul_succ_r, <- mul_le_mono_pos_l, le_succ_l; auto.
  (* end 0<= ... < b*c *)
- rewrite (div_mod a b) at 1; [|order].
+ rewrite (div_mod a b) at 1 by order.
  rewrite add_assoc, add_cancel_r.
  rewrite <- mul_assoc, <- mul_add_distr_l, mul_cancel_l by order.
  apply div_mod; order.

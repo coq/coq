@@ -354,7 +354,7 @@ nzsimpl.
 rewrite (add_lt_mono_r _ _ (a mod c)).
 rewrite <- div_mod by order.
 apply lt_le_trans with b; trivial.
-rewrite (div_mod b c) at 1; [| order].
+rewrite (div_mod b c) at 1 by order.
 rewrite <- add_assoc, <- add_le_mono_l.
 apply le_trans with (c+0).
 nzsimpl; destruct (mod_pos_bound b c); order.
@@ -495,7 +495,7 @@ now apply mod_bound_or.
 rewrite <-(mul_0_l c), <-2mul_lt_mono_neg_r, <-2mul_le_mono_neg_r by order.
 destruct (mod_bound_or a b); tauto.
 (* equation *)
-rewrite (div_mod a b) at 1; [|order].
+rewrite (div_mod a b) at 1 by order.
 rewrite mul_add_distr_r.
 rewrite add_cancel_r.
 rewrite <- 2 mul_assoc. now rewrite (mul_comm c).
@@ -539,7 +539,7 @@ Lemma mul_mod_idemp_l : forall a b n, n~=0 ->
  ((a mod n)*b) mod n == (a*b) mod n.
 Proof.
  intros a b n Hn. symmetry.
- rewrite (div_mod a n) at 1; [|order].
+ rewrite (div_mod a n) at 1 by order.
  rewrite add_comm, (mul_comm n), (mul_comm _ b).
  rewrite mul_add_distr_l, mul_assoc.
  intros. rewrite mod_add by trivial.
@@ -562,7 +562,7 @@ Lemma add_mod_idemp_l : forall a b n, n~=0 ->
  ((a mod n)+b) mod n == (a+b) mod n.
 Proof.
  intros a b n Hn. symmetry.
- rewrite (div_mod a n) at 1; [|order].
+ rewrite (div_mod a n) at 1 by order.
  rewrite <- add_assoc, add_comm, mul_comm.
  intros. now rewrite mod_add.
 Qed.
@@ -598,7 +598,7 @@ Proof.
  now rewrite <- add_lt_mono_l.
  now rewrite <- mul_succ_r, <- mul_le_mono_pos_l, le_succ_l.
  (* end 0<= ... < b*c \/ ... *)
- rewrite (div_mod a b) at 1; [|order].
+ rewrite (div_mod a b) at 1 by order.
  rewrite add_assoc, add_cancel_r.
  rewrite <- mul_assoc, <- mul_add_distr_l, mul_cancel_l by order.
  apply div_mod; order.

@@ -22,7 +22,7 @@ open Termops
 
 let all_with delta = make_red_flag [FBeta;FIota;FZeta;delta]
 
-let tactic_kw = [ "->"; "<-" ]
+let tactic_kw = [ "->"; "<-" ; "by" ]
 let _ = List.iter (fun s -> Lexer.add_token("",s)) tactic_kw
 
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
@@ -478,11 +478,11 @@ GEXTEND Gram
     [ [ "as"; id = ident -> Names.Name id | -> Names.Anonymous ] ]
   ;
   by_tactic:
-    [ [ IDENT "by"; tac = tactic_expr LEVEL "3" -> TacComplete tac
+    [ [ "by"; tac = tactic_expr LEVEL "3" -> TacComplete tac
       | -> TacId [] ] ]
   ;
   opt_by_tactic:
-    [ [ IDENT "by"; tac = tactic_expr LEVEL "3" -> Some tac
+    [ [ "by"; tac = tactic_expr LEVEL "3" -> Some tac
     | -> None ] ]
   ;
   rename :
