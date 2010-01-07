@@ -17,10 +17,10 @@ Module Homomorphism (N1 N2 : NAxiomsSig).
 Local Notation "n == m" := (N2.eq n m) (at level 70, no associativity).
 
 Definition homomorphism (f : N1.t -> N2.t) : Prop :=
-  f N1.zero == N2.zero /\ forall n, f (N1.S n) == N2.S (f n).
+  f N1.zero == N2.zero /\ forall n, f (N1.succ n) == N2.succ (f n).
 
 Definition natural_isomorphism : N1.t -> N2.t :=
-  N1.recursion N2.zero (fun (n : N1.t) (p : N2.t) => N2.S p).
+  N1.recursion N2.zero (fun (n : N1.t) (p : N2.t) => N2.succ p).
 
 Instance natural_isomorphism_wd : Proper (N1.eq ==> N2.eq) natural_isomorphism.
 Proof.
@@ -38,7 +38,7 @@ unfold natural_isomorphism; now rewrite N1.recursion_0.
 Qed.
 
 Theorem natural_isomorphism_succ :
-  forall n : N1.t, natural_isomorphism (N1.S n) == N2.S (natural_isomorphism n).
+  forall n : N1.t, natural_isomorphism (N1.succ n) == N2.succ (natural_isomorphism n).
 Proof.
 unfold natural_isomorphism.
 intro n. rewrite N1.recursion_succ; auto with *.

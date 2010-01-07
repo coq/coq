@@ -12,8 +12,7 @@
 
 Require Import NZAxioms.
 
-Module Type NZBasePropSig (Import NZ : NZDomainSig).
-Local Open Scope NumScope.
+Module Type NZBasePropSig (Import NZ : NZDomainSig').
 
 Include BackportEq NZ NZ. (** eq_refl, eq_sym, eq_trans *)
 

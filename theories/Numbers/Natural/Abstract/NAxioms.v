@@ -14,9 +14,7 @@ Require Export NZAxioms.
 
 Set Implicit Arguments.
 
-Module Type NAxiomsSig.
-Include Type NZOrdAxiomsSig.
-Local Open Scope NumScope.
+Module Type NAxioms (Import NZ : NZDomainSig').
 
 Axiom pred_0 : P 0 == 0.
 
@@ -34,5 +32,8 @@ Axiom recursion_succ :
     Aeq a a -> Proper (eq==>Aeq==>Aeq) f ->
       forall n, Aeq (recursion a f (S n)) (f n (recursion a f n)).
 
-End NAxiomsSig.
+End NAxioms.
+
+Module Type NAxiomsSig := NZOrdAxiomsSig <+ NAxioms.
+Module Type NAxiomsSig' := NZOrdAxiomsSig' <+ NAxioms.
 

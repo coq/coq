@@ -55,8 +55,7 @@ Implicit Arguments iter [A].
 Local Infix "^" := iter.
 
 
-Module NZDomainProp (Import NZ:NZDomainSig).
-Local Open Scope NumScope.
+Module NZDomainProp (Import NZ:NZDomainSig').
 
 (** * Relationship between points thanks to [succ] and [pred]. *)
 
@@ -274,11 +273,11 @@ End NZDomainProp.
     First, relationship with [0], [succ], [pred].
 *)
 
-Module NZOfNat (Import NZ:NZDomainSig).
-Local Open Scope NumScope.
+Module NZOfNat (Import NZ:NZDomainSig').
 
 Definition ofnat (n : nat) : t := (S^n) 0.
-Notation "[ n ]" := (ofnat n) (at level 7) : NumScope.
+Notation "[ n ]" := (ofnat n) (at level 7) : ofnat.
+Local Open Scope ofnat.
 
 Lemma ofnat_zero : [O] == 0.
 Proof.
@@ -306,10 +305,10 @@ End NZOfNat.
     [ofnat] is injective, and hence that NZ is infinite
     (i.e. we ban Z/nZ models) *)
 
-Module NZOfNatOrd (Import NZ:NZOrdSig).
+Module NZOfNatOrd (Import NZ:NZOrdSig').
 Include NZOfNat NZ.
 Include NZOrderPropFunct NZ.
-Local Open Scope NumScope.
+Local Open Scope ofnat.
 
 Theorem ofnat_S_gt_0 :
   forall n : nat, 0 < [Datatypes.S n].
@@ -368,9 +367,9 @@ End NZOfNatOrd.
 (** For basic operations, we can prove correspondance with
     their counterpart in [nat]. *)
 
-Module NZOfNatOps (Import NZ:NZAxiomsSig).
+Module NZOfNatOps (Import NZ:NZAxiomsSig').
 Include NZOfNat NZ.
-Local Open Scope NumScope.
+Local Open Scope ofnat.
 
 Lemma ofnat_add_l : forall n m, [n]+m == (S^n) m.
 Proof.

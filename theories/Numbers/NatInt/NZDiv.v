@@ -10,15 +10,20 @@
 
 Require Import NZAxioms NZMulOrder.
 
-Open Scope NumScope.
+(** The first signatures will be common to all divisions over NZ, N and Z *)
 
-(** This first signature will be common to all divisions over NZ, N and Z *)
+Module Type DivMod (Import T:Typ).
+ Parameters div modulo : t -> t -> t.
+End DivMod.
 
-Module Type NZDivCommon (Import NZ : NZAxiomsSig).
- Parameter Inline div : t -> t -> t.
- Parameter Inline modulo : t -> t -> t.
- Infix "/" := div : NumScope.
- Infix "mod" := modulo (at level 40, no associativity) : NumScope.
+Module Type DivModNotation (T:Typ)(Import NZ:DivMod T).
+ Infix "/" := div.
+ Infix "mod" := modulo (at level 40, no associativity).
+End DivModNotation.
+
+Module Type DivMod' (T:Typ) := DivMod T <+ DivModNotation T.
+
+Module Type NZDivCommon (Import NZ : NZAxiomsSig')(Import DM : DivMod' NZ).
  Declare Instance div_wd : Proper (eq==>eq==>eq) div.
  Declare Instance mod_wd : Proper (eq==>eq==>eq) modulo.
  Axiom div_mod : forall a b, b ~= 0 -> a == b*(a/b) + (a mod b).
@@ -31,15 +36,18 @@ End NZDivCommon.
     NB: This axiom would also be true for N and Z, but redundant.
 *)
 
-Module Type NZDiv (Import NZ : NZOrdAxiomsSig).
- Include Type NZDivCommon NZ.
+Module Type NZDivSpecific (Import NZ : NZOrdAxiomsSig')(Import DM : DivMod' NZ).
  Axiom mod_bound : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
-End NZDiv.
+End NZDivSpecific.
+
+Module Type NZDiv (NZ:NZOrdAxiomsSig)
+ := DivMod NZ <+ NZDivCommon NZ <+ NZDivSpecific NZ.
 
 Module Type NZDivSig := NZOrdAxiomsSig <+ NZDiv.
+Module Type NZDivSig' := NZOrdAxiomsSig' <+ NZDiv <+ DivModNotation.
 
 Module NZDivPropFunct
- (Import NZ : NZDivSig)(Import NZP : NZMulOrderPropSig NZ).
+ (Import NZ : NZDivSig')(Import NZP : NZMulOrderPropSig NZ).
 
 (** Uniqueness theorems *)
 

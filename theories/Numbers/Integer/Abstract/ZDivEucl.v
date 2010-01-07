@@ -23,17 +23,18 @@
 
 Require Import ZAxioms ZProperties NZDiv.
 
-Open Scope NumScope.
-
-Module Type ZDiv (Import Z : ZAxiomsSig).
- Include Type NZDivCommon Z. (** div, mod, compat with eq, equation a=bq+r *)
+Module Type ZDivSpecific (Import Z : ZAxiomsSig')(Import DM : DivMod' Z).
  Definition abs z := max z (-z).
  Axiom mod_always_pos : forall a b, 0 <= a mod b < abs b.
-End ZDiv.
+End ZDivSpecific.
+
+Module Type ZDiv (Z:ZAxiomsSig)
+ := DivMod Z <+ NZDivCommon Z <+ ZDivSpecific Z.
 
 Module Type ZDivSig := ZAxiomsSig <+ ZDiv.
+Module Type ZDivSig' := ZAxiomsSig' <+ ZDiv <+ DivModNotation.
 
-Module ZDivPropFunct (Import Z : ZDivSig)(Import ZP : ZPropSig Z).
+Module ZDivPropFunct (Import Z : ZDivSig')(Import ZP : ZPropSig Z).
 
 (** We benefit from what already exists for NZ *)
 
@@ -159,7 +160,7 @@ Qed.
 Parameter sign : t -> t.
 Parameter sign_pos : forall t, sign t == 1 <-> 0<t.
 Parameter sign_0 : forall t, sign t == 0 <-> t==0.
-Parameter sign_neg : forall t, sign t == -1 <-> t<0.
+Parameter sign_neg : forall t, sign t == -(1) <-> t<0.
 Parameter sign_abs : forall t, t * sign t == abs t.
 (** END TODO *)
 

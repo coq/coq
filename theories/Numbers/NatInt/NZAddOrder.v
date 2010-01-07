@@ -12,9 +12,8 @@
 
 Require Import NZAxioms NZBase NZMul NZOrder.
 
-Module Type NZAddOrderPropSig (Import NZ : NZOrdAxiomsSig).
+Module Type NZAddOrderPropSig (Import NZ : NZOrdAxiomsSig').
 Include Type NZBasePropSig NZ <+ NZMulPropSig NZ <+ NZOrderPropSig NZ.
-Local Open Scope NumScope.
 
 Theorem add_lt_mono_l : forall n m p, n < m <-> p + n < p + m.
 Proof.

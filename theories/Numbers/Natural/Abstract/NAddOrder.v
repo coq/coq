@@ -12,9 +12,8 @@
 
 Require Export NOrder.
 
-Module NAddOrderPropFunct (Import N : NAxiomsSig).
+Module NAddOrderPropFunct (Import N : NAxiomsSig').
 Include NOrderPropFunct N.
-Local Open Scope NumScope.
 
 (** Theorems true for natural numbers, not for integers *)
 

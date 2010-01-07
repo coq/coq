@@ -12,9 +12,8 @@
 
 Require Export ZLt.
 
-Module ZAddOrderPropFunct (Import Z : ZAxiomsSig).
+Module ZAddOrderPropFunct (Import Z : ZAxiomsSig').
 Include ZOrderPropFunct Z.
-Local Open Scope NumScope.
 
 (** Theorems that are either not valid on N or have different proofs
     on N and Z *)

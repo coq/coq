@@ -12,9 +12,8 @@
 
 Require Export ZMul.
 
-Module ZOrderPropFunct (Import Z : ZAxiomsSig).
+Module ZOrderPropFunct (Import Z : ZAxiomsSig').
 Include ZMulPropFunct Z.
-Local Open Scope NumScope.
 
 (** Instances of earlier theorems for m == 0 *)
 
@@ -124,10 +123,10 @@ Proof.
 intro; apply lt_neq; apply lt_pred_l.
 Qed.
 
-Theorem lt_n1_r : forall n m, n < m -> m < 0 -> n < -1.
+Theorem lt_n1_r : forall n m, n < m -> m < 0 -> n < -(1).
 Proof.
 intros n m H1 H2. apply -> lt_le_pred in H2.
-setoid_replace (P 0) with (-1) in H2. now apply lt_le_trans with m.
+setoid_replace (P 0) with (-(1)) in H2. now apply lt_le_trans with m.
 apply <- eq_opp_r. now rewrite opp_pred, opp_0.
 Qed.
 

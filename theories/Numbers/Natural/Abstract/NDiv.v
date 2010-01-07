@@ -10,16 +10,14 @@
 
 Require Import NAxioms NProperties NZDiv.
 
-Open Scope NumScope.
-
-Module Type NDiv (Import N : NAxiomsSig).
- Include Type NZDivCommon N. (** div, mod, compat with eq, equation a=bq+r *)
+Module Type NDivSpecific (Import N : NAxiomsSig')(Import DM : DivMod' N).
  Axiom mod_upper_bound : forall a b, b ~= 0 -> a mod b < b.
-End NDiv.
+End NDivSpecific.
 
-Module Type NDivSig := NAxiomsSig <+ NDiv.
+Module Type NDivSig := NAxiomsSig <+ DivMod <+ NZDivCommon <+ NDivSpecific.
+Module Type NDivSig' := NAxiomsSig' <+ DivMod' <+ NZDivCommon <+ NDivSpecific.
 
-Module NDivPropFunct (Import N : NDivSig)(Import NP : NPropSig N).
+Module NDivPropFunct (Import N : NDivSig')(Import NP : NPropSig N).
 
 (** We benefit from what already exists for NZ *)
 

@@ -12,9 +12,8 @@
 
 Require Export ZAdd.
 
-Module ZMulPropFunct (Import Z : ZAxiomsSig).
+Module ZMulPropFunct (Import Z : ZAxiomsSig').
 Include ZAddPropFunct Z.
-Local Open Scope NumScope.
 
 (** A note on naming: right (correspondingly, left) distributivity
     happens when the sum is multiplied by a number on the right

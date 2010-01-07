@@ -13,8 +13,7 @@
 Require Import NZAxioms NZBase Decidable OrderTac.
 
 Module Type NZOrderPropSig
- (Import NZ : NZOrdSig)(Import NZBase : NZBasePropSig NZ).
-Local Open Scope NumScope.
+ (Import NZ : NZOrdSig')(Import NZBase : NZBasePropSig NZ).
 
 Instance le_wd : Proper (eq==>eq==>iff) le.
 Proof.
@@ -137,11 +136,7 @@ Module OrderElts.
  Definition le_lteq := lt_eq_cases.
 End OrderElts.
 Module OrderTac := MakeOrderTac OrderElts.
-Ltac order :=
-  change eq with OrderElts.eq in *;
-  change lt with OrderElts.lt in *;
-  change le with OrderElts.le in *;
-  OrderTac.order.
+Ltac order := OrderTac.order.
 
 (** Some direct consequences of [order]. *)
 
@@ -619,30 +614,4 @@ End NZOrderPropSig.
 Module NZOrderPropFunct (Import NZ : NZOrdSig).
  Include Type NZBasePropSig NZ <+ NZOrderPropSig NZ.
 End NZOrderPropFunct.
-
-
-(** To Merge with GenericMinMax ... *)
-
-Module NZMinMaxPropFunct (Import NZ : NZOrdAxiomsSig).
-Include NZOrderPropFunct NZ.
-
-(** * Compatibility of [min] and [max]. *)
-
-Instance min_wd : Proper (eq==>eq==>eq) min.
-Proof.
-intros n n' Hn m m' Hm.
-destruct (le_ge_cases n m).
-rewrite 2 min_l; auto. now rewrite <-Hn,<-Hm.
-rewrite 2 min_r; auto. now rewrite <-Hn,<-Hm.
-Qed.
-
-Instance max_wd : Proper (eq==>eq==>eq) max.
-Proof.
-intros n n' Hn m m' Hm.
-destruct (le_ge_cases n m).
-rewrite 2 max_r; auto. now rewrite <-Hn,<-Hm.
-rewrite 2 max_l; auto. now rewrite <-Hn,<-Hm.
-Qed.
-
-End NZMinMaxPropFunct.
 

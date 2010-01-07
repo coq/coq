@@ -32,11 +32,13 @@ Module Type EqLtLe := Typ <+ HasEq <+ HasLt <+ HasLe.
 
 Module Type LtNotation (E:EqLt).
   Infix "<" := E.lt.
+  Notation "x > y" := (y<x) (only parsing).
   Notation "x < y < z" := (x<y /\ y<z).
 End LtNotation.
 
 Module Type LeNotation (E:EqLe).
   Infix "<=" := E.le.
+  Notation "x >= y" := (y<=x) (only parsing).
   Notation "x <= y <= z" := (x<=y /\ y<=z).
 End LeNotation.
 

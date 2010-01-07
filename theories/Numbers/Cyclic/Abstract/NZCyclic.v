@@ -43,17 +43,13 @@ Definition add := w_op.(znz_add).
 Definition sub := w_op.(znz_sub).
 Definition mul := w_op.(znz_mul).
 
-Delimit Scope NumScope with Num.
-Bind Scope NumScope with t.
-Local Open Scope NumScope.
-Notation "x == y"  := (eq x y) (at level 70) : NumScope.
-Notation "0" := zero : NumScope.
-Notation S := succ.
-Notation P := pred.
-Notation "x + y" := (add x y) : NumScope.
-Notation "x - y" := (sub x y) : NumScope.
-Notation "x * y" := (mul x y) : NumScope.
-
+Local Infix "=="  := eq (at level 70).
+Local Notation "0" := zero.
+Local Notation S := succ.
+Local Notation P := pred.
+Local Infix "+" := add.
+Local Infix "-" := sub.
+Local Infix "*" := mul.
 
 Hint Rewrite w_spec.(spec_0) w_spec.(spec_succ) w_spec.(spec_pred)
  w_spec.(spec_add) w_spec.(spec_mul) w_spec.(spec_sub) : w.
@@ -129,7 +125,7 @@ rewrite <- pred_mod_wB.
 replace ([| n |] + 1 - 1)%Z with [| n |] by auto with zarith. apply NZ_to_Z_mod.
 Qed.
 
-Lemma Z_to_NZ_0 : Z_to_NZ 0%Z == 0%Num.
+Lemma Z_to_NZ_0 : Z_to_NZ 0%Z == 0.
 Proof.
 unfold NZ_to_Z, Z_to_NZ. wsimpl.
 rewrite znz_of_Z_correct; auto.

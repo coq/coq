@@ -10,12 +10,10 @@
 
 (*i $Id$ i*)
 
-Require Import NZAxioms.
-Require Import NZBase.
+Require Import NZAxioms NZBase.
 
 Module Type NZAddPropSig
- (Import NZ : NZAxiomsSig)(Import NZBase : NZBasePropSig NZ).
-Local Open Scope NumScope.
+ (Import NZ : NZAxiomsSig')(Import NZBase : NZBasePropSig NZ).
 
 Hint Rewrite
  pred_succ add_0_l add_succ_l mul_0_l mul_succ_l sub_0_r sub_succ_r : nz.

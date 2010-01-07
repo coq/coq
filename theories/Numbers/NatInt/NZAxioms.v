@@ -10,10 +10,7 @@
 
 (*i $Id$ i*)
 
-Require Export DecidableType2 OrderedType2 NumPrelude.
-
-Delimit Scope NumScope with Num.
-Local Open Scope NumScope.
+Require Export DecidableType2 OrderedType2 NumPrelude GenericMinMax.
 
 (** Axiomatization of a domain with zero, successor, predecessor,
     and a bi-directional induction principle. We require [P (S n) = n]
@@ -22,121 +19,93 @@ Local Open Scope NumScope.
     for instance [Z/nZ] (See file [NZDomain for a study of that).
 *)
 
-Module Type NZDomain (Import E : EqualityType).
- (** [E] provides [t], [eq], [eq_equiv : Equivalence eq] *)
+Module Type ZeroSuccPred (Import T:Typ).
+ Parameter Inline zero : t.
+ Parameters Inline succ pred : t -> t.
+End ZeroSuccPred.
 
-Notation "x == y"  := (eq x y) (at level 70) : NumScope.
-Notation "x ~= y" := (~ eq x y) (at level 70) : NumScope.
+Module Type ZeroSuccPredNotation (T:Typ)(Import NZ:ZeroSuccPred T).
+ Notation "0" := zero.
+ Notation S := succ.
+ Notation P := pred.
+ Notation "1" := (S 0).
+ Notation "2" := (S 1).
+End ZeroSuccPredNotation.
 
-Parameter Inline zero : t.
-Parameter Inline succ : t -> t.
-Parameter Inline pred : t -> t.
+Module Type ZeroSuccPred' (T:Typ) :=
+ ZeroSuccPred T <+ ZeroSuccPredNotation T.
 
-Notation "0" := zero : NumScope.
-Notation S := succ.
-Notation P := pred.
-Notation "1" := (S 0) : NumScope.
-
-Declare Instance succ_wd : Proper (eq ==> eq) S.
-Declare Instance pred_wd : Proper (eq ==> eq) P.
-
-Axiom pred_succ : forall n, P (S n) == n.
-
-Axiom bi_induction :
+Module Type IsNZDomain (Import E:Eq')(Import NZ:ZeroSuccPred' E).
+ Declare Instance succ_wd : Proper (eq ==> eq) S.
+ Declare Instance pred_wd : Proper (eq ==> eq) P.
+ Axiom pred_succ : forall n, P (S n) == n.
+ Axiom bi_induction :
   forall A : t -> Prop, Proper (eq==>iff) A ->
     A 0 -> (forall n, A n <-> A (S n)) -> forall n, A n.
+End IsNZDomain.
 
-End NZDomain.
-
-Module Type NZDomainSig := EqualityType <+ NZDomain.
-
-(** A version with decidable type *)
-
-Module Type NZDecDomainSig := DecidableType <+ NZDomain.
+Module Type NZDomainSig := EqualityType <+ ZeroSuccPred <+ IsNZDomain.
+Module Type NZDomainSig' := EqualityType' <+ ZeroSuccPred' <+ IsNZDomain.
 
 
 (** Axiomatization of basic operations : [+] [-] [*] *)
 
-Module Type NZHasBasicFuns (Import NZ : NZDomainSig).
+Module Type AddSubMul (Import T:Typ).
+ Parameters Inline add sub mul : t -> t -> t.
+End AddSubMul.
 
-Parameter Inline add : t -> t -> t.
-Parameter Inline sub : t -> t -> t.
-Parameter Inline mul : t -> t -> t.
+Module Type AddSubMulNotation (T:Typ)(Import NZ:AddSubMul T).
+ Notation "x + y" := (add x y).
+ Notation "x - y" := (sub x y).
+ Notation "x * y" := (mul x y).
+End AddSubMulNotation.
 
-Notation "x + y" := (add x y) : NumScope.
-Notation "x - y" := (sub x y) : NumScope.
-Notation "x * y" := (mul x y) : NumScope.
+Module Type AddSubMul' (T:Typ) := AddSubMul T <+ AddSubMulNotation T.
 
-Declare Instance add_wd : Proper (eq ==> eq ==> eq) add.
-Declare Instance sub_wd : Proper (eq ==> eq ==> eq) sub.
-Declare Instance mul_wd : Proper (eq ==> eq ==> eq) mul.
+Module Type IsAddSubMul (Import E:NZDomainSig')(Import NZ:AddSubMul' E).
+ Declare Instance add_wd : Proper (eq ==> eq ==> eq) add.
+ Declare Instance sub_wd : Proper (eq ==> eq ==> eq) sub.
+ Declare Instance mul_wd : Proper (eq ==> eq ==> eq) mul.
+ Axiom add_0_l : forall n, 0 + n == n.
+ Axiom add_succ_l : forall n m, (S n) + m == S (n + m).
+ Axiom sub_0_r : forall n, n - 0 == n.
+ Axiom sub_succ_r : forall n m, n - (S m) == P (n - m).
+ Axiom mul_0_l : forall n, 0 * n == 0.
+ Axiom mul_succ_l : forall n m, S n * m == n * m + m.
+End IsAddSubMul.
 
-Axiom add_0_l : forall n, (0 + n) == n.
-Axiom add_succ_l : forall n m, (S n) + m == S (n + m).
-
-Axiom sub_0_r : forall n, n - 0 == n.
-Axiom sub_succ_r : forall n m, n - (S m) == P (n - m).
-
-Axiom mul_0_l : forall n, 0 * n == 0.
-Axiom mul_succ_l : forall n m, S n * m == n * m + m.
-
-End NZHasBasicFuns.
-
-Module Type NZBasicFunsSig := NZDomainSig <+ NZHasBasicFuns.
-
+Module Type NZBasicFunsSig := NZDomainSig <+ AddSubMul <+ IsAddSubMul.
+Module Type NZBasicFunsSig' := NZDomainSig' <+ AddSubMul' <+IsAddSubMul.
 
 (** Old name for the same interface: *)
 
 Module Type NZAxiomsSig := NZBasicFunsSig.
-
+Module Type NZAxiomsSig' := NZBasicFunsSig'.
 
 (** Axiomatization of order *)
 
-Module Type NZHasOrd (Import NZ : NZDomainSig).
+Module Type NZOrd := NZDomainSig <+ HasLt <+ HasLe.
+Module Type NZOrd' := NZDomainSig' <+ HasLt <+ HasLe <+
+                      LtNotation <+ LeNotation <+ LtLeNotation.
 
-Parameter Inline lt : t -> t -> Prop.
-Parameter Inline le : t -> t -> Prop.
+Module Type IsNZOrd (Import NZ : NZOrd').
+ Declare Instance lt_wd : Proper (eq ==> eq ==> iff) lt.
+ Axiom lt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
+ Axiom lt_irrefl : forall n, ~ (n < n).
+ Axiom lt_succ_r : forall n m, n < S m <-> n <= m.
+End IsNZOrd.
 
-Notation "x < y" := (lt x y) : NumScope.
-Notation "x <= y" := (le x y) : NumScope.
-Notation "x > y" := (lt y x) (only parsing) : NumScope.
-Notation "x >= y" := (le y x) (only parsing) : NumScope.
-
-Notation "x < y < z" := (x<y /\ y<z) : NumScope.
-Notation "x <= y <= z" := (x<=y /\ y<=z) : NumScope.
-Notation "x <= y < z" := (x<=y /\ y<z) : NumScope.
-Notation "x < y <= z" := (x<y /\ y<=z) : NumScope.
-
-Declare Instance lt_wd : Proper (eq ==> eq ==> iff) lt.
-(** Compatibility of [le] can be proved later from [lt_wd]
+(** NB: the compatibility of [le] can be proved later from [lt_wd]
     and [lt_eq_cases] *)
 
-Axiom lt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
-Axiom lt_irrefl : forall n, ~ (n < n).
-Axiom lt_succ_r : forall n m, n < S m <-> n <= m.
+Module Type NZOrdSig := NZOrd <+ IsNZOrd.
+Module Type NZOrdSig' := NZOrd' <+ IsNZOrd.
 
-End NZHasOrd.
+(** Everything together : *)
 
-Module Type NZOrdSig := NZDomainSig <+ NZHasOrd.
+Module Type NZOrdAxiomsSig <: NZBasicFunsSig <: NZOrdSig
+ := NZOrdSig <+ AddSubMul <+ IsAddSubMul <+ HasMinMax.
+Module Type NZOrdAxiomsSig' <: NZOrdAxiomsSig
+ := NZOrdSig' <+ AddSubMul' <+ IsAddSubMul <+ HasMinMax.
 
-
-(** Axiomatization of minimum and maximum *)
-
-Module Type NZHasMinMax (Import NZ : NZOrdSig).
-
-Parameter Inline min : t -> t -> t.
-Parameter Inline max : t -> t -> t.
-
-(** Compatibility of [min] and [max] can be proved later *)
-
-Axiom min_l : forall n m, n <= m -> min n m == n.
-Axiom min_r : forall n m, m <= n -> min n m == m.
-Axiom max_l : forall n m, m <= n -> max n m == n.
-Axiom max_r : forall n m, n <= m -> max n m == m.
-
-End NZHasMinMax.
-
-
-Module Type NZOrdAxiomsSig :=
- NZDomainSig <+ NZHasBasicFuns <+ NZHasOrd <+ NZHasMinMax.
 

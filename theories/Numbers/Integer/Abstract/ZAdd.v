@@ -12,9 +12,8 @@
 
 Require Export ZBase.
 
-Module ZAddPropFunct (Import Z : ZAxiomsSig).
+Module ZAddPropFunct (Import Z : ZAxiomsSig').
 Include ZBasePropFunct Z.
-Local Open Scope NumScope.
 
 (** Theorems that are either not valid on N or have different proofs
     on N and Z *)

@@ -12,9 +12,10 @@
 
 Require Export ZAddOrder.
 
-Module Type ZMulOrderPropFunct (Import Z : ZAxiomsSig).
+Module Type ZMulOrderPropFunct (Import Z : ZAxiomsSig').
 Include ZAddOrderPropFunct Z.
-Local Open Scope NumScope.
+
+Local Notation "- 1" := (-(1)).
 
 Theorem mul_lt_mono_nonpos :
   forall n m p q, m <= 0 -> n < m -> q <= 0 -> p < q ->  m * q < n * p.

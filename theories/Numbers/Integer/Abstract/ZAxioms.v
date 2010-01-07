@@ -14,22 +14,25 @@ Require Export NZAxioms.
 
 Set Implicit Arguments.
 
-Module Type ZAxiomsSig.
-Include Type NZOrdAxiomsSig.
-Local Open Scope NumScope.
+Module Type Opp (Import T:Typ).
+ Parameter Inline opp : t -> t.
+End Opp.
 
-Parameter Inline opp : t -> t.
-Declare Instance opp_wd : Proper (eq==>eq) opp.
+Module Type OppNotation (T:Typ)(Import O : Opp T).
+ Notation "- x" := (opp x) (at level 35, right associativity).
+End OppNotation.
 
-Notation "- x" := (opp x) (at level 35, right associativity) : NumScope.
-Notation "- 1" := (- (1)) : NumScope.
+Module Type Opp' (T:Typ) := Opp T <+ OppNotation T.
 
-(* Integers are obtained by postulating that every number has a predecessor *)
+(** We obtain integers by postulating that every number has a predecessor. *)
 
-Axiom succ_pred : forall n, S (P n) == n.
+Module Type IsOpp (Import Z : NZAxiomsSig')(Import O : Opp' Z).
+ Declare Instance opp_wd : Proper (eq==>eq) opp.
+ Axiom succ_pred : forall n, S (P n) == n.
+ Axiom opp_0 : - 0 == 0.
+ Axiom opp_succ : forall n, - (S n) == P (- n).
+End IsOpp.
 
-Axiom opp_0 : - 0 == 0.
-Axiom opp_succ : forall n, - (S n) == P (- n).
-
-End ZAxiomsSig.
+Module Type ZAxiomsSig := NZOrdAxiomsSig <+ Opp <+ IsOpp.
+Module Type ZAxiomsSig' := NZOrdAxiomsSig' <+ Opp' <+ IsOpp.
 

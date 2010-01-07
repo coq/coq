@@ -16,18 +16,15 @@ Require Import ZSig.
 
 Module ZSig_ZAxioms (Z:ZType) <: ZAxiomsSig.
 
-Delimit Scope NumScope with Num.
-Bind Scope NumScope with Z.t.
-Local Open Scope NumScope.
-Local Notation "[ x ]" := (Z.to_Z x) : NumScope.
-Local Infix "=="  := Z.eq (at level 70) : NumScope.
-Local Notation "0" := Z.zero : NumScope.
-Local Infix "+" := Z.add : NumScope.
-Local Infix "-" := Z.sub : NumScope.
-Local Infix "*" := Z.mul : NumScope.
-Local Notation "- x" := (Z.opp x) : NumScope.
-Local Infix "<=" := Z.le : NumScope.
-Local Infix "<" := Z.lt : NumScope.
+Local Notation "[ x ]" := (Z.to_Z x).
+Local Infix "=="  := Z.eq (at level 70).
+Local Notation "0" := Z.zero.
+Local Infix "+" := Z.add.
+Local Infix "-" := Z.sub.
+Local Infix "*" := Z.mul.
+Local Notation "- x" := (Z.opp x).
+Local Infix "<=" := Z.le.
+Local Infix "<" := Z.lt.
 
 Hint Rewrite
  Z.spec_0 Z.spec_1 Z.spec_add Z.spec_sub Z.spec_pred Z.spec_succ

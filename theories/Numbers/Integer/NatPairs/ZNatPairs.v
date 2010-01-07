@@ -21,7 +21,18 @@ Open Local Scope pair_scope.
 Module ZPairsAxiomsMod (Import N : NAxiomsSig) <: ZAxiomsSig.
 Module Import NPropMod := NPropFunct N. (* Get all properties of N *)
 
-Local Open Scope NumScope.
+Delimit Scope NScope with N.
+Bind Scope NScope with N.t.
+Infix "=="  := N.eq (at level 70) : NScope.
+Notation "x ~= y" := (~ N.eq x y) (at level 70) : NScope.
+Notation "0" := N.zero : NScope.
+Notation "1" := (N.succ N.zero) : NScope.
+Infix "+" := N.add : NScope.
+Infix "-" := N.sub : NScope.
+Infix "*" := N.mul : NScope.
+Infix "<" := N.lt : NScope.
+Infix "<=" := N.le : NScope.
+Local Open Scope NScope.
 
 (** The definitions of functions ([add], [mul], etc.) will be unfolded
     by the properties functor. Since we don't want [add_comm] to refer
@@ -34,8 +45,8 @@ Module Z.
 Definition t := (N.t * N.t)%type.
 Definition zero : t := (0, 0).
 Definition eq (p q : t) := (p#1 + q#2 == q#1 + p#2).
-Definition succ (n : t) : t := (S n#1, n#2).
-Definition pred (n : t) : t := (n#1, S n#2).
+Definition succ (n : t) : t := (N.succ n#1, n#2).
+Definition pred (n : t) : t := (n#1, N.succ n#2).
 Definition opp (n : t) : t := (n#2, n#1).
 Definition add (n m : t) : t := (n#1 + m#1, n#2 + m#2).
 Definition sub (n m : t) : t := (n#1 + m#2, n#2 + m#1).
@@ -58,20 +69,19 @@ Definition max (n m : t) : t := (max (n#1 + m#2) (m#1 + n#2), n#2 + m#2).
 
 End Z.
 
-Delimit Scope IntScope with Int.
-Bind Scope IntScope with Z.t.
-Notation "x == y"  := (Z.eq x y) (at level 70) : IntScope.
-Notation "x ~= y" := (~ Z.eq x y) (at level 70) : IntScope.
-Notation "0" := Z.zero : IntScope.
-Notation "1" := (Z.succ Z.zero) : IntScope.
-Notation "x + y" := (Z.add x y) : IntScope.
-Notation "x - y" := (Z.sub x y) : IntScope.
-Notation "x * y" := (Z.mul x y) : IntScope.
-Notation "- x" := (Z.opp x) : IntScope.
-Notation "x < y" := (Z.lt x y) : IntScope.
-Notation "x <= y" := (Z.le x y) : IntScope.
-Notation "x > y" := (Z.lt y x) (only parsing) : IntScope.
-Notation "x >= y" := (Z.le y x) (only parsing) : IntScope.
+Delimit Scope ZScope with Z.
+Bind Scope ZScope with Z.t.
+Infix "=="  := Z.eq (at level 70) : ZScope.
+Notation "x ~= y" := (~ Z.eq x y) (at level 70) : ZScope.
+Notation "0" := Z.zero : ZScope.
+Notation "1" := (Z.succ Z.zero) : ZScope.
+Infix "+" := Z.add : ZScope.
+Infix "-" := Z.sub : ZScope.
+Infix "*" := Z.mul : ZScope.
+Notation "- x" := (Z.opp x) : ZScope.
+Infix "<" := Z.lt : ZScope.
+Infix "<=" := Z.le : ZScope.
+Local Open Scope ZScope.
 
 Lemma sub_add_opp : forall n m, Z.sub n m = Z.add n (Z.opp m).
 Proof. reflexivity. Qed.
@@ -82,7 +92,7 @@ split.
 unfold Reflexive, Z.eq. reflexivity.
 unfold Symmetric, Z.eq; now symmetry.
 unfold Transitive, Z.eq. intros (n1,n2) (m1,m2) (p1,p2) H1 H2; simpl in *.
-apply (add_cancel_r _ _ (m1+m2)).
+apply (add_cancel_r _ _ (m1+m2)%N).
 rewrite add_shuffle2, H1, add_shuffle1, H2.
 now rewrite add_shuffle1, (add_comm m1).
 Qed.
@@ -122,10 +132,10 @@ intros n1 m1 H1 n2 m2 H2. rewrite 2 sub_add_opp.
 apply add_wd, opp_wd; auto.
 Qed.
 
-Lemma mul_comm : forall n m, (n*m == m*n)%Int.
+Lemma mul_comm : forall n m, n*m == m*n.
 Proof.
 intros (n1,n2) (m1,m2); compute.
-rewrite (add_comm (m1*n2)).
+rewrite (add_comm (m1*n2)%N).
 apply N.add_wd; apply N.add_wd; apply mul_comm.
 Qed.
 
@@ -133,7 +143,7 @@ Instance mul_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) Z.mul.
 Proof.
 assert (forall n, Proper (Z.eq ==> Z.eq) (Z.mul n)).
  unfold Z.mul, Z.eq. intros (n1,n2) (p1,p2) (q1,q2) H; simpl in *.
- rewrite add_shuffle1, (add_comm (n1*p1)).
+ rewrite add_shuffle1, (add_comm (n1*p1)%N).
  symmetry. rewrite add_shuffle1.
  rewrite <- ! mul_add_distr_l.
  rewrite (add_comm p2), (add_comm q2), H.
@@ -152,25 +162,23 @@ Theorem bi_induction :
 Proof.
 intros A0 AS n; unfold Z.zero, Z.succ, Z.eq in *.
 destruct n as [n m].
-cut (forall p, A (p, 0)); [intro H1 |].
-cut (forall p, A (0, p)); [intro H2 |].
+cut (forall p, A (p, 0%N)); [intro H1 |].
+cut (forall p, A (0%N, p)); [intro H2 |].
 destruct (add_dichotomy n m) as [[p H] | [p H]].
-rewrite (A_wd (n, m) (0, p)) by (rewrite add_0_l; now rewrite add_comm).
+rewrite (A_wd (n, m) (0%N, p)) by (rewrite add_0_l; now rewrite add_comm).
 apply H2.
-rewrite (A_wd (n, m) (p, 0)) by now rewrite add_0_r. apply H1.
+rewrite (A_wd (n, m) (p, 0%N)) by now rewrite add_0_r. apply H1.
 induct p. assumption. intros p IH.
-apply -> (A_wd (0, p) (1, S p)) in IH; [| now rewrite add_0_l, add_1_l].
+apply -> (A_wd (0%N, p) (1%N, N.succ p)) in IH; [| now rewrite add_0_l, add_1_l].
 now apply <- AS.
 induct p. assumption. intros p IH.
-replace 0 with (snd (p, 0)); [| reflexivity].
-replace (S p) with (S (fst (p, 0))); [| reflexivity]. now apply -> AS.
+replace 0%N with (snd (p, 0%N)); [| reflexivity].
+replace (N.succ p) with (N.succ (fst (p, 0%N))); [| reflexivity]. now apply -> AS.
 Qed.
 
 End Induction.
 
 (* Time to prove theorems in the language of Z *)
-
-Open Scope IntScope.
 
 Theorem pred_succ : forall n, Z.pred (Z.succ n) == n.
 Proof.
@@ -221,7 +229,7 @@ Theorem mul_succ_l : forall n m, (Z.succ n) * m == n * m + m.
 Proof.
 intros (n1,n2) (m1,m2); unfold Z.mul, Z.succ, Z.eq; simpl; nzsimpl.
 rewrite <- (add_assoc _ m1), (add_comm m1), (add_assoc _ _ m1).
-now rewrite <- (add_assoc _ m2), (add_comm m2), (add_assoc _ (n2*m1)%Num m2).
+now rewrite <- (add_assoc _ m2), (add_comm m2), (add_assoc _ (n2*m1)%N m2).
 Qed.
 
 (** Order *)
@@ -279,7 +287,7 @@ Proof.
 assert (forall n, Proper (Z.eq==>iff) (Z.lt n)).
  intros (n1,n2). apply proper_sym_impl_iff; auto with *.
  unfold Z.lt, Z.eq; intros (r1,r2) (s1,s2) Eq H; simpl in *.
- apply le_lt_add_lt with (r1+r2)%Num (r1+r2)%Num; [apply le_refl; auto with *|].
+ apply le_lt_add_lt with (r1+r2)%N (r1+r2)%N; [apply le_refl; auto with *|].
  rewrite add_shuffle2, (add_comm s2), Eq.
  rewrite (add_comm s1 n2), (add_shuffle1 n2), (add_comm n2 r1).
  now rewrite <- add_lt_mono_r.

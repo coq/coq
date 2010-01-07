@@ -12,9 +12,8 @@
 
 Require Export NAddOrder.
 
-Module NMulOrderPropFunct (Import N : NAxiomsSig).
+Module NMulOrderPropFunct (Import N : NAxiomsSig').
 Include NAddOrderPropFunct N.
-Local Open Scope NumScope.
 
 (** Theorems that are either not valid on Z or have different proofs
     on N and Z *)

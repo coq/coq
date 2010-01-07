@@ -12,9 +12,8 @@
 
 Require Export NMulOrder.
 
-Module Type NSubPropFunct (Import N : NAxiomsSig).
+Module Type NSubPropFunct (Import N : NAxiomsSig').
 Include NMulOrderPropFunct N.
-Local Open Scope NumScope.
 
 Theorem sub_0_l : forall n, 0 - n == 0.
 Proof.

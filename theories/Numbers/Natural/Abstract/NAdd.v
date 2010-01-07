@@ -12,10 +12,8 @@
 
 Require Export NBase.
 
-Module NAddPropFunct (Import N : NAxiomsSig).
+Module NAddPropFunct (Import N : NAxiomsSig').
 Include NBasePropFunct N.
-
-Local Open Scope NumScope.
 
 (** For theorems about [add] that are both valid for [N] and [Z], see [NZAdd] *)
 (** Now comes theorems valid for natural numbers but not for Z *)
