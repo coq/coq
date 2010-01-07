@@ -242,14 +242,6 @@ Module KeyOrderedType(Import O:OrderedType).
 
  End Elt.
 
- Hint Resolve (fun elt => @Equivalence_Reflexive _ _ (eqk_equiv elt)).
- Hint Resolve (fun elt => @Equivalence_Transitive _ _ (eqk_equiv elt)).
- Hint Immediate (fun elt => @Equivalence_Symmetric _ _ (eqk_equiv elt)).
- Hint Resolve (fun elt => @Equivalence_Reflexive _ _ (eqke_equiv elt)).
- Hint Resolve (fun elt => @Equivalence_Transitive _ _ (eqke_equiv elt)).
- Hint Immediate (fun elt => @Equivalence_Symmetric _ _ (eqke_equiv elt)).
- Hint Resolve (fun elt => @StrictOrder_Transitive _ _ (ltk_strorder elt)).
-
  Hint Unfold eqk eqke ltk.
  Hint Extern 2 (eqke ?a ?b) => split.
  Hint Resolve ltk_not_eqk ltk_not_eqke.

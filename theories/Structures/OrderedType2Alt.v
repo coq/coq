@@ -226,15 +226,18 @@ Module OT_to_Alt (Import O:OrderedType) <: OrderedTypeAlt.
  rewrite H in H0. elim (StrictOrder_Irreflexive x); auto.
  Qed.
 
+ Lemma compare_Gt : forall x y, compare x y = Gt <-> lt y x.
+ Proof.
+ intros x y. rewrite compare_sym, CompOpp_iff. apply compare_Lt.
+ Qed.
+
  Lemma compare_trans :
    forall c x y z, (x?=y) = c -> (y?=z) = c -> (x?=z) = c.
  Proof.
  intros c x y z.
- destruct c; unfold compare.
- rewrite 3 compare_Eq. etransitivity; eauto.
- rewrite 3 compare_Lt. etransitivity; eauto.
- do 3 (rewrite compare_sym, CompOpp_iff, compare_Lt).
- etransitivity; eauto.
+ destruct c; unfold compare;
+  rewrite ?compare_Eq, ?compare_Lt, ?compare_Gt;
+  transitivity y; auto.
  Qed.
 
 End OT_to_Alt.

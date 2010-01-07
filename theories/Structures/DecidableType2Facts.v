@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Require Import DecidableType2 Bool SetoidList.
+Require Import DecidableType2 Bool SetoidList RelationPairs.
 
 (** In a BooleanEqualityType, [eqb] is compatible with [eq] *)
 
@@ -23,55 +23,35 @@ End BoolEqualityFacts.
 
 
 (** * Keys and datas used in FMap *)
-
-Module KeyDecidableType(D:DecidableType).
- Import D.
+Module KeyDecidableType(Import D:DecidableType).
 
  Section Elt.
  Variable elt : Type.
  Notation key:=t.
 
-  Definition eqk (p p':key*elt) := eq (fst p) (fst p').
-  Definition eqke (p p':key*elt) :=
-          eq (fst p) (fst p') /\ (snd p) = (snd p').
+  Local Open Scope signature_scope.
 
+  Definition eqk : relation (key*elt) := eq @@1.
+  Definition eqke : relation (key*elt) := eq * Logic.eq.
   Hint Unfold eqk eqke.
-  Hint Extern 2 (eqke ?a ?b) => split.
 
-   (* eqke is stricter than eqk *)
+  (* eqke is stricter than eqk *)
 
-   Lemma eqke_eqk : forall x x', eqke x x' -> eqk x x'.
-   Proof.
-     unfold eqk, eqke; intuition.
-   Qed.
+  Global Instance eqke_eqk : subrelation eqke eqk.
+  Proof. firstorder. Qed.
 
-  (* eqk, eqke are equalities *)
+  (* eqk, eqke are equalities, ltk is a strict order *)
 
-  Instance eqk_equiv : Equivalence eqk.
-  Proof.
-   constructor; unfold eqk; repeat red; intros;
-   [ reflexivity | symmetry; auto | etransitivity; eauto ].
-  Qed.
+  Global Instance eqk_equiv : Equivalence eqk.
 
-  Instance eqke_equiv : Equivalence eqke.
-  Proof.
-   constructor; unfold eqke; repeat red; intuition; simpl;
-   etransitivity; eauto.
-  Qed.
+  Global Instance eqke_equiv : Equivalence eqke.
 
-(*
-  Hint Resolve (@Equivalence_Reflexive _ _ eqk_equiv).
-  Hint Resolve (@Equivalence_Transitive _ _ eqk_equiv).
-  Hint Immediate (@Equivalence_Symmetric _ _ eqk_equiv).
-  Hint Resolve (@Equivalence_Reflexive _ _ eqke_equiv).
-  Hint Resolve (@Equivalence_Transitive _ _ eqke_equiv).
-  Hint Immediate (@Equivalence_Symmetric _ _ eqke_equiv).
-*)
+  (* Additionnal facts *)
 
   Lemma InA_eqke_eqk :
      forall x m, InA eqke x m -> InA eqk x m.
   Proof.
-    unfold eqke; induction 1; intuition.
+    unfold eqke, RelProd; induction 1; firstorder.
   Qed.
   Hint Resolve InA_eqke_eqk.
 
@@ -92,63 +72,75 @@ Module KeyDecidableType(D:DecidableType).
   firstorder.
   exists x; auto.
   induction H.
-  destruct y.
-  exists e; auto.
+  destruct y; compute in H.
+  exists e; left; auto.
   destruct IHInA as [e H0].
   exists e; auto.
   Qed.
 
-  Global Instance MapsTo_compat :
-    Proper (eq==>Logic.eq==>Logic.eq==>iff) MapsTo.
+  Lemma In_alt2 : forall k l, In k l <-> Exists (fun p => eq k (fst p)) l.
   Proof.
-  intros x x' Hxx' e e' Hee' l l' Hll'; subst.
-  unfold MapsTo.
-  assert (EQN : eqke (x,e') (x',e')) by (compute;auto).
-  rewrite EQN; intuition.
+  unfold In, MapsTo.
+  setoid_rewrite Exists_exists; setoid_rewrite InA_alt.
+  firstorder.
+  exists (snd x), x; auto.
+  Qed.
+
+  Lemma In_nil : forall k, In k nil <-> False.
+  Proof.
+  intros; rewrite In_alt2; apply Exists_nil.
+  Qed.
+
+  Lemma In_cons : forall k p l,
+   In k (p::l) <-> eq k (fst p) \/ In k l.
+  Proof.
+  intros; rewrite !In_alt2, Exists_cons; intuition.
+  Qed.
+
+  Global Instance MapsTo_compat :
+   Proper (eq==>Logic.eq==>equivlistA eqke==>iff) MapsTo.
+  Proof.
+  intros x x' Hx e e' He l l' Hl. unfold MapsTo.
+  rewrite Hx, He, Hl; intuition.
+  Qed.
+
+  Global Instance In_compat : Proper (eq==>equivlistA eqk==>iff) In.
+  Proof.
+  intros x x' Hx l l' Hl. rewrite !In_alt.
+  setoid_rewrite Hl. setoid_rewrite Hx. intuition.
   Qed.
 
   Lemma MapsTo_eq : forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.
-  Proof.
-  intros; rewrite <- H; auto.
-  Qed.
-
-  Global Instance In_compat : Proper (eq==>Logic.eq==>iff) In.
-  Proof.
-  intros x x' Hxx' l l' Hll'; subst l.
-  unfold In.
-  split; intros (e,He); exists e.
-  rewrite <- Hxx'; auto.
-  rewrite Hxx'; auto.
-  Qed.
+  Proof. intros l x y e EQ. rewrite <- EQ; auto. Qed.
 
   Lemma In_eq : forall l x y, eq x y -> In x l -> In y l.
-  Proof.
-  intros; rewrite <- H; auto.
-  Qed.
+  Proof. intros l x y EQ. rewrite <- EQ; auto. Qed.
 
   Lemma In_inv : forall k k' e l, In k ((k',e) :: l) -> eq k k' \/ In k l.
   Proof.
-    inversion 1.
-    inversion_clear H0; eauto.
-    destruct H1; simpl in *; intuition.
+    intros; invlist In; invlist MapsTo. compute in * |- ; intuition.
+    right; exists x; auto.
   Qed.
 
   Lemma In_inv_2 : forall k k' e e' l,
       InA eqk (k, e) ((k', e') :: l) -> ~ eq k k' -> InA eqk (k, e) l.
   Proof.
-   inversion_clear 1; compute in H0; intuition.
+   intros; invlist InA; intuition.
   Qed.
 
   Lemma In_inv_3 : forall x x' l,
       InA eqke x (x' :: l) -> ~ eqk x x' -> InA eqke x l.
   Proof.
-   inversion_clear 1; compute in H0; intuition.
+   intros; invlist InA; compute in * |- ; intuition.
   Qed.
 
  End Elt.
 
+ Hint Unfold eqk eqke.
+ Hint Extern 2 (eqke ?a ?b) => split.
+ Hint Resolve InA_eqke_eqk.
+ Hint Unfold MapsTo In.
  Hint Resolve In_inv_2 In_inv_3.
- (* TODO: (re-)populate with more hints after failed attempt of Global Hint *)
 
 End KeyDecidableType.
 

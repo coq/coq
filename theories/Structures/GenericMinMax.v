@@ -488,7 +488,7 @@ End MinMaxProperties.
 
 
 
-(** Some Remaining questions...
+(** TODO: Some Remaining questions...
 
 --> Compare with a type-classes version ?
 
@@ -496,10 +496,5 @@ End MinMaxProperties.
     that any possible definition of max will in fact be equivalent ?
 
 --> Is it possible to avoid copy-paste about min even more ?
-
---> Can this modular approach be used for more complex things,
-    in particular div/mod ?
-    How can we share common parts between nat and Z in this case ?
-    How to handle different choices (Zdiv vs. ZOdiv) ?
 
 *)
