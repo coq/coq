@@ -569,21 +569,14 @@ Fixpoint isok s :=
 
 (** * Correctness proofs *)
 
-(* Module Proofs. *)
- Module Import MX := OrderedTypeFacts X.
- Hint Resolve MX.lt_trans.
+Module Import MX := OrderedTypeFacts X.
 
 (** * Automation and dedicated tactics *)
 
-Hint Unfold In.
-Hint Constructors InT bst.
-Hint Unfold lt_tree gt_tree.
-Hint Resolve @ok.
-Hint Constructors Ok.
-
-(* TODO: modify proofs in order to avoid these hints *)
-Hint Resolve MX.eq_refl MX.eq_trans.
-Hint Immediate MX.eq_sym.
+Local Hint Resolve MX.eq_refl MX.eq_trans MX.lt_trans @ok.
+Local Hint Immediate MX.eq_sym.
+Local Hint Unfold In lt_tree gt_tree.
+Local Hint Constructors InT bst Ok.
 
 Tactic Notation "factornode" ident(l) ident(x) ident(r) ident(h)
  "as" ident(s) :=
@@ -674,7 +667,7 @@ Lemma In_1 :
 Proof.
  induction s; simpl; intuition_in; eauto 3. (** TODO: why 5 is so slow ? *)
 Qed.
-Hint Immediate In_1.
+Local Hint Immediate In_1.
 
 Instance In_compat : Proper (X.eq==>eq==>iff) InT.
 Proof.
@@ -715,7 +708,7 @@ Proof.
  unfold gt_tree; intuition_in; order.
 Qed.
 
-Hint Resolve lt_leaf gt_leaf lt_tree_node gt_tree_node.
+Local Hint Resolve lt_leaf gt_leaf lt_tree_node gt_tree_node.
 
 Lemma lt_tree_not_in :
  forall (x : elt) (t : tree), lt_tree x t -> ~ InT x t.
@@ -741,7 +734,7 @@ Proof.
  eauto.
 Qed.
 
-Hint Resolve lt_tree_not_in lt_tree_trans gt_tree_not_in gt_tree_trans.
+Local Hint Resolve lt_tree_not_in lt_tree_trans gt_tree_not_in gt_tree_trans.
 
 (** * Inductions principles for some of the set operators *)
 
@@ -950,7 +943,7 @@ Proof.
   specialize (L m); rewrite remove_min_spec, e0 in L; simpl in L;
    [setoid_replace y with x|inv]; eauto.
 Qed.
-Hint Resolve remove_min_gt_tree.
+Local Hint Resolve remove_min_gt_tree.
 
 
 
@@ -1334,7 +1327,7 @@ Proof.
  intros; unfold elements; apply elements_spec2'; auto.
  intros; inversion H0.
 Qed.
-Hint Resolve elements_spec2.
+Local Hint Resolve elements_spec2.
 
 Lemma elements_spec2w : forall s `(Ok s), NoDupA X.eq (elements s).
 Proof.
@@ -1752,13 +1745,11 @@ Proof.
  rewrite IHs1; apply flatten_e_elements.
 Qed.
 
-Hint Unfold flip.
-
 (** Correctness of this comparison *)
 
 Definition Cmp c x y := CompSpec L.eq L.lt x y c.
 
-Hint Unfold Cmp.
+Local Hint Unfold Cmp flip.
 
 Lemma compare_end_Cmp :
  forall e2, Cmp (compare_end e2) nil (flatten_e e2).
