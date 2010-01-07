@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import QArith_base OrderedType2 QOrderedType GenericMinMax.
+Require Import QArith_base Orders QOrderedType GenericMinMax.
 
 (** * Maximum and Minimum of two rational numbers *)
 

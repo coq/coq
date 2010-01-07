@@ -13,8 +13,8 @@
 
 (* $Id$ *)
 
-Require Import OrderedType2 NatOrderedType POrderedType NOrderedType
- ZOrderedType DecidableType2Ex RelationPairs.
+Require Import Orders NatOrderedType POrderedType NOrderedType
+ ZOrderedType RelationPairs EqualitiesFacts.
 
 (** * Examples of Ordered Type structures. *)
 

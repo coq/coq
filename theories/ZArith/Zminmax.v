@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import OrderedType2 BinInt Zcompare Zorder ZOrderedType
+Require Import Orders BinInt Zcompare Zorder ZOrderedType
  GenericMinMax.
 
 (** * Maximum and Minimum of two [Z] numbers *)

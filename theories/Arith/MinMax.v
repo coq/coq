@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import OrderedType2 NatOrderedType GenericMinMax.
+Require Import Orders NatOrderedType GenericMinMax.
 
 (** * Maximum and Minimum of two natural numbers *)
 

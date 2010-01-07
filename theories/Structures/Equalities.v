@@ -168,47 +168,49 @@ Module Bool2Dec (E:BooleanEqualityType) <: BooleanDecidableType
    A particular case of [DecidableType] where the equality is
    the usual one of Coq. *)
 
-Module Type UsualEq <: Eq.
- Parameter Inline t : Type.
- Definition eq := @eq t.
-End UsualEq.
+Module Type HasUsualEq (Import T:Typ) <: HasEq T.
+ Definition eq := @Logic.eq t.
+End HasUsualEq.
 
-Module UsualIsEq (E:UsualEq) <: IsEq E.
+Module Type UsualEq <: Eq := Typ <+ HasUsualEq.
+
+Module Type UsualIsEq (E:UsualEq) <: IsEq E.
  Program Instance eq_equiv : Equivalence E.eq.
 End UsualIsEq.
 
-Module UsualIsEqOrig (E:UsualEq) <: IsEqOrig E.
- Definition eq_refl := @eq_refl E.t.
- Definition eq_sym := @eq_sym E.t.
- Definition eq_trans := @eq_trans E.t.
+Module Type UsualIsEqOrig (E:UsualEq) <: IsEqOrig E.
+ Definition eq_refl := @Logic.eq_refl E.t.
+ Definition eq_sym := @Logic.eq_sym E.t.
+ Definition eq_trans := @Logic.eq_trans E.t.
 End UsualIsEqOrig.
 
 Module Type UsualEqualityType <: EqualityType
- := UsualEq <+ IsEq.
+ := UsualEq <+ UsualIsEq.
 
 Module Type UsualDecidableType <: DecidableType
- := UsualEq <+ IsEq <+ HasEqDec.
+ := UsualEq <+ UsualIsEq <+ HasEqDec.
+
+Module Type UsualDecidableTypeOrig <: DecidableTypeOrig
+ := UsualEq <+ UsualIsEqOrig <+ HasEqDec.
 
 Module Type UsualDecidableTypeBoth <: DecidableTypeBoth
- := UsualEq <+ IsEq <+ IsEqOrig <+ HasEqDec.
+ := UsualEq <+ UsualIsEq <+ UsualIsEqOrig <+ HasEqDec.
 
 Module Type UsualBoolEq := UsualEq <+ HasEqBool.
 
 Module Type UsualDecidableTypeFull <: DecidableTypeFull
- := UsualEq <+ IsEq <+ IsEqOrig <+ HasEqDec <+ HasEqBool.
+ := UsualEq <+ UsualIsEq <+ UsualIsEqOrig <+ HasEqDec <+ HasEqBool.
 
 
 (** Some shortcuts for easily building a [UsualDecidableType] *)
 
 Module Type MiniDecidableType.
- Parameter t : Type.
+ Include Typ.
  Parameter eq_dec : forall x y : t, {x=y}+{~x=y}.
 End MiniDecidableType.
 
-Module Make_UDT (M:MiniDecidableType) <: UsualDecidableTypeBoth.
- Definition eq := @Logic.eq M.t.
- Include M <+ UsualIsEq <+ UsualIsEqOrig.
-End Make_UDT.
+Module Make_UDT (M:MiniDecidableType) <: UsualDecidableTypeBoth
+ := M <+ HasUsualEq <+ UsualIsEq <+ UsualIsEqOrig.
 
 Module Make_UDTF (M:UsualBoolEq) <: UsualDecidableTypeFull
  := M <+ UsualIsEq <+ UsualIsEqOrig <+ HasEqBool2Dec.

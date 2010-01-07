@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Require Import OrderTac OrderedType2 OrderedType2Facts Setoid Morphisms Basics.
+Require Import Orders OrdersTac OrdersFacts Setoid Morphisms Basics.
 
 (** * A Generic construction of min and max *)
 

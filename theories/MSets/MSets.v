@@ -8,11 +8,10 @@
 
 (* $Id$ *)
 
-Require Export OrderedType2.
-Require Export OrderedType2Ex.
-Require Export OrderedType2Alt.
-Require Export DecidableType2.
-Require Export DecidableType2Ex.
+Require Export Orders.
+Require Export OrdersEx.
+Require Export OrdersAlt.
+Require Export Equalities.
 Require Export MSetInterface.
 Require Export MSetFacts.
 Require Export MSetDecide.

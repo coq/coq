@@ -30,7 +30,7 @@
 *)
 
 Require Export Bool SetoidList RelationClasses Morphisms
- RelationPairs DecidableType2 OrderedType2 OrderedType2Facts.
+ RelationPairs Equalities Orders OrdersFacts.
 Set Implicit Arguments.
 Unset Strict Implicit.
 

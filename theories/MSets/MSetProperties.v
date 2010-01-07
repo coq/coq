@@ -17,7 +17,7 @@
     [Equal s s'] instead of [equal s s'=true], etc. *)
 
 Require Export MSetInterface.
-Require Import DecidableTypeEx OrderedType2Lists MSetFacts MSetDecide.
+Require Import DecidableTypeEx OrdersLists MSetFacts MSetDecide.
 Set Implicit Arguments.
 Unset Strict Implicit.
 

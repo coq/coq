@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import OrderedType2 BinPos Pnat POrderedType GenericMinMax.
+Require Import Orders BinPos Pnat POrderedType GenericMinMax.
 
 (** * Maximum and Minimum of two positive numbers *)
 

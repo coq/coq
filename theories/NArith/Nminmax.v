@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import OrderedType2 BinNat Nnat NOrderedType GenericMinMax.
+Require Import Orders BinNat Nnat NOrderedType GenericMinMax.
 
 (** * Maximum and Minimum of two [N] numbers *)
 

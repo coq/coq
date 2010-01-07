@@ -20,11 +20,11 @@ Unset Strict Implicit.
 (** This is just a compatibility layer, the real implementation
     is now in [MSetWeakList] *)
 
-Require DecidableType2 FSetCompat MSetWeakList.
+Require Equalities FSetCompat MSetWeakList.
 
 Module Make (X: DecidableType) <: WS with Module E := X.
  Module E := X.
- Module X' := DecidableType2.Update_DT X.
+ Module X' := Equalities.Update_DT X.
  Module MSet := MSetWeakList.Make X'.
  Include FSetCompat.Backport_WSets X MSet.
 End Make.

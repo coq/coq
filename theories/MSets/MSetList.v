@@ -13,7 +13,7 @@
 (** This file proposes an implementation of the non-dependant
     interface [MSetInterface.S] using strictly ordered list. *)
 
-Require Export MSetInterface OrderedType2Facts OrderedType2Lists.
+Require Export MSetInterface OrdersFacts OrdersLists.
 Set Implicit Arguments.
 Unset Strict Implicit.
 

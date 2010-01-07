@@ -10,7 +10,7 @@
 
 (*i $Id$ i*)
 
-Require Import NZAxioms NZBase Decidable OrderTac.
+Require Import NZAxioms NZBase Decidable OrdersTac.
 
 Module Type NZOrderPropSig
  (Import NZ : NZOrdSig')(Import NZBase : NZBasePropSig NZ).

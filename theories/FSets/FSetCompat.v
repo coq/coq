@@ -221,7 +221,7 @@ End Backport_Sets.
 (** * From old Weak Sets to new ones. *)
 
 Module Update_WSets
- (E:DecidableType2.DecidableType)
+ (E:Equalities.DecidableType)
  (M:FSetInterface.WS with Definition E.t := E.t
                      with Definition E.eq := E.eq)
  <: MSetInterface.WSetsOn E.
@@ -342,7 +342,7 @@ End Update_WSets.
 (** * From old Sets to new ones. *)
 
 Module Update_Sets
- (E:OrderedType2.OrderedType)
+ (E:Orders.OrderedType)
  (M:FSetInterface.S with Definition E.t := E.t
                     with Definition E.eq := E.eq
                     with Definition E.lt := E.lt)

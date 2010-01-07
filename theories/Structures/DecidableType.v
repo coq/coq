@@ -9,19 +9,21 @@
 (* $Id$ *)
 
 Require Export SetoidList.
-Require DecidableType2. (* No Import here, this is on purpose. *)
+Require Equalities.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+(** NB: This file is here only for compatibility with earlier version of
+    [FSets] and [FMap]. Please use [Structures/Equalities.v] directly now. *)
 
 (** * Types with Equalities, and nothing more (for subtyping purpose) *)
 
-Module Type EqualityType := DecidableType2.EqualityTypeOrig.
+Module Type EqualityType := Equalities.EqualityTypeOrig.
 
 (** * Types with decidable Equalities (but no ordering) *)
 
-Module Type DecidableType := DecidableType2.DecidableTypeOrig.
+Module Type DecidableType := Equalities.DecidableTypeOrig.
 
 (** * Additional notions about keys and datas used in FMap *)
 

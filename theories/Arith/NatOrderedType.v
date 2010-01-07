@@ -7,7 +7,7 @@
 (************************************************************************)
 
 Require Import Lt Peano_dec Compare_dec EqNat
- DecidableType2 OrderedType2 OrderTac.
+ Equalities Orders OrdersTac.
 
 
 (** * DecidableType structure for Peano numbers *)

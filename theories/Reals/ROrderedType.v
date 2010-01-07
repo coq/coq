@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Rbase DecidableType2 OrderedType2 OrderTac.
+Require Import Rbase Equalities Orders OrdersTac.
 
 Local Open Scope R_scope.
 

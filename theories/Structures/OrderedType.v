@@ -8,9 +8,12 @@
 
 (* $Id$ *)
 
-Require Export SetoidList Morphisms OrderTac.
+Require Export SetoidList Morphisms OrdersTac.
 Set Implicit Arguments.
 Unset Strict Implicit.
+
+(** NB: This file is here only for compatibility with earlier version of
+     [FSets] and [FMap]. Please use [Structures/Orders.v] directly now. *)
 
 (** * Ordered types *)
 
@@ -103,7 +106,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Lemma lt_total : forall x y, lt x y \/ eq x y \/ lt y x.
   Proof. intros; destruct (compare x y); auto. Qed.
 
-  Module OrderElts <: OrderedType2.TotalOrder.
+  Module OrderElts <: Orders.TotalOrder.
   Definition t := t.
   Definition eq := eq.
   Definition lt := lt.

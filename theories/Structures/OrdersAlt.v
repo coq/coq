@@ -13,7 +13,7 @@
 
 (* $Id$ *)
 
-Require Import OrderedType OrderedType2.
+Require Import OrderedType Orders.
 Set Implicit Arguments.
 
 (** * Some alternative (but equivalent) presentations for an Ordered Type

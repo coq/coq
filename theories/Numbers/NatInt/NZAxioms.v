@@ -10,7 +10,7 @@
 
 (*i $Id$ i*)
 
-Require Export DecidableType2 OrderedType2 NumPrelude GenericMinMax.
+Require Export Equalities Orders NumPrelude GenericMinMax.
 
 (** Axiomatization of a domain with zero, successor, predecessor,
     and a bi-directional induction principle. We require [P (S n) = n]

@@ -41,10 +41,10 @@ Unset Strict Implicit.
 (** This is just a compatibility layer, the real implementation
     is now in [MSetAVL] *)
 
-Require FSetCompat MSetAVL OrderedType2 OrderedType2Alt.
+Require FSetCompat MSetAVL Orders OrdersAlt.
 
 Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
- Module X' := OrderedType2Alt.Update_OT X.
+ Module X' := OrdersAlt.Update_OT X.
  Module MSet := MSetAVL.IntMake I X'.
  Include FSetCompat.Backport_Sets X MSet.
 End IntMake.

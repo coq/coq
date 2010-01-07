@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import OrderedType2 Rbase Rbasic_fun ROrderedType GenericMinMax.
+Require Import Orders Rbase Rbasic_fun ROrderedType GenericMinMax.
 
 (** * Maximum and Minimum of two real numbers *)
 

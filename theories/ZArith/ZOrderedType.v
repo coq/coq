@@ -7,7 +7,7 @@
 (************************************************************************)
 
 Require Import BinInt Zcompare Zorder Zbool ZArith_dec
- DecidableType2 OrderedType2 OrderTac.
+ Equalities Orders OrdersTac.
 
 Local Open Scope Z_scope.
 

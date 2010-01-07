@@ -8,7 +8,7 @@
 
 (* $Id$ *)
 
-Require Export Relations Morphisms Setoid DecidableType2.
+Require Export Relations Morphisms Setoid Equalities.
 Set Implicit Arguments.
 Unset Strict Implicit.
 

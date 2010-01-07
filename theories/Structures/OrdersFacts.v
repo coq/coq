@@ -6,8 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Require Import Basics OrderTac.
-Require Export OrderedType2.
+Require Import Basics OrdersTac.
+Require Export Orders.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

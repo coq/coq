@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Require Export RelationPairs SetoidList OrderedType2.
+Require Export RelationPairs SetoidList Orders.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

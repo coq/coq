@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import BinPos DecidableType2 OrderedType2 OrderTac.
+Require Import BinPos Equalities Orders OrdersTac.
 
 Local Open Scope positive_scope.
 

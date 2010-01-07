@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Require Import Setoid Morphisms Basics DecidableType2 OrderedType2.
+Require Import Setoid Morphisms Basics Equalities Orders.
 Set Implicit Arguments.
 
 (** * The order tactic *)
