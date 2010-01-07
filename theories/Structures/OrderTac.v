@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Require Import Setoid Morphisms.
+Require Import Setoid Morphisms Basics DecidableType2 OrderedType2.
 Set Implicit Arguments.
 
 (** * The order tactic *)
@@ -23,25 +23,6 @@ Set Implicit Arguments.
     The tactic will fail if it doesn't solve the goal. *)
 
 
-(** ** The requirements of the tactic : an equivalence [eq],
-   a strict order [lt] total and compatible with [eq], and
-   a larger order [le] synonym of [lt\/eq]. *)
-
-Module Type OrderSig.
-
-Parameter Inline t : Type.
-Parameters eq lt le : t -> t -> Prop.
-Declare Instance eq_equiv : Equivalence eq.
-Declare Instance lt_strorder : StrictOrder lt.
-Declare Instance lt_compat : Proper (eq==>eq==>iff) lt.
-Parameter lt_total : forall x y, lt x y \/ eq x y \/ lt y x.
-Parameter le_lteq : forall x y, le x y <-> lt x y \/ eq x y.
-
-End OrderSig.
-
-(** NB : we should _not_ use "Inline" for these predicates,
-   otherwise the ltac matching will not work properly later. *)
-
 (** An abstract vision of the predicates. This allows a one-line
     statement for interesting transitivity properties: for instance
     [trans_ord OLE OLE = OLE] will imply later
@@ -56,19 +37,46 @@ Definition trans_ord o o' :=
  | OLE, OLE => OLE
  | _, _ => OLT
  end.
-Infix "+" := trans_ord : order.
+Local Infix "+" := trans_ord.
 
-(** ** [MakeOrderTac] : The functor providing the order tactic. *)
 
-Module MakeOrderTac(Import O:OrderSig).
+(** ** The requirements of the tactic : [TotalOrder].
 
-Local Open Scope order.
+   [TotalOrder] contains an equivalence [eq],
+   a strict order [lt] total and compatible with [eq], and
+   a larger order [le] synonym for [lt\/eq].
 
-Infix "==" := eq (at level 70, no associativity) : order.
-Infix "<" := lt : order.
-Infix "<=" := le : order.
+  NB: we create here a clone of TotalOrder, but without the [Inline] Pragma.
+  This is important for having later the exact shape in Ltac matching.
+*)
 
-(** ** Properties that will be used by the tactic *)
+Module Type TotalOrder_NoInline <: TotalOrder.
+ Parameter Inline t : Type.
+ Parameters eq lt le : t -> t -> Prop.
+ Include Type IsEq <+ IsStrOrder <+ LeIsLtEq <+ LtIsTotal.
+End TotalOrder_NoInline.
+
+Module Type TotalOrder_NoInline' := TotalOrder_NoInline <+ EqLtLeNotation.
+
+(** We make explicit aliases to help ltac matching *)
+
+Module CloneOrder (O:TotalOrder_NoInline) <: TotalOrder.
+Definition t := O.t.
+Definition eq := O.eq.
+Definition lt := O.lt.
+Definition le := O.le.
+Definition eq_equiv := O.eq_equiv.
+Definition lt_compat := O.lt_compat.
+Definition lt_strorder := O.lt_strorder.
+Definition le_lteq := O.le_lteq.
+Definition lt_total := O.lt_total.
+End CloneOrder.
+
+
+
+(** ** Properties that will be used by the [order] tactic *)
+
+Module OrderFacts(Import O:TotalOrder_NoInline').
 
 (** Reflexivity rules *)
 
@@ -104,8 +112,8 @@ Ltac subst_eqns :=
  end.
 
 Definition interp_ord o :=
- match o with OEQ => eq | OLT => lt | OLE => le end.
-Notation "#" := interp_ord : order.
+ match o with OEQ => O.eq | OLT => O.lt | OLE => O.le end.
+Local Notation "#" := interp_ord.
 
 Lemma trans : forall o o' x y z, #o x y -> #o' y z -> #(o+o') x z.
 Proof.
@@ -113,15 +121,15 @@ destruct o, o'; simpl; intros x y z; rewrite ?le_lteq; intuition;
  subst_eqns; eauto using (StrictOrder_Transitive x y z) with *.
 Qed.
 
-Definition eq_trans x y z : x==y -> y==z -> x==z := trans OEQ OEQ x y z.
-Definition le_trans x y z : x<=y -> y<=z -> x<=z := trans OLE OLE x y z.
-Definition lt_trans x y z : x<y -> y<z -> x<z := trans OLT OLT x y z.
-Definition le_lt_trans x y z : x<=y -> y<z -> x<z := trans OLE OLT x y z.
-Definition lt_le_trans x y z : x<y -> y<=z -> x<z := trans OLT OLE x y z.
-Definition eq_lt x y z : x==y -> y<z -> x<z := trans OEQ OLT x y z.
-Definition lt_eq x y z : x<y -> y==z -> x<z := trans OLT OEQ x y z.
-Definition eq_le x y z : x==y -> y<=z -> x<=z := trans OEQ OLE x y z.
-Definition le_eq x y z : x<=y -> y==z -> x<=z := trans OLE OEQ x y z.
+Definition eq_trans x y z : x==y -> y==z -> x==z := @trans OEQ OEQ x y z.
+Definition le_trans x y z : x<=y -> y<=z -> x<=z := @trans OLE OLE x y z.
+Definition lt_trans x y z : x<y -> y<z -> x<z := @trans OLT OLT x y z.
+Definition le_lt_trans x y z : x<=y -> y<z -> x<z := @trans OLE OLT x y z.
+Definition lt_le_trans x y z : x<y -> y<=z -> x<z := @trans OLT OLE x y z.
+Definition eq_lt x y z : x==y -> y<z -> x<z := @trans OEQ OLT x y z.
+Definition lt_eq x y z : x<y -> y==z -> x<z := @trans OLT OEQ x y z.
+Definition eq_le x y z : x==y -> y<=z -> x<=z := @trans OEQ OLE x y z.
+Definition le_eq x y z : x<=y -> y==z -> x<=z := @trans OLE OEQ x y z.
 
 Lemma eq_neq : forall x y z, x==y -> ~y==z -> ~x==z.
 Proof. eauto using eq_trans, eq_sym. Qed.
@@ -151,8 +159,15 @@ Qed.
 Lemma le_neq_lt : forall x y, x<=y -> ~x==y -> x<y.
 Proof. auto using not_ge_lt, le_antisym. Qed.
 
+End OrderFacts.
 
-(** ** The tactic itself *)
+
+
+(** ** [MakeOrderTac] : The functor providing the order tactic. *)
+
+Module MakeOrderTac (Import O:TotalOrder_NoInline').
+
+Include OrderFacts O.
 
 (** order_eq : replace x by y in all (in)equations hyps thanks
    to equality EQ (where eq has been hidden in order to avoid
@@ -177,7 +192,7 @@ end.
 Ltac order_eq x y eqn :=
  match x with
  | y => clear eqn
- | _ => change (#OEQ x y) in eqn; order_rewr x eqn
+ | _ => change (interp_ord OEQ x y) in eqn; order_rewr x eqn
  end.
 
 (** Goal preparation : We turn all negative hyps into positive ones
@@ -190,18 +205,31 @@ Ltac order_eq x y eqn :=
 Ltac order_prepare :=
  match goal with
  | H : ?A -> False |- _ => change (~A) in H; order_prepare
- | H : ~ _ < _ |- _ => apply not_gt_le in H; order_prepare
- | H : ~ _ <= _ |- _ => apply not_ge_lt in H; order_prepare
- | |- ~ _ => intro
- (* Two special cases. This handling is optional but gives nicer proofs. *)
- | |- ?x == ?x => exact (eq_refl x)
- | |- ?x <= ?x => exact (le_refl x)
- | |- ?x < ?x => exfalso
- (* Any cool stuff left in the goal becomes an hyp via double neg. *)
- | |- _ == _ => apply not_neq_eq; intro
- | |- _ < _ => apply not_ge_lt; intro
- | |- _ <= _ => apply not_gt_le; intro
- | _ => exfalso
+ | H : ~(?R ?x ?y) |- _ =>
+   match R with
+   | eq => fail 1 (* if already using [eq], we leave it this ways *)
+   | _ => (change (~x==y) in H ||
+           apply not_gt_le in H ||
+           apply not_ge_lt in H ||
+           clear H || fail 1); order_prepare
+   end
+ | H : ?R ?x ?y |- _ =>
+   match R with
+   | eq => fail 1
+   | lt => fail 1
+   | le => fail 1
+   | _ => (change (x==y) in H ||
+           change (x<y) in H ||
+           change (x<=y) in H ||
+           clear H || fail 1); order_prepare
+   end
+ | |- ~ _ => intro; order_prepare
+ | |- _ ?x ?x =>
+   exact (eq_refl x) || exact (le_refl x) || exfalso
+ | _ =>
+   (apply not_neq_eq; intro) ||
+   (apply not_ge_lt; intro) ||
+   (apply not_gt_le; intro) || exfalso
  end.
 
 (** We now try to prove False from the various [< <= == !=] hypothesis *)
@@ -254,4 +282,42 @@ Ltac order :=
 
 End MakeOrderTac.
 
+Module OTF_to_OrderTac (OTF:OrderedTypeFull).
+ Module TO := OTF_to_TotalOrder OTF.
+ Module TO' := CloneOrder TO.
+ Include MakeOrderTac TO'.
+End OTF_to_OrderTac.
+
+Module OT_to_OrderTac (OT:OrderedType).
+ Module OTF := OT_to_Full OT.
+ Include OTF_to_OrderTac OTF.
+End OT_to_OrderTac.
+
 (** For example of use of this tactic, see for instance [OrderedType] *)
+
+
+Module TotalOrderRev (O:TotalOrder) <: TotalOrder.
+
+Definition t := O.t.
+Definition eq := O.eq.
+Definition lt := flip O.lt.
+Definition le := flip O.le.
+Include Type EqLtLeNotation.
+
+Instance eq_equiv : Equivalence eq.
+
+Instance lt_strorder: StrictOrder lt.
+Proof. unfold lt; auto with *. Qed.
+Instance lt_compat : Proper (eq==>eq==>iff) lt.
+Proof. unfold lt; auto with *. Qed.
+
+Lemma le_lteq : forall x y, x<=y <-> x<y \/ x==y.
+Proof. intros; unfold le, lt, flip. rewrite O.le_lteq; intuition. Qed.
+
+Lemma lt_total : forall x y, x<y \/ x==y \/ y<x.
+Proof.
+ intros x y; unfold lt, eq, flip.
+ generalize (O.lt_total x y); intuition.
+Qed.
+
+End TotalOrderRev.

@@ -103,11 +103,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Lemma lt_total : forall x y, lt x y \/ eq x y \/ lt y x.
   Proof. intros; destruct (compare x y); auto. Qed.
 
-  Module OrderElts : OrderSig
-    with Definition t := t
-    with Definition eq := eq
-    with Definition lt := lt.
-  (* Opaque signature is crucial for ltac to work correctly later *)
+  Module OrderElts <: OrderedType2.TotalOrder.
   Definition t := t.
   Definition eq := eq.
   Definition lt := lt.
@@ -121,11 +117,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Proof. unfold le; intuition. Qed.
   End OrderElts.
   Module OrderTac := MakeOrderTac OrderElts.
-
-  Ltac order :=
-    change eq with OrderElts.eq in *;
-    change lt with OrderElts.lt in *;
-    OrderTac.order.
+  Ltac order := OrderTac.order.
 
   Lemma le_eq x y z : ~lt x y -> eq y z -> ~lt x z. Proof. order. Qed.
   Lemma eq_le x y z : eq x y -> ~lt y z -> ~lt x z. Proof. order. Qed.

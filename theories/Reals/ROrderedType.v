@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Rbase DecidableType2 OrderedType2 OrderedType2Facts.
+Require Import Rbase DecidableType2 OrderedType2 OrderTac.
 
 Local Open Scope R_scope.
 
@@ -88,9 +88,7 @@ End R_as_OT.
 (** * An [order] tactic for real numbers *)
 
 Module ROrder := OTF_to_OrderTac R_as_OT.
-Ltac r_order :=
- change (@eq R) with ROrder.OrderElts.eq in *;
- ROrder.order.
+Ltac r_order := ROrder.order.
 
 (** Note that [r_order] is domain-agnostic: it will not prove
     [1<=2] or [x<=x+x], but rather things like [x<=y -> y<=x -> x=y]. *)

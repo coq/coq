@@ -6,8 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import BinPos
- DecidableType2 OrderedType2 OrderedType2Facts.
+Require Import BinPos DecidableType2 OrderedType2 OrderTac.
 
 Local Open Scope positive_scope.
 
@@ -55,9 +54,7 @@ End Positive_as_OT.
 (** * An [order] tactic for positive numbers *)
 
 Module PositiveOrder := OTF_to_OrderTac Positive_as_OT.
-Ltac p_order :=
- change (@eq positive) with PositiveOrder.OrderElts.eq in *;
- PositiveOrder.order.
+Ltac p_order := PositiveOrder.order.
 
 (** Note that [p_order] is domain-agnostic: it will not prove
     [1<=2] or [x<=x+x], but rather things like [x<=y -> y<=x -> x=y]. *)

@@ -6,8 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import QArith_base
- DecidableType2 OrderedType2 OrderedType2Facts.
+Require Import QArith_base DecidableType2 OrderedType2 OrderTac.
 
 Local Open Scope Q_scope.
 

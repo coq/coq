@@ -7,7 +7,7 @@
 (************************************************************************)
 
 Require Import Lt Peano_dec Compare_dec EqNat
- DecidableType2 OrderedType2 OrderedType2Facts.
+ DecidableType2 OrderedType2 OrderTac.
 
 
 (** * DecidableType structure for Peano numbers *)
@@ -53,10 +53,7 @@ End Nat_as_OT.
 (** * An [order] tactic for Peano numbers *)
 
 Module NatOrder := OTF_to_OrderTac Nat_as_OT.
-Ltac nat_order :=
- change (@eq nat) with NatOrder.OrderElts.eq in *;
- NatOrder.order.
+Ltac nat_order := NatOrder.order.
 
 (** Note that [nat_order] is domain-agnostic: it will not prove
     [1<=2] or [x<=x+x], but rather things like [x<=y -> y<=x -> x=y]. *)
-

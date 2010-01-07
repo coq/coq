@@ -7,7 +7,7 @@
 (************************************************************************)
 
 Require Import BinInt Zcompare Zorder Zbool ZArith_dec
- DecidableType2 OrderedType2 OrderedType2Facts.
+ DecidableType2 OrderedType2 OrderTac.
 
 Local Open Scope Z_scope.
 
@@ -53,9 +53,7 @@ End Z_as_OT.
 (** * An [order] tactic for integers *)
 
 Module ZOrder := OTF_to_OrderTac Z_as_OT.
-Ltac z_order :=
- change (@eq Z) with ZOrder.OrderElts.eq in *;
- ZOrder.order.
+Ltac z_order := ZOrder.order.
 
 (** Note that [z_order] is domain-agnostic: it will not prove
     [1<=2] or [x<=x+x], but rather things like [x<=y -> y<=x -> x=y]. *)

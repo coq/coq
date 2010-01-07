@@ -9,47 +9,15 @@
 Require Import Basics OrderTac.
 Require Export OrderedType2.
 
-
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+(** * Properties of [OrderedTypeFull] *)
 
-(** * Properties of ordered types *)
+Module OrderedTypeFullFacts (Import O:OrderedTypeFull').
 
-(** First, an OrderdType (with [<=]) is enough for building an [order]
-    tactic. *)
-
-Module OTF_to_OrderSig (O : OrderedTypeFull) :
- OrderSig with Definition t := O.t
-          with Definition eq := O.eq
-          with Definition lt := O.lt
-          with Definition le := O.le
-          with Definition eq_equiv := O.eq_equiv
-          with Definition lt_strorder := O.lt_strorder
-          with Definition lt_compat := O.lt_compat.
- Include O.
- Lemma lt_total : forall x y, O.lt x y \/ O.eq x y \/ O.lt y x.
- Proof. intros; destruct (O.compare_spec x y); auto. Qed.
-End OTF_to_OrderSig.
-
-
-Module OTF_to_OrderTac (O:OrderedTypeFull).
- Module OrderElts := OTF_to_OrderSig O.
- Module OrderTac := MakeOrderTac OrderElts.
- Ltac order :=
-   change O.eq with OrderElts.eq in *;
-   change O.lt with OrderElts.lt in *;
-   change O.le with OrderElts.le in *;
-   OrderTac.order.
-End OTF_to_OrderTac.
-
-
-(** This allows to prove a few properties of [<=] *)
-
-Module OrderedTypeFullFacts (Import O:OrderedTypeFull).
-
- Module Order := OTF_to_OrderTac O.
- Ltac order := Order.order.
+ Module OrderTac := OTF_to_OrderTac O.
+ Ltac order := OrderTac.order.
  Ltac iorder := intuition order.
 
  Instance le_compat : Proper (eq==>eq==>iff) le.
@@ -64,33 +32,31 @@ Module OrderedTypeFullFacts (Import O:OrderedTypeFull).
  Instance le_antisym : Antisymmetric _ eq le.
  Proof. apply partial_order_antisym; auto with *. Qed.
 
- Lemma le_not_gt_iff : forall x y, le x y <-> ~lt y x.
+ Lemma le_not_gt_iff : forall x y, x<=y <-> ~y<x.
  Proof. iorder. Qed.
 
- Lemma lt_not_ge_iff : forall x y, lt x y <-> ~le y x.
+ Lemma lt_not_ge_iff : forall x y, x<y <-> ~y<=x.
  Proof. iorder. Qed.
 
- Lemma le_or_gt : forall x y, le x y \/ lt y x.
+ Lemma le_or_gt : forall x y, x<=y \/ y<x.
  Proof. intros. rewrite le_lteq; destruct (O.compare_spec x y); auto. Qed.
 
- Lemma lt_or_ge : forall x y, lt x y \/ le y x.
+ Lemma lt_or_ge : forall x y, x<y \/ y<=x.
  Proof. intros. rewrite le_lteq; destruct (O.compare_spec x y); iorder. Qed.
 
- Lemma eq_is_le_ge : forall x y, eq x y <-> le x y /\ le y x.
+ Lemma eq_is_le_ge : forall x y, x==y <-> x<=y /\ y<=x.
  Proof. iorder. Qed.
 
 End OrderedTypeFullFacts.
 
 
-(** * Properties of OrderedType *)
+(** * Properties of [OrderedType] *)
 
-Module OrderedTypeFacts (Import O: OrderedType).
-  Module O' := OT_to_Full O.
-  Module Order := OTF_to_OrderTac O'.
-  Ltac order := Order.order.
+Module OrderedTypeFacts (Import O: OrderedType').
 
-  Infix "==" := eq (at level 70, no associativity) : order.
-  Infix "<" := lt : order.
+  Module OrderTac := OT_to_OrderTac O.
+  Ltac order := OrderTac.order.
+
   Notation "x <= y" := (~lt y x) : order.
   Infix "?=" := compare (at level 70, no associativity) : order.
 
@@ -204,7 +170,7 @@ End OrderedTypeFacts.
 
     Is it at least capable of proving some basic properties ? *)
 
-Module OrderedTypeTest (O:OrderedType).
+Module OrderedTypeTest (Import O:OrderedType').
   Module Import MO := OrderedTypeFacts O.
   Local Open Scope order.
   Lemma lt_not_eq x y : x<y -> ~x==y.  Proof. order. Qed.

@@ -6,8 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import BinNat
- DecidableType2 OrderedType2 OrderedType2Facts.
+Require Import BinNat DecidableType2 OrderedType2 OrderTac.
 
 Local Open Scope N_scope.
 
@@ -54,9 +53,7 @@ End N_as_OT.
 (** * An [order] tactic for [N] numbers *)
 
 Module NOrder := OTF_to_OrderTac N_as_OT.
-Ltac n_order :=
- change (@eq N) with NOrder.OrderElts.eq in *;
- NOrder.order.
+Ltac n_order := NOrder.order.
 
 (** Note that [n_order] is domain-agnostic: it will not prove
     [1<=2] or [x<=x+x], but rather things like [x<=y -> y<=x -> x=y]. *)
