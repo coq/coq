@@ -20,47 +20,47 @@ Open Local Scope Z_scope.
 
 (** * Characterization of the minimum on binary integer numbers *)
 
-Definition Zmin_case := Zmin_case.
-Definition Zmin_case_strong := Zmin_case_strong.
+Definition Zmin_case := Z.min_case.
+Definition Zmin_case_strong := Z.min_case_strong.
 
 Lemma Zmin_spec : forall x y,
   x <= y /\ Zmin x y = x  \/  x > y /\ Zmin x y = y.
 Proof.
- intros x y. rewrite Zgt_iff_lt, Zmin_comm. destruct (Zmin_spec y x); auto.
+ intros x y. rewrite Zgt_iff_lt, Z.min_comm. destruct (Z.min_spec y x); auto.
 Qed.
 
 (** * Greatest lower bound properties of min *)
 
-Definition Zle_min_l : forall n m, Zmin n m <= n := Zle_min_l.
-Definition Zle_min_r : forall n m, Zmin n m <= m := Zle_min_r.
+Definition Zle_min_l : forall n m, Zmin n m <= n := Z.le_min_l.
+Definition Zle_min_r : forall n m, Zmin n m <= m := Z.le_min_r.
 
 Definition Zmin_glb : forall n m p, p <= n -> p <= m -> p <= Zmin n m
- := Zmin_glb.
+ := Z.min_glb.
 Definition Zmin_glb_lt : forall n m p, p < n -> p < m -> p < Zmin n m
- := Zmin_glb_lt.
+ := Z.min_glb_lt.
 
 (** * Compatibility with order *)
 
 Definition Zle_min_compat_r : forall n m p, n <= m -> Zmin n p <= Zmin m p
- := Zmin_le_compat_r.
+ := Z.min_le_compat_r.
 Definition Zle_min_compat_l : forall n m p, n <= m -> Zmin p n <= Zmin p m
- := Zmin_le_compat_l.
+ := Z.min_le_compat_l.
 
 (** * Semi-lattice properties of min *)
 
-Definition Zmin_idempotent : forall n, Zmin n n = n := Zmin_id.
+Definition Zmin_idempotent : forall n, Zmin n n = n := Z.min_id.
 Notation Zmin_n_n := Zmin_idempotent (only parsing).
-Definition Zmin_comm : forall n m, Zmin n m = Zmin m n := Zmin_comm.
+Definition Zmin_comm : forall n m, Zmin n m = Zmin m n := Z.min_comm.
 Definition Zmin_assoc : forall n m p, Zmin n (Zmin m p) = Zmin (Zmin n m) p
- := Zmin_assoc.
+ := Z.min_assoc.
 
 (** * Additional properties of min *)
 
 Lemma Zmin_irreducible_inf : forall n m, {Zmin n m = n} + {Zmin n m = m}.
-Proof. exact Zmin_dec. Qed.
+Proof. exact Z.min_dec. Qed.
 
 Lemma Zmin_irreducible : forall n m, Zmin n m = n \/ Zmin n m = m.
-Proof. intros; destruct (Zmin_dec n m); auto. Qed.
+Proof. intros; destruct (Z.min_dec n m); auto. Qed.
 
 Notation Zmin_or := Zmin_irreducible (only parsing).
 
@@ -71,20 +71,20 @@ Proof. intros n m p; apply Zmin_case; auto. Qed.
 
 Definition Zsucc_min_distr :
  forall n m, Zsucc (Zmin n m) = Zmin (Zsucc n) (Zsucc m)
- := Zsucc_min_distr.
+ := Z.succ_min_distr.
 
-Notation Zmin_SS := Zsucc_min_distr (only parsing).
+Notation Zmin_SS := Z.succ_min_distr (only parsing).
 
 Definition Zplus_min_distr_r :
  forall n m p, Zmin (n + p) (m + p) = Zmin n m + p
- := Zplus_min_distr_r.
+ := Z.plus_min_distr_r.
 
-Notation Zmin_plus := Zplus_min_distr_r (only parsing).
+Notation Zmin_plus := Z.plus_min_distr_r (only parsing).
 
 (** * Minimum and Zpos *)
 
 Definition Zpos_min : forall p q, Zpos (Pmin p q) = Zmin (Zpos p) (Zpos q)
- := Zpos_min.
+ := Z.pos_min.
 
 
 
