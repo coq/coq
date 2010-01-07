@@ -61,6 +61,9 @@ let error_not_a_modtype_loc loc s =
 let error_not_a_module_loc loc s = 
   user_err_loc (loc,"",str ("\""^s^"\" is not a module."))
 
+let error_not_a_module_or_modtype_loc loc s =
+  user_err_loc (loc,"",str ("\""^s^"\" is not a module or module type."))
+
 let error_not_a_module s = error_not_a_module_loc dummy_loc s
 
 let error_not_a_constant l = 
@@ -86,6 +89,9 @@ let error_local_context lo =
 let error_no_such_label_sub l l1 =
   error ("The field "^(string_of_label l)^" is missing in "^l1^".")
 
+let error_with_in_module _ = error "The syntax \"with\" is not allowed for modules."
+
+let error_application_to_module_type _ = error "Module application to a module type."
 
 let destr_functor env mtb =
   match mtb with

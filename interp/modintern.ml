@@ -80,6 +80,16 @@ let lookup_modtype (loc,qid) =
     | Not_found ->
 	Modops.error_not_a_modtype_loc loc (string_of_qualid qid)
 
+let lookup_module_or_modtype (loc,qid) =
+  try
+    let mp = Nametab.locate_module qid in
+    Dumpglob.dump_modref loc mp "modtype"; (mp,true)
+  with Not_found -> try
+    let mp = Nametab.locate_modtype qid in
+    Dumpglob.dump_modref loc mp "mod"; (mp,false)
+  with Not_found ->
+    Modops.error_not_a_module_or_modtype_loc loc (string_of_qualid qid)
+
 let transl_with_decl env = function
   | CWith_Module ((_,fqid),qid) ->
       With_Module (fqid,lookup_module qid)
@@ -87,22 +97,38 @@ let transl_with_decl env = function
       With_Definition (fqid,interp_constr Evd.empty env c)
 
 let rec interp_modexpr env = function
-  | CMEident qid ->
+  | CMident qid ->
       MSEident (lookup_module qid)
-  | CMEapply (me1,me2) ->
+  | CMapply (me1,me2) ->
       let me1 = interp_modexpr env me1 in
       let me2 = interp_modexpr env me2 in
 	MSEapply(me1,me2)
+  | CMwith _ -> Modops.error_with_in_module ()
+
 
 let rec interp_modtype env = function
-  | CMTEident qid ->
+  | CMident qid ->
       MSEident (lookup_modtype qid)
-  | CMTEapply (mty1,me) ->
+  | CMapply (mty1,me) ->
       let mty' = interp_modtype env mty1 in
       let me' = interp_modexpr env me in
 	MSEapply(mty',me')
-  | CMTEwith (mty,decl) ->
+  | CMwith (mty,decl) ->
       let mty = interp_modtype env mty in
       let decl = transl_with_decl env decl in
 	MSEwith(mty,decl)
 
+let rec interp_modexpr_or_modtype env = function
+  | CMident qid ->
+      let (mp,ismod) = lookup_module_or_modtype qid in
+      (MSEident mp, ismod)
+  | CMapply (me1,me2) ->
+      let me1,ismod1 = interp_modexpr_or_modtype env me1 in
+      let me2,ismod2 = interp_modexpr_or_modtype env me2 in
+      if not ismod2 then Modops.error_application_to_module_type ();
+      (MSEapply (me1,me2), ismod1)
+  | CMwith (me,decl) ->
+      let me,ismod = interp_modexpr_or_modtype env me in
+      let decl = transl_with_decl env decl in
+      if ismod then Modops.error_with_in_module ();
+      (MSEwith(me,decl), ismod)

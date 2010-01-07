@@ -258,7 +258,7 @@ End WSfun.
 
 Module Type WS.
   Declare Module E : DecidableType.
-  Include Type WSfun E.
+  Include WSfun E.
 End WS.
 
 
@@ -266,7 +266,7 @@ End WS.
 (** ** Maps on ordered keys, functorial signature *)
 
 Module Type Sfun (E : OrderedType).
-  Include Type WSfun E.
+  Include WSfun E.
   Section elt.
   Variable elt:Type.
    Definition lt_key (p p':key*elt) := E.lt (fst p) (fst p').
@@ -284,7 +284,7 @@ End Sfun.
 
 Module Type S.
   Declare Module E : OrderedType.
-  Include Type Sfun E.
+  Include Sfun E.
 End S.
 
 

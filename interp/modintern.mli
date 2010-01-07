@@ -21,8 +21,15 @@ open Topconstr
 (* Module expressions and module types are interpreted relatively to
    eventual functor or funsig arguments. *)
 
-val interp_modtype : env -> module_type_ast -> module_struct_entry
+val interp_modtype : env -> module_ast -> module_struct_entry
 
 val interp_modexpr : env -> module_ast -> module_struct_entry
+
+(* The following function tries to interprete an ast as a module,
+   and in case of failure, interpretes this ast as a module type.
+   The boolean is true for a module, false for a module type *)
+
+val interp_modexpr_or_modtype : env -> module_ast ->
+ module_struct_entry * bool
 
 val lookup_module : qualid located -> module_path

@@ -117,7 +117,7 @@ End HasWOps.
 Module Type WOps (E : DecidableType).
   Definition elt := E.t.
   Parameter t : Type. (** the abstract type of sets *)
-  Include Type HasWOps.
+  Include HasWOps.
 End WOps.
 
 
@@ -128,7 +128,7 @@ End WOps.
 
 Module Type WSetsOn (E : DecidableType).
   (** First, we ask for all the functions *)
-  Include Type WOps E.
+  Include WOps E.
 
   (** Logical predicates *)
   Parameter In : elt -> t -> Prop.
@@ -144,8 +144,8 @@ Module Type WSetsOn (E : DecidableType).
   Notation "s  [<=]  t" := (Subset s t) (at level 70, no associativity).
 
   Definition eq : t -> t -> Prop := Equal.
-  Include Type IsEq. (** [eq] is obviously an equivalence, for subtyping only *)
-  Include Type HasEqDec.
+  Include IsEq. (** [eq] is obviously an equivalence, for subtyping only *)
+  Include HasEqDec.
 
   (** Specifications of set operators *)
 
@@ -197,7 +197,7 @@ End WSetsOn.
 
 Module Type WSets.
   Declare Module E : DecidableType.
-  Include Type WSetsOn E.
+  Include WSetsOn E.
 End WSets.
 
 (** ** Functorial signature for sets on ordered elements
@@ -226,7 +226,7 @@ Module Type Ops (E : OrderedType) := WOps E <+ HasOrdOps.
 
 
 Module Type SetsOn (E : OrderedType).
-  Include Type WSetsOn E <+ HasOrdOps <+ HasLt <+ IsStrOrder.
+  Include WSetsOn E <+ HasOrdOps <+ HasLt <+ IsStrOrder.
 
   Section Spec.
   Variable s s': t.
@@ -266,7 +266,7 @@ End SetsOn.
 
 Module Type Sets.
   Declare Module E : OrderedType.
-  Include Type SetsOn E.
+  Include SetsOn E.
 End Sets.
 
 Module Type S := Sets.
@@ -335,7 +335,7 @@ Module WS_WSfun (M : WSets) <: WSetsOn M.E := M.
 
 Module Type WRawSets (E : DecidableType).
   (** First, we ask for all the functions *)
-  Include Type WOps E.
+  Include WOps E.
 
   (** Is a set well-formed or ill-formed ? *)
 
@@ -559,7 +559,7 @@ End WRaw2Sets.
 (** Same approach for ordered sets *)
 
 Module Type RawSets (E : OrderedType).
-  Include Type WRawSets E <+ HasOrdOps <+ HasLt <+ IsStrOrder.
+  Include WRawSets E <+ HasOrdOps <+ HasLt <+ IsStrOrder.
 
   Section Spec.
   Variable s s': t.

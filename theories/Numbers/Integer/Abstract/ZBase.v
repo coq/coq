@@ -15,7 +15,7 @@ Require Export ZAxioms.
 Require Import NZProperties.
 
 Module ZBasePropFunct (Import Z : ZAxiomsSig').
-Include Type NZPropFunct Z.
+Include NZPropFunct Z.
 
 (* Theorems that are true for integers but not for natural numbers *)
 

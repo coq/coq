@@ -176,7 +176,7 @@ type inductive_expr =
 type one_inductive_expr =
   lident * local_binder list * constr_expr option * constructor_expr list
 
-type module_binder = bool option * lident list * module_type_ast
+type module_binder = bool option * lident list * module_ast
 
 type grammar_tactic_prod_item_expr =
   | TacTerm of string
@@ -264,12 +264,12 @@ type vernac_expr =
 
   (* Modules and Module Types *)
   | VernacDeclareModule of bool option * lident *
-      module_binder list * module_type_ast
+      module_binder list * module_ast
   | VernacDefineModule of bool option * lident *
-      module_binder list * module_type_ast module_signature * module_ast list
+      module_binder list * module_ast module_signature * module_ast list
   | VernacDeclareModuleType of lident *
-      module_binder list * module_type_ast list * module_type_ast list
-  | VernacInclude of include_ast
+      module_binder list * module_ast list * module_ast list
+  | VernacInclude of module_ast list
 
   (* Solving *)
 

@@ -18,5 +18,5 @@ Require Export NAxioms NSub.
 Module Type NPropSig := NSubPropFunct.
 
 Module NPropFunct (N:NAxiomsSig) <: NPropSig N.
- Include Type NPropSig N.
+ Include NPropSig N.
 End NPropFunct.

@@ -397,9 +397,10 @@ GEXTEND Gram
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)
       | IDENT "Export"; qidl = LIST1 global -> VernacImport (true,qidl)
       | IDENT "Include"; e = module_expr; l = LIST0 ext_module_expr ->
-	  VernacInclude(CIME(e::l))
+	  VernacInclude(e::l)
       | IDENT "Include"; "Type"; e = module_type; l = LIST0 ext_module_type ->
-          VernacInclude(CIMTE(e::l)) ] ]
+	  warning "Include Type is deprecated; use Include instead";
+          VernacInclude(e::l) ] ]
   ;
   export_token:
     [ [ IDENT "Import" -> Some false
@@ -440,11 +441,11 @@ GEXTEND Gram
   (* Module expressions *)
   module_expr:
     [ [ me = module_expr_atom -> me
-      | me1 = module_expr; me2 = module_expr_atom -> CMEapply (me1,me2)
+      | me1 = module_expr; me2 = module_expr_atom -> CMapply (me1,me2)
       ] ]
   ;
   module_expr_atom:
-    [ [ qid = qualid -> CMEident qid | "("; me = module_expr; ")" -> me ] ]
+    [ [ qid = qualid -> CMident qid | "("; me = module_expr; ")" -> me ] ]
   ;
   with_declaration:
     [ [ "Definition"; fqid = fullyqualid; ":="; c = Constr.lconstr ->
@@ -454,10 +455,10 @@ GEXTEND Gram
       ] ]
   ;
   module_type:
-    [ [ qid = qualid -> CMTEident qid
+    [ [ qid = qualid -> CMident qid
       | "("; mt = module_type; ")" -> mt
-      | mty = module_type; me = module_expr_atom -> CMTEapply (mty,me)
-      | mty = module_type; "with"; decl = with_declaration -> CMTEwith (mty,decl)
+      | mty = module_type; me = module_expr_atom -> CMapply (mty,me)
+      | mty = module_type; "with"; decl = with_declaration -> CMwith (mty,decl)
       ] ]
   ;
 END

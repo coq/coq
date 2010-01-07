@@ -214,7 +214,7 @@ module Constr :
 module Module :
   sig
     val module_expr : module_ast Gram.Entry.e
-    val module_type : module_type_ast Gram.Entry.e
+    val module_type : module_ast Gram.Entry.e
   end
 
 module Tactic :

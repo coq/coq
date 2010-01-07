@@ -53,7 +53,7 @@ Local Infix "+" := trans_ord.
 Module Type TotalOrder_NoInline <: TotalOrder.
  Parameter Inline t : Type.
  Parameters eq lt le : t -> t -> Prop.
- Include Type IsEq <+ IsStrOrder <+ LeIsLtEq <+ LtIsTotal.
+ Include IsEq <+ IsStrOrder <+ LeIsLtEq <+ LtIsTotal.
 End TotalOrder_NoInline.
 
 Module Type TotalOrder_NoInline' := TotalOrder_NoInline <+ EqLtLeNotation.
@@ -302,7 +302,7 @@ Definition t := O.t.
 Definition eq := O.eq.
 Definition lt := flip O.lt.
 Definition le := flip O.le.
-Include Type EqLtLeNotation.
+Include EqLtLeNotation.
 
 Instance eq_equiv : Equivalence eq.
 

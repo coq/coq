@@ -18,6 +18,6 @@ Require Export ZAxioms ZMulOrder.
 Module Type ZPropSig := ZMulOrderPropFunct.
 
 Module ZPropFunct (Z:ZAxiomsSig) <: ZPropSig Z.
- Include Type ZPropSig Z.
+ Include ZPropSig Z.
 End ZPropFunct.
 

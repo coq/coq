@@ -453,6 +453,7 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast =
      else (idl,ty)) binders_ast in
   let mp = Declaremods.declare_module
     Modintern.interp_modtype Modintern.interp_modexpr
+    Modintern.interp_modexpr_or_modtype
     id binders_ast (Enforce mty_ast) []
   in
     Dumpglob.dump_moddef loc mp "mod";
@@ -493,6 +494,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
           else (idl,ty)) binders_ast in
        let mp =	Declaremods.declare_module
 	  Modintern.interp_modtype Modintern.interp_modexpr
+          Modintern.interp_modexpr_or_modtype
 	  id binders_ast mty_ast_o mexpr_ast_l
        in
 	 Dumpglob.dump_moddef loc mp "mod";
@@ -540,6 +542,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
 			"and \"Import\" keywords from every functor argument.")
             else (idl,ty)) binders_ast in
 	let mp = Declaremods.declare_modtype Modintern.interp_modtype
+          Modintern.interp_modexpr_or_modtype
 	  id binders_ast mty_sign mty_ast_l in
           Dumpglob.dump_moddef loc mp "modtype";
 	  if_verbose message
@@ -550,13 +553,8 @@ let vernac_end_modtype (loc,id) =
   Dumpglob.dump_modref loc mp "modtype";
   if_verbose message ("Module Type "^ string_of_id id ^" is defined")
 
-let vernac_include = function
-  | CIMTE mtys ->
-      Declaremods.declare_include
-	Modintern.interp_modtype mtys false
-  | CIME mexprs ->
-      Declaremods.declare_include
-	Modintern.interp_modexpr mexprs true
+let vernac_include l =
+  Declaremods.declare_include Modintern.interp_modexpr_or_modtype l
 
 (**********************)
 (* Gallina extensions *)

@@ -84,6 +84,8 @@ val error_not_a_modtype_loc : loc -> string -> 'a
 
 val error_not_a_module_loc : loc -> string -> 'a
 
+val error_not_a_module_or_modtype_loc : loc -> string -> 'a
+
 val error_not_a_module : string -> 'a
 
 val error_not_a_constant : label -> 'a
@@ -96,5 +98,7 @@ val error_local_context : label option -> 'a
 
 val error_no_such_label_sub : label->string->'a
 
+val error_with_in_module : unit -> 'a
 
+val error_application_to_module_type : unit -> 'a
 

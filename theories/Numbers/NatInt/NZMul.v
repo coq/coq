@@ -14,7 +14,7 @@ Require Import NZAxioms NZBase NZAdd.
 
 Module Type NZMulPropSig
  (Import NZ : NZAxiomsSig')(Import NZBase : NZBasePropSig NZ).
-Include Type NZAddPropSig NZ NZBase.
+Include NZAddPropSig NZ NZBase.
 
 Theorem mul_0_r : forall n, n * 0 == 0.
 Proof.

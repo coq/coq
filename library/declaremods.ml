@@ -897,9 +897,8 @@ let get_includeself_substobjs env objs me is_mod =
     ([],mp_self,subst_objects subst objects)
   with NothingToDo -> objs
 
-let declare_one_include interp_struct me_ast is_mod =
+let declare_one_include_inner (me,is_mod) =
   let env = Global.env() in
-  let me = interp_struct env me_ast in
   let mp1,_ = current_prefix () in
   let (mbids,mp,objs)=
     if is_mod then
@@ -918,11 +917,11 @@ let declare_one_include interp_struct me_ast is_mod =
   ignore (add_leaf id
 	    (in_include ((me,is_mod), substobjs)))
 
+let declare_one_include interp_struct me_ast =
+  declare_one_include_inner (interp_struct (Global.env()) me_ast)
 
-let declare_include_ interp_struct me_asts is_mod =
-  List.iter
-    (fun me -> declare_one_include interp_struct me is_mod)
-    me_asts
+let declare_include_ interp_struct me_asts =
+  List.iter (declare_one_include interp_struct) me_asts
 
 (** Versions of earlier functions taking care of the freeze/unfreeze
     of summaries *)
@@ -934,17 +933,17 @@ let protect_summaries f =
     (* Something wrong: undo the whole process *)
     Summary.unfreeze_summaries fs; raise e
 
-let declare_include interp_struct me_asts is_mod =
+let declare_include interp_struct me_asts =
   protect_summaries
-    (fun _ -> declare_include_ interp_struct me_asts is_mod)
+    (fun _ -> declare_include_ interp_struct me_asts)
 
-let declare_modtype interp_mt id args mtys mty_l =
+let declare_modtype interp_mt interp_mix id args mtys mty_l =
   let declare_mt fs = match mty_l with
     | [] -> assert false
     | [mty] -> declare_modtype_ interp_mt id args mtys mty fs
     | mty_l ->
 	ignore (start_modtype_ interp_mt id args mtys fs);
-	declare_include_ interp_mt mty_l false;
+	declare_include_ interp_mix mty_l;
 	end_modtype ()
   in
   protect_summaries declare_mt
@@ -952,13 +951,13 @@ let declare_modtype interp_mt id args mtys mty_l =
 let start_modtype interp_modtype id args mtys =
   protect_summaries (start_modtype_ interp_modtype id args mtys)
 
-let declare_module interp_mt interp_me id args mtys me_l =
+let declare_module interp_mt interp_me interp_mix id args mtys me_l =
   let declare_me fs = match me_l with
     | [] -> declare_module_ interp_mt interp_me id args mtys None fs
     | [me] -> declare_module_ interp_mt interp_me id args mtys (Some me) fs
     | me_l ->
 	ignore (start_module_ interp_mt None id args mtys fs);
-	declare_include_ interp_me me_l true;
+	declare_include_ interp_mix me_l;
 	end_module ()
   in
   protect_summaries declare_me

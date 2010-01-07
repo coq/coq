@@ -611,7 +611,6 @@ End WF.
 
 End NZOrderPropSig.
 
-Module NZOrderPropFunct (Import NZ : NZOrdSig).
- Include Type NZBasePropSig NZ <+ NZOrderPropSig NZ.
-End NZOrderPropFunct.
+Module NZOrderPropFunct (NZ : NZOrdSig) :=
+ NZBasePropSig NZ <+ NZOrderPropSig NZ.
 

@@ -43,7 +43,7 @@ Module Type LeNotation (E:EqLe).
 End LeNotation.
 
 Module Type LtLeNotation (E:EqLtLe).
-  Include Type LtNotation E <+ LeNotation E.
+  Include LtNotation E <+ LeNotation E.
   Notation "x <= y < z" := (x<=y /\ y<z).
   Notation "x < y <= z" := (x<y /\ y<=z).
 End LtLeNotation.

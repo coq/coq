@@ -275,7 +275,7 @@ End WSfun.
 
 Module Type WS.
   Declare Module E : DecidableType.
-  Include Type WSfun E.
+  Include WSfun E.
 End WS.
 
 
@@ -286,7 +286,7 @@ End WS.
     and some stronger specifications for other functions. *)
 
 Module Type Sfun (E : OrderedType).
-  Include Type WSfun E.
+  Include WSfun E.
 
   Parameter lt : t -> t -> Prop.
   Parameter compare : forall s s' : t, Compare lt eq s s'.
@@ -349,7 +349,7 @@ End Sfun.
 
 Module Type S.
   Declare Module E : OrderedType.
-  Include Type Sfun E.
+  Include Sfun E.
 End S.
 
 

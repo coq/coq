@@ -37,16 +37,17 @@ open Lib
 *)
 
 val declare_module :
-  (env -> 'modtype -> module_struct_entry) ->
-  (env -> 'modexpr -> module_struct_entry) ->
+  (env -> 'modast -> module_struct_entry) ->
+  (env -> 'modast -> module_struct_entry) ->
+  (env -> 'modast -> module_struct_entry * bool) ->
   identifier ->
-  (identifier located list * 'modtype) list ->
-  'modtype Topconstr.module_signature ->
-  'modexpr list -> module_path
+  (identifier located list * 'modast) list ->
+  'modast Topconstr.module_signature ->
+  'modast list -> module_path
 
-val start_module : (env -> 'modtype -> module_struct_entry) ->
-  bool option -> identifier -> (identifier located list * 'modtype) list ->
-  'modtype Topconstr.module_signature -> module_path
+val start_module : (env -> 'modast -> module_struct_entry) ->
+  bool option -> identifier -> (identifier located list * 'modast) list ->
+  'modast Topconstr.module_signature -> module_path
 
 val end_module : unit -> module_path
 
@@ -54,13 +55,14 @@ val end_module : unit -> module_path
 
 (*s Module types *)
 
-val declare_modtype : (env -> 'modtype -> module_struct_entry) ->
-  identifier -> (identifier located list * 'modtype) list ->
-  'modtype list -> 'modtype list -> module_path
+val declare_modtype : (env -> 'modast -> module_struct_entry) ->
+  (env -> 'modast -> module_struct_entry * bool) ->
+  identifier -> (identifier located list * 'modast) list ->
+  'modast list -> 'modast list -> module_path
 
-val start_modtype : (env -> 'modtype -> module_struct_entry) ->
-  identifier -> (identifier located list * 'modtype) list ->
-  'modtype list -> module_path
+val start_modtype : (env -> 'modast -> module_struct_entry) ->
+  identifier -> (identifier located list * 'modast) list ->
+  'modast list -> module_path
 
 val end_modtype : unit -> module_path
 
@@ -103,8 +105,8 @@ val import_module : bool -> module_path -> unit
 
 (* Include  *)
 
-val declare_include : (env -> 'struct_expr -> module_struct_entry) ->
-  'struct_expr list -> bool -> unit
+val declare_include : (env -> 'struct_expr -> module_struct_entry * bool) ->
+  'struct_expr list -> unit
 
 (*s [iter_all_segments] iterate over all segments, the modules'
     segments first and then the current segment. Modules are presented

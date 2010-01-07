@@ -16,7 +16,7 @@ Require Import NZProperties.
 
 Module NBasePropFunct (Import N : NAxiomsSig').
 (** First, we import all known facts about both natural numbers and integers. *)
-Include Type NZPropFunct N.
+Include NZPropFunct N.
 
 (** We prove that the successor of a number is not zero by defining a
 function (by recursion) that maps 0 to false and the successor to true *)

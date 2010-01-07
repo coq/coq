@@ -41,7 +41,7 @@ Module Type MiniOrderedType.
 End MiniOrderedType.
 
 Module Type OrderedType.
-  Include Type MiniOrderedType.
+  Include MiniOrderedType.
 
   (** A [eq_dec] can be deduced from [compare] below. But adding this
      redundant field allows to see an OrderedType as a DecidableType. *)

@@ -234,29 +234,22 @@ let pr_with_declaration pr_c = function
       str"Module" ++ spc() ++ pr_lfqid id ++ str" := " ++
       pr_located pr_qualid qid
 
-let rec pr_module_type pr_c = function
-  | CMTEident qid -> spc () ++ pr_located pr_qualid qid
-  | CMTEwith (mty,decl) ->
-      let m = pr_module_type pr_c mty in
+let rec pr_module_ast pr_c = function
+  | CMident qid -> spc () ++ pr_located pr_qualid qid
+  | CMwith (mty,decl) ->
+      let m = pr_module_ast pr_c mty in
       let p = pr_with_declaration pr_c decl in
       m ++ spc() ++ str"with" ++ spc() ++ p
-  | CMTEapply (fexpr,mexpr)->
-      let f = pr_module_type pr_c fexpr in
-      let m = pr_module_expr mexpr in
-	f ++ spc () ++ m
-
-and  pr_module_expr = function
-  | CMEident qid -> pr_located pr_qualid qid
-  | CMEapply (me1,(CMEident _ as me2)) ->
-      pr_module_expr me1 ++ spc() ++ pr_module_expr me2
-  | CMEapply (me1,me2) ->
-      pr_module_expr me1 ++ spc() ++
-      hov 1 (str"(" ++ pr_module_expr me2 ++ str")")
+  | CMapply (me1,(CMident _ as me2)) ->
+      pr_module_ast pr_c me1 ++ spc() ++ pr_module_ast pr_c me2
+  | CMapply (me1,me2) ->
+      pr_module_ast pr_c me1 ++ spc() ++
+      hov 1 (str"(" ++ pr_module_ast pr_c me2 ++ str")")
 
 let pr_of_module_type prc = function
-  | Enforce mty -> str ":" ++ pr_module_type prc mty
+  | Enforce mty -> str ":" ++ pr_module_ast prc mty
   | Check mtys ->
-      prlist_strict (fun m -> str "<:" ++ pr_module_type prc m) mtys
+      prlist_strict (fun m -> str "<:" ++ pr_module_ast prc m) mtys
 
 let pr_require_token = function
   | Some true -> str "Export "
@@ -264,7 +257,7 @@ let pr_require_token = function
   | None -> mt()
 
 let pr_module_vardecls pr_c (export,idl,mty) =
-  let m = pr_module_type pr_c mty in
+  let m = pr_module_ast pr_c mty in
   (* Update the Nametab for interpreting the body of module/modtype *)
   let lib_dir = Lib.library_dp() in
   List.iter (fun (_,id) ->
@@ -751,27 +744,24 @@ let rec pr_vernac = function
                pr_lident m ++ b ++
                pr_of_module_type pr_lconstr tys ++
 	       (if bd = [] then mt () else str ":= ") ++
-	       prlist_with_sep (fun () -> str " <+ ") pr_module_expr bd)
+	       prlist_with_sep (fun () -> str " <+ ")
+	        (pr_module_ast pr_lconstr) bd)
   | VernacDeclareModule (export,id,bl,m1) ->
       let b = pr_module_binders_list bl pr_lconstr in
 	hov 2 (str"Declare Module" ++ spc() ++ pr_require_token export ++
              pr_lident id ++ b ++
-             pr_module_type pr_lconstr m1)
+             pr_module_ast pr_lconstr m1)
   | VernacDeclareModuleType (id,bl,tyl,m) ->
       let b = pr_module_binders_list bl pr_lconstr in
-      let pr_mt = pr_module_type pr_lconstr in
+      let pr_mt = pr_module_ast pr_lconstr in
 	hov 2 (str"Module Type " ++ pr_lident id ++ b ++
 		 prlist_strict (fun m -> str " <: " ++ pr_mt m) tyl ++
 		 (if m = [] then mt () else str ":= ") ++
 		 prlist_with_sep (fun () -> str " <+ ") pr_mt m)
-  | VernacInclude (CIMTE(mtys)) ->
-      let pr_mty = pr_module_type pr_lconstr in
-      hov 2 (str"Include Type " ++
-	     prlist_with_sep (fun () -> str " <+ ") pr_mty mtys)
-  | VernacInclude (CIME(mexprs)) ->
-      let pr_me = pr_module_expr in
+  | VernacInclude (mexprs) ->
+      let pr_m = pr_module_ast pr_lconstr in
       hov 2 (str"Include " ++
-	     prlist_with_sep (fun () -> str " <+ ") pr_me mexprs)
+	     prlist_with_sep (fun () -> str " <+ ") pr_m mexprs)
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
       (if i = 1 then mt() else int i ++ str ": ") ++
