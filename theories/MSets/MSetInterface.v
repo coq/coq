@@ -34,11 +34,11 @@ Require Export Bool SetoidList RelationClasses Morphisms
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Module Type WOps (E : DecidableType).
+Module Type TypElt.
+ Parameters t elt : Type.
+End TypElt.
 
-  Definition elt := E.t.
-
-  Parameter t : Type. (** the abstract type of sets *)
+Module Type HasWOps (Import T:TypElt).
 
   Parameter empty : t.
   (** The empty set. *)
@@ -112,9 +112,13 @@ Module Type WOps (E : DecidableType).
   the set is empty. Which element is chosen is unspecified.
   Equal sets could return different elements. *)
 
+End HasWOps.
+
+Module Type WOps (E : DecidableType).
+  Definition elt := E.t.
+  Parameter t : Type. (** the abstract type of sets *)
+  Include Type HasWOps.
 End WOps.
-
-
 
 
 (** ** Functorial signature for weak sets
@@ -140,8 +144,8 @@ Module Type WSetsOn (E : DecidableType).
   Notation "s  [<=]  t" := (Subset s t) (at level 70, no associativity).
 
   Definition eq : t -> t -> Prop := Equal.
-  Declare Instance eq_equiv : Equivalence eq. (* obvious, for subtyping only *)
-  Parameter eq_dec : forall s s', { eq s s' } + { ~ eq s s' }.
+  Include Type IsEq. (** [eq] is obviously an equivalence, for subtyping only *)
+  Include Type HasEqDec.
 
   (** Specifications of set operators *)
 
@@ -201,8 +205,7 @@ End WSets.
     Based on [WSetsOn], plus ordering on sets and [min_elt] and [max_elt]
     and some stronger specifications for other functions. *)
 
-Module Type SetsOn (E : OrderedType).
-  Include Type WSetsOn E.
+Module Type HasOrdOps (Import T:TypElt).
 
   Parameter compare : t -> t -> comparison.
   (** Total ordering between sets. Can be used as the ordering function
@@ -217,11 +220,13 @@ Module Type SetsOn (E : OrderedType).
   (** Same as [min_elt], but returns the largest element of the
   given set. *)
 
-  Parameter lt : t -> t -> Prop.
+End HasOrdOps.
 
-  (** Specification of [lt] *)
-  Declare Instance lt_strorder : StrictOrder lt.
-  Declare Instance lt_compat : Proper (eq==>eq==>iff) lt.
+Module Type Ops (E : OrderedType) := WOps E <+ HasOrdOps.
+
+
+Module Type SetsOn (E : OrderedType).
+  Include Type WSetsOn E <+ HasOrdOps <+ HasLt <+ IsStrOrder.
 
   Section Spec.
   Variable s s': t.
@@ -554,16 +559,7 @@ End WRaw2Sets.
 (** Same approach for ordered sets *)
 
 Module Type RawSets (E : OrderedType).
-  Include Type WRawSets E.
-
-  Parameter compare : t -> t -> comparison.
-  Parameter min_elt : t -> option elt.
-  Parameter max_elt : t -> option elt.
-  Parameter lt : t -> t -> Prop.
-
-  (** Specification of [lt] *)
-  Declare Instance lt_strorder : StrictOrder lt.
-  Declare Instance lt_compat : Proper (eq==>eq==>iff) lt.
+  Include Type WRawSets E <+ HasOrdOps <+ HasLt <+ IsStrOrder.
 
   Section Spec.
   Variable s s': t.
