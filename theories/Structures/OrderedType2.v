@@ -14,82 +14,145 @@ Unset Strict Implicit.
 
 (** * Ordered types *)
 
-Module Type MiniOrderedType.
-  Include Type EqualityType.
+(** First, signatures with only the order relations *)
 
+Module Type HasLt (Import T:Typ).
   Parameter Inline lt : t -> t -> Prop.
+End HasLt.
+
+Module Type HasLe (Import T:Typ).
+  Parameter Inline le : t -> t -> Prop.
+End HasLe.
+
+Module Type EqLt := Typ <+ HasEq <+ HasLt.
+Module Type EqLe := Typ <+ HasEq <+ HasLe.
+Module Type EqLtLe := Typ <+ HasEq <+ HasLt <+ HasLe.
+
+(** Versions with nice notations *)
+
+Module Type LtNotation (E:EqLt).
+  Infix "<" := E.lt.
+  Notation "x < y < z" := (x<y /\ y<z).
+End LtNotation.
+
+Module Type LeNotation (E:EqLe).
+  Infix "<=" := E.le.
+  Notation "x <= y <= z" := (x<=y /\ y<=z).
+End LeNotation.
+
+Module Type LtLeNotation (E:EqLtLe).
+  Include Type LtNotation E <+ LeNotation E.
+  Notation "x <= y < z" := (x<=y /\ y<z).
+  Notation "x < y <= z" := (x<y /\ y<=z).
+End LtLeNotation.
+
+Module Type EqLtNotation (E:EqLt) := EqNotation E <+ LtNotation E.
+Module Type EqLeNotation (E:EqLe) := EqNotation E <+ LeNotation E.
+Module Type EqLtLeNotation (E:EqLtLe) := EqNotation E <+ LtLeNotation E.
+
+Module Type EqLt' := EqLt <+ EqLtNotation.
+Module Type EqLe' := EqLe <+ EqLeNotation.
+Module Type EqLtLe' := EqLtLe <+ EqLtLeNotation.
+
+(** Versions with logical specifications *)
+
+Module Type IsStrOrder (Import E:EqLt).
   Declare Instance lt_strorder : StrictOrder lt.
   Declare Instance lt_compat : Proper (eq==>eq==>iff) lt.
+End IsStrOrder.
 
+Module Type LeIsLtEq (Import E:EqLtLe').
+  Axiom le_lteq : forall x y, x<=y <-> x<y \/ x==y.
+End LeIsLtEq.
+
+Module Type HasCompare (Import E:EqLt).
   Parameter Inline compare : t -> t -> comparison.
   Axiom compare_spec : forall x y, CompSpec eq lt x y (compare x y).
+End HasCompare.
 
-End MiniOrderedType.
+Module Type StrOrder := EqualityType <+ HasLt <+ IsStrOrder.
+Module Type DecStrOrder := StrOrder <+ HasCompare.
+Module Type OrderedType <: DecidableType := DecStrOrder <+ HasEqDec.
+Module Type OrderedTypeFull := OrderedType <+ HasLe <+ LeIsLtEq.
 
-
-Module Type OrderedType.
-  Include Type MiniOrderedType.
-
-  (** A [eq_dec] can be deduced from [compare] below. But adding this
-     redundant field allows to see an OrderedType as a DecidableType. *)
-  Parameter eq_dec : forall x y, { eq x y } + { ~ eq x y }.
-
-End OrderedType.
-
-
-Module MOT_to_OT (Import O : MiniOrderedType) <: OrderedType.
-  Include O.
-
-  Definition eq_dec : forall x y : t, {eq x y} + {~ eq x y}.
-  Proof.
-   intros.
-   assert (H:=compare_spec x y); destruct (compare x y).
-   left; inversion_clear H; auto.
-   right; inversion_clear H. intro H'. rewrite H' in *.
-      apply (StrictOrder_Irreflexive y); auto.
-   right; inversion_clear H. intro H'. rewrite H' in *.
-      apply (StrictOrder_Irreflexive y); auto.
-  Defined.
-
-End MOT_to_OT.
+Module Type StrOrder' := StrOrder <+ EqLtNotation.
+Module Type DecStrOrder' := DecStrOrder <+ EqLtNotation.
+Module Type OrderedType' := OrderedType <+ EqLtNotation.
+Module Type OrderedTypeFull' := OrderedTypeFull <+ EqLtLeNotation.
 
 
-(** * UsualOrderedType
+(** NB: in [OrderedType], an [eq_dec] could be deduced from [compare].
+  But adding this redundant field allows to see an [OrderedType] as a
+  [DecidableType]. *)
 
-    A particular case of [OrderedType] where the equality is
-    the usual one of Coq. *)
+(** * Versions with [eq] being the usual Leibniz equality of Coq *)
 
-Module Type UsualOrderedType.
- Include Type UsualDecidableType.
+Module Type UsualStrOrder := UsualEqualityType <+ HasLt <+ IsStrOrder.
+Module Type UsualDecStrOrder := UsualStrOrder <+ HasCompare.
+Module Type UsualOrderedType <: UsualDecidableType <: OrderedType
+ := UsualDecStrOrder <+ HasEqDec.
+Module Type UsualOrderedTypeFull := UsualOrderedType <+ HasLe <+ LeIsLtEq.
 
- Parameter Inline lt : t -> t -> Prop.
- Declare Instance lt_strorder : StrictOrder lt.
- (* The following is useless since eq is Leibniz, but should be there
-    for subtyping... *)
- Declare Instance lt_compat : Proper (eq==>eq==>iff) lt.
+(** NB: in [UsualOrderedType], the field [lt_compat] is
+    useless since [eq] is [Leibniz], but it should be
+    there for subtyping. *)
 
- Parameter Inline compare : t -> t -> comparison.
- Axiom compare_spec : forall x y, CompSpec eq lt x y (compare x y).
+Module Type UsualStrOrder' := UsualStrOrder <+ LtNotation.
+Module Type UsualDecStrOrder' := UsualDecStrOrder <+ LtNotation.
+Module Type UsualOrderedType' := UsualOrderedType <+ LtNotation.
+Module Type UsualOrderedTypeFull' := UsualOrderedTypeFull <+ LtLeNotation.
 
-End UsualOrderedType.
+(** * Purely logical versions *)
 
-(** a [UsualOrderedType] is in particular an [OrderedType]. *)
+Module Type LtIsTotal (Import E:EqLt').
+  Axiom lt_total : forall x y, x<y \/ x==y \/ y<x.
+End LtIsTotal.
 
-Module UOT_to_OT (U:UsualOrderedType) <: OrderedType := U.
+Module Type TotalOrder := StrOrder <+ HasLe <+ LeIsLtEq <+ LtIsTotal.
+Module Type UsualTotalOrder <: TotalOrder
+ := UsualStrOrder <+ HasLe <+ LeIsLtEq <+ LtIsTotal.
 
+Module Type TotalOrder' := TotalOrder <+ EqLtLeNotation.
+Module Type UsualTotalOrder' := UsualTotalOrder <+ LtLeNotation.
 
-(** * OrderedType with also a [<=] predicate *)
+(** * Conversions *)
 
-Module Type OrderedTypeFull.
- Include Type OrderedType.
- Parameter Inline le : t -> t -> Prop.
- Axiom le_lteq : forall x y, le x y <-> lt x y \/ eq x y.
-End OrderedTypeFull.
+(** From [compare] to [eqb], and then [eq_dec] *)
 
-Module OT_to_Full (O:OrderedType) <: OrderedTypeFull.
+Module Compare2EqBool (Import O:DecStrOrder') <: HasEqBool O.
+
+ Definition eqb x y :=
+   match compare x y with Eq => true | _ => false end.
+
+ Lemma eqb_eq : forall x y, eqb x y = true <-> x==y.
+ Proof.
+ unfold eqb. intros x y.
+ destruct (compare_spec x y) as [H|H|H]; split; auto; try discriminate.
+ intros EQ; rewrite EQ in H; elim (StrictOrder_Irreflexive _ H).
+ intros EQ; rewrite EQ in H; elim (StrictOrder_Irreflexive _ H).
+ Qed.
+
+End Compare2EqBool.
+
+Module DSO_to_OT (O:DecStrOrder) <: OrderedType :=
+  O <+ Compare2EqBool <+ HasEqBool2Dec.
+
+(** From [OrderedType] To [OrderedTypeFull] (adding [<=]) *)
+
+Module OT_to_Full (O:OrderedType') <: OrderedTypeFull.
  Include O.
- Definition le x y := lt x y \/ eq x y.
- Lemma le_lteq : forall x y, le x y <-> lt x y \/ eq x y.
+ Definition le x y := x<y \/ x==y.
+ Lemma le_lteq : forall x y, le x y <-> x<y \/ x==y.
  Proof. unfold le; split; auto. Qed.
 End OT_to_Full.
+
+(** From computational to logical versions *)
+
+Module OTF_LtIsTotal (Import O:OrderedTypeFull') <: LtIsTotal O.
+ Lemma lt_total : forall x y, x<y \/ x==y \/ y<x.
+ Proof. intros; destruct (compare_spec x y); auto. Qed.
+End OTF_LtIsTotal.
+
+Module OTF_to_TotalOrder (O:OrderedTypeFull) <: TotalOrder
+ := O <+ OTF_LtIsTotal.
 

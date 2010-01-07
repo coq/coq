@@ -13,33 +13,47 @@ Require Export RelationClasses.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-(** * Types with Equality, and nothing more (for subtyping purpose) *)
+(** * Structure with just a base type [t] *)
 
-Module Type BareEquality.
+Module Type Typ.
   Parameter Inline t : Type.
+End Typ.
+
+(** * Structure with an equality relation [eq] *)
+
+Module Type HasEq (Import T:Typ).
   Parameter Inline eq : t -> t -> Prop.
-End BareEquality.
+End HasEq.
 
-(** * Specification of the equality by the Type Classe [Equivalence] *)
+Module Type Eq := Typ <+ HasEq.
 
-Module Type IsEq (Import E:BareEquality).
+Module Type EqNotation (Import E:Eq).
+  Infix "==" := eq (at level 70, no associativity).
+  Notation "x ~= y" := (~eq x y) (at level 70, no associativity).
+End EqNotation.
+
+Module Type Eq' := Eq <+ EqNotation.
+
+(** * Specification of the equality via the [Equivalence] type class *)
+
+Module Type IsEq (Import E:Eq).
   Declare Instance eq_equiv : Equivalence eq.
 End IsEq.
 
 (** * Earlier specification of equality by three separate lemmas. *)
 
-Module Type IsEqOrig (Import E:BareEquality).
-  Axiom eq_refl : forall x : t, eq x x.
-  Axiom eq_sym : forall x y : t, eq x y -> eq y x.
-  Axiom eq_trans : forall x y z : t, eq x y -> eq y z -> eq x z.
+Module Type IsEqOrig (Import E:Eq').
+  Axiom eq_refl : forall x : t, x==x.
+  Axiom eq_sym : forall x y : t, x==y -> y==x.
+  Axiom eq_trans : forall x y z : t, x==y -> y==z -> x==z.
   Hint Immediate eq_sym.
   Hint Resolve eq_refl eq_trans.
 End IsEqOrig.
 
 (** * Types with decidable equality *)
 
-Module Type HasEqDec (Import E:BareEquality).
-  Parameter eq_dec : forall x y : t, { eq x y } + { ~ eq x y }.
+Module Type HasEqDec (Import E:Eq').
+  Parameter eq_dec : forall x y : t, { x==y } + { ~ x==y }.
 End HasEqDec.
 
 (** * Boolean Equality *)
@@ -47,50 +61,61 @@ End HasEqDec.
 (** Having [eq_dec] is the same as having a boolean equality plus
     a correctness proof. *)
 
-Module Type HasEqBool (Import E:BareEquality).
+Module Type HasEqBool (Import E:Eq').
   Parameter Inline eqb : t -> t -> bool.
-  Parameter eqb_eq : forall x y, eqb x y = true <-> eq x y.
+  Parameter eqb_eq : forall x y, eqb x y = true <-> x==y.
 End HasEqBool.
 
 (** From these basic blocks, we can build many combinations
     of static standalone module types. *)
 
-Module Type EqualityType := BareEquality <+ IsEq.
+Module Type EqualityType := Eq <+ IsEq.
 
-Module Type EqualityTypeOrig := BareEquality <+ IsEqOrig.
+Module Type EqualityTypeOrig := Eq <+ IsEqOrig.
 
 Module Type EqualityTypeBoth <: EqualityType <: EqualityTypeOrig
- := BareEquality <+ IsEq <+ IsEqOrig.
+ := Eq <+ IsEq <+ IsEqOrig.
 
 Module Type DecidableType <: EqualityType
- := BareEquality <+ IsEq <+ HasEqDec.
+ := Eq <+ IsEq <+ HasEqDec.
 
 Module Type DecidableTypeOrig <: EqualityTypeOrig
- := BareEquality <+ IsEqOrig <+ HasEqDec.
+ := Eq <+ IsEqOrig <+ HasEqDec.
 
 Module Type DecidableTypeBoth <: DecidableType <: DecidableTypeOrig
  := EqualityTypeBoth <+ HasEqDec.
 
 Module Type BooleanEqualityType <: EqualityType
- := BareEquality <+ IsEq <+ HasEqBool.
+ := Eq <+ IsEq <+ HasEqBool.
 
 Module Type BooleanDecidableType <: DecidableType <: BooleanEqualityType
- := BareEquality <+ IsEq <+ HasEqDec <+ HasEqBool.
+ := Eq <+ IsEq <+ HasEqDec <+ HasEqBool.
 
 Module Type DecidableTypeFull <: DecidableTypeBoth <: BooleanDecidableType
- := BareEquality <+ IsEq <+ IsEqOrig <+ HasEqDec <+ HasEqBool.
+ := Eq <+ IsEq <+ IsEqOrig <+ HasEqDec <+ HasEqBool.
 
+(** Same, with notation for [eq] *)
+
+Module Type EqualityType' := EqualityType <+ EqNotation.
+Module Type EqualityTypeOrig' := EqualityTypeOrig <+ EqNotation.
+Module Type EqualityTypeBoth' := EqualityTypeBoth <+ EqNotation.
+Module Type DecidableType' := DecidableType <+ EqNotation.
+Module Type DecidableTypeOrig' := DecidableTypeOrig <+ EqNotation.
+Module Type DecidableTypeBoth' := DecidableTypeBoth <+ EqNotation.
+Module Type BooleanEqualityType' := BooleanEqualityType <+ EqNotation.
+Module Type BooleanDecidableType' := BooleanDecidableType <+ EqNotation.
+Module Type DecidableTypeFull' := DecidableTypeFull <+ EqNotation.
 
 (** * Compatibility wrapper from/to the old version of
       [EqualityType] and [DecidableType] *)
 
-Module BackportEq (E:BareEquality)(F:IsEq E) <: IsEqOrig E.
+Module BackportEq (E:Eq)(F:IsEq E) <: IsEqOrig E.
  Definition eq_refl := @Equivalence_Reflexive _ _ F.eq_equiv.
  Definition eq_sym := @Equivalence_Symmetric _ _ F.eq_equiv.
  Definition eq_trans := @Equivalence_Transitive _ _ F.eq_equiv.
 End BackportEq.
 
-Module UpdateEq (E:BareEquality)(F:IsEqOrig E) <: IsEq E.
+Module UpdateEq (E:Eq)(F:IsEqOrig E) <: IsEq E.
  Instance eq_equiv : Equivalence E.eq.
  Proof. exact (Build_Equivalence _ _ F.eq_refl F.eq_sym F.eq_trans). Qed.
 End UpdateEq.
@@ -110,7 +135,7 @@ Module Update_DT (E:DecidableTypeOrig) <: DecidableTypeBoth
 
 (** * Having [eq_dec] is equivalent to having [eqb] and its spec. *)
 
-Module HasEqDec2Bool (E:BareEquality)(F:HasEqDec E) <: HasEqBool E.
+Module HasEqDec2Bool (E:Eq)(F:HasEqDec E) <: HasEqBool E.
  Definition eqb x y := if F.eq_dec x y then true else false.
  Lemma eqb_eq : forall x y, eqb x y = true <-> E.eq x y.
  Proof.
@@ -120,7 +145,7 @@ Module HasEqDec2Bool (E:BareEquality)(F:HasEqDec E) <: HasEqBool E.
  Qed.
 End HasEqDec2Bool.
 
-Module HasEqBool2Dec (E:BareEquality)(F:HasEqBool E) <: HasEqDec E.
+Module HasEqBool2Dec (E:Eq)(F:HasEqBool E) <: HasEqDec E.
  Lemma eq_dec : forall x y, {E.eq x y}+{~E.eq x y}.
  Proof.
   intros x y. assert (H:=F.eqb_eq x y).
@@ -143,45 +168,45 @@ Module Bool2Dec (E:BooleanEqualityType) <: BooleanDecidableType
    A particular case of [DecidableType] where the equality is
    the usual one of Coq. *)
 
-Module Type UsualBareEquality <: BareEquality.
+Module Type UsualEq <: Eq.
  Parameter Inline t : Type.
  Definition eq := @eq t.
-End UsualBareEquality.
+End UsualEq.
 
-Module UsualIsEq (E:UsualBareEquality) <: IsEq E.
+Module UsualIsEq (E:UsualEq) <: IsEq E.
  Program Instance eq_equiv : Equivalence E.eq.
 End UsualIsEq.
 
-Module UsualIsEqOrig (E:UsualBareEquality) <: IsEqOrig E.
+Module UsualIsEqOrig (E:UsualEq) <: IsEqOrig E.
  Definition eq_refl := @eq_refl E.t.
  Definition eq_sym := @eq_sym E.t.
  Definition eq_trans := @eq_trans E.t.
 End UsualIsEqOrig.
 
 Module Type UsualEqualityType <: EqualityType
- := UsualBareEquality <+ IsEq.
+ := UsualEq <+ IsEq.
 
 Module Type UsualDecidableType <: DecidableType
- := UsualBareEquality <+ IsEq <+ HasEqDec.
+ := UsualEq <+ IsEq <+ HasEqDec.
 
 Module Type UsualDecidableTypeBoth <: DecidableTypeBoth
- := UsualBareEquality <+ IsEq <+ IsEqOrig <+ HasEqDec.
+ := UsualEq <+ IsEq <+ IsEqOrig <+ HasEqDec.
 
-Module Type UsualBoolEq := UsualBareEquality <+ HasEqBool.
+Module Type UsualBoolEq := UsualEq <+ HasEqBool.
 
 Module Type UsualDecidableTypeFull <: DecidableTypeFull
- := UsualBareEquality <+ IsEq <+ IsEqOrig <+ HasEqDec <+ HasEqBool.
+ := UsualEq <+ IsEq <+ IsEqOrig <+ HasEqDec <+ HasEqBool.
 
 
 (** Some shortcuts for easily building a [UsualDecidableType] *)
 
 Module Type MiniDecidableType.
  Parameter t : Type.
- Parameter eq_dec : forall x y : t, {eq x y}+{~eq x y}.
+ Parameter eq_dec : forall x y : t, {x=y}+{~x=y}.
 End MiniDecidableType.
 
 Module Make_UDT (M:MiniDecidableType) <: UsualDecidableTypeBoth.
- Definition eq := @eq M.t.
+ Definition eq := @Logic.eq M.t.
  Include M <+ UsualIsEq <+ UsualIsEqOrig.
 End Make_UDT.
 
