@@ -112,6 +112,16 @@ Proof.
 intros; tauto.
 Qed.
 
+Theorem and_comm : forall A B : Prop, A /\ B <-> B /\ A.
+Proof.
+intros; tauto.
+Qed.
+
+Theorem and_assoc : forall A B C : Prop, (A /\ B) /\ C <-> A /\ B /\ C.
+Proof.
+intros; tauto.
+Qed.
+
 Theorem or_cancel_l : forall A B C : Prop,
   (B -> ~ A) -> (C -> ~ A) -> ((A \/ B <-> A \/ C) <-> (B <-> C)).
 Proof.
@@ -120,6 +130,16 @@ Qed.
 
 Theorem or_cancel_r : forall A B C : Prop,
   (B -> ~ A) -> (C -> ~ A) -> ((B \/ A <-> C \/ A) <-> (B <-> C)).
+Proof.
+intros; tauto.
+Qed.
+
+Theorem or_comm : forall A B : Prop, (A \/ B) <-> (B \/ A).
+Proof.
+intros; tauto.
+Qed.
+
+Theorem or_assoc : forall A B C : Prop, (A \/ B) \/ C <-> A \/ B \/ C.
 Proof.
 intros; tauto.
 Qed.
