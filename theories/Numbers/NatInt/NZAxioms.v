@@ -16,7 +16,7 @@ Require Export Equalities Orders NumPrelude GenericMinMax.
     and a bi-directional induction principle. We require [P (S n) = n]
     but not the other way around, since this domain is meant
     to be either N or Z. In fact it can be a few other things,
-    for instance [Z/nZ] (See file [NZDomain for a study of that).
+    for instance [Z/nZ] (See file [NZDomain] for a study of that).
 *)
 
 Module Type ZeroSuccPred (Import T:Typ).
@@ -108,4 +108,12 @@ Module Type NZOrdAxiomsSig <: NZBasicFunsSig <: NZOrdSig
 Module Type NZOrdAxiomsSig' <: NZOrdAxiomsSig
  := NZOrdSig' <+ AddSubMul' <+ IsAddSubMul <+ HasMinMax.
 
+
+(** Same, plus a comparison function. *)
+
+Module Type NZDecOrdSig := NZOrdSig <+ HasCompare.
+Module Type NZDecOrdSig' := NZOrdSig' <+ HasCompare.
+
+Module Type NZDecOrdAxiomsSig := NZOrdAxiomsSig <+ HasCompare.
+Module Type NZDecOrdAxiomsSig' := NZOrdAxiomsSig' <+ HasCompare.
 

@@ -122,7 +122,7 @@ Qed.
 
 (** We know enough now to benefit from the generic [order] tactic. *)
 
-Module OrderElts.
+Module OrderElts <: TotalOrder.
  Definition t := t.
  Definition eq := eq.
  Definition lt := lt.
@@ -252,7 +252,7 @@ reduce to a normal form that will say if the numbers are equal or not,
 which cannot be true in all finite rings. Therefore, we prove decidability
 in the presence of order. *)
 
-Theorem eq_dec : forall n m, decidable (n == m).
+Theorem eq_decidable : forall n m, decidable (n == m).
 Proof.
 intros n m; destruct (lt_trichotomy n m) as [ | [ | ]];
  (right; order) || (left; order).
@@ -263,7 +263,7 @@ Qed.
 Theorem eq_dne : forall n m, ~ ~ n == m <-> n == m.
 Proof.
 intros n m; split; intro H.
-destruct (eq_dec n m) as [H1 | H1].
+destruct (eq_decidable n m) as [H1 | H1].
 assumption. false_hyp H1 H.
 intro H1; now apply H1.
 Qed.
@@ -276,7 +276,7 @@ Proof. intuition order. Qed.
 Theorem nlt_ge : forall n m, ~ n < m <-> n >= m.
 Proof. intuition order. Qed.
 
-Theorem lt_dec : forall n m, decidable (n < m).
+Theorem lt_decidable : forall n m, decidable (n < m).
 Proof.
 intros n m; destruct (le_gt_cases m n); [right|left]; order.
 Qed.
@@ -284,7 +284,7 @@ Qed.
 Theorem lt_dne : forall n m, ~ ~ n < m <-> n < m.
 Proof.
 intros n m; split; intro H.
-destruct (lt_dec n m) as [H1 | H1]; [assumption | false_hyp H1 H].
+destruct (lt_decidable n m) as [H1 | H1]; [assumption | false_hyp H1 H].
 intro H1; false_hyp H H1.
 Qed.
 
@@ -296,7 +296,7 @@ Proof. intuition order. Qed.
 Theorem lt_nge : forall n m, n < m <-> ~ n >= m.
 Proof. intuition order. Qed.
 
-Theorem le_dec : forall n m, decidable (n <= m).
+Theorem le_decidable : forall n m, decidable (n <= m).
 Proof.
 intros n m; destruct (le_gt_cases n m); [left|right]; order.
 Qed.
@@ -304,7 +304,7 @@ Qed.
 Theorem le_dne : forall n m, ~ ~ n <= m <-> n <= m.
 Proof.
 intros n m; split; intro H.
-destruct (le_dec n m) as [H1 | H1]; [assumption | false_hyp H1 H].
+destruct (le_decidable n m) as [H1 | H1]; [assumption | false_hyp H1 H].
 intro H1; false_hyp H H1.
 Qed.
 
@@ -614,3 +614,14 @@ End NZOrderPropSig.
 Module NZOrderPropFunct (NZ : NZOrdSig) :=
  NZBasePropSig NZ <+ NZOrderPropSig NZ.
 
+(** If we have moreover a [compare] function, we can build
+    an [OrderedType] structure. *)
+
+Module NZOrderedTypeFunct (NZ : NZDecOrdSig')
+  <: DecidableTypeFull <: OrderedTypeFull.
+ Include NZ <+ NZOrderPropFunct.
+ Instance lt_compat : Proper (eq==>eq==>iff) lt := lt_wd.
+ Instance lt_strorder : StrictOrder lt.
+ Include Compare2EqBool <+ HasEqBool2Dec.
+ Definition le_lteq := lt_eq_cases.
+End NZOrderedTypeFunct.
