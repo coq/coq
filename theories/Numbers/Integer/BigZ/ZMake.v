@@ -369,17 +369,17 @@ Module Make (N:NType) <: ZType.
   end.
 
 
- Theorem spec_div_eucl: forall x y,
+ Theorem spec_div_eucl_nz: forall x y,
       to_Z y <> 0 ->
       let (q,r) := div_eucl x y in
       (to_Z q, to_Z r) = Zdiv_eucl (to_Z x) (to_Z y).
  unfold div_eucl, to_Z; intros [x | x] [y | y] H.
  assert (H1: 0 < N.to_Z y).
    generalize (N.spec_pos y); auto with zarith.
- generalize (N.spec_div_eucl x y H1); case N.div_eucl; auto.
+ generalize (N.spec_div_eucl x y); case N.div_eucl; auto.
  assert (HH: 0 < N.to_Z y).
    generalize (N.spec_pos y); auto with zarith.
- generalize (N.spec_div_eucl x y HH); case N.div_eucl; auto.
+ generalize (N.spec_div_eucl x y); case N.div_eucl; auto.
  intros q r; generalize (N.spec_pos x) HH; unfold Zdiv_eucl;
    case_eq (N.to_Z x); case_eq (N.to_Z y);
      try (intros; apply False_ind; auto with zarith; fail).
@@ -411,7 +411,7 @@ Module Make (N:NType) <: ZType.
    intros; apply False_ind; auto with zarith.
  assert (HH: 0 < N.to_Z y).
    generalize (N.spec_pos y); auto with zarith.
- generalize (N.spec_div_eucl x y HH); case N.div_eucl; auto.
+ generalize (N.spec_div_eucl x y); case N.div_eucl; auto.
  intros q r; generalize (N.spec_pos x) HH; unfold Zdiv_eucl;
    case_eq (N.to_Z x); case_eq (N.to_Z y);
      try (intros; apply False_ind; auto with zarith; fail).
@@ -441,7 +441,7 @@ Module Make (N:NType) <: ZType.
  rewrite N.spec_0; generalize (N.spec_pos r); intros; apply False_ind; auto with zarith.
  assert (H1: 0 < N.to_Z y).
    generalize (N.spec_pos y); auto with zarith.
- generalize (N.spec_div_eucl x y H1); case N.div_eucl; auto.
+ generalize (N.spec_div_eucl x y); case N.div_eucl; auto.
  intros q r; generalize (N.spec_pos x) H1; unfold Zdiv_eucl;
    case_eq (N.to_Z x); case_eq (N.to_Z y);
      try (intros; apply False_ind; auto with zarith; fail).
@@ -455,11 +455,43 @@ Module Make (N:NType) <: ZType.
  rewrite <- H2; auto.
  Qed.
 
+ Lemma Zdiv_eucl_0 : forall a, Zdiv_eucl a 0 = (0,0).
+ Proof. destruct a; auto. Qed.
+
+ Theorem spec_div_eucl: forall x y,
+      let (q,r) := div_eucl x y in
+      (to_Z q, to_Z r) = Zdiv_eucl (to_Z x) (to_Z y).
+ Proof.
+ intros. destruct (Z_eq_dec (to_Z y) 0) as [EQ|NEQ];
+  [|apply spec_div_eucl_nz; auto].
+ unfold div_eucl.
+ destruct x; destruct y; simpl in *.
+ generalize (N.spec_div_eucl t0 t1). destruct N.div_eucl; simpl; auto.
+ generalize (N.spec_div_eucl t0 t1). destruct N.div_eucl; simpl; auto.
+ assert (EQ' : N.to_Z t1 = 0) by auto with zarith.
+ rewrite EQ'. simpl. rewrite Zdiv_eucl_0. injection 1; intros.
+ generalize (N.spec_compare N.zero t3); destruct N.compare.
+ simpl. intros. f_equal; auto with zarith.
+ rewrite N.spec_0; intro; exfalso; auto with zarith.
+ rewrite N.spec_0; intro; exfalso; auto with zarith.
+ generalize (N.spec_div_eucl t0 t1). destruct N.div_eucl; simpl; auto.
+ assert (EQ' : N.to_Z t1 = 0) by auto with zarith.
+ rewrite EQ'. simpl. rewrite 2 Zdiv_eucl_0. injection 1; intros.
+ generalize (N.spec_compare N.zero t3); destruct N.compare.
+ simpl. intros. f_equal; auto with zarith.
+ rewrite N.spec_0; intro; exfalso; auto with zarith.
+ rewrite N.spec_0; intro; exfalso; auto with zarith.
+ generalize (N.spec_div_eucl t0 t1). destruct N.div_eucl; simpl; auto.
+ assert (EQ' : N.to_Z t1 = 0) by auto with zarith.
+ rewrite EQ'. simpl. rewrite 2 Zdiv_eucl_0. injection 1; intros.
+ f_equal; auto with zarith.
+ Qed.
+
  Definition div x y := fst (div_eucl x y).
 
  Definition spec_div: forall x y,
-     to_Z y <> 0 -> to_Z (div x y) = to_Z x / to_Z y.
- intros x y H1; generalize (spec_div_eucl x y H1); unfold div, Zdiv.
+     to_Z (div x y) = to_Z x / to_Z y.
+ intros x y; generalize (spec_div_eucl x y); unfold div, Zdiv.
  case div_eucl; case Zdiv_eucl; simpl; auto.
  intros q r q11 r1 H; injection H; auto.
  Qed.
@@ -467,8 +499,8 @@ Module Make (N:NType) <: ZType.
  Definition modulo x y := snd (div_eucl x y).
 
  Theorem spec_modulo:
-   forall x y, to_Z y <> 0  -> to_Z (modulo x y) = to_Z x mod to_Z y.
- intros x y H1; generalize (spec_div_eucl x y H1); unfold modulo, Zmod.
+   forall x y, to_Z (modulo x y) = to_Z x mod to_Z y.
+ intros x y; generalize (spec_div_eucl x y); unfold modulo, Zmod.
  case div_eucl; case Zdiv_eucl; simpl; auto.
  intros q r q11 r1 H; injection H; auto.
  Qed.

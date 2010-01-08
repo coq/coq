@@ -15,12 +15,7 @@ Author: Arnaud Spiwack
 *)
 
 Require Export Int31.
-Require Import CyclicAxioms.
-Require Import Cyclic31.
-Require Import NSig.
-Require Import NSigNAxioms.
-Require Import NMake.
-Require Import NProperties.
+Require Import CyclicAxioms Cyclic31 NSig NSigNAxioms NMake NProperties NDiv.
 
 Module BigN <: NType := NMake.Make Int31Cyclic.
 
@@ -28,6 +23,7 @@ Module BigN <: NType := NMake.Make Int31Cyclic.
 
 Module Export BigNAxiomsMod := NSig_NAxioms BigN.
 Module Export BigNPropMod := NPropFunct BigNAxiomsMod.
+Module Export BigDivModProp := NDivPropFunct BigNAxiomsMod BigNPropMod.
 
 (** Notations about [BigN] *)
 
@@ -73,6 +69,7 @@ Infix "<=" := BigN.le : bigN_scope.
 Notation "x > y" := (BigN.lt y x)(only parsing) : bigN_scope.
 Notation "x >= y" := (BigN.le y x)(only parsing) : bigN_scope.
 Notation "[ i ]" := (BigN.to_Z i) : bigN_scope.
+Infix "mod" := modulo (at level 40, no associativity) : bigN_scope.
 
 Local Open Scope bigN_scope.
 

@@ -13,7 +13,7 @@ Require Import NZAxioms NZMulOrder.
 (** The first signatures will be common to all divisions over NZ, N and Z *)
 
 Module Type DivMod (Import T:Typ).
- Parameters div modulo : t -> t -> t.
+ Parameters Inline div modulo : t -> t -> t.
 End DivMod.
 
 Module Type DivModNotation (T:Typ)(Import NZ:DivMod T).

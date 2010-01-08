@@ -8,11 +8,15 @@
 
 (*i $Id$ i*)
 
-Require Import ZArith ZAxioms ZSgnAbs ZSig.
+Require Import ZArith ZAxioms ZDivFloor ZSig.
 
-(** * The interface [ZSig.ZType] implies the interface [ZAxiomsSig] *)
+(** * The interface [ZSig.ZType] implies the interface [ZAxiomsSig]
 
-Module ZSig_ZAxioms (Z:ZType) <: ZAxiomsExtSig.
+    It also provides [sgn], [abs], [div], [mod]
+*)
+
+
+Module ZSig_ZAxioms (Z:ZType) <: ZAxiomsSig <: ZDivSig.
 
 Local Notation "[ x ]" := (Z.to_Z x).
 Local Infix "=="  := Z.eq (at level 70).
@@ -26,7 +30,7 @@ Local Infix "<" := Z.lt.
 
 Hint Rewrite
  Z.spec_0 Z.spec_1 Z.spec_add Z.spec_sub Z.spec_pred Z.spec_succ
- Z.spec_mul Z.spec_opp Z.spec_of_Z : zspec.
+ Z.spec_mul Z.spec_opp Z.spec_of_Z Z.spec_div Z.spec_modulo: zspec.
 
 Ltac zsimpl := unfold Z.eq in *; autorewrite with zspec.
 Ltac zcongruence := repeat red; intros; zsimpl; congruence.
@@ -235,32 +239,53 @@ Qed.
 
 Theorem abs_eq : forall n, 0 <= n -> Z.abs n == n.
 Proof.
-intros. red. rewrite Z.spec_abs. apply Zabs_eq.
- rewrite <- Z.spec_0, <- spec_le; auto.
+intros n. red. rewrite spec_le, Z.spec_0, Z.spec_abs. apply Zabs_eq.
 Qed.
 
 Theorem abs_neq : forall n, n <= 0 -> Z.abs n == -n.
 Proof.
-intros. red. rewrite Z.spec_abs, Z.spec_opp. apply Zabs_non_eq.
- rewrite <- Z.spec_0, <- spec_le; auto.
+intros n. red. rewrite spec_le, Z.spec_0, Z.spec_abs, Z.spec_opp.
+ apply Zabs_non_eq.
 Qed.
 
 Theorem sgn_null : forall n, n==0 -> Z.sgn n == 0.
 Proof.
-intros. red. rewrite Z.spec_sgn, Z.spec_0. rewrite Zsgn_null.
- rewrite <- Z.spec_0; auto.
+intros n. unfold Z.eq. rewrite Z.spec_sgn, Z.spec_0. rewrite Zsgn_null; auto.
 Qed.
 
 Theorem sgn_pos : forall n, 0<n -> Z.sgn n == Z.succ 0.
 Proof.
-intros. red. rewrite Z.spec_sgn. zsimpl. rewrite Zsgn_pos.
- rewrite <- Z.spec_0, <- spec_lt; auto.
+intros n. red. rewrite spec_lt, Z.spec_sgn. zsimpl. rewrite Zsgn_pos; auto.
 Qed.
 
 Theorem sgn_neg : forall n, n<0 -> Z.sgn n == Z.opp (Z.succ 0).
 Proof.
-intros. red. rewrite Z.spec_sgn. zsimpl. rewrite Zsgn_neg.
- rewrite <- Z.spec_0, <- spec_lt; auto.
+intros n. red. rewrite spec_lt, Z.spec_sgn. zsimpl. rewrite Zsgn_neg; auto.
+Qed.
+
+Program Instance div_wd : Proper (Z.eq==>Z.eq==>Z.eq) Z.div.
+Program Instance mod_wd : Proper (Z.eq==>Z.eq==>Z.eq) Z.modulo.
+
+Theorem div_mod : forall a b, ~b==0 -> a == b*(Z.div a b) + (Z.modulo a b).
+Proof.
+intros a b. unfold Z.eq; zsimpl. intros.
+apply Z_div_mod_eq_full; auto.
+Qed.
+
+Theorem mod_pos_bound :
+ forall a b, 0 < b -> 0 <= Z.modulo a b /\ Z.modulo a b < b.
+Proof.
+intros a b. rewrite 2 spec_lt, spec_le, Z.spec_0. intros.
+rewrite Z.spec_modulo; auto with zarith.
+apply Z_mod_lt; auto with zarith.
+Qed.
+
+Theorem mod_neg_bound :
+ forall a b, b < 0 -> b < Z.modulo a b /\ Z.modulo a b <= 0.
+Proof.
+intros a b. rewrite 2 spec_lt, spec_le, Z.spec_0. intros.
+rewrite Z.spec_modulo; auto with zarith.
+apply Z_mod_neg; auto with zarith.
 Qed.
 
 (** Aliases *)
@@ -280,5 +305,7 @@ Definition min := Z.min.
 Definition max := Z.max.
 Definition abs := Z.abs.
 Definition sgn := Z.sgn.
+Definition div := Z.div.
+Definition modulo := Z.modulo.
 
 End ZSig_ZAxioms.

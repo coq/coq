@@ -98,17 +98,16 @@ Module Type ZType.
 
  Parameter div_eucl : t -> t -> t * t.
 
- Parameter spec_div_eucl: forall x y, [y] <> 0 ->
+ Parameter spec_div_eucl: forall x y,
    let (q,r) := div_eucl x y in ([q], [r]) = Zdiv_eucl [x] [y].
 
  Parameter div : t -> t -> t.
 
- Parameter spec_div: forall x y, [y] <> 0 -> [div x y] = [x] / [y].
+ Parameter spec_div: forall x y, [div x y] = [x] / [y].
 
  Parameter modulo : t -> t -> t.
 
- Parameter spec_modulo: forall x y, [y] <> 0 ->
-   [modulo x y] = [x] mod [y].
+ Parameter spec_modulo: forall x y, [modulo x y] = [x] mod [y].
 
  Parameter gcd : t -> t -> t.
 

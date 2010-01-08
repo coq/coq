@@ -1956,6 +1956,7 @@ let _ =
   pr "";
 
   pr " Definition div_eucl x y :=";
+  pr "  if eq_bool y zero then (zero,zero) else";
   pr "  match compare x y with";
   pr "  | Eq => (one, zero)";
   pr "  | Lt => (zero, x)";
@@ -1964,7 +1965,6 @@ let _ =
   pr "";
 
   pr " Theorem spec_div_eucl: forall x y,";
-  pr "      0 < [y] ->";
   pr "      let (q,r) := div_eucl x y in";
   pr "      ([q], [r]) = Zdiv_eucl [x] [y].";
   pa " Admitted.";
@@ -1973,8 +1973,13 @@ let _ =
   pp "   exact (spec_0 w0_spec).";
   pp " assert (F1: [one] = 1).";
   pp "   exact (spec_1 w0_spec).";
-  pp " intros x y H; generalize (spec_compare x y);";
-  pp "   unfold div_eucl; case compare; try rewrite F0;";
+  pp " intros x y. unfold div_eucl.";
+  pp " generalize (spec_eq_bool y zero). destruct eq_bool; rewrite F0.";
+  pp " intro H. rewrite H. destruct [x]; auto.";
+  pp " intro H'.";
+  pp " assert (0 < [y]) by (generalize (spec_pos y); auto with zarith).";
+  pp " clear H'.";
+  pp " generalize (spec_compare x y); case compare; try rewrite F0;";
   pp "   try rewrite F1; intros; auto with zarith.";
   pp " rewrite H0; generalize (Z_div_same [y] (Zlt_gt _ _ H))";
   pp "                        (Z_mod_same [y] (Zlt_gt _ _ H));";
@@ -1994,10 +1999,10 @@ let _ =
   pr "";
 
   pr " Theorem spec_div:";
-  pr "   forall x y, 0 < [y] -> [div x y] = [x] / [y].";
+  pr "   forall x y, [div x y] = [x] / [y].";
   pa " Admitted.";
   pp " Proof.";
-  pp " intros x y H1; unfold div; generalize (spec_div_eucl x y H1);";
+  pp " intros x y; unfold div; generalize (spec_div_eucl x y);";
   pp "   case div_eucl; simpl fst.";
   pp " intros xx yy; unfold Zdiv; case Zdiv_eucl; intros qq rr H; ";
   pp "  injection H; auto.";
@@ -2099,6 +2104,7 @@ let _ =
   pr "";
 
   pr " Definition modulo x y := ";
+  pr "  if eq_bool y zero then zero else";
   pr "  match compare x y with";
   pr "  | Eq => zero";
   pr "  | Lt => x";
@@ -2107,15 +2113,20 @@ let _ =
   pr "";
 
   pr " Theorem spec_modulo:";
-  pr "   forall x y, 0 < [y] -> [modulo x y] = [x] mod [y].";
+  pr "   forall x y, [modulo x y] = [x] mod [y].";
   pa " Admitted.";
   pp " Proof.";
   pp " assert (F0: [zero] = 0).";
   pp "   exact (spec_0 w0_spec).";
   pp " assert (F1: [one] = 1).";
   pp "   exact (spec_1 w0_spec).";
-  pp " intros x y H; generalize (spec_compare x y);";
-  pp "   unfold modulo; case compare; try rewrite F0;";
+  pp " intros x y. unfold modulo.";
+  pp " generalize (spec_eq_bool y zero). destruct eq_bool; rewrite F0.";
+  pp " intro H; rewrite H. destruct [x]; auto.";
+  pp " intro H'.";
+  pp " assert (H : 0 < [y]) by (generalize (spec_pos y); auto with zarith).";
+  pp " clear H'.";
+  pp " generalize (spec_compare x y); case compare; try rewrite F0;";
   pp "   try rewrite F1; intros; try split; auto with zarith.";
   pp " rewrite H0; apply sym_equal; apply Z_mod_same; auto with zarith.";
   pp " apply sym_equal; apply Zmod_small; auto with zarith.";

@@ -11,10 +11,7 @@
 (*i $Id$ i*)
 
 Require Export BigN.
-Require Import ZProperties.
-Require Import ZSig.
-Require Import ZSigZAxioms.
-Require Import ZMake.
+Require Import ZProperties ZDivFloor ZSig ZSigZAxioms ZMake.
 
 Module BigZ <: ZType := ZMake.Make BigN.
 
@@ -22,6 +19,7 @@ Module BigZ <: ZType := ZMake.Make BigN.
 
 Module Export BigZAxiomsMod := ZSig_ZAxioms BigZ.
 Module Export BigZPropMod := ZPropFunct BigZAxiomsMod.
+Module Export BigZDivPropMod := ZDivPropFunct BigZAxiomsMod BigZPropMod.
 
 (** Notations about [BigZ] *)
 
@@ -71,6 +69,7 @@ Infix "<=" := BigZ.le : bigZ_scope.
 Notation "x > y" := (BigZ.lt y x)(only parsing) : bigZ_scope.
 Notation "x >= y" := (BigZ.le y x)(only parsing) : bigZ_scope.
 Notation "[ i ]" := (BigZ.to_Z i) : bigZ_scope.
+Infix "mod" := modulo (at level 40, no associativity) : bigN_scope.
 
 Local Open Scope bigZ_scope.
 

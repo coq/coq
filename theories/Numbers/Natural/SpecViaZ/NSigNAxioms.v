@@ -8,14 +8,11 @@
 
 (*i $Id$ i*)
 
-Require Import ZArith.
-Require Import Nnat.
-Require Import NAxioms.
-Require Import NSig.
+Require Import ZArith Nnat NAxioms NDiv NSig.
 
 (** * The interface [NSig.NType] implies the interface [NAxiomsSig] *)
 
-Module NSig_NAxioms (N:NType) <: NAxiomsSig.
+Module NSig_NAxioms (N:NType) <: NAxiomsSig <: NDivSig.
 
 Delimit Scope NumScope with Num.
 Bind Scope NumScope with N.t.
@@ -28,7 +25,8 @@ Local Infix "-" := N.sub : NumScope.
 Local Infix "*" := N.mul : NumScope.
 
 Hint Rewrite
- N.spec_0 N.spec_succ N.spec_add N.spec_mul N.spec_pred N.spec_sub : num.
+ N.spec_0 N.spec_succ N.spec_add N.spec_mul N.spec_pred N.spec_sub
+ N.spec_div N.spec_modulo : num.
 Ltac nsimpl := autorewrite with num.
 Ltac ncongruence := unfold N.eq; repeat red; intros; nsimpl; congruence.
 
@@ -212,6 +210,22 @@ Proof.
 red; nsimpl; auto.
 Qed.
 
+Program Instance div_wd : Proper (N.eq==>N.eq==>N.eq) N.div.
+Program Instance mod_wd : Proper (N.eq==>N.eq==>N.eq) N.modulo.
+
+Theorem div_mod : forall a b, ~b==0 -> a == b*(N.div a b) + (N.modulo a b).
+Proof.
+intros a b. unfold N.eq. nsimpl. intros.
+apply Z_div_mod_eq_full; auto.
+Qed.
+
+Theorem mod_upper_bound : forall a b, ~b==0 -> N.modulo a b < b.
+Proof.
+intros a b. unfold N.eq. rewrite spec_lt. nsimpl. intros.
+destruct (Z_mod_lt [a] [b]); auto.
+generalize (N.spec_pos b); auto with zarith.
+Qed.
+
 Definition recursion (A : Type) (a : A) (f : N.t -> A -> A) (n : N.t) :=
   Nrect (fun _ => A) a (fun n a => f (N.of_N n) a) (N.to_N n).
 Implicit Arguments recursion [A].
@@ -282,5 +296,7 @@ Definition lt := N.lt.
 Definition le := N.le.
 Definition min := N.min.
 Definition max := N.max.
+Definition div := N.div.
+Definition modulo := N.modulo.
 
 End NSig_NAxioms.
