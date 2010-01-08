@@ -34,8 +34,8 @@ End ZDivSpecific.
 Module Type ZDiv (Z:ZAxiomsSig)
  := DivMod Z <+ NZDivCommon Z <+ ZDivSpecific Z.
 
-Module Type ZDivSig := ZAxiomsSig <+ ZDiv.
-Module Type ZDivSig' := ZAxiomsSig' <+ ZDiv <+ DivModNotation.
+Module Type ZDivSig := ZAxiomsExtSig <+ ZDiv.
+Module Type ZDivSig' := ZAxiomsExtSig' <+ ZDiv <+ DivModNotation.
 
 Module ZDivPropFunct (Import Z : ZDivSig')(Import ZP : ZPropSig Z).
 

@@ -21,6 +21,7 @@ Integer/Abstract/ZBase.vo
 Integer/Abstract/ZLt.vo
 Integer/Abstract/ZMulOrder.vo
 Integer/Abstract/ZMul.vo
+Integer/Abstract/ZSgnAbs.vo
 Integer/Abstract/ZProperties.vo
 Integer/Abstract/ZDivFloor.vo
 Integer/Abstract/ZDivTrunc.vo

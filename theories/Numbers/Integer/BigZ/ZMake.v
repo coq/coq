@@ -488,4 +488,20 @@ Module Make (N:NType) <: ZType.
   case N.to_Z; simpl; auto with zarith.
  Qed.
 
+ Definition sgn x :=
+  match compare zero x with
+   | Lt => one
+   | Eq => zero
+   | Gt => minus_one
+  end.
+
+ Lemma spec_sgn : forall x, to_Z (sgn x) = Zsgn (to_Z x).
+ Proof.
+ intros. unfold sgn. generalize (spec_compare zero x).
+ destruct compare.
+ rewrite spec_0. intros <-; auto.
+ rewrite spec_0, spec_1. symmetry. rewrite Zsgn_pos; auto.
+ rewrite spec_0, spec_m1. symmetry. rewrite Zsgn_neg; auto with zarith.
+ Qed.
+
 End Make.

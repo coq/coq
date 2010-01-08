@@ -114,4 +114,12 @@ Module Type ZType.
 
  Parameter spec_gcd: forall a b, [gcd a b] = Zgcd (to_Z a) (to_Z b).
 
+ Parameter sgn : t -> t.
+
+ Parameter spec_sgn : forall x, [sgn x] = Zsgn [x].
+
+ Parameter abs : t -> t.
+
+ Parameter spec_abs : forall x, [abs x] = Zabs [x].
+
 End ZType.

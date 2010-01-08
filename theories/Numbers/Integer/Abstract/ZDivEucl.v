@@ -23,16 +23,15 @@
 
 Require Import ZAxioms ZProperties NZDiv.
 
-Module Type ZDivSpecific (Import Z : ZAxiomsSig')(Import DM : DivMod' Z).
- Definition abs z := max z (-z).
+Module Type ZDivSpecific (Import Z : ZAxiomsExtSig')(Import DM : DivMod' Z).
  Axiom mod_always_pos : forall a b, 0 <= a mod b < abs b.
 End ZDivSpecific.
 
-Module Type ZDiv (Z:ZAxiomsSig)
+Module Type ZDiv (Z:ZAxiomsExtSig)
  := DivMod Z <+ NZDivCommon Z <+ ZDivSpecific Z.
 
-Module Type ZDivSig := ZAxiomsSig <+ ZDiv.
-Module Type ZDivSig' := ZAxiomsSig' <+ ZDiv <+ DivModNotation.
+Module Type ZDivSig := ZAxiomsExtSig <+ ZDiv.
+Module Type ZDivSig' := ZAxiomsExtSig' <+ ZDiv <+ DivModNotation.
 
 Module ZDivPropFunct (Import Z : ZDivSig')(Import ZP : ZPropSig Z).
 
@@ -42,9 +41,8 @@ Module ZDivPropFunct (Import Z : ZDivSig')(Import ZP : ZPropSig Z).
   Include Z.
   Lemma mod_bound : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
   Proof.
-  intros. rewrite <- (max_l b (-b)) at 3.
+  intros. rewrite <- (abs_eq b) at 3 by now apply lt_le_incl.
   apply mod_always_pos.
-  apply le_trans with 0; [ rewrite opp_nonpos_nonneg |]; order.
   Qed.
  End Z'.
  Module Import NZDivP := NZDivPropFunct Z' ZP.
@@ -64,53 +62,6 @@ Ltac pos_or_neg a :=
  let LE := fresh "LE" in
  destruct (le_gt_cases 0 a) as [LE|LT]; [|rewrite <- opp_pos_neg in LT].
 
-(*TODO: To migrate later ... *)
-Lemma abs_pos : forall z, 0<=z -> abs z == z.
-Proof.
-intros; apply max_l. apply le_trans with 0; trivial.
-now rewrite opp_nonpos_nonneg.
-Qed.
-Lemma abs_neg : forall z, 0<=-z -> abs z == -z.
-Proof.
-intros; apply max_r. apply le_trans with 0; trivial.
-now rewrite <- opp_nonneg_nonpos.
-Qed.
-Instance abs_wd : Proper (eq==>eq) abs.
-Proof.
-intros x y EQ. pos_or_neg x.
-rewrite 2 abs_pos; trivial. now rewrite <- EQ.
-rewrite 2 abs_neg; try order. now rewrite opp_inj_wd. rewrite <- EQ; order.
-Qed.
-Lemma abs_opp : forall z, abs (-z) == abs z.
-Proof.
-intros. pos_or_neg z.
-rewrite (abs_pos z), (abs_neg (-z)); rewrite ? opp_involutive; order.
-rewrite (abs_pos (-z)), (abs_neg z); order.
-Qed.
-Lemma abs_nonneg : forall z, 0<=abs z.
-Proof.
-intros. pos_or_neg z.
-rewrite abs_pos; trivial.
-rewrite <-abs_opp, abs_pos; order.
-Qed.
-Lemma abs_nz : forall z, z~=0 -> 0<abs z.
-Proof.
-intros. pos_or_neg z.
-rewrite abs_pos; order.
-rewrite <-abs_opp, abs_pos; order.
-Qed.
-Lemma abs_mul : forall a b, abs (a*b) == abs a * abs b.
-Proof.
-assert (Aux1 : forall a b, 0<=a -> abs (a*b) == a * abs b).
- intros. pos_or_neg b.
- rewrite 2 abs_pos; try order. now apply mul_nonneg_nonneg.
- rewrite 2 abs_neg; try order. now rewrite mul_opp_r.
-  rewrite <-mul_opp_r; apply mul_nonneg_nonneg; order.
-intros. pos_or_neg a. rewrite Aux1, (abs_pos a); order.
-rewrite <- mul_opp_opp, Aux1, abs_opp, (abs_neg a); order.
-Qed.
-(*/TODO *)
-
 (** Uniqueness theorems *)
 
 Theorem div_mod_unique : forall b q1 q2 r1 r2 : t,
@@ -119,9 +70,9 @@ Theorem div_mod_unique : forall b q1 q2 r1 r2 : t,
 Proof.
 intros b q1 q2 r1 r2 Hr1 Hr2 EQ.
 pos_or_neg b.
-rewrite abs_pos in * by trivial.
+rewrite abs_eq in * by trivial.
 apply div_mod_unique with b; trivial.
-rewrite abs_neg in *; try order.
+rewrite abs_neq' in * by auto using lt_le_incl.
 rewrite eq_sym_iff. apply div_mod_unique with (-b); trivial.
 rewrite 2 mul_opp_l.
 rewrite add_move_l, sub_opp_r.
@@ -136,8 +87,8 @@ Proof.
 intros a b q r Hr EQ.
 assert (Hb : b~=0).
  pos_or_neg b.
- rewrite abs_pos in Hr; intuition; order.
- rewrite <- opp_0, eq_opp_r. rewrite abs_neg in Hr; intuition; order.
+ rewrite abs_eq in Hr; intuition; order.
+ rewrite <- opp_0, eq_opp_r. rewrite abs_neq' in Hr; intuition; order.
 destruct (div_mod_unique b q (a/b) r (a mod b)); trivial.
 now apply mod_always_pos.
 now rewrite <- div_mod.
@@ -149,21 +100,12 @@ Proof.
 intros a b q r Hr EQ.
 assert (Hb : b~=0).
  pos_or_neg b.
- rewrite abs_pos in Hr; intuition; order.
- rewrite <- opp_0, eq_opp_r. rewrite abs_neg in Hr; intuition; order.
+ rewrite abs_eq in Hr; intuition; order.
+ rewrite <- opp_0, eq_opp_r. rewrite abs_neq' in Hr; intuition; order.
 destruct (div_mod_unique b q (a/b) r (a mod b)); trivial.
 now apply mod_always_pos.
 now rewrite <- div_mod.
 Qed.
-
-(** TODO: Provide a [sign] function *)
-Parameter sign : t -> t.
-Parameter sign_pos : forall t, sign t == 1 <-> 0<t.
-Parameter sign_0 : forall t, sign t == 0 <-> t==0.
-Parameter sign_neg : forall t, sign t == -(1) <-> t<0.
-Parameter sign_abs : forall t, t * sign t == abs t.
-(** END TODO *)
-
 
 (** Sign rules *)
 
@@ -189,12 +131,12 @@ Proof.
 intros a b Hb Hab. symmetry.
 apply div_unique with (-(a mod b)).
 rewrite Hab, opp_0. split; [order|].
-pos_or_neg b; [rewrite abs_pos | rewrite abs_neg]; order.
+pos_or_neg b; [rewrite abs_eq | rewrite abs_neq']; order.
 now rewrite mul_opp_r, <-opp_add_distr, <-div_mod.
 Qed.
 
 Lemma div_opp_l_nz : forall a b, b~=0 -> a mod b ~= 0 ->
- (-a)/b == -(a/b)-sign b.
+ (-a)/b == -(a/b)-sgn b.
 Proof.
 intros a b Hb Hab. symmetry.
 apply div_unique with (abs b -(a mod b)).
@@ -204,7 +146,7 @@ rewrite <- (add_0_l (abs b)) at 2.
 rewrite <- add_lt_mono_r.
 destruct (mod_always_pos a b); intuition order.
 rewrite <- 2 add_opp_r, mul_add_distr_l, 2 mul_opp_r.
-rewrite sign_abs.
+rewrite sgn_abs.
 rewrite add_shuffle2, add_opp_diag_l; nzsimpl.
 rewrite <-opp_add_distr, <-div_mod; order.
 Qed.
@@ -214,7 +156,7 @@ Lemma mod_opp_l_z : forall a b, b~=0 -> a mod b == 0 ->
 Proof.
 intros a b Hb Hab. symmetry.
 apply mod_unique with (-(a/b)).
-split; [order|now apply abs_nz].
+split; [order|now rewrite abs_pos].
 now rewrite <-opp_0, <-Hab, mul_opp_r, <-opp_add_distr, <-div_mod.
 Qed.
 
@@ -222,14 +164,14 @@ Lemma mod_opp_l_nz : forall a b, b~=0 -> a mod b ~= 0 ->
  (-a) mod b == abs b - (a mod b).
 Proof.
 intros a b Hb Hab. symmetry.
-apply mod_unique with (-(a/b)-sign b).
+apply mod_unique with (-(a/b)-sgn b).
 rewrite lt_sub_lt_add_l.
 rewrite <- le_add_le_sub_l. nzsimpl.
 rewrite <- (add_0_l (abs b)) at 2.
 rewrite <- add_lt_mono_r.
 destruct (mod_always_pos a b); intuition order.
 rewrite <- 2 add_opp_r, mul_add_distr_l, 2 mul_opp_r.
-rewrite sign_abs.
+rewrite sgn_abs.
 rewrite add_shuffle2, add_opp_diag_l; nzsimpl.
 rewrite <-opp_add_distr, <-div_mod; order.
 Qed.
@@ -241,7 +183,7 @@ intros. now rewrite div_opp_r, div_opp_l_z, opp_involutive.
 Qed.
 
 Lemma div_opp_opp_nz : forall a b, b~=0 -> a mod b ~= 0 ->
- (-a)/(-b) == a/b + sign(b).
+ (-a)/(-b) == a/b + sgn(b).
 Proof.
 intros. rewrite div_opp_r, div_opp_l_nz by trivial.
 now rewrite opp_sub_distr, opp_involutive.
@@ -264,7 +206,7 @@ Qed.
 Lemma div_same : forall a, a~=0 -> a/a == 1.
 Proof.
 intros. symmetry. apply div_unique with 0.
-split; [order|now apply abs_nz].
+split; [order|now rewrite abs_pos].
 now nzsimpl.
 Qed.
 
@@ -319,7 +261,7 @@ Proof. exact mod_1_l. Qed.
 Lemma div_mul : forall a b, b~=0 -> (a*b)/b == a.
 Proof.
 intros. symmetry. apply div_unique with 0.
-split; [order|now apply abs_nz].
+split; [order|now rewrite abs_pos].
 nzsimpl; apply mul_comm.
 Qed.
 
@@ -353,10 +295,10 @@ rewrite (div_mod a b Hb), EQ; nzsimpl.
 apply mod_always_pos.
 intros. pos_or_neg b.
 apply div_small.
-now rewrite <- (abs_pos b).
+now rewrite <- (abs_eq b).
 apply opp_inj; rewrite opp_0, <- div_opp_r by trivial.
 apply div_small.
-rewrite <- (abs_neg b) by order. trivial.
+rewrite <- (abs_neq' b) by order. trivial.
 Qed.
 
 Lemma mod_small_iff : forall a b, b~=0 -> (a mod b == a <-> 0<=a<abs b).
@@ -390,7 +332,7 @@ rewrite (div_mod b c) at 1 by order.
 rewrite <- add_assoc, <- add_le_mono_l.
 apply le_trans with (c+0).
 nzsimpl; destruct (mod_always_pos b c); try order.
-rewrite abs_pos in *; order.
+rewrite abs_eq in *; order.
 rewrite <- add_le_mono_l. destruct (mod_always_pos a c); order.
 Qed.
 
@@ -420,7 +362,7 @@ nzsimpl.
 rewrite (div_mod a b) at 1; try order.
 rewrite <- add_lt_mono_l.
 destruct (mod_always_pos a b).
-rewrite abs_pos in *; order.
+rewrite abs_eq in *; order.
 Qed.
 
 Lemma mul_pred_div_gt: forall a b, b<0 -> a < b*(P (a/b)).
@@ -430,7 +372,7 @@ rewrite mul_pred_r, <- add_opp_r.
 rewrite (div_mod a b) at 1; try order.
 rewrite <- add_lt_mono_l.
 destruct (mod_always_pos a b).
-rewrite <- opp_pos_neg in Hb. rewrite abs_neg in *; order.
+rewrite <- opp_pos_neg in Hb. rewrite abs_neq' in *; order.
 Qed.
 
 (** NB: The three previous properties could be used as
@@ -521,7 +463,7 @@ intros.
 symmetry.
 apply div_unique with ((a mod b)*c).
 (* ineqs *)
-rewrite abs_mul, (abs_pos c) by order.
+rewrite abs_mul, (abs_eq c) by order.
 rewrite <-(mul_0_l c), <-mul_lt_mono_pos_r, <-mul_le_mono_pos_r by trivial.
 apply mod_always_pos.
 (* equation *)
@@ -626,7 +568,7 @@ Proof.
  apply mul_nonneg_nonneg; order.
  apply lt_le_trans with (b*((a/b) mod c) + abs b).
  now rewrite <- add_lt_mono_l.
- rewrite (abs_pos b) by order.
+ rewrite (abs_eq b) by order.
  now rewrite <- mul_succ_r, <- mul_le_mono_pos_l, le_succ_l.
  (* end 0<= ... < abs(b*c) *)
  rewrite (div_mod a b) at 1 by order.

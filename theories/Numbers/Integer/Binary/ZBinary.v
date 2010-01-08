@@ -18,7 +18,7 @@ Local Open Scope Z_scope.
 
 (** * Implementation of [ZAxiomsSig] by [BinInt.Z] *)
 
-Module ZBinAxiomsMod <: ZAxiomsSig.
+Module ZBinAxiomsMod <: ZAxiomsExtSig.
 
 (** Bi-directional induction. *)
 
@@ -70,6 +70,18 @@ Definition succ_pred n := eq_sym (Zsucc_pred n).
 Definition opp_0 := Zopp_0.
 Definition opp_succ := Zopp_succ.
 
+(** Absolute value and sign *)
+
+Definition abs_eq := Zabs_eq.
+Definition abs_neq := Zabs_non_eq.
+
+Lemma sgn_null : forall x, x = 0 -> Zsgn x = 0.
+Proof. intros. apply <- Zsgn_null; auto. Qed.
+Lemma sgn_pos : forall x, 0 < x -> Zsgn x = 1.
+Proof. intros. apply <- Zsgn_pos; auto. Qed.
+Lemma sgn_neg : forall x, x < 0 -> Zsgn x = -1.
+Proof. intros. apply <- Zsgn_neg; auto. Qed.
+
 (** The instantiation of operations.
     Placing them at the very end avoids having indirections in above lemmas. *)
 
@@ -86,6 +98,8 @@ Definition le := Zle.
 Definition min := Zmin.
 Definition max := Zmax.
 Definition opp := Zopp.
+Definition abs := Zabs.
+Definition sgn := Zsgn.
 
 End ZBinAxiomsMod.
 

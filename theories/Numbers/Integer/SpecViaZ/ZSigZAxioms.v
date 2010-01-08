@@ -8,13 +8,11 @@
 
 (*i $Id$ i*)
 
-Require Import ZArith.
-Require Import ZAxioms.
-Require Import ZSig.
+Require Import ZArith ZAxioms ZSgnAbs ZSig.
 
 (** * The interface [ZSig.ZType] implies the interface [ZAxiomsSig] *)
 
-Module ZSig_ZAxioms (Z:ZType) <: ZAxiomsSig.
+Module ZSig_ZAxioms (Z:ZType) <: ZAxiomsExtSig.
 
 Local Notation "[ x ]" := (Z.to_Z x).
 Local Infix "=="  := Z.eq (at level 70).
@@ -235,6 +233,36 @@ Proof.
 intros; zsimpl; auto with zarith.
 Qed.
 
+Theorem abs_eq : forall n, 0 <= n -> Z.abs n == n.
+Proof.
+intros. red. rewrite Z.spec_abs. apply Zabs_eq.
+ rewrite <- Z.spec_0, <- spec_le; auto.
+Qed.
+
+Theorem abs_neq : forall n, n <= 0 -> Z.abs n == -n.
+Proof.
+intros. red. rewrite Z.spec_abs, Z.spec_opp. apply Zabs_non_eq.
+ rewrite <- Z.spec_0, <- spec_le; auto.
+Qed.
+
+Theorem sgn_null : forall n, n==0 -> Z.sgn n == 0.
+Proof.
+intros. red. rewrite Z.spec_sgn, Z.spec_0. rewrite Zsgn_null.
+ rewrite <- Z.spec_0; auto.
+Qed.
+
+Theorem sgn_pos : forall n, 0<n -> Z.sgn n == Z.succ 0.
+Proof.
+intros. red. rewrite Z.spec_sgn. zsimpl. rewrite Zsgn_pos.
+ rewrite <- Z.spec_0, <- spec_lt; auto.
+Qed.
+
+Theorem sgn_neg : forall n, n<0 -> Z.sgn n == Z.opp (Z.succ 0).
+Proof.
+intros. red. rewrite Z.spec_sgn. zsimpl. rewrite Zsgn_neg.
+ rewrite <- Z.spec_0, <- spec_lt; auto.
+Qed.
+
 (** Aliases *)
 
 Definition t := Z.t.
@@ -250,5 +278,7 @@ Definition lt := Z.lt.
 Definition le := Z.le.
 Definition min := Z.min.
 Definition max := Z.max.
+Definition abs := Z.abs.
+Definition sgn := Z.sgn.
 
 End ZSig_ZAxioms.

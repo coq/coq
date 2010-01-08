@@ -35,8 +35,8 @@ End ZDivSpecific.
 Module Type ZDiv (Z:ZAxiomsSig)
  := DivMod Z <+ NZDivCommon Z <+ ZDivSpecific Z.
 
-Module Type ZDivSig := ZAxiomsSig <+ ZDiv.
-Module Type ZDivSig' := ZAxiomsSig' <+ ZDiv <+ DivModNotation.
+Module Type ZDivSig := ZAxiomsExtSig <+ ZDiv.
+Module Type ZDivSig' := ZAxiomsExtSig' <+ ZDiv <+ DivModNotation.
 
 Module ZDivPropFunct (Import Z : ZDivSig')(Import ZP : ZPropSig Z).
 
@@ -205,31 +205,16 @@ Proof. exact div_pos. Qed.
 Lemma div_str_pos : forall a b, 0<b<=a -> 0 < a/b.
 Proof. exact div_str_pos. Qed.
 
-(** TODO: TO MIGRATE LATER *)
-Definition abs z := max z (-z).
-Lemma abs_pos : forall z, 0<=z -> abs z == z.
-Proof.
-intros; apply max_l. apply le_trans with 0; trivial.
-now rewrite opp_nonpos_nonneg.
-Qed.
-Lemma abs_neg : forall z, 0<=-z -> abs z == -z.
-Proof.
-intros; apply max_r. apply le_trans with 0; trivial.
-now rewrite <- opp_nonneg_nonpos.
-Qed.
-
-(** END TODO *)
-
 Lemma div_small_iff : forall a b, b~=0 -> (a/b==0 <-> abs a < abs b).
 Proof.
 intros. pos_or_neg a; pos_or_neg b.
-rewrite div_small_iff; try order. rewrite 2 abs_pos; intuition; order.
+rewrite div_small_iff; try order. rewrite 2 abs_eq; intuition; order.
 rewrite <- opp_inj_wd, opp_0, <- div_opp_r, div_small_iff by order.
- rewrite (abs_pos a), (abs_neg b); intuition; order.
+ rewrite (abs_eq a), (abs_neq' b); intuition; order.
 rewrite <- opp_inj_wd, opp_0, <- div_opp_l, div_small_iff by order.
- rewrite (abs_neg a), (abs_pos b); intuition; order.
+ rewrite (abs_neq' a), (abs_eq b); intuition; order.
 rewrite <- div_opp_opp, div_small_iff by order.
- rewrite (abs_neg a), (abs_neg b); intuition; order.
+ rewrite (abs_neq' a), (abs_neq' b); intuition; order.
 Qed.
 
 Lemma mod_small_iff : forall a b, b~=0 -> (a mod b == a <-> abs a < abs b).
