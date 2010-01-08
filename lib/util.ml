@@ -347,120 +347,13 @@ let check_ident_gen handle s =
 let check_ident_soft = check_ident_gen warning
 let check_ident = check_ident_gen error
 
-let lowercase_unicode s unicode =
-    match unicode land 0x1F000 with
-    | 0x0 ->
-    begin match unicode with
-    (* utf-8 Basic Latin underscore *)
-    | x when x = 0x005F -> x
-    (* utf-8 Basic Latin letters *)
-    | x when 0x0041 <= x & x <= 0x005A -> x + 32
-    | x when 0x0061 <= x & x <= 0x007A -> x
-    (* utf-8 Latin-1 non breaking space U00A0 *)
-    | 0x00A0 as x -> x
-    (* utf-8 Latin-1 letters U00C0-00D6 *)
-    | x when 0x00C0 <= x & x <= 0x00D6 -> x + 32
-    (* utf-8 Latin-1 letters U00D8-00F6 *)
-    | x when 0x00D8 <= x & x <= 0x00DE -> x + 32
-    | x when 0x00E0 <= x & x <= 0x00F6 -> x
-    (* utf-8 Latin-1 letters U00F8-00FF *)
-    | x when 0x00F8 <= x & x <= 0x00FF -> x
-    (* utf-8 Latin Extended A U0100-017F and Latin Extended B U0180-U0241 *)
-    | x when 0x0100 <= x & x <= 0x017F ->
-	if x mod 2 = 1 then x else x + 1
-    | x when 0x0180 <= x & x <= 0x0241 ->
-	warning ("Unable to decide which lowercase letter to map to "^s); x
-    (* utf-8 Phonetic letters U0250-02AF *)
-    | x when 0x0250 <= x & x <= 0x02AF -> x
-    (* utf-8 what do to with diacritics U0300-U036F ? *)
-    (* utf-8 Greek letters U0380-03FF *)
-    | x when 0x0380 <= x & x <= 0x0385 -> x
-    | 0x0386 -> 0x03AC
-    | x when 0x0388 <= x & x <= 0x038A -> x + 37
-    | 0x038C -> 0x03CC
-    | x when 0x038E <= x & x <= 0x038F -> x + 63
-    | x when 0x0390 <= x & x <= 0x03AB & x <> 0x03A2 -> x + 32
-    (* utf-8 Greek lowercase letters U03B0-03CE *)
-    | x when 0x03AC <= x & x <= 0x03CE -> x
-    | x when 0x03CF <= x & x <= 0x03FF ->
-	warning ("Unable to decide which lowercase letter to map to "^s); x
-    (* utf-8 Cyrillic letters U0400-0481 *)
-    | x when 0x0400 <= x & x <= 0x040F -> x + 80
-    | x when 0x0410 <= x & x <= 0x042F -> x + 32
-    | x when 0x0430 <= x & x <= 0x045F -> x
-    | x when 0x0460 <= x & x <= 0x0481 ->
-	if x mod 2 = 1 then x else x + 1
-    (* utf-8 Cyrillic letters U048A-U4F9 (Warning: 04CF) *)
-    | x when 0x048A <= x & x <= 0x04F9 & x <> 0x04CF ->
-	if x mod 2 = 1 then x else x + 1
-    (* utf-8 Cyrillic supplement letters U0500-U050F *)
-    | x when 0x0500 <= x & x <= 0x050F ->
-	if x mod 2 = 1 then x else x + 1
-    (* utf-8 Hebrew letters U05D0-05EA *)
-    | x when 0x05D0 <= x & x <= 0x05EA -> x
-    (* utf-8 Arabic letters U0621-064A *)
-    | x when 0x0621 <= x & x <= 0x064A -> x
-    (* utf-8 Arabic supplement letters U0750-076D *)
-    | x when 0x0750 <= x & x <= 0x076D -> x
-    | _ -> raise UnsupportedUtf8
-    end
-    | 0x1000 ->
-    begin match unicode with
-    (* utf-8 Georgian U10A0-10FF (has holes) *)
-    | x when 0x10A0 <= x & x <= 0x10FF -> x
-    (* utf-8 Hangul Jamo U1100-11FF (has holes) *)
-    | x when 0x1100 <= x & x <= 0x11FF -> x
-    (* utf-8 Latin additional letters U1E00-1E9B and U1EA0-1EF9 *)
-    | x when 0x1E00 <= x & x <= 0x1E95 ->
-	if x mod 2 = 1 then x else x + 1
-    | x when 0x1E96 <= x & x <= 0x1E9B -> x
-    | x when 0x1EA0 <= x & x <= 0x1EF9 ->
-	if x mod 2 = 1 then x else x + 1
-    | _ -> raise UnsupportedUtf8
-    end
-    | 0x2000 ->
-    begin match unicode with
-    (* utf-8 general punctuation U2080-2089 *)
-    (* Hyphens *)
-    | x when 0x2010 <= x & x <= 0x2011 -> x
-    (* utf-8 letter-like U2100-214F *)
-    | 0x2102 (* double-struck C *) -> Char.code 'x'
-    | 0x2115 (* double-struck N *) -> Char.code 'n'
-    | 0x2119 (* double-struck P *) -> Char.code 'x'
-    | 0x211A (* double-struck Q *) -> Char.code 'x'
-    | 0x211D (* double-struck R *) -> Char.code 'r'
-    | 0x2124 (* double-struck Z *) -> Char.code 'x'
-    | x when 0x2100 <= x & x <= 0x214F ->
-	warning ("Unable to decide which lowercase letter to map to "^s); x
-    | _ -> raise UnsupportedUtf8
-    end
-    | _ ->
-    begin match unicode with
-    (* utf-8 Hiragana U3040-309F and Katakana U30A0-30FF *)
-    | x when 0x3040 <= x & x <= 0x30FF -> x
-    (* utf-8 Unified CJK Ideographs U4E00-9FA5 *)
-    | x when 0x4E00 <= x & x <= 0x9FA5 -> x
-    (* utf-8 Hangul syllables UAC00-D7AF *)
-    | x when 0xAC00 <= x & x <= 0xD7AF -> x
-    (* utf-8 Gothic U10330-1034A *)
-    | x when 0x10330 <= x & x <= 0x1034A -> x
-    (* utf-8 Math Alphanumeric Symbols U1D400-1D7FF (letters) (has holes) *)
-    | x when 0x1D6A8 <= x & x <= 0x1D7C9 ->
-        let a = (x - 0x1D6A8) mod 58 in
-        if a <= 16 or (18 <= a & a <= 24)
-        then x + 26 (* all but nabla and theta symbol *)
-        else x
-    | x when 0x1D538 <= x & x <= 0x1D56B ->
-        (* Use ordinary lowercase in both small and capital double-struck *)
-        (x - 0x1D538) mod 26 + Char.code 'a'
-    | x when 0x1D468 <= x & x <= 0x1D6A3 -> (* General case *)
-        if (x - 0x1D400 / 26) mod 2 = 0 then x + 26 else x
-    | x when 0x1D400 <= x & x <= 0x1D7CB -> (* fallback *)
-        x
-    (* utf-8 Math Alphanumeric Symbols U1D400-1D7FF (digits) *)
-    | x when 0x1D7CE <= x & x <= 0x1D7FF -> x
-    | _ -> raise UnsupportedUtf8
-    end
+let lowercase_unicode s unicode = 
+  let tree = Segmenttree.make Unicodetable.to_lower in
+    try 
+      match Segmenttree.lookup unicode tree with
+	| `Abs c -> c
+	| `Delta d -> unicode + d
+    with Not_found -> unicode
 
 let lowercase_first_char_utf8 s =
   assert (s <> "");
