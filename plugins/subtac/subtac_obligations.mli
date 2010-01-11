@@ -15,7 +15,7 @@ type progress = (* Resolution status of a program *)
   | Dependent (* Dependent on other definitions *)
   | Defined of global_reference (* Defined as id *)
       
-val set_default_tactic : Tacexpr.glob_tactic_expr -> unit
+val set_default_tactic : bool -> Tacexpr.glob_tactic_expr -> unit
 val default_tactic : unit -> Proof_type.tactic
 
 val set_proofs_transparency : bool -> unit (* true = All transparent, false = Opaque if possible *)

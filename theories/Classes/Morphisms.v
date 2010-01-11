@@ -21,6 +21,7 @@ Require Import Coq.Relations.Relation_Definitions.
 Require Export Coq.Classes.RelationClasses.
 
 Generalizable All Variables.
+Local Obligation Tactic := simpl_relation.
 
 (** * Morphisms.
 

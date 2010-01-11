@@ -9,7 +9,7 @@
 
 Require Import BinPos BinNat Nnat ZArith_base ROmega ZArithRing Morphisms.
 Require Export ZOdiv_def.
-Require Zdiv ZBinary ZDivTrunc.
+Require Zdiv Binary.ZBinary ZDivTrunc.
 
 Open Scope Z_scope.
 
@@ -249,6 +249,7 @@ Qed.
 Module ZODiv <: ZDivTrunc.ZDiv ZBinary.ZBinAxiomsMod.
  Definition div := ZOdiv.
  Definition modulo := ZOmod.
+ Local Obligation Tactic := simpl_relation.
  Program Instance div_wd : Proper (eq==>eq==>eq) div.
  Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 

@@ -155,14 +155,14 @@ let _ =
 
 let progmap_union = ProgMap.fold ProgMap.add
 
-let cache (_, tac) =
+let cache (_, (local, tac)) =
   set_default_tactic tac
 
-let load (_, tac) =
-  set_default_tactic tac
+let load (_, (local, tac)) =
+  if not local then set_default_tactic tac
 
-let subst (s, tac) =
-  Tacinterp.subst_tactic s tac
+let subst (s, (local, tac)) =
+  (local, Tacinterp.subst_tactic s tac)
 
 let (input,output) =
   declare_object
@@ -170,19 +170,19 @@ let (input,output) =
       cache_function = cache;
       load_function = (fun _ -> load);
       open_function = (fun _ -> load);
-      classify_function = (fun tac ->
+      classify_function = (fun (local, tac) ->
 	if not (ProgMap.is_empty !from_prg) then
 	  errorlabstrm "Program" (str "Unsolved obligations when closing module:" ++ spc () ++
-				   prlist_with_sep spc (fun x -> Nameops.pr_id x)
-				   (map_keys !from_prg));
-	Substitute tac);
+				     prlist_with_sep spc (fun x -> Nameops.pr_id x)
+				     (map_keys !from_prg));
+	if local then Dispose else Substitute (local, tac));
       subst_function = subst}
+    
+let update_state local =
+  Lib.add_anonymous_leaf (input (local, !default_tactic_expr))
 
-let update_state () =
-  Lib.add_anonymous_leaf (input !default_tactic_expr)
-
-let set_default_tactic t =
-  set_default_tactic t; update_state ()
+let set_default_tactic local t =
+  set_default_tactic t; update_state local
 
 open Evd
 
@@ -223,7 +223,7 @@ let declare_definition prg =
             Flags.if_verbose msg_warning
 	      (str"Local definition " ++ Nameops.pr_id prg.prg_name ++
 		  str" is not visible from current goals");
-	  progmap_remove prg; update_state ();
+	  progmap_remove prg; 
           VarRef prg.prg_name
     | (Global|Local) ->
 	let c =
@@ -234,7 +234,7 @@ let declare_definition prg =
 	  if Impargs.is_implicit_args () || prg.prg_implicits <> [] then
 	    Impargs.declare_manual_implicits false gr prg.prg_implicits;
 	  print_message (Subtac_utils.definition_message prg.prg_name);
-	  progmap_remove prg; update_state ();
+	  progmap_remove prg; 
 	  prg.prg_hook local gr;
 	  gr
 
@@ -297,8 +297,7 @@ let declare_mutual_definition l =
     let gr = List.hd kns in
     let kn = match gr with ConstRef kn -> kn | _ -> assert false in
       first.prg_hook local gr;
-      List.iter progmap_remove l;
-      update_state (); kn
+      List.iter progmap_remove l; kn
       
 let declare_obligation prg obl body =
   let body = reduce body in
@@ -383,7 +382,7 @@ let obligations_message rem =
 
 let update_obls prg obls rem =
   let prg' = { prg with prg_obligations = (obls, rem) } in
-    from_prg := map_replace prg.prg_name prg' !from_prg; update_state ();
+    from_prg := map_replace prg.prg_name prg' !from_prg; 
     obligations_message rem;
     if rem > 0 then Remain rem
     else (

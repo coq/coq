@@ -306,6 +306,7 @@ Qed.
 Module ZDiv <: ZDivFloor.ZDiv ZBinary.ZBinAxiomsMod.
  Definition div := Zdiv.
  Definition modulo := Zmod.
+ Local Obligation Tactic := simpl_relation.
  Program Instance div_wd : Proper (eq==>eq==>eq) div.
  Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 

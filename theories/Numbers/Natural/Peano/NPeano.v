@@ -28,6 +28,7 @@ Qed.
 (** Basic operations. *)
 
 Instance eq_equiv : Equivalence (@eq nat).
+Local Obligation Tactic := simpl_relation.
 Program Instance succ_wd : Proper (eq==>eq) S.
 Program Instance pred_wd : Proper (eq==>eq) pred.
 Program Instance add_wd : Proper (eq==>eq==>eq) plus.
@@ -228,6 +229,7 @@ Module NDivMod <: NDivSig.
  Definition modulo := modulo.
  Definition div_mod := div_mod.
  Definition mod_upper_bound := mod_upper_bound.
+ Local Obligation Tactic := simpl_relation.
  Program Instance div_wd : Proper (eq==>eq==>eq) div.
  Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 End NDivMod.

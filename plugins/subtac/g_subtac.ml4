@@ -151,7 +151,9 @@ VERNAC COMMAND EXTEND Subtac_Admit_Obligations
 
 VERNAC COMMAND EXTEND Subtac_Set_Solver
 | [ "Obligation" "Tactic" ":=" tactic(t) ] -> [
-    Subtac_obligations.set_default_tactic (Tacinterp.glob_tactic t) ]
+    Subtac_obligations.set_default_tactic 
+      (Vernacexpr.use_section_locality ())
+      (Tacinterp.glob_tactic t) ]
 END
 
 VERNAC COMMAND EXTEND Subtac_Show_Obligations

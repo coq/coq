@@ -134,7 +134,7 @@ Ltac simpl_relation :=
   unfold flip, impl, arrow ; try reduce ; program_simpl ;
     try ( solve [ intuition ]).
 
-Obligation Tactic := simpl_relation.
+Local Obligation Tactic := simpl_relation.
 
 (** Logical implication. *)
 
