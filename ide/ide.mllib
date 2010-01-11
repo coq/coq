@@ -16,7 +16,6 @@ Ideutils
 CoqLex
 Gtk_parsing
 Undo
-ProofBrowser
 Coq
 Coq_commands
 Coq_tactics
