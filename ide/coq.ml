@@ -679,76 +679,84 @@ let print_no_goal () =
   (* Fall back on standard coq goal printer for completed goal printing *)
   msg (pr_open_subgoals ())
 
-let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =
-  [("clear "^ident),("clear "^ident^".");
+(**)
+(** renvoi des buts **)
+(**)
 
-   ("apply "^ident),
-   ("apply "^ident^".");
+type context_menu = (string * string) list
 
-   ("exact "^ident),
-   ("exact "^ident^".");
+let string_of_ppcmds c =
+  Pp.msg_with Format.str_formatter c;
+  Format.flush_str_formatter ()
 
-   ("generalize "^ident),
-   ("generalize "^ident^".");
-
-   ("absurd <"^ident^">"),
-   ("absurd "^
-    pr_ast
-    ^".") ] @
-
-   (if is_equality_type ast then
-      [ "discriminate "^ident, "discriminate "^ident^".";
-	"injection "^ident, "injection "^ident^"." ]
-    else
-      []) @
-
-   (let _,t = splay_prod env sigma ast in
-    if is_equality_type t then
-      [ "rewrite "^ident, "rewrite "^ident^".";
-	"rewrite <- "^ident, "rewrite <- "^ident^"." ]
-    else
-      []) @
-
-  [("elim "^ident),
-   ("elim "^ident^".");
-
-   ("inversion "^ident),
-   ("inversion "^ident^".");
-
-   ("inversion clear "^ident),
-   ("inversion_clear "^ident^".")]
-
-let concl_menu (_,_,concl,_) =
-  let is_eq = is_equality_type concl in
-  ["intro", "intro.";
-   "intros", "intros.";
-   "intuition","intuition." ] @
-
-   (if is_eq then
-      ["reflexivity", "reflexivity.";
-       "discriminate", "discriminate.";
-       "symmetry", "symmetry." ]
-    else
-      []) @
-
-  ["assumption" ,"assumption.";
-   "omega", "omega.";
-   "ring", "ring.";
-   "auto with *", "auto with *.";
-   "eauto with *", "eauto with *.";
-   "tauto", "tauto.";
-   "trivial", "trivial.";
-   "decide equality", "decide equality.";
-
-   "simpl", "simpl.";
-   "subst", "subst.";
-
-   "red", "red.";
-   "split", "split.";
-   "left", "left.";
-   "right", "right.";
+let hyp_next_tac sigma env (id,_,ast) =
+  let id_s = Names.string_of_id id in
+  let type_s = string_of_ppcmds (pr_ltype_env env ast) in
+  [
+    ("clear "^id_s),("clear "^id_s^".\n");
+    ("apply "^id_s),("apply "^id_s^".\n");
+    ("exact "^id_s),("exact "^id_s^".\n");
+    ("generalize "^id_s),("generalize "^id_s^".\n");
+    ("absurd <"^id_s^">"),("absurd "^type_s^".\n")
+  ] @ (if Hipattern.is_equality_type ast then [
+    ("discriminate "^id_s),("discriminate "^id_s^".\n");
+    ("injection "^id_s),("injection "^id_s^".\n")
+  ] else []) @ (if Hipattern.is_equality_type (snd (Reductionops.splay_prod env sigma ast)) then [
+    ("rewrite "^id_s),("rewrite "^id_s^".\n");
+    ("rewrite <- "^id_s),("rewrite <- "^id_s^".\n")
+  ] else []) @ [
+    ("elim "^id_s), ("elim "^id_s^".\n");
+    ("inversion "^id_s), ("inversion "^id_s^".\n");
+    ("inversion clear "^id_s), ("inversion_clear "^id_s^".\n")
   ]
 
+let concl_next_tac concl =
+  let expand s = (s,s^".\n") in
+  List.map expand ([
+    "intro";
+    "intros";
+    "intuition"
+  ] @ (if Hipattern.is_equality_type concl.Evd.evar_concl then [
+    "reflexivity";
+    "discriminate";
+    "symmetry"
+  ] else []) @ [
+    "assumption";
+    "omega";
+    "ring";
+    "auto";
+    "eauto";
+    "tauto";
+    "trivial";
+    "decide equality";
+    "simpl";
+    "subst";
+    "red";
+    "split";
+    "left";
+    "right"
+  ])
+
+let goals () =
+  let pfts = Pfedit.get_pftreestate () in
+  let sigma = Tacmach.evc_of_pftreestate pfts in
+  let (all_goals,_) = Refiner.frontier (Refiner.proof_of_pftreestate pfts) in
+  let process_goal g =
+    let env = Evd.evar_env g in
+    let ccl =
+      string_of_ppcmds (pr_ltype_env_at_top env g.Evd.evar_concl) in
+    let process_hyp h_env d acc =
+      (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in
+    let hyps =
+      List.rev (Environ.fold_named_context process_hyp env ~init:[]) in
+    (hyps,ccl,concl_next_tac g) in
+  let goals_strings = List.map process_goal all_goals in
+  goals_strings
+
+let no_goal_message () =
+  string_of_ppcmds (pr_open_subgoals ())
+
+(**  **)
 
 let id_of_name = function
   | Names.Anonymous -> id_of_string "x"

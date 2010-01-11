@@ -84,12 +84,12 @@ val get_current_goals : unit -> goal list
 
 val get_current_pm_goal : unit -> goal
 
-val print_no_goal : unit -> string
+type context_menu = (string * string) list
+
+val goals : unit -> ((string * context_menu) list * string * context_menu) list
+val no_goal_message : unit -> string
 
 val process_exn : exn -> string*(Util.loc option)
-
-val hyp_menu : hyp -> (string * string) list
-val concl_menu : concl -> (string * string) list
 
 val is_in_coq_lib : string -> bool
 val is_in_coq_path : string -> bool
