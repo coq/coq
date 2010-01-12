@@ -176,6 +176,10 @@ intro n. rewrite ltb_0. split; intro H; [discriminate | false_hyp H nlt_0_r].
 intros n m. rewrite succ_ltb_mono. now rewrite <- succ_lt_mono.
 Qed.
 
+Theorem ltb_ge : forall n m, n << m = false <-> n >= m.
+Proof.
+intros. rewrite <- not_true_iff_false, ltb_lt. apply nlt_ge.
+Qed.
 
 (*****************************************************)
 (**                     Even                         *)
