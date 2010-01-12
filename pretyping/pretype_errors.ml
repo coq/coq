@@ -51,7 +51,12 @@ let nf_evar = Reductionops.nf_evar
 let j_nf_evar sigma j =
   { uj_val = nf_evar sigma j.uj_val;
     uj_type = nf_evar sigma j.uj_type }
+let j_nf_betaiotaevar sigma j =
+  { uj_val = nf_evar sigma j.uj_val;
+    uj_type = Reductionops.nf_betaiota sigma j.uj_type }
 let jl_nf_evar sigma jl = List.map (j_nf_evar sigma) jl
+let jl_nf_betaiotaevar sigma jl =
+  List.map (j_nf_betaiotaevar sigma) jl
 let jv_nf_evar sigma = Array.map (j_nf_evar sigma)
 let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=nf_evar sigma v;utj_type=t}
@@ -112,11 +117,11 @@ let error_cant_apply_not_functional_loc loc env sigma rator randl =
     CantApplyNonFunctional (j_nf_evar sigma rator, ja))
 
 let error_cant_apply_bad_type_loc loc env sigma (n,c,t) rator randl =
-  let ja = Array.of_list (jl_nf_evar sigma randl) in
+  let ja = Array.of_list (jl_nf_betaiotaevar sigma randl) in
   raise_located_type_error
     (loc, env, sigma,
      CantApplyBadType
-       ((n,nf_evar sigma c, nf_evar sigma t),
+       ((n,nf_evar sigma c, Reductionops.nf_betaiota sigma t),
         j_nf_evar sigma rator, ja))
 
 let error_ill_formed_branch_loc loc env sigma c i actty expty =
