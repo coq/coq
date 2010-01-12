@@ -30,7 +30,7 @@ Hint Rewrite
 Ltac nsimpl := autorewrite with num.
 Ltac ncongruence := unfold N.eq; repeat red; intros; nsimpl; congruence.
 
-Obligation Tactic := ncongruence.
+Local Obligation Tactic := ncongruence.
 
 Instance eq_equiv : Equivalence N.eq.
 Proof. unfold N.eq. firstorder. Qed.

@@ -38,7 +38,7 @@ Ltac zcongruence := repeat red; intros; zsimpl; congruence.
 Instance eq_equiv : Equivalence Z.eq.
 Proof. unfold Z.eq. firstorder. Qed.
 
-Obligation Tactic := zcongruence.
+Local Obligation Tactic := zcongruence.
 
 Program Instance succ_wd : Proper (Z.eq ==> Z.eq) Z.succ.
 Program Instance pred_wd : Proper (Z.eq ==> Z.eq) Z.pred.
