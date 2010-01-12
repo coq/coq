@@ -99,10 +99,26 @@ type search_entry = stored_data list * stored_data list * Bounded_net.t
 
 let empty_se = ([],[],Bounded_net.create ())
 
+let eq_pri_auto_tactic x y =
+  if x.pri = y.pri && x.pat = y.pat then
+    match x.code,y.code with
+      | Res_pf(cstr,_),Res_pf(cstr1,_) -> 
+	   eq_constr cstr cstr1
+      | ERes_pf(cstr,_),ERes_pf(cstr1,_) -> 
+	  eq_constr cstr cstr1
+      | Give_exact cstr,Give_exact cstr1  -> 
+	  eq_constr cstr cstr1
+      | Res_pf_THEN_trivial_fail(cstr,_)
+	  ,Res_pf_THEN_trivial_fail(cstr1,_) -> 
+	  eq_constr cstr cstr1
+      | _,_ -> false
+  else
+    false
+
 let add_tac pat t st (l,l',dn) =
   match pat with
-  | None -> if not (List.mem t l) then (insert t l, l', dn) else (l, l', dn)
-  | Some pat -> if not (List.mem t l') then (l, insert t l', Bounded_net.add st dn (pat,t)) else (l, l', dn)
+  | None -> if not (List.exists (eq_pri_auto_tactic t) l) then (insert t l, l', dn) else (l, l', dn)
+  | Some pat -> if not (List.exists (eq_pri_auto_tactic t) l') then (l, insert t l', Bounded_net.add st dn (pat,t)) else (l, l', dn)
 
 let rebuild_dn st (l,l',dn) =
   (l, l', List.fold_left (fun dn t -> Bounded_net.add (Some st) dn (Option.get t.pat, t))

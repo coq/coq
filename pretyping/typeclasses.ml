@@ -55,8 +55,9 @@ type typeclass = {
   (* The method implementaions as projections. *)
   cl_projs : (identifier * constant option) list;
 }
+module Gmap = Fmap.Make(RefOrdered)
 
-type typeclasses = (global_reference, typeclass) Gmap.t
+type typeclasses = typeclass Gmap.t
 
 type instance = {
   is_class: global_reference;
@@ -68,7 +69,7 @@ type instance = {
   is_impl: global_reference; 
 }
 
-type instances = (global_reference, (global_reference, instance) Gmap.t) Gmap.t
+type instances = (instance Gmap.t) Gmap.t
 
 let instance_impl is = is.is_impl
 
