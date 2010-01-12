@@ -128,6 +128,83 @@ intro m; rewrite sub_0_r; split; intro H;
 intros n m H. rewrite <- succ_le_mono. now rewrite sub_succ.
 Qed.
 
+Theorem sub_add_le : forall n m, n <= n - m + m.
+Proof.
+intros.
+destruct (le_ge_cases n m) as [LE|GE].
+rewrite <- sub_0_le in LE. rewrite LE; nzsimpl.
+now rewrite <- sub_0_le.
+rewrite sub_add by assumption. apply le_refl.
+Qed.
+
+Theorem le_sub_le_add_r : forall n m p,
+ n - p <= m <-> n <= m + p.
+Proof.
+intros n m p.
+split; intros LE.
+rewrite (add_le_mono_r _ _ p) in LE.
+apply le_trans with (n-p+p); auto using sub_add_le.
+destruct (le_ge_cases n p) as [LE'|GE].
+rewrite <- sub_0_le in LE'. rewrite LE'. apply le_0_l.
+rewrite (add_le_mono_r _ _ p). now rewrite sub_add.
+Qed.
+
+Theorem le_sub_le_add_l : forall n m p, n - m <= p <-> n <= m + p.
+Proof.
+intros n m p. rewrite add_comm; apply le_sub_le_add_r.
+Qed.
+
+Theorem lt_sub_lt_add_r : forall n m p,
+ n - p < m -> n < m + p.
+Proof.
+intros n m p LT.
+rewrite (add_lt_mono_r _ _ p) in LT.
+apply le_lt_trans with (n-p+p); auto using sub_add_le.
+Qed.
+
+(** Unfortunately, we do not have [n < m + p -> n - p < m].
+    For instance [1<0+2] but not [1-2<0]. *)
+
+Theorem lt_sub_lt_add_l : forall n m p, n - m < p -> n < m + p.
+Proof.
+intros n m p. rewrite add_comm; apply lt_sub_lt_add_r.
+Qed.
+
+Theorem le_add_le_sub_r : forall n m p, n + p <= m -> n <= m - p.
+Proof.
+intros n m p LE.
+apply (add_le_mono_r _ _ p).
+rewrite sub_add. assumption.
+apply le_trans with (n+p); trivial.
+rewrite <- (add_0_l p) at 1. rewrite <- add_le_mono_r. apply le_0_l.
+Qed.
+
+(** Unfortunately, we do not have [n <= m - p -> n + p <= m].
+    For instance [0<=1-2] but not [2+0<=1]. *)
+
+Theorem le_add_le_sub_l : forall n m p, n + p <= m -> p <= m - n.
+Proof.
+intros n m p. rewrite add_comm; apply le_add_le_sub_r.
+Qed.
+
+Theorem lt_add_lt_sub_r : forall n m p, n + p < m <-> n < m - p.
+Proof.
+intros n m p.
+destruct (le_ge_cases p m) as [LE|GE].
+rewrite <- (sub_add p m) at 1 by assumption.
+now rewrite <- add_lt_mono_r.
+assert (GE' := GE). rewrite <- sub_0_le in GE'; rewrite GE'.
+split; intros LT.
+elim (lt_irrefl m). apply le_lt_trans with (n+p); trivial.
+ rewrite <- (add_0_l m). apply add_le_mono. apply le_0_l. assumption.
+now elim (nlt_0_r n).
+Qed.
+
+Theorem lt_add_lt_sub_l : forall n m p, n + p < m <-> p < m - n.
+Proof.
+intros n m p. rewrite add_comm; apply lt_add_lt_sub_r.
+Qed.
+
 (** Sub and mul *)
 
 Theorem mul_pred_r : forall n m, n * (P m) == n * m - n.
