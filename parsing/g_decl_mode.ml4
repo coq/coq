@@ -54,8 +54,8 @@ GLOBAL: proof_instr;
     ];
   justification_items :
     [[ -> Some []
-     | IDENT "by"; l=LIST1 constr SEP "," -> Some l
-     | IDENT "by"; "*"                    -> None ]]
+     | "by"; l=LIST1 constr SEP "," -> Some l
+     | "by"; "*"                    -> None ]]
   ;
   justification_method :
     [[ -> None
