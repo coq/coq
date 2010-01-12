@@ -126,17 +126,17 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
 
   Definition IsOk := NoDup.
 
-  Class Ok (s:t) : Prop := { ok : NoDup s }.
+  Class Ok (s:t) : Prop := ok : NoDup s.
 
-  Hint Constructors Ok.
+  Hint Unfold Ok.
   Hint Resolve @ok.
 
   Instance NoDup_Ok s (nd : NoDup s) : Ok s := { ok := nd }.
 
   Ltac inv_ok := match goal with
-   | H:Ok (_ :: _) |- _ => apply @ok in H; inversion_clear H; inv_ok
+   | H:Ok (_ :: _) |- _ => inversion_clear H; inv_ok
    | H:Ok nil |- _ => clear H; inv_ok
-   | H:NoDup ?l |- _ => generalize (Build_Ok H); clear H; intro H; inv_ok
+   | H:NoDup ?l |- _ => change (Ok l) in H; inv_ok
    | _ => idtac
   end.
 

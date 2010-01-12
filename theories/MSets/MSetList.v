@@ -225,17 +225,17 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
 
   Definition IsOk := Sort.
 
-  Class Ok (s:t) : Prop := { ok : Sort s }.
+  Class Ok (s:t) : Prop := ok : Sort s.
 
   Hint Resolve @ok.
-  Hint Constructors Ok.
+  Hint Unfold Ok.
 
   Instance Sort_Ok s `(Hs : Sort s) : Ok s := { ok := Hs }.
 
   Ltac inv_ok := match goal with
-   | H:Ok (_ :: _) |- _ => apply @ok in H; inversion_clear H; inv_ok
+   | H:Ok (_ :: _) |- _ => inversion_clear H; inv_ok
    | H:Ok nil |- _ => clear H; inv_ok
-   | H:Sort ?l |- _ => generalize (Build_Ok H); clear H; intro H; inv_ok
+   | H:Sort ?l |- _ => change (Ok l) in H; inv_ok
    | _ => idtac
   end.
 
@@ -439,7 +439,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
 
   Global Instance diff_ok s s' `(Ok s, Ok s') : Ok (diff s s').
   Proof.
-  induction2. constructors; auto. apply @ok; auto.
+  induction2. constructors; auto.
   Qed.
 
   Lemma diff_spec :

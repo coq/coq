@@ -340,7 +340,7 @@ Module Type WRawSets (E : DecidableType).
   (** Is a set well-formed or ill-formed ? *)
 
   Parameter IsOk : t -> Prop.
-  Class Ok (s:t) : Prop := { ok : IsOk s }.
+  Class Ok (s:t) : Prop := ok : IsOk s.
 
   (** In order to be able to validate (at least some) particular sets as
       well-formed, we ask for a boolean function for (semi-)deciding
@@ -424,14 +424,6 @@ Module Type WRawSets (E : DecidableType).
   Parameter choose_spec2 : choose s = None -> Empty s.
 
   End Spec.
-
-(*
- BUG ?! When the Instance *_ok were under a section,
-   this re-export was mandatory !! BUG in Global Instance ?
- Hint Resolve empty_ok add_ok remove_ok union_ok inter_ok
-  diff_ok singleton_ok filter_ok partition_ok1 partition_ok2
-  : typeclass_instances.
-*)
 
 End WRawSets.
 

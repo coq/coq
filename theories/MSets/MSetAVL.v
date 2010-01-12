@@ -536,7 +536,7 @@ Inductive bst : tree -> Prop :=
 
 Definition IsOk := bst.
 
-Class Ok (s:t) : Prop := { ok : bst s }.
+Class Ok (s:t) : Prop := ok : bst s.
 
 Instance bst_Ok s (Hs : bst s) : Ok s := { ok := Hs }.
 
@@ -576,7 +576,8 @@ Module Import MX := OrderedTypeFacts X.
 Local Hint Resolve MX.eq_refl MX.eq_trans MX.lt_trans @ok.
 Local Hint Immediate MX.eq_sym.
 Local Hint Unfold In lt_tree gt_tree.
-Local Hint Constructors InT bst Ok.
+Local Hint Constructors InT bst.
+Local Hint Unfold Ok.
 
 Tactic Notation "factornode" ident(l) ident(x) ident(r) ident(h)
  "as" ident(s) :=
@@ -585,9 +586,9 @@ Tactic Notation "factornode" ident(l) ident(x) ident(r) ident(h)
 (** Automatic treatment of [Ok] hypothesis *)
 
 Ltac inv_ok := match goal with
- | H:Ok (Node _ _ _ _) |- _ => apply @ok in H; inversion_clear H; inv_ok
+ | H:Ok (Node _ _ _ _) |- _ => inversion_clear H; inv_ok
  | H:Ok Leaf |- _ => clear H; inv_ok
- | H:bst _ |- _ => generalize (Build_Ok H); clear H; intro H; inv_ok
+ | H:bst ?x |- _ => change (Ok x) in H; inv_ok
  | _ => idtac
 end.
 
@@ -665,7 +666,7 @@ Proof. intros; apply <- isok_iff; auto. Qed.
 Lemma In_1 :
  forall s x y, X.eq x y -> InT x s -> InT y s.
 Proof.
- induction s; simpl; intuition_in; eauto 3. (** TODO: why 5 is so slow ? *)
+ induction s; simpl; intuition_in; eauto.
 Qed.
 Local Hint Immediate In_1.
 
