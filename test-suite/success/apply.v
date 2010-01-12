@@ -348,20 +348,3 @@ Goal True.
 eapply (fun (A:Prop) (x:A) => conj I x).
 exact I.
 Qed.
-
-(* The following was not accepted from r12612 to r12649 *)
-
-Record sig0 := { p1 : nat; p2 : p1 = 0 }.
-
-Goal forall x : sig0, p1 x = 0.
-intro x;
-apply x.
-Qed.
-
-(* The following was accepted before r12612 but is still not accepted in r12650
-
-Goal forall x : { x:nat | x = 0}, proj1_sig x = 0.
-intro x;
-apply x.
-
-*)
