@@ -863,18 +863,30 @@ let simplest_case c = general_case_analysis false (c,NoBindings)
 
 (* Apply a tactic below the products of the conclusion of a lemma *)
 
+type conjunction_status =
+  | DefinedRecord of constant option list
+  | NotADefinedRecordUseScheme of constr
+
 let make_projection params cstr sign elim i n c =
-  let (na,b,t) = List.nth cstr.cs_args i in
-  let b = match b with None -> mkRel (i+1) | Some b -> b in
-  let branch = it_mkLambda_or_LetIn b cstr.cs_args in
-  if noccur_between 1 (n-i-1) t then
-    let t = lift (i+1-n) t in
-    let args = params@[t;branch;mkApp (c,extended_rel_vect 0 sign)] in
-    let p = it_mkLambda_or_LetIn (beta_applist (elim,args)) sign in
-    let pt = it_mkProd_or_LetIn t sign in
-    Some (p,pt)
-  else
-    None
+  let elim = match elim with
+  | NotADefinedRecordUseScheme elim ->
+      let (na,b,t) = List.nth cstr.cs_args i in
+      let b = match b with None -> mkRel (i+1) | Some b -> b in
+      let branch = it_mkLambda_or_LetIn b cstr.cs_args in
+      if noccur_between 1 (n-i-1) t then
+        let t = lift (i+1-n) t in
+	Some (beta_applist (elim,params@[t;branch]),t)
+      else
+	None
+  | DefinedRecord l ->
+      match List.nth l i with
+      | Some proj ->
+	  let t = Typeops.type_of_constant (Global.env()) proj in
+	  Some (beta_applist (mkConst proj,params),prod_applist t (params@[c]))
+      | None -> None
+  in Option.map (fun (abselim,elimt) -> 
+    let c = beta_applist (abselim,[mkApp (c,extended_rel_vect 0 sign)]) in
+    (it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn elimt sign)) elim
 
 let descend_in_conjunctions tac exit c gl =
   try
@@ -888,7 +900,11 @@ let descend_in_conjunctions tac exit c gl =
 	let IndType (indf,_) = pf_apply find_rectype gl ccl in
 	let params = snd (dest_ind_family indf) in
 	let cstr = (get_constructors (pf_env gl) indf).(0) in
-	let elim = pf_apply build_case_analysis_scheme gl ind false sort in
+	let elim =
+	  try DefinedRecord (Recordops.lookup_projections ind)
+	  with Not_found ->
+	    let elim = pf_apply build_case_analysis_scheme gl ind false sort in
+	    NotADefinedRecordUseScheme elim in
 	tclFIRST
 	  (list_tabulate (fun i gl ->
 	    match make_projection params cstr sign elim i n c with
