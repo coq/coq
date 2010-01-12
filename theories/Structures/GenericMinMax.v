@@ -594,7 +594,7 @@ Module UsualMinMaxDecProperties
  Proof. exact P.max_dec. Defined.
 
  Lemma min_case_strong : forall n m (P:O.t -> Type),
-  (m<=n -> P m) -> (n<=m -> P n) -> P (min n m).
+  (n<=m -> P n) -> (m<=n -> P m) -> P (min n m).
  Proof. intros; apply P.min_case_strong; auto. congruence. Defined.
 
  Lemma min_case : forall n m (P:O.t -> Type),
