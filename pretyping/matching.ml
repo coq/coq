@@ -65,7 +65,7 @@ let add_binders na1 na2 (names,terms as subst) =
   | Name id1, Name id2 ->
       if List.mem_assoc id1 names then
         (Flags.if_verbose Pp.warning
-          ("Collision between bound variables of name"^string_of_id id1);
+          ("Collision between bound variables of name "^string_of_id id1);
          (names,terms))
       else
         (if List.mem_assoc id1 terms then
