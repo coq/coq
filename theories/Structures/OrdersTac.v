@@ -304,7 +304,8 @@ Definition lt := flip O.lt.
 Definition le := flip O.le.
 Include EqLtLeNotation.
 
-Instance eq_equiv : Equivalence eq.
+(* No Instance syntax to avoid saturating the Equivalence tables *)
+Definition eq_equiv := O.eq_equiv.
 
 Instance lt_strorder: StrictOrder lt.
 Proof. unfold lt; auto with *. Qed.
