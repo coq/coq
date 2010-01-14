@@ -6,6 +6,7 @@
 *.annot
 *.o
 *.a
+*.annot
 *.log
 *.aux
 *.dvi
