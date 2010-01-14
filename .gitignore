@@ -5,6 +5,7 @@
 *.cm*
 *.o
 *.a
+*.annot
 *.log
 *.aux
 *.dvi
