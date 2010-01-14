@@ -6,7 +6,7 @@ Zabs.vo
 ZArith_base.vo
 ZArith_dec.vo
 ZArith.vo
-Zbinary.vo
+Zdigits.vo
 Zbool.vo
 Zcompare.vo
 Zcomplements.vo
