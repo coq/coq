@@ -571,6 +571,12 @@ files is only possible under the bytecode version of {\tt coqtop}
 \ref{Addoc-coqc}), or when Coq has been compiled with a version of
 Objective Caml that supports native {\tt Dynlink} ($\ge$ 3.11).
 
+\begin{Variants}
+\item {\tt Local Declare ML Module {\str$_1$} .. {\str$_n$}.}\\
+  This variant is not exported to the modules that import the module
+  where they occur, even if outside a section.
+\end{Variants}
+
 \begin{ErrMsgs}
 \item \errindex{File not found on loadpath : \str}
 \item \errindex{Loading of ML object file forbidden in a native Coq}

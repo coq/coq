@@ -92,7 +92,8 @@ Vernacular commands
   done via new command "Declare Instance", while the syntax "Instance"
   now always provides a concrete instance, both in and out of Module Type.
 - Include Type is now deprecated since Include now accept both modules and
-  module types. 
+  module types.
+- Declare ML Module supports Local option.
 
 Tools
 
