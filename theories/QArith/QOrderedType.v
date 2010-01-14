@@ -15,7 +15,7 @@ Local Open Scope Q_scope.
 Module Q_as_DT <: DecidableTypeFull.
  Definition t := Q.
  Definition eq := Qeq.
- Instance eq_equiv : Equivalence Qeq.
+ Definition eq_equiv := Q_setoid.
  Definition eqb := Qeq_bool.
  Definition eqb_eq := Qeq_bool_iff.
 

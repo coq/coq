@@ -34,7 +34,7 @@ Qed.
 
 (** Basic operations. *)
 
-Instance eq_equiv : Equivalence (@eq Z).
+Definition eq_equiv : Equivalence (@eq Z) := eq_equivalence.
 Local Obligation Tactic := simpl_relation.
 Program Instance succ_wd : Proper (eq==>eq) Zsucc.
 Program Instance pred_wd : Proper (eq==>eq) Zpred.
