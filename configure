@@ -6,9 +6,9 @@
 # 
 ##################################
 
-VERSION=trunk
-VOMAGIC=08211
-STATEMAGIC=58211
+VERSION=8.3-bugfix
+VOMAGIC=08300
+STATEMAGIC=58300
 DATE=`LANG=C date +"%B %Y"`
 
 # Create the bin/ directory if non-existent

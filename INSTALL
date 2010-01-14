@@ -39,7 +39,7 @@ WHAT DO YOU NEED ?
 
      urpmi coq
 
-   Should you need or prefer to compile Coq V8.2 yourself, you need:
+   Should you need or prefer to compile Coq V8.3 yourself, you need:
 
      - Objective Caml version 3.09.3 or later
        (available at http://caml.inria.fr/)
