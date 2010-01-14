@@ -648,3 +648,4 @@ let next_obligation n =
   in solve_obligation prg i
 
 let default_tactic () = !default_tactic
+let default_tactic_expr () = !default_tactic_expr
