@@ -926,23 +926,26 @@ object(self)
       self#insert_message (if show_output then msg else "") in
     let display_error e =
       let (s,loc) = Coq.process_exn e in
-        assert (Glib.Utf8.validate s);
-        self#insert_message s;
-        message_view#misc#draw None;
-        if localize then
-          (match Option.map Util.unloc loc with
-             | None -> ()
-             | Some (start,stop) ->
-                 let convert_pos = byte_offset_to_char_offset phrase in
-                 let start = convert_pos start in
-                 let stop = convert_pos stop in
-                 let i = self#get_start_of_input in
-                 let starti = i#forward_chars start in
-                 let stopi = i#forward_chars stop in
+        if not (Glib.Utf8.validate s) then
+          flash_info "This error is so nasty that I can't even display it." 
+        else begin
+          self#insert_message s;
+          message_view#misc#draw None;
+          if localize then
+            (match Option.map Util.unloc loc with
+               | None -> ()
+               | Some (start,stop) ->
+                   let convert_pos = byte_offset_to_char_offset phrase in
+                   let start = convert_pos start in
+                   let stop = convert_pos stop in
+                   let i = self#get_start_of_input in
+                   let starti = i#forward_chars start in
+                   let stopi = i#forward_chars stop in
                    input_buffer#apply_tag Tags.Script.error
                      ~start:starti
                      ~stop:stopi;
-                   input_buffer#place_cursor starti) in
+                   input_buffer#place_cursor starti)
+        end in
       try
         full_goal_done <- false;
         prerr_endline "Send_to_coq starting now";
