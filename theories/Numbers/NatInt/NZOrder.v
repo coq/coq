@@ -127,7 +127,7 @@ Module OrderElts <: TotalOrder.
  Definition eq := eq.
  Definition lt := lt.
  Definition le := le.
- Instance eq_equiv : Equivalence eq.
+ Definition eq_equiv := eq_equiv.
  Instance lt_strorder : StrictOrder lt.
  Proof. split; [ exact lt_irrefl | exact lt_trans ]. Qed.
  Instance lt_compat : Proper (eq==>eq==>iff) lt.
