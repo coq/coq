@@ -79,7 +79,7 @@ End GenericMinMax.
 (** ** Consequences of the minimalist interface: facts about [max]. *)
 
 Module MaxLogicalProperties (Import O:TotalOrder')(Import M:HasMax O).
- Module Import T := MakeOrderTac O.
+ Module Import T := !MakeOrderTac O.
 
 (** An alternative caracterisation of [max], equivalent to
     [max_l /\ max_r] *)
