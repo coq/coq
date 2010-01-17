@@ -55,12 +55,12 @@ val add_mind :
 
 (* Adding a module *)
 val add_module :
-  label -> module_entry -> safe_environment
+  label -> module_entry -> bool -> safe_environment
     -> module_path * delta_resolver * safe_environment
 
 (* Adding a module type *)
 val add_modtype :
-  label -> module_struct_entry -> safe_environment
+  label -> module_struct_entry -> bool -> safe_environment
     -> module_path * safe_environment
 
 (* Adding universe constraints *)
@@ -76,11 +76,11 @@ val start_module :
   label -> safe_environment -> module_path * safe_environment
 
 val end_module :
-  label -> module_struct_entry option 
+  label -> (module_struct_entry * bool) option
       -> safe_environment -> module_path * delta_resolver * safe_environment 
 
 val add_module_parameter :
-  mod_bound_id -> module_struct_entry -> safe_environment -> delta_resolver * safe_environment
+  mod_bound_id -> module_struct_entry -> bool -> safe_environment -> delta_resolver * safe_environment
 
 val start_modtype :
   label -> safe_environment -> module_path * safe_environment
@@ -89,7 +89,7 @@ val end_modtype :
   label -> safe_environment -> module_path * safe_environment
 
 val add_include :
-  module_struct_entry -> bool -> safe_environment ->
+  module_struct_entry -> bool -> bool -> safe_environment ->
    delta_resolver * safe_environment
 
 val pack_module : safe_environment -> module_body

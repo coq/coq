@@ -246,24 +246,27 @@ let rec pr_module_ast pr_c = function
       pr_module_ast pr_c me1 ++ spc() ++
       hov 1 (str"(" ++ pr_module_ast pr_c me2 ++ str")")
 
+let pr_module_ast_inl pr_c (mast,b) =
+  (if b then mt () else str "!") ++ pr_module_ast pr_c mast
+
 let pr_of_module_type prc = function
-  | Enforce mty -> str ":" ++ pr_module_ast prc mty
+  | Enforce mty -> str ":" ++ pr_module_ast_inl prc mty
   | Check mtys ->
-      prlist_strict (fun m -> str "<:" ++ pr_module_ast prc m) mtys
+      prlist_strict (fun m -> str "<:" ++ pr_module_ast_inl prc m) mtys
 
 let pr_require_token = function
   | Some true -> str "Export "
   | Some false -> str "Import "
   | None -> mt()
 
-let pr_module_vardecls pr_c (export,idl,mty) =
+let pr_module_vardecls pr_c (export,idl,(mty,inl)) =
   let m = pr_module_ast pr_c mty in
   (* Update the Nametab for interpreting the body of module/modtype *)
   let lib_dir = Lib.library_dp() in
   List.iter (fun (_,id) ->
     Declaremods.process_module_bindings [id]
       [make_mbid lib_dir (string_of_id id),
-       Modintern.interp_modtype (Global.env()) mty]) idl;
+       (Modintern.interp_modtype (Global.env()) mty, inl)]) idl;
   (* Builds the stream *)
   spc() ++
   hov 1 (str"(" ++ pr_require_token export ++
@@ -745,21 +748,21 @@ let rec pr_vernac = function
                pr_of_module_type pr_lconstr tys ++
 	       (if bd = [] then mt () else str ":= ") ++
 	       prlist_with_sep (fun () -> str " <+ ")
-	        (pr_module_ast pr_lconstr) bd)
+	        (pr_module_ast_inl pr_lconstr) bd)
   | VernacDeclareModule (export,id,bl,m1) ->
       let b = pr_module_binders_list bl pr_lconstr in
 	hov 2 (str"Declare Module" ++ spc() ++ pr_require_token export ++
              pr_lident id ++ b ++
-             pr_module_ast pr_lconstr m1)
+             pr_module_ast_inl pr_lconstr m1)
   | VernacDeclareModuleType (id,bl,tyl,m) ->
       let b = pr_module_binders_list bl pr_lconstr in
-      let pr_mt = pr_module_ast pr_lconstr in
+      let pr_mt = pr_module_ast_inl pr_lconstr in
 	hov 2 (str"Module Type " ++ pr_lident id ++ b ++
 		 prlist_strict (fun m -> str " <: " ++ pr_mt m) tyl ++
 		 (if m = [] then mt () else str ":= ") ++
 		 prlist_with_sep (fun () -> str " <+ ") pr_mt m)
   | VernacInclude (mexprs) ->
-      let pr_m = pr_module_ast pr_lconstr in
+      let pr_m = pr_module_ast_inl pr_lconstr in
       hov 2 (str"Include " ++
 	     prlist_with_sep (fun () -> str " <+ ") pr_m mexprs)
   (* Solving *)

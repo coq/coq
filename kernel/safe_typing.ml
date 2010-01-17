@@ -262,10 +262,10 @@ let add_mind dir l mie senv =
 
 (* Insertion of module types *)
 
-let add_modtype l mte senv =
+let add_modtype l mte inl senv =
   check_label l senv.labset;
   let mp = MPdot(senv.modinfo.modpath, l) in
-  let mtb = translate_module_type senv.env mp mte  in
+  let mtb = translate_module_type senv.env mp inl mte  in
   let senv' = add_constraints mtb.typ_constraints senv in
    let env'' = Environ.add_modtype mp mtb senv'.env in
     mp, { old = senv'.old;
@@ -288,10 +288,10 @@ let full_add_module mb senv =
 
 (* Insertion of modules *)
 
-let add_module l me senv =
+let add_module l me inl senv =
   check_label l senv.labset;
   let mp = MPdot(senv.modinfo.modpath, l) in
-  let mb = translate_module senv.env mp me in
+  let mb = translate_module senv.env mp inl me in
   let senv' = full_add_module mb senv  in
   let modinfo = match mb.mod_type with
       SEBstruct _ -> 
@@ -339,7 +339,9 @@ let end_module l restype senv =
   let oldsenv = senv.old in
   let modinfo = senv.modinfo in
   let mp = senv.modinfo.modpath in
-  let restype = Option.map (translate_module_type senv.env mp) restype in
+  let restype =
+    Option.map
+      (fun (res,inl) -> translate_module_type senv.env mp inl res) restype in
   let params,is_functor =
     match modinfo.variant with
       | NONE | LIBRARY _ | SIG _ -> error_no_module_to_end ()
@@ -420,17 +422,17 @@ let end_module l restype senv =
 
 
 (* Include for module and module type*)
- let add_include me is_module senv =
+ let add_include me is_module inl senv =
    let sign,cst,resolver =
      if is_module then
        let sign,resolver,cst =  
 	 translate_struct_include_module_entry senv.env 
-	   senv.modinfo.modpath me in
+	   senv.modinfo.modpath inl me in
 	 sign,cst,resolver
      else
        let mtb = 
 	 translate_module_type senv.env 
-	   senv.modinfo.modpath me in
+	   senv.modinfo.modpath inl me in
        mtb.typ_expr,mtb.typ_constraints,mtb.typ_delta
    in
    let senv = add_constraints cst senv in
@@ -441,8 +443,9 @@ let end_module l restype senv =
      | SEBfunctor(mbid,mtb,str) ->
 	 let cst_sub = check_subtypes senv.env mb mtb in
 	 let senv = add_constraints cst_sub senv in
-	 let mpsup_delta = complete_inline_delta_resolver senv.env mp_sup 
-	   mbid mtb mb.typ_delta in
+	 let mpsup_delta = if not inl then mb.typ_delta else
+	   complete_inline_delta_resolver senv.env mp_sup mbid mtb mb.typ_delta
+	 in
 	   (compute_sign 
 	     (subst_struct_expr (map_mbid mbid mp_sup mpsup_delta) str) mb senv)
      | str -> str,senv
@@ -534,10 +537,10 @@ let end_module l restype senv =
 
 (* Adding parameters to modules or module types *)
 
-let add_module_parameter mbid mte senv =
+let add_module_parameter mbid mte inl senv =
   if  senv.revstruct <> [] or senv.loads <> [] then
     anomaly "Cannot add a module parameter to a non empty module";
-  let mtb = translate_module_type senv.env (MPbound mbid) mte in
+  let mtb = translate_module_type senv.env (MPbound mbid) inl mte in
   let senv = 
     full_add_module (module_body_of_type (MPbound mbid) mtb) senv
   in

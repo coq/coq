@@ -56,12 +56,12 @@ let add_thing add dir id thing =
 
 let add_constant = add_thing add_constant
 let add_mind = add_thing add_mind
-let add_modtype = add_thing (fun _ -> add_modtype) ()
+let add_modtype x y inl = add_thing (fun _ x y -> add_modtype x y inl) () x y
 
 
-let add_module id me =
+let add_module id me inl =
   let l = label_of_id id in
-  let mp,resolve,new_env = add_module l me !global_env in
+  let mp,resolve,new_env = add_module l me inl !global_env in
     global_env := new_env;
     mp,resolve
     
@@ -70,8 +70,8 @@ let add_constraints c = global_env := add_constraints c !global_env
 
 let set_engagement c = global_env := set_engagement c !global_env
 
-let add_include me is_module =
-  let resolve,newenv = add_include me is_module !global_env in
+let add_include me is_module inl =
+  let resolve,newenv = add_include me is_module inl !global_env in
     global_env := newenv;
     resolve
 
@@ -89,8 +89,8 @@ let end_module fs id mtyo =
     mp,resolve
 
 
-let add_module_parameter mbid mte =
-  let resolve,newenv = add_module_parameter mbid mte !global_env in
+let add_module_parameter mbid mte inl =
+  let resolve,newenv = add_module_parameter mbid mte inl !global_env in
     global_env := newenv;
     resolve
 
