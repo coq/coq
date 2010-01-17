@@ -144,6 +144,10 @@ Qed.
 
 (** We know enough now to benefit from the generic [order] tactic. *)
 
+Definition lt_compat := lt_wd.
+Definition lt_total := lt_trichotomy.
+Definition le_lteq := lt_eq_cases.
+
 Module OrderElts <: TotalOrder.
  Definition t := t.
  Definition eq := eq.
@@ -151,9 +155,9 @@ Module OrderElts <: TotalOrder.
  Definition le := le.
  Definition eq_equiv := eq_equiv.
  Definition lt_strorder := lt_strorder.
- Definition lt_compat := lt_wd.
- Definition lt_total := lt_trichotomy.
- Definition le_lteq := lt_eq_cases.
+ Definition lt_compat := lt_compat.
+ Definition lt_total := lt_total.
+ Definition le_lteq := le_lteq.
 End OrderElts.
 Module OrderTac := !MakeOrderTac OrderElts.
 Ltac order := OrderTac.order.
@@ -635,9 +639,6 @@ Module NZOrderPropFunct (NZ : NZOrdSig) :=
     an [OrderedType] structure. *)
 
 Module NZOrderedTypeFunct (NZ : NZDecOrdSig')
-  <: DecidableTypeFull <: OrderedTypeFull.
- Include NZ <+ NZOrderPropFunct.
- Definition lt_compat := lt_wd.
- Definition le_lteq := lt_eq_cases.
- Include Compare2EqBool <+ HasEqBool2Dec.
-End NZOrderedTypeFunct.
+  <: DecidableTypeFull <: OrderedTypeFull :=
+ NZ <+ NZOrderPropFunct <+ Compare2EqBool <+ HasEqBool2Dec.
+

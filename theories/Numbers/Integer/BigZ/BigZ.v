@@ -13,13 +13,26 @@
 Require Export BigN.
 Require Import ZProperties ZDivFloor ZSig ZSigZAxioms ZMake.
 
-Module BigZ <: ZType := ZMake.Make BigN.
+(** * [BigZ] : arbitrary large efficient integers.
 
-(** Module [BigZ] implements [ZAxiomsSig] *)
+    The following [BigZ] module regroups both the operations and
+    all the abstract properties:
 
-Module Export BigZAxiomsMod := ZSig_ZAxioms BigZ.
-Module Export BigZPropMod := ZPropFunct BigZAxiomsMod.
-Module Export BigZDivPropMod := ZDivPropFunct BigZAxiomsMod BigZPropMod.
+    - [ZMake.Make BigN] provides the operations and basic specs w.r.t. ZArith
+    - [ZTypeIsZAxioms] shows (mainly) that these operations implement
+      the interface [ZAxioms]
+    - [ZPropSig] adds all generic properties derived from [ZAxioms]
+    - [ZDivPropFunct] provides generic properties of [div] and [mod]
+      ("Floor" variant)
+    - [MinMax*Properties] provides properties of [min] and [max]
+
+*)
+
+
+Module BigZ <: ZType <: OrderedTypeFull <: TotalOrder :=
+ ZMake.Make BigN <+ ZTypeIsZAxioms
+ <+ !ZPropSig <+ !ZDivPropFunct <+ HasEqBool2Dec
+ <+ !MinMaxLogicalProperties <+ !MinMaxDecProperties.
 
 (** Notations about [BigZ] *)
 
@@ -69,7 +82,7 @@ Infix "<=" := BigZ.le : bigZ_scope.
 Notation "x > y" := (BigZ.lt y x)(only parsing) : bigZ_scope.
 Notation "x >= y" := (BigZ.le y x)(only parsing) : bigZ_scope.
 Notation "[ i ]" := (BigZ.to_Z i) : bigZ_scope.
-Infix "mod" := modulo (at level 40, no associativity) : bigN_scope.
+Infix "mod" := BigZ.modulo (at level 40, no associativity) : bigN_scope.
 
 Local Open Scope bigZ_scope.
 
@@ -102,34 +115,33 @@ intros p1 _ H1; case H1; auto.
 intros p1 H1; case H1; auto.
 Qed.
 
-Lemma sub_opp : forall x y : bigZ, x - y == x + (- y).
-Proof.
-red; intros; zsimpl; auto.
-Qed.
-
-Lemma add_opp : forall x : bigZ, x + (- x) == 0.
-Proof.
-red; intros; zsimpl; auto with zarith.
-Qed.
-
 (** [BigZ] is a ring *)
 
 Lemma BigZring :
  ring_theory BigZ.zero BigZ.one BigZ.add BigZ.mul BigZ.sub BigZ.opp BigZ.eq.
 Proof.
 constructor.
-exact add_0_l.
-exact add_comm.
-exact add_assoc.
-exact mul_1_l.
-exact mul_comm.
-exact mul_assoc.
-exact mul_add_distr_r.
-exact sub_opp.
-exact add_opp.
+exact BigZ.add_0_l.
+exact BigZ.add_comm.
+exact BigZ.add_assoc.
+exact BigZ.mul_1_l.
+exact BigZ.mul_comm.
+exact BigZ.mul_assoc.
+exact BigZ.mul_add_distr_r.
+symmetry. apply BigZ.add_opp_r.
+exact BigZ.add_opp_diag_r.
 Qed.
 
 Add Ring BigZr : BigZring.
+
+(** [BigZ] benefits from an "order" tactic *)
+
+Ltac bigZ_order := BigZ.order.
+
+Section Test.
+Let test : forall x y : bigZ, x<=y -> y<=x -> x==y.
+Proof. bigZ_order. Qed.
+End Test.
 
 (** Todo: tactic translating from [BigZ] to [Z] + omega *)
 

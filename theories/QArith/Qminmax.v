@@ -21,8 +21,10 @@ Module QHasMinMax <: HasMinMax Q_as_OT.
  Module QMM := GenericMinMax Q_as_OT.
  Definition max := Qmax.
  Definition min := Qmin.
- Definition max_spec := QMM.max_spec.
- Definition min_spec := QMM.min_spec.
+ Definition max_l := QMM.max_l.
+ Definition max_r := QMM.max_r.
+ Definition min_l := QMM.min_l.
+ Definition min_r := QMM.min_r.
 End QHasMinMax.
 
 Module Q.

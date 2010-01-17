@@ -49,6 +49,7 @@ Module Make (N:NType) <: ZType.
   end.
 
  Theorem spec_of_Z: forall x, to_Z (of_Z x) = x.
+ Proof.
  intros x; case x; unfold to_Z, of_Z, zero.
    exact N.spec_0.
    intros; rewrite N.spec_of_N; auto.
@@ -85,34 +86,23 @@ Module Make (N:NType) <: ZType.
   | Neg nx, Neg ny => N.compare ny nx
   end.
 
- Definition lt n m := compare n m = Lt.
- Definition le n m := compare n m <> Gt.
- Definition min n m := match compare n m with Gt => m | _ => n end.
- Definition max n m := match compare n m with Lt => m | _ => n end.
-
- Theorem spec_compare: forall x y,
-    match compare x y with
-      Eq => to_Z x = to_Z y
-    | Lt => to_Z x < to_Z y
-    | Gt => to_Z x > to_Z y
-    end.
-  unfold compare, to_Z; intros x y; case x; case y; clear x y;
-    intros x y; auto; generalize (N.spec_pos x) (N.spec_pos y).
-  generalize (N.spec_compare y x); case N.compare; auto with zarith.
-  generalize (N.spec_compare y N.zero); case N.compare;
-     try rewrite N.spec_0; auto with zarith.
-  generalize (N.spec_compare x N.zero); case N.compare;
-   rewrite N.spec_0; auto with zarith.
-  generalize (N.spec_compare x N.zero); case N.compare;
-   rewrite N.spec_0; auto with zarith.
-  generalize (N.spec_compare N.zero y); case N.compare;
-     try rewrite N.spec_0; auto with zarith.
-  generalize (N.spec_compare N.zero x); case N.compare;
-   rewrite N.spec_0; auto with zarith.
-  generalize (N.spec_compare N.zero x); case N.compare;
-   rewrite N.spec_0; auto with zarith.
-  generalize (N.spec_compare x y); case N.compare; auto with zarith.
-  Qed.
+ Theorem spec_compare :
+  forall x y, compare x y = Zcompare (to_Z x) (to_Z y).
+ Proof.
+ unfold compare, to_Z.
+ destruct x as [x|x], y as [y|y];
+ rewrite ?N.spec_compare, ?N.spec_0, <-?Zcompare_opp; auto;
+ assert (Hx:=N.spec_pos x); assert (Hy:=N.spec_pos y);
+ set (X:=N.to_Z x) in *; set (Y:=N.to_Z y) in *; clearbody X Y.
+ destruct (Zcompare_spec X 0) as [EQ|LT|GT].
+  rewrite EQ. rewrite <- Zopp_0 at 2. apply Zcompare_opp.
+  exfalso. omega.
+  symmetry. change (X > -Y). omega.
+ destruct (Zcompare_spec 0 X) as [EQ|LT|GT].
+  rewrite <- EQ. rewrite Zopp_0; auto.
+  symmetry. change (-X < Y). omega.
+  exfalso. omega.
+ Qed.
 
  Definition eq_bool x y :=
   match compare x y with
@@ -120,36 +110,27 @@ Module Make (N:NType) <: ZType.
   | _ => false
   end.
 
- Theorem spec_eq_bool: forall x y,
-    if eq_bool x y then to_Z x = to_Z y else to_Z x <> to_Z y.
- intros x y; unfold eq_bool;
-   generalize (spec_compare x y); case compare; auto with zarith.
+ Theorem spec_eq_bool:
+  forall x y, eq_bool x y = Zeq_bool (to_Z x) (to_Z y).
+ Proof.
+ unfold eq_bool, Zeq_bool; intros; rewrite spec_compare; reflexivity.
  Qed.
 
- Definition cmp_sign x y :=
-  match x, y with
-  | Pos nx, Neg ny =>
-    if N.eq_bool ny N.zero then Eq else Gt
-  | Neg nx, Pos ny =>
-    if N.eq_bool nx N.zero then Eq else Lt
-  | _, _ => Eq
-  end.
+ Definition lt n m := to_Z n < to_Z m.
+ Definition le n m := to_Z n <= to_Z m.
 
- Theorem spec_cmp_sign: forall x y,
-  match cmp_sign x y with
-  | Gt => 0 <= to_Z x /\ to_Z y < 0
-  | Lt => to_Z x <  0 /\ 0 <= to_Z y
-  | Eq => True
-  end.
-  Proof.
-  intros [x | x] [y | y]; unfold cmp_sign; auto.
-  generalize (N.spec_eq_bool y N.zero); case N.eq_bool; auto.
-  rewrite N.spec_0; unfold to_Z.
-  generalize (N.spec_pos x) (N.spec_pos y); auto with zarith.
-  generalize (N.spec_eq_bool x N.zero); case N.eq_bool; auto.
-  rewrite N.spec_0; unfold to_Z.
-  generalize (N.spec_pos x) (N.spec_pos y); auto with zarith.
-  Qed.
+ Definition min n m := match compare n m with Gt => m | _ => n end.
+ Definition max n m := match compare n m with Lt => m | _ => n end.
+
+ Theorem spec_min : forall n m, to_Z (min n m) = Zmin (to_Z n) (to_Z m).
+ Proof.
+ unfold min, Zmin. intros. rewrite spec_compare. destruct Zcompare; auto.
+ Qed.
+
+ Theorem spec_max : forall n m, to_Z (max n m) = Zmax (to_Z n) (to_Z m).
+ Proof.
+ unfold max, Zmax. intros. rewrite spec_compare. destruct Zcompare; auto.
+ Qed.
 
  Definition to_N x :=
   match x with
@@ -160,6 +141,7 @@ Module Make (N:NType) <: ZType.
  Definition abs x := Pos (to_N x).
 
  Theorem spec_abs: forall x, to_Z (abs x) = Zabs (to_Z x).
+ Proof.
  intros x; case x; clear x; intros x; assert (F:=N.spec_pos x).
     simpl; rewrite Zabs_eq; auto.
  simpl; rewrite Zabs_non_eq; simpl; auto with zarith.
@@ -172,6 +154,7 @@ Module Make (N:NType) <: ZType.
   end.
 
  Theorem spec_opp: forall x, to_Z (opp x) = - to_Z x.
+ Proof.
  intros x; case x; simpl; auto with zarith.
  Qed.
 
@@ -186,10 +169,10 @@ Module Make (N:NType) <: ZType.
   end.
 
  Theorem spec_succ: forall n, to_Z (succ n) = to_Z n + 1.
+ Proof.
  intros x; case x; clear x; intros x.
    exact (N.spec_succ x).
- simpl; generalize (N.spec_compare N.zero x); case N.compare;
-   rewrite N.spec_0; simpl.
+ simpl. rewrite N.spec_compare. case Zcompare_spec; rewrite ?N.spec_0; simpl.
   intros HH; rewrite <- HH; rewrite N.spec_1; ring.
   intros HH; rewrite N.spec_pred, Zmax_r; auto with zarith.
  generalize (N.spec_pos x); auto with zarith.
@@ -214,17 +197,11 @@ Module Make (N:NType) <: ZType.
   end.
 
  Theorem spec_add: forall x y, to_Z (add x y) = to_Z x +  to_Z y.
- unfold add, to_Z; intros [x | x] [y | y].
-   exact (N.spec_add x y).
- unfold zero; generalize (N.spec_compare x y); case N.compare.
-   rewrite N.spec_0; auto with zarith.
- intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
- intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
- unfold zero; generalize (N.spec_compare x y); case N.compare.
-   rewrite N.spec_0; auto with zarith.
- intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
- intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
- intros; rewrite N.spec_add; auto with zarith.
+ Proof.
+ unfold add, to_Z; intros [x | x] [y | y];
+   try (rewrite N.spec_add; auto with zarith);
+ rewrite N.spec_compare; case Zcompare_spec;
+  unfold zero; rewrite ?N.spec_0, ?N.spec_sub; omega with *.
  Qed.
 
  Definition pred x :=
@@ -238,12 +215,12 @@ Module Make (N:NType) <: ZType.
   end.
 
  Theorem spec_pred: forall x, to_Z (pred x) = to_Z x - 1.
- unfold pred, to_Z, minus_one; intros [x | x].
-   generalize (N.spec_compare N.zero x); case N.compare;
-     rewrite N.spec_0; try rewrite N.spec_1; auto with zarith.
-   intros H; rewrite N.spec_pred, Zmax_r; auto with zarith.
- generalize (N.spec_pos x); auto with zarith.
- rewrite N.spec_succ; ring.
+ Proof.
+ unfold pred, to_Z, minus_one; intros [x | x];
+   try (rewrite N.spec_succ; ring).
+ rewrite N.spec_compare; case Zcompare_spec;
+  rewrite ?N.spec_0, ?N.spec_1, ?N.spec_pred;
+  generalize (N.spec_pos x); omega with *.
  Qed.
 
  Definition sub x y :=
@@ -265,17 +242,11 @@ Module Make (N:NType) <: ZType.
   end.
 
  Theorem spec_sub: forall x y, to_Z (sub x y) = to_Z x - to_Z y.
- unfold sub, to_Z; intros [x | x] [y | y].
- unfold zero; generalize (N.spec_compare x y); case N.compare.
-   rewrite N.spec_0; auto with zarith.
- intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
- intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
- rewrite N.spec_add; auto with zarith.
- rewrite N.spec_add; auto with zarith.
- unfold zero; generalize (N.spec_compare x y); case N.compare.
-   rewrite N.spec_0; auto with zarith.
- intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
- intros; rewrite N.spec_sub, Zmax_r; auto with zarith.
+ Proof.
+ unfold sub, to_Z; intros [x | x] [y | y];
+  try (rewrite N.spec_add; auto with zarith);
+ rewrite N.spec_compare; case Zcompare_spec;
+  unfold zero; rewrite ?N.spec_0, ?N.spec_sub; omega with *.
  Qed.
 
  Definition mul x y :=
@@ -286,8 +257,8 @@ Module Make (N:NType) <: ZType.
   | Neg nx, Neg ny => Pos (N.mul nx ny)
   end.
 
-
  Theorem spec_mul: forall x y, to_Z (mul x y) = to_Z x * to_Z y.
+ Proof.
  unfold mul, to_Z; intros [x | x] [y | y]; rewrite N.spec_mul; ring.
  Qed.
 
@@ -298,6 +269,7 @@ Module Make (N:NType) <: ZType.
   end.
 
  Theorem spec_square: forall x, to_Z (square x) = to_Z x *  to_Z x.
+ Proof.
  unfold square, to_Z; intros [x | x]; rewrite N.spec_square; ring.
  Qed.
 
@@ -313,6 +285,7 @@ Module Make (N:NType) <: ZType.
   end.
 
  Theorem spec_power_pos: forall x n, to_Z (power_pos x n) = to_Z x ^ Zpos n.
+ Proof.
  assert (F0: forall x, (-x)^2 = x^2).
    intros x; rewrite Zpower_2; ring.
  unfold power_pos, to_Z; intros [x | x] [p | p |];
@@ -335,9 +308,9 @@ Module Make (N:NType) <: ZType.
   | Neg nx => Neg N.zero
   end.
 
-
  Theorem spec_sqrt: forall x, 0 <= to_Z x ->
    to_Z (sqrt x) ^ 2 <= to_Z x < (to_Z (sqrt x) + 1) ^ 2.
+ Proof.
  unfold to_Z, sqrt; intros [x | x] H.
    exact (N.spec_sqrt x).
  replace (N.to_Z x) with 0.
@@ -353,144 +326,74 @@ Module Make (N:NType) <: ZType.
     (Pos q, Pos r)
   | Pos nx, Neg ny =>
     let (q, r) := N.div_eucl nx ny in
-    match N.compare N.zero r with
-    | Eq => (Neg q, zero)
-    | _ => (Neg (N.succ q), Neg (N.sub ny r))
-    end
+    if N.eq_bool N.zero r
+    then (Neg q, zero)
+    else (Neg (N.succ q), Neg (N.sub ny r))
   | Neg nx, Pos ny =>
     let (q, r) := N.div_eucl nx ny in
-    match N.compare N.zero r with
-    | Eq => (Neg q, zero)
-    | _ => (Neg (N.succ q), Pos (N.sub ny r))
-    end
+    if N.eq_bool N.zero r
+    then (Neg q, zero)
+    else (Neg (N.succ q), Pos (N.sub ny r))
   | Neg nx, Neg ny =>
     let (q, r) := N.div_eucl nx ny in
     (Pos q, Neg r)
   end.
 
-
- Theorem spec_div_eucl_nz: forall x y,
-      to_Z y <> 0 ->
-      let (q,r) := div_eucl x y in
-      (to_Z q, to_Z r) = Zdiv_eucl (to_Z x) (to_Z y).
- unfold div_eucl, to_Z; intros [x | x] [y | y] H.
- assert (H1: 0 < N.to_Z y).
-   generalize (N.spec_pos y); auto with zarith.
- generalize (N.spec_div_eucl x y); case N.div_eucl; auto.
- assert (HH: 0 < N.to_Z y).
-   generalize (N.spec_pos y); auto with zarith.
- generalize (N.spec_div_eucl x y); case N.div_eucl; auto.
- intros q r; generalize (N.spec_pos x) HH; unfold Zdiv_eucl;
-   case_eq (N.to_Z x); case_eq (N.to_Z y);
-     try (intros; apply False_ind; auto with zarith; fail).
- intros p He1 He2 _ _ H1; injection H1; intros H2 H3.
- generalize (N.spec_compare N.zero r); case N.compare;
-   unfold zero; rewrite N.spec_0; try rewrite H3; auto.
- rewrite H2; intros; apply False_ind; auto with zarith.
- rewrite H2; intros; apply False_ind; auto with zarith.
- intros p _ _ _ H1; discriminate H1.
- intros p He p1 He1 H1 _.
- generalize (N.spec_compare N.zero r); case N.compare.
- change (- Zpos p) with (Zneg p).
- unfold zero; lazy zeta.
- rewrite N.spec_0; intros H2; rewrite <- H2.
- intros H3; rewrite <- H3; auto.
- rewrite N.spec_0; intros H2.
- change (- Zpos p) with (Zneg p); lazy iota beta.
- intros H3; rewrite <- H3; auto.
- rewrite N.spec_succ; rewrite N.spec_sub, Zmax_r.
- generalize H2; case (N.to_Z r).
- intros; apply False_ind; auto with zarith.
- intros p2 _; rewrite He; auto with zarith.
- change (Zneg p) with (- (Zpos p)); apply f_equal2 with (f := @pair Z Z); ring.
- intros p2 H4; discriminate H4.
- assert (N.to_Z r = (Zpos p1 mod (Zpos p))).
-   unfold Zmod, Zdiv_eucl; rewrite <- H3; auto.
- case (Z_mod_lt (Zpos p1) (Zpos p)); auto with zarith.
- rewrite N.spec_0; intros H2; generalize (N.spec_pos r);
-   intros; apply False_ind; auto with zarith.
- assert (HH: 0 < N.to_Z y).
-   generalize (N.spec_pos y); auto with zarith.
- generalize (N.spec_div_eucl x y); case N.div_eucl; auto.
- intros q r; generalize (N.spec_pos x) HH; unfold Zdiv_eucl;
-   case_eq (N.to_Z x); case_eq (N.to_Z y);
-     try (intros; apply False_ind; auto with zarith; fail).
- intros p He1 He2 _ _ H1; injection H1; intros H2 H3.
- generalize (N.spec_compare N.zero r); case N.compare;
-   unfold zero; rewrite N.spec_0; try rewrite H3; auto.
- rewrite H2; intros; apply False_ind; auto with zarith.
- rewrite H2; intros; apply False_ind; auto with zarith.
- intros p _ _ _ H1; discriminate H1.
- intros p He p1 He1 H1 _.
- generalize (N.spec_compare N.zero r); case N.compare.
- change (- Zpos p1) with (Zneg p1).
- unfold zero; lazy zeta.
- rewrite N.spec_0; intros H2; rewrite <- H2.
- intros H3; rewrite <- H3; auto.
- rewrite N.spec_0; intros H2.
- change (- Zpos p1) with (Zneg p1); lazy iota beta.
- intros H3; rewrite <- H3; auto.
- rewrite N.spec_succ; rewrite N.spec_sub, Zmax_r.
- generalize H2; case (N.to_Z r).
- intros; apply False_ind; auto with zarith.
- intros p2 _; rewrite He; auto with zarith.
- intros p2 H4; discriminate H4.
- assert (N.to_Z r = (Zpos p1 mod (Zpos p))).
-   unfold Zmod, Zdiv_eucl; rewrite <- H3; auto.
- case (Z_mod_lt (Zpos p1) (Zpos p)); auto with zarith.
- rewrite N.spec_0; generalize (N.spec_pos r); intros; apply False_ind; auto with zarith.
- assert (H1: 0 < N.to_Z y).
-   generalize (N.spec_pos y); auto with zarith.
- generalize (N.spec_div_eucl x y); case N.div_eucl; auto.
- intros q r; generalize (N.spec_pos x) H1; unfold Zdiv_eucl;
-   case_eq (N.to_Z x); case_eq (N.to_Z y);
-     try (intros; apply False_ind; auto with zarith; fail).
- change (-0) with 0; lazy iota beta; auto.
- intros p _ _ _ _ H2; injection H2.
- intros H3 H4; rewrite H3; rewrite H4; auto.
- intros p _ _ _ H2; discriminate H2.
- intros p He p1 He1 _ _  H2.
- change (- Zpos p1) with (Zneg p1); lazy iota beta.
- change (- Zpos p) with (Zneg p); lazy iota beta.
- rewrite <- H2; auto.
- Qed.
-
- Lemma Zdiv_eucl_0 : forall a, Zdiv_eucl a 0 = (0,0).
- Proof. destruct a; auto. Qed.
+ Ltac break_nonneg x px EQx :=
+  let H := fresh "H" in
+  assert (H:=N.spec_pos x);
+  destruct (N.to_Z x) as [|px|px]_eqn:EQx;
+   [clear H|clear H|elim H; reflexivity].
 
  Theorem spec_div_eucl: forall x y,
-      let (q,r) := div_eucl x y in
-      (to_Z q, to_Z r) = Zdiv_eucl (to_Z x) (to_Z y).
+   let (q,r) := div_eucl x y in
+   (to_Z q, to_Z r) = Zdiv_eucl (to_Z x) (to_Z y).
  Proof.
- intros. destruct (Z_eq_dec (to_Z y) 0) as [EQ|NEQ];
-  [|apply spec_div_eucl_nz; auto].
- unfold div_eucl.
- destruct x; destruct y; simpl in *.
- generalize (N.spec_div_eucl t0 t1). destruct N.div_eucl; simpl; auto.
- generalize (N.spec_div_eucl t0 t1). destruct N.div_eucl; simpl; auto.
- assert (EQ' : N.to_Z t1 = 0) by auto with zarith.
- rewrite EQ'. simpl. rewrite Zdiv_eucl_0. injection 1; intros.
- generalize (N.spec_compare N.zero t3); destruct N.compare.
- simpl. intros. f_equal; auto with zarith.
- rewrite N.spec_0; intro; exfalso; auto with zarith.
- rewrite N.spec_0; intro; exfalso; auto with zarith.
- generalize (N.spec_div_eucl t0 t1). destruct N.div_eucl; simpl; auto.
- assert (EQ' : N.to_Z t1 = 0) by auto with zarith.
- rewrite EQ'. simpl. rewrite 2 Zdiv_eucl_0. injection 1; intros.
- generalize (N.spec_compare N.zero t3); destruct N.compare.
- simpl. intros. f_equal; auto with zarith.
- rewrite N.spec_0; intro; exfalso; auto with zarith.
- rewrite N.spec_0; intro; exfalso; auto with zarith.
- generalize (N.spec_div_eucl t0 t1). destruct N.div_eucl; simpl; auto.
- assert (EQ' : N.to_Z t1 = 0) by auto with zarith.
- rewrite EQ'. simpl. rewrite 2 Zdiv_eucl_0. injection 1; intros.
- f_equal; auto with zarith.
+ unfold div_eucl, to_Z. intros [x | x] [y | y].
+ (* Pos Pos *)
+ generalize (N.spec_div_eucl x y); destruct (N.div_eucl x y); auto.
+ (* Pos Neg *)
+ generalize (N.spec_div_eucl x y); destruct (N.div_eucl x y) as (q,r).
+ break_nonneg x px EQx; break_nonneg y py EQy;
+ try (injection 1; intros Hr Hq; rewrite N.spec_eq_bool, N.spec_0, Hr;
+      simpl; rewrite Hq, N.spec_0; auto).
+ change (- Zpos py) with (Zneg py).
+ assert (GT : Zpos py > 0) by (compute; auto).
+ generalize (Z_div_mod (Zpos px) (Zpos py) GT).
+ unfold Zdiv_eucl. destruct (Zdiv_eucl_POS px (Zpos py)) as (q',r').
+ intros (EQ,MOD). injection 1. intros Hr' Hq'.
+ rewrite N.spec_eq_bool, N.spec_0, Hr'.
+ break_nonneg r pr EQr.
+ subst; simpl. rewrite N.spec_0; auto.
+ subst. lazy iota beta delta [Zeq_bool Zcompare].
+ rewrite N.spec_sub, N.spec_succ, EQy, EQr. f_equal. omega with *.
+ (* Neg Pos *)
+ generalize (N.spec_div_eucl x y); destruct (N.div_eucl x y) as (q,r).
+ break_nonneg x px EQx; break_nonneg y py EQy;
+ try (injection 1; intros Hr Hq; rewrite N.spec_eq_bool, N.spec_0, Hr;
+      simpl; rewrite Hq, N.spec_0; auto).
+ change (- Zpos px) with (Zneg px).
+ assert (GT : Zpos py > 0) by (compute; auto).
+ generalize (Z_div_mod (Zpos px) (Zpos py) GT).
+ unfold Zdiv_eucl. destruct (Zdiv_eucl_POS px (Zpos py)) as (q',r').
+ intros (EQ,MOD). injection 1. intros Hr' Hq'.
+ rewrite N.spec_eq_bool, N.spec_0, Hr'.
+ break_nonneg r pr EQr.
+ subst; simpl. rewrite N.spec_0; auto.
+ subst. lazy iota beta delta [Zeq_bool Zcompare].
+ rewrite N.spec_sub, N.spec_succ, EQy, EQr. f_equal. omega with *.
+ (* Neg Neg *)
+ generalize (N.spec_div_eucl x y); destruct (N.div_eucl x y) as (q,r).
+ break_nonneg x px EQx; break_nonneg y py EQy;
+ try (injection 1; intros Hr Hq; rewrite Hr, Hq; auto).
+ simpl. intros <-; auto.
  Qed.
 
  Definition div x y := fst (div_eucl x y).
 
  Definition spec_div: forall x y,
      to_Z (div x y) = to_Z x / to_Z y.
+ Proof.
  intros x y; generalize (spec_div_eucl x y); unfold div, Zdiv.
  case div_eucl; case Zdiv_eucl; simpl; auto.
  intros q r q11 r1 H; injection H; auto.
@@ -500,6 +403,7 @@ Module Make (N:NType) <: ZType.
 
  Theorem spec_modulo:
    forall x y, to_Z (modulo x y) = to_Z x mod to_Z y.
+ Proof.
  intros x y; generalize (spec_div_eucl x y); unfold modulo, Zmod.
  case div_eucl; case Zdiv_eucl; simpl; auto.
  intros q r q11 r1 H; injection H; auto.
@@ -514,6 +418,7 @@ Module Make (N:NType) <: ZType.
   end.
 
  Theorem spec_gcd: forall a b, to_Z (gcd a b) = Zgcd (to_Z a) (to_Z b).
+ Proof.
  unfold gcd, Zgcd, to_Z; intros [x | x] [y | y]; rewrite N.spec_gcd; unfold Zgcd;
   auto; case N.to_Z; simpl; auto with zarith;
   try rewrite Zabs_Zopp; auto;
@@ -529,8 +434,7 @@ Module Make (N:NType) <: ZType.
 
  Lemma spec_sgn : forall x, to_Z (sgn x) = Zsgn (to_Z x).
  Proof.
- intros. unfold sgn. generalize (spec_compare zero x).
- destruct compare.
+ intros. unfold sgn. rewrite spec_compare. case Zcompare_spec.
  rewrite spec_0. intros <-; auto.
  rewrite spec_0, spec_1. symmetry. rewrite Zsgn_pos; auto.
  rewrite spec_0, spec_m1. symmetry. rewrite Zsgn_neg; auto with zarith.

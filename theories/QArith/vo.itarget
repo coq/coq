@@ -8,3 +8,5 @@ Qreals.vo
 Qreduction.vo
 Qring.vo
 Qround.vo
+QOrderedType.vo
+Qminmax.vo

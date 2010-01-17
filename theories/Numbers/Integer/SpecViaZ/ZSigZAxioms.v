@@ -16,71 +16,64 @@ Require Import ZArith ZAxioms ZDivFloor ZSig.
 *)
 
 
-Module ZSig_ZAxioms (Z:ZType) <: ZAxiomsSig <: ZDivSig.
-
-Local Notation "[ x ]" := (Z.to_Z x).
-Local Infix "=="  := Z.eq (at level 70).
-Local Notation "0" := Z.zero.
-Local Infix "+" := Z.add.
-Local Infix "-" := Z.sub.
-Local Infix "*" := Z.mul.
-Local Notation "- x" := (Z.opp x).
-Local Infix "<=" := Z.le.
-Local Infix "<" := Z.lt.
+Module ZTypeIsZAxioms (Import Z : ZType').
 
 Hint Rewrite
- Z.spec_0 Z.spec_1 Z.spec_add Z.spec_sub Z.spec_pred Z.spec_succ
- Z.spec_mul Z.spec_opp Z.spec_of_Z Z.spec_div Z.spec_modulo: zspec.
+ spec_0 spec_1 spec_add spec_sub spec_pred spec_succ
+ spec_mul spec_opp spec_of_Z spec_div spec_modulo
+ spec_compare spec_eq_bool spec_max spec_min spec_abs spec_sgn
+ : zsimpl.
 
-Ltac zsimpl := unfold Z.eq in *; autorewrite with zspec.
+Ltac zsimpl := autorewrite with zsimpl.
 Ltac zcongruence := repeat red; intros; zsimpl; congruence.
+Ltac zify := unfold eq, lt, le in *; zsimpl.
 
-Instance eq_equiv : Equivalence Z.eq.
-Proof. unfold Z.eq. firstorder. Qed.
+Instance eq_equiv : Equivalence eq.
+Proof. unfold eq. firstorder. Qed.
 
 Local Obligation Tactic := zcongruence.
 
-Program Instance succ_wd : Proper (Z.eq ==> Z.eq) Z.succ.
-Program Instance pred_wd : Proper (Z.eq ==> Z.eq) Z.pred.
-Program Instance add_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) Z.add.
-Program Instance sub_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) Z.sub.
-Program Instance mul_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) Z.mul.
+Program Instance succ_wd : Proper (eq ==> eq) succ.
+Program Instance pred_wd : Proper (eq ==> eq) pred.
+Program Instance add_wd : Proper (eq ==> eq ==> eq) add.
+Program Instance sub_wd : Proper (eq ==> eq ==> eq) sub.
+Program Instance mul_wd : Proper (eq ==> eq ==> eq) mul.
 
-Theorem pred_succ : forall n, Z.pred (Z.succ n) == n.
+Theorem pred_succ : forall n, pred (succ n) == n.
 Proof.
-intros; zsimpl; auto with zarith.
+intros. zify. auto with zarith.
 Qed.
 
 Section Induction.
 
 Variable A : Z.t -> Prop.
-Hypothesis A_wd : Proper (Z.eq==>iff) A.
+Hypothesis A_wd : Proper (eq==>iff) A.
 Hypothesis A0 : A 0.
-Hypothesis AS : forall n, A n <-> A (Z.succ n).
+Hypothesis AS : forall n, A n <-> A (succ n).
 
-Let B (z : Z) := A (Z.of_Z z).
+Let B (z : Z) := A (of_Z z).
 
 Lemma B0 : B 0.
 Proof.
 unfold B; simpl.
 rewrite <- (A_wd 0); auto.
-zsimpl; auto.
+zify. auto.
 Qed.
 
 Lemma BS : forall z : Z, B z -> B (z + 1).
 Proof.
 intros z H.
 unfold B in *. apply -> AS in H.
-setoid_replace (Z.of_Z (z + 1)) with (Z.succ (Z.of_Z z)); auto.
-zsimpl; auto.
+setoid_replace (of_Z (z + 1)) with (succ (of_Z z)); auto.
+zify. auto.
 Qed.
 
 Lemma BP : forall z : Z, B z -> B (z - 1).
 Proof.
 intros z H.
 unfold B in *. rewrite AS.
-setoid_replace (Z.succ (Z.of_Z (z - 1))) with (Z.of_Z z); auto.
-zsimpl; auto with zarith.
+setoid_replace (succ (of_Z (z - 1))) with (of_Z z); auto.
+zify. auto with zarith.
 Qed.
 
 Lemma B_holds : forall z : Z, B z.
@@ -99,213 +92,168 @@ Qed.
 
 Theorem bi_induction : forall n, A n.
 Proof.
-intro n. setoid_replace n with (Z.of_Z (Z.to_Z n)).
+intro n. setoid_replace n with (of_Z (to_Z n)).
 apply B_holds.
-zsimpl; auto.
+zify. auto.
 Qed.
 
 End Induction.
 
 Theorem add_0_l : forall n, 0 + n == n.
 Proof.
-intros; zsimpl; auto with zarith.
+intros. zify. auto with zarith.
 Qed.
 
-Theorem add_succ_l : forall n m, (Z.succ n) + m == Z.succ (n + m).
+Theorem add_succ_l : forall n m, (succ n) + m == succ (n + m).
 Proof.
-intros; zsimpl; auto with zarith.
+intros. zify. auto with zarith.
 Qed.
 
 Theorem sub_0_r : forall n, n - 0 == n.
 Proof.
-intros; zsimpl; auto with zarith.
+intros. zify. auto with zarith.
 Qed.
 
-Theorem sub_succ_r : forall n m, n - (Z.succ m) == Z.pred (n - m).
+Theorem sub_succ_r : forall n m, n - (succ m) == pred (n - m).
 Proof.
-intros; zsimpl; auto with zarith.
+intros. zify. auto with zarith.
 Qed.
 
 Theorem mul_0_l : forall n, 0 * n == 0.
 Proof.
-intros; zsimpl; auto with zarith.
+intros. zify. auto with zarith.
 Qed.
 
-Theorem mul_succ_l : forall n m, (Z.succ n) * m == n * m + m.
+Theorem mul_succ_l : forall n m, (succ n) * m == n * m + m.
 Proof.
-intros; zsimpl; ring.
+intros. zify. ring.
 Qed.
 
 (** Order *)
 
-Lemma spec_compare_alt : forall x y, Z.compare x y = ([x] ?= [y])%Z.
+Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
 Proof.
- intros; generalize (Z.spec_compare x y).
- destruct (Z.compare x y); auto.
- intros H; rewrite H; symmetry; apply Zcompare_refl.
+ intros. zify. destruct (Zcompare_spec [x] [y]); auto.
 Qed.
 
-Lemma spec_lt : forall x y, (x<y) <-> ([x]<[y])%Z.
+Definition eqb := eq_bool.
+
+Lemma eqb_eq : forall x y, eq_bool x y = true <-> x == y.
 Proof.
- intros; unfold Z.lt, Zlt; rewrite spec_compare_alt; intuition.
+ intros. zify. symmetry. apply Zeq_is_eq_bool.
 Qed.
 
-Lemma spec_le : forall x y, (x<=y) <-> ([x]<=[y])%Z.
+Instance compare_wd : Proper (eq ==> eq ==> Logic.eq) compare.
 Proof.
- intros; unfold Z.le, Zle; rewrite spec_compare_alt; intuition.
+intros x x' Hx y y' Hy. rewrite 2 spec_compare, Hx, Hy; intuition.
 Qed.
 
-Lemma spec_min : forall x y, [Z.min x y] = Zmin [x] [y].
+Instance lt_wd : Proper (eq ==> eq ==> iff) lt.
 Proof.
- intros; unfold Z.min, Zmin.
- rewrite spec_compare_alt; destruct Zcompare; auto.
-Qed.
-
-Lemma spec_max : forall x y, [Z.max x y] = Zmax [x] [y].
-Proof.
- intros; unfold Z.max, Zmax.
- rewrite spec_compare_alt; destruct Zcompare; auto.
-Qed.
-
-Instance compare_wd : Proper (Z.eq ==> Z.eq ==> eq) Z.compare.
-Proof.
-intros x x' Hx y y' Hy.
-rewrite 2 spec_compare_alt; unfold Z.eq in *; rewrite Hx, Hy; intuition.
-Qed.
-
-Instance lt_wd : Proper (Z.eq ==> Z.eq ==> iff) Z.lt.
-Proof.
-intros x x' Hx y y' Hy; unfold Z.lt; rewrite Hx, Hy; intuition.
+intros x x' Hx y y' Hy; unfold lt; rewrite Hx, Hy; intuition.
 Qed.
 
 Theorem lt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
 Proof.
-intros.
-unfold Z.eq; rewrite spec_lt, spec_le; omega.
+intros. zify. omega.
 Qed.
 
 Theorem lt_irrefl : forall n, ~ n < n.
 Proof.
-intros; rewrite spec_lt; auto with zarith.
+intros. zify. omega.
 Qed.
 
-Theorem lt_succ_r : forall n m, n < (Z.succ m) <-> n <= m.
+Theorem lt_succ_r : forall n m, n < (succ m) <-> n <= m.
 Proof.
-intros; rewrite spec_lt, spec_le, Z.spec_succ; omega.
+intros. zify. omega.
 Qed.
 
-Theorem min_l : forall n m, n <= m -> Z.min n m == n.
+Theorem min_l : forall n m, n <= m -> min n m == n.
 Proof.
-intros n m; unfold Z.eq; rewrite spec_le, spec_min.
-generalize (Zmin_spec [n] [m]); omega.
+intros n m. zify. omega with *.
 Qed.
 
-Theorem min_r : forall n m, m <= n -> Z.min n m == m.
+Theorem min_r : forall n m, m <= n -> min n m == m.
 Proof.
-intros n m; unfold Z.eq; rewrite spec_le, spec_min.
-generalize (Zmin_spec [n] [m]); omega.
+intros n m. zify. omega with *.
 Qed.
 
-Theorem max_l : forall n m, m <= n -> Z.max n m == n.
+Theorem max_l : forall n m, m <= n -> max n m == n.
 Proof.
-intros n m; unfold Z.eq; rewrite spec_le, spec_max.
-generalize (Zmax_spec [n] [m]); omega.
+intros n m. zify. omega with *.
 Qed.
 
-Theorem max_r : forall n m, n <= m -> Z.max n m == m.
+Theorem max_r : forall n m, n <= m -> max n m == m.
 Proof.
-intros n m; unfold Z.eq; rewrite spec_le, spec_max.
-generalize (Zmax_spec [n] [m]); omega.
+intros n m. zify. omega with *.
 Qed.
 
 (** Part specific to integers, not natural numbers *)
 
-Program Instance opp_wd : Proper (Z.eq ==> Z.eq) Z.opp.
+Program Instance opp_wd : Proper (eq ==> eq) opp.
 
-Theorem succ_pred : forall n, Z.succ (Z.pred n) == n.
+Theorem succ_pred : forall n, succ (pred n) == n.
 Proof.
-red; intros; zsimpl; auto with zarith.
+intros. zify. auto with zarith.
 Qed.
 
 Theorem opp_0 : - 0 == 0.
 Proof.
-red; intros; zsimpl; auto with zarith.
+intros. zify. auto with zarith.
 Qed.
 
-Theorem opp_succ : forall n, - (Z.succ n) == Z.pred (- n).
+Theorem opp_succ : forall n, - (succ n) == pred (- n).
 Proof.
-intros; zsimpl; auto with zarith.
+intros. zify. auto with zarith.
 Qed.
 
-Theorem abs_eq : forall n, 0 <= n -> Z.abs n == n.
+Theorem abs_eq : forall n, 0 <= n -> abs n == n.
 Proof.
-intros n. red. rewrite spec_le, Z.spec_0, Z.spec_abs. apply Zabs_eq.
+intros n. zify. omega with *.
 Qed.
 
-Theorem abs_neq : forall n, n <= 0 -> Z.abs n == -n.
+Theorem abs_neq : forall n, n <= 0 -> abs n == -n.
 Proof.
-intros n. red. rewrite spec_le, Z.spec_0, Z.spec_abs, Z.spec_opp.
- apply Zabs_non_eq.
+intros n. zify. omega with *.
 Qed.
 
-Theorem sgn_null : forall n, n==0 -> Z.sgn n == 0.
+Theorem sgn_null : forall n, n==0 -> sgn n == 0.
 Proof.
-intros n. unfold Z.eq. rewrite Z.spec_sgn, Z.spec_0. rewrite Zsgn_null; auto.
+intros n. zify. omega with *.
 Qed.
 
-Theorem sgn_pos : forall n, 0<n -> Z.sgn n == Z.succ 0.
+Theorem sgn_pos : forall n, 0<n -> sgn n == succ 0.
 Proof.
-intros n. red. rewrite spec_lt, Z.spec_sgn. zsimpl. rewrite Zsgn_pos; auto.
+intros n. zify. omega with *.
 Qed.
 
-Theorem sgn_neg : forall n, n<0 -> Z.sgn n == Z.opp (Z.succ 0).
+Theorem sgn_neg : forall n, n<0 -> sgn n == opp (succ 0).
 Proof.
-intros n. red. rewrite spec_lt, Z.spec_sgn. zsimpl. rewrite Zsgn_neg; auto.
+intros n. zify. omega with *.
 Qed.
 
-Program Instance div_wd : Proper (Z.eq==>Z.eq==>Z.eq) Z.div.
-Program Instance mod_wd : Proper (Z.eq==>Z.eq==>Z.eq) Z.modulo.
+Program Instance div_wd : Proper (eq==>eq==>eq) div.
+Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 
-Theorem div_mod : forall a b, ~b==0 -> a == b*(Z.div a b) + (Z.modulo a b).
+Theorem div_mod : forall a b, ~b==0 -> a == b*(div a b) + (modulo a b).
 Proof.
-intros a b. unfold Z.eq; zsimpl. intros.
-apply Z_div_mod_eq_full; auto.
+intros a b. zify. intros. apply Z_div_mod_eq_full; auto.
 Qed.
 
 Theorem mod_pos_bound :
- forall a b, 0 < b -> 0 <= Z.modulo a b /\ Z.modulo a b < b.
+ forall a b, 0 < b -> 0 <= modulo a b /\ modulo a b < b.
 Proof.
-intros a b. rewrite 2 spec_lt, spec_le, Z.spec_0. intros.
-rewrite Z.spec_modulo; auto with zarith.
-apply Z_mod_lt; auto with zarith.
+intros a b. zify. intros. apply Z_mod_lt; auto with zarith.
 Qed.
 
 Theorem mod_neg_bound :
- forall a b, b < 0 -> b < Z.modulo a b /\ Z.modulo a b <= 0.
+ forall a b, b < 0 -> b < modulo a b /\ modulo a b <= 0.
 Proof.
-intros a b. rewrite 2 spec_lt, spec_le, Z.spec_0. intros.
-rewrite Z.spec_modulo; auto with zarith.
-apply Z_mod_neg; auto with zarith.
+intros a b. zify. intros. apply Z_mod_neg; auto with zarith.
 Qed.
 
-(** Aliases *)
+End ZTypeIsZAxioms.
 
-Definition t := Z.t.
-Definition eq := Z.eq.
-Definition zero := Z.zero.
-Definition succ := Z.succ.
-Definition pred := Z.pred.
-Definition add := Z.add.
-Definition sub := Z.sub.
-Definition mul := Z.mul.
-Definition opp := Z.opp.
-Definition lt := Z.lt.
-Definition le := Z.le.
-Definition min := Z.min.
-Definition max := Z.max.
-Definition abs := Z.abs.
-Definition sgn := Z.sgn.
-Definition div := Z.div.
-Definition modulo := Z.modulo.
-
-End ZSig_ZAxioms.
+Module ZType_ZAxioms (Z : ZType)
+ <: ZAxiomsSig <: ZDivSig <: HasCompare Z <: HasEqBool Z
+ := Z <+ ZTypeIsZAxioms.
