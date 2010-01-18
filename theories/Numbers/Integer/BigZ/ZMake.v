@@ -302,6 +302,19 @@ Module Make (N:NType) <: ZType.
  rewrite F0; ring.
  Qed.
 
+ Definition power x n :=
+  match n with
+  | N0 => one
+  | Npos p => power_pos x p
+  end.
+
+ Theorem spec_power: forall x n, to_Z (power x n) = to_Z x ^ Z_of_N n.
+ Proof.
+ destruct n; simpl. rewrite N.spec_1; reflexivity.
+ apply spec_power_pos.
+ Qed.
+
+
  Definition sqrt x :=
   match x with
   | Pos nx => Pos (N.sqrt nx)

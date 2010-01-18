@@ -1780,6 +1780,20 @@ let _ =
   pp " intros; rewrite Zpower_1_r; auto.";
   pp " Qed.";
   pp "";
+
+  pr " Definition power x (n:N) := match n with";
+  pr "  | BinNat.N0 => one";
+  pr "  | BinNat.Npos p => power_pos x p";
+  pr " end.";
+  pr "";
+
+  pr " Theorem spec_power: forall x n, [power x n] = [x] ^ Z_of_N n.";
+  pa " Admitted.";
+  pp " Proof.";
+  pp " destruct n; simpl. apply (spec_1 w0_spec).";
+  pp " apply spec_power_pos.";
+  pp " Qed.";
+  pr "";
   pr "";
 
   pr " (***************************************************************)";
