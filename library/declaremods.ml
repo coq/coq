@@ -386,7 +386,6 @@ let (in_modtype,_) =
       subst_function = subst_modtype;
       classify_function = classify_modtype }
 
-
 let rec replace_module_object idl ( mbids, mp, lib_stack) (mbids2,mp2,objs) mp1=
   if mbids<>[] then 
     error "Unexpected functor objects"
@@ -744,6 +743,54 @@ let rec get_module_substobjs env mp_from inl = function
   | MSEwith (mty, With_Definition _) -> get_module_substobjs env mp_from inl mty
   | MSEwith (mty, With_Module (idl,mp)) -> assert false
 
+
+let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
+  let mmp = Global.start_module id in
+  let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
+
+  let funct f m = funct_entry arg_entries (f (Global.env ()) m) in
+  let env = Global.env() in
+  let mty_entry_o, subs, inl_res = match res with
+    | Topconstr.Enforce (mty,inl) -> Some (funct interp_modtype mty), [], inl
+    | Topconstr.Check mtys ->
+	None, build_subtypes interp_modtype mmp arg_entries mtys, true
+  in
+ 
+  (*let subs = List.map (Mod_typing.translate_module_type env mmp) mty_sub_l in  *)
+  let mexpr_entry_o, inl_expr = match mexpr_o with
+    | None -> None, true
+    | Some (mexpr, inl) -> Some (funct interp_modexpr mexpr), inl
+  in
+  let entry =
+    {mod_entry_type = mty_entry_o;
+     mod_entry_expr = mexpr_entry_o }
+  in
+
+  let substobjs =
+    match entry with
+      | {mod_entry_type = Some mte} -> get_modtype_substobjs env mmp inl_res mte
+      | {mod_entry_expr = Some mexpr} -> get_module_substobjs env mmp inl_expr mexpr
+      | _ -> anomaly "declare_module: No type, no body ..."
+  in
+  let (mbids,mp_from,objs) = substobjs in
+  (* Undo the simulated interactive building of the module *)
+  (* and declare the module as a whole *)
+  Summary.unfreeze_summaries fs;
+  let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
+  let mp_env,resolver = Global.add_module id entry (inl_expr&&inl_res) in
+
+  if mp_env <> mp then anomaly "Kernel and Library names do not match";
+
+  
+  check_subtypes mp subs;
+
+  let substobjs = (mbids,mp_env,
+		   subst_objects(map_mp mp_from mp_env resolver) objs) in
+  ignore (add_leaf
+	    id
+	    (in_module (Some (entry), substobjs)));
+  mmp
+
 (* Include *)
 
 let rec subst_inc_expr subst me =
@@ -784,10 +831,8 @@ let load_include  i (oname,((me,is_mod),(mbis,mp1,objs))) =
 let open_include i (oname,((me,is_mod),(mbis,mp1,objs))) =
   let dir,mp1 = lift_oname oname in
   let prefix = (dir,(mp1,empty_dirpath)) in
-      if is_mod || i = 1 then
-	open_objects i prefix objs
-      else ()
-    
+    open_objects i prefix objs
+          
 let subst_include (subst,((me,is_mod),substobj)) =
   let (mbids,mp,objs) = substobj in
   let substobjs = (mbids,subst_mp subst mp,subst_objects subst objs) in
@@ -803,68 +848,6 @@ let (in_include,out_include) =
     open_function = open_include;
     subst_function = subst_include;
     classify_function = classify_include }
-
-let rec update_include (mbids,mp,objs) =
-  let rec replace_include = function
-    | [] -> []
-    | (id,obj)::tail ->
-	if object_tag obj = "INCLUDE" then
-	  let ((me,is_mod),substobjs) = out_include obj in
-	  let substobjs' = update_include substobjs in
-            (id, in_include ((me,true),substobjs'))::
-	      (replace_include tail)
-	else
-	  (id,obj)::(replace_include tail)
-  in
-    (mbids,mp,replace_include objs)
-
-let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
-  let mmp = Global.start_module id in
-  let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
-
-  let funct f m = funct_entry arg_entries (f (Global.env ()) m) in
-  let env = Global.env() in
-  let mty_entry_o, subs, inl_res = match res with
-    | Topconstr.Enforce (mty,inl) -> Some (funct interp_modtype mty), [], inl
-    | Topconstr.Check mtys ->
-	None, build_subtypes interp_modtype mmp arg_entries mtys, true
-  in
- 
-  (*let subs = List.map (Mod_typing.translate_module_type env mmp) mty_sub_l in  *)
-  let mexpr_entry_o, inl_expr = match mexpr_o with
-    | None -> None, true
-    | Some (mexpr, inl) -> Some (funct interp_modexpr mexpr), inl
-  in
-  let entry =
-    {mod_entry_type = mty_entry_o;
-     mod_entry_expr = mexpr_entry_o }
-  in
-
-  let substobjs =
-    match entry with
-      | {mod_entry_type = Some mte} -> get_modtype_substobjs env mmp inl_res mte
-      | {mod_entry_expr = Some mexpr} -> get_module_substobjs env mmp inl_expr mexpr
-      | _ -> anomaly "declare_module: No type, no body ..."
-  in
-  let (mbids,mp_from,objs) = update_include substobjs in
-  (* Undo the simulated interactive building of the module *)
-  (* and declare the module as a whole *)
-  Summary.unfreeze_summaries fs;
-  let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
-  let mp_env,resolver = Global.add_module id entry (inl_expr&&inl_res) in
-
-  if mp_env <> mp then anomaly "Kernel and Library names do not match";
-
-  
-  check_subtypes mp subs;
-
-  let substobjs = (mbids,mp_env,
-		   subst_objects(map_mp mp_from mp_env resolver) objs) in
-  ignore (add_leaf
-	    id
-	    (in_module (Some (entry), substobjs)));
-  mmp
-
 
 let rec include_subst env mb mbids sign inline =
   match mbids with

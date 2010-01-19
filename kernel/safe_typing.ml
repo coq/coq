@@ -438,23 +438,24 @@ let end_module l restype senv =
    let senv = add_constraints cst senv in
    let mp_sup = senv.modinfo.modpath in
      (* Include Self support  *)
-   let rec compute_sign sign mb senv = 
+   let rec compute_sign sign mb resolver senv = 
      match sign with
      | SEBfunctor(mbid,mtb,str) ->
 	 let cst_sub = check_subtypes senv.env mb mtb in
 	 let senv = add_constraints cst_sub senv in
 	 let mpsup_delta = if not inl then mb.typ_delta else
-	   complete_inline_delta_resolver senv.env mp_sup mbid mtb mb.typ_delta
-	 in
+	   complete_inline_delta_resolver senv.env mp_sup mbid mtb mb.typ_delta in
+	 let subst = map_mbid mbid mp_sup mpsup_delta in
+	 let resolver = subst_codom_delta_resolver subst resolver in
 	   (compute_sign 
-	     (subst_struct_expr (map_mbid mbid mp_sup mpsup_delta) str) mb senv)
-     | str -> str,senv
+	     (subst_struct_expr subst str) mb resolver senv)
+     | str -> resolver,str,senv
    in
-   let sign,senv = compute_sign sign {typ_mp = mp_sup;
+   let resolver,sign,senv = compute_sign sign {typ_mp = mp_sup;
 				      typ_expr = SEBstruct (List.rev senv.revstruct);
 				      typ_expr_alg = None;
 				      typ_constraints = Constraint.empty;
-				      typ_delta = senv.modinfo.resolver} senv in
+				      typ_delta = senv.modinfo.resolver} resolver senv in
    let str = match sign with
      | SEBstruct(str_l) -> str_l
      | _ -> error ("You cannot Include a high-order structure.")
