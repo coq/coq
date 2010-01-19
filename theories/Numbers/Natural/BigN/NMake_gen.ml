@@ -262,7 +262,7 @@ let _ =
 
   for i = 1 to size + 2 do
     pp " Let znz_to_Z_%i: forall x y," i;
-    pp "   znz_to_Z w%i_op (WW x y) = " i;
+    pp "   znz_to_Z w%i_op (WW x y) =" i;
     pp "    znz_to_Z w%i_op x * base (znz_digits w%i_op) + znz_to_Z w%i_op y." (i-1) (i-1) (i-1);
     pp " Proof.";
     pp " auto.";
@@ -938,7 +938,7 @@ let _ =
     pp " intros x; case x; unfold reduce_%i." i;
     pp " exact (spec_0 w0_spec).";
     pp " intros x1 y1.";
-    pp " generalize (spec_w%i_eq0 x1); " (i - 1);
+    pp " generalize (spec_w%i_eq0 x1);" (i - 1);
     pp "   case w%i_eq0; intros H1; auto." (i - 1);
     if i <> 1 then
       pp " rewrite spec_reduce_%i." (i - 1);
@@ -1079,7 +1079,7 @@ let _ =
   pp " Hint Rewrite spec_wn_add: addr.";
 
   pr " Definition add := Eval lazy beta delta [same_level] in";
-  pr0 "   (same_level t_";
+  pr0 "   (same_level t_ ";
   for i = 0 to size do
     pr0 "w%i_add " i;
   done;
@@ -1134,7 +1134,7 @@ let _ =
   pp " Proof.";
   pp " intros x; case x; unfold pred.";
   for i = 0 to size do
-    pp " intros x1 H1; unfold w%i_pred_c; " i;
+    pp " intros x1 H1; unfold w%i_pred_c;" i;
     pp " generalize (spec_pred_c w%i_spec x1); case znz_pred_c; intros y1." i;
     pp " rewrite spec_reduce_%i; auto." i;
     pp " unfold interp_carry; unfold to_Z.";
@@ -1158,7 +1158,7 @@ let _ =
   pp " Proof.";
   pp " intros x; case x; unfold pred.";
   for i = 0 to size do
-    pp " intros x1 H1; unfold w%i_pred_c; " i;
+    pp " intros x1 H1; unfold w%i_pred_c;" i;
     pp "   generalize (spec_pred_c w%i_spec x1); case znz_pred_c; intros y1." i;
     pp " unfold interp_carry; unfold to_Z.";
     pp " unfold to_Z in H1; auto with zarith.";
@@ -1217,7 +1217,7 @@ let _ =
     pp " Let spec_w%i_sub: forall x y, [%s%i y] <= [%s%i x] -> [w%i_sub x y] = [%s%i x] - [%s%i y]." i c i c i i c i c i;
     pp " Proof.";
     pp " intros n m; unfold w%i_sub, w%i_sub_c." i i;
-    pp "  generalize (spec_sub_c w%i_spec n m); case znz_sub_c; " i;
+    pp "  generalize (spec_sub_c w%i_spec n m); case znz_sub_c;" i;
     if i == 0 then
       pp "    intros x; auto."
     else
@@ -1240,7 +1240,7 @@ let _ =
   pp "";
 
   pr " Definition sub := Eval lazy beta delta [same_level] in";
-  pr0 "   (same_level t_";
+  pr0 "   (same_level t_ ";
   for i = 0 to size do
     pr0 "w%i_sub " i;
   done;
@@ -1264,7 +1264,7 @@ let _ =
     pp " Let spec_w%i_sub0: forall x y, [%s%i x] < [%s%i y] -> [w%i_sub x y] = 0." i c i c i i;
     pp " Proof.";
     pp " intros n m; unfold w%i_sub, w%i_sub_c." i i;
-    pp "  generalize (spec_sub_c w%i_spec n m); case znz_sub_c; " i;
+    pp "  generalize (spec_sub_c w%i_spec n m); case znz_sub_c;" i;
     pp "   intros x; unfold interp_carry.";
     pp "   unfold to_Z; case (spec_to_Z w%i_spec x); intros; auto with zarith." i;
     pp " intros; unfold to_Z, zero, w_0; rewrite (spec_0 w0_spec); auto.";
@@ -1341,7 +1341,7 @@ let _ =
 
   for i = 0 to size do
     pp " Let spec_compare_%i: forall x y," i;
-    pp "    match compare_%i x y with " i;
+    pp "    match compare_%i x y with" i;
     pp "      Eq => [%s%i x] = [%s%i y]" c i c i;
     pp "    | Lt => [%s%i x] < [%s%i y]" c i c i;
     pp "    | Gt => [%s%i x] > [%s%i y]" c i c i;
@@ -1564,7 +1564,7 @@ let _ =
   pr " Definition mul := Eval lazy beta delta [iter0] in";
   pr "  (iter0 t_";
   for i = 0 to size do
-    pr "    (fun x y => reduce_%i (w%i_mul_c x y)) " (i + 1) i;
+    pr "    (fun x y => reduce_%i (w%i_mul_c x y))" (i + 1) i;
     pr "    (fun n x y => w%i_mul n y x)" i;
     pr "    w%i_mul" i;
   done;
@@ -1614,7 +1614,7 @@ let _ =
 
   for i = 0 to size do
     pp "  Lemma extend%in_spec: forall n x1," i;
-    pp "  znz_to_Z (nmake_op _ w%i_op (S n)) (extend%i n x1) = " i i;
+    pp "  znz_to_Z (nmake_op _ w%i_op (S n)) (extend%i n x1) =" i i;
     pp "  znz_to_Z w%i_op x1." i;
     pp "  Proof.";
     pp "    intros n1 x2; rewrite nmake_double.";
@@ -1635,12 +1635,13 @@ let _ =
   pp "    rewrite make_op_S.";
   pp "    case znz_mul_c; auto.";
   pp "  Qed.";
+  pr "";
 
   pr "  Theorem spec_mul: forall x y, [mul x y] = [x] * [y].";
   pa "  Admitted.";
   pp "  Proof.";
   for i = 0 to size do
-    pp "    assert(F%i: " i;
+    pp "    assert(F%i:" i;
     pp "    forall n x y,";
     if i <> size then
       pp0 "    Z_of_nat n <= %i -> "   (size - i);
@@ -1674,7 +1675,7 @@ let _ =
   done;
   pp "    refine (spec_iter0 t_ (fun x y res => [res] = x * y)";
   for i = 0 to size do
-    pp "    (fun x y => reduce_%i (w%i_mul_c x y)) " (i + 1) i;
+    pp "    (fun x y => reduce_%i (w%i_mul_c x y))" (i + 1) i;
     pp "    (fun n x y => w%i_mul n y x)" i;
     pp "    w%i_mul _ _ _" i;
   done;
@@ -1690,12 +1691,12 @@ let _ =
     if i == size then
       begin
         pp "    intros n x y; rewrite F%i; auto with zarith." i;
-        pp "    intros n x y; rewrite F%i; auto with zarith. " i;
+        pp "    intros n x y; rewrite F%i; auto with zarith." i;
       end
     else
       begin
         pp "    intros n x y H; rewrite F%i; auto with zarith." i;
-        pp "    intros n x y H; rewrite F%i; auto with zarith. " i;
+        pp "    intros n x y H; rewrite F%i; auto with zarith." i;
       end;
   done;
   pp "    intros n m x y; unfold mulnm.";
@@ -1872,7 +1873,7 @@ let _ =
 
   for i = 0 to size do
     pp " Lemma spec_get_end%i: forall n x y," i;
-    pp "    eval%in n x  <= [%s%i y] -> " i c i;
+    pp "    eval%in n x  <= [%s%i y] ->" i c i;
     pp "     [%s%i (DoubleBase.get_low %s n x)] = eval%in n x." c i (pz i) i;
     pp " Proof.";
     pp " intros n x y H.";
@@ -1940,7 +1941,7 @@ let _ =
       pp "  intros n x y H2 H3; unfold div_gt%i, w%i_div_gt." i i
     else
       pp "  intros n x y H1 H2 H3; unfold div_gt%i, w%i_div_gt." i i;
-    pp "    generalize (spec_div_gt w%i_spec x " i;
+    pp "    generalize (spec_div_gt w%i_spec x" i;
     pp "                (DoubleBase.get_low %s (S n) y))." (pz i);
     pp0 "";
     for j = 0 to i do
@@ -2529,7 +2530,7 @@ let _ =
     pp " assert (F1:= spec_more_than_1_digit w%i_spec)." i;
     pp " generalize (spec_head0 w%i_spec x Hx)." i;
     pp " unfold base.";
-    pp " pattern (Zpos (znz_digits w%i_op)) at 1; " i;
+    pp " pattern (Zpos (znz_digits w%i_op)) at 1;" i;
     pp " rewrite <- (fun x => (F0 (Zpos x))).";
     pp " rewrite Zpower_exp; auto with zarith.";
     pp " rewrite Zpower_1_r; rewrite Z_div_mult; auto with zarith.";
