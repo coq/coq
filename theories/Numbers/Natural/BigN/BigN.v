@@ -11,7 +11,7 @@
 (** Initial Author: Arnaud Spiwack *)
 
 Require Export Int31.
-Require Import CyclicAxioms Cyclic31 NSig NSigNAxioms NMake
+Require Import CyclicAxioms Cyclic31 Ring31 NSig NSigNAxioms NMake
   NProperties NDiv GenericMinMax.
 
 (** The following [BigN] module regroups both the operations and
@@ -136,36 +136,6 @@ Qed.
 
 
 (** Detection of constants *)
-
-Local Open Scope list_scope.
-
-Ltac isInt31cst_lst l :=
- match l with
- | nil => constr:true
- | ?t::?l => match t with
-               | D1 => isInt31cst_lst l
-               | D0 => isInt31cst_lst l
-               | _ => constr:false
-             end
- | _ => constr:false
- end.
-
-Ltac isInt31cst t :=
- match t with
- | I31 ?i0 ?i1 ?i2 ?i3 ?i4 ?i5 ?i6 ?i7 ?i8 ?i9 ?i10
-       ?i11 ?i12 ?i13 ?i14 ?i15 ?i16 ?i17 ?i18 ?i19 ?i20
-       ?i21 ?i22 ?i23 ?i24 ?i25 ?i26 ?i27 ?i28 ?i29 ?i30 =>
-    let l :=
-      constr:(i0::i1::i2::i3::i4::i5::i6::i7::i8::i9::i10
-      ::i11::i12::i13::i14::i15::i16::i17::i18::i19::i20
-      ::i21::i22::i23::i24::i25::i26::i27::i28::i29::i30::nil)
-    in isInt31cst_lst l
- | Int31.On => constr:true
- | Int31.In => constr:true
- | Int31.Tn => constr:true
- | Int31.Twon => constr:true
- | _ => constr:false
- end.
 
 Ltac isStaticWordCst t :=
  match t with

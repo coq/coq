@@ -11,8 +11,9 @@ Cyclic/DoubleCyclic/DoubleMul.vo
 Cyclic/DoubleCyclic/DoubleSqrt.vo
 Cyclic/DoubleCyclic/DoubleSub.vo
 Cyclic/DoubleCyclic/DoubleType.vo
-Cyclic/Int31/Cyclic31.vo
 Cyclic/Int31/Int31.vo
+Cyclic/Int31/Cyclic31.vo
+Cyclic/Int31/Ring31.vo
 Cyclic/ZModulo/ZModulo.vo
 Integer/Abstract/ZAddOrder.vo
 Integer/Abstract/ZAdd.vo
