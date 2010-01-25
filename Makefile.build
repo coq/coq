@@ -433,7 +433,7 @@ theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_STRICT) | 
 	$(HIDE)rm -f theories/Init/$*.glob
 	$(HIDE)$(BOOTCOQTOP) -nois -compile theories/Init/$*
 
-theories/Numbers/Natural/BigN/NMake.v: theories/Numbers/Natural/BigN/NMake_gen.ml
+theories/Numbers/Natural/BigN/NMake_gen.v: theories/Numbers/Natural/BigN/NMake_gen.ml
 	$(OCAML) $< > $@
 
 ###########################################################################

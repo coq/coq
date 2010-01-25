@@ -58,6 +58,7 @@ Natural/Abstract/NProperties.vo
 Natural/Abstract/NDiv.vo
 Natural/BigN/BigN.vo
 Natural/BigN/Nbasic.vo
+Natural/BigN/NMake_gen.vo
 Natural/BigN/NMake.vo
 Natural/Binary/NBinary.vo
 Natural/Peano/NPeano.vo
