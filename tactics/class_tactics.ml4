@@ -523,7 +523,8 @@ exception FoundTerm of constr
 
 let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
   let gls = { it = Evd.make_evar (Environ.named_context_val env) gl; sigma = sigma } in
-  let gls', v = eauto [searchtable_map typeclasses_db] gls in
+  let hints = searchtable_map typeclasses_db in
+  let gls', v = eauto ~st:(Hint_db.transparent_state hints) [hints] gls in
   let term = v [] in
   let evd = sig_sig gls' in
   let term = fst (Refiner.extract_open_proof evd term) in
