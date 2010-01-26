@@ -193,7 +193,13 @@ let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a option)
     let t = Reductionops.whd_betadeltaiota env (fst evars) ty in
       match kind_of_term t, l with
       | Prod (na, ty, b), obj :: cstrs ->
-	  if dependent (mkRel 1) b then
+	  if noccurn 1 b (* non-dependent product *) then
+	    let ty = Reductionops.nf_betaiota (fst evars) ty in
+	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
+	    let evars, relty = mk_relty evars env ty obj in
+	    let newarg = mkApp (Lazy.force respectful, [| ty ; b' ; relty ; arg |]) in
+	      evars, mkProd(na, ty, b), newarg, (ty, Some relty) :: cstrs
+	  else
 	    let (evars, b, arg, cstrs) = aux (Environ.push_rel (na, None, ty) env) evars b cstrs in
 	    let ty = Reductionops.nf_betaiota (fst evars) ty in
 	    let pred = mkLambda (na, ty, b) in
@@ -201,12 +207,6 @@ let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a option)
 	    let arg' = mkApp (Lazy.force forall_relation, [| ty ; pred ; liftarg |]) in
 	      if obj = None then evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
 	      else error "build_signature: no constraint can apply on a dependent argument"
-	  else
-	    let ty = Reductionops.nf_betaiota (fst evars) ty in
-	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
-	    let evars, relty = mk_relty evars env ty obj in
-	    let newarg = mkApp (Lazy.force respectful, [| ty ; b' ; relty ; arg |]) in
-	      evars, mkProd(na, ty, b), newarg, (ty, Some relty) :: cstrs
       | _, obj :: _ -> anomaly "build_signature: not enough products"
       | _, [] ->
 	  (match finalcstr with
@@ -548,6 +548,13 @@ let make_leibniz_proof c ty r =
     { r with rew_car = ty; rew_rel = mkApp (Lazy.force coq_eq, [| ty |]);
       rew_from = c r.rew_from; rew_to = c r.rew_to; rew_prf = prf }
 
+let pointwise_or_dep_relation n t car rel =
+  if noccurn 1 car then
+    mkApp (Lazy.force pointwise_relation, [| t; lift (-1) car; lift (-1) rel |])
+  else
+    mkApp (Lazy.force forall_relation, 
+	  [| t; mkLambda (n, t, car); mkLambda (n, t, rel) |])
+
 let subterm all flags (s : strategy) : strategy =
   let rec aux env sigma t ty cstr evars =
     let cstr' = Option.map (fun c -> (ty, c)) cstr in
@@ -597,7 +604,7 @@ let subterm all flags (s : strategy) : strategy =
 		    in Some (Some res)
 	    else rewrite_args None
 
-      | Prod (n, x, b) when not (dependent (mkRel 1) b) ->
+      | Prod (n, x, b) when noccurn 1 b ->
 	  let b = subst1 mkProp b in
 	  let tx = Typing.type_of env sigma x and tb = Typing.type_of env sigma b in
 	  let res = aux env sigma (mkApp (arrow_morphism tx tb, [| x; b |])) ty cstr evars in
@@ -634,7 +641,7 @@ let subterm all flags (s : strategy) : strategy =
 		Some (Some { r with
 		  rew_prf = mkLambda (n, t, r.rew_prf);
 		  rew_car = mkProd (n, t, r.rew_car);
-		  rew_rel = mkApp (Lazy.force pointwise_relation, [| t; r.rew_car; r.rew_rel |]);
+		  rew_rel = pointwise_or_dep_relation n t r.rew_car r.rew_rel;
 		  rew_from = mkLambda(n, t, r.rew_from);
 		  rew_to = mkLambda (n, t, r.rew_to) })
 	    | _ -> b')
@@ -1520,7 +1527,7 @@ let implify id gl =
   let binders,concl = decompose_prod_assum ctype in
   let ctype' =
     match binders with
-    | (_, None, ty as hd) :: tl when not (dependent (mkRel 1) concl) ->
+    | (_, None, ty as hd) :: tl when noccurn 1 concl ->
 	let env = Environ.push_rel_context tl (pf_env gl) in
 	let sigma = project gl in
 	let tyhd = Typing.type_of env sigma ty

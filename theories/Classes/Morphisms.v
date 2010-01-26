@@ -166,6 +166,24 @@ Instance pointwise_subrelation {A} `(sub : subrelation B R R') :
   subrelation (pointwise_relation A R) (pointwise_relation A R') | 4.
 Proof. reduce. unfold pointwise_relation in *. apply sub. apply H. Qed.
 
+(** For dependent function types. *)
+Lemma forall_subrelation A (B : A -> Type) (R S : forall x : A, relation (B x)) :
+  (forall a, subrelation (R a) (S a)) -> subrelation (forall_relation R) (forall_relation S).
+Proof. reduce. apply H. apply H0. Qed.
+
+(** We use an extern hint to help unification. *)
+
+Hint Extern 4 (subrelation (@forall_relation ?A ?B ?R) (@forall_relation _ _ ?S)) =>
+  apply (@forall_subrelation A B R S) ; intro : typeclass_instances.
+
+(** Any symmetric relation is equal to its inverse. *)
+
+Lemma subrelation_symmetric A R `(Symmetric A R) : subrelation (inverse R) R.
+Proof. reduce. red in H0. symmetry. assumption. Qed.
+
+Hint Extern 4 (subrelation (inverse _) _) => 
+  class_apply @subrelation_symmetric : typeclass_instances.
+
 (** The complement of a relation conserves its proper elements. *)
 
 Program Instance complement_proper
