@@ -204,6 +204,12 @@ else
  PLUGINSOPT:=
 endif
 
+ifeq ($(BEST),opt)
+  INITPLUGINSBEST:=$(INITPLUGINSOPT)
+else
+  INITPLUGINSBEST:=$(INITPLUGINS)
+endif
+
 CMA:=$(CLIBS) $(CAMLP4OBJS)
 CMXA:=$(CMA:.cma=.cmxa)
 
