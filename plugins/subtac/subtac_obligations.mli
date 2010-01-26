@@ -43,9 +43,10 @@ val add_mutual_definitions :
   notations ->
   fixpoint_kind -> unit
 
-val subtac_obligation : int * Names.identifier option * Topconstr.constr_expr option -> unit
+val subtac_obligation : int * Names.identifier option * Topconstr.constr_expr option ->
+  Tacexpr.raw_tactic_expr option -> unit
 
-val next_obligation : Names.identifier option -> unit
+val next_obligation : Names.identifier option -> Tacexpr.raw_tactic_expr option -> unit
 
 val solve_obligations : Names.identifier option -> Proof_type.tactic option -> progress
 (* Number of remaining obligations to be solved for this program *)

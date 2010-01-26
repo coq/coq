@@ -41,7 +41,7 @@ struct
 		(* types *)
   let subtac_gallina_loc : Vernacexpr.vernac_expr located Gram.Entry.e = gec "subtac_gallina_loc"
 
-  let subtac_nameopt : identifier option Gram.Entry.e = gec "subtac_nameopt"
+  let subtac_withtac : Tacexpr.raw_tactic_expr option Gram.Entry.e = gec "subtac_withtac"
 end
 
 open Rawterm
@@ -53,17 +53,17 @@ open Constr
 let sigref = mkRefC (Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Init.Specif.sig"))
 
 GEXTEND Gram
-  GLOBAL: subtac_gallina_loc typeclass_constraint Constr.binder subtac_nameopt;
+  GLOBAL: subtac_gallina_loc typeclass_constraint Constr.binder subtac_withtac;
 
   subtac_gallina_loc:
     [ [ g = Vernac.gallina -> loc, g
     | g = Vernac.gallina_ext -> loc, g ] ]
     ;
 
-  subtac_nameopt:
-    [ [ "ofb"; id=Prim.ident -> Some (id)
+  subtac_withtac:
+    [ [ "with"; t = Tactic.tactic -> Some t
       | -> None ] ]
-    ;
+  ;
 
   Constr.binder_let:
     [[ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" ->
@@ -90,12 +90,12 @@ let (wit_subtac_gallina_loc : Genarg.tlevel gallina_loc_argtype),
   (rawwit_subtac_gallina_loc : Genarg.rlevel gallina_loc_argtype) =
   Genarg.create_arg "subtac_gallina_loc"
 
-type 'a nameopt_argtype = (identifier option, 'a) Genarg.abstract_argument_type
+type 'a withtac_argtype = (Tacexpr.raw_tactic_expr option, 'a) Genarg.abstract_argument_type
 
-let (wit_subtac_nameopt : Genarg.tlevel nameopt_argtype),
-  (globwit_subtac_nameopt : Genarg.glevel nameopt_argtype),
-  (rawwit_subtac_nameopt : Genarg.rlevel nameopt_argtype) =
-  Genarg.create_arg "subtac_nameopt"
+let (wit_subtac_withtac : Genarg.tlevel withtac_argtype),
+  (globwit_subtac_withtac : Genarg.glevel withtac_argtype),
+  (rawwit_subtac_withtac : Genarg.rlevel withtac_argtype) =
+  Genarg.create_arg "subtac_withtac"
 
 VERNAC COMMAND EXTEND Subtac
 [ "Program" subtac_gallina_loc(g) ] -> [ Subtac.subtac g ]
@@ -113,12 +113,17 @@ let solve_all_obligations e = try_catch_exn Subtac_obligations.solve_all_obligat
 let admit_obligations e = try_catch_exn Subtac_obligations.admit_obligations e
 
 VERNAC COMMAND EXTEND Subtac_Obligations
-| [ "Obligation" integer(num) "of" ident(name) ":" lconstr(t) ] -> [ subtac_obligation (num, Some name, Some t) ]
-| [ "Obligation" integer(num) "of" ident(name) ] -> [ subtac_obligation (num, Some name, None) ]
-| [ "Obligation" integer(num) ":" lconstr(t) ] -> [ subtac_obligation (num, None, Some t) ]
-| [ "Obligation" integer(num) ] -> [ subtac_obligation (num, None, None) ]
-| [ "Next" "Obligation" "of" ident(name) ] -> [ next_obligation (Some name) ]
-| [ "Next" "Obligation" ] -> [ next_obligation None ]
+| [ "Obligation" integer(num) "of" ident(name) ":" lconstr(t) subtac_withtac(tac) ] -> 
+    [ subtac_obligation (num, Some name, Some t) tac ]
+| [ "Obligation" integer(num) "of" ident(name) subtac_withtac(tac) ] -> 
+    [ subtac_obligation (num, Some name, None) tac ]
+| [ "Obligation" integer(num) ":" lconstr(t) subtac_withtac(tac) ] -> 
+    [ subtac_obligation (num, None, Some t) tac ]
+| [ "Obligation" integer(num) subtac_withtac(tac) ] -> 
+    [ subtac_obligation (num, None, None) tac ]
+| [ "Next" "Obligation" "of" ident(name) subtac_withtac(tac) ] -> 
+    [ next_obligation (Some name) tac ]
+| [ "Next" "Obligation" subtac_withtac(tac) ] -> [ next_obligation None tac ]
 END
 
 VERNAC COMMAND EXTEND Subtac_Solve_Obligation
