@@ -85,6 +85,8 @@ usage () {
     printf "\tAdd profiling information in the Coq executables\n"
     echo "-annotate"
     printf "\tCompiles Coq with -dtypes option\n"
+    echo "-makecmd <command>"
+    printf "\tName of GNU Make command.\n"
 }
 
 
@@ -239,6 +241,8 @@ while : ; do
 	  ranlib_spec=yes
 	  ranlib_exec=$2
 	  shift;;
+    -makecmd|--makecmd) makecmd="$2"
+		      shift;;
     -byte-only|-byteonly|--byteonly|--byte-only) best_compiler=byte;;
     -debug|--debug) coq_debug_flag=-g;;
     -profile|--profile) coq_profile_flag=-p;;
@@ -319,7 +323,7 @@ fi
 
 # make command
 
-MAKE=`which make`
+MAKE=`which ${makecmd:-make}`
 if [ "$MAKE" != "" ]; then
   MAKEVERSION=`$MAKE -v | head -1`
   case $MAKEVERSION in
