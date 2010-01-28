@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/sh
 
 dest="$1"
 shift

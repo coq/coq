@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 ##################################
 #
@@ -331,7 +331,7 @@ if [ "$MAKE" != "" ]; then
       OK="no"
       if [ -x ./make ]; then
 	  MAKEVERSION=`./make -v | head -1`
-	  if [ "$MAKEVERSION" == "GNU Make 3.81" ]; then OK="yes"; fi
+	  if [ "$MAKEVERSION" = "GNU Make 3.81" ]; then OK="yes"; fi
       fi
       if [ $OK = "no" ]; then
 	  echo "GNU Make >= 3.81 is needed"
