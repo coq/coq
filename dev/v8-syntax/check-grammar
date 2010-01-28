@@ -1,31 +1,31 @@
-#!/bin/bash
+#!/bin/sh
 # This scripts checks that the new grammar of Coq as defined in syntax-v8.tex
 # is consistent in the sense that all invoked non-terminals are defined
 
-defined-nt() {
+defined_nt() {
   grep "\\DEFNT{.*}" syntax-v8.tex | sed -e "s|.*DEFNT{\([^}]*\)}.*|\1|"|\
     sort | sort -u
 }
 
-used-nt() {
+used_nt() {
   cat syntax-v8.tex | tr \\\\ \\n | grep "^NT{.*}" |\
     sed -e "s|^NT{\([^}]*\)}.*|\1|" | egrep -v ^\#1\|non-terminal | sort -u
 }
 
-used-term() {
+used_term() {
   cat syntax-v8.tex | tr \\\\ \\n | grep "^TERM{.*}" |\
     sed -e "s|^TERM{\([^}]*\)}.*|\1|" -e "s|\\$||g" | egrep -v ^\#1\|terminal | sort -u
 }
 
-used-kwd() {
+used_kwd() {
   cat syntax-v8.tex | tr \\\\ \\n | grep "^KWD{.*}" |\
     sed -e "s|^KWD{\([^}]*\)}.*|\1|" -e "s|\\$||g" | egrep -v ^\#1 | sort -u
 }
 
-defined-nt > def
-used-nt > use
-used-term > use-t
-used-kwd > use-k
+defined_nt > def
+used_nt > use
+used_term > use-t
+used_kwd > use-k
 diff def use > df
 
 ###############################
