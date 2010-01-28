@@ -693,7 +693,7 @@ and doc_bol = parse
   | eof
       { true }
   | '_'
-      { if !Cdglobals.plain_comments then start_emph () Output.char '%';
+      { if !Cdglobals.plain_comments then start_emph () else Output.char '%';
         doc None lexbuf }
   | _
       { backtrack lexbuf; doc None lexbuf }
