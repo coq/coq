@@ -693,7 +693,7 @@ and doc_bol = parse
   | eof
       { true }
   | '_'
-      { if !Cdglobals.plain_comments then start_emph () else Output.char '%';
+      { if !Cdglobals.plain_comments then Output.char '_' else start_emph ();
         doc None lexbuf }
   | _
       { backtrack lexbuf; doc None lexbuf }
@@ -840,10 +840,10 @@ and doc indents = parse
         doc indents lexbuf}
   | nonidentchar '_'
       { Output.char (lexeme_char lexbuf 0);
-        if !Cdglobals.plain_comments then start_emph () else Output.char '%';
+        if !Cdglobals.plain_comments then Output.char '_' else  start_emph () ;
         doc indents lexbuf }
   | '_' nonidentchar
-      { if !Cdglobals.plain_comments then stop_emph () else Output.char '%';
+      { if !Cdglobals.plain_comments then Output.char '_' else stop_emph () ;
         Output.char (lexeme_char lexbuf 1);
         doc indents lexbuf }
   | eof
