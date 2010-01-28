@@ -878,7 +878,7 @@ let _ = add_map "field_cond"
 (*                       (function -1|8|10->Eval|9->Rec|_->Prot)]);;*)
 
 
-let _ = Redexpr.declare_red_expr "simpl_field_expr"
+let _ = Redexpr.declare_reduction "simpl_field_expr"
   (protect_red "field")
 
 

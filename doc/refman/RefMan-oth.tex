@@ -1020,6 +1020,21 @@ command is prefixed by {\tt Local}. In the latter case, the behavior
 regarding sections and modules is the same as for the {\tt
   Transparent} and {\tt Opaque} commands.
 
+\subsection{\tt Declare Reduction \ident\ := {\rm\sl convtactic}.}
+
+This command allows to give a short name to a reduction expression,
+for instance {\tt lazy beta delta [foo bar]}. This short name can
+then be used in {\tt Eval \ident\ in ...} or {\tt eval} directives.
+This command accepts the {\tt Local} modifier, for discarding
+this reduction name at the end of the file or module. For the moment
+the name cannot be qualified. In particular declaring the same name
+in several modules or in several functor applications will be refused
+if these declarations are not local. The name \ident\ cannot be used
+directly as an Ltac tactic, but nothing prevent the user to also
+perform a {\tt Ltac \ident\ := {\rm\sl convtactic}}.
+
+\SeeAlso sections \ref{Conversion-tactics}
+
 \subsection{\tt Set Virtual Machine
 \label{SetVirtualMachine}
 \comindex{Set Virtual Machine}}
