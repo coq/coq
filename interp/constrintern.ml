@@ -1497,7 +1497,7 @@ let intern_context fail_anonymous sigma env params =
 	    (intern_local_binder_aux ~fail_anonymous (my_intern_constr sigma env lvar) (my_intern_type sigma env lvar) lvar)
 	    ((extract_ids env,false,None,[]), []) params)
 
-let interp_context_gen understand_type understand_judgment env bl =
+let interp_rawcontext_gen understand_type understand_judgment env bl =
   let (env, par, _, impls) =
     List.fold_left
       (fun (env,params,n,impls) (na, k, b, t) ->
@@ -1520,12 +1520,15 @@ let interp_context_gen understand_type understand_judgment env bl =
       (env,[],1,[]) (List.rev bl)
   in (env, par), impls
 
-let interp_context ?(fail_anonymous=false) sigma env params =
+let interp_context_gen understand_type understand_judgment ?(fail_anonymous=false) sigma env params =
   let bl = intern_context fail_anonymous sigma env params in
-    interp_context_gen (Default.understand_type sigma)
-      (Default.understand_judgment sigma) env bl
+    interp_rawcontext_gen understand_type understand_judgment env bl
+
+let interp_context ?(fail_anonymous=false) sigma env params =
+  interp_context_gen (Default.understand_type sigma) 
+    (Default.understand_judgment sigma) ~fail_anonymous sigma env params
 
 let interp_context_evars ?(fail_anonymous=false) evdref env params =
-  let bl = intern_context fail_anonymous !evdref env params in
-    interp_context_gen (fun env t -> Default.understand_tcc_evars evdref env IsType t)
-      (Default.understand_judgment_tcc evdref) env bl
+  interp_context_gen (fun env t -> Default.understand_tcc_evars evdref env IsType t)
+    (Default.understand_judgment_tcc evdref) ~fail_anonymous !evdref env params
+    
