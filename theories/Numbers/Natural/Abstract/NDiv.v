@@ -21,12 +21,16 @@ Module NDivPropFunct (Import N : NDivSig')(Import NP : NPropSig N).
 
 (** We benefit from what already exists for NZ *)
 
- Module N' <: NZDivSig.
-  Include N.
+ Module ND <: NZDiv N.
+  Definition div := div.
+  Definition modulo := modulo.
+  Definition div_wd := div_wd.
+  Definition mod_wd := mod_wd.
+  Definition div_mod := div_mod.
   Lemma mod_bound : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
   Proof. split. apply le_0_l. apply mod_upper_bound. order. Qed.
- End N'.
- Module Import NZDivP := NZDivPropFunct N' NP.
+ End ND.
+ Module Import NZDivP := NZDivPropFunct N NP ND.
 
  Ltac auto' := try rewrite <- neq_0_lt_0; auto using le_0_l.
 

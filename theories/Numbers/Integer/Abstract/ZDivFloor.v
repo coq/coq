@@ -41,12 +41,16 @@ Module ZDivPropFunct (Import Z : ZDivSig')(Import ZP : ZPropSig Z).
 
 (** We benefit from what already exists for NZ *)
 
- Module Z' <: NZDivSig.
-  Include Z.
+ Module ZD <: NZDiv Z.
+  Definition div := div.
+  Definition modulo := modulo.
+  Definition div_wd := div_wd.
+  Definition mod_wd := mod_wd.
+  Definition div_mod := div_mod.
   Lemma mod_bound : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
   Proof. intros. now apply mod_pos_bound. Qed.
- End Z'.
- Module Import NZDivP := NZDivPropFunct Z' ZP.
+ End ZD.
+ Module Import NZDivP := NZDivPropFunct Z ZP ZD.
 
 (** Another formulation of the main equation *)
 
