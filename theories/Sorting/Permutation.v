@@ -75,11 +75,10 @@ Hint Resolve Permutation_refl Permutation_sym Permutation_trans.
 (* This provides reflexivity, symmetry and transitivity and rewriting
    on morphims to come *)
 
-Add Parametric Relation A : (list A) (@Permutation A)
-  reflexivity proved by (@Permutation_refl A)
-  symmetry proved by (@Permutation_sym A)
-  transitivity proved by (@Permutation_trans A)
-as Permutation_Equivalence.
+Instance Permutation_Equivalence A : Equivalence (@Permutation A) | 10 := {
+  Equivalence_Reflexive := @Permutation_refl A ;
+  Equivalence_Symmetric := @Permutation_sym A ;
+  Equivalence_Transitive := @Permutation_trans A }.
 
 Add Parametric Morphism A (a:A) : (cons a)
   with signature @Permutation A ==> @Permutation A

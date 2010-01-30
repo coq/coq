@@ -21,10 +21,13 @@ Tactics
   (i.e. library Classical_Prop or Classical) is loaded.
 - New "Hint Resolve ->" (or "<-") for declaring iff's as oriented
   hints (wish #2104).
+- "Hint Rewrite" now checks that the lemma looks like an equation.
 - New introduction patterns "*" for introducing the next block of dependent 
   variables and "**" for introducing all quantified variables and hypotheses.
 - Pattern Unification for existential variables activated in tactics and 
   new option "Unset Tactic Evars Pattern Unification" to deactivate it.
+- Resolution of Canonical Structures is now part of the tactic's unification
+  algorithm.
 - New tactic "etransitivity".
 - Support of JMeq for "injection" and "discriminate".
 - Tactic "subst" now supports heterogeneous equality and equality
@@ -52,6 +55,16 @@ Tactics
   sequences of "apply in") now leave the side conditions of the lemmas
   uniformly after the main goal (possible source of rare incompatibilities).
 - In "simpl c" and "change c with d", c can be a pattern.
+- Tactic "revert" now preserves let-in's making it the exact inverse of
+  "intro".
+- Renamed "Morphism" into "Proper" and "respect" into "proper_prf"
+  (possible source of incompatibility).
+- "Require Import Setoid" does not export all of "Morphims" and
+  "RelationClasses" anymore (possible source of incompatibility, fixed
+  by importing "Morphisms" too).
+- New tactic variants "rewrite* by" and "autorewrite*" that rewrite
+  respectively the first and all matches whose side-conditions are
+  solved.
 
 Tactic Language
 
@@ -94,6 +107,13 @@ Vernacular commands
 - Include Type is now deprecated since Include now accept both modules and
   module types.
 - Declare ML Module supports Local option.
+- New command "(Global?) Generalizable [All|No] Variable(s)? ident(s)?" to
+  declare which identifiers are generalizable in `{} and `() binders.
+- New command "Print Opaque Dependencies" to display opaque constants in
+  addition to all variables, parameters or axioms a theorem or
+  definition relies on.
+- New option [Set Automatic Introduction] to automatically introduce
+  variables before the colon at the start of interactive proofs.
 - New command "Declare Reduction <id> := <conv_expr>", allowing to write
   later "Eval <id> in ...". This command accepts a Local variant.
 
@@ -116,7 +136,7 @@ Coqdoc
 - The "--lib-name <string>" flag prints "<string> Foo" instead of
   "Library Foo" where library titles are called for.  The
   "--no-lib-name" flag eliminates the extra title.
-- New option "--parse-comments" to allow parsing of regular ("(* *)") 
+- New option "--parse-comments" to allow parsing of regular "(* *)"
   comments.
 - New option "--plain-comments" to disable interpretation inside comments.
 - New option "--interpolate" to try and typeset identifiers in Coq escapings
@@ -152,6 +172,29 @@ Language
   \Delta-equivalence on qualified name. The include operator has been extended 
   to high-order structures (cf. libraries Numbers and Structures to see examples).
   Interactive proofs are now authorized in module type.
+
+Program
+
+- Streamlined definitions using well-founded recursion and measures so
+  that they can work on any number subset of the arguments directly
+  (uses currying).
+- Try to automatically clear structural fixpoint prototypes in
+  obligations to avoid issues of opacity.
+- Use return type clause inference as in the standard typing algorithm.
+- Support [Local Obligation Tactic] and [Next Obligation with tactic].
+- Use [Show Obligation Tactic] to print the current default tactic.
+- [fst] and [snd] have maximal implicits in Program now (possible source
+  of incompatibility)
+
+Typeclasses
+
+- Use [Existing Class foo] to declare foo as a class a posteriori.
+  [foo] can be an inductive type or a constant definition, no
+  projections are defined.
+- Various bug fixes and improvements: support for defined fields, 
+  anonymous instances, declarations giving terms, better handling of
+  sections, contexts.
+
 
 Changes from V8.1 to V8.2
 =========================

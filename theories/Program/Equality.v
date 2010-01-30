@@ -221,7 +221,7 @@ Ltac simplify_eqs :=
 
 Ltac simplify_IH_hyps := repeat
   match goal with
-    | [ hyp : _ |- _ ] => specialize_hypothesis hyp
+    | [ hyp : _ |- _ ] => specialize_eqs hyp
   end.
 
 (** We split substitution tactics in the two directions depending on which 

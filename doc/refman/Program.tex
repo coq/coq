@@ -203,10 +203,14 @@ obligations (e.g. when defining mutually recursive blocks). The optional
 tactic is replaced by the default one if not specified.
 
 \begin{itemize}
-\item {\tt Obligation Tactic := \tacexpr}\comindex{Obligation Tactic}
+\item {\tt [Local|Global] Obligation Tactic := \tacexpr}\comindex{Obligation Tactic}
   Sets the default obligation
   solving tactic applied to all obligations automatically, whether to
   solve them or when starting to prove one, e.g. using {\tt Next}.
+  Local makes the setting last only for the current module. Inside
+  sections, local is the default.
+\item {\tt Show Obligation Tactic}\comindex{Show Obligation Tactic}
+  Displays the current default tactic.
 \item {\tt Obligations [of \ident]}\comindex{Obligations} Displays all remaining
   obligations.
 \item {\tt Obligation num [of \ident]}\comindex{Obligation} Start the proof of
@@ -270,5 +274,5 @@ Program Fixpoint f (x : A | P) { measure size } :=
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% compile-command: "BIBINPUTS=\".\" make -C ../.. -f Makefile.stage3 doc/refman/Reference-Manual.pdf"
+%%% compile-command: "BIBINPUTS=\".\" make -C ../.. -f Makefile.stage2 doc/refman/Reference-Manual.pdf"
 %%% End: 

@@ -346,8 +346,9 @@ Proof. firstorder. Qed.
 Lemma proper_proper_proxy `(Proper A R x) : ProperProxy R x.
 Proof. firstorder. Qed.
 
-Hint Extern 1 (ProperProxy _ _) => class_apply @eq_proper_proxy || class_apply @reflexive_proper_proxy : typeclass_instances.
-Hint Extern 2 (ProperProxy ?R _) => not_evar R ; class_apply @proper_proper_proxy : typeclass_instances.
+Hint Extern 1 (ProperProxy _ _) => 
+  class_apply @eq_proper_proxy || class_apply @reflexive_proper_proxy : typeclass_instances.
+Hint Extern 2 (ProperProxy ?R _) => not_evar R; class_apply @proper_proper_proxy : typeclass_instances.
 
 (** [R] is Reflexive, hence we can build the needed proof. *)
 
@@ -383,7 +384,7 @@ Ltac partial_application_tactic :=
     let v := eval compute in n in clear n ;
     let H := fresh in
       assert(H:Params m' v) by typeclasses eauto ;
-      let v' := eval compute in v in
+      let v' := eval compute in v in subst m';
       do_partial H v' m
  in
   match goal with

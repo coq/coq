@@ -848,6 +848,10 @@ let hintmap_of hdc concl =
       if occur_existential concl then Hint_db.map_all hdc
       else Hint_db.map_auto (hdc,concl)
 
+let exists_evaluable_reference env = function
+  | EvalConstRef _ -> true
+  | EvalVarRef v -> try ignore(lookup_named v env); true with Not_found -> false
+
 let rec trivial_fail_db mod_delta db_list local_db gl =
   let intro_tac =
     tclTHEN intro
@@ -908,7 +912,10 @@ and tac_of_hint db_list local_db concl (flags, {pat=p; code=t}) =
       tclTHEN
         (unify_resolve_gen flags (term,cl))
         (trivial_fail_db (flags <> None) db_list local_db)
-  | Unfold_nth c -> tclPROGRESS (unfold_in_concl [all_occurrences,c])
+  | Unfold_nth c -> (fun gl ->
+      if exists_evaluable_reference (pf_env gl) c then
+	tclPROGRESS (unfold_in_concl [all_occurrences,c]) gl
+      else tclFAIL 0 (str"Unbound reference") gl)
   | Extern tacast -> conclPattern concl p tacast
 
 and trivial_resolve mod_delta db_list local_db cl =
