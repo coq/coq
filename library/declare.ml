@@ -106,7 +106,7 @@ let load_constant i ((sp,kn),(_,_,kind)) =
 
 (* Opening means making the name without its module qualification available *)
 let open_constant i ((sp,kn),_) =
-  let con = constant_of_kn kn in
+  let con = Global.constant_of_delta (constant_of_kn kn) in
     Nametab.push (Nametab.Exactly i) sp (ConstRef con)
 
 let cache_constant ((sp,kn),(cdt,dhyps,kind)) =
