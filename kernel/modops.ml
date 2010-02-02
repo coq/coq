@@ -427,9 +427,11 @@ and strengthen_and_subst_struct
 	let resolve_out,rest' =
 	  strengthen_and_subst_struct rest subst env 
 	    mp_alias mp_from mp_to alias incl resolver in
-	  if incl && not (con_in_delta con resolver) then
+	  if incl then
+	    let old_name = constant_of_delta resolver con in
 	    (add_constant_delta_resolver
-	      (make_con_equiv mp_to mp_alias empty_dirpath l) resolve_out),
+	      (constant_of_kn_equiv (user_con con) (canonical_con old_name)) 
+	      resolve_out),
 	item'::rest'
 	  else
 	    resolve_out,item'::rest'
@@ -439,9 +441,10 @@ and strengthen_and_subst_struct
 	let resolve_out,rest' =
 	  strengthen_and_subst_struct rest subst env 
 	    mp_alias mp_from mp_to alias incl resolver in
-	  if incl && not (mind_in_delta mind resolver) then
+	  if incl then
+	    let old_name =  mind_of_delta resolver mind in 
 	    (add_mind_delta_resolver
-	      (make_mind_equiv mp_to mp_alias empty_dirpath l) resolve_out),
+	      (mind_of_kn_equiv (user_mind mind) (canonical_mind old_name)) resolve_out),
 	item'::rest'
 	  else
 	    resolve_out,item'::rest'
