@@ -430,7 +430,8 @@ and strengthen_and_subst_struct
 	  if incl then
 	    let old_name = constant_of_delta resolver con in
 	    (add_constant_delta_resolver
-	      (constant_of_kn_equiv (user_con con) (canonical_con old_name)) 
+	      (constant_of_kn_equiv (make_kn mp_to empty_dirpath l)
+		 (canonical_con old_name)) 
 	      resolve_out),
 	item'::rest'
 	  else
@@ -444,7 +445,7 @@ and strengthen_and_subst_struct
 	  if incl then
 	    let old_name =  mind_of_delta resolver mind in 
 	    (add_mind_delta_resolver
-	      (mind_of_kn_equiv (user_mind mind) (canonical_mind old_name)) resolve_out),
+	      (mind_of_kn_equiv (make_kn mp_to empty_dirpath l) (canonical_mind old_name)) resolve_out),
 	item'::rest'
 	  else
 	    resolve_out,item'::rest'
@@ -491,12 +492,9 @@ let strengthen_and_subst_mb mb mp env include_b =
 	    add_mp_delta_resolver mp mp_alias
 	      (subst_dom_delta_resolver subst_resolver mb.mod_delta) in	    
 	  let subst = map_mp mb.mod_mp mp new_resolver in 
-	  let resolver = if mb_is_an_alias && include_b then
-	    remove_mp_delta_resolver mb.mod_delta mb.mod_mp
-	  else mb.mod_delta in
 	  let resolver_out,new_sig = 
 	    strengthen_and_subst_struct str subst env
-	     mp_alias mb.mod_mp mp mb_is_an_alias include_b resolver 
+	     mp_alias mb.mod_mp mp mb_is_an_alias include_b mb.mod_delta
 	  in
 	    {mb with 
 	       mod_mp = mp;
