@@ -417,7 +417,8 @@ and strengthen_and_subst_struct
   match str with
     | [] -> empty_delta_resolver,[]
     | (l,SFBconst cb) :: rest ->
-	let item' = if alias then
+	let item' = if alias then 
+	  (* case alias no strengthening needed*)
 	  l,SFBconst (subst_const_body subst cb) 
 	else 
 	  l,SFBconst (strengthen_const env mp_from l 
@@ -428,14 +429,21 @@ and strengthen_and_subst_struct
 	  strengthen_and_subst_struct rest subst env 
 	    mp_alias mp_from mp_to alias incl resolver in
 	  if incl then
+	    (* If we are performing an inclusion we need to add
+	       the fact that the constant mp_to.l is \Delta-equivalent
+	       to resolver(mp_from.l) *)
 	    let old_name = constant_of_delta resolver con in
 	    (add_constant_delta_resolver
-	      (constant_of_kn_equiv (user_con con) (canonical_con old_name)) 
+	      (constant_of_kn_equiv (make_kn mp_to empty_dirpath l) (canonical_con old_name)) 
 	      resolve_out),
 	item'::rest'
 	  else
+	    (*In this case the fact that the constant mp_to.l is 
+	      \Delta-equivalent to resolver(mp_from.l) is already known
+	       because resolve_out contains mp_to maps to resolver(mp_from)*)
 	    resolve_out,item'::rest'
     | (l,SFBmind mib) :: rest ->
+	(*Same as constant*)
 	let item' = l,SFBmind (subst_mind subst mib) in
 	let mind = make_mind mp_from empty_dirpath l in
 	let resolve_out,rest' =
@@ -444,7 +452,7 @@ and strengthen_and_subst_struct
 	  if incl then
 	    let old_name =  mind_of_delta resolver mind in 
 	    (add_mind_delta_resolver
-	      (mind_of_kn_equiv (user_mind mind) (canonical_mind old_name)) resolve_out),
+	      (mind_of_kn_equiv (make_kn mp_to empty_dirpath l) (canonical_mind old_name)) resolve_out),
 	item'::rest'
 	  else
 	    resolve_out,item'::rest'
@@ -463,8 +471,14 @@ and strengthen_and_subst_struct
 	let resolve_out,rest' = 
 	  strengthen_and_subst_struct rest subst env' 
 	    mp_alias mp_from mp_to alias incl resolver in
-	  if  is_functor mb_out.mod_type then (add_mp_delta_resolver 
-	     mp_to' mp_to' resolve_out),item':: rest' else
+	  (* if mb is a functor we should not derive new equivalences
+	     on names, hence we add the fact that the functor can only
+	     be equivalent to itself. If we adopt an applicative
+	     semantic for functor this should be changed.*)
+	  if is_functor mb_out.mod_type then 
+	    (add_mp_delta_resolver 
+	       mp_to' mp_to' resolve_out),item':: rest' 
+	  else
 	    add_delta_resolver resolve_out mb_out.mod_delta,
 	item':: rest'
     | (l,SFBmodtype mty) :: rest -> 
@@ -479,24 +493,25 @@ and strengthen_and_subst_struct
 	  (add_mp_delta_resolver 
 	     mp_to' mp_to' resolve_out),(l,SFBmodtype mty)::rest'
     
+
+(* Let P be a module path when we write "Module M:=P." or "Module M. Include P. End M."
+   we need to perform two operations to compute the body of M. The first one is applying
+   the substitution {P <- M} on the type of P and the second one is strenghtening. *)
 let strengthen_and_subst_mb mb mp env include_b =
     match mb.mod_type with
 	SEBstruct str ->
 	  let mb_is_an_alias = mp_in_delta mb.mod_mp mb.mod_delta in
-	    (*if mb is an alias then the strengthening is useless 
+	    (*if mb.mod_mp is an alias then the strengthening is useless 
 	      (i.e. it is already done)*)
 	  let mp_alias = delta_of_mp mb.mod_delta mb.mod_mp in
 	  let subst_resolver = map_mp mb.mod_mp mp empty_delta_resolver in
 	  let new_resolver = 
 	    add_mp_delta_resolver mp mp_alias
-	      (subst_dom_delta_resolver subst_resolver mb.mod_delta) in	    
+	      (subst_dom_delta_resolver subst_resolver mb.mod_delta) in
 	  let subst = map_mp mb.mod_mp mp new_resolver in 
-	  let resolver = if mb_is_an_alias && include_b then
-	    remove_mp_delta_resolver mb.mod_delta mb.mod_mp
-	  else mb.mod_delta in
 	  let resolver_out,new_sig = 
 	    strengthen_and_subst_struct str subst env
-	     mp_alias mb.mod_mp mp mb_is_an_alias include_b resolver 
+	     mp_alias mb.mod_mp mp mb_is_an_alias include_b mb.mod_delta 
 	  in
 	    {mb with 
 	       mod_mp = mp;
