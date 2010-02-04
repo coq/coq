@@ -693,7 +693,7 @@ let occur_mbid uid = occur_uid (MBI uid)
 
 type 'a lazy_subst =
   | LSval of 'a
-  | LSlazy of substitution * 'a
+  | LSlazy of substitution list * 'a
 
 type 'a substituted = 'a lazy_subst ref
 
@@ -703,14 +703,14 @@ let force fsubst r =
   match !r with
   | LSval a -> a
   | LSlazy(s,a) ->
-      let a' = fsubst s a in
+      let subst = List.fold_left join empty_subst (List.rev s) in
+      let a' = fsubst subst a in
       r := LSval a';
       a'
 
 let subst_substituted s r =
   match !r with
-    | LSval a -> ref (LSlazy(s,a))
+    | LSval a -> ref (LSlazy([s],a))
     | LSlazy(s',a) ->
-	let s'' = join s' s in
-	  ref (LSlazy(s'',a))
+	  ref (LSlazy(s::s',a))
 
