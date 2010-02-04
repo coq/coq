@@ -795,13 +795,21 @@ where $G'$ is obtained from $G$ by replacing all occurrences of $t$ by
   This generalizes {\term} but also {\em all} hypotheses which depend
   on {\term}. It clears the generalized hypotheses.
 
-\item {\tt revert \ident$_1$ \dots\ \ident$_n$}\tacindex{revert}
- 
-  This is equivalent to a {\tt generalize} followed by a {\tt clear}
-  on the given hypotheses. This tactic can be seen as reciprocal to 
-  {\tt intros}. 
-
 \end{Variants}
+
+
+\subsection{\tt revert  \ident$_1$ \dots\ \ident$_n$
+\tacindex{revert}
+\label{revert}}
+
+This applies to any goal with variables \ident$_1$ \dots\ \ident$_n$.
+It moves the hypotheses (possibly defined) to the goal, if this respects
+dependencies. This tactic is the inverse of {\tt intro}. 
+
+\begin{ErrMsgs}
+\item \errindexbis{{\ident} is used in the hypothesis {\ident'}}{is
+    used in the hypothesis} 
+\end{ErrMsgs}
 
 \subsection{\tt change \term
 \tacindex{change}

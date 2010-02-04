@@ -507,21 +507,8 @@ END
 
 (** Tactic to automatically simplify hypotheses of the form [Π Δ, x_i = t_i -> T] 
     where [t_i] is closed w.r.t. Δ. Such hypotheses are automatically generated
-    during dependent induction. *)
+    during dependent induction. For internal use. *)
 
-TACTIC EXTEND specialize_hyp
-[ "specialize_hypothesis" hyp(id) ] -> [ specialize_hypothesis id ]
-END
-
-TACTIC EXTEND dependent_pattern
-| ["dependent" "pattern" constr(c) ] -> [ dependent_pattern c ]
-END
-
-TACTIC EXTEND dependent_pattern_from
-| ["dependent" "pattern" "from" constr(c) ] ->
-    [ dependent_pattern ~pattern_term:false c ]
-END
-
-TACTIC EXTEND resolve_classes
-| ["resolve_classes" ] -> [ resolve_classes ]
+TACTIC EXTEND specialize_eqs
+[ "specialize_eqs" hyp(id) ] -> [ specialize_eqs id ]
 END

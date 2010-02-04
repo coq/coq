@@ -2433,7 +2433,7 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id gl =
 				   tclMAP (fun id -> 
 				     tclTRY (generalize_dep ~with_let:true (mkVar id))) vars] gl) gl
 
-let specialize_hypothesis id gl =
+let specialize_eqs id gl =
   let env = pf_env gl in
   let ty = pf_get_hyp_typ gl id in
   let evars = ref (create_evar_defs (project gl)) in
@@ -2481,36 +2481,10 @@ let specialize_hypothesis id gl =
     else tclFAIL 0 (str "Nothing to do in hypothesis " ++ pr_id id) gl
       
 
-let specialize_hypothesis id gl =
+let specialize_eqs id gl =
   if try ignore(clear [id] gl); false with _ -> true then
     tclFAIL 0 (str "Specialization not allowed on dependent hypotheses") gl 
-  else specialize_hypothesis id gl
-
-let dependent_pattern ?(pattern_term=true) c gl =
-  let cty = pf_type_of gl c in
-  let deps =
-    match kind_of_term cty with
-    | App (f, args) -> 
-	let f', args' = decompose_indapp f args in 
-	  Array.to_list args'
-    | _ -> []
-  in
-  let varname c = match kind_of_term c with
-    | Var id -> id
-    | _ -> id_of_string (hdchar (pf_env gl) c)
-  in
-  let mklambda ty (c, id, cty) =
-    let conclvar = subst_term_occ all_occurrences c ty in
-      mkNamedLambda id cty conclvar
-  in
-  let subst = 
-    let deps = List.rev_map (fun c -> (c, varname c, pf_type_of gl c)) deps in
-      if pattern_term then (c, varname c, cty) :: deps
-      else deps
-  in
-  let concllda = List.fold_left mklambda (pf_concl gl) subst in
-  let conclapp = applistc concllda (List.rev_map pi1 subst) in
-    convert_concl_no_check conclapp DEFAULTcast gl
+  else specialize_eqs id gl
 
 let occur_rel n c =
   let res = not (noccurn n c) in

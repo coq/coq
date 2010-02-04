@@ -1535,7 +1535,11 @@ let constr_of_pat env isevars arsign pat avoid =
 	  PatVar (l, name), [name, None, ty] @ realargs, mkRel 1, ty, (List.map (fun x -> mkRel 1) realargs), 1, avoid
     | PatCstr (l,((_, i) as cstr),args,alias) ->
 	let cind = inductive_of_constructor cstr in
-	let IndType (indf, _) = find_rectype env ( !isevars) (lift (-(List.length realargs)) ty) in
+	let IndType (indf, _) = 
+	  try find_rectype env ( !isevars) (lift (-(List.length realargs)) ty) 
+	  with Not_found -> error_case_not_inductive env 
+	    {uj_val = ty; uj_type = Typing.type_of env !isevars ty}
+	in
 	let ind, params = dest_ind_family indf in
 	if ind <> cind then error_bad_constructor_loc l cstr ind;
 	let cstrs = get_constructors env indf in

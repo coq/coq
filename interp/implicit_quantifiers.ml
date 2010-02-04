@@ -226,6 +226,7 @@ let combine_params avoid fn applied needed =
     (fun x -> match x with (t, Some (loc, ExplByName id)) -> id, t | _ -> assert false)
     named
   in
+  let needed = List.filter (fun (_, (_, b, _)) -> b = None) needed in
   let rec aux ids avoid app need =
     match app, need with
 	[], [] -> List.rev ids, avoid

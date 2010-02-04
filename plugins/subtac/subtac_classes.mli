@@ -25,12 +25,11 @@ open Classes
 (*i*)
 
 val type_ctx_instance :     Evd.evar_map ref ->
-    Environ.env ->
+  Environ.env ->
     ('a * Term.constr option * Term.constr) list ->
     Topconstr.constr_expr list ->
     Term.constr list ->
-    Term.constr list *
-    ('a * Term.constr option * Term.constr) list
+    Term.constr list
 
 val new_instance :
   ?global:bool ->

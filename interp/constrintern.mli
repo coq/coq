@@ -158,6 +158,11 @@ val interp_binder_evars : evar_map ref -> env -> name -> constr_expr -> types
 
 (* Interpret contexts: returns extended env and context *)
 
+val interp_context_gen : (env -> rawconstr -> types) ->
+  (env -> rawconstr -> unsafe_judgment) ->
+  ?fail_anonymous:bool ->
+  evar_map -> env -> local_binder list -> (env * rel_context) * manual_implicits
+  
 val interp_context : ?fail_anonymous:bool ->
   evar_map -> env -> local_binder list -> (env * rel_context) * manual_implicits
 

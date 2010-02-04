@@ -428,7 +428,7 @@ let not_transp_msg =
 let warn_not_transp () = ppwarn not_transp_msg
 let error_not_transp () = pperror not_transp_msg
 
-let rec solve_obligation prg num =
+let rec solve_obligation prg num tac =
   let user_num = succ num in
   let obls, rem = prg.prg_obligations in
   let obl = obls.(num) in
@@ -470,18 +470,19 @@ let rec solve_obligation prg num =
 	    trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
 		      Subtac_utils.my_print_constr (Global.env ()) obl.obl_type);
 	    Pfedit.by !default_tactic;
+	    Option.iter (fun tac -> Pfedit.set_end_tac (Tacinterp.interp tac)) tac;
 	    Flags.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
       | l -> pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
 		       ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) l))
 
-and subtac_obligation (user_num, name, typ) =
+and subtac_obligation (user_num, name, typ) tac =
   let num = pred user_num in
   let prg = get_prog_err name in
   let obls, rem = prg.prg_obligations in
     if num < Array.length obls then
       let obl = obls.(num) in
 	match obl.obl_body with
-	    None -> solve_obligation prg num
+	    None -> solve_obligation prg num tac
 	  | Some r -> error "Obligation already solved"
     else error (sprintf "Unknown obligation number %i" (succ num))
 
@@ -639,12 +640,13 @@ let array_find f arr =
     raise Not_found
   with Found i -> i
 
-let next_obligation n =
+let next_obligation n tac =
   let prg = get_prog_err n in
   let obls, rem = prg.prg_obligations in
   let i =
     try array_find (fun x ->  x.obl_body = None && deps_remaining obls x.obl_deps = []) obls
     with Not_found -> anomaly "Could not find a solvable obligation."
-  in solve_obligation prg i
+  in solve_obligation prg i tac
 
 let default_tactic () = !default_tactic
+let default_tactic_expr () = !default_tactic_expr

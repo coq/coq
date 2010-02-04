@@ -175,13 +175,13 @@ module Coercion = struct
 	      let c2 = coerce_unify env' (subst1 coec1 (liftn 1 2 b)) b' in
 		(* env, x : a' |- c2 : b[c1[x]/x]] > b' *)
 		(match c1, c2 with
-		     None, None -> failwith "subtac.coerce': Should have detected equivalence earlier"
-		   | _, _ ->
-		       Some
-			 (fun f ->
-			   mkLambda (name', a',
-				    app_opt c2
-				      (mkApp (Term.lift 1 f, [| coec1 |])))))
+		| None, None -> None
+		| _, _ ->
+		    Some
+		      (fun f ->
+			mkLambda (name', a',
+				 app_opt c2
+				   (mkApp (Term.lift 1 f, [| coec1 |])))))
 
 	  | App (c, l), App (c', l') ->
 	      (match kind_of_term c, kind_of_term c' with

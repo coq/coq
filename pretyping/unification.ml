@@ -177,7 +177,7 @@ let use_evars_pattern_unification flags =
 
 let expand_key env = function
   | Some (ConstKey cst) -> constant_opt_value env cst
-  | Some (VarKey id) -> named_body id env
+  | Some (VarKey id) -> (try named_body id env with Not_found -> None)
   | Some (RelKey _) -> None
   | None -> None
 

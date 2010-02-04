@@ -381,9 +381,7 @@ val tclABSTRACT : identifier option -> tactic -> tactic
 val admit_as_an_axiom : tactic
 
 val abstract_generalize : ?generalize_vars:bool -> ?force_dep:bool -> identifier -> tactic
-val specialize_hypothesis : identifier -> tactic
-
-val dependent_pattern : ?pattern_term:bool -> constr -> tactic
+val specialize_eqs : identifier -> tactic
 
 val register_general_multi_rewrite :
   (bool -> evars_flag -> constr with_bindings -> clause -> tactic) -> unit
