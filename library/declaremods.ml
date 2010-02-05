@@ -776,10 +776,8 @@ let load_include  i (oname,((me,is_mod),(mbis,mp1,objs))) =
 let open_include i (oname,((me,is_mod),(mbis,mp1,objs))) =
   let dir,mp1 = lift_oname oname in
   let prefix = (dir,(mp1,empty_dirpath)) in
-      if is_mod || i = 1 then
-	open_objects i prefix objs
-      else ()
-    
+    open_objects i prefix objs
+      
 let subst_include (subst,((me,is_mod),substobj)) =
   let (mbids,mp,objs) = substobj in
   let substobjs = (mbids,subst_mp subst mp,subst_objects subst objs) in
@@ -796,19 +794,6 @@ let (in_include,out_include) =
     subst_function = subst_include;
     classify_function = classify_include }
 
-let rec update_include (mbids,mp,objs) =
-  let rec replace_include = function
-    | [] -> []
-    | (id,obj)::tail ->
-	if object_tag obj = "INCLUDE" then
-	  let ((me,is_mod),substobjs) = out_include obj in
-	  let substobjs' = update_include substobjs in
-            (id, in_include ((me,true),substobjs'))::
-	      (replace_include tail)
-	else
-	  (id,obj)::(replace_include tail)
-  in
-    (mbids,mp,replace_include objs)
 
 let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
   let mmp = Global.start_module id in
@@ -828,13 +813,12 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
      mod_entry_expr = mexpr_entry_o }
   in
 
-  let substobjs =
+  let(mbids,mp_from,objs) =
     match entry with
       | {mod_entry_type = Some mte} -> get_modtype_substobjs env mmp mte
       | {mod_entry_expr = Some mexpr} -> get_module_substobjs env mmp mexpr
       | _ -> anomaly "declare_module: No type, no body ..."
   in
-  let (mbids,mp_from,objs) = update_include substobjs in
   (* Undo the simulated interactive building of the module *)
   (* and declare the module as a whole *)
   Summary.unfreeze_summaries fs;
