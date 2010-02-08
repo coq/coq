@@ -51,6 +51,7 @@ Module Type NType.
  Parameter power_pos : t -> positive -> t.
  Parameter power : t -> N -> t.
  Parameter sqrt : t -> t.
+ Parameter log2 : t -> t.
  Parameter div_eucl : t -> t -> t * t.
  Parameter div : t -> t -> t.
  Parameter modulo : t -> t -> t.
@@ -74,6 +75,8 @@ Module Type NType.
  Parameter spec_power_pos: forall x n, [power_pos x n] = [x] ^ Zpos n.
  Parameter spec_power: forall x n, [power x n] = [x] ^ Z_of_N n.
  Parameter spec_sqrt: forall x, [sqrt x] ^ 2 <= [x] < ([sqrt x] + 1) ^ 2.
+ Parameter spec_log2_0: forall x, [x] = 0 -> [log2 x] = 0.
+ Parameter spec_log2: forall x, [x]<>0 -> 2^[log2 x] <= [x] < 2^([log2 x]+1).
  Parameter spec_div_eucl: forall x y,
   let (q,r) := div_eucl x y in ([q], [r]) = Zdiv_eucl [x] [y].
  Parameter spec_div: forall x y, [div x y] = [x] / [y].

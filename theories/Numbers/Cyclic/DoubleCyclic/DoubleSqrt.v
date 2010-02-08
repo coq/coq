@@ -220,12 +220,8 @@ Section DoubleSqrt.
   Variable spec_w_0W : forall l, [[w_0W l]] = [|l|].
   Variable spec_w_is_even : forall x,
       if w_is_even x then [|x|] mod 2 = 0 else [|x|] mod 2 = 1.
-   Variable spec_w_compare : forall x y,
-       match w_compare x y with
-       | Eq => [|x|] = [|y|]
-       | Lt => [|x|] < [|y|]
-       | Gt => [|x|] > [|y|]
-       end.
+  Variable spec_w_compare : forall x y,
+       w_compare x y = Zcompare [|x|] [|y|].
  Variable spec_w_sub : forall x y, [|w_sub x y|] = ([|x|] - [|y|]) mod wB.
  Variable spec_w_square_c : forall x, [[ w_square_c x]] = [|x|] * [|x|].
  Variable spec_w_div21 : forall a1 a2 b,
@@ -257,11 +253,7 @@ Section DoubleSqrt.
  Variable spec_ww_pred : forall x, [[ww_pred x]] = ([[x]] - 1) mod wwB.
  Variable spec_ww_add_c  : forall x y, [+[ww_add_c x y]] = [[x]] + [[y]].
  Variable spec_ww_compare : forall x y,
-       match ww_compare x y with
-       | Eq => [[x]] = [[y]]
-       | Lt => [[x]] < [[y]]
-       | Gt => [[x]] > [[y]]
-       end.
+    ww_compare x y = Zcompare [[x]] [[y]].
  Variable spec_ww_head0  : forall x,  0 < [[x]] ->
 	 wwB/ 2 <= 2 ^ [[ww_head0 x]] * [[x]] < wwB.
  Variable spec_low: forall x, [|low x|] = [[x]] mod wB.
@@ -299,10 +291,7 @@ intros x; case x; simpl ww_is_even.
  apply Zlt_le_trans with (2 := Hb); auto with zarith.
  apply Zlt_le_trans with 1; auto with zarith.
  apply Zdiv_le_lower_bound; auto with zarith.
- repeat match goal with |- context[w_compare ?y ?z] =>
-   generalize (spec_w_compare y z);
-   case (w_compare y z)
- end.
+ rewrite !spec_w_compare. repeat case Zcompare_spec.
  intros H1 H2; split.
  unfold interp_carry; autorewrite with w_rewrite rm10; auto with zarith.
  rewrite H1; rewrite H2; ring.
@@ -1113,7 +1102,7 @@ intros x; case x; simpl ww_is_even.
  Lemma spec_ww_is_zero: forall x,
    if ww_is_zero x then [[x]] = 0 else 0 < [[x]].
   intro x; unfold ww_is_zero.
-  generalize (spec_ww_compare W0 x); case (ww_compare W0 x);
+  rewrite spec_ww_compare. case Zcompare_spec;
    auto with zarith.
   simpl ww_to_Z.
   assert (V4 := spec_ww_to_Z w_digits w_to_Z spec_to_Z x);auto with zarith.
@@ -1198,7 +1187,7 @@ intros x; case x; simpl ww_is_even.
   simpl ww_to_Z; simpl Zpower; unfold Zpower_pos; simpl;
     auto with zarith.
   intros H1.
-  generalize (spec_ww_compare (ww_head1 x) W0); case ww_compare;
+  rewrite spec_ww_compare. case Zcompare_spec;
     simpl ww_to_Z; autorewrite with rm10.
   generalize H1; case x.
   intros HH; contradict HH; simpl ww_to_Z; auto with zarith.

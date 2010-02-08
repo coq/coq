@@ -82,11 +82,7 @@ Section POS_MOD.
 
   Variable spec_w_0W : forall l, [[w_0W l]] = [|l|].
   Variable spec_ww_compare : forall x y,
-       match ww_compare x y with
-       | Eq => [[x]] = [[y]]
-       | Lt => [[x]] < [[y]]
-       | Gt => [[x]] > [[y]]
-       end.
+    ww_compare x y = Zcompare [[x]] [[y]].
  Variable spec_ww_sub: forall x y,
    [[ww_sub x y]] = ([[x]] - [[y]]) mod wwB.
 
@@ -105,8 +101,8 @@ Section POS_MOD.
  intros w1 p; case (spec_to_w_Z p); intros HH1 HH2.
  unfold ww_pos_mod; case w1.
  simpl; rewrite Zmod_small; split; auto with zarith.
- intros xh xl; generalize (spec_ww_compare p (w_0W w_zdigits));
-    case ww_compare;
+ intros xh xl; rewrite spec_ww_compare.
+    case Zcompare_spec;
     rewrite spec_w_0W; rewrite spec_zdigits; fold wB;
     intros H1.
    rewrite H1; simpl ww_to_Z.
@@ -134,8 +130,8 @@ Section POS_MOD.
    rewrite Z_mod_mult; auto with zarith.
    autorewrite with w_rewrite rm10.
    rewrite Zmod_mod; auto with zarith.
-generalize (spec_ww_compare p ww_zdigits);
-    case ww_compare; rewrite spec_ww_zdigits;
+  rewrite spec_ww_compare.
+    case Zcompare_spec; rewrite spec_ww_zdigits;
                      rewrite spec_zdigits; intros H2.
   replace (2^[[p]]) with wwB.
     rewrite Zmod_small; auto with zarith.
@@ -266,12 +262,7 @@ Section DoubleDiv32.
 
   Variable spec_w_WW : forall h l, [[w_WW h l]] = [|h|] * wB + [|l|].
   Variable spec_compare :
-     forall x y,
-       match w_compare x y with
-       | Eq => [|x|] = [|y|]
-       | Lt => [|x|] < [|y|]
-       | Gt => [|x|] > [|y|]
-       end.
+     forall x y, w_compare x y = Zcompare [|x|] [|y|].
   Variable spec_w_add_c  : forall x y, [+|w_add_c x y|] = [|x|] + [|y|].
   Variable spec_w_add_carry_c :
          forall x y, [+|w_add_carry_c x y|] = [|x|] + [|y|] + 1.
@@ -343,7 +334,7 @@ Section DoubleDiv32.
      (WW (w_sub a2 b2) a3) (WW b1 b2)
     | Gt => (w_0, W0) (* cas absurde *)
     end.
-   assert (Hcmp:=spec_compare a1 b1);destruct (w_compare a1 b1).
+   rewrite spec_compare. case Zcompare_spec; intro Hcmp.
    simpl in Hlt.
    rewrite Hcmp in Hlt;assert ([|a2|] < [|b2|]). omega.
    assert ([[WW (w_sub a2 b2) a3]] = ([|a2|]-[|b2|])*wB + [|a3|] + wwB).
@@ -545,11 +536,7 @@ Section DoubleDiv21.
      0 <= [[r]] < [|b1|] * wB + [|b2|].
   Variable spec_ww_1 : [[ww_1]] = 1.
   Variable spec_ww_compare :  forall x y,
-       match ww_compare x y with
-       | Eq => [[x]] = [[y]]
-       | Lt => [[x]] < [[y]]
-       | Gt => [[x]] > [[y]]
-       end.
+    ww_compare x y = Zcompare [[x]] [[y]].
   Variable spec_ww_sub : forall x y, [[ww_sub x y]] = ([[x]] - [[y]]) mod wwB.
 
   Theorem wwB_div: wwB  = 2 * (wwB / 2).
@@ -576,10 +563,9 @@ Section DoubleDiv21.
    intros a1 a2 b H Hlt; unfold ww_div21.
    Spec_ww_to_Z b; assert (Eq: 0 < [[b]]).    Spec_ww_to_Z a1;omega.
    generalize Hlt H ;clear Hlt H;case a1.
-   intros H1 H2;simpl in H1;Spec_ww_to_Z a2;
-   match goal with |-context [ww_compare ?Y ?Z] =>
-     generalize (spec_ww_compare Y Z); case (ww_compare Y Z)
-   end; simpl;try rewrite spec_ww_1;autorewrite with rm10; intros;zarith.
+   intros H1 H2;simpl in H1;Spec_ww_to_Z a2.
+   rewrite spec_ww_compare. case Zcompare_spec;
+   simpl;try rewrite spec_ww_1;autorewrite with rm10; intros;zarith.
    rewrite spec_ww_sub;simpl. rewrite Zmod_small;zarith.
    split. ring.
    assert (wwB <= 2*[[b]]);zarith.
@@ -809,12 +795,7 @@ Section DoubleDivGt.
   Variable spec_w_WW : forall h l, [[w_WW h l]] = [|h|] * wB + [|l|].
   Variable spec_w_0W : forall l, [[w_0W l]] = [|l|].
   Variable spec_compare :
-     forall x y,
-       match w_compare x y with
-       | Eq => [|x|] = [|y|]
-       | Lt => [|x|] < [|y|]
-       | Gt => [|x|] > [|y|]
-       end.
+     forall x y, w_compare x y = Zcompare [|x|] [|y|].
   Variable spec_eq0 : forall x, w_eq0 x = true -> [|x|] = 0.
 
   Variable spec_opp_c : forall x, [-|w_opp_c x|] = -[|x|].
@@ -914,7 +895,7 @@ Section DoubleDivGt.
     end in [[WW ah al]]=[[q]]*[[WW bh bl]]+[[r]] /\ 0 <=[[r]]< [[WW bh bl]]).
    assert (Hh := spec_head0 Hpos).
    lazy zeta.
-   generalize (spec_compare (w_head0 bh) w_0); case w_compare;
+   rewrite spec_compare; case Zcompare_spec;
     rewrite spec_w_0; intros HH.
    generalize Hh; rewrite HH; simpl Zpower;
         rewrite Zmult_1_l; intros (HH1, HH2); clear HH.
@@ -1058,7 +1039,7 @@ Section DoubleDivGt.
    assert (H2:=spec_div_gt Hgt Hpos);destruct (w_div_gt al bl).
    repeat rewrite spec_w_0W;simpl;rewrite spec_w_0;simpl;trivial.
    clear H.
-   assert (Hcmp := spec_compare w_0 bh); destruct (w_compare w_0 bh).
+   rewrite spec_compare; case Zcompare_spec; intros Hcmp.
    rewrite spec_w_0 in Hcmp. change [[WW bh bl]] with ([|bh|]*wB+[|bl|]).
    rewrite <- Hcmp;rewrite Zmult_0_l;rewrite Zplus_0_l.
    simpl in Hpos;rewrite <- Hcmp in Hpos;simpl in Hpos.
@@ -1154,7 +1135,7 @@ Section DoubleDivGt.
    rewrite spec_w_0W;rewrite spec_w_mod_gt_eq;trivial.
    destruct (w_div_gt al bl);simpl;rewrite spec_w_0W;trivial.
    clear H.
-   assert (H2 := spec_compare w_0 bh);destruct (w_compare w_0 bh).
+   rewrite spec_compare; case Zcompare_spec; intros H2.
    rewrite (@spec_double_modn1_aux w w_zdigits w_0 w_WW w_head0 w_add_mul_div
             w_div21 w_compare w_sub w_to_Z spec_w_0 spec_compare 1 (WW ah al) bl).
    destruct (double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 w_compare w_sub 1
@@ -1227,13 +1208,14 @@ Section DoubleDivGt.
       end
     | Gt => W0 (* absurde *)
     end).
-   assert (Hbh := spec_compare w_0 bh);destruct (w_compare w_0 bh).
-   simpl ww_to_Z in *. rewrite spec_w_0 in Hbh;rewrite <- Hbh;
+   rewrite spec_compare, spec_w_0.
+   case Zcompare_spec; intros Hbh.
+   simpl ww_to_Z in *. rewrite <- Hbh.
    rewrite Zmult_0_l;rewrite Zplus_0_l.
-   assert (Hbl := spec_compare w_0 bl); destruct (w_compare w_0 bl).
-   rewrite spec_w_0 in Hbl;rewrite <- Hbl;apply Zis_gcd_0.
+   rewrite spec_compare, spec_w_0.
+   case Zcompare_spec; intros Hbl.
+   rewrite <- Hbl;apply Zis_gcd_0.
    simpl;rewrite spec_w_0;rewrite Zmult_0_l;rewrite Zplus_0_l.
-   rewrite spec_w_0 in Hbl.
    apply Zis_gcd_mod;zarith.
    change ([|ah|] * wB + [|al|]) with (double_to_Z w_digits w_to_Z 1 (WW ah al)).
    rewrite <- (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW w_head0 w_add_mul_div
@@ -1243,20 +1225,20 @@ Section DoubleDivGt.
    rewrite  (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW); trivial.
    apply Zlt_gt;match goal with | |- ?x mod ?y < ?y =>
     destruct (Z_mod_lt x y);zarith end.
-   rewrite spec_w_0 in Hbl;Spec_w_to_Z bl;exfalso;omega.
-   rewrite spec_w_0 in Hbh;assert (H:= spec_ww_mod_gt_aux _ _ _ Hgt Hbh).
+   Spec_w_to_Z bl;exfalso;omega.
+   assert (H:= spec_ww_mod_gt_aux _ _ _ Hgt Hbh).
    assert (H2 : 0 < [[WW bh bl]]).
    simpl;Spec_w_to_Z bl. apply Zlt_le_trans with ([|bh|]*wB);zarith.
    apply Zmult_lt_0_compat;zarith.
    apply Zis_gcd_mod;trivial. rewrite <- H.
    simpl in *;destruct (ww_mod_gt_aux ah al bh bl) as [ |mh ml].
    simpl;apply Zis_gcd_0;zarith.
-   assert (Hmh := spec_compare w_0 mh);destruct (w_compare w_0 mh).
-   simpl;rewrite spec_w_0 in Hmh; rewrite <- Hmh;simpl.
-   assert (Hml := spec_compare w_0 ml);destruct (w_compare w_0 ml).
-   rewrite <- Hml;rewrite spec_w_0;simpl;apply Zis_gcd_0.
-   simpl;rewrite spec_w_0;simpl.
-   rewrite spec_w_0 in Hml. apply Zis_gcd_mod;zarith.
+   rewrite spec_compare, spec_w_0; case Zcompare_spec; intros Hmh.
+   simpl;rewrite <- Hmh;simpl.
+   rewrite spec_compare, spec_w_0; case Zcompare_spec; intros Hml.
+   rewrite <- Hml;simpl;apply Zis_gcd_0.
+   simpl; rewrite spec_w_0; simpl.
+   apply Zis_gcd_mod;zarith.
    change ([|bh|] * wB + [|bl|]) with (double_to_Z w_digits w_to_Z 1 (WW bh bl)).
    rewrite <- (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW w_head0 w_add_mul_div
    w_div21 w_compare w_sub w_to_Z spec_to_Z spec_w_zdigits spec_w_0 spec_w_WW spec_head0 spec_add_mul_div
@@ -1265,8 +1247,8 @@ Section DoubleDivGt.
    rewrite  (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW); trivial.
    apply Zlt_gt;match goal with | |- ?x mod ?y < ?y =>
    destruct (Z_mod_lt x y);zarith end.
-   rewrite spec_w_0 in Hml;Spec_w_to_Z ml;exfalso;omega.
-   rewrite spec_w_0 in Hmh. assert ([[WW bh bl]] > [[WW mh ml]]).
+   Spec_w_to_Z ml;exfalso;omega.
+   assert ([[WW bh bl]] > [[WW mh ml]]).
    rewrite H;simpl; apply Zlt_gt;match goal with | |- ?x mod ?y < ?y =>
    destruct (Z_mod_lt x y);zarith end.
    assert (H1:= spec_ww_mod_gt_aux _ _ _ H0 Hmh).
@@ -1300,8 +1282,8 @@ Section DoubleDivGt.
    rewrite Z_div_mult;zarith.
    assert (2^1 <= 2^n). change (2^1) with 2;zarith.
    assert (H7 := @Zpower_le_monotone_inv 2 1 n);zarith.
-   rewrite spec_w_0 in Hmh;Spec_w_to_Z mh;exfalso;zarith.
-   rewrite spec_w_0 in Hbh;Spec_w_to_Z bh;exfalso;zarith.
+   Spec_w_to_Z mh;exfalso;zarith.
+   Spec_w_to_Z bh;exfalso;zarith.
   Qed.
 
   Lemma spec_ww_gcd_gt_aux :
@@ -1374,11 +1356,7 @@ Section DoubleDiv.
   Variable spec_to_Z  : forall x, 0 <= [|x|] < wB.
   Variable spec_ww_1 : [[ww_1]] = 1.
   Variable spec_ww_compare :  forall x y,
-       match ww_compare x y with
-       | Eq => [[x]] = [[y]]
-       | Lt => [[x]] < [[y]]
-       | Gt => [[x]] > [[y]]
-       end.
+    ww_compare x y = Zcompare [[x]] [[y]].
   Variable spec_ww_div_gt : forall a b, [[a]] > [[b]] -> 0 < [[b]] ->
       let (q,r) := ww_div_gt a b in
       [[a]] = [[q]] * [[b]] + [[r]] /\
@@ -1400,20 +1378,20 @@ Section DoubleDiv.
       0 <= [[r]] < [[b]].
   Proof.
    intros a b Hpos;unfold ww_div.
-   assert (H:=spec_ww_compare a b);destruct (ww_compare a b).
+   rewrite spec_ww_compare; case Zcompare_spec; intros.
    simpl;rewrite spec_ww_1;split;zarith.
    simpl;split;[ring|Spec_ww_to_Z a;zarith].
-   apply spec_ww_div_gt;trivial.
+   apply spec_ww_div_gt;auto with zarith.
   Qed.
 
   Lemma  spec_ww_mod :  forall a b, 0 < [[b]] ->
       [[ww_mod a b]] = [[a]] mod [[b]].
   Proof.
    intros a b Hpos;unfold ww_mod.
-   assert (H := spec_ww_compare a b);destruct (ww_compare a b).
+   rewrite spec_ww_compare; case Zcompare_spec; intros.
    simpl;apply Zmod_unique with 1;try rewrite H;zarith.
    Spec_ww_to_Z a;symmetry;apply Zmod_small;zarith.
-   apply spec_ww_mod_gt;trivial.
+   apply spec_ww_mod_gt;auto with zarith.
   Qed.
 
 
@@ -1431,12 +1409,7 @@ Section DoubleDiv.
   Variable spec_w_0   : [|w_0|] = 0.
   Variable spec_w_1   : [|w_1|] = 1.
   Variable spec_compare :
-     forall x y,
-       match w_compare x y with
-       | Eq => [|x|] = [|y|]
-       | Lt => [|x|] < [|y|]
-       | Gt => [|x|] > [|y|]
-       end.
+    forall x y, w_compare x y = Zcompare [|x|] [|y|].
   Variable spec_eq0 : forall x, w_eq0 x = true -> [|x|] = 0.
   Variable spec_gcd_gt : forall a b, [|a|] > [|b|] ->
       Zis_gcd [|a|] [|b|] [|w_gcd_gt a b|].
@@ -1468,14 +1441,14 @@ Section DoubleDiv.
     assert (0 <= 1 < wB). split;zarith. apply wB_pos.
     assert (H1:= beta_lex _ _ _ _ _ Hle (spec_to_Z yl) H).
     Spec_w_to_Z yh;zarith.
-   unfold gcd_cont;assert (Hcmpy:=spec_compare w_1 yl);
-   rewrite spec_w_1 in Hcmpy.
-   simpl;rewrite H;simpl;destruct (w_compare w_1 yl).
+   unfold gcd_cont; rewrite spec_compare, spec_w_1.
+   case Zcompare_spec; intros Hcmpy.
+   simpl;rewrite H;simpl;
    rewrite spec_ww_1;rewrite <- Hcmpy;apply Zis_gcd_mod;zarith.
    rewrite <- (Zmod_unique ([|xh|]*wB+[|xl|]) 1 ([|xh|]*wB+[|xl|]) 0);zarith.
    rewrite H in Hle; exfalso;zarith.
-   assert ([|yl|] = 0). Spec_w_to_Z yl;zarith.
-   rewrite H0;simpl;apply Zis_gcd_0;trivial.
+   assert (H0 : [|yl|] = 0) by (Spec_w_to_Z yl;zarith).
+   simpl. rewrite H0, H;simpl;apply Zis_gcd_0;trivial.
   Qed.
 
 
@@ -1528,7 +1501,7 @@ Section DoubleDiv.
      | Eq => a
      | Lt => ww_gcd_gt b a
      end).
-   assert (Hcmp := spec_ww_compare a b);destruct (ww_compare a b).
+   rewrite spec_ww_compare; case Zcompare_spec; intros Hcmp.
    Spec_ww_to_Z b;rewrite Hcmp.
    apply Zis_gcd_for_euclid with 1;zarith.
    ring_simplify ([[b]] - 1 * [[b]]). apply Zis_gcd_0;zarith.

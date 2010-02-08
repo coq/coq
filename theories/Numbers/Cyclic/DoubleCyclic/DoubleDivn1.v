@@ -62,12 +62,7 @@ Section GENDIVN1.
      [|a1|] *wB+ [|a2|] = [|q|] * [|b|] + [|r|] /\
      0 <= [|r|] < [|b|].
  Variable spec_compare :
-     forall x y,
-       match w_compare x y with
-       | Eq => [|x|] = [|y|]
-       | Lt => [|x|] < [|y|]
-       | Gt => [|x|] > [|y|]
-       end.
+   forall x y, w_compare x y = Zcompare [|x|] [|y|].
  Variable spec_sub: forall x y,
    [|w_sub x y|] = ([|x|] - [|y|]) mod wB.
 
@@ -373,7 +368,7 @@ Section GENDIVN1.
    intros n a b H. unfold double_divn1.
    case (spec_head0 H); intros H0 H1.
    case (spec_to_Z (w_head0 b)); intros HH1 HH2.
-   generalize (spec_compare (w_head0 b) w_0); case w_compare;
+   rewrite spec_compare; case Zcompare_spec;
      rewrite spec_0; intros H2; auto with zarith.
    assert (Hv1: wB/2 <= [|b|]).
      generalize H0; rewrite H2; rewrite Zpower_0_r;
@@ -506,7 +501,7 @@ Section GENDIVN1.
     double_modn1 n a b = snd (double_divn1 n a b).
  Proof.
   intros n a b;unfold double_divn1,double_modn1.
-  generalize (spec_compare (w_head0 b) w_0); case w_compare;
+  rewrite spec_compare; case Zcompare_spec;
      rewrite spec_0; intros H2; auto with zarith.
   apply spec_double_modn1_0.
   apply spec_double_modn1_0.

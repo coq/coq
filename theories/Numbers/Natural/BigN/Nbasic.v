@@ -260,13 +260,6 @@ Section ReduceRec.
 
 End ReduceRec.
 
-Definition opp_compare cmp :=
-  match cmp with
-  | Lt => Gt
-  | Eq => Eq
-  | Gt => Lt
-  end.
-
 Section CompareRec.
 
  Variable wm w : Type.
@@ -294,11 +287,7 @@ Section CompareRec.
  Variable w_to_Z: w -> Z.
  Variable w_to_Z_0: w_to_Z w_0 = 0.
  Variable spec_compare0_m: forall x,
-    match compare0_m x with
-      Eq => w_to_Z w_0 = wm_to_Z x
-    | Lt => w_to_Z w_0 < wm_to_Z x
-    | Gt => w_to_Z w_0 > wm_to_Z x
-    end.
+   compare0_m x = (w_to_Z w_0 ?= wm_to_Z x).
  Variable wm_to_Z_pos: forall x, 0 <= wm_to_Z x < base wm_base.
 
  Let double_to_Z := double_to_Z wm_base wm_to_Z.
@@ -315,29 +304,25 @@ Section CompareRec.
 
 
  Lemma spec_compare0_mn: forall n x,
-    match compare0_mn n x with
-      Eq => 0 = double_to_Z n x
-    | Lt => 0 < double_to_Z n x
-    | Gt => 0 > double_to_Z n x
-    end.
-  Proof.
+   compare0_mn n x = (0 ?= double_to_Z n x).
+ Proof.
   intros n; elim n; clear n; auto.
-  intros x; generalize (spec_compare0_m x); rewrite w_to_Z_0; auto.
+  intros x; rewrite spec_compare0_m; rewrite w_to_Z_0; auto.
   intros n Hrec x; case x; unfold compare0_mn; fold compare0_mn; auto.
+  fold word in *.
   intros xh xl.
-  generalize (Hrec xh); case compare0_mn; auto.
-  generalize (Hrec xl); case compare0_mn; auto.
-  simpl double_to_Z; intros H1 H2; rewrite H1; rewrite <- H2; auto.
-  simpl double_to_Z; intros H1 H2; rewrite <- H2; auto.
-  case (double_to_Z_pos n xl); auto with zarith.
-  intros H1; simpl double_to_Z.
-  set (u := DoubleBase.double_wB wm_base n).
-  case (double_to_Z_pos n xl); intros H2 H3.
-  assert (0 < u); auto with zarith.
-  unfold u, DoubleBase.double_wB, base; auto with zarith.
+  rewrite 2 Hrec.
+  simpl double_to_Z.
+  set (wB := DoubleBase.double_wB wm_base n).
+  case Zcompare_spec; intros Cmp.
+  rewrite <- Cmp. reflexivity.
+  symmetry. apply Zgt_lt, Zlt_gt. (* ;-) *)
+  assert (0 < wB).
+   unfold wB, DoubleBase.double_wB, base; auto with zarith.
   change 0 with (0 + 0); apply Zplus_lt_le_compat; auto with zarith.
   apply Zmult_lt_0_compat; auto with zarith.
-  case (double_to_Z_pos n xh); auto with zarith.
+  case (double_to_Z_pos n xl); auto with zarith.
+  case (double_to_Z_pos n xh); intros; exfalso; omega.
   Qed.
 
  Fixpoint compare_mn_1 (n:nat) : word wm n -> w -> comparison :=
@@ -355,17 +340,9 @@ Section CompareRec.
   end.
 
  Variable spec_compare: forall x y,
-   match compare x y with
-     Eq => w_to_Z x = w_to_Z y
-   | Lt => w_to_Z x < w_to_Z y
-   | Gt => w_to_Z x > w_to_Z y
-   end.
+   compare x y = Zcompare (w_to_Z x) (w_to_Z y).
  Variable spec_compare_m: forall x y,
-   match compare_m x y with
-     Eq => wm_to_Z x = w_to_Z y
-   | Lt => wm_to_Z x < w_to_Z y
-   | Gt => wm_to_Z x > w_to_Z y
-   end.
+   compare_m x y = Zcompare (wm_to_Z x) (w_to_Z y).
  Variable wm_base_lt: forall x,
    0 <= w_to_Z x < base (wm_base).
 
@@ -387,26 +364,23 @@ Section CompareRec.
 
 
  Lemma spec_compare_mn_1: forall n x y,
-   match compare_mn_1 n x y with
-     Eq => double_to_Z n x = w_to_Z y
-   | Lt => double_to_Z n x < w_to_Z y
-   | Gt => double_to_Z n x > w_to_Z y
-   end.
+   compare_mn_1 n x y = Zcompare (double_to_Z n x) (w_to_Z y).
  Proof.
  intros n; elim n; simpl; auto; clear n.
  intros n Hrec x; case x; clear x; auto.
- intros y; generalize (spec_compare w_0 y); rewrite w_to_Z_0; case compare; auto.
- intros xh xl y; simpl; generalize (spec_compare0_mn n xh); case compare0_mn; intros H1b.
+ intros y; rewrite spec_compare; rewrite w_to_Z_0. reflexivity.
+ intros xh xl y; simpl;
+ rewrite spec_compare0_mn, Hrec. case Zcompare_spec.
+ intros H1b.
  rewrite <- H1b; rewrite Zmult_0_l; rewrite Zplus_0_l; auto.
- apply Hrec.
- apply Zlt_gt.
+ symmetry. apply Zlt_gt.
  case (double_wB_lt n y); intros _ H0.
  apply Zlt_le_trans with (1:= H0).
  fold double_wB.
  case (double_to_Z_pos n xl); intros H1 H2.
  apply Zle_trans with (double_to_Z n xh * double_wB n); auto with zarith.
  apply Zle_trans with (1 * double_wB n); auto with zarith.
- case (double_to_Z_pos n xh); auto with zarith.
+ case (double_to_Z_pos n xh); intros; exfalso; omega.
  Qed.
 
 End CompareRec.
@@ -440,22 +414,6 @@ Section AddS.
 
 End AddS.
 
-
- Lemma spec_opp: forall u x y,
-  match u with
-  | Eq => y = x
-  | Lt => y < x
-  | Gt => y > x
-  end ->
-  match opp_compare u with
-  | Eq => x = y
-  | Lt => x < y
-  | Gt => x > y
-  end.
- Proof.
- intros u x y; case u; simpl; auto with zarith.
- Qed.
-
  Fixpoint length_pos x :=
   match x with xH => O | xO x1 => S (length_pos x1) | xI x1 => S (length_pos x1) end.
 
@@ -481,33 +439,37 @@ End AddS.
 
  Variable w: Type.
 
- Theorem digits_zop: forall w (x: znz_op w),
-  znz_digits (mk_zn2z_op x) = xO (znz_digits x).
+ Theorem digits_zop: forall t (ops : ZnZ.Ops t),
+  @ZnZ.digits _ mk_zn2z_ops = xO ZnZ.digits.
+ Proof.
  intros ww x; auto.
  Qed.
 
- Theorem digits_kzop: forall w (x: znz_op w),
-  znz_digits (mk_zn2z_op_karatsuba x) = xO (znz_digits x).
+ Theorem digits_kzop: forall t (ops : ZnZ.Ops t),
+  @ZnZ.digits _ mk_zn2z_ops_karatsuba = xO (@ZnZ.digits _ ops).
+ Proof.
  intros ww x; auto.
  Qed.
 
- Theorem make_zop: forall w (x: znz_op w),
-  znz_to_Z (mk_zn2z_op x) =
+ Theorem make_zop: forall t (ops : ZnZ.Ops t),
+  @ZnZ.to_Z _ mk_zn2z_ops =
     fun z => match z with
-                W0 => 0
-             | WW xh xl => znz_to_Z x xh * base (znz_digits x)
-                                + znz_to_Z x xl
+             | W0 => 0
+             | WW xh xl => ZnZ.to_Z xh * base ZnZ.digits
+                                + ZnZ.to_Z xl
              end.
+ Proof.
  intros ww x; auto.
  Qed.
 
- Theorem make_kzop: forall w (x: znz_op w),
-  znz_to_Z (mk_zn2z_op_karatsuba x) =
+ Theorem make_kzop: forall t (x: ZnZ.Ops t),
+  @ZnZ.to_Z _ mk_zn2z_ops_karatsuba =
     fun z => match z with
-                W0 => 0
-             | WW xh xl => znz_to_Z x xh * base (znz_digits x)
-                                + znz_to_Z x xl
+             | W0 => 0
+             | WW xh xl => ZnZ.to_Z xh * base ZnZ.digits
+                                + ZnZ.to_Z xl
              end.
+ Proof.
  intros ww x; auto.
  Qed.
 

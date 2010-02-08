@@ -1106,81 +1106,61 @@ Section Basics.
 
 End Basics.
 
-
-Section Int31_Op.
-
-(** Nullity test *)
-Let w_iszero i := match i ?= 0 with Eq => true | _ => false end.
-
-(** Modulo [2^p] *)
-Let w_pos_mod p i :=
-  match compare31 p 31 with
+Instance int31_ops : ZnZ.Ops int31 :=
+{
+ digits      := 31%positive; (* number of digits *)
+ zdigits     := 31; (* number of digits *)
+ to_Z        := phi; (* conversion to Z *)
+ of_pos      := positive_to_int31; (* positive -> N*int31 :  p => N,i
+                                      where p = N*2^31+phi i *)
+ head0       := head031;  (* number of head 0 *)
+ tail0       := tail031;  (* number of tail 0 *)
+ zero        := 0;
+ one         := 1;
+ minus_one   := Tn; (* 2^31 - 1 *)
+ compare     := compare31;
+ eq0         := fun i => match i ?= 0 with Eq => true | _ => false end;
+ opp_c       := fun i => 0 -c i;
+ opp         := opp31;
+ opp_carry   := fun i => 0-i-1;
+ succ_c      := fun i => i +c 1;
+ add_c       := add31c;
+ add_carry_c := add31carryc;
+ succ        := fun i => i + 1;
+ add         := add31;
+ add_carry   := fun i j => i + j + 1;
+ pred_c      := fun i => i -c 1;
+ sub_c       := sub31c;
+ sub_carry_c := sub31carryc;
+ pred        := fun i => i - 1;
+ sub         := sub31;
+ sub_carry   := fun i j => i - j - 1;
+ mul_c       := mul31c;
+ mul         := mul31;
+ square_c    := fun x => x *c x;
+ div21       := div3121;
+ div_gt      := div31; (* this is supposed to be the special case of
+                         division a/b where a > b *)
+ div         := div31;
+ modulo_gt   := fun i j => let (_,r) := i/j in r;
+ modulo      := fun i j => let (_,r) := i/j in r;
+ gcd_gt      := gcd31;
+ gcd         := gcd31;
+ add_mul_div := addmuldiv31;
+ pos_mod     := (* modulo 2^p *)
+  fun p i =>
+  match p ?= 31 with
     | Lt => addmuldiv31 p 0 (addmuldiv31 (31-p) i 0)
     | _ => i
-  end.
+  end;
+ is_even      :=
+  fun i => let (_,r) := i/2 in
+  match r ?= 0 with Eq => true | _ => false end;
+ sqrt2       := sqrt312;
+ sqrt        := sqrt31
+}.
 
-(** Parity test *)
-Let w_iseven i :=
- let (_,r) := i/2 in
- match r ?= 0 with Eq => true | _ => false end.
-
-Definition int31_op := (mk_znz_op
- 31%positive (* number of digits *)
- 31 (* number of digits *)
- phi (* conversion to Z *)
- positive_to_int31 (* positive -> N*int31 :  p => N,i where p = N*2^31+phi i *)
- head031  (* number of head 0 *)
- tail031  (* number of tail 0 *)
- (* Basic constructors *)
- 0
- 1
- Tn (* 2^31 - 1 *)
- (* Comparison *)
- compare31
- w_iszero
- (* Basic arithmetic operations *)
- (fun i => 0 -c i)
- opp31
- (fun i => 0-i-1)
- (fun i => i +c 1)
- add31c
- add31carryc
- (fun i => i + 1)
- add31
- (fun i j => i + j + 1)
- (fun i => i -c 1)
- sub31c
- sub31carryc
- (fun i => i - 1)
- sub31
- (fun i j => i - j - 1)
- mul31c
- mul31
- (fun x => x *c x)
- (* special (euclidian) division operations *)
- div3121
- div31 (* this is supposed to be the special case of division a/b where a > b *)
- div31
- (* euclidian division remainder *)
- (* again special case for a > b *)
- (fun i j => let (_,r) := i/j in r)
- (fun i j => let (_,r) := i/j in r)
- gcd31 (*gcd_gt*)
- gcd31 (*gcd*)
- (* shift operations *)
- addmuldiv31 (*add_mul_div  *)
- (* modulo 2^p *)
- w_pos_mod
- (* is i even ? *)
- w_iseven
- (* square root operations *)
- sqrt312 (* sqrt2 *)
- sqrt31 (* sqrt *)
-).
-
-End Int31_Op.
-
-Section Int31_Spec.
+Section Int31_Specs.
 
  Local Open Scope Z_scope.
 
@@ -1222,22 +1202,14 @@ Section Int31_Spec.
   reflexivity.
  Qed.
 
- Lemma spec_Bm1 : [| Tn |] = wB - 1.
+ Lemma spec_m1 : [| Tn |] = wB - 1.
  Proof.
   reflexivity.
  Qed.
 
  Lemma spec_compare : forall x y,
-   match (x ?= y)%int31 with
-     | Eq => [|x|] = [|y|]
-     | Lt => [|x|] < [|y|]
-     | Gt => [|x|] > [|y|]
-   end.
- Proof.
- clear; unfold compare31; simpl; intros.
- case_eq ([|x|] ?= [|y|]); auto.
- intros; apply Zcompare_Eq_eq; auto.
- Qed.
+   (x ?= y)%int31 = ([|x|] ?= [|y|]).
+ Proof. reflexivity. Qed.
 
  (** Addition *)
 
@@ -1654,12 +1626,10 @@ Section Int31_Spec.
  rewrite Zmult_comm, Z_div_mult; auto with zarith.
  Qed.
 
- Let w_pos_mod     := int31_op.(znz_pos_mod).
-
  Lemma spec_pos_mod : forall w p,
-       [|w_pos_mod p w|] = [|w|] mod (2 ^ [|p|]).
+       [|ZnZ.pos_mod p w|] = [|w|] mod (2 ^ [|p|]).
  Proof.
- unfold w_pos_mod, znz_pos_mod, int31_op, compare31.
+ unfold ZnZ.pos_mod, int31_ops, compare31.
  change [|31|] with 31%Z.
  assert (forall w p, 31<=p -> [|w|] = [|w|] mod 2^p).
   intros.
@@ -2018,8 +1988,8 @@ Section Int31_Spec.
  Proof.
  assert (Hp2: 0 < [|2|]) by exact (refl_equal Lt).
  intros rec i j Hi Hj Hij H31 Hrec; rewrite sqrt31_step_def.
- generalize (spec_compare (fst (i/j)%int31) j); case compare31;
-   rewrite div31_phi; auto; intros Hc;
+ rewrite spec_compare, div31_phi; auto.
+   case Zcompare_spec; auto; intros Hc;
    try (split; auto; apply sqrt_test_true; auto with zarith; fail).
  apply Hrec; repeat rewrite div31_phi; auto with zarith.
  replace [|(j + fst (i / j)%int31)|] with ([|j|] + [|i|] / [|j|]).
@@ -2072,7 +2042,7 @@ Section Int31_Spec.
        [|sqrt31 x|] ^ 2 <= [|x|] < ([|sqrt31 x|] + 1) ^ 2.
  Proof.
  intros i; unfold sqrt31.
- generalize (spec_compare 1 i); case compare31; change [|1|] with 1;
+ rewrite spec_compare. case Zcompare_spec; change [|1|] with 1;
    intros Hi; auto with zarith.
  repeat rewrite Zpower_2; auto with zarith.
  apply iter31_sqrt_correct; auto with zarith.
@@ -2157,7 +2127,7 @@ Section Int31_Spec.
  unfold phi2; apply Zlt_le_trans with ([|ih|] * base)%Z; auto with zarith.
  apply Zmult_lt_0_compat; auto with zarith.
  apply Zlt_le_trans with (2:= Hih); auto with zarith.
- generalize (spec_compare ih j); case compare31; intros Hc1.
+ rewrite spec_compare. case Zcompare_spec; intros Hc1.
  split; auto.
  apply sqrt_test_true; auto.
  unfold phi2, base; auto with zarith.
@@ -2166,7 +2136,7 @@ Section Int31_Spec.
  rewrite Zmult_comm, Z_div_plus_full_l; unfold base; auto with zarith.
  unfold Zpower, Zpower_pos in Hj1; simpl in Hj1; auto with zarith.
  case (Zle_or_lt (2 ^ 30) [|j|]); intros Hjj.
- generalize (spec_compare (fst (div3121 ih il j)) j); case compare31;
+ rewrite spec_compare; case Zcompare_spec;
   rewrite div312_phi; auto; intros Hc;
   try (split; auto; apply sqrt_test_true; auto with zarith; fail).
  apply Hrec.
@@ -2300,7 +2270,7 @@ Section Int31_Spec.
  generalize (spec_sub_c il il1).
  case sub31c; intros il2 Hil2.
  simpl interp_carry in Hil2.
- generalize (spec_compare ih ih1); case compare31.
+ rewrite spec_compare; case Zcompare_spec.
  unfold interp_carry.
  intros H1; split.
  rewrite Zpower_2, <- Hihl1.
@@ -2347,7 +2317,7 @@ Section Int31_Spec.
   case (phi_bounded ih); intros H1 H2.
   generalize Hih; change (2 ^ Z_of_nat size / 4) with 536870912.
   split; auto with zarith.
- generalize (spec_compare (ih - 1) ih1); case compare31.
+ rewrite spec_compare; case Zcompare_spec.
  rewrite Hsih.
  intros H1; split.
  rewrite Zpower_2, <- Hihl1.
@@ -2418,11 +2388,9 @@ Section Int31_Spec.
 
  (** [iszero] *)
 
- Let w_eq0         := int31_op.(znz_eq0).
-
- Lemma spec_eq0 : forall x, w_eq0 x = true -> [|x|] = 0.
+ Lemma spec_eq0 : forall x, ZnZ.eq0 x = true -> [|x|] = 0.
  Proof.
- clear; unfold w_eq0, znz_eq0; simpl.
+ clear; unfold ZnZ.eq0; simpl.
  unfold compare31; simpl; intros.
  change [|0|] with 0 in H.
  apply Zcompare_Eq_eq.
@@ -2431,12 +2399,10 @@ Section Int31_Spec.
 
  (* Even *)
 
- Let w_is_even     := int31_op.(znz_is_even).
-
  Lemma spec_is_even : forall x,
-      if w_is_even x then [|x|] mod 2 = 0 else [|x|] mod 2 = 1.
+      if ZnZ.is_even x then [|x|] mod 2 = 0 else [|x|] mod 2 = 1.
  Proof.
- unfold w_is_even; simpl; intros.
+ unfold ZnZ.is_even; simpl; intros.
  generalize (spec_div x 2).
  destruct (x/2)%int31 as (q,r); intros.
  unfold compare31.
@@ -2445,77 +2411,60 @@ Section Int31_Spec.
  destruct H; auto with zarith.
  replace ([|x|] mod 2) with [|r|].
  destruct H; auto with zarith.
- case_eq ([|r|] ?= 0)%Z; intros.
- apply Zcompare_Eq_eq; auto.
- change ([|r|] < 0)%Z in H; auto with zarith.
- change ([|r|] > 0)%Z in H; auto with zarith.
+ case Zcompare_spec; auto with zarith.
  apply Zmod_unique with [|q|]; auto with zarith.
  Qed.
 
- Definition int31_spec : znz_spec int31_op.
-  split.
-  exact phi_bounded.
-  exact positive_to_int31_spec.
-  exact spec_zdigits.
-  exact spec_more_than_1_digit.
+ Global Instance int31_specs : ZnZ.Specs int31_ops := {
+    spec_to_Z   := phi_bounded;
+    spec_of_pos := positive_to_int31_spec;
+    spec_zdigits := spec_zdigits;
+    spec_more_than_1_digit := spec_more_than_1_digit;
+    spec_0   := spec_0;
+    spec_1   := spec_1;
+    spec_m1  := spec_m1;
+    spec_compare := spec_compare;
+    spec_eq0 := spec_eq0;
+    spec_opp_c := spec_opp_c;
+    spec_opp := spec_opp;
+    spec_opp_carry := spec_opp_carry;
+    spec_succ_c := spec_succ_c;
+    spec_add_c := spec_add_c;
+    spec_add_carry_c := spec_add_carry_c;
+    spec_succ := spec_succ;
+    spec_add := spec_add;
+    spec_add_carry := spec_add_carry;
+    spec_pred_c := spec_pred_c;
+    spec_sub_c := spec_sub_c;
+    spec_sub_carry_c := spec_sub_carry_c;
+    spec_pred := spec_pred;
+    spec_sub := spec_sub;
+    spec_sub_carry := spec_sub_carry;
+    spec_mul_c := spec_mul_c;
+    spec_mul := spec_mul;
+    spec_square_c := spec_square_c;
+    spec_div21 := spec_div21;
+    spec_div_gt := fun a b _ => spec_div a b;
+    spec_div := spec_div;
+    spec_modulo_gt := fun a b _ => spec_mod a b;
+    spec_modulo := spec_mod;
+    spec_gcd_gt := fun a b _ => spec_gcd a b;
+    spec_gcd := spec_gcd;
+    spec_head00 := spec_head00;
+    spec_head0 := spec_head0;
+    spec_tail00 := spec_tail00;
+    spec_tail0 := spec_tail0;
+    spec_add_mul_div := spec_add_mul_div;
+    spec_pos_mod := spec_pos_mod;
+    spec_is_even := spec_is_even;
+    spec_sqrt2 := spec_sqrt2;
+    spec_sqrt := spec_sqrt }.
 
-  exact spec_0.
-  exact spec_1.
-  exact spec_Bm1.
-
-  exact spec_compare.
-  exact spec_eq0.
-
-  exact spec_opp_c.
-  exact spec_opp.
-  exact spec_opp_carry.
-
-  exact spec_succ_c.
-  exact spec_add_c.
-  exact spec_add_carry_c.
-  exact spec_succ.
-  exact spec_add.
-  exact spec_add_carry.
-
-  exact spec_pred_c.
-  exact spec_sub_c.
-  exact spec_sub_carry_c.
-  exact spec_pred.
-  exact spec_sub.
-  exact spec_sub_carry.
-
-  exact spec_mul_c.
-  exact spec_mul.
-  exact spec_square_c.
-
-  exact spec_div21.
-  intros; apply spec_div; auto.
-  exact spec_div.
-
-  intros; unfold int31_op; simpl; apply spec_mod; auto.
-  exact spec_mod.
-
-  intros; apply spec_gcd; auto.
-  exact spec_gcd.
-
-  exact spec_head00.
-  exact spec_head0.
-  exact spec_tail00.
-  exact spec_tail0.
-
-  exact spec_add_mul_div.
-  exact spec_pos_mod.
-
-  exact spec_is_even.
-  exact spec_sqrt2.
-  exact spec_sqrt.
- Qed.
-
-End Int31_Spec.
+End Int31_Specs.
 
 
 Module Int31Cyclic <: CyclicType.
-  Definition w := int31.
-  Definition w_op := int31_op.
-  Definition w_spec := int31_spec.
+  Definition t := int31.
+  Definition ops := int31_ops.
+  Definition specs := int31_specs.
 End Int31Cyclic.

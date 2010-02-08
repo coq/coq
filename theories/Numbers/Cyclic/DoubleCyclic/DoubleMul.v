@@ -248,12 +248,7 @@ Section DoubleMul.
   Variable spec_w_W0 : forall h, [[w_W0 h]] = [|h|] * wB.
   Variable spec_w_0W : forall l, [[w_0W l]] = [|l|].
   Variable spec_w_compare :
-     forall x y,
-       match w_compare x y with
-       | Eq => [|x|] = [|y|]
-       | Lt => [|x|] < [|y|]
-       | Gt => [|x|] > [|y|]
-       end.
+     forall x y, w_compare x y = Zcompare [|x|] [|y|].
   Variable spec_w_succ : forall x, [|w_succ x|] = ([|x|] + 1) mod wB.
   Variable spec_w_add_c  : forall x y, [+|w_add_c x y|] = [|x|] + [|y|].
   Variable spec_w_add : forall x y, [|w_add x y|] = ([|x|] + [|y|]) mod wB.
@@ -408,9 +403,9 @@ Section DoubleMul.
      assert (Hyh := (spec_to_Z yh)); assert (Hyl := (spec_to_Z yl)).
    generalize (spec_ww_add_c hh ll); case (ww_add_c hh ll);
      intros z Hz; rewrite <- Hz; unfold interp_carry; assert (Hz1 := (spec_ww_to_Z z)).
-   generalize (spec_w_compare xl xh); case (w_compare xl xh); intros Hxlh;
+   rewrite spec_w_compare; case Zcompare_spec; intros Hxlh;
     try rewrite Hxlh; try rewrite spec_w_0; try (ring; fail).
-   generalize (spec_w_compare yl yh); case (w_compare yl yh); intros Hylh.
+   rewrite spec_w_compare; case Zcompare_spec; intros Hylh.
    rewrite Hylh; rewrite spec_w_0; try (ring; fail).
    rewrite spec_w_0; try (ring; fail).
    repeat (rewrite spec_ww_sub || rewrite spec_w_sub || rewrite spec_w_mul_c).
@@ -430,7 +425,7 @@ Section DoubleMul.
    rewrite spec_w_1; unfold interp_carry in Hz2; rewrite Hz2;
      repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
-   generalize (spec_w_compare yl yh); case (w_compare yl yh); intros Hylh.
+   rewrite spec_w_compare; case Zcompare_spec; intros Hylh.
    rewrite Hylh; rewrite spec_w_0; try (ring; fail).
    match goal with |- context[ww_add_c ?x ?y] =>
      generalize (spec_ww_add_c x y); case (ww_add_c x y); try rewrite spec_w_0;
@@ -455,9 +450,9 @@ Section DoubleMul.
    apply Zmult_le_0_compat; auto with zarith.
    (** there is a carry in hh + ll **)
    rewrite Zmult_1_l.
-   generalize (spec_w_compare xl xh); case (w_compare xl xh); intros Hxlh;
+   rewrite spec_w_compare; case Zcompare_spec; intros Hxlh;
     try rewrite Hxlh; try rewrite spec_w_1; try (ring; fail).
-   generalize (spec_w_compare yl yh); case (w_compare yl yh); intros Hylh;
+   rewrite spec_w_compare; case Zcompare_spec; intros Hylh;
      try rewrite Hylh; try rewrite spec_w_1; try (ring; fail).
    match goal with |- context[ww_sub_c ?x ?y] =>
      generalize (spec_ww_sub_c x y); case (ww_sub_c x y); try rewrite spec_w_1;
@@ -480,7 +475,7 @@ Section DoubleMul.
    ring.
    rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
-   generalize (spec_w_compare yl yh); case (w_compare yl yh); intros Hylh;
+   rewrite spec_w_compare; case Zcompare_spec; intros Hylh;
      try rewrite Hylh; try rewrite spec_w_1; try (ring; fail).
    match goal with |- context[ww_add_c ?x ?y] =>
      generalize (spec_ww_add_c x y); case (ww_add_c x y); try rewrite spec_w_1;
