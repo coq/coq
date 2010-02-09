@@ -521,3 +521,62 @@ Proof.
     apply Zmult_compare_compat_l; assumption.
 Qed.
 
+(*************************)
+(** * Basic properties of minimum and maximum *)
+
+Lemma Zmax_l : forall x y, y<=x -> Zmax x y = x.
+Proof.
+ unfold Zle, Zmax. intros x y. rewrite <- (Zcompare_antisym x y).
+ destruct (x ?= y); intuition.
+Qed.
+
+Lemma Zmax_r : forall x y, x<=y -> Zmax x y = y.
+Proof.
+ unfold Zle, Zmax. intros x y. generalize (Zcompare_Eq_eq x y).
+ destruct (x ?= y); intuition.
+Qed.
+
+Lemma Zmin_l : forall x y, x<=y -> Zmin x y = x.
+Proof.
+ unfold Zle, Zmin. intros x y. generalize (Zcompare_Eq_eq x y).
+ destruct (x ?= y); intuition.
+Qed.
+
+Lemma Zmin_r : forall x y, y<=x -> Zmin x y = y.
+Proof.
+ unfold Zle, Zmin. intros x y.
+ rewrite <- (Zcompare_antisym x y). generalize (Zcompare_Eq_eq x y).
+ destruct (x ?= y); intuition.
+Qed.
+
+
+(**************************)
+(** * Basic properties of [Zabs] *)
+
+Lemma Zabs_eq : forall n:Z, 0 <= n -> Zabs n = n.
+Proof.
+ destruct n; auto. now destruct 1.
+Qed.
+
+Lemma Zabs_non_eq : forall n:Z, n <= 0 -> Zabs n = - n.
+Proof.
+ destruct n; auto. now destruct 1.
+Qed.
+
+(**************************)
+(** * Basic properties of [Zsign] *)
+
+Lemma Zsgn_0 : forall x, x = 0 -> Zsgn x = 0.
+Proof.
+ intros. now subst.
+Qed.
+
+Lemma Zsgn_1 : forall x, 0 < x -> Zsgn x = 1.
+Proof.
+ destruct x; auto; discriminate.
+Qed.
+
+Lemma Zsgn_m1 : forall x, x < 0 -> Zsgn x = -1.
+Proof.
+ destruct x; auto; discriminate.
+Qed.

@@ -19,7 +19,7 @@
 
 Require Export ZArith_base.
 Require Import Zbool Omega ZArithRing Zcomplements Setoid Morphisms.
-Require ZDivFloor ZBinary.
+Require ZDivFloor.
 Open Local Scope Z_scope.
 
 (** * Definitions of Euclidian operations *)
@@ -301,9 +301,11 @@ Proof.
 Qed.
 
 (** We know enough to prove that [Zdiv] and [Zmod] are instances of
-    one of the abstract Euclidean divisions of Numbers. *)
+    one of the abstract Euclidean divisions of Numbers.
+    We hence benefit from generic results about this abstract division. *)
 
-Module ZDiv <: ZDivFloor.ZDiv ZBinary.ZBinAxiomsMod.
+Module Z.
+
  Definition div := Zdiv.
  Definition modulo := Zmod.
  Local Obligation Tactic := simpl_relation.
@@ -314,14 +316,10 @@ Module ZDiv <: ZDivFloor.ZDiv ZBinary.ZBinAxiomsMod.
  Definition mod_pos_bound : forall a b:Z, 0<b -> 0<=a mod b<b.
  Proof. intros; apply Z_mod_lt; auto with zarith. Qed.
  Definition mod_neg_bound := Z_mod_neg.
-End ZDiv.
 
-Module ZDivMod := ZBinary.ZBinAxiomsMod <+ ZDiv.
+ Include ZBinary.Z (* ideally: Zminmax.Z *) <+ ZDivFloor.ZDivPropFunct.
 
-(** We hence benefit from generic results about this abstract division. *)
-
-Module Z := ZDivFloor.ZDivPropFunct ZDivMod ZBinary.ZBinPropMod.
-
+End Z.
 
 (** Existence theorem *)
 

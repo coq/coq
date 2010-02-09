@@ -1118,6 +1118,21 @@ Notation "x < y < z" := (x < y /\ y < z) : Z_scope.
 Notation "x < y <= z" := (x < y /\ y <= z) : Z_scope.
 
 (**********************************************************************)
+(** * Minimum and maximum *)
+
+Unboxed Definition Zmax (n m:Z) :=
+  match n ?= m with
+    | Eq | Gt => n
+    | Lt => m
+  end.
+
+Unboxed Definition Zmin (n m:Z) :=
+  match n ?= m with
+    | Eq | Lt => n
+    | Gt => m
+  end.
+
+(**********************************************************************)
 (** * Absolute value on integers *)
 
 Definition Zabs_nat (x:Z) : nat :=

@@ -176,8 +176,7 @@ Module Type UsualEq <: Eq := Typ <+ HasUsualEq.
 
 Module Type UsualIsEq (E:UsualEq) <: IsEq E.
  (* No Instance syntax to avoid saturating the Equivalence tables *)
- Lemma eq_equiv : Equivalence E.eq.
- Proof. exact eq_equivalence. Qed.
+ Definition eq_equiv : Equivalence E.eq := eq_equivalence.
 End UsualIsEq.
 
 Module Type UsualIsEqOrig (E:UsualEq) <: IsEqOrig E.

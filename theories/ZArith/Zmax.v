@@ -9,12 +9,12 @@
 
 (** THIS FILE IS DEPRECATED. Use [Zminmax] instead. *)
 
-Require Export BinInt Zorder Zminmax.
+Require Export BinInt Zcompare Zorder Zminmax.
 
 Open Local Scope Z_scope.
 
-(** [Zmax] is now [Zminmax.Zmax]. Code that do things like
-  [unfold Zmin.Zmin] will have to be adapted, and neither
+(** [Zmax] is now [BinInt.Zmax]. Code that do things like
+  [unfold Zmax.Zmax] will have to be adapted, and neither
   a [Definition] or a [Notation] here can help much. *)
 
 

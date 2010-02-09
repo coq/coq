@@ -12,17 +12,11 @@
 
 
 Require Import ZAxioms ZProperties.
-Require Import ZArith_base.
+Require Import BinInt Zcompare Zorder ZArith_dec Zbool.
 
 Local Open Scope Z_scope.
 
-(** * Implementation of [ZAxiomsSig] by [BinInt.Z] *)
-
-Module ZBinAxiomsMod <: ZAxiomsExtSig.
-
-(** Bi-directional induction. *)
-
-Theorem bi_induction :
+Theorem Z_bi_induction :
   forall A : Z -> Prop, Proper (eq ==> iff) A ->
     A 0 -> (forall n : Z, A n <-> A (Zsucc n)) -> forall n : Z, A n.
 Proof.
@@ -31,6 +25,34 @@ assumption.
 intros; rewrite <- Zsucc_succ'. now apply -> AS.
 intros n H. rewrite <- Zpred_pred'. rewrite Zsucc_pred in H. now apply <- AS.
 Qed.
+
+
+(** * Implementation of [ZAxiomsSig] by [BinInt.Z] *)
+
+Module Z
+ <: ZAxiomsExtSig <: UsualOrderedTypeFull <: TotalOrder
+ <: UsualDecidableTypeFull.
+
+Definition t := Z.
+Definition eqb := Zeq_bool.
+Definition zero := 0.
+Definition succ := Zsucc.
+Definition pred := Zpred.
+Definition add := Zplus.
+Definition sub := Zminus.
+Definition mul := Zmult.
+Definition lt := Zlt.
+Definition le := Zle.
+Definition compare := Zcompare.
+Definition min := Zmin.
+Definition max := Zmax.
+Definition opp := Zopp.
+Definition abs := Zabs.
+Definition sgn := Zsgn.
+
+Definition eq_dec := Z_eq_dec.
+
+Definition bi_induction := Z_bi_induction.
 
 (** Basic operations. *)
 
@@ -50,6 +72,10 @@ Definition sub_succ_r := Zminus_succ_r.
 Definition mul_0_l := Zmult_0_l.
 Definition mul_succ_l := Zmult_succ_l.
 
+(** Boolean Equality *)
+
+Definition eqb_eq x y := iff_sym (Zeq_is_eq_bool x y).
+
 (** Order *)
 
 Program Instance lt_wd : Proper (eq==>eq==>iff) Zlt.
@@ -57,6 +83,12 @@ Program Instance lt_wd : Proper (eq==>eq==>iff) Zlt.
 Definition lt_eq_cases := Zle_lt_or_eq_iff.
 Definition lt_irrefl := Zlt_irrefl.
 Definition lt_succ_r := Zlt_succ_r.
+
+(** Comparison *)
+
+Definition compare_spec := Zcompare_spec.
+
+(** Minimum and maximum *)
 
 Definition min_l := Zmin_l.
 Definition min_r := Zmin_r.
@@ -76,35 +108,34 @@ Definition opp_succ := Zopp_succ.
 Definition abs_eq := Zabs_eq.
 Definition abs_neq := Zabs_non_eq.
 
-Lemma sgn_null : forall x, x = 0 -> Zsgn x = 0.
-Proof. intros. apply <- Zsgn_null; auto. Qed.
-Lemma sgn_pos : forall x, 0 < x -> Zsgn x = 1.
-Proof. intros. apply <- Zsgn_pos; auto. Qed.
-Lemma sgn_neg : forall x, x < 0 -> Zsgn x = -1.
-Proof. intros. apply <- Zsgn_neg; auto. Qed.
+Definition sgn_null := Zsgn_0.
+Definition sgn_pos := Zsgn_1.
+Definition sgn_neg := Zsgn_m1.
 
-(** The instantiation of operations.
-    Placing them at the very end avoids having indirections in above lemmas. *)
+(** We define [eq] only here to avoid refering to this [eq] above. *)
 
-Definition t := Z.
 Definition eq := (@eq Z).
-Definition zero := 0.
-Definition succ := Zsucc.
-Definition pred := Zpred.
-Definition add := Zplus.
-Definition sub := Zminus.
-Definition mul := Zmult.
-Definition lt := Zlt.
-Definition le := Zle.
-Definition min := Zmin.
-Definition max := Zmax.
-Definition opp := Zopp.
-Definition abs := Zabs.
-Definition sgn := Zsgn.
 
-End ZBinAxiomsMod.
+(** Now the generic properties. *)
 
-Module Export ZBinPropMod := ZPropFunct ZBinAxiomsMod.
+Include ZPropFunct
+ <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
+
+End Z.
+
+(** * An [order] tactic for integers *)
+
+Ltac z_order := Z.order.
+
+(** Note that [z_order] is domain-agnostic: it will not prove
+    [1<=2] or [x<=x+x], but rather things like [x<=y -> y<=x -> x=y]. *)
+
+Section TestOrder.
+ Let test : forall x y, x<=y -> y<=x -> x=y.
+ Proof.
+ z_order.
+ Qed.
+End TestOrder.
 
 (** Z forms a ring *)
 

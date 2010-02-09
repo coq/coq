@@ -6,69 +6,18 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Orders BinInt Zcompare Zorder ZOrderedType
- GenericMinMax.
+Require Import Orders BinInt Zcompare Zorder ZBinary.
 
 (** * Maximum and Minimum of two [Z] numbers *)
 
 Local Open Scope Z_scope.
 
-Unboxed Definition Zmax (n m:Z) :=
-  match n ?= m with
-    | Eq | Gt => n
-    | Lt => m
-  end.
-
-Unboxed Definition Zmin (n m:Z) :=
-  match n ?= m with
-    | Eq | Lt => n
-    | Gt => m
-  end.
-
-(** The functions [Zmax] and [Zmin] implement indeed
-    a maximum and a minimum *)
-
-Lemma Zmax_l : forall x y, y<=x -> Zmax x y = x.
-Proof.
- unfold Zle, Zmax. intros x y. rewrite <- (Zcompare_antisym x y).
- destruct (x ?= y); intuition.
-Qed.
-
-Lemma Zmax_r : forall x y, x<=y -> Zmax x y = y.
-Proof.
- unfold Zle, Zmax. intros x y. generalize (Zcompare_Eq_eq x y).
- destruct (x ?= y); intuition.
-Qed.
-
-Lemma Zmin_l : forall x y, x<=y -> Zmin x y = x.
-Proof.
- unfold Zle, Zmin. intros x y. generalize (Zcompare_Eq_eq x y).
- destruct (x ?= y); intuition.
-Qed.
-
-Lemma Zmin_r : forall x y, y<=x -> Zmin x y = y.
-Proof.
- unfold Zle, Zmin. intros x y.
- rewrite <- (Zcompare_antisym x y). generalize (Zcompare_Eq_eq x y).
- destruct (x ?= y); intuition.
-Qed.
-
-Module ZHasMinMax <: HasMinMax Z_as_OT.
- Definition max := Zmax.
- Definition min := Zmin.
- Definition max_l := Zmax_l.
- Definition max_r := Zmax_r.
- Definition min_l := Zmin_l.
- Definition min_r := Zmin_r.
-End ZHasMinMax.
+(* All generic properties about max and min are already in [ZBinary.Z].
+   We prove here in addition some results specific to Z.
+*)
 
 Module Z.
-
-(** We obtain hence all the generic properties of max and min. *)
-
-Include UsualMinMaxProperties Z_as_OT ZHasMinMax.
-
-(** * Properties specific to the [Z] domain *)
+Include ZBinary.Z.
 
 (** Compatibilities (consequences of monotonicity) *)
 
@@ -176,7 +125,6 @@ Proof.
 Qed.
 
 End Z.
-
 
 (** * Characterization of Pminus in term of Zminus and Zmax *)
 

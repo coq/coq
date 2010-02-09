@@ -23,21 +23,12 @@ Open Local Scope Z_scope.
 (**********************************************************************)
 (** * Properties of absolute value *)
 
-Lemma Zabs_eq : forall n:Z, 0 <= n -> Zabs n = n.
-Proof.
-  intro x; destruct x; auto with arith.
-  compute in |- *; intros; absurd (Gt = Gt); trivial with arith.
-Qed.
-
-Lemma Zabs_non_eq : forall n:Z, n <= 0 -> Zabs n = - n.
-Proof.
-  intro x; destruct x; auto with arith.
-  compute in |- *; intros; absurd (Gt = Gt); trivial with arith.
-Qed.
+Notation Zabs_eq := Zabs_eq (only parsing). (* 0 <= n -> Zabs n = n *)
+Notation Zabs_non_eq := Zabs_non_eq (only parsing). (* n <= 0 -> Zabs n = -n *)
 
 Theorem Zabs_Zopp : forall n:Z, Zabs (- n) = Zabs n.
 Proof.
-  intros z; case z; simpl in |- *; auto.
+  intros z; case z; simpl; auto.
 Qed.
 
 (** * Proving a property of the absolute value by cases *)

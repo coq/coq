@@ -9,7 +9,7 @@
 
 Require Import BinPos BinNat Nnat ZArith_base ROmega ZArithRing Morphisms.
 Require Export ZOdiv_def.
-Require Zdiv Binary.ZBinary ZDivTrunc.
+Require Zdiv ZBinary ZDivTrunc.
 
 Open Scope Z_scope.
 
@@ -246,7 +246,7 @@ Qed.
 (** We know enough to prove that [ZOdiv] and [ZOmod] are instances of
     one of the abstract Euclidean divisions of Numbers. *)
 
-Module ZODiv <: ZDivTrunc.ZDiv ZBinary.ZBinAxiomsMod.
+Module ZODiv <: ZDivTrunc.ZDiv ZBinary.Z.
  Definition div := ZOdiv.
  Definition modulo := ZOmod.
  Local Obligation Tactic := simpl_relation.
@@ -259,11 +259,11 @@ Module ZODiv <: ZDivTrunc.ZDiv ZBinary.ZBinAxiomsMod.
  Definition mod_opp_r := fun a b (_:b<>0) => ZOmod_opp_r a b.
 End ZODiv.
 
-Module ZODivMod := ZBinary.ZBinAxiomsMod <+ ZODiv.
+Module ZODivMod := ZBinary.Z <+ ZODiv.
 
 (** We hence benefit from generic results about this abstract division. *)
 
-Module Z := ZDivTrunc.ZDivPropFunct ZODivMod ZBinary.ZBinPropMod.
+Module Z := ZDivTrunc.ZDivPropFunct ZODivMod ZBinary.Z.
 
 (** * Unicity results *)
 

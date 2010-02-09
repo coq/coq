@@ -9,11 +9,11 @@
 
 (** THIS FILE IS DEPRECATED. Use [Zminmax] instead. *)
 
-Require Import BinInt Zorder Zminmax.
+Require Import BinInt Zcompare Zorder Zminmax.
 
 Open Local Scope Z_scope.
 
-(** [Zmin] is now [Zminmax.Zmin]. Code that do things like
+(** [Zmin] is now [BinInt.Zmin]. Code that do things like
   [unfold Zmin.Zmin] will have to be adapted, and neither
   a [Definition] or a [Notation] here can help much. *)
 
