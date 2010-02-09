@@ -8,15 +8,15 @@
 
 (*i $Id$ i*)
 
-Require Export ZAxioms ZMulOrder ZSgnAbs.
+Require Export ZAxioms ZMaxMin ZSgnAbs.
 
 (** This functor summarizes all known facts about Z.
-    For the moment it is only an alias to [ZMulOrderPropFunct], which
+    For the moment it is only an alias to the last functor which
     subsumes all others, plus properties of [sgn] and [abs].
 *)
 
 Module Type ZPropSig (Z:ZAxiomsExtSig) :=
- ZMulOrderPropFunct Z <+ ZSgnAbsPropSig Z.
+ ZMaxMinProp Z <+ ZSgnAbsPropSig Z.
 
 Module ZPropFunct (Z:ZAxiomsExtSig) <: ZPropSig Z.
  Include ZPropSig Z.

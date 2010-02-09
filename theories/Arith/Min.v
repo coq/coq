@@ -8,21 +8,20 @@
 
 (*i $Id$ i*)
 
-(** THIS FILE IS DEPRECATED. Use [NPeano] and [MinMax] instead. *)
+(** THIS FILE IS DEPRECATED. Use [NPeano.Nat] instead. *)
 
 Require Import NPeano.
-Require Export MinMax.
 
 Open Local Scope nat_scope.
 Implicit Types m n p : nat.
 
 Notation min := NPeano.min (only parsing).
 
-Definition min_0_l := min_0_l.
-Definition min_0_r := min_0_r.
-Definition succ_min_distr := succ_min_distr.
-Definition plus_min_distr_l := plus_min_distr_l.
-Definition plus_min_distr_r := plus_min_distr_r.
+Definition min_0_l := Nat.min_0_l.
+Definition min_0_r := Nat.min_0_r.
+Definition succ_min_distr := Nat.succ_min_distr.
+Definition plus_min_distr_l := Nat.add_min_distr_l.
+Definition plus_min_distr_r := Nat.add_min_distr_r.
 Definition min_case_strong := Nat.min_case_strong.
 Definition min_spec := Nat.min_spec.
 Definition min_dec := Nat.min_dec.
@@ -41,5 +40,5 @@ Definition min_glb := Nat.min_glb.
 (* begin hide *)
 (* Compatibility *)
 Notation min_case2 := min_case (only parsing).
-Notation min_SS := succ_min_distr (only parsing).
+Notation min_SS := Nat.succ_min_distr (only parsing).
 (* end hide *)

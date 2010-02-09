@@ -34,5 +34,3 @@ Hint Resolve Zle_refl Zplus_comm Zplus_assoc Zmult_comm Zmult_assoc Zplus_0_l
   Zmult_plus_distr_r: zarith.
 
 Require Export Zhints.
-
-Module Z := Zminmax.Z.

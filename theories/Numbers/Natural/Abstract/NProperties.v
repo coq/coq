@@ -8,14 +8,14 @@
 
 (*i $Id$ i*)
 
-Require Export NAxioms NSub.
+Require Export NAxioms NMaxMin.
 
 (** This functor summarizes all known facts about N.
-    For the moment it is only an alias to [NSubPropFunct], which
+    For the moment it is only an alias to the last functor which
     subsumes all others.
 *)
 
-Module Type NPropSig := NSubPropFunct.
+Module Type NPropSig := NMaxMinProp.
 
 Module NPropFunct (N:NAxiomsSig) <: NPropSig N.
  Include NPropSig N.

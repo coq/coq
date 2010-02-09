@@ -807,13 +807,13 @@ Module Make (W0:CyclicType) <: NType.
  assert (H2 := ZnZ.spec_to_Z (ZnZ.zdigits (dom_op n))).
  assert (H3 := head0_zdigits n x).
  rewrite Zmod_small by auto with zarith.
- rewrite (ZBinary.ZBinPropMod.mul_lt_mono_pos_l (2^(ZnZ.to_Z (ZnZ.head0 x))));
+ rewrite (Z.mul_lt_mono_pos_l (2^(ZnZ.to_Z (ZnZ.head0 x))));
   auto with zarith.
- rewrite (ZBinary.ZBinPropMod.mul_le_mono_pos_l _ _ (2^(ZnZ.to_Z (ZnZ.head0 x))));
+ rewrite (Z.mul_le_mono_pos_l _ _ (2^(ZnZ.to_Z (ZnZ.head0 x))));
   auto with zarith.
  rewrite <- 2 Zpower_exp; auto with zarith.
- rewrite ZBinary.ZBinPropMod.add_sub_assoc, Zplus_minus.
- rewrite ZBinary.ZBinPropMod.sub_simpl_r, Zplus_minus.
+ rewrite Z.add_sub_assoc, Zplus_minus.
+ rewrite Z.sub_simpl_r, Zplus_minus.
  rewrite ZnZ.spec_zdigits.
  rewrite pow2_pos_minus_1 by (red; auto).
  apply ZnZ.spec_head0; auto with zarith.

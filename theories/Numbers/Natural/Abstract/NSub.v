@@ -214,6 +214,17 @@ apply add_sub_eq_nz in EQ; [|order].
 rewrite (add_lt_mono_r _ _ n), add_0_l in LT. order.
 Qed.
 
+Lemma sub_le_mono_r : forall n m p, n <= m -> n-p <= m-p.
+Proof.
+ intros. rewrite le_sub_le_add_r. transitivity m. assumption. apply sub_add_le.
+Qed.
+
+Lemma sub_le_mono_l : forall n m p, n <= m -> p-m <= p-n.
+Proof.
+ intros. rewrite le_sub_le_add_r.
+ transitivity (p-n+n); [ apply sub_add_le | now apply add_le_mono_l].
+Qed.
+
 (** Sub and mul *)
 
 Theorem mul_pred_r : forall n m, n * (P m) == n * m - n.

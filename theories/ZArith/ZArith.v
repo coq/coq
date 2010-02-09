@@ -22,6 +22,6 @@ Require Export Zlogarithm.
 
 Export ZArithRing.
 
-(** Final Z module, cumulating ZBinary.Z, Zminmax.Z, and Zdiv.Z *)
+(** Final Z module, cumulating ZBinary.Z and Zdiv.Z *)
 
 Module Z := Zdiv.Z.

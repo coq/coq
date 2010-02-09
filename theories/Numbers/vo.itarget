@@ -27,6 +27,7 @@ Integer/Abstract/ZProperties.vo
 Integer/Abstract/ZDivFloor.vo
 Integer/Abstract/ZDivTrunc.vo
 Integer/Abstract/ZDivEucl.vo
+Integer/Abstract/ZMaxMin.vo
 Integer/BigZ/BigZ.vo
 Integer/BigZ/ZMake.vo
 Integer/Binary/ZBinary.vo
@@ -56,6 +57,7 @@ Natural/Abstract/NStrongRec.vo
 Natural/Abstract/NSub.vo
 Natural/Abstract/NProperties.vo
 Natural/Abstract/NDiv.vo
+Natural/Abstract/NMaxMin.vo
 Natural/BigN/BigN.vo
 Natural/BigN/Nbasic.vo
 Natural/BigN/NMake_gen.vo

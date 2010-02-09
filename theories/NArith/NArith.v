@@ -15,9 +15,11 @@ Require Export BinNat.
 Require Export Nnat.
 Require Export Ndigits.
 Require Export NArithRing.
-Require NBinary Nminmax.
+Require NBinary.
 
-Module N := NBinary.N <+ Nminmax.Nextend.
+Module N.
+ Include NBinary.N.
+End N.
 
 (** [N] contains An [order] tactic for natural numbers *)
 

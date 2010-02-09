@@ -7,15 +7,13 @@
 (************************************************************************)
 (*i $Id$ i*)
 
-(** THIS FILE IS DEPRECATED. Use [Zminmax] instead. *)
+(** THIS FILE IS DEPRECATED. Use [ZBinary.Z] instead. *)
 
-Require Export BinInt Zcompare Zorder Zminmax.
+Require Export BinInt Zcompare Zorder ZBinary.
 
 Open Local Scope Z_scope.
 
-(** [Zmax] is now [BinInt.Zmax]. Code that do things like
-  [unfold Zmax.Zmax] will have to be adapted, and neither
-  a [Definition] or a [Notation] here can help much. *)
+(** Definition [Zmax] is now [BinInt.Zmax]. *)
 
 
 (** * Characterization of maximum on binary integer numbers *)
@@ -78,24 +76,35 @@ Definition Zsucc_max_distr :
  := Z.succ_max_distr.
 
 Definition Zplus_max_distr_l : forall n m p:Z, Zmax (p + n) (p + m) = p + Zmax n m
- := Z.plus_max_distr_l.
+ := Z.add_max_distr_l.
 
 Definition Zplus_max_distr_r : forall n m p:Z, Zmax (n + p) (m + p) = Zmax n m + p
- := Z.plus_max_distr_r.
+ := Z.add_max_distr_r.
 
 (** * Maximum and Zpos *)
 
-Definition Zpos_max : forall p q, Zpos (Pmax p q) = Zmax (Zpos p) (Zpos q)
- := Z.pos_max.
+Lemma Zpos_max : forall p q, Zpos (Pmax p q) = Zmax (Zpos p) (Zpos q).
+Proof.
+ intros; unfold Zmax, Pmax; simpl; generalize (Pcompare_Eq_eq p q).
+ destruct Pcompare; auto.
+ intro H; rewrite H; auto.
+Qed.
 
-Definition Zpos_max_1 : forall p, Zmax 1 (Zpos p) = Zpos p
- := Z.pos_max_1.
+Lemma Zpos_max_1 : forall p, Zmax 1 (Zpos p) = Zpos p.
+Proof.
+  intros; unfold Zmax; simpl; destruct p; simpl; auto.
+Qed.
 
 (** * Characterization of Pminus in term of Zminus and Zmax *)
 
-Definition Zpos_minus :
- forall p q, Zpos (Pminus p q) = Zmax 1 (Zpos p - Zpos q)
- := Zpos_minus.
+Lemma Zpos_minus : forall p q, Zpos (Pminus p q) = Zmax 1 (Zpos p - Zpos q).
+Proof.
+  intros; simpl. destruct (Pcompare p q Eq) as [ ]_eqn:H.
+  rewrite (Pcompare_Eq_eq _ _ H).
+  unfold Pminus; rewrite Pminus_mask_diag; reflexivity.
+  rewrite Pminus_Lt; auto.
+  symmetry. apply Zpos_max_1.
+Qed.
 
 (* begin hide *)
 (* Compatibility *)

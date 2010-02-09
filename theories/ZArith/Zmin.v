@@ -7,16 +7,13 @@
 (************************************************************************)
 (*i $Id$ i*)
 
-(** THIS FILE IS DEPRECATED. Use [Zminmax] instead. *)
+(** THIS FILE IS DEPRECATED. Use [ZBinary.Z] instead. *)
 
-Require Import BinInt Zcompare Zorder Zminmax.
+Require Import BinInt Zcompare Zorder ZBinary.
 
 Open Local Scope Z_scope.
 
-(** [Zmin] is now [BinInt.Zmin]. Code that do things like
-  [unfold Zmin.Zmin] will have to be adapted, and neither
-  a [Definition] or a [Notation] here can help much. *)
-
+(** Definition [Zmin] is now [BinInt.Zmin]. *)
 
 (** * Characterization of the minimum on binary integer numbers *)
 
@@ -77,14 +74,24 @@ Notation Zmin_SS := Z.succ_min_distr (only parsing).
 
 Definition Zplus_min_distr_r :
  forall n m p, Zmin (n + p) (m + p) = Zmin n m + p
- := Z.plus_min_distr_r.
+ := Z.add_min_distr_r.
 
-Notation Zmin_plus := Z.plus_min_distr_r (only parsing).
+Notation Zmin_plus := Z.add_min_distr_r (only parsing).
 
 (** * Minimum and Zpos *)
 
-Definition Zpos_min : forall p q, Zpos (Pmin p q) = Zmin (Zpos p) (Zpos q)
- := Z.pos_min.
+Lemma Zpos_min : forall p q, Zpos (Pmin p q) = Zmin (Zpos p) (Zpos q).
+Proof.
+ intros; unfold Zmin, Pmin; simpl; generalize (Pcompare_Eq_eq p q).
+ destruct Pcompare; auto.
+Qed.
+
+Lemma Zpos_min_1 : forall p, Zmin 1 (Zpos p) = 1.
+Proof.
+  intros; unfold Zmax; simpl; destruct p; simpl; auto.
+Qed.
+
+
 
 
 
