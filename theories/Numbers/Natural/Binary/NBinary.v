@@ -18,7 +18,8 @@ Local Open Scope N_scope.
 
 (** * Implementation of [NAxiomsSig] module type via [BinNat.N] *)
 
-Module NBinaryAxiomsMod <: NAxiomsSig.
+Module Type N
+ <: NAxiomsSig <: UsualOrderedTypeFull <: TotalOrder <: DecidableTypeFull.
 
 (** Bi-directional induction. *)
 
@@ -64,6 +65,10 @@ now rewrite H. now rewrite H, Pcompare_refl.
 apply <- Pcompare_p_Sq. case_eq ((p ?= q)%positive Eq); intro H1.
 right; now apply Pcompare_Eq_eq. now left. exfalso; now apply H.
 Qed.
+
+Definition eqb_eq := Neqb_eq.
+
+Definition compare_spec := Ncompare_spec.
 
 Theorem min_l : forall n m, n <= m -> Nmin n m = n.
 Proof.
@@ -138,6 +143,9 @@ Qed.
 
 Definition t := N.
 Definition eq := @eq N.
+Definition eqb := Neqb.
+Definition compare := Ncompare.
+Definition eq_dec := N_eq_dec.
 Definition zero := N0.
 Definition succ := Nsucc.
 Definition pred := Npred.
@@ -149,9 +157,10 @@ Definition le := Nle.
 Definition min := Nmin.
 Definition max := Nmax.
 
-End NBinaryAxiomsMod.
+Include NPropFunct
+ <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
 
-Module Export NBinaryPropMod := NPropFunct NBinaryAxiomsMod.
+End N.
 
 (*
 Require Import NDefOps.

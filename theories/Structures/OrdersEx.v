@@ -13,8 +13,8 @@
 
 (* $Id$ *)
 
-Require Import Orders NatOrderedType POrderedType NOrderedType
- ZBinary RelationPairs EqualitiesFacts.
+Require Import Orders NatOrderedType POrderedType NArith
+ ZArith RelationPairs EqualitiesFacts.
 
 (** * Examples of Ordered Type structures. *)
 
@@ -23,8 +23,8 @@ Require Import Orders NatOrderedType POrderedType NOrderedType
 
 Module Nat_as_OT := NatOrderedType.Nat_as_OT.
 Module Positive_as_OT := POrderedType.Positive_as_OT.
-Module N_as_OT := NOrderedType.N_as_OT.
-Module Z_as_OT := ZBinary.Z.
+Module N_as_OT := NArith.N.
+Module Z_as_OT := ZArith.Z.
 
 (** An OrderedType can now directly be seen as a DecidableType *)
 
