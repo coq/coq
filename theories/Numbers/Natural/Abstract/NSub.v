@@ -205,6 +205,15 @@ Proof.
 intros n m p. rewrite add_comm; apply lt_add_lt_sub_r.
 Qed.
 
+Theorem sub_lt : forall n m, m <= n -> 0 < m -> n - m < n.
+Proof.
+intros n m LE LT.
+assert (LE' := le_sub_l n m). rewrite lt_eq_cases in LE'.
+destruct LE' as [LT'|EQ]. assumption.
+apply add_sub_eq_nz in EQ; [|order].
+rewrite (add_lt_mono_r _ _ n), add_0_l in LT. order.
+Qed.
+
 (** Sub and mul *)
 
 Theorem mul_pred_r : forall n m, n * (P m) == n * m - n.
