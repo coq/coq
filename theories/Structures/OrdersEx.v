@@ -13,7 +13,7 @@
 
 (* $Id$ *)
 
-Require Import Orders NatOrderedType POrderedType NArith
+Require Import Orders NPeano POrderedType NArith
  ZArith RelationPairs EqualitiesFacts.
 
 (** * Examples of Ordered Type structures. *)
@@ -21,7 +21,7 @@ Require Import Orders NatOrderedType POrderedType NArith
 
 (** Ordered Type for [nat], [Positive], [N], [Z] with the usual order. *)
 
-Module Nat_as_OT := NatOrderedType.Nat_as_OT.
+Module Nat_as_OT := NPeano.Nat.
 Module Positive_as_OT := POrderedType.Positive_as_OT.
 Module N_as_OT := NArith.N.
 Module Z_as_OT := ZArith.Z.

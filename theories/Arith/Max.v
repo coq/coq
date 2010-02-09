@@ -8,34 +8,35 @@
 
 (*i $Id$ i*)
 
-(** THIS FILE IS DEPRECATED. Use [MinMax] instead. *)
+(** THIS FILE IS DEPRECATED. Use [NPeano] and [MinMax] instead. *)
 
+Require Import NPeano.
 Require Export MinMax.
 
 Local Open Scope nat_scope.
 Implicit Types m n p : nat.
 
-Notation max := MinMax.max (only parsing).
+Notation max := NPeano.max (only parsing).
 
 Definition max_0_l := max_0_l.
 Definition max_0_r := max_0_r.
 Definition succ_max_distr := succ_max_distr.
 Definition plus_max_distr_l := plus_max_distr_l.
 Definition plus_max_distr_r := plus_max_distr_r.
-Definition max_case_strong := max_case_strong.
-Definition max_spec := max_spec.
-Definition max_dec := max_dec.
-Definition max_case := max_case.
-Definition max_idempotent := max_id.
-Definition max_assoc := max_assoc.
-Definition max_comm := max_comm.
-Definition max_l := max_l.
-Definition max_r := max_r.
-Definition le_max_l := le_max_l.
-Definition le_max_r := le_max_r.
-Definition max_lub_l := max_lub_l.
-Definition max_lub_r := max_lub_r.
-Definition max_lub := max_lub.
+Definition max_case_strong := Nat.max_case_strong.
+Definition max_spec := Nat.max_spec.
+Definition max_dec := Nat.max_dec.
+Definition max_case := Nat.max_case.
+Definition max_idempotent := Nat.max_id.
+Definition max_assoc := Nat.max_assoc.
+Definition max_comm := Nat.max_comm.
+Definition max_l := Nat.max_l.
+Definition max_r := Nat.max_r.
+Definition le_max_l := Nat.le_max_l.
+Definition le_max_r := Nat.le_max_r.
+Definition max_lub_l := Nat.max_lub_l.
+Definition max_lub_r := Nat.max_lub_r.
+Definition max_lub := Nat.max_lub.
 
 (* begin hide *)
 (* Compatibility *)

@@ -19,5 +19,4 @@ Mult.vo
 Peano_dec.vo
 Plus.vo
 Wf_nat.vo
-NatOrderedType.vo
 MinMax.vo

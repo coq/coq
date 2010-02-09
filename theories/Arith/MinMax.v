@@ -6,61 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Orders NatOrderedType GenericMinMax.
+Require Import Orders NPeano.
 
-(** * Maximum and Minimum of two natural numbers *)
-
-Fixpoint max n m : nat :=
-  match n, m with
-    | O, _ => m
-    | S n', O => n
-    | S n', S m' => S (max n' m')
-  end.
-
-Fixpoint min n m : nat :=
-  match n, m with
-    | O, _ => 0
-    | S n', O => 0
-    | S n', S m' => S (min n' m')
-  end.
-
-(** These functions implement indeed a maximum and a minimum *)
-
-Lemma max_l : forall x y, y<=x -> max x y = x.
-Proof.
- induction x; destruct y; simpl; auto with arith.
-Qed.
-
-Lemma max_r : forall x y, x<=y -> max x y = y.
-Proof.
- induction x; destruct y; simpl; auto with arith.
-Qed.
-
-Lemma min_l : forall x y, x<=y -> min x y = x.
-Proof.
- induction x; destruct y; simpl; auto with arith.
-Qed.
-
-Lemma min_r : forall x y, y<=x -> min x y = y.
-Proof.
- induction x; destruct y; simpl; auto with arith.
-Qed.
-
-
-Module NatHasMinMax <: HasMinMax Nat_as_OT.
- Definition max := max.
- Definition min := min.
- Definition max_l := max_l.
- Definition max_r := max_r.
- Definition min_l := min_l.
- Definition min_r := min_r.
-End NatHasMinMax.
-
-(** We obtain hence all the generic properties of [max] and [min],
-    see file [GenericMinMax] or use SearchAbout. *)
-
-Module Export MMP := UsualMinMaxProperties Nat_as_OT NatHasMinMax.
-
+(** The Definition of maximum and minimum of two natural numbers
+    is now in NPeano, as well as generic properties. *)
 
 (** * Properties specific to the [nat] domain *)
 
@@ -88,26 +37,26 @@ Proof. auto. Qed.
 
 Lemma plus_max_distr_l : forall n m p, max (p + n) (p + m) = p + max n m.
 Proof.
-intros. apply max_monotone. repeat red; auto with arith.
+intros. apply Nat.max_monotone. repeat red; auto with arith.
 Qed.
 
 Lemma plus_max_distr_r : forall n m p, max (n + p) (m + p) = max n m + p.
 Proof.
-intros. apply max_monotone with (f:=fun x => x + p).
+intros. apply Nat.max_monotone with (f:=fun x => x + p).
 repeat red; auto with arith.
 Qed.
 
 Lemma plus_min_distr_l : forall n m p, min (p + n) (p + m) = p + min n m.
 Proof.
-intros. apply min_monotone. repeat red; auto with arith.
+intros. apply Nat.min_monotone. repeat red; auto with arith.
 Qed.
 
 Lemma plus_min_distr_r : forall n m p, min (n + p) (m + p) = min n m + p.
 Proof.
-intros. apply min_monotone with (f:=fun x => x + p).
+intros. apply Nat.min_monotone with (f:=fun x => x + p).
 repeat red; auto with arith.
 Qed.
 
 Hint Resolve
- max_l max_r le_max_l le_max_r
- min_l min_r le_min_l le_min_r : arith v62.
+ Nat.max_l Nat.max_r Nat.le_max_l Nat.le_max_r
+ Nat.min_l Nat.min_r Nat.le_min_l Nat.le_min_r : arith v62.

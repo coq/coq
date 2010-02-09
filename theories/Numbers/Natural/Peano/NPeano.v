@@ -10,11 +10,44 @@
 
 (*i $Id$ i*)
 
-Require Import Arith MinMax NAxioms NProperties.
+Require Import Peano Peano_dec Compare_dec EqNat NAxioms NProperties NDiv.
+
+(** Some functions not already encountered: min max div mod *)
+
+Fixpoint max n m : nat :=
+  match n, m with
+    | O, _ => m
+    | S n', O => n
+    | S n', S m' => S (max n' m')
+  end.
+
+Fixpoint min n m : nat :=
+  match n, m with
+    | O, _ => 0
+    | S n', O => 0
+    | S n', S m' => S (min n' m')
+  end.
+
+Definition divF div x y := if leb y x then S (div (x-y) y) else 0.
+Definition modF mod x y := if leb y x then mod (x-y) y else x.
+Definition initF (_ _ : nat) := 0.
+
+Fixpoint loop {A} (F:A->A)(i:A) (n:nat) : A :=
+ match n with
+  | 0 => i
+  | S n => F (loop F i n)
+ end.
+
+Definition div x y := loop divF initF x x y.
+Definition modulo x y := loop modF initF x x y.
+Infix "/" := div : nat_scope.
+Infix "mod" := modulo (at level 40, no associativity) : nat_scope.
+
 
 (** * Implementation of [NAxiomsSig] by [nat] *)
 
-Module NPeanoAxiomsMod <: NAxiomsSig.
+Module Nat
+ <: NAxiomsSig <: UsualDecidableTypeFull <: OrderedTypeFull <: TotalOrder.
 
 (** Bi-directional induction. *)
 
@@ -57,7 +90,7 @@ Qed.
 
 Theorem sub_succ_r : forall n m : nat, n - (S m) = pred (n - m).
 Proof.
-intros n m; induction n m using nat_double_ind; simpl; auto. apply sub_0_r.
+induction n; destruct m; simpl; auto. apply sub_0_r.
 Qed.
 
 Theorem mul_0_l : forall n : nat, 0 * n = 0.
@@ -67,49 +100,61 @@ Qed.
 
 Theorem mul_succ_l : forall n m : nat, S n * m = n * m + m.
 Proof.
-intros n m; now rewrite plus_comm.
+assert (add_S_r : forall n m, n+S m = S(n+m)) by (induction n; auto).
+assert (add_comm : forall n m, n+m = m+n).
+ induction n; simpl; auto. intros; rewrite add_S_r; auto.
+intros n m; now rewrite add_comm.
 Qed.
 
 (** Order on natural numbers *)
 
 Program Instance lt_wd : Proper (eq==>eq==>iff) lt.
 
+Theorem lt_succ_r : forall n m : nat, n < S m <-> n <= m.
+Proof.
+unfold lt.
+split; [|induction 1; auto].
+assert (le_pred : forall n m, n <= m -> pred n <= pred m).
+ induction 1 as [|m' H IH]; auto.
+ destruct m'. inversion H; subst; auto. simpl; auto.
+exact (le_pred (S n) (S m)).
+Qed.
+
+
 Theorem lt_eq_cases : forall n m : nat, n <= m <-> n < m \/ n = m.
 Proof.
-intros n m; split.
-apply le_lt_or_eq.
-intro H; destruct H as [H | H].
-now apply lt_le_weak. rewrite H; apply le_refl.
+split.
+inversion 1; auto. rewrite lt_succ_r; auto.
+destruct 1; [|subst; auto]. rewrite <- lt_succ_r; auto.
 Qed.
 
 Theorem lt_irrefl : forall n : nat, ~ (n < n).
 Proof.
-exact lt_irrefl.
-Qed.
-
-Theorem lt_succ_r : forall n m : nat, n < S m <-> n <= m.
-Proof.
-intros n m; split; [apply lt_n_Sm_le | apply le_lt_n_Sm].
+induction n. intro H; inversion H. rewrite lt_succ_r; auto.
 Qed.
 
 Theorem min_l : forall n m : nat, n <= m -> min n m = n.
 Proof.
-exact min_l.
+induction n; destruct m; simpl; auto. inversion 1.
+rewrite (lt_succ_r n m). auto.
 Qed.
 
 Theorem min_r : forall n m : nat, m <= n -> min n m = m.
 Proof.
-exact min_r.
+induction n; destruct m; simpl; auto. inversion 1.
+rewrite (lt_succ_r m n). auto.
 Qed.
 
 Theorem max_l : forall n m : nat, m <= n -> max n m = n.
 Proof.
-exact max_l.
+induction n; destruct m; simpl; auto. inversion 1.
+rewrite (lt_succ_r m n). auto.
 Qed.
 
 Theorem max_r : forall n m : nat, n <= m -> max n m = m.
 Proof.
-exact max_r.
+induction n; destruct m; simpl; auto. inversion 1.
+rewrite (lt_succ_r n m). auto.
 Qed.
 
 (** Facts specific to natural numbers, not integers. *)
@@ -149,6 +194,8 @@ Qed.
 
 Definition t := nat.
 Definition eq := @eq nat.
+Definition eqb := beq_nat.
+Definition compare := nat_compare.
 Definition zero := 0.
 Definition succ := S.
 Definition pred := pred.
@@ -160,30 +207,16 @@ Definition le := le.
 Definition min := min.
 Definition max := max.
 
-End NPeanoAxiomsMod.
+Definition eqb_eq := beq_nat_true_iff.
+Definition compare_spec := nat_compare_spec.
+Definition eq_dec := eq_nat_dec.
 
-(** Now we apply the largest property functor *)
+(** Generic Properties *)
 
-Module Export NPeanoPropMod := NPropFunct NPeanoAxiomsMod.
+Include NPropFunct
+ <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
 
-
-
-(** Euclidean Division *)
-
-Definition divF div x y := if leb y x then S (div (x-y) y) else 0.
-Definition modF mod x y := if leb y x then mod (x-y) y else x.
-Definition initF (_ _ : nat) := 0.
-
-Fixpoint loop {A} (F:A->A)(i:A) (n:nat) : A :=
- match n with
-  | 0 => i
-  | S n => F (loop F i n)
- end.
-
-Definition div x y := loop divF initF x x y.
-Definition modulo x y := loop modF initF x x y.
-Infix "/" := div : nat_scope.
-Infix "mod" := modulo (at level 40, no associativity) : nat_scope.
+(** Proofs of specification for [div] and [mod]. *)
 
 Lemma div_mod : forall x y, y<>0 -> x = y*(x/y) + x mod y.
 Proof.
@@ -195,14 +228,13 @@ Proof.
  simpl; unfold divF at 1, modF at 1.
  intros.
  destruct (leb y x) as [ ]_eqn:L;
-  [apply leb_complete in L | apply leb_complete_conv in L].
+  [apply leb_complete in L | apply leb_complete_conv in L; now nzsimpl].
  rewrite mul_succ_r, <- add_assoc, (add_comm y), add_assoc.
  rewrite <- IHn; auto.
  symmetry; apply sub_add; auto.
- rewrite <- NPeanoAxiomsMod.lt_succ_r.
+ rewrite <- lt_succ_r.
  apply lt_le_trans with x; auto.
- apply lt_minus; auto. rewrite <- neq_0_lt_0; auto.
- nzsimpl; auto.
+ apply sub_lt; auto. rewrite <- neq_0_lt_0; auto.
 Qed.
 
 Lemma mod_upper_bound : forall x y, y<>0 -> x mod y < y.
@@ -216,22 +248,30 @@ Proof.
  destruct (leb y x) as [ ]_eqn:L;
   [apply leb_complete in L | apply leb_complete_conv in L]; auto.
  apply IHn; auto.
- rewrite <- NPeanoAxiomsMod.lt_succ_r.
+ rewrite <- lt_succ_r.
  apply lt_le_trans with x; auto.
- apply lt_minus; auto. rewrite <- neq_0_lt_0; auto.
+ apply sub_lt; auto. rewrite <- neq_0_lt_0; auto.
 Qed.
 
-Require Import NDiv.
+Definition div := div.
+Definition modulo := modulo.
+Program Instance div_wd : Proper (eq==>eq==>eq) div.
+Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 
-Module NDivMod <: NDivSig.
- Include NPeanoAxiomsMod.
- Definition div := div.
- Definition modulo := modulo.
- Definition div_mod := div_mod.
- Definition mod_upper_bound := mod_upper_bound.
- Local Obligation Tactic := simpl_relation.
- Program Instance div_wd : Proper (eq==>eq==>eq) div.
- Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
-End NDivMod.
+(** Generic properties of [div] and [mod] *)
 
-Module Export NDivPropMod := NDivPropFunct NDivMod NPeanoPropMod.
+Include NDivPropFunct.
+
+End Nat.
+
+(** [Nat] contains an [order] tactic for natural numbers *)
+
+(** Note that [Nat.order] is domain-agnostic: it will not prove
+    [1<=2] or [x<=x+x], but rather things like [x<=y -> y<=x -> x=y]. *)
+
+Section TestOrder.
+ Let test : forall x y, x<=y -> y<=x -> x=y.
+ Proof.
+ Nat.order.
+ Qed.
+End TestOrder.
