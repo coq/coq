@@ -55,6 +55,9 @@ Module Type NType.
  Parameter div : t -> t -> t.
  Parameter modulo : t -> t -> t.
  Parameter gcd : t -> t -> t.
+ Parameter shiftr : t -> t -> t.
+ Parameter shiftl : t -> t -> t.
+ Parameter is_even : t -> bool.
 
  Parameter spec_compare: forall x y, compare x y = Zcompare [x] [y].
  Parameter spec_eq_bool: forall x y, eq_bool x y = Zeq_bool [x] [y].
@@ -76,6 +79,10 @@ Module Type NType.
  Parameter spec_div: forall x y, [div x y] = [x] / [y].
  Parameter spec_modulo: forall x y, [modulo x y] = [x] mod [y].
  Parameter spec_gcd: forall a b, [gcd a b] = Zgcd [a] [b].
+ Parameter spec_shiftr: forall p x, [shiftr p x] = [x] / 2^[p].
+ Parameter spec_shiftl: forall p x, [shiftl p x] = [x] * 2^[p].
+ Parameter spec_is_even: forall x,
+  if is_even x then [x] mod 2 = 0 else [x] mod 2 = 1.
 
 End NType.
 

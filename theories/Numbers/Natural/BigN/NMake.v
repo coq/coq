@@ -389,21 +389,21 @@ Module Make (Import W0:CyclicType) <: NType.
 
  (** * Shift *)
 
- Definition safe_shiftr n x :=
+ Definition shiftr n x :=
    match compare n (Ndigits x) with
-   |  Lt => shiftr n x
+   |  Lt => unsafe_shiftr n x
    | _ => N0 w_0
    end.
 
- Theorem spec_safe_shiftr: forall n x,
-   [safe_shiftr n x] = [x] / 2 ^ [n].
+ Theorem spec_shiftr: forall n x,
+   [shiftr n x] = [x] / 2 ^ [n].
  Proof.
- intros n x; unfold safe_shiftr;
+ intros n x; unfold shiftr;
     generalize (spec_compare_aux n (Ndigits x)); case compare; intros H.
  apply trans_equal with (1 := spec_0 w0_spec).
  apply sym_equal; apply Zdiv_small; rewrite H.
  rewrite spec_Ndigits; exact (spec_digits x).
- rewrite <- spec_shiftr; auto with zarith.
+ rewrite <- spec_unsafe_shiftr; auto with zarith.
  apply trans_equal with (1 := spec_0 w0_spec).
  apply sym_equal; apply Zdiv_small.
  rewrite spec_Ndigits in H; case (spec_digits x); intros H1 H2.
@@ -412,22 +412,22 @@ Module Make (Import W0:CyclicType) <: NType.
  apply Zpower_le_monotone; auto with zarith.
  Qed.
 
- Definition safe_shiftl_aux_body cont n x :=
+ Definition shiftl_aux_body cont n x :=
    match compare n (head0 x)  with
       Gt => cont n (double_size x)
-   |  _ => shiftl n x
+   |  _ => unsafe_shiftl n x
    end.
 
- Theorem spec_safe_shift_aux_body: forall n p x cont,
+ Theorem spec_shiftl_aux_body: forall n p x cont,
        2^ Zpos p  <=  [head0 x]  ->
       (forall x, 2 ^ (Zpos p + 1) <= [head0 x]->
          [cont n x] = [x] * 2 ^ [n]) ->
-      [safe_shiftl_aux_body cont n x] = [x] * 2 ^ [n].
+      [shiftl_aux_body cont n x] = [x] * 2 ^ [n].
  Proof.
- intros n p x cont H1 H2; unfold safe_shiftl_aux_body.
+ intros n p x cont H1 H2; unfold shiftl_aux_body.
  generalize (spec_compare_aux n (head0 x)); case compare; intros H.
-  apply spec_shiftl; auto with zarith.
-  apply spec_shiftl; auto with zarith.
+  apply spec_unsafe_shiftl; auto with zarith.
+  apply spec_unsafe_shiftl; auto with zarith.
  rewrite H2.
  rewrite spec_double_size; auto.
  rewrite Zplus_comm; rewrite Zpower_exp; auto with zarith.
@@ -435,23 +435,23 @@ Module Make (Import W0:CyclicType) <: NType.
  rewrite Zpower_1_r; apply Zmult_le_compat_l; auto with zarith.
  Qed.
 
- Fixpoint safe_shiftl_aux p cont n x  {struct p} :=
-   safe_shiftl_aux_body
+ Fixpoint shiftl_aux p cont n x  {struct p} :=
+   shiftl_aux_body
        (fun n x => match p with
         | xH => cont n x
-        | xO p => safe_shiftl_aux p (safe_shiftl_aux p cont) n x
-        | xI p => safe_shiftl_aux p (safe_shiftl_aux p cont) n x
+        | xO p => shiftl_aux p (shiftl_aux p cont) n x
+        | xI p => shiftl_aux p (shiftl_aux p cont) n x
         end) n x.
 
- Theorem spec_safe_shift_aux: forall p q n x cont,
+ Theorem spec_shiftl_aux: forall p q n x cont,
     2 ^ (Zpos q) <= [head0 x] ->
       (forall x, 2 ^ (Zpos p + Zpos q) <= [head0 x] ->
          [cont n x] = [x] * 2 ^ [n]) ->
-      [safe_shiftl_aux p cont n x] = [x] * 2 ^ [n].
+      [shiftl_aux p cont n x] = [x] * 2 ^ [n].
  Proof.
- intros p; elim p; unfold safe_shiftl_aux; fold safe_shiftl_aux; clear p.
+ intros p; elim p; unfold shiftl_aux; fold shiftl_aux; clear p.
  intros p Hrec q n x cont H1 H2.
- apply spec_safe_shift_aux_body with (q); auto.
+ apply spec_shiftl_aux_body with (q); auto.
  intros x1 H3; apply Hrec with (q + 1)%positive; auto.
  intros x2 H4; apply Hrec with (p + q + 1)%positive; auto.
  rewrite <- Pplus_assoc.
@@ -462,7 +462,7 @@ Module Make (Import W0:CyclicType) <: NType.
    auto.
  repeat rewrite Zpos_plus_distr; ring.
  intros p Hrec q n x cont H1 H2.
- apply spec_safe_shift_aux_body with (q); auto.
+ apply spec_shiftl_aux_body with (q); auto.
  intros x1 H3; apply Hrec with (q); auto.
  apply Zle_trans with (2 := H3); auto with zarith.
  apply Zpower_le_monotone; auto with zarith.
@@ -473,34 +473,34 @@ Module Make (Import W0:CyclicType) <: NType.
    auto.
  repeat rewrite Zpos_plus_distr; ring.
  intros q n x cont H1 H2.
- apply spec_safe_shift_aux_body with (q); auto.
+ apply spec_shiftl_aux_body with (q); auto.
  rewrite Zplus_comm; auto.
  Qed.
 
- Definition safe_shiftl n x :=
-  safe_shiftl_aux_body
-   (safe_shiftl_aux_body
-    (safe_shiftl_aux (digits n) shiftl)) n x.
+ Definition shiftl n x :=
+  shiftl_aux_body
+   (shiftl_aux_body
+    (shiftl_aux (digits n) unsafe_shiftl)) n x.
 
- Theorem spec_safe_shift: forall n x,
-   [safe_shiftl n x] = [x] * 2 ^ [n].
+ Theorem spec_shiftl: forall n x,
+   [shiftl n x] = [x] * 2 ^ [n].
  Proof.
- intros n x; unfold safe_shiftl, safe_shiftl_aux_body.
+ intros n x; unfold shiftl, shiftl_aux_body.
  generalize (spec_compare_aux n (head0 x)); case compare; intros H.
-  apply spec_shiftl; auto with zarith.
-  apply spec_shiftl; auto with zarith.
+  apply spec_unsafe_shiftl; auto with zarith.
+  apply spec_unsafe_shiftl; auto with zarith.
  rewrite <- (spec_double_size x).
  generalize (spec_compare_aux n (head0 (double_size x))); case compare; intros H1.
-  apply spec_shiftl; auto with zarith.
-  apply spec_shiftl; auto with zarith.
+  apply spec_unsafe_shiftl; auto with zarith.
+  apply spec_unsafe_shiftl; auto with zarith.
  rewrite <- (spec_double_size (double_size x)).
- apply spec_safe_shift_aux with 1%positive.
+ apply spec_shiftl_aux with 1%positive.
  apply Zle_trans with (2 := spec_double_size_head0 (double_size x)).
  replace (2 ^ 1) with (2 * 1).
  apply Zmult_le_compat_l; auto with zarith.
  generalize (spec_double_size_head0_pos x); auto with zarith.
  rewrite Zpower_1_r; ring.
- intros x1 H2; apply spec_shiftl.
+ intros x1 H2; apply spec_unsafe_shiftl.
  apply Zle_trans with (2 := H2).
  apply Zle_trans with (2 ^ Zpos (digits n)); auto with zarith.
  case (spec_digits n); auto with zarith.
