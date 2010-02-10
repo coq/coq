@@ -49,6 +49,7 @@ Module Type ZType.
  Parameter mul : t -> t -> t.
  Parameter square : t -> t.
  Parameter power_pos : t -> positive -> t.
+ Parameter power : t -> N -> t.
  Parameter sqrt : t -> t.
  Parameter div_eucl : t -> t -> t * t.
  Parameter div : t -> t -> t.
@@ -72,6 +73,7 @@ Module Type ZType.
  Parameter spec_mul: forall x y, [mul x y] = [x] * [y].
  Parameter spec_square: forall x, [square x] = [x] *  [x].
  Parameter spec_power_pos: forall x n, [power_pos x n] = [x] ^ Zpos n.
+ Parameter spec_power: forall x n, [power x n] = [x] ^ Z_of_N n.
  Parameter spec_sqrt: forall x, 0 <= [x] ->
    [sqrt x] ^ 2 <= [x] < ([sqrt x] + 1) ^ 2.
  Parameter spec_div_eucl: forall x y,

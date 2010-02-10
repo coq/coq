@@ -17,7 +17,7 @@ Module NTypeIsNAxioms (Import N : NType').
 Hint Rewrite
  spec_0 spec_succ spec_add spec_mul spec_pred spec_sub
  spec_div spec_modulo spec_gcd spec_compare spec_eq_bool
- spec_max spec_min
+ spec_max spec_min spec_power_pos spec_power
  : nsimpl.
 Ltac nsimpl := autorewrite with nsimpl.
 Ltac ncongruence := unfold eq; repeat red; intros; nsimpl; congruence.
@@ -252,5 +252,5 @@ Qed.
 End NTypeIsNAxioms.
 
 Module NType_NAxioms (N : NType)
- <: NAxiomsSig <: NDivSig <: HasCompare N <: HasEqBool N
+ <: NAxiomsSig <: NDivSig <: HasCompare N <: HasEqBool N <: HasMinMax N
  := N <+ NTypeIsNAxioms.

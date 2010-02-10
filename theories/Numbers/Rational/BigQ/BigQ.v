@@ -11,7 +11,7 @@
 (** Initial authors: Benjamin Gregoire, Laurent Thery, INRIA, 2007 *)
 
 Require Export BigZ.
-Require Import Field Qfield QSig QMake.
+Require Import Field Qfield QSig QMake Orders GenericMinMax.
 
 (** We choose for BigQ an implemention with
     multiple representation of 0: 0, 1/0, 2/0 etc.
@@ -35,7 +35,9 @@ End BigN_BigZ.
 
 (** This allows to build [BigQ] out of [BigN] and [BigQ] via [QMake] *)
 
-Module BigQ <: QSig.QType := QMake.Make BigN BigZ BigN_BigZ.
+Module BigQ <: QType <: OrderedTypeFull <: TotalOrder :=
+ QMake.Make BigN BigZ BigN_BigZ <+ !QProperties <+ HasEqBool2Dec
+ <+ !MinMaxLogicalProperties <+ !MinMaxDecProperties.
 
 (** Notations about [BigQ] *)
 
@@ -76,6 +78,8 @@ Arguments Scope BigQ.power_norm [bigQ_scope bigQ_scope].
 
 (** As in QArith, we use [#] to denote fractions *)
 Notation "p # q" := (BigQ.Qq p q) (at level 55, no associativity) : bigQ_scope.
+Local Notation "0" := BigQ.zero : bigQ_scope.
+Local Notation "1" := BigQ.one : bigQ_scope.
 Infix "+" := BigQ.add : bigQ_scope.
 Infix "-" := BigQ.sub : bigQ_scope.
 Notation "- x" := (BigQ.opp x) : bigQ_scope.
@@ -84,146 +88,102 @@ Infix "/" := BigQ.div : bigQ_scope.
 Infix "^" := BigQ.power : bigQ_scope.
 Infix "?=" := BigQ.compare : bigQ_scope.
 Infix "==" := BigQ.eq : bigQ_scope.
+Notation "x != y" := (~x==y)%bigQ (at level 70, no associativity) : bigQ_scope.
 Infix "<" := BigQ.lt : bigQ_scope.
 Infix "<=" := BigQ.le : bigQ_scope.
 Notation "x > y" := (BigQ.lt y x)(only parsing) : bigQ_scope.
 Notation "x >= y" := (BigQ.le y x)(only parsing) : bigQ_scope.
+Notation "x < y < z" := (x<y /\ y<z)%bigQ : bigQ_scope.
+Notation "x < y <= z" := (x<y /\ y<=z)%bigQ : bigQ_scope.
+Notation "x <= y < z" := (x<=y /\ y<z)%bigQ : bigQ_scope.
+Notation "x <= y <= z" := (x<=y /\ y<=z)%bigQ : bigQ_scope.
 Notation "[ q ]" := (BigQ.to_Q q) : bigQ_scope.
 
 Local Open Scope bigQ_scope.
 
-(** [BigQ] is a setoid *)
-
-Instance BigQeq_rel : Equivalence BigQ.eq.
-Proof. unfold BigQ.eq. split; red; eauto with qarith. Qed.
-
-Instance BigQadd_wd : Proper (BigQ.eq==>BigQ.eq==>BigQ.eq) BigQ.add.
-Proof.
- do 3 red. unfold BigQ.eq; intros.
- rewrite !BigQ.spec_add, H, H0. reflexivity.
-Qed.
-
-Instance BigQopp_wd : Proper (BigQ.eq==>BigQ.eq) BigQ.opp.
-Proof.
- do 2 red. unfold BigQ.eq; intros.
- rewrite !BigQ.spec_opp, H; reflexivity.
-Qed.
-
-Instance BigQsub_wd : Proper (BigQ.eq==>BigQ.eq==>BigQ.eq) BigQ.sub.
-Proof.
- do 3 red. unfold BigQ.eq; intros.
- rewrite !BigQ.spec_sub, H, H0; reflexivity.
-Qed.
-
-Instance BigQmul_wd : Proper (BigQ.eq==>BigQ.eq==>BigQ.eq) BigQ.mul.
-Proof.
- do 3 red. unfold BigQ.eq; intros.
- rewrite !BigQ.spec_mul, H, H0; reflexivity.
-Qed.
-
-Instance BigQinv_wd : Proper (BigQ.eq==>BigQ.eq) BigQ.inv.
-Proof.
- do 2 red; unfold BigQ.eq; intros.
- rewrite !BigQ.spec_inv, H; reflexivity.
-Qed.
-
-Instance BigQdiv_wd : Proper (BigQ.eq==>BigQ.eq==>BigQ.eq) BigQ.div.
-Proof.
- do 3 red; unfold BigQ.eq; intros.
- rewrite !BigQ.spec_div, H, H0; reflexivity.
-Qed.
-
-(* TODO : fix this. For the moment it's useless (horribly slow)
-Hint Rewrite
- BigQ.spec_0 BigQ.spec_1 BigQ.spec_m1 BigQ.spec_compare
- BigQ.spec_red BigQ.spec_add BigQ.spec_sub BigQ.spec_opp
- BigQ.spec_mul BigQ.spec_inv BigQ.spec_div BigQ.spec_power_pos
- BigQ.spec_square : bigq. *)
-
-
 (** [BigQ] is a field *)
 
 Lemma BigQfieldth :
- field_theory BigQ.zero BigQ.one BigQ.add BigQ.mul BigQ.sub BigQ.opp BigQ.div BigQ.inv BigQ.eq.
+ field_theory 0 1 BigQ.add BigQ.mul BigQ.sub BigQ.opp
+  BigQ.div BigQ.inv BigQ.eq.
 Proof.
 constructor.
-constructor; intros; red.
-rewrite BigQ.spec_add, BigQ.spec_0; ring.
-rewrite ! BigQ.spec_add; ring.
-rewrite ! BigQ.spec_add; ring.
-rewrite BigQ.spec_mul, BigQ.spec_1; ring.
-rewrite ! BigQ.spec_mul; ring.
-rewrite ! BigQ.spec_mul; ring.
-rewrite BigQ.spec_add, ! BigQ.spec_mul, BigQ.spec_add; ring.
-unfold BigQ.sub; apply Qeq_refl.
-rewrite BigQ.spec_add, BigQ.spec_0, BigQ.spec_opp; ring.
-compute; discriminate.
-intros; red.
-unfold BigQ.div; apply Qeq_refl.
-intros; red.
-rewrite BigQ.spec_mul, BigQ.spec_inv, BigQ.spec_1; field.
-rewrite <- BigQ.spec_0; auto.
+constructor.
+exact BigQ.add_0_l. exact BigQ.add_comm. exact BigQ.add_assoc.
+exact BigQ.mul_1_l. exact BigQ.mul_comm. exact BigQ.mul_assoc.
+exact BigQ.mul_add_distr_r. exact BigQ.sub_add_opp.
+exact BigQ.add_opp_diag_r. exact BigQ.neq_1_0.
+exact BigQ.div_mul_inv. exact BigQ.mul_inv_diag_l.
 Qed.
 
 Lemma BigQpowerth :
- power_theory BigQ.one BigQ.mul BigQ.eq Z_of_N BigQ.power.
+ power_theory 1 BigQ.mul BigQ.eq Z_of_N BigQ.power.
 Proof.
-constructor.
-intros; red.
-rewrite BigQ.spec_power.
-replace ([r] ^ Z_of_N n)%Q with (pow_N 1 Qmult [r] n)%Q.
-destruct n.
-simpl; compute; auto.
-induction p; simpl; auto; try rewrite !BigQ.spec_mul, !IHp; apply Qeq_refl.
-destruct n; reflexivity.
+constructor. intros. BigQ.qify.
+replace ([r] ^ Z_of_N n)%Q with (pow_N 1 Qmult [r] n)%Q by (now destruct n).
+destruct n. reflexivity.
+induction p; simpl; auto; rewrite ?BigQ.spec_mul, ?IHp; reflexivity.
 Qed.
 
-Lemma BigQ_eq_bool_iff :
- forall x y, BigQ.eq_bool x y = true <-> x==y.
-Proof.
-intros. rewrite BigQ.spec_eq_bool. apply Qeq_bool_iff.
-Qed.
-
-Lemma BigQ_eq_bool_correct :
- forall x y, BigQ.eq_bool x y = true -> x==y.
-Proof. now apply BigQ_eq_bool_iff. Qed.
-
-Lemma BigQ_eq_bool_complete :
- forall x y, x==y -> BigQ.eq_bool x y = true.
-Proof. now apply BigQ_eq_bool_iff. Qed.
-
-(* TODO : improve later the detection of constants ... *)
+Ltac isBigQcst t :=
+ match t with
+ | BigQ.Qz ?t => isBigZcst t
+ | BigQ.Qq ?n ?d => match isBigZcst n with
+             | true => isBigNcst d
+             | false => constr:false
+             end
+ | BigQ.zero => constr:true
+ | BigQ.one => constr:true
+ | BigQ.minus_one => constr:true
+ | _ => constr:false
+ end.
 
 Ltac BigQcst t :=
- match t with
-   | BigQ.zero => BigQ.zero
-   | BigQ.one => BigQ.one
-   | BigQ.minus_one => BigQ.minus_one
-   | _ => NotConstant
+ match isBigQcst t with
+ | true => constr:t
+ | false => constr:NotConstant
  end.
 
 Add Field BigQfield : BigQfieldth
- (decidable BigQ_eq_bool_correct,
-  completeness BigQ_eq_bool_complete,
+ (decidable BigQ.eqb_correct,
+  completeness BigQ.eqb_complete,
   constants [BigQcst],
   power_tac BigQpowerth [Qpow_tac]).
 
-Section Examples.
+Section TestField.
 
 Let ex1 : forall x y z, (x+y)*z ==  (x*z)+(y*z).
   intros.
   ring.
 Qed.
 
-Let ex8 : forall x, x ^ 1 == x.
+Let ex8 : forall x, x ^ 2 == x*x.
   intro.
   ring.
 Qed.
 
-Let ex10 : forall x y, ~(y==BigQ.zero) -> (x/y)*y == x.
+Let ex10 : forall x y, y!=0 -> (x/y)*y == x.
 intros.
 field.
 auto.
 Qed.
 
-End Examples.
+End TestField.
+
+(** [BigQ] can also benefit from an "order" tactic *)
+
+Module BigQ_Order := !OrdersTac.MakeOrderTac BigQ.
+Ltac bigQ_order := BigQ_Order.order.
+
+Section TestOrder.
+Let test : forall x y : bigQ, x<=y -> y<=x -> x==y.
+Proof. bigQ_order. Qed.
+End TestOrder.
+
+(** We can also reason by switching to QArith thanks to tactic
+    BigQ.qify. *)
+
+Section TestQify.
+Let test : forall x : bigQ, 0+x == 1*x.
+Proof. intro x. BigQ.qify. ring. Qed.
+End TestQify.

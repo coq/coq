@@ -255,5 +255,5 @@ Qed.
 End ZTypeIsZAxioms.
 
 Module ZType_ZAxioms (Z : ZType)
- <: ZAxiomsSig <: ZDivSig <: HasCompare Z <: HasEqBool Z
+ <: ZAxiomsSig <: ZDivSig <: HasCompare Z <: HasEqBool Z <: HasMinMax Z
  := Z <+ ZTypeIsZAxioms.
