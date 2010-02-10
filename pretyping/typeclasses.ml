@@ -241,7 +241,7 @@ let add_constant_class cst =
   let ctx, arity = decompose_prod_assum ty in
   let tc = 
     { cl_impl = ConstRef cst;
-      cl_context = ([], ctx);
+      cl_context = (List.map (const None) ctx, ctx);
       cl_props = [(Anonymous, None, arity)];
       cl_projs = []
     }
@@ -251,18 +251,16 @@ let add_constant_class cst =
 let add_inductive_class ind =
   let mind, oneind = Global.lookup_inductive ind in
   let k =
+    let ctx = oneind.mind_arity_ctxt in
     let ty = Inductive.type_of_inductive_knowing_parameters
-      (push_rel_context oneind.mind_arity_ctxt (Global.env ()))
-	  oneind (Termops.rel_vect 1 (List.length oneind.mind_arity_ctxt))
+      (push_rel_context ctx (Global.env ()))
+	  oneind (Termops.extended_rel_vect 0 ctx)
     in
       { cl_impl = IndRef ind;
-	cl_context = [], oneind.mind_arity_ctxt;
+	cl_context = List.map (const None) ctx, ctx;
 	cl_props = [Anonymous, None, ty];
 	cl_projs = [] }
-  in add_class k;
-    Array.iteri (fun i _ -> 
-      add_instance (new_instance k None true (ConstructRef (ind, succ i))))
-      oneind.mind_consnames 
+  in add_class k
       
 (*
  * interface functions

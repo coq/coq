@@ -176,24 +176,24 @@ Language
 Program
 
 - Streamlined definitions using well-founded recursion and measures so
-  that they can work on any number subset of the arguments directly
-  (uses currying).
+  that they can work on any subset of the arguments directly (uses currying).
 - Try to automatically clear structural fixpoint prototypes in
-  obligations to avoid issues of opacity.
-- Use return type clause inference as in the standard typing algorithm.
+  obligations to avoid issues with opacity.
+- Use return type clause inference in pattern-matching as in the standard 
+  typing algorithm.
 - Support [Local Obligation Tactic] and [Next Obligation with tactic].
 - Use [Show Obligation Tactic] to print the current default tactic.
 - [fst] and [snd] have maximal implicits in Program now (possible source
-  of incompatibility)
+  of incompatibility).
 
 Typeclasses
 
 - Use [Existing Class foo] to declare foo as a class a posteriori.
-  [foo] can be an inductive type or a constant definition, no
-  projections are defined.
+  [foo] can be an inductive type or a constant definition. No
+  projections or instances are defined.
 - Various bug fixes and improvements: support for defined fields, 
   anonymous instances, declarations giving terms, better handling of
-  sections, contexts.
+  sections and [Context].
 
 
 Changes from V8.1 to V8.2
