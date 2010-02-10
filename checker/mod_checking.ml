@@ -306,7 +306,7 @@ and check_structure_field (s,env) mp lab = function
         let sub = join_alias sub (map_mp mp' mp2') in
         let sub = add_mp mp' mp2' sub in
         (join s sub, register_alias mp' mp2 env)
-      with Not_found -> failwith "unkown aliased module")
+      with Not_found -> failwith "unknown aliased module")
   | SFBmodtype mty ->
       let kn = MPdot(mp, lab) in
       check_module_type env mty;
