@@ -1140,7 +1140,7 @@ Definition int31_op := (mk_znz_op
  w_iszero
  (* Basic arithmetic operations *)
  (fun i => 0 -c i)
- (fun i => 0 - i)
+ opp31
  (fun i => 0-i-1)
  (fun i => i +c 1)
  add31c

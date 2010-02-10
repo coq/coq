@@ -274,6 +274,10 @@ Definition sub31carryc (n m : int31) :=
   | _ => C1 nmmmone
   end.
 
+(** Opposite *)
+
+Definition opp31 x := On - x.
+Notation "- x" := (opp31 x) : int31_scope.
 
 (** Multiplication *)
 
@@ -308,6 +312,9 @@ Notation "n / m" := (div31 n m) : int31_scope.
 
 Definition compare31 (n m : int31) := ((phi n)?=(phi m))%Z.
 Notation "n ?= m" := (compare31 n m) (at level 70, no associativity) : int31_scope.
+
+Definition eqb31 (n m : int31) :=
+ match n ?= m with Eq => true | _ => false end.
 
 
 (** Computing the [i]-th iterate of a function:

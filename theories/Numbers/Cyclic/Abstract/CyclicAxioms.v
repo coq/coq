@@ -373,3 +373,112 @@ Module Type CyclicType.
  Parameter w_op : znz_op w.
  Parameter w_spec : znz_spec w_op.
 End CyclicType.
+
+
+(** A Cyclic structure can be seen as a ring *)
+
+Module CyclicRing (Import Cyclic : CyclicType).
+
+Definition t := w.
+
+Local Notation "[| x |]" := (w_op.(znz_to_Z) x) (at level 0, x at level 99).
+
+Definition eq (n m : t) := [| n |] = [| m |].
+Definition zero : t := w_op.(znz_0).
+Definition one := w_op.(znz_1).
+Definition add := w_op.(znz_add).
+Definition sub := w_op.(znz_sub).
+Definition mul := w_op.(znz_mul).
+Definition opp := w_op.(znz_opp).
+
+Local Infix "=="  := eq (at level 70).
+Local Notation "0" := zero.
+Local Notation "1" := one.
+Local Infix "+" := add.
+Local Infix "-" := sub.
+Local Infix "*" := mul.
+Local Notation "!!" := (base (znz_digits w_op)).
+
+Hint Rewrite
+ w_spec.(spec_0) w_spec.(spec_1)
+ w_spec.(spec_add) w_spec.(spec_mul) w_spec.(spec_opp) w_spec.(spec_sub)
+ : cyclic.
+
+Ltac zify :=
+ unfold eq, zero, one, add, sub, mul, opp in *; autorewrite with cyclic.
+
+Lemma add_0_l : forall x, 0 + x == x.
+Proof.
+intros. zify. rewrite Zplus_0_l.
+apply Zmod_small. apply w_spec.(spec_to_Z).
+Qed.
+
+Lemma add_comm : forall x y, x + y == y + x.
+Proof.
+intros. zify. now rewrite Zplus_comm.
+Qed.
+
+Lemma add_assoc : forall x y z, x + (y + z) == x + y + z.
+Proof.
+intros. zify. now rewrite Zplus_mod_idemp_r, Zplus_mod_idemp_l, Zplus_assoc.
+Qed.
+
+Lemma mul_1_l : forall x, 1 * x == x.
+Proof.
+intros. zify. rewrite Zmult_1_l.
+apply Zmod_small. apply w_spec.(spec_to_Z).
+Qed.
+
+Lemma mul_comm : forall x y, x * y == y * x.
+Proof.
+intros. zify. now rewrite Zmult_comm.
+Qed.
+
+Lemma mul_assoc : forall x y z, x * (y * z) == x * y * z.
+Proof.
+intros. zify. now rewrite Zmult_mod_idemp_r, Zmult_mod_idemp_l, Zmult_assoc.
+Qed.
+
+Lemma mul_add_distr_r : forall x y z, (x+y)*z == x*z + y*z.
+Proof.
+intros. zify. now rewrite <- Zplus_mod, Zmult_mod_idemp_l, Zmult_plus_distr_l.
+Qed.
+
+Lemma add_opp_r : forall x y, x + opp y == x-y.
+Proof.
+intros. zify. rewrite <- Zminus_mod_idemp_r. unfold Zminus.
+destruct (Z_eq_dec ([|y|] mod !!) 0) as [EQ|NEQ].
+rewrite Z_mod_zero_opp_full, EQ, 2 Zplus_0_r; auto.
+rewrite Z_mod_nz_opp_full by auto.
+rewrite <- Zplus_mod_idemp_r, <- Zminus_mod_idemp_l.
+rewrite Z_mod_same_full. simpl. now rewrite Zplus_mod_idemp_r.
+Qed.
+
+Lemma add_opp_diag_r : forall x, x + opp x == 0.
+Proof.
+intros. red. rewrite add_opp_r. zify. now rewrite Zminus_diag, Zmod_0_l.
+Qed.
+
+Lemma CyclicRing : ring_theory 0 1 add mul sub opp eq.
+Proof.
+constructor.
+exact add_0_l. exact add_comm. exact add_assoc.
+exact mul_1_l. exact mul_comm. exact mul_assoc.
+exact mul_add_distr_r.
+symmetry. apply add_opp_r.
+exact add_opp_diag_r.
+Qed.
+
+Definition eqb x y :=
+ match w_op.(znz_compare) x y with Eq => true | _ => false end.
+
+Lemma eqb_eq : forall x y, eqb x y = true <-> x == y.
+Proof.
+ intros. unfold eqb, eq. generalize (w_spec.(spec_compare) x y).
+ destruct (w_op.(znz_compare) x y); intuition; try discriminate.
+Qed.
+
+Lemma eqb_correct : forall x y, eqb x y = true -> x==y.
+Proof. now apply eqb_eq. Qed.
+
+End CyclicRing.
