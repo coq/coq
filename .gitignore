@@ -57,7 +57,7 @@ kernel/byterun/dllcoqrun.so
 kernel/copcodes.ml
 scripts/tolink.ml
 states/initial.coq
-theories/Numbers/Natural/BigN/NMake.v
+theories/Numbers/Natural/BigN/NMake_gen.v
 tools/coqdep_lexer.ml
 tools/coqdoc/index.ml
 tools/coqdoc/cpretty.ml
