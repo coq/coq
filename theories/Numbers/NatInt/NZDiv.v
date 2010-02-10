@@ -43,11 +43,13 @@ End NZDivSpecific.
 Module Type NZDiv (NZ:NZOrdAxiomsSig)
  := DivMod NZ <+ NZDivCommon NZ <+ NZDivSpecific NZ.
 
-Module Type NZDivSig := NZOrdAxiomsSig <+ NZDiv.
-Module Type NZDivSig' := NZOrdAxiomsSig' <+ NZDiv <+ DivModNotation.
+Module Type NZDiv' (NZ:NZOrdAxiomsSig) := NZDiv NZ <+ DivModNotation NZ.
 
 Module NZDivPropFunct
- (Import NZ : NZDivSig')(Import NZP : NZMulOrderPropSig NZ).
+ (Import NZ : NZOrdAxiomsSig')
+ (Import NZP : NZMulOrderPropSig NZ)
+ (Import NZD : NZDiv' NZ)
+.
 
 (** Uniqueness theorems *)
 
