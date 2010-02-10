@@ -10,12 +10,12 @@
 
 (** THIS FILE IS DEPRECATED. Use [NPeano.Nat] instead. *)
 
-Require Import NPeano.
+Require Export NPeano.
 
 Local Open Scope nat_scope.
 Implicit Types m n p : nat.
 
-Notation max := NPeano.max (only parsing).
+Notation max := max (only parsing).
 
 Definition max_0_l := Nat.max_0_l.
 Definition max_0_r := Nat.max_0_r.

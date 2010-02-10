@@ -10,12 +10,12 @@
 
 (** THIS FILE IS DEPRECATED. Use [NPeano.Nat] instead. *)
 
-Require Import NPeano.
+Require Export NPeano.
 
 Open Local Scope nat_scope.
 Implicit Types m n p : nat.
 
-Notation min := NPeano.min (only parsing).
+Notation min := min (only parsing).
 
 Definition min_0_l := Nat.min_0_l.
 Definition min_0_r := Nat.min_0_r.

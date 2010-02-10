@@ -907,9 +907,11 @@ Section Basics.
  apply nshiftr_n_0.
  Qed.
 
- Lemma p2ibis_spec : forall n p, n<=size ->
-    Zpos p = ((Z_of_N (fst (p2ibis n p)))*2^(Z_of_nat n) +
-             phi (snd (p2ibis n p)))%Z.
+ Local Open Scope Z_scope.
+
+ Lemma p2ibis_spec : forall n p, (n<=size)%nat ->
+    Zpos p = (Z_of_N (fst (p2ibis n p)))*2^(Z_of_nat n) +
+             phi (snd (p2ibis n p)).
  Proof.
  induction n; intros.
  simpl; rewrite Pmult_1_r; auto.
@@ -917,7 +919,7 @@ Section Basics.
   (rewrite <- Zpower_Zsucc, <- Zpos_P_of_succ_nat;
    auto with zarith).
  rewrite (Zmult_comm 2).
- assert (n<=size) by omega.
+ assert (n<=size)%nat by omega.
  destruct p; simpl; [ | | auto];
   specialize (IHn p H0);
   generalize (p2ibis_bounded n p);
@@ -973,7 +975,8 @@ Section Basics.
  (** Moreover, [p2ibis] is also related with [p2i] and hence with
     [positive_to_int31]. *)
 
- Lemma double_twice_firstl : forall x, firstl x = D0 -> Twon*x = twice x.
+ Lemma double_twice_firstl : forall x, firstl x = D0 ->
+  (Twon*x = twice x)%int31.
  Proof.
  intros.
  unfold mul31.
@@ -981,7 +984,7 @@ Section Basics.
  Qed.
 
  Lemma double_twice_plus_one_firstl : forall x, firstl x = D0 ->
-  Twon*x+In = twice_plus_one x.
+  (Twon*x+In = twice_plus_one x)%int31.
  Proof.
  intros.
  rewrite double_twice_firstl; auto.
@@ -1015,8 +1018,8 @@ Section Basics.
  Qed.
 
  Lemma positive_to_int31_spec : forall p,
-    Zpos p = ((Z_of_N (fst (positive_to_int31 p)))*2^(Z_of_nat size) +
-               phi (snd (positive_to_int31 p)))%Z.
+    Zpos p = (Z_of_N (fst (positive_to_int31 p)))*2^(Z_of_nat size) +
+               phi (snd (positive_to_int31 p)).
  Proof.
  unfold positive_to_int31.
  intros; rewrite p2i_p2ibis; auto.
@@ -1033,7 +1036,7 @@ Section Basics.
  intros.
  pattern x at 1; rewrite <- (phi_inv_phi x).
  rewrite <- phi_inv_double.
- assert (0 <= Zdouble (phi x))%Z.
+ assert (0 <= Zdouble (phi x)).
   rewrite Zdouble_mult; generalize (phi_bounded x); omega.
  destruct (Zdouble (phi x)).
  simpl; auto.
@@ -1047,7 +1050,7 @@ Section Basics.
  intros.
  pattern x at 1; rewrite <- (phi_inv_phi x).
  rewrite <- phi_inv_double_plus_one.
- assert (0 <= Zdouble_plus_one (phi x))%Z.
+ assert (0 <= Zdouble_plus_one (phi x)).
   rewrite Zdouble_plus_one_mult; generalize (phi_bounded x); omega.
  destruct (Zdouble_plus_one (phi x)).
  simpl; auto.
@@ -1061,7 +1064,7 @@ Section Basics.
  intros.
  pattern x at 1; rewrite <- (phi_inv_phi x).
  rewrite <- phi_inv_incr.
- assert (0 <= Zsucc (phi x))%Z.
+ assert (0 <= Zsucc (phi x)).
   change (Zsucc (phi x)) with ((phi x)+1)%Z;
    generalize (phi_bounded x); omega.
  destruct (Zsucc (phi x)).
@@ -1083,7 +1086,7 @@ Section Basics.
  rewrite incr_twice, phi_twice_plus_one.
  remember (phi (complement_negative p)) as q.
  rewrite Zdouble_plus_one_mult.
- replace (2*q+1)%Z with (2*(Zsucc q)-1)%Z by omega.
+ replace (2*q+1) with (2*(Zsucc q)-1) by omega.
  rewrite <- Zminus_mod_idemp_l, <- Zmult_mod_idemp_r, IHp.
  rewrite Zmult_mod_idemp_r, Zminus_mod_idemp_l; auto with zarith.
 
