@@ -228,3 +228,8 @@ Proof.
   discriminate.
 Qed.
 
+Lemma Zeq_bool_if : forall x y, if Zeq_bool x y then x=y else x<>y.
+Proof.
+  intros. generalize (Zeq_bool_eq x y)(Zeq_bool_neq x y).
+  destruct Zeq_bool; auto.
+Qed.

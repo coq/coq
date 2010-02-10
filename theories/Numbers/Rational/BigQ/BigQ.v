@@ -5,10 +5,10 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-(*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
-(************************************************************************)
 
-(*i $Id$ i*)
+(** * BigQ: an efficient implementation of rational numbers *)
+
+(** Initial authors: Benjamin Gregoire, Laurent Thery, INRIA, 2007 *)
 
 Require Export BigZ.
 Require Import Field Qfield QSig QMake.
@@ -178,18 +178,19 @@ induction p; simpl; auto; try rewrite !BigQ.spec_mul, !IHp; apply Qeq_refl.
 destruct n; reflexivity.
 Qed.
 
+Lemma BigQ_eq_bool_iff :
+ forall x y, BigQ.eq_bool x y = true <-> x==y.
+Proof.
+intros. rewrite BigQ.spec_eq_bool. apply Qeq_bool_iff.
+Qed.
+
 Lemma BigQ_eq_bool_correct :
  forall x y, BigQ.eq_bool x y = true -> x==y.
-Proof.
-intros; generalize (BigQ.spec_eq_bool x y); rewrite H; auto.
-Qed.
+Proof. now apply BigQ_eq_bool_iff. Qed.
 
 Lemma BigQ_eq_bool_complete :
  forall x y, x==y -> BigQ.eq_bool x y = true.
-Proof.
-intros; generalize (BigQ.spec_eq_bool x y).
-destruct BigQ.eq_bool; auto.
-Qed.
+Proof. now apply BigQ_eq_bool_iff. Qed.
 
 (* TODO : improve later the detection of constants ... *)
 

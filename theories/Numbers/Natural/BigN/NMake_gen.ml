@@ -1339,12 +1339,6 @@ let _ =
   pr "      comparenm).";
   pr "";
 
-  pr " Definition lt n m := compare n m = Lt.";
-  pr " Definition le n m := compare n m <> Gt.";
-  pr " Definition min n m := match compare n m with Gt => m | _ => n end.";
-  pr " Definition max n m := match compare n m with Lt => m | _ => n end.";
-  pr "";
-
   for i = 0 to size do
     pp " Let spec_compare_%i: forall x y," i;
     pp "    match compare_%i x y with " i;
@@ -1386,7 +1380,7 @@ let _ =
   pp "";
 
 
-  pr " Theorem spec_compare: forall x y,";
+  pr " Theorem spec_compare_aux: forall x y,";
   pr "    match compare x y with ";
   pr "      Eq => [x] = [y]";
   pr "    | Lt => [x] < [y]";
@@ -1421,6 +1415,15 @@ let _ =
   pp "  Qed.";
   pr "";
 
+  pr " Theorem spec_compare : forall x y, compare x y = Zcompare [x] [y].";
+  pa " Admitted.";
+  pp " Proof.";
+  pp " intros x y. generalize (spec_compare_aux x y); destruct compare;";
+  pp " intros; symmetry; try rewrite Zcompare_Eq_iff_eq; assumption.";
+  pp " Qed.";
+  pr "";
+
+
   pr " Definition eq_bool x y :=";
   pr "  match compare x y with";
   pr "  | Eq => true";
@@ -1428,17 +1431,42 @@ let _ =
   pr "  end.";
   pr "";
 
+  pr " Theorem spec_eq_bool : forall x y, eq_bool x y = Zeq_bool [x] [y].";
+  pa " Admitted.";
+  pp " Proof.";
+  pp " intros. unfold eq_bool, Zeq_bool. rewrite spec_compare; reflexivity.";
+  pp " Qed.";
+  pr "";
 
-  pr " Theorem spec_eq_bool: forall x y,";
+  pr " Theorem spec_eq_bool_aux: forall x y,";
   pr "    if eq_bool x y then [x] = [y] else [x] <> [y].";
   pa " Admitted.";
   pp " Proof.";
   pp " intros x y; unfold eq_bool.";
-  pp " generalize (spec_compare x y); case compare; auto with zarith.";
-  pp "  Qed.";
+  pp " generalize (spec_compare_aux x y); case compare; auto with zarith.";
+  pp " Qed.";
   pr "";
 
+  pr " Definition lt n m := [n] < [m].";
+  pr " Definition le n m := [n] <= [m].";
+  pr "";
+  pr " Definition min n m := match compare n m with Gt => m | _ => n end.";
+  pr " Definition max n m := match compare n m with Lt => m | _ => n end.";
+  pr "";
 
+  pr " Theorem spec_max : forall n m, [max n m] = Zmax [n] [m].";
+  pa " Admitted.";
+  pp " Proof.";
+  pp " intros. unfold max, Zmax. rewrite spec_compare; destruct Zcompare; reflexivity.";
+  pp " Qed.";
+  pr "";
+
+  pr " Theorem spec_min : forall n m, [min n m] = Zmin [n] [m].";
+  pa " Admitted.";
+  pp " Proof.";
+  pp " intros. unfold min, Zmin. rewrite spec_compare; destruct Zcompare; reflexivity.";
+  pp " Qed.";
+  pr "";
 
   pr " (***************************************************************)";
   pr " (*                                                             *)";
@@ -1974,12 +2002,12 @@ let _ =
   pp " assert (F1: [one] = 1).";
   pp "   exact (spec_1 w0_spec).";
   pp " intros x y. unfold div_eucl.";
-  pp " generalize (spec_eq_bool y zero). destruct eq_bool; rewrite F0.";
+  pp " generalize (spec_eq_bool_aux y zero). destruct eq_bool; rewrite F0.";
   pp " intro H. rewrite H. destruct [x]; auto.";
   pp " intro H'.";
   pp " assert (0 < [y]) by (generalize (spec_pos y); auto with zarith).";
   pp " clear H'.";
-  pp " generalize (spec_compare x y); case compare; try rewrite F0;";
+  pp " generalize (spec_compare_aux x y); case compare; try rewrite F0;";
   pp "   try rewrite F1; intros; auto with zarith.";
   pp " rewrite H0; generalize (Z_div_same [y] (Zlt_gt _ _ H))";
   pp "                        (Z_mod_same [y] (Zlt_gt _ _ H));";
@@ -2121,12 +2149,12 @@ let _ =
   pp " assert (F1: [one] = 1).";
   pp "   exact (spec_1 w0_spec).";
   pp " intros x y. unfold modulo.";
-  pp " generalize (spec_eq_bool y zero). destruct eq_bool; rewrite F0.";
+  pp " generalize (spec_eq_bool_aux y zero). destruct eq_bool; rewrite F0.";
   pp " intro H; rewrite H. destruct [x]; auto.";
   pp " intro H'.";
   pp " assert (H : 0 < [y]) by (generalize (spec_pos y); auto with zarith).";
   pp " clear H'.";
-  pp " generalize (spec_compare x y); case compare; try rewrite F0;";
+  pp " generalize (spec_compare_aux x y); case compare; try rewrite F0;";
   pp "   try rewrite F1; intros; try split; auto with zarith.";
   pp " rewrite H0; apply sym_equal; apply Z_mod_same; auto with zarith.";
   pp " apply sym_equal; apply Zmod_small; auto with zarith.";
@@ -2185,11 +2213,11 @@ let _ =
   pp " assert (F1: [zero] = 0).";
   pp "   unfold zero, w_0, to_Z; rewrite (spec_0 w0_spec); auto.";
   pp " intros a b cont p H2 H3 H4; unfold gcd_gt_body.";
-  pp " generalize (spec_compare b zero); case compare; try rewrite F1.";
+  pp " generalize (spec_compare_aux b zero); case compare; try rewrite F1.";
   pp "   intros HH; rewrite HH; apply Zis_gcd_0.";
   pp " intros HH; absurd (0 <= [b]); auto with zarith.";
   pp " case (spec_digits b); auto with zarith.";
-  pp " intros H5; generalize (spec_compare (mod_gt a b) zero); ";
+  pp " intros H5; generalize (spec_compare_aux (mod_gt a b) zero); ";
   pp "   case compare; try rewrite F1.";
   pp " intros H6; rewrite <- (Zmult_1_r [b]).";
   pp " rewrite (Z_div_mod_eq [a] [b]); auto with zarith.";
@@ -2322,7 +2350,7 @@ let _ =
   pp " intros a b.";
   pp " case (spec_digits a); intros H1 H2.";
   pp " case (spec_digits b); intros H3 H4.";
-  pp " unfold gcd; generalize (spec_compare a b); case compare.";
+  pp " unfold gcd; generalize (spec_compare_aux a b); case compare.";
   pp " intros HH; rewrite HH; apply sym_equal; apply Zis_gcd_gcd; auto.";
   pp "   apply Zis_gcd_refl.";
   pp " intros; apply trans_equal with (Zgcd [b] [a]).";
@@ -2727,7 +2755,7 @@ let _ =
   pa " Admitted.";
   pp " Proof.";
   pp " intros n x; unfold safe_shiftr;";
-  pp "    generalize (spec_compare n (Ndigits x)); case compare; intros H.";
+  pp "    generalize (spec_compare_aux n (Ndigits x)); case compare; intros H.";
   pp " apply trans_equal with (1 := spec_0 w0_spec).";
   pp " apply sym_equal; apply Zdiv_small; rewrite H.";
   pp " rewrite spec_Ndigits; exact (spec_digits x).";
@@ -3063,7 +3091,7 @@ let _ =
   pa " Admitted.";
   pp " Proof.";
   pp " intros n p x cont H1 H2; unfold safe_shiftl_aux_body.";
-  pp " generalize (spec_compare n (head0 x)); case compare; intros H.";
+  pp " generalize (spec_compare_aux n (head0 x)); case compare; intros H.";
   pp "  apply spec_shiftl; auto with zarith.";
   pp "  apply spec_shiftl; auto with zarith.";
   pp " rewrite H2.";
@@ -3131,11 +3159,11 @@ let _ =
   pa " Admitted.";
   pp " Proof.";
   pp " intros n x; unfold safe_shiftl, safe_shiftl_aux_body.";
-  pp " generalize (spec_compare n (head0 x)); case compare; intros H.";
+  pp " generalize (spec_compare_aux n (head0 x)); case compare; intros H.";
   pp "  apply spec_shiftl; auto with zarith.";
   pp "  apply spec_shiftl; auto with zarith.";
   pp " rewrite <- (spec_double_size x).";
-  pp " generalize (spec_compare n (head0 (double_size x))); case compare; intros H1.";
+  pp " generalize (spec_compare_aux n (head0 (double_size x))); case compare; intros H1.";
   pp "  apply spec_shiftl; auto with zarith.";
   pp "  apply spec_shiftl; auto with zarith.";
   pp " rewrite <- (spec_double_size (double_size x)).";

@@ -12,50 +12,41 @@ Require Import ZArith Nnat NAxioms NDiv NSig.
 
 (** * The interface [NSig.NType] implies the interface [NAxiomsSig] *)
 
-Module NSig_NAxioms (N:NType) <: NAxiomsSig <: NDivSig.
-
-Delimit Scope NumScope with Num.
-Bind Scope NumScope with N.t.
-Local Open Scope NumScope.
-Local Notation "[ x ]" := (N.to_Z x) : NumScope.
-Local Infix "=="  := N.eq (at level 70) : NumScope.
-Local Notation "0" := N.zero : NumScope.
-Local Infix "+" := N.add : NumScope.
-Local Infix "-" := N.sub : NumScope.
-Local Infix "*" := N.mul : NumScope.
+Module NTypeIsNAxioms (Import N : NType').
 
 Hint Rewrite
- N.spec_0 N.spec_succ N.spec_add N.spec_mul N.spec_pred N.spec_sub
- N.spec_div N.spec_modulo : num.
-Ltac nsimpl := autorewrite with num.
-Ltac ncongruence := unfold N.eq; repeat red; intros; nsimpl; congruence.
+ spec_0 spec_succ spec_add spec_mul spec_pred spec_sub
+ spec_div spec_modulo spec_gcd spec_compare spec_eq_bool
+ spec_max spec_min
+ : nsimpl.
+Ltac nsimpl := autorewrite with nsimpl.
+Ltac ncongruence := unfold eq; repeat red; intros; nsimpl; congruence.
+Ltac zify := unfold eq, lt, le in *; nsimpl.
 
 Local Obligation Tactic := ncongruence.
 
-Instance eq_equiv : Equivalence N.eq.
-Proof. unfold N.eq. firstorder. Qed.
+Instance eq_equiv : Equivalence eq.
+Proof. unfold eq. firstorder. Qed.
 
-Program Instance succ_wd : Proper (N.eq==>N.eq) N.succ.
-Program Instance pred_wd : Proper (N.eq==>N.eq) N.pred.
-Program Instance add_wd : Proper (N.eq==>N.eq==>N.eq) N.add.
-Program Instance sub_wd : Proper (N.eq==>N.eq==>N.eq) N.sub.
-Program Instance mul_wd : Proper (N.eq==>N.eq==>N.eq) N.mul.
+Program Instance succ_wd : Proper (eq==>eq) succ.
+Program Instance pred_wd : Proper (eq==>eq) pred.
+Program Instance add_wd : Proper (eq==>eq==>eq) add.
+Program Instance sub_wd : Proper (eq==>eq==>eq) sub.
+Program Instance mul_wd : Proper (eq==>eq==>eq) mul.
 
-Theorem pred_succ : forall n, N.pred (N.succ n) == n.
+Theorem pred_succ : forall n, pred (succ n) == n.
 Proof.
-unfold N.eq; repeat red; intros.
-rewrite N.spec_pred; rewrite N.spec_succ.
-generalize (N.spec_pos n); omega with *.
+intros. zify. generalize (spec_pos n); omega with *.
 Qed.
 
-Definition N_of_Z z := N.of_N (Zabs_N z).
+Definition N_of_Z z := of_N (Zabs_N z).
 
 Section Induction.
 
 Variable A : N.t -> Prop.
-Hypothesis A_wd : Proper (N.eq==>iff) A.
+Hypothesis A_wd : Proper (eq==>iff) A.
 Hypothesis A0 : A 0.
-Hypothesis AS : forall n, A n <-> A (N.succ n).
+Hypothesis AS : forall n, A n <-> A (succ n).
 
 Let B (z : Z) := A (N_of_Z z).
 
@@ -63,17 +54,17 @@ Lemma B0 : B 0.
 Proof.
 unfold B, N_of_Z; simpl.
 rewrite <- (A_wd 0); auto.
-red; rewrite N.spec_0, N.spec_of_N; auto.
+red; rewrite spec_0, spec_of_N; auto.
 Qed.
 
 Lemma BS : forall z : Z, (0 <= z)%Z -> B z -> B (z + 1).
 Proof.
 intros z H1 H2.
 unfold B in *. apply -> AS in H2.
-setoid_replace (N_of_Z (z + 1)) with (N.succ (N_of_Z z)); auto.
-unfold N.eq. rewrite N.spec_succ.
+setoid_replace (N_of_Z (z + 1)) with (succ (N_of_Z z)); auto.
+unfold eq. rewrite spec_succ.
 unfold N_of_Z.
-rewrite 2 N.spec_of_N, 2 Z_of_N_abs, 2 Zabs_eq; auto with zarith.
+rewrite 2 spec_of_N, 2 Z_of_N_abs, 2 Zabs_eq; auto with zarith.
 Qed.
 
 Lemma B_holds : forall z : Z, (0 <= z)%Z -> B z.
@@ -83,147 +74,124 @@ Qed.
 
 Theorem bi_induction : forall n, A n.
 Proof.
-intro n. setoid_replace n with (N_of_Z (N.to_Z n)).
-apply B_holds. apply N.spec_pos.
+intro n. setoid_replace n with (N_of_Z (to_Z n)).
+apply B_holds. apply spec_pos.
 red; unfold N_of_Z.
-rewrite N.spec_of_N, Z_of_N_abs, Zabs_eq; auto.
-apply N.spec_pos.
+rewrite spec_of_N, Z_of_N_abs, Zabs_eq; auto.
+apply spec_pos.
 Qed.
 
 End Induction.
 
 Theorem add_0_l : forall n, 0 + n == n.
 Proof.
-intros; red; nsimpl; auto with zarith.
+intros. zify. auto with zarith.
 Qed.
 
-Theorem add_succ_l : forall n m, (N.succ n) + m == N.succ (n + m).
+Theorem add_succ_l : forall n m, (succ n) + m == succ (n + m).
 Proof.
-intros; red; nsimpl; auto with zarith.
+intros. zify. auto with zarith.
 Qed.
 
 Theorem sub_0_r : forall n, n - 0 == n.
 Proof.
-intros; red; nsimpl. generalize (N.spec_pos n); omega with *.
+intros. zify. generalize (spec_pos n); omega with *.
 Qed.
 
-Theorem sub_succ_r : forall n m, n - (N.succ m) == N.pred (n - m).
+Theorem sub_succ_r : forall n m, n - (succ m) == pred (n - m).
 Proof.
-intros; red; nsimpl. omega with *.
+intros. zify. omega with *.
 Qed.
 
 Theorem mul_0_l : forall n, 0 * n == 0.
 Proof.
-intros; red; nsimpl; auto with zarith.
+intros. zify. auto with zarith.
 Qed.
 
-Theorem mul_succ_l : forall n m, (N.succ n) * m == n * m + m.
+Theorem mul_succ_l : forall n m, (succ n) * m == n * m + m.
 Proof.
-intros; red; nsimpl. ring.
+intros. zify. ring.
 Qed.
 
 (** Order *)
 
-Infix "<=" := N.le : NumScope.
-Infix "<" := N.lt : NumScope.
-
-Lemma spec_compare_alt : forall x y, N.compare x y = ([x] ?= [y])%Z.
+Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
 Proof.
- intros; generalize (N.spec_compare x y).
- destruct (N.compare x y); auto.
- intros H; rewrite H; symmetry; apply Zcompare_refl.
+ intros. zify. destruct (Zcompare_spec [x] [y]); auto.
 Qed.
 
-Lemma spec_lt : forall x y, (x<y) <-> ([x]<[y])%Z.
+Definition eqb := eq_bool.
+
+Lemma eqb_eq : forall x y, eq_bool x y = true <-> x == y.
 Proof.
- intros; unfold N.lt, Zlt; rewrite spec_compare_alt; intuition.
+ intros. zify. symmetry. apply Zeq_is_eq_bool.
 Qed.
 
-Lemma spec_le : forall x y, (x<=y) <-> ([x]<=[y])%Z.
+Instance compare_wd : Proper (eq ==> eq ==> Logic.eq) compare.
 Proof.
- intros; unfold N.le, Zle; rewrite spec_compare_alt; intuition.
+intros x x' Hx y y' Hy. rewrite 2 spec_compare, Hx, Hy; intuition.
 Qed.
 
-Lemma spec_min : forall x y, [N.min x y] = Zmin [x] [y].
+Instance lt_wd : Proper (eq ==> eq ==> iff) lt.
 Proof.
- intros; unfold N.min, Zmin.
- rewrite spec_compare_alt; destruct Zcompare; auto.
-Qed.
-
-Lemma spec_max : forall x y, [N.max x y] = Zmax [x] [y].
-Proof.
- intros; unfold N.max, Zmax.
- rewrite spec_compare_alt; destruct Zcompare; auto.
-Qed.
-
-Instance compare_wd : Proper (N.eq ==> N.eq ==> eq) N.compare.
-Proof.
-intros x x' Hx y y' Hy.
-rewrite 2 spec_compare_alt. unfold N.eq in *. rewrite Hx, Hy; intuition.
-Qed.
-
-Instance lt_wd : Proper (N.eq ==> N.eq ==> iff) N.lt.
-Proof.
-intros x x' Hx y y' Hy; unfold N.lt; rewrite Hx, Hy; intuition.
+intros x x' Hx y y' Hy; unfold lt; rewrite Hx, Hy; intuition.
 Qed.
 
 Theorem lt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
 Proof.
-intros.
-unfold N.eq; rewrite spec_lt, spec_le; omega.
+intros. zify. omega.
 Qed.
 
 Theorem lt_irrefl : forall n, ~ n < n.
 Proof.
-intros; rewrite spec_lt; auto with zarith.
+intros. zify. omega.
 Qed.
 
-Theorem lt_succ_r : forall n m, n < (N.succ m) <-> n <= m.
+Theorem lt_succ_r : forall n m, n < (succ m) <-> n <= m.
 Proof.
-intros; rewrite spec_lt, spec_le, N.spec_succ; omega.
+intros. zify. omega.
 Qed.
 
-Theorem min_l : forall n m, n <= m -> N.min n m == n.
+Theorem min_l : forall n m, n <= m -> min n m == n.
 Proof.
-intros n m; red; rewrite spec_le, spec_min; omega with *.
+intros n m. zify. omega with *.
 Qed.
 
-Theorem min_r : forall n m, m <= n -> N.min n m == m.
+Theorem min_r : forall n m, m <= n -> min n m == m.
 Proof.
-intros n m; red; rewrite spec_le, spec_min; omega with *.
+intros n m. zify. omega with *.
 Qed.
 
-Theorem max_l : forall n m, m <= n -> N.max n m == n.
+Theorem max_l : forall n m, m <= n -> max n m == n.
 Proof.
-intros n m; red; rewrite spec_le, spec_max; omega with *.
+intros n m. zify. omega with *.
 Qed.
 
-Theorem max_r : forall n m, n <= m -> N.max n m == m.
+Theorem max_r : forall n m, n <= m -> max n m == m.
 Proof.
-intros n m; red; rewrite spec_le, spec_max; omega with *.
+intros n m. zify. omega with *.
 Qed.
 
 (** Properties specific to natural numbers, not integers. *)
 
-Theorem pred_0 : N.pred 0 == 0.
+Theorem pred_0 : pred 0 == 0.
 Proof.
-red; nsimpl; auto.
+zify. auto.
 Qed.
 
-Program Instance div_wd : Proper (N.eq==>N.eq==>N.eq) N.div.
-Program Instance mod_wd : Proper (N.eq==>N.eq==>N.eq) N.modulo.
+Program Instance div_wd : Proper (eq==>eq==>eq) div.
+Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 
-Theorem div_mod : forall a b, ~b==0 -> a == b*(N.div a b) + (N.modulo a b).
+Theorem div_mod : forall a b, ~b==0 -> a == b*(div a b) + (modulo a b).
 Proof.
-intros a b. unfold N.eq. nsimpl. intros.
-apply Z_div_mod_eq_full; auto.
+intros a b. zify. intros. apply Z_div_mod_eq_full; auto.
 Qed.
 
-Theorem mod_upper_bound : forall a b, ~b==0 -> N.modulo a b < b.
+Theorem mod_upper_bound : forall a b, ~b==0 -> modulo a b < b.
 Proof.
-intros a b. unfold N.eq. rewrite spec_lt. nsimpl. intros.
+intros a b. zify. intros.
 destruct (Z_mod_lt [a] [b]); auto.
-generalize (N.spec_pos b); auto with zarith.
+generalize (spec_pos b); auto with zarith.
 Qed.
 
 Definition recursion (A : Type) (a : A) (f : N.t -> A -> A) (n : N.t) :=
@@ -231,9 +199,9 @@ Definition recursion (A : Type) (a : A) (f : N.t -> A -> A) (n : N.t) :=
 Implicit Arguments recursion [A].
 
 Instance recursion_wd (A : Type) (Aeq : relation A) :
- Proper (Aeq ==> (N.eq==>Aeq==>Aeq) ==> N.eq ==> Aeq) (@recursion A).
+ Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) (@recursion A).
 Proof.
-unfold N.eq.
+unfold eq.
 intros A Aeq a a' Eaa' f f' Eff' x x' Exx'.
 unfold recursion.
 unfold N.to_N.
@@ -255,11 +223,11 @@ Qed.
 
 Theorem recursion_succ :
   forall (A : Type) (Aeq : relation A) (a : A) (f : N.t -> A -> A),
-    Aeq a a -> Proper (N.eq==>Aeq==>Aeq) f ->
-      forall n, Aeq (recursion a f (N.succ n)) (f n (recursion a f n)).
+    Aeq a a -> Proper (eq==>Aeq==>Aeq) f ->
+      forall n, Aeq (recursion a f (succ n)) (f n (recursion a f n)).
 Proof.
 unfold N.eq, recursion; intros A Aeq a f EAaa f_wd n.
-replace (N.to_N (N.succ n)) with (Nsucc (N.to_N n)).
+replace (N.to_N (succ n)) with (Nsucc (N.to_N n)).
 rewrite Nrect_step.
 apply f_wd; auto.
 unfold N.to_N.
@@ -277,26 +245,12 @@ apply Z_of_N_eq_rev.
 rewrite Z_of_N_succ.
 rewrite 2 Z_of_N_abs.
 rewrite 2 Zabs_eq; auto.
-generalize (N.spec_pos n); auto with zarith.
-apply N.spec_pos; auto.
+generalize (spec_pos n); auto with zarith.
+apply spec_pos; auto.
 Qed.
 
-(** The instantiation of operations.
-    Placing them at the very end avoids having indirections in above lemmas. *)
+End NTypeIsNAxioms.
 
-Definition t := N.t.
-Definition eq := N.eq.
-Definition zero := N.zero.
-Definition succ := N.succ.
-Definition pred := N.pred.
-Definition add := N.add.
-Definition sub := N.sub.
-Definition mul := N.mul.
-Definition lt := N.lt.
-Definition le := N.le.
-Definition min := N.min.
-Definition max := N.max.
-Definition div := N.div.
-Definition modulo := N.modulo.
-
-End NSig_NAxioms.
+Module NType_NAxioms (N : NType)
+ <: NAxiomsSig <: NDivSig <: HasCompare N <: HasEqBool N
+ := N <+ NTypeIsNAxioms.

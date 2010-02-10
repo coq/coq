@@ -15,12 +15,12 @@ Local Open Scope Q_scope.
 Module Q_as_DT <: DecidableTypeFull.
  Definition t := Q.
  Definition eq := Qeq.
- Definition eq_equiv := Q_setoid.
+ Definition eq_equiv := Q_Setoid.
  Definition eqb := Qeq_bool.
  Definition eqb_eq := Qeq_bool_iff.
 
- Include Backport_ET_fun. (** eq_refl, eq_sym, eq_trans *)
- Include Bool2Dec_fun. (** eq_dec *)
+ Include BackportEq. (** eq_refl, eq_sym, eq_trans *)
+ Include HasEqBool2Dec. (** eq_dec *)
 
 End Q_as_DT.
 

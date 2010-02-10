@@ -6,24 +6,32 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
+(** * Efficient arbitrary large natural numbers in base 2^31 *)
 
-(** * Natural numbers in base 2^31 *)
-
-(**
-Author: Arnaud Spiwack
-*)
+(** Initial Author: Arnaud Spiwack *)
 
 Require Export Int31.
-Require Import CyclicAxioms Cyclic31 NSig NSigNAxioms NMake NProperties NDiv.
+Require Import CyclicAxioms Cyclic31 NSig NSigNAxioms NMake
+  NProperties NDiv GenericMinMax.
 
-Module BigN <: NType := NMake.Make Int31Cyclic.
+(** The following [BigN] module regroups both the operations and
+    all the abstract properties:
 
-(** Module [BigN] implements [NAxiomsSig] *)
+    - [NMake.Make Int31Cyclic] provides the operations and basic specs
+       w.r.t. ZArith
+    - [NTypeIsNAxioms] shows (mainly) that these operations implement
+      the interface [NAxioms]
+    - [NPropSig] adds all generic properties derived from [NAxioms]
+    - [NDivPropFunct] provides generic properties of [div] and [mod].
+    - [MinMax*Properties] provides properties of [min] and [max].
 
-Module Export BigNAxiomsMod := NSig_NAxioms BigN.
-Module Export BigNPropMod := NPropFunct BigNAxiomsMod.
-Module Export BigDivModProp := NDivPropFunct BigNAxiomsMod BigNPropMod.
+*)
+
+Module BigN <: NType <: OrderedTypeFull <: TotalOrder :=
+ NMake.Make Int31Cyclic <+ NTypeIsNAxioms
+ <+ !NPropSig <+ !NDivPropFunct <+ HasEqBool2Dec
+ <+ !MinMaxLogicalProperties <+ !MinMaxDecProperties.
+
 
 (** Notations about [BigN] *)
 
@@ -69,7 +77,7 @@ Infix "<=" := BigN.le : bigN_scope.
 Notation "x > y" := (BigN.lt y x)(only parsing) : bigN_scope.
 Notation "x >= y" := (BigN.le y x)(only parsing) : bigN_scope.
 Notation "[ i ]" := (BigN.to_Z i) : bigN_scope.
-Infix "mod" := modulo (at level 40, no associativity) : bigN_scope.
+Infix "mod" := BigN.modulo (at level 40, no associativity) : bigN_scope.
 
 Local Open Scope bigN_scope.
 
@@ -78,7 +86,7 @@ Local Open Scope bigN_scope.
 Theorem succ_pred: forall q : bigN,
   0 < q -> BigN.succ (BigN.pred q) == q.
 Proof.
-intros; apply succ_pred.
+intros; apply BigN.succ_pred.
 intro H'; rewrite H' in H; discriminate.
 Qed.
 
@@ -88,18 +96,32 @@ Lemma BigNring :
  semi_ring_theory BigN.zero BigN.one BigN.add BigN.mul BigN.eq.
 Proof.
 constructor.
-exact add_0_l.
-exact add_comm.
-exact add_assoc.
-exact mul_1_l.
-exact mul_0_l.
-exact mul_comm.
-exact mul_assoc.
-exact mul_add_distr_r.
+exact BigN.add_0_l.
+exact BigN.add_comm.
+exact BigN.add_assoc.
+exact BigN.mul_1_l.
+exact BigN.mul_0_l.
+exact BigN.mul_comm.
+exact BigN.mul_assoc.
+exact BigN.mul_add_distr_r.
 Qed.
 
 Add Ring BigNr : BigNring.
 
-(** Todo: tactic translating from [BigN] to [Z] + omega *)
+(** We benefit from an "order" tactic *)
+
+Ltac bigN_order := BigN.order.
+
+Section TestOrder.
+Let test : forall x y : bigN, x<=y -> y<=x -> x==y.
+Proof. bigN_order. Qed.
+End TestOrder.
+
+(** We can use at least a bit of (r)omega by translating to [Z]. *)
+
+Section TestOmega.
+Let test : forall x y : bigN, x<=y -> y<=x -> x==y.
+Proof. intros x y. BigN.zify. omega. Qed.
+End TestOmega.
 
 (** Todo: micromega *)

@@ -175,9 +175,6 @@ Qed.
 
 (** *** Least-upper bound properties of [max] *)
 
-Definition max_l := max_l.
-Definition max_r := max_r.
-
 Lemma le_max_l : forall n m, n <= max n m.
 Proof.
  intros; destruct (max_spec n m); intuition; order.
@@ -328,9 +325,6 @@ Proof. intros. symmetry; apply MPRev.max_assoc. Qed.
 
 Lemma min_comm : forall n m, min n m == min m n.
 Proof. intros. exact (MPRev.max_comm m n). Qed.
-
-Definition min_l := min_l.
-Definition min_r := min_r.
 
 Lemma le_min_r : forall n m, min n m <= m.
 Proof. intros. exact (MPRev.le_max_l m n). Qed.
@@ -544,6 +538,10 @@ Module MinMaxProperties (Import O:OrderedTypeFull')(Import M:HasMinMax O).
  Module OT := OTF_to_TotalOrder O.
  Include MinMaxLogicalProperties OT M.
  Include MinMaxDecProperties O M.
+ Definition max_l := max_l.
+ Definition max_r := max_r.
+ Definition min_l := min_l.
+ Definition min_r := min_r.
  Notation max_monotone := max_mono.
  Notation min_monotone := min_mono.
  Notation max_min_antimonotone := max_min_antimono.
@@ -611,6 +609,10 @@ Module UsualMinMaxProperties
  Module OT := OTF_to_TotalOrder O.
  Include UsualMinMaxLogicalProperties OT M.
  Include UsualMinMaxDecProperties O M.
+ Definition max_l := max_l.
+ Definition max_r := max_r.
+ Definition min_l := min_l.
+ Definition min_r := min_r.
 End UsualMinMaxProperties.
 
 

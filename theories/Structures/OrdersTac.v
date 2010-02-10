@@ -262,10 +262,8 @@ End OTF_to_OrderTac.
 
 Module OT_to_OrderTac (OT:OrderedType).
  Module OTF := OT_to_Full OT.
- Include !OTF_to_OrderTac OTF. (* Why a bang here ? *)
+ Include !OTF_to_OrderTac OTF.
 End OT_to_OrderTac.
-
-
 
 Module TotalOrderRev (O:TotalOrder) <: TotalOrder.
 
