@@ -81,11 +81,17 @@ Proof.
 Abort.
 
 (* Example 8 *)
-Goal
-forall x y : R,
-x * (1 / x + x / (x + y)) =
-- (1 / y) * y * (- (x * (x / (x + y))) - 1).
+Goal forall x y : R,
+  x * (1 / x + x / (x + y)) =
+  - (1 / y) * y * (- (x * (x / (x + y))) - 1).
 Proof.
   intros.
    field.
+Abort.
+
+(* Example 9 *)
+Goal forall a b : R, 1 / (a * b) * (1 / 1 / b) = 1 / a -> False.
+Proof.
+intros.
+field_simplify_eq in H.
 Abort.
