@@ -88,7 +88,7 @@ export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) \
   scripts/tolink.ml kernel/copcodes.ml
 export GENMLIFILES:=$(YACCFILES:.mly=.mli)
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
-export GENVFILES:=theories/Numbers/Natural/BigN/NMake.v
+export GENVFILES:=theories/Numbers/Natural/BigN/NMake_gen.v
 export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) $(GENVFILES)
 export MLFILES  := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.ml'  ')' $(FIND_PRINTF_P) | \
   while read f; do if ! [ -e "$${f}4" ]; then echo "$$f"; fi; done) \

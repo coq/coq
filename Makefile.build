@@ -796,7 +796,7 @@ plugins/%_mod.ml: plugins/%.mllib
 	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $@ \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
-%.vo %.glob: %.v states/initial.coq $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
+%.vo %.glob: %.v states/initial.coq $(INITPLUGINSBEST) $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
 	$(SHOW)'COQC      $<'
 	$(HIDE)rm -f $*.glob 
 	$(HIDE)$(BOOTCOQTOP) -compile $*
