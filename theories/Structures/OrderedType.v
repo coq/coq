@@ -114,12 +114,11 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Definition eq_equiv := eq_equiv.
   Definition lt_strorder := lt_strorder.
   Definition lt_compat := lt_compat.
-  Lemma lt_total : forall x y, lt x y \/ eq x y \/ lt y x.
-  Proof. intros; destruct (compare x y); auto. Qed.
+  Definition lt_total := lt_total.
   Lemma le_lteq : forall x y, le x y <-> lt x y \/ eq x y.
   Proof. unfold le; intuition. Qed.
   End OrderElts.
-  Module OrderTac := MakeOrderTac OrderElts.
+  Module OrderTac := !MakeOrderTac OrderElts.
   Ltac order := OrderTac.order.
 
   Lemma le_eq x y z : ~lt x y -> eq y z -> ~lt x z. Proof. order. Qed.

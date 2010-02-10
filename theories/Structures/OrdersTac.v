@@ -45,38 +45,11 @@ Local Infix "+" := trans_ord.
    [TotalOrder] contains an equivalence [eq],
    a strict order [lt] total and compatible with [eq], and
    a larger order [le] synonym for [lt\/eq].
-
-  NB: we create here a clone of TotalOrder, but without the [Inline] Pragma.
-  This is important for having later the exact shape in Ltac matching.
 *)
-
-Module Type TotalOrder_NoInline <: TotalOrder.
- Parameter Inline t : Type.
- Parameters eq lt le : t -> t -> Prop.
- Include IsEq <+ IsStrOrder <+ LeIsLtEq <+ LtIsTotal.
-End TotalOrder_NoInline.
-
-Module Type TotalOrder_NoInline' := TotalOrder_NoInline <+ EqLtLeNotation.
-
-(** We make explicit aliases to help ltac matching *)
-
-Module CloneOrder (O:TotalOrder_NoInline) <: TotalOrder.
-Definition t := O.t.
-Definition eq := O.eq.
-Definition lt := O.lt.
-Definition le := O.le.
-Definition eq_equiv := O.eq_equiv.
-Definition lt_compat := O.lt_compat.
-Definition lt_strorder := O.lt_strorder.
-Definition le_lteq := O.le_lteq.
-Definition lt_total := O.lt_total.
-End CloneOrder.
-
-
 
 (** ** Properties that will be used by the [order] tactic *)
 
-Module OrderFacts(Import O:TotalOrder_NoInline').
+Module OrderFacts(Import O:TotalOrder').
 
 (** Reflexivity rules *)
 
@@ -165,7 +138,7 @@ End OrderFacts.
 
 (** ** [MakeOrderTac] : The functor providing the order tactic. *)
 
-Module MakeOrderTac (Import O:TotalOrder_NoInline').
+Module MakeOrderTac (Import O:TotalOrder').
 
 Include OrderFacts O.
 
@@ -284,16 +257,14 @@ End MakeOrderTac.
 
 Module OTF_to_OrderTac (OTF:OrderedTypeFull).
  Module TO := OTF_to_TotalOrder OTF.
- Module TO' := CloneOrder TO.
- Include MakeOrderTac TO'.
+ Include !MakeOrderTac TO.
 End OTF_to_OrderTac.
 
 Module OT_to_OrderTac (OT:OrderedType).
  Module OTF := OT_to_Full OT.
- Include OTF_to_OrderTac OTF.
+ Include !OTF_to_OrderTac OTF. (* Why a bang here ? *)
 End OT_to_OrderTac.
 
-(** For example of use of this tactic, see for instance [OrderedType] *)
 
 
 Module TotalOrderRev (O:TotalOrder) <: TotalOrder.

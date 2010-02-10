@@ -120,6 +120,28 @@ le_elim H3. assumption. rewrite <- H3 in H2.
 elim (lt_asymm n m); auto.
 Qed.
 
+Theorem le_trans : forall n m p, n <= m -> m <= p -> n <= p.
+Proof.
+intros n m p. rewrite 3 lt_eq_cases.
+intros [LT|EQ] [LT'|EQ']; try rewrite EQ; try rewrite <- EQ';
+ generalize (lt_trans n m p); auto with relations.
+Qed.
+
+(** Some type classes about order *)
+
+Instance lt_strorder : StrictOrder lt.
+Proof. split. exact lt_irrefl. exact lt_trans. Qed.
+
+Instance le_preorder : PreOrder le.
+Proof. split. exact le_refl. exact le_trans. Qed.
+
+Instance le_partialorder : PartialOrder _ le.
+Proof.
+intros x y. compute. split.
+intro EQ; now rewrite EQ.
+rewrite 2 lt_eq_cases. intuition. elim (lt_irrefl x). now transitivity y.
+Qed.
+
 (** We know enough now to benefit from the generic [order] tactic. *)
 
 Module OrderElts <: TotalOrder.
@@ -128,14 +150,12 @@ Module OrderElts <: TotalOrder.
  Definition lt := lt.
  Definition le := le.
  Definition eq_equiv := eq_equiv.
- Instance lt_strorder : StrictOrder lt.
- Proof. split; [ exact lt_irrefl | exact lt_trans ]. Qed.
- Instance lt_compat : Proper (eq==>eq==>iff) lt.
- Proof. exact lt_wd. Qed. (* BUG(?) pourquoi ne trouve-t'il pas lt_wd *)
+ Definition lt_strorder := lt_strorder.
+ Definition lt_compat := lt_wd.
  Definition lt_total := lt_trichotomy.
  Definition le_lteq := lt_eq_cases.
 End OrderElts.
-Module OrderTac := MakeOrderTac OrderElts.
+Module OrderTac := !MakeOrderTac OrderElts.
 Ltac order := OrderTac.order.
 
 (** Some direct consequences of [order]. *)
@@ -166,9 +186,6 @@ Declare Right Step lt_stepr.
 Declare Left  Step le_stepl.
 Declare Right Step le_stepr.
 
-Theorem le_trans : forall n m p, n <= m -> m <= p -> n <= p.
-Proof. order. Qed.
-
 Theorem le_lt_trans : forall n m p, n <= m -> m < p -> n < p.
 Proof. order. Qed.
 
@@ -187,17 +204,17 @@ Qed.
 
 Theorem lt_succ_l : forall n m, S n < m -> n < m.
 Proof.
-intros n m H; apply -> le_succ_l; now apply lt_le_incl.
+intros n m H; apply -> le_succ_l; order.
 Qed.
 
 Theorem le_le_succ_r : forall n m, n <= m -> n <= S m.
 Proof.
-intros n m LE. rewrite <- lt_succ_r in LE. now apply lt_le_incl.
+intros n m LE. rewrite <- lt_succ_r in LE. order.
 Qed.
 
 Theorem lt_lt_succ_r : forall n m, n < m -> n < S m.
 Proof.
-intros. rewrite lt_succ_r. now apply lt_le_incl.
+intros. rewrite lt_succ_r. order.
 Qed.
 
 Theorem succ_lt_mono : forall n m, n < m <-> S n < S m.
@@ -222,7 +239,7 @@ Qed.
 
 Theorem lt_1_l : forall n m, 0 < n -> n < m -> 1 < m.
 Proof.
-intros n m H1 H2. apply <- le_succ_l in H1. now apply le_lt_trans with n.
+intros n m H1 H2. apply <- le_succ_l in H1. order.
 Qed.
 
 
@@ -233,12 +250,12 @@ remember whether one has to say le_gt_cases or lt_ge_cases *)
 
 Theorem lt_ge_cases : forall n m, n < m \/ n >= m.
 Proof.
-intros n m; destruct (le_gt_cases m n); [right|left]; order.
+intros n m; destruct (le_gt_cases m n); intuition order.
 Qed.
 
 Theorem le_ge_cases : forall n m, n <= m \/ n >= m.
 Proof.
-intros n m; destruct (le_gt_cases n m); [left|right]; order.
+intros n m; destruct (le_gt_cases n m); intuition order.
 Qed.
 
 Theorem lt_gt_cases : forall n m, n ~= m <-> n < m \/ n > m.
@@ -310,7 +327,7 @@ Qed.
 
 Theorem nlt_succ_r : forall n m, ~ m < S n <-> n < m.
 Proof.
-intros n m; rewrite lt_succ_r; apply nle_gt.
+intros n m; rewrite lt_succ_r. intuition order.
 Qed.
 
 (** The difference between integers and natural numbers is that for
@@ -620,8 +637,7 @@ Module NZOrderPropFunct (NZ : NZOrdSig) :=
 Module NZOrderedTypeFunct (NZ : NZDecOrdSig')
   <: DecidableTypeFull <: OrderedTypeFull.
  Include NZ <+ NZOrderPropFunct.
- Instance lt_compat : Proper (eq==>eq==>iff) lt := lt_wd.
- Instance lt_strorder : StrictOrder lt.
- Include Compare2EqBool <+ HasEqBool2Dec.
+ Definition lt_compat := lt_wd.
  Definition le_lteq := lt_eq_cases.
+ Include Compare2EqBool <+ HasEqBool2Dec.
 End NZOrderedTypeFunct.

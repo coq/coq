@@ -57,3 +57,8 @@ Ltac nat_order := NatOrder.order.
 
 (** Note that [nat_order] is domain-agnostic: it will not prove
     [1<=2] or [x<=x+x], but rather things like [x<=y -> y<=x -> x=y]. *)
+
+Section Test.
+Let test : forall x y : nat, x<=y -> y<=x -> x=y.
+Proof. nat_order. Qed.
+End Test.
