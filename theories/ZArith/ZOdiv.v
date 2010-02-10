@@ -8,7 +8,7 @@
 
 
 Require Import BinPos BinNat Nnat ZArith_base ROmega ZArithRing Morphisms.
-Require Export ZOdiv_def.
+Require Export Ndiv_def ZOdiv_def.
 Require Zdiv ZBinary ZDivTrunc.
 
 Open Scope Z_scope.
@@ -31,9 +31,7 @@ Open Scope Z_scope.
 Infix "/" := ZOdiv : Z_scope.
 Infix "mod" := ZOmod (at level 40, no associativity) : Z_scope.
 
-Infix "/" := Ndiv : N_scope.
-Infix "mod" := Nmod (at level 40, no associativity) : N_scope.
-
+(*
 (** Auxiliary results on the ad-hoc comparison [NPgeb]. *)
 
 Lemma NPgeb_Zge : forall (n:N)(p:positive),
@@ -51,6 +49,7 @@ Proof.
  red; auto.
  red; simpl; destruct Pcompare; now auto.
 Qed.
+*)
 
 (** * Relation between division on N and on Z. *)
 
@@ -76,14 +75,6 @@ Qed.
    has been chosen to be [a], so this equation holds even for [b=0].
 *)
 
-Theorem N_div_mod_eq : forall a b,
-  a = (b * (Ndiv a b) + (Nmod a b))%N.
-Proof.
-  intros; generalize (Ndiv_eucl_correct a b).
-  unfold Ndiv, Nmod; destruct Ndiv_eucl; simpl.
-  intro H; rewrite H; rewrite Nmult_comm; auto.
-Qed.
-
 Theorem ZO_div_mod_eq : forall a b,
   a = b * (ZOdiv a b) + (ZOmod a b).
 Proof.
@@ -92,35 +83,8 @@ Proof.
   intro H; rewrite H; rewrite Zmult_comm; auto.
 Qed.
 
-(** Then, the inequalities constraining the remainder. *)
-
-Theorem Pdiv_eucl_remainder : forall a b:positive,
-  Z_of_N (snd (Pdiv_eucl a b)) < Zpos b.
-Proof.
-  induction a; cbv beta iota delta [Pdiv_eucl]; fold Pdiv_eucl; cbv zeta.
-  intros b; generalize (IHa b); case Pdiv_eucl.
-    intros q1 r1 Hr1; simpl in Hr1.
-    case_eq (NPgeb (2*r1+1) b); intros; unfold snd.
-    romega with *.
-    apply NPgeb_Zlt; auto.
-  intros b; generalize (IHa b); case Pdiv_eucl.
-    intros q1 r1 Hr1; simpl in Hr1.
-    case_eq (NPgeb (2*r1) b); intros; unfold snd.
-    romega with *.
-    apply NPgeb_Zlt; auto.
-  destruct b; simpl; romega with *.
-Qed.
-
-Theorem Nmod_lt : forall (a b:N), b<>0%N ->
-  (a mod b < b)%N.
-Proof.
-  destruct b as [ |b]; intro H; try solve [elim H;auto].
-  destruct a as [ |a]; try solve [compute;auto]; unfold Nmod, Ndiv_eucl.
-  generalize (Pdiv_eucl_remainder a b); destruct Pdiv_eucl; simpl.
-  romega with *.
-Qed.
-
-(** The remainder is bounded by the divisor, in term of absolute values *)
+(** Then, the inequalities constraining the remainder:
+    The remainder is bounded by the divisor, in term of absolute values *)
 
 Theorem ZOmod_lt : forall a b:Z, b<>0 ->
   Zabs (a mod b) < Zabs b.
@@ -128,7 +92,8 @@ Proof.
   destruct b as [ |b|b]; intro H; try solve [elim H;auto];
   destruct a as [ |a|a]; try solve [compute;auto]; unfold ZOmod, ZOdiv_eucl;
   generalize (Pdiv_eucl_remainder a b); destruct Pdiv_eucl; simpl;
-  try rewrite Zabs_Zopp; rewrite Zabs_eq; auto; apply Z_of_N_le_0.
+  try rewrite Zabs_Zopp; rewrite Zabs_eq; auto using Z_of_N_le_0;
+  intros LT; apply (Z_of_N_lt _ _ LT).
 Qed.
 
 (** The sign of the remainder is the one of [a]. Due to the possible

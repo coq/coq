@@ -13,7 +13,7 @@ Require Import BinNat.
 Require Import Setoid.
 Require Import Ring_theory.
 Require Import Ring_polynom.
-Require Import ZOdiv_def.
+Require Import Ndiv_def ZOdiv_def.
 Import List.
 
 Set Implicit Arguments.

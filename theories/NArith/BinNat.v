@@ -365,6 +365,11 @@ destruct m; destruct p; try reflexivity.
 simpl in |- *; rewrite Pmult_plus_distr_r; reflexivity.
 Qed.
 
+Theorem Nmult_plus_distr_l : forall n m p:N, p * (n + m) = p * n + p * m.
+Proof.
+intros. rewrite ! (Nmult_comm p); apply Nmult_plus_distr_r.
+Qed.
+
 Theorem Nmult_reg_r : forall n m p:N, p <> N0 -> n * p = m * p -> n = m.
 Proof.
 destruct p; intros Hp H.

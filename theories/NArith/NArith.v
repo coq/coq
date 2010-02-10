@@ -13,6 +13,7 @@
 Require Export BinPos.
 Require Export BinNat.
 Require Export Nnat.
+Require Export Ndiv_def.
 Require Export Ndigits.
 Require Export NArithRing.
 Require NBinary.

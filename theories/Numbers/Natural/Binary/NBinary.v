@@ -10,9 +10,9 @@
 
 (*i $Id$ i*)
 
-Require Import BinPos.
+Require Import BinPos Ndiv_def.
 Require Export BinNat.
-Require Import NAxioms NProperties.
+Require Import NAxioms NProperties NDiv.
 
 Local Open Scope N_scope.
 
@@ -138,6 +138,14 @@ clear n; intro n; do 2 rewrite Nrect_step; intro IH. apply f_wd; [reflexivity|].
 now rewrite Nrect_step.
 Qed.
 
+(** Division and modulo *)
+
+Program Instance div_wd : Proper (eq==>eq==>eq) Ndiv.
+Program Instance mod_wd : Proper (eq==>eq==>eq) Nmod.
+
+Definition div_mod := fun x y (_:y<>0) => Ndiv_mod_eq x y.
+Definition mod_upper_bound := Nmod_lt.
+
 (** The instantiation of operations.
     Placing them at the very end avoids having indirections in above lemmas. *)
 
@@ -156,9 +164,15 @@ Definition lt := Nlt.
 Definition le := Nle.
 Definition min := Nmin.
 Definition max := Nmax.
+Definition div := Ndiv.
+Definition modulo := Nmod.
 
 Include NPropFunct
  <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
+
+(** Generic properties of [div] and [mod] *)
+
+Include NDivPropFunct.
 
 End N.
 
