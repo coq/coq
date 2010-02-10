@@ -143,21 +143,14 @@ let evar_dependencies evm ev =
   in aux (Intset.singleton ev)
 
 let sort_dependencies evl =
-  let one_step deps ine oute =
-    List.fold_left (fun (ine, oute, acc) (id, _, deps' as d) -> 
-      if not (Intset.mem id deps) then
-	if Intset.subset deps' (Intset.add id deps) then
-	  (d :: ine, oute, Intset.add id acc)
-	else (ine, d :: oute, acc)
-      else (ine, oute, acc))
-      (ine, [], deps) oute
-  in
-  let rec aux deps evsin evsout =
-    let (evsin, evsout, deps') = one_step deps evsin evsout in
-      if evsout = [] then List.rev evsin
-      else aux deps' evsin evsout
-  in aux Intset.empty [] evl
-
+  List.stable_sort
+    (fun (id, ev, deps) (id', ev', deps') ->
+      if id = id' then 0
+      else if Intset.mem id deps' then -1
+      else if Intset.mem id' deps then 1
+      else Pervasives.compare id id')
+    evl
+      
 let map_evar_body f = function
   | Evar_empty -> Evar_empty
   | Evar_defined c -> Evar_defined (f c)

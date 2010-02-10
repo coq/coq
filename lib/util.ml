@@ -1126,6 +1126,8 @@ let identity x = x
 
 let compose f g x = f (g x)
 
+let const x _ = x
+
 let iterate f =
   let rec iterate_f n x =
     if n <= 0 then x else iterate_f (pred n) (f x)

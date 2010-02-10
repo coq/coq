@@ -258,7 +258,7 @@ Ltac bang :=
   match goal with
     | |- ?x =>
       match x with
-        | context [False_rect _ ?p] => elim p
+        | appcontext [False_rect _ ?p] => elim p
       end
   end.
 

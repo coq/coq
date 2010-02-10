@@ -261,13 +261,18 @@ type atac = auto_result tac
 
 let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
   let cty = Evarutil.nf_evar sigma cty in
-  let keep = not only_classes || 
-    let ctx, ar = decompose_prod cty in
+  let rec iscl env ty = 
+    let ctx, ar = decompose_prod_assum ty in
       match kind_of_term (fst (decompose_app ar)) with
       | Const c -> is_class (ConstRef c)
       | Ind i -> is_class (IndRef i)
-      | _ -> false
+      | _ -> 
+	  let env' = Environ.push_rel_context ctx env in
+	  let ty' = whd_betadeltaiota env' ar in
+	       if not (eq_constr ty' ar) then iscl env' ty'
+	       else false
   in
+  let keep = not only_classes || iscl env cty in
     if keep then let c = mkVar id in
       map_succeed 
 	(fun f -> try f (c,cty) with UserError _ -> failwith "") 
