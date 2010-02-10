@@ -323,6 +323,7 @@ type vernac_expr =
   | VernacPrintOption of Goptions.option_name
   | VernacCheckMayEval of raw_red_expr option * int option * constr_expr
   | VernacGlobalCheck of constr_expr
+  | VernacDeclareReduction of locality_flag * string * raw_red_expr
   | VernacPrint of printable
   | VernacSearch of searchable * search_restriction
   | VernacLocate of locatable

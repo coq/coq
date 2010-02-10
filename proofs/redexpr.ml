@@ -21,6 +21,7 @@ open Tacred
 open Closure
 open RedFlags
 open Libobject
+open Summary
 
 (* call by value normalisation function using the virtual machine *)
 let cbv_vm env _ c =
@@ -98,11 +99,10 @@ let (inStrategy,outStrategy) =
 let set_strategy local str =
   Lib.add_anonymous_leaf (inStrategy (local,str))
 
-let _ =
-  Summary.declare_summary "Transparent constants and variables"
-    { Summary.freeze_function = Conv_oracle.freeze;
-      Summary.unfreeze_function = Conv_oracle.unfreeze;
-      Summary.init_function = Conv_oracle.init }
+let _ = declare_summary "Transparent constants and variables"
+    { freeze_function = Conv_oracle.freeze;
+      unfreeze_function = Conv_oracle.unfreeze;
+      init_function = Conv_oracle.init }
 
 
 (* Generic reduction: reduction functions used in reduction tactics *)
@@ -135,14 +135,32 @@ let make_flag f =
 
 let is_reference = function PRef _ | PVar _ -> true | _ -> false
 
+(* table of custom reductino fonctions, not synchronized,
+   filled via ML calls to [declare_reduction] *)
+let reduction_tab = ref Stringmap.empty
+
+(* table of custom reduction expressions, synchronized,
+   filled by command Declare Reduction *)
 let red_expr_tab = ref Stringmap.empty
 
-let declare_red_expr s f =
-  try
-    let _ = Stringmap.find s !red_expr_tab in
-    error ("There is already a reduction expression of name "^s)
-  with Not_found ->
-    red_expr_tab := Stringmap.add s f !red_expr_tab
+let declare_reduction s f =
+  if Stringmap.mem s !reduction_tab || Stringmap.mem s !red_expr_tab
+  then error ("There is already a reduction expression of name "^s)
+  else reduction_tab := Stringmap.add s f !reduction_tab
+
+let check_custom = function
+  | ExtraRedExpr s ->
+      if not (Stringmap.mem s !reduction_tab || Stringmap.mem s !red_expr_tab)
+      then error ("Reference to undefined reduction expression "^s)
+  |_ -> ()
+
+let decl_red_expr s e =
+  if Stringmap.mem s !reduction_tab || Stringmap.mem s !red_expr_tab
+  then error ("There is already a reduction expression of name "^s)
+  else begin
+    check_custom e;
+    red_expr_tab := Stringmap.add s e !red_expr_tab
+  end
 
 let out_arg = function
   | ArgVar _ -> anomaly "Unevaluated or_var variable"
@@ -151,7 +169,7 @@ let out_arg = function
 let out_with_occurrences ((b,l),c) =
   ((b,List.map out_arg l), c)
 
-let reduction_of_red_expr = function
+let rec reduction_of_red_expr = function
   | Red internal ->
       if internal then (try_red_product,DEFAULTcast)
       else (red_product,DEFAULTcast)
@@ -166,6 +184,49 @@ let reduction_of_red_expr = function
   | Fold cl -> (fold_commands cl,DEFAULTcast)
   | Pattern lp -> (pattern_occs (List.map out_with_occurrences lp),DEFAULTcast)
   | ExtraRedExpr s ->
-      (try (Stringmap.find s !red_expr_tab,DEFAULTcast)
-      with Not_found -> error("unknown user-defined reduction \""^s^"\""))
+      (try (Stringmap.find s !reduction_tab,DEFAULTcast)
+      with Not_found ->
+	(try reduction_of_red_expr (Stringmap.find s !red_expr_tab)
+	 with Not_found ->
+	   error("unknown user-defined reduction \""^s^"\"")))
   | CbvVm -> (cbv_vm ,VMcast)
+
+
+let subst_flags subs flags =
+  { flags with rConst = List.map subs flags.rConst }
+
+let subst_occs subs (occ,e) = (occ,subs e)
+
+let subst_gen_red_expr subs_a subs_b subs_c = function
+  | Fold l -> Fold (List.map subs_a l)
+  | Pattern occs_l -> Pattern (List.map (subst_occs subs_a) occs_l)
+  | Simpl occs_o -> Simpl (Option.map (subst_occs subs_c) occs_o)
+  | Unfold occs_l -> Unfold (List.map (subst_occs subs_b) occs_l)
+  | Cbv flags -> Cbv (subst_flags subs_b flags)
+  | Lazy flags -> Lazy (subst_flags subs_b flags)
+  | e -> e
+
+let subst_red_expr subs e =
+  subst_gen_red_expr
+    (Mod_subst.subst_mps subs)
+    (Mod_subst.subst_evaluable_reference subs)
+    (Pattern.subst_pattern subs)
+    e
+
+let (inReduction,_) =
+  declare_object
+    {(default_object "REDUCTION") with
+       cache_function = (fun (_,(_,s,e)) -> decl_red_expr s e);
+       load_function = (fun _ (_,(_,s,e)) -> decl_red_expr s e);
+       subst_function =
+	(fun (subs,(b,s,e)) -> b,s,subst_red_expr subs e);
+       classify_function =
+	(fun ((b,_,_) as obj) -> if b then Dispose else Substitute obj) }
+
+let declare_red_expr locality s expr =
+    Lib.add_anonymous_leaf (inReduction (locality,s,expr))
+
+let _ = declare_summary "Declare Reduction"
+  { freeze_function = (fun () -> !red_expr_tab);
+    unfreeze_function = ((:=) red_expr_tab);
+    init_function = (fun () -> red_expr_tab := Stringmap.empty) }

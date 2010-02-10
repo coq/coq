@@ -1050,6 +1050,9 @@ let vernac_check_may_eval redexp glopt rc =
 	then (Option.get !pcoq).print_eval redfun env evmap rc j
 	else msg (print_eval redfun env evmap rc j)
 
+let vernac_declare_reduction locality s r =
+  declare_red_expr locality s (interp_redexp (Global.env()) Evd.empty r)
+
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =
   let evmap = Evd.empty in
@@ -1391,6 +1394,7 @@ let interp c = match c with
   | VernacMemOption (key,v) -> vernac_mem_option key v
   | VernacPrintOption key -> vernac_print_option key
   | VernacCheckMayEval (r,g,c) -> vernac_check_may_eval r g c
+  | VernacDeclareReduction (b,s,r) -> vernac_declare_reduction b s r
   | VernacGlobalCheck c -> vernac_global_check c
   | VernacPrint p -> vernac_print p
   | VernacSearch (s,r) -> vernac_search s r

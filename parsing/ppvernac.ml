@@ -892,6 +892,9 @@ let rec pr_vernac = function
       (if io = None then mt() else int (Option.get io) ++ str ": ") ++
       pr_mayeval r c
   | VernacGlobalCheck c -> hov 2 (str"Type" ++ pr_constrarg c)
+  | VernacDeclareReduction (b,s,r) ->
+     pr_locality b ++ str "Declare Reduction " ++ str s ++ str " := " ++
+     pr_red_expr (pr_constr,pr_lconstr,pr_smart_global, pr_constr) r
   | VernacPrint p ->
       let pr_printable = function
 	| PrintFullContext -> str"Print All"

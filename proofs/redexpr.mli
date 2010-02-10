@@ -24,7 +24,13 @@ val out_with_occurrences : 'a with_occurrences -> occurrences * 'a
 val reduction_of_red_expr : red_expr -> reduction_function * cast_kind
 (* [true] if we should use the vm to verify the reduction *)
 
-val declare_red_expr : string -> reduction_function -> unit
+(* Adding a custom reduction (function to be use at the ML level)
+   NB: the effect is permanent. *)
+val declare_reduction : string -> reduction_function -> unit
+
+(* Adding a custom reduction (function to be called a vernac command).
+   The boolean flag is the locality. *)
+val declare_red_expr : bool -> string -> red_expr -> unit
 
 (* Opaque and Transparent commands. *)
 

@@ -807,6 +807,12 @@ GEXTEND Gram
       |	IDENT "Debug"; IDENT "Off" ->
           VernacSetOption (None,["Ltac";"Debug"], BoolValue false)
 
+(* registration of a custom reduction *)
+
+      | IDENT "Declare"; IDENT "Reduction"; s = IDENT; ":=";
+         r = Tactic.red_expr ->
+	   VernacDeclareReduction (use_locality(),s,r)
+
  ] ];
     END
 ;;
