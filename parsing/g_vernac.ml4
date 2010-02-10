@@ -380,7 +380,7 @@ GEXTEND Gram
 	body = is_module_type ->
 	  VernacDeclareModuleType (id, bl, sign, body)
       | IDENT "Declare"; IDENT "Module"; export = export_token; id = identref;
-	bl = LIST0 module_binder; ":"; mty = module_type ->
+	bl = LIST0 module_binder; ":"; mty = module_type_inl ->
 	  VernacDeclareModule (export, id, bl, mty)
       (* Section beginning *)
       | IDENT "Section"; id = identref -> VernacBeginSection id
@@ -396,9 +396,9 @@ GEXTEND Gram
 	  VernacRequireFrom (export, None, filename)
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)
       | IDENT "Export"; qidl = LIST1 global -> VernacImport (true,qidl)
-      | IDENT "Include"; e = module_expr; l = LIST0 ext_module_expr ->
+      | IDENT "Include"; e = module_expr_inl; l = LIST0 ext_module_expr ->
 	  VernacInclude(e::l)
-      | IDENT "Include"; "Type"; e = module_type; l = LIST0 ext_module_type ->
+      | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
 	  warning "Include Type is deprecated; use Include instead";
           VernacInclude(e::l) ] ]
   ;
@@ -408,36 +408,42 @@ GEXTEND Gram
       |  -> None ] ]
   ;
   ext_module_type:
-    [ [ "<+"; mty = module_type -> mty ] ]
+    [ [ "<+"; mty = module_type_inl -> mty ] ]
   ;
   ext_module_expr:
-    [ [ "<+"; mexpr = module_expr -> mexpr ] ]
+    [ [ "<+"; mexpr = module_expr_inl -> mexpr ] ]
   ;
   check_module_type:
-    [ [ "<:"; mty = module_type -> mty ] ]
+    [ [ "<:"; mty = module_type_inl -> mty ] ]
   ;
   check_module_types:
     [ [ mtys = LIST0 check_module_type -> mtys ] ]
   ;
   of_module_type:
-    [ [ ":"; mty = module_type -> Enforce mty
+    [ [ ":"; mty = module_type_inl -> Enforce mty
       | mtys = check_module_types -> Check mtys ] ]
   ;
   is_module_type:
-    [ [ ":="; mty = module_type ; l = LIST0 ext_module_type -> (mty::l)
+    [ [ ":="; mty = module_type_inl ; l = LIST0 ext_module_type -> (mty::l)
       | -> [] ] ]
   ;
   is_module_expr:
-    [ [ ":="; mexpr = module_expr; l = LIST0 ext_module_expr -> (mexpr::l)
+    [ [ ":="; mexpr = module_expr_inl; l = LIST0 ext_module_expr -> (mexpr::l)
       | -> [] ] ]
   ;
-
+  module_expr_inl:
+    [ [ "!"; me = module_expr -> (me,false)
+      | me = module_expr -> (me,true) ] ]
+  ;
+  module_type_inl:
+    [ [ "!"; me = module_type -> (me,false)
+      | me = module_type -> (me,true) ] ]
+  ;
   (* Module binder  *)
   module_binder:
     [ [ "("; export = export_token; idl = LIST1 identref; ":";
-         mty = module_type; ")" -> (export,idl,mty) ] ]
+         mty = module_type_inl; ")" -> (export,idl,mty) ] ]
   ;
-
   (* Module expressions *)
   module_expr:
     [ [ me = module_expr_atom -> me

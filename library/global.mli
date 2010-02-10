@@ -50,10 +50,12 @@ val add_constant :
 val add_mind        :
   dir_path -> identifier -> mutual_inductive_entry -> mutual_inductive
 
-val add_module      : identifier -> module_entry -> module_path * delta_resolver
-val add_modtype     : identifier -> module_struct_entry -> module_path
+val add_module      :
+ identifier -> module_entry -> bool -> module_path * delta_resolver
+val add_modtype     :
+ identifier -> module_struct_entry -> bool -> module_path
 val add_include :
- module_struct_entry -> bool -> delta_resolver
+ module_struct_entry -> bool -> bool -> delta_resolver
 
 val add_constraints : constraints -> unit
 
@@ -68,10 +70,11 @@ val set_engagement : engagement -> unit
 
 val start_module : identifier -> module_path
 
-val end_module : Summary.frozen ->identifier -> module_struct_entry option -> 
-  module_path * delta_resolver
+val end_module : Summary.frozen ->identifier ->
+  (module_struct_entry * bool) option -> module_path * delta_resolver
 
-val add_module_parameter : mod_bound_id -> module_struct_entry -> delta_resolver
+val add_module_parameter :
+ mod_bound_id -> module_struct_entry -> bool -> delta_resolver
 
 val start_modtype : identifier -> module_path
 val end_modtype : Summary.frozen -> identifier -> module_path

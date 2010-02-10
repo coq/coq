@@ -1009,6 +1009,8 @@ type module_ast =
   | CMapply of module_ast * module_ast
   | CMwith of module_ast * with_declaration_ast
 
+type module_ast_inl = module_ast * bool (* honor the inline annotations or not *)
+
 type 'a module_signature =
   | Enforce of 'a (* ... : T *)
   | Check of 'a list (* ... <: T1 <: T2, possibly empty *)
