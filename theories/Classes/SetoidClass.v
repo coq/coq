@@ -24,7 +24,6 @@ Require Import Coq.Program.Program.
 Require Import Relation_Definitions.
 Require Export Coq.Classes.RelationClasses.
 Require Export Coq.Classes.Morphisms.
-Require Import Coq.Classes.Functions.
 
 (** A setoid wraps an equivalence. *)
 
