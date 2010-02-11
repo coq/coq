@@ -12,6 +12,7 @@ together, as well as a mean of massive abstraction.
  & $|$ & {\modtype} \texttt{ with Definition }{\qualid} := {\term} \\
  & $|$ & {\modtype} \texttt{ with Module }{\qualid} := {\qualid} \\
  & $|$ & {\qualid} \nelist{\qualid}{}\\
+ & $|$ & $!${\qualid} \nelist{\qualid}{}\\
  &&\\
 
 {\onemodbinding}  & ::= & {\tt ( [Import|Export] \nelist{\ident}{} : {\modtype} )}\\
@@ -20,11 +21,16 @@ together, as well as a mean of massive abstraction.
 {\modbindings} & ::= & \nelist{\onemodbinding}{}\\
  &&\\
 
-{\modexpr} & ::= & \nelist{\qualid}{} 
+{\modexpr} & ::= & \nelist{\qualid}{} \\
+           & $|$ & $!$\nelist{\qualid}{}
 \end{tabular}
 \end{centerframe}
 \caption{Syntax of modules}
 \end{figure}
+
+In the syntax of module application, the $!$ prefix indicates that
+any {\tt Inline} directive in the type of the functor arguments
+will be ignored (see \ref{Inline} below).
 
 \subsection{\tt Module {\ident}
 \comindex{Module}}
@@ -144,6 +150,7 @@ This command is used to start an interactive module type {\ident}.
 \end{Variants}
 \subsubsection{Reserved commands inside an interactive module type:
 \comindex{Include}\comindex{Inline}}
+\label{Inline}
 \begin{enumerate}
 \item {\tt Include {\module}}
 
@@ -155,7 +162,8 @@ is a shortcut for {\tt Include {\module$_1$}}  $\ldots$ {\tt Include {\module$_n
 
 \item {\tt {\declarationkeyword} Inline {\assums} }
 
- This declaration will be automatically unfolded at functor application.
+ This declaration will be automatically unfolded at functor
+ application, except when this functor application is prefixed by a $!$ annotation.
 \end{enumerate}
 \subsection{\tt End {\ident}
 \comindex{End}}
