@@ -361,7 +361,7 @@ Tactic Notation (at level 0) "field_simplify_eq" :=
 
 Tactic Notation (at level 0) "field_simplify_eq" "[" constr_list(lH) "]" :=
   let G := Get_goal in
-  field_lookup FIELD_SIMPL [lH] G.
+  field_lookup (PackField FIELD_SIMPL) [lH] G.
 
 (* Same as FIELD_SIMPL but in hypothesis *)
 
@@ -396,7 +396,7 @@ Ltac Field_simplify_eq n FLD lH :=
 Ltac FIELD_SIMPL_EQ FLD lH rl :=
   get_FldPre FLD ();
   Field_simplify_eq Ring_tac.ring_subst_niter FLD lH;
-  get_FldPost().
+  get_FldPost FLD ().
 
 Tactic Notation (at level 0) "field_simplify_eq" "in" hyp(H) :=
   let t := type of H in
