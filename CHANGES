@@ -172,6 +172,8 @@ Language
   \Delta-equivalence on qualified name. The include operator has been extended 
   to high-order structures (cf. libraries Numbers and Structures to see examples).
   Interactive proofs are now authorized in module type.
+  A functor application can be prefixed by a "!" to make it ignore any "Inline"
+  annotation in the type of its argument(s).
 
 Program
 
