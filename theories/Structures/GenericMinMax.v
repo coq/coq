@@ -51,26 +51,26 @@ Module GenericMinMax (Import O:OrderedTypeFull') <: HasMinMax O.
 
  Lemma max_l : forall x y, y<=x -> max x y == x.
  Proof.
- intros. unfold max, gmax. destruct (compare_spec x y); auto with relations.
- elim (ge_not_lt x y); auto.
+ intros. unfold max, gmax. case compare_spec; auto with relations.
+ intros; elim (ge_not_lt x y); auto.
  Qed.
 
  Lemma max_r : forall x y, x<=y -> max x y == y.
  Proof.
- intros. unfold max, gmax. destruct (compare_spec x y); auto with relations.
- elim (ge_not_lt y x); auto.
+ intros. unfold max, gmax. case compare_spec; auto with relations.
+ intros; elim (ge_not_lt y x); auto.
  Qed.
 
  Lemma min_l : forall x y, x<=y -> min x y == x.
  Proof.
- intros. unfold min, gmin. destruct (compare_spec x y); auto with relations.
- elim (ge_not_lt y x); auto.
+ intros. unfold min, gmin. case compare_spec; auto with relations.
+ intros; elim (ge_not_lt y x); auto.
  Qed.
 
  Lemma min_r : forall x y, y<=x -> min x y == y.
  Proof.
- intros. unfold min, gmin. destruct (compare_spec x y); auto with relations.
- elim (ge_not_lt x y); auto.
+ intros. unfold min, gmin. case compare_spec; auto with relations.
+ intros; elim (ge_not_lt x y); auto.
  Qed.
 
 End GenericMinMax.
@@ -483,12 +483,12 @@ Lemma max_case_strong : forall n m (P:t -> Type),
   (m<=n -> P n) -> (n<=m -> P m) -> P (max n m).
 Proof.
 intros n m P Compat Hl Hr.
-assert (H:=compare_spec n m). destruct (compare n m).
-assert (n<=m) by (inversion H; rewrite le_lteq; auto).
+destruct (CompSpec2Type (compare_spec n m)) as [EQ|LT|GT].
+assert (n<=m) by (rewrite le_lteq; auto).
 apply (Compat m), Hr; auto. symmetry; apply max_r; auto.
-assert (n<=m) by (inversion H; rewrite le_lteq; auto).
+assert (n<=m) by (rewrite le_lteq; auto).
 apply (Compat m), Hr; auto. symmetry; apply max_r; auto.
-assert (m<=n) by (inversion H; rewrite le_lteq; auto).
+assert (m<=n) by (rewrite le_lteq; auto).
 apply (Compat n), Hl; auto. symmetry; apply max_l; auto.
 Defined.
 
@@ -512,12 +512,12 @@ Lemma min_case_strong : forall n m (P:O.t -> Type),
  (n<=m -> P n) -> (m<=n -> P m) -> P (min n m).
 Proof.
 intros n m P Compat Hl Hr.
-assert (H:=compare_spec n m). destruct (compare n m).
-assert (n<=m) by (inversion H; rewrite le_lteq; auto).
+destruct (CompSpec2Type (compare_spec n m)) as [EQ|LT|GT].
+assert (n<=m) by (rewrite le_lteq; auto).
 apply (Compat n), Hl; auto. symmetry; apply min_l; auto.
-assert (n<=m) by (inversion H; rewrite le_lteq; auto).
+assert (n<=m) by (rewrite le_lteq; auto).
 apply (Compat n), Hl; auto. symmetry; apply min_l; auto.
-assert (m<=n) by (inversion H; rewrite le_lteq; auto).
+assert (m<=n) by (rewrite le_lteq; auto).
 apply (Compat m), Hr; auto. symmetry; apply min_r; auto.
 Defined.
 
