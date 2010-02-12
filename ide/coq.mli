@@ -16,18 +16,19 @@ open Evd
 val short_version : unit -> string
 val version : unit -> string
 
-type printing_state = {
-  mutable printing_implicit : bool;
-  mutable printing_coercions : bool;
-  mutable printing_raw_matching : bool;
-  mutable printing_no_notation : bool;
-  mutable printing_all : bool;
-  mutable printing_evar_instances : bool;
-  mutable printing_universes : bool;
-  mutable printing_full_all : bool
-}
+module PrintOpt :
+sig
+  type t
+  val implicit : t
+  val coercions : t
+  val raw_matching : t
+  val notations : t
+  val all_basic : t
+  val existential : t
+  val universes : t
 
-val printing_state : printing_state
+  val set : t -> bool -> unit
+end
 
 type reset_mark =
   | ResetToId of Names.identifier

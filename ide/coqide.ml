@@ -12,6 +12,7 @@
 open Preferences
 open Vernacexpr
 open Coq
+open Coq.PrintOpt
 open Gtk_parsing
 open Ideutils
 
@@ -2798,47 +2799,27 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					    ~accel_modi:!current.modifier_for_display
 					  in
 
-					  let _ = ignore (view_factory#add_check_item
-							    "Display _implicit arguments"
-							    ~key:GdkKeysyms._i
-							    ~callback:(fun _ -> printing_state.printing_implicit <- not printing_state.printing_implicit; do_or_activate (fun a -> a#show_goals) ())) in
-
-					  let _ = ignore (view_factory#add_check_item
-							    "Display _coercions"
-							    ~key:GdkKeysyms._c
-							    ~callback:(fun _ -> printing_state.printing_coercions <- not printing_state.printing_coercions; do_or_activate (fun a -> a#show_goals) ())) in
-
-					  let _ = ignore (view_factory#add_check_item
-							    "Display raw _matching expressions"
-							    ~key:GdkKeysyms._m
-							    ~callback:(fun _ -> printing_state.printing_raw_matching <- not printing_state.printing_raw_matching; do_or_activate (fun a -> a#show_goals) ())) in
-
-					  let _ = ignore (view_factory#add_check_item
-							    "Deactivate _notations display"
-							    ~key:GdkKeysyms._n
-							    ~callback:(fun _ -> printing_state.printing_no_notation <- not printing_state.printing_no_notation; do_or_activate (fun a -> a#show_goals) ())) in
-
-					  let _ = ignore (view_factory#add_check_item
-							    "Display _all basic low-level contents"
-							    ~key:GdkKeysyms._a
-							    ~callback:(fun _ -> printing_state.printing_all <- not printing_state.printing_all; do_or_activate (fun a -> a#show_goals) ())) in
-
-					  let _ = ignore (view_factory#add_check_item
-							    "Display _existential variable instances"
-							    ~key:GdkKeysyms._e
-					    		    ~callback:(fun _ -> printing_state.printing_evar_instances <- not printing_state.printing_evar_instances; do_or_activate (fun a -> a#show_goals) ())) in
-
-					  let _ = ignore (view_factory#add_check_item
-							    "Display _universe levels"
-							    ~key:GdkKeysyms._u
-					    		    ~callback:(fun _ -> printing_state.printing_universes <- not printing_state.printing_universes; do_or_activate (fun a -> a#show_goals) ())) in
-
-					  let _ = ignore (view_factory#add_check_item
-							    "Display all _low-level contents"
-							    ~key:GdkKeysyms._l
-							    ~callback:(fun _ -> printing_state.printing_full_all <- not printing_state.printing_full_all; do_or_activate (fun a -> a#show_goals) ())) in
-
-
+             let print_items = [
+               ([implicit],"Display _implicit arguments",GdkKeysyms._i,false);
+               ([coercions],"Display _coercions",GdkKeysyms._c,false);
+               ([raw_matching],"Display raw _matching expressions",GdkKeysyms._m,true);
+               ([notations],"Display _notations",GdkKeysyms._n,true);
+               ([all_basic],"Display _all basic low-level contents",GdkKeysyms._a,false);
+               ([existential],"Display _existential variable instances",GdkKeysyms._e,false);
+               ([universes],"Display _universe levels",GdkKeysyms._u,false);
+               ([all_basic;existential;universes],"Display all _low-level contents",GdkKeysyms._l,false)
+             ] in
+             let setopts opts v = List.iter (fun o -> set o v) opts in
+             let _ =
+               List.map
+                       (fun (opts,text,key,dflt) -> 
+                          setopts opts dflt;
+                          view_factory#add_check_item ~key ~active:dflt text
+                            ~callback:(fun v -> do_or_activate (fun a ->
+                                                                  setopts opts v;
+                                                                  a#show_goals) ()))
+                       print_items
+             in
 
 					  (* Externals *)
 					  let externals_menu =  factory#add_submenu "_Compile" in

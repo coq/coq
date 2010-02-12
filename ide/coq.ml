@@ -118,36 +118,6 @@ let is_in_proof_mode () =
 let user_error_loc l s =
   raise (Stdpp.Exc_located (l, Util.UserError ("CoqIde", s)))
 
-type printing_state = {
-  mutable printing_implicit : bool;
-  mutable printing_coercions : bool;
-  mutable printing_raw_matching : bool;
-  mutable printing_no_notation : bool;
-  mutable printing_all : bool;
-  mutable printing_evar_instances : bool;
-  mutable printing_universes : bool;
-  mutable printing_full_all : bool
-}
-
-let printing_state = {
-  printing_implicit = false;
-  printing_coercions = false;
-  printing_raw_matching = false;
-  printing_no_notation = false;
-  printing_all = false;
-  printing_evar_instances = false;
-  printing_universes = false;
-  printing_full_all = false;
-}
-
-let printing_implicit_data = ["Printing";"Implicit"], false
-let printing_coercions_data = ["Printing";"Coercions"], false
-let printing_raw_matching_data = ["Printing";"Matching"], true
-let printing_no_synth_data = ["Printing";"Synth"], true
-let printing_no_notation_data = ["Printing";"Notations"], true
-let printing_all_data = ["Printing";"All"], false
-let printing_evar_instances_data = ["Printing";"Existential";"Instances"],false
-let printing_universes_data = ["Printing";"Universes"], false
 
 let known_options = ref []
 
@@ -158,31 +128,6 @@ let prepare_option (l,dft) =
   if dft then unset,set else set,unset
 
 let coqide_known_option table = List.mem table !known_options
-
-let with_printing_implicit = prepare_option printing_implicit_data
-let with_printing_coercions = prepare_option printing_coercions_data
-let with_printing_raw_matching = prepare_option printing_raw_matching_data
-let with_printing_no_synth = prepare_option printing_no_synth_data
-let with_printing_no_notation = prepare_option printing_no_notation_data
-let with_printing_all = prepare_option printing_all_data
-let with_printing_evar_instances = prepare_option printing_evar_instances_data
-let with_printing_universes = prepare_option printing_universes_data
-
-let make_option_commands () =
-  let p = printing_state in
-  (if p.printing_implicit then [with_printing_implicit] else [])@
-  (if p.printing_coercions then [with_printing_coercions] else [])@
-  (if p.printing_raw_matching then [with_printing_raw_matching;with_printing_no_synth] else [])@
-  (if p.printing_no_notation then [with_printing_no_notation] else [])@
-  (if p.printing_all then [with_printing_all] else [])@
-  (if p.printing_evar_instances then [with_printing_evar_instances] else [])@
-  (if p.printing_universes then [with_printing_universes] else [])@
-  (if p.printing_full_all then [with_printing_all;with_printing_evar_instances;with_printing_universes] else [])
-
-let make_option_commands () =
-  let l = make_option_commands () in
-  List.iter (fun (a,b) -> prerr_endline a; prerr_endline b) l;
-  l
 
 type command_attribute =
     NavigationCommand | QueryCommand | DebugCommand | KnownOptionCommand
@@ -425,10 +370,43 @@ let reset_to_mod id =
   prerr_endline ("Reset called to Mod/Sect with "^(string_of_id id));
   Lib.reset_mod (Util.dummy_loc,id)
 
+let parse_sentence s =
+  Pcoq.Gram.Entry.parse Pcoq.main_entry (Pcoq.Gram.parsable (Stream.of_string s))
+
 let raw_interp s =
   Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s))
 
-let interp_with_options verbosely options s =
+module PrintOpt =
+struct
+  type t = string list
+  let implicit = ["Implicit"]
+  let coercions = ["Coercions"]
+  let raw_matching = ["Matching";"Synth"]
+  let notations = ["Notations"]
+  let all_basic = ["All"]
+  let existential = ["Existential Instances"]
+  let universes = ["Universes"]
+
+  let state_hack = Hashtbl.create 11
+  let _ = List.iter (fun opt -> Hashtbl.add state_hack opt false)
+            [ implicit; coercions; raw_matching; notations; all_basic; existential; universes ]
+
+  let set opt value =
+    Hashtbl.replace state_hack opt value;
+    List.iter
+      (fun cmd -> 
+         raw_interp ((if value then "Set" else "Unset") ^ " Printing " ^ cmd ^ "."))
+      opt
+
+  let enforce_hack () = Hashtbl.iter set state_hack 
+end
+
+(*
+let forbid_vernac blacklist (loc,vernac) =
+  List.map (fun (test,err) -> if test vernac then err loc
+ *)
+
+let interp_with_options verbosely s =
   prerr_endline "Starting interp...";
   prerr_endline s;
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
@@ -451,16 +429,15 @@ let interp_with_options verbosely options s =
 	if not (is_vernac_goal_printing_command vernac) then
 	  (* Verbose if in small step forward and not a tactic *)
 	  Flags.make_silent (not verbosely);
+        PrintOpt.enforce_hack ();
 	let reset_info = compute_reset_info last in
-	List.iter (fun (set_option,_) -> raw_interp set_option) options;
 	raw_interp s;
 	Flags.make_silent true;
-	List.iter (fun (_,unset_option) -> raw_interp unset_option) options;
 	prerr_endline ("...Done with interp of : "^s);
 	reset_info
 
 let interp verbosely phrase =
-  interp_with_options verbosely (make_option_commands ()) phrase
+  interp_with_options verbosely phrase
 
 let interp_and_replace s =
   let result = interp false s in
@@ -507,6 +484,7 @@ let interp_last last =
   with e ->
     let s,_ = process_exn e in prerr_endline ("Replay during undo failed because: "^s);
     raise e
+
 
 let update_on_end_of_segment cmd_stk id =
   let lookup_section (_,elt) =
@@ -657,10 +635,7 @@ let prepare_goal_main sigma g =
    (env, sigma, g.evar_concl, msg (pr_ltype_env_at_top env g.evar_concl)))
 
 let prepare_goal sigma g =
-  let options = make_option_commands () in
-  List.iter (fun (set_option,_) -> raw_interp set_option) options;
   let x = prepare_goal_main sigma g in
-  List.iter (fun (_,unset_option) -> raw_interp unset_option) options;
   x
 
 let get_current_pm_goal () =
