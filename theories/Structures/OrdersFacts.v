@@ -134,8 +134,8 @@ Module OrderedTypeFacts (Import O: OrderedType').
 
   Lemma lt_dec : forall x y : t, {lt x y} + {~ lt x y}.
   Proof.
-   intros; assert (H:=compare_spec x y); destruct (compare x y);
-    [ right | left | right ]; inversion_clear H; order.
+   intros x y; destruct (CompSpec2Type (compare_spec x y));
+    [ right | left | right ]; order.
   Defined.
 
   Definition eqb x y : bool := if eq_dec x y then true else false.

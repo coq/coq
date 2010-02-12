@@ -223,7 +223,7 @@ Qed.
 
 (** The [CompSpec] inductive will be used to relate a [compare] function
     (returning a comparison answer) and some equality and order predicates.
-    Interest: [CompSpec] behave nicely with [destruct]. *)
+    Interest: [CompSpec] behave nicely with [case] and [destruct]. *)
 
 Inductive CompSpec {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Prop :=
  | CompEq : eq x y -> CompSpec eq lt x y Eq
@@ -231,6 +231,22 @@ Inductive CompSpec {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Prop :=
  | CompGt : lt y x -> CompSpec eq lt x y Gt.
 Hint Constructors CompSpec.
 
+(** For having clean interfaces after extraction, [CompSpec] is declared
+    in Prop. For some situations, it is nonetheless useful to have a
+    version in Type. Interestingly, these two versions are equivalent.
+*)
+
+Inductive CompSpecT {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Type :=
+ | CompEqT : eq x y -> CompSpecT eq lt x y Eq
+ | CompLtT : lt x y -> CompSpecT eq lt x y Lt
+ | CompGtT : lt y x -> CompSpecT eq lt x y Gt.
+Hint Constructors CompSpecT.
+
+Lemma CompSpec2Type : forall A (eq lt:A->A->Prop) x y c,
+ CompSpec eq lt x y c -> CompSpecT eq lt x y c.
+Proof.
+ destruct c; intros H; constructor; inversion_clear H; auto.
+Qed.
 
 (** Identity *)
 

@@ -101,9 +101,8 @@ Module Backport_OT (O:OrderedType) <: OrderedTypeOrig.
 
  Definition compare : forall x y, Compare lt eq x y.
  Proof.
-  intros. assert (H:=O.compare_spec x y).
-  destruct (O.compare x y); [apply EQ|apply LT|apply GT];
-   inversion H; auto.
+  intros x y; destruct (CompSpec2Type (O.compare_spec x y));
+   [apply EQ|apply LT|apply GT]; auto.
  Defined.
 
 End Backport_OT.

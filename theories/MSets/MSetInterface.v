@@ -612,10 +612,7 @@ Module Raw2SetsOn (O:OrderedType)(M:RawSets O) <: SetsOn O.
   Variable x y : elt.
 
   Lemma compare_spec : CompSpec eq lt s s' (compare s s').
-  Proof.
-   assert (H:=@M.compare_spec s s' _ _).
-   unfold compare; destruct M.compare; inversion_clear H; auto.
-  Qed.
+  Proof. unfold compare; destruct (@M.compare_spec s s' _ _); auto. Qed.
 
   (** Additional specification of [elements] *)
   Lemma elements_spec2 : sort O.lt (elements s).

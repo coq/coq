@@ -805,10 +805,9 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
    CompSpec eq lt s s' (compare s s').
   Proof.
   intros s s' Hs Hs'.
-  generalize (compare_spec_aux s s').
-  destruct (compare s s'); inversion_clear 1; auto.
-  apply CompLt. exists s, s'; repeat split; auto using @ok.
-  apply CompGt. exists s', s; repeat split; auto using @ok.
+  destruct (compare_spec_aux s s'); constructor; auto.
+  exists s, s'; repeat split; auto using @ok.
+  exists s', s; repeat split; auto using @ok.
   Qed.
 
 End MakeRaw.
