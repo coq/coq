@@ -117,7 +117,7 @@ let initialcoq = "states/initial.coq"
 let init_vo = ["theories/Init/Prelude.vo";"theories/Init/Logic_Type.vo"]
 let makeinitial = "states/MakeInitial.v"
 
-let nmake = "theories/Numbers/Natural/BigN/NMake.v"
+let nmake = "theories/Numbers/Natural/BigN/NMake_gen.v"
 let nmakegen = "theories/Numbers/Natural/BigN/NMake_gen.ml"
 
 let adapt_name (pref,oldsuf,newsuf) f =
@@ -138,7 +138,7 @@ let pluginsv = get_vo_itargets "plugins/pluginsvo.itarget"
 let pluginsmllib = get_names (".cma",".mllib") "plugins/pluginsbyte.itarget"
 
 (** for correct execution of coqdep_boot, source files should have
-    been imported in _build (and NMake.v should have been created). *)
+    been imported in _build (and NMake_gen.v should have been created). *)
 
 let coqdepdeps = theoriesv @ pluginsv @ pluginsmllib
 
