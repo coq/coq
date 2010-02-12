@@ -309,9 +309,7 @@ type undo_info = identifier list
 
 let undo_info () = Pfedit.get_all_proof_names ()
 
-type reset_mark =
-  | ResetToId of Names.identifier     (* Relying on identifiers only *)
-  | ResetToState of Libnames.object_name (* Relying on states if any *)
+type reset_mark = Libnames.object_name (* Relying on states if any *)
 
 type reset_status =
   | NoReset
@@ -322,26 +320,10 @@ type reset_info = {
   status : reset_status;
   proofs : identifier list;
   loc_ast : Util.loc * Vernacexpr.vernac_expr;
-  mutable section : bool;
 }
-
-let reset_mark id = match Lib.has_top_frozen_state () with
-  | Some sp -> 
-      prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
-      ResetToState sp
-  | None -> ResetToId id
 
 let compute_reset_info loc_ast = 
   let status = match snd loc_ast with
-    | VernacBeginSection id 
-    | VernacDefineModule (_,id, _, _, _) 
-    | VernacDeclareModule (_,id, _, _)
-    | VernacDeclareModuleType (id, _, _, _) ->
-        ResetAtSegmentStart (snd id)
-    | VernacDefinition (_, (_,id), DefineBody _, _)
-    | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
-    | VernacInductive (_,_, (((_,(_,id)),_,_,_,_),_) :: _) ->
-        ResetAtRegisteredObject (reset_mark id)
     | com when is_vernac_proof_ending_command com -> NoReset
     | VernacEndSegment _ -> NoReset
     | com when is_vernac_tactic_command com -> NoReset
@@ -349,31 +331,22 @@ let compute_reset_info loc_ast =
         (match Lib.has_top_frozen_state () with
            | Some sp -> 
                prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
-               ResetAtRegisteredObject (ResetToState sp)
+               ResetAtRegisteredObject sp
            | None -> NoReset)
   in
   { status = status;
     proofs = Pfedit.get_all_proof_names ();
     loc_ast = loc_ast; 
-    section = true;
   }
 
 let reset_initial () =
   prerr_endline "Reset initial called"; flush stderr;
   Vernacentries.abort_refine Lib.reset_initial ()
 
-let reset_to = function
-  | ResetToId id ->
-      prerr_endline ("Reset called with "^(string_of_id id));
-      Lib.reset_name (Util.dummy_loc,id)
-  | ResetToState sp ->
+let reset_to sp =
       prerr_endline
         ("Reset called with state "^(Libnames.string_of_path (fst sp)));
       Lib.reset_to_state sp
-
-let reset_to_mod id =
-  prerr_endline ("Reset called to Mod/Sect with "^(string_of_id id));
-  Lib.reset_mod (Util.dummy_loc,id)
 
 let parsable_of_string s =
   Pcoq.Gram.parsable (Stream.of_string s)
@@ -430,8 +403,8 @@ let interp_with_options verbosely s =
     if not (is_vernac_goal_printing_command vernac) then
       (* Verbose if in small step forward and not a tactic *)
       Flags.make_silent (not verbosely);
-    PrintOpt.enforce_hack ();
     let reset_info = compute_reset_info (loc,vernac) in
+    PrintOpt.enforce_hack ();
     Vernac.eval_expr (loc,vernac);
     Flags.make_silent true;
     prerr_endline ("...Done with interp of : "^s);
@@ -485,29 +458,12 @@ let interp_last last =
     let s,_ = process_exn e in prerr_endline ("Replay during undo failed because: "^s);
     raise e
 
-
-let update_on_end_of_segment cmd_stk id =
-  let lookup_section (_,elt) =
-    match elt with
-      | { status = ResetAtSegmentStart id' } when id = id' -> raise Exit
-      | _ -> elt.section <- false
-  in
-  try Stack.iter lookup_section cmd_stk with Exit -> ()
-
 let push_phrase cmd_stk reset_info ide_payload =
-  begin
-    match snd (reset_info.loc_ast) with
-      | VernacEndSegment (_,id) ->
-          prerr_endline "Updating on end of segment 1";
-          update_on_end_of_segment cmd_stk id
-      | _ -> ()
-  end;
   Stack.push (ide_payload,reset_info) cmd_stk
 
 type backtrack =
   | BacktrackToNextActiveMark
   | BacktrackToMark of reset_mark
-  | BacktrackToModSec of Names.identifier
   | NoBacktrack
 
 type undo_cmds = int * int * backtrack * int * identifier list
@@ -532,30 +488,19 @@ let update_proofs (n,a,b,p,cur_lems) prev_lems =
 
 let pop_command cmd_stk undos =
   let (_,t) = Stack.top cmd_stk in
-  let (state_info,undo_info,section_info) = t.status,t.proofs,t.section in
-  let undos =
-    if section_info then
-      let undos = update_proofs undos undo_info in
-      match state_info with
-        | _ when is_vernac_tactic_command (snd t.loc_ast) ->
-            (* A tactic, active if not * below a Qed *)
-            add_undo undos
-        | ResetAtRegisteredObject mark ->
-            add_backtrack undos (BacktrackToMark mark)
-        | ResetAtSegmentStart id ->
-            add_backtrack undos (BacktrackToModSec id)
-        | _ when is_vernac_state_preserving_command (snd t.loc_ast) ->
-            undos
-        | _ ->
-            add_backtrack undos BacktrackToNextActiveMark
-            else
-              begin
-                prerr_endline "In section";
-                (* An * object * inside * a * closed * section * *)
-                add_backtrack undos BacktrackToNextActiveMark
-              end in
+  let (state_info,undo_info) = t.status,t.proofs in
+  let undos = update_proofs undos undo_info in
   ignore (Stack.pop cmd_stk);
-  undos
+  match state_info with
+    | _ when is_vernac_tactic_command (snd t.loc_ast) ->
+        (* A tactic, active if not * below a Qed *)
+        add_undo undos
+    | ResetAtRegisteredObject mark ->
+        add_backtrack undos (BacktrackToMark mark)
+    | _ when is_vernac_state_preserving_command (snd t.loc_ast) ->
+        undos
+    | _ ->
+        add_backtrack undos BacktrackToNextActiveMark
 
 (* appelle Pfedit.delete_current_proof a fois
 *  * utiliser Vernacentries.vernac_abort a la place ? *)
@@ -576,7 +521,6 @@ let apply_tactic_undo n =
 
 let apply_reset = function
   | BacktrackToMark mark -> reset_to mark
-  | BacktrackToModSec id -> reset_to_mod id
   | NoBacktrack -> ()
   | BacktrackToNextActiveMark -> assert false
 

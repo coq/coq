@@ -30,14 +30,8 @@ sig
   val set : t -> bool -> unit
 end
 
-type reset_mark =
-  | ResetToId of Names.identifier
-  | ResetToState of Libnames.object_name
 
-type reset_status =
-  | NoReset
-  | ResetAtSegmentStart of Names.identifier
-  | ResetAtRegisteredObject of reset_mark
+type reset_status
 
 type undo_info = identifier list
 
@@ -47,13 +41,10 @@ type reset_info = {
  status : reset_status;
  proofs : undo_info;
  loc_ast : Util.loc * Vernacexpr.vernac_expr;
- mutable section : bool;
 }
 
 val compute_reset_info : Util.loc * Vernacexpr.vernac_expr -> reset_info
 val reset_initial : unit -> unit
-val reset_to : reset_mark -> unit
-val reset_to_mod : identifier -> unit
 
 val init : unit -> string list
 val interp : bool -> string -> reset_info

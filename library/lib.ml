@@ -630,7 +630,7 @@ let reset_to_state sp =
   let (_,eq,before) = split_lib sp in
   (* if eq a frozen state, we'll reset to it *)
   match eq with
-  | [_,FrozenState f] -> lib_stk := eq@before;  unfreeze_summaries f
+  | [_,FrozenState f] -> lib_stk := eq@before; recalc_path_prefix (); unfreeze_summaries f
   | _ -> error "Not a frozen state"
 
 
