@@ -89,7 +89,7 @@ let verbose_phrase verbch loc =
 
 exception End_of_input
 
-let parse_phrase (po, verbch) =
+let parse_sentence (po, verbch) =
   match Pcoq.Gram.Entry.parse Pcoq.main_entry po with
     | Some (loc,_ as com) -> verbose_phrase verbch loc; com
     | None -> raise End_of_input
@@ -193,22 +193,21 @@ let rec vernac_com interpfun (loc,com) =
       Format.set_formatter_out_channel stdout;
       raise (DuringCommandInterp (loc, e))
 
-and vernac interpfun input =
-  vernac_com interpfun (parse_phrase input)
-
 and read_vernac_file verbosely s =
   Flags.make_warn verbosely;
   let interpfun =
-    if verbosely then
-      Vernacentries.interp
-    else
-      Flags.silently Vernacentries.interp
+    if verbosely then Vernacentries.interp
+    else Flags.silently Vernacentries.interp
   in
-  let (in_chan, fname, input) = open_file_twice_if verbosely s in
+  let (in_chan, fname, input) =
+    open_file_twice_if verbosely s in
   try
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
-    while true do vernac interpfun input; pp_flush () done
+    while true do
+      vernac_com interpfun (parse_sentence input);
+      pp_flush ()
+    done
   with e ->   (* whatever the exception *)
     Format.set_formatter_out_channel stdout;
     close_input in_chan input;    (* we must close the file first *)
@@ -217,16 +216,22 @@ and read_vernac_file verbosely s =
           if do_beautify () then pr_new_syntax (make_loc (max_int,max_int)) None
       | _ -> raise_with_file fname e
 
-(* raw_do_vernac : char Stream.t -> unit
- * parses and executes one command of the vernacular char stream.
- * Marks the end of the command in the lib_stk with a new label to
- * make vernac undoing easier. Also freeze state to speed up
- * backtracking. *)
 
-let raw_do_vernac po =
-  vernac (States.with_heavy_rollback Vernacentries.interp) (po,None);
+(* eval_expr : Util.loc * Vernacexpr.vernac_expr -> unit
+ * execute one vernacular command. Marks the end of the command in the lib_stk
+ * with a new label to make vernac undoing easier. Also freeze state to speed up
+ * backtracking. *)
+let eval_expr last =
+  vernac_com (States.with_heavy_rollback Vernacentries.interp) last;
   Lib.add_frozen_state();
   Lib.mark_end_of_command()
+
+let eval_ctrl ast =
+  vernac_com Vernacentries.interp (Util.dummy_loc,ast)
+
+(* raw_do_vernac : Pcoq.Gram.parsable -> unit
+ * vernac_step . parse_sentence *)
+let raw_do_vernac po = eval_expr (parse_sentence (po,None))
 
 (* XML output hooks *)
 let xml_start_library = ref (fun _ -> ())

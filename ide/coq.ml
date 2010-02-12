@@ -300,6 +300,11 @@ let is_vernac_tactic_command com =
 let is_vernac_proof_ending_command com =
   List.mem ProofEndingCommand (attribute_of_vernac_command com)
 
+type annotated_vernac =
+  | ControlVernac of vernac_expr * string (* navigation, debug, process control, print opts *)
+  | PureVernac of vernac_expr
+ 
+
 type undo_info = identifier list
 
 let undo_info () = Pfedit.get_all_proof_names ()
@@ -370,11 +375,8 @@ let reset_to_mod id =
   prerr_endline ("Reset called to Mod/Sect with "^(string_of_id id));
   Lib.reset_mod (Util.dummy_loc,id)
 
-let parse_sentence s =
-  Pcoq.Gram.Entry.parse Pcoq.main_entry (Pcoq.Gram.parsable (Stream.of_string s))
-
-let raw_interp s =
-  Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s))
+let parsable_of_string s =
+  Pcoq.Gram.parsable (Stream.of_string s)
 
 module PrintOpt =
 struct
@@ -395,7 +397,8 @@ struct
     Hashtbl.replace state_hack opt value;
     List.iter
       (fun cmd -> 
-         raw_interp ((if value then "Set" else "Unset") ^ " Printing " ^ cmd ^ "."))
+         let str = (if value then "Set" else "Unset") ^ " Printing " ^ cmd ^ "." in
+         Vernac.eval_ctrl (snd (Vernac.parse_sentence (parsable_of_string str,None))))
       opt
 
   let enforce_hack () = Hashtbl.iter set state_hack 
@@ -409,32 +412,31 @@ let forbid_vernac blacklist (loc,vernac) =
 let interp_with_options verbosely s =
   prerr_endline "Starting interp...";
   prerr_endline s;
-  let pa = Pcoq.Gram.parsable (Stream.of_string s) in
-  let pe = Pcoq.Gram.Entry.parse Pcoq.main_entry pa in
+  let pa = parsable_of_string s in
+  try
+    let (loc,vernac) = Vernac.parse_sentence (pa,None) in
   (* Temporary hack to make coqide.byte work (WTF???) - now with less screen
   * pollution *)
-  Pervasives.prerr_string " \r"; Pervasives.flush stderr;
-  match pe with
-    | None -> assert false
-    | Some((loc,vernac) as last) ->
-	if is_vernac_debug_command vernac then
-	  user_error_loc loc (str "Debug mode not available within CoqIDE");
-	if is_vernac_navigation_command vernac then
-	  user_error_loc loc (str "Use CoqIDE navigation instead");
-	if is_vernac_known_option_command vernac then
-	  user_error_loc loc (str "Use CoqIDE display menu instead");
-	if is_vernac_query_command vernac then
-	  flash_info
-	    "Warning: query commands should not be inserted in scripts";
-	if not (is_vernac_goal_printing_command vernac) then
-	  (* Verbose if in small step forward and not a tactic *)
-	  Flags.make_silent (not verbosely);
-        PrintOpt.enforce_hack ();
-	let reset_info = compute_reset_info last in
-	raw_interp s;
-	Flags.make_silent true;
-	prerr_endline ("...Done with interp of : "^s);
-	reset_info
+    Pervasives.prerr_string " \r"; Pervasives.flush stderr;
+    if is_vernac_debug_command vernac then
+      user_error_loc loc (str "Debug mode not available within CoqIDE");
+    if is_vernac_navigation_command vernac then
+      user_error_loc loc (str "Use CoqIDE navigation instead");
+    if is_vernac_known_option_command vernac then
+      user_error_loc loc (str "Use CoqIDE display menu instead");
+    if is_vernac_query_command vernac then
+      flash_info
+        "Warning: query commands should not be inserted in scripts";
+    if not (is_vernac_goal_printing_command vernac) then
+      (* Verbose if in small step forward and not a tactic *)
+      Flags.make_silent (not verbosely);
+    PrintOpt.enforce_hack ();
+    let reset_info = compute_reset_info (loc,vernac) in
+    Vernac.eval_expr (loc,vernac);
+    Flags.make_silent true;
+    prerr_endline ("...Done with interp of : "^s);
+    reset_info
+  with Vernac.End_of_input -> assert false
 
 let interp verbosely phrase =
   interp_with_options verbosely phrase
@@ -478,9 +480,7 @@ let process_exn e = let s,loc= print_toplevel_error e in (msgnl s,loc)
 
 let interp_last last =
   prerr_string "*";
-  try
-    vernac_com (States.with_heavy_rollback Vernacentries.interp) last;
-    Lib.add_frozen_state()
+  try Vernac.eval_expr last
   with e ->
     let s,_ = process_exn e in prerr_endline ("Replay during undo failed because: "^s);
     raise e
