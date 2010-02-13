@@ -246,7 +246,7 @@ Lemma CompSpec2Type : forall A (eq lt:A->A->Prop) x y c,
  CompSpec eq lt x y c -> CompSpecT eq lt x y c.
 Proof.
  destruct c; intros H; constructor; inversion_clear H; auto.
-Qed.
+Defined.
 
 (** Identity *)
 
