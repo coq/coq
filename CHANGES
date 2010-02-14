@@ -153,27 +153,75 @@ Library
 - Lemmas in library Relations and Reals have been homogenized a bit.
 - The implicit argument of Logic.eq is now maximally inserted, allowing
   to simply write "eq" instead of "@eq _" in morphism signatures.
-- Light revision and extension of the List library (possible source
-  of incompatibilities solvable by qualifying names accordingly).
-- Revision of the Sorting library:
+- List library:
+  - Definitions of list, length and app are now in Init/Datatypes.
+    Support for compatibility is provided.
+  - Definition of Permutation is now in Sorting/Permtation.v
+  - Some other light revisions and extensions (possible source
+    of incompatibilities solvable by qualifying names accordingly).
+- Sorting library:
   - new mergesort of worst-case complexity O(n*ln(n)) made available in 
     Mergesort.v;
-  - notion of permutation up to setoid from Permutation.v is deprecated and 
-    was moved to PermutSetoid.v;
-  - Permutation.v now contains the notion of permutation that was formerly in 
-    List.v;
+  - former notion of permutation up to setoid from Permutation.v is
+    deprecated and moved to PermutSetoid.v;
   - heapsort from Heap.v of worst-case complexity O(n*n) is deprecated;
   - new file Sorted.v for some definitions of being sorted.
+- Structure library. This new library is meant to contain generic
+  structures such as types with equalities or orders, either
+  in Module version (for now) or Type Classe (still to do):
+  - DecidableType.v and OrderedType.v: initial notions for FSets/FMaps,
+    left for compatibility but considered as deprecated.
+  - Equalities.v and Orders.v: evolutions of the previous files,
+    with fine-grain Module architecture, many variants, use of
+    Equivalence and other relevant Type Classe notions.
+  - OrdersTac.v: a generic tactic for solving chains of (in)equalities
+    over variables. See {Nat,N,Z,P}OrderedType.v for concrete instances.
+  - GenericMinMax: any ordered type can be equipped with min and max.
+    We derived here all the generic properties of these functions.
+- MSets library: an important evolution of the FSets library.
+  "MSets" stands for Modular (Finite) Sets, by contrast with a forthcoming
+  library of Class (Finite) Sets contributed by S. Lescuyer which will be
+  integrated with the next release of Coq. The main features of MSets are:
+  - The use of Equivalence, Proper and other Type Classe features
+    easing the handling of setoid equalities.
+  - The interfaces are now stated in iff-style. Old specifications
+    are now derived properties.
+  - The compare functions are now pure, and return a "comparison" value.
+    Thanks to the CompSpec inductive type, reasoning on them remains easy.
+  - Sets structures requiring invariants (i.e. sorted lists) are
+    built first as "Raw" sets (pure objects and separate proofs) and
+    attached with their proofs thanks to a generic functor. "Raw" sets
+    have now a proper interface and can be manipulated directly.
+  Nota: No Maps yet in MSets. The FSets library is still provided
+  for compatibility, but will probably be considered as deprecated in the
+  next release of Coq.
+- Numbers library:
+  - The abstract layer (NatInt, Natural/Abstract, Integer/Abstract) has
+    been simplified and enhance thanks to new features of the module
+    system such as Include (see below). It has been extended to Euclidean
+    division (three flavour for integers: Trunc, Floor and Math).
+  - The arbitrary-large efficient numbers (BigN, BigZ, BigQ) has also
+    been reworked. They benefit from the abstract layer improvements
+    (especially for div and mod). Note that some specifications have
+    slightly changed (compare, div, mod, shift{r,l}). Ring/Field should
+    work better (true recognition of constants).
 
 Language
 
-- New implementation of the module system. The sharing between non-logical
-  object and the management of the name-space has been improved by the new 
-  \Delta-equivalence on qualified name. The include operator has been extended 
-  to high-order structures (cf. libraries Numbers and Structures to see examples).
-  Interactive proofs are now authorized in module type.
-  A functor application can be prefixed by a "!" to make it ignore any "Inline"
-  annotation in the type of its argument(s).
+- New implementation of the module system:
+  - The sharing between non-logical object and the management of the
+    name-space has been improved by the new \Delta-equivalence on
+    qualified name.
+  - The include operator has been extended to high-order structures
+  - Sequences of Include can be abbreviated via new syntax "<+".
+  - A module (or module type) can be given several "<:" signatures.
+  - Interactive proofs are now authorized in module type.
+    Functor can hence be declared as Module Type and be used later
+    to type themselves.
+  - A functor application can be prefixed by a "!" to make it ignore
+    any "Inline" annotation in the type of its argument(s).
+  For examples of use for these new features, see libraries Structures
+  and Numbers.
 
 Program
 
@@ -196,6 +244,22 @@ Typeclasses
 - Various bug fixes and improvements: support for defined fields, 
   anonymous instances, declarations giving terms, better handling of
   sections and [Context].
+
+Internal Infrastructure
+
+- To avoid confusion with the repository of user's contributions,
+  the subdirectory "contrib" has been renamed into "plugins".
+  On platforms supporting ocaml native dynlink, code located there
+  is built as loadable plugins for coqtop.
+- An experimental build mechanism via ocamlbuild is provided.
+  From the top of the archive, run ./configure as usual, and
+  then ./build. Feedback about this build mechanism is most welcome.
+  Compiling Coq on platforms such as Windows might be simplier
+  this way, but this remains to be tested.
+- The Makefile system has been simplified and factorized with
+  the ocamlbuild system. In particular "make" takes advantage
+  of .mllib files for building .cma/.cmxa. The .vo files to
+  compile are now listed in several vo.itarget files.
 
 
 Changes from V8.1 to V8.2
