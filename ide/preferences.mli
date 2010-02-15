@@ -49,7 +49,6 @@ type pref =
       mutable window_height : int;
       mutable query_window_width : int;
       mutable query_window_height : int;
-      mutable fold_delay_ms : int;
 (*
       mutable use_utf8_notation : bool;
 *)
