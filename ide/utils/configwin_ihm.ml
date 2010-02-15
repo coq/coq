@@ -802,41 +802,27 @@ class hotkey_param_box param (tt:GData.tooltips) =
 
 class modifiers_param_box param =
   let hbox = GPack.hbox () in
-  let wev = GBin.event_box ~packing: (hbox#pack ~expand: false ~padding: 2) () in
+  let wev = GBin.event_box ~packing: (hbox#pack ~expand:true ~fill:true ~padding: 2) () in
   let _wl = GMisc.label ~text: param.md_label ~packing: wev#add () in
-  let we = GEdit.entry
-      ~editable: false
-      ~packing: (hbox#pack ~expand: param.md_expand ~padding: 2)
-      ()
-  in
   let value = ref param.md_value in
+  let _ = List.map (fun modifier ->
+                      let but = GButton.toggle_button
+                                  ~label:(Configwin_types.modifiers_to_string [modifier])
+                                  ~active:(List.mem modifier param.md_value)
+                                  ~packing:(hbox#pack ~expand:false) () in
+                      ignore (but#connect#toggled
+                                (fun _ -> if but#active then value := modifier::!value
+                                 else value := List.filter ((<>) modifier) !value)))
+            param.md_allow
+  in
   let _ =
     match param.md_help with
       None -> ()
     | Some help ->
-	let tooltips = GData.tooltips () in
-	ignore (hbox#connect#destroy ~callback: tooltips#destroy);
-	tooltips#set_tip wev#coerce ~text: help ~privat: help
+       let tooltips = GData.tooltips () in
+       ignore (hbox#connect#destroy ~callback: tooltips#destroy);
+       tooltips#set_tip wev#coerce ~text: help ~privat: help
   in
-  let _ = we#set_text (Configwin_types.modifiers_to_string param.md_value) in
-  let mods_we_care = param.md_allow in
-  let capture ev =
-    let modifiers = GdkEvent.Key.state ev in
-    let mods = List.filter
-	(fun m -> (List.mem m mods_we_care))
-	modifiers
-    in
-    value := mods;
-    we#set_text (Configwin_types.modifiers_to_string !value);
-    false
-  in
-  let _ =
-    if param.md_editable then
-      ignore (we#event#connect#key_press capture)
-    else
-      ()
-  in
-
   object (self)
     (** This method returns the main box ready to be packed. *)
     method box = hbox#coerce
@@ -1411,7 +1397,7 @@ let modifiers
   ?(editable=true)
   ?(expand=true)
   ?help
-  ?(allow=[`CONTROL;`SHIFT;`LOCK;`MOD1;`MOD1;`MOD2;`MOD3;`MOD4;`MOD5])
+  ?(allow=[`CONTROL;`SHIFT;`LOCK;`MOD1;`MOD2;`MOD3;`MOD4;`MOD5])
   ?(f=(fun _ -> ())) label v =
   Modifiers_param
     {
