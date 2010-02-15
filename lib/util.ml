@@ -347,9 +347,10 @@ let check_ident_gen handle s =
 let check_ident_soft = check_ident_gen warning
 let check_ident = check_ident_gen error
 
-let lowercase_unicode s unicode = 
+let lowercase_unicode =
   let tree = Segmenttree.make Unicodetable.to_lower in
-    try 
+  fun unicode ->
+    try
       match Segmenttree.lookup unicode tree with
 	| `Abs c -> c
 	| `Delta d -> unicode + d
@@ -358,7 +359,7 @@ let lowercase_unicode s unicode =
 let lowercase_first_char_utf8 s =
   assert (s <> "");
   let j, n = next_utf8 s 0 in
-  utf8_of_unicode (lowercase_unicode (String.sub s 0 j) n)
+  utf8_of_unicode (lowercase_unicode n)
 
 (* Lists *)
 
