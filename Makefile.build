@@ -535,12 +535,21 @@ endif
   # Can be changed for a local installation (to make packages).
   # You must NOT put a "/" at the end (Cygnus for win32 does not like "//").
 
+ifdef COQINSTALLPREFIX
 FULLBINDIR=$(BINDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLCOQLIB=$(COQLIBINSTALL:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLMANDIR=$(MANDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLEMACSLIB=$(EMACSLIB:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLCOQDOCDIR=$(COQDOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLDOCDIR=$(DOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+else
+FULLBINDIR=$(BINDIR)
+FULLCOQLIB=$(COQLIBINSTALL)
+FULLMANDIR=$(MANDIR)
+FULLEMACSLIB=$(EMACSLIB)
+FULLCOQDOCDIR=$(COQDOCDIR)
+FULLDOCDIR=$(DOCDIR)
+endif
 
 install-coq: install-binaries install-library install-coq-info
 install-coqlight: install-binaries install-library-light
