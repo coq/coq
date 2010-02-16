@@ -575,7 +575,7 @@ install-library:
 	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG) $(LINKCMO) $(GRAMMARCMA)
 	# reconstitute the list of core .cmi
 	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG:.cmo=.cmi) \
-          `cat $(CORECMA:.cma=.mllib.d) | tr ' ' '\n' | sed -n -e "/\.cmo/s/\.cmo/\.cmi/p"`
+          `cat $(CORECMA:.cma=.mllib.d) $(PLUGINSCMA:.cma=.mllib.d) | tr ' ' '\n' | sed -n -e "/\.cmo/s/\.cmo/\.cmi/p"`
 ifeq ($(BEST),opt)
 	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)
 	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) $(LINKCMO:.cma=.a)
