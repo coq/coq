@@ -13,7 +13,7 @@
 
 (* Initial author: Hugo Herbelin, Oct 2009 *)
 
-Require Import List Setoid Permutation Sorted.
+Require Import List Setoid Permutation Sorted Orders.
 
 (** Notations and conventions *)
 
@@ -22,22 +22,16 @@ Local Notation "[ a ; .. ; b ]" := (a :: .. (b :: []) ..).
 
 Open Scope bool_scope.
 
-Local Coercion eq_true : bool >-> Sortclass.
+Local Coercion is_true : bool >-> Sortclass.
 
-(** A total relation *)
+(** The main module defining [mergesort] on a given boolean
+    order [<=?]. We require minimal hypotheses : this boolean
+    order should only be total: [forall x y, (x<=?y) \/ (y<=?x)].
+    Transitivity is not mandatory, but without it one can
+    only prove [LocallySorted] and not [StronglySorted].
+*)
 
-Module Type TotalOrder.
-  Parameter A : Type.
-  Parameter le_bool : A -> A -> bool.
-  Infix "<=?" := le_bool (at level 35).
-  Axiom le_bool_total : forall a1 a2, a1 <=? a2 \/ a2 <=? a1.
-End TotalOrder.
-
-(** The main module defining [mergesort] on a given total order.
-    We require minimal hypotheses
- *)
-
-Module Sort (Import X:TotalOrder).
+Module Sort (Import X:Orders.TotalLeBool').
 
 Fixpoint merge l1 l2 :=
   let fix merge_aux l2 :=
@@ -116,7 +110,7 @@ Definition sort := iter_merge [].
 
 (** The proof of correctness *)
 
-Local Notation Sorted := (LocallySorted le_bool) (only parsing).
+Local Notation Sorted := (LocallySorted leb) (only parsing).
 
 Fixpoint SortedStack stack :=
   match stack with
@@ -127,7 +121,7 @@ Fixpoint SortedStack stack :=
 
 Local Ltac invert H := inversion H; subst; clear H.
 
-Fixpoint flatten_stack (stack : list (option (list A))) :=
+Fixpoint flatten_stack (stack : list (option (list t))) :=
   match stack with
   | [] => []
   | None :: stack' => flatten_stack stack'
@@ -145,19 +139,18 @@ induction l1; induction l2; intros; simpl; auto.
       clear H0 H3 IHl1; simpl in *.
       destruct (b <=? a0); constructor; auto || rewrite Heq1; constructor.
     assert (a0 <=? a) by
-      (destruct (le_bool_total a0 a) as [H'|H']; trivial || (rewrite Heq1 in H'; inversion H')).
+      (destruct (leb_total a0 a) as [H'|H']; trivial || (rewrite Heq1 in H'; inversion H')).
     invert H0.
       constructor; trivial.
       assert (Sorted (merge (a::l1) (b::l))) by auto using IHl1.
       clear IHl2; simpl in *.
-      destruct (a <=? b) as ()_eqn:Heq2;
-        constructor; auto.
+      destruct (a <=? b); constructor; auto.
 Qed.
 
 Theorem Permuted_merge : forall l1 l2, Permutation (l1++l2) (merge l1 l2).
 Proof.
   induction l1; simpl merge; intro.
-    assert (forall l, (fix merge_aux (l0 : list A) : list A := l0) l = l)
+    assert (forall l, (fix merge_aux (l0 : list t) : list t := l0) l = l)
     as -> by (destruct l; trivial). (* Technical lemma *)
     apply Permutation_refl.
   induction l2.
@@ -241,7 +234,7 @@ Proof.
 intro; apply Sorted_iter_merge. constructor.
 Qed.
 
-Corollary LocallySorted_sort : forall l, Sorted.Sorted le_bool (sort l).
+Corollary LocallySorted_sort : forall l, Sorted.Sorted leb (sort l).
 Proof. intro; eapply Sorted_LocallySorted_iff, Sorted_sort; auto. Qed.
 
 Theorem Permuted_sort : forall l, Permutation l (sort l).
@@ -250,27 +243,26 @@ intro; apply (Permuted_iter_merge l []).
 Qed.
 
 Corollary StronglySorted_sort : forall l,
-  Transitive le_bool -> StronglySorted le_bool (sort l).
+  Transitive leb -> StronglySorted leb (sort l).
 Proof. auto using Sorted_StronglySorted, LocallySorted_sort. Qed.
 
 End Sort.
 
 (** An example *)
 
-Module NatOrder.
-  Definition A := nat.
-  Fixpoint le_bool x y :=
+Module NatOrder <: TotalLeBool.
+  Definition t := nat.
+  Fixpoint leb x y :=
     match x, y with
     | 0, _ => true
-    | S x', 0 => false
-    | S x', S y' => le_bool x' y'
+    | _, 0 => false
+    | S x', S y' => leb x' y'
     end.
-  Infix "<=?" := le_bool (at level 35).
-  Theorem le_bool_total : forall a1 a2, a1 <=? a2 \/ a2 <=? a1.
+  Infix "<=?" := leb (at level 35).
+  Theorem leb_total : forall a1 a2, a1 <=? a2 \/ a2 <=? a1.
   Proof.
-    induction a1; destruct a2; simpl; auto using is_eq_true.
+    induction a1; destruct a2; simpl; auto.
   Qed.
-
 End NatOrder.
 
 Module Import NatSort := Sort NatOrder.
