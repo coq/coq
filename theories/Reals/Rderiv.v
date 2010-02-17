@@ -17,8 +17,6 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rlimit.
 Require Import Fourier.
-Require Import Classical_Prop.
-Require Import Classical_Pred_Type.
 Require Import Omega.
 Open Local Scope R_scope.
 
@@ -168,12 +166,11 @@ Proof.
       rewrite eps2 in H10; assumption.
   unfold Rabs in |- *; case (Rcase_abs 2); auto.
   intro; cut (0 < 2).
-  intro; generalize (Rlt_asym 0 2 H7); intro; exfalso; auto.
+  intro ; elim (Rlt_asym 0 2 H7 r).
   fourier.
   apply Rabs_no_R0.
   discrR.
 Qed.
-
 
 (*********)
 Lemma Dconst :
@@ -344,8 +341,7 @@ Proof.
       rewrite (tech_pow_Rmult x1 n0) in H2; rewrite (tech_pow_Rmult x0 n0) in H2;
         rewrite (Rmult_comm (INR n0) (x0 ^ (n0 - 1))) in H2;
           rewrite <- (Rmult_assoc x0 (x0 ^ (n0 - 1)) (INR n0)) in H2;
-            rewrite (tech_pow_Rmult x0 (n0 - 1)) in H2; elim (classic (n0 = 0%nat));
-              intro cond.
+            rewrite (tech_pow_Rmult x0 (n0 - 1)) in H2; elim (Peano_dec.eq_nat_dec n0 0) ; intros cond.
   rewrite cond in H2; rewrite cond; simpl in H2; simpl in |- *;
     cut (1 + x0 * 1 * 0 = 1 * 1);
       [ intro A; rewrite A in H2; assumption | ring ].
@@ -391,7 +387,7 @@ Proof.
   intros; elim H11; clear H11; intros; elim (Rmin_Rgt x x1 (R_dist x2 x0));
     intros a b; clear b; unfold Rgt in a; elim (a H12);
       clear H5 a; intros; unfold D_x, Dgf in H11, H7, H10;
-        clear H12; elim (classic (f x2 = f x0)); intro.
+        clear H12; elim (Req_dec (f x2) (f x0)); intro.
   elim H11; clear H11; intros; elim H11; clear H11; intros;
     generalize (H10 x2 (conj (conj H11 H14) H5)); intro;
       rewrite (Rminus_diag_eq (f x2) (f x0) H12) in H16;
