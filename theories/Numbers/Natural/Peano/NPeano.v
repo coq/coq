@@ -12,21 +12,7 @@
 
 Require Import Peano Peano_dec Compare_dec EqNat NAxioms NProperties NDiv.
 
-(** Some functions not already encountered: min max div mod *)
-
-Fixpoint max n m : nat :=
-  match n, m with
-    | O, _ => m
-    | S n', O => n
-    | S n', S m' => S (max n' m')
-  end.
-
-Fixpoint min n m : nat :=
-  match n, m with
-    | O, _ => 0
-    | S n', O => 0
-    | S n', S m' => S (min n' m')
-  end.
+(** Functions not already defined: div mod *)
 
 Definition divF div x y := if leb y x then S (div (x-y) y) else 0.
 Definition modF mod x y := if leb y x then mod (x-y) y else x.
@@ -112,12 +98,7 @@ Program Instance lt_wd : Proper (eq==>eq==>iff) lt.
 
 Theorem lt_succ_r : forall n m : nat, n < S m <-> n <= m.
 Proof.
-unfold lt.
-split; [|induction 1; auto].
-assert (le_pred : forall n m, n <= m -> pred n <= pred m).
- induction 1 as [|m' H IH]; auto.
- destruct m'. inversion H; subst; auto. simpl; auto.
-exact (le_pred (S n) (S m)).
+unfold lt; split. apply le_S_n. induction 1; auto.
 Qed.
 
 
@@ -131,30 +112,6 @@ Qed.
 Theorem lt_irrefl : forall n : nat, ~ (n < n).
 Proof.
 induction n. intro H; inversion H. rewrite lt_succ_r; auto.
-Qed.
-
-Theorem min_l : forall n m : nat, n <= m -> min n m = n.
-Proof.
-induction n; destruct m; simpl; auto. inversion 1.
-rewrite (lt_succ_r n m). auto.
-Qed.
-
-Theorem min_r : forall n m : nat, m <= n -> min n m = m.
-Proof.
-induction n; destruct m; simpl; auto. inversion 1.
-rewrite (lt_succ_r m n). auto.
-Qed.
-
-Theorem max_l : forall n m : nat, m <= n -> max n m = n.
-Proof.
-induction n; destruct m; simpl; auto. inversion 1.
-rewrite (lt_succ_r m n). auto.
-Qed.
-
-Theorem max_r : forall n m : nat, n <= m -> max n m = m.
-Proof.
-induction n; destruct m; simpl; auto. inversion 1.
-rewrite (lt_succ_r n m). auto.
 Qed.
 
 (** Facts specific to natural numbers, not integers. *)
@@ -204,8 +161,13 @@ Definition sub := minus.
 Definition mul := mult.
 Definition lt := lt.
 Definition le := le.
+
 Definition min := min.
 Definition max := max.
+Definition max_l := max_l.
+Definition max_r := max_r.
+Definition min_l := min_l.
+Definition min_r := min_r.
 
 Definition eqb_eq := beq_nat_true_iff.
 Definition compare_spec := nat_compare_spec.

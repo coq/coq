@@ -84,8 +84,7 @@ Hint Immediate le_Sn_le: arith v62.
 
 Theorem le_S_n : forall n m, S n <= S m -> n <= m.
 Proof.
-  intros n m H; change (pred (S n) <= pred (S m)) in |- *.
-  destruct H; simpl; auto with arith.
+  exact Peano.le_S_n.
 Qed.
 Hint Immediate le_S_n: arith v62.
 
@@ -105,10 +104,8 @@ Hint Resolve le_pred_n: arith v62.
 
 Theorem le_pred : forall n m, n <= m -> pred n <= pred m.
 Proof.
-  destruct n; simpl; auto with arith.
-  destruct m; simpl; auto with arith.
+  exact Peano.le_pred.
 Qed.
-
 
 (** * [le] is a order on [nat] *)
 (** Antisymmetry *)

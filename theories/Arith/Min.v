@@ -15,7 +15,7 @@ Require Export NPeano.
 Open Local Scope nat_scope.
 Implicit Types m n p : nat.
 
-Notation min := min (only parsing).
+Notation min := Peano.min (only parsing).
 
 Definition min_0_l := Nat.min_0_l.
 Definition min_0_r := Nat.min_0_r.

@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Import Le Gt Minus Min Bool.
+Require Import Le Gt Minus Bool.
 
 Set Implicit Arguments.
 

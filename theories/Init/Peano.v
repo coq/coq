@@ -201,6 +201,16 @@ Notation "x <= y < z" := (x <= y /\ y < z) : nat_scope.
 Notation "x < y < z" := (x < y /\ y < z) : nat_scope.
 Notation "x < y <= z" := (x < y /\ y <= z) : nat_scope.
 
+Theorem le_pred : forall n m, n <= m -> pred n <= pred m.
+Proof.
+induction 1; auto. destruct m; simpl; auto.
+Qed.
+
+Theorem le_S_n : forall n m, S n <= S m -> n <= m.
+Proof.
+intros n m. exact (le_pred (S n) (S m)).
+Qed.
+
 (** Case analysis *)
 
 Theorem nat_case :
@@ -219,4 +229,44 @@ Theorem nat_double_ind :
 Proof.
   induction n; auto.
   destruct m as [| n0]; auto.
+Qed.
+
+(** Maximum and minimum : definitions and specifications *)
+
+Fixpoint max n m : nat :=
+  match n, m with
+    | O, _ => m
+    | S n', O => n
+    | S n', S m' => S (max n' m')
+  end.
+
+Fixpoint min n m : nat :=
+  match n, m with
+    | O, _ => 0
+    | S n', O => 0
+    | S n', S m' => S (min n' m')
+  end.
+
+Theorem max_l : forall n m : nat, m <= n -> max n m = n.
+Proof.
+induction n; destruct m; simpl; auto. inversion 1.
+intros. apply f_equal. apply IHn. apply le_S_n. trivial.
+Qed.
+
+Theorem max_r : forall n m : nat, n <= m -> max n m = m.
+Proof.
+induction n; destruct m; simpl; auto. inversion 1.
+intros. apply f_equal. apply IHn. apply le_S_n. trivial.
+Qed.
+
+Theorem min_l : forall n m : nat, n <= m -> min n m = n.
+Proof.
+induction n; destruct m; simpl; auto. inversion 1.
+intros. apply f_equal. apply IHn. apply le_S_n. trivial.
+Qed.
+
+Theorem min_r : forall n m : nat, m <= n -> min n m = m.
+Proof.
+induction n; destruct m; simpl; auto. inversion 1.
+intros. apply f_equal. apply IHn. apply le_S_n. trivial.
 Qed.
