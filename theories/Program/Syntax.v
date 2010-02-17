@@ -35,8 +35,6 @@ Implicit Arguments pair [[A] [B]].
 Implicit Arguments fst [[A] [B]].
 Implicit Arguments snd [[A] [B]].
 
-Require Import Coq.Lists.List.
-
 Implicit Arguments nil [[A]].
 Implicit Arguments cons [[A]].
 

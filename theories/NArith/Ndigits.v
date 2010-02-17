@@ -8,10 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Import Bool.
-Require Import Bvector.
-Require Import BinPos.
-Require Import BinNat.
+Require Import Bool Setoid Bvector BinPos BinNat.
 
 (** Operation over bits of a [N] number. *)
 

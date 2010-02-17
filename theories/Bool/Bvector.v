@@ -10,9 +10,8 @@
 
 (** Bit vectors. Contribution by Jean Duprat (ENS Lyon). *)
 
-Require Export Bool.
-Require Export Sumbool.
-Require Import Arith.
+Require Export Bool Sumbool.
+Require Import Minus.
 
 Open Local Scope nat_scope.
 
