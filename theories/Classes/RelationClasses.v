@@ -149,9 +149,9 @@ Program Instance iff_Transitive : Transitive iff.
 
 (** Leibniz equality. *)
 
-Instance eq_Reflexive : Reflexive (@eq A) := eq_refl.
-Instance eq_Symmetric : Symmetric (@eq A) := eq_sym.
-Instance eq_Transitive : Transitive (@eq A) := eq_trans.
+Instance eq_Reflexive {A} : Reflexive (@eq A) := @eq_refl A.
+Instance eq_Symmetric {A} : Symmetric (@eq A) := @eq_sym A.
+Instance eq_Transitive {A} : Transitive (@eq A) := @eq_trans A.
 
 (** Various combinations of reflexivity, symmetry and transitivity. *)
 
