@@ -18,7 +18,6 @@ Require Export Cos_rel.
 Require Export Cos_plus.
 Require Import ZArith_base.
 Require Import Zcomplements.
-Require Import Classical_Prop.
 Local Open Scope nat_scope.
 Local Open Scope R_scope.
 
@@ -372,7 +371,11 @@ Qed.
 
 Lemma cos_sin_0_var : forall x:R, cos x <> 0 \/ sin x <> 0.
 Proof.
-  intro; apply not_and_or; apply cos_sin_0.
+  intros x.
+  destruct (Req_dec (cos x) 0). 2: now left.
+  right. intros H'.
+  apply (cos_sin_0 x).
+  now split.
 Qed.
 
 (*****************************************************************)
