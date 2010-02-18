@@ -100,12 +100,9 @@ Section sequence.
   Qed.
 
 (*********)
-  Lemma Un_cv_crit : Un_growing -> bound EUn ->  exists l : R, Un_cv l.
+  Lemma Un_cv_crit_lub : Un_growing -> forall l, is_lub EUn l -> Un_cv l.
   Proof.
-    intros Hug Heub.
-    destruct (completeness EUn Heub EUn_noempty) as (l, H).
-    exists l.
-    intros eps Heps.
+    intros Hug l H eps Heps.
 
     cut (exists N, Un N > l - eps).
     intros (N, H3).
@@ -260,6 +257,15 @@ Section sequence.
     exact (proj1 (Hsum' _ _)).
     rewrite Hs.
     now apply Rlt_le.
+  Qed.
+
+(*********)
+  Lemma Un_cv_crit : Un_growing -> bound EUn ->  exists l : R, Un_cv l.
+  Proof.
+    intros Hug Heub.
+    exists (projT1 (completeness EUn Heub EUn_noempty)).
+    destruct (completeness EUn Heub EUn_noempty) as (l, H).
+    now apply Un_cv_crit_lub.
   Qed.
 
 (*********)
