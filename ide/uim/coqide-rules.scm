@@ -5,22 +5,136 @@
 ;;    //   ;      This file is distributed under the terms of the       ;;
 ;;         ;       GNU Lesser General Public License Version 2.1        ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; coqide-rules.scm -- key sequence tables for coqide.scm
+
+;; Copyright (c) 2003-2009 uim Project http://code.google.com/p/uim/
 ;;
-;; $Id$
-;;
-;; Original file : latin-ltx.el --- Quail package for TeX-style input
-;;
-;; Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
+;; All rights reserved.
+
+;; The translation tables in this file were derived from
+;; the emacs-lisp source files latin-pre.el, latin-post.el, latin-alt.el
+;; included in GNU Emacs.  The following is the original copyright notice
+;; therein, with the name GNU Emacs replaced by "this program".
+
+;; Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
+;;   2006, 2007
 ;;   Free Software Foundation, Inc.
-;; Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
+;; Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
+;;   2006, 2007
 ;;   National Institute of Advanced Industrial Science and Technology (AIST)
 ;;   Registration Number H14PRO021
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 2, or (at your option)
+;; any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, write to the
+;; Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+;; Boston, MA 02110-1301, USA.
+
+;;; Commentary:
+
+;; Key translation maps were originally copied from iso-acc.el.
+;; latin-1-prefix: extra special characters added, adapted from the vim
+;;                 digraphs (from J.H.M.Dassen <jdassen@wi.leidenuniv.nl>)
+;;                 by R.F. Smith <rsmith@xs4all.nl>
 ;;
-;; Author: TAKAHASHI Naoto <ntakahas@m17n.org>
-;;         Dave Love <fx@gnu.org>
+;; polish-slash:
+;; Author: Włodek Bzyl <matwb@univ.gda.pl>
+;; Maintainer: Włodek Bzyl <matwb@univ.gda.pl>
+;;
+;; latin-[89]-prefix: Dave Love <fx@gnu.org>
 
+(define coqide-rules-british '(
+((("#")) ("£" "#"))
+))
 
-(define elatin-rules-latin-ltx '(
+(define coqide-rules-english-dvorak '(
+((("-")) ("["))
+((("=")) ("]"))
+((("`")) ("`"))
+((("q")) ("'"))
+((("w")) (","))
+((("e")) ("."))
+((("r")) ("p"))
+((("t")) ("y"))
+((("y")) ("f"))
+((("u")) ("g"))
+((("i")) ("c"))
+((("o")) ("r"))
+((("p")) ("l"))
+((("[")) ("/"))
+((("]")) ("="))
+((("a")) ("a"))
+((("s")) ("o"))
+((("d")) ("e"))
+((("f")) ("u"))
+((("g")) ("i"))
+((("h")) ("d"))
+((("j")) ("h"))
+((("k")) ("t"))
+((("l")) ("n"))
+(((";")) ("s"))
+((("'")) ("-"))
+((("\\")) ("\\"))
+((("z")) (";"))
+((("x")) ("q"))
+((("c")) ("j"))
+((("v")) ("k"))
+((("b")) ("x"))
+((("n")) ("b"))
+((("m")) ("m"))
+(((",")) ("w"))
+(((".")) ("v"))
+((("/")) ("z"))
+((("_")) ("{"))
+((("+")) ("}"))
+((("~")) ("~"))
+((("Q")) ("\""))
+((("W")) ("<"))
+((("E")) (">"))
+((("R")) ("P"))
+((("T")) ("Y"))
+((("Y")) ("F"))
+((("U")) ("G"))
+((("I")) ("C"))
+((("O")) ("R"))
+((("P")) ("L"))
+((("{")) ("?"))
+((("}")) ("+"))
+((("A")) ("A"))
+((("S")) ("O"))
+((("D")) ("E"))
+((("F")) ("U"))
+((("G")) ("I"))
+((("H")) ("D"))
+((("J")) ("H"))
+((("K")) ("T"))
+((("L")) ("N"))
+(((":")) ("S"))
+((("\"")) ("_"))
+((("|")) ("|"))
+((("Z")) (":"))
+((("X")) ("Q"))
+((("C")) ("J"))
+((("V")) ("K"))
+((("B")) ("X"))
+((("N")) ("B"))
+((("M")) ("M"))
+((("<")) ("W"))
+(((">")) ("V"))
+((("?")) ("Z"))
+))
+
+(define coqide-rules-latin-ltx '(
 ((("!" "`")) ("¡"))
 ((("\\" "p" "o" "u" "n" "d" "s")) ("£"))
 ((("\\" "S")) ("§"))
@@ -1102,3 +1216,8 @@
 ((("\\" "t" "e" "x" "t" "c" "i" "r" "c" "l" "e" "d" "P")) ("℗"))
 ((("\\" "t" "e" "x" "t" "r" "e" "f" "e" "r" "e" "n" "c" "e" "m" "a" "r" "k")) ("※"))
 ))
+
+;; Local Variables:
+;; mode: scheme
+;; coding: utf-8
+;; End:

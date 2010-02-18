@@ -263,26 +263,14 @@ A list of symbol codes is available at \url{http://www.unicode.org}.
 
 This method obviously doesn't scale, that's why the preferred alternative is to
 use an Input Method Editor. On POSIX systems (Linux distros, BSD variants and
-MacOS X), you can use \texttt{uim} and patch it to support \LaTeX{}-style
-edition. To do this, you must have \texttt{uim} and the \texttt{ELatin} Input
-Method installed on your system. Then, issue the following commands as the root
-user:
-
-\begin{verbatim}
-# cd $COQIDE_SRC
-# AUTOON=yes ide/uim/patch-uim.sh
-\end{verbatim}
-
-The AUTOON variable set to yes tells our script to patch ELatin behaviour so
-that the IM is active by default. If you do not want ELatin to be active by
-default, don't set this variable to yes. The script will modify a few files in
-uim's installation directory (most of the time it is \texttt{/usr/share/uim}),
-and save the originals with a \texttt{.orig} suffix.
+MacOS X), you can use \texttt{uim} and the CoqIDE IM module to support \LaTeX{}-style
+edition. To do this, you must have \texttt{uim} installed on your system.
+Then, issue a \texttt{make install-im} as root from the Coq source directory
 
 If everything went right, execute \texttt{uim-pref-gtk} as your regular user
-and in the "Global Settings" menu set the default Input Method to "ELatin", and
-in the "ELatin" menu set the layout to "latin-ltx". You can now execute CoqIDE
-with the following commands (assuming you use a Bourne-style shell):
+and in the "Global Settings" menu set the default Input Method to "CoqIDE"
+(don't forget to tick the checkbox "Specify default IM").  You can now execute
+CoqIDE with the following commands (assuming you use a Bourne-style shell):
 
 \begin{verbatim}
 $ export GTK_IM_MODULE=uim
@@ -290,35 +278,7 @@ $ coqide
 \end{verbatim}
 
 If you then type the sequence "\verb=\Gamma=", you will see the sequence being
-replaced by $\Gamma$ as soon as you  type the second "a". The correspondance
-table is stored in the \texttt{elatin-rules.scm} file on uim's installation
-directory.
-
-%  such a binding is system-dependent. We
-% give here a solution for X11:
-% \begin{itemize}
-% \item first, using \verb|xmodmap|, bind some key combination into a
-%   new key name such as Fxx where xx greater that 12: for example (on a
-%   french keyboard)
-%   \begin{quote}\tt
-%     xmodmap -e "keycode  24 = a A F13 F13" \\
-%     xmodmap -e "keycode  26 = e E F14 F14" 
-%   \end{quote}
-%   will rebind "<AltGr>a" to F13 and "<AltGr>e" to F14.
-% \item then add   
-%   \begin{quote}\tt
-%     bind "F13" {"insert-at-cursor" ("$\forall$")}\\
-%     bind "F14" {"insert-at-cursor" ("$\exists$")}
-%   \end{quote}
-%   to your \verb|binding "text"| section in \verb|.coqide-gtk2rc|.
-%        The strange \verb|∀| argument is the UTF-8 encoding for
-%        0x2200, that is the symbol $\forall$. Computing UTF-8 encoding
-%        for a unicode can be done in various ways, including
-%        launching a \verb|lablgtk2| toplevel and use
-%\begin{verbatim}
-%     Glib.Utf8.from_unichar 0x2200;;
-%\end{verbatim}
-%\end{itemize}
+replaced by $\Gamma$ as soon as you  type the second "a".
 
 \subsection[Character encoding for saved files]{Character encoding for saved files\label{sec:coqidecharencoding}}
 
