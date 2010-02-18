@@ -400,17 +400,17 @@ let apply_tag (buffer:GText.buffer) orig off_conv from upto sort =
     let stop = orig#forward_chars (off_conv upto) in
     buffer#apply_tag ~start ~stop tag
   in match sort with
-    | CoqLex.Comment ->
+    | Coq_lex.Comment ->
         conv_and_apply from upto Tags.Script.comment
-    | CoqLex.Keyword ->
+    | Coq_lex.Keyword ->
         conv_and_apply from upto Tags.Script.kwd
-    | CoqLex.Declaration ->
+    | Coq_lex.Declaration ->
         conv_and_apply from upto Tags.Script.decl
-    | CoqLex.ProofDeclaration ->
+    | Coq_lex.ProofDeclaration ->
         conv_and_apply from upto Tags.Script.proof_decl
-    | CoqLex.Qed ->
+    | Coq_lex.Qed ->
         conv_and_apply from upto Tags.Script.qed
-    | CoqLex.String -> ()
+    | Coq_lex.String -> ()
 
 let remove_tags (buffer:GText.buffer) from upto =
   List.iter (buffer#remove_tag ~start:from ~stop:upto)
@@ -425,7 +425,7 @@ let split_slice_lax (buffer:GText.buffer) from upto =
   let rec split_substring str =
     let off_conv = byte_offset_to_char_offset str in
     let slice_len = String.length str in
-    let sentence_len = CoqLex.find_end_offset (apply_tag buffer from off_conv) str in
+    let sentence_len = Coq_lex.find_end_offset (apply_tag buffer from off_conv) str in
 
     let stop = from#forward_chars (pred (off_conv sentence_len)) in
     let start = stop#backward_char in
