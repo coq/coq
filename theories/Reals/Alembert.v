@@ -109,7 +109,7 @@ Proof.
   symmetry  in |- *; apply tech2; assumption.
   exists (sum_f_R0 An 0); unfold EUn in |- *; exists 0%nat; reflexivity.
   intro X; elim X; intros.
-  exists x; apply tech10;
+  exists x; apply Un_cv_crit_lub;
     [ unfold Un_growing in |- *; intro; rewrite tech5;
       pattern (sum_f_R0 An n) at 1 in |- *; rewrite <- Rplus_0_r;
 	apply Rplus_le_compat_l; left; apply H
@@ -524,7 +524,7 @@ Proof.
   symmetry  in |- *; apply tech2; assumption.
   exists (sum_f_R0 An 0); unfold EUn in |- *; exists 0%nat; reflexivity.
   intro X; elim X; intros.
-  exists x; apply tech10;
+  exists x; apply Un_cv_crit_lub;
     [ unfold Un_growing in |- *; intro; rewrite tech5;
       pattern (sum_f_R0 An n) at 1 in |- *; rewrite <- Rplus_0_r;
 	apply Rplus_le_compat_l; left; apply H
