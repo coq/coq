@@ -16,6 +16,9 @@ ocb()
 
 rule() {
   case $1 in
+    win32)  check_config
+            sed -i 's/let arch = .*$/let arch = "win32"/' config/coq_config.ml && \
+	    $OCAMLBUILD toplevel/coqtop.native plugins/pluginsopt.otarget;;
     clean)  ocb -clean && rm -rf bin/* && rm -f myocamlbuild_config.ml;;
     all)    ocb coq.otarget;;
     *)      ocb $1;;

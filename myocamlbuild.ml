@@ -58,6 +58,20 @@ let _ = begin
   Options.ocamllex := A Coq_config.ocamllex;
 end
 
+let w32 = (Coq_config.arch = "win32")
+
+let w32pref = "i586-mingw32msvc"
+let w32ocamlc = w32pref^"-ocamlc"
+let w32ocamlopt = w32pref^"-ocamlopt"
+let w32ocamlmklib = w32pref^"-ocamlmklib"
+let w32lib = "/usr/"^w32pref^"/lib/"
+let w32bin = "/usr/"^w32pref^"/bin/"
+
+let _ = if w32 then begin
+  Options.ocamlopt := A w32ocamlopt;
+  Options.ocamlmklib := A w32ocamlmklib;
+end
+
 let ocaml = A Coq_config.ocaml
 let camlp4o = A Coq_config.camlp4o
 let camlp4incl = S[A"-I"; A Coq_config.camlp4lib]
@@ -174,8 +188,8 @@ let best_ext = if opt then ".opt" else ".byte"
 let best_iext = if ide = "opt" then ".opt" else ".byte"
 
 let coqtopbest = coqtop^best_oext
-let coqdepbest = coqdepboot^best_oext
-let coqmktopbest = coqmktop^best_oext
+let coqdepbest = coqdepboot^(if w32 then ".byte" else best_oext)
+let coqmktopbest = coqmktop^(if w32 then ".byte" else best_oext)
 
 let binaries_deps =
   let rec deps = function
@@ -301,6 +315,17 @@ let extra_rules () = begin
   flag ["compile"; "c"] cflags;
   dep ["link"; "ocaml"; "use_libcoqrun"] [libcoqrun];
 
+  (* we need to use a different ocamlc. For now we copy the rule *)
+  if w32 then
+  rule ".c.o"  ~deps:("%.c"::c_headers) ~prod:"%.o" ~insert:`top
+    (fun env _ ->
+       let c = env "%.c" in
+       let o = env "%.o" in
+       Seq [Cmd (S [P w32ocamlc;cflags;A"-c";Px c]);
+	    mv  (Filename.basename o) o]);
+
+  if w32 then flag [ "ocamlmklib"; "c" ] (S[A"-ldopt";A ("-I "^w32lib)]);
+
 (** VM: Generation of coq_jumbtbl.h and copcodes.ml from coq_instruct.h *)
 
   rule "coqinstrs" ~dep:coqinstrs ~prods:[coqjumps;copcodes]
@@ -347,10 +372,11 @@ let extra_rules () = begin
     let depsb = "coq_config.cmo" :: core_cma in
     let depideo = if is_ide then [ide_cmxa] else [] in
     let depideb = if is_ide then [ide_cma] else [] in
+    let camlbin = if w32 then S [A"-camlbin";A w32bin] else N in
     if opt then rule fo ~prod:fo ~deps:(depsall@depso@depideo) ~insert:`top
-      (cmd [P coqmktopbest;A"-boot";A"-opt";ideflag;incl fo;A"-o";Px fo]);
+      (cmd [P coqmktopbest;camlbin;A"-boot";A"-opt";ideflag;incl fo;A"-o";Px fo]);
     rule fb ~prod:fb ~deps:(depsall@depsb@depideb) ~insert:`top
-      (cmd [P coqmktopbest;A"-boot";A"-top";ideflag;incl fb;A"-o";Px fb]);
+      (cmd [P coqmktopbest;camlbin;A"-boot";A"-top";ideflag;incl fb;A"-o";Px fb]);
   in
   mktop_rule coqtop false;
   mktop_rule coqide true;
