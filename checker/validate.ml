@@ -164,11 +164,12 @@ let val_mp =
   val_rec_sum "module_path" 0
     (fun vmp -> [|[|val_dp|];[|val_uid|];[|vmp;val_id|]|])
 
-let val_kn =
-  let val_kn = val_tuple "kernel_name" [|val_mp;val_dp;val_id|] in
-  val_tuple "kn*kn" [|val_kn;val_kn|]
+let val_kn = val_tuple "kernel_name" [|val_mp;val_dp;val_id|]
 
-let val_ind = val_tuple "inductive"[|val_kn;val_int|]
+let val_con =
+  val_tuple "constant/mutind" [|val_kn;val_kn|]
+
+let val_ind = val_tuple "inductive"[|val_con;val_int|]
 let val_cstr = val_tuple "constructor"[|val_ind;val_int|]
 
 (* univ *)

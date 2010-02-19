@@ -127,7 +127,9 @@ let strengthen_const env mp_from l cb resolver =
 	  
 
 let rec strengthen_mod env mp_from mp_to mb = 
-    assert(mp_from = mb.mod_mp);
+  if Declarations.mp_in_delta mb.mod_mp mb.mod_delta then
+    mb 
+  else
     match mb.mod_type with
      | SEBstruct (sign) -> 
 	 let resolve_out,sign_out = 

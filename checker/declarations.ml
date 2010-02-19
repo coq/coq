@@ -64,13 +64,13 @@ let empty_delta_resolver = Deltamap.empty
 type substitution = (module_path * delta_resolver) Umap.t
 type 'a subst_fun = substitution -> 'a -> 'a
 
-let val_res_dom = no_val
-  (*val_sum "resolver_domain" 0 [|[|val_kn|];[|val_mp|]|]*)
+let val_res_dom =
+  val_sum "delta_key" 0 [|[|val_kn|];[|val_mp|]|]
 
-let val_res = no_val
- (* val_map ~name:"delta_resolver"
+let val_res =
+  val_map ~name:"delta_resolver"
     val_res_dom  
-    (val_sum "resolver_codomain" 0 [|[|val_opt val_constr||];[|val_kn|];[|val_mp|]|])*)
+    (val_sum "delta_hint" 0 [|[|val_opt val_constr|];[|val_kn|];[|val_mp|]|])
 
 let val_subst =
   val_map ~name:"substitution"
