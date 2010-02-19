@@ -41,6 +41,8 @@ let pr_obj o = pr_obj_rec o; Format.print_newline()
 exception ValidObjError of string * Obj.t
 let fail o s = raise (ValidObjError(s,o))
 
+let ep s1 f s2 = f (s1^"/"^s2) 
+
 let apply debug f x =
   let o = Obj.repr x in
   try f o
@@ -49,7 +51,7 @@ let apply debug f x =
       print_endline ("Validation failed: "^msg);
       pr_obj obj
     end;
-    failwith "validation failed"
+    failwith "vo structure validation failed"
 
 (* data not validated *)
 let no_val (o:Obj.t) = ()
@@ -71,8 +73,7 @@ let val_block s o =
 let val_tuple s v o =
   let n = Array.length v in
   val_block ("tuple: "^s) o;
-  if Obj.size o = n then
-    Array.iteri (fun i f -> f (Obj.field o i)) v
+  if Obj.size o = n then Array.iteri (fun i f -> f (Obj.field o i)) v
   else
     fail o ("tuple:" ^s^" size found:"^string_of_int (Obj.size o))
 
@@ -88,7 +89,7 @@ let val_sum s cc vv o =
     let n = Array.length vv in
     let i = Obj.tag o in
     if i < n then val_tuple (s^"(tag "^string_of_int i^")") vv.(i) o
-    else fail o ("bad tag in (sum type) "^s^": max is "^string_of_int i))
+    else fail o ("bad tag in (sum type) "^s^": found "^string_of_int i))
   else if Obj.is_int o then
     let (n:int) = Obj.magic o in
     (if n<0 || n>=cc then
@@ -161,9 +162,11 @@ let val_uid = val_tuple "uniq_ident" [|val_int;val_str;val_dp|]
 
 let val_mp =
   val_rec_sum "module_path" 0
-    (fun vmp -> [|[|val_dp|];[|val_uid|];[|val_uid|];[|vmp;val_id|]|])
+    (fun vmp -> [|[|val_dp|];[|val_uid|];[|vmp;val_id|]|])
 
-let val_kn = val_tuple "kernel_name" [|val_mp;val_dp;val_id|]
+let val_kn =
+  let val_kn = val_tuple "kernel_name" [|val_mp;val_dp;val_id|] in
+  val_tuple "kn*kn" [|val_kn;val_kn|]
 
 let val_ind = val_tuple "inductive"[|val_kn;val_int|]
 let val_cstr = val_tuple "constructor"[|val_ind;val_int|]

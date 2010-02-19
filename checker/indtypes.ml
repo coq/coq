@@ -22,7 +22,7 @@ open Environ
 let rec debug_string_of_mp = function
   | MPfile sl -> string_of_dirpath sl
   | MPbound uid -> "bound("^string_of_mbid uid^")"
-  | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
+  | MPdot (mp,l) -> debug_string_of_mp mp ^ "." ^ string_of_label l
 
 let rec string_of_mp = function
   | MPfile sl -> string_of_dirpath sl
@@ -36,8 +36,9 @@ let prkn kn =
   let (mp,_,l) = repr_kn kn in
   str(string_of_mp mp ^ "." ^ string_of_label l)
 let prcon c =
-  let (mp,_,l) = repr_con c in
-  str(string_of_mp mp ^ "." ^ string_of_label l)
+  let ck = canonical_con c in
+  let uk = user_con c in
+  if ck=uk then prkn uk else (prkn uk ++str"(="++prkn ck++str")")
 
 (* Same as noccur_between but may perform reductions.
    Could be refined more...  *)
