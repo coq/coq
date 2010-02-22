@@ -637,11 +637,16 @@ let w_merge env with_types flags (evd,metas,evars) =
     	else begin
           let rhs' = subst_meta_instances metas rhs in
           match kind_of_term rhs with
-	  | App (f,cl) when is_mimick_head f & occur_meta rhs' ->
+	  | App (f,cl) when occur_meta rhs' ->
 	      if occur_evar evn rhs' then
                 error_occur_check env evd evn rhs';
-	      let evd' = mimick_evar evd flags f (Array.length cl) evn in
-	      w_merge_rec evd' metas evars eqns
+	      if is_mimick_head f then
+		let evd' = mimick_evar evd flags f (Array.length cl) evn in
+		  w_merge_rec evd' metas evars eqns
+	      else
+		let evd', rhs'' = pose_all_metas_as_evars env evd rhs' in
+	  	  w_merge_rec (solve_simple_evar_eqn env evd' ev rhs'')
+		    metas evars' eqns
           | _ ->
 	      w_merge_rec (solve_simple_evar_eqn env evd ev rhs')
 		metas evars' eqns
