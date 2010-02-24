@@ -69,7 +69,36 @@ let pf_get_new_id id g =
 let h_intros l =
   tclMAP h_intro l
 
-let do_observe_tac s tac g =
+let debug_queue = Queue.create ()
+
+
+let rec print_debug_queue e = 
+  let lmsg,goal = Queue.pop debug_queue in 
+  if Queue.is_empty debug_queue 
+  then 
+    msgnl (lmsg ++ (str " raised exception " ++ Cerrors.explain_exn e) ++ str " on goal " ++ goal)
+  else
+    begin
+      print_debug_queue e;
+      msgnl (str " from " ++ lmsg ++ str " on goal " ++ goal);
+    end
+  
+
+let do_observe_tac s tac g = 
+  let goal = Printer.pr_goal (sig_it g) in
+  let lmsg = (str "recdef ") ++ (str s) in 
+  Queue.add (lmsg,goal) debug_queue;
+  try 
+    let v = tac g in 
+    ignore(Queue.pop debug_queue);
+    v
+  with e -> 
+    if not (Queue.is_empty debug_queue)
+    then
+      print_debug_queue e;
+    raise e
+
+(*let do_observe_tac s tac g =
   let goal = begin (Printer.pr_goal (sig_it g)) end in
  try let v = tac g in msgnl (goal ++ fnl () ++ (str "recdef ") ++
     (str s)++(str " ")++(str "finished")); v
@@ -77,7 +106,7 @@ let do_observe_tac s tac g =
    msgnl (str "observation "++str s++str " raised exception " ++
 	    Cerrors.explain_exn e ++ str " on goal " ++ goal );
    raise e;;
-
+*)
 
 let observe_tac s tac g =
   if Tacinterp.get_debug () <> Tactic_debug.DebugOff
@@ -333,6 +362,7 @@ let mkDestructEq :
 
 let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
     cont_function (eqs:constr list) nb_lam (expr:constr) g =
+  observe_tac "mk_intros_and_continue" (
   let finalize () =  	if extra_eqn then
 	  let teq = pf_get_new_id teq_id g in
 	    tclTHENLIST
@@ -352,13 +382,13 @@ let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
 	           cont_function (mkVar teq::eqs) (replace_term teq_lhs teq_rhs expr) g1
 		)
 	      ]
-	      g
+	      
 	else
 	  tclTHENSEQ[
 	    thin thin_intros;
 	    h_intros thin_intros;
 	    cont_function eqs expr
-	  ] g
+	  ] 
   in
   if nb_lam = 0
   then finalize ()
@@ -373,9 +403,9 @@ let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
      	  let new_n = pf_get_new_id n1 g in
 	  tclTHEN (h_intro new_n)
 	    (mk_intros_and_continue thin_intros extra_eqn cont_function eqs
-	       (pred nb_lam) (subst1 (mkVar new_n) b)) g
+	       (pred nb_lam) (subst1 (mkVar new_n) b)) 
       | _ ->
-	  assert false
+	  assert false) g
 (* 	  finalize () *)
 let const_of_ref = function
     ConstRef kn -> kn
@@ -1160,7 +1190,7 @@ let base_leaf_eq func eqs f_id g =
 		    mkApp(delayed_force lt_n_Sn, [|mkVar p|]); f_id|])));
       simpl_iter onConcl;
       tclTRY (unfold_in_concl [((true,[1]), evaluable_of_global_reference func)]);
-      list_rewrite true eqs;
+      observe_tac "list_revrite" (list_rewrite true eqs);
       apply (delayed_force refl_equal)] g;;
 
 let f_S t = mkApp(delayed_force coq_S, [|t|]);;
@@ -1279,7 +1309,7 @@ let rec_leaf_eq termine f ids functional eqs expr fn args =
 let rec prove_eq  (termine:constr) (f:constr)(functional:global_reference)
     (eqs:constr list) (expr:constr) =
 (*   tclTRY *)
-  (match kind_of_term expr with
+  observe_tac "prove_eq"  (match kind_of_term expr with
      Case(ci,t,a,l) ->
      (match find_call_occs 0 f a with
 	_,[] ->
@@ -1295,16 +1325,16 @@ let rec prove_eq  (termine:constr) (f:constr)(functional:global_reference)
 	       0 (Array.to_list l)) g)
 	   | _,_::_ ->
 	      (match find_call_occs 0 f expr with
-		_,[] -> base_leaf_eq functional eqs f
+		_,[] -> observe_tac "base_leaf_eq(1)" (base_leaf_eq functional eqs f)
 	      | fn,args ->
 	        fun g ->
 		  let ids = ids_of_named_context (pf_hyps g) in
-	          rec_leaf_eq termine f ids
+	          observe_tac "rec_leaf_eq" (rec_leaf_eq termine f ids
 		    (constr_of_global functional)
-		    eqs expr fn args g))
+		    eqs expr fn args) g))
        | _ ->
 	   (match find_call_occs 0 f expr with
-		_,[] -> base_leaf_eq functional eqs f
+		_,[] -> observe_tac "base_leaf_eq(2)" ( base_leaf_eq functional eqs f)
 	      | fn,args ->
 		  fun g ->
 		    let ids = ids_of_named_context (pf_hyps g) in
@@ -1355,13 +1385,22 @@ let nf_zeta env =
     env
     Evd.empty
 
+let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta  *)
+  let clos_norm_flags flgs env sigma t =
+    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Reductionops.nf_evar sigma t)) in
+  clos_norm_flags Closure.betaiotazeta  Environ.empty_env Evd.empty
+
+
 let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq
     generate_induction_principle using_lemmas : unit =
   let function_type = interp_constr Evd.empty (Global.env()) type_of_f in
   let env = push_named (function_name,None,function_type) (Global.env()) in
 (*   Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type); *)
-  let equation_lemma_type = interp_gen (OfType None) Evd.empty env ~impls:rec_impls eq in
-(*   Pp.msgnl (Printer.pr_lconstr equation_lemma_type); *)
+  let equation_lemma_type = 
+    nf_betaiotazeta
+      (interp_gen (OfType None) Evd.empty env ~impls:rec_impls eq) 
+  in
+(*  Pp.msgnl (str "lemma type := " ++ Printer.pr_lconstr equation_lemma_type ++ fnl ()); *)
   let res_vars,eq' = decompose_prod equation_lemma_type in
   let env_eq' = Environ.push_rel_context (List.map (fun (x,y) -> (x,None,y)) res_vars) env in
   let eq' = nf_zeta env_eq' eq'  in
