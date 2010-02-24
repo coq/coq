@@ -202,6 +202,9 @@ let binaries_deps =
     | (_,bin,_)::l -> (bin^best_oext) :: deps l
   in deps all_binaries
 
+let binariesopt_deps =
+  List.filter (fun s -> Filename.check_suffix s ".native") binaries_deps
+
 let ln_sf toward f =
   Command.execute ~quiet:true (Cmd (S [A"ln";A"-sf";P toward;P f]))
 
@@ -240,6 +243,7 @@ let extra_rules () = begin
 (** Virtual target for building all binaries *)
 
   rule "binaries" ~stamp:"binaries" ~deps:binaries_deps (fun _ _ -> Nop);
+  rule "binariesopt" ~stamp:"binariesopt" ~deps:binariesopt_deps (fun _ _ -> Nop);
 
 (** We create a special coq_config which mentions _build *)
 
@@ -323,8 +327,6 @@ let extra_rules () = begin
        let o = env "%.o" in
        Seq [Cmd (S [P w32ocamlc;cflags;A"-c";Px c]);
 	    mv  (Filename.basename o) o]);
-
-  if w32 then flag [ "ocamlmklib"; "c" ] (S[A"-ldopt";A ("-I "^w32lib)]);
 
 (** VM: Generation of coq_jumbtbl.h and copcodes.ml from coq_instruct.h *)
 
