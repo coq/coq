@@ -4,6 +4,8 @@
 *.vo
 *.cm*
 *.annot
+*.spit
+*.spot
 *.o
 *.a
 *.log
@@ -97,3 +99,4 @@ dev/doc/naming-conventions.pdf
 _build
 plugins/*/*_mod.ml
 myocamlbuild_config.ml
+.DS_Store
