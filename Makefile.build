@@ -711,7 +711,7 @@ ifeq ($(CHECKEDOUT),git)
 	if test -x "`which git`"; then \
 	  LANG=C; export LANG; \
 	  GIT_BRANCH=$$(git branch -a | sed -ne '/^\* /s/^\* \(.*\)/\1/p'); \
-	  GIT_HOST=$$(hostname --fqdn); \
+	  GIT_HOST=$$(hostname -f); \
 	  GIT_PATH=$$(pwd); \
 	  (echo "$${GIT_HOST}:$${GIT_PATH},$${GIT_BRANCH}") > revision.new; \
 	  (echo "$$(git log -1 --pretty='format:%H')") >> revision.new; \
