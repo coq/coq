@@ -71,6 +71,7 @@
     Hashtbl.mem h
 
   let start = ref true
+  let last_leading_blank = ref 0
 }
 
 let space =
@@ -135,10 +136,14 @@ and comment = parse
   | _ { comment lexbuf }
 
 and sentence stamp = parse
-  | space+ { sentence stamp lexbuf }
+  | space+ {
+      if !start then last_leading_blank := Lexing.lexeme_end lexbuf;
+      sentence stamp lexbuf
+    }
   | "(*" {
       let comm_start = Lexing.lexeme_start lexbuf in
       let comm_end = comment lexbuf in
+      if !start then last_leading_blank := comm_end;
       stamp comm_start comm_end Comment;
       sentence stamp lexbuf
     }
@@ -189,6 +194,7 @@ and sentence stamp = parse
   let find_end_offset stamp slice =
     let lb = Lexing.from_string slice in
     start := true;
+    last_leading_blank := 0;
     sentence stamp lb;
-    Lexing.lexeme_end lb
+    !last_leading_blank,Lexing.lexeme_end lb
 }

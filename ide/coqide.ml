@@ -420,60 +420,56 @@ let remove_tags (buffer:GText.buffer) from upto =
 
 let split_slice_lax (buffer:GText.buffer) from upto =
   remove_tags buffer from upto;
-  buffer#remove_tag ~start:from ~stop:upto Tags.Script.lax_end;
+  buffer#remove_tag ~start:from ~stop:upto Tags.Script.sentence;
   let slice = buffer#get_text ~start:from ~stop:upto () in
+  Pervasives.prerr_endline slice;
   let slice = slice ^ " " in
   let rec split_substring str =
     let off_conv = byte_offset_to_char_offset str in
     let slice_len = String.length str in
-    let sentence_len = Coq_lex.find_end_offset (apply_tag buffer from off_conv) str in
+    let start_off,end_off = Coq_lex.find_end_offset (apply_tag buffer from off_conv) str in
 
-    let stop = from#forward_chars (pred (off_conv sentence_len)) in
-    let start = stop#backward_char in
-    buffer#apply_tag ~start ~stop Tags.Script.lax_end;
+    let start = from#forward_chars (off_conv start_off) in
+    let stop = from#forward_chars (pred (off_conv end_off)) in
+    let _ = stop#backward_char in
+    buffer#apply_tag ~start ~stop Tags.Script.sentence;
 
-    if 1 < slice_len - sentence_len then begin (* remember that we added a trailing space *)
-      ignore (from#nocopy#forward_chars (off_conv sentence_len));
-      split_substring (String.sub str sentence_len (slice_len - sentence_len))
+    if 1 < slice_len - end_off then begin (* remember that we added a trailing space *)
+      ignore (from#nocopy#forward_chars (off_conv end_off));
+      split_substring (String.sub str end_off (slice_len - end_off))
     end
   in
   split_substring slice
 
-let rec grab_safe_sentence_start (iter:GText.iter) soi =
-  let lax_back = iter#backward_char#has_tag Tags.Script.lax_end in
-  let on_space = List.mem iter#char [0x09;0x0A;0x20] in
-  let full_ending = iter#is_start || (lax_back & on_space) in
-  if full_ending then iter
-  else if iter#compare soi <= 0 then raise Not_found
-  else
-    let prev = iter#backward_to_tag_toggle (Some Tags.Script.lax_end) in
-    (if prev#has_tag Tags.Script.lax_end then
-       ignore (prev#nocopy#backward_to_tag_toggle (Some Tags.Script.lax_end)));
-    grab_safe_sentence_start prev soi
-
 let grab_sentence_end_from (start:GText.iter) =
-  let stop = start#forward_to_tag_toggle (Some Tags.Script.lax_end) in
+  let stop = start#forward_to_tag_toggle (Some Tags.Script.sentence) in
   stop#forward_char
 
-let get_sentence_bounds (iter:GText.iter) =
-  let start = iter#backward_to_tag_toggle (Some Tags.Script.lax_end) in
-  (if start#has_tag Tags.Script.lax_end then ignore (
-    start#nocopy#backward_to_tag_toggle (Some Tags.Script.lax_end)));
-  let stop = start#forward_to_tag_toggle (Some Tags.Script.lax_end) in
-  let stop = stop#forward_char in
+let get_curr_sentence (iter:GText.iter) =
+  let start = iter#backward_to_tag_toggle (Some Tags.Script.sentence) in
+  if not (start#has_tag Tags.Script.sentence) then
+    ignore (start#nocopy#backward_to_tag_toggle (Some Tags.Script.sentence));
+  let stop = start#forward_to_tag_toggle (Some Tags.Script.sentence) in
   start,stop
 
-let end_tag_present end_iter =
-  end_iter#backward_char#has_tag Tags.Script.lax_end
+let get_next_sentence ?(check=false) (iter:GText.iter) =
+  let start = iter#forward_to_tag_toggle (Some Tags.Script.sentence) in
+  if iter#has_tag Tags.Script.sentence then
+    ignore (start#nocopy#forward_to_tag_toggle (Some Tags.Script.sentence));
+  if check && (not (start#has_tag Tags.Script.sentence)) then
+    raise Not_found;
+  let stop = start#forward_to_tag_toggle (Some Tags.Script.sentence) in
+  start,stop
 
 let tag_on_insert =
+  (* possible race condition here : editing two buffers with a timedelta smaller
+   * than 1.5s might break the error recovery mechanism. *)
   let skip_last = ref (ref true) in (* ref to the mutable flag created on last call *)
   fun buffer ->
     try 
       let insert = buffer#get_iter_at_mark `INSERT in
-      let start = grab_safe_sentence_start insert
-                    (buffer#get_iter_at_mark (`NAME "start_of_input")) in 
-      let stop = grab_sentence_end_from insert in
+      let start,_ = get_curr_sentence insert in
+      let _,stop = get_next_sentence insert in
       let skip_curr = ref true in (* shall the callback be skipped ? by default yes*)
       (!skip_last) := true; (* skip the previously created callback *)
       skip_last := skip_curr;
@@ -968,14 +964,12 @@ object(self)
         if show_error then sync display_error e;
         None
 
+  val check = true
+
   method find_phrase_starting_at (start:GText.iter) =
     try
-      let start = grab_safe_sentence_start start self#get_start_of_input in
-      let stop = grab_sentence_end_from start in
-      if stop#backward_char#has_tag Tags.Script.lax_end then
-        Some (start,stop)
-      else
-        None
+      let _,stop = get_next_sentence ~check start in
+      Some (start,stop)
     with Not_found -> None
 
   method complete_at_offset (offset:int) =

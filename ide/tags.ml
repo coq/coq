@@ -33,7 +33,7 @@ struct
   let hidden = make_tag table ~name:"hidden" [`INVISIBLE true; `EDITABLE false]
   let folded = make_tag table ~name:"locked" [`EDITABLE false; `BACKGROUND "light grey"]
   let paren = make_tag table ~name:"paren" [`BACKGROUND "purple"]
-  let lax_end = make_tag table ~name:"sentence_end" []
+  let sentence = make_tag table ~name:"sentence" []
 end
 module Proof =
 struct
