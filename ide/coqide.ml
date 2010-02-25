@@ -167,8 +167,6 @@ let on_active_view f =
 let cb = GData.clipboard Gdk.Atom.primary
 
 
-exception Size of int
-
 let last_cb_content = ref ""
 
 
@@ -422,16 +420,15 @@ let split_slice_lax (buffer:GText.buffer) from upto =
   remove_tags buffer from upto;
   buffer#remove_tag ~start:from ~stop:upto Tags.Script.sentence;
   let slice = buffer#get_text ~start:from ~stop:upto () in
-  Pervasives.prerr_endline slice;
   let slice = slice ^ " " in
   let rec split_substring str =
     let off_conv = byte_offset_to_char_offset str in
     let slice_len = String.length str in
     let start_off,end_off = Coq_lex.find_end_offset (apply_tag buffer from off_conv) str in
 
-    let start = from#forward_chars (off_conv start_off) in
+    let _ = from#forward_chars (off_conv start_off) in
     let stop = from#forward_chars (pred (off_conv end_off)) in
-    let _ = stop#backward_char in
+    let start = stop#backward_char in
     buffer#apply_tag ~start ~stop Tags.Script.sentence;
 
     if 1 < slice_len - end_off then begin (* remember that we added a trailing space *)
@@ -441,10 +438,23 @@ let split_slice_lax (buffer:GText.buffer) from upto =
   in
   split_substring slice
 
+let rec grab_safe_sentence_start (iter:GText.iter) soi =
+  let lax_back = iter#backward_char#has_tag Tags.Script.sentence in
+  let on_space = List.mem iter#char [0x09;0x0A;0x20] in
+  let full_ending = iter#is_start || (lax_back & on_space) in
+  if full_ending then iter
+  else if iter#compare soi <= 0 then raise Not_found
+  else
+    let prev = iter#backward_to_tag_toggle (Some Tags.Script.sentence) in
+    (if prev#has_tag Tags.Script.sentence then
+       ignore (prev#nocopy#backward_to_tag_toggle (Some Tags.Script.sentence)));
+    grab_safe_sentence_start prev soi
+
 let grab_sentence_end_from (start:GText.iter) =
   let stop = start#forward_to_tag_toggle (Some Tags.Script.sentence) in
   stop#forward_char
 
+(* XXX - a activer plus tard
 let get_curr_sentence (iter:GText.iter) =
   let start = iter#backward_to_tag_toggle (Some Tags.Script.sentence) in
   if not (start#has_tag Tags.Script.sentence) then
@@ -460,6 +470,7 @@ let get_next_sentence ?(check=false) (iter:GText.iter) =
     raise Not_found;
   let stop = start#forward_to_tag_toggle (Some Tags.Script.sentence) in
   start,stop
+ *)
 
 let tag_on_insert =
   (* possible race condition here : editing two buffers with a timedelta smaller
@@ -468,8 +479,9 @@ let tag_on_insert =
   fun buffer ->
     try 
       let insert = buffer#get_iter_at_mark `INSERT in
-      let start,_ = get_curr_sentence insert in
-      let _,stop = get_next_sentence insert in
+      let start = grab_safe_sentence_start insert
+                    (buffer#get_iter_at_mark (`NAME "start_of_input")) in 
+      let stop = grab_sentence_end_from insert in
       let skip_curr = ref true in (* shall the callback be skipped ? by default yes*)
       (!skip_last) := true; (* skip the previously created callback *)
       skip_last := skip_curr;
@@ -964,12 +976,14 @@ object(self)
         if show_error then sync display_error e;
         None
 
-  val check = true
-
   method find_phrase_starting_at (start:GText.iter) =
     try
-      let _,stop = get_next_sentence ~check start in
-      Some (start,stop)
+      let start = grab_safe_sentence_start start self#get_start_of_input in
+      let stop = grab_sentence_end_from start in
+      if (stop#backward_char#has_tag Tags.Script.sentence) then
+        Some (start,stop)
+      else
+        None
     with Not_found -> None
 
   method complete_at_offset (offset:int) =
@@ -1247,7 +1261,7 @@ object(self)
             apply_undos cmd_stack undo;
             sync update_input ()
         with
-          | Size 0 -> (* flash_info "Nothing to Undo"*)()
+          | Stack.Empty -> (* flash_info "Nothing to Undo"*)()
        );
        pop_info ();
        Mutex.unlock coq_may_stop)
