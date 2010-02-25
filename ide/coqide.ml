@@ -166,8 +166,6 @@ let on_active_view f =
 let cb = GData.clipboard Gdk.Atom.primary
 
 
-exception Size of int
-
 let last_cb_content = ref ""
 
 
@@ -1249,7 +1247,7 @@ object(self)
             apply_undos cmd_stack undo;
             sync update_input ()
         with
-          | Size 0 -> (* flash_info "Nothing to Undo"*)()
+          | Stack.Empty -> (* flash_info "Nothing to Undo"*)()
        );
        pop_info ();
        Mutex.unlock coq_may_stop)
