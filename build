@@ -2,24 +2,24 @@
 
 FLAGS=
 OCAMLBUILD=ocamlbuild
+CFG=config/coq_config.ml
+MYCFG=myocamlbuild_config.ml
 
 check_config() {
- [ -f config/coq_config.ml ] || (echo "please run ./configure first"; exit 1)
- [ -L myocamlbuild_config.ml ] || ln -sf config/coq_config.ml myocamlbuild_config.ml
+ [ -f $CFG ] || (echo "please run ./configure first"; exit 1)
+ [ -L $MYCFG ] || ln -sf $CFG $MYCFG
 }
 
-ocb()
-{
-  check_config
-  $OCAMLBUILD $FLAGS $*
-}
+ocb() { $OCAMLBUILD $FLAGS $*; }
 
 rule() {
+  check_config
   case $1 in
-    win32)  check_config
-            sed -i 's/let arch = .*$/let arch = "win32"/' config/coq_config.ml && \
-	    $OCAMLBUILD coq-win32.otarget;;
-    clean)  ocb -clean && rm -rf bin/* && rm -f myocamlbuild_config.ml;;
+    win32)  cp $CFG $CFG.initial && chmod 644 $CFG && \
+	    echo 'let arch = "win32"' >> $CFG &&
+	    ocb coq-win32.otarget
+	    mv -f $CFG.initial $CFG;;
+    clean)  ocb -clean && rm -rf bin/* && rm -f $MYCFG;;
     all)    ocb coq.otarget;;
     *)      ocb $1;;
   esac;

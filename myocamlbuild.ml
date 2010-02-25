@@ -374,11 +374,12 @@ let extra_rules () = begin
     let depsb = "coq_config.cmo" :: core_cma in
     let depideo = if is_ide then [ide_cmxa] else [] in
     let depideb = if is_ide then [ide_cma] else [] in
-    let camlbin = if w32 then S [A"-camlbin";A w32bin] else N in
+    let w32ideflag = if is_ide then [A"-ccopt";A"\"-link -mwindows\""] else [] in
+    let w32flag = if not w32 then N else S ([A"-camlbin";A w32bin]@w32ideflag) in
     if opt then rule fo ~prod:fo ~deps:(depsall@depso@depideo) ~insert:`top
-      (cmd [P coqmktopbest;camlbin;A"-boot";A"-opt";ideflag;incl fo;A"-o";Px fo]);
+      (cmd [P coqmktopbest;w32flag;A"-boot";A"-opt";ideflag;incl fo;A"-o";Px fo]);
     rule fb ~prod:fb ~deps:(depsall@depsb@depideb) ~insert:`top
-      (cmd [P coqmktopbest;camlbin;A"-boot";A"-top";ideflag;incl fb;A"-o";Px fb]);
+      (cmd [P coqmktopbest;w32flag;A"-boot";A"-top";ideflag;incl fb;A"-o";Px fb]);
   in
   mktop_rule coqtop false;
   mktop_rule coqide true;
