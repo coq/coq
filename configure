@@ -471,6 +471,8 @@ fi
 case $HASNATDYNLINK,`uname -s`,`uname -r`,$CAMLVERSION in
     true,Darwin,9.*,3.11.*)  # ocaml 3.11.0 dynlink on MacOS 10.5 is buggy
         NATDYNLINKFLAG=os5fixme;;
+    true,Darwin,10.*,3.11.*)  # enable the hack/fix on Mac OS 10.6
+        NATDYNLINKFLAG=os5fixme;;
     *)
         NATDYNLINKFLAG=$HASNATDYNLINK;;
 esac
