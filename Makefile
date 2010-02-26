@@ -184,6 +184,8 @@ endif #GOTO_STAGE
 
 clean: objclean cruftclean depclean docclean devdocclean
 
+cleankeepvo: indepclean clean-ide optclean cruftclean depclean docclean devdocclean
+
 objclean: archclean indepclean
 
 cruftclean: ml4clean
@@ -195,7 +197,6 @@ indepclean:
 	rm -f $(COQTOPBYTE) $(COQMKTOPBYTE) $(COQCBYTE) $(CHICKENBYTE)
 	find . -name '*~' -o -name '*.cm[ioa]' | xargs rm -f
 	find . -name '*_mod.ml' | xargs rm -f
-	find plugins test-suite -name '*.vo' -o -name '*.glob' | xargs rm -f
 	rm -f */*.pp[iox] plugins/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
@@ -221,12 +222,14 @@ docclean:
 	rm -f doc/refman/*.eps doc/refman/Reference-Manual.html
 	rm -f doc/coq.tex
 
-archclean: clean-ide cleantheories
+archclean: clean-ide optclean voclean
+	rm -rf _build myocamlbuild_config.ml
+
+optclean:
 	rm -f $(COQTOPEXE) $(COQMKTOP) $(COQC) $(CHICKEN) $(COQDEPBOOT)
 	rm -f $(COQTOPOPT) $(COQMKTOPOPT) $(COQCOPT) $(CHICKENOPT)
-	find . -name '*.cmx' -o -name '*.cmxs' -o -name '*.cmxa' -o -name '*.[soa]' -o -name '*.so' | xargs rm -f
 	rm -f $(TOOLS) $(CSDPCERT)
-	rm -rf _build myocamlbuild_config.ml
+	find . -name '*.cmx' -o -name '*.cmxs' -o -name '*.cmxa' -o -name '*.[soa]' -o -name '*.so' | xargs rm -f
 
 clean-ide:
 	rm -f $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
@@ -249,9 +252,9 @@ cleanconfig:
 
 distclean: clean cleanconfig
 
-cleantheories:
+voclean:
 	rm -f states/*.coq
-	find theories -name '*.vo' -o -name '*.glob' | xargs rm -f
+	find theories plugins test-suite -name '*.vo' -o -name '*.glob' | xargs rm -f
 
 devdocclean:
 	find . -name '*.dep.ps' -o -name '*.dot' -exec rm -f {} \;
