@@ -38,7 +38,7 @@ val interp : bool -> string -> int
 val interp_and_replace : string ->
   int * string
 
-val old_rewind : int -> unit
+val rewind : int -> int
 
 val is_vernac_tactic_command : Vernacexpr.vernac_expr -> bool
 val is_vernac_state_preserving_command : Vernacexpr.vernac_expr -> bool

@@ -1180,7 +1180,8 @@ object(self)
     in
     begin
       try
-        old_rewind (n_step 0);
+        prerr_endline (string_of_int (rewind (n_step 0)));
+        prerr_endline (string_of_int (Stack.length cmd_stack));
         sync (fun _ ->
                 let start =
                   if Stack.is_empty cmd_stack then input_buffer#start_iter
@@ -1243,7 +1244,7 @@ object(self)
             self#show_goals;
             self#clear_message
           in
-          old_rewind 1;
+          ignore ((rewind 1));
           sync update_input ()
         with
           | Stack.Empty -> (* flash_info "Nothing to Undo"*)()
