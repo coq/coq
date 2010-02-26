@@ -249,6 +249,7 @@ let extra_rules () = begin
 
   rule "coq_config.ml" ~prod:"coq_config.ml" ~dep:"config/coq_config.ml"
     (fun _ _ ->
+       if w32 then cp "config/coq_config.ml" "coq_config.ml" else
        let lines = read_file "config/coq_config.ml" in
        let lines = List.map (fun s -> s^"\n") lines in
        let srcbuild = Filename.concat coqsrc !_build in
@@ -374,7 +375,7 @@ let extra_rules () = begin
     let depsb = "coq_config.cmo" :: core_cma in
     let depideo = if is_ide then [ide_cmxa] else [] in
     let depideb = if is_ide then [ide_cma] else [] in
-    let w32ideflag = if is_ide then [A"-ccopt";A"\"-link -mwindows\""] else [] in
+    let w32ideflag = (*if is_ide then [A"-ccopt";A"\"-link -mwindows\""] else*) [] in
     let w32flag = if not w32 then N else S ([A"-camlbin";A w32bin]@w32ideflag) in
     if opt then rule fo ~prod:fo ~deps:(depsall@depso@depideo) ~insert:`top
       (cmd [P coqmktopbest;w32flag;A"-boot";A"-opt";ideflag;incl fo;A"-o";Px fo]);

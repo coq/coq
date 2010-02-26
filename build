@@ -15,12 +15,9 @@ ocb() { $OCAMLBUILD $FLAGS $*; }
 rule() {
   check_config
   case $1 in
-    win32)  cp $CFG $CFG.initial && chmod 644 $CFG && \
-	    echo 'let arch = "win32"' >> $CFG &&
-	    ocb coq-win32.otarget
-	    mv -f $CFG.initial $CFG;;
     clean)  ocb -clean && rm -rf bin/* && rm -f $MYCFG;;
     all)    ocb coq.otarget;;
+    win32)  ocb coq-win32.otarget;;
     *)      ocb $1;;
   esac;
 }
