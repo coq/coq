@@ -304,25 +304,6 @@ type annotated_vernac =
   | ControlVernac of vernac_expr * string (* navigation, debug, process control, print opts *)
   | PureVernac of vernac_expr
  
-
-let comm_stack = Stack.create ()
-
-let parsable_of_string s =
-  Pcoq.Gram.parsable (Stream.of_string s)
-
-let reset_initial () =
-  prerr_endline "Reset initial called"; flush stderr;
-  Vernacentries.abort_refine Lib.reset_initial ()
-
-let reset_to sp =
-      prerr_endline
-        ("Reset called with state "^(Libnames.string_of_path (fst sp)));
-      Lib.reset_to_state sp
-
-type undo_info = identifier list
-
-let undo_info () = Pfedit.get_all_proof_names ()
-
 type reset_status =
   | NoReset
   | ResetAtMark of Libnames.object_name
@@ -332,6 +313,23 @@ type reset_info = {
   proofs : identifier list;
   loc_ast : Util.loc * Vernacexpr.vernac_expr;
 }
+
+let com_stk = Stack.create ()
+
+let parsable_of_string s =
+  Pcoq.Gram.parsable (Stream.of_string s)
+
+let reset_initial () =
+  prerr_endline "Reset initial called"; flush stderr;
+  Stack.clear com_stk;
+  Vernacentries.abort_refine Lib.reset_initial ()
+
+let reset_to sp =
+      prerr_endline
+        ("Reset called with state "^(Libnames.string_of_path (fst sp)));
+      Lib.reset_to_state sp
+
+let undo_info () = Pfedit.get_all_proof_names ()
 
 let compute_reset_info loc_ast = 
   let status,_ = match snd loc_ast with
@@ -352,11 +350,38 @@ let compute_reset_info loc_ast =
     loc_ast = loc_ast; 
   }
 
-let eval_expr cmd_stk loc_ast ide_payload =
+let eval_expr cmd_stk loc_ast =
   let rewind_info = compute_reset_info loc_ast in
   Vernac.eval_expr loc_ast;
-  Stack.push (ide_payload,rewind_info) cmd_stk;
+  Stack.push ((),rewind_info) cmd_stk;
   Stack.length cmd_stk
+
+let interp_with_options verbosely s =
+  prerr_endline "Starting interp...";
+  prerr_endline s;
+  let pa = parsable_of_string s in
+  try
+    let (loc,vernac) = Vernac.parse_sentence (pa,None) in
+  (* Temporary hack to make coqide.byte work (WTF???) - now with less screen
+  * pollution *)
+    Pervasives.prerr_string " \r"; Pervasives.flush stderr;
+    if is_vernac_debug_command vernac then
+      user_error_loc loc (str "Debug mode not available within CoqIDE");
+    if is_vernac_navigation_command vernac then
+      user_error_loc loc (str "Use CoqIDE navigation instead");
+    if is_vernac_known_option_command vernac then
+      user_error_loc loc (str "Use CoqIDE display menu instead");
+    if is_vernac_query_command vernac then
+      flash_info
+        "Warning: query commands should not be inserted in scripts";
+    if not (is_vernac_goal_printing_command vernac) then
+      (* Verbose if in small step forward and not a tactic *)
+      Flags.make_silent (not verbosely);
+    let stack_depth = eval_expr com_stk (loc,vernac) in
+    Flags.make_silent true;
+    prerr_endline ("...Done with interp of : "^s);
+    stack_depth
+  with Vernac.End_of_input -> assert false
 
 let rewind cmd_stk count =
   let undo_ops = Hashtbl.create count in
@@ -383,13 +408,13 @@ let rewind cmd_stk count =
       end
     else
       begin
-        let ide,coq = Stack.pop cmd_stk in
+        let _,coq = Stack.pop cmd_stk in
         if is_vernac_tactic_command (snd coq.loc_ast) then Hashtbl.add undo_ops () ();
         do_rewind (pred count) (if coq.status <> NoReset then coq.status else reset_op) coq.proofs;
         if count < 0 then begin
           (* we had to backtrack further to find a suitable anchor point,
            * replaying *)
-          ignore (eval_expr cmd_stk coq.loc_ast ide);
+          ignore (eval_expr cmd_stk coq.loc_ast);
         end
       end
   in
@@ -427,33 +452,6 @@ let forbid_vernac blacklist (loc,vernac) =
   List.map (fun (test,err) -> if test vernac then err loc
  *)
 
-let interp_with_options verbosely s =
-  prerr_endline "Starting interp...";
-  prerr_endline s;
-  let pa = parsable_of_string s in
-  try
-    let (loc,vernac) = Vernac.parse_sentence (pa,None) in
-  (* Temporary hack to make coqide.byte work (WTF???) - now with less screen
-  * pollution *)
-    Pervasives.prerr_string " \r"; Pervasives.flush stderr;
-    if is_vernac_debug_command vernac then
-      user_error_loc loc (str "Debug mode not available within CoqIDE");
-    if is_vernac_navigation_command vernac then
-      user_error_loc loc (str "Use CoqIDE navigation instead");
-    if is_vernac_known_option_command vernac then
-      user_error_loc loc (str "Use CoqIDE display menu instead");
-    if is_vernac_query_command vernac then
-      flash_info
-        "Warning: query commands should not be inserted in scripts";
-    if not (is_vernac_goal_printing_command vernac) then
-      (* Verbose if in small step forward and not a tactic *)
-      Flags.make_silent (not verbosely);
-    let reset_info = compute_reset_info (loc,vernac) in
-    Vernac.eval_expr (loc,vernac);
-    Flags.make_silent true;
-    prerr_endline ("...Done with interp of : "^s);
-    reset_info(* ,Stack.length comm_stack *)
-  with Vernac.End_of_input -> assert false
 
 let interp verbosely phrase =
   interp_with_options verbosely phrase
@@ -494,16 +492,6 @@ let print_toplevel_error exc =
 	(if is_pervasive_exn exc then None else loc)
 
 let process_exn e = let s,loc= print_toplevel_error e in (msgnl s,loc)
-
-let interp_last last =
-  prerr_string "*";
-  try Vernac.eval_expr last
-  with e ->
-    let s,_ = process_exn e in prerr_endline ("Replay during undo failed because: "^s);
-    raise e
-
-let push_phrase cmd_stk reset_info ide_payload =
-  Stack.push (ide_payload,reset_info) cmd_stk
 
 type backtrack =
   | BacktrackToNextActiveMark
@@ -563,7 +551,8 @@ let apply_reset = function
   | NoBacktrack -> ()
   | BacktrackToNextActiveMark -> assert false
 
-let old_rewind count cmd_stk =
+let old_rewind count =
+  let cmd_stk = com_stk in
   let rec do_rewind count n_undo n_abort reset_op n_closed prev_proofs =
     if (count <= 0) && (reset_op <> BacktrackToNextActiveMark) && (n_closed = 0) then
       begin
@@ -583,7 +572,7 @@ let old_rewind count cmd_stk =
           let (n_undo,n_abort,reset_op,n_closed,prev_proofs) =
             pop_command cmd_stk (n_undo,n_abort,reset_op,n_closed,prev_proofs) in
           do_rewind (pred count) n_undo n_abort reset_op n_closed prev_proofs;
-          if count <= 0 then ignore (eval_expr cmd_stk coq.loc_ast ide);
+          if count <= 0 then ignore (eval_expr cmd_stk coq.loc_ast);
         end
   in
   do_rewind count 0 0 NoBacktrack 0 (undo_info ());

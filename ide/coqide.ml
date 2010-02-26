@@ -34,7 +34,7 @@ object('self)
   val message_view : GText.view
   val proof_buffer : GText.buffer
   val proof_view : GText.view
-  val cmd_stack : (ide_info * Coq.reset_info) Stack.t
+  val cmd_stack : ide_info Stack.t
   val mutable is_active : bool
   val mutable read_only : bool
   val mutable filename : string option
@@ -85,7 +85,7 @@ object('self)
   method send_to_coq :
     bool -> bool -> string ->
     bool -> bool -> bool ->
-    (bool*reset_info) option
+    (bool*int) option
   method set_message : string -> unit
   method show_pm_goal : unit
   method show_goals : unit
@@ -1050,10 +1050,7 @@ object(self)
            end;
          let ide_payload = { start = `MARK (b#create_mark start);
                              stop = `MARK (b#create_mark stop); } in
-         push_phrase
-           cmd_stack
-           reset_info
-           ide_payload;
+         Stack.push ide_payload cmd_stack;
          if display_goals then self#show_goals;
          remove_tag (start,stop) in
     begin
@@ -1081,8 +1078,8 @@ object(self)
                input_buffer#place_cursor stop;
              let ide_payload = { start = `MARK (input_buffer#create_mark start);
                                  stop = `MARK (input_buffer#create_mark stop); } in
-               push_phrase cmd_stack reset_info ide_payload;
-               self#show_goals;
+             Stack.push ide_payload cmd_stack;
+             self#show_goals;
       (*Auto insert save on success...
        try (match Coq.get_current_goals () with
        | [] ->
@@ -1155,7 +1152,7 @@ object(self)
   method reset_initial =
     sync (fun _ ->
             Stack.iter
-              (function (inf,_) ->
+              (function inf ->
                  let start = input_buffer#get_iter_at_mark inf.start in
                  let stop = input_buffer#get_iter_at_mark inf.stop in
                    input_buffer#move_mark ~where:start (`NAME "start_of_input");
@@ -1173,22 +1170,21 @@ object(self)
   method backtrack_to_no_lock i =
     prerr_endline "Backtracking_to iter starts now.";
     (* pop Coq commands until we reach iterator [i] *)
-    let itstk = Stack.copy cmd_stack in
     let rec n_step n =
-      if Stack.is_empty itstk then n else
-        let ide_ri,_ = Stack.pop itstk in
+      if Stack.is_empty cmd_stack then n else
+        let ide_ri = Stack.pop cmd_stack in
         if i#compare (input_buffer#get_iter_at_mark ide_ri.stop) < 0 then
           n_step (succ n)
         else
-          n
+          (Stack.push ide_ri cmd_stack; n)
     in
     begin
       try
-        old_rewind (n_step 0) cmd_stack;
+        old_rewind (n_step 0);
         sync (fun _ ->
                 let start =
                   if Stack.is_empty cmd_stack then input_buffer#start_iter
-                  else input_buffer#get_iter_at_mark (fst (Stack.top cmd_stack)).stop in
+                  else input_buffer#get_iter_at_mark (Stack.top cmd_stack).stop in
                 prerr_endline "Removing (long) processed tag...";
                 input_buffer#remove_tag
                   Tags.Script.processed
@@ -1226,7 +1222,7 @@ object(self)
     if Mutex.try_lock coq_may_stop then
       (push_info "Undoing last step...";
        (try
-          let (ide_ri,_) = Stack.top cmd_stack in
+          let ide_ri = Stack.pop cmd_stack in
           let start = input_buffer#get_iter_at_mark ide_ri.start in
           let update_input () =
             prerr_endline "Removing processed tag...";
@@ -1247,7 +1243,7 @@ object(self)
             self#show_goals;
             self#clear_message
           in
-          old_rewind 1 cmd_stack;
+          old_rewind 1;
           sync update_input ()
         with
           | Stack.Empty -> (* flash_info "Nothing to Undo"*)()
