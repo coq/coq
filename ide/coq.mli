@@ -33,7 +33,7 @@ end
 
 type reset_status
 
-type undo_info = identifier list
+type undo_info
 
 val undo_info : unit -> undo_info
 

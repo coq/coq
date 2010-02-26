@@ -305,39 +305,8 @@ type annotated_vernac =
   | PureVernac of vernac_expr
  
 
-type undo_info = identifier list
-
-let undo_info () = Pfedit.get_all_proof_names ()
-
-type reset_mark = Libnames.object_name (* Relying on states if any *)
-
-type reset_status =
-  | NoReset
-  | ResetAtSegmentStart of Names.identifier
-  | ResetAtRegisteredObject of reset_mark
-
-type reset_info = {
-  status : reset_status;
-  proofs : identifier list;
-  loc_ast : Util.loc * Vernacexpr.vernac_expr;
-}
-
-let compute_reset_info loc_ast = 
-  let status = match snd loc_ast with
-    | com when is_vernac_proof_ending_command com -> NoReset
-    | VernacEndSegment _ -> NoReset
-    | com when is_vernac_tactic_command com -> NoReset
-    | _ ->
-        (match Lib.has_top_frozen_state () with
-           | Some sp -> 
-               prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
-               ResetAtRegisteredObject sp
-           | None -> NoReset)
-  in
-  { status = status;
-    proofs = Pfedit.get_all_proof_names ();
-    loc_ast = loc_ast; 
-  }
+let parsable_of_string s =
+  Pcoq.Gram.parsable (Stream.of_string s)
 
 let reset_initial () =
   prerr_endline "Reset initial called"; flush stderr;
@@ -348,8 +317,138 @@ let reset_to sp =
         ("Reset called with state "^(Libnames.string_of_path (fst sp)));
       Lib.reset_to_state sp
 
-let parsable_of_string s =
-  Pcoq.Gram.parsable (Stream.of_string s)
+type undo_info = identifier list
+
+let undo_info () = Pfedit.get_all_proof_names ()
+
+type reset_status =
+  | NoReset
+  | ResetAtMark of Libnames.object_name
+
+type reset_info = {
+  status : reset_status;
+  proofs : identifier list;
+  loc_ast : Util.loc * Vernacexpr.vernac_expr;
+}
+
+let compute_reset_info loc_ast = 
+  let status = match snd loc_ast with
+    | com when is_vernac_tactic_command com -> NoReset
+    | com when is_vernac_state_preserving_command com -> NoReset 
+    | com when is_vernac_proof_ending_command com -> NoReset
+    | VernacEndSegment _ -> NoReset
+    | _ ->
+        (match Lib.has_top_frozen_state () with
+           | Some sp -> 
+               prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
+               ResetAtMark sp
+           | None -> NoReset)
+  in
+  { status = status;
+    proofs = Pfedit.get_all_proof_names ();
+    loc_ast = loc_ast; 
+  }
+
+let push_phrase cmd_stk reset_info ide_payload =
+  Stack.push (ide_payload,reset_info) cmd_stk
+
+type backtrack =
+  | BacktrackToNextActiveMark
+  | BacktrackToMark of Libnames.object_name
+  | NoBacktrack
+
+type undo_cmds = int * int * backtrack * int * identifier list
+
+let init_undo_cmds u =
+  (0,0,NoBacktrack,0,undo_info u)
+
+let add_undo = function (n,a,b,p,l as x) -> if p = 0 then (n+1,a,b,p,l) else x
+let add_abort = function
+  | (n,a,b,0,l) -> (0,a+1,b,0,l)
+  | (n,a,b,p,l) -> (n,a,b,p-1,l)
+let add_qed q (n,a,b,p,l as x) =
+    if q = 0 then x else (n,a,BacktrackToNextActiveMark,p+q,l)
+let add_backtrack (n,a,b,p,l) b' = (n,a,b',p,l)
+
+let update_proofs (n,a,b,p,cur_lems) prev_lems =
+  let ncommon = List.length (Util.list_intersect cur_lems prev_lems) in
+  let openproofs = List.length cur_lems - ncommon in
+  let closedproofs = List.length prev_lems - ncommon in
+  let undos = (n,a,b,p,prev_lems) in
+  add_qed closedproofs (Util.iterate add_abort openproofs undos)
+
+let eval_expr cmd_stk loc_ast ide_payload =
+  let rewind_info = compute_reset_info loc_ast in
+  Vernac.eval_expr loc_ast;
+  Stack.push (ide_payload,rewind_info) cmd_stk
+
+let rewind cmd_stk count =
+  let undo_ops = Queue.create () in
+  let current_proofs = undo_info () in
+  let rec do_rewind count reset_op prev_proofs =
+    if (count <= 0) && (reset_op <> NoReset) &&
+       (Util.list_subtract prev_proofs current_proofs = []) then
+      (* We backtracked at least what we wanted to, we have no proof to reopen,
+       * and we don't need to find a reset mark *)
+      begin(*
+        apply_aborts (Util.list_subtract current_proofs prev_proofs);
+        apply_undos undo_ops;
+        apply_reset reset_op*)()
+      end
+    else
+      begin
+        let ide,coq = Stack.pop cmd_stk in
+        if is_vernac_tactic_command (snd coq.loc_ast) then Queue.push () undo_ops;
+        do_rewind (pred count) (if coq.status <> NoReset then coq.status else reset_op) coq.proofs;
+        if count < 0 then begin
+          (* we had to backtrack further to find a suitable anchor point,
+           * replaying *)
+          eval_expr cmd_stk coq.loc_ast ide;
+        end
+      end
+  in
+  do_rewind count NoReset current_proofs
+
+let pop_command cmd_stk undos =
+  let (_,t) = Stack.top cmd_stk in
+  let (state_info,undo_info) = t.status,t.proofs in
+  let undos = update_proofs undos undo_info in
+  ignore (Stack.pop cmd_stk);
+  match state_info with
+    | _ when is_vernac_tactic_command (snd t.loc_ast) ->
+        (* A tactic, active if not * below a Qed *)
+        add_undo undos
+    | ResetAtMark mark ->
+        add_backtrack undos (BacktrackToMark mark)
+    | _ when is_vernac_state_preserving_command (snd t.loc_ast) ->
+        undos
+    | _ ->
+        add_backtrack undos BacktrackToNextActiveMark
+
+(* appelle Pfedit.delete_current_proof a fois
+*  * utiliser Vernacentries.vernac_abort a la place ? *)
+let apply_aborts a =
+  if a <> 0 then prerr_endline ("Applying "^string_of_int a^" aborts");
+  try Util.repeat a Pfedit.delete_current_proof ()
+  with e -> prerr_endline "WARNING : found a closed environment"; raise e
+
+exception UndoStackExhausted
+
+(* appelle Pfedit.undo n fois
+ * utiliser vernac_undo ? *)
+let apply_tactic_undo n =
+  if n<>0 then
+    (prerr_endline ("Applying "^string_of_int n^" undos");
+     try Pfedit.undo n with _ -> raise UndoStackExhausted)
+
+
+let apply_reset = function
+  | BacktrackToMark mark -> reset_to mark
+  | NoBacktrack -> ()
+  | BacktrackToNextActiveMark -> assert false
+
+
+
 
 module PrintOpt =
 struct
@@ -404,7 +503,6 @@ let interp_with_options verbosely s =
       (* Verbose if in small step forward and not a tactic *)
       Flags.make_silent (not verbosely);
     let reset_info = compute_reset_info (loc,vernac) in
-    PrintOpt.enforce_hack ();
     Vernac.eval_expr (loc,vernac);
     Flags.make_silent true;
     prerr_endline ("...Done with interp of : "^s);
@@ -457,72 +555,6 @@ let interp_last last =
   with e ->
     let s,_ = process_exn e in prerr_endline ("Replay during undo failed because: "^s);
     raise e
-
-let push_phrase cmd_stk reset_info ide_payload =
-  Stack.push (ide_payload,reset_info) cmd_stk
-
-type backtrack =
-  | BacktrackToNextActiveMark
-  | BacktrackToMark of reset_mark
-  | NoBacktrack
-
-type undo_cmds = int * int * backtrack * int * identifier list
-
-let init_undo_cmds u =
-  (0,0,NoBacktrack,0,undo_info u)
-
-let add_undo = function (n,a,b,p,l as x) -> if p = 0 then (n+1,a,b,p,l) else x
-let add_abort = function
-  | (n,a,b,0,l) -> (0,a+1,b,0,l)
-  | (n,a,b,p,l) -> (n,a,b,p-1,l)
-let add_qed q (n,a,b,p,l as x) =
-    if q = 0 then x else (n,a,BacktrackToNextActiveMark,p+q,l)
-let add_backtrack (n,a,b,p,l) b' = (n,a,b',p,l)
-
-let update_proofs (n,a,b,p,cur_lems) prev_lems =
-  let ncommon = List.length (Util.list_intersect cur_lems prev_lems) in
-  let openproofs = List.length cur_lems - ncommon in
-  let closedproofs = List.length prev_lems - ncommon in
-  let undos = (n,a,b,p,prev_lems) in
-  add_qed closedproofs (Util.iterate add_abort openproofs undos)
-
-let pop_command cmd_stk undos =
-  let (_,t) = Stack.top cmd_stk in
-  let (state_info,undo_info) = t.status,t.proofs in
-  let undos = update_proofs undos undo_info in
-  ignore (Stack.pop cmd_stk);
-  match state_info with
-    | _ when is_vernac_tactic_command (snd t.loc_ast) ->
-        (* A tactic, active if not * below a Qed *)
-        add_undo undos
-    | ResetAtRegisteredObject mark ->
-        add_backtrack undos (BacktrackToMark mark)
-    | _ when is_vernac_state_preserving_command (snd t.loc_ast) ->
-        undos
-    | _ ->
-        add_backtrack undos BacktrackToNextActiveMark
-
-(* appelle Pfedit.delete_current_proof a fois
-*  * utiliser Vernacentries.vernac_abort a la place ? *)
-let apply_aborts a =
-  if a <> 0 then prerr_endline ("Applying "^string_of_int a^" aborts");
-  try Util.repeat a Pfedit.delete_current_proof ()
-  with e -> prerr_endline "WARNING : found a closed environment"; raise e
-
-exception UndoStackExhausted
-
-(* appelle Pfedit.undo n fois
- * utiliser vernac_undo ? *)
-let apply_tactic_undo n =
-  if n<>0 then
-    (prerr_endline ("Applying "^string_of_int n^" undos");
-     try Pfedit.undo n with _ -> raise UndoStackExhausted)
-
-
-let apply_reset = function
-  | BacktrackToMark mark -> reset_to mark
-  | NoBacktrack -> ()
-  | BacktrackToNextActiveMark -> assert false
 
 let rec apply_undos cmd_stk (n,a,b,p,l as undos) =
   if p = 0 & b <> BacktrackToNextActiveMark then
@@ -583,6 +615,7 @@ let prepare_goal sigma g =
   x
 
 let get_current_pm_goal () =
+  PrintOpt.enforce_hack ();
   let pfts = get_pftreestate ()  in
   let gls = try nth_goal_of_pftreestate 1 pfts with _ -> raise Not_found in
   let sigma= sig_sig gls in
@@ -590,10 +623,11 @@ let get_current_pm_goal () =
     prepare_goal sigma gl
 
 let get_current_goals () =
-    let pfts = get_pftreestate () in
-    let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in
-    let sigma = Tacmach.evc_of_pftreestate pfts in
-    List.map (prepare_goal sigma) gls
+  PrintOpt.enforce_hack ();
+  let pfts = get_pftreestate () in
+  let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in
+  let sigma = Tacmach.evc_of_pftreestate pfts in
+  List.map (prepare_goal sigma) gls
 
 let print_no_goal () =
   (* Fall back on standard coq goal printer for completed goal printing *)
