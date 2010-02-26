@@ -54,10 +54,7 @@ val interp_and_replace : string ->
 
 val push_phrase : ('a * reset_info) Stack.t -> reset_info -> 'a -> unit
 
-type undo_cmds
-val init_undo_cmds : unit -> undo_cmds
-val pop_command : ('a * reset_info) Stack.t -> undo_cmds -> undo_cmds
-val apply_undos : ('a * reset_info) Stack.t -> undo_cmds -> unit
+val old_rewind : int -> ('a * reset_info) Stack.t -> unit
 
 val is_vernac_tactic_command : Vernacexpr.vernac_expr -> bool
 val is_vernac_state_preserving_command : Vernacexpr.vernac_expr -> bool

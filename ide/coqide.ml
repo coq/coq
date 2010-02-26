@@ -104,7 +104,6 @@ type viewable_script =
      proof_view : GText.view;
      message_view : GText.view;
      analyzed_view : analyzed_views;
-     command_stack : (ide_info * Coq.reset_info) Stack.t;
     }
 
 
@@ -1174,50 +1173,41 @@ object(self)
   method backtrack_to_no_lock i =
     prerr_endline "Backtracking_to iter starts now.";
     (* pop Coq commands until we reach iterator [i] *)
-    let  rec pop_commands done_smthg undos =
-      if Stack.is_empty cmd_stack then
-        done_smthg, undos
-      else
-        let (ide_ri,_) = Stack.top cmd_stack in
-          if i#compare (input_buffer#get_iter_at_mark ide_ri.stop) < 0 then
-            begin
-              prerr_endline "Popped top command";
-              pop_commands true (pop_command cmd_stack undos)
-            end
-          else
-            done_smthg, undos
+    let itstk = Stack.copy cmd_stack in
+    let rec n_step n =
+      if Stack.is_empty itstk then n else
+        let ide_ri,_ = Stack.pop itstk in
+        if i#compare (input_buffer#get_iter_at_mark ide_ri.stop) < 0 then
+          n_step (succ n)
+        else
+          n
     in
-    let undos = init_undo_cmds () in
-    let done_smthg, undos = pop_commands false undos in
-      prerr_endline "Popped commands";
-      if done_smthg then
-        begin
-          try
-            apply_undos cmd_stack undos;
-            sync (fun _ ->
-                    let start =
-                      if Stack.is_empty cmd_stack then input_buffer#start_iter
-                      else input_buffer#get_iter_at_mark (fst (Stack.top cmd_stack)).stop in
-                      prerr_endline "Removing (long) processed tag...";
-                      input_buffer#remove_tag
-                        Tags.Script.processed
-                        ~start
-                        ~stop:self#get_start_of_input;
-                      input_buffer#remove_tag
-                        Tags.Script.unjustified
-                        ~start
-                        ~stop:self#get_start_of_input;
-                      prerr_endline "Moving (long) start_of_input...";
-                      input_buffer#move_mark ~where:start (`NAME "start_of_input");
-                      self#show_goals;
-                      clear_stdout ();
-                      self#clear_message)
-              ();
-          with _ ->
-            push_info "WARNING: undo failed badly -> Coq might be in an inconsistent state.
-                                                                     Please restart and report NOW.";
-        end
-      else prerr_endline "backtrack_to : discarded (...)"
+    begin
+      try
+        old_rewind (n_step 0) cmd_stack;
+        sync (fun _ ->
+                let start =
+                  if Stack.is_empty cmd_stack then input_buffer#start_iter
+                  else input_buffer#get_iter_at_mark (fst (Stack.top cmd_stack)).stop in
+                prerr_endline "Removing (long) processed tag...";
+                input_buffer#remove_tag
+                  Tags.Script.processed
+                  ~start
+                  ~stop:self#get_start_of_input;
+                input_buffer#remove_tag
+                  Tags.Script.unjustified
+                  ~start
+                  ~stop:self#get_start_of_input;
+                prerr_endline "Moving (long) start_of_input...";
+                input_buffer#move_mark ~where:start (`NAME "start_of_input");
+                self#show_goals;
+                clear_stdout ();
+                self#clear_message)
+          ();
+      with _ ->
+        push_info "WARNING: undo failed badly -> Coq might be in an inconsistent state.
+                                                                 Please restart and report NOW.";
+    end
 
   method backtrack_to i =
     if Mutex.try_lock coq_may_stop then
@@ -1257,9 +1247,8 @@ object(self)
             self#show_goals;
             self#clear_message
           in
-          let undo = pop_command cmd_stack (init_undo_cmds ()) in
-            apply_undos cmd_stack undo;
-            sync update_input ()
+          old_rewind 1 cmd_stack;
+          sync update_input ()
         with
           | Stack.Empty -> (* flash_info "Nothing to Undo"*)()
        );
@@ -1591,7 +1580,6 @@ let create_session () =
       proof_view=proof;
       message_view=message;
       analyzed_view=legacy_av;
-      command_stack=stack;
       encoding=""
     }
 
