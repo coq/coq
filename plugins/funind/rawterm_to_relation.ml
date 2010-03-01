@@ -500,6 +500,18 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 	in
 	begin
 	  match f with
+	    | RLambda _  -> 
+		let rec aux t l = 
+		  match l with 
+		    | [] -> t
+		    | u::l -> 
+			match t with 
+			  | RLambda(loc,na,_,nat,b) -> 
+			      RLetIn(dummy_loc,na,u,aux b l)
+			  | _ -> 
+			      RApp(dummy_loc,t,l)
+		in
+		build_entry_lc env funnames avoid (aux f args)
 	    | RVar(_,id) when Idset.mem id funnames ->
 		(* if we have [f t1 ... tn] with [f]$\in$[fnames]
 		   then we create a fresh variable [res],
@@ -566,7 +578,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 		  funnames
 		  avoid
 		  (mkRLetIn(new_n,t,mkRApp(new_b,args)))
-	    | RCases _ | RLambda _ | RIf _ | RLetTuple _ ->
+	    | RCases _  | RIf _ | RLetTuple _ ->
 		(* we have [(match e1, ...., en with ..... end) t1 tn]
 		   we first compute the result from the case and
 		   then combine each of them with each of args one
