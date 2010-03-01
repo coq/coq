@@ -199,7 +199,7 @@ let split_lib_at_opening sp =
     | _ ->
 	false) in
   assert (List.tl s = []);
-  (a,b)
+  (a,List.hd s,b)
 
 (* Adding operations. *)
 
@@ -297,9 +297,9 @@ let end_module () =
     with Not_found ->
       error "No opened modules."
   in
-  let (after,before) = split_lib_at_opening oname in
+  let (after,mark,before) = split_lib_at_opening oname in
   lib_stk := before;
-  add_entry oname (ClosedModule (List.rev after));
+  add_entry oname (ClosedModule (List.rev mark::after));
   let prefix = !path_prefix in
   (* LEM: This module business seems more complicated than sections;
           shouldn't a backtrack into a closed module also do something
@@ -332,9 +332,9 @@ let end_modtype () =
     with Not_found ->
       error "no opened module types"
   in
-  let (after,before) = split_lib_at_opening oname in
+  let (after,mark,before) = split_lib_at_opening oname in
   lib_stk := before;
-  add_entry oname (ClosedModtype (List.rev after));
+  add_entry oname (ClosedModtype (List.rev mark::after));
   let dir = !path_prefix in
   recalc_path_prefix ();
   (* add_frozen_state must be called after processing the module type.
@@ -394,7 +394,7 @@ let end_compilation dir =
 	    ("The current open module has name "^ (Names.string_of_dirpath m) ^
 	       " and not " ^ (Names.string_of_dirpath m));
   in
-  let (after,before) = split_lib_at_opening oname in
+  let (after,mark,before) = split_lib_at_opening oname in
     comp_name := None;
     !path_prefix,after
 
@@ -571,11 +571,11 @@ let close_section () =
     with Not_found ->
       error "No opened section."
   in
-  let (secdecls,before) = split_lib_at_opening oname in
+  let (secdecls,mark,before) = split_lib_at_opening oname in
   lib_stk := before;
   let full_olddir = fst !path_prefix in
   pop_path_prefix ();
-  add_entry oname (ClosedSection (List.rev secdecls));
+  add_entry oname (ClosedSection (List.rev mark::secdecls));
   if !Flags.xml_export then !xml_close_section (basename (fst oname));
   let newdecls = List.map discharge_item secdecls in
   Summary.unfreeze_summaries fs;
