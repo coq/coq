@@ -24,7 +24,8 @@
 
 let environment = Unix.environment ()
 
-let binary = ref ("coqtop." ^ Coq_config.best)
+let best = if Coq_config.arch = "win32" then "" else ("."^Coq_config.best)
+let binary = ref ("coqtop" ^ best)
 let image = ref ""
 
 (* coqc options *)
