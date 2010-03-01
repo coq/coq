@@ -58,6 +58,20 @@ let _ = begin
   Options.ocamllex := A Coq_config.ocamllex;
 end
 
+let w32 = (Coq_config.arch = "win32")
+
+let w32pref = "i586-mingw32msvc"
+let w32ocamlc = w32pref^"-ocamlc"
+let w32ocamlopt = w32pref^"-ocamlopt"
+let w32ocamlmklib = w32pref^"-ocamlmklib"
+let w32lib = "/usr/"^w32pref^"/lib/"
+let w32bin = "/usr/"^w32pref^"/bin/"
+
+let _ = if w32 then begin
+  Options.ocamlopt := A w32ocamlopt;
+  Options.ocamlmklib := A w32ocamlmklib;
+end
+
 let ocaml = A Coq_config.ocaml
 let camlp4o = A Coq_config.camlp4o
 let camlp4incl = S[A"-I"; A Coq_config.camlp4lib]
@@ -174,8 +188,8 @@ let best_ext = if opt then ".opt" else ".byte"
 let best_iext = if ide = "opt" then ".opt" else ".byte"
 
 let coqtopbest = coqtop^best_oext
-let coqdepbest = coqdepboot^best_oext
-let coqmktopbest = coqmktop^best_oext
+let coqdepbest = coqdepboot^(if w32 then ".byte" else best_oext)
+let coqmktopbest = coqmktop^(if w32 then ".byte" else best_oext)
 
 let binaries_deps =
   let rec deps = function
@@ -187,6 +201,9 @@ let binaries_deps =
 	(bin^".native") :: (bin^".byte") :: deps l
     | (_,bin,_)::l -> (bin^best_oext) :: deps l
   in deps all_binaries
+
+let binariesopt_deps =
+  List.filter (fun s -> Filename.check_suffix s ".native") binaries_deps
 
 let ln_sf toward f =
   Command.execute ~quiet:true (Cmd (S [A"ln";A"-sf";P toward;P f]))
@@ -226,11 +243,13 @@ let extra_rules () = begin
 (** Virtual target for building all binaries *)
 
   rule "binaries" ~stamp:"binaries" ~deps:binaries_deps (fun _ _ -> Nop);
+  rule "binariesopt" ~stamp:"binariesopt" ~deps:binariesopt_deps (fun _ _ -> Nop);
 
 (** We create a special coq_config which mentions _build *)
 
   rule "coq_config.ml" ~prod:"coq_config.ml" ~dep:"config/coq_config.ml"
     (fun _ _ ->
+       if w32 then cp "config/coq_config.ml" "coq_config.ml" else
        let lines = read_file "config/coq_config.ml" in
        let lines = List.map (fun s -> s^"\n") lines in
        let srcbuild = Filename.concat coqsrc !_build in
@@ -301,6 +320,15 @@ let extra_rules () = begin
   flag ["compile"; "c"] cflags;
   dep ["link"; "ocaml"; "use_libcoqrun"] [libcoqrun];
 
+  (* we need to use a different ocamlc. For now we copy the rule *)
+  if w32 then
+  rule ".c.o"  ~deps:("%.c"::c_headers) ~prod:"%.o" ~insert:`top
+    (fun env _ ->
+       let c = env "%.c" in
+       let o = env "%.o" in
+       Seq [Cmd (S [P w32ocamlc;cflags;A"-c";Px c]);
+	    mv  (Filename.basename o) o]);
+
 (** VM: Generation of coq_jumbtbl.h and copcodes.ml from coq_instruct.h *)
 
   rule "coqinstrs" ~dep:coqinstrs ~prods:[coqjumps;copcodes]
@@ -347,10 +375,12 @@ let extra_rules () = begin
     let depsb = "coq_config.cmo" :: core_cma in
     let depideo = if is_ide then [ide_cmxa] else [] in
     let depideb = if is_ide then [ide_cma] else [] in
+    let w32ideflag = (*if is_ide then [A"-ccopt";A"\"-link -mwindows\""] else*) [] in
+    let w32flag = if not w32 then N else S ([A"-camlbin";A w32bin]@w32ideflag) in
     if opt then rule fo ~prod:fo ~deps:(depsall@depso@depideo) ~insert:`top
-      (cmd [P coqmktopbest;A"-boot";A"-opt";ideflag;incl fo;A"-o";Px fo]);
+      (cmd [P coqmktopbest;w32flag;A"-boot";A"-opt";ideflag;incl fo;A"-o";Px fo]);
     rule fb ~prod:fb ~deps:(depsall@depsb@depideb) ~insert:`top
-      (cmd [P coqmktopbest;A"-boot";A"-top";ideflag;incl fb;A"-o";Px fb]);
+      (cmd [P coqmktopbest;w32flag;A"-boot";A"-top";ideflag;incl fb;A"-o";Px fb]);
   in
   mktop_rule coqtop false;
   mktop_rule coqide true;
