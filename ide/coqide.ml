@@ -1160,26 +1160,28 @@ object(self)
   method backtrack_to_no_lock i =
     prerr_endline "Backtracking_to iter starts now.";
     (* pop Coq commands until we reach iterator [i] *)
-    let  rec pop_commands done_smthg undos =
+    let rec pop_cmds popped =
       if Stack.is_empty cmd_stack then
-        done_smthg, undos
+        popped
       else
-        let (ide_ri,_) = Stack.top cmd_stack in
-          if i#compare (input_buffer#get_iter_at_mark ide_ri.stop) < 0 then
-            begin
-              prerr_endline "Popped top command";
-              pop_commands true (pop_command cmd_stack undos)
-            end
-          else
-            done_smthg, undos
+        let (ide,coq) = Stack.pop cmd_stack in
+        if i#compare (input_buffer#get_iter_at_mark ide.stop) < 0 then
+          begin
+            prerr_endline "popped command";
+            pop_cmds (coq::popped)
+          end
+        else
+          begin
+            Stack.push (ide,coq) cmd_stack;
+            popped
+          end
     in
-    let undos = init_undo_cmds () in
-    let done_smthg, undos = pop_commands false undos in
+    let seq = List.rev (pop_cmds []) in
       prerr_endline "Popped commands";
-      if done_smthg then
+      if 0 < List.length seq then
         begin
           try
-            apply_undos cmd_stack undos;
+            rewind seq cmd_stack;
             sync (fun _ ->
                     let start =
                       if Stack.is_empty cmd_stack then input_buffer#start_iter
@@ -1243,9 +1245,9 @@ object(self)
             self#show_goals;
             self#clear_message
           in
-          let undo = pop_command cmd_stack (init_undo_cmds ()) in
-            apply_undos cmd_stack undo;
-            sync update_input ()
+          let _,coq = Stack.pop cmd_stack in
+          rewind [coq] cmd_stack;
+          sync update_input ()
         with
           | Stack.Empty -> (* flash_info "Nothing to Undo"*)()
        );

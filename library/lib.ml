@@ -299,7 +299,7 @@ let end_module () =
   in
   let (after,mark,before) = split_lib_at_opening oname in
   lib_stk := before;
-  add_entry oname (ClosedModule (List.rev mark::after));
+  add_entry oname (ClosedModule (List.rev (mark::after)));
   let prefix = !path_prefix in
   (* LEM: This module business seems more complicated than sections;
           shouldn't a backtrack into a closed module also do something
@@ -334,7 +334,7 @@ let end_modtype () =
   in
   let (after,mark,before) = split_lib_at_opening oname in
   lib_stk := before;
-  add_entry oname (ClosedModtype (List.rev mark::after));
+  add_entry oname (ClosedModtype (List.rev (mark::after)));
   let dir = !path_prefix in
   recalc_path_prefix ();
   (* add_frozen_state must be called after processing the module type.
@@ -575,7 +575,7 @@ let close_section () =
   lib_stk := before;
   let full_olddir = fst !path_prefix in
   pop_path_prefix ();
-  add_entry oname (ClosedSection (List.rev mark::secdecls));
+  add_entry oname (ClosedSection (List.rev (mark::secdecls)));
   if !Flags.xml_export then !xml_close_section (basename (fst oname));
   let newdecls = List.map discharge_item secdecls in
   Summary.unfreeze_summaries fs;

@@ -77,3 +77,26 @@ Qed.
 
 Definition q := O.
 Definition r := O.
+
+(* Bug 2082 : Follow the numbers *)
+
+Variable A : Prop.
+Variable B : Prop.
+
+Axiom OR : A \/ B.
+
+Lemma MyLemma2 : True.
+proof.
+per cases of (A \/ B) by OR.
+suppose A.
+    then (1 = 1).
+    then H1 : thesis. (* 4 *)
+    thus thesis by H1. (* 2 *)
+suppose B. (* 1 *) (* 3 *)
+    then (1 = 1).
+    then H2 : thesis.
+    thus thesis by H2.
+end cases.
+end proof.
+Qed. (* 5 if you made it here, there is no regression *)
+
