@@ -295,7 +295,7 @@ let rec explain_exn = function
       hov 0 (anomaly_string () ++ str "Uncaught exception " ++
 	       str (Printexc.to_string reraise)++report())
 
-let parse_args() =
+let parse_args argv =
   let rec parse = function
     | [] -> ()
    | "-impredicative-set" :: rem ->
@@ -340,7 +340,7 @@ let parse_args() =
     | s :: rem ->  add_compile s; parse rem
   in
   try
-    parse (List.tl (Array.to_list Sys.argv))
+    parse (List.tl (Array.to_list argv))
   with
     | UserError(_,s) as e -> begin
 	try
@@ -354,12 +354,12 @@ let parse_args() =
 (* To prevent from doing the initialization twice *)
 let initialized = ref false
 
-let init() =
+let init_with_argv argv =
   if not !initialized then begin
     initialized := true;
     Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
     try
-      parse_args();
+      parse_args argv;
       if_verbose print_header ();
       init_load_path ();
       engage ();
@@ -369,6 +369,8 @@ let init() =
       msgnl (explain_exn e);
       exit 1
   end
+
+let init() = init_with_argv Sys.argv
 
 let run () =
   try

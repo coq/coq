@@ -64,13 +64,13 @@ let empty_delta_resolver = Deltamap.empty
 type substitution = (module_path * delta_resolver) Umap.t
 type 'a subst_fun = substitution -> 'a -> 'a
 
-let val_res_dom = no_val
-  (*val_sum "resolver_domain" 0 [|[|val_kn|];[|val_mp|]|]*)
+let val_res_dom =
+  val_sum "delta_key" 0 [|[|val_kn|];[|val_mp|]|]
 
-let val_res = no_val
- (* val_map ~name:"delta_resolver"
+let val_res =
+  val_map ~name:"delta_resolver"
     val_res_dom  
-    (val_sum "resolver_codomain" 0 [|[|val_opt val_constr||];[|val_kn|];[|val_mp|]|])*)
+    (val_sum "delta_hint" 0 [|[|val_opt val_constr|];[|val_kn|];[|val_mp|]|])
 
 let val_subst =
   val_map ~name:"substitution"
@@ -482,19 +482,16 @@ let subst_mps sub =
 
 type 'a lazy_subst =
   | LSval of 'a
-  | LSlazy of substitution * 'a
+  | LSlazy of substitution list * 'a
 
 type 'a substituted = 'a lazy_subst ref
 
-let from_val a = ref (LSval a)
+let val_substituted val_a =
+  val_ref
+    (val_sum "constr_substituted" 0
+      [|[|val_a|];[|val_list val_subst;val_a|]|])
 
-let force fsubst r =
-  match !r with
-  | LSval a -> a
-  | LSlazy(s,a) ->
-      let a' = fsubst s a in
-      r := LSval a';
-      a'
+let from_val a = ref (LSval a)
 
 let mp_in_key mp key = 
   let rec mp_rec mp1 = 
@@ -606,21 +603,27 @@ let join (subst1 : substitution) (subst2 : substitution) =
   let subst = Umap.mapi (apply_subst subst2) subst1 in
     (Umap.fold Umap.add subst2 subst)   
 
+
+let force fsubst r =
+  match !r with
+  | LSval a -> a
+  | LSlazy(s,a) ->
+      let subst = List.fold_left join empty_subst (List.rev s) in
+      let a' = fsubst subst a in
+      r := LSval a';
+      a'
+
 let subst_substituted s r =
   match !r with
-    | LSval a -> ref (LSlazy(s,a))
+    | LSval a -> ref (LSlazy([s],a))
     | LSlazy(s',a) ->
-	let s'' = join s' s in
-	  ref (LSlazy(s'',a))
+	  ref (LSlazy(s::s',a))
 
 let force_constr = force subst_mps
 
 type constr_substituted = constr substituted
 
-let val_cstr_subst =
-  val_ref
-    (val_sum "constr_substituted" 0
-      [|[|val_constr|];[|val_subst;val_constr|]|])
+let val_cstr_subst = val_substituted val_constr
 
 let subst_constr_subst = subst_substituted
 
@@ -635,8 +638,13 @@ type constant_body = {
     const_inline : bool}
 
 let val_cb = val_tuple "constant_body"
-  [|val_nctxt;val_opt val_cstr_subst; val_cst_type;no_val;val_cstrs;
-    val_bool; val_bool |]
+  [|val_nctxt;
+    val_opt val_cstr_subst;
+    val_cst_type;
+    no_val;
+    val_cstrs;
+    val_bool;
+    val_bool |]
 
 
 let subst_rel_declaration sub (id,copt,t as x) =
@@ -791,7 +799,7 @@ type mutual_inductive_body = {
   }
 let val_ind_pack = val_tuple "mutual_inductive_body"
   [|val_array val_one_ind;val_bool;val_bool;val_int;val_nctxt;
-    val_int; val_int; val_rctxt;val_cstrs;val_opt val_kn|]
+    val_int; val_int; val_rctxt;val_cstrs|]
 
 
 let subst_arity sub = function
@@ -821,7 +829,7 @@ let subst_mind_packet sub mbp =
   { mind_consnames = mbp.mind_consnames;
     mind_consnrealdecls = mbp.mind_consnrealdecls;
     mind_typename = mbp.mind_typename;
-    mind_nf_lc = array_smartmap (subst_mps sub) mbp.mind_nf_lc;
+   mind_nf_lc = array_smartmap (subst_mps sub) mbp.mind_nf_lc;
     mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;
     mind_arity = subst_arity sub mbp.mind_arity;
     mind_user_lc = array_smartmap (subst_mps sub) mbp.mind_user_lc;
@@ -896,16 +904,16 @@ and val_sb o = val_list (val_tuple"label*sfb"[|val_id;val_sfb|]) o
 and val_seb o = val_sum "struct_expr_body" 0
   [|[|val_mp|];                      (* SEBident *)
     [|val_uid;val_modtype;val_seb|]; (* SEBfunctor *)
-    [|val_sb|];              (* SEBstruct *)
     [|val_seb;val_seb;val_cstrs|];   (* SEBapply *)
+    [|val_sb|];              (* SEBstruct *)
     [|val_seb;val_with|]             (* SEBwith *)
   |] o
 and val_with o = val_sum "with_declaration_body" 0
   [|[|val_list val_id;val_mp|];
     [|val_list val_id;val_cb|]|] o
 and val_module o = val_tuple "module_body"
-  [|val_mp;val_opt val_seb;val_opt val_seb;
-    val_seb;val_cstrs;val_res;no_val|] o
+  [|val_mp;val_opt val_seb;val_seb;
+    val_opt val_seb;val_cstrs;val_res;no_val|] o
 and val_modtype o = val_tuple "module_type_body"
   [|val_mp;val_seb;val_opt val_seb;val_cstrs;val_res|] o
 

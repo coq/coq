@@ -127,10 +127,9 @@ let strengthen_const env mp_from l cb resolver =
 	  
 
 let rec strengthen_mod env mp_from mp_to mb = 
-  assert(mp_from = mb.mod_mp);
-(*  if mp_in_delta mb.mod_mp mb.mod_delta then
+  if Declarations.mp_in_delta mb.mod_mp mb.mod_delta then
     mb 
-  else*)
+  else
     match mb.mod_type with
      | SEBstruct (sign) -> 
 	 let resolve_out,sign_out = 
@@ -180,10 +179,6 @@ and strengthen_sig env mp_from sign mp_to resolver =
 	  resolve_out,item::rest'
     
 let strengthen env mtb mp = 
-(*  if mp_in_delta mtb.typ_mp mtb.typ_delta then
-    (* in this case mtb has already been strengthened*)
-    mtb 
-  else*)
     match mtb.typ_expr with
       | SEBstruct (sign) -> 
 	  let resolve_out,sign_out =

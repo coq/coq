@@ -8,19 +8,25 @@
    (mainly run_l and norec).
  *)
 
-#cd ".."
+#cd "..";;
 #directory "lib";;
 #directory "kernel";;
 #directory "checker";;
+#directory "+camlp4";;
+#directory "+camlp5";;
 
 #load "unix.cma";;
 #load "str.cma";;
 #load "gramlib.cma";;
+(*#load "toplevellib.cma";;
+
+#directory "/usr/lib/ocaml/compiler-libs/utils";;
+let _ = Clflags.recursive_types:=true;;
+*)
 #load "check.cma";;
 
 open Typeops;;
 open Check;;
-
 
 open Pp;;
 open Util;;
@@ -70,10 +76,11 @@ let prenv e =
   pp pe;;
 *)
 
+(*
 let prsub s =
   let string_of_mp mp =
     let s = string_of_mp mp in
-    (match mp with MPself _ -> "#self."|MPbound _ -> "#bound."|_->"")^s in 
+    (match mp with MPbound _ -> "#bound."|_->"")^s in 
   pp (hv 0 
   (fold_subst
     (fun msid mp strm ->
@@ -86,6 +93,7 @@ let prsub s =
       str"P " ++ str (string_of_mp mp1) ++ str " |-> " ++
       str (string_of_mp mp) ++ fnl() ++ strm) s (mt())))
 ;;
+*)
 
 #install_printer prid;;
 #install_printer prcon;;
@@ -100,10 +108,10 @@ let prsub s =
 #install_printer prcstrs;;
 (*#install_printer prus;;*)
 (*#install_printer prenv;;*)
-(*#install_printer prenvu;;*)
-#install_printer prsub;;
+(*#install_printer prenvu;;
+#install_printer prsub;;*)
 
-Checker.init();;
+Checker.init_with_argv [|""|];;
 Flags.make_silent false;;
 Flags.debug := true;;
 Sys.catch_break true;;
@@ -114,7 +122,7 @@ let module_of_file f =
 ;;
 let mod_access m fld =
   match m.mod_expr with
-      Some(SEBstruct(msid,l)) -> List.assoc fld l
+      Some(SEBstruct l) -> List.assoc fld l
     | _ -> failwith "bad structure type"
 ;;
 
@@ -153,7 +161,7 @@ let read_mod s f =
     engagement option);;
 
 let deref_mod md s =
-  let (Some (SEBstruct(msid,l))) = md.mod_expr in
+  let (Some (SEBstruct l)) = md.mod_expr in
   List.assoc (label_of_id(id_of_string s)) l
 ;;
 

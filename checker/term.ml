@@ -116,7 +116,7 @@ let val_constr = val_rec_sum "constr" 0 (fun val_constr -> [|
   [|val_name;val_constr;val_constr|]; (* Lambda *)
   [|val_name;val_constr;val_constr;val_constr|]; (* LetIn *)
   [|val_constr;val_array val_constr|]; (* App *)
-  [|val_kn|]; (* Const *)
+  [|val_con|]; (* Const *)
   [|val_ind|]; (* Ind *)
   [|val_cstr|]; (* Construct *)
   [|val_ci;val_constr;val_constr;val_array val_constr|]; (* Case *)
