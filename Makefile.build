@@ -306,18 +306,6 @@ $(COQIDEBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) ide/ide.cma
 $(COQIDE):
 	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)
 
-ide/%.cmo: ide/%.ml | ide/%.ml.d 
-	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
-
-ide/%.cmi: ide/%.mli | ide/%.mli.d
-	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
-
-ide/%.cmx: ide/%.ml | ide/%.ml.d
-	$(SHOW)'OCAMLOPT  $<'	
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
-
 # install targets
 
 FULLIDELIB=$(FULLCOQLIB)/ide
@@ -738,33 +726,31 @@ endif
 # Default rules
 ###########################################################################
 
-checker/%.cmo: checker/%.ml | checker/%.ml.d
-	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) -c $(CHKBYTEFLAGS) $<
+## Three flavor of flags: checker/* ide/* and normal files
 
-checker/%.cmx: checker/%.ml | checker/%.ml.d
-	$(SHOW)'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) -c $(CHKOPTFLAGS) $<
+COND_BYTEFLAGS= \
+ $(if $(filter checker/%,$<), $(CHKBYTEFLAGS), \
+   $(if $(filter ide/%,$<),$(COQIDEFLAGS),) $(BYTEFLAGS))
 
-checker/%.cmi: checker/%.mli | checker/%.mli.d
-	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) -c $(CHKBYTEFLAGS) $<
+COND_OPTFLAGS= \
+ $(if $(filter checker/%,$<), $(CHKOPTFLAGS), \
+   $(if $(filter ide/%,$<),$(COQIDEFLAGS),) $(OPTFLAGS))
 
 %.o: %.c
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)cd $(dir $<) && $(OCAMLC) -ccopt "$(CFLAGS)" -c $(notdir $<)
 
-%.cmo: %.ml | %.ml.d
-	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -c $<
-
 %.cmi: %.mli | %.mli.d
 	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -c $<
+	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -c $<
+
+%.cmo: %.ml | %.ml.d
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -c $<
 
 %.cmx: %.ml | %.ml.d
 	$(SHOW)'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -c $<
+	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) -c $<
 
 %.cmxs: %.cmxa
 	$(SHOW)'OCAMLOPT -shared -o $@'
