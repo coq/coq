@@ -180,7 +180,7 @@ endif #GOTO_STAGE
 # Cleaning
 ###########################################################################
 
-.PHONY: clean objclean cruftclean indepclean archclean ml4clean clean-ide ml4depclean depclean distclean cleanconfig cleantheories docclean devdocclean
+.PHONY: clean cleankeepvo objclean cruftclean indepclean doclean archclean optclean clean-ide ml4clean ml4depclean depclean cleanconfig distclean voclean devdocclean
 
 clean: objclean cruftclean depclean docclean devdocclean
 
@@ -256,7 +256,7 @@ voclean:
 	find theories plugins test-suite -name '*.vo' -o -name '*.glob' | xargs rm -f
 
 devdocclean:
-	find . -name '*.dep.ps' -o -name '*.dot' -exec rm -f {} \;
+	find . -name '*.dep.ps' -o -name '*.dot' | xargs rm -f
 
 ###########################################################################
 # Emacs tags
