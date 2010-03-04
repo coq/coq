@@ -125,6 +125,13 @@ else
   D_DEPEND_AFTER_SRC:=|
 endif
 
+## When a rule redirects stdout of a command to the target file : cmd > $@
+## then the target file will be created even if cmd has failed.
+## Hence relaunching make will go further, as make thinks the target has been
+## done ok. To avoid this, we use the following macro:
+
+TOTARGET = > "$@" || (RV=$$?; rm -f "$@"; exit $${RV})
+
 ###########################################################################
 # Compilation option for .c files 
 ###########################################################################
@@ -141,16 +148,11 @@ $(LIBCOQRUN): kernel/byterun/coq_jumptbl.h $(BYTERUN)
 #coq_jumptbl.h is required only if you have GCC 2.0 or later
 kernel/byterun/coq_jumptbl.h : kernel/byterun/coq_instruct.h
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&coq_lbl_\1/gp' \
-               -e '/^}/q' kernel/byterun/coq_instruct.h > \
-                          kernel/byterun/coq_jumptbl.h \
-	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
+               -e '/^}/q' $< $(TOTARGET)
 
 kernel/copcodes.ml: kernel/byterun/coq_instruct.h
-	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' \
-	kernel/byterun/coq_instruct.h | \
-	awk -f kernel/make-opcodes > kernel/copcodes.ml \
-	|| ( RV=$$?; rm -f "$@"; exit $${RV} )
-
+	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' $< | \
+	awk -f kernel/make-opcodes $(TOTARGET)
 
 ###########################################################################
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
@@ -442,7 +444,7 @@ theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_STRICT) | 
 	$(HIDE)$(BOOTCOQTOP) -nois -compile theories/Init/$*
 
 theories/Numbers/Natural/BigN/NMake_gen.v: theories/Numbers/Natural/BigN/NMake_gen.ml
-	$(OCAML) $< > $@
+	$(OCAML) $< $(TOTARGET)
 
 ###########################################################################
 # tools
@@ -674,14 +676,12 @@ toplevel/mltop.cmx: toplevel/mltop.optml | toplevel/mltop.ml4.ml.d toplevel/mlto
 toplevel/mltop.byteml: toplevel/mltop.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'	
 	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4USE) $<` \
-	  -DByte -DHasDynlink -impl $< > $@ \
-	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
+	  -DByte -DHasDynlink -impl $< $(TOTARGET)
 
 toplevel/mltop.optml: toplevel/mltop.ml4 config/Makefile # no camlp4deps here 
 	$(SHOW)'CAMLP4O   $<'	
 	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4USE) $<` \
-	  $(NATDYNLINKDEF) -impl $< > $@ \
-	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
+	  $(NATDYNLINKDEF) -impl $< $(TOTARGET)
 
 # pretty printing of the revision number when compiling a checked out
 # source tree
@@ -810,8 +810,7 @@ plugins/%_mod.ml: plugins/%.mllib
 
 %.ml4-preprocessed: %.ml4 | %.ml4.d
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $@ \
-	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< $(TOTARGET)
 
 %.vo %.glob: %.v states/initial.coq $(INITPLUGINSBEST) $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
 	$(SHOW)'COQC      $<'
@@ -836,8 +835,7 @@ else
 endif
 %.ml4.d: $(D_DEPEND_BEFORE_SRC) %.ml4
 	$(SHOW)'CAMLP4DEPS $<'
-	$(HIDE)( printf "%s" '$*.cmo $*.cmx $*.ml4.ml.d $*.ml4-preprocessed: $(SEP)' && $(CAMLP4DEPS) "$<" ) > "$@" \
-	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
+	$(HIDE)( printf "%s" '$*.cmo $*.cmx $*.ml4.ml.d $*.ml4-preprocessed: $(SEP)' && $(CAMLP4DEPS) "$<" ) $(TOTARGET)
 
 %.ml4.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml4 $(D_DEPEND_AFTER_SRC) $(GENFILES) $(ML4FILESML) %.ml4.d
 #Critical section:
@@ -845,51 +843,46 @@ endif
 	$(SHOW)'OCAMLDEP4 $<'
 	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< -o $*.ml \
 	  || ( RV=$$?; rm -f "$*.ml"; exit $${RV} )
-	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $*.ml | sed '' > "$@" || ( RV=$$?; rm -f "$@"; exit $${RV} )
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $*.ml | sed '' $(TOTARGET)
 	$(HIDE)echo "let keep_ocamldep_happy Do_not_compile_me = assert false" > $*.ml
 #End critical section
 
 checker/%.ml.d: $(D_DEPEND_BEFORE_SRC) checker/%.ml $(D_DEPEND_AFTER_SRC)
 	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP) -slash $(LOCALCHKLIBS) "$<" | sed '' > "$@"
+	$(HIDE)$(OCAMLDEP) -slash $(LOCALCHKLIBS) "$<" | sed '' $(TOTARGET)
 
 checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC)
 	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP) -slash $(LOCALCHKLIBS) "$<" | sed '' > "$@"
+	$(HIDE)$(OCAMLDEP) -slash $(LOCALCHKLIBS) "$<" | sed '' $(TOTARGET)
 
 %.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml $(D_DEPEND_AFTER_SRC) $(GENFILES) $(ML4FILESML)
 	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" | sed '' > "$@"
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" | sed '' $(TOTARGET)
 
 %.mli.d: $(D_DEPEND_BEFORE_SRC) %.mli $(D_DEPEND_AFTER_SRC) $(GENFILES) $(ML4FILESML)
 	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" | sed '' > "$@"
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" | sed '' $(TOTARGET)
 
 checker/%.mllib.d: $(D_DEPEND_BEFORE_SRC) checker/%.mllib $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
 	$(SHOW)'COQDEP  $<'
-	$(HIDE)$(COQDEPBOOT) -slash -boot -I checker -c "$<" > "$@" \
-	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
+	$(HIDE)$(COQDEPBOOT) -slash -boot -I checker -c "$<" $(TOTARGET)
 
 %.mllib.d: $(D_DEPEND_BEFORE_SRC) %.mllib $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
 	$(SHOW)'COQDEP  $<'
-	$(HIDE)$(COQDEPBOOT) -slash -boot -I kernel -I tools/coqdoc -c "$<" > "$@" \
-	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
+	$(HIDE)$(COQDEPBOOT) -slash -boot -I kernel -I tools/coqdoc -c "$<" $(TOTARGET)
 
 ## Veerry nasty hack to keep ocamldep happy
 %.ml: | %.ml4
 	$(SHOW)'TOUCH     $@'
-	$(HIDE)echo "let keep_ocamldep_happy Do_not_compile_me = assert false" > $@ \
-	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
+	$(HIDE)echo "let keep_ocamldep_happy Do_not_compile_me = assert false" $(TOTARGET)
 
 %.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENVFILES)
 	$(SHOW)'COQDEP    $<'
-	$(HIDE)$(COQDEPBOOT) $(DEPNATDYN) -slash -boot "$<" > "$@" \
-	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
+	$(HIDE)$(COQDEPBOOT) $(DEPNATDYN) -slash -boot "$<" $(TOTARGET)
 
 %.c.d: $(D_DEPEND_BEFORE_SRC) %.c $(D_DEPEND_AFTER_SRC) $(GENHFILES)
 	$(SHOW)'CCDEP     $<'
-	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) -isystem $(CAMLHLIB) $< > $@ \
-	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
+	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) -isystem $(CAMLHLIB) $< $(TOTARGET)
 
 .SECONDARY: $(GENFILES)
 
