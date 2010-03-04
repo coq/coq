@@ -24,25 +24,45 @@
 # by Emacs' next-error.
 ###########################################################################
 
-include Makefile.common
-ifndef COQ_CONFIGURED
- $(error Please run ./configure first)
-endif
-
-.PHONY: NOARG
-
-NOARG: world
+###########################################################################
+# Starting rule
+###########################################################################
 
 # build and install the three subsystems: coq, coqide
 world: revision coq coqide
 install: install-coq install-coqide
+
+.PHONY: world install
+
+###########################################################################
+# Includes
+###########################################################################
+
+include Makefile.common
+include Makefile.doc
 
 ifeq ($(WITHDOC),all)
 world: doc
 install: install-doc
 endif
 
-#install-manpages: install-coq-manpages
+# All dependency includes must be declared secondary, otherwise make will
+# delete them if it decided to build them by dependency instead of because
+# of include, and they will then be automatically deleted, leading to an
+# infinite loop.
+
+ALLDEPS=$(addsuffix .d, \
+  $(ML4FILES) $(MLFILES) $(MLIFILES) $(CFILES) $(MLLIBFILES) $(VFILES))
+
+.SECONDARY: $(ALLDEPS) $(GENFILES) $(GENML4FILES)
+
+# NOTA: the -include below will lauch the build of all .d. Some of them
+# will _fail_ at first, this is to be expected (no grammar.cma initially).
+# These errors (see below "not ready yet, will try again later") do not
+# discourage make to try again and finally succeed.
+
+-include $(ALLDEPS)
+
 
 ###########################################################################
 # Compilation options
@@ -662,7 +682,7 @@ parsing/grammar.cma: | parsing/grammar.mllib.d
 ## of the ml4
 
 toplevel/mltop.cmx: toplevel/mltop.optml | toplevel/mltop.ml.d toplevel/mltop.ml4.d
-	$(SHOW)'OCAMLOPT    $<'
+	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -c -impl $< -o $@
 
 toplevel/mltop.ml: toplevel/mltop.ml4 config/Makefile # no camlp4deps here
@@ -764,7 +784,7 @@ $(MLWITHOUTMLI:.ml=.cmi): %.cmi: %.cmo
 %.cmx: %.ml | %.ml.d
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) -c -o $*.tmp.cmx $< && \
-	  rm -f $*.tmp.cmi && mv -f $*.tmp.o $*.o && mv -f $*.tmp.cmx $*.cmx
+          rm -f $*.tmp.cmi && mv -f $*.tmp.o $*.o && mv -f $*.tmp.cmx $*.cmx
 
 %.cmxs: %.cmxa
 	$(SHOW)'OCAMLOPT -shared -o $@'
@@ -791,11 +811,11 @@ plugins/%_mod.ml: plugins/%.mllib
 	$(HIDE)sed -e "s/\([^ ]\{1,\}\)/let _=Mltop.add_known_module\"\1\" /g" $< > $@
 	$(HIDE)echo "let _=Mltop.add_known_module\"$(notdir $*)\"" >> $@
 
-.SECONDARY: $(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml))
-
 %.ml: %.ml4 | %.ml4.d
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) $(PR_O) `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< $(TOTARGET)
+	$(HIDE)if ls `$(CAMLP4DEPS) $<` > /dev/null 2>&1; then \
+	       $(CAMLP4O) $(CAMLP4EXTENDFLAGS) $(PR_O) `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< $(TOTARGET); \
+	       else echo Dependencies `$(CAMLP4DEPS) $<` not ready yet, will try again later; false; fi
 
 %.vo %.glob: %.v states/initial.coq $(INITPLUGINSBEST) $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
 	$(SHOW)'COQC      $<'
@@ -859,8 +879,6 @@ checker/%.mllib.d: $(D_DEPEND_BEFORE_SRC) checker/%.mllib $(D_DEPEND_AFTER_SRC) 
 %.c.d: $(D_DEPEND_BEFORE_SRC) %.c $(D_DEPEND_AFTER_SRC) $(GENHFILES)
 	$(SHOW)'CCDEP     $<'
 	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) -isystem $(CAMLHLIB) $< $(TOTARGET)
-
-.SECONDARY: $(GENFILES) $(GENML4FILES)
 
 ###########################################################################
 # this sets up developper supporting stuff

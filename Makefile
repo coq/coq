@@ -27,7 +27,6 @@
 
 # Specific command-line options to this Makefile
 #
-# make GOTO_STAGE=N        # perform only stage N (with N=1,2)
 # make VERBOSE=1           # restore the raw echoing of commands
 # make NO_RECALC_DEPS=1    # avoid recomputing dependencies
 # make NO_RECOMPILE_LIB=1  # a coqtop rebuild does not trigger a stdlib rebuild
@@ -58,7 +57,7 @@
 #
 # * Useful builtin functions
 #
-# $(subst ...), $(patsubst ...), $(shell ...), $(foreach ...)
+# $(subst ...), $(patsubst ...), $(shell ...), $(foreach ...), $(if ...)
 #
 # * Behavior of -include
 #
@@ -138,9 +137,7 @@ include Makefile.common
 
 NOARG: world
 
-.PHONY: NOARG help always tags otags
-
-always: ;
+.PHONY: NOARG help always
 
 help:
 	@echo "Please use either"
@@ -152,60 +149,33 @@ help:
 	@echo
 	@echo "For make to be verbose, add VERBOSE=1"
 
-# Nota: do not use the name $(MAKEFLAGS), it has a particular behavior
-MAKEFLGS:=--warn-undefined-variable --no-builtin-rules
-
-ifdef COQ_CONFIGURED
-define stage-template
-	@echo '*****************************************************'
-	@echo '*****************************************************'
-	@echo '****************** Entering stage$(1) ******************'
-	@echo '*****************************************************'
-	@echo '*****************************************************'
-	+$(MAKE) $(MAKEFLGS) -f Makefile.stage$(1) "$@"
-endef
-else
-define stage-template
-	@echo "Please run ./configure first" >&2; exit 1
-endef
-endif
-
-UNSAVED_FILES:=$(shell find . -name '.\#*v' -o -name '.\#*.ml' -o -name '.\#*.mli' -o -name '.\#*.ml4')
+UNSAVED_FILES:=$(shell find . -name '.\#*v' -o -name '.\#*.ml' -o -name '.\#*.ml?')
 ifdef UNSAVED_FILES
-$(error You have unsaved changes in your editor (emacs?) [$(UNSAVED_FILES)]; cancel them or save before proceeding. \
-Or your editor crashed. Then, you may want to consider whether you want to restore the autosaves)
+$(error You have unsaved changes in your editor (emacs?) [$(UNSAVED_FILES)]; \
+cancel them or save before proceeding. Or your editor crashed. \
+Then, you may want to consider whether you want to restore the autosaves)
 #If you try to simply remove this explicit test, the compilation may
 #fail later. In particular, if a .#*.v file exists, coqdep fails to
 #run.
 endif
 
-ifdef GOTO_STAGE
-config/Makefile Makefile.common Makefile.build Makefile: ;
+# Apart from clean and tags, everything will be done in a sub-call to make
+# on Makefile.build. This way, we avoid doing here the -include of .d :
+# since they trigger some compilations, we do not want them for a mere clean
 
-%: always
-	$(call stage-template,$(GOTO_STAGE))
+ifdef COQ_CONFIGURED
+%:: always
+	$(MAKE) --warn-undefined-variable --no-builtin-rules -f Makefile.build "$@"
 else
+%:: always
+	@echo "Please run ./configure first" >&2; exit 1
+endif
 
-.PHONY: stage1 stage2 world revision
+always : ;
 
-stage1 $(STAGE1_TARGETS) : always
-	$(call stage-template,1)
+# To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 
-stage2 $(STAGE2_TARGETS) : stage1
-	$(call stage-template,2)
-
-# Nota:
-# - world is one of the targets in $(STAGE2_TARGETS), hence launching
-# "make" or "make world" leads to recursion into stage1 then stage2
-# - the aim of stage1 is to build grammar.cma and q_constr.cmo
-# More details in dev/doc/build-system*.txt
-
-
-# This is to remove the built-in rule "%: %.o" :
-%: %.o
-# Otherwise, "make foo" recurses into stage1, trying to build foo.o .
-
-endif #GOTO_STAGE
+Makefile Makefile.build Makefile.common config/Makefile : ;
 
 ###########################################################################
 # Cleaning
@@ -291,6 +261,8 @@ devdocclean:
 ###########################################################################
 # Emacs tags
 ###########################################################################
+
+.PHONY: tags otags
 
 tags:
 	echo $(MLIFILES) $(MLSTATICFILES) $(ML4FILES) | sort -r | xargs \

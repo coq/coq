@@ -261,20 +261,6 @@ COQDOCCMO:=$(CONFIG) $(addprefix tools/coqdoc/, \
   cdglobals.cmo alpha.cmo index.cmo output.cmo cpretty.cmo main.cmo )
 COQDOCCMX:=$(COQDOCCMO:.cmo=.cmx)
 
-# grammar modules with camlp4
-
-GRAMMARCMA:=parsing/grammar.cma
-
-GRAMMARML4:=lib/compat.ml4 lib/pp.ml4 parsing/q_util.ml4 parsing/pcoq.ml4 \
-  parsing/argextend.ml4 parsing/tacextend.ml4 parsing/vernacextend.ml4 \
-  parsing/g_prim.ml4 parsing/g_tactic.ml4 \
-  parsing/g_ltac.ml4 parsing/g_constr.ml4 \
-  parsing/lexer.ml4 parsing/q_coqast.ml4
-
-STAGE1_ML4:=$(GRAMMARML4) parsing/q_constr.ml4
-STAGE1:=parsing/grammar.cma parsing/q_constr.cmo
-
-
 ###########################################################################
 # vo files
 ###########################################################################
@@ -363,52 +349,6 @@ MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 DATE=$(shell LANG=C date +"%B %Y")
 
 SOURCEDOCDIR=dev/source-doc
-
-CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa %.cmxs %.dep.ps %.dot
-
-### Targets forwarded by Makefile to a specific stage:
-
-## Enumeration of targets that require being done at stage1
-
-STAGE1_TARGETS:= $(STAGE1) $(COQDEPBOOT) \
-  $(GENFILES) \
-  source-doc revision toplevel/mltop.ml toplevel/mltop.optml \
-  $(STAGE1_ML4:.ml4=.ml) %.o
-
-ifdef CM_STAGE1
- STAGE1_TARGETS+=$(CAML_OBJECT_PATTERNS)
-endif
-
-## Enumeration of targets that require being done at stage2
-
-VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
-  fsets relations wellfounded ints reals \
-  setoids sorting natural integer rational numbers noreal \
-  omega micromega ring setoid_ring dp xml extraction field fourier \
-  funind cc subtac rtauto
-
-DOC_TARGETS:=doc doc-html doc-ps doc-pdf stdlib refman tutorial faq \
-  rectutorial refman-quick refman-nodep stdlib-nodep \
-  install-doc install-doc-meta install-doc-html install-doc-printable install-doc-index-url \
-  ide/index_urls.txt
-
-DOC_TARGET_PATTERNS:=%.dvi %.ps %.eps %.pdf %.html %.v.tex %.hva
-
-STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
-  interp parsing pretyping highparsing toplevel hightactics \
-  coqide-binaries coqide-byte coqide-opt $(COQIDEOPT) $(COQIDEBYTE) $(COQIDE) \
-  $(CSDPCERT) coqbinaries $(TOOLS) tools \
-  printers debug initplugins plugins \
-  world install coqide coqide-files coq coqlib \
-  coqlight states check init theories theories-light \
-  $(DOC_TARGETS) $(VO_TARGETS) validate \
-  %.vo %.glob states/% install-% \
-  $(DOC_TARGET_PATTERNS)
-
-ifndef CM_STAGE1
- STAGE2_TARGETS+=$(CAML_OBJECT_PATTERNS)
-endif
-
 
 # For emacs: 
 # Local Variables: 
