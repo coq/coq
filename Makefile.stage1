@@ -19,10 +19,12 @@ include Makefile.build
 -include $(MLIFILES:.mli=.mli.d)
 .SECONDARY: $(MLIFILES:.mli=.mli.d)
 ##Depends upon the fact that all .ml4.d for stage1 files are empty
--include $(STAGE1_ML4:.ml4=.ml4.ml.d)
-.SECONDARY: $(STAGE1_ML4:.ml4=.ml4.ml.d)
+-include $(STAGE1_ML4:.ml4=.ml.d)
+.SECONDARY: $(STAGE1_ML4:.ml4=.ml.d)
 -include  $(CFILES:.c=.c.d)
 .SECONDARY: $(CFILES:.c=.c.d)
+-include $(MLLIBFILES:.mllib=.mllib.d)
+.SECONDARY: $(MLLIBFILES:.mllib=.mllib.d)
 
 .PHONY: stage1
 stage1: $(STAGE1)

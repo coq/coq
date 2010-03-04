@@ -26,6 +26,7 @@ let option_c = ref false
 let option_noglob = ref false
 let option_slash = ref false
 let option_natdynlk = ref true
+let option_mldep = ref None
 
 let norecdir_list = ref ([]:string list)
 
@@ -176,7 +177,22 @@ let depend_ML str =
 	(" "^mlifile^".cmi"," "^mlifile^".cmi")
     | None, None -> "", ""
 
-let traite_fichier_ML md ext =
+let soustraite_fichier_ML dep md ext =
+  try
+    let chan = open_process_in (dep^" -modules "^md^ext) in
+    let list = ocamldep_parse (Lexing.from_channel chan) in
+    let a_faire = ref "" in
+    let a_faire_opt = ref "" in
+    List.iter
+      (fun str ->
+	 let byte,opt = depend_ML str in
+	 a_faire := !a_faire ^ byte;
+	 a_faire_opt := !a_faire_opt ^ opt)
+      (List.rev list);
+    (!a_faire, !a_faire_opt)
+  with Sys_error _ -> ("","")
+
+let autotraite_fichier_ML md ext =
   try
     let chan = open_in (md ^ ext) in
     let buf = Lexing.from_channel chan in
@@ -200,6 +216,11 @@ let traite_fichier_ML md ext =
     close_in chan;
     (!a_faire, !a_faire_opt)
   with Sys_error _ -> ("","")
+
+let traite_fichier_ML md ext =
+  match !option_mldep with
+    | Some dep -> soustraite_fichier_ML dep md ext
+    | None -> autotraite_fichier_ML md ext
 
 let traite_fichier_mllib md ext =
   try

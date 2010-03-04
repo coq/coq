@@ -6,9 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4use: "pr_o.cmo pa_macro.cmo" i*)
-(* Add pr_o.cmo to circumvent a useless-warning bug when preprocessed with
- * ast-based camlp4 *)
+(*i camlp4use: "pa_macro.cmo" i*)
 
 (*i $Id$ i*)
 

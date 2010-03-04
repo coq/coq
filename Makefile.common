@@ -372,8 +372,8 @@ CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa %.cmxs %.dep.ps %.dot
 
 STAGE1_TARGETS:= $(STAGE1) $(COQDEPBOOT) \
   $(GENFILES) \
-  source-doc revision toplevel/mltop.byteml toplevel/mltop.optml \
-  $(STAGE1_ML4:.ml4=.ml4-preprocessed) %.o
+  source-doc revision toplevel/mltop.ml toplevel/mltop.optml \
+  $(STAGE1_ML4:.ml4=.ml) %.o
 
 ifdef CM_STAGE1
  STAGE1_TARGETS+=$(CAML_OBJECT_PATTERNS)
@@ -402,7 +402,7 @@ STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
   world install coqide coqide-files coq coqlib \
   coqlight states check init theories theories-light \
   $(DOC_TARGETS) $(VO_TARGETS) validate \
-  %.vo %.glob states/% install-% %.ml4-preprocessed \
+  %.vo %.glob states/% install-% \
   $(DOC_TARGET_PATTERNS)
 
 ifndef CM_STAGE1

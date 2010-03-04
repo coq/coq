@@ -225,8 +225,10 @@ and qual_id = parse
 and mllib_list = parse
   | coq_ident { let s = String.uncapitalize (Lexing.lexeme lexbuf)
 		in s :: mllib_list lexbuf }
+  | "*predef*" { mllib_list lexbuf }
   | space+ { mllib_list lexbuf }
   | eof { [] }
 
-
-
+and ocamldep_parse = parse
+  | [^ ':' ]* ':' { mllib_list lexbuf }
+  | _ { [] }
