@@ -748,9 +748,23 @@ COND_OPTFLAGS= \
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -c $<
 
+## NB: for the moment ocamlopt erases and recreates .cmi if there's no .mli around.
+## This can lead to nasty things with make -j. To avoid that:
+##  1) We make .cmx always depend on .cmi
+##  2) This .cmi will be created from the .mli, or trigger the compilation of the
+##    .cmo if there's no .mli (see rule below about MLWITHOUTMLI)
+##  3) We tell ocamlopt to output to temporary names, remove the temp .cmi
+##     (since the actual .cmi should already be there and up-to-date) and move
+##     the temp .cmx and .o back in place
+
+$(MLFILES:.ml=.cmx): %.cmx: %.cmi
+
+$(MLWITHOUTMLI:.ml=.cmi): %.cmi: %.cmo
+
 %.cmx: %.ml | %.ml.d
 	$(SHOW)'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) -c $<
+	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) -c -o $*.tmp.cmx $< && \
+	  rm -f $*.tmp.cmi && mv -f $*.tmp.o $*.o && mv -f $*.tmp.cmx $*.cmx
 
 %.cmxs: %.cmxa
 	$(SHOW)'OCAMLOPT -shared -o $@'
