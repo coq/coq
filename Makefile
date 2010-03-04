@@ -11,59 +11,31 @@
 
 # Makefile for Coq
 #
-# To be used with GNU Make.
+# To be used with GNU Make >= 3.81.
 #
-# This is the only Makefile. You won't find Makefiles in sub-directories
-# and this is done on purpose. If you are not yet convinced of the advantages
-# of a single Makefile, please read
+# This Makefile is now separated into Makefile.{common,build,doc}.
+# You won't find Makefiles in sub-directories and this is done on purpose.
+# If you are not yet convinced of the advantages of a single Makefile, please
+# read
 #    http://miller.emu.id.au/pmiller/books/rmch/
 # before complaining.
 # 
 # When you are working in a subdir, you can compile without moving to the
 # upper directory using "make -C ..", and the output is still understood
 # by Emacs' next-error.
-###########################################################################
-
-
-# Specific command-line options to this Makefile
+#
+# Specific command-line options to this Makefile:
 #
 # make VERBOSE=1           # restore the raw echoing of commands
 # make NO_RECALC_DEPS=1    # avoid recomputing dependencies
 # make NO_RECOMPILE_LIB=1  # a coqtop rebuild does not trigger a stdlib rebuild
 #
 # Nota: the 1 above can be replaced by any non-empty value
-# More details in dev/doc/build-system*.txt
+#
+# ----------------------------------------------------------------------
+# See dev/doc/build-system*.txt for more details/FAQ about this Makefile
+# ----------------------------------------------------------------------
 
-
-# FAQ: special features used in this Makefile
-#
-# * Order-only dependencies: |
-#
-# Dependencies placed after a bar (|) should be built before
-# the current rule, but having one of them is out-of-date do not
-# trigger a rebuild of the current rule.
-# See http://www.gnu.org/software/make/manual/make.html#Prerequisite-Types
-#
-# * Annotation before commands: +/-/@
-#
-# a command starting by - is always successful (errors are ignored)
-# a command starting by + is runned even if option -n is given to make
-# a command starting by @ is not echoed before being runned
-#
-# * Custom functions
-#
-# Definition via "define foo" followed by commands (arg is $(1) etc)
-# Call via "$(call foo,arg1)"
-#
-# * Useful builtin functions
-#
-# $(subst ...), $(patsubst ...), $(shell ...), $(foreach ...), $(if ...)
-#
-# * Behavior of -include
-#
-# If the file given to -include doesn't exist, make tries to build it,
-# but doesn't care if this build fails. This can be quite surprising,
-# see in particular the -include in Makefile.stage*
 
 ###########################################################################
 # File lists

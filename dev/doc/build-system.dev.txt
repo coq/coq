@@ -1,5 +1,21 @@
+
 Since July 2007, Coq features a build system overhauled by Pierre
 Corbineau and Lionel Elie Mamane.
+
+---------------------------------------------------------------------
+WARNING:
+In March 2010 this build system has been heavily adapted by Pierre
+Letouzey. In particular there no more explicit stage1,2. Stage3
+was removed some time ago when coqdep was splitted into coqdep_boot
+and full coqdep. Ideas are still similar to what is describe below,
+but:
+1) .ml4 are explicitely turned into .ml files, which stay after build
+2) we let "make" handle the inclusion of .d without trying to guess
+   what could be done at what time. Some initial inclusions hence
+  _fail_, but "make" tries again later and succeed.
+
+TODO: remove obsolete sections below and better describe the new approach
+-----------------------------------------------------------------------
 
 This file documents internals of the implementation of the build
 system. For what a Coq developer needs to know about the build system,
