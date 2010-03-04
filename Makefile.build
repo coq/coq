@@ -760,18 +760,19 @@ COND_OPTFLAGS= \
 ##  1) We make .cmx always depend on .cmi
 ##  2) This .cmi will be created from the .mli, or trigger the compilation of the
 ##    .cmo if there's no .mli (see rule below about MLWITHOUTMLI)
-##  3) We tell ocamlopt to output to temporary names, remove the temp .cmi
-##     (since the actual .cmi should already be there and up-to-date) and move
-##     the temp .cmx and .o back in place
+##  3) We tell ocamlopt to use the .cmi as the interface source file. With this
+##     hack, everything goes as if there is a .mli, and the .cmi is preserved
+##     and the .cmx is checked with respect to this .cmi
 
-$(MLFILES:.ml=.cmx): %.cmx: %.cmi
+HACKMLI = $(if $(wildcard $<i),,-intf-suffix .cmi)
+
+$(MLWITHOUTMLI:.ml=.cmx): %.cmx: %.cmi  # for .ml with .mli this is already the case
 
 $(MLWITHOUTMLI:.ml=.cmi): %.cmi: %.cmo
 
 %.cmx: %.ml | %.ml.d
 	$(SHOW)'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) -c -o $*.tmp.cmx $< && \
-          rm -f $*.tmp.cmi && mv -f $*.tmp.o $*.o && mv -f $*.tmp.cmx $*.cmx
+	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) -c $<
 
 %.cmxs: %.cmxa
 	$(SHOW)'OCAMLOPT -shared -o $@'
