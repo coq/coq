@@ -66,6 +66,10 @@
 # but doesn't care if this build fails. This can be quite surprising,
 # see in particular the -include in Makefile.stage*
 
+###########################################################################
+# File lists
+###########################################################################
+
 # !! Before using FIND_VCS_CLAUSE, please read how you should in the !!
 # !! FIND_VCS_CLAUSE section of dev/doc/build-system.dev.txt         !!
 export FIND_VCS_CLAUSE:='(' \
@@ -78,35 +82,59 @@ export FIND_VCS_CLAUSE:='(' \
   -name "$${GIT_DIR}" -o \
   -name '_build' \
 ')' -prune -o
-export PRUNE_CHECKER := -wholename ./checker/\* -prune -o
 
-FIND_PRINTF_P:=-print | sed 's|^\./||'
+define find
+ $(shell find . $(FIND_VCS_CLAUSE) '(' -name $(1) ')' -print | sed 's|^\./||')
+endef
 
-export YACCFILES:=$(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mly' ')' $(FIND_PRINTF_P))
-export LEXFILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mll' ')' $(FIND_PRINTF_P))
+## Files in the source tree
+
+export YACCFILES:=$(call find, '*.mly')
+export LEXFILES := $(call find, '*.mll')
+export MLLIBFILES := $(call find, '*.mllib')
+export ML4FILES := $(call find, '*.ml4')
+export CFILES := $(call find, '*.c')
+
+# NB: The lists of currently existing .ml and .mli files will change
+# before and after a build or a make clean. Hence we do not export
+# these variables, but cleaned-up versions (see below MLFILES and co)
+
+EXISTINGML := $(call find, '*.ml')
+EXISTINGMLI := $(call find, '*.mli')
+
+## Files that will be generated
+
 export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) \
   scripts/tolink.ml kernel/copcodes.ml
 export GENMLIFILES:=$(YACCFILES:.mly=.mli)
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
 export GENVFILES:=theories/Numbers/Natural/BigN/NMake_gen.v
-export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) $(GENVFILES)
-export MLFILES  := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.ml'  ')' $(FIND_PRINTF_P) | \
-  while read f; do if ! [ -e "$${f}4" ]; then echo "$$f"; fi; done) \
-  $(GENMLFILES)
-export MLIFILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mli' ')' $(FIND_PRINTF_P)) \
-  $(GENMLIFILES)
-export MLLIBFILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mllib' ')' $(FIND_PRINTF_P))
-export ML4FILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.ml4' ')' $(FIND_PRINTF_P))
-#export VFILES   := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.v'   ')' $(FIND_PRINTF_P)) \
-#  $(GENVFILES)
-export CFILES   := $(shell find kernel/byterun $(FIND_VCS_CLAUSE) '(' -name '*.c' ')' -print)
+export GENPLUGINSMOD:=$(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml))
+export GENML4FILES:= $(ML4FILES:.ml4=.ml)
+export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) $(GENVFILES) $(GENPLUGINSMOD)
 
-export ML4FILESML:= $(ML4FILES:.ml4=.ml)
+# NB: all files in $(GENFILES) can be created initially, while
+# .ml files in $(GENML4FILES) might need some intermediate building.
+# That's why we keep $(GENML4FILES) out of $(GENFILES)
 
-# Nota: do not use the name $(MAKEFLAGS), it has a particular behavior
-MAKEFLGS:=--warn-undefined-variable --no-builtin-rules
+## More complex file lists
+
+define diff
+ $(foreach f, $(1), $(if $(filter $(f),$(2)),,$f))
+endef
+
+export MLSTATICFILES := \
+ $(call diff, $(EXISTINGML), $(GENMLFILES) $(GENML4FILES) $(GENPLUGINSMOD))
+export MLFILES := \
+ $(sort $(EXISTINGML) $(GENMLFILES) $(GENML4FILES) $(GENPLUGINSMOD))
+export MLIFILES := $(sort $(GENMLIFILES) $(EXISTINGMLI))
+export MLWITHOUTMLI := $(call diff, $(MLFILES), $(MLIFILES:.mli=.ml))
 
 include Makefile.common
+
+###########################################################################
+# Starting rules
+###########################################################################
 
 NOARG: world
 
@@ -123,6 +151,9 @@ help:
 	@echo "or make archclean"
 	@echo
 	@echo "For make to be verbose, add VERBOSE=1"
+
+# Nota: do not use the name $(MAKEFLAGS), it has a particular behavior
+MAKEFLGS:=--warn-undefined-variable --no-builtin-rules
 
 ifdef COQ_CONFIGURED
 define stage-template
@@ -196,7 +227,6 @@ indepclean:
 	rm -f $(GENFILES)
 	rm -f $(COQTOPBYTE) $(COQMKTOPBYTE) $(COQCBYTE) $(CHICKENBYTE)
 	find . -name '*~' -o -name '*.cm[ioa]' | xargs rm -f
-	find . -name '*_mod.ml' | xargs rm -f
 	rm -f */*.pp[iox] plugins/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
@@ -238,7 +268,7 @@ clean-ide:
 	rm -f ide/utf8_convert.ml
 
 ml4clean:
-	rm -f $(ML4FILESML) $(ML4FILESML:.ml=.ml4-preprocessed)
+	rm -f $(GENML4FILES)
 
 ml4depclean:
 	find . -name '*.ml4.d' | xargs rm -f
@@ -263,7 +293,7 @@ devdocclean:
 ###########################################################################
 
 tags:
-	echo $(MLIFILES) $(MLFILES) $(ML4FILES) | sort -r | xargs \
+	echo $(MLIFILES) $(MLSTATICFILES) $(ML4FILES) | sort -r | xargs \
 	etags --language=none\
 	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
@@ -278,7 +308,7 @@ tags:
 
 
 otags: 
-	echo $(MLIFILES) $(MLFILES) | sort -r | xargs otags
+	echo $(MLIFILES) $(MLSTATICFILES) | sort -r | xargs otags
 	echo $(ML4FILES) | sort -r | xargs \
 	etags --append --language=none\
 	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \

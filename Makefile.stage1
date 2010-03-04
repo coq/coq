@@ -12,19 +12,16 @@ include Makefile.build
 # them if it decided to build them by dependency instead of because of
 # include, and they will then be automatically deleted, leading to an
 # infinite loop.
--include $(ML4FILES:.ml4=.ml4.d)
-.SECONDARY: $(ML4FILES:.ml4=.ml4.d)
--include $(MLFILES:.ml=.ml.d)
-.SECONDARY: $(MLFILES:.ml=.ml.d)
--include $(MLIFILES:.mli=.mli.d)
-.SECONDARY: $(MLIFILES:.mli=.mli.d)
-##Depends upon the fact that all .ml4.d for stage1 files are empty
--include $(STAGE1_ML4:.ml4=.ml.d)
-.SECONDARY: $(STAGE1_ML4:.ml4=.ml.d)
--include  $(CFILES:.c=.c.d)
-.SECONDARY: $(CFILES:.c=.c.d)
--include $(MLLIBFILES:.mllib=.mllib.d)
-.SECONDARY: $(MLLIBFILES:.mllib=.mllib.d)
+
+STAGE1_DEPS := $(addsuffix .d, \
+ $(MLSTATICFILES) $(GENMLFILES) $(ML4FILES) $(MLIFILES) $(CFILES) \
+ $(MLLIBFILES) $(STAGE1_ML4:.ml4=.ml))
+
+# NB: this depends upon the fact that .ml4.d for $(STAGE1_ML4) are empty,
+# hence .ml and .ml.d for these .ml4 can be generated initially.
+
+.SECONDARY: $(STAGE1_DEPS)
+-include $(STAGE1_DEPS)
 
 .PHONY: stage1
 stage1: $(STAGE1)

@@ -9,14 +9,13 @@
 include Makefile.stage1
 include Makefile.doc
 
--include $(MLLIBFILES:.mllib=.mllib.d)
-.SECONDARY: $(MLLIBFILES:.mllib=.mllib.d)
--include $(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml.d))
-.SECONDARY: $(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml.d))
--include $(ML4FILES:.ml4=.ml.d)
-.SECONDARY: $(ML4FILES:.ml4=.ml.d)
--include $(VFILES:.v=.v.d)
-.SECONDARY: $(VFILES:.v=.v.d)
+STAGE2_DEPS := $(addsuffix .d, $(GENPLUGINSMOD) $(GENML4FILES) $(VFILES))
+
+.SECONDARY: $(STAGE2_DEPS)
+-include $(STAGE2_DEPS)
+
+# NB: all $(STAGE1_DEPS) are already included thanks to the inclusion of
+# Makefile.stage1
 
 # For emacs: 
 # Local Variables: 

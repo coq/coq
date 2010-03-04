@@ -632,7 +632,7 @@ install-latex:
 
 source-doc:
 	if !(test -d $(SOURCEDOCDIR)); then mkdir $(SOURCEDOCDIR); fi
-	$(OCAMLDOC) -html -rectypes $(LOCALINCLUDES) -d $(SOURCEDOCDIR) $(MLFILES)
+	$(OCAMLDOC) -html -rectypes $(LOCALINCLUDES) -d $(SOURCEDOCDIR) $(MLSTATICFILES)
 
 
 ###########################################################################
@@ -846,7 +846,7 @@ checker/%.mllib.d: $(D_DEPEND_BEFORE_SRC) checker/%.mllib $(D_DEPEND_AFTER_SRC) 
 	$(SHOW)'CCDEP     $<'
 	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) -isystem $(CAMLHLIB) $< $(TOTARGET)
 
-.SECONDARY: $(GENFILES) $(ML4FILESML)
+.SECONDARY: $(GENFILES) $(GENML4FILES)
 
 ###########################################################################
 # this sets up developper supporting stuff
