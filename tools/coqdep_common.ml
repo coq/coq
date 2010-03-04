@@ -336,28 +336,24 @@ let mL_dependencies () =
 	 | None -> ""
 	 | Some mldir -> " "^(file_name name mldir)^".cmi"
        in
-       if dep<>"" || intf<>"" then begin
-	 printf "%s.cmo:%s%s\n" fullname dep intf;
-	 printf "%s.cmx:%s%s\n" fullname dep_opt intf;
-	 flush stdout;
-       end)
+       printf "%s.cmo:%s%s\n" fullname dep intf;
+       printf "%s.cmx:%s%s\n" fullname dep_opt intf;
+       flush stdout)
     (List.rev !mlAccu);
   List.iter
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
        let (dep,_) = traite_fichier_ML fullname ".mli" in
-       if dep<>"" then printf "%s.cmi:%s\n" fullname dep;
+       printf "%s.cmi:%s\n" fullname dep;
        flush stdout)
     (List.rev !mliAccu);
   List.iter
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
        let (dep,dep_opt) = traite_fichier_mllib fullname ".mllib" in
-       if dep<>"" then begin
-	 printf "%s.cma:%s\n" fullname dep;
-	 printf "%s.cmxa %s.cmxs:%s\n" fullname fullname dep_opt;
-	 flush stdout
-       end)
+       printf "%s.cma:%s\n" fullname dep;
+       printf "%s.cmxa %s.cmxs:%s\n" fullname fullname dep_opt;
+       flush stdout)
     (List.rev !mllibAccu)
 
 let coq_dependencies () =
