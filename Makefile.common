@@ -50,12 +50,16 @@ COQIDEOPT:=bin/coqide.opt$(EXE)
 COQIDE:=bin/coqide$(EXE)
 
 ifeq ($(BEST),opt)
-COQBINARIES:= $(COQMKTOP) $(COQC) \
-  $(COQTOPBYTE) $(COQTOPOPT) $(COQTOPEXE) $(CHICKENBYTE) $(CHICKENOPT) $(CHICKEN)
+OPT:=opt
 else
-COQBINARIES:= $(COQMKTOP) $(COQC) \
-  $(COQTOPBYTE)              $(COQTOPEXE) $(CHICKENBYTE)               $(CHICKEN)
+OPT:=
 endif
+
+BESTOBJ:=$(if $(OPT),.cmx,.cmo)
+
+COQBINARIES:= $(COQMKTOP) $(COQC) \
+  $(COQTOPBYTE) $(if $(OPT),$(COQTOPOPT)) $(COQTOPEXE) \
+  $(CHICKENBYTE) $(if $(OPT),$(CHICKENOPT)) $(CHICKEN)
 OTHERBINARIES:=$(COQMKTOPBYTE) $(COQCBYTE)
 
 CSDPCERT:=plugins/micromega/csdpcert$(EXE)
@@ -204,11 +208,7 @@ else
  PLUGINSOPT:=
 endif
 
-ifeq ($(BEST),opt)
-  INITPLUGINSBEST:=$(INITPLUGINSOPT)
-else
-  INITPLUGINSBEST:=$(INITPLUGINS)
-endif
+INITPLUGINSBEST:=$(if $(OPT),$(INITPLUGINSOPT),$(INITPLUGINS))
 
 CMA:=$(CLIBS) $(CAMLP4OBJS)
 CMXA:=$(CMA:.cma=.cmxa)
@@ -233,10 +233,8 @@ COQENVCMO:=$(CONFIG) \
   lib/envars.cmo
 
 COQMKTOPCMO:=$(COQENVCMO) scripts/tolink.cmo scripts/coqmktop.cmo 
-COQMKTOPCMX:=$(COQMKTOPCMO:.cmo=.cmx)
 
 COQCCMO:=$(COQENVCMO) toplevel/usage.cmo scripts/coqc.cmo
-COQCCMX:=$(COQCCMO:.cmo=.cmx)
 
 ## Misc
 
@@ -244,22 +242,12 @@ CSDPCERTCMO:=$(addprefix plugins/micromega/, \
   mutils.cmo 	micromega.cmo 	mfourier.cmo 	certificate.cmo \
   sos_types.cmo sos_lib.cmo sos.cmo 	csdpcert.cmo )
 
-CSDPCERTCMX:= $(CSDPCERTCMO:.cmo=.cmx)
-
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
 
-COQDEPBOOTML:=tools/coqdep_lexer.ml tools/coqdep_common.ml tools/coqdep_boot.ml
-COQDEPML:=tools/coqdep_lexer.ml tools/coqdep_common.ml tools/coqdep.ml
-
-COQDEPCMO:=$(COQENVCMO) $(COQDEPML:.ml=.cmo)
-COQDEPCMX:=$(COQDEPCMO:.cmo=.cmx)
-
-GALLINACMO:=tools/gallina_lexer.cmo tools/gallina.cmo
-GALLINACMX:=$(GALLINACMO:.cmo=.cmx)
+COQDEPCMO:=$(COQENVCMO) tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep.cmo
 
 COQDOCCMO:=$(CONFIG) $(addprefix tools/coqdoc/, \
   cdglobals.cmo alpha.cmo index.cmo output.cmo cpretty.cmo main.cmo )
-COQDOCCMX:=$(COQDOCCMO:.cmo=.cmx)
 
 ###########################################################################
 # vo files

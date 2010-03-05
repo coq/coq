@@ -91,7 +91,7 @@ export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) $(GENVFILES) $(GENPLU
 ## More complex file lists
 
 define diff
- $(foreach f, $(1), $(if $(filter $(f),$(2)),,$f))
+ $(strip $(foreach f, $(1), $(if $(filter $(f),$(2)),,$f)))
 endef
 
 export MLSTATICFILES := \
