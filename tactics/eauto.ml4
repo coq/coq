@@ -396,7 +396,7 @@ END
 
 let cons a l = a :: l
 
-let autounfold db cl =
+let autounfolds db occs =
   let unfolds = List.concat (List.map (fun dbname -> 
     let db = try searchtable_map dbname 
       with Not_found -> errorlabstrm "autounfold" (str "Unknown database " ++ str dbname)
@@ -404,7 +404,15 @@ let autounfold db cl =
     let (ids, csts) = Hint_db.unfolds db in
       Cset.fold (fun cst -> cons (all_occurrences, EvalConstRef cst)) csts
 	(Idset.fold (fun id -> cons (all_occurrences, EvalVarRef id)) ids [])) db)
-  in unfold_option unfolds cl
+  in unfold_option unfolds
+
+let autounfold db cls gl =
+  let cls = concrete_clause_of cls gl in
+  let tac = autounfolds db in
+  tclMAP (function
+    | OnHyp (id,occs,where) -> tac occs (Some (id,where))
+    | OnConcl occs -> tac occs None)
+    cls gl
 
 let autosimpl db cl =
   let unfold_of_elts constr (b, elts) =
@@ -419,12 +427,13 @@ let autosimpl db cl =
       unfold_of_elts (fun x -> EvalVarRef x) (Idpred.elements ids)) db)
   in unfold_option unfolds cl
 
+open Extraargs
+
 TACTIC EXTEND autounfold
-| [ "autounfold" hintbases(db) "in" hyp(id) ] ->
-    [ autounfold (match db with None -> ["core"] | Some x -> x) (Some (id, InHyp)) ]
-| [ "autounfold" hintbases(db) ] ->
-    [ autounfold (match db with None -> ["core"] | Some x -> x) None ]
-      END
+| [ "autounfold" hintbases(db) in_arg_hyp(id) ] ->
+    [ autounfold (match db with None -> ["core"] | Some x -> x) 
+	(glob_in_arg_hyp_to_clause id) ]
+END
 
 let unfold_head env (ids, csts) c = 
   let rec aux c = 
@@ -498,7 +507,7 @@ TACTIC EXTEND autounfoldify
     let db = match kind_of_term x with
       | Const c -> string_of_label (con_label c)
       | _ -> assert false
-    in autounfold ["core";db] None ]
+    in autounfold ["core";db] onConcl ]
 END
 
 TACTIC EXTEND unify
