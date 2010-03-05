@@ -177,17 +177,18 @@ let new_cstr_evar (goal,cstr) env t =
   let cstr', t = Evarutil.new_evar cstr env t in
     (goal, cstr'), t
 
-let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a option) (f : 'a -> constr) =
+let build_signature evars env m (cstrs : (types * types option) option list)
+    (finalcstr : (types * types option) option) =
   let new_evar evars env t =
     new_cstr_evar evars env
       (* ~src:(dummy_loc, ImplicitArg (ConstRef (Lazy.force respectful), (n, Some na))) *) t
   in
   let mk_relty evars env ty obj =
     match obj with
-      | None ->
+      | None | Some (_, None) ->
 	  let relty = mk_relation ty in
 	    new_evar evars env relty
-      | Some x -> evars, f x
+      | Some (x, Some rel) -> evars, rel
   in
   let rec aux env evars ty l =
     let t = Reductionops.whd_betadeltaiota env (fst evars) ty in
@@ -210,12 +211,11 @@ let build_signature evars env m (cstrs : 'a option list) (finalcstr : 'a option)
       | _, obj :: _ -> anomaly "build_signature: not enough products"
       | _, [] ->
 	  (match finalcstr with
-	  | None ->
+	  | None | Some (_, None) ->
 	      let t = Reductionops.nf_betaiota (fst evars) ty in
 	      let evars, rel = mk_relty evars env t None in
 		evars, t, rel, [t, Some rel]
-	  | Some codom -> let (t, rel) = codom in
-			    evars, t, rel, [t, Some rel])
+	  | Some (t, Some rel) -> evars, t, rel, [t, Some rel])
   in aux env evars m cstrs
 
 let proper_proof env evars carrier relation x =
@@ -406,11 +406,11 @@ let lift_cstr env sigma evars args cstr =
   let cstr =
     let start =
       match cstr with
-      | Some codom -> codom
-      | None ->
+      | None | Some (_, None) ->
 	  let car = Evarutil.e_new_evar evars env (new_Type ()) in
 	  let rel = Evarutil.e_new_evar evars env (mk_relation car) in
 	    (car, rel)
+      | Some (ty, Some rel) -> (ty, rel)
     in
       Array.fold_right
 	(fun arg (car, rel) ->
@@ -431,12 +431,17 @@ let default_flags = { under_lambdas = true; on_morphisms = true; }
 
 type evars = evar_map * evar_map (* goal evars, constraint evars *)
 
+type rewrite_proof = 
+  | RewPrf of constr * constr
+  | RewCast of cast_kind
+
+let get_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
+
 type rewrite_result_info = {
   rew_car : constr;
-  rew_rel : constr;
   rew_from : constr;
   rew_to : constr;
-  rew_prf : constr;
+  rew_prf : rewrite_proof;
   rew_evars : evars;
 }
 
@@ -445,7 +450,13 @@ type rewrite_result = rewrite_result_info option
 type strategy = Environ.env -> evar_map -> constr -> types ->
   constr option -> evars -> rewrite_result option
 
-let resolve_subrelation env sigma car rel rel' res =
+let get_rew_prf r = match r.rew_prf with
+  | RewPrf (rel, prf) -> prf 
+  | RewCast c ->
+      mkCast (mkApp (Coqlib.build_coq_eq_refl (), [| r.rew_car; r.rew_from |]),
+	     c, mkApp (Coqlib.build_coq_eq (), [| r.rew_car; r.rew_from; r.rew_to |]))
+
+let resolve_subrelation env sigma car rel prf rel' res =
   if eq_constr rel rel' then res
   else
 (*   try let evd' = Evarconv.the_conv_x env rel rel' res.rew_evars in *)
@@ -453,11 +464,10 @@ let resolve_subrelation env sigma car rel rel' res =
 (*   with NotConvertible -> *)
     let app = mkApp (Lazy.force subrelation, [|car; rel; rel'|]) in
     let evars, subrel = new_cstr_evar res.rew_evars env app in
+    let appsub = mkApp (subrel, [| res.rew_from ; res.rew_to ; prf |]) in
       { res with
-	rew_prf = mkApp (subrel, [| res.rew_from ; res.rew_to ; res.rew_prf |]);
-	rew_rel = rel';
+	rew_prf = RewPrf (rel', appsub);
 	rew_evars = evars }
-
 
 let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars =
   let evars, morph_instance, proj, sigargs, m', args, args' =
@@ -467,9 +477,11 @@ let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars 
     let morphargs', morphobjs' = array_chop first args' in
     let appm = mkApp(m, morphargs) in
     let appmtype = Typing.type_of env sigma appm in
-    let cstrs = List.map (Option.map (fun r -> r.rew_car, r.rew_rel)) (Array.to_list morphobjs') in
+    let cstrs = List.map (Option.map (fun r -> r.rew_car, get_rew_rel r.rew_prf)) (Array.to_list morphobjs') in
       (* Desired signature *)
-    let evars, appmtype', signature, sigargs = build_signature evars env appmtype cstrs cstr (fun (a,r) -> r) in
+    let evars, appmtype', signature, sigargs = 
+      build_signature evars env appmtype cstrs cstr
+    in
       (* Actual signature found *)
     let cl_args = [| appmtype' ; signature ; appm |] in
     let app = mkApp (Lazy.force proper_type, cl_args) in
@@ -493,7 +505,7 @@ let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars 
 		  let evars, proof = proper_proof env evars carrier relation x in
 		    [ proof ; x ; x ] @ acc, subst, evars, sigargs, x :: typeargs'
 	      | Some r ->
-		  [ r.rew_prf; r.rew_to; x ] @ acc, subst, evars, sigargs, r.rew_to :: typeargs')
+		  [ get_rew_prf r; r.rew_to; x ] @ acc, subst, evars, sigargs, r.rew_to :: typeargs')
 	  | None ->
 	      if y <> None then error "Cannot rewrite the argument of a dependent function";
 	      x :: acc, x :: subst, evars, sigargs, x :: typeargs')
@@ -505,10 +517,10 @@ let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars 
 	[ a, Some r ] -> evars, proof, a, r, oldt, fnewt newt
       | _ -> assert(false)
 
-let apply_constraint env sigma car rel cstr res =
+let apply_constraint env sigma car rel prf cstr res =
   match cstr with
   | None -> res
-  | Some r -> resolve_subrelation env sigma car rel r res
+  | Some r -> resolve_subrelation env sigma car rel prf r res
 
 let eq_env x y = x == y
 
@@ -524,12 +536,14 @@ let apply_rule hypinfo loccs : strategy =
 	match unif with
 	| Some (env', (prf, (car, rel, c1, c2))) when is_occ !occ ->
 	    begin
-	      let goalevars = Evd.evar_merge (fst evars)
-		(Evd.undefined_evars (Evarutil.nf_evar_map env'.evd))
-	      in
-	      let res = { rew_car = ty; rew_rel = rel; rew_from = c1;
-			  rew_to = c2; rew_prf = prf; rew_evars = goalevars, snd evars }
-	      in Some (Some (apply_constraint env sigma car rel cstr res))
+	      if eq_constr t c2 then Some None
+	      else
+		let goalevars = Evd.evar_merge (fst evars)
+		  (Evd.undefined_evars (Evarutil.nf_evar_map env'.evd))
+		in
+		let res = { rew_car = ty; rew_from = c1;
+			    rew_to = c2; rew_prf = RewPrf (rel, prf); rew_evars = goalevars, snd evars }
+		in Some (Some (apply_constraint env sigma car rel prf cstr res))
 	    end
 	| _ -> None
 
@@ -540,12 +554,19 @@ let apply_lemma (evm,c) left2right loccs : strategy =
       apply_rule hypinfo loccs env sigma
 
 let make_leibniz_proof c ty r =
-  let prf = mkApp (Lazy.force coq_f_equal,
-		  [| r.rew_car; ty;
-		     mkLambda (Anonymous, r.rew_car, c (mkRel 1));
-		     r.rew_from; r.rew_to; r.rew_prf |])
+  let prf = 
+    match r.rew_prf with
+    | RewPrf (rel, prf) -> 
+	let rel = mkApp (Lazy.force coq_eq, [| ty |]) in
+	let prf =
+	  mkApp (Lazy.force coq_f_equal,
+		[| r.rew_car; ty;
+		   mkLambda (Anonymous, r.rew_car, c (mkRel 1));
+		   r.rew_from; r.rew_to; prf |])
+	in RewPrf (rel, prf)
+    | RewCast k -> r.rew_prf
   in
-    { r with rew_car = ty; rew_rel = mkApp (Lazy.force coq_eq, [| ty |]);
+    { r with rew_car = ty; 
       rew_from = c r.rew_from; rew_to = c r.rew_to; rew_prf = prf }
 
 let pointwise_or_dep_relation n t car rel =
@@ -555,9 +576,55 @@ let pointwise_or_dep_relation n t car rel =
     mkApp (Lazy.force forall_relation, 
 	  [| t; mkLambda (n, t, car); mkLambda (n, t, rel) |])
 
+open Elimschemes
+
+let fold_match env sigma c =
+  let (ci, p, c, brs) = destCase c in
+  let cty = Retyping.get_type_of env sigma c in
+  let dep, pred, sk = 
+    let env', ctx, body =
+      let ctx, pred = decompose_lam_assum p in
+      let env' = Environ.push_rel_context ctx env in
+	env', ctx, pred
+    in
+    let sortp = Retyping.get_sort_family_of env' sigma body in
+    let sortc = Retyping.get_sort_family_of env sigma cty in
+    let dep = not (noccurn 1 body) in
+    let pred = if dep then p else
+	it_mkProd_or_LetIn (subst1 mkProp body) (List.tl ctx)
+    in
+    let sk = 
+      if sortp = InProp then
+	if sortc = InProp then
+	  if dep then case_dep_scheme_kind_from_prop
+	  else case_scheme_kind_from_prop
+	else (
+	  if dep
+	  then case_dep_scheme_kind_from_type_in_prop
+	  else case_scheme_kind_from_type)
+      else ((* sortc <> InProp by typing *)
+	if dep
+	then case_dep_scheme_kind_from_type
+	else case_scheme_kind_from_type)
+    in dep, pred, Ind_tables.find_scheme sk ci.ci_ind
+  in
+  let app = 
+    let ind, args = Inductive.find_rectype env cty in
+    let pars, args = list_chop ci.ci_npar args in
+    let meths = List.map (fun br -> br) (Array.to_list brs) in
+      applist (mkConst sk, pars @ [pred] @ meths @ args @ [c])
+  in sk, app
+
+let unfold_match env sigma sk app =
+  match kind_of_term app with
+  | App (f', args) when f' = mkConst sk ->
+      let v = Environ.constant_value env sk in
+	Reductionops.whd_beta sigma (mkApp (v, args))
+  | _ -> app
+    
 let subterm all flags (s : strategy) : strategy =
   let rec aux env sigma t ty cstr evars =
-    let cstr' = Option.map (fun c -> (ty, c)) cstr in
+    let cstr' = Option.map (fun c -> (ty, Some c)) cstr in
       match kind_of_term t with
       | App (m, args) ->
 	  let rewrite_args success =
@@ -579,8 +646,10 @@ let subterm all flags (s : strategy) : strategy =
 	      | Some true ->
 		  let args' = Array.of_list (List.rev args') in
 		  let evars', prf, car, rel, c1, c2 = resolve_morphism env sigma t m args args' cstr' evars' in
-		  let res = { rew_car = ty; rew_rel = rel; rew_from = c1;
-			      rew_to = c2; rew_prf = prf; rew_evars = evars' } in
+		  let res = { rew_car = ty; rew_from = c1;
+			      rew_to = c2; rew_prf = RewPrf (rel, prf);
+			      rew_evars = evars' } 
+		  in
 		    Some (Some res)
 	  in
 	    if flags.on_morphisms then
@@ -596,11 +665,16 @@ let subterm all flags (s : strategy) : strategy =
 		    (* We rewrote the function and get a proof of pointwise rel for the arguments.
 		       We just apply it. *)
 		    let nargs = Array.length args in
+		    let prf = match r.rew_prf with
+		      | RewPrf (rel, prf) ->
+			  RewPrf (decomp_pointwise nargs rel, mkApp (prf, args))
+		      | x -> x
+		    in
 		    let res =
 		      { rew_car = decomp_prod env (fst r.rew_evars) nargs r.rew_car;
-			rew_rel = decomp_pointwise nargs r.rew_rel;
 			rew_from = mkApp(r.rew_from, args); rew_to = mkApp(r.rew_to, args);
-			rew_prf = mkApp (r.rew_prf, args); rew_evars = r.rew_evars }
+			rew_prf = prf;
+			rew_evars = r.rew_evars }
 		    in Some (Some res)
 	    else rewrite_args None
 
@@ -638,18 +712,24 @@ let subterm all flags (s : strategy) : strategy =
 	  let b' = s env' sigma b (Typing.type_of env' sigma b) (unlift_cstr env sigma cstr) evars in
 	    (match b' with
 	    | Some (Some r) ->
-		Some (Some { r with
-		  rew_prf = mkLambda (n, t, r.rew_prf);
-		  rew_car = mkProd (n, t, r.rew_car);
-		  rew_rel = pointwise_or_dep_relation n t r.rew_car r.rew_rel;
-		  rew_from = mkLambda(n, t, r.rew_from);
-		  rew_to = mkLambda (n, t, r.rew_to) })
+		let prf = match r.rew_prf with
+		  | RewPrf (rel, prf) ->
+		      let rel = pointwise_or_dep_relation n t r.rew_car rel in
+		      let prf = mkLambda (n, t, prf) in
+			RewPrf (rel, prf)
+		  | x -> x
+		in
+		  Some (Some { r with
+		    rew_prf = prf;
+		    rew_car = mkProd (n, t, r.rew_car);
+		    rew_from = mkLambda(n, t, r.rew_from);
+		    rew_to = mkLambda (n, t, r.rew_to) })
 	    | _ -> b')
 
       | Case (ci, p, c, brs) ->
 	  let cty = Typing.type_of env sigma c in
-	  let cstr = Some (mkApp (Lazy.force coq_eq, [| cty |])) in
-	  let c' = s env sigma c cty cstr evars in
+	  let cstr' = Some (mkApp (Lazy.force coq_eq, [| cty |])) in
+	  let c' = s env sigma c cty cstr' evars in
 	    (match c' with
 	    | Some (Some r) ->
 		Some (Some (make_leibniz_proof (fun x -> mkCase (ci, p, x, brs)) ty r))
@@ -669,7 +749,12 @@ let subterm all flags (s : strategy) : strategy =
 			let ctxc x = mkCase (ci, p, c, Array.of_list (List.rev (brs' x))) in
 			  Some (Some (make_leibniz_proof ctxc ty r))
 		    | None -> x
-		else x)
+		else 
+		  let cst, t' = fold_match env sigma t in
+		    match aux env sigma t' ty cstr evars with
+		    | Some (Some prf) -> Some (Some { prf with
+			rew_from = t; rew_to = unfold_match env sigma cst prf.rew_to })
+		    | x -> x)
 
       | _ -> if all then Some None else None
   in aux
@@ -677,19 +762,27 @@ let subterm all flags (s : strategy) : strategy =
 let all_subterms = subterm true default_flags
 let one_subterm = subterm false default_flags
 
-(** Requires transitivity of the rewrite step, not tail-recursive. *)
+(** Requires transitivity of the rewrite step, if not a reduction.
+    Not tail-recursive. *)
 
 let transitivity env sigma (res : rewrite_result_info) (next : strategy) : rewrite_result option =
-  match next env sigma res.rew_to res.rew_car (Some res.rew_rel) res.rew_evars with
+  match next env sigma res.rew_to res.rew_car (get_rew_rel res.rew_prf) res.rew_evars with
   | None -> None
   | Some None -> Some (Some res)
   | Some (Some res') ->
-      let prfty = mkApp (Lazy.force transitive_type, [| res.rew_car ; res.rew_rel |]) in
-      let evars, prf = new_cstr_evar res'.rew_evars env prfty in
-      let prf = mkApp (prf, [|res.rew_from; res'.rew_from; res'.rew_to;
-			      res.rew_prf; res'.rew_prf |])
-      in Some (Some { res' with rew_from = res.rew_from; rew_evars = evars; rew_prf = prf })
-
+      match res.rew_prf with
+      | RewCast c -> Some (Some { res' with rew_from = res.rew_from })
+      | RewPrf (rew_rel, rew_prf) ->
+	  match res'.rew_prf with
+	  | RewCast _ -> Some (Some ({ res with rew_to = res'.rew_to }))
+	  | RewPrf (res'_rel, res'_prf) ->
+	      let prfty = mkApp (Lazy.force transitive_type, [| res.rew_car; rew_rel |]) in
+	      let evars, prf = new_cstr_evar res'.rew_evars env prfty in
+	      let prf = mkApp (prf, [|res.rew_from; res'.rew_from; res'.rew_to;
+				      rew_prf; res'_prf |])
+	      in Some (Some { res' with rew_from = res.rew_from; 
+		rew_evars = evars; rew_prf = RewPrf (res'_rel, prf) })
+		
 (** Rewriting strategies.
 
     Inspired by ELAN's rewriting strategies:
@@ -715,8 +808,8 @@ module Strategies =
 	  let mty = mkApp (Lazy.force proper_proxy_type, [| ty ; rel; t |]) in
 	    new_cstr_evar evars env mty
 	in
-	  Some (Some { rew_car = ty; rew_rel = rel; rew_from = t; rew_to = t;
-		       rew_prf = proof; rew_evars = evars })
+	  Some (Some { rew_car = ty; rew_from = t; rew_to = t;
+		       rew_prf = RewPrf (rel, proof); rew_evars = evars })
 
     let progress (s : strategy) : strategy =
       fun env sigma t ty cstr evars ->
@@ -778,6 +871,17 @@ module Strategies =
 	  lemmas (List.map (fun hint -> (inj_open hint.Autorewrite.rew_lemma, hint.Autorewrite.rew_l2r)) rules)
 	    env sigma t ty cstr evars
 
+    let reduce (r : Redexpr.red_expr) : strategy =
+      let rfn, ckind = Redexpr.reduction_of_red_expr r in
+	fun env sigma t ty cstr evars ->
+	  let t' = rfn env sigma t in
+	    if eq_constr t' t then
+	      Some None
+	    else
+	      Some (Some { rew_car = ty; rew_from = t; rew_to = t';
+			   rew_prf = RewCast ckind; rew_evars = evars })
+	  
+
 end
 
 (** The strategy for a single rewrite, dealing with occurences. *)
@@ -804,7 +908,7 @@ let apply_strategy (s : strategy) env sigma concl cstr evars =
     | Some None -> Some None
     | Some (Some res) ->
 	evars := res.rew_evars;
-	Some (Some (res.rew_prf, (res.rew_car, res.rew_rel, res.rew_from, res.rew_to)))
+	Some (Some (res.rew_prf, (res.rew_car, res.rew_from, res.rew_to)))
 
 let split_evars_once sigma evd =
   Evd.fold (fun ev evi deps ->
@@ -835,6 +939,10 @@ let solve_constraints env evars =
 let nf_zeta =
   Reductionops.clos_norm_flags (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
 
+let map_rewprf f = function
+  | RewPrf (rel, prf) -> RewPrf (f rel, f prf)
+  | RewCast c -> RewCast c
+
 let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
   let concl, is_hyp =
     match clause with
@@ -853,12 +961,14 @@ let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
   let env = pf_env gl in
   let eq = apply_strategy strat env sigma concl (Some cstr) evars in
     match eq with
-    | Some (Some (p, (_, _, oldt, newt))) ->
+    | Some (Some (p, (car, oldt, newt))) ->
 	(try
 	    let cstrevars = !evars in
 	    let evars = solve_constraints env cstrevars in
-	    let p = Evarutil.nf_isevar evars p in
-	    let p = nf_zeta env evars p in
+	    let p = map_rewprf 
+	      (fun p -> nf_zeta env evars (Evarutil.nf_isevar evars p)) 
+	      p 
+	    in
 	    let newt = Evarutil.nf_isevar evars newt in
 	    let abs = Option.map (fun (x, y) ->
 	      Evarutil.nf_isevar evars x, Evarutil.nf_isevar evars y) abs in
@@ -866,27 +976,36 @@ let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
 	    let rewtac =
 	      match is_hyp with
 	      | Some id ->
-		  let term =
-		    match abs with
-		    | None -> p
-		    | Some (t, ty) ->
-			mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |])
-		  in
-		    cut_replacing id newt
-		      (Tacmach.refine_no_check (mkApp (term, [| mkVar id |])))
+		  (match p with
+		  | RewPrf (rel, p) ->
+		      let term =
+			match abs with
+			| None -> p
+			| Some (t, ty) ->
+			    mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |])
+		      in
+			cut_replacing id newt
+			  (Tacmach.refine_no_check (mkApp (term, [| mkVar id |])))
+		  | RewCast c ->
+		      change_in_hyp None newt (id, InHypTypeOnly))
+		    
 	      | None ->
-		  (match abs with
-		  | None ->
-		      let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
-			tclTHENLAST
-			  (Tacmach.internal_cut_no_check false name newt)
-			  (tclTHEN (Tactics.revert [name]) (Tacmach.refine_no_check p))
-		  | Some (t, ty) ->
-		      Tacmach.refine_no_check
-			(mkApp (mkLambda (Name (id_of_string "newt"), newt,
-					 mkLambda (Name (id_of_string "lemma"), ty,
-						  mkApp (p, [| mkRel 2 |]))),
-			       [| mkMeta goal_meta; t |])))
+		  (match p with
+		  | RewPrf (rel, p) ->
+		      (match abs with
+		      | None ->
+			  let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
+			    tclTHENLAST
+			      (Tacmach.internal_cut_no_check false name newt)
+			      (tclTHEN (Tactics.revert [name]) (Tacmach.refine_no_check p))
+		      | Some (t, ty) ->
+			  Tacmach.refine_no_check
+			    (mkApp (mkLambda (Name (id_of_string "newt"), newt,
+					     mkLambda (Name (id_of_string "lemma"), ty,
+						      mkApp (p, [| mkRel 2 |]))),
+				   [| mkMeta goal_meta; t |])))
+		  | RewCast c -> 
+		      change_in_concl None newt)
 	    in
 	    let evartac =
 	      if not (undef = Evd.empty) then
@@ -981,7 +1100,10 @@ ARGUMENT EXTEND rewstrategy TYPED AS strategy
   | [ "choice" rewstrategy(h) rewstrategy(h') ] -> [ Strategies.choice h h' ]
   | [ "old_hints" preident(h) ] -> [ Strategies.old_hints h ]
   | [ "hints" preident(h) ] -> [ Strategies.hints h ]
-  | [ "terms" constr_list(h) ] -> [ fun env sigma -> Strategies.lemmas (interp_constr_list env sigma h) env sigma ]
+  | [ "terms" constr_list(h) ] -> [ fun env sigma -> 
+      Strategies.lemmas (interp_constr_list env sigma h) env sigma ]
+  | [ "eval" red_expr(r) ] -> [ fun env sigma -> 
+      Strategies.reduce (Tacinterp.interp_redexp env sigma r) env sigma ]
 END
 
 TACTIC EXTEND class_rewrite
@@ -1243,7 +1365,7 @@ let build_morphism_signature m =
 	| _ -> []
     in aux t
   in
-  let evars, t', sig_, cstrs = build_signature !isevars env t cstrs None snd in
+  let evars, t', sig_, cstrs = build_signature !isevars env t cstrs None in
   let _ = isevars := evars in
   let _ = List.iter
     (fun (ty, rel) ->
@@ -1265,7 +1387,7 @@ let default_morphism sign m =
   let env = Global.env () in
   let t = Typing.type_of env Evd.empty m in
   let evars, _, sign, cstrs =
-    build_signature (Evd.empty,Evd.empty) env t (fst sign) (snd sign) (fun (ty, rel) -> rel)
+    build_signature (Evd.empty,Evd.empty) env t (fst sign) (snd sign)
   in
   let morph =
     mkApp (Lazy.force proper_type, [| t; sign; m |])
@@ -1539,4 +1661,11 @@ let implify id gl =
 
 TACTIC EXTEND implify
 [ "implify" hyp(n) ] -> [ implify n ]
+END
+
+TACTIC EXTEND fold_match
+[ "fold_match" ] -> [ fun gl -> 
+  let c, t = decompose_app (pf_concl gl) in
+  let _, c' = fold_match (pf_env gl) (project gl) c in
+    change None (applist (c', t)) onConcl gl ]
 END

@@ -531,7 +531,7 @@ let ring_equality (r,add,mul,opp,req) =
 	  (setoid,op_morph)
     | _ ->
 	let setoid = setoid_of_relation (Global.env ()) r req in
-	let signature = [Some (r,req);Some (r,req)],Some(r,req) in
+	let signature = [Some (r,Some req);Some (r,Some req)],Some(r,Some req) in
 	let add_m, add_m_lem =
 	  try Rewrite.default_morphism signature add
           with Not_found ->
@@ -544,7 +544,7 @@ let ring_equality (r,add,mul,opp,req) =
           match opp with
             | Some opp ->
 		(let opp_m,opp_m_lem =
-		  try Rewrite.default_morphism ([Some(r,req)],Some(r,req)) opp
+		  try Rewrite.default_morphism ([Some(r,Some req)],Some(r,Some req)) opp
 		  with Not_found ->
                     error "ring opposite should be declared as a morphism" in
 		let op_morph =
@@ -1031,7 +1031,7 @@ let field_equality r inv req =
         mkApp((Coqlib.build_coq_eq_data()).congr,[|r;r;inv|])
     | _ ->
 	let _setoid = setoid_of_relation (Global.env ()) r req in
-	let signature = [Some (r,req)],Some(r,req) in
+	let signature = [Some (r,Some req)],Some(r,Some req) in
 	let inv_m, inv_m_lem =
 	  try Rewrite.default_morphism signature inv
           with Not_found ->
