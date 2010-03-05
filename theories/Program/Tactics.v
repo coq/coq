@@ -101,7 +101,7 @@ Ltac revert_last :=
     [ H : _ |- _ ] => revert H
   end.
 
-(** Reapeateadly reverse the last hypothesis, putting everything in the goal. *)
+(** Repeatedly reverse the last hypothesis, putting everything in the goal. *)
 
 Ltac reverse := repeat revert_last.
 
