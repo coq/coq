@@ -3,6 +3,7 @@ open Util
 open Libnames
 open Evd
 open Proof_type
+open Vernacexpr
 
 type obligation_info =
   (identifier * Term.types * loc *
@@ -16,8 +17,8 @@ type progress = (* Resolution status of a program *)
   | Defined of global_reference (* Defined as id *)
       
 val set_default_tactic : bool -> Tacexpr.glob_tactic_expr -> unit
-val default_tactic : unit -> Proof_type.tactic
-val default_tactic_expr : unit -> Tacexpr.glob_tactic_expr
+val get_default_tactic : unit -> locality_flag * Proof_type.tactic
+val print_default_tactic : unit -> Pp.std_ppcmds
 
 val set_proofs_transparency : bool -> unit (* true = All transparent, false = Opaque if possible *)
 val get_proofs_transparency : unit -> bool

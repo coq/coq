@@ -161,9 +161,11 @@ VERNAC COMMAND EXTEND Subtac_Set_Solver
       (Tacinterp.glob_tactic t) ]
 END
 
+open Pp
+
 VERNAC COMMAND EXTEND Subtac_Show_Solver
 | [ "Show" "Obligation" "Tactic" ] -> [
-    Pp.msgnl (Pptactic.pr_glob_tactic (Global.env ()) (Subtac_obligations.default_tactic_expr ())) ]
+    msgnl (str"Program obligation tactic is " ++ Subtac_obligations.print_default_tactic ()) ]
 END
 
 VERNAC COMMAND EXTEND Subtac_Show_Obligations
