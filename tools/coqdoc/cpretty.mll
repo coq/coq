@@ -329,6 +329,7 @@ let def_token =
   | "Example"
   | "Local"
   | "Fixpoint"
+  | "Function"
   | "Boxed"
   | "CoFixpoint"
   | "Record"
