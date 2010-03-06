@@ -298,6 +298,10 @@ GEXTEND Gram
           IDENT "Sort"; s = sort-> InductionScheme(true,ind,s)
       | IDENT "Minimality"; "for"; ind = smart_global;
           IDENT "Sort"; s = sort-> InductionScheme(false,ind,s)
+      | IDENT "Elimination"; "for"; ind = smart_global;
+          IDENT "Sort"; s = sort-> CaseScheme(true,ind,s)
+      | IDENT "Case"; "for"; ind = smart_global;
+          IDENT "Sort"; s = sort-> CaseScheme(false,ind,s)
       | IDENT "Equality"; "for" ; ind = smart_global -> EqualityScheme(ind) ] ]
   ;
   (* Various Binders *)

@@ -330,6 +330,14 @@ let pr_onescheme (idop,schem) =
     hov 0 ((if dep then str"Induction for" else str"Minimality for")
     ++ spc() ++ pr_smart_global ind) ++ spc() ++
     hov 0 (str"Sort" ++ spc() ++ pr_rawsort s)
+  | CaseScheme (dep,ind,s) ->
+    (match idop with
+      | Some id -> hov 0 (pr_lident id ++ str" :=") ++ spc()
+      | None -> spc ()
+    ) ++
+    hov 0 ((if dep then str"Elimination for" else str"Case for")
+    ++ spc() ++ pr_smart_global ind) ++ spc() ++
+    hov 0 (str"Sort" ++ spc() ++ pr_rawsort s)
   | EqualityScheme ind ->
     (match idop with
       | Some id -> hov 0 (pr_lident id ++ str" :=") ++ spc()

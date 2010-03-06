@@ -280,6 +280,7 @@ let rec split_scheme l =
   | (Some id,t)::q -> let l1,l2 = split_scheme q in
     ( match t with
       | InductionScheme (x,y,z) -> ((id,x,smart_global_inductive y,z)::l1),l2
+      | CaseScheme (x,y,z) -> ((id,x,smart_global_inductive y,z)::l1),l2
       | EqualityScheme  x -> l1,((Some id,smart_global_inductive x)::l2)
     )
 (*
@@ -287,38 +288,41 @@ let rec split_scheme l =
 requested
 *)
   | (None,t)::q ->
-       let l1,l2 = split_scheme q in
-    ( match t with
-      | InductionScheme (x,y,z) ->
-             let ind = smart_global_inductive y in
-             let sort_of_ind = Retyping.get_sort_family_of env Evd.empty (mkInd ind) in
-             let z' = family_of_sort (interp_sort z) in
-             let suffix = (
-                match sort_of_ind with
-                | InProp ->
-                    if x then (match z' with
-                       | InProp -> "_ind_nodep"
-                       | InSet -> "_rec_nodep"
-                       | InType -> "_rect_nodep")
-                    else ( match z' with
-                       | InProp -> "_ind"
-                       | InSet -> "_rec"
-                       | InType -> "_rect" )
-                | _ ->
-                    if x then (match z' with
-                       | InProp -> "_ind"
-                       | InSet -> "_rec"
-                       | InType -> "_rect" )
-                    else (match z' with
-                       | InProp -> "_ind_dep"
-                       | InSet  -> "_rec_dep"
-                       | InType -> "_rect_dep")
-                ) in
-            let newid = add_suffix (basename_of_global (IndRef ind)) suffix in
-            let newref = (dummy_loc,newid) in
+      let l1,l2 = split_scheme q in
+      let names inds recs x y z =
+        let ind = smart_global_inductive y in
+        let sort_of_ind = Retyping.get_sort_family_of env Evd.empty (mkInd ind) in
+        let z' = family_of_sort (interp_sort z) in
+        let suffix = (
+          match sort_of_ind with
+          | InProp ->
+              if x then (match z' with
+              | InProp -> inds ^ "_nodep"
+              | InSet -> recs ^ "_nodep"
+              | InType -> recs ^ "t_nodep")
+              else ( match z' with
+              | InProp -> inds
+              | InSet -> recs
+              | InType -> recs ^ "t" )
+          | _ ->
+              if x then (match z' with
+              | InProp -> inds
+              | InSet -> recs
+              | InType -> recs ^ "t" )
+              else (match z' with
+              | InProp -> inds ^ "_dep"
+              | InSet  -> recs ^ "_dep"
+              | InType -> recs ^ "t_dep")
+        ) in
+        let newid = add_suffix (basename_of_global (IndRef ind)) suffix in
+        let newref = (dummy_loc,newid) in
           ((newref,x,ind,z)::l1),l2
-      | EqualityScheme  x -> l1,((None,smart_global_inductive x)::l2)
-    )
+      in
+	match t with
+	| CaseScheme (x,y,z) -> names "_case" "_case" x y z
+	| InductionScheme (x,y,z) -> names "_ind" "_rec" x y z
+	| EqualityScheme  x -> l1,((None,smart_global_inductive x)::l2)
+	    
 
 let do_mutual_induction_scheme lnamedepindsort =
   let lrecnames = List.map (fun ((_,f),_,_,_) -> f) lnamedepindsort

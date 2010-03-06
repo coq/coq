@@ -196,6 +196,7 @@ type proof_end =
 
 type scheme =
   | InductionScheme of bool * reference or_by_notation * sort_expr
+  | CaseScheme of bool * reference or_by_notation * sort_expr
   | EqualityScheme of reference or_by_notation
 
 type vernac_expr =
