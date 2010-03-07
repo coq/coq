@@ -421,30 +421,35 @@ let pointwise_or_dep_relation n t car rel =
     mkApp (Lazy.force forall_relation, 
 	  [| t; mkLambda (n, t, car); mkLambda (n, t, rel) |])
 
-let lift_cstr env sigma evars (args : constr list) ty cstr =
-  let cstr =
-    let start env car =
-      match cstr with
-      | None | Some (_, None) ->
-	  Evarutil.e_new_evar evars env (mk_relation car)
-      | Some (ty, Some rel) -> rel
-    in
-    let rec aux env prod n = 
-      if n = 0 then start env prod
-      else
-	match kind_of_term (Reduction.whd_betadeltaiota env prod) with
-	| Prod (na, ty, b) ->
-	    if noccurn 1 b then
-	      let b' = lift (-1) b in
-	      let rb = aux env b' (pred n) in
-		mkApp (Lazy.force pointwise_relation, [| ty; b'; rb |])
-	    else
-	      let rb = aux (Environ.push_rel (na, None, ty) env) b (pred n) in
-		mkApp (Lazy.force forall_relation, 
-		      [| ty; mkLambda (na, ty, b); mkLambda (na, ty, rb) |])
-	| _ -> assert false
-    in aux env ty (List.length args)
-  in Some (ty, cstr)
+let lift_cstr env sigma evars (args : constr list) c ty cstr =
+  let start env car =
+    match cstr with
+    | None | Some (_, None) ->
+	Evarutil.e_new_evar evars env (mk_relation car)
+    | Some (ty, Some rel) -> rel
+  in
+  let rec aux env prod n = 
+    if n = 0 then start env prod
+    else
+      match kind_of_term (Reduction.whd_betadeltaiota env prod) with
+      | Prod (na, ty, b) ->
+	  if noccurn 1 b then
+	    let b' = lift (-1) b in
+	    let rb = aux env b' (pred n) in
+	      mkApp (Lazy.force pointwise_relation, [| ty; b'; rb |])
+	  else
+	    let rb = aux (Environ.push_rel (na, None, ty) env) b (pred n) in
+	      mkApp (Lazy.force forall_relation, 
+		    [| ty; mkLambda (na, ty, b); mkLambda (na, ty, rb) |])
+      | _ -> raise Not_found
+  in 
+  let rec find env c ty = function
+    | [] -> None
+    | arg :: args ->
+	try Some (aux env ty (succ (List.length args)), c, ty, arg :: args)
+	with Not_found ->
+	  find env (mkApp (c, [| arg |])) (prod_applist ty [arg]) args
+  in find env c ty args
 
 let unlift_cstr env sigma = function
   | None -> None
@@ -682,9 +687,13 @@ let subterm all flags (s : strategy) : strategy =
 	    if flags.on_morphisms then
 	      let evarsref = ref (snd evars) in
 	      let mty = Typing.type_of env sigma m in
-	      let argsl = Array.to_list args in
-	      let cstr' = lift_cstr env sigma evarsref argsl mty None in
-	      let m' = s env sigma m mty (Option.map snd cstr') (fst evars, !evarsref) in
+	      let cstr', m, mty, argsl, args = 
+		let argsl = Array.to_list args in
+		  match lift_cstr env sigma evarsref argsl m mty None with
+		  | Some (cstr', m, mty, args) -> Some cstr', m, mty, args, Array.of_list args
+		  | None -> None, m, mty, argsl, args
+	      in
+	      let m' = s env sigma m mty cstr' (fst evars, !evarsref) in
 		match m' with
 		| None -> rewrite_args None (* Standard path, try rewrite on arguments *)
 		| Some None -> rewrite_args (Some false)
@@ -707,7 +716,7 @@ let subterm all flags (s : strategy) : strategy =
 			  Some (Some (apply_constraint env sigma res.rew_car rel prf cstr res))
 		      | _ -> Some (Some res)
 	    else rewrite_args None
-
+	      
       | Prod (n, x, b) when noccurn 1 b ->
 	  let b = subst1 mkProp b in
 	  let tx = Typing.type_of env sigma x and tb = Typing.type_of env sigma b in
