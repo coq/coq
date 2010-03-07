@@ -128,7 +128,7 @@ let clenv_conv_leq env sigma t c bound =
   let evd = Evd.create_goal_evar_defs sigma in
   let evars,args,_ = clenv_environments_evars env evd (Some bound) ty in
   let evars = Evarconv.the_conv_x_leq env t (applist (c,args)) evars in
-  let evars,_ = Evarconv.consider_remaining_unif_problems env evars in
+  let evars = Evarconv.consider_remaining_unif_problems env evars in
   let args = List.map (whd_evar evars) args in
   check_evars env sigma evars (applist (c,args));
   args

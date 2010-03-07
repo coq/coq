@@ -453,7 +453,7 @@ let interp_recursive fixkind l boxed =
   let fixdefs = List.map out_def fixdefs in
 
   (* Instantiate evars and check all are resolved *)
-  let evd,_ = Evarconv.consider_remaining_unif_problems env_rec !evdref in
+  let evd = Evarconv.consider_remaining_unif_problems env_rec !evdref in
   let evd = Typeclasses.resolve_typeclasses
     ~onlyargs:true ~split:true ~fail:false env_rec evd
   in

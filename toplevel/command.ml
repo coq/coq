@@ -256,9 +256,9 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
      () in
 
   (* Instantiate evars and check all are resolved *)
-  let evd,_ = consider_remaining_unif_problems env_params !evdref in
+  let evd = consider_remaining_unif_problems env_params !evdref in
   let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env_params evd in
-  let sigma =  evd in
+  let sigma = evd in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map (nf_evar sigma) cl,impsl)) constructors in
   let ctx_params = Sign.map_rel_context (nf_evar sigma) ctx_params in
   let arities = List.map (nf_evar sigma) arities in
@@ -522,7 +522,7 @@ let interp_recursive isfix fixl notations =
       () in
 
   (* Instantiate evars and check all are resolved *)
-  let evd,_ = consider_remaining_unif_problems env_rec !evdref in
+  let evd = consider_remaining_unif_problems env_rec !evdref in
   let fixdefs = List.map (Option.map (nf_evar evd)) fixdefs in
   let fixtypes = List.map (nf_evar evd) fixtypes in
   let fixctxlength = List.map (fun (_,ctx) -> rel_context_nhyps ctx) fixctxs in

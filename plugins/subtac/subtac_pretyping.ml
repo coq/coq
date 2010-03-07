@@ -70,7 +70,7 @@ let merge_evms x y =
 let interp env isevars c tycon =
   let j = pretype tycon env isevars ([],[]) c in
   let _ = isevars := Evarutil.nf_evar_map !isevars in
-  let evd,_ = consider_remaining_unif_problems env !isevars in
+  let evd = consider_remaining_unif_problems env !isevars in
 (*   let unevd = undefined_evars evd in *)
   let unevd' = Typeclasses.resolve_typeclasses ~onlyargs:true ~split:true ~fail:true env evd in
   let unevd' = Typeclasses.resolve_typeclasses ~onlyargs:false ~split:true ~fail:false env unevd' in

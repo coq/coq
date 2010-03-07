@@ -554,12 +554,9 @@ let pose_all_metas_as_evars env evd t =
 let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
   let (evd',j') = inh_conv_coerce_rigid_to dummy_loc env evd j tycon in
-  let (evd',b) = Evarconv.consider_remaining_unif_problems env evd' in
-  if b then
-    let evd' = Evd.map_metas_fvalue (nf_evar evd') evd' in
+  let evd' = Evarconv.consider_remaining_unif_problems env evd' in
+  let evd' = Evd.map_metas_fvalue (nf_evar evd') evd' in
     (evd',j'.uj_val)
-  else
-    error "Cannot solve unification constraints"
 
 let w_coerce_to_type env evd c cty mvty =
   let evd,mvty = pose_all_metas_as_evars env evd mvty in
@@ -615,9 +612,7 @@ let order_metas metas =
 let solve_simple_evar_eqn env evd ev rhs =
   let evd,b = solve_simple_eqn Evarconv.evar_conv_x env evd (None,ev,rhs) in
   if not b then error_cannot_unify env evd (mkEvar ev,rhs);
-  let (evd,b) = Evarconv.consider_remaining_unif_problems env evd in
-  if not b then error "Cannot solve unification constraints";
-  evd
+  Evarconv.consider_remaining_unif_problems env evd
 
 (* [w_merge env sigma b metas evars] merges common instances in metas
    or in evars, possibly generating new unification problems; if [b]

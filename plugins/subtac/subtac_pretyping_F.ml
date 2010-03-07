@@ -576,11 +576,11 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  (pretype tycon env evdref lvar c).uj_val
       | IsType ->
 	  (pretype_type empty_valcon env evdref lvar c).utj_val in
-    evdref := fst (consider_remaining_unif_problems env !evdref);
+    evdref := consider_remaining_unif_problems env !evdref;
     if resolve_classes then
-      evdref :=
-        Typeclasses.resolve_typeclasses ~onlyargs:false
+      (evdref := Typeclasses.resolve_typeclasses ~onlyargs:false
 	  ~split:true ~fail:fail_evar env !evdref;
+       evdref := consider_remaining_unif_problems env !evdref);
     let c = if expand_evar then nf_evar !evdref c' else c' in
     if fail_evar then check_evars env Evd.empty !evdref c;
     c
@@ -593,7 +593,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   let understand_judgment sigma env c =
     let evdref = ref (create_evar_defs sigma) in
     let j = pretype empty_tycon env evdref ([],[]) c in
-    let evd,_ = consider_remaining_unif_problems env !evdref in
+    let evd = consider_remaining_unif_problems env !evdref in
     let j = j_nf_evar evd j in
     check_evars env sigma evd (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
     j
