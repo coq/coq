@@ -575,15 +575,15 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
 	  (pretype tycon env evdref lvar c).uj_val
       | IsType ->
-	  (pretype_type empty_valcon env evdref lvar c).utj_val in
-    evdref := consider_remaining_unif_problems env !evdref;
-    if resolve_classes then
-      (evdref := Typeclasses.resolve_typeclasses ~onlyargs:false
+	  (pretype_type empty_valcon env evdref lvar c).utj_val 
+    in
+      if resolve_classes then
+	evdref := Typeclasses.resolve_typeclasses ~onlyargs:false
 	  ~split:true ~fail:fail_evar env !evdref;
-       evdref := consider_remaining_unif_problems env !evdref);
-    let c = if expand_evar then nf_evar !evdref c' else c' in
-    if fail_evar then check_evars env Evd.empty !evdref c;
-    c
+      evdref := consider_remaining_unif_problems env !evdref;
+      let c = if expand_evar then nf_evar !evdref c' else c' in
+      if fail_evar then check_evars env Evd.empty !evdref c;
+      c
 
   (* TODO: comment faire remonter l'information si le typage a resolu des
      variables du sigma original. il faudrait que la fonction de typage

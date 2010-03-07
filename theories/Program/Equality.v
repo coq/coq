@@ -324,6 +324,7 @@ Ltac simplify_one_dep_elim_term c :=
       refine (simplification_existT2 _ _ _ _ _ _ _) ||
         refine (simplification_existT1 _ _ _ _ _ _ _ _)
     | ?x = ?y -> _ => (* variables case *)
+      (unfold x) || (unfold y) ||
       (let hyp := fresh in intros hyp ;
         move hyp before x ; revert_until hyp ; generalize dependent x ;
           refine (solution_left _ _ _ _)(*  ; intros until 0 *)) ||

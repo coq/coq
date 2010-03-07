@@ -677,7 +677,6 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  (pretype_type empty_valcon env evdref lvar c).utj_val 
     in
     if resolve_classes then (
-      evdref := consider_remaining_unif_problems env !evdref;
       evdref :=
         Typeclasses.resolve_typeclasses ~onlyargs:false
 	  ~split:true ~fail:fail_evar env !evdref);
@@ -694,10 +693,10 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   let understand_judgment sigma env c =
     let evdref = ref (create_evar_defs sigma) in
     let j = pretype empty_tycon env evdref ([],[]) c in
-    let evd = consider_remaining_unif_problems env !evdref in
     let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~split:false
-      ~fail:true env evd
+      ~fail:true env !evdref
     in
+    let evd = consider_remaining_unif_problems env evd in
     let j = j_nf_evar evd j in
     check_evars env sigma evd (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
     j
