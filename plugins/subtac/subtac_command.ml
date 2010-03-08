@@ -237,14 +237,18 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   let rel = interp_constr isevars env r in
   let relty = type_of env !isevars rel in
   let relargty =
-    let ctx, ar = Reductionops.splay_prod_n env !isevars 2 relty in
-      match ctx, kind_of_term ar with
-      | [(_, None, t); (_, None, u)], Sort (Prop Null)
-	  when Reductionops.is_conv env !isevars t u -> t
-      | _, _ ->
-	  user_err_loc (constr_loc r,
-		       "Subtac_command.build_wellfounded",
-		       my_print_constr env rel ++ str " is not an homogeneous binary relation.")
+    let error () =
+      user_err_loc (constr_loc r,
+		   "Subtac_command.build_wellfounded",
+		   my_print_constr env rel ++ str " is not an homogeneous binary relation.")
+    in
+      try
+	let ctx, ar = Reductionops.splay_prod_n env !isevars 2 relty in
+	  match ctx, kind_of_term ar with
+	  | [(_, None, t); (_, None, u)], Sort (Prop Null)
+	      when Reductionops.is_conv env !isevars t u -> t
+	  | _, _ -> error ()
+      with _ -> error ()
   in
   let measure = interp_casted_constr isevars binders_env measure relargty in
   let wf_rel, wf_rel_fun, measure_fn =
