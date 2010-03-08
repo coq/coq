@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ##################################
 #
@@ -69,6 +69,8 @@ usage () {
     printf "\tSpecifies whether or not to compile Coqide\n"
     echo "-uim-script-path"
     printf "\tSpecifies where uim's .scm files are installed\n"
+    echo "-csdpdir <dir>"
+    printf "\tSpecifies the path of the CSDP solver intallation\n"
     echo "-browser <command>"
     printf "\tUse <command> to open URL %%s\n"
     echo "-with-doc (yes|no)"
@@ -116,6 +118,8 @@ natdynlink=yes
 gcc_exec=gcc
 ar_exec=ar
 ranlib_exec=ranlib
+
+csdpexec=
 
 local=false
 coqrunbyteflags_spec=no
@@ -213,6 +217,9 @@ while : ; do
 			  *) COQIDE=no
 		      esac
 		      shift;;
+    -csdpdir|--csdpdir)
+	                csdpdir="$2"
+			shift;;
     -browser|--browser) browser_spec=yes
 		      BROWSER=$2
 		      shift;;
@@ -261,7 +268,7 @@ while : ; do
 done
 
 if [ $prefix_spec = yes -a $local = true ] ; then
-  echo "Options -prefix and -local are incompatible"
+  echo "Options -prefix and -local are incompatible."
   echo "Configure script failed!"
   exit 1
 fi
@@ -295,7 +302,7 @@ case $arch_spec in
  	elif test -x /usr/bin/uname ; then
  	    ARCH=`/usr/bin/uname -s`
 	else
-	    echo "I can not automatically find the name of your architecture"
+	    echo "I can not automatically find the name of your architecture."
 	    printf "%s"\
 		"Give me a name, please [win32 for Win95, Win98 or WinNT]: "
 	    read ARCH
@@ -341,7 +348,7 @@ if [ "$MAKE" != "" ]; then
 	  if [ "$MAKEVERSION" = "GNU Make 3.81" ]; then OK="yes"; fi
       fi
       if [ $OK = "no" ]; then
-	  echo "GNU Make >= 3.81 is needed"
+	  echo "GNU Make >= 3.81 is needed."
 	  echo "Make 3.81 can be downloaded from ftp://ftp.gnu.org/gnu/make/make-3.81.tar.gz"
 	  echo "then locally installed on a Unix-style system by issuing:"
 	  echo "  tar xzvf make-3.81.tar.gz"
@@ -350,14 +357,14 @@ if [ "$MAKE" != "" ]; then
           echo "  make"
           echo "  mv make .."
 	  echo "  cd .."
-	  echo "Restart then the configure script and later use ./make instead of make"
+	  echo "Restart then the configure script and later use ./make instead of make."
 	  exit 1
       else
 	  echo "You have locally installed GNU Make 3.81. Good!"
       fi
   esac
 else
-  echo "Cannot find GNU Make 3.81"
+  echo "Cannot find GNU Make 3.81."
 fi
 
 # Browser command
@@ -407,7 +414,7 @@ case $camldir_spec in
 esac
 
 if test ! -f "$CAMLC" ; then
-    echo "I can not find the executable '$CAMLC'! (Have you installed it?)"
+    echo "I can not find the executable '$CAMLC'. Have you installed it?"
     echo "Configuration script failed!"
     exit 1
 fi
@@ -423,10 +430,10 @@ case $CAMLVERSION in
     1.*|2.*|3.00|3.01|3.02|3.03|3.03alpha|3.04|3.05beta|3.05|3.06|3.07*|3.08*|3.09.[012])
 	echo "Your version of Objective-Caml is $CAMLVERSION."
 	if [ "$force_caml_version" = "yes" ]; then
-	    echo "WARNING: you are compiling Coq with an outdated version of Objective-Caml"
+	    echo "*Warning* You are compiling Coq with an outdated version of Objective-Caml."
 	else
-	    echo "You need Objective-Caml 3.09.3 or later"
-	    echo "Configuration script failed!"
+	    echo "          You need Objective-Caml 3.09.3 or later."
+	    echo "          Configuration script failed!"
 	    exit 1
 	fi;;
     ?*)
@@ -487,7 +494,7 @@ if [ "$camlp5dir" != "" ]; then
     CAMLP4=camlp5
     CAMLP4LIB=$camlp5dir
     if [ ! -f $camlp5dir/camlp5.cma ]; then
-	echo "Cannot find camlp5 libraries in $camlp5dir (camlp5.cma not found)"
+	echo "Cannot find camlp5 libraries in $camlp5dir (camlp5.cma not found)."
 	echo "Configuration script failed!"
 	exit 1
     fi
@@ -650,6 +657,51 @@ if which uim-fep; then
         fi
     done
 fi
+
+# Borcher's C library for semidefinite programming (CSDP) is required for the
+# micromega plugin to be fully functional.
+#
+# We test for its presence; when not found we
+# - fail if the path was explicitely provided via the "-csdpdir" option,
+# - issue a warning else.
+
+if [ "$csdpdir" != "" ]; then
+    if [ ! -f "$csdpdir/csdp" ]; then
+	echo "Cannot find the csdp binary in $csdpdir ($csdpdir/csdp not found)."
+	echo "Configuration script failed!"
+	exit 1
+    else
+      if [ ! -x "$csdpdir/csdp" ]; then
+          echo "The csdp binary in $csdpdir is not executable: check your permissions."
+          echo "Configuration script failed!"
+          exit 1
+      fi
+    fi
+    USE_CSDP="yes"
+    CSDP=$csdpdir/csdp
+else
+    CSDP=`which csdp`
+    if [ ! -f "$CSDP" ]; then
+      echo "*Warning* Cannot find the csdp executable. Have you installed it?"
+      echo "          CSDP can be found pre-packaged as part of your software distribution,"
+      echo "          or at https://projects.coin-or.org/csdp."
+      USE_CSDP="no"
+    else
+      if [ ! -x "$CSDP" ]; then
+          echo "*Warning* The csdp binary at $CSDP is not executable: check your permissions."
+          USE_CSDP="noexec"
+      else
+          USE_CSDP="yes"
+      fi
+    fi
+fi
+
+# Finally, set the ML configuration variable to reflect the state of the CSDP
+# installation.
+case $USE_CSDP in
+  yes)          csdpexec="Some \"$CSDP\"";;
+  no|noexec)    csdpexec="None";;
+esac
 
 # strip command
 
@@ -865,6 +917,13 @@ else
 echo "  Documentation                     : None"
 fi
 echo "  CoqIde                            : $COQIDE"
+if test "$USE_CSDP" = "yes"; then
+echo "  CSDP for Micromega                : $CSDP"
+else if test "$USE_CSDP" = "no"; then
+echo "  CSDP for Micromega                : None"
+else if test "$USE_CSDP" = "noexec"; then
+echo "  CSDP for Micromega                : $CSDP found, but is not executable"
+fi fi fi
 echo "  Web browser                       : $BROWSER"
 echo "  Coq web site                      : $WWWCOQ"
 echo ""
@@ -1008,6 +1067,7 @@ let vo_magic_number = $VOMAGIC
 let state_magic_number = $STATEMAGIC
 let exec_extension = "$EXE"
 let with_geoproof = ref $with_geoproof
+let csdp = $csdpexec
 let browser = "$BROWSER"
 let wwwcoq = "$WWWCOQ"
 let wwwrefman = wwwcoq ^ "distrib/" ^ version ^ "/refman/"
@@ -1099,9 +1159,9 @@ chmod a-w "$config_file"
 # The end
 ####################################################
 
-echo "If anything in the above is wrong, please restart './configure'"
+echo "If anything in the above is wrong, please restart './configure'."
 echo
 echo "*Warning* To compile the system for a new architecture"
 echo "          don't forget to do a 'make archclean' before './configure'."
 
-# $Id$
+# $Id: configure 12689 2010-01-26 13:41:56Z glondu $
