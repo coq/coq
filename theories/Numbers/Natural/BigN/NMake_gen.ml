@@ -69,7 +69,7 @@ let _ =
   pr "(*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)";
   pr "(************************************************************************)";
   pr "";
-  pr "(** * NMake *)";
+  pr "(** * NMake_gen *)";
   pr "";
   pr "(** From a cyclic Z/nZ representation to arbitrary precision natural numbers.*)";
   pr "";
@@ -79,15 +79,7 @@ let _ =
   pr " DoubleType DoubleMul DoubleDivn1 DoubleCyclic Nbasic";
   pr " Wf_nat StreamMemo.";
   pr "";
-  pr "Module Make (W0:CyclicType).";
-  pr "";
-
-  pr " Implicit Arguments mk_zn2z_ops [t].";
-  pr " Implicit Arguments mk_zn2z_ops_karatsuba [t].";
-  pr " Implicit Arguments mk_zn2z_specs [t ops].";
-  pr " Implicit Arguments mk_zn2z_specs_karatsuba [t ops].";
-  pr " Implicit Arguments ZnZ.digits [t].";
-  pr " Implicit Arguments ZnZ.zdigits [t].";
+  pr "Module Make (W0:CyclicType) <: NAbstract.";
   pr "";
 
   pr " (** * The word types *)";
@@ -162,10 +154,6 @@ let _ =
   pr " Definition %s := %s_." t t;
   pr "";
 
-  pr " Definition zero : t := %s0 ZnZ.zero." c;
-  pr " Definition one : t := %s0 ZnZ.one." c;
-  pr "";
-
   pr " (** * A generic toolbox for building and deconstructing [t] *)";
   pr "";
 
@@ -208,24 +196,26 @@ let _ =
   pr "";
 
 pr "
- Lemma dom_t_S : forall n, zn2z (dom_t n) = dom_t (S n).
+ Definition level := iter_t (fun n _ => n).
+
+ Inductive View_t : t -> Prop :=
+  Mk_t : forall n (x : dom_t n), View_t (mk_t n x).
+
+ Lemma destr_t : forall x, View_t x.
  Proof.
-  do %i (destruct n; try reflexivity).
- Defined.
+ intros x. generalize (Mk_t (level x)). destruct x; simpl; auto.
+ Qed.
+";
+
+pr "
+ Lemma iter_mk_t : forall A (f:forall n, dom_t n -> A),
+ forall n x, iter_t f (mk_t n x) = f n x.
+ Proof.
+ do %i (destruct n; try reflexivity).
+ Qed.
 " (size+1);
 
 pr "
- Definition cast w w' (H:w=w') (x:w) : w' :=
-   match H in _=y return y with
-   | eq_refl => x
-   end.
-
- Definition mk_t_S n (x:zn2z (dom_t n)) : t :=
-  Eval lazy beta delta [cast dom_t_S] in
-  mk_t (S n) (cast _ _ (dom_t_S n) x).
-";
-pr "
-
  (** * Projection to ZArith *)
 
  Definition to_Z : t -> Z :=
@@ -237,8 +227,13 @@ pr "
   pr " Notation \"[ x ]\" := (to_Z x).";
   pr "";
 
-  pr " Definition eq (x y : t) := (to_Z x = to_Z y).";
-  pr "";
+pr "
+ Theorem spec_mk_t : forall n (x:dom_t n), [mk_t n x] = ZnZ.to_Z x.
+ Proof.
+ intros. change to_Z with (iter_t (fun _ x => ZnZ.to_Z x)).
+ rewrite iter_mk_t; auto.
+ Qed.
+";
 
   pp " (* Regular make op (no karatsuba) *)";
   pp " Fixpoint nmake_op (ww:Type) (ww_op: ZnZ.Ops ww) (n: nat) :";
@@ -328,6 +323,35 @@ pr "
   pp " Qed.";
   pp "";
 
+pr "
+ Lemma dom_t_S : forall n, zn2z (dom_t n) = dom_t (S n).
+ Proof.
+  do %i (destruct n; try reflexivity).
+ Defined.
+
+ Definition cast w w' (H:w=w') (x:w) : w' :=
+   match H in _=y return y with
+   | eq_refl => x
+   end.
+
+ Definition mk_t_S n (x:zn2z (dom_t n)) : t :=
+  Eval lazy beta delta [cast dom_t_S] in
+  mk_t (S n) (cast _ _ (dom_t_S n) x).
+
+ Theorem spec_mk_t_S : forall n (x:zn2z (dom_t n)),
+  [mk_t_S n x] = zn2z_to_Z (base (ZnZ.digits (dom_op n))) ZnZ.to_Z x.
+ Proof.
+ intros.
+ do %i (destruct n; [reflexivity|]).
+ simpl. rewrite !make_op_S. reflexivity.
+ Qed.
+
+ Lemma mk_t_S_level : forall n x, level (mk_t_S n x) = S n.
+ Proof.
+ do %i (destruct n; try reflexivity).
+ Qed.
+" (size+1) (size+1) (size+1);
+
   pr " (** * The specification proofs for the word operators *)";
   pr "";
 
@@ -357,7 +381,7 @@ pr "
   pp "";
 
 pr "
- Instance spec_dom n : ZnZ.Specs (dom_op n) | 10.
+ Instance dom_spec n : ZnZ.Specs (dom_op n) | 10.
  Proof.
   do %i (destruct n; auto with *). apply wn_spec.
  Qed.
@@ -647,7 +671,7 @@ pr "
   pr "  end.";
   pr "";
 
-  pp "  Lemma spec_same_level: forall x y, P [x] [y] (same_level x y).";
+  pp "  Lemma spec_same_level_0: forall x y, P [x] [y] (same_level x y).";
   pp "  Proof.";
   pp "  intros x; case x; clear x; unfold same_level.";
   for i = 0 to size do
@@ -679,6 +703,28 @@ pr "
   pr " End SameLevel.";
   pr "";
   pr " Implicit Arguments same_level [res].";
+
+pr "
+ Theorem spec_same_level_dep :
+  forall res
+   (P : nat -> Z -> Z -> res -> Prop)
+   (Pantimon : forall n m z z' r, (n <= m)%%nat -> P m z z' r -> P n z z' r)
+   (f : forall n, dom_t n -> dom_t n -> res)
+   (Pf: forall n x y, P n (ZnZ.to_Z x) (ZnZ.to_Z y) (f n x y)),
+   forall x y, P (level y) [x] [y] (same_level f x y).
+ Proof.
+ intros res P Pantimon f Pf.
+ set (f' := fun n x y => (n, f n x y)).
+ set (P' := fun z z' r => P (fst r) z z' (snd r)).
+ assert (FST : forall x y, (level y <= fst (same_level f' x y))%%nat)
+  by (destruct x, y; simpl; omega with * ).
+ assert (SND : forall x y, same_level f x y = snd (same_level f' x y))
+  by (destruct x, y; reflexivity).
+ intros. eapply Pantimon; [eapply FST|].
+ rewrite SND. eapply (@spec_same_level_0 _ P' f'); eauto.
+ Qed.
+";
+
   pr "";
   pr " Section Iter.";
   pr "";
@@ -883,17 +929,17 @@ pr "
   for i = 1 to size do
    pr " Definition reduce_%i :=" i;
    pr "  Eval lazy beta iota delta[reduce_n1] in";
-   pr "   reduce_n1 _ _ zero (ZnZ.eq0 (Ops:=w%i_op)) %s%i %s%i."
+   pr "   reduce_n1 _ _ (N0 ZnZ.zero) (ZnZ.eq0 (Ops:=w%i_op)) %s%i %s%i."
       (i-1) (if i = 1 then c else "reduce_") (i-1) c i
   done;
   pr " Definition reduce_%i :=" (size+1);
   pr "  Eval lazy beta iota delta[reduce_n1] in";
-  pr "   reduce_n1 _ _ zero (ZnZ.eq0 (Ops:=w%i_op)) reduce_%i (%sn 0)."
+  pr "   reduce_n1 _ _ (N0 ZnZ.zero) (ZnZ.eq0 (Ops:=w%i_op)) reduce_%i (%sn 0)."
     size size c;
 
   pr " Definition reduce_n n :=";
   pr "  Eval lazy beta iota delta[reduce_n] in";
-  pr "   reduce_n _ _ zero reduce_%i %sn n." (size + 1) c;
+  pr "   reduce_n _ _ (N0 ZnZ.zero) reduce_%i %sn n." (size + 1) c;
   pr "";
 
   pp " Let spec_reduce_0: forall x, [reduce_0 x] = [%s0 x]." c;
@@ -1075,7 +1121,7 @@ pr "";
       else
         pr "  | %i%s => fun x => %s%i x" j "%nat" c (i + j + 1)
     done;
-    pr   "  | _   => fun _ => zero";
+    pr   "  | _   => fun _ => N0 ZnZ.zero";
     pr "  end.";
     pr "";
   done;
@@ -1129,8 +1175,8 @@ pr "";
     pr "    w%i_mul" i;
   done;
   pr "    mulnm";
-  pr "    (fun _ => zero)";
-  pr "    (fun _ => zero)";
+  pr "    (fun _ => N0 ZnZ.zero)";
+  pr "    (fun _ => N0 ZnZ.zero)";
   pr "  ).";
   pr " Definition mul : t -> t -> t :=";
   pr "  Eval lazy beta delta [iter0] in mul_folded.";
@@ -1184,7 +1230,7 @@ pr "";
     pp "    unfold extend%i." i;
     pp "    rewrite DoubleBase.spec_extend; auto.";
     if i == 0 then
-      pp "    intros l; simpl; unfold zero; rewrite ZnZ.spec_0; ring.";
+      pp "    intros l; simpl; rewrite ZnZ.spec_0; ring.";
     pp "  Qed.";
     pp "";
   done;

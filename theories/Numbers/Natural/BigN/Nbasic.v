@@ -18,6 +18,13 @@ Require Import DoubleBase.
 Require Import CyclicAxioms.
 Require Import DoubleCyclic.
 
+Implicit Arguments mk_zn2z_ops [t].
+Implicit Arguments mk_zn2z_ops_karatsuba [t].
+Implicit Arguments mk_zn2z_specs [t ops].
+Implicit Arguments mk_zn2z_specs_karatsuba [t ops].
+Implicit Arguments ZnZ.digits [t].
+Implicit Arguments ZnZ.zdigits [t].
+
 (* To compute the necessary height *)
 
 Fixpoint plength (p: positive) : positive :=
@@ -440,33 +447,33 @@ End AddS.
  Variable w: Type.
 
  Theorem digits_zop: forall t (ops : ZnZ.Ops t),
-  @ZnZ.digits _ mk_zn2z_ops = xO ZnZ.digits.
+  ZnZ.digits (mk_zn2z_ops ops) = xO (ZnZ.digits ops).
  Proof.
  intros ww x; auto.
  Qed.
 
  Theorem digits_kzop: forall t (ops : ZnZ.Ops t),
-  @ZnZ.digits _ mk_zn2z_ops_karatsuba = xO (@ZnZ.digits _ ops).
+  ZnZ.digits (mk_zn2z_ops_karatsuba ops) = xO (ZnZ.digits ops).
  Proof.
  intros ww x; auto.
  Qed.
 
  Theorem make_zop: forall t (ops : ZnZ.Ops t),
-  @ZnZ.to_Z _ mk_zn2z_ops =
+  @ZnZ.to_Z _ (mk_zn2z_ops ops) =
     fun z => match z with
              | W0 => 0
-             | WW xh xl => ZnZ.to_Z xh * base ZnZ.digits
+             | WW xh xl => ZnZ.to_Z xh * base (ZnZ.digits ops)
                                 + ZnZ.to_Z xl
              end.
  Proof.
  intros ww x; auto.
  Qed.
 
- Theorem make_kzop: forall t (x: ZnZ.Ops t),
-  @ZnZ.to_Z _ mk_zn2z_ops_karatsuba =
+ Theorem make_kzop: forall t (ops: ZnZ.Ops t),
+  @ZnZ.to_Z _ (mk_zn2z_ops_karatsuba ops) =
     fun z => match z with
              | W0 => 0
-             | WW xh xl => ZnZ.to_Z xh * base ZnZ.digits
+             | WW xh xl => ZnZ.to_Z xh * base (ZnZ.digits ops)
                                 + ZnZ.to_Z xl
              end.
  Proof.
@@ -474,3 +481,97 @@ End AddS.
  Qed.
 
  End SimplOp.
+
+
+(** Abstract vision of a datatype of arbitrary-large numbers.
+    Concrete operations can be derived from these generic
+    fonctions, in particular from [iter_t] and [same_level].
+*)
+
+
+Module Type NAbstract.
+
+(** The domains: a sequence of [Z/nZ] structures *)
+
+Parameter dom_t : nat -> Type.
+Declare Instance dom_op n : ZnZ.Ops (dom_t n).
+Declare Instance dom_spec n : ZnZ.Specs (dom_op n).
+
+Axiom digits_dom_op : forall n,
+  Zpos (ZnZ.digits (dom_op n)) = Zpos (ZnZ.digits (dom_op 0)) * 2 ^ Z_of_nat n.
+
+(** The type [t] of arbitrary-large numbers, with abstract constructor [mk_t]
+    and destructor [destr_t] and iterator [iter_t] *)
+
+Parameter t : Type.
+
+Parameter mk_t : forall (n:nat), dom_t n -> t.
+
+Inductive View_t : t -> Prop :=
+ Mk_t : forall n (x : dom_t n), View_t (mk_t n x).
+
+Axiom destr_t : forall x, View_t x. (* i.e. every x is a (mk_t n xw) *)
+
+Parameter iter_t : forall {A:Type}(f : forall n, dom_t n -> A), t -> A.
+
+Axiom iter_mk_t : forall A (f:forall n, dom_t n -> A),
+ forall n x, iter_t f (mk_t n x) = f n x.
+
+(** Conversion to [ZArith] *)
+
+Parameter to_Z : t -> Z.
+Local Notation "[ x ]" := (to_Z x).
+
+Axiom spec_mk_t : forall n x, [mk_t n x] = ZnZ.to_Z x.
+
+(** [reduce] is like [mk_t], but try to minimise the level of the number *)
+
+Parameter reduce : forall (n:nat), dom_t n -> t.
+Axiom spec_reduce : forall n x, [reduce n x] = ZnZ.to_Z x.
+
+(** Number of level in the tree representation of a number.
+    NB: This function isn't a morphism for setoid [eq]. *)
+
+Definition level := iter_t (fun n _ => n).
+
+(** [same_level] and its rich specification, indexed by [level] *)
+
+Parameter same_level : forall {A:Type}
+ (f : forall n, dom_t n -> dom_t n -> A), t -> t -> A.
+
+Axiom spec_same_level_dep :
+  forall res
+   (P : nat -> Z -> Z -> res -> Prop)
+   (Pantimon : forall n m z z' r, (n <= m)%nat -> P m z z' r -> P n z z' r)
+   (f : forall n, dom_t n -> dom_t n -> res)
+   (Pf: forall n x y, P n (ZnZ.to_Z x) (ZnZ.to_Z y) (f n x y)),
+   forall x y, P (level y) [x] [y] (same_level f x y).
+
+(** [mk_t_S] : building a number of the next level *)
+
+Parameter mk_t_S : forall (n:nat), zn2z (dom_t n) -> t.
+
+Axiom spec_mk_t_S : forall n (x:zn2z (dom_t n)),
+  [mk_t_S n x] = zn2z_to_Z (base (ZnZ.digits (dom_op n))) ZnZ.to_Z x.
+
+Axiom mk_t_S_level : forall n x, level (mk_t_S n x) = S n.
+
+(** Not generalized yet : *)
+
+Parameter compare : t -> t -> comparison.
+Axiom spec_compare : forall x y, compare x y = Zcompare [x] [y].
+
+Parameter mul : t -> t -> t.
+Axiom spec_mul : forall x y, [mul x y] = [x] * [y].
+
+Parameter div_gt : t -> t -> t*t.
+Axiom spec_div_gt: forall x y,
+       [x] > [y] -> 0 < [y] ->
+      let (q,r) := div_gt x y in
+      [q] = [x] / [y] /\ [r] = [x] mod [y].
+
+Parameter mod_gt : t -> t -> t.
+Axiom spec_mod_gt :
+ forall x y, [x] > [y] -> 0 < [y] -> [mod_gt x y] = [x] mod [y].
+
+End NAbstract.

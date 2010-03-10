@@ -25,6 +25,10 @@ Module Make (W0:CyclicType) <: NType.
 
  Include NMake_gen.Make W0.
 
+ Local Notation "[ x ]" := (to_Z x).
+
+ Definition eq (x y : t) := [x] = [y].
+
  Declare Reduction red_t :=
   lazy beta iota delta
    [iter_t reduce same_level mk_t mk_t_S dom_t dom_op].
@@ -34,53 +38,53 @@ Module Make (W0:CyclicType) <: NType.
 
  (** * Generic results *)
 
- Theorem spec_mk_t : forall n (x:dom_t n), [mk_t n x] = ZnZ.to_Z x.
+ Tactic Notation "destr_t" constr(x) "as" simple_intropattern(pat) :=
+  destruct (destr_t x) as pat; cbv zeta;
+  rewrite ?iter_mk_t, ?spec_mk_t, ?spec_reduce.
+
+(*
+ Ltac abstract_pair t1 t2 :=
+ pattern t1, t2;
+ match goal with |- ?u ?v ?w =>
+  change (let p := (v,w) in u (fst p) (snd p)); cbv beta
+ end.
+
+ Ltac abstract_triple t1 t2 t3 :=
+  abstract_pair t2 t3; abstract_pair t1 (t2,t3).
+
+ Lemma pair_iter_t : forall A B
+  (f:forall n, dom_t n -> A)(g:forall n, dom_t n -> B), forall x,
+  (iter_t f x, iter_t g x) = iter_t (fun n x => (f n x, g n x)) x.
  Proof.
- intros. change to_Z with (iter_t (fun _ x => ZnZ.to_Z x)).
- unfold iter_t.
- repeat (destruct n; try reflexivity).
+ intros. destr_t x as (n,x). reflexivity.
  Qed.
 
- Theorem spec_mk_t_S : forall n (x:zn2z (dom_t n)),
-  [mk_t_S n x] = zn2z_to_Z (base (ZnZ.digits (dom_op n))) ZnZ.to_Z x.
- Proof.
- intros.
- repeat ((simpl; rewrite !make_op_S; reflexivity) ||
-         (destruct n; [reflexivity|])).
- Qed.
+ Ltac spec_iter_t_2 f g x :=
+ abstract_pair (f x) (g x); cbv delta [f g]; rewrite pair_iter_t;
+ pattern [x]; apply spec_iter_t; clear x.
+
+ Ltac spec_iter_t_3 f g h x :=
+ abstract_triple (f x) (g x) (h x); cbv delta [g h]; rewrite !pair_iter_t;
+ pattern [x]; apply spec_iter_t; clear x.
 
  Lemma spec_iter_t : forall A (P:Z->A->Prop)(f:forall n, dom_t n -> A),
   (forall n x, P (ZnZ.to_Z x) (f n x)) -> forall x, P [x] (iter_t f x).
  Proof.
-  intros A P f H; destruct x; unfold iter_t;
-   match goal with |- context [f ?n _] => apply (H n) end.
+ intros. destr_t x as (n,x). auto.
  Qed.
+*)
 
- Lemma spec_iter_t_2 : forall A B (P:Z->A->B->Prop)
-  (f:forall n, dom_t n -> A)
-  (g:forall n, dom_t n -> B),
-  (forall n x, P (ZnZ.to_Z x) (f n x) (g n x)) ->
-  forall x, P [x] (iter_t f x) (iter_t g x).
+ Lemma spec_same_level : forall A (P:Z->Z->A->Prop)
+  (f : forall n, dom_t n -> dom_t n -> A),
+  (forall n x y, P (ZnZ.to_Z x) (ZnZ.to_Z y) (f n x y)) ->
+  forall x y, P [x] [y] (same_level f x y).
  Proof.
-  intros A B P f g H; destruct x; unfold iter_t;
-   match goal with |- context [f ?n _] => apply (H n) end.
- Qed.
-
- Lemma spec_iter_t_3 : forall A B C (P:Z->A->B->C->Prop)
-  (f:forall n, dom_t n -> A)
-  (g:forall n, dom_t n -> B)
-  (h:forall n, dom_t n -> C),
-  (forall n x, P (ZnZ.to_Z x) (f n x) (g n x) (h n x)) ->
-  forall x, P [x] (iter_t f x) (iter_t g x) (iter_t h x).
- Proof.
-  intros A B C P f g h H; destruct x; unfold iter_t;
-   match goal with |- context [f ?n _] => apply (H n) end.
+ intros. apply spec_same_level_dep with (P:=fun _ => P); auto.
  Qed.
 
  Theorem spec_pos: forall x, 0 <= [x].
  Proof.
- intros x; apply spec_iter_t with (f := fun _ _ => 0)(P := fun u _ => 0<=u).
- intros n wx. now case (ZnZ.spec_to_Z wx).
+ intros x. destr_t x as (n,x). now case (ZnZ.spec_to_Z x).
  Qed.
 
  Lemma digits_dom_op_incr : forall n m, (n<=m)%nat ->
@@ -88,48 +92,24 @@ Module Make (W0:CyclicType) <: NType.
  Proof.
  intros.
  change (Zpos (ZnZ.digits (dom_op n)) <= Zpos (ZnZ.digits (dom_op m))).
- rewrite 2 digits_dom_op.
+ rewrite (digits_dom_op n), (digits_dom_op m).
  apply Zmult_le_compat_l; auto with zarith.
  apply Zpower_le_monotone2; auto with zarith.
  Qed.
 
- (** Number of level in the tree representation of a number.
-     NB: This function isn't a morphism for setoid [eq]. *)
-
- Definition level := iter_t (fun n _ => n).
-
- (** Specification of [same_level] indexed by [level] *)
-
- Theorem spec_same_level_dep :
-  forall res
-   (P : nat -> Z -> Z -> res -> Prop)
-   (Pantimon : forall n m z z' r, (n <= m)%nat -> P m z z' r -> P n z z' r)
-   (f : forall n, dom_t n -> dom_t n -> res)
-   (Pf: forall n x y, P n (ZnZ.to_Z x) (ZnZ.to_Z y) (f n x y)),
-   forall x y, P (level y) [x] [y] (same_level f x y).
- Proof.
- intros res P Pantimon f Pf.
- set (f' := fun n x y => (n, f n x y)).
- set (P' := fun z z' r => P (fst r) z z' (snd r)).
- assert (FST : forall x y, (level y <= fst (same_level f' x y))%nat)
-  by (destruct x, y; simpl; omega with * ).
- assert (SND : forall x y, same_level f x y = snd (same_level f' x y))
-  by (destruct x, y; reflexivity).
- intros. eapply Pantimon; [eapply FST|].
- rewrite SND. eapply (@spec_same_level _ P' f'); eauto.
- Qed.
-
-
  (** * Zero and One *)
+
+ Definition zero := mk_t O ZnZ.zero.
+ Definition one := mk_t O ZnZ.one.
 
  Theorem spec_0: [zero] = 0.
  Proof.
- exact ZnZ.spec_0.
+ unfold zero. rewrite spec_mk_t. exact ZnZ.spec_0.
  Qed.
 
  Theorem spec_1: [one] = 1.
  Proof.
- exact ZnZ.spec_1.
+ unfold one. rewrite spec_mk_t. exact ZnZ.spec_1.
  Qed.
 
  (** * Successor *)
@@ -148,8 +128,7 @@ Module Make (W0:CyclicType) <: NType.
 
  Theorem spec_succ: forall n, [succ n] = [n] + 1.
  Proof.
-  intros x. rewrite succ_fold. apply spec_iter_t. clear x.
-  intros n x. simpl.
+  intros x. rewrite succ_fold. destr_t x as (n,x).
   generalize (ZnZ.spec_succ_c x); case ZnZ.succ_c.
   intros. rewrite spec_mk_t. assumption.
   intros. unfold interp_carry in *.
@@ -195,8 +174,7 @@ Module Make (W0:CyclicType) <: NType.
 
  Theorem spec_pred_pos : forall x, 0 < [x] -> [pred x] = [x] - 1.
  Proof.
-  intros x. rewrite pred_fold. apply spec_iter_t. clear x.
-  intros n x H.
+  intros x. rewrite pred_fold. destr_t x as (n,x). intros H.
   generalize (ZnZ.spec_pred_c x); case ZnZ.pred_c; intros y H'.
   rewrite spec_reduce. assumption.
   exfalso. unfold interp_carry in *.
@@ -205,8 +183,7 @@ Module Make (W0:CyclicType) <: NType.
 
  Theorem spec_pred0 : forall x, [x] = 0 -> [pred x] = 0.
  Proof.
-  intros x. rewrite pred_fold. apply spec_iter_t. clear x.
-  intros n x H.
+  intros x. rewrite pred_fold. destr_t x as (n,x). intros H.
   generalize (ZnZ.spec_pred_c x); case ZnZ.pred_c; intros y H'.
   rewrite spec_reduce.
   unfold interp_carry in H'.
@@ -308,8 +285,8 @@ Module Make (W0:CyclicType) <: NType.
 
  Theorem spec_square: forall x, [square x] = [x] * [x].
  Proof.
-  intros x. rewrite square_fold. apply spec_iter_t. clear x.
-  intros n x. rewrite spec_mk_t_S. exact (ZnZ.spec_square_c x).
+  intros x. rewrite square_fold. destr_t x as (n,x).
+  rewrite spec_mk_t_S. exact (ZnZ.spec_square_c x).
  Qed.
 
  (** * Sqrt *)
@@ -324,8 +301,7 @@ Module Make (W0:CyclicType) <: NType.
 
  Theorem spec_sqrt: forall x, [sqrt x] ^ 2 <= [x] < ([sqrt x] + 1) ^ 2.
  Proof.
-  intros x. rewrite sqrt_fold. apply spec_iter_t. clear x.
-  intros n x; rewrite spec_reduce; exact (ZnZ.spec_sqrt x).
+  intros x. rewrite sqrt_fold. destr_t x as (n,x). exact (ZnZ.spec_sqrt x).
  Qed.
 
  (** * Power *)
@@ -358,7 +334,7 @@ Module Make (W0:CyclicType) <: NType.
 
  Theorem spec_power: forall x n, [power x n] = [x] ^ Z_of_N n.
  Proof.
- destruct n; simpl. apply ZnZ.spec_1.
+ destruct n; simpl. apply spec_1.
  apply spec_power_pos.
  Qed.
 
@@ -449,15 +425,14 @@ Module Make (W0:CyclicType) <: NType.
  Lemma digits_fold : digits = iter_t digitsn.
  Proof. red_t; reflexivity. Qed.
 
- Theorem spec_digits: forall x, 0 <= [x] < 2 ^  Zpos (digits x).
+ Theorem spec_digits: forall x, 0 <= [x] < 2 ^ Zpos (digits x).
  Proof.
- intros x. rewrite digits_fold. apply spec_iter_t. clear x.
- intros n x. exact (ZnZ.spec_to_Z x).
+ intros x. rewrite digits_fold. destr_t x as (n,x). exact (ZnZ.spec_to_Z x).
  Qed.
 
  Lemma digits_level : forall x, digits x = ZnZ.digits (dom_op (level x)).
  Proof.
- destruct x; reflexivity.
+ intros x. rewrite digits_fold. unfold level. destr_t x as (n,x). reflexivity.
  Qed.
 
  (** * Gcd *)
@@ -616,10 +591,10 @@ Module Make (W0:CyclicType) <: NType.
  (** * Conversion *)
 
  Definition pheight p :=
-   Peano.pred (nat_of_P (get_height (ZnZ.digits W0.ops) (plength p))).
+   Peano.pred (nat_of_P (get_height (ZnZ.digits (dom_op 0)) (plength p))).
 
  Theorem pheight_correct: forall p,
-    Zpos p < 2 ^ (Zpos (ZnZ.digits W0.ops) * 2 ^ (Z_of_nat (pheight p))).
+    Zpos p < 2 ^ (Zpos (ZnZ.digits (dom_op 0)) * 2 ^ (Z_of_nat (pheight p))).
  Proof.
  intros p; unfold pheight.
  assert (F1: forall x, Z_of_nat (Peano.pred (nat_of_P x)) = Zpos x - 1).
@@ -631,7 +606,7 @@ Module Make (W0:CyclicType) <: NType.
     apply lt_le_trans with 1%nat; auto with zarith.
     exact (le_Pmult_nat x 1).
   rewrite F1; clear F1.
- assert (F2:= (get_height_correct (ZnZ.digits W0.ops) (plength p))).
+ assert (F2:= (get_height_correct (ZnZ.digits (dom_op 0)) (plength p))).
  apply Zlt_le_trans with (Zpos (Psucc p)).
    rewrite Zpos_succ_morphism; auto with zarith.
   apply Zle_trans with (1 := plength_pred_correct (Psucc p)).
@@ -653,7 +628,7 @@ Module Make (W0:CyclicType) <: NType.
  unfold base.
  apply Zlt_le_trans with (1 := pheight_correct x).
  apply Zpower_le_monotone2; auto with zarith.
- rewrite digits_dom_op; auto with zarith.
+ rewrite (digits_dom_op (_ _)); auto with zarith.
  Qed.
 
  Definition of_N (x:N) : t :=
@@ -688,9 +663,8 @@ Module Make (W0:CyclicType) <: NType.
 
  Theorem spec_head00: forall x, [x] = 0 -> [head0 x] = Zpos (digits x).
  Proof.
- intros x. rewrite head0_fold, digits_fold.
- apply spec_iter_t_2 with (P:=fun z u v => z=0 -> [u] = Zpos v). clear x.
- intros n x; rewrite spec_reduce; exact (ZnZ.spec_head00 x).
+ intros x. rewrite head0_fold, digits_fold. destr_t x as (n,x).
+ exact (ZnZ.spec_head00 x).
  Qed.
 
  Lemma pow2_pos_minus_1 : forall z, 0<z -> 2^(z-1) = 2^z / 2.
@@ -705,11 +679,7 @@ Module Make (W0:CyclicType) <: NType.
    2 ^ (Zpos (digits x) - 1) <= 2 ^ [head0 x] * [x] < 2 ^ Zpos (digits x).
  Proof.
  intros x. rewrite pow2_pos_minus_1 by (red; auto).
- rewrite head0_fold, digits_fold.
- apply spec_iter_t_2 with
-   (P:=fun z u v => 0<z -> 2^(Zpos v) / 2 <= 2^[u] * z < 2^(Zpos v)).
- clear x. intros n x. rewrite spec_reduce.
- exact (ZnZ.spec_head0 x).
+ rewrite head0_fold, digits_fold. destr_t x as (n,x). exact (ZnZ.spec_head0 x).
  Qed.
 
  Local Notation tail0n := (fun n x => reduce n (ZnZ.tail0 x)).
@@ -721,16 +691,14 @@ Module Make (W0:CyclicType) <: NType.
 
  Theorem spec_tail00: forall x, [x] = 0 -> [tail0 x] = Zpos (digits x).
  Proof.
- intros x. rewrite tail0_fold, digits_fold.
- apply spec_iter_t_2 with (P:=fun z u v => z=0 -> [u] = Zpos v). clear x.
- intros n x; rewrite spec_reduce; exact (ZnZ.spec_tail00 x).
+ intros x. rewrite tail0_fold, digits_fold. destr_t x as (n,x).
+ exact (ZnZ.spec_tail00 x).
  Qed.
 
  Theorem spec_tail0: forall x,
    0 < [x] -> exists y, 0 <= y /\ [x] = (2 * y + 1) * 2 ^ [tail0 x].
  Proof.
- intros x. rewrite tail0_fold. apply spec_iter_t. clear x.
- intros n x. rewrite spec_reduce. exact (ZnZ.spec_tail0 x).
+ intros x. rewrite tail0_fold. destr_t x as (n,x). exact (ZnZ.spec_tail0 x).
  Qed.
 
  (** * [Ndigits]
@@ -748,9 +716,8 @@ Module Make (W0:CyclicType) <: NType.
 
  Theorem spec_Ndigits: forall x, [Ndigits x] = Zpos (digits x).
  Proof.
- intros x. rewrite Ndigits_fold, digits_fold.
- apply spec_iter_t_2 with (P:=fun z u v => [u] = Zpos v). clear x.
- intros n x. rewrite spec_reduce. apply ZnZ.spec_zdigits.
+ intros x. rewrite Ndigits_fold, digits_fold. destr_t x as (n,x).
+ apply ZnZ.spec_zdigits.
  Qed.
 
  (** * Binary logarithm *)
@@ -769,8 +736,7 @@ Module Make (W0:CyclicType) <: NType.
  Lemma spec_log2_0 : forall x, [x] = 0 -> [log2 x] = 0.
  Proof.
  intros x H. rewrite log2_fold.
- rewrite spec_eq_bool, H. rewrite spec_0. simpl.
- exact ZnZ.spec_0.
+ rewrite spec_eq_bool, H. rewrite spec_0. simpl. exact spec_0.
  Qed.
 
  Lemma head0_zdigits : forall n (x : dom_t n),
@@ -800,8 +766,9 @@ Module Make (W0:CyclicType) <: NType.
  rewrite spec_eq_bool. rewrite spec_0.
  generalize (Zeq_bool_if [x] 0). destruct Zeq_bool.
  auto with zarith.
- apply spec_iter_t. clear x H. intros n x H. simpl.
- rewrite spec_reduce, ZnZ.spec_sub_carry.
+ clear H.
+ destr_t x as (n,x). intros H.
+ rewrite ZnZ.spec_sub_carry.
  assert (H0 := ZnZ.spec_to_Z x).
  assert (H1 := ZnZ.spec_to_Z (ZnZ.head0 x)).
  assert (H2 := ZnZ.spec_to_Z (ZnZ.zdigits (dom_op n))).
@@ -822,15 +789,11 @@ Module Make (W0:CyclicType) <: NType.
  Lemma log2_digits_head0 : forall x, 0 < [x] ->
    [log2 x] = Zpos (digits x) - [head0 x] - 1.
  Proof.
- intros.
- rewrite log2_fold.
+ intros. rewrite log2_fold.
  rewrite spec_eq_bool. rewrite spec_0.
  generalize (Zeq_bool_if [x] 0). destruct Zeq_bool.
  auto with zarith.
- intros _. revert H.
- rewrite digits_fold, head0_fold.
- apply spec_iter_t_3 with (P:=fun z a b c => 0<z -> [a] = Zpos b - [c] -1).
- clear x. intros n x. rewrite 2 spec_reduce.
+ intros _. revert H. rewrite digits_fold, head0_fold. destr_t x as (n,x).
  rewrite ZnZ.spec_sub_carry.
  intros.
  generalize (head0_zdigits n x H).
@@ -967,18 +930,24 @@ Module Make (W0:CyclicType) <: NType.
  Lemma double_size_fold : double_size = iter_t double_size_n.
  Proof. red_t; reflexivity. Qed.
 
- Theorem spec_double_size_digits:
-   forall x, digits (double_size x) = xO (digits x).
+ Lemma double_size_level : forall x, level (double_size x) = S (level x).
  Proof.
- intros x; case x; unfold double_size, digits; clear x; auto.
- intros n x; rewrite make_op_S; auto.
+ intros x. rewrite double_size_fold; unfold level at 2. destr_t x as (n,x).
+ apply mk_t_S_level.
+ Qed.
+
+ Theorem spec_double_size_digits:
+   forall x, Zpos (digits (double_size x)) = 2 * (Zpos (digits x)).
+ Proof.
+ intros x. rewrite ! digits_level, double_size_level.
+ rewrite !(digits_dom_op (_ _)), inj_S, Zpower_Zsucc; auto with zarith.
+ ring.
  Qed.
 
  Theorem spec_double_size: forall x, [double_size x] = [x].
  Proof.
- intros x. rewrite double_size_fold. apply spec_iter_t. clear x.
- intros n x. rewrite spec_mk_t_S. simpl. rewrite ZnZ.spec_0.
- auto with zarith.
+ intros x. rewrite double_size_fold. destr_t x as (n,x).
+ rewrite spec_mk_t_S. simpl. rewrite ZnZ.spec_0. auto with zarith.
  Qed.
 
  Theorem spec_double_size_head0:
@@ -1017,7 +986,7 @@ Module Make (W0:CyclicType) <: NType.
  rewrite Zpower_2.
  apply Zlt_le_trans with (2 := HH3).
  rewrite <- Zmult_assoc.
- replace (Zpos (xO (digits x)) - 1) with
+ replace (2 * Zpos (digits x) - 1) with
    ((Zpos (digits x) - 1) + (Zpos (digits x))).
  rewrite Zpower_exp; auto with zarith.
  apply Zmult_lt_compat2; auto with zarith.
@@ -1164,8 +1133,8 @@ Module Make (W0:CyclicType) <: NType.
  Theorem spec_is_even: forall x,
    if is_even x then [x] mod 2 = 0 else [x] mod 2 = 1.
  Proof.
- intros x. rewrite is_even_fold. apply spec_iter_t. clear x.
- intros n x; exact (ZnZ.spec_is_even x).
+ intros x. rewrite is_even_fold. destr_t x as (n,x).
+ exact (ZnZ.spec_is_even x).
  Qed.
 
 End Make.
