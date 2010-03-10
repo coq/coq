@@ -30,6 +30,12 @@ let rec gen2 n = if n == 0 then "1" else if n == 1 then "2"
 let rec genxO n s =
   if n == 0 then s else " (xO" ^ (genxO (n - 1) s) ^ ")"
 
+let rec iter_str n s = if n = 0 then "" else (iter_str (n-1) s) ^ s
+
+let rec iter_name i j base sep =
+  if i >= j then base^(string_of_int i)
+  else (iter_name i (j-1) base sep)^sep^" "^base^(string_of_int j)
+
 (* NB: in ocaml >= 3.10, we could use Printf.ifprintf for printing to
    /dev/null, but for being compatible with earlier ocaml and not
    relying on system-dependent stuff like open_out "/dev/null",
@@ -97,7 +103,7 @@ let _ =
   pr "";
 
   pr " Local Notation w0_op := W0.ops.";
-  for i = 1 to 3 do
+  for i = 1 to min 3 size do
     pr " Instance w%i_op : ZnZ.Ops w%i := mk_zn2z_ops w%i_op." i i (i-1)
   done;
   for i = 4 to size do
@@ -132,7 +138,7 @@ let _ =
   pr "";
   pr " Definition make_op_list := dmemo_list _ omake_op.";
   pr "";
-  pr " Instance make_op n : ZnZ.Ops (word w6 (S n))";
+  pr " Instance make_op n : ZnZ.Ops (word w%i (S n))" size;
   pr "  := dmemo_get _ omake_op n make_op_list.";
   pr "";
 
@@ -163,8 +169,6 @@ let _ =
   pr " (** * A generic toolbox for building and deconstructing [t] *)";
   pr "";
 
-  let rec iter_str n s = if n = 0 then "" else (iter_str (n-1) s) ^ s
-  in
   pr " Local Notation SizePlus n := %sn%s."
     (iter_str size "(S ") (iter_str size ")");
   pr "";
@@ -173,7 +177,7 @@ let _ =
   for i = 0 to size do
     pr "  | %i => w%i" i i;
   done;
-  pr "  | SizePlus n => word w%i n" size;
+  pr "  | %sn => word w%i n" (if size=0 then "" else "SizePlus ") size;
   pr " end.";
   pr "";
 
@@ -199,7 +203,7 @@ let _ =
   for i = 0 to size do
     pr "   | %i => %s%i" i c i;
   done;
-  pr "   | SizePlus (S n) => %sn n" c;
+  pr "   | %s(S n) => %sn n" (if size=0 then "" else "SizePlus ") c;
   pr "  end.";
   pr "";
 
@@ -327,15 +331,19 @@ pr "
   pr " (** * The specification proofs for the word operators *)";
   pr "";
 
-  pr " Typeclasses Opaque w1 w2 w3 w4 w5 w6.";
+  if size <> 0 then
+  pr " Typeclasses Opaque %s." (iter_name 1 size "w" " ");
   pr "";
 
   pp " Instance w0_spec: ZnZ.Specs w0_op := W0.specs.";
-  for i = 1 to 3 do
+  for i = 1 to min 3 size do
     pp " Instance w%i_spec: ZnZ.Specs w%i_op := mk_zn2z_specs w%i_spec." i i (i-1)
   done;
-  for i = 4 to size + 3 do
-    pp " Instance w%i_spec : ZnZ.Specs w%i_op := mk_zn2z_specs_karatsuba w%i_spec." i i (i-1)
+  for i = 4 to size do
+    pp " Instance w%i_spec: ZnZ.Specs w%i_op := mk_zn2z_specs_karatsuba w%i_spec." i i (i-1)
+  done;
+  for i = size+1 to size+3 do
+    pp " Instance w%i_spec: ZnZ.Specs w%i_op := mk_zn2z_specs_karatsuba w%i_spec." i i (i-1)
   done;
   pp "";
 
@@ -372,11 +380,6 @@ pr "
   pp " intros n x y; rewrite make_op_S; auto.";
   pp " Qed.";
   pp "";
-
-  let rec iter_name i j base sep =
-    if i = j then base^(string_of_int i)
-    else (iter_name i (j-1) base sep)^sep^" "^base^(string_of_int j)
-  in
 
   for i = 0 to size do
     pp " Theorem digits_w%i:  ZnZ.digits w%i_op = ZnZ.digits (nmake_op _ w0_op %i)." i i i;
@@ -536,18 +539,18 @@ pr "
   Zpos (ZnZ.digits (dom_op n)) = Zpos (ZnZ.digits W0.ops) * 2 ^ Z_of_nat n.
  Proof.
  intros. rewrite Zmult_comm.
- do 7 (destruct n; try reflexivity).
+ do %i (destruct n; try reflexivity).
  simpl.
  rewrite <- shift_pos_correct. f_equal.
  rewrite shift_pos_nat.
- rewrite !nat_of_P_succ_morphism, nat_of_P_o_P_of_succ_nat_eq_succ.
+ rewrite ?nat_of_P_succ_morphism, nat_of_P_o_P_of_succ_nat_eq_succ.
  unfold shift_nat. simpl.
  generalize (digits_w%in n); simpl; intros ->.
  rewrite digits_doubled.
- rewrite digits_w%i, !digits_nmake. simpl.
+ rewrite digits_w%i, ?digits_nmake. simpl.
  induction n; simpl; congruence.
  Qed.
-" size size;
+" (size+1) size size;
 
   pp " Let spec_extendn_0: forall n wx, [%sn n (extend n _ wx)] = [%sn 0 wx]." c c;
   pp " intros n; elim n; auto.";
@@ -877,14 +880,11 @@ pr "
   pr "";
 
   pr " Definition reduce_0 (x:w0) := %s0 x." c;
-  pr " Definition reduce_1 :=";
-  pr "  Eval lazy beta iota delta[reduce_n1] in";
-  pr "   reduce_n1 _ _ zero (ZnZ.eq0 (Ops:=w0_op)) %s0 %s1." c c;
-  for i = 2 to size do
-    pr " Definition reduce_%i :=" i;
-    pr "  Eval lazy beta iota delta[reduce_n1] in";
-    pr "   reduce_n1 _ _ zero (ZnZ.eq0 (Ops:=w%i_op)) reduce_%i %s%i."
-      (i-1) (i-1)  c i
+  for i = 1 to size do
+   pr " Definition reduce_%i :=" i;
+   pr "  Eval lazy beta iota delta[reduce_n1] in";
+   pr "   reduce_n1 _ _ zero (ZnZ.eq0 (Ops:=w%i_op)) %s%i %s%i."
+      (i-1) (if i = 1 then c else "reduce_") (i-1) c i
   done;
   pr " Definition reduce_%i :=" (size+1);
   pr "  Eval lazy beta iota delta[reduce_n1] in";
@@ -940,7 +940,7 @@ pr "  match n with";
 for i = 0 to size do
 pr "   | %i => reduce_%i" i i;
  done;
-pr "   | SizePlus (S n) => reduce_n n";
+pr "   | %s(S n) => reduce_n n" (if size=0 then "" else "SizePlus ");
 pr "  end%%nat.";
 pr "";
 
@@ -1491,193 +1491,6 @@ pr "";
   pp "    rewrite <- (spec_cast_r n m y) in H2; auto.";
   pp " Qed.";
   pr "";
-
-
-(*
-  (* Unsafe_Shiftl *)
-  for i = 0 to size do
-    pr " Definition unsafe_shiftl%i n x := w%i_op.(znz_add_mul_div) n x w%i_op.(znz_0)." i i i
-  done;
-  pr " Definition unsafe_shiftln n p x := (make_op n).(znz_add_mul_div) p x (make_op n).(znz_0).";
-  pr " Definition unsafe_shiftl := Eval lazy beta delta [same_level] in";
-  pr "    same_level _ (fun n x => %s0 (unsafe_shiftl0 n x))" c;
-  for i = 1 to size do
-    pr "           (fun n x => reduce_%i (unsafe_shiftl%i n x))" i i;
-  done;
-  pr "           (fun n p x => reduce_n n (unsafe_shiftln n p x)).";
-  pr "";
-  pr "";
-
-
-  pr " Theorem spec_unsafe_shiftl: forall n x,";
-  pr "  [n] <= [head0 x] -> [unsafe_shiftl n x] = [x] * 2 ^ [n].";
-  pa " Admitted.";
-  pp " Proof.";
-  pp " assert (F0: forall x y, x - (x - y) = y).";
-  pp "   intros; ring.";
-  pp " assert (F2: forall x y z, 0 <= x -> 0 <= y -> x < z -> 0 <= x / 2 ^ y < z).";
-  pp "   intros x y z HH HH1 HH2.";
-  pp "   split; auto with zarith.";
-  pp "   apply Zle_lt_trans with (2 := HH2); auto with zarith.";
-  pp "   apply Zdiv_le_upper_bound; auto with zarith.";
-  pp "   pattern x at 1; replace x with (x * 2 ^ 0); auto with zarith.";
-  pp "   apply Zmult_le_compat_l; auto.";
-  pp "   apply Zpower_le_monotone; auto with zarith.";
-  pp "   rewrite Zpower_0_r; ring.";
-  pp "  assert (F3: forall x y, 0 <= y -> y <= x -> 0 <= x - y < 2 ^ x).";
-  pp "    intros xx y HH HH1.";
-  pp "    split; auto with zarith.";
-  pp "    apply Zle_lt_trans with xx; auto with zarith.";
-  pp "    apply Zpower2_lt_lin; auto with zarith.";
-  pp "  assert (F4: forall ww ww1 ww2";
-  pp "         (ww_op: ZnZ.Ops ww) (ww1_op: ZnZ.Ops ww1) (ww2_op: ZnZ.Ops ww2)";
-  pp "           xx yy xx1 yy1,";
-  pp "  ZnZ.to_Z ww2_op yy <= ZnZ.to_Z ww1_op (znz_head0 ww1_op xx) ->";
-  pp "  ZnZ.to_Z ww1_op (ZnZ.zdigits ww1_op) <= ZnZ.to_Z ww_op (ZnZ.zdigits ww_op) ->";
-  pp "  znz_spec ww_op -> znz_spec ww1_op -> znz_spec ww2_op ->";
-  pp "  ZnZ.to_Z ww_op xx1 = ZnZ.to_Z ww1_op xx ->";
-  pp "  ZnZ.to_Z ww_op yy1 = ZnZ.to_Z ww2_op yy ->";
-  pp "  ZnZ.to_Z ww_op";
-  pp "  (znz_add_mul_div ww_op yy1";
-  pp "     xx1 (znz_0 ww_op)) = ZnZ.to_Z ww1_op xx * 2 ^ ZnZ.to_Z ww2_op yy).";
-  pp "  intros ww ww1 ww2 ww_op ww1_op ww2_op xx yy xx1 yy1 Hl Hl1 Hw Hw1 Hw2 Hx Hy.";
-  pp "     case (spec_to_Z Hw xx1); auto with zarith; intros HH1 HH2.";
-  pp "     case (spec_to_Z Hw yy1); auto with zarith; intros HH3 HH4.";
-  pp "     rewrite <- Hx.";
-  pp "     rewrite <- Hy.";
-  pp "     generalize (spec_add_mul_div Hw xx1 (znz_0 ww_op) yy1).";
-  pp "     rewrite ZnZ.spec_0.";
-  pp "     assert (F1: ZnZ.to_Z ww1_op (znz_head0 ww1_op xx) <= Zpos (ZnZ.digits ww1_op)).";
-  pp "     case (Zle_lt_or_eq _ _ HH1); intros HH5.";
-  pp "     apply Zlt_le_weak.";
-  pp "     case (CyclicAxioms.spec_head0 Hw1 xx).";
-  pp "       rewrite <- Hx; auto.";
-  pp "     intros _ Hu; unfold base in Hu.";
-  pp "     case (Zle_or_lt (Zpos (ZnZ.digits ww1_op))";
-  pp "                     (ZnZ.to_Z ww1_op (znz_head0 ww1_op xx))); auto; intros H1.";
-  pp "     absurd (2 ^  (Zpos (ZnZ.digits ww1_op)) <= 2 ^ (ZnZ.to_Z ww1_op (znz_head0 ww1_op xx))).";
-  pp "       apply Zlt_not_le.";
-  pp "       case (spec_to_Z Hw1 xx); intros HHx3 HHx4.";
-  pp "       rewrite <- (Zmult_1_r (2 ^ ZnZ.to_Z ww1_op (znz_head0 ww1_op xx))).";
-  pp "       apply Zle_lt_trans with (2 := Hu).";
-  pp "       apply Zmult_le_compat_l; auto with zarith.";
-  pp "     apply Zpower_le_monotone; auto with zarith.";
-  pp "     rewrite (CyclicAxioms.spec_head00 Hw1 xx); auto with zarith.";
-  pp "     rewrite Zdiv_0_l; auto with zarith.";
-  pp "     rewrite Zplus_0_r.";
-  pp "     case (Zle_lt_or_eq _ _ HH1); intros HH5.";
-  pp "     rewrite Zmod_small; auto with zarith.";
-  pp "     intros HH; apply HH.";
-  pp "     rewrite Hy; apply Zle_trans with (1:= Hl).";
-  pp "     rewrite <- (spec_zdigits Hw).";
-  pp "     apply Zle_trans with (2 := Hl1); auto.";
-  pp "     rewrite  (spec_zdigits Hw1); auto with zarith.";
-  pp "     split; auto with zarith .";
-  pp "     apply Zlt_le_trans with (base (ZnZ.digits ww1_op)).";
-  pp "     rewrite Hx.";
-  pp "     case (CyclicAxioms.spec_head0 Hw1 xx); auto.";
-  pp "       rewrite <- Hx; auto.";
-  pp "     intros _ Hu; rewrite Zmult_comm in Hu.";
-  pp "     apply Zle_lt_trans with (2 := Hu).";
-  pp "     apply Zmult_le_compat_l; auto with zarith.";
-  pp "     apply Zpower_le_monotone; auto with zarith.";
-  pp "     unfold base; apply Zpower_le_monotone; auto with zarith.";
-  pp "     split; auto with zarith.";
-  pp "     rewrite <- (spec_zdigits Hw); auto with zarith.";
-  pp "     rewrite <- (spec_zdigits Hw1); auto with zarith.";
-  pp "     rewrite <- HH5.";
-  pp "     rewrite Zmult_0_l.";
-  pp "     rewrite Zmod_small; auto with zarith.";
-  pp "     intros HH; apply HH.";
-  pp "     rewrite Hy; apply Zle_trans with (1 := Hl).";
-  pp "     rewrite (CyclicAxioms.spec_head00 Hw1 xx); auto with zarith.";
-  pp "     rewrite <- (spec_zdigits Hw); auto with zarith.";
-  pp "     rewrite <- (spec_zdigits Hw1); auto with zarith.";
-  pp "  assert (F5: forall n m, (n <= m)%snat ->" "%";
-  pp "     Zpos (ZnZ.digits (make_op n)) <= Zpos (ZnZ.digits (make_op m))).";
-  pp "    intros n m HH; elim HH; clear m HH; auto with zarith.";
-  pp "    intros m HH Hrec; apply Zle_trans with (1 := Hrec).";
-  pp "    rewrite make_op_S.";
-  pp "    match goal with |- Zpos ?Y <= ?X => change X with (Zpos (xO Y)) end.";
-  pp "    rewrite Zpos_xO.";
-  pp "    assert (0 <= Zpos (ZnZ.digits (make_op n))); auto with zarith.";
-  pp "  assert (F6: forall n, Zpos (ZnZ.digits w%i_op) <= Zpos (ZnZ.digits (make_op n)))." size;
-  pp "    intros n ; apply Zle_trans with (Zpos (ZnZ.digits (make_op 0))).";
-  pp "    change (ZnZ.digits (make_op 0)) with (xO (ZnZ.digits w%i_op))." size;
-  pp "    rewrite Zpos_xO.";
-  pp "    assert (0 <= Zpos (ZnZ.digits w%i_op)); auto with zarith." size;
-  pp "    apply F5; auto with arith.";
-  pp "  intros x; case x; clear x; unfold unsafe_shiftl, same_level.";
-  for i = 0 to size do
-    pp "    intros x y; case y; clear y.";
-    for j = 0 to i - 1 do
-      pp "     intros y; unfold unsafe_shiftl%i, head0." i;
-      pp "       repeat rewrite spec_reduce_%i; repeat rewrite spec_reduce_%i; unfold to_Z; intros H1." i j;
-      pp "       apply F4 with (3:=w%i_spec)(4:=w%i_spec)(5:=w%i_spec); auto with zarith." i j i;
-      pp "       rewrite (spec_zdigits w%i_spec)." i;
-      pp "       rewrite (spec_zdigits w%i_spec)." j;
-      pp "       change (ZnZ.digits w%i_op) with %s." i (genxO (i - j) (" (ZnZ.digits w"^(string_of_int j)^"_op)"));
-      pp "       repeat rewrite (fun x => Zpos_xO (xO x)).";
-      pp "       repeat rewrite (fun x y => Zpos_xO (@ZnZ.digits x y)).";
-      pp "       assert (0 <= Zpos (ZnZ.digits w%i_op)); auto with zarith." j;
-      pp "       try (apply sym_equal; exact (spec_extend%in%i y))." j i;
-    done;
-    pp "     intros y; unfold unsafe_shiftl%i, head0." i;
-    pp "     repeat rewrite spec_reduce_%i; unfold to_Z; intros H1." i;
-    pp "       apply F4 with (3:=w%i_spec)(4:=w%i_spec)(5:=w%i_spec); auto with zarith." i i i;
-    for j = i + 1 to size do
-      pp "     intros y; unfold unsafe_shiftl%i, head0." j;
-      pp "       repeat rewrite spec_reduce_%i; repeat rewrite spec_reduce_%i; unfold to_Z; intros H1." i j;
-      pp "       apply F4 with (3:=w%i_spec)(4:=w%i_spec)(5:=w%i_spec); auto with zarith." j j i;
-      pp "       try (apply sym_equal; exact (spec_extend%in%i x))." i j;
-    done;
-    if i == size then
-      begin
-        pp "     intros m y; unfold unsafe_shiftln, head0.";
-        pp "       repeat rewrite spec_reduce_n; unfold to_Z; intros H1.";
-        pp "       apply F4 with (3:=(wn_spec m))(4:=wn_spec m)(5:=w%i_spec); auto with zarith." size;
-        pp "       try (apply sym_equal; exact (spec_extend%in m x))." size;
-      end
-    else
-      begin
-        pp "     intros m y; unfold unsafe_shiftln, head0.";
-        pp "       repeat rewrite spec_reduce_n; unfold to_Z; intros H1.";
-        pp "       apply F4 with (3:=(wn_spec m))(4:=wn_spec m)(5:=w%i_spec); auto with zarith." i;
-        pp "       change ([Nn m (extend%i m (extend%i %i x))] = [N%i x])." size i (size - i - 1) i;
-        pp "       rewrite <- (spec_extend%in m); rewrite <- spec_extend%in%i; auto." size i size;
-      end
-  done;
-  pp "    intros n x y; case y; clear y;";
-  pp "     intros y; unfold unsafe_shiftln, head0; try rewrite spec_reduce_n.";
-  for i = 0 to size do
-    pp "     try rewrite spec_reduce_%i; unfold to_Z; intros H1." i;
-    pp "       apply F4 with (3:=(wn_spec n))(4:=w%i_spec)(5:=wn_spec n); auto with zarith." i;
-    pp "       rewrite (spec_zdigits w%i_spec)." i;
-    pp "       rewrite (spec_zdigits (wn_spec n)).";
-    pp "       apply Zle_trans with (2 := F6 n).";
-    pp "       change (ZnZ.digits w%i_op) with %s." size (genxO (size - i) ("(ZnZ.digits w" ^ (string_of_int i) ^ "_op)"));
-    pp "       repeat rewrite (fun x => Zpos_xO (xO x)).";
-    pp "       repeat rewrite (fun x y => Zpos_xO (@ZnZ.digits x y)).";
-    pp "       assert (H: 0 <= Zpos (ZnZ.digits w%i_op)); auto with zarith." i;
-    if i == size then
-      pp "       change ([Nn n (extend%i n y)] = [N%i y])." size i
-    else
-      pp "       change ([Nn n (extend%i n (extend%i %i y))] = [N%i y])." size i (size - i - 1) i;
-    pp "       rewrite <- (spec_extend%in n); auto." size;
-    if i <> size then
-      pp "       try (rewrite <- spec_extend%in%i; auto)." i size;
-  done;
-  pp "     generalize y; clear y; intros m y.";
-  pp "     repeat rewrite spec_reduce_n; unfold to_Z; intros H1.";
-  pp "       apply F4 with (3:=(wn_spec (Max.max n m)))(4:=wn_spec m)(5:=wn_spec n); auto with zarith.";
-  pp "     rewrite (spec_zdigits (wn_spec m)).";
-  pp "     rewrite (spec_zdigits (wn_spec (Max.max n m))).";
-  pp "     apply F5; auto with arith.";
-  pp "     exact (spec_cast_r n m y).";
-  pp "     exact (spec_cast_l n m x).";
-  pp " Qed.";
-  pr "";
-*)
 
   pr "End Make.";
   pr "";
