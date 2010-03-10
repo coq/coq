@@ -21,7 +21,9 @@ Require Import BigNumPrelude ZArith CyclicAxioms DoubleType
 
 Module Make (W0:CyclicType) <: NType.
 
- (** * Macro-generated part *)
+ (** Let's include the macro-generated part. Even if we can't functorize
+     things (due to Eval red_t below), the rest of the module only uses
+     elements mentionned in interface [NAbstract]. *)
 
  Include NMake_gen.Make W0.
 
@@ -41,38 +43,6 @@ Module Make (W0:CyclicType) <: NType.
  Tactic Notation "destr_t" constr(x) "as" simple_intropattern(pat) :=
   destruct (destr_t x) as pat; cbv zeta;
   rewrite ?iter_mk_t, ?spec_mk_t, ?spec_reduce.
-
-(*
- Ltac abstract_pair t1 t2 :=
- pattern t1, t2;
- match goal with |- ?u ?v ?w =>
-  change (let p := (v,w) in u (fst p) (snd p)); cbv beta
- end.
-
- Ltac abstract_triple t1 t2 t3 :=
-  abstract_pair t2 t3; abstract_pair t1 (t2,t3).
-
- Lemma pair_iter_t : forall A B
-  (f:forall n, dom_t n -> A)(g:forall n, dom_t n -> B), forall x,
-  (iter_t f x, iter_t g x) = iter_t (fun n x => (f n x, g n x)) x.
- Proof.
- intros. destr_t x as (n,x). reflexivity.
- Qed.
-
- Ltac spec_iter_t_2 f g x :=
- abstract_pair (f x) (g x); cbv delta [f g]; rewrite pair_iter_t;
- pattern [x]; apply spec_iter_t; clear x.
-
- Ltac spec_iter_t_3 f g h x :=
- abstract_triple (f x) (g x) (h x); cbv delta [g h]; rewrite !pair_iter_t;
- pattern [x]; apply spec_iter_t; clear x.
-
- Lemma spec_iter_t : forall A (P:Z->A->Prop)(f:forall n, dom_t n -> A),
-  (forall n x, P (ZnZ.to_Z x) (f n x)) -> forall x, P [x] (iter_t f x).
- Proof.
- intros. destr_t x as (n,x). auto.
- Qed.
-*)
 
  Lemma spec_same_level : forall A (P:Z->Z->A->Prop)
   (f : forall n, dom_t n -> dom_t n -> A),
