@@ -1,0 +1,42 @@
+le_S: forall n m : nat, n <= m -> n <= S m
+le_n: forall n : nat, n <= n
+le_pred: forall n m : nat, n <= m -> pred n <= pred m
+le_S_n: forall n m : nat, S n <= S m -> n <= m
+false: bool
+true: bool
+sumor_beq:
+  forall (A : Type) (B : Prop),
+  (A -> A -> bool) -> (B -> B -> bool) -> A + {B} -> A + {B} -> bool
+sumbool_beq:
+  forall A B : Prop,
+  (A -> A -> bool) -> (B -> B -> bool) -> {A} + {B} -> {A} + {B} -> bool
+xorb: bool -> bool -> bool
+sum_beq:
+  forall A B : Type,
+  (A -> A -> bool) -> (B -> B -> bool) -> A + B -> A + B -> bool
+prod_beq:
+  forall A B : Type,
+  (A -> A -> bool) -> (B -> B -> bool) -> A * B -> A * B -> bool
+orb: bool -> bool -> bool
+option_beq: forall A : Type, (A -> A -> bool) -> option A -> option A -> bool
+negb: bool -> bool
+nat_beq: nat -> nat -> bool
+list_beq: forall A : Type, (A -> A -> bool) -> list A -> list A -> bool
+implb: bool -> bool -> bool
+comparison_beq: comparison -> comparison -> bool
+bool_beq: bool -> bool -> bool
+andb: bool -> bool -> bool
+Empty_set_beq: Empty_set -> Empty_set -> bool
+pred_Sn: forall n : nat, n = pred (S n)
+plus_n_Sm: forall n m : nat, S (n + m) = n + S m
+plus_n_O: forall n : nat, n = n + 0
+plus_Sn_m: forall n m : nat, S n + m = S (n + m)
+plus_O_n: forall n : nat, 0 + n = n
+mult_n_Sm: forall n m : nat, n * m + n = n * S m
+mult_n_O: forall n : nat, 0 = n * 0
+min_r: forall n m : nat, m <= n -> min n m = m
+min_l: forall n m : nat, n <= m -> min n m = n
+max_r: forall n m : nat, n <= m -> max n m = m
+max_l: forall n m : nat, m <= n -> max n m = n
+eq_add_S: forall n m : nat, S n = S m -> n = m
+eq_S: forall x y : nat, x = y -> S x = S y
