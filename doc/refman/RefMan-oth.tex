@@ -99,25 +99,25 @@ relies.
   to the assumptions.
 \end{Variants}
 
-\subsection[\tt Search {\qualid}.]{\tt Search {\qualid}.\comindex{Search}}
+\subsection[\tt Search {\term}.]{\tt Search {\term}.\comindex{Search}}
 This command displays the name and type of all theorems of the current
-context whose statement's conclusion has the form {\tt ({\qualid} t1 ..
+context whose statement's conclusion has the form {\tt ({\term} t1 ..
   tn)}.  This command is useful to remind the user of the name of
 library lemmas.
-\begin{ErrMsgs}
-\item \errindex{The reference \qualid\ was not found in the current
-environment}\\
-    There is no constant in the environment named \qualid.
-\end{ErrMsgs}
+
+\begin{coq_example}
+Search le.
+Search (@eq bool).
+\end{coq_example}
 
 \begin{Variants}
 \item
-{\tt Search {\qualid} inside {\module$_1$} \ldots{} {\module$_n$}.}
+{\tt Search {\term} inside {\module$_1$} \ldots{} {\module$_n$}.}
 
 This restricts the search to constructions defined in modules
 {\module$_1$} \ldots{} {\module$_n$}.
 
-\item {\tt Search {\qualid} outside {\module$_1$} \ldots{} {\module$_n$}.}
+\item {\tt Search {\term} outside {\module$_1$} \ldots{} {\module$_n$}.}
 
 This restricts the search to constructions not defined in modules
 {\module$_1$} \ldots{} {\module$_n$}.
@@ -218,15 +218,18 @@ SearchAbout (?x * _ + ?x * _)%Z outside OmegaLemmas.
 \subsection[\tt SearchPattern {\termpattern}.]{\tt SearchPattern {\term}.\comindex{SearchPattern}}
 
 This command displays the name and type of all theorems of the current
-context whose statement's conclusion matches the expression {\term}
-where holes in the latter are denoted by ``{\texttt \_}''. It is a
-variant of {\tt SearchAbout {\termpattern}} that does not look for
-subterms but searches for statements whose conclusion has exactly the
-expected form.
+context whose statement's conclusion or last hypothesis and conclusion
+matches the expression {\term} where holes in the latter are denoted
+by ``{\texttt \_}''. It is a variant of {\tt SearchAbout
+  {\termpattern}} that does not look for subterms but searches for
+statements whose conclusion has exactly the expected form, or whose
+statement finishes by the given series of hypothesis/conclusion.
 
 \begin{coq_example}
 Require Import Arith.
 SearchPattern (_ + _ = _ + _).
+SearchPattern (nat -> bool).
+SearchPattern (forall l : list _, _ l l).
 \end{coq_example}
 
 Patterns need not be linear: you can express that the same expression
