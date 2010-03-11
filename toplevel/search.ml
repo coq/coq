@@ -168,6 +168,8 @@ let raw_search_rewrite extra_filter display_function pattern =
 let raw_search_by_head extra_filter display_function pattern =
   Util.todo "raw_search_by_head"
 
+let name_of_reference ref = string_of_id (basename_of_global ref)
+
 (*
  * functions to use the new Libtypes facility
  *)
@@ -194,22 +196,25 @@ let filter_by_module_from_list = function
   | [], _ -> (fun _ _ _ -> true)
   | l, outside -> filter_by_module l (not outside)
 
+let filter_subproof gr _ _ =
+  not (string_string_contains (name_of_reference gr) "_subproof")
+
+let (&&&&&) f g x y z = f x y z && g x y z
+
 let search_by_head pat inout =
-  text_search_by_head (filter_by_module_from_list inout) pat
+  text_search_by_head (filter_by_module_from_list inout &&&&& filter_subproof) pat
 
 let search_rewrite pat inout =
-  text_search_rewrite (filter_by_module_from_list inout) pat
+  text_search_rewrite (filter_by_module_from_list inout &&&&& filter_subproof) pat
 
 let search_pattern pat inout =
-  text_pattern_search (filter_by_module_from_list inout) pat
+  text_pattern_search (filter_by_module_from_list inout &&&&& filter_subproof) pat
 
 let gen_filtered_search filter_function display_function =
   gen_crible None
     (fun s a c -> if filter_function s a c then display_function s a c)
 
 (** SearchAbout *)
-
-let name_of_reference ref = string_of_id (basename_of_global ref)
 
 type glob_search_about_item =
   | GlobSearchSubPattern of constr_pattern
@@ -223,7 +228,7 @@ let raw_search_about filter_modules display_function l =
   let filter ref' env typ =
     filter_modules ref' env typ &&
     List.for_all (fun (b,i) -> b = search_about_item (ref',typ) i) l &&
-    not (string_string_contains (name_of_reference ref') "_subproof")
+      filter_subproof ref' () ()
   in
   gen_filtered_search filter display_function
 
