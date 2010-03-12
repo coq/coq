@@ -1,6 +1,6 @@
 (* Examples to check that the guard condition does not unfold
    irrelevant subterms *)
-(* Expected time < 1s *)
+(* Expected time < 1.00s *)
 Require Import Bool.
 
 Fixpoint slow n :=

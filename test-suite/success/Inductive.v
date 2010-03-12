@@ -56,11 +56,11 @@ Check
 
 (* Check inductive types with local definitions (constructors) *)
 
-Inductive I1 : Set := c (_:I1) (_:=0).
+Inductive I1 : Set := C1 (_:I1) (_:=0).
 
 Check (fun x:I1 =>
   match x with
-  | c i n => (i,n)
+  | C1 i n => (i,n)
   end).
 
 (* Check implicit parameters of inductive types (submitted by Pierre
