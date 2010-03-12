@@ -86,7 +86,17 @@ struct
 	DCoFix (i,Array.map f ta,Array.map f ca)
     | DCons ((t,topt),u) -> DCons ((f t,Option.map f topt), f u)
 
-  let compare = Pervasives.compare
+  let compare x y =
+    let make_name n =
+      match n with
+	| DRef(ConstRef con) ->
+	    DRef(ConstRef(constant_of_kn(canonical_con con)))
+	| DRef(IndRef (kn,i)) ->
+	    DRef(IndRef(mind_of_kn(canonical_mind kn),i))
+	| DRef(ConstructRef ((kn,i),j ))->
+	    DRef(ConstructRef((mind_of_kn(canonical_mind kn),i),j))
+	| k -> k in
+    Pervasives.compare (make_name x) (make_name y)
 
   let fold f acc = function
     | (DRel | DNil | DSort | DRef _) -> acc
@@ -275,6 +285,7 @@ struct
   let rec remove_cap : term_pattern -> term_pattern = function
     | Term (DCons (t,u)) -> Term (DCons (t,remove_cap u))
     | Term DNil -> new_meta()
+    | Meta _ as m -> m
     | _ -> assert false
 
   let under_prod : term_pattern -> term_pattern = function
@@ -300,6 +311,8 @@ struct
 
   let search_pat cpat dpat dn (up,plug) =
     let whole_c = subst_evar plug cpat up in
+    (* if we are at the root, add an empty context *)
+    let dpat = if isEvar_or_Meta up then under_prod (empty_ctx dpat) else dpat in
     TDnet.Idset.fold
       (fun id acc ->
 	 let c_id = Opt.reduce (Ident.constr_of id) in
@@ -333,10 +346,10 @@ struct
     let rec aux fst dn (up,plug) acc =
       let cpat = pat() in
       let dpat = pat_of_constr cpat in
-      let dpat = if fst then empty_ctx dpat else dpat in
-      snd (fold_pattern_up (aux false) acc dpat cpat dn (up,plug)) @
-	(k dn (up,plug)) in
-    aux true dn (up,plug) []
+      let dpat = if fst then under_prod (empty_ctx dpat) else dpat in
+	(k dn (up,plug)) @
+	  snd (fold_pattern_up (aux false) acc dpat cpat dn (up,plug)) in
+      aux true dn (up,plug) []
 
   let eq_pat eq () = mkApp(eq,[|mkEvar(neutral_meta,[||]);new_evar();new_evar()|])
   let app_pat () = mkApp(new_evar(),[|mkEvar(neutral_meta,[||])|])

@@ -15,9 +15,11 @@ open Names
  * Module construction
  *)
 
-let reduce c = Reductionops.head_unfold_under_prod
-  (Auto.Hint_db.transparent_state (Auto.searchtable_map "typeclass_instances"))
-  (Global.env()) Evd.empty c
+(* let reduce c = Reductionops.head_unfold_under_prod *)
+(*   (Auto.Hint_db.transparent_state (Auto.searchtable_map "typeclass_instances")) *)
+(*   (Global.env()) Evd.empty c *)
+
+let reduce c = c
 
 module TypeDnet = Term_dnet.Make
   (struct
