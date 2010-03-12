@@ -96,7 +96,7 @@ let eq_context ctxt1 ctxt2 = array_for_all2 eq_constr ctxt1 ctxt2
 let same_case_structure (_,cs1,ind,_) ci2 br1 br2 =
   match ind with
   | Some ind -> ind = ci2.ci_ind
-  | None -> cs1 = ci2.ci_cstr_nargs
+  | None -> cs1 = ci2.ci_cstr_ndecls
 
 let matches_core convert allow_partial_app pat c =
   let conv = match convert with
@@ -181,8 +181,8 @@ let matches_core convert allow_partial_app pat c =
             (add_binders na1 na2 (sorec stk subst c1 c2)) d1 d2
 
       | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
-	  let ctx,b2 = decompose_lam_n_assum ci.ci_cstr_nargs.(0) b2 in
-	  let ctx',b2' = decompose_lam_n_assum ci.ci_cstr_nargs.(1) b2' in
+	  let ctx,b2 = decompose_lam_n_assum ci.ci_cstr_ndecls.(0) b2 in
+	  let ctx',b2' = decompose_lam_n_assum ci.ci_cstr_ndecls.(1) b2' in
 	  let n = rel_context_length ctx in
           let n' = rel_context_length ctx' in
 	  if noccur_between 1 n b2 & noccur_between 1 n' b2' then

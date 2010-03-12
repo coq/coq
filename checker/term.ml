@@ -31,10 +31,10 @@ type case_printing =
   { ind_nargs : int; (* length of the arity of the inductive type *)
     style     : case_style }
 type case_info =
-  { ci_ind        : inductive;
-    ci_npar       : int;
-    ci_cstr_nargs : int array; (* number of real args of each constructor *)
-    ci_pp_info    : case_printing (* not interpreted by the kernel *)
+  { ci_ind         : inductive;
+    ci_npar        : int;
+    ci_cstr_ndecls : int array; (* number of pattern var of each constructor *)
+    ci_pp_info     : case_printing (* not interpreted by the kernel *)
   }
 let val_ci =
   let val_cstyle = val_enum "case_style" 5 in

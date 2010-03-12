@@ -367,7 +367,7 @@ let check_case_info env indsp ci =
   if
     not (eq_ind indsp ci.ci_ind) or
     (mib.mind_nparams <> ci.ci_npar) or
-    (mip.mind_consnrealdecls <> ci.ci_cstr_nargs)
+    (mip.mind_consnrealdecls <> ci.ci_cstr_ndecls)
   then raise (TypeError(env,WrongCaseInfo(indsp,ci)))
 
 (************************************************************************)
@@ -521,7 +521,10 @@ let lookup_subterms env ind =
    Rq: if branch is not eta-long, then the recursive information
    is not propagated to the missing abstractions *)
 let case_branches_specif renv c_spec ci lbr =
-  let ind = ci.ci_ind in
+  let car =
+    let (_,mip) = lookup_mind_specif renv.env ci.ci_ind in
+    let v = dest_subterms mip.mind_recargs in
+    Array.map List.length v in
   let rec push_branch_args renv lrec c =
     match lrec with
         ra::lr ->
@@ -545,7 +548,7 @@ let case_branches_specif renv c_spec ci lbr =
 	      | Dead_code -> Array.create nca (lazy Dead_code)
 	      | Not_subterm -> Array.create nca (lazy Not_subterm)) in
 	 list_tabulate (fun j -> (Lazy.force cs).(j)) nca)
-      ci.ci_cstr_nargs in
+      car in
   assert (Array.length sub_spec = Array.length lbr);
   array_map2 (push_branch_args renv) sub_spec lbr
 

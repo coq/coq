@@ -54,6 +54,15 @@ Check
    | Build_B x0 x1 => f x0 x1
    end).
 
+(* Check inductive types with local definitions (constructors) *)
+
+Inductive I1 : Set := c (_:I1) (_:=0).
+
+Check (fun x:I1 =>
+  match x with
+  | c i n => (i,n)
+  end).
+
 (* Check implicit parameters of inductive types (submitted by Pierre
   Casteran and also implicit in #338) *)
 

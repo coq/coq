@@ -125,7 +125,7 @@ type one_inductive_body = {
     mind_nf_lc : types array;
 
  (* Length of the signature of the constructors (with let, w/o params)
-    (not used in the kernel) *)
+    (not to be used in the kernel!) *)
     mind_consnrealdecls : int array;
 
  (* Signature of recursive arguments in the constructors *)

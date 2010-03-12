@@ -31,7 +31,7 @@ type case_printing =
 type case_info =
   { ci_ind        : inductive;
     ci_npar       : int;
-    ci_cstr_nargs : int array; (* number of real args of each constructor *)
+    ci_cstr_ndecls : int array; (* number of pattern vars of each constructor *)
     ci_pp_info    : case_printing (* not interpreted by the kernel *)
   }
 

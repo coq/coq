@@ -130,7 +130,7 @@ let pattern_of_constr sigma t =
     | Case (ci,p,a,br) ->
 	let cip = ci.ci_pp_info in
 	let no = Some (ci.ci_npar,cip.ind_nargs) in
-	PCase ((cip.style,ci.ci_cstr_nargs,Some ci.ci_ind,no),
+	PCase ((cip.style,ci.ci_cstr_ndecls,Some ci.ci_ind,no),
 	       pattern_of_constr p,pattern_of_constr a,
 	       Array.map pattern_of_constr br)
     | Fix f -> PFix f

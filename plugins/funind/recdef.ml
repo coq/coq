@@ -685,7 +685,7 @@ let proveterminate rec_arg_id is_mes acc_inv (hrec:identifier)
 				true
 				proveterminate
 				eqs
-				ci.ci_cstr_nargs.(i))
+				ci.ci_cstr_ndecls.(i))
 		    0 (Array.to_list l)) g)
 		  | _, _::_ ->
 		    (match find_call_occs  0 f_constr expr with
@@ -1321,7 +1321,7 @@ let rec prove_eq  (termine:constr) (f:constr)(functional:global_reference)
 	       (fun i -> mk_intros_and_continue
                           (List.rev rev_to_thin_intro) true
 			  (prove_eq termine f functional)
-			  eqs ci.ci_cstr_nargs.(i))
+			  eqs ci.ci_cstr_ndecls.(i))
 	       0 (Array.to_list l)) g)
 	   | _,_::_ ->
 	      (match find_call_occs 0 f expr with

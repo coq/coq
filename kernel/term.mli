@@ -46,10 +46,10 @@ type case_printing =
     style     : case_style }
 (* the integer is the number of real args, needed for reduction *)
 type case_info =
-  { ci_ind        : inductive;
-    ci_npar       : int;
-    ci_cstr_nargs : int array; (* number of real args of each constructor *)
-    ci_pp_info    : case_printing (* not interpreted by the kernel *)
+  { ci_ind         : inductive;
+    ci_npar        : int;
+    ci_cstr_ndecls : int array; (* number of pattern vars of each constructor *)
+    ci_pp_info     : case_printing (* not interpreted by the kernel *)
   }
 
 (*s*******************************************************************)

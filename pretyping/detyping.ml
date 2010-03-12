@@ -237,7 +237,7 @@ let rec decomp_branch n nal b (avoid,env as e) c =
 
 let rec build_tree na isgoal e ci cl =
   let mkpat n rhs pl = PatCstr(dl,(ci.ci_ind,n+1),pl,update_name na rhs) in
-  let cnl = ci.ci_cstr_nargs in
+  let cnl = ci.ci_cstr_ndecls in
   List.flatten
     (list_tabulate (fun i -> contract_branch isgoal e (cnl.(i),mkpat i,cl.(i)))
        (Array.length cl))
@@ -409,7 +409,7 @@ let rec detype (isgoal:bool) avoid env t =
 	  (detype_eqns isgoal avoid env ci comp)
 	  is_nondep_branch avoid
 	  (ci.ci_ind,ci.ci_pp_info.style,ci.ci_npar,
-	   ci.ci_cstr_nargs,ci.ci_pp_info.ind_nargs)
+	   ci.ci_cstr_ndecls,ci.ci_pp_info.ind_nargs)
 	  (Some p) c bl
     | Fix (nvn,recdef) -> detype_fix isgoal avoid env nvn recdef
     | CoFix (n,recdef) -> detype_cofix isgoal avoid env n recdef

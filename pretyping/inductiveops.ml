@@ -145,7 +145,7 @@ let make_case_info env ind style =
   let print_info = { ind_nargs = mip.mind_nrealargs_ctxt; style = style } in
   { ci_ind     = ind;
     ci_npar    = mib.mind_nparams;
-    ci_cstr_nargs = mip.mind_consnrealdecls;
+    ci_cstr_ndecls = mip.mind_consnrealdecls;
     ci_pp_info = print_info }
 
 let make_default_case_info env style ind =
