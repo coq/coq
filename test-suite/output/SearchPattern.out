@@ -29,16 +29,12 @@ pred: nat -> nat
 plus: nat -> nat -> nat
 mult: nat -> nat -> nat
 minus: nat -> nat -> nat
-min: nat -> nat -> nat
-max: nat -> nat -> nat
 length: forall A : Type, list A -> nat
 S: nat -> nat
 pred: nat -> nat
 plus: nat -> nat -> nat
 mult: nat -> nat -> nat
 minus: nat -> nat -> nat
-min: nat -> nat -> nat
-max: nat -> nat -> nat
 mult_n_Sm: forall n m : nat, n * m + n = n * S m
 le_n: forall n : nat, n <= n
 eq_refl: forall (A : Type) (x : A), x = x

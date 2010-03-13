@@ -1,7 +1,5 @@
 le_S: forall n m : nat, n <= m -> n <= S m
 le_n: forall n : nat, n <= n
-le_pred: forall n m : nat, n <= m -> pred n <= pred m
-le_S_n: forall n m : nat, S n <= S m -> n <= m
 false: bool
 true: bool
 sumor_beq:
@@ -34,9 +32,5 @@ plus_Sn_m: forall n m : nat, S n + m = S (n + m)
 plus_O_n: forall n : nat, 0 + n = n
 mult_n_Sm: forall n m : nat, n * m + n = n * S m
 mult_n_O: forall n : nat, 0 = n * 0
-min_r: forall n m : nat, m <= n -> min n m = m
-min_l: forall n m : nat, n <= m -> min n m = n
-max_r: forall n m : nat, n <= m -> max n m = m
-max_l: forall n m : nat, m <= n -> max n m = n
 eq_add_S: forall n m : nat, S n = S m -> n = m
 eq_S: forall x y : nat, x = y -> S x = S y
