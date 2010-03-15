@@ -498,7 +498,8 @@ let create_evar_defs sigma = { sigma with
   conv_pbs=[]; last_mods=ExistentialSet.empty; metas=Metamap.empty }
 (* spiwack: tentatively deprecated *)
 let create_goal_evar_defs sigma = { sigma with
-   conv_pbs=[]; last_mods=ExistentialSet.empty; metas=Metamap.empty }
+   (* conv_pbs=[]; last_mods=ExistentialSet.empty; metas=Metamap.empty } *)
+  metas=Metamap.empty } 
 let empty =  {
   evars=EvarMap.empty;
   conv_pbs=[];
