@@ -27,6 +27,7 @@ val add_definition : Names.identifier -> ?term:Term.constr -> Term.types ->
   ?implicits:(Topconstr.explicitation * (bool * bool * bool)) list ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:Proof_type.tactic ->
+  ?reduce:(Term.constr -> Term.constr) ->
   ?hook:(Tacexpr.declaration_hook) -> obligation_info -> progress
 
 type notations = (string * Topconstr.constr_expr * Topconstr.scope_name option) list
@@ -40,6 +41,7 @@ val add_mutual_definitions :
       (Topconstr.explicitation * (bool * bool * bool)) list * obligation_info) list ->
   ?tactic:Proof_type.tactic ->
   ?kind:Decl_kinds.definition_kind ->
+  ?reduce:(Term.constr -> Term.constr) ->
   ?hook:Tacexpr.declaration_hook ->
   notations ->
   fixpoint_kind -> unit

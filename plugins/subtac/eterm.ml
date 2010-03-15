@@ -149,7 +149,7 @@ let move_after (id, ev, deps as obl) l =
 	  if Intset.is_empty restdeps' then
 	    obl' :: obl :: tl
 	  else obl' :: aux restdeps' tl
-    | [] -> assert false
+    | [] -> [obl]
   in aux (Intset.remove id deps) l
     
 let sort_dependencies evl =

@@ -70,7 +70,7 @@ let evar_filter evi =
     { evi with 
       evar_hyps = Environ.val_of_named_context hyps';
       evar_filter = List.map (fun _ -> true) hyps' }
-      
+
 let evars_to_goals p evm =
   let goals, evm' =
     Evd.fold
@@ -86,6 +86,7 @@ let evars_to_goals p evm =
     if goals = [] then None
     else
       let goals = List.rev goals in
+      let evm' = evars_reset_evd evm' evm in
 	Some (goals, evm')
 
 (** Typeclasses instance search tactic / eauto *)
@@ -332,7 +333,14 @@ let or_tac (x : 'a tac) (y : 'a tac) : 'a tac =
   { skft = fun sk fk gls -> x.skft sk (fun () -> y.skft sk fk gls) gls }
 
 let solve_tac (x : 'a tac) : 'a tac =
-  { skft = fun sk fk gls -> x.skft (fun ({it = gls},_ as res) fk -> if gls = [] then sk res fk else fk ()) fk gls }
+  { skft = fun sk fk gls -> x.skft (fun ({it = gls},_ as res) fk -> 
+    if gls = [] then sk res fk else fk ()) fk gls }
+
+let solve_unif_tac : atac =
+  { skft = fun sk fk {it = gl; sigma = s} -> 
+    try let s' = Evarconv.consider_remaining_unif_problems (Global.env ()) s in
+	  normevars_tac.skft sk fk ({it=gl; sigma=s'})
+    with _ -> fk () }
 
 let hints_tac hints =
   { skft = fun sk fk {it = gl,info; sigma = s} ->
@@ -457,7 +465,6 @@ let then_tac (first : atac) (second : atac) : atac =
 let run_tac (t : 'a tac) (gl : autogoal sigma) : auto_result option =
   t.skft (fun x _ -> Some x) (fun _ -> None) gl
 
-
 type run_list_res = (auto_result * run_list_res fk) option
 
 let run_list_tac (t : 'a tac) p goals (gl : autogoal list sigma) : run_list_res =
@@ -492,7 +499,7 @@ let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm tac =
       let res = run_list_tac tac p goals (make_autogoals ~only_classes ~st goals evm') in
 	match get_result res with
 	| None -> raise Not_found
-	| Some (evm', fk) -> Some (Evd.evars_reset_evd evm' evm, fk)
+	| Some (evm', fk) -> Some (evars_reset_evd evm' evm, fk)
 	    
 let eauto_tac hints = 
   fix (or_tac (then_tac normevars_tac (hints_tac hints)) intro_tac)
@@ -552,16 +559,31 @@ let rec merge_deps deps = function
       else hd :: merge_deps deps tl
 
 let evars_of_evi evi =
-  Intset.union (Evarutil.evars_of_term evi.evar_concl)
-    (match evi.evar_body with
-    | Evar_defined b -> Evarutil.evars_of_term b
-    | Evar_empty -> Intset.empty)
+  Intset.union (evars_of_term evi.evar_concl)
+    (Intset.union
+	(match evi.evar_body with
+	| Evar_empty -> Intset.empty
+	| Evar_defined b -> evars_of_term b)
+	(Evarutil.evars_of_named_context (evar_filtered_context evi)))
+
+let deps_of_constraints cstrs deps =
+  List.fold_right (fun (_, _, x, y) deps -> 
+    let evs = Intset.union (evars_of_term x) (evars_of_term y) in
+      merge_deps evs deps)
+    cstrs deps
+      
+let evar_dependencies evm =
+  Evd.fold 
+    (fun ev evi acc ->
+      merge_deps (Intset.union (Intset.singleton ev) 
+		     (evars_of_evi evi)) acc)
+    evm []
 
 let split_evars evm =
-  Evd.fold (fun ev evi acc ->
-    let deps = Intset.union (Intset.singleton ev) (evars_of_evi evi) in
-      merge_deps deps acc)
-    evm []
+  let _, cstrs = extract_all_conv_pbs evm in
+  let evmdeps = evar_dependencies evm in
+  let deps = deps_of_constraints cstrs evmdeps in
+    List.sort Intset.compare deps
 
 let select_evars evs evm =
   Evd.fold (fun ev evi acc ->

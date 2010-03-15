@@ -532,7 +532,7 @@ let explain_unsatisfiable_constraints env evd constr =
   match constr with
   | None ->
       str"Unable to satisfy the following constraints:" ++ fnl() ++
-	pr_constraints true env evm
+	pr_constraints true env undef
   | Some (ev, k) ->
       explain_unsolvable_implicit env (Evd.find evm ev) k None ++ fnl () ++
 	if List.length (Evd.to_list undef) > 1 then
