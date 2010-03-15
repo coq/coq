@@ -22,7 +22,7 @@ let pperror cmd = Util.errorlabstrm "Program" cmd
 let error s = pperror (str s)
 
 let reduce c =
-  Reductionops.clos_norm_flags Closure.betaiotazeta (Global.env ()) Evd.empty c
+  Reductionops.clos_norm_flags Closure.betaiota (Global.env ()) Evd.empty c
 
 exception NoObligations of identifier option
 
