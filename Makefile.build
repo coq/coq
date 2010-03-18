@@ -98,8 +98,8 @@ $(OCAMLOPT) $(OPTFLAGS) -o $@ $(1) $(addsuffix .cmxa,$(2)) $^ && $(STRIP) $@,\
 $(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(1) $(addsuffix .cma,$(2)) $^)
 endef
 
-CAMLP4DEPS=`sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*\*)@\1@p' $<`
-CAMLP4USE=`sed -n -e 's/pa_macro.cmo/pa_macro.cmo -D$(CAMLVERSION)/' -e 's@^(\*.*camlp4use: "\(.*\)".*\*)@\1@p' $<`
+CAMLP4DEPS=`sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*@\1@p' $<`
+CAMLP4USE=`sed -n -e 's/pa_macro.cmo/pa_macro.cmo -D$(CAMLVERSION)/' -e 's@^(\*.*camlp4use: "\(.*\)".*@\1@p' $<`
 
 PR_O := $(if $(READABLE_ML4),pr_o.cmo)
 
