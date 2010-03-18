@@ -123,10 +123,6 @@ let copcodes = "kernel/copcodes.ml"
 
 let libcoqrun = "kernel/byterun/libcoqrun.a"
 
-let grammar = "parsing/grammar.cma"
-let qconstr = "parsing/q_constr.cmo"
-let refutpat = "lib/refutpat.cmo"
-
 let initialcoq = "states/initial.coq"
 let init_vo = ["theories/Init/Prelude.vo";"theories/Init/Logic_Type.vo"]
 let makeinitial = "states/MakeInitial.v"
@@ -274,13 +270,13 @@ let extra_rules () = begin
 	      T(tags_of_pathname ml4 ++ "p4option"); camlp4compat;
 	      A"-o"; Px ml; A"-impl"; P ml4]));
 
-  flag ["is_ml4"; "p4mod"; "use_macro"] (A"pa_macro.cmo");
-  flag ["is_ml4"; "p4mod"; "use_extend"] (A"pa_extend.cmo");
-  flag ["is_ml4"; "p4mod"; "use_MLast"] (A"q_MLast.cmo");
+  flag ["p4mod"; "use_macro"] (A"pa_macro.cmo");
+  flag ["p4mod"; "use_extend"] (A"pa_extend.cmo");
+  flag ["p4mod"; "use_MLast"] (A"q_MLast.cmo");
 
-  flag_and_dep ["is_ml4"; "p4mod"; "use_grammar"] (P grammar);
-  flag_and_dep ["is_ml4"; "p4mod"; "use_constr"] (P qconstr);
-  flag_and_dep ["is_ml4"; "p4mod"; "use_refutpat"] (P refutpat);
+  flag_and_dep ["p4mod"; "use_grammar"] (P "parsing/grammar.cma");
+  flag_and_dep ["p4mod"; "use_constr"] (P "parsing/q_constr.cmo");
+  flag_and_dep ["p4mod"; "use_refutpat"] (P "lib/refutpat.cmo");
 
 (** Special case of toplevel/mltop.ml4:
     - mltop.ml will be the old mltop.optml and be used to obtain mltop.cmx

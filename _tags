@@ -21,8 +21,6 @@
 
 ## tags for camlp4 files 
 
-<**/*.ml4>: is_ml4
-
 "toplevel/mltop.ml4": is_mltop, use_macro
 
 "parsing/lexer.ml4": use_macro
