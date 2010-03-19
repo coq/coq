@@ -162,6 +162,8 @@ CORECMA:=lib/lib.cma kernel/kernel.cma library/library.cma \
         parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
         parsing/highparsing.cma tactics/hightactics.cma 
 
+GRAMMARCMA:=parsing/grammar.cma
+
 OMEGACMA:=plugins/omega/omega_plugin.cma
 ROMEGACMA:=plugins/romega/romega_plugin.cma
 MICROMEGACMA:=plugins/micromega/micromega_plugin.cma
