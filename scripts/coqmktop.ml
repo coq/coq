@@ -285,7 +285,7 @@ let main () =
   (*file for dynlink *)
   let dynlink=
     if not (!opt || !top) then
-      [(print_int 2; tmp_dynlink())]
+      [tmp_dynlink()]
     else
       []
   in
