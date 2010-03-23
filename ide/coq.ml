@@ -461,7 +461,7 @@ struct
     List.iter
       (fun cmd -> 
          let str = (if value then "Set" else "Unset") ^ " Printing " ^ cmd ^ "." in
-         Vernac.eval_ctrl (snd (Vernac.parse_sentence (parsable_of_string str,None))))
+         Vernac.eval_expr (Vernac.parse_sentence (parsable_of_string str,None)))
       opt
 
   let enforce_hack () = Hashtbl.iter set state_hack 

@@ -3,8 +3,8 @@
 
 (* Undoing arbitrary commands, as first step *)
 
-Theorem a : O=O.
-Ltac f x := x.
+Theorem a : O=O. (* 2 *)
+Ltac f x := x. (* 1 * 3 *)
 assert True by trivial.
 trivial.
 Qed.
