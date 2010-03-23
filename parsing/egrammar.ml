@@ -59,62 +59,90 @@ let cases_pattern_expr_of_name (loc,na) = match na with
 type grammar_constr_prod_item =
   | GramConstrTerminal of Token.pattern
   | GramConstrNonTerminal of constr_prod_entry_key * identifier option
+  | GramConstrListMark of int * bool
+    (* tells action rule to make a list of the n previous parsed items; 
+       concat with last parsed list if true *)
 
 type 'a action_env = 'a list * 'a list list
 
 let make_constr_action
   (f : loc -> constr_expr action_env -> constr_expr) pil =
   let rec make (env,envlist as fullenv : constr_expr action_env) = function
-    | [] ->
-	Gramext.action (fun loc -> f loc fullenv)
-    | None :: tl -> (* parse a non-binding item *)
-        Gramext.action (fun _ -> make fullenv tl)
-    | Some (p, (ETConstr _| ETOther _)) :: tl -> (* constr non-terminal *)
+  | [] ->
+      Gramext.action (fun loc -> f loc fullenv)
+  | (GramConstrTerminal _ | GramConstrNonTerminal (_,None)) :: tl ->
+      (* parse a non-binding item *)
+      Gramext.action (fun _ -> make fullenv tl)
+  | GramConstrNonTerminal (typ, Some _) :: tl ->
+      (* parse a binding non-terminal *)
+    (match typ with
+    | (ETConstr _| ETOther _) ->
         Gramext.action (fun (v:constr_expr) -> make (v :: env, envlist) tl)
-    | Some (p, ETReference) :: tl -> (* non-terminal *)
+    | ETReference ->
         Gramext.action (fun (v:reference) -> make (CRef v :: env, envlist) tl)
-    | Some (p, ETName) :: tl -> (* non-terminal *)
+    | ETName ->
         Gramext.action (fun (na:name located) ->
 	  make (constr_expr_of_name na :: env, envlist) tl)
-    | Some (p, ETBigint) :: tl -> (* non-terminal *)
+    | ETBigint ->
         Gramext.action (fun (v:Bigint.bigint) ->
 	  make (CPrim (dummy_loc,Numeral v) :: env, envlist) tl)
-    | Some (p, ETConstrList _) :: tl ->
-        Gramext.action (fun (v:constr_expr list) -> make (env, v::envlist) tl)
-    | Some (p, ETPattern) :: tl ->
-	failwith "Unexpected entry of type cases pattern" in
+    | ETConstrList (_,n) ->
+	Gramext.action (fun (v:constr_expr list) -> make (env, v::envlist) tl)
+    | ETPattern ->
+	failwith "Unexpected entry of type cases pattern")
+  | GramConstrListMark (n,b) :: tl ->
+      (* Rebuild expansions of ConstrList *)
+      let heads,env = list_chop n env in
+      if b then make (env,(heads@List.hd envlist)::List.tl envlist) tl
+      else make (env,heads::envlist) tl
+  in
   make ([],[]) (List.rev pil)
 
 let make_cases_pattern_action
   (f : loc -> cases_pattern_expr action_env -> cases_pattern_expr) pil =
   let rec make (env,envlist as fullenv : cases_pattern_expr action_env) = function
-    | [] ->
-	Gramext.action (fun loc -> f loc fullenv)
-    | None :: tl -> (* parse a non-binding item *)
-        Gramext.action (fun _ -> make fullenv tl)
-    | Some (p, ETConstr _) :: tl -> (* pattern non-terminal *)
+  | [] ->
+      Gramext.action (fun loc -> f loc fullenv)
+  | (GramConstrTerminal _ | GramConstrNonTerminal (_,None)) :: tl ->
+      (* parse a non-binding item *)
+      Gramext.action (fun _ -> make fullenv tl)
+  | GramConstrNonTerminal (typ, Some _) :: tl ->
+      (* parse a binding non-terminal *)
+    (match typ with
+    | ETConstr _ -> (* pattern non-terminal *)
         Gramext.action (fun (v:cases_pattern_expr) -> make (v::env,envlist) tl)
-    | Some (p, ETReference) :: tl -> (* non-terminal *)
+    | ETReference ->
         Gramext.action (fun (v:reference) ->
 	  make (CPatAtom (dummy_loc,Some v) :: env, envlist) tl)
-    | Some (p, ETName) :: tl -> (* non-terminal *)
+    | ETName ->
         Gramext.action (fun (na:name located) ->
 	  make (cases_pattern_expr_of_name na :: env, envlist) tl)
-    | Some (p, ETBigint) :: tl -> (* non-terminal *)
+    | ETBigint ->
         Gramext.action (fun (v:Bigint.bigint) ->
 	  make (CPatPrim (dummy_loc,Numeral v) :: env, envlist) tl)
-    | Some (p, ETConstrList _) :: tl ->
-        Gramext.action (fun (v:cases_pattern_expr list) ->
-	  make (env, v :: envlist) tl)
-    | Some (p, (ETPattern | ETOther _)) :: tl ->
-	failwith "Unexpected entry of type cases pattern or other" in
+    | ETConstrList (_,_) ->
+        Gramext.action  (fun (vl:cases_pattern_expr list) ->
+	  make (env, vl :: envlist) tl)
+    | (ETPattern | ETOther _) ->
+	failwith "Unexpected entry of type cases pattern or other")
+  | GramConstrListMark (n,b) :: tl ->
+      (* Rebuild expansions of ConstrList *)
+      let heads,env = list_chop n env in
+      if b then make (env,(heads@List.hd envlist)::List.tl envlist) tl
+      else make (env,heads::envlist) tl
+  in
   make ([],[]) (List.rev pil)
 
-let make_constr_prod_item univ assoc from forpat = function
-  | GramConstrTerminal tok -> (Gramext.Stoken tok, None)
-  | GramConstrNonTerminal (nt, ovar) ->
-      let eobj = symbol_of_constr_prod_entry_key assoc from forpat nt in
-      (eobj, Option.map (fun x -> (x,nt)) ovar)
+let rec make_constr_prod_item assoc from forpat = function
+  | GramConstrTerminal tok :: l ->
+      Gramext.Stoken tok :: make_constr_prod_item assoc from forpat l
+  | GramConstrNonTerminal (nt, ovar) :: l ->
+      symbol_of_constr_prod_entry_key assoc from forpat nt
+      :: make_constr_prod_item assoc from forpat l
+  | GramConstrListMark _ :: l ->
+      make_constr_prod_item assoc from forpat l
+  | [] ->
+      []
 
 let prepare_empty_levels forpat (pos,p4assoc,name,reinit) =
   let entry = 
@@ -129,26 +157,25 @@ let pure_sublevels level symbs =
   | _ ->
       failwith "") symbs
 
-let extend_constr (entry,level) (n,assoc) mkact forpat pt =
-  let univ = get_univ "constr" in
-  let pil = List.map (make_constr_prod_item univ assoc n forpat) pt in
-  let (symbs,ntl) = List.split pil in
+let extend_constr (entry,level) (n,assoc) mkact forpat rules =
+  List.iter (fun pt ->
+  let symbs = make_constr_prod_item assoc n forpat pt in
   let pure_sublevels = pure_sublevels level symbs in
   let needed_levels = register_empty_levels forpat pure_sublevels in
   let pos,p4assoc,name,reinit = find_position forpat assoc level in
   List.iter (prepare_empty_levels forpat) needed_levels;
-  grammar_extend entry pos reinit [(name, p4assoc, [symbs, mkact ntl])]
+  grammar_extend entry pos reinit [(name, p4assoc, [symbs, mkact pt])]) rules
 
-let extend_constr_notation (n,assoc,ntn,rule) =
+let extend_constr_notation (n,assoc,ntn,rules) =
   (* Add the notation in constr *)
   let mkact loc env = CNotation (loc,ntn,env) in
   let e = interp_constr_entry_key false (ETConstr (n,())) in
-  extend_constr e (ETConstr(n,()),assoc) (make_constr_action mkact) false rule;
+  extend_constr e (ETConstr(n,()),assoc) (make_constr_action mkact) false rules;
   (* Add the notation in cases_pattern *)
   let mkact loc env = CPatNotation (loc,ntn,env) in
   let e = interp_constr_entry_key true (ETConstr (n,())) in
   extend_constr e (ETConstr (n,()),assoc) (make_cases_pattern_action mkact)
-    true rule
+    true rules
 
 (**********************************************************************)
 (** Making generic actions in type generic_argument                   *)
@@ -241,7 +268,7 @@ let add_tactic_entry (key,lev,prods,tac) =
 (** State of the grammar extensions                                   *)
 
 type notation_grammar =
-    int * Gramext.g_assoc option * notation * grammar_constr_prod_item list
+    int * Gramext.g_assoc option * notation * grammar_constr_prod_item list list
 
 type all_grammar_command =
   | Notation of (precedence * tolerability list) * notation_grammar

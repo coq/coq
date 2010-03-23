@@ -82,6 +82,8 @@ Notations
   incompatibilities generally solvable by changing such abbreviations from
   e.g. "Notation foo' := (foo x)" to "Notation foo' y := (foo x (y:=y))").
 - The "where" clause now supports multiple notations per defined object.
+- Recursive notations automatically expand one step on the left for better
+  factorization; recursion notations inner separators now ensured being tokens.
 
 Vernacular commands
 

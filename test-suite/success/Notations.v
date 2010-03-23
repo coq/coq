@@ -53,3 +53,9 @@ Notation "'exists' x >= y , P" := (exists x, x >= y /\ P)%nat
 
 Notation R x := (@pair _ _ x).
 Check (fun x:nat*nat => match x with R x y => (x,y) end).
+
+(* Check multi-tokens recursive notations *)
+
+Local Notation "[ a  # ; ..  # ; b ]" := (a + .. (b + 0) ..).   
+Check [ 0 ].
+Check [ 0 # ; 1 ].
