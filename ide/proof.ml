@@ -38,16 +38,17 @@ let hook_tag_cb tag menu_content sel_cb hover_cb =
 
 let mode_tactic sel_cb (proof:GText.view) = function
   | [] -> assert false
-  | (hyps,cur_goal,cur_goal_menu)::rem_goals ->
+  | (hyps,(cur_goal,cur_goal_menu))::rem_goals ->
       let on_hover sel_start sel_stop =
-        proof#buffer#remove_tag_by_name
-          "highlight"
+        proof#buffer#remove_tag
           ~start:proof#buffer#start_iter
-          ~stop:sel_start;
-        proof#buffer#remove_tag_by_name
-          "highlight"
+          ~stop:sel_start
+          Tags.Proof.highlight;
+        proof#buffer#remove_tag
           ~start:sel_stop
           ~stop:proof#buffer#end_iter
+          Tags.Proof.highlight;
+        proof#buffer#apply_tag ~start:sel_start ~stop:sel_stop Tags.Proof.highlight
       in
       let goals_cnt = List.length rem_goals + 1 in
       let head_str = Printf.sprintf "%d subgoal%s\n" goals_cnt (if 1 < goals_cnt then "" else "s") in
@@ -70,7 +71,7 @@ let mode_tactic sel_cb (proof:GText.view) = function
       proof#buffer#insert head_str;
       List.iter insert_hyp hyps;
       insert_goal cur_goal cur_goal_menu 1 goals_cnt;
-      Util.list_fold_left_i (fun i _ (_,g,_) -> insert_goal g [] i goals_cnt) 2 () rem_goals;
+      Util.list_fold_left_i (fun i _ (_,(g,_)) -> insert_goal g [] i goals_cnt) 2 () rem_goals;
       ignore (proof#scroll_to_iter
                 ((proof#buffer#get_iter_at_mark `INSERT)#backward_lines (3*goals_cnt - 2)))
 
@@ -85,7 +86,7 @@ let mode_cesar (proof:GText.view) = function
       proof#buffer#insert ("thesis := \n "^cur_goal^"\n");
       ignore (proof#scroll_to_iter (proof#buffer#get_iter_at_mark `INSERT))
 
-let display mode view goals =
+let display mode (view:GText.view) goals =
   view#buffer#set_text "";
   match goals with
     | Coq.Message msg ->

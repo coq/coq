@@ -518,55 +518,6 @@ type  tried_tactic =
   | Success of int (* nb of goals after *)
   | Failed
 
-type hyp = env * evar_map *
-           ((identifier * string) * constr option * constr) *
-           (string * string)
-type concl = env * evar_map * constr * string
-type meta = env * evar_map * string
-type goal = hyp list * concl
-
-let prepare_hyp sigma env ((i,c,d) as a) =
-  env, sigma,
-  ((i,string_of_id i),c,d),
-  (msg (pr_var_decl env a), msg (pr_ltype_env env d))
-
-let prepare_hyps sigma env =
-  assert (rel_context env = []);
-  let hyps =
-    fold_named_context
-      (fun env d acc -> let hyp = prepare_hyp sigma env d in hyp :: acc)
-      env ~init:[]
-  in
-  List.rev hyps
-
-let prepare_goal_main sigma g =
-  let env = evar_env g in
-  (prepare_hyps sigma env,
-   (env, sigma, g.evar_concl, msg (pr_ltype_env_at_top env g.evar_concl)))
-
-let prepare_goal sigma g =
-  let x = prepare_goal_main sigma g in
-  x
-
-let get_current_pm_goal () =
-  PrintOpt.enforce_hack ();
-  let pfts = get_pftreestate ()  in
-  let gls = try nth_goal_of_pftreestate 1 pfts with _ -> raise Not_found in
-  let sigma= sig_sig gls in
-  let gl = sig_it gls in
-    prepare_goal sigma gl
-
-let get_current_goals () =
-  PrintOpt.enforce_hack ();
-  let pfts = get_pftreestate () in
-  let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in
-  let sigma = Tacmach.evc_of_pftreestate pfts in
-  List.map (prepare_goal sigma) gls
-
-let print_no_goal () =
-  (* Fall back on standard coq goal printer for completed goal printing *)
-  msg (pr_open_subgoals ())
-
 let string_of_ppcmds c =
   Pp.msg_with Format.str_formatter c;
   Format.flush_str_formatter ()
@@ -577,156 +528,84 @@ type goals =
   | Message of string
   | Goals of ((string menu) list * string menu) list
 
-module Goals =
-struct
-  let hyp_next_tac sigma env (id,_,ast) =
-    let id_s = Names.string_of_id id in
-    let type_s = string_of_ppcmds (pr_ltype_env env ast) in
-    [
-      ("clear "^id_s),("clear "^id_s^".\n");
-      ("apply "^id_s),("apply "^id_s^".\n");
-      ("exact "^id_s),("exact "^id_s^".\n");
-      ("generalize "^id_s),("generalize "^id_s^".\n");
-      ("absurd <"^id_s^">"),("absurd "^type_s^".\n")
-    ] @ (if Hipattern.is_equality_type ast then [
-      ("discriminate "^id_s),("discriminate "^id_s^".\n");
-      ("injection "^id_s),("injection "^id_s^".\n")
-    ] else []) @ (if Hipattern.is_equality_type (snd (Reductionops.splay_prod env sigma ast)) then [
-      ("rewrite "^id_s),("rewrite "^id_s^".\n");
-      ("rewrite <- "^id_s),("rewrite <- "^id_s^".\n")
-    ] else []) @ [
-      ("elim "^id_s), ("elim "^id_s^".\n");
-      ("inversion "^id_s), ("inversion "^id_s^".\n");
-      ("inversion clear "^id_s), ("inversion_clear "^id_s^".\n")
-    ]
-
-  let concl_next_tac concl =
-    let expand s = (s,s^".\n") in
-    List.map expand ([
-      "intro";
-      "intros";
-      "intuition"
-    ] @ (if Hipattern.is_equality_type concl.Evd.evar_concl then [
-      "reflexivity";
-      "discriminate";
-      "symmetry"
-    ] else []) @ [
-      "assumption";
-      "omega";
-      "ring";
-      "auto";
-      "eauto";
-      "tauto";
-      "trivial";
-      "decide equality";
-      "simpl";
-      "subst";
-      "red";
-      "split";
-      "left";
-      "right"
-    ])
-
-  let goals () =
-    let pfts = Pfedit.get_pftreestate () in
-    let sigma = Tacmach.evc_of_pftreestate pfts in
-    let (all_goals,_) = Refiner.frontier (Refiner.proof_of_pftreestate pfts) in
-    if all_goals = [] then
-      begin
-        Message (
-          match Decl_mode.get_end_command pfts with
-            | Some c -> "Subproof completed, now type "^c^".\n"
-            | None ->
-                let exl = Evarutil.non_instantiated sigma in
-                if exl = [] then "Proof Completed.\n" else
-                  ("No more subgoals but non-instantiated existential variables:\n"^
-                   string_of_ppcmds (pr_evars_int 1 exl)))
-      end
-    else
-      begin
-        let process_goal g =
-          let env = Evd.evar_env g in
-          let ccl =
-            string_of_ppcmds (pr_ltype_env_at_top env g.Evd.evar_concl) in
-          let process_hyp h_env d acc =
-            (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in
-          let hyps =
-            List.rev (Environ.fold_named_context process_hyp env ~init:[]) in
-          (hyps,(ccl,concl_next_tac g))
-        in
-        Goals (List.map process_goal all_goals)
-      end
-end
-
-let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =
-  [("clear "^ident),("clear "^ident^".");
-
-   ("apply "^ident),
-   ("apply "^ident^".");
-
-   ("exact "^ident),
-   ("exact "^ident^".");
-
-   ("generalize "^ident),
-   ("generalize "^ident^".");
-
-   ("absurd <"^ident^">"),
-   ("absurd "^
-    pr_ast
-    ^".") ] @
-
-  (if is_equality_type ast then
-     [ "discriminate "^ident, "discriminate "^ident^".";
-       "injection "^ident, "injection "^ident^"." ]
-   else
-     []) @
-
-  (let _,t = splay_prod env sigma ast in
-   if is_equality_type t then
-     [ "rewrite "^ident, "rewrite "^ident^".";
-       "rewrite <- "^ident, "rewrite <- "^ident^"." ]
-   else
-     []) @
-
-  [("elim "^ident),
-   ("elim "^ident^".");
-
-   ("inversion "^ident),
-   ("inversion "^ident^".");
-
-   ("inversion clear "^ident),
-   ("inversion_clear "^ident^".")]
-
-let concl_menu (_,_,concl,_) =
-  let is_eq = is_equality_type concl in
-  ["intro", "intro.";
-   "intros", "intros.";
-   "intuition","intuition." ] @
-
-   (if is_eq then
-      ["reflexivity", "reflexivity.";
-       "discriminate", "discriminate.";
-       "symmetry", "symmetry." ]
-    else
-      []) @
-
-  ["assumption" ,"assumption.";
-   "omega", "omega.";
-   "ring", "ring.";
-   "auto with *", "auto with *.";
-   "eauto with *", "eauto with *.";
-   "tauto", "tauto.";
-   "trivial", "trivial.";
-   "decide equality", "decide equality.";
-
-   "simpl", "simpl.";
-   "subst", "subst.";
-
-   "red", "red.";
-   "split", "split.";
-   "left", "left.";
-   "right", "right.";
+let hyp_next_tac sigma env (id,_,ast) =
+  let id_s = Names.string_of_id id in
+  let type_s = string_of_ppcmds (pr_ltype_env env ast) in
+  [
+    ("clear "^id_s),("clear "^id_s^".\n");
+    ("apply "^id_s),("apply "^id_s^".\n");
+    ("exact "^id_s),("exact "^id_s^".\n");
+    ("generalize "^id_s),("generalize "^id_s^".\n");
+    ("absurd <"^id_s^">"),("absurd "^type_s^".\n")
+  ] @ (if Hipattern.is_equality_type ast then [
+    ("discriminate "^id_s),("discriminate "^id_s^".\n");
+    ("injection "^id_s),("injection "^id_s^".\n")
+  ] else []) @ (if Hipattern.is_equality_type (snd (Reductionops.splay_prod env sigma ast)) then [
+    ("rewrite "^id_s),("rewrite "^id_s^".\n");
+    ("rewrite <- "^id_s),("rewrite <- "^id_s^".\n")
+  ] else []) @ [
+    ("elim "^id_s), ("elim "^id_s^".\n");
+    ("inversion "^id_s), ("inversion "^id_s^".\n");
+    ("inversion clear "^id_s), ("inversion_clear "^id_s^".\n")
   ]
+
+let concl_next_tac concl =
+  let expand s = (s,s^".\n") in
+  List.map expand ([
+    "intro";
+    "intros";
+    "intuition"
+  ] @ (if Hipattern.is_equality_type concl.Evd.evar_concl then [
+    "reflexivity";
+    "discriminate";
+    "symmetry"
+  ] else []) @ [
+    "assumption";
+    "omega";
+    "ring";
+    "auto";
+    "eauto";
+    "tauto";
+    "trivial";
+    "decide equality";
+    "simpl";
+    "subst";
+    "red";
+    "split";
+    "left";
+    "right"
+  ])
+
+let goals () =
+  PrintOpt.enforce_hack ();
+  let pfts = Pfedit.get_pftreestate () in
+  let sigma = Tacmach.evc_of_pftreestate pfts in
+  let (all_goals,_) = Refiner.frontier (Refiner.proof_of_pftreestate pfts) in
+  if all_goals = [] then
+    begin
+      Message (
+        match Decl_mode.get_end_command pfts with
+          | Some c -> "Subproof completed, now type "^c^".\n"
+          | None ->
+              let exl = Evarutil.non_instantiated sigma in
+              if exl = [] then "Proof Completed.\n" else
+                ("No more subgoals but non-instantiated existential variables:\n"^
+                 string_of_ppcmds (pr_evars_int 1 exl)))
+    end
+  else
+    begin
+      let process_goal g =
+        let env = Evd.evar_env g in
+        let ccl =
+          string_of_ppcmds (pr_ltype_env_at_top env g.Evd.evar_concl) in
+        let process_hyp h_env d acc =
+          (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in
+        let hyps =
+          List.rev (Environ.fold_named_context process_hyp env ~init:[]) in
+        (hyps,(ccl,concl_next_tac g))
+      in
+      Goals (List.map process_goal all_goals)
+    end
 
 
 let id_of_name = function

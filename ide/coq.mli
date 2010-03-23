@@ -47,29 +47,13 @@ val is_vernac_proof_ending_command : Vernacexpr.vernac_expr -> bool
 
 (* type hyp = (identifier * constr option * constr) * string *)
 
-type hyp = env * evar_map *
-           ((identifier*string) * constr option * constr) * (string * string)
-type meta = env * evar_map * string
-type concl = env * evar_map * constr * string
-type goal = hyp list * concl
-
-val get_current_goals : unit -> goal list
-
-val get_current_pm_goal : unit -> goal
-
-val print_no_goal : unit -> string
-
 val process_exn : exn -> string*(Util.loc option)
-
-val hyp_menu : hyp -> (string * string) list
-val concl_menu : concl -> (string * string) list
 
 val is_in_coq_lib : string -> bool
 val is_in_coq_path : string -> bool
 val is_in_loadpath : string -> bool
 
 val make_cases : string -> string list list
-
 
 type tried_tactic =
   | Interrupted
@@ -85,3 +69,5 @@ type 'a menu = 'a * (string * string) list
 type goals =
   | Message of string
   | Goals of ((string menu) list * string menu) list
+
+val goals : unit -> goals

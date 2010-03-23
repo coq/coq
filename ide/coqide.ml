@@ -87,7 +87,6 @@ object('self)
     bool -> bool -> bool ->
     (bool*int) option
   method set_message : string -> unit
-  method show_pm_goal : unit
   method show_goals : unit
   method show_goals_full : unit
   method undo_last_step : unit
@@ -731,85 +730,16 @@ object(self)
                 (String.make previous_line_spaces ' ')
       end
 
-  method show_pm_goal =
-    proof_buffer#insert
-      (Printf.sprintf "    *** Declarative Mode ***\n");
-    try
-      let (hyps,concl) = get_current_pm_goal () in
-        List.iter
-          (fun ((_,_,_,(s,_)) as _hyp) ->
-             proof_buffer#insert (s^"\n"))
-          hyps;
-        proof_buffer#insert
-          (String.make 38 '_' ^ "\n");
-        let (_,_,_,s) = concl in
-          proof_buffer#insert ("thesis := \n "^s^"\n");
-          let my_mark = `NAME "end_of_conclusion" in
-            proof_buffer#move_mark
-              ~where:((proof_buffer#get_iter_at_mark `INSERT))
-              my_mark;
-            ignore (proof_view#scroll_to_mark my_mark)
-    with Not_found ->
-      match Decl_mode.get_end_command (Pfedit.get_pftreestate ()) with
-          Some endc ->
-            proof_buffer#insert
-              ("Subproof completed, now type "^endc^".")
-        | None ->
-            proof_buffer#insert "Proof completed."
-
   method show_goals =
     try
-      proof_buffer#set_text "";
       match Decl_mode.get_current_mode () with
           Decl_mode.Mode_none -> ()
         | Decl_mode.Mode_tactic ->
-            begin
-              let s = Coq.get_current_goals () in
-                match s with
-                  | [] -> proof_buffer#insert (Coq.print_no_goal ())
-                  | (hyps,concl)::r ->
-                      let goal_nb = List.length s in
-                        proof_buffer#insert
-                          (Printf.sprintf "%d subgoal%s\n"
-                             goal_nb
-                             (if goal_nb<=1 then "" else "s"));
-                        List.iter
-                          (fun ((_,_,_,(s,_)) as _hyp) ->
-                             proof_buffer#insert (s^"\n"))
-                          hyps;
-                        proof_buffer#insert
-                          (String.make 38 '_' ^ "(1/"^
-                           (string_of_int goal_nb)^
-                           ")\n") ;
-                        let _,_,_,sconcl = concl in
-                          proof_buffer#insert sconcl;
-                          proof_buffer#insert "\n";
-                          let my_mark = `NAME "end_of_conclusion" in
-                            proof_buffer#move_mark
-                              ~where:((proof_buffer#get_iter_at_mark `INSERT))
-                              my_mark;
-                            proof_buffer#insert "\n\n";
-                            let i = ref 1 in
-                              List.iter
-                                (function (_,(_,_,_,concl)) ->
-                                  incr i;
-                                  proof_buffer#insert
-                                    (String.make 38 '_' ^"("^
-                                     (string_of_int !i)^
-                                     "/"^
-                                     (string_of_int goal_nb)^
-                                     ")\n");
-                                  proof_buffer#insert concl;
-                                  proof_buffer#insert "\n\n";
-                                )
-                                r;
-                              ignore (proof_view#scroll_to_mark my_mark)
-            end
+            Proof.display (Proof.mode_tactic (fun _ _ -> ())) proof_view (Coq.goals ())
         | Decl_mode.Mode_proof ->
-            self#show_pm_goal
+            Proof.display Proof.mode_cesar proof_view (Coq.goals ())
     with e ->
       prerr_endline ("Don't worry be happy despite: "^Printexc.to_string e)
-
 
   val mutable full_goal_done = true
 
@@ -817,115 +747,15 @@ object(self)
     if not full_goal_done then
       begin
         try
-          proof_buffer#set_text "";
           match Decl_mode.get_current_mode () with
               Decl_mode.Mode_none -> ()
             | Decl_mode.Mode_tactic ->
-                begin
-                  match Coq.get_current_goals () with
-                      [] -> Util.anomaly "show_goals_full"
-                    | ((hyps,concl)::r) as s ->
-                        let last_shown_area = Tags.Proof.highlight
-                        in
-                        let goal_nb = List.length s in
-                          proof_buffer#insert (Printf.sprintf "%d subgoal%s\n"
-                                                 goal_nb
-                                                 (if goal_nb<=1 then "" else "s"));
-                          let coq_menu commands =
-                            let tag = proof_buffer#create_tag []
-                            in
-                              ignore
-                                (tag#connect#event ~callback:
-                                   (fun ~origin ev it ->
-                                      match GdkEvent.get_type ev with
-                                        | `BUTTON_PRESS ->
-                                            let ev = (GdkEvent.Button.cast ev) in
-                                              if (GdkEvent.Button.button ev) = 3
-                                              then (
-                                                let loc_menu = GMenu.menu () in
-                                                let factory =
-                                                  new GMenu.factory loc_menu in
-                                                let add_coq_command (cp,ip) =
-                                                  ignore
-                                                    (factory#add_item cp
-                                                       ~callback:
-                                                       (fun () -> ignore
-                                                                    (self#insert_this_phrase_on_success
-                                                                       true
-                                                                       true
-                                                                       false
-                                                                       ("progress "^ip^"\n")
-                                                                       (ip^"\n"))
-                                                       )
-                                                    )
-                                                in
-                                                  List.iter add_coq_command commands;
-                                                  loc_menu#popup
-                                                    ~button:3
-                                                    ~time:(GdkEvent.Button.time ev);
-                                                  true)
-                                              else false
-                                        | `MOTION_NOTIFY ->
-                                            proof_buffer#remove_tag
-                                              ~start:proof_buffer#start_iter
-                                              ~stop:proof_buffer#end_iter
-                                              last_shown_area;
-                                            prerr_endline "Before find_tag_limits";
-
-                                            let s,e = find_tag_limits tag
-                                                        (new GText.iter it)
-                                            in
-                                              prerr_endline "After find_tag_limits";
-                                              proof_buffer#apply_tag
-                                                ~start:s
-                                                ~stop:e
-                                                last_shown_area;
-
-                                              prerr_endline "Applied tag";
-                                              false
-                                        | _ ->
-                                            false
-                                   )
-                                );
-                              tag
-                          in
-                            List.iter
-                              (fun ((_,_,_,(s,_)) as hyp) ->
-                                 let tag = coq_menu (hyp_menu hyp) in
-                                   proof_buffer#insert ~tags:[tag] (s^"\n"))
-                              hyps;
-                            proof_buffer#insert
-                              (String.make 38 '_' ^"(1/"^
-                               (string_of_int goal_nb)^
-                               ")\n")
-                              ;
-                            let tag = coq_menu (concl_menu concl) in
-                            let _,_,_,sconcl = concl in
-                              proof_buffer#insert ~tags:[tag] sconcl;
-                              proof_buffer#insert "\n";
-                              let my_mark = `NAME "end_of_conclusion" in
-                                proof_buffer#move_mark
-                                  ~where:((proof_buffer#get_iter_at_mark `INSERT)) my_mark;
-                                proof_buffer#insert "\n\n";
-                                let i = ref 1 in
-                                  List.iter
-                                    (function (_,(_,_,_,concl)) ->
-                                      incr i;
-                                      proof_buffer#insert
-                                        (String.make 38 '_' ^"("^
-                                         (string_of_int !i)^
-                                         "/"^
-                                         (string_of_int goal_nb)^
-                                         ")\n");
-                                      proof_buffer#insert concl;
-                                      proof_buffer#insert "\n\n";
-                                    )
-                                    r;
-                                  ignore (proof_view#scroll_to_mark my_mark) ;
-                                  full_goal_done <- true
-                end
+                Proof.display
+                  (Proof.mode_tactic (fun s () -> ignore (self#insert_this_phrase_on_success
+                                                            true true false ("progress "^s) s)))
+                  proof_view (Coq.goals ())
             | Decl_mode.Mode_proof ->
-                self#show_pm_goal
+                Proof.display Proof.mode_cesar proof_view (Coq.goals ())
         with e -> prerr_endline (Printexc.to_string e)
       end
 
