@@ -25,6 +25,7 @@ open Libnames
 open Lexer
 open Egrammar
 open Notation
+open Nameops
 
 (**********************************************************************)
 (* Tokens                                                             *)
@@ -269,24 +270,29 @@ let split_notation_string str =
 
 (* Interpret notations with a recursive component *)
 
-let rec find_pattern xl = function
+let out_nt = function NonTerminal x -> x | _ -> assert false
+
+let rec find_pattern nt xl = function
   | Break n as x :: l, Break n' :: l' when n=n' ->
-      find_pattern (x::xl) (l,l')
+      find_pattern nt (x::xl) (l,l')
   | Terminal s as x :: l, Terminal s' :: l' when s = s' ->
-      find_pattern (x::xl) (l,l')
-  | [NonTerminal x], NonTerminal x' :: l' ->
-      (x,x',xl),l'
-  | [NonTerminal _], Terminal s :: _ | Terminal s :: _, _ ->
+      find_pattern nt (x::xl) (l,l')
+  | [], NonTerminal x' :: l' ->
+      (out_nt nt,x',List.rev xl),l'
+  | _, Terminal s :: _ | Terminal s :: _, _ ->
       error ("The token "^s^" occurs on one side of \"..\" but not on the other side.")
-  | [NonTerminal _], Break s :: _ | Break s :: _, _ ->
+  | _, Break s :: _ | Break s :: _, _ ->
       error ("A break occurs on one side of \"..\" but not on the other side.")
-  | ((SProdList _ | NonTerminal _) :: _ | []), _ ->
+  | _, [] ->
       error ("The special symbol \"..\" must occur in a configuration of the form\n\"x symbs .. symbs y\".")
+  | ((SProdList _ | NonTerminal _) :: _), _ | _, (SProdList _ :: _) ->
+      anomaly "Only Terminal or Break expected on left, non-SProdList on right"
 
 let rec interp_list_parser hd = function
   | [] -> [], [], List.rev hd
   | NonTerminal id :: tl when id = ldots_var ->
-      let ((x,y,sl),tl') = find_pattern [] (hd,tl) in
+      let hd = List.rev hd in
+      let ((x,y,sl),tl') = find_pattern (List.hd hd) [] (List.tl hd,tl) in
       let yl,xl,tl'' = interp_list_parser [] tl' in
       (* We remember each pair of variable denoting a recursive part to *)
       (* remove the second copy of it afterwards *)
@@ -301,6 +307,7 @@ let rec interp_list_parser hd = function
       let yl,xl,tl' = interp_list_parser [x] tl in
       yl, xl, List.rev_append hd tl'
   | SProdList _ :: _ -> anomaly "Unexpected SProdList in interp_list_parser"
+
 
 (* Find non-terminal tokens of notation *)
 
@@ -576,7 +583,7 @@ let is_not_small_constr = function
   | _ -> false
 
 let rec define_keywords_aux = function
-    GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal("IDENT",k) :: l
+  | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal("IDENT",k) :: l
       when is_not_small_constr e ->
       message ("Defining '"^k^"' as keyword");
       Lexer.add_token("",k);
@@ -584,37 +591,54 @@ let rec define_keywords_aux = function
   | n :: l -> n :: define_keywords_aux l
   | [] -> []
 
+  (* Ensure that IDENT articulation terminal symbols are keywords *)
 let define_keywords = function
-    GramConstrTerminal("IDENT",k)::l ->
+  | GramConstrTerminal("IDENT",k)::l ->
       message ("Defining '"^k^"' as keyword");
       Lexer.add_token("",k);
       GramConstrTerminal("",k) :: define_keywords_aux l
   | l -> define_keywords_aux l
 
+let distribute a ll = List.map (fun l -> a @ l) ll
+
+  (* Expand LIST1(t,sep) into the combination of t and t;sep;LIST1(t,sep)
+     as many times as expected in [n] argument *)
+let rec expand_list_rule typ tkl x n i hds ll =
+  if i = n then
+    let hds =
+      GramConstrListMark (n,true) :: hds
+      @	[GramConstrNonTerminal (ETConstrList (typ,tkl), Some x)] in
+    distribute hds ll
+  else
+    let camlp4_message_name = Some (add_suffix x ("_"^string_of_int n)) in
+    let main = GramConstrNonTerminal (ETConstr typ, camlp4_message_name) in
+    let tks = List.map (fun x -> GramConstrTerminal x) tkl in
+    distribute (GramConstrListMark (i+1,false) :: hds @ [main]) ll @
+      expand_list_rule typ tkl x n (i+1) (main :: tks @ hds) ll
+
 let make_production etyps symbols =
   let prod =
     List.fold_right
-      (fun t l -> match t with
+      (fun t ll -> match t with
         | NonTerminal m ->
 	    let typ = List.assoc m etyps in
-	    GramConstrNonTerminal (typ, Some m) :: l
+	    distribute [GramConstrNonTerminal (typ, Some m)] ll
         | Terminal s ->
-	    GramConstrTerminal (terminal s) :: l
+	    distribute [GramConstrTerminal (terminal s)] ll
         | Break _ ->
-            l
+            ll
         | SProdList (x,sl) ->
-            let sl = List.flatten
+            let tkl = List.flatten
               (List.map (function Terminal s -> [terminal s]
                 | Break _ -> []
                 | _ -> anomaly "Found a non terminal token in recursive notation separator") sl) in
-	    let y = match List.assoc x etyps with
+	    let typ = match List.assoc x etyps with
               | ETConstr x -> x
               | _ ->
                   error "Component of recursive patterns in notation must be constr." in
-            let typ = ETConstrList (y,sl) in
-            GramConstrNonTerminal (typ, Some x) :: l)
-      symbols [] in
-  define_keywords prod
+	    expand_list_rule typ tkl x 1 0 [] ll)
+      symbols [[]] in
+  List.map define_keywords prod
 
 let rec find_symbols c_current c_next c_last = function
   | [] -> []

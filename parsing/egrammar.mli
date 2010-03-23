@@ -31,9 +31,12 @@ open Mod_subst
 type grammar_constr_prod_item =
   | GramConstrTerminal of Token.pattern
   | GramConstrNonTerminal of constr_prod_entry_key * identifier option
+  | GramConstrListMark of int * bool
+    (* tells action rule to make a list of the n previous parsed items; 
+       concat with last parsed list if true *)
 
 type notation_grammar =
-    int * Gramext.g_assoc option * notation * grammar_constr_prod_item list
+    int * Gramext.g_assoc option * notation * grammar_constr_prod_item list list
 
 (* For tactic and vernac notations *)
 
