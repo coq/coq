@@ -266,16 +266,18 @@ let split_notation_string str =
 
 (* Interpret notations with a recursive component *)
 
-let rec find_pattern xl = function
-  | Break n as x :: l, Break n' :: l' when n=n' -> 
-      find_pattern (x::xl) (l,l')
+let out_nt = function NonTerminal x -> x | _ -> assert false
+
+let rec find_pattern nt xl = function
+  | Break n as x :: l, Break n' :: l' when n=n' ->
+      find_pattern nt (x::xl) (l,l')
   | Terminal s as x :: l, Terminal s' :: l' when s = s' -> 
-      find_pattern (x::xl) (l,l')
-  | [NonTerminal x], NonTerminal x' :: l' ->
-      (x,x',xl),l'
-  | [NonTerminal _], Terminal s :: _ | Terminal s :: _, _ ->
+      find_pattern nt (x::xl) (l,l')
+  | [], NonTerminal x' :: l' ->
+      (out_nt nt,x',List.rev xl),l'
+  | [], Terminal s :: _ | Terminal s :: _, _ ->
       error ("The token "^s^" occurs on one side of \"..\" but not on the other side.")
-  | [NonTerminal _], Break s :: _ | Break s :: _, _ ->
+  | [], Break s :: _ | Break s :: _, _ ->
       error ("A break occurs on one side of \"..\" but not on the other side.")
   | ((SProdList _ | NonTerminal _) :: _ | []), _ -> 
       error ("The special symbol \"..\" must occur in a configuration of the form\n\"x symbs .. symbs y\".")
@@ -283,7 +285,8 @@ let rec find_pattern xl = function
 let rec interp_list_parser hd = function
   | [] -> [], [], List.rev hd
   | NonTerminal id :: tl when id = ldots_var ->
-      let ((x,y,sl),tl') = find_pattern [] (hd,tl) in
+      let hd = List.rev hd in
+      let ((x,y,sl),tl') = find_pattern (List.hd hd) [] (List.tl hd,tl) in
       let yl,xl,tl'' = interp_list_parser [] tl' in
       (* We remember each pair of variable denoting a recursive part to *)
       (* remove the second copy of it afterwards *)
@@ -298,6 +301,7 @@ let rec interp_list_parser hd = function
       let yl,xl,tl' = interp_list_parser [x] tl in
       yl, xl, List.rev_append hd tl'
   | SProdList _ :: _ -> anomaly "Unexpected SProdList in interp_list_parser"
+
 
 (* Find non-terminal tokens of notation *)
 
