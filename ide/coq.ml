@@ -567,6 +567,97 @@ let print_no_goal () =
   (* Fall back on standard coq goal printer for completed goal printing *)
   msg (pr_open_subgoals ())
 
+let string_of_ppcmds c =
+  Pp.msg_with Format.str_formatter c;
+  Format.flush_str_formatter ()
+
+type 'a menu = 'a * (string * string) list
+
+type goals =
+  | Message of string
+  | Goals of ((string menu) list * string menu) list
+
+module Goals =
+struct
+  let hyp_next_tac sigma env (id,_,ast) =
+    let id_s = Names.string_of_id id in
+    let type_s = string_of_ppcmds (pr_ltype_env env ast) in
+    [
+      ("clear "^id_s),("clear "^id_s^".\n");
+      ("apply "^id_s),("apply "^id_s^".\n");
+      ("exact "^id_s),("exact "^id_s^".\n");
+      ("generalize "^id_s),("generalize "^id_s^".\n");
+      ("absurd <"^id_s^">"),("absurd "^type_s^".\n")
+    ] @ (if Hipattern.is_equality_type ast then [
+      ("discriminate "^id_s),("discriminate "^id_s^".\n");
+      ("injection "^id_s),("injection "^id_s^".\n")
+    ] else []) @ (if Hipattern.is_equality_type (snd (Reductionops.splay_prod env sigma ast)) then [
+      ("rewrite "^id_s),("rewrite "^id_s^".\n");
+      ("rewrite <- "^id_s),("rewrite <- "^id_s^".\n")
+    ] else []) @ [
+      ("elim "^id_s), ("elim "^id_s^".\n");
+      ("inversion "^id_s), ("inversion "^id_s^".\n");
+      ("inversion clear "^id_s), ("inversion_clear "^id_s^".\n")
+    ]
+
+  let concl_next_tac concl =
+    let expand s = (s,s^".\n") in
+    List.map expand ([
+      "intro";
+      "intros";
+      "intuition"
+    ] @ (if Hipattern.is_equality_type concl.Evd.evar_concl then [
+      "reflexivity";
+      "discriminate";
+      "symmetry"
+    ] else []) @ [
+      "assumption";
+      "omega";
+      "ring";
+      "auto";
+      "eauto";
+      "tauto";
+      "trivial";
+      "decide equality";
+      "simpl";
+      "subst";
+      "red";
+      "split";
+      "left";
+      "right"
+    ])
+
+  let goals () =
+    let pfts = Pfedit.get_pftreestate () in
+    let sigma = Tacmach.evc_of_pftreestate pfts in
+    let (all_goals,_) = Refiner.frontier (Refiner.proof_of_pftreestate pfts) in
+    if all_goals = [] then
+      begin
+        Message (
+          match Decl_mode.get_end_command pfts with
+            | Some c -> "Subproof completed, now type "^c^".\n"
+            | None ->
+                let exl = Evarutil.non_instantiated sigma in
+                if exl = [] then "Proof Completed.\n" else
+                  ("No more subgoals but non-instantiated existential variables:\n"^
+                   string_of_ppcmds (pr_evars_int 1 exl)))
+      end
+    else
+      begin
+        let process_goal g =
+          let env = Evd.evar_env g in
+          let ccl =
+            string_of_ppcmds (pr_ltype_env_at_top env g.Evd.evar_concl) in
+          let process_hyp h_env d acc =
+            (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in
+          let hyps =
+            List.rev (Environ.fold_named_context process_hyp env ~init:[]) in
+          (hyps,(ccl,concl_next_tac g))
+        in
+        Goals (List.map process_goal all_goals)
+      end
+end
+
 let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =
   [("clear "^ident),("clear "^ident^".");
 
@@ -584,18 +675,18 @@ let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =
     pr_ast
     ^".") ] @
 
-   (if is_equality_type ast then
-      [ "discriminate "^ident, "discriminate "^ident^".";
-	"injection "^ident, "injection "^ident^"." ]
-    else
-      []) @
+  (if is_equality_type ast then
+     [ "discriminate "^ident, "discriminate "^ident^".";
+       "injection "^ident, "injection "^ident^"." ]
+   else
+     []) @
 
-   (let _,t = splay_prod env sigma ast in
-    if is_equality_type t then
-      [ "rewrite "^ident, "rewrite "^ident^".";
-	"rewrite <- "^ident, "rewrite <- "^ident^"." ]
-    else
-      []) @
+  (let _,t = splay_prod env sigma ast in
+   if is_equality_type t then
+     [ "rewrite "^ident, "rewrite "^ident^".";
+       "rewrite <- "^ident, "rewrite <- "^ident^"." ]
+   else
+     []) @
 
   [("elim "^ident),
    ("elim "^ident^".");

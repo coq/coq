@@ -79,3 +79,9 @@ type tried_tactic =
 (* Message to display in lower status bar. *)
 
 val current_status : unit -> string
+
+type 'a menu = 'a * (string * string) list
+
+type goals =
+  | Message of string
+  | Goals of ((string menu) list * string menu) list
