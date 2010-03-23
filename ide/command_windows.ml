@@ -106,7 +106,7 @@ object(self)
 	then com ^ " " else com ^ " " ^ entry#text ^" . "
       in
       try
-	ignore(Coq.interp false phrase);
+	ignore(Coq.interp Coq.dummy_coqtop false phrase);
 	result#buffer#set_text
 	  ("Result for command " ^ phrase ^ ":\n" ^ Ideutils.read_stdout ())
       with e ->

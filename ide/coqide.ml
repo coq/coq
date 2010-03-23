@@ -735,9 +735,9 @@ object(self)
       match Decl_mode.get_current_mode () with
           Decl_mode.Mode_none -> ()
         | Decl_mode.Mode_tactic ->
-            Proof.display (Proof.mode_tactic (fun _ _ -> ())) proof_view (Coq.goals ())
+            Proof.display (Proof.mode_tactic (fun _ _ -> ())) proof_view (Coq.goals Coq.dummy_coqtop)
         | Decl_mode.Mode_proof ->
-            Proof.display Proof.mode_cesar proof_view (Coq.goals ())
+            Proof.display Proof.mode_cesar proof_view (Coq.goals Coq.dummy_coqtop)
     with e ->
       prerr_endline ("Don't worry be happy despite: "^Printexc.to_string e)
 
@@ -753,9 +753,9 @@ object(self)
                 Proof.display
                   (Proof.mode_tactic (fun s () -> ignore (self#insert_this_phrase_on_success
                                                             true true false ("progress "^s) s)))
-                  proof_view (Coq.goals ())
+                  proof_view (Coq.goals Coq.dummy_coqtop)
             | Decl_mode.Mode_proof ->
-                Proof.display Proof.mode_cesar proof_view (Coq.goals ())
+                Proof.display Proof.mode_cesar proof_view (Coq.goals Coq.dummy_coqtop)
         with e -> prerr_endline (Printexc.to_string e)
       end
 
@@ -788,19 +788,11 @@ object(self)
         full_goal_done <- false;
         prerr_endline "Send_to_coq starting now";
         Decl_mode.clear_daimon_flag ();
-        if replace then begin
-          let r,info = Coq.interp_and_replace ("info " ^ phrase) in
-          let is_complete = not (Decl_mode.get_daimon_flag ()) in
-          let msg = read_stdout () in
-            sync display_output msg;
-            Some (is_complete,r)
-        end else begin
-          let r = Coq.interp verbosely phrase in
-          let is_complete = not (Decl_mode.get_daimon_flag ()) in
-          let msg = read_stdout () in
-            sync display_output msg;
-            Some (is_complete,r)
-        end
+        let r = Coq.interp Coq.dummy_coqtop verbosely phrase in
+        let is_complete = not (Decl_mode.get_daimon_flag ()) in
+        let msg = read_stdout () in
+        sync display_output msg;
+        Some (is_complete,r)
       with e ->
         if show_error then sync display_error e;
         None
@@ -994,7 +986,7 @@ object(self)
               cmd_stack;
             Stack.clear cmd_stack;
             self#clear_message)();
-    Coq.reset_initial ()
+    Coq.reset_initial Coq.dummy_coqtop
 
   (* backtrack Coq to the phrase preceding iterator [i] *)
   method backtrack_to_no_lock i =
@@ -1010,7 +1002,7 @@ object(self)
     in
     begin
       try
-        prerr_endline (string_of_int (rewind (n_step 0)));
+        prerr_endline (string_of_int (rewind Coq.dummy_coqtop (n_step 0)));
         prerr_endline (string_of_int (Stack.length cmd_stack));
         sync (fun _ ->
                 let start =
@@ -1074,7 +1066,7 @@ object(self)
             self#show_goals;
             self#clear_message
           in
-          ignore ((rewind 1));
+          ignore ((rewind Coq.dummy_coqtop 1));
           sync update_input ()
         with
           | Stack.Empty -> (* flash_info "Nothing to Undo"*)()
@@ -1142,7 +1134,7 @@ object(self)
     is_active <- false;
     (match act_id with None -> ()
        | Some id ->
-           reset_initial ();
+           reset_initial Coq.dummy_coqtop;
            input_view#misc#disconnect id;
            prerr_endline "DISCONNECTED old active : ";
            print_id id;
@@ -1169,9 +1161,9 @@ object(self)
     with
       | None -> ()
       | Some f -> let dir = Filename.dirname f in
-          if not (is_in_loadpath dir) then
+          if not (is_in_loadpath Coq.dummy_coqtop dir) then
             begin
-              ignore (Coq.interp false
+              ignore (Coq.interp Coq.dummy_coqtop false
                         (Printf.sprintf "Add LoadPath \"%s\". "  dir))
             end
 
@@ -2242,7 +2234,7 @@ let main files =
 				    (_do_or_activate
 				       (fun av -> f av;
                                           pop_info ();
-                                          push_info (Coq.current_status())
+                                          push_info (Coq.current_status Coq.dummy_coqtop)
                                        )
                                     )
 				in
@@ -2472,7 +2464,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					let callback () =
 					  let w = get_current_word () in
 					    try
-					      let cases = Coq.make_cases w
+					      let cases = Coq.make_cases Coq.dummy_coqtop w
 					      in
 					      let print c = function
 						| [x] -> Format.fprintf c "  | %s => _@\n" x
@@ -2632,7 +2624,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
                ([universes],"Display _universe levels",GdkKeysyms._u,false);
                ([all_basic;existential;universes],"Display all _low-level contents",GdkKeysyms._l,false)
              ] in
-             let setopts opts v = List.iter (fun o -> set o v) opts in
+             let setopts opts v = List.iter (fun o -> set Coq.dummy_coqtop o v) opts in
              let _ =
                List.map
                        (fun (opts,text,key,dflt) -> 

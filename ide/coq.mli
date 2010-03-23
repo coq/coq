@@ -16,6 +16,10 @@ open Evd
 val short_version : unit -> string
 val version : unit -> string
 
+type coqtop
+
+val dummy_coqtop : coqtop
+
 module PrintOpt :
 sig
   type t
@@ -27,33 +31,21 @@ sig
   val existential : t
   val universes : t
 
-  val set : t -> bool -> unit
+  val set : coqtop -> t -> bool -> unit
 end
 
-
-val reset_initial : unit -> unit
+val reset_initial : coqtop -> unit
 
 val init : unit -> string list
-val interp : bool -> string -> int
-val interp_and_replace : string ->
-  int * string
+val interp : coqtop -> bool -> string -> int
 
-val rewind : int -> int
-
-val is_vernac_tactic_command : Vernacexpr.vernac_expr -> bool
-val is_vernac_state_preserving_command : Vernacexpr.vernac_expr -> bool
-val is_vernac_goal_starting_command : Vernacexpr.vernac_expr -> bool
-val is_vernac_proof_ending_command : Vernacexpr.vernac_expr -> bool
-
-(* type hyp = (identifier * constr option * constr) * string *)
+val rewind : coqtop -> int -> int
 
 val process_exn : exn -> string*(Util.loc option)
 
-val is_in_coq_lib : string -> bool
-val is_in_coq_path : string -> bool
-val is_in_loadpath : string -> bool
+val is_in_loadpath : coqtop -> string -> bool
 
-val make_cases : string -> string list list
+val make_cases : coqtop -> string -> string list list
 
 type tried_tactic =
   | Interrupted
@@ -62,7 +54,7 @@ type tried_tactic =
 
 (* Message to display in lower status bar. *)
 
-val current_status : unit -> string
+val current_status : coqtop -> string
 
 type 'a menu = 'a * (string * string) list
 
@@ -70,4 +62,4 @@ type goals =
   | Message of string
   | Goals of ((string menu) list * string menu) list
 
-val goals : unit -> goals
+val goals : coqtop -> goals

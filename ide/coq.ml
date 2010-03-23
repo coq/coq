@@ -27,6 +27,10 @@ open Termops
 open Namegen
 open Ideutils
 
+type coqtop = unit
+
+let dummy_coqtop = ()
+
 let prerr_endline s = if !debug then prerr_endline s else ()
 
 let output = ref (Format.formatter_of_out_channel stdout)
@@ -83,32 +87,8 @@ let version () =
     (if Mltop.is_native then "native" else "bytecode")
     (if Coq_config.best="opt" then "native" else "bytecode")
 
-let is_in_coq_lib dir =
-  prerr_endline ("Is it a coq theory ? : "^dir);
-  let is_same_file = same_file dir in
-  List.exists
-    (fun s ->
-      let fdir =
-        Filename.concat (Envars.coqlib ()) (Filename.concat "theories" s) in
-      prerr_endline (" Comparing to: "^fdir);
-      if is_same_file fdir then (prerr_endline " YES";true)
-      else (prerr_endline"NO";false))
-    Coq_config.theories_dirs
-
-let is_in_loadpath dir =
+let is_in_loadpath coqtop dir =
   Library.is_in_load_paths (System.physical_path_of_string dir)
-
-let is_in_coq_path f =
-  try
-  let base = Filename.chop_extension (Filename.basename f) in
-  let _ = Library.locate_qualified_library false
-	    (Libnames.make_qualid Names.empty_dirpath
-	       (Names.id_of_string base)) in
-  prerr_endline (f ^ " is in coq path");
-  true
-  with _ ->
-    prerr_endline (f ^ " is NOT in coq path");
-    false
 
 let is_in_proof_mode () =
   match Decl_mode.get_current_mode () with
@@ -117,7 +97,6 @@ let is_in_proof_mode () =
 
 let user_error_loc l s =
   raise (Stdpp.Exc_located (l, Util.UserError ("CoqIde", s)))
-
 
 let known_options = ref []
 
@@ -300,10 +279,6 @@ let is_vernac_tactic_command com =
 let is_vernac_proof_ending_command com =
   List.mem ProofEndingCommand (attribute_of_vernac_command com)
 
-type annotated_vernac =
-  | ControlVernac of vernac_expr * string (* navigation, debug, process control, print opts *)
-  | PureVernac of vernac_expr
- 
 type reset_status =
   | NoReset
   | ResetToNextMark
@@ -321,17 +296,10 @@ let com_stk = Stack.create ()
 let parsable_of_string s =
   Pcoq.Gram.parsable (Stream.of_string s)
 
-let reset_initial () =
+let reset_initial coqtop =
   prerr_endline "Reset initial called"; flush stderr;
   Stack.clear com_stk;
   Vernacentries.abort_refine Lib.reset_initial ()
-
-let reset_to sp =
-      prerr_endline
-        ("Reset called with state "^(Libnames.string_of_path (fst sp)));
-      Lib.reset_to_state sp
-
-let undo_info () = Pfedit.get_all_proof_names ()
 
 let compute_reset_info loc_ast = 
   let status,cur_prf = match snd loc_ast with
@@ -359,7 +327,7 @@ let eval_expr cmd_stk loc_ast =
   Stack.push rewind_info cmd_stk;
   Stack.length cmd_stk
 
-let interp_with_options verbosely s =
+let interp coqtop verbosely s =
   prerr_endline "Starting interp...";
   prerr_endline s;
   let pa = parsable_of_string s in
@@ -386,9 +354,9 @@ let interp_with_options verbosely s =
     stack_depth
   with Vernac.End_of_input -> assert false
 
-let rewind count =
+let rewind coqtop count =
   let undo_ops = Hashtbl.create 31 in
-  let current_proofs = undo_info () in
+  let current_proofs = Pfedit.get_all_proof_names () in
   let rec do_rewind count reset_op prev_proofs curprf =
     if (count <= 0) && (reset_op <> ResetToNextMark) &&
        (Util.list_subset prev_proofs current_proofs) then
@@ -456,7 +424,7 @@ struct
   let _ = List.iter (fun opt -> Hashtbl.add state_hack opt false)
             [ implicit; coercions; raw_matching; notations; all_basic; existential; universes ]
 
-  let set opt value =
+  let set coqtop opt value =
     Hashtbl.replace state_hack opt value;
     List.iter
       (fun cmd -> 
@@ -464,22 +432,13 @@ struct
          Vernac.eval_expr (Vernac.parse_sentence (parsable_of_string str,None)))
       opt
 
-  let enforce_hack () = Hashtbl.iter set state_hack 
+  let enforce_hack () = Hashtbl.iter (set ()) state_hack 
 end
 
 (*
 let forbid_vernac blacklist (loc,vernac) =
   List.map (fun (test,err) -> if test vernac then err loc
  *)
-
-
-let interp verbosely phrase =
-  interp_with_options verbosely phrase
-
-let interp_and_replace s =
-  let result = interp false s in
-  let msg = read_stdout () in
-  result,msg
 
 let rec is_pervasive_exn = function
   | Out_of_memory | Stack_overflow | Sys.Break -> true
@@ -576,7 +535,7 @@ let concl_next_tac concl =
     "right"
   ])
 
-let goals () =
+let goals coqtop =
   PrintOpt.enforce_hack ();
   let pfts = Pfedit.get_pftreestate () in
   let sigma = Tacmach.evc_of_pftreestate pfts in
@@ -612,7 +571,7 @@ let id_of_name = function
   | Names.Anonymous -> id_of_string "x"
   | Names.Name x -> x
 
-let make_cases s =
+let make_cases coqtop s =
   let qualified_name = Libnames.qualid_of_string s in
   let glob_ref = Nametab.locate qualified_name in
   match glob_ref with
@@ -642,7 +601,7 @@ let make_cases s =
 	  []
     | _ -> raise Not_found
 
-let current_status () =
+let current_status coqtop =
   let path = msg (Libnames.pr_dirpath (Lib.cwd ())) in
   let path = if path = "Top" then "Ready" else "Ready in " ^ String.sub path 4 (String.length path - 4) in
   try
