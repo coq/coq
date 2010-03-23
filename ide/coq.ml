@@ -345,7 +345,7 @@ let compute_reset_info loc_ast =
            | Some sp -> 
                prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
                ResetAtMark sp,None
-           | None -> NoReset,None)
+           | None -> prerr_endline "No top state"; (NoReset,None))
   in
   { status = status;
     proofs = Pfedit.get_all_proof_names ();
@@ -411,8 +411,8 @@ let rewind count =
           (Util.list_subtract current_proofs prev_proofs);
         prerr_endline "OK for aborts";
         (match reset_op with
-          | NoReset -> ()
-          | ResetAtMark m -> Lib.reset_to_state m 
+          | NoReset -> prerr_endline "No Reset"
+          | ResetAtMark m -> (prerr_endline ("Reset at "^(Libnames.string_of_path (fst m))); Lib.reset_to_state m)
           | ResetToNextMark -> assert false);
         prerr_endline "OK for reset"
       end
