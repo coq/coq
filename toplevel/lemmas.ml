@@ -312,10 +312,11 @@ let start_proof_with_initialization kind recguard thms hook =
 
 let start_proof_com kind thms hook =
   let evdref = ref (create_evar_defs Evd.empty) in
-  let env = Global.env () in
+  let env0 = Global.env () in
   let thms = List.map (fun (sopt,(bl,t,guard)) ->
-    let (env, ctx), imps = interp_context_evars evdref env bl in
+    let (env, ctx), imps = interp_context_evars evdref env0 bl in
     let t', imps' = interp_type_evars_impls ~evdref env t in
+    Sign.iter_rel_context (check_evars env Evd.empty !evdref) ctx;
     let len = List.length ctx in
       (compute_proof_name sopt,
       (nf_isevar !evdref (it_mkProd_or_LetIn t' ctx),
