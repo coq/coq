@@ -329,7 +329,6 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
             n, aliastyp, Some typ
   in
   let constructs = Array.init (Array.length bl) (fun i -> (indsp,i+1)) in
-  let eqnl = detype_eqns constructs consnargsl bl in
   let tag =
     try 
       if !Flags.raw_print then
@@ -357,8 +356,10 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
 	RIf (dl,tomatch,(alias,pred),
              Option.get nondepbrs.(0),Option.get nondepbrs.(1))
       else
+	let eqnl = detype_eqns constructs consnargsl bl in
 	RCases (dl,tag,pred,[tomatch,(alias,aliastyp)],eqnl)
   | _ ->
+      let eqnl = detype_eqns constructs consnargsl bl in
       RCases (dl,tag,pred,[tomatch,(alias,aliastyp)],eqnl)
 
 let detype_sort = function
