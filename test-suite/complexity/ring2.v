@@ -1,4 +1,4 @@
-(* This example, checks the efficiency of the abstract machine used by ring *)
+(* This example checks the efficiency of the abstract machine used by ring *)
 (* Expected time < 1.00s *)
 
 Require Import BinInt Zbool.
