@@ -688,6 +688,16 @@ let minimal_free_rels env sigma (c,cty) =
   else
     (cty',rels')
 
+(* Like the above, but recurse over all the rels found until there are
+   no more rels to be found *)
+let minimal_free_rels_rec env sigma =
+  let rec minimalrec_free_rels_rec prev_rels (c,cty) =
+    let (cty,direct_rels) = minimal_free_rels env sigma (c,cty) in
+    let combined_rels = Intset.union prev_rels direct_rels in
+    let folder rels i = snd (minimalrec_free_rels_rec rels (c, type_of env sigma (mkRel i)))
+    in (cty, List.fold_left folder combined_rels (Intset.elements (Intset.diff direct_rels prev_rels)))
+  in minimalrec_free_rels_rec Intset.empty
+
 (* [sig_clausal_form siglen ty]
     
    Will explode [siglen] [sigS,sigT ]'s on [ty] (depending on the 
@@ -706,7 +716,7 @@ let minimal_free_rels env sigma (c,cty) =
 
    WARNING: No checking is done to make sure that the 
             sigS(or sigT)'s are actually there.
-          - Only homogenious pairs are built i.e. pairs where all the 
+          - Only homogeneous pairs are built i.e. pairs where all the 
    dependencies are of the same sort
 
    [sig_clausal_form] proceed as follows: the default tuple is
@@ -747,7 +757,12 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
 	Evd.existential_opt_value (Evd.evars_of !evdref) 
 	(destEvar ev)
       with
-	| Some w -> applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
+	| Some w ->
+            let w_type = type_of env sigma w in
+            if Evarconv.e_conv env evdref w_type a then
+              applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
+            else
+              error "Cannot solve a unification problem."
 	| None -> anomaly "Not enough components to build the dependent tuple"
   in
   let scf = sigrec_clausal_form siglen ty in
@@ -812,7 +827,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
  *)
 
 let make_iterated_tuple env sigma dflt (z,zty) =
-  let (zty,rels) = minimal_free_rels env sigma (z,zty) in
+  let (zty,rels) = minimal_free_rels_rec env sigma (z,zty) in
   let sort_of_zty = get_sort_of env sigma zty in
   let sorted_rels = Sort.list (<) (Intset.elements rels) in
   let (tuple,tuplety) =
