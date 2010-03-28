@@ -195,6 +195,8 @@ module Default = struct
         (* We eta-expand (hence possibly modifying the original term!) *)
 	(* and look for a coercion c:u1->t1 s.t. fun x:u1 => v' (c x)) *)
 	(* has type forall (x:u1), u2 (with v' recursively obtained) *)
+        (* Note: we retupe the term because sort-polymorphism may have *)
+        (* weaken its type *)
 	let name = match name with
 	  | Anonymous -> Name (id_of_string "x")
 	  | _ -> name in
@@ -204,7 +206,9 @@ module Default = struct
             (Some (mkRel 1)) (lift 1 u1) (lift 1 t1) in
         let v1 = Option.get v1 in
 	let v2 = Option.map (fun v -> beta_applist (lift 1 v,[v1])) v in
-        let t2 = subst_term v1 t2 in
+	let t2 = match v2 with
+	  | None -> subst_term v1 t2
+	  | Some v2 -> Retyping.get_type_of env1 evd' v2 in
 	let (evd'',v2') = inh_conv_coerce_to_fail loc env1 evd' rigidonly v2 t2 u2 in
 	(evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2')
     | _ -> raise NoCoercion
