@@ -1025,3 +1025,5 @@ Qed.
 
 (** For compatibility *)
 Notation Zlt_O_minus_lt := Zlt_0_minus_lt (only parsing).
+Notation Zle_gt_succ := Zlt_gt_succ (only parsing).
+Notation Zle_succ_gt := Zlt_succ_gt (only parsing).
