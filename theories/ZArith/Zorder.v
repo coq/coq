@@ -413,7 +413,7 @@ Proof.
 	  | elim (Zcompare_Gt_Lt_antisym (n + 1) p); intros H4 H5; apply H4; exact H3 ].
 Qed.
 
-Lemma Zlt_gt_succ : forall n m:Z, n <= m -> Zsucc m > n.
+Lemma Zle_gt_succ : forall n m:Z, n <= m -> Zsucc m > n.
 Proof.
   intros n p H; apply Zgt_le_trans with p.
   apply Zgt_succ.
@@ -422,7 +422,7 @@ Qed.
 
 Lemma Zle_lt_succ : forall n m:Z, n <= m -> n < Zsucc m.
 Proof.
-  intros n m H; apply Zgt_lt; apply Zlt_gt_succ; assumption.
+  intros n m H; apply Zgt_lt; apply Zle_gt_succ; assumption.
 Qed.
 
 Lemma Zlt_le_succ : forall n m:Z, n < m -> Zsucc n <= m.
@@ -440,7 +440,7 @@ Proof.
   intros n m H; apply Zgt_succ_le; apply Zlt_gt; assumption.
 Qed.
 
-Lemma Zlt_succ_gt : forall n m:Z, Zsucc n <= m -> m > n.
+Lemma Zle_succ_gt : forall n m:Z, Zsucc n <= m -> m > n.
 Proof.
   intros n m H; apply Zle_gt_trans with (m := Zsucc n);
     [ assumption | apply Zgt_succ ].

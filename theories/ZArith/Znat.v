@@ -91,7 +91,7 @@ Qed.
 
 Theorem inj_lt : forall n m:nat, (n < m)%nat -> Z_of_nat n < Z_of_nat m.
 Proof.
-  intros x y H; apply Zgt_lt; apply Zlt_succ_gt; rewrite <- inj_S; apply inj_le;
+  intros x y H; apply Zgt_lt; apply Zle_succ_gt; rewrite <- inj_S; apply inj_le;
     exact H.
 Qed.
 

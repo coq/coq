@@ -155,6 +155,8 @@ Library
 - Lemmas in library Relations and Reals have been homogenized a bit.
 - The implicit argument of Logic.eq is now maximally inserted, allowing
   to simply write "eq" instead of "@eq _" in morphism signatures.
+- Wrongly named lemmas (Zlt_gt_succ and Zlt_succ_gt) fixed (potential source
+  of incompatibilities)
 - List library:
   - Definitions of list, length and app are now in Init/Datatypes.
     Support for compatibility is provided.
