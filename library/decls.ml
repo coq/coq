@@ -36,6 +36,10 @@ let variable_opacity id = let (_,opaq,_,_) = Idmap.find id !vartab in opaq
 let variable_kind id = let (_,_,_,k) = Idmap.find id !vartab in k
 let variable_constraints id = let (_,_,cst,_) = Idmap.find id !vartab in cst
 
+let variable_secpath id =
+  let dir = drop_dirpath_prefix (Lib.library_dp()) (variable_path id) in
+  make_qualid dir id
+
 let variable_exists id = Idmap.mem id !vartab
 
 (** Datas associated to global parameters and constants *)

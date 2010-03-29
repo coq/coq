@@ -756,7 +756,8 @@ let vernac_declare_tactic_definition (local,x,def) =
 let vernac_create_hintdb local id b =
   Auto.create_hint_db local id full_transparent_state b
 
-let vernac_hints local lb h = Auto.add_hints local lb (Auto.interp_hints h)
+let vernac_hints local lb h =
+  Auto.add_hints local lb (Auto.interp_hints h)
 
 let vernac_syntactic_definition lid =
   Dumpglob.dump_definition lid false "syndef";

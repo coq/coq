@@ -47,23 +47,10 @@ let previous_state = ref MultFiles
 let pause () = previous_state := !glob_output; glob_output := NoGlob
 let continue () = glob_output := !previous_state
 
+type coqdoc_state = Lexer.location_table
 
-let token_number = ref 0
-let last_pos = ref 0
-
-type coqdoc_state = Lexer.location_table * int * int
-
-let coqdoc_freeze () =
-  let lt = Lexer.location_table() in
-  let state = (lt,!token_number,!last_pos) in
-    token_number := 0;
-    last_pos := 0;
-    state
-
-let coqdoc_unfreeze (lt,tn,lp) =
-  Lexer.restore_location_table lt;
-  token_number := tn;
-  last_pos := lp
+let coqdoc_freeze = Lexer.location_table
+let coqdoc_unfreeze = Lexer.restore_location_table
 
 open Decl_kinds
 
@@ -200,19 +187,31 @@ let dump_libref loc dp ty =
   dump_string (Printf.sprintf "R%d %s <> <> %s\n"
 		  (fst (Util.unloc loc)) (Names.string_of_dirpath dp) ty)
 
-let dump_notation_location pos ((path,df),sc) =
+let cook_notation df sc =
+  let ntn = String.make (String.length df * 3) '_' in
+  let j = ref 0 in
+  let quoted = ref false in
+  for i = 0 to String.length df - 1 do
+    if df.[i] = '\'' then quoted := not !quoted;
+    if df.[i] = ' ' then (ntn.[!j] <- '_'; incr j) else
+    if df.[i] = '_' && not !quoted then (ntn.[!j] <- 'x'; incr j) else
+    if df.[i] = 'x' && not !quoted then (String.blit "'x'" 0 ntn !j 3; j := !j + 3) else
+    (ntn.[!j] <- df.[i]; incr j)
+  done;
+  let df = String.sub ntn 0 !j in
+  match sc with Some sc -> ":" ^ sc ^ ":" ^ df | _ -> "::" ^ df
+
+let dump_notation (loc,(df,_)) sc sec =
+  (* We dump the location of the opening '"' *)
+  dump_string (Printf.sprintf "not %d %s %s\n" (fst (Util.unloc loc))
+    (Names.string_of_dirpath (Lib.current_dirpath sec)) (cook_notation df sc))
+
+let dump_notation_location posl df (((path,secpath),_),sc) =
   if dump () then
-    let rec next growing =
-      let loc = Lexer.location_function !token_number in
-      let (bp,_) = Util.unloc loc in
-	if growing then if bp >= pos then loc else (incr token_number; next true)
-	else if bp = pos then loc
-	else if bp > pos then (decr token_number;next false)
-	else (incr token_number;next true) in
-    let loc = next (pos >= !last_pos) in
-      last_pos := pos;
-      let path = Names.string_of_dirpath path in
-      let _sc = match sc with Some sc -> " "^sc | _ -> "" in
-	dump_string (Printf.sprintf "R%d %s \"%s\" not\n" (fst (Util.unloc loc)) path df)
-
-
+    let path = Names.string_of_dirpath path in
+    let secpath = Names.string_of_dirpath secpath in
+    let df = cook_notation df sc in
+    List.iter (fun (bl,el) ->
+      for pos=bl to el do
+	dump_string (Printf.sprintf "R%d %s %s %s not\n" pos path secpath df)
+      done) posl

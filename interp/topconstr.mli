@@ -252,5 +252,8 @@ type 'a module_signature =
   | Enforce of 'a (* ... : T *)
   | Check of 'a list (* ... <: T1 <: T2, possibly empty *)
 
-val ntn_loc : Util.loc -> constr_expr notation_substitution -> string -> int
-val patntn_loc : Util.loc -> cases_pattern_expr notation_substitution -> string -> int
+val ntn_loc :
+  Util.loc -> constr_expr notation_substitution -> string -> (int * int) list
+val patntn_loc :
+  Util.loc -> cases_pattern_expr notation_substitution -> string ->
+  (int * int) list

@@ -247,7 +247,13 @@
     else
       String.sub s 1 (String.length s - 3)
 
-  let symbol lexbuf s = Output.symbol s
+  let symbol lexbuf s = Output.symbol s (lexeme_start lexbuf)
+
+  let output_indented_keyword s lexbuf =
+    let nbsp,isp = count_spaces s in
+    Output.indentation nbsp;
+    let s = String.sub s isp (String.length s - isp) in
+    Output.ident s (lexeme_start lexbuf + isp)
 
 }
 
@@ -359,15 +365,17 @@ let gallina_ext =
   | "Coercion"
   | "Identity"
   | "Implicit"
-  | "Notation"
-  | "Infix"
   | "Tactic" space+ "Notation"
-  | "Reserved" space+ "Notation"
   | "Section"
   | "Context"
   | "Variable" 's'?
   | ("Hypothesis" | "Hypotheses")
   | "End"
+
+let notation_kw =
+    "Notation"
+  | "Infix"
+  | "Reserved" space+ "Notation"
 
 let commands =
   "Pwd"
@@ -439,8 +447,6 @@ let begin_verb = "(*" space* "begin" space+ "verb" space* "*)"
 let end_verb = "(*" space* "end" space+ "verb" space* "*)"
 *)
 
-
-
 (*s Scanning Coq, at beginning of line *)
 
 rule coq_bol = parse
@@ -469,22 +475,16 @@ rule coq_bol = parse
 	      if eol then (coq_bol lexbuf) else coq lexbuf
 	  else
 	    begin
-	      let nbsp,isp = count_spaces s in
-		Output.indentation nbsp;
-		let s = String.sub s isp (String.length s - isp) in
-		  Output.ident s (lexeme_start lexbuf + isp);
-		  let eol = body lexbuf in
-		    if eol then coq_bol lexbuf else coq lexbuf
+	      output_indented_keyword s lexbuf;
+	      let eol = body lexbuf in
+	      if eol then coq_bol lexbuf else coq lexbuf
 	    end }
   | space* thm_token
       { let s = lexeme lexbuf in
-	let nbsp,isp = count_spaces s in
-	let s = String.sub s isp (String.length s - isp)  in
-	  Output.indentation nbsp;
-	  Output.ident s (lexeme_start lexbuf + isp);
-	  let eol = body lexbuf in
-	    in_proof := Some eol;
-	    if eol then coq_bol lexbuf else coq lexbuf }
+        output_indented_keyword s lexbuf;
+        let eol = body lexbuf in
+	in_proof := Some eol;
+	if eol then coq_bol lexbuf else coq lexbuf }
   | space* prf_token
       { in_proof := Some true;
 	let eol =
@@ -507,22 +507,21 @@ rule coq_bol = parse
       {
 	in_proof := None;
 	let s = lexeme lexbuf in
-	let nbsp,isp = count_spaces s in
-	let s = String.sub s isp (String.length s - isp)  in
-	  Output.indentation nbsp;
-	  Output.ident s (lexeme_start lexbuf + isp);
-	  let eol= body lexbuf in
-	    if eol then coq_bol lexbuf else coq lexbuf }
+	output_indented_keyword s lexbuf;
+	let eol= body lexbuf in
+	if eol then coq_bol lexbuf else coq lexbuf }
   | space* prog_kw
       {
 	in_proof := None;
 	let s = lexeme lexbuf in
-	let nbsp,isp = count_spaces s in
-	  Output.indentation nbsp;
-	  let s = String.sub s isp (String.length s - isp)  in
-	    Output.ident s (lexeme_start lexbuf + isp);
-	    let eol= body lexbuf in
-	      if eol then coq_bol lexbuf else coq lexbuf }
+	output_indented_keyword s lexbuf;
+	let eol= body lexbuf in
+	if eol then coq_bol lexbuf else coq lexbuf }
+  | space* notation_kw space*
+      {	let s = lexeme lexbuf in
+	output_indented_keyword s lexbuf;
+	let eol= start_notation_string lexbuf in
+	if eol then coq_bol lexbuf else coq lexbuf }
 
   | space* "(**" space+ "printing" space+ printing_token space+
       { let tok = lexeme lexbuf in
@@ -634,6 +633,11 @@ and coq = parse
 	  Output.ident s (lexeme_start lexbuf);
 	let eol = body lexbuf in
 	  if eol then coq_bol lexbuf else coq lexbuf }
+  | notation_kw space*
+      { let s = lexeme lexbuf in
+	Output.ident s (lexeme_start lexbuf);
+	let eol= start_notation_string lexbuf in
+	if eol then coq_bol lexbuf else coq lexbuf }
   | prog_kw
       { let s = lexeme lexbuf in
 	  Output.ident s (lexeme_start lexbuf);
@@ -1040,7 +1044,6 @@ and body = parse
       }
   | '.' space+ { Output.char '.'; Output.char ' ';
 	  if not !formatted then false else body lexbuf }
-  | '"' { Output.char '"'; ignore(notation lexbuf); body lexbuf }
   | "(**" space_nl
       { Output.end_coq (); Output.start_doc ();
 	let eol = doc_bol lexbuf in
@@ -1052,6 +1055,10 @@ and body = parse
 	     if eol
 	     then begin if not !Cdglobals.parse_comments then Output.line_break(); body_bol lexbuf end
 	     else body lexbuf }
+  | "where" space*
+      { let s = lexeme lexbuf in
+	Output.ident s (lexeme_start lexbuf);
+	start_notation_string lexbuf }
   | identifier
       { let s = lexeme lexbuf in
 	  Output.ident s (lexeme_start lexbuf);
@@ -1059,24 +1066,34 @@ and body = parse
   | token_no_brackets
       { let s = lexeme lexbuf in
 	  symbol lexbuf s; body lexbuf }
+  | ".."
+      { Output.char '.'; Output.char '.';
+        body lexbuf }
   | _ { let c = lexeme_char lexbuf 0 in
 	  Output.char c;
           body lexbuf }
 
-and notation_bol = parse
-  | space+
-      { Output.indentation (fst (count_spaces (lexeme lexbuf))); notation lexbuf }
-  | _ { backtrack lexbuf; notation lexbuf }
+and start_notation_string = parse
+  | '"' (* a true notation *)
+      { symbol lexbuf "\"";
+        notation_string lexbuf;
+	body lexbuf }
+  | _ (* an abbreviation *)
+      { body lexbuf }
 
-and notation = parse
-  | nl { Output.line_break(); notation_bol lexbuf }
-  | '"' { Output.char '"'}
+and notation_string = parse
+  | "\"\""
+      { Output.char '"'; Output.char '"'; (* Unlikely! *)
+        notation_string lexbuf }
+  | '"'
+      { Output.char '"' }
   | token
       { let s = lexeme lexbuf in
-	  symbol lexbuf s; notation lexbuf }
+        symbol lexbuf s;
+        notation_string lexbuf }
   | _ { let c = lexeme_char lexbuf 0 in
-	  Output.char c;
-          notation lexbuf }
+        Output.char c;
+        notation_string lexbuf }
 
 and skip_hide = parse
   | eof | end_hide { () }

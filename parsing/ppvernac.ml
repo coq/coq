@@ -285,7 +285,7 @@ let pr_type_option pr_c = function
   | CHole (loc, k) -> mt()
   | _ as c -> brk(0,2) ++ str":" ++ pr_c c
 
-let pr_decl_notation prc (ntn,c,scopt) =
+let pr_decl_notation prc ((loc,ntn),c,scopt) =
   fnl () ++ str "where " ++ qs ntn ++ str " := " ++ prc c ++
   pr_opt (fun sc -> str ": " ++ str sc) scopt
 
@@ -552,14 +552,14 @@ let rec pr_vernac = function
     pr_section_locality local ++ str"Arguments Scope" ++ spc() ++ 
     pr_smart_global q
     ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
-  | VernacInfix (local,(s,mv),q,sn) -> (* A Verifier *)
+  | VernacInfix (local,((_,s),mv),q,sn) -> (* A Verifier *)
       hov 0 (hov 0 (pr_locality local ++ str"Infix "
       ++ qs s ++ str " :=" ++ pr_constrarg q) ++
       pr_syntax_modifiers mv ++
       (match sn with
     | None -> mt()
     | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
-  | VernacNotation (local,c,(s,l),opt) ->
+  | VernacNotation (local,c,((_,s),l),opt) ->
       let ps =
 	let n = String.length s in
 	if n > 2 & s.[0] = '\'' & s.[n-1] = '\''
@@ -573,7 +573,7 @@ let rec pr_vernac = function
         | None -> mt()
         | Some sc -> str" :" ++ spc() ++ str sc))
   | VernacSyntaxExtension (local,(s,l)) ->
-      pr_locality local ++ str"Reserved Notation" ++ spc() ++ qs s ++
+      pr_locality local ++ str"Reserved Notation" ++ spc() ++ pr_located qs s ++
       pr_syntax_modifiers l
 
   (* Gallina *)

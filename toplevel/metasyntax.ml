@@ -867,7 +867,7 @@ let compute_syntax_data (df,modifiers) =
   let typs = List.map (set_entry_type etyps) typs in
   let prec = (n,List.map (assoc_of_type n) typs) in
   let sy_data = (ntn_for_grammar,prec,need_squash,(n,typs,symbols',fmt)) in
-  let df' = (Lib.library_dp(),df) in
+  let df' = ((Lib.library_dp(),Lib.current_dirpath true),df) in
   let i_data = (onlyparse,extrarecvars,recvars,vars,(ntn_for_interp,df')) in
   (i_data,sy_data)
 
@@ -974,7 +974,8 @@ let add_notation_in_scope local df c mods scope =
   let (acvars,ac) = interp_aconstr (vars,recvars) c in
   let a = (remove_extravars extrarecvars acvars,ac) in
   let onlyparse = onlyparse or is_not_printable ac in
-  Lib.add_anonymous_leaf (inNotation (local,scope,a,onlyparse,df'))
+  Lib.add_anonymous_leaf (inNotation (local,scope,a,onlyparse,df'));
+  df'
 
 let add_notation_interpretation_core local df ?(impls=empty_internalization_env) c scope onlyparse =
   let dfs = split_notation_string df in
@@ -985,55 +986,62 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
     Lib.add_anonymous_leaf (inSyntaxExtension (local,sy_rules))
   end;
   (* Declare interpretation *)
-  let df' = (make_notation_key symbs,(Lib.library_dp(),df)) in
+  let path = (Lib.library_dp(),Lib.current_dirpath true) in
+  let df' = (make_notation_key symbs,(path,df)) in
   let (acvars,ac) = interp_aconstr ~impls (vars,recvars) c in
   let a = (remove_extravars extrarecvars acvars,ac) in
   let onlyparse = onlyparse or is_not_printable ac in
-  Lib.add_anonymous_leaf (inNotation (local,scope,a,onlyparse,df'))
+  Lib.add_anonymous_leaf (inNotation (local,scope,a,onlyparse,df'));
+  df'
 
 (* Notations without interpretation (Reserved Notation) *)
 
-let add_syntax_extension local mv =
-  let (_,sy_data) = compute_syntax_data mv in
+let add_syntax_extension local ((loc,df),mods) =
+  let (_,sy_data) = compute_syntax_data (df,mods) in
   let sy_rules = make_syntax_rules sy_data in
   Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules))
 
 (* Notations with only interpretation *)
 
-let add_notation_interpretation (df,c,sc) =
-  add_notation_interpretation_core false df c sc false
+let add_notation_interpretation ((loc,df),c,sc) =
+  let df' = add_notation_interpretation_core false df c sc false in
+  Dumpglob.dump_notation (loc,df') sc true
 
-let set_notation_for_interpretation impls (df,c,sc) =
-  (try silently (add_notation_interpretation_core false df ~impls c sc) false;
+let set_notation_for_interpretation impls ((_,df),c,sc) =
+  (try ignore
+    (silently (add_notation_interpretation_core false df ~impls c sc) false);
   with NoSyntaxRule ->
     error "Parsing rule for this notation has to be previously declared.");
   Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
 
 (* Main entry point *)
 
-let add_notation local c (df,modifiers) sc =
-  if no_syntax_modifiers modifiers then
+let add_notation local c ((loc,df),modifiers) sc =
+  let df' =
+   if no_syntax_modifiers modifiers then
     (* No syntax data: try to rely on a previously declared rule *)
     let onlyparse = modifiers=[SetOnlyParsing] in
     try add_notation_interpretation_core local df c sc onlyparse
     with NoSyntaxRule ->
       (* Try to determine a default syntax rule *)
       add_notation_in_scope local df c modifiers sc
-  else
+   else
     (* Declare both syntax and interpretation *)
     add_notation_in_scope local df c modifiers sc
+  in
+  Dumpglob.dump_notation (loc,df') sc true
 
 (* Infix notations *)
 
 let inject_var x = CRef (Ident (dummy_loc, id_of_string x))
 
-let add_infix local (inf,modifiers) pr sc =
+let add_infix local ((loc,inf),modifiers) pr sc =
   check_infix_modifiers modifiers;
   (* check the precedence *)
   let metas = [inject_var "x"; inject_var "y"] in
   let c = mkAppC (pr,metas) in
   let df = "x "^(quote_notation_token inf)^" y" in
-  add_notation local c (df,modifiers) sc
+  add_notation local c ((loc,df),modifiers) sc
 
 (**********************************************************************)
 (* Delimiters and classes bound to scopes                             *)

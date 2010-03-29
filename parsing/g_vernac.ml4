@@ -238,7 +238,7 @@ GEXTEND Gram
       | -> None ] ]
   ;
   one_decl_notation:
-    [ [ ntn = ne_string; ":="; c = constr;
+    [ [ ntn = ne_lstring; ":="; c = constr;
         scopt = OPT [ ":"; sc = IDENT -> sc] -> (ntn,c,scopt) ] ]
   ;
   decl_notation:
@@ -844,7 +844,7 @@ GEXTEND Gram
 	 VernacArgumentsScope (use_section_locality (),qid,scl)
 
      | IDENT "Infix"; local = obsolete_locality;
-	 op = ne_string; ":="; p = constr;
+	 op = ne_lstring; ":="; p = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
          VernacInfix (enforce_module_locality local,(op,modl),p,sc)
@@ -853,7 +853,7 @@ GEXTEND Gram
 	 b = [ "("; IDENT "only"; IDENT "parsing"; ")" -> true | -> false ] ->
            VernacSyntacticDefinition
 	     (id,(idl,c),enforce_module_locality local,b)
-     | IDENT "Notation"; local = obsolete_locality; s = ne_string; ":=";
+     | IDENT "Notation"; local = obsolete_locality; s = ne_lstring; ":=";
 	 c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
@@ -863,13 +863,14 @@ GEXTEND Gram
 	 pil = LIST1 production_item; ":="; t = Tactic.tactic
          -> VernacTacticNotation (n,pil,t)
 
-     | IDENT "Reserved"; IDENT "Infix"; s = ne_string;
+     | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ] ->
 	   Metasyntax.check_infix_modifiers l;
-	   VernacSyntaxExtension (use_module_locality (),("x '"^s^"' y",l))
+	   let (loc,s) = s in
+	   VernacSyntaxExtension (use_module_locality(),((loc,"x '"^s^"' y"),l))
 
      | IDENT "Reserved"; IDENT "Notation"; local = obsolete_locality;
-	 s = ne_string;
+	 s = ne_lstring;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
 	 -> VernacSyntaxExtension (enforce_module_locality local,(s,l))
 

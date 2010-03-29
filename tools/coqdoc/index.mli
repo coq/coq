@@ -52,13 +52,9 @@ val init_coqlib_library : unit -> unit
 
 val add_external_library : string -> coq_module -> unit
 
-(*s Scan identifiers introductions from a file *)
-
-val scan_file : string -> coq_module -> unit
-
 (*s Read globalizations from a file (produced by coqc -dump-glob) *)
 
-val read_glob : string -> coq_module
+val read_glob : string -> unit
 
 (*s Indexes *)
 
@@ -68,6 +64,10 @@ type 'a index = {
   idx_size : int }
 
 val current_library : string ref
+
+val display_letter : char -> string
+
+val prepare_entry : string -> entry_type -> string
 
 val all_entries : unit ->
       (coq_module * entry_type) index *

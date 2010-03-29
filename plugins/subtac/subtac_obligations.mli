@@ -30,7 +30,7 @@ val add_definition : Names.identifier -> ?term:Term.constr -> Term.types ->
   ?reduce:(Term.constr -> Term.constr) ->
   ?hook:(Tacexpr.declaration_hook) -> obligation_info -> progress
 
-type notations = (string * Topconstr.constr_expr * Topconstr.scope_name option) list
+type notations = (Vernacexpr.lstring * Topconstr.constr_expr * Topconstr.scope_name option) list
 
 type fixpoint_kind =
   | IsFixpoint of (identifier located option * Topconstr.recursion_order_expr) list

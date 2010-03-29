@@ -90,7 +90,6 @@ plugins/dp/dp_zenon.ml
 tools/gallina_lexer.ml
 tools/coqwc.ml
 tools/coqdep_lexer.ml
-tools/coqdoc/index.ml
 tools/coqdoc/cpretty.ml
 
 # .mly files

@@ -36,7 +36,7 @@ let my_int_of_string loc s =
 GEXTEND Gram
   GLOBAL:
     bigint natural integer identref name ident var preident
-    fullyqualid qualid reference dirpath
+    fullyqualid qualid reference dirpath ne_lstring
     ne_string string pattern_ident pattern_identref by_notation smart_global;
   preident:
     [ [ s = IDENT -> s ] ]
@@ -98,6 +98,9 @@ GEXTEND Gram
     [ [ s = STRING ->
         if s="" then Util.user_err_loc(loc,"",Pp.str"Empty string."); s
     ] ]
+  ;
+  ne_lstring:
+    [ [ s = ne_string -> (loc,s) ] ]
   ;
   dirpath:
     [ [ id = ident; l = LIST0 field ->

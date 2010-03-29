@@ -23,8 +23,9 @@ val dump_to_dotglob : unit -> unit
 val pause : unit -> unit
 val continue : unit -> unit
 
-val coqdoc_freeze : unit -> Lexer.location_table * int * int
-val coqdoc_unfreeze : Lexer.location_table * int * int -> unit
+type coqdoc_state = Lexer.location_table
+val coqdoc_freeze : unit -> coqdoc_state
+val coqdoc_unfreeze : coqdoc_state -> unit
 
 val add_glob : Util.loc -> Libnames.global_reference -> unit
 val add_glob_kn : Util.loc -> Names.kernel_name -> unit
@@ -34,8 +35,9 @@ val dump_moddef : Util.loc -> Names.module_path -> string -> unit
 val dump_modref  : Util.loc -> Names.module_path -> string -> unit
 val dump_reference  : Util.loc -> string -> string -> string -> unit
 val dump_libref : Util.loc -> Names.dir_path -> string -> unit
-val dump_notation_location : int -> (Notation.notation_location * Topconstr.scope_name option) -> unit
+val dump_notation_location : (int * int) list -> Topconstr.notation -> (Notation.notation_location * Topconstr.scope_name option) -> unit
 val dump_binding : Util.loc -> Names.Idset.elt -> unit
+val dump_notation : Util.loc * (Topconstr.notation * Notation.notation_location) -> Topconstr.scope_name option -> bool -> unit
 val dump_constraint :  Topconstr.typeclass_constraint -> bool -> string -> unit
 val dump_local_binder : Topconstr.local_binder -> bool -> string -> unit
 

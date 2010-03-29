@@ -292,6 +292,7 @@ module Prim =
     let dirpath = Gram.Entry.create "Prim.dirpath"
 
     let ne_string = Gram.Entry.create "Prim.ne_string"
+    let ne_lstring = Gram.Entry.create "Prim.ne_lstring"
 
   end
 
