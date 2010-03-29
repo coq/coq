@@ -60,9 +60,10 @@ val reach_item_level : int -> unit
 
 val rule : unit -> unit
 
+val nbsp : unit -> unit
 val char : char -> unit
 val ident : string -> loc -> unit
-val symbol : string -> unit
+val symbol : string -> loc -> unit
 
 val proofbox : unit -> unit
 

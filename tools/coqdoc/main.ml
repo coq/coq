@@ -102,7 +102,7 @@ let target_full_name f =
 
 let check_if_file_exists f =
   if not (Sys.file_exists f) then begin
-    eprintf "\ncoqdoc: %s: no such file\n" f;
+    eprintf "coqdoc: %s: no such file\n" f;
     exit 1
   end
 
@@ -116,50 +116,44 @@ let normalize_path p =
      works... *)
   (* Rq: Sys.getcwd () returns paths without '/' at the end *)
   let orig = Sys.getcwd () in
-    Sys.chdir p;
-    let res = Sys.getcwd () in
-      Sys.chdir orig;
-      res
+  Sys.chdir p;
+  let res = Sys.getcwd () in
+  Sys.chdir orig;
+  res
 
 let normalize_filename f =
   let basename = Filename.basename f in
   let dirname = Filename.dirname f in
-    Filename.concat (normalize_path dirname) basename
+  normalize_path dirname, basename
 
 (* [paths] maps a physical path to a name *)
 let paths = ref []
 
 let add_path dir name =
-  (* if dir is relative we add both the relative and absolute name *)
   let p = normalize_path dir in
-    paths := (p,name) :: !paths
+  paths := (p,name) :: !paths
 
 (* turn A/B/C into A.B.C *)
-let name_of_path = Str.global_replace (Str.regexp "/") ".";;
+let rec name_of_path p name fname suffix =
+  let dir = Filename.dirname fname in
+  if dir = fname then raise Not_found
+  else
+    let base = Filename.basename fname in
+    if p = dir then String.concat "." (name::base::suffix)
+    else name_of_path p name dir (base::suffix)
 
 let coq_module filename =
   let bfname = Filename.chop_extension filename in
-  let nfname = normalize_filename bfname in
-  let rec change_prefix map f =
-    match map with
-      | [] ->
-	  (* There is no prefix alias;
-	     we just cut the name wrt current working directory *)
-	  let cwd = Sys.getcwd () in
-	  let exp = Str.regexp (Str.quote (cwd ^ "/")) in
-	    if (Str.string_match exp f 0) then
-	      name_of_path (Str.replace_first exp "" f)
-	    else
-	      name_of_path f
-      | (p, name) :: rem ->
-          let expp = Str.regexp (Str.quote p) in
-	    if (Str.string_match expp f 0) then
-	      let newp = Str.replace_first expp name f in
-		name_of_path newp
-            else
-	      change_prefix rem f
+  let dirname, fname = normalize_filename bfname in
+  let rec change_prefix = function
+    (* Follow coqc: if in scope of -R, substitute logical name *)
+    (* otherwise, keep only base name *)
+    | [] -> fname
+    | (p, name) :: rem ->
+	try name_of_path p name dirname [fname]
+	with Not_found -> change_prefix rem
   in
-    change_prefix !paths nfname
+  change_prefix !paths
 
 let what_file f =
   check_if_file_exists f;
@@ -200,7 +194,7 @@ let files_from_file f =
       let l = files_from_channel ch in
 	close_in ch;l
     with Sys_error s -> begin
-      eprintf "\ncoqdoc: cannot read from file %s (%s)\n" f s;
+      eprintf "coqdoc: cannot read from file %s (%s)\n" f s;
       exit 1
     end
 
@@ -296,7 +290,7 @@ let parse () =
     | ("-toc-depth" | "--toc-depth") :: ds :: rem ->
       let d = try int_of_string ds with
                 Failure _ ->
-                  (eprintf "--toc-depth must be followed by an integer";
+                  (eprintf "--toc-depth must be followed by an integer\n";
                    exit 1)
       in
       Cdglobals.toc_depth := Some d;
@@ -404,13 +398,17 @@ let cat file =
       close_in c
 
 let copy src dst =
-  let cin = open_in src
-  and cout = open_out dst in
+  let cin = open_in src in
+  try
+    let cout = open_out dst in
     try
       while true do Pervasives.output_char cout (input_char cin) done
     with End_of_file ->
-      close_in cin; close_out cout
-
+      close_out cout;
+      close_in cin
+  with Sys_error e ->
+    eprintf "%s\n" e;
+    exit 1
 
 (*s Functions for generating output files *)
 
@@ -462,37 +460,35 @@ let gen_mult_files l =
     end
       (* Rq: pour latex et texmacs, une toc ou un index séparé n'a pas de sens... *)
 
-let read_glob x =
-  match x with
-    | Vernac_file (f,m) ->
-	let glob = (Filename.chop_extension f) ^ ".glob" in
- 	  (try
-	      Vernac_file (f, Index.read_glob glob)
-            with e ->
-              eprintf "Warning: file %s cannot be used; links will not be available: %s\n" glob (Printexc.to_string e);
-	      x)
-  | Latex_file _ -> x
+let read_glob_file x =
+  try Index.read_glob x
+  with Sys_error s ->
+    eprintf "Warning: %s (links will not be available)\n" s
+
+let read_glob_file_of = function
+  | Vernac_file (f,_) -> read_glob_file (Filename.chop_extension f ^ ".glob")
+  | Latex_file _ -> ()
 
 let index_module = function
   | Vernac_file (f,m) ->
       Index.add_module m
   | Latex_file _ -> ()
 
+let copy_style_file file =
+  let src =
+    List.fold_left
+      Filename.concat !Cdglobals.coqlib_path ["tools";"coqdoc";file] in
+  let dst = coqdoc_out file in
+  if Sys.file_exists src then copy src dst
+  else eprintf "Warning: file %s does not exist\n" src
+
 let produce_document l =
-  (if !target_language=HTML then
-    let src = (Filename.concat !Cdglobals.coqlib_path "/tools/coqdoc/coqdoc.css") in
-    let dst = if !output_dir <> "" then Filename.concat !output_dir "coqdoc.css" else "coqdoc.css" in
-      if (Sys.file_exists src) then (copy src dst) else eprintf "Warning: file %s does not exist\n" src);
-  (if !target_language=LaTeX then
-      let src = (Filename.concat !Cdglobals.coqlib_path "/tools/coqdoc/coqdoc.sty") in
-      let dst = if !output_dir <> "" then
-	  Filename.concat !output_dir "coqdoc.sty"
-	else "coqdoc.sty" in
-	if Sys.file_exists src then copy src dst else eprintf "Warning: file %s does not exist\n" src);
+  if !target_language=HTML then copy_style_file "coqdoc.css";
+  if !target_language=LaTeX then copy_style_file "coqdoc.sty";
   (match !Cdglobals.glob_source with
     | NoGlob -> ()
-    | DotGlob -> ignore (List.map read_glob l)
-    | GlobFile f -> ignore (Index.read_glob f));
+    | DotGlob -> List.iter read_glob_file_of l
+    | GlobFile f -> read_glob_file f);
   List.iter index_module l;
   match !out_to with
     | StdOut ->

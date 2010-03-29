@@ -337,7 +337,7 @@ let rec subst_aconstr_in_rawconstr loc interp (subst,substlist as sub) infos c =
 let intern_notation intern (_,_,tmp_scope,scopes as env) loc ntn fullargs =
   let ntn,(args,argslist as fullargs) = contract_notation ntn fullargs in
   let (((ids,idsl),c),df) = interp_notation loc ntn (tmp_scope,scopes) in
-  Dumpglob.dump_notation_location (ntn_loc loc fullargs ntn) df;
+  Dumpglob.dump_notation_location (ntn_loc loc fullargs ntn) ntn df;
   let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
   let substlist = List.map2 (fun (id,scl) a -> (id,(a,scl))) idsl argslist in
   subst_aconstr_in_rawconstr loc intern (subst,substlist) ([],env) c
@@ -383,9 +383,8 @@ let intern_var (env,unbound_vars,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) l
   with Not_found ->
   (* Is [id] bound in current env or is an ltac var bound to constr *)
   if Idset.mem id env or List.mem id vars1
-  then (
-    Dumpglob.dump_reference loc "<>" (string_of_id id) "var";
-    RVar (loc,id), [], [], [])
+  then
+    RVar (loc,id), [], [], []
   (* Is [id] a notation variable *)
   else if List.mem_assoc id vars3
   then
@@ -404,7 +403,10 @@ let intern_var (env,unbound_vars,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) l
 	(* [id] a section variable *)
 	(* Redundant: could be done in intern_qualid *)
 	let ref = VarRef id in
-	  RRef (loc, ref), implicits_of_global ref, find_arguments_scope ref, []
+	let impls = implicits_of_global ref in
+	let scopes = find_arguments_scope ref in
+	Dumpglob.dump_reference loc "<>" (string_of_qualid (Decls.variable_secpath id)) "var";
+	RRef (loc, ref), impls, scopes, []
       with _ ->
 	(* [id] a goal variable *)
 	RVar (loc,id), [], [], []
@@ -811,7 +813,7 @@ let rec intern_cases_pattern genv scopes (ids,asubst as aliases) tmp_scope pat=
   | CPatNotation (loc, ntn, fullargs) ->
       let ntn,(args,argsl as fullargs) = contract_pat_notation ntn fullargs in
       let (((ids',idsl'),c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
-      Dumpglob.dump_notation_location (patntn_loc loc fullargs ntn) df;
+      Dumpglob.dump_notation_location (patntn_loc loc fullargs ntn) ntn df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids' args in
       let substlist = List.map2 (fun (id,scl) a -> (id,(a,scl))) idsl' argsl in
       let ids'',pl =
@@ -820,9 +822,8 @@ let rec intern_cases_pattern genv scopes (ids,asubst as aliases) tmp_scope pat=
       in ids@ids'', pl
   | CPatPrim (loc, p) ->
       let a = alias_of aliases in
-      let (c,df) = Notation.interp_prim_token_cases_pattern loc p a
+      let (c,_) = Notation.interp_prim_token_cases_pattern loc p a
 	(tmp_scope,scopes) in
-      Dumpglob.dump_notation_location (fst (unloc loc)) df;
       (ids,[asubst,c])
   | CPatDelimiters (loc, key, e) ->
       intern_pat (find_delimiters_scope loc key::scopes) aliases None e
@@ -1118,9 +1119,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
     | CGeneralization (loc,b,a,c) ->
         intern_generalization intern env lvar loc b a c
     | CPrim (loc, p) ->
-	let c,df = Notation.interp_prim_token loc p (tmp_scope,scopes) in
-	Dumpglob.dump_notation_location (fst (unloc loc)) df;
-	c
+	fst (Notation.interp_prim_token loc p (tmp_scope,scopes))
     | CDelimiters (loc, key, e) ->
 	intern (ids,unb,None,find_delimiters_scope loc key::scopes) e
     | CAppExpl (loc, (isproj,ref), args) ->

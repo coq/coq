@@ -26,7 +26,7 @@ open Nametab
 
 type lident = identifier located
 type lname = name located
-type lstring = string
+type lstring = string located
 type lreference = reference
 
 type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
@@ -160,7 +160,7 @@ type local_decl_expr =
   | DefExpr of lname * constr_expr * constr_expr option
 
 type inductive_kind = Inductive_kw | CoInductive | Record | Structure | Class of bool (* true = definitional, false = inductive *)
-type decl_notation = string * constr_expr * scope_name option
+type decl_notation = lstring * constr_expr * scope_name option
 type simple_binder = lident list  * constr_expr
 type class_binder = lident * constr_expr list
 type 'a with_coercion = coercion_flag * 'a
@@ -201,7 +201,7 @@ type scheme =
 type vernac_expr =
   (* Control *)
   | VernacList of located_vernac_expr list
-  | VernacLoad of verbose_flag * lstring
+  | VernacLoad of verbose_flag * string
   | VernacTime of vernac_expr
   | VernacTimeout of int * vernac_expr
 
@@ -209,7 +209,7 @@ type vernac_expr =
   | VernacTacticNotation of int * grammar_tactic_prod_item_expr list * raw_tactic_expr
   | VernacSyntaxExtension of locality_flag * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of (locality_flag * bool * scope_name)
-  | VernacDelimiters of scope_name * lstring
+  | VernacDelimiters of scope_name * string
   | VernacBindScope of scope_name * class_rawexpr list
   | VernacArgumentsScope of locality_flag * reference or_by_notation *
       scope_name option list
@@ -284,16 +284,16 @@ type vernac_expr =
 
 
   (* Auxiliary file and library management *)
-  | VernacRequireFrom of export_flag option * specif_flag option * lstring
-  | VernacAddLoadPath of rec_flag * lstring * dir_path option
-  | VernacRemoveLoadPath of lstring
-  | VernacAddMLPath of rec_flag * lstring
-  | VernacDeclareMLModule of locality_flag * lstring list
-  | VernacChdir of lstring option
+  | VernacRequireFrom of export_flag option * specif_flag option * string
+  | VernacAddLoadPath of rec_flag * string * dir_path option
+  | VernacRemoveLoadPath of string
+  | VernacAddMLPath of rec_flag * string
+  | VernacDeclareMLModule of locality_flag * string list
+  | VernacChdir of string option
 
   (* State management *)
-  | VernacWriteState of lstring
-  | VernacRestoreState of lstring
+  | VernacWriteState of string
+  | VernacRestoreState of string
 
   (* Resetting *)
   | VernacRemoveName of lident
@@ -305,8 +305,8 @@ type vernac_expr =
   (* Commands *)
   | VernacDeclareTacticDefinition of
       (locality_flag * rec_flag * (reference * bool * raw_tactic_expr) list)
-  | VernacCreateHintDb of locality_flag * lstring * bool
-  | VernacHints of locality_flag * lstring list * hints_expr
+  | VernacCreateHintDb of locality_flag * string * bool
+  | VernacHints of locality_flag * string list * hints_expr
   | VernacSyntacticDefinition of identifier located * (identifier list * constr_expr) *
       locality_flag * onlyparsing_flag
   | VernacDeclareImplicits of locality_flag * reference or_by_notation *

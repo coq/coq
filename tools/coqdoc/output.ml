@@ -187,6 +187,8 @@ module Latex = struct
       printf "\\end{document}\n"
     end
 
+  let nbsp () = output_char '~'
+
   let char c = match c with
     | '\\' ->
 	printf "\\symbol{92}"
@@ -304,7 +306,7 @@ module Latex = struct
     else
       with_latex_printing (fun s -> ident s l) s
 
-  let symbol s = with_latex_printing raw_ident s
+  let symbol s l = with_latex_printing raw_ident s
 
   let proofbox () = printf "\\ensuremath{\\Box}"
 
@@ -450,6 +452,8 @@ module Html = struct
   let empty_line_of_code () =
     printf "\n<br/>\n"
 
+  let nbsp () = printf "&nbsp;"
+
   let char = function
     | '<' -> printf "&lt;"
     | '>' -> printf "&gt;"
@@ -526,19 +530,25 @@ module Html = struct
 	    else (printf "<span class=\"id\" type=\"var\">"; raw_ident s ; printf "</span>")
       end
 
-  let with_html_printing f tok =
+  let with_html_printing f tok loc =
     try
       (match Hashtbl.find token_pp tok with
-	 | _, Some s -> output_string s
-	 | _ -> f tok)
+	 | _, Some s ->
+	     (try reference s (Index.find (get_module false) loc)
+	      with Not_found -> output_string s)
+	 | _ -> f tok loc)
     with Not_found ->
-      f tok
+      f tok loc
 
   let ident s l =
-    with_html_printing (fun s -> ident s l) s
+    with_html_printing ident s l
 
-  let symbol s =
-    with_html_printing raw_ident s
+  let raw_symbol s loc =
+    try reference s (Index.find (get_module false) loc)
+    with Not_found -> raw_ident s
+
+  let symbol s l =
+    with_html_printing raw_symbol s l
 
   let proofbox () = printf "<font size=-2>&#9744;</font>"
 
@@ -614,10 +624,11 @@ module Html = struct
   let letter_index category idx (c,l) =
     if l <> [] then begin
       let cat = if category && idx <> "global" then "(" ^ idx ^ ")" else "" in
-      printf "<a name=\"%s_%c\"></a><h2>%c %s</h2>\n" idx c c cat;
+      printf "<a name=\"%s_%c\"></a><h2>%s %s</h2>\n" idx c (display_letter c) cat;
       List.iter
-	(fun (id,(text,link)) ->
-	   printf "<a href=\"%s\">%s</a> %s<br/>\n" link id text) l;
+	(fun (id,(text,link,t)) ->
+	   let id' = prepare_entry id t in
+	   printf "<a href=\"%s\">%s</a> %s<br/>\n" link id' text) l;
       printf "<br/><br/>"
     end
 
@@ -628,24 +639,24 @@ module Html = struct
   let format_global_index =
     Index.map
       (fun s (m,t) ->
-	 if t = Library then
+	if t = Library then
          let ln = !lib_name in
            if ln <> "" then
-	       "[" ^ String.lowercase ln ^ "]", m ^ ".html"
+	       "[" ^ String.lowercase ln ^ "]", m ^ ".html", t
            else
-	       "[library]", m ^ ".html"
-	 else
-	   sprintf "[%s, in <a href=\"%s.html\">%s</a>]" (type_name t) m m ,
-	 sprintf "%s.html#%s" m s)
+	       "[library]", m ^ ".html", t
+	else
+	 sprintf "[%s, in <a href=\"%s.html\">%s</a>]" (type_name t) m m ,
+	sprintf "%s.html#%s" m s, t)
 
   let format_bytype_index = function
     | Library, idx ->
-	Index.map (fun id m -> "", m ^ ".html") idx
+	Index.map (fun id m -> "", m ^ ".html", Library) idx
     | (t,idx) ->
 	Index.map
 	  (fun s m ->
 	     let text = sprintf "[in <a href=\"%s.html\">%s</a>]" m m in
-	       (text, sprintf "%s.html#%s" m s)) idx
+	       (text, sprintf "%s.html#%s" m s, t)) idx
 
   (* Impression de la table d'index *)
   let print_index_table_item i =
@@ -653,9 +664,10 @@ module Html = struct
     List.iter
       (fun (c,l) ->
 	 if l <> [] then
-	   printf "<td><a href=\"%s\">%c</a></td>\n" (index_ref i c) c
+	   printf "<td><a href=\"%s\">%s</a></td>\n" (index_ref i c)
+	     (display_letter c)
 	 else
-	   printf "<td>%c</td>\n" c)
+	   printf "<td>%s</td>\n" (display_letter c))
       i.idx_entries;
     let n = i.idx_size in
       printf "<td>(%d %s)</td>\n" n (if n > 1 then "entries" else "entry");
@@ -667,7 +679,7 @@ module Html = struct
     printf "</table>\n"
 
   let make_one_multi_index prt_tbl i =
-    (* Attn: make_one_multi_index créé un nouveau fichier... *)
+    (* Attn: make_one_multi_index crée un nouveau fichier... *)
     let idx = i.idx_name in
     let one_letter ((c,l) as cl) =
       open_out_file (sprintf "%s_%s_%c.html" !index_name idx c);
@@ -750,6 +762,8 @@ module TeXmacs = struct
 
   let trailer () = ()
 
+  let nbsp () = output_char ' '
+
   let char_true c = match c with
     | '\\' -> printf "\\\\"
     | '<' -> printf "\\<"
@@ -806,7 +820,7 @@ module TeXmacs = struct
 	| "|-" -> ensuremath "vdash"
 	| s    -> raw_ident s
 
-  let symbol s = if !in_doc then symbol_true s else raw_ident s
+  let symbol s _ = if !in_doc then symbol_true s else raw_ident s
 
   let proofbox () = printf "QED"
 
@@ -891,6 +905,8 @@ module Raw = struct
 
   let trailer () = ()
 
+  let nbsp () = output_char ' '
+
   let char = output_char
 
   let label_char c = match c with
@@ -923,7 +939,7 @@ module Raw = struct
 
   let ident s loc = raw_ident s
 
-  let symbol s = raw_ident s
+  let symbol s loc = raw_ident s
 
   let proofbox () = printf "[]"
 
@@ -1028,6 +1044,7 @@ let stop_item = select Latex.stop_item Html.stop_item TeXmacs.stop_item Raw.stop
 let reach_item_level = select Latex.reach_item_level Html.reach_item_level TeXmacs.reach_item_level Raw.reach_item_level
 let rule = select Latex.rule Html.rule TeXmacs.rule Raw.rule
 
+let nbsp = select Latex.nbsp Html.nbsp TeXmacs.nbsp Raw.nbsp
 let char = select Latex.char Html.char TeXmacs.char Raw.char
 let ident = select Latex.ident Html.ident TeXmacs.ident Raw.ident
 let symbol = select Latex.symbol Html.symbol TeXmacs.symbol Raw.symbol

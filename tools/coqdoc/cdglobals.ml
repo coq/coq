@@ -25,9 +25,19 @@ let out_to = ref MultFiles
 
 let out_channel = ref stdout
 
+let coqdoc_out f =
+  if !output_dir <> "" && Filename.is_relative f then
+    if not (Sys.file_exists !output_dir) then
+      (Printf.eprintf "No such directory: %s\n" !output_dir; exit 1)
+    else
+      Filename.concat !output_dir f
+  else
+    f
+
 let open_out_file f =
-  let f = if !output_dir <> "" && Filename.is_relative f then Filename.concat !output_dir f else f in
-    out_channel := open_out f
+  out_channel :=
+    try open_out (coqdoc_out f)
+    with Sys_error s -> Printf.eprintf "%s\n" s; exit 1
 
 let close_out_file () = close_out !out_channel
 

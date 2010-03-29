@@ -42,7 +42,7 @@ open Ppextend
 
 type level = precedence * tolerability list
 type delimiters = string
-type notation_location = dir_path * string
+type notation_location = (dir_path * dir_path) * string
 
 type scope = {
   notations: (string, interpretation * notation_location) Gmap.t;
@@ -355,7 +355,7 @@ let find_prim_token g loc p sc =
   (* Try for a primitive numerical notation *)
   let (spdir,interp) = Hashtbl.find prim_token_interpreter_tab sc loc p in
   check_required_module loc sc spdir;
-  g (interp ()), (dirpath (fst spdir),"")
+  g (interp ()), ((dirpath (fst spdir),empty_dirpath),"")
 
 let interp_prim_token_gen g loc p local_scopes =
   let scopes = make_current_scopes local_scopes in
@@ -536,6 +536,7 @@ type symbol =
 
 let rec string_of_symbol = function
   | NonTerminal _ -> ["_"]
+  | Terminal "_" -> ["'_'"]
   | Terminal s -> [s]
   | SProdList (_,l) ->
      let l = List.flatten (List.map string_of_symbol l) in "_"::l@".."::l@["_"]

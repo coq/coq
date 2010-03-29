@@ -1015,9 +1015,17 @@ type 'a module_signature =
   | Enforce of 'a (* ... : T *)
   | Check of 'a list (* ... <: T1 <: T2, possibly empty *)
 
-let loc_of_notation f loc (args,_) ntn =
-  if args=[] or ntn.[0] <> '_' then fst (Util.unloc loc)
-  else snd (Util.unloc (f (List.hd args)))
+(* Returns the ranges of locs of the notation that are not occupied by args  *)
+(* and which are them occupied by proper symbols of the notation (or spaces) *)
 
-let ntn_loc = loc_of_notation constr_loc
-let patntn_loc = loc_of_notation cases_pattern_expr_loc
+let locs_of_notation f loc (args,argslist) ntn =
+  let (bl,el) = Util.unloc loc in
+  let rec aux pos = function
+    | [] -> if pos = el then [] else [(pos,el-1)]
+    | a::l ->
+	let ba,ea = Util.unloc (f a) in
+	if pos = ba then aux ea l else (pos,ba-1)::aux ea l
+  in aux bl (args@List.flatten argslist)
+
+let ntn_loc = locs_of_notation constr_loc
+let patntn_loc = locs_of_notation cases_pattern_expr_loc

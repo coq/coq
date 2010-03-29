@@ -29,11 +29,11 @@ val add_tactic_notation :
 
 (* Adding a (constr) notation in the environment*)
 
-val add_infix : locality_flag -> (string * syntax_modifier list) ->
+val add_infix : locality_flag -> (lstring * syntax_modifier list) ->
   constr_expr -> scope_name option -> unit
 
 val add_notation : locality_flag -> constr_expr ->
-  (string * syntax_modifier list) -> scope_name option -> unit
+  (lstring * syntax_modifier list) -> scope_name option -> unit
 
 (* Declaring delimiter keys and default scopes *)
 
@@ -43,17 +43,17 @@ val add_class_scope : scope_name -> Classops.cl_typ -> unit
 (* Add only the interpretation of a notation that already has pa/pp rules *)
 
 val add_notation_interpretation :
-  (string * constr_expr * scope_name option) -> unit
+  (lstring * constr_expr * scope_name option) -> unit
 
 (* Add a notation interpretation for supporting the "where" clause *)
 
 val set_notation_for_interpretation : Constrintern.full_internalization_env ->
-  (string * constr_expr * scope_name option) -> unit
+  (lstring * constr_expr * scope_name option) -> unit
 
 (* Add only the parsing/printing rule of a notation *)
 
 val add_syntax_extension :
-  locality_flag -> (string * syntax_modifier list) -> unit
+  locality_flag -> (lstring * syntax_modifier list) -> unit
 
 (* Add a syntactic definition (as in "Notation f := ...") *)
 

@@ -61,7 +61,6 @@ scripts/tolink.ml
 states/initial.coq
 theories/Numbers/Natural/BigN/NMake_gen.v
 tools/coqdep_lexer.ml
-tools/coqdoc/index.ml
 tools/coqdoc/cpretty.ml
 tools/coqwc.ml
 tools/gallina_lexer.ml

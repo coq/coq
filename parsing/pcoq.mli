@@ -186,6 +186,7 @@ module Prim :
     val smart_global : reference or_by_notation Gram.Entry.e
     val dirpath : dir_path Gram.Entry.e
     val ne_string : string Gram.Entry.e
+    val ne_lstring : string located Gram.Entry.e
     val var : identifier located Gram.Entry.e
   end
 
