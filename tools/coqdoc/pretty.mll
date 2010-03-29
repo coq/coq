@@ -731,6 +731,9 @@ and body = parse
   | token_no_brackets
       { let s = lexeme lexbuf in
 	  symbol lexbuf s; body lexbuf }
+  | ".."
+      { Output.char '.'; Output.char '.';
+        body lexbuf }
   | _ { let c = lexeme_char lexbuf 0 in 
 	  Output.char c; 
           body lexbuf }
