@@ -26,4 +26,4 @@ Definition f (x : nat * nat) :=
   let (a,b) := x in
   0.
 
-Timeout 5 Print f.
+Timeout 5 Time Print f.

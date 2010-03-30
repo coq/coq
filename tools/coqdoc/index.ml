@@ -314,10 +314,17 @@ let read_glob f =
 	      current_library := !cur_mod
 	  | 'R' ->
 	      (try
+		Scanf.sscanf s "R%d:%d %s %s %s %s"
+		  (fun loc1 loc2 lib_dp sp id ty ->
+		    for loc=loc1 to loc2 do
+		      add_ref !cur_mod loc lib_dp sp id (type_of_string ty)
+		    done)
+	       with _ ->
+	       try
 		Scanf.sscanf s "R%d %s %s %s %s"
 		  (fun loc lib_dp sp id ty ->
 		    add_ref !cur_mod loc lib_dp sp id (type_of_string ty))
-	      with _ -> ())
+	       with _ -> ())
 	  | _ ->
 	      try Scanf.sscanf s "%s %d %s %s"
 		(fun ty loc sp id -> add_def loc (type_of_string ty) sp id)

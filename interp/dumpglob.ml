@@ -212,6 +212,5 @@ let dump_notation_location posl df (((path,secpath),_),sc) =
     let secpath = Names.string_of_dirpath secpath in
     let df = cook_notation df sc in
     List.iter (fun (bl,el) ->
-      for pos=bl to el do
-	dump_string (Printf.sprintf "R%d %s %s %s not\n" pos path secpath df)
-      done) posl
+      dump_string(Printf.sprintf "R%d:%d %s %s %s not\n" bl el path secpath df))
+      posl
