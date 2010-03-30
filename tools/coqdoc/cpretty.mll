@@ -1078,7 +1078,7 @@ and start_notation_string = parse
         notation_string lexbuf;
 	body lexbuf }
   | _ (* an abbreviation *)
-      { body lexbuf }
+      { backtrack lexbuf; body lexbuf }
 
 and notation_string = parse
   | "\"\""

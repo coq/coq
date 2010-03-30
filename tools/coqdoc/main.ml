@@ -134,13 +134,12 @@ let add_path dir name =
   paths := (p,name) :: !paths
 
 (* turn A/B/C into A.B.C *)
-let rec name_of_path p name fname suffix =
-  let dir = Filename.dirname fname in
-  if dir = fname then raise Not_found
+let rec name_of_path p name dirname suffix =
+  if p = dirname then String.concat "." (name::suffix)
   else
-    let base = Filename.basename fname in
-    if p = dir then String.concat "." (name::base::suffix)
-    else name_of_path p name dir (base::suffix)
+    let subdir = Filename.dirname dirname in
+    if subdir = dirname then raise Not_found
+    else name_of_path p name subdir (Filename.basename dirname::suffix)
 
 let coq_module filename =
   let bfname = Filename.chop_extension filename in
