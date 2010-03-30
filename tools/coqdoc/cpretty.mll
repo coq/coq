@@ -941,7 +941,7 @@ and comment = parse
         else (brackets := 1; Output.start_inline_coq ();
               escaped_coq lexbuf; Output.end_inline_coq ());
       comment lexbuf }
-  | "[[" {
+  | "[[" nl {
       if !Cdglobals.parse_comments then
         if !Cdglobals.plain_comments then (Output.char '['; Output.char '[')
         else (formatted := true;

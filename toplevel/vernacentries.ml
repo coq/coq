@@ -308,7 +308,8 @@ let start_proof_and_print k l hook =
   if !pcoq <> None then (Option.get !pcoq).start_proof ()
 
 let vernac_definition (local,boxed,k) (loc,id as lid) def hook =
-  Dumpglob.dump_definition lid false "def";
+  if local = Local then Dumpglob.dump_definition lid true "var"
+  else Dumpglob.dump_definition lid false "def";
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
  	let hook _ _ = () in
