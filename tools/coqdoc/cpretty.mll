@@ -264,10 +264,8 @@ let space_nl = [' ' '\t' '\n' '\r']
 let nl = "\r\n" | '\n'
 
 let firstchar =
-  ['A'-'Z' 'a'-'z' '_'
-  (* iso 8859-1 accents *)
-  '\192'-'\214' '\216'-'\246' '\248'-'\255' ] |
-  (* *)
+  ['A'-'Z' 'a'-'z' '_'] |
+  (* superscript 1 *)
   '\194' '\185' |
   (* utf-8 latin 1 supplement *)
   '\195' ['\128'-'\191'] |
