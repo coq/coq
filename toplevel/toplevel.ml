@@ -111,18 +111,19 @@ let dotted_location (b,e) =
   else
     (String.make (e-b-1) '.', " ")
 
-let blanching_string s i n =
-  let s = String.sub s i n in
-  for i = 0 to String.length s - 1 do
+let blanch_utf8_string s bp ep =
+  let s' = String.make (ep-bp) ' ' in
+  let j = ref 0 in
+  for i = bp to ep - 1 do
     let n = Char.code s.[i] in
     (* Heuristic: assume utf-8 chars are printed using a single
     fixed-size char and therefore contract all utf-8 code into one
-    space and trailing null chars; in any case, preserve tabulation so
+    space; in any case, preserve tabulation so
     that its effective interpretation in terms of spacing is preserved *)
-    if 0xC0 > n && n >= 0x80 then s.[i] <- '\000'
-    else if s.[i] <> '\t' then s.[i] <- ' '
-  done; s
-
+    if s.[i] = '\t' then s'.[!j] <- '\t';
+    if n < 0x80 || 0xC0 <= n then incr j
+  done;
+  String.sub s' 0 !j
 
 let print_highlight_location ib loc =
   let (bp,ep) = unloc loc in
@@ -131,9 +132,10 @@ let print_highlight_location ib loc =
   let highlight_lines =
     match get_bols_of_loc ib (bp,ep) with
       | ([],(bl,el)) ->
+	  let shift = blanch_utf8_string ib.str bl bp in
+	  let span = String.length (blanch_utf8_string ib.str bp ep) in
 	  (str"> " ++ str(String.sub ib.str bl (el-bl-1)) ++ fnl () ++
-             str"> " ++ str(blanching_string ib.str bl (bp-bl)) ++
-             str(String.make (ep-bp) '^'))
+           str"> " ++ str(shift) ++ str(String.make span '^'))
       | ((b1,e1)::ml,(bn,en)) ->
           let (d1,s1) = dotted_location (b1,bp) in
           let (dn,sn) = dotted_location (ep,en) in
@@ -325,7 +327,7 @@ let parse_to_dot =
 let rec discard_to_dot () =
   try
     Gram.Entry.parse parse_to_dot top_buffer.tokens
-  with Stdpp.Exc_located(_,Token.Error _) ->
+  with Stdpp.Exc_located(_,(Token.Error _|Lexer.Error _)) ->
     discard_to_dot()
 
 
