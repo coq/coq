@@ -486,7 +486,7 @@ let raw_certificate l =
       match Fourier.find_point p with
 	| Inr prf ->
 	    if debug then Printf.printf "AProof : %a\n" pp_proof prf ;
-	    let cert = List.map (fun (x,n) -> x+1,n) (fst (List.hd (Proof.mk_proof p prf))) in
+	    let cert = List.map (fun (x,n) -> x+1,n) (fst (List.hd (Mfourier.Proof.mk_proof p prf))) in
 	      if debug then Printf.printf "CProof : %a" Vect.pp_vect cert ;
 	      Some (rats_to_ints (Vect.to_list cert))
 	| Inl _   -> None
