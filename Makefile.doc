@@ -214,11 +214,11 @@ doc/stdlib/html/index.html: doc/stdlib/index-list.html doc/stdlib/index-body.htm
 ifdef QUICK
 doc/stdlib/Library.coqdoc.tex:
 	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
-            -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
+            -R theories Coq $(THEORIESLIGHTVO:.vo=.v) > $@
 else
 doc/stdlib/Library.coqdoc.tex: $(COQDOC) $(THEORIESLIGHTVO)
 	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
-            -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
+            -R theories Coq $(THEORIESLIGHTVO:.vo=.v) > $@
 endif
 
 doc/stdlib/Library.dvi: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.tex

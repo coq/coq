@@ -16,11 +16,11 @@
     be used to build functions outside the scope of a theorem proof) *)
 
 (** Classical logic and unique choice, as shown in
-    [ChicliPottierSimpson02], implies the double-negation of
+    [[ChicliPottierSimpson02]], implies the double-negation of
     excluded-middle in [Set], hence it implies a strongly classical
     world. Especially it conflicts with the impredicativity of [Set].
 
-    [ChicliPottierSimpson02] Laurent Chicli, Loïc Pottier, Carlos
+    [[ChicliPottierSimpson02]] Laurent Chicli, Loïc Pottier, Carlos
     Simpson, Mathematical Quotients and Quotient Types in Coq,
     Proceedings of TYPES 2002, Lecture Notes in Computer Science 2646,
     Springer Verlag.  *)
@@ -44,7 +44,7 @@ intros A B.
 apply (dependent_unique_choice A (fun _ => B)).
 Qed.
 
-(** The following proof comes from [ChicliPottierSimpson02] *)
+(** The following proof comes from [[ChicliPottierSimpson02]] *)
 
 Require Import Setoid.
 

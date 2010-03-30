@@ -50,9 +50,9 @@ description principles
 
 We let also
 
-IPL_2   = 2nd-order impredicative minimal predicate logic (with ex. quant.)
-IPL^2   = 2nd-order functional minimal predicate logic (with ex. quant.)
-IPL_2^2 = 2nd-order impredicative, 2nd-order functional minimal pred. logic (with ex. quant.)
+- IPL_2   = 2nd-order impredicative minimal predicate logic (with ex. quant.)
+- IPL^2   = 2nd-order functional minimal predicate logic (with ex. quant.)
+- IPL_2^2 = 2nd-order impredicative, 2nd-order functional minimal pred. logic (with ex. quant.)
 
 with no prerequisite on the non-emptyness of domains
 
@@ -86,7 +86,7 @@ unpublished.
 [[Bell93]] John L. Bell, Hilbert's Epsilon Operator in Intuitionistic
 Type Theories, Mathematical Logic Quarterly, volume 39, 1993.
 
-[Carlström05] Jesper Carlström, Interpreting descriptions in
+[[Carlström05]] Jesper Carlström, Interpreting descriptions in
 intentional type theory, Journal of Symbolic Logic 70(2):488-514, 2005.
 *)
 
