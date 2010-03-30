@@ -315,7 +315,7 @@ let parse_to_dot =
 let rec discard_to_dot () =
   try 
     Gram.Entry.parse parse_to_dot top_buffer.tokens
-  with Stdpp.Exc_located(_,Token.Error _) -> 
+  with Stdpp.Exc_located(_,(Token.Error _|Lexer.Error _)) -> 
     discard_to_dot()
 
 

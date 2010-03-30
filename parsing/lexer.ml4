@@ -91,6 +91,14 @@ let error_utf8 cs =
   Stream.junk cs; (* consume the char to avoid read it and fail again *)
   err (bp, bp+1) Illegal_character
 
+let utf8_char_size cs = function
+  (* Utf8 leading byte *)
+  | '\x00'..'\x7F' -> 1
+  | '\xC0'..'\xDF' -> 2
+  | '\xE0'..'\xEF' -> 3
+  | '\xF0'..'\xF7' -> 4
+  | _ (* '\x80'..\xBF'|'\xF8'..'\xFF' *) -> error_utf8 cs
+
 let njunk n = Util.repeat n Stream.junk
 
 let check_utf8_trailing_byte cs c =
@@ -355,14 +363,8 @@ and progress_utf8 last nj n c tt cs =
   with Not_found ->
     last
 
-and progress_from_byte last nj tt cs = function
-  (* Utf8 leading byte *)
-  | '\x00'..'\x7F' as c -> progress_utf8 last nj 1 c tt cs
-  | '\xC0'..'\xDF' as c -> progress_utf8 last nj 2 c tt cs
-  | '\xE0'..'\xEF' as c -> progress_utf8 last nj 3 c tt cs
-  | '\xF0'..'\xF7' as c -> progress_utf8 last nj 4 c tt cs
-  | _ (* '\x80'..\xBF'|'\xF8'..'\xFF' *) ->
-      error_utf8 cs
+and progress_from_byte last nj tt cs c =
+  progress_utf8 last nj (utf8_char_size cs c) c tt cs
 
 (* Must be a special token *)
 let process_chars bp c cs =
@@ -370,7 +372,10 @@ let process_chars bp c cs =
   let ep = Stream.count cs in
   match t with
     | Some t -> (("", t), (bp, ep))
-    | None -> err (bp, ep) Undefined_token
+    | None ->
+	let ep' = bp + utf8_char_size cs c in
+	njunk (ep' - ep) cs;
+	err (bp, ep') Undefined_token
 
 let parse_after_dollar bp =
   parser
