@@ -284,6 +284,11 @@ let pfx_id = (id '.')*
 let identifier =
   id | pfx_id id
 
+let utf8_multibyte =
+   [ '\xC0'-'\xDF' ] _
+ | [ '\xE0'-'\xEF' ] _ _
+ | [ '\xF0'-'\xF7' ] _ _ _
+
 (* This misses unicode stuff, and it adds "[" and "]".  It's only an
    approximation of idents - used for detecting whether an underscore
    is part of an identifier or meant to indicate emphasis *)
@@ -1066,6 +1071,16 @@ and body = parse
   | ".."
       { Output.char '.'; Output.char '.';
         body lexbuf }
+  | '"' 
+      { Output.char '"'; 
+        string lexbuf;
+        body lexbuf }
+
+  | utf8_multibyte
+      { let c = lexeme lexbuf in
+	symbol lexbuf c;
+        body lexbuf }
+
   | _ { let c = lexeme_char lexbuf 0 in
 	  Output.char c;
           body lexbuf }
@@ -1091,6 +1106,11 @@ and notation_string = parse
   | _ { let c = lexeme_char lexbuf 0 in
         Output.char c;
         notation_string lexbuf }
+
+and string = parse
+  | "\"\"" { Output.char '"'; Output.char '"'; string lexbuf }
+  | '"'    { Output.char '"' }
+  | _      { let c = lexeme_char lexbuf 0 in Output.char c; string lexbuf }
 
 and skip_hide = parse
   | eof | end_hide { () }

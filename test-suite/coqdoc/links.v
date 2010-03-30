@@ -19,7 +19,9 @@ Notation "n ++ m" := (plus n m).
 
 Notation "n ++ m" := (mult n m). (* redefinition *)
 
-Notation "n % m" := (plus n m) (at level 60).
+Notation "n ** m" := (plus n m) (at level 60).
+
+Notation "n ▵ m" := (plus n m) (at level 60).
 
 Notation "n '_' ++ 'x' m" := (plus n m) (at level 3).
 
@@ -31,7 +33,7 @@ Definition eq0 := 0 = 0 :> nat.
 
 Notation "( x # y ; .. ; z )" := (pair .. (pair x y) .. z).
 
-Definition p := ((0#0;0) , (0 % 0)).
+Definition b_α := ((0#0;0) , (0 ** 0)).
 
 Notation h := a.
 
@@ -39,7 +41,7 @@ Notation h := a.
 
     Variables b' b2: nat.
 
-    Notation "n + m" := (plus n m) : my_scope.
+    Notation "n + m" := (n ▵ m) : my_scope.
 
     Delimit Scope my_scope with my.
 
