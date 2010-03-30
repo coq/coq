@@ -209,7 +209,7 @@ else
 doc/stdlib/Library.coqdoc.tex: | $(COQDOC) $(THEORIESLIGHTVO)
 endif
 	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
-            -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
+            -R theories Coq $(THEORIESLIGHTVO:.vo=.v) > $@
 
 doc/stdlib/Library.dvi: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.tex
 	(cd doc/stdlib;\
