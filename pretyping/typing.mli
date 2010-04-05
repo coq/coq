@@ -21,14 +21,11 @@ open Evd
 val type_of : env -> evar_map -> constr -> types
 (* Typecheck a type and return its sort *)
 val sort_of : env -> evar_map -> types -> sorts
-(* Typecheck a term has a given type (assuming the type is OK *)
+(* Typecheck a term has a given type (assuming the type is OK) *)
 val check   : env -> evar_map -> constr -> types -> unit
 
-(* The same but with metas... *)
-val mtype_of : env -> evar_map -> constr -> types
-val msort_of : env -> evar_map -> types -> sorts
-val mcheck   : env -> evar_map -> constr -> types -> unit
+(* Returns the instantiated type of a metavariable *)
 val meta_type : evar_map -> metavariable -> types
 
-(* unused typing function... *)
-val mtype_of_type : env -> evar_map -> types -> types
+(* Solve existential variables using typing *)
+val solve_evars : env -> evar_map -> constr -> constr

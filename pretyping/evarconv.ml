@@ -17,8 +17,6 @@ open Reduction
 open Reductionops
 open Termops
 open Environ
-open Typing
-open Classops
 open Recordops
 open Evarutil
 open Libnames
