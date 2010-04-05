@@ -182,7 +182,9 @@ let find_elim hdcncl lft2rgt dep cls args gl =
   let inccl = (cls = None) in
   if (hdcncl = constr_of_reference (Coqlib.glob_eq) ||
       hdcncl = constr_of_reference (Coqlib.glob_jmeq) &&
-      pf_conv_x gl (List.nth args 0) (List.nth args 2)) && not dep then
+      pf_conv_x gl (List.nth args 0) (List.nth args 2)) && not dep
+    || Flags.version_less_or_equal Flags.V8_2
+  then
     (* use eq_rect, eq_rect_r, JMeq_rect, etc for compatibility *)
     let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
     let hdcncls = string_of_inductive hdcncl ^ suffix in
