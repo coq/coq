@@ -61,7 +61,7 @@ let abstract_list_all env evd typ c l =
   let l_with_all_occs = List.map (function a -> (all_occurrences,a)) l in
   let p = abstract_scheme env c l_with_all_occs ctxt in
   try
-    if is_conv_leq env evd (Typing.mtype_of env evd p) typ then p
+    if is_conv_leq env evd (Typing.type_of env evd p) typ then p
     else error "abstract_list_all"
   with UserError _ | Type_errors.TypeError _ ->
     error_cannot_find_well_typed_abstraction env evd p l

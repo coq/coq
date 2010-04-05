@@ -7,15 +7,15 @@ Inductiveops
 Retyping
 Cbv
 Pretype_errors
-Typing
 Evarutil
 Term_dnet
 Recordops
+Evarconv
+Typing
 Rawterm
 Pattern
 Matching
 Tacred
-Evarconv
 Typeclasses_errors
 Typeclasses
 Classops

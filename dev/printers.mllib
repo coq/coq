@@ -76,11 +76,11 @@ Inductiveops
 Retyping
 Cbv
 Pretype_errors
-Typing
 Evarutil
 Term_dnet
 Recordops
 Evarconv
+Typing
 Pattern
 Matching
 Tacred

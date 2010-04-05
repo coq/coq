@@ -269,7 +269,7 @@ let decompose_applied_relation env sigma c left2right =
       | _ -> error "The term provided is not an applied relation." in
     let others,(c1,c2) = split_last_two args in
     let ty1, ty2 =
-      Typing.mtype_of env eqclause.evd c1, Typing.mtype_of env eqclause.evd c2
+      Typing.type_of env eqclause.evd c1, Typing.type_of env eqclause.evd c2
     in
       if not (evd_convertible env eqclause.evd ty1 ty2) then None
       else
@@ -353,8 +353,8 @@ let unify_eqn env sigma hypinfo t =
 	  let c1 = nf c1 and c2 = nf c2
 	  and car = nf car and rel = nf rel
 	  and prf = nf (Clenv.clenv_value env') in
-	  let ty1 = Typing.mtype_of env'.env env'.evd c1
-	  and ty2 = Typing.mtype_of env'.env env'.evd c2
+	  let ty1 = Typing.type_of env'.env env'.evd c1
+	  and ty2 = Typing.type_of env'.env env'.evd c2
 	  in
 	    if convertible env env'.evd ty1 ty2 then (
 	      if occur_meta prf then

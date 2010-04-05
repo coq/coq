@@ -2,6 +2,10 @@
 = CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
 =========================================
 
+** Obsolete functions in typing.ml
+
+For mtype_of, msort_of, mcheck, now use type_of, sort_of, check
+
 ** Renaming functions renamed
 
 concrete_name -> compute_displayed_name_in

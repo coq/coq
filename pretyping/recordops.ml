@@ -18,7 +18,6 @@ open Termops
 open Typeops
 open Libobject
 open Library
-open Classops
 open Mod_subst
 open Reductionops
 
