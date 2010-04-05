@@ -13,7 +13,7 @@ Config_lexer
 Utf8_convert
 Preferences
 Ideutils
-Proof
+Ideproof
 Coq_lex
 Gtk_parsing
 Undo

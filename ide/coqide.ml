@@ -735,9 +735,9 @@ object(self)
       match Decl_mode.get_current_mode () with
           Decl_mode.Mode_none -> ()
         | Decl_mode.Mode_tactic ->
-            Proof.display (Proof.mode_tactic (fun _ _ -> ())) proof_view (Coq.goals Coq.dummy_coqtop)
+            Ideproof.display (Ideproof.mode_tactic (fun _ _ -> ())) proof_view (Coq.goals Coq.dummy_coqtop)
         | Decl_mode.Mode_proof ->
-            Proof.display Proof.mode_cesar proof_view (Coq.goals Coq.dummy_coqtop)
+            Ideproof.display Ideproof.mode_cesar proof_view (Coq.goals Coq.dummy_coqtop)
     with e ->
       prerr_endline ("Don't worry be happy despite: "^Printexc.to_string e)
 
@@ -750,12 +750,12 @@ object(self)
           match Decl_mode.get_current_mode () with
               Decl_mode.Mode_none -> ()
             | Decl_mode.Mode_tactic ->
-                Proof.display
-                  (Proof.mode_tactic (fun s () -> ignore (self#insert_this_phrase_on_success
+                Ideproof.display
+                  (Ideproof.mode_tactic (fun s () -> ignore (self#insert_this_phrase_on_success
                                                             true true false ("progress "^s) s)))
                   proof_view (Coq.goals Coq.dummy_coqtop)
             | Decl_mode.Mode_proof ->
-                Proof.display Proof.mode_cesar proof_view (Coq.goals Coq.dummy_coqtop)
+                Ideproof.display Ideproof.mode_cesar proof_view (Coq.goals Coq.dummy_coqtop)
         with e -> prerr_endline (Printexc.to_string e)
       end
 
@@ -2442,10 +2442,10 @@ let main files =
 					  ignore (templates_factory#add_item menu_text ~callback ?key)
 				      in
 					add_complex_template
-					  ("_Lemma __", "Lemma new_lemma : .\nProof.\n\nSave.\n",
+					  ("_Lemma __", "Lemma new_lemma : .\nIdeproof.\n\nSave.\n",
 					   19, 9, Some GdkKeysyms._L);
 					add_complex_template
-					  ("_Theorem __", "Theorem new_theorem : .\nProof.\n\nSave.\n",
+					  ("_Theorem __", "Theorem new_theorem : .\nIdeproof.\n\nSave.\n",
 					   19, 11, Some GdkKeysyms._T);
 					add_complex_template
 					  ("_Definition __", "Definition ident := .\n",
