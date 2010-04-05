@@ -413,7 +413,8 @@ let intern_var (env,unbound_vars,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) l
 
 let find_appl_head_data = function
   | RRef (_,ref) as x -> x,implicits_of_global ref,find_arguments_scope ref,[]
-  | RApp (_,RRef (_,ref),l) as x when l <> [] ->
+  | RApp (_,RRef (_,ref),l) as x
+      when l <> [] & Flags.version_strictly_greater Flags.V8_2 ->
       let n = List.length l in
       x,list_skipn_at_least n (implicits_of_global ref),
       list_skipn_at_least n (find_arguments_scope ref),[]
