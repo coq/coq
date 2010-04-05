@@ -482,7 +482,9 @@ fi
 case $HASNATDYNLINK,`uname -s`,`uname -r`,$CAMLVERSION in
     true,Darwin,9.*,3.11.*)  # ocaml 3.11.0 dynlink on MacOS 10.5 is buggy
         NATDYNLINKFLAG=os5fixme;;
-    true,Darwin,10.*,3.11.*) #also a problem on Mac OS 10.6
+    true,Darwin,10.3.*,3.11.*) # Not a problem on MacOS 10.6.3
+	NATDYNLINKFLAG=$HASNATDYNLINK;;
+    true,Darwin,10.*,3.11.*) # Also a problem on previous Mac OS 10.6 versions
 	NATDYNLINKFLAG=os5fixme;;
     *)
         NATDYNLINKFLAG=$HASNATDYNLINK;;
@@ -1164,4 +1166,4 @@ echo
 echo "*Warning* To compile the system for a new architecture"
 echo "          don't forget to do a 'make archclean' before './configure'."
 
-# $Id: configure 12689 2010-01-26 13:41:56Z glondu $
+# $Id$
