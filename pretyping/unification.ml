@@ -763,7 +763,7 @@ let w_unify_to_subterm env ?(flags=default_unify_flags) (op,cl) evd =
   let rec matchrec cl =
     let cl = strip_outer_cast cl in
     (try
-       if closed0 cl
+       if closed0 cl && not (isEvar cl)
        then w_typed_unify env topconv flags op cl evd,cl
        else error "Bound 1"
      with ex when precatchable_exception ex ->
