@@ -100,6 +100,24 @@ let rec subst_meta_instances bl c =
     | Meta i -> (try assoc_pair i bl with Not_found -> c)
     | _ -> map_constr (subst_meta_instances bl) c
 
+let pose_all_metas_as_evars env evd t =
+  let evdref = ref evd in
+  let rec aux t = match kind_of_term t with
+  | Meta mv ->
+      (match Evd.meta_opt_fvalue !evdref mv with
+       | Some ({rebus=c},_) -> c
+       | None ->
+        let {rebus=ty;freemetas=mvs} = Evd.meta_ftype evd mv in
+        let ty = if mvs = Evd.Metaset.empty then ty else aux ty in
+        let ev = Evarutil.e_new_evar evdref env ~src:(dummy_loc,GoalEvar) ty in
+        evdref := meta_assign mv (ev,(ConvUpToEta 0,TypeNotProcessed)) !evdref;
+        ev)
+  | _ ->
+      map_constr aux t in
+  let c = aux t in
+  (* side-effect *)
+  (!evdref, c)
+
 let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst) =
   match kind_of_term f with
     | Meta k ->
@@ -110,6 +128,7 @@ let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst) =
             sigma,(k,lift (-nb) c,pb)::metasubst,evarsubst
 	  else error_cannot_unify_local env sigma (mkApp (f, l),c,c)
     | Evar ev ->
+	let sigma,c = pose_all_metas_as_evars env sigma c in
 	sigma,metasubst,(ev,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
     | _ -> assert false
 
@@ -532,24 +551,6 @@ let is_mimick_head f =
   match kind_of_term f with
       (Const _|Var _|Rel _|Construct _|Ind _) -> true
     | _ -> false
-
-let pose_all_metas_as_evars env evd t =
-  let evdref = ref evd in
-  let rec aux t = match kind_of_term t with
-  | Meta mv ->
-      (match Evd.meta_opt_fvalue !evdref mv with
-       | Some ({rebus=c},_) -> c
-       | None ->
-        let {rebus=ty;freemetas=mvs} = Evd.meta_ftype evd mv in
-        let ty = if mvs = Evd.Metaset.empty then ty else aux ty in
-        let ev = Evarutil.e_new_evar evdref env ~src:(dummy_loc,GoalEvar) ty in
-        evdref := meta_assign mv (ev,(ConvUpToEta 0,TypeNotProcessed)) !evdref;
-        ev)
-  | _ ->
-      map_constr aux t in
-  let c = aux t in
-  (* side-effect *)
-  (!evdref, c)
 
 let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
