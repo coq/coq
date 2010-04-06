@@ -359,7 +359,6 @@ let parse () =
 	add_file (what_file f); parse_rec rem
   in
     parse_rec (List.tl (Array.to_list Sys.argv));
-    Output.initialize ();
     List.rev !files
 
 

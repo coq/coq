@@ -96,22 +96,32 @@ let set_module m sub = current_module := (m,sub);
 let item_level = ref 0
 let in_doc = ref false
 
-(*s Customized pretty-print *)
+(*s Customized and predefined pretty-print *)
 
-let token_pp = Hashtbl.create 97
+let initialize_texmacs () =
+  let ensuremath x = sprintf "<with|mode|math|\\<%s\\>>" x in
+  List.fold_right (fun (s,t) tt -> Tokens.ttree_add tt s t)
+    [ "*", ensuremath "times";
+      "->", ensuremath "rightarrow";
+      "<-", ensuremath "leftarrow";
+      "<->", ensuremath "leftrightarrow";
+      "=>", ensuremath "Rightarrow";
+      "<=", ensuremath "le";
+      ">=", ensuremath "ge";
+      "<>", ensuremath "noteq";
+      "~",  ensuremath "lnot";
+      "/\\", ensuremath "land";
+      "\\/", ensuremath "lor";
+      "|-", ensuremath "vdash"
+    ] Tokens.empty_ttree
 
-let add_printing_token = Hashtbl.replace token_pp
+let token_tree_texmacs = lazy (initialize_texmacs ())
 
-let find_printing_token tok =
-  try Hashtbl.find token_pp tok with Not_found -> None, None
-
-let remove_printing_token = Hashtbl.remove token_pp
-
-(* predefined pretty-prints *)
-let initialize () =
+let initialize_tex_html () =
   let if_utf8 = if !Cdglobals.utf8 then fun x -> Some x else fun _ -> None in
-    List.iter
-      (fun (s,l,l') -> Hashtbl.add token_pp s (Some l, l'))
+    List.fold_right (fun (s,l,l') (tt,tt') ->
+      (Tokens.ttree_add tt s l,
+       match l' with None -> tt' | Some l' -> Tokens.ttree_add tt' s l'))
       [ "*" ,  "\\ensuremath{\\times}", if_utf8 "×";
 	"|", "\\ensuremath{|}", None;
 	"->",  "\\ensuremath{\\rightarrow}", if_utf8 "→";
@@ -132,7 +142,20 @@ let initialize () =
 	"Π", "\\ensuremath{\\Pi}", if_utf8 "Π";
 	"λ", "\\ensuremath{\\lambda}", if_utf8 "λ";
 	(* "fun", "\\ensuremath{\\lambda}" ? *)
-      ]
+      ] (Tokens.empty_ttree,Tokens.empty_ttree)
+
+let token_tree_latex = lazy (fst (initialize_tex_html ()))
+let token_tree_html = lazy (snd (initialize_tex_html ()))
+
+let add_printing_token s (t1,t2) =
+  match
+    (match !Cdglobals.target_language with LaTeX -> t1 | HTML -> t2 | _ -> None)
+  with
+  | None -> ()
+  | Some t -> Tokens.token_tree := Tokens.ttree_add !Tokens.token_tree s t
+
+let remove_printing_token s =
+  Tokens.token_tree := Tokens.ttree_remove !Tokens.token_tree s
 
 (*s Table of contents *)
 
@@ -187,6 +210,8 @@ module Latex = struct
       printf "\\end{document}\n"
     end
 
+  (*s Latex low-level translation *)
+
   let nbsp () = output_char '~'
 
   let char c = match c with
@@ -200,10 +225,13 @@ module Latex = struct
 	output_char c
 
   let label_char c = match c with
-    | '\\' | '$' | '#' | '%' | '&' | '{' | '}' | '_'
-    | '^' | '~' -> ()
-    | _ ->
-	output_char c
+    | '_' -> output_char ' '
+    | '\\' | '$' | '#' | '%' | '&' | '{' | '}'
+    | '^' | '~' -> printf "x%X" (Char.code c)
+    | _ -> if c >= '\x80' then printf "x%X" (Char.code c) else output_char c
+
+  let label_ident s =
+    for i = 0 to String.length s - 1 do label_char s.[i] done
 
   let latex_char = output_char
   let latex_string = output_string
@@ -211,11 +239,27 @@ module Latex = struct
   let html_char _ = ()
   let html_string _ = ()
 
-  let raw_ident s =
-    for i = 0 to String.length s - 1 do char s.[i] done
+  (*s Latex char escaping *)
 
-  let label_ident s =
-    for i = 0 to String.length s - 1 do label_char s.[i] done
+  let escaped =
+    let buff = Buffer.create 5 in
+    fun s ->
+      Buffer.clear buff;
+      for i = 0 to String.length s - 1 do
+	match s.[i] with
+	| '\\' ->
+	    Buffer.add_string buff "\\symbol{92}"
+	| '$' | '#' | '%' | '&' | '{' | '}' | '_' as c ->
+	    Buffer.add_char buff '\\'; Buffer.add_char buff c
+	| '^' | '~' as c ->
+	    Buffer.add_char buff '\\'; Buffer.add_char buff c;
+	    Buffer.add_string buff "{}"
+	| c ->
+	    Buffer.add_char buff c
+      done;
+      Buffer.contents buff
+
+  (*s Latex reference and symbol translation *)
 
   let start_module () =
     let ln = !lib_name in
@@ -224,9 +268,7 @@ module Latex = struct
         label_ident (get_module false);
         printf "}{";
         if ln <> "" then printf "%s " ln;
-        printf "}{";
-        raw_ident (get_module true);
-        printf "}\n\n"
+        printf "}{%s}\n\n" (escaped (get_module true))
     end
 
   let start_latex_math () = output_char '$'
@@ -244,35 +286,33 @@ module Latex = struct
       let space = 0.5 *. (float n) in
       printf "\\coqdocindent{%2.2fem}\n" space
 
-  let with_latex_printing f tok =
-    try
-      (match Hashtbl.find token_pp tok with
-	 | Some s, _ -> output_string s
-	 | _ -> f tok)
-    with Not_found ->
-      f tok
-
   let module_ref m s =
-    printf "\\moduleid{%s}{" m; raw_ident s; printf "}"
+    printf "\\moduleid{%s}{%s}" m (escaped s)
 
   let ident_ref m fid typ s =
     let id = if fid <> "" then (m ^ "." ^ fid) else m in
     match find_module m with
-      | Local -> 
-	  if typ = Variable then (printf "\\coqdoc%s{" (type_name typ); raw_ident s; printf "}")
+      | Local ->
+	  if typ = Variable then
+	    printf "\\coqdoc%s{%s}" (type_name typ) s
 	  else
-	    (printf "\\coqref{"; label_ident id; printf "}{\\coqdoc%s{" (type_name typ);
-	     raw_ident s; printf "}}")
+	    (printf "\\coqref{"; label_ident id;
+	     printf "}{\\coqdoc%s{%s}}" (type_name typ) s)
       | External m when !externals ->
-	  printf "\\coqexternalref{"; raw_ident m; printf "}{";
-	  label_ident fid; printf "}{\\coqdoc%s{" (type_name typ); raw_ident s; printf "}}"
+	  printf "\\coqexternalref{"; label_ident fid;
+	  printf "}{%s}{\\coqdoc%s{%s}}" (escaped m) (type_name typ) s
       | External _ | Unknown ->
-	  (* printf "\\coqref{"; label_ident id; printf "}{" *)
-	  printf "\\coqdoc%s{" (type_name typ); raw_ident s; printf "}"
+	  printf "\\coqdoc%s{%s}" (type_name typ) s
 
   let defref m id ty s =
-    printf "\\coqdef{"; label_ident (m ^ "." ^ id); printf "}{"; raw_ident s; printf "}{";
-    printf "\\coqdoc%s{" (type_name ty); raw_ident s; printf "}}"
+    if ty <> Notation then
+      (printf "\\coqdef{"; label_ident (m ^ "." ^ id);
+       printf "}{%s}{\\coqdoc%s{%s}}" s (type_name ty) s)
+    else
+      (* Glob file still not able to say the exact extent of the definition *)
+      (* so we currently renounce to highlight the notation location *)
+      (printf "\\coqdef{"; label_ident (m ^ "." ^ id);
+       printf "}{%s}{%s}" s s)
 
   let reference s = function
     | Def (fullid,typ) ->
@@ -282,31 +322,60 @@ module Latex = struct
     | Ref (m,fullid,typ) ->
 	ident_ref m fullid typ s
     | Mod _ ->
-	printf "\\coqdocvar{"; raw_ident s; printf "}"
+	printf "\\coqdocvar{%s}" (escaped s)
+
+  (*s The sublexer buffers symbol characters and attached
+       uninterpreted ident and try to apply special translation such as,
+       predefined, translation "->" to "\ensuremath{\rightarrow}" or,
+       virtually, a user-level translation from "=_h" to "\ensuremath{=_{h}}" *)
+
+  let output_sublexer_string doescape issymbchar tag s =
+    let s = if doescape then escaped s else s in
+    match tag with
+    | Some ref -> reference s ref
+    | None -> if issymbchar then output_string s else printf "\\coqdocvar{%s}" s
+
+  let sublexer c loc =
+    let tag =
+      try Some (Index.find (get_module false) loc) with Not_found -> None
+    in
+    Tokens.output_tagged_symbol_char tag c
+
+  let initialize () =
+    Tokens.token_tree := Lazy.force token_tree_latex;
+    Tokens.outfun := output_sublexer_string
+
+  (*s Interpreting ident with fallback on sublexer if unknown ident *)
+
+  let translate s =
+    match Tokens.translate s with Some s -> s | None -> escaped s
 
   let ident s loc =
     try
-      reference s (Index.find (get_module false) loc)
+      let tag = Index.find (get_module false) loc in
+      reference (translate s) tag
     with Not_found ->
       if is_tactic s then
-	(printf "\\coqdoctac{"; raw_ident s; printf "}")
+	printf "\\coqdoctac{%s}" (translate s)
       else if is_keyword s then
-	(printf "\\coqdockw{"; raw_ident s; printf "}")
+	printf "\\coqdockw{%s}" (translate s)
       else if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
       then
-	try reference s (Index.find_string (get_module false) s)
-	with _ -> (printf "\\coqdocvar{"; raw_ident s; printf "}")
-      else (printf "\\coqdocvar{"; raw_ident s; printf "}")
+	try
+	  let tag = Index.find_string (get_module false) s in
+	  reference (translate s) tag
+	with _ -> Tokens.output_tagged_ident_string s
+      else Tokens.output_tagged_ident_string s
 
   let ident s l =
     if !in_title then (
       printf "\\texorpdfstring{\\protect";
-      with_latex_printing (fun s -> ident s l) s;
-      printf "}{"; raw_ident s; printf "}")
+      ident s l;
+      printf "}{%s}" (translate s))
     else
-      with_latex_printing (fun s -> ident s l) s
+      ident s l
 
-  let symbol s l = with_latex_printing raw_ident s
+  (*s Translating structure *)
 
   let proofbox () = printf "\\ensuremath{\\Box}"
 
@@ -329,8 +398,6 @@ module Latex = struct
   let start_doc () = in_doc := true
 
   let end_doc () = in_doc := false; stop_item ()
-
-  let comment c = char c
 
   (* This is broken if we are in math mode, but coqdoc currently isn't
      tracking that *)
@@ -460,7 +527,21 @@ module Html = struct
     | '&' -> printf "&amp;"
     | c -> output_char c
 
-  let raw_ident s = for i = 0 to String.length s - 1 do char s.[i] done
+  let raw_string s =
+    for i = 0 to String.length s - 1 do char s.[i] done
+
+  let escaped =
+    let buff = Buffer.create 5 in
+    fun s ->
+      Buffer.clear buff;
+      for i = 0 to String.length s - 1 do
+	match s.[i] with
+	| '<' -> Buffer.add_string buff "&lt;"
+	| '>' -> Buffer.add_string buff "&gt;"
+	| '&' -> Buffer.add_string buff "&amp;"
+	| c -> Buffer.add_char buff c
+      done;
+      Buffer.contents buff
 
   let latex_char _ = ()
   let latex_string _ = ()
@@ -477,78 +558,72 @@ module Html = struct
   let module_ref m s =
     match find_module m with
       | Local ->
-	  printf "<a class=\"modref\" href=\"%s.html\">" m; raw_ident s; printf "</a>"
+	  printf "<a class=\"modref\" href=\"%s.html\">%s</a>" m s
       | External m when !externals ->
-	    printf "<a class=\"modref\" href=\"%s.html\">" m; raw_ident s; printf "</a>"
+	  printf "<a class=\"modref\" href=\"%s.html\">%s</a>" m s
       | External _ | Unknown ->
-	  raw_ident s
+	  output_string s
 
   let ident_ref m fid typ s =
     match find_module m with
     | Local ->
 	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
-	printf "<span class=\"id\" type=\"%s\">" typ;
-	raw_ident s;
-	printf "</span></a>"
+	printf "<span class=\"id\" type=\"%s\">%s</span></a>" typ s
     | External m when !externals ->
-	  printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
-	  printf "<span class=\"id\" type=\"%s\">" typ;
-	  raw_ident s; printf "</span></a>"
+	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
+	printf "<span class=\"id\" type=\"%s\">%s</span></a>" typ s
     | External _ | Unknown ->
-	printf "<span class=\"id\" type=\"%s\">" typ; raw_ident s; printf "</span>"
+	printf "<span class=\"id\" type=\"%s\">%s</span>" typ s
 
   let reference s r =
     match r with
     | Def (fullid,ty) ->
-	  printf "<a name=\"%s\">" fullid;
-	  printf "<span class=\"id\" type=\"%s\">" (type_name ty);
-	  raw_ident s; printf "</span></a>"
+	printf "<a name=\"%s\">" fullid;
+	printf "<span class=\"id\" type=\"%s\">%s</span></a>" (type_name ty) s
     | Mod (m,s') when s = s' ->
-	  module_ref m s
+	module_ref m s
     | Ref (m,fullid,ty) ->
-	  ident_ref m fullid (type_name ty) s
+	ident_ref m fullid (type_name ty) s
     | Mod _ ->
-	  printf "<span class=\"id\" type=\"mod\">"; raw_ident s ; printf "</span>"
+	printf "<span class=\"id\" type=\"mod\">%s</span>" s
+
+  let output_sublexer_string doescape issymbchar tag s =
+    let s = if doescape then escaped s else s in
+    match tag with
+    | Some ref -> reference s ref
+    | None ->
+	if issymbchar then output_string s
+	else printf "<span class=\"id\" type=\"var\">%s</span>" s
+
+  let sublexer c loc =
+    let tag =
+      try Some (Index.find (get_module false) loc) with Not_found -> None
+    in
+    Tokens.output_tagged_symbol_char tag c
+
+  let initialize () =
+    Tokens.token_tree := Lazy.force token_tree_html;
+    Tokens.outfun := output_sublexer_string
+
+  let translate s =
+    match Tokens.translate s with Some s -> s | None -> escaped s
 
   let ident s loc =
     if is_keyword s then begin
-      printf "<span class=\"id\" type=\"keyword\">";
-      raw_ident s;
-      printf "</span>"
-    end else
-      begin
-	  try reference s (Index.find (get_module false) loc)
-	  with Not_found ->
-	    if is_tactic s then
-		(printf "<span class=\"id\" type=\"tactic\">"; raw_ident s; printf "</span>")
-	    else
-		if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
-		then
-	        try reference s (Index.find_string (get_module false) s)
-	        with _ ->
-		    (printf "<span class=\"id\" type=\"var\">"; raw_ident s ; printf "</span>")
-	    else (printf "<span class=\"id\" type=\"var\">"; raw_ident s ; printf "</span>")
-      end
-
-  let with_html_printing f tok loc =
-    try
-      (match Hashtbl.find token_pp tok with
-	 | _, Some s ->
-	     (try reference s (Index.find (get_module false) loc)
-	      with Not_found -> output_string s)
-	 | _ -> f tok loc)
-    with Not_found ->
-      f tok loc
-
-  let ident s l =
-    with_html_printing ident s l
-
-  let raw_symbol s loc =
-    try reference s (Index.find (get_module false) loc)
-    with Not_found -> raw_ident s
-
-  let symbol s l =
-    with_html_printing raw_symbol s l
+      printf "<span class=\"id\" type=\"keyword\">%s</span>" (translate s)
+    end else begin
+      try reference (translate s) (Index.find (get_module false) loc)
+      with Not_found ->
+	if is_tactic s then
+	  printf "<span class=\"id\" type=\"tactic\">%s</span>" (translate s)
+	else
+	  if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
+	  then
+	    try reference (translate s) (Index.find_string (get_module false) s)
+	    with _ -> Tokens.output_tagged_ident_string s
+	  else
+	    Tokens.output_tagged_ident_string s
+    end
 
   let proofbox () = printf "<font size=-2>&#9744;</font>"
 
@@ -803,24 +878,15 @@ module TeXmacs = struct
 
   let ident s _ = if !in_doc then ident_true s else raw_ident s
 
-  let symbol_true s =
-    let ensuremath x = printf "<with|mode|math|\\<%s\\>>" x in
-      match s with
-	| "*"  -> ensuremath "times"
-	| "->" -> ensuremath "rightarrow"
-	| "<-" -> ensuremath "leftarrow"
-	| "<->" ->ensuremath "leftrightarrow"
-	| "=>" -> ensuremath "Rightarrow"
-	| "<=" -> ensuremath "le"
-	| ">=" -> ensuremath "ge"
-	| "<>" -> ensuremath "noteq"
-	| "~" ->  ensuremath "lnot"
-	| "/\\" -> ensuremath "land"
-	| "\\/" -> ensuremath "lor"
-	| "|-" -> ensuremath "vdash"
-	| s    -> raw_ident s
+  let output_sublexer_string doescape issymbchar tag s =
+    if doescape then raw_ident s else output_string s
 
-  let symbol s _ = if !in_doc then symbol_true s else raw_ident s
+  let sublexer c l =
+    if !in_doc then Tokens.output_tagged_symbol_char None c else char c
+
+  let initialize () =
+    Tokens.token_tree := Lazy.force token_tree_texmacs;
+    Tokens.outfun := output_sublexer_string
 
   let proofbox () = printf "QED"
 
@@ -897,7 +963,7 @@ module TeXmacs = struct
 end
 
 
-(*s LaTeX output *)
+(*s Raw output *)
 
 module Raw = struct
 
@@ -908,12 +974,6 @@ module Raw = struct
   let nbsp () = output_char ' '
 
   let char = output_char
-
-  let label_char c = match c with
-    | '\\' | '$' | '#' | '%' | '&' | '{' | '}' | '_'
-    | '^' | '~' -> ()
-    | _ ->
-	output_char c
 
   let latex_char = output_char
   let latex_string = output_string
@@ -939,7 +999,11 @@ module Raw = struct
 
   let ident s loc = raw_ident s
 
-  let symbol s loc = raw_ident s
+  let sublexer c l = char c
+
+  let initialize () =
+    Tokens.token_tree := Tokens.empty_ttree;
+    Tokens.outfun := (fun _ _ _ _ -> failwith "Useless")
 
   let proofbox () = printf "[]"
 
@@ -1027,7 +1091,7 @@ let end_inline_coq =
   select Latex.end_inline_coq Html.end_inline_coq TeXmacs.end_inline_coq Raw.end_inline_coq
 
 let start_inline_coq_block =
-  select Latex.start_inline_coq_block Html.start_inline_coq_block 
+  select Latex.start_inline_coq_block Html.start_inline_coq_block
     TeXmacs.start_inline_coq_block Raw.start_inline_coq_block
 let end_inline_coq_block =
   select Latex.end_inline_coq_block Html.end_inline_coq_block TeXmacs.end_inline_coq_block Raw.end_inline_coq_block
@@ -1047,7 +1111,8 @@ let rule = select Latex.rule Html.rule TeXmacs.rule Raw.rule
 let nbsp = select Latex.nbsp Html.nbsp TeXmacs.nbsp Raw.nbsp
 let char = select Latex.char Html.char TeXmacs.char Raw.char
 let ident = select Latex.ident Html.ident TeXmacs.ident Raw.ident
-let symbol = select Latex.symbol Html.symbol TeXmacs.symbol Raw.symbol
+let sublexer = select Latex.sublexer Html.sublexer TeXmacs.sublexer Raw.sublexer
+let initialize = select Latex.initialize Html.initialize TeXmacs.initialize Raw.initialize
 
 let proofbox = select Latex.proofbox Html.proofbox TeXmacs.proofbox Raw.proofbox
 

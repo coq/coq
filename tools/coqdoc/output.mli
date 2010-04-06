@@ -63,7 +63,8 @@ val rule : unit -> unit
 val nbsp : unit -> unit
 val char : char -> unit
 val ident : string -> loc -> unit
-val symbol : string -> loc -> unit
+val sublexer : char -> loc -> unit
+val initialize : unit -> unit
 
 val proofbox : unit -> unit
 

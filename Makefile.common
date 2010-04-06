@@ -249,7 +249,7 @@ DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
 COQDEPCMO:=$(COQENVCMO) tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep.cmo
 
 COQDOCCMO:=$(CONFIG) $(addprefix tools/coqdoc/, \
-  cdglobals.cmo alpha.cmo index.cmo output.cmo cpretty.cmo main.cmo )
+  cdglobals.cmo alpha.cmo index.cmo tokens.cmo output.cmo cpretty.cmo main.cmo )
 
 ###########################################################################
 # vo files
