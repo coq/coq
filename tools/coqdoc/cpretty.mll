@@ -18,7 +18,7 @@
   (* A function that emulates Lexing.new_line (which does not exist in OCaml < 3.11.0) *)
   let new_line lexbuf =
     let pos = lexbuf.lex_curr_p in
-      lexbuf.lex_curr_p <- { pos with 
+      lexbuf.lex_curr_p <- { pos with
 	pos_lnum = pos.pos_lnum + 1;
 	pos_bol = pos.pos_cnum }
 
@@ -39,6 +39,12 @@
 	| _ -> c,i
     in
       count 0 0
+
+  let remove_newline s =
+    let n = String.length s in
+    let rec count i = if i == n || s.[i] <> '\n' then i else count (i + 1) in
+    let i = count 0 in
+    i, String.sub s i (n - i)
 
   let count_dashes s =
     let c = ref 0 in
@@ -76,7 +82,7 @@
 
   let start_emph () = in_emph := true; Output.start_emph ()
   let stop_emph () = if !in_emph then (Output.stop_emph (); in_emph := false)
-    
+
   let backtrack lexbuf = lexbuf.lex_curr_pos <- lexbuf.lex_start_pos;
     lexbuf.lex_curr_p <- lexbuf.lex_start_p
 
@@ -247,8 +253,6 @@
     else
       String.sub s 1 (String.length s - 3)
 
-  let symbol lexbuf s = Output.symbol s (lexeme_start lexbuf)
-
   let output_indented_keyword s lexbuf =
     let nbsp,isp = count_spaces s in
     Output.indentation nbsp;
@@ -269,7 +273,7 @@ let firstchar =
   '\194' '\185' |
   (* utf-8 latin 1 supplement *)
   '\195' ['\128'-'\191'] |
-  (* utf-8 letterlike symbols *) 
+  (* utf-8 letterlike symbols *)
   (* '\206' ([ '\145' - '\183'] | '\187') | *)
   (* '\xCF' [ '\x00' - '\xCE' ] |  *)
   (* utf-8 letterlike symbols *)
@@ -284,37 +288,12 @@ let pfx_id = (id '.')*
 let identifier =
   id | pfx_id id
 
-let utf8_multibyte =
-   [ '\xC0'-'\xDF' ] _
- | [ '\xE0'-'\xEF' ] _ _
- | [ '\xF0'-'\xF7' ] _ _ _
-
 (* This misses unicode stuff, and it adds "[" and "]".  It's only an
    approximation of idents - used for detecting whether an underscore
    is part of an identifier or meant to indicate emphasis *)
-let nonidentchar =
-  [^ 'A'-'Z' 'a'-'z' '_' '[' ']'
-      (* iso 8859-1 accents *)
-    '\192'-'\214' '\216'-'\246' '\248'-'\255'
-    '\'' '0'-'9' '@' ]
+let nonidentchar = [^ 'A'-'Z' 'a'-'z' '_' '[' ']' '\'' '0'-'9' '@' ]
 
-let symbolchar_symbol_no_brackets =
-  ['!' '$' '%' '&' '*' '+' ',' '^' '#'
-      '\\' '/' '-' '<' '>' '|' ':' '?' '=' '~' ] |
-  (* utf-8 symbols *)
-  '\226' ['\134'-'\143' '\152'-'\155' '\164'-'\165' '\168'-'\171'] _
-let symbolchar_no_brackets = symbolchar_symbol_no_brackets |
-    [ '@' '{' '}' '(' ')' 'A'-'Z' 'a'-'z' '_']
-let symbolchar = symbolchar_no_brackets | '[' | ']'
-let token_no_brackets = symbolchar_symbol_no_brackets symbolchar_no_brackets*
-let token = symbolchar_symbol_no_brackets symbolchar* | '[' [^ '[' ']' ':']* ']'
-let printing_token = (token | id)+
-
-(* tokens with balanced brackets *)
-let token_brackets =
-  ( token_no_brackets ('[' token_no_brackets? ']')*
-  | token_no_brackets? ('[' token_no_brackets? ']')+ )
-  token_no_brackets?
+let printing_token = [^ ' ' '\t']*
 
 let thm_token =
   "Theorem"
@@ -453,8 +432,8 @@ let end_verb = "(*" space* "end" space+ "verb" space* "*)"
 
 rule coq_bol = parse
   | space* nl+
-      { if not (!in_proof <> None && (!Cdglobals.gallina || !Cdglobals.light)) 
-        then Output.empty_line_of_code (); 
+      { if not (!in_proof <> None && (!Cdglobals.gallina || !Cdglobals.light))
+        then Output.empty_line_of_code ();
         coq_bol lexbuf }
   | space* "(**" space_nl
       { Output.end_coq (); Output.start_doc ();
@@ -537,7 +516,7 @@ rule coq_bol = parse
 	ignore (comment lexbuf);
 	coq_bol lexbuf }
   | space* "(**" space+ "remove" space+ "printing" space+
-      (identifier | token) space* "*)"
+      printing_token space* "*)"
       { remove_printing_token (lexeme lexbuf);
 	coq_bol lexbuf }
   | space* "(**" space+ "remove" space+ "printing" space+
@@ -590,7 +569,18 @@ and coq = parse
           else coq lexbuf
       }
   | nl+ space* "]]"
-      { if not !formatted then begin symbol lexbuf (lexeme lexbuf); coq lexbuf end }
+      { if not !formatted then
+	begin
+	  (* Isn't this an anomaly *)
+	  let s = lexeme lexbuf in
+	  let nlsp,s = remove_newline s in
+	  let nbsp,isp = count_spaces s in
+	  Output.indentation nbsp;
+	  let loc = lexeme_start lexbuf + isp + nlsp in
+	  Output.sublexer ']' loc;
+	  Output.sublexer ']' (loc+1);
+	  coq lexbuf
+	end }
   | eof
       { () }
   | gallina_kw_to_hide
@@ -890,22 +880,27 @@ and verbatim = parse
 and escaped_coq = parse
   | "]"
       { decr brackets;
-	if !brackets > 0 then begin Output.char ']'; escaped_coq lexbuf end }
+	if !brackets > 0 then
+	  (Output.sublexer ']' (lexeme_start lexbuf); escaped_coq lexbuf)
+	else Tokens.flush_sublexer () }
   | "["
-      { incr brackets; Output.char '['; escaped_coq lexbuf }
+      { incr brackets;
+        Output.sublexer '[' (lexeme_start lexbuf); escaped_coq lexbuf }
   | "(*"
-      { comment_level := 1; ignore (comment lexbuf); escaped_coq lexbuf }
+      { Tokens.flush_sublexer (); comment_level := 1;
+        ignore (comment lexbuf); escaped_coq lexbuf }
   | "*)"
       { (* likely to be a syntax error: we escape *) backtrack lexbuf }
   | eof
-      { () }
-  | token_brackets
-      { let s = lexeme lexbuf in
-	  symbol lexbuf s; escaped_coq lexbuf }
+      { Tokens.flush_sublexer () }
   | (identifier '.')* identifier
       { Output.ident (lexeme lexbuf) (lexeme_start lexbuf); escaped_coq lexbuf }
+  | space
+      { Tokens.flush_sublexer(); Output.char (lexeme_char lexbuf 0);
+        escaped_coq lexbuf }
   | _
-      { Output.char (lexeme_char lexbuf 0); escaped_coq lexbuf }
+      { Output.sublexer (lexeme_char lexbuf 0) (lexeme_start lexbuf);
+        escaped_coq lexbuf }
 
 (*s Coq "Comments" command. *)
 
@@ -1003,11 +998,18 @@ and body_bol = parse
   | _ { backtrack lexbuf; Output.indentation 0; body lexbuf }
 
 and body = parse
-  | nl {Output.line_break(); new_line lexbuf; body_bol lexbuf}
+  | nl {Tokens.flush_sublexer(); Output.line_break(); new_line lexbuf; body_bol lexbuf}
   | nl+ space* "]]" space* nl
-      { if not !formatted then
+      { Tokens.flush_sublexer();
+        if not !formatted then
           begin
-            symbol lexbuf (lexeme lexbuf);
+            let s = lexeme lexbuf in
+            let nlsp,s = remove_newline s in
+            let _,isp = count_spaces s in
+            let loc = lexeme_start lexbuf + nlsp + isp in
+            Output.sublexer ']' loc;
+            Output.sublexer ']' (loc+1);
+            Tokens.flush_sublexer();
             body lexbuf
           end
         else
@@ -1016,9 +1018,14 @@ and body = parse
             true
           end }
   | "]]" space* nl
-      { if not !formatted then
+      { Tokens.flush_sublexer();
+        if not !formatted then
           begin
-            symbol lexbuf (lexeme lexbuf);
+	    let loc = lexeme_start lexbuf in
+	    Output.sublexer ']' loc;
+	    Output.sublexer ']' (loc+1);
+	    Tokens.flush_sublexer();
+	    Output.line_break();
             body lexbuf
           end
         else
@@ -1026,12 +1033,12 @@ and body = parse
             Output.paragraph ();
             true
           end }
-  | eof { false }
+  | eof { Tokens.flush_sublexer(); false }
   | '.' space* nl | '.' space* eof
-	{ Output.char '.'; Output.line_break();
+	{ Tokens.flush_sublexer(); Output.char '.'; Output.line_break();
 	  if not !formatted then true else body_bol lexbuf }
   | '.' space* nl "]]" space* nl
-	{ Output.char '.';
+	{ Tokens.flush_sublexer(); Output.char '.';
         if not !formatted then
           begin
             eprintf "Error: stray ]] at %d\n"  (lexeme_start lexbuf);
@@ -1044,50 +1051,46 @@ and body = parse
             true
           end
       }
-  | '.' space+ { Output.char '.'; Output.char ' ';
+  | '.' space+
+        { Tokens.flush_sublexer(); Output.char '.'; Output.char ' ';
 	  if not !formatted then false else body lexbuf }
   | "(**" space_nl
-      { Output.end_coq (); Output.start_doc ();
+      { Tokens.flush_sublexer(); Output.end_coq (); Output.start_doc ();
 	let eol = doc_bol lexbuf in
 	  Output.end_doc (); Output.start_coq ();
 	  if eol then body_bol lexbuf else body lexbuf }
-  | "(*" { comment_level := 1;
+  | "(*" { Tokens.flush_sublexer(); comment_level := 1;
 	   if !Cdglobals.parse_comments then Output.start_comment ();
 	   let eol = comment lexbuf in
 	     if eol
 	     then begin if not !Cdglobals.parse_comments then Output.line_break(); body_bol lexbuf end
 	     else body lexbuf }
   | "where" space*
-      { let s = lexeme lexbuf in
-	Output.ident s (lexeme_start lexbuf);
+      { Tokens.flush_sublexer();
+        Output.ident (lexeme lexbuf) (lexeme_start lexbuf);
 	start_notation_string lexbuf }
   | identifier
-      { let s = lexeme lexbuf in
-	  Output.ident s (lexeme_start lexbuf);
-	  body lexbuf }
-  | token_no_brackets
-      { let s = lexeme lexbuf in
-	  symbol lexbuf s; body lexbuf }
+      { Tokens.flush_sublexer();
+        Output.ident (lexeme lexbuf) (lexeme_start lexbuf);
+	body lexbuf }
   | ".."
-      { Output.char '.'; Output.char '.';
+      { Tokens.flush_sublexer(); Output.char '.'; Output.char '.';
         body lexbuf }
-  | '"' 
-      { Output.char '"'; 
+  | '"'
+      { Tokens.flush_sublexer(); Output.char '"';
         string lexbuf;
         body lexbuf }
-
-  | utf8_multibyte
-      { let c = lexeme lexbuf in
-	symbol lexbuf c;
+  | space
+      { Tokens.flush_sublexer(); Output.char (lexeme_char lexbuf 0);
         body lexbuf }
 
   | _ { let c = lexeme_char lexbuf 0 in
-	  Output.char c;
-          body lexbuf }
+	Output.sublexer c (lexeme_start lexbuf);
+        body lexbuf }
 
 and start_notation_string = parse
   | '"' (* a true notation *)
-      { symbol lexbuf "\"";
+      { Output.sublexer '"' (lexeme_start lexbuf);
         notation_string lexbuf;
 	body lexbuf }
   | _ (* an abbreviation *)
@@ -1098,13 +1101,9 @@ and notation_string = parse
       { Output.char '"'; Output.char '"'; (* Unlikely! *)
         notation_string lexbuf }
   | '"'
-      { Output.char '"' }
-  | token
-      { let s = lexeme lexbuf in
-        symbol lexbuf s;
-        notation_string lexbuf }
+      { Tokens.flush_sublexer(); Output.char '"' }
   | _ { let c = lexeme_char lexbuf 0 in
-        Output.char c;
+        Output.sublexer c (lexeme_start lexbuf);
         notation_string lexbuf }
 
 and string = parse
@@ -1163,6 +1162,7 @@ and st_subtitle = parse
     let c = open_in f in
     let lb = from_channel c in
       (Index.current_library := m;
+       Output.initialize ();
        Output.start_module ();
        Output.start_coq (); coq_bol lb; Output.end_coq ();
        close_in c)

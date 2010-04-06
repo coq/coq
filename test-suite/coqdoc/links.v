@@ -3,7 +3,7 @@
 - symbols should not be inlined in string g
 - links to both kinds of notations in a' should work to the right notation
 - with utf8 option, forall must be unicode
-- spliting between symbols and ident should be correct in a' and c
+- splitting between symbols and ident should be correct in a' and c
 - ".." should be rendered correctly
 *)
 
