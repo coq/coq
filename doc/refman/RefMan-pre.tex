@@ -691,6 +691,46 @@ Palaiseau, June 2008\\
 Hugo Herbelin\\
 \end{flushright}
 
+\section*{Credits: version 8.3}
+
+{\Coq} version 8.3 is before all a transition version with refinements
+or extensions of the existing features and libraries and a new tactic
+{\tt gb} based on Hilbert's Nullstellensatz for deciding systems of
+equations over rings.
+
+With respect to libraries, the main evolutions are due to Pierre
+Letouzey with a rewriting of the FSet library and a new round of
+progresses in the Numbers library and to Hugo Herbelin for a slight
+revision of the Sorting library and the addition of a certified
+merge-sort. The reason for making FSet evolve is that the
+computational and logical contents were quite intertwined in the
+original implementation, leading in some cases to longer computations
+than expected and this problem is solved in the new MSet
+implementation. As for the Numbers library, it was only dealing with a
+few arithmetic operators in the former version and its current
+extension now allows to instantaneously derive the standard properties
+of division from any implementation of $\mathbb{N}$ or $\mathbb{Z}$ or
+$\mathbb{Z}/n\mathbb{Z}$.
+
+The module system evolved significantly. Besides the resolution of
+efficiency issues, Élie Soubiran brought a new model of name
+equivalence which respects as much as possible the names given by the
+users. He also designed with Pierre Letouzey a new convenient operator
+{\verb!<+! for nesting functor application, what provide a light
+  notation for inheriting the properties of stacks of modules.
+
+Gb
+
+The tactics evolved too.
+
+Classes...
+
+
+\begin{flushright}
+Paris, April 2010\\
+Hugo Herbelin\\
+\end{flushright}
+
 %new Makefile
 
 %\newpage

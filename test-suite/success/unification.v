@@ -92,7 +92,7 @@ Qed.
 
 (* Test instanciation of evars by unification *)
 
-Goal (forall x, 0 * x = 0 -> True) -> True.
+Goal (forall x, 0 + x = 0 -> True) -> True.
 intros; eapply H.
 rewrite <- plus_n_Sm. (* should refine ?x with S ?x' *)
 Abort.
