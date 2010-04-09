@@ -49,6 +49,7 @@ plugins/micromega/csdpcert
 kernel/byterun/dllcoqrun.so
 states/initial.coq
 coqdoc.sty
+test-suite/lia.cache
 
 # documentation
 
