@@ -214,40 +214,6 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
 
   Section ForNotations.
 
-  Notation Sort := (sort X.lt).
-  Notation Inf := (lelistA X.lt).
-  Notation In := (InA X.eq).
-
-  (* TODO: modify proofs in order to avoid these hints *)
-  Hint Resolve (@Equivalence_Reflexive _ _ X.eq_equiv).
-  Hint Immediate (@Equivalence_Symmetric _ _ X.eq_equiv).
-  Hint Resolve (@Equivalence_Transitive _ _ X.eq_equiv).
-
-  Definition IsOk := Sort.
-
-  Class Ok (s:t) : Prop := ok : Sort s.
-
-  Hint Resolve @ok.
-  Hint Unfold Ok.
-
-  Instance Sort_Ok s `(Hs : Sort s) : Ok s := { ok := Hs }.
-
-  Ltac inv_ok := match goal with
-   | H:Ok (_ :: _) |- _ => inversion_clear H; inv_ok
-   | H:Ok nil |- _ => clear H; inv_ok
-   | H:Sort ?l |- _ => change (Ok l) in H; inv_ok
-   | _ => idtac
-  end.
-
-  Ltac inv := invlist InA; inv_ok; invlist lelistA.
-  Ltac constructors := repeat constructor.
-
-  Ltac sort_inf_in := match goal with
-   | H:Inf ?x ?l, H':In ?y ?l |- _ =>
-     cut (X.lt x y); [ intro | apply Sort_Inf_In with l; auto]
-   | _ => fail
-  end.
-
   Definition inf x l :=
    match l with
    | nil => true
@@ -260,30 +226,81 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
    | x::l => inf x l && isok l
    end.
 
+  Notation Sort l := (isok l = true).
+  Notation Inf := (lelistA X.lt).
+  Notation In := (InA X.eq).
+
+  (* TODO: modify proofs in order to avoid these hints *)
+  Hint Resolve (@Equivalence_Reflexive _ _ X.eq_equiv).
+  Hint Immediate (@Equivalence_Symmetric _ _ X.eq_equiv).
+  Hint Resolve (@Equivalence_Transitive _ _ X.eq_equiv).
+
+  Definition IsOk s := Sort s.
+
+  Class Ok (s:t) : Prop := ok : Sort s.
+
+  Hint Resolve @ok.
+  Hint Unfold Ok.
+
+  Instance Sort_Ok s `(Hs : Sort s) : Ok s := { ok := Hs }.
+
   Lemma inf_iff : forall x l, Inf x l <-> inf x l = true.
   Proof.
-  induction l as [ | y l IH].
-  simpl; split; auto.
-  simpl.
-  elim_compare x y; intuition; try discriminate.
-  inv; order.
-  inv; order.
+    intros x l; split; intro H.
+    (* -> *)
+    destruct H; simpl in *.
+      reflexivity.
+    rewrite <- compare_lt_iff in H; rewrite H; reflexivity.
+    (* <- *)
+    destruct l as [|y ys]; simpl in *.
+      constructor; fail.
+    revert H; case_eq (X.compare x y); try discriminate; [].
+    intros Ha _.
+    rewrite compare_lt_iff in Ha.
+    constructor; assumption.
   Qed.
 
-  Lemma isok_iff : forall l, Ok l <-> isok l = true.
+  Lemma isok_iff : forall l, sort X.lt l <-> Ok l.
   Proof.
-  induction l as [ | x l IH].
-  simpl; split; auto; constructor.
-  simpl.
-  rewrite andb_true_iff, <- inf_iff, <- IH.
-  split.
-  intros; inv; auto.
-  constructor; intuition.
+    intro l; split; intro H.
+    (* -> *)
+    elim H.
+      constructor; fail.
+    intros y ys Ha Hb Hc.
+    change (inf y ys && isok ys = true).
+    rewrite inf_iff in Hc.
+    rewrite andb_true_iff; tauto.
+    (* <- *)
+    induction l as [|x xs].
+      constructor.
+    change (inf x xs && isok xs = true) in H.
+    rewrite andb_true_iff, <- inf_iff in H.
+    destruct H; constructor; tauto.
   Qed.
+
+  Hint Extern 1 (Ok _) => rewrite <- isok_iff.
+
+  Ltac inv_ok := match goal with
+   | H:sort X.lt (_ :: _) |- _ => inversion_clear H; inv_ok
+   | H:sort X.lt nil |- _ => clear H; inv_ok
+   | H:sort X.lt ?l |- _ => change (Ok l) in H; inv_ok
+   | H:Ok _ |- _ => rewrite <- isok_iff in H; inv_ok
+   | |- Ok _ => rewrite <- isok_iff
+   | _ => idtac
+  end.
+
+  Ltac inv := invlist InA; inv_ok; invlist lelistA.
+  Ltac constructors := repeat constructor.
+
+  Ltac sort_inf_in := match goal with
+   | H:Inf ?x ?l, H':In ?y ?l |- _ =>
+     cut (X.lt x y); [ intro | apply Sort_Inf_In with l; auto]
+   | _ => fail
+  end.
 
   Global Instance isok_Ok s `(isok s = true) : Ok s | 10.
   Proof.
-  intros. apply <- isok_iff. auto.
+  intros. assumption.
   Qed.
 
   Definition Equal s s' := forall a : elt, In a s <-> In a s'.
@@ -295,7 +312,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Lemma mem_spec :
    forall (s : t) (x : elt) (Hs : Ok s), mem x s = true <-> In x s.
   Proof.
-  induction s; intros; inv; simpl.
+  induction s; intros x Hs; inv; simpl.
   intuition. discriminate. inv.
   elim_compare x a; rewrite InA_cons; intuition; try order.
   discriminate.
@@ -315,6 +332,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
 
   Global Instance add_ok s x `(Ok s) : Ok (add x s).
   Proof.
+  intros s x; repeat rewrite <- isok_iff; revert s x.
   simple induction s; simpl.
   intuition.
   intros; elim_compare x a; inv; auto.
@@ -342,6 +360,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
 
   Global Instance remove_ok s x `(Ok s) : Ok (remove x s).
   Proof.
+  intros s x; repeat rewrite <- isok_iff; revert s x.
   induction s; simpl.
   intuition.
   intros; elim_compare x a; inv; auto.
@@ -384,6 +403,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
 
   Global Instance union_ok s s' `(Ok s, Ok s') : Ok (union s s').
   Proof.
+  intros s s'; repeat rewrite <- isok_iff; revert s s'.
   induction2; constructors; try apply @ok; auto.
   apply Inf_eq with x'; auto; apply union_inf; auto; apply Inf_eq with x; auto.
   change (Inf x' (union (x :: l) l')); auto.
@@ -410,6 +430,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
 
   Global Instance inter_ok s s' `(Ok s, Ok s') : Ok (inter s s').
   Proof.
+  intros s s'; repeat rewrite <- isok_iff; revert s s'.
   induction2.
   constructors; auto.
   apply Inf_eq with x'; auto; apply inter_inf; auto; apply Inf_eq with x; auto.
@@ -428,6 +449,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
    forall (s s' : t) (Hs : Ok s) (Hs' : Ok s') (a : elt),
    Inf a s -> Inf a s' -> Inf a (diff s s').
   Proof.
+  intros s s'; repeat rewrite <- isok_iff; revert s s'.
   induction2.
   apply Hrec; trivial.
   apply Inf_lt with x; auto.
@@ -439,7 +461,8 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
 
   Global Instance diff_ok s s' `(Ok s, Ok s') : Ok (diff s s').
   Proof.
-  induction2. constructors; auto.
+  intros s s'; repeat rewrite <- isok_iff; revert s s'.
+  induction2.
   Qed.
 
   Lemma diff_spec :
@@ -524,14 +547,14 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   intuition.
   Qed.
 
-  Lemma elements_spec2 : forall (s : t) (Hs : Ok s), Sort (elements s).
+  Lemma elements_spec2 : forall (s : t) (Hs : Ok s), sort X.lt (elements s).
   Proof.
-  auto.
+  intro s; repeat rewrite <- isok_iff; auto.
   Qed.
 
   Lemma elements_spec2w : forall (s : t) (Hs : Ok s), NoDupA X.eq (elements s).
   Proof.
-  auto.
+  intro s; repeat rewrite <- isok_iff; auto.
   Qed.
 
   Lemma min_elt_spec1 : forall (s : t) (x : elt), min_elt s = Some x -> In x s.
@@ -625,6 +648,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
 
   Global Instance filter_ok s f `(Ok s) : Ok (filter f s).
   Proof.
+  intros s f; repeat rewrite <- isok_iff; revert s f.
   simple induction s; simpl.
   auto.
   intros x l Hrec f Hs; inv.
@@ -679,6 +703,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
    forall (s : t) (f : elt -> bool) (x : elt) (Hs : Ok s),
    Inf x s -> Inf x (fst (partition f s)).
   Proof.
+  intros s f x; repeat rewrite <- isok_iff; revert s f x.
   simple induction s; simpl.
   intuition.
   intros x l Hrec f a Hs Ha; inv.
@@ -692,6 +717,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
    forall (s : t) (f : elt -> bool) (x : elt) (Hs : Ok s),
    Inf x s -> Inf x (snd (partition f s)).
   Proof.
+  intros s f x; repeat rewrite <- isok_iff; revert s f x.
   simple induction s; simpl.
   intuition.
   intros x l Hrec f a Hs Ha; inv.
@@ -703,6 +729,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
 
   Global Instance partition_ok1 s f `(Ok s) : Ok (fst (partition f s)).
   Proof.
+  intros s f; repeat rewrite <- isok_iff; revert s f.
   simple induction s; simpl.
   auto.
   intros x l Hrec f Hs; inv.
@@ -712,6 +739,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
 
   Global Instance partition_ok2 s f `(Ok s) : Ok (snd (partition f s)).
   Proof.
+  intros s f; repeat rewrite <- isok_iff; revert s f.
   simple induction s; simpl.
   auto.
   intros x l Hrec f Hs; inv.
@@ -767,6 +795,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   split.
   intros s (s1 & s2 & B1 & B2 & E1 & E2 & L).
+  repeat rewrite <- isok_iff in *.
   assert (eqlistA X.eq s1 s2).
    apply SortA_equivlistA_eqlistA with (ltA:=X.lt); auto using @ok with *.
    transitivity s; auto. symmetry; auto.
@@ -774,7 +803,9 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   apply (StrictOrder_Irreflexive s2); auto.
   intros s1 s2 s3 (s1' & s2' & B1 & B2 & E1 & E2 & L12)
                   (s2'' & s3' & B2' & B3 & E2' & E3 & L23).
-  exists s1', s3'; do 4 (split; trivial).
+  exists s1', s3'.
+  repeat rewrite <- isok_iff in *.
+  do 4 (split; trivial).
   assert (eqlistA X.eq s2' s2'').
    apply SortA_equivlistA_eqlistA with (ltA:=X.lt); auto using @ok with *.
    transitivity s2; auto. symmetry; auto.
@@ -821,3 +852,48 @@ Module Make (X: OrderedType) <: S with Module E := X.
  Module Raw := MakeRaw X.
  Include Raw2Sets X Raw.
 End Make.
+
+(** For this specific implementation, eq coincides with Leibniz equality *)
+
+Require Eqdep_dec.
+
+Module Type OrderedTypeWithLeibniz.
+  Include OrderedType.
+  Parameter eq_leibniz : forall x y, eq x y -> x = y.
+End OrderedTypeWithLeibniz.
+
+Module Type SWithLeibniz.
+  Declare Module E : OrderedTypeWithLeibniz.
+  Include SetsOn E.
+  Parameter eq_leibniz : forall x y, eq x y -> x = y.
+End SWithLeibniz.
+
+Module MakeWithLeibniz (X: OrderedTypeWithLeibniz) <: SWithLeibniz with Module E := X.
+  Module E := X.
+  Module Raw := MakeRaw X.
+  Include Raw2SetsOn X Raw.
+
+  Lemma eq_leibniz_list : forall xs ys, eqlistA X.eq xs ys -> xs = ys.
+  Proof.
+    induction xs as [|x xs]; intros [|y ys] H; inversion H; [ | ].
+    reflexivity.
+    f_equal.
+    apply X.eq_leibniz; congruence.
+    apply IHxs; subst; assumption.
+  Qed.
+
+  Lemma eq_leibniz : forall s s', eq s s' -> s = s'.
+  Proof.
+    intros [xs Hxs] [ys Hys] Heq.
+    change (equivlistA X.eq xs ys) in Heq.
+    assert (H : eqlistA X.eq xs ys).
+      rewrite <- Raw.isok_iff in Hxs, Hys.
+      apply SortA_equivlistA_eqlistA with X.lt; auto with *.
+    apply eq_leibniz_list in H.
+    subst ys.
+    f_equal.
+    apply Eqdep_dec.eq_proofs_unicity.
+    intros x y; destruct (bool_dec x y); tauto.
+  Qed.
+
+End MakeWithLeibniz.
