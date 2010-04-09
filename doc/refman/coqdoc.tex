@@ -386,10 +386,16 @@ Default behavior is to build an index, for the HTML output only, into
   
   Do not insert links to the \Coq\ standard library.
 
+\item[\texttt{\mm{}external }\textit{url}~\textit{coqdir}] ~\par
+  
+  Use given URL for linking references whose name starts with prefix
+  \textit{coqdir}.
+
 \item[\texttt{\mm{}coqlib }\textit{url}] ~\par
 
   Set base URL for the \Coq\ standard library (default is 
-  \url{http://coq.inria.fr/library/}).
+  \url{http://coq.inria.fr/library/}). This is equivalent to
+  \texttt{\mm{}external }\textit{url}~\texttt{Coq}.
 
 \item[\texttt{-R }\textit{dir }\textit{coqdir}] ~\par
 

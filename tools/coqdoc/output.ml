@@ -115,7 +115,7 @@ let initialize_texmacs () =
       "|-", ensuremath "vdash"
     ] Tokens.empty_ttree
 
-let token_tree_texmacs = lazy (initialize_texmacs ())
+let token_tree_texmacs = ref (initialize_texmacs ())
 
 let initialize_tex_html () =
   let if_utf8 = if !Cdglobals.utf8 then fun x -> Some x else fun _ -> None in
@@ -144,18 +144,18 @@ let initialize_tex_html () =
 	(* "fun", "\\ensuremath{\\lambda}" ? *)
       ] (Tokens.empty_ttree,Tokens.empty_ttree)
 
-let token_tree_latex = lazy (fst (initialize_tex_html ()))
-let token_tree_html = lazy (snd (initialize_tex_html ()))
+let token_tree_latex = ref (fst (initialize_tex_html ()))
+let token_tree_html = ref (snd (initialize_tex_html ()))
 
 let add_printing_token s (t1,t2) =
-  match
-    (match !Cdglobals.target_language with LaTeX -> t1 | HTML -> t2 | _ -> None)
-  with
-  | None -> ()
-  | Some t -> Tokens.token_tree := Tokens.ttree_add !Tokens.token_tree s t
+  (match t1 with None -> () | Some t1 ->
+    token_tree_latex := Tokens.ttree_add !token_tree_latex s t1);
+  (match t2 with None -> () | Some t2 ->
+    token_tree_html := Tokens.ttree_add !token_tree_html s t2)
 
 let remove_printing_token s =
-  Tokens.token_tree := Tokens.ttree_remove !Tokens.token_tree s
+  token_tree_latex := Tokens.ttree_remove !token_tree_latex s;
+  token_tree_html := Tokens.ttree_remove !token_tree_html s
 
 (*s Table of contents *)
 
@@ -342,7 +342,7 @@ module Latex = struct
     Tokens.output_tagged_symbol_char tag c
 
   let initialize () =
-    Tokens.token_tree := Lazy.force token_tree_latex;
+    Tokens.token_tree := token_tree_latex;
     Tokens.outfun := output_sublexer_string
 
   (*s Interpreting ident with fallback on sublexer if unknown ident *)
@@ -602,7 +602,7 @@ module Html = struct
     Tokens.output_tagged_symbol_char tag c
 
   let initialize () =
-    Tokens.token_tree := Lazy.force token_tree_html;
+    Tokens.token_tree := token_tree_html;
     Tokens.outfun := output_sublexer_string
 
   let translate s =
@@ -885,7 +885,7 @@ module TeXmacs = struct
     if !in_doc then Tokens.output_tagged_symbol_char None c else char c
 
   let initialize () =
-    Tokens.token_tree := Lazy.force token_tree_texmacs;
+    Tokens.token_tree := token_tree_texmacs;
     Tokens.outfun := output_sublexer_string
 
   let proofbox () = printf "QED"
@@ -1002,7 +1002,7 @@ module Raw = struct
   let sublexer c l = char c
 
   let initialize () =
-    Tokens.token_tree := Tokens.empty_ttree;
+    Tokens.token_tree := ref Tokens.empty_ttree;
     Tokens.outfun := (fun _ _ _ _ -> failwith "Useless")
 
   let proofbox () = printf "[]"
