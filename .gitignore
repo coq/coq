@@ -48,7 +48,7 @@ dev/ocamlweb-doc/syntax.mli
 ide/config_lexer.ml
 ide/config_parser.ml
 ide/config_parser.mli
-ide/coqLex.ml
+ide/coq_lex.ml
 ide/extract_index.ml
 ide/find_phrase.ml
 ide/highlight.ml
@@ -59,6 +59,7 @@ kernel/byterun/dllcoqrun.so
 kernel/copcodes.ml
 scripts/tolink.ml
 states/initial.coq
+test-suite/lia.cache
 theories/Numbers/Natural/BigN/NMake_gen.v
 tools/coqdep_lexer.ml
 tools/coqdoc/cpretty.ml
