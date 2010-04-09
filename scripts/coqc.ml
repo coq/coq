@@ -126,8 +126,8 @@ let parse_args () =
         parse (cfiles,args) rem
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
-    | ("-I"|"-include"|"-outputstate"
-      |"-inputstate"|"-is"|"-load-vernac-source"|"-l"|"-load-vernac-object"
+    | ("-outputstate"|"-inputstate"|"-is"
+      |"-load-vernac-source"|"-l"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"|"-user"
       |"-init-file" | "-dump-glob" | "-coqlib" as o) :: rem ->
 	begin
@@ -135,7 +135,17 @@ let parse_args () =
 	    | s :: rem' -> parse (cfiles,s::o::args) rem'
 	    | []        -> usage ()
 	end
-    | "-R" as o :: s :: t :: rem -> parse (cfiles,t::s::o::args) rem
+    | ("-I"|"-include" as o) :: rem ->
+	begin
+	  match rem with
+	  | s :: "-as" :: t :: rem' -> parse (cfiles,t::"-as"::s::o::args) rem'
+	  | s :: "-as" :: [] -> usage ()
+	  | s :: rem' -> parse (cfiles,s::o::args) rem'
+	  | []        -> usage ()
+	end
+    | "-R" :: s :: "-as" :: t :: rem ->	parse (cfiles,t::"-as"::s::"-R"::args) rem
+    | "-R" :: s :: "-as" :: [] -> usage ()
+    | "-R" :: s :: t :: rem -> parse (cfiles,t::s::"-R"::args) rem
 
     | ("-notactics"|"-debug"|"-nolib"
       |"-debugVM"|"-alltransp"|"-VMno"
