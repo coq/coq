@@ -74,7 +74,7 @@ let ttree_find ttree str =
 
 type out_function = bool -> bool -> Index.index_entry option -> string -> unit
 
-let token_tree = ref empty_ttree
+let token_tree = ref (ref empty_ttree)
 let outfun = ref (fun _ _ _ _ -> failwith "outfun not initialized")
 
 (*s Translation automaton *)
@@ -142,7 +142,7 @@ let buffer_char is_symbolchar ctag c =
 	end
 
   and restart_buffering () =
-    let tt = try ttree_descend !token_tree c with Not_found -> empty_ttree in
+    let tt = try ttree_descend !(!token_tree) c with Not_found -> empty_ttree in
     Buffer.add_char buff c;
     Buffering (is_symbolchar,ctag,"",tt)
 
@@ -168,4 +168,4 @@ let flush_sublexer () =
 
 (* Translation not using the automaton *)
 let translate s =
-  try (ttree_find !token_tree s).node with Not_found -> None
+  try (ttree_find !(!token_tree) s).node with Not_found -> None

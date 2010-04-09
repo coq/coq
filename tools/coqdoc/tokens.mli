@@ -65,7 +65,7 @@ type out_function =
   string -> unit
 
 (* This must be initialized before calling the sublexer *)
-val token_tree : ttree ref
+val token_tree : ttree ref ref
 val outfun : out_function ref
 
 (* Process an ident part that might be a symbol part *)
