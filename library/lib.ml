@@ -111,12 +111,16 @@ let sections_are_opened () =
 
 let cwd () = fst !path_prefix
 
+let cwd_except_section () =
+  Libnames.pop_dirpath_n (sections_depth ()) (cwd ())
+
 let current_dirpath sec =
   Libnames.drop_dirpath_prefix (library_dp ())
-    (if sec then cwd ()
-      else Libnames.pop_dirpath_n (sections_depth ()) (cwd ()))
+    (if sec then cwd () else cwd_except_section ())
 
 let make_path id = Libnames.make_path (cwd ()) id
+
+let make_path_except_section id = Libnames.make_path (cwd_except_section ()) id
 
 let path_of_include () =
   let dir = Names.repr_dirpath (cwd ()) in

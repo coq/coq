@@ -185,19 +185,16 @@ let save_named opacity =
 
 let default_thm_id = id_of_string "Unnamed_thm"
 
-let compute_proof_name = function
+let compute_proof_name locality = function
   | Some (loc,id) ->
       (* We check existence here: it's a bit late at Qed time *)
-      if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
+      if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
+	 locality=Global && Nametab.exists_cci (Lib.make_path_except_section id)
+      then
         user_err_loc (loc,"",pr_id id ++ str " already exists.");
       id
   | None ->
-      let rec next avoid id =
-        let id = next_global_ident_away id avoid in
-        if Nametab.exists_cci (Lib.make_path id) then next (id::avoid) id
-        else id
-      in
-      next (Pfedit.get_all_proof_names ()) default_thm_id
+      next_global_ident_away default_thm_id (Pfedit.get_all_proof_names ()) 
 
 let save_remaining_recthms (local,kind) body opaq i (id,(t_i,(_,imps))) =
   match body with
@@ -318,7 +315,7 @@ let start_proof_com kind thms hook =
     let t', imps' = interp_type_evars_impls ~evdref env t in
     Sign.iter_rel_context (check_evars env Evd.empty !evdref) ctx;
     let len = List.length ctx in
-      (compute_proof_name sopt,
+      (compute_proof_name (fst kind) sopt,
       (nf_isevar !evdref (it_mkProd_or_LetIn t' ctx),
        (len, imps @ lift_implicits len imps'),
        guard)))

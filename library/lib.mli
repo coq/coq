@@ -79,8 +79,10 @@ val contents_after : Libnames.object_name option -> library_segment
 
 (* User-side names *)
 val cwd : unit -> Names.dir_path
-val current_dirpath : bool -> Names.dir_path
+val cwd_except_section : unit -> Names.dir_path
+val current_dirpath : bool -> Names.dir_path (* false = except sections *)
 val make_path : Names.identifier -> Libnames.full_path
+val make_path_except_section : Names.identifier -> Libnames.full_path
 val path_of_include : unit -> Libnames.full_path
 
 (* Kernel-side names *)
