@@ -4,3 +4,5 @@ R x x
      : Prop
 fun (x : foo) (n : nat) => x n
      : foo -> nat -> nat
+"1" 0
+     : PAIR

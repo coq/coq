@@ -387,7 +387,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
   try
     if !Flags.raw_print or !print_no_symbol then raise No_match;
     let (na,sc,p) = uninterp_prim_token_cases_pattern pat in
-    match availability_of_prim_token sc scopes with
+    match availability_of_prim_token p sc scopes with
     | None -> raise No_match
     | Some key ->
       let loc = cases_pattern_loc pat in
@@ -604,7 +604,7 @@ let rec rename_rawconstr_var id0 id1 = function
 let extern_possible_prim_token scopes r =
   try
     let (sc,n) = uninterp_prim_token r in
-    match availability_of_prim_token sc scopes with
+    match availability_of_prim_token n sc scopes with
     | None -> None
     | Some key -> Some (insert_delimiters (CPrim (loc_of_rawconstr r,n)) key)
   with No_match ->
