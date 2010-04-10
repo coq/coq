@@ -489,7 +489,7 @@ left; auto.
 destruct IHl.
 left; auto.
 right; intro; inv; contradiction.
-Qed.
+Defined.
 
 Fixpoint removeA (x : A) (l : list A) : list A :=
   match l with
