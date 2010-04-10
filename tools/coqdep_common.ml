@@ -84,7 +84,9 @@ let safe_hash_add clq q (k,v) =
           (k1,l1)::cltl when k=k1 -> (k1,v::l1)::cltl
         | cl::cltl -> cl::add_clash cltl
         | [] -> [(k,[v;v2])] in
-      clq := add_clash !clq
+      clq := add_clash !clq;
+      (* overwrite previous bindings, as coqc does *)
+      Hashtbl.add q k v
   with Not_found -> Hashtbl.add q k v
 
 (** Files found in the loadpaths.
@@ -114,18 +116,18 @@ let coqlibKnown = (Hashtbl.create 19 : (string list, unit) Hashtbl.t)
 let clash_v = ref ([]: (string list * string list) list)
 
 let warning_module_notfound f s =
-  eprintf "*** Warning : in file %s, library " f;
-  eprintf "%s.v is required and has not been found in loadpath !\n"
+  eprintf "*** Warning: in file %s, library " f;
+  eprintf "%s.v is required and has not been found in loadpath!\n"
     (String.concat "." s);
   flush stderr
 
 let warning_notfound f s =
-  eprintf "*** Warning : in file %s, the file " f;
+  eprintf "*** Warning: in file %s, the file " f;
   eprintf "%s.v is required and has not been found !\n" s;
   flush stderr
 
 let warning_declare f s =
-  eprintf "*** Warning : in file %s, Declared ML Module " f;
+  eprintf "*** Warning: in file %s, declared ML module " f;
   eprintf "%s has not been found !\n" s;
   flush stderr
 
@@ -137,10 +139,10 @@ let warning_clash file dir =
       let d2 = Filename.dirname f2 in
       let dl = List.map Filename.dirname (List.rev fl) in
       eprintf
-        "*** Warning : in file %s, \n    required library %s is ambiguous!\n    (found %s.v in "
+        "*** Warning: in file %s, \n    required library %s is ambiguous!\n    (found %s.v in "
         file (String.concat "." dir) f;
       List.iter (fun s -> eprintf "%s, " s) dl;
-      eprintf "%s and %s)\n" d2 d1
+      eprintf "%s and %s; used the latter)\n" d2 d1
   | _ -> assert false
 
 let safe_assoc verbose file k =
@@ -238,29 +240,42 @@ let traite_fichier_mllib md ext =
     (!a_faire, !a_faire_opt)
   with Sys_error _ -> ("","")
 
-let escape escaped_chars s =
-  let n = ref 0 in
+(* Makefile's escaping rules are awful: $ is escaped by doubling and
+   other special characters are escaped by backslash prefixing while
+   backslashes themselves must be escaped only if part of a sequence
+   followed by a special character (i.e. in case of ambiguity with a
+   use of it as escaping character).  Moreover (even if not crucial)
+   it is apparently not possible to directly escape ';' and leading '\t'. *)
+
+let escape =
+  let s' = Buffer.create 10 in
+  fun s ->
+    Buffer.clear s';
     for i = 0 to String.length s - 1 do
-      n := !n +
-        (if List.mem s.[i] escaped_chars then 2 else 1)
+      let c = s.[i] in
+      if c = ' ' or c = '#' or c = ':' (* separators and comments *)
+	or c = '%' (* pattern *)
+	or c = '?' or c = '[' or c = ']' or c = '*' (* expansion in filenames *)
+	or i=0 && c = '~' && (String.length s = 1 || s.[1] = '/' || 
+	    'A' <= s.[1] && s.[1] <= 'Z' || 
+	    'a' <= s.[1] && s.[1] <= 'z') (* homedir expansion *)
+      then begin
+	let j = ref (i-1) in
+	while !j >= 0 && s.[!j] = '\\' do 
+	  Buffer.add_char s' '\\'; decr j (* escape all preceding '\' *)
+	done;
+	Buffer.add_char s' '\\';
+      end;
+      if c = '$' then Buffer.add_char s' '$';
+      Buffer.add_char s' c
     done;
-    if !n = String.length s then s else 
-      begin
-	let s' = String.create !n in
-          n := 0;
-          for i = 0 to String.length s - 1 do
-            if List.mem s.[i] escaped_chars then begin s'.[!n] <- '\\'; incr n end;
-	    s'.[!n] <- s.[i];
-            incr n
-          done;
-          s'
-      end
+    Buffer.contents s'
 
 let canonize f =
   let f' = absolute_dir (Filename.dirname f) // Filename.basename f in
   match List.filter (fun (_,full) -> f' = full) !vAccu with
-    | (f,_) :: _ -> escape ['#'] f
-    | _ -> escape ['#'] f
+    | (f,_) :: _ -> escape f
+    | _ -> escape f
 
 let traite_fichier_Coq verbose f =
   try
@@ -298,7 +313,7 @@ let traite_fichier_Coq verbose f =
 	      let declare suff dir s =
 		let base = file_name s dir in
 		let opt = if !option_natdynlk then " "^base^".cmxs" else "" in
-		printf " %s%s%s" base suff opt
+		printf " %s%s%s" (escape base) suff opt
 	      in
 	      let decl str =
                 let s = basename_noext str in
@@ -336,42 +351,50 @@ let mL_dependencies () =
 	 | None -> ""
 	 | Some mldir -> " "^(file_name name mldir)^".cmi"
        in
-       printf "%s.cmo:%s%s\n" fullname dep intf;
-       printf "%s.cmx:%s%s\n" fullname dep_opt intf;
+       let efullname = escape fullname in
+       printf "%s.cmo:%s%s\n" efullname dep intf;
+       printf "%s.cmx:%s%s\n" efullname dep_opt intf;
        flush stdout)
     (List.rev !mlAccu);
   List.iter
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
        let (dep,_) = traite_fichier_ML fullname ".mli" in
-       printf "%s.cmi:%s\n" fullname dep;
+       printf "%s.cmi:%s\n" (escape fullname) dep;
        flush stdout)
     (List.rev !mliAccu);
   List.iter
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
        let (dep,dep_opt) = traite_fichier_mllib fullname ".mllib" in
-       printf "%s.cma:%s\n" fullname dep;
-       printf "%s.cmxa %s.cmxs:%s\n" fullname fullname dep_opt;
+       let efullname = escape fullname in
+       printf "%s.cma:%s\n" efullname dep;
+       printf "%s.cmxa %s.cmxs:%s\n" efullname efullname dep_opt;
        flush stdout)
     (List.rev !mllibAccu)
 
 let coq_dependencies () =
   List.iter
     (fun (name,_) ->
-       let glob = if !option_noglob then "" else " "^name^".glob" in
-       printf "%s%s%s: %s.v" name !suffixe glob name;
+       let ename = escape name in
+       let glob = if !option_noglob then "" else " "^ename^".glob" in
+       printf "%s%s%s: %s.v" ename !suffixe glob ename;
        traite_fichier_Coq true (name ^ ".v");
        printf "\n";
        flush stdout)
     (List.rev !vAccu)
+
+let rec suffixes = function
+  | [] -> assert false
+  | [name] -> [[name]]
+  | dir::suffix as l -> l::suffixes suffix
 
 let add_known phys_dir log_dir f =
   match get_extension f [".v";".ml";".mli";".ml4";".mllib"] with
     | (basename,".v") ->
 	let name = log_dir@[basename] in
 	let file = phys_dir//basename in
-	let paths = [name;[basename]] in
+	let paths = suffixes name in
 	List.iter
 	  (fun n -> safe_hash_add clash_v vKnown (n,file)) paths
     | (basename,(".ml"|".ml4")) -> add_ml_known basename (Some phys_dir)
