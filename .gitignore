@@ -35,6 +35,7 @@
 *.v.pdf
 *.v.ps
 *.v.html
+*.stamp
 revision
 TAGS
 .DS_Store
@@ -50,6 +51,7 @@ kernel/byterun/dllcoqrun.so
 states/initial.coq
 coqdoc.sty
 test-suite/lia.cache
+test-suite/trace
 
 # documentation
 
