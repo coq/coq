@@ -825,6 +825,11 @@ Section Map.
     rewrite IHl; auto.
   Qed.
 
+  Lemma map_eq_nil : forall l, map l = [] -> l = [].
+  Proof.
+    destruct l; simpl; reflexivity || discriminate.
+  Qed.
+
   (** [flat_map] *)
 
   Definition flat_map (f:A -> list B) :=
