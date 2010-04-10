@@ -729,8 +729,7 @@ let locate_if_isevar loc na = function
 let check_hidden_implicit_parameters id (_,_,_,(indnames,_)) =
   if List.mem id indnames then
     errorlabstrm "" (strbrk "A parameter or name of an inductive type " ++
-    pr_id id ++ strbrk " must not be used as a bound variable in the type \
-of its constructor.")
+    pr_id id ++ strbrk " is not allowed to be used as a bound variable in the type of its constructor.")
 
 let push_name_env ?(fail_anonymous=false) lvar (ids,unb,tmpsc,scopes as env) = function
   | Anonymous -> 
@@ -1061,15 +1060,17 @@ let internalise sigma globalenv env allow_patvar lvar c =
     | CLetTuple (loc, nal, (na,po), b, c) ->
 	let env' = reset_tmp_scope env in
         let ((b',(na',_)),ids) = intern_case_item env' (b,(na,None)) in
-        let env'' = List.fold_left (push_name_env lvar) env ids in
-        let p' = Option.map (intern_type env'') po in
+        let p' = Option.map (fun p ->
+          let env'' = List.fold_left (push_name_env lvar) env ids in
+	  intern_type env'' p) po in
         RLetTuple (loc, nal, (na', p'), b',
                    intern (List.fold_left (push_name_env lvar) env nal) c)
     | CIf (loc, c, (na,po), b1, b2) ->
 	let env' = reset_tmp_scope env in
         let ((c',(na',_)),ids) = intern_case_item env' (c,(na,None)) in
-        let env'' = List.fold_left (push_name_env lvar) env ids in
-        let p' = Option.map (intern_type env'') po in
+        let p' = Option.map (fun p ->
+          let env'' = List.fold_left (push_name_env lvar) env ids in
+	  intern_type env'' p) po in
         RIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole (loc, k) -> 
 	RHole (loc, match k with Some k -> k | None -> Evd.QuestionMark (Evd.Define true))
