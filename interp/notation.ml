@@ -190,14 +190,14 @@ let prim_token_key_table = Hashtbl.create 7
 
 
 let make_gr = function
-  | ConstRef con -> 
+  | ConstRef con ->
       ConstRef(constant_of_kn(canonical_con con))
   | IndRef (kn,i) ->
       IndRef(mind_of_kn(canonical_mind kn),i)
   | ConstructRef ((kn,i),j )->
       ConstructRef((mind_of_kn(canonical_mind kn),i),j)
   | VarRef id ->  VarRef id
-      
+
 let rawconstr_key = function
   | RApp (_,RRef (_,ref),_) -> RefKey (make_gr ref)
   | RRef (_,ref) -> RefKey (make_gr ref)
@@ -409,8 +409,10 @@ let uninterp_prim_token_cases_pattern c =
       | Some n -> (na,sc,n)
   with Not_found -> raise No_match
 
-let availability_of_prim_token printer_scope local_scopes =
-  let f scope = Hashtbl.mem prim_token_interpreter_tab scope in
+let availability_of_prim_token n printer_scope local_scopes =
+  let f scope =
+    try ignore (Hashtbl.find prim_token_interpreter_tab scope dummy_loc n); true
+    with Not_found -> false in
   let scopes = make_current_scopes local_scopes in
   Option.map snd (find_without_delimiters f (Some printer_scope,None) scopes)
 

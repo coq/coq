@@ -98,7 +98,7 @@ val uninterp_prim_token_cases_pattern :
   cases_pattern -> name * scope_name * prim_token
 
 val availability_of_prim_token :
-  scope_name -> local_scopes -> delimiters option option
+  prim_token -> scope_name -> local_scopes -> delimiters option option
 
 (*s Declare and interpret back and forth a notation *)
 
