@@ -358,10 +358,12 @@ validate:: $(BESTCHICKEN) $(ALLVO)
 	$(SHOW)'COQCHK <theories & plugins>'
 	$(HIDE)$(BESTCHICKEN) -boot $(VALIDOPTS) $(ALLMODS)
 
+MAKE_TSOPTS=-C test-suite -s BEST=$(BEST) VERBOSE=$(VERBOSE)
+
 check:: world
-	cd test-suite; \
-	env COQBIN=../bin COQLIB=.. ./check -$(BEST) | tee check.log
-	if grep -F 'Error!' test-suite/check.log ; then false; fi
+	$(MAKE) $(MAKE_TSOPTS) clean
+	$(MAKE) $(MAKE_TSOPTS) all
+	$(HIDE)if grep -F 'Error!' test-suite/summary.log ; then false; fi
 
 ##################################################################
 # partial targets: 1) core ML parts
