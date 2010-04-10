@@ -60,7 +60,9 @@ let safe_hash_add clq q (k,v) =
           (k1,l1)::cltl when k=k1 -> (k1,v::l1)::cltl
         | cl::cltl -> cl::add_clash cltl
         | [] -> [(k,[v;v2])] in
-      clq := add_clash !clq
+      clq := add_clash !clq;
+      (* overwrite previous bindings, as coqc does *)
+      Hashtbl.add q k v
   with Not_found -> Hashtbl.add q k v
 
 (* Files found in the loadpaths *)
@@ -166,6 +168,37 @@ let cut_prefix p s =
   let lp = String.length p in
   let ls = String.length s in
   if ls >= lp && String.sub s 0 lp = p then String.sub s lp (ls - lp) else s
+
+(* Makefile's escaping rules are awful: $ is escaped by doubling and
+   other special characters are escaped by backslash prefixing while
+   backslashes themselves must be escaped only if part of a sequence
+   followed by a special character (i.e. in case of ambiguity with a
+   use of it as escaping character).  Moreover (even if not crucial)
+   it is apparently not possible to directly escape ';' and leading '\t'. *)
+
+let escape =
+  let s' = Buffer.create 10 in
+  fun s ->
+    Buffer.clear s';
+    for i = 0 to String.length s - 1 do
+      let c = s.[i] in
+      if c = ' ' or c = '#' or c = ':' (* separators and comments *)
+	or c = '%' (* pattern *)
+	or c = '?' or c = '[' or c = ']' or c = '*' (* expansion in filenames *)
+	or i=0 && c = '~' && (String.length s = 1 || s.[1] = '/' || 
+	    'A' <= s.[1] && s.[1] <= 'Z' || 
+	    'a' <= s.[1] && s.[1] <= 'z') (* homedir expansion *)
+      then begin
+	let j = ref (i-1) in
+	while !j >= 0 && s.[!j] = '\\' do 
+	  Buffer.add_char s' '\\'; decr j (* escape all preceding '\' *)
+	done;
+	Buffer.add_char s' '\\';
+      end;
+      if c = '$' then Buffer.add_char s' '$';
+      Buffer.add_char s' c
+    done;
+    Buffer.contents s'
 
 let canonize f =
   let f' = absolute_dir (Filename.dirname f) // Filename.basename f in
@@ -423,6 +456,11 @@ let add_coqlib_known phys_dir log_dir f =
     Hashtbl.add coqlibKnown [basename] ();
     Hashtbl.add coqlibKnown name ()
 
+let rec suffixes = function
+  | [] -> assert false
+  | [name] -> [[name]]
+  | dir::suffix as l -> l::suffixes suffix
+
 let add_known phys_dir log_dir f = 
   if (Filename.check_suffix f ".ml" ||  Filename.check_suffix f ".mli" || Filename.check_suffix f ".ml4")  then
     let basename = make_ml_module_name f in
@@ -431,7 +469,7 @@ let add_known phys_dir log_dir f =
     let basename = Filename.chop_suffix f ".v" in
     let name = log_dir@[basename] in
     let file = phys_dir//basename in
-    let paths = [name;[basename]] in
+    let paths = suffixes name in
     List.iter
       (fun n -> safe_hash_add clash_v vKnown (n,file)) paths
 
