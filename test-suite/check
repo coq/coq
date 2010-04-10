@@ -135,7 +135,7 @@ test_bugs () {
 
     echo "Testing opened bugs..."
     # We first test opened bugs that should not succeed
-    files=`/bin/ls -1 $1/opened/shoulnotsucceed/*.v 2> /dev/null`
+    files=`/bin/ls -1 $1/opened/shouldnotsucceed/*.v 2> /dev/null`
     for f in $files; do 
 	nbtests=`expr $nbtests + 1`
 	printf "    "$f"..."
@@ -276,8 +276,8 @@ echo "Module tests"
 $coqtop -compile modules/Nat
 $coqtop -compile modules/plik
 test_success modules "-I modules -impredicative-set"
-#echo "Ideal-features tests"
-#test_features ideal-features
+echo "Ideal-features tests"
+test_features ideal-features
 
 pourcentage=`expr 100 \* $nbtestsok / $nbtests`
 echo
