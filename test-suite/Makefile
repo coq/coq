@@ -90,7 +90,7 @@ bugs: $(BUGS)
 
 clean:
 	rm -f trace lia.cache
-	$(SHOW) "RM      <**/*.stamp> <**/*.vo> <**/*.log>"
+	$(SHOW) "RM        <**/*.stamp> <**/*.vo> <**/*.log>"
 	$(HIDE)find . \( \
 	  -name '*.stamp' -o -name '*.vo' -o -name '*.log' \
 	\) -print0 | xargs -0 rm -f
@@ -128,8 +128,8 @@ summary:
 	  $(call summary_dir, "Complexity tests", complexity); \
 	  $(call summary_dir, "Module tests", modules); \
 	  $(call summary_dir, "Ideal-features tests", ideal-features); \
-	  nb_success=`find $(2) -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
-	  nb_failure=`find $(2) -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
+	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
+	  nb_failure=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
 	  nb_tests=`expr $$nb_success + $$nb_failure`; \
 	  pourcentage=`expr 100 \* $$nb_success / $$nb_tests`; \
 	  echo; \
@@ -154,7 +154,7 @@ summary.log:
 # at the time of writing this Makefile, but the possibility was in the
 # original shellscript... so left it here, but untested)
 $(addsuffix .log,$(wildcard bugs/opened/shouldnotsucceed/*.v)): %.v.log: %.v
-	@echo "TEST    $<"
+	@echo "TEST      $<"
 	$(HIDE){ \
 	  $(call test_intro,$<); \
 	  $(command) "$<" 2>&1; R=$$?; times; \
@@ -169,7 +169,7 @@ $(addsuffix .log,$(wildcard bugs/opened/shouldnotsucceed/*.v)): %.v.log: %.v
 
 # Opened bugs that should not fail
 $(addsuffix .log,$(wildcard bugs/opened/shouldnotfail/*.v)): %.v.log: %.v
-	@echo "TEST    $<"
+	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  $(command) "$<" 2>&1; R=$$?; times; \
@@ -184,7 +184,7 @@ $(addsuffix .log,$(wildcard bugs/opened/shouldnotfail/*.v)): %.v.log: %.v
 
 # Closed bugs that should succeed
 $(addsuffix .log,$(wildcard bugs/closed/shouldsucceed/*.v)): %.v.log: %.v
-	@echo "TEST    $<"
+	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  $(command) "$<" 2>&1; R=$$?; times; \
@@ -199,7 +199,7 @@ $(addsuffix .log,$(wildcard bugs/closed/shouldsucceed/*.v)): %.v.log: %.v
 
 # Closed bugs that should fail
 $(addsuffix .log,$(wildcard bugs/closed/shouldfail/*.v)): %.v.log: %.v
-	@echo "TEST    $<"
+	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  $(command) "$<" 2>&1; R=$$?; times; \
@@ -217,7 +217,7 @@ $(addsuffix .log,$(wildcard bugs/closed/shouldfail/*.v)): %.v.log: %.v
 #######################################################################
 
 $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
-	@echo "TEST    $<"
+	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  $(coqc) "$*" 2>&1; R=$$?; times; \
@@ -231,7 +231,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	} > "$@"
 
 $(addsuffix .log,$(wildcard success/*.v micromega/*.v modules/*.v)): %.v.log: %.v
-	@echo "TEST    $<"
+	@echo "TEST      $<"
 	$(HIDE){ \
 	  opts="$(if $(findstring modules/,$<),-I modules -impredicative-set)"; \
 	  echo $(call log_intro,$<); \
@@ -246,7 +246,7 @@ $(addsuffix .log,$(wildcard success/*.v micromega/*.v modules/*.v)): %.v.log: %.
 	} > "$@"
 
 $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v
-	@echo "TEST    $<"
+	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  $(command) "$<" 2>&1; R=$$?; times; \
@@ -260,7 +260,7 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v
 	} > "$@"
 
 $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v
-	@echo "TEST    $<"
+	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
@@ -280,7 +280,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v
 	} > "$@"
 
 $(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v
-	@echo "TEST    $<"
+	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  $(coqtop) < "$<" 2>&1; R=$$?; times; \
@@ -298,7 +298,7 @@ $(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v
 # time is a 6120 bogomips cpu.
 ifneq (,$(bogomips))
 $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v
-	@echo "TEST    $<"
+	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  true "extract effective user time"; \
@@ -329,7 +329,7 @@ endif
 
 # Ideal-features tests
 $(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v
-	@echo "TEST    $<"
+	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  $(command) "$<" 2>&1; R=$$?; times; \
@@ -354,7 +354,7 @@ $(addsuffix .log,$(wildcard modules/*.v)): %.v.log: modules/Nat.vo modules/plik.
 # Test xml compilation
 xml: xml.log
 xml.log:
-	@echo "TEST    xml"
+	@echo "TEST      xml"
 	$(HIDE){ \
 	  echo $(call log_intro,xml); \
 	  COQ_XML_LIBRARY_ROOT=misc/xml \
