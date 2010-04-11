@@ -358,6 +358,32 @@ intro x;
 apply x.
 Qed.
 
+(* The following worked in 8.2 but was not accepted from r12229 to
+   r12926 because "simple apply" started to use pattern unification of
+   evars. Evars pattern unification for simple (e)apply was disabled
+   in 12927 but "simple eapply" below worked from 12898 to 12926
+   because pattern-unification also started supporting abstraction
+   over Metas. However it did not find the "simple" solution and hence
+   the subsequent "assumption" failed. *)
+
+Goal exists f:nat->nat, forall x y, x = y -> f x = f y.
+intros; eexists; intros.
+simple eapply (@f_equal nat).
+assumption.
+Existential 1 := fun x => x.
+Qed.
+
+(* The following worked in 8.2 but was not accepted from r12229 to
+   r12897 for the same reason because eauto uses "simple apply". It
+   worked from 12898 to 12926 because eauto uses eassumption and not
+   assumption. *)
+
+Goal exists f:nat->nat, forall x y, x = y -> f x = f y.
+intros; eexists; intros.
+eauto.
+Existential 1 := fun x => x.
+Qed.
+
 (* The following was accepted before r12612 but is still not accepted in r12658
 
 Goal forall x : { x:nat | x = 0}, proj1_sig x = 0.
