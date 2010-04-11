@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 ##################################
 #
@@ -69,8 +69,6 @@ usage () {
     printf "\tSpecifies whether or not to compile Coqide\n"
     echo "-uim-script-path"
     printf "\tSpecifies where uim's .scm files are installed\n"
-    echo "-csdpdir <dir>"
-    printf "\tSpecifies the path of the CSDP solver intallation\n"
     echo "-browser <command>"
     printf "\tUse <command> to open URL %%s\n"
     echo "-with-doc (yes|no)"
@@ -118,8 +116,6 @@ natdynlink=yes
 gcc_exec=gcc
 ar_exec=ar
 ranlib_exec=ranlib
-
-csdpexec=
 
 local=false
 coqrunbyteflags_spec=no
@@ -217,9 +213,6 @@ while : ; do
 			  *) COQIDE=no
 		      esac
 		      shift;;
-    -csdpdir|--csdpdir)
-	                csdpdir="$2"
-			shift;;
     -browser|--browser) browser_spec=yes
 		      BROWSER=$2
 		      shift;;
@@ -660,51 +653,6 @@ if which uim-fep; then
     done
 fi
 
-# Borcher's C library for semidefinite programming (CSDP) is required for the
-# micromega plugin to be fully functional.
-#
-# We test for its presence; when not found we
-# - fail if the path was explicitely provided via the "-csdpdir" option,
-# - issue a warning else.
-
-if [ "$csdpdir" != "" ]; then
-    if [ ! -f "$csdpdir/csdp" ]; then
-	echo "Cannot find the csdp binary in $csdpdir ($csdpdir/csdp not found)."
-	echo "Configuration script failed!"
-	exit 1
-    else
-      if [ ! -x "$csdpdir/csdp" ]; then
-          echo "The csdp binary in $csdpdir is not executable: check your permissions."
-          echo "Configuration script failed!"
-          exit 1
-      fi
-    fi
-    USE_CSDP="yes"
-    CSDP=$csdpdir/csdp
-else
-    CSDP=`which csdp`
-    if [ ! -f "$CSDP" ]; then
-      echo "*Warning* Cannot find the csdp executable. Have you installed it?"
-      echo "          CSDP can be found pre-packaged as part of your software distribution,"
-      echo "          or at https://projects.coin-or.org/csdp."
-      USE_CSDP="no"
-    else
-      if [ ! -x "$CSDP" ]; then
-          echo "*Warning* The csdp binary at $CSDP is not executable: check your permissions."
-          USE_CSDP="noexec"
-      else
-          USE_CSDP="yes"
-      fi
-    fi
-fi
-
-# Finally, set the ML configuration variable to reflect the state of the CSDP
-# installation.
-case $USE_CSDP in
-  yes)          csdpexec="Some \"$CSDP\"";;
-  no|noexec)    csdpexec="None";;
-esac
-
 # strip command
 
 case $ARCH in
@@ -919,13 +867,6 @@ else
 echo "  Documentation                     : None"
 fi
 echo "  CoqIde                            : $COQIDE"
-if test "$USE_CSDP" = "yes"; then
-echo "  CSDP for Micromega                : $CSDP"
-else if test "$USE_CSDP" = "no"; then
-echo "  CSDP for Micromega                : None"
-else if test "$USE_CSDP" = "noexec"; then
-echo "  CSDP for Micromega                : $CSDP found, but is not executable"
-fi fi fi
 echo "  Web browser                       : $BROWSER"
 echo "  Coq web site                      : $WWWCOQ"
 echo ""
@@ -1069,7 +1010,6 @@ let vo_magic_number = $VOMAGIC
 let state_magic_number = $STATEMAGIC
 let exec_extension = "$EXE"
 let with_geoproof = ref $with_geoproof
-let csdp = $csdpexec
 let browser = "$BROWSER"
 let wwwcoq = "$WWWCOQ"
 let wwwrefman = wwwcoq ^ "distrib/" ^ version ^ "/refman/"

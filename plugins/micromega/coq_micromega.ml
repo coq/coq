@@ -1465,12 +1465,15 @@ let csdp_cache = "csdp.cache"
   * Throw CsdpNotFound if a Coq isn't aware of any csdp executable.
   *)
 
+let require_csdp =
+  match System.search_exe_in_path "csdp" with
+    | Some _ -> lazy ()
+    | _ -> lazy (raise CsdpNotFound)
+
 let really_call_csdpcert : provername -> micromega_polys -> Sos_types.positivstellensatz option  =
   fun provername poly ->
 
-  match Coq_config.csdp with
-    | None -> raise CsdpNotFound (* caugth in micromega_gen *)
-    | Some _ -> () ;
+  Lazy.force require_csdp;
 
   let cmdname =
     List.fold_left Filename.concat (Envars.coqlib ())

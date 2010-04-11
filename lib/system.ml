@@ -284,6 +284,26 @@ let run_command converter f c =
   done;
   (Unix.close_process_full (cin,cout,cerr),  Buffer.contents result)
 
+let path_separator = if Sys.os_type = "Unix" then ':' else ';'
+
+let search_exe_in_path exe =
+  try
+    let path = Sys.getenv "PATH" in
+    let n = String.length path in
+    let rec aux i =
+      if i < n then
+        let j =
+          try String.index_from path i path_separator
+          with Not_found -> n
+        in
+        let dir = String.sub path i (j-i) in
+        let exe = Filename.concat dir exe in
+        if Sys.file_exists exe then Some exe else aux (i+1)
+      else
+        None
+    in aux 0
+  with Not_found -> None
+
 (* Time stamps. *)
 
 type time = float * float * float
