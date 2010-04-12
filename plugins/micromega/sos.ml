@@ -582,30 +582,7 @@ printlevel=1
 let csdp_params = csdp_default_parameters;;
 
 (* ------------------------------------------------------------------------- *)
-(* Now call SDPA on a problem and parse back the output.                     *)
-(* ------------------------------------------------------------------------- *)
-
-let run_sdpa dbg obj mats =
-  let input_file = Filename.temp_file "sos" ".dat-s" in
-  let output_file =
-    String.sub input_file 0 (String.length input_file - 6) ^ ".out"
-  and params_file = Filename.concat (!temp_path) "param.sdpa" in
-  file_of_string input_file (sdpa_of_problem "" obj mats);
-  file_of_string params_file sdpa_params;
-  ignore (Sys.command("cd "^ !temp_path ^
-              "; sdpa "^input_file ^ " " ^ output_file ^
-              (if dbg then "" else "> /dev/null")));
-  let op = string_of_file output_file in
-  if not(sdpa_run_succeeded op) then failwith "sdpa: call failed" else
-  let res = parse_sdpaoutput op in
-  ((if dbg then ()
-   else (Sys.remove input_file; Sys.remove output_file));
-   res);;
-
-let sdpa obj mats = run_sdpa (!debugging) obj mats;;
-
-(* ------------------------------------------------------------------------- *)
-(* The same thing with CSDP.                                                 *)
+(* Now call CSDP on a problem and parse back the output.                     *)
 (* ------------------------------------------------------------------------- *)
 
 let run_csdp dbg obj mats =
@@ -1444,24 +1421,6 @@ let sdpa_of_problem comment obj mats =
   sdpa_of_vector obj ^
   itlist2 (fun k m a -> sdpa_of_matrix (k - 1) m ^ a)
           (1--length mats) mats "";;
-
-let run_sdpa dbg obj mats =
-  let input_file = Filename.temp_file "sos" ".dat-s" in
-  let output_file =
-    String.sub input_file 0 (String.length input_file - 6) ^ ".out"
-  and params_file = Filename.concat (!temp_path) "param.sdpa" in
-  file_of_string input_file (sdpa_of_problem "" obj mats);
-  file_of_string params_file sdpa_params;
-  ignore (Sys.command("cd "^(!temp_path)^"; sdpa "^input_file ^ " " ^
-              output_file ^(if dbg then "" else "> /dev/null")));
-  let op = string_of_file output_file in
-  if not(sdpa_run_succeeded op) then failwith "sdpa: call failed" else
-  let res = parse_sdpaoutput op in
-  ((if dbg then ()
-   else (Sys.remove input_file; Sys.remove output_file));
-   res);;
-
-let sdpa obj mats = run_sdpa (!debugging) obj mats;;
 
 let run_csdp dbg obj mats =
   let input_file = Filename.temp_file "sos" ".dat-s" in
