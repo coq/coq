@@ -55,6 +55,8 @@ val plugins_dirs : string list
 val exec_extension : string (* "" under Unix, ".exe" under MS-windows *)
 val with_geoproof : bool ref (* to (de)activate functions specific to Geoproof with Coqide *)
 
+val csdp : string option (* the path to CSDP, for the Micromega plugin *)
+
 val browser : string
 (** default web browser to use, may be overriden by environment
     variable COQREMOTEBROWSER *)
