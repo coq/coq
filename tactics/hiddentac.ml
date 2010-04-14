@@ -32,7 +32,7 @@ let h_vm_cast_no_check c =
   abstract_tactic (TacVmCastNoCheck c) (vm_cast_no_check c)
 let h_apply simple ev cb =
   abstract_tactic (TacApply (simple,ev,List.map snd cb,None))
-    (apply_with_ebindings_gen simple ev cb)
+    (apply_with_bindings_gen simple ev cb)
 let h_apply_in simple ev cb (id,ipat as inhyp) =
   abstract_tactic (TacApply (simple,ev,List.map snd cb,Some inhyp))
     (apply_in simple ev id cb ipat)
@@ -94,9 +94,9 @@ let h_rename l =
 let h_revert l = abstract_tactic (TacRevert l) (revert l)
 
 (* Constructors *)
-let h_left ev l  = abstract_tactic (TacLeft (ev,l)) (left_with_ebindings ev l)
-let h_right ev l = abstract_tactic (TacRight (ev,l)) (right_with_ebindings ev l)
-let h_split ev l = abstract_tactic (TacSplit (ev,false,l)) (split_with_ebindings ev l)
+let h_left ev l  = abstract_tactic (TacLeft (ev,l)) (left_with_bindings ev l)
+let h_right ev l = abstract_tactic (TacRight (ev,l)) (right_with_bindings ev l)
+let h_split ev l = abstract_tactic (TacSplit (ev,false,l)) (split_with_bindings ev l)
 (* Moved to tacinterp because of dependencies in Tacinterp.interp
 let h_any_constructor t =
   abstract_tactic (TacAnyConstructor t) (any_constructor t)

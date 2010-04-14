@@ -961,25 +961,19 @@ let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
   in
   try_main_apply with_destruct c gl0
 
-let rec apply_with_ebindings_gen b e = function
+let rec apply_with_bindings_gen b e = function
   | [] -> tclIDTAC
   | [cb] -> general_apply b b e cb
   | cb::cbl ->
-      tclTHENLAST (general_apply b b e cb) (apply_with_ebindings_gen b e cbl)
+      tclTHENLAST (general_apply b b e cb) (apply_with_bindings_gen b e cbl)
 
-let apply_with_ebindings cb =
-  apply_with_ebindings_gen false false [dloc,cb]
+let apply_with_bindings cb = apply_with_bindings_gen false false [dloc,cb]
 
-let eapply_with_ebindings cb =
-  apply_with_ebindings_gen false true [dloc,cb]
+let eapply_with_bindings cb = apply_with_bindings_gen false true [dloc,cb]
 
-let apply_with_bindings cb = apply_with_ebindings_gen false false [dloc,cb]
+let apply c = apply_with_bindings_gen false false [dloc,(c,NoBindings)]
 
-let eapply_with_bindings cb = apply_with_ebindings_gen false true [dloc,cb]
-
-let apply c = apply_with_ebindings_gen false false [dloc,(c,NoBindings)]
-
-let eapply c = apply_with_ebindings_gen false true [dloc,(c,NoBindings)]
+let eapply c = apply_with_bindings_gen false true [dloc,(c,NoBindings)]
 
 let apply_list = function
   | c::l -> apply_with_bindings (c,ImplicitBindings l)
@@ -1226,15 +1220,15 @@ let any_constructor with_evars tacopt gl =
       (fun i -> tclTHEN (constructor_tac with_evars None i NoBindings) t)
       (interval 1 nconstr)) gl
 
-let left_with_ebindings  with_evars = constructor_tac with_evars (Some 2) 1
-let right_with_ebindings with_evars = constructor_tac with_evars (Some 2) 2
-let split_with_ebindings with_evars l =
+let left_with_bindings  with_evars = constructor_tac with_evars (Some 2) 1
+let right_with_bindings with_evars = constructor_tac with_evars (Some 2) 2
+let split_with_bindings with_evars l =
   tclMAP (constructor_tac with_evars (Some 1) 1) l
 
-let left           = left_with_ebindings false
+let left           = left_with_bindings false
 let simplest_left  = left NoBindings
 
-let right          = right_with_ebindings false
+let right          = right_with_bindings false
 let simplest_right = right NoBindings
 
 let split          = constructor_tac false (Some 1) 1
