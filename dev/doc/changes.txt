@@ -2,6 +2,21 @@
 = CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
 =========================================
 
+** Internal tactics renamed
+
+There is no more difference between bindings and ebindings. The
+following tactics are therefore renamed
+
+apply_with_ebindings_gen -> apply_with_bindings_gen
+left_with_ebindings -> left_with_bindings
+right_with_ebindings -> right_with_bindings
+split_with_ebindings -> split_with_bindings
+
+and the following tactics are removed
+
+apply_with_ebindings (use instead apply_with_bindings)
+eapply_with_ebindings (use instead eapply_with_bindings)
+
 ** Obsolete functions in typing.ml
 
 For mtype_of, msort_of, mcheck, now use type_of, sort_of, check
@@ -14,7 +29,6 @@ rename_rename_bound_var -> rename_bound_vars_as_displayed
 lookup_name_as_renamed -> lookup_name_as_displayed
 next_global_ident_away true -> next_ident_away_in_goal
 next_global_ident_away false -> next_global_ident_away
-
 
 ** Cleaning in commmand.ml
 

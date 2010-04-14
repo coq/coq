@@ -178,14 +178,11 @@ val bring_hyps : named_context -> tactic
 val apply                 : constr -> tactic
 val eapply                : constr -> tactic
 
-val apply_with_ebindings_gen :
+val apply_with_bindings_gen :
   advanced_flag -> evars_flag -> constr with_bindings located list -> tactic
 
 val apply_with_bindings   : constr with_bindings -> tactic
 val eapply_with_bindings  : constr with_bindings -> tactic
-
-val apply_with_ebindings  : constr with_bindings -> tactic
-val eapply_with_ebindings : constr with_bindings -> tactic
 
 val cut_and_apply         : constr -> tactic
 
@@ -327,9 +324,9 @@ val left                 : constr bindings -> tactic
 val right                : constr bindings -> tactic
 val split                : constr bindings -> tactic
 
-val left_with_ebindings  : evars_flag -> constr bindings -> tactic
-val right_with_ebindings : evars_flag -> constr bindings -> tactic
-val split_with_ebindings : evars_flag -> constr bindings list -> tactic
+val left_with_bindings  : evars_flag -> constr bindings -> tactic
+val right_with_bindings : evars_flag -> constr bindings -> tactic
+val split_with_bindings : evars_flag -> constr bindings list -> tactic
 
 val simplest_left        : tactic
 val simplest_right       : tactic
