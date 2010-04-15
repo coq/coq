@@ -29,6 +29,7 @@
 *.htoc
 *.ind
 *.lof
+*.stamp
 *.tacidx
 *.tacind
 *.v.tex
@@ -60,6 +61,7 @@ kernel/copcodes.ml
 scripts/tolink.ml
 states/initial.coq
 test-suite/lia.cache
+test-suite/trace
 theories/Numbers/Natural/BigN/NMake_gen.v
 tools/coqdep_lexer.ml
 tools/coqdoc/cpretty.ml
