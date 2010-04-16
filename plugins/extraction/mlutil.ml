@@ -320,7 +320,7 @@ let type_expunge env t =
 	  | _ -> assert false
       else t
     in f t s
-  else if List.mem (Kill Kother) s then
+  else if lang () <> Haskell && List.mem (Kill Kother) s then
     Tarr (Tdummy Kother, snd (type_decomp (type_weak_expand env t)))
   else snd (type_decomp (type_weak_expand env t))
 
@@ -913,13 +913,13 @@ let case_expunge s e =
 (*s [term_expunge] takes a function [fun idn ... id1 -> c]
   and a signature [s] and remove dummy lams. The difference
   with [case_expunge] is that we here leave one dummy lambda
-  if all lambdas are logical dummy. *)
+  if all lambdas are logical dummy and the target language is strict. *)
 
 let term_expunge s (ids,c) =
   if s = [] then c
   else
     let ids,c = kill_some_lams (List.rev s) (ids,c) in
-    if ids = [] && List.mem (Kill Kother) s then
+    if ids = [] && lang () <> Haskell && List.mem (Kill Kother) s then
       MLlam (dummy_name, ast_lift 1 c)
     else named_lams ids c
 
