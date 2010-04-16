@@ -181,7 +181,6 @@ val debug_string_of_mind : mutual_inductive -> string
 
 
 
-val mind_modpath : mutual_inductive -> module_path
 val ind_modpath : inductive -> module_path
 val constr_modpath : constructor -> module_path
 
