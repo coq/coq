@@ -53,6 +53,8 @@ val strengthen_and_subst_mb : module_body -> module_path -> env -> bool
 val subst_modtype_and_resolver : module_type_body -> module_path -> env ->
   module_type_body
 
+val clean_bounded_mod_expr : struct_expr_body -> struct_expr_body
+
 val error_existing_label : label -> 'a
 
 val error_declaration_not_path : module_struct_entry -> 'a

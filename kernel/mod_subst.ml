@@ -526,20 +526,20 @@ let replace_mp_in_kn mpfrom mpto kn =
     if mp==mp'' then kn
     else make_kn mp'' dir l
 
+let rec mp_in_mp mp mp1 =
+  match mp1 with
+    | _ when mp1 = mp -> true
+    | MPdot (mp2,l) -> mp_in_mp mp mp2
+    | _ -> false
+	
 let mp_in_key mp key = 
-  let rec mp_rec mp1 = 
-    match mp1 with
-      | _ when mp1 = mp -> true
-      | MPdot (mp2,l) -> mp_rec mp2
-      | _ -> false
-  in 
-    match key with
+  match key with
     | MP mp1 -> 
-	mp_rec mp1
+	mp_in_mp mp mp1
     | KN kn -> 
 	let mp1,dir,l = repr_kn kn in
-	  mp_rec mp1
-   
+	  mp_in_mp mp mp1
+	    
 let subset_prefixed_by mp resolver =
   let prefixmp key hint resolv =
     match hint with 
@@ -652,10 +652,23 @@ let add_delta_resolver resolver1 resolver2 =
     Deltamap.fold Deltamap.add (update_delta_resolver resolver1 resolver2)
       resolver2
 
+let substition_prefixed_by k mp subst =
+  let prefixmp key (mp_to,reso) sub =
+    match key with 
+      | MPI mpk ->
+	  if mp_in_mp mp mpk then
+	    let new_key = replace_mp_in_mp mp k mpk in
+	      Umap.add (MPI new_key) (mp_to,reso) sub
+	  else 
+	    sub
+      |  _ -> sub
+  in
+    Umap.fold prefixmp subst empty_subst
+
 let join (subst1 : substitution) (subst2 : substitution) =
-  let apply_subst (sub : substitution) (mp,resolve) =
+  let apply_subst key (mp,resolve) res =
     let mp',resolve' =
-      match subst_mp0 sub mp with
+      match subst_mp0 subst2 mp with
 	  None -> mp, None
 	| Some (mp',resolve') ->  mp'
 	    ,Some resolve' in
@@ -663,12 +676,15 @@ let join (subst1 : substitution) (subst2 : substitution) =
       match resolve' with
           Some res -> 
 	    add_delta_resolver 
-	      (subst_dom_codom_delta_resolver sub resolve) res
+	      (subst_dom_codom_delta_resolver subst2 resolve) res
 	| None -> 
-	    subst_codom_delta_resolver sub resolve
+	    subst_codom_delta_resolver subst2 resolve
     in
-      mp',resolve'' in
-  let subst = Umap.map (apply_subst subst2) subst1 in
+    let k = match key with MBI mp -> MPbound mp | MPI mp -> mp in
+    let prefixed_subst = substition_prefixed_by k mp subst2 in
+      Umap.fold Umap.add prefixed_subst 
+	(Umap.add key (mp',resolve'') res) in
+  let subst = Umap.fold apply_subst subst1 empty_subst in
     (Umap.fold Umap.add subst2 subst)   
 
 

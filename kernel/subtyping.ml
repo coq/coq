@@ -390,8 +390,6 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
 	      let env = add_module 
 		(module_body_of_type (MPbound arg_id2) arg_t2) env 
 	      in
-	      let subst1 = 
-		(join (map_mbid arg_id1 (MPbound arg_id2) arg_t2.typ_delta) subst1) in
 	      let env = match body_t1 with
 		  SEBstruct str -> 
 		    add_module {mod_mp = mtb1.typ_mp;
