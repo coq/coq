@@ -361,7 +361,8 @@ let rec translate_struct_include_module_entry env mp inl mse  = match mse with
   | MSEident mp1 ->
       let mb = lookup_module mp1 env in 
       let mb' = strengthen_and_subst_mb mb mp env true in
-	mb'.mod_type, mb'.mod_delta,Univ.Constraint.empty
+      let mb_typ = clean_bounded_mod_expr mb'.mod_type in 
+	mb_typ, mb'.mod_delta,Univ.Constraint.empty
   | MSEapply (fexpr,mexpr) ->
       let sign,resolver,cst1 =
 	translate_struct_include_module_entry env mp inl fexpr in

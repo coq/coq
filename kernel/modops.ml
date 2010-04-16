@@ -532,3 +532,56 @@ let subst_modtype_and_resolver mtb mp env =
   let full_subst = (map_mp mtb.typ_mp mp new_delta) in
     subst_modtype full_subst
       (fun resolver subst -> subst_dom_codom_delta_resolver subst resolver) mtb
+
+let rec is_bounded_expr l = function
+  | SEBident mp -> List.mem mp l
+  | SEBapply (fexpr,mexpr,_) ->  
+      is_bounded_expr l mexpr || is_bounded_expr l fexpr
+  | _ -> false
+
+let rec clean_struct l = function
+  | (lab,SFBmodule mb) as field -> 
+      let clean_typ = clean_expr l mb.mod_type in 
+      let clean_impl = 
+	begin try
+	  if (is_bounded_expr l (Option.get mb.mod_expr)) then
+	    Some clean_typ
+	  else  Some (clean_expr l (Option.get mb.mod_expr))
+	with
+	    Option.IsNone -> None 
+	end in
+	  if clean_typ==mb.mod_type && clean_impl==mb.mod_expr then
+	    field 
+	  else 
+	    (lab,SFBmodule {mb with 
+			      mod_type=clean_typ;
+			      mod_expr=clean_impl})
+  | field -> field
+      
+and clean_expr l = function
+ | SEBfunctor (mbid,sigt,str) as s->
+     let str_clean = clean_expr l str in
+     let sig_clean = clean_expr l sigt.typ_expr in 
+       if  str_clean == str && sig_clean = sigt.typ_expr then
+	 s else SEBfunctor (mbid,{sigt with typ_expr=sig_clean},str_clean)
+  | SEBstruct str as s->
+      let str_clean = Util.list_smartmap (clean_struct l) str in 
+	if  str_clean == str then s else SEBstruct(str_clean)
+  |  str -> str 
+
+let rec collect_mbid l = function
+  | SEBfunctor (mbid,sigt,str) as s->
+      let str_clean = collect_mbid ((MPbound mbid)::l) str in 
+	if  str_clean == str then s else 
+      SEBfunctor (mbid,sigt,str_clean)
+  | SEBstruct str as s->
+      let str_clean = Util.list_smartmap (clean_struct l) str in 
+	if  str_clean == str then s else SEBstruct(str_clean)
+  |  _ -> anomaly "Modops:the evaluation of the structure failed "
+       
+       
+let clean_bounded_mod_expr = function
+  | SEBfunctor _ as str -> 
+      let str_clean = collect_mbid [] str in 
+	if  str_clean == str then str else str_clean
+  | str -> str
