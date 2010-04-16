@@ -96,12 +96,12 @@ let sig_preamble _ used_modules usf =
    below should not be altered since they force evaluation order.
 *)
 
-let pp_global k r =
-  if is_inline_custom r then str (find_custom r)
-  else str (Common.pp_global k r)
+let str_global k r =
+  if is_inline_custom r then find_custom r else Common.pp_global k r
+
+let pp_global k r = str (str_global k r)
 
 let pp_modname mp = str (Common.pp_module mp)
-
 
 let is_infix r =
   is_inline_custom r &&
@@ -130,9 +130,7 @@ let rec pp_type par vl t =
     | Tvar i -> (try pp_tvar (List.nth vl (pred i))
 		 with _ -> (str "'a" ++ int i))
     | Tglob (r,[a1;a2]) when is_infix r ->
-	pp_par par
-	  (pp_rec true a1 ++ spc () ++ str (get_infix r) ++ spc () ++
-	   pp_rec true a2)
+	pp_par par (pp_rec true a1 ++ str (get_infix r) ++ pp_rec true a2)
     | Tglob (r,[]) -> pp_global Type r
     | Tglob (r,l) ->
 	if r = IndRef (kn_sig,0) then
@@ -215,12 +213,14 @@ let rec pp_expr par env args =
     | MLcons (_,r,[arg1;arg2]) when is_infix r ->
 	assert (args=[]);
 	pp_par par
-	  ((pp_expr true env [] arg1) ++ spc () ++ str (get_infix r) ++
-	   spc () ++ (pp_expr true env [] arg2))
+	  ((pp_expr true env [] arg1) ++ str (get_infix r) ++
+	   (pp_expr true env [] arg2))
     | MLcons (_,r,args') ->
 	assert (args=[]);
 	let tuple = pp_tuple (pp_expr true env []) args' in
-	pp_par par (pp_global Cons r ++ spc () ++ tuple)
+	if str_global Cons r = "" (* hack Extract Inductive prod *)
+	then tuple
+	else pp_par par (pp_global Cons r ++ spc () ++ tuple)
     | MLcase ((i,factors), t, pv) ->
 	let expr = if i = Coinductive then
 	  (str "Lazy.force" ++ spc () ++ pp_expr true env [] t)
@@ -303,10 +303,12 @@ and pp_one_pat env i (r,ids,t) =
     pp_record_pat (projs, List.rev_map pr_id ids), expr
   with NoRecord ->
     (match List.rev ids with
-      | [i1;i2] when is_infix r ->
-	  pr_id i1 ++ str " " ++ str (get_infix r) ++ str " " ++ pr_id i2
+      | [i1;i2] when is_infix r -> pr_id i1 ++ str (get_infix r) ++ pr_id i2
       | [] -> pp_global Cons r
-      | ids -> pp_global Cons r ++ str " " ++ pp_boxed_tuple pr_id ids),
+      | ids ->
+	  (* hack Extract Inductive prod *)
+	  (if str_global Cons r = "" then mt () else pp_global Cons r ++ spc ())
+	   ++ pp_boxed_tuple pr_id ids),
     expr
 
 and pp_pat env (info,factors) pv =
