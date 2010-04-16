@@ -772,6 +772,8 @@ let is_atomic = function
   | MLrel _ | MLglob _ | MLexn _ | MLdummy -> true
   | _ -> false
 
+let is_imm_apply = function MLapp (MLrel 1, _) -> true | _ -> false
+
 (*S The main simplification function. *)
 
 (* Some beta-iota reductions + simplifications. *)
@@ -788,7 +790,7 @@ let rec simpl o = function
       if
 	(is_atomic c) || (is_atomic e) ||
 	(let n = nb_occur_match e in
-	 (n = 0 || (n=1 && (is_tmp id || o.opt_lin_let))))
+	 (n = 0 || (n=1 && (is_tmp id || is_imm_apply e || o.opt_lin_let))))
       then
 	simpl o (ast_subst c e)
       else
