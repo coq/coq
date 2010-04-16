@@ -418,7 +418,7 @@ let ast_occurs_itvl k k' t =
     ast_iter_rel (fun i -> if (k <= i) && (i <= k') then raise Found) t; false
   with Found -> true
 
-(*s Number of occurences of [Rel k] and [Rel 1] in [t]. *)
+(*s Number of occurences of [Rel k] (resp. [Rel 1]) in [t]. *)
 
 let nb_occur_k k t =
   let cpt = ref 0 in
@@ -541,17 +541,15 @@ let rec named_lams ids a = match ids with
   | [] -> a
   | id :: ids -> named_lams ids (MLlam (id,a))
 
-(*s The same in anonymous version. *)
+(*s The same for a specific identifier (resp. anonymous, dummy) *)
 
-let rec anonym_lams a = function
+let rec many_lams id a = function
   | 0 -> a
-  | n -> anonym_lams (MLlam (anonymous,a)) (pred n)
+  | n -> many_lams id (MLlam (id,a)) (pred n)
 
-(*s Idem for [dummy_name]. *)
-
-let rec dummy_lams a = function
-  | 0 -> a
-  | n -> dummy_lams (MLlam (Dummy,a)) (pred n)
+let anonym_lams a n = many_lams anonymous a n
+let anonym_tmp_lams a n = many_lams (Tmp anonymous_name) a n
+let dummy_lams a n = many_lams Dummy a n
 
 (*s mixed according to a signature. *)
 
@@ -857,11 +855,6 @@ and simpl_case o i br e =
 	  else MLcase (new_i,e,br)
 	else MLcase (new_i,e,br)
 
-let rec post_simpl = function
-  | MLletin(_,c,e) when (is_atomic (eta_red c)) ->
-      post_simpl (ast_subst (eta_red c) e)
-  | a -> ast_map post_simpl a
-
 (*S Local prop elimination. *)
 (* We try to eliminate as many [prop] as possible inside an [ml_ast]. *)
 
@@ -972,35 +965,49 @@ let kill_dummy_args ids t0 t =
 let rec kill_dummy = function
   | MLfix(i,fi,c) ->
       (try
-	 let ids,c = kill_dummy_fix i fi c in
+	 let ids,c = kill_dummy_fix i c in
 	 ast_subst (MLfix (i,fi,c)) (kill_dummy_args ids (MLrel 1) (MLrel 1))
        with Impossible -> MLfix (i,fi,Array.map kill_dummy c))
   | MLapp (MLfix (i,fi,c),a) ->
+      let a = List.map kill_dummy a in
       (try
-	 let ids,c = kill_dummy_fix i fi c in
-	 let a = List.map (fun t -> ast_lift 1 (kill_dummy t)) a in
-	 let e = kill_dummy_args ids (MLrel 1) (MLapp (MLrel 1,a)) in
-	 ast_subst (MLfix (i,fi,c)) e
-       with Impossible ->
-	 MLapp(MLfix(i,fi,Array.map kill_dummy c),List.map kill_dummy a))
+	 let ids,c = kill_dummy_fix i c in
+	 let fake = MLapp (MLrel 1, List.map (ast_lift 1) a) in
+	 let fake' = kill_dummy_args ids (MLrel 1) fake in
+	 ast_subst (MLfix (i,fi,c)) fake'
+       with Impossible -> MLapp(MLfix(i,fi,Array.map kill_dummy c),a))
   | MLletin(id, MLfix (i,fi,c),e) ->
       (try
-	 let ids,c = kill_dummy_fix i fi c in
+	 let ids,c = kill_dummy_fix i c in
 	 let e = kill_dummy (kill_dummy_args ids (MLrel 1) e) in
 	 MLletin(id, MLfix(i,fi,c),e)
       with Impossible ->
 	MLletin(id, MLfix(i,fi,Array.map kill_dummy c),kill_dummy e))
   | MLletin(id,c,e) ->
       (try
-	 let ids,c = kill_dummy_lams c in
-	 let e = kill_dummy_args ids (MLrel 1) e in
-	 MLletin (id, kill_dummy c,kill_dummy e)
+	 let ids,c = kill_dummy_lams (kill_dummy_hd c) in
+	 let e = kill_dummy (kill_dummy_args ids (MLrel 1) e) in
+	 let c = eta_red (kill_dummy c) in
+	 if is_atomic c then ast_subst c e else MLletin (id, c, e)
        with Impossible -> MLletin(id,kill_dummy c,kill_dummy e))
   | a -> ast_map kill_dummy a
 
-and kill_dummy_fix i fi c =
-  let n = Array.length fi in
-  let ids,ci = kill_dummy_lams c.(i) in
+(* Similar function, but acting only on head lambdas and let-ins *)
+
+and kill_dummy_hd = function
+  | MLlam(id,e) -> MLlam(id, kill_dummy_hd e)
+  | MLletin(id,c,e) ->
+      (try
+	 let ids,c = kill_dummy_lams (kill_dummy_hd c) in
+	 let e = kill_dummy_hd (kill_dummy_args ids (MLrel 1) e) in
+	 let c = eta_red (kill_dummy c) in
+	 if is_atomic c then ast_subst c e else MLletin (id, c, e)
+       with Impossible -> MLletin(id,kill_dummy c,kill_dummy_hd e))
+  | a -> a
+
+and kill_dummy_fix i c =
+  let n = Array.length c in
+  let ids,ci = kill_dummy_lams (kill_dummy_hd c.(i)) in
   let c = Array.copy c in c.(i) <- ci;
   for j = 0 to (n-1) do
     c.(j) <- kill_dummy (kill_dummy_args ids (MLrel (n-i)) c.(j))
@@ -1012,7 +1019,7 @@ and kill_dummy_fix i fi c =
 let normalize a =
   let o = optims () in
   let a = simpl o a in
-  if o.opt_kill_dum then post_simpl (kill_dummy a) else a
+  if o.opt_kill_dum then kill_dummy a else a
 
 (*S Special treatment of fixpoint for pretty-printing purpose. *)
 
@@ -1025,7 +1032,7 @@ let general_optimize_fix f ids n args m c =
     | _ -> raise Impossible
   in list_iter_i aux args;
   let args_f = List.rev_map (fun i -> MLrel (i+m+1)) (Array.to_list v) in
-  let new_f = anonym_lams (MLapp (MLrel (n+m+1),args_f)) m in
+  let new_f = anonym_tmp_lams (MLapp (MLrel (n+m+1),args_f)) m in
   let new_c = named_lams ids (normalize (MLapp ((ast_subst new_f c),args))) in
   MLfix(0,[|f|],[|new_c|])
 
