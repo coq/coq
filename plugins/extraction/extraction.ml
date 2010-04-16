@@ -830,7 +830,7 @@ let extract_std_constant env kn body typ =
     and m = nb_lam body in
     if n <= m then decompose_lam_n n body
     else
-      let s,s' = list_split_at m s in
+      let s,s' = list_chop m s in
       if List.for_all ((=) Keep) s' &&
 	(lang () = Haskell || sign_kind s <> UnsafeLogicalSig)
       then decompose_lam_n m body
@@ -838,7 +838,7 @@ let extract_std_constant env kn body typ =
   in
   let n = List.length rels in
   let s = list_firstn n s in
-  let l,l' = list_split_at n l in
+  let l,l' = list_chop n l in
   let t' = type_recomp (l',t') in
   (* The initial ML environment. *)
   let mle = List.fold_left Mlenv.push_std_type Mlenv.empty l in

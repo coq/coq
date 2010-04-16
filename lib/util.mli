@@ -116,7 +116,6 @@ val list_union : 'a list -> 'a list -> 'a list
 val list_unionq : 'a list -> 'a list -> 'a list
 val list_subtract : 'a list -> 'a list -> 'a list
 val list_subtractq : 'a list -> 'a list -> 'a list
-val list_chop : int -> 'a list -> 'a list * 'a list
 (* [list_tabulate f n] builds [[f 0; ...; f (n-1)]] *)
 val list_tabulate : (int -> 'a) -> int -> 'a list
 val list_make : int -> 'a -> 'a list
@@ -164,7 +163,8 @@ val list_uniquize : 'a list -> 'a list
 (* merges two sorted lists and preserves the uniqueness property: *)
 val list_merge_uniq : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 val list_subset : 'a list -> 'a list -> bool
-val list_split_at : int -> 'a list -> 'a list*'a list
+val list_chop : int -> 'a list -> 'a list * 'a list
+(* former [list_split_at] was a duplicate of [list_chop] *)
 val list_split_when : ('a -> bool) -> 'a list -> 'a list * 'a list
 val list_split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
 val list_partition_by : ('a -> 'a -> bool) -> 'a list -> 'a list list

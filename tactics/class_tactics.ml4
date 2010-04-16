@@ -452,7 +452,7 @@ let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk
 	  let goals' = List.concat (List.map (fun (gls,v) -> gls) res) in
 	  let v' s' pfs' : proof_tree =
 	    let (newpfs, rest) = List.fold_left (fun (newpfs,pfs') (gls,v) ->
-	      let before, after = list_split_at (List.length gls) pfs' in
+	      let before, after = list_chop (List.length gls) pfs' in
 		(v s' before :: newpfs, after))
 	      ([], pfs') res
 	    in assert(rest = []); v s' (List.rev newpfs)

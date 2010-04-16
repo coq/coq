@@ -415,9 +415,9 @@ let compute_global_implicits flags manual = function
 let merge_impls oldimpls newimpls =
   let (before, news), olds =
     let len = List.length newimpls - List.length oldimpls in
-      if len >= 0 then list_split_at len newimpls, oldimpls
+      if len >= 0 then list_chop len newimpls, oldimpls
       else
-	let before, after = list_split_at (-len) oldimpls in
+	let before, after = list_chop (-len) oldimpls in
 	  (before, newimpls), after
   in
     before @ (List.map2 (fun orig ni ->

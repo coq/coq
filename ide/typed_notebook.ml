@@ -18,14 +18,14 @@ object(self)
       (* XXX - Temporary hack to compile with archaic lablgtk *)
     ignore (super#append_page ?tab_label ?menu_label page);
     let real_pos = super#page_num page in
-    let lower,higher = Util.list_split_at real_pos term_list in
+    let lower,higher = Util.list_chop real_pos term_list in
       term_list <- lower@[term]@higher;
       real_pos
 (* XXX - Temporary hack to compile with archaic lablgtk
   method insert_term ?(build=default_build) ?pos (term:'a) =
     let tab_label,menu_label,page = build term in
     let real_pos = super#insert_page ?tab_label ?menu_label ?pos page in
-    let lower,higher = Util.list_split_at real_pos term_list in
+    let lower,higher = Util.list_chop real_pos term_list in
       term_list <- lower@[term]@higher;
       real_pos
  *)
@@ -34,7 +34,7 @@ object(self)
       (* XXX - Temporary hack to compile with archaic lablgtk *)
     ignore (super#prepend_page ?tab_label ?menu_label page);
     let real_pos = super#page_num page in
-    let lower,higher = Util.list_split_at real_pos term_list in
+    let lower,higher = Util.list_chop real_pos term_list in
       term_list <- lower@[term]@higher;
       real_pos
 

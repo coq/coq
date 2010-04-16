@@ -396,14 +396,6 @@ let list_subtract l1 l2 =
 let list_subtractq l1 l2 =
   if l2 = [] then l1 else List.filter (fun x -> not (List.memq x l2)) l1
 
-let list_chop n l =
-  let rec chop_aux acc = function
-    | (0, l2) -> (List.rev acc, l2)
-    | (n, (h::t)) -> chop_aux (h::acc) (pred n, t)
-    | (_, []) -> failwith "list_chop"
-  in
-  chop_aux [] (n,l)
-
 let list_tabulate f len =
   let rec tabrec n =
     if n = len then [] else (f n)::(tabrec (n+1))
@@ -655,15 +647,17 @@ let list_subset l1 l2 =
   in
   look l1
 
-(* [list_split_at i l] splits [l] into two lists [(l1,l2)] such that [l1++l2=l]
-    and [l1] has length [i].
-    It raises [Failure] when [i] is negative or greater than the length of [l]  *)
-let list_split_at index l =
-  let rec aux i acc = function
-      tl when i = index -> (List.rev acc), tl
-    | hd :: tl -> aux (succ i) (hd :: acc) tl
-    | [] -> failwith "list_split_at: Invalid argument"
-  in aux 0 [] l
+(* [list_chop i l] splits [l] into two lists [(l1,l2)] such that
+   [l1++l2=l] and [l1] has length [i].
+   It raises [Failure] when [i] is negative or greater than the length of [l]  *)
+
+let list_chop n l =
+  let rec chop_aux i acc = function
+    | tl when i=0 -> (List.rev acc, tl)
+    | h::t -> chop_aux (pred i) (h::acc) t
+    | [] -> failwith "list_chop"
+  in
+  chop_aux n [] l
 
 (* [list_split_when p l] splits [l] into two lists [(l1,a::l2)] such that
     [l1++(a::l2)=l], [p a=true] and [p b = false] for every element [b] of [l1].
