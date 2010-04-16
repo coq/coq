@@ -25,13 +25,26 @@ exception Impossible
 
 (*S Names operations. *)
 
-let anonymous = id_of_string "x"
+let anonymous_name = id_of_string "x"
 let dummy_name = id_of_string "_"
 
+let anonymous = Id anonymous_name
+
 let id_of_name = function
-  | Anonymous -> anonymous
-  | Name id when id = dummy_name -> anonymous
+  | Anonymous -> anonymous_name
+  | Name id when id = dummy_name -> anonymous_name
   | Name id -> id
+
+let id_of_mlid = function
+  | Dummy -> dummy_name
+  | Id id -> id
+  | Tmp id -> id
+
+let tmp_id = function
+  | Id id -> Tmp id
+  | a -> a
+
+let is_tmp = function Tmp _ -> true | _ -> false
 
 (*S Operations upon ML types (with meta). *)
 
@@ -298,7 +311,9 @@ let isKill = function Kill _ -> true | _ -> false
 
 let isDummy = function Tdummy _ -> true | _ -> false
 
-let sign_of_id i = if i = dummy_name then Kill Kother else Keep
+let sign_of_id = function
+  | Dummy -> Kill Kother
+  | _ -> Keep
 
 (*s Removing [Tdummy] from the top level of a ML type. *)
 
@@ -536,14 +551,14 @@ let rec anonym_lams a = function
 
 let rec dummy_lams a = function
   | 0 -> a
-  | n -> dummy_lams (MLlam (dummy_name,a)) (pred n)
+  | n -> dummy_lams (MLlam (Dummy,a)) (pred n)
 
 (*s mixed according to a signature. *)
 
 let rec anonym_or_dummy_lams a = function
   | [] -> a
   | Keep :: s -> MLlam(anonymous, anonym_or_dummy_lams a s)
-  | Kill _ :: s -> MLlam(dummy_name, anonym_or_dummy_lams a s)
+  | Kill _ :: s -> MLlam(Dummy, anonym_or_dummy_lams a s)
 
 (*S Operations concerning eta. *)
 
@@ -603,12 +618,19 @@ let rec linear_beta_red a t = match a,t with
 	     MLletin (id, a0, linear_beta_red a t))
   | _ -> MLapp (t, a)
 
+let rec tmp_head_lams = function
+  | MLlam (id, t) -> MLlam (tmp_id id, tmp_head_lams t)
+  | e -> e
+
 (*s Applies a substitution [s] of constants by their body, plus
-  linear beta reductions at modified positions. *)
+  linear beta reductions at modified positions.
+  Moreover, we mark some lambdas as suitable for later linear
+  reduction (this helps the inlining of recursors).
+*)
 
 let rec ast_glob_subst s t = match t with
   | MLapp ((MLglob ((ConstRef kn) as refe)) as f, a) ->
-      let a = List.map (ast_glob_subst s) a in
+      let a = List.map (fun e -> tmp_head_lams (ast_glob_subst s e)) a in
       (try linear_beta_red a (Refmap.find refe s)
        with Not_found -> MLapp (f, a))
   | MLglob ((ConstRef kn) as refe) ->
@@ -692,7 +714,7 @@ let rec merge_ids ids ids' = match ids,ids' with
   | [],l -> l
   | l,[] -> l
   | i::ids, i'::ids' ->
-      (if i = dummy_name then i' else i) :: (merge_ids ids ids')
+      (if i = Dummy then i' else i) :: (merge_ids ids ids')
 
 let is_exn = function MLexn _ -> true | _ -> false
 
@@ -765,11 +787,13 @@ let rec simpl o = function
   | MLcase (i,e,br) ->
       let br = Array.map (fun (n,l,t) -> (n,l,simpl o t)) br in
       simpl_case o i br (simpl o e)
+  | MLletin(Dummy,_,e) -> simpl o (ast_pop e)
   | MLletin(id,c,e) ->
-      let e = (simpl o e) in
+      let e = simpl o e in
       if
-	(id = dummy_name) || (is_atomic c) || (is_atomic e) ||
-	(let n = nb_occur_match e in n = 0 || (n=1 && o.opt_lin_let))
+	(is_atomic c) || (is_atomic e) ||
+	(let n = nb_occur_match e in
+	 (n = 0 || (n=1 && (is_tmp id || o.opt_lin_let))))
       then
 	simpl o (ast_subst c e)
       else
@@ -783,12 +807,12 @@ let rec simpl o = function
 
 and simpl_app o a = function
   | MLapp (f',a') -> simpl_app o (a'@a) f'
-  | MLlam (id,t) when id = dummy_name ->
+  | MLlam (Dummy,t) ->
       simpl o (MLapp (ast_pop t, List.tl a))
   | MLlam (id,t) -> (* Beta redex *)
       (match nb_occur_match t with
 	 | 0 -> simpl o (MLapp (ast_pop t, List.tl a))
-	 | 1 when o.opt_lin_beta ->
+	 | 1 when (is_tmp id || o.opt_lin_beta) ->
 	     simpl o (MLapp (ast_subst (List.hd a) t, List.tl a))
 	 | _ ->
 	     let a' = List.map (ast_lift 1) (List.tl a) in
@@ -896,7 +920,7 @@ let eta_expansion_sign s (ids,c) =
 	let a = List.rev_map (function MLrel x -> MLrel (i-x) | a -> a) rels
 	in ids, MLapp (ast_lift (i-1) c, a)
     | Keep :: l -> abs (anonymous :: ids) (MLrel i :: rels) (i+1) l
-    | Kill _ :: l -> abs (dummy_name :: ids) (MLdummy :: rels) (i+1) l
+    | Kill _ :: l -> abs (Dummy :: ids) (MLdummy :: rels) (i+1) l
   in abs ids [] 1 s
 
 (*s If [s = [b1; ... ; bn]] then [case_expunge] decomposes [e]
@@ -920,7 +944,7 @@ let term_expunge s (ids,c) =
   else
     let ids,c = kill_some_lams (List.rev s) (ids,c) in
     if ids = [] && lang () <> Haskell && List.mem (Kill Kother) s then
-      MLlam (dummy_name, ast_lift 1 c)
+      MLlam (Dummy, ast_lift 1 c)
     else named_lams ids c
 
 (*s [kill_dummy_args ids t0 t] looks for occurences of [t0] in [t] and
@@ -1083,10 +1107,6 @@ let rec non_stricts add cand = function
       pop 1 (non_stricts add cand t)
   | MLrel n ->
       List.filter ((<>) n) cand
-  | MLapp (MLrel n, _) ->
-      List.filter ((<>) n) cand
-	(* In [(x y)] we say that only x is strict. Cf [sig_rec]. We may *)
-	(* gain something if x is replaced by a function like a projection *)
   | MLapp (t,l)->
       let cand = non_stricts false cand t in
       List.fold_left (non_stricts false) cand l

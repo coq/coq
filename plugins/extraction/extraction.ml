@@ -536,8 +536,9 @@ let rec extract_term env mle mlt c args =
 	       in extract_term env mle mlt d' []
 	   | [] ->
 	       let env' = push_rel_assum (Name id, t) env in
-	       let id, a = try check_default env t; id, new_meta()
-	       with NotDefault d -> dummy_name, Tdummy d
+	       let id, a =
+		 try check_default env t; Id id, new_meta()
+		 with NotDefault d -> Dummy, Tdummy d
 	       in
 	       let b = new_meta () in
 	       (* If [mlt] cannot be unified with an arrow type, then magic! *)
@@ -554,7 +555,7 @@ let rec extract_term env mle mlt c args =
 	  let c1' = extract_term env mle a c1 [] in
 	  (* The type of [c1'] is generalized and stored in [mle]. *)
 	  let mle' = Mlenv.push_gen mle a in
-	  MLletin (id, c1', extract_term env' mle' mlt c2 args')
+	  MLletin (Id id, c1', extract_term env' mle' mlt c2 args')
 	with NotDefault d ->
 	  let mle' = Mlenv.push_std_type mle (Tdummy d) in
 	  ast_pop (extract_term env' mle' mlt c2 args'))
@@ -777,7 +778,7 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
 	  assert (br_size = 1);
 	  let (_,ids,e') = extract_branch 0 in
 	  assert (List.length ids = 1);
-	  MLletin (List.hd ids,a,e')
+	  MLletin (tmp_id (List.hd ids),a,e')
 	end
       else
 	(* Standard case: we apply [extract_branch]. *)
@@ -842,7 +843,7 @@ let extract_std_constant env kn body typ =
   (* The initial ML environment. *)
   let mle = List.fold_left Mlenv.push_std_type Mlenv.empty l in
   (* The lambdas names. *)
-  let ids = List.map (fun (n,_) -> id_of_name n) rels in
+  let ids = List.map (fun (n,_) -> Id (id_of_name n)) rels in
   (* The according Coq environment. *)
   let env = push_rels_assum rels env in
   (* The real extraction: *)
@@ -877,7 +878,7 @@ let extract_constant env kn cb =
 	   | (Info,TypeScheme) ->
 	       if not (is_custom r) then add_info_axiom r;
 	       let n = type_scheme_nb_args env typ in
-	       let ids = iterate (fun l -> anonymous::l) n [] in
+	       let ids = iterate (fun l -> anonymous_name::l) n [] in
 	       Dtype (r, ids, Taxiom)
            | (Info,Default) ->
 	       if not (is_custom r) then add_info_axiom r;

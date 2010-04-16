@@ -69,22 +69,24 @@ val type_expunge : abbrev_map -> ml_type -> ml_type
 val isDummy : ml_type -> bool
 val isKill : sign -> bool
 
-val case_expunge : signature -> ml_ast -> identifier list * ml_ast
-val term_expunge : signature -> identifier list * ml_ast -> ml_ast
+val case_expunge : signature -> ml_ast -> ml_ident list * ml_ast
+val term_expunge : signature -> ml_ident list * ml_ast -> ml_ast
 
 
 (*s Special identifiers. [dummy_name] is to be used for dead code
     and will be printed as [_] in concrete (Caml) code. *)
 
-val anonymous : identifier
+val anonymous_name : identifier
 val dummy_name : identifier
 val id_of_name : name -> identifier
+val id_of_mlid : ml_ident -> identifier
+val tmp_id : ml_ident -> ml_ident
 
 (*s [collect_lambda MLlam(id1,...MLlam(idn,t)...)] returns
     the list [idn;...;id1] and the term [t]. *)
 
-val collect_lams : ml_ast -> identifier list * ml_ast
-val collect_n_lams : int -> ml_ast -> identifier list * ml_ast
+val collect_lams : ml_ast -> ml_ident list * ml_ast
+val collect_n_lams : int -> ml_ast -> ml_ident list * ml_ast
 val nb_lams : ml_ast -> int
 
 val dummy_lams : ml_ast -> int -> ml_ast
