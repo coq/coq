@@ -1,54 +1,67 @@
 Changes from V8.2 to V8.3
 =========================
 
-Tactics
+Rewriting tactics
+
+- Tactic "rewrite" now supports rewriting on ad hoc equalities such as eq_true.
+- "Hint Rewrite" now checks that the lemma looks like an equation.
+- New tactic "etransitivity".
+- Support for heterogeneous equality (JMeq) in "injection" and "discriminate".
+- Tactic "subst" now supports heterogeneous equality and equality
+  proofs that are dependent (use "simple subst" for preserving compatibility).
+- Added support for Leibniz-rewriting of dependent hypotheses.
+- Renamed "Morphism" into "Proper" and "respect" into "proper_prf"
+  (possible source of incompatibility).
+- New tactic variants "rewrite* by" and "autorewrite*" that rewrite
+  respectively the first and all matches whose side-conditions are
+  solved.
+- "Require Import Setoid" does not export all of "Morphisms" and
+  "RelationClasses" anymore (possible source of incompatibility, fixed
+  by importing "Morphisms" too).
+
+Automation tactics
+
+- Tactic "intuition" now preserves inner "iff" and "not" (exceptional
+  source of incompatibilities solvable by redefining "intuition" as
+  "unfold iff, not in *; intuition", or by using "Set Intuition Unfolding".)
+- Tactic "tauto" now proves classical tautologies as soon as classical logic
+  (i.e. library Classical_Prop or Classical) is loaded.
+- Tactic "gappa" has been removed from the Dp plugin.
+- Tactic "firstorder" now supports the combination of its "using" and
+  "with" options.
+- New "Hint Resolve ->" (or "<-") for declaring iff's as oriented
+  hints (wish #2104).
+- An inductive type as argument of the "using" option of "auto/eauto/firstorder"
+  is interpreted as using the collection of its constructors.
+- New decision tactic "gb" to solve systems of polynomial equations 
+  by (exact) computation of Groebner bases.
+
+Other tactics
 
 - Tactic "discriminate" now performs intros before trying to discriminate an
   hypothesis of the goal (previously it applied intro only if the goal
   had the form t1<>t2) (exceptional source of incompatibilities - former
   behavior can be obtained by "Unset Discriminate Introduction").
-- Tactic "rewrite" now supports rewriting on ad hoc equalities such as eq_true.
-- Tactic "intuition" now preserves inner "iff" and "not" (exceptional
-  source of incompatibilities solvable by redefining "intuition" as
-  "unfold iff, not in *; intuition", or by using "Set Intuition Unfolding".)
-- Improved support of dependent goals over objects in dependent types for
-  "destruct" (rare source of incompatibility that can be avoided by unsetting
-  option "Dependent Propositions Elimination").
 - Tactic "quote" now supports quotation of arbitrary terms (not just the
   goal).
 - Tactic "idtac" now displays its "list" arguments.
-- Tactic "tauto" now proves classical tautologies as soon as classical logic
-  (i.e. library Classical_Prop or Classical) is loaded.
-- New "Hint Resolve ->" (or "<-") for declaring iff's as oriented
-  hints (wish #2104).
-- "Hint Rewrite" now checks that the lemma looks like an equation.
 - New introduction patterns "*" for introducing the next block of dependent 
   variables and "**" for introducing all quantified variables and hypotheses.
 - Pattern Unification for existential variables activated in tactics and 
   new option "Unset Tactic Evars Pattern Unification" to deactivate it.
 - Resolution of Canonical Structures is now part of the tactic's unification
   algorithm.
-- New tactic "etransitivity".
-- Support of JMeq for "injection" and "discriminate".
-- Tactic "subst" now supports heterogeneous equality and equality
-  proofs that are dependent (use "simple subst" for preserving compatibility).
 - New tactic "decide lemma with hyp" for rewriting decidability lemmas
   when one knows which side is true.
+- Improved support of dependent goals over objects in dependent types for
+  "destruct" (rare source of incompatibility that can be avoided by unsetting
+  option "Dependent Propositions Elimination").
 - Tactic "exists", "eexists", "destruct" and "edestruct" supports iteration
   using comma-separated arguments.
-- Tactic "gappa" has been removed from the Dp plugin.
-- Tactic "firstorder" now supports the combination of its "using" and
-  "with" options.
-- An inductive type as argument of the "using" option of "auto/eauto/firstorder"
-  is interpreted as using the collection of its constructors.
 - Tactic names "case" and "elim" now support clauses "as" and "in" and become
   then synonymous of "destruct" and "induction" respectively.
 - A new tactic name "exfalso" for the use of 'ex-falso quodlibet' principle.
   This tactic is simply a shortcut for "elimtype False".
-- Added support for Leibniz-rewriting of dependent hypotheses.
-- Binders given before ":" in lemmas are now automatically
-  introduced in the context (possible source of incompatibility that can be
-  avoided by unsetting option "Automatic Introduction").
 - Made quantified hypotheses get the name they would have if introduced in
   the context (possible but rare source of incompatibilities).
 - When applying a component of a conjunctive lemma, "apply in" (and
@@ -57,17 +70,10 @@ Tactics
 - In "simpl c" and "change c with d", c can be a pattern.
 - Tactic "revert" now preserves let-in's making it the exact inverse of
   "intro".
-- Renamed "Morphism" into "Proper" and "respect" into "proper_prf"
-  (possible source of incompatibility).
-- "Require Import Setoid" does not export all of "Morphims" and
-  "RelationClasses" anymore (possible source of incompatibility, fixed
-  by importing "Morphisms" too).
-- New tactic variants "rewrite* by" and "autorewrite*" that rewrite
-  respectively the first and all matches whose side-conditions are
-  solved.
 
-Tactic Language
+Tactic definitions
 
+- Ltac definitions support Local option for non-export outside modules.
 - Support for parsing non-empty lists with separators in tactic notations.
 
 Notations
@@ -84,31 +90,70 @@ Notations
 - The "where" clause now supports multiple notations per defined object.
 - Recursive notations automatically expand one step on the left for better
   factorization; recursion notations inner separators now ensured being tokens.
+- Added "Reserved Infix" as a specific shortcut of the corresponding
+  "Reserved Notation".
+- Open/Close Scope command supports Global option in sections.
+
+Specification language
+
+- New support for local binders in the syntax of Record/Structure fields.
+- Fixpoint/CoFixpoint now support building part or all of bodies using tactics.
+- Binders given before ":" in lemmas can now be automatically
+  introduced in the context by setting option "Set Automatic Introduction".
+
+Module system
+
+- Include Type is now deprecated since Include now accept both modules and
+  module types.
+- Declare ML Module supports Local option.
+- The sharing between non-logical object and the management of the
+  name-space has been improved by the new "Delta-equivalence" on
+  qualified name.
+- The include operator has been extended to high-order structures
+- Sequences of Include can be abbreviated via new syntax "<+".
+- A module (or module type) can be given several "<:" signatures.
+- Interactive proofs are now permitted in module type. Functors can hence
+  be declared as Module Type and be used later to type themselves.
+- A functor application can be prefixed by a "!" to make it ignore any
+  "Inline" annotation in the type of its argument(s) (for examples of
+  use of the new features, see libraries Structures and Numbers).
+
+Program
+
+- Streamlined definitions using well-founded recursion and measures so
+  that they can work on any subset of the arguments directly (uses currying).
+- Try to automatically clear structural fixpoint prototypes in
+  obligations to avoid issues with opacity.
+- Use return type clause inference in pattern-matching as in the standard 
+  typing algorithm.
+- Support [Local Obligation Tactic] and [Next Obligation with tactic].
+- Use [Show Obligation Tactic] to print the current default tactic.
+- [fst] and [snd] have maximal implicit arguments in Program now (possible 
+  source of incompatibility).
+
+Type classes
+
+- Declaring axiomatic type class instances in Module Type should be now
+  done via new command "Declare Instance", while the syntax "Instance"
+  now always provides a concrete instance, both in and out of Module Type.
+- Use [Existing Class foo] to declare foo as a class a posteriori.
+  [foo] can be an inductive type or a constant definition. No
+  projections or instances are defined.
+- Various bug fixes and improvements: support for defined fields, 
+  anonymous instances, declarations giving terms, better handling of
+  sections and [Context].
 
 Vernacular commands
 
 - New command "Timeout <n> <command>." interprets a command and a timeout
   interrupts the interpretation after <n> seconds.
-- Option -R now supports binding Coq root read-only.
-- New support for local binders in the syntax of Record/Structure fields.
 - Most commands referring to constant (e.g. Print or About) now support
   referring to the constant by a notation string.
-- Added "Reserved Infix" as a specific shortcut of the corresponding
-  "Reserved Notation".
-- Open/Close Scope command supports Global option in sections.
-- Ltac definitions support Local option for non-export outside modules.
 - Made generation of boolean equality automatic for datatypes (use
   "Unset Boolean Equality Schemes" for deactivation).
 - Made support for automatic generation of case analysis schemes and
   congruence schemes available to user (governed by options "Unset
   Case Analysis Schemes" and "Unset Congruence Schemes").
-- Fixpoint/CoFixpoint now support building part or all of bodies using tactics.
-- Declaring axiomatic type class instances in Module Type should be now
-  done via new command "Declare Instance", while the syntax "Instance"
-  now always provides a concrete instance, both in and out of Module Type.
-- Include Type is now deprecated since Include now accept both modules and
-  module types.
-- Declare ML Module supports Local option.
 - New command "(Global?) Generalizable [All|No] Variable(s)? ident(s)?" to
   declare which identifiers are generalizable in `{} and `() binders.
 - New command "Print Opaque Dependencies" to display opaque constants in
@@ -118,33 +163,6 @@ Vernacular commands
   variables before the colon at the start of interactive proofs.
 - New command "Declare Reduction <id> := <conv_expr>", allowing to write
   later "Eval <id> in ...". This command accepts a Local variant.
-
-Tools
-
-- New coqtop/coqc option -beautify to reformat .v files (usable
-  e.g. to globally update notations).
-- New tool beautify-archive to beautify a full archive of developments.
-- New coqtop/coqc option -compat X.Y to simulate the general behavior
-  of previous versions of Coq (provides e.g. support for 8.2 compatibility).
-
-Coqdoc
-
-- List have been revamped.  List depth and scope is now determined by
-  an "offside" whitespace rule.
-- Text may be italicized by placing it in _underscores_.
-- The "--index <string>" flag changes the filename of the index.
-- The "--toc-depth <int>" flag limits the depth of headers which are
-  included in the table of contents.
-- The "--lib-name <string>" flag prints "<string> Foo" instead of
-  "Library Foo" where library titles are called for.  The
-  "--no-lib-name" flag eliminates the extra title.
-- New option "--parse-comments" to allow parsing of regular "(* *)"
-  comments.
-- New option "--plain-comments" to disable interpretation inside comments.
-- New option "--interpolate" to try and typeset identifiers in Coq escapings
-  using the available globalization information.
-- New option "--external url root" to refer to external libraries.
-- Links to section variables and notations now supported.
 
 Library
 
@@ -173,21 +191,21 @@ Library
   - new file Sorted.v for some definitions of being sorted.
 - Structure library. This new library is meant to contain generic
   structures such as types with equalities or orders, either
-  in Module version (for now) or Type Classe (still to do):
+  in Module version (for now) or Type Classes (still to do):
   - DecidableType.v and OrderedType.v: initial notions for FSets/FMaps,
     left for compatibility but considered as deprecated.
   - Equalities.v and Orders.v: evolutions of the previous files,
     with fine-grain Module architecture, many variants, use of
-    Equivalence and other relevant Type Classe notions.
+    Equivalence and other relevant Type Classes notions.
   - OrdersTac.v: a generic tactic for solving chains of (in)equalities
     over variables. See {Nat,N,Z,P}OrderedType.v for concrete instances.
-  - GenericMinMax: any ordered type can be equipped with min and max.
+  - GenericMinMax.v: any ordered type can be equipped with min and max.
     We derived here all the generic properties of these functions.
 - MSets library: an important evolution of the FSets library.
   "MSets" stands for Modular (Finite) Sets, by contrast with a forthcoming
   library of Class (Finite) Sets contributed by S. Lescuyer which will be
   integrated with the next release of Coq. The main features of MSets are:
-  - The use of Equivalence, Proper and other Type Classe features
+  - The use of Equivalence, Proper and other Type Classes features
     easing the handling of setoid equalities.
   - The interfaces are now stated in iff-style. Old specifications
     are now derived properties.
@@ -197,60 +215,49 @@ Library
     built first as "Raw" sets (pure objects and separate proofs) and
     attached with their proofs thanks to a generic functor. "Raw" sets
     have now a proper interface and can be manipulated directly.
-  Nota: No Maps yet in MSets. The FSets library is still provided
+  Note: No Maps yet in MSets. The FSets library is still provided
   for compatibility, but will probably be considered as deprecated in the
   next release of Coq.
 - Numbers library:
   - The abstract layer (NatInt, Natural/Abstract, Integer/Abstract) has
     been simplified and enhance thanks to new features of the module
     system such as Include (see below). It has been extended to Euclidean
-    division (three flavour for integers: Trunc, Floor and Math).
+    division (three flavors for integers: Trunc, Floor and Math).
   - The arbitrary-large efficient numbers (BigN, BigZ, BigQ) has also
     been reworked. They benefit from the abstract layer improvements
     (especially for div and mod). Note that some specifications have
     slightly changed (compare, div, mod, shift{r,l}). Ring/Field should
     work better (true recognition of constants).
 
-Language
+Tools
 
-- New implementation of the module system:
-  - The sharing between non-logical object and the management of the
-    name-space has been improved by the new \Delta-equivalence on
-    qualified name.
-  - The include operator has been extended to high-order structures
-  - Sequences of Include can be abbreviated via new syntax "<+".
-  - A module (or module type) can be given several "<:" signatures.
-  - Interactive proofs are now authorized in module type.
-    Functor can hence be declared as Module Type and be used later
-    to type themselves.
-  - A functor application can be prefixed by a "!" to make it ignore
-    any "Inline" annotation in the type of its argument(s).
-  For examples of use for these new features, see libraries Structures
-  and Numbers.
+- Option -R now supports binding Coq root read-only.
+- New coqtop/coqc option -beautify to reformat .v files (usable
+  e.g. to globally update notations).
+- New tool beautify-archive to beautify a full archive of developments.
+- New coqtop/coqc option -compat X.Y to simulate the general behavior
+  of previous versions of Coq (provides e.g. support for 8.2 compatibility).
 
-Program
+Coqdoc
 
-- Streamlined definitions using well-founded recursion and measures so
-  that they can work on any subset of the arguments directly (uses currying).
-- Try to automatically clear structural fixpoint prototypes in
-  obligations to avoid issues with opacity.
-- Use return type clause inference in pattern-matching as in the standard 
-  typing algorithm.
-- Support [Local Obligation Tactic] and [Next Obligation with tactic].
-- Use [Show Obligation Tactic] to print the current default tactic.
-- [fst] and [snd] have maximal implicits in Program now (possible source
-  of incompatibility).
+- List have been revamped.  List depth and scope is now determined by
+  an "offside" whitespace rule.
+- Text may be italicized by placing it in _underscores_.
+- The "--index <string>" flag changes the filename of the index.
+- The "--toc-depth <int>" flag limits the depth of headers which are
+  included in the table of contents.
+- The "--lib-name <string>" flag prints "<string> Foo" instead of
+  "Library Foo" where library titles are called for.  The
+  "--no-lib-name" flag eliminates the extra title.
+- New option "--parse-comments" to allow parsing of regular "(* *)"
+  comments.
+- New option "--plain-comments" to disable interpretation inside comments.
+- New option "--interpolate" to try and typeset identifiers in Coq escapings
+  using the available globalization information.
+- New option "--external url root" to refer to external libraries.
+- Links to section variables and notations now supported.
 
-Typeclasses
-
-- Use [Existing Class foo] to declare foo as a class a posteriori.
-  [foo] can be an inductive type or a constant definition. No
-  projections or instances are defined.
-- Various bug fixes and improvements: support for defined fields, 
-  anonymous instances, declarations giving terms, better handling of
-  sections and [Context].
-
-Internal Infrastructure
+Internal infrastructure
 
 - To avoid confusion with the repository of user's contributions,
   the subdirectory "contrib" has been renamed into "plugins".
@@ -259,13 +266,12 @@ Internal Infrastructure
 - An experimental build mechanism via ocamlbuild is provided.
   From the top of the archive, run ./configure as usual, and
   then ./build. Feedback about this build mechanism is most welcome.
-  Compiling Coq on platforms such as Windows might be simplier
+  Compiling Coq on platforms such as Windows might be simpler
   this way, but this remains to be tested.
 - The Makefile system has been simplified and factorized with
   the ocamlbuild system. In particular "make" takes advantage
   of .mllib files for building .cma/.cmxa. The .vo files to
   compile are now listed in several vo.itarget files.
-
 
 Changes from V8.1 to V8.2
 =========================
