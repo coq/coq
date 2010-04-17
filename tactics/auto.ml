@@ -914,7 +914,7 @@ and tac_of_hint db_list local_db concl (flags, {pat=p; code=t}) =
         (trivial_fail_db (flags <> None) db_list local_db)
   | Unfold_nth c -> (fun gl ->
       if exists_evaluable_reference (pf_env gl) c then
-	tclPROGRESS (unfold_in_concl [all_occurrences,c]) gl
+	tclPROGRESS (h_reduce (Unfold [all_occurrences_expr,c]) onConcl) gl
       else tclFAIL 0 (str"Unbound reference") gl)
   | Extern tacast -> conclPattern concl p tacast
 
