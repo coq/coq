@@ -134,7 +134,7 @@ and e_my_find_search db_list local_db hdc concl =
 	   | Res_pf_THEN_trivial_fail (term,cl) ->
                tclTHEN (unify_e_resolve st (term,cl))
 		 (e_trivial_fail_db db_list local_db)
-	   | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
+	   | Unfold_nth c -> h_reduce (Unfold [all_occurrences_expr,c]) onConcl
 	   | Extern tacast -> conclPattern concl p tacast
        in
        (tac,pr_autotactic t))
