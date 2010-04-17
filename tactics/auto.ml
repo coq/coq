@@ -764,15 +764,19 @@ let auto_unif_flags = {
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
+let h_clenv_refine ev c clenv =
+  Refiner.abstract_tactic (TacApply (true,ev,[c,NoBindings],None))
+    (Clenvtac.clenv_refine ev clenv)
+
 let unify_resolve_nodelta (c,clenv) gl =
   let clenv' = connect_clenv gl clenv in
-  let _ = clenv_unique_resolver false ~flags:auto_unif_flags clenv' gl in
-  h_simplest_apply c gl
+  let clenv'' = clenv_unique_resolver false ~flags:auto_unif_flags clenv' gl in
+  h_clenv_refine false c clenv'' gl
 
 let unify_resolve flags (c,clenv) gl =
   let clenv' = connect_clenv gl clenv in
-  let _ = clenv_unique_resolver false ~flags clenv' gl in
-  h_apply true false [dummy_loc,(c,NoBindings)] gl
+  let clenv'' = clenv_unique_resolver false ~flags clenv' gl in
+  h_clenv_refine false c clenv'' gl
 
 let unify_resolve_gen = function
   | None -> unify_resolve_nodelta
