@@ -1,7 +1,7 @@
 (* Test propagation of evars from subgoal to brother subgoals *)
 
 (* This does not work (oct 2008) because "match goal" sees "?evar = O"
-   and not "O = O"
+   and not "O = O" *)
 
 Lemma eapply_evar : O=O -> 0=O.
 intro H; eapply trans_equal;
