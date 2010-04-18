@@ -592,6 +592,10 @@ let rec remove_coercions inctx = function
       with Not_found -> c)
   | c -> c
 
+let rec flatten_application = function
+  | RApp (loc,RApp(_,a,l'),l) -> flatten_application (RApp (loc,a,l'@l))
+  | a -> a
+
 let rec rename_rawconstr_var id0 id1 = function
     RRef(loc,VarRef id) when id=id0 -> RRef(loc,VarRef id1)
   | RVar(loc,id) when id=id0 -> RVar(loc,id1)
@@ -632,8 +636,9 @@ let rec extern inctx scopes vars r =
     extern_optimal_prim_token scopes r r'
   with No_match ->
   try
+    let r'' = flatten_application r' in
     if !Flags.raw_print or !print_no_symbol then raise No_match;
-    extern_symbol scopes vars r' (uninterp_notations r')
+    extern_symbol scopes vars r'' (uninterp_notations r'')
   with No_match -> match r' with
   | RRef (loc,ref) ->
       extern_global loc (implicits_of_global ref)

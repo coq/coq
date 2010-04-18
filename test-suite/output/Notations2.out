@@ -1,4 +1,6 @@
 2 3
      : PAIR
+2[+]3
+     : nat
 forall (A : Set) (le : A -> A -> Prop) (x y : A), le x y \/ le y x
      : Prop

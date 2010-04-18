@@ -6,6 +6,15 @@ Inductive PAIR := P (n1:nat) (n2:nat).
 Coercion P : nat >-> Funclass.
 Check (2 3).
 
+(* Check that notations with coercions to functions inserted still work *)
+(* (were not working from revision 11886 to 12951) *)
+
+Record Binop := { binop :> nat -> nat -> nat }.
+Class Plusop := { plusop : Binop; z : nat }.
+Infix "[+]" := plusop (at level 40).
+Instance Plus : Plusop := {| plusop := {| binop := plus |} ; z := 0 |}.
+Check 2[+]3.
+
 (* Test bug #2091 (variable le was printed using <= !) *)
 
 Check forall (A: Set) (le: A -> A -> Prop) (x y: A), le x y \/ le y x.
