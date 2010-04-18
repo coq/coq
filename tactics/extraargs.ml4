@@ -184,7 +184,7 @@ ARGUMENT EXTEND hloc
 let pr_by_arg_tac _prc _prlc prtac opt_c =
   match opt_c with
     | None -> mt ()
-    | Some t -> spc () ++ hov 2 (str "by" ++ spc () ++ prtac (3,Ppextend.E) t)
+    | Some t -> hov 2 (str "by" ++ spc () ++ prtac (3,Ppextend.E) t)
 
 ARGUMENT EXTEND by_arg_tac
   TYPED AS tactic_opt
@@ -200,8 +200,8 @@ let pr_in_hyp  pr_id (lo,concl) :  Pp.std_ppcmds =
     | None,true -> str "in" ++ spc () ++ str "*"
     | None,false -> str "in" ++ spc () ++ str "*" ++ spc () ++ str "|-"
     | Some l,_ ->
-	str "in" ++ spc () ++
-	  Util.prlist_with_sep spc pr_id l ++
+	str "in" ++
+	  Util.prlist (fun id -> spc () ++ pr_id id) l ++
 	  match concl with
 	    | true -> spc () ++ str "|-" ++ spc () ++ str "*"
 	    | _ -> mt ()
