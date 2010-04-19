@@ -182,6 +182,79 @@ let new_evar_instance sign evd typ ?(src=(dummy_loc,InternalHole)) ?filter insta
   let evd = evar_declare sign newevk typ ~src:src ?filter evd in
   (evd,mkEvar (newevk,Array.of_list instance))
 
+(* Expand rels and vars that are bound to other rels or vars so that
+   dependencies in variables are canonically associated to the most ancient
+   variable in its family of aliased variables *)
+
+let compute_aliases sign =
+  List.fold_right (fun (id,b,c) aliases ->
+    match b with
+    | Some t ->
+	(match kind_of_term t with
+	| Var id' ->
+	    let id'' = try Idmap.find id' aliases with Not_found -> id' in
+	    Idmap.add id id'' aliases
+	| _ -> aliases)
+    | None -> aliases) sign Idmap.empty
+
+let alias_of_var id aliases = try Idmap.find id aliases with Not_found -> id
+
+let make_alias_map env =
+  let var_aliases = compute_aliases (named_context env) in
+  let rels = rel_context env in
+  let rel_aliases = 
+    snd (List.fold_right (fun (_,b,t) (n,aliases) ->
+      (n-1,
+      match b with
+	| Some t when isRel t or isVar t -> Intmap.add n (lift n t) aliases
+	| _ -> aliases)) rels (List.length rels,Intmap.empty)) in
+  (var_aliases,rel_aliases)
+
+let expand_var_once aliases x = match kind_of_term x with
+  | Rel n -> Intmap.find n (snd aliases)
+  | Var id -> mkVar (Idmap.find id (fst aliases))
+  | _ -> raise Not_found
+
+let rec expand_var_at_least_once aliases x =
+  let t = expand_var_once aliases x in
+  try expand_var_at_least_once aliases t
+  with Not_found -> t
+
+let expand_var aliases x =
+  try expand_var_at_least_once aliases x with Not_found -> x
+
+let expand_var_opt aliases x =
+  try Some (expand_var_at_least_once aliases x) with Not_found -> None
+
+let extend_alias (_,b,_) (var_aliases,rel_aliases) =
+  let rel_aliases =
+    Intmap.fold (fun n c -> Intmap.add (n+1) (lift 1 c))
+      rel_aliases Intmap.empty in
+  let rel_aliases =
+    match b with
+    | Some t when isRel t or isVar t -> Intmap.add 1 (lift 1 t) rel_aliases
+    | _ -> rel_aliases in
+  (var_aliases, rel_aliases)
+
+let rec expand_vars_in_term_using aliases t = match kind_of_term t with
+  | Rel _ | Var _ ->
+      expand_var aliases t
+  | _ ->
+      map_constr_with_full_binders
+	extend_alias expand_vars_in_term_using aliases t
+
+let expand_vars_in_term env = expand_vars_in_term_using (make_alias_map env)
+
+let rec expansions_of_var aliases x =
+  try
+    let t = expand_var_once aliases x in
+    t :: expansions_of_var aliases t
+  with Not_found ->
+    [x]
+
+let expand_full_opt aliases y =
+  try Some (expand_var aliases y) with Not_found -> None
+
 (* Knowing that [Gamma |- ev : T] and that [ev] is applied to [args],
  * [make_projectable_subst ev args] builds the substitution [Gamma:=args].
  * If a variable and an alias of it are bound to the same instance, we skip
@@ -192,20 +265,28 @@ let new_evar_instance sign evd typ ?(src=(dummy_loc,InternalHole)) ?filter insta
  * useful to ensure the uniqueness of a projection.
 *)
 
-let make_projectable_subst sigma evi args =
+let make_projectable_subst aliases sigma evi args =
   let sign = evar_filtered_context evi in
-  let rec alias_of_var id =
-    match pi2 (Sign.lookup_named id sign) with
-    | Some t when isVar t -> alias_of_var (destVar t)
-    | _ -> id in
+  let evar_aliases = compute_aliases sign in
   snd (List.fold_right
     (fun (id,b,c) (args,l) ->
       match b,args with
-	| Some c, a::rest when
-	    isVar c & (try eq_constr a (snd (List.assoc (destVar c) l)) with Not_found -> false) -> (rest,l)
-	| _, a::rest -> (rest, (id, (alias_of_var id,whd_evar sigma a))::l)
+	| None, a::rest ->
+	    let a = whd_evar sigma a in
+	    (rest,Idmap.add id [a,expand_full_opt aliases a,id] l)
+	| Some c, a::rest ->
+	    let a = whd_evar sigma a in
+	    (match kind_of_term c with
+	    | Var id ->
+		let idc = alias_of_var id evar_aliases in
+		let sub = try Idmap.find idc l with Not_found -> [] in
+		if List.exists (fun (c,_,_) -> eq_constr a c) sub then (rest,l)
+		else
+		  (rest,Idmap.add idc ((a,expand_full_opt aliases c,id)::sub) l)
+	    | _ ->
+		(rest,Idmap.add id [a,expand_full_opt aliases a,id] l))
 	| _ -> anomaly "Instance does not match its signature")
-    sign (List.rev (Array.to_list args),[]))
+    sign (array_rev_to_list args,Idmap.empty))
 
 let make_pure_subst evi args =
   snd (List.fold_right
@@ -213,7 +294,7 @@ let make_pure_subst evi args =
       match args with
 	| a::rest -> (rest, (id,a)::l)
 	| _ -> anomaly "Instance does not match its signature")
-    (evar_filtered_context evi) (List.rev (Array.to_list args),[]))
+    (evar_filtered_context evi) (array_rev_to_list args,[]))
 
 (* [push_rel_context_to_named_context] builds the defining context and the
  * initial instance of an evar. If the evar is to be used in context
@@ -235,9 +316,10 @@ let make_pure_subst evi args =
  * Remark 2: If some of the ai or xj are definitions, we keep them in the
  *   instance. This is necessary so that no unfolding of local definitions
  *   happens when inferring implicit arguments (consider e.g. the problem
- *   "x:nat; x':=x; f:forall x, x=x -> Prop |- f _ (refl_equal x')"
- *   we want the hole to be instantiated by x', not by x (which would have the
- *   case in [invert_instance] if x' had disappear of the instance).
+ *   "x:nat; x':=x; f:forall y, y=y -> Prop |- f _ (refl_equal x')" which
+ *   produces the equation "?y[x,x']=?y[x,x']" =? "x'=x'": we want
+ *   the hole to be instantiated by x', not by x (which would have been
+ *   the case in [invert_definition] if x' had disappeared from the instance).
  *   Note that at any time, if, in some context env, the instance of
  *   declaration x:A is t and the instance of definition x':=phi(x) is u, then
  *   we have the property that u and phi(t) are convertible in env.
@@ -490,46 +572,6 @@ let clear_hyps_in_evi evdref hyps concl ids =
   (nhyps,nconcl)
 
 
-(* Expand rels and vars that are bound to other rels or vars so that
-   dependencies in variables are canonically associated to the most ancient
-   variable in its family of aliased variables *)
-
-let expand_var_once env x = match kind_of_term x with
-  | Rel n ->
-      begin match pi2 (lookup_rel n env) with
-      | Some t when isRel t or isVar t -> lift n t
-      | _ -> raise Not_found
-      end
-  | Var id ->
-      begin match pi2 (lookup_named id env) with
-      | Some t when isVar t -> t
-      | _ -> raise Not_found
-      end
-  | _ ->
-      raise Not_found
-
-let rec expand_var_at_least_once env x =
-  let t = expand_var_once env x in
-  try expand_var_at_least_once env t
-  with Not_found -> t
-
-let expand_var env x =
-  try expand_var_at_least_once env x with Not_found -> x
-
-let expand_var_opt env x =
-  try Some (expand_var_at_least_once env x) with Not_found -> None
-
-let rec expand_vars_in_term env t = match kind_of_term t with
-  | Rel _ | Var _ -> expand_var env t
-  | _ -> map_constr_with_full_binders push_rel expand_vars_in_term env t
-
-let rec expansions_of_var env x =
-  try
-    let t = expand_var_once env x in
-    t :: expansions_of_var env t
-  with Not_found ->
-    [x]
-
 (* [find_projectable_vars env sigma y subst] finds all vars of [subst]
  * that project on [y]. It is able to find solutions to the following
  * two kinds of problems:
@@ -569,24 +611,38 @@ type evar_projection =
 | ProjectVar
 | ProjectEvar of existential * evar_info * identifier * evar_projection
 
-let rec find_projectable_vars with_evars env sigma y subst =
-  let is_projectable (id,(idc,y')) =
-    let y' = whd_evar sigma y' in
-    if y = y' or expand_var env y = expand_var env y'
-    then (idc,(y'=y,(id,ProjectVar)))
-    else if with_evars & isEvar y' then
-      let (evk,argsv as t) = destEvar y' in
-      let evi = Evd.find sigma evk in
-      let subst = make_projectable_subst sigma evi argsv in
-      let l = find_projectable_vars with_evars env sigma y subst in
-      match l with
-      | [id',p] -> (idc,(true,(id,ProjectEvar (t,evi,id',p))))
-      | _ -> failwith ""
-    else failwith "" in
-  let l = map_succeed is_projectable subst in
-  let l = list_partition_by (fun (idc,_) (idc',_) -> idc = idc') l in
-  let l = List.map (List.map snd) l in
-  List.map (fun l -> try List.assoc true l with Not_found -> snd (List.hd l)) l
+let rec assoc_up_to_alias y yc = function
+  | (c,_,id)::l when y = c -> id
+  | (c,Some cc,id)::l when yc = cc -> id
+  | _::l -> assoc_up_to_alias y yc l
+  | [] -> raise Not_found
+
+let rec find_projectable_vars with_evars aliases sigma y subst =
+  let yc = expand_var aliases y in
+  let is_projectable idc idcl subst' =
+    (* First test if some [id] aliased to [idc] is bound to [y] in [subst] *)
+    try let id = assoc_up_to_alias y yc idcl in (id,ProjectVar)::subst'
+    with Not_found ->
+    (* Then test if [idc] is (indirectly) bound in [subst] to some evar *)
+    (* projectable on [y] *)
+      if with_evars then
+	let idcl' = List.filter (fun (c,_,id) -> isEvar c) idcl in
+	match idcl' with
+	| [c,_,id] ->
+	  begin
+	    let (evk,argsv as t) = destEvar c in
+	    let evi = Evd.find sigma evk in
+	    let subst = make_projectable_subst aliases sigma evi argsv in
+	    let l = find_projectable_vars with_evars aliases sigma y subst in
+	    match l with
+	    | [id',p] -> (id,ProjectEvar (t,evi,id',p))::subst'
+	    | _ -> subst'
+	  end
+	| [] -> subst'
+	| _ -> anomaly "More than one non var in aliases class of evar instance"
+      else
+	subst' in
+  Idmap.fold is_projectable subst []
 
 (* [filter_solution] checks if one and only one possible projection exists
  * among a set of solutions to a projection problem *)
@@ -596,8 +652,9 @@ let filter_solution = function
   | (id,p)::_::_ -> raise NotUnique
   | [id,p] -> (mkVar id, p)
 
-let project_with_effects env sigma effects t subst =
-  let c, p = filter_solution (find_projectable_vars false env sigma t subst) in
+let project_with_effects aliases sigma effects t subst =
+  let c, p =
+    filter_solution (find_projectable_vars false aliases sigma t subst) in
   effects := p :: !effects;
   c
 
@@ -636,7 +693,7 @@ let rec do_projection_effects define_fun env ty evd = function
       else
 	evd
 
-(* Assuming Σ; Γ, y1..yk |- c, [invert_subst Γ k Σ [x1:=u1;...;xn:=un] c]
+(* Assuming Σ; Γ, y1..yk |- c, [invert_arg_from_subst Γ k Σ [x1:=u1..xn:=un] c]
  * tries to return φ(x1..xn) such that equation φ(u1..un) = c is valid.
  * The strategy is to imitate the structure of c and then to invert
  * the variables of c (i.e. rels or vars of Γ) using the algorithm
@@ -650,10 +707,10 @@ let rec do_projection_effects define_fun env ty evd = function
  *
  * The effects correspond to evars instantiated while trying to project.
  *
- * [invert_subst] is used on instances of evars. Since the evars are flexible,
- * these instances are potentially erasable. This is why we don't investigate
- * whether evars in the instances of evars are unifiable, to the contrary of
- * [invert_definition].
+ * [invert_arg_from_subst] is used on instances of evars. Since the
+ * evars are flexible, these instances are potentially erasable. This
+ * is why we don't investigate whether evars in the instances of evars
+ * are unifiable, to the contrary of [invert_definition].
  *)
 
 type projectibility_kind =
@@ -664,15 +721,15 @@ type projectibility_status =
   | CannotInvert
   | Invertible of projectibility_kind
 
-let invert_arg_from_subst env k sigma subst_in_env c_in_env_extended_with_k_binders =
+let invert_arg_from_subst aliases k sigma subst_in_env c_in_env_extended_with_k_binders =
   let effects = ref [] in
   let rec aux k t =
     let t = whd_evar sigma t in
     match kind_of_term t with
     | Rel i when i>k ->
-	project_with_effects env sigma effects (mkRel (i-k)) subst_in_env
+	project_with_effects aliases sigma effects (mkRel (i-k)) subst_in_env
     | Var id ->
-	project_with_effects env sigma effects t subst_in_env
+	project_with_effects aliases sigma effects t subst_in_env
     | _ ->
 	map_constr_with_binders succ aux k t in
   try
@@ -682,9 +739,8 @@ let invert_arg_from_subst env k sigma subst_in_env c_in_env_extended_with_k_bind
     | Not_found -> CannotInvert
     | NotUnique -> Invertible NoUniqueProjection
 
-let invert_arg env k sigma (evk,args_in_env) c_in_env_extended_with_k_binders =
-  let subst_in_env = make_projectable_subst sigma (Evd.find sigma evk) args_in_env in
-  let res = invert_arg_from_subst env k sigma subst_in_env c_in_env_extended_with_k_binders in
+let invert_arg aliases k sigma evk subst_in_env c_in_env_extended_with_k_binders =
+  let res = invert_arg_from_subst aliases k sigma subst_in_env c_in_env_extended_with_k_binders in
   match res with
   | Invertible (UniqueProjection (c,_)) when occur_evar evk c -> CannotInvert
   | _ -> res
@@ -798,10 +854,33 @@ let postpone_evar_evar env evd projs1 (evk1,args1) projs2 (evk2,args2) =
  * Note: argument f is the function used to instantiate evars.
  *)
 
+let are_canonical_instances args1 args2 env =
+  let n1 = Array.length args1 in
+  let n2 = Array.length args2 in
+  let rec aux n = function
+    | (id,_,c)::sign
+	when n < n1 && args1.(n) = mkVar id && args1.(n) = args2.(n) ->
+	aux (n+1) sign
+    | [] ->
+	let rec aux2 n =
+	  n = n1 ||
+	  (args1.(n) = mkRel (n1-n) && args2.(n) = mkRel (n1-n) && aux2 (n+1))
+	in aux2 n
+    | _ -> false in
+  n1 = n2 & aux 0 (named_context env)
+
 exception CannotProject of projectibility_status list
 
-let solve_evar_evar_l2r f env evd (evk1,args1) (evk2,_ as ev2) =
-  let proj1 = array_map_to_list (invert_arg env 0 evd ev2) args1 in
+let solve_evar_evar_l2r f env evd (evk1,args1) (evk2,args2 as ev2) =
+  let aliases = make_alias_map env in
+  let subst = make_projectable_subst aliases evd (Evd.find evd evk2) args2 in
+  if are_canonical_instances args1 args2 env then
+    (* If instances are canonical, we solve the problem in linear time *)
+    let sign = evar_filtered_context (Evd.find evd evk2) in
+    let subst = List.map (fun (id,_,_) -> mkVar id) sign in
+    Evd.define evk2 (mkEvar(evk1,Array.of_list subst)) evd
+  else
+  let proj1 = array_map_to_list (invert_arg aliases 0 evd evk2 subst) args1 in
   try
     (* Instantiate ev2 with (a restriction of) ev1 if uniquely projectable *)
     let proj1' = effective_projections proj1 in
@@ -846,16 +925,17 @@ exception NotInvertibleUsingOurAlgorithm of constr
 exception NotEnoughInformationToProgress
 
 let rec invert_definition choose env evd (evk,argsv as ev) rhs =
+  let aliases = make_alias_map env in
   let evdref = ref evd in
   let progress = ref false in
   let evi = Evd.find evd evk in
-  let subst = make_projectable_subst evd evi argsv in
+  let subst = make_projectable_subst aliases evd evi argsv in
 
   (* Projection *)
   let project_variable t =
     (* Evar/Var problem: unifiable iff variable projectable from ev subst *)
     try
-      let sols = find_projectable_vars true env !evdref t subst in
+      let sols = find_projectable_vars true aliases !evdref t subst in
       let c, p = match sols with
 	| [] -> raise Not_found
 	| [id,p] -> (mkVar id, p)
@@ -872,7 +952,7 @@ let rec invert_definition choose env evd (evk,argsv as ev) rhs =
       | NotUniqueInType ty ->
 	  if not !progress then raise NotEnoughInformationToProgress;
 	  (* No unique projection but still restrict to where it is possible *)
-	  let ts = expansions_of_var env t in
+	  let ts = expansions_of_var aliases t in
 	  let test c = isEvar c or List.mem c ts in
 	  let filter = array_map_to_list test argsv in
 	  let args' = filter_along (fun x -> x) filter argsv in
@@ -893,7 +973,7 @@ let rec invert_definition choose env evd (evk,argsv as ev) rhs =
 	(* Evar/Evar problem (but left evar is virtual) *)
 	let projs' =
 	  array_map_to_list
-	    (invert_arg_from_subst env k !evdref subst) args'
+	    (invert_arg_from_subst aliases k !evdref subst) args'
 	in
 	(try
 	  (* Try to project (a restriction of) the right evar *)
@@ -1033,8 +1113,9 @@ let rec expand_and_check_vars env = function
 let is_unification_pattern_evar env (_,args) l t =
   List.for_all (fun x -> isRel x || isVar x) l (* common failure case *)
   &&
+    let aliases = make_alias_map env in
     let l' = Array.to_list args @ l in
-    let l'' = try Some (expand_and_check_vars env l') with Exit -> None in
+    let l'' = try Some (expand_and_check_vars aliases l') with Exit -> None in
     match l'' with
     | Some l ->
 	let deps =
@@ -1043,7 +1124,7 @@ let is_unification_pattern_evar env (_,args) l t =
 	    l
 	  else
 	    (* Probably strong restrictions coming from t being evar-closed *)
-	    let t = expand_vars_in_term env t in
+	    let t = expand_vars_in_term_using aliases t in
 	    let fv_rels = free_rels t in
 	    let fv_ids = global_vars env t in
 	    List.filter (fun c ->
@@ -1071,7 +1152,7 @@ let is_unification_pattern (env,nb) f l t =
    dependency: ?X x = ?1 (?1 is a meta) will return \_.?1 while it should
    return \y. ?1{x\y} (non constant function if ?1 depends on x) (BB) *)
 let solve_pattern_eqn env l1 c =
-  let l1 = List.map (expand_var env) l1 in
+  let l1 = List.map (expand_var (make_alias_map env)) l1 in
   let c' = List.fold_right (fun a c ->
     let c' = subst_term (lift 1 a) (lift 1 c) in
     match kind_of_term a with

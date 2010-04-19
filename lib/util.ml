@@ -1115,6 +1115,11 @@ let array_union_map f a acc =
     acc
     a
 
+let array_rev_to_list a =
+  let rec tolist i res =
+    if i >= Array.length a then res else tolist (i+1) (a.(i) :: res) in
+  tolist 0 []
+
 (* Matrices *)
 
 let matrix_transpose mat =

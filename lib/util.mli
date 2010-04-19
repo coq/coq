@@ -253,6 +253,7 @@ val array_fold_map2' :
   ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
 val array_distinct : 'a array -> bool
 val array_union_map : ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
+val array_rev_to_list : 'a array -> 'a list
 
 (*s Matrices *)
 
