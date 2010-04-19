@@ -656,7 +656,7 @@ let substition_prefixed_by k mp subst =
   let prefixmp key (mp_to,reso) sub =
     match key with 
       | MPI mpk ->
-	  if mp_in_mp mp mpk then
+	  if mp_in_mp mp mpk && mp <> mpk then
 	    let new_key = replace_mp_in_mp mp k mpk in
 	      Umap.add (MPI new_key) (mp_to,reso) sub
 	  else 
