@@ -2579,6 +2579,7 @@ let induction_tac_felim with_evars indvars scheme gl =
 let apply_induction_in_context isrec hyp0 indsign indvars names induct_tac gl =
   let env = pf_env gl in
   let statlists,lhyp0,indhyps,deps = cook_sign hyp0 indvars env in
+  let deps = List.map (fun (id,c,t)-> (id,c,refresh_universes_strict t)) deps in
   let tmpcl = it_mkNamedProd_or_LetIn (pf_concl gl) deps in
   let names = compute_induction_names (Array.length indsign) names in
   let dephyps = List.map (fun (id,_,_) -> id) deps in
