@@ -56,7 +56,7 @@ let cmp_univ_level u v = match u,v with
       else compare dp1 dp2
 
 let string_of_univ_level = function
-  | Set -> "0"
+  | Set -> "Set"
   | Level (d,n) -> Names.string_of_dirpath d^"."^string_of_int n
 
 module UniverseLMap =
@@ -603,7 +603,7 @@ let pr_constraints c =
 		     in pp_std ++  pr_uni_level u1 ++ str op_str ++
 			  pr_uni_level u2 ++ fnl () )  c (str "")
 
-(* Dumping constrains to a file *)
+(* Dumping constraints to a file *)
 
 let dump_universes output g =
   let dump_arc _ = function
