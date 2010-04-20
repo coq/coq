@@ -20,6 +20,7 @@ open Tacticals
 open Tacinterp
 open Tactics
 open Util
+open Genarg
 
 let assoc_var s ist =
   match List.assoc (Names.id_of_string s) ist.lfun with
@@ -97,18 +98,21 @@ let is_conj ist =
 let flatten_contravariant_conj ist =
   let typ = assoc_var "X1" ist in
   let c = assoc_var "X2" ist in
+  let hyp = assoc_var "id" ist in
   match match_with_conjunction ~strict:strict_in_contravariant_hyp typ with
   | Some (_,args) ->
       let i = List.length args in
       if not binary_mode || i = 2 then 
 	let newtyp = valueIn (VConstr (List.fold_right mkArrow args c)) in
+        let hyp = valueIn (VConstr hyp) in
 	let intros =
 	  iter_tac (List.map (fun _ -> <:tactic< intro >>) args) 
 	  <:tactic< idtac >> in
 	<:tactic<
           let newtyp := $newtyp in
-	  assert newtyp by ($intros; apply id; split; assumption);
-	  clear id
+          let hyp := $hyp in
+          assert newtyp by ($intros; apply hyp; split; assumption);
+          clear hyp
 	>>
       else
 	<:tactic<fail>>
@@ -129,16 +133,19 @@ let is_disj ist =
 let flatten_contravariant_disj ist =
   let typ = assoc_var "X1" ist in
   let c = assoc_var "X2" ist in
+  let hyp = assoc_var "id" ist in
   match match_with_disjunction ~strict:strict_in_contravariant_hyp typ with
   | Some (_,args) ->
       let i = List.length args in
       if not binary_mode || i = 2 then 
+	let hyp = valueIn (VConstr hyp) in
 	iter_tac (list_map_i (fun i arg ->
 	  let typ = valueIn (VConstr (mkArrow arg c)) in
 	  <:tactic< 
             let typ := $typ in
-	    assert typ by (intro; apply id; constructor $i; assumption)
-	  >>) 1 args) <:tactic< clear id >>
+            let hyp := $hyp in
+            assert typ by (intro; apply hyp; constructor $i; assumption)
+          >>) 1 args) <:tactic< let hyp := $hyp in clear hyp >>
       else
 	<:tactic<fail>>
   | _ ->

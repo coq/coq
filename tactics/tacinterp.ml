@@ -2872,7 +2872,8 @@ let add_tacdef isrec tacl =
 (***************************************************************************)
 (* Other entry points *)
 
-let glob_tactic x = intern_tactic (make_empty_glob_sign ()) x
+let glob_tactic x =
+  Flags.with_option strict_check (intern_tactic (make_empty_glob_sign ())) x
 
 let glob_tactic_env l env x = 
   Flags.with_option strict_check
