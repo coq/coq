@@ -277,12 +277,12 @@ let make_projectable_subst aliases sigma evi args =
 	| Some c, a::rest ->
 	    let a = whd_evar sigma a in
 	    (match kind_of_term c with
-	    | Var id ->
-		let idc = alias_of_var id evar_aliases in
+	    | Var id' ->
+		let idc = alias_of_var id' evar_aliases in
 		let sub = try Idmap.find idc l with Not_found -> [] in
 		if List.exists (fun (c,_,_) -> eq_constr a c) sub then (rest,l)
 		else
-		  (rest,Idmap.add idc ((a,expand_full_opt aliases c,id)::sub) l)
+		  (rest,Idmap.add idc ((a,expand_full_opt aliases a,id)::sub) l)
 	    | _ ->
 		(rest,Idmap.add id [a,expand_full_opt aliases a,id] l))
 	| _ -> anomaly "Instance does not match its signature")
@@ -611,17 +611,26 @@ type evar_projection =
 | ProjectVar
 | ProjectEvar of existential * evar_info * identifier * evar_projection
 
-let rec assoc_up_to_alias y yc = function
-  | (c,_,id)::l when y = c -> id
-  | (c,Some cc,id)::l when yc = cc -> id
-  | _::l -> assoc_up_to_alias y yc l
+let rec assoc_up_to_alias sigma aliases y yc = function
   | [] -> raise Not_found
+  | (c,cc,id)::l ->
+      let c' = whd_evar sigma c in
+      if y = c' then id
+      else
+	if l <> [] then assoc_up_to_alias sigma aliases y yc l
+	else
+	  (* Last chance, we reason up to alias conversion *)
+	  match (if c == c' then cc else expand_full_opt aliases c') with
+	  | Some cc when yc = cc -> id
+	  | _ -> raise Not_found
 
 let rec find_projectable_vars with_evars aliases sigma y subst =
   let yc = expand_var aliases y in
   let is_projectable idc idcl subst' =
     (* First test if some [id] aliased to [idc] is bound to [y] in [subst] *)
-    try let id = assoc_up_to_alias y yc idcl in (id,ProjectVar)::subst'
+    try
+      let id = assoc_up_to_alias sigma aliases y yc idcl in
+      (id,ProjectVar)::subst'
     with Not_found ->
     (* Then test if [idc] is (indirectly) bound in [subst] to some evar *)
     (* projectable on [y] *)
