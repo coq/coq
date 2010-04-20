@@ -672,7 +672,7 @@ let error_not_allowed_case_analysis isrec kind i =
 let error_not_mutual_in_scheme ind ind' =
   if ind = ind' then
     str "The inductive type " ++ pr_inductive (Global.env()) ind ++
-    str "occurs twice."
+    str " occurs twice."
   else
     str "The inductive types " ++ pr_inductive (Global.env()) ind ++ spc () ++
     str "and" ++ spc () ++ pr_inductive (Global.env()) ind' ++ spc () ++
