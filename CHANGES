@@ -163,6 +163,8 @@ Vernacular commands
   variables before the colon at the start of interactive proofs.
 - New command "Declare Reduction <id> := <conv_expr>", allowing to write
   later "Eval <id> in ...". This command accepts a Local variant.
+- Syntax of Implicit Type now supports more than one block of variables of
+  a given type.
 
 Library
 
