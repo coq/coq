@@ -843,11 +843,11 @@ let rec pr_vernac = function
       hov 1 (pr_section_locality local ++ str"Implicit Arguments " ++ 
 	spc() ++ pr_smart_global q ++ spc() ++
 	str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
-  | VernacReserve (idl,c) ->
-      hov 1 (str"Implicit Type" ++
-        str (if List.length idl > 1 then "s " else " ") ++
-        prlist_with_sep spc pr_lident idl ++ str " :" ++ spc () ++
-        pr_lconstr c)
+  | VernacReserve bl ->
+      let n = List.length (List.flatten (List.map fst bl)) in
+      hov 2 (str"Implicit Type" ++
+        str (if n > 1 then "s " else " ") ++
+        pr_ne_params_list pr_lconstr_expr (List.map (fun sb -> false,sb) bl))
   | VernacGeneralizable (local, g) ->
       hov 1 (pr_locality local ++ str"Generalizable Variable" ++
 		match g with

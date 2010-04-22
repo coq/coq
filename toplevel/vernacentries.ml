@@ -771,10 +771,12 @@ let vernac_declare_implicits local r = function
   | None ->
       Impargs.declare_implicits local (smart_global r)
 
-let vernac_reserve idl c =
-  let t = Constrintern.interp_type Evd.empty (Global.env()) c in
-  let t = Detyping.detype false [] [] t in
-  List.iter (fun id -> Reserve.declare_reserved_type id t) idl
+let vernac_reserve bl =
+  let sb_decl = (fun (idl,c) ->
+    let t = Constrintern.interp_type Evd.empty (Global.env()) c in
+      let t = Detyping.detype false [] [] t in
+        List.iter (fun id -> Reserve.declare_reserved_type id t) idl)
+  in List.iter sb_decl bl
 
 let vernac_generalizable = Implicit_quantifiers.declare_generalizable
 
@@ -1386,7 +1388,7 @@ let interp c = match c with
   | VernacHints (local,dbnames,hints) -> vernac_hints local dbnames hints
   | VernacSyntacticDefinition (id,c,l,b) ->vernac_syntactic_definition id c l b
   | VernacDeclareImplicits (local,qid,l) ->vernac_declare_implicits local qid l
-  | VernacReserve (idl,c) -> vernac_reserve idl c
+  | VernacReserve bl -> vernac_reserve bl
   | VernacGeneralizable (local,gen) -> vernac_generalizable local gen
   | VernacSetOpacity (local,qidl) -> vernac_set_opacity local qidl
   | VernacSetOption (locality,key,v) -> vernac_set_option locality key v

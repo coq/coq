@@ -120,6 +120,12 @@ let test_plurial_form = function
    "Keywords Variables/Hypotheses/Parameters expect more than one assumption"
   | _ -> ()
 
+let test_plurial_form_types = function
+  | [([_],_)] ->
+      Flags.if_verbose warning
+   "Keywords Implicit Types expect more than one type"
+  | _ -> ()
+
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
@@ -542,8 +548,12 @@ GEXTEND Gram
 	     List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
 	   VernacDeclareImplicits (use_section_locality (),qid,pos)
 
-      | IDENT "Implicit"; ["Type" | IDENT "Types"];
-	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c)
+      | IDENT "Implicit"; "Type"; bl = reserv_list ->
+	   VernacReserve bl
+
+      | IDENT "Implicit"; IDENT "Types"; bl = reserv_list ->
+          test_plurial_form_types bl;
+           VernacReserve bl
 
       | IDENT "Generalizable"; 
 	   gen = [IDENT "All"; IDENT "Variables" -> Some []
@@ -570,6 +580,15 @@ GEXTEND Gram
 	  (let (loc,id) = name in (loc, Name id)),
           (Option.default [] sup)
       | -> (loc, Anonymous), []  ] ]
+  ;
+  reserv_list:
+    [ [ bl = LIST1 reserv_tuple -> bl | b = simple_reserv -> [b] ] ]
+  ;
+  reserv_tuple:
+    [ [ "("; a = simple_reserv; ")" -> a ] ]
+  ;
+  simple_reserv:
+    [ [ idl = LIST1 identref; ":"; c = lconstr -> (idl,c) ] ]
   ;
 
 END

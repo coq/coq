@@ -1585,6 +1585,12 @@ Lemma cons_inj_bool : forall (m n:bool) l, n :: l = m :: l -> n = m.
 \begin{Variants}
 \item {\tt Implicit Type {\ident} : {\type}}\\
 This is useful for declaring the implicit type of a single variable.
+\item
+ {\tt Implicit Types\,%
+(\,{\ident$_{1,1}$}\ldots{\ident$_{1,k_1}$}\,{\tt :}\,{\term$_1$} {\tt )}\,%
+\ldots\,{\tt (}\,{\ident$_{n,1}$}\ldots{\ident$_{n,k_n}$}\,{\tt :}\,%
+{\term$_n$} {\tt )}.}\\ 
+  Adds $n$ blocks of implicit types with different specifications.
 \end{Variants}
 
 
