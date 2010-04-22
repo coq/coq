@@ -99,7 +99,7 @@ let expmod_constr modlist c =
 
   in
   if modlist = empty_modlist then c
-  else under_outer_cast nf_betaiota (substrec c)
+  else substrec c
 
 let abstract_constant_type =
    List.fold_left (fun c d -> mkNamedProd_wo_LetIn d c)

@@ -247,7 +247,6 @@ module Vernac_ :
     val syntax : vernac_expr Gram.Entry.e
     val vernac : vernac_expr Gram.Entry.e
     val vernac_eoi : vernac_expr Gram.Entry.e
-    val proof_instr : Decl_expr.raw_proof_instr Gram.Entry.e
   end
 
 (* The main entry: reads an optional vernac command *)

@@ -774,22 +774,15 @@ let rec pr_vernac = function
       hov 2 (str"Include " ++
 	     prlist_with_sep (fun () -> str " <+ ") pr_m mexprs)
   (* Solving *)
-  | VernacSolve (i,tac,deftac) ->
+  | VernacSolve (i,b,tac,deftac) ->
       (if i = 1 then mt() else int i ++ str ": ") ++
+      (match b with None -> mt () | Some Dash -> str"-" | Some Star -> str"*" | Some Plus -> str"+") ++
       pr_raw_tactic tac
-      ++ (try if deftac & Pfedit.get_end_tac() <> None then str ".." else mt ()
+      ++ (try if deftac then str ".." else mt ()
       with UserError _|Stdpp.Exc_located _ -> mt())
 
   | VernacSolveExistential (i,c) ->
       str"Existential " ++ int i ++ pr_lconstrarg c
-
-  (* MMode *)
-
-  | VernacProofInstr instr -> anomaly "Not implemented"
-  | VernacDeclProof -> str "proof"
-  | VernacReturn -> str "return"
-
-  (* /MMode *)
 
   (* Auxiliary file and library management *)
   | VernacRequireFrom (exp,spe,f) -> hov 2

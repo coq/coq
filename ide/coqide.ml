@@ -730,14 +730,10 @@ object(self)
                 (String.make previous_line_spaces ' ')
       end
 
+
   method show_goals =
     try
-      match Decl_mode.get_current_mode () with
-          Decl_mode.Mode_none -> ()
-        | Decl_mode.Mode_tactic ->
-            Ideproof.display (Ideproof.mode_tactic (fun _ _ -> ())) proof_view (Coq.goals Coq.dummy_coqtop)
-        | Decl_mode.Mode_proof ->
-            Ideproof.display Ideproof.mode_cesar proof_view (Coq.goals Coq.dummy_coqtop)
+      Ideproof.display (Ideproof.mode_tactic (fun _ _ -> ())) proof_view (Coq.goals Coq.dummy_coqtop)
     with e ->
       prerr_endline ("Don't worry be happy despite: "^Printexc.to_string e)
 
@@ -747,15 +743,10 @@ object(self)
     if not full_goal_done then
       begin
         try
-          match Decl_mode.get_current_mode () with
-              Decl_mode.Mode_none -> ()
-            | Decl_mode.Mode_tactic ->
-                Ideproof.display
-                  (Ideproof.mode_tactic (fun s () -> ignore (self#insert_this_phrase_on_success
-                                                            true true false ("progress "^s) s)))
-                  proof_view (Coq.goals Coq.dummy_coqtop)
-            | Decl_mode.Mode_proof ->
-                Ideproof.display Ideproof.mode_cesar proof_view (Coq.goals Coq.dummy_coqtop)
+          Ideproof.display
+            (Ideproof.mode_tactic (fun s () -> ignore (self#insert_this_phrase_on_success
+                                                         true true false ("progress "^s) s)))
+            proof_view (Coq.goals Coq.dummy_coqtop)
         with e -> prerr_endline (Printexc.to_string e)
       end
 
@@ -787,9 +778,8 @@ object(self)
       try
         full_goal_done <- false;
         prerr_endline "Send_to_coq starting now";
-        Decl_mode.clear_daimon_flag ();
         let r = Coq.interp Coq.dummy_coqtop verbosely phrase in
-        let is_complete = not (Decl_mode.get_daimon_flag ()) in
+        let is_complete = true in
         let msg = read_stdout () in
         sync display_output msg;
         Some (is_complete,r)

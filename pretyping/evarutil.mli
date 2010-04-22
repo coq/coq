@@ -193,6 +193,10 @@ type clear_dependency_error =
 
 exception ClearDependencyError of identifier * clear_dependency_error
 
+(* spiwack: marks an evar that has been "defined" by clear. 
+    used by [Goal] and (indirectly) [Proofview] to handle the clear tactic gracefully*)
+val cleared : bool Store.Field.t
+
 val clear_hyps_in_evi : evar_map ref -> named_context_val -> types ->
   identifier list -> named_context_val * types
 

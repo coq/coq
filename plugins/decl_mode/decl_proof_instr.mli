@@ -21,19 +21,15 @@ val register_automation_tac: tactic -> unit
 
 val automation_tac : tactic
 
-val daimon_subtree: pftreestate -> pftreestate
+val daimon_subtree: Proof.proof -> Proof.proof
 
 val concl_refiner:
   Termops.meta_type_map -> constr -> Proof_type.goal sigma -> constr
 
-val do_instr: Decl_expr.raw_proof_instr -> pftreestate -> pftreestate
+val do_instr: Decl_expr.raw_proof_instr -> Proof.proof -> unit
 val proof_instr: Decl_expr.raw_proof_instr -> unit
 
 val tcl_change_info : Decl_mode.pm_info -> tactic
-
-val mark_proof_tree_as_done : Proof_type.proof_tree -> Proof_type.proof_tree
-
-val mark_as_done : pftreestate -> pftreestate
 
 val execute_cases :
     Names.name ->
@@ -74,7 +70,7 @@ val register_dep_subcase :
 val thesis_for :     Term.constr ->
     Term.constr -> Decl_mode.per_info -> Environ.env -> Term.constr
 
-val close_previous_case : pftreestate -> pftreestate
+val close_previous_case : Proof.proof -> unit
 
 val pop_stacks :
   (Names.identifier *

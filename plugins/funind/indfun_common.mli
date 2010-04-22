@@ -50,14 +50,7 @@ val jmeq_refl : unit -> Term.constr
 
 (* [save_named] is a copy of [Command.save_named] but uses
    [nf_betaiotazeta] instead of [nf_betaiotaevar_preserving_vm_cast]
-
-
-
-   DON'T USE IT if you cannot ensure that there is no VMcast in the proof
-
 *)
-
-(* val nf_betaiotazeta : Reductionops.reduction_function *)
 
 val new_save_named : bool -> unit
 

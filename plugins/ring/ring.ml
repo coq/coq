@@ -21,7 +21,6 @@ open Reductionops
 open Tacticals
 open Tacexpr
 open Tacmach
-open Proof_trees
 open Printer
 open Equality
 open Vernacinterp

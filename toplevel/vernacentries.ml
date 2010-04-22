@@ -19,8 +19,6 @@ open Nameops
 open Term
 open Pfedit
 open Tacmach
-open Proof_trees
-open Decl_mode
 open Constrintern
 open Prettyp
 open Printer
@@ -66,52 +64,34 @@ let cl_of_qualid = function
 (* "Show" commands *)
 
 let show_proof () =
-  let pts = get_pftreestate () in
-  let cursor = cursor_of_pftreestate pts in
-  let evc = evc_of_pftreestate pts in
-  let (pfterm,meta_types) = extract_open_pftreestate pts in
-  msgnl (str"LOC: " ++
-    prlist_with_sep pr_spc pr_int (List.rev cursor) ++ fnl () ++
-    str"Subgoals" ++ fnl () ++
-    prlist (fun (mv,ty) -> Nameops.pr_meta mv ++ str" -> " ++
-      pr_ltype ty ++ fnl ())
-      meta_types
-    ++ str"Proof: " ++ pr_lconstr (Evarutil.nf_evar evc pfterm))
+  (* spiwack: this would probably be cooler with a bit of polishing. *)
+  let p = Proof_global.give_me_the_proof () in
+  let pprf = Proof.partial_proof p in
+  msgnl (Util.prlist_with_sep Pp.fnl Printer.pr_constr pprf)
 
 let show_node () =
-  let pts = get_pftreestate () in
-  let pf = proof_of_pftreestate pts
-  and cursor = cursor_of_pftreestate pts in
-  msgnl (prlist_with_sep pr_spc pr_int (List.rev cursor) ++ fnl () ++
-         pr_goal (goal_of_proof pf) ++ fnl () ++
-         (match pf.Proof_type.ref with
-            | None -> (str"BY <rule>")
-            | Some(r,spfl) ->
-		(str"BY " ++ pr_rule r ++ fnl () ++
-		 str"  " ++
-		   hov 0 (prlist_with_sep pr_fnl pr_goal
-			    (List.map goal_of_proof spfl)))))
+  (* spiwack: I'm have little clue what this function used to do. I deactivated it, 
+      could, possibly, be cleaned away. (Feb. 2010) *)
+  ()
 
 let show_script () =
-  let pts = get_pftreestate () in
-  let pf = proof_of_pftreestate pts
-  and evc = evc_of_pftreestate pts in
-  msgnl_with !Pp_control.deep_ft (print_treescript evc pf)
+  (* spiwack: show_script is currently not working *)
+  ()
 
 let show_thesis () =
      msgnl (anomaly "TODO" )
 
 let show_top_evars () =
+  (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
   let pfts = get_pftreestate () in
-  let gls = top_goal_of_pftreestate pfts in
-  let sigma = project gls in
+  let gls = Proof.V82.subgoals pfts in
+  let sigma = gls.Evd.sigma in
   msg (pr_evars_int 1 (Evarutil.non_instantiated sigma))
+  
 
 let show_prooftree () =
-  let pts = get_pftreestate () in
-  let pf = proof_of_pftreestate pts
-  and evc = evc_of_pftreestate pts in
-  msg (print_proof evc (Global.named_context()) pf)
+  (* Spiwack: proof tree is currently not working *)
+  ()
 
 let print_subgoals () = if_verbose (fun () -> msg (pr_open_subgoals ())) ()
 
@@ -119,7 +99,8 @@ let print_subgoals () = if_verbose (fun () -> msg (pr_open_subgoals ())) ()
 
 let show_intro all =
   let pf = get_pftreestate() in
-  let gl = nth_goal_of_pftreestate 1 pf in
+  let {Evd.it=gls ; sigma=sigma} = Proof.V82.subgoals pf in
+  let gl = {Evd.it=List.hd gls ; sigma = sigma} in
   let l,_= decompose_prod_assum (strip_outer_cast (pf_concl gl)) in
   if all
   then
@@ -349,14 +330,10 @@ let vernac_end_proof = function
      the theories [??] *)
 
 let vernac_exact_proof c =
-  let pfs = top_of_tree (get_pftreestate()) in
-  let pf = proof_of_pftreestate pfs in
-    if (is_leaf_proof pf) then begin
-      by (Tactics.exact_proof c);
-      save_named true end
-    else
-      errorlabstrm "Vernacentries.ExactProof"
-	(strbrk "Command 'Proof ...' can only be used at the beginning of the proof.")
+  (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
+     called only at the begining of a proof. *)
+    by (Tactics.exact_proof c);
+      save_named true
 
 let vernac_assumption kind l nl=
   if Pfedit.refining () then
@@ -626,24 +603,61 @@ let vernac_declare_class id =
 
 (***********)
 (* Solving *)
-let vernac_solve n tcom b =
+
+let command_focus = Proof.new_focus_kind ()
+let focus_command_cond = Proof.no_cond command_focus
+
+(* Gestion of bullets. *)
+open Store.Field
+(* spiwack: we need only one focus kind as we keep a stack of (distinct!) bullets *)
+let bullet_kind = Proof.new_focus_kind () 
+let bullet_cond = Proof.done_cond bullet_kind
+let (get_bullets,set_bullets) =
+  let bullets = Store.field () in
+  ( begin fun pr -> Option.default [] (bullets.get (Proof.get_proof_info pr)) end ,
+    begin fun bs pr -> Proof.set_proof_info (bullets.set bs (Proof.get_proof_info pr)) pr end )
+let has_bullet bul pr =
+  let rec has_bullet = function
+    | b'::_ when bul=b' -> true
+    | _::l -> has_bullet l
+    | [] -> false
+  in
+  has_bullet (get_bullets pr)
+(* precondition: the stack is not empty *)
+let pop_bullet pr =
+  match get_bullets pr with
+  | b::stk -> Proof.unfocus bullet_kind pr ;
+                   set_bullets stk pr ;
+		   b
+  | [] -> Util.anomaly "Tried to pop bullet from an empty stack"
+let push_bullet b pr =
+  Proof.focus bullet_cond 1 pr ;
+  set_bullets (b::get_bullets pr) pr
+
+let put_bullet p bul =
+  if has_bullet bul p then
+    begin 
+      while bul <> pop_bullet p do () done;
+      push_bullet bul p
+    end
+  else 
+    push_bullet bul p
+
+let vernac_solve n bullet tcom b =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode.";
-  Decl_mode.check_not_proof_mode "Unknown proof instruction";
-  begin
-    if b then
-      solve_nth n (Tacinterp.hide_interp tcom (get_end_tac ()))
-    else solve_nth n (Tacinterp.hide_interp tcom None)
-  end;
+  let p = Proof_global.give_me_the_proof () in
+  Option.iter (put_bullet p) bullet ;
+  solve_nth n (Tacinterp.hide_interp tcom None) ~with_end_tac:b;
   (* in case a strict subtree was completed,
      go back to the top of the prooftree *)
-  if subtree_solved () then begin
-    Flags.if_verbose msgnl (str "Subgoal proved");
-    make_focus 0;
-    reset_top_of_script ()
-  end;
+  begin try while Proof.no_focused_goal p do
+    Proof.unfocus command_focus p
+  done
+  with Util.UserError _ -> () end;
   print_subgoals();
   if !pcoq <> None then (Option.get !pcoq).solve n
+ 
 
   (* A command which should be a tactic. It has been
      added by Christine to patch an error in the design of the proof
@@ -659,32 +673,6 @@ let vernac_set_end_tac tac =
   if tac <> (Tacexpr.TacId []) then set_end_tac (Tacinterp.interp tac) else ()
     (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
 
-(***********************)
-(* Proof Language Mode *)
-
-let vernac_decl_proof () =
-  check_not_proof_mode "Already in Proof Mode";
-  if tree_solved () then
-    error "Nothing left to prove here."
-  else
-    begin
-      Decl_proof_instr.go_to_proof_mode ();
-      print_subgoals ()
-    end
-
-let vernac_return () =
-  match get_current_mode () with
-      Mode_tactic ->
-	Decl_proof_instr.return_from_tactic_mode ();
-	print_subgoals ()
-    | Mode_proof ->
-	error "\"return\" is only used after \"escape\"."
-    | Mode_none ->
-	error "There is no proof to end."
-
-let vernac_proof_instr instr =
-  Decl_proof_instr.proof_instr instr;
-  print_subgoals ()
 
 (*****************************)
 (* Auxiliary file management *)
@@ -824,14 +812,6 @@ let _ =
       optkey   = ["Contextual";"Implicit"];
       optread  = Impargs.is_contextual_implicit_args;
       optwrite = Impargs.make_contextual_implicit_args }
-
-(* let _ = *)
-(*   declare_bool_option  *)
-(*     { optsync  = true; *)
-(*       optname  = "forceable implicit arguments"; *)
-(*       optkey   = ["Forceable";"Implicit")); *)
-(*       optread  = Impargs.is_forceable_implicit_args; *)
-(*       optwrite = Impargs.make_forceable_implicit_args } *)
 
 let _ =
   declare_bool_option
@@ -1223,41 +1203,56 @@ let vernac_backtrack snum pnum naborts =
   vernac_backto snum;
   Pp.flush_all();
   (* there may be no proof in progress, even if no abort *)
-  (try print_subgoals () with UserError _ -> ())
+  (try print_subgoals () with Proof_global.NoCurrentProof | UserError _ -> ())
 
 
 let vernac_focus gln =
-  check_not_proof_mode "No focussing or Unfocussing in Proof Mode.";
+  let p = Proof_global.give_me_the_proof () in
   match gln with
-    | None -> traverse_nth_goal 1; print_subgoals ()
-    | Some n -> traverse_nth_goal n; print_subgoals ()
+    | None -> Proof.focus focus_command_cond 1 p; print_subgoals ()
+    | Some n -> Proof.focus focus_command_cond n p; print_subgoals ()
 
-  (* Reset the focus to the top of the tree *)
+
+  (* Unfocuses one step in the focus stack. *)
 let vernac_unfocus () =
-  check_not_proof_mode "No focussing or Unfocussing in Proof Mode.";
-  make_focus 0; reset_top_of_script (); print_subgoals ()
+  let p = Proof_global.give_me_the_proof () in
+  Proof.unfocus command_focus p; print_subgoals ()
 
-let vernac_go = function
-  | GoTo n -> Pfedit.traverse n;show_node()
-  | GoTop -> Pfedit.reset_top_of_tree ();show_node()
-  | GoNext -> Pfedit.traverse_next_unproven ();show_node()
-  | GoPrev -> Pfedit.traverse_prev_unproven ();show_node()
+(* BeginSubproof / EndSubproof. 
+    BeginSubproof (vernac_subproof) focuses on the first goal, or the goal
+    given as argument.
+    EndSubproof (vernac_end_subproof) unfocuses from a BeginSubproof, provided
+    that the proof of the goal has been completed.
+*)
+let subproof_kind = Proof.new_focus_kind ()
+let subproof_cond = Proof.done_cond subproof_kind
 
-let apply_subproof f occ =
-  let pts = get_pftreestate() in
-  let evc = evc_of_pftreestate pts in
-  let rec aux pts = function
-    | [] -> pts
-    | (n::l) -> aux (Tacmach.traverse n pts) occ in
-  let pts = aux pts (occ@[-1]) in
-  let pf = proof_of_pftreestate pts in
-  f evc (Global.named_context()) pf
+let vernac_subproof gln =
+  let p = Proof_global.give_me_the_proof () in
+  begin match gln with
+  | None -> Proof.focus subproof_cond 1 p
+  | Some n -> Proof.focus subproof_cond n p
+  end ;
+  print_subgoals ()
+
+let vernac_end_subproof () =
+  let p = Proof_global.give_me_the_proof () in
+  Proof.unfocus subproof_kind p ; print_subgoals ()
+
+let vernac_go _ = 
+  (* spiwack: don't know what it's supposed to do. Undocumented. 
+     Deactivated and candidate for removal. (Feb. 2010) *)
+  ()
 
 let explain_proof occ =
-  msg (apply_subproof (fun evd _ -> print_treescript evd) occ)
+  (* spiwack: don't know what it's supposed to do. Undocumented. 
+     Deactivated and candidate for removal. (Feb. 2010) *)
+  ()
 
 let explain_tree occ =
-  msg (apply_subproof print_proof occ)
+  (* spiwack: don't know what it's supposed to do. Undocumented.
+     Deactivated and candidate for removeal. (Feb. 2010) *)
+  ()
 
 let vernac_show = function
   | ShowGoal nopt ->
@@ -1285,11 +1280,11 @@ let vernac_show = function
 
 let vernac_check_guard () =
   let pts = get_pftreestate () in
-  let pf = proof_of_pftreestate pts in
-  let (pfterm,_) = extract_open_pftreestate pts in
+  let pfterm = List.hd (Proof.partial_proof pts) in
   let message =
     try
-      Inductiveops.control_only_guard (Evd.evar_env (goal_of_proof pf))
+      let { Evd.it=gl ; sigma=sigma } = Proof.V82.top_goal pts in
+      Inductiveops.control_only_guard (Goal.V82.env sigma gl)
 	pfterm;
       (str "The condition holds up to here")
     with UserError(_,s) ->
@@ -1352,16 +1347,8 @@ let interp c = match c with
   | VernacDeclareClass id -> vernac_declare_class id
 
   (* Solving *)
-  | VernacSolve (n,tac,b) -> vernac_solve n tac b
+  | VernacSolve (n,bullet,tac,b) -> vernac_solve n bullet tac b
   | VernacSolveExistential (n,c) -> vernac_solve_existential n c
-
-  (* MMode *)
-
-  | VernacDeclProof -> vernac_decl_proof ()
-  | VernacReturn -> vernac_return ()
-  | VernacProofInstr stp -> vernac_proof_instr stp
-
-  (* /MMode *)
 
   (* Auxiliary file and library management *)
   | VernacRequireFrom (exp,spec,f) -> vernac_require_from exp spec f
@@ -1418,10 +1405,13 @@ let interp c = match c with
   | VernacBacktrack (snum,pnum,naborts) -> vernac_backtrack snum pnum naborts
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()
+  | VernacSubproof n -> vernac_subproof n
+  | VernacEndSubproof -> vernac_end_subproof ()
   | VernacGo g -> vernac_go g
   | VernacShow s -> vernac_show s
   | VernacCheckGuard -> vernac_check_guard ()
   | VernacProof tac -> vernac_set_end_tac tac
+  | VernacProofMode mn -> Proof_global.set_proof_mode mn
   (* Toplevel control *)
   | VernacToplevelControl e -> raise e
 

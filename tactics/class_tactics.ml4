@@ -20,7 +20,6 @@ open Termops
 open Sign
 open Reduction
 open Proof_type
-open Proof_trees
 open Declarations
 open Tacticals
 open Tacmach
@@ -54,17 +53,6 @@ let is_dependent ev evm =
     else dep || occur_evar ev evi.evar_concl)
     evm false
 
-let valid goals p res_sigma l =
-  let evm =
-    List.fold_left2
-      (fun sigma (ev, evi) prf ->
-	let cstr, obls = Refiner.extract_open_proof !res_sigma prf in
-	  if not (Evd.is_defined sigma ev) then
-	    Evd.define ev cstr sigma
-	  else sigma)
-      !res_sigma goals l
-  in raise (Found evm)
-
 let evar_filter evi =
   let hyps' = evar_filtered_context evi in
     { evi with 
@@ -78,7 +66,7 @@ let evars_to_goals p evm =
 	if evi.evar_body = Evar_empty then
 	  let evi', goal = p evm ev evi in
 	    if goal then
-	      ((ev, evi') :: gls, Evd.add evm' ev evi')
+	      ((ev,Goal.V82.build ev) :: gls, Evd.add evm' ev evi')
 	    else (gls, Evd.add evm' ev evi')
 	else (gls, Evd.add evm' ev evi))
       evm ([], Evd.empty)
@@ -223,29 +211,17 @@ let rec catchable = function
   | Stdpp.Exc_located (_, e) -> catchable e
   | e -> Logic.catchable_exception e
 
-let is_dep gl gls =
-  let evs = Evarutil.evars_of_term gl.evar_concl in
-    if evs = Intset.empty then false
-    else
-      List.fold_left
-	(fun b gl ->
-	  if b then b
-	  else
-	    let evs' = Evarutil.evars_of_term gl.evar_concl in
-	      intersects evs evs')
-	false gls
-
 let is_ground gl =
   Evarutil.is_ground_term (project gl) (pf_concl gl)
 
 let nb_empty_evars s =
   Evd.fold (fun ev evi acc -> if evi.evar_body = Evar_empty then succ acc else acc) s 0
 
-let pr_ev evs ev = Printer.pr_constr_env (Evd.evar_env ev) (Evarutil.nf_evar evs ev.Evd.evar_concl)
+let pr_ev evs ev = Printer.pr_constr_env (Goal.V82.env evs ev) (Evarutil.nf_evar evs (Goal.V82.concl evs ev))
+
+let pr_depth l = prlist_with_sep (fun () -> str ".") pr_int (List.rev l)
 
 let typeclasses_debug = ref false
-
-type validation = evar_map -> proof_tree list -> proof_tree
 
 let pr_depth l = prlist_with_sep (fun () -> str ".") pr_int (List.rev l)
 
@@ -256,7 +232,7 @@ type 'ans fk = unit -> 'ans
 type ('a,'ans) sk = 'a -> 'ans fk -> 'ans
 type 'a tac = { skft : 'ans. ('a,'ans) sk -> 'ans fk -> autogoal sigma -> 'ans }
 
-type auto_result = autogoal list sigma * validation
+type auto_result = autogoal list sigma
 
 type atac = auto_result tac
 
@@ -281,7 +257,7 @@ let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
     else []
 
 let pf_filtered_hyps gls = 
-  evar_filtered_context (sig_it gls)
+  Goal.V82.filtered_context gls.Evd.sigma (sig_it gls)
 
 let make_autogoal_hints only_classes ?(st=full_transparent_state) g =
   let sign = pf_filtered_hyps g in
@@ -292,7 +268,7 @@ let lift_tactic tac (f : goal list sigma -> autoinfo -> autogoal list sigma) : '
   { skft = fun sk fk {it = gl,hints; sigma=s} ->
     let res = try Some (tac {it=gl; sigma=s}) with e when catchable e -> None in
       match res with
-      | Some (gls,v) -> sk (f gls hints, fun _ -> v) fk
+      | Some gls -> sk (f gls hints) fk
       | None -> fk () }
 
 let intro_tac : atac =
@@ -300,28 +276,33 @@ let intro_tac : atac =
     (fun {it = gls; sigma = s} info ->
       let gls' =
 	List.map (fun g' ->
-	  let env = evar_env g' in
+	  let env = Goal.V82.env s g' in
+	  let context = Environ.named_context_of_val (Goal.V82.hyps s g') in
 	  let hint = make_resolve_hyp env s (Hint_db.transparent_state info.hints) 
-	    (true,false,false) info.only_classes None (List.hd (evar_context g')) in
+	    (true,false,false) info.only_classes None (List.hd context) in
 	  let ldb = Hint_db.add_list hint info.hints in
 	    (g', { info with is_evar = None; hints = ldb; auto_last_tac = str"intro" })) gls
       in {it = gls'; sigma = s})
 
 let normevars_tac : atac = 
-  lift_tactic tclNORMEVAR
-    (fun {it = gls; sigma = s} info ->
-      let gls' =
-	List.map (fun g' ->
-	  (g', { info with auto_last_tac = str"NORMEVAR" })) gls
-      in {it = gls'; sigma = s})
+  { skft = fun sk fk {it = gl; sigma = s} ->
+    let gl', sigma' = Goal.V82.nf_evar s (fst gl) in
+      sk {it = [gl', snd gl]; sigma = sigma'} fk }
+
+  (* lift_tactic tclNORMEVAR *)
+  (*   (fun {it = gls; sigma = s} info -> *)
+  (*     let gls' = *)
+  (* 	List.map (fun g' -> *)
+  (* 	  (g', { info with auto_last_tac = str"NORMEVAR" })) gls *)
+  (*     in {it = gls'; sigma = s}) *)
 
 
 let id_tac : atac =
   { skft = fun sk fk {it = gl; sigma = s} ->
-    sk ({it = [gl]; sigma = s}, fun _ pfs -> List.hd pfs) fk }
+    sk {it = [gl]; sigma = s} fk }
 
 (* Ordering of states is lexicographic on the number of remaining goals. *)
-let compare (pri, _, _, (res, _)) (pri', _, _, (res', _)) =
+let compare (pri, _, _, res) (pri', _, _, res') =
   let nbgoals s =
     List.length (sig_it s) + nb_empty_evars (sig_sig s)
   in
@@ -344,11 +325,11 @@ let solve_unif_tac : atac =
 
 let hints_tac hints =
   { skft = fun sk fk {it = gl,info; sigma = s} ->
-    let possible_resolve ((lgls,v) as res, pri, b, pp) =
+    let possible_resolve (lgls as res, pri, b, pp) =
       (pri, pp, b, res)
     in
     let tacs =
-      let concl = gl.evar_concl in
+      let concl = Goal.V82.concl s gl in
       let poss = e_possible_resolve hints info.hints concl in
       let l =
 	let tacgl = {it = gl; sigma = s} in
@@ -358,25 +339,26 @@ let hints_tac hints =
       in
 	if l = [] && !typeclasses_debug then
 	  msgnl (pr_depth info.auto_depth ++ str": no match for " ++
-		    Printer.pr_constr_env (Evd.evar_env gl) concl ++
+		    Printer.pr_constr_env (Goal.V82.env s gl) concl ++
 		    spc () ++ int (List.length poss) ++ str" possibilities");
 	List.map possible_resolve l
     in
     let tacs = List.sort compare tacs in
     let rec aux i = function
-      | (_, pp, b, ({it = gls; sigma = s}, v)) :: tl ->
+      | (_, pp, b, {it = gls; sigma = s}) :: tl ->
 	  if !typeclasses_debug then msgnl (pr_depth (i :: info.auto_depth) ++ str": " ++ pp
 					       ++ str" on" ++ spc () ++ pr_ev s gl);
 	  let fk =
 	    (fun () -> (* if !typeclasses_debug then msgnl (str"backtracked after " ++ pp); *)
 	    aux (succ i) tl)
 	  in
-	  let sgls = evars_to_goals (fun evm ev evi ->
-	    if Typeclasses.is_resolvable evi && 
-	      (not info.only_classes || Typeclasses.is_class_evar evm evi) then
-	      Typeclasses.mark_unresolvable evi, true
-	    else evi, false) s
-	  in
+	  let sgls = None in
+	  (*   evars_to_goals (fun evm ev evi -> *)
+	  (*   if Typeclasses.is_resolvable evi &&  *)
+	  (*     (not info.only_classes || Typeclasses.is_class_evar evm evi) then *)
+	  (*     Typeclasses.mark_unresolvable evi, true *)
+	  (*   else evi, false) s *)
+	  (* in *)
 	  let nbgls, newgls, s' =
 	    let gls' = List.map (fun g -> (None, g)) gls in
 	    match sgls with
@@ -389,12 +371,12 @@ let hints_tac hints =
 	      { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp;
 		is_evar = evar;
 		hints = 
-		  if b && g.evar_hyps <> gl.evar_hyps 
+		  if b && Goal.V82.hyps s g <> Goal.V82.hyps s gl
 		  then make_autogoal_hints info.only_classes
 		    ~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s'}
 		  else info.hints }
 	    in g, info) 1 newgls in
-	  let glsv = {it = gls'; sigma = s'}, (fun _ pfl -> v (list_firstn nbgls pfl)) in
+	  let glsv = {it = gls'; sigma = s'} in
 	    sk glsv fk
       | [] -> fk ()
     in aux 1 tacs }
@@ -423,9 +405,9 @@ let dependent only_classes evd oev concl =
   in not (Intset.is_empty concl_evars) 
 
 let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk =
-  let rec aux s (acc : (autogoal list * validation) list) fk = function
+  let rec aux s (acc : autogoal list list) fk = function
     | (gl,info) :: gls ->
-	second.skft (fun ({it=gls';sigma=s'},v') fk' ->
+	second.skft (fun {it=gls';sigma=s'} fk' ->
 	  let s', needs_backtrack = 
 	    if gls' = [] then
 	      match info.is_evar with
@@ -433,30 +415,23 @@ let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk
 		  let s' = 
 		    if Evd.is_defined s' ev then s' 
 		    else
-		      let prf = v' s' [] in
-		      let term, _ = Refiner.extract_open_proof s' prf in
-			Evd.define ev term s' 
-		  in s', dependent info.only_classes s' (Some ev) gl.evar_concl
-	      | None -> s', dependent info.only_classes s' None gl.evar_concl
+		      s'
+		  in s', dependent info.only_classes s' (Some ev) (Goal.V82.concl s' gl)
+	      | None -> 
+		  s', dependent info.only_classes s' None (Goal.V82.concl s' gl)
 	    else s', true
 	  in
 	  let fk'' = if not needs_backtrack then
 	    (if !typeclasses_debug then msgnl (str"no backtrack on " ++ pr_ev s gl); fk) else fk' 
-	  in aux s' ((gls',v')::acc) fk'' gls)
+	  in aux s' (gls'::acc) fk'' gls)
 	  fk {it = (gl,info); sigma = s}
     | [] -> Some (List.rev acc, s, fk)
-  in fun ({it = gls; sigma = s},v) fk ->
+  in fun {it = gls; sigma = s} fk ->
     let rec aux' = function
       | None -> fk ()
       | Some (res, s', fk') ->
-	  let goals' = List.concat (List.map (fun (gls,v) -> gls) res) in
-	  let v' s' pfs' : proof_tree =
-	    let (newpfs, rest) = List.fold_left (fun (newpfs,pfs') (gls,v) ->
-	      let before, after = list_chop (List.length gls) pfs' in
-		(v s' before :: newpfs, after))
-	      ([], pfs') res
-	    in assert(rest = []); v s' (List.rev newpfs)
-	  in sk ({it = goals'; sigma = s'}, v') (fun () -> aux' (fk' ()))
+	  let goals' = List.concat res in
+	    sk {it = goals'; sigma = s'} (fun () -> aux' (fk' ()))
     in aux' (aux s [] (fun () -> None) gls)
 
 let then_tac (first : atac) (second : atac) : atac =
@@ -469,7 +444,7 @@ type run_list_res = (auto_result * run_list_res fk) option
 
 let run_list_tac (t : 'a tac) p goals (gl : autogoal list sigma) : run_list_res =
   (then_list t (fun x fk -> Some (x, fk)))
-    (gl, fun s pfs -> valid goals p (ref s) pfs)
+    gl
     (fun _ -> None)
 
 let rec fix (t : 'a tac) : 'a tac =
@@ -488,10 +463,8 @@ let make_autogoals ?(only_classes=true) ?(st=full_transparent_state) gs evm' =
 let get_result r = 
   match r with
   | None -> None
-  | Some ((gls, v), fk) ->
-      try ignore(v (sig_sig gls) []); assert(false)
-      with Found evm' -> Some (evm', fk)
-
+  | Some (gls, fk) -> Some (gls.sigma,fk)
+	
 let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm tac =
   match evars_to_goals p evm with
   | None -> None (* This happens only because there's no evar having p *)
@@ -508,8 +481,8 @@ let eauto ?(only_classes=true) ?st hints g =
   let gl = { it = make_autogoal ~only_classes ?st None g; sigma = project g } in
     match run_tac (eauto_tac hints) gl with
     | None -> raise Not_found
-    | Some ({it = goals; sigma = s}, valid) ->
-	{it = List.map fst goals; sigma = s}, valid s
+    | Some {it = goals; sigma = s} ->
+	{it = List.map fst goals; sigma = s}
 
 let real_eauto st hints p evd =
   let rec aux evd fails =
@@ -531,17 +504,15 @@ let resolve_all_evars_once debug (mode, depth) p evd =
   let db = searchtable_map typeclasses_db in
     real_eauto (Hint_db.transparent_state db) [db] p evd
 
-exception FoundTerm of constr
-
 let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
-  let gls = { it = Evd.make_evar (Environ.named_context_val env) gl; sigma = sigma } in
+  let (gl,t,sigma) = 
+    Goal.V82.mk_goal sigma (Environ.named_context_val env) gl Store.empty in
+  let gls = { it = gl ; sigma = sigma } in
   let hints = searchtable_map typeclasses_db in
-  let gls', v = eauto ~st:(Hint_db.transparent_state hints) [hints] gls in
-  let term = v [] in
+  let gls' =  eauto ~st:(Hint_db.transparent_state hints) [hints] gls in
   let evd = sig_sig gls' in
-  let term = fst (Refiner.extract_open_proof evd term) in
-  let term = Evarutil.nf_evar evd term in
-    evd, term
+  let term = Evarutil.nf_evar evd t in
+  evd, term
 
 let _ =
   Typeclasses.solve_instanciation_problem := (fun x y z -> resolve_one_typeclass x ~sigma:y z)

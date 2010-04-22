@@ -15,7 +15,6 @@ open Sign
 open Environ
 open Evd
 open Reduction
-open Proof_trees
 open Proof_type
 open Refiner
 open Redexpr
@@ -27,7 +26,6 @@ open Pattern
 (* Operations for handling terms under a local typing context. *)
 
 type 'a sigma   = 'a Evd.sigma;;
-type validation = Proof_type.validation;;
 type tactic     = Proof_type.tactic;;
 
 val sig_it  : 'a sigma   -> 'a
@@ -38,7 +36,7 @@ val re_sig : 'a -> evar_map -> 'a sigma
 val unpackage : 'a sigma -> evar_map ref * 'a
 val repackage : evar_map ref -> 'a -> 'a sigma
 val apply_sig_tac :
-  evar_map ref -> (goal sigma -> (goal list) sigma * validation) -> goal -> (goal list) * validation
+  evar_map ref -> (goal sigma -> (goal list) sigma) -> goal -> (goal list) 
 
 val pf_concl              : goal sigma -> types
 val pf_env                : goal sigma -> env
@@ -90,38 +88,6 @@ val pf_conv_x_leq  : goal sigma -> constr -> constr -> bool
 val pf_matches     : goal sigma -> constr_pattern -> constr -> patvar_map
 val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 
-type transformation_tactic = proof_tree -> (goal list * validation)
-
-val frontier : transformation_tactic
-
-
-(*s Functions for handling the state of the proof editor. *)
-
-type pftreestate = Refiner.pftreestate
-
-val proof_of_pftreestate    : pftreestate -> proof_tree
-val cursor_of_pftreestate   : pftreestate -> int list
-val is_top_pftreestate      : pftreestate -> bool
-val evc_of_pftreestate      : pftreestate -> evar_map
-val top_goal_of_pftreestate : pftreestate -> goal sigma
-val nth_goal_of_pftreestate : int -> pftreestate -> goal sigma
-val traverse                : int -> pftreestate -> pftreestate
-val weak_undo_pftreestate   : pftreestate -> pftreestate
-val solve_nth_pftreestate   : int -> tactic -> pftreestate -> pftreestate
-val solve_pftreestate       : tactic -> pftreestate -> pftreestate
-val mk_pftreestate          : goal -> pftreestate
-val extract_open_pftreestate : pftreestate -> constr * Termops.meta_type_map
-val extract_pftreestate     : pftreestate -> constr
-val first_unproven          : pftreestate -> pftreestate
-val last_unproven           : pftreestate -> pftreestate
-val nth_unproven            : int -> pftreestate -> pftreestate
-val node_prev_unproven      : int -> pftreestate -> pftreestate
-val node_next_unproven      : int -> pftreestate -> pftreestate
-val next_unproven           : pftreestate -> pftreestate
-val prev_unproven           : pftreestate -> pftreestate
-val top_of_tree             : pftreestate -> pftreestate
-val change_constraints_pftreestate :
-  evar_map -> pftreestate -> pftreestate
 
 (*s The most primitive tactics. *)
 
@@ -159,7 +125,7 @@ val rename_hyp       : (identifier*identifier) list -> tactic
 
 type validation_list = proof_tree list -> proof_tree list
 
-type tactic_list = (goal list sigma) -> (goal list sigma) * validation_list
+type tactic_list = Refiner.tactic_list
 
 val first_goal         : 'a list sigma -> 'a sigma
 val goal_goal_list     : 'a sigma -> 'a list sigma

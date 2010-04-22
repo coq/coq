@@ -14,7 +14,6 @@ open Term
 open Evd
 open Evarutil
 open Sign
-open Proof_trees
 open Refiner
 
 (******************************************)
@@ -55,19 +54,10 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
 
 (* vernac command Existential *)
 
-let instantiate_pf_com n com pfts =
-  let gls = top_goal_of_pftreestate pfts in
-  let sigma = gls.sigma in
-  let (evk,evi) =
-    let evl = Evarutil.non_instantiated sigma in
-      if (n <= 0) then
-	error "incorrect existential variable index"
-      else if List.length evl < n then
-	  error "not so many uninstantiated existential variables"
-      else
-	List.nth evl (n-1)
-  in
+(* Main component of vernac command Existential *)
+let instantiate_pf_com evk com sigma =
+  let evi = Evd.find sigma evk in
   let env = Evd.evar_env evi in
   let rawc = Constrintern.intern_constr sigma env com in
   let sigma' = w_refine (evk,evi) (([],[]),rawc) sigma in
-  change_constraints_pftreestate sigma' pfts
+  sigma'

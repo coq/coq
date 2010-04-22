@@ -222,12 +222,13 @@ let extend_tactic_grammar s gl =
 let vernac_exts = ref []
 let get_extend_vernac_grammars () = !vernac_exts
 
-let extend_vernac_command_grammar s gl =
+let extend_vernac_command_grammar s nt gl =
+  let nt = Option.default Vernac_.command nt in
   vernac_exts := (s,gl) :: !vernac_exts;
   let univ = get_univ "vernac" in
   let mkact loc l = VernacExtend (s,List.map snd l) in
   let rules = List.map (make_rule univ mkact make_prod_item) gl in
-  Gram.extend Vernac_.command None [(None, None, List.rev rules)]
+  Gram.extend nt None [(None, None, List.rev rules)]
 
 (**********************************************************************)
 (** Grammar declaration for Tactic Notation (Coq level)               *)

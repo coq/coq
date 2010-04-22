@@ -19,7 +19,6 @@ open Topconstr
 open Extend
 open Vernacexpr
 open Pcoq
-open Decl_mode
 open Tactic
 open Decl_kinds
 open Genarg
@@ -40,7 +39,6 @@ let _ = List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
 let check_command = Gram.Entry.create "vernac:check_command"
 
 let tactic_mode = Gram.Entry.create "vernac:tactic_command"
-let proof_mode = Gram.Entry.create "vernac:proof_command"
 let noedit_mode = Gram.Entry.create "vernac:noedit_command"
 
 let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
@@ -50,13 +48,23 @@ let decl_notation = Gram.Entry.create "vernac:decl_notation"
 let typeclass_context = Gram.Entry.create "vernac:typeclass_context"
 let record_field = Gram.Entry.create "vernac:record_field"
 let of_type_with_opt_coercion = Gram.Entry.create "vernac:of_type_with_opt_coercion"
+let subgoal_command = Gram.Entry.create "proof_mode:subgoal_command"
 let instance_name = Gram.Entry.create "vernac:instance_name"
 
-let get_command_entry () =
-  match Decl_mode.get_current_mode () with
-      Mode_proof -> proof_mode
-    | Mode_tactic -> tactic_mode
-    | Mode_none -> noedit_mode
+let command_entry = ref noedit_mode
+let set_command_entry e = command_entry := e
+let get_command_entry () = !command_entry
+
+
+(* Registers the Classic Proof Mode (which uses [tactic_mode] as a parser for
+    proof editing and changes nothing else). Then sets it as the default proof mode. *)
+let set_tactic_mode () = set_command_entry tactic_mode
+let set_noedit_mode () = set_command_entry noedit_mode
+let _ = Proof_global.register_proof_mode {Proof_global.
+					    name = "Classic" ;
+					    set = set_tactic_mode ;
+					    reset = set_noedit_mode
+					 }
 
 let default_command_entry =
   Gram.Entry.of_parser "command_entry"
@@ -64,7 +72,7 @@ let default_command_entry =
 
 let no_hook _ _ = ()
 GEXTEND Gram
-  GLOBAL: vernac gallina_ext tactic_mode proof_mode noedit_mode;
+  GLOBAL: vernac gallina_ext tactic_mode noedit_mode subgoal_command;
   vernac: FIRST
     [ [ IDENT "Time"; v = vernac -> VernacTime v
       | IDENT "Timeout"; n = natural; v = vernac -> VernacTimeout(n,v)
@@ -89,25 +97,25 @@ GEXTEND Gram
       | -> locality_flag := None ] ]
   ;
   noedit_mode:
-    [ [ c = subgoal_command -> c None] ]
+    [ [ c = subgoal_command -> c None None] ]
   ;
   tactic_mode:
   [ [ gln = OPT[n=natural; ":" -> n];
-      tac = subgoal_command -> tac gln ] ]
+      tac = subgoal_command -> tac gln None 
+    | b = bullet; tac = subgoal_command -> tac None (Some b)] ]
   ;
-  subgoal_command:
-    [ [ c = check_command; "." -> c
+  bullet:
+  [ [ "-" -> Dash
+    | "*" -> Star
+    | "+" -> Plus ] ]
+  ;
+  subgoal_command: 
+    [ [ c = check_command; "." -> fun g _ -> c g
       | tac = Tactic.tactic;
         use_dft_tac = [ "." -> false | "..." -> true ] ->
-          (fun g ->
-            let g = match g with Some gl -> gl | _ -> 1 in
-            VernacSolve(g,tac,use_dft_tac)) ] ]
-  ;
-  proof_mode:
-    [ [ instr = proof_instr; "." -> VernacProofInstr instr ] ]
-  ;
-  proof_mode: LAST
-    [ [ c=subgoal_command -> c (Some 1) ] ]
+          (fun g b ->
+            let g = Option.default 1 g in
+            VernacSolve(g,b,tac,use_dft_tac)) ] ]
   ;
   located_vernac:
     [ [ v = vernac -> loc, v ] ]
@@ -713,10 +721,7 @@ GEXTEND Gram
       | IDENT "Remove"; table = IDENT; field = IDENT; v= LIST1 option_ref_value
         -> VernacRemoveOption ([table;field], v)
       | IDENT "Remove"; table = IDENT; v = LIST1 option_ref_value ->
-	  VernacRemoveOption ([table], v)
-
-      | IDENT "proof" -> VernacDeclProof
-      | "return" -> VernacReturn ]]
+	  VernacRemoveOption ([table], v) ]] 
   ;
   check_command: (* TODO: rapprocher Eval et Check *)
     [ [ IDENT "Eval"; r = Tactic.red_expr; "in"; c = lconstr ->

@@ -40,6 +40,7 @@ GEXTEND Gram
     [ [ IDENT "Goal"; c = lconstr -> VernacGoal c
       | IDENT "Proof" -> VernacProof (Tacexpr.TacId [])
       | IDENT "Proof"; "with"; ta = tactic -> VernacProof ta
+      | IDENT "Proof" ; IDENT "Mode" ; mn = string -> VernacProofMode mn
       | IDENT "Abort" -> VernacAbort None
       | IDENT "Abort"; IDENT "All" -> VernacAbortAll
       | IDENT "Abort"; id = identref -> VernacAbort (Some id)
@@ -66,6 +67,9 @@ GEXTEND Gram
       | IDENT "Focus" -> VernacFocus None
       | IDENT "Focus"; n = natural -> VernacFocus (Some n)
       | IDENT "Unfocus" -> VernacUnfocus
+      | IDENT "BeginSubproof" -> VernacSubproof None
+      | IDENT "BeginSubproof"; n = natural -> VernacSubproof (Some n)
+      | IDENT "EndSubproof" -> VernacEndSubproof
       | IDENT "Show" -> VernacShow (ShowGoal None)
       | IDENT "Show"; n = natural -> VernacShow (ShowGoal (Some n))
       | IDENT "Show"; IDENT "Implicit"; IDENT "Arguments"; n = OPT natural ->

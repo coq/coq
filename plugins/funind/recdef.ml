@@ -85,7 +85,7 @@ let rec print_debug_queue e =
   
 
 let do_observe_tac s tac g = 
-  let goal = Printer.pr_goal (sig_it g) in
+  let goal = Printer.pr_goal g in
   let lmsg = (str "recdef ") ++ (str s) in 
   Queue.add (lmsg,goal) debug_queue;
   try 
@@ -376,7 +376,7 @@ let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
 		(fun g1 ->
 		   let ty_teq = pf_type_of g1 (mkVar teq) in
 		   let teq_lhs,teq_rhs =
-		     let _,args = try destApp ty_teq with _ -> Pp.msgnl (Printer.pr_goal (sig_it g1) ++ fnl () ++ pr_id teq ++ str ":" ++ Printer.pr_lconstr ty_teq); assert false in
+		     let _,args = try destApp ty_teq with _ -> Pp.msgnl (Printer.pr_goal g1 ++ fnl () ++ pr_id teq ++ str ":" ++ Printer.pr_lconstr ty_teq); assert false in
 		     args.(1),args.(2)
 		   in
 	           cont_function (mkVar teq::eqs) (replace_term teq_lhs teq_rhs expr) g1
@@ -884,9 +884,9 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
   end
 
 let get_current_subgoals_types () =
-  let pts =  get_pftreestate () in
-  let _,subs = extract_open_pftreestate pts in
-  List.map snd ((* List.sort (fun (x,_) (y,_) -> x -y ) *)subs )
+  let p = Proof_global.give_me_the_proof () in
+  let { Evd.it=sgs ; sigma=sigma } = Proof.V82.subgoals p in
+  List.map (Goal.V82.abstract_type sigma) sgs
 
 let build_and_l l =
   let and_constr =  Coqlib.build_coq_and () in

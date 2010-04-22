@@ -190,6 +190,11 @@ type syntax_modifier =
   | SetOnlyParsing
   | SetFormat of string located
 
+type bullet = 
+  | Dash
+  | Star
+  | Plus
+
 type proof_end =
   | Admitted
   | Proved of opacity_flag * (lident * theorem_kind option) option
@@ -274,15 +279,8 @@ type vernac_expr =
 
   (* Solving *)
 
-  | VernacSolve of int * raw_tactic_expr * bool
+  | VernacSolve of int * bullet option * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
-
-  (* Proof Mode *)
-
-  | VernacDeclProof
-  | VernacReturn
-  | VernacProofInstr of Decl_expr.raw_proof_instr
-
 
   (* Auxiliary file and library management *)
   | VernacRequireFrom of export_flag option * specif_flag option * string
@@ -343,10 +341,13 @@ type vernac_expr =
   | VernacBacktrack of int*int*int
   | VernacFocus of int option
   | VernacUnfocus
+  | VernacSubproof of int option
+  | VernacEndSubproof
   | VernacGo of goable
   | VernacShow of showable
   | VernacCheckGuard
   | VernacProof of raw_tactic_expr
+  | VernacProofMode of string
   (* Toplevel control *)
   | VernacToplevelControl of exn
 

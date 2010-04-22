@@ -512,7 +512,14 @@ let explain_no_instance env (_,id) l =
   str "applied to arguments" ++ spc () ++
     prlist_with_sep pr_spc (pr_lconstr_env env) l
 
+let undefined_evars evm =
+  Evd.fold (fun ev evi undef ->
+    if evi.evar_body = Evar_empty then
+      Evd.add undef ev (Evarutil.nf_evar_info evm evi)
+    else undef) evm Evd.empty
+
 let pr_constraints printenv env evm =
+  let evm = undefined_evars evm in
   let l = Evd.to_list evm in
   let (ev, evi) = List.hd l in
     if List.for_all (fun (ev', evi') ->

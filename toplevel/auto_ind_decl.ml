@@ -551,7 +551,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
   Ci a1 ... an = Ci b1 ... bn
  replace bi with ai; auto || replace bi with ai by  apply typeofbi_prod ; auto
 *)
-                    fun gls-> let gl = (gls.Evd.it).Evd.evar_concl in
+                    fun gls-> let gl = pf_concl gls in
                       match (kind_of_term gl) with
                       | App (c,ca) -> (
                         match (kind_of_term c) with
@@ -674,7 +674,7 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec gsig =
                       tclTHENSEQ [apply (andb_true_intro());
                                   simplest_split ;Auto.default_auto ]
                       );
-                      fun gls -> let gl = (gls.Evd.it).Evd.evar_concl in
+                      fun gls -> let gl = pf_concl gls in
                   (* assume the goal to be eq (eq_type ...) = true *)
                         match (kind_of_term gl) with
                           | App(c,ca) -> (match (kind_of_term ca.(1)) with

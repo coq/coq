@@ -21,7 +21,6 @@ open Reductionops
 open Inductive
 open Inductiveops
 open Typing
-open Proof_trees
 open Proof_type
 open Typeops
 open Type_errors
@@ -326,22 +325,18 @@ let goal_type_of env sigma c =
   (if !check then type_of else Retyping.get_type_of ~refresh:true) env sigma c
 
 let rec mk_refgoals sigma goal goalacc conclty trm =
-  let env = evar_env goal in
-  let hyps = goal.evar_hyps in
-  let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
-(*
-   if  not (occur_meta trm) then
-    let t'ty = (unsafe_machine env sigma trm).uj_type in
-    let _ = conv_leq_goal env sigma trm t'ty conclty in
-      (goalacc,t'ty)
-  else
-*)
+  let env = Goal.V82.env sigma goal in
+  let hyps = Goal.V82.hyps sigma goal in
+  let mk_goal hyps concl =
+    Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal)
+  in
   match kind_of_term trm with
     | Meta _ ->
 	let conclty = nf_betaiota sigma conclty in
 	  if !check && occur_meta conclty then
 	    raise (RefinerError (MetaInType conclty));
-	  (mk_goal hyps conclty)::goalacc, conclty
+	  let (gl,ev,sigma) = mk_goal hyps conclty in
+	  gl::goalacc, conclty, sigma, ev
 
     | Cast (t,_, ty) ->
 	check_typability env sigma ty;
@@ -349,30 +344,32 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	mk_refgoals sigma goal goalacc ty t
 
     | App (f,l) ->
-	let (acc',hdty) =
+	let (acc',hdty,sigma,applicand) =
 	  match kind_of_term f with
 	    | Ind _ | Const _
 		when (isInd f or has_polymorphic_type (destConst f)) ->
 		(* Sort-polymorphism of definition and inductive types *)
 		goalacc,
-                type_of_global_reference_knowing_conclusion env sigma f conclty
+                type_of_global_reference_knowing_conclusion env sigma f conclty,
+		sigma, f
 	    | _ ->
 		mk_hdgoals sigma goal goalacc f
 	in
-	let (acc'',conclty') =
+	let (acc'',conclty',sigma, args) =
 	  mk_arggoals sigma goal acc' hdty (Array.to_list l) in
 	check_conv_leq_goal env sigma trm conclty' conclty;
-        (acc'',conclty')
+        (acc'',conclty',sigma, Term.mkApp (applicand, Array.of_list args))
 
-    | Case (_,p,c,lf) ->
-	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
+    | Case (ci,p,c,lf) ->
+	let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals sigma goal goalacc p c in
 	check_conv_leq_goal env sigma trm conclty' conclty;
-	let acc'' =
+	let (acc'',sigma, rbranches) =
 	  array_fold_left2
-            (fun lacc ty fi -> fst (mk_refgoals sigma goal lacc ty fi))
-            acc' lbrty lf
+            (fun (lacc,sigma,bacc) ty fi ->
+	       let (r,_,s,b') = mk_refgoals sigma goal lacc ty fi in r,s,(b'::bacc))
+            (acc',sigma,[]) lbrty lf
 	in
-	(acc'',conclty')
+	(acc'',conclty',sigma, Term.mkCase (ci,p',c',Array.of_list (List.rev rbranches)))
 
     | _ ->
 	if occur_meta trm then
@@ -380,70 +377,77 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 
       	let t'ty = goal_type_of env sigma trm in
 	check_conv_leq_goal env sigma trm t'ty conclty;
-        (goalacc,t'ty)
+        (goalacc,t'ty,sigma, trm)
 
-(* Same as mkREFGOALS but without knowing te type of the term. Therefore,
+(* Same as mkREFGOALS but without knowing the type of the term. Therefore,
  * Metas should be casted. *)
 
 and mk_hdgoals sigma goal goalacc trm =
-  let env = evar_env goal in
-  let hyps = goal.evar_hyps in
-  let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
+  let env = Goal.V82.env sigma goal in
+  let hyps = Goal.V82.hyps sigma goal in
+  let mk_goal hyps concl = 
+    Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
   match kind_of_term trm with
     | Cast (c,_, ty) when isMeta c ->
 	check_typability env sigma ty;
-	(mk_goal hyps (nf_betaiota sigma ty))::goalacc,ty
+	let (gl,ev,sigma) = mk_goal hyps (nf_betaiota sigma ty) in
+	gl::goalacc,ty,sigma,ev
 
     | Cast (t,_, ty) ->
 	check_typability env sigma ty;
 	mk_refgoals sigma goal goalacc ty t
 
     | App (f,l) ->
-	let (acc',hdty) =
+	let (acc',hdty,sigma,applicand) =
 	  if isInd f or isConst f
 	     & not (array_exists occur_meta l) (* we could be finer *)
 	  then
-	    (goalacc,type_of_global_reference_knowing_parameters env sigma f l)
+	   (goalacc,type_of_global_reference_knowing_parameters env sigma f l,sigma,f)
 	  else mk_hdgoals sigma goal goalacc f
 	in
-	mk_arggoals sigma goal acc' hdty (Array.to_list l)
+	let (acc'',conclty',sigma, args) =
+	  mk_arggoals sigma goal acc' hdty (Array.to_list l) in
+	(acc'',conclty',sigma, Term.mkApp (applicand, Array.of_list args))
 
-    | Case (_,p,c,lf) ->
-	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
-	let acc'' =
+    | Case (ci,p,c,lf) ->
+	let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals sigma goal goalacc p c in
+	let (acc'',sigma,rbranches) =
 	  array_fold_left2
-            (fun lacc ty fi -> fst (mk_refgoals sigma goal lacc ty fi))
-            acc' lbrty lf
+            (fun (lacc,sigma,bacc) ty fi ->
+	       let (r,_,s,b') = mk_refgoals sigma goal lacc ty fi in r,s,(b'::bacc))
+            (acc',sigma,[]) lbrty lf
 	in
-	(acc'',conclty')
+	(acc'',conclty',sigma, Term.mkCase (ci,p',c',Array.of_list (List.rev rbranches)))
 
     | _ ->
 	if !check && occur_meta trm then
 	  anomaly "refine called with a dependent meta";
-	goalacc, goal_type_of env sigma trm
+	goalacc, goal_type_of env sigma trm, sigma, trm
 
 and mk_arggoals sigma goal goalacc funty = function
-  | [] -> goalacc,funty
+  | [] -> goalacc,funty,sigma, []
   | harg::tlargs as allargs ->
-      let t = whd_betadeltaiota (evar_env goal) sigma funty in
+      let t = whd_betadeltaiota (Goal.V82.env sigma goal) sigma funty in
       match kind_of_term t with
 	| Prod (_,c1,b) ->
-	    let (acc',hargty) = mk_refgoals sigma goal goalacc c1 harg in
-	    mk_arggoals sigma goal acc' (subst1 harg b) tlargs
+	    let (acc',hargty,sigma,arg') = mk_refgoals sigma goal goalacc c1 harg in
+	    let (acc'',fty, sigma', args) =
+	      mk_arggoals sigma goal acc' (subst1 harg b) tlargs in
+	    (acc'',fty,sigma',arg'::args)
 	| LetIn (_,c1,_,b) ->
 	    mk_arggoals sigma goal goalacc (subst1 c1 b) allargs
 	| _ -> raise (RefinerError (CannotApply (t,harg)))
 
 and mk_casegoals sigma goal goalacc p c =
-  let env = evar_env goal in
-  let (acc',ct) = mk_hdgoals sigma goal goalacc c in
-  let (acc'',pt) = mk_hdgoals sigma goal acc' p in
+  let env = Goal.V82.env sigma goal in
+  let (acc',ct,sigma,c') = mk_hdgoals sigma goal goalacc c in
+  let (acc'',pt,sigma,p') = mk_hdgoals sigma goal acc' p in
   let indspec =
     try find_mrectype env sigma ct
     with Not_found -> anomaly "mk_casegoals" in
   let (lbrty,conclty) =
     type_case_branches_with_names env indspec p c in
-  (acc'',lbrty,conclty)
+  (acc'',lbrty,conclty,sigma,p',c')
 
 
 let convert_hyp sign sigma (id,b,bt as d) =
@@ -461,18 +465,6 @@ let convert_hyp sign sigma (id,b,bt as d) =
        d) in
   reorder_val_context env sign' !reorder
 
-(* Normalizing evars in a goal. Called by tactic Local_constraints
-   (i.e. when the sigma of the proof tree changes). Detect if the
-   goal is unchanged *)
-let norm_goal sigma gl =
-  let red_fun = Evarutil.nf_evar sigma in
-  let ncl = red_fun gl.evar_concl in
-  let ngl =
-    { gl with
-	evar_concl = ncl;
-	evar_hyps = map_named_val red_fun gl.evar_hyps } in
-    if Evd.eq_evar_info ngl gl then None else Some ngl
-
 
 
 (************************************************************************)
@@ -480,10 +472,12 @@ let norm_goal sigma gl =
 (* Primitive tactics are handled here *)
 
 let prim_refiner r sigma goal =
-  let env = evar_env goal in
-  let sign = goal.evar_hyps in
-  let cl = goal.evar_concl in
-  let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
+  let env = Goal.V82.env sigma goal in
+  let sign = Goal.V82.hyps sigma goal in
+  let cl = Goal.V82.concl sigma goal in
+  let mk_goal hyps concl = 
+    Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) 
+  in
   match r with
     (* Logical rules *)
     | Intro id ->
@@ -491,19 +485,23 @@ let prim_refiner r sigma goal =
 	  error "New variable is already declared";
         (match kind_of_term (strip_outer_cast cl) with
 	   | Prod (_,c1,b) ->
-	       let sg = mk_goal (push_named_context_val (id,None,c1) sign)
+	       let (sg,ev,sigma) = mk_goal (push_named_context_val (id,None,c1) sign)
 			  (subst1 (mkVar id) b) in
+               let sigma = 
+		 Goal.V82.partial_solution sigma goal (mkNamedLambda id c1 ev) in
 	       ([sg], sigma)
 	   | LetIn (_,c1,t1,b) ->
-	       let sg =
+	       let (sg,ev,sigma) =
 		 mk_goal (push_named_context_val (id,Some c1,t1) sign)
 		   (subst1 (mkVar id) b) in
+	       let sigma = 
+		 Goal.V82.partial_solution sigma goal (mkNamedLetIn id c1 t1 ev) in
 	       ([sg], sigma)
 	   | _ ->
 	       raise (RefinerError IntroNeedsProduct))
 
     | Cut (b,replace,id,t) ->
-        let sg1 = mk_goal sign (nf_betaiota sigma t) in
+        let (sg1,ev1,sigma) = mk_goal sign (nf_betaiota sigma t) in
 	let sign,cl,sigma =
 	  if replace then
 	    let nexthyp = get_hyp_after id (named_context_of_val sign) in
@@ -515,7 +513,10 @@ let prim_refiner r sigma goal =
             (if !check && mem_named_context id (named_context_of_val sign) then
                 error "New variable is already declared";
 	     push_named_context_val (id,None,t) sign,cl,sigma) in
-        let sg2 = mk_goal sign cl in
+        let (sg2,ev2,sigma) = 
+	  Goal.V82.mk_goal sigma sign cl (Goal.V82.extra sigma goal) in
+	let oterm = Term.mkApp (Term.mkNamedLambda id t ev2 , [| ev1 |]) in
+	let sigma = Goal.V82.partial_solution sigma goal oterm in
         if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 
     | FixRule (f,n,rest,j) ->
@@ -545,9 +546,24 @@ let prim_refiner r sigma goal =
 		  ("Name "^string_of_id f^" already used in the environment");
 	      mk_sign (push_named_context_val (f,None,ar) sign) oth
 	  | [] ->
-	      List.map (fun (_,_,c) -> mk_goal sign c) all
+	      Goal.list_map (fun sigma (_,_,c) ->
+				                   let (gl,ev,sig')=
+				                     Goal.V82.mk_goal sigma sign c
+						             (Goal.V82.extra sigma goal)
+						   in ((gl,ev),sig'))
+		                              all sigma
 	in
-	  (mk_sign sign all, sigma)
+	let (gls_evs,sigma) =  mk_sign sign all in
+	let (gls,evs) = List.split gls_evs in
+	let ids = List.map pi1 all in
+	let evs = List.map (Term.subst_vars (List.rev ids)) evs in
+	let indxs = Array.of_list (List.map (fun n -> n-1) (List.map pi2 all)) in
+	let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
+	let typarray = Array.of_list (List.map pi3 all) in
+	let bodies = Array.of_list evs in
+	let oterm = Term.mkFix ((indxs,0),(funnames,typarray,bodies)) in
+	let sigma = Goal.V82.partial_solution sigma goal oterm in
+	(gls,sigma)
 
     | Cofix (f,others,j) ->
      	let rec check_is_coind env cl =
@@ -572,32 +588,55 @@ let prim_refiner r sigma goal =
               with
               |	Not_found ->
                   mk_sign (push_named_context_val (f,None,ar) sign) oth)
-	  | [] -> List.map (fun (_,c) -> mk_goal sign c) all
+	  | [] -> Goal.list_map (fun sigma(_,c) ->
+				                       let (gl,ev,sigma) =
+				                         Goal.V82.mk_goal sigma sign c
+							   (Goal.V82.extra sigma goal)
+						       in
+				                       ((gl,ev),sigma))
+	                                             all sigma                                      
      	in
-	  (mk_sign sign all, sigma)
+	let (gls_evs,sigma) =  mk_sign sign all in
+	let (gls,evs) = List.split gls_evs in
+	let (ids,types) = List.split all in
+	let evs = List.map (Term.subst_vars (List.rev ids)) evs in
+	let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
+	let typarray = Array.of_list types in
+	let bodies = Array.of_list evs in
+	let oterm = Term.mkCoFix (0,(funnames,typarray,bodies)) in
+	let sigma = Goal.V82.partial_solution sigma goal oterm in
+        (gls,sigma)
 
     | Refine c ->
 	check_meta_variables c;
-	let (sgl,cl') = mk_refgoals sigma goal [] cl c in
+	let (sgl,cl',sigma,oterm) = mk_refgoals sigma goal [] cl c in
 	let sgl = List.rev sgl in
+	let sigma = Goal.V82.partial_solution sigma goal oterm in
 	  (sgl, sigma)
 
     (* Conversion rules *)
     | Convert_concl (cl',_) ->
 	check_typability env sigma cl';
 	if (not !check) || is_conv_leq env sigma cl' cl then
-          let sg = mk_goal sign cl' in
+          let (sg,ev,sigma) = mk_goal sign cl' in
+	  let sigma = Goal.V82.partial_solution sigma goal ev in
           ([sg], sigma)
 	else
 	  error "convert-concl rule passed non-converting term"
 
     | Convert_hyp (id,copt,ty) ->
-	([mk_goal (convert_hyp sign sigma (id,copt,ty)) cl], sigma)
+	let (gl,ev,sigma) = mk_goal (convert_hyp sign sigma (id,copt,ty)) cl in
+	let sigma = Goal.V82.partial_solution sigma goal ev in
+	([gl], sigma)
 
     (* And now the structural rules *)
     | Thin ids ->
 	let (hyps,concl,nsigma) = clear_hyps sigma ids sign cl in
-	  ([mk_goal hyps concl], nsigma)
+	let (gl,ev,sigma) =
+	  Goal.V82.mk_goal nsigma hyps concl (Goal.V82.extra nsigma goal)
+	in
+	let sigma = Goal.V82.partial_solution sigma goal ev in
+	  ([gl], sigma)
 
     | ThinBody ids ->
 	let clear_aux env id =
@@ -606,7 +645,8 @@ let prim_refiner r sigma goal =
             env'
 	in
 	let sign' = named_context_val (List.fold_left clear_aux env ids) in
-     	let sg = mk_goal sign' cl in
+     	let (sg,ev,sigma) = mk_goal sign' cl in
+	let sigma = Goal.V82.partial_solution sigma goal ev in
      	  ([sg], sigma)
 
     | Move (withdep, hfrom, hto) ->
@@ -614,11 +654,15 @@ let prim_refiner r sigma goal =
 	  split_sign hfrom hto (named_context_of_val sign) in
   	let hyps' =
 	  move_hyp withdep toleft (left,declfrom,right) hto in
-  	  ([mk_goal hyps' cl], sigma)
+	let (gl,ev,sigma) = mk_goal hyps' cl in
+	let sigma = Goal.V82.partial_solution sigma goal ev in
+  	  ([gl], sigma)
 
     | Order ord ->
         let hyps' = reorder_val_context env sign ord in
-        ([mk_goal hyps' cl], sigma)
+	let (gl,ev,sigma) = mk_goal hyps' cl in
+	let sigma = Goal.V82.partial_solution sigma goal ev in
+        ([gl], sigma)
 
     | Rename (id1,id2) ->
         if !check & id1 <> id2 &&
@@ -626,12 +670,19 @@ let prim_refiner r sigma goal =
           error ((string_of_id id2)^" is already used.");
         let sign' = rename_hyp id1 id2 sign in
         let cl' = replace_vars [id1,mkVar id2] cl in
-          ([mk_goal sign' cl'], sigma)
+	let (gl,ev,sigma) = mk_goal sign' cl' in
+	let ev = Term.replace_vars [(id2,mkVar id1)] ev in
+	let sigma = Goal.V82.partial_solution sigma goal ev in
+          ([gl], sigma)
 
     | Change_evars ->
-        match norm_goal sigma goal with
-	    Some ngl -> ([ngl],sigma)
-          | None -> ([goal], sigma)
+	(* spiwack: a priori [Change_evars] is now devoid of operational content.
+	    The new proof engine keeping the evar_map up to date at all time.
+	    As a compatibility mesure I leave the rule. 
+	    It is possible that my assumption is wrong and some uses of 
+	    [Change_evars] are not subsumed by the new engine. In which
+	    case something has to be done here. (Feb. 2010) *)
+	([goal],sigma)
 
 (************************************************************************)
 (************************************************************************)
@@ -671,77 +722,3 @@ let proof_variable_index x =
     | [] -> raise Not_found
   in
   aux 1
-
-let prim_extractor subfun vl pft =
-  let cl = pft.goal.evar_concl in
-    match pft.ref with
-      | Some (Prim (Intro id), [spf]) ->
-	  (match kind_of_term (strip_outer_cast cl) with
-	    | Prod (_,ty,_) ->
-		let cty = subst_proof_vars vl ty in
-		  mkLambda (Name id, cty, subfun (add_proof_var id vl) spf)
-	    | LetIn (_,b,ty,_) ->
-		let cb = subst_proof_vars vl b in
-		let cty = subst_proof_vars vl ty in
-		  mkLetIn (Name id, cb, cty, subfun (add_proof_var id vl) spf)
-	    | _ -> error "Incomplete proof!")
-
-      | Some (Prim (Cut (b,_,id,t)),[spf1;spf2]) ->
-          let spf1, spf2 = if b then spf1, spf2 else spf2, spf1 in
-	    mkLetIn (Name id,subfun vl spf1,subst_proof_vars vl t,
-                    subfun (add_proof_var id vl) spf2)
-
-      | Some (Prim (FixRule (f,n,others,j)),spfl) ->
-	  let firsts,lasts = list_chop j others in
-	  let all = Array.of_list (firsts@(f,n,cl)::lasts) in
-	  let lcty = Array.map (fun (_,_,ar) -> subst_proof_vars vl ar) all in
-	  let names = Array.map (fun (f,_,_) -> Name f) all in
-	  let vn = Array.map (fun (_,n,_) -> n-1) all in
-	  let newvl = List.fold_left (fun vl (id,_,_) -> add_proof_var id vl)
-            (add_proof_var f vl) others in
-	  let lfix = Array.map (subfun newvl) (Array.of_list spfl) in
-	    mkFix ((vn,j),(names,lcty,lfix))
-
-      | Some (Prim (Cofix (f,others,j)),spfl) ->
-	  let firsts,lasts = list_chop j others in
-	  let all = Array.of_list (firsts@(f,cl)::lasts) in
-	  let lcty = Array.map (fun (_,ar) -> subst_proof_vars vl ar) all in
-	  let names  = Array.map (fun (f,_) -> Name f) all in
-	  let newvl = List.fold_left (fun vl (id,_)-> add_proof_var id vl)
-            (add_proof_var f vl) others in
-	  let lfix = Array.map (subfun newvl) (Array.of_list spfl) in
-	    mkCoFix (j,(names,lcty,lfix))
-
-      | Some (Prim (Refine c),spfl) ->
-	  let mvl = collect_meta_variables c in
-	  let metamap = List.combine mvl (List.map (subfun vl) spfl) in
-	  let cc = subst_proof_vars vl c in
-	    plain_instance metamap cc
-
-      (* Structural and conversion rules do not produce any proof *)
-      | Some (Prim (Convert_concl (t,k)),[pf]) ->
-	  if k = DEFAULTcast then subfun vl pf
-	  else mkCast (subfun vl pf,k,subst_proof_vars vl cl)
-      | Some (Prim (Convert_hyp _),[pf]) ->
-	  subfun vl pf
-
-      | Some (Prim (Thin _),[pf]) ->
-	  (* No need to make ids Anon in vl: subst_proof_vars take the most recent*)
-	  subfun vl pf
-
-      | Some (Prim (ThinBody _),[pf]) ->
-	  subfun vl pf
-
-      | Some (Prim (Move _|Order _),[pf]) ->
-	  subfun vl pf
-
-      | Some (Prim (Rename (id1,id2)),[pf]) ->
-	  subfun (rebind id1 id2 vl) pf
-
-      | Some (Prim Change_evars, [pf]) ->
-	  subfun vl pf
-
-      | Some _ -> anomaly "prim_extractor"
-
-      | None-> error "prim_extractor handed incomplete proof"
-

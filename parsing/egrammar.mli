@@ -59,7 +59,7 @@ val extend_tactic_grammar :
   string -> grammar_prod_item list list -> unit
 
 val extend_vernac_command_grammar :
-  string -> grammar_prod_item list list -> unit
+  string -> vernac_expr Gram.Entry.e option -> grammar_prod_item list list -> unit
 
 val get_extend_vernac_grammars :
  unit -> (string * grammar_prod_item list list) list

@@ -51,7 +51,7 @@ type evar_info = {
   evar_body : evar_body;
   evar_filter : bool list;
   evar_source : hole_kind located;
-  evar_extra : Dyn.t option}
+  evar_extra : Store.t }
 
 let make_evar hyps ccl = {
   evar_concl = ccl;
@@ -59,7 +59,7 @@ let make_evar hyps ccl = {
   evar_body = Evar_empty;
   evar_filter = List.map (fun _ -> true) (named_context_of_val hyps);
   evar_source = (dummy_loc,InternalHole);
-  evar_extra = None
+  evar_extra = Store.empty
 }
 
 let evar_concl evi = evi.evar_concl
@@ -93,26 +93,31 @@ module ExistentialSet = Intset
 (* This exception is raised by *.existential_value *)
 exception NotInstantiatedEvar
 
-module EvarInfoMap = struct
-  type t = evar_info ExistentialMap.t
 
-  let empty = ExistentialMap.empty
+module EvarInfoMap = struct
+  type t = evar_info ExistentialMap.t 
+
+  let empty = ExistentialMap.empty 
+  let is_empty  = ExistentialMap.is_empty 
 
   let to_list evc = (* Workaround for change in Map.fold behavior *)
+    (* spiwack: seems to arrange the items in decreasing order.
+        Which would also be the behaviour of a naive [fold].
+        I don't understand above comment. *)
     let l = ref [] in
     ExistentialMap.iter (fun evk x -> l := (evk,x)::!l) evc;
     !l
 
   let dom evc = ExistentialMap.fold (fun evk _ acc -> evk::acc) evc []
   let find evc k = ExistentialMap.find k evc
-  let remove evc k = ExistentialMap.remove k evc
+  let remove evc k = ExistentialMap.remove k evc 
   let mem evc k = ExistentialMap.mem k evc
   let fold = ExistentialMap.fold
   let exists evc f = ExistentialMap.fold (fun k v b -> b || f k v) evc false
 
   let add evd evk newinfo =  ExistentialMap.add evk newinfo evd
 
-  let equal = ExistentialMap.equal
+  let map = ExistentialMap.map
 
   let define evd evk body =
     let oldinfo =
@@ -182,6 +187,14 @@ module EvarInfoMap = struct
     try Some (existential_value sigma ev)
     with NotInstantiatedEvar -> None
 
+  (* Combinators on undefined evars. *)
+  let fold_undefined f  = ExistentialMap.fold begin fun ev evi acc -> 
+                                          match evar_body evi with
+					  | Evar_empty -> f ev evi acc
+					  | _ -> acc
+                                       end
+
+  let undefined evm = fold_undefined ExistentialMap.add evm empty
 end
 
 (*******************************************************************)
@@ -336,7 +349,23 @@ module EvarMap = struct
         (EvarInfoMap.find sigma2 k).evar_body <> Evar_empty)
     || not (UniverseMap.equal (=) sm1 sm2))
 
-  let merge e e' = fold (fun n v sigma -> add sigma n v) e' e
+  (* spiwack: used to workaround a bug in clenv: evar_merge
+        could merge an "old" version of an evar map into
+        a more up to date and erase evar definitions (in the case
+        of [constructor_tac] it actually erased a goal in some cases).
+       This is due to the fact that [open_constr] carry around their own
+       sigma which can be outdated by other operations. *)
+  let add_if_more_recent evd evk newinfo =
+    if newinfo.evar_body = Evar_empty && mem evd evk then
+	evd
+    else
+      add evd evk newinfo
+
+  let merge e e' = fold (fun n v sigma -> add_if_more_recent sigma n v) e' e
+
+  (* combinators on undefined values *)
+  let undefined (sigma,sm) = (EvarInfoMap.undefined sigma,sm)
+  let fold_undefined f (sigma,_) = EvarInfoMap.fold_undefined f sigma
 
 end
 
@@ -441,7 +470,6 @@ let progress_evar_map d1 d2 =
 (* spiwack: tentative. It might very well not be the semantics we want
      for merging evar_map *)
 let merge d1 d2 = {
-(* d1 with evars = EvarMap.merge d1.evars d2.evars*)
   evars = EvarMap.merge d1.evars d2.evars ;
   conv_pbs = List.rev_append d1.conv_pbs d2.conv_pbs ;
   last_mods = ExistentialSet.union d1.last_mods d2.last_mods ;
@@ -488,7 +516,7 @@ let subst_evar_defs_light sub evd =
   assert (evd.conv_pbs = []);
   { evd with
       metas = Metamap.map (map_clb (subst_mps sub)) evd.metas;
-      evars = ExistentialMap.map (subst_evar_info sub)  (fst evd.evars), snd evd.evars
+      evars = EvarInfoMap.map (subst_evar_info sub)  (fst evd.evars), (snd evd.evars)
   }
 
 let subst_evar_map = subst_evar_defs_light
@@ -536,7 +564,7 @@ let evar_declare hyps evk ty ?(src=(dummy_loc,InternalHole)) ?filter evd =
        evar_body = Evar_empty;
        evar_filter = filter;
        evar_source = src;
-       evar_extra = None} }
+       evar_extra = Store.empty } }
 
 let is_defined_evar evd (evk,_) = EvarMap.is_defined evd.evars evk
 
@@ -546,12 +574,10 @@ let is_undefined_evar evd c = match kind_of_term c with
   | _ -> false
 
 let undefined_evars evd =
-  let evars =
-    EvarMap.fold (fun evk evi sigma -> if evi.evar_body = Evar_empty then
-	    EvarMap.add sigma evk evi else sigma)
-      evd.evars EvarMap.empty
-  in
-    { evd with evars = evars }
+  let evars = EvarMap.undefined evd.evars in
+  { evd with evars = evars }
+
+let fold_undefined f evd = EvarMap.fold_undefined f evd.evars
 
 (* extracts conversion problems that satisfy predicate p *)
 (* Note: conv_pbs not satisying p are stored back in reverse order *)
@@ -694,7 +720,6 @@ let meta_with_name evd id =
            strbrk "\" occurs more than once in clause.")
 
 
-(* spiwack: we should try and replace this List.fold_left by a Metamap.fold.  *)
 let meta_merge evd1 evd2 =
   {evd2 with
     metas = List.fold_left (fun m (n,v) -> Metamap.add n v m)

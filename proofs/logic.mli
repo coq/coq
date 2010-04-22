@@ -38,9 +38,6 @@ val prim_refiner : prim_rule -> evar_map -> goal -> goal list * evar_map
 
 type proof_variable
 
-val prim_extractor :
-  (proof_variable list -> proof_tree -> constr)
-  -> proof_variable list -> proof_tree -> constr
 
 val proof_variable_index : identifier -> proof_variable list -> int
 

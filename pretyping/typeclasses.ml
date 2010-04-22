@@ -355,18 +355,15 @@ let is_implicit_arg k =
    calls (e.g. when doing apply in an External hint in typeclass_instances).
    Would be solved by having real evars-as-goals. *)
 
-let ((bool_in : bool -> Dyn.t),
-    (bool_out : Dyn.t -> bool)) = Dyn.create "bool"
-
-let bool_false = bool_in false
+let resolvable = Store.field ()
+open Store.Field
 
 let is_resolvable evi =
-  match evi.evar_extra with
-      Some t -> if Dyn.tag t = "bool" then bool_out t else true
-    | None -> true
+  Option.default true (resolvable.get evi.evar_extra)
 
 let mark_unresolvable evi =
-  { evi with evar_extra = Some bool_false }
+  let t = resolvable.set false evi.evar_extra in
+  { evi with evar_extra = t }
 
 let mark_unresolvables sigma =
   Evd.fold (fun ev evi evs ->
@@ -374,7 +371,7 @@ let mark_unresolvables sigma =
     sigma Evd.empty
 
 let has_typeclasses evd =
-  Evd.fold (fun ev evi has -> has ||
+  Evd.fold_undefined (fun ev evi has -> has ||
     (evi.evar_body = Evar_empty && is_class_evar evd evi && is_resolvable evi))
     evd false
 

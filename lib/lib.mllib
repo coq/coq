@@ -10,8 +10,6 @@ Hashcons
 Dyn
 System
 Envars
-Bstack
-Edit
 Gset
 Gmap
 Fset
@@ -26,4 +24,4 @@ Rtree
 Heap
 Option
 Dnet
-
+Store

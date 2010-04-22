@@ -19,7 +19,6 @@ open Printer
 open Environ
 open Evarutil
 open Evd
-open Decl_mode
 open Hipattern
 open Tacmach
 open Reductionops
@@ -89,11 +88,6 @@ let version () =
 
 let is_in_loadpath coqtop dir =
   Library.is_in_load_paths (System.physical_path_of_string dir)
-
-let is_in_proof_mode () =
-  match Decl_mode.get_current_mode () with
-      Decl_mode.Mode_none -> false
-    | _ -> true
 
 let user_error_loc l s =
   raise (Stdpp.Exc_located (l, Util.UserError ("CoqIde", s)))
@@ -169,11 +163,6 @@ let rec attribute_of_vernac_command = function
   | VernacSolve _ -> [SolveCommand]
   | VernacSolveExistential _ -> [SolveCommand]
 
-  (* MMode *)
-  | VernacDeclProof -> [SolveCommand]
-  | VernacReturn -> [SolveCommand]
-  | VernacProofInstr _ -> [SolveCommand]
-
   (* Auxiliary file and library management *)
   | VernacRequireFrom _ -> []
   | VernacAddLoadPath _ -> []
@@ -241,8 +230,14 @@ let rec attribute_of_vernac_command = function
   | VernacProof (Tacexpr.TacId []) -> [OtherStatePreservingCommand]
   | VernacProof _ -> []
 
+  | VernacProofMode _ -> []
+
+  | VernacSubproof _ -> [SolveCommand]
+  | VernacEndSubproof _ -> [SolveCommand]
+
   (* Toplevel control *)
   | VernacToplevelControl _ -> []
+
 
   (* Extensions *)
   | VernacExtend ("Subtac_Obligations", _) -> [GoalStartingCommand]
@@ -508,13 +503,13 @@ let hyp_next_tac sigma env (id,_,ast) =
     ("inversion clear "^id_s), ("inversion_clear "^id_s^".\n")
   ]
 
-let concl_next_tac concl =
+let concl_next_tac sigma concl =
   let expand s = (s,s^".\n") in
   List.map expand ([
     "intro";
     "intros";
     "intuition"
-  ] @ (if Hipattern.is_equality_type concl.Evd.evar_concl then [
+  ] @ (if Hipattern.is_equality_type (Goal.V82.concl sigma concl) then [
     "reflexivity";
     "discriminate";
     "symmetry"
@@ -538,30 +533,26 @@ let concl_next_tac concl =
 let goals coqtop =
   PrintOpt.enforce_hack ();
   let pfts = Pfedit.get_pftreestate () in
-  let sigma = Tacmach.evc_of_pftreestate pfts in
-  let (all_goals,_) = Refiner.frontier (Refiner.proof_of_pftreestate pfts) in
+  let { it=all_goals ; sigma=sigma } = Proof.V82.subgoals pfts in
   if all_goals = [] then
     begin
       Message (
-        match Decl_mode.get_end_command pfts with
-          | Some c -> "Subproof completed, now type "^c^".\n"
-          | None ->
-              let exl = Evarutil.non_instantiated sigma in
-              if exl = [] then "Proof Completed.\n" else
-                ("No more subgoals but non-instantiated existential variables:\n"^
-                 string_of_ppcmds (pr_evars_int 1 exl)))
+        let exl = Evarutil.non_instantiated sigma in
+        if exl = [] then "Proof Completed.\n" else
+          ("No more subgoals but non-instantiated existential variables:\n"^
+             string_of_ppcmds (pr_evars_int 1 exl)))
     end
   else
     begin
       let process_goal g =
-        let env = Evd.evar_env g in
+        let env = Goal.V82.env sigma g in
         let ccl =
-          string_of_ppcmds (pr_ltype_env_at_top env g.Evd.evar_concl) in
+          string_of_ppcmds (pr_ltype_env_at_top env (Goal.V82.concl sigma g)) in
         let process_hyp h_env d acc =
           (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in
         let hyps =
           List.rev (Environ.fold_named_context process_hyp env ~init:[]) in
-        (hyps,(ccl,concl_next_tac g))
+        (hyps,(ccl,concl_next_tac sigma g))
       in
       Goals (List.map process_goal all_goals)
     end

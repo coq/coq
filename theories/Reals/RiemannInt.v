@@ -2242,7 +2242,7 @@ Proof.
   unfold RiemannInt_SF in |- *; case (Rle_dec a b); intro.
   eapply StepFun_P17.
   apply StepFun_P1.
-  simpl in |- *; apply StepFun_P1.
+  simpl in |- *; apply StepFun_P1. 
   apply Ropp_eq_compat; eapply StepFun_P17.
   apply StepFun_P1.
   simpl in |- *; apply StepFun_P1.

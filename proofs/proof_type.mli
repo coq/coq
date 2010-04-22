@@ -16,7 +16,6 @@ open Libnames
 open Term
 open Util
 open Tacexpr
-open Decl_expr
 open Rawterm
 open Genarg
 open Nametab
@@ -25,6 +24,10 @@ open Pattern
 
 (* This module defines the structure of proof tree and the tactic type. So, it
    is used by [Proof_tree] and [Refiner] *)
+
+type goal = Goal.goal
+
+type tactic = goal sigma -> goal list sigma
 
 type prim_rule =
   | Intro of identifier
@@ -89,13 +92,6 @@ and rule =
 and compound_rule=
   (* the boolean of Tactic tells if the default tactic is used *)
   | Tactic of tactic_expr * bool
-  | Proof_instr of bool * proof_instr
-
-and goal = evar_info
-
-and tactic = goal sigma -> (goal list sigma * validation)
-
-and validation = (proof_tree list -> proof_tree)
 
 and tactic_expr =
   (constr,

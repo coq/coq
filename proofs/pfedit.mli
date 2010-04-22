@@ -20,6 +20,7 @@ open Tacmach
 open Tacexpr
 (*i*)
 
+
 (*s Several proofs can be opened simultaneously but at most one is
    focused at some time. The following functions work by side-effect
    on current set of open proofs. In this module, ``proofs'' means an
@@ -57,17 +58,16 @@ val delete_all_proofs : unit -> unit
 
 val undo : int -> unit
 
-(* Same as undo, but undoes the current proof stack to reach depth
-   [n]. This is used in [vernac_backtrack]. *)
-val undo_todepth : int -> unit
+(* [undo_todepth n] resets the proof to its nth step (does [undo (d-n)] where d
+   is the depth of the undo stack). *)
+val undo_todepth : int -> unit 
 
 (* Returns the depth of the current focused proof stack, this is used
    to put informations in coq prompt (in emacs mode). *)
 val current_proof_depth: unit -> int
 
-(* [set_undo (Some n)] sets the size of the ``undo'' stack; [set_undo None]
-   sets the size to the default value (12) *)
-
+(* [set_undo (Some n)] used to set the size of the ``undo'' stack. 
+    These function now do nothing and will disapear. *)
 val set_undo : int option -> unit
 val get_undo : unit -> int option
 
@@ -78,7 +78,7 @@ val get_undo : unit -> int option
     systematically apply at initialization time (e.g. to start the
     proof of mutually dependent theorems) *)
 
-type lemma_possible_guards = int list list
+type lemma_possible_guards = Proof_global.lemma_possible_guards
 
 val start_proof :
   identifier -> goal_kind -> named_context_val -> constr ->
@@ -110,22 +110,18 @@ val suspend_proof : unit -> unit
     it fails if there is no current proof of if it is not completed;
     it also tells if the guardness condition has to be inferred. *)
 
-val cook_proof : (Refiner.pftreestate -> unit) ->
+val cook_proof : (Proof.proof -> unit) ->
   identifier *
-  (Entries.definition_entry * lemma_possible_guards * goal_kind * 
-   declaration_hook)
+    (Entries.definition_entry * lemma_possible_guards * goal_kind *
+     declaration_hook)
 
 (* To export completed proofs to xml *)
-val set_xml_cook_proof : (goal_kind * pftreestate -> unit) -> unit
+val set_xml_cook_proof : (goal_kind * Proof.proof -> unit) -> unit
 
-(*s [get_pftreestate ()] returns the current focused pending proof or
+(*s [get_Proof.proof ()] returns the current focused pending proof or
    raises [UserError "no focused proof"] *)
 
-val get_pftreestate : unit -> pftreestate
-
-(* [get_end_tac ()] returns the current tactic to apply to all new subgoal *)
-
-val get_end_tac : unit -> tactic option
+val get_pftreestate : unit -> Proof.proof
 
 (* [get_goal_context n] returns the context of the [n]th subgoal of
    the current focused proof or raises a [UserError] if there is no
@@ -160,7 +156,7 @@ val set_end_tac : tactic -> unit
    current focused proof or raises a UserError if no proof is focused or
    if there is no [n]th subgoal *)
 
-val solve_nth : int -> tactic -> unit
+val solve_nth : ?with_end_tac:bool -> int -> tactic -> unit
 
 (* [by tac] applies tactic [tac] to the 1st subgoal of the current
    focused proof or raises a UserError if there is no focused proof or
@@ -174,31 +170,6 @@ val by : tactic -> unit
    existential variable *)
 
 val instantiate_nth_evar_com : int -> Topconstr.constr_expr -> unit
-
-(*s To deal with subgoal focus *)
-
-val make_focus : int -> unit
-val focus : unit -> int
-val focused_goal : unit -> int
-val subtree_solved : unit -> bool
-val tree_solved : unit -> bool
-val top_tree_solved : unit -> bool
-
-val reset_top_of_tree : unit -> unit
-val reset_top_of_script : unit -> unit
-
-val traverse : int -> unit
-val traverse_nth_goal : int -> unit
-val traverse_next_unproven : unit -> unit
-val traverse_prev_unproven : unit -> unit
-
-
-(* These two functions make it possible to implement more elaborate
-   proof and goal management, as it is done, for instance in pcoq *)
-
-val traverse_to : int list -> unit
-val mutate : (pftreestate -> pftreestate) -> unit
-
 
 (* [build_by_tactic typ tac] returns a term of type [typ] by calling [tac] *)
 

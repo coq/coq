@@ -280,9 +280,7 @@ let try_head_pattern c =
   try head_pattern_bound c
   with BoundPattern -> error "Bound head variable."
 
-let dummy_goal =
-  {it = make_evar empty_named_context_val mkProp;
-   sigma = empty}
+let dummy_goal = Goal.V82.dummy_goal
 
 let make_exact_entry sigma pri (c,cty) =
   let cty = strip_outer_cast cty in
@@ -700,7 +698,8 @@ let print_hint_term cl = ppnl (pr_hint_term cl)
 (* print all hints that apply to the concl of the current goal *)
 let print_applicable_hint () =
   let pts = get_pftreestate () in
-  let gl = nth_goal_of_pftreestate 1 pts in
+  let glss = Proof.V82.subgoals pts in
+  let gl = { Evd.it = List.hd glss.Evd.it; sigma = glss.Evd.sigma } in
   print_hint_term (pf_concl gl)
 
 (* displays the whole hint database db *)

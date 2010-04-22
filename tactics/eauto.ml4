@@ -19,7 +19,6 @@ open Termops
 open Sign
 open Reduction
 open Proof_type
-open Proof_trees
 open Declarations
 open Tacticals
 open Tacmach
@@ -170,7 +169,7 @@ let find_first_goal gls =
 
 type search_state = {
   depth : int; (*r depth of search before failing *)
-  tacres : goal list sigma * validation;
+  tacres : goal list sigma;
   last_tactic : std_ppcmds;
   dblist : Auto.hint_db list;
   localdb :  Auto.hint_db list }
@@ -179,7 +178,7 @@ module SearchProblem = struct
 
   type state = search_state
 
-  let success s = (sig_it (fst s.tacres)) = []
+  let success s = (sig_it s.tacres) = []
 
   let pr_ev evs ev = Printer.pr_constr_env (Evd.evar_env ev) (Evarutil.nf_evar evs ev.Evd.evar_concl)
 
@@ -187,7 +186,7 @@ module SearchProblem = struct
     let evars = Evarutil.nf_evars (Refiner.project gls) in
       prlist (pr_ev evars) (sig_it gls)
 
-  let filter_tactics (glls,v) l =
+  let filter_tactics glls l =
 (*     let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
 (*     let evars = Evarutil.nf_evars (Refiner.project glls) in *)
 (*     msg (str"Goal:" ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"); *)
@@ -195,11 +194,10 @@ module SearchProblem = struct
       | [] -> []
       | (tac,pptac) :: tacl ->
 	  try
-	    let (lgls,ptl) = apply_tac_list tac glls in
-	    let v' p = v (ptl p) in
+	    let lgls = apply_tac_list tac glls in
 (* 	    let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
 (* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
-	      ((lgls,v'),pptac) :: aux tacl
+	      (lgls,pptac) :: aux tacl
 	  with e -> Refiner.catch_failerror e; aux tacl
     in aux l
 
@@ -207,14 +205,14 @@ module SearchProblem = struct
      number of remaining goals. *)
   let compare s s' =
     let d = s'.depth - s.depth in
-    let nbgoals s = List.length (sig_it (fst s.tacres)) in
+    let nbgoals s = List.length (sig_it s.tacres) in
     if d <> 0 then d else nbgoals s - nbgoals s'
 
   let branching s =
     if s.depth = 0 then
       []
     else
-      let lg = fst s.tacres in
+      let lg = s.tacres in
       let nbgl = List.length (sig_it lg) in
       assert (nbgl > 0);
       let g = find_first_goal lg in
@@ -232,7 +230,7 @@ module SearchProblem = struct
       in
       let intro_tac =
 	List.map
-	  (fun ((lgls,_) as res,pp) ->
+	  (fun (lgls as res,pp) ->
 	     let g' = first_goal lgls in
 	     let hintl =
 	       make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
@@ -248,7 +246,7 @@ module SearchProblem = struct
 	  filter_tactics s.tacres (e_possible_resolve s.dblist (List.hd s.localdb) (pf_concl g))
 	in
 	List.map
-	  (fun ((lgls,_) as res, pp) ->
+	  (fun (lgls as res, pp) ->
 	     let nbgl' = List.length (sig_it lgls) in
 	     if nbgl' < nbgl then
 	       { depth = s.depth; tacres = res; last_tactic = pp;

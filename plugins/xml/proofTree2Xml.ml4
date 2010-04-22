@@ -161,10 +161,12 @@ Pp.ppnl (Pp.(++) (Pp.str
          let of_attribute = ("name",tacname)::("script",tac)::of_attribute in
 
          (****** le but *)
-         let {Evd.evar_concl=concl;
-              Evd.evar_hyps=hyps}=goal in
+
+	 let concl = Goal.V82.concl sigma goal in
+	 let hyps = Goal.V82.hyps sigma goal in
 
          let env = Global.env_of_context hyps in
+	   
 
          let xgoal =
           X.xml_nempty "Goal" [] (constr_to_xml concl sigma env) in
@@ -187,9 +189,6 @@ Pp.ppnl (Pp.(++) (Pp.str
          X.xml_nempty "Tactic" of_attribute
           [<(build_hyps new_hyps) ; (aux flat_proof nhyps)>]
         end
-
-     | {PT.ref=Some((PT.Nested(PT.Proof_instr (_,_),_)|PT.Decl_proof _),nodes)} ->
-         Util.anomaly "Not Implemented"
 
      | {PT.ref=Some(PT.Daimon,_)} ->
          X.xml_empty "Hidden_open_goal" of_attribute

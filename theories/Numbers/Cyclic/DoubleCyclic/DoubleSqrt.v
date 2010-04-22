@@ -1097,7 +1097,7 @@ intros x; case x; simpl ww_is_even.
  rewrite wwB_wBwB; rewrite Zpower_2.
  apply Zmult_le_compat_r; auto with zarith.
  case (spec_to_Z w4);auto with zarith.
- Qed.
+Qed.
 
  Lemma spec_ww_is_zero: forall x,
    if ww_is_zero x then [[x]] = 0 else 0 < [[x]].

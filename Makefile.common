@@ -73,7 +73,7 @@ SRCDIRS:=\
     omega	romega 		micromega 	quote		ring	dp \
     setoid_ring xml 		extraction 	fourier \
     cc 		funind 		firstorder 	field 		subtac \
-    rtauto 	groebner        syntax)
+    rtauto 	groebner        syntax      decl_mode)
 
 # Order is relevent here because kernel and checker contain files
 # with the same name
@@ -188,10 +188,12 @@ OTHERSYNTAXCMA:=$(addprefix plugins/syntax/, \
         r_syntax_plugin.cma \
 	ascii_syntax_plugin.cma \
         string_syntax_plugin.cma )
+DECLMODECMA:=plugins/decl_mode/decl_mode_plugin.cma
 
 PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) \
         $(QUOTECMA) $(RINGCMA) $(NEWRINGCMA) $(DPCMA) $(FIELDCMA) \
         $(FOURIERCMA) $(EXTRACTIONCMA) $(XMLCMA) \
+	$(DECLMODECMA) \
         $(CCCMA)  $(FOCMA) $(SUBTACCMA) $(RTAUTOCMA) \
         $(FUNINDCMA) $(GBCMA) $(NATSYNTAXCMA) $(OTHERSYNTAXCMA)
 
@@ -325,7 +327,6 @@ ALLMODS:=$(call vo_to_mod,$(ALLVO))
 
 LIBFILES:=$(THEORIESVO) $(PLUGINSVO)
 LIBFILESLIGHT:=$(THEORIESLIGHTVO)
-
 
 ###########################################################################
 # Miscellaneous

@@ -33,9 +33,9 @@ let instantiate n (ist,rawc) ido gl =
   let sigma = gl.sigma in
   let evl =
     match ido with
-	ConclLocation () -> evar_list sigma gl.it.evar_concl
+	ConclLocation () -> evar_list sigma (pf_concl gl)
       | HypLocation (id,hloc) ->
-	  let decl = Environ.lookup_named_val id gl.it.evar_hyps in
+	  let decl = Environ.lookup_named_val id (Goal.V82.hyps sigma (sig_it gl)) in
 	    match hloc with
 		InHyp ->
 		  (match decl with

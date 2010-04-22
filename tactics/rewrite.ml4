@@ -21,7 +21,6 @@ open Termops
 open Sign
 open Reduction
 open Proof_type
-open Proof_trees
 open Declarations
 open Tacticals
 open Tacmach
@@ -569,7 +568,7 @@ let apply_rule hypinfo loccs : strategy =
 	      if eq_constr t c2 then Some None
 	      else
 		let goalevars = Evd.evar_merge (fst evars)
-		  (Evd.undefined_evars (Evarutil.nf_evar_map env'.evd))
+		  (Evd.undefined_evars env'.evd)
 		in
 		let res = { rew_car = ty; rew_from = c1;
 			    rew_to = c2; rew_prf = RewPrf (rel, prf); rew_evars = goalevars, snd evars }
@@ -908,8 +907,8 @@ module Strategies =
 
     let hints (db : string) : strategy =
       fun env sigma t ty cstr evars ->
-	let rules = Autorewrite.find_matches db t in
-	  lemmas (List.map (fun hint -> (inj_open hint.Autorewrite.rew_lemma, hint.Autorewrite.rew_l2r)) rules)
+      let rules = Autorewrite.find_matches db t in
+	lemmas (List.map (fun hint -> (inj_open hint.Autorewrite.rew_lemma, hint.Autorewrite.rew_l2r)) rules)
 	    env sigma t ty cstr evars
 
     let reduce (r : Redexpr.red_expr) : strategy =
@@ -1051,8 +1050,8 @@ let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
 		      change_in_concl None newt)
 	    in
 	    let evartac =
-	      if not (undef = Evd.empty) then
-		Refiner.tclEVARS undef
+	      if not (Evd.is_empty undef) then
+		Refiner.tclEVARS evars
 	      else tclIDTAC
 	    in tclTHENLIST [evartac; rewtac] gl
 	  with
@@ -1575,9 +1574,10 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
   let meta = Evarutil.new_meta() in
   let hypinfo, strat = apply_lemma gl c cl l2r occs in
     try
-      tclTHEN
-        (Refiner.tclEVARS hypinfo.cl.evd)
-        (cl_rewrite_clause_aux ~abs:hypinfo.abs strat meta cl) gl
+      tclWEAK_PROGRESS 
+	(tclTHEN
+            (Refiner.tclEVARS hypinfo.cl.evd)
+            (cl_rewrite_clause_aux ~abs:hypinfo.abs strat meta cl)) gl
     with RewriteFailure ->
       let {l2r=l2r; c1=x; c2=y} = hypinfo in
 	raise (Pretype_errors.PretypeError

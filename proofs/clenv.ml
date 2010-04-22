@@ -31,10 +31,10 @@ open Coercion.Default
 
 (* Abbreviations *)
 
-let pf_env gls = Global.env_of_context gls.it.evar_hyps
-let pf_hyps gls = named_context_of_val gls.it.evar_hyps
+let pf_env = Refiner.pf_env
+let pf_hyps = Refiner.pf_hyps
 let pf_type_of gls c  = Typing.type_of (pf_env gls) gls.sigma c
-let pf_concl gl = gl.it.evar_concl
+let pf_concl = Tacmach.pf_concl
 
 (******************************************************************)
 (* Clausal environments *)
@@ -142,7 +142,7 @@ let mk_clenv_from_env environ sigma n (c,cty) =
     env = environ }
 
 let mk_clenv_from_n gls n (c,cty) =
-  mk_clenv_from_env (Global.env_of_context gls.it.evar_hyps) gls.sigma n (c, cty)
+  mk_clenv_from_env (pf_env gls) gls.sigma n (c, cty)
 
 let mk_clenv_from gls = mk_clenv_from_n gls None
 
@@ -250,12 +250,13 @@ let clenv_unify_meta_types ?(flags=default_unify_flags) clenv =
   { clenv with evd = w_unify_meta_types ~flags:flags clenv.env clenv.evd }
 
 let clenv_unique_resolver allow_K ?(flags=default_unify_flags) clenv gl =
+  let concl = Goal.V82.concl clenv.evd (sig_it gl) in
   if isMeta (fst (whd_stack clenv.evd clenv.templtyp.rebus)) then
-    clenv_unify allow_K CUMUL ~flags:flags (clenv_type clenv) (pf_concl gl)
+    clenv_unify allow_K CUMUL ~flags:flags (clenv_type clenv) concl
       (clenv_unify_meta_types ~flags:flags clenv)
   else
     clenv_unify allow_K CUMUL ~flags:flags
-      (meta_reducible_instance clenv.evd clenv.templtyp) (pf_concl gl) clenv
+      (meta_reducible_instance clenv.evd clenv.templtyp) concl clenv
 
 (* [clenv_pose_metas_as_evars clenv dep_mvs]
  * For each dependent evar in the clause-env which does not have a value,
@@ -304,9 +305,18 @@ let evar_clenv_unique_resolver = clenv_unique_resolver
 (******************************************************************)
 
 let connect_clenv gls clenv =
+  let evd = Evd.fold begin fun ev evi acc -> 
+                        if evi.evar_body = Evar_empty then
+			  acc
+			else
+			  Evd.add acc ev evi
+                  end
+                  clenv.evd gls.sigma
+  in
+  let evd = evars_reset_evd evd clenv.evd in
   { clenv with
-    evd = evars_reset_evd gls.sigma clenv.evd;
-    env = Global.env_of_context gls.it.evar_hyps }
+    evd = evd ;
+    env = Goal.V82.env evd (sig_it gls) }
 
 (* [clenv_fchain mv clenv clenv']
  *

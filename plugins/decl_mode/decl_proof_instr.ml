@@ -14,7 +14,6 @@ open Evd
 
 open Refiner
 open Proof_type
-open Proof_trees
 open Tacmach
 open Tacinterp
 open Decl_expr
@@ -35,7 +34,7 @@ open Goptions
 
 (* Strictness option *)
 
-let get_its_info gls = get_info gls.it
+let get_its_info gls = get_info gls.sigma gls.it
 
 let get_strictness,set_strictness =
   let strictness = ref false in
@@ -51,18 +50,20 @@ let _ =
 
 let tcl_change_info_gen info_gen =
   (fun gls ->
-  let gl =sig_it gls in
-    {it=[{gl with evar_extra=info_gen}];sigma=sig_sig gls},
-  function
-      [pftree] ->
-	{pftree with
-	   goal=gl;
-	   ref=Some (Prim Change_evars,[pftree])}
-    | _ -> anomaly "change_info : Wrong number of subtrees")
+     let concl = pf_concl gls in
+     let hyps = Goal.V82.hyps (project gls) (sig_it gls) in
+     let extra = Goal.V82.extra (project gls) (sig_it gls) in
+     let (gl,ev,sigma) = Goal.V82.mk_goal (project gls) hyps concl (info_gen extra) in
+     let sigma = Goal.V82.partial_solution sigma (sig_it gls) ev in
+     { it = [gl] ; sigma= sigma } )
 
-let tcl_change_info info gls =  tcl_change_info_gen (Some (pm_in info)) gls
+open Store.Field
 
-let tcl_erase_info gls =  tcl_change_info_gen None gls
+let tcl_change_info info gls =  
+  let info_gen = Decl_mode.info.set info in
+  tcl_change_info_gen info_gen gls
+
+let tcl_erase_info gls =  tcl_change_info_gen (Decl_mode.info.remove) gls
 
 let special_whd gl=
   let infos=Closure.create_clos_infos Closure.betadeltaiota (pf_env gl) in
@@ -77,7 +78,7 @@ let is_good_inductive env ind =
     oib.mind_nrealargs = 0 && not (Inductiveops.mis_is_recursive (ind,mib,oib))
 
 let check_not_per pts =
-  if not (Proof_trees.is_complete_proof (proof_of_pftreestate pts)) then
+  if not (Proof.is_done pts) then
     match get_stack pts with
 	Per (_,_,_,_)::_ ->
 	  error "You are inside a proof per cases/induction.\n\
@@ -112,32 +113,23 @@ let assert_postpone id t =
 
 (* start a proof *)
 
+let proof_focus = Proof.new_focus_kind ()
+let proof_cond = Proof.no_cond proof_focus
+
 let start_proof_tac gls=
-  let gl=sig_it gls in
   let info={pm_stack=[]} in
-    {it=[{gl with evar_extra=Some (pm_in info)}];sigma=sig_sig gls},
-  function
-      [pftree] ->
-	{pftree with
-	   goal=gl;
-	   ref=Some (Decl_proof true,[pftree])}
-    | _ -> anomaly "Dem : Wrong number of subtrees"
+  tcl_change_info info gls
 
 let go_to_proof_mode () =
-  Pfedit.mutate
-    (fun pts -> nth_unproven 1 (solve_pftreestate start_proof_tac pts))
+  Pfedit.by start_proof_tac  ;
+  let p = Proof_global.give_me_the_proof () in
+  Proof.focus proof_cond 1 p
 
 (* closing gaps *)
 
 let daimon_tac gls =
   set_daimon_flag ();
-  ({it=[];sigma=sig_sig gls},
-   function
-       [] ->
-	 {open_subgoals=0;
-	    goal=sig_it gls;
-	    ref=Some (Daimon,[])}
-     | _ -> anomaly "Daimon: Wrong number of subtrees")
+  {it=[];sigma=sig_sig gls}
 
 let daimon _ pftree =
   set_daimon_flag ();
@@ -145,7 +137,8 @@ let daimon _ pftree =
      open_subgoals=0;
      ref=Some (Daimon,[])}
 
-let daimon_subtree = map_pftreestate (fun _ ->  frontier_mapi daimon )
+let daimon_subtree =
+  fun _ -> Util.anomaly "Todo: Decl_proof_instr.daimon_subtree"
 
 (* marking closed blocks *)
 
@@ -159,32 +152,17 @@ let mark_rule_as_done = function
     Decl_proof true -> Decl_proof false
   | Decl_proof false ->
       anomaly "already marked as done"
-  | Nested(Proof_instr (lock_focus,instr),spfl) ->
-      if lock_focus then
-	Nested(Proof_instr (false,instr),spfl)
-      else
-	anomaly "already marked as done"
   | _ -> anomaly "mark_rule_as_done"
 
-let mark_proof_tree_as_done pt =
-  match pt.ref with
-      None -> anomaly "mark_proof_tree_as_done"
-    | Some (r,spfl) ->
-	{pt with ref= Some (mark_rule_as_done r,spfl)}
-
-let mark_as_done pts =
-  map_pftreestate
-    (fun _ -> mark_proof_tree_as_done)
-    (up_to_matching_rule is_focussing_command pts)
 
 (* post-instruction focus management *)
 
-let goto_current_focus pts = up_until_matching_rule is_focussing_command pts
+let goto_current_focus pts = 
+  Proof.unfocus proof_focus pts
 
 let goto_current_focus_or_top pts =
-  try
-    up_until_matching_rule is_focussing_command pts
-  with Not_found -> top_of_tree pts
+  try goto_current_focus pts
+  with Util.UserError _ -> ()
 
 (* return *)
 
@@ -194,22 +172,21 @@ let close_tactic_mode pts =
       with Not_found ->
 	error "\"return\" cannot be used outside of Declarative Proof Mode." in
     let pts2 = daimon_subtree pts1 in
-    let pts3 = mark_as_done pts2 in
-      goto_current_focus pts3
+      goto_current_focus pts2
 
-let return_from_tactic_mode () = Pfedit.mutate close_tactic_mode
+let return_from_tactic_mode () =
+  Util.anomaly "Todo: Decl_proof_instr.return_from_tactic_mode"
 
 (* end proof/claim *)
 
 let close_block bt pts =
-  let stack =
-    if Proof_trees.is_complete_proof (proof_of_pftreestate pts) then
-      get_top_stack pts
+    if Proof.no_focused_goal pts then
+      goto_current_focus pts
     else
-      get_stack pts in
-    match bt,stack with
+      let stack =get_stack pts in
+      match bt,stack with
 	B_claim, Claim::_ | B_focus, Focus_claim::_ | B_proof, [] ->
-	  daimon_subtree (goto_current_focus pts)
+	  (goto_current_focus pts)
       | _, Claim::_ ->
 	  error "\"end claim\" expected."
       | _, Focus_claim::_ ->
@@ -223,23 +200,24 @@ let close_block bt pts =
 	      | ET_Induction ->  error "\"end induction\" expected."
 	  end
       | _,_ -> anomaly "Lonely suppose on stack."
+  
 
 (* utility for suppose / suppose it is *)
 
 let close_previous_case pts =
   if
-    Proof_trees.is_complete_proof (proof_of_pftreestate pts)
+    Proof.is_done pts
   then
     match get_top_stack pts with
 	Per (et,_,_,_) :: _ -> anomaly "Weird case occured ..."
       | Suppose_case :: Per (et,_,_,_) :: _ ->
-	  goto_current_focus (mark_as_done pts)
+	  goto_current_focus (pts)
       | _ -> error "Not inside a proof per cases or induction."
   else
     match get_stack pts with
-	Per (et,_,_,_) :: _ -> pts
+	Per (et,_,_,_) :: _ -> ()
       | Suppose_case :: Per (et,_,_,_) :: _ ->
-	  goto_current_focus (mark_as_done (daimon_subtree pts))
+	  goto_current_focus ((pts))
       | _ -> error "Not inside a proof per cases or induction."
 
 (* Proof instructions *)
@@ -252,7 +230,7 @@ let filter_hyps f gls =
       tclIDTAC
     else
       tclTRY (clear [id])  in
-    tclMAP filter_aux (Environ.named_context_of_val gls.it.evar_hyps) gls
+    tclMAP filter_aux (pf_hyps gls) gls
 
 let local_hyp_prefix = id_of_string "___"
 
@@ -1446,59 +1424,59 @@ let rec preprocess pts instr =
   | Pconsider (_,_) | Pcast (_,_) | Pgiven _ | Ptake _
   | Pdefine (_,_,_) | Pper _ | Prew _ ->
       check_not_per pts;
-      true,pts
+      true
   | Pescape ->
       check_not_per pts;
-      true,pts
+      true
   | Pcase _ | Psuppose _ | Pend (B_elim _) ->
-      true,close_previous_case pts
+      close_previous_case pts ;
+      true
   | Pend bt ->
-      false,close_block bt pts
+      close_block bt pts ;
+      false
 
 let rec postprocess pts instr =
   match instr with
       Phence i | Pthus i | Pthen i -> postprocess pts i
     | Pcut _ | Psuffices _ | Passume _ | Plet _ | Pconsider (_,_) | Pcast (_,_)
-    | Pgiven _ | Ptake _ | Pdefine (_,_,_) | Prew (_,_) -> pts
+    | Pgiven _ | Ptake _ | Pdefine (_,_,_) | Prew (_,_) -> ()
     | Pclaim _ | Pfocus _ | Psuppose _ | Pcase _ | Pper _
-    | Pescape -> nth_unproven 1 pts
+    | Pescape -> Proof.focus proof_cond 1 pts
     | Pend (B_elim ET_Induction) ->
   	begin
-	  let pf = proof_of_pftreestate pts in
-	  let (pfterm,_) = extract_open_pftreestate pts in
-	  let env =  Evd.evar_env (goal_of_proof pf) in
+	  let pfterm = List.hd (Proof.partial_proof pts) in
+	  let { it = gls ; sigma = sigma } = Proof.V82.subgoals pts in
+	  let env =  Goal.V82.env sigma (List.hd gls) in
 	    try
 	      Inductiveops.control_only_guard env pfterm;
-	      goto_current_focus_or_top (mark_as_done pts)
+	      goto_current_focus_or_top pts
  	    with
 		Type_errors.TypeError(env,
 				      Type_errors.IllFormedRecBody(_,_,_,_,_)) ->
 		  anomaly "\"end induction\" generated an ill-formed fixpoint"
 	end
     | Pend _ ->
-	goto_current_focus_or_top (mark_as_done pts)
+	goto_current_focus_or_top (pts)
 
 let do_instr raw_instr pts =
-  let has_tactic,pts1 = preprocess pts raw_instr.instr in
-  let pts2 =
+  let has_tactic = preprocess pts raw_instr.instr in
+  begin
     if has_tactic then
-      let gl = nth_goal_of_pftreestate 1 pts1 in
+      let { it=gls ; sigma=sigma } = Proof.V82.subgoals pts in
+      let gl = { it=List.hd gls ; sigma=sigma } in
       let env=  pf_env gl in
-      let sigma= project gl in
       let ist = {ltacvars = ([],[]); ltacrecvars = [];
 		 gsigma = sigma; genv = env} in
       let glob_instr = intern_proof_instr ist raw_instr in
       let instr =
 	interp_proof_instr (get_its_info gl) sigma env glob_instr in
-      let lock_focus = is_focussing_instr instr.instr in
-      let marker= Proof_instr (lock_focus,instr) in
-	solve_nth_pftreestate 1
-	  (abstract_operation marker (tclTHEN (eval_instr instr) clean_tmp)) pts1
-    else pts1 in
-      postprocess pts2 raw_instr.instr
+      Pfedit.by (tclTHEN (eval_instr instr) clean_tmp)
+    else () end;
+  postprocess pts raw_instr.instr
 
 let proof_instr raw_instr =
-  Pfedit.mutate (do_instr raw_instr)
+  let p = Proof_global.give_me_the_proof () in
+  do_instr raw_instr p
 
 (*
 

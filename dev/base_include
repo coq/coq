@@ -110,11 +110,9 @@ open Topconstr
 open Prettyp
 open Search
 
-open Clenvtac
 open Evar_refiner
 open Logic
 open Pfedit
-open Proof_trees
 open Proof_type
 open Redexpr
 open Refiner
@@ -193,12 +191,12 @@ let constbody_of_string s =
   Option.get b.const_body;;
 
 (* Get the current goal *)
-
+(*
 let getgoal x = top_goal_of_pftreestate (Pfedit.get_pftreestate x);;
 
 let get_nth_goal n = nth_goal_of_pftreestate n (Pfedit.get_pftreestate ());;
 let current_goal () = get_nth_goal 1;;
-
+*)
 let pf_e gl s = 
   Constrintern.interp_constr (project gl) (pf_env gl) (parse_constr s);;
 

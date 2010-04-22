@@ -48,9 +48,10 @@ let make_clauses s l =
 
 let mlexpr_of_clause =
   mlexpr_of_list
-    (fun (a,b,c) -> mlexpr_of_list make_prod_item (GramTerminal a::b))
+    (fun (a,b,c) -> mlexpr_of_list make_prod_item 
+       (Option.List.cons (Option.map (fun a -> GramTerminal a) a) b))
 
-let declare_command loc s cl =
+let declare_command loc s nt cl =
   let gl = mlexpr_of_clause cl in
   let icl = make_clauses s cl in
   <:str_item<
@@ -59,7 +60,7 @@ let declare_command loc s cl =
       open Extrawit;
       try Vernacinterp.vinterp_add $mlexpr_of_string s$ (fun [ $list:icl$ ])
       with e -> Pp.pp (Cerrors.explain_exn e);
-      Egrammar.extend_vernac_command_grammar $mlexpr_of_string s$ $gl$;
+      Egrammar.extend_vernac_command_grammar $mlexpr_of_string s$ $nt$ $gl$;
     end
   >>
 
@@ -71,13 +72,22 @@ EXTEND
     [ [ "VERNAC"; "COMMAND"; "EXTEND"; s = UIDENT;
         OPT "|"; l = LIST1 rule SEP "|";
         "END" ->
-         declare_command loc s l ] ]
+         declare_command loc s <:expr<None>> l 
+      | "VERNAC"; nt = LIDENT ; "EXTEND"; s = UIDENT;
+        OPT "|"; l = LIST1 rule SEP "|";
+        "END" ->
+          declare_command loc s <:expr<Some $lid:nt$>> l ] ]
   ;
+  (* spiwack: comment-by-guessing: it seems that the isolated string (which
+      otherwise could have been another argument) is not passed to the
+      VernacExtend interpreter function to discriminate between the clauses. *)
   rule:
     [ [ "["; s = STRING; l = LIST0 args; "]"; "->"; "["; e = Pcaml.expr; "]"
         ->
       if s = "" then Util.user_err_loc (loc,"",Pp.str"Command name is empty.");
-      (s,l,<:expr< fun () -> $e$ >>)
+      (Some s,l,<:expr< fun () -> $e$ >>)
+      | "[" ; "-" ; l = LIST1 args ; "]" ; "->" ; "[" ; e = Pcaml.expr ; "]" ->
+	  (None,l,<:expr< fun () -> $e$ >>)
     ] ]
   ;
   args:

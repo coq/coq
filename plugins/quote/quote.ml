@@ -111,7 +111,6 @@ open Pattern
 open Matching
 open Tacmach
 open Tactics
-open Proof_trees
 open Tacexpr
 (*i*)
 

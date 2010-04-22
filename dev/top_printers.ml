@@ -16,14 +16,11 @@ open Libnames
 open Nameops
 open Sign
 open Univ
-open Proof_trees
 open Environ
 open Printer
 open Tactic_printer
-open Refiner
 open Term
 open Termops
-open Clenv
 open Cerrors
 open Evd
 open Goptions
@@ -103,21 +100,24 @@ let pp_transparent_state s = pp (pr_transparent_state s)
 (* proof printers *)
 let ppmetas metas = pp(pr_metaset metas)
 let ppevm evd = pp(pr_evar_map evd)
+(* spiwack: deactivated until a replacement is found
 let ppclenv clenv = pp(pr_clenv clenv)
 let ppgoal g = pp(db_pr_goal g)
 let pppftreestate p = pp(print_pftreestate p)
+*)
 
-let pr_gls gls =
-  hov 0 (pr_evar_map (sig_sig gls) ++ fnl () ++ db_pr_goal (sig_it gls))
+(* let ppgoal g = pp(db_pr_goal g) *)
+(* let pr_gls gls = *)
+(*   hov 0 (pr_evar_defs (sig_sig gls) ++ fnl () ++ db_pr_goal (sig_it gls)) *)
 
-let pr_glls glls =
-  hov 0 (pr_evar_map (sig_sig glls) ++ fnl () ++
-         prlist_with_sep pr_fnl db_pr_goal (sig_it glls))
+(* let pr_glls glls = *)
+(*   hov 0 (pr_evar_defs (sig_sig glls) ++ fnl () ++ *)
+(*          prlist_with_sep pr_fnl db_pr_goal (sig_it glls)) *)
 
-let ppsigmagoal g = pp(pr_goal (sig_it g))
-let prgls gls = pp(pr_gls gls)
-let prglls glls = pp(pr_glls glls)
-let pproof p = pp(print_proof Evd.empty empty_named_context p)
+(* let ppsigmagoal g = pp(pr_goal (sig_it g)) *)
+(* let prgls gls = pp(pr_gls gls) *)
+(* let prglls glls = pp(pr_glls glls) *)
+(* let pproof p = pp(print_proof Evd.empty empty_named_context p) *)
 
 let ppuni u = pp(pr_uni u)
 
@@ -402,7 +402,7 @@ let _ =
   with
     e -> Pp.pp (Cerrors.explain_exn e)
 let _ =
-  extend_vernac_command_grammar "PrintConstr"
+  extend_vernac_command_grammar "PrintConstr" None
     [[GramTerminal "PrintConstr";
       GramNonTerminal
         (dummy_loc,ConstrArgType,Extend.Aentry ("constr","constr"),
@@ -419,7 +419,7 @@ let _ =
   with
     e -> Pp.pp (Cerrors.explain_exn e)
 let _ =
-  extend_vernac_command_grammar "PrintPureConstr"
+  extend_vernac_command_grammar "PrintPureConstr" None
     [[GramTerminal "PrintPureConstr";
       GramNonTerminal
         (dummy_loc,ConstrArgType,Extend.Aentry ("constr","constr"),

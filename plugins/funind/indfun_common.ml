@@ -180,48 +180,9 @@ let save with_clean id const (locality,kind) hook =
 
 
 
-
-let extract_pftreestate pts =
-  let pfterm,subgoals = Refiner.extract_open_pftreestate pts in
-  let tpfsigma = Refiner.evc_of_pftreestate pts in
-  let exl = Evarutil.non_instantiated tpfsigma  in
-  if subgoals <> [] or exl <> [] then
-    Util.errorlabstrm "extract_proof"
-      (if subgoals <> [] then
-        str "Attempt to save an incomplete proof"
-      else
-        str "Attempt to save a proof with existential variables still non-instantiated");
-  let env = Global.env_of_context (Refiner.proof_of_pftreestate pts).Proof_type.goal.Evd.evar_hyps in
-  env,tpfsigma,pfterm
-
-
-let nf_betaiotazeta =
-  let clos_norm_flags flgs env sigma t =
-    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Reductionops.nf_evar sigma t)) in
-  clos_norm_flags Closure.betaiotazeta
-
-let nf_betaiota =
-  let clos_norm_flags flgs env sigma t =
-    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Reductionops.nf_evar sigma t)) in
-  clos_norm_flags Closure.betaiota
-
-let cook_proof do_reduce =
-  let pfs = Pfedit.get_pftreestate ()
-(*   and ident = Pfedit.get_current_proof_name ()  *)
-  and (ident,strength,concl,hook) = Pfedit.current_proof_statement ()  in
-  let env,sigma,pfterm = extract_pftreestate pfs in
-  let pfterm =
-    if do_reduce
-    then nf_betaiota env sigma pfterm
-    else pfterm
-  in
-  (ident,
-   ({ const_entry_body = pfterm;
-      const_entry_type = Some concl;
-      const_entry_opaque = false;
-      const_entry_boxed = false},
-    strength, hook))
-
+let cook_proof _ =
+  let (id,(entry,_,strength,hook)) = Pfedit.cook_proof (fun _ -> ()) in
+  (id,(entry,strength,hook))
 
 let new_save_named opacity =
   let id,(const,persistence,hook) = cook_proof true  in

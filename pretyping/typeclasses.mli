@@ -77,10 +77,6 @@ val is_implicit_arg : hole_kind -> bool
 
 val instance_constructor : typeclass -> constr list -> constr * types
 
-(* Use evar_extra for marking resolvable evars. *)
-val bool_in : bool -> Dyn.t
-val bool_out : Dyn.t -> bool
-
 val is_resolvable : evar_info -> bool
 val mark_unresolvable : evar_info -> evar_info
 val mark_unresolvables : evar_map -> evar_map

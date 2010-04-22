@@ -668,11 +668,11 @@ let __eps__ = id_of_string "_eps_"
 
 let new_state_var typ state =
   let id = pf_get_new_id __eps__ state.gls in
-    state.gls<-
-      {state.gls with it =
-	  {state.gls.it with evar_hyps =
-	      Environ.push_named_context_val (id,None,typ)
-		state.gls.it.evar_hyps}};
+  let {it=gl ; sigma=sigma} = state.gls in
+  let new_hyps =
+    Environ.push_named_context_val (id,None,typ) (Goal.V82.hyps sigma gl) in
+  let gls = Goal.V82.new_goal_with sigma gl new_hyps in
+    state.gls<- gls;
     id
 
 let complete_one_class state i=

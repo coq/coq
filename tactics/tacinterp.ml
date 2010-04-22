@@ -73,7 +73,7 @@ type ltac_type =
 
 (* Values for interpretation *)
 type value =
-  | VRTactic of (goal list sigma * validation) (* For Match results *)
+  | VRTactic of (goal list sigma) (* For Match results *)
                                                (* Not a true value *)
   | VFun of ltac_trace * (identifier*value) list *
       identifier option list * glob_tactic_expr
@@ -346,11 +346,6 @@ let intern_name l ist = function
 let vars_of_ist (lfun,_,_,env) =
   List.fold_left (fun s id -> Idset.add id s)
     (vars_of_env env) lfun
-
-let get_current_context () =
-    try Pfedit.get_current_goal_context ()
-    with e when Logic.catchable_exception e ->
-      (Evd.empty, Global.env())
 
 let strict_check = ref false
 
@@ -1794,11 +1789,11 @@ let mk_int_or_var_value ist c = VInteger (interp_int_or_var ist c)
 
 let pack_sigma (sigma,c) = {it=c;sigma=sigma}
 
-let extend_gl_hyps gl sign =
- { gl with
-   it = { gl.it with
-     evar_hyps = 
-     List.fold_right Environ.push_named_context_val sign gl.it.evar_hyps } }
+let extend_gl_hyps { it=gl ; sigma=sigma } sign =
+  let hyps = Goal.V82.hyps sigma gl in
+  let new_hyps = List.fold_right Environ.push_named_context_val sign hyps in
+  (* spiwack: (2010/01/13) if a bug was reintroduced in [change] in is probably here *)
+  Goal.V82.new_goal_with sigma gl new_hyps
 
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist gl (tac:glob_tactic_expr) =
@@ -1988,6 +1983,8 @@ and interp_letin ist gl llc u =
 
 (* Interprets the Match Context expressions *)
 and interp_match_goal ist goal lz lr lmr =
+  let (gl,sigma) = Goal.V82.nf_evar (project goal) (sig_it goal) in
+  let goal = { it = gl ; sigma = sigma } in
   let hyps = pf_hyps goal in
   let hyps = if lr then List.rev hyps else hyps in
   let concl = pf_concl goal in

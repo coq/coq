@@ -24,6 +24,6 @@ val w_refine : evar * evar_info ->
   (var_map * unbound_ltac_var_map) * rawconstr -> evar_map -> evar_map
 
 val instantiate_pf_com :
-  int -> Topconstr.constr_expr -> pftreestate -> pftreestate
+  Evd.evar -> Topconstr.constr_expr -> Evd.evar_map -> Evd.evar_map
 
 (* the instantiate tactic was moved to [tactics/evar_tactics.ml] *)

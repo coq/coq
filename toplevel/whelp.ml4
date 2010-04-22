@@ -196,7 +196,8 @@ let whelp_elim ind =
   send_whelp "elim" (make_string uri_of_global (IndRef ind))
 
 let on_goal f =
-  let gls = nth_goal_of_pftreestate 1 (get_pftreestate ()) in
+  let { Evd.it=goals ; sigma=sigma } = Proof.V82.subgoals (get_pftreestate ()) in
+  let gls = { Evd.it=List.hd goals ; sigma = sigma }  in
   f (it_mkNamedProd_or_LetIn (pf_concl gls) (pf_hyps gls))
 
 type whelp_request =

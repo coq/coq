@@ -21,3 +21,4 @@ syntax/r_syntax_plugin.cmxa
 syntax/string_syntax_plugin.cmxa
 syntax/z_syntax_plugin.cmxa
 quote/quote_plugin.cmxa
+decl_mode/decl_mode_plugin.cmxa

@@ -15,7 +15,6 @@ open Term
 open Sign
 open Evd
 open Pattern
-open Proof_trees
 open Coqlib
 (*i*)
 

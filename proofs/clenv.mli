@@ -50,16 +50,16 @@ val clenv_nf_meta   : clausenv -> constr -> constr
 (* type of a meta in clenv context *)
 val clenv_meta_type : clausenv -> metavariable -> types
 
-val mk_clenv_from : evar_info sigma -> constr * types -> clausenv
+val mk_clenv_from : Goal.goal sigma -> constr * types -> clausenv
 val mk_clenv_from_n :
-  evar_info sigma -> int option -> constr * types -> clausenv
-val mk_clenv_type_of : evar_info sigma -> constr -> clausenv
+  Goal.goal sigma -> int option -> constr * types -> clausenv
+val mk_clenv_type_of : Goal.goal sigma -> constr -> clausenv
 val mk_clenv_from_env : env -> evar_map -> int option -> constr * types -> clausenv
 
 (***************************************************************)
 (* linking of clenvs *)
 
-val connect_clenv : evar_info sigma -> clausenv -> clausenv
+val connect_clenv : Goal.goal sigma -> clausenv -> clausenv
 val clenv_fchain :
   ?allow_K:bool -> ?flags:unify_flags -> metavariable -> clausenv -> clausenv -> clausenv
 
@@ -72,12 +72,12 @@ val clenv_unify :
 
 (* unifies the concl of the goal with the type of the clenv *)
 val clenv_unique_resolver :
-  bool -> ?flags:unify_flags -> clausenv -> evar_info sigma -> clausenv
+  bool -> ?flags:unify_flags -> clausenv -> Goal.goal sigma -> clausenv
 
 (* same as above ([allow_K=false]) but replaces remaining metas
    with fresh evars if [evars_flag] is [true] *)
 val evar_clenv_unique_resolver :
-  bool -> ?flags:unify_flags -> clausenv -> evar_info sigma -> clausenv
+  bool -> ?flags:unify_flags -> clausenv -> Goal.goal sigma -> clausenv
 
 val clenv_dependent : bool -> clausenv -> metavariable list
 
@@ -107,10 +107,10 @@ val clenv_unify_meta_types : ?flags:unify_flags -> clausenv -> clausenv
 (* the optional int tells how many prods of the lemma have to be used *)
 (* use all of them if None *)
 val make_clenv_binding_apply :
-  evar_info sigma -> int option -> constr * constr -> constr bindings ->
+  Goal.goal sigma -> int option -> constr * constr -> constr bindings ->
    clausenv
 val make_clenv_binding :
-  evar_info sigma -> constr * constr -> constr bindings -> clausenv
+  Goal.goal sigma -> constr * constr -> constr bindings -> clausenv
 
 (* [clenv_environments sigma n t] returns [sigma',lmeta,ccl] where
    [lmetas] is a list of metas to be applied to a proof of [t] so that

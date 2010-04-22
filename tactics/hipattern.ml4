@@ -21,7 +21,6 @@ open Reductionops
 open Inductiveops
 open Evd
 open Environ
-open Proof_trees
 open Clenv
 open Pattern
 open Matching

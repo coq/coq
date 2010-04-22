@@ -267,14 +267,13 @@ open Pp
 let rtauto_tac gls=
   Coqlib.check_required_library ["Coq";"rtauto";"Rtauto"];
   let gamma={next=1;env=[]} in
-  let gl=gls.it.evar_concl in
+  let gl=pf_concl gls in
   let _=
     if Retyping.get_sort_family_of
       (pf_env gls) (Tacmach.project gls) gl <> InProp
     then errorlabstrm "rtauto" (Pp.str "goal should be in Prop") in
   let glf=make_form gamma gls gl in
-  let hyps=make_hyps gamma gls [gl]
-      (Environ.named_context_of_val gls.it.evar_hyps) in
+  let hyps=make_hyps gamma gls [gl] (pf_hyps gls) in
   let formula=
     List.fold_left (fun gl (_,f)-> Arrow (f,gl)) glf hyps in
   let search_fun =

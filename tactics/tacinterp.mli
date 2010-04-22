@@ -25,7 +25,7 @@ open Redexpr
 
 (* Values for interpretation *)
 type value =
-  | VRTactic of (goal list sigma * validation)
+  | VRTactic of (goal list sigma)
   | VFun of ltac_trace * (identifier*value) list *
       identifier option list * glob_tactic_expr
   | VVoid

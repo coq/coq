@@ -27,7 +27,6 @@ open Pfedit
 open Tacred
 open Rawterm
 open Tacmach
-open Proof_trees
 open Proof_type
 open Logic
 open Evar_refiner
@@ -516,8 +515,8 @@ let intro_move idopt hto = match idopt with
   | Some id -> intro_gen dloc (IntroMustBe id) hto true false
 
 let pf_lookup_hypothesis_as_renamed env ccl = function
-  | AnonHyp n -> pf_lookup_index_as_renamed env ccl n
-  | NamedHyp id -> pf_lookup_name_as_displayed env ccl id
+  | AnonHyp n -> Detyping.lookup_index_as_renamed env ccl n
+  | NamedHyp id -> Detyping.lookup_name_as_displayed env ccl id
 
 let pf_lookup_hypothesis_as_renamed_gen red h gl =
   let env = pf_env gl in
@@ -614,7 +613,7 @@ let bring_hyps hyps =
 
 let resolve_classes gl =
   let env = pf_env gl and evd = project gl in
-    if evd = Evd.empty then tclIDTAC gl
+    if Evd.is_empty evd then tclIDTAC gl
     else
       let evd' = Typeclasses.resolve_typeclasses env (Evd.create_evar_defs evd) in
 	(tclTHEN (tclEVARS evd') tclNORMEVAR) gl

@@ -55,3 +55,14 @@ val abort_refine : ('a -> unit) -> 'a -> unit;;
 val interp : Vernacexpr.vernac_expr -> unit
 
 val vernac_reset_name : identifier Util.located -> unit
+
+(* Print subgoals when the verbose flag is on. Meant to be used inside
+    vernac commands from plugins. *)
+val print_subgoals : unit -> unit
+
+
+(* Handles focusing/defocusing with bullets:
+    - If this bullet follows another one of its kind, defocuses then focuses
+      (which fails if the focused subproof is not complete).
+    - If it is the first bullet of its kind, then focuses a new subproof. *)
+val put_bullet : Proof.proof -> bullet -> unit

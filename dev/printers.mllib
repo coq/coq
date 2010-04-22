@@ -12,8 +12,7 @@ Hashcons
 Dyn
 System
 Envars
-Bstack
-Edit
+Store
 Gset
 Gmap
 Fset
@@ -93,7 +92,6 @@ Coercion
 Unification
 Cases
 Pretyping
-Clenv
 
 Lexer
 Ppextend
@@ -108,12 +106,15 @@ Syntax_def
 Implicit_quantifiers
 Smartlocate
 Constrintern
-Proof_trees
 Tacexpr
 Proof_type
+Goal
 Logic
 Refiner
 Evar_refiner
+Proofview
+Proof
+Proof_global
 Pfedit
 Tactic_debug
 Decl_mode

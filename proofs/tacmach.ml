@@ -21,7 +21,6 @@ open Evd
 open Typing
 open Redexpr
 open Tacred
-open Proof_trees
 open Proof_type
 open Logic
 open Refiner
@@ -34,7 +33,6 @@ let re_sig it gc = { it = it; sigma = gc }
 (**************************************************************)
 
 type 'a sigma   = 'a Evd.sigma;;
-type validation = Proof_type.validation;;
 type tactic     = Proof_type.tactic;;
 
 let unpackage = Refiner.unpackage
@@ -46,7 +44,7 @@ let project  = Refiner.project
 let pf_env   = Refiner.pf_env
 let pf_hyps  = Refiner.pf_hyps
 
-let pf_concl gls = (sig_it gls).evar_concl
+let pf_concl gls = Goal.V82.concl (project gls) (sig_it gls)
 let pf_hyps_types gls  =
   let sign = Environ.named_context (pf_env gls) in
   List.map (fun (id,_,x) -> (id, x)) sign
@@ -123,11 +121,11 @@ let pf_matches                  = pf_apply Matching.matches_conv
 (* Tactics handling a list of goals *)
 (************************************)
 
-type transformation_tactic = proof_tree -> (goal list * validation)
+type transformation_tactic = proof_tree -> goal list 
 
 type validation_list = proof_tree list -> proof_tree list
 
-type tactic_list = (goal list sigma) -> (goal list sigma) * validation_list
+type tactic_list = Refiner.tactic_list 
 
 let first_goal         = first_goal
 let goal_goal_list     = goal_goal_list
@@ -136,37 +134,6 @@ let then_tactic_list   = then_tactic_list
 let tactic_list_tactic = tactic_list_tactic
 let tclFIRSTLIST       = tclFIRSTLIST
 let tclIDTAC_list      = tclIDTAC_list
-
-
-(********************************************************)
-(* Functions for handling the state of the proof editor *)
-(********************************************************)
-
-type pftreestate = Refiner.pftreestate
-
-let proof_of_pftreestate    = proof_of_pftreestate
-let cursor_of_pftreestate   = cursor_of_pftreestate
-let is_top_pftreestate      = is_top_pftreestate
-let evc_of_pftreestate      = evc_of_pftreestate
-let top_goal_of_pftreestate = top_goal_of_pftreestate
-let nth_goal_of_pftreestate = nth_goal_of_pftreestate
-let traverse                = traverse
-let solve_nth_pftreestate   = solve_nth_pftreestate
-let solve_pftreestate       = solve_pftreestate
-let weak_undo_pftreestate   = weak_undo_pftreestate
-let mk_pftreestate          = mk_pftreestate
-let extract_pftreestate     = extract_pftreestate
-let extract_open_pftreestate = extract_open_pftreestate
-let first_unproven          = first_unproven
-let last_unproven           = last_unproven
-let nth_unproven            = nth_unproven
-let node_prev_unproven      = node_prev_unproven
-let node_next_unproven      = node_next_unproven
-let next_unproven           = next_unproven
-let prev_unproven           = prev_unproven
-let top_of_tree             = top_of_tree
-let frontier                = frontier
-let change_constraints_pftreestate = change_constraints_pftreestate
 
 
 (********************************************)
@@ -243,10 +210,18 @@ let rec pr_list f = function
   | []   -> mt ()
   | a::l1 -> (f a) ++ pr_list f l1
 
+let db_pr_goal sigma g =
+  let env = Goal.V82.env sigma g in
+  let penv = print_named_context env in
+  let pc = print_constr_env env (Goal.V82.concl sigma g) in
+  str"  " ++ hv 0 (penv ++ fnl () ++
+                   str "============================" ++ fnl ()  ++
+                   str" "  ++ pc) ++ fnl ()
+
 let pr_gls gls =
-  hov 0 (pr_evar_map (sig_sig gls) ++ fnl () ++ db_pr_goal (sig_it gls))
+  hov 0 (pr_evar_map (sig_sig gls) ++ fnl () ++ db_pr_goal (project gls) (sig_it gls))
 
 let pr_glls glls =
   hov 0 (pr_evar_map (sig_sig glls) ++ fnl () ++
-         prlist_with_sep pr_fnl db_pr_goal (sig_it glls))
+         prlist_with_sep pr_fnl (db_pr_goal (project glls)) (sig_it glls))
 

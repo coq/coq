@@ -13,32 +13,17 @@ open Term
 open Evd
 open Util
 
+
 let daimon_flag = ref false
 
 let set_daimon_flag () = daimon_flag:=true
 let clear_daimon_flag () = daimon_flag:=false
 let get_daimon_flag () = !daimon_flag
 
-type command_mode =
-    Mode_tactic
-  | Mode_proof
-  | Mode_none
 
-let mode_of_pftreestate pts =
-  let goal = sig_it (Refiner.top_goal_of_pftreestate pts) in
-    if goal.evar_extra = None then
-      Mode_tactic
-    else
-      Mode_proof
 
-let get_current_mode () =
-  try
-    mode_of_pftreestate (Pfedit.get_pftreestate ())
-  with _ -> Mode_none
-
-let check_not_proof_mode str =
- if get_current_mode () = Mode_proof then
-   error str
+(* Information associated to goals. *)
+open Store.Field
 
 type split_tree=
     Skip_patt of Idset.t * split_tree
@@ -72,53 +57,51 @@ type stack_info =
 
 type pm_info =
     { pm_stack : stack_info list}
+let info = Store.field ()
 
-let pm_in,pm_out = Dyn.create "pm_info"
 
-let get_info gl=
-  match gl.evar_extra with
-      None ->  invalid_arg "get_info"
-    | Some extra ->
-	try pm_out extra with _ -> invalid_arg "get_info"
+(* Current proof mode *)
+
+type command_mode =
+    Mode_tactic
+  | Mode_proof
+  | Mode_none
+
+let mode_of_pftreestate pts =
+  (* spiwack: it was "top_goal_..." but this should be fine *)
+  let { it = goals ; sigma = sigma } = Proof.V82.subgoals pts in
+  let goal = List.hd goals in
+    if info.get (Goal.V82.extra sigma goal) = None then
+      Mode_tactic 
+    else
+      Mode_proof
+	  
+let get_current_mode () =
+  try 
+    mode_of_pftreestate (Pfedit.get_pftreestate ())
+  with _ -> Mode_none
+
+let check_not_proof_mode str =
+ if get_current_mode () = Mode_proof then
+   error str
+
+let get_info sigma gl=
+  match info.get (Goal.V82.extra sigma gl) with
+  | None ->  invalid_arg "get_info"
+  | Some pm -> pm
+
+let try_get_info sigma gl =
+  info.get (Goal.V82.extra sigma gl)
 
 let get_stack pts =
-  let info = get_info (sig_it (Refiner.nth_goal_of_pftreestate 1 pts)) in
-    info.pm_stack
+  let { it = goals ; sigma = sigma } = Proof.V82.subgoals pts in
+  let info = get_info sigma (List.hd goals) in
+  info.pm_stack
 
 let get_top_stack pts =
-  let info = get_info (sig_it (Refiner.top_goal_of_pftreestate pts)) in
-    info.pm_stack
-
-let get_end_command pts =
-  match mode_of_pftreestate pts with
-      Mode_proof ->
-	Some
-	  begin
-	    match get_top_stack pts with
-		[] -> "\"end proof\""
-	      | Claim::_ -> "\"end claim\""
-	      | Focus_claim::_-> "\"end focus\""
-	      | (Suppose_case :: Per (et,_,_,_) :: _
-		| Per (et,_,_,_) :: _ ) ->
-		  begin
-		    match et with
-			Decl_expr.ET_Case_analysis ->
-			  "\"end cases\" or start a new case"
-		      | Decl_expr.ET_Induction ->
-			  "\"end induction\" or start a new case"
-		  end
-	      | _ -> anomaly "lonely suppose"
-	  end
-    | Mode_tactic ->
-	begin
-	  try
-	    ignore
-	      (Refiner.up_until_matching_rule Proof_trees.is_proof_instr pts);
-	    Some "\"return\""
-	  with Not_found -> None
-	end
-    | Mode_none ->
-        error "no proof in progress"
+  let { it = gl ; sigma = sigma } = Proof.V82.top_goal pts in
+  let info = get_info sigma gl in
+  info.pm_stack
 
 let get_last env =
   try

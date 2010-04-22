@@ -29,7 +29,6 @@ open Auto
 open Pattern
 open Matching
 open Hipattern
-open Proof_trees
 open Proof_type
 open Tacmach
 open Coqlib

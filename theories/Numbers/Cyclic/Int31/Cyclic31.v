@@ -2387,7 +2387,7 @@ Section Int31_Specs.
  replace [|il|] with (([|il|] - [|il1|]) + [|il1|]); try ring.
  rewrite <-Hil2.
  change (-1 * 2 ^ Z_of_nat size) with (-base); ring.
- Qed.
+Qed.
 
  (** [iszero] *)
 

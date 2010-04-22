@@ -150,12 +150,11 @@ let evars_to_metas sigma (emap, c) =
 (* The list of non-instantiated existential declarations *)
 
 let non_instantiated sigma =
-  let listev = to_list sigma in
-  List.fold_left
-    (fun l (ev,evi) ->
-       if evi.evar_body = Evar_empty then
-	 ((ev,nf_evar_info sigma evi)::l) else l)
-    [] listev
+  List.rev begin
+    Evd.fold_undefined begin fun ev evi l ->
+      (ev,nf_evar_info sigma evi)::l
+    end sigma []
+  end
 
 (**********************)
 (* Creating new evars *)
@@ -478,6 +477,10 @@ type clear_dependency_error =
 
 exception ClearDependencyError of identifier * clear_dependency_error
 
+open Store.Field
+
+let cleared = Store.field ()
+
 let rec check_and_clear_in_constr evdref err ids c =
   (* returns a new constr where all the evars have been 'cleaned'
      (ie the hypotheses ids have been removed from the contexts of
@@ -539,6 +542,13 @@ let rec check_and_clear_in_constr evdref err ids c =
 	      let ev'= e_new_evar evdref env ~src:(evar_source evk !evdref) nconcl in
 	      evdref := Evd.define evk ev' !evdref;
 	      let (evk',_) = destEvar ev' in
+	    (* spiwack: hacking session to mark the old [evk] as having been "cleared" *)
+	      let evi = Evd.find !evdref evk in
+	      let extra = evi.evar_extra in
+	      let extra' = cleared.set true extra in
+	      let evi' = { evi with evar_extra = extra' } in
+	      evdref := Evd.add !evdref evk evi' ;
+	    (* spiwack: /hacking session *)
 	      mkEvar(evk', Array.of_list nargs)
             end
 

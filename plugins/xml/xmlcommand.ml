@@ -551,34 +551,7 @@ let print_ref qid fn =
 (*  where dest is either None (for stdout) or (Some filename) *)
 (* pretty prints via Xml.pp the proof in progress on dest     *)
 let show_pftreestate internal fn (kind,pftst) id =
- let pf = Tacmach.proof_of_pftreestate pftst in
- let typ = (Proof_trees.goal_of_proof pf).Evd.evar_concl in
- let val0,evar_map,proof_tree_to_constr,proof_tree_to_flattened_proof_tree,
-     unshared_pf
- =
-  Proof2aproof.extract_open_pftreestate pftst in
- let env = Global.env () in
- let obj =
-  mk_current_proof_obj (fst kind = Decl_kinds.Local) id val0 typ evar_map env in
- let uri =
-  match kind with
-     Decl_kinds.Local, _ ->
-      let uri =
-       "cic:/" ^ String.concat "/"
-        (Cic2acic.token_list_of_path (Lib.cwd ()) id Cic2acic.TVariable)
-      in
-      let kind_of_var = "VARIABLE","LocalFact" in
-       if not internal then print_object_kind uri kind_of_var;
-      uri
-   | Decl_kinds.Global, _ ->
-      let uri = Cic2acic.uri_of_declaration id Cic2acic.TConstant in
-       if not internal then print_object_kind uri (kind_of_global_goal kind);
-       uri
- in
-  print_object uri obj evar_map
-   (Some (Tacmach.evc_of_pftreestate pftst,unshared_pf,proof_tree_to_constr,
-    proof_tree_to_flattened_proof_tree)) fn
-;;
+  Util.anomaly "Xmlcommand.show_pftreestate is not supported in this version."
 
 let show fn =
  let pftst = Pfedit.get_pftreestate () in

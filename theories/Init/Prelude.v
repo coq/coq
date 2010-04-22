@@ -18,9 +18,11 @@ Require Export Coq.Init.Tactics.
 (* Initially available plugins
    (+ nat_syntax_plugin loaded in Datatypes) *)
 Declare ML Module "extraction_plugin".
+Declare ML Module "decl_mode_plugin".
 Declare ML Module "cc_plugin".
 Declare ML Module "ground_plugin".
 Declare ML Module "dp_plugin".
 Declare ML Module "recdef_plugin".
 Declare ML Module "subtac_plugin".
 Declare ML Module "xml_plugin".
+Global Set Default Proof Mode "Classic".

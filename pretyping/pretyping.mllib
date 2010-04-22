@@ -21,7 +21,6 @@ Typeclasses
 Classops
 Coercion
 Unification
-Clenv
 Detyping
 Indrec
 Cases

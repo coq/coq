@@ -36,8 +36,18 @@ let explain_logic_error = ref (fun e -> mt())
 let explain_logic_error_no_anomaly = ref (fun e -> mt())
 
 (* Prints the goal *)
+
 let db_pr_goal g =
-  msgnl (str "Goal:" ++ fnl () ++ Proof_trees.db_pr_goal (Refiner.sig_it g))
+  let env = Refiner.pf_env g in
+  let penv = print_named_context env in
+  let pc = print_constr_env env (Goal.V82.concl (Refiner.project g) (Refiner.sig_it g)) in
+  str"  " ++ hv 0 (penv ++ fnl () ++
+                   str "============================" ++ fnl ()  ++
+                   str" "  ++ pc) ++ fnl ()
+
+let db_pr_goal g =
+  msgnl (str "Goal:" ++ fnl () ++ db_pr_goal g)
+
 
 (* Prints the commands *)
 let help () =

@@ -12,9 +12,9 @@
 open Term
 open Sign
 open Evd
-open Proof_trees
 open Proof_type
 open Tacexpr
+open Logic
 (*i*)
 
 (* The refiner (handles primitive rules and high-level tactics). *)
@@ -28,14 +28,14 @@ val pf_hyps : goal sigma -> named_context
 val unpackage : 'a sigma -> evar_map ref * 'a
 val repackage : evar_map ref -> 'a -> 'a sigma
 val apply_sig_tac :
-  evar_map ref -> (goal sigma -> (goal list) sigma * validation) -> goal -> (goal list) * validation
-
-type transformation_tactic = proof_tree -> (goal list * validation)
+  evar_map ref -> (goal sigma -> goal list sigma) -> goal -> goal list
 
 (*s Hiding the implementation of tactics. *)
 
 (* [abstract_tactic tac] hides the (partial) proof produced by [tac] under
    a single proof node. The boolean tells if the default tactic is used. *)
+(* spiwack: currently here for compatibility, abstract_operation 
+    is a second projection *)
 val abstract_operation : compound_rule -> tactic -> tactic
 val abstract_tactic : ?dflt:bool -> atomic_tactic_expr -> tactic -> tactic
 val abstract_tactic_expr : ?dflt:bool -> tactic_expr -> tactic -> tactic
@@ -43,22 +43,6 @@ val abstract_extended_tactic :
   ?dflt:bool -> string -> typed_generic_argument list -> tactic -> tactic
 
 val refiner : rule -> tactic
-val frontier : transformation_tactic
-val list_pf : proof_tree -> goal list
-val unTAC : tactic -> goal sigma -> proof_tree sigma
-
-
-(* Install a hook frontier_map and frontier_mapi call on the new node they create *)
-val set_solve_hook : (Proof_type.proof_tree -> unit) -> unit
-(* [frontier_map f n p] applies f on the n-th open subgoal of p and
-   rebuilds proof-tree.
-   n=1 for first goal, n negative counts from the right *)
-val frontier_map :
-  (proof_tree -> proof_tree) -> int -> proof_tree -> proof_tree
-
-(* [frontier_mapi f p] applies (f i) on the i-th open subgoal of p. *)
-val frontier_mapi :
-  (int -> proof_tree -> proof_tree) -> proof_tree -> proof_tree
 
 (*s Tacticals. *)
 
@@ -153,8 +137,8 @@ val tclAT_LEAST_ONCE : tactic -> tactic
 val tclFAIL          : int -> Pp.std_ppcmds -> tactic
 val tclFAIL_lazy     : int -> Pp.std_ppcmds Lazy.t -> tactic
 val tclDO            : int -> tactic -> tactic
-val tclPROGRESS      : tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic
+val tclPROGRESS      : tactic -> tactic
 val tclNOTSAMEGOAL   : tactic -> tactic
 val tclINFO          : tactic -> tactic
 
@@ -173,9 +157,7 @@ val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
 
 (*s Tactics handling a list of goals. *)
 
-type validation_list = proof_tree list -> proof_tree list
-
-type tactic_list = (goal list sigma) -> (goal list sigma) * validation_list
+type tactic_list = goal list sigma -> goal list sigma
 
 val tclFIRSTLIST       : tactic_list list -> tactic_list
 val tclIDTAC_list      : tactic_list
@@ -191,57 +173,4 @@ val goal_goal_list     : 'a sigma -> 'a list sigma
    extension of the sigma of the goal *)
 val tclWITHHOLES : bool -> ('a -> tactic) -> evar_map -> 'a -> tactic
 
-(*s Functions for handling the state of the proof editor. *)
-
-type pftreestate
-
-val proof_of_pftreestate : pftreestate -> proof_tree
-val cursor_of_pftreestate : pftreestate -> int list
-val is_top_pftreestate : pftreestate -> bool
-val match_rule : (rule -> bool) -> pftreestate -> bool
-val evc_of_pftreestate : pftreestate -> evar_map
-val top_goal_of_pftreestate : pftreestate -> goal sigma
-val nth_goal_of_pftreestate : int -> pftreestate -> goal sigma
-
-val traverse : int -> pftreestate -> pftreestate
-val map_pftreestate :
-  (evar_map ref -> proof_tree -> proof_tree) -> pftreestate -> pftreestate
-val solve_nth_pftreestate : int -> tactic -> pftreestate -> pftreestate
-val solve_pftreestate : tactic -> pftreestate -> pftreestate
-
-(* a weak version of logical undoing, that is really correct only *)
-(* if there are no existential variables.                         *)
-val weak_undo_pftreestate : pftreestate -> pftreestate
-
-val mk_pftreestate : goal -> pftreestate
-val extract_open_proof : evar_map -> proof_tree -> constr * (int * types) list
-val extract_open_pftreestate : pftreestate -> constr * Termops.meta_type_map
-val extract_pftreestate : pftreestate -> constr
-val first_unproven : pftreestate -> pftreestate
-val last_unproven : pftreestate -> pftreestate
-val nth_unproven : int -> pftreestate -> pftreestate
-val node_prev_unproven : int -> pftreestate -> pftreestate
-val node_next_unproven : int -> pftreestate -> pftreestate
-val next_unproven : pftreestate -> pftreestate
-val prev_unproven : pftreestate -> pftreestate
-val top_of_tree : pftreestate -> pftreestate
-val match_rule : (rule -> bool) -> pftreestate -> bool
-val up_until_matching_rule : (rule -> bool) ->
-  pftreestate -> pftreestate
-val up_to_matching_rule : (rule -> bool) ->
-  pftreestate -> pftreestate
-val change_rule : (rule -> rule) -> pftreestate -> pftreestate
-val change_constraints_pftreestate
-  : evar_map -> pftreestate -> pftreestate
-
-
 (*s Pretty-printers. *)
-
-(*i*)
-open Pp
-(*i*)
-val set_info_printer :
-  (evar_map -> named_context -> proof_tree -> Pp.std_ppcmds) -> unit
-val set_proof_printer :
-  (evar_map -> named_context -> proof_tree -> Pp.std_ppcmds) -> unit
-val print_pftreestate : pftreestate -> Pp.std_ppcmds

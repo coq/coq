@@ -393,7 +393,7 @@ Program Instance subrelation_partial_order :
 
   Next Obligation.
   Proof.
-    unfold relation_equivalence in *. firstorder.
+    unfold relation_equivalence in *. compute; firstorder.
   Qed.
 
 Typeclasses Opaque arrows predicate_implication predicate_equivalence

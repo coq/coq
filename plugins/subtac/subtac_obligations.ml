@@ -489,6 +489,7 @@ and solve_obligation_by_tac prg obls i tac =
 	| Stdpp.Exc_located(_, Refiner.FailError (_, s))
 	| Refiner.FailError (_, s) ->
 	    user_err_loc (obl.obl_location, "solve_obligation", Lazy.force s)
+	| Util.Anomaly _ as e -> raise e
 	| e -> false
 
 and solve_prg_obligations prg tac =

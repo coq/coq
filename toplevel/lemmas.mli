@@ -36,7 +36,7 @@ val start_proof_with_initialization :
   declaration_hook -> unit
 
 (* A hook the next three functions pass to cook_proof *)
-val set_save_hook : (Refiner.pftreestate -> unit) -> unit
+val set_save_hook : (Proof.proof -> unit) -> unit
 
 (*s [save_named b] saves the current completed proof under the name it
 was started; boolean [b] tells if the theorem is declared opaque; it

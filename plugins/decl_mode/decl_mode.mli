@@ -22,7 +22,7 @@ type command_mode =
   | Mode_proof
   | Mode_none
 
-val mode_of_pftreestate : pftreestate -> command_mode
+val mode_of_pftreestate : Proof.proof -> command_mode
 
 val get_current_mode : unit -> command_mode
 
@@ -61,14 +61,14 @@ type stack_info =
 type pm_info =
     {pm_stack : stack_info list }
 
-val pm_in : pm_info -> Dyn.t
+val info : pm_info Store.Field.t
 
-val get_info : Proof_type.goal -> pm_info
+val get_info : Evd.evar_map -> Proof_type.goal -> pm_info
 
-val get_end_command : pftreestate -> string option
+val try_get_info : Evd.evar_map -> Proof_type.goal -> pm_info option
 
-val get_stack : pftreestate -> stack_info list
+val get_stack : Proof.proof -> stack_info list
 
-val get_top_stack : pftreestate -> stack_info list
+val get_top_stack : Proof.proof -> stack_info list
 
 val get_last:  Environ.env -> identifier

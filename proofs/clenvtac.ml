@@ -20,7 +20,6 @@ open Evd
 open Evarutil
 open Proof_type
 open Refiner
-open Proof_trees
 open Logic
 open Reduction
 open Reductionops

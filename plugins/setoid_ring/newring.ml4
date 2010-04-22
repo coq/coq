@@ -188,8 +188,10 @@ let ltac_record flds =
 let carg c = TacDynamic(dummy_loc,Pretyping.constr_in c)
 
 let dummy_goal env =
-  {Evd.it = Evd.make_evar (named_context_val env) mkProp;
-   Evd.sigma = Evd.empty}
+  let (gl,_,sigma) = 
+    Goal.V82.mk_goal Evd.empty (named_context_val env) mkProp Store.empty in
+  {Evd.it = gl;
+   Evd.sigma = sigma}
 
 let exec_tactic env n f args =
   let lid = list_tabulate(fun i -> id_of_string("x"^string_of_int i)) n in

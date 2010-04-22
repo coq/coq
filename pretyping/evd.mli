@@ -123,7 +123,7 @@ type evar_info = {
   evar_body : evar_body;
   evar_filter : bool list;
   evar_source : hole_kind located;
-  evar_extra : Dyn.t option}
+  evar_extra : Store.t }
 
 val eq_evar_info : evar_info -> evar_info -> bool
 
@@ -185,6 +185,15 @@ val evars_reset_evd  : evar_map ->  evar_map -> evar_map
                    for moving to evarutils *)
 val is_undefined_evar :  evar_map -> constr -> bool
 val undefined_evars : evar_map -> evar_map
+(* [fold_undefined f m] iterates ("folds") function [f] over the undefined
+    evars (that is, whose value is [Evar_empty]) of map [m].
+    Making it effectively equivalent to {!Evd.fold} applies to
+    [f] and [undefined_evars m] *)
+(* spiwack: at the moment, [fold_undefined] is defined rather naively.
+    But we can hope to enable some optimisation in the future, as
+    an evar_map contains typically few undefined evars compared to all
+    its evars. *)
+val fold_undefined : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 val evar_declare :
   named_context_val -> evar -> types -> ?src:loc * hole_kind ->
       ?filter:bool list -> evar_map -> evar_map

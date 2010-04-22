@@ -24,7 +24,6 @@ open Entries
 open Inductiveops
 open Environ
 open Tacmach
-open Proof_trees
 open Proof_type
 open Pfedit
 open Evar_refiner
@@ -217,29 +216,31 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     errorlabstrm "lemma_inversion"
     (str"Computed inversion goal was not closed in initial signature.");
   *)
-  let invSign = named_context_val invEnv in
-  let pfs = mk_pftreestate (mk_goal invSign invGoal None) in
-  let pfs = solve_pftreestate (tclTHEN intro (onLastHypId inv_op)) pfs in
-  let (pfterm,meta_types) = extract_open_pftreestate pfs in
+  let pf = Proof.start [invEnv,invGoal] in
+  Proof.run_tactic env (Proofview.V82.tactic (tclTHEN intro (onLastHypId inv_op))) pf;
+  let pfterm = List.hd (Proof.partial_proof pf) in
   let global_named_context = Global.named_context () in
-  let ownSign =
+  let ownSign = ref begin
     fold_named_context
       (fun env (id,_,_ as d) sign ->
          if mem_named_context id global_named_context then sign
 	 else add_named_decl d sign)
       invEnv ~init:empty_named_context
-  in
-  let (_,ownSign,mvb) =
-    List.fold_left
-      (fun (avoid,sign,mvb) (mv,mvty) ->
-         let h = next_ident_away (id_of_string "H") avoid in
-	 (h::avoid, add_named_decl (h,None,mvty) sign, (mv,mkVar h)::mvb))
-      (ids_of_context invEnv, ownSign, [])
-      meta_types
+  end in
+  let avoid = ref [] in
+  let { sigma=sigma } = Proof.V82.subgoals pf in
+  let rec fill_holes c =
+    match kind_of_term c with
+    | Evar (e,_) ->
+	let h = next_ident_away (id_of_string "H") !avoid in
+	let ty = (Evd.find sigma e).evar_concl in
+	avoid := h::!avoid;
+	ownSign := add_named_decl (h,None,ty) !ownSign;
+	mkVar h
+    | _ -> map_constr fill_holes c
   in
   let invProof =
-    it_mkNamedLambda_or_LetIn
-      (local_strong (fun _ -> whd_meta mvb) Evd.empty pfterm) ownSign
+    it_mkNamedLambda_or_LetIn (fill_holes pfterm) !ownSign
   in
   invProof
 
@@ -255,26 +256,17 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
      IsProof Lemma)
   in ()
 
-(* open Pfedit *)
-
 (* inv_op = Inv (derives de complete inv. lemma)
  * inv_op = InvNoThining (derives de semi inversion lemma) *)
 
 let inversion_lemma_from_goal n na (loc,id) sort dep_option inv_op =
   let pts = get_pftreestate() in
-  let gl = nth_goal_of_pftreestate n pts in
+  let { it=gls ; sigma=sigma } = Proof.V82.subgoals pts in
+  let gl = { it = List.nth gls (n-1) ; sigma=sigma } in
   let t =
     try pf_get_hyp_typ gl id
     with Not_found -> Pretype_errors.error_var_not_found_loc loc id in
   let env = pf_env gl and sigma = project gl in
-(* Pourquoi ???
-  let fv = global_vars env t in
-  let thin_ids = thin_ids (hyps,fv) in
-  if not(list_subset thin_ids fv) then
-    errorlabstrm "lemma_inversion"
-      (str"Cannot compute lemma inversion when there are" ++ spc () ++
-	 str"free variables in the types of an inductive" ++ spc () ++
-	 str"which are not free in its instance."); *)
   add_inversion_lemma na env sigma t sort dep_option inv_op
 
 let add_inversion_lemma_exn na com comsort bool tac =

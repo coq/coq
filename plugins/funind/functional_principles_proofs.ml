@@ -35,7 +35,7 @@ let observennl strm =
 let do_observe_tac s tac g =
  try let v = tac g in (* msgnl (goal ++ fnl () ++ (str s)++(str " ")++(str "finished")); *) v
  with e ->
-   let goal = begin try (Printer.pr_goal (sig_it g)) with _ -> assert false end in
+   let goal = begin try (Printer.pr_goal g) with _ -> assert false end in
    msgnl (str "observation "++ s++str " raised exception " ++
 	    Cerrors.explain_exn e ++ str " on goal " ++ goal );
    raise e;;

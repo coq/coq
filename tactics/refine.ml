@@ -382,5 +382,3 @@ let refine (evd,c) gl =
      complicated to update meta types when passing through a binder *)
   let th = compute_metamap (pf_env gl) evd c in
   tclTHEN (Refiner.tclEVARS evd) (tcc_aux [] th) gl
-
-let _ = Decl_proof_instr.set_refine refine (* dirty trick to solve circular dependency *)

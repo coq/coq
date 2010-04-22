@@ -204,9 +204,9 @@ let rec make_prb gls depth additionnal_terms =
 		 neg_hyps:=(cid,nh):: !neg_hyps
 	     | `Rule patts -> add_quant state id true patts
 	     | `Nrule patts -> add_quant state id false patts
-	 end) (Environ.named_context_of_val gls.it.evar_hyps);
+	 end) (Environ.named_context_of_val (Goal.V82.hyps gls.sigma gls.it));
     begin
-      match atom_of_constr env sigma gls.it.evar_concl with
+      match atom_of_constr env sigma (pf_concl gls) with
 	  `Eq (t,a,b) -> add_disequality state Goal a b
 	|	`Other g ->
 		  List.iter

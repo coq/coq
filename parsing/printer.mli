@@ -101,9 +101,9 @@ val pr_transparent_state   : transparent_state -> std_ppcmds
 
 (* Proofs *)
 
-val pr_goal                : goal -> std_ppcmds
+val pr_goal                : goal sigma -> std_ppcmds
 val pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds
-val pr_subgoal             : int -> goal list -> std_ppcmds
+val pr_subgoal             : int -> evar_map -> goal list -> std_ppcmds
 
 val pr_open_subgoals       : unit -> std_ppcmds
 val pr_nth_open_subgoal    : int -> std_ppcmds
@@ -130,8 +130,8 @@ val pr_assumptionset : env -> Term.types Environ.ContextObjectMap.t ->std_ppcmds
 
 type printer_pr = {
  pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds;
- pr_subgoal             : int -> goal list -> std_ppcmds;
- pr_goal                : goal -> std_ppcmds;
+ pr_subgoal             : int -> evar_map -> goal list -> std_ppcmds;
+ pr_goal                : goal sigma -> std_ppcmds;
 };;
 
 val set_printer_pr : printer_pr -> unit

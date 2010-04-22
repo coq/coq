@@ -22,12 +22,13 @@ open Libnames
 open Nametab
 open Evd
 open Proof_type
-open Decl_mode
 open Refiner
 open Pfedit
 open Ppconstr
 open Constrextern
 open Tacexpr
+
+open Store.Field
 
 let emacs_str s alts =
   match !Flags.print_emacs, !Flags.print_emacs_safechar with
@@ -265,18 +266,13 @@ let pr_subgoal_metas metas env=
     hv 0 (prlist_with_sep mt pr_one metas)
 
 (* display complete goal *)
-let default_pr_goal g =
-  let env = evar_unfiltered_env g in
+let default_pr_goal gs =
+  let (g,sigma) = Goal.V82.nf_evar (project gs) (sig_it gs) in
+  let env = Goal.V82.unfiltered_env sigma g in
   let preamb,thesis,penv,pc =
-    if g.evar_extra = None then
-          mt (), mt (),
-	  pr_context_of env,
-	  pr_ltype_env_at_top env g.evar_concl
-    else
-      (str "     *** Declarative Mode ***" ++ fnl ()++fnl ()),
-      (str "thesis := "  ++ fnl ()),
-       pr_context_of env,
-       pr_ltype_env_at_top env g.evar_concl
+    mt (), mt (),
+    pr_context_of env,
+    pr_ltype_env_at_top env (Goal.V82.concl sigma g)
   in
     preamb ++
     str"  " ++ hv 0 (penv ++ fnl () ++
@@ -285,9 +281,10 @@ let default_pr_goal g =
 		       thesis ++ str " " ++  pc) ++ fnl ()
 
 (* display the conclusion of a goal *)
-let pr_concl n g =
-  let env = evar_env g in
-  let pc = pr_ltype_env_at_top env g.evar_concl in
+let pr_concl n sigma g =
+  let (g,sigma) = Goal.V82.nf_evar sigma g in
+  let env = Goal.V82.env sigma g in
+  let pc = pr_ltype_env_at_top env (Goal.V82.concl sigma g) in
     str (emacs_str (String.make 1 (Char.chr 253)) "")  ++
       str "subgoal " ++ int n ++ str " is:" ++ cut () ++ str" "  ++ pc
 
@@ -313,12 +310,12 @@ let rec pr_evars_int i = function
               str (string_of_existential ev)  ++ str " : " ++ pegl)) ++
       fnl () ++ pei
 
-let default_pr_subgoal n =
+let default_pr_subgoal n sigma =
   let rec prrec p = function
     | [] -> error "No such goal."
     | g::rest ->
        	if p = 1 then
-          let pg = default_pr_goal g in
+          let pg = default_pr_goal { sigma=sigma ; it=g } in
           v 0 (str "subgoal " ++ int n ++ str " is:" ++ cut () ++ pg)
        	else
 	  prrec (p-1) rest
@@ -343,17 +340,17 @@ let default_pr_subgoals close_cmd sigma = function
 		     str "variables:" ++ fnl () ++ (hov 0 pei))
       end
   | [g] ->
-      let pg = default_pr_goal g in
+      let pg = default_pr_goal { it = g ; sigma = sigma } in
       v 0 (str ("1 "^"subgoal") ++cut () ++ pg)
   | g1::rest ->
       let rec pr_rec n = function
         | [] -> (mt ())
         | g::rest ->
-            let pc = pr_concl n g in
+            let pc = pr_concl n sigma g in
             let prest = pr_rec (n+1) rest in
             (cut () ++ pc ++ prest)
       in
-      let pg1 = default_pr_goal g1 in
+      let pg1 = default_pr_goal { it = g1 ; sigma = sigma } in
       let prest = pr_rec 2 rest in
       v 0 (int(List.length rest+1) ++ str" subgoals" ++ cut ()
 	   ++ pg1 ++ prest ++ fnl ())
@@ -365,8 +362,8 @@ let default_pr_subgoals close_cmd sigma = function
 
 type printer_pr = {
  pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds;
- pr_subgoal             : int -> goal list -> std_ppcmds;
- pr_goal                : goal -> std_ppcmds;
+ pr_subgoal             : int -> evar_map -> goal list -> std_ppcmds;
+ pr_goal                : goal sigma -> std_ppcmds;
 }
 
 let default_printer_pr = {
@@ -387,25 +384,29 @@ let pr_goal     x = !printer_pr.pr_goal     x
 (**********************************************************************)
 
 let pr_open_subgoals () =
-  let pfts = get_pftreestate () in
-  let gls = fst (frontier (proof_of_pftreestate pfts)) in
-  match focus() with
-    | 0 ->
-        let sigma = (top_goal_of_pftreestate pfts).sigma in
-        let close_cmd = Decl_mode.get_end_command pfts in
-        pr_subgoals close_cmd sigma gls
-    | n ->
-	assert (n > List.length gls);
-	if List.length gls < 2 then
-	  pr_subgoal n gls
-	else
-	  (* LEM TODO: this way of saying how many subgoals has to be abstracted out*)
-	  v 0 (int(List.length gls) ++ str" subgoals" ++ cut () ++
-	  pr_subgoal n gls)
+  let p = Proof_global.give_me_the_proof () in
+  let { Evd.it = goals ; sigma = sigma } = Proof.V82.subgoals p in
+  begin match goals with
+  | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
+            begin match bgoals with
+	    | [] -> pr_subgoals None sigma goals
+	    | _ -> pr_subgoals None bsigma bgoals ++ fnl () ++ fnl () ++
+		      str"This subproof is complete, but there are still unfocused goals:"
+		(* spiwack: to stay compatible with the proof general and coqide,
+		    I use print the message after the goal. It would be better to have
+		    something like:
+ 		      str"This subproof is complete, but there are still unfocused goals:" 
+		      ++ fnl () ++ fnl () ++ pr_subgoals None bsigma bgoals
+		    instead. But it doesn't quite work.
+		*)
+	    end
+  | _ -> pr_subgoals None sigma goals
+  end
 
 let pr_nth_open_subgoal n =
-  let pf = proof_of_pftreestate (get_pftreestate ()) in
-  pr_subgoal n (fst (frontier pf))
+  let pf = get_pftreestate () in
+  let { it=gls ; sigma=sigma } = Proof.V82.subgoals pf in
+  pr_subgoal n sigma gls
 
 (* Elementary tactics *)
 

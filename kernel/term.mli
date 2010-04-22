@@ -161,9 +161,9 @@ val mkFix : fixpoint -> constr
 (* If [funnames = [|f1,.....fn|]]
       [typarray = [|t1,...tn|]]
       [bodies   = [b1,.....bn]] \par\noindent
-   then [mkCoFix (i, (typsarray, funnames, bodies))]
+   then [mkCoFix (i, (funnames, typarray, bodies))]
    constructs the ith function of the block
-
+   
     [CoFixpoint f1 = b1
      with       f2 = b2
      ...

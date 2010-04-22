@@ -373,8 +373,6 @@ module Vernac_ =
     let command = gec_vernac "command"
     let syntax = gec_vernac "syntax_command"
     let vernac = gec_vernac "Vernac.vernac"
-    let proof_instr = Gram.Entry.create "proofmode:instr"
-
     let vernac_eoi = eoi_entry vernac
 
     (* Main vernac entry *)

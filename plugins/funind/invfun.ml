@@ -60,7 +60,7 @@ let observennl strm =
 
 
 let do_observe_tac s tac g =
-  let goal = begin try (Printer.pr_goal (sig_it g)) with _ -> assert false end in
+  let goal = begin try (Printer.pr_goal g) with _ -> assert false end in
   try
     let v = tac g in msgnl (goal ++ fnl () ++ s ++(str " ")++(str "finished")); v
   with e ->
