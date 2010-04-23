@@ -70,7 +70,7 @@ BUGS := bugs/opened/shouldnotfail bugs/opened/shouldnotsucceed \
   bugs/closed/shouldsucceed bugs/closed/shouldfail
 
 VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
-  interactive micromega $(COMPLEXITY) modules ideal-features
+  interactive micromega $(COMPLEXITY) modules
 
 # All subsystems
 SUBSYSTEMS := $(VSUBSYSTEMS) xml bugs
@@ -127,7 +127,6 @@ summary:
 	  $(call summary_one, "Miscellaneous tests", xml); \
 	  $(call summary_dir, "Complexity tests", complexity); \
 	  $(call summary_dir, "Module tests", modules); \
-	  $(call summary_dir, "Ideal-features tests", ideal-features); \
 	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
 	  nb_failure=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
 	  nb_tests=`expr $$nb_success + $$nb_failure`; \
