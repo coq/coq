@@ -957,6 +957,11 @@ let rec pr_vernac = function
   | VernacProof (Tacexpr.TacId _) -> str "Proof"
   | VernacProof te -> str "Proof with" ++ spc() ++ pr_raw_tactic te
 
+  | VernacProofMode s -> str ("Proof Mode "^s)
+  | VernacSubproof None -> str "BeginSubproof"
+  | VernacSubproof (Some i) -> str "BeginSubproof " ++ pr_int i
+  | VernacEndSubproof -> str "EndSubproof"
+
 and pr_extend s cl =
   let pr_arg a =
     try pr_gen (Global.env()) a

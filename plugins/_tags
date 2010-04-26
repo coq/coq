@@ -20,6 +20,7 @@
 "fourier/g_fourier.ml4": use_grammar
 "groebner/ideal.ml4": use_refutpat
 "groebner/groebner.ml4": use_grammar
+"decl_mode/g_decl_mode.ml4": use_grammar, use_extend, use_MLast
 
 "cc": include
 "extraction": include

@@ -1,6 +1,7 @@
 field/field_plugin.cmxs
 setoid_ring/newring_plugin.cmxs
 extraction/extraction_plugin.cmxs
+decl_mode/decl_mode_plugin.cmxs
 firstorder/ground_plugin.cmxs
 rtauto/rtauto_plugin.cmxs
 fourier/fourier_plugin.cmxs

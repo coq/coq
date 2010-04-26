@@ -1,6 +1,7 @@
 field/field_plugin.cmxa
 setoid_ring/newring_plugin.cmxa
 extraction/extraction_plugin.cmxa
+decl_mode/decl_mode_plugin.cmxa
 firstorder/ground_plugin.cmxa
 rtauto/rtauto_plugin.cmxa
 fourier/fourier_plugin.cmxa
@@ -21,4 +22,3 @@ syntax/r_syntax_plugin.cmxa
 syntax/string_syntax_plugin.cmxa
 syntax/z_syntax_plugin.cmxa
 quote/quote_plugin.cmxa
-decl_mode/decl_mode_plugin.cmxa

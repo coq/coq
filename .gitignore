@@ -145,6 +145,7 @@ plugins/groebner/ideal.ml
 plugins/micromega/g_micromega.ml
 plugins/subtac/g_subtac.ml
 plugins/fourier/g_fourier.ml
+plugins/decl_mode/g_decl_mode.ml
 tactics/tauto.ml
 tactics/eauto.ml
 tactics/hipattern.ml
