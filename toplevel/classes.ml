@@ -302,23 +302,25 @@ let context ?(hook=fun _ -> ()) l =
   let ctx = try named_of_rel_context fullctx with _ ->
     error "Anonymous variables not allowed in contexts."
   in
-    List.iter (function (id,_,t) ->
-      if Lib.is_modtype () then
-	let cst = Declare.declare_internal_constant id
-	  (ParameterEntry (t,false), IsAssumption Logical)
-	in
-	  match class_of_constr t with
-	    | Some tc ->
-		add_instance (Typeclasses.new_instance tc None false (ConstRef cst));
-		hook (ConstRef cst)
-	    | None -> ()
-      else (
-	let impl = List.exists (fun (x,_) ->
-	  match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
-	in
-	  Command.declare_assumption false (Local (* global *), Definitional) t
-	    [] impl (* implicit *) false (* inline *) (dummy_loc, id);
-	  match class_of_constr t with
-	  | None -> ()
-	  | Some tc -> hook (VarRef id)))
-      (List.rev ctx)
+  let fn (id, _, t) =
+    if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
+      let cst = Declare.declare_internal_constant id
+	(ParameterEntry (t,false), IsAssumption Logical)
+      in
+	match class_of_constr t with
+	| Some tc ->
+	    add_instance (Typeclasses.new_instance tc None false (ConstRef cst));
+	    hook (ConstRef cst)
+	| None -> ()
+    else (
+      let impl = List.exists 
+	(fun (x,_) ->
+	   match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
+      in
+	Command.declare_assumption false (Local (* global *), Definitional) t
+	  [] impl (* implicit *) false (* inline *) (dummy_loc, id);
+	match class_of_constr t with
+	| None -> ()
+	| Some tc -> hook (VarRef id))
+  in List.iter fn (List.rev ctx)
+	
