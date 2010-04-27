@@ -140,6 +140,8 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
 	       else
 		 (mt ())) ++
 	       report_fn ())
+  | AlreadyDeclared msg ->
+      hov 0 (msg ++ str ".")
   | reraise ->
       hov 0 (anomaly_string () ++ str "Uncaught exception " ++
 	       str (Printexc.to_string reraise) ++ report_fn ())

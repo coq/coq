@@ -56,7 +56,7 @@ let cache_variable ((sp,_),o) =
   | Inr (id,(p,d,mk)) ->
   (* Constr raisonne sur les noms courts *)
   if variable_exists id then
-    errorlabstrm "cache_variable" (pr_id id ++ str " already exists");
+    alreadydeclared (pr_id id ++ str " already exists");
   let impl,opaq,cst = match d with (* Fails if not well-typed *)
     | SectionLocalAssum (ty, impl) ->
         let cst = Global.push_named_assum (id,ty) in
@@ -98,8 +98,7 @@ type constant_declaration = constant_entry * logical_kind
 (* section (if Remark or Fact) is needed to access a construction *)
 let load_constant i ((sp,kn),(_,_,kind)) =
   if Nametab.exists_cci sp then
-    errorlabstrm "cache_constant"
-      (pr_id (basename sp) ++ str " already exists");
+    alreadydeclared (pr_id (basename sp) ++ str " already exists");
   let con = Global.constant_of_delta (constant_of_kn kn) in
   Nametab.push (Nametab.Until i) sp (ConstRef con);
   add_constant_kind con kind
@@ -113,7 +112,7 @@ let cache_constant ((sp,kn),(cdt,dhyps,kind)) =
   let id = basename sp in
   let _,dir,_ = repr_kn kn in
   if variable_exists id or Nametab.exists_cci sp then
-    errorlabstrm "cache_constant" (pr_id id ++ str " already exists");
+    alreadydeclared (pr_id id ++ str " already exists");
   let kn' = Global.add_constant dir id cdt in
   assert (kn' = constant_of_kn kn);
   Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
@@ -210,11 +209,10 @@ let inductive_names sp kn mie =
 
 let check_exists_inductive (sp,_) =
   (if variable_exists (basename sp) then
-    errorlabstrm ""
-      (pr_id (basename sp) ++ str " already exists"));
+    alreadydeclared (pr_id (basename sp) ++ str " already exists"));
   if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
-    errorlabstrm "" (pr_id id ++ str " already exists")
+    alreadydeclared (pr_id id ++ str " already exists")
 
 let load_inductive i ((sp,kn),(_,mie)) =
   let names = inductive_names sp kn mie in
