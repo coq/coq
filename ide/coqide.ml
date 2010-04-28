@@ -731,24 +731,24 @@ object(self)
       end
 
 
-  method show_goals =
-    try
-      Ideproof.display (Ideproof.mode_tactic (fun _ _ -> ())) proof_view (Coq.goals Coq.dummy_coqtop)
-    with e ->
-      prerr_endline ("Don't worry be happy despite: "^Printexc.to_string e)
-
   val mutable full_goal_done = true
 
   method show_goals_full =
     if not full_goal_done then
       begin
+        let menu_callback = if !current.contextual_menus_on_goal then
+          (fun s () -> ignore (self#insert_this_phrase_on_success
+                                 true true false ("progress "^s) s))
+        else
+          (fun _ _ -> ()) in
         try
           Ideproof.display
-            (Ideproof.mode_tactic (fun s () -> ignore (self#insert_this_phrase_on_success
-                                                         true true false ("progress "^s) s)))
+            (Ideproof.mode_tactic menu_callback)
             proof_view (Coq.goals Coq.dummy_coqtop)
         with e -> prerr_endline (Printexc.to_string e)
       end
+
+  method show_goals = self#show_goals_full
 
   method send_to_coq verbosely replace phrase show_output show_error localize =
     let display_output msg =
@@ -1366,16 +1366,6 @@ let create_session () =
                 ignore (GtkText.Tag.event t#as_tag proof#as_widget e it#as_iter))
              tags;
            false) in
-  let _ =
-    proof#event#connect#enter_notify
-      (fun _ -> if !current.contextual_menus_on_goal then
-         begin
-           push_info "Computing advanced goal menus";
-           prerr_endline "Entering Goal Window. Computing Menus...";
-           on_active_view (function {analyzed_view = av} -> av#show_goals_full);
-           prerr_endline "...Done with Goal menu.";
-           pop_info();
-         end; false) in
     script#misc#set_name "ScriptWindow";
     script#buffer#place_cursor ~where:(script#buffer#start_iter);
     proof#misc#set_can_focus true;
