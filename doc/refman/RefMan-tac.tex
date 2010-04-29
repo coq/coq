@@ -2045,30 +2045,37 @@ Qed.
 %\subsection[\tt FixPoint \dots]{\tt FixPoint \dots\tacindex{Fixpoint}}
 %Not yet documented.
 
-\subsection{\tt double induction \ident$_1$ \ident$_2$
-\tacindex{double induction}}
+\subsection{\tt double induction \ident$_1$ \ident$_2$}
+%\tacindex{double induction}}
+This tactic is deprecated and should be replaced by {\tt induction \ident$_1$; induction \ident$_2$} (or {\tt induction \ident$_1$; destruct \ident$_2$} depending on the exact needs).
 
-This tactic applies to any goal. If the variables {\ident$_1$} and
-{\ident$_2$} of the goal have an inductive type, then this tactic
-performs double induction on these variables.  For instance, if the
-current goal is \verb+forall n m:nat, P n m+ then, {\tt double induction n
-  m} yields the four cases with their respective inductive hypotheses.
+%% This tactic applies to any goal. If the variables {\ident$_1$} and
+%% {\ident$_2$} of the goal have an inductive type, then this tactic
+%% performs double induction on these variables.  For instance, if the
+%% current goal is \verb+forall n m:nat, P n m+ then, {\tt double induction n
+%%   m} yields the four cases with their respective inductive hypotheses.
 
-In particular, for proving \verb+(P (S n) (S m))+, the generated induction
-hypotheses are \verb+(P (S n) m)+ and \verb+(m:nat)(P n m)+ (of the latter, 
-\verb+(P n m)+ and \verb+(P n (S m))+ are derivable).
+%% In particular, for proving \verb+(P (S n) (S m))+, the generated induction
+%% hypotheses are \verb+(P (S n) m)+ and \verb+(m:nat)(P n m)+ (of the latter, 
+%% \verb+(P n m)+ and \verb+(P n (S m))+ are derivable).
 
-\Rem When the induction hypothesis \verb+(P (S n) m)+ is not
-needed, {\tt induction \ident$_1$; destruct \ident$_2$} produces
-more concise subgoals.
+%% \Rem When the induction hypothesis \verb+(P (S n) m)+ is not
+%% needed, {\tt induction \ident$_1$; destruct \ident$_2$} produces
+%% more concise subgoals.
 
 \begin{Variant}
 
 \item {\tt double induction \num$_1$ \num$_2$}
 
-This applies double induction on the \num$_1^{th}$ and \num$_2^{th}$ {\it
-non dependent} premises of the goal. More generally, any combination of an
-{\ident} and a {\num} is valid.
+This tactic is deprecated and should be replaced by {\tt induction
+  \num$_1$; induction \num$_3$} where \num$_3$ is the result of
+\num$_2$-\num$_1$.
+
+%% This tactic applies to any goal. If the variables {\ident$_1$} and
+
+%% This applies double induction on the \num$_1^{th}$ and \num$_2^{th}$ {\it
+%% non dependent} premises of the goal. More generally, any combination of an
+%% {\ident} and a {\num} is valid.
 
 \end{Variant}
 

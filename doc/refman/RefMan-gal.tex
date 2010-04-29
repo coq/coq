@@ -1569,8 +1569,7 @@ All these commands are synonymous of \texttt{Theorem}
 % %within the section will be replaced by the proof of  {\ident}.
 % Same as {\tt Remark} except
 % that the innermost section name is dropped from the full name.
-\item {\tt Theorem \nelist{{\ident} : {\type}}{with}.}
-
+\item {\tt Theorem \nelist{{\ident} : {\type}}{with}.}\\
 This command is useful for theorems that are proved by simultaneous
 induction over a mutually inductive assumption, or that state mutually
 dependent statements in some mutual coinductive type. It is equivalent
@@ -1598,9 +1597,22 @@ Allow to define a term of type {\type} using the proof editing mode. It
 behaves as {\tt Theorem} but is intended for the interactive
 definition of expression which computational behavior will be used by
 further commands. \SeeAlso~\ref{Transparent} and \ref{unfold}. 
+
+\item {\tt Fixpoint \nelist{{\ident} \nelist{\binderlet}{} \zeroone{\annotation} {\typecstr} \zeroone{{\tt :=} {\term}}}{with}.}
+\comindex{Fixpoint}\\
+This generalizes the syntax of {\tt Fixpoint} so that one or more
+bodies can be defined interactively using the proof editing mode. When
+the block of proofs is completed, it is intended to be ended by {\tt
+  Defined}.
+
+\item {\tt CoFixpoint \nelist{{\ident} \nelist{\binderlet}{} {\typecstr} \zeroone{{\tt :=} {\term}}}{with}.}
+\comindex{CoFixpoint}\\
+This generalizes the syntax of {\tt CoFixpoint} so that one or more bodies
+can be defined interactively using the proof editing mode.
+
 \end{Variants}
 
-\subsubsection{{\tt Proof} {\tt .} \dots {\tt Qed} {\tt .}
+\subsubsection{{\tt Proof} {\tt .} \dots {\tt Qed} ~ {\tt .}
 \comindex{Proof}
 \comindex{Qed}
 \comindex{Defined}
