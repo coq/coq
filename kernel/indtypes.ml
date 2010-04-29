@@ -449,7 +449,7 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps i nargs lcnames indlc =
       (* If the inductive appears in the args (non params) then the
 	 definition is not positive. *)
       if not (List.for_all (noccur_between n ntypes) auxlargs) then
-	raise (IllFormedInd (LocalNonPos n));
+        failwith_non_pos_list n ntypes auxlargs;
       (* We do not deal with imbricated mutual inductive types *)
       let auxntyp = mib.mind_ntypes in
 	if auxntyp <> 1 then raise (IllFormedInd (LocalNonPos n));
