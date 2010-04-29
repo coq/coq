@@ -6,6 +6,7 @@ open Term
 type globals = {
   env_constants : Declarations.constant_body Cmap_env.t;
   env_inductives : Declarations.mutual_inductive_body Mindmap_env.t;
+  env_inductives_eq : kernel_name KNmap.t;
   env_modules : Declarations.module_body MPmap.t;
   env_modtypes : Declarations.module_type_body MPmap.t}
 type stratification = {
@@ -57,6 +58,8 @@ val constant_opt_value : env -> constant -> constr option
 val evaluable_constant : constant -> env -> bool
 
 (* Inductives *)
+val mind_equiv : env -> inductive -> inductive -> bool
+
 val lookup_mind :
   mutual_inductive -> env -> Declarations.mutual_inductive_body
 

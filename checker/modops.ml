@@ -85,7 +85,7 @@ let rec add_signature mp sign resolver env =
   let add_one env (l,elem) =
     let kn = make_kn mp empty_dirpath l in
     let con = constant_of_kn kn in
-    let mind = mind_of_kn kn in
+    let mind = mind_of_delta resolver (mind_of_kn kn) in
       match elem with
 	| SFBconst cb -> 
 	   (* let con =  constant_of_delta resolver con in*)

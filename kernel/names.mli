@@ -229,3 +229,10 @@ type inv_rel_key = int (** index in the [rel_context] part of environment
 type id_key = inv_rel_key tableKey
 
 val eq_id_key : id_key -> id_key -> bool
+
+(*equalities on constant and inductive 
+  names for the checker*)
+
+val eq_con_chk : constant -> constant -> bool
+val eq_ind_chk : inductive -> inductive -> bool
+

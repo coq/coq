@@ -376,7 +376,12 @@ let defined_rels flags env =
       (rel_context env) ~init:(0,[])
 (*  else (0,[])*)
 
-let mind_equiv_infos info = eq_ind
+let mind_equiv_infos info = mind_equiv info.i_env
+
+let eq_table_key k1 k2 = 
+ match k1,k2 with
+   | ConstKey con1 ,ConstKey con2 -> eq_con_chk con1 con2
+   | _,_  -> k1=k2
 
 let create mk_cl flgs env =
   { i_flags = flgs;

@@ -175,6 +175,7 @@ val unfold_reference : clos_infos -> table_key -> fconstr option
 (* [mind_equiv] checks whether two inductive types are intentionally equal *)
 val mind_equiv_infos : clos_infos -> inductive -> inductive -> bool
 
+val eq_table_key : table_key -> table_key -> bool
 (************************************************************************)
 (*i This is for lazy debug *)
 
