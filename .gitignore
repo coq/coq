@@ -169,3 +169,9 @@ kernel/copcodes.ml
 scripts/tolink.ml
 theories/Numbers/Natural/BigN/NMake_gen.v
 ide/index_urls.txt
+
+# mlis documentation
+
+dev/ocamldoc/html/
+dev/ocamldoc/coq.*
+dev/ocamldoc/ocamldoc.sty

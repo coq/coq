@@ -144,11 +144,6 @@ UIMSCRIPTDIR=UIMSCRIPTPATH
 # Defining REVISION
 CHECKEDOUT=CHECKEDOUTSOURCETREE
 
-# Defining options to generate dependencies graphs
-DOT=dot
-DOTOPTS=-Tps
-ODOCDOTOPTS=-dot -dot-reduce
-
 # Option to control compilation and installation of the documentation
 WITHDOC=WITHDOCOPT
 

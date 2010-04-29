@@ -227,6 +227,9 @@ voclean:
 
 devdocclean:
 	find . -name '*.dep.ps' -o -name '*.dot' | xargs rm -f
+	rm -f $(OCAMLDOCDIR)/*.log $(OCAMLDOCDIR)/*.aux $(OCAMLDOCDIR)/*.toc 
+	rm -f $(OCAMLDOCDIR)/ocamldoc.sty $(OCAMLDOCDIR)/coq.tex 
+	rm -f $(OCAMLDOCDIR)/html/*.html
 
 ###########################################################################
 # Emacs tags

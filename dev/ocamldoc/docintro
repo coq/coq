@@ -1,10 +1,9 @@
 {!indexlist}
 
-This is Coq, a proof assistant for the Calculus of Inductive Construction.
+This is Coq, a proof assistant for the Calculus of Inductive Constructions.
 This document describes the implementation of Coq.
 It has been automatically generated from the source of
-Coq using ocamldoc, a literate programming tool for
-Objective Caml  freely available at http://caml.inria.fr/.
+Coq using {{:http://caml.inria.fr/}ocamldoc}.
 The source files are organized in several directories ordered like that:
 
 {ol {- Utility libraries : lib
@@ -13,8 +12,8 @@ describes the various utility libraries used in the code
 of Coq.}
 {- Kernel : kernel
 
-describes the \Coq\ kernel, which is a type checker for the Calculus
-of Inductive Construction.}
+describes the Coq kernel, which is a type checker for the Calculus
+of Inductive Constructions.}
 {- Library : library
 
 describes the Coq library, which is made of two parts:
@@ -30,11 +29,11 @@ describes the Coq library, which is made of two parts:
 {- Front abstract syntax of terms : interp
 
 describes the translation from Coq context-dependent
-front abstract syntax of terms {v front v} to and from the
+front abstract syntax of terms {v constr_expr v} to and from the
 context-free, untyped, raw form of constructions {v rawconstr v}.}
 {- Parsers and printers : parsing
 
-describes the implementation of the \Coq\ parsers and printers.}
+describes the implementation of the Coq parsers and printers.}
 {- Proof engine : proofs
 
 describes the Coq proof engine, which is also called

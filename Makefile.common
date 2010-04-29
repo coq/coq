@@ -339,7 +339,20 @@ MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 
 DATE=$(shell LANG=C date +"%B %Y")
 
-SOURCEDOCDIR=dev/source-doc
+###########################################################################
+# Source documentation
+###########################################################################
+
+OCAMLDOCDIR=dev/ocamldoc
+
+DOCMLIS=$(wildcard ./lib/*.mli ./kernel/*.mli ./library/*.mli \
+	./pretyping/*.mli ./interp/*.mli \
+	./parsing/*.mli ./proofs/*.mli \
+	./tactics/*.mli ./toplevel/*.mli)
+
+# Defining options to generate dependencies graphs
+DOT=dot
+ODOCDOTOPTS=-dot -dot-reduce
 
 # For emacs: 
 # Local Variables: 

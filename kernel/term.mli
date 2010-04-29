@@ -36,7 +36,8 @@ type existential_key = int
 type metavariable = int
 
 (** {6 Case annotation } *)
-type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle (** infer printing form from number of constructor *)
+type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle 
+  | RegularStyle (** infer printing form from number of constructor *)
 type case_printing =
   { ind_nargs : int; (** length of the arity of the inductive type *)
     style     : case_style }
@@ -64,8 +65,7 @@ val eq_constr : constr -> constr -> bool
 
 type types = constr
 
-(** {6 ... } *)
-(** Functions for dealing with constr terms.
+(** {5 Functions for dealing with constr terms. }
   The following functions are intended to simplify and to uniform the
   manipulation of terms. Some of these functions may be overlapped with
   previous ones. *)
@@ -95,20 +95,21 @@ val mkType : Univ.universe -> types
 (** This defines the strategy to use for verifiying a Cast *)
 type cast_kind = VMcast | DEFAULTcast
 
-(** Constructs the term [t1::t2], i.e. the term {% $ %}t_1{% $ %} casted with the
-   type {% $ %}t_2{% $ %} (that means t2 is declared as the type of t1). *)
+(** Constructs the term [t1::t2], i.e. the term t{_ 1} casted with the
+   type t{_ 2} (that means t2 is declared as the type of t1). *)
 val mkCast : constr * cast_kind * constr -> constr
 
 (** Constructs the product [(x:t1)t2] *)
 val mkProd : name * types * types -> types
 val mkNamedProd : identifier -> types -> types -> types
 
-(** non-dependant product {% $ %}t_1 \rightarrow t_2{% $ %}, an alias for
-   [(_:t1)t2]. Beware {% $ %}t_2{% $ %} is NOT lifted.
-   Eg: A |- A->A is built by [(mkArrow (mkRel 0) (mkRel 1))] *)
+(** non-dependent product [t1 -> t2], an alias for
+   [forall (_:t1), t2]. Beware [t_2] is NOT lifted.
+   Eg: in context [A:Prop], [A->A] is built by [(mkArrow (mkRel 0) (mkRel 1))]
+*)
 val mkArrow : types -> types -> constr
 
-(** Constructs the abstraction {% $ %}[x:t_1]t_2{% $ %} *)
+(** Constructs the abstraction \[x:t{_ 1}\]t{_ 2} *)
 val mkLambda : name * types * constr -> constr
 val mkNamedLambda : identifier -> types -> constr -> constr
 
@@ -117,7 +118,7 @@ val mkLetIn : name * constr * types * constr -> constr
 val mkNamedLetIn : identifier -> constr -> types -> constr -> constr
 
 (** [mkApp (f,[| t_1; ...; t_n |]] constructs the application
-   {% $ %}(f~t_1~\dots~t_n){% $ %}. *)
+   {% $(f~t_1~\dots~t_n)$ %}. *)
 val mkApp : constr * constr array -> constr
 
 (** Constructs a constant 
@@ -135,12 +136,12 @@ val mkInd : inductive -> constr
    introduced in the section *)
 val mkConstruct : constructor -> constr
 
-(** Construct the term <p>Case c of c1 | c2 .. | cn end 
+(** Constructs a destructor of inductive type.
     
-    [mkCase ci p c ac] stand for match [c] return [p] with [ac] presented as 
-    describe in [ci].
+    [mkCase ci p c ac] stand for match [c] as [x] in [I args] return [p] with [ac] 
+    presented as describe in [ci].
 
-    [p] stucture is lambda inductive_args, I inductive_args -> "return"
+    [p] stucture is [fun args x -> "return clause"]
 
     [ac]{^ ith} element is ith constructor case presented as 
     {e lambda construct_args (without params). case_term } *)
@@ -158,7 +159,7 @@ val mkCase : case_info * constr * constr * constr array -> constr
      ...
      with     fn [ctxn] = bn.]
 
-   \noindent where the length of the {% $ %}j{% $ %}th context is {% $ %}ij{% $ %}.
+   where the length of the {% $ %}j{% $ %}th context is {% $ %}ij{% $ %}.
 *)
 type rec_declaration = name array * types array * constr array
 type fixpoint = (int array * int) * rec_declaration
@@ -166,7 +167,7 @@ val mkFix : fixpoint -> constr
 
 (** If [funnames = [|f1,.....fn|]]
       [typarray = [|t1,...tn|]]
-      [bodies   = [b1,.....bn]] \par\noindent
+      [bodies   = [b1,.....bn]] 
    then [mkCoFix (i, (funnames, typarray, bodies))]
    constructs the ith function of the block
    
@@ -253,10 +254,10 @@ val is_Type : constr -> bool
 val iskind : constr -> bool
 val is_small : sorts -> bool
 
-(** {6 ... } *)
-(** Term destructors.
-   Destructor operations are partial functions and
-   raise [invalid_arg "dest*"] if the term has not the expected form. *)
+
+(** {6 Term destructors } *)
+(** Destructor operations are partial functions and
+    @raise Invalid_argument "dest*" if the term has not the expected form. *)
 
 (** Destructs a DeBrujin index *)
 val destRel : constr -> int
@@ -304,28 +305,32 @@ val destInd : constr -> inductive
 (** Destructs a constructor *)
 val destConstruct : constr -> constructor
 
-(** Destructs a term <p>Case c of lc1 | lc2 .. | lcn end *)
+(** Destructs a [match c as x in I args return P with ... |
+Ci(...yij...) => ti | ... end] (or [let (..y1i..) := c as x in I args
+return P in t1], or [if c then t1 else t2])
+@return [(info,c,fun args x => P,[|...|fun yij => ti| ...|])]
+where [info] is pretty-printing information *)
 val destCase : constr -> case_info * constr * constr * constr array
 
 (** Destructs the {% $ %}i{% $ %}th function of the block
-   {% $ %}{% \mathit{%}Fixpoint{% }%} ~ f_1 ~ [ctx_1] = b_1
-    {% \mathit{%}with{% }%}     ~ f_2 ~ [ctx_2] = b_2
-    \dots
-    {% \mathit{%}with{% }%}     ~ f_n ~ [ctx_n] = b_n{% $ %},
-   where the lenght of the {% $ %}j{% $ %}th context is {% $ %}ij{% $ %}.
+   [Fixpoint f{_ 1} ctx{_ 1} = b{_ 1}
+    with    f{_ 2} ctx{_ 2} = b{_ 2}
+    ...
+    with    f{_ n} ctx{_ n} = b{_ n}],
+   where the length of the {% $ %}j{% $ %}th context is {% $ %}ij{% $ %}.
 *)
 val destFix : constr -> fixpoint
 
 val destCoFix : constr -> cofixpoint
 
 
-(** {6 ... } *)
-(** A {e declaration} has the form (name,body,type). It is either an
+(** {6 Local } *)
+(** A {e declaration} has the form [(name,body,type)]. It is either an
     {e assumption} if [body=None] or a {e definition} if
     [body=Some actualbody]. It is referred by {e name} if [na] is an
     identifier or by {e relative index} if [na] is not an identifier
     (in the latter case, [na] is of type [name] but just for printing
-    purpose *)
+    purpose) *)
 
 type named_declaration = identifier * constr option * types
 type rel_declaration = name * constr option * types
@@ -367,44 +372,47 @@ val abs_implicit : constr -> constr
 val lambda_implicit : constr -> constr
 val lambda_implicit_lift : int -> constr -> constr
 
-(** [applist (f,args)] and co work as [mkApp] *)
+(** [applist (f,args)] and its variants work as [mkApp] *)
 
 val applist : constr * constr list -> constr
 val applistc : constr -> constr list -> constr
 val appvect : constr * constr array -> constr
 val appvectc : constr -> constr array -> constr
 
-(** [prodn n l b] = {% $ %}(x_1:T_1)..(x_n:T_n)b{% $ %}
-   where {% $ %}l = [(x_n,T_n);\dots;(x_1,T_1);Gamma]{% $ %} *)
+(** [prodn n l b] = [forall (x_1:T_1)...(x_n:T_n), b]
+   where [l] is [(x_n,T_n)...(x_1,T_1)...]. *)
 val prodn : int -> (name * constr) list -> constr -> constr
 
-(** [compose_prod l b] = {% $ %}(x_1:T_1)..(x_n:T_n)b{% $ %}
-   where {% $ %}l = [(x_n,T_n);\dots;(x_1,T_1)]{% $ %}.
+(** [compose_prod l b]
+   @return [forall (x_1:T_1)...(x_n:T_n), b]
+   where [l] is [(x_n,T_n)...(x_1,T_1)].
    Inverse of [decompose_prod]. *)
 val compose_prod : (name * constr) list -> constr -> constr
 
-(** [lamn n l b] = {% $ %}[x_1:T_1]..[x_n:T_n]b{% $ %}
-   where {% $ %}l = [(x_n,T_n);\dots;(x_1,T_1);Gamma]{% $ %} *)
+(** [lamn n l b]
+    @return [fun (x_1:T_1)...(x_n:T_n) => b]
+   where [l] is [(x_n,T_n)...(x_1,T_1)...]. *)
 val lamn : int -> (name * constr) list -> constr -> constr
 
-(** [compose_lam l b] = {% $ %}[x_1:T_1]..[x_n:T_n]b{% $ %}
-   where {% $ %}l = [(x_n,T_n);\dots;(x_1,T_1)]{% $ %}.
+(** [compose_lam l b]
+   @return [fun (x_1:T_1)...(x_n:T_n) => b]
+   where [l] is [(x_n,T_n)...(x_1,T_1)].
    Inverse of [it_destLam] *)
 val compose_lam : (name * constr) list -> constr -> constr
 
 (** [to_lambda n l]
-   = {% $ %}[x_1:T_1]...[x_n:T_n]T{% $ %}
-   where {% $ %}l = (x_1:T_1)...(x_n:T_n)T{% $ %} *)
+   @return [fun (x_1:T_1)...(x_n:T_n) => T]
+   where [l] is [forall (x_1:T_1)...(x_n:T_n), T] *)
 val to_lambda : int -> constr -> constr
 
 (** [to_prod n l]
-   = {% $ %}(x_1:T_1)...(x_n:T_n)T{% $ %}
-   where {% $ %}l = [x_1:T_1]...[x_n:T_n]T{% $ %} *)
+   @return [forall (x_1:T_1)...(x_n:T_n), T]
+   where [l] is [fun (x_1:T_1)...(x_n:T_n) => T] *)
 val to_prod : int -> constr -> constr
 
 (** pseudo-reduction rule *)
 
-(** [prod_appvect] {% $ %}(x1:B1;...;xn:Bn)B a1...an \rightarrow B[a1...an]{% $ %} *)
+(** [prod_appvect] [forall (x1:B1;...;xn:Bn), B] [a1...an] @return [B[a1...an]] *)
 val prod_appvect : constr -> constr array -> constr
 val prod_applist : constr -> constr list -> constr
 

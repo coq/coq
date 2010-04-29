@@ -53,6 +53,7 @@ open Libnames
      The [user_name] can be for example the shortest non ambiguous [qualid] or
      the [full_user_name] or [identifier]. Such a function can also have a
      local context argument.}}
+
 *)
 
 
@@ -67,12 +68,11 @@ val error_global_constant_not_found_loc : loc -> qualid -> 'a
 (** {6 Register visibility of things } *)
 
 (** The visibility can be registered either
-
    - for all suffixes not shorter then a given int -- when the
-     object is loaded inside a module -- or
-
+   object is loaded inside a module -- or
    - for a precise suffix, when the module containing (the module
    containing ...) the object is opened (imported)
+   
 *)
 
 type visibility = Until of int | Exactly of int
@@ -133,8 +133,8 @@ val full_name_cci : qualid -> full_path
 val full_name_modtype : qualid -> full_path
 val full_name_module : qualid -> dir_path
 
-(** {6 ... } *)
-(** Reverse lookup -- finding user names corresponding to the given
+(** {6 Reverse lookup }
+  Finding user names corresponding to the given
   internal name *)
 
 (** Returns the full path bound to a global reference or syntactic
