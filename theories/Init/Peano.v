@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** The type [nat] of Peano natural numbers (built from [O] and [S])
     is defined in [Datatypes.v] *)
 

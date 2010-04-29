@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 
 (* Dump of globalization (to be used by coqdoc) *)
 

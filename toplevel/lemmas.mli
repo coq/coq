@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.fix_expr        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 open Names
 open Term
 open Decl_kinds

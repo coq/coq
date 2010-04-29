@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: closure.ml 9983 2007-07-12 17:15:22Z barras $ *)
-
 open Util
 open Pp
 open Term

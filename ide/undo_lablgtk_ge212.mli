@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: undo_lablgtk_ge26.mli 7580 2005-11-18 17:09:10Z herbelin $ i*)
-
 (* An undoable view class *)
 
 class undoable_view : [> Gtk.text_view] Gtk.obj ->

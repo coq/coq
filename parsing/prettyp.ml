@@ -10,8 +10,6 @@
  * on May-June 2006 for implementation of abstraction of pretty-printing of objects.
  *)
 
-(* $Id$ *)
-
 open Pp
 open Util
 open Names

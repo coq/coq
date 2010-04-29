@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This file provides a constructive form of indefinite description that
     allows to build choice functions; this is weaker than Hilbert's
     epsilon operator (which implies weakly classical properties) but

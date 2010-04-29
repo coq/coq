@@ -8,8 +8,6 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Export ZLt.
 
 Module ZAddOrderPropFunct (Import Z : ZAxiomsSig').

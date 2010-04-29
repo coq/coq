@@ -7,8 +7,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: ChoiceFacts.v 12363 2009-09-28 15:04:07Z letouzey $ i*)
-
 (** Some facts and definitions concerning choice and description in
        intuitionistic logic.
 

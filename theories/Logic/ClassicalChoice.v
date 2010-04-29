@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This file provides classical logic and functional choice; this
     especially provides both indefinite descriptions and choice functions
     but this is weaker than providing epsilon operator and classical logic

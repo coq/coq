@@ -7,8 +7,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This file provides classical logic and indefinite description under
     the form of Hilbert's epsilon operator *)
 

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 Require Export LegacyField_Compl.
 Require Export LegacyField_Theory.
 Require Export LegacyField_Tactic.

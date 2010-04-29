@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 open Tacinterp
 open Decl_expr
 open Mod_subst

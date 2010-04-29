@@ -24,8 +24,6 @@
 (* in Summer 1995. Several developments by E. Ledinot were an inspiration.  *)
 (****************************************************************************)
 
-(*i $Id$ i*)
-
 Section Ensembles.
   Variable U : Type.
 

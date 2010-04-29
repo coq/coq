@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This file is deprecated, for a tree on list, use [Mergesort.v]. *)
 
 (** A development of Treesort on Heap trees. It has an average

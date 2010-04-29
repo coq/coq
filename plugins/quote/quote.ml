@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* The `Quote' tactic *)
 
 (* The basic idea is to automatize the inversion of interpetation functions

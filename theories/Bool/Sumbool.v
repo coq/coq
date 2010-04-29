@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** Here are collected some results about the type sumbool (see INIT/Specif.v)
    [sumbool A B], which is written [{A}+{B}], is the informative
    disjunction "A or B", where A and B are logical propositions.

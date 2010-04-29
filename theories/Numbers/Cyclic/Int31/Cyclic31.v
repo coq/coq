@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** * Int31 numbers defines indeed a cyclic structure : Z/(2^31)Z *)
 
 (**

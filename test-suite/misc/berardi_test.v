@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This file formalizes Berardi's paradox which says that in
    the calculus of constructions, excluded middle (EM) and axiom of
    choice (AC) imply proof irrelevance (PI).

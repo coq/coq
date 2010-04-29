@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 Require Export Compare_dec.
 Require Export Peano_dec.
 Require Import Sumbool.

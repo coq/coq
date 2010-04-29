@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 open Pp_control
 
 (** Modify pretty printing functions behavior for emacs ouput (special

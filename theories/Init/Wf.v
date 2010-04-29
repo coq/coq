@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** * This module proves the validity of
     - well-founded recursion (also known as course of values)
     - well-founded induction

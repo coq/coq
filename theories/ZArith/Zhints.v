@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This file centralizes the lemmas about [Z], classifying them
     according to the way they can be used in automatic search  *)
 

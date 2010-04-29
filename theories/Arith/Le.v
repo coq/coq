@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** Order on natural numbers. [le] is defined in [Init/Peano.v] as:
 <<
 Inductive le (n:nat) : nat -> Prop :=

@@ -8,8 +8,6 @@
 
 (** Initial Author : Evgeny Makarov, INRIA, 2007 *)
 
-(*i $Id$ i*)
-
 Require Export Equalities Orders NumPrelude GenericMinMax.
 
 (** Axiomatization of a domain with zero, successor, predecessor,

@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 (** Parsing of vernacular. *)
 
 (** Read a vernac command on the specified input (parse only).

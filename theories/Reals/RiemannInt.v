@@ -7,8 +7,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Import Rfunctions.
 Require Import SeqSeries.
 Require Import Ranalysis.

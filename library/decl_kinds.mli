@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(** {% $ %}Id: decl_kinds.mli 12337 2009-09-17 15:58:14Z glondu {% $ %} *)
-
 open Util
 open Libnames
 

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This file provides indefinite description under the form of
     Hilbert's epsilon operator; it does not assume classical logic. *)
 

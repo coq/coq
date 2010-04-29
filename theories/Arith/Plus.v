@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** Properties of addition. [add] is defined in [Init/Peano.v] as:
 <<
 Fixpoint plus (n m:nat) : nat :=

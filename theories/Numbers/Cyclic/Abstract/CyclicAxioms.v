@@ -8,8 +8,6 @@
 (*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (** * Signature and specification of a bounded integer structure *)
 
 (** This file specifies how to represent [Z/nZ] when [n=2^d],

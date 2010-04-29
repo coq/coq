@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* This module instantiates the structure of generic deBruijn terms to Coq *)
 
 open Util

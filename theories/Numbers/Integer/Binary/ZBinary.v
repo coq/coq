@@ -8,8 +8,6 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 
 Require Import ZAxioms ZProperties.
 Require Import BinInt Zcompare Zorder ZArith_dec Zbool.

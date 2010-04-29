@@ -1,6 +1,4 @@
 
-(*i $Id$ i*)
-
 (** Module [Pred]: sets over infinite ordered types with complement. *)
 
 (** This module implements the set data structure, given a total ordering

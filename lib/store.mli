@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (*** This module implements an "untyped store", in this particular case we
         see it as an extensible record whose fields are left unspecified. ***)
 

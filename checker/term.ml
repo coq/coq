@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: term.ml 10098 2007-08-27 11:41:08Z herbelin $ *)
-
 (* This module instantiates the structure of generic deBruijn terms to Coq *)
 
 open Util

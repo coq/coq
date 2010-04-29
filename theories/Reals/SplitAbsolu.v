@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i      $Id$       i*)
-
 Require Import Rbasic_fun.
 
 Ltac split_case_Rabs :=

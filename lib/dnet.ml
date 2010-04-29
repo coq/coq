@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id:$ *)
-
 (* Generic dnet implementation over non-recursive types *)
 
 module type Datatype =

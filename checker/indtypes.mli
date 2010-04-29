@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: indtypes.mli 9831 2007-05-17 18:55:42Z herbelin $ i*)
-
 (*i*)
 open Names
 open Univ

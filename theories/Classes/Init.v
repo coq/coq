@@ -13,8 +13,6 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-(* $Id$ *)
-
 (** Hints for the proof search: these combinators should be considered rigid. *)
 
 Require Import Coq.Program.Basics.

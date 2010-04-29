@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (* File created by Vincent Siles, Oct 2007, extended into a generic
    support for generation of inductive schemes by Hugo Herbelin, Nov 2009 *)
 

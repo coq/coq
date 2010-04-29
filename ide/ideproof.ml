@@ -7,8 +7,6 @@
 (************************************************************************)
 
 
-(* $Id$ *)
-
 (* tag is the tag to be hooked, item is the item covered by this tag, make_menu
  *  * is the template for building menu if needed, sel_cb is the callback if
  *  there

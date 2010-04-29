@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 (** This module manages customization parameters at the vernacular level     *)
 
 (** Two kinds of things are managed : tables and options value

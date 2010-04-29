@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: subtyping.ml 10664 2008-03-14 11:27:37Z soubiran $ i*)
-
 (*i*)
 open Util
 open Names

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 let commands = [
   [(* "Abort"; *)
    "Add Abstract Ring A Aplus Amult Aone Azero Ainv Aeq T.";

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: modops.ml 9872 2007-05-30 16:01:18Z soubiran $ i*)
-
 (*i*)
 open Util
 open Pp

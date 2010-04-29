@@ -6,9 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(** {% $ %}Id: dumpglob.mli 11252 2008-07-24 11:16:48Z notin {% $ %} *)
-
-
 val open_glob_file : string -> unit
 val close_glob_file : unit -> unit
 

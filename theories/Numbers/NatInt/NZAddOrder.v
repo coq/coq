@@ -8,8 +8,6 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Import NZAxioms NZBase NZMul NZOrder.
 
 Module Type NZAddOrderPropSig (Import NZ : NZOrdAxiomsSig').

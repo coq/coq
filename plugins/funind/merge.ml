@@ -8,7 +8,6 @@
 
 (* Merging of induction principles. *)
 
-(*i $Id: i*)
 open Libnames
 open Tactics
 open Indfun_common

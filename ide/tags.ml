@@ -7,8 +7,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 
 let make_tag (tt:GText.tag_table) ~name prop =
   let new_tag = GText.tag ~name () in

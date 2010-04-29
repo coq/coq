@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 (** Sets using the generic comparison function of ocaml. Same interface as
    the module [Set] from the ocaml standard library. *)
 

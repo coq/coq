@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 Require Import LegacyRing_theory.
 Require Import Quote.
 Require Import Ring_normalize.

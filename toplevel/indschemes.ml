@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* Created by Hugo Herbelin from contents related to inductive schemes
    initially developed by Christine Paulin (induction schemes), Vincent
    Siles (decidable equality and boolean equality) and Matthieu Sozeau

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Export Field.
 Require Export QArith_base.
 Require Import NArithRing.

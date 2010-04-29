@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** * Finite sets library *)
 
 (** This functor derives additional properties from [FSetInterface.S].

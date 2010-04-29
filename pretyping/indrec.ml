@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* File initially created by Christine Paulin, 1996 *)
 
 (* This file builds various inductive schemes *)

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This module implements various tactics used to simplify the goals produced by Program,
    which are also generally useful. *)
 

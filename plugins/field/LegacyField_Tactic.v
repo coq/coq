@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 Require Import List.
 Require Import LegacyRing.
 Require Export LegacyField_Compl.

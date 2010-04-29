@@ -11,8 +11,6 @@
  * camlp4deps will not work for this file unless Makefile system enhanced.
  *)
 
-(* $Id$ *)
-
 open Util
 open Pp
 open Flags

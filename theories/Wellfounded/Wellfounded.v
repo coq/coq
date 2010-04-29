@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Export Disjoint_Union.
 Require Export Inclusion.
 Require Export Inverse_Image.

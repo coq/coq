@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: type_errors.mli 8845 2006-05-23 07:41:58Z herbelin $ i*)
-
 (*i*)
 open Names
 open Term

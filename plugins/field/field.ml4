@@ -8,8 +8,6 @@
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
-(* $Id$ *)
-
 open Names
 open Pp
 open Proof_type

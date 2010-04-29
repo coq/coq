@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 open Util
 
 type ('a,'b) t = ('a,'b list) Gmap.t

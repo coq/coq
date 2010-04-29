@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 (** Type of regular tree with nodes labelled by values of type 'a 
    The implementation uses de Bruijn indices, so binding capture
    is avoided by the lift operator (see example below) *)

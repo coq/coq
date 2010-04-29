@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* JCF -- 6 janvier 1998  EXPERIMENTAL *)
 
 (*

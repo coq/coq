@@ -12,8 +12,6 @@
 (*                       http://helm.cs.unibo.it                        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (* Tokens for XML cdata, empty elements and not-empty elements           *)
 (* Usage:                                                                *)
 (*  Str cdata                                                            *)

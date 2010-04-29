@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(** {% $ %}Id: pre_env.mli 12406 2009-10-21 15:12:52Z soubiran {% $ %} *)
-
 open Util
 open Names
 open Sign

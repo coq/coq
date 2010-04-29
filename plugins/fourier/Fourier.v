@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* "Fourier's method to solve linear inequations/equations systems.".*)
 
 Require Export LegacyRing.

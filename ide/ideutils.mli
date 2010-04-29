@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 val async : ('a -> unit) -> 'a -> unit
 val sync  : ('a -> 'b) -> 'a -> 'b
 

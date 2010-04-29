@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** Theorems about [gt] in [nat]. [gt] is defined in [Init/Peano.v] as:
 <<
 Definition gt (n m:nat) := m < n.

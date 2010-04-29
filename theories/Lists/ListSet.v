@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** A Library for finite sets, implemented as lists *)
 
 (** List is loaded, but not exported.

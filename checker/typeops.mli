@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: typeops.mli 9427 2006-12-11 18:46:35Z bgregoir $ i*)
-
 (*i*)
 open Names
 open Term

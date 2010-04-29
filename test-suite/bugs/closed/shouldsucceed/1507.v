@@ -2,7 +2,6 @@
    Implementing reals a la Stolzenberg
 
    Danko Ilik, March 2007
-   svn revision: $Id$
 
    XField.v -- (unfinished) axiomatisation of the theories of real and
                rational intervals.

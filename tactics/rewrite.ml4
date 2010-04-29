@@ -9,8 +9,6 @@
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
-(* $Id: rewrite.ml4 11981 2009-03-16 08:18:53Z herbelin $ *)
-
 open Pp
 open Util
 open Names

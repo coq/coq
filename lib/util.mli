@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1       
   **********************************************************************)
 
-(*i $Id$ i*)
-
 open Pp
 
 (** This module contains numerous utility functions on strings, lists,

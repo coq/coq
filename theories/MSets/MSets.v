@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 Require Export Orders.
 Require Export OrdersEx.
 Require Export OrdersAlt.

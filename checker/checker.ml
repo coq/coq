@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: coqtop.ml 10153 2007-09-28 18:00:45Z glondu $ *)
-
 open Pp
 open Util
 open System

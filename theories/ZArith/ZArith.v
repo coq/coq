@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** Library for manipulating integers based on binary encoding *)
 
 Require Export ZArith_base.

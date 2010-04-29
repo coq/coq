@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** * An light axiomatization of integers (used in FSetAVL). *)
 
 (** We define a signature for an integer datatype based on [Z].

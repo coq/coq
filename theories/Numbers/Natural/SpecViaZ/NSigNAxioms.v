@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Import ZArith Nnat NAxioms NDiv NSig.
 
 (** * The interface [NSig.NType] implies the interface [NAxiomsSig] *)

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* Hash consing of datastructures *)
 
 (* The generic hash-consing functions (does not use Obj) *)

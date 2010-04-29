@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: typeops.ml 9314 2006-10-29 20:11:08Z herbelin $ *)
-
 open Util
 open Names
 open Univ

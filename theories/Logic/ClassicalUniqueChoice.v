@@ -7,8 +7,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This file provides classical logic and unique choice; this is
     weaker than providing iota operator and classical logic as the
     definite descriptions provided by the axiom of unique choice can

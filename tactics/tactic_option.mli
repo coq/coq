@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: subtac.ml 12623 2010-01-04 17:50:38Z letouzey $ *)
-
 open Proof_type
 open Tacexpr
 open Vernacexpr

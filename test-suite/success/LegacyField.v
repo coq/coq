@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: Field.v 7693 2005-12-21 23:50:17Z herbelin $ *)
-
 (**** Tests of Field with real numbers ****)
 
 Require Import Reals LegacyRfield.

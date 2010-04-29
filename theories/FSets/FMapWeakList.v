@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** * Finite map library *)
 
 (** This file proposes an implementation of the non-dependant interface

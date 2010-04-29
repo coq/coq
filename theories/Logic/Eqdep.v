@@ -7,8 +7,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This file axiomatizes the invariance by substitution of reflexive
     equality proofs [[Streicher93]] and exports its consequences, such
     as the injectivity of the projection of the dependent pair.

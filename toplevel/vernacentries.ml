@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (* Concrete syntax of the mathematical vernacular MV V2.6 *)
 
 open Pp

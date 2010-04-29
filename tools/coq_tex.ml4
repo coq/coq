@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* coq-tex
  * JCF, 16/1/98
  * adapted from caml-tex (perl script written by Xavier Leroy)

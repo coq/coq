@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* Created from contents that was formerly in termops.ml and
    nameops.ml, Nov 2009 *)
 

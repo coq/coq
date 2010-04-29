@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Import Arith_base.
 Require Import Compare_dec.
 Require Import Sumbool.

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (* An undoable view class *)
 
 class undoable_view : Gtk.text_view Gtk.obj ->

@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 (** Dynamics. Use with extreme care. Not for kids. *)
 
 type t

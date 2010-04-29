@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Import Omega Relations Multiset SetoidList.
 
 (** This file is deprecated, use [Permutation.v] instead.

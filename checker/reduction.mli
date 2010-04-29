@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: reduction.mli 7639 2005-12-02 10:01:15Z gregoire $ i*)
-
 (*i*)
 open Term
 open Environ

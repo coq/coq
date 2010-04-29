@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* $Id$ *)
-
 (* We do not require [ZArith] anymore, but only what's necessary for Omega *)
 Require Export ZArith_base.
 Require Export OmegaLemmas.

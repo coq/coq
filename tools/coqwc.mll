@@ -9,8 +9,6 @@
 (* coqwc - counts the lines of spec, proof and comments in Coq sources
  * Copyright (C) 2003 Jean-Christophe Filliâtre *)
 
-(*i $Id$ i*)
-
 (*s {\bf coqwc.} Counts the lines of spec, proof and comments in a Coq source.
     It assumes the files to be lexically well-formed. *)
 

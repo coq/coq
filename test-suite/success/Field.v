@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (**** Tests of Field with real numbers ****)
 
 Require Import Reals RealField.

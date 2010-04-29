@@ -5,7 +5,6 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-(* $Id$ *)
 
 (* Maps using the generic comparison function of ocaml. Code borrowed from
    the ocaml standard library (Copyright 1996, INRIA). *)

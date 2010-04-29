@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** Author: Cristina Cornes
     From : Constructing Recursion Operators in Type Theory
            L. Paulson  JSC (1986) 2, 325-355 *)

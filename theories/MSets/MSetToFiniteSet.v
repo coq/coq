@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** * Finite sets library : conversion to old [Finite_sets] *)
 
 Require Import Ensembles Finite_sets.

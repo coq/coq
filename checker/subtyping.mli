@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: subtyping.mli 5920 2004-07-16 20:01:26Z herbelin $ i*)
-
 (*i*)
 open Univ
 open Term

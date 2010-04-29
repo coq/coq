@@ -13,8 +13,6 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-(* $Id$ *)
-
 Require Import Coq.Program.Basics.
 Require Import Coq.Program.Tactics.
 Require Import Coq.Relations.Relation_Definitions.

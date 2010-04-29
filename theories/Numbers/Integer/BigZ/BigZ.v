@@ -8,8 +8,6 @@
 (*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Export BigN.
 Require Import ZProperties ZDivFloor ZSig ZSigZAxioms ZMake.
 

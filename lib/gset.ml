@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* Sets using the generic comparison function of ocaml. Code borrowed from
    the ocaml standard library. *)
 

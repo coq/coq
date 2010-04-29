@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 open Coqdep_common
 
 (** [coqdep_boot] is a stripped-down version of [coqdep], whose

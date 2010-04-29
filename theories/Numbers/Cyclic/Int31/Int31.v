@@ -8,8 +8,6 @@
 (*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Import NaryFunctions.
 Require Import Wf_nat.
 Require Export ZArith.

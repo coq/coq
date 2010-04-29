@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** Various syntaxic shortands that are useful with [Program]. *)
 
 Require Export Coq.Program.Tactics.

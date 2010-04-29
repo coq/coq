@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Import QArith Qpower Qminmax Orders RelationPairs GenericMinMax.
 
 Open Scope Q_scope.

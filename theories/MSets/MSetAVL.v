@@ -7,8 +7,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** * MSetAVL : Implementation of MSetInterface via AVL trees *)
 
 (** This module implements finite sets using AVL trees.

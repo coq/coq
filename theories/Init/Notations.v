@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** These are the notations whose level and associativity are imposed by Coq *)
 
 (** Notations for propositional connectives *)

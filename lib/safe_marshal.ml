@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 let hobcnv = Array.init 256 (fun i -> Printf.sprintf "%.2x" i)
 let bohcnv = Array.init 256 (fun i -> i -
                                       (if 0x30 <= i then 0x30 else 0) -

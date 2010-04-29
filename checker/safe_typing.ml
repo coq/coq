@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: safe_typing.ml 10275 2007-10-30 11:01:24Z barras $ *)
-
 open Pp
 open Util
 open Names

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** * Finite maps library *)
 
 (** This functor derives additional facts from [FMapInterface.S]. These

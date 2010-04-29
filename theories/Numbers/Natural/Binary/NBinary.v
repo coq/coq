@@ -8,8 +8,6 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Import BinPos Ndiv_def.
 Require Export BinNat.
 Require Import NAxioms NProperties NDiv.

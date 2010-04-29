@@ -6,8 +6,6 @@
 (*         *       GNU Lesscer General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 open Term
 
 (* This module implements the abstract interface to goals *)

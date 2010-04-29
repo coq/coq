@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This file is obsolete, use Classical_Pred_Type.v via Classical.v
 instead *)
 

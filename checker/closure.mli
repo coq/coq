@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: closure.mli 9902 2007-06-21 17:01:21Z herbelin $ i*)
-
 (*i*)
 open Pp
 open Names

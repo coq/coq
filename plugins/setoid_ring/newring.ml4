@@ -8,8 +8,6 @@
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
-(*i $Id$ i*)
-
 open Pp
 open Util
 open Names

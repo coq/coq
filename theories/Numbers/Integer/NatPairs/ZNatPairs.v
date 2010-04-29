@@ -8,8 +8,6 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Import NProperties. (* The most complete file for N *)
 Require Export ZProperties. (* The most complete file for Z *)
 Require Export Ring.

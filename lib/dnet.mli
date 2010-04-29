@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(** {% $ %}Id:{% $ %} *)
-
 (** Generic discrimination net implementation over recursive
    types. This module implements a association data structure similar
    to tries but working on any types (not just lists). It is a term

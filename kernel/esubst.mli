@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 (** {6 Sect } *)
 (** Explicit substitutions of type ['a]. 
     - ESID(n)             = %n END   bounded identity

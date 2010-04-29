@@ -14,8 +14,6 @@
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
-(* $Id$ *)
-
 open Quote
 open Ring
 open Mutils

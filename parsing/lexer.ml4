@@ -8,8 +8,6 @@
 
 (*i camlp4use: "pa_macro.cmo" i*)
 
-(*i $Id$ i*)
-
 open Pp
 open Util
 open Token

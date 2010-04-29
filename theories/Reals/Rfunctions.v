@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (*i Some properties about pow and sum have been made with John Harrison i*)
 (*i Some Lemmas (about pow and powerRZ) have been done by Laurent Thery i*)
 

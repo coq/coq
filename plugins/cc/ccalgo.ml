@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* This file implements the basic congruence-closure algorithm by *)
 (* Downey,Sethi and Tarjan. *)
 

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (* G. Huet 1-9-95 *)
 
 (** We consider a Set [U], given with a commutative-associative operator [op],

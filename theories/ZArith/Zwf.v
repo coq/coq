@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 Require Import ZArith_base.
 Require Export Wf_nat.
 Require Import Omega.

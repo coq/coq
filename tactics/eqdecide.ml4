@@ -14,8 +14,6 @@
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
-(* $Id$ *)
-
 open Util
 open Names
 open Namegen

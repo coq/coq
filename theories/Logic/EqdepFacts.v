@@ -7,8 +7,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This file defines dependent equality and shows its equivalence with
     equality on dependent pairs (inhabiting sigma-types). It derives
     the consequence of axiomatizing the invariance by substitution of

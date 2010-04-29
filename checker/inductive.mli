@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: inductive.mli 9420 2006-12-08 15:34:09Z barras $ i*)
-
 (*i*)
 open Names
 open Term

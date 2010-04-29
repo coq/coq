@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Set Implicit Arguments.
 
 Definition ifdec (A B:Prop) (C:Type) (H:{A} + {B}) (x y:C) : C :=

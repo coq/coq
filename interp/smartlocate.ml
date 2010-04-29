@@ -11,8 +11,6 @@
 
 (* This file provides high-level name globalization functions *)
 
-(* $Id:$ *)
-
 (* *)
 open Pp
 open Util

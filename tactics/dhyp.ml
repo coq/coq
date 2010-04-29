@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* Chet's comments about this tactic :
 
  Programmable destruction of hypotheses and conclusions.

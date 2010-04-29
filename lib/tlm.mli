@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 (** Tries. This module implements a data structure [('a,'b) t] mapping lists
    of values of type ['a] to sets (as lists) of values of type ['b]. *)
 

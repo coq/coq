@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 class command_window () =
 (*  let window = GWindow.window
 		 ~allow_grow:true ~allow_shrink:true

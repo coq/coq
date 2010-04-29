@@ -8,8 +8,6 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Import NZAxioms.
 
 Module Type NZBasePropSig (Import NZ : NZDomainSig').

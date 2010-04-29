@@ -8,8 +8,6 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Export ZBase.
 
 Module ZAddPropFunct (Import Z : ZAxiomsSig').

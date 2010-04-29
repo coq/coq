@@ -8,8 +8,6 @@
 
 (*i camlp4use: "pa_extend.cmo" i*)
 
-(* $Id$ *)
-
 
 open Pcoq
 open Pp

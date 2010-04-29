@@ -12,8 +12,6 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-(* $Id$ *)
-
 (** Export notations. *)
 
 Require Export Coq.Classes.Equivalence.

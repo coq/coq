@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* Instantiation of the Ring tactic for the binary integers of ZArith *)
 
 Require Export LegacyArithRing.

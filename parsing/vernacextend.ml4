@@ -8,8 +8,6 @@
 
 (*i camlp4use: "pa_extend.cmo q_MLast.cmo" i*)
 
-(* $Id$ *)
-
 open Util
 open Genarg
 open Q_util

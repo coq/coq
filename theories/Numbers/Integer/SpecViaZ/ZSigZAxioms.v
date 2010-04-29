@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Import ZArith ZAxioms ZDivFloor ZSig.
 
 (** * The interface [ZSig.ZType] implies the interface [ZAxiomsSig]

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This module defines type constructors for types in [Type]
     ([Datatypes.v] and [Logic.v] defined them for types in [Set]) *)
 

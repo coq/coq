@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 
 
 (* La tactique Fourier ne fonctionne de manière sûre que si les coefficients

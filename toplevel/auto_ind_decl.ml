@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (* This file is about the automatic generation of schemes about
    decidable equality, created by Vincent Siles, Oct 2007 *)
 

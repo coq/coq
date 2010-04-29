@@ -8,8 +8,6 @@
 
 (*i camlp4use: "pa_extend.cmo" i*)
 
-(*i $Id$ i*)
-
 open Pcoq
 open Names
 open Libnames

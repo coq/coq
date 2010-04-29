@@ -12,8 +12,6 @@
 (*                       http://helm.cs.unibo.it                        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (* print_global qid fn                                                    *)
 (*  where qid  is a long name denoting a definition/theorem or            *)
 (*             an inductive definition                                    *)

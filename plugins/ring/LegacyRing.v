@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 Require Export Bool.
 Require Export LegacyRing_theory.
 Require Export Quote.

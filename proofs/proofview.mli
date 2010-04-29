@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: proofview.mli aspiwack $ *)
-
 (* The proofview datastructure is a pure datastructure underlying the notion
    of proof (namely, a proof is a proofview which can evolve and has safety
    mechanisms attached).

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: coqdep_common.ml 11984 2009-03-16 13:41:49Z letouzey $ *)
-
 open Printf
 open Coqdep_lexer
 open Unix

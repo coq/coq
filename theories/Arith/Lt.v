@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** Theorems about [lt] in nat. [lt] is defined in library [Init/Peano.v] as:
 <<
 Definition lt (n m:nat) := S n <= m.

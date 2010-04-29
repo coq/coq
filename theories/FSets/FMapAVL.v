@@ -8,8 +8,6 @@
 
 (* Finite map library.  *)
 
-(* $Id$ *)
-
 (** * FMapAVL *)
 
 (** This module implements maps using AVL trees.

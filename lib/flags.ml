@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 let with_option o f x =
   let old = !o in o:=true;
   try let r = f x in o := old; r

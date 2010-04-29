@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* This module defines validation functions to ensure an imported
    value (using input_value) has the correct structure. *)
 

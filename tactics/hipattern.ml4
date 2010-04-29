@@ -8,8 +8,6 @@
 
 (*i camlp4deps: "parsing/grammar.cma parsing/q_constr.cmo" i*)
 
-(* $Id$ *)
-
 open Pp
 open Util
 open Names

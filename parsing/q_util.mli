@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 val patt_of_expr : MLast.expr -> MLast.patt
 
 val mlexpr_of_list :  ('a -> MLast.expr) -> 'a list -> MLast.expr

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* Module defining the last essential tiles of interactive proofs.
    The features of the Proof module are undoing and focusing.
    A proof is a mutable object, it contains a proofview, and some information

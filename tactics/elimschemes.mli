@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(** {% $ %}Id: elimschemes.mli 12584 2009-12-13 21:04:34Z herbelin {% $ %} *)
-
 open Ind_tables
 
 (** Induction/recursion schemes *)

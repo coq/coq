@@ -8,8 +8,6 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Import NBase.
 
 Module Homomorphism (N1 N2 : NAxiomsSig).

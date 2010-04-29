@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (* digit-based syntax for int31, bigN bigZ and bigQ *)
 
 open Bigint

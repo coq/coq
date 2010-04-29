@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** * Finite set library *)
 
 (** Set interfaces, inspired by the one of Ocaml. When compared with

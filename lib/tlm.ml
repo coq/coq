@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 type ('a,'b) t = Node of 'b Gset.t * ('a, ('a,'b) t) Gmap.t
 
 let empty = Node (Gset.empty, Gmap.empty)

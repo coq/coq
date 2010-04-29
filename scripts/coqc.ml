@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* Afin de rendre Coq plus portable, ce programme Caml remplace le script
    coqc.
 

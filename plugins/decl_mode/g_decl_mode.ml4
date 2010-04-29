@@ -9,8 +9,6 @@
 (*i camlp4deps: "parsing/grammar.cma" i*)
 (*i camlp4use: "pa_extend.cmo q_MLast.cmo" i*)
 
-(* $Id$ *)
-
 (* arnaud: veiller à l'aspect tutorial des commentaires *)
 
 open Pp

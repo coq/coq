@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: indtypes.ml 10296 2007-11-07 11:02:42Z barras $ *)
-
 open Util
 open Names
 open Univ

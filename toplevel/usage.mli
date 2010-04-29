@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 (** {6 Prints the version number on the standard output and exits (with 0). } *)
 
 val version : unit -> 'a

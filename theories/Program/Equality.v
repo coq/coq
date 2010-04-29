@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** Tactics related to (dependent) equality and proof irrelevance. *)
 
 Require Export ProofIrrelevance.

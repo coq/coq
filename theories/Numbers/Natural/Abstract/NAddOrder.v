@@ -8,8 +8,6 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Export NOrder.
 
 Module NAddOrderPropFunct (Import N : NAxiomsSig').

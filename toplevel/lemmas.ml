@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* Created by Hugo Herbelin from contents related to lemma proofs in
    file command.ml, Aug 2009 *)
 

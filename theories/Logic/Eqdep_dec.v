@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** We prove that there is only one proof of [x=x], i.e [refl_equal x].
     This holds if the equality upon the set of [x] is decidable.
     A corollary of this theorem is the equality of the right projections

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** A modular implementation of mergesort (the complexity is O(n.log n) in
    the length of the list) *)
 

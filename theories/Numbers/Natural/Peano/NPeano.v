@@ -8,8 +8,6 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Import Peano Peano_dec Compare_dec EqNat NAxioms NProperties NDiv.
 
 (** Functions not already defined: div mod *)

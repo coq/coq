@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* This file uses the (non-compressed) union-find structure to generate *)
 (* proof-trees that will be transformed into proof-terms in cctac.ml4   *)
 

@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 (** If there is a toplevel under Coq, it is described by the following
    record. *)
 type toplevel = {

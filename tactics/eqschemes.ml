@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* File created by Hugo Herbelin, Nov 2009 *)
 
 (* This file builds schemes related to equality inductive types,

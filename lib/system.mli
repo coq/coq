@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 (** {6 Sect } *)
 (** Files and load paths. Load path entries remember the original root
     given by the user. For efficiency, we keep the full path (field

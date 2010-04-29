@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This file axiomatizes the relational form of the axiom of choice *)
 
 Axiom relational_choice :

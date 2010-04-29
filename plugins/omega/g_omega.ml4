@@ -15,8 +15,6 @@
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
-(* $Id$ *)
-
 open Coq_omega
 open Refiner
 

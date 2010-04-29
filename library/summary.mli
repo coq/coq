@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 (** This module registers the declaration of global tables, which will be kept
    in synchronization during the various backtracks of the system. *)
 

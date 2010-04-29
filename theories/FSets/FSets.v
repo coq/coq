@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 Require Export OrderedType.
 Require Export OrderedTypeEx.
 Require Export OrderedTypeAlt.

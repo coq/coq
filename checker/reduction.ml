@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: reduction.ml 9215 2006-10-05 15:40:31Z herbelin $ *)
-
 open Util
 open Names
 open Term

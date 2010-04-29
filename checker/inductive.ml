@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: inductive.ml 10172 2007-10-04 13:02:03Z herbelin $ *)
-
 open Util
 open Names
 open Univ

@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(** {% $ %}Id: namegen.mli 12549 2009-12-01 12:05:57Z herbelin {% $ %} *)
-
 open Names
 open Term
 open Environ

@@ -8,8 +8,6 @@
 
 (*i camlp4use: "pa_extend.cmo q_MLast.cmo" i*)
 
-(* $Id$ *)
-
 open Rawterm
 open Term
 open Names

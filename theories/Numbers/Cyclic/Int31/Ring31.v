@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** * Int31 numbers defines Z/(2^31)Z, and can hence be equipped
       with a ring structure and a ring tactic *)
 

@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(** {% $ %}Id: option.mli 12603 2009-12-21 11:16:27Z herbelin {% $ %} *)
-
 (** Module implementing basic combinators for OCaml option type.
    It tries follow closely the style of OCaml standard library.
 

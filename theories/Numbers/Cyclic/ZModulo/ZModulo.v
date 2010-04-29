@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (** * Type [Z] viewed modulo a particular constant corresponds to [Z/nZ]
       as defined abstractly in CyclicAxioms. *)
 

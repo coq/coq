@@ -6,8 +6,6 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(*i $Id$ i*)
-
 (** {6 This program is a small time and allocation profiler for Objective Caml } *)
 
 (*i It requires the UNIX library *)

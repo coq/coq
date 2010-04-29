@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** * FMapPositive : an implementation of FMapInterface for [positive] keys. *)
 
 Require Import Bool.

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: coqide.ml 11952 2009-03-02 15:29:08Z vgross $ *)
-
 open Ideutils
 
 

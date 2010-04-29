@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** This file provides classical logic and definite description, which is
     equivalent to providing classical logic and Church's iota operator *)
 

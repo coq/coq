@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 Require Export Setoid_ring_theory.
 Require Export Quote.
 Require Export Setoid_ring_normalize.

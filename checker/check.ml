@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: library.ml 9679 2007-02-24 15:22:07Z herbelin $ *)
-
 open Pp
 open Util
 open Names

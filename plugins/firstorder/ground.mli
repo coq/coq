@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 val ground_tac:     Tacmach.tactic ->
   (Proof_type.goal Tacmach.sigma -> Sequent.t) -> Tacmach.tactic
 

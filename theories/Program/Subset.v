@@ -5,8 +5,6 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-(* $Id$ *)
-
 (** Tactics related to subsets and proof irrelevance. *)
 
 Require Import Coq.Program.Utils.

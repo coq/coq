@@ -7,8 +7,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** Bit vectors interpreted as integers.
     Contribution by Jean Duprat (ENS Lyon). *)
 

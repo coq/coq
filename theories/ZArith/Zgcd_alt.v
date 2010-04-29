@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 (** * Zgcd_alt : an alternate version of Zgcd, based on Euler's algorithm *)
 
 (**

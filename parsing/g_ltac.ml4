@@ -8,8 +8,6 @@
 
 (*i camlp4use: "pa_extend.cmo" i*)
 
-(* $Id$ *)
-
 open Pp
 open Util
 open Topconstr

@@ -8,8 +8,6 @@
 
 (*i camlp4use: "pa_extend.cmo pa_macro.cmo" i*)
 
-(*i $Id$ i*)
-
 open Pp
 open Util
 open Names

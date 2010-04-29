@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 Require Export NewtonInt.
 Require Export RiemannInt_SF.
 Require Export RiemannInt.

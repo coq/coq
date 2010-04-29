@@ -13,8 +13,6 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-(* $Id$ *)
-
 Set Implicit Arguments.
 Unset Strict Implicit.
 

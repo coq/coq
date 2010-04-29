@@ -8,8 +8,6 @@
 
 (*i camlp4use: "q_MLast.cmo pa_macro.cmo" i*)
 
-(* $Id$ *)
-
 open Util
 open Names
 open Libnames

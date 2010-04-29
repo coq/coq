@@ -5,8 +5,6 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-(* $Id$ *)
-
 Require Export Coq.Program.Utils.
 Require Export Coq.Program.Wf.
 Require Export Coq.Program.Equality.

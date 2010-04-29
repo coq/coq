@@ -6,7 +6,5 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
 val ocaml_descr : Miniml.language_descr
 
