@@ -418,3 +418,7 @@ let eq_id_key ik1 ik2 =
     ConstKey (_,kn1),
       ConstKey (_,kn2) -> kn1=kn2
     | a,b -> a=b
+
+let eq_con_chk (kn1,_) (kn2,_) = kn1=kn2
+let eq_mind_chk (kn1,_) (kn2,_) = kn1=kn2
+let eq_ind_chk (kn1,i1) (kn2,i2) = i1=i2&&eq_mind_chk kn1 kn2

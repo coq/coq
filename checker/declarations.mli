@@ -199,6 +199,7 @@ val add_mp   : module_path -> module_path -> substitution -> substitution
 val map_mbid : mod_bound_id -> module_path -> substitution
 val map_mp   : module_path -> module_path -> substitution
 val mp_in_delta : module_path -> delta_resolver -> bool
+val mind_of_delta : delta_resolver -> mutual_inductive -> mutual_inductive
 
 val subst_const_body : constant_body subst_fun
 val subst_mind : mutual_inductive_body subst_fun

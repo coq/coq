@@ -7,6 +7,7 @@ open Declarations
 type globals = {
   env_constants : constant_body Cmap_env.t;
   env_inductives : mutual_inductive_body Mindmap_env.t;
+  env_inductives_eq : kernel_name  KNmap.t;
   env_modules : module_body MPmap.t;
   env_modtypes : module_type_body MPmap.t}
 
@@ -26,6 +27,7 @@ let empty_env = {
   env_globals =
   { env_constants = Cmap_env.empty;
     env_inductives = Mindmap_env.empty;
+    env_inductives_eq = KNmap.empty;
     env_modules = MPmap.empty;
     env_modtypes = MPmap.empty};
   env_named_context = [];
@@ -142,14 +144,31 @@ let evaluable_constant cst env =
   with Not_found | NotEvaluableConst _ -> false
 
 (* Mutual Inductives *)
+let scrape_mind env kn=
+  try
+    KNmap.find kn env.env_globals.env_inductives_eq
+  with 
+      Not_found -> kn
+
+let mind_equiv env (kn1,i1) (kn2,i2) =
+  i1 = i2 && 
+  scrape_mind env (user_mind kn1) = scrape_mind env (user_mind kn2)
+
+
 let lookup_mind kn env =
   Mindmap_env.find kn env.env_globals.env_inductives
 
 let add_mind kn mib env =
   let new_inds = Mindmap_env.add kn mib env.env_globals.env_inductives in
+  let kn1,kn2 =  user_mind kn,canonical_mind kn in
+  let new_inds_eq = if kn1=kn2 then 
+    env.env_globals.env_inductives_eq
+  else
+    KNmap.add kn1 kn2  env.env_globals.env_inductives_eq in
   let new_globals =
     { env.env_globals with
-	env_inductives = new_inds } in
+	env_inductives = new_inds;
+	env_inductives_eq = new_inds_eq} in
   { env with env_globals = new_globals }
 
 

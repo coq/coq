@@ -256,7 +256,7 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
     (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
 	(try (* try first intensional equality *)
-	  if fl1 = fl2
+	  if  eq_table_key fl1 fl2
           then convert_stacks univ infos lft1 lft2 v1 v2
           else raise NotConvertible
         with NotConvertible ->

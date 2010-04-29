@@ -245,27 +245,30 @@ and check_module env mp mb =
   match mb.mod_expr, mb.mod_type with
     | None,mtb -> 
 	let _ = check_modtype env mtb mb.mod_mp in ()
+    | Some mexpr, mtb when mtb==mexpr ->
+	let _ = check_modtype env mtb mb.mod_mp in ()
     | Some mexpr, _ ->
-	let sign = check_modexpr env mexpr mb.mod_mp in
-	let _ = check_modtype env mb.mod_type mb.mod_mp in
+	let sign = check_modexpr env mexpr mb.mod_mp mb.mod_delta in
+	let _ = check_modtype env mb.mod_type mb.mod_mp mb.mod_delta in
           check_subtypes env 
 	    {typ_mp=mp;
 	     typ_expr=sign;
 	     typ_expr_alg=None;
 	     typ_constraints=Univ.Constraint.empty;
-	     typ_delta = empty_delta_resolver;}
+	     typ_delta = mb.mod_delta;}
 	    {typ_mp=mp;
 	     typ_expr=mb.mod_type;
 	     typ_expr_alg=None;
 	     typ_constraints=Univ.Constraint.empty;
-	     typ_delta = empty_delta_resolver;};
+	     typ_delta = mb.mod_delta;};
 	  
-and check_structure_field env mp lab = function
+and check_structure_field env mp lab res = function
   | SFBconst cb ->
       let c = make_con mp empty_dirpath lab in
 	check_constant_declaration env c cb
   | SFBmind mib ->
       let kn = make_mind mp empty_dirpath lab in
+      let kn = mind_of_delta res kn in
 	Indtypes.check_inductive env kn mib
   | SFBmodule msb ->
       let _= check_module env (MPdot(mp,lab)) msb in
@@ -274,17 +277,17 @@ and check_structure_field env mp lab = function
       check_module_type env mty;
       add_modtype (MPdot(mp,lab)) mty env
 	
-and check_modexpr env mse mp_mse = match mse with
+and check_modexpr env mse mp_mse res = match mse with
   | SEBident mp ->
       let mb = lookup_module mp env in
       	(subst_and_strengthen mb mp_mse env).mod_type
   | SEBfunctor (arg_id, mtb, body) ->
       check_module_type env mtb ;
       let env' = add_module (module_body_of_type (MPbound arg_id) mtb) env in
-      let sign = check_modexpr env' body mp_mse in
+      let sign = check_modexpr env' body mp_mse res in
 	SEBfunctor (arg_id, mtb, sign)
   | SEBapply (f,m,cst) ->
-      let sign = check_modexpr env f mp_mse in
+      let sign = check_modexpr env f mp_mse res in
       let farg_id, farg_b, fbody_b = destr_functor env sign in
       let mp =
 	try (path_of_mexpr m)
@@ -294,25 +297,25 @@ and check_modexpr env mse mp_mse = match mse with
 	check_subtypes env mtb farg_b;
 	(subst_struct_expr (map_mbid farg_id mp) fbody_b)
   | SEBwith(mte, with_decl) ->
-      let sign = check_modexpr env mte mp_mse in
+      let sign = check_modexpr env mte mp_mse res in
       let sign = check_with env sign with_decl mp_mse in 
 	sign
   | SEBstruct(msb) ->
       let _ = List.fold_left (fun env (lab,mb) ->
-		   check_structure_field env mp_mse lab mb) env msb in
+		   check_structure_field env mp_mse lab res mb) env msb in
 	SEBstruct(msb)
 	
-and check_modtype env mse mp_mse= match mse with
+and check_modtype env mse mp_mse res = match mse with
   | SEBident mp ->
       let mtb = lookup_modtype mp env in
 	mtb.typ_expr
   | SEBfunctor (arg_id, mtb, body) ->
       check_module_type env mtb;
       let env' = add_module (module_body_of_type (MPbound arg_id) mtb) env in
-      let body = check_modtype env' body mp_mse in
+      let body = check_modtype env' body mp_mse res in
 	SEBfunctor(arg_id,mtb,body)
   | SEBapply (f,m,cst) ->
-      let sign = check_modtype env f mp_mse in
+      let sign = check_modtype env f mp_mse res in
       let farg_id, farg_b, fbody_b = destr_functor env sign in
       let mp =
 	try (path_of_mexpr m)
@@ -322,12 +325,12 @@ and check_modtype env mse mp_mse= match mse with
 	check_subtypes env mtb farg_b;
 	subst_struct_expr (map_mbid farg_id mp) fbody_b
   | SEBwith(mte, with_decl) ->
-      let sign = check_modtype env mte mp_mse in
+      let sign = check_modtype env mte mp_mse res in
       let sign = check_with env sign with_decl mp_mse in
 	sign
   | SEBstruct(msb) ->
       let _ = List.fold_left (fun env (lab,mb) ->
-		   check_structure_field env mp_mse lab mb) env msb in
+		   check_structure_field env mp_mse lab res mb) env msb in
       SEBstruct(msb)
 	
 (*
