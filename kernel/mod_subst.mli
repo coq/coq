@@ -90,7 +90,8 @@ val from_val : 'a -> 'a substituted
 val force : (substitution -> 'a -> 'a) -> 'a substituted -> 'a
 val subst_substituted : substitution -> 'a substituted -> 'a substituted
 
-(*i debugging *)
+(**/**)
+(* debugging *)
 val debug_string_of_subst : substitution -> string
 val debug_pr_subst : substitution -> Pp.std_ppcmds
 val debug_string_of_delta : delta_resolver -> string

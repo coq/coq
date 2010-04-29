@@ -120,7 +120,7 @@ val add_constant : constant -> constant_body -> env -> env
 val lookup_constant    : constant -> env -> constant_body
 val evaluable_constant : constant -> env -> bool
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [constant_value env c] raises [NotEvaluableConst Opaque] if
    [c] is opaque and [NotEvaluableConst NoBody] if it has no
    body and [Not_found] if it does not exist in [env] *)

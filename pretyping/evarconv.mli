@@ -21,7 +21,8 @@ val the_conv_x_leq : env -> constr -> constr -> evar_map -> evar_map
 val e_conv  : env -> evar_map ref -> constr -> constr -> bool
 val e_cumul : env -> evar_map ref -> constr -> constr -> bool
 
-(*i For debugging *)
+(**/**)
+(* For debugging *)
 val evar_conv_x :
   env -> evar_map -> conv_pb -> constr -> constr -> evar_map * bool
 val evar_eqappr_x :

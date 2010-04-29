@@ -26,7 +26,7 @@ val find_coinductive : env -> types -> inductive * constr list
 
 type mind_specif = mutual_inductive_body * one_inductive_body
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Fetching information in the environment about an inductive type.
     Raises [Not_found] if the inductive type is not found. *)
 val lookup_mind_specif : env -> inductive -> mind_specif

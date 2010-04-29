@@ -120,7 +120,7 @@ val encode_con : dir_path -> identifier -> constant
 val decode_con : constant -> dir_path * identifier
 
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** A [qualid] is a partially qualified ident; it includes fully
     qualified names (= absolute names) and all intermediate partial
     qualifications of absolute names, including single identifiers.
@@ -161,7 +161,7 @@ type global_dir_reference =
   | DirClosedSection of dir_path
       (** this won't last long I hope! *)
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** A [reference] is the user-level notion of name. It denotes either a
     global name (referred either by a qualified name or by a single
     name) or a variable *)

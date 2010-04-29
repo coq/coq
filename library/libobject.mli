@@ -84,7 +84,7 @@ val default_object : string -> 'a object_declaration
 (** the identity substitution function *)
 val ident_subst_function : substitution * 'a -> 'a
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Given an object declaration, the function [declare_object]
    will hand back two functions, the "injection" and "projection"
    functions for dynamically typed library-objects. *)

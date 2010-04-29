@@ -16,12 +16,9 @@ open Rawterm
 open Topconstr
 open Ppextend
 
-(**/**)
+(** Notations *)
 
-(*********************************************************************
-   Scopes *)
-
-(** {6 Sect } *)
+(** {6 Scopes } *)
 (** A scope is a set of interpreters for symbols + optional
    interpreter and printers for integers + optional delimiters *)
 
@@ -131,7 +128,7 @@ val availability_of_notation : scope_name option * notation -> local_scopes ->
 val declare_notation_level : notation -> level -> unit
 val level_of_notation : notation -> level (** raise [Not_found] if no level *)
 
-(*s** Miscellaneous *)
+(** {6 Miscellaneous} *)
 
 val interp_notation_as_global_reference : loc -> (global_reference -> bool) ->
       notation -> delimiters option -> global_reference
@@ -170,13 +167,11 @@ val locate_notation : (rawconstr -> std_ppcmds) -> notation ->
 
 val pr_visibility: (rawconstr -> std_ppcmds) -> scope_name option -> std_ppcmds
 
-(*********************************************************************
-  s Printing rules for notations *)
+(** {6 Printing rules for notations} *)
 
 (** Declare and look for the printing rule for symbolic notations *)
 type unparsing_rule = unparsing list * precedence
 val declare_notation_printing_rule : notation -> unparsing_rule -> unit
 val find_notation_printing_rule : notation -> unparsing_rule
 
-(*********************************************************************
-   Rem: printing rules for primitive token are canonical *)
+(** Rem: printing rules for primitive token are canonical *)

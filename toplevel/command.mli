@@ -19,18 +19,16 @@ open Redexpr
 open Constrintern
 open Pfedit
 
-(** {6 Sect } *)
 (** This file is about the interpretation of raw commands into typed
     ones and top-level declaration of the main Gallina objects *)
 
-(** Hooks for Pcoq *)
+(** {6 Hooks for Pcoq} *)
 
 val set_declare_definition_hook : (definition_entry -> unit) -> unit
 val get_declare_definition_hook : unit -> (definition_entry -> unit)
 val set_declare_assumptions_hook : (types -> unit) -> unit
 
-(************************************************************************
-   Definitions/Let *)
+(** {6 Definitions/Let} *)
 
 val interp_definition :
   boxed_flag -> local_binder list -> red_expr option -> constr_expr ->
@@ -39,8 +37,7 @@ val interp_definition :
 val declare_definition : identifier -> locality * definition_object_kind ->
   definition_entry -> manual_implicits -> declaration_hook -> unit
 
-(************************************************************************
-   Parameters/Assumptions *)
+(** {6 Parameters/Assumptions} *)
 
 val interp_assumption :
   local_binder list -> constr_expr -> types * manual_implicits
@@ -53,8 +50,7 @@ val declare_assumptions : variable located list ->
   coercion_flag -> assumption_kind -> types -> manual_implicits ->
   bool -> bool -> unit
 
-(************************************************************************
-   Inductive and coinductive types *)
+(** {6 Inductive and coinductive types} *)
 
 (** Extracting the semantical components out of the raw syntax of mutual
    inductive declarations *)
@@ -94,8 +90,7 @@ val declare_mutual_inductive_with_eliminations :
 val do_mutual_inductive :
   (one_inductive_expr * decl_notation list) list -> bool -> unit
 
-(************************************************************************
-   Fixpoints and cofixpoints *)
+(** {6 Fixpoints and cofixpoints} *)
 
 type structured_fixpoint_expr = {
   fix_name : identifier;

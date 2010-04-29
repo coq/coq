@@ -39,7 +39,7 @@ val empty_dirpath : dir_path
 val string_of_dirpath : dir_path -> string
 
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Unique identifier to be used as "self" in structures and
   signatures - invisible for users *)
 type label

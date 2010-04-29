@@ -65,7 +65,7 @@ type prim_rule =
                                               in the type of evar] \} \} \} v}
 *)
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Proof trees.
   [ref] = [None] if the goal has still to be proved,
   and [Some (r,l)] if the rule [r] was applied to the goal

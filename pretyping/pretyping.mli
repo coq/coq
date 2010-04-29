@@ -81,8 +81,7 @@ sig
   val understand_judgment_tcc : evar_map ref -> env -> rawconstr -> unsafe_judgment
 
   (**/**)
-  (** Internal of Pretyping...
-   *)
+  (** Internal of Pretyping... *)
   val pretype :
     type_constraint -> env -> evar_map ref ->
     var_map * (identifier * identifier option) list ->

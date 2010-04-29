@@ -82,7 +82,8 @@ val lookup_path_to_sort_from : env -> evar_map -> types ->
 val lookup_pattern_path_between :
   inductive * inductive -> (constructor * int) list
 
-(*i Crade *)
+(**/**)
+(* Crade *)
 open Pp
 val install_path_printer :
   ((cl_index * cl_index) * inheritance_path -> std_ppcmds) -> unit

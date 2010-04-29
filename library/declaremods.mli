@@ -13,9 +13,7 @@ open Environ
 open Libnames
 open Libobject
 open Lib
-   (**/**)
 
-(** {6 Sect } *)
 (** This modules provides official functions to declare modules and
   module types *)
 
@@ -65,7 +63,7 @@ val start_modtype : (env -> 'modast -> module_struct_entry) ->
 val end_modtype : unit -> module_path
 
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Objects of a module. They come in two lists: the substitutive ones
   and the other *)
 
@@ -107,7 +105,7 @@ val import_module : bool -> module_path -> unit
 val declare_include : (env -> 'struct_expr -> module_struct_entry * bool) ->
   ('struct_expr * bool) list -> unit
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [iter_all_segments] iterate over all segments, the modules'
     segments first and then the current segment. Modules are presented
     in an arbitrary order. The given function is applied to all leaves

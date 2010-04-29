@@ -6,11 +6,13 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-(** {6 Sect } *)
-(** Files and load paths. Load path entries remember the original root
+(** System utilities *)
+
+(** {6 Files and load paths} *)
+
+(** Load path entries remember the original root
     given by the user. For efficiency, we keep the full path (field
     [directory]), the root path and the path relative to the root. *)
-
 
 type physical_path = string
 type load_path = physical_path list
@@ -38,7 +40,7 @@ val exists_dir : string -> bool
 val find_file_in_path :
   ?warn:bool -> load_path -> string -> physical_path * string
 
-(** {6 Sect } *)
+(** {6 I/O functions } *)
 (** Generic input and output functions, parameterized by a magic number
   and a suffix. The intern functions raise the exception [Bad_magic_number]
   when the check fails, with the full file name. *)
@@ -58,7 +60,7 @@ val extern_intern : ?warn:bool -> int -> string ->
 
 val connect : (out_channel -> unit) -> (in_channel -> 'a) -> string -> 'a
 
-(** {6 Sect } *)
+(** {6 Executing commands } *)
 (** [run_command converter f com] launches command [com], and returns
     the contents of stdout and stderr that have been processed with
     [converter]; the processed contents of stdout and stderr is also

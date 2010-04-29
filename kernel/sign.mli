@@ -34,7 +34,7 @@ val fold_named_context_reverse :
 (** {6 Section-related auxiliary functions } *)
 val instance_from_named_context : named_context -> constr array
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Signatures of ordered optionally named variables, intended to be
    accessed by de Bruijn indices *)
 

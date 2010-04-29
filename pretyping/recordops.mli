@@ -13,7 +13,9 @@ open Libnames
 open Libobject
 open Library
 
-(** {6 Sect } *)
+(** Operations concerning records and canonical structures *)
+
+(** {6 Records } *)
 (** A structure S is a non recursive inductive type with a single
    constructor (the name of which defaults to Build_S) *)
 
@@ -51,7 +53,7 @@ val methods_matching : constr ->
   ((global_reference*Evd.evar*Evd.evar_map) *
      (constr*existential_key)*Termops.subst) list
 
-(** {6 Sect } *)
+(** {6 Canonical structures } *)
 (** A canonical structure declares "canonical" conversion hints between 
     the effective components of a structure and the projections of the  
     structure *)

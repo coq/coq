@@ -14,8 +14,8 @@ open Environ
 open Entries
 open Typeops
 
+(** Inductive type checking and errors *)
 
-(** {6 Sect } *)
 (** The different kinds of errors that may result of a malformed inductive
   definition. *)
 
@@ -34,7 +34,7 @@ type inductive_error =
 
 exception InductiveError of inductive_error
 
-(** {6 The following function does checks on inductive declarations. } *)
+(** The following function does checks on inductive declarations. *)
 
 val check_inductive :
   env -> mutual_inductive_entry -> mutual_inductive_body

@@ -89,7 +89,7 @@ val msg_with : Format.formatter -> std_ppcmds -> unit
 val msgnl_with : Format.formatter -> std_ppcmds -> unit
 
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** The following functions are instances of the previous ones on
   [std_ft] and [err_ft]. *)
 

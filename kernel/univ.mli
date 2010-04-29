@@ -51,7 +51,7 @@ type constraint_function = universe -> universe -> constraints -> constraints
 val enforce_geq : constraint_function
 val enforce_eq : constraint_function
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Merge of constraints in a universes graph.
   The function [merge_constraints] merges a set of constraints in a given
   universes graph. It raises the exception [UniverseInconsistency] if the

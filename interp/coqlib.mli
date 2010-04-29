@@ -12,11 +12,10 @@ open Nametab
 open Term
 open Pattern
 
-(** {6 Sect } *)
 (** This module collects the global references, constructions and
     patterns of the standard library used in ocaml files *)
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [find_reference caller_message [dir;subdir;...] s] returns a global
    reference to the name dir.subdir.(...).s; the corresponding module
    must have been required or in the process of being compiled so that
@@ -80,7 +79,7 @@ val glob_eq : global_reference
 val glob_identity : global_reference
 val glob_jmeq : global_reference
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Constructions and patterns related to Coq initial state are unknown
    at compile time. Therefore, we can only provide methods to build
    them at runtime. This is the purpose of the [constr delayed] and
@@ -144,7 +143,7 @@ val build_coq_inversion_eq_true_data : coq_inversion_data delayed
 (** Specif *)
 val build_coq_sumbool : constr delayed
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Connectives 
    The False proposition *)
 val build_coq_False : constr delayed

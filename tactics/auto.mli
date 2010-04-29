@@ -20,6 +20,8 @@ open Libnames
 open Vernacexpr
 open Mod_subst
 
+(** Auto and related automation tactics *)
+
 type auto_tactic =
   | Res_pf     of constr * clausenv    (** Hint Apply *)
   | ERes_pf    of constr * clausenv    (** Hint EApply *)
@@ -122,11 +124,11 @@ val make_apply_entry :
       -> hint_entry
 
 (** A constr which is Hint'ed will be:
-   (1) used as an Exact, if it does not start with a product
-   (2) used as an Apply, if its HNF starts with a product, and
-       has no missing arguments.
-   (3) used as an EApply, if its HNF starts with a product, and
-       has missing arguments. *)
+   - (1) used as an Exact, if it does not start with a product
+   - (2) used as an Apply, if its HNF starts with a product, and
+         has no missing arguments.
+   - (3) used as an EApply, if its HNF starts with a product, and
+         has missing arguments. *)
 
 val make_resolves :
   env -> evar_map -> bool * bool * bool -> int option -> constr ->

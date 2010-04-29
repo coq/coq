@@ -12,8 +12,9 @@ open Declarations
 open Entries
 open Mod_subst
 
-(** {6 Sect } *)
-(** Safe environments. Since we are now able to type terms, we can
+(** {6 Safe environments } *)
+
+(** Since we are now able to type terms, we can
   define an abstract type of safe environments, where objects are
   typed before being added.
 
@@ -69,6 +70,7 @@ val set_engagement : engagement -> safe_environment -> safe_environment
 
 
 (** {6 Interactive module functions } *)
+
 val start_module :
   label -> safe_environment -> module_path * safe_environment
 

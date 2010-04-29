@@ -120,7 +120,7 @@ type meta_type_map = (metavariable * types) list
 (** [pop c] lifts by -1 the positive indexes in [c] *)
 val pop : constr -> constr
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Substitution of an arbitrary large term. Uses equality modulo
    reduction of let *)
 

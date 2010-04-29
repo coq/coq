@@ -14,7 +14,9 @@ open Rawterm
 open Term
 open Mod_subst
 
-(** {6 Sect } *)
+(** Topconstr: definitions of [aconstr] et [constr_expr] *)
+
+(** {6 aconstr } *)
 (** This is the subtype of rawconstr allowed in syntactic extensions 
    No location since intended to be substituted at any place of a text 
    Complex expressions such as fixpoints and cofixpoints are excluded, 
@@ -43,9 +45,8 @@ type aconstr =
   | APatVar of patvar
   | ACast of aconstr * aconstr cast_type
 
-(*********************************************************************
-   Translate a rawconstr into a notation given the list of variables  
-   bound by the notation; also interpret recursive patterns           *)
+(** Translate a rawconstr into a notation given the list of variables
+    bound by the notation; also interpret recursive patterns           *)
 
 val aconstr_of_rawconstr : identifier list -> rawconstr -> aconstr
 
@@ -55,8 +56,7 @@ val ldots_var : identifier
 (** Equality of rawconstr (warning: only partially implemented) *)
 val eq_rawconstr : rawconstr -> rawconstr -> bool
 
-(*********************************************************************
-   Re-interpret a notation as a rawconstr, taking care of binders     *)
+(** Re-interpret a notation as a rawconstr, taking care of binders     *)
 
 val rawconstr_of_aconstr_with_binders : loc ->
   ('a -> name -> 'a * name) ->
@@ -64,8 +64,7 @@ val rawconstr_of_aconstr_with_binders : loc ->
 
 val rawconstr_of_aconstr : loc -> aconstr -> rawconstr
 
-(*********************************************************************
-   [match_aconstr metas] matches a rawconstr against an aconstr with  
+(** [match_aconstr metas] matches a rawconstr against an aconstr with
    metavariables in [metas]; raise [No_match] if the matching fails   *)
 
 exception No_match
@@ -83,13 +82,11 @@ type interpretation =
 val match_aconstr : rawconstr -> interpretation ->
       (rawconstr * subscopes) list * (rawconstr list * subscopes) list
 
-(*********************************************************************
-   Substitution of kernel names in interpretation data                *)
+(** Substitution of kernel names in interpretation data                *)
 
 val subst_interpretation : substitution -> interpretation -> interpretation
 
-(*********************************************************************
-  s Concrete syntax for terms                                         *)
+(** {6 Concrete syntax for terms }                                        *)
 
 type notation = string
 
@@ -172,8 +169,7 @@ and typeclass_context = typeclass_constraint list
 
 type constr_pattern_expr = constr_expr
 
-(*********************************************************************
-   Utilities on constr_expr                                           *)
+(** Utilities on constr_expr                                           *)
 
 val constr_loc : constr_expr -> loc
 
@@ -231,8 +227,7 @@ val map_constr_expr_with_binders :
   (identifier -> 'a -> 'a) -> ('a -> constr_expr -> constr_expr) ->
       'a -> constr_expr -> constr_expr
 
-(*********************************************************************
-   Concrete syntax for modules and module types                       *)
+(** Concrete syntax for modules and module types                       *)
 
 type with_declaration_ast =
   | CWith_Module of identifier list located * qualid located

@@ -64,7 +64,7 @@ val eq_constr : constr -> constr -> bool
 
 type types = constr
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Functions for dealing with constr terms.
   The following functions are intended to simplify and to uniform the
   manipulation of terms. Some of these functions may be overlapped with
@@ -253,7 +253,7 @@ val is_Type : constr -> bool
 val iskind : constr -> bool
 val is_small : sorts -> bool
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Term destructors.
    Destructor operations are partial functions and
    raise [invalid_arg "dest*"] if the term has not the expected form. *)
@@ -319,7 +319,7 @@ val destFix : constr -> fixpoint
 val destCoFix : constr -> cofixpoint
 
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** A {e declaration} has the form (name,body,type). It is either an
     {e assumption} if [body=None] or a {e definition} if
     [body=Some actualbody]. It is referred by {e name} if [na] is an
@@ -483,7 +483,7 @@ val under_casts : (constr -> constr) -> constr -> constr
 (** Apply a function under components of Cast if any *)
 val under_outer_cast : (constr -> constr) -> constr -> constr
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** An "arity" is a term of the form [[x1:T1]...[xn:Tn]s] with [s] a sort.
     Such a term can canonically be seen as the pair of a context of types
     and of a sort *)

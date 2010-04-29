@@ -8,7 +8,7 @@
 
 (** {6 Search strategies. } *)
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** A search problem implements the following signature [SearchProblem].
     [state] is the type of states of the search tree.
     [branching] is the branching function; if [branching s] returns an
@@ -31,7 +31,7 @@ module type SearchProblem = sig
 
 end
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Functor [Make] returns some search functions given a search problem.
     Search functions raise [Not_found] if no success is found.
     States are always visited in the order they appear in the

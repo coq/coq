@@ -23,7 +23,7 @@ open Tacexpr
    or [Theorem]), and ``goal'' means a subgoal of the current focused
    proof *)
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [refining ()] tells if there is some proof in progress, even if a not
    focused one *)
 
@@ -34,7 +34,7 @@ val refining : unit -> bool
 
 val check_no_pending_proofs : unit -> unit
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [delete_proof name] deletes proof of name [name] or fails if no proof
     has this name *)
 
@@ -49,7 +49,7 @@ val delete_current_proof : unit -> unit
 
 val delete_all_proofs : unit -> unit
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [undo n] undoes the effect of the last [n] tactics applied to the
     current proof; it fails if no proof is focused or if the ``undo''
     stack is exhausted *)
@@ -69,7 +69,7 @@ val current_proof_depth: unit -> int
 val set_undo : int option -> unit
 val get_undo : unit -> int option
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [start_proof s str env t hook tac] starts a proof of name [s] and
     conclusion [t]; [hook] is optionally a function to be applied at
     proof end (e.g. to declare the built constructions as a coercion
@@ -89,7 +89,7 @@ val start_proof :
 
 val restart_proof : unit -> unit
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [resume_last_proof ()] focus on the last unfocused proof or fails
    if there is no suspended proofs *)
 
@@ -105,7 +105,7 @@ val resume_proof : identifier located -> unit
 
 val suspend_proof : unit -> unit
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [cook_proof opacity] turns the current proof (assumed completed) into
     a constant with its name, kind and possible hook (see [start_proof]);
     it fails if there is no current proof of if it is not completed;
@@ -119,7 +119,7 @@ val cook_proof : (Proof.proof -> unit) ->
 (** To export completed proofs to xml *)
 val set_xml_cook_proof : (goal_kind * Proof.proof -> unit) -> unit
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [get_Proof.proof ()] returns the current focused pending proof or
    raises [UserError "no focused proof"] *)
 
@@ -140,7 +140,7 @@ val get_current_goal_context : unit -> Evd.evar_map * env
 val current_proof_statement :
   unit -> identifier * goal_kind * types * declaration_hook
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [get_current_proof_name ()] return the name of the current focused
     proof or failed if no proof is focused *)
 
@@ -150,13 +150,13 @@ val get_current_proof_name : unit -> identifier
 
 val get_all_proof_names : unit -> identifier list
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [set_end_tac tac] applies tactic [tac] to all subgoal generate
     by [solve_nth] *)
 
 val set_end_tac : tactic -> unit
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [solve_nth n tac] applies tactic [tac] to the [n]th subgoal of the
    current focused proof or raises a UserError if no proof is focused or
    if there is no [n]th subgoal *)

@@ -11,7 +11,6 @@ open Names
 open Libnames
 open Libobject
 
-(** {6 Sect } *)
 (** This module provides functions to load, open and save
   libraries. Libraries correspond to the subclass of modules that
   coincide with a file on disk (the ".vo" files). Libraries on the
@@ -20,7 +19,7 @@ open Libobject
   written at various dates.
 *)
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Require = load in the environment + open (if the optional boolean
     is not [None]); mark also for export if the boolean is [Some true] *)
 val require_library : qualid located list -> bool option -> unit
@@ -28,7 +27,7 @@ val require_library_from_dirpath : (dir_path * string) list -> bool option -> un
 val require_library_from_file :
   identifier option -> System.physical_path -> bool option -> unit
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Open a module (or a library); if the boolean is true then it's also
    an export otherwise just a simple import *)
 val import_module : bool -> qualid located -> unit
@@ -58,7 +57,7 @@ val overwrite_library_filenames : string -> unit
 (** {6 Hook for the xml exportation of libraries } *)
 val set_xml_require : (dir_path -> unit) -> unit
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Global load paths: a load path is a physical path in the file
     system; to each load path is associated a Coq [dir_path] (the "logical"
     path of the physical path) *)

@@ -11,7 +11,7 @@ open Pp
 (** This module contains numerous utility functions on strings, lists,
    arrays, etc. *)
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Errors. [Anomaly] is used for system errors and [UserError] for the
    user's ones. *)
 
@@ -361,7 +361,7 @@ val size_kb : 'a -> int
 val heap_size : unit -> int
 val heap_size_kb : unit -> int
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Coq interruption: set the following boolean reference to interrupt Coq
     (it eventually raises [Break], simulating a Ctrl-C) *)
 

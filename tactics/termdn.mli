@@ -64,5 +64,5 @@ sig
   val constr_pat_discr : constr_pattern -> (term_label * constr_pattern list) option
   val constr_val_discr : constr -> (term_label * constr list) lookup_res
     
-(**/**)
+  (**/**)
 end

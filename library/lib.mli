@@ -7,7 +7,8 @@
   ***********************************************************************)
 
 
-(** {6 Sect } *)
+(** Lib: record of operations, backtrack, low-level sections *)
+
 (** This module provides a general mechanism to keep a trace of all operations
    and to backtrack (undo) those operations. It provides also the section
    mechanism (at a low level; discharge is not known at this step). *)
@@ -27,7 +28,7 @@ and library_segment = (Libnames.object_name * node) list
 
 type lib_objects = (Names.identifier * Libobject.obj) list
 
-(** {6 Object iteratation functions. } *)
+(** {6 Object iteration functions. } *)
 
 val open_objects : int -> Libnames.object_prefix -> lib_objects -> unit
 val load_objects : int -> Libnames.object_prefix -> lib_objects -> unit
@@ -47,7 +48,7 @@ val segment_of_objects :
   Libnames.object_prefix -> lib_objects -> library_segment
 
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Adding operations (which call the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)
 
@@ -71,7 +72,7 @@ val current_command_label : unit -> int
    registered after it. *)
 val reset_label : int -> unit
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** The function [contents_after] returns the current library segment,
   starting from a given section path. If not given, the entire segment
   is returned. *)

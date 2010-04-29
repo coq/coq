@@ -34,7 +34,7 @@ val start_proof_with_initialization :
 (** A hook the next three functions pass to cook_proof *)
 val set_save_hook : (Proof.proof -> unit) -> unit
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [save_named b] saves the current completed proof under the name it
 was started; boolean [b] tells if the theorem is declared opaque; it
 fails if the proof is not completed *)

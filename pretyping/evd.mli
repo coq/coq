@@ -162,7 +162,7 @@ val is_evar : evar_map -> evar -> bool
 
 val is_defined : evar_map -> evar -> bool
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** [existential_value sigma ev] raises [NotInstantiatedEvar] if [ev] has
     no body and [Not_found] if it does not exist in [sigma] *)
 

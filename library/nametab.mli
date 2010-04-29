@@ -11,51 +11,48 @@ open Pp
 open Names
 open Libnames
 
-(** {6 Sect } *)
-(** This module contains the tables for globalization, which
-    associates internal object references to qualified names (qualid).
+(** This module contains the tables for globalization. *)
 
-    There are three classes of names:
+(** These globalization tables associate internal object references to
+    qualified names (qualid). There are three classes of names:
 
-    1a- internal kernel names: [kernel_name], [constant], [inductive],
-        [module_path], [dir_path]
+    - 1a) internal kernel names: [kernel_name], [constant], [inductive],
+         [module_path], [dir_path]
 
-    1b- other internal names: [global_reference], [syndef_name],
+    - 1b) other internal names: [global_reference], [syndef_name],
         [extended_global_reference], [global_dir_reference], ...
 
-    2- full, non ambiguous user names: [full_path]
+    - 2) full, non ambiguous user names: [full_path]
 
-    3- non necessarily full, possibly ambiguous user names: [reference]
-       and [qualid]
+    - 3) non necessarily full, possibly ambiguous user names: [reference]
+        and [qualid]
 *)
 
 (** Most functions in this module fall into one of the following categories:
-   {% \begin{%}itemize{% }%}
-   \item [push : visibility -> full_user_name -> object_reference -> unit]
+{ul {- [push : visibility -> full_user_name -> object_reference -> unit]
 
-   Registers the [object_reference] to be referred to by the
-   [full_user_name] (and its suffixes according to [visibility]).
-   [full_user_name] can either be a [full_path] or a [dir_path].
+     Registers the [object_reference] to be referred to by the
+     [full_user_name] (and its suffixes according to [visibility]).
+     [full_user_name] can either be a [full_path] or a [dir_path].
+   }
+   {- [exists : full_user_name -> bool]
 
-   \item [exists : full_user_name -> bool]
+     Is the [full_user_name] already atributed as an absolute user name
+     of some object?
+   }
+   {- [locate : qualid -> object_reference]
 
-   Is the [full_user_name] already atributed as an absolute user name
-   of some object?
+     Finds the object referred to by [qualid] or raises [Not_found]
+   }
+   {- [full_name : qualid -> full_user_name]
 
-   \item [locate : qualid -> object_reference]
+     Finds the full user name referred to by [qualid] or raises [Not_found]
+   }
+   {- [shortest_qualid_of : object_reference -> user_name]
 
-   Finds the object referred to by [qualid] or raises [Not_found]
-
-   \item [full_name : qualid -> full_user_name]
-
-   Finds the full user name referred to by [qualid] or raises [Not_found]
-
-   \item [shortest_qualid_of : object_reference -> user_name]
-
-   The [user_name] can be for example the shortest non ambiguous [qualid] or
-   the [full_user_name] or [identifier]. Such a function can also have a
-   local context argument.
-   {% \end{%}itemize{% }%}
+     The [user_name] can be for example the shortest non ambiguous [qualid] or
+     the [full_user_name] or [identifier]. Such a function can also have a
+     local context argument.}}
 *)
 
 
@@ -70,14 +67,12 @@ val error_global_constant_not_found_loc : loc -> qualid -> 'a
 (** {6 Register visibility of things } *)
 
 (** The visibility can be registered either
-   {% \begin{%}itemize{% }%}
 
-   \item for all suffixes not shorter then a given int -- when the
-   object is loaded inside a module -- or
+   - for all suffixes not shorter then a given int -- when the
+     object is loaded inside a module -- or
 
-   \item for a precise suffix, when the module containing (the module
+   - for a precise suffix, when the module containing (the module
    containing ...) the object is opened (imported)
-   {% \end{%}itemize{% }%}
 *)
 
 type visibility = Until of int | Exactly of int
@@ -138,7 +133,7 @@ val full_name_cci : qualid -> full_path
 val full_name_modtype : qualid -> full_path
 val full_name_module : qualid -> dir_path
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** Reverse lookup -- finding user names corresponding to the given
   internal name *)
 

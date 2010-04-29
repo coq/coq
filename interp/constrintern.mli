@@ -18,19 +18,17 @@ open Topconstr
 open Termops
 open Pretyping
 
-(** {6 Sect } *)
-(** Translation from front abstract syntax of term to untyped terms (rawconstr)
+(** Translation from front abstract syntax of term to untyped terms (rawconstr) *)
 
-   The translation performs:
+(** The translation performs:
 
    - resolution of names :
       - check all variables are bound
       - make absolute the references to global objets
    - resolution of symbolic notations using scopes
    - insert existential variables for implicit arguments
-*)
 
-(** To interpret implicits and arg scopes of recursive variables while
+   To interpret implicits and arg scopes of recursive variables while
    internalizing inductive types and recursive definitions, and also
    projection while typing records.
 

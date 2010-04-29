@@ -8,7 +8,7 @@ type reloc_info =
 
 type patch = reloc_info * int
 
-(** A virer *)
+(* A virer *)
 val subst_patch : Mod_subst.substitution -> patch -> patch
 
 type emitcodes

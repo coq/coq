@@ -13,7 +13,6 @@ open Nametab
 
 type discharged_hyps = full_path list
 
-(** {6 Sect } *)
 (** Discharged hypothesis. Here we store the discharged hypothesis of each 
     constant or inductive type declaration.                                *)
 

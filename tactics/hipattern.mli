@@ -14,7 +14,8 @@ open Evd
 open Pattern
 open Coqlib
 
-(** {6 Sect } *)
+(** High-order patterns *)
+
 (** Given a term with second-order variables in it,
    represented by Meta's, and possibly applied using SoApp
    terms, this function will perform second-order, binding-preserving,
@@ -34,7 +35,6 @@ open Coqlib
    intersection of the free-rels of the term and the current stack be
    contained in the arguments of the application *)
 
-(** {6 Sect } *)
 (** I implemented the following functions which test whether a term [t]
    is an inductive but non-recursive type, a general conjuction, a
    general disjunction, or a type with no constructors.

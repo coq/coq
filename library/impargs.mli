@@ -12,8 +12,10 @@ open Term
 open Environ
 open Nametab
 
-(** {6 Sect } *)
-(** Implicit arguments. Here we store the implicit arguments. Notice that we
+(** Implicit Arguments *)
+
+(** {6 ... } *)
+(** Here we store the implicit arguments. Notice that we
     are outside the kernel, which knows nothing about implicit arguments. *)
 
 val make_implicit_args : bool -> unit
@@ -33,7 +35,7 @@ val is_maximal_implicit_args : unit -> bool
 type implicits_flags
 val with_implicits : implicits_flags -> ('a -> 'b) -> 'a -> 'b
 
-(** {6 Sect } *)
+(** {6 ... } *)
 (** An [implicits_list] is a list of positions telling which arguments
     of a reference can be automatically infered *)
 
