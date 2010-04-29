@@ -1,23 +1,23 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(* Universes. *)
+(** Universes. *)
 
 type universe
 
-(* The universes hierarchy: Type 0- = Prop <= Type 0 = Set <= Type 1 <= ... *)
-(* Typing of universes: Type 0-, Type 0 : Type 1; Type i : Type (i+1) if i>0 *)
+(** The universes hierarchy: Type 0- = Prop <= Type 0 = Set <= Type 1 <= ... 
+   Typing of universes: Type 0-, Type 0 : Type 1; Type i : Type (i+1) if i>0 *)
 
-val type0m_univ : universe  (* image of Prop in the universes hierarchy *)
-val type0_univ : universe  (* image of Set in the universes hierarchy *)
-val type1_univ : universe  (* the universe of the type of Prop/Set *)
+val type0m_univ : universe  (** image of Prop in the universes hierarchy *)
+val type0_univ : universe  (** image of Set in the universes hierarchy *)
+val type1_univ : universe  (** the universe of the type of Prop/Set *)
 
 val make_univ : Names.dir_path * int -> universe
 
@@ -25,13 +25,13 @@ val is_type0_univ : universe -> bool
 val is_type0m_univ : universe -> bool
 val is_univ_variable : universe -> bool
 
-(* The type of a universe *)
+(** The type of a universe *)
 val super : universe -> universe
 
-(* The max of 2 universes *)
+(** The max of 2 universes *)
 val sup   : universe -> universe -> universe
 
-(*s Graphs of universes. *)
+(** {6 Graphs of universes. } *)
 
 type universes
 
@@ -39,10 +39,10 @@ type check_function = universes -> universe -> universe -> bool
 val check_geq : check_function
 val check_eq : check_function
 
-(* The empty graph of universes *)
+(** The empty graph of universes *)
 val initial_universes : universes
 
-(*s Constraints. *)
+(** {6 Constraints. } *)
 
 module Constraint : Set.S
 
@@ -53,7 +53,8 @@ type constraint_function = universe -> universe -> constraints -> constraints
 val enforce_geq : constraint_function
 val enforce_eq : constraint_function
 
-(*s Merge of constraints in a universes graph.
+(** {6 Sect } *)
+(** Merge of constraints in a universes graph.
   The function [merge_constraints] merges a set of constraints in a given
   universes graph. It raises the exception [UniverseInconsistency] if the
   constraints are not satisfiable. *)
@@ -64,7 +65,7 @@ exception UniverseInconsistency of order_request * universe * universe
 
 val merge_constraints : constraints -> universes -> universes
 
-(*s Support for sort-polymorphic inductive types *)
+(** {6 Support for sort-polymorphic inductive types } *)
 
 val fresh_local_univ : unit -> universe
 
@@ -78,13 +79,13 @@ val subst_large_constraints :
 
 val no_upper_constraints : universe -> constraints -> bool
 
-(*s Pretty-printing of universes. *)
+(** {6 Pretty-printing of universes. } *)
 
 val pr_uni : universe -> Pp.std_ppcmds
 val pr_universes : universes -> Pp.std_ppcmds
 val pr_constraints : constraints -> Pp.std_ppcmds
 
-(*s Dumping to a file *)
+(** {6 Dumping to a file } *)
 
 val dump_universes : out_channel -> universes -> unit
 

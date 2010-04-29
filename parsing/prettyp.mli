@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Pp
 open Util
 open Names
@@ -19,9 +18,8 @@ open Reductionops
 open Libnames
 open Nametab
 open Genarg
-(*i*)
 
-(* A Pretty-Printer for the Calculus of Inductive Constructions. *)
+(** A Pretty-Printer for the Calculus of Inductive Constructions. *)
 
 val assumptions_for_print : name list -> Termops.names_context
 
@@ -38,7 +36,8 @@ val print_judgment : env -> unsafe_judgment -> std_ppcmds
 val print_safe_judgment : env -> Safe_typing.judgment -> std_ppcmds
 val print_eval :
   reduction_function -> env -> Evd.evar_map -> Topconstr.constr_expr -> unsafe_judgment -> std_ppcmds
-(* This function is exported for the graphical user-interface pcoq *)
+
+(** This function is exported for the graphical user-interface pcoq *)
 val build_inductive : mutual_inductive -> int ->
   global_reference * rel_context * types * identifier array * types array
 val print_name : reference or_by_notation -> std_ppcmds
@@ -52,21 +51,21 @@ val print_extraction : unit -> std_ppcmds
 val print_extracted_vars : unit -> std_ppcmds
 i*)
 
-(* Pretty-printing functions for classes and coercions *)
+(** Pretty-printing functions for classes and coercions *)
 val print_graph : unit -> std_ppcmds
 val print_classes : unit -> std_ppcmds
 val print_coercions : unit -> std_ppcmds
 val print_path_between : Classops.cl_typ -> Classops.cl_typ -> std_ppcmds
 val print_canonical_projections : unit -> std_ppcmds
 
-(* Pretty-printing functions for type classes and instances *)
+(** Pretty-printing functions for type classes and instances *)
 val print_typeclasses : unit -> std_ppcmds
 val print_instances : global_reference -> std_ppcmds
 val print_all_instances : unit -> std_ppcmds
 
 val inspect : int -> std_ppcmds
 
-(* Locate *)
+(** Locate *)
 val print_located_qualid : reference -> std_ppcmds
 
 type object_pr = {

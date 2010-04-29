@@ -1,14 +1,14 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
-(* $Id:$ *)
+(** {% $ %}Id:{% $ %} *)
 
-(* Generic discrimination net implementation over recursive
+(** Generic discrimination net implementation over recursive
    types. This module implements a association data structure similar
    to tries but working on any types (not just lists). It is a term
    indexing datastructure, a generalization of the discrimination nets
@@ -43,27 +43,27 @@
 
 *)
 
-(* datatype you want to build a dnet on *)
+(** datatype you want to build a dnet on *)
 module type Datatype =
 sig
-  (* parametric datatype. ['a] is morally the recursive argument *)
+  (** parametric datatype. ['a] is morally the recursive argument *)
   type 'a t
 
-  (* non-recursive mapping of subterms *)
+  (** non-recursive mapping of subterms *)
   val map : ('a -> 'b) -> 'a t -> 'b t
   val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
 
-  (* non-recursive folding of subterms *)
+  (** non-recursive folding of subterms *)
   val fold : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
   val fold2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b t -> 'c t -> 'a
 
-  (* comparison of constructors *)
+  (** comparison of constructors *)
   val compare : unit t -> unit t -> int
 
-  (* for each constructor, is it not-parametric on 'a? *)
+  (** for each constructor, is it not-parametric on 'a? *)
   val terminal : 'a t -> bool
 
-  (* [choose f w] applies f on ONE of the subterms of w *)
+  (** [choose f w] applies f on ONE of the subterms of w *)
   val choose : ('a -> 'b) -> 'a t -> 'b
 end
 
@@ -71,19 +71,19 @@ module type S =
 sig
   type t
 
-  (* provided identifier type *)
+  (** provided identifier type *)
   type ident
 
-  (* provided metavariable type *)
+  (** provided metavariable type *)
   type meta
 
-  (* provided parametrized datastructure *)
+  (** provided parametrized datastructure *)
   type 'a structure
 
-  (* returned sets of solutions *)
+  (** returned sets of solutions *)
   module Idset : Set.S with type elt=ident
 
-  (* a pattern is a term where each node can be a unification
+  (** a pattern is a term where each node can be a unification
      variable *)
   type 'a pattern =
     | Term of 'a
@@ -93,13 +93,13 @@ sig
 
   val empty : t
 
-  (* [add t w i] adds a new association (w,i) in t. *)
+  (** [add t w i] adds a new association (w,i) in t. *)
   val add : t -> term_pattern -> ident -> t
 
-  (* [find_all t] returns all identifiers contained in t. *)
+  (** [find_all t] returns all identifiers contained in t. *)
   val find_all : t -> Idset.t
 
-  (* [fold_pattern f acc p dn] folds f on each meta of p, passing the
+  (** [fold_pattern f acc p dn] folds f on each meta of p, passing the
      meta and the sub-dnet under it. The result includes:
      - Some set if identifiers were gathered on the leafs of the term
      - None if the pattern contains no leaf (only Metas at the leafs).
@@ -107,15 +107,15 @@ sig
   val fold_pattern :
     ('a -> (Idset.t * meta * t) -> 'a) -> 'a -> term_pattern -> t -> Idset.t option * 'a
 
-  (* [find_match p t] returns identifiers of all terms matching p in
+  (** [find_match p t] returns identifiers of all terms matching p in
      t. *)
   val find_match : term_pattern -> t -> Idset.t
 
-  (* set operations on dnets *)
+  (** set operations on dnets *)
   val inter : t -> t -> t
   val union : t -> t -> t
 
-  (* apply a function on each identifier and node of terms in a dnet *)
+  (** apply a function on each identifier and node of terms in a dnet *)
   val map : (ident -> ident) -> (unit structure -> unit structure) -> t -> t
 end
 

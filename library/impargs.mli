@@ -1,22 +1,21 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Names
 open Libnames
 open Term
 open Environ
 open Nametab
-(*i*)
 
-(*s Implicit arguments. Here we store the implicit arguments. Notice that we
+(** {6 Sect } *)
+(** Implicit arguments. Here we store the implicit arguments. Notice that we
     are outside the kernel, which knows nothing about implicit arguments. *)
 
 val make_implicit_args : bool -> unit
@@ -36,7 +35,8 @@ val is_maximal_implicit_args : unit -> bool
 type implicits_flags
 val with_implicits : implicits_flags -> ('a -> 'b) -> 'a -> 'b
 
-(*s An [implicits_list] is a list of positions telling which arguments
+(** {6 Sect } *)
+(** An [implicits_list] is a list of positions telling which arguments
     of a reference can be automatically infered *)
 
 
@@ -61,11 +61,11 @@ val force_inference_of : implicit_status -> bool
 
 val positions_of_implicits : implicits_list -> int list
 
-(* Computation of the positions of arguments automatically inferable
+(** Computation of the positions of arguments automatically inferable
    for an object of the given type in the given env *)
 val compute_implicits : env -> types -> implicits_list
 
-(* A [manual_explicitation] is a tuple of a positional or named explicitation with
+(** A [manual_explicitation] is a tuple of a positional or named explicitation with
    maximal insertion, force inference and force usage flags. Forcing usage makes
    the argument implicit even if the automatic inference considers it not inferable. *)
 type manual_explicitation = Topconstr.explicitation * (bool * bool * bool)
@@ -73,7 +73,7 @@ type manual_explicitation = Topconstr.explicitation * (bool * bool * bool)
 val compute_implicits_with_manual : env -> types -> bool ->
   manual_explicitation list -> implicits_list
 
-(*s Computation of implicits (done using the global environment). *)
+(** {6 Computation of implicits (done using the global environment). } *)
 
 val declare_var_implicits : variable -> unit
 val declare_constant_implicits : constant -> unit
@@ -81,7 +81,7 @@ val declare_mib_implicits : mutual_inductive -> unit
 
 val declare_implicits : bool -> global_reference -> unit
 
-(* [declare_manual_implicits local ref enriching l]
+(** [declare_manual_implicits local ref enriching l]
    Manual declaration of which arguments are expected implicit.
    If not set, we decide if it should enrich by automatically inferd
    implicits depending on the current state.
@@ -90,7 +90,7 @@ val declare_implicits : bool -> global_reference -> unit
 val declare_manual_implicits : bool -> global_reference -> ?enriching:bool ->
   manual_explicitation list -> unit
 
-(* If the list is empty, do nothing, otherwise declare the implicits. *)
+(** If the list is empty, do nothing, otherwise declare the implicits. *)
 
 val maybe_declare_manual_implicits : bool -> global_reference -> ?enriching:bool ->
   manual_explicitation list -> unit

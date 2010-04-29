@@ -12,7 +12,7 @@ sig
     
   val empty : t
       
-  (* Work on labels, not on paths. *)
+  (** Work on labels, not on paths. *)
 
   val map : t -> Y.t -> t
 
@@ -22,7 +22,7 @@ sig
 
   val in_dom : t -> Y.t -> bool
 
-  (* Work on paths, not on labels. *)
+  (** Work on paths, not on labels. *)
 
   val add : t -> Y.t list * X.t -> t
   

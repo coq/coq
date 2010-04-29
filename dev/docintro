@@ -1,0 +1,50 @@
+{!indexlist}
+
+This is Coq, a proof assistant for the Calculus of Inductive Construction.
+This document describes the implementation of Coq.
+It has been automatically generated from the source of
+Coq using ocamldoc, a literate programming tool for
+Objective Caml  freely available at http://caml.inria.fr/.
+The source files are organized in several directories ordered like that:
+
+{ol {- Utility libraries : lib
+
+describes the various utility libraries used in the code
+of Coq.}
+{- Kernel : kernel
+
+describes the \Coq\ kernel, which is a type checker for the Calculus
+of Inductive Construction.}
+{- Library : library
+
+describes the Coq library, which is made of two parts:
+- a general mechanism to keep a trace of all operations and of
+    the state of the system, with backtrack capabilities;
+- a global environment for the CCI, with functions to export and 
+    import compiled modules.
+
+}
+{- Pretyping : pretyping
+
+}
+{- Front abstract syntax of terms : interp
+
+describes the translation from Coq context-dependent
+front abstract syntax of terms {v front v} to and from the
+context-free, untyped, raw form of constructions {v rawconstr v}.}
+{- Parsers and printers : parsing
+
+describes the implementation of the \Coq\ parsers and printers.}
+{- Proof engine : proofs
+
+describes the Coq proof engine, which is also called
+the ``refiner'', since it provides a way to build terms by successive
+refining steps. Those steps are either primitive rules or higher-level
+tactics.}
+{- Tacticts : tactics
+
+describes the Coq main tactics.}
+{- Toplevel : toplevel
+
+describes the highest modules of the Coq system.}
+}

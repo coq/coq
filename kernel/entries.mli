@@ -1,43 +1,40 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Names
 open Univ
 open Term
 open Sign
-(*i*)
 
-(* This module defines the entry types for global declarations. This
+(** This module defines the entry types for global declarations. This
    information is entered in the environments. This includes global
    constants/axioms, mutual inductive definitions, modules and module
    types *)
 
 
-(*s Local entries *)
+(** {6 Local entries } *)
 
 type local_entry =
   | LocalDef of constr
   | LocalAssum of constr
 
 
-(*s Declaration of inductive types. *)
+(** {6 Declaration of inductive types. } *)
 
-(* Assume the following definition in concrete syntax:
-\begin{verbatim}
-Inductive I1 (x1:X1) ... (xn:Xn) : A1 := c11 : T11 | ... | c1n1 : T1n1
+(** Assume the following definition in concrete syntax:
+{v Inductive I1 (x1:X1) ... (xn:Xn) : A1 := c11 : T11 | ... | c1n1 : T1n1
 ...
-with      Ip (x1:X1) ... (xn:Xn) : Ap := cp1 : Tp1 | ... | cpnp : Tpnp.
-\end{verbatim}
-then, in $i^{th}$ block, [mind_entry_params] is [[xn:Xn;...;x1:X1]];
-[mind_entry_arity] is [Ai], defined in context [[[x1:X1;...;xn:Xn]];
+with      Ip (x1:X1) ... (xn:Xn) : Ap := cp1 : Tp1 | ... | cpnp : Tpnp. v}
+
+then, in i{^ th} block, [mind_entry_params] is [xn:Xn;...;x1:X1];
+[mind_entry_arity] is [Ai], defined in context [x1:X1;...;xn:Xn];
 [mind_entry_lc] is [Ti1;...;Tini], defined in context [[A'1;...;A'p;x1:X1;...;xn:Xn]] where [A'i] is [Ai] generalized over [[x1:X1;...;xn:Xn]].
 *)
 
@@ -53,7 +50,7 @@ type mutual_inductive_entry = {
   mind_entry_params : (identifier * local_entry) list;
   mind_entry_inds : one_inductive_entry list }
 
-(*s Constants (Definition/Axiom) *)
+(** {6 Constants (Definition/Axiom) } *)
 
 type definition_entry = {
   const_entry_body   : constr;
@@ -67,7 +64,7 @@ type constant_entry =
   | DefinitionEntry of definition_entry
   | ParameterEntry of parameter_entry
 
-(*s Modules *)
+(** {6 Modules } *)
 
 
 type specification_entry = 

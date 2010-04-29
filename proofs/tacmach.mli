@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Names
 open Term
 open Sign
@@ -21,9 +20,8 @@ open Redexpr
 open Tacexpr
 open Rawterm
 open Pattern
-(*i*)
 
-(* Operations for handling terms under a local typing context. *)
+(** Operations for handling terms under a local typing context. *)
 
 type 'a sigma   = 'a Evd.sigma;;
 type tactic     = Proof_type.tactic;;
@@ -89,7 +87,7 @@ val pf_matches     : goal sigma -> constr_pattern -> constr -> patvar_map
 val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 
 
-(*s The most primitive tactics. *)
+(** {6 The most primitive tactics. } *)
 
 val refiner                   : rule -> tactic
 val introduction_no_check     : identifier -> tactic
@@ -108,7 +106,7 @@ val mutual_fix      :
   identifier -> int -> (identifier * int * constr) list -> int -> tactic
 val mutual_cofix    : identifier -> (identifier * constr) list -> int -> tactic
 
-(*s The most primitive tactics with consistency and type checking *)
+(** {6 The most primitive tactics with consistency and type checking } *)
 
 val introduction     : identifier -> tactic
 val internal_cut     : bool -> identifier -> types -> tactic
@@ -121,7 +119,7 @@ val thin_body        : identifier list -> tactic
 val move_hyp         : bool -> identifier -> identifier move_location -> tactic
 val rename_hyp       : (identifier*identifier) list -> tactic
 
-(*s Tactics handling a list of goals. *)
+(** {6 Tactics handling a list of goals. } *)
 
 type validation_list = proof_tree list -> proof_tree list
 
@@ -135,6 +133,6 @@ val tactic_list_tactic : tactic_list -> tactic
 val tclFIRSTLIST       : tactic_list list -> tactic_list
 val tclIDTAC_list      : tactic_list
 
-(*s Pretty-printing functions (debug only). *)
+(** {6 Pretty-printing functions (debug only). } *)
 val pr_gls    : goal sigma -> Pp.std_ppcmds
 val pr_glls   : goal list sigma -> Pp.std_ppcmds

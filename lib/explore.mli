@@ -1,16 +1,17 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*s Search strategies. *)
+(** {6 Search strategies. } *)
 
-(*s A search problem implements the following signature [SearchProblem].
+(** {6 Sect } *)
+(** A search problem implements the following signature [SearchProblem].
     [state] is the type of states of the search tree.
     [branching] is the branching function; if [branching s] returns an
     empty list, then search from [s] is aborted; successors of [s] are
@@ -32,7 +33,8 @@ module type SearchProblem = sig
 
 end
 
-(*s Functor [Make] returns some search functions given a search problem.
+(** {6 Sect } *)
+(** Functor [Make] returns some search functions given a search problem.
     Search functions raise [Not_found] if no success is found.
     States are always visited in the order they appear in the
     output of [branching] (whatever the search method is).

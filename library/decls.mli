@@ -1,10 +1,10 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
@@ -20,7 +20,7 @@ open Decl_kinds
 (** Registration and access to the table of variable *)
 
 type variable_data =
-    dir_path * bool (* opacity *) * Univ.constraints * logical_kind
+    dir_path * bool (** opacity *) * Univ.constraints * logical_kind
 
 val add_variable_data : variable -> variable_data -> unit
 val variable_path : variable -> dir_path

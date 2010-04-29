@@ -1,18 +1,16 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Pp
-(*i*)
 
-(* Arbitrary large integer numbers *)
+(** Arbitrary large integer numbers *)
 
 type bigint
 
@@ -23,7 +21,7 @@ val zero : bigint
 val one : bigint
 val two : bigint
 
-val div2_with_rest : bigint -> bigint * bool (* true=odd; false=even *)
+val div2_with_rest : bigint -> bigint * bool (** true=odd; false=even *)
 val add_1 : bigint -> bigint
 val sub_1 : bigint -> bigint
 val mult_2 : bigint -> bigint

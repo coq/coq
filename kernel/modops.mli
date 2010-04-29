@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Util
 open Names
 open Univ
@@ -16,9 +15,8 @@ open Environ
 open Declarations
 open Entries
 open Mod_subst
-(*i*)
 
-(* Various operations on modules and module types *)
+(** Various operations on modules and module types *)
 
 
 val module_body_of_type : module_path -> module_type_body  -> module_body 
@@ -36,7 +34,7 @@ val subst_signature : substitution -> structure_body -> structure_body
 val add_signature :
   module_path -> structure_body -> delta_resolver -> env -> env
 
-(* adds a module and its components, but not the constraints *)
+(** adds a module and its components, but not the constraints *)
 val add_module : module_body -> env -> env
 
 val check_modpath_equiv : env -> module_path -> module_path -> unit

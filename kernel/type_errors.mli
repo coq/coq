@@ -1,30 +1,28 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Names
 open Term
 open Environ
-(*i*)
 
-(* Type errors. \label{typeerrors} *)
+(** Type errors. {% \label{%}typeerrors{% }%} *)
 
 (*i Rem: NotEnoughAbstractionInFixBody should only occur with "/i" Fix
     notation i*)
 type guard_error =
-  (* Fixpoints *)
+  (** Fixpoints *)
   | NotEnoughAbstractionInFixBody
   | RecursionNotOnInductiveType of constr
   | RecursionOnIllegalTerm of int * constr * int list * int list
   | NotEnoughArgumentsForFixCall of int
-  (* CoFixpoints *)
+  (** CoFixpoints *)
   | CodomainNotInductiveType of constr
   | NestedRecursiveOccurrences
   | UnguardedRecursiveCall of constr

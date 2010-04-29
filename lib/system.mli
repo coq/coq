@@ -1,14 +1,15 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*s Files and load paths. Load path entries remember the original root
+(** {6 Sect } *)
+(** Files and load paths. Load path entries remember the original root
     given by the user. For efficiency, we keep the full path (field
     [directory]), the root path and the path relative to the root. *)
 
@@ -39,7 +40,8 @@ val exists_dir : string -> bool
 val find_file_in_path :
   ?warn:bool -> load_path -> string -> physical_path * string
 
-(*s Generic input and output functions, parameterized by a magic number
+(** {6 Sect } *)
+(** Generic input and output functions, parameterized by a magic number
   and a suffix. The intern functions raise the exception [Bad_magic_number]
   when the check fails, with the full file name. *)
 
@@ -54,11 +56,12 @@ val raw_extern_intern : int -> string ->
 val extern_intern : ?warn:bool -> int -> string ->
   (string -> 'a -> unit) * (load_path -> string -> 'a)
 
-(*s Sending/receiving once with external executable *)
+(** {6 Sending/receiving once with external executable } *)
 
 val connect : (out_channel -> unit) -> (in_channel -> 'a) -> string -> 'a
 
-(*s [run_command converter f com] launches command [com], and returns
+(** {6 Sect } *)
+(** [run_command converter f com] launches command [com], and returns
     the contents of stdout and stderr that have been processed with
     [converter]; the processed contents of stdout and stderr is also
     passed to [f] *)
@@ -68,11 +71,11 @@ val run_command : (string -> string) -> (string -> unit) -> string ->
 
 val search_exe_in_path : string -> string option
 
-(*s Time stamps. *)
+(** {6 Time stamps.} *)
 
 type time
 
 val process_time : unit -> float * float
 val get_time : unit -> time
-val time_difference : time -> time -> float (* in seconds *)
+val time_difference : time -> time -> float (** in seconds *)
 val fmt_time_difference : time -> time -> Pp.std_ppcmds

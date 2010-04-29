@@ -1,25 +1,25 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Names
 open Libnames
 open Nametab
 open Term
 open Pattern
-(*i*)
 
-(*s This module collects the global references, constructions and
+(** {6 Sect } *)
+(** This module collects the global references, constructions and
     patterns of the standard library used in ocaml files *)
 
-(*s [find_reference caller_message [dir;subdir;...] s] returns a global
+(** {6 Sect } *)
+(** [find_reference caller_message [dir;subdir;...] s] returns a global
    reference to the name dir.subdir.(...).s; the corresponding module
    must have been required or in the process of being compiled so that
    it must be used lazyly; it raises an anomaly with the given message
@@ -29,39 +29,39 @@ type message = string
 
 val find_reference : message -> string list -> string -> global_reference
 
-(* [coq_reference caller_message [dir;subdir;...] s] returns a
+(** [coq_reference caller_message [dir;subdir;...] s] returns a
    global reference to the name Coq.dir.subdir.(...).s *)
 
 val coq_reference : message -> string list -> string -> global_reference
 
-(* idem but return a term *)
+(** idem but return a term *)
 
 val coq_constant : message -> string list -> string -> constr
 
-(* Synonyms of [coq_constant] and [coq_reference] *)
+(** Synonyms of [coq_constant] and [coq_reference] *)
 
 val gen_constant : message -> string list -> string -> constr
 val gen_reference :  message -> string list -> string -> global_reference
 
-(* Search in several modules (not prefixed by "Coq") *)
+(** Search in several modules (not prefixed by "Coq") *)
 val gen_constant_in_modules : string->string list list-> string -> constr
 val arith_modules : string list list
 val zarith_base_modules : string list list
 val init_modules : string list list
 
-(* For tactics/commands requiring vernacular libraries *)
+(** For tactics/commands requiring vernacular libraries *)
 val check_required_library : string list -> unit
 
-(*s Global references *)
+(** {6 Global references } *)
 
-(* Modules *)
+(** Modules *)
 val logic_module : dir_path
 val logic_type_module : dir_path
 
 val datatypes_module_name : string list
 val logic_module_name : string list
 
-(* Natural numbers *)
+(** Natural numbers *)
 val nat_path : full_path
 val glob_nat : global_reference
 val path_of_O : constructor
@@ -69,7 +69,7 @@ val path_of_S : constructor
 val glob_O : global_reference
 val glob_S : global_reference
 
-(* Booleans *)
+(** Booleans *)
 val glob_bool : global_reference
 val path_of_true : constructor
 val path_of_false : constructor
@@ -77,12 +77,13 @@ val glob_true : global_reference
 val glob_false : global_reference
 
 
-(* Equality *)
+(** Equality *)
 val glob_eq : global_reference
 val glob_identity : global_reference
 val glob_jmeq : global_reference
 
-(*s Constructions and patterns related to Coq initial state are unknown
+(** {6 Sect } *)
+(** Constructions and patterns related to Coq initial state are unknown
    at compile time. Therefore, we can only provide methods to build
    them at runtime. This is the purpose of the [constr delayed] and
    [constr_pattern delayed] types. Objects of this time needs to be
@@ -96,7 +97,7 @@ type coq_bool_data = {
   andb_true_intro : constr}
 val build_bool_type : coq_bool_data delayed
 
-(*s For Equality tactics *)
+(** {6 For Equality tactics } *)
 type coq_sigma_data = {
   proj1 : constr;
   proj2 : constr;
@@ -106,7 +107,8 @@ type coq_sigma_data = {
 
 val build_sigma_set : coq_sigma_data delayed
 val build_sigma_type : coq_sigma_data delayed
-(* Non-dependent pairs in Set from Datatypes *)
+
+(** Non-dependent pairs in Set from Datatypes *)
 val build_prod : coq_sigma_data delayed
 
 type coq_eq_data = {
@@ -121,17 +123,19 @@ val build_coq_eq_data : coq_eq_data delayed
 val build_coq_identity_data : coq_eq_data delayed
 val build_coq_jmeq_data : coq_eq_data delayed
 
-val build_coq_eq       : constr delayed (* = [(build_coq_eq_data()).eq] *)
-val build_coq_eq_refl  : constr delayed (* = [(build_coq_eq_data()).refl] *)
-val build_coq_eq_sym   : constr delayed (* = [(build_coq_eq_data()).sym] *)
+val build_coq_eq       : constr delayed (** = [(build_coq_eq_data()).eq] *)
+val build_coq_eq_refl  : constr delayed (** = [(build_coq_eq_data()).refl] *)
+val build_coq_eq_sym   : constr delayed (** = [(build_coq_eq_data()).sym] *)
 val build_coq_f_equal2 : constr delayed
 
-(* Data needed for discriminate and injection *)
+(** Data needed for discriminate and injection *)
 
 type coq_inversion_data = {
-  inv_eq   : constr; (* : forall params, t -> Prop *)
-  inv_ind  : constr; (* : forall params P y, eq params y -> P y *)
-  inv_congr: constr  (* : forall params B (f:t->B) y, eq params y -> f c=f y *)
+  inv_eq   : constr; (** : forall params, args -> Prop *)
+  inv_ind  : constr; (** : forall params P (H : P params) args, eq params args 
+			 ->  P args *)
+  inv_congr: constr  (** : forall params B (f:t->B) args, eq params args -> 
+			 f params = f args *)
 }
 
 val build_coq_inversion_eq_data : coq_inversion_data delayed
@@ -139,21 +143,22 @@ val build_coq_inversion_identity_data : coq_inversion_data delayed
 val build_coq_inversion_jmeq_data : coq_inversion_data delayed
 val build_coq_inversion_eq_true_data : coq_inversion_data delayed
 
-(* Specif *)
+(** Specif *)
 val build_coq_sumbool : constr delayed
 
-(*s Connectives *)
-(* The False proposition *)
+(** {6 Sect } *)
+(** Connectives 
+   The False proposition *)
 val build_coq_False : constr delayed
 
-(* The True proposition and its unique proof *)
+(** The True proposition and its unique proof *)
 val build_coq_True : constr delayed
 val build_coq_I : constr delayed
 
-(* Negation *)
+(** Negation *)
 val build_coq_not : constr delayed
 
-(* Conjunction *)
+(** Conjunction *)
 val build_coq_and : constr delayed
 val build_coq_conj : constr delayed
 val build_coq_iff : constr delayed
@@ -161,10 +166,10 @@ val build_coq_iff : constr delayed
 val build_coq_iff_left_proj : constr delayed
 val build_coq_iff_right_proj : constr delayed
 
-(* Disjunction *)
+(** Disjunction *)
 val build_coq_or : constr delayed
 
-(* Existential quantifier *)
+(** Existential quantifier *)
 val build_coq_ex : constr delayed
 
 val coq_eq_ref : global_reference lazy_t

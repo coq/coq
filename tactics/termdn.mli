@@ -1,25 +1,23 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Term
 open Pattern
 open Libnames
 open Names
-(*i*)
 
-(* Discrimination nets of terms. *)
+(** Discrimination nets of terms. *)
 
-(* This module registers actions (typically tactics) mapped to patterns *)
+(** This module registers actions (typically tactics) mapped to patterns *)
 
-(* Patterns are stocked linearly as the list of its node in prefix
+(** Patterns are stocked linearly as the list of its node in prefix
 order in such a way patterns having the same prefix have this common
 prefix shared and the seek for the action associated to the patterns
 that a term matches are found in time proportional to the maximal
@@ -38,21 +36,21 @@ sig
     
   val create : unit -> t
     
-  (* [add t (c,a)] adds to table [t] pattern [c] associated to action [act] *)
+  (** [add t (c,a)] adds to table [t] pattern [c] associated to action [act] *)
     
   val add : t -> transparent_state -> (constr_pattern * Z.t) -> t
     
   val rmv : t -> transparent_state -> (constr_pattern * Z.t) -> t
     
-  (* [lookup t c] looks for patterns (with their action) matching term [c] *)
+  (** [lookup t c] looks for patterns (with their action) matching term [c] *)
     
   val lookup : t -> transparent_state -> constr -> (constr_pattern * Z.t) list
     
   val app : ((constr_pattern * Z.t) -> unit) -> t -> unit
 
     
-  (*i*)
-  (* These are for Nbtermdn *)
+  (**/**)
+  (** These are for Nbtermdn *)
  
   type term_label = 
     | GRLabel of global_reference
@@ -68,5 +66,5 @@ sig
   val constr_pat_discr : constr_pattern -> (term_label * constr_pattern list) option
   val constr_val_discr : constr -> (term_label * constr list) lookup_res
     
-(*i*)
+(**/**)
 end

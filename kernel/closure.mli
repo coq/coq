@@ -1,28 +1,27 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Pp
 open Names
 open Term
 open Environ
 open Esubst
-(*i*)
 
-(* Flags for profiling reductions. *)
+(** Flags for profiling reductions. *)
 val stats : bool ref
 val share : bool ref
 
 val with_stats: 'a Lazy.t -> 'a
 
-(*s Delta implies all consts (both global (= by
+(** {6 Sect } *)
+(** Delta implies all consts (both global (= by
   [kernel_name]) and local (= by [Rel] or [Var])), all evars, and letin's.
   Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of
   a LetIn expression is Letin reduction *)
@@ -32,12 +31,12 @@ val with_stats: 'a Lazy.t -> 'a
 val all_opaque      : transparent_state
 val all_transparent : transparent_state
 
-(* Sets of reduction kinds. *)
+(** Sets of reduction kinds. *)
 module type RedFlagsSig = sig
   type reds
   type red_kind
 
-  (* The different kinds of reduction *)
+  (** The different kinds of reduction *)
   val fBETA : red_kind
   val fDELTA : red_kind
   val fIOTA : red_kind
@@ -45,25 +44,25 @@ module type RedFlagsSig = sig
   val fCONST : constant -> red_kind
   val fVAR : identifier -> red_kind
 
-  (* No reduction at all *)
+  (** No reduction at all *)
   val no_red : reds
 
-  (* Adds a reduction kind to a set *)
+  (** Adds a reduction kind to a set *)
   val red_add : reds -> red_kind -> reds
 
-  (* Removes a reduction kind to a set *)
+  (** Removes a reduction kind to a set *)
   val red_sub : reds -> red_kind -> reds
 
-  (* Adds a reduction kind to a set *)
+  (** Adds a reduction kind to a set *)
   val red_add_transparent : reds -> transparent_state -> reds
 
-  (* Build a reduction set from scratch = iter [red_add] on [no_red] *)
+  (** Build a reduction set from scratch = iter [red_add] on [no_red] *)
   val mkflags : red_kind list -> reds
 
-  (* Tests if a reduction kind is set *)
+  (** Tests if a reduction kind is set *)
   val red_set : reds -> red_kind -> bool
 
-  (* Gives the constant list *)
+  (** Gives the constant list *)
   val red_get_const : reds -> bool * evaluable_global_reference list
 end
 
@@ -89,19 +88,19 @@ val create: ('a infos -> constr -> 'a) -> reds -> env ->
   (existential -> constr option) -> 'a infos
 val evar_value : 'a infos -> existential -> constr option
 
-(************************************************************************)
-(*s Lazy reduction. *)
+(***********************************************************************
+  s Lazy reduction. *)
 
-(* [fconstr] is the type of frozen constr *)
+(** [fconstr] is the type of frozen constr *)
 
 type fconstr
 
-(* [fconstr] can be accessed by using the function [fterm_of] and by
+(** [fconstr] can be accessed by using the function [fterm_of] and by
    matching on type [fterm] *)
 
 type fterm =
   | FRel of int
-  | FAtom of constr (* Metas and Sorts *)
+  | FAtom of constr (** Metas and Sorts *)
   | FCast of fconstr * cast_kind * fconstr
   | FFlex of table_key
   | FInd of inductive
@@ -118,8 +117,8 @@ type fterm =
   | FCLOS of constr * fconstr subs
   | FLOCKED
 
-(************************************************************************)
-(*s A [stack] is a context of arguments, arguments are pushed by
+(***********************************************************************
+  s A [stack] is a context of arguments, arguments are pushed by
    [append_stack] one array at a time but popped with [decomp_stack]
    one by one *)
 
@@ -143,12 +142,13 @@ val stack_tail : int -> stack -> stack
 val stack_nth : stack -> int -> fconstr
 val zip_term : (fconstr -> constr) -> constr -> stack -> constr
 
-(* To lazy reduce a constr, create a [clos_infos] with
+(** To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
    a reduction function *)
 
 val inject : constr -> fconstr
-(* mk_atom: prevents a term from being evaluated *)
+
+(** mk_atom: prevents a term from being evaluated *)
 val mk_atom : constr -> fconstr
 
 val fterm_of : fconstr -> fterm
@@ -156,33 +156,33 @@ val term_of_fconstr : fconstr -> constr
 val destFLambda :
   (fconstr subs -> constr -> fconstr) -> fconstr -> name * fconstr * fconstr
 
-(* Global and local constant cache *)
+(** Global and local constant cache *)
 type clos_infos
 val create_clos_infos :
   ?evars:(existential->constr option) -> reds -> env -> clos_infos
 
-(* Reduction function *)
+(** Reduction function *)
 
-(* [norm_val] is for strong normalization *)
+(** [norm_val] is for strong normalization *)
 val norm_val : clos_infos -> fconstr -> constr
 
-(* [whd_val] is for weak head normalization *)
+(** [whd_val] is for weak head normalization *)
 val whd_val : clos_infos -> fconstr -> constr
 
-(* [whd_stack] performs weak head normalization in a given stack. It
+(** [whd_stack] performs weak head normalization in a given stack. It
    stops whenever a reduction is blocked. *)
 val whd_stack :
   clos_infos -> fconstr -> stack -> fconstr * stack
 
-(* Conversion auxiliary functions to do step by step normalisation *)
+(** Conversion auxiliary functions to do step by step normalisation *)
 
-(* [unfold_reference] unfolds references in a [fconstr] *)
+(** [unfold_reference] unfolds references in a [fconstr] *)
 val unfold_reference : clos_infos -> table_key -> fconstr option
 
 val eq_table_key : table_key -> table_key -> bool
 
-(************************************************************************)
-(*i This is for lazy debug *)
+(***********************************************************************
+  i This is for lazy debug *)
 
 val lift_fconstr      : int -> fconstr -> fconstr
 val lift_fconstr_vect : int -> fconstr array -> fconstr array
@@ -200,4 +200,4 @@ val kl : clos_infos -> fconstr -> constr
 val to_constr : (lift -> fconstr -> constr) -> lift -> fconstr -> constr
 val optimise_closure : fconstr subs -> constr -> fconstr subs * constr
 
-(* End of cbn debug section i*)
+(** End of cbn debug section i*)

@@ -1,14 +1,14 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(* Global options of the system. *)
+(** Global options of the system. *)
 
 val boot : bool ref
 
@@ -55,40 +55,40 @@ val if_warn : ('a -> unit) -> 'a -> unit
 
 val hash_cons_proofs : bool ref
 
-(* Temporary activate an option (to activate option [o] on [f x y z],
+(** Temporary activate an option (to activate option [o] on [f x y z],
    use [with_option o (f x y) z]) *)
 val with_option : bool ref -> ('a -> 'b) -> 'a -> 'b
 
-(* Temporary deactivate an option *)
+(** Temporary deactivate an option *)
 val without_option : bool ref -> ('a -> 'b) -> 'a -> 'b
 
-(* If [None], no limit *)
+(** If [None], no limit *)
 val set_print_hyps_limit : int option -> unit
 val print_hyps_limit : unit -> int option
 
 val add_unsafe : string -> unit
 val is_unsafe : string -> bool
 
-(* Options for the virtual machine *)
+(** Options for the virtual machine *)
 
 val set_boxed_definitions : bool -> unit
 val boxed_definitions : unit -> bool
 
-(* Options for external tools *)
+(** Options for external tools *)
 
-(* Returns string format for default browser to use from Coq or CoqIDE *)
+(** Returns string format for default browser to use from Coq or CoqIDE *)
 val browser_cmd_fmt : string
 
 val is_standard_doc_url : string -> bool
 
-(* Substitute %s in the first chain by the second chain *)
+(** Substitute %s in the first chain by the second chain *)
 val subst_command_placeholder : string -> string -> string
 
-(* Options for specifying where coq librairies reside *)
+(** Options for specifying where coq librairies reside *)
 val coqlib_spec : bool ref
 val coqlib : string ref
 
-(* Options for specifying where OCaml binaries reside *)
+(** Options for specifying where OCaml binaries reside *)
 val camlbin_spec : bool ref
 val camlbin : string ref
 val camlp4bin_spec : bool ref

@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Util
 open Names
 open Term
@@ -17,7 +16,6 @@ open Environ
 open Inductiveops
 open Rawterm
 open Evarutil
-(*i*)
 
 type pattern_matching_error =
   | BadPattern of constructor * constr
@@ -47,7 +45,7 @@ val error_wrong_predicate_arity_loc : loc -> env -> constr -> constr -> constr -
 val error_needs_inversion : env -> constr -> types -> 'a
 
 val set_impossible_default_clause : constr * types -> unit
-(*s Compilation of pattern-matching. *)
+(** {6 Compilation of pattern-matching. } *)
 
 type alias_constr =
   | DepAlias

@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Util
 open Names
 open Entries
@@ -16,15 +15,16 @@ open Environ
 open Libnames
 open Libobject
 open Lib
-   (*i*)
+   (**/**)
 
-(*s This modules provides official functions to declare modules and
+(** {6 Sect } *)
+(** This modules provides official functions to declare modules and
   module types *)
 
 
-(*s Modules *)
+(** {6 Modules } *)
 
-(* [declare_module interp_modtype interp_modexpr id fargs typ expr]
+(** [declare_module interp_modtype interp_modexpr id fargs typ expr]
    declares module [id], with type constructed by [interp_modtype]
    from functor arguments [fargs] and [typ] and with module body
    constructed by [interp_modtype] from functor arguments [fargs] and
@@ -53,7 +53,7 @@ val end_module : unit -> module_path
 
 
 
-(*s Module types *)
+(** {6 Module types } *)
 
 val declare_modtype : (env -> 'modast -> module_struct_entry) ->
   (env -> 'modast -> module_struct_entry * bool) ->
@@ -67,13 +67,14 @@ val start_modtype : (env -> 'modast -> module_struct_entry) ->
 val end_modtype : unit -> module_path
 
 
-(*s Objects of a module. They come in two lists: the substitutive ones
+(** {6 Sect } *)
+(** Objects of a module. They come in two lists: the substitutive ones
   and the other *)
 
 val module_objects : module_path -> library_segment
 
 
-(*s Libraries i.e. modules on disk *)
+(** {6 Libraries i.e. modules on disk } *)
 
 type library_name = dir_path
 
@@ -88,27 +89,28 @@ val start_library : library_name -> unit
 val end_library :
   library_name -> Safe_typing.compiled_library * library_objects
 
-(* set a function to be executed at end_library *)
+(** set a function to be executed at end_library *)
 val set_end_library_hook : (unit -> unit) -> unit
 
-(* [really_import_module mp] opens the module [mp] (in a Caml sense).
+(** [really_import_module mp] opens the module [mp] (in a Caml sense).
    It modifies Nametab and performs the [open_object] function for
    every object of the module. *)
 
 val really_import_module : module_path -> unit
 
-(* [import_module export mp] is a synchronous version of
+(** [import_module export mp] is a synchronous version of
    [really_import_module]. If [export] is [true], the module is also
    opened every time the module containing it is. *)
 
 val import_module : bool -> module_path -> unit
 
-(* Include  *)
+(** Include  *)
 
 val declare_include : (env -> 'struct_expr -> module_struct_entry * bool) ->
   ('struct_expr * bool) list -> unit
 
-(*s [iter_all_segments] iterate over all segments, the modules'
+(** {6 Sect } *)
+(** [iter_all_segments] iterate over all segments, the modules'
     segments first and then the current segment. Modules are presented
     in an arbitrary order. The given function is applied to all leaves
     (together with their section path). *)
@@ -120,7 +122,7 @@ val debug_print_modtab : unit -> Pp.std_ppcmds
 
 (*i val debug_print_modtypetab : unit -> Pp.std_ppcmds i*)
 
-(* For translator *)
+(** For translator *)
 val process_module_bindings : module_ident list ->
   (mod_bound_id * (module_struct_entry * bool)) list -> unit
 

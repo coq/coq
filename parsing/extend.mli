@@ -1,21 +1,21 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
 open Util
 
-(**********************************************************************)
-(* General entry keys *)
+(*********************************************************************
+   General entry keys *)
 
-(* This intermediate abstract representation of entries can           *)
-(* both be reified into mlexpr for the ML extensions and              *)
-(* dynamically interpreted as entries for the Coq level extensions    *)
+(** This intermediate abstract representation of entries can           
+   both be reified into mlexpr for the ML extensions and              
+   dynamically interpreted as entries for the Coq level extensions    *)
 
 type 'a prod_entry_key =
   | Alist1 of 'a prod_entry_key
@@ -30,8 +30,8 @@ type 'a prod_entry_key =
   | Agram of 'a Gramext.g_entry
   | Aentry of string * string
 
-(**********************************************************************)
-(* Entry keys for constr notations                                    *)
+(*********************************************************************
+   Entry keys for constr notations                                    *)
 
 type side = Left | Right
 

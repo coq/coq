@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Pp
 open Util
 open Names
@@ -23,9 +22,8 @@ open Genarg
 open Tacexpr
 open Termops
 open Rawterm
-(*i*)
 
-(* Tacticals i.e. functions from tactics to tactics. *)
+(** Tacticals i.e. functions from tactics to tactics. *)
 
 val tclNORMEVAR      : tactic
 val tclIDTAC         : tactic
@@ -68,7 +66,7 @@ val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
 
 val tclFIRST_PROGRESS_ON : ('a -> tactic) -> 'a list -> tactic
 
-(*s Tacticals applying to hypotheses *)
+(** {6 Tacticals applying to hypotheses } *)
 
 val onNthHypId       : int -> (identifier -> tactic) -> tactic
 val onNthHyp         : int -> (constr -> tactic) -> tactic
@@ -96,14 +94,14 @@ val ifOnHyp     : (identifier * types -> bool) ->
 val onHyps      : (goal sigma -> named_context) ->
                   (named_context -> tactic) -> tactic
 
-(*s Tacticals applying to goal components *)
+(** {6 Tacticals applying to goal components } *)
 
-(* A [simple_clause] is a set of hypotheses, possibly extended with
+(** A [simple_clause] is a set of hypotheses, possibly extended with
    the conclusion (conclusion is represented by None) *)
 
 type simple_clause = identifier option list
 
-(* A [clause] denotes occurrences and hypotheses in a
+(** A [clause] denotes occurrences and hypotheses in a
    goal; in particular, it can abstractly refer to the set of
    hypotheses independently of the effective contents of the current goal *)
 
@@ -126,21 +124,21 @@ val onAllHypsAndConclLR : (identifier option -> tactic) -> tactic
 val onClause   : (identifier option -> tactic) -> clause -> tactic
 val onClauseLR : (identifier option -> tactic) -> clause -> tactic
 
-(*s An intermediate form of occurrence clause with no mention of occurrences *)
+(** {6 An intermediate form of occurrence clause with no mention of occurrences } *)
 
-(* A [hyp_location] is an hypothesis together with a position, in
+(** A [hyp_location] is an hypothesis together with a position, in
    body if any, in type or in both *)
 
 type hyp_location = identifier * hyp_location_flag
 
-(* A [goal_location] is either an hypothesis (together with a position, in
+(** A [goal_location] is either an hypothesis (together with a position, in
    body if any, in type or in both) or the goal *)
 
 type goal_location = hyp_location option
 
-(*s A concrete view of occurrence clauses *)
+(** {6 A concrete view of occurrence clauses } *)
 
-(* [clause_atom] refers either to an hypothesis location (i.e. an
+(** [clause_atom] refers either to an hypothesis location (i.e. an
    hypothesis with occurrences and a position, in body if any, in type
    or in both) or to some occurrences of the conclusion *)
 
@@ -148,40 +146,40 @@ type clause_atom =
   | OnHyp of identifier * occurrences_expr * hyp_location_flag
   | OnConcl of occurrences_expr
 
-(* A [concrete_clause] is an effective collection of
+(** A [concrete_clause] is an effective collection of
   occurrences in the hypotheses and the conclusion *)
 
 type concrete_clause = clause_atom list
 
-(* This interprets an [clause] in a given [goal] context *)
+(** This interprets an [clause] in a given [goal] context *)
 val concrete_clause_of : clause -> goal sigma -> concrete_clause
 
-(*s Elimination tacticals. *)
+(** {6 Elimination tacticals. } *)
 
 type branch_args = {
-  ity        : inductive;   (* the type we were eliminating on *)
-  largs      : constr list; (* its arguments *)
-  branchnum  : int;         (* the branch number *)
-  pred       : constr;      (* the predicate we used *)
-  nassums    : int;         (* the number of assumptions to be introduced *)
-  branchsign : bool list;   (* the signature of the branch.
+  ity        : inductive;   (** the type we were eliminating on *)
+  largs      : constr list; (** its arguments *)
+  branchnum  : int;         (** the branch number *)
+  pred       : constr;      (** the predicate we used *)
+  nassums    : int;         (** the number of assumptions to be introduced *)
+  branchsign : bool list;   (** the signature of the branch.
                                true=recursive argument, false=constant *)
   branchnames : intro_pattern_expr located list}
 
 type branch_assumptions = {
-  ba        : branch_args;     (* the branch args *)
-  assums    : named_context}   (* the list of assumptions introduced *)
+  ba        : branch_args;     (** the branch args *)
+  assums    : named_context}   (** the list of assumptions introduced *)
 
-(* [check_disjunctive_pattern_size loc pats n] returns an appropriate *)
-(* error message if |pats| <> n *)
+(** [check_disjunctive_pattern_size loc pats n] returns an appropriate 
+   error message if |pats| <> n *)
 val check_or_and_pattern_size :
   Util.loc -> or_and_intro_pattern_expr -> int -> unit
 
-(* Tolerate "[]" to mean a disjunctive pattern of any length *)
+(** Tolerate "[]" to mean a disjunctive pattern of any length *)
 val fix_empty_or_and_pattern : int -> or_and_intro_pattern_expr ->
   or_and_intro_pattern_expr
 
-(* Useful for [as intro_pattern] modifier *)
+(** Useful for [as intro_pattern] modifier *)
 val compute_induction_names :
   int -> intro_pattern_expr located option ->
     intro_pattern_expr located list array

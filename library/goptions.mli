@@ -1,16 +1,16 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(* This module manages customization parameters at the vernacular level     *)
+(** This module manages customization parameters at the vernacular level     *)
 
-(* Two kinds of things are managed : tables and options value
+(** Two kinds of things are managed : tables and options value
    - Tables are created by applying the [MakeTable] functor.
    - Variables storing options value are created by applying one of the
    [declare_int_option], [declare_bool_option], ... functions.
@@ -40,12 +40,11 @@
 
        Set Tata Tutu Titi.
        Unset Tata Tutu Titi.
-       Print Table Tata Tutu Titi. (* synonym: Test Table Tata Tutu Titi. *)
+       Print Table Tata Tutu Titi. (** synonym: Test Table Tata Tutu Titi. *)
 
    The created table/option may be declared synchronous or not
    (synchronous = consistent with the resetting commands)                   *)
 
-(*i*)
 open Pp
 open Util
 open Names
@@ -53,18 +52,17 @@ open Libnames
 open Term
 open Nametab
 open Mod_subst
-(*i*)
 
-(*s Things common to tables and options. *)
+(** {6 Things common to tables and options. } *)
 
-(* The type of table/option keys *)
+(** The type of table/option keys *)
 type option_name = string list
 
 val error_undeclared_key : option_name -> 'a
 
-(*s Tables. *)
+(** {6 Tables. } *)
 
-(* The functor [MakeStringTable] declares a table containing objects
+(** The functor [MakeStringTable] declares a table containing objects
    of type [string]; the function [member_message] say what to print
    when invoking the "Test Toto Titi foo." command; at the end [title]
    is the table name printed when invoking the "Print Toto Titi."
@@ -85,7 +83,7 @@ sig
   val elements : unit -> string list
 end
 
-(* The functor [MakeRefTable] declares a new table of objects of type
+(** The functor [MakeRefTable] declares a new table of objects of type
    [A.t] practically denoted by [reference]; the encoding function
    [encode : reference -> A.t] is typically a globalization function,
    possibly with some restriction checks; the function
@@ -113,9 +111,9 @@ module MakeRefTable :
     end
 
 
-(*s Options. *)
+(** {6 Options. } *)
 
-(* These types and function are for declaring a new option of name [key]
+(** These types and function are for declaring a new option of name [key]
    and access functions [read] and [write]; the parameter [name] is the option name
    used when printing the option value (command "Print Toto Titi." *)
 
@@ -127,7 +125,7 @@ type 'a option_sig = {
   optwrite   : 'a -> unit
 }
 
-(* When an option is declared synchronous ([optsync] is [true]), the output is
+(** When an option is declared synchronous ([optsync] is [true]), the output is
    a synchronous write function. Otherwise it is [optwrite] *)
 
 type 'a write_function = 'a -> unit
@@ -137,7 +135,7 @@ val declare_bool_option  : bool option_sig   -> bool write_function
 val declare_string_option: string option_sig -> string write_function
 
 
-(*s Special functions supposed to be used only in vernacentries.ml *)
+(** {6 Special functions supposed to be used only in vernacentries.ml } *)
 
 val get_string_table :
   option_name ->
@@ -153,7 +151,7 @@ val get_ref_table :
       mem : reference -> unit;
       print : unit >
 
-(* The first argument is a locality flag. [Some true] = "Local", [Some false]="Global". *)
+(** The first argument is a locality flag. [Some true] = "Local", [Some false]="Global". *)
 val set_int_option_value_gen    : bool option -> option_name -> int option -> unit
 val set_bool_option_value_gen   : bool option -> option_name -> bool   -> unit
 val set_string_option_value_gen : bool option -> option_name -> string -> unit

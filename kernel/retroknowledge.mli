@@ -1,24 +1,22 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Names
 open Term
-(*i*)
 
 type retroknowledge
 
-(* aliased type for clarity purpose*)
+(** aliased type for clarity purpose*)
 type entry =  (constr, types) kind_of_term
 
-(* the following types correspond to the different "things"
+(** the following types correspond to the different "things"
    the kernel can learn about.*)
 type nat_field =
   | NatType
@@ -58,25 +56,26 @@ type int31_field =
   | Int31Tail0
 
 type field =
-(*  | KEq
+
+(**  | KEq
   | KNat of nat_field
   | KN of n_field *)
   | KInt31 of string*int31_field
 
 
-(* This type represent an atomic action of the retroknowledge. It
-   is stored in the compiled libraries *)
-(* As per now, there is only the possibility of registering things
+(** This type represent an atomic action of the retroknowledge. It
+   is stored in the compiled libraries 
+   As per now, there is only the possibility of registering things
    the possibility of unregistering or changing the flag is under study *)
 type action =
     | RKRegister of field*entry
 
 
-(* initial value for retroknowledge *)
+(** initial value for retroknowledge *)
 val initial_retroknowledge : retroknowledge
 
 
-(* Given an identifier id (usually Const _)
+(** Given an identifier id (usually Const _)
    and the continuation cont of the bytecode compilation
    returns the compilation of id in cont if it has a specific treatment
    or raises Not_found if id should be compiled as usual *)
@@ -103,28 +102,29 @@ val get_vm_constant_dynamic_info : retroknowledge -> entry ->
                                 Cbytecodes.comp_env ->
                                 Cbytecodes.block array ->
                                 int -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes
-(* Given a type identifier, this function is used before compiling a match
+
+(** Given a type identifier, this function is used before compiling a match
    over this type. In the case of 31-bit integers for instance, it is used
    to add the instruction sequence which would perform a dynamic decompilation
    in case the argument of the match is not in coq representation *)
 val get_vm_before_match_info : retroknowledge -> entry -> Cbytecodes.bytecodes
                                                        -> Cbytecodes.bytecodes
 
-(* Given a type identifier, this function is used by pretyping/vnorm.ml to
+(** Given a type identifier, this function is used by pretyping/vnorm.ml to
    recover the elements of that type from their compiled form if it's non
    standard (it is used (and can be used) only when the compiled form
    is not a block *)
 val get_vm_decompile_constant_info : retroknowledge -> entry -> int -> Term.constr
 
 
-(* the following functions are solely used in Pre_env and Environ to implement
+(** the following functions are solely used in Pre_env and Environ to implement
    the functions  register and unregister (and mem) of Environ *)
 val add_field : retroknowledge -> field -> entry -> retroknowledge
 val mem : retroknowledge -> field -> bool
 val remove : retroknowledge -> field -> retroknowledge
 val find : retroknowledge -> field -> entry
 
-(* the following function manipulate the reactive information of values
+(** the following function manipulate the reactive information of values
    they are only used by the functions of Pre_env, and Environ to implement
    the functions register and unregister of Environ *)
 val add_vm_compiling_info : retroknowledge-> entry ->

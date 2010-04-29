@@ -1,10 +1,10 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
@@ -18,13 +18,13 @@ open Topconstr
 open Tacexpr
 open Libnames
 
-(**********************************************************************)
-(* The parser of Coq                                                  *)
+(*********************************************************************
+   The parser of Coq                                                  *)
 
 module Gram : Grammar.S with type te = Compat.token
 
-(**********************************************************************)
-(* The parser of Coq is built from three kinds of rule declarations:
+(*********************************************************************
+   The parser of Coq is built from three kinds of rule declarations:
    - dynamic rules declared at the evaluation of Coq files (using
      e.g. Notation, Infix, or Tactic Notation)
    - static rules explicitly defined in files g_*.ml4
@@ -32,7 +32,7 @@ module Gram : Grammar.S with type te = Compat.token
      VERNAC EXTEND (see e.g. file extratactics.ml4)
 *)
 
-(* Dynamic extension of rules
+(** Dynamic extension of rules
 
     For constr notations, dynamic addition of new rules is done in
     several steps:
@@ -98,54 +98,54 @@ module Gram : Grammar.S with type te = Compat.token
 
 *)
 
-(* The superclass of all grammar entries *)
+(** The superclass of all grammar entries *)
 type grammar_object
 
 type camlp4_rule =
     Compat.token Gramext.g_symbol list * Gramext.g_action
 
 type camlp4_entry_rules =
-    (* first two parameters are name and assoc iff a level is created *)
+    (** first two parameters are name and assoc iff a level is created *)
     string option * Gramext.g_assoc option * camlp4_rule list
 
-(* Add one extension at some camlp4 position of some camlp4 entry *)
+(** Add one extension at some camlp4 position of some camlp4 entry *)
 val grammar_extend :
   grammar_object Gram.Entry.e -> Gramext.position option ->
-   (* for reinitialization if ever needed: *) Gramext.g_assoc option ->
+   (** for reinitialization if ever needed: *) Gramext.g_assoc option ->
      camlp4_entry_rules list -> unit
 
-(* Remove the last n extensions *)
+(** Remove the last n extensions *)
 val remove_grammars : int -> unit
 
 
 
 
-(* The type of typed grammar objects *)
+(** The type of typed grammar objects *)
 type typed_entry
 
-(* The possible types for extensible grammars *)
+(** The possible types for extensible grammars *)
 type entry_type = argument_type
 
 val type_of_typed_entry : typed_entry -> entry_type
 val object_of_typed_entry : typed_entry -> grammar_object Gram.Entry.e
 val weaken_entry : 'a Gram.Entry.e -> grammar_object Gram.Entry.e
 
-(* Temporary activate camlp4 verbosity *)
+(** Temporary activate camlp4 verbosity *)
 
 val camlp4_verbosity : bool -> ('a -> unit) -> 'a -> unit
 
-(* Parse a string *)
+(** Parse a string *)
 
 val parse_string : 'a Gram.Entry.e -> string -> 'a
 val eoi_entry : 'a Gram.Entry.e -> 'a Gram.Entry.e
 val map_entry : ('a -> 'b) -> 'a Gram.Entry.e -> 'b Gram.Entry.e
 
-(**********************************************************************)
-(* Table of Coq statically defined grammar entries                    *)
+(*********************************************************************
+   Table of Coq statically defined grammar entries                    *)
 
 type gram_universe
 
-(* There are four predefined universes: "prim", "constr", "tactic", "vernac" *)
+(** There are four predefined universes: "prim", "constr", "tactic", "vernac" *)
 
 val get_univ : string -> gram_universe
 
@@ -249,40 +249,40 @@ module Vernac_ :
     val vernac_eoi : vernac_expr Gram.Entry.e
   end
 
-(* The main entry: reads an optional vernac command *)
+(** The main entry: reads an optional vernac command *)
 val main_entry : (loc * vernac_expr) option Gram.Entry.e
 
-(**********************************************************************)
-(* Mapping formal entries into concrete ones                          *)
+(*********************************************************************
+   Mapping formal entries into concrete ones                          *)
 
-(* Binding constr entry keys to entries and symbols *)
+(** Binding constr entry keys to entries and symbols *)
 
-val interp_constr_entry_key : bool (* true for cases_pattern *) ->
+val interp_constr_entry_key : bool (** true for cases_pattern *) ->
   constr_entry_key -> grammar_object Gram.Entry.e * int option
 
 val symbol_of_constr_prod_entry_key : Gramext.g_assoc option ->
   constr_entry_key -> bool -> constr_prod_entry_key ->
     Compat.token Gramext.g_symbol
 
-(* Binding general entry keys to symbols *)
+(** Binding general entry keys to symbols *)
 
 val symbol_of_prod_entry_key :
   Gram.te prod_entry_key -> Gram.te Gramext.g_symbol
 
-(**********************************************************************)
-(* Interpret entry names of the form "ne_constr_list" as entry keys   *)
+(*********************************************************************
+   Interpret entry names of the form "ne_constr_list" as entry keys   *)
 
-val interp_entry_name : bool (* true to fail on unknown entry *) ->
+val interp_entry_name : bool (** true to fail on unknown entry *) ->
   int option -> string -> string -> entry_type * Gram.te prod_entry_key
 
-(**********************************************************************)
-(* Registering/resetting the level of a constr entry                  *)
+(*********************************************************************
+   Registering/resetting the level of a constr entry                  *)
 
 val find_position :
-  bool (* true if for creation in pattern entry; false if in constr entry *) ->
+  bool (** true if for creation in pattern entry; false if in constr entry *) ->
   Gramext.g_assoc option -> int option ->
     Gramext.position option * Gramext.g_assoc option * string option *
-    (* for reinitialization: *) Gramext.g_assoc option
+    (** for reinitialization: *) Gramext.g_assoc option
 
 val synchronize_level_positions : unit -> unit
 

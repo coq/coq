@@ -1,22 +1,21 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Names
 open Term
 open Declarations
 open Entries
 open Mod_subst
-(*i*)
 
-(*s Safe environments. Since we are now able to type terms, we can
+(** {6 Sect } *)
+(** Safe environments. Since we are now able to type terms, we can
   define an abstract type of safe environments, where objects are
   typed before being added.
 
@@ -31,7 +30,7 @@ val env_of_safe_env : safe_environment -> Environ.env
 val empty_environment : safe_environment
 val is_empty : safe_environment -> bool
 
-(* Adding and removing local declarations (Local or Variables) *)
+(** Adding and removing local declarations (Local or Variables) *)
 val push_named_assum :
   identifier * types -> safe_environment ->
     Univ.constraints * safe_environment
@@ -39,7 +38,7 @@ val push_named_def :
   identifier * constr * types option -> safe_environment ->
     Univ.constraints * safe_environment
 
-(* Adding global axioms or definitions *)
+(** Adding global axioms or definitions *)
 type global_declaration =
   | ConstantEntry of constant_entry
   | GlobalRecipe of Cooking.recipe
@@ -48,30 +47,30 @@ val add_constant :
   dir_path -> label -> global_declaration -> safe_environment ->
       constant * safe_environment
 
-(* Adding an inductive type *)
+(** Adding an inductive type *)
 val add_mind :
   dir_path -> label -> mutual_inductive_entry -> safe_environment ->
     mutual_inductive * safe_environment
 
-(* Adding a module *)
+(** Adding a module *)
 val add_module :
   label -> module_entry -> bool -> safe_environment
     -> module_path * delta_resolver * safe_environment
 
-(* Adding a module type *)
+(** Adding a module type *)
 val add_modtype :
   label -> module_struct_entry -> bool -> safe_environment
     -> module_path * safe_environment
 
-(* Adding universe constraints *)
+(** Adding universe constraints *)
 val add_constraints :
   Univ.constraints -> safe_environment -> safe_environment
 
-(* Settin the strongly constructive or classical logical engagement *)
+(** Settin the strongly constructive or classical logical engagement *)
 val set_engagement : engagement -> safe_environment -> safe_environment
 
 
-(*s Interactive module functions *)
+(** {6 Interactive module functions } *)
 val start_module :
   label -> safe_environment -> module_path * safe_environment
 
@@ -96,9 +95,10 @@ val pack_module : safe_environment -> module_body
 val current_modpath : safe_environment -> module_path
 val delta_of_senv : safe_environment -> delta_resolver*delta_resolver
   
-(* Loading and saving compilation units *)
 
-(* exporting and importing modules *)
+(** Loading and saving compilation units *)
+
+(** exporting and importing modules *)
 type compiled_library
 
 val start_library : dir_path -> safe_environment
@@ -110,18 +110,18 @@ val export : safe_environment -> dir_path
 val import : compiled_library -> Digest.t -> safe_environment
       -> module_path * safe_environment
 
-(* Remove the body of opaque constants *)
+(** Remove the body of opaque constants *)
 
 val lighten_library : compiled_library -> compiled_library
 
-(*s Typing judgments *)
+(** {6 Typing judgments } *)
 
 type judgment
 
 val j_val : judgment -> constr
 val j_type : judgment -> constr
 
-(* Safe typing of a term returning a typing judgment and universe
+(** Safe typing of a term returning a typing judgment and universe
    constraints to be added to the environment for the judgment to
    hold. It is guaranteed that the constraints are satisfiable
  *)

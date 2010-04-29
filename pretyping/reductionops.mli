@@ -1,28 +1,26 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Names
 open Term
 open Univ
 open Evd
 open Environ
 open Closure
-(*i*)
 
-(* Reduction Functions. *)
+(** Reduction Functions. *)
 
 exception Elimconst
 
-(************************************************************************)
-(*s A [stack] is a context of arguments, arguments are pushed by
+(***********************************************************************
+  s A [stack] is a context of arguments, arguments are pushed by
    [append_stack] one array at a time but popped with [decomp_stack]
    one by one *)
 
@@ -67,13 +65,13 @@ type contextual_state_reduction_function =
 type state_reduction_function = contextual_state_reduction_function
 type local_state_reduction_function = evar_map -> state -> state
 
-(* Removes cast and put into applicative form *)
+(** Removes cast and put into applicative form *)
 val whd_stack : local_stack_reduction_function
 
-(* For compatibility: alias for whd\_stack *)
+(** For compatibility: alias for whd\_stack *)
 val whd_castapp_stack : local_stack_reduction_function
 
-(*s Reduction Function Operators *)
+(** {6 Reduction Function Operators } *)
 
 val strong : reduction_function -> reduction_function
 val local_strong : local_reduction_function -> local_reduction_function
@@ -84,17 +82,19 @@ val stack_reduction_of_reduction :
 i*)
 val stacklam : (state -> 'a) -> constr list -> constr -> constr stack -> 'a
 
-(*s Generic Optimized Reduction Function using Closures *)
+(** {6 Generic Optimized Reduction Function using Closures } *)
 
 val clos_norm_flags : Closure.RedFlags.reds -> reduction_function
-(* Same as [(strong whd_beta[delta][iota])], but much faster on big terms *)
+
+(** Same as [(strong whd_beta[delta][iota])], but much faster on big terms *)
 val nf_beta : local_reduction_function
 val nf_betaiota : local_reduction_function
 val nf_betadeltaiota : reduction_function
 val nf_evar : evar_map -> constr -> constr
 
 val nf_betaiota_preserving_vm_cast : reduction_function
-(* Lazy strategy, weak head reduction *)
+
+(** Lazy strategy, weak head reduction *)
 val whd_evar :  evar_map -> constr -> constr
 val whd_beta : local_reduction_function
 val whd_betaiota : local_reduction_function
@@ -120,7 +120,7 @@ val whd_betadeltaiota_nolet_state : contextual_state_reduction_function
 val whd_betaetalet_state : local_state_reduction_function
 val whd_betalet_state : local_state_reduction_function
 
-(*s Head normal forms *)
+(** {6 Head normal forms } *)
 
 val whd_delta_stack :  stack_reduction_function
 val whd_delta_state :  state_reduction_function
@@ -138,7 +138,7 @@ val whd_betadeltaiotaeta :  reduction_function
 val whd_eta : constr -> constr
 val whd_zeta : constr -> constr
 
-(* Various reduction functions *)
+(** Various reduction functions *)
 
 val safe_evar_value : evar_map -> existential -> constr option
 
@@ -163,11 +163,11 @@ val decomp_sort : env -> evar_map -> types -> sorts
 val is_sort : env -> evar_map -> types -> bool
 
 type 'a miota_args = {
-  mP      : constr;     (* the result type *)
-  mconstr : constr;     (* the constructor *)
-  mci     : case_info;  (* special info to re-build pattern *)
-  mcargs  : 'a list;    (* the constructor's arguments *)
-  mlf     : 'a array }  (* the branch code vector *)
+  mP      : constr;     (** the result type *)
+  mconstr : constr;     (** the constructor *)
+  mci     : case_info;  (** special info to re-build pattern *)
+  mcargs  : 'a list;    (** the constructor's arguments *)
+  mlf     : 'a array }  (** the branch code vector *)
 
 val reducible_mind_case : constr -> bool
 val reduce_mind_case : constr miota_args -> constr
@@ -177,7 +177,7 @@ val is_arity : env ->  evar_map -> constr -> bool
 
 val whd_programs :  reduction_function
 
-(* [reduce_fix redfun fix stk] contracts [fix stk] if it is actually
+(** [reduce_fix redfun fix stk] contracts [fix stk] if it is actually
    reducible; the structural argument is reduced by [redfun] *)
 
 type fix_reduction_result = NotReducible | Reduced of state
@@ -186,10 +186,10 @@ val fix_recarg : fixpoint -> constr stack -> (int * constr) option
 val reduce_fix : local_state_reduction_function -> evar_map -> fixpoint
    -> constr stack -> fix_reduction_result
 
-(*s Querying the kernel conversion oracle: opaque/transparent constants *)
+(** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)
 val is_transparent : 'a tableKey -> bool
 
-(*s Conversion Functions (uses closures, lazy strategy) *)
+(** {6 Conversion Functions (uses closures, lazy strategy) } *)
 
 type conversion_test = constraints -> constraints
 
@@ -206,18 +206,18 @@ val is_trans_conv : transparent_state -> env -> evar_map -> constr -> constr -> 
 val is_trans_conv_leq : transparent_state -> env ->  evar_map -> constr -> constr -> bool
 val is_trans_fconv : conv_pb -> transparent_state -> env ->  evar_map -> constr -> constr -> bool
 
-(*s Special-Purpose Reduction Functions *)
+(** {6 Special-Purpose Reduction Functions } *)
 
 val whd_meta : (metavariable * constr) list -> constr -> constr
 val plain_instance : (metavariable * constr) list -> constr -> constr
 val instance :evar_map -> (metavariable * constr) list -> constr -> constr
 val head_unfold_under_prod : transparent_state -> reduction_function
 
-(*s Heuristic for Conversion with Evar *)
+(** {6 Heuristic for Conversion with Evar } *)
 
 val whd_betaiota_deltazeta_for_iota_state :  state_reduction_function
 
-(*s Meta-related reduction functions *)
+(** {6 Meta-related reduction functions } *)
 val meta_instance : evar_map -> constr freelisted -> constr
 val nf_meta       : evar_map -> constr -> constr
 val meta_reducible_instance : evar_map -> constr freelisted -> constr

@@ -1,10 +1,10 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
@@ -43,7 +43,7 @@ type 'a extra_genarg_printer =
     (tolerability -> glob_tactic_expr -> std_ppcmds) ->
     'a -> std_ppcmds
 
-  (* if the boolean is false then the extension applies only to old syntax *)
+  (** if the boolean is false then the extension applies only to old syntax *)
 val declare_extra_genarg_pprule :
   ('c raw_abstract_argument_type * 'c raw_extra_genarg_printer) ->
   ('a glob_abstract_argument_type * 'a glob_extra_genarg_printer) ->
@@ -51,7 +51,7 @@ val declare_extra_genarg_pprule :
 
 type grammar_terminals = string option list
 
-  (* if the boolean is false then the extension applies only to old syntax *)
+  (** if the boolean is false then the extension applies only to old syntax *)
 val declare_extra_tactic_pprule :
   string * argument_type list * (int * grammar_terminals) -> unit
 

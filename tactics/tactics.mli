@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Util
 open Names
 open Term
@@ -29,11 +28,10 @@ open Nametab
 open Rawterm
 open Pattern
 open Termops
-(*i*)
 
-(* Main tactics. *)
+(** Main tactics. *)
 
-(*s General functions. *)
+(** {6 General functions. } *)
 
 val string_of_inductive : constr -> string
 val head_constr       : constr -> constr * constr list
@@ -42,7 +40,7 @@ val is_quantified_hypothesis : identifier -> goal sigma -> bool
 
 exception Bound
 
-(*s Primitive tactics. *)
+(** {6 Primitive tactics. } *)
 
 val introduction    : identifier -> tactic
 val refine          : constr -> tactic
@@ -55,7 +53,7 @@ val fix             : identifier option -> int -> tactic
 val mutual_cofix    : identifier -> (identifier * constr) list -> int -> tactic
 val cofix           : identifier option -> tactic
 
-(*s Introduction tactics. *)
+(** {6 Introduction tactics. } *)
 
 val fresh_id_in_env : identifier list -> identifier -> env -> identifier
 val fresh_id : identifier list -> identifier -> goal sigma -> identifier
@@ -65,7 +63,7 @@ val intro                : tactic
 val introf               : tactic
 val intro_move        : identifier option -> identifier move_location -> tactic
 
-  (* [intro_avoiding idl] acts as intro but prevents the new identifier
+  (** [intro_avoiding idl] acts as intro but prevents the new identifier
      to belong to [idl] *)
 val intro_avoiding       : identifier list -> tactic
 
@@ -78,7 +76,7 @@ val intros_replacing     : identifier list -> tactic
 
 val intros               : tactic
 
-(* [depth_of_quantified_hypothesis b h g] returns the index of [h] in
+(** [depth_of_quantified_hypothesis b h g] returns the index of [h] in
    the conclusion of goal [g], up to head-reduction if [b] is [true] *)
 val depth_of_quantified_hypothesis :
   bool -> quantified_hypothesis -> goal sigma -> int
@@ -88,7 +86,7 @@ val intros_until         : quantified_hypothesis -> tactic
 
 val intros_clearing      : bool list -> tactic
 
-(* Assuming a tactic [tac] depending on an hypothesis identifier,
+(** Assuming a tactic [tac] depending on an hypothesis identifier,
    [try_intros_until tac arg] first assumes that arg denotes a
    quantified hypothesis (denoted by name or by index) and try to
    introduce it in context before to apply [tac], otherwise assume the
@@ -97,21 +95,21 @@ val intros_clearing      : bool list -> tactic
 val try_intros_until :
   (identifier -> tactic) -> quantified_hypothesis -> tactic
 
-(* Apply a tactic on a quantified hypothesis, an hypothesis in context
+(** Apply a tactic on a quantified hypothesis, an hypothesis in context
    or a term with bindings *)
 
 val onInductionArg :
   (constr with_bindings -> tactic) ->
     constr with_bindings induction_arg -> tactic
 
-(*s Introduction tactics with eliminations. *)
+(** {6 Introduction tactics with eliminations. } *)
 
 val intro_pattern  : identifier move_location -> intro_pattern_expr -> tactic
 val intro_patterns : intro_pattern_expr located list -> tactic
 val intros_pattern :
   identifier move_location -> intro_pattern_expr located list -> tactic
 
-(*s Exact tactics. *)
+(** {6 Exact tactics. } *)
 
 val assumption       : tactic
 val exact_no_check   : constr -> tactic
@@ -119,7 +117,7 @@ val vm_cast_no_check : constr -> tactic
 val exact_check      : constr -> tactic
 val exact_proof      : Topconstr.constr_expr -> tactic
 
-(*s Reduction tactics. *)
+(** {6 Reduction tactics. } *)
 
 type tactic_reduction = env -> evar_map -> constr -> constr
 
@@ -156,7 +154,7 @@ val pattern_option    :
 val reduce            : red_expr -> clause -> tactic
 val unfold_constr     : global_reference -> tactic
 
-(*s Modification of the local context. *)
+(** {6 Modification of the local context. } *)
 
 val clear         : identifier list -> tactic
 val clear_body    : identifier list -> tactic
@@ -169,7 +167,7 @@ val rename_hyp    : (identifier * identifier) list -> tactic
 
 val revert        : identifier list -> tactic
 
-(*s Resolution tactics. *)
+(** {6 Resolution tactics. } *)
 
 val apply_type : constr -> constr list -> tactic
 val apply_term : constr -> constr list -> tactic
@@ -193,7 +191,7 @@ val apply_in :
 
 val simple_apply_in : identifier -> constr -> tactic
 
-(*s Elimination tactics. *)
+(** {6 Elimination tactics. } *)
 
 
 (*
@@ -219,36 +217,36 @@ val simple_apply_in : identifier -> constr -> tactic
   Principles taken from functional induction have the final (f...).
 *)
 
-(* [rel_contexts] and [rel_declaration] actually contain triples, and
+(** [rel_contexts] and [rel_declaration] actually contain triples, and
    lists are actually in reverse order to fit [compose_prod]. *)
 type elim_scheme = {
   elimc: constr with_bindings option;
   elimt: types;
   indref: global_reference option;
-  index: int;              (* index of the elimination type in the scheme *)
-  params: rel_context;     (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
-  nparams: int;            (* number of parameters *)
-  predicates: rel_context; (* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
-  npredicates: int;        (* Number of predicates *)
-  branches: rel_context;   (* branchr,...,branch1 *)
-  nbranches: int;          (* Number of branches *)
-  args: rel_context;       (* (xni, Ti_ni) ... (x1, Ti_1) *)
-  nargs: int;              (* number of arguments *)
-  indarg: rel_declaration option; (* Some (H,I prm1..prmp x1...xni)
+  index: int;              (** index of the elimination type in the scheme *)
+  params: rel_context;     (** (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
+  nparams: int;            (** number of parameters *)
+  predicates: rel_context; (** (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
+  npredicates: int;        (** Number of predicates *)
+  branches: rel_context;   (** branchr,...,branch1 *)
+  nbranches: int;          (** Number of branches *)
+  args: rel_context;       (** (xni, Ti_ni) ... (x1, Ti_1) *)
+  nargs: int;              (** number of arguments *)
+  indarg: rel_declaration option; (** Some (H,I prm1..prmp x1...xni)
 				     if HI is in premisses, None otherwise *)
-  concl: types;            (* Qi x1...xni HI (f...), HI and (f...)
+  concl: types;            (** Qi x1...xni HI (f...), HI and (f...)
 			      are optional and mutually exclusive *)
-  indarg_in_concl: bool;   (* true if HI appears at the end of conclusion *)
-  farg_in_concl: bool;     (* true if (f...) appears at the end of conclusion *)
+  indarg_in_concl: bool;   (** true if HI appears at the end of conclusion *)
+  farg_in_concl: bool;     (** true if (f...) appears at the end of conclusion *)
 }
 
 
 val compute_elim_sig : ?elimc: constr with_bindings -> types -> elim_scheme
 val rebuild_elimtype_from_scheme: elim_scheme -> types
 
-(* elim principle with the index of its inductive arg *)
+(** elim principle with the index of its inductive arg *)
 type eliminator = {
-  elimindex : int option;  (* None = find it automatically *)
+  elimindex : int option;  (** None = find it automatically *)
   elimbody : constr with_bindings
 }
 
@@ -278,7 +276,7 @@ val new_induct : evars_flag -> constr with_bindings induction_arg list ->
     intro_pattern_expr located option * intro_pattern_expr located option ->
       clause option -> tactic
 
-(*s Case analysis tactics. *)
+(** {6 Case analysis tactics. } *)
 
 val general_case_analysis : evars_flag -> constr with_bindings ->  tactic
 val simplest_case         : constr -> tactic
@@ -289,7 +287,7 @@ val new_destruct : evars_flag -> constr with_bindings induction_arg list ->
     intro_pattern_expr located option * intro_pattern_expr located option ->
       clause option -> tactic
 
-(*s Generic case analysis / induction tactics. *)
+(** {6 Generic case analysis / induction tactics. } *)
 
 val induction_destruct : rec_flag -> evars_flag ->
   (constr with_bindings induction_arg list *
@@ -298,12 +296,12 @@ val induction_destruct : rec_flag -> evars_flag ->
   list *
   clause option -> tactic
 
-(*s Eliminations giving the type instead of the proof. *)
+(** {6 Eliminations giving the type instead of the proof. } *)
 
 val case_type         : constr  -> tactic
 val elim_type         : constr  -> tactic
 
-(*s Some eliminations which are frequently used. *)
+(** {6 Some eliminations which are frequently used. } *)
 
 val impE : identifier -> tactic
 val andE : identifier -> tactic
@@ -313,7 +311,7 @@ val dAnd : clause -> tactic
 val dorE : bool -> clause ->tactic
 
 
-(*s Introduction tactics. *)
+(** {6 Introduction tactics. } *)
 
 val constructor_tac      : evars_flag -> int option -> int ->
   constr bindings -> tactic
@@ -332,7 +330,7 @@ val simplest_left        : tactic
 val simplest_right       : tactic
 val simplest_split       : tactic
 
-(*s Logical connective tactics. *)
+(** {6 Logical connective tactics. } *)
 
 val register_setoid_reflexivity : tactic -> unit
 val reflexivity_red             : bool -> tactic
@@ -368,7 +366,7 @@ val pose_proof : name -> constr -> tactic
 
 val generalize      : constr list -> tactic
 val generalize_gen  : ((occurrences * constr) * name) list -> tactic
-val generalize_dep  : ?with_let:bool (* Don't lose let bindings *) -> constr  -> tactic
+val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -> tactic
 
 val unify           : ?state:Names.transparent_state -> constr -> constr -> tactic
 val resolve_classes : tactic

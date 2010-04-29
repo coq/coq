@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Pp
 open Util
 open Names
@@ -16,20 +15,20 @@ open Libnames
 open Rawterm
 open Term
 open Mod_subst
-(*i*)
 
-(*s This is the subtype of rawconstr allowed in syntactic extensions *)
-(* No location since intended to be substituted at any place of a text *)
-(* Complex expressions such as fixpoints and cofixpoints are excluded, *)
-(* non global expressions such as existential variables also *)
+(** {6 Sect } *)
+(** This is the subtype of rawconstr allowed in syntactic extensions 
+   No location since intended to be substituted at any place of a text 
+   Complex expressions such as fixpoints and cofixpoints are excluded, 
+   non global expressions such as existential variables also *)
 
 type aconstr =
-  (* Part common to [rawconstr] and [cases_pattern] *)
+  (** Part common to [rawconstr] and [cases_pattern] *)
   | ARef of global_reference
   | AVar of identifier
   | AApp of aconstr * aconstr list
   | AList of identifier * identifier * aconstr * aconstr * bool
-  (* Part only in [rawconstr] *)
+  (** Part only in [rawconstr] *)
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
@@ -46,20 +45,20 @@ type aconstr =
   | APatVar of patvar
   | ACast of aconstr * aconstr cast_type
 
-(**********************************************************************)
-(* Translate a rawconstr into a notation given the list of variables  *)
-(* bound by the notation; also interpret recursive patterns           *)
+(*********************************************************************
+   Translate a rawconstr into a notation given the list of variables  
+   bound by the notation; also interpret recursive patterns           *)
 
 val aconstr_of_rawconstr : identifier list -> rawconstr -> aconstr
 
-(* Name of the special identifier used to encode recursive notations  *)
+(** Name of the special identifier used to encode recursive notations  *)
 val ldots_var : identifier
 
-(* Equality of rawconstr (warning: only partially implemented) *)
+(** Equality of rawconstr (warning: only partially implemented) *)
 val eq_rawconstr : rawconstr -> rawconstr -> bool
 
-(**********************************************************************)
-(* Re-interpret a notation as a rawconstr, taking care of binders     *)
+(*********************************************************************
+   Re-interpret a notation as a rawconstr, taking care of binders     *)
 
 val rawconstr_of_aconstr_with_binders : loc ->
   ('a -> name -> 'a * name) ->
@@ -67,9 +66,9 @@ val rawconstr_of_aconstr_with_binders : loc ->
 
 val rawconstr_of_aconstr : loc -> aconstr -> rawconstr
 
-(**********************************************************************)
-(* [match_aconstr metas] matches a rawconstr against an aconstr with  *)
-(* metavariables in [metas]; raise [No_match] if the matching fails   *)
+(*********************************************************************
+   [match_aconstr metas] matches a rawconstr against an aconstr with  
+   metavariables in [metas]; raise [No_match] if the matching fails   *)
 
 exception No_match
 
@@ -80,19 +79,19 @@ type tmp_scope_name = scope_name
 type subscopes = tmp_scope_name option * scope_name list
 
 type interpretation =
-    (* regular vars of notation    / recursive parts of notation    / body *)
+    (** regular vars of notation    / recursive parts of notation    / body *)
     ((identifier * subscopes) list * (identifier * subscopes) list) * aconstr
 
 val match_aconstr : rawconstr -> interpretation ->
       (rawconstr * subscopes) list * (rawconstr list * subscopes) list
 
-(**********************************************************************)
-(* Substitution of kernel names in interpretation data                *)
+(*********************************************************************
+   Substitution of kernel names in interpretation data                *)
 
 val subst_interpretation : substitution -> interpretation -> interpretation
 
-(**********************************************************************)
-(*s Concrete syntax for terms                                         *)
+(*********************************************************************
+  s Concrete syntax for terms                                         *)
 
 type notation = string
 
@@ -101,17 +100,17 @@ type explicitation = ExplByPos of int * identifier option | ExplByName of identi
 type binder_kind =
   | Default of binding_kind
   | Generalized of binding_kind * binding_kind * bool
-      (* Inner binding, outer bindings, typeclass-specific flag
+      (** Inner binding, outer bindings, typeclass-specific flag
 	 for implicit generalization of superclasses *)
 
 type abstraction_kind = AbsLambda | AbsPi
 
-type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
+type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
 
 type prim_token = Numeral of Bigint.bigint | String of string
 
 type 'a notation_substitution =
-    'a list * (* for recursive notations: *) 'a list list
+    'a list * (** for recursive notations: *) 'a list list
 
 type cases_pattern_expr =
   | CPatAlias of loc * cases_pattern_expr * identifier
@@ -162,7 +161,7 @@ and cofix_expr =
 and recursion_order_expr =
   | CStructRec
   | CWfRec of constr_expr
-  | CMeasureRec of constr_expr * constr_expr option (* measure, relation *)
+  | CMeasureRec of constr_expr * constr_expr option (** measure, relation *)
 
 (** Anonymous defs allowed ?? *)
 and local_binder =
@@ -175,8 +174,8 @@ and typeclass_context = typeclass_constraint list
 
 type constr_pattern_expr = constr_expr
 
-(**********************************************************************)
-(* Utilities on constr_expr                                           *)
+(*********************************************************************
+   Utilities on constr_expr                                           *)
 
 val constr_loc : constr_expr -> loc
 
@@ -190,7 +189,7 @@ val occur_var_constr_expr : identifier -> constr_expr -> bool
 
 val default_binder_kind : binder_kind
 
-(* Specific function for interning "in indtype" syntax of "match" *)
+(** Specific function for interning "in indtype" syntax of "match" *)
 val ids_of_cases_indtype : constr_expr -> identifier list
 
 val mkIdentC : identifier -> constr_expr
@@ -210,32 +209,32 @@ val index_of_annot : local_binder list -> identifier located option -> int optio
 val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
 val prod_constr_expr : constr_expr -> local_binder list -> constr_expr
 
-(* Same as [abstract_constr_expr] and [prod_constr_expr], with location *)
+(** Same as [abstract_constr_expr] and [prod_constr_expr], with location *)
 val mkCLambdaN : loc -> local_binder list -> constr_expr -> constr_expr
 val mkCProdN : loc -> local_binder list -> constr_expr -> constr_expr
 
-(* For binders parsing *)
+(** For binders parsing *)
 
-(* With let binders *)
+(** With let binders *)
 val names_of_local_binders : local_binder list -> name located list
 
-(* Does not take let binders into account *)
+(** Does not take let binders into account *)
 val names_of_local_assums : local_binder list -> name located list
 
-(* Used in typeclasses *)
+(** Used in typeclasses *)
 
 val fold_constr_expr_with_binders : (identifier -> 'a -> 'a) ->
    ('a -> 'b -> constr_expr -> 'b) -> 'a -> 'b -> constr_expr -> 'b
 
-(* Used in correctness and interface; absence of var capture not guaranteed *)
-(* in pattern-matching clauses and in binders of the form [x,y:T(x)] *)
+(** Used in correctness and interface; absence of var capture not guaranteed 
+   in pattern-matching clauses and in binders of the form [x,y:T(x)] *)
 
 val map_constr_expr_with_binders :
   (identifier -> 'a -> 'a) -> ('a -> constr_expr -> constr_expr) ->
       'a -> constr_expr -> constr_expr
 
-(**********************************************************************)
-(* Concrete syntax for modules and module types                       *)
+(*********************************************************************
+   Concrete syntax for modules and module types                       *)
 
 type with_declaration_ast =
   | CWith_Module of identifier list located * qualid located
@@ -246,11 +245,11 @@ type module_ast =
   | CMapply of module_ast * module_ast
   | CMwith of module_ast * with_declaration_ast
 
-type module_ast_inl = module_ast * bool (* honor the inline annotations or not *)
+type module_ast_inl = module_ast * bool (** honor the inline annotations or not *)
 
 type 'a module_signature =
-  | Enforce of 'a (* ... : T *)
-  | Check of 'a list (* ... <: T1 <: T2, possibly empty *)
+  | Enforce of 'a (** ... : T *)
+  | Check of 'a list (** ... <: T1 <: T2, possibly empty *)
 
 val ntn_loc :
   Util.loc -> constr_expr notation_substitution -> string -> (int * int) list

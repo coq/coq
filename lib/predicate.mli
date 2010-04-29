@@ -1,9 +1,9 @@
 
 (*i $Id$ i*)
 
-(* Module [Pred]: sets over infinite ordered types with complement. *)
+(** Module [Pred]: sets over infinite ordered types with complement. *)
 
-(* This module implements the set data structure, given a total ordering
+(** This module implements the set data structure, given a total ordering
    function over the set elements. All operations over sets
    are purely applicative (no side-effects).
    The implementation uses the Set library. *)
@@ -13,7 +13,7 @@ module type OrderedType =
     type t
     val compare: t -> t -> int
   end
-          (* The input signature of the functor [Pred.Make].
+          (** The input signature of the functor [Pred.Make].
              [t] is the type of the set elements.
              [compare] is a total ordering function over the set elements.
              This is a two-argument function [f] such that
@@ -26,44 +26,44 @@ module type OrderedType =
 module type S =
   sig
     type elt
-          (* The type of the set elements. *)
+          (** The type of the set elements. *)
     type t
-          (* The type of sets. *)
+          (** The type of sets. *)
     val empty: t
-          (* The empty set. *)
+          (** The empty set. *)
     val full: t
-          (* The whole type. *)
+          (** The whole type. *)
     val is_empty: t -> bool
-        (* Test whether a set is empty or not. *)
+        (** Test whether a set is empty or not. *)
     val is_full: t -> bool
-        (* Test whether a set contains the whole type or not. *)
+        (** Test whether a set contains the whole type or not. *)
     val mem: elt -> t -> bool
-        (* [mem x s] tests whether [x] belongs to the set [s]. *)
+        (** [mem x s] tests whether [x] belongs to the set [s]. *)
     val singleton: elt -> t
-        (* [singleton x] returns the one-element set containing only [x]. *)
+        (** [singleton x] returns the one-element set containing only [x]. *)
     val add: elt -> t -> t
-        (* [add x s] returns a set containing all elements of [s],
+        (** [add x s] returns a set containing all elements of [s],
            plus [x]. If [x] was already in [s], [s] is returned unchanged. *)
     val remove: elt -> t -> t
-        (* [remove x s] returns a set containing all elements of [s],
+        (** [remove x s] returns a set containing all elements of [s],
            except [x]. If [x] was not in [s], [s] is returned unchanged. *)
     val union: t -> t -> t
     val inter: t -> t -> t
     val diff: t -> t -> t
     val complement: t -> t
-        (* Union, intersection, difference and set complement. *)
+        (** Union, intersection, difference and set complement. *)
     val equal: t -> t -> bool
-        (* [equal s1 s2] tests whether the sets [s1] and [s2] are
+        (** [equal s1 s2] tests whether the sets [s1] and [s2] are
            equal, that is, contain equal elements. *)
     val subset: t -> t -> bool
-        (* [subset s1 s2] tests whether the set [s1] is a subset of
+        (** [subset s1 s2] tests whether the set [s1] is a subset of
            the set [s2]. *)
     val elements: t -> bool * elt list
-        (* Gives a finite representation of the predicate: if the
+        (** Gives a finite representation of the predicate: if the
            boolean is false, then the predicate is given in extension.
            if it is true, then the complement is given *)
   end
 
 module Make(Ord: OrderedType): (S with type elt = Ord.t)
-        (* Functor building an implementation of the set structure
+        (** Functor building an implementation of the set structure
            given a totally ordered type. *)

@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Util
 open Names
 open Term
@@ -16,9 +15,9 @@ open Sign
 open Evd
 open Pattern
 open Coqlib
-(*i*)
 
-(*s Given a term with second-order variables in it,
+(** {6 Sect } *)
+(** Given a term with second-order variables in it,
    represented by Meta's, and possibly applied using SoApp
    terms, this function will perform second-order, binding-preserving,
    matching, in the case where the pattern is a pattern in the sense
@@ -37,7 +36,8 @@ open Coqlib
    intersection of the free-rels of the term and the current stack be
    contained in the arguments of the application *)
 
-(*s I implemented the following functions which test whether a term [t]
+(** {6 Sect } *)
+(** I implemented the following functions which test whether a term [t]
    is an inductive but non-recursive type, a general conjuction, a
    general disjunction, or a type with no constructors.
 
@@ -52,36 +52,36 @@ type testing_function = constr -> bool
 val match_with_non_recursive_type : (constr * constr list) matching_function
 val is_non_recursive_type         : testing_function
 
-(* Non recursive type with no indices and exactly one argument for each
+(** Non recursive type with no indices and exactly one argument for each
    constructor; canonical definition of n-ary disjunction if strict *)
 val match_with_disjunction : ?strict:bool -> (constr * constr list) matching_function
 val is_disjunction         : ?strict:bool -> testing_function
 
-(* Non recursive tuple (one constructor and no indices) with no inner
+(** Non recursive tuple (one constructor and no indices) with no inner
    dependencies; canonical definition of n-ary conjunction if strict *)
 val match_with_conjunction : ?strict:bool -> (constr * constr list) matching_function
 val is_conjunction         : ?strict:bool -> testing_function
 
-(* Non recursive tuple, possibly with inner dependencies *)
+(** Non recursive tuple, possibly with inner dependencies *)
 val match_with_record      : (constr * constr list) matching_function
 val is_record              : testing_function
 
-(* Like record but supports and tells if recursive (e.g. Acc) *)
+(** Like record but supports and tells if recursive (e.g. Acc) *)
 val match_with_tuple       : (constr * constr list * bool) matching_function
 val is_tuple               : testing_function
 
-(* No constructor, possibly with indices *)
+(** No constructor, possibly with indices *)
 val match_with_empty_type  : constr matching_function
 val is_empty_type          : testing_function
 
-(* type with only one constructor and no arguments, possibly with indices *)
+(** type with only one constructor and no arguments, possibly with indices *)
 val match_with_unit_or_eq_type : constr matching_function
 val is_unit_or_eq_type     : testing_function
 
-(* type with only one constructor and no arguments, no indices *)
+(** type with only one constructor and no arguments, no indices *)
 val is_unit_type           : testing_function
 
-(* type with only one constructor, no arguments and at least one dependency *)
+(** type with only one constructor, no arguments and at least one dependency *)
 val is_inductive_equality  : inductive -> bool
 val match_with_equality_type : (constr * constr list) matching_function
 val is_equality_type       : testing_function
@@ -95,7 +95,7 @@ val is_forall_term            : testing_function
 val match_with_imp_term    : (constr * constr) matching_function
 val is_imp_term            : testing_function
 
-(* I added these functions to test whether a type contains dependent
+(** I added these functions to test whether a type contains dependent
   products or not, and if an inductive has constructors with dependent types
  (excluding parameters). this is useful to check whether a conjunction is a
  real conjunction and not a dependent tuple. (Pierre Corbineau, 13/5/2002) *)
@@ -109,7 +109,7 @@ val is_nodep_ind           : testing_function
 val match_with_sigma_type   : (constr * constr list) matching_function
 val is_sigma_type           : testing_function
 
-(* Recongnize inductive relation defined by reflexivity *)
+(** Recongnize inductive relation defined by reflexivity *)
 
 type equation_kind =
   | MonomorphicLeibnizEq of constr * constr
@@ -123,37 +123,37 @@ val match_with_equation:
 
 (***** Destructing patterns bound to some theory *)
 
-(* Match terms [eq A t u], [identity A t u] or [JMeq A t A u] *)
-(* Returns associated lemmas and [A,t,u] or fails PatternMatchingFailure *)
+(** Match terms [eq A t u], [identity A t u] or [JMeq A t A u] 
+   Returns associated lemmas and [A,t,u] or fails PatternMatchingFailure *)
 val find_eq_data_decompose : Proof_type.goal sigma -> constr ->
       coq_eq_data * (types * constr * constr)
 
-(* Idem but fails with an error message instead of PatternMatchingFailure *)
+(** Idem but fails with an error message instead of PatternMatchingFailure *)
 val find_this_eq_data_decompose : Proof_type.goal sigma -> constr ->
       coq_eq_data * (types * constr * constr)
 
-(* A variant that returns more informative structure on the equality found *)
+(** A variant that returns more informative structure on the equality found *)
 val find_eq_data : constr -> coq_eq_data * equation_kind
 
-(* Match a term of the form [(existT A P t p)] *)
-(* Returns associated lemmas and [A,P,t,p] *)
+(** Match a term of the form [(existT A P t p)] 
+   Returns associated lemmas and [A,P,t,p] *)
 val find_sigma_data_decompose : constr ->
   coq_sigma_data * (constr * constr * constr * constr)
 
-(* Match a term of the form [{x:A|P}], returns [A] and [P] *)
+(** Match a term of the form [{x:A|P}], returns [A] and [P] *)
 val match_sigma : constr -> constr * constr
 
 val is_matching_sigma : constr -> bool
 
-(* Match a decidable equality judgement (e.g [{t=u:>T}+{~t=u}]), returns
+(** Match a decidable equality judgement (e.g [{t=u:>T}+{~t=u}]), returns
    [t,u,T] and a boolean telling if equality is on the left side *)
 val match_eqdec : constr -> bool * constr * constr * constr * constr
 
-(* Match an equality up to conversion; returns [(eq,t1,t2)] in normal form *)
+(** Match an equality up to conversion; returns [(eq,t1,t2)] in normal form *)
 open Proof_type
 open Tacmach
 val dest_nf_eq : goal sigma -> constr -> (constr * constr * constr)
 
-(* Match a negation *)
+(** Match a negation *)
 val is_matching_not : constr -> bool
 val is_matching_imp_False : constr -> bool

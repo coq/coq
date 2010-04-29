@@ -1,21 +1,19 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Term
 open Environ
 open Closure
-(*i*)
 
-(************************************************************************)
-(*s Reduction functions *)
+(***********************************************************************
+  s Reduction functions *)
 
 val whd_betaiotazeta        : constr -> constr
 val whd_betadeltaiota       : env -> constr -> constr
@@ -23,8 +21,8 @@ val whd_betadeltaiota_nolet : env -> constr -> constr
 
 val nf_betaiota      : constr -> constr
 
-(************************************************************************)
-(*s conversion functions *)
+(***********************************************************************
+  s conversion functions *)
 
 exception NotConvertible
 exception NotConvertibleVect of int
@@ -53,7 +51,7 @@ val conv_leq       :
 val conv_leq_vecti :
   ?evars:(existential->constr option) -> types array conversion_function
 
-(* option for conversion *)
+(** option for conversion *)
 val set_vm_conv : (conv_pb -> types conversion_function) -> unit
 val vm_conv : conv_pb -> types conversion_function
 
@@ -63,18 +61,18 @@ val default_conv_leq : types conversion_function
 
 (************************************************************************)
 
-(* Builds an application node, reducing beta redexes it may produce. *)
+(** Builds an application node, reducing beta redexes it may produce. *)
 val beta_appvect : constr -> constr array -> constr
 
-(* Builds an application node, reducing the [n] first beta-zeta redexes. *)
+(** Builds an application node, reducing the [n] first beta-zeta redexes. *)
 val betazeta_appvect : int -> constr -> constr array -> constr
 
-(* Pseudo-reduction rule  Prod(x,A,B) a --> B[x\a] *)
+(** Pseudo-reduction rule  Prod(x,A,B) a --> B[x\a] *)
 val hnf_prod_applist : env -> types -> constr list -> types
 
 
-(************************************************************************)
-(*s Recognizing products and arities modulo reduction *)
+(***********************************************************************
+  s Recognizing products and arities modulo reduction *)
 
 val dest_prod       : env -> types -> rel_context * types
 val dest_prod_assum : env -> types -> rel_context * types

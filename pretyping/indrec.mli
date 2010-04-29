@@ -1,23 +1,21 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Names
 open Term
 open Declarations
 open Inductiveops
 open Environ
 open Evd
-(*i*)
 
-(* Errors related to recursors building *)
+(** Errors related to recursors building *)
 
 type recursion_scheme_error =
   | NotAllowedCaseAnalysis of (*isrec:*) bool * sorts * inductive
@@ -29,35 +27,35 @@ exception RecursionSchemeError of recursion_scheme_error
 
 type dep_flag = bool
 
-(* Build a case analysis elimination scheme in some sort family *)
+(** Build a case analysis elimination scheme in some sort family *)
 
 val build_case_analysis_scheme : env -> evar_map -> inductive ->
       dep_flag -> sorts_family -> constr
 
-(* Build a dependent case elimination predicate unless type is in Prop *)
+(** Build a dependent case elimination predicate unless type is in Prop *)
 
 val build_case_analysis_scheme_default : env -> evar_map -> inductive ->
       sorts_family -> constr
 
-(* Builds a recursive induction scheme (Peano-induction style) in the same
+(** Builds a recursive induction scheme (Peano-induction style) in the same
    sort family as the inductive family; it is dependent if not in Prop *)
 
 val build_induction_scheme : env -> evar_map -> inductive ->
       dep_flag -> sorts_family -> constr
 
-(* Builds mutual (recursive) induction schemes *)
+(** Builds mutual (recursive) induction schemes *)
 
 val build_mutual_induction_scheme :
   env -> evar_map -> (inductive * dep_flag * sorts_family) list -> constr list
 
 (** Scheme combinators *)
 
-(* [modify_sort_scheme s n c] modifies the quantification sort of
+(** [modify_sort_scheme s n c] modifies the quantification sort of
    scheme c whose predicate is abstracted at position [n] of [c] *)
 
 val modify_sort_scheme : sorts -> int -> constr -> constr
 
-(* [weaken_sort_scheme s n c t] derives by subtyping from [c:t]
+(** [weaken_sort_scheme s n c t] derives by subtyping from [c:t]
    whose conclusion is quantified on [Type] at position [n] of [t] a
    scheme quantified on sort [s] *)
 

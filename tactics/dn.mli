@@ -17,7 +17,7 @@ sig
 
   val create : unit -> t
     
-  (* [add t f (tree,inf)] adds a structured object [tree] together with
+  (** [add t f (tree,inf)] adds a structured object [tree] together with
      the associated information [inf] to the table [t]; the function
      [f] is used to translated [tree] into its prefix decomposition: [f]
      must decompose any tree into a label characterizing its root node and
@@ -31,7 +31,8 @@ sig
       
   type 'tree lookup_fun = 'tree -> (Y.t * 'tree list) lookup_res
     
-(* [lookup t f tree] looks for trees (and their associated
+
+(** [lookup t f tree] looks for trees (and their associated
    information) in table [t] such that the structured object [tree]
    matches against them; [f] is used to translated [tree] into its
    prefix decomposition: [f] must decompose any tree into a label

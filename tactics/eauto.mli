@@ -1,12 +1,11 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
-(*i*)
 open Term
 open Proof_type
 open Tacexpr
@@ -15,7 +14,6 @@ open Topconstr
 open Evd
 open Environ
 open Explore
-(*i*)
 
 val hintbases : hint_db_name list option Pcoq.Gram.Entry.e
 val wit_hintbases : hint_db_name list option typed_abstract_argument_type

@@ -1,20 +1,18 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Names
 open Libnames
 open Mod_subst
-(*i*)
 
-(* [Libobject] declares persistent objects, given with methods:
+(** [Libobject] declares persistent objects, given with methods:
 
    * a caching function specifying how to add the object in the current
      scope;
@@ -74,7 +72,7 @@ type 'a object_declaration = {
   discharge_function : object_name * 'a -> 'a option;
   rebuild_function : 'a -> 'a }
 
-(* The default object is a "Keep" object with empty methods.
+(** The default object is a "Keep" object with empty methods.
    Object creators are advised to use the construction
    [{(default_object "MY_OBJECT") with
       cache_function = ...
@@ -85,10 +83,11 @@ type 'a object_declaration = {
 
 val default_object : string -> 'a object_declaration
 
-(* the identity substitution function *)
+(** the identity substitution function *)
 val ident_subst_function : substitution * 'a -> 'a
 
-(*s Given an object declaration, the function [declare_object]
+(** {6 Sect } *)
+(** Given an object declaration, the function [declare_object]
    will hand back two functions, the "injection" and "projection"
    functions for dynamically typed library-objects. *)
 

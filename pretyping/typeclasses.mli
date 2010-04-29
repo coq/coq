@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Names
 open Libnames
 open Decl_kinds
@@ -20,23 +19,22 @@ open Nametab
 open Mod_subst
 open Topconstr
 open Util
-(*i*)
 
-(* This module defines type-classes *)
+(** This module defines type-classes *)
 type typeclass = {
-  (* The class implementation: a record parameterized by the context with defs in it or a definition if
+  (** The class implementation: a record parameterized by the context with defs in it or a definition if
      the class is a singleton. This acts as the class' global identifier. *)
   cl_impl : global_reference;
 
-  (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses.
+  (** Context in which the definitions are typed. Includes both typeclass parameters and superclasses.
      The boolean indicates if the typeclass argument is a direct superclass and the global reference
      gives a direct link to the class itself. *)
   cl_context : (global_reference * bool) option list * rel_context;
 
-  (* Context of definitions and properties on defs, will not be shared *)
+  (** Context of definitions and properties on defs, will not be shared *)
   cl_props : rel_context;
 
-  (* The methods implementations of the typeclass as projections. Some may be undefinable due to
+  (** The methods implementations of the typeclass as projections. Some may be undefinable due to
      sorting restrictions. *)
   cl_projs : (identifier * constant option) list;
 }
@@ -56,13 +54,13 @@ val add_inductive_class : inductive -> unit
 val new_instance : typeclass -> int option -> bool -> global_reference -> instance
 val add_instance : instance -> unit
 
-val class_info : global_reference -> typeclass (* raises a UserError if not a class *)
+val class_info : global_reference -> typeclass (** raises a UserError if not a class *)
 
 
-(* These raise a UserError if not a class. *)
+(** These raise a UserError if not a class. *)
 val dest_class_app : env -> constr -> typeclass * constr list
 
-(* Just return None if not a class *)
+(** Just return None if not a class *)
 val class_of_constr : constr -> typeclass option
   
 val instance_impl : instance -> global_reference
@@ -72,7 +70,7 @@ val is_instance : global_reference -> bool
 
 val is_implicit_arg : hole_kind -> bool
 
-(* Returns the term and type for the given instance of the parameters and fields
+(** Returns the term and type for the given instance of the parameters and fields
    of the type class. *)
 
 val instance_constructor : typeclass -> constr list -> constr * types

@@ -14,7 +14,7 @@ val iter : (key -> 'a -> unit) -> 'a t -> unit
 val map : ('a -> 'b) -> 'a t -> 'b t
 val fold : (key -> 'a -> 'c -> 'c) -> 'a t -> 'c -> 'c
 
-(* Additions with respect to ocaml standard library. *)
+(** Additions with respect to ocaml standard library. *)
 
 val dom : 'a t -> key list
 val rng : 'a t -> 'a list

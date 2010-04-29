@@ -7,7 +7,8 @@ type reloc_info =
   | Reloc_getglobal of constant
 
 type patch = reloc_info * int
-(* A virer *)
+
+(** A virer *)
 val subst_patch : Mod_subst.substitution -> patch -> patch
 
 type emitcodes
@@ -37,4 +38,4 @@ val is_boxed : to_patch_substituted -> bool
 val subst_to_patch_subst : Mod_subst.substitution -> to_patch_substituted -> to_patch_substituted
 
 val to_memory : bytecodes * bytecodes * fv -> to_patch
-               (* init code, fun code, fv *)
+               (** init code, fun code, fv *)

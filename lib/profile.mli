@@ -1,20 +1,20 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*s This program is a small time and allocation profiler for Objective Caml *)
+(** {6 This program is a small time and allocation profiler for Objective Caml } *)
 
 (*i It requires the UNIX library *)
 
-(* Adapted from Christophe Raffalli *)
+(** Adapted from Christophe Raffalli *)
 
-(* To use it, link it with the program you want to profile (do not forget
+(** To use it, link it with the program you want to profile (do not forget
 "-cclib -lunix -custom unix.cma" among the link options).
 
 To trace a function "f" you first need to get a key for it by using :
@@ -107,23 +107,23 @@ val profile7 :
     -> 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h
 
 
-(* Some utilities to compute the logical and physical sizes and depth
+(** Some utilities to compute the logical and physical sizes and depth
    of ML objects *)
 
-(* Print logical size (in words) and depth of its argument *)
-(* This function does not disturb the heap *)
+(** Print logical size (in words) and depth of its argument 
+   This function does not disturb the heap *)
 val print_logical_stats : 'a -> unit
 
-(* Print physical size, logical size (in words) and depth of its argument *)
-(* This function allocates itself a lot (the same order of magnitude
+(** Print physical size, logical size (in words) and depth of its argument 
+   This function allocates itself a lot (the same order of magnitude
    as the physical size of its argument) *)
 val print_stats : 'a -> unit
 
-(* Return logical size (first for strings, then for not strings),
-   (in words) and depth of its argument *)
-(* This function allocates itself a lot *)
+(** Return logical size (first for strings, then for not strings),
+   (in words) and depth of its argument 
+   This function allocates itself a lot *)
 val obj_stats : 'a -> int * int * int
 
-(* Return physical size of its argument (string part and rest) *)
-(* This function allocates itself a lot *)
+(** Return physical size of its argument (string part and rest) 
+   This function allocates itself a lot *)
 val obj_shared_size : 'a -> int * int

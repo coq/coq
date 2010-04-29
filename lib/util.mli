@@ -1,21 +1,20 @@
-(***********************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
-(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
-(*   \VV/  *************************************************************)
-(*    //   *      This file is distributed under the terms of the      *)
-(*         *       GNU Lesser General Public License Version 2.1       *)
-(***********************************************************************)
+(**********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team    
+   <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              
+     \VV/  ************************************************************
+      //   *      This file is distributed under the terms of the      
+           *       GNU Lesser General Public License Version 2.1       
+  **********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Pp
-(*i*)
 
-(* This module contains numerous utility functions on strings, lists,
+(** This module contains numerous utility functions on strings, lists,
    arrays, etc. *)
 
-(*s Errors. [Anomaly] is used for system errors and [UserError] for the
+(** {6 Sect } *)
+(** Errors. [Anomaly] is used for system errors and [UserError] for the
    user's ones. *)
 
 exception Anomaly of string * std_ppcmds
@@ -31,7 +30,7 @@ val alreadydeclared : std_ppcmds -> 'a
 
 exception AnomalyOnError of string * exn
 
-(* [todo] is for running of an incomplete code its implementation is
+(** [todo] is for running of an incomplete code its implementation is
    "do nothing" (or print a message), but this function should not be
    used in a released code *)
 
@@ -53,37 +52,37 @@ val join_loc : loc -> loc -> loc
 val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
 val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
 
-(* Like [Exc_located], but specifies the outermost file read, the
+(** Like [Exc_located], but specifies the outermost file read, the
    input buffer associated to the location of the error (or the module name
    if boolean is true), and the error itself. *)
 
 exception Error_in_file of string * (bool * string * loc) * exn
 
-(* Mapping under pairs *)
+(** Mapping under pairs *)
 
 val on_fst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
 val on_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
 
-(* Mapping under triple *)
+(** Mapping under triple *)
 
 val on_pi1 : ('a -> 'b) -> 'a * 'c * 'd -> 'b * 'c * 'd
 val on_pi2 : ('a -> 'b) -> 'c * 'a * 'd -> 'c * 'b * 'd
 val on_pi3 : ('a -> 'b) -> 'c * 'd * 'a -> 'c * 'd * 'b
 
-(*s Projections from triplets *)
+(** {6 Projections from triplets } *)
 
 val pi1 : 'a * 'b * 'c -> 'a
 val pi2 : 'a * 'b * 'c -> 'b
 val pi3 : 'a * 'b * 'c -> 'c
 
-(*s Chars. *)
+(** {6 Chars. } *)
 
 val is_letter : char -> bool
 val is_digit : char -> bool
 val is_ident_tail : char -> bool
 val is_blank : char -> bool
 
-(*s Strings. *)
+(** {6 Strings. } *)
 
 val explode : string -> string list
 val implode : string list -> string
@@ -109,7 +108,7 @@ val check_ident : string -> unit
 val check_ident_soft : string -> unit
 val lowercase_first_char_utf8 : string -> string
 
-(*s Lists. *)
+(** {6 Lists. } *)
 
 val list_compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
 val list_add_set : 'a -> 'a list -> 'a list
@@ -119,7 +118,8 @@ val list_union : 'a list -> 'a list -> 'a list
 val list_unionq : 'a list -> 'a list -> 'a list
 val list_subtract : 'a list -> 'a list -> 'a list
 val list_subtractq : 'a list -> 'a list -> 'a list
-(* [list_tabulate f n] builds [[f 0; ...; f (n-1)]] *)
+
+(** [list_tabulate f n] builds [[f 0; ...; f (n-1)]] *)
 val list_tabulate : (int -> 'a) -> int -> 'a list
 val list_make : int -> 'a -> 'a list
 val list_assign : 'a list -> int -> 'a -> 'a list
@@ -127,7 +127,8 @@ val list_distinct : 'a list -> bool
 val list_duplicates : 'a list -> 'a list
 val list_filter2 : ('a -> 'b -> bool) -> 'a list * 'b list -> 'a list * 'b list
 val list_map_filter : ('a -> 'b option) -> 'a list -> 'b list
-(* [list_smartmap f [a1...an] = List.map f [a1...an]] but if for all i
+
+(** [list_smartmap f [a1...an] = List.map f [a1...an]] but if for all i
    [ f ai == ai], then [list_smartmap f l==l] *)
 val list_smartmap : ('a -> 'a) -> 'a list -> 'a list
 val list_map_left : ('a -> 'b) -> 'a list -> 'b list
@@ -140,11 +141,14 @@ val list_map4 :
   ('a -> 'b -> 'c -> 'd -> 'e) -> 'a list -> 'b list -> 'c list -> 'd list -> 'e list
 val list_filter_i :
   (int -> 'a -> bool) -> 'a list -> 'a list
-(* [list_index] returns the 1st index of an element in a list (counting from 1) *)
+
+(** [list_index] returns the 1st index of an element in a list (counting from 1) *)
 val list_index : 'a -> 'a list -> int
-(* [list_unique_index x l] returns [Not_found] if [x] doesn't occur exactly once *)
+
+(** [list_unique_index x l] returns [Not_found] if [x] doesn't occur exactly once *)
 val list_unique_index : 'a -> 'a list -> int
-(* [list_index0] behaves as [list_index] except that it starts counting at 0 *)
+
+(** [list_index0] behaves as [list_index] except that it starts counting at 0 *)
 val list_index0 : 'a -> 'a list -> int
 val list_iter3 : ('a -> 'b -> 'c -> unit) -> 'a list -> 'b list -> 'c list -> unit
 val list_iter_i :  (int -> 'a -> unit) -> 'a list -> unit
@@ -163,7 +167,8 @@ val list_sep_last : 'a list -> 'a * 'a list
 val list_try_find_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b
 val list_try_find : ('a -> 'b) -> 'a list -> 'b
 val list_uniquize : 'a list -> 'a list
-(* merges two sorted lists and preserves the uniqueness property: *)
+
+(** merges two sorted lists and preserves the uniqueness property: *)
 val list_merge_uniq : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 val list_subset : 'a list -> 'a list -> bool
 val list_chop : int -> 'a list -> 'a list * 'a list
@@ -178,30 +183,38 @@ val list_skipn : int -> 'a list -> 'a list
 val list_skipn_at_least : int -> 'a list -> 'a list
 val list_addn : int -> 'a -> 'a list -> 'a list
 val list_prefix_of : 'a list -> 'a list -> bool
-(* [list_drop_prefix p l] returns [t] if [l=p++t] else return [l] *)
+
+(** [list_drop_prefix p l] returns [t] if [l=p++t] else return [l] *)
 val list_drop_prefix : 'a list -> 'a list -> 'a list
 val list_drop_last : 'a list -> 'a list
-(* [map_append f [x1; ...; xn]] returns [(f x1)@(f x2)@...@(f xn)] *)
+
+(** [map_append f [x1; ...; xn]] returns [(f x1)@(f x2)@...@(f xn)] *)
 val list_map_append : ('a -> 'b list) -> 'a list -> 'b list
 val list_join_map : ('a -> 'b list) -> 'a list -> 'b list
-(* raises [Invalid_argument] if the two lists don't have the same length *)
+
+(** raises [Invalid_argument] if the two lists don't have the same length *)
 val list_map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
 val list_share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
-(* [list_fold_map f e_0 [l_1...l_n] = e_n,[k_1...k_n]]
+
+(** [list_fold_map f e_0 [l_1...l_n] = e_n,[k_1...k_n]]
    where [(e_i,k_i)=f e_{i-1} l_i] *)
 val list_fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
 val list_fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
 val list_map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
-(* A generic cartesian product: for any operator (**),
+
+(** A generic cartesian product: for any operator (**),
    [list_cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]],
    and so on if there are more elements in the lists. *)
 val list_cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-(* [list_cartesians] is an n-ary cartesian product: it iterates
+
+(** [list_cartesians] is an n-ary cartesian product: it iterates
    [list_cartesian] over a list of lists.  *)
 val list_cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
-(* list_combinations [[a;b];[c;d]] returns [[a;c];[a;d];[b;c];[b;d]] *)
+
+(** list_combinations [[a;b];[c;d]] returns [[a;c];[a;d];[b;c];[b;d]] *)
 val list_combinations : 'a list list -> 'a list list
-(* Keep only those products that do not return None *)
+
+(** Keep only those products that do not return None *)
 val list_cartesian_filter :
   ('a -> 'b -> 'c option) -> 'a list -> 'b list -> 'c list
 val list_cartesians_filter :
@@ -209,7 +222,7 @@ val list_cartesians_filter :
 
 val list_union_map : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 
-(*s Arrays. *)
+(** {6 Arrays. } *)
 
 val array_compare : ('a -> 'a -> int) -> 'a array -> 'a array -> int
 val array_exists : ('a -> bool) -> 'a array -> bool
@@ -258,11 +271,11 @@ val array_distinct : 'a array -> bool
 val array_union_map : ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
 val array_rev_to_list : 'a array -> 'a list
 
-(*s Matrices *)
+(** {6 Matrices } *)
 
 val matrix_transpose : 'a list list -> 'a list list
 
-(*s Functions. *)
+(** {6 Functions. } *)
 
 val identity : 'a -> 'a
 val compose : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
@@ -271,7 +284,7 @@ val iterate : ('a -> 'a) -> int -> 'a -> 'a
 val repeat : int -> ('a -> unit) -> 'a -> unit
 val iterate_for : int -> int -> (int -> 'a -> 'a) -> 'a -> 'a
 
-(*s Misc. *)
+(** {6 Misc. } *)
 
 type ('a,'b) union = Inl of 'a | Inr of 'b
 
@@ -286,12 +299,12 @@ val intmap_inv : 'a Intmap.t -> 'a -> int list
 val interval : int -> int -> int list
 
 
-(* In [map_succeed f l] an element [a] is removed if [f a] raises *)
-(* [Failure _] otherwise behaves as [List.map f l] *)
+(** In [map_succeed f l] an element [a] is removed if [f a] raises 
+   [Failure _] otherwise behaves as [List.map f l] *)
 
 val map_succeed : ('a -> 'b) -> 'a list -> 'b list
 
-(*s Pretty-printing. *)
+(** {6 Pretty-printing. } *)
 
 val pr_spc : unit -> std_ppcmds
 val pr_fnl : unit -> std_ppcmds
@@ -306,7 +319,8 @@ val pr_opt_no_spc : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
 val nth : int -> std_ppcmds
 
 val prlist : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
-(* unlike all other functions below, [prlist] works lazily.
+
+(** unlike all other functions below, [prlist] works lazily.
    if a strict behavior is needed, use [prlist_strict] instead. *)
 val prlist_strict :  ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 val prlist_with_sep :
@@ -321,34 +335,36 @@ val pr_located : ('a -> std_ppcmds) -> 'a located -> std_ppcmds
 val pr_sequence : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 val surround : std_ppcmds -> std_ppcmds
 
-(*s Memoization. *)
+(** {6 Memoization. } *)
 
-(* General comments on memoization:
+(** General comments on memoization:
    - cache is created whenever the function is supplied (because of
       ML's polymorphic value restriction).
    - cache is never flushed (unless the memoized fun is GC'd)
- *)
-(* One cell memory: memorizes only the last call *)
+ 
+   One cell memory: memorizes only the last call *)
 val memo1_1 : ('a -> 'b) -> ('a -> 'b)
 val memo1_2 : ('a -> 'b -> 'c) -> ('a -> 'b -> 'c)
-(* with custom equality (used to deal with various arities) *)
+
+(** with custom equality (used to deal with various arities) *)
 val memo1_eq : ('a -> 'a -> bool) -> ('a -> 'b) -> ('a -> 'b)
 
-(* Memorizes the last [n] distinct calls. Efficient only for small [n]. *)
+(** Memorizes the last [n] distinct calls. Efficient only for small [n]. *)
 val memon_eq : ('a -> 'a -> bool) -> int -> ('a -> 'b) -> ('a -> 'b)
 
-(*s Size of an ocaml value (in words, bytes and kilobytes). *)
+(** {6 Size of an ocaml value (in words, bytes and kilobytes). } *)
 
 val size_w : 'a -> int
 val size_b : 'a -> int
 val size_kb : 'a -> int
 
-(*s Total size of the allocated ocaml heap. *)
+(** {6 Total size of the allocated ocaml heap. } *)
 
 val heap_size : unit -> int
 val heap_size_kb : unit -> int
 
-(*s Coq interruption: set the following boolean reference to interrupt Coq
+(** {6 Sect } *)
+(** Coq interruption: set the following boolean reference to interrupt Coq
     (it eventually raises [Break], simulating a Ctrl-C) *)
 
 val interrupt : bool ref

@@ -7,20 +7,20 @@ open Pre_env
 
 
 val compile : env -> constr -> bytecodes * bytecodes * fv
-                              (* init, fun, fv *)
+                              (** init, fun, fv *)
 
 val compile_constant_body :
     env -> constr_substituted option -> bool -> bool -> body_code
-                                 (* opaque *) (* boxed *)
+                                 (** opaque *) (* boxed *)
 
 
-(* spiwack: this function contains the information needed to perform
+(** spiwack: this function contains the information needed to perform
             the static compilation of int31 (trying and obtaining
             a 31-bit integer in processor representation at compile time) *)
 val compile_structured_int31 : bool -> constr array ->
                                structured_constant
 
-(* this function contains the information needed to perform
+(** this function contains the information needed to perform
         the dynamic compilation of int31 (trying and obtaining a
         31-bit integer in processor representation at runtime when
         it failed at compile time *)

@@ -1,11 +1,11 @@
 
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
@@ -80,7 +80,7 @@ type term_pr = {
 val set_term_pr : term_pr -> unit
 val default_term_pr : term_pr
 
-(* The modular constr printer.
+(** The modular constr printer.
     [modular_constr_pr pr s p t] prints the head of the term [t] and calls
     [pr] on its subterms.
     [s] is typically {!Pp.mt} and [p] is [lsimple] for "constr" printers and [ltop]

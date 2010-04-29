@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Pp
 open Names
 open Libnames
@@ -23,11 +22,10 @@ open Evd
 open Proof_type
 open Rawterm
 open Tacexpr
-(*i*)
 
-(* These are the entry points for printing terms, context, tac, ... *)
+(** These are the entry points for printing terms, context, tac, ... *)
 
-(* Terms *)
+(** Terms *)
 
 val pr_lconstr_env         : env -> constr -> std_ppcmds
 val pr_lconstr_env_at_top  : env -> constr -> std_ppcmds
@@ -68,7 +66,7 @@ val pr_cases_pattern       : cases_pattern -> std_ppcmds
 
 val pr_sort                : sorts -> std_ppcmds
 
-(* Printing global references using names as short as possible *)
+(** Printing global references using names as short as possible *)
 
 val pr_global_env          : Idset.t -> global_reference -> std_ppcmds
 val pr_global              : global_reference -> std_ppcmds
@@ -79,7 +77,7 @@ val pr_constructor         : env -> constructor -> std_ppcmds
 val pr_inductive           : env -> inductive -> std_ppcmds
 val pr_evaluable_reference : evaluable_global_reference -> std_ppcmds
 
-(* Contexts *)
+(** Contexts *)
 
 val pr_ne_context_of       : std_ppcmds -> env -> std_ppcmds
 
@@ -92,14 +90,14 @@ val pr_rel_context         : env -> rel_context -> std_ppcmds
 val pr_rel_context_of      : env -> std_ppcmds
 val pr_context_of          : env -> std_ppcmds
 
-(* Predicates *)
+(** Predicates *)
 
 val pr_predicate           : ('a -> std_ppcmds) -> (bool * 'a list) -> std_ppcmds
 val pr_cpred               : Cpred.t -> std_ppcmds
 val pr_idpred              : Idpred.t -> std_ppcmds
 val pr_transparent_state   : transparent_state -> std_ppcmds
 
-(* Proofs *)
+(** Proofs *)
 
 val pr_goal                : goal sigma -> std_ppcmds
 val pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds
@@ -111,19 +109,19 @@ val pr_evars_int           : int -> (evar * evar_info) list -> std_ppcmds
 
 val pr_prim_rule           : prim_rule -> std_ppcmds
 
-(* Emacs/proof general support *)
-(* (emacs_str s alts) outputs
+(** Emacs/proof general support 
+   (emacs_str s alts) outputs
    - s if emacs mode & unicode allowed,
    - alts if emacs mode and & unicode not allowed
    - nothing otherwise *)
 val emacs_str              : string -> string -> string
 
-(* Backwards compatibility *)
+(** Backwards compatibility *)
 
-val prterm                 : constr -> std_ppcmds (* = pr_lconstr *)
+val prterm                 : constr -> std_ppcmds (** = pr_lconstr *)
 
 
-(* spiwack: printer function for sets of Environ.assumption.
+(** spiwack: printer function for sets of Environ.assumption.
             It is used primarily by the Print Assumption command. *)
 val pr_assumptionset : env -> Term.types Environ.ContextObjectMap.t ->std_ppcmds
 

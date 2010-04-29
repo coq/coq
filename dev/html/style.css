@@ -1,0 +1,220 @@
+a:visited {
+  color: #416DFF; text-decoration: none; 
+}
+
+a:link {
+  color: #416DFF; text-decoration: none;
+}
+
+a:hover {
+  color: Red; text-decoration: none; background-color: #5FFF88
+}
+
+a:active {
+  color: Red; text-decoration: underline; 
+}
+
+.keyword {
+  font-weight: bold; color: Red 
+}
+
+.keywordsign {
+  color: #C04600 
+}
+
+.superscript {
+  font-size: 4 
+}
+
+.subscript {
+  font-size: 4 
+}
+
+.comment {
+  color: Green 
+}
+
+.constructor {
+  color: Blue 
+}
+
+.type {
+  color: #5C6585 
+}
+
+.string {
+  color: Maroon 
+}
+
+.warning {
+  color: Red; font-weight: bold 
+}
+
+.info {
+  margin-left: 3em; margin-right: 3em 
+}
+
+.param_info {
+  margin-top: 4px; margin-left: 3em; margin-right: 3em 
+}
+
+.code {
+  color: #465F91; 
+}
+
+h1 {
+  font-size: 20pt; text-align: center; 
+}
+
+h5, h6, div.h7, div.h8, div.h9 {
+  font-size: 20pt;
+  border: 1px solid #000000;
+  margin-top: 5px;
+  margin-bottom: 2px;
+  text-align: center;
+  padding: 2px;
+}
+
+h5 {
+  background-color: #90FDFF;
+}
+
+h6 {
+  background-color: #016699;
+  color: white;
+}
+
+div.h7 {
+  background-color: #E0FFFF;
+}
+
+div.h8 {
+  background-color: #F0FFFF;
+}
+
+div.h9 {
+  background-color: #FFFFFF;
+}
+
+.typetable, .indextable, .paramstable {
+  border-style: hidden;
+}
+
+.paramstable {
+  padding: 5pt 5pt;
+}
+
+body {
+  background-color: white;
+}
+
+tr {
+  background-color: white;
+}
+
+td.typefieldcomment {
+  background-color: #FFFFFF;
+  font-size: smaller;
+}
+
+pre {
+  margin-bottom: 4px;
+}
+
+div.sig_block {
+  margin-left: 2em;
+}
+
+
+h2 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16pt;
+  font-weight: normal;
+  border-bottom: 1px solid #dadada;
+  border-top: 1px solid #dadada;
+  color: #101010;
+  background: #eeeeff;
+  margin: 25px 0px 10px 0px;
+  padding: 1px 1px 1px 1px;
+}
+
+h3 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12pt;
+  color: #016699;
+  font-weight: bold;
+  padding: 15px 0 0 0ex;
+  margin: 5px 0 0 0;
+}
+
+h4 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10pt;
+  color: #016699;
+  padding: 15px 0 0 0ex;
+  margin: 5px 0 0 0;
+}
+
+/* Here starts the overwrite of default rules to give a better look */
+
+body {
+  font-family: Calibri, Georgia, Garamond, Baskerville, serif;
+  font-size: 12pt;
+  background-color: white;
+}
+
+a:link, a {
+  color: #6895c3 !important;
+}
+
+a:hover {
+  color: #2F4459 !important;
+  background-color: white;
+}
+
+hr {
+  height: 1px;
+  color: #016699;
+  background-color: #016699;
+  border-width: 0;
+}
+
+h1, h1 a:link, h1 a:visited, h1 a {
+  font-family: Cambria, Georgia, Garamond, Baskerville, serif;
+  color: #016699;
+}
+
+.navbar {
+  float: left;
+}
+
+.navbar a, .navbar a:link, .navbar a:visited {
+  color: #016699;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  font-size: 80%;
+}
+
+.keyword {
+  color: #c13939;
+}
+
+.constructor {
+  color: #3c8f7e;
+}
+
+pre, code {
+  font-family: "DejaVu Sans Mono", "Bitstream Vera Mono", "Courrier New", monospace;
+  white-space: normal;
+  font-size: 9pt;
+  font-weight: bold;
+}
+
+.type br {
+  display: none;
+}
+
+.info {
+  margin-left: 1em;
+  font-size: 12pt;
+}

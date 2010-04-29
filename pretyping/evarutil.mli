@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Util
 open Names
 open Rawterm
@@ -17,29 +16,29 @@ open Sign
 open Evd
 open Environ
 open Reductionops
-(*i*)
 
-(*s This modules provides useful functions for unification modulo evars *)
+(** {6 This modules provides useful functions for unification modulo evars } *)
 
-(***********************************************************)
-(* Metas *)
+(**********************************************************
+   Metas *)
 
-(* [new_meta] is a generator of unique meta variables *)
+(** [new_meta] is a generator of unique meta variables *)
 val new_meta : unit -> metavariable
 val mk_new_meta : unit -> constr
 
-(* [new_untyped_evar] is a generator of unique evar keys *)
+(** [new_untyped_evar] is a generator of unique evar keys *)
 val new_untyped_evar : unit -> existential_key
 
-(***********************************************************)
-(* Creating a fresh evar given their type and context *)
+(**********************************************************
+   Creating a fresh evar given their type and context *)
 val new_evar :
   evar_map -> env -> ?src:loc * hole_kind -> ?filter:bool list -> types -> evar_map * constr
-(* the same with side-effects *)
+
+(** the same with side-effects *)
 val e_new_evar :
   evar_map ref -> env -> ?src:loc * hole_kind -> ?filter:bool list -> types -> constr
 
-(* Create a fresh evar in a context different from its definition context:
+(** Create a fresh evar in a context different from its definition context:
    [new_evar_instance sign evd ty inst] creates a new evar of context
    [sign] and type [ty], [inst] is a mapping of the evar context to
    the context where the evar should occur. This means that the terms
@@ -50,30 +49,30 @@ val new_evar_instance :
 
 val make_pure_subst : evar_info -> constr array -> (identifier * constr) list
 
-(***********************************************************)
-(* Instantiate evars *)
+(**********************************************************
+   Instantiate evars *)
 
-(* [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
+(** [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
    possibly solving related unification problems, possibly leaving open
    some problems that cannot be solved in a unique way (except if choose is
    true); fails if the instance is not valid for the given [ev] *)
 val evar_define : ?choose:bool -> env -> existential -> constr -> evar_map -> evar_map
 
-(***********************************************************)
-(* Evars/Metas switching... *)
+(**********************************************************
+   Evars/Metas switching... *)
 
-(* [evars_to_metas] generates new metavariables for each non dependent
+(** [evars_to_metas] generates new metavariables for each non dependent
    existential and performs the replacement in the given constr; it also
    returns the evar_map extended with dependent evars *)
 val evars_to_metas : evar_map -> open_constr -> (evar_map * constr)
 
 val non_instantiated : evar_map -> (evar * evar_info) list
 
-(***********************************************************)
-(* Unification utils *)
+(**********************************************************
+   Unification utils *)
 
 exception NoHeadEvar
-val head_evar : constr -> existential_key (* may raise NoHeadEvar *)
+val head_evar : constr -> existential_key (** may raise NoHeadEvar *)
 
 val is_ground_term :  evar_map -> constr -> bool
 val is_ground_env  :  evar_map -> env -> bool
@@ -86,7 +85,7 @@ val solve_simple_eqn :
   -> ?choose:bool -> env ->  evar_map -> bool option * existential * constr ->
     evar_map * bool
 
-(* [check_evars env initial_sigma extended_sigma c] fails if some
+(** [check_evars env initial_sigma extended_sigma c] fails if some
    new unresolved evar remains in [c] *)
 val check_evars : env -> evar_map -> evar_map -> constr -> unit
 
@@ -105,8 +104,8 @@ val evars_of_term : constr -> Intset.t
 val evars_of_named_context : named_context -> Intset.t
 val evars_of_evar_info : evar_info -> Intset.t
 
-(***********************************************************)
-(* Value/Type constraints *)
+(**********************************************************
+   Value/Type constraints *)
 
 val judge_of_new_Type : unit -> unsafe_judgment
 
@@ -136,8 +135,8 @@ val lift_tycon : int -> type_constraint -> type_constraint
 
 (***********************************************************)
 
-(* [whd_ise] raise [Uninstantiated_evar] if an evar remains uninstantiated; *)
-(* *[whd_evar]* and *[nf_evar]* leave uninstantiated evar as is *)
+(** [whd_ise] raise [Uninstantiated_evar] if an evar remains uninstantiated; 
+   *[whd_evar]* and *[nf_evar]* leave uninstantiated evar as is *)
 
 val nf_evar :  evar_map -> constr -> constr
 val j_nf_evar :  evar_map -> unsafe_judgment -> unsafe_judgment
@@ -155,7 +154,7 @@ val nf_named_context_evar : evar_map -> named_context -> named_context
 val nf_rel_context_evar : evar_map -> rel_context -> rel_context
 val nf_env_evar : evar_map -> env -> env
 
-(* Same for evar defs *)
+(** Same for evar defs *)
 val nf_isevar :  evar_map -> constr -> constr
 val j_nf_isevar :  evar_map -> unsafe_judgment -> unsafe_judgment
 val jl_nf_isevar :
@@ -167,25 +166,25 @@ val tj_nf_isevar :
 
 val nf_evar_map : evar_map -> evar_map
 
-(* Replacing all evars *)
+(** Replacing all evars *)
 exception Uninstantiated_evar of existential_key
 val whd_ise :  evar_map -> constr -> constr
 val whd_castappevar :  evar_map -> constr -> constr
 
-(* Replace the vars and rels that are aliases to other vars and rels by *)
-(* their representative that is most ancient in the context *)
+(** Replace the vars and rels that are aliases to other vars and rels by 
+   their representative that is most ancient in the context *)
 val expand_vars_in_term : env -> constr -> constr
 
-(*********************************************************************)
-(* debug pretty-printer: *)
+(********************************************************************
+   debug pretty-printer: *)
 
 val pr_tycon_type : env -> type_constraint_type -> Pp.std_ppcmds
 val pr_tycon : env -> type_constraint -> Pp.std_ppcmds
 
 
-(*********************************************************************)
-(* Removing hyps in evars'context;                                   *)
-(* raise OccurHypInSimpleClause if the removal breaks dependencies   *)
+(********************************************************************
+   Removing hyps in evars'context;                                   
+   raise OccurHypInSimpleClause if the removal breaks dependencies   *)
 
 type clear_dependency_error =
 | OccurHypInSimpleClause of identifier option

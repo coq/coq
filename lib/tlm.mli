@@ -1,28 +1,28 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(* Tries. This module implements a data structure [('a,'b) t] mapping lists
+(** Tries. This module implements a data structure [('a,'b) t] mapping lists
    of values of type ['a] to sets (as lists) of values of type ['b]. *)
 
 type ('a,'b) t
 
 val empty : ('a,'b) t
 
-(* Work on labels, not on paths. *)
+(** Work on labels, not on paths. *)
 
 val map : ('a,'b) t -> 'a -> ('a,'b) t
 val xtract : ('a,'b) t -> 'b list
 val dom : ('a,'b) t -> 'a list
 val in_dom : ('a,'b) t -> 'a -> bool
 
-(* Work on paths, not on labels. *)
+(** Work on paths, not on labels. *)
 
 val add : ('a,'b) t -> 'a list * 'b -> ('a,'b) t
 val rmv : ('a,'b) t -> ('a list * 'b) -> ('a,'b) t

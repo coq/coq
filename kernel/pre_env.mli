@@ -1,12 +1,12 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
-(* $Id$ *)
+(** {% $ %}Id: pre_env.mli 12406 2009-10-21 15:12:52Z soubiran {% $ %} *)
 
 open Util
 open Names
@@ -15,7 +15,7 @@ open Univ
 open Term
 open Declarations
 
-(* The type of environments. *)
+(** The type of environments. *)
 
 
 type key = int option ref
@@ -57,25 +57,27 @@ val empty_named_context_val : named_context_val
 
 val empty_env : env
 
-(* Rel context *)
+(** Rel context *)
 
 val nb_rel         : env -> int
 val push_rel       : rel_declaration -> env -> env
 val lookup_rel_val : int -> env -> lazy_val
 val env_of_rel     : int -> env -> env
-(* Named context *)
+
+(** Named context *)
 
 val push_named_context_val  :
     named_declaration -> named_context_val -> named_context_val
 val push_named       : named_declaration -> env -> env
 val lookup_named_val : identifier -> env -> lazy_val
 val env_of_named     : identifier -> env -> env
-(* Global constants *)
+
+(** Global constants *)
 
 
 val lookup_constant_key : constant -> env -> constant_key
 val lookup_constant : constant -> env -> constant_body
 
-(* Mutual Inductives *)
+(** Mutual Inductives *)
 val lookup_mind : mutual_inductive -> env -> mutual_inductive_body
 

@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Names
 open Term
 open Environ
@@ -18,16 +17,15 @@ open Closure
 open Rawterm
 open Termops
 open Pattern
-(*i*)
 
 type reduction_tactic_error =
     InvalidAbstraction of env * constr * (env * Type_errors.type_error)
 
 exception ReductionTacticError of reduction_tactic_error
 
-(*s Reduction functions associated to tactics. \label{tacred} *)
+(** {6 Reduction functions associated to tactics. {% \label{%}tacred{% }%} } *)
 
-(* Evaluable global reference *)
+(** Evaluable global reference *)
 
 val is_evaluable : Environ.env -> evaluable_global_reference -> bool
 
@@ -41,51 +39,52 @@ val global_of_evaluable_reference :
 
 exception Redelimination
 
-(* Red (raise user error if nothing reducible) *)
+(** Red (raise user error if nothing reducible) *)
 val red_product : reduction_function
 
-(* Red (raise Redelimination if nothing reducible) *)
+(** Red (raise Redelimination if nothing reducible) *)
 val try_red_product : reduction_function
 
-(* Simpl *)
+(** Simpl *)
 val simpl : reduction_function
 
-(* Simpl only at the head *)
+(** Simpl only at the head *)
 val whd_simpl : reduction_function
 
-(* Hnf: like whd_simpl but force delta-reduction of constants that do
+(** Hnf: like whd_simpl but force delta-reduction of constants that do
    not immediately hide a non reducible fix or cofix *)
 val hnf_constr : reduction_function
 
-(* Unfold *)
+(** Unfold *)
 val unfoldn :
   (occurrences * evaluable_global_reference) list ->  reduction_function
 
-(* Fold *)
+(** Fold *)
 val fold_commands : constr list ->  reduction_function
 
-(* Pattern *)
+(** Pattern *)
 val pattern_occs : (occurrences * constr) list ->  reduction_function
-(* Rem: Lazy strategies are defined in Reduction *)
 
-(* Call by value strategy (uses Closures) *)
+(** Rem: Lazy strategies are defined in Reduction *)
+
+(** Call by value strategy (uses Closures) *)
 val cbv_norm_flags : Closure.RedFlags.reds ->  reduction_function
   val cbv_beta : local_reduction_function
   val cbv_betaiota : local_reduction_function
   val cbv_betadeltaiota :  reduction_function
-  val compute :  reduction_function  (* = [cbv_betadeltaiota] *)
+  val compute :  reduction_function  (** = [cbv_betadeltaiota] *)
 
-(* [reduce_to_atomic_ind env sigma t] puts [t] in the form [t'=(I args)]
+(** [reduce_to_atomic_ind env sigma t] puts [t] in the form [t'=(I args)]
    with [I] an inductive definition;
    returns [I] and [t'] or fails with a user error *)
 val reduce_to_atomic_ind : env ->  evar_map -> types -> inductive * types
 
-(* [reduce_to_quantified_ind env sigma t] puts [t] in the form
+(** [reduce_to_quantified_ind env sigma t] puts [t] in the form
    [t'=(x1:A1)..(xn:An)(I args)] with [I] an inductive definition;
    returns [I] and [t'] or fails with a user error *)
 val reduce_to_quantified_ind : env ->  evar_map -> types -> inductive * types
 
-(* [reduce_to_quantified_ref env sigma ref t] try to put [t] in the form
+(** [reduce_to_quantified_ref env sigma ref t] try to put [t] in the form
    [t'=(x1:A1)..(xn:An)(ref args)] and fails with user error if not possible *)
 val reduce_to_quantified_ref :
   env ->  evar_map -> Libnames.global_reference -> types -> types

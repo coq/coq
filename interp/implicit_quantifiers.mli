@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Names
 open Decl_kinds
 open Term
@@ -22,7 +21,6 @@ open Topconstr
 open Util
 open Libnames
 open Typeclasses
-(*i*)
 
 val declare_generalizable : Vernacexpr.locality_flag -> (identifier located) list option -> unit
 
@@ -30,7 +28,7 @@ val ids_of_list : identifier list -> Idset.t
 val destClassApp : constr_expr -> loc * reference * constr_expr list
 val destClassAppExpl : constr_expr -> loc * reference * (constr_expr * explicitation located option) list
 
-(* Fragile, should be used only for construction a set of identifiers to avoid *)
+(** Fragile, should be used only for construction a set of identifiers to avoid *)
 
 val free_vars_of_constr_expr : constr_expr -> ?bound:Idset.t ->
   identifier list -> identifier list
@@ -38,7 +36,7 @@ val free_vars_of_constr_expr : constr_expr -> ?bound:Idset.t ->
 val free_vars_of_binders :
   ?bound:Idset.t -> Names.identifier list -> local_binder list -> Idset.t * Names.identifier list
 
-(* Returns the generalizable free ids in left-to-right
+(** Returns the generalizable free ids in left-to-right
    order with the location of their first occurence *)
 
 val generalizable_vars_of_rawconstr : ?bound:Idset.t -> ?allowed:Idset.t ->

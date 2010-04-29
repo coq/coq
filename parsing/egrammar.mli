@@ -1,14 +1,13 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Util
 open Names
 open Topconstr
@@ -19,14 +18,13 @@ open Ppextend
 open Rawterm
 open Genarg
 open Mod_subst
-(*i*)
 
 (** Mapping of grammar productions to camlp4 actions
     Used for Coq-level Notation and Tactic Notation,
     and for ML-level tactic and vernac extensions
  *)
 
-(* For constr notations *)
+(** For constr notations *)
 
 type grammar_constr_prod_item =
   | GramConstrTerminal of Token.pattern
@@ -38,14 +36,14 @@ type grammar_constr_prod_item =
 type notation_grammar =
     int * Gramext.g_assoc option * notation * grammar_constr_prod_item list list
 
-(* For tactic and vernac notations *)
+(** For tactic and vernac notations *)
 
 type grammar_prod_item =
   | GramTerminal of string
   | GramNonTerminal of loc * argument_type *
       Gram.te prod_entry_key * identifier option
 
-(* Adding notations *)
+(** Adding notations *)
 
 type all_grammar_command =
   | Notation of (precedence * tolerability list) * notation_grammar

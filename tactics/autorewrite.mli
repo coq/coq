@@ -1,34 +1,32 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************
+    v      *   The Coq Proof Assistant  /  The Coq Development Team     
+   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
+     \VV/  *************************************************************
+      //   *      This file is distributed under the terms of the       
+           *       GNU Lesser General Public License Version 2.1        
+  ***********************************************************************)
 
 (*i $Id$ i*)
 
-(*i*)
 open Term
 open Tacexpr
 open Tacmach
 open Equality
-(*i*)
 
-(* Rewriting rules before tactic interpretation *)
+(** Rewriting rules before tactic interpretation *)
 type raw_rew_rule = Util.loc * Term.constr * bool * Tacexpr.raw_tactic_expr
 
-(* To add rewriting rules to a base *)
+(** To add rewriting rules to a base *)
 val add_rew_rules : string -> raw_rew_rule list -> unit
 
-(* The AutoRewrite tactic.
+(** The AutoRewrite tactic.
    The optional conditions tell rewrite how to handle matching and side-condition solving.
    Default is Naive: first match in the clause, don't look at the side-conditions to
    tell if the rewrite succeeded. *)
 val autorewrite : ?conds:conditions -> tactic -> string list -> tactic
 val autorewrite_in : ?conds:conditions -> Names.identifier -> tactic -> string list -> tactic
 
-(* Rewriting rules *)
+(** Rewriting rules *)
 type rew_rule = { rew_lemma: constr;
 		  rew_type: types;
 		  rew_pat: constr;

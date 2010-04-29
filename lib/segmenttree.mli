@@ -7,7 +7,7 @@
 (** A mapping from a union of disjoint segments to some values of type ['a]. *)
 type 'a t
 
-(** [make [(i1, j1), v1; (i2, j2), v2; ...] creates a mapping that
+(** [make [(i1, j1), v1; (i2, j2), v2; ...]] creates a mapping that
     associates to every integer [x] the value [v1] if [i1 <= x <= j1],
     [v2] if [i2 <= x <= j2], and so one. 
     Precondition: the segments must be sorted. *)
