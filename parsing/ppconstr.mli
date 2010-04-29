@@ -24,9 +24,6 @@ val extract_lam_binders :
   constr_expr -> local_binder list * constr_expr
 val extract_prod_binders :
   constr_expr -> local_binder list * constr_expr
-val extract_def_binders :
-  constr_expr -> constr_expr ->
-  local_binder list * constr_expr * constr_expr
 val split_fix :
   int -> constr_expr -> constr_expr ->
   local_binder list *  constr_expr * constr_expr

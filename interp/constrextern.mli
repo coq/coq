@@ -21,7 +21,6 @@ open Pattern
 open Topconstr
 open Notation
 
-(** v7->v8 translation *)
 val check_same_type : constr_expr -> constr_expr -> unit
 
 (** Translation of pattern, cases pattern, rawterm and term into syntax
