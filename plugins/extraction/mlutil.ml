@@ -315,8 +315,7 @@ let sign_of_id = function
 
 (*s Removing [Tdummy] from the top level of a ML type. *)
 
-let type_expunge env t =
-  let s = type_to_signature env t in
+let type_expunge_from_sign env s t =
   if s = [] then t
   else if List.mem Keep s then
     let rec f t s =
@@ -336,6 +335,9 @@ let type_expunge env t =
   else if lang () <> Haskell && List.mem (Kill Kother) s then
     Tarr (Tdummy Kother, snd (type_decomp (type_weak_expand env t)))
   else snd (type_decomp (type_weak_expand env t))
+
+let type_expunge env t =
+  type_expunge_from_sign env (type_to_signature env t) t
 
 (*S Generic functions over ML ast terms. *)
 
@@ -489,13 +491,17 @@ let ast_subst e =
    [v] array: [(Rel i)] becomes [v.(i-1)]. [d] is the correction applies
    to [Rel] greater than [Array.length v]. *)
 
+exception Occurs of int
+
 let gen_subst v d t =
   let rec subst n = function
     | MLrel i as a ->
 	let i'= i-n in
 	if i' < 1 then a
 	else if i' <= Array.length v then
-	  ast_lift n v.(i'-1)
+	  match v.(i'-1) with
+	    | None -> raise (Occurs i')
+	    | Some u -> ast_lift n u
 	else MLrel (i+d)
     | a -> ast_map_lift subst n a
   in subst 0 t
@@ -881,12 +887,12 @@ let kill_some_lams bl (ids,c) =
   if n = n' then ids,c
   else if n' = 0 then [],ast_lift (-n) c
   else begin
-    let v = Array.make n MLdummy in
+    let v = Array.make n None in
     let rec parse_ids i j = function
       | [] -> ()
-      | Keep :: l -> v.(i) <- MLrel j; parse_ids (i+1) (j+1) l
+      | Keep :: l -> v.(i) <- Some (MLrel j); parse_ids (i+1) (j+1) l
       | Kill _ :: l -> parse_ids (i+1) j l
-    in parse_ids 0 1 bl ;
+    in parse_ids 0 1 bl;
     select_via_bl bl ids, gen_subst v (n'-n) c
   end
 

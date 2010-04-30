@@ -146,6 +146,19 @@ let rec no_final_keeps = function
   | [] -> []
   | k :: s -> let s' = k :: no_final_keeps s in if s' = [Keep] then [] else s'
 
+(* Enriching a signature with implicit information *)
+
+let sign_with_implicits r s =
+  let implicits = implicits_of_global r in
+  let rec add_impl i = function
+    | [] -> []
+    | sign::s ->
+	let sign' =
+	  if sign = Keep && List.mem i implicits then Kill Kother else sign
+	in sign' :: add_impl (succ i) s
+  in
+  add_impl 1 s
+
 (*S Management of type variable contexts. *)
 
 (* A De Bruijn variable context (db) is a context for translating Coq [Rel]
@@ -459,13 +472,12 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
     i
 
 (*s [extract_type_cons] extracts the type of an inductive
-  constructor toward the corresponding list of ML types. *)
+  constructor toward the corresponding list of ML types.
 
-(* \begin{itemize}
-   \item [db] is a context for translating Coq [Rel] into ML type [Tvar]
-   \item [dbmap] is a translation map (produced by a call to [parse_in_args])
-   \item [i] is the rank of the current product (initially [params_nb+1])
-   \end{itemize} *)
+   - [db] is a context for translating Coq [Rel] into ML type [Tvar]
+   - [dbmap] is a translation map (produced by a call to [parse_in_args])
+   - [i] is the rank of the current product (initially [params_nb+1])
+*)
 
 and extract_type_cons env db dbmap c i =
   match kind_of_term (whd_betadeltaiota env none c) with
@@ -505,6 +517,7 @@ and expand env = type_expand (mlt_env env)
 and type2signature env = type_to_signature (mlt_env env)
 let type2sign env = type_to_sign (mlt_env env)
 let type_expunge env = type_expunge (mlt_env env)
+let type_expunge_from_sign env = type_expunge_from_sign (mlt_env env)
 
 (*s Extraction of the type of a constant. *)
 
@@ -636,6 +649,7 @@ and extract_cst_app env mle mlt kn args =
   let head = put_magic_if magic1 (MLglob (ConstRef kn)) in
   (* Now, the extraction of the arguments. *)
   let s_full = type2signature env (snd schema) in
+  let s_full = sign_with_implicits (ConstRef kn) s_full in
   let s = no_final_keeps s_full in
   let ls = List.length s in
   let la = List.length args in
@@ -694,6 +708,7 @@ and extract_cons_app env mle mlt (((kn,i) as ip,j) as cp) args =
   let type_cons = instantiation (nb_tvars, type_cons) in
   (* Then, the usual variables [s], [ls], [la], ... *)
   let s = List.map (type2sign env) types in
+  let s = sign_with_implicits (ConstructRef cp) s in
   let ls = List.length s in
   let la = List.length args in
   assert (la <= ls + params_nb);
@@ -760,16 +775,23 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
       let a = extract_term env mle type_head c [] in
       (* The extraction of each branch. *)
       let extract_branch i =
+	let r = ConstructRef (ip,i+1) in
 	(* The types of the arguments of the corresponding constructor. *)
 	let f t = type_subst_vect metas (expand env t) in
 	let l = List.map f oi.ip_types.(i) in
 	(* the corresponding signature *)
 	let s = List.map (type2sign env) oi.ip_types.(i) in
+	let s = sign_with_implicits r s in
 	(* Extraction of the branch (in functional form). *)
 	let e = extract_maybe_term env mle (type_recomp (l,mlt)) br.(i) in
 	(* We suppress dummy arguments according to signature. *)
-	let ids,e = case_expunge s e in
-	(ConstructRef (ip,i+1), List.rev ids, e)
+	try
+	  let ids,e = case_expunge s e in
+	  (r, List.rev ids, e)
+	with Occurs i ->
+	  let n = List.length s in
+	  assert ((0<i) && (i <= n));
+	  error_non_implicit r (n-i+1) None
       in
       if mi.ind_info = Singleton then
 	begin
@@ -819,6 +841,8 @@ let extract_std_constant env kn body typ =
   (* and with [Tvar] translated to [Tvar'] (not instantiable). *)
   let l,t' = type_decomp (expand env (var2var' t)) in
   let s = List.map (type2sign env) l in
+  (* Check for user-declared implicit information *)
+  let s = sign_with_implicits (ConstRef kn) s in
   (* Decomposing the top level lambdas of [body].
      If there isn't enough, it's ok, as long as remaining args
      aren't to be pruned (and initial lambdas aren't to be all
@@ -849,7 +873,11 @@ let extract_std_constant env kn body typ =
   (* The real extraction: *)
   let e = extract_term env mle t' c [] in
   (* Expunging term and type from dummy lambdas. *)
-  term_expunge s (ids,e), type_expunge env t
+  try
+    term_expunge s (ids,e), type_expunge_from_sign env s t
+  with Occurs i ->
+    assert ((0 < i) && (i <= n));
+    error_non_implicit (ConstRef kn) (n-i+1) (Some (fst (List.nth rels (i-1))))
 
 let extract_fixpoint env vkn (fi,ti,ci) =
   let n = Array.length vkn in
@@ -934,9 +962,18 @@ let extract_with_type env cb =
 let extract_inductive env kn =
   let ind = extract_ind env kn in
   add_recursors env kn;
-  let f l = List.filter (fun t -> not (isDummy (expand env t))) l in
+  let f i j l =
+    let implicits = implicits_of_global (ConstructRef ((kn,i),j+1)) in
+    let rec filter i = function
+      | [] -> []
+      | t::l ->
+	  let l' = filter (succ i) l in
+	  if isDummy (expand env t) || List.mem i implicits then l'
+	  else t::l'
+    in filter 1 l
+  in
   let packets =
-    Array.map (fun p -> { p with ip_types = Array.map f p.ip_types })
+    Array.mapi (fun i p -> { p with ip_types = Array.mapi (f i) p.ip_types })
       ind.ind_packets
   in { ind with ind_packets = packets }
 

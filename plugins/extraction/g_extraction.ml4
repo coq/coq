@@ -89,6 +89,12 @@ VERNAC COMMAND EXTEND ResetExtractionInline
   -> [ reset_extraction_inline () ]
 END
 
+VERNAC COMMAND EXTEND ExtractionImplicit
+(* Custom implicit arguments of some csts/inds/constructors *)
+| [ "Extraction" "Implicit" global(r) "[" integer_list(l) "]" ]
+  -> [ extraction_implicit r l ]
+END
+
 VERNAC COMMAND EXTEND ExtractionBlacklist
 (* Force Extraction to not use some filenames *)
 | [ "Extraction" "Blacklist" ne_ident_list(l) ]

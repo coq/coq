@@ -321,6 +321,15 @@ let error_record r =
   err (str "Record " ++ safe_pr_global r ++ str " has an anonymous field." ++
        fnl () ++ str "To help extraction, please use an explicit name.")
 
+let error_non_implicit r n oid =
+  let name = match oid with
+    | None -> mt ()
+    | Some id -> str "(" ++ pr_name id ++ str ") "
+  in
+  err (str ("The "^(ordinal n)^" argument ") ++ name ++ str "of " ++
+       safe_pr_global r ++ str " still occurs after extraction." ++
+       fnl () ++ str "Please check the Extraction Implicit declarations.")
+
 let check_loaded_modfile mp = match base_mp mp with
   | MPfile dp -> if not (Library.library_is_loaded dp) then
       let mp1 = (fst(Lib.current_prefix())) in
@@ -521,6 +530,39 @@ let (reset_inline,_) =
        load_function = (fun _ (_,_)-> inline_table :=  empty_inline_table)}
 
 let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
+
+(*s Extraction Implicit *)
+
+let implicits_table = ref Refmap.empty
+
+let implicits_of_global r =
+ try Refmap.find r !implicits_table with Not_found -> []
+
+let add_implicits r l =
+  implicits_table := Refmap.add r l !implicits_table
+
+(* Registration of operations for rollback. *)
+
+let (implicit_extraction,_) =
+  declare_object
+    {(default_object "Extraction Implicit") with
+       cache_function = (fun (_,(r,l)) -> add_implicits r l);
+       load_function = (fun _ (_,(r,l)) -> add_implicits r l);
+       classify_function = (fun o -> Substitute o);
+       subst_function = (fun (s,(r,l)) -> (fst (subst_global s r), l))
+    }
+
+let _ = declare_summary "Extraction Implicit"
+	  { freeze_function = (fun () -> !implicits_table);
+	    unfreeze_function = ((:=) implicits_table);
+	    init_function = (fun () -> implicits_table := Refmap.empty) }
+
+(* Grammar entries. *)
+
+let extraction_implicit r l =
+  check_inside_section ();
+  Lib.add_anonymous_leaf (implicit_extraction (Nametab.global r,l))
+
 
 (*s Extraction Blacklist of filenames not to use while extracting *)
 
