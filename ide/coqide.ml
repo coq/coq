@@ -747,59 +747,6 @@ object(self)
         | None ->
             proof_buffer#insert "Proof completed."
 
-  method show_goals =
-    try
-      proof_buffer#set_text "";
-      match Decl_mode.get_current_mode () with
-          Decl_mode.Mode_none -> ()
-        | Decl_mode.Mode_tactic ->
-            begin
-              let s = Coq.get_current_goals () in
-                match s with
-                  | [] -> proof_buffer#insert (Coq.print_no_goal ())
-                  | (hyps,concl)::r ->
-                      let goal_nb = List.length s in
-                        proof_buffer#insert
-                          (Printf.sprintf "%d subgoal%s\n"
-                             goal_nb
-                             (if goal_nb<=1 then "" else "s"));
-                        List.iter
-                          (fun ((_,_,_,(s,_)) as _hyp) ->
-                             proof_buffer#insert (s^"\n"))
-                          hyps;
-                        proof_buffer#insert
-                          (String.make 38 '_' ^ "(1/"^
-                           (string_of_int goal_nb)^
-                           ")\n") ;
-                        let _,_,_,sconcl = concl in
-                          proof_buffer#insert sconcl;
-                          proof_buffer#insert "\n";
-                          let my_mark = `NAME "end_of_conclusion" in
-                            proof_buffer#move_mark
-                              ~where:((proof_buffer#get_iter_at_mark `INSERT))
-                              my_mark;
-                            proof_buffer#insert "\n\n";
-                            let i = ref 1 in
-                              List.iter
-                                (function (_,(_,_,_,concl)) ->
-                                  incr i;
-                                  proof_buffer#insert
-                                    (String.make 38 '_' ^"("^
-                                     (string_of_int !i)^
-                                     "/"^
-                                     (string_of_int goal_nb)^
-                                     ")\n");
-                                  proof_buffer#insert concl;
-                                  proof_buffer#insert "\n\n";
-                                )
-                                r;
-                              ignore (proof_view#scroll_to_mark my_mark)
-            end
-        | Decl_mode.Mode_proof ->
-            self#show_pm_goal
-    with e ->
-      prerr_endline ("Don't worry be happy despite: "^Printexc.to_string e)
-
 
   val mutable full_goal_done = true
 
@@ -918,6 +865,9 @@ object(self)
                 self#show_pm_goal
         with e -> prerr_endline (Printexc.to_string e)
       end
+
+  method show_goals = self#show_goals_full
+
 
   method send_to_coq verbosely replace phrase show_output show_error localize =
     let display_output msg =
@@ -1556,16 +1506,6 @@ let create_session () =
                 ignore (GtkText.Tag.event t#as_tag proof#as_widget e it#as_iter))
              tags;
            false) in
-  let _ =
-    proof#event#connect#enter_notify
-      (fun _ -> if !current.contextual_menus_on_goal then
-         begin
-           push_info "Computing advanced goal menus";
-           prerr_endline "Entering Goal Window. Computing Menus...";
-           on_active_view (function {analyzed_view = av} -> av#show_goals_full);
-           prerr_endline "...Done with Goal menu.";
-           pop_info();
-         end; false) in
     script#misc#set_name "ScriptWindow";
     script#buffer#place_cursor ~where:(script#buffer#start_iter);
     proof#misc#set_can_focus true;
