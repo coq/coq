@@ -1292,7 +1292,7 @@ let vernac_check_guard () =
 
 let interp c = match c with
   (* Control (done in vernac) *)
-  | (VernacTime _ | VernacList _ | VernacLoad _| VernacTimeout _) ->
+  | (VernacTime _|VernacList _|VernacLoad _|VernacTimeout _|VernacFail _) ->
       assert false
 
   (* Syntax *)

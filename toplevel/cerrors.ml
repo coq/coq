@@ -162,3 +162,6 @@ let _ = Tactic_debug.explain_logic_error_no_anomaly :=
 let explain_exn_function = ref explain_exn_default
 
 let explain_exn e = !explain_exn_function e
+
+let explain_exn_no_anomaly e =
+   explain_exn_default_aux (fun () -> raise e) mt e
