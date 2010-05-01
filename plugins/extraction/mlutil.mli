@@ -114,3 +114,14 @@ val inline : global_reference -> ml_ast -> bool
 
 exception Occurs of int
 
+(* Classification of signatures *)
+
+type sign_kind =
+  | EmptySig
+  | NonLogicalSig (* at least a [Keep] *)
+  | UnsafeLogicalSig (* No [Keep], at least a [Kill Kother] *)
+  | SafeLogicalSig (* only [Kill Ktype] *)
+
+val sign_kind : signature -> sign_kind
+
+val sign_no_final_keeps : signature -> signature

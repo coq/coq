@@ -122,30 +122,6 @@ let rec nb_default_params env c =
 	if is_default env t then n+1 else n
     | _ -> 0
 
-(* Classification of signatures *)
-
-type sign_kind =
-  | EmptySig
-  | NonLogicalSig (* at least a [Keep] *)
-  | UnsafeLogicalSig (* No [Keep], at least a [Kill Kother] *)
-  | SafeLogicalSig (* only [Kill Ktype] *)
-
-let rec sign_kind = function
-  | [] -> EmptySig
-  | Keep :: _ -> NonLogicalSig
-  | Kill k :: s ->
-      match sign_kind s with
-	| NonLogicalSig -> NonLogicalSig
-	| UnsafeLogicalSig -> UnsafeLogicalSig
-	| SafeLogicalSig | EmptySig ->
-	    if k = Kother then UnsafeLogicalSig else SafeLogicalSig
-
-(* Removing the final [Keep] in a signature *)
-
-let rec no_final_keeps = function
-  | [] -> []
-  | k :: s -> let s' = k :: no_final_keeps s in if s' = [Keep] then [] else s'
-
 (* Enriching a signature with implicit information *)
 
 let sign_with_implicits r s =
@@ -650,7 +626,7 @@ and extract_cst_app env mle mlt kn args =
   (* Now, the extraction of the arguments. *)
   let s_full = type2signature env (snd schema) in
   let s_full = sign_with_implicits (ConstRef kn) s_full in
-  let s = no_final_keeps s_full in
+  let s = sign_no_final_keeps s_full in
   let ls = List.length s in
   let la = List.length args in
   (* The ml arguments, already expunged from known logical ones *)
