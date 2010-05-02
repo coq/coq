@@ -20,7 +20,7 @@ sig
       | GRLabel of global_reference
       | ProdLabel 
       | LambdaLabel
-      | SortLabel of sorts option
+      | SortLabel
   end 
     
   type 'na t
