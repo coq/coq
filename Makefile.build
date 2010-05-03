@@ -360,7 +360,9 @@ validate:: $(BESTCHICKEN) $(ALLVO)
 
 MAKE_TSOPTS=-C test-suite -s BEST=$(BEST) VERBOSE=$(VERBOSE)
 
-check:: world validate
+check:: validate test-suite
+
+test-suite: world
 	$(MAKE) $(MAKE_TSOPTS) clean
 	$(MAKE) $(MAKE_TSOPTS) all
 	$(HIDE)if grep -F 'Error!' test-suite/summary.log ; then false; fi
