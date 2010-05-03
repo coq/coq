@@ -601,10 +601,10 @@ mli-doc:: $(DOCMLIS:.mli=.cmi)
 	-t "Coq mlis documentation" -intro $(OCAMLDOCDIR)/docintro \
 	-css-style style.css
 
-%.png: %.dot
+%_dep.png: %.dot
 	$(DOT) -Tpng $< -o $@
 
-%.types.dot: %.mli
+%_types.dot: %.mli
 	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -dot-types -o $@ $< 
 
 OCAMLDOC_MLLIBD = $(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ \
