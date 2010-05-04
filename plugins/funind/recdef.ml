@@ -180,7 +180,6 @@ let rec (find_call_occs : int -> int -> constr -> constr ->
       if Array.length args <> nb_arg then errorlabstrm "recdef" (str "Partial application of function " ++ Printer.pr_lconstr expr ++ str " in its body is not allowed while using Function");
       (fun l -> List.hd l), [Array.to_list args]
   | App (g, args) ->
-      msgnl (str "NB_ARGS " ++ int nb_arg ++ str " " ++ Printer.pr_lconstr g);
      let (largs: constr list) = Array.to_list args in
      let rec find_aux = function
 	 []    -> (fun x -> []), []
