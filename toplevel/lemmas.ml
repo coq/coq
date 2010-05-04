@@ -139,17 +139,18 @@ let find_mutually_recursive_statements thms =
             ("Cannot find common (mutual) inductive premises or coinductive" ^
              " conclusions in the statements.")
     in
-    (finite,guard,None), List.map pi2 ordered_inds
+    (finite,guard,None), ordered_inds
 
 let look_for_possibly_mutual_statements = function
   | [id,(t,impls,None)] ->
       (* One non recursively proved theorem *)
-      None,[id,(t,impls)]
+      None,[id,(t,impls)],None
   | _::_ as thms ->
     (* More than one statement and/or an explicit decreasing mark: *)
     (* we look for a common inductive hyp or a common coinductive conclusion *)
-    let recguard,thms = find_mutually_recursive_statements thms in
-    Some recguard,thms
+    let recguard,ordered_inds = find_mutually_recursive_statements thms in
+    let thms = List.map pi2 ordered_inds in
+    Some recguard,thms, Some (List.map (fun (_,_,i) -> succ i) ordered_inds)
   | [] -> anomaly "Empty list of theorems."
 
 (* Saving a goal *)
@@ -258,23 +259,25 @@ let start_proof id kind c ?init_tac ?(compute_guard=[]) hook =
   !start_hook c;
   Pfedit.start_proof id kind sign c ?init_tac ~compute_guard hook
 
-let rec_tac_initializer finite guard thms =
+let rec_tac_initializer finite guard thms snl =
   if finite then
     match List.map (fun (id,(t,_)) -> (id,t)) thms with
     | (id,_)::l -> Hiddentac.h_mutual_cofix true id l
     | _ -> assert false
   else
     (* nl is dummy: it will be recomputed at Qed-time *)
-    let nl = List.map succ (List.map list_last guard) in
-    match List.map2 (fun (id,(t,_)) n -> (id,n,t)) thms nl with
-    | (id,n,_)::l -> Hiddentac.h_mutual_fix true id n l
-    | _ -> assert false
+    let nl = match snl with 
+     | None -> List.map succ (List.map list_last guard)
+     | Some nl -> nl
+    in match List.map2 (fun (id,(t,_)) n -> (id,n,t)) thms nl with
+       | (id,n,_)::l -> Hiddentac.h_mutual_fix true id n l
+       | _ -> assert false
 
-let start_proof_with_initialization kind recguard thms hook =
+let start_proof_with_initialization kind recguard thms snl hook =
   let intro_tac (_, (_, (len, _))) = Refiner.tclDO len Tactics.intro in
   let init_tac,guard = match recguard with
   | Some (finite,guard,init_tac) ->
-      let rec_tac = rec_tac_initializer finite guard thms in
+      let rec_tac = rec_tac_initializer finite guard thms snl in
       Some (match init_tac with
         | None -> 
             if Flags.is_auto_intros () then 
@@ -318,8 +321,8 @@ let start_proof_com kind thms hook =
        (len, imps @ lift_implicits len imps'),
        guard)))
     thms in
-  let recguard,thms = look_for_possibly_mutual_statements thms in
-  start_proof_with_initialization kind recguard thms hook
+  let recguard,thms,snl = look_for_possibly_mutual_statements thms in
+  start_proof_with_initialization kind recguard thms snl hook
 
 (* Admitted *)
 

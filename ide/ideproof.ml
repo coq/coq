@@ -70,8 +70,10 @@ let mode_tactic sel_cb (proof:GText.view) = function
       List.iter insert_hyp hyps;
       insert_goal cur_goal cur_goal_menu 1 goals_cnt;
       Util.list_fold_left_i (fun i _ (_,(g,_)) -> insert_goal g [] i goals_cnt) 2 () rem_goals;
-      ignore (proof#scroll_to_iter
-                ((proof#buffer#get_iter_at_mark `INSERT)#backward_lines (3*goals_cnt - 2)))
+      ignore(proof#buffer#place_cursor  
+        ((proof#buffer#get_iter_at_mark `INSERT)#backward_lines (3*goals_cnt - 2)));
+      ignore(proof#scroll_to_mark `INSERT)
+
 
 let mode_cesar (proof:GText.view) = function
   | [] -> assert false
