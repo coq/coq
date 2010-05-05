@@ -262,13 +262,19 @@ let is_opening_node = function
     _,(OpenedSection _ | OpenedModule _ | OpenedModtype _) -> true
   | _ -> false
 
+let is_opening_node_or_lib = function
+    _,(CompilingLibrary _ | OpenedSection _ 
+    | OpenedModule _ | OpenedModtype _) -> true
+  | _ -> false
 
 let current_mod_id () =
-  try match find_entry_p is_opening_node with
+  try match find_entry_p is_opening_node_or_lib with
     | oname,OpenedModule (_,_,fs) ->
 	basename (fst oname)
     | oname,OpenedModtype (_,fs) ->
 	basename (fst oname)
+    | oname,CompilingLibrary _ ->
+       basename (fst oname)
     | _ -> error "you are not in a module"
   with Not_found ->
     error "no opened modules"
