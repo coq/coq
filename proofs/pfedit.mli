@@ -96,7 +96,9 @@ val restart_proof : unit -> unit
 val resume_last_proof : unit -> unit
 
 (** [resume_proof name] focuses on the proof of name [name] or
-   raises [UserError] if no proof has name [name] *)
+   raises [NoSuchProof] if no proof has name [name]. 
+
+    It doesn't [suspend_proof ()] before. *)
 
 val resume_proof : identifier located -> unit
 

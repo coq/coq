@@ -6,24 +6,22 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(***********************************************************************)
-(*                                                                     *)
-(*      This module defines the global proof environment               *)
-(*      Especially it keeps tracks of whether or not there is          *)
-(*      a proof which is currently being edited.                       *)
-(*                                                                     *)
-(***********************************************************************)
+(** This module defines the global proof environment
 
-(* Type of proof modes :
+ Especially it keeps tracks of whether or not there is a proof which is currently being edited. *)
+
+(** Type of proof modes :
     - A name
     - A function [set] to set it *from standard mode*
-    - A function [reset] to reset the *standard mode* from it *)
+    - A function [reset] to reset the *standard mode* from it 
+
+*)
 type proof_mode = {
   name : string ;
   set : unit -> unit ;
   reset : unit -> unit
 }
-(* Registers a new proof mode which can then be adressed by name
+(** Registers a new proof mode which can then be adressed by name
     in [set_default_proof_mode].
     One mode is already registered - the standard mode - named "No",
     It corresponds to Coq default setting are they are set when coqtop starts. *)
@@ -40,7 +38,7 @@ val discard : Names.identifier Util.located -> unit
 val discard_current : unit -> unit
 val discard_all : unit -> unit
 
-(* [set_proof_mode] sets the proof mode to be used after it's called. It is
+(** [set_proof_mode] sets the proof mode to be used after it's called. It is
     typically called by the Proof Mode command. *)
 val set_proof_mode : string -> unit
 
@@ -48,7 +46,7 @@ exception NoCurrentProof
 val give_me_the_proof : unit -> Proof.proof
 
 
-(* [start_proof s str goals ~init_tac ~compute_guard hook] starts 
+(** [start_proof s str goals ~init_tac ~compute_guard hook] starts 
     a proof of name [s] and
     conclusion [t]; [hook] is optionally a function to be applied at
     proof end (e.g. to declare the built constructions as a coercion
@@ -68,9 +66,13 @@ val close_proof : unit ->
 			    Decl_kinds.goal_kind * 
 			    Tacexpr.declaration_hook)
 
+exception NoSuchProof
+
 val suspend : unit -> unit
 val resume_last : unit -> unit
+
 val resume : Names.identifier -> unit
+(** @raise NoSuchProof if it doesn't find *)
 
 (* Runs a tactic on the current proof. Raises [NoCurrentProof] is there is 
    no current proof. *)

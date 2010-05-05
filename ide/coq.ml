@@ -360,13 +360,15 @@ let rewind coqtop count =
         Hashtbl.iter
           (fun id depth ->
              if List.mem id prev_proofs then begin
-               Pfedit.resume_proof (Util.dummy_loc,id);
+               Pfedit.suspend_proof ();
+	       Pfedit.resume_proof (Util.dummy_loc,id);
                Pfedit.undo_todepth depth
              end)
           undo_ops;
         prerr_endline "OK for undos";
         Option.iter (fun id -> if List.mem id prev_proofs then
-                       Pfedit.resume_proof (Util.dummy_loc,id)) curprf;
+                       Pfedit.suspend_proof ();
+		       Pfedit.resume_proof (Util.dummy_loc,id)) curprf;
         prerr_endline "OK for focusing";
         List.iter
           (fun id -> Pfedit.delete_proof (Util.dummy_loc,id))
