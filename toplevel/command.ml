@@ -549,7 +549,7 @@ let declare_fixpoint boxed ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
         fixdefs) in
     Lemmas.start_proof_with_initialization (Global,DefinitionBody Fixpoint)
-      (Some(false,indexes,init_tac)) thms (fun _ _ -> ())
+      (Some(false,indexes,init_tac)) thms None (fun _ _ -> ())
   else begin
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in
@@ -574,7 +574,7 @@ let declare_cofixpoint boxed ((fixnames,fixdefs,fixtypes),fiximps) ntns =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
         fixdefs) in
     Lemmas.start_proof_with_initialization (Global,DefinitionBody CoFixpoint)
-      (Some(true,[],init_tac)) thms (fun _ _ -> ())
+      (Some(true,[],init_tac)) thms None (fun _ _ -> ())
   else begin
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in
