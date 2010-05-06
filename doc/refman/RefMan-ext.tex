@@ -675,7 +675,15 @@ Function plus (n m : nat) {struct n} : nat :=
 \paragraph[Limitations]{Limitations\label{sec:Function-limitations}}
 \term$_0$ must be build as a \emph{pure pattern-matching tree}
 (\texttt{match...with}) with applications only \emph{at the end} of
-each branch.  For now dependent cases are not treated.
+each branch.  
+
+Function does not support partial application of the function being defined. Thus, the following example cannot be accepted due to the presence of partial application of \ident{wrong} into the body of \ident{wrong}~:
+\begin{coq_example*}
+  Function wrong (C:nat) {\ldots} : nat := 
+    List.hd(List.map wrong (C::nil)).
+\end{coq_example*}
+
+For now dependent cases are not treated for non structurally terminating functions.
 
 
 
