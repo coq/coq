@@ -2166,9 +2166,9 @@ and interp_match ist g lz constr lmr =
         match_next_pattern find_next' () in
     match_next_pattern (fun () -> match_subterm_gen app c csr) () in
   let rec apply_match ist csr = function
-    | (All t)::_ ->
+    | (All t)::tl ->
         (try eval_with_fail ist lz g t
-         with e when is_match_catchable e -> apply_match ist csr [])
+         with e when is_match_catchable e -> apply_match ist csr tl)
     | (Pat ([],Term c,mt))::tl ->
         (try
             let lmatch =
