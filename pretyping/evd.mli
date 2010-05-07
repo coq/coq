@@ -178,7 +178,7 @@ val subst_evar_defs_light : substitution -> evar_map -> evar_map
 val evars_reset_evd  : evar_map ->  evar_map -> evar_map
 
 
-(** spiwack: [is_undefined_evar] should be considered a candidate
+(* spiwack: [is_undefined_evar] should be considered a candidate
                    for moving to evarutils *)
 val is_undefined_evar :  evar_map -> constr -> bool
 val undefined_evars : evar_map -> evar_map
@@ -196,7 +196,7 @@ val evar_declare :
       ?filter:bool list -> evar_map -> evar_map
 val evar_source : existential_key -> evar_map -> loc * hole_kind
 
-(** spiwack: this function seems to somewhat break the abstraction. 
+(* spiwack: this function seems to somewhat break the abstraction. 
    [evar_merge evd ev1] extends the evars of [evd] with [evd1] *)
 val evar_merge : evar_map -> evar_map -> evar_map
 
