@@ -548,8 +548,10 @@ let goals coqtop =
       let process_goal g =
         let env = Goal.V82.env sigma g in
         let ccl =
-          string_of_ppcmds (pr_ltype_env_at_top env (Goal.V82.concl sigma g)) in
+	  let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
+          string_of_ppcmds (pr_ltype_env_at_top env norm_constr) in
         let process_hyp h_env d acc =
+	  let d = Term.map_named_declaration (Reductionops.nf_evar sigma) d in
           (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in
         let hyps =
           List.rev (Environ.fold_named_context process_hyp env ~init:[]) in
