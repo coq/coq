@@ -152,6 +152,8 @@ let try_declare_scheme what f internal names kn =
     | UndefinedCst s ->
 	alarm what internal
 	  (strbrk "Required constant " ++ str s ++ str " undefined.")
+    | AlreadyDeclared msg ->
+        alarm what internal (msg ++ str ".")
     | _ ->
 	alarm what internal
 	  (str "Unknown exception during scheme creation.")
