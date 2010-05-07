@@ -912,12 +912,12 @@ let is_rec_res id =
 let clear_goals =
   let rec clear_goal t =
     match kind_of_term t with
-      | Prod(Name id as na,t,b) ->
+      | Prod(Name id as na,t',b) ->
 	  let b' = clear_goal b in
 	  if noccurn 1 b' && (is_rec_res id)
 	  then pop b'
 	  else if b' == b then t
-	  else mkProd(na,t,b')
+	  else mkProd(na,t',b')
       | _ -> map_constr clear_goal t
   in
   List.map clear_goal
@@ -925,29 +925,14 @@ let clear_goals =
 
 let build_new_goal_type () =
   let sub_gls_types = get_current_subgoals_types () in
+  (* Pp.msgnl (str "sub_gls_types1 := " ++ Util.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
   let sub_gls_types = clear_goals sub_gls_types in
+  (* Pp.msgnl (str "sub_gls_types2 := " ++ Util.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
   let res = build_and_l sub_gls_types in
   res
 
-
-    (*
-let prove_with_tcc lemma _ : tactic =
-  fun gls ->
-    let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
-    tclTHENSEQ
-      [
-	h_generalize [lemma];
-	h_intro hid;
-	Elim.h_decompose_and (mkVar hid);
-	gen_eauto(* default_eauto *) false (false,5) [] (Some [])
-	  (* 	      default_auto *)
-      ]
-      gls
-    *)
-
-
-
 let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   =
+  (* Pp.msgnl (str "gls_type := " ++ Printer.pr_lconstr gls_type); *)
   let current_proof_name = get_current_proof_name () in
   let name = match goal_name with
     | Some s -> s
@@ -1033,28 +1018,23 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
     by (tclIDTAC)
   else 
     begin
-         let _ = msgnl (str "TOTO") in 
-    by (tclIDTAC);
-
-	 (* by ( *)
-	 (*   fun g -> *)
-	 (*     tclTHEN *)
-	 (*       (decompose_and_tac) *)
-	 (*       (tclORELSE *)
-	 (* 	  (tclFIRST *)
-	 (* 	     (List.map *)
-	 (* 		(fun c -> *)
-	 (* 		   tclTHENSEQ *)
-	 (* 		     [intros; *)
-	 (* 		      h_simplest_apply (interp_constr Evd.empty (Global.env()) c); *)
-	 (* 		      tclCOMPLETE Auto.default_auto *)
-	 (* 		     ] *)
-	 (* 		) *)
-	 (* 		using_lemmas) *)
-	 (* 	  ) tclIDTAC) *)
-	 (*       g); *)
-   let _ = msgnl (str "TOTO") in 
-   ()
+      by (
+	fun g ->
+	  tclTHEN
+	    (decompose_and_tac)
+	    (tclORELSE
+	       (tclFIRST
+	 	  (List.map
+	 	     (fun c ->
+	 		tclTHENSEQ
+	 		  [intros;
+	 		   h_simplest_apply (interp_constr Evd.empty (Global.env()) c);
+	 		   tclCOMPLETE Auto.default_auto
+	 		  ]
+	 	     )
+	 	     using_lemmas)
+	       ) tclIDTAC)
+	    g)
     end;
   try
     by tclIDTAC; (* raises UserError _ if the proof is complete *)
@@ -1433,7 +1413,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   in
   let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref None in
-  let _ = Pp.msgnl (str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in
+  (* let _ = Pp.msgnl (str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
   let hook _ _ =
     let term_ref = Nametab.locate (qualid_of_ident term_id) in
     let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
