@@ -1031,23 +1031,31 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
   if Indfun_common.is_strict_tcc  ()
   then
     by (tclIDTAC)
-  else by (
-    fun g ->
-      tclTHEN
-	(decompose_and_tac)
-	(tclORELSE
-	   (tclFIRST
-	      (List.map
-		 (fun c ->
-		    tclTHENSEQ
-		      [intros;
-		       h_simplest_apply (interp_constr Evd.empty (Global.env()) c);
-		       tclCOMPLETE Auto.default_auto
-		      ]
-		 )
-		 using_lemmas)
-	   ) tclIDTAC)
-	g);
+  else 
+    begin
+         let _ = msgnl (str "TOTO") in 
+    by (tclIDTAC);
+
+	 (* by ( *)
+	 (*   fun g -> *)
+	 (*     tclTHEN *)
+	 (*       (decompose_and_tac) *)
+	 (*       (tclORELSE *)
+	 (* 	  (tclFIRST *)
+	 (* 	     (List.map *)
+	 (* 		(fun c -> *)
+	 (* 		   tclTHENSEQ *)
+	 (* 		     [intros; *)
+	 (* 		      h_simplest_apply (interp_constr Evd.empty (Global.env()) c); *)
+	 (* 		      tclCOMPLETE Auto.default_auto *)
+	 (* 		     ] *)
+	 (* 		) *)
+	 (* 		using_lemmas) *)
+	 (* 	  ) tclIDTAC) *)
+	 (*       g); *)
+   let _ = msgnl (str "TOTO") in 
+   ()
+    end;
   try
     by tclIDTAC; (* raises UserError _ if the proof is complete *)
     if Flags.is_verbose () then (pp (Printer.pr_open_subgoals()))
@@ -1073,17 +1081,18 @@ let com_terminate
     start_proof thm_name
       (Global, Proof Lemma) (Environ.named_context_val env)
       (hyp_terminates nb_args fonctional_ref) hook;
+
     by (observe_tac "starting_tac" tac_start);
     by (observe_tac "whole_start" (whole_start tac_end nb_args is_mes fonctional_ref
 				   input_type relation rec_arg_num ))
-
   in
   start_proof tclIDTAC tclIDTAC;
   try
     let new_goal_type = build_new_goal_type () in
     open_new_goal start_proof using_lemmas tcc_lemma_ref
       (Some tcc_lemma_name)
-      (new_goal_type)
+      (new_goal_type);
+
   with Failure "empty list of subgoals!" ->
     (* a non recursive function declared with measure ! *)
     defined ()
@@ -1415,7 +1424,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let functional_id =  add_suffix function_name "_F" in
   let term_id = add_suffix function_name "_terminate" in
   let functional_ref = declare_fun functional_id (IsDefinition Definition) res in
-  let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> (x,None,t)) pre_rec_args) env in
+  let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> (x,None,t)) pre_rec_args) env in  
   let relation =
     interp_constr
       Evd.empty
@@ -1424,7 +1433,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   in
   let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref None in
-(*   let _ = Pp.msgnl (str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
+  let _ = Pp.msgnl (str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in
   let hook _ _ =
     let term_ref = Nametab.locate (qualid_of_ident term_id) in
     let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
