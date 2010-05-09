@@ -691,12 +691,91 @@ Palaiseau, June 2008\\
 Hugo Herbelin\\
 \end{flushright}
 
+\section*{Credits: version 8.3}
+
+{\Coq} version 8.3 is before all a transition version with refinements
+or extensions of the existing features and libraries and a new tactic
+{\tt gb} based on Hilbert's Nullstellensatz for deciding systems of
+equations over rings.
+
+With respect to libraries, the main evolutions are due to Pierre
+Letouzey with a rewriting of the library of finite sets {\tt FSets}
+and a new round of evolutions in the modular development of arithmetic
+(library {\tt Numbers}). The reason for making {\tt FSets} evolve is
+that the computational and logical contents were quite intertwined in
+the original implementation, leading in some cases to longer
+computations than expected and this problem is solved in the new {\tt
+  MSets} implementation. As for the modular arithmetic library, it was
+only dealing with the basic arithmetic operators in the former version
+and its current extension adds the standard theory of the division,
+min and max functions, all made available for free to any
+implementation of $\mathbb{N}$, $\mathbb{Z}$ or
+$\mathbb{Z}/n\mathbb{Z}$. 
+
+The main other evolutions of the library are due to Hugo Herbelin who
+made a revision of the sorting library (includingh a certified
+merge-sort) and to Guillaume Melquiond who slightly revised and
+cleaned up the library of reals.
+
+The module system evolved significantly. Besides the resolution of
+some efficiency issues and a more flexible construction of module
+types, Élie Soubiran brought a new model of name equivalence, the
+$\Delta$-equivalence, which respects as much as possible the names
+given by the users. He also designed with Pierre Letouzey a new
+convenient operator \verb!<+! for nesting functor application, what
+provides a light notation for inheriting the properties of cascading
+modules.
+
+The new tactic {\tt gb} is due to Loïc Pottier. It works by computing
+Gr\"obner bases what explains its name. Regarding the existing
+tactics, various improvements have been done by Matthieu Sozeau, Hugo
+Herbelin and Pierre Letouzey.
+
+Matthieu Sozeau extended and refined the type classes and {\tt
+  Program} features (the {\sc Russell} language). Pierre Letouzey
+maintained and improved the extraction mechanism.  Bruno Barras and
+\'Elie Soubiran maintained the Coq checker, Julien Forest maintained
+the {\tt Function} mechanism for reasoning over recursively defined
+functions. Matthieu Sozeau, Hugo Herbelin and Jean-Marc Notin
+maintained {\tt coqdoc}. Frédéric Besson maintained the {\sc
+  Micromega} plateform for deciding systems of inequalities. Pierre
+Courtieu maintained the support for the Proof General Emacs
+interface. Claude Marché maintained the plugin for calling external
+provers ({\tt dp}). Yves Bertot made some improvements to the
+libraries of lists and integers. Matthias Puech improved the search
+functions. Guillaume Melquiond usefully contributed here and
+there. Yann Régis-Gianas grounded the support for Unicode on a more
+standard and more robust basis.
+
+Though invisible from outside, Arnaud Spiwack improved the general
+process of management of existential variables. Pierre Letouzey and
+Stéphane Glondu improved the compilation scheme of the Coq archive.
+Vincent Gross provided support to CoqIDE. Jean-Marc Notin provided
+support for benchmarking and archiving.
+
+Many users helped by reporting problems, providing patches, suggesting
+improvements or making useful comments, either on the bug tracker or
+on the Coq-club mailing list. This includes but not exhaustively
+Cédric Auger, Arthur Charguéraud, François Garillot, Georges Gonthier,
+Robin Green, Stéphane Lescuyer, Eelis van der Weegen,~...
+
+Though not directly related to the implementation, special thanks are
+going to Yves Bertot, Pierre Castéran, Adam Chlipala, and Benjamin
+Pierce for the excellent teaching materials they provided.
+
+\begin{flushright}
+Paris, April 2010\\
+Hugo Herbelin\\
+\end{flushright}
+
 %new Makefile
 
 %\newpage
 
 % Integration of ZArith lemmas from Sophia and Nijmegen.
 
+
+% $Id$ 
 
 %%% Local Variables: 
 %%% mode: latex
