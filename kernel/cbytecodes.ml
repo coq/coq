@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
 (* Created by Bruno Barras for Benjamin Grégoire as part of the
    bytecode-based reduction machine, Oct 2004 *)
 (* Support for native arithmetics by Arnaud Spiwack, May 2007 *)
