@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* File created for Coq V5.10.14b, Oct 1995 *)
+
 (** Classical Logic *)
 
 Require Export Classical_Prop.

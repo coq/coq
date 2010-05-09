@@ -6,6 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Created by Jacek Chrzaszcz, Aug 2002 as part of the implementation of
+   the Coq module system *)
+
+(* This module provides the main functions for type-checking module
+   declarations *)
+
 open Util
 open Names
 open Univ

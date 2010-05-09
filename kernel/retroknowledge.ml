@@ -6,6 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Created by Arnaud Spiwack, May 2007 *)
+(* Addition of native Head (nb of heading 0) and Tail (nb of trailing 0) by
+   Benjamin Grégoire, Jun 2007 *)
+
+(* This file defines the knowledge that the kernel is able to optimize
+   for evaluation in the bytecode virtual machine *)
+
 open Term
 open Names
 

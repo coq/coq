@@ -7,6 +7,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* File Eqdep.v created by Christine Paulin-Mohring in Coq V5.6, May 1992 *)
+(* Abstraction with respect to the eq_rect_eq axiom and creation of
+   EqdepFacts.v by Hugo Herbelin, Mar 2006 *)
+
 (** This file axiomatizes the invariance by substitution of reflexive
     equality proofs [[Streicher93]] and exports its consequences, such
     as the injectivity of the projection of the dependent pair.

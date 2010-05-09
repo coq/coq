@@ -6,9 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Initial Caml version originates from CoC 4.8 [Dec 1988] *)
-(* Extension with algebraic universes by HH [Sep 2001] *)
+(* Created in Caml by Gérard Huet for CoC 4.8 [Dec 1988] *)
+(* Functional code by Jean-Christophe Filliâtre for Coq V7.0 [1999] *)
+(* Extension with algebraic universes by HH for Coq V7.0 [Sep 2001] *)
 (* Additional support for sort-polymorphic inductive types by HH [Mar 2006] *)
+
+(* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey *)
 
 (* Universes are stratified by a partial ordering $\le$.
    Let $\~{}$ be the associated equivalence. We also have a strict ordering

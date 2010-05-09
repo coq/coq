@@ -6,6 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* File created for Coq V5.10.14b, Oct 1995 *)
+(* Classical tactics for proving disjunctions by Julien Narboux, Jul 2005 *)
+(* Inferred proof-irrelevance and eq_rect_eq added by Hugo Herbelin, Mar 2006 *)
+
 (** Classical Propositional Logic *)
 
 Require Import ClassicalFacts.

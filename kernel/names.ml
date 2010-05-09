@@ -6,6 +6,18 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* File created around Apr 1994 for CiC V5.10.5 by Chet Murthy collecting
+   parts of file initial.ml from CoC V4.8, Dec 1988, by Gérard Huet,
+   Thierry Coquand and Christine Paulin *)
+(* Hash-consing by Bruno Barras in Feb 1998 *)
+(* Extra functions for splitting/generation of identifiers by Hugo Herbelin *)
+(* Restructuration by Jacek Chrzaszcz as part of the implementation of
+   the module system, Aug 2002 *)
+(* Abstraction over the type of constant for module inlining by Claudio
+   Sacerdoti, Nov 2004 *)
+(* Miscellaneous features or improvements by Hugo Herbelin, 
+   Élie Soubiran, ... *)
+
 open Pp
 open Util
 

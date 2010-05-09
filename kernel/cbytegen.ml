@@ -1,3 +1,17 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+(* $Id$ *)
+
+(* Author: Benjamin Grégoire as part of the bytecode-based virtual reduction
+   machine, Oct 2004 *)
+(* Extension: Arnaud Spiwack (support for native arithmetic), May 2005 *)
+
 open Util
 open Names
 open Cbytecodes
@@ -7,15 +21,15 @@ open Declarations
 open Pre_env
 
 
-(* Compilation des variables + calcul des variables libres               *)
+(* Compilation des variables + calcul des variables libres                *)
 
-(* Dans la machine virtuel il n'y a pas de difference entre les           *)
+(* Dans la machine virtuelle il n'y a pas de difference entre les         *)
 (* fonctions et leur environnement                                        *)
 
-(* Representation de l'environnements des fonctions :                     *)
+(* Representation de l'environnement des fonctions :                      *)
 (*        [clos_t | code | fv1 | fv2 | ... | fvn ]                        *)
 (*                ^                                                       *)
-(*  l'offset pour l'acces au variable libre est 1 (il faut passer le      *)
+(*  l'offset pour l'acces aux variables libres est 1 (il faut passer le   *)
 (*  pointeur de code).                                                    *)
 (*  Lors de la compilation, les variables libres sont stock'ees dans      *)
 (*  [in_env] dans l'ordre inverse de la representation machine, ceci      *)
@@ -28,21 +42,21 @@ open Pre_env
 (* Dans le corps de la fonction [arg1] est repr'esent'e par le de Bruijn  *)
 (*  [n], [argn] par le de Bruijn [1]                                      *)
 
-(* Representation des environnements des points fix mutuels :             *)
+(* Representation des environnements des points fixes mutuels :           *)
 (* [t1|C1| ... |tc|Cc| ... |t(nbr)|C(nbr)| fv1 | fv2 | .... | fvn | type] *)
 (*                ^<----------offset--------->                            *)
 (* type = [Ct1 | .... | Ctn]                                              *)
-(* Ci est le code correspondant au corps du ieme point fix                *)
-(* Lors de l'evaluation d'un point fix l'environnement est un pointeur    *)
+(* Ci est le code correspondant au corps du ieme point fixe               *)
+(* Lors de l'evaluation d'un point fixe l'environnement est un pointeur   *)
 (* sur la position correspondante a son code.                             *)
-(* Dans le corps de chaque point fix le de Bruijn [nbr] represente,       *)
-(* le 1er point fix de la declaration mutuelle, le de Bruijn [1] le       *)
+(* Dans le corps de chaque point fixe le de Bruijn [nbr] represente,      *)
+(* le 1er point fixe de la declaration mutuelle, le de Bruijn [1] le      *)
 (* nbr-ieme.                                                              *)
 (* L'acces a ces variables se fait par l'instruction [Koffsetclosure]     *)
 (*  (decalage de l'environnement)                                         *)
 
-(* Ceci permet de representer tout les point fix mutuels en un seul bloc  *)
-(* [Ct1 | ... | Ctn] est un tableau contant le code d'evaluation des      *)
+(* Ceci permet de representer les points fixes mutuels en un seul bloc    *)
+(* [Ct1 | ... | Ctn] est un tableau contenant le code d'evaluation des    *)
 (* types des points fixes, ils sont utilises pour tester la conversion    *)
 (* Leur environnement d'execution est celui du dernier point fix :        *)
 (* [t1|C1| ... |tc|Cc| ... |t(nbr)|C(nbr)| fv1 | fv2 | .... | fvn | type] *)
@@ -59,7 +73,7 @@ open Pre_env
 (*                ...                                                     *)
 (*  fcofixnbr = [clos_t | codenbr | a1 |...| anbr | fv1 |...| fvn | type] *)
 (*                      ^                                                 *)
-(*  Les block [ai] sont des fonctions qui accumulent leurs arguments :    *)
+(*  Les blocs [ai] sont des fonctions qui accumulent leurs arguments :    *)
 (*           ai arg1  argp --->                                           *)
 (*    ai' = [A_t | accumulate | [Cfx_t | fcofixi] | arg1 | ... | argp ]   *)
 (* Si un tel bloc arrive sur un [match] il faut forcer l'evaluation,      *)
@@ -68,10 +82,10 @@ open Pre_env
 (* l'evaluation :                                                         *)
 (*  ai' <--                                                               *)
 (*   [A_t | accumulate | [Cfxe_t |fcofixi|result] | arg1 | ... | argp ]   *)
-(* L'avantage de cette representation est qu'elle permet d'evaluer qu'une *)
-(* fois l'application d'un cofix (evaluation lazy)                        *)
-(* De plus elle permet de creer facilement des cycles quand les cofix ne  *)
-(* n'ont pas d'aruments, ex:                                              *)
+(* L'avantage de cette representation est qu'elle permet de n'evaluer     *)
+(* qu'une fois l'application d'un cofix (evaluation lazy)                 *)
+(* De plus elle permet de creer facilement des cycles quand les cofix     *)
+(* n'ont pas d'argument, ex:                                              *)
 (*   cofix one := cons 1 one                                              *)
 (*   a1 = [A_t | accumulate | [Cfx_t|fcofix1] ]                           *)
 (*   fcofix1 = [clos_t | code | a1]                                       *)

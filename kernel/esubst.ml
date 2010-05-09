@@ -6,6 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Created by Bruno Barras for Coq V7.0, Mar 2001 *)
+
+(* Support for explicit substitutions *)
+
 open Util
 
 (*********************)

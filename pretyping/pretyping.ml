@@ -6,6 +6,21 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* This file contains the syntax-directed part of the type inference
+   algorithm introduced by Murthy in Coq V5.10, 1995; the type
+   inference algorithm was initially developed in a file named trad.ml
+   which formerly contained a simple concrete-to-abstract syntax
+   translation function introduced in CoC V4.10 for implementing the
+   "exact" tactic, 1989 *)
+(* Support for typing term in Ltac environment by David Delahaye, 2000 *)
+(* Type inference algorithm made a functor of the coercion and
+   pattern-matching compilation by Matthieu Sozeau, March 2006 *)
+(* Fixpoint guard index computation by Pierre Letouzey, July 2007 *)
+
+(* Structural maintainer: Hugo Herbelin *)
+(* Secondary maintenance: collective *)
+
+
 open Pp
 open Util
 open Names

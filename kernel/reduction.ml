@@ -6,6 +6,15 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Created under Benjamin Werner account by Bruno Barras to implement
+   a call-by-value conversion algorithm and a lazy reduction machine
+   with sharing, Nov 1996 *)
+(* Addition of zeta-reduction (let-in contraction) by Hugo Herbelin, Oct 2000 *)
+(* Irreversibility of opacity by Bruno Barras *)
+(* Cleaning and lightening of the kernel by Bruno Barras, Nov 2001 *)
+(* Equal inductive types by Jacek Chrzaszcz as part of the module
+   system, Aug 2002 *)
+
 open Util
 open Names
 open Term

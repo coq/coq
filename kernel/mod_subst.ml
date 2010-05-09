@@ -6,6 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Created by Claudio Sacerdoti from contents of term.ml, names.ml and
+   new support for constant inlining in functor application, Nov 2004 *)
+(* Optimizations and bug fixes by Élie Soubiran, from Feb 2008 *)
+
+(* This file provides types and functions for managing name
+   substitution in module constructions *)
+
 open Pp
 open Util
 open Names

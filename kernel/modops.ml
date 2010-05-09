@@ -6,7 +6,15 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i*)
+(* Created by Jacek Chrzaszcz, Aug 2002 as part of the implementation of
+   the Coq module system *)
+(* Inlining and more liberal use of modules and module types by Claudio
+   Sacerdoti, Nov 2004 *)
+(* New structure-based model of modules and miscellaneous bug fixes by
+   Élie Soubiran, from Feb 2008 *)
+
+(* This file provides with various operations on modules and module types *)
+
 open Util
 open Pp
 open Names
@@ -16,9 +24,6 @@ open Declarations
 open Environ
 open Entries
 open Mod_subst
-(*i*)
-
-
 
 let error_existing_label l = 
   error ("The label "^string_of_label l^" is already declared.")

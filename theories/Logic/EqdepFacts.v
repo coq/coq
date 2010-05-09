@@ -7,6 +7,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* File Eqdep.v created by Christine Paulin-Mohring in Coq V5.6, May 1992 *)
+(* Further documentation and variants of eq_rect_eq by Hugo Herbelin,
+   Apr 2003 *)
+(* Abstraction with respect to the eq_rect_eq axiom and renaming to
+   EqdepFacts.v by Hugo Herbelin, Mar 2006 *)
+
 (** This file defines dependent equality and shows its equivalence with
     equality on dependent pairs (inhabiting sigma-types). It derives
     the consequence of axiomatizing the invariance by substitution of

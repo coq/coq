@@ -6,20 +6,29 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i*)
+(* This file is a late renaming in May 2000 of constant.ml which
+   itself was made for V7.0 in Aug 1999 out of a dispatch by
+   Jean-Christophe Filliâtre of Chet Murthy's constants.ml in V5.10.5
+   into cooking.ml, declare.ml and constant.ml, ...; renaming done
+   because the new contents exceeded in extent what the name
+   suggested *)
+(* Cleaning and lightening of the kernel by Bruno Barras, Nov 2001 *)
+(* Declarations for the module systems added by Jacek Chrzaszcz, Aug 2002 *)
+(* Miscellaneous extensions, cleaning or restructurations by Bruno
+   Barras, Hugo Herbelin, Jean-Christophe Filliâtre, Pierre Letouzey *)
+
+(* This module defines the types of global declarations. This includes
+   global constants/axioms, mutual inductive definitions and the
+   module system *)
+
 open Util
 open Names
 open Univ
 open Term
 open Sign
 open Mod_subst
-(*i*)
-
-(* This module defines the types of global declarations. This includes
-   global constants/axioms and mutual inductive definitions *)
 
 type engagement = ImpredicativeSet
-
 
 (*s Constants (internal representation) (Definition/Axiom) *)
 

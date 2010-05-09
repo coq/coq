@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* File created for Coq V5.10.14b, Oct 1995, by duplication of
+   Classical_Pred_Type.v *)
+
 (** This file is obsolete, use Classical_Pred_Type.v via Classical.v
 instead *)
 

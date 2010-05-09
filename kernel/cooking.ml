@@ -6,6 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Created by Jean-Christophe Filliâtre out of V6.3 file constants.ml
+   as part of the rebuilding of Coq around a purely functional
+   abstract type-checker, Nov 1999 *)
+
+(* This module implements kernel-level discharching of local
+   declarations over global constants and inductive types *)
+
 open Pp
 open Util
 open Names

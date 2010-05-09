@@ -6,6 +6,57 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Created by Jean-Christophe Filliâtre as part of the rebuilding of
+   Coq around a purely functional abstract type-checker, Dec 1999 *)
+
+(* This file provides the entry points to the kernel type-checker. It
+   defines the abstract type of well-formed environments and
+   implements the rules that build well-formed environments.
+
+   An environment is made of constants and inductive types (E), of
+   section declarations (Delta), of local bound-by-index declarations
+   (Gamma) and of universe constraints (C). Below E[Delta,Gamma] |-_C
+   means that the tuple E, Delta, Gamma, C is a well-formed
+   environment. Main rules are:
+
+   empty_environment:
+
+     ------
+     [,] |-
+
+   push_named_assum(a,T):
+   
+     E[Delta,Gamma] |-_G
+     ------------------------
+     E[Delta,Gamma,a:T] |-_G'
+
+   push_named_def(a,t,T):
+   
+     E[Delta,Gamma] |-_G
+     ---------------------------
+     E[Delta,Gamma,a:=t:T] |-_G'
+
+   add_constant(ConstantEntry(DefinitionEntry(c,t,T))):
+
+     E[Delta,Gamma] |-_G
+     ---------------------------
+     E,c:=t:T[Delta,Gamma] |-_G'
+
+   add_constant(ConstantEntry(ParameterEntry(c,T))):
+
+     E[Delta,Gamma] |-_G
+     ------------------------
+     E,c:T[Delta,Gamma] |-_G'
+
+   add_mind(Ind(Ind[Gamma_p](Gamma_I:=Gamma_C))):
+
+     E[Delta,Gamma] |-_G
+     ------------------------
+     E,Ind[Gamma_p](Gamma_I:=Gamma_C)[Delta,Gamma] |-_G'
+
+   etc.
+*)
+
 open Util
 open Names
 open Univ

@@ -1,3 +1,19 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+(* $Id$ *)
+
+(* Created by Bruno Barras for Benjamin Grégoire as part of the
+   bytecode-based reduction machine, Oct 2004 *)
+(* Support for native arithmetics by Arnaud Spiwack, May 2007 *)
+
+(* This file defines the type of bytecode instructions *)
+
 open Names
 open Term
 

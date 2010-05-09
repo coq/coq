@@ -6,6 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Created by Amokrane Saïbi, Dec 1998 *)
+(* Addition of products and sorts in canonical structures by Pierre
+   Corbineau, Feb 2008 *)
+
+(* This file registers properties of records: projections and
+   canonical structures *)
+
 open Util
 open Pp
 open Names

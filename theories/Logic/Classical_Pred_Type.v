@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* This file is a renaming for V5.10.14b, Oct 1995, of file Classical.v
+   introduced in Coq V5.8.3, June 1993 *)
+
 (** Classical Predicate Logic on Type *)
 
 Require Import Classical_Prop.

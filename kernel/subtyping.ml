@@ -6,6 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Created by Jacek Chrzaszcz, Aug 2002 as part of the implementation of
+   the Coq module system *)
+
+(* This module checks subtyping of module types *)
+
 (*i*)
 open Util
 open Names
@@ -19,8 +24,6 @@ open Modops
 open Mod_subst
 open Entries
 (*i*)
-
-
 
 (* This local type is used to subtype a constant with a constructor or
    an inductive type. It can also be useful to allow reorderings in

@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Created by Bruno Barras as part of the rewriting of the conversion
+   algorithm, Nov 2001 *)
+
 open Names
 
 (* Priority for the expansion of constant in the conversion test.

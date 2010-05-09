@@ -6,6 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Created by Benjamin Grégoire out of environ.ml for better
+   modularity in the design of the bytecode virtual evaluation
+   machine, Dec 2005 *)
+(* Bug fix by Jean-Marc Notin *)
+
+(* This file defines the type of kernel environments *)
+
 open Util
 open Names
 open Sign
