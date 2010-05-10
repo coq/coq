@@ -344,8 +344,7 @@ let clenv_fchain ?(allow_K=true) ?(flags=default_unify_flags) mv clenv nextclenv
   let clenv' =
     { templval = clenv.templval;
       templtyp = clenv.templtyp;
-      evd =
-        evar_merge (meta_merge clenv.evd nextclenv.evd) clenv.evd;
+      evd = meta_merge nextclenv.evd clenv.evd;
       env = nextclenv.env } in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv'' =
