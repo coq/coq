@@ -91,15 +91,30 @@ let set_end_tac tac =
   let tac = Proofview.V82.tactic tac in
   Proof_global.set_endline_tactic tac
 
-let get_goal_context i =
+exception NoSuchGoal
+let get_nth_V82_goal i =
+  let p = Proof_global.give_me_the_proof () in
+  let { it=goals ; sigma = sigma } = Proof.V82.subgoals p in
   try
-    let p = Proof_global.give_me_the_proof () in
-    let { it=goals ; sigma = sigma } = Proof.V82.subgoals p in
-    let goal = List.nth goals (i-1) in
+    { it=(List.nth goals (i-1)) ; sigma=sigma }
+  with Failure _ -> raise NoSuchGoal
+    
+let get_goal_context_gen i =
+  try
+    let { it=goal ; sigma=sigma } =  get_nth_V82_goal i in
     (sigma, Refiner.pf_env { it=goal ; sigma=sigma })
   with Proof_global.NoCurrentProof -> Util.error "No focused proof."
 
-let get_current_goal_context () = get_goal_context 1
+let get_goal_context i =
+  try get_goal_context_gen i
+  with NoSuchGoal -> Util.error "No such goal."
+
+let get_current_goal_context () =
+  try get_goal_context_gen 1
+  with NoSuchGoal ->
+    (* spiwack: returning empty evar_map, since if there is no goal, under focus,
+        there is no accessible evar either *)
+    (Evd.empty, Global.env ())
 
 let current_proof_statement () =
   match Proof_global.V82.get_current_initial_conclusions () with
