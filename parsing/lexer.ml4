@@ -254,7 +254,7 @@ let rec string in_comments bp len = parser
       (parser
         | [< '')'; s >] ->
 	    if in_comments then
-	      warning "Not interpreting \"*)\" as the end of current non-terminated comment because it occurs in a non-terminated string of the comment.";
+	      msg_warning (str "Not interpreting \"*)\" as the end of current non-terminated comment because it occurs in a non-terminated string of the comment.");
 	    string in_comments bp (store (store len '*') ')') s
         | [< >] ->
 	    string in_comments bp (store len '*') s) s

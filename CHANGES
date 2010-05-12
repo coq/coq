@@ -1,3 +1,8 @@
+Changes from V8.3 to V8.4
+=========================
+
+New proof engine
+
 Changes from V8.2 to V8.3
 =========================
 
@@ -168,7 +173,7 @@ Vernacular commands
 
 Library
 
-- Use "Coq standard" names for the properties of eq and identity
+- Use "standard" Coq names for the properties of eq and identity
   (e.g. refl_equal is now eq_refl). Support for compatibility is provided.
 - The function Compare_dec.nat_compare is now defined directly,
   instead of relying on lt_eq_lt_dec. The earlier version is still
