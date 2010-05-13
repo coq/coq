@@ -370,7 +370,7 @@ let mark_unresolvables sigma =
 
 let has_typeclasses evd =
   Evd.fold_undefined (fun ev evi has -> has ||
-    (evi.evar_body = Evar_empty && is_class_evar evd evi && is_resolvable evi))
+    (is_class_evar evd evi && is_resolvable evi))
     evd false
 
 let solve_instanciations_problem = ref (fun _ _ _ _ _ -> assert false)

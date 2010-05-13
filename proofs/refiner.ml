@@ -416,17 +416,19 @@ let tclINFO (tac : tactic) gls =
 
 (* Check that holes in arguments have been resolved *)
 
-let check_evars env sigma evm gl =
+let check_evars env sigma extsigma gl =
   let origsigma = gl.sigma in
   let rest =
-    Evd.fold (fun ev evi acc ->
-      if not (Evd.mem origsigma ev) && not (Evd.is_defined sigma ev)
-      then Evd.add acc ev evi else acc)
-      evm Evd.empty
+    Evd.fold_undefined (fun evk evi acc ->
+      if Evd.is_undefined extsigma evk & not (Evd.mem origsigma evk) then
+	evi::acc
+      else
+	acc)
+      sigma []
   in
-  if rest <> Evd.empty then
-    let (evk,evi) = List.hd (Evd.to_list rest) in
-    let (loc,k) = evar_source evk rest in
+  if rest <> [] then
+    let evi = List.hd rest in
+    let (loc,k) = evi.evar_source in
     let evi = Evarutil.nf_evar_info sigma evi in
     Pretype_errors.error_unsolvable_implicit loc env sigma evi k None
 

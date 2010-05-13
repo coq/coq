@@ -622,8 +622,8 @@ let w_merge env with_types flags (evd,metas,evars) =
 
     (* Process evars *)
     match evars with
-    | ((evn,_ as ev),rhs)::evars' ->
-    	if is_defined_evar evd ev then
+    | ((evk,_ as ev),rhs)::evars' ->
+	if Evd.is_defined evd evk then
 	  let v = Evd.existential_value evd ev in
 	  let (evd,metas',evars'') =
 	    unify_0 env evd topconv flags rhs v in
@@ -632,15 +632,17 @@ let w_merge env with_types flags (evd,metas,evars) =
           let rhs' = subst_meta_instances metas rhs in
           match kind_of_term rhs with
 	  | App (f,cl) when occur_meta rhs' ->
-	      if occur_evar evn rhs' then
-                error_occur_check env evd evn rhs';
+	      if occur_evar evk rhs' then
+                error_occur_check env evd evk rhs';
 	      if is_mimick_head f then
-		let evd' = mimick_evar evd flags f (Array.length cl) evn in
-		  w_merge_rec evd' metas evars eqns
+		let evd' =
+		  mimick_undefined_evar evd flags f (Array.length cl) evk in
+		w_merge_rec evd' metas evars eqns
 	      else
 		let evd', rhs'' = pose_all_metas_as_evars env evd rhs' in
-	  	  w_merge_rec (solve_simple_evar_eqn env evd' ev rhs'')
-		    metas evars' eqns
+		w_merge_rec (solve_simple_evar_eqn env evd' ev rhs'')
+		  metas evars' eqns
+
           | _ ->
 	      w_merge_rec (solve_simple_evar_eqn env evd ev rhs')
 		metas evars' eqns
@@ -682,8 +684,8 @@ let w_merge env with_types flags (evd,metas,evars) =
         w_merge_rec evd metas evars eqns
     | [] -> evd
 
-  and mimick_evar evd flags hdc nargs sp =
-    let ev = Evd.find evd sp in
+  and mimick_undefined_evar evd flags hdc nargs sp =
+    let ev = Evd.find_undefined evd sp in
     let sp_env = Global.env_of_context ev.evar_hyps in
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (evd'',mc,ec) =

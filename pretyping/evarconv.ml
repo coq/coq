@@ -514,7 +514,7 @@ let first_order_unification env evd (ev1,l1) (term2,l2) =
 	solve_simple_eqn ~choose:true evar_conv_x env i (None,ev1,t2))]
 
 let choose_less_dependent_instance evk evd term args =
-  let evi = Evd.find evd evk in
+  let evi = Evd.find_undefined evd evk in
   let subst = make_pure_subst evi args in
   let subst' = List.filter (fun (id,c) -> c = term) subst in
   if subst' = [] then error "Too complex unification problem." else

@@ -87,7 +87,6 @@ val solve_simple_eqn :
    new unresolved evar remains in [c] *)
 val check_evars : env -> evar_map -> evar_map -> constr -> unit
 
-val subtract_evars : evar_map -> evar_map -> evar_map * evar_map 
 val define_evar_as_product : evar_map -> existential -> evar_map * types
 val define_evar_as_lambda : evar_map -> existential -> evar_map * types
 val define_evar_as_sort : evar_map -> existential -> evar_map * sorts

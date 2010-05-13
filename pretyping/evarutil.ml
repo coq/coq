@@ -28,10 +28,10 @@ exception Uninstantiated_evar of existential_key
 
 let rec whd_ise sigma c =
   match kind_of_term c with
-    | Evar (evk,args as ev) when Evd.mem sigma evk ->
-	if Evd.is_defined sigma evk then
-          whd_ise sigma (existential_value sigma ev)
-	else raise (Uninstantiated_evar evk)
+  | Evar (evk,_ as ev) when Evd.is_defined sigma evk ->
+      whd_ise sigma (existential_value sigma ev)
+  | Evar (evk,_) when Evd.is_undefined sigma evk ->
+      raise (Uninstantiated_evar evk)
   | _ -> c
 
 
@@ -39,7 +39,7 @@ let rec whd_ise sigma c =
 let whd_castappevar_stack sigma c =
   let rec whrec (c, l as s) =
     match kind_of_term c with
-      | Evar (evk,args as ev) when Evd.mem sigma evk & Evd.is_defined sigma evk
+      | Evar (evk,args as ev) when Evd.is_defined sigma evk
 	  -> whrec (existential_value sigma ev, l)
       | Cast (c,_,_) -> whrec (c, l)
       | App (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
@@ -100,7 +100,7 @@ let collect_evars emap c =
   let rec collrec acc c =
     match kind_of_term c with
       | Evar (evk,_) ->
-	  if Evd.mem emap evk & not (Evd.is_defined emap evk) then evk::acc
+	  if Evd.is_undefined emap evk then evk::acc
 	  else (* No recursion on the evar instantiation *) acc
       | _         ->
 	  fold_constr collrec acc c in
@@ -145,14 +145,11 @@ let evars_to_metas sigma (emap, c) =
       | _ -> map_constr replace c in
   (sigma', replace c)
 
-(* The list of non-instantiated existential declarations *)
+(* The list of non-instantiated existential declarations (order is important) *)
 
 let non_instantiated sigma =
-  List.rev begin
-    Evd.fold_undefined begin fun ev evi l ->
-      (ev,nf_evar_info sigma evi)::l
-    end sigma []
-  end
+  let listev = Evd.undefined_list sigma in
+  List.map (fun (ev,evi) -> (ev,nf_evar_info sigma evi)) listev
 
 (**********************)
 (* Creating new evars *)
@@ -423,7 +420,7 @@ let extend_evar env evdref k (evk1,args1) c =
     let n = Array.length v - Array.length v2 in
     for i = 0 to Array.length v2 - 1 do v.(n+i) <- v2.(i) done;
     v in
-  let evi1 = Evd.find !evdref evk1 in
+  let evi1 = Evd.find_undefined !evdref evk1 in
   let named_sign',rel_sign',ty =
     if k = 0 then [], [], ty
     else shrink_context env (List.rev (make_pure_subst evi1 args1)) ty in
@@ -496,7 +493,7 @@ let rec check_and_clear_in_constr evdref err ids c =
             List.iter check vars; c
 
       | Evar (evk,l as ev) ->
-	  if Evd.is_defined_evar !evdref ev then
+	  if Evd.is_defined !evdref evk then
 	    (* If evk is already defined we replace it by its definition *)
 	    let nc = whd_evar !evdref c in
 	      (check_and_clear_in_constr evdref err ids nc)
@@ -506,7 +503,7 @@ let rec check_and_clear_in_constr evdref err ids c =
 	       arguments. Concurrently, we build a new evar
 	       corresponding to e where hypotheses of ids have been
 	       removed *)
-	    let evi = Evd.find !evdref evk in
+	    let evi = Evd.find_undefined !evdref evk in
 	    let ctxt = Evd.evar_filtered_context evi in
 	    let (nhyps,nargs,rids) =
 	      List.fold_right2
@@ -1219,7 +1216,7 @@ let status_changed lev (pbty,_,t1,t2) =
 
 let solve_refl conv_algo env evd evk argsv1 argsv2 =
   if argsv1 = argsv2 then evd else
-  let evi = Evd.find evd evk in
+  let evi = Evd.find_undefined evd evk in
   (* Filter and restrict if needed *)
   let evd,evk,args =
     restrict_upon_filter evd evi evk
@@ -1334,19 +1331,37 @@ let check_evars env initial_sigma evd c =
 	      (match k with
 	      | ImplicitArg (gr, (i, id), false) -> ()
 	      | _ ->
-		  let evi = nf_evar_info sigma (Evd.find sigma evk) in
+		  let evi = nf_evar_info sigma (Evd.find_undefined sigma evk) in
 		    error_unsolvable_implicit loc env sigma evi k None)
       | _ -> iter_constr proc_rec c
   in proc_rec c
 
-(* This returns the evars of [sigma] that are not in [sigma0] and
-   [sigma] minus these evars *)
+(* Substitutes undefined evars by evars of same context up to renaming *)
 
-let subtract_evars sigma0 sigma =
-  Evd.fold (fun evk ev (sigma,sigma' as acc) ->
-    if Evd.mem sigma0 evk || Evd.mem sigma' evk then acc else
-      (Evd.remove sigma evk,Evd.add sigma' evk ev))
-    sigma (sigma,Evd.empty)
+let subst_evar_evar subst c =
+  let rec aux c = match kind_of_term c with
+  | Evar (evk,args) ->
+      let evk' = try ExistentialMap.find evk subst with Not_found -> evk in
+      mkEvar (evk',Array.map aux args)
+  | _ -> map_constr aux c
+  in aux c
+
+let subst_undefined_evar_info_evar subst evi =
+  { evi with
+    evar_hyps = map_named_val (subst_evar_evar subst) evi.evar_hyps;
+    evar_concl = subst_evar_evar subst evi.evar_concl }
+
+open Rawterm
+
+let subst_evar_evar_in_constr_with_bindings subst (c,bl) =
+  (subst_evar_evar subst c,
+   match bl with
+   | ImplicitBindings largs ->
+       ImplicitBindings (List.map (subst_evar_evar subst) largs)
+   | ExplicitBindings lbind ->
+       ExplicitBindings (List.map (on_pi3 (subst_evar_evar subst)) lbind)
+   | NoBindings ->
+       NoBindings)
 
 (* Operations on value/type constraints *)
 
@@ -1393,7 +1408,7 @@ let mk_valcon c = Some c
    cumulativity now includes Prop and Set in Type...
    It is, but that's not too bad *)
 let define_evar_as_abstraction abs evd (ev,args) =
-  let evi = Evd.find evd ev in
+  let evi = Evd.find_undefined evd ev in
   let evenv = evar_unfiltered_env evi in
   let (evd1,dom) = new_evar evd evenv (new_Type()) ~filter:(evar_filter evi) in
   let nvar =

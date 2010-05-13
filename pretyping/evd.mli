@@ -147,20 +147,21 @@ val is_empty : evar_map -> bool
 
 val add : evar_map -> evar -> evar_info -> evar_map
 
-val dom : evar_map -> evar list
 val find : evar_map -> evar -> evar_info
+val find_undefined : evar_map -> evar -> evar_info
 val remove : evar_map -> evar -> evar_map
 val mem : evar_map -> evar -> bool
+val undefined_list : evar_map -> (evar * evar_info) list
 val to_list : evar_map -> (evar * evar_info) list
 val fold : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
-
+val fold_undefined : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 val merge : evar_map -> evar_map -> evar_map
-
 val define : evar -> constr -> evar_map -> evar_map
 
 val is_evar : evar_map -> evar -> bool
 
 val is_defined : evar_map -> evar -> bool
+val is_undefined : evar_map -> evar -> bool
 
 (** {6 ... } *)
 (** [existential_value sigma ev] raises [NotInstantiatedEvar] if [ev] has
@@ -184,17 +185,12 @@ val is_undefined_evar :  evar_map -> constr -> bool
 val undefined_evars : evar_map -> evar_map
 (* [fold_undefined f m] iterates ("folds") function [f] over the undefined
     evars (that is, whose value is [Evar_empty]) of map [m].
-    Making it effectively equivalent to {!Evd.fold} applies to
-    [f] and [undefined_evars m] *)
-(* spiwack: at the moment, [fold_undefined] is defined rather naively.
-    But we can hope to enable some optimisation in the future, as
-    an evar_map contains typically few undefined evars compared to all
-    its evars. *)
+    It optimizes the call of {!Evd.fold} to [f] and [undefined_evars m] *)
 val fold_undefined : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 val evar_declare :
   named_context_val -> evar -> types -> ?src:loc * hole_kind ->
       ?filter:bool list -> evar_map -> evar_map
-val evar_source : existential_key -> evar_map -> loc * hole_kind
+val evar_source : existential_key -> evar_map -> hole_kind located
 
 (* spiwack: this function seems to somewhat break the abstraction. 
    [evar_merge evd ev1] extends the evars of [evd] with [evd1] *)
@@ -205,6 +201,7 @@ type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * env * constr * constr
 val add_conv_pb :  evar_constraint -> evar_map -> evar_map
 
+module ExistentialMap : Map.S with type key = existential_key
 module ExistentialSet : Set.S with type elt = existential_key
 val extract_changed_conv_pbs : evar_map ->
       (ExistentialSet.t -> evar_constraint -> bool) ->

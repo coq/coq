@@ -71,7 +71,7 @@ type delayed_open_constr_with_bindings =
     env -> evar_map -> evar_map * constr with_bindings
 
 val general_multi_multi_rewrite :
-  evars_flag -> (bool * multi * delayed_open_constr_with_bindings) list -> 
+  evars_flag -> (bool * multi * delayed_open_constr_with_bindings) list ->
     clause -> (tactic * conditions) option -> tactic
 
 val replace_in_clause_maybe_by : constr -> constr -> clause -> tactic option -> tactic

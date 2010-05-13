@@ -2,6 +2,13 @@
 = CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
 =========================================
 
+** Optimizing calls to Evd functions **
+
+Evars are split into defined evars and undefined evars; for
+efficiency, when an evar is known to be undefined, it is preferable to
+use specific functions about undefined evars since these ones are
+generally fewer than the defined ones.
+
 ** Internal tactics renamed
 
 There is no more difference between bindings and ebindings. The

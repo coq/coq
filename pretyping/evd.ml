@@ -79,10 +79,10 @@ let eq_evar_info ei1 ei2 =
     ei1.evar_body = ei2.evar_body
 
 (* spiwack: Revised hierarchy :
-      - ExistentialMap ( Maps of existential_keys )
-      - EvarInfoMap ( .t = evar_info ExistentialMap.t )
-      - EvarMap ( .t = EvarInfoMap.t * sort_constraints )
-      - evar_map (exported)
+   - ExistentialMap ( Maps of existential_keys )
+   - EvarInfoMap ( .t = evar_info ExistentialMap.t * evar_info ExistentialMap )
+   - EvarMap ( .t = EvarInfoMap.t * sort_constraints )
+   - evar_map (exported)
 *)
 
 module ExistentialMap = Intmap
@@ -93,47 +93,70 @@ exception NotInstantiatedEvar
 
 
 module EvarInfoMap = struct
-  type t = evar_info ExistentialMap.t 
+  type t = evar_info ExistentialMap.t * evar_info ExistentialMap.t
 
-  let empty = ExistentialMap.empty 
-  let is_empty  = ExistentialMap.is_empty 
+  let empty = ExistentialMap.empty, ExistentialMap.empty
+  let is_empty (def,undef) =
+    (ExistentialMap.is_empty def, ExistentialMap.is_empty undef)
 
-  let to_list evc = (* Workaround for change in Map.fold behavior *)
-    (* spiwack: seems to arrange the items in decreasing order.
-        Which would also be the behaviour of a naive [fold].
-        I don't understand above comment. *)
+  let to_list (def,undef) =
+    (* Workaround for change in Map.fold behavior in ocaml 3.08.4 *)
     let l = ref [] in
-    ExistentialMap.iter (fun evk x -> l := (evk,x)::!l) evc;
+    ExistentialMap.iter (fun evk x -> l := (evk,x)::!l) def;
+    ExistentialMap.iter (fun evk x -> l := (evk,x)::!l) undef;
     !l
 
-  let dom evc = ExistentialMap.fold (fun evk _ acc -> evk::acc) evc []
-  let find evc k = ExistentialMap.find k evc
-  let remove evc k = ExistentialMap.remove k evc 
-  let mem evc k = ExistentialMap.mem k evc
-  let fold = ExistentialMap.fold
-  let exists evc f = ExistentialMap.fold (fun k v b -> b || f k v) evc false
+  let undefined_list (def,undef) =
+    (* Order is important: needs ocaml >= 3.08.4 from which "fold" is a
+       "fold_left" *)
+    ExistentialMap.fold (fun evk evi l -> (evk,evi)::l) undef []
 
-  let add evd evk newinfo =  ExistentialMap.add evk newinfo evd
+  let undefined_evars (def,undef) = (ExistentialMap.empty,undef)
 
-  let map = ExistentialMap.map
+  let find (def,undef) k =
+    try ExistentialMap.find k def
+    with Not_found -> ExistentialMap.find k undef
+  let find_undefined (def,undef) k = ExistentialMap.find k undef
+  let remove (def,undef) k =
+    (ExistentialMap.remove k def,ExistentialMap.remove k undef)
+  let mem (def,undef) k =
+    ExistentialMap.mem k def || ExistentialMap.mem k undef
+  let fold (def,undef) f a =
+    ExistentialMap.fold f def (ExistentialMap.fold f undef a)
+  let fold_undefined (def,undef) f a =
+    ExistentialMap.fold f undef a
+  let exists_undefined (def,undef) f =
+    ExistentialMap.fold (fun k v b -> b || f k v) undef false
 
-  let define evd evk body =
+  let add (def,undef) evk newinfo =
+    if newinfo.evar_body = Evar_empty then
+      (def,ExistentialMap.add evk newinfo undef)
+    else
+      (ExistentialMap.add evk newinfo def,undef)
+
+  let add_undefined (def,undef) evk newinfo =
+    assert (newinfo.evar_body = Evar_empty);
+    (def,ExistentialMap.add evk newinfo undef)
+
+  let map f (def,undef) = (ExistentialMap.map f def, ExistentialMap.map f undef)
+
+  let define (def,undef) evk body =
     let oldinfo =
-      try find evd evk
-      with Not_found -> error "Evd.define: cannot define undeclared evar" in
+      try ExistentialMap.find evk undef
+      with Not_found -> anomaly "Evd.define: cannot define undeclared evar" in
     let newinfo =
       { oldinfo with
 	  evar_body = Evar_defined body } in
       match oldinfo.evar_body with
-	| Evar_empty -> ExistentialMap.add evk newinfo evd
-	| _ -> anomaly "Evd.define: cannot define an evar twice"
+	| Evar_empty ->
+	    (ExistentialMap.add evk newinfo def,ExistentialMap.remove evk undef)
+	| _ ->
+	    anomaly "Evd.define: cannot define an evar twice"
 
-  let is_evar sigma evk = mem sigma evk
+  let is_evar = mem
 
-  let is_defined sigma evk =
-    let info = find sigma evk in
-      not (info.evar_body = Evar_empty)
-
+  let is_defined (def,undef) evk = ExistentialMap.mem evk def
+  let is_undefined (def,undef) evk = ExistentialMap.mem evk undef
 
   (*******************************************************************)
   (* Formerly Instantiate module *)
@@ -185,14 +208,6 @@ module EvarInfoMap = struct
     try Some (existential_value sigma ev)
     with NotInstantiatedEvar -> None
 
-  (* Combinators on undefined evars. *)
-  let fold_undefined f  = ExistentialMap.fold begin fun ev evi acc -> 
-                                          match evar_body evi with
-					  | Evar_empty -> f ev evi acc
-					  | _ -> acc
-                                       end
-
-  let undefined evm = fold_undefined ExistentialMap.add evm empty
 end
 
 (*******************************************************************)
@@ -329,41 +344,30 @@ module EvarMap = struct
   type t = EvarInfoMap.t * sort_constraints
   let empty = EvarInfoMap.empty, UniverseMap.empty
   let add (sigma,sm) k v = (EvarInfoMap.add sigma k v, sm)
-  let dom (sigma,_) = EvarInfoMap.dom sigma
+  let add_undefined (sigma,sm) k v = (EvarInfoMap.add_undefined sigma k v, sm)
   let find (sigma,_) = EvarInfoMap.find sigma
+  let find_undefined (sigma,_) = EvarInfoMap.find_undefined sigma
   let remove (sigma,sm) k = (EvarInfoMap.remove sigma k, sm)
   let mem (sigma,_) = EvarInfoMap.mem sigma
   let to_list (sigma,_) = EvarInfoMap.to_list sigma
-  let fold f (sigma,_) = EvarInfoMap.fold f sigma
+  let undefined_list (sigma,_) = EvarInfoMap.undefined_list sigma
+  let undefined_evars (sigma,sm) = (EvarInfoMap.undefined_evars sigma, sm)
+  let fold (sigma,_) = EvarInfoMap.fold sigma
+  let fold_undefined (sigma,_) = EvarInfoMap.fold_undefined sigma
   let define (sigma,sm) k v = (EvarInfoMap.define sigma k v, sm)
   let is_evar (sigma,_) = EvarInfoMap.is_evar sigma
   let is_defined (sigma,_) = EvarInfoMap.is_defined sigma
+  let is_undefined (sigma,_) = EvarInfoMap.is_undefined sigma
   let existential_value (sigma,_) = EvarInfoMap.existential_value sigma
   let existential_type (sigma,_) = EvarInfoMap.existential_type sigma
   let existential_opt_value (sigma,_) = EvarInfoMap.existential_opt_value sigma
   let progress_evar_map (sigma1,sm1 as x) (sigma2,sm2 as y) = not (x == y) &&
-    (EvarInfoMap.exists sigma1
-      (fun k v -> v.evar_body = Evar_empty &&
-        (EvarInfoMap.find sigma2 k).evar_body <> Evar_empty)
+    (EvarInfoMap.exists_undefined sigma1
+      (fun k v -> assert (v.evar_body = Evar_empty);
+        EvarInfoMap.is_defined sigma2 k)
     || not (UniverseMap.equal (=) sm1 sm2))
 
-  (* spiwack: used to workaround a bug in clenv: evar_merge
-        could merge an "old" version of an evar map into
-        a more up to date and erase evar definitions (in the case
-        of [constructor_tac] it actually erased a goal in some cases).
-       This is due to the fact that [open_constr] carry around their own
-       sigma which can be outdated by other operations. *)
-  let add_if_more_recent evd evk newinfo =
-    if newinfo.evar_body = Evar_empty && mem evd evk then
-	evd
-    else
-      add evd evk newinfo
-
-  let merge e e' = fold (fun n v sigma -> add_if_more_recent sigma n v) e' e
-
-  (* combinators on undefined values *)
-  let undefined (sigma,sm) = (EvarInfoMap.undefined sigma,sm)
-  let fold_undefined f (sigma,_) = EvarInfoMap.fold_undefined f sigma
+  let merge e e' = fold e' (fun n v sigma -> add sigma n v) e
 
 end
 
@@ -475,17 +479,21 @@ let merge d1 d2 = {
 }
 let add d e i = { d with evars=EvarMap.add d.evars e i }
 let remove d e = { d with evars=EvarMap.remove d.evars e }
-let dom d = EvarMap.dom d.evars
 let find d e = EvarMap.find d.evars e
+let find_undefined d e = EvarMap.find_undefined d.evars e
 let mem d e = EvarMap.mem d.evars e
 (* spiwack: this function loses information from the original evar_map
    it might be an idea not to export it. *)
 let to_list d = EvarMap.to_list d.evars
+let undefined_list d = EvarMap.undefined_list d.evars
+let undefined_evars d = { d with evars=EvarMap.undefined_evars d.evars }
 (* spiwack: not clear what folding over an evar_map, for now we shall
     simply fold over the inner evar_map. *)
-let fold f d a = EvarMap.fold f d.evars a
+let fold f d a = EvarMap.fold d.evars f a
+let fold_undefined f d a = EvarMap.fold_undefined d.evars f a
 let is_evar d e = EvarMap.is_evar d.evars e
 let is_defined d e = EvarMap.is_defined d.evars e
+let is_undefined d e = EvarMap.is_undefined d.evars e
 
 let existential_value d e = EvarMap.existential_value d.evars e
 let existential_type d e = EvarMap.existential_type d.evars e
@@ -556,7 +564,7 @@ let evar_declare hyps evk ty ?(src=(dummy_loc,InternalHole)) ?filter evd =
       filter)
   in
   { evd with
-    evars = EvarMap.add evd.evars evk
+    evars = EvarMap.add_undefined evd.evars evk
       {evar_hyps = hyps;
        evar_concl = ty;
        evar_body = Evar_empty;
@@ -570,12 +578,6 @@ let is_defined_evar evd (evk,_) = EvarMap.is_defined evd.evars evk
 let is_undefined_evar evd c = match kind_of_term c with
   | Evar ev -> not (is_defined_evar evd ev)
   | _ -> false
-
-let undefined_evars evd =
-  let evars = EvarMap.undefined evd.evars in
-  { evd with evars = evars }
-
-let fold_undefined f evd = EvarMap.fold_undefined f evd.evars
 
 (* extracts conversion problems that satisfy predicate p *)
 (* Note: conv_pbs not satisying p are stored back in reverse order *)

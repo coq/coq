@@ -1305,13 +1305,13 @@ let solve_remaining_evars fail_evar use_classes env initial_sigma evd c =
   let rec proc_rec c =
     let c = Reductionops.whd_evar !evdref c in
     match kind_of_term c with
-      | Evar (ev,args as k) when not (Evd.mem initial_sigma ev) ->
-            let (loc,src) = evar_source ev !evdref in
+      | Evar (evk,args as ev) when not (Evd.mem initial_sigma evk) ->
+            let (loc,src) = evar_source evk !evdref in
 	    let sigma =  !evdref in
-	    let evi = Evd.find sigma ev in
+	    let evi = Evd.find_undefined sigma evk in
 	    (try
-	      let c = solvable_by_tactic env evi k src in
-	      evdref := Evd.define ev c !evdref;
+	      let c = solvable_by_tactic env evi ev src in
+	      evdref := Evd.define evk c !evdref;
 	      c
 	    with Exit ->
               if fail_evar then

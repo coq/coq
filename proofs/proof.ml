@@ -117,7 +117,7 @@ let return p =
   if not (is_done p) then
     raise UnfinishedProof
   else if has_unresolved_evar p then 
-    (* spiwack: for compatibility with <= 8.2 proof engine *)
+    (* spiwack: for compatibility with <= 8.3 proof engine *)
     raise HasUnresolvedEvar
   else
     Proofview.return p.state.proofview
