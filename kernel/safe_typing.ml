@@ -294,9 +294,9 @@ let add_mind dir l mie senv =
   check_label l senv.labset;
     (* TODO: when we will allow reorderings we will have to verify
        all labels *)
-  let mib = translate_mind senv.env mie in
-  let senv' = add_constraints mib.mind_constraints senv in
   let kn = make_mind senv.modinfo.modpath dir l in
+  let mib = translate_mind senv.env kn mie in
+  let senv' = add_constraints mib.mind_constraints senv in
   let env'' = Environ.add_mind kn mib senv'.env in
   kn, { old = senv'.old;
 	env = env'';

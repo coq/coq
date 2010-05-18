@@ -51,7 +51,7 @@ val subst_const_body : substitution -> constant_body -> constant_body
 
 type recarg =
   | Norec
-  | Mrec of int
+  | Mrec of inductive
   | Imbr of inductive
 
 val subst_recarg : substitution -> recarg -> recarg

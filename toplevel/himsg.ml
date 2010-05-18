@@ -227,7 +227,7 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
   | RecursionNotOnInductiveType c ->
       str "Recursive definition on" ++ spc () ++ pr_lconstr_env env c ++ spc () ++
       str "which should be an inductive type"
-  | RecursionOnIllegalTerm(j,arg,le,lt) ->
+  | RecursionOnIllegalTerm(j,(arg_env, arg),le,lt) ->
       let called =
         match names.(j) with
             Name id -> pr_id id
@@ -245,7 +245,7 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
               prlist_with_sep pr_spc pr_db lt in
       str "Recursive call to " ++ called ++ spc () ++
       strbrk "has principal argument equal to" ++ spc () ++
-      pr_lconstr_env env arg ++ strbrk " instead of " ++ vars
+      pr_lconstr_env arg_env arg ++ strbrk " instead of " ++ vars
 
   | NotEnoughArgumentsForFixCall j ->
       let called =

@@ -290,7 +290,7 @@ let compute_construtor_signatures isrec (_,k as ity) =
     | Prod (_,_,c), recarg::rest ->
 	let b = match dest_recarg recarg with
 	  | Norec | Imbr _  -> false
-	  | Mrec j  -> isrec & j=k
+	  | Mrec (_,j)  -> isrec & j=k
 	in b :: (analrec c rest)
     | LetIn (_,_,_,c), rest -> false :: (analrec c rest)
     | _, [] -> []

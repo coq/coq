@@ -138,4 +138,4 @@ let translate_recipe env kn r =
 
 (* Insertion of inductive types. *)
 
-let translate_mind env mie = check_inductive env mie
+let translate_mind env kn mie = check_inductive env kn mie

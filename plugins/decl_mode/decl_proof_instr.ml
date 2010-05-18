@@ -806,7 +806,7 @@ let is_rec_pos (main_ind,wft) =
       None -> false
     | Some index ->
 	match fst (Rtree.dest_node wft) with
-	    Mrec i when i = index -> true
+	    Mrec (_,i) when i = index -> true
 	  | _ -> false
 
 let rec constr_trees (main_ind,wft) ind =

@@ -101,14 +101,11 @@ type guard_env =
   { env     : env;
     (** dB of last fixpoint *)
     rel_min : int;
-    (** inductive of recarg of each fixpoint *)
-    inds    : inductive array;
-    (** the recarg information of inductive family *)
-    recvec  : wf_paths array;
     (** dB of variables denoting subterms *)
     genv    : subterm_spec Lazy.t list;
   }
 
-val subterm_specif : guard_env -> constr -> subterm_spec
-val case_branches_specif : guard_env -> subterm_spec Lazy.t -> case_info ->
-  constr array -> (guard_env * constr) array
+type stack_element = |SClosure of guard_env*constr |SArg of subterm_spec Lazy.t
+
+val subterm_specif : guard_env -> stack_element list -> constr -> subterm_spec
+

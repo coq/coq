@@ -153,7 +153,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
 	      | [] -> None,[]
               | ra::rest ->
                   (match dest_recarg ra with
-	            | Mrec j when is_rec -> (depPvect.(j),rest)
+	            | Mrec (_,j) when is_rec -> (depPvect.(j),rest)
 	            | Imbr _  ->
 		        Flags.if_verbose warning "Ignoring recursive call";
 		        (None,rest)
@@ -223,7 +223,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
 	  match dest_recarg recarg with
             | Norec   -> None
             | Imbr _  -> None
-            | Mrec i  -> fvect.(i)
+            | Mrec (_,i)  -> fvect.(i)
 	in
         (match optionpos with
            | None ->

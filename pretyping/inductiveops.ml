@@ -76,7 +76,7 @@ let mis_is_recursive_subset listind rarg =
     List.exists
       (fun ra ->
         match dest_recarg ra with
-	  | Mrec i -> List.mem i listind
+	  | Mrec (_,i) -> List.mem i listind
           | _ -> false) rvec
   in
   array_exists one_is_rec (dest_subterms rarg)

@@ -37,4 +37,4 @@ exception InductiveError of inductive_error
 (** The following function does checks on inductive declarations. *)
 
 val check_inductive :
-  env -> mutual_inductive_entry -> mutual_inductive_body
+  env -> mutual_inductive -> mutual_inductive_entry -> mutual_inductive_body

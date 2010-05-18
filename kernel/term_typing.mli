@@ -31,7 +31,7 @@ val build_constant_declaration : env -> 'a ->
 val translate_constant : env -> constant -> constant_entry -> constant_body
 
 val translate_mind :
-  env -> mutual_inductive_entry -> mutual_inductive_body
+  env -> mutual_inductive -> mutual_inductive_entry -> mutual_inductive_body
 
 val translate_recipe :
   env -> constant -> Cooking.recipe -> constant_body

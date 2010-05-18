@@ -18,7 +18,7 @@ type guard_error =
   (** Fixpoints *)
   | NotEnoughAbstractionInFixBody
   | RecursionNotOnInductiveType of constr
-  | RecursionOnIllegalTerm of int * constr * int list * int list
+  | RecursionOnIllegalTerm of int * (env * constr) * int list * int list
   | NotEnoughArgumentsForFixCall of int
   (** CoFixpoints *)
   | CodomainNotInductiveType of constr

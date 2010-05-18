@@ -71,7 +71,7 @@ let subst_rel_context sub = list_smartmap (subst_rel_declaration sub)
 
 type recarg =
   | Norec
-  | Mrec of int
+  | Mrec of inductive
   | Imbr of inductive
 
 let subst_recarg sub r = match r with
