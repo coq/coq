@@ -89,8 +89,7 @@ val max_inductive_sort : sorts array -> universe
 val instantiate_universes : env -> rel_context ->
     polymorphic_arity -> types array -> rel_context * sorts
 
-(**************************************************************
-   Debug *)
+(** {6 Debug} *)
 
 type size = Large | Strict
 type subterm_spec =

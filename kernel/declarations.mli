@@ -40,7 +40,7 @@ type constant_body = {
     const_body : constr_substituted option;
     const_type : constant_type;
     const_body_code : to_patch_substituted;
-   (*i const_type_code : to_patch;i*)
+   (* const_type_code : to_patch;*)
     const_constraints : constraints;
     const_opaque : bool;
     const_inline : bool}
@@ -67,11 +67,11 @@ val recarg_length : wf_paths -> int -> int
 val subst_wf_paths : substitution -> wf_paths -> wf_paths
 
 (**
-{% \begin{verbatim} %}
+{v
    Inductive I1 (params) : U1 := c11 : T11 | ... | c1p1 : T1p1
    ...
    with      In (params) : Un := cn1 : Tn1 | ... | cnpn : Tnpn
-{% \end{verbatim} %}
+v}
 *)
 
 type monomorphic_inductive_arity = {

@@ -58,12 +58,14 @@ native-code versions of the system.
 \section[Resource file]{Resource file\index{Resource file}}
 
 When \Coq\ is launched, with either {\tt coqtop} or {\tt coqc}, the
-resource file \verb:$HOME/.coqrc.7.0: is loaded, where \verb:$HOME: is
-the home directory of the user.  If this file is not found, then the
-file \verb:$HOME/.coqrc: is searched. You can also specify an
-arbitrary name for the resource file (see option \verb:-init-file:
-below), or the name of another user to load the resource file of
-someone else (see option \verb:-user:).
+resource file \verb:$HOME/.coqrc.xxx: is loaded, where \verb:$HOME: is
+the home directory of the user and \verb:xxx: is the version number
+(e.g. 8.3).  If this file is not found, then the file
+\verb:$HOME/.coqrc: is searched. You can also specify an arbitrary
+name for the resource file (see option \verb:-init-file: below), or
+the name of another user to load the resource file of someone else
+(see option \verb:-user:).
+
 
 This file may contain, for instance, \verb:Add LoadPath: commands to add
 directories to the load path of \Coq.

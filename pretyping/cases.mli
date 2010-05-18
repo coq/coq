@@ -15,6 +15,9 @@ open Inductiveops
 open Rawterm
 open Evarutil
 
+(** {5 Compilation of pattern-matching } *)
+
+(** {6 Pattern-matching errors } *)
 type pattern_matching_error =
   | BadPattern of constructor * constr
   | BadConstructor of constructor * inductive
@@ -43,8 +46,8 @@ val error_wrong_predicate_arity_loc : loc -> env -> constr -> constr -> constr -
 val error_needs_inversion : env -> constr -> types -> 'a
 
 val set_impossible_default_clause : constr * types -> unit
-(** {6 Compilation of pattern-matching. } *)
 
+(** {6 Compilation primitive. } *)
 type alias_constr =
   | DepAlias
   | NonDepAlias
