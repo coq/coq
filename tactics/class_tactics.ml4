@@ -35,6 +35,7 @@ open Pfedit
 open Command
 open Libnames
 open Evd
+open Compat
 
 let default_eauto_depth = 100
 let typeclasses_db = "typeclass_instances"
@@ -205,7 +206,7 @@ let e_possible_resolve db_list local_db gl =
 
 let rec catchable = function
   | Refiner.FailError _ -> true
-  | Stdpp.Exc_located (_, e) -> catchable e
+  | Loc.Exc_located (_, e) -> catchable e
   | e -> Logic.catchable_exception e
 
 let is_ground gl =

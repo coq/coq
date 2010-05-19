@@ -10,6 +10,8 @@ open Pcoq
 open Names
 open Libnames
 open Topconstr
+open Tok
+open Compat
 
 let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "'"]
 let _ = List.iter Lexer.add_keyword prim_kw
@@ -41,7 +43,7 @@ GEXTEND Gram
     [ [ s = IDENT -> id_of_string s ] ]
   ;
   pattern_ident:
-    [ [ s = LEFTQMARK; id = ident -> id ] ]
+    [ [ LEFTQMARK; id = ident -> id ] ]
   ;
   pattern_identref:
     [ [ id = pattern_ident -> (loc, id) ] ]

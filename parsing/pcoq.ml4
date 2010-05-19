@@ -7,6 +7,8 @@
 (************************************************************************)
 
 open Pp
+open Compat
+open Tok
 open Util
 open Names
 open Extend
@@ -18,54 +20,67 @@ open Tacexpr
 open Extrawit
 open Ppextend
 
-(* The parser of Coq *)
+(** The parser of Coq *)
+
+module G = GrammarMake (Lexer)
+
+(* TODO: this is a workaround, since there isn't such
+   [warning_verbose] in new camlp4. In camlp5, this ref
+   gets hidden by [Gramext.warning_verbose] *)
+let warning_verbose = ref true
 
 IFDEF CAMLP5 THEN
-
-module L =
-  struct
-    type te = Tok.t
-    let lexer = Lexer.lexer
-  end
-
-module G = Grammar.GMake(L)
-
-ELSE (* official camlp4 of ocaml >= 3.10 *)
-
-TODO
-
+open Gramext
+ELSE
+open G
 END
 
-let gram_token_of_token tok = Gramext.Stoken (Tok.to_pattern tok)
+let gram_token_of_token tok =
+IFDEF CAMLP5 THEN
+ Stoken (Tok.to_pattern tok)
+ELSE
+ match tok with
+  | KEYWORD s -> Skeyword s
+  | tok -> Stoken ((=) tok, to_string tok)
+END
+
 let gram_token_of_string s = gram_token_of_token (Lexer.terminal s)
 
-let grammar_delete e pos reinit rls =
-  List.iter
-    (fun (n,ass,lev) ->
+let camlp4_verbosity silent f x =
+  let a = !warning_verbose in
+  warning_verbose := silent;
+  f x;
+  warning_verbose := a
 
-      (* Caveat: deletion is not the converse of extension: when an
-	 empty level is extended, deletion removes the level instead
-	 of keeping it empty. This has an effect on the empty levels 8,
-	 99 and 200. We didn't find a good solution to this problem
-	 (e.g. using G.extend to know if the level exists results in a
-	 printed error message as side effect). As a consequence an
-	 extension at 99 or 8 (and for pattern 200 too) inside a section
-         corrupts the parser. *)
+let camlp4_verbose f x = camlp4_verbosity (Flags.is_verbose ()) f x
 
-      List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
-    (List.rev rls);
-  if reinit <> None then
-    let lev = match pos with Some (Gramext.Level n) -> n | _ -> assert false in
-    let pos =
-      if lev = "200" then Gramext.First
-      else Gramext.After (string_of_int (int_of_string lev + 1)) in
-    G.extend e (Some pos) [Some lev,reinit,[]];
 
-(* grammar_object is the superclass of all grammar entries *)
+(** General entry keys *)
+
+(** This intermediate abstract representation of entries can
+   both be reified into mlexpr for the ML extensions and
+   dynamically interpreted as entries for the Coq level extensions
+*)
+
+type prod_entry_key =
+  | Alist1 of prod_entry_key
+  | Alist1sep of prod_entry_key * string
+  | Alist0 of prod_entry_key
+  | Alist0sep of prod_entry_key * string
+  | Aopt of prod_entry_key
+  | Amodifiers of prod_entry_key
+  | Aself
+  | Anext
+  | Atactic of int
+  | Agram of G.internal_entry
+  | Aentry of string * string
+
+(** [grammar_object] is the superclass of all grammar entries *)
+
 module type Gramobj =
 sig
   type grammar_object
-  val weaken_entry : 'a G.Entry.e -> grammar_object G.Entry.e
+  val weaken_entry : 'a G.entry -> grammar_object G.entry
 end
 
 module Gramobj : Gramobj =
@@ -74,9 +89,11 @@ struct
   let weaken_entry e = Obj.magic e
 end
 
+(** Grammar entries with associated types *)
+
 type entry_type = argument_type
 type grammar_object = Gramobj.grammar_object
-type typed_entry = argument_type * grammar_object G.Entry.e
+type typed_entry = argument_type * grammar_object G.entry
 let in_typed_entry t e = (t,Gramobj.weaken_entry e)
 let type_of_typed_entry (t,e) = t
 let object_of_typed_entry (t,e) = e
@@ -85,8 +102,8 @@ let weaken_entry x = Gramobj.weaken_entry x
 module type Gramtypes =
 sig
   open Decl_kinds
-  val inGramObj : 'a raw_abstract_argument_type -> 'a G.Entry.e -> typed_entry
-  val outGramObj : 'a raw_abstract_argument_type -> typed_entry -> 'a G.Entry.e
+  val inGramObj : 'a raw_abstract_argument_type -> 'a G.entry -> typed_entry
+  val outGramObj : 'a raw_abstract_argument_type -> typed_entry -> 'a G.entry
 end
 
 module Gramtypes : Gramtypes =
@@ -101,77 +118,107 @@ end
 
 open Gramtypes
 
-type camlp4_rule =
-    Tok.t Gramext.g_symbol list * Gramext.g_action
+(** Grammar extensions *)
 
-type camlp4_entry_rules =
-    (* first two parameters are name and assoc iff a level is created *)
-    string option * Gramext.g_assoc option * camlp4_rule list
+(** NB: [extend_statment =
+         gram_position option * single_extend_statment list]
+    and [single_extend_statment =
+         string option * gram_assoc option * production_rule list]
+    and [production_rule = symbol list * action]
+
+    In [single_extend_statement, first two parameters are name and
+    assoc iff a level is created *)
 
 type ext_kind =
   | ByGrammar of
-      grammar_object G.Entry.e * Gramext.position option *
-      camlp4_entry_rules list * Gramext.g_assoc option
-  | ByGEXTEND of (unit -> unit) * (unit -> unit)
+      grammar_object G.entry
+      * gram_assoc option (** for reinitialization if ever needed *)
+      * G.extend_statment
+  | ByEXTEND of (unit -> unit) * (unit -> unit)
+
+(** The list of extensions *)
 
 let camlp4_state = ref []
 
-(* The apparent parser of Coq; encapsulate G to keep track of the
-   extensions. *)
+(** Deletion
+
+   Caveat: deletion is not the converse of extension: when an
+   empty level is extended, deletion removes the level instead
+   of keeping it empty. This has an effect on the empty levels 8,
+   99 and 200. We didn't find a good solution to this problem
+   (e.g. using G.extend to know if the level exists results in a
+   printed error message as side effect). As a consequence an
+   extension at 99 or 8 (and for pattern 200 too) inside a section
+   corrupts the parser. *)
+
+let grammar_delete e reinit (pos,rls) =
+  List.iter
+    (fun (n,ass,lev) ->
+      List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
+    (List.rev rls);
+  if reinit <> None then
+    let lev = match pos with Some (Level n) -> n | _ -> assert false in
+    let pos =
+      if lev = "200" then First
+      else After (string_of_int (int_of_string lev + 1)) in
+    maybe_uncurry (G.extend e) (Some pos, [Some lev,reinit,[]])
+
+(** The apparent parser of Coq; encapsulate G to keep track
+    of the extensions. *)
+
 module Gram =
   struct
     include G
-    let extend e pos rls =
-      camlp4_state :=
-      (ByGEXTEND ((fun () -> grammar_delete e pos None rls),
-                  (fun () -> G.extend e pos rls)))
-      :: !camlp4_state;
-      G.extend e pos rls
+    let extend e =
+      maybe_curry
+	(fun ext ->
+	   camlp4_state :=
+	     (ByEXTEND ((fun () -> grammar_delete e None ext),
+			(fun () -> maybe_uncurry (G.extend e) ext)))
+	   :: !camlp4_state;
+	   maybe_uncurry (G.extend e) ext)
     let delete_rule e pil =
       (* spiwack: if you use load an ML module which contains GDELETE_RULE
 	  in a section, God kills a kitty. As it would corrupt remove_grammars.
           There does not seem to be a good way to undo a delete rule. As deleting
 	  takes fewer arguments than extending. The production rule isn't returned
 	  by delete_rule. If we could retrieve the necessary information, then
-	  ByGEXTEND provides just the framework we need to allow this in section.
+	  ByEXTEND provides just the framework we need to allow this in section.
 	  I'm not entirely sure it makes sense, but at least it would be more correct.
           *)
       G.delete_rule e pil
   end
 
+(** This extension command is used by the Grammar constr *)
 
-let camlp4_verbosity silent f x =
-  let a = !Gramext.warning_verbose in
-  Gramext.warning_verbose := silent;
-  f x;
-  Gramext.warning_verbose := a
+let grammar_extend e reinit ext =
+  camlp4_state := ByGrammar (weaken_entry e,reinit,ext) :: !camlp4_state;
+  camlp4_verbose (maybe_uncurry (G.extend e)) ext
 
-(* This extension command is used by the Grammar constr *)
+(** Remove extensions
 
-let grammar_extend te pos reinit rls =
-  camlp4_state := ByGrammar (weaken_entry te,pos,rls,reinit) :: !camlp4_state;
-  camlp4_verbosity (Flags.is_verbose ()) (G.extend te pos) rls
-
-(* n is the number of extended entries (not the number of Grammar commands!)
+   [n] is the number of extended entries (not the number of Grammar commands!)
    to remove. *)
+
 let rec remove_grammars n =
   if n>0 then
     (match !camlp4_state with
        | [] -> anomaly "Pcoq.remove_grammars: too many rules to remove"
-       | ByGrammar(g,pos,rls,reinit)::t ->
-           grammar_delete g pos reinit rls;
+       | ByGrammar(g,reinit,ext)::t ->
+           grammar_delete g reinit ext;
            camlp4_state := t;
            remove_grammars (n-1)
-       | ByGEXTEND (undo,redo)::t ->
+       | ByEXTEND (undo,redo)::t ->
            undo();
            camlp4_state := t;
            remove_grammars n;
            redo();
-           camlp4_state := ByGEXTEND (undo,redo) :: !camlp4_state)
+           camlp4_state := ByEXTEND (undo,redo) :: !camlp4_state)
 
-(* An entry that checks we reached the end of the input. *)
+(** An entry that checks we reached the end of the input. *)
+
 let eoi_entry en =
-  let e = Gram.Entry.create ((Gram.Entry.name en) ^ "_eoi") in
+  let e = Gram.entry_create ((Gram.Entry.name en) ^ "_eoi") in
   GEXTEND Gram
     e: [ [ x = en; EOI -> x ] ]
     ;
@@ -179,7 +226,7 @@ let eoi_entry en =
   e
 
 let map_entry f en =
-  let e = Gram.Entry.create ((Gram.Entry.name en) ^ "_map") in
+  let e = Gram.entry_create ((Gram.Entry.name en) ^ "_map") in
   GEXTEND Gram
     e: [ [ x = en -> f x ] ]
     ;
@@ -190,7 +237,7 @@ let map_entry f en =
    (use eoi_entry) *)
 
 let parse_string f x =
-  let strm = Stream.of_string x in Gram.Entry.parse f (Gram.parsable strm)
+  let strm = Stream.of_string x in Gram.entry_parse f (Gram.parsable strm)
 
 type gram_universe = string * (string, typed_entry) Hashtbl.t
 
@@ -227,7 +274,7 @@ let get_entry_type (u, utab) s =
 let new_entry etyp (u, utab) s =
   if !trace then (Printf.eprintf "[Creating entry %s:%s]\n" u s; flush stderr);
   let ename = u ^ ":" ^ s in
-  let e = in_typed_entry etyp (Gram.Entry.create ename) in
+  let e = in_typed_entry etyp (Gram.entry_create ename) in
   Hashtbl.add utab s e; e
 
 let create_entry (u, utab) s etyp =
@@ -246,10 +293,10 @@ let create_generic_entry s wit =
   outGramObj wit (create_entry utactic s (unquote wit))
 
 (* [make_gen_entry] builds entries extensible by giving its name (a string) *)
-(* For entries extensible only via the ML name, Gram.Entry.create is enough *)
+(* For entries extensible only via the ML name, Gram.entry_create is enough *)
 
 let make_gen_entry (u,univ) rawwit s =
-  let e = Gram.Entry.create (u ^ ":" ^ s) in
+  let e = Gram.entry_create (u ^ ":" ^ s) in
   Hashtbl.add univ s (inGramObj rawwit e); e
 
 (* Initial grammar entries *)
@@ -258,35 +305,35 @@ module Prim =
   struct
     let gec_gen x = make_gen_entry uprim x
 
-    (* Entries that can be refered via the string -> Gram.Entry.e table *)
+    (* Entries that can be refered via the string -> Gram.entry table *)
     (* Typically for tactic or vernac extensions *)
     let preident = gec_gen rawwit_pre_ident "preident"
     let ident = gec_gen rawwit_ident "ident"
     let natural = gec_gen rawwit_int "natural"
     let integer = gec_gen rawwit_int "integer"
-    let bigint = Gram.Entry.create "Prim.bigint"
+    let bigint = Gram.entry_create "Prim.bigint"
     let string = gec_gen rawwit_string "string"
     let reference = make_gen_entry uprim rawwit_ref "reference"
-    let by_notation = Gram.Entry.create "by_notation"
-    let smart_global = Gram.Entry.create "smart_global"
+    let by_notation = Gram.entry_create "by_notation"
+    let smart_global = Gram.entry_create "smart_global"
 
     (* parsed like ident but interpreted as a term *)
     let var = gec_gen rawwit_var "var"
 
-    let name = Gram.Entry.create "Prim.name"
-    let identref = Gram.Entry.create "Prim.identref"
+    let name = Gram.entry_create "Prim.name"
+    let identref = Gram.entry_create "Prim.identref"
     let pattern_ident = gec_gen rawwit_pattern_ident "pattern_ident"
-    let pattern_identref = Gram.Entry.create "pattern_identref"
+    let pattern_identref = Gram.entry_create "pattern_identref"
 
     (* A synonym of ident - maybe ident will be located one day *)
-    let base_ident = Gram.Entry.create "Prim.base_ident"
+    let base_ident = Gram.entry_create "Prim.base_ident"
 
-    let qualid = Gram.Entry.create "Prim.qualid"
-    let fullyqualid = Gram.Entry.create "Prim.fullyqualid"
-    let dirpath = Gram.Entry.create "Prim.dirpath"
+    let qualid = Gram.entry_create "Prim.qualid"
+    let fullyqualid = Gram.entry_create "Prim.fullyqualid"
+    let dirpath = Gram.entry_create "Prim.dirpath"
 
-    let ne_string = Gram.Entry.create "Prim.ne_string"
-    let ne_lstring = Gram.Entry.create "Prim.ne_lstring"
+    let ne_string = Gram.entry_create "Prim.ne_string"
+    let ne_lstring = Gram.entry_create "Prim.ne_lstring"
 
   end
 
@@ -295,7 +342,7 @@ module Constr =
     let gec_constr = make_gen_entry uconstr rawwit_constr
     let gec_constr_list = make_gen_entry uconstr (wit_list0 rawwit_constr)
 
-    (* Entries that can be refered via the string -> Gram.Entry.e table *)
+    (* Entries that can be refered via the string -> Gram.entry table *)
     let constr = gec_constr "constr"
     let operconstr = gec_constr "operconstr"
     let constr_eoi = eoi_entry constr
@@ -304,30 +351,30 @@ module Constr =
     let ident = make_gen_entry uconstr rawwit_ident "ident"
     let global = make_gen_entry uconstr rawwit_ref "global"
     let sort = make_gen_entry uconstr rawwit_sort "sort"
-    let pattern = Gram.Entry.create "constr:pattern"
+    let pattern = Gram.entry_create "constr:pattern"
     let constr_pattern = gec_constr "constr_pattern"
     let lconstr_pattern = gec_constr "lconstr_pattern"
-    let binder = Gram.Entry.create "constr:binder"
-    let binder_let = Gram.Entry.create "constr:binder_let"
-    let binders_let = Gram.Entry.create "constr:binders_let"
-    let binders_let_fixannot = Gram.Entry.create "constr:binders_let_fixannot"
-    let typeclass_constraint = Gram.Entry.create "constr:typeclass_constraint"
-    let record_declaration = Gram.Entry.create "constr:record_declaration"
-    let appl_arg = Gram.Entry.create "constr:appl_arg"
+    let binder = Gram.entry_create "constr:binder"
+    let binder_let = Gram.entry_create "constr:binder_let"
+    let binders_let = Gram.entry_create "constr:binders_let"
+    let binders_let_fixannot = Gram.entry_create "constr:binders_let_fixannot"
+    let typeclass_constraint = Gram.entry_create "constr:typeclass_constraint"
+    let record_declaration = Gram.entry_create "constr:record_declaration"
+    let appl_arg = Gram.entry_create "constr:appl_arg"
   end
 
 module Module =
   struct
-    let module_expr = Gram.Entry.create "module_expr"
-    let module_type = Gram.Entry.create "module_type"
+    let module_expr = Gram.entry_create "module_expr"
+    let module_type = Gram.entry_create "module_type"
   end
 
 module Tactic =
   struct
     (* Main entry for extensions *)
-    let simple_tactic = Gram.Entry.create "tactic:simple_tactic"
+    let simple_tactic = Gram.entry_create "tactic:simple_tactic"
 
-    (* Entries that can be refered via the string -> Gram.Entry.e table *)
+    (* Entries that can be refered via the string -> Gram.entry table *)
     (* Typically for tactic user extensions *)
     let open_constr =
       make_gen_entry utactic (rawwit_open_constr_gen false) "open_constr"
@@ -346,9 +393,9 @@ module Tactic =
       make_gen_entry utactic rawwit_intro_pattern "simple_intropattern"
 
     (* Main entries for ltac *)
-    let tactic_arg = Gram.Entry.create "tactic:tactic_arg"
-    let tactic_expr = Gram.Entry.create "tactic:tactic_expr"
-    let binder_tactic = Gram.Entry.create "tactic:binder_tactic"
+    let tactic_arg = Gram.entry_create "tactic:tactic_arg"
+    let tactic_expr = Gram.entry_create "tactic:tactic_expr"
+    let binder_tactic = Gram.entry_create "tactic:binder_tactic"
 
     let tactic = make_gen_entry utactic (rawwit_tactic tactic_main_level) "tactic"
 
@@ -359,7 +406,7 @@ module Tactic =
 
 module Vernac_ =
   struct
-    let gec_vernac s = Gram.Entry.create ("vernac:" ^ s)
+    let gec_vernac s = Gram.entry_create ("vernac:" ^ s)
 
     (* The different kinds of vernacular commands *)
     let gallina = gec_vernac "gallina"
@@ -370,7 +417,8 @@ module Vernac_ =
     let vernac_eoi = eoi_entry vernac
 
     (* Main vernac entry *)
-    let main_entry = Gram.Entry.create "vernac"
+    let main_entry = Gram.entry_create "vernac"
+
     GEXTEND Gram
     main_entry:
       [ [ a = vernac -> Some (loc,a) | EOI -> None ] ]
@@ -397,23 +445,23 @@ let main_entry = Vernac_.main_entry
 let constr_level = string_of_int
 
 let default_levels =
-  [200,Gramext.RightA,false;
-   100,Gramext.RightA,false;
-   99,Gramext.RightA,true;
-   90,Gramext.RightA,false;
-   10,Gramext.RightA,false;
-   9,Gramext.RightA,false;
-   8,Gramext.RightA,true;
-   1,Gramext.LeftA,false;
-   0,Gramext.RightA,false]
+  [200,RightA,false;
+   100,RightA,false;
+   99,RightA,true;
+   90,RightA,false;
+   10,RightA,false;
+   9,RightA,false;
+   8,RightA,true;
+   1,LeftA,false;
+   0,RightA,false]
 
 let default_pattern_levels =
-  [200,Gramext.RightA,true;
-   100,Gramext.RightA,false;
-   99,Gramext.RightA,true;
-   10,Gramext.LeftA,false;
-   1,Gramext.LeftA,false;
-   0,Gramext.RightA,false]
+  [200,RightA,true;
+   100,RightA,false;
+   99,RightA,true;
+   10,LeftA,false;
+   1,LeftA,false;
+   0,RightA,false]
 
 let level_stack =
   ref [(default_levels, default_pattern_levels)]
@@ -424,19 +472,19 @@ let level_stack =
 open Ppextend
 
 let admissible_assoc = function
-  | Gramext.LeftA, Some (Gramext.RightA | Gramext.NonA) -> false
-  | Gramext.RightA, Some Gramext.LeftA -> false
+  | LeftA, Some (RightA | NonA) -> false
+  | RightA, Some LeftA -> false
   | _ -> true
 
 let create_assoc = function
-  | None -> Gramext.RightA
+  | None -> RightA
   | Some a -> a
 
 let error_level_assoc p current expected =
   let pr_assoc = function
-    | Gramext.LeftA -> str "left"
-    | Gramext.RightA -> str "right"
-    | Gramext.NonA -> str "non" in
+    | LeftA -> str "left"
+    | RightA -> str "right"
+    | NonA -> str "non" in
   errorlabstrm ""
     (str "Level " ++ int p ++ str " is already declared " ++
      pr_assoc current ++ str " associative while it is now expected to be " ++
@@ -470,18 +518,18 @@ let find_position_gen forpat ensure assoc lev =
 	let assoc = create_assoc assoc in
         if !init = None then
 	  (* Create the entry *)
-	  (if !after = None then Some Gramext.First
-	   else Some (Gramext.After (constr_level (Option.get !after)))),
+	  (if !after = None then Some First
+	   else Some (After (constr_level (Option.get !after)))),
 	   Some assoc, Some (constr_level n), None
         else
 	  (* The reinit flag has been updated *)
-	   Some (Gramext.Level (constr_level n)), None, None, !init
+	   Some (Level (constr_level n)), None, None, !init
       with
 	  (* Nothing has changed *)
           Exit ->
             level_stack := current :: !level_stack;
 	    (* Just inherit the existing associativity and name (None) *)
-	    Some (Gramext.Level (constr_level n)), None, None, None
+	    Some (Level (constr_level n)), None, None, None
 
 let remove_levels n =
   level_stack := list_skipn n !level_stack
@@ -510,8 +558,8 @@ let synchronize_level_positions () =
 
 (* Camlp4 levels do not treat NonA: use RightA with a NEXT on the left *)
 let camlp4_assoc = function
-  | Some Gramext.NonA | Some Gramext.RightA -> Gramext.RightA
-  | None | Some Gramext.LeftA -> Gramext.LeftA
+  | Some NonA | Some RightA -> RightA
+  | None | Some LeftA -> LeftA
 
 (* [adjust_level assoc from prod] where [assoc] and [from] are the name
    and associativity of the level where to add the rule; the meaning of
@@ -526,20 +574,20 @@ let adjust_level assoc from = function
   | (NumLevel n,BorderProd (_,None)) -> Some (Some (n,true))
 (* Compute production name on the right side *)
   (* If NonA or LeftA on the right-hand side, set to NEXT *)
-  | (NumLevel n,BorderProd (Right,Some (Gramext.NonA|Gramext.LeftA))) ->
+  | (NumLevel n,BorderProd (Right,Some (NonA|LeftA))) ->
       Some None
   (* If RightA on the right-hand side, set to the explicit (current) level *)
-  | (NumLevel n,BorderProd (Right,Some Gramext.RightA)) ->
+  | (NumLevel n,BorderProd (Right,Some RightA)) ->
       Some (Some (n,true))
 (* Compute production name on the left side *)
   (* If NonA on the left-hand side, adopt the current assoc ?? *)
-  | (NumLevel n,BorderProd (Left,Some Gramext.NonA)) -> None
+  | (NumLevel n,BorderProd (Left,Some NonA)) -> None
   (* If the expected assoc is the current one, set to SELF *)
   | (NumLevel n,BorderProd (Left,Some a)) when a = camlp4_assoc assoc ->
       None
   (* Otherwise, force the level, n or n-1, according to expected assoc *)
   | (NumLevel n,BorderProd (Left,Some a)) ->
-      if a = Gramext.LeftA then Some (Some (n,true)) else Some None
+      if a = LeftA then Some (Some (n,true)) else Some None
   (* None means NEXT *)
   | (NextLevel,_) -> Some None
 (* Compute production name elsewhere *)
@@ -585,7 +633,7 @@ let interp_constr_prod_entry_key ass from forpat en =
 let is_self from e =
   match from, e with
       ETConstr(n,()), ETConstr(NumLevel n',
-        BorderProd(Right, _ (* Some(Gramext.NonA|Gramext.LeftA) *))) -> false
+        BorderProd(Right, _ (* Some(NonA|LeftA) *))) -> false
     | ETConstr(n,()), ETConstr(NumLevel n',BorderProd(Left,_)) -> n=n'
     | (ETName,ETName | ETReference, ETReference | ETBigint,ETBigint
       | ETPattern, ETPattern) -> true
@@ -601,56 +649,59 @@ let is_binder_level from e =
 let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
   if is_binder_level from typ then
     if forpat then
-      Gramext.Snterml (Gram.Entry.obj Constr.pattern,"200")
+      Snterml (Gram.Entry.obj Constr.pattern,"200")
     else
-      Gramext.Snterml (Gram.Entry.obj Constr.operconstr,"200")
+      Snterml (Gram.Entry.obj Constr.operconstr,"200")
   else if is_self from typ then
-    Gramext.Sself
+      Sself
   else
     match typ with
     | ETConstrList (typ',[]) ->
-        Gramext.Slist1 (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'))
+        Slist1 (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'))
     | ETConstrList (typ',tkl) ->
-        Gramext.Slist1sep
+        Slist1sep
           (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'),
-           Gramext.srules
+           Gram.srules'
              [List.map gram_token_of_token tkl,
-              List.fold_right (fun _ v -> Gramext.action (fun _ -> v)) tkl
-                (Gramext.action (fun loc -> ()))])
+              List.fold_right (fun _ v -> Gram.action (fun _ -> v)) tkl
+                (Gram.action (fun loc -> ()))])
     | _ ->
     match interp_constr_prod_entry_key assoc from forpat typ with
-      | (eobj,None,_) -> Gramext.Snterm (Gram.Entry.obj eobj)
-      | (eobj,Some None,_) -> Gramext.Snext
+      | (eobj,None,_) -> Snterm (Gram.Entry.obj eobj)
+      | (eobj,Some None,_) -> Snext
       | (eobj,Some (Some (lev,cur)),_) ->
-          Gramext.Snterml (Gram.Entry.obj eobj,constr_level lev)
+          Snterml (Gram.Entry.obj eobj,constr_level lev)
 
-(**********************************************************************)
-(* Binding general entry keys to symbol                               *)
+(** Binding general entry keys to symbol *)
 
 let rec symbol_of_prod_entry_key = function
-  | Alist1 s -> Gramext.Slist1 (symbol_of_prod_entry_key s)
+  | Alist1 s -> Slist1 (symbol_of_prod_entry_key s)
   | Alist1sep (s,sep) ->
-      Gramext.Slist1sep (symbol_of_prod_entry_key s, Gramext.Stoken ("",sep))
-  | Alist0 s -> Gramext.Slist0 (symbol_of_prod_entry_key s)
+      Slist1sep (symbol_of_prod_entry_key s, gram_token_of_string sep)
+  | Alist0 s -> Slist0 (symbol_of_prod_entry_key s)
   | Alist0sep (s,sep) ->
-      Gramext.Slist0sep (symbol_of_prod_entry_key s, Gramext.Stoken ("",sep))
-  | Aopt s -> Gramext.Sopt (symbol_of_prod_entry_key s)
+      Slist0sep (symbol_of_prod_entry_key s, gram_token_of_string sep)
+  | Aopt s -> Sopt (symbol_of_prod_entry_key s)
   | Amodifiers s ->
-       Gramext.srules
-        [([], Gramext.action(fun _loc -> []));
+       Gram.srules'
+        [([], Gram.action (fun _loc -> []));
          ([gram_token_of_string "(";
-           Gramext.Slist1sep ((symbol_of_prod_entry_key s), gram_token_of_string ",");
+           Slist1sep ((symbol_of_prod_entry_key s), gram_token_of_string ",");
            gram_token_of_string ")"],
-	   Gramext.action (fun _ l _ _loc -> l))]
-  | Aself -> Gramext.Sself
-  | Anext -> Gramext.Snext
-  | Atactic 5 -> Gramext.Snterm (Gram.Entry.obj Tactic.binder_tactic)
+	   Gram.action (fun _ l _ _loc -> l))]
+  | Aself -> Sself
+  | Anext -> Snext
+  | Atactic 5 -> Snterm (Gram.Entry.obj Tactic.binder_tactic)
   | Atactic n ->
-      Gramext.Snterml (Gram.Entry.obj Tactic.tactic_expr, string_of_int n)
-  | Agram s -> Gramext.Snterm s
+      Snterml (Gram.Entry.obj Tactic.tactic_expr, string_of_int n)
+  | Agram s -> Snterm s
   | Aentry (u,s) ->
-      Gramext.Snterm (Gram.Entry.obj
+      Snterm (Gram.Entry.obj
 	(object_of_typed_entry (get_entry (get_univ u) s)))
+
+let level_of_snterml = function
+  | Snterml (_,l) -> int_of_string l
+  | _ -> failwith "level_of_snterml"
 
 (**********************************************************************)
 (* Interpret entry names of the form "ne_constr_list" as entry keys   *)

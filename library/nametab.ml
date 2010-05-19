@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Util
+open Compat
 open Pp
 open Names
 open Libnames
@@ -18,10 +19,10 @@ exception GlobalizationError of qualid
 exception GlobalizationConstantError of qualid
 
 let error_global_not_found_loc loc q =
-  Stdpp.raise_with_loc loc (GlobalizationError q)
+  Loc.raise loc (GlobalizationError q)
 
 let error_global_constant_not_found_loc loc q =
-  Stdpp.raise_with_loc loc (GlobalizationConstantError q)
+  Loc.raise loc (GlobalizationConstantError q)
 
 let error_global_not_found q = raise (GlobalizationError q)
 

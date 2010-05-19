@@ -13,6 +13,7 @@ open Cerrors
 open Vernac
 open Vernacexpr
 open Pcoq
+open Compat
 
 (* A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
@@ -272,7 +273,7 @@ let set_prompt prompt =
 let rec is_pervasive_exn = function
   | Out_of_memory | Stack_overflow | Sys.Break -> true
   | Error_in_file (_,_,e) -> is_pervasive_exn e
-  | Stdpp.Exc_located (_,e) -> is_pervasive_exn e
+  | Loc.Exc_located (_,e) -> is_pervasive_exn e
   | DuringCommandInterp (_,e) -> is_pervasive_exn e
   | DuringSyntaxChecking (_,e) -> is_pervasive_exn e
   | _ -> false
@@ -290,7 +291,7 @@ let print_toplevel_error exc =
   in
   let (locstrm,exc) =
     match exc with
-      | Stdpp.Exc_located (loc, ie) ->
+      | Loc.Exc_located (loc, ie) ->
           if valid_buffer_loc top_buffer dloc loc then
             (print_highlight_location top_buffer loc, ie)
           else
@@ -314,7 +315,7 @@ let print_toplevel_error exc =
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =
-  let rec dot st = match Stream.next st with
+  let rec dot st = match get_tok (Stream.next st) with
     | Tok.KEYWORD "." -> ()
     | Tok.EOI -> raise End_of_input
     | _ -> dot st
@@ -324,8 +325,8 @@ let parse_to_dot =
 (* We assume that when a lexer error occurs, at least one char was eaten *)
 let rec discard_to_dot () =
   try
-    Gram.Entry.parse parse_to_dot top_buffer.tokens
-  with Stdpp.Exc_located(_,(Token.Error _|Lexer.Error _)) ->
+    Gram.entry_parse parse_to_dot top_buffer.tokens
+  with Loc.Exc_located(_,(Token.Error _|Lexer.Error.E _)) ->
     discard_to_dot()
 
 

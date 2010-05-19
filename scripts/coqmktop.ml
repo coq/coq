@@ -17,7 +17,8 @@ open Unix
 (* 1. Core objects *)
 let ocamlobjs = ["str.cma";"unix.cma";"nums.cma"]
 let dynobjs = ["dynlink.cma"]
-let camlp4objs = ["gramlib.cma"]
+let camlp4objs =
+  if Coq_config.camlp4 = "camlp5" then ["gramlib.cma"] else ["camlp4lib.cma"]
 let libobjs = ocamlobjs @ camlp4objs
 
 let spaces = Str.regexp "[ \t\n]+"
@@ -33,7 +34,11 @@ let camlp4topobjs =
   if Coq_config.camlp4 = "camlp5" then
     ["camlp5_top.cma"; "pa_o.cmo"; "pa_extend.cmo"]
   else
-    ["camlp4_top.cma"; "pa_o.cmo"; "pa_op.cmo"; "pa_extend.cmo"]
+    [ "Camlp4Top.cmo";
+      "Camlp4Parsers/Camlp4OCamlRevisedParser.cmo";
+      "Camlp4Parsers/Camlp4OCamlParser.cmo";
+      "Camlp4Parsers/Camlp4GrammarParser.cmo";
+      "q_util.cmo"; "q_coqast.cmo" ]
 let topobjs = camlp4topobjs
 
 let gramobjs = []

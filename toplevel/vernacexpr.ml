@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Compat
 open Util
 open Names
 open Tacexpr
@@ -183,7 +184,7 @@ type grammar_tactic_prod_item_expr =
 type syntax_modifier =
   | SetItemLevel of string list * production_level
   | SetLevel of int
-  | SetAssoc of Gramext.g_assoc
+  | SetAssoc of gram_assoc
   | SetEntryType of string * simple_constr_prod_entry_key
   | SetOnlyParsing
   | SetFormat of string located

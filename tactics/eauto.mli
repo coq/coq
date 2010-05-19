@@ -15,7 +15,7 @@ open Evd
 open Environ
 open Explore
 
-val hintbases : hint_db_name list option Pcoq.Gram.Entry.e
+val hintbases : hint_db_name list option Pcoq.Gram.entry
 val wit_hintbases : hint_db_name list option typed_abstract_argument_type
 val rawwit_hintbases : hint_db_name list option raw_abstract_argument_type
 

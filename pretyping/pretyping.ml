@@ -21,6 +21,7 @@
 (* Secondary maintenance: collective *)
 
 
+open Compat
 open Pp
 open Util
 open Names
@@ -66,7 +67,7 @@ let search_guard loc env possible_indexes fixdefs =
     let indexes = Array.of_list (List.map List.hd possible_indexes) in
     let fix = ((indexes, 0),fixdefs) in
     (try check_fix env fix with
-       | e -> if loc = dummy_loc then raise e else Stdpp.raise_with_loc loc e);
+       | e -> if loc = dummy_loc then raise e else Loc.raise loc e);
     indexes
   else
     (* we now search recursively amoungst all combinations *)
@@ -396,7 +397,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	      make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	  | RCoFix i ->
 	      let cofix = (i,(names,ftys,fdefs)) in
-	      (try check_cofix env cofix with e -> Stdpp.raise_with_loc loc e);
+	      (try check_cofix env cofix with e -> Loc.raise loc e);
 	      make_judge (mkCoFix cofix) ftys.(i) in
 	inh_conv_coerce_to_tycon loc env evdref fixj tycon
 
@@ -464,7 +465,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	in
 	let resj =
 	  try judge_of_product env name j j'
-	  with TypeError _ as e -> Stdpp.raise_with_loc loc e in
+	  with TypeError _ as e -> Loc.raise loc e in
 	  inh_conv_coerce_to_tycon loc env evdref resj tycon
 
     | RLetIn(loc,name,c1,c2)      ->

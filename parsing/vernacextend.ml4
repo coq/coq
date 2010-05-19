@@ -14,6 +14,7 @@ open Argextend
 open Tacextend
 open Pcoq
 open Egrammar
+open Compat
 
 let rec make_let e = function
   | [] -> e
@@ -24,11 +25,6 @@ let rec make_let e = function
       <:expr< let $lid:p$ = Genarg.out_gen $make_rawwit loc t$ $lid:p$ in $e$ >>
   | _::l -> make_let e l
 
-let add_clause s (_,pt,e) l =
-  let p = make_patt pt in
-  let w = Some (make_when (MLast.loc_of_expr e) pt) in
-  (p, w, make_let e pt)::l
-
 let check_unicity s l =
   let l' = List.map (fun (_,l,_) -> extract_signature l) l in
   if not (Util.list_distinct l') then
@@ -36,11 +32,14 @@ let check_unicity s l =
       ("Two distinct rules of entry "^s^" have the same\n"^
       "non-terminals in the same order: put them in distinct vernac entries")
 
-let make_clauses s l =
+let make_clause (_,pt,e) =
+  (make_patt pt,
+   Some (make_when (MLast.loc_of_expr e) pt),
+   make_let e pt)
+
+let make_fun_clauses loc s l =
   check_unicity s l;
-  let default =
-    (<:patt< _ >>,None,<:expr< failwith "Vernac extension: cannot occur" >>) in
-  List.fold_right (add_clause s) l [default]
+  Compat.make_fun loc (List.map make_clause l)
 
 let mlexpr_of_clause =
   mlexpr_of_list
@@ -49,18 +48,16 @@ let mlexpr_of_clause =
 
 let declare_command loc s nt cl =
   let gl = mlexpr_of_clause cl in
-  let icl = make_clauses s cl in
-  <:str_item<
-    declare
-      open Pcoq;
-      open Extrawit;
-      try Vernacinterp.vinterp_add $mlexpr_of_string s$ (fun [ $list:icl$ ])
-      with e -> Pp.pp (Cerrors.explain_exn e);
-      Egrammar.extend_vernac_command_grammar $mlexpr_of_string s$ $nt$ $gl$;
-    end
-  >>
+  let funcl = make_fun_clauses loc s cl in
+  declare_str_items loc
+    [ <:str_item< do {
+	try Vernacinterp.vinterp_add $mlexpr_of_string s$ $funcl$
+	with e -> Pp.pp (Cerrors.explain_exn e);
+	Egrammar.extend_vernac_command_grammar $mlexpr_of_string s$ $nt$ $gl$
+      } >> ]
 
 open Pcaml
+open PcamlSig
 
 EXTEND
   GLOBAL: str_item;

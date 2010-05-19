@@ -8,10 +8,10 @@
 
 open Genarg
 open Q_util
-open Q_coqast
 open Egrammar
+open Pcoq
+open Compat
 
-let join_loc = Util.join_loc
 let loc = Util.dummy_loc
 let default_loc = <:expr< Util.dummy_loc >>
 
@@ -92,16 +92,16 @@ let rec make_wit loc = function
 
 let make_act loc act pil =
   let rec make = function
-    | [] -> <:expr< Gramext.action (fun loc -> ($act$ : 'a)) >>
+    | [] -> <:expr< Gram.action (fun loc -> ($act$ : 'a)) >>
     | GramNonTerminal (_,t,_,Some p) :: tl ->
 	let p = Names.string_of_id p in
 	<:expr<
-          Gramext.action
+          Gram.action
             (fun $lid:p$ ->
                let _ = Genarg.in_gen $make_rawwit loc t$ $lid:p$ in $make tl$)
         >>
     | (GramTerminal _ | GramNonTerminal (_,_,_,None)) :: tl ->
-	<:expr< Gramext.action (fun _ -> $make tl$) >> in
+	<:expr< Gram.action (fun _ -> $make tl$) >> in
   make (List.rev pil)
 
 let make_prod_item = function
@@ -145,13 +145,13 @@ let declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr cl =
   let rawwit = <:expr< $lid:"rawwit_"^s$ >> in
   let globwit = <:expr< $lid:"globwit_"^s$ >> in
   let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
-  <:str_item<
-    declare
-      open Pcoq;
-      open Extrawit;
+  declare_str_items loc
+   [ <:str_item<
       value ($lid:"wit_"^s$, $lid:"globwit_"^s$, $lid:"rawwit_"^s$) =
-        Genarg.create_arg $se$;
-      value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$;
+      Genarg.create_arg $se$ >>;
+     <:str_item<
+      value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
+     <:str_item< do {
       Tacinterp.add_interp_genarg $se$
         ((fun e x ->
           (Genarg.in_gen $globwit$ ($glob$ e (out_gen $rawwit$ x)))),
@@ -159,14 +159,13 @@ let declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr cl =
           (Genarg.in_gen $wit$ ($interp$ ist gl (out_gen $globwit$ x)))),
         (fun subst x ->
           (Genarg.in_gen $globwit$ ($substitute$ subst (out_gen $globwit$ x)))));
-      Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.Entry.e 'a) None
-        [(None, None, $rules$)];
+      Compat.maybe_uncurry (Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.entry 'a))
+	(None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule
         ($rawwit$, $lid:rawpr$)
         ($globwit$, $lid:globpr$)
-        ($wit$, $lid:pr$);
-    end
-  >>
+        ($wit$, $lid:pr$) }
+     >> ]
 
 let declare_vernac_argument loc s pr cl =
   let se = mlexpr_of_string s in
@@ -177,31 +176,31 @@ let declare_vernac_argument loc s pr cl =
   let pr_rules = match pr with
     | None -> <:expr< fun _ _ _ _ -> str $str:"[No printer for "^s^"]"$ >>
     | Some pr -> <:expr< fun _ _ _ -> $lid:pr$ >> in
-  <:str_item<
-    declare
-      open Pcoq;
-      open Extrawit;
+  declare_str_items loc
+   [ <:str_item<
       value (($lid:"wit_"^s$:Genarg.abstract_argument_type unit Genarg.tlevel),
              ($lid:"globwit_"^s$:Genarg.abstract_argument_type unit Genarg.glevel),
-              $lid:"rawwit_"^s$) = Genarg.create_arg $se$;
-      value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$;
-      Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.Entry.e 'a) None
-        [(None, None, $rules$)];
+              $lid:"rawwit_"^s$) = Genarg.create_arg $se$ >>;
+     <:str_item<
+      value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
+    <:str_item< do {
+      Compat.maybe_uncurry (Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.entry 'a))
+	(None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule
         ($rawwit$, $pr_rules$)
         ($globwit$, fun _ _ _ _ -> Util.anomaly "vernac argument needs not globwit printer")
-        ($wit$, fun _ _ _ _ -> Util.anomaly "vernac argument needs not wit printer");
-    end
-  >>
+        ($wit$, fun _ _ _ _ -> Util.anomaly "vernac argument needs not wit printer") }
+      >> ]
 
 open Vernacexpr
 open Pcoq
 open Pcaml
+open PcamlSig
 
 EXTEND
   GLOBAL: str_item;
   str_item:
-    [ [ "ARGUMENT"; "EXTEND"; s = [ UIDENT | LIDENT ];
+    [ [ "ARGUMENT"; "EXTEND"; s = entry_name;
         "TYPED"; "AS"; typ = argtype;
         "PRINTED"; "BY"; pr = LIDENT;
         f = OPT [ "INTERPRETED"; "BY"; f = LIDENT -> f ];
@@ -216,15 +215,11 @@ EXTEND
                 "GLOB_PRINTED"; "BY"; pr = LIDENT -> (t,pr) ];
         OPT "|"; l = LIST1 argrule SEP "|";
         "END" ->
-	  if String.capitalize s = s then
-	    failwith "Argument entry names must be lowercase";
          declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr l
-      | "VERNAC"; "ARGUMENT"; "EXTEND"; s = [ UIDENT | LIDENT ];
+      | "VERNAC"; "ARGUMENT"; "EXTEND"; s = entry_name;
         pr = OPT ["PRINTED"; "BY"; pr = LIDENT -> pr];
         OPT "|"; l = LIST1 argrule SEP "|";
         "END" ->
-	  if String.capitalize s = s then
-	    failwith "Argument entry names must be lowercase";
          declare_vernac_argument loc s pr l ] ]
   ;
   argtype:
@@ -252,6 +247,11 @@ EXTEND
 	    Lexer.add_keyword s;
           GramTerminal s
     ] ]
+  ;
+  entry_name:
+    [ [ s = LIDENT -> s
+      | UIDENT -> failwith "Argument entry names must be lowercase"
+      ] ]
   ;
   END
 

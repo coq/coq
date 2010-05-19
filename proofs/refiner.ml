@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Compat
 open Pp
 open Util
 open Term
@@ -255,15 +256,15 @@ let tclNOTSAMEGOAL (tac : tactic) goal =
 let catch_failerror e =
   if catchable_exception e then check_for_interrupt ()
   else match e with
-  | FailError (0,_) | Stdpp.Exc_located(_, FailError (0,_))
-  | Stdpp.Exc_located(_, LtacLocated (_,FailError (0,_)))  ->
+  | FailError (0,_) | Loc.Exc_located(_, FailError (0,_))
+  | Loc.Exc_located(_, LtacLocated (_,FailError (0,_)))  ->
       check_for_interrupt ()
   | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
-  | Stdpp.Exc_located(s,FailError (lvl,s')) ->
-      raise (Stdpp.Exc_located(s,FailError (lvl - 1, s')))
-  | Stdpp.Exc_located(s,LtacLocated (s'',FailError (lvl,s')))  ->
+  | Loc.Exc_located(s,FailError (lvl,s')) ->
+      raise (Loc.Exc_located(s,FailError (lvl - 1, s')))
+  | Loc.Exc_located(s,LtacLocated (s'',FailError (lvl,s')))  ->
       raise
-       (Stdpp.Exc_located(s,LtacLocated (s'',FailError (lvl - 1,s'))))
+       (Loc.Exc_located(s,LtacLocated (s'',FailError (lvl - 1,s'))))
   | e -> raise e
 
 (* ORELSE0 t1 t2 tries to apply t1 and if it fails, applies t2 *)

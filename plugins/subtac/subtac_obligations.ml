@@ -15,6 +15,7 @@ open Util
 open Evd
 open Declare
 open Proof_type
+open Compat
 
 let ppwarn cmd = Pp.warn (str"Program:" ++ cmd)
 let pperror cmd = Util.errorlabstrm "Program" cmd
@@ -484,8 +485,8 @@ and solve_obligation_by_tac prg obls i tac =
 	      true
 	  else false
 	with
-	| Stdpp.Exc_located(_, Proof_type.LtacLocated (_, Refiner.FailError (_, s)))
-	| Stdpp.Exc_located(_, Refiner.FailError (_, s))
+	| Loc.Exc_located(_, Proof_type.LtacLocated (_, Refiner.FailError (_, s)))
+	| Loc.Exc_located(_, Refiner.FailError (_, s))
 	| Refiner.FailError (_, s) ->
 	    user_err_loc (obl.obl_location, "solve_obligation", Lazy.force s)
 	| Util.Anomaly _ as e -> raise e

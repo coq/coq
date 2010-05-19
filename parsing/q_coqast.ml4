@@ -10,6 +10,7 @@ open Util
 open Names
 open Libnames
 open Q_util
+open Compat
 
 let is_meta s = String.length s > 0 && s.[0] == '$'
 
@@ -18,9 +19,7 @@ let purge_str s =
   else String.sub s 1 (String.length s - 1)
 
 let anti loc x =
-  let e = <:expr< $lid:purge_str x$ >>
-  in
-  <:expr< $anti:e$ >>
+  expl_anti loc <:expr< $lid:purge_str x$ >>
 
 (* We don't give location for tactic quotation! *)
 let loc = dummy_loc
@@ -411,12 +410,6 @@ let rec mlexpr_of_atomic_tactic = function
       let lems = mlexpr_of_list mlexpr_of_constr lems in
       <:expr< Tacexpr.TacTrivial $lems$ $l$ >>
 
-(*
-  | Tacexpr.TacExtend (s,l) ->
-      let l = mlexpr_of_list mlexpr_of_tactic_arg l in
-      let $dloc$ = MLast.loc_of_expr l in
-      <:expr< Tacexpr.TacExtend $mlexpr_of_string s$ $l$ >>
-*)
   | _ -> failwith "Quotation of atomic tactic expressions: TODO"
 
 and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
@@ -492,18 +485,47 @@ and mlexpr_of_tactic_arg = function
       <:expr< Tacexpr.Reference $mlexpr_of_reference r$ >>
   | _ -> failwith "mlexpr_of_tactic_arg: TODO"
 
+
+IFDEF CAMLP5 THEN
+
+let not_impl x =
+  let desc =
+    if Obj.is_block (Obj.repr x) then
+      "tag = " ^ string_of_int (Obj.tag (Obj.repr x))
+    else "int_val = " ^ string_of_int (Obj.magic x)
+  in
+  failwith ("<Q_coqast.patt_of_expt, not impl: " ^ desc)
+
+(* The following function is written without quotation
+   in order to be parsable even by camlp4. The version with
+   quotation can be found in revision <= 12972 of [q_util.ml4] *)
+
+open MLast
+
+let rec patt_of_expr e =
+  let loc = loc_of_expr e in
+  match e with
+    | ExAcc (_, e1, e2) -> PaAcc (loc, patt_of_expr e1, patt_of_expr e2)
+    | ExApp (_, e1, e2) -> PaApp (loc, patt_of_expr e1, patt_of_expr e2)
+    | ExLid (_, "loc") -> PaAny loc
+    | ExLid (_, s) -> PaLid (loc, s)
+    | ExUid (_, s) -> PaUid (loc, s)
+    | ExStr (_, s) -> PaStr (loc, s)
+    | ExAnt (_, e) -> PaAnt (loc, patt_of_expr e)
+    | _ -> not_impl e
+
 let fconstr e =
   let ee s =
-    mlexpr_of_constr (Pcoq.Gram.Entry.parse e
-                     (Pcoq.Gram.parsable (Stream.of_string s)))
+    mlexpr_of_constr (Pcoq.Gram.entry_parse e
+			(Pcoq.Gram.parsable (Stream.of_string s)))
   in
   let ep s = patt_of_expr (ee s) in
   Quotation.ExAst (ee, ep)
 
 let ftac e =
   let ee s =
-    mlexpr_of_tactic (Pcoq.Gram.Entry.parse e
-                     (Pcoq.Gram.parsable (Stream.of_string s)))
+    mlexpr_of_tactic (Pcoq.Gram.entry_parse e
+			(Pcoq.Gram.parsable (Stream.of_string s)))
   in
   let ep s = patt_of_expr (ee s) in
   Quotation.ExAst (ee, ep)
@@ -512,3 +534,23 @@ let _ =
   Quotation.add "constr" (fconstr Pcoq.Constr.constr_eoi);
   Quotation.add "tactic" (ftac Pcoq.Tactic.tactic_eoi);
   Quotation.default := "constr"
+
+ELSE
+
+open Pcaml
+
+let expand_constr_quot_expr loc _loc_name_opt contents =
+  mlexpr_of_constr
+    (Pcoq.Gram.parse_string Pcoq.Constr.constr_eoi loc contents)
+
+let expand_tactic_quot_expr loc _loc_name_opt contents =
+  mlexpr_of_tactic
+    (Pcoq.Gram.parse_string Pcoq.Tactic.tactic_eoi loc contents)
+
+let _ =
+  (* FIXME: for the moment, we add quotations in expressions only, not pattern *)
+  Quotation.add "constr" Quotation.DynAst.expr_tag expand_constr_quot_expr;
+  Quotation.add "tactic" Quotation.DynAst.expr_tag expand_tactic_quot_expr;
+  Quotation.default := "constr"
+
+END

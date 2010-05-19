@@ -6,8 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Compat
 open Util
-open Stdpp
 open Names
 open Sign
 open Term
@@ -41,7 +41,7 @@ exception PretypeError of env * pretype_error
 
 let precatchable_exception = function
   | Util.UserError _ | TypeError _ | PretypeError _
-  | Stdpp.Exc_located(_,(Util.UserError _ | TypeError _ |
+  | Loc.Exc_located(_,(Util.UserError _ | TypeError _ |
     Nametab.GlobalizationError _ | PretypeError _)) -> true
   | _ -> false
 
@@ -96,10 +96,10 @@ let contract3 env a b c = match contract env [a;b;c] with
   | env, [a;b;c] -> env,a,b,c | _ -> assert false
 
 let raise_pretype_error (loc,ctx,sigma,te) =
-  Stdpp.raise_with_loc loc (PretypeError(env_ise sigma ctx,te))
+  Loc.raise loc (PretypeError(env_ise sigma ctx,te))
 
 let raise_located_type_error (loc,ctx,sigma,te) =
-  Stdpp.raise_with_loc loc (TypeError(env_ise sigma ctx,te))
+  Loc.raise loc (TypeError(env_ise sigma ctx,te))
 
 
 let error_actual_type_loc loc env sigma {uj_val=c;uj_type=actty} expty =
@@ -155,11 +155,11 @@ let error_occur_check env sigma ev c =
 
 let error_not_clean env sigma ev c (loc,k) =
   let c = nf_evar sigma c in
-  raise_with_loc loc
+  Loc.raise loc
     (PretypeError (env_ise sigma env,  NotClean (ev,c,k)))
 
 let error_unsolvable_implicit loc env sigma evi e explain =
-  raise_with_loc loc
+  Loc.raise loc
     (PretypeError (env_ise sigma env, UnsolvableImplicit (evi, e, explain)))
 
 let error_cannot_unify env sigma (m,n) =

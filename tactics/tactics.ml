@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Compat
 open Pp
 open Util
 open Names
@@ -951,9 +952,9 @@ let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
 	    with PretypeError _|RefinerError _|UserError _|Failure _|Exit ->
 	      if with_destruct then
                 descend_in_conjunctions
-                  try_main_apply (fun _ -> Stdpp.raise_with_loc loc exn) c gl
+                  try_main_apply (fun _ -> Loc.raise loc exn) c gl
 	      else
-		Stdpp.raise_with_loc loc exn
+		Loc.raise loc exn
 	in try_red_apply thm_ty0
   in
   try_main_apply with_destruct c gl0
@@ -1109,7 +1110,7 @@ let clear_wildcards ids =
     try with_check (Tacmach.thin_no_check [id]) gl
     with ClearDependencyError (id,err) ->
       (* Intercept standard [thin] error message *)
-      Stdpp.raise_with_loc loc
+      Loc.raise loc
         (error_clear_dependency (pf_env gl) (id_of_string "_") err))
     ids
 

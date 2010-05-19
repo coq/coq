@@ -8,7 +8,7 @@
 
 open Pp
 open Util
-open Token
+open Compat
 open Tok
 
 (* Dictionaries: trees annotated with string options, each node being a map
@@ -71,18 +71,34 @@ let ttree_remove ttree str =
 
 (* Errors occuring while lexing (explained as "Lexer error: ...") *)
 
-type error =
-  | Illegal_character
-  | Unterminated_comment
-  | Unterminated_string
-  | Undefined_token
-  | Bad_token of string
+module Error = struct
 
-exception Error of error
+  type t =
+    | Illegal_character
+    | Unterminated_comment
+    | Unterminated_string
+    | Undefined_token
+    | Bad_token of string
 
-let err loc str = Stdpp.raise_with_loc (Util.make_loc loc) (Error str)
+  exception E of t
 
-let bad_token str = raise (Error (Bad_token str))
+  let to_string x =
+    "Syntax Error: Lexer: " ^
+      (match x with
+	 | Illegal_character -> "Illegal character"
+	 | Unterminated_comment -> "Unterminated comment"
+	 | Unterminated_string -> "Unterminated string"
+	 | Undefined_token -> "Undefined token"
+	 | Bad_token tok -> Format.sprintf "Bad token %S" tok)
+
+  let print ppf x = Format.fprintf ppf "%s@." (to_string x)
+
+end
+open Error
+
+let err loc str = Loc.raise (make_loc loc) (Error.E str)
+
+let bad_token str = raise (Error.E (Bad_token str))
 
 (* Lexer conventions on tokens *)
 
@@ -175,7 +191,7 @@ let check_ident str =
 
 let check_keyword str =
   try check_special_token str
-  with Error _ -> check_ident str
+  with Error.E _ -> check_ident str
 
 (* Keyword and symbol dictionary *)
 let token_tree = ref empty_ttree
@@ -379,7 +395,7 @@ let find_keyword id s =
   let tt = ttree_find !token_tree id in
   match progress_further tt.node 0 tt s with
   | None -> raise Not_found
-  | Some c -> c
+  | Some c -> KEYWORD c
 
 (* Must be a special token *)
 let process_chars bp c cs =
@@ -438,7 +454,7 @@ let rec next_token = parser bp
        len = ident_tail (store 0 c); s >] ep ->
       let id = get_buff len in
       comment_stop bp;
-      (try KEYWORD (find_keyword id s) with Not_found -> IDENT id), (bp, ep)
+      (try find_keyword id s with Not_found -> IDENT id), (bp, ep)
   | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
       comment_stop bp;
       (INT (get_buff len), (bp, ep))
@@ -461,7 +477,7 @@ let rec next_token = parser bp
 	    let id = get_buff len in
 	    let ep = Stream.count s in
 	    comment_stop bp;
-	    (try KEYWORD (find_keyword id s) with Not_found -> IDENT id), (bp, ep)
+	    (try find_keyword id s with Not_found -> IDENT id), (bp, ep)
 	| AsciiChar | Utf8Token ((UnicodeSymbol | UnicodeIdentPart), _) ->
 	    let t = process_chars bp (Stream.next s) s in
 	    comment_stop bp; t
@@ -473,53 +489,23 @@ let rec next_token = parser bp
 
 let locerr () = invalid_arg "Lexer: location function"
 
-let tsz = 256   (* up to 2^29 entries on a 32-bit machine, 2^61 on 64-bit *)
-
-let loct_create () = ref [| [| |] |]
+let loct_create () = Hashtbl.create 207
 
 let loct_func loct i =
-  match
-    if i < 0 || i/tsz >= Array.length !loct then None
-    else if !loct.(i/tsz) = [| |] then None
-    else !loct.(i/tsz).(i mod tsz)
-  with
-    | Some loc -> Util.make_loc loc
-    | _ -> locerr ()
+  try Hashtbl.find loct i with Not_found -> locerr ()
 
-let loct_add loct i loc =
-  while i/tsz >= Array.length !loct do
-    let new_tmax = Array.length !loct * 2 in
-    let new_loct = Array.make new_tmax [| |] in
-    Array.blit !loct 0 new_loct 0 (Array.length !loct);
-    loct := new_loct;
-  done;
-  if !loct.(i/tsz) = [| |] then !loct.(i/tsz) <- Array.make tsz None;
-  !loct.(i/tsz).(i mod tsz) <- Some loc
+let loct_add loct i loc = Hashtbl.add loct i loc
 
-let current_location_table = ref (ref [| [| |] |])
+let current_location_table = ref (loct_create ())
 
-let location_function n =
-  loct_func !current_location_table n
-
-let func cs =
-  let loct = loct_create () in
-  let ts =
-    Stream.from
-      (fun i ->
-         let (tok, loc) = next_token cs in
-	   loct_add loct i loc; Some tok)
-  in
-    current_location_table := loct;
-    (ts, loct_func loct)
-
-type location_table = (int * int) option array array ref
+type location_table = (int, loc) Hashtbl.t
 let location_table () = !current_location_table
 let restore_location_table t = current_location_table := t
+let location_function n = loct_func !current_location_table n
 
+(** {6 The lexer of Coq} *)
 
-(* The lexer of Coq *)
-
-(* Note: removing a token.
+(** Note: removing a token.
    We do nothing because [remove_token] is called only when removing a grammar
    rule with [Grammar.delete_rule]. The latter command is called only when
    unfreezing the state of the grammar entries (see GRAMMAR summary, file
@@ -529,7 +515,9 @@ let restore_location_table t = current_location_table := t
 
 IFDEF CAMLP5 THEN
 
-(* Names of tokens, for this lexer, used in Grammar error messages *)
+type te = Tok.t
+
+(** Names of tokens, for this lexer, used in Grammar error messages *)
 
 let token_text = function
   | ("", t) -> "'" ^ t ^ "'"
@@ -542,15 +530,23 @@ let token_text = function
   | (con, "") -> con
   | (con, prm) -> con ^ " \"" ^ prm ^ "\""
 
-(* Adding a new token (keyword or special token). *)
-
-let add_token pat = match Tok.of_pattern pat with
-  | KEYWORD s -> add_keyword s
-  | _ -> ()
+let func cs =
+  let loct = loct_create () in
+  let ts =
+    Stream.from
+      (fun i ->
+         let (tok, loc) = next_token cs in
+	 loct_add loct i (make_loc loc); Some tok)
+  in
+  current_location_table := loct;
+  (ts, loct_func loct)
 
 let lexer = {
   Token.tok_func = func;
-  Token.tok_using = add_token;
+  Token.tok_using =
+    (fun pat -> match Tok.of_pattern pat with
+       | KEYWORD s -> add_keyword s
+       | _ -> ());
   Token.tok_removing = (fun _ -> ());
   Token.tok_match = Tok.match_pattern;
   Token.tok_comm = None;
@@ -558,11 +554,38 @@ let lexer = {
 
 ELSE (* official camlp4 for ocaml >= 3.10 *)
 
-TODO
+module M_ = Camlp4.ErrorHandler.Register (Error)
+
+module Loc = Loc
+module Token = struct
+  include Tok (* Cf. tok.ml *)
+  module Loc = Loc
+  module Error = Camlp4.Struct.EmptyError
+  module Filter = struct
+    type token_filter = (Tok.t * Loc.t) Stream.t -> (Tok.t * Loc.t) Stream.t
+    type t = unit
+    let mk _is_kwd = ()
+    let keyword_added () kwd _ = add_keyword kwd
+    let keyword_removed () _ = ()
+    let filter () x = x
+    let define_filter () _ = ()
+  end
+end
+
+let mk () _init_loc(*FIXME*) cs =
+  let loct = loct_create () in
+  let rec self =
+    parser i
+       [< (tok, loc) = next_token; s >] ->
+          let loc = make_loc loc in
+            loct_add loct i loc;
+            [< '(tok, loc); self s >]
+      | [< >] -> [< >]
+  in current_location_table := loct; self cs
 
 END
 
-(* Terminal symbols interpretation *)
+(** Terminal symbols interpretation *)
 
 let is_ident_not_keyword s =
   match s.[0] with

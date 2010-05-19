@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Compat
 open Util
 open Names
 open Nameops
@@ -42,7 +43,7 @@ type pattern_matching_error =
 exception PatternMatchingError of env * pattern_matching_error
 
 let raise_pattern_matching_error (loc,ctx,te) =
-  Stdpp.raise_with_loc loc (PatternMatchingError(ctx,te))
+  Loc.raise loc (PatternMatchingError(ctx,te))
 
 let error_bad_pattern_loc loc cstr ind =
   raise_pattern_matching_error (loc, Global.env(), BadPattern (cstr,ind))
@@ -98,7 +99,7 @@ let rec list_try_compile f = function
   | h::t ->
       try f h
       with UserError _ | TypeError _ | PretypeError _
-	| Stdpp.Exc_located (_,(UserError _ | TypeError _ | PretypeError _)) ->
+	| Loc.Exc_located (_,(UserError _ | TypeError _ | PretypeError _)) ->
 	    list_try_compile f t
 
 let force_name =

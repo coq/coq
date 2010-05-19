@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Compat
+
 (* The proofview datastructure is a pure datastructure underlying the notion
    of proof (namely, a proof is a proofview which can evolve and has safety
    mechanisms attached).
@@ -392,7 +394,7 @@ let rec tclGOALBINDU s k =
     this should be maintained synchronized, probably. *)
 open Pretype_errors
 let rec catchable_exception = function
-  | Stdpp.Exc_located(_,e) -> catchable_exception e
+  | Loc.Exc_located(_,e) -> catchable_exception e
   | Util.UserError _ | Type_errors.TypeError _ 
   | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)

@@ -17,6 +17,7 @@ open Pretyping.Default
 open Rawterm
 open Term
 open Pp
+open Compat
 
 (* INTERN *)
 
@@ -85,10 +86,10 @@ let intern_fundecl args body globs=
 let rec add_vars_of_simple_pattern globs = function
     CPatAlias (loc,p,id) ->
       add_vars_of_simple_pattern (add_var id globs) p
-(*      Stdpp.raise_with_loc loc
+(*      Loc.raise loc
 	(UserError ("simple_pattern",str "\"as\" is not allowed here"))*)
   | CPatOr (loc, _)->
-      Stdpp.raise_with_loc loc
+      Loc.raise loc
 	(UserError ("simple_pattern",str "\"(_ | _)\" is not allowed here"))
   | CPatDelimiters (_,_,p) ->
       add_vars_of_simple_pattern globs p

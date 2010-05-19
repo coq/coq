@@ -46,6 +46,7 @@ open Pretyping
 open Pretyping.Default
 open Extrawit
 open Pcoq
+open Compat
 
 let safe_msgnl s =
     try msgnl s with e ->
@@ -90,15 +91,15 @@ let dloc = dummy_loc
 let catch_error call_trace tac g =
   if call_trace = [] then tac g else try tac g with
   | LtacLocated _ as e -> raise e
-  | Stdpp.Exc_located (_,LtacLocated _) as e -> raise e
+  | Loc.Exc_located (_,LtacLocated _) as e -> raise e
   | e ->
     let (nrep,loc',c),tail = list_sep_last call_trace in
-    let loc,e' = match e with Stdpp.Exc_located(loc,e) -> loc,e | _ ->dloc,e in
+    let loc,e' = match e with Loc.Exc_located(loc,e) -> loc,e | _ ->dloc,e in
     if tail = [] then
       let loc = if loc = dloc then loc' else loc in
-      raise (Stdpp.Exc_located(loc,e'))
+      raise (Loc.Exc_located(loc,e'))
     else
-      raise (Stdpp.Exc_located(loc',LtacLocated((nrep,c,tail,loc),e')))
+      raise (Loc.Exc_located(loc',LtacLocated((nrep,c,tail,loc),e')))
 
 (* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign =
@@ -1955,14 +1956,14 @@ and eval_with_fail ist is_lazy goal tac =
 	VRTactic (catch_error trace tac goal)
     | a -> a)
   with
-    | FailError (0,s) | Stdpp.Exc_located(_, FailError (0,s))
-    | Stdpp.Exc_located(_,LtacLocated (_,FailError (0,s))) ->
+    | FailError (0,s) | Loc.Exc_located(_, FailError (0,s))
+    | Loc.Exc_located(_,LtacLocated (_,FailError (0,s))) ->
 	raise (Eval_fail (Lazy.force s))
     | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
-    | Stdpp.Exc_located(s,FailError (lvl,s')) ->
-	raise (Stdpp.Exc_located(s,FailError (lvl - 1, s')))
-    | Stdpp.Exc_located(s,LtacLocated (s'',FailError (lvl,s'))) ->
-	raise (Stdpp.Exc_located(s,LtacLocated (s'',FailError (lvl - 1, s'))))
+    | Loc.Exc_located(s,FailError (lvl,s')) ->
+	raise (Loc.Exc_located(s,FailError (lvl - 1, s')))
+    | Loc.Exc_located(s,LtacLocated (s'',FailError (lvl,s'))) ->
+	raise (Loc.Exc_located(s,LtacLocated (s'',FailError (lvl - 1, s'))))
 
 (* Interprets the clauses of a recursive LetIn *)
 and interp_letrec ist gl llc u =

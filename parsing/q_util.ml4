@@ -8,30 +8,9 @@
 
 (* This file defines standard combinators to build ml expressions *)
 
-open Util
 open Extrawit
-open Pcoq
-
-let not_impl name x =
-  let desc =
-    if Obj.is_block (Obj.repr x) then
-      "tag = " ^ string_of_int (Obj.tag (Obj.repr x))
-    else
-      "int_val = " ^ string_of_int (Obj.magic x)
-  in
-  failwith ("<Q_util." ^ name ^ ", not impl: " ^ desc)
-
-let rec patt_of_expr e =
-  let loc = MLast.loc_of_expr e in
-  match e with
-    | <:expr< $e1$.$e2$ >> -> <:patt< $patt_of_expr e1$.$patt_of_expr e2$ >>
-    | <:expr< $e1$ $e2$ >> -> <:patt< $patt_of_expr e1$ $patt_of_expr e2$ >>
-    | <:expr< loc >> -> <:patt< _ >>
-    | <:expr< $lid:s$ >> -> <:patt< $lid:s$ >>
-    | <:expr< $uid:s$ >> -> <:patt< $uid:s$ >>
-    | <:expr< $str:s$ >> -> <:patt< $str:s$ >>
-    | <:expr< $anti:e$ >> -> <:patt< $anti:patt_of_expr e$ >>
-    | _ -> not_impl "patt_of_expr" e
+open Compat
+open Util
 
 let mlexpr_of_list f l =
   List.fold_right
@@ -77,15 +56,15 @@ open Pcoq
 open Genarg
 
 let rec mlexpr_of_prod_entry_key = function
-  | Extend.Alist1 s -> <:expr< Extend.Alist1 $mlexpr_of_prod_entry_key s$ >>
-  | Extend.Alist1sep (s,sep) -> <:expr< Extend.Alist1sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
-  | Extend.Alist0 s -> <:expr< Extend.Alist0 $mlexpr_of_prod_entry_key s$ >>
-  | Extend.Alist0sep (s,sep) -> <:expr< Extend.Alist0sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
-  | Extend.Aopt s -> <:expr< Extend.Aopt $mlexpr_of_prod_entry_key s$ >>
-  | Extend.Amodifiers s -> <:expr< Extend.Amodifiers $mlexpr_of_prod_entry_key s$ >>
-  | Extend.Aself -> <:expr< Extend.Aself >>
-  | Extend.Anext -> <:expr< Extend.Anext >>
-  | Extend.Atactic n -> <:expr< Extend.Atactic $mlexpr_of_int n$ >>
-  | Extend.Agram s -> anomaly "Agram not supported"
-  | Extend.Aentry ("",s) -> <:expr< Extend.Agram (Gram.Entry.obj $lid:s$) >>
-  | Extend.Aentry (u,s) -> <:expr< Extend.Aentry $str:u$ $str:s$ >>
+  | Alist1 s -> <:expr< Alist1 $mlexpr_of_prod_entry_key s$ >>
+  | Alist1sep (s,sep) -> <:expr< Alist1sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
+  | Alist0 s -> <:expr< Alist0 $mlexpr_of_prod_entry_key s$ >>
+  | Alist0sep (s,sep) -> <:expr< Alist0sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
+  | Aopt s -> <:expr< Aopt $mlexpr_of_prod_entry_key s$ >>
+  | Amodifiers s -> <:expr< Amodifiers $mlexpr_of_prod_entry_key s$ >>
+  | Aself -> <:expr< Aself >>
+  | Anext -> <:expr< Anext >>
+  | Atactic n -> <:expr< Atactic $mlexpr_of_int n$ >>
+  | Agram s -> Util.anomaly "Agram not supported"
+  | Aentry ("",s) -> <:expr< Agram (Gram.Entry.obj $lid:s$) >>
+  | Aentry (u,s) -> <:expr< Aentry $str:u$ $str:s$ >>

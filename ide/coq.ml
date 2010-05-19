@@ -23,6 +23,7 @@ open Reductionops
 open Termops
 open Namegen
 open Ideutils
+open Compat
 
 type coqtop = unit
 
@@ -88,7 +89,7 @@ let is_in_loadpath coqtop dir =
   Library.is_in_load_paths (System.physical_path_of_string dir)
 
 let user_error_loc l s =
-  raise (Stdpp.Exc_located (l, Util.UserError ("CoqIde", s)))
+  raise (Loc.Exc_located (l, Util.UserError ("CoqIde", s)))
 
 let known_options = ref []
 
@@ -439,7 +440,7 @@ let forbid_vernac blacklist (loc,vernac) =
 let rec is_pervasive_exn = function
   | Out_of_memory | Stack_overflow | Sys.Break -> true
   | Error_in_file (_,_,e) -> is_pervasive_exn e
-  | Stdpp.Exc_located (_,e) -> is_pervasive_exn e
+  | Loc.Exc_located (_,e) -> is_pervasive_exn e
   | DuringCommandInterp (_,e) -> is_pervasive_exn e
   | _ -> false
 
@@ -452,7 +453,7 @@ let print_toplevel_error exc =
   in
   let (loc,exc) =
     match exc with
-      | Stdpp.Exc_located (loc, ie) -> (Some loc),ie
+      | Loc.Exc_located (loc, ie) -> (Some loc),ie
       | Error_in_file (s, (_,fname, loc), ie) -> None, ie
       | _ -> dloc,exc
   in

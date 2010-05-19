@@ -10,6 +10,7 @@ open Pp
 open Names
 open Nameops
 open Nametab
+open Compat
 open Util
 open Extend
 open Vernacexpr
@@ -93,15 +94,15 @@ let pr_ne_sep sep pr = function
   | l -> sep() ++ pr l
 
 let pr_entry_prec = function
-  | Some Gramext.LeftA -> str"LEFTA "
-  | Some Gramext.RightA -> str"RIGHTA "
-  | Some Gramext.NonA -> str"NONA "
+  | Some LeftA -> str"LEFTA "
+  | Some RightA -> str"RIGHTA "
+  | Some NonA -> str"NONA "
   | None -> mt()
 
 let pr_prec = function
-  | Some Gramext.LeftA -> str", left associativity"
-  | Some Gramext.RightA -> str", right associativity"
-  | Some Gramext.NonA -> str", no associativity"
+  | Some LeftA -> str", left associativity"
+  | Some RightA -> str", right associativity"
+  | Some NonA -> str", no associativity"
   | None -> mt()
 
 let pr_set_entry_type = function
@@ -398,9 +399,9 @@ let pr_syntax_modifier = function
       prlist_with_sep sep_v2 str l ++
       spc() ++ str"at level" ++ spc() ++ int n
   | SetLevel n -> str"at level" ++ spc() ++ int n
-  | SetAssoc Gramext.LeftA -> str"left associativity"
-  | SetAssoc Gramext.RightA -> str"right associativity"
-  | SetAssoc Gramext.NonA -> str"no associativity"
+  | SetAssoc LeftA -> str"left associativity"
+  | SetAssoc RightA -> str"right associativity"
+  | SetAssoc NonA -> str"no associativity"
   | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_entry_type typ
   | SetOnlyParsing -> str"only parsing"
   | SetFormat s -> str"format " ++ pr_located qs s
@@ -778,7 +779,7 @@ let rec pr_vernac = function
       (match b with None -> mt () | Some Dash -> str"-" | Some Star -> str"*" | Some Plus -> str"+") ++
       pr_raw_tactic tac
       ++ (try if deftac then str ".." else mt ()
-      with UserError _|Stdpp.Exc_located _ -> mt())
+      with UserError _|Loc.Exc_located _ -> mt())
 
   | VernacSolveExistential (i,c) ->
       str"Existential " ++ int i ++ pr_lconstrarg c

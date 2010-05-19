@@ -9,15 +9,6 @@
 open Pp
 open Util
 
-type error =
-  | Illegal_character
-  | Unterminated_comment
-  | Unterminated_string
-  | Undefined_token
-  | Bad_token of string
-
-exception Error of error
-
 val add_keyword : string -> unit
 val remove_keyword : string -> unit
 val is_keyword : string -> bool
@@ -45,6 +36,6 @@ val set_xml_output_comment : (string -> unit) -> unit
 
 val terminal : string -> Tok.t
 
-(** The lexer of Coq *)
+(** The lexer of Coq: *)
 
-val lexer : Compat.lexer
+include Compat.LexerSig

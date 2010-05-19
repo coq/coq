@@ -7,6 +7,7 @@
 (***********************************************************************)
 
 open Pp
+open Compat
 
 (* Errors *)
 
@@ -27,17 +28,17 @@ let todo s = prerr_string ("TODO: "^s^"\n")
 
 exception Timeout
 
-type loc = Compat.loc
-let dummy_loc = Compat.dummy_loc
-let unloc = Compat.unloc
-let make_loc = Compat.make_loc
-let join_loc = Compat.join_loc
+type loc = Loc.t
+let dummy_loc = Loc.ghost
+let join_loc = Loc.merge
+let make_loc = make_loc
+let unloc = unloc
 
 (* raising located exceptions *)
 type 'a located = loc * 'a
-let anomaly_loc (loc,s,strm) = Stdpp.raise_with_loc loc (Anomaly (s,strm))
-let user_err_loc (loc,s,strm) = Stdpp.raise_with_loc loc (UserError (s,strm))
-let invalid_arg_loc (loc,s) = Stdpp.raise_with_loc loc (Invalid_argument s)
+let anomaly_loc (loc,s,strm) = Loc.raise loc (Anomaly (s,strm))
+let user_err_loc (loc,s,strm) = Loc.raise loc (UserError (s,strm))
+let invalid_arg_loc (loc,s) = Loc.raise loc (Invalid_argument s)
 
 let located_fold_left f x (_,a) = f x a
 let located_iter2 f (_,a) (_,b) = f a b

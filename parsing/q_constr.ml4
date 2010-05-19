@@ -12,7 +12,9 @@ open Names
 open Pattern
 open Q_util
 open Util
+open Compat
 open Pcaml
+open PcamlSig
 
 let loc = dummy_loc
 let dloc = <:expr< Util.dummy_loc >>
@@ -40,7 +42,7 @@ EXTEND
     [ [ "_" -> <:expr< Anonymous >> | id = ident -> <:expr< Name $id$ >> ] ]
   ;
   string:
-    [ [ UIDENT | LIDENT ] ]
+    [ [ s = UIDENT -> s | s = LIDENT -> s ] ]
   ;
   constr:
     [ "200" RIGHTA

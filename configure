@@ -57,6 +57,10 @@ usage () {
     printf "\tSpecifies the path to the OCaml library\n"
     echo "-lablgtkdir"
     printf "\tSpecifies the path to the Lablgtk library\n"
+    echo "-usecamlp5"
+    printf "\tSpecifies to use camlp5 instead of camlp4\n"
+    echo "-usecamlp4"
+    printf "\tSpecifies to use camlp4 instead of camlp5\n"
     echo "-camlp5dir"
     printf "\tSpecifies where to look for the Camlp5 library and tells to use it\n"
     echo "-arch"
@@ -141,6 +145,7 @@ with_doc=all
 with_doc_spec=no
 force_caml_version=no
 force_caml_version_spec=no
+usecamlp5=yes
 
 COQSRC=`pwd`
 
@@ -193,7 +198,12 @@ while : ; do
     -lablgtkdir|--lablgtkdir) lablgtkdir_spec=yes
 	                lablgtkdir="$2"
 			shift;;
+    -usecamlp5|--usecamlp5)
+	                usecamlp5=yes;;
+    -usecamlp4|--usecamlp4)
+	                usecamlp5=no;;
     -camlp5dir|--camlp5dir)
+                        usecamlp5=yes
 	                camlp5dir="$2"
 			shift;;
     -arch|--arch) arch_spec=yes
@@ -479,77 +489,81 @@ esac
 
 # Camlp4 / Camlp5 configuration
 
-if [ "$camlp5dir" != "" ]; then
+# Assume that camlp(4|5) binaries are at the same place as ocaml ones
+# (this should become configurable some day)
+CAMLP4BIN=${CAMLBIN}
+
+if [ "$usecamlp5" = "yes" ]; then
     CAMLP4=camlp5
-    CAMLP4LIB=$camlp5dir
-    if [ ! -f $camlp5dir/camlp5.cma ]; then
-	echo "Cannot find camlp5 libraries in $camlp5dir (camlp5.cma not found)."
+    CAMLP4MOD=gramlib
+    if [ "$camlp5dir" != "" ]; then
+	if [ -f "$camlp5dir/${CAMLP4MOD}.cma" ]; then
+	    CAMLP4LIB=$camlp5dir
+	    FULLCAMLP4LIB=$camlp5dir
+	else
+	    echo "Cannot find camlp5 libraries in $camlp5dir (camlp5.cma not found)."
+	    echo "Configuration script failed!"
+	    exit 1
+	fi
+    elif [ -f "${CAMLLIB}/camlp5/${CAMLP4MOD}.cma" ]; then
+        CAMLP4LIB=+camlp5
+	FULLCAMLP4LIB=${CAMLLIB}/camlp5
+    elif [ -f "${CAMLLIB}/site-lib/${CAMLP4MOD}.cma" ]; then
+        CAMLP4LIB=+site-lib/camlp5
+	FULLCAMLP4LIB=${CAMLLIB}/site-lib/camlp5
+    else
+	echo "Objective Caml $CAMLVERSION found but no Camlp5 installed."
 	echo "Configuration script failed!"
 	exit 1
     fi
+
     camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
-    if [ `$camlp4oexec -pmode 2>&1` = "strict" ]; then 
-	echo "Error: Camlp5 found, but in strict mode!"
-	echo "Please compile Camlp5 in transitional mode."
+    if [ "`$camlp4oexec -pmode 2>&1`" != "transitional" ]; then
+	echo "Error: $camlp4oexec not found, or not in transitional mode!"
+	echo "Configuration script failed!"
 	exit 1
     fi
-else
-    case $CAMLTAG in
-        OCAML31*)
-            if [ -x "${CAMLLIB}/camlp5" ]; then
-                CAMLP4LIB=+camlp5
-            elif [ -x "${CAMLLIB}/site-lib/camlp5" ]; then
-                CAMLP4LIB=+site-lib/camlp5
-            else
-	        echo "Objective Caml $CAMLVERSION found but no Camlp5 installed."
-	        echo "Configuration script failed!"
-	        exit 1
-            fi
-            CAMLP4=camlp5
-            camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
-            if [ `$camlp4oexec -pmode 2>&1` = "strict" ]; then
-	        echo "Error: Camlp5 found, but in strict mode!"
-	        echo "Please compile Camlp5 in transitional mode."
-	        exit 1
-            fi
-            ;;
-        *)
-            CAMLP4=camlp4
-            CAMLP4LIB=+camlp4
-            ;;
+    case `$camlp4oexec -v 2>&1` in
+	*4.0*|*5.00*)
+	    echo "Camlp5 version < 5.01 not supported."
+	    echo "Configuration script failed!"
+	    exit 1;;
     esac
+
+else # let's use camlp4
+    CAMLP4=camlp4
+    CAMLP4MOD=camlp4lib
+    CAMLP4LIB=+camlp4
+    FULLCAMLP4LIB=${CAMLLIB}/camlp4
+
+    if [ ! -f "${FULLCAMLP4LIB}/${CAMLP4MOD}.cma" ]; then
+	echo "Objective Caml $CAMLVERSION found but no Camlp4 installed."
+	echo "Configuration script failed!"
+	exit 1
+    fi
+
+    camlp4oexec=${camlp4oexec}rf
+    if [ "`$camlp4oexec 2>&1`" != "" ]; then
+	echo "Error: $camlp4oexec not found or not executable."
+	echo "Configuration script failed!"
+	exit 1
+    fi
 fi
-
-if [ "$CAMLP4" = "camlp5" ] && `$camlp4oexec -v 2>&1 | grep -q 5.00`; then
-    echo "Camlp5 version 5.00 not supported: versions 4.0x or >= 5.01 are OK."
-    echo "Configuration script failed!"
-    exit 1
-fi
-
-
-case $CAMLP4LIB in
-    +*) FULLCAMLP4LIB=$CAMLLIB/`echo $CAMLP4LIB | cut -b 2-`;;
-    *)  FULLCAMLP4LIB=$CAMLP4LIB;;
-esac
-
-# Assume that camlp(4|5) binaries are at the same place as ocaml ones
-# (this should become configurable some day) 
-CAMLP4BIN=${CAMLBIN}
 
 # do we have a native compiler: test of ocamlopt and its version
 
 if [ "$best_compiler" = "opt" ] ; then
   if test -e "$nativecamlc" || test -e "`which $nativecamlc`"; then
       CAMLOPTVERSION=`"$nativecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
-      if [ ! -f $FULLCAMLP4LIB/gramlib.cmxa ]; then
+      if [ ! -f "${FULLCAMLP4LIB}/${CAMLP4MOD}.cmxa" ]; then
 	  best_compiler=byte
 	  echo "Cannot find native-code $CAMLP4,"
 	  echo "only the bytecode version of Coq will be available."
       else
-        if [ "$CAMLOPTVERSION" != "$CAMLVERSION" ] ; then
-	  echo "Native and bytecode compilers do not have the same version!"
-        fi
-        echo "You have native-code compilation. Good!"
+          if [ "$CAMLOPTVERSION" != "$CAMLVERSION" ] ; then
+	      echo "Native and bytecode compilers do not have the same version!"
+          fi
+          echo "You have native-code compilation. Good!"
       fi
   else
       best_compiler=byte
@@ -1049,6 +1063,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|OSDEPENDENTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \
     -e "s|CAMLLIBDIRECTORY|$CAMLLIB|" \
     -e "s|CAMLTAG|$CAMLTAG|" \
+    -e "s|CAMLP4VARIANT|$CAMLP4|" \
     -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
     -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
     -e "s|CAMLP4TOOL|$camlp4oexec|" \

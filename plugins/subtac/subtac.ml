@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Compat
 open Global
 open Pp
 open Util
@@ -228,8 +229,8 @@ let subtac (loc, command) =
       debug 2 (Himsg.explain_pretype_error env exn);
       raise e
 
-  | (Stdpp.Exc_located (loc, Proof_type.LtacLocated (_,e')) |
-     Stdpp.Exc_located (loc, e') as e) ->
+  | (Loc.Exc_located (loc, Proof_type.LtacLocated (_,e')) |
+     Loc.Exc_located (loc, e') as e) ->
       debug 2 (str "Parsing exception: ");
       (match e' with
       | Type_errors.TypeError (env, exn) ->

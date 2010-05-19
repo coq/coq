@@ -6,13 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Compat
 open Pp
 open Util
 open Indtypes
 open Type_errors
 open Pretype_errors
 open Indrec
-open Lexer
 
 let print_loc loc =
   if loc = dummy_loc then
@@ -111,20 +111,10 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (str "Error: Tactic failure" ++
                 (if Lazy.force s <> mt() then str ":" ++ Lazy.force s else mt ()) ++
                 if i=0 then str "." else str " (level " ++ int i ++ str").")
-  | Stdpp.Exc_located (loc,exc) ->
+  | Loc.Exc_located (loc,exc) ->
       hov 0 ((if loc = dummy_loc then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
                ++ explain_exn_default_aux anomaly_string report_fn exc)
-  | Lexer.Error Illegal_character ->
-      hov 0 (str "Syntax error: Illegal character.")
-  | Lexer.Error Unterminated_comment ->
-      hov 0 (str "Syntax error: Unterminated comment.")
-  | Lexer.Error Unterminated_string ->
-      hov 0 (str "Syntax error: Unterminated string.")
-  | Lexer.Error Undefined_token ->
-      hov 0 (str "Syntax error: Undefined token.")
-  | Lexer.Error (Bad_token s) ->
-      hov 0 (str "Syntax error: Bad token" ++ spc () ++ str s ++ str ".")
   | Assert_failure (s,b,e) ->
       hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
 	       (if s <> "" then

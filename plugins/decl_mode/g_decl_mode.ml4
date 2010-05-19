@@ -11,7 +11,7 @@
 (* arnaud: veiller à l'aspect tutorial des commentaires *)
 
 open Pp
-
+open Tok
 open Decl_expr
 open Names
 open Term
@@ -85,9 +85,9 @@ let vernac_proof_instr instr =
 
 (* We create a new parser entry [proof_mode]. The Declarative proof mode
     will replace the normal parser entry for tactics with this one. *)
-let proof_mode = Gram.Entry.create "vernac:proof_command" 
+let proof_mode = Gram.entry_create "vernac:proof_command"
 (* Auxiliary grammar entry. *)
-let proof_instr = Gram.Entry.create "proofmode:instr"
+let proof_instr = Gram.entry_create "proofmode:instr"
 
 (* Before we can write an new toplevel command (see below) 
     which takes a [proof_instr] as argument, we need to declare

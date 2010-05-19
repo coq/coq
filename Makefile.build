@@ -97,9 +97,23 @@ $(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(1) $(addsuffix .cma,$(2)) $^
 endef
 
 CAMLP4DEPS=`sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*@\1@p' $<`
+ifeq ($(CAMLP4),camlp5)
 CAMLP4USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
+else
+CAMLP4USE=-D$(CAMLVERSION)
+endif
 
-PR_O := $(if $(READABLE_ML4),pr_o.cmo)
+PR_O := $(if $(READABLE_ML4),pr_o.cmo,pr_dump.cmo) # works also with new camlp4
+
+ifeq ($(CAMLP4),camlp5)
+SYSMOD:=str unix gramlib
+else
+SYSMOD:=str unix dynlink camlp4lib
+endif
+
+SYSCMA:=$(addsuffix .cma,$(SYSMOD))
+SYSCMXA:=$(addsuffix .cmxa,$(SYSMOD))
+
 
 ###########################################################################
 # Infrastructure for the rest of the Makefile
@@ -202,12 +216,12 @@ CHKOPTFLAGS:=$(CHKLIBS) $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
 
 $(CHICKENOPT): checker/check.cmxa checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -o $@ str.cmxa unix.cmxa gramlib.cmxa $^
+	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -o $@ $(SYSCMXA) $^
 	$(STRIP) $@
 
 $(CHICKENBYTE): checker/check.cma checker/main.ml
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ str.cma unix.cma gramlib.cma $^
+	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(SYSCMA) $^
 
 $(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
 	cd bin && ln -sf coqchk.$(BEST)$(EXE) coqchk$(EXE)
@@ -216,13 +230,11 @@ $(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
 
 $(COQMKTOPBYTE): $(COQMKTOPCMO)
 	$(SHOW)'OCAMLC -o $@'	
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma gramlib.cma\
-          $^ $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ $(SYSCMA) $^ $(OSDEPLIBS)
 
 $(COQMKTOPOPT): $(COQMKTOPCMO:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -o $@'	
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa gramlib.cmxa\
-          $^ $(OSDEPLIBS)
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ $(SYSCMXA) $^ $(OSDEPLIBS)
 	$(STRIP) $@
 
 $(COQMKTOP): $(ORDER_ONLY_SEP) $(BESTCOQMKTOP)
@@ -239,11 +251,11 @@ scripts/tolink.ml: Makefile.build Makefile.common
 
 $(COQCBYTE): $(COQCCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma gramlib.cma $^ $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ $(SYSCMA) $^ $(OSDEPLIBS)
 
 $(COQCOPT): $(COQCCMO:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa gramlib.cmxa $^ $(OSDEPLIBS)
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ $(SYSCMXA) $^ $(OSDEPLIBS)
 	$(STRIP) $@
 
 $(COQC): $(ORDER_ONLY_SEP) $(BESTCOQC)
@@ -464,7 +476,7 @@ $(COQDEPBOOT): tools/coqdep_lexer.ml tools/coqdep_common.ml tools/coqdep_boot.ml
 
 $(COQDEP): $(COQDEPCMO:.cmo=$(BESTOBJ))
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml, $(OSDEPLIBS), str unix gramlib)
+	$(HIDE)$(call bestocaml, $(OSDEPLIBS), $(SYSMOD))
 
 $(GALLINA): $(addsuffix $(BESTOBJ), tools/gallina_lexer tools/gallina)
 	$(SHOW)'OCAMLBEST -o $@'
@@ -634,7 +646,7 @@ $(OCAMLDOCDIR)/%.pdf: $(OCAMLDOCDIR)/%.tex
 
 dev/printers.cma: | dev/printers.mllib.d
 	$(SHOW)'Testing $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) unix.cma gramlib.cma $^ -o test-printer
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(SYSCMA) $^ -o test-printer
 	@rm -f test-printer
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) unix.cma $^ -linkall -a -o $@

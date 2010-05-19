@@ -16,6 +16,7 @@ open Topconstr
 open Libnames
 open Termops
 open Tok
+open Compat
 
 let all_with delta = make_red_flag [FBeta;FIota;FZeta;delta]
 
@@ -29,11 +30,11 @@ let err () = raise Stream.Failure
 let test_lpar_id_coloneq =
   Gram.Entry.of_parser "lpar_id_coloneq"
     (fun strm ->
-      match stream_nth 0 strm with
+      match get_tok (stream_nth 0 strm) with
         | KEYWORD "(" ->
-            (match stream_nth 1 strm with
+            (match get_tok (stream_nth 1 strm) with
               | IDENT _ ->
-                  (match stream_nth 2 strm with
+                  (match get_tok (stream_nth 2 strm) with
 	            | KEYWORD ":=" -> ()
 	            | _ -> err ())
 	      | _ -> err ())
@@ -43,11 +44,11 @@ let test_lpar_id_coloneq =
 let test_lpar_idnum_coloneq =
   Gram.Entry.of_parser "test_lpar_idnum_coloneq"
     (fun strm ->
-      match stream_nth 0 strm with
+      match get_tok (stream_nth 0 strm) with
         | KEYWORD "(" ->
-            (match stream_nth 1 strm with
+            (match get_tok (stream_nth 1 strm) with
               | IDENT _ | INT _ ->
-                  (match stream_nth 2 strm with
+                  (match get_tok (stream_nth 2 strm) with
                     | KEYWORD ":=" -> ()
                     | _ -> err ())
               | _ -> err ())
@@ -57,11 +58,11 @@ let test_lpar_idnum_coloneq =
 let test_lpar_id_colon =
   Gram.Entry.of_parser "lpar_id_colon"
     (fun strm ->
-      match stream_nth 0 strm with
+      match get_tok (stream_nth 0 strm) with
         | KEYWORD "(" ->
-            (match stream_nth 1 strm with
+            (match get_tok (stream_nth 1 strm) with
               | IDENT _ ->
-                  (match stream_nth 2 strm with
+                  (match get_tok (stream_nth 2 strm) with
                     | KEYWORD ":" -> ()
                     | _ -> err ())
               | _ -> err ())
@@ -72,33 +73,33 @@ let check_for_coloneq =
   Gram.Entry.of_parser "lpar_id_colon"
     (fun strm ->
       let rec skip_to_rpar p n =
-	match list_last (Stream.npeek n strm) with
+	match get_tok (list_last (Stream.npeek n strm)) with
         | KEYWORD "(" -> skip_to_rpar (p+1) (n+1)
         | KEYWORD ")" -> if p=0 then n+1 else skip_to_rpar (p-1) (n+1)
 	| KEYWORD "." -> err ()
 	| _ -> skip_to_rpar p (n+1) in
       let rec skip_names n =
-	match list_last (Stream.npeek n strm) with
+	match get_tok (list_last (Stream.npeek n strm)) with
         | IDENT _ | KEYWORD "_" -> skip_names (n+1)
 	| KEYWORD ":" -> skip_to_rpar 0 (n+1) (* skip a constr *)
 	| _ -> err () in
       let rec skip_binders n =
-	match list_last (Stream.npeek n strm) with
+	match get_tok (list_last (Stream.npeek n strm)) with
         | KEYWORD "(" -> skip_binders (skip_names (n+1))
         | IDENT _ | KEYWORD "_" -> skip_binders (n+1)
 	| KEYWORD ":=" -> ()
 	| _ -> err () in
-      match Stream.npeek 1 strm with
-      | [KEYWORD "("] -> skip_binders 2
+      match get_tok (stream_nth 0 strm) with
+      | KEYWORD "(" -> skip_binders 2
       | _ -> err ())
 
 let guess_lpar_ipat s strm =
-  match stream_nth 0 strm with
+  match get_tok (stream_nth 0 strm) with
     | KEYWORD "(" ->
-        (match stream_nth 1 strm with
+        (match get_tok (stream_nth 1 strm) with
           | KEYWORD ("("|"[") -> ()
           | IDENT _ ->
-              (match stream_nth 2 strm with
+              (match get_tok (stream_nth 2 strm) with
                 | KEYWORD s' when s = s' -> ()
                 | _ -> err ())
           | _ -> err ())
@@ -113,7 +114,7 @@ let guess_lpar_colon =
 let lookup_at_as_coma =
   Gram.Entry.of_parser "lookup_at_as_coma"
     (fun strm ->
-      match stream_nth 0 strm with
+      match get_tok (stream_nth 0 strm) with
 	| KEYWORD (","|"at"|"as") -> ()
 	| _ -> err ())
 
@@ -450,7 +451,7 @@ GEXTEND Gram
   ;
   hintbases:
     [ [ "with"; "*" -> None
-      | "with"; l = LIST1 IDENT -> Some l
+      | "with"; l = LIST1 [ x = IDENT -> x] -> Some l
       | -> Some [] ] ]
   ;
   auto_using:

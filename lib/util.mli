@@ -7,6 +7,7 @@
   **********************************************************************)
 
 open Pp
+open Compat
 
 (** This module contains numerous utility functions on strings, lists,
    arrays, etc. *)
@@ -36,17 +37,18 @@ val todo : string -> unit
 
 exception Timeout
 
-type loc = Compat.loc
+type loc = Loc.t
 
 type 'a located = loc * 'a
 
 val unloc : loc -> int * int
 val make_loc : int * int -> loc
 val dummy_loc : loc
+val join_loc : loc -> loc -> loc
+
 val anomaly_loc : loc * string * std_ppcmds -> 'a
 val user_err_loc : loc * string * std_ppcmds -> 'a
 val invalid_arg_loc : loc * string -> 'a
-val join_loc : loc -> loc -> loc
 val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
 val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
 

@@ -14,6 +14,7 @@ open Argextend
 open Pcoq
 open Extrawit
 open Egrammar
+open Compat
 
 let rec make_patt = function
   | [] -> <:patt< [] >>
@@ -48,11 +49,6 @@ let rec make_let e = function
       <:expr< let $lid:p$ = $v$ in $e$ >>
   | _::l -> make_let e l
 
-let add_clause s (pt,e) l =
-  let p = make_patt pt in
-  let w = Some (make_when (MLast.loc_of_expr e) pt) in
-  (p, w, make_let e pt)::l
-
 let rec extract_signature = function
   | [] -> []
   | GramNonTerminal (_,t,_,_) :: l -> t :: extract_signature l
@@ -65,11 +61,14 @@ let check_unicity s l =
       ("Two distinct rules of tactic entry "^s^" have the same\n"^
       "non-terminals in the same order: put them in distinct tactic entries")
 
-let make_clauses s l =
+let make_clause (pt,e) =
+  (make_patt pt,
+   Some (make_when (MLast.loc_of_expr e) pt),
+   make_let e pt)
+
+let make_fun_clauses loc s l =
   check_unicity s l;
-  let default =
-    (<:patt< _ >>,None,<:expr< failwith "Tactic extension: cannot occur" >>) in
-  List.fold_right (add_clause s) l [default]
+  Compat.make_fun loc (List.map make_clause l)
 
 let rec make_args = function
   | [] -> <:expr< [] >>
@@ -160,13 +159,11 @@ let declare_tactic loc s cl =
   let atomic_tactics =
     mlexpr_of_list mlexpr_of_string
       (List.flatten (List.map (fun (al,_) -> is_atomic al) cl)) in
-  <:str_item<
-    declare
-      open Pcoq;
-      open Extrawit;
-      declare $list:hidden$ end;
+  declare_str_items loc
+   (hidden @
+    [ <:str_item< do {
       try
-        let _=Tacinterp.add_tactic $se$ (fun [ $list:make_clauses s cl$ ]) in
+        let _=Tacinterp.add_tactic $se$ $make_fun_clauses loc s cl$ in
         List.iter
           (fun s -> Tacinterp.add_primitive_tactic s
               (Tacexpr.TacAtom($default_loc$,
@@ -174,16 +171,16 @@ let declare_tactic loc s cl =
           $atomic_tactics$
       with e -> Pp.pp (Cerrors.explain_exn e);
       Egrammar.extend_tactic_grammar $se$ $gl$;
-      List.iter Pptactic.declare_extra_tactic_pprule $pp$;
-    end
-  >>
+      List.iter Pptactic.declare_extra_tactic_pprule $pp$; } >>
+    ])
 
 open Pcaml
+open PcamlSig
 
 EXTEND
   GLOBAL: str_item;
   str_item:
-    [ [ "TACTIC"; "EXTEND"; s = [ UIDENT | LIDENT ];
+    [ [ "TACTIC"; "EXTEND"; s = tac_name;
         OPT "|"; l = LIST1 tacrule SEP "|";
         "END" ->
          declare_tactic loc s l ] ]
@@ -207,6 +204,11 @@ EXTEND
       | s = STRING ->
 	if s = "" then Util.user_err_loc (loc,"",Pp.str "Empty terminal.");
         GramTerminal s
+    ] ]
+  ;
+  tac_name:
+    [ [ s = LIDENT -> s
+      | s = UIDENT -> s
     ] ]
   ;
   END

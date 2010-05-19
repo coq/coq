@@ -6,7 +6,7 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
-val patt_of_expr : MLast.expr -> MLast.patt
+open Compat
 
 val mlexpr_of_list :  ('a -> MLast.expr) -> 'a list -> MLast.expr
 
@@ -30,4 +30,4 @@ val mlexpr_of_string : string -> MLast.expr
 
 val mlexpr_of_option : ('a -> MLast.expr) -> 'a option -> MLast.expr
 
-val mlexpr_of_prod_entry_key : Pcoq.Gram.te Extend.prod_entry_key -> MLast.expr
+val mlexpr_of_prod_entry_key : Pcoq.prod_entry_key -> MLast.expr

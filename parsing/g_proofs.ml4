@@ -15,6 +15,7 @@ open Topconstr
 open Vernacexpr
 open Prim
 open Constr
+open Tok
 
 let thm_token = G_vernac.thm_token
 
@@ -29,7 +30,7 @@ GEXTEND Gram
   ;
   opt_hintbases:
   [ [ -> []
-    | ":"; l = LIST1 IDENT -> l ] ]
+    | ":"; l = LIST1 [id = IDENT -> id ] -> l ] ]
   ;
   command:
     [ [ IDENT "Goal"; c = lconstr -> VernacGoal c

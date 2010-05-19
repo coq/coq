@@ -16,6 +16,7 @@ open System
 open Vernacexpr
 open Vernacinterp
 open Ppvernac
+open Compat
 
 (* The functions in this module may raise (unexplainable!) exceptions.
    Use the module Coqtoplevel, which catches these exceptions
@@ -40,14 +41,14 @@ let raise_with_file file exc =
     match re with
       | Error_in_file (_, (b,f,loc), e) when loc <> dummy_loc ->
           ((b, f, loc), e)
-      | Stdpp.Exc_located (loc, e) when loc <> dummy_loc ->
+      | Loc.Exc_located (loc, e) when loc <> dummy_loc ->
           ((false,file, loc), e)
       | _ -> ((false,file,cmdloc), re)
   in
   raise (Error_in_file (file, inner, disable_drop inex))
 
 let real_error = function
-  | Stdpp.Exc_located (_, e) -> e
+  | Loc.Exc_located (_, e) -> e
   | Error_in_file (_, _, e) -> e
   | e -> e
 
@@ -90,7 +91,7 @@ let verbose_phrase verbch loc =
 exception End_of_input
 
 let parse_sentence (po, verbch) =
-  match Pcoq.Gram.Entry.parse Pcoq.main_entry po with
+  match Pcoq.Gram.entry_parse Pcoq.main_entry po with
     | Some (loc,_ as com) -> verbose_phrase verbch loc; com
     | None -> raise End_of_input
 

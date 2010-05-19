@@ -33,11 +33,11 @@ module Tactic = Pcoq.Tactic
 
 module SubtacGram =
 struct
-  let gec s = Gram.Entry.create ("Subtac."^s)
+  let gec s = Gram.entry_create ("Subtac."^s)
 		(* types *)
-  let subtac_gallina_loc : Vernacexpr.vernac_expr located Gram.Entry.e = gec "subtac_gallina_loc"
+  let subtac_gallina_loc : Vernacexpr.vernac_expr located Gram.entry = gec "subtac_gallina_loc"
 
-  let subtac_withtac : Tacexpr.raw_tactic_expr option Gram.Entry.e = gec "subtac_withtac"
+  let subtac_withtac : Tacexpr.raw_tactic_expr option Gram.entry = gec "subtac_withtac"
 end
 
 open Rawterm

@@ -143,10 +143,6 @@ COQRUN := coqrun
 LIBCOQRUN:=kernel/byterun/lib$(COQRUN).a
 DLLCOQRUN:=$(dir $(LIBCOQRUN))dll$(COQRUN)$(DLLEXT)
 
-CLIBS:=unix.cma
-
-CAMLP4OBJS:=gramlib.cma
-
 CONFIG:=config/coq_config.cmo
 
 BYTERUN:=$(addprefix kernel/byterun/, \
@@ -213,9 +209,6 @@ else
 endif
 
 INITPLUGINSBEST:=$(if $(OPT),$(INITPLUGINSOPT),$(INITPLUGINS))
-
-CMA:=$(CLIBS) $(CAMLP4OBJS)
-CMXA:=$(CMA:.cma=.cmxa)
 
 LINKCMO:=$(CONFIG) $(CORECMA) $(STATICPLUGINS)
 LINKCMX:=$(CONFIG:.cmo=.cmx) $(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cma=.cmxa)

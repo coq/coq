@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp
+open Compat
 open Util
 open Names
 open Sign
@@ -270,7 +271,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	      make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	  | RCoFix i ->
 	      let cofix = (i,(names,ftys,fdefs)) in
-	      (try check_cofix env cofix with e -> Stdpp.raise_with_loc loc e);
+	      (try check_cofix env cofix with e -> Loc.raise loc e);
 	      make_judge (mkCoFix cofix) ftys.(i) in
 	inh_conv_coerce_to_tycon loc env evdref fixj tycon
 
@@ -357,7 +358,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	let j' = pretype_type empty_valcon env' evdref lvar c2 in
 	let resj =
 	  try judge_of_product env name j j'
-	  with TypeError _ as e -> Stdpp.raise_with_loc loc e in
+	  with TypeError _ as e -> Loc.raise loc e in
 	  inh_conv_coerce_to_tycon loc env evdref resj tycon
 
     | RLetIn(loc,name,c1,c2)      ->

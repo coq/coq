@@ -17,6 +17,7 @@ open Libnames
 open Topconstr
 open Util
 open Tok
+open Compat
 
 let constr_kw =
   [ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for";
@@ -74,11 +75,11 @@ let err () = raise Stream.Failure
 let lpar_id_coloneq =
   Gram.Entry.of_parser "test_lpar_id_coloneq"
     (fun strm ->
-      match stream_nth 0 strm with
+      match get_tok (stream_nth 0 strm) with
         | KEYWORD "(" ->
-            (match stream_nth 1 strm with
+            (match get_tok (stream_nth 1 strm) with
 	      | IDENT s ->
-                  (match stream_nth 2 strm with
+                  (match get_tok (stream_nth 2 strm) with
                     | KEYWORD ":=" ->
                         stream_njunk 3 strm;
                         Names.id_of_string s
@@ -89,9 +90,9 @@ let lpar_id_coloneq =
 let impl_ident =
   Gram.Entry.of_parser "impl_ident"
     (fun strm ->
-      match stream_nth 0 strm with
+      match get_tok (stream_nth 0 strm) with
 	| KEYWORD "{" ->
-	    (match stream_nth 1 strm with
+	    (match get_tok (stream_nth 1 strm) with
 	      | IDENT ("wf"|"struct"|"measure") -> err ()
 	      | IDENT s ->
 		  stream_njunk 2 strm;
@@ -102,9 +103,9 @@ let impl_ident =
 let ident_colon =
   Gram.Entry.of_parser "ident_colon"
     (fun strm ->
-      match stream_nth 0 strm with
+      match get_tok (stream_nth 0 strm) with
 	| IDENT s ->
-            (match stream_nth 1 strm with
+            (match get_tok (stream_nth 1 strm) with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
                   Names.id_of_string s
@@ -114,9 +115,9 @@ let ident_colon =
 let ident_with =
   Gram.Entry.of_parser "ident_with"
     (fun strm ->
-      match stream_nth 0 strm with
+      match get_tok (stream_nth 0 strm) with
       | IDENT s ->
-          (match stream_nth 1 strm with
+          (match get_tok (stream_nth 1 strm) with
              | KEYWORD "with" ->
 		 stream_njunk 2 strm;
 		 Names.id_of_string s

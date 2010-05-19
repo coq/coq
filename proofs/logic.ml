@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Compat
 open Pp
 open Util
 open Names
@@ -45,7 +46,7 @@ exception RefinerError of refiner_error
 open Pretype_errors
 
 let rec catchable_exception = function
-  | Stdpp.Exc_located(_,e) -> catchable_exception e
+  | Loc.Exc_located(_,e) -> catchable_exception e
   | LtacLocated(_,e) -> catchable_exception e
   | Util.UserError _ | TypeError _
   | RefinerError _ | Indrec.RecursionSchemeError _

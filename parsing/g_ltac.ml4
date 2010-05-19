@@ -15,6 +15,7 @@ open Vernacexpr
 open Pcoq
 open Prim
 open Tactic
+open Tok
 
 let fail_default_value = ArgArg 0
 

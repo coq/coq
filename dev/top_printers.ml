@@ -405,7 +405,7 @@ let _ =
   extend_vernac_command_grammar "PrintConstr" None
     [[GramTerminal "PrintConstr";
       GramNonTerminal
-        (dummy_loc,ConstrArgType,Extend.Aentry ("constr","constr"),
+        (dummy_loc,ConstrArgType,Aentry ("constr","constr"),
 	 Some (Names.id_of_string "c"))]]
 
 let _ =
@@ -422,7 +422,7 @@ let _ =
   extend_vernac_command_grammar "PrintPureConstr" None
     [[GramTerminal "PrintPureConstr";
       GramNonTerminal
-        (dummy_loc,ConstrArgType,Extend.Aentry ("constr","constr"),
+        (dummy_loc,ConstrArgType,Aentry ("constr","constr"),
 	 Some (Names.id_of_string "c"))]]
 
 (* Setting printer of unbound global reference *)

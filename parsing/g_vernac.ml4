@@ -10,6 +10,8 @@
 
 
 open Pp
+open Compat
+open Tok
 open Util
 open Names
 open Topconstr
@@ -33,20 +35,20 @@ let _ = List.iter Lexer.add_keyword vernac_kw
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)
 
-let check_command = Gram.Entry.create "vernac:check_command"
+let check_command = Gram.entry_create "vernac:check_command"
 
-let tactic_mode = Gram.Entry.create "vernac:tactic_command"
-let noedit_mode = Gram.Entry.create "vernac:noedit_command"
+let tactic_mode = Gram.entry_create "vernac:tactic_command"
+let noedit_mode = Gram.entry_create "vernac:noedit_command"
 
-let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
-let thm_token = Gram.Entry.create "vernac:thm_token"
-let def_body = Gram.Entry.create "vernac:def_body"
-let decl_notation = Gram.Entry.create "vernac:decl_notation"
-let typeclass_context = Gram.Entry.create "vernac:typeclass_context"
-let record_field = Gram.Entry.create "vernac:record_field"
-let of_type_with_opt_coercion = Gram.Entry.create "vernac:of_type_with_opt_coercion"
-let subgoal_command = Gram.Entry.create "proof_mode:subgoal_command"
-let instance_name = Gram.Entry.create "vernac:instance_name"
+let class_rawexpr = Gram.entry_create "vernac:class_rawexpr"
+let thm_token = Gram.entry_create "vernac:thm_token"
+let def_body = Gram.entry_create "vernac:def_body"
+let decl_notation = Gram.entry_create "vernac:decl_notation"
+let typeclass_context = Gram.entry_create "vernac:typeclass_context"
+let record_field = Gram.entry_create "vernac:record_field"
+let of_type_with_opt_coercion = Gram.entry_create "vernac:of_type_with_opt_coercion"
+let subgoal_command = Gram.entry_create "proof_mode:subgoal_command"
+let instance_name = Gram.entry_create "vernac:instance_name"
 
 let command_entry = ref noedit_mode
 let set_command_entry e = command_entry := e
@@ -65,7 +67,7 @@ let _ = Proof_global.register_proof_mode {Proof_global.
 
 let default_command_entry =
   Gram.Entry.of_parser "command_entry"
-    (fun strm -> Gram.Entry.parse_token (get_command_entry ()) strm)
+    (fun strm -> Gram.parse_tokens_after_filter (get_command_entry ()) strm)
 
 let no_hook _ _ = ()
 GEXTEND Gram
@@ -758,7 +760,7 @@ GEXTEND Gram
       | "Rewrite"; IDENT "HintDb"; s = IDENT -> PrintRewriteHintDbName s
       | IDENT "Scopes" -> PrintScopes
       | IDENT "Scope"; s = IDENT -> PrintScope s
-      | IDENT "Visibility"; s = OPT IDENT -> PrintVisibility s
+      | IDENT "Visibility"; s = OPT [x = IDENT -> x ] -> PrintVisibility s
       | IDENT "Implicit"; qid = smart_global -> PrintImplicit qid
       | IDENT "Universes"; fopt = OPT ne_string -> PrintUniverses fopt
       | IDENT "Assumptions"; qid = smart_global -> PrintAssumptions (false, qid)
@@ -784,7 +786,7 @@ GEXTEND Gram
       | s  = STRING   -> StringRefValue s ] ]
   ;
   option_table:
-    [ [ fl = LIST1 IDENT -> fl ]]
+    [ [ fl = LIST1 [ x = IDENT -> x ] -> fl ]]
   ;
   as_dirpath:
     [ [ d = OPT [ "as"; d = dirpath -> d ] -> d ] ]
@@ -911,16 +913,17 @@ GEXTEND Gram
       | IDENT "next"; IDENT "level" -> NextLevel ] ]
   ;
   syntax_modifier:
-    [ [ x = IDENT; "at"; lev = level -> SetItemLevel ([x],lev)
-      | x = IDENT; ","; l = LIST1 IDENT SEP ","; "at";
-        lev = level -> SetItemLevel (x::l,lev)
-      | "at"; IDENT "level"; n = natural -> SetLevel n
-      | IDENT "left"; IDENT "associativity" -> SetAssoc Gramext.LeftA
-      | IDENT "right"; IDENT "associativity" -> SetAssoc Gramext.RightA
-      | IDENT "no"; IDENT "associativity" -> SetAssoc Gramext.NonA
-      | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ)
+    [ [ "at"; IDENT "level"; n = natural -> SetLevel n
+      | IDENT "left"; IDENT "associativity" -> SetAssoc LeftA
+      | IDENT "right"; IDENT "associativity" -> SetAssoc RightA
+      | IDENT "no"; IDENT "associativity" -> SetAssoc NonA
       | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
-      | IDENT "format"; s = [s = STRING -> (loc,s)] -> SetFormat s ] ]
+      | IDENT "format"; s = [s = STRING -> (loc,s)] -> SetFormat s
+      | x = IDENT; ","; l = LIST1 [id = IDENT -> id ] SEP ","; "at";
+        lev = level -> SetItemLevel (x::l,lev)
+      | x = IDENT; "at"; lev = level -> SetItemLevel ([x],lev)
+      | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ)
+    ] ]
   ;
   syntax_extension_type:
     [ [ IDENT "ident" -> ETName | IDENT "global" -> ETReference

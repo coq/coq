@@ -418,7 +418,7 @@ let main_targets vfiles mlfiles other_targets inc =
 
 let all_target (vfiles, mlfiles, sps, sds) inc =
   let special_targets = List.filter (fun (n,_,_) -> not (is_genrule n)) sps in
-  let other_targets = List.map (fun x,_,_ -> x) special_targets @ sds in
+  let other_targets = List.map (function x,_,_ -> x) special_targets @ sds in
   section "Definition of the \"all\" target.";
   main_targets vfiles mlfiles other_targets inc;
   custom sps;

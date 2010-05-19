@@ -18,6 +18,7 @@ open Libnames
 
 open Nametab
 open Detyping
+open Tok
 
 (* Generic xml parser without raw data *)
 
@@ -29,7 +30,7 @@ let check_tags loc otag ctag =
     user_err_loc (loc,"",str "closing xml tag " ++ str ctag ++
       str "does not match open xml tag " ++ str otag ++ str ".")
 
-let xml_eoi = (Gram.Entry.create "xml_eoi" : xml Gram.Entry.e)
+let xml_eoi = (Gram.entry_create "xml_eoi" : xml Gram.entry)
 
 GEXTEND Gram
   GLOBAL: xml_eoi;
@@ -273,5 +274,5 @@ let rec interp_xml_tactic_arg = function
 
 let parse_tactic_arg ch =
   interp_xml_tactic_arg
-    (Pcoq.Gram.Entry.parse xml_eoi
-        (Pcoq.Gram.parsable (Stream.of_channel ch)))
+    (Pcoq.Gram.entry_parse xml_eoi
+       (Pcoq.Gram.parsable (Stream.of_channel ch)))

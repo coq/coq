@@ -6,6 +6,7 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
+open Compat
 open Util
 open Names
 open Topconstr
@@ -32,14 +33,14 @@ type grammar_constr_prod_item =
        concat with last parsed list if true *)
 
 type notation_grammar =
-    int * Gramext.g_assoc option * notation * grammar_constr_prod_item list list
+    int * gram_assoc option * notation * grammar_constr_prod_item list list
 
 (** For tactic and vernac notations *)
 
 type grammar_prod_item =
   | GramTerminal of string
   | GramNonTerminal of loc * argument_type *
-      Gram.te prod_entry_key * identifier option
+      prod_entry_key * identifier option
 
 (** Adding notations *)
 
@@ -55,7 +56,7 @@ val extend_tactic_grammar :
   string -> grammar_prod_item list list -> unit
 
 val extend_vernac_command_grammar :
-  string -> vernac_expr Gram.Entry.e option -> grammar_prod_item list list -> unit
+  string -> vernac_expr Gram.entry option -> grammar_prod_item list list -> unit
 
 val get_extend_vernac_grammars :
  unit -> (string * grammar_prod_item list list) list

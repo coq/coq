@@ -8,6 +8,7 @@
 
 open Pp
 open Flags
+open Compat
 open Util
 open Names
 open Topconstr
@@ -105,33 +106,33 @@ let add_tactic_notation (n,prods,e) =
 let print_grammar = function
   | "constr" | "operconstr" | "binder_constr" ->
       msgnl (str "Entry constr is");
-      Gram.Entry.print Pcoq.Constr.constr;
+      Gram.entry_print Pcoq.Constr.constr;
       msgnl (str "and lconstr is");
-      Gram.Entry.print Pcoq.Constr.lconstr;
+      Gram.entry_print Pcoq.Constr.lconstr;
       msgnl (str "where binder_constr is");
-      Gram.Entry.print Pcoq.Constr.binder_constr;
+      Gram.entry_print Pcoq.Constr.binder_constr;
       msgnl (str "and operconstr is");
-      Gram.Entry.print Pcoq.Constr.operconstr;
+      Gram.entry_print Pcoq.Constr.operconstr;
   | "pattern" ->
-      Gram.Entry.print Pcoq.Constr.pattern
+      Gram.entry_print Pcoq.Constr.pattern
   | "tactic" ->
       msgnl (str "Entry tactic_expr is");
-      Gram.Entry.print Pcoq.Tactic.tactic_expr;
+      Gram.entry_print Pcoq.Tactic.tactic_expr;
       msgnl (str "Entry binder_tactic is");
-      Gram.Entry.print Pcoq.Tactic.binder_tactic;
+      Gram.entry_print Pcoq.Tactic.binder_tactic;
       msgnl (str "Entry simple_tactic is");
-      Gram.Entry.print Pcoq.Tactic.simple_tactic;
+      Gram.entry_print Pcoq.Tactic.simple_tactic;
   | "vernac" ->
       msgnl (str "Entry vernac is");
-      Gram.Entry.print Pcoq.Vernac_.vernac;
+      Gram.entry_print Pcoq.Vernac_.vernac;
       msgnl (str "Entry command is");
-      Gram.Entry.print Pcoq.Vernac_.command;
+      Gram.entry_print Pcoq.Vernac_.command;
       msgnl (str "Entry syntax is");
-      Gram.Entry.print Pcoq.Vernac_.syntax;
+      Gram.entry_print Pcoq.Vernac_.syntax;
       msgnl (str "Entry gallina is");
-      Gram.Entry.print Pcoq.Vernac_.gallina;
+      Gram.entry_print Pcoq.Vernac_.gallina;
       msgnl (str "Entry gallina_ext is");
-      Gram.Entry.print Pcoq.Vernac_.gallina_ext;
+      Gram.entry_print Pcoq.Vernac_.gallina_ext;
   | _ -> error "Unknown or unprintable grammar entry."
 
 (**********************************************************************)
@@ -232,7 +233,7 @@ let parse_format (loc,str) =
     else
       error "Empty format."
   with e ->
-    Stdpp.raise_with_loc loc e
+    Loc.raise loc e
 
 (***********************)
 (* Analyzing notations *)
@@ -311,7 +312,7 @@ let rec interp_list_parser hd = function
 (* Find non-terminal tokens of notation *)
 
 let is_normal_token str =
-  try let _ = Lexer.check_ident str in true with Lexer.Error _ -> false
+  try let _ = Lexer.check_ident str in true with Lexer.Error.E _ -> false
 
 (* To protect alphabetic tokens and quotes from being seen as variables *)
 let quote_notation_token x =
@@ -379,9 +380,9 @@ type printing_precedence = int * parenRelation
 type parsing_precedence = int option
 
 let prec_assoc = function
-  | Gramext.RightA -> (L,E)
-  | Gramext.LeftA -> (E,L)
-  | Gramext.NonA -> (L,L)
+  | RightA -> (L,E)
+  | LeftA -> (E,L)
+  | NonA -> (L,L)
 
 let precedence_of_entry_type from = function
   | ETConstr (NumLevel n,BorderProd (_,None)) -> n, Prec n
@@ -655,9 +656,9 @@ let border = function
 
 let recompute_assoc typs =
   match border typs, border (List.rev typs) with
-    | Some Gramext.LeftA, Some Gramext.RightA -> assert false
-    | Some Gramext.LeftA, _ -> Some Gramext.LeftA
-    | _, Some Gramext.RightA -> Some Gramext.RightA
+    | Some LeftA, Some RightA -> assert false
+    | Some LeftA, _ -> Some LeftA
+    | _, Some RightA -> Some RightA
     | _ -> None
 
 (**************************************************************************)
@@ -846,7 +847,7 @@ let remove_curly_brackets l =
 let compute_syntax_data (df,modifiers) =
   let (assoc,n,etyps,onlyparse,fmt) = interp_modifiers modifiers in
   (* Notation defaults to NONA *)
-  let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
+  let assoc = match assoc with None -> Some NonA | a -> a in
   let toks = split_notation_string df in
   let (extrarecvars,recvars,vars,symbols) = analyze_notation_tokens toks in
   let ntn_for_interp = make_notation_key symbols in
