@@ -6,11 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4use: "pa_macro.cmo" i*)
-(* WARNING
- * camlp4deps will not work for this file unless Makefile system enhanced.
- *)
-
 open Util
 open Pp
 open Flags

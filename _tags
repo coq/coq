@@ -21,28 +21,11 @@
 
 ## tags for camlp4 files 
 
-"toplevel/mltop.ml4": is_mltop, use_macro
-
-"parsing/lexer.ml4": use_macro
-"lib/compat.ml4": use_macro
-"lib/refutpat.ml4": use_extend, use_MLast
-"parsing/g_xml.ml4": use_extend
-"parsing/q_constr.ml4": use_extend, use_MLast
-"parsing/argextend.ml4": use_extend, use_MLast
-"parsing/tacextend.ml4": use_extend, use_MLast
-"parsing/g_prim.ml4": use_extend
-"parsing/g_ltac.ml4": use_extend
-"parsing/pcoq.ml4": use_extend, use_macro
-"parsing/q_util.ml4": use_MLast
-"parsing/vernacextend.ml4": use_extend, use_MLast
-"parsing/g_constr.ml4": use_extend
-"parsing/g_tactic.ml4": use_extend
-"parsing/g_proofs.ml4": use_extend
-"parsing/q_coqast.ml4": use_MLast, use_macro
+"toplevel/mltop.ml4": is_mltop
 
 "toplevel/whelp.ml4": use_grammar
-"parsing/g_vernac.ml4": use_grammar, use_extend
-"parsing/g_decl_mode.ml4": use_grammar, use_extend, use_MLast
+"parsing/g_vernac.ml4": use_grammar
+"parsing/g_decl_mode.ml4": use_grammar
 "tactics/extraargs.ml4": use_grammar
 "tactics/extratactics.ml4": use_grammar
 "tactics/class_tactics.ml4": use_grammar

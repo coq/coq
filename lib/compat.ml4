@@ -6,9 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4use: "pa_macro.cmo" i*)
-
-(* Compatibility file depending on ocaml version *)
+(** Compatibility file depending on ocaml/camlp4 version *)
 
 IFDEF CAMLP5 THEN
 

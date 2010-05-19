@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4use: "q_MLast.cmo pa_macro.cmo" i*)
-
 open Util
 open Names
 open Libnames

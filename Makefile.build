@@ -97,7 +97,7 @@ $(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(1) $(addsuffix .cma,$(2)) $^
 endef
 
 CAMLP4DEPS=`sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*@\1@p' $<`
-CAMLP4USE=`sed -n -e 's/pa_macro.cmo/pa_macro.cmo -D$(CAMLVERSION)/' -e 's@^(\*.*camlp4use: "\(.*\)".*@\1@p' $<`
+CAMLP4USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
 
 PR_O := $(if $(READABLE_ML4),pr_o.cmo)
 
@@ -788,7 +788,7 @@ plugins/%_mod.ml: plugins/%.mllib
 	$(HIDE)\
 	DEPS=$(CAMLP4DEPS); \
 	if ls $${DEPS} > /dev/null 2>&1; then \
-	$(CAMLP4O) $(PR_O) $(CAMLP4USE) $${DEPS} $(CAMLP4COMPAT) -impl $< $(TOTARGET); \
+	$(CAMLP4O) $(PR_O) $${DEPS} $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< $(TOTARGET); \
 	else echo $< : Dependency $${DEPS} not ready yet; false; fi
 
 %.vo %.glob: %.v states/initial.coq $(INITPLUGINSBEST) $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
