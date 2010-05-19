@@ -1,4 +1,3 @@
-(* -*- compile-command: "make -C ../.. plugins/subtac/subtac_plugin.cma" -*- *)
 (**
    - Get types of existentials ;
    - Flatten dependency tree (prefix order) ;

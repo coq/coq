@@ -1,4 +1,3 @@
-(* -*- compile-command: "make -C ../.. plugins/subtac/subtac_plugin.cma" -*- *)
 open Printf
 open Pp
 open Subtac_utils

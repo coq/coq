@@ -1023,9 +1023,3 @@ let relprinctype_to_funprinctype relprinctype nfuns =
     url = "citeseer.ist.psu.edu/bundy93rippling.html" }
 
  *)
-(*
-*** Local Variables: ***
-*** compile-command: "make -C ../.. plugins/funind/merge.cmo" ***
-*** indent-tabs-mode: nil ***
-*** End: ***
-*)
