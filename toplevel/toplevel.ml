@@ -315,8 +315,8 @@ let print_toplevel_error exc =
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =
   let rec dot st = match Stream.next st with
-    | ("", ".") -> ()
-    | ("EOI", "") -> raise End_of_input
+    | Tok.KEYWORD "." -> ()
+    | Tok.EOI -> raise End_of_input
     | _ -> dot st
   in
   Gram.Entry.of_parser "Coqtoplevel.dot" dot

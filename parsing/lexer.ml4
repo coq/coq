@@ -9,6 +9,7 @@
 open Pp
 open Util
 open Token
+open Tok
 
 (* Dictionaries: trees annotated with string options, each node being a map
    from chars to dictionaries (the subtrees). A trie, in other words. *)
@@ -189,16 +190,6 @@ let add_keyword str =
 
 let remove_keyword str =
   token_tree := ttree_remove !token_tree str
-
-(* Adding a new token (keyword or special token). *)
-let add_token (con, str) = match con with
-  | "" -> add_keyword str
-  | "METAIDENT" | "LEFTQMARK" | "IDENT" | "FIELD" | "INT" | "STRING" | "EOI"
-      -> ()
-  | _ ->
-      raise (Token.Error ("\
-the constructor \"" ^ con ^ "\" is not recognized by Lexer"))
-
 
 (* Freeze and unfreeze the state of the lexer *)
 type frozen_t = ttree
@@ -395,54 +386,51 @@ let process_chars bp c cs =
   let t = progress_from_byte None (-1) !token_tree cs c in
   let ep = Stream.count cs in
   match t with
-    | Some t -> (("", t), (bp, ep))
+    | Some t -> (KEYWORD t, (bp, ep))
     | None ->
 	let ep' = bp + utf8_char_size cs c in
 	njunk (ep' - ep) cs;
 	err (bp, ep') Undefined_token
 
-let parse_after_dollar bp =
-  parser
-  | [< ' ('a'..'z' | 'A'..'Z' | '_' as c); len = ident_tail (store 0 c) >] ->
-      ("METAIDENT", get_buff len)
-  | [< s >] ->
-      match lookup_utf8 s with
-      | Utf8Token (UnicodeLetter, n) ->
-	  ("METAIDENT", get_buff (ident_tail (nstore n 0 s) s))
-      | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars bp '$' s)
+let token_of_special c s = match c with
+  | '$' -> METAIDENT s
+  | '.' -> FIELD s
+  | _ -> assert false
 
-(* Parse what follows a dot *)
-let parse_after_dot bp c =
+(* Parse what follows a dot / a dollar *)
+
+let parse_after_special c bp =
   parser
-  | [< ' ('a'..'z' | 'A'..'Z' | '_' as c); len = ident_tail (store 0 c) >] ->
-      ("FIELD", get_buff len)
+  | [< ' ('a'..'z' | 'A'..'Z' | '_' as d); len = ident_tail (store 0 d) >] ->
+      token_of_special c (get_buff len)
   | [< s >] ->
       match lookup_utf8 s with
       | Utf8Token (UnicodeLetter, n) ->
-	  ("FIELD", get_buff (ident_tail (nstore n 0 s) s))
-      | AsciiChar | Utf8Token _ | EmptyStream ->
-	  fst (process_chars bp c s)
+	  token_of_special c (get_buff (ident_tail (nstore n 0 s) s))
+      | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars bp c s)
 
 (* Parse what follows a question mark *)
+
 let parse_after_qmark bp s =
   match Stream.peek s with
-    |Some ('a'..'z' | 'A'..'Z' | '_') -> ("LEFTQMARK", "")
-    |None -> ("","?")
+    | Some ('a'..'z' | 'A'..'Z' | '_') -> LEFTQMARK
+    | None -> KEYWORD "?"
     | _ ->
 	match lookup_utf8 s with
-	  | Utf8Token (UnicodeLetter, _) -> ("LEFTQMARK", "")
+	  | Utf8Token (UnicodeLetter, _) -> LEFTQMARK
 	  | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars bp '?' s)
 
 
 (* Parse a token in a char stream *)
+
 let rec next_token = parser bp
   | [< '' ' | '\t' | '\n' |'\r' as c; s >] ->
       comm_loc bp; push_char c; next_token s
-  | [< ''$'; t = parse_after_dollar bp >] ep ->
+  | [< ''$' as c; t = parse_after_special c bp >] ep ->
       comment_stop bp; (t, (ep, bp))
-  | [< ''.' as c; t = parse_after_dot bp c >] ep ->
+  | [< ''.' as c; t = parse_after_special c bp >] ep ->
       comment_stop bp;
-      if Flags.do_beautify() & t=("",".") then between_com := true;
+      if Flags.do_beautify() && t=KEYWORD "." then between_com := true;
       (t, (bp,ep))
   | [< ''?'; s >] ep ->
       let t = parse_after_qmark bp s in comment_stop bp; (t, (ep, bp))
@@ -450,13 +438,13 @@ let rec next_token = parser bp
        len = ident_tail (store 0 c); s >] ep ->
       let id = get_buff len in
       comment_stop bp;
-      (try ("", find_keyword id s) with Not_found -> ("IDENT", id)), (bp, ep)
+      (try KEYWORD (find_keyword id s) with Not_found -> IDENT id), (bp, ep)
   | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
       comment_stop bp;
-      (("INT", get_buff len), (bp, ep))
+      (INT (get_buff len), (bp, ep))
   | [< ''\"'; len = string false bp 0 >] ep ->
       comment_stop bp;
-      (("STRING", get_buff len), (bp, ep))
+      (STRING (get_buff len), (bp, ep))
   | [< ' ('(' as c);
       t = parser
         | [< ''*'; s >] ->
@@ -473,12 +461,12 @@ let rec next_token = parser bp
 	    let id = get_buff len in
 	    let ep = Stream.count s in
 	    comment_stop bp;
-	    (try ("",find_keyword id s) with Not_found -> ("IDENT",id)), (bp, ep)
+	    (try KEYWORD (find_keyword id s) with Not_found -> IDENT id), (bp, ep)
 	| AsciiChar | Utf8Token ((UnicodeSymbol | UnicodeIdentPart), _) ->
 	    let t = process_chars bp (Stream.next s) s in
 	    comment_stop bp; t
 	| EmptyStream ->
-	    comment_stop bp; (("EOI", ""), (bp, bp + 1))
+	    comment_stop bp; (EOI, (bp, bp + 1))
 
 (* Location table system for creating tables associating a token count
    to its location in a char stream (the source) *)
@@ -528,18 +516,6 @@ type location_table = (int * int) option array array ref
 let location_table () = !current_location_table
 let restore_location_table t = current_location_table := t
 
-(* Names of tokens, for this lexer, used in Grammar error messages *)
-
-let token_text = function
-  | ("", t) -> "'" ^ t ^ "'"
-  | ("IDENT", "") -> "identifier"
-  | ("IDENT", t) -> "'" ^ t ^ "'"
-  | ("INT", "") -> "integer"
-  | ("INT", s) -> "'" ^ s ^ "'"
-  | ("STRING", "") -> "string"
-  | ("EOI", "") -> "end of input"
-  | (con, "") -> con
-  | (con, prm) -> con ^ " \"" ^ prm ^ "\""
 
 (* The lexer of Coq *)
 
@@ -553,22 +529,36 @@ let token_text = function
 
 IFDEF CAMLP5 THEN
 
+(* Names of tokens, for this lexer, used in Grammar error messages *)
+
+let token_text = function
+  | ("", t) -> "'" ^ t ^ "'"
+  | ("IDENT", "") -> "identifier"
+  | ("IDENT", t) -> "'" ^ t ^ "'"
+  | ("INT", "") -> "integer"
+  | ("INT", s) -> "'" ^ s ^ "'"
+  | ("STRING", "") -> "string"
+  | ("EOI", "") -> "end of input"
+  | (con, "") -> con
+  | (con, prm) -> con ^ " \"" ^ prm ^ "\""
+
+(* Adding a new token (keyword or special token). *)
+
+let add_token pat = match Tok.of_pattern pat with
+  | KEYWORD s -> add_keyword s
+  | _ -> ()
+
 let lexer = {
   Token.tok_func = func;
   Token.tok_using = add_token;
   Token.tok_removing = (fun _ -> ());
-  Token.tok_match = default_match;
+  Token.tok_match = Tok.match_pattern;
   Token.tok_comm = None;
   Token.tok_text = token_text }
 
-ELSE
+ELSE (* official camlp4 for ocaml >= 3.10 *)
 
-let lexer = {
-  Token.func = func;
-  Token.using = add_token;
-  Token.removing = (fun _ -> ());
-  Token.tparse = (fun _ -> None);
-  Token.text = token_text }
+TODO
 
 END
 
@@ -607,6 +597,6 @@ let strip s =
 let terminal s =
   let s = strip s in
   if s = "" then failwith "empty token";
-  if is_ident_not_keyword s then ("IDENT", s)
-  else if is_number s then ("INT", s)
-  else ("", s)
+  if is_ident_not_keyword s then IDENT s
+  else if is_number s then INT s
+  else KEYWORD s

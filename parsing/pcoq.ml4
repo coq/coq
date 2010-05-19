@@ -24,7 +24,7 @@ IFDEF CAMLP5 THEN
 
 module L =
   struct
-    type te = string * string
+    type te = Tok.t
     let lexer = Lexer.lexer
   end
 
@@ -35,6 +35,9 @@ ELSE (* official camlp4 of ocaml >= 3.10 *)
 TODO
 
 END
+
+let gram_token_of_token tok = Gramext.Stoken (Tok.to_pattern tok)
+let gram_token_of_string s = gram_token_of_token (Lexer.terminal s)
 
 let grammar_delete e pos reinit rls =
   List.iter
@@ -99,7 +102,7 @@ end
 open Gramtypes
 
 type camlp4_rule =
-    Compat.token Gramext.g_symbol list * Gramext.g_action
+    Tok.t Gramext.g_symbol list * Gramext.g_action
 
 type camlp4_entry_rules =
     (* first two parameters are name and assoc iff a level is created *)
@@ -611,7 +614,7 @@ let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
         Gramext.Slist1sep
           (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'),
            Gramext.srules
-             [List.map (fun x -> Gramext.Stoken x) tkl,
+             [List.map gram_token_of_token tkl,
               List.fold_right (fun _ v -> Gramext.action (fun _ -> v)) tkl
                 (Gramext.action (fun loc -> ()))])
     | _ ->
@@ -635,9 +638,9 @@ let rec symbol_of_prod_entry_key = function
   | Amodifiers s ->
        Gramext.srules
         [([], Gramext.action(fun _loc -> []));
-         ([Gramext.Stoken ("", "(");
-           Gramext.Slist1sep ((symbol_of_prod_entry_key s), Gramext.Stoken ("", ","));
-           Gramext.Stoken ("", ")")],
+         ([gram_token_of_string "(";
+           Gramext.Slist1sep ((symbol_of_prod_entry_key s), gram_token_of_string ",");
+           gram_token_of_string ")"],
 	   Gramext.action (fun _ l _ _loc -> l))]
   | Aself -> Gramext.Sself
   | Anext -> Gramext.Snext

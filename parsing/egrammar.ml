@@ -55,7 +55,7 @@ let cases_pattern_expr_of_name (loc,na) = match na with
   | Name id -> CPatAtom (loc,Some (Ident (loc,id)))
 
 type grammar_constr_prod_item =
-  | GramConstrTerminal of Token.pattern
+  | GramConstrTerminal of Tok.t
   | GramConstrNonTerminal of constr_prod_entry_key * identifier option
   | GramConstrListMark of int * bool
     (* tells action rule to make a list of the n previous parsed items; 
@@ -133,7 +133,7 @@ let make_cases_pattern_action
 
 let rec make_constr_prod_item assoc from forpat = function
   | GramConstrTerminal tok :: l ->
-      Gramext.Stoken tok :: make_constr_prod_item assoc from forpat l
+      gram_token_of_token tok :: make_constr_prod_item assoc from forpat l
   | GramConstrNonTerminal (nt, ovar) :: l ->
       symbol_of_constr_prod_entry_key assoc from forpat nt
       :: make_constr_prod_item assoc from forpat l
@@ -203,7 +203,7 @@ type grammar_prod_item =
       loc * argument_type * Gram.te prod_entry_key * identifier option
 
 let make_prod_item = function
-  | GramTerminal s -> (Gramext.Stoken (Lexer.terminal s), None)
+  | GramTerminal s -> (gram_token_of_string s, None)
   | GramNonTerminal (_,t,e,po) ->
       (symbol_of_prod_entry_key e, Option.map (fun p -> (p,t)) po)
 

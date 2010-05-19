@@ -28,7 +28,7 @@ open Vernac_
 open Module
 
 let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "where"; "at" ]
-let _ = List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
+let _ = List.iter Lexer.add_keyword vernac_kw
 
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)

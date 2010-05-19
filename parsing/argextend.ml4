@@ -105,7 +105,7 @@ let make_act loc act pil =
   make (List.rev pil)
 
 let make_prod_item = function
-  | GramTerminal s -> <:expr< (Gramext.Stoken (Lexer.terminal $str:s$)) >>
+  | GramTerminal s -> <:expr< gram_token_of_string $str:s$ >>
   | GramNonTerminal (_,_,g,_) ->
       <:expr< Pcoq.symbol_of_prod_entry_key $mlexpr_of_prod_entry_key g$ >>
 
@@ -249,7 +249,7 @@ EXTEND
 	GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then
-	    Lexer.add_token ("", s);
+	    Lexer.add_keyword s;
           GramTerminal s
     ] ]
   ;

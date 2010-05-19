@@ -66,6 +66,7 @@ Topconstr
 Genarg
 Ppextend
 Tacexpr
+Tok
 Lexer
 Extend
 Vernacexpr

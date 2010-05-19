@@ -17,8 +17,7 @@ let unloc loc = Stdpp.first_pos loc, Stdpp.last_pos loc
 let join_loc loc1 loc2 =
  if loc1 = dummy_loc or loc2 = dummy_loc then dummy_loc
  else Stdpp.encl_loc loc1 loc2
-type token = string*string
-type lexer = token Token.glexer
+type lexer = Tok.t Token.glexer
 
 ELSE (* official camlp4 of ocaml >= 3.10 *)
 

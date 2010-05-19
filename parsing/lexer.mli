@@ -18,7 +18,7 @@ type error =
 
 exception Error of error
 
-val add_token : string * string -> unit
+val add_keyword : string -> unit
 val remove_keyword : string -> unit
 val is_keyword : string -> bool
 
@@ -43,7 +43,7 @@ val restore_com_state: com_state -> unit
 
 val set_xml_output_comment : (string -> unit) -> unit
 
-val terminal : string -> string * string
+val terminal : string -> Tok.t
 
 (** The lexer of Coq *)
 

@@ -15,54 +15,57 @@ open Genarg
 open Topconstr
 open Libnames
 open Termops
+open Tok
 
 let all_with delta = make_red_flag [FBeta;FIota;FZeta;delta]
 
 let tactic_kw = [ "->"; "<-" ; "by" ]
-let _ = List.iter (fun s -> Lexer.add_token("",s)) tactic_kw
+let _ = List.iter Lexer.add_keyword tactic_kw
+
+let err () = raise Stream.Failure
 
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
 let test_lpar_id_coloneq =
   Gram.Entry.of_parser "lpar_id_coloneq"
     (fun strm ->
-      match Stream.npeek 1 strm with
-        | [("","(")] ->
-            (match Stream.npeek 2 strm with
-              | [_; ("IDENT",s)] ->
-                  (match Stream.npeek 3 strm with
-	            | [_; _; ("", ":=")] -> ()
-	            | _ -> raise Stream.Failure)
-	      | _ -> raise Stream.Failure)
-	| _ -> raise Stream.Failure)
+      match stream_nth 0 strm with
+        | KEYWORD "(" ->
+            (match stream_nth 1 strm with
+              | IDENT _ ->
+                  (match stream_nth 2 strm with
+	            | KEYWORD ":=" -> ()
+	            | _ -> err ())
+	      | _ -> err ())
+	| _ -> err ())
 
 (* idem for (x:=t) and (1:=t) *)
 let test_lpar_idnum_coloneq =
   Gram.Entry.of_parser "test_lpar_idnum_coloneq"
     (fun strm ->
-      match Stream.npeek 1 strm with
-        | [("","(")] ->
-            (match Stream.npeek 2 strm with
-              | [_; (("IDENT"|"INT"),_)] ->
-                  (match Stream.npeek 3 strm with
-                    | [_; _; ("", ":=")] -> ()
-                    | _ -> raise Stream.Failure)
-              | _ -> raise Stream.Failure)
-        | _ -> raise Stream.Failure)
+      match stream_nth 0 strm with
+        | KEYWORD "(" ->
+            (match stream_nth 1 strm with
+              | IDENT _ | INT _ ->
+                  (match stream_nth 2 strm with
+                    | KEYWORD ":=" -> ()
+                    | _ -> err ())
+              | _ -> err ())
+        | _ -> err ())
 
 (* idem for (x:t) *)
 let test_lpar_id_colon =
   Gram.Entry.of_parser "lpar_id_colon"
     (fun strm ->
-      match Stream.npeek 1 strm with
-        | [("","(")] ->
-            (match Stream.npeek 2 strm with
-              | [_; ("IDENT",id)] ->
-                  (match Stream.npeek 3 strm with
-                    | [_; _; ("", ":")] -> ()
-                    | _ -> raise Stream.Failure)
-              | _ -> raise Stream.Failure)
-        | _ -> raise Stream.Failure)
+      match stream_nth 0 strm with
+        | KEYWORD "(" ->
+            (match stream_nth 1 strm with
+              | IDENT _ ->
+                  (match stream_nth 2 strm with
+                    | KEYWORD ":" -> ()
+                    | _ -> err ())
+              | _ -> err ())
+        | _ -> err ())
 
 (* idem for (x1..xn:t) [n^2 complexity but exceptional use] *)
 let check_for_coloneq =
@@ -70,36 +73,36 @@ let check_for_coloneq =
     (fun strm ->
       let rec skip_to_rpar p n =
 	match list_last (Stream.npeek n strm) with
-        | ("","(") -> skip_to_rpar (p+1) (n+1)
-        | ("",")") -> if p=0 then n+1 else skip_to_rpar (p-1) (n+1)
-	| ("",".") -> raise Stream.Failure
+        | KEYWORD "(" -> skip_to_rpar (p+1) (n+1)
+        | KEYWORD ")" -> if p=0 then n+1 else skip_to_rpar (p-1) (n+1)
+	| KEYWORD "." -> err ()
 	| _ -> skip_to_rpar p (n+1) in
       let rec skip_names n =
 	match list_last (Stream.npeek n strm) with
-        | ("IDENT",_) | ("","_") -> skip_names (n+1)
-	| ("",":") -> skip_to_rpar 0 (n+1) (* skip a constr *)
-	| _ -> raise Stream.Failure in
+        | IDENT _ | KEYWORD "_" -> skip_names (n+1)
+	| KEYWORD ":" -> skip_to_rpar 0 (n+1) (* skip a constr *)
+	| _ -> err () in
       let rec skip_binders n =
 	match list_last (Stream.npeek n strm) with
-        | ("","(") -> skip_binders (skip_names (n+1))
-        | ("IDENT",_) | ("","_") -> skip_binders (n+1)
-	| ("",":=") -> ()
-	| _ -> raise Stream.Failure in
+        | KEYWORD "(" -> skip_binders (skip_names (n+1))
+        | IDENT _ | KEYWORD "_" -> skip_binders (n+1)
+	| KEYWORD ":=" -> ()
+	| _ -> err () in
       match Stream.npeek 1 strm with
-      | [("","(")] -> skip_binders 2
-      | _ -> raise Stream.Failure)
+      | [KEYWORD "("] -> skip_binders 2
+      | _ -> err ())
 
 let guess_lpar_ipat s strm =
-  match Stream.npeek 1 strm with
-    | [("","(")] ->
-        (match Stream.npeek 2 strm with
-          | [_; ("",("("|"["))] -> ()
-          | [_; ("IDENT",_)] ->
-              (match Stream.npeek 3 strm with
-                | [_; _; ("", s')] when s = s' -> ()
-                | _ -> raise Stream.Failure)
-          | _ -> raise Stream.Failure)
-    | _ -> raise Stream.Failure
+  match stream_nth 0 strm with
+    | KEYWORD "(" ->
+        (match stream_nth 1 strm with
+          | KEYWORD ("("|"[") -> ()
+          | IDENT _ ->
+              (match stream_nth 2 strm with
+                | KEYWORD s' when s = s' -> ()
+                | _ -> err ())
+          | _ -> err ())
+    | _ -> err ()
 
 let guess_lpar_coloneq =
   Gram.Entry.of_parser "guess_lpar_coloneq" (guess_lpar_ipat ":=")
@@ -110,9 +113,9 @@ let guess_lpar_colon =
 let lookup_at_as_coma =
   Gram.Entry.of_parser "lookup_at_as_coma"
     (fun strm ->
-      match Stream.npeek 1 strm with
-	| [("",(","|"at"|"as"))] -> ()
-	| _ -> raise Stream.Failure)
+      match stream_nth 0 strm with
+	| KEYWORD (","|"at"|"as") -> ()
+	| _ -> err ())
 
 open Constr
 open Prim

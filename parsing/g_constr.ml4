@@ -15,8 +15,8 @@ open Term
 open Names
 open Libnames
 open Topconstr
-
 open Util
+open Tok
 
 let constr_kw =
   [ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for";
@@ -24,7 +24,7 @@ let constr_kw =
     "Prop"; "Set"; "Type"; ".("; "_"; "..";
     "`{"; "`("; "{|"; "|}" ]
 
-let _ = List.iter (fun s -> Lexer.add_token("",s)) constr_kw
+let _ = List.iter Lexer.add_keyword constr_kw
 
 let mk_cast = function
     (c,(_,None)) -> c
@@ -67,60 +67,61 @@ let mk_fix(loc,kw,id,dcls) =
 let mk_single_fix (loc,kw,dcl) =
   let (id,_,_,_,_) = dcl in mk_fix(loc,kw,id,[dcl])
 
+let err () = raise Stream.Failure
+
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
 let lpar_id_coloneq =
   Gram.Entry.of_parser "test_lpar_id_coloneq"
     (fun strm ->
-      match Stream.npeek 1 strm with
-        | [("","(")] ->
-            (match Stream.npeek 2 strm with
-	      | [_; ("IDENT",s)] ->
-                  (match Stream.npeek 3 strm with
-                    | [_; _; ("", ":=")] ->
-                        Stream.junk strm; Stream.junk strm; Stream.junk strm;
+      match stream_nth 0 strm with
+        | KEYWORD "(" ->
+            (match stream_nth 1 strm with
+	      | IDENT s ->
+                  (match stream_nth 2 strm with
+                    | KEYWORD ":=" ->
+                        stream_njunk 3 strm;
                         Names.id_of_string s
-	            | _ -> raise Stream.Failure)
-              | _ -> raise Stream.Failure)
-        | _ -> raise Stream.Failure)
+	            | _ -> err ())
+              | _ -> err ())
+        | _ -> err ())
 
 let impl_ident =
   Gram.Entry.of_parser "impl_ident"
     (fun strm ->
-      match Stream.npeek 1 strm with
-	| [(_,"{")] ->
-	    (match Stream.npeek 2 strm with
-	      | [_;("IDENT",("wf"|"struct"|"measure"))] ->
-		  raise Stream.Failure
-	      | [_;("IDENT",s)] ->
-		  Stream.junk strm; Stream.junk strm;
+      match stream_nth 0 strm with
+	| KEYWORD "{" ->
+	    (match stream_nth 1 strm with
+	      | IDENT ("wf"|"struct"|"measure") -> err ()
+	      | IDENT s ->
+		  stream_njunk 2 strm;
 		  Names.id_of_string s
-	      | _ -> raise Stream.Failure)
-	| _ -> raise Stream.Failure)
+	      | _ -> err ())
+	| _ -> err ())
 
 let ident_colon =
   Gram.Entry.of_parser "ident_colon"
     (fun strm ->
-      match Stream.npeek 1 strm with
-	| [("IDENT",s)] ->
-            (match Stream.npeek 2 strm with
-              | [_; ("", ":")] ->
-                  Stream.junk strm; Stream.junk strm;
+      match stream_nth 0 strm with
+	| IDENT s ->
+            (match stream_nth 1 strm with
+              | KEYWORD ":" ->
+                  stream_njunk 2 strm;
                   Names.id_of_string s
-              | _ -> raise Stream.Failure)
-        | _ -> raise Stream.Failure)
+              | _ -> err ())
+        | _ -> err ())
 
 let ident_with =
   Gram.Entry.of_parser "ident_with"
     (fun strm ->
-      match Stream.npeek 1 strm with
-      | [("IDENT",s)] ->
-          (match Stream.npeek 2 strm with
-          | [_; ("", "with")] ->
-              Stream.junk strm; Stream.junk strm;
-              Names.id_of_string s
-          | _ -> raise Stream.Failure)
-      | _ -> raise Stream.Failure)
+      match stream_nth 0 strm with
+      | IDENT s ->
+          (match stream_nth 1 strm with
+             | KEYWORD "with" ->
+		 stream_njunk 2 strm;
+		 Names.id_of_string s
+             | _ -> err ())
+      | _ -> err ())
 
 let aliasvar = function CPatAlias (_, _, id) -> Some (Name id) | _ -> None
 

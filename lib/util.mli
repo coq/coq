@@ -269,7 +269,12 @@ val array_distinct : 'a array -> bool
 val array_union_map : ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
 val array_rev_to_list : 'a array -> 'a list
 
-(** {6 Matrices } *)
+(** {6 Streams. } *)
+
+val stream_nth : int -> 'a Stream.t -> 'a
+val stream_njunk : int -> 'a Stream.t -> unit
+
+(** {6 Matrices. } *)
 
 val matrix_transpose : 'a list list -> 'a list list
 

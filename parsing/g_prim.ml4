@@ -12,7 +12,7 @@ open Libnames
 open Topconstr
 
 let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "'"]
-let _ = List.iter (fun s -> Lexer.add_token("",s)) prim_kw
+let _ = List.iter Lexer.add_keyword prim_kw
 
 open Prim
 open Nametab

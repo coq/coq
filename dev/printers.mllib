@@ -93,6 +93,7 @@ Unification
 Cases
 Pretyping
 
+Tok
 Lexer
 Ppextend
 Genarg

@@ -1115,6 +1115,15 @@ let array_rev_to_list a =
     if i >= Array.length a then res else tolist (i+1) (a.(i) :: res) in
   tolist 0 []
 
+(* Stream *)
+
+let stream_nth n st =
+  try List.nth (Stream.npeek (n+1) st) n
+  with Failure _ -> raise Stream.Failure
+
+let stream_njunk n st =
+  for i = 1 to n do Stream.junk st done
+
 (* Matrices *)
 
 let matrix_transpose mat =

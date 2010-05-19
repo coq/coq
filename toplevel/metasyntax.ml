@@ -20,6 +20,7 @@ open Vernacexpr
 open Pcoq
 open Rawterm
 open Libnames
+open Tok
 open Lexer
 open Egrammar
 open Notation
@@ -28,7 +29,7 @@ open Nameops
 (**********************************************************************)
 (* Tokens                                                             *)
 
-let cache_token (_,s) = add_token ("", s)
+let cache_token (_,s) = add_keyword s
 
 let (inToken, outToken) =
   declare_object {(default_object "TOKEN") with
@@ -581,20 +582,20 @@ let is_not_small_constr = function
   | _ -> false
 
 let rec define_keywords_aux = function
-  | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal("IDENT",k) :: l
+  | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal(IDENT k) :: l
       when is_not_small_constr e ->
       message ("Defining '"^k^"' as keyword");
-      Lexer.add_token("",k);
-      n1 :: GramConstrTerminal("",k) :: define_keywords_aux l
+      Lexer.add_keyword k;
+      n1 :: GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | n :: l -> n :: define_keywords_aux l
   | [] -> []
 
   (* Ensure that IDENT articulation terminal symbols are keywords *)
 let define_keywords = function
-  | GramConstrTerminal("IDENT",k)::l ->
+  | GramConstrTerminal(IDENT k)::l ->
       message ("Defining '"^k^"' as keyword");
-      Lexer.add_token("",k);
-      GramConstrTerminal("",k) :: define_keywords_aux l
+      Lexer.add_keyword k;
+      GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | l -> define_keywords_aux l
 
 let distribute a ll = List.map (fun l -> a @ l) ll
