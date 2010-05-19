@@ -72,6 +72,13 @@ let _ = if w32 then begin
   Options.ocamlmklib := A w32ocamlmklib;
 end
 
+let _ =
+  if Coq_config.camlp4 = "camlp5" then begin
+    printf "Camlp5 is not supported by this ocamlbuild plugin\n";
+    printf "Use camlp4, or make, or both\n";
+    exit 1
+  end
+
 let ocaml = A Coq_config.ocaml
 let camlp4o = A Coq_config.camlp4o
 let camlp4incl = S[A"-I"; A Coq_config.camlp4lib]
@@ -270,10 +277,6 @@ let extra_rules () = begin
 	      T(tags_of_pathname ml4 ++ "p4option"); camlp4compat;
 	      A"-o"; Px ml; A"-impl"; P ml4]));
 
-  flag ["p4mod"] (A"pa_macro.cmo");
-  flag ["p4mod"] (A"pa_extend.cmo");
-  flag ["p4mod"] (A"q_MLast.cmo");
-
   flag_and_dep ["p4mod"; "use_grammar"] (P "parsing/grammar.cma");
   flag_and_dep ["p4mod"; "use_constr"] (P "parsing/q_constr.cmo");
 
@@ -304,10 +307,6 @@ let extra_rules () = begin
   flag ["link"; "ocaml"] (S [A"-rectypes"; camlp4incl]);
   flag ["compile"; "ocaml"; "ide"] lablgtkincl;
   flag ["link"; "ocaml"; "ide"] lablgtkincl;
-
-(** Extra libraries *)
-
-  ocaml_lib ~extern:true "gramlib";
 
 (** C code for the VM *)
 

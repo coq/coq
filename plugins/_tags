@@ -22,6 +22,7 @@
 "decl_mode/g_decl_mode.ml4": use_grammar
 
 "cc": include
+"decl_mode": include
 "extraction": include
 "firstorder": include
 "funind": include

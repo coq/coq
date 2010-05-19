@@ -1,14 +1,14 @@
 
 ## tags for binaries
 
-<scripts/coqmktop.{native,byte}> : use_str, use_unix, use_gramlib
-<scripts/coqc.{native,byte}> : use_unix, use_gramlib
+<scripts/coqmktop.{native,byte}> : use_str, use_unix, use_dynlink, use_camlp4
+<scripts/coqc.{native,byte}> : use_unix, use_dynlink, use_camlp4
 <tools/coqdep_boot.{native,byte}> : use_unix
-<tools/coqdep.{native,byte}> : use_unix, use_gramlib
+<tools/coqdep.{native,byte}> : use_unix, use_dynlink, use_camlp4
 <tools/coq_tex.{native,byte}> : use_str
 <tools/coq_makefile.{native,byte}> : use_str
 <tools/coqdoc/main.{native,byte}> : use_str
-<checker/main.{native,byte}> : use_str, use_unix, use_gramlib
+<checker/main.{native,byte}> : use_str, use_unix, use_dynlink, use_camlp4
 <plugins/micromega/csdpcert.{native,byte}> : use_nums, use_unix
 
 ## tags for ide
