@@ -420,16 +420,16 @@ esac
 CAMLVERSION=`"$bytecamlc" -version`
 
 case $CAMLVERSION in
-    1.*|2.*|3.00|3.01|3.02|3.03|3.03alpha|3.04|3.05beta|3.05|3.06|3.07*|3.08*|3.09.[012])
+    1.*|2.*|3.0*)
 	echo "Your version of Objective-Caml is $CAMLVERSION."
 	if [ "$force_caml_version" = "yes" ]; then
 	    echo "*Warning* You are compiling Coq with an outdated version of Objective-Caml."
 	else
-	    echo "          You need Objective-Caml 3.09.3 or later."
+	    echo "          You need Objective-Caml 3.10.0 or later."
 	    echo "          Configuration script failed!"
 	    exit 1
 	fi;;
-    ?*)
+    3.1*)
 	CAMLP4COMPAT="-loc loc" 
 	echo "You have Objective-Caml $CAMLVERSION. Good!";;
     *)
@@ -448,12 +448,6 @@ case $ARCH in
       CAMLLIB=`"$CAMLC" -where | sed -e 's/^\(.*\)$/\1/'` ;;
     *)
       CAMLLIB=`"$CAMLC" -where`
-esac
-
-# We need to set a special flag for OCaml 3.07
-case  $CAMLVERSION in 
-	3.07*)
-	  cflags="$cflags -DOCAML_307";;
 esac
 
 if [ "$coq_debug_flag" = "-g" ]; then
@@ -547,14 +541,7 @@ CAMLP4BIN=${CAMLBIN}
 if [ "$best_compiler" = "opt" ] ; then
   if test -e "$nativecamlc" || test -e "`which $nativecamlc`"; then
       CAMLOPTVERSION=`"$nativecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
-      if [ "`uname -s`" = "Darwin" -a "$ARCH" = "i386" ]; then
-	  case $CAMLOPTVERSION in
-	      3.09.3|3.1?*) ;;
-	      *) echo "Native compilation on MacOS X Pentium requires Objective-Caml >= 3.09.3,"
-		 best_compiler=byte
-		 echo "only the bytecode version of Coq will be available."
-	  esac
-      elif [ ! -f $FULLCAMLP4LIB/gramlib.cmxa ]; then
+      if [ ! -f $FULLCAMLP4LIB/gramlib.cmxa ]; then
 	  best_compiler=byte
 	  echo "Cannot find native-code $CAMLP4,"
 	  echo "only the bytecode version of Coq will be available."

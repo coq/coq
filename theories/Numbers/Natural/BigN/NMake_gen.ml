@@ -34,16 +34,10 @@ let rec iter_name i j base sep =
   if i >= j then base^(string_of_int i)
   else (iter_name i (j-1) base sep)^sep^" "^base^(string_of_int j)
 
-(* NB: in ocaml >= 3.10, we could use Printf.ifprintf for printing to
-   /dev/null, but for being compatible with earlier ocaml and not
-   relying on system-dependent stuff like open_out "/dev/null",
-   let's use instead a magical hack *)
-
 (* Standard printer, with a final newline *)
 let pr s = Printf.printf (s^^"\n")
 (* Printing to /dev/null *)
-let pn = (fun s -> Obj.magic (fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ -> ())
-	  : ('a, out_channel, unit) format -> 'a)
+let pn s = Printf.ifprintf stdout s
 (* Proof printer : prints iff gen_proof is true *)
 let pp = if gen_proof then pr else pn
 (* Printer for admitted parts : prints iff gen_proof is false *)

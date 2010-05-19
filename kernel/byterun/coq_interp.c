@@ -80,13 +80,6 @@ sp is a local copy of the global variable extern_sp. */
 #   define print_int(i) 
 #endif
 
-/* Wrapper pour caml_modify */ 	 
-#ifdef OCAML_307 	 
-#define CAML_MODIFY(a,b) modify(a,b) 	 
-#else 	 
-#define CAML_MODIFY(a,b) caml_modify(a,b) 	 
-#endif
-
 /* GC interface */
 #define Setup_for_gc { sp -= 2; sp[0] = accu; sp[1] = coq_env; coq_sp = sp; }
 #define Restore_after_gc { accu = sp[0]; coq_env = sp[1]; sp += 2; }
@@ -659,7 +652,7 @@ value coq_interprete
 	  Field(accu, 0) = sp[0];
 	  *sp = accu;
 	  /* mise a jour du block accumulate */
-	  CAML_MODIFY(&Field(p[i], 1),*sp);
+	  caml_modify(&Field(p[i], 1),*sp);
 	  sp++;
 	}
 	pc += nfunc;
@@ -830,7 +823,7 @@ value coq_interprete
       
       Instruct(SETFIELD0){
 	print_instr("SETFIELD0");
-	CAML_MODIFY(&Field(accu, 0),*sp);
+	caml_modify(&Field(accu, 0),*sp);
 	sp++;
 	Next;
       }
@@ -838,7 +831,7 @@ value coq_interprete
       Instruct(SETFIELD1){
         int i, j, size, size_aux;
 	print_instr("SETFIELD1");
-	CAML_MODIFY(&Field(accu, 1),*sp);
+	caml_modify(&Field(accu, 1),*sp);
        	sp++;
 	Next; 
       }
@@ -856,9 +849,9 @@ value coq_interprete
 	    *sp = accu;
 	    Alloc_small(accu, 1, ATOM_COFIX_TAG);
 	    Field(accu, 0) = Field(Field(*sp, 1), 0);
-	    CAML_MODIFY(&Field(*sp, 1), accu);
+	    caml_modify(&Field(*sp, 1), accu);
 	    accu = *sp; sp++;
-            CAML_MODIFY(&Field(*sp, i), accu);
+            caml_modify(&Field(*sp, i), accu);
 	  }
 	}
 	sp++;
@@ -867,7 +860,7 @@ value coq_interprete
       
       Instruct(SETFIELD){
 	print_instr("SETFIELD");
-	CAML_MODIFY(&Field(accu, *pc),*sp);
+	caml_modify(&Field(accu, *pc),*sp);
 	sp++; pc++;
 	Next;
       }	

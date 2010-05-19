@@ -32,14 +32,9 @@ module L =
 
 module G = Grammar.GMake(L)
 
-ELSE
+ELSE (* official camlp4 of ocaml >= 3.10 *)
 
-module L =
-  struct
-    let lexer = Lexer.lexer
-  end
-
-module G = Grammar.Make(L)
+TODO
 
 END
 
