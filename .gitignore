@@ -106,7 +106,6 @@ ide/config_parser.mli
 
 lib/pp.ml
 lib/compat.ml
-lib/refutpat.ml
 parsing/g_xml.ml
 parsing/g_prim.ml
 parsing/q_util.ml
@@ -141,7 +140,6 @@ plugins/funind/g_indfun.ml
 plugins/omega/g_omega.ml
 plugins/quote/g_quote.ml
 plugins/groebner/groebner.ml
-plugins/groebner/ideal.ml
 plugins/micromega/g_micromega.ml
 plugins/subtac/g_subtac.ml
 plugins/fourier/g_fourier.ml

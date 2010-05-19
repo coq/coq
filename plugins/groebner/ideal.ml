@@ -6,9 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4deps: "lib/refutpat.cmo" i*)
-(* NB: The above camlp4 extension adds a let* syntax for refutable patterns *)
-
 (*
    Nullstellensatz par calcul de base de Grobner
 
@@ -23,6 +20,30 @@
  *)
 
 open Utile
+
+(* NB: Loic is using a coding-style "let x::q = ... in ..." that
+   produces lots of warnings about non-exhaustive pattern matchs.
+   Even worse, it is not clear whether a [Match_failure] could
+   happen (and be catched by a "with _ ->") or not. Loic told me
+   it shouldn't happen.
+
+   In a first time, I used a camlp4 extension (search history
+   for lib/refutpat.ml4) for introducing an ad-hoc syntax
+   "let* x::q = ...". This is now removed (too complex during
+   porting to camlp4).
+
+   Now, we simply use the following function that turns x::q
+   into (x,q) and hence an irrefutable pattern. Yes, this adds
+   a (small) cost since the intermediate pair is allocated
+   (in opt, the cost might even be 0 due to inlining).
+   If somebody want someday to remove this extra cost,
+   (x::q) could also be turned brutally into (x,q) by Obj.magic
+   (beware: be sure no floats are around in this case).
+*)
+
+let of_cons = function
+  | [] -> assert false
+  | x::q -> x,q
 
 exception NotInIdeal
 
@@ -741,7 +762,7 @@ let normal_form d p g mg onlyhead =
     | (a,v)::p' ->
 	(try
 	   let q = find_reductor d v g mg in
-	   let* (b,u)::q' = q.pol in
+	   let (b,u),q' = of_cons q.pol in
 	   let c = P.pgcdP a b in
 	   let a' = P.divP b c in
 	   let b' = P.oppP (P.divP a c) in
@@ -770,7 +791,7 @@ let reduce_rem d r lt lq =
   r
 
 let tail_normal_form d p g mg =
-  let* (a,v)::p' = p in
+  let (a,v),p' = of_cons p in
   let (c,r)= (normal_form d p' g mg false) in
   plusP d [(P.multP a c,v)] r
 
@@ -801,8 +822,8 @@ let head_normal_form d p lt mt =
     then ((* info "=";*) [])
     else (
       while !h <> [] && (!g).pol <> [] do
-	let* (a,v)::p' = !h in
-	let* (b,u)::q' = (!g).pol in
+	let (a,v),p' = of_cons !h in
+	let (b,u),q' = of_cons (!g).pol in
 	let c = P.pgcdP a b in
 	let a' = P.divP b c in
 	let b' = P.oppP (P.divP a c) in
@@ -830,7 +851,7 @@ let head_reduce d lq lt mt =
   let ls = ref lq in
   let lq = ref [] in
   while !ls <> [] do
-    let* p::ls1 = !ls in
+    let p,ls1 = of_cons !ls in
     ls := ls1;
     if !homogeneous && p.pol<>[] && deg_hom p.pol > deg_hom !pol_courant
     then info "h"
@@ -959,8 +980,8 @@ let head_normal_form3 d p lt mt =
     then ((* info "=";*) [])
     else (
       while !h <> [] && (!g).pol <> [] do
-	let* (a,v)::p' = !h in
-        let* (b,u)::q' = (!g).pol in
+	let (a,v),p' = of_cons !h in
+        let (b,u),q' = of_cons (!g).pol in
 	let c = P.pgcdP a b in
 	let a' = P.divP b c in
 	let b' = P.oppP (P.divP a c) in
@@ -987,14 +1008,14 @@ let janet3 d lf p0 =
   let r = ref p0 in
   let lf = List.map (pol_to_pol3 d) lf in
 
-  let* f::lf1 = lf in
+  let f,lf1 = of_cons lf in
   let lt = ref [f] in
   let mt = ref (hashtbl_multiplicative d !lt) in
   let lq = ref lf1 in
   r := reduce_rem  d !r !lt !lq ; (* janet_normal_form  d !r !lt !mt ;*)
   info ("reste: "^(stringPcut !r)^"\n");
   while !lq <> [] && !r <> [] do
-    let* p::lq1 = !lq in
+    let p,lq1 = of_cons !lq in
     lq := lq1;
 (*
     if p.pol = p.anc
@@ -1272,7 +1293,7 @@ let pbuchf d pq p lp0=
       match lpc with
         [] -> test_dans_ideal d p lp lp0
       | _ ->
-	  let* a::lpc2 = choix_spol d !pol_courant lpc in
+	  let a,lpc2 = of_cons (choix_spol d !pol_courant lpc) in
 	  if !homogeneous && a<>[] && deg_hom a > deg_hom !pol_courant
 	  then (info "h";pbuchf lp lpc2)
 	  else

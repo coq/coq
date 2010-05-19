@@ -276,7 +276,6 @@ let extra_rules () = begin
 
   flag_and_dep ["p4mod"; "use_grammar"] (P "parsing/grammar.cma");
   flag_and_dep ["p4mod"; "use_constr"] (P "parsing/q_constr.cmo");
-  flag_and_dep ["p4mod"; "use_refutpat"] (P "lib/refutpat.cmo");
 
 (** Special case of toplevel/mltop.ml4:
     - mltop.ml will be the old mltop.optml and be used to obtain mltop.cmx
