@@ -495,24 +495,38 @@ let lookup_subterms env ind =
   let (_,mip) = lookup_mind_specif env ind in
   mip.mind_recargs
 
+
+let match_inductive ind ra =
+  match ra with
+    | (Mrec i | Imbr i) -> eq_ind ind i
+    | Norec -> false
+
 (* In {match c as z in ci y_s return P with |C_i x_s => t end}
    [branches_specif renv c_spec ci] returns an array of x_s specs knowing
    c_spec. *)
 let branches_specif renv c_spec ci =
   let car = 
+    (* We fetch the regular tree associated to the inductive of the match.
+       This is just to get the number of constructors (and constructor
+       arities) that fit the match branches without forcing c_spec.
+       Note that c_spec might be more precise than [v] below, because of
+       nested inductive types. *)
     let (_,mip) = lookup_mind_specif renv.env ci.ci_ind in
     let v = dest_subterms mip.mind_recargs in
       Array.map List.length v in
     Array.mapi
       (fun i nca -> (* i+1-th cstructor has arity nca *)
-	 let cs = lazy 
+	 let lvra = lazy 
 	   (match Lazy.force c_spec with
-		Subterm (_,t) ->
-		  Array.map (fun t -> spec_of_tree (lazy t))
-		    (Array.of_list (dest_subterms t).(i))
-	      | Dead_code -> Array.create nca (lazy Dead_code)
-	      | Not_subterm -> Array.create nca (lazy Not_subterm)) in
-	 list_tabulate (fun j -> (Lazy.force cs).(j)) nca)
+		Subterm (_,t) when match_inductive ci.ci_ind (dest_recarg t) ->
+		  let vra = Array.of_list (dest_subterms t).(i) in
+		  assert (nca = Array.length vra);
+		  Array.map
+		    (fun t -> Lazy.force (spec_of_tree (lazy t)))
+		    vra
+	      | Dead_code -> Array.create nca Dead_code
+	      | _ -> Array.create nca Not_subterm) in
+	 list_tabulate (fun j -> lazy (Lazy.force lvra).(j)) nca)
       car 
 
 (* [subterm_specif renv t] computes the recursive structure of [t] and
@@ -595,20 +609,8 @@ and stack_element_specif = function
   |SArg x -> x
 
 and extract_stack renv a = function
-  |[] -> Lazy.lazy_from_val Not_subterm , []
-  |h::t -> lazy ((* because commutavive cuts are not compatible with typing, 
-		     arg_spec must carry the good wf_path *)
-       match Lazy.force (stack_element_specif h) with
-	     |Subterm(k,wpath) as spec -> begin
-	     	 try let (inda,_) = find_inductive renv.env a in
-	     	   match fst (Rtree.dest_node wpath) with
-		     |Norec -> assert false
-		     |(Mrec ind | Imbr ind) -> if inda = ind then spec else Dead_code
-	     	 with |Not_found -> Dead_code
-	     	   (* Something not of inductive type cannot be used as
-	     	      fixpoint recursive argument *)
-	       end
-	     |_ as spec -> spec) , t
+  | [] -> Lazy.lazy_from_val Not_subterm , []
+  | h::t -> stack_element_specif h, t
 
 (* Check term c can be applied to one of the mutual fixpoints. *)
 let check_is_subterm x =
@@ -733,7 +735,7 @@ let check_one_fix renv recpos def =
 	    assert (l = []);
 	    check_rec_call renv [] a ;
 	    let spec, stack' = extract_stack renv a stack in
-		     check_rec_call (push_var renv (x,a,spec)) stack' b
+	    check_rec_call (push_var renv (x,a,spec)) stack' b
 
         | Prod (x,a,b) ->
 	    assert (l = [] && stack = []);
