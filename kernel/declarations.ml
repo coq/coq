@@ -75,7 +75,9 @@ type recarg =
   | Imbr of inductive
 
 let subst_recarg sub r = match r with
-  | Norec | Mrec _  -> r
+  | Norec -> r
+  | Mrec (kn,i) -> let kn' = subst_ind sub kn in
+      if kn==kn' then r else Mrec (kn',i)
   | Imbr (kn,i) -> let kn' = subst_ind sub kn in
       if kn==kn' then r else Imbr (kn',i)
 
@@ -89,8 +91,14 @@ let mk_paths r recargs =
 
 let dest_recarg p = fst (Rtree.dest_node p)
 
+(* dest_subterms returns the sizes of each argument of each constructor of
+   an inductive object of size [p]. This should never be done for Norec,
+   because the number of sons does not correspond to the number of
+   constructors.
+ *)
 let dest_subterms p =
-  let (_,cstrs) = Rtree.dest_node p in
+  let (ra,cstrs) = Rtree.dest_node p in
+  assert (ra<>Norec);
   Array.map (fun t -> Array.to_list (snd (Rtree.dest_node t))) cstrs
 
 let recarg_length p j =
