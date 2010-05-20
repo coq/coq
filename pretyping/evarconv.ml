@@ -548,11 +548,15 @@ let apply_conversion_problem_heuristic env evd pbty t1 t2 =
 
 let consider_remaining_unif_problems env evd =
   let (evd,pbs) = extract_all_conv_pbs evd in
-  List.fold_left
+  let heuristic_solved_evd = List.fold_left
     (fun evd (pbty,env,t1,t2) ->
       let evd', b = apply_conversion_problem_heuristic env evd pbty t1 t2 in
 	if b then evd' else Pretype_errors.error_cannot_unify env evd (t1, t2))
-    evd pbs
+    evd pbs in
+    Evd.fold_undefined (fun ev ev_info evd' -> match ev_info.evar_source with
+			  |_,ImpossibleCase -> 
+			     Evd.define ev (j_type (coq_unit_judge ())) evd'
+			  |_ -> evd') heuristic_solved_evd heuristic_solved_evd
 
 (* Main entry points *)
 

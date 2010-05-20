@@ -61,8 +61,7 @@ val it_mkNamedLambda_or_LetIn : init:constr -> named_context -> constr
 val it_named_context_quantifier :
   (named_declaration -> 'a -> 'a) -> init:'a -> named_context -> 'a
 
-(*********************************************************************
-   Generic iterators on constr                                        *)
+(** {6 Generic iterators on constr} *)
 
 val map_constr_with_named_binders :
   (name -> 'a -> 'a) ->
@@ -248,3 +247,7 @@ val has_polymorphic_type : constant -> bool
 val on_judgment       : (types -> types) -> unsafe_judgment -> unsafe_judgment
 val on_judgment_value : (types -> types) -> unsafe_judgment -> unsafe_judgment
 val on_judgment_type  : (types -> types) -> unsafe_judgment -> unsafe_judgment
+
+(** {6 Functions to deal with impossible cases } *)
+val set_impossible_default_clause : constr * types -> unit
+val coq_unit_judge : unit -> unsafe_judgment
