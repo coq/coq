@@ -88,7 +88,7 @@ val collect_lams : ml_ast -> ml_ident list * ml_ast
 val collect_n_lams : int -> ml_ast -> ml_ident list * ml_ast
 val remove_n_lams : int -> ml_ast -> ml_ast
 val nb_lams : ml_ast -> int
-
+val named_lams : ml_ident list -> ml_ast -> ml_ast
 val dummy_lams : ml_ast -> int -> ml_ast
 val anonym_or_dummy_lams : ml_ast -> signature -> ml_ast
 

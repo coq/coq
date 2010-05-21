@@ -94,7 +94,15 @@ let rec pp_expr env args =
 		 prlist_with_sep spc (pp_cons_args env) args')
 	in
 	if i = Coinductive then paren (str "delay " ++ st) else st
-    | MLcase ((i,_),t, pv) ->
+    | MLcase (_,t,pv) when is_custom_match pv ->
+	let mkfun (_,ids,e) =
+	  if ids <> [] then named_lams (List.rev ids) e
+	  else dummy_lams (ast_lift 1 e) 1
+	in
+	hov 2 (str (find_custom_match pv) ++ fnl () ++
+		 prvect (fun tr -> pp_expr env [] (mkfun tr) ++ fnl ()) pv
+	       ++ pp_expr env [] t)
+     | MLcase ((i,_),t, pv) ->
 	let e =
 	  if i <> Coinductive then pp_expr env [] t
 	  else paren (str "force" ++ spc () ++ pp_expr env [] t)

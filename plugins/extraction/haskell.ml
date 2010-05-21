@@ -146,6 +146,14 @@ let rec pp_expr par env args =
 	assert (args=[]);
 	pp_par par (pp_global Cons r ++ spc () ++
 		    prlist_with_sep spc (pp_expr true env []) args')
+    | MLcase (_,t, pv) when is_custom_match pv ->
+	let mkfun (_,ids,e) =
+	  if ids <> [] then named_lams (List.rev ids) e
+	  else dummy_lams (ast_lift 1 e) 1
+	in
+	hov 2 (str (find_custom_match pv) ++ fnl () ++
+		 prvect (fun tr -> pp_expr true env [] (mkfun tr) ++ fnl ()) pv
+	       ++ pp_expr true env [] t)
     | MLcase ((_,factors),t, pv) ->
       	apply (pp_par par'
 		 (v 0 (str "case " ++ pp_expr false env [] t ++ str " of" ++

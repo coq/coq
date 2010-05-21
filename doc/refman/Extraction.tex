@@ -255,12 +255,48 @@ types and constructors.  For instance, the user may want to use the ML
 native boolean type instead of \Coq\ one.  The syntax is the following:
 
 \begin{description}
-\item{\tt Extract Inductive \qualid\ => \str\ [ \str\ \dots \str\ ].} ~\par
+\item{\tt Extract Inductive \qualid\ => \str\ [ \str\ \dots \str\ ]\
+{\it optstring}.} ~\par
   Give an ML extraction for the given inductive type. You must specify
   extractions for the type itself (first \str) and all its
-  constructors (between square brackets). The ML extraction must be an
-  ML recursive datatype.
+  constructors (between square brackets). If given, the final optional
+  string should contain a function emulating pattern-matching over this
+  inductive type. If this optional string is not given, the ML
+  extraction must be an ML inductive datatype, and the native
+  pattern-matching of the language will be used.
 \end{description}
+
+For an inductive type with $k$ constructor, the function used to
+emulate the match should expect $(k+1)$ arguments, first the $k$
+branches in functional form, and then the inductive element to
+destruct. For instance, the match branch \verb$| S n => foo$ gives the
+functional form \verb$(fun n -> foo)$. Note that a constructor with no
+argument is considered to have one unit argument, in order to block
+early evaluation of the branch: \verb$| O => bar$ leads to the functional
+form \verb$(fun () -> bar)$. For instance, when extracting {\tt nat}
+into {\tt int}, the code to provide has type:
+{\tt (unit->'a)->(int->'a)->int->'a}.
+    
+As for {\tt Extract Inductive}, this command should be used with care:
+\begin{itemize}
+\item The ML code provided by the user is currently \emph{not} checked at all by
+  extraction, even for syntax errors.
+
+\item Extracting an inductive type to a pre-existing ML inductive type
+is quite sound. But extracting to a general type (by providing an
+ad-hoc pattern-matching) will often \emph{not} be fully rigorously
+correct.  For instance, when extracting {\tt nat} to Ocaml's {\tt
+int}, it is theoretically possible to build {\tt nat} values that are
+larger than Ocaml's {\tt max\_int}. It is the user's responsability to
+be sure that no overflow or other bad events occur in practice.
+
+\item Translating an inductive type to an ML type does \emph{not}
+magically improve the asymptotic complexity of functions, even if the
+ML type is an efficient representation. For instance, when extracting
+{\tt nat} to Ocaml's {\tt int}, the function {\tt mult} stays
+quadratic. It might be interesting to associate this translation with
+some specific {\tt Extract Constant} when primitive counterparts exist.
+\end{itemize}
 
 \Example
 Typical examples are the following:
@@ -276,6 +312,13 @@ as infix constructor or type.
 \begin{coq_example}
 Extract Inductive list => "list" [ "[]" "(::)" ].
 Extract Inductive prod => "(*)"  [ "(,)" ].
+\end{coq_example}
+
+As an example of translation to a non-inductive datatype, let's turn
+{\tt nat} into Ocaml's {\tt int} (see caveat above):
+\begin{coq_example}
+Extract Inductive nat => int [ "0" "succ" ]
+ "(fun fO fS n => if n=0 then fO () else fS (n-1))".
 \end{coq_example}
 
 \asubsection{Avoiding conflicts with existing filenames}

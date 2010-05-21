@@ -135,6 +135,9 @@ val is_inline_custom : global_reference -> bool
 val find_custom : global_reference -> string
 val find_type_custom : global_reference -> string list * string
 
+val is_custom_match : ml_branch array -> bool
+val find_custom_match : ml_branch array -> string
+
 (*s Extraction commands. *)
 
 val extraction_language : lang -> unit
@@ -143,7 +146,8 @@ val print_extraction_inline : unit -> unit
 val reset_extraction_inline : unit -> unit
 val extract_constant_inline :
   bool -> reference -> string list -> string -> unit
-val extract_inductive : reference -> string * string list -> unit
+val extract_inductive :
+  reference -> string -> string list -> string option -> unit
 val extraction_implicit : reference -> int list -> unit
 
 (*s Table of blacklisted filenames *)
