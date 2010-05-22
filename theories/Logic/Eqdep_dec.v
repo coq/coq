@@ -166,6 +166,12 @@ Theorem eq_dep_eq_dec :
      forall (P:A->Type) (p:A) (x y:P p), eq_dep A P p x p y -> x = y.
 Proof (fun A eq_dec => eq_rect_eq__eq_dep_eq A (eq_rect_eq_dec eq_dec)).
 
+Theorem UIP_dec :
+  forall (A:Type),
+    (forall x y:A, {x = y} + {x <> y}) ->
+    forall (x y:A) (p1 p2:x = y), p1 = p2.
+Proof (fun A eq_dec => eq_dep_eq__UIP A (eq_dep_eq_dec eq_dec)).
+
 Unset Implicit Arguments.
 
 (************************************************************************)
