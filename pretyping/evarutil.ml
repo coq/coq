@@ -349,6 +349,16 @@ let e_new_evar evdref env ?(src=(dummy_loc,InternalHole)) ?filter ty =
   evdref := evd';
   ev
 
+(* This assumes an evar with identity instance and generalizes it over only 
+   the de Bruijn part of the context *)
+let generalize_evar_over_rels sigma (ev,args) =
+  let evi = Evd.find sigma ev in
+  let sign = named_context_of_val evi.evar_hyps in
+  List.fold_left2
+    (fun (c,inst as x) a d ->
+      if isRel a then (mkNamedProd_or_LetIn d c,a::inst) else x)
+     (evi.evar_concl,[]) (Array.to_list args) sign
+
 (*------------------------------------*
  * operations on the evar constraints *
  *------------------------------------*)

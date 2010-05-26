@@ -229,16 +229,17 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let { sigma=sigma } = Proof.V82.subgoals pf in
   let rec fill_holes c =
     match kind_of_term c with
-    | Evar (e,_) ->
+    | Evar (e,args) ->
 	let h = next_ident_away (id_of_string "H") !avoid in
-	let ty = (Evd.find sigma e).evar_concl in
+	let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
 	avoid := h::!avoid;
 	ownSign := add_named_decl (h,None,ty) !ownSign;
-	mkVar h
+	applist (mkVar h, inst)
     | _ -> map_constr fill_holes c
   in
-  let invProof =
-    it_mkNamedLambda_or_LetIn (fill_holes pfterm) !ownSign
+  let c = fill_holes pfterm in
+  (* warning: side-effect on ownSign *)
+  let invProof = it_mkNamedLambda_or_LetIn c !ownSign
   in
   invProof
 
