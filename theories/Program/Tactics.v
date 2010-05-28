@@ -302,10 +302,8 @@ Ltac refine_hyp c :=
    possibly using [program_simplify] to use standard goal-cleaning tactics. *)
 
 Ltac program_simplify :=
-(*  arnaud: enlever la première ligne en faveur de la suite. *)
-simpl ; intros ; destruct_conjs ; simpl proj1_sig in * ; subst* ; autoinjections ; try discriminates ;
-(*  arnaud: restore: simpl in |- *; intros ; destruct_all_rec_calls ; repeat (destruct_conjs; simpl proj1_sig in * );
-  subst*; autoinjections ; try discriminates ;*)
+simpl in |- *; intros ; destruct_all_rec_calls ; repeat (destruct_conjs; simpl proj1_sig in * );
+  subst*; autoinjections ; try discriminates ;
     try (solve [ red ; intros ; destruct_conjs ; autoinjections ; discriminates ]).
 
 Ltac program_solve_wf :=
