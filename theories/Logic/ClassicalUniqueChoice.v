@@ -46,9 +46,10 @@ Qed.
 
 Require Import Setoid.
 
-Theorem classic_set : ((forall P:Prop, {P} + {~ P}) -> False) -> False.
+Theorem classic_set_in_prop_context :
+  forall C:Prop, ((forall P:Prop, {P} + {~ P}) -> C) -> C.
 Proof.
-intro HnotEM.
+intros C HnotEM.
 set (R := fun A b => A /\ true = b \/ ~ A /\ false = b).
 assert (H :  exists f : Prop -> bool, (forall A:Prop, R A (f A))).
 apply unique_choice.
@@ -80,3 +81,11 @@ destruct (f P).
     assumption.
 Qed.
 
+Corollary not_not_classic_set :
+  ((forall P:Prop, {P} + {~ P}) -> False) -> False.
+Proof.
+apply classic_set_in_prop_context.
+Qed.
+
+(* Compatibility *)
+Notation classic_set := not_not_classic_set (only parsing).
