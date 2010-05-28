@@ -70,8 +70,6 @@ val connect : (out_channel -> unit) -> (in_channel -> 'a) -> string -> 'a
 val run_command : (string -> string) -> (string -> unit) -> string ->
   Unix.process_status * string
 
-val search_exe_in_path : string -> string option
-
 (** {6 Time stamps.} *)
 
 type time
