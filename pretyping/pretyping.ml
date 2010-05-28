@@ -244,41 +244,29 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | _ -> name
 
   let pretype_id loc env (lvar,unbndltacvars) id =
+    (* Look for the binder of [id] *)
     try
       let (n,_,typ) = lookup_rel_id id (rel_context env) in
       { uj_val  = mkRel n; uj_type = lift n typ }
     with Not_found ->
+    (* Check if [id] is an ltac variable *)
     try
       List.assoc id lvar
     with Not_found ->
+    (* Check if [id] is a section or goal variable *)
     try
       let (_,_,typ) = lookup_named id env in
       { uj_val  = mkVar id; uj_type = typ }
     with Not_found ->
-    try (* To build a nicer ltac error message *)
+    (* [id] not found, build nice error message if [id] yet known from ltac *)
+    try
       match List.assoc id unbndltacvars with
       | None -> user_err_loc (loc,"",
 	  str "Variable " ++ pr_id id ++ str " should be bound to a term.")
       | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
     with Not_found ->
+    (* [id] not found, standard error message *)
       error_var_not_found_loc loc id
-
-  (* make a dependent predicate from an undependent one *)
-
-  let make_dep_of_undep env (IndType (indf,realargs)) pj =
-    let n = List.length realargs in
-    let rec decomp n p =
-      if n=0 then p else
-	match kind_of_term p with
-	  | Lambda (_,_,c) -> decomp (n-1) c
-	  | _ -> decomp (n-1) (applist (lift 1 p, [mkRel 1]))
-    in
-    let sign,s = decompose_prod_n n pj.uj_type in
-    let ind = build_dependent_inductive env indf in
-    let s' = mkProd (Anonymous, ind, s) in
-    let ccl = lift 1 (decomp n pj.uj_val) in
-    let ccl' = mkLambda (Anonymous, ind, ccl) in
-      {uj_val=it_mkLambda ccl' sign; uj_type=it_mkProd s' sign}
 
   let evar_kind_of_term sigma c =
     kind_of_term (whd_evar sigma c)
