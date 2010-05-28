@@ -1433,8 +1433,8 @@ let micromega_gen
       Tacticals.tclFAIL 0 (Pp.str 
       (" Skipping what remains of this tactic: the complexity of the goal requires "
       ^ "the use of a specialized external tool called csdp. \n\n" 
-      ^ "Unfortunately this instance of Coq isn't aware of the presence of any \"csdp\" executable. \n\n"
-      ^ "You may need to specify the location during Coq's pre-compilation configuration step")) gl
+      ^ "Unfortunately Coq isn't aware of the presence of any \"csdp\" executable in the path. \n\n"
+      ^ "Csdp packages are provided by some OS distributions; binaries and source code can be downloaded from https://projects.coin-or.org/Csdp")) gl
 
 let lift_ratproof  prover l =
  match prover l with
@@ -1466,9 +1466,9 @@ let csdp_cache = "csdp.cache"
   *)
 
 let require_csdp =
-  match System.search_exe_in_path "csdp" with
-    | Some _ -> lazy ()
-    | _ -> lazy (raise CsdpNotFound)
+  if System.is_in_system_path "csdp" 
+  then lazy ()
+  else lazy (raise CsdpNotFound)
 
 let really_call_csdpcert : provername -> micromega_polys -> Sos_types.positivstellensatz option  =
   fun provername poly ->
