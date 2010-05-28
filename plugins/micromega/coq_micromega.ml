@@ -1462,7 +1462,7 @@ let csdp_cache = "csdp.cache"
 (**
   * Build the command to call csdpcert, and launch it. This in turn will call
   * the sos driver to the csdp executable.
-  * Throw CsdpNotFound if a Coq isn't aware of any csdp executable.
+  * Throw CsdpNotFound if Coq isn't aware of any csdp executable.
   *)
 
 let require_csdp =
