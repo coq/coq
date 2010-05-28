@@ -8,6 +8,11 @@
 (*                                                                      *)
 (* Micromega: A reflexive tactic using the Positivstellensatz           *)
 (*                                                                      *)
+(* ** Utility functions **                                              *)
+(*                                                                      *)
+(* - Modules CoqToCaml, CamlToCoq                                       *)
+(* - Modules Cmp, Tag, TagSet                                           *)
+(*                                                                      *)
 (*  Frédéric Besson (Irisa/Inria) 2006-2008                             *)
 (*                                                                      *)
 (************************************************************************)
@@ -59,8 +64,6 @@ let rec map3 f l1 l2 l3 =
     | e1::l1 , e2::l2 , e3::l3 -> (f e1 e2 e3)::(map3 f l1 l2 l3)
     |      _   -> raise (Invalid_argument "map3")
 
-
-
 let rec is_sublist l1 l2 =
   match l1 ,l2 with
     | [] ,_ -> true
@@ -68,8 +71,6 @@ let rec is_sublist l1 l2 =
     | e::l1' , e'::l2' ->
 	if e = e' then is_sublist l1' l2'
 	else is_sublist l1 l2'
-
-
 
 let list_try_find f =
   let rec try_find_f = function
@@ -100,7 +101,6 @@ let ppcm x y =
  let y' = div_big_int y g in
   mult_big_int g (mult_big_int x' y')
 
-
 let denominator = function
  | Int _ | Big_int _ -> unit_big_int
  | Ratio r -> Ratio.denominator_ratio r
@@ -125,8 +125,6 @@ let rec gcd_list l =
   if compare_big_int res zero_big_int = 0
   then unit_big_int else res
 
-
-
 let rats_to_ints l =
  let c = ppcm_list unit_big_int l in
   List.map (fun x ->  (div_big_int (mult_big_int (numerator x) c)
@@ -139,7 +137,6 @@ let mapi f l =
    | []   -> []
    | e::l ->  (f e i)::(xmapi (i+1) l) in
   xmapi 0 l
-
 
 let concatMapi f l = List.rev (mapi (fun e i -> (i,f e)) l)
 
@@ -178,6 +175,9 @@ let  select_pos lpos l =
 	  else xselect (i+1) lpos l in
   xselect 0 lpos l
 
+(**
+  * MODULE: Coq to Caml data-structure mappings
+  *)
 
 module CoqToCaml =
 struct
@@ -194,19 +194,16 @@ struct
    | XI p -> 1+ 2*(positive p)
    | XO p -> 2*(positive p)
 
-
  let n nt =
   match nt with
    | N0 -> 0
    | Npos p -> positive p
-
 
  let rec index i = (* Swap left-right ? *)
   match i with
    | XH -> 1
    | XI i -> 1+(2*(index i))
    | XO i -> 2*(index i)
-
 
  let z x =
   match x with
@@ -222,13 +219,11 @@ struct
    | XI p -> add_int_big_int 1 (mult_int_big_int 2 (positive_big_int p))
    | XO p -> (mult_int_big_int 2 (positive_big_int p))
 
-
  let z_big_int x =
   match x with
    | Z0 -> zero_big_int
    | Zpos p -> (positive_big_int p)
    | Zneg p -> minus_big_int (positive_big_int p)
-
 
  let num x = Num.Big_int (z_big_int x)
 
@@ -237,6 +232,10 @@ struct
 
 end
 
+
+(**
+  * MODULE: Caml to Coq data-structure mappings
+  *)
 
 module CamlToCoq =
 struct
@@ -266,8 +265,7 @@ struct
 
  let idx n =
   (*a.k.a path_of_int *)
-  (* returns the list of digits of n in reverse order with
-     initial 1 removed *)
+  (* returns the list of digits of n in reverse order with initial 1 removed *)
   let rec digits_of_int n =
    if n=1 then []
    else (n mod 2 = 1)::(digits_of_int (n lsr 1))
@@ -309,6 +307,11 @@ struct
 
 end
 
+(**
+  * MODULE: Comparisons on lists: by evaluating the elements in a single list,
+  * between two lists given an ordering, and using a hash computation
+  *)
+
 module Cmp =
 struct
 
@@ -317,7 +320,7 @@ struct
    | [] -> 0 (* Equal *)
    | f::l ->
       let cmp = f () in
-       if cmp = 0 	then  compare_lexical l else cmp
+       if cmp = 0 then compare_lexical l else cmp
 
  let rec compare_list cmp l1 l2 =
   match l1 , l2 with
@@ -328,43 +331,65 @@ struct
       let c = cmp e1 e2 in
        if c = 0 then compare_list cmp l1 l2 else c
 
+(**
+  * hash_list takes a hash function and a list, and computes an integer which
+  * is the hash value of the list.
+  *)
  let hash_list hash l =
   let rec _hash_list l h =
    match l with
     | []  -> h lxor (Hashtbl.hash [])
-    | e::l -> _hash_list l   ((hash e)  lxor h) in
+    | e::l -> _hash_list l ((hash e) lxor h) 
+  in _hash_list l 0
 
-   _hash_list  l 0
 end
+
+(**
+  * MODULE: Labels for atoms in propositional formulas. 
+  * Tags are used to identify unused atoms in CNFs, and propagate them back to
+  * the original formula. The translation back to Coq then ignores these
+  * superfluous items, which speeds the translation up a bit.
+  *)
 
 module type Tag =
 sig
+
   type t
 
   val from : int -> t
   val next : t -> t
   val pp : out_channel -> t -> unit
   val compare : t -> t -> int
+
 end
 
 module Tag : Tag =
 struct
+
   type t = int
+
   let from i = i
   let next i = i + 1
   let pp o i = output_string o (string_of_int i)
   let compare : int -> int -> int = Pervasives.compare
+
 end
+
+(**
+  * MODULE: Ordered sets of tags.
+  *)
 
 module TagSet = Set.Make(Tag)
 
+(**
+  * Forking routine, plumbing the appropriate pipes where needed.
+  *)
 
 let command exe_path args vl =
   (* creating pipes for stdin, stdout, stderr *)
   let (stdin_read,stdin_write) = Unix.pipe ()
   and (stdout_read,stdout_write) = Unix.pipe ()
   and (stderr_read,stderr_write) = Unix.pipe () in
-
 
   (* Create the process *)
   let pid = Unix.create_process exe_path args stdin_read stdout_write stderr_write in
@@ -378,24 +403,20 @@ let command exe_path args vl =
     let _pid,status = Unix.waitpid [] pid in
 
       finally
+        (* Recover the result *)
 	(fun () ->
-	  (* Recover the result *)
 	  match status with
 	    | Unix.WEXITED 0 ->
-		let inch  = Unix.in_channel_of_descr  stdout_read in
-		  begin try Marshal.from_channel inch with x -> failwith (Printf.sprintf "command \"%s\" exited %s" exe_path (Printexc.to_string x)) end
-	    | Unix.WEXITED i -> failwith (Printf.sprintf "command \"%s\" exited %i" exe_path i)
+		let inch  = Unix.in_channel_of_descr stdout_read in
+		  begin try Marshal.from_channel inch 
+                        with x -> failwith (Printf.sprintf "command \"%s\" exited %s" exe_path (Printexc.to_string x)) 
+                  end
+	    | Unix.WEXITED i   -> failwith (Printf.sprintf "command \"%s\" exited %i" exe_path i)
 	    | Unix.WSIGNALED i -> failwith (Printf.sprintf "command \"%s\" killed %i" exe_path i)
-	    | Unix.WSTOPPED  i -> failwith (Printf.sprintf "command \"%s\" stopped %i" exe_path i))
+	    | Unix.WSTOPPED i  -> failwith (Printf.sprintf "command \"%s\" stopped %i" exe_path i))
+        (* Cleanup  *)
 	(fun () ->
-	  (* Cleanup  *)
-	  List.iter (fun x -> try Unix.close x with _ -> ()) [stdin_read; stdin_write; stdout_read ; stdout_write ; stderr_read; stderr_write]
-	)
-
-
-
-
-
+	  List.iter (fun x -> try Unix.close x with _ -> ()) [stdin_read; stdin_write; stdout_read; stdout_write; stderr_read; stderr_write])
 
 (* Local Variables: *)
 (* coding: utf-8 *)

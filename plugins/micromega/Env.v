@@ -17,27 +17,21 @@ Require Import Coq.Arith.Max.
 Require Import List.
 Set Implicit Arguments.
 
-(* I have addded a Leaf constructor to the varmap data structure (/plugins/ring/Quote.v)
-   -- this is harmless and spares a lot of Empty.
-   This means smaller proof-terms.
-   BTW, by dropping the  polymorphism, I get small (yet noticeable) speed-up.
-*)
-
 Section S.
 
   Variable D :Type.
 
   Definition Env := positive -> D.
 
-  Definition jump  (j:positive) (e:Env) := fun x => e (Pplus x j).
+  Definition jump (j:positive) (e:Env) := fun x => e (Pplus x j).
 
-  Definition nth  (n:positive) (e : Env ) := e n.
+  Definition nth (n:positive) (e : Env ) := e n.
 
-  Definition hd (x:D)  (e: Env)  := nth xH e.
+  Definition hd (x:D) (e: Env)  := nth xH e.
 
   Definition tail (e: Env) := jump xH e.
 
-  Lemma psucc : forall p,  (match p with
+  Lemma psucc : forall p, (match p with
                               | xI y' => xO (Psucc y')
                               | xO y' => xI y'
                               | 1%positive => 2%positive

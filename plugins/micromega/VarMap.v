@@ -18,11 +18,12 @@ Require Import Coq.Arith.Max.
 Require Import List.
 Set Implicit Arguments.
 
-(* I have addded a Leaf constructor to the varmap data structure (/plugins/ring/Quote.v)
-   -- this is harmless and spares a lot of Empty.
-   This means smaller proof-terms.
-   BTW, by dropping the  polymorphism, I get small (yet noticeable) speed-up.
-*)
+(* 
+ * This adds a Leaf constructor to the varmap data structure (plugins/quote/Quote.v)
+ * --- it is harmless and spares a lot of Empty.
+ * It also means smaller proof-terms.
+ * As a side note, by dropping the polymorphism, one gets small, yet noticeable, speed-up.
+ *)
 
 Section MakeVarMap.
   Variable A : Type.
@@ -33,7 +34,7 @@ Section MakeVarMap.
   | Leaf : A -> t
   | Node : t  -> A -> t  -> t .
 
-  Fixpoint find   (vm : t ) (p:positive) {struct vm} : A :=
+  Fixpoint find (vm : t) (p:positive) {struct vm} : A :=
     match vm with
       | Empty => default
       | Leaf i => i
@@ -44,8 +45,9 @@ Section MakeVarMap.
                       end
     end.
 
- (* an off_map (a map with offset) offers the same functionalites  as /plugins/setoid_ring/BinList.v - it is used in EnvRing.v *)
-(*
+  (* FK: scheduled for deletion *)
+  (* an off_map (a map with offset) offers the same functionalites  as /plugins/setoid_ring/BinList.v - it is used in EnvRing.v *)
+  (*
   Definition off_map  :=  (option positive *t )%type.
 
 

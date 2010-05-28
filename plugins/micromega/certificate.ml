@@ -194,9 +194,6 @@ let q_spec = {
 
 let r_spec = z_spec
 
-
-
-
 let dev_form n_spec  p =
  let rec dev_form p =
   match p with
@@ -218,7 +215,6 @@ let dev_form n_spec  p =
        else Poly.product p (pow (n-1)) in
        pow n in
   dev_form p
-
 
 let monomial_to_polynomial mn =
  Monomial.fold
@@ -252,13 +248,6 @@ let rec fixpoint f x =
   if y' = x then y'
   else fixpoint f y'
 
-
-
-
-
-
-
-
 let  rec_simpl_cone n_spec e =
  let simpl_cone =
   Mc.simpl_cone n_spec.zero n_spec.unit n_spec.mult n_spec.eqb in
@@ -271,7 +260,6 @@ let  rec_simpl_cone n_spec e =
  |  x           -> simpl_cone x in
   rec_simpl_cone e
 
-
 let simplify_cone n_spec c = fixpoint (rec_simpl_cone n_spec) c
 
 type cone_prod =
@@ -280,8 +268,6 @@ type cone_prod =
   | Mult of cone * cone
   | Other of cone
 and cone =   Mc.zWitness
-
-
 
 let factorise_linear_cone c =
 
@@ -313,8 +299,6 @@ let factorise_linear_cone c =
       ) in
 
   (rebuild_cone (List.sort Pervasives.compare (cone_list c [])) None)
-
-
 
 (* The binding with Fourier might be a bit obsolete
    -- how does it handle equalities ? *)

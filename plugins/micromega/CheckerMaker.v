@@ -12,6 +12,8 @@
 (*                                                                      *)
 (************************************************************************)
 
+(* FK: scheduled for deletion *)
+(*
 Require Import Setoid.
 Require Import Decidable.
 Require Import List.
@@ -127,3 +129,4 @@ apply <- negate_correct. intro; now elim H3. exact (H1 H2).
 Qed.
 
 End CheckerMaker.
+*)

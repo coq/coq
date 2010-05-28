@@ -8,6 +8,8 @@
 (*                                                                      *)
 (* Micromega: A reflexive tactic using the Positivstellensatz           *)
 (*                                                                      *)
+(* * Mappings from Coq tactics to Caml function calls                   *)
+(*                                                                      *)
 (*  Frédéric Besson (Irisa/Inria) 2006-2008			        *)
 (*                                                                      *)
 (************************************************************************)
@@ -55,8 +57,6 @@ TACTIC EXTEND QOmicron
 [ "psatzl_Q"  ] -> [ Coq_micromega.psatzl_Q]
 END
 
-
-
 TACTIC EXTEND ROmicron
 [ "psatzl_R"  ] -> [ Coq_micromega.psatzl_R]
 END
@@ -65,7 +65,6 @@ TACTIC EXTEND RMicromega
 | [ "psatz_R" int_or_var(i) ] -> [ Coq_micromega.psatz_R (out_arg i) ]
 | [ "psatz_R" ] -> [ Coq_micromega.psatz_R (-1) ]
 END
-
 
 TACTIC EXTEND QMicromega
 | [ "psatz_Q" int_or_var(i) ] -> [ Coq_micromega.psatz_Q (out_arg i) ]
