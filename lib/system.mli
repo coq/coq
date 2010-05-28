@@ -23,6 +23,7 @@ val exclude_search_in_dirname : string -> unit
 
 val all_subdirs : unix_path:string -> (physical_path * string list) list
 val is_in_path : load_path -> string -> bool
+val is_in_system_path : string -> bool
 val where_in_path : ?warn:bool -> load_path -> string -> physical_path * string
 
 val physical_path_of_string : string -> physical_path
