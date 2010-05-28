@@ -1225,8 +1225,8 @@ $I$.
 
 \begin{description}
 \item[Prod] \inference{\frac{\compat{(I~x):A'}{B'}}
-                      {\compat{I:(x:A)A'}{(x:A)B'}}}
-\item[\Set \& \Type] \inference{\frac{
+                      {\compat{I:\forall x:A, A'}{\forall x:A, B'}}}
+\item[{\Set} \& \Type] \inference{\frac{
     s_1 \in \{\Set,\Type(j)\}, 
     s_2 \in \Sort}{\compat{I:s_1}{I\ra s_2}}}
 \end{description}
