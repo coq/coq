@@ -34,7 +34,7 @@
      don't how to avoid. The result below is a compromise with
      dependent left-to-right rewriting in conclusion (l2r_dep) using
      the tricky involutivity of symmetry and dependent left-to-right
-     rewriting in hypotheses (l2r_forward_dep), that one wants to be
+     rewriting in hypotheses (r2l_forward_dep), that one wants to be
      used for non-symmetric equality and that introduces blocked
      beta-expansions.
 
@@ -82,6 +82,15 @@ let get_coq_eq () =
   with Not_found ->
     error "eq not found."
 
+(**********************************************************************)
+(* Check if an inductive type [ind] has the form                      *)
+(*                                                                    *)
+(*   I q1..qm,p1..pn a1..an with one constructor                      *)
+(*   C : I q1..qm,p1..pn p1..pn                                       *)
+(*                                                                    *)
+(* in which case, a symmetry lemma is definable                       *)
+(**********************************************************************)
+
 let get_sym_eq_data env ind =
   let (mib,mip as specif) = lookup_mind_specif env ind in
   if Array.length mib.mind_packets <> 1 or Array.length mip.mind_nf_lc <> 1 then
@@ -103,6 +112,16 @@ let get_sym_eq_data env ind =
     error "Constructors arguments must repeat the parameters.";
   (* nrealargs_ctxt and nrealargs are the same here *)
   (specif,mip.mind_nrealargs,realsign,mib.mind_params_ctxt,paramsctxt1)
+
+(**********************************************************************)
+(* Check if an inductive type [ind] has the form                      *)
+(*                                                                    *)
+(*   I q1..qm a1..an with one constructor                             *)
+(*   C : I q1..qm b1..bn                                              *)
+(*                                                                    *)
+(* in which case it expresses the equalities ai=bi, but not in a way  *)
+(* such that symmetry is a priori definable                           *)
+(**********************************************************************)
 
 let get_non_sym_eq_data env ind =
   let (mib,mip as specif) = lookup_mind_specif env ind in
@@ -226,29 +245,56 @@ let sym_involutive_scheme_kind =
 (*                                                                    *)
 (* We could have defined the scheme in one match over a generalized   *)
 (* type but this behaves badly wrt the guard condition, so we use     *)
-(* symmetry instead                                                   *)
+(* symmetry instead; with commutative-cuts-aware guard condition a    *)
+(* proof in the style of l2r_forward is also possible (see below)     *)
 (*                                                                    *)
-(* ind_rd := fun q1..qm p1..pn a1..an                                 *)
-(*               (P:forall p1..pn, I q1..qm p1..pn a1..an -> kind)    *)
-(*               (HC:P a1..an C)                                      *)
-(*               (H:I q1..qm p1..pn a1..an)  =>                       *)
-(*           match sym_involutive q1..qm p1..pn a1..an H as Heq       *)
-(*               in _ = H return P p1..pn H                           *)
-(*           with                                                     *)
-(*             refl =>                                                *)
-(*               match sym q1..qm p1..pn a1..an H as H                *)
-(*                      in I _.._ p1..pn                              *)
-(*                     return P p1..pn (sym q1..qm a1..an p1..pn H)   *)
-(*               with                                                 *)
-(*                 C => HC                                            *)
-(*               end                                                  *)
-(*           end                                                      *)
-(*       : forall q1..qn p1..pn a1..an                                *)
-(*           (P:forall p1..pn, I q1..qm p1..pn a1..an ->kind),        *)
-(*           P a1..an C ->                                            *)
-(*           forall (H:I q1..qm p1..pn a1..an), P p1..pn H            *)
+(* rew := fun q1..qm p1..pn a1..an                                    *)
+(*          (P:forall p1..pn, I q1..qm p1..pn a1..an -> kind)         *)
+(*          (HC:P a1..an C)                                           *)
+(*          (H:I q1..qm p1..pn a1..an)  =>                            *)
+(*          match sym_involutive q1..qm p1..pn a1..an H as Heq        *)
+(*                in _ = H return P p1..pn H                          *)
+(*          with                                                      *)
+(*            refl =>                                                 *)
+(*              match sym q1..qm p1..pn a1..an H as H                 *)
+(*                     in I _.._ p1..pn                               *)
+(*                    return P p1..pn (sym q1..qm a1..an p1..pn H)    *)
+(*              with                                                  *)
+(*                C => HC                                             *)
+(*              end                                                   *)
+(*          end                                                       *)
+(*      : forall q1..qn p1..pn a1..an                                 *)
+(*          (P:forall p1..pn, I q1..qm p1..pn a1..an -> kind),        *)
+(*          P a1..an C ->                                             *)
+(*          forall (H:I q1..qm p1..pn a1..an), P p1..pn H             *)
 (*                                                                    *)
 (* where A1..An are the common types of p1..pn and a1..an             *)
+(*                                                                    *)
+(* Note: the symmetry is needed in the dependent case since the       *)
+(* dependency is on the inner arguments (the indices in C) and these  *)
+(* inner arguments need to be visible as parameters to be able to     *)
+(* abstract over them in P.                                           *)
+(**********************************************************************)
+
+(**********************************************************************)
+(* For information, the alternative proof of dependent l2r_rew scheme *)
+(* that would use commutative cuts is the following                   *)
+(*                                                                    *)
+(* rew := fun q1..qm p1..pn a1..an                                    *)
+(*          (P:forall p1..pn, I q1..qm p1..pn a1..an -> kind)         *)
+(*          (HC:P a1..an C)                                           *)
+(*          (H:I q1..qm p1..pn a1..an)  =>                            *)
+(*          match H in I .._.. a1..an return                          *)
+(*             forall p1..pn, I q1..qm p1..pn a1..an -> kind),        *)
+(*             P a1..an C -> P p1..pn H                               *)
+(*          with                                                      *)
+(*            C => fun P HC => HC                                     *)
+(*          end P HC                                                  *)
+(*      : forall q1..qn p1..pn a1..an                                 *)
+(*          (P:forall p1..pn, I q1..qm p1..pn a1..an -> kind),        *)
+(*          P a1..an C ->                                             *)
+(*          forall (H:I q1..qm p1..pn a1..an), P p1..pn H             *)
+(*                                                                    *)
 (**********************************************************************)
 
 let build_l2r_rew_scheme dep env ind kind =
@@ -336,10 +382,10 @@ let build_l2r_rew_scheme dep env ind kind =
      main_body))))))
 
 (**********************************************************************)
-(* Build the right-to-left rewriting lemma for hypotheses associated  *)
+(* Build the left-to-right rewriting lemma for hypotheses associated  *)
 (* to an inductive type I q1..qm,p1..pn a1..an with one constructor   *)
 (* C : I q1..qm,p1..pn p1..pn                                         *)
-(* (symmetric equality in dependent cases)                            *)
+(* (symmetric equality in non dependent and dependent cases)          *)
 (*                                                                    *)
 (* rew := fun q1..qm p1..pn a1..an (H:I q1..qm p1..pn a1..an)         *)
 (*          match H in I _.._ a1..an                                  *)
@@ -350,14 +396,18 @@ let build_l2r_rew_scheme dep env ind kind =
 (*          with                                                      *)
 (*             C => fun P HC => HC                                    *)
 (*          end                                                       *)
-(*       : forall q1..qm p1..pn a1..an                                *)
-(*           (H:I q1..qm p1..pn a1..an)                               *)
-(*           (P:forall p1..pn, I q1..qm p1..pn a1..an ->kind),        *)
-(*           P p1..pn H -> P a1..an C                                 *)
+(*      : forall q1..qm p1..pn a1..an                                 *)
+(*          (H:I q1..qm p1..pn a1..an)                                *)
+(*          (P:forall p1..pn, I q1..qm p1..pn a1..an ->kind),         *)
+(*          P p1..pn H -> P a1..an C                                  *)
 (*                                                                    *)
+(* Note: the symmetry is needed in the dependent case since the       *)
+(* dependency is on the inner arguments (the indices in C) and these  *)
+(* inner arguments need to be visible as parameters to be able to     *)
+(* abstract over them in P.                                           *)
 (**********************************************************************)
 
-let build_r2l_forward_rew_scheme dep env ind kind =
+let build_l2r_forward_rew_scheme dep env ind kind =
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env ind in
   let cstr n p =
@@ -415,31 +465,36 @@ let build_r2l_forward_rew_scheme dep env ind kind =
 	(mkVar varHC))|])))))
 
 (**********************************************************************)
-(* Build the left-to-right rewriting lemma for hypotheses associated  *)
+(* Build the right-to-left rewriting lemma for hypotheses associated  *)
 (* to an inductive type I q1..qm a1..an with one constructor          *)
-(* C : I q1..qm b1..bn  (dependent case)                              *)
+(* C : I q1..qm b1..bn                                                *)
+(* (arbitrary equality in non-dependent and dependent cases)          *)
 (*                                                                    *)
-(* ind_rd := fun q1..qm a1..an (H:I q1..qm a1..an)                    *)
-(*             (P:forall a1..an, I q1..qm a1..an -> kind)             *)
-(*             (HC:P a1..an H) =>                                     *)
-(*           match H in I _.._ a1..an return P a1..an H -> P b1..bn C *)
-(*           with                                                     *)
-(*             C => fun x => x                                        *)
-(*           end HC                                                   *)
+(* rew := fun q1..qm a1..an (H:I q1..qm a1..an)                       *)
+(*          (P:forall a1..an, I q1..qm a1..an -> kind)                *)
+(*          (HC:P a1..an H) =>                                        *)
+(*          match H in I _.._ a1..an return P a1..an H -> P b1..bn C  *)
+(*          with                                                      *)
+(*            C => fun x => x                                         *)
+(*          end HC                                                    *)
 (*      : forall q1..pm a1..an (H:I q1..qm a1..an)                    *)
-(*               (P:forall a1..an, I q1..qm a1..an -> kind),          *)
-(*               P a1..an H -> P b1..bn C                             *)
+(*          (P:forall a1..an, I q1..qm a1..an -> kind),               *)
+(*          P a1..an H -> P b1..bn C                                  *)
 (*                                                                    *)
-(* Note that the dependent elimination in ind_rd is not a dependency  *)
+(* Note that the dependent elimination here is not a dependency       *)
 (* in the conclusion of the scheme but a dependency in the premise of *)
 (* the scheme. This is unfortunately incompatible with the standard   *)
 (* pattern for schemes in Coq which expects that the eliminated       *)
 (* object is the last premise of the scheme. We then have no choice   *)
 (* than following the more liberal pattern of having the eliminated   *)
 (* object coming before the premises.                                 *)
+(*                                                                    *)
+(* Note that in the non-dependent case, this scheme (up to the order  *)
+(* of premises) generalizes the (backward) l2r scheme above: same     *)
+(* statement but no need for symmetry of the equality.                *)
 (**********************************************************************)
 
-let build_l2r_forward_rew_scheme dep env ind kind =
+let build_r2l_forward_rew_scheme dep env ind kind =
   let ((mib,mip as specif),constrargs,realsign,nrealargs) =
     get_non_sym_eq_data env ind in
   let cstr n =
@@ -478,22 +533,22 @@ let build_l2r_forward_rew_scheme dep env ind kind =
     [|mkVar varHC|]))))))
 
 (**********************************************************************)
-(* This function "repairs" the non-dependent l2r forward rewriting    *)
+(* This function "repairs" the non-dependent r2l forward rewriting    *)
 (* scheme by making it comply with the standard pattern of schemes    *)
 (* in Coq. Otherwise said, it turns a scheme of type                  *)
 (*                                                                    *)
-(*  forall q1..pm a1..an (H:I q1..qm a1..an)                          *)
-(*         (P:forall a1..an, I q1..qm a1..an -> kind),                *)
-(*         P a1..an H -> P b1..bn C                                   *)
+(*  forall q1..pm a1..an, I q1..qm a1..an ->                          *)
+(*  forall (P: forall a1..an, kind),                                  *)
+(*         P a1..an -> P b1..bn                                       *)
 (*                                                                    *)
 (* into a scheme of type                                              *)
 (*                                                                    *)
-(*  forall q1..pm a1..an (P:forall a1..an, I q1..qm a1..an -> kind),  *)
-(*         P a1..an H -> forall (H:I q1..qm a1..an), P b1..bn C       *)
+(*  forall q1..pm (P:forall a1..an, kind),                            *)
+(*         P a1..an -> forall a1..an, I q1..qm a1..an -> P b1..bn     *)
 (*                                                                    *)
 (**********************************************************************)
 
-let fix_l2r_forward_rew_scheme c =
+let fix_r2l_forward_rew_scheme c =
   let t = Retyping.get_type_of (Global.env()) Evd.empty c in
   let ctx,_ = decompose_prod_assum t in
   match ctx with
@@ -508,56 +563,98 @@ let fix_l2r_forward_rew_scheme c =
   | _ -> anomaly "Ill-formed non-dependent left-to-right rewriting scheme"
 
 (**********************************************************************)
+(* Build the right-to-left rewriting lemma for conclusion associated  *)
+(* to an inductive type I q1..qm a1..an with one constructor          *)
+(* C : I q1..qm b1..bn                                                *)
+(* (arbitrary equality in non-dependent and dependent case)           *)
+(*                                                                    *)
+(* This is actually the standard case analysis scheme                 *)
+(*                                                                    *)
+(* rew := fun q1..qm a1..an                                           *)
+(*          (P:forall a1..an, I q1..qm a1..an -> kind)                *)
+(*          (H:I q1..qm a1..an)                                       *)
+(*          (HC:P b1..bn C) =>                                        *)
+(*          match H in I _.._ a1..an return P a1..an H with           *)
+(*            C => HC                                                 *)
+(*          end                                                       *)
+(*      : forall q1..pm a1..an                                        *)
+(*          (P:forall a1..an, I q1..qm a1..an -> kind)                *)
+(*          (H:I q1..qm a1..an),                                      *)
+(*          P b1..bn C -> P a1..an H                                  *)
+(**********************************************************************)
 
 let build_r2l_rew_scheme dep env ind k =
   build_case_analysis_scheme env Evd.empty ind dep k
 
-(* Dependent rewrite from left-to-right in conclusion *)
+(**********************************************************************)
+(* Register the rewriting schemes                                     *)
+(**********************************************************************)
+
+(**********************************************************************)
+(* Dependent rewrite from left-to-right in conclusion                 *)
+(* (symmetrical equality type only)                                   *)
+(* Gamma |- P p1..pn H   ==>   Gamma |- P a1..an C                    *)
+(* with H:I p1..pn a1..an in Gamma                                    *)
+(**********************************************************************)
 let rew_l2r_dep_scheme_kind =
   declare_individual_scheme_object "_rew_r_dep"
   (fun ind -> build_l2r_rew_scheme true (Global.env()) ind InType)
 
-(* Dependent rewrite from left-to-right in hypotheses *)
-let rew_l2r_forward_dep_scheme_kind =
-  declare_individual_scheme_object "_rew_fwd_dep"
-  (fun ind -> build_l2r_forward_rew_scheme true (Global.env()) ind InType)
-
-(* Dependent rewrite from right-to-left in conclusion *)
+(**********************************************************************)
+(* Dependent rewrite from right-to-left in conclusion                 *)
+(* Gamma |- P a1..an H   ==>   Gamma |- P b1..bn C                    *)
+(* with H:I a1..an in Gamma (non symmetric case)                      *)
+(* or   H:I b1..bn a1..an in Gamma (symmetric case)                   *)
+(**********************************************************************)
 let rew_r2l_dep_scheme_kind =
   declare_individual_scheme_object "_rew_dep"
   (fun ind -> build_r2l_rew_scheme true (Global.env()) ind InType)
 
-(* Dependent rewrite from right-to-left in hypotheses *)
+(**********************************************************************)
+(* Dependent rewrite from right-to-left in hypotheses                 *)
+(* Gamma, P a1..an H |- D   ==>   Gamma, P b1..bn C |- D              *)
+(* with H:I a1..an in Gamma (non symmetric case)                      *)
+(* or   H:I b1..bn a1..an in Gamma (symmetric case)                   *)
+(**********************************************************************)
 let rew_r2l_forward_dep_scheme_kind =
-  declare_individual_scheme_object "_rew_fwd_r_dep"
+  declare_individual_scheme_object "_rew_fwd_dep"
   (fun ind -> build_r2l_forward_rew_scheme true (Global.env()) ind InType)
 
-(* Rewrite from left-to-right in conclusion and right-to-left in hypotheses *)
+(**********************************************************************)
+(* Dependent rewrite from left-to-right in hypotheses                 *)
+(* (symmetrical equality type only)                                   *)
+(* Gamma, P p1..pn H |- D   ==>   Gamma, P a1..an C |- D              *)
+(* with H:I p1..pn a1..an in Gamma                                    *)
+(**********************************************************************)
+let rew_l2r_forward_dep_scheme_kind =
+  declare_individual_scheme_object "_rew_fwd_r_dep"
+  (fun ind -> build_l2r_forward_rew_scheme true (Global.env()) ind InType)
+
+(**********************************************************************)
+(* Non-dependent rewrite from either left-to-right in conclusion or   *)
+(* right-to-left in hypotheses: both l2r_rew and r2l_forward_rew are  *)
+(* potential candidates. Since l2r_rew needs a symmetrical equality,  *)
+(* we adopt r2l_forward_rew (this one introduces a blocked beta-      *)
+(* expansion but since the guard condition supports commutative cuts  *)
+(* this is not a problem; we need though a fix to adjust it to the    *)
+(* standard form of schemes in Coq)                                   *)
+(**********************************************************************)
 let rew_l2r_scheme_kind =
   declare_individual_scheme_object "_rew_r"
-  (fun ind ->
-    (* We cannot use the simply-proved build_l2r_forward_rew_scheme *)
-    (* because it is introduced a beta-expansion blocked by the match *)
-    (* and may thus block in turn guard condition *)
-    build_l2r_rew_scheme false (Global.env()) ind InType)
+  (fun ind -> fix_r2l_forward_rew_scheme
+      (build_r2l_forward_rew_scheme false (Global.env()) ind InType))
 
-(* Asymmetric rewrite in hypotheses *)
-let rew_asym_scheme_kind =
-  declare_individual_scheme_object "_rew_r_asym"
-  (fun ind ->
-    (* For the asymmetrical non-dependent case, we (currently) have only *)
-    (* build_l2r_forward_rew_scheme available, though it may break the   *)
-    (* guard condition due to the introduction of a beta-expansion       *)
-    (* blocked by a match.                                               *)
-    (* Moreover, its standard form needs the inductive hypothesis not    *)
-    (* in last position what breaks the order of goals and need a fix!   *)
-    fix_l2r_forward_rew_scheme
-      (build_l2r_forward_rew_scheme false (Global.env()) ind InType))
-
-(* Rewrite from right-to-left in conclusion and left-to-right in hypotheses *)
+(**********************************************************************)
+(* Non-dependent rewrite from either right-to-left in conclusion or   *)
+(* left-to-right in hypotheses: both r2l_rew and l2r_forward_rew but  *)
+(* since r2l_rew works in the non-symmetric case as well as without   *)
+(* introducing commutative cuts, we adopt it                          *)
+(**********************************************************************)
 let rew_r2l_scheme_kind =
   declare_individual_scheme_object "_rew"
   (fun ind -> build_r2l_rew_scheme false (Global.env()) ind InType)
+
+(* End of rewriting schemes *)
 
 (**********************************************************************)
 (* Build the congruence lemma associated to an inductive type         *)

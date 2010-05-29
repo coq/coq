@@ -191,20 +191,16 @@ let find_elim hdcncl lft2rgt dep cls args gl =
     with Not_found -> error ("Cannot find rewrite principle "^rwr_thm^".")
   else
   let scheme_name = match dep, lft2rgt, inccl with
-    (* Non dependent case with symmetric equality *)
-    | false, Some true, true | false, Some false, false -> rew_l2r_scheme_kind
-    | false, Some false, true | false, Some true, false -> rew_r2l_scheme_kind
-    (* Dependent case with symmetric equality *)
+    (* Non dependent case *)
+    | false, Some true, true -> rew_l2r_scheme_kind
+    | false, Some true, false -> rew_r2l_scheme_kind
+    | false, _, false -> rew_l2r_scheme_kind
+    | false, _, true -> rew_r2l_scheme_kind
+    (* Dependent case *)
     | true, Some true, true -> rew_l2r_dep_scheme_kind
-    | true, Some true, false -> rew_r2l_forward_dep_scheme_kind
-    | true, Some false, true -> rew_r2l_dep_scheme_kind
-    | true, Some false, false -> rew_l2r_forward_dep_scheme_kind
-    (* Non dependent case with non-symmetric rewriting lemma *)
-    | false, None, true -> rew_r2l_scheme_kind
-    | false, None, false -> rew_asym_scheme_kind
-    (* Dependent case with non-symmetric rewriting lemma *)
-    | true, None, true -> rew_r2l_dep_scheme_kind
-    | true, None, false -> rew_l2r_forward_dep_scheme_kind
+    | true, Some true, false -> rew_l2r_forward_dep_scheme_kind
+    | true, _, true -> rew_r2l_dep_scheme_kind
+    | true, _, false -> rew_r2l_forward_dep_scheme_kind
   in
   match kind_of_term hdcncl with
   | Ind ind -> mkConst (find_scheme scheme_name ind)
