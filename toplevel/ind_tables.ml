@@ -120,7 +120,7 @@ let define internal id c =
         const_entry_opaque = false;
 	const_entry_boxed = Flags.boxed_definitions() },
       Decl_kinds.IsDefinition Scheme) in
-  definition_message id;
+  if not internal then definition_message id;
   kn
 
 let define_individual_scheme_base kind suff f internal idopt (mind,i as ind) =

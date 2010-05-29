@@ -247,14 +247,14 @@ let declare_rewriting_schemes ind =
   if Hipattern.is_inductive_equality ind then begin
     ignore (define_individual_scheme rew_r2l_scheme_kind true None ind);
     ignore (define_individual_scheme rew_r2l_dep_scheme_kind true None ind);
-    ignore (define_individual_scheme rew_l2r_forward_dep_scheme_kind true None ind);
+    ignore (define_individual_scheme rew_r2l_forward_dep_scheme_kind true None ind);
     (* These ones expect the equality to be symmetric; the first one also *)
     (* needs eq *)
     ignore_error (define_individual_scheme rew_l2r_scheme_kind true None) ind;
     ignore_error
       (define_individual_scheme rew_l2r_dep_scheme_kind true None) ind;
     ignore_error
-      (define_individual_scheme rew_r2l_forward_dep_scheme_kind true None) ind
+      (define_individual_scheme rew_l2r_forward_dep_scheme_kind true None) ind
   end
 
 let declare_congr_scheme ind =

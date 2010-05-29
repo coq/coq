@@ -198,15 +198,15 @@ let find_elim hdcncl lft2rgt dep cls args gl =
     | false, Some false, true | false, Some true, false -> rew_r2l_scheme_kind
     (* Dependent case with symmetric equality *)
     | true, Some true, true -> rew_l2r_dep_scheme_kind
-    | true, Some true, false -> rew_r2l_forward_dep_scheme_kind
+    | true, Some true, false -> rew_l2r_forward_dep_scheme_kind
     | true, Some false, true -> rew_r2l_dep_scheme_kind
-    | true, Some false, false -> rew_l2r_forward_dep_scheme_kind
+    | true, Some false, false -> rew_r2l_forward_dep_scheme_kind
     (* Non dependent case with non-symmetric rewriting lemma *)
     | false, None, true -> rew_r2l_scheme_kind
     | false, None, false -> rew_asym_scheme_kind
     (* Dependent case with non-symmetric rewriting lemma *)
     | true, None, true -> rew_r2l_dep_scheme_kind
-    | true, None, false -> rew_l2r_forward_dep_scheme_kind
+    | true, None, false -> rew_r2l_forward_dep_scheme_kind
   in
   match kind_of_term hdcncl with
   | Ind ind -> mkConst (find_scheme scheme_name ind)
