@@ -164,7 +164,7 @@ let _focus cond i j pr =
   push_focus cond context pr;
   pr.state <- { pr.state with proofview = focused }
 
-(* This function unfocuses the proof [pr], it raises [CannotUnfocus],
+(* This function unfocuses the proof [pr], it raises [FullyUnfocused],
    if the proof is already fully unfocused.
    This function does not care about the condition of the current focus. *)
 let _unfocus pr =
