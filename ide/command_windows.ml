@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+let get_current_toplevel = ref (fun () -> Coq.dummy_coqtop)
+
 class command_window () =
 (*  let window = GWindow.window
 		 ~allow_grow:true ~allow_shrink:true
@@ -104,9 +106,10 @@ object(self)
 	then com ^ " " else com ^ " " ^ entry#text ^" . "
       in
       try
-	Coq.raw_interp Coq.dummy_coqtop phrase;
+        let curtop = !get_current_toplevel () in
+	Coq.raw_interp curtop phrase;
 	result#buffer#set_text
-	  ("Result for command " ^ phrase ^ ":\n" ^ (Coq.read_stdout Coq.dummy_coqtop))
+	  ("Result for command " ^ phrase ^ ":\n" ^ (Coq.read_stdout curtop))
       with e ->
 	let (s,loc) = Coq.process_exn e in
 	assert (Glib.Utf8.validate s);

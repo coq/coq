@@ -23,7 +23,7 @@ type 'a call
 
 type 'a value =
   | Good of 'a
-  | Fail of exn
+  | Fail of (Util.loc * Pp.std_ppcmds)
 
 val eval_call : 'a call -> 'a value
 
@@ -43,3 +43,4 @@ val current_goals : goals call
 
 val read_stdout : string call
 
+val loop : unit -> unit

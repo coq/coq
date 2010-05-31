@@ -101,6 +101,7 @@ type viewable_script =
      proof_view : GText.view;
      message_view : GText.view;
      analyzed_view : analyzed_views;
+     toplvl : Coq.coqtop;
     }
 
 
@@ -181,7 +182,7 @@ let set_active_view i =
   prerr_endline "entering set_active_view";
   (try on_active_view (fun {tab_label=lbl} -> lbl#set_text lbl#text) with _ -> ());
   session_notebook#goto_page i;
-  let s = session_notebook#current_term in
+  let s = session_notebook#get_nth_term i in
     s.tab_label#set_use_markup true;
     s.tab_label#set_label ("<span background=\"light green\">"^s.tab_label#text^"</span>");
     active_view := i;
@@ -279,6 +280,7 @@ let kill_input_view i =
     v.tab_label#destroy ();
     v.proof_view#destroy ();
     v.message_view#destroy ();
+    Coq.kill_coqtop v.toplvl;
     session_notebook#remove_page i
 (*
 (* XXX - beaucoups d'appels, a garder *)
@@ -289,6 +291,19 @@ let remove_current_view_page () =
   let c = session_notebook#current_page in
     kill_input_view c
 
+let print_items = [
+  ([implicit],"Display _implicit arguments",GdkKeysyms._i,false);
+  ([coercions],"Display _coercions",GdkKeysyms._c,false);
+  ([raw_matching],"Display raw _matching expressions",GdkKeysyms._m,true);
+  ([notations],"Display _notations",GdkKeysyms._n,true);
+  ([all_basic],"Display _all basic low-level contents",GdkKeysyms._a,false);
+  ([existential],"Display _existential variable instances",GdkKeysyms._e,false);
+  ([universes],"Display _universe levels",GdkKeysyms._u,false);
+  ([all_basic;existential;universes],"Display all _low-level contents",GdkKeysyms._l,false)
+]
+
+let setopts ct opts v =
+  List.iter (fun o -> set ct o v) opts
 
 (* Reset this to None on page change ! *)
 let (last_completion:(string*int*int*bool) option ref) = ref None
@@ -375,9 +390,9 @@ exception Stop of int
 (* XXX *)
 let activate_input i =
   prerr_endline "entering activate_input";
-  (try on_active_view (fun {analyzed_view=a_v} -> a_v#reset_initial; a_v#deactivate ())
+(*  (try on_active_view (fun {analyzed_view=a_v} -> a_v#reset_initial; a_v#deactivate ())
    with _ -> ());
-  (session_notebook#get_nth_term i).analyzed_view#activate ();
+  (session_notebook#get_nth_term i).analyzed_view#activate (); *)
   set_active_view i;
   prerr_endline "exiting activate_input"
 
@@ -514,7 +529,7 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
     buffer#apply_tag ~start:decl_start ~stop:decl_end Tags.Script.folded;
     buffer#apply_tag ~start:decl_end ~stop:prf_end Tags.Script.hidden)
 
-class analyzed_view (_script:Undo.undoable_view) (_pv:GText.view) (_mv:GText.view) _cs =
+class analyzed_view (_script:Undo.undoable_view) (_pv:GText.view) (_mv:GText.view) _cs _ct =
 object(self)
   val input_view = _script
   val input_buffer = _script#buffer
@@ -523,6 +538,7 @@ object(self)
   val message_view = _mv
   val message_buffer = _mv#buffer
   val cmd_stack = _cs
+  val mycoqtop = _ct
   val mutable is_active = false
   val mutable read_only = false
   val mutable filename = None
@@ -742,8 +758,9 @@ object(self)
         try
           Ideproof.display
             (Ideproof.mode_tactic menu_callback)
-            proof_view (Coq.goals Coq.dummy_coqtop)
-        with e -> prerr_endline (Printexc.to_string e)
+            proof_view (Coq.goals mycoqtop)
+        with
+          | e -> prerr_endline (Printexc.to_string e)
       end
 
   method show_goals = self#show_goals_full
@@ -776,12 +793,14 @@ object(self)
       try
         full_goal_done <- false;
         prerr_endline "Send_to_coq starting now";
-        let r = Coq.interp Coq.dummy_coqtop verbosely phrase in
+        let r = Coq.interp mycoqtop verbosely phrase in
         let is_complete = true in
-        let msg = Coq.read_stdout Coq.dummy_coqtop in
+        let msg = Coq.read_stdout mycoqtop in
         sync display_output msg;
         Some (is_complete,r)
-      with e ->
+      with
+        | Coq_failure (l,pp) -> Pervasives.prerr_endline (Coq.msgnl pp); None
+        | e ->
         if show_error then sync display_error e;
         None
 
@@ -974,7 +993,7 @@ object(self)
               cmd_stack;
             Stack.clear cmd_stack;
             self#clear_message)();
-    Coq.reset_initial ()
+    Coq.reset_coqtop mycoqtop
 
   (* backtrack Coq to the phrase preceding iterator [i] *)
   method backtrack_to_no_lock i =
@@ -990,7 +1009,7 @@ object(self)
     in
     begin
       try
-        prerr_endline (string_of_int (rewind Coq.dummy_coqtop (n_step 0)));
+        prerr_endline (string_of_int (Coq.rewind mycoqtop (n_step 0)));
         prerr_endline (string_of_int (Stack.length cmd_stack));
         sync (fun _ ->
                 let start =
@@ -1053,7 +1072,7 @@ object(self)
             self#show_goals;
             self#clear_message
           in
-          ignore ((rewind Coq.dummy_coqtop 1));
+          ignore ((Coq.rewind mycoqtop 1));
           sync update_input ()
         with
           | Stack.Empty -> (* flash_info "Nothing to Undo"*)()
@@ -1117,7 +1136,7 @@ object(self)
   val mutable deact_id = None
   val mutable act_id = None
 
-  method deactivate () =
+  method deactivate () = () (*
     is_active <- false;
     (match act_id with None -> ()
        | Some id ->
@@ -1125,14 +1144,14 @@ object(self)
            input_view#misc#disconnect id;
            prerr_endline "DISCONNECTED old active : ";
            print_id id;
-    )(*;
+    );
     deact_id <- Some
                   (input_view#event#connect#key_press self#disconnected_keypress_handler);
     prerr_endline "CONNECTED  inactive : ";
     print_id (Option.get deact_id)*)
 
   (* XXX *)
-  method activate () =
+  method activate () = if not is_active then begin
     is_active <- true;(*
     (match deact_id with None -> ()
        | Some id -> input_view#misc#disconnect id;
@@ -1148,11 +1167,12 @@ object(self)
     with
       | None -> ()
       | Some f -> let dir = Filename.dirname f in
-          if not (is_in_loadpath Coq.dummy_coqtop dir) then
+          if not (is_in_loadpath mycoqtop dir) then
             begin
-              ignore (Coq.interp Coq.dummy_coqtop false
+              ignore (Coq.interp mycoqtop false
                         (Printf.sprintf "Add LoadPath \"%s\". "  dir))
             end
+  end
 
   method electric_handler =
     input_buffer#connect#insert_text ~callback:
@@ -1340,14 +1360,19 @@ let create_session () =
     GMisc.label ~text:"*scratch*" () in
   let stack =
     Stack.create () in
+  let ct =
+    spawn_coqtop () in
   let legacy_av =
-    new analyzed_view script proof message stack in
+    new analyzed_view script proof message stack ct in
   let _ =
     script#buffer#create_mark ~name:"start_of_input" script#buffer#start_iter in
   let _ =
     proof#buffer#create_mark ~name:"end_of_conclusion" proof#buffer#start_iter in
   let _ =
     GtkBase.Widget.add_events proof#as_widget [`ENTER_NOTIFY;`POINTER_MOTION] in
+  let _ =
+    List.map (fun (opts,_,_,dflt) -> setopts ct opts dflt) print_items in
+  let _ = legacy_av#activate () in
   let _ =
     proof#event#connect#motion_notify ~callback:
       (fun e ->
@@ -1376,7 +1401,8 @@ let create_session () =
       proof_view=proof;
       message_view=message;
       analyzed_view=legacy_av;
-      encoding=""
+      encoding="";
+      toplvl=ct
     }
 
 (* XXX - to be used later
@@ -2193,17 +2219,17 @@ let main files =
 				in
 				let _do_or_activate f () =
 				  let current = session_notebook#current_term in
-				  let analyzed_view = current.analyzed_view in
+				  let analyzed_view = current.analyzed_view in (*
 				    if analyzed_view#is_active then begin
-                                      prerr_endline ("view "^current.tab_label#text^"already active");
-				      ignore (f analyzed_view)
+                                      prerr_endline ("view "^current.tab_label#text^"already active"); *)
+				      ignore (f analyzed_view) (*
                                     end else
 				      begin
 					flash_info "New proof started";
                                         prerr_endline ("activating view "^current.tab_label#text);
 					activate_input session_notebook#current_page;
 					ignore (f analyzed_view)
-				      end
+				      end *)
 				in
 
 				let do_or_activate f =
@@ -2211,7 +2237,8 @@ let main files =
 				    (_do_or_activate
 				       (fun av -> f av;
                                           pop_info ();
-                                          push_info (Coq.current_status Coq.dummy_coqtop)
+                                          let cur_ct = session_notebook#current_term.toplvl in
+                                          push_info (Coq.current_status cur_ct)
                                        )
                                     )
 				in
@@ -2440,8 +2467,9 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					(* Template for match *)
 					let callback () =
 					  let w = get_current_word () in
+let cur_ct = session_notebook#current_term.toplvl in
 					    try
-					      let cases = Coq.make_cases Coq.dummy_coqtop w
+					      let cases = Coq.make_cases cur_ct w
 					      in
 					      let print c = function
 						| [x] -> Format.fprintf c "  | %s => _@\n" x
@@ -2590,25 +2618,12 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					    ~accel_group
 					    ~accel_modi:!current.modifier_for_display
 					  in
-
-             let print_items = [
-               ([implicit],"Display _implicit arguments",GdkKeysyms._i,false);
-               ([coercions],"Display _coercions",GdkKeysyms._c,false);
-               ([raw_matching],"Display raw _matching expressions",GdkKeysyms._m,true);
-               ([notations],"Display _notations",GdkKeysyms._n,true);
-               ([all_basic],"Display _all basic low-level contents",GdkKeysyms._a,false);
-               ([existential],"Display _existential variable instances",GdkKeysyms._e,false);
-               ([universes],"Display _universe levels",GdkKeysyms._u,false);
-               ([all_basic;existential;universes],"Display all _low-level contents",GdkKeysyms._l,false)
-             ] in
-             let setopts opts v = List.iter (fun o -> set Coq.dummy_coqtop o v) opts in
              let _ =
                List.map
                        (fun (opts,text,key,dflt) -> 
-                          setopts opts dflt;
                           view_factory#add_check_item ~key ~active:dflt text
                             ~callback:(fun v -> do_or_activate (fun a ->
-                                                                  setopts opts v;
+                                                                  setopts session_notebook#current_term.toplvl opts v;
                                                                   a#show_goals) ()))
                        print_items
              in
@@ -3068,7 +3083,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
                                                                                  let f = if Filename.check_suffix f ".v" then f else f^".v" in
 										 load_file (fun s -> print_endline s; exit 1) f)
                                                                     files;
-								  activate_input 0
+								 activate_input 0 
 								end
 							      else
 								begin
@@ -3078,6 +3093,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 								end;
                                   initial_about session_notebook#current_term.proof_view#buffer;
                                   !show_toolbar !current.show_toolbar;
+                                  Command_windows.get_current_toplevel := (fun () -> session_notebook#current_term.toplvl);
                                   session_notebook#current_term.script#misc#grab_focus ()
 
 ;;

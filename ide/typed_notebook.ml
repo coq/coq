@@ -54,7 +54,9 @@ object(self)
 
   method pages = term_list
 
-  method current_term = List.nth term_list super#current_page
+  method current_term =
+    List.nth term_list super#current_page
+
 end
 
 let create build =

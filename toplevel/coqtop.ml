@@ -150,6 +150,7 @@ let usage () =
 
 let warning s = msg_warning (str s)
 
+let ide_slave = ref false
 
 let ide_args = ref []
 let parse_args arglist =
@@ -287,6 +288,8 @@ let parse_args arglist =
 
     | "-no-hash-consing" :: rem -> Flags.hash_cons_proofs := false; parse rem
 
+    | "-ideslave" :: rem -> ide_slave := true; parse rem
+
     | s :: rem ->
 	  ide_args := s :: !ide_args;
 	  parse rem
@@ -308,6 +311,12 @@ let init arglist =
   begin
     try
       parse_args arglist;
+      if !ide_args <> [] then usage ();
+      if !ide_slave then begin
+        Flags.make_silent true;
+        Pfedit.set_undo (Some 5000);
+        Ide_blob.init_stdout ()
+      end;
       if_verbose print_header ();
       init_load_path ();
       inputstate ();
@@ -342,13 +351,14 @@ let init_ide arglist =
   Flags.make_silent true;
   Pfedit.set_undo (Some 5000);
   Ide_blob.init_stdout ();
-  init arglist;
   List.rev !ide_args
 
 let start () =
   init_toplevel (List.tl (Array.to_list Sys.argv));
-  if !ide_args <> [] then usage ();
-  Toplevel.loop();
+  if !ide_slave then
+    Ide_blob.loop ()
+  else
+    Toplevel.loop();
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
   Mltop.ocaml_toploop();

@@ -17,4 +17,4 @@ class command_window :
 
 val command_window : unit -> command_window
 
-
+val get_current_toplevel : (unit -> Coq.coqtop) ref

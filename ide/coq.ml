@@ -47,9 +47,8 @@ let msg m =
 let msgnl m =
   (msg m)^"\n"
 
-let init () =
-  Coqtop.init_ide (List.tl (Array.to_list Sys.argv))
-
+let init () = List.tl (Array.to_list Sys.argv)
+(*  Coqtop.init_ide (List.tl (Array.to_list Sys.argv))*)
 
 let i = ref 0
 
@@ -83,22 +82,40 @@ let version () =
     (if Mltop.is_native then "native" else "bytecode")
     (if Coq_config.best="opt" then "native" else "bytecode")
 
-let eval_call c =
-  match Ide_blob.eval_call c with
-    | Ide_blob.Good v -> v
-    | Ide_blob.Fail e -> raise e
+exception Coq_failure of (Util.loc * Pp.std_ppcmds)
 
-let is_in_loadpath coqtop s = eval_call (Ide_blob.is_in_loadpath s)
+let eval_call coqtop (c:'a Ide_blob.call) =
+  Safe_marshal.send coqtop.cin c;
+  let res = (Safe_marshal.receive: in_channel -> 'a Ide_blob.value) coqtop.cout in
+  match res with
+    | Ide_blob.Good v -> v
+    | Ide_blob.Fail (l,pp) -> prerr_endline (msg pp); raise (Coq_failure (l,pp))
+
+let is_in_loadpath coqtop s = eval_call coqtop (Ide_blob.is_in_loadpath s)
  
 let reset_initial = Ide_blob.reinit
 
-let raw_interp coqtop s = eval_call (Ide_blob.raw_interp s)
+let raw_interp coqtop s = eval_call coqtop (Ide_blob.raw_interp s)
 
-let interp coqtop b s = eval_call (Ide_blob.interp b s)
+let interp coqtop b s = eval_call coqtop (Ide_blob.interp b s)
 
-let rewind coqtop i = eval_call (Ide_blob.rewind i)
+let rewind coqtop i = eval_call coqtop (Ide_blob.rewind i)
  
-let read_stdout coqtop = eval_call Ide_blob.read_stdout
+let read_stdout coqtop = eval_call coqtop Ide_blob.read_stdout
+
+let spawn_coqtop () =
+  let prog = Sys.argv.(0) in
+  let dir = Filename.dirname prog in
+  let oc,ic = Unix.open_process (dir^"/coqtop.opt -ideslave") in
+  { cin = ic; cout = oc }
+
+let kill_coqtop coqtop = raw_interp coqtop "Quit."
+
+let reset_coqtop coqtop =
+  kill_coqtop coqtop;
+  let ni = spawn_coqtop () in
+  coqtop.cin <- ni.cin;
+  coqtop.cout <- ni.cout
 
 module PrintOpt =
 struct
@@ -120,10 +137,10 @@ struct
     List.iter
       (fun cmd -> 
          let str = (if value then "Set" else "Unset") ^ " Printing " ^ cmd ^ "." in
-         raw_interp dummy_coqtop str)
+         raw_interp coqtop str)
       opt
 
-  let enforce_hack () = Hashtbl.iter (set ()) state_hack 
+  let enforce_hack coqtop = Hashtbl.iter (set coqtop) state_hack 
 end
 
 let rec is_pervasive_exn = function
@@ -158,15 +175,15 @@ let print_toplevel_error exc =
 
 let process_exn e = let s,loc= print_toplevel_error e in (msgnl s,loc)
 
-type  tried_tactic =
+type tried_tactic =
   | Interrupted
   | Success of int (* nb of goals after *)
   | Failed
 
 let goals coqtop =
-  PrintOpt.enforce_hack ();
-  eval_call Ide_blob.current_goals
+  PrintOpt.enforce_hack coqtop;
+  eval_call coqtop Ide_blob.current_goals
 
-let make_cases coqtop s = eval_call (Ide_blob.make_cases s)
+let make_cases coqtop s = eval_call coqtop (Ide_blob.make_cases s)
 
-let current_status coqtop = eval_call Ide_blob.current_status
+let current_status coqtop = eval_call coqtop Ide_blob.current_status

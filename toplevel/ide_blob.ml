@@ -403,7 +403,9 @@ let concl_next_tac sigma concl =
   ])
 
 let current_goals () =
-  let pfts = Pfedit.get_pftreestate () in
+  let pfts =
+    Proof_global.give_me_the_proof ()
+  in
   let { Evd.it=all_goals ; sigma=sigma } = Proof.V82.subgoals pfts in
   if all_goals = [] then
     begin
@@ -524,12 +526,14 @@ type 'a call =
 
 type 'a value =
   | Good of 'a
-  | Fail of exn
+  | Fail of (Util.loc * Pp.std_ppcmds)
 
 let eval_call c = 
+  let null_formatter = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in
   let filter_compat_exn = function
     | Vernac.DuringCommandInterp (loc,inner)
     | Vernacexpr.DuringSyntaxChecking (loc,inner) -> inner
+    | Vernacexpr.Quit -> raise Vernacexpr.Quit
     | e -> e
   in
   try Good (match c with
@@ -541,7 +545,11 @@ let eval_call c =
               | Cur_goals -> Obj.magic (current_goals ())
               | Cur_status -> Obj.magic (current_status ())
               | Cases s -> Obj.magic (make_cases s))
-  with e -> Fail (filter_compat_exn e)
+  with e ->
+    let (l,pp) = explain_exn (filter_compat_exn e) in
+    (* force evaluation of format stream *)
+    Pp.msg_with null_formatter pp;
+    Fail (l,pp)
 
 let is_in_loadpath s : bool call =
   In_loadpath s
@@ -568,3 +576,14 @@ let make_cases s : string list list call =
   Cases s
 
 (* End of wrappers *)
+
+let loop () =
+  try
+    while true do
+      let q = (Safe_marshal.receive: in_channel -> 'a call) stdin in
+      let r = eval_call q in
+      Safe_marshal.send stdout r
+    done
+  with
+    | Vernacexpr.Quit -> exit 0
+    | _ -> exit 1

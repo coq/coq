@@ -19,6 +19,14 @@ type coqtop
 
 val dummy_coqtop : coqtop
 
+val spawn_coqtop : unit -> coqtop
+
+val kill_coqtop : coqtop -> unit
+
+val reset_coqtop : coqtop -> unit
+
+exception Coq_failure of (Util.loc * Pp.std_ppcmds)
+
 module PrintOpt :
 sig
   type t
@@ -61,3 +69,5 @@ type tried_tactic =
 val current_status : coqtop -> string
 
 val goals : coqtop -> goals
+
+val msgnl : Pp.std_ppcmds -> string
