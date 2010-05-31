@@ -275,7 +275,7 @@ let interp verbosely s =
     if is_vernac_known_option_command vernac then
       user_error_loc loc (str "Use CoqIDE display menu instead");
     if is_vernac_query_command vernac then
-      user_error_loc loc (str "Warning: query commands should not be inserted in scripts");
+      msgerrnl (str "Warning: query commands should not be inserted in scripts");
     if not (is_vernac_goal_printing_command vernac) then
       (* Verbose if in small step forward and not a tactic *)
       Flags.make_silent (not verbosely);
@@ -421,7 +421,6 @@ let current_goals () =
                    a ++ (Printer.pr_concl i sigma g) ++ (spc ())) 1
                 (str "This subproof is complete, but there are still unfocused goals:" ++ (fnl ()))
                 bgoals))
-
     end
   else
     begin
@@ -439,44 +438,6 @@ let current_goals () =
       in
       Goals (List.map process_goal all_goals)
     end
-
-(*
-  let pfts = Proof_global.give_me_the_proof () in
-  let { Evd.it = goals ; sigma = sigma } = Proof.V82.subgoals pfts in
-  if goals = [] then
-    begin
-      Message (string_of_ppcmds (
-        let { Evd.it = bgoals ; sigma = sigma } = Proof.V82.background_subgoals pfts in
-        match bgoals with
-          | [] ->
-              let exl = Evarutil.non_instantiated sigma in
-              (str (if exl = [] then "Proof Completed." else
-                      "No more subgoals but non-instantiated existential variables:") ++
-               (fnl ()) ++ (pr_evars_int 1 exl))
-          | _ ->
-              Util.list_fold_left_i
-                (fun i a g ->
-                   a ++ (Printer.pr_concl i sigma g) ++ (spc ())) 1
-                (str "This subproof is complete, but there are still unfocused goals:" ++ (fnl ()))
-                bgoals))
-    end
-  else
-    begin
-      let process_goal gs =
-        let (g,sigma) = Goal.V82.nf_evar sigma gs in
-        let env = Goal.V82.unfiltered_env sigma g in
-        let ccl =
-          string_of_ppcmds (pr_ltype_env_at_top env (Goal.V82.concl sigma g)) in
-        let process_hyp h_env d acc =
-          (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in
-        let hyps =
-          List.rev (Environ.fold_named_context process_hyp env ~init:[]) in
-        (hyps,(ccl,concl_next_tac gs))
-      in
-      Goals (List.map process_goal all_goals)
-    end
- *)
-
 
 let id_of_name = function
   | Names.Anonymous -> id_of_string "x"
@@ -533,6 +494,24 @@ let init_stdout,read_stdout =
              let r = Buffer.contents out_buff in
              Buffer.clear out_buff; r)
 
+(* XXX - duplicates toplevel/toplevel.ml. should be merged. *)
+let explain_exn e =
+  let toploc,exc =
+    match e with
+      | Stdpp.Exc_located (loc, inner) ->
+          loc,inner
+      | Error_in_file (s, (is_in_lib, fname, loc), inner) ->
+          dummy_loc,inner
+      | _ -> dummy_loc,e
+  in
+  toploc,(Cerrors.explain_exn exc)
+
+
+(**
+ * Wrappers around Coq calls. We use phantom types and GADT to protect ourselves
+  * against wild casts
+  *)
+
 type 'a call =
   | In_loadpath of string
   | Raw_interp of string
@@ -543,17 +522,26 @@ type 'a call =
   | Cur_status
   | Cases of string
 
+type 'a value =
+  | Good of 'a
+  | Fail of exn
 
-let eval_call = function
-  | In_loadpath s -> Obj.magic (is_in_loadpath s)
-  | Raw_interp s -> Obj.magic (raw_interp s)
-  | Interp (b,s) -> Obj.magic (interp b s)
-  | Rewind i -> Obj.magic (rewind i)
-  | Read_stdout -> Obj.magic (read_stdout ())
-  | Cur_goals -> Obj.magic (current_goals ())
-  | Cur_status -> Obj.magic (current_status ())
-  | Cases s -> Obj.magic (make_cases s)
-
+let eval_call c = 
+  let filter_compat_exn = function
+    | Vernac.DuringCommandInterp (loc,inner)
+    | Vernacexpr.DuringSyntaxChecking (loc,inner) -> inner
+    | e -> e
+  in
+  try Good (match c with
+              | In_loadpath s -> Obj.magic (is_in_loadpath s)
+              | Raw_interp s -> Obj.magic (raw_interp s)
+              | Interp (b,s) -> Obj.magic (interp b s)
+              | Rewind i -> Obj.magic (rewind i)
+              | Read_stdout -> Obj.magic (read_stdout ())
+              | Cur_goals -> Obj.magic (current_goals ())
+              | Cur_status -> Obj.magic (current_status ())
+              | Cases s -> Obj.magic (make_cases s))
+  with e -> Fail (filter_compat_exn e)
 
 let is_in_loadpath s : bool call =
   In_loadpath s
@@ -578,3 +566,5 @@ let current_status : string call =
 
 let make_cases s : string list list call =
   Cases s
+
+(* End of wrappers *)

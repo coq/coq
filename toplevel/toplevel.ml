@@ -164,26 +164,26 @@ let print_location_in_file s inlibrary fname loc =
       hov 0 (errstrm ++ str"Module " ++ str ("\""^fname^"\"") ++ spc() ++
              str"characters " ++ Cerrors.print_loc loc) ++ fnl ()
     else
-    let (bp,ep) = unloc loc in
-    let ic = open_in fname in
-    let rec line_of_pos lin bol cnt =
-      if cnt < bp then
-        if input_char ic == '\n'
-        then line_of_pos (lin + 1) (cnt +1) (cnt+1)
-        else line_of_pos lin bol (cnt+1)
-      else (lin, bol)
-    in
-    try
-      let (line, bol) = line_of_pos 1 0 0 in
-      close_in ic;
-      hov 0 (* No line break so as to follow emacs error message format *)
-        (errstrm ++ str"File " ++ str ("\""^fname^"\"") ++
-         str", line " ++ int line ++ str", characters " ++
-         Cerrors.print_loc (make_loc (bp-bol,ep-bol))) ++ str":" ++
-      fnl ()
-    with e ->
-      (close_in ic;
-       hov 1 (errstrm ++ spc() ++ str"(invalid location):") ++ fnl ())
+      let (bp,ep) = unloc loc in
+      let ic = open_in fname in
+      let rec line_of_pos lin bol cnt =
+        if cnt < bp then
+          if input_char ic == '\n'
+          then line_of_pos (lin + 1) (cnt +1) (cnt+1)
+          else line_of_pos lin bol (cnt+1)
+        else (lin, bol)
+      in
+      try
+        let (line, bol) = line_of_pos 1 0 0 in
+        close_in ic;
+        hov 0 (* No line break so as to follow emacs error message format *)
+          (errstrm ++ str"File " ++ str ("\""^fname^"\"") ++
+           str", line " ++ int line ++ str", characters " ++
+           Cerrors.print_loc (make_loc (bp-bol,ep-bol))) ++ str":" ++
+        fnl ()
+      with e ->
+        (close_in ic;
+         hov 1 (errstrm ++ spc() ++ str"(invalid location):") ++ fnl ())
 
 let print_command_location ib dloc =
   match dloc with

@@ -83,17 +83,22 @@ let version () =
     (if Mltop.is_native then "native" else "bytecode")
     (if Coq_config.best="opt" then "native" else "bytecode")
 
-let is_in_loadpath coqtop s = Ide_blob.eval_call (Ide_blob.is_in_loadpath s)
+let eval_call c =
+  match Ide_blob.eval_call c with
+    | Ide_blob.Good v -> v
+    | Ide_blob.Fail e -> raise e
+
+let is_in_loadpath coqtop s = eval_call (Ide_blob.is_in_loadpath s)
  
 let reset_initial = Ide_blob.reinit
 
-let raw_interp coqtop s = Ide_blob.eval_call (Ide_blob.raw_interp s)
+let raw_interp coqtop s = eval_call (Ide_blob.raw_interp s)
 
-let interp coqtop b s = Ide_blob.eval_call (Ide_blob.interp b s)
+let interp coqtop b s = eval_call (Ide_blob.interp b s)
 
-let rewind coqtop i = Ide_blob.eval_call (Ide_blob.rewind i)
+let rewind coqtop i = eval_call (Ide_blob.rewind i)
  
-let read_stdout coqtop = Ide_blob.eval_call Ide_blob.read_stdout
+let read_stdout coqtop = eval_call Ide_blob.read_stdout
 
 module PrintOpt =
 struct
@@ -160,8 +165,8 @@ type  tried_tactic =
 
 let goals coqtop =
   PrintOpt.enforce_hack ();
-  Ide_blob.eval_call Ide_blob.current_goals
+  eval_call Ide_blob.current_goals
 
-let make_cases coqtop s = Ide_blob.eval_call (Ide_blob.make_cases s)
+let make_cases coqtop s = eval_call (Ide_blob.make_cases s)
 
-let current_status coqtop = Ide_blob.eval_call Ide_blob.current_status
+let current_status coqtop = eval_call Ide_blob.current_status

@@ -21,7 +21,11 @@ val init_stdout : unit -> unit
 
 type 'a call
 
-val eval_call : 'a call -> 'a
+type 'a value =
+  | Good of 'a
+  | Fail of exn
+
+val eval_call : 'a call -> 'a value
 
 val raw_interp : string -> unit call
 
