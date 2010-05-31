@@ -10,6 +10,7 @@ open Names
 open Term
 open Environ
 open Evd
+open Ide_blob
 
 val short_version : unit -> string
 val version : unit -> string
@@ -35,9 +36,14 @@ end
 val reset_initial : coqtop -> unit
 
 val init : unit -> string list
+
+val raw_interp : coqtop -> string -> unit
+
 val interp : coqtop -> bool -> string -> int
 
 val rewind : coqtop -> int -> int
+
+val read_stdout : coqtop -> string
 
 val process_exn : exn -> string*(Util.loc option)
 
@@ -53,11 +59,5 @@ type tried_tactic =
 (* Message to display in lower status bar. *)
 
 val current_status : coqtop -> string
-
-type 'a menu = 'a * (string * string) list
-
-type goals =
-  | Message of string
-  | Goals of ((string menu) list * string menu) list
 
 val goals : coqtop -> goals

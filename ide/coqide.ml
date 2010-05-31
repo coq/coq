@@ -778,7 +778,7 @@ object(self)
         prerr_endline "Send_to_coq starting now";
         let r = Coq.interp Coq.dummy_coqtop verbosely phrase in
         let is_complete = true in
-        let msg = read_stdout () in
+        let msg = Coq.read_stdout Coq.dummy_coqtop in
         sync display_output msg;
         Some (is_complete,r)
       with e ->
@@ -1008,7 +1008,6 @@ object(self)
                 prerr_endline "Moving (long) start_of_input...";
                 input_buffer#move_mark ~where:start (`NAME "start_of_input");
                 self#show_goals;
-                clear_stdout ();
                 self#clear_message)
           ();
       with _ ->
@@ -3121,7 +3120,6 @@ let start () =
 		  then Pp.warning msg
 		  else failwith ("Coqide internal error: " ^ msg)));
     Command_windows.main ();
-    init_stdout ();
     main files;
     if !Coq_config.with_geoproof then ignore (Thread.create check_for_geoproof_input ());
     while true do

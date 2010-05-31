@@ -16,8 +16,6 @@ val doc_url : unit -> string
 val browse : (string -> unit) -> string -> unit
 val browse_keyword : (string -> unit) -> string -> unit
 val byte_offset_to_char_offset : string -> int -> int
-val init_stdout : unit -> unit
-val clear_stdout : unit -> unit
 val debug : bool ref
 val disconnect_revert_timer : unit -> unit
 val disconnect_auto_save_timer : unit -> unit
@@ -36,7 +34,6 @@ val prerr_endline : string -> unit
 val prerr_string : string -> unit
 val print_id : 'a -> unit
 
-val read_stdout : unit -> string
 val revert_timer : GMain.Timeout.id option ref
 val auto_save_timer : GMain.Timeout.id option ref
 val select_file_for_open :

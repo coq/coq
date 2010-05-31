@@ -100,6 +100,7 @@ val pr_transparent_state   : transparent_state -> std_ppcmds
 val pr_goal                : goal sigma -> std_ppcmds
 val pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds
 val pr_subgoal             : int -> evar_map -> goal list -> std_ppcmds
+val pr_concl               : int -> evar_map -> goal -> std_ppcmds
 
 val pr_open_subgoals       : unit -> std_ppcmds
 val pr_nth_open_subgoal    : int -> std_ppcmds

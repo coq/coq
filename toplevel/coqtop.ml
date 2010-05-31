@@ -341,6 +341,7 @@ let init_toplevel = init
 let init_ide arglist =
   Flags.make_silent true;
   Pfedit.set_undo (Some 5000);
+  Ide_blob.init_stdout ();
   init arglist;
   List.rev !ide_args
 

@@ -104,9 +104,9 @@ object(self)
 	then com ^ " " else com ^ " " ^ entry#text ^" . "
       in
       try
-	ignore(Coq.interp Coq.dummy_coqtop false phrase);
+	Coq.raw_interp Coq.dummy_coqtop phrase;
 	result#buffer#set_text
-	  ("Result for command " ^ phrase ^ ":\n" ^ Ideutils.read_stdout ())
+	  ("Result for command " ^ phrase ^ ":\n" ^ (Coq.read_stdout Coq.dummy_coqtop))
       with e ->
 	let (s,loc) = Coq.process_exn e in
 	assert (Glib.Utf8.validate s);

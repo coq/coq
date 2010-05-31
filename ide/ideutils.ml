@@ -147,26 +147,6 @@ let set_highlight_timer f =
 	Some (GMain.Timeout.add ~ms:2000
 		~callback:(fun () -> f (); highlight_timer := None; true))
 
-
-(* Get back the standard coq out channels *)
-let init_stdout,read_stdout,clear_stdout =
-  let out_buff = Buffer.create 100 in
-  let out_ft = Format.formatter_of_buffer out_buff in
-  let deep_out_ft = Format.formatter_of_buffer out_buff in
-  let _ = Pp_control.set_gp deep_out_ft Pp_control.deep_gp in
-  (fun () ->
-    Pp_control.std_ft := out_ft;
-    Pp_control.err_ft := out_ft;
-    Pp_control.deep_ft := deep_out_ft;
-),
-  (fun () -> Format.pp_print_flush out_ft ();
-     let r = Buffer.contents out_buff in
-     prerr_endline "Output from Coq is: "; prerr_endline r;
-     Buffer.clear out_buff; r),
-  (fun () ->
-     Format.pp_print_flush out_ft (); Buffer.clear out_buff)
-
-
 let last_dir = ref ""
 
 let filter_all_files () = GFile.filter
