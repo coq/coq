@@ -25,9 +25,15 @@ open Namegen
 open Ideutils
 open Compat
 
-type coqtop = unit
+type coqtop = {
+  mutable cout : in_channel ;
+  mutable cin : out_channel ;
+}
 
-let dummy_coqtop = ()
+let dummy_coqtop = {
+  cout = stdin ;
+  cin = stdout ;
+}
 
 let prerr_endline s = if !debug then prerr_endline s else ()
 
@@ -77,17 +83,17 @@ let version () =
     (if Mltop.is_native then "native" else "bytecode")
     (if Coq_config.best="opt" then "native" else "bytecode")
 
-let is_in_loadpath coqtop = Ide_blob.is_in_loadpath
+let is_in_loadpath coqtop s = Ide_blob.eval_call (Ide_blob.is_in_loadpath s)
  
 let reset_initial = Ide_blob.reinit
 
-let raw_interp coqtop = Ide_blob.raw_interp
+let raw_interp coqtop s = Ide_blob.eval_call (Ide_blob.raw_interp s)
 
-let interp coqtop = Ide_blob.interp
+let interp coqtop b s = Ide_blob.eval_call (Ide_blob.interp b s)
 
-let rewind coqtop = Ide_blob.rewind
+let rewind coqtop i = Ide_blob.eval_call (Ide_blob.rewind i)
  
-let read_stdout = Ide_blob.read_stdout
+let read_stdout coqtop = Ide_blob.eval_call Ide_blob.read_stdout
 
 module PrintOpt =
 struct
@@ -109,7 +115,7 @@ struct
     List.iter
       (fun cmd -> 
          let str = (if value then "Set" else "Unset") ^ " Printing " ^ cmd ^ "." in
-         Ide_blob.raw_interp str)
+         raw_interp dummy_coqtop str)
       opt
 
   let enforce_hack () = Hashtbl.iter (set ()) state_hack 
@@ -154,8 +160,8 @@ type  tried_tactic =
 
 let goals coqtop =
   PrintOpt.enforce_hack ();
-  Ide_blob.current_goals ()
+  Ide_blob.eval_call Ide_blob.current_goals
 
-let make_cases coqtop = Ide_blob.make_cases
+let make_cases coqtop s = Ide_blob.eval_call (Ide_blob.make_cases s)
 
-let current_status = Ide_blob.current_status
+let current_status coqtop = Ide_blob.eval_call Ide_blob.current_status

@@ -79,6 +79,7 @@ Definition q := O.
 Definition r := O.
 
 (* Bug 2082 : Follow the numbers *)
+(* Broken due to proof engine rewriting *)
 
 Variable A : Prop.
 Variable B : Prop.

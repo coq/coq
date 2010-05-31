@@ -974,7 +974,7 @@ object(self)
               cmd_stack;
             Stack.clear cmd_stack;
             self#clear_message)();
-    Coq.reset_initial Coq.dummy_coqtop
+    Coq.reset_initial ()
 
   (* backtrack Coq to the phrase preceding iterator [i] *)
   method backtrack_to_no_lock i =
@@ -1121,7 +1121,7 @@ object(self)
     is_active <- false;
     (match act_id with None -> ()
        | Some id ->
-           reset_initial Coq.dummy_coqtop;
+           reset_initial ();
            input_view#misc#disconnect id;
            prerr_endline "DISCONNECTED old active : ";
            print_id id;

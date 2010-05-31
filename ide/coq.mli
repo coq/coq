@@ -33,7 +33,7 @@ sig
   val set : coqtop -> t -> bool -> unit
 end
 
-val reset_initial : coqtop -> unit
+val reset_initial : unit -> unit
 
 val init : unit -> string list
 
