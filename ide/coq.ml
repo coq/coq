@@ -42,15 +42,7 @@ let msgnl m =
   (msg m)^"\n"
 
 let init () =
-  (* To hide goal in lower window.
-     Problem: should not hide "xx is assumed"
-     messages *)
-(**)
-  Flags.make_silent true;
-  (* don't set a too large undo stack because Edit.create allocates an array *)
-  Pfedit.set_undo (Some 5000);
-(**)
-  Coqtop.init_ide ()
+  Coqtop.init_ide (List.tl (Array.to_list Sys.argv))
 
 
 let i = ref 0

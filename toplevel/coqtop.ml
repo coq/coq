@@ -125,37 +125,6 @@ let set_compat_version = function
   | "8.0" -> warning "Compatibility with version 8.0 not supported."
   | s -> error ("Unknown compatibility version \""^s^"\".")
 
-let re_exec_version = ref ""
-let set_byte () = re_exec_version := "byte"
-let set_opt () = re_exec_version := "opt"
-
-(* Re-exec Coq in bytecode or native code if necessary. [s] is either
-   ["byte"] or ["opt"]. Notice that this is possible since the nature of
-   the toplevel has already been set in [Mltop] by the main file created
-   by coqmktop (see scripts/coqmktop.ml). *)
-
-let re_exec is_ide =
-  let s = !re_exec_version in
-  let is_native = Mltop.is_native in
-  (* Unix.readlink is not implemented on Windows architectures :-(
-     let prog =
-       try Unix.readlink "/proc/self/exe"
-       with Unix.Unix_error _ -> Sys.argv.(0) in
-  *)
-  let prog = Sys.argv.(0) in
-  if (is_native && s = "byte") || ((not is_native) && s = "opt")
-  then begin
-    let s = if s = "" then if is_native then "opt" else "byte" else s in
-    let newprog =
-      let dir = Filename.dirname prog in
-      let coqtop = if is_ide then "coqide." else "coqtop." in
-      let com = coqtop ^ s ^ Coq_config.exec_extension in
-      if dir <> "." then Filename.concat dir com else com
-    in
-    Sys.argv.(0) <- newprog;
-    Unix.handle_unix_error (Unix.execvp newprog) Sys.argv
-  end
-
 (*s options for the virtual machine *)
 
 let boxed_val = ref false
@@ -183,7 +152,7 @@ let warning s = msg_warning (str s)
 
 
 let ide_args = ref []
-let parse_args is_ide =
+let parse_args arglist =
   let glob_opt = ref false in
   let rec parse = function
     | [] -> ()
@@ -214,8 +183,8 @@ let parse_args is_ide =
     | "-notop" :: rem -> unset_toplevel_name (); parse rem
     | "-q" :: rem -> no_load_rc (); parse rem
 
-    | "-opt" :: rem -> set_opt(); parse rem
-    | "-byte" :: rem -> set_byte(); parse rem
+    | "-opt" :: rem -> warning "option -opt deprecated, call with .opt suffix\n"; parse rem
+    | "-byte" :: rem -> warning "option -byte deprecated, call with .byte suffix\n"; parse rem
     | "-full" :: rem -> warning "option -full deprecated\n"; parse rem
 
     | "-batch" :: rem -> set_batch_mode (); parse rem
@@ -319,15 +288,11 @@ let parse_args is_ide =
     | "-no-hash-consing" :: rem -> Flags.hash_cons_proofs := false; parse rem
 
     | s :: rem ->
-	if is_ide then begin
 	  ide_args := s :: !ide_args;
 	  parse rem
-	end else begin
-	  prerr_endline ("Don't know what to do with " ^ s); usage ()
-	end
   in
   try
-    parse (List.tl (Array.to_list Sys.argv))
+    parse arglist
   with
     | UserError(_,s) as e -> begin
 	try
@@ -337,13 +302,12 @@ let parse_args is_ide =
       end
     | e -> begin msgnl (Cerrors.explain_exn e); exit 1 end
 
-let init is_ide =
+let init arglist =
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
   Lib.init();
   begin
     try
-      parse_args is_ide;
-      re_exec is_ide;
+      parse_args arglist;
       if_verbose print_header ();
       init_load_path ();
       inputstate ();
@@ -372,12 +336,17 @@ let init is_ide =
      exit 0);
   Lib.declare_initial_state ()
 
-let init_toplevel () = init false
+let init_toplevel = init
 
-let init_ide () = init true; List.rev !ide_args
+let init_ide arglist =
+  Flags.make_silent true;
+  Pfedit.set_undo (Some 5000);
+  init arglist;
+  List.rev !ide_args
 
 let start () =
-  init_toplevel ();
+  init_toplevel (List.tl (Array.to_list Sys.argv));
+  if !ide_args <> [] then usage ();
   Toplevel.loop();
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
