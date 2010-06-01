@@ -19,7 +19,7 @@ type coqtop
 
 val dummy_coqtop : coqtop
 
-val spawn_coqtop : unit -> coqtop
+val spawn_coqtop : string -> coqtop
 
 val kill_coqtop : coqtop -> unit
 
@@ -42,8 +42,6 @@ sig
 end
 
 val reset_initial : unit -> unit
-
-val init : unit -> string list
 
 val raw_interp : coqtop -> string -> unit
 

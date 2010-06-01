@@ -529,6 +529,8 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
     buffer#apply_tag ~start:decl_start ~stop:decl_end Tags.Script.folded;
     buffer#apply_tag ~start:decl_end ~stop:prf_end Tags.Script.hidden)
 
+let sup_args = ref ""
+
 class analyzed_view (_script:Undo.undoable_view) (_pv:GText.view) (_mv:GText.view) _cs _ct =
 object(self)
   val input_view = _script
@@ -1361,7 +1363,7 @@ let create_session () =
   let stack =
     Stack.create () in
   let ct =
-    spawn_coqtop () in
+    spawn_coqtop !sup_args in
   let legacy_av =
     new analyzed_view script proof message stack ct in
   let _ =
@@ -3117,9 +3119,13 @@ let rec check_for_geoproof_input () =
 	(* cb_Dr#set_text "Ack" *)
     done
 
+let rec init = function
+  | [] -> []
+  | "-args"::str::rem -> sup_args := str; init rem
+  | f::rem -> f::(init rem)
 
 let start () =
-  let files = Coq.init () in
+  let files = init (List.tl (Array.to_list Sys.argv)) in
     ignore_break ();
     GtkMain.Rc.add_default_file (lib_ide_file ".coqide-gtk2rc");
     (try

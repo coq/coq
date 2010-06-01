@@ -28,11 +28,13 @@ open Compat
 type coqtop = {
   mutable cout : in_channel ;
   mutable cin : out_channel ;
+  sup_args : string ;
 }
 
 let dummy_coqtop = {
   cout = stdin ;
   cin = stdout ;
+  sup_args = "" ;
 }
 
 let prerr_endline s = if !debug then prerr_endline s else ()
@@ -46,9 +48,6 @@ let msg m =
 
 let msgnl m =
   (msg m)^"\n"
-
-let init () = List.tl (Array.to_list Sys.argv)
-(*  Coqtop.init_ide (List.tl (Array.to_list Sys.argv))*)
 
 let i = ref 0
 
@@ -103,17 +102,17 @@ let rewind coqtop i = eval_call coqtop (Ide_blob.rewind i)
  
 let read_stdout coqtop = eval_call coqtop Ide_blob.read_stdout
 
-let spawn_coqtop () =
+let spawn_coqtop sup_args =
   let prog = Sys.argv.(0) in
   let dir = Filename.dirname prog in
-  let oc,ic = Unix.open_process (dir^"/coqtop.opt -ideslave") in
-  { cin = ic; cout = oc }
+  let oc,ic = Unix.open_process (dir^"/coqtop.opt -ideslave "^sup_args) in
+  { cin = ic; cout = oc ; sup_args = sup_args }
 
 let kill_coqtop coqtop = raw_interp coqtop "Quit."
 
 let reset_coqtop coqtop =
   kill_coqtop coqtop;
-  let ni = spawn_coqtop () in
+  let ni = spawn_coqtop coqtop.sup_args in
   coqtop.cin <- ni.cin;
   coqtop.cout <- ni.cout
 
