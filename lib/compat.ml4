@@ -80,6 +80,7 @@ module type LexerSig = sig
   module Error : sig
     type t
     exception E of t
+    val to_string : t -> string
   end
 end
 
