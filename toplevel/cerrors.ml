@@ -52,14 +52,9 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (anomaly_string () ++ str s ++ str ". Received exception is:" ++
 	fnl() ++ explain_exn_default_aux anomaly_string report_fn exc)
   | Match_failure(filename,pos1,pos2) ->
-      hov 0 (anomaly_string () ++ str "Match failure in file " ++ str (guill filename) ++
-      if Sys.ocaml_version = "3.06" then
-		   (str " from character " ++ int pos1 ++
-                    str " to " ++ int pos2)
-		 else
-		   (str " at line " ++ int pos1 ++
-		    str " character " ++ int pos2)
-	           ++ report_fn ())
+      hov 0 (anomaly_string () ++ str "Match failure in file " ++
+	     str (guill filename) ++ str " at line " ++ int pos1 ++
+	     str " character " ++ int pos2 ++ report_fn ())
   | Not_found ->
       hov 0 (anomaly_string () ++ str "uncaught exception Not_found" ++ report_fn ())
   | Failure s ->
@@ -118,16 +113,11 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
                ++ explain_exn_default_aux anomaly_string report_fn exc)
   | Assert_failure (s,b,e) ->
       hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
-	       (if s <> "" then
-		 if Sys.ocaml_version = "3.06" then
-		   (str ("(file \"" ^ s ^ "\", characters ") ++
-		    int b ++ str "-" ++ int e ++ str ")")
-		 else
-		   (str ("(file \"" ^ s ^ "\", line ") ++ int b ++
-		    str ", characters " ++ int e ++ str "-" ++
-		    int (e+6) ++ str ")")
-	       else
-		 (mt ())) ++
+	       (if s = "" then mt ()
+		else
+		  (str ("(file \"" ^ s ^ "\", line ") ++ int b ++
+		   str ", characters " ++ int e ++ str "-" ++
+		   int (e+6) ++ str ")")) ++
 	       report_fn ())
   | AlreadyDeclared msg ->
       hov 0 (msg ++ str ".")

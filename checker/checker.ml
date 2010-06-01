@@ -238,14 +238,9 @@ let rec explain_exn = function
   | Anomaly (s,pps) ->
       hov 1 (anomaly_string () ++ where s ++ pps ++ report ())
   | Match_failure(filename,pos1,pos2) ->
-      hov 1 (anomaly_string () ++ str "Match failure in file " ++ str (guill filename) ++
-      if Sys.ocaml_version = "3.06" then
-		   (str " from character " ++ int pos1 ++
-                    str " to " ++ int pos2)
-		 else
-		   (str " at line " ++ int pos1 ++
-		    str " character " ++ int pos2)
-	           ++ report ())
+      hov 1 (anomaly_string () ++ str "Match failure in file " ++
+	     str (guill filename) ++ str " at line " ++ int pos1 ++
+	     str " character " ++ int pos2 ++ report ())
   | Not_found ->
       hov 0 (anomaly_string () ++ str "uncaught exception Not_found" ++ report ())
   | Failure s ->
@@ -279,16 +274,11 @@ let rec explain_exn = function
                ++ explain_exn exc)
   | Assert_failure (s,b,e) ->
       hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
-	       (if s <> "" then
-		 if Sys.ocaml_version = "3.06" then
-		   (str ("(file \"" ^ s ^ "\", characters ") ++
-		    int b ++ str "-" ++ int e ++ str ")")
-		 else
-		   (str ("(file \"" ^ s ^ "\", line ") ++ int b ++
-		    str ", characters " ++ int e ++ str "-" ++
-		    int (e+6) ++ str ")")
-	       else
-		 (mt ())) ++
+	       (if s = "" then mt ()
+		else
+		  (str ("(file \"" ^ s ^ "\", line ") ++ int b ++
+		   str ", characters " ++ int e ++ str "-" ++
+		   int (e+6) ++ str ")")) ++
 	       report ())
   | reraise ->
       hov 0 (anomaly_string () ++ str "Uncaught exception " ++
