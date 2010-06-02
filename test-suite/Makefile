@@ -28,13 +28,14 @@
 # Default value when called from a freshly compiled Coq, but can be
 # easily overridden
 BIN := ../bin/
+LIB := ..
 
 ifeq ($(BEST),byte)
   coqtop := $(BIN)coqtop.byte -boot -q -batch -I prerequisite
-  bincoqc := $(BIN)coqc -byte -I prerequisite
+  bincoqc := $(BIN)coqc -coqlib $(LIB) -byte -I prerequisite
 else
   coqtop := $(BIN)coqtop -boot -q -batch -I prerequisite
-  bincoqc := $(BIN)coqc -I prerequisite
+  bincoqc := $(BIN)coqc -coqlib $(LIB) -I prerequisite
 endif
 
 command := $(coqtop) -top Top -load-vernac-source
@@ -359,6 +360,7 @@ xml.log:
 	@echo "TEST      xml"
 	$(HIDE){ \
 	  echo $(call log_intro,xml); \
+	  rm -rf misc/xml; \
 	  COQ_XML_LIBRARY_ROOT=misc/xml \
 	  $(bincoqc) -xml misc/berardi_test 2>&1; times; \
 	  if [ ! -d misc/xml ]; then \
