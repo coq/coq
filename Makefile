@@ -202,6 +202,7 @@ indepclean:
 	rm -f test-suite/check.log
 	rm -f glob.dump
 	rm -f config/revision.ml revision
+	$(MAKE) -C test-suite clean
 
 docclean:
 	rm -f doc/*/*.dvi doc/*/*.aux doc/*/*.log doc/*/*.bbl doc/*/*.blg doc/*/*.toc \
@@ -248,6 +249,7 @@ cleanconfig:
 	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-v7 ide/undo.mli
 
 distclean: clean cleanconfig
+	$(MAKE) -C test-suite distclean
 
 cleantheories:
 	rm -f states/*.coq
