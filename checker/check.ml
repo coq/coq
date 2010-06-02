@@ -366,7 +366,7 @@ let recheck_library ~norec ~admit ~check =
   let nochk = fold_deps_list LibrarySet.add nrl LibrarySet.empty in
   let nochk = fold_deps_list LibrarySet.remove ml nochk in
   let nochk = fold_deps_list LibrarySet.add al nochk in
-  (* explicitely required modules cannot be skipped... *)
+  (* explicitly required modules cannot be skipped... *)
   let nochk =
     List.fold_right LibrarySet.remove (List.map fst (nrl@ml)) nochk in
   (* *)

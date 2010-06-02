@@ -70,7 +70,7 @@ let pp strm fn =
       let ch = open_out filename in
        pp_ch strm ch;
        close_out ch ;
-       print_string ("\nWriting on file \"" ^ filename ^ "\" was succesful\n");
+       print_string ("\nWriting on file \"" ^ filename ^ "\" was successful\n");
        flush stdout
    | None ->
        pp_ch strm stdout
