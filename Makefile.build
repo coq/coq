@@ -649,7 +649,7 @@ dev/printers.cma: | dev/printers.mllib.d
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(SYSCMA) $^ -o test-printer
 	@rm -f test-printer
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) unix.cma $^ -linkall -a -o $@
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $^ -linkall -a -o $@
 
 parsing/grammar.cma: | parsing/grammar.mllib.d
 	$(SHOW)'Testing $@'
@@ -657,7 +657,7 @@ parsing/grammar.cma: | parsing/grammar.mllib.d
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) -I $(CAMLLIB) unix.cma $^ -impl" -impl test.ml4 -o test-grammar
 	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) unix.cma $^ -linkall -a -o $@
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $^ -linkall -a -o $@
 
 # toplevel/mltop.ml4 (ifdef Byte)
 
@@ -800,7 +800,7 @@ plugins/%_mod.ml: plugins/%.mllib
 	$(HIDE)\
 	DEPS=$(CAMLP4DEPS); \
 	if ls $${DEPS} > /dev/null 2>&1; then \
-	$(CAMLP4O) $(PR_O) $${DEPS} $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< $(TOTARGET); \
+	$(CAMLP4O) $(PR_O) -I $(CAMLLIB) unix.cma $${DEPS} $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< $(TOTARGET); \
 	else echo $< : Dependency $${DEPS} not ready yet; false; fi
 
 %.vo %.glob: %.v states/initial.coq $(INITPLUGINSBEST) $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
