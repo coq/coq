@@ -191,22 +191,28 @@ let best_ext = if opt then ".opt" else ".byte"
 let best_iext = if ide = "opt" then ".opt" else ".byte"
 
 let coqtopbest = coqtop^best_oext
-let coqdepbest = coqdepboot^(if w32 then ".byte" else best_oext)
-let coqmktopbest = coqmktop^(if w32 then ".byte" else best_oext)
-
-let binaries_deps =
-  let rec deps = function
-    | [] -> []
-    | (_,bin,Ide)::l ->
-	(if ide = "opt" then [bin^".native"] else []) @
-	(if ide <> "no" then [bin^".byte"] else []) @ deps l
-    | (_,bin,Both)::l when opt ->
-	(bin^".native") :: (bin^".byte") :: deps l
-    | (_,bin,_)::l -> (bin^best_oext) :: deps l
-  in deps all_binaries
+(* For inner needs, we rather use the bytecode versions of coqdep
+   and coqmktop: slightly slower but compile quickly, and ok with
+   w32 cross-compilation *)
+let coqdep_boot = coqdepboot^".byte"
+let coqmktop_boot = coqmktop^".byte"
 
 let binariesopt_deps =
-  List.filter (fun s -> Filename.check_suffix s ".native") binaries_deps
+  let addext b = b ^ ".native" in
+  let rec deps = function
+    | [] -> []
+    | (_,b,Ide)::l -> if ide="opt" then addext b :: deps l else deps l
+    | (_,b,_)::l -> if opt then addext b :: deps l else deps l
+  in deps all_binaries
+
+let binariesbyte_deps =
+  let addext b = b ^ ".byte" in
+  let rec deps = function
+    | [] -> []
+    | (_,b,Ide)::l -> if ide<>"no" then addext b :: deps l else deps l
+    | (_,b,Both)::l -> addext b :: deps l
+    | (_,b,_)::l -> if not opt then addext b :: deps l else deps l
+  in deps all_binaries
 
 let ln_sf toward f =
   Command.execute ~quiet:true (Cmd (S [A"ln";A"-sf";P toward;P f]))
@@ -245,8 +251,9 @@ let extra_rules () = begin
 
 (** Virtual target for building all binaries *)
 
-  rule "binaries" ~stamp:"binaries" ~deps:binaries_deps (fun _ _ -> Nop);
   rule "binariesopt" ~stamp:"binariesopt" ~deps:binariesopt_deps (fun _ _ -> Nop);
+  rule "binariesbyte" ~stamp:"binariesbyte" ~deps:binariesbyte_deps (fun _ _ -> Nop);
+  rule "binaries" ~stamp:"binaries" ~deps:["binariesbyte";"binariesopt"] (fun _ _ -> Nop);
 
 (** We create a special coq_config which mentions _build *)
 
@@ -364,7 +371,7 @@ let extra_rules () = begin
   let mktop_rule f is_ide =
     let fo = f^".native" and fb = f^".byte" in
     let ideflag = if is_ide then A"-ide" else N in
-    let depsall = [coqmktopbest;libcoqrun] in
+    let depsall = [coqmktop_boot;libcoqrun] in
     let depso = "coq_config.cmx" :: core_cmxa in
     let depsb = "coq_config.cmo" :: core_cma in
     let depideo = if is_ide then [ide_cmxa] else [] in
@@ -372,9 +379,9 @@ let extra_rules () = begin
     let w32ideflag = (*if is_ide then [A"-ccopt";A"\"-link -mwindows\""] else*) [] in
     let w32flag = if not w32 then N else S ([A"-camlbin";A w32bin]@w32ideflag) in
     if opt then rule fo ~prod:fo ~deps:(depsall@depso@depideo) ~insert:`top
-      (cmd [P coqmktopbest;w32flag;A"-boot";A"-opt";ideflag;incl fo;A"-o";Px fo]);
+      (cmd [P coqmktop_boot;w32flag;A"-boot";A"-opt";ideflag;incl fo;A"-o";Px fo]);
     rule fb ~prod:fb ~deps:(depsall@depsb@depideb) ~insert:`top
-      (cmd [P coqmktopbest;w32flag;A"-boot";A"-top";ideflag;incl fb;A"-o";Px fb]);
+      (cmd [P coqmktop_boot;w32flag;A"-boot";A"-top";ideflag;incl fb;A"-o";Px fb]);
   in
   mktop_rule coqtop false;
   mktop_rule coqide true;
@@ -383,11 +390,11 @@ let extra_rules () = begin
 
   rule "coqdepready" ~stamp:"coqdepready" ~deps:coqdepdeps (fun _ _ -> Nop);
 
-  rule ".v.d" ~prod:"%.v.depends" ~deps:["%.v";coqdepbest;"coqdepready"]
+  rule ".v.d" ~prod:"%.v.depends" ~deps:["%.v";coqdep_boot;"coqdepready"]
     (fun env _ ->
        let v = env "%.v" and vd = env "%.v.depends" in
        (** NB: this relies on all .v files being already in _build. *)
-       Cmd (S [P coqdepbest;dep_dynlink;A"-slash";P v;Sh">";Px vd]));
+       Cmd (S [P coqdep_boot;dep_dynlink;A"-slash";P v;Sh">";Px vd]));
 
 (** Coq files compilation *)
 

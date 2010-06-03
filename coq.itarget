@@ -1,3 +1,8 @@
-binaries
-plugins/plugins.otarget
+# NB: for the moment we start with bytecode compilation
+# for early error detection in .ml
+binariesbyte
+plugins/pluginsbyte.otarget
+binariesopt
+plugins/pluginsopt.otarget
 theories/theories.otarget
+plugins/pluginsvo.otarget
