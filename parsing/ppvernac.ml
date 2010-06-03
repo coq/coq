@@ -52,7 +52,7 @@ let pr_lname = function
 
 let pr_smart_global = pr_or_by_notation pr_reference
 
-let pr_ltac_id = Libnames.pr_reference
+let pr_ltac_ref = Libnames.pr_reference
 
 let pr_module = Libnames.pr_reference
 
@@ -813,7 +813,7 @@ let rec pr_vernac = function
           match body with
 	    | Tacexpr.TacFun (idl,b) -> idl,b
             | _ -> [], body in
-        pr_ltac_id id ++
+        pr_ltac_ref id ++
 	prlist (function None -> str " _"
                        | Some id -> spc () ++ pr_id id) idl
 	++ (if redef then str" ::=" else str" :=") ++ brk(1,1) ++
@@ -910,7 +910,7 @@ let rec pr_vernac = function
 	| PrintClasses -> str"Print Classes"
 	| PrintTypeClasses -> str"Print TypeClasses"
 	| PrintInstances qid -> str"Print Instances" ++ spc () ++ pr_smart_global qid
-	| PrintLtac qid -> str"Print Ltac" ++ spc() ++ pr_reference qid
+	| PrintLtac qid -> str"Print Ltac" ++ spc() ++ pr_ltac_ref qid
 	| PrintCoercions -> str"Print Coercions"
 	| PrintCoercionPaths (s,t) -> str"Print Coercion Paths" ++ spc() ++ pr_class_rawexpr s ++ spc() ++ pr_class_rawexpr t
 	| PrintCanonicalConversions -> str"Print Canonical Structures"
@@ -942,6 +942,7 @@ let rec pr_vernac = function
 	| LocateFile f -> str"File" ++ spc() ++ qs f
 	| LocateLibrary qid -> str"Library" ++ spc () ++ pr_module qid
 	| LocateModule qid -> str"Module" ++ spc () ++ pr_module qid
+	| LocateTactic qid -> str"Ltac" ++ spc () ++ pr_ltac_ref qid
       in str"Locate" ++ spc() ++ pr_locate loc
   | VernacComments l ->
       hov 2

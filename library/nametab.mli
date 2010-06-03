@@ -150,6 +150,7 @@ val full_name_module : qualid -> dir_path
 val path_of_syndef : syndef_name -> full_path
 val path_of_global : global_reference -> full_path
 val dirpath_of_module : module_path -> dir_path
+val path_of_tactic : ltac_constant -> full_path
 
 (* Returns in particular the dirpath or the basename of the full path
    associated to global reference *)

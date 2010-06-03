@@ -766,7 +766,8 @@ GEXTEND Gram
     [ [ qid = smart_global -> LocateTerm qid
       | IDENT "File"; f = ne_string -> LocateFile f
       | IDENT "Library"; qid = global -> LocateLibrary qid
-      | IDENT "Module"; qid = global -> LocateModule qid ] ]
+      | IDENT "Module"; qid = global -> LocateModule qid
+      | IDENT "Ltac"; qid = global -> LocateTactic qid ] ]
   ;
   option_value:
     [ [ n  = integer   -> IntValue n

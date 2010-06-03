@@ -471,6 +471,8 @@ let path_of_syndef kn =
 let dirpath_of_module mp =
   MPmap.find mp !the_modrevtab
 
+let path_of_tactic kn =
+  KNmap.find kn !the_tacticrevtab
 
 (* Shortest qualid functions **********************************************)
 

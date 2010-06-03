@@ -75,6 +75,7 @@ Tactic definitions
 
 - Ltac definitions support Local option for non-export outside modules.
 - Support for parsing non-empty lists with separators in tactic notations.
+- New command "Locate Ltac" to get the full name of an Ltac definition.
 
 Notations
 
