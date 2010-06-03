@@ -38,8 +38,8 @@ Automation tactics
   hints (wish #2104).
 - An inductive type as argument of the "using" option of "auto/eauto/firstorder"
   is interpreted as using the collection of its constructors.
-- New decision tactic "gb" to solve systems of polynomial equations 
-  by (exact) computation of Groebner bases.
+- New decision tactic "nsatz" to prove polynomial equations 
+  by computation of Groebner bases.
 
 Other tactics
 

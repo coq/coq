@@ -2,7 +2,7 @@ dp/vo.otarget
 field/vo.otarget
 fourier/vo.otarget
 funind/vo.otarget
-groebner/vo.otarget
+nsatz/vo.otarget
 micromega/vo.otarget
 omega/vo.otarget
 quote/vo.otarget
@@ -10,4 +10,3 @@ ring/vo.otarget
 romega/vo.otarget
 rtauto/vo.otarget
 setoid_ring/vo.otarget
-extraction/vo.itarget

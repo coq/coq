@@ -47,7 +47,7 @@ plugins/funind
   and Yves Bertot (INRIA-Marelle, 2005-2006)
 plugins/omega
   developed by Pierre Crégut (France Telecom R&D, 1996)
-plugins/groebner
+plugins/nsatz
   developed by Loïc Pottier (INRIA-Marelle, 2009)
 plugins/ring
   developed by Samuel Boutin (INRIA-Coq, 1996) and Patrick 

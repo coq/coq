@@ -73,7 +73,7 @@ SRCDIRS:=\
     omega	romega 		micromega 	quote		ring	dp \
     setoid_ring xml 		extraction 	fourier \
     cc 		funind 		firstorder 	field 		subtac \
-    rtauto 	groebner        syntax      decl_mode)
+    rtauto 	nsatz        syntax      decl_mode)
 
 # Order is relevent here because kernel and checker contain files
 # with the same name
@@ -118,7 +118,7 @@ REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
   RefMan-oth.v.tex RefMan-ltac.v.tex \
   RefMan-decl.v.tex \
   Cases.v.tex Coercion.v.tex Extraction.v.tex \
-  Program.v.tex Omega.v.tex Micromega.v.tex Polynom.v.tex \
+  Program.v.tex Omega.v.tex Micromega.v.tex Polynom.v.tex Nsatz.v.tex \
   Setoid.v.tex Helm.tex Classes.v.tex )
 
 REFMANTEXFILES:=$(addprefix doc/refman/, \
@@ -166,7 +166,7 @@ MICROMEGACMA:=plugins/micromega/micromega_plugin.cma
 QUOTECMA:=plugins/quote/quote_plugin.cma
 RINGCMA:=plugins/ring/ring_plugin.cma
 NEWRINGCMA:=plugins/setoid_ring/newring_plugin.cma
-GBCMA:=plugins/groebner/groebner_plugin.cma
+NSATZCMA:=plugins/nsatz/nsatz_plugin.cma
 DPCMA:=plugins/dp/dp_plugin.cma
 FIELDCMA:=plugins/field/field_plugin.cma
 XMLCMA:=plugins/xml/xml_plugin.cma
@@ -191,7 +191,7 @@ PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) \
         $(FOURIERCMA) $(EXTRACTIONCMA) $(XMLCMA) \
 	$(DECLMODECMA) \
         $(CCCMA)  $(FOCMA) $(SUBTACCMA) $(RTAUTOCMA) \
-        $(FUNINDCMA) $(GBCMA) $(NATSYNTAXCMA) $(OTHERSYNTAXCMA)
+        $(FUNINDCMA) $(NSATZCMA) $(NATSYNTAXCMA) $(OTHERSYNTAXCMA)
 
 ifneq ($(HASNATDYNLINK),false)
  STATICPLUGINS:=
@@ -296,20 +296,18 @@ QUOTEVO:=$(call cat_vo_itarget, plugins/quote)
 RINGVO:=$(call cat_vo_itarget, plugins/ring)
 FIELDVO:=$(call cat_vo_itarget, plugins/field)
 NEWRINGVO:=$(call cat_vo_itarget, plugins/setoid_ring)
-GBVO:=$(call cat_vo_itarget, plugins/groebner)
+NSATZVO:=$(call cat_vo_itarget, plugins/nsatz)
 FOURIERVO:=$(call cat_vo_itarget, plugins/fourier)
 FUNINDVO:=$(call cat_vo_itarget, plugins/funind)
 DPVO:=$(call cat_vo_itarget, plugins/dp)
 RTAUTOVO:=$(call cat_vo_itarget, plugins/rtauto)
-EXTRACTIONVO:=$(call cat_vo_itarget, plugins/extraction)
 XMLVO:=
 CCVO:=
-
 
 PLUGINSVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
 	    $(XMLVO) $(FOURIERVO) $(CCVO) $(FUNINDVO) \
 	    $(RTAUTOVO) $(NEWRINGVO) $(DPVO) $(QUOTEVO) \
-            $(GBVO) $(EXTRACTIONVO)
+            $(NSATZVO)
 
 ALLVO:= $(THEORIESVO) $(PLUGINSVO)
 VFILES:= $(ALLVO:.vo=.v)
