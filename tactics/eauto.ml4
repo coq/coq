@@ -137,7 +137,7 @@ and e_my_find_search db_list local_db hdc concl =
 	   | Unfold_nth c -> h_reduce (Unfold [all_occurrences_expr,c]) onConcl
 	   | Extern tacast -> conclPattern concl p tacast
        in
-       (tac,pr_autotactic t))
+       (tac,lazy (pr_autotactic t)))
        (*i
 	 fun gls -> pPNL (pr_autotactic t); Format.print_flush ();
                      try tac gls
@@ -171,7 +171,7 @@ let find_first_goal gls =
 type search_state = {
   depth : int; (*r depth of search before failing *)
   tacres : goal list sigma * validation;
-  last_tactic : std_ppcmds;
+  last_tactic : std_ppcmds Lazy.t;
   dblist : Auto.hint_db list;
   localdb :  Auto.hint_db list }
 
@@ -223,7 +223,7 @@ module SearchProblem = struct
 	  filter_tactics s.tacres
 	    (List.map
 	       (fun id -> (e_give_exact (mkVar id),
-			   (str "exact" ++ spc () ++ pr_id id)))
+			   lazy (str "exact" ++ spc () ++ pr_id id)))
 	       (pf_ids_of_hyps g))
 	in
 	List.map (fun (res,pp) -> { depth = s.depth; tacres = res;
@@ -241,7 +241,7 @@ module SearchProblem = struct
 	     { depth = s.depth; tacres = res;
 	       last_tactic = pp; dblist = s.dblist;
 	       localdb = ldb :: List.tl s.localdb })
-	  (filter_tactics s.tacres [Tactics.intro,(str "intro")])
+	  (filter_tactics s.tacres [Tactics.intro,lazy (str "intro")])
       in
       let rec_tacs =
 	let l =
@@ -264,7 +264,7 @@ module SearchProblem = struct
 
   let pp s =
     msg (hov 0 (str " depth=" ++ int s.depth ++ spc () ++
-		  s.last_tactic ++ str "\n"))
+		  (Lazy.force s.last_tactic) ++ str "\n"))
 
 end
 
@@ -273,7 +273,7 @@ module Search = Explore.Make(SearchProblem)
 let make_initial_state n gl dblist localdb =
   { depth = n;
     tacres = tclIDTAC gl;
-    last_tactic = (mt ());
+    last_tactic = lazy (mt());
     dblist = dblist;
     localdb = [localdb] }
 

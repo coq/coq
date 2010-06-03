@@ -201,8 +201,8 @@ and e_my_find_search db_list local_db hdc concl =
 	  | Extern tacast -> conclPattern concl p tacast
       in
 	match t with
-	| Extern _ -> (tac,b,true,pr_autotactic t)
-	| _ -> (tac,b,false,pr_autotactic t)
+	| Extern _ -> (tac,b,true,lazy (pr_autotactic t))
+	| _ -> (tac,b,false,lazy (pr_autotactic t))
   in List.map tac_of_hint hintl
 
 and e_trivial_resolve db_list local_db gl =
@@ -249,7 +249,7 @@ type validation = evar_map -> proof_tree list -> proof_tree
 let pr_depth l = prlist_with_sep (fun () -> str ".") pr_int (List.rev l)
 
 type autoinfo = { hints : Auto.hint_db; is_evar: existential_key option;
-		  only_classes: bool; auto_depth: int list; auto_last_tac: std_ppcmds }
+		  only_classes: bool; auto_depth: int list; auto_last_tac: std_ppcmds Lazy.t}
 type autogoal = goal * autoinfo
 type 'ans fk = unit -> 'ans
 type ('a,'ans) sk = 'a -> 'ans fk -> 'ans
@@ -303,7 +303,7 @@ let intro_tac : atac =
 	  let hint = make_resolve_hyp env s (Hint_db.transparent_state info.hints) 
 	    (true,false,false) info.only_classes None (List.hd (evar_context g')) in
 	  let ldb = Hint_db.add_list hint info.hints in
-	    (g', { info with is_evar = None; hints = ldb; auto_last_tac = str"intro" })) gls
+	    (g', { info with is_evar = None; hints = ldb; auto_last_tac = lazy (str"intro") })) gls
       in {it = gls'; sigma = s})
 
 let normevars_tac : atac = 
@@ -311,7 +311,7 @@ let normevars_tac : atac =
     (fun {it = gls; sigma = s} info ->
       let gls' =
 	List.map (fun g' ->
-	  (g', { info with auto_last_tac = str"NORMEVAR" })) gls
+	  (g', { info with auto_last_tac = lazy (str"NORMEVAR") })) gls
       in {it = gls'; sigma = s})
 
 
@@ -357,7 +357,7 @@ let hints_tac hints =
     let tacs = List.sort compare tacs in
     let rec aux i = function
       | (_, pp, b, ({it = gls; sigma = s}, v)) :: tl ->
-	  if !typeclasses_debug then msgnl (pr_depth (i :: info.auto_depth) ++ str": " ++ pp
+	  if !typeclasses_debug then msgnl (pr_depth (i :: info.auto_depth) ++ str": " ++ Lazy.force pp
 					       ++ str" on" ++ spc () ++ pr_ev s gl);
 	  let fk =
 	    (fun () -> (* if !typeclasses_debug then msgnl (str"backtracked after " ++ pp); *)
@@ -471,7 +471,7 @@ let rec fix (t : 'a tac) : 'a tac =
 let make_autogoal ?(only_classes=true) ?(st=full_transparent_state) ev g =
   let hints = make_autogoal_hints only_classes ~st g in
     (g.it, { hints = hints ; is_evar = ev; 
-	     only_classes = only_classes; auto_depth = []; auto_last_tac = mt() })
+	     only_classes = only_classes; auto_depth = []; auto_last_tac = lazy (mt()) })
       
 let make_autogoals ?(only_classes=true) ?(st=full_transparent_state) gs evm' =
   { it = list_map_i (fun i g -> 
