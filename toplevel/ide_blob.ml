@@ -15,6 +15,7 @@
 
 open Vernacexpr
 open Names
+open Compat
 open Util
 open Pp
 open Printer
@@ -256,7 +257,7 @@ let raw_interp s =
   Vernac.eval_expr (Vernac.parse_sentence (parsable_of_string s,None))
 
 let user_error_loc l s =
-    raise (Stdpp.Exc_located (l, Util.UserError ("CoqIde", s)))
+    raise (Loc.Exc_located (l, Util.UserError ("CoqIde", s)))
 
 let interp verbosely s =
   prerr_endline "Starting interp...";
@@ -500,7 +501,7 @@ let init_stdout,read_stdout =
 let explain_exn e =
   let toploc,exc =
     match e with
-      | Stdpp.Exc_located (loc, inner) ->
+      | Loc.Exc_located (loc, inner) ->
           loc,inner
       | Error_in_file (s, (is_in_lib, fname, loc), inner) ->
           dummy_loc,inner
