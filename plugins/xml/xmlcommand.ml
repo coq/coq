@@ -551,7 +551,8 @@ let print_ref qid fn =
 (*  where dest is either None (for stdout) or (Some filename) *)
 (* pretty prints via Xml.pp the proof in progress on dest     *)
 let show_pftreestate internal fn (kind,pftst) id =
-  Util.anomaly "Xmlcommand.show_pftreestate is not supported in this version."
+ if true then
+   Util.anomaly "Xmlcommand.show_pftreestate is not supported in this version."
 
 let show fn =
  let pftst = Pfedit.get_pftreestate () in

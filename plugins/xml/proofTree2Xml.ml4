@@ -195,6 +195,7 @@ Pp.ppnl (Pp.(++) (Pp.str
 
      | {PT.ref=None;PT.goal=goal} ->
          X.xml_empty "Open_goal" of_attribute
+     | {PT.ref=Some(PT.Decl_proof _, _)} -> failwith "TODO: xml and decl_proof"
   in
    [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
       X.xml_cdata ("<!DOCTYPE ProofTree SYSTEM \""^prooftreedtdname ^"\">\n\n");
