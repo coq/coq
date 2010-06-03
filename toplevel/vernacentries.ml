@@ -254,6 +254,15 @@ let print_located_module r =
 	str "No module is referred to by name ") ++ pr_qualid qid
   in msgnl msg
 
+let print_located_tactic r =
+  let (loc,qid) = qualid_of_reference r in
+  msgnl
+    (try
+      str "Ltac " ++
+      pr_path (Nametab.path_of_tactic (Nametab.locate_tactic qid))
+     with Not_found ->
+	str "No Ltac definition is referred to by " ++ pr_qualid qid)
+
 let smart_global r =
   let gr = Smartlocate.smart_global r in
     Dumpglob.add_glob (Genarg.loc_of_or_by_notation loc_of_reference r) gr;
@@ -1145,6 +1154,7 @@ let vernac_locate = function
           (Constrextern.without_symbols pr_lrawconstr) ntn sc)
   | LocateLibrary qid -> print_located_library qid
   | LocateModule qid -> print_located_module qid
+  | LocateTactic qid -> print_located_tactic qid
   | LocateFile f -> locate_file f
 
 (********************)
