@@ -875,9 +875,6 @@ let critere3 ((i,j),m) lp lcp =
 
 let add_cpairs p lp lcp =
   mergecpairs (cpairs1 p lp) lcp 
-   
-let prod_rec f = function
-    (x0, x) -> f x0 x
 
 let step = ref 0
 
@@ -950,9 +947,6 @@ let divide_rem_with_critical_pair = ref false
 let list_diff l x =
   filter (fun y -> y <> x) l
 
-let choix_spol p l =
-  l
-
 let deg_hom p =
   match p with
   | [] -> -1
@@ -962,9 +956,8 @@ let pbuchf pq p lp0=
   info "computation of the Groebner basis\n";
   step:=0;
   Hashtbl.clear hmon;
-  let rec pbuchf x = 
-    prod_rec (fun lp lpc ->
-      infobuch lp lpc; 
+  let rec pbuchf (lp, lpc) =
+      infobuch lp lpc;
 (*      step:=(!step+1)mod 10;*)
       match lpc with
         [] ->
@@ -972,8 +965,7 @@ let pbuchf pq p lp0=
 	 (* info ("List of polynomials:\n"^(fold_left (fun r p -> r^(stringP p)^"\n") "" lp));
 	  info "--------------------\n";*)
 	  test_dans_ideal (ppol p) lp lp0
-      | _ ->
-	  let (((i,j),m)::lpc2)= choix_spol !pol_courant lpc in
+      | ((i,j),m) :: lpc2 ->
 (*          info "choosen pair\n";*)
 	  if critere3 ((i,j),m) lp lpc2
 	  then (info "c"; pbuchf (lp, lpc2))
@@ -1009,9 +1001,8 @@ let pbuchf pq p lp0=
 		  try test_dans_ideal (ppol p) (addS a0 lp) lp0
 		  with NotInIdeal ->
 		    let newlpc = add_cpairs a0 lp lpc2 in
-		    pbuchf (((addS a0 lp), newlpc)))
-      x
-  in pbuchf pq 
+		    pbuchf (((addS a0 lp), newlpc))
+  in pbuchf pq
     
 let is_homogeneous p =
   match p with
