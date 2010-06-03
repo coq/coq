@@ -94,6 +94,9 @@ let pure_stack lfts stk =
 (*                   Reduction Functions                                    *)
 (****************************************************************************)
 
+let whd_betaiota t =
+  whd_val (create_clos_infos betaiota empty_env) (inject t)
+
 let nf_betaiota t =
   norm_val (create_clos_infos betaiota empty_env) (inject t)
 

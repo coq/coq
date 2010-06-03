@@ -17,6 +17,7 @@ val whd_betaiotazeta        : constr -> constr
 val whd_betadeltaiota       : env -> constr -> constr
 val whd_betadeltaiota_nolet : env -> constr -> constr
 
+val whd_betaiota      : constr -> constr
 val nf_betaiota      : constr -> constr
 
 (***********************************************************************
