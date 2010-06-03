@@ -281,6 +281,7 @@ let variables defs =
     print "COQDOC:=$(COQBIN)coqdoc\n";
     print "COQMKTOP:=$(COQBIN)coqmktop\n";
     (* Caml executables and relative variables *)
+    printf "CAMLLIB:=$(shell $(CAMLBIN)%s -where)\n" best_ocamlc;
     printf "CAMLC:=$(CAMLBIN)%s -c -rectypes\n" best_ocamlc;
     printf "CAMLOPTC:=$(CAMLBIN)%s -c -rectypes\n" best_ocamlopt;
     printf "CAMLLINK:=$(CAMLBIN)%s -rectypes\n" best_ocamlc;
@@ -289,7 +290,7 @@ let variables defs =
     print "CAMLP4EXTEND:=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
     print "CAMLP4OPTIONS:=\n";
     List.iter var_aux defs;
-    print "PP:=-pp \"$(CAMLP4BIN)$(CAMLP4)o -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n";
+    print "PP:=-pp \"$(CAMLP4BIN)$(CAMLP4)o -I $(CAMLLIB) unix.cma -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n";
     print "\n"
 
 let parameters () =
