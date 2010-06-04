@@ -346,7 +346,7 @@ let build_branches_type ind (_,mip as specif) params p =
 (* [p] is the predicate, [c] is the match object, [realargs] is the
    list of real args of the inductive type *)
 let build_case_type n p c realargs =
-  betazeta_appvect (n+1) p (Array.of_list (realargs@[c]))
+  whd_betaiota (betazeta_appvect (n+1) p (Array.of_list (realargs@[c])))
 
 let type_case_branches env (ind,largs) pj c =
   let specif = lookup_mind_specif env ind in
