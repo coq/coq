@@ -760,7 +760,7 @@ object(self)
             | Decl_mode.Mode_tactic ->
                 begin
                   match Coq.get_current_goals () with
-                      [] -> Util.anomaly "show_goals_full"
+                      [] -> proof_buffer#insert (Coq.print_no_goal())
                     | ((hyps,concl)::r) as s ->
                         let last_shown_area = Tags.Proof.highlight
                         in
