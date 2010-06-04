@@ -1,7 +1,7 @@
 true ? 0; 1
      : nat
 if true as x return (x ? nat; bool) then 0 else true
-     : true ? nat; bool
+     : nat
 Defining 'proj1' as keyword
 fun e : nat * nat => proj1 e
      : nat * nat -> nat
