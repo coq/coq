@@ -1147,6 +1147,7 @@ object(self)
                         ~stop:self#get_start_of_input;
                       prerr_endline "Moving (long) start_of_input...";
                       input_buffer#move_mark ~where:start (`NAME "start_of_input");
+                      full_goal_done <- false;
                       self#show_goals;
                       clear_stdout ();
                       self#clear_message)
@@ -1192,6 +1193,7 @@ object(self)
               (`NAME "start_of_input");
             input_buffer#place_cursor start;
             self#recenter_insert;
+            full_goal_done <- false;
             self#show_goals;
             self#clear_message
           in
