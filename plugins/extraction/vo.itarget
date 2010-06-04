@@ -1,4 +1,5 @@
 ExtrOcamlBasic.vo
-ExtrOcamlBigIntConv.vo
 ExtrOcamlIntConv.vo
+ExtrOcamlBigIntConv.vo
 ExtrOcamlNatInt.vo
+ExtrOcamlNatBigInt.vo

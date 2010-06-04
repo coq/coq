@@ -10,17 +10,17 @@
 
 Extract Inductive bool => bool [ true false ].
 Extract Inductive option => option [ Some None ].
-Extract Inductive prod => "( * )" [ "" ].
- (* The "" above is a hack, but produce nicer code than with "(,)" *)
 Extract Inductive unit => unit [ "()" ].
 Extract Inductive list => list [ "[]" "( :: )" ].
+Extract Inductive prod => "( * )" [ "" ].
 
-(** We could also map sumbool to bool, sumor to option, but
-    this isn't always a gain in clarity. We leave it to the user...
+(** NB: The "" above is a hack, but produce nicer code than "(,)" *)
+
+(** Mapping sumbool to bool and sumor to option is not always nicer,
+    but it helps when realizing stuff like [lt_eq_lt_dec] *)
 
 Extract Inductive sumbool => bool [ true false ].
 Extract Inductive sumor => option [ Some None ].
-*)
 
 (** Restore lazyness of andb, orb.
     NB: without these Extract Constant, andb/orb would be inlined
