@@ -3,3 +3,4 @@ ExtrOcamlIntConv.vo
 ExtrOcamlBigIntConv.vo
 ExtrOcamlNatInt.vo
 ExtrOcamlNatBigInt.vo
+ExtrOcamlString.vo
