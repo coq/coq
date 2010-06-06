@@ -543,7 +543,7 @@ let add_extern pri pat tacast local dbname =
 	(match (list_subtract tacmetas patmetas) with
 	| i::_ ->
 	    errorlabstrm "add_extern"
-	      (str "The meta-variable ?" ++ pr_patvar i ++ str" is not bound.")
+	      (str "The meta-variable ?" ++ Ppconstr.pr_patvar i ++ str" is not bound.")
 	| []  ->
 	    Lib.add_anonymous_leaf
 	      (inAutoHint(local,dbname, AddTactic [make_extern pri (Some pat) tacast])))

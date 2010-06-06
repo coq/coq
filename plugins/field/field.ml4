@@ -154,7 +154,7 @@ let field g =
       | _ -> raise Exit
     with Hipattern.NoEquationFound | Exit ->
       error "The statement is not built from Leibniz' equality" in
-  let th = VConstr (lookup (pf_env g) typ) in
+  let th = VConstr ([],lookup (pf_env g) typ) in
   (interp_tac_gen [(id_of_string "FT",th)] [] (get_debug ())
     <:tactic< match goal with |- (@eq _ _ _) => field_gen FT end >>) g
 
@@ -174,8 +174,8 @@ let field_term l g =
   Coqlib.check_required_library ["Coq";"field";"LegacyField"];
   let env = (pf_env g)
   and evc = (project g) in
-  let th = valueIn (VConstr (guess_theory env evc l))
-  and nl = List.map (fun x -> valueIn (VConstr x)) (Quote.sort_subterm g l) in
+  let th = valueIn (VConstr ([],guess_theory env evc l))
+  and nl = List.map (fun x -> valueIn (VConstr ([],x))) (Quote.sort_subterm g l) in
   (List.fold_right
     (fun c a ->
      let tac = (Tacinterp.interp <:tactic<(Field_Term $th $c)>>) in

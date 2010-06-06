@@ -19,8 +19,10 @@ open Mod_subst
 
 (* Metavariables *)
 
+type constr_under_binders = identifier list * constr
+
 type patvar_map = (patvar * constr) list
-let pr_patvar = pr_id
+type extended_patvar_map = (patvar * constr_under_binders) list
 
 (* Patterns *)
 
@@ -143,9 +145,9 @@ let pattern_of_constr sigma t =
 let map_pattern_with_binders g f l = function
   | PApp (p,pl) -> PApp (f l p, Array.map (f l) pl)
   | PSoApp (n,pl) -> PSoApp (n, List.map (f l) pl)
-  | PLambda (n,a,b) -> PLambda (n,f l a,f (g l) b)
-  | PProd (n,a,b) -> PProd (n,f l a,f (g l) b)
-  | PLetIn (n,a,b) -> PLetIn (n,f l a,f (g l) b)
+  | PLambda (n,a,b) -> PLambda (n,f l a,f (g n l) b)
+  | PProd (n,a,b) -> PProd (n,f l a,f (g n l) b)
+  | PLetIn (n,a,b) -> PLetIn (n,f l a,f (g n l) b)
   | PIf (c,b1,b2) -> PIf (f l c,f l b1,f l b2)
   | PCase (ci,po,p,pl) -> PCase (ci,f l po,f l p,Array.map (f l) pl)
   (* Non recursive *)
@@ -153,18 +155,40 @@ let map_pattern_with_binders g f l = function
   (* Bound to terms *)
   | PFix _ | PCoFix _ as x) -> x
 
-let map_pattern f = map_pattern_with_binders (fun () -> ()) (fun () -> f) ()
+let map_pattern f = map_pattern_with_binders (fun _ () -> ()) (fun () -> f) ()
 
-let rec instantiate_pattern lvar = function
-  | PVar id as x -> (try Lazy.force(List.assoc id lvar) with Not_found -> x)
+let error_instantiate_pattern id l =
+  let is = if List.length l = 1 then "is" else "are" in
+  errorlabstrm "" (str "Cannot substitute the term bound to " ++ pr_id id
+    ++ strbrk " in pattern because the term refers to " ++ pr_enum pr_id l
+    ++ strbrk " which " ++ str is ++ strbrk " not bound in the pattern.")
+
+let instantiate_pattern lvar c =
+  let rec aux vars = function
+  | PVar id as x ->
+      (try
+	let ctx,c = List.assoc id lvar in
+	try
+	  let inst =
+	    List.map (fun id -> mkRel (list_index (Name id) vars)) ctx in
+	  let c = substl inst c in
+	  snd (pattern_of_constr Evd.empty c)
+	with Not_found (* list_index failed *) ->
+	  let vars =
+	    list_map_filter (function Name id -> Some id | _ -> None) vars in
+	  error_instantiate_pattern id (list_subtract ctx vars)
+       with Not_found (* List.assoc failed *) ->
+	 x)
   | (PFix _ | PCoFix _) -> error ("Non instantiable pattern.")
-  | c -> map_pattern (instantiate_pattern lvar) c
+  | c ->
+      map_pattern_with_binders (fun id vars -> id::vars) aux vars c in
+  aux [] c
 
 let rec liftn_pattern k n = function
   | PRel i as x -> if i >= n then PRel (i+k) else x
   | PFix x -> PFix (destFix (liftn k n (mkFix x)))
   | PCoFix x -> PCoFix (destCoFix (liftn k n (mkCoFix x)))
-  | c -> map_pattern_with_binders succ (liftn_pattern k) n c
+  | c -> map_pattern_with_binders (fun _ -> succ) (liftn_pattern k) n c
 
 let lift_pattern k = liftn_pattern k 1
 

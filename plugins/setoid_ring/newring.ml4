@@ -206,7 +206,7 @@ let exec_tactic env n f args =
   !res
 
 let constr_of = function
-  | VConstr c -> c
+  | VConstr ([],c) -> c
   | _ -> failwith "Ring.exec_tactic: anomaly"
 
 let stdlib_modules =

@@ -46,6 +46,7 @@ val pr_sep_com :
 val pr_id : identifier -> std_ppcmds
 val pr_name : name -> std_ppcmds
 val pr_qualid : qualid -> std_ppcmds
+val pr_patvar : patvar -> std_ppcmds
 
 val pr_with_occurrences :
   ('a -> std_ppcmds) -> 'a with_occurrences -> std_ppcmds

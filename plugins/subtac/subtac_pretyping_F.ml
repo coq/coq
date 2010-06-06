@@ -105,14 +105,24 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
       if s.[0]='$' then id_of_string (String.sub s 1 (String.length s - 1))
       else id
 
-  let pretype_id loc env (lvar,unbndltacvars) id =
+  let invert_ltac_bound_name env id0 id =
+    try mkRel (pi1 (lookup_rel_id id (rel_context env)))
+    with Not_found ->
+      errorlabstrm "" (str "Ltac variable " ++ pr_id id0 ++
+	str " depends on pattern variable name " ++ pr_id id ++
+	str " which is not bound in current context")
+
+  let pretype_id loc env sigma (lvar,unbndltacvars) id =
     let id = strip_meta id in (* May happen in tactics defined by Grammar *)
       try
 	let (n,_,typ) = lookup_rel_id id (rel_context env) in
 	  { uj_val  = mkRel n; uj_type = lift n typ }
       with Not_found ->
 	try
-	  List.assoc id lvar
+	  let (ids,c) = List.assoc id lvar in
+	  let subst = List.map (invert_ltac_bound_name env id) ids in
+	  let c = substl subst c in
+	  { uj_val = c; uj_type = Retyping.get_type_of env sigma c }
 	with Not_found ->
 	  try
 	    let (_,_,typ) = lookup_named id env in
@@ -170,7 +180,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 
     | RVar (loc, id) ->
 	inh_conv_coerce_to_tycon loc env evdref
-	  (pretype_id loc env lvar id)
+	  (pretype_id loc env !evdref lvar id)
 	  tycon
 
     | REvar (loc, ev, instopt) ->

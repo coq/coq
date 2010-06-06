@@ -6,18 +6,25 @@
            *       GNU Lesser General Public License Version 2.1        
   ***********************************************************************)
 
+(** This module implements pattern-matching on terms *)
+
 open Names
 open Term
 open Environ
 open Pattern
 open Termops
 
-(** {6 This modules implements pattern-matching on terms } *)
-
+(** [PatternMatchingFailure] is the exception raised when pattern
+  matching fails *)
 exception PatternMatchingFailure
 
+(** [special_meta] is the default name of the meta holding the
+   surrounding context in subterm matching *)
 val special_meta : metavariable
 
+(** [bound_ident_map] represents the result of matching binding
+   identifiers of the pattern with the binding identifiers of the term
+   matched *)
 type bound_ident_map = (identifier * identifier) list
 
 (** [matches pat c] matches [c] against [pat] and returns the resulting
@@ -31,7 +38,7 @@ val matches : constr_pattern -> constr -> patvar_map
    variables or metavariables have the same name, the metavariable,
    or else the rightmost bound variable, takes precedence *)
 val extended_matches :
-  constr_pattern -> constr -> bound_ident_map * patvar_map
+  constr_pattern -> constr -> bound_ident_map * extended_patvar_map
 
 (** [is_matching pat c] just tells if [c] matches against [pat] *)
 val is_matching : constr_pattern -> constr -> bool

@@ -22,7 +22,7 @@ open Genarg
 
 let assoc_var s ist =
   match List.assoc (Names.id_of_string s) ist.lfun with
-    | VConstr c -> c
+    | VConstr ([],c) -> c
     | _ -> failwith "tauto: anomaly"
 
 (** Parametrization of tauto *)
@@ -114,8 +114,8 @@ let flatten_contravariant_conj ist =
   | Some (_,args) ->
       let i = List.length args in
       if not binary_mode || i = 2 then
-	let newtyp = valueIn (VConstr (List.fold_right mkArrow args c)) in
-	let hyp = valueIn (VConstr hyp) in
+	let newtyp = valueIn (VConstr ([],List.fold_right mkArrow args c)) in
+	let hyp = valueIn (VConstr ([],hyp)) in
 	let intros =
 	  iter_tac (List.map (fun _ -> <:tactic< intro >>) args)
 	  <:tactic< idtac >> in
@@ -149,9 +149,9 @@ let flatten_contravariant_disj ist =
   | Some (_,args) ->
       let i = List.length args in
       if not binary_mode || i = 2 then
-	let hyp = valueIn (VConstr hyp) in
+	let hyp = valueIn (VConstr ([],hyp)) in
 	iter_tac (list_map_i (fun i arg ->
-	  let typ = valueIn (VConstr (mkArrow arg c)) in
+	  let typ = valueIn (VConstr ([],mkArrow arg c)) in
 	  <:tactic<
             let typ := $typ in
             let hyp := $hyp in
