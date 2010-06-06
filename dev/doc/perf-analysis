@@ -1,6 +1,21 @@
 Performance analysis (trunk repository)
 ---------------------------------------
 
+Jun 4, 2010: improvement in type classes inference by removing
+  systematic preparation of debugging pretty-printing streams (std_ppcmds)
+  (-7% in ATBR, visible only on V8.3 logs since ATBR is broken in trunk)
+
+Apr 19, 2010: small improvement obtained by reducing evar instantiation 
+  from O(n^3) to O(n^2) in the size of the instance (-2% in Compcert,
+  -2% AreaMethod, -15% in Ssreflect)
+
+Apr 17, 2010: small improvement obtained by not repeating unification
+  twice in auto (-2% in Compcert, -2% in Algebra)
+
+Feb 15, 2010: Global decrease due to unicode inefficiency repaired
+
+Jan 8, 2010: Global increase due to an inefficiency in unicode treatment
+
 Dec 1, 2009 - Dec 19, 2009: Temporary addition of [forall x, P x] hints to
   exact (generally not significative but, e.g., +25% on Subst, +8% on
   ZFC, +5% on AreaMethod)
