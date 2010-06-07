@@ -125,7 +125,8 @@ let start_tac gls =
 
 let finish_tac (sigr,gl) = repackage sigr gl
 
-(* Apply [taci.(i)] on the first n subgoals and [tac] on the others *)
+(* Apply [tacfi.(i)] on the first n subgoals, [tacli.(i)] on the last
+   m subgoals, and [tac] on the others *)
 let thens3parts_tac tacfi tac tacli (sigr,gs) =
   let nf = Array.length tacfi in
   let nl = Array.length tacli in
