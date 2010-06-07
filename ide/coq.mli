@@ -25,7 +25,7 @@ val kill_coqtop : coqtop -> unit
 
 val reset_coqtop : coqtop -> unit
 
-exception Coq_failure of (Util.loc * Pp.std_ppcmds)
+exception Coq_failure of (Util.loc option * string)
 
 module PrintOpt :
 sig

@@ -502,10 +502,10 @@ let explain_exn e =
   let toploc,exc =
     match e with
       | Loc.Exc_located (loc, inner) ->
-          loc,inner
+          (if loc = dummy_loc then None else Some loc),inner
       | Error_in_file (s, (is_in_lib, fname, loc), inner) ->
-          dummy_loc,inner
-      | _ -> dummy_loc,e
+          None,inner
+      | _ -> None,e
   in
   toploc,(Cerrors.explain_exn exc)
 
@@ -527,7 +527,7 @@ type 'a call =
 
 type 'a value =
   | Good of 'a
-  | Fail of (Util.loc * Pp.std_ppcmds)
+  | Fail of (Util.loc option * string)
 
 let eval_call c = 
   let null_formatter = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in
@@ -549,8 +549,7 @@ let eval_call c =
   with e ->
     let (l,pp) = explain_exn (filter_compat_exn e) in
     (* force evaluation of format stream *)
-    Pp.msg_with null_formatter pp;
-    Fail (l,pp)
+    Fail (l,string_of_ppcmds pp)
 
 let is_in_loadpath s : bool call =
   In_loadpath s

@@ -770,8 +770,8 @@ object(self)
   method send_to_coq verbosely replace phrase show_output show_error localize =
     let display_output msg =
       self#insert_message (if show_output then msg else "") in
-    let display_error e =
-      let (s,loc) = Coq.process_exn e in
+    let display_error (s,loc) =
+      if show_error then begin
         if not (Glib.Utf8.validate s) then
           flash_info "This error is so nasty that I can't even display it." 
         else begin
@@ -791,20 +791,21 @@ object(self)
                      ~start:starti
                      ~stop:stopi;
                    input_buffer#place_cursor starti)
-        end in
-      try
-        full_goal_done <- false;
-        prerr_endline "Send_to_coq starting now";
-        let r = Coq.interp mycoqtop verbosely phrase in
-        let is_complete = true in
-        let msg = Coq.read_stdout mycoqtop in
-        sync display_output msg;
-        Some (is_complete,r)
-      with
-        | Coq_failure (l,pp) -> Pervasives.prerr_endline (Coq.msgnl pp); None
-        | e ->
-        if show_error then sync display_error e;
-        None
+        end
+      end in
+    try
+      full_goal_done <- false;
+      prerr_endline "Send_to_coq starting now";
+      let r = Coq.interp mycoqtop verbosely phrase in
+      let is_complete = true in
+      let msg = Coq.read_stdout mycoqtop in
+      sync display_output msg;
+      Some (is_complete,r)
+    with
+      | Coq_failure (l,s) ->
+          sync display_error (s,l); None
+      | e ->
+          sync display_error (Coq.process_exn e); None
 
   method find_phrase_starting_at (start:GText.iter) =
     try

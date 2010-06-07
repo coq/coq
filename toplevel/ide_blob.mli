@@ -23,7 +23,7 @@ type 'a call
 
 type 'a value =
   | Good of 'a
-  | Fail of (Util.loc * Pp.std_ppcmds)
+  | Fail of (Util.loc option * string)
 
 val eval_call : 'a call -> 'a value
 

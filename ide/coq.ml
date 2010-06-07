@@ -81,14 +81,14 @@ let version () =
     (if Mltop.is_native then "native" else "bytecode")
     (if Coq_config.best="opt" then "native" else "bytecode")
 
-exception Coq_failure of (Util.loc * Pp.std_ppcmds)
+exception Coq_failure of (Util.loc option * string)
 
 let eval_call coqtop (c:'a Ide_blob.call) =
   Safe_marshal.send coqtop.cin c;
   let res = (Safe_marshal.receive: in_channel -> 'a Ide_blob.value) coqtop.cout in
   match res with
     | Ide_blob.Good v -> v
-    | Ide_blob.Fail (l,pp) -> prerr_endline (msg pp); raise (Coq_failure (l,pp))
+    | Ide_blob.Fail err -> raise (Coq_failure err)
 
 let is_in_loadpath coqtop s = eval_call coqtop (Ide_blob.is_in_loadpath s)
  
