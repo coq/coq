@@ -213,6 +213,7 @@ val list_cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
 
 (** list_combinations [[a;b];[c;d]] returns [[a;c];[a;d];[b;c];[b;d]] *)
 val list_combinations : 'a list list -> 'a list list
+val list_combine3 : 'a list -> 'b list -> 'c list -> ('a * 'b * 'c) list
 
 (** Keep only those products that do not return None *)
 val list_cartesian_filter :

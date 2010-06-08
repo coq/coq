@@ -800,6 +800,13 @@ let list_cartesians op init ll =
 
 let list_combinations l = list_cartesians (fun x l -> x::l) [] l
 
+let rec list_combine3 x y z = 
+  match x, y, z with
+  | [], [], [] -> []
+  | (x :: xs), (y :: ys), (z :: zs) ->
+      (x, y, z) :: list_combine3 xs ys zs
+  | _, _, _ -> raise (Invalid_argument "list_combine3")
+  
 (* Keep only those products that do not return None *)
 
 let rec list_cartesian_filter op l1 l2 =

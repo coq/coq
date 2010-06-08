@@ -443,14 +443,18 @@ let check_mutuality env isfix fixl =
 
 type structured_fixpoint_expr = {
   fix_name : identifier;
+  fix_annot : identifier located option;
   fix_binders : local_binder list;
   fix_body : constr_expr option;
   fix_type : constr_expr
 }
 
-let interp_fix_context evdref env fix =
-  interp_context_evars evdref env fix.fix_binders
-
+let interp_fix_context evdref env isfix fix =
+  let before, after = if isfix then split_at_annot fix.fix_binders fix.fix_annot else [], fix.fix_binders in
+  let (env', ctx), imps = interp_context_evars evdref env before in
+  let (env'', ctx'), imps' = interp_context_evars evdref env' after in
+    ((env'', ctx' @ ctx), imps @ imps', Option.map (fun _ -> List.length ctx) fix.fix_annot)
+      
 let interp_fix_ccl evdref (env,_) fix =
   interp_type_evars evdref env fix.fix_type
 
@@ -482,8 +486,8 @@ let prepare_recursive_declaration fixnames fixtypes fixdefs =
 
 (* Jump over let-bindings. *)
 
-let compute_possible_guardness_evidences na fix (nb,_) =
-  match index_of_annot fix.fix_binders na with
+let compute_possible_guardness_evidences (nb,_,na) =
+  match na with
   | Some i -> [i]
   | None ->
       (* If recursive argument was not given by user, we try all args.
@@ -502,8 +506,8 @@ let interp_recursive isfix fixl notations =
 
   (* Interp arities allowing for unresolved types *)
   let evdref = ref Evd.empty in
-  let fixctxs, fiximps =
-    List.split (List.map (interp_fix_context evdref env) fixl) in
+  let fixctxs, fiximps, fixannots =
+    list_split3 (List.map (interp_fix_context evdref env isfix) fixl) in
   let fixccls = List.map2 (interp_fix_ccl evdref) fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let fixtypes = List.map (nf_evar !evdref) fixtypes in
@@ -533,7 +537,7 @@ let interp_recursive isfix fixl notations =
   end;
 
   (* Build the fix declaration block *)
-  (fixnames,fixdefs,fixtypes),List.combine fixctxlength fiximps
+  (fixnames,fixdefs,fixtypes), list_combine3 fixctxlength fiximps fixannots
 
 let interp_fixpoint = interp_recursive true
 let interp_cofixpoint = interp_recursive false
@@ -542,7 +546,7 @@ let declare_fixpoint boxed ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
   if List.mem None fixdefs then
     (* Some bodies to define by proof *)
     let thms =
-      list_map3 (fun id t imps -> (id,(t,imps))) fixnames fixtypes fiximps in
+      list_map3 (fun id t (len,imps,_) -> (id,(t,(len,imps)))) fixnames fixtypes fiximps in
     let init_tac =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
         fixdefs) in
@@ -553,7 +557,7 @@ let declare_fixpoint boxed ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let indexes = search_guard dummy_loc (Global.env()) indexes fixdecls in
-    let fiximps = List.map snd fiximps in
+    let fiximps = List.map (fun (n,r,p) -> r) fiximps in
     let fixdecls =
       list_map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
     ignore (list_map4 (declare_fix boxed Fixpoint) fixnames fixdecls fixtypes fiximps);
@@ -567,7 +571,7 @@ let declare_cofixpoint boxed ((fixnames,fixdefs,fixtypes),fiximps) ntns =
   if List.mem None fixdefs then
     (* Some bodies to define by proof *)
     let thms =
-      list_map3 (fun id t imps -> (id,(t,imps))) fixnames fixtypes fiximps in
+      list_map3 (fun id t (len,imps,_) -> (id,(t,(len,imps)))) fixnames fixtypes fiximps in
     let init_tac =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
         fixdefs) in
@@ -578,7 +582,7 @@ let declare_cofixpoint boxed ((fixnames,fixdefs,fixtypes),fiximps) ntns =
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let fixdecls = list_map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
-    let fiximps = List.map snd fiximps in
+    let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
     ignore (list_map4 (declare_fix boxed CoFixpoint) fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     cofixpoint_message fixnames
@@ -587,28 +591,28 @@ let declare_cofixpoint boxed ((fixnames,fixdefs,fixtypes),fiximps) ntns =
   List.iter Metasyntax.add_notation_interpretation ntns
 
 let extract_decreasing_argument = function
-  | (_,(na,CStructRec),_,_,_) -> na
+  | (na,CStructRec) -> na
   | _ -> error 
       "Only structural decreasing is supported for a non-Program Fixpoint"
 
 let extract_fixpoint_components l =
   let fixl, ntnl = List.split l in
-  let wfl = List.map extract_decreasing_argument fixl in
-  let fixl = List.map (fun ((_,id),_,bl,typ,def) ->
-    {fix_name = id; fix_binders = bl; fix_body = def; fix_type = typ}) fixl in
-  fixl, List.flatten ntnl, wfl
+  let fixl = List.map (fun ((_,id),ann,bl,typ,def) ->
+    let ann = extract_decreasing_argument ann in
+      {fix_name = id; fix_annot = ann; fix_binders = bl; fix_body = def; fix_type = typ}) fixl in
+  fixl, List.flatten ntnl
 
 let extract_cofixpoint_components l =
   let fixl, ntnl = List.split l in
   List.map (fun ((_,id),bl,typ,def) ->
-    {fix_name = id; fix_binders = bl; fix_body = def; fix_type = typ}) fixl,
+    {fix_name = id; fix_annot = None; fix_binders = bl; fix_body = def; fix_type = typ}) fixl,
   List.flatten ntnl
 
 let do_fixpoint l b =
-  let fixl,ntns,wfl = extract_fixpoint_components l in
+  let fixl,ntns = extract_fixpoint_components l in
   let fix = interp_fixpoint fixl ntns in
   let possible_indexes =
-    list_map3 compute_possible_guardness_evidences wfl fixl (snd fix) in
+    List.map compute_possible_guardness_evidences (snd fix) in
   declare_fixpoint b fix possible_indexes ntns
 
 let do_cofixpoint l b =

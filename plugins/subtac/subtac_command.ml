@@ -522,8 +522,8 @@ let build_recursive l b =
 		    m ntn false)
 
       | _, _ when List.for_all (fun (n, ro) -> ro = CStructRec) g ->
-	  let fixl = List.map (fun (((_,id),_,bl,typ,def),ntn) ->
-	    ({Command.fix_name = id; Command.fix_binders = bl; 
+	  let fixl = List.map (fun (((_,id),(n,ro),bl,typ,def),ntn) ->
+	    ({Command.fix_name = id; Command.fix_binders = bl; Command.fix_annot = n;
 	      Command.fix_body = def; Command.fix_type = typ},ntn)) l
 	  in interp_recursive (IsFixpoint g) fixl b
       | _, _ ->
@@ -532,7 +532,7 @@ let build_recursive l b =
 
 let build_corecursive l b =
   let fixl = List.map (fun (((_,id),bl,typ,def),ntn) ->
-    ({Command.fix_name = id; Command.fix_binders = bl; 
+    ({Command.fix_name = id; Command.fix_binders = bl; Command.fix_annot = None;
       Command.fix_body = def; Command.fix_type = typ},ntn))
     l in
   interp_recursive IsCoFixpoint fixl b
