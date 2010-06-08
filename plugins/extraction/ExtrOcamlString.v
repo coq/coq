@@ -30,7 +30,7 @@ Extract Constant shift =>
 
 Extract Inlined Constant ascii_dec => "(=)".
 
-Extract Inductive string => "list char" [ "[]" "(::)" ].
+Extract Inductive string => "char list" [ "[]" "(::)" ].
 
 (*
 Definition test := "ceci est un test"%string.
