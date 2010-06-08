@@ -1341,7 +1341,7 @@ applicative subterms whose head occurrence is {\ident}.
 \label{unfold}}
 
 This tactic applies to any goal. The argument {\qualid} must denote a
-defined transparent constant or local definition (see Sections~\ref{Simpl-definitions} and~\ref{Transparent}).  The tactic {\tt
+defined transparent constant or local definition (see Sections~\ref{Basic-definitions} and~\ref{Transparent}).  The tactic {\tt
   unfold} applies the $\delta$ rule to each occurrence of the constant
 to which {\qualid} refers in the current goal and then replaces it
 with its $\beta\iota$-normal form.
@@ -4182,7 +4182,7 @@ general principle of mutual induction for objects in type {\term$_i$}.
 \comindex{Set Elimination Schemes}
 It is possible to deactivate the automatic declaration of the induction
  principles when defining a new inductive type  with the
- {\tt UnSet Elimination Schemes} command. It may be
+ {\tt Unset Elimination Schemes} command. It may be
 reactivated at any time with {\tt Set Elimination Schemes}. 
 \\
 

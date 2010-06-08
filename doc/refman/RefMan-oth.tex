@@ -570,7 +570,7 @@ This command displays the list of library files loaded in the current
 imported.
 
 \subsection[\tt Declare ML Module {\str$_1$} .. {\str$_n$}.]{\tt Declare ML Module {\str$_1$} .. {\str$_n$}.\comindex{Declare ML Module}}
-This commands loads the Objective Caml compiled files {\str$_1$} \dots
+This commands loads the Objective Caml compiled files {\str$_1$} {\dots}
 {\str$_n$} (dynamic link). It is mainly used to load tactics
 dynamically.
 % (see Chapter~\ref{WritingTactics}).
@@ -778,7 +778,7 @@ Chapter~\ref{Proof-handling}).
   command.
 \item $\num_2$ is the proof state number after the last
   command.
-\item $id_1$ $id_2$ \dots $id_n$ are the currently opened proof names
+\item $id_1$ $id_2$ {\dots} $id_n$ are the currently opened proof names
   (order not significant).
 \end{itemize}
 
@@ -943,13 +943,13 @@ computation of algebraic values, such as numbers, and for reflexion-based
 tactics. The commands to fine-tune the reduction strategies and the
 lazy conversion algorithm are described first.
 
-\subsection[\tt Opaque \qualid$_1$ \dots \qualid$_n$.]{\tt Opaque \qualid$_1$ \dots \qualid$_n$.\comindex{Opaque}\label{Opaque}} 
+\subsection[\tt Opaque \qualid$_1$ {\dots} \qualid$_n$.]{\tt Opaque \qualid$_1$ {\dots} \qualid$_n$.\comindex{Opaque}\label{Opaque}} 
 This command has an effect on unfoldable constants, i.e. 
 on constants defined by {\tt Definition} or {\tt Let} (with an explicit
 body), or by a command assimilated to a definition such as {\tt
 Fixpoint}, {\tt Program Definition}, etc, or by a proof ended by {\tt
 Defined}. The command tells not to unfold
-the constants {\qualid$_1$} \dots {\qualid$_n$} in tactics using
+the constants {\qualid$_1$} {\dots} {\qualid$_n$} in tactics using
 $\delta$-conversion (unfolding a constant is replacing it by its
 definition).
 
@@ -959,7 +959,7 @@ case {\Coq} has to check the conversion (see Section~\ref{conv-rules})
 of two distinct applied constants.
 
 The scope of {\tt Opaque} is limited to the current section, or
-current file, unless the variant {\tt Global Opaque \qualid$_1$ \dots
+current file, unless the variant {\tt Global Opaque \qualid$_1$ {\dots}
 \qualid$_n$} is used.
 
 \SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
@@ -973,7 +973,7 @@ environment}\\
     and if \texttt{bar} does not exist, \texttt{foo} is set opaque.
 \end{ErrMsgs}
 
-\subsection[\tt Transparent \qualid$_1$ \dots \qualid$_n$.]{\tt Transparent \qualid$_1$ \dots \qualid$_n$.\comindex{Transparent}\label{Transparent}}
+\subsection[\tt Transparent \qualid$_1$ {\dots} \qualid$_n$.]{\tt Transparent \qualid$_1$ {\dots} \qualid$_n$.\comindex{Transparent}\label{Transparent}}
 This command is the converse of {\tt Opaque} and it applies on
 unfoldable constants to restore their unfoldability after an {\tt
 Opaque} command.
@@ -1001,12 +1001,12 @@ environment}\\
 \SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
 \ref{Theorem}
 
-\subsection{\tt Strategy {\it level} [ \qualid$_1$ \dots \qualid$_n$
+\subsection{\tt Strategy {\it level} [ \qualid$_1$ {\dots} \qualid$_n$
   ].\comindex{Strategy}\comindex{Local Strategy}\label{Strategy}}
 This command generalizes the behavior of {\tt Opaque} and {\tt
   Transparent} commands. It is used to fine-tune the strategy for
 unfolding constants, both at the tactic level and at the kernel
-level. This command associates a level to \qualid$_1$ \dots
+level. This command associates a level to \qualid$_1$ {\dots}
 \qualid$_n$. Whenever two expressions with two distinct head
 constants are compared (for instance, this comparison can be triggered
 by a type cast), the one with lower level is expanded first. In case

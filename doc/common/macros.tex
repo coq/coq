@@ -75,8 +75,8 @@
 \newcommand{\zeroone}[1]{\mbox{\sl [}#1\mbox{\sl ]}}
 %\newcommand{\zeroonemany}[1]{$\{$#1$\}$*}
 %\newcommand{\onemany}[1]{$\{$#1$\}$+}
-\newcommand{\nelist}[2]{{#1} {\tt #2} {\ldots} {\tt #2} {#1}}
-\newcommand{\sequence}[2]{{\sl [}{#1} {\tt #2} {\ldots} {\tt #2} {#1}{\sl ]}}
+\newcommand{\nelist}[2]{{#1} {\tt #2}~{\ldots}~{\tt #2} {#1}}
+\newcommand{\sequence}[2]{{\sl [}{#1} {\tt #2}~{\ldots}~{\tt #2} {#1}{\sl ]}}
 \newcommand{\nelistwithoutblank}[2]{#1{\tt #2}\ldots{\tt #2}#1}
 \newcommand{\sequencewithoutblank}[2]{$[$#1{\tt #2}\ldots{\tt #2}#1$]$}
 
@@ -123,8 +123,7 @@
 \newcommand{\assums}{\nterm{assums}} % vernac
 \newcommand{\simpleassums}{\nterm{simple\_assums}} % assumptions
 \newcommand{\binder}{\nterm{binder}}
-\newcommand{\binderlet}{\nterm{binderlet}}
-\newcommand{\binderlist}{\nterm{binderlist}}
+\newcommand{\binders}{\nterm{binders}}
 \newcommand{\caseitems}{\nterm{match\_items}}
 \newcommand{\caseitem}{\nterm{match\_item}}
 \newcommand{\eqn}{\nterm{equation}}
@@ -137,10 +136,11 @@
 \newcommand{\params}{\nterm{params}} % vernac
 \newcommand{\returntype}{\nterm{return\_type}}
 \newcommand{\idparams}{\nterm{ident\_with\_params}}
-\newcommand{\statkwd}{\nterm{statement\_keyword}} % vernac
+\newcommand{\statkwd}{\nterm{assertion\_keyword}} % vernac
 \newcommand{\termarg}{\nterm{arg}}
 
-\newcommand{\typecstr}{\zeroone{{\tt :} {\term}}}
+\newcommand{\typecstr}{\zeroone{{\tt :}~{\term}}}
+\newcommand{\typecstrwithoutblank}{\zeroone{{\tt :}{\term}}}
 
 
 \newcommand{\Fwterm}{\nterm{Fwterm}}
@@ -154,8 +154,8 @@
 \newcommand{\commandtac}{\nterm{tactic\_invocation}}
 \newcommand{\constructor}{\nterm{constructor}}
 \newcommand{\convtactic}{\nterm{conv\_tactic}}
-\newcommand{\declarationkeyword}{\nterm{declaration\_keyword}}
-\newcommand{\declaration}{\nterm{declaration}}
+\newcommand{\assumptionkeyword}{\nterm{assumption\_keyword}}
+\newcommand{\assumption}{\nterm{assumption}}
 \newcommand{\definition}{\nterm{definition}}
 \newcommand{\digit}{\nterm{digit}}
 \newcommand{\exteqn}{\nterm{ext\_eqn}}
@@ -211,7 +211,7 @@
 \newcommand{\simplepattern}{\nterm{simple\_pattern}}
 \newcommand{\sort}{\nterm{sort}}
 \newcommand{\specif}{\nterm{specif}}
-\newcommand{\statement}{\nterm{statement}}
+\newcommand{\assertion}{\nterm{assertion}}
 \newcommand{\str}{\nterm{string}}
 \newcommand{\subsequentletter}{\nterm{subsequent\_letter}}
 \newcommand{\switch}{\nterm{switch}}

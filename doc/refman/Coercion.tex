@@ -202,8 +202,8 @@ valid coercion paths are ignored; they are signaled by a warning.
   source and its target.
 
 \item Assumptions can be declared as coercions at declaration
-time. This extends the grammar of declarations from Figure
-\ref{sentences-syntax} as follows:
+time. This extends the grammar of assumptions from 
+Figure~\ref{sentences-syntax} as follows:
 \comindex{Variable \mbox{\rm (and coercions)}}
 \comindex{Axiom \mbox{\rm (and coercions)}}
 \comindex{Parameter \mbox{\rm (and coercions)}}
@@ -211,7 +211,7 @@ time. This extends the grammar of declarations from Figure
 
 \begin{tabular}{lcl}
 %% Declarations
-{\declaration} & ::= & {\declarationkeyword} {\assums} {\tt .} \\
+{\assumption} & ::= & {\assumptionkeyword} {\assums} {\tt .} \\
 &&\\
 {\assums} & ::= & {\simpleassums} \\
           & $|$ & \nelist{{\tt (} \simpleassums {\tt )}}{} \\
@@ -236,10 +236,10 @@ grammar of inductive types from Figure \ref{sentences-syntax} as follows:
  & $|$ & {\tt CoInductive} \nelist{\inductivebody}{with} {\tt .} \\
            & & \\
 {\inductivebody} & ::= & 
-  {\ident} \sequence{\binderlet}{} {\tt :} {\term} {\tt :=} \\
+  {\ident} \zeroone{\binders} {\tt :} {\term} {\tt :=} \\
    && ~~~\zeroone{\zeroone{\tt |} \nelist{\constructor}{|}} \\
            & & \\
-{\constructor} & ::= &  {\ident} \sequence{\binderlet}{} \zeroone{{\tt :}\zeroone{\tt >} {\term}} \\
+{\constructor} & ::= &  {\ident} \zeroone{\binders} \zeroone{{\tt :}\zeroone{\tt >} {\term}} \\
 \end{tabular}
 \end{center}
 
@@ -331,7 +331,7 @@ classes as records) by extending the existing {\tt Record} macro
 
 \begin{center}
 \begin{tabular}{l}
-{\tt Record \zeroone{>}~{\ident} {\binderlet} : {\sort} := \zeroone{\ident$_0$} \verb+{+} \\
+{\tt Record \zeroone{>}~{\ident} \zeroone{\binders} : {\sort} := \zeroone{\ident$_0$} \verb+{+} \\
 ~~~~\begin{tabular}{l}
         {\tt \ident$_1$ $[$:$|$:>$]$ \term$_1$ ;} \\
         ... \\
