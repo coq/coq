@@ -16,6 +16,7 @@ open Indfun
 open Genarg
 open Pcoq
 open Tacticals
+open Constr
 
 let pr_binding prc = function
   | loc, Rawterm.NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ cut () ++ prc c)
@@ -129,85 +130,36 @@ ARGUMENT EXTEND auto_using'
 | [ ] -> [ [] ]
 END
 
-let pr_rec_annotation2_aux s r id l =
-  str ("{"^s^" ") ++ Ppconstr.pr_constr_expr r ++
-    Util.pr_opt Nameops.pr_id id ++
-    Pptactic.pr_auto_using Ppconstr.pr_constr_expr l ++ str "}"
+module Gram = Pcoq.Gram
+module Vernac = Pcoq.Vernac_
+module Tactic = Pcoq.Tactic
 
-let pr_rec_annotation2 = function
-  | Struct id -> str "{struct" ++ Nameops.pr_id id ++ str "}"
-  | Wf(r,id,l) -> pr_rec_annotation2_aux "wf" r id l
-  | Mes(r,id,l) -> pr_rec_annotation2_aux "measure" r id l
+module FunctionGram =
+struct
+  let gec s = Gram.entry_create ("Function."^s)
+		(* types *)
+  let function_rec_definition_loc : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) located Gram.entry = gec "function_rec_definition_loc"
+end
+open FunctionGram
 
-VERNAC ARGUMENT EXTEND rec_annotation2
-PRINTED BY pr_rec_annotation2
-  [ "{"  "struct" ident(id)  "}"] -> [ Struct id ]
-| [ "{" "wf" constr(r) ident_opt(id) auto_using'(l) "}" ] -> [ Wf(r,id,l) ]
-| [ "{" "measure" constr(r) ident_opt(id) auto_using'(l) "}" ] -> [ Mes(r,id,l) ]
-END
+GEXTEND Gram
+  GLOBAL: function_rec_definition_loc ;
 
-let pr_binder2 (idl,c) =
-  str "(" ++ Util.prlist_with_sep spc Nameops.pr_id idl ++ spc () ++
-    str ": " ++ Ppconstr.pr_lconstr_expr c ++ str ")"
+  function_rec_definition_loc:
+    [ [ g = Vernac.rec_definition -> loc, g ]]
+    ;
 
-VERNAC ARGUMENT EXTEND binder2
-PRINTED BY pr_binder2
-    [ "(" ne_ident_list(idl) ":" lconstr(c)  ")"] -> [ (idl,c) ]
-END
+  END
+type 'a function_rec_definition_loc_argtype = ((Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) located, 'a) Genarg.abstract_argument_type
 
-let make_binder2 (idl,c) =
-  LocalRawAssum (List.map (fun id -> (Util.dummy_loc,Name id)) idl,Topconstr.default_binder_kind,c)
-
-let pr_rec_definition2 (id,bl,annot,type_,def) =
-  Nameops.pr_id id ++ spc () ++ Util.prlist_with_sep spc pr_binder2 bl ++
-    Util.pr_opt pr_rec_annotation2 annot ++ spc () ++ str ":" ++ spc () ++
-    Ppconstr.pr_lconstr_expr type_ ++ str " :=" ++ spc () ++
-    Ppconstr.pr_lconstr_expr def
-
-VERNAC ARGUMENT EXTEND rec_definition2
-PRINTED BY pr_rec_definition2
- [ ident(id)  binder2_list(bl)
-     rec_annotation2_opt(annot) ":" lconstr(type_)
-	":=" lconstr(def)] ->
-    [ (id,bl,annot,type_,def) ]
-END
-
-let make_rec_definitions2 (id,bl,annot,type_,def) =
-     let bl = List.map make_binder2 bl in
-     let names = List.map snd (Topconstr.names_of_local_assums bl) in
-     let check_one_name () =
-       if List.length names > 1 then
-         Util.user_err_loc
-           (Util.dummy_loc,"Function",
-            Pp.str "the recursive argument needs to be specified");
-     in
-     let check_exists_args an =
-       try
-	 let id = match an with
-	   | Struct id -> id | Wf(_,Some id,_) -> id | Mes(_,Some id,_) -> id
-	   | Wf(_,None,_) | Mes(_,None,_) -> failwith "check_exists_args"
-	 in
-	 (try ignore(Util.list_index0 (Name id) names); annot
-	  with Not_found ->  Util.user_err_loc
-            (Util.dummy_loc,"Function",
-             Pp.str "No argument named " ++ Nameops.pr_id id)
-	 )
-       with Failure "check_exists_args" ->  check_one_name ();annot
-     in
-     let ni =
-       match annot with
-         | None ->
-             annot
-	 | Some an ->
-	     check_exists_args an
-     in
-     ((Util.dummy_loc,id), ni, bl, type_, def)
-
-
+let (wit_function_rec_definition_loc : Genarg.tlevel function_rec_definition_loc_argtype),
+  (globwit_function_rec_definition_loc : Genarg.glevel function_rec_definition_loc_argtype),
+  (rawwit_function_rec_definition_loc : Genarg.rlevel function_rec_definition_loc_argtype) =
+  Genarg.create_arg "function_rec_definition_loc"
 VERNAC COMMAND EXTEND Function
-   ["Function" ne_rec_definition2_list_sep(recsl,"with")] ->
+   ["Function" ne_function_rec_definition_loc_list_sep(recsl,"with")] ->
 	[
-	  do_generate_principle false (List.map make_rec_definitions2 recsl);
+	  do_generate_principle false (List.map snd recsl);
 
 	]
 END

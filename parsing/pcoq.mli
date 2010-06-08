@@ -239,6 +239,7 @@ module Vernac_ :
     val command : vernac_expr Gram.entry
     val syntax : vernac_expr Gram.entry
     val vernac : vernac_expr Gram.entry
+    val rec_definition : (fixpoint_expr * decl_notation list) Gram.entry
     val vernac_eoi : vernac_expr Gram.entry
   end
 

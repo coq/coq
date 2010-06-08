@@ -19,12 +19,10 @@ let is_rec_info scheme_info =
   in
   Util.list_fold_left_i test_branche 1 false (List.rev scheme_info.Tactics.branches)
 
-
 let choose_dest_or_ind scheme_info =
     if is_rec_info scheme_info
     then Tactics.new_induct false
     else Tactics.new_destruct false
-
 
 let functional_induction with_clean c princl pat =
   Dumpglob.pause ();
@@ -67,7 +65,6 @@ let functional_induction with_clean c princl pat =
 		    in
 		    (princ,Rawterm.NoBindings, Tacmach.pf_type_of g princ)
 		| _ -> raise (UserError("",str "functional induction must be used with a function" ))
-
 	    end
 	| Some ((princ,binding)) ->
 	    princ,binding,Tacmach.pf_type_of g princ
@@ -114,7 +111,6 @@ let functional_induction with_clean c princl pat =
 	  (Hiddentac.h_reduce flag Tacticals.allHypsAndConcl)
 	  g
       else Tacticals.tclIDTAC g
-
     in
     Tacticals.tclTHEN
       (choose_dest_or_ind
@@ -129,18 +125,6 @@ let functional_induction with_clean c princl pat =
     Dumpglob.continue ();
     res
 
-
-
-
-type annot =
-    Struct of identifier
-  | Wf of Topconstr.constr_expr * identifier option * Topconstr.constr_expr list
-  | Mes of Topconstr.constr_expr * identifier option * Topconstr.constr_expr list
-
-
-type newfixpoint_expr =
-    identifier * annot * Topconstr.local_binder list * Topconstr.constr_expr * Topconstr.constr_expr
-
 let rec abstract_rawconstr c = function
   | [] -> c
   | Topconstr.LocalRawDef (x,b)::bl -> Topconstr.mkLetInC(x,b,abstract_rawconstr c bl)
@@ -149,23 +133,22 @@ let rec abstract_rawconstr c = function
         (abstract_rawconstr c bl)
 
 let interp_casted_constr_with_implicits sigma env impls c  =
-(*   Constrintern.interp_rawconstr_with_implicits sigma env [] impls c *)
   Constrintern.intern_gen false sigma env ~impls
     ~allow_patvar:false  ~ltacvars:([],[]) c
-
 
 (*
    Construct a fixpoint as a Rawterm
    and not as a constr
 *)
+
 let build_newrecursive
-(lnameargsardef)  =
+    lnameargsardef  =
   let env0 = Global.env()
   and sigma = Evd.empty
   in
   let (rec_sign,rec_impls) =
     List.fold_left
-      (fun (env,impls) ((_,recname),_,bl,arityc,_) ->
+      (fun (env,impls) ((_,recname),bl,arityc,_) ->
         let arityc = Topconstr.prod_constr_expr arityc bl in
         let arity = Constrintern.interp_type sigma env0 arityc in
 	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity [] in
@@ -178,7 +161,7 @@ let build_newrecursive
     let def =
       try
 	List.map
-	  (fun (_,_,bl,_,def)  ->
+	  (fun (_,bl,_,def)  ->
              let def = abstract_rawconstr def bl in
              interp_casted_constr_with_implicits
 	       sigma rec_sign rec_impls def
@@ -190,19 +173,16 @@ let build_newrecursive
   in
   recdef,rec_impls
 
-
-let compute_annot (name,annot,args,types,body) =
-  let names = List.map snd (Topconstr.names_of_local_assums args) in
-  match annot with
-    | None ->
-        if List.length names > 1 then
-          user_err_loc
-            (dummy_loc,"Function",
-             Pp.str "the recursive argument needs to be specified");
-        let new_annot = (id_of_name (List.hd names)) in
-	(name,Struct new_annot,args,types,body)
-    | Some r -> (name,r,args,types,body)
-
+let build_newrecursive l = 
+  let l' = List.map 
+    (fun ((fixna,_,bll,ar,body_opt),lnot) -> 
+       match body_opt with 
+	 | Some body -> 
+	     (fixna,bll,ar,body)
+	 | None -> user_err_loc (dummy_loc,"Function",str "Body of Function must be given")
+    ) l
+  in
+  build_newrecursive l'
 
 (* Checks whether or not the mutual bloc is recursive *)
 let rec is_rec names =
@@ -241,7 +221,7 @@ let rec local_binders_length = function
   | Topconstr.LocalRawDef _::bl -> 1 + local_binders_length bl
   | Topconstr.LocalRawAssum (idl,_,_)::bl -> List.length idl + local_binders_length bl
 
-let prepare_body (name,annot,args,types,body) rt =
+let prepare_body ((name,_,args,types,_),_) rt =
   let n = local_binders_length args in
 (*   Pp.msgnl (str "nb lambda to chop : " ++ str (string_of_int n) ++ fnl () ++Printer.pr_rawconstr rt); *)
   let fun_args,rt' = chop_rlambda_n n rt in
@@ -312,13 +292,13 @@ let error_error names e =
     | _ -> anomaly ""
 
 let generate_principle  on_error
-    is_general do_built fix_rec_l recdefs  interactive_proof
+    is_general do_built (fix_rec_l:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) recdefs  interactive_proof
     (continue_proof : int -> Names.constant array -> Term.constr array -> int ->
       Tacmach.tactic) : unit =
-  let names = List.map (function ((_, name),_,_,_,_) -> name) fix_rec_l in
+  let names = List.map (function ((_, name),_,_,_,_),_ -> name) fix_rec_l in
   let fun_bodies = List.map2 prepare_body fix_rec_l recdefs in
   let funs_args = List.map fst fun_bodies in
-  let funs_types =  List.map (function (_,_,_,types,_) -> types) fix_rec_l in
+  let funs_types =  List.map (function ((_,_,_,types,_),_) -> types) fix_rec_l in
   try
     (* We then register the Inductive graphs of the functions  *)
     Rawterm_to_relation.build_inductive names funs_args funs_types recdefs;
@@ -335,7 +315,7 @@ let generate_principle  on_error
 		 locate_ind
 		 f_R_mut)
 	in
-	let fname_kn (fname,_,_,_,_) =
+	let fname_kn ((fname,_,_,_,_),_) =
 	  let f_ref = Ident fname in
 	  locate_with_msg
 	    (pr_reference f_ref++str ": Not an inductive type!")
@@ -367,9 +347,10 @@ let generate_principle  on_error
   with e ->
     on_error names e
 
-let register_struct is_rec fixpoint_exprl =
+let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) =
   match fixpoint_exprl with
     | [((_,fname),_,bl,ret_type,body),_] when not is_rec ->
+      let body = match body with | Some body -> body | None -> user_err_loc (dummy_loc,"Function",str "Body of Function must be given") in 
 	let ce,imps =
 	  Command.interp_definition
 	    (Flags.boxed_definitions ()) bl None body (Some ret_type)
@@ -378,9 +359,6 @@ let register_struct is_rec fixpoint_exprl =
 	  fname (Decl_kinds.Global,Decl_kinds.Definition)
 	  ce imps (fun _ _ -> ())
     | _ ->
-        let fixpoint_exprl =
-          List.map (fun ((name,annot,bl,types,body),ntn) ->
-            ((name,annot,bl,types,Some body),ntn)) fixpoint_exprl in
 	Command.do_fixpoint fixpoint_exprl (Flags.boxed_definitions())
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref
@@ -403,8 +381,8 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
     in
     match wf_arg with
       | None ->
-	  if List.length names = 1 then 1
-	  else error "Recursive argument must be specified"
+	if List.length names = 1 then 1
+	else error "Recursive argument must be specified"
       | Some wf_arg ->
 	  list_index (Name wf_arg) names
   in
@@ -477,7 +455,7 @@ let register_mes fname rec_impls wf_mes_expr wf_arg using_lemmas args ret_type b
   let ltof =
     let make_dir l = make_dirpath (List.map id_of_string (List.rev l)) in
     Libnames.Qualid (dummy_loc,Libnames.qualid_of_path
-      (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (id_of_string "ltof")))
+		       (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (id_of_string "ltof")))
   in
   let fun_from_mes =
     let applied_mes =
@@ -490,12 +468,17 @@ let register_mes fname rec_impls wf_mes_expr wf_arg using_lemmas args ret_type b
   register_wf ~is_mes:true fname rec_impls wf_rel_from_mes (Some wf_arg)
     using_lemmas args ret_type body
 
+let map_option f = function 
+  | None -> None 
+  | Some v -> Some (f v)
 
-let do_generate_principle on_error register_built interactive_proof fixpoint_exprl  =
+let do_generate_principle on_error register_built interactive_proof (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) :unit  =
   let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
   let _is_struct =
     match fixpoint_exprl with
-      | [(((_,name),Some (Wf (wf_rel,wf_x,using_lemmas)),args,types,body))] ->
+      | [(((_,name),(wf_x,Topconstr.CWfRec wf_rel)(* Some (Wf (wf_rel,wf_x,using_lemmas)) *),args,types,body)),[]] ->
+	  let body = match body with | Some body -> body | None -> user_err_loc (dummy_loc,"Function",str "Body of Function must be given") in 
+	  let using_lemmas = [] in 
 	  let pre_hook =
 	    generate_principle
 	      on_error
@@ -506,9 +489,11 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
 	      true
 	  in
 	  if register_built
-	  then register_wf name rec_impls wf_rel wf_x using_lemmas args types body pre_hook;
+	  then register_wf name rec_impls wf_rel (map_option snd wf_x) using_lemmas args types body pre_hook;
 	  false
-      | [(((_,name),Some (Mes (wf_mes,wf_x,using_lemmas)),args,types,body))] ->
+      | [(((_,name),(wf_x,Topconstr.CMeasureRec(wf_mes,wf_rel_opt)),args,types,body)),[]] ->
+	  let using_lemmas = [] in
+	  let body = match body with | Some body -> body | None -> user_err_loc (dummy_loc,"Function",str "Body of Function must be given") in 
 	  let pre_hook =
 	    generate_principle
 	      on_error
@@ -519,46 +504,23 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
 	      true
 	  in
 	  if register_built
-	  then register_mes name rec_impls wf_mes wf_x using_lemmas args types body pre_hook;
+	  then register_mes name rec_impls wf_mes (map_option snd wf_x) using_lemmas args types body pre_hook;
 	  true
       | _ ->
+	  List.iter (function ((_na,(_,ord),_args,_body,_type),_not) ->
+		       match ord with 
+			 | Topconstr.CMeasureRec _ | Topconstr.CWfRec _ -> 
+			     error
+			       ("Cannot use mutual definition with well-founded recursion or measure")
+			 | _ -> ()
+		    )
+	    fixpoint_exprl;
 	  let fix_names =
-	    List.map (function ((_,name),_,_,_,_) -> name) fixpoint_exprl
-	  in
-	  let is_one_rec = is_rec fix_names  in
-	  let old_fixpoint_exprl =
-	    List.map
-	      (function
-		 | (name,Some (Struct id),args,types,body),_ ->
-		     let annot =
-		       try Some (dummy_loc, id), Topconstr.CStructRec
-		       with Not_found ->
-			 raise (UserError("",str "Cannot find argument " ++
-					    Ppconstr.pr_id id))
-		     in
-		     (name,annot,args,types,body),([]:Vernacexpr.decl_notation list)
-		 | (name,None,args,types,body),recdef ->
-		     let names =  (Topconstr.names_of_local_assums args) in
-		     if  is_one_rec recdef  && List.length names > 1 then
-		       user_err_loc
-			 (dummy_loc,"Function",
-			  Pp.str "the recursive argument needs to be specified in Function")
-		     else
-		       let loc, na = List.hd names in
-			 (name,(Some (loc, Nameops.out_name na), Topconstr.CStructRec),args,types,body),
-		     ([]:Vernacexpr.decl_notation list)
-		 | (_,Some (Wf _),_,_,_),_ | (_,Some (Mes _),_,_,_),_->
-		     error
-		       ("Cannot use mutual definition with well-founded recursion or measure")
-	      )
-	      (List.combine fixpoint_exprl recdefs)
+	    List.map (function (((_,name),_,_,_,_),_) -> name) fixpoint_exprl
 	  in
 	  (* ok all the expressions are structural *)
-	  let fix_names =
-	    List.map (function ((_,name),_,_,_,_) -> name) fixpoint_exprl
-	  in
 	  let is_rec = List.exists (is_rec fix_names) recdefs in
-	  if register_built then register_struct is_rec old_fixpoint_exprl;
+	  if register_built then register_struct is_rec fixpoint_exprl;
 	  generate_principle
 	    on_error
 	    false
@@ -568,7 +530,7 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
 	    interactive_proof
 	    (Functional_principles_proofs.prove_princ_for_struct interactive_proof);
 	  if register_built then derive_inversion fix_names;
-	  true;
+	  true; 
   in
   ()
 
@@ -702,74 +664,70 @@ let rec get_args b t : Topconstr.local_binder list *
 
 
 let make_graph (f_ref:global_reference) =
- let c,c_body =
-      match f_ref with
-	| ConstRef c ->
-	    begin try c,Global.lookup_constant c
-	    with Not_found ->
-	      raise (UserError ("",str "Cannot find " ++ Printer.pr_lconstr (mkConst c)) )
-	    end
-	| _ -> raise (UserError ("", str "Not a function reference") )
-
+  let c,c_body =
+    match f_ref with
+      | ConstRef c ->
+	  begin try c,Global.lookup_constant c
+	  with Not_found ->
+	    raise (UserError ("",str "Cannot find " ++ Printer.pr_lconstr (mkConst c)) )
+	  end
+      | _ -> raise (UserError ("", str "Not a function reference") )
   in
-   Dumpglob.pause ();
+  Dumpglob.pause ();
   (match c_body.const_body with
-    | None -> error "Cannot build a graph over an axiom !"
-    | Some b ->
-	let env = Global.env () in
-	let body = (force b) in
-	let extern_body,extern_type =
-	  with_full_print
-	    (fun () ->
-	       (Constrextern.extern_constr false env body,
-		Constrextern.extern_type false env
-                  (Typeops.type_of_constant_type env c_body.const_type)
-	       )
-	    )
-	    ()
-	in
-	let (nal_tas,b,t)  = get_args extern_body extern_type in
-	let expr_list =
-	  match b with
-	    | Topconstr.CFix(loc,l_id,fixexprl) ->
-		let l =
-		  List.map
-		    (fun (id,(n,recexp),bl,t,b) ->
-		       let loc, rec_id = Option.get n in
-		       let new_args =
-			 List.flatten
-			   (List.map
-			      (function
- 				 | Topconstr.LocalRawDef (na,_)-> []
-			      	 | Topconstr.LocalRawAssum (nal,_,_) ->
-				     List.map
-				       (fun (loc,n) ->
-					  CRef(Libnames.Ident(loc, Nameops.out_name n)))
-				       nal
-			      )
-			      nal_tas
-			   )
-		       in
-		       let b' = add_args (snd id) new_args b in
-		       (id, Some (Struct rec_id),nal_tas@bl,t,b')
-		    )
-		    fixexprl
-		in
-		l
-	    | _ ->
-		let id = id_of_label (con_label c) in
-		[((dummy_loc,id),None,nal_tas,t,b)]
-	in
-	do_generate_principle error_error false false expr_list;
-	(* We register the infos *)
-	let mp,dp,_ = repr_con c in
-	List.iter
-	  (fun ((_,id),_,_,_,_) -> add_Function false (make_con mp dp (label_of_id id)))
-	  expr_list);
+     | None -> error "Cannot build a graph over an axiom !"
+     | Some b ->
+	 let env = Global.env () in
+	 let body = (force b) in
+	 let extern_body,extern_type =
+	   with_full_print
+	     (fun () ->
+		(Constrextern.extern_constr false env body,
+		 Constrextern.extern_type false env
+                   (Typeops.type_of_constant_type env c_body.const_type)
+		)
+	     )
+	     ()
+	 in
+	 let (nal_tas,b,t)  = get_args extern_body extern_type in
+	 let expr_list =
+	   match b with
+	     | Topconstr.CFix(loc,l_id,fixexprl) ->
+		 let l =
+		   List.map
+		     (fun (id,(n,recexp),bl,t,b) ->
+			let loc, rec_id = Option.get n in
+			let new_args =
+			  List.flatten
+			    (List.map
+			       (function
+ 				  | Topconstr.LocalRawDef (na,_)-> []
+			      	  | Topconstr.LocalRawAssum (nal,_,_) ->
+				      List.map
+					(fun (loc,n) ->
+					   CRef(Libnames.Ident(loc, Nameops.out_name n)))
+					nal
+			       )
+			       nal_tas
+			    )
+			in
+			let b' = add_args (snd id) new_args b in
+			(((id, ( Some (dummy_loc,rec_id),CStructRec),nal_tas@bl,t,Some b'),[]):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
+		     )
+		     fixexprl
+		 in
+		 l
+	     | _ ->
+		 let id = id_of_label (con_label c) in
+		 [((dummy_loc,id),(None,Topconstr.CStructRec),nal_tas,t,Some b),[]]
+	 in
+	 do_generate_principle error_error false false expr_list;
+	 (* We register the infos *)
+	 let mp,dp,_ = repr_con c in
+	 List.iter
+	   (fun (((_,id),_,_,_,_),_) -> add_Function false (make_con mp dp (label_of_id id)))
+	   expr_list);
   Dumpglob.continue ()
-
-
-(* let make_graph _ = assert false	 *)
 
 let do_generate_principle = do_generate_principle warning_error true
 
