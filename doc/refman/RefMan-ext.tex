@@ -20,7 +20,7 @@ construction allows to define ``signatures''.
 {\sentence} & ++= & {\record}\\
   & & \\
 {\record} & ::= &
-   {\tt Record} {\ident} \sequence{\binderlet}{} \zeroone{{\tt :} {\sort}} \verb.:=. \\
+   {\tt Record} {\ident} \zeroone{\binders} \zeroone{{\tt :} {\sort}} \verb.:=. \\
 && ~~~~\zeroone{\ident}
        \verb!{! \zeroone{\nelist{\field}{;}} \verb!}! \verb:.:\\
   & & \\
@@ -86,7 +86,7 @@ Remark here that the field
 %
 %\medskip
 %\noindent
-%{\tt Inductive {\ident} {\binderlet} : {\sort} := \\
+%{\tt Inductive {\ident} \zeroone{\binders} : {\sort} := \\
 %\mbox{}\hspace{0.4cm} {\ident$_0$} : forall ({\ident$_1$}:{\term$_1$}) .. 
 %({\ident$_n$}:{\term$_n$}), {\ident} {\rm\sl params}.}
 %\medskip
@@ -820,7 +820,7 @@ subgoals belonging to a Lemma {\ident}{\tt\_tcc}. % These subgoals are independe
 
 The sectioning mechanism allows to organize a proof in structured
 sections. Then local declarations become available (see
-Section~\ref{Simpl-definitions}). 
+Section~\ref{Basic-definitions}).
 
 \subsection{\tt Section {\ident}\comindex{Section}}
 
@@ -836,13 +836,13 @@ This command is used to open a section named {\ident}.
 \subsection{\tt End {\ident}
 \comindex{End}}
 
-This command closes the section named {\ident}. When a section is
-closed, all local declarations (variables and local definitions) are
-{\em discharged}. This means that all global objects defined in the
-section are generalized with respect to all variables and local
-definitions it depends on in the section.  None of the local
-declarations (considered as autonomous declarations) survive the end
-of the section.
+This command closes the section named {\ident}. After closing of the
+section, the local declarations (variables and local definitions) get
+{\em discharged}, meaning that they stop being visible and that all
+global objects defined in the section are generalized with respect to
+the variables and local definitions they each depended on in the
+section.
+
 
 Here is an example :
 \begin{coq_example}
