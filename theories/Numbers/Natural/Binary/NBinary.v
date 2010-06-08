@@ -110,7 +110,7 @@ Implicit Arguments recursion [A].
 Instance recursion_wd A (Aeq : relation A) :
  Proper (Aeq==>(eq==>Aeq==>Aeq)==>eq==>Aeq) (@recursion A).
 Proof.
-intros A Aeq a a' Eaa' f f' Eff'.
+intros a a' Eaa' f f' Eff'.
 intro x; pattern x; apply Nrect.
 intros x' H; now rewrite <- H.
 clear x.

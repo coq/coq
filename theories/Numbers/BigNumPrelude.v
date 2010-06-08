@@ -331,7 +331,7 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  Theorem Zgcd_div_pos a b:
    0 < b -> 0 < Zgcd a b -> 0 < b / Zgcd a b.
  Proof.
- intros a b Ha Hg.
+ intros Ha Hg.
  case (Zle_lt_or_eq 0 (b/Zgcd a b)); auto.
  apply Z_div_pos; auto with zarith.
  intros H; generalize Ha.
@@ -343,7 +343,7 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  Theorem Zdiv_neg a b:
    a < 0 -> 0 < b -> a / b < 0.
  Proof.
- intros a b Ha Hb.
+ intros Ha Hb.
  assert (b > 0) by omega.
  generalize (Z_mult_div_ge a _ H); intros.
  assert (b * (a / b) < 0)%Z.

@@ -736,7 +736,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
 
   Definition compare (s s':t) : Compare lt eq s s'.
   Proof.
-   intros (s,b,a) (s',b',a').
+   destruct s as (s,b,a), s' as (s',b',a').
    generalize (compare_Cmp s s').
    destruct compare_aux; intros; [apply EQ|apply LT|apply GT]; red; auto.
   Defined.

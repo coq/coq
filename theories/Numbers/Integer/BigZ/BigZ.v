@@ -105,7 +105,7 @@ Qed.
 Theorem spec_to_N n:
  ([n] = Zsgn [n] * (BigN.to_Z (BigZ.to_N n)))%Z.
 Proof.
-intros n; case n; simpl; intros p;
+case n; simpl; intros p;
   generalize (BigN.spec_pos p); case (BigN.to_Z p); auto.
 intros p1 H1; case H1; auto.
 intros p1 H1; case H1; auto.

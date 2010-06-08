@@ -45,7 +45,7 @@ Qed.
 
 Global Instance iter_wd (R:relation A) : Proper ((R==>R)==>eq==>R==>R) iter.
 Proof.
-intros R f f' Hf n n' Hn; subst n'. induction n; simpl; red; auto.
+intros f f' Hf n n' Hn; subst n'. induction n; simpl; red; auto.
 Qed.
 
 End Iter.

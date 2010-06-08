@@ -261,7 +261,7 @@ Qed.
 Global Instance if_eqA (B:Type)(b b':B) :
  Proper (eqA==>eqA==>@eq _) (fun x y => if eqA_dec x y then b else b').
 Proof.
- intros B b b' x x' Hxx' y y' Hyy'.
+ intros x x' Hxx' y y' Hyy'.
  intros; destruct (eqA_dec x y) as [H|H];
   destruct (eqA_dec x' y') as [H'|H']; auto.
  contradict H'; transitivity x; auto with *; transitivity y; auto with *.
@@ -292,7 +292,7 @@ Qed.
 Global Instance multiplicity_eqA (l:list A) :
  Proper (eqA==>@eq _) (multiplicity (list_contents l)).
 Proof.
-  intros l x x' Hxx'.
+  intros x x' Hxx'.
   induction l as [|y l Hl]; simpl; auto.
   rewrite (@if_eqA_rewrite_r y x x'); auto.
 Qed.

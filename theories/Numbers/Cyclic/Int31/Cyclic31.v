@@ -1877,14 +1877,14 @@ Section Int31_Specs.
 
  Lemma quotient_by_2 a: a - 1 <= (a/2) + (a/2).
  Proof.
- intros a; case (Z_mod_lt a 2); auto with zarith.
+ case (Z_mod_lt a 2); auto with zarith.
  intros H1; rewrite Zmod_eq_full; auto with zarith.
  Qed.
 
  Lemma sqrt_main_trick j k: 0 <= j -> 0 <= k ->
    (j * k) + j <= ((j + k)/2 + 1)  ^ 2.
  Proof.
- intros j k Hj; generalize Hj k; pattern j; apply natlike_ind;
+ intros Hj; generalize Hj k; pattern j; apply natlike_ind;
    auto; clear k j Hj.
  intros _ k Hk; repeat rewrite Zplus_0_l.
  apply  Zmult_le_0_compat; generalize (Z_div_pos k 2); auto with zarith.
@@ -1907,7 +1907,7 @@ Section Int31_Specs.
 
  Lemma sqrt_main i j: 0 <= i -> 0 < j -> i < ((j + (i/j))/2 + 1) ^ 2.
  Proof.
- intros i j Hi Hj.
+ intros Hi Hj.
  assert (Hij: 0 <= i/j) by (apply Z_div_pos; auto with zarith).
  apply Zlt_le_trans with (2 := sqrt_main_trick _ _ (Zlt_le_weak _ _ Hj) Hij).
  pattern i at 1; rewrite (Z_div_mod_eq i j); case (Z_mod_lt i j); auto with zarith.
@@ -1915,7 +1915,7 @@ Section Int31_Specs.
 
  Lemma sqrt_init i: 1 < i -> i < (i/2 + 1) ^ 2.
  Proof.
- intros i Hi.
+ intros Hi.
  assert (H1: 0 <= i - 2) by auto with zarith.
  assert (H2: 1 <= (i / 2) ^ 2); auto with zarith.
    replace i with (1* 2 + (i - 2)); auto with zarith.
@@ -1933,14 +1933,14 @@ Section Int31_Specs.
 
  Lemma sqrt_test_true i j: 0 <= i -> 0 < j -> i/j >= j -> j ^ 2 <= i.
  Proof.
- intros i j Hi Hj Hd; rewrite Zpower_2.
+ intros Hi Hj Hd; rewrite Zpower_2.
  apply Zle_trans with (j * (i/j)); auto with zarith.
  apply Z_mult_div_ge; auto with zarith.
  Qed.
 
  Lemma sqrt_test_false i j: 0 <= i -> 0 < j -> i/j < j ->  (j + (i/j))/2 < j.
  Proof.
- intros i j Hi Hj H; case (Zle_or_lt j ((j + (i/j))/2)); auto.
+ intros Hi Hj H; case (Zle_or_lt j ((j + (i/j))/2)); auto.
  intros H1; contradict H; apply Zle_not_lt.
  assert (2 * j <= j + (i/j)); auto with zarith.
  apply Zle_trans with (2 * ((j + (i/j))/2)); auto with zarith.
@@ -1955,7 +1955,7 @@ Section Int31_Specs.
 
  Lemma Zcompare_spec i j: ZcompareSpec i j (i ?= j).
  Proof.
- intros i j; case_eq (Zcompare i j); intros H.
+ case_eq (Zcompare i j); intros H.
  apply ZcompareSpecEq; apply Zcompare_Eq_eq; auto.
  apply ZcompareSpecLt; auto.
  apply ZcompareSpecGt; apply Zgt_lt; auto.
@@ -1968,12 +1968,12 @@ Section Int31_Specs.
    | _ =>  j
    end.
  Proof.
- intros rec i j; unfold sqrt31_step; case div31; intros.
+ unfold sqrt31_step; case div31; intros.
  simpl; case compare31; auto.
  Qed.
 
  Lemma div31_phi i j: 0 < [|j|] -> [|fst (i/j)%int31|] = [|i|]/[|j|].
- intros i j Hj; generalize (spec_div i j Hj).
+ intros Hj; generalize (spec_div i j Hj).
  case div31; intros q r; simpl fst.
  intros (H1,H2); apply Zdiv_unique with [|r|]; auto with zarith.
  rewrite H1; ring.
@@ -1988,7 +1988,7 @@ Section Int31_Specs.
   [|sqrt31_step rec i j|] ^ 2 <= [|i|] < ([|sqrt31_step rec i j|] + 1) ^ 2.
  Proof.
  assert (Hp2: 0 < [|2|]) by exact (refl_equal Lt).
- intros rec i j Hi Hj Hij H31 Hrec; rewrite sqrt31_step_def.
+ intros Hi Hj Hij H31 Hrec; rewrite sqrt31_step_def.
  rewrite spec_compare, div31_phi; auto.
    case Zcompare_spec; auto; intros Hc;
    try (split; auto; apply sqrt_test_true; auto with zarith; fail).
@@ -2024,7 +2024,7 @@ Section Int31_Specs.
        [|rec i j1|] ^ 2 <= [|i|] < ([|rec i j1|] + 1) ^ 2) ->
   [|iter31_sqrt n rec i j|] ^ 2 <= [|i|] < ([|iter31_sqrt n rec i j|] + 1) ^ 2.
  Proof.
- intros n; elim n; unfold iter31_sqrt; fold iter31_sqrt; clear n.
+ revert rec i j; elim n; unfold iter31_sqrt; fold iter31_sqrt; clear n.
  intros rec i j Hi Hj Hij H31 Hrec; apply sqrt31_step_correct; auto with zarith.
  intros; apply Hrec; auto with zarith.
  rewrite Zpower_0_r; auto with zarith.
@@ -2083,14 +2083,14 @@ Section Int31_Specs.
        end
    end.
  Proof.
- intros rec ih il j; unfold sqrt312_step; case div3121; intros.
+ unfold sqrt312_step; case div3121; intros.
  simpl; case compare31; auto.
  Qed.
 
  Lemma sqrt312_lower_bound ih il j:
    phi2 ih  il  < ([|j|] + 1) ^ 2 -> [|ih|] <= [|j|].
  Proof.
- intros ih il j H1.
+ intros H1.
  case (phi_bounded j); intros Hbj _.
  case (phi_bounded il); intros Hbil _.
  case (phi_bounded ih); intros Hbih Hbih1.
@@ -2104,7 +2104,7 @@ Section Int31_Specs.
  Lemma div312_phi ih il j: (2^30 <= [|j|] -> [|ih|] < [|j|] ->
   [|fst (div3121 ih il j)|] = phi2 ih il/[|j|])%Z.
  Proof.
- intros ih il j Hj Hj1.
+ intros Hj Hj1.
  generalize (spec_div21 ih il j Hj Hj1).
  case div3121; intros q r (Hq, Hr).
  apply Zdiv_unique with (phi r); auto with zarith.
@@ -2119,7 +2119,7 @@ Section Int31_Specs.
       < ([|sqrt312_step rec ih il j|] + 1) ^  2.
  Proof.
  assert (Hp2: (0 < [|2|])%Z) by exact (refl_equal Lt).
- intros rec ih il j Hih Hj Hij Hrec; rewrite sqrt312_step_def.
+ intros Hih Hj Hij Hrec; rewrite sqrt312_step_def.
  assert (H1: ([|ih|] <= [|j|])%Z) by (apply sqrt312_lower_bound with il; auto).
  case (phi_bounded ih); intros Hih1 _.
  case (phi_bounded il); intros Hil1 _.
@@ -2213,7 +2213,7 @@ Section Int31_Specs.
   [|iter312_sqrt n rec ih il j|] ^ 2 <= phi2 ih il
       < ([|iter312_sqrt n rec ih il j|] + 1) ^ 2.
  Proof.
- intros n; elim n; unfold iter312_sqrt; fold iter312_sqrt; clear n.
+ revert rec ih il j; elim n; unfold iter312_sqrt; fold iter312_sqrt; clear n.
  intros rec ih il j Hi Hj Hij Hrec; apply sqrt312_step_correct; auto with zarith.
  intros; apply Hrec; auto with zarith.
  rewrite Zpower_0_r; auto with zarith.

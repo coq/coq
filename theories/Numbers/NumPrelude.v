@@ -96,7 +96,7 @@ Definition predicate (A : Type) := A -> Prop.
 Instance well_founded_wd A :
  Proper (@relation_equivalence A ==> iff) (@well_founded A).
 Proof.
-intros A R1 R2 H.
+intros R1 R2 H.
 split; intros WF a; induction (WF a) as [x _ WF']; constructor;
 intros y Ryx; apply WF'; destruct (H y x); auto.
 Qed.

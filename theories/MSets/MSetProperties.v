@@ -947,12 +947,12 @@ Module OrdProperties (M:Sets).
 
   Instance gtb_compat x : Proper (E.eq==>Logic.eq) (gtb x).
   Proof.
-   intros x a b H. unfold gtb. rewrite H; auto.
+   intros a b H. unfold gtb. rewrite H; auto.
   Qed.
 
   Instance leb_compat x : Proper (E.eq==>Logic.eq) (leb x).
   Proof.
-   intros x a b H; unfold leb. rewrite H; auto.
+   intros a b H; unfold leb. rewrite H; auto.
   Qed.
   Hint Resolve gtb_compat leb_compat.
 

@@ -134,7 +134,6 @@ Section Fix_rects.
             Fix_F_sub A R P f (proj1_sig y) (Acc_inv a (proj2_sig y)))))
     : forall x a, Q _ (Fix_F_sub A R P f x a).
   Proof with auto.
-    intros Q inv.
     set (R' := fun (x: A) => forall a, Q _ (Fix_F_sub A R P f x a)).
     cut (forall x, R' x)...
     apply (well_founded_induction_type Rwf).
@@ -167,7 +166,7 @@ Section Fix_rects.
     Fix_F_sub A R P f x a =
     Fix_F_sub A R P f x a'.
   Proof.
-    intros x a.
+    revert a'.
     pattern x, (Fix_F_sub A R P f x a).
     apply Fix_F_sub_rect.
     intros.

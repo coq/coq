@@ -565,10 +565,10 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  ring.
  Qed.
 
- Instance strong_spec_mul_norm_Qz_Qq z n d
-   `(Reduced (Qq n d)) : Reduced (mul_norm_Qz_Qq z n d).
+ Instance strong_spec_mul_norm_Qz_Qq z n d :
+   forall `(Reduced (Qq n d)), Reduced (mul_norm_Qz_Qq z n d).
  Proof.
- unfold Reduced; intros z n d.
+ unfold Reduced.
  rewrite 2 strong_spec_red, 2 Qred_iff.
  simpl; nzsimpl.
  destr_eqb; intros Hd H; simpl in *; nzsimpl.
@@ -648,8 +648,8 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  rewrite <- Hg1, <- Hg2, <- Hg1', <- Hg2'; ring.
  Qed.
 
- Instance strong_spec_mul_norm x y
-  `(Reduced x, Reduced y) : Reduced (mul_norm x y).
+ Instance strong_spec_mul_norm x y :
+  forall `(Reduced x, Reduced y), Reduced (mul_norm x y).
  Proof.
  unfold Reduced; intros.
  rewrite strong_spec_red, Qred_iff.
@@ -833,7 +833,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  romega.
  Qed.
 
- Instance strong_spec_inv_norm x `(Reduced x) : Reduced (inv_norm x).
+ Instance strong_spec_inv_norm x : Reduced x -> Reduced (inv_norm x).
  Proof.
  unfold Reduced.
  intros.
@@ -888,7 +888,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
 
  Theorem spec_div x y: [div x y] == [x] / [y].
  Proof.
- intros x y; unfold div; rewrite spec_mul; auto.
+ unfold div; rewrite spec_mul; auto.
  unfold Qdiv; apply Qmult_comp.
  apply Qeq_refl.
  apply spec_inv; auto.
@@ -898,7 +898,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
 
  Theorem spec_div_norm x y: [div_norm x y] == [x] / [y].
  Proof.
- intros x y; unfold div_norm; rewrite spec_mul_norm; auto.
+ unfold div_norm; rewrite spec_mul_norm; auto.
  unfold Qdiv; apply Qmult_comp.
  apply Qeq_refl.
  apply spec_inv_norm; auto.
@@ -1019,8 +1019,8 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  rewrite spec_inv_norm, spec_power_pos; apply Qeq_refl.
  Qed.
 
- Instance strong_spec_power_norm x z
-   `(Reduced x) : Reduced (power_norm x z).
+ Instance strong_spec_power_norm x z :
+   Reduced x -> Reduced (power_norm x z).
  Proof.
  destruct z; simpl.
  intros _; unfold Reduced; rewrite strong_spec_red.
@@ -1088,7 +1088,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  Theorem spec_addc x y:
   [[add x y]] = [[x]] + [[y]].
  Proof.
- intros x y; unfold to_Qc.
+ unfold to_Qc.
  apply trans_equal with (!! ([x] + [y])).
  unfold Q2Qc.
  apply Qc_decomp; intros _ _; unfold this.
@@ -1102,7 +1102,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  Theorem spec_add_normc x y:
   [[add_norm x y]] = [[x]] + [[y]].
  Proof.
- intros x y; unfold to_Qc.
+ unfold to_Qc.
  apply trans_equal with (!! ([x] + [y])).
  unfold Q2Qc.
  apply Qc_decomp; intros _ _; unfold this.
@@ -1125,14 +1125,14 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
 
  Theorem spec_subc x y:  [[sub x y]] = [[x]] - [[y]].
  Proof.
- intros x y; unfold sub; rewrite spec_addc; auto.
+ unfold sub; rewrite spec_addc; auto.
  rewrite spec_oppc; ring.
  Qed.
 
  Theorem spec_sub_normc x y:
    [[sub_norm x y]] = [[x]] - [[y]].
  Proof.
- intros x y; unfold sub_norm; rewrite spec_add_normc; auto.
+ unfold sub_norm; rewrite spec_add_normc; auto.
  rewrite spec_oppc; ring.
  Qed.
 
@@ -1150,7 +1150,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  Theorem spec_mulc x y:
   [[mul x y]] = [[x]] * [[y]].
  Proof.
- intros x y; unfold to_Qc.
+ unfold to_Qc.
  apply trans_equal with (!! ([x] * [y])).
  unfold Q2Qc.
  apply Qc_decomp; intros _ _; unfold this.
@@ -1164,7 +1164,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  Theorem spec_mul_normc x y:
    [[mul_norm x y]] = [[x]] * [[y]].
  Proof.
- intros x y; unfold to_Qc.
+ unfold to_Qc.
  apply trans_equal with (!! ([x] * [y])).
  unfold Q2Qc.
  apply Qc_decomp; intros _ _; unfold this.
@@ -1188,7 +1188,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  Theorem spec_invc x:
    [[inv x]] =  /[[x]].
  Proof.
- intros x; unfold to_Qc.
+ unfold to_Qc.
  apply trans_equal with (!! (/[x])).
  unfold Q2Qc.
  apply Qc_decomp; intros _ _; unfold this.
@@ -1202,7 +1202,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  Theorem spec_inv_normc x:
    [[inv_norm x]] =  /[[x]].
  Proof.
- intros x; unfold to_Qc.
+ unfold to_Qc.
  apply trans_equal with (!! (/[x])).
  unfold Q2Qc.
  apply Qc_decomp; intros _ _; unfold this.
@@ -1225,14 +1225,14 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
 
  Theorem spec_divc x y: [[div x y]] = [[x]] / [[y]].
  Proof.
- intros x y; unfold div; rewrite spec_mulc; auto.
+ unfold div; rewrite spec_mulc; auto.
  unfold Qcdiv; apply f_equal2 with (f := Qcmult); auto.
  apply spec_invc; auto.
  Qed.
 
  Theorem spec_div_normc x y: [[div_norm x y]] = [[x]] / [[y]].
  Proof.
- intros x y; unfold div_norm; rewrite spec_mul_normc; auto.
+ unfold div_norm; rewrite spec_mul_normc; auto.
  unfold Qcdiv; apply f_equal2 with (f := Qcmult); auto.
  apply spec_inv_normc; auto.
  Qed.
@@ -1250,7 +1250,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
 
  Theorem spec_squarec x: [[square x]] = [[x]]^2.
  Proof.
- intros x; unfold to_Qc.
+ unfold to_Qc.
  apply trans_equal with (!! ([x]^2)).
  unfold Q2Qc.
  apply Qc_decomp; intros _ _; unfold this.
@@ -1267,7 +1267,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  Theorem spec_power_posc x p:
    [[power_pos x p]] = [[x]] ^ nat_of_P p.
  Proof.
- intros x p; unfold to_Qc.
+ unfold to_Qc.
  apply trans_equal with (!! ([x]^Zpos p)).
  unfold Q2Qc.
  apply Qc_decomp; intros _ _; unfold this.

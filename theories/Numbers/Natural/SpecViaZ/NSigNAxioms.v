@@ -200,7 +200,7 @@ Instance recursion_wd (A : Type) (Aeq : relation A) :
  Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) (@recursion A).
 Proof.
 unfold eq.
-intros A Aeq a a' Eaa' f f' Eff' x x' Exx'.
+intros a a' Eaa' f f' Eff' x x' Exx'.
 unfold recursion.
 unfold N.to_N.
 rewrite <- Exx'; clear x' Exx'.

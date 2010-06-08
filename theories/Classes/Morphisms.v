@@ -476,8 +476,7 @@ Qed.
 
 Lemma proper_normalizes_proper `(Normalizes A R0 R1, Proper A R1 m) : Proper R0 m.
 Proof.
-  intros A R0 R1 H m H'.
-  red in H, H'.
+  red in H, H0.
   setoid_rewrite H.
   assumption.
 Qed.
@@ -512,16 +511,16 @@ Hint Extern 7 (@Proper _ _ _) => proper_reflexive : typeclass_instances.
 (** When the relation on the domain is symmetric, we can
     inverse the relation on the codomain. Same for binary functions. *)
 
-Lemma proper_sym_flip
- `(Symmetric A R1)`(Proper (A->B) (R1==>R2) f) :
+Lemma proper_sym_flip :
+ forall `(Symmetric A R1)`(Proper (A->B) (R1==>R2) f),
  Proper (R1==>inverse R2) f.
 Proof.
 intros A R1 Sym B R2 f Hf.
 intros x x' Hxx'. apply Hf, Sym, Hxx'.
 Qed.
 
-Lemma proper_sym_flip_2
- `(Symmetric A R1)`(Symmetric B R2)`(Proper (A->B->C) (R1==>R2==>R3) f) :
+Lemma proper_sym_flip_2 :
+ forall `(Symmetric A R1)`(Symmetric B R2)`(Proper (A->B->C) (R1==>R2==>R3) f),
  Proper (R1==>R2==>inverse R3) f.
 Proof.
 intros A R1 Sym1 B R2 Sym2 C R3 f Hf.
@@ -532,14 +531,14 @@ Qed.
   compatible with [iff] as soon as it is compatible with [impl].
   Same with a binary relation. *)
 
-Lemma proper_sym_impl_iff `(Symmetric A R)`(Proper _ (R==>impl) f) :
+Lemma proper_sym_impl_iff : forall `(Symmetric A R)`(Proper _ (R==>impl) f),
  Proper (R==>iff) f.
 Proof.
 intros A R Sym f Hf x x' Hxx'. repeat red in Hf. split; eauto.
 Qed.
 
-Lemma proper_sym_impl_iff_2
- `(Symmetric A R)`(Symmetric B R')`(Proper _ (R==>R'==>impl) f) :
+Lemma proper_sym_impl_iff_2 :
+ forall `(Symmetric A R)`(Symmetric B R')`(Proper _ (R==>R'==>impl) f),
  Proper (R==>R'==>iff) f.
 Proof.
 intros A R Sym B R' Sym' f Hf x x' Hxx' y y' Hyy'.

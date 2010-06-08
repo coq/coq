@@ -833,7 +833,7 @@ Qed.
 Instance bal_ok l x r `(Ok l, Ok r, lt_tree x l, gt_tree x r) :
  Ok (bal l x r).
 Proof.
- intros l x r; functional induction bal l x r; intros;
+ functional induction bal l x r; intros;
  inv; repeat apply create_ok; auto; unfold create;
  (apply lt_tree_node || apply gt_tree_node); auto;
  (eapply lt_tree_trans || eapply gt_tree_trans); eauto.
@@ -894,7 +894,7 @@ Proof.
  apply create_spec.
 Qed.
 
-Instance join_ok l x r `(Ok l, Ok r, lt_tree x l, gt_tree x r) :
+Instance join_ok : forall l x r `(Ok l, Ok r, lt_tree x l, gt_tree x r),
  Ok (join l x r).
 Proof.
  join_tac; auto with *; inv; apply bal_ok; auto;
@@ -915,10 +915,10 @@ Proof.
  rewrite bal_spec, In_node_iff, IHp, e0; simpl; intuition.
 Qed.
 
-Instance remove_min_ok l x r h `(Ok (Node l x r h)) :
+Instance remove_min_ok l x r : forall h `(Ok (Node l x r h)),
  Ok (remove_min l x r)#1.
 Proof.
- intros l x r; functional induction (remove_min l x r); simpl; intros.
+ functional induction (remove_min l x r); simpl; intros.
  inv; auto.
  assert (O : Ok (Node ll lx lr _x)) by (inv; auto).
  assert (L : lt_tree x (Node ll lx lr _x)) by (inv; auto).
@@ -958,11 +958,11 @@ Proof.
  rewrite bal_spec, remove_min_spec, e1; simpl; intuition.
 Qed.
 
-Instance merge_ok s1 s2 `(Ok s1, Ok s2)
- `(forall y1 y2 : elt, InT y1 s1 -> InT y2 s2 -> X.lt y1 y2) :
+Instance merge_ok s1 s2 : forall `(Ok s1, Ok s2)
+ `(forall y1 y2 : elt, InT y1 s1 -> InT y2 s2 -> X.lt y1 y2),
  Ok (merge s1 s2).
 Proof.
- intros s1 s2; functional induction (merge s1 s2); intros; auto;
+ functional induction (merge s1 s2); intros; auto;
  try factornode _x _x0 _x1 _x2 as s1.
  apply bal_ok; auto.
  change s2' with ((s2',m)#1); rewrite <-e1; eauto with *.
@@ -1110,11 +1110,11 @@ Proof.
  rewrite join_spec, remove_min_spec, e1; simpl; intuition.
 Qed.
 
-Instance concat_ok s1 s2 `(Ok s1, Ok s2)
- `(forall y1 y2 : elt, InT y1 s1 -> InT y2 s2 -> X.lt y1 y2) :
+Instance concat_ok s1 s2 : forall `(Ok s1, Ok s2)
+ `(forall y1 y2 : elt, InT y1 s1 -> InT y2 s2 -> X.lt y1 y2),
  Ok (concat s1 s2).
 Proof.
- intros s1 s2; functional induction (concat s1 s2); intros; auto;
+ functional induction (concat s1 s2); intros; auto;
  try factornode _x _x0 _x1 _x2 as s1.
  apply join_ok; auto.
  change (Ok (s2',m)#1); rewrite <-e1; eauto with *.
@@ -1164,7 +1164,7 @@ Proof.
  destruct (split x r); simpl in *. rewrite IHr; intuition_in; order.
 Qed.
 
-Lemma split_ok s x `{Ok s} : Ok (split x s)#l /\ Ok (split x s)#r.
+Lemma split_ok : forall s x `{Ok s}, Ok (split x s)#l /\ Ok (split x s)#r.
 Proof.
  induct s x; simpl; auto.
  specialize (IHl x).
@@ -1273,9 +1273,9 @@ Proof.
  elim_compare y x1; intuition_in.
 Qed.
 
-Instance union_ok s1 s2 `(Ok s1, Ok s2) : Ok (union s1 s2).
+Instance union_ok s1 s2 : forall `(Ok s1, Ok s2), Ok (union s1 s2).
 Proof.
- intros s1 s2; functional induction union s1 s2; intros B1 B2; auto.
+ functional induction union s1 s2; intros B1 B2; auto.
  factornode _x0 _x1 _x2 _x3 as s2; destruct_split; inv.
  apply join_ok; auto with *.
  intro y; rewrite union_spec, split_spec1; intuition_in.
@@ -1387,7 +1387,7 @@ Proof.
  rewrite H0 in H3; discriminate.
 Qed.
 
-Instance filter_ok' s acc f `(Ok s, Ok acc) :
+Instance filter_ok' : forall s acc f `(Ok s, Ok acc),
  Ok (filter_acc f acc s).
 Proof.
  induction s; simpl; auto.
@@ -1473,7 +1473,7 @@ Proof.
  intros u v H; rewrite H; auto.
 Qed.
 
-Instance partition_ok1' s acc f `(Ok s, Ok acc#1) :
+Instance partition_ok1' : forall s acc f `(Ok s, Ok acc#1),
  Ok (partition_acc f acc s)#1.
 Proof.
  induction s; simpl; auto.
@@ -1484,7 +1484,7 @@ Proof.
  apply IHs1; simpl; auto with *.
 Qed.
 
-Instance partition_ok2' s acc f `(Ok s, Ok acc#2) :
+Instance partition_ok2' : forall s acc f `(Ok s, Ok acc#2),
  Ok (partition_acc f acc s)#2.
 Proof.
  induction s; simpl; auto.
@@ -1496,10 +1496,10 @@ Proof.
 Qed.
 
 Instance partition_ok1 s f `(Ok s) : Ok (partition f s)#1.
-Proof. intros; apply partition_ok1'; auto. Qed.
+Proof. apply partition_ok1'; auto. Qed.
 
 Instance partition_ok2 s f `(Ok s) : Ok (partition f s)#2.
-Proof. intros; apply partition_ok2'; auto. Qed.
+Proof. apply partition_ok2'; auto. Qed.
 
 
 

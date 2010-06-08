@@ -126,7 +126,7 @@ Implicit Arguments recursion [A].
 Instance recursion_wd (A : Type) (Aeq : relation A) :
  Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) (@recursion A).
 Proof.
-intros A Aeq a a' Ha f f' Hf n n' Hn. subst n'.
+intros a a' Ha f f' Hf n n' Hn. subst n'.
 induction n; simpl; auto. apply Hf; auto.
 Qed.
 
