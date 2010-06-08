@@ -112,8 +112,6 @@ val normalize : ml_ast -> ml_ast
 val optimize_fix : ml_ast -> ml_ast
 val inline : global_reference -> ml_ast -> bool
 
-exception Occurs of int
-
 (* Classification of signatures *)
 
 type sign_kind =

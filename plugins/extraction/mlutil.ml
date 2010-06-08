@@ -497,8 +497,6 @@ let ast_subst e =
    [v] array: [(Rel i)] becomes [v.(i-1)]. [d] is the correction applies
    to [Rel] greater than [Array.length v]. *)
 
-exception Occurs of int
-
 let gen_subst v d t =
   let rec subst n = function
     | MLrel i as a ->
@@ -506,7 +504,7 @@ let gen_subst v d t =
 	if i' < 1 then a
 	else if i' <= Array.length v then
 	  match v.(i'-1) with
-	    | None -> raise (Occurs i')
+	    | None -> MLexn ("UNBOUND " ^ string_of_int i')
 	    | Some u -> ast_lift n u
 	else MLrel (i+d)
     | a -> ast_map_lift subst n a

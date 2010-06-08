@@ -207,9 +207,11 @@ let safe_basename_of_global = function
       (snd (lookup_ind kn)).ind_packets.(i).ip_consnames.(j-1)
   | _ -> assert false
 
-let safe_pr_global r =
- try Printer.pr_global r
- with _ -> pr_id (safe_basename_of_global r)
+let string_of_global r =
+ try string_of_qualid (Nametab.shortest_qualid_of_global Idset.empty r)
+ with _ -> string_of_id (safe_basename_of_global r)
+
+let safe_pr_global r = str (string_of_global r)
 
 (* idem, but with qualification, and only for constants. *)
 
@@ -321,13 +323,15 @@ let error_record r =
   err (str "Record " ++ safe_pr_global r ++ str " has an anonymous field." ++
        fnl () ++ str "To help extraction, please use an explicit name.")
 
-let error_non_implicit r n oid =
-  let name = match oid with
-    | None -> mt ()
-    | Some id -> str "(" ++ pr_name id ++ str ") "
+let msg_non_implicit r n id =
+  let name = match id with
+    | Anonymous -> ""
+    | Name id -> "(" ^ string_of_id id ^ ") "
   in
-  err (str ("The "^(ordinal n)^" argument ") ++ name ++ str "of " ++
-       safe_pr_global r ++ str " still occurs after extraction." ++
+  "The " ^ (ordinal n) ^ " argument " ^ name ^ "of " ^ (string_of_global r)
+
+let error_non_implicit msg =
+  err (str (msg ^ " still occurs after extraction.") ++
        fnl () ++ str "Please check the Extraction Implicit declarations.")
 
 let check_loaded_modfile mp = match base_mp mp with

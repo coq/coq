@@ -135,6 +135,17 @@ let sign_with_implicits r s =
   in
   add_impl 1 s
 
+(* Enriching a exception message *)
+
+let rec handle_exn r n fn_name = function
+  | MLexn s ->
+      (try Scanf.sscanf s "UNBOUND %d"
+	 (fun i ->
+	    assert ((0 < i) && (i <= n));
+	    MLexn ("IMPLICIT "^ msg_non_implicit r (n+1-i) (fn_name i)))
+       with _ -> MLexn s)
+  | a -> ast_map (handle_exn r n fn_name) a
+
 (*S Management of type variable contexts. *)
 
 (* A De Bruijn variable context (db) is a context for translating Coq [Rel]
@@ -761,13 +772,9 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
 	(* Extraction of the branch (in functional form). *)
 	let e = extract_maybe_term env mle (type_recomp (l,mlt)) br.(i) in
 	(* We suppress dummy arguments according to signature. *)
-	try
-	  let ids,e = case_expunge s e in
-	  (r, List.rev ids, e)
-	with Occurs i ->
-	  let n = List.length s in
-	  assert ((0<i) && (i <= n));
-	  error_non_implicit r (n-i+1) None
+	let ids,e = case_expunge s e in
+	let e' = handle_exn r (List.length s) (fun _ -> Anonymous) e in
+	(r, List.rev ids, e')
       in
       if mi.ind_info = Singleton then
 	begin
@@ -849,11 +856,10 @@ let extract_std_constant env kn body typ =
   (* The real extraction: *)
   let e = extract_term env mle t' c [] in
   (* Expunging term and type from dummy lambdas. *)
-  try
-    term_expunge s (ids,e), type_expunge_from_sign env s t
-  with Occurs i ->
-    assert ((0 < i) && (i <= n));
-    error_non_implicit (ConstRef kn) (n-i+1) (Some (fst (List.nth rels (i-1))))
+  let trm = term_expunge s (ids,e) in
+  let trm = handle_exn (ConstRef kn) n (fun i -> fst (List.nth rels (i-1))) trm
+  in
+  trm, type_expunge_from_sign env s t
 
 let extract_fixpoint env vkn (fi,ti,ci) =
   let n = Array.length vkn in
