@@ -405,24 +405,20 @@ let dependent only_classes evd oev concl =
 let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk =
   let rec aux s (acc : autogoal list list) fk = function
     | (gl,info) :: gls ->
-	second.skft (fun {it=gls';sigma=s'} fk' ->
-	  let s', needs_backtrack = 
-	    if gls' = [] then
-	      match info.is_evar with
-	      | Some ev -> 
-		  let s' = 
-		    if Evd.is_defined s' ev then s' 
-		    else
-		      s'
-		  in s', dependent info.only_classes s' (Some ev) (Goal.V82.concl s' gl)
-	      | None -> 
-		  s', dependent info.only_classes s' None (Goal.V82.concl s' gl)
-	    else s', true
-	  in
-	  let fk'' = if not needs_backtrack then
-	    (if !typeclasses_debug then msgnl (str"no backtrack on " ++ pr_ev s gl); fk) else fk' 
-	  in aux s' (gls'::acc) fk'' gls)
-	  fk {it = (gl,info); sigma = s}
+	(match info.is_evar with 
+	 | Some ev when Evd.is_defined s ev -> aux s acc fk gls
+	 | _ -> 
+	     second.skft
+	       (fun {it=gls';sigma=s'} fk' ->
+		  let needs_backtrack = 
+		    if gls' = [] then
+		      dependent info.only_classes s' info.is_evar (Goal.V82.concl s' gl)
+		    else true
+		  in
+		  let fk'' = if not needs_backtrack then
+		    (if !typeclasses_debug then msgnl (str"no backtrack on " ++ pr_ev s gl); fk) else fk' 
+		  in aux s' (gls'::acc) fk'' gls)
+	       fk {it = (gl,info); sigma = s})
     | [] -> Some (List.rev acc, s, fk)
   in fun {it = gls; sigma = s} fk ->
     let rec aux' = function
