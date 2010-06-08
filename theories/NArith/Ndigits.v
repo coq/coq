@@ -690,7 +690,7 @@ Qed.
 
 Definition Bnth (n:nat)(bv:Bvector n)(p:nat) : p<n -> bool.
 Proof.
- induction 1.
+ induction bv in p |- *.
  intros.
  exfalso; inversion H.
  intros.

@@ -330,9 +330,9 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Qed.
   Hint Resolve add_inf.
 
-  Global Instance add_ok s x `(Ok s) : Ok (add x s).
+  Global Instance add_ok s x : forall `(Ok s), Ok (add x s).
   Proof.
-  intros s x; repeat rewrite <- isok_iff; revert s x.
+  repeat rewrite <- isok_iff; revert s x.
   simple induction s; simpl.
   intuition.
   intros; elim_compare x a; inv; auto.
@@ -358,9 +358,9 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Qed.
   Hint Resolve remove_inf.
 
-  Global Instance remove_ok s x `(Ok s) : Ok (remove x s).
+  Global Instance remove_ok s x : forall `(Ok s), Ok (remove x s).
   Proof.
-  intros s x; repeat rewrite <- isok_iff; revert s x.
+  repeat rewrite <- isok_iff; revert s x.
   induction s; simpl.
   intuition.
   intros; elim_compare x a; inv; auto.
@@ -401,9 +401,9 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Qed.
   Hint Resolve union_inf.
 
-  Global Instance union_ok s s' `(Ok s, Ok s') : Ok (union s s').
+  Global Instance union_ok s s' : forall `(Ok s, Ok s'), Ok (union s s').
   Proof.
-  intros s s'; repeat rewrite <- isok_iff; revert s s'.
+  repeat rewrite <- isok_iff; revert s s'.
   induction2; constructors; try apply @ok; auto.
   apply Inf_eq with x'; auto; apply union_inf; auto; apply Inf_eq with x; auto.
   change (Inf x' (union (x :: l) l')); auto.
@@ -428,9 +428,9 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Qed.
   Hint Resolve inter_inf.
 
-  Global Instance inter_ok s s' `(Ok s, Ok s') : Ok (inter s s').
+  Global Instance inter_ok s s' : forall `(Ok s, Ok s'), Ok (inter s s').
   Proof.
-  intros s s'; repeat rewrite <- isok_iff; revert s s'.
+  repeat rewrite <- isok_iff; revert s s'.
   induction2.
   constructors; auto.
   apply Inf_eq with x'; auto; apply inter_inf; auto; apply Inf_eq with x; auto.
@@ -459,9 +459,9 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Qed.
   Hint Resolve diff_inf.
 
-  Global Instance diff_ok s s' `(Ok s, Ok s') : Ok (diff s s').
+  Global Instance diff_ok s s' : forall `(Ok s, Ok s'), Ok (diff s s').
   Proof.
-  intros s s'; repeat rewrite <- isok_iff; revert s s'.
+  repeat rewrite <- isok_iff; revert s s'.
   induction2.
   Qed.
 
@@ -646,9 +646,9 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   apply Inf_lt with x; auto.
   Qed.
 
-  Global Instance filter_ok s f `(Ok s) : Ok (filter f s).
+  Global Instance filter_ok s f : forall `(Ok s), Ok (filter f s).
   Proof.
-  intros s f; repeat rewrite <- isok_iff; revert s f.
+  repeat rewrite <- isok_iff; revert s f.
   simple induction s; simpl.
   auto.
   intros x l Hrec f Hs; inv.
@@ -727,9 +727,9 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   auto.
   Qed.
 
-  Global Instance partition_ok1 s f `(Ok s) : Ok (fst (partition f s)).
+  Global Instance partition_ok1 s f : forall `(Ok s), Ok (fst (partition f s)).
   Proof.
-  intros s f; repeat rewrite <- isok_iff; revert s f.
+  repeat rewrite <- isok_iff; revert s f.
   simple induction s; simpl.
   auto.
   intros x l Hrec f Hs; inv.
@@ -737,9 +737,9 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   case (f x); case (partition f l); simpl; auto.
   Qed.
 
-  Global Instance partition_ok2 s f `(Ok s) : Ok (snd (partition f s)).
+  Global Instance partition_ok2 s f : forall `(Ok s), Ok (snd (partition f s)).
   Proof.
-  intros s f; repeat rewrite <- isok_iff; revert s f.
+  repeat rewrite <- isok_iff; revert s f.
   simple induction s; simpl.
   auto.
   intros x l Hrec f Hs; inv.

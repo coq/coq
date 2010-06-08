@@ -277,7 +277,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   reflexivity.
   Qed.
 
-  Global Instance union_ok s s' `(Ok s, Ok s') : Ok (union s s').
+  Global Instance union_ok : forall s s' `(Ok s, Ok s'), Ok (union s s').
   Proof.
   induction s; simpl; auto; intros; inv; unfold flip; auto with *.
   Qed.
@@ -293,7 +293,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
 
   Global Instance inter_ok s s' `(Ok s, Ok s') : Ok (inter s s').
   Proof.
-  unfold inter, fold, flip; intros s.
+  unfold inter, fold, flip.
   set (acc := nil (A:=elt)).
   assert (Hacc : Ok acc) by constructors.
   clearbody acc; revert acc Hacc.
@@ -324,7 +324,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   rewrite H2, <- mem_spec in H3; auto. congruence.
   Qed.
 
-  Global Instance diff_ok s s' `(Ok s, Ok s') : Ok (diff s s').
+  Global Instance diff_ok : forall s s' `(Ok s, Ok s'), Ok (diff s s').
   Proof.
   unfold diff; intros s s'; revert s.
   induction s'; simpl; unfold flip; auto; intros. inv; auto with *.
@@ -493,7 +493,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   inversion_clear H; auto.
   Qed.
 
-  Global Instance partition_ok1 s f `(Ok s) : Ok (fst (partition f s)).
+  Global Instance partition_ok1 : forall s f `(Ok s), Ok (fst (partition f s)).
   Proof.
   simple induction s; simpl.
   auto.
@@ -503,7 +503,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   case (f x); case (partition f l); simpl; constructors; auto.
   Qed.
 
-  Global Instance partition_ok2 s f `(Ok s) : Ok (snd (partition f s)).
+  Global Instance partition_ok2 : forall s f `(Ok s), Ok (snd (partition f s)).
   Proof.
   simple induction s; simpl.
   auto.

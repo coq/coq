@@ -96,7 +96,7 @@ Theorem refl_pos_eq : forall m, pos_eq m m = true.
 induction m;simpl;auto.
 Qed.
 
-Definition pos_eq_dec (m n:positive) :{m=n}+{m<>n} .
+Definition pos_eq_dec : forall (m n:positive), {m=n}+{m<>n} .
 fix 1;intros [mm|mm|] [nn|nn|];try (right;congruence).
 case (pos_eq_dec mm nn).
 intro e;left;apply (f_equal xI e).

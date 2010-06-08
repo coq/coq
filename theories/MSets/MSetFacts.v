@@ -490,13 +490,13 @@ Qed.
 
 Generalizable Variables f.
 
-Instance filter_equal `(Proper _ (E.eq==>Logic.eq) f) :
+Instance filter_equal : forall `(Proper _ (E.eq==>Logic.eq) f),
  Proper (Equal==>Equal) (filter f).
 Proof.
 intros f Hf s s' Hs a. rewrite !filter_iff, Hs by auto; intuition.
 Qed.
 
-Instance filter_subset `(Proper _ (E.eq==>Logic.eq) f) :
+Instance filter_subset : forall `(Proper _ (E.eq==>Logic.eq) f),
  Proper (Subset==>Subset) (filter f).
 Proof.
 intros f Hf s s' Hs a. rewrite !filter_iff, Hs by auto; intuition.

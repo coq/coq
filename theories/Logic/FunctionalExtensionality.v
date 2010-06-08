@@ -54,5 +54,5 @@ Qed.
 
 Lemma eta_expansion {A B} (f : A -> B) : f = fun x => f x.
 Proof.
-  intros A B f. apply (eta_expansion_dep f).
+  apply (eta_expansion_dep f).
 Qed.

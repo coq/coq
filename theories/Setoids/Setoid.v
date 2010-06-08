@@ -18,15 +18,15 @@ Definition Setoid_Theory := @Equivalence.
 Definition Build_Setoid_Theory := @Build_Equivalence.
 
 Definition Seq_refl A Aeq (s : Setoid_Theory A Aeq) : forall x:A, Aeq x x.
-  unfold Setoid_Theory. intros ; reflexivity.
+  unfold Setoid_Theory in s. intros ; reflexivity.
 Defined.
 
 Definition Seq_sym A Aeq (s : Setoid_Theory A Aeq) : forall x y:A, Aeq x y -> Aeq y x.
-  unfold Setoid_Theory. intros ; symmetry ; assumption.
+  unfold Setoid_Theory in s. intros ; symmetry ; assumption.
 Defined.
 
 Definition Seq_trans A Aeq (s : Setoid_Theory A Aeq) : forall x y z:A, Aeq x y -> Aeq y z -> Aeq x z.
-  unfold Setoid_Theory. intros ; transitivity y ; assumption.
+  unfold Setoid_Theory in s. intros ; transitivity y ; assumption.
 Defined.
 
 (** Some tactics for manipulating Setoid Theory not officially
