@@ -365,7 +365,7 @@ pr "
 
   pp " Instance wn_spec (n:nat) : ZnZ.Specs (make_op n).";
   pp " Proof.";
-  pp "  intros n; elim n; clear n.";
+  pp "  elim n; clear n.";
   pp "    exact w%i_spec." (size + 1);
   pp "  intros n Hrec; rewrite make_op_S.";
   pp "  exact (mk_zn2z_specs_karatsuba Hrec).";
