@@ -153,7 +153,7 @@ let declare_delimiters scope key =
     | Some oldkey when oldkey = key -> ()
     | Some oldkey ->
 	Flags.if_verbose warning
-	  ("Overwritting previous delimiting key "^oldkey^" in scope "^scope);
+	  ("overwriting previous delimiting key "^oldkey^" in scope "^scope);
 	scope_map := Gmap.add scope newsc !scope_map
   end;
   try
