@@ -126,20 +126,20 @@ type recursive_preentry =
 
 val interp_fixpoint :
   structured_fixpoint_expr list -> decl_notation list ->
-    recursive_preentry * (int * manual_implicits) list
+    recursive_preentry * (name list * manual_implicits) list
 
 val interp_cofixpoint :
   structured_fixpoint_expr list -> decl_notation list ->
-    recursive_preentry * (int * manual_implicits) list
+    recursive_preentry * (name list * manual_implicits) list
 
 (* Registering fixpoints and cofixpoints in the environment *)
 
 val declare_fixpoint :
-  bool -> recursive_preentry * (int * manual_implicits) list -> 
+  bool -> recursive_preentry * (name list * manual_implicits) list -> 
   lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint :
-  bool -> recursive_preentry * (int * manual_implicits) list ->
+  bool -> recursive_preentry * (name list * manual_implicits) list ->
     decl_notation list -> unit
 
 (* Entry points for the vernacular commands Fixpoint and CoFixpoint *)

@@ -71,7 +71,6 @@ Record Morphism (X Y:Setoid) : Type :=
 {evalMorphism :> X -> Y}.
 
 Definition extSetoid (X Y:Setoid) : Setoid.
-intros X Y.
 constructor.
 exact (Morphism X Y).
 Defined.

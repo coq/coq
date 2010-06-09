@@ -322,7 +322,7 @@ match v in (vector _ n0) return (vector A (pred n0)) with
 end.
 
 Definition Vtail' (A:Set)(n:nat)(v:vector A n) : vector A (pred n).
- intros A n v; case v.
+ case v.
  simpl.
  exact (Vnil A).
  simpl.
@@ -920,9 +920,7 @@ Print minus_decrease.
 
 
 
-Definition div_aux (x y:nat)(H: Acc lt x):nat.
- fix 3.
- intros.
+Fixpoint div_aux (x y:nat)(H: Acc lt x):nat.
   refine (if eq_nat_dec x 0
          then 0
          else if eq_nat_dec y 0

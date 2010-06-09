@@ -66,14 +66,14 @@ Definition pEFct (F:k2) : Type :=
 Definition moncomp (X Y:k1)(mX:mon X)(mY:mon Y): mon (fun A => X(Y A)).
 Proof.
   red.
-  intros X Y mX mY A B f x.
+  intros A B f x.
   exact (mX (Y A)(Y B) (mY A B f) x).
 Defined.
 
 (** closure under composition *)
 Lemma compEFct (X Y:k1): EFct X -> EFct Y -> EFct (fun A => X(Y A)).
 Proof.
-  intros X Y ef1 ef2.
+  intros ef1 ef2.
   apply (mkEFct(m:=moncomp (m ef1) (m ef2))); red; intros; unfold moncomp.
 (* prove ext *)
   apply (e ef1).
@@ -103,7 +103,7 @@ Defined.
 (** closure under sums *)
 Lemma sumEFct (X Y:k1): EFct X -> EFct Y -> EFct (fun A => X A + Y A)%type.
 Proof.
-  intros X Y ef1 ef2.
+  intros ef1 ef2.
   set (m12:=fun (A B:Set)(f:A->B) x => match x with
     | inl y => inl _ (m ef1 f y)
     | inr y => inr _ (m ef2 f y)
@@ -144,7 +144,7 @@ Defined.
 (** closure under products *)
 Lemma prodEFct (X Y:k1): EFct X -> EFct Y -> EFct (fun A => X A * Y A)%type.
 Proof.
-  intros X Y ef1 ef2.
+  intros ef1 ef2.
   set (m12:=fun (A B:Set)(f:A->B) x => match x with
     (x1,x2) => (m ef1 f x1, m ef2 f x2) end).
   apply (mkEFct(m:=m12)); red; intros.
@@ -220,7 +220,6 @@ Defined.
 (** constants in k1 *)
 Lemma constEFct (C:Set): EFct (fun _ => C).
 Proof.
-  intro.
   set (mC:=fun A B (f:A->B)(x:C) => x).
   apply (mkEFct(m:=mC)); red; intros; unfold mC; reflexivity.
 Defined.

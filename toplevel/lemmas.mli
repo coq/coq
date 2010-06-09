@@ -32,8 +32,8 @@ val start_proof_com : goal_kind ->
 
 val start_proof_with_initialization : 
   goal_kind -> (bool * lemma_possible_guards * tactic list option) option ->
-  (identifier * (types * (int * Impargs.manual_explicitation list))) list ->
-  int list option -> declaration_hook -> unit
+  (identifier * (types * (name list * Impargs.manual_explicitation list))) list
+  -> int list option -> declaration_hook -> unit
 
 (* A hook the next three functions pass to cook_proof *)
 val set_save_hook : (Refiner.pftreestate -> unit) -> unit

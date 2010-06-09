@@ -276,7 +276,10 @@ let rec_tac_initializer finite guard thms snl =
        | _ -> assert false
 
 let start_proof_with_initialization kind recguard thms snl hook =
-  let intro_tac (_, (_, (len, _))) = Refiner.tclDO len Tactics.intro in
+  let intro_tac (_, (_, (ids, _))) =
+    Refiner.tclMAP (function
+    | Name id -> Tactics.intro_mustbe_force id
+    | Anonymous -> Tactics.intro) (List.rev ids) in
   let init_tac,guard = match recguard with
   | Some (finite,guard,init_tac) ->
       let rec_tac = rec_tac_initializer finite guard thms snl in
@@ -297,7 +300,7 @@ let start_proof_with_initialization kind recguard thms snl hook =
       (if Flags.is_auto_intros () then Some (intro_tac (List.hd thms)) else None), [] in
   match thms with
   | [] -> anomaly "No proof to start"
-  | (id,(t,(len,imps)))::other_thms ->
+  | (id,(t,(_,imps)))::other_thms ->
       let hook strength ref =
         let other_thms_data =
           if other_thms = [] then [] else
@@ -317,10 +320,10 @@ let start_proof_com kind thms hook =
     let (env, ctx), imps = interp_context_evars evdref env0 bl in
     let t', imps' = interp_type_evars_impls ~evdref env t in
     Sign.iter_rel_context (check_evars env Evd.empty !evdref) ctx;
-    let len = List.length ctx in
+    let ids = List.map pi1 ctx in
       (compute_proof_name (fst kind) sopt,
       (nf_isevar !evdref (it_mkProd_or_LetIn t' ctx),
-       (len, imps @ lift_implicits len imps'),
+       (ids, imps @ lift_implicits (List.length ids) imps'),
        guard)))
     thms in
   let recguard,thms,snl = look_for_possibly_mutual_statements thms in
