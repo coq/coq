@@ -426,7 +426,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
     using_lemmas
 
 
-let register_mes fname rec_impls wf_mes_expr wf_arg using_lemmas args ret_type body =
+let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas args ret_type body =
   let wf_arg_type,wf_arg =
     match wf_arg with
       | None ->
@@ -452,20 +452,41 @@ let register_mes fname rec_impls wf_mes_expr wf_arg using_lemmas args ret_type b
 	      | _ -> assert false
 	  with Not_found -> assert false
   in
-  let ltof =
-    let make_dir l = make_dirpath (List.map id_of_string (List.rev l)) in
-    Libnames.Qualid (dummy_loc,Libnames.qualid_of_path
-		       (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (id_of_string "ltof")))
-  in
-  let fun_from_mes =
-    let applied_mes =
-      Topconstr.mkAppC(wf_mes_expr,[Topconstr.mkIdentC wf_arg])    in
-    Topconstr.mkLambdaC ([(dummy_loc,Name wf_arg)],Topconstr.default_binder_kind,wf_arg_type,applied_mes)
-  in
-  let wf_rel_from_mes =
-    Topconstr.mkAppC(Topconstr.mkRefC  ltof,[wf_arg_type;fun_from_mes])
-  in
-  register_wf ~is_mes:true fname rec_impls wf_rel_from_mes (Some wf_arg)
+  let wf_rel_from_mes,is_mes = 
+    match wf_rel_expr_opt with 
+      | None ->
+	  let ltof =
+	    let make_dir l = make_dirpath (List.map id_of_string (List.rev l)) in
+	    Libnames.Qualid (dummy_loc,Libnames.qualid_of_path
+			       (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (id_of_string "ltof")))
+	  in
+	  let fun_from_mes =
+	    let applied_mes =
+	      Topconstr.mkAppC(wf_mes_expr,[Topconstr.mkIdentC wf_arg])    in
+	    Topconstr.mkLambdaC ([(dummy_loc,Name wf_arg)],Topconstr.default_binder_kind,wf_arg_type,applied_mes)
+	  in
+	  let wf_rel_from_mes =
+	    Topconstr.mkAppC(Topconstr.mkRefC  ltof,[wf_arg_type;fun_from_mes])
+	  in
+	  wf_rel_from_mes,true
+      | Some wf_rel_expr -> 
+	  let wf_rel_with_mes = 
+	    let a = Names.id_of_string "___a" in 
+	    let b = Names.id_of_string "___b" in 
+	    Topconstr.mkLambdaC(
+	      [dummy_loc,Name a;dummy_loc,Name b],
+	      Topconstr.Default Lib.Explicit,
+	      wf_arg_type,
+	      Topconstr.mkAppC(wf_rel_expr,
+			       [
+				Topconstr.mkAppC(wf_mes_expr,[Topconstr.mkIdentC a]);
+				Topconstr.mkAppC(wf_mes_expr,[Topconstr.mkIdentC b])
+			       ])
+			      )
+	  in
+	  wf_rel_with_mes,false
+  in			       
+  register_wf ~is_mes:is_mes fname rec_impls wf_rel_from_mes (Some wf_arg)
     using_lemmas args ret_type body
 
 let map_option f = function 
@@ -504,7 +525,7 @@ let do_generate_principle on_error register_built interactive_proof (fixpoint_ex
 	      true
 	  in
 	  if register_built
-	  then register_mes name rec_impls wf_mes (map_option snd wf_x) using_lemmas args types body pre_hook;
+	  then register_mes name rec_impls wf_mes wf_rel_opt (map_option snd wf_x) using_lemmas args types body pre_hook;
 	  true
       | _ ->
 	  List.iter (function ((_na,(_,ord),_args,_body,_type),_not) ->
