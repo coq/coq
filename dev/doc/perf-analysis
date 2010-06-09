@@ -1,9 +1,13 @@
 Performance analysis (trunk repository)
 ---------------------------------------
 
-Jun 4, 2010: improvement in type classes inference by removing
+Jun 7, 2010: delayed re-typing of Ltac instances in matching
+  (-1% on HighSchoolGeometry, -2% on JordanCurveTheorem)
+
+Jun 4, 2010: improvement in eauto and type classes inference by removing
   systematic preparation of debugging pretty-printing streams (std_ppcmds)
-  (-7% in ATBR, visible only on V8.3 logs since ATBR is broken in trunk)
+  (-7% in ATBR, visible only on V8.3 logs since ATBR is broken in trunk;
+   -6% in HighSchoolGeometry)
 
 Apr 19, 2010: small improvement obtained by reducing evar instantiation 
   from O(n^3) to O(n^2) in the size of the instance (-2% in Compcert,
