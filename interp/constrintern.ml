@@ -1425,8 +1425,9 @@ let interp_constr_evars_gen_impls ?evdref ?(fail_evar=true)
     | None -> ref Evd.empty
     | Some evdref -> evdref
   in
-  let c = intern_gen (kind=IsType) ~impls !evdref env c in
-  let imps = Implicit_quantifiers.implicits_of_rawterm c in
+  let istype = kind = IsType in
+  let c = intern_gen istype ~impls !evdref env c in
+  let imps = Implicit_quantifiers.implicits_of_rawterm ~with_products:istype c in
     Default.understand_tcc_evars ~fail_evar evdref env kind c, imps
 
 let interp_casted_constr_evars_impls ?evdref ?(fail_evar=true)

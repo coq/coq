@@ -84,8 +84,10 @@ let find_with_index x l =
 
 open Vernacexpr
 
-let coqintern_constr evd env : Topconstr.constr_expr -> Rawterm.rawconstr = Constrintern.intern_constr ( evd) env
-let coqintern_type evd env : Topconstr.constr_expr -> Rawterm.rawconstr = Constrintern.intern_type ( evd) env
+let coqintern_constr evd env : Topconstr.constr_expr -> Rawterm.rawconstr = 
+  Constrintern.intern_constr evd env
+let coqintern_type evd env : Topconstr.constr_expr -> Rawterm.rawconstr = 
+  Constrintern.intern_type evd env
 
 let env_with_binders env isevars l =
   let rec aux ((env, rels) as acc) = function
@@ -109,19 +111,20 @@ let env_with_binders env isevars l =
 
 let subtac_process env isevars id bl c tycon =
   let c = Topconstr.abstract_constr_expr c bl in
-  let tycon =
+  let tycon, imps =
     match tycon with
-	None -> empty_tycon
+	None -> empty_tycon, None
       | Some t ->
 	  let t = Topconstr.prod_constr_expr t bl in
 	  let t = coqintern_type !isevars env t in
+	  let imps = Implicit_quantifiers.implicits_of_rawterm t in
 	  let coqt, ttyp = interp env isevars t empty_tycon in
-	    mk_tycon coqt
+	    mk_tycon coqt, Some imps
   in
   let c = coqintern_constr !isevars env c in
-  let imps = Implicit_quantifiers.implicits_of_rawterm c in
+  let imps = Option.default (Implicit_quantifiers.implicits_of_rawterm ~with_products:false c) imps in
   let coqc, ctyp = interp env isevars c tycon in
-  let evm = non_instanciated_map env isevars ( !isevars) in
+  let evm = non_instanciated_map env isevars !isevars in
   let ty = nf_isevar !isevars (match tycon with Some (None, c) -> c | _ -> ctyp) in
     evm, coqc, ty, imps
 
