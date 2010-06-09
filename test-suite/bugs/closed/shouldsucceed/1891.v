@@ -7,7 +7,7 @@
 
   Lemma L (x: T unit): (unit -> T unit) -> unit.
   Proof.
-    refine (fun x => match x return _ with mkT n => fun g => f (g _) end).
+    refine (match x return _ with mkT n => fun g => f (g _) end).
     trivial.
   Qed.
 

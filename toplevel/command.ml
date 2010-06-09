@@ -486,7 +486,7 @@ let prepare_recursive_declaration fixnames fixtypes fixdefs =
 
 (* Jump over let-bindings. *)
 
-let compute_possible_guardness_evidences (nb,_,na) =
+let compute_possible_guardness_evidences (ids,_,na) =
   match na with
   | Some i -> [i]
   | None ->
@@ -495,7 +495,7 @@ let compute_possible_guardness_evidences (nb,_,na) =
 	 but doing it properly involves delta-reduction, and it finally
          doesn't seem to worth the effort (except for huge mutual
 	 fixpoints ?) *)
-      interval 0 (nb - 1)
+      interval 0 (List.length ids - 1)
 
 type recursive_preentry =
   identifier list * constr option list * types list
@@ -527,7 +527,7 @@ let interp_recursive isfix fixl notations =
   let evd = consider_remaining_unif_problems env_rec !evdref in
   let fixdefs = List.map (Option.map (nf_evar evd)) fixdefs in
   let fixtypes = List.map (nf_evar evd) fixtypes in
-  let fixctxlength = List.map (fun (_,ctx) -> rel_context_nhyps ctx) fixctxs in
+  let fixctxnames = List.map (fun (_,ctx) -> List.map pi1 ctx) fixctxs in
   let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env evd in
   List.iter (Option.iter (check_evars env_rec Evd.empty evd)) fixdefs;
   List.iter (check_evars env Evd.empty evd) fixtypes;
@@ -537,7 +537,7 @@ let interp_recursive isfix fixl notations =
   end;
 
   (* Build the fix declaration block *)
-  (fixnames,fixdefs,fixtypes), list_combine3 fixctxlength fiximps fixannots
+  (fixnames,fixdefs,fixtypes), list_combine3 fixctxnames fiximps fixannots
 
 let interp_fixpoint = interp_recursive true
 let interp_cofixpoint = interp_recursive false

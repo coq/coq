@@ -21,7 +21,6 @@ Parameter eq_img : forall (i1:img) (i2:img),
   eqB (ib i1) (ib i2) -> eqA (ia i1) (ia i2).
 
 Lemma phi_img (a:A) : img.
-  intro a.
   exists  a (phi a).
   refine ( refl_equal _).
 Defined.

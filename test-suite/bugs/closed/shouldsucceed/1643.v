@@ -10,7 +10,6 @@ Definition decomp_func (s:Str) :=
 
 Theorem decomp s: s = decomp_func s.
 Proof.
-  intros s.
   case s; simpl; reflexivity.
 Qed.
 

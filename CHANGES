@@ -106,8 +106,9 @@ Specification language
 
 - New support for local binders in the syntax of Record/Structure fields.
 - Fixpoint/CoFixpoint now support building part or all of bodies using tactics.
-- Binders given before ":" in lemmas can now be automatically
-  introduced in the context by setting option "Set Automatic Introduction".
+- Binders given before ":" in lemmas and in definitions built by tactics are
+  now automatically introduced (possible source of incompatibility that can
+  be resolved by invoking "Unset Automatic Introduction").
 
 Module system
 

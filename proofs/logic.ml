@@ -481,7 +481,7 @@ let prim_refiner r sigma goal =
     (* Logical rules *)
     | Intro id ->
     	if !check && mem_named_context id (named_context_of_val sign) then
-	  error "New variable is already declared";
+	  error ("Variable " ^ string_of_id id ^ " is already declared.");
         (match kind_of_term (strip_outer_cast cl) with
 	   | Prod (_,c1,b) ->
 	       let (sg,ev,sigma) = mk_goal (push_named_context_val (id,None,c1) sign)
@@ -510,7 +510,7 @@ let prim_refiner r sigma goal =
 	      cl,sigma
 	  else
             (if !check && mem_named_context id (named_context_of_val sign) then
-                error "New variable is already declared";
+	      error ("Variable " ^ string_of_id id ^ " is already declared.");
 	     push_named_context_val (id,None,t) sign,cl,sigma) in
         let (sg2,ev2,sigma) = 
 	  Goal.V82.mk_goal sigma sign cl (Goal.V82.extra sigma goal) in

@@ -1,6 +1,8 @@
 (* Automatic computing of guard in "Theorem with"; check that guard is not
    computed when the user explicitly indicated it *)
 
+Unset Automatic Introduction.
+
 Inductive T : Set :=
 | v : T.
 
