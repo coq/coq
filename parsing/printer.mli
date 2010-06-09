@@ -42,6 +42,12 @@ val pr_open_constr         : open_constr -> std_ppcmds
 val pr_open_lconstr_env    : env -> open_constr -> std_ppcmds
 val pr_open_lconstr        : open_constr -> std_ppcmds
 
+val pr_constr_under_binders_env  : env -> constr_under_binders -> std_ppcmds
+val pr_constr_under_binders      : constr_under_binders -> std_ppcmds
+
+val pr_lconstr_under_binders_env : env -> constr_under_binders -> std_ppcmds
+val pr_lconstr_under_binders     : constr_under_binders -> std_ppcmds
+
 val pr_ltype_env_at_top    : env -> types -> std_ppcmds
 val pr_ltype_env           : env -> types -> std_ppcmds
 val pr_ltype               : types -> std_ppcmds

@@ -31,8 +31,10 @@ open Evarconv
 open Pattern
 
 type typing_constraint = OfType of types option | IsType
-type var_map = (identifier * unsafe_judgment) list
+type var_map = (identifier * constr_under_binders) list
 type unbound_ltac_var_map = (identifier * identifier option) list
+type ltac_var_map = var_map * unbound_ltac_var_map
+type rawconstr_ltac_closure = ltac_var_map * rawconstr
 
 (************************************************************************)
 (* This concerns Cases *)
@@ -117,7 +119,7 @@ sig
   *)
 
   val understand_ltac :
-    bool -> evar_map -> env -> var_map * unbound_ltac_var_map ->
+    bool -> evar_map -> env -> ltac_var_map ->
     typing_constraint -> rawconstr -> evar_map * constr
 
   (* Standard call to get a constr from a rawconstr, resolving implicit args *)
@@ -148,18 +150,15 @@ sig
    *)
   val pretype :
     type_constraint -> env -> evar_map ref ->
-    var_map * (identifier * identifier option) list ->
-    rawconstr -> unsafe_judgment
+    ltac_var_map -> rawconstr -> unsafe_judgment
 
   val pretype_type :
     val_constraint -> env -> evar_map ref ->
-    var_map * (identifier * identifier option) list ->
-    rawconstr -> unsafe_type_judgment
+    ltac_var_map -> rawconstr -> unsafe_type_judgment
 
   val pretype_gen :
     bool -> bool -> bool -> evar_map ref -> env ->
-    var_map * (identifier * identifier option) list ->
-    typing_constraint -> rawconstr -> constr
+    ltac_var_map -> typing_constraint -> rawconstr -> constr
 
     (*i*)
 end
@@ -211,7 +210,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   let check_branches_message loc env evdref c (explft,lft) =
     for i = 0 to Array.length explft - 1 do
       if not (e_cumul env evdref lft.(i) explft.(i)) then
-	let sigma =  !evdref in
+	let sigma = !evdref in
 	  error_ill_formed_branch_loc loc env sigma c i lft.(i) explft.(i)
     done
 
@@ -229,13 +228,23 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | Anonymous -> name'
     | _ -> name
 
-  let pretype_id loc env (lvar,unbndltacvars) id =
+  let invert_ltac_bound_name env id0 id =
+    try mkRel (pi1 (lookup_rel_id id (rel_context env)))
+    with Not_found ->
+      errorlabstrm "" (str "Ltac variable " ++ pr_id id0 ++
+	str " depends on pattern variable name " ++ pr_id id ++
+	str " which is not bound in current context.")
+
+  let pretype_id loc env sigma (lvar,unbndltacvars) id =
     try
       let (n,_,typ) = lookup_rel_id id (rel_context env) in
       { uj_val  = mkRel n; uj_type = lift n typ }
     with Not_found ->
     try
-      List.assoc id lvar
+      let (ids,c) = List.assoc id lvar in
+      let subst = List.map (invert_ltac_bound_name env id) ids in
+      let c = substl subst c in
+      { uj_val = c; uj_type = Retyping.get_type_of env sigma c }
     with Not_found ->
     try
       let (_,_,typ) = lookup_named id env in
@@ -293,7 +302,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 
     | RVar (loc, id) ->
 	inh_conv_coerce_to_tycon loc env evdref
-	  (pretype_id loc env lvar id)
+	  (pretype_id loc env !evdref lvar id)
 	  tycon
 
     | REvar (loc, evk, instopt) ->

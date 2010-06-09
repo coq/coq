@@ -70,6 +70,8 @@ Other tactics
 - In "simpl c" and "change c with d", c can be a pattern.
 - Tactic "revert" now preserves let-in's making it the exact inverse of
   "intro".
+- Ltac's pattern-matching now supports matching metavariables that
+  depend on variables bound upwards in the pattern.
 
 Tactic definitions
 

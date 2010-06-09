@@ -35,7 +35,7 @@ val matches : constr_pattern -> constr -> patvar_map
    variables or metavariables have the same name, the metavariable,
    or else the rightmost bound variable, takes precedence *)
 val extended_matches :
-  constr_pattern -> constr -> bound_ident_map * patvar_map
+  constr_pattern -> constr -> bound_ident_map * extended_patvar_map
 
 (* [is_matching pat c] just tells if [c] matches against [pat] *)
 val is_matching : constr_pattern -> constr -> bool

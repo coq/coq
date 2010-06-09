@@ -124,6 +124,7 @@ let pr_rawsort = function
 let pr_id = pr_id
 let pr_name = pr_name
 let pr_qualid = pr_qualid
+let pr_patvar = pr_id
 
 let pr_expl_args pr (a,expl) =
   match expl with

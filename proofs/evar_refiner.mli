@@ -21,7 +21,7 @@ open Rawterm
 (* Refinement of existential variables. *)
 
 val w_refine : evar * evar_info ->
-  (var_map * unbound_ltac_var_map) * rawconstr -> evar_map -> evar_map
+  rawconstr_ltac_closure -> evar_map -> evar_map
 
 val instantiate_pf_com :
   int -> Topconstr.constr_expr -> pftreestate -> pftreestate

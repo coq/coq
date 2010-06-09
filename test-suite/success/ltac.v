@@ -230,3 +230,16 @@ Section LtacLoopTest.
   Timeout 1 try f()().
   Abort.
 End LtacLoopTest.
+
+(* Test binding of open terms *)
+
+Ltac test_open_match z :=
+  match z with
+    (forall y x, ?h = 0) => assert (forall x y, h = x + y)
+  end.
+
+Goal True.
+test_open_match (forall z y, y + z  = 0).
+reflexivity.
+apply I.
+Qed.

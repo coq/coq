@@ -817,14 +817,14 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
 		 | _ -> mt ())
        | Proof_type.LtacConstrInterp (c,(vars,unboundvars)) ->
 	   let filter =
-	     function (id,None) -> None | (id,Some id') -> Some(id,mkVar id') in
+	     function (id,None) -> None | (id,Some id') -> Some(id,([],mkVar id')) in
 	   let unboundvars = list_map_filter filter unboundvars in
 	   quote (pr_rawconstr_env (Global.env()) c) ++
 	     (if unboundvars <> [] or vars <> [] then
 		strbrk " (with " ++
 		  prlist_with_sep pr_coma
 		  (fun (id,c) ->
-		     pr_id id ++ str ":=" ++ Printer.pr_lconstr c)
+		     pr_id id ++ str ":=" ++ Printer.pr_lconstr_under_binders c)
 		  (List.rev vars @ unboundvars) ++ str ")"
 	      else mt())) ++
       (if n=2 then str " (repeated twice)"

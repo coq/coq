@@ -25,8 +25,10 @@ val search_guard :
 
 type typing_constraint = OfType of types option | IsType
 
-type var_map = (identifier * unsafe_judgment) list
+type var_map = (identifier * Pattern.constr_under_binders) list
 type unbound_ltac_var_map = (identifier * identifier option) list
+type ltac_var_map = var_map * unbound_ltac_var_map
+type rawconstr_ltac_closure = ltac_var_map * rawconstr
 
 module type S =
 sig
@@ -60,7 +62,7 @@ sig
   *)
 
   val understand_ltac :
-    bool -> evar_map -> env -> var_map * unbound_ltac_var_map ->
+    bool -> evar_map -> env -> ltac_var_map ->
     typing_constraint -> rawconstr -> evar_map * constr
 
   (* Standard call to get a constr from a rawconstr, resolving implicit args *)
@@ -89,18 +91,15 @@ sig
    *)
   val pretype :
     type_constraint -> env -> evar_map ref ->
-    var_map * (identifier * identifier option) list ->
-    rawconstr -> unsafe_judgment
+    ltac_var_map -> rawconstr -> unsafe_judgment
 
   val pretype_type :
     val_constraint -> env -> evar_map ref ->
-    var_map * (identifier * identifier option) list ->
-    rawconstr -> unsafe_type_judgment
+    ltac_var_map -> rawconstr -> unsafe_type_judgment
 
   val pretype_gen :
     bool -> bool -> bool -> evar_map ref -> env ->
-    var_map * (identifier * identifier option) list ->
-    typing_constraint -> rawconstr -> constr
+    ltac_var_map -> typing_constraint -> rawconstr -> constr
 
   (*i*)
 

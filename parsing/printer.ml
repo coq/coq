@@ -58,6 +58,19 @@ let pr_constr t = pr_constr_env (Global.env()) t
 let pr_open_lconstr (_,c) = pr_lconstr c
 let pr_open_constr (_,c) = pr_constr c
 
+let pr_constr_under_binders_env_gen pr env (ids,c) =
+  (* Warning: clashes can occur with variables of same name in env but *)
+  (* we also need to preserve the actual names of the patterns *)
+  (* So what to do? *)
+  let assums = List.map (fun id -> (Name id,(* dummy *) mkProp)) ids in
+  pr (push_rels_assum assums env) c
+
+let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_constr_env
+let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_lconstr_env
+
+let pr_constr_under_binders c = pr_constr_under_binders_env (Global.env()) c
+let pr_lconstr_under_binders c = pr_lconstr_under_binders_env (Global.env()) c
+
 let pr_type_core at_top env t =
   pr_constr_expr (extern_type at_top env t)
 let pr_ltype_core at_top env t =

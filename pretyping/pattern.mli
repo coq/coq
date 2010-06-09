@@ -20,10 +20,11 @@ open Rawterm
 open Mod_subst
 (*i*)
 
-(* Pattern variables *)
+(* Types of substitutions with or w/o bound variables *)
 
+type constr_under_binders = identifier list * constr
 type patvar_map = (patvar * constr) list
-val pr_patvar : patvar -> std_ppcmds
+type extended_patvar_map = (patvar * constr_under_binders) list
 
 (* Patterns *)
 
@@ -44,6 +45,8 @@ type constr_pattern =
       * constr_pattern * constr_pattern * constr_pattern array
   | PFix of fixpoint
   | PCoFix of cofixpoint
+
+(** {5 Functions on patterns} *)
 
 val occur_meta_pattern : constr_pattern -> bool
 
@@ -76,6 +79,7 @@ val pattern_of_rawconstr : rawconstr ->
       patvar list * constr_pattern
 
 val instantiate_pattern :
-  (identifier * constr_pattern Lazy.t) list -> constr_pattern -> constr_pattern
+  (identifier * (identifier list * constr)) list ->
+  constr_pattern -> constr_pattern
 
 val lift_pattern : int -> constr_pattern -> constr_pattern

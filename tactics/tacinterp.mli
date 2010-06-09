@@ -31,7 +31,7 @@ type value =
   | VVoid
   | VInteger of int
   | VIntroPattern of intro_pattern_expr
-  | VConstr of constr
+  | VConstr of Pattern.constr_under_binders
   | VConstr_context of constr
   | VList of value list
   | VRec of (identifier*value) list ref * glob_tactic_expr
@@ -43,8 +43,8 @@ and interp_sign =
     debug : debug_info;
     trace : ltac_trace }
 
-val extract_ltac_vars : interp_sign -> Evd.evar_map -> Environ.env ->
-  Pretyping.var_map * Pretyping.unbound_ltac_var_map
+val extract_ltac_constr_values : interp_sign -> Environ.env ->
+  Pretyping.ltac_var_map
 
 (* Transforms an id into a constr if possible *)
 val constr_of_id : Environ.env -> identifier -> constr
