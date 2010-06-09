@@ -412,7 +412,8 @@ let find_name loc decl gl = function
       let id = fresh_id idl (default_id (pf_env gl) gl.sigma decl) gl in id
   | IntroBasedOn (id,idl) -> fresh_id idl id gl
   | IntroMustBe id ->
-      let id' = fresh_id [] id gl in
+      (* When name is given, we allow to hide a global name *)
+      let id' = next_ident_away id (pf_ids_of_hyps gl) in
       if id'<>id then user_err_loc (loc,"",pr_id id ++ str" is already used.");
       id'
 
