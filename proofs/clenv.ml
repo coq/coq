@@ -462,18 +462,22 @@ let clenv_constrain_dep_args hyps_only bl clenv =
 (****************************************************************)
 (* Clausal environment for an application *)
 
-let make_clenv_binding_gen hyps_only n gls (c,t) = function
+let make_clenv_binding_gen hyps_only n env sigma (c,t) = function
   | ImplicitBindings largs ->
-      let clause = mk_clenv_from_n gls n (c,t) in
+      let clause = mk_clenv_from_env env sigma n (c,t) in
       clenv_constrain_dep_args hyps_only largs clause
   | ExplicitBindings lbind ->
-      let clause = mk_clenv_rename_from_n gls n (c,t) in
-      clenv_match_args lbind clause
+      let clause = mk_clenv_from_env env sigma n 
+	(c,rename_bound_vars_as_displayed [] t) 
+      in clenv_match_args lbind clause
   | NoBindings ->
-      mk_clenv_from_n gls n (c,t)
+      mk_clenv_from_env env sigma n (c,t)
 
-let make_clenv_binding_apply gls n = make_clenv_binding_gen true n gls
-let make_clenv_binding = make_clenv_binding_gen false None
+let make_clenv_binding_env_apply env sigma n =
+  make_clenv_binding_gen true n env sigma
+	
+let make_clenv_binding_apply gls n = make_clenv_binding_gen true n (pf_env gls) gls.sigma
+let make_clenv_binding gls = make_clenv_binding_gen false None (pf_env gls) gls.sigma
 
 (****************************************************************)
 (* Pretty-print *)

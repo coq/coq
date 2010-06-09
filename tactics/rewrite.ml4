@@ -245,7 +245,7 @@ type hypinfo = {
   l2r : bool;
   c1 : constr;
   c2 : constr;
-  c  : constr option;
+  c  : constr with_bindings option;
   abs : (constr * types) option;
 }
 
@@ -253,10 +253,10 @@ let evd_convertible env evd x y =
   try ignore(Evarconv.the_conv_x env x y evd); true
   with _ -> false
 
-let decompose_applied_relation env sigma c left2right =
+let decompose_applied_relation env sigma (c,l) left2right =
   let ctype = Typing.type_of env sigma c in
   let find_rel ty =
-    let eqclause = Clenv.mk_clenv_from_env env sigma None (c,ty) in
+    let eqclause = Clenv.make_clenv_binding_env_apply env sigma None (c,ty) l in
     let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
     let rec split_last_two = function
       | [c1;c2] -> [],(c1, c2)
@@ -271,7 +271,7 @@ let decompose_applied_relation env sigma c left2right =
       else
 	Some { cl=eqclause; prf=(Clenv.clenv_value eqclause);
 	       car=ty1; rel=mkApp (equiv, Array.of_list others);
-	       l2r=left2right; c1=c1; c2=c2; c=Some c; abs=None }
+	       l2r=left2right; c1=c1; c2=c2; c=Some (c,l); abs=None }
   in
     match find_rel ctype with
     | Some c -> c
@@ -901,12 +901,12 @@ module Strategies =
 
     let old_hints (db : string) : strategy =
       let rules = Autorewrite.find_rewrites db in
-	lemmas (List.map (fun hint -> (inj_open hint.Autorewrite.rew_lemma, hint.Autorewrite.rew_l2r)) rules)
+	lemmas (List.map (fun hint -> (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r)) rules)
 
     let hints (db : string) : strategy =
       fun env sigma t ty cstr evars ->
       let rules = Autorewrite.find_matches db t in
-	lemmas (List.map (fun hint -> (inj_open hint.Autorewrite.rew_lemma, hint.Autorewrite.rew_l2r)) rules)
+	lemmas (List.map (fun hint -> (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r)) rules)
 	    env sigma t ty cstr evars
 
     let reduce (r : Redexpr.red_expr) : strategy =
@@ -930,7 +930,7 @@ let rewrite_strat flags occs hyp =
     Strategies.choice app (subterm true flags (fun env -> aux () env))
   in aux ()
 
-let rewrite_with (evm,c) left2right loccs : strategy =
+let rewrite_with {it = c; sigma = evm} left2right loccs : strategy =
   fun env sigma ->
     let evars = Evd.merge sigma evm in
     let hypinfo = ref (decompose_applied_relation env evars c left2right) in
@@ -1099,11 +1099,13 @@ let glob_strategy ist l = l
 let subst_strategy evm l = l
 
 let apply_constr_expr c l2r occs = fun env sigma ->
-  let c = Constrintern.interp_open_constr sigma env c in
-    apply_lemma c l2r occs env sigma
+  let evd, c = Constrintern.interp_open_constr sigma env c in
+    apply_lemma (evd, (c, NoBindings)) l2r occs env sigma
 
-let interp_constr_list env sigma cs =
-  List.map (fun c -> Constrintern.interp_open_constr sigma env c, true) cs
+let interp_constr_list env sigma =
+  List.map (fun c -> 
+	      let evd, c = Constrintern.interp_open_constr sigma env c in
+		(evd, (c, NoBindings)), true)
 
 open Pcoq
 
@@ -1147,11 +1149,11 @@ ARGUMENT EXTEND rewstrategy TYPED AS strategy
 END
 
 TACTIC EXTEND class_rewrite
-| [ "clrewrite" orient(o) open_constr(c) "in" hyp(id) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some id) ]
-| [ "clrewrite" orient(o) open_constr(c) "at" occurrences(occ) "in" hyp(id) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some id) ]
-| [ "clrewrite" orient(o) open_constr(c) "in" hyp(id) ] -> [ cl_rewrite_clause c o all_occurrences (Some id) ]
-| [ "clrewrite" orient(o) open_constr(c) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) None ]
-| [ "clrewrite" orient(o) open_constr(c) ] -> [ cl_rewrite_clause c o all_occurrences None ]
+| [ "clrewrite" orient(o) constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some id) ]
+| [ "clrewrite" orient(o) constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some id) ]
+| [ "clrewrite" orient(o) constr_with_bindings(c) "in" hyp(id) ] -> [ cl_rewrite_clause c o all_occurrences (Some id) ]
+| [ "clrewrite" orient(o) constr_with_bindings(c) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) None ]
+| [ "clrewrite" orient(o) constr_with_bindings(c) ] -> [ cl_rewrite_clause c o all_occurrences None ]
     END
 
 TACTIC EXTEND class_rewrite_strat
@@ -1161,7 +1163,7 @@ END
 
 
 let clsubstitute o c =
-  let is_tac id = match kind_of_term (snd c) with Var id' when id' = id -> true | _ -> false in
+  let is_tac id = match kind_of_term (fst c.it) with Var id' when id' = id -> true | _ -> false in
     Tacticals.onAllHypsAndConcl
       (fun cl ->
 	match cl with
@@ -1169,22 +1171,22 @@ let clsubstitute o c =
 	  | _ -> tclTRY (cl_rewrite_clause c o all_occurrences cl))
 
 TACTIC EXTEND substitute
-| [ "substitute" orient(o) open_constr(c) ] -> [ clsubstitute o c ]
+| [ "substitute" orient(o) constr_with_bindings(c) ] -> [ clsubstitute o c ]
 END
 
 
 (* Compatibility with old Setoids *)
 
 TACTIC EXTEND setoid_rewrite
-   [ "setoid_rewrite" orient(o) open_constr(c) ]
+   [ "setoid_rewrite" orient(o) constr_with_bindings(c) ]
    -> [ cl_rewrite_clause c o all_occurrences None ]
- | [ "setoid_rewrite" orient(o) open_constr(c) "in" hyp(id) ] ->
+ | [ "setoid_rewrite" orient(o) constr_with_bindings(c) "in" hyp(id) ] ->
       [ cl_rewrite_clause c o all_occurrences (Some id)]
- | [ "setoid_rewrite" orient(o) open_constr(c) "at" occurrences(occ) ] ->
+ | [ "setoid_rewrite" orient(o) constr_with_bindings(c) "at" occurrences(occ) ] ->
       [ cl_rewrite_clause c o (occurrences_of occ) None]
- | [ "setoid_rewrite" orient(o) open_constr(c) "at" occurrences(occ) "in" hyp(id)] ->
+ | [ "setoid_rewrite" orient(o) constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id)] ->
       [ cl_rewrite_clause c o (occurrences_of occ) (Some id)]
- | [ "setoid_rewrite" orient(o) open_constr(c) "in" hyp(id) "at" occurrences(occ)] ->
+ | [ "setoid_rewrite" orient(o) constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ)] ->
       [ cl_rewrite_clause c o (occurrences_of occ) (Some id)]
 END
 
@@ -1553,16 +1555,16 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
   let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty } in
     {cl=cl'; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
 
-let get_hyp gl evars c clause l2r =
-  let hi = decompose_applied_relation (pf_env gl) evars c l2r in
+let get_hyp gl evars (c,l) clause l2r =
+  let hi = decompose_applied_relation (pf_env gl) evars (c,l) l2r in
   let but = match clause with Some id -> pf_get_hyp_typ gl id | None -> pf_concl gl in
     unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl
 
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 
-let apply_lemma gl c cl l2r occs =
+let apply_lemma gl (c,l) cl l2r occs =
   let sigma = project gl in
-  let hypinfo = ref (get_hyp gl sigma c cl l2r) in
+  let hypinfo = ref (get_hyp gl sigma (c,l) cl l2r) in
   let app = apply_rule hypinfo occs in
   let rec aux () =
     Strategies.choice app (subterm true general_rewrite_flags (fun env -> aux () env))
@@ -1570,7 +1572,7 @@ let apply_lemma gl c cl l2r occs =
 
 let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
   let meta = Evarutil.new_meta() in
-  let hypinfo, strat = apply_lemma gl c cl l2r occs in
+  let hypinfo, strat = apply_lemma gl (c,l) cl l2r occs in
     try
       tclWEAK_PROGRESS 
 	(tclTHEN
