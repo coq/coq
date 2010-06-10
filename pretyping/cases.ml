@@ -1804,7 +1804,8 @@ let prepare_predicate loc typing_fun evdref env tomatchs sign tycon pred =
 	   let t2 = mkExistential env ~src:(loc, CasesType) evdref2 in
            let arsign = extract_arity_signature env tomatchs sign in
            let names2 = List.rev (List.map (List.map pi1) arsign) in
-	   let nal2,pred2 = build_initial_predicate KnownNotDep names2 t2 in
+           let pred2 = lift (List.length names2) t2 in
+	   let nal2,pred2 = build_initial_predicate KnownNotDep names2 pred2 in
 	   [evdref, nal1, pred1; evdref2, nal2, pred2])
 
   (* Some type annotation *)
