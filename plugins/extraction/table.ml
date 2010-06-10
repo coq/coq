@@ -537,13 +537,32 @@ let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
 (*s Extraction Implicit *)
 
+type int_or_id = ArgInt of int | ArgId of identifier
+
 let implicits_table = ref Refmap.empty
 
 let implicits_of_global r =
  try Refmap.find r !implicits_table with Not_found -> []
 
 let add_implicits r l =
-  implicits_table := Refmap.add r l !implicits_table
+  let typ = Global.type_of_global r in
+  let rels,_ =
+    decompose_prod (Reduction.whd_betadeltaiota (Global.env ()) typ) in
+  let names = List.rev_map fst rels in
+  let n = List.length names in
+  let check = function
+    | ArgInt i ->
+	if 1 <= i && i <= n then i
+	else err (int i ++ str " is not a valid argument number for " ++
+		  safe_pr_global r)
+    | ArgId id ->
+	(try list_index (Name id) names
+	 with Not_found ->
+	   err (str "No argument " ++ pr_id id ++ str " for " ++
+		safe_pr_global r))
+  in
+  let l' = List.map check l in
+  implicits_table := Refmap.add r l' !implicits_table
 
 (* Registration of operations for rollback. *)
 

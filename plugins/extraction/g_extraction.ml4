@@ -14,6 +14,10 @@ open Vernacexpr
 open Pcoq
 open Genarg
 open Pp
+open Names
+open Nameops
+open Table
+open Extract_env
 
 let pr_mlname _ _ _ s = spc () ++ qs s
 
@@ -24,8 +28,16 @@ ARGUMENT EXTEND mlname
 | [ string(s) ] -> [ s ]
 END
 
-open Table
-open Extract_env
+let pr_int_or_id _ _ _ = function
+  | ArgInt i -> int i
+  | ArgId id -> pr_id id
+
+ARGUMENT EXTEND int_or_id
+  TYPED AS int_or_id
+  PRINTED BY pr_int_or_id
+| [ preident(id) ] -> [ ArgId (id_of_string id) ]
+| [ integer(i) ] -> [ ArgInt i ]
+END
 
 let pr_language = function
   | Ocaml -> str "Ocaml"
@@ -91,7 +103,7 @@ END
 
 VERNAC COMMAND EXTEND ExtractionImplicit
 (* Custom implicit arguments of some csts/inds/constructors *)
-| [ "Extraction" "Implicit" global(r) "[" integer_list(l) "]" ]
+| [ "Extraction" "Implicit" global(r) "[" int_or_id_list(l) "]" ]
   -> [ extraction_implicit r l ]
 END
 

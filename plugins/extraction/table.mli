@@ -149,7 +149,10 @@ val extract_constant_inline :
   bool -> reference -> string list -> string -> unit
 val extract_inductive :
   reference -> string -> string list -> string option -> unit
-val extraction_implicit : reference -> int list -> unit
+
+
+type int_or_id = ArgInt of int | ArgId of identifier
+val extraction_implicit : reference -> int_or_id list -> unit
 
 (*s Table of blacklisted filenames *)
 
