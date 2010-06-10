@@ -8,9 +8,10 @@
 
 (* An undoable view class *)
 
-class undoable_view : [> Gtk.text_view] Gtk.obj ->
+class undoable_view : ([> Gtk.text_view] as 'a) Gtk.obj ->
 object
   inherit GText.view
+  val obj : 'a Gtk.obj
   method undo : bool
   method redo : bool
   method clear_undo : unit
