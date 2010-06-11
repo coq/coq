@@ -907,6 +907,25 @@ let solve_evar_evar f env evd ev1 ev2 =
   with CannotProject projs2 ->
   postpone_evar_evar env evd projs1 ev1 projs2 ev2
 
+(* Solve pbs (?i x1..xn) = (?i y1..yn) which arises often in fixpoint
+ * definitions. We try to unify the xi with the yi pairwise. The pairs
+ * that don't unify are discarded (i.e. ?i is redefined so that it does not
+ * depend on these args). *)
+
+let solve_refl conv_algo env evd evk argsv1 argsv2 =
+  if argsv1 = argsv2 then evd else
+  let evi = Evd.find evd evk in
+  (* Filter and restrict if needed *)
+  let evd,evk,args =
+    restrict_upon_filter evd evi evk
+      (fun (a1,a2) -> snd (conv_algo env evd Reduction.CONV a1 a2))
+      (List.combine (Array.to_list argsv1) (Array.to_list argsv2)) in
+  (* Leave a unification problem *)
+  let args1,args2 = List.split args in
+  let argsv1 = Array.of_list args1 and argsv2 = Array.of_list args2 in
+  let pb = (Reduction.CONV,env,mkEvar(evk,argsv1),mkEvar(evk,argsv2)) in
+  Evd.add_conv_pb pb evd
+
 (* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times
  * (i.e. we tackle a generalization of Miller-Pfenning patterns unification)
@@ -932,6 +951,7 @@ let solve_evar_evar f env evd ev1 ev2 =
 
 exception NotInvertibleUsingOurAlgorithm of constr
 exception NotEnoughInformationToProgress
+exception OccurCheckIn of evar_map * constr
 
 let rec invert_definition choose env evd (evk,argsv as ev) rhs =
   let aliases = make_alias_map env in
@@ -978,7 +998,7 @@ let rec invert_definition choose env evd (evk,argsv as ev) rhs =
     | Rel i when i>k -> project_variable (mkRel (i-k))
     | Var id -> project_variable t
     | Evar (evk',args' as ev') ->
-        if evk = evk' then error_occur_check env evd evk rhs;
+        if evk = evk' then raise (OccurCheckIn (evd,rhs));
 	(* Evar/Evar problem (but left evar is virtual) *)
 	let projs' =
 	  array_map_to_list
@@ -1028,13 +1048,13 @@ and occur_existential evm c =
     | _ -> iter_constr occrec c
   in try occrec c; false with Occur -> true
 
-and evar_define ?(choose=false) env (evk,_ as ev) rhs evd =
+and evar_define ?(choose=false) env (evk,argsv as ev) rhs evd =
   try
     let (evd',body) = invert_definition choose env evd ev rhs in
     if occur_meta body then error "Meta cannot occur in evar body.";
     (* invert_definition may have instantiate some evars of rhs with evk *)
     (* so we recheck acyclicity *)
-    if occur_evar evk body then error_occur_check env evd evk body;
+    if occur_evar evk body then raise (OccurCheckIn (evd',body));
     (* needed only if an inferred type *)
     let body = refresh_universes body in
 (* Cannot strictly type instantiations since the unification algorithm
@@ -1059,6 +1079,16 @@ and evar_define ?(choose=false) env (evk,_ as ev) rhs evd =
 	postpone_evar_term env evd ev rhs
     | NotInvertibleUsingOurAlgorithm t ->
 	error_not_clean env evd evk t (evar_source evk evd)
+    | OccurCheckIn (evd,rhs) ->
+	(* last chance: rhs actually reduces to ev *)
+	let c = whd_betadeltaiota env evd rhs in
+	match kind_of_term c with
+	| Evar (evk',argsv2) when evk = evk' ->
+	    solve_refl
+	      (fun env sigma pb c c' -> (evd,is_fconv pb env sigma c c'))
+	      env evd evk argsv argsv2
+	| _ ->
+	    error_occur_check env evd evk rhs
 
 (*-------------------*)
 (* Auxiliary functions for the conversion algorithms modulo evars
@@ -1204,25 +1234,6 @@ let status_changed lev (pbty,_,t1,t2) =
   (try ExistentialSet.mem (head_evar t1) lev with NoHeadEvar -> false) or
   (try ExistentialSet.mem (head_evar t2) lev with NoHeadEvar -> false)
 
-(* Solve pbs (?i x1..xn) = (?i y1..yn) which arises often in fixpoint
- * definitions. We try to unify the xi with the yi pairwise. The pairs
- * that don't unify are discarded (i.e. ?i is redefined so that it does not
- * depend on these args). *)
-
-let solve_refl conv_algo env evd evk argsv1 argsv2 =
-  if argsv1 = argsv2 then evd else
-  let evi = Evd.find evd evk in
-  (* Filter and restrict if needed *)
-  let evd,evk,args =
-    restrict_upon_filter evd evi evk
-      (fun (a1,a2) -> snd (conv_algo env evd Reduction.CONV a1 a2))
-      (List.combine (Array.to_list argsv1) (Array.to_list argsv2)) in
-  (* Leave a unification problem *)
-  let args1,args2 = List.split args in
-  let argsv1 = Array.of_list args1 and argsv2 = Array.of_list args2 in
-  let pb = (Reduction.CONV,env,mkEvar(evk,argsv1),mkEvar(evk,argsv2)) in
-  Evd.add_conv_pb pb evd
-
 (* Util *)
 
 let check_instance_type conv_algo env evd ev1 t2 =
@@ -1249,7 +1260,7 @@ let check_instance_type conv_algo env evd ev1 t2 =
 (* Rq: uncomplete algorithm if pbty = CONV_X_LEQ ! *)
 let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1),t2) =
   try
-    let t2 = whd_evar evd t2 in
+    let t2 = whd_betaiota evd t2 in (* includes whd_evar *)
     let evd = match kind_of_term t2 with
       | Evar (evk2,args2 as ev2) ->
 	  if evk1 = evk2 then
