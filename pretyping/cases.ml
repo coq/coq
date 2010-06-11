@@ -1024,6 +1024,7 @@ let rec generalize_problem names pb = function
   | [] -> pb
   | i::l ->
       let d = map_rel_declaration (lift i) (Environ.lookup_rel i pb.env) in
+      let d = on_pi3 (whd_betaiota !(pb.evdref)) d in (* for better rendering *)
       let pb' = generalize_problem names pb l in
       let tomatch = lift_tomatch_stack 1 pb'.tomatch in
       let tomatch = regeneralize_index_tomatch (i+1) tomatch in

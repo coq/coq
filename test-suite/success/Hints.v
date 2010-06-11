@@ -52,3 +52,18 @@ Hint Resolve -> a.
 Goal forall n, n=0 -> n<=0.
 auto.
 Qed.
+
+
+(* This example comes from Chlipala's ltamer *)
+(* It used to fail from r12902 to r13112 since type_of started to call *)
+(* e_cumul (instead of conv_leq) which was not able to unify "?id" and *)
+(* "(fun x => x) ?id" *)
+
+Notation "e :? pf" := (eq_rect _ (fun X : Set => X) e _ pf)
+  (no associativity, at level 90).
+
+Axiom cast_coalesce :
+  forall (T1 T2 T3 : Set) (e : T1) (pf1 : T1 = T2) (pf2 : T2 = T3),
+  ((e :? pf1) :? pf2) = (e :? trans_eq pf1 pf2).
+
+Hint Rewrite cast_coalesce : ltamer.
