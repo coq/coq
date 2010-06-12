@@ -428,8 +428,11 @@ let non_full_mutual_message x xge y yge isfix rest =
   let e = if rest <> [] then "e.g.: "^reason else reason in
   let k = if isfix then "fixpoint" else "cofixpoint" in
   let w =
-    if isfix then "Well-foundedness check may fail unexpectedly.\n" else "" in
-  "Not a fully mutually defined "^k^"\n("^e^").\n"^w
+    if isfix
+    then strbrk "Well-foundedness check may fail unexpectedly." ++ fnl()
+    else mt () in
+  strbrk ("Not a fully mutually defined "^k) ++ fnl () ++
+  strbrk ("("^e^").") ++ fnl () ++ w
 
 let check_mutuality env isfix fixl =
   let names = List.map fst fixl in
@@ -440,7 +443,7 @@ let check_mutuality env isfix fixl =
   let po = partial_order preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
     | (x,Inr xge)::(y,Inr yge)::rest ->
-	if_verbose warning (non_full_mutual_message x xge y yge isfix rest)
+	if_verbose msg_warning (non_full_mutual_message x xge y yge isfix rest)
     | _ -> ()
 
 type structured_fixpoint_expr = {
