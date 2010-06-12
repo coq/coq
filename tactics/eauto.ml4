@@ -345,7 +345,7 @@ ARGUMENT EXTEND hintbases
 | [ ] -> [ Some [] ]
 END
 
-let pr_constr_coma_sequence prc _ _ = prlist_with_sep pr_coma prc
+let pr_constr_coma_sequence prc _ _ = prlist_with_sep pr_comma prc
 
 ARGUMENT EXTEND constr_coma_sequence
   TYPED AS constr_list

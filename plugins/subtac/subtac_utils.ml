@@ -365,7 +365,7 @@ let recursive_message v =
   match Array.length v with
     | 0 -> error "no recursive definition"
     | 1 -> (Printer.pr_constant (Global.env ()) v.(0) ++ str " is recursively defined")
-    | _ -> hov 0 (prvect_with_sep pr_coma (Printer.pr_constant (Global.env ())) v ++
+    | _ -> hov 0 (prvect_with_sep pr_comma (Printer.pr_constant (Global.env ())) v ++
 		    spc () ++ str "are recursively defined")
 
 let print_message m =

@@ -78,9 +78,9 @@ let pr_uni = function
       str "(" ++ pr_uni_level u ++ str ")+1"
   | Max (gel,gtl) ->
       str "max(" ++ hov 0
-       (prlist_with_sep pr_coma pr_uni_level gel ++
-	  (if gel <> [] & gtl <> [] then pr_coma () else mt ()) ++
-	prlist_with_sep pr_coma
+       (prlist_with_sep pr_comma pr_uni_level gel ++
+	  (if gel <> [] & gtl <> [] then pr_comma () else mt ()) ++
+	prlist_with_sep pr_comma
 	  (fun x -> str "(" ++ pr_uni_level x ++ str ")+1") gtl) ++
       str ")"
 

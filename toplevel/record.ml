@@ -94,7 +94,7 @@ let warning_or_error coe indsp err =
 	let s,have = if List.length projs > 1 then "s","were" else "","was" in
         (str(string_of_id fi) ++
 	   strbrk" cannot be defined because the projection" ++ str s ++ spc () ++
-           prlist_with_sep pr_coma pr_id projs ++ spc () ++ str have ++
+           prlist_with_sep pr_comma pr_id projs ++ spc () ++ str have ++
 	   strbrk " not defined.")
     | BadTypedProj (fi,ctx,te) ->
 	match te with

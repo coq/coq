@@ -673,7 +673,7 @@ let pr_arg_level from = function
 
 let pr_level ntn (from,args) =
   str "at level " ++ int from ++ spc () ++ str "with arguments" ++ spc() ++
-  prlist_with_sep pr_coma (pr_arg_level from) args
+  prlist_with_sep pr_comma (pr_arg_level from) args
 
 let error_incompatible_level ntn oldprec prec =
   errorlabstrm ""

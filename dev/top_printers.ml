@@ -68,7 +68,7 @@ let prset pr l = str "[" ++ hov 0 (prlist_with_sep spc pr l) ++ str "]"
 let ppintset l = pp (prset int (Intset.elements l))
 let ppidset l = pp (prset pr_id (Idset.elements l))
 
-let prset' pr l = str "[" ++ hov 0 (prlist_with_sep pr_coma pr l) ++ str "]"
+let prset' pr l = str "[" ++ hov 0 (prlist_with_sep pr_comma pr l) ++ str "]"
 let ppidmap pr l =
   let pr (id,b) = pr_id id ++ str "=>" ++ pr id b in
   pp (prset' pr (Idmap.fold (fun a b l -> (a,b)::l) l []))

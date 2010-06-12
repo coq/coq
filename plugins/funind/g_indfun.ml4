@@ -112,7 +112,7 @@ TACTIC EXTEND snewfunind
 END
 
 
-let pr_constr_coma_sequence prc _ _ = Util.prlist_with_sep Util.pr_coma prc
+let pr_constr_coma_sequence prc _ _ = Util.prlist_with_sep Util.pr_comma prc
 
 ARGUMENT EXTEND constr_coma_sequence'
   TYPED AS constr_list
