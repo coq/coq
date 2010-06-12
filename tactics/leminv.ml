@@ -192,6 +192,10 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
   let extenv = push_named (p,None,npty) env in
   extenv, goal
 
+let whd_meta_from_map metamap c = match kind_of_term c with
+  | Meta p -> (try List.assoc p metamap with Not_found -> c)
+  | _ -> c
+
 (* [inversion_scheme sign I]
 
    Given a local signature, [sign], and an instance of an inductive
@@ -239,7 +243,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   in
   let invProof =
     it_mkNamedLambda_or_LetIn
-      (local_strong (fun _ -> whd_meta mvb) Evd.empty pfterm) ownSign
+      (local_strong (fun _ -> whd_meta_from_map mvb) Evd.empty pfterm) ownSign
   in
   invProof
 
