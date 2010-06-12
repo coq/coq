@@ -58,7 +58,7 @@ let explain_coercion_error g = function
       pr_class cl ++ str " cannot be a source class"
   | NotUniform ->
       (Printer.pr_global g ++
-         str" does not respect the inheritance uniform condition");
+         str" does not respect the uniform inheritance condition");
   | NoTarget ->
       (str"Cannot find the target class")
   | WrongTarget (clt,cl) ->
