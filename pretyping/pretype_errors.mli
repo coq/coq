@@ -31,6 +31,8 @@ type pretype_error =
   | CannotGeneralize of constr
   | NoOccurrenceFound of constr * identifier option
   | CannotFindWellTypedAbstraction of constr * constr list
+  | AbstractionOverMeta of name * name
+  | NonLinearUnification of name * constr
   (** Pretyping *)
   | VarNotFound of identifier
   | UnexpectedType of constr * constr
@@ -100,6 +102,12 @@ val error_cannot_unify_local : env -> Evd.evar_map -> constr * constr * constr -
 
 val error_cannot_find_well_typed_abstraction : env -> Evd.evar_map ->
       constr -> constr list -> 'b
+
+val error_abstraction_over_meta : env -> Evd.evar_map ->
+  metavariable -> metavariable -> 'b
+
+val error_non_linear_unification : env -> Evd.evar_map ->
+  metavariable -> constr -> 'b
 
 (** {6 Ml Case errors } *)
 

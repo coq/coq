@@ -694,10 +694,7 @@ let meta_reassign mv (v,pb) evd =
 
 (* If the meta is defined then forget its name *)
 let meta_name evd mv =
-  try
-    let (na,def) = clb_name (Metamap.find mv evd.metas) in
-    if def then Anonymous else na
-  with Not_found -> Anonymous
+  try fst (clb_name (Metamap.find mv evd.metas)) with Not_found -> Anonymous
 
 let meta_with_name evd id =
   let na = Name id in

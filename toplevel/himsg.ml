@@ -436,6 +436,16 @@ let explain_cannot_find_well_typed_abstraction env p l =
   str "leads to a term" ++ spc () ++ pr_lconstr_env env p ++ spc () ++
   str "which is ill-typed."
 
+let explain_abstraction_over_meta _ m n =
+  strbrk "Too complex unification problem: cannot find a solution for both " ++
+  pr_name m ++ spc () ++ str "and " ++ pr_name n ++ str "."
+
+let explain_non_linear_unification env m t =
+  strbrk "Cannot unambiguously instantiate " ++
+  pr_name m ++ str ":" ++
+  strbrk " which would require to abstract twice on " ++
+  pr_lconstr_env env t ++ str "."
+
 let explain_type_error env err =
   let env = make_all_name_different env in
   match err with
@@ -489,7 +499,8 @@ let explain_pretype_error env err =
   | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type env m n
   | CannotFindWellTypedAbstraction (p,l) ->
       explain_cannot_find_well_typed_abstraction env p l
-
+  | AbstractionOverMeta (m,n) -> explain_abstraction_over_meta env m n
+  | NonLinearUnification (m,c) -> explain_non_linear_unification env m c
 
 (* Typeclass errors *)
 
