@@ -880,12 +880,13 @@ let w_unify_to_subterm_all env ?(flags=default_unify_flags) (op,cl) evd =
   else
     res
 
-let w_unify_to_subterm_list env flags allow_K oplist t evd =
+let w_unify_to_subterm_list env flags allow_K hdmeta oplist t evd =
   List.fold_right
     (fun op (evd,l) ->
+      let op = whd_meta evd op in
       if isMeta op then
 	if allow_K then (evd,op::l)
-	else error "Unify_to_subterm_list"
+	else error_abstraction_over_meta env evd hdmeta (destMeta op)
       else if occur_meta_or_existential op then
         let (evd',cl) =
           try
@@ -895,7 +896,7 @@ let w_unify_to_subterm_list env flags allow_K oplist t evd =
         in
 	  if not allow_K && (* ensure we found a different instance *)
 	    List.exists (fun op -> eq_constr op cl) l
-	  then error "Unify_to_subterm_list"
+	  then error_non_linear_unification env evd hdmeta cl
 	  else (evd',cl::l)
       else if allow_K or dependent op t then
 	(evd,op::l)
@@ -909,7 +910,7 @@ let secondOrderAbstraction env flags allow_K typ (p, oplist) evd =
   (* Remove delta when looking for a subterm *)
   let flags = { flags with modulo_delta = (fst flags.modulo_delta, Cpred.empty) } in
   let (evd',cllist) =
-    w_unify_to_subterm_list env flags allow_K oplist typ evd in
+    w_unify_to_subterm_list env flags allow_K p oplist typ evd in
   let typp = Typing.meta_type evd' p in
   let pred = abstract_list_all env evd' typp typ cllist in
   w_merge env false flags (evd',[p,pred,(ConvUpToEta 0,TypeProcessed)],[])

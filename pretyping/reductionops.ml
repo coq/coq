@@ -637,8 +637,8 @@ let is_trans_fconv = function | CONV -> is_trans_conv | CUMUL -> is_trans_conv_l
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
 
-let whd_meta metasubst c = match kind_of_term c with
-  | Meta p -> (try List.assoc p metasubst with Not_found -> c)
+let whd_meta sigma c = match kind_of_term c with
+  | Meta p -> (try meta_value sigma p with Not_found -> c)
   | _ -> c
 
 (* Try to replace all metas. Does not replace metas in the metas' values
