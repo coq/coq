@@ -1197,7 +1197,7 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
 	  let evm = evars_of evd in
 	  let evi = Evd.find evm evk1 in
 	    if occur_existential evm evi.evar_concl then
-	      let evenv = evar_env evi in
+	      let evenv = evar_unfiltered_env evi in
 	      let evc = nf_isevar evd evi.evar_concl in
 		match evi.evar_body with 
 		| Evar_defined body -> 
