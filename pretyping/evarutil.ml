@@ -247,7 +247,7 @@ let rec expansions_of_var aliases x =
     [x]
 
 let expand_full_opt aliases y =
-  try Some (expand_var aliases y) with Not_found -> None
+  try expand_var_opt aliases y with Not_found -> None
 
 (* Knowing that [Gamma |- ev : T] and that [ev] is applied to [args],
  * [make_projectable_subst ev args] builds the substitution [Gamma:=args].
@@ -262,25 +262,37 @@ let expand_full_opt aliases y =
 let make_projectable_subst aliases sigma evi args =
   let sign = evar_filtered_context evi in
   let evar_aliases = compute_aliases sign in
-  snd (List.fold_right
-    (fun (id,b,c) (args,l) ->
-      match b,args with
+  let (_,full_subst,cstr_subst) =
+    List.fold_right
+      (fun (id,b,c) (args,all,cstrs) ->
+        match b,args with
 	| None, a::rest ->
 	    let a = whd_evar sigma a in
-	    (rest,Idmap.add id [a,expand_full_opt aliases a,id] l)
+	    let cstrs =
+	      let a',args = decompose_app_vect a in
+	      match kind_of_term a' with
+	      | Construct cstr ->
+		  let l = try Constrmap.find cstr cstrs with Not_found -> [] in
+		  Constrmap.add cstr ((args,id)::l) cstrs
+	      | _ -> cstrs in
+	    (rest,Idmap.add id [a,expand_full_opt aliases a,id] all,cstrs)
 	| Some c, a::rest ->
 	    let a = whd_evar sigma a in
 	    (match kind_of_term c with
 	    | Var id' ->
 		let idc = alias_of_var id' evar_aliases in
-		let sub = try Idmap.find idc l with Not_found -> [] in
-		if List.exists (fun (c,_,_) -> eq_constr a c) sub then (rest,l)
+		let sub = try Idmap.find idc all with Not_found -> [] in
+		if List.exists (fun (c,_,_) -> eq_constr a c) sub then
+		  (rest,all,cstrs)
 		else
-		  (rest,Idmap.add idc ((a,expand_full_opt aliases a,id)::sub) l)
+		  (rest,
+		   Idmap.add idc ((a,expand_full_opt aliases a,id)::sub) all,
+		   cstrs)
 	    | _ ->
-		(rest,Idmap.add id [a,expand_full_opt aliases a,id] l))
+		(rest,Idmap.add id [a,expand_full_opt aliases a,id] all,cstrs))
 	| _ -> anomaly "Instance does not match its signature")
-    sign (array_rev_to_list args,Idmap.empty))
+      sign (array_rev_to_list args,Idmap.empty,Constrmap.empty) in
+  (full_subst,cstr_subst)
 
 let make_pure_subst evi args =
   snd (List.fold_right
@@ -586,6 +598,20 @@ let clear_hyps_in_evi evdref hyps concl ids =
   in
   (nhyps,nconcl)
 
+(* Inverting constructors in instances (common when inferring type of match) *)
+
+let find_projectable_constructor env evd cstr k args cstr_subst =
+  try
+    let l = Constrmap.find cstr cstr_subst in
+    let args = Array.map (lift (-k)) args in
+    let l =
+      List.filter (fun (args',id) ->
+	(* is_conv is maybe too strong (and source of useless computation) *)
+	(* (at least expansion of aliases is needed) *)
+	array_for_all2 (is_conv env evd) args args') l in
+    List.map snd l
+  with Not_found ->
+    []
 
 (* [find_projectable_vars env sigma y subst] finds all vars of [subst]
  * that project on [y]. It is able to find solutions to the following
@@ -637,7 +663,7 @@ let rec assoc_up_to_alias sigma aliases y yc = function
 	  (* Last chance, we reason up to alias conversion *)
 	  match (if c == c' then cc else expand_full_opt aliases c') with
 	  | Some cc when yc = cc -> id
-	  | _ -> raise Not_found
+	  | _ -> if yc = c then id else raise Not_found
 
 let rec find_projectable_vars with_evars aliases sigma y subst =
   let yc = expand_var aliases y in
@@ -656,7 +682,7 @@ let rec find_projectable_vars with_evars aliases sigma y subst =
 	  begin
 	    let (evk,argsv as t) = destEvar c in
 	    let evi = Evd.find sigma evk in
-	    let subst = make_projectable_subst aliases sigma evi argsv in
+	    let subst,_ = make_projectable_subst aliases sigma evi argsv in
 	    let l = find_projectable_vars with_evars aliases sigma y subst in
 	    match l with
 	    | [id',p] -> (id,ProjectEvar (t,evi,id',p))::subst'
@@ -897,7 +923,7 @@ exception CannotProject of projectibility_status list
 
 let solve_evar_evar_l2r f env evd (evk1,args1) (evk2,args2 as ev2) =
   let aliases = make_alias_map env in
-  let subst = make_projectable_subst aliases evd (Evd.find evd evk2) args2 in
+  let subst,_ = make_projectable_subst aliases evd (Evd.find evd evk2) args2 in
   if are_canonical_instances args1 args2 env then
     (* If instances are canonical, we solve the problem in linear time *)
     let sign = evar_filtered_context (Evd.find evd evk2) in
@@ -973,7 +999,7 @@ let rec invert_definition choose env evd (evk,argsv as ev) rhs =
   let evdref = ref evd in
   let progress = ref false in
   let evi = Evd.find evd evk in
-  let subst = make_projectable_subst aliases evd evi argsv in
+  let subst,cstr_subst = make_projectable_subst aliases evd evi argsv in
 
   (* Projection *)
   let project_variable t =
@@ -1041,10 +1067,25 @@ let rec invert_definition choose env evd (evk,argsv as ev) rhs =
 	  evdref := evd;
 	  evar'')
     | _ ->
-	progress := true;
-	(* Evar/Rigid problem (or assimilated if not normal): we "imitate" *)
-	map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
-	  imitate envk t in
+	match
+	  let c,args = decompose_app_vect t in
+	  match kind_of_term c with
+	  | Construct cstr when noccur_between 1 k t ->
+	    (* This is common case when inferring the return clause of match *)
+	    (* (currently rudimentary: we do not treat the case of multiple *)
+            (*  possible inversions; we do not treat overlap with a possible *)
+            (*  alternative inversion of the subterms of the constructor, etc)*)
+	    (match find_projectable_constructor env evd cstr k args cstr_subst with
+	     | [id] -> Some (mkVar id)
+	     | _ -> None)
+	  | _ -> None
+	with
+	| Some c -> c
+	| None ->
+	  progress := true;
+	  (* Evar/Rigid problem (or assimilated if not normal): we "imitate" *)
+	  map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
+	    imitate envk t in
 
   let rhs = whd_beta evd rhs (* heuristic *) in
   let body = imitate (env,0) rhs in

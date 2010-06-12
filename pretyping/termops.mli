@@ -195,6 +195,9 @@ val align_prod_letin : constr -> constr -> rel_context * constr
 (** Get the last arg of a constr intended to be an application *)
 val last_arg : constr -> constr
 
+(** Force the decomposition of a term as an applicative one *)
+val decompose_app_vect : constr -> constr * constr array
+
 (** name contexts *)
 type names_context = name list
 val add_name : name -> names_context -> names_context
