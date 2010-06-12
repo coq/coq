@@ -67,9 +67,22 @@ let ppfconstr c = ppconstr (Closure.term_of_fconstr c)
 
 let ppbigint n = pp (Bigint.pr_bigint n);;
 
-let prset pr l = str "[" ++ prlist_with_sep spc pr l ++ str "]"
+let prset pr l = str "[" ++ hov 0 (prlist_with_sep spc pr l) ++ str "]"
 let ppintset l = pp (prset int (Intset.elements l))
 let ppidset l = pp (prset pr_id (Idset.elements l))
+
+let prset' pr l = str "[" ++ hov 0 (prlist_with_sep pr_coma pr l) ++ str "]"
+let ppidmap pr l =
+  let pr (id,b) = pr_id id ++ str "=>" ++ pr id b in
+  pp (prset' pr (Idmap.fold (fun a b l -> (a,b)::l) l []))
+
+let ppevarsubst = ppidmap (fun id0 -> prset (fun (c,copt,id) ->
+  hov 0
+  (Termops.print_constr c ++
+   (match copt with None -> mt () | Some c -> spc () ++ str "<expanded: " ++
+    Termops.print_constr c ++ str">") ++
+   (if id = id0 then mt ()
+    else spc () ++ str "<canonical: " ++ pr_id id ++ str ">"))))
 
 let pP s = pp (hov 0 s)
 
