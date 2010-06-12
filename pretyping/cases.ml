@@ -1299,20 +1299,13 @@ let adjust_to_extended_env_and_remove_deps env extenv subst t =
     (* \--env-/          (= x:ty)         *)
     (* \--------------extenv------------/ *)
     let (p,_,_) = lookup_rel_id x (rel_context extenv) in
-    let rec aux n (_,b,ty) =
-      match b with
-      | Some c ->
-	  assert (isRel c);
-	  let p = n + destRel c in aux p (lookup_rel p extenv)
-      | None ->
-	  (n,ty) in
-    let (p,ty) = aux p (lookup_rel p extenv) in
-    if noccur_between_without_evar 1 (n'-p-n+1) ty
-    then
-      let u = lift (n'-n) u in
-      (p,u,(expand_vars_in_term extenv u,lift p ty))
-    else
-      failwith "") subst in
+    let rec traverse_local_defs p =
+      match pi2 (lookup_rel p extenv) with
+      | Some c -> assert (isRel c); traverse_local_defs (p + destRel c)
+      | None -> p in
+    let p = traverse_local_defs p in
+    let u = lift (n'-n) u in
+    (p,u,expand_vars_in_term extenv u)) subst in
   let t0 = lift (n'-n) t in
   (subst0,t0)
 
@@ -1349,7 +1342,8 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
     else
     let good = List.filter (fun (_,u,_) -> is_conv_leq env sigma t u) subst in
     if good <> [] then
-      let (u,ty) = pi3 (List.hd good) in
+      let u = pi3 (List.hd good) in
+      let ty = aux x (get_type_of env sigma t) in
       let vl = List.map pi1 good in
       let inst =
 	list_map_i
@@ -1432,16 +1426,23 @@ let build_inversion_problem loc env sigma tms t =
      problem have to be abstracted *)
   let patl,sign,(subst,avoid) = aux 0 env [] tms ([],avoid0) in
   let n = List.length sign in
+
+  let decls = List.rev sign in
+  let dep_sign = find_dependencies_signature (list_make n true) decls in
+
   let (pb_env,_),sub_tms =
-    list_fold_map (fun (env,i) (na,b,t as d) ->
+    list_fold_map (fun (env,i) (deps,(na,b,t as d)) ->
       let typ =
 	if b<>None then NotInd(None,t) else
 	  try try_find_ind env sigma t None
 	  with Not_found -> NotInd (None,t) in
       let ty = lift_tomatch_type (n-i) typ in
-      let tm = Pushed ((mkRel (n-i),ty),[],(Anonymous,KnownNotDep)) in
+      let na_dep =
+	if deps = [] then (Anonymous,KnownNotDep) else (force_name na,KnownDep)
+      in
+      let tm = Pushed ((mkRel (n-i),ty),deps,na_dep) in
       ((push_rel d env,i+1),tm))
-      (env,0) (List.rev sign) in
+      (env,0) (List.combine dep_sign decls) in
   let subst = List.map (fun (na,t) -> (na,lift n t)) subst in
   (* [eqn1] is the first clause of the auxiliary pattern-matching that
      serves as skeleton for the return type: [patl] is the
