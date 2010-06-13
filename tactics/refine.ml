@@ -114,6 +114,8 @@ let replace_by_meta env sigma = function
 	| _ -> invalid_arg "Tcc.replace_by_meta (TO DO)"
         *)
       in
+      if occur_meta ty then
+	error "Unable to manage a dependent metavariable of higher-order type.";
       mkCast (m,DEFAULTcast, ty),[n,ty],[Some th]
 
 exception NoMeta
