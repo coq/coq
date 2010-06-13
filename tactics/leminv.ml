@@ -296,12 +296,16 @@ let add_inversion_lemma_exn na com comsort bool tac =
 (* ================================= *)
 
 let lemInv id c gls =
+  ignore (pf_get_hyp gls id); (* ensure id exists *)
   try
     let clause = mk_clenv_type_of gls c in
     let clause = clenv_constrain_last_binding (mkVar id) clause in
     Clenvtac.res_pf clause ~allow_K:true gls
   with
-    |  UserError (a,b) ->
+    | NoSuchBinding ->
+	errorlabstrm ""
+	  (hov 0 (pr_constr c ++ spc () ++ str "does not refer to an inversion lemma."))
+    | UserError (a,b) ->
 	 errorlabstrm "LemInv"
 	   (str "Cannot refine current goal with the lemma " ++
 	      pr_lconstr_env (Global.env()) c)
