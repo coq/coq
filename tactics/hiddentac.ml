@@ -76,9 +76,9 @@ let h_simple_destruct = h_simple_induction_destruct false
 
 let h_induction_destruct isrec ev lcl =
   abstract_tactic (TacInductionDestruct (isrec,ev,lcl))
-    (induction_destruct ev isrec lcl)
-let h_new_induction ev c e idl cl = h_induction_destruct ev true ([c,e,idl],cl)
-let h_new_destruct ev c e idl cl = h_induction_destruct ev false ([c,e,idl],cl)
+    (induction_destruct isrec ev lcl)
+let h_new_induction ev c e idl cl = h_induction_destruct true ev ([c,e,idl],cl)
+let h_new_destruct ev c e idl cl = h_induction_destruct false ev ([c,e,idl],cl)
 
 let h_specialize n d = abstract_tactic (TacSpecialize (n,d)) (specialize n d)
 let h_lapply c = abstract_tactic (TacLApply c) (cut_and_apply c)

@@ -2349,7 +2349,7 @@ and interp_atomic ist gl tac =
             (Option.map (interp_intro_pattern ist gl) ipato,
 	     Option.map (interp_intro_pattern ist gl) ipats)))) sigma l in
       let cls = Option.map (interp_clause ist gl) cls in
-      tclWITHHOLES ev (h_induction_destruct ev isrec) sigma (l,cls)
+      tclWITHHOLES ev (h_induction_destruct isrec ev) sigma (l,cls)
   | TacDoubleInduction (h1,h2) ->
       let h1 = interp_quantified_hypothesis ist h1 in
       let h2 = interp_quantified_hypothesis ist h2 in

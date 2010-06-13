@@ -2,6 +2,11 @@
 = CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
 =========================================
 
+** Semantical change of h_induction_destruct **
+
+Warning, the order of the isrec and evar_flag was inconsistent and has
+been permuted. Tactic induction_destruct in tactics.ml is unchanged.
+
 ** Internal tactics renamed
 
 There is no more difference between bindings and ebindings. The
