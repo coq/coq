@@ -197,6 +197,8 @@ let rec compute_metamap env sigma c = match kind_of_term c with
       end
 
   | Case (ci,p,cc,v) ->
+      if occur_meta p then
+       error "Unable to manage a metavariable in the return clause of a match.";
       (* bof... *)
       let nbr = Array.length v in
       let v = Array.append [|p;cc|] v in
