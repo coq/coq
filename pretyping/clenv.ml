@@ -437,11 +437,11 @@ let clenv_match_args bl clenv =
 	  clenv_assign_binding clenv k sc)
       clenv bl
 
+exception NoSuchBinding
+
 let clenv_constrain_last_binding c clenv =
   let all_mvs = collect_metas clenv.templval.rebus in
-  let k =
-    try list_last all_mvs 
-    with Failure _ -> anomaly "clenv_constrain_with_bindings" in
+  let k = try list_last all_mvs with Failure _ -> raise NoSuchBinding in
   clenv_assign_binding clenv k (Evd.empty,c)
 
 let clenv_constrain_dep_args hyps_only bl clenv =
