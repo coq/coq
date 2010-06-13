@@ -129,3 +129,10 @@ Proof.
    an inconsistent state that disturbed "inversion" *)
 intros. inversion H.
 Abort.
+
+(* Bug #2314 (simplified): check that errors do not show as anomalies *)
+
+Goal True -> True.
+intro.
+Fail inversion H using False.
+Fail inversion foo using True_ind.

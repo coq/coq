@@ -85,6 +85,8 @@ type arg_bindings = constr explicit_bindings
 val clenv_independent : clausenv -> metavariable list
 val clenv_missing : clausenv -> metavariable list
 
+(** for the purpose of inversion tactics *)
+exception NoSuchBinding
 val clenv_constrain_last_binding : constr -> clausenv -> clausenv
 
 (** defines metas corresponding to the name of the bindings *)

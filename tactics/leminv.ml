@@ -288,7 +288,10 @@ let lemInv id c gls =
     let clause = clenv_constrain_last_binding (mkVar id) clause in
     Clenvtac.res_pf clause ~allow_K:true gls
   with
-    |  UserError (a,b) ->
+    | NoSuchBinding ->
+	errorlabstrm ""
+	  (hov 0 (pr_constr c ++ spc () ++ str "does not refer to an inversion lemma."))
+    | UserError (a,b) ->
 	 errorlabstrm "LemInv"
 	   (str "Cannot refine current goal with the lemma " ++
 	      pr_lconstr_env (Global.env()) c)
