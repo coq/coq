@@ -165,6 +165,7 @@ let error_unsolvable_implicit loc env sigma evi e explain =
     (PretypeError (env_ise sigma env, UnsolvableImplicit (evi, e, explain)))
 
 let error_cannot_unify env sigma (m,n) =
+  let m = nf_evar sigma m and n = nf_evar sigma n in
   raise (PretypeError (env_ise sigma env,CannotUnify (m,n)))
 
 let error_cannot_unify_local env sigma (m,n,sn) =
