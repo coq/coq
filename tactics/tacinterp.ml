@@ -1704,14 +1704,19 @@ let is_match_catchable = function
   | PatternMatchingFailure | Eval_fail _ -> true
   | e -> Logic.catchable_exception e
 
+let equal_instances gl (ctx',c') (ctx,c) =
+  (* How to compare instances? Do we want the terms to be convertible?
+     unifiable? Do we want the universe levels to be relevant? 
+     (historically, conv_x is used) *)
+  ctx = ctx' & pf_conv_x gl c' c
+
 (* Verifies if the matched list is coherent with respect to lcm *)
 (* While non-linear matching is modulo eq_constr in matches, merge of *)
 (* different instances of the same metavars is here modulo conversion... *)
 let verify_metas_coherence gl (ln1,lcm) (ln,lm) =
   let rec aux = function
-  | (id,(ctx,c) as x)::tl ->
-      if List.for_all
-	(fun (id',(ctx',c')) -> id'<>id or ctx = ctx' & pf_conv_x gl c' c) lcm
+  | (id,c as x)::tl ->
+      if List.for_all (fun (id',c') -> id'<>id or equal_instances gl c' c) lcm
       then
 	x :: aux tl
       else
@@ -1755,7 +1760,9 @@ let apply_one_mhyp_context ist env gl lmatch (hypname,patv,pat) lhyps =
                  match_next_pattern find_next')
               with
                 | PatternMatchingFailure -> apply_one_mhyp_context_rec tl in
-            match_next_pattern (fun () -> match_pat lmatch hyp pat) ()
+            match_next_pattern (fun () ->
+	      let hyp = if b<>None then refresh_universes_strict hyp else hyp in
+	      match_pat lmatch hyp pat) ()
 	| Some patv ->
 	    match b with
 	    | Some body ->
@@ -1771,7 +1778,9 @@ let apply_one_mhyp_context ist env gl lmatch (hypname,patv,pat) lhyps =
                         | PatternMatchingFailure ->
                             match_next_pattern_in_body next_in_body' () in
                     match_next_pattern_in_typ
-                      (fun () -> match_pat lmeta hyp pat) ()
+                      (fun () ->
+			let hyp = refresh_universes_strict hyp in
+			match_pat lmeta hyp pat) ()
                   with PatternMatchingFailure -> apply_one_mhyp_context_rec tl
                 in
                 match_next_pattern_in_body
