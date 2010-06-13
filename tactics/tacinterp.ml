@@ -1606,6 +1606,14 @@ let interp_open_constr_with_bindings_loc ist env sigma ((c,_),bl as cb) =
   let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
   sigma, (loc,cb)
 
+let interp_induction_ident ist gl sigma loc id =
+  if Tactics.is_quantified_hypothesis id gl then
+    sigma, ElimOnIdent (loc,id)
+  else
+    let c = (RVar (loc,id),Some (CRef (Ident (loc,id)))) in
+    let c = interp_constr ist (pf_env gl) sigma c in
+    sigma, ElimOnConstr (c,NoBindings)
+
 let interp_induction_arg ist gl sigma arg =
   let env = pf_env gl in
   match arg with
@@ -1615,21 +1623,19 @@ let interp_induction_arg ist gl sigma arg =
   | ElimOnAnonHyp n as x -> sigma, x
   | ElimOnIdent (loc,id) ->
       try
-	sigma,
         match List.assoc id ist.lfun with
-	| VInteger n -> ElimOnAnonHyp n
-	| VIntroPattern (IntroIdentifier id) -> ElimOnIdent (loc,id)
-	| VConstr ([],c) -> ElimOnConstr (c,NoBindings)
+	| VInteger n ->
+	    sigma, ElimOnAnonHyp n
+	| VIntroPattern (IntroIdentifier id) ->
+	    interp_induction_ident ist gl sigma loc id
+	| VConstr ([],c) ->
+	    sigma, ElimOnConstr (c,NoBindings)
 	| _ -> user_err_loc (loc,"",
 	      strbrk "Cannot coerce " ++ pr_id id ++
 	      strbrk " neither to a quantified hypothesis nor to a term.")
       with Not_found ->
-	(* Interactive mode *)
-	if Tactics.is_quantified_hypothesis id gl then
-          sigma, ElimOnIdent (loc,id)
-	else
-          let c = interp_constr ist env sigma (RVar (loc,id),Some (CRef (Ident (loc,id)))) in
-          sigma, ElimOnConstr (c,NoBindings)
+	(* We were in non strict (interactive) mode *)
+	interp_induction_ident ist gl sigma loc id
 
 (* Associates variables with values and gives the remaining variables and
    values *)

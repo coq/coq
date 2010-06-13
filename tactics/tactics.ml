@@ -563,8 +563,13 @@ let intros_until = intros_until_gen true
 let intros_until_n = intros_until_n_gen true
 let intros_until_n_wored = intros_until_n_gen false
 
+let tclCHECKVAR id gl = ignore (pf_get_hyp gl id); tclIDTAC gl
+
+let try_intros_until_id_check id =
+  tclORELSE (intros_until_id id) (tclCHECKVAR id)
+
 let try_intros_until tac = function
-  | NamedHyp id -> tclTHEN (tclTRY (intros_until_id id)) (tac id)
+  | NamedHyp id -> tclTHEN (try_intros_until_id_check id) (tac id)
   | AnonHyp n -> tclTHEN (intros_until_n n) (onLastHypId tac)
 
 let rec intros_move = function
@@ -582,16 +587,13 @@ let dependent_in_decl a (_,c,t) =
    or a term with bindings *)
 
 let onInductionArg tac = function
-  | ElimOnConstr (c,lbindc as cbl) ->
-      if isVar c & lbindc = NoBindings then
-	tclTHEN (tclTRY (intros_until_id (destVar c))) (tac cbl)
-      else
-	tac cbl
+  | ElimOnConstr cbl ->
+      tac cbl
   | ElimOnAnonHyp n ->
       tclTHEN (intros_until_n n) (onLastHyp (fun c -> tac (c,NoBindings)))
   | ElimOnIdent (_,id) ->
-      (*Identifier apart because id can be quantified in goal and not typable*)
-      tclTHEN (tclTRY (intros_until_id id)) (tac (mkVar id,NoBindings))
+      (* A quantified hypothesis *)
+      tclTHEN (try_intros_until_id_check id) (tac (mkVar id,NoBindings))
 
 (**************************)
 (*  Refinement tactics    *)
@@ -790,9 +792,10 @@ let elim_in_context with_evars c = function
 let elim with_evars (c,lbindc as cx) elim =
   match kind_of_term c with
     | Var id when lbindc = NoBindings ->
-	tclTHEN (tclTRY (intros_until_id id))
+	tclTHEN (try_intros_until_id_check id)
 	  (elim_in_context with_evars cx elim)
-    | _ -> elim_in_context with_evars cx elim
+    | _ ->
+	elim_in_context with_evars cx elim
 
 (* The simplest elimination tactic, with no substitutions at all. *)
 
@@ -853,8 +856,8 @@ let general_case_analysis_in_context with_evars (c,lbindc) gl =
 let general_case_analysis with_evars (c,lbindc as cx) =
   match kind_of_term c with
     | Var id when lbindc = NoBindings ->
-	tclTHEN (tclTRY (intros_until_id id))
-	(general_case_analysis_in_context with_evars cx)
+	tclTHEN (try_intros_until_id_check id)
+	  (general_case_analysis_in_context with_evars cx)
     | _ ->
 	general_case_analysis_in_context with_evars cx
 
@@ -3177,11 +3180,8 @@ let new_destruct ev lc e idl cls = induct_destruct false ev (lc,e,idl,cls)
 (* Induction tactics *)
 
 (* This was Induction before 6.3 (induction only in quantified premisses) *)
-let raw_induct s = tclTHEN (intros_until_id s) (onLastHyp simplest_elim)
-let raw_induct_nodep n = tclTHEN (intros_until_n n) (onLastHyp simplest_elim)
-
-let simple_induct_id hyp = raw_induct hyp
-let simple_induct_nodep = raw_induct_nodep
+let simple_induct_id s = tclTHEN (intros_until_id s) (onLastHyp simplest_elim)
+let simple_induct_nodep n = tclTHEN (intros_until_n n) (onLastHyp simplest_elim)
 
 let simple_induct = function
   | NamedHyp id -> simple_induct_id id
