@@ -1,5 +1,5 @@
 =========================================
-= CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
+= CHANGES BETWEEN COQ V8.3 AND COQ V8.4 =
 =========================================
 
 ** Optimizing calls to Evd functions **
@@ -8,6 +8,15 @@ Evars are split into defined evars and undefined evars; for
 efficiency, when an evar is known to be undefined, it is preferable to
 use specific functions about undefined evars since these ones are
 generally fewer than the defined ones.
+
+=========================================
+= CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
+=========================================
+
+** Semantical change of h_induction_destruct **
+
+Warning, the order of the isrec and evar_flag was inconsistent and has
+been permuted. Tactic induction_destruct in tactics.ml is unchanged.
 
 ** Internal tactics renamed
 
