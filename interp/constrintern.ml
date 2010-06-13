@@ -1260,6 +1260,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	[], None in
     let na = match tm', na with
       | RVar (_,id), None when Idset.mem id vars -> Name id
+      | RRef (loc, VarRef id), None -> Name id
       | _, None -> Anonymous
       | _, Some na -> na in
     (tm',(na,typ)), na::ids
