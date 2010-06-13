@@ -373,23 +373,22 @@ End first_definitions.
 
 Section other_definitions.
 
-  Variables A B : Type.
-
-  Definition set_prod : set A -> set B -> set (A * B) :=
-    list_prod (A:=A) (B:=B).
+  Definition set_prod : forall {A B:Type}, set A -> set B -> set (A * B) :=
+    list_prod.
 
   (** [B^A], set of applications from [A] to [B] *)
-  Definition set_power : set A -> set B -> set (set (A * B)) :=
-    list_power (A:=A) (B:=B).
+  Definition set_power : forall {A B:Type}, set A -> set B -> set (set (A * B)) :=
+    list_power.
 
-  Definition set_map : (A -> B) -> set A -> set B := map (A:=A) (B:=B).
-
-  Definition set_fold_left : (B -> A -> B) -> set A -> B -> B :=
+  Definition set_fold_left {A B:Type} : (B -> A -> B) -> set A -> B -> B :=
     fold_left (A:=B) (B:=A).
 
-  Definition set_fold_right (f:A -> B -> B) (x:set A)
+  Definition set_fold_right {A B:Type} (f:A -> B -> B) (x:set A)
     (b:B) : B := fold_right f b x.
 
+  Definition set_map {A B:Type} (Aeq_dec : forall x y:B, {x = y} + {x <> y})
+    (f : A -> B) (x : set A) : set B :=
+    set_fold_right (fun a => set_add Aeq_dec (f a)) x (empty_set B).
 
 End other_definitions.
 
