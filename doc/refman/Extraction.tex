@@ -175,6 +175,25 @@ this constant is not declared in the generated file.
   declared in the produced file. 
 \end{itemize}
 
+\asubsection{Extra elimination of useless arguments}
+
+\begin{description}
+\item \comindex{Extraction Implicit}
+ {\tt Extraction Implicit} \qualid\ [ \ident$_1$ \dots\ \ident$_n$ ].
+
+This experimental command allows to declare some arguments of
+\qualid\ as implicit, i.e. useless in extracted code and hence to
+be removed by extraction. Here \qualid\ can be any function or
+inductive constructor, and \ident$_i$ are the names of the concerned
+arguments. In fact, an argument can also be referred by a number
+indicating its position, starting from 1. When an actual extraction
+takes place, an error is raised if the {\tt Extraction Implicit}
+declarations cannot be honored, that is if any of the implicited
+variables still occurs in the final code. This declaration of useless
+arguments is independent but complementary to the main elimination
+principles of extraction (logical parts and types).
+\end{description}
+
 \asubsection{Realizing axioms}\label{extraction:axioms}
 
 Extraction will fail if it encounters an informative
