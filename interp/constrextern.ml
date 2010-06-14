@@ -338,48 +338,6 @@ let make_pat_notation loc ntn l =
     (fun (loc,p) -> CPatPrim (loc,p))
     destPatPrim l
 
-let bind_env (sigma,sigmalist as fullsigma) var v =
-  try
-    let vvar = List.assoc var sigma in
-    if v=vvar then fullsigma else raise No_match
-  with Not_found ->
-    (* TODO: handle the case of multiple occs in different scopes *)
-    (var,v)::sigma,sigmalist
-
-let rec match_cases_pattern metas sigma a1 a2 = match (a1,a2) with
-  | r1, AVar id2 when List.mem id2 metas -> bind_env sigma id2 r1
-  | PatVar (_,Anonymous), AHole _ -> sigma
-  | PatCstr (loc,(ind,_ as r1),args1,_), _ ->
-      let nparams =
-	(fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
-      let l2 =
-        match a2 with
-	  | ARef (ConstructRef r2) when r1 = r2 -> []
-	  | AApp (ARef (ConstructRef r2),l2)  when r1 = r2 -> l2
-          | _ -> raise No_match in
-      if List.length l2 <> nparams + List.length args1
-      then
-	(* TODO: revert partially applied notations of the form 
-           "Notation P x := (@pair _ _ x)." *)
-	raise No_match
-      else
-        let (p2,args2) = list_chop nparams l2 in
-        (* All parameters must be _ *)
-        List.iter (function AHole _ -> () | _ -> raise No_match) p2;
-	List.fold_left2 (match_cases_pattern metas) sigma args1 args2
-  (* TODO: use recursive notations *)
-  | _ -> raise No_match
-
-let match_aconstr_cases_pattern c ((metas_scl,metaslist_scl),pat) =
-  let vars = List.map fst metas_scl @ List.map fst metaslist_scl in
-  let subst,substlist = match_cases_pattern vars ([],[]) c pat in
-  (* Reorder canonically the substitution *)
-  let find x subst =
-    try List.assoc x subst
-    with Not_found -> anomaly "match_aconstr_cases_pattern" in
-  List.map (fun (x,scl) -> (find x subst,scl)) metas_scl,
-  List.map (fun (x,scl) -> (find x substlist,scl)) metaslist_scl
-
  (* Better to use extern_rawconstr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
   try

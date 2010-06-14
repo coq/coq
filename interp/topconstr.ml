@@ -467,18 +467,41 @@ let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
   | (Anonymous,Anonymous) -> alp,sigma
   | _ -> raise No_match
 
-let rec match_cases_pattern metas acc pat1 pat2 =
+let rec match_cases_pattern_binders metas acc pat1 pat2 =
   match (pat1,pat2) with
   | PatVar (_,na1), PatVar (_,na2) -> match_names metas acc na1 na2
   | PatCstr (_,c1,patl1,na1), PatCstr (_,c2,patl2,na2)
       when c1 = c2 & List.length patl1 = List.length patl2 ->
-      List.fold_left2 (match_cases_pattern metas)
+      List.fold_left2 (match_cases_pattern_binders metas)
 	(match_names metas acc na1 na2) patl1 patl2
   | _ -> raise No_match
 
 let adjust_application_n n loc f l =
   let l1,l2 = list_chop (List.length l - n) l in
   if l1 = [] then f,l else RApp (loc,f,l1), l2
+
+let match_alist match_fun metas sigma l1 l2 x iter termin lassoc =
+  (* match the iterator at least once *)
+  let sigmavar,sigmalist =
+    List.fold_left2 (match_fun (ldots_var::metas)) sigma l1 l2 in
+  (* Recover the recursive position *)
+  let rest = List.assoc ldots_var sigmavar in
+  (* Recover the first element *)
+  let t1 = List.assoc x sigmavar in
+  let sigmavar = List.remove_assoc x (List.remove_assoc ldots_var sigmavar) in
+  (* try to find the remaining elements or the terminator *)
+  let rec match_alist_tail metas sigma acc rest =
+    try
+      let sigmavar,sigmalist = match_fun (ldots_var::metas) sigma rest iter in
+      let rest = List.assoc ldots_var sigmavar in
+      let t = List.assoc x sigmavar in
+      let sigmavar =
+	List.remove_assoc x (List.remove_assoc ldots_var sigmavar) in
+      match_alist_tail metas (sigmavar,sigmalist) (t::acc) rest
+    with No_match ->
+      List.rev acc, match_fun metas (sigmavar,sigmalist) rest termin in
+  let tl,(sigmavar,sigmalist) = match_alist_tail metas sigma [t1] rest in
+  (sigmavar, (x,if lassoc then List.rev tl else tl)::sigmalist)
 
 let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | r1, AVar id2 when List.mem id2 metas -> bind_env alp sigma id2 r1
@@ -497,7 +520,8 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | RApp (loc,f1,l1), AList (x,_,(AApp (f2,l2) as iter),termin,lassoc)
       when List.length l1 >= List.length l2 ->
       let f1,l1 = adjust_application_n (List.length l2) loc f1 l1 in
-      match_alist alp metas sigma (f1::l1) (f2::l2) x iter termin lassoc
+      match_alist (match_ alp)
+	metas sigma (f1::l1) (f2::l2) x iter termin lassoc
   | RLambda (_,na1,_,t1,b1), ALambda (na2,t2,b2) ->
      match_binders alp metas na1 na2 (match_ alp metas sigma t1 t2) b1 b2
   | RProd (_,na1,_,t1,b1), AProd (na2,t2,b2) ->
@@ -550,29 +574,6 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | (RDynamic _ | RRec _ | REvar _), _
   | _,_ -> raise No_match
 
-and match_alist alp metas sigma l1 l2 x iter termin lassoc =
-  (* match the iterator at least once *)
-  let sigmavar,sigmalist =
-    List.fold_left2 (match_ alp (ldots_var::metas)) sigma l1 l2 in
-  (* Recover the recursive position *)
-  let rest = List.assoc ldots_var sigmavar in
-  (* Recover the first element *)
-  let t1 = List.assoc x sigmavar in
-  let sigmavar = List.remove_assoc x (List.remove_assoc ldots_var sigmavar) in
-  (* try to find the remaining elements or the terminator *)
-  let rec match_alist_tail alp metas sigma acc rest =
-    try
-      let sigmavar,sigmalist = match_ alp (ldots_var::metas) sigma rest iter in
-      let rest = List.assoc ldots_var sigmavar in
-      let t = List.assoc x sigmavar in
-      let sigmavar =
-	List.remove_assoc x (List.remove_assoc ldots_var sigmavar) in
-      match_alist_tail alp metas (sigmavar,sigmalist) (t::acc) rest
-    with No_match ->
-      List.rev acc, match_ alp metas (sigmavar,sigmalist) rest termin in
-  let tl,(sigmavar,sigmalist) = match_alist_tail alp metas sigma [t1] rest in
-  (sigmavar, (x,if lassoc then List.rev tl else tl)::sigmalist)
-
 and match_binders alp metas na1 na2 sigma b1 b2 =
   let (alp,sigma) = match_names metas (alp,sigma) na1 na2 in
   match_ alp metas sigma b1 b2
@@ -581,7 +582,8 @@ and match_equations alp metas sigma (_,_,patl1,rhs1) (patl2,rhs2) =
   (* patl1 and patl2 have the same length because they respectively
      correspond to some tml1 and tml2 that have the same length *)
   let (alp,sigma) =
-    List.fold_left2 (match_cases_pattern metas) (alp,sigma) patl1 patl2 in
+    List.fold_left2 (match_cases_pattern_binders metas)
+      (alp,sigma) patl1 patl2 in
   match_ alp metas sigma rhs1 rhs2
 
 type scope_name = string
@@ -606,6 +608,55 @@ let match_aconstr c ((metas_scl,metaslist_scl),pat) =
       RVar (dummy_loc,x) in
   List.map (fun (x,scl) -> (find x,scl)) metas_scl,
   List.map (fun (x,scl) -> (List.assoc x substlist,scl)) metaslist_scl
+
+(* Matching cases pattern *)
+
+let bind_env_cases_pattern (sigma,sigmalist as fullsigma) var v =
+  try
+    let vvar = List.assoc var sigma in
+    if v=vvar then fullsigma else raise No_match
+  with Not_found ->
+    (* TODO: handle the case of multiple occs in different scopes *)
+    (var,v)::sigma,sigmalist
+
+let rec match_cases_pattern metas sigma a1 a2 = match (a1,a2) with
+  | r1, AVar id2 when List.mem id2 metas -> bind_env_cases_pattern sigma id2 r1
+  | PatVar (_,Anonymous), AHole _ -> sigma
+  | PatCstr (loc,(ind,_ as r1),[],_), ARef (ConstructRef r2) when r1 = r2 ->
+      sigma
+  | PatCstr (loc,(ind,_ as r1),args1,_), AApp (ARef (ConstructRef r2),l2)
+      when r1 = r2 ->
+      let nparams = Inductive.inductive_params (Global.lookup_inductive ind) in
+      if List.length l2 <> nparams + List.length args1
+      then
+	(* TODO: revert partially applied notations of the form
+           "Notation P := (@pair)." *)
+	raise No_match
+      else
+        let (p2,args2) = list_chop nparams l2 in
+        (* All parameters must be _ *)
+        List.iter (function AHole _ -> () | _ -> raise No_match) p2;
+	List.fold_left2 (match_cases_pattern metas) sigma args1 args2
+  | PatCstr (loc,(ind,_ as r1),args1,_),
+    AList (x,_,(AApp (ARef (ConstructRef r2),l2) as iter),termin,lassoc)
+      when r1 = r2 ->
+      let nparams = Inductive.inductive_params (Global.lookup_inductive ind) in
+      assert (List.length args1 + nparams = List.length l2);
+      let (p2,args2) = list_chop nparams l2 in
+      List.iter (function AHole _ -> () | _ -> raise No_match) p2;
+      match_alist match_cases_pattern
+	metas sigma args1 args2 x iter termin lassoc
+  | _ -> raise No_match
+
+let match_aconstr_cases_pattern c ((metas_scl,metaslist_scl),pat) =
+  let vars = List.map fst metas_scl @ List.map fst metaslist_scl in
+  let subst,substlist = match_cases_pattern vars ([],[]) c pat in
+  (* Reorder canonically the substitution *)
+  let find x subst =
+    try List.assoc x subst
+    with Not_found -> anomaly "match_aconstr_cases_pattern" in
+  List.map (fun (x,scl) -> (find x subst,scl)) metas_scl,
+  List.map (fun (x,scl) -> (find x substlist,scl)) metaslist_scl
 
 (**********************************************************************)
 (*s Concrete syntax for terms *)

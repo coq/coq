@@ -82,6 +82,9 @@ type interpretation =
 val match_aconstr : rawconstr -> interpretation ->
       (rawconstr * subscopes) list * (rawconstr list * subscopes) list
 
+val match_aconstr_cases_pattern :  cases_pattern -> interpretation ->
+      (cases_pattern * subscopes) list * (cases_pattern list * subscopes) list
+
 (** Substitution of kernel names in interpretation data                *)
 
 val subst_interpretation : substitution -> interpretation -> interpretation

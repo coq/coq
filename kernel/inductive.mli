@@ -50,6 +50,7 @@ val type_of_constructors : inductive -> mind_specif -> types array
 (** Transforms inductive specification into types (in nf) *)
 val arities_of_specif : mutual_inductive -> mind_specif -> types array
 
+val inductive_params : mind_specif -> int
 
 (** [type_case_branches env (I,args) (p:A) c] computes useful types
    about the following Cases expression:
