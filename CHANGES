@@ -186,6 +186,7 @@ Library
   - Definition of Permutation is now in Sorting/Permtation.v
   - Some other light revisions and extensions (possible source
     of incompatibilities solvable by qualifying names accordingly).
+- In ListSet, set_map has been fixed (source of incompatibilities if used).
 - Sorting library:
   - new mergesort of worst-case complexity O(n*ln(n)) made available in 
     Mergesort.v;
