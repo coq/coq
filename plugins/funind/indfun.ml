@@ -232,7 +232,7 @@ let derive_inversion fix_names =
   try
     (* we first transform the fix_names identifier into their corresponding constant *)
     let fix_names_as_constant =
-      List.map (fun id -> destConst (Tacinterp.constr_of_id (Global.env ()) id)) fix_names
+      List.map (fun id -> destConst (Constrintern.global_reference id)) fix_names
     in
     (*
        Then we check that the graphs have been defined
@@ -249,7 +249,7 @@ let derive_inversion fix_names =
 	  Ensures by : register_built
 	  i*)
 	(List.map
-	   (fun id -> destInd (Tacinterp.constr_of_id (Global.env ()) (mk_rel_id id)))
+	   (fun id -> destInd (Constrintern.global_reference (mk_rel_id id)))
 	   fix_names
 	)
     with e ->

@@ -1009,7 +1009,7 @@ let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
 	  | _ -> ()
 
       in
-      Tacinterp.constr_of_id (pf_env g) equation_lemma_id
+      Constrintern.construct_reference (pf_hyps g) equation_lemma_id
   in
   let nb_intro_to_do = nb_prod (pf_concl g) in
     tclTHEN

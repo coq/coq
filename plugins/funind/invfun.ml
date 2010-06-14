@@ -84,7 +84,7 @@ let nf_zeta =
 (* [id_to_constr id] finds the term associated to [id] in the global environment *)
 let id_to_constr id =
   try
-    Tacinterp.constr_of_id (Global.env ())  id
+    Constrintern.global_reference id
   with Not_found ->
     raise (UserError ("",str "Cannot find " ++ Ppconstr.pr_id id))
 
@@ -797,7 +797,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	 let finfo = find_Function_infos f_as_constant in
 	 update_Function
 	   {finfo with
-	      correctness_lemma = Some (destConst (Tacinterp.constr_of_id (Global.env ())(mk_correct_id f_id)))
+	      correctness_lemma = Some (destConst (Constrintern.global_reference (mk_correct_id f_id)))
 	   }
 
       )
@@ -849,7 +849,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	 let finfo = find_Function_infos f_as_constant in
 	 update_Function
 	   {finfo with
-	      completeness_lemma = Some (destConst (Tacinterp.constr_of_id (Global.env ())(mk_complete_id f_id)))
+	      completeness_lemma = Some (destConst (Constrintern.global_reference (mk_complete_id f_id)))
 	   }
       )
       funs;

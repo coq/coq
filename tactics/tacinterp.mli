@@ -42,9 +42,6 @@ and interp_sign =
 val extract_ltac_constr_values : interp_sign -> Environ.env ->
   Pretyping.ltac_var_map
 
-(** Transforms an id into a constr if possible *)
-val constr_of_id : Environ.env -> identifier -> constr
-
 (** To embed several objects in Coqast.t *)
 val tactic_in : (interp_sign -> glob_tactic_expr) -> Dyn.t
 val tactic_out : Dyn.t -> (interp_sign -> glob_tactic_expr)

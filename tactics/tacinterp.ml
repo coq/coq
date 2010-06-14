@@ -136,9 +136,9 @@ let rec pr_value env = function
   | VList (a::_) ->
       str "a list (first element is " ++ pr_value env a ++ str")"
 
-(* Transforms an id into a constr if possible, or fails *)
+(* Transforms an id into a constr if possible, or fails with Not_found *)
 let constr_of_id env id =
-  construct_reference (Environ.named_context env) id
+  Term.mkVar (let _ = Environ.lookup_named id env in id)
 
 (* To embed tactics *)
 let ((tactic_in : (interp_sign -> glob_tactic_expr) -> Dyn.t),
@@ -1606,14 +1606,6 @@ let interp_open_constr_with_bindings_loc ist env sigma ((c,_),bl as cb) =
   let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
   sigma, (loc,cb)
 
-let interp_induction_ident ist gl sigma loc id =
-  if Tactics.is_quantified_hypothesis id gl then
-    sigma, ElimOnIdent (loc,id)
-  else
-    let c = (RVar (loc,id),Some (CRef (Ident (loc,id)))) in
-    let c = interp_constr ist (pf_env gl) sigma c in
-    sigma, ElimOnConstr (c,NoBindings)
-
 let interp_induction_arg ist gl sigma arg =
   let env = pf_env gl in
   match arg with
@@ -1623,19 +1615,31 @@ let interp_induction_arg ist gl sigma arg =
   | ElimOnAnonHyp n as x -> sigma, x
   | ElimOnIdent (loc,id) ->
       try
+	sigma,
         match List.assoc id ist.lfun with
 	| VInteger n ->
-	    sigma, ElimOnAnonHyp n
-	| VIntroPattern (IntroIdentifier id) ->
-	    interp_induction_ident ist gl sigma loc id
+	    ElimOnAnonHyp n
+	| VIntroPattern (IntroIdentifier id') ->
+	    if Tactics.is_quantified_hypothesis id' gl
+	    then ElimOnIdent (loc,id')
+	    else
+	      (try ElimOnConstr (constr_of_id env id',NoBindings)
+	       with Not_found ->
+		user_err_loc (loc,"",
+		pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared or a quantified hypothesis."))
 	| VConstr ([],c) ->
-	    sigma, ElimOnConstr (c,NoBindings)
+	    ElimOnConstr (c,NoBindings)
 	| _ -> user_err_loc (loc,"",
 	      strbrk "Cannot coerce " ++ pr_id id ++
 	      strbrk " neither to a quantified hypothesis nor to a term.")
       with Not_found ->
 	(* We were in non strict (interactive) mode *)
-	interp_induction_ident ist gl sigma loc id
+	if Tactics.is_quantified_hypothesis id gl then
+          sigma, ElimOnIdent (loc,id)
+	else
+          let c = (RVar (loc,id),Some (CRef (Ident (loc,id)))) in
+          let c = interp_constr ist env sigma c in
+          sigma, ElimOnConstr (c,NoBindings)
 
 (* Associates variables with values and gives the remaining variables and
    values *)

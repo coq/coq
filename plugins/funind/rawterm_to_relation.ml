@@ -1225,7 +1225,7 @@ let do_build_inductive
   let env =
     Array.fold_right
       (fun id env ->
-	 Environ.push_named (id,None,Typing.type_of env Evd.empty (Tacinterp.constr_of_id env id))  env
+	 Environ.push_named (id,None,Typing.type_of env Evd.empty (Constrintern.global_reference id))  env
       )
       funnames
       (Global.env ())

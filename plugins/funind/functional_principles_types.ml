@@ -283,7 +283,7 @@ let change_property_sort toSort princ princName =
      compose_prod args (mkSort toSort)
     )
   in
-  let princName_as_constr = Tacinterp.constr_of_id (Global.env ()) princName in
+  let princName_as_constr = Constrintern.global_reference princName in
   let init =
     let nargs =  (princ_info.nparams + (List.length  princ_info.predicates)) in
     mkApp(princName_as_constr,
@@ -688,7 +688,7 @@ let build_case_scheme fa =
   let env = Global.env ()
   and sigma = Evd.empty in
 (*   let id_to_constr id =  *)
-(*     Tacinterp.constr_of_id env  id *)
+(*     Constrintern.global_reference  id *)
 (*   in  *)
   let funs =  (fun (_,f,_) ->
 		 try Libnames.constr_of_global (Nametab.global f)

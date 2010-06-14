@@ -129,7 +129,7 @@ let prNamedRLDecl s lc =
   end
 
 let showind (id:identifier) =
-  let cstrid = Tacinterp.constr_of_id (Global.env()) id in
+  let cstrid = Constrintern.global_reference id in
   let ind1,cstrlist = Inductiveops.find_inductive (Global.env()) Evd.empty cstrid in
   let mib1,ib1 = Inductive.lookup_mind_specif (Global.env()) ind1 in
   List.iter (fun (nm, optcstr, tp) ->
