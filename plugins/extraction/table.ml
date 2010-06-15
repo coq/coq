@@ -606,6 +606,24 @@ let find_custom r = snd (Refmap.find r !customs)
 
 let find_type_custom r = Refmap.find r !customs
 
+let custom_matchs = ref Refmap.empty
+
+let add_custom_match r s =
+  custom_matchs := Refmap.add r s !custom_matchs
+
+let indref_of_match pv =
+  if Array.length pv = 0 then raise Not_found;
+  match pv.(0) with
+    | (ConstructRef (ip,_), _, _) -> IndRef ip
+    | _ -> raise Not_found
+
+let is_custom_match pv =
+  try Refmap.mem (indref_of_match pv) !custom_matchs
+  with Not_found -> false
+
+let find_custom_match pv =
+  Refmap.find (indref_of_match pv) !custom_matchs
+
 (* Registration of operations for rollback. *)
 
 let (in_customs,_) =
@@ -622,6 +640,20 @@ let _ = declare_summary "ML extractions"
 	  { freeze_function = (fun () -> !customs);
 	    unfreeze_function = ((:=) customs);
 	    init_function = (fun () -> customs := Refmap.empty) }
+
+let (in_custom_matchs,_) =
+  declare_object
+    {(default_object "ML extractions custom matchs") with
+       cache_function = (fun (_,(r,s)) -> add_custom_match r s);
+       load_function = (fun _ (_,(r,s)) -> add_custom_match r s);
+       classify_function = (fun o -> Substitute o);
+       subst_function = (fun (subs,(r,s)) -> (fst (subst_global subs r), s))
+    }
+
+let _ = declare_summary "ML extractions custom match"
+	  { freeze_function = (fun () -> !custom_matchs);
+	    unfreeze_function = ((:=) custom_matchs);
+	    init_function = (fun () -> custom_matchs := Refmap.empty) }
 
 (* Grammar entries. *)
 
@@ -643,7 +675,7 @@ let extract_constant_inline inline r ids s =
     | _ -> error_constant g
 
 
-let extract_inductive r (s,l) =
+let extract_inductive r s l optstr =
   check_inside_section ();
   let g = Nametab.global r in
   match g with
@@ -653,6 +685,8 @@ let extract_inductive r (s,l) =
 	if n <> List.length l then error_nb_cons ();
 	Lib.add_anonymous_leaf (inline_extraction (true,[g]));
 	Lib.add_anonymous_leaf (in_customs (g,[],s));
+	Option.iter (fun s -> Lib.add_anonymous_leaf (in_custom_matchs (g,s)))
+	  optstr;
 	list_iter_i
 	  (fun j s ->
 	     let g = ConstructRef (ip,succ j) in

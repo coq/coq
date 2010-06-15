@@ -221,6 +221,14 @@ let rec pp_expr par env args =
 	if str_global Cons r = "" (* hack Extract Inductive prod *)
 	then tuple
 	else pp_par par (pp_global Cons r ++ spc () ++ tuple)
+    | MLcase (_, t, pv) when is_custom_match pv ->
+	let mkfun (_,ids,e) =
+	  if ids <> [] then named_lams (List.rev ids) e
+	  else dummy_lams (ast_lift 1 e) 1
+	in
+	hov 2 (str (find_custom_match pv) ++ fnl () ++
+		 prvect (fun tr -> pp_expr true env [] (mkfun tr) ++ fnl ()) pv
+	       ++ pp_expr true env [] t)
     | MLcase ((i,factors), t, pv) ->
 	let expr = if i = Coinductive then
 	  (str "Lazy.force" ++ spc () ++ pp_expr true env [] t)
@@ -330,7 +338,7 @@ and pp_function env t =
   let bl,t' = collect_lams t in
   let bl,env' = push_vars (List.map id_of_mlid bl) env in
   match t' with
-    | MLcase(i,MLrel 1,pv) when fst i=Standard ->
+    | MLcase(i,MLrel 1,pv) when fst i=Standard && not (is_custom_match pv) ->
 	if not (ast_occurs 1 (MLcase(i,MLdummy,pv))) then
 	  pr_binding (List.rev (List.tl bl)) ++
        	  str " = function" ++ fnl () ++

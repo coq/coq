@@ -118,6 +118,7 @@ VERNAC COMMAND EXTEND ExtractionInlinedConstant
 END
 
 VERNAC COMMAND EXTEND ExtractionInductive
-| [ "Extract" "Inductive" global(x) "=>" mlname(id) "[" mlname_list(idl) "]" ]
-  -> [ extract_inductive x (id,idl) ]
+| [ "Extract" "Inductive" global(x) "=>"
+    mlname(id) "[" mlname_list(idl) "]" string_opt(o) ]
+  -> [ extract_inductive x id idl o ]
 END

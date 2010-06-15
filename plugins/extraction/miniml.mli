@@ -97,15 +97,16 @@ type ml_ident =
   | Id of identifier
   | Tmp of identifier
 
-type ml_ast =
+type ml_branch = global_reference * ml_ident list * ml_ast
+
+and ml_ast =
   | MLrel    of int
   | MLapp    of ml_ast * ml_ast list
   | MLlam    of ml_ident * ml_ast
   | MLletin  of ml_ident * ml_ast * ml_ast
   | MLglob   of global_reference
   | MLcons   of inductive_info * global_reference * ml_ast list
-  | MLcase   of (inductive_info*case_info) * ml_ast *
-      (global_reference * ml_ident list * ml_ast) array
+  | MLcase   of (inductive_info*case_info) * ml_ast * ml_branch array
   | MLfix    of int * identifier array * ml_ast array
   | MLexn    of string
   | MLdummy
