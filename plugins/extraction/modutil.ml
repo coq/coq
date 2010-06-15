@@ -348,12 +348,24 @@ let rec depcheck_struct = function
       let lse' = depcheck_se lse in
       (mp,lse')::struc'
 
+let check_implicits = function
+  | MLexn s ->
+      if String.length s > 8 && (s.[0] = 'U' || s.[0] = 'I') then
+	begin
+	  if String.sub s 0 7 = "UNBOUND" then assert false;
+	  if String.sub s 0 8 = "IMPLICIT" then
+	    error_non_implicit (String.sub s 9 (String.length s - 9));
+	end;
+      false
+  | _ -> false
+
 let optimize_struct to_appear struc =
   let subst = ref (Refmap.empty : ml_ast Refmap.t) in
   let opt_struc =
     List.map (fun (mp,lse) -> (mp, optim_se true to_appear subst lse)) struc
   in
   let opt_struc = List.filter (fun (_,lse) -> lse<>[]) opt_struc in
+  ignore (struct_ast_search check_implicits opt_struc);
   try
     if modular () then raise NoDepCheck;
     reset_needed ();

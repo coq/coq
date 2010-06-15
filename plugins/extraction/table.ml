@@ -209,9 +209,11 @@ let safe_basename_of_global = function
       (snd (lookup_ind kn)).ind_packets.(i).ip_consnames.(j-1)
   | _ -> assert false
 
-let safe_pr_global r =
- try Printer.pr_global r
- with _ -> pr_id (safe_basename_of_global r)
+let string_of_global r =
+ try string_of_qualid (Nametab.shortest_qualid_of_global Idset.empty r)
+ with _ -> string_of_id (safe_basename_of_global r)
+
+let safe_pr_global r = str (string_of_global r)
 
 (* idem, but with qualification, and only for constants. *)
 
@@ -322,6 +324,17 @@ let error_MPfile_as_mod mp b =
 let error_record r =
   err (str "Record " ++ safe_pr_global r ++ str " has an anonymous field." ++
        fnl () ++ str "To help extraction, please use an explicit name.")
+
+let msg_non_implicit r n id =
+  let name = match id with
+    | Anonymous -> ""
+    | Name id -> "(" ^ string_of_id id ^ ") "
+  in
+  "The " ^ (ordinal n) ^ " argument " ^ name ^ "of " ^ (string_of_global r)
+
+let error_non_implicit msg =
+  err (str (msg ^ " still occurs after extraction.") ++
+       fnl () ++ str "Please check the Extraction Implicit declarations.")
 
 let check_loaded_modfile mp = match base_mp mp with
   | MPfile dp -> if not (Library.library_is_loaded dp) then
@@ -523,6 +536,58 @@ let (reset_inline,_) =
        load_function = (fun _ (_,_)-> inline_table :=  empty_inline_table)}
 
 let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
+
+(*s Extraction Implicit *)
+
+type int_or_id = ArgInt of int | ArgId of identifier
+
+let implicits_table = ref Refmap.empty
+
+let implicits_of_global r =
+ try Refmap.find r !implicits_table with Not_found -> []
+
+let add_implicits r l =
+  let typ = Global.type_of_global r in
+  let rels,_ =
+    decompose_prod (Reduction.whd_betadeltaiota (Global.env ()) typ) in
+  let names = List.rev_map fst rels in
+  let n = List.length names in
+  let check = function
+    | ArgInt i ->
+	if 1 <= i && i <= n then i
+	else err (int i ++ str " is not a valid argument number for " ++
+		  safe_pr_global r)
+    | ArgId id ->
+	(try list_index (Name id) names
+	 with Not_found ->
+	   err (str "No argument " ++ pr_id id ++ str " for " ++
+		safe_pr_global r))
+  in
+  let l' = List.map check l in
+  implicits_table := Refmap.add r l' !implicits_table
+
+(* Registration of operations for rollback. *)
+
+let (implicit_extraction,_) =
+  declare_object
+    {(default_object "Extraction Implicit") with
+       cache_function = (fun (_,(r,l)) -> add_implicits r l);
+       load_function = (fun _ (_,(r,l)) -> add_implicits r l);
+       classify_function = (fun o -> Substitute o);
+       subst_function = (fun (s,(r,l)) -> (fst (subst_global s r), l))
+    }
+
+let _ = declare_summary "Extraction Implicit"
+	  { freeze_function = (fun () -> !implicits_table);
+	    unfreeze_function = ((:=) implicits_table);
+	    init_function = (fun () -> implicits_table := Refmap.empty) }
+
+(* Grammar entries. *)
+
+let extraction_implicit r l =
+  check_inside_section ();
+  Lib.add_anonymous_leaf (implicit_extraction (Nametab.global r,l))
+
 
 (*s Extraction Blacklist of filenames not to use while extracting *)
 

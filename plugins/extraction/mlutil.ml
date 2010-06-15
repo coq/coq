@@ -276,23 +276,6 @@ let type_expand env t =
     | a -> a
   in if Table.type_expand () then expand t else t
 
-(*s Idem, but only at the top level of implications. *)
-
-let is_arrow = function Tarr _ -> true | _ -> false
-
-let type_weak_expand env t =
-  let rec expand = function
-    | Tmeta {contents = Some t} -> expand t
-    | Tglob (r,l) as t ->
-	(match env r with
-	   | Some mlt ->
-	       let u = expand (type_subst_list l mlt) in
-	       if is_arrow u then u else t
-	   | None -> t)
-    | Tarr (a,b) -> Tarr (a, expand b)
-    | a -> a
-  in expand t
-
 (*s Generating a signature from a ML type. *)
 
 let type_to_sign env t = match type_expand env t with
@@ -315,29 +298,54 @@ let sign_of_id = function
   | Dummy -> Kill Kother
   | _ -> Keep
 
+(* Classification of signatures *)
+
+type sign_kind =
+  | EmptySig
+  | NonLogicalSig (* at least a [Keep] *)
+  | UnsafeLogicalSig (* No [Keep], at least a [Kill Kother] *)
+  | SafeLogicalSig (* only [Kill Ktype] *)
+
+let rec sign_kind = function
+  | [] -> EmptySig
+  | Keep :: _ -> NonLogicalSig
+  | Kill k :: s ->
+      match sign_kind s with
+	| NonLogicalSig -> NonLogicalSig
+	| UnsafeLogicalSig -> UnsafeLogicalSig
+	| SafeLogicalSig | EmptySig ->
+	    if k = Kother then UnsafeLogicalSig else SafeLogicalSig
+
+(* Removing the final [Keep] in a signature *)
+
+let rec sign_no_final_keeps = function
+  | [] -> []
+  | k :: s ->
+      let s' = k :: sign_no_final_keeps s in
+      if s' = [Keep] then [] else s'
+
 (*s Removing [Tdummy] from the top level of a ML type. *)
 
+let type_expunge_from_sign env s t =
+  let rec expunge s t =
+    if s = [] then t else match t with
+      | Tmeta {contents = Some t} -> expunge s t
+      | Tarr (a,b) ->
+	  let t = expunge (List.tl s) b in
+	  if List.hd s = Keep then Tarr (a, t) else t
+      | Tglob (r,l) ->
+	  (match env r with
+	     | Some mlt -> expunge s (type_subst_list l mlt)
+	     | None -> assert false)
+      | _ -> assert false
+  in
+  let t = expunge (sign_no_final_keeps s) t in
+  if lang () <> Haskell && sign_kind s = UnsafeLogicalSig then
+    Tarr (Tdummy Kother, t)
+  else t
+
 let type_expunge env t =
-  let s = type_to_signature env t in
-  if s = [] then t
-  else if List.mem Keep s then
-    let rec f t s =
-      if List.exists isKill s then
-	match t with
-	  | Tmeta {contents = Some t} -> f t s
-	  | Tarr (a,b) ->
-	      let t = f b (List.tl s) in
-	      if List.hd s = Keep then Tarr (a, t) else t
-	  | Tglob (r,l) ->
-	      (match env r with
-		 | Some mlt -> f (type_subst_list l mlt) s
-		 | None -> assert false)
-	  | _ -> assert false
-      else t
-    in f t s
-  else if lang () <> Haskell && List.mem (Kill Kother) s then
-    Tarr (Tdummy Kother, snd (type_decomp (type_weak_expand env t)))
-  else snd (type_decomp (type_weak_expand env t))
+  type_expunge_from_sign env (type_to_signature env t) t
 
 (*S Generic functions over ML ast terms. *)
 
@@ -497,7 +505,9 @@ let gen_subst v d t =
 	let i'= i-n in
 	if i' < 1 then a
 	else if i' <= Array.length v then
-	  ast_lift n v.(i'-1)
+	  match v.(i'-1) with
+	    | None -> MLexn ("UNBOUND " ^ string_of_int i')
+	    | Some u -> ast_lift n u
 	else MLrel (i+d)
     | a -> ast_map_lift subst n a
   in subst 0 t
@@ -883,12 +893,12 @@ let kill_some_lams bl (ids,c) =
   if n = n' then ids,c
   else if n' = 0 then [],ast_lift (-n) c
   else begin
-    let v = Array.make n MLdummy in
+    let v = Array.make n None in
     let rec parse_ids i j = function
       | [] -> ()
-      | Keep :: l -> v.(i) <- MLrel j; parse_ids (i+1) (j+1) l
+      | Keep :: l -> v.(i) <- Some (MLrel j); parse_ids (i+1) (j+1) l
       | Kill _ :: l -> parse_ids (i+1) j l
-    in parse_ids 0 1 bl ;
+    in parse_ids 0 1 bl;
     select_via_bl bl ids, gen_subst v (n'-n) c
   end
 

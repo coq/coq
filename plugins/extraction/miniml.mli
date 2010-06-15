@@ -20,7 +20,8 @@ open Libnames
    object. *)
 
 (* We eliminate from terms:  1) types 2) logical parts.
-   [Kother] stands both for logical or unknown reason. *)
+   [Kother] stands both for logical or other reasons
+   (for instance user-declared implicit arguments w.r.t. extraction). *)
 
 type kill_reason = Ktype | Kother
 

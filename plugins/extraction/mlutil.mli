@@ -65,6 +65,7 @@ val type_expand : abbrev_map -> ml_type -> ml_type
 val type_to_sign : abbrev_map -> ml_type -> sign
 val type_to_signature : abbrev_map -> ml_type -> signature
 val type_expunge : abbrev_map -> ml_type -> ml_type
+val type_expunge_from_sign : abbrev_map -> signature -> ml_type -> ml_type
 
 val isDummy : ml_type -> bool
 val isKill : sign -> bool
@@ -113,5 +114,14 @@ val normalize : ml_ast -> ml_ast
 val optimize_fix : ml_ast -> ml_ast
 val inline : global_reference -> ml_ast -> bool
 
+(* Classification of signatures *)
 
+type sign_kind =
+  | EmptySig
+  | NonLogicalSig (* at least a [Keep] *)
+  | UnsafeLogicalSig (* No [Keep], at least a [Kill Kother] *)
+  | SafeLogicalSig (* only [Kill Ktype] *)
 
+val sign_kind : signature -> sign_kind
+
+val sign_no_final_keeps : signature -> signature

@@ -33,6 +33,8 @@ val error_record : global_reference -> 'a
 val check_inside_module : unit -> unit
 val check_inside_section : unit -> unit
 val check_loaded_modfile : module_path -> unit
+val msg_non_implicit : global_reference -> int -> name -> string
+val error_non_implicit : string -> 'a
 
 val info_file : string -> unit
 
@@ -122,6 +124,10 @@ val modular : unit -> bool
 val to_inline : global_reference -> bool
 val to_keep : global_reference -> bool
 
+(*s Table for implicits arguments *)
+
+val implicits_of_global : global_reference -> int list
+
 (*s Table for user-given custom ML extractions. *)
 
 (* UGLY HACK: registration of a function defined in [extraction.ml] *)
@@ -145,6 +151,9 @@ val extract_constant_inline :
   bool -> reference -> string list -> string -> unit
 val extract_inductive :
   reference -> string -> string list -> string option -> unit
+
+type int_or_id = ArgInt of int | ArgId of identifier
+val extraction_implicit : reference -> int_or_id list -> unit
 
 (*s Table of blacklisted filenames *)
 
