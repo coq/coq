@@ -8,7 +8,10 @@
 
 (** Extraction to Ocaml: conversion from/to [big_int] *)
 
-(** The extracted code should be linked with [nums.(cma|cmxa)] *)
+(** NB: The extracted code should be linked with [nums.cm(x)a]
+    from ocaml's stdlib and with the wrapper [big.ml] that
+    simlifies the use of [Big_int] (it could be found in the sources
+    of Coq). *)
 
 Require Import Arith ZArith.
 
@@ -18,11 +21,11 @@ Parameter bigint_succ : bigint -> bigint.
 Parameter bigint_opp : bigint -> bigint.
 Parameter bigint_twice : bigint -> bigint.
 
-Extract Inlined Constant bigint => "Big_int.big_int".
-Extract Inlined Constant bigint_zero => "Big_int.zero_big_int".
-Extract Inlined Constant bigint_succ => "Big_int.succ_big_int".
-Extract Inlined Constant bigint_opp => "Big_int.minus_big_int".
-Extract Inlined Constant bigint_twice => "Big_int.mult_int_big_int 2".
+Extract Inlined Constant bigint => "Big.big_int".
+Extract Inlined Constant bigint_zero => "Big.zero".
+Extract Inlined Constant bigint_succ => "Big.succ".
+Extract Inlined Constant bigint_opp => "Big.opp".
+Extract Inlined Constant bigint_twice => "Big.double".
 
 Definition bigint_of_nat : nat -> bigint :=
  (fix loop acc n :=
@@ -56,43 +59,50 @@ Fixpoint bigint_of_n n :=
     non-positive inputs. *)
 
 Parameter bigint_natlike_rec : forall A, A -> (A->A) -> bigint -> A.
-Extract Constant bigint_natlike_rec =>
-"fun fO fS ->
- let rec loop acc i = if Big_int.sign_big_int i <= 0 then acc
-  else loop (fS acc) (Big_int.pred_big_int i)
- in loop fO".
+Extract Constant bigint_natlike_rec => "Big.nat_rec".
 
 Definition nat_of_bigint : bigint -> nat := bigint_natlike_rec _ O S.
 
-Parameter bigint_poslike_rec : forall A, A -> (A->A) -> (A->A) -> bigint -> A.
-Extract Constant bigint_poslike_rec =>
-"fun f1 f2x f2x1 ->
- let rec loop i = if Big_int.le_big_int i Big_int.unit_big_int then f1
- else
-  let (q,r) = Big_int.quomod_big_int i (Big_int.big_int_of_int 2) in
-  if Big_int.sign_big_int r = 0 then f2x (loop q) else f2x1 (loop q)
- in loop".
+Parameter bigint_poslike_rec : forall A, (A->A) -> (A->A) -> A -> bigint -> A.
+Extract Constant bigint_poslike_rec => "Big.positive_rec".
 
-Definition pos_of_bigint : bigint -> positive := bigint_poslike_rec _ xH xO xI.
+Definition pos_of_bigint : bigint -> positive := bigint_poslike_rec _ xI xO xH.
 
-Parameter bigint_zlike_case : forall A, A -> (bigint->A) -> (bigint->A) -> bigint -> A.
-Extract Constant bigint_zlike_case =>
-"fun f0 fpos fneg i ->
-  let sgn = Big_int.sign_big_int i in
-  if sgn = 0 then f0 else if sgn>0 then fpos i
-  else fneg (Big_int.minus_big_int i)".
+Parameter bigint_zlike_case :
+ forall A, A -> (bigint->A) -> (bigint->A) -> bigint -> A.
+Extract Constant bigint_zlike_case => "Big.z_rec".
 
 Definition z_of_bigint : bigint -> Z :=
  bigint_zlike_case _ Z0 (fun i => Zpos (pos_of_bigint i))
-                     (fun i => Zneg (pos_of_bigint i)).
+                        (fun i => Zneg (pos_of_bigint i)).
 
 Definition n_of_bigint : bigint -> N :=
  bigint_zlike_case _ N0 (fun i => Npos (pos_of_bigint i)) (fun _ => N0).
 
-(*
-Extraction "/tmp/test.ml"
-  nat_of_bigint bigint_of_nat
-  pos_of_bigint bigint_of_pos
-  z_of_bigint bigint_of_z
-  n_of_bigint bigint_of_n.
+(* Tests:
+
+Definition small := 1234%nat.
+Definition big := 12345678901234567890%positive.
+
+Definition nat_0 := nat_of_bigint (bigint_of_nat 0).
+Definition nat_1 := nat_of_bigint (bigint_of_nat small).
+Definition pos_1 := pos_of_bigint (bigint_of_pos 1).
+Definition pos_2 := pos_of_bigint (bigint_of_pos big).
+Definition n_0 := n_of_bigint (bigint_of_n 0).
+Definition n_1 := n_of_bigint (bigint_of_n 1).
+Definition n_2 := n_of_bigint (bigint_of_n (Npos big)).
+Definition z_0 := z_of_bigint (bigint_of_z 0).
+Definition z_1 := z_of_bigint (bigint_of_z 1).
+Definition z_2 := z_of_bigint (bigint_of_z (Zpos big)).
+Definition z_m1 := z_of_bigint (bigint_of_z (-1)).
+Definition z_m2 := z_of_bigint (bigint_of_z (Zneg big)).
+
+Definition test :=
+ (nat_0, nat_1, pos_1, pos_2, n_0, n_1, n_2, z_0, z_1, z_2, z_m1, z_m2).
+Definition check :=
+ (O, small, xH, big, 0%N, 1%N, Npos big, 0%Z, 1%Z, Zpos big, (-1)%Z, Zneg big).
+
+Extraction "/tmp/test.ml" check test.
+
+... and we check that test=check
 *)
