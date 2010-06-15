@@ -176,11 +176,12 @@ let rec pp_expr par env args =
         pp_expr par env (stl @ args) f
     | MLlam _ as a ->
       	let fl,a' = collect_lams a in
+	let fl = List.map id_of_mlid fl in
 	let fl,env' = push_vars fl env in
 	let st = (pp_abst (List.rev fl) ++ pp_expr false env' [] a') in
 	apply (pp_par par' st)
     | MLletin (id,a1,a2) ->
-	let i,env' = push_vars [id] env in
+	let i,env' = push_vars [id_of_mlid id] env in
 	let pp_id = pr_id (List.hd i)
 	and pp_a1 = pp_expr false env [] a1
 	and pp_a2 = pp_expr (not par && expr_needs_par a2) env' [] a2 in
@@ -238,7 +239,8 @@ let rec pp_expr par env args =
 		 if List.exists (ast_occurs_itvl 1 n) a
 		 then raise NoRecord
 		 else
-		   let ids,env' = push_vars (List.rev ids) env in
+		   let ids,env' = push_vars (List.rev_map id_of_mlid ids) env
+		   in
 		   (pp_apply
 		      (pp_expr true env [] t ++ str "." ++
 		       pp_global Term (List.nth projs (n-i)))
@@ -294,7 +296,7 @@ and pp_ifthenelse par env expr pv = match pv with
   | _ -> raise Not_found
 
 and pp_one_pat env i (r,ids,t) =
-  let ids,env' = push_vars (List.rev ids) env in
+  let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
   let expr = pp_expr (expr_needs_par t) env' [] t in
   try
     let projs = find_projections i in
@@ -324,7 +326,7 @@ and pp_pat env (info,factors) pv =
 
 and pp_function env t =
   let bl,t' = collect_lams t in
-  let bl,env' = push_vars bl env in
+  let bl,env' = push_vars (List.map id_of_mlid bl) env in
   match t' with
     | MLcase(i,MLrel 1,pv) when fst i=Standard ->
 	if not (ast_occurs 1 (MLcase(i,MLdummy,pv))) then

@@ -121,11 +121,11 @@ let rec pp_expr par env args =
         pp_expr par env (stl @ args) f
     | MLlam _ as a ->
       	let fl,a' = collect_lams a in
-	let fl,env' = push_vars fl env in
+	let fl,env' = push_vars (List.map id_of_mlid fl) env in
 	let st = (pp_abst (List.rev fl) ++ pp_expr false env' [] a') in
 	apply (pp_par par' st)
     | MLletin (id,a1,a2) ->
-	let i,env' = push_vars [id] env in
+	let i,env' = push_vars [id_of_mlid id] env in
 	let pp_id = pr_id (List.hd i)
 	and pp_a1 = pp_expr false env [] a1
 	and pp_a2 = pp_expr (not par && expr_needs_par a2) env' [] a2 in
@@ -166,7 +166,7 @@ let rec pp_expr par env args =
 
 and pp_pat env factors pv =
   let pp_one_pat (name,ids,t) =
-    let ids,env' = push_vars (List.rev ids) env in
+    let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
     let par = expr_needs_par t in
     hov 2 (pp_global Cons name ++
 	   (match ids with
@@ -204,7 +204,7 @@ and pp_fix par env i (ids,bl) args =
 
 and pp_function env f t =
   let bl,t' = collect_lams t in
-  let bl,env' = push_vars bl env in
+  let bl,env' = push_vars (List.map id_of_mlid bl) env in
   (f ++ pr_binding (List.rev bl) ++
      str " =" ++ fnl () ++ str "  " ++
      hov 2 (pp_expr false env' [] t'))

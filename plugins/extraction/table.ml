@@ -400,10 +400,14 @@ let flag_of_int n =
       opt_lin_let = kth_digit n 9;
       opt_lin_beta = kth_digit n 10 }
 
-(* For the moment, we allow by default everything except the type-unsafe
-   optimization [opt_case_idg]. *)
+(* For the moment, we allow by default everything except :
+   - the type-unsafe optimization [opt_case_idg]
+   - the linear let and beta reduction [opt_lin_let] and [opt_lin_beta]
+     (may lead to complexity blow-up, subsumed by finer reductions
+      when inlining recursors).
+*)
 
-let int_flag_init = 1 + 2 + 4 + 8 + 32 + 64 + 128 + 256 + 512 + 1024
+let int_flag_init = 1 + 2 + 4 + 8 (*+ 16*) + 32 + 64 + 128 + 256 (*+ 512 + 1024*)
 
 let int_flag_ref = ref int_flag_init
 let opt_flag_ref = ref (flag_of_int int_flag_init)

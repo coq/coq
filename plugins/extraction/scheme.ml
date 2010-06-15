@@ -72,10 +72,10 @@ let rec pp_expr env args =
         pp_expr env (stl @ args) f
     | MLlam _ as a ->
       	let fl,a' = collect_lams a in
-	let fl,env' = push_vars fl env in
+	let fl,env' = push_vars (List.map id_of_mlid fl) env in
 	apply (pp_abst (pp_expr env' [] a') (List.rev fl))
     | MLletin (id,a1,a2) ->
-	let i,env' = push_vars [id] env in
+	let i,env' = push_vars [id_of_mlid id] env in
 	apply
 	  (hv 0
 	     (hov 2
@@ -123,7 +123,7 @@ and pp_cons_args env = function
 
 
 and pp_one_pat env (r,ids,t) =
-  let ids,env' = push_vars (List.rev ids) env in
+  let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
   let args =
     if ids = [] then mt ()
     else (str " " ++ prlist_with_sep spc pr_id (List.rev ids))

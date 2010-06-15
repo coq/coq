@@ -92,15 +92,20 @@ type ml_ind = {
 
 (*s ML terms. *)
 
+type ml_ident =
+  | Dummy
+  | Id of identifier
+  | Tmp of identifier
+
 type ml_ast =
   | MLrel    of int
   | MLapp    of ml_ast * ml_ast list
-  | MLlam    of identifier * ml_ast
-  | MLletin  of identifier * ml_ast * ml_ast
+  | MLlam    of ml_ident * ml_ast
+  | MLletin  of ml_ident * ml_ast * ml_ast
   | MLglob   of global_reference
   | MLcons   of inductive_info * global_reference * ml_ast list
   | MLcase   of (inductive_info*case_info) * ml_ast *
-      (global_reference * identifier list * ml_ast) array
+      (global_reference * ml_ident list * ml_ast) array
   | MLfix    of int * identifier array * ml_ast array
   | MLexn    of string
   | MLdummy
