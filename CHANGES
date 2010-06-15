@@ -173,6 +173,10 @@ Vernacular commands
 
 - New command "Timeout <n> <command>." interprets a command and a timeout
   interrupts the interpretation after <n> seconds.
+- New command "Compute <expr>." is a shortcut for "Eval vm_compute in <expr>".
+- New command "Fail <command>." interprets a command and is successful iff
+  the command fails on an error (but not an anomaly). Handy for tests and
+  illustration of wrong commands.
 - Most commands referring to constant (e.g. Print or About) now support
   referring to the constant by a notation string.
 - Made generation of boolean equality automatic for datatypes (use
