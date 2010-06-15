@@ -120,9 +120,8 @@ let find_projections = function Record l -> l | _ -> raise NoRecord
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
 
-let kn_sig =
-  let specif = MPfile (dirpath_of_string "Coq.Init.Specif") in
-  make_mind specif empty_dirpath (mk_label "sig")
+let mk_ind path s =
+  make_mind (MPfile (dirpath_of_string path)) empty_dirpath (mk_label s)
 
 let rec pp_type par vl t =
   let rec pp_rec par = function
@@ -132,11 +131,10 @@ let rec pp_type par vl t =
     | Tglob (r,[a1;a2]) when is_infix r ->
 	pp_par par (pp_rec true a1 ++ str (get_infix r) ++ pp_rec true a2)
     | Tglob (r,[]) -> pp_global Type r
+    | Tglob (IndRef(kn,0),l) when kn = mk_ind "Coq.Init.Specif" "sig" ->
+	pp_tuple_light pp_rec l
     | Tglob (r,l) ->
-	if r = IndRef (kn_sig,0) then
-	  pp_tuple_light pp_rec l
-	else
-	  pp_tuple_light pp_rec l ++ spc () ++ pp_global Type r
+	pp_tuple_light pp_rec l ++ spc () ++ pp_global Type r
     | Tarr (t1,t2) ->
 	pp_par par
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
@@ -162,6 +160,25 @@ let expr_needs_par = function
   | MLcase (_,_,pv) -> not (is_ifthenelse pv)
   | _        -> false
 
+
+(** Special hack for constants of type Ascii.ascii : if an
+    [Extract Inductive ascii => char] has been declared, then
+    the constants are directly turned into chars *)
+
+let ind_ascii = mk_ind "Coq.Strings.Ascii" "ascii"
+
+let check_extract_ascii () =
+  try find_custom (IndRef (ind_ascii,0)) = "char" with Not_found -> false
+
+let is_list_cons l =
+ List.for_all (function MLcons (_,ConstructRef(_,_),[]) -> true | _ -> false) l
+
+let pp_char l =
+  let rec cumul = function
+    | [] -> 0
+    | MLcons(_,ConstructRef(_,j),[])::l -> (2-j) + 2 * (cumul l)
+    | _ -> assert false
+  in str ("'"^Char.escaped (Char.chr (cumul l))^"'")
 
 let rec pp_expr par env args =
   let par' = args <> [] || par
@@ -197,6 +214,10 @@ let rec pp_expr par env args =
 	   let record = List.hd args in
 	   pp_apply (record ++ str "." ++ pp_global Term r) par (List.tl args)
 	 with _ -> apply (pp_global Term r))
+    | MLcons(_,ConstructRef ((kn,0),1),l)
+        when kn = ind_ascii && check_extract_ascii () & is_list_cons l ->
+	assert (args=[]);
+	pp_char l
     | MLcons (Coinductive,r,[]) ->
 	assert (args=[]);
 	pp_par par (str "lazy " ++ pp_global Cons r)

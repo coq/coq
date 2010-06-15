@@ -330,13 +330,15 @@ FOURIERVO:=$(call cat_vo_itarget, plugins/fourier)
 FUNINDVO:=$(call cat_vo_itarget, plugins/funind)
 DPVO:=$(call cat_vo_itarget, plugins/dp)
 RTAUTOVO:=$(call cat_vo_itarget, plugins/rtauto)
+EXTRACTIONVO:=$(call cat_vo_itarget, plugins/extraction)
 XMLVO:=
 CCVO:=
+
 
 PLUGINSVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
 	    $(XMLVO) $(FOURIERVO) $(CCVO) $(FUNINDVO) \
 	    $(RTAUTOVO) $(NEWRINGVO) $(DPVO) $(QUOTEVO) \
-            $(GBVO)
+            $(GBVO) $(EXTRACTIONVO)
 
 ALLVO:= $(THEORIESVO) $(PLUGINSVO)
 VFILES:= $(ALLVO:.vo=.v)
