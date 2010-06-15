@@ -35,6 +35,9 @@ Require Import MSetInterface ZArith Int.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
+(* for nicer extraction, we create only logical inductive principles *)
+Local Unset Elimination Schemes.
+Local Unset Case Analysis Schemes.
 
 (** * Ops : the pure functions *)
 
@@ -570,6 +573,8 @@ Fixpoint isok s :=
 Module Import MX := OrderedTypeFacts X.
 
 (** * Automation and dedicated tactics *)
+
+Scheme tree_ind := Induction for tree Sort Prop.
 
 Local Hint Resolve MX.eq_refl MX.eq_trans MX.lt_trans @ok.
 Local Hint Immediate MX.eq_sym.
