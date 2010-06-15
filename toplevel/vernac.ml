@@ -25,6 +25,8 @@ open Ppvernac
 
 exception DuringCommandInterp of Util.loc * exn
 
+exception HasNotFailed
+
 (* Specifies which file is read. The intermediate file names are
    discarded here. The Drop exception becomes an error. We forget
    if the error ocurred during interpretation or not *)
@@ -159,6 +161,19 @@ let rec vernac_com interpfun (loc,com) =
 	  end
 
     | VernacList l -> List.iter (fun (_,v) -> interp v) l
+
+    | VernacFail v ->
+	if not !just_parsing then begin try
+	  interp v; raise HasNotFailed
+	with e -> match real_error e with
+	  | HasNotFailed ->
+	      errorlabstrm "Fail" (str "The command has not failed !")
+	  | e ->
+	      (* if [e] is an anomaly, the next function will re-raise it *)
+	      let msg = Cerrors.explain_exn_no_anomaly e in
+	      msgnl (str "The command has indeed failed with message:" ++
+		     fnl () ++ str "=> " ++ hov 0 msg)
+	end
 
     | VernacTime v ->
 	if not !just_parsing then begin

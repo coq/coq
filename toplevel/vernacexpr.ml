@@ -205,6 +205,7 @@ type vernac_expr =
   | VernacLoad of verbose_flag * string
   | VernacTime of vernac_expr
   | VernacTimeout of int * vernac_expr
+  | VernacFail of vernac_expr
 
   (* Syntax *)
   | VernacTacticNotation of int * grammar_tactic_prod_item_expr list * raw_tactic_expr
