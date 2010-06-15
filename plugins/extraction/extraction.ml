@@ -124,6 +124,24 @@ let rec nb_default_params env c =
 	if is_default env t then n+1 else n
     | _ -> 0
 
+(* Classification of signatures *)
+
+type sign_kind =
+  | EmptySig
+  | NonLogicalSig (* at least a [Keep] *)
+  | UnsafeLogicalSig (* No [Keep], at least a [Kill Kother] *)
+  | SafeLogicalSig (* only [Kill Ktype] *)
+
+let rec sign_kind = function
+  | [] -> EmptySig
+  | Keep :: _ -> NonLogicalSig
+  | Kill k :: s ->
+      match sign_kind s with
+	| NonLogicalSig -> NonLogicalSig
+	| UnsafeLogicalSig -> UnsafeLogicalSig
+	| SafeLogicalSig | EmptySig ->
+	    if k = Kother then UnsafeLogicalSig else SafeLogicalSig
+
 (*S Management of type variable contexts. *)
 
 (* A De Bruijn variable context (db) is a context for translating Coq [Rel]
@@ -402,7 +420,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	      if isDummy (expand env typ) then select_fields l typs
 	      else
 		let knp = make_con mp d (label_of_id id) in
-		if not (List.exists isKill (type2signature env typ))
+		if List.for_all ((=) Keep) (type2signature env typ)
 		then
 		  projs := Cset.add knp !projs;
 		(ConstRef knp) :: (select_fields l typs)
@@ -627,27 +645,30 @@ and extract_cst_app env mle mlt kn args =
     else mla
   in
   (* Different situations depending of the number of arguments: *)
-  if ls = 0 then put_magic_if magic2 head
-  else if List.mem Keep s then
-    if la >= ls || not (List.exists isKill s)
-    then
-      put_magic_if (magic2 && not magic1) (MLapp (head, mla))
-    else
-      (* Not enough arguments. We complete via eta-expansion. *)
-      let ls' = ls-la in
-      let s' = list_lastn ls' s in
-      let mla = (List.map (ast_lift ls') mla) @ (eta_args_sign ls' s') in
-      put_magic_if magic2 (anonym_or_dummy_lams (MLapp (head, mla)) s')
-  else if List.mem (Kill Kother) s then
-    (* In the special case of always false signature, one dummy lam is left. *)
-    (* So a [MLdummy] is left accordingly. *)
-    if la >= ls
-    then put_magic_if (magic2 && not magic1) (MLapp (head, MLdummy :: mla))
-    else put_magic_if magic2 (dummy_lams head (ls-la-1))
-  else (* s is made only of [Kill Ktype] *)
-    if la >= ls
-    then put_magic_if (magic2 && not magic1) (MLapp (head, mla))
-    else put_magic_if magic2 (dummy_lams head (ls-la))
+  match sign_kind s with
+    | EmptySig -> put_magic_if magic2 head
+    | NonLogicalSig ->
+	if la >= ls || List.for_all ((=) Keep) s
+	then
+	  put_magic_if (magic2 && not magic1) (MLapp (head, mla))
+	else
+	  (* Non-pure function partially applied. We complete via eta. *)
+	  let ls' = ls-la in
+	  let s' = list_lastn ls' s in
+	  let mla = (List.map (ast_lift ls') mla) @ (eta_args_sign ls' s') in
+	  put_magic_if magic2 (anonym_or_dummy_lams (MLapp (head, mla)) s')
+    | UnsafeLogicalSig when lang () <> Haskell ->
+	(* For strict languages, purely logical signatures with at least
+	   one [Kill Kother] lead to a dummy lam. So a [MLdummy] is left
+	   accordingly. *)
+	if la >= ls
+	then put_magic_if (magic2 && not magic1) (MLapp (head, MLdummy :: mla))
+	else put_magic_if magic2 (dummy_lams head (ls-la-1))
+    | _ ->
+	(* s is made only of [Kill Ktype], or we have a lazy target language *)
+	if la >= ls
+	then put_magic_if (magic2 && not magic1) (MLapp (head, mla))
+	else put_magic_if magic2 (dummy_lams head (ls-la))
 
 
 (*s Extraction of an inductive constructor applied to arguments. *)
@@ -777,18 +798,15 @@ and extract_fix env mle i (fi,ti,ci as recd) mlt =
 (* [decomp_lams_eta env c t] finds the number [n] of products in the type [t],
    and decompose the term [c] in [n] lambdas, with eta-expansion if needed. *)
 
-let rec decomp_lams_eta_n n env c t =
+let rec decomp_lams_eta_n n m env c t =
   let rels = fst (splay_prod_n env none n t) in
   let rels = List.map (fun (id,_,c) -> (id,c)) rels in
-  let m = nb_lam c in
-  if m >= n then decompose_lam_n n c
-  else
-    let rels',c = decompose_lam c in
-    let d = n - m in
-    (* we'd better keep rels' as long as possible. *)
-    let rels = (list_firstn d rels) @ rels' in
-    let eta_args = List.rev_map mkRel (interval 1 d) in
-    rels, applist (lift d c,eta_args)
+  let rels',c = decompose_lam c in
+  let d = n - m in
+  (* we'd better keep rels' as long as possible. *)
+  let rels = (list_firstn d rels) @ rels' in
+  let eta_args = List.rev_map mkRel (interval 1 d) in
+  rels, applist (lift d c,eta_args)
 
 (*s From a constant to a ML declaration. *)
 
@@ -796,14 +814,33 @@ let extract_std_constant env kn body typ =
   reset_meta_count ();
   (* The short type [t] (i.e. possibly with abbreviations). *)
   let t = snd (record_constant_type env kn (Some typ)) in
-  (* The real type [t']: without head lambdas, expanded, *)
+  (* The real type [t']: without head products, expanded, *)
   (* and with [Tvar] translated to [Tvar'] (not instantiable). *)
   let l,t' = type_decomp (expand env (var2var' t)) in
   let s = List.map (type2sign env) l in
+  (* Decomposing the top level lambdas of [body].
+     If there isn't enough, it's ok, as long as remaining args
+     aren't to be pruned (and initial lambdas aren't to be all
+     removed if the target language is strict). In other situations,
+     eta-expansions create artificially enough lams (but that may
+     break user's clever let-ins and partial applications). *)
+  let rels, c =
+    let n = List.length s
+    and m = nb_lam body in
+    if n <= m then decompose_lam_n n body
+    else
+      let s,s' = list_split_at m s in
+      if List.for_all ((=) Keep) s' &&
+	(lang () = Haskell || sign_kind s <> UnsafeLogicalSig)
+      then decompose_lam_n m body
+      else decomp_lams_eta_n n m env body typ
+  in
+  let n = List.length rels in
+  let s = list_firstn n s in
+  let l,l' = list_split_at n l in
+  let t' = type_recomp (l',t') in
   (* The initial ML environment. *)
   let mle = List.fold_left Mlenv.push_std_type Mlenv.empty l in
-  (* Decomposing the top level lambdas of [body]. *)
-  let rels,c = decomp_lams_eta_n (List.length s) env body typ in
   (* The lambdas names. *)
   let ids = List.map (fun (n,_) -> id_of_name n) rels in
   (* The according Coq environment. *)
