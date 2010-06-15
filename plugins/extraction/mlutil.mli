@@ -87,6 +87,7 @@ val tmp_id : ml_ident -> ml_ident
 
 val collect_lams : ml_ast -> ml_ident list * ml_ast
 val collect_n_lams : int -> ml_ast -> ml_ident list * ml_ast
+val remove_n_lams : int -> ml_ast -> ml_ast
 val nb_lams : ml_ast -> int
 
 val dummy_lams : ml_ast -> int -> ml_ast
@@ -96,6 +97,7 @@ val eta_args_sign : int -> signature -> ml_ast list
 
 (*s Utility functions over ML terms. *)
 
+val mlapp : ml_ast -> ml_ast list -> ml_ast
 val ast_map : (ml_ast -> ml_ast) -> ml_ast -> ml_ast
 val ast_map_lift : (int -> ml_ast -> ml_ast) -> int -> ml_ast -> ml_ast
 val ast_iter : (ml_ast -> unit) -> ml_ast -> unit

@@ -142,6 +142,12 @@ let rec sign_kind = function
 	| SafeLogicalSig | EmptySig ->
 	    if k = Kother then UnsafeLogicalSig else SafeLogicalSig
 
+(* Removing the final [Keep] in a signature *)
+
+let rec no_final_keeps = function
+  | [] -> []
+  | k :: s -> let s' = k :: no_final_keeps s in if s' = [Keep] then [] else s'
+
 (*S Management of type variable contexts. *)
 
 (* A De Bruijn variable context (db) is a context for translating Coq [Rel]
@@ -595,19 +601,18 @@ and extract_app env mle mlt mk_head args =
   let metas = List.map new_meta args in
   let type_head = type_recomp (metas, mlt) in
   let mlargs = List.map2 (extract_maybe_term env mle) metas args in
-  if mlargs = [] then mk_head type_head else MLapp (mk_head type_head, mlargs)
+  mlapp (mk_head type_head) mlargs
 
 (*s Auxiliary function used to extract arguments of constant or constructor. *)
 
 and make_mlargs env e s args typs =
-  let l = ref s in
-  let keep () = match !l with [] -> true | b :: s -> l:=s; b=Keep in
   let rec f = function
-    | [], [] -> []
-    | a::la, t::lt when keep() -> extract_maybe_term env e t a :: (f (la,lt))
-    | _::la, _::lt -> f (la,lt)
+    | [], [], _ -> []
+    | a::la, t::lt, [] -> extract_maybe_term env e t a :: (f (la,lt,[]))
+    | a::la, t::lt, Keep::s -> extract_maybe_term env e t a :: (f (la,lt,s))
+    | _::la, _::lt, _::s -> f (la,lt,s)
     | _ -> assert false
-  in f (args,typs)
+  in f (args,typs,s)
 
 (*s Extraction of a constant applied to arguments. *)
 
@@ -632,9 +637,11 @@ and extract_cst_app env mle mlt kn args =
   (* The internal head receives a magic if [magic1] *)
   let head = put_magic_if magic1 (MLglob (ConstRef kn)) in
   (* Now, the extraction of the arguments. *)
-  let s = type2signature env (snd schema) in
+  let s_full = type2signature env (snd schema) in
+  let s = no_final_keeps s_full in
   let ls = List.length s in
   let la = List.length args in
+  (* The ml arguments, already expunged from known logical ones *)
   let mla = make_mlargs env mle s args metas in
   let mla =
     if not magic1 then
@@ -645,32 +652,27 @@ and extract_cst_app env mle mlt kn args =
       with _ -> mla
     else mla
   in
+  (* For strict languages, purely logical signatures with at least
+     one [Kill Kother] lead to a dummy lam. So a [MLdummy] is left
+     accordingly. *)
+  let optdummy = match sign_kind s_full with
+    | UnsafeLogicalSig when lang () <> Haskell -> [MLdummy]
+    | _ -> []
+  in
   (* Different situations depending of the number of arguments: *)
-  match sign_kind s with
-    | EmptySig -> put_magic_if magic2 head
-    | NonLogicalSig ->
-	if la >= ls || List.for_all ((=) Keep) s
-	then
-	  put_magic_if (magic2 && not magic1) (MLapp (head, mla))
-	else
-	  (* Non-pure function partially applied. We complete via eta. *)
-	  let ls' = ls-la in
-	  let s' = list_lastn ls' s in
-	  let mla = (List.map (ast_lift ls') mla) @ (eta_args_sign ls' s') in
-	  put_magic_if magic2 (anonym_or_dummy_lams (MLapp (head, mla)) s')
-    | UnsafeLogicalSig when lang () <> Haskell ->
-	(* For strict languages, purely logical signatures with at least
-	   one [Kill Kother] lead to a dummy lam. So a [MLdummy] is left
-	   accordingly. *)
-	if la >= ls
-	then put_magic_if (magic2 && not magic1) (MLapp (head, MLdummy :: mla))
-	else put_magic_if magic2 (dummy_lams head (ls-la-1))
-    | _ ->
-	(* s is made only of [Kill Ktype], or we have a lazy target language *)
-	if la >= ls
-	then put_magic_if (magic2 && not magic1) (MLapp (head, mla))
-	else put_magic_if magic2 (dummy_lams head (ls-la))
-
+  if la >= ls
+  then
+    (* Enough args, cleanup already done in [mla], we only add the
+       additionnal dummy if needed. *)
+    put_magic_if (magic2 && not magic1) (mlapp head (optdummy @ mla))
+  else
+    (* Partially applied function with some logical arg missing.
+       We complete via eta and expunge logical args. *)
+    let ls' = ls-la in
+    let s' = list_skipn la s in
+    let mla = (List.map (ast_lift ls') mla) @ (eta_args_sign ls' s') in
+    let e = anonym_or_dummy_lams (mlapp head mla) s' in
+    put_magic_if magic2 (remove_n_lams (List.length optdummy) e)
 
 (*s Extraction of an inductive constructor applied to arguments. *)
 

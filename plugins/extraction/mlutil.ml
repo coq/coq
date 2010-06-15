@@ -341,6 +341,8 @@ let type_expunge env t =
 
 (*S Generic functions over ML ast terms. *)
 
+let mlapp f a = if a = [] then f else MLapp (f,a)
+
 (*s [ast_iter_rel f t] applies [f] on every [MLrel] in t. It takes care
    of the number of bingings crossed before reaching the [MLrel]. *)
 
@@ -662,22 +664,19 @@ let check_and_generalize (r0,l,c) =
 (* CAVEAT: this optimization breaks typing in some special case. example:
    [type 'x a = A]. Then [let f = function A -> A] has type ['x a -> 'y a],
    which is incompatible with the type of [let f x = x].
-   By default, we brutally disable this optim except for some known types:
-   [bool], [sumbool], [sumor] *)
+   By default, we brutally disable this optim except for the known types
+   in theories/Init/*.v *)
 
-let generalizable_list =
-  let datatypes = MPfile (dirpath_of_string "Coq.Init.Datatypes")
-  and specif = MPfile (dirpath_of_string "Coq.Init.Specif")
-  in
-  [ make_mind datatypes empty_dirpath (mk_label "bool");
-    make_mind specif empty_dirpath (mk_label "sumbool");
-    make_mind specif empty_dirpath (mk_label "sumor") ]
+let generalizable_mind m =
+  match mind_modpath m with
+    | MPfile dir -> is_dirpath_prefix_of (dirpath_of_string "Coq.Init") dir
+    | _ -> false
 
 let check_generalizable_case unsafe br =
   if not unsafe then
     (match br.(0) with
      | ConstructRef ((kn,_),_), _, _ ->
-	 if not (List.mem kn generalizable_list) then raise Impossible
+	 if not (generalizable_mind kn) then raise Impossible
      | _ -> assert false);
   let f = check_and_generalize br.(0) in
   for i = 1 to Array.length br - 1 do
@@ -704,7 +703,7 @@ let common_branches br =
   let best = ref [] in
   Hashtbl.iter
     (fun _ l -> if List.length l > List.length !best then best := l) tab;
-  if List.length !best < 2 then [] else !best
+  if Array.length br >= 2 && List.length !best < 2 then [] else !best
 
 (*s If all branches are functions, try to permut the case and the functions. *)
 
@@ -778,10 +777,8 @@ let is_atomic = function
 (* Some beta-iota reductions + simplifications. *)
 
 let rec simpl o = function
-  | MLapp (f, []) ->
-      simpl o f
-  | MLapp (f, a) ->
-      simpl_app o (List.map (simpl o) a) (simpl o f)
+  | MLapp (f, []) -> simpl o f
+  | MLapp (f, a) -> simpl_app o (List.map (simpl o) a) (simpl o f)
   | MLcase (i,e,br) ->
       let br = Array.map (fun (n,l,t) -> (n,l,simpl o t)) br in
       simpl_case o i br (simpl o e)
@@ -802,6 +799,8 @@ let rec simpl o = function
 	MLfix (i, ids, Array.map (simpl o) c)
       else simpl o (ast_lift (-n) c.(i)) (* Dummy fixpoint *)
   | a -> ast_map (simpl o) a
+
+(* invariant : list [a] of arguments is non-empty *)
 
 and simpl_app o a = function
   | MLapp (f',a') -> simpl_app o (a'@a) f'
@@ -831,6 +830,8 @@ and simpl_app o a = function
 	(* We just discard arguments in those cases. *)
   | f -> MLapp (f,a)
 
+(* Invariant : all empty matches should now be [MLexn] *)
+
 and simpl_case o i br e =
   if o.opt_case_iot && (is_iota_gen e) then (* Generalized iota-redex *)
     simpl o (iota_gen br e)
@@ -842,7 +843,7 @@ and simpl_case o i br e =
     with Impossible ->
       (* Detect common branches *)
       let common_br = if not o.opt_case_cst then [] else common_branches br in
-      if List.length common_br = Array.length br && br <> [||] then
+      if List.length common_br = Array.length br then
 	let (_,ids,t) = br.(0) in ast_lift (-List.length ids) t
       else
 	let new_i = (fst i, common_br) in
@@ -1018,8 +1019,10 @@ and kill_dummy_fix i c =
 
 let normalize a =
   let o = optims () in
-  let a = simpl o a in
-  if o.opt_kill_dum then kill_dummy a else a
+  let rec norm a =
+    let a' = if o.opt_kill_dum then kill_dummy (simpl o a) else simpl o a in
+    if a = a' then a else norm a'
+  in norm a
 
 (*S Special treatment of fixpoint for pretty-printing purpose. *)
 
