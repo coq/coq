@@ -122,6 +122,23 @@ Module system
   "Inline" annotation in the type of its argument(s) (for examples of
   use of the new features, see libraries Structures and Numbers).
 
+Extraction
+
+- The extraction now tries harder to avoid code transformations that can be
+  dangerous for the complexity. In particular many eta-expansions at the top
+  of functions body are now avoided, clever partial applications will likely
+  be preserved, let-ins are almost always kept, etc.
+- Extract Inductive is now possible toward non-inductive types (e.g. nat => int)
+- Extraction Implicit: this new experimental command allows to mark
+  some arguments of a function or constructor for removed during
+  extraction, even if these arguments don't fit the usual elimination
+  principles of extraction, for instance the length n of a vector.
+- A few .v files in plugins/extraction try to provide a library of common
+  extraction commands: mapping of basics types toward Ocaml's counterparts,
+  conversions from/to int and big_int, or even complete mapping of nat,Z,N
+  to int or big_int, or mapping of ascii to char and string to char list
+  (in this case recognition of ascii constants is hard-wired in the extraction).
+
 Program
 
 - Streamlined definitions using well-founded recursion and measures so
