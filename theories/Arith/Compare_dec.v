@@ -18,21 +18,25 @@ Open Local Scope nat_scope.
 Implicit Types m n x y : nat.
 
 Definition zerop n : {n = 0} + {0 < n}.
+Proof.
   destruct n; auto with arith.
 Defined.
 
-Definition lt_eq_lt_dec n m : {n < m} + {n = m} + {m < n}.
-  intros; induction n in m |- *; destruct m; auto with arith.
+Definition lt_eq_lt_dec : forall n m, {n < m} + {n = m} + {m < n}.
+Proof.
+  induction n; destruct m; auto with arith.
   destruct (IHn m) as [H|H]; auto with arith.
   destruct H; auto with arith.
 Defined.
 
-Definition gt_eq_gt_dec n m : {m > n} + {n = m} + {n > m}.
+Definition gt_eq_gt_dec : forall n m, {m > n} + {n = m} + {n > m}.
+Proof.
   intros; apply lt_eq_lt_dec; assumption.
 Defined.
 
-Definition le_lt_dec n m : {n <= m} + {m < n}.
-  intros; induction n in m |- *.
+Definition le_lt_dec : forall n m, {n <= m} + {m < n}.
+Proof.
+  induction n.
   auto with arith.
   destruct m.
   auto with arith.
@@ -40,48 +44,53 @@ Definition le_lt_dec n m : {n <= m} + {m < n}.
 Defined.
 
 Definition le_le_S_dec n m : {n <= m} + {S m <= n}.
+Proof.
   intros; exact (le_lt_dec n m).
 Defined.
 
 Definition le_ge_dec n m : {n <= m} + {n >= m}.
+Proof.
   intros; elim (le_lt_dec n m); auto with arith.
 Defined.
 
 Definition le_gt_dec n m : {n <= m} + {n > m}.
+Proof.
   intros; exact (le_lt_dec n m).
 Defined.
 
 Definition le_lt_eq_dec n m : n <= m -> {n < m} + {n = m}.
+Proof.
   intros; destruct (lt_eq_lt_dec n m); auto with arith.
   intros; absurd (m < n); auto with arith.
 Defined.
 
 Theorem le_dec : forall n m, {n <= m} + {~ n <= m}.
 Proof.
-  intros x y; elim (le_gt_dec x y);
-    [ auto with arith | intro; right; apply gt_not_le; assumption ].
-Qed.
+  intros n m. destruct (le_gt_dec n m).
+   auto with arith.
+   right. apply gt_not_le. assumption.
+Defined.
 
 Theorem lt_dec : forall n m, {n < m} + {~ n < m}.
 Proof.
   intros; apply le_dec.
-Qed.
+Defined.
 
 Theorem gt_dec : forall n m, {n > m} + {~ n > m}.
 Proof.
   intros; apply lt_dec.
-Qed.
+Defined.
 
 Theorem ge_dec : forall n m, {n >= m} + {~ n >= m}.
 Proof.
   intros; apply le_dec.
-Qed.
+Defined.
 
 (** Proofs of decidability *)
 
 Theorem dec_le : forall n m, decidable (n <= m).
 Proof.
-  intros x y; destruct (le_dec x y); unfold decidable; auto.
+  intros n m; destruct (le_dec n m); unfold decidable; auto.
 Qed.
 
 Theorem dec_lt : forall n m, decidable (n < m).
