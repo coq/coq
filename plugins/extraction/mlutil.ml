@@ -603,7 +603,7 @@ let eta_red e =
 	  if m = n then
 	    [], f, a
 	  else if m < n then
-	    snd (list_chop (n-m) ids), f, a
+	    list_skipn m ids, f, a
 	  else (* m > n *)
 	    let a1,a2 = list_chop (m-n) a in
 	    [], MLapp (f,a1), a2
