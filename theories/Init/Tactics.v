@@ -207,3 +207,20 @@ Tactic Notation "decide" constr(lemma) "with" constr(H) :=
   | ?C -> False => apply (decide_right lemma H); try_to_merge_hyps H
   | _ => apply (decide_left lemma H); try_to_merge_hyps H
   end.
+
+(** Clear an hypothesis and its dependencies *)
+
+Tactic Notation "clear" "dependent" ident(h) :=
+ let rec depclear h :=
+  clear h ||
+  match goal with
+   | H : context [ h ] |- _ => depclear H; depclear h
+  end ||
+  fail "hypothesis to clear is used in the conclusion (maybe indirectly)"
+ in depclear h.
+
+(** Revert an hypothesis and its dependencies :
+    this is actually generalize dependent... *)
+
+Tactic Notation "revert" "dependent" ident(h) :=
+ generalize dependent h.
