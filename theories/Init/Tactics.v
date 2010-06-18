@@ -210,7 +210,7 @@ Tactic Notation "decide" constr(lemma) "with" constr(H) :=
 
 (** Clear an hypothesis and its dependencies *)
 
-Tactic Notation "clear" "dependent" ident(h) :=
+Tactic Notation "clear" "dependent" hyp(h) :=
  let rec depclear h :=
   clear h ||
   match goal with
@@ -222,5 +222,5 @@ Tactic Notation "clear" "dependent" ident(h) :=
 (** Revert an hypothesis and its dependencies :
     this is actually generalize dependent... *)
 
-Tactic Notation "revert" "dependent" ident(h) :=
+Tactic Notation "revert" "dependent" hyp(h) :=
  generalize dependent h.
