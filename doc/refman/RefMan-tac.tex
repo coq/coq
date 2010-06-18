@@ -163,6 +163,11 @@ usable in the proof development.
   This tactic clears all hypotheses except the ones depending in 
   goal.
 
+\item {\tt clear dependent \ident \tacindex{clear dependent}}
+
+ This clears the hypothesis \ident\ and all hypotheses
+ which depend on it.
+
 \end{Variants}
 
 \begin{ErrMsgs}
@@ -810,6 +815,14 @@ dependencies. This tactic is the inverse of {\tt intro}.
 \item \errindexbis{{\ident} is used in the hypothesis {\ident'}}{is
     used in the hypothesis} 
 \end{ErrMsgs}
+
+\begin{Variants}
+\item {\tt revert dependent \ident \tacindex{revert dependent}}
+
+ This moves to the goal the hypothesis \ident\ and all hypotheses
+ which depend on it.
+
+\end{Variants}
 
 \subsection{\tt change \term
 \tacindex{change}
