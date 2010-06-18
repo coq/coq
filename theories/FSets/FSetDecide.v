@@ -416,7 +416,7 @@ the above form:
         propositions of interest. *)
 
     Inductive FSet_elt_Prop : Prop -> Prop :=
-    | eq_Prop : forall (S : Set) (x y : S),
+    | eq_Prop : forall (S : Type) (x y : S),
         FSet_elt_Prop (x = y)
     | eq_elt_prop : forall x y,
         FSet_elt_Prop (E.eq x y)
