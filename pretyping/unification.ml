@@ -241,7 +241,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       match (kind_of_term cM,kind_of_term cN) with
 	| Meta k1, Meta k2 ->
 	    let stM,stN = extract_instance_status pb in
-	    if k1 < k2
+	    if k2 < k1
 	    then sigma,(k1,cN,stN)::metasubst,evarsubst
 	    else if k1 = k2 then substn
 	    else sigma,(k2,cM,stM)::metasubst,evarsubst
