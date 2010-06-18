@@ -32,7 +32,7 @@ open Coercion.Default
 let pf_env = Refiner.pf_env
 let pf_hyps = Refiner.pf_hyps
 let pf_type_of gls c  = Typing.type_of (pf_env gls) gls.sigma c
-let pf_concl = Tacmach.pf_concl
+let pf_concl gls = Goal.V82.concl (Refiner.project gls) (sig_it gls)
 
 (******************************************************************)
 (* Clausal environments *)

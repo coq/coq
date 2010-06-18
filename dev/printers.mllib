@@ -112,6 +112,7 @@ Proof_type
 Goal
 Logic
 Refiner
+Clenv
 Evar_refiner
 Proofview
 Proof

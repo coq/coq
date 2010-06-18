@@ -26,7 +26,7 @@ open Evd
 open Goptions
 open Genarg
 open Mod_subst
-
+open Clenv
 
 let _ = Constrextern.print_evar_arguments := true
 let _ = set_bool_option_value ["Printing";"Matching"] false
@@ -113,8 +113,8 @@ let pp_transparent_state s = pp (pr_transparent_state s)
 (* proof printers *)
 let ppmetas metas = pp(pr_metaset metas)
 let ppevm evd = pp(pr_evar_map evd)
-(* spiwack: deactivated until a replacement is found
 let ppclenv clenv = pp(pr_clenv clenv)
+(* spiwack: deactivated until a replacement is found
 let ppgoal g = pp(db_pr_goal g)
 let pppftreestate p = pp(print_pftreestate p)
 *)

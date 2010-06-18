@@ -78,6 +78,7 @@ open Pretyping.Default.Cases
 open Cbv
 open Classops
 open Clenv
+open Clenvtac
 open Rawterm
 open Coercion
 open Coercion.Default
