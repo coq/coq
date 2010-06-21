@@ -22,6 +22,8 @@ open Mlutil
 open Modutil
 open Mod_subst
 
+let string_of_id id = ascii_of_ident (Names.string_of_id id)
+
 (*s Some pretty-print utility functions. *)
 
 let pp_par par st = if par then str "(" ++ st ++ str ")" else st
@@ -74,7 +76,11 @@ let is_upper s = match s.[0] with 'A' .. 'Z' -> true | _ -> false
 let is_lower s = match s.[0] with 'a' .. 'z' | '_' -> true | _ -> false
 
 let lowercase_id id = id_of_string (String.uncapitalize (string_of_id id))
-let uppercase_id id = id_of_string (String.capitalize (string_of_id id))
+let uppercase_id id =
+  let s = string_of_id id in
+  assert (s<>"");
+  if s.[0] = '_' then id_of_string ("Coq_"^s)
+  else id_of_string (String.capitalize s)
 
 type kind = Term | Type | Cons | Mod
 
