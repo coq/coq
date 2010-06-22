@@ -73,7 +73,7 @@ SRCDIRS:=\
     omega	romega 		micromega 	quote		ring	dp \
     setoid_ring xml 		extraction 	fourier \
     cc 		funind 		firstorder 	field 		subtac \
-    rtauto 	nsatz        syntax      decl_mode)
+    rtauto 	nsatz           syntax          decl_mode)
 
 # Order is relevent here because kernel and checker contain files
 # with the same name
