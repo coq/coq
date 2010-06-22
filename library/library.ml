@@ -328,14 +328,6 @@ let (in_import, out_import) =
 let (raw_extern_library, raw_intern_library) =
   System.raw_extern_intern Coq_config.vo_magic_number ".vo"
 
-let with_magic_number_check f a =
-  try f a
-  with System.Bad_magic_number fname ->
-    errorlabstrm "with_magic_number_check"
-    (str"File " ++ str fname ++ spc () ++ str"has bad magic number." ++
-    spc () ++ str"It is corrupted" ++ spc () ++
-    str"or was compiled with another version of Coq.")
-
 (************************************************************************)
 (*s Locate absolute or partially qualified library names in the path *)
 
@@ -414,7 +406,7 @@ let mk_library md digest = {
   library_digest = digest }
 
 let intern_from_file f =
-  let ch = with_magic_number_check raw_intern_library f in
+  let ch = System.with_magic_number_check raw_intern_library f in
   let md = System.marshal_in ch in
   let digest = System.marshal_in ch in
   close_in ch;
