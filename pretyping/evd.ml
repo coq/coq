@@ -578,6 +578,13 @@ let extract_all_conv_pbs evd =
 let evar_merge evd evars =
   { evd with evars = EvarMap.merge evd.evars evars.evars }
 
+let evar_list evd c =
+  let rec evrec acc c =
+    match kind_of_term c with
+    | Evar (evk, _ as ev) when mem evd evk -> ev :: acc
+    | _ -> fold_constr evrec acc c in
+  evrec [] c
+
 (**********************************************************)
 (* Sort variables *)
 

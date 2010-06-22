@@ -931,6 +931,12 @@ let rec mem_named_context id = function
   | _ :: sign -> mem_named_context id sign
   | [] -> false
 
+let clear_named_body id env =
+  let rec aux _ = function
+  | (id',Some c,t) when id = id' -> push_named (id,None,t)
+  | d -> push_named d in
+  fold_named_context aux env ~init:(reset_context env)
+
 let global_vars env ids = Idset.elements (global_vars_set env ids)
 
 let global_vars_set_of_decl env = function

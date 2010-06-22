@@ -229,6 +229,8 @@ val fold_named_context_both_sides :
     named_context -> init:'a -> 'a
 val mem_named_context : identifier -> named_context -> bool
 
+val clear_named_body : identifier -> env -> env
+
 val global_vars : env -> constr -> identifier list
 val global_vars_set_of_decl : env -> named_declaration -> Idset.t
 
