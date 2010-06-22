@@ -24,7 +24,8 @@ let (extern_state,intern_state) =
     extern_intern Coq_config.state_magic_number ".coq" in
   (fun s -> raw_extern s (freeze())),
   (fun s ->
-    unfreeze (raw_intern (Library.get_load_paths ()) s);
+    unfreeze
+      (with_magic_number_check (raw_intern (Library.get_load_paths ())) s);
     Library.overwrite_library_filenames s)
 
 (* Rollback. *)

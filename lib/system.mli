@@ -54,6 +54,8 @@ val raw_extern_intern : int -> string ->
 val extern_intern : ?warn:bool -> int -> string ->
   (string -> 'a -> unit) * (load_path -> string -> 'a)
 
+val with_magic_number_check : ('a -> 'b) -> 'a -> 'b
+
 (*s Sending/receiving once with external executable *)
 
 val connect : (out_channel -> unit) -> (in_channel -> 'a) -> string -> 'a

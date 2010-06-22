@@ -228,6 +228,13 @@ let extern_intern ?(warn=true) magic suffix =
   in
   (extern_state,intern_state)
 
+let with_magic_number_check f a =
+  try f a
+  with Bad_magic_number fname ->
+    errorlabstrm "with_magic_number_check"
+    (str"File " ++ str fname ++ strbrk" has bad magic number." ++ spc () ++ 
+    strbrk "It is corrupted or was compiled with another version of Coq.")
+
 (* Communication through files with another executable *)
 
 let connect writefun readfun com =
