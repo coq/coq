@@ -93,18 +93,11 @@ and cases_clauses = cases_clause list
 
 val cases_predicate_names : tomatch_tuples -> name list
 
-(* - if PRec (_, names, arities, bodies) is in env then arities are
-   typed in env too and bodies are typed in env enriched by the
-   arities incrementally lifted
-
-  [On pourrait plutot mettre les arités aves le type qu'elles auront
-   dans le contexte servant à typer les body ???]
-
-   - boolean in POldCase means it is recursive
-   - option in PHole tell if the "?" was apparent or has been implicitely added
-*)
-
 val map_rawconstr : (rawconstr -> rawconstr) -> rawconstr -> rawconstr
+
+(* Ensure traversal from left to right *)
+val map_rawconstr_left_to_right :
+  (rawconstr -> rawconstr) -> rawconstr -> rawconstr
 
 (*
 val map_rawconstr_with_binders_loc : loc ->

@@ -20,10 +20,11 @@ open Tactics
 open Util
 open Termops
 open Evd
-
-(* Equality *)
 open Equality
 
+(**********************************************************************)
+(* replace, discriminate, injection, simplify_eq                      *)
+(* cutrewrite, dependent rewrite                                      *)
 
 TACTIC EXTEND replace
    ["replace" constr(c1) "with" constr(c2) in_arg_hyp(in_hyp) by_arg_tac(tac) ]
@@ -151,7 +152,9 @@ TACTIC EXTEND cut_rewrite
     -> [ cutRewriteInHyp b eqn id ]
 END
 
-(* Contradiction *)
+(**********************************************************************)
+(* Contradiction                                                      *)
+
 open Contradiction
 
 TACTIC EXTEND absurd
@@ -167,21 +170,10 @@ TACTIC EXTEND contradiction
     [ onSomeWithHoles contradiction c ]
 END
 
-(* AutoRewrite *)
+(**********************************************************************)
+(* AutoRewrite                                                        *)
 
 open Autorewrite
-(* J.F : old version
-TACTIC EXTEND autorewrite
-  [ "autorewrite" "with" ne_preident_list(l) ] ->
-    [ autorewrite Refiner.tclIDTAC l ]
-| [ "autorewrite" "with" ne_preident_list(l) "using" tactic(t) ] ->
-    [ autorewrite (snd t) l ]
-| [ "autorewrite" "with" ne_preident_list(l) "in" hyp(id) ] ->
-    [ autorewrite_in id Refiner.tclIDTAC l ]
-| [ "autorewrite" "with" ne_preident_list(l) "in" hyp(id) "using" tactic(t) ] ->
-    [ autorewrite_in id (snd t) l ]
-END
-*)
 
 TACTIC EXTEND autorewrite
 | [ "autorewrite" "with" ne_preident_list(l) in_arg_hyp(cl) ] ->
@@ -202,7 +194,8 @@ TACTIC EXTEND autorewrite_star
 	auto_multi_rewrite_with ~conds:AllMatches (snd t) l cl ]
 END
 
-open Extraargs
+(**********************************************************************)
+(* Rewrite star                                                       *)
 
 let rewrite_star clause orient occs (sigma,c) (tac : glob_tactic_expr option) =
   let tac' = Option.map (fun t -> Tacinterp.eval_tactic t, FirstSolved) tac in
@@ -229,6 +222,9 @@ TACTIC EXTEND rewrite_star
     [ rewrite_star None o all_occurrences c tac ]
     END
 
+(**********************************************************************)
+(* Hint Rewrite                                                       *)
+
 let add_rewrite_hint name ort t lcsr =
   let env = Global.env() and sigma = Evd.empty in
   let f c = Topconstr.constr_loc c, Constrintern.interp_constr sigma env c, ort, t in
@@ -245,6 +241,9 @@ VERNAC COMMAND EXTEND HintRewrite
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
   [ add_rewrite_hint "core" o t l ]
 END
+
+(**********************************************************************)
+(* Hint Resolve                                                       *)
 
 open Term
 open Coqlib
@@ -285,8 +284,8 @@ VERNAC COMMAND EXTEND HintResolveIffRL
   [ add_hints_iff false lc n ["core"] ]
 END
 
-
-(* Refine *)
+(**********************************************************************)
+(* Refine                                                             *)
 
 open Refine
 
@@ -296,7 +295,8 @@ END
 
 let refine_tac = h_refine
 
-(* Inversion lemmas (Leminv) *)
+(**********************************************************************)
+(* Inversion lemmas (Leminv)                                          *)
 
 open Inv
 open Leminv
@@ -342,7 +342,8 @@ VERNAC COMMAND EXTEND DeriveDependentInversionClear
   -> [ add_inversion_lemma_exn na c s true dinv_clear_tac ]
 END
 
-(* Subst *)
+(**********************************************************************)
+(* Subst                                                              *)
 
 TACTIC EXTEND subst
 | [ "subst" ne_var_list(l) ] -> [ subst l ]
@@ -358,7 +359,8 @@ END
 
 open Evar_tactics
 
-(* evar creation *)
+(**********************************************************************)
+(* Evar creation                                                      *)
 
 TACTIC EXTEND evar
   [ "evar" "(" ident(id) ":" lconstr(typ) ")" ] -> [ let_evar (Name id) typ ]
@@ -375,7 +377,8 @@ TACTIC EXTEND instantiate
 END
 
 
-(** Nijmegen "step" tactic for setoid rewriting *)
+(**********************************************************************)
+(** Nijmegen "step" tactic for setoid rewriting                       *)
 
 open Tactics
 open Tactics
@@ -477,7 +480,8 @@ END
 
 
 
-(*spiwack : Vernac commands for retroknowledge *)
+(**********************************************************************)
+(*spiwack : Vernac commands for retroknowledge                        *)
 
 VERNAC COMMAND EXTEND RetroknowledgeRegister
  | [ "Register" constr(c) "as" retroknowledge_field(f) "by" constr(b)] ->
@@ -488,6 +492,7 @@ END
 
 
 
+(**********************************************************************)
 (* sozeau: abs/gen for induction on instantiated dependent inductives, using "Ford" induction as
   defined by Conor McBride *)
 TACTIC EXTEND generalize_eqs
@@ -510,3 +515,98 @@ END
 TACTIC EXTEND specialize_eqs
 [ "specialize_eqs" hyp(id) ] -> [ specialize_eqs id ]
 END
+
+(**********************************************************************)
+(* A tactic that considers a given occurrence of [c] in [t] and       *)
+(* abstract the minimal set of all the occurrences of [c] so that the *)
+(* abstraction [fun x -> t[x/c]] is well-typed                        *)
+(*                                                                    *)
+(* Contributed by Chung-Kil Hur (Winter 2009)                         *)
+(**********************************************************************)
+
+let subst_var_with_hole occ tid t = 
+  let occref = if occ > 0 then ref occ else error_invalid_occurrence [occ] in
+  let locref = ref 0 in
+  let rec substrec = function
+    | RVar (_,id) as x -> 
+        if id = tid 
+        then (decr occref; if !occref = 0 then x
+                           else (incr locref; RHole (Ploc.make !locref 0 (0,0),Evd.QuestionMark(Evd.Define true))))
+        else x
+    | c -> map_rawconstr_left_to_right substrec c in
+  let t' = substrec t
+  in
+  if !occref > 0 then error_invalid_occurrence [occ] else t'
+
+let subst_hole_with_term occ tc t =
+  let locref = ref 0 in
+  let occref = ref occ in
+  let rec substrec = function
+    | RHole (_,Evd.QuestionMark(Evd.Define true)) -> 
+        decr occref; if !occref = 0 then tc
+                     else (incr locref; RHole (Ploc.make !locref 0 (0,0),Evd.QuestionMark(Evd.Define true)))
+    | c -> map_rawconstr_left_to_right substrec c
+  in
+  substrec t
+
+open Tacmach
+
+let out_arg = function
+  | ArgVar _ -> anomaly "Unevaluated or_var variable"
+  | ArgArg x -> x
+
+let hResolve id c occ t gl = 
+  let sigma = project gl in 
+  let env = clear_named_body id (pf_env gl) in
+  let env_ids = ids_of_context env in
+  let env_names = names_of_rel_context env in
+  let c_raw = Detyping.detype true env_ids env_names c in 
+  let t_raw = Detyping.detype true env_ids env_names t in 
+  let rec resolve_hole t_hole =
+    try 
+      Pretyping.Default.understand sigma env t_hole
+    with 
+    | Ploc.Exc (loc,Pretype_errors.PretypeError (_, Pretype_errors.UnsolvableImplicit _)) -> 
+        resolve_hole (subst_hole_with_term (Ploc.line_nb loc) c_raw t_hole)
+  in
+  let t_constr = resolve_hole (subst_var_with_hole occ id t_raw) in
+  let t_constr_type = Retyping.get_type_of env sigma t_constr in
+  change_in_concl None (mkLetIn (Anonymous,t_constr,t_constr_type,pf_concl gl)) gl
+
+let hResolve_auto id c t gl =
+  let rec resolve_auto n = 
+    try
+      hResolve id c n t gl
+    with
+    | UserError _ as e -> raise e
+    | _ -> resolve_auto (n+1)
+  in
+  resolve_auto 1
+
+TACTIC EXTEND hresolve_core
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> [ hResolve id c (out_arg occ) t ]
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> [ hResolve_auto id c t ]
+END
+
+(**
+   hget_evar
+*)
+
+open Evar_refiner
+open Sign
+
+let hget_evar n gl =
+  let sigma = project gl in
+  let evl = evar_list sigma (pf_concl gl) in
+  if List.length evl < n then
+    error "Not enough uninstantiated existential variables.";
+  if n <= 0 then error "Incorrect existential variable index.";
+  let ev = List.nth evl (n-1) in
+  let ev_type = existential_type sigma ev in
+  change_in_concl None (mkLetIn (Anonymous,mkEvar ev,ev_type,pf_concl gl)) gl
+
+TACTIC EXTEND hget_evar
+| [ "hget_evar" int_or_var(n) ] -> [ hget_evar (out_arg n) ]
+END
+
+(**********************************************************************)

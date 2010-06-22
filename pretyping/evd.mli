@@ -195,6 +195,8 @@ val evar_source : existential_key -> evar_map -> hole_kind located
    [evar_merge evd ev1] extends the evars of [evd] with [evd1] *)
 val evar_merge : evar_map -> evar_map -> evar_map
 
+val evar_list : evar_map -> constr -> existential list
+
 (** Unification constraints *)
 type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * env * constr * constr

@@ -95,37 +95,55 @@ let cases_predicate_names tml =
     | (tm,(na,None)) -> [na]
     | (tm,(na,Some (_,_,_,nal))) -> na::nal) tml)
 
-(*i - if PRec (_, names, arities, bodies) is in env then arities are
-   typed in env too and bodies are typed in env enriched by the
-   arities incrementally lifted
+let map_rawdecl_left_to_right f (na,k,obd,ty) = 
+  let comp1 = Option.map f obd in
+  let comp2 = f ty in
+  (na,k,comp1,comp2)
 
-  [On pourrait plutot mettre les arités aves le type qu'elles auront
-   dans le contexte servant à typer les body ???]
-
-   - boolean in POldCase means it is recursive
-i*)
-let map_rawdecl f (na,k,obd,ty) = (na,k,Option.map f obd,f ty)
-
-let map_rawconstr f = function
-  | RVar (loc,id) -> RVar (loc,id)
-  | RApp (loc,g,args) -> RApp (loc,f g, List.map f args)
-  | RLambda (loc,na,bk,ty,c) -> RLambda (loc,na,bk,f ty,f c)
-  | RProd (loc,na,bk,ty,c) -> RProd (loc,na,bk,f ty,f c)
-  | RLetIn (loc,na,b,c) -> RLetIn (loc,na,f b,f c)
+let map_rawconstr_left_to_right f = function
+  | RApp (loc,g,args) -> 
+      let comp1 = f g in 
+      let comp2 = Util.list_map_left f args in 
+      RApp (loc,comp1,comp2)
+  | RLambda (loc,na,bk,ty,c) -> 
+      let comp1 = f ty in 
+      let comp2 = f c in 
+      RLambda (loc,na,bk,comp1,comp2)
+  | RProd (loc,na,bk,ty,c) -> 
+      let comp1 = f ty in 
+      let comp2 = f c in 
+      RProd (loc,na,bk,comp1,comp2)
+  | RLetIn (loc,na,b,c) -> 
+      let comp1 = f b in 
+      let comp2 = f c in 
+      RLetIn (loc,na,comp1,comp2)
   | RCases (loc,sty,rtntypopt,tml,pl) ->
-      RCases (loc,sty,Option.map f rtntypopt,
-        List.map (fun (tm,x) -> (f tm,x)) tml,
-        List.map (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl)
+      let comp1 = Option.map f rtntypopt in 
+      let comp2 = Util.list_map_left (fun (tm,x) -> (f tm,x)) tml in
+      let comp3 = Util.list_map_left (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl in
+      RCases (loc,sty,comp1,comp2,comp3)
   | RLetTuple (loc,nal,(na,po),b,c) ->
-      RLetTuple (loc,nal,(na,Option.map f po),f b,f c)
+      let comp1 = Option.map f po in
+      let comp2 = f b in
+      let comp3 = f c in 
+      RLetTuple (loc,nal,(na,comp1),comp2,comp3)
   | RIf (loc,c,(na,po),b1,b2) ->
-      RIf (loc,f c,(na,Option.map f po),f b1,f b2)
+      let comp1 = Option.map f po in
+      let comp2 = f b1 in
+      let comp3 = f b2 in
+      RIf (loc,f c,(na,comp1),comp2,comp3)
   | RRec (loc,fk,idl,bl,tyl,bv) ->
-      RRec (loc,fk,idl,Array.map (List.map (map_rawdecl f)) bl,
-            Array.map f tyl,Array.map f bv)
-  | RCast (loc,c,k) -> RCast (loc,f c, match k with CastConv (k,t) -> CastConv (k, f t) | x -> x)
-  | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) as x -> x
+      let comp1 = Array.map (Util.list_map_left (map_rawdecl_left_to_right f)) bl in
+      let comp2 = Array.map f tyl in
+      let comp3 = Array.map f bv in
+      RRec (loc,fk,idl,comp1,comp2,comp3)
+  | RCast (loc,c,k) -> 
+      let comp1 = f c in
+      let comp2 = match k with CastConv (k,t) -> CastConv (k, f t) | x -> x in
+      RCast (loc,comp1,comp2)
+  | (RVar _ | RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) as x -> x
 
+let map_rawconstr = map_rawconstr_left_to_right
 
 (*
 let name_app f e = function

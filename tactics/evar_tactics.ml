@@ -19,14 +19,6 @@ open Termops
 
 (* The instantiate tactic *)
 
-let evar_list evc c =
-  let rec evrec acc c =
-    match kind_of_term c with
-    | Evar (n, _) when Evd.mem evc n -> c :: acc
-    | _ -> fold_constr evrec acc c
-  in
-    evrec [] c
-
 let instantiate n (ist,rawc) ido gl =
   let sigma = gl.sigma in
   let evl =
@@ -49,7 +41,7 @@ let instantiate n (ist,rawc) ido gl =
     if List.length evl < n then
       error "Not enough uninstantiated existential variables.";
     if n <= 0 then error "Incorrect existential variable index.";
-    let evk,_ = destEvar (List.nth evl (n-1)) in
+    let evk,_ = List.nth evl (n-1) in
     let evi = Evd.find sigma evk in
     let ltac_vars = Tacinterp.extract_ltac_constr_values ist (Evd.evar_env evi) in
     let sigma' = w_refine (evk,evi) (ltac_vars,rawc) sigma in
