@@ -308,12 +308,12 @@ coqide-byte: $(COQIDEBYTE) $(COQIDE)
 coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
 coqide-files: $(IDEFILES)
 
-$(COQIDEOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) ide/ide.cmxa
+$(COQIDEOPT): $(COQTOPOPT) $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) ide/ide.cmxa
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -boot -ide -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
-$(COQIDEBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) ide/ide.cma
+$(COQIDEBYTE): $(COQTOPBYTE) $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) ide/ide.cma
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -boot -g -ide -top $(BYTEFLAGS) -o $@
 
