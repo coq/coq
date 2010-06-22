@@ -81,7 +81,7 @@ let identchar =
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let ident = firstchar identchar*
 
-let sentence_sep = '.' [ ' ' '\n' '\t' ]
+let sentence_sep = '.' [ ' ' '\r' '\n' '\t' ]
 
 let multiword_declaration =
   "Module" (space+ "Type")?

@@ -451,7 +451,7 @@ let split_slice_lax (buffer:GText.buffer) from upto =
 
 let rec grab_safe_sentence_start (iter:GText.iter) soi =
   let lax_back = iter#backward_char#has_tag Tags.Script.sentence in
-  let on_space = List.mem iter#char [0x09;0x0A;0x20] in
+  let on_space = List.mem iter#char [0x09;0x0A;0x20;0x0D] in
   let full_ending = iter#is_start || (lax_back & on_space) in
   if full_ending then iter
   else if iter#compare soi <= 0 then raise Not_found
