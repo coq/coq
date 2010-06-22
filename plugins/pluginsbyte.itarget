@@ -12,7 +12,7 @@ xml/xml_plugin.cma
 subtac/subtac_plugin.cma
 ring/ring_plugin.cma
 cc/cc_plugin.cma
-groebner/groebner_plugin.cma
+nsatz/nsatz_plugin.cma
 funind/recdef_plugin.cma
 syntax/ascii_syntax_plugin.cma
 syntax/nat_syntax_plugin.cma

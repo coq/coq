@@ -38,7 +38,7 @@ open Unix
 open Utile
 
 (***********************************************************************
-  1. Opérations sur les coefficients.
+ Operations on coefficients
 *)
 
 let num_0 = Int 0
@@ -140,7 +140,6 @@ end
 *)
 
 (* ------------------------------------------------------------------------- *)
-(*  term??                                                                   *)
 (* ------------------------------------------------------------------------- *)
 
 type vname = string
@@ -308,7 +307,7 @@ let string_of_term p =
 
 
 (***********************************************************************
-   Coefficients: polynomes recursifs
+   Coefficients: recursive polynomials
  *)
 
 module Coef = BigInt
@@ -317,8 +316,9 @@ module Poly = Polynom.Make(Coef)
 module PIdeal = Ideal.Make(Poly)
 open PIdeal
 
-(* terme vers polynome creux *)
-(* les variables d'indice <=np sont dans les coeff *)
+(* term to sparse polynomial 
+   varaibles <=np are in the coefficients
+*)
 
 let term_pol_sparse np t=
   let d = !nvars in
@@ -335,17 +335,16 @@ let term_pol_sparse np t=
 	then polconst d (Poly.x v)
 	else gen d v
     | Opp t1 ->  oppP (aux t1)
-    | Add (t1,t2) -> plusP d (aux t1) (aux t2)
-    | Sub (t1,t2) -> plusP d (aux t1) (oppP (aux t2))
-    | Mul (t1,t2) -> multP d (aux t1) (aux t2)
-    | Pow (t1,n) ->  puisP d (aux t1) n
+    | Add (t1,t2) -> plusP (aux t1) (aux t2)
+    | Sub (t1,t2) -> plusP (aux t1) (oppP (aux t2))
+    | Mul (t1,t2) -> multP (aux t1) (aux t2)
+    | Pow (t1,n) ->  puisP (aux t1) n
   in (*info ("conversion de: "^(string_of_term t)^"\n");*)
   let res= aux t in
   (*info ("donne: "^(stringP res)^"\n");*)
   res
 
-(* polynome recusrsif vers terme *)
-
+(* sparse polynomial to term *)
 
 let polrec_to_term p =
   let rec aux p =
@@ -362,9 +361,10 @@ let polrec_to_term p =
      !res
   in aux p
 
-(* on approche la forme de Horner utilisee par la tactique ring. *)
+(* approximation of the Horner form used in the tactic ring *)
 
 let pol_sparse_to_term n2 p =
+  info "pol_sparse_to_term ->\n";
   let p = PIdeal.repr p in
   let rec aux p =
     match p with
@@ -408,7 +408,8 @@ let pol_sparse_to_term n2 p =
 	  then Var (string_of_int (i0))
 	  else pow (Var (string_of_int (i0)),e0) in
 	add(mul(vm, aux (List.rev (!p1))), aux (List.rev (!p2))))
-  in aux p
+  in   info "-> pol_sparse_to_term\n";
+  aux p
 
 
 let rec remove_list_tail l i =
@@ -433,7 +434,7 @@ let rec remove_list_tail l i =
    ...
    [cn+m n+m-1,...,cn+m 1]]
 
-   enleve les polynomes intermediaires inutiles pour calculer le dernier
+   removes intermediate polynomials not useful to compute the last one.
  *)
 
 let remove_zeros zero lci =
@@ -466,9 +467,9 @@ let remove_zeros zero lci =
 	done;
 	!lcr)
       lr in
-  info ("spolynomes inutiles: "
+  info ("unuseful spolynomials: "
 	^string_of_int (m-List.length lr)^"\n");
-  info ("spolynomes utiles: "
+  info ("useful spolynomials: "
 	^string_of_int (List.length lr)^"\n");
   lr
 
@@ -477,20 +478,56 @@ let theoremedeszeros lpol p =
   let m = !nvars in
   let (lp0,p,cert) = in_ideal m lpol p in
   let lpc = List.rev !poldepcontent in
-  info ("temps: "^Format.sprintf "@[%10.3f@]s\n" (Unix.gettimeofday ()-.t1));
+  info ("time: "^Format.sprintf "@[%10.3f@]s\n" (Unix.gettimeofday ()-.t1));
   (cert,lp0,p,lpc)
 
+open Ideal
 
 let theoremedeszeros_termes lp =
   nvars:=0;(* mise a jour par term_pol_sparse *)
   List.iter set_nvars_term  lp;
   match lp with
-  | Const (Int nparam)::lp ->
-      (let m= !nvars in
+  | Const (Int sugarparam)::Const (Int nparam)::lp ->
+      ((match sugarparam with
+      |0 -> info "calcul sans sugar\n";
+	  lexico:=false;
+	  sugar_flag := false;
+	  divide_rem_with_critical_pair := false
+      |1 -> info "calcul avec sugar\n";
+	  lexico:=false;
+	  sugar_flag := true;
+	  divide_rem_with_critical_pair := false
+      |2 -> info "ordre lexico calcul sans sugar\n";
+	  lexico:=true;
+	  sugar_flag := false;
+	  divide_rem_with_critical_pair := false
+      |3 -> info "ordre lexico calcul avec sugar\n";
+	  lexico:=true;
+	  sugar_flag := true;
+	  divide_rem_with_critical_pair := false
+      |4 -> info "calcul sans sugar, division par les paires\n";
+	  lexico:=false;
+	  sugar_flag := false;
+	  divide_rem_with_critical_pair := true
+      |5 -> info "calcul avec sugar, division par les paires\n";
+	  lexico:=false;
+	  sugar_flag := true;
+	  divide_rem_with_critical_pair := true
+      |6 -> info "ordre lexico calcul sans sugar, division par les paires\n";
+	  lexico:=true;
+	  sugar_flag := false;
+	  divide_rem_with_critical_pair := true
+      |7 -> info "ordre lexico calcul avec sugar, division par les paires\n";
+	  lexico:=true;
+	  sugar_flag := true;
+	  divide_rem_with_critical_pair := true
+      | _ -> error "nsatz: bad parameter"
+       );
+      let m= !nvars in
       let lvar=ref [] in
-      for i=m downto 1 do lvar:=["x"^string_of_int i^""]@(!lvar); done;
+      for i=m downto 1 do lvar:=["x"^(string_of_int i)^""]@(!lvar); done;
+      lvar:=["a";"b";"c";"d";"e";"f";"g";"h";"i";"j";"k";"l";"m";"n";"o";"p";"q";"r";"s";"t";"u";"v";"w";"x";"y";"z"] @ (!lvar); (* pour macaulay *)
       name_var:=!lvar;
-
       let lp = List.map (term_pol_sparse nparam) lp in
       match lp with
       | [] -> assert false
@@ -516,7 +553,7 @@ let theoremedeszeros_termes lp =
 
 
 (* version avec hash-consing du certificat:
-let groebner lpol =
+let nsatz lpol =
   Hashtbl.clear Dansideal.hmon;
   Hashtbl.clear Dansideal.coefpoldep;
   Hashtbl.clear Dansideal.sugartbl;
@@ -532,7 +569,7 @@ let groebner lpol =
   (c, certif)
 *)
 
-let groebner lpol =
+let nsatz lpol =
   let lp= parse_request lpol in
   let (c,r,lci,lq) = theoremedeszeros_termes lp in
   let res = [c::r::lq]@lci in
@@ -557,15 +594,15 @@ let return_term t =
     mkApp(gen_constant "CC" ["Init";"Logic"] "refl_equal",[|tllp ();t|]) in
   generalize [a]
 
-let groebner_compute t =
+let nsatz_compute t =
   let lpol =
-    try groebner t
+    try nsatz t
     with Ideal.NotInIdeal ->
-      error "groebner cannot solve this problem" in
+      error "nsatz cannot solve this problem" in
   return_term lpol
 
-TACTIC EXTEND groebner_compute
-| [ "groebner_compute"  constr(lt) ] -> [ groebner_compute lt ]
+TACTIC EXTEND nsatz_compute
+| [ "nsatz_compute"  constr(lt) ] -> [ nsatz_compute lt ]
 END
 
 

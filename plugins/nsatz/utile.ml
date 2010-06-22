@@ -1,8 +1,4 @@
-(***********************************************************************
-        Utilitaires.
-*)
-
-(* Impression *)
+(* Printing *)
 
 let pr x =
   if !Flags.debug then (Format.printf "@[%s@]" x; flush(stdout);)else ()
@@ -18,54 +14,28 @@ let prt s =
 let info s =
   Flags.if_verbose prerr_string s
 
-(**********************************************************************
-  Listes
-*)
+(* Lists *)
 
-(* appartenance à une liste , on donne l'égalité *)
 let rec list_mem_eq eq x l =
   match l with
     [] -> false
    |y::l1 -> if (eq x y) then true else (list_mem_eq eq x l1)
 
-(* vire les repetitions d'une liste, on donne l'égalité *)
 let set_of_list_eq eq l =
    let res = ref [] in
    List.iter (fun x -> if not (list_mem_eq eq x (!res)) then res:=x::(!res)) l;
    List.rev !res
 
 
-(***********************************************************************
- Un outil pour faire une mémo-fonction:
- fonction est la fonction(!)
- memoire est une référence au graphe déjà calculé
-    (liste de couples, c'est une variable globale)
- egal est l'égalité sur les arguments
- valeur est une valeur possible de la fonction (sert uniquement pour le typage)
+(* Memoization
+   f is compatible with nf: f(nf(x)) = f(x)
 *)
 
-let memo memoire egal valeur fonction x =
-   let res = ref valeur in
-   try (List.iter (fun (y,v) -> if egal y x
-		       then (res:=v;
-			     failwith "trouve"))
-	          !memoire;
-        let v = fonction x in
-	memoire:=(x,v)::(!memoire);
-	v)
-   with _ -> !res
-
-
-(* un autre plus efficace,
-   utilisant une fonction intermediaire (utile si on n'a pas
-   l'égalité = sur les arguments de fonction)
-   s chaîne imprimée s'il n'y a pas calcul *)
-
-let memos s memoire print fonction x =
-   try (let v = Hashtbl.find memoire (print x) in pr s;v)
+let memos s memoire nf f x =
+   try (let v = Hashtbl.find memoire (nf x) in pr s;v)
    with _ -> (pr "#";
-	      let v = fonction x in
-	      Hashtbl.add memoire (print x) v;
+	      let v = f x in
+	      Hashtbl.add memoire (nf x) v;
 	      v)
 
 
@@ -154,7 +124,6 @@ let f = facteurs_liste div1 constant l
 
 
 factorise_tableau div1 zero 0 (Array.of_list l) (Array.of_list f)
-
 
 *)
 

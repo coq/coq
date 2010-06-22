@@ -11,8 +11,6 @@ val list_mem_eq : ('a -> 'b -> bool) -> 'a -> 'b list -> bool
 val set_of_list_eq : ('a -> 'a -> bool) -> 'a list -> 'a list
 
 (* Memoization *)
-val memo :
-  ('a * 'b) list ref -> ('a -> 'a -> bool) -> 'b -> ('a -> 'b) -> 'a -> 'b
 val memos :
   string -> ('a, 'b) Hashtbl.t -> ('c -> 'a) -> ('c -> 'b) -> 'c -> 'b
 

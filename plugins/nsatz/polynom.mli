@@ -90,31 +90,8 @@ module type S = sig
   val gcd_sub_res : t -> t -> variable -> t
   val gcd_sub_res_rec : t -> t -> t -> t -> int -> variable -> t
   val lazard_power : t -> t -> int -> variable -> t
-  val sans_carre : t -> variable -> t
-  val facteurs : t -> variable -> t list
-  val facteurs_impairs : t -> variable -> t list
-  val hcontentP : (string, t) Hashtbl.t
-  val prcontentP : unit -> unit
-  val contentP : t * variable -> t
   val hash : t -> int
   module Hashpol : Hashtbl.S with type key=t
-  val memoP : string -> 'a Hashpol.t -> (t -> 'a) -> t -> 'a
-  val hfactorise : t list list Hashpol.t
-  val prfactorise : unit -> unit
-  val factorise : t -> t list list
-  val facteurs2 : t -> t list
-  val pol_de_factorisation : t list list -> t
-  val set_of_array_facteurs : t list array -> t list
-  val factorise_tableauP2 :
-    t array -> t list array -> t array * (t * int list) array
-  val factorise_tableauP : t array -> t array * (t * int list) array
-  val is_positif : t -> bool
-  val is_negatif : t -> bool
-  val pseudo_euclide :
-    t list -> t -> t -> variable ->
-    t * t * int * t * t * (t * int) list * (t * int) list
-  val implique_non_nul : t list -> t -> bool
-  val ajoute_non_nul : t -> t list -> t list
 end
 
 module Make (C:Coef) : S with type coef = C.t

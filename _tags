@@ -54,6 +54,8 @@
 "tactics/hipattern.ml4": use_grammar, use_constr
 "tactics/rewrite.ml4": use_grammar
 
+<plugins/**/*.ml4>: use_grammar
+
 ## sub-directory inclusion
 
 # Note: "checker" is deliberately not included
@@ -78,3 +80,5 @@
 "tools": include
 "tools/coqdoc": include
 "toplevel": include
+
+<plugins/**>: include
