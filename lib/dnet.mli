@@ -1,10 +1,10 @@
-(***********************************************************************
-    v      *   The Coq Proof Assistant  /  The Coq Development Team     
-   <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud 
-     \VV/  *************************************************************
-      //   *      This file is distributed under the terms of the       
-           *       GNU Lesser General Public License Version 2.1        
-  ***********************************************************************)
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
 (** Generic discrimination net implementation over recursive
    types. This module implements a association data structure similar

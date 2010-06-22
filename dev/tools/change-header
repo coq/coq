@@ -1,0 +1,32 @@
+#!/bin/sh
+
+#This script changes the header of .ml* files
+
+if [ ! $# = 2 ]; then
+  echo Usage: change-header old-header-file new-header-file
+  exit 1
+fi
+
+oldheader=$1
+newheader=$2
+
+if [ ! -f $oldheader ]; then echo Cannot read file $oldheader; exit 1; fi
+if [ ! -f $newheader ]; then echo Cannot read file $newheader; exit 1; fi
+
+n=`wc -l $oldheader | sed -e "s/ *\([0-9]*\).*/\1/g"`
+nsucc=`expr $n + 1`
+
+filter="-name \*.mli -o -name \*.ml -o -name \*.ml4 -o -name \*.mll -o -name \*.mly"
+
+for i in `find . $filter`; do
+  head -n +$n $i > $i.head.tmp$$
+  if diff -a -q $oldheader $i.head.tmp$$ > /dev/null; then
+    rm $i.head.tmp$$
+    echo "$i: header changed"
+    cat dev/header > $i.tmp$$
+    tail -n +$nsucc $i >> $i.tmp$$
+    mv $i.tmp$$ $i
+  else
+    echo "$i: old header not found, file untouched"
+  fi
+done
