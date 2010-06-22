@@ -18,6 +18,8 @@ Rewriting tactics
 - "Require Import Setoid" does not export all of "Morphisms" and
   "RelationClasses" anymore (possible source of incompatibility, fixed
   by importing "Morphisms" too).
+- Support added for using Chung-Kil Hur's Heq library for rewriting over
+  heterogeneous equality (courtesy of the library's author).
 
 Automation tactics
 
