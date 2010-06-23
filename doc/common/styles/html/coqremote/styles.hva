@@ -12,6 +12,7 @@
 
 <style type="text/css" media="all">@import "http://coq.inria.fr/sites/all/themes/coq/style.css";</style>
 <style type="text/css" media="all">@import "http://coq.inria.fr/sites/all/themes/coq/coqdoc.css";</style>
+<style type="text/css" media="all">@import "http://coq.inria.fr/sites/all/themes/coq/hevea.css";</style>
 \end{rawhtml}}
 
 % for HeVeA
