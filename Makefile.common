@@ -330,7 +330,7 @@ FOURIERVO:=$(call cat_vo_itarget, plugins/fourier)
 FUNINDVO:=$(call cat_vo_itarget, plugins/funind)
 DPVO:=$(call cat_vo_itarget, plugins/dp)
 RTAUTOVO:=$(call cat_vo_itarget, plugins/rtauto)
-EXTACTIONVO:=$(call cat_vo_itarget, plugins/extraction)
+EXTRACTIONVO:=$(call cat_vo_itarget, plugins/extraction)
 XMLVO:=
 CCVO:=
 
