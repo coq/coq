@@ -4,14 +4,14 @@
 <title>Reference Manual | The Coq Proof Assistant</title>
 
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
-<style type="text/css" media="all">@import "http://logical.saclay.inria.fr/coq/modules/node/node.css";</style>
+<style type="text/css" media="all">@import "http://coq.inria.fr/modules/node/node.css";</style>
 
-<style type="text/css" media="all">@import "http://logical.saclay.inria.fr/coq/modules/system/defaults.css";</style>
-<style type="text/css" media="all">@import "http://logical.saclay.inria.fr/coq/modules/system/system.css";</style>
-<style type="text/css" media="all">@import "http://logical.saclay.inria.fr/coq/modules/user/user.css";</style>
+<style type="text/css" media="all">@import "http://coq.inria.fr/modules/system/defaults.css";</style>
+<style type="text/css" media="all">@import "http://coq.inria.fr/modules/system/system.css";</style>
+<style type="text/css" media="all">@import "http://coq.inria.fr/modules/user/user.css";</style>
 
-<style type="text/css" media="all">@import "http://logical.saclay.inria.fr/coq/themes/coq/style.css";</style>
-<style type="text/css" media="all">@import "http://logical.saclay.inria.fr/coq/themes/coq/coqdoc.css";</style>
+<style type="text/css" media="all">@import "http://coq.inria.fr/sites/all/themes/coq/style.css";</style>
+<style type="text/css" media="all">@import "http://coq.inria.fr/sites/all/themes/coq/coqdoc.css";</style>
 \end{rawhtml}}
 
 % for HeVeA
@@ -21,12 +21,12 @@
 <div id="headertop">
 <div id="nav">
   <ul class="links-menu">
-    <li><a href="http://logical.saclay.inria.fr/coq/" class="active">Home</a></li>
+    <li><a href="http://coq.inria.fr/" class="active">Home</a></li>
 
-    <li><a href="http://logical.saclay.inria.fr/coq/?q=node/19" title="More about coq">About Coq</a></li>    
-    <li><a href="http://logical.saclay.inria.fr/coq/?q=node/3">Get Coq</a></li>
-    <li><a href="http://logical.saclay.inria.fr/coq/?q=node/4">Resources</a></li>
-    <li><a href="http://logical.saclay.inria.fr/coq/?q=node/5">Contact</a></li>
+    <li><a href="http://coq.inria.fr/about-coq" title="More about coq">About Coq</a></li>    
+    <li><a href="http://coq.inria.fr/download">Get Coq</a></li>
+    <li><a href="http://coq.inria.fr/documentation">Documentation</a></li>
+    <li><a href="http://coq.inria.fr/community">Community</a></li>
   </ul>
 </div>
 </div>
@@ -35,9 +35,9 @@
 
 <div id="logoWrapper">
 
-<div id="logo"><a href="http://logical.saclay.inria.fr/coq/" title="Home"><img src="http://logical.saclay.inria.fr/coq/files/barron_logo.png" alt="Home" /></a>
+<div id="logo"><a href="http://coq.inria.fr/" title="Home"><img src="http://coq.inria.fr/files/barron_logo.png" alt="Home" /></a>
 </div>
-<div id="siteName"><a href="http://logical.saclay.inria.fr/coq/" title="Home">The Coq Proof Assistant</a>
+<div id="siteName"><a href="http://coq.inria.fr/" title="Home">The Coq Proof Assistant</a>
 </div>
 
 </div>
@@ -84,7 +84,7 @@
 <div id="footer">
 <div id="nav-footer">
   <ul class="links-menu-footer">
-    <li><a href="mailto:webmaster_@_logical.saclay.inria.fr">webmaster</a></li>
+    <li><a href="mailto:www-coq at lix.polytechnique.fr">webmaster</a></li>
     <li><a href="http://validator.w3.org/check?uri=referer">xhtml valid</a></li>
     <li><a href="http://jigsaw.w3.org/css-validator/check/referer">CSS valid</a></li>
   </ul>
