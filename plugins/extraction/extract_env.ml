@@ -482,15 +482,12 @@ let simple_extraction r = match locate_ref [r] with
   | ([], [mp]) as p -> full_extr None p
   | [r],[] ->
       init false;
-      if is_custom r then
-	msgnl (str "User defined extraction:" ++ spc () ++
-		 str (find_custom r) ++ fnl ())
-      else
-	let struc = optimize_struct [r] (mono_environment [r] []) in
-	let d = get_decl_in_structure r struc in
-	warning_axioms ();
-	print_one_decl struc (modpath_of_r r) d;
-	reset ()
+      let struc = optimize_struct [r] (mono_environment [r] []) in
+      let d = get_decl_in_structure r struc in
+      warning_axioms ();
+      if is_custom r then msgnl (str "(** User defined extraction *)");
+      print_one_decl struc (modpath_of_r r) d;
+      reset ()
   | _ -> assert false
 
 
