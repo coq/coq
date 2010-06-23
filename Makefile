@@ -215,11 +215,10 @@ docclean:
 	  doc/stdlib/library.files.ls
 	rm -f doc/*/*.ps doc/*/*.pdf 
 	rm -rf doc/refman/html doc/stdlib/html doc/faq/html doc/tutorial/tutorial.v.html
-	rm -f doc/stdlib/html/*.html
 	rm -f doc/refman/euclid.ml doc/refman/euclid.mli
 	rm -f doc/refman/heapsort.ml doc/refman/heapsort.mli
 	rm -f doc/common/version.tex
-	rm -f doc/refman/*.eps doc/refman/Reference-Manual.html
+	rm -f doc/refman/styles.hva doc/refman/cover.html doc/refman/*.eps doc/refman/Reference-Manual.html
 	rm -f doc/coq.tex
 
 archclean: clean-ide cleantheories
