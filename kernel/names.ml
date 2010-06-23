@@ -88,15 +88,6 @@ module Umap = Map.Make(struct
 
 type label = string
 
-type mod_self_id = uniq_ident
-let make_msid = make_uid
-let repr_msid (n, id, dp) = (n, id, dp)
-let debug_string_of_msid = debug_string_of_uid
-let refresh_msid (_,s,dir) = make_uid dir s
-let string_of_msid = string_of_uid
-let id_of_msid (_,s,_) = s
-let label_of_msid (_,s,_) = s
-
 type mod_bound_id = uniq_ident
 let make_mbid = make_uid
 let repr_mbid (n, id, dp) = (n, id, dp)
@@ -230,7 +221,6 @@ let default_module_name = "If you see this, it's a bug"
 
 let initial_dir = make_dirpath [default_module_name]
 
-let initial_msid = (make_msid initial_dir "If you see this, it's a bug")
 let initial_path = MPfile initial_dir
 
 type variable = identifier

@@ -117,38 +117,6 @@ let subtract l1 l2 =
    Names.make_dirpath (List.rev (aux l1'))
 ;;
 
-(*CSC: Dead code to be removed
-let token_list_of_kernel_name ~keep_sections kn tag =
- let module N = Names in
-  let (modpath,dirpath,label) = Names.repr_kn kn in
-  let token_list_of_dirpath dirpath =
-   List.rev_map N.string_of_id (N.repr_dirpath dirpath) in
-  let rec token_list_of_modpath =
-   function
-      N.MPdot (path,label) ->
-       token_list_of_modpath path @ [N.string_of_label label]
-    | N.MPfile dirpath -> token_list_of_dirpath dirpath
-    | N.MPself self ->
-       if self = Names.initial_msid then
-        [ "Top" ]
-       else
-        let module_path =
-          let f = N.string_of_id (N.id_of_msid self) in
-          let _,longf =
-            System.find_file_in_path (Library.get_load_path ()) (f^".v") in
-          let ldir0 = Library.find_logical_path (Filename.dirname longf) in
-          let id = Names.id_of_string (Filename.basename f) in
-           Libnames.extend_dirpath ldir0 id
-        in
-          token_list_of_dirpath module_path
-    | N.MPbound _ -> raise FunctorsXMLExportationNotImplementedYet
-  in
-   token_list_of_modpath modpath @
-    (if keep_sections then token_list_of_dirpath dirpath else []) @
-    [N.string_of_label label ^ "." ^ (ext_of_tag tag)]
-;;
-*)
-
 let token_list_of_path dir id tag =
  let module N = Names in
   let token_list_of_dirpath dirpath =
