@@ -41,7 +41,6 @@ let pppp x = pp x
 (* name printers *)
 let ppid id = pp (pr_id id)
 let pplab l = pp (pr_lab l)
-let ppmsid msid = pp (str (debug_string_of_msid msid))
 let ppmbid mbid = pp (str (debug_string_of_mbid mbid))
 let ppdir dir = pp (pr_dirpath dir)
 let ppmp mp = pp(str (string_of_mp mp))

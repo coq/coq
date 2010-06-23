@@ -39,25 +39,13 @@ val empty_dirpath : dir_path
 (* Printing of directory paths as ["coq_root.module.submodule"] *)
 val string_of_dirpath : dir_path -> string
 
-
-(*s Unique identifier to be used as "self" in structures and
-  signatures - invisible for users *)
 type label
-type mod_self_id
-
-(* The first argument is a file name - to prevent conflict between
-   different files *)
-val make_msid : dir_path -> string -> mod_self_id
-val repr_msid : mod_self_id -> int * string * dir_path
-val id_of_msid : mod_self_id -> identifier
-val label_of_msid : mod_self_id -> label
-val refresh_msid : mod_self_id -> mod_self_id
-val debug_string_of_msid : mod_self_id -> string
-val string_of_msid : mod_self_id -> string
 
 (*s Unique names for bound modules *)
 type mod_bound_id
 
+(* The first argument is a file name - to prevent conflict between
+   different files *)
 val make_mbid : dir_path -> string -> mod_bound_id
 val repr_mbid : mod_bound_id -> int * string * dir_path
 val id_of_mbid : mod_bound_id -> identifier
@@ -91,12 +79,11 @@ val string_of_mp : module_path -> string
 module MPset : Set.S with type elt = module_path
 module MPmap : Map.S with type key = module_path
 
-(* Name of the toplevel structure *)
-val initial_msid : mod_self_id
-val initial_path : module_path (* [= MPself initial_msid] *)
-
 (* Initial "seed" of the unique identifier generator *)
 val initial_dir : dir_path
+
+(* Name of the toplevel structure *)
+val initial_path : module_path (* [= MPfile initial_dir] *)
 
 (*s The absolute names of objects seen by kernel *)
 
