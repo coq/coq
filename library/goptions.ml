@@ -297,10 +297,11 @@ let set_int_option_value = set_option_value
   (fun v -> function 
      | (IntValue _) -> IntValue v
      | _ -> bad_type_error ())
-let set_bool_option_value = set_option_value
-  (fun v -> function 
+let set_bool_option_value key v =
+  try set_option_value (fun v -> function
      | (BoolValue _) -> BoolValue v
-     | _ -> bad_type_error ())
+     | _ -> bad_type_error ()) key v
+  with UserError (_,s) -> Flags.if_verbose msg_warning s
 let set_string_option_value = set_option_value
  (fun v -> function 
     | (StringValue _) -> StringValue v
