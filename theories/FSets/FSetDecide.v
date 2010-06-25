@@ -346,6 +346,19 @@ the above form:
     (** ** Generic Tactics
         We begin by defining a few generic, useful tactics. *)
 
+    (** remove logical hypothesis inter-dependencies (fix #2136). *)
+
+    Ltac no_logical_interdep :=
+      match goal with
+        | H : ?P |- _ =>
+          match type of P with
+            | Prop =>
+              match goal with H' : context [ H ] |- _ => clear dependent H' end
+            | _ => fail
+          end; no_logical_interdep
+        | _ => idtac
+      end.
+
     (** [if t then t1 else t2] executes [t] and, if it does not
         fail, then [t1] will be applied to all subgoals
         produced.  If [t] fails, then [t2] is executed. *)
@@ -405,7 +418,7 @@ the above form:
         propositions of interest. *)
 
     Inductive FSet_elt_Prop : Prop -> Prop :=
-    | eq_Prop : forall (S : Set) (x y : S),
+    | eq_Prop : forall (S : Type) (x y : S),
         FSet_elt_Prop (x = y)
     | eq_elt_prop : forall x y,
         FSet_elt_Prop (E.eq x y)
@@ -660,6 +673,9 @@ the above form:
   Ltac fsetdec :=
     (** We first unfold any occurrences of [iff]. *)
     unfold iff in *;
+    (** We remove dependencies to logical hypothesis. This way,
+        later "clear" will work nicely (see bug #2136) *)
+    no_logical_interdep;
     (** We fold occurrences of [not] because it is better for
         [intros] to leave us with a goal of [~ P] than a goal of
         [False]. *)
