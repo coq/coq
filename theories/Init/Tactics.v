@@ -174,3 +174,20 @@ Tactic Notation "now" tactic(t) := t; easy.
 
 (** A tactic to document or check what is proved at some point of a script *)
 Ltac now_show c := change c.
+
+(** Clear an hypothesis and its dependencies *)
+
+Tactic Notation "clear" "dependent" hyp(h) :=
+ let rec depclear h :=
+  clear h ||
+  match goal with
+   | H : context [ h ] |- _ => depclear H; depclear h
+  end ||
+  fail "hypothesis to clear is used in the conclusion (maybe indirectly)"
+ in depclear h.
+
+(** Revert an hypothesis and its dependencies :
+    this is actually generalize dependent... *)
+
+Tactic Notation "revert" "dependent" hyp(h) :=
+ generalize dependent h.
