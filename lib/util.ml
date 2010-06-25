@@ -486,6 +486,26 @@ let lowercase_first_char_utf8 s =
   let j, n = next_utf8 s 0 in
   utf8_of_unicode (lowercase_unicode (String.sub s 0 j) n)
 
+(* For extraction, we need to encode unicode character into ascii ones *)
+
+let ascii_of_ident s =
+  let check_ascii s =
+    let ok = ref true in
+    String.iter (fun c -> if Char.code c >= 128 then ok := false) s;
+    !ok
+  in
+  if check_ascii s then s else
+    let i = ref 0 and out = ref "" in
+    begin try while true do
+      let j, n = next_utf8 s !i in
+      out :=
+       if n >= 128
+       then Printf.sprintf "%s__U%04x_" !out n
+       else Printf.sprintf "%s%c" !out s.[!i];
+      i := !i + j
+    done with End_of_input -> () end;
+    !out
+
 (* Lists *)
 
 let list_intersect l1 l2 = 
