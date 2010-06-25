@@ -222,19 +222,6 @@ let oracle_order env cf1 cf2 =
       | Some k2 -> Some (Conv_oracle.oracle_order k1 k2)
 
 let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flags m n =
-  let trivial_unify curenv pb (sigma,metasubst,_) m n =
-    let subst = if flags.use_metas_eagerly then metasubst else ms in
-    match subst_defined_metas subst m, subst_defined_metas subst n with
-    | Some m1, Some n1 ->
-	let evd = (create_evar_defs sigma) in
-          if (occur_meta_or_undefined_evar evd m1 || occur_meta_or_undefined_evar evd n1)
-	  then false
-	  else if (match flags.modulo_conv_on_closed_terms with
-	  | Some flags ->
-	      is_trans_fconv (conv_pb_of pb) flags env sigma m1 n
-	  | None -> false) then true 
-	  else error_cannot_unify curenv sigma (m, n)
-    | _ -> false in
   let rec unirec_rec (curenv,nb as curenvnb) pb b ((sigma,metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_castappevar sigma curm
     and cN = Evarutil.whd_castappevar sigma curn in
@@ -321,10 +308,41 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 		  match kind_of_term cN with App (f,l) -> (f,l) | _ -> (cN,[||]) in
 		  expand curenvnb pb b substn cM f1 l1 cN f2 l2
 
-  and expand (curenv,_ as curenvnb) pb b (sigma, _, _ as substn) cM f1 l1 cN f2 l2 =
-    if trivial_unify curenv pb substn cM cN then substn
+  and expand (curenv,_ as curenvnb) pb b (sigma,metasubst,_ as substn) cM f1 l1 cN f2 l2 =
+
+    if
+      (* Try full conversion on meta-free terms. *)
+      (* Back to 1995 (later on called trivial_unify in 2002), the
+	 heuristic was to apply conversion on meta-free (but not
+	 evar-free!) terms in all cases (i.e. for apply but also for
+	 auto and rewrite, even though auto and rewrite did not use
+	 modulo conversion in the rest of the unification
+	 algorithm). By compatibility we need to support this
+	 separately from the main unification algorithm *)
+      (* The exploitation of known metas has been added in May 2007
+	 (it is used by apply and rewrite); it might now be redundant
+	 with the support for delta-expansion (which is used
+	 essentially for apply)... *)
+      match flags.modulo_conv_on_closed_terms with
+      | None -> false
+      | Some convflags ->
+      let subst = if flags.use_metas_eagerly then metasubst else ms in
+      match subst_defined_metas subst cM with
+      | None -> (* some undefined Metas in cM *) false
+      | Some m1 ->
+      match subst_defined_metas subst cN with
+      | None -> (* some undefined Metas in cN *) false
+      | Some n1 ->
+	  if is_trans_fconv (conv_pb_of pb) convflags env sigma m1 n1
+	  then true else
+	    if is_ground_term sigma m1 && is_ground_term sigma n1 then
+	      error_cannot_unify curenv sigma (cM,cN)
+	    else false
+    then
+      substn
     else
       if b then
+      (* Try delta-expansion if in subterms or if asked to conv at top *)
       let cf1 = key_of flags f1 and cf2 = key_of flags f2 in
 	match oracle_order curenv cf1 cf2 with
 	| None -> error_cannot_unify curenv sigma (cM,cN)
