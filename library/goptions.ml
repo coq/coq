@@ -69,7 +69,7 @@ module MakeTable =
 
     let _ =
       if List.mem_assoc nick !A.table then
-	error "Sorry, this table name is already used"
+	error "Sorry, this table name is already used."
 
     module MySet = Set.Make (struct type t = A.t let compare = compare end)
 
@@ -219,11 +219,11 @@ let get_option key = OptionMap.find key !value_tab
 
 let check_key key = try
   let _ = get_option key in
-  error "Sorry, this option name is already used"
+  error "Sorry, this option name is already used."
 with Not_found ->
   if List.mem_assoc (nickname key) !string_table
     or List.mem_assoc (nickname key) !ref_table
-  then error "Sorry, this option name is already used"
+  then error "Sorry, this option name is already used."
 
 open Summary
 open Libobject
@@ -303,16 +303,17 @@ let set_option_value locality check_and_cast key v =
   in
   write (check_and_cast v (read ()))
 
-let bad_type_error () = error "Bad type of value for this option"
+let bad_type_error () = error "Bad type of value for this option."
 
 let set_int_option_value_gen locality = set_option_value  locality
   (fun v -> function
      | (IntValue _) -> IntValue v
      | _ -> bad_type_error ())
-let set_bool_option_value_gen locality = set_option_value locality
-  (fun v -> function
+let set_bool_option_value_gen locality key v =
+  try set_option_value locality (fun v -> function
      | (BoolValue _) -> BoolValue v
-     | _ -> bad_type_error ())
+     | _ -> bad_type_error ()) key v
+  with UserError (_,s) -> Flags.if_verbose msg_warning s
 let set_string_option_value_gen locality = set_option_value locality
  (fun v -> function
     | (StringValue _) -> StringValue v
