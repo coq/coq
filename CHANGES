@@ -51,7 +51,7 @@ Other tactics
   variables and "**" for introducing all quantified variables and hypotheses.
 - Pattern Unification for existential variables activated in tactics and 
   new option "Unset Tactic Evars Pattern Unification" to deactivate it.
-- Resolution of Canonical Structures is now part of the tactic's unification
+- Resolution of canonical structure is now part of the tactic's unification
   algorithm.
 - New tactic "decide lemma with hyp" for rewriting decidability lemmas
   when one knows which side is true.
@@ -192,6 +192,7 @@ Vernacular commands
   later "Eval <id> in ...". This command accepts a Local variant.
 - Syntax of Implicit Type now supports more than one block of variables of
   a given type.
+- Command "Canonical Structure" now warns when it has no effects.
 
 Library
 

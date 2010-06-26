@@ -756,12 +756,6 @@ let print_path_between cls clt =
   in
   print_path ((i,j),p)
 
-let pr_cs_pattern = function
-    Const_cs c -> pr_global c
-  | Prod_cs -> str "_ -> _"
-  | Default_cs -> str "_"
-  | Sort_cs s -> pr_sort_family s
-
 let print_canonical_projections () =
   prlist_with_sep pr_fnl
     (fun ((r1,r2),o) -> pr_cs_pattern r2 ++
