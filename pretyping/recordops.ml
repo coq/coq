@@ -235,7 +235,14 @@ let compute_canonical_projections (con,ind) =
 		 try
 		   let patt, n , args = cs_pattern_of_constr t in
 		     ((ConstRef proji_sp, patt, n, args) :: l)
-		 with Not_found -> l
+		 with Not_found ->
+                   if Flags.is_verbose () then
+                     (let con_pp = Nametab.pr_global_env Idset.empty (ConstRef con)
+                      and proji_sp_pp = Nametab.pr_global_env Idset.empty (ConstRef proji_sp) in
+		      msg_warning (str "No global reference exists for projection value"
+                                   ++ print_constr t ++ str " in instance "  
+                                   ++ con_pp ++ str " of " ++ proji_sp_pp ++ str ", ignoring it."));
+		   l
 	       end
 	   | _ -> l)
       [] lps in
@@ -245,13 +252,30 @@ let compute_canonical_projections (con,ind) =
      o_TPARAMS=params; o_NPARAMS=List.length params; o_TCOMPS=argj})
     comp
 
+let pr_cs_pattern = function
+    Const_cs c -> Nametab.pr_global_env Idset.empty c
+  | Prod_cs -> str "_ -> _"
+  | Default_cs -> str "_"
+  | Sort_cs s -> Termops.pr_sort_family s
+
 let open_canonical_structure i (_,o) =
   if i=1 then
     let lo = compute_canonical_projections o in
     List.iter (fun ((proj,cs_pat),s) ->
       let l = try Refmap.find proj !object_table with Not_found -> [] in
-      if not (List.mem_assoc cs_pat l) then
-        object_table := Refmap.add proj ((cs_pat,s)::l) !object_table) lo
+      let ocs = try Some (List.assoc cs_pat l)
+      with Not_found -> None
+      in match ocs with
+        | None -> object_table := Refmap.add proj ((cs_pat,s)::l) !object_table;
+        | Some cs ->
+            if Flags.is_verbose () then
+              let old_can_s = (Termops.print_constr cs.o_DEF)
+              and new_can_s = (Termops.print_constr s.o_DEF) in
+              let prj = (Nametab.pr_global_env Idset.empty proj)
+              and hd_val = (pr_cs_pattern cs_pat) in
+              msg_warning (str "Ignoring canonical projection to " ++ hd_val
+                             ++ str " by " ++ prj ++ str " in "
+                             ++ new_can_s ++ str ": redundant with " ++ old_can_s)) lo
 
 let cache_canonical_structure o =
   open_canonical_structure 1 o

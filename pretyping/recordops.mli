@@ -73,6 +73,7 @@ type obj_typ = {
   o_TCOMPS : constr list } (** ordered *)
 
 val cs_pattern_of_constr : constr -> cs_pattern * int * constr list
+val pr_cs_pattern : cs_pattern -> Pp.std_ppcmds
 
 val lookup_canonical_conversion : (global_reference * cs_pattern) -> obj_typ
 val declare_canonical_structure : global_reference -> unit
