@@ -1,23 +1,30 @@
 \achapter{Nsatz: tactics for proving equalities in $\mathbb{R}$ and $\mathbb{Z}$}
 \aauthor{Loïc Pottier}
 
-The tactic \texttt{nsatz} proves formulas of the form
+The tactic \texttt{nsatz} proves goals of the form
 
 \[ \begin{array}{l}
   \forall X_1,\ldots,X_n \in \mathbb{R},\\
-   P_1(X_1,\ldots,X_n) = Q_1(X_1,\ldots,X_n) \wedge \ldots \wedge  P_s(X_1,\ldots,X_n) =Q_s(X_1,\ldots,X_n)\\ 
- \Rightarrow P(X_1,\ldots,X_n) = Q(X_1,\ldots,X_n)\\
+   P_1(X_1,\ldots,X_n) = Q_1(X_1,\ldots,X_n) , \ldots ,  P_s(X_1,\ldots,X_n) =Q_s(X_1,\ldots,X_n)\\ 
+ \vdash P(X_1,\ldots,X_n) = Q(X_1,\ldots,X_n)\\
   \end{array}
 \]
 where $P,Q, P_1,Q_1,\ldots,P_s,Q_s$ are polynomials.
+It also proves formulas
+\[ \begin{array}{l}
+  \forall X_1,\ldots,X_n \in \mathbb{R},\\
+   P_1(X_1,\ldots,X_n) = Q_1(X_1,\ldots,X_n) \wedge \ldots \wedge  P_s(X_1,\ldots,X_n) =Q_s(X_1,\ldots,X_n)\\ 
+ \rightarrow P(X_1,\ldots,X_n) = Q(X_1,\ldots,X_n)\\
+  \end{array}
+\] doing automatic introductions.
  
-The tactic \texttt{nsatzZ} proves the same formulas where the $X_i$ are in $\mathbb{Z}$.
+The tactic \texttt{nsatzZ} proves the same goals where the $X_i$ are in $\mathbb{Z}$.
 
 \asection{Using the basic tactic \texttt{nsatz}}
 \tacindex{nsatz}
 
 If you work in $\mathbb{R}$, load the
-\texttt{NsatzR} module: \texttt{Require
+\texttt{NsatzR} module: \texttt{Require Import
 NsatzR}.\\
  and use the tactic \texttt{nsatz} or \texttt{nsatzR}.
 If you work in $\mathbb{Z}$ do the same thing {\em mutatis mutandis}.
@@ -48,9 +55,11 @@ the generic tactic \texttt{nsatzRpv}, which are used as follows:
   \begin{itemize}
   \item \texttt{nsatzRpv rmax strategy lparam lvar}:
     \begin{itemize}
-	\item \texttt{rmax} is the maximum r when for searching r s.t.$c (P-Q)^r =
-\sum_{i=1}^{s} S_i (P_i - Q_i)$
-	\item \texttt{strategy} gives the order on variables $X_1,...X_n$ and the strategy of choice for s-polynomials during Buchberger algorithm: 
+	\item \texttt{rmax} is a bound when for searching r s.t.$c (P-Q)^r =
+\sum_{i=1..s} S_i (P_i - Q_i)$
+	\item \texttt{strategy} gives the order on variables $X_1,...X_n$ and
+the strategy used in Buchberger algorithm (see
+\cite{sugar} for details): 
 
      	\begin{itemize}
 		\item  strategy = 0: reverse lexicographic order and newest s-polynomial.
@@ -72,11 +81,11 @@ in the decreasing order in which they will be used in Buchberger algorithm. If \
 R)}, then \texttt{lvar} is replaced by all the variables which are not in lparam.
      \end{itemize}
   \item \texttt{nsatzRparameters lparam} is equivalent to 
-        \texttt{nsatzRpv nsatzRpv 6\%N 1\%Z lparam (@nil R)}
+        \texttt{nsatzRpv 6\%N 1\%Z lparam (@nil R)}
   \item \texttt{nsatzRradical rmax} is equivalent to 
 	\texttt{nsatzRpv rmax 1\%Z (@nil R) (@nil R)}
   \item \texttt{nsatz} is equivalent to 
-	\texttt{nsatzRpv 6\%N 1\%Z (@nil R) (@nil R)}
+	\texttt{nsatzRpv 6\%N 1\%Z (@nil R) (@nil R)}ls
   \end{itemize}
 
 %%% Local Variables: 

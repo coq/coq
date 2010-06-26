@@ -1,7 +1,7 @@
 (* Test robustness of Groebner tactic in presence of disequalities *)
 
 Require Export Reals.
-Require Export GroebnerR.
+Require Export NsatzR.
 
 Open Scope R_scope.
 
@@ -15,6 +15,6 @@ Lemma essai :
 Proof.
 intros.
 (* clear H. groebner used not to work when H was not cleared *)
-groebnerR.
+nsatzR.
 Qed.
 

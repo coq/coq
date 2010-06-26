@@ -363,6 +363,7 @@ Ltac nsatzR_gen radicalmax info lparam lvar n RNG lH _rl :=
   let SplitPolyList kont :=
     match lpol with
     | ?p2::?lp2 => kont p2 lp2
+    | _ => idtac "polynomial not in the ideal"
     end in
   SplitPolyList ltac:(fun p lp =>
     set (p21:=p) ;
