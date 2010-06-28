@@ -70,6 +70,12 @@ let rec dottify = function
   | s::[""] -> s
   | s::l -> (dottify l)^"."^s
 
+let rec pseudo_qualify up = function
+  | [] -> assert false
+  | [s] -> s
+  | s::[""] -> s
+  | s::l -> (if up then "" else "_")^(pseudo_qualify true l)^"__"^s
+
 (*s Uppercase/lowercase renamings. *)
 
 let is_upper s = match s.[0] with 'A' .. 'Z' -> true | _ -> false
@@ -305,6 +311,7 @@ and mp_renaming =
 let ref_renaming_fun (k,r) =
   let mp = subst_mp (modpath_of_r r) in
   let l = mp_renaming mp in
+  let l = if lang () = Haskell && not (modular ()) then [""] else l in
   let s =
     if l = [""] (* this happens only at toplevel of the monolithic case *)
     then
@@ -372,7 +379,7 @@ let opened_libraries () =
    contains the label of the reference to print.
    Invariant: [List.length ls >= 2], simpler situations are handled elsewhere. *)
 
-let pp_gen k mp ls olab =
+let pp_ocaml_gen k mp ls olab =
   try (* what is the largest prefix of [mp] that belongs to [visible]? *)
     let prefix = common_prefix_from_list mp (get_visible_mps ()) in
     let delta = mp_length mp - mp_length prefix in
@@ -413,6 +420,14 @@ let pp_gen k mp ls olab =
       error_module_clash base_s
     else dottify ls
 
+let pp_haskell_gen k mp ls =
+  if not (modular ()) then List.hd ls
+  else match List.rev ls with
+    | [] -> assert false
+    | s::ls' ->
+	(if base_mp mp <> top_visible_mp () then s ^ "." else "") ^
+	  (pseudo_qualify (upperkind k) (List.rev ls'))
+
 let pp_global k r =
   let ls = ref_renaming (k,r) in
   assert (List.length ls > 1);
@@ -424,9 +439,8 @@ let pp_global k r =
     (add_visible (k,s); unquote s)
   else match lang () with
     | Scheme -> unquote s (* no modular Scheme extraction... *)
-    | Haskell -> if modular () then dottify ls else s
-	(* for the moment we always qualify in modular Haskell... *)
-    | Ocaml -> pp_gen k mp ls (Some (label_of_r r))
+    | Haskell -> pp_haskell_gen k mp ls
+    | Ocaml -> pp_ocaml_gen k mp ls (Some (label_of_r r))
 
 (* The next function is used only in Ocaml extraction...*)
 let pp_module mp =
@@ -439,6 +453,6 @@ let pp_module mp =
 	(* we update the visible environment *)
 	let s = List.hd ls in
 	add_visible (Mod,s); s
-    | _ -> pp_gen Mod mp ls None
+    | _ -> pp_ocaml_gen Mod mp ls None
 
 
