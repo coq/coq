@@ -38,9 +38,8 @@ let toplevel_env () =
 	in l,seb
     | _ -> failwith "caught"
   in
-  match current_toplevel () with
-    | _ -> SEBstruct (List.rev (map_succeed get_reference seg))
- 
+  SEBstruct (List.rev (map_succeed get_reference seg))
+
 
 let environment_until dir_opt =
   let rec parse = function
