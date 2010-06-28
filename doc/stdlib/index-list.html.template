@@ -48,8 +48,6 @@ through the <tt>Require Import</tt> command.</p>
     (theories/Logic/Classical.v)
     theories/Logic/ClassicalFacts.v
     theories/Logic/Decidable.v
-    theories/Logic/DecidableType.v
-    theories/Logic/DecidableTypeEx.v
     theories/Logic/Eqdep_dec.v
     theories/Logic/EqdepFacts.v
     theories/Logic/Eqdep.v
@@ -72,6 +70,27 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/FunctionalExtensionality.v
   </dd>
     
+  <dt> <b>Structures</b>:
+       Algebraic structures (types with equality, with order, ...).
+       DecidableType* and OrderedType* are there only for compatibility.
+  </dt>
+  <dd>
+    theories/Structures/Equalities.v
+    theories/Structures/EqualitiesFacts.v
+    theories/Structures/Orders.v
+    theories/Structures/OrdersTac.v
+    theories/Structures/OrdersAlt.v
+    theories/Structures/OrdersEx.v
+    theories/Structures/OrdersFacts.v
+    theories/Structures/OrdersLists.v
+    theories/Structures/GenericMinMax.v
+    theories/Structures/DecidableType.v
+    theories/Structures/DecidableTypeEx.v
+    theories/Structures/OrderedType.v
+    theories/Structures/OrderedTypeAlt.v
+    theories/Structures/OrderedTypeEx.v
+  </dd>
+
   <dt> <b>Bool</b>:
        Booleans (basic functions and results)
   </dt>
@@ -124,6 +143,9 @@ through the <tt>Require Import</tt> command.</p>
     theories/NArith/Ndigits.v
     theories/NArith/Ndist.v
     theories/NArith/Ndec.v
+    theories/NArith/Ndiv_def.v
+    theories/NArith/POrderedType.v
+    theories/NArith/Pminmax.v
   </dd>
 
   <dt> <b>ZArith</b>:
@@ -155,12 +177,12 @@ through the <tt>Require Import</tt> command.</p>
     (theories/ZArith/ZArith.v)
     theories/ZArith/Zgcd_alt.v
     theories/ZArith/Zwf.v
-    theories/ZArith/Zbinary.v
     theories/ZArith/Znumtheory.v
     theories/ZArith/Int.v
     theories/ZArith/ZOdiv_def.v
     theories/ZArith/ZOdiv.v
     theories/ZArith/Zpow_facts.v
+    theories/ZArith/Zdigits.v
   </dd>
 
   <dt> <b>QArith</b>:
@@ -177,6 +199,8 @@ through the <tt>Require Import</tt> command.</p>
     theories/QArith/Qreals.v
     theories/QArith/Qcanon.v
     theories/QArith/Qround.v
+    theories/QArith/QOrderedType.v
+    theories/QArith/Qminmax.v
   </dd>
 
   <dt> <b>Numbers</b>: 
@@ -197,8 +221,11 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/NatInt/NZAxioms.v
     theories/Numbers/NatInt/NZBase.v
     theories/Numbers/NatInt/NZMul.v
+    theories/Numbers/NatInt/NZDiv.v
     theories/Numbers/NatInt/NZMulOrder.v
     theories/Numbers/NatInt/NZOrder.v
+    theories/Numbers/NatInt/NZDomain.v
+    theories/Numbers/NatInt/NZProperties.v
     </dd>
     </dt>
 
@@ -218,6 +245,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Cyclic/DoubleCyclic/DoubleSub.v
     theories/Numbers/Cyclic/DoubleCyclic/DoubleType.v
     theories/Numbers/Cyclic/Int31/Cyclic31.v
+    theories/Numbers/Cyclic/Int31/Ring31.v
     theories/Numbers/Cyclic/Int31/Int31.v
     theories/Numbers/Cyclic/ZModulo/ZModulo.v
     </dd>
@@ -232,19 +260,21 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Natural/Abstract/NBase.v
     theories/Numbers/Natural/Abstract/NDefOps.v
     theories/Numbers/Natural/Abstract/NIso.v
-    theories/Numbers/Natural/Abstract/NMul.v
     theories/Numbers/Natural/Abstract/NMulOrder.v
     theories/Numbers/Natural/Abstract/NOrder.v
     theories/Numbers/Natural/Abstract/NStrongRec.v
     theories/Numbers/Natural/Abstract/NSub.v
+    theories/Numbers/Natural/Abstract/NDiv.v
+    theories/Numbers/Natural/Abstract/NProperties.v
+    theories/Numbers/Natural/Abstract/NMinMax.v
     theories/Numbers/Natural/Binary/NBinary.v
-    theories/Numbers/Natural/Binary/NBinDefs.v
     theories/Numbers/Natural/Peano/NPeano.v
     theories/Numbers/Natural/SpecViaZ/NSig.v
     theories/Numbers/Natural/SpecViaZ/NSigNAxioms.v
     theories/Numbers/Natural/BigN/BigN.v
     theories/Numbers/Natural/BigN/Nbasic.v
     theories/Numbers/Natural/BigN/NMake.v
+    theories/Numbers/Natural/BigN/NMake_gen.v
     </dd>
     </dt>
 
@@ -255,10 +285,15 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Integer/Abstract/ZAddOrder.v
     theories/Numbers/Integer/Abstract/ZAxioms.v
     theories/Numbers/Integer/Abstract/ZBase.v
-    theories/Numbers/Integer/Abstract/ZDomain.v
     theories/Numbers/Integer/Abstract/ZLt.v
     theories/Numbers/Integer/Abstract/ZMul.v
     theories/Numbers/Integer/Abstract/ZMulOrder.v
+    theories/Numbers/Integer/Abstract/ZDivEucl.v
+    theories/Numbers/Integer/Abstract/ZDivFloor.v
+    theories/Numbers/Integer/Abstract/ZDivTrunc.v
+    theories/Numbers/Integer/Abstract/ZProperties.v
+    theories/Numbers/Integer/Abstract/ZSgnAbs.v
+    theories/Numbers/Integer/Abstract/ZMinMax.v
     theories/Numbers/Integer/Binary/ZBinary.v
     theories/Numbers/Integer/NatPairs/ZNatPairs.v
     theories/Numbers/Integer/SpecViaZ/ZSig.v
@@ -325,11 +360,10 @@ through the <tt>Require Import</tt> command.</p>
     theories/Classes/Morphisms_Relations.v
     theories/Classes/Equivalence.v
     theories/Classes/EquivDec.v
-    theories/Classes/Functions.v
     theories/Classes/SetoidTactics.v
     theories/Classes/SetoidClass.v
     theories/Classes/SetoidDec.v
-    theories/Classes/SetoidAxioms.v
+    theories/Classes/RelationPairs.v
   </dd>
 
   <dt> <b>Setoids</b>:
@@ -359,6 +393,8 @@ through the <tt>Require Import</tt> command.</p>
     theories/Sorting/Sorting.v
     theories/Sorting/PermutEq.v
     theories/Sorting/PermutSetoid.v
+    theories/Sorting/Mergesort.v
+    theories/Sorting/Sorted.v
   </dd>
 
   <dt> <b>Wellfounded</b>:
@@ -375,15 +411,30 @@ through the <tt>Require Import</tt> command.</p>
     theories/Wellfounded/Wellfounded.v
     theories/Wellfounded/Well_Ordering.v
   </dd>
-    
-  <dt> <b>FSets</b>:
-    Modular implementation of finite sets/maps using lists or
-    efficient trees
+
+  <dt> <b>MSets</b>:
+    Modular implementation of finite sets using lists or
+    efficient trees. This is a modernization of FSets.
   </dt>
   <dd>
-    theories/FSets/OrderedType.v
-    theories/FSets/OrderedTypeAlt.v
-    theories/FSets/OrderedTypeEx.v
+    theories/MSets/MSetInterface.v
+    theories/MSets/MSetFacts.v
+    theories/MSets/MSetDecide.v
+    theories/MSets/MSetProperties.v
+    theories/MSets/MSetEqProperties.v
+    theories/MSets/MSetWeakList.v
+    theories/MSets/MSetList.v
+    theories/MSets/MSetAVL.v
+    theories/MSets/MSetToFiniteSet.v
+    (theories/MSets/MSets.v)
+  </dd>
+
+  <dt> <b>FSets</b>:
+    Modular implementation of finite sets/maps using lists or
+    efficient trees. For sets, please consider the more
+    modern MSets.
+  </dt>
+  <dd>
     theories/FSets/FSetInterface.v
     theories/FSets/FSetBridge.v
     theories/FSets/FSetFacts.v
@@ -392,6 +443,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/FSets/FSetEqProperties.v
     theories/FSets/FSetList.v
     theories/FSets/FSetWeakList.v
+    theories/FSets/FSetCompat.v
     (theories/FSets/FSets.v)
     theories/FSets/FSetAVL.v
     theories/FSets/FSetToFiniteSet.v
@@ -402,7 +454,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/FSets/FMapFacts.v
     (theories/FSets/FMaps.v)
     theories/FSets/FMapAVL.v
-    theories/FSets/FSetFullAVL.v
     theories/FSets/FMapFullAVL.v
   </dd>
 
@@ -422,6 +473,8 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/Raxioms.v
     theories/Reals/RIneq.v
     theories/Reals/DiscrR.v
+    theories/Reals/ROrderedType.v
+    theories/Reals/Rminmax.v
     (theories/Reals/Rbase.v)
     theories/Reals/RList.v
     theories/Reals/Ranalysis.v
