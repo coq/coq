@@ -20,6 +20,7 @@ Rewriting tactics
   by importing "Morphisms" too).
 - Support added for using Chung-Kil Hur's Heq library for rewriting over
   heterogeneous equality (courtesy of the library's author).
+- Tactic "replace" supports matching terms with holes.
 
 Automation tactics
 
