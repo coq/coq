@@ -251,7 +251,7 @@ let pp_one_ind ip pl cv =
   if Array.length cv = 0 then str "= () -- empty inductive"
   else
     (v 0 (str "= " ++
-	  prvect_with_sep (fun () -> fnl () ++ str "  | ") pp_constructor
+	  prvect_with_sep (fun () -> fnl () ++ str "| ") pp_constructor
 	    (Array.mapi (fun i c -> ConstructRef (ip,i+1),c) cv)))
 
 let rec pp_ind first kn i ind =
@@ -311,12 +311,17 @@ let pp_decl = function
 	  else
 	    hov 0 (pp_function (empty_env ()) e a ++ fnl2 ())
 
-let pp_structure_elem = function
+let rec pp_structure_elem = function
   | (l,SEdecl d) -> pp_decl d
-  | (l,SEmodule m) ->
-      failwith "TODO: Haskell extraction of modules not implemented yet"
-  | (l,SEmodtype m) ->
-      failwith "TODO: Haskell extraction of modules not implemented yet"
+  | (l,SEmodule m) -> pp_module_expr m.ml_mod_expr
+  | (l,SEmodtype m) -> mt ()
+      (* for the moment we simply discard module type *)
+
+and pp_module_expr = function
+  | MEstruct (mp,sel) -> prlist_strict pp_structure_elem sel
+  | MEident _ -> failwith "Not Implemented: Module Ident"
+  | MEfunctor _ -> failwith "Not Implemented: Module Functor"
+  | MEapply _ -> failwith "Not Implemented: Module Application"
 
 let pp_struct =
   let pp_sel (mp,sel) =
