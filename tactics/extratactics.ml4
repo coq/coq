@@ -26,24 +26,36 @@ open Equality
 (* replace, discriminate, injection, simplify_eq                      *)
 (* cutrewrite, dependent rewrite                                      *)
 
+let replace_in_clause_maybe_by (sigma1,c1) c2 in_hyp tac =
+  Refiner.tclWITHHOLES false
+    (replace_in_clause_maybe_by c1 c2 (glob_in_arg_hyp_to_clause in_hyp))
+    sigma1
+    (Option.map Tacinterp.eval_tactic tac)
+
+let replace_multi_term dir_opt (sigma,c) in_hyp =
+  Refiner.tclWITHHOLES false
+    (replace_multi_term dir_opt c)
+    sigma
+    (glob_in_arg_hyp_to_clause in_hyp)
+
 TACTIC EXTEND replace
-   ["replace" constr(c1) "with" constr(c2) in_arg_hyp(in_hyp) by_arg_tac(tac) ]
--> [ replace_in_clause_maybe_by c1 c2 (glob_in_arg_hyp_to_clause in_hyp) (Option.map Tacinterp.eval_tactic tac) ]
+   ["replace" open_constr(c1) "with" constr(c2) in_arg_hyp(in_hyp) by_arg_tac(tac) ]
+-> [ replace_in_clause_maybe_by c1 c2 in_hyp tac ]
 END
 
 TACTIC EXTEND replace_term_left
-  [ "replace"  "->" constr(c) in_arg_hyp(in_hyp) ]
-  -> [ replace_multi_term (Some true) c (glob_in_arg_hyp_to_clause in_hyp)]
+  [ "replace"  "->" open_constr(c) in_arg_hyp(in_hyp) ]
+  -> [ replace_multi_term (Some true) c in_hyp]
 END
 
 TACTIC EXTEND replace_term_right
-  [ "replace"  "<-" constr(c) in_arg_hyp(in_hyp) ]
-  -> [replace_multi_term (Some false) c (glob_in_arg_hyp_to_clause in_hyp)]
+  [ "replace"  "<-" open_constr(c) in_arg_hyp(in_hyp) ]
+  -> [replace_multi_term (Some false) c in_hyp]
 END
 
 TACTIC EXTEND replace_term
-  [ "replace" constr(c) in_arg_hyp(in_hyp) ]
-  -> [ replace_multi_term None c (glob_in_arg_hyp_to_clause in_hyp) ]
+  [ "replace" open_constr(c) in_arg_hyp(in_hyp) ]
+  -> [ replace_multi_term None c in_hyp ]
 END
 
 let induction_arg_of_quantified_hyp = function
