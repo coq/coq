@@ -1667,7 +1667,7 @@ let eval_pattern lfun ist env sigma (_,pat as c) =
   if use_types then
     snd (interp_typed_pattern ist env sigma c)
   else
-    instantiate_pattern lfun pat
+    instantiate_pattern sigma lfun pat
 
 let read_pattern lfun ist env sigma = function
   | Subterm (b,ido,c) -> Subterm (b,ido,eval_pattern lfun ist env sigma c)
