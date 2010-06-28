@@ -79,7 +79,7 @@ val pattern_of_rawconstr : rawconstr ->
       patvar list * constr_pattern
 
 val instantiate_pattern :
-  (identifier * (identifier list * constr)) list ->
+  Evd.evar_map -> (identifier * (identifier list * constr)) list ->
   constr_pattern -> constr_pattern
 
 val lift_pattern : int -> constr_pattern -> constr_pattern

@@ -165,7 +165,7 @@ let error_instantiate_pattern id l =
     ++ strbrk " in pattern because the term refers to " ++ pr_enum pr_id l
     ++ strbrk " which " ++ str is ++ strbrk " not bound in the pattern.")
 
-let instantiate_pattern lvar c =
+let instantiate_pattern sigma lvar c =
   let rec aux vars = function
   | PVar id as x ->
       (try
@@ -174,7 +174,7 @@ let instantiate_pattern lvar c =
 	  let inst =
 	    List.map (fun id -> mkRel (list_index (Name id) vars)) ctx in
 	  let c = substl inst c in
-	  snd (pattern_of_constr Evd.empty c)
+	  snd (pattern_of_constr sigma c)
 	with Not_found (* list_index failed *) ->
 	  let vars =
 	    list_map_filter (function Name id -> Some id | _ -> None) vars in
