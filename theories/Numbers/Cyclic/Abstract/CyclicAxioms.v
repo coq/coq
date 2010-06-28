@@ -269,7 +269,7 @@ Module ZnZ.
  case (of_pos p); intros n w1; simpl.
  case n; simpl Npos; auto with zarith.
  intros p1 Hp1; contradict Hp; apply Zle_not_lt.
- replace (base digits) with (1 * base digits + 0) by auto with zarith.
+ replace (base digits) with (1 * base digits + 0) by ring.
  rewrite Hp1.
  apply Zplus_le_compat.
  apply Zmult_le_compat; auto with zarith.

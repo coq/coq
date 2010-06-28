@@ -100,7 +100,7 @@ Theorem pred_succ : forall n, P (S n) == n.
 Proof.
 intro n. zify.
 rewrite <- pred_mod_wB.
-replace ([| n |] + 1 - 1)%Z with [| n |] by auto with zarith. apply NZ_to_Z_mod.
+replace ([| n |] + 1 - 1)%Z with [| n |] by ring. apply NZ_to_Z_mod.
 Qed.
 
 Section Induction.
@@ -170,7 +170,7 @@ Theorem sub_succ_r : forall n m, n - (S m) == P (n - m).
 Proof.
 intros n m. zify. rewrite Zminus_mod_idemp_r, Zminus_mod_idemp_l.
 now replace ([|n|] - ([|m|] + 1))%Z with ([|n|] - [|m|] - 1)%Z
-     by auto with zarith.
+     by ring.
 Qed.
 
 Theorem mul_0_l : forall n, 0 * n == 0.
