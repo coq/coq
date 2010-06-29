@@ -30,13 +30,8 @@ Proof.
   rewrite <- H ; rewrite <- H0 ; auto.
   rewrite H ; rewrite  H0 ; auto.
   apply Qsrt.
-  apply Qle_refl.
-  apply Qle_antisym ; auto.
   eapply Qle_trans ; eauto.
-  apply Qlt_le_weak ; auto.
   apply (Qlt_not_eq n m H H0) ; auto.
-  destruct (Qle_lt_or_eq _ _ H0) ; auto.
-  tauto.
   destruct(Q_dec n m) as [[H1 |H1] | H1 ] ; tauto.
   apply (Qplus_le_compat  p p n m  (Qle_refl p) H).
   generalize (Qmult_lt_compat_r 0 n m H0 H).
