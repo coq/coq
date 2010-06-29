@@ -408,7 +408,11 @@ let kind_of_global_goal = function
 let kind_of_inductive isrecord kn =
  "DEFINITION",
  if (fst (Global.lookup_inductive (kn,0))).Declarations.mind_finite
- then if isrecord then "Record" else "Inductive"
+ then begin 
+   match isrecord with 
+   | Declare.KernelSilent -> "Record"
+   | _ -> "Inductive"
+ end
  else "CoInductive"
 ;;
 
@@ -478,8 +482,8 @@ let kind_of_global r =
   match r with
   | Ln.IndRef kn | Ln.ConstructRef (kn,_) ->
       let isrecord =
-	try let _ = Recordops.lookup_projections kn in true
-        with Not_found -> false in
+	try let _ = Recordops.lookup_projections kn in Declare.KernelSilent
+        with Not_found -> Declare.KernelVerbose in
       kind_of_inductive isrecord (fst kn)
   | Ln.VarRef id -> kind_of_variable id
   | Ln.ConstRef kn -> kind_of_constant kn
@@ -539,13 +543,15 @@ let print internal glob_ref kind xml_library_root =
   in
   let fn = filename_of_path xml_library_root tag in
   let uri = Cic2acic.uri_of_kernel_name tag in
-   if not internal then print_object_kind uri kind;
+  (match internal with
+    | Declare.KernelSilent -> ()
+    | _ -> print_object_kind uri kind);
    print_object uri obj Evd.empty None fn
 ;;
 
 let print_ref qid fn =
   let ref = Nametab.global qid in
-  print false ref (kind_of_global ref) fn
+  print Declare.UserVerbose ref (kind_of_global ref) fn
 
 (* show dest                                                  *)
 (*  where dest is either None (for stdout) or (Some filename) *)
@@ -606,7 +612,7 @@ let _ =
   Declare.set_xml_declare_variable
    (function (sp,kn) ->
      let id = Libnames.basename sp in
-     print false (Libnames.VarRef id) (kind_of_variable id) xml_library_root ;
+     print Declare.UserVerbose (Libnames.VarRef id) (kind_of_variable id) xml_library_root ;
      proof_to_export := None)
 ;;
 
@@ -629,7 +635,8 @@ let _ =
 let _ =
   Declare.set_xml_declare_inductive
    (function (isrecord,(sp,kn)) ->
-      print false (Libnames.IndRef (Names.mind_of_kn kn,0)) (kind_of_inductive isrecord (Names.mind_of_kn kn))
+      print Declare.UserVerbose (Libnames.IndRef (Names.mind_of_kn kn,0))
+        (kind_of_inductive isrecord (Names.mind_of_kn kn))
         xml_library_root)
 ;;
 

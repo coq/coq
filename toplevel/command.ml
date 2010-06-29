@@ -190,7 +190,7 @@ type structured_inductive_expr =
 let minductive_message = function
   | []  -> error "No inductive definition."
   | [x] -> (pr_id x ++ str " is defined")
-  | l   -> hov 0  (prlist_with_sep pr_coma pr_id l ++
+  | l   -> hov 0  (prlist_with_sep pr_comma pr_id l ++
 		     spc () ++ str "are defined")
 
 let check_all_names_different indl =
@@ -365,7 +365,7 @@ let do_mutual_inductive indl finite =
   (* Interpret the types *)
   let mie,impls = interp_mutual_inductive indl ntns finite in
   (* Declare the mutual inductive block with its associated schemes *)
-  ignore (declare_mutual_inductive_with_eliminations false mie impls);
+  ignore (declare_mutual_inductive_with_eliminations UserVerbose mie impls);
   (* Declare the possible notations of inductive types *)
   List.iter Metasyntax.add_notation_interpretation ntns;
   (* Declare the coercions *)

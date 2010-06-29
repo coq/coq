@@ -102,7 +102,10 @@ let _ =
 (* Util *)
 
 let define id internal c t =
-  let f = if internal then declare_internal_constant else declare_constant in
+  (* TODO: specify even more by distinguish KernelVerbose and UserVerbose *)
+  let f = match internal with
+   | KernelSilent -> declare_internal_constant
+   | _ -> declare_constant in
   let kn = f id
     (DefinitionEntry
       { const_entry_body = c;
@@ -120,12 +123,13 @@ let declare_beq_scheme_gen internal names kn =
 
 let alarm what internal msg =
   let debug = false in
-  if internal then
+  (* TODO: specify even more by distinguish KernelVerbose and UserVerbose *)
+  match internal with
+  | KernelSilent ->
     (if debug then
       Flags.if_verbose Pp.msg_warning
 	(hov 0 msg ++ fnl () ++ what ++ str " not defined."))
-  else
-    errorlabstrm "" msg
+  | _ -> errorlabstrm "" msg
 
 let try_declare_scheme what f internal names kn =
   try f internal names kn
@@ -166,18 +170,19 @@ let beq_scheme_msg mind =
     (list_tabulate (fun i -> (mind,i)) (Array.length mib.mind_packets))
 
 let declare_beq_scheme_with l kn =
-  try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen false l kn
+  try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen UserVerbose l kn
 
+(* TODO : maybe switch to KernelVerbose to have the right behaviour *)
 let try_declare_beq_scheme kn =
   (* TODO: handle Fix, see e.g. TheoryList.In_spec, eventually handle
       proof-irrelevance; improve decidability by depending on decidability
       for the parameters rather than on the bl and lb properties *)
-  try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen true [] kn
+  try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen KernelSilent [] kn
 
 let declare_beq_scheme = declare_beq_scheme_with []
 
 (* Case analysis schemes *)
-
+(* TODO: maybe switch to KernelVerbose *)
 let declare_one_case_analysis_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let kind = inductive_sort_family mip in
@@ -187,7 +192,7 @@ let declare_one_case_analysis_scheme ind =
        induction scheme, the other ones share the same code with the
        apropriate type *)
   if List.mem InType kelim then
-    ignore (define_individual_scheme dep true None ind)
+    ignore (define_individual_scheme dep KernelSilent None ind)
 
 (* Induction/recursion schemes *)
 
@@ -201,6 +206,7 @@ let kinds_from_type =
    InProp,ind_dep_scheme_kind_from_type;
    InSet,rec_dep_scheme_kind_from_type]
 
+  (* TODO: maybe switch to kernel verbose *)
 let declare_one_induction_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let kind = inductive_sort_family mip in
@@ -210,7 +216,7 @@ let declare_one_induction_scheme ind =
     list_map_filter (fun (sort,kind) ->
       if List.mem sort kelim then Some kind else None)
       (if from_prop then kinds_from_prop else kinds_from_type) in
-  List.iter (fun kind -> ignore (define_individual_scheme kind true None ind))
+  List.iter (fun kind -> ignore (define_individual_scheme kind KernelSilent None ind))
     elims
 
 let declare_induction_schemes kn =
@@ -233,11 +239,12 @@ let eq_dec_scheme_msg ind = (* TODO: mutual inductive case *)
 
 let declare_eq_decidability_scheme_with l kn =
   try_declare_scheme (eq_dec_scheme_msg (kn,0))
-    declare_eq_decidability_gen false l kn
+    declare_eq_decidability_gen UserVerbose l kn
 
+(* TODO:  maybe switch to kernel verbose *)
 let try_declare_eq_decidability kn =
   try_declare_scheme (eq_dec_scheme_msg (kn,0))
-    declare_eq_decidability_gen true [] kn
+    declare_eq_decidability_gen KernelSilent [] kn
 
 let declare_eq_decidability = declare_eq_decidability_scheme_with []
 
@@ -245,33 +252,36 @@ let ignore_error f x = try ignore (f x) with _ -> ()
 
 let declare_rewriting_schemes ind =
   if Hipattern.is_inductive_equality ind then begin
-    ignore (define_individual_scheme rew_r2l_scheme_kind true None ind);
-    ignore (define_individual_scheme rew_r2l_dep_scheme_kind true None ind);
-    ignore (define_individual_scheme rew_r2l_forward_dep_scheme_kind true None ind);
+    ignore (define_individual_scheme rew_r2l_scheme_kind KernelSilent None ind);
+    ignore (define_individual_scheme rew_r2l_dep_scheme_kind KernelSilent None ind);
+    ignore (define_individual_scheme rew_r2l_forward_dep_scheme_kind
+      KernelSilent None ind);
     (* These ones expect the equality to be symmetric; the first one also *)
     (* needs eq *)
-    ignore_error (define_individual_scheme rew_l2r_scheme_kind true None) ind;
+    ignore_error (define_individual_scheme rew_l2r_scheme_kind KernelSilent None) ind;
     ignore_error
-      (define_individual_scheme rew_l2r_dep_scheme_kind true None) ind;
+      (define_individual_scheme rew_l2r_dep_scheme_kind KernelSilent None) ind;
     ignore_error
-      (define_individual_scheme rew_l2r_forward_dep_scheme_kind true None) ind
+      (define_individual_scheme rew_l2r_forward_dep_scheme_kind KernelSilent None) ind
   end
 
+(* TODO: maybe switch to kernel verbose *)
 let declare_congr_scheme ind =
   if Hipattern.is_equality_type (mkInd ind) then begin
     if
       try Coqlib.check_required_library Coqlib.logic_module_name; true
       with _ -> false
     then
-      ignore (define_individual_scheme congr_scheme_kind true None ind)
+      ignore (define_individual_scheme congr_scheme_kind KernelSilent None ind)
     else
       warning "Cannot build congruence scheme because eq is not found"
   end
 
+(* TODO: maybe switch to kernel verbose *)
 let declare_sym_scheme ind =
   if Hipattern.is_inductive_equality ind then
     (* Expect the equality to be symmetric *)
-    ignore_error (define_individual_scheme sym_scheme_kind true None) ind
+    ignore_error (define_individual_scheme sym_scheme_kind KernelSilent None) ind
 
 (* Scheme command *)
 
@@ -335,7 +345,7 @@ let do_mutual_induction_scheme lnamedepindsort =
   let rec declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 Evd.empty decl in
     let decltype = refresh_universes decltype in
-    let cst = define fi false decl (Some decltype) in
+    let cst = define fi UserVerbose decl (Some decltype) in
     ConstRef cst :: lrecref
   in
   let _ = List.fold_right2 declare listdecl lrecnames [] in
@@ -430,7 +440,7 @@ let do_combined_scheme name schemes =
       schemes
   in
   let body,typ = build_combined_scheme (Global.env ()) csts in
-  ignore (define (snd name) false body (Some typ));
+  ignore (define (snd name) UserVerbose body (Some typ));
   fixpoint_message None [snd name]
 
 (**********************************************************************)

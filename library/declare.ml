@@ -27,11 +27,17 @@ open Cooking
 open Decls
 open Decl_kinds
 
+(** flag for internal message display *)
+type internal_flag = 
+  | KernelVerbose (* kernel action, a message is displayed *)
+  | KernelSilent  (* kernel action, no message is displayed *)
+  | UserVerbose   (* user action, a message is displayed *)
+
 (** XML output hooks *)
 
 let xml_declare_variable = ref (fun (sp:object_name) -> ())
-let xml_declare_constant = ref (fun (sp:bool * constant)-> ())
-let xml_declare_inductive = ref (fun (sp:bool * object_name) -> ())
+let xml_declare_constant = ref (fun (sp:internal_flag * constant)-> ())
+let xml_declare_inductive = ref (fun (sp:internal_flag * object_name) -> ())
 
 let if_xml f x = if !Flags.xml_export then f x else ()
 
@@ -174,8 +180,10 @@ let declare_constant_gen internal id (cd,kind) =
   !xml_declare_constant (internal,kn);
   kn
 
-let declare_internal_constant = declare_constant_gen true
-let declare_constant = declare_constant_gen false
+(* TODO: add a third function to distinguish between KernelVerbose
+ * and user Verbose *)
+let declare_internal_constant = declare_constant_gen KernelSilent
+let declare_constant = declare_constant_gen UserVerbose
 
 (** Declaration of inductive blocks *)
 
@@ -290,11 +298,11 @@ let fixpoint_message indexes l =
       (match indexes with
 	 | Some [|i|] -> str " (decreasing on "++pr_rank i++str " argument)"
 	 | _ -> mt ())
-  | l -> hov 0 (prlist_with_sep pr_coma pr_id l ++
+  | l -> hov 0 (prlist_with_sep pr_comma pr_id l ++
 		  spc () ++ str "are recursively defined" ++
 		  match indexes with
 		    | Some a -> spc () ++ str "(decreasing respectively on " ++
-			prlist_with_sep pr_coma pr_rank (Array.to_list a) ++
+			prlist_with_sep pr_comma pr_rank (Array.to_list a) ++
 			str " arguments)"
 		    | None -> mt ()))
 
@@ -302,7 +310,7 @@ let cofixpoint_message l =
   Flags.if_verbose msgnl (match l with
   | [] -> anomaly "No corecursive definition."
   | [id] -> pr_id id ++ str " is corecursively defined"
-  | l -> hov 0 (prlist_with_sep pr_coma pr_id l ++
+  | l -> hov 0 (prlist_with_sep pr_comma pr_id l ++
                     spc () ++ str "are corecursively defined"))
 
 let recursive_message isfix i l =

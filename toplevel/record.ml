@@ -96,7 +96,7 @@ let warning_or_error coe indsp err =
 	let s,have = if List.length projs > 1 then "s","were" else "","was" in
         (str(string_of_id fi) ++
 	   strbrk" cannot be defined because the projection" ++ str s ++ spc () ++
-           prlist_with_sep pr_coma pr_id projs ++ spc () ++ str have ++
+           prlist_with_sep pr_comma pr_id projs ++ spc () ++ str have ++
 	   strbrk " not defined.")
     | BadTypedProj (fi,ctx,te) ->
 	match te with
@@ -261,7 +261,8 @@ let declare_structure finite infer id idbuild paramimpls params arity fieldimpls
       mind_entry_record = true;
       mind_entry_finite = recursivity_flag_of_kind finite;
       mind_entry_inds = [mie_ind] } in
-  let kn = Command.declare_mutual_inductive_with_eliminations true mie [(paramimpls,[])] in
+(* TODO : maybe switch to KernelVerbose *)
+  let kn = Command.declare_mutual_inductive_with_eliminations KernelSilent mie [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in
   let kinds,sp_projs = declare_projections rsp ~kind ?name coers fieldimpls fields in

@@ -112,7 +112,11 @@ let declare_scheme kind indcl =
   Lib.add_anonymous_leaf (inScheme (kind,indcl))
 
 let define internal id c =
-  let fd = if internal then declare_internal_constant else declare_constant in
+  (* TODO: specify even more by distinguish between KernelVerbose and
+   * UserVerbose *)
+  let fd = match internal with 
+    | KernelSilent -> declare_internal_constant
+    | _ -> declare_constant in
   let kn = fd id
     (DefinitionEntry
       { const_entry_body = c;
@@ -120,7 +124,9 @@ let define internal id c =
         const_entry_opaque = false;
 	const_entry_boxed = Flags.boxed_definitions() },
       Decl_kinds.IsDefinition Scheme) in
-  if not internal then definition_message id;
+  (match internal with
+  | KernelSilent -> ()
+  | _-> definition_message id);
   kn
 
 let define_individual_scheme_base kind suff f internal idopt (mind,i as ind) =
@@ -160,9 +166,9 @@ let find_scheme kind (mind,i as ind) =
   with Not_found ->
   match Hashtbl.find scheme_object_table kind with
   | s,IndividualSchemeFunction f ->
-      define_individual_scheme_base kind s f true None ind
+      define_individual_scheme_base kind s f KernelSilent None ind
   | s,MutualSchemeFunction f ->
-      (define_mutual_scheme_base kind s f true [] mind).(i)
+      (define_mutual_scheme_base kind s f KernelSilent [] mind).(i)
 
 let check_scheme kind ind =
   try let _ = Stringmap.find kind (Indmap.find ind !scheme_map) in true

@@ -39,10 +39,11 @@ val declare_scheme : 'a scheme_kind -> (inductive * constant) array -> unit
 
 (* Force generation of a (mutually) scheme with possibly user-level names *)
 
-val define_individual_scheme : individual scheme_kind -> bool (* internal *) ->
+val define_individual_scheme : individual scheme_kind -> 
+  Declare.internal_flag (* internal *) ->
   identifier option -> inductive -> constant
 
-val define_mutual_scheme : mutual scheme_kind -> bool (* internal *) ->
+val define_mutual_scheme : mutual scheme_kind -> Declare.internal_flag (* internal *) ->
   (int * identifier) list -> mutual_inductive -> constant array
 
 (* Main function to retrieve a scheme in the cache or to generate it *)

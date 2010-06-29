@@ -48,6 +48,11 @@ type constant_declaration = constant_entry * logical_kind
 (* [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
    the full path of the declaration *)
+type internal_flag =
+  | KernelVerbose
+  | KernelSilent
+  | UserVerbose
+
 val declare_constant :
  identifier -> constant_declaration -> constant
 
@@ -57,12 +62,12 @@ val declare_internal_constant :
 (* [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of
    the whole block (boolean must be true iff it is a record) *)
-val declare_mind : bool -> mutual_inductive_entry -> object_name
+val declare_mind : internal_flag -> mutual_inductive_entry -> object_name
 
 (* Hooks for XML output *)
 val set_xml_declare_variable : (object_name -> unit) -> unit
-val set_xml_declare_constant : (bool * constant -> unit) -> unit
-val set_xml_declare_inductive : (bool * object_name -> unit) -> unit
+val set_xml_declare_constant : (internal_flag * constant -> unit) -> unit
+val set_xml_declare_inductive : (internal_flag * object_name -> unit) -> unit
 
 (* Hook for the cache function of constants and inductives *)
 val add_cache_hook : (full_path -> unit) -> unit
