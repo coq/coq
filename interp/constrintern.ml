@@ -259,7 +259,7 @@ let set_var_scope loc id (_,_,scopt,scopes) varscopes =
 	| [] -> str "the empty scope stack"
 	| [a] -> str "scope " ++ str a
 	| l -> str "scope stack " ++
-	    str "[" ++ prlist_with_sep pr_coma str l ++ str "]" in
+	    str "[" ++ prlist_with_sep pr_comma str l ++ str "]" in
       user_err_loc (loc,"set_var_scope",
       pr_id id ++ str " is used both in " ++ 
 	pr_scope_stack (make_current_scope (Option.get !idscopes)) ++

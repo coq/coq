@@ -53,7 +53,7 @@ let check_no_metas clenv ccl =
     errorlabstrm "inversion"
       (str ("Cannot find an instantiation for variable"^
 	       (if List.length metas = 1 then " " else "s ")) ++
-	 prlist_with_sep pr_coma pr_name metas
+	 prlist_with_sep pr_comma pr_name metas
 	 (* ajouter "in " ++ pr_lconstr ccl mais il faut le bon contexte *))
 
 let var_occurs_in_pf gl id =

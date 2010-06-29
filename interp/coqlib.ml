@@ -53,12 +53,12 @@ let gen_constant_in_modules locstr dirs s =
     | [] ->
 	anomalylabstrm "" (str (locstr^": cannot find "^s^
 	" in module"^(if List.length dirs > 1 then "s " else " ")) ++
-	prlist_with_sep pr_coma pr_dirpath dirs)
+	prlist_with_sep pr_comma pr_dirpath dirs)
     | l ->
 	anomalylabstrm ""
 	(str (locstr^": found more than once object of name "^s^
 	" in module"^(if List.length dirs > 1 then "s " else " ")) ++
-	prlist_with_sep pr_coma pr_dirpath dirs)
+	prlist_with_sep pr_comma pr_dirpath dirs)
 
 
 (* For tactics/commands requiring vernacular libraries *)

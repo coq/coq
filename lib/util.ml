@@ -1205,7 +1205,7 @@ let pr_spc = spc
 let pr_fnl = fnl
 let pr_int = int
 let pr_str = str
-let pr_coma () = str "," ++ spc ()
+let pr_comma () = str "," ++ spc ()
 let pr_semicolon () = str ";" ++ spc ()
 let pr_bar () = str "|" ++ spc ()
 let pr_arg pr x = spc () ++ pr x
@@ -1253,7 +1253,7 @@ let rec pr_sequence elem = function
 
 let pr_enum pr l =
   let c,l' = list_sep_last l in
-  prlist_with_sep pr_coma pr l' ++
+  prlist_with_sep pr_comma pr l' ++
   (if l'<>[] then str " and" ++ spc () else mt()) ++ pr c
 
 let pr_vertical_list pr = function

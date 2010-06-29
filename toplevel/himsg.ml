@@ -575,7 +575,7 @@ let explain_refiner_bad_type arg ty conclty =
 let explain_refiner_unresolved_bindings l =
   str "Unable to find an instance for the " ++
   str (plural (List.length l) "variable") ++ spc () ++
-  prlist_with_sep pr_coma pr_name l ++ str"."
+  prlist_with_sep pr_comma pr_name l ++ str"."
 
 let explain_refiner_cannot_apply t harg =
   str "In refiner, a term of type" ++ brk(1,1) ++
@@ -661,7 +661,7 @@ let error_same_names_constructors id =
 let error_same_names_overlap idl =
   strbrk "The following names are used both as type names and constructor " ++
   str "names:" ++ spc () ++
-  prlist_with_sep pr_coma pr_id idl ++ str "."
+  prlist_with_sep pr_comma pr_id idl ++ str "."
 
 let error_not_an_arity id =
   str "The type of" ++ spc () ++ pr_id id ++ spc () ++ str "is not an arity."
@@ -833,7 +833,7 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
 	   quote (pr_rawconstr_env (Global.env()) c) ++
 	     (if unboundvars <> [] or vars <> [] then
 		strbrk " (with " ++
-		  prlist_with_sep pr_coma
+		  prlist_with_sep pr_comma
 		  (fun (id,c) ->
 		     pr_id id ++ str ":=" ++ Printer.pr_lconstr_under_binders c)
 		  (List.rev vars @ unboundvars) ++ str ")"

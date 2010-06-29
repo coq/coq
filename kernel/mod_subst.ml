@@ -269,7 +269,7 @@ let debug_pr_subst sub =
   let f (s1,s2,s3) = hov 2 (str s1 ++ spc () ++ str "|-> " ++ str s2 ++
 			      spc () ++ str "[" ++ str s3 ++ str "]") 
   in
-    str "{" ++ hov 2 (prlist_with_sep pr_coma f l) ++ str "}"
+    str "{" ++ hov 2 (prlist_with_sep pr_comma f l) ++ str "}"
       
       
 let subst_mp0 sub mp = (* 's like subst *)

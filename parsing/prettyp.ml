@@ -71,7 +71,7 @@ let print_impl_args_by_name max = function
   | []  -> mt ()
   | impls ->
       hov 0 (str (plural (List.length impls) "Argument") ++ spc() ++
-      prlist_with_sep pr_coma pr_implicit impls ++ spc() ++
+      prlist_with_sep pr_comma pr_implicit impls ++ spc() ++
       str (conjugate_to_be impls) ++ str" implicit" ++
       (if max then strbrk " and maximally inserted" else mt())) ++ fnl()
 

@@ -311,7 +311,7 @@ let pr_evgl_sign gl =
   let ids = List.rev (List.map pi1 l) in
   let warn =
     if ids = [] then mt () else
-      (str "(" ++ prlist_with_sep pr_coma pr_id ids ++ str " cannot be used)")
+      (str "(" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
   in
   let pc = pr_lconstr gl.evar_concl in
   hov 0 (str"[" ++ ps ++ spc () ++ str"|- "  ++ pc ++ str"]" ++ spc () ++ warn)

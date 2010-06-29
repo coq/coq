@@ -166,7 +166,7 @@ let pr_evar pr n l =
    | Some l ->
        spc () ++ pr_in_comment
          (fun l ->
-	   str"[" ++ hov 0 (prlist_with_sep pr_coma (pr ltop) l) ++ str"]")
+	   str"[" ++ hov 0 (prlist_with_sep pr_comma (pr ltop) l) ++ str"]")
          (List.rev l)
    | None -> mt()))
 
@@ -738,11 +738,11 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) = function
       hov 1 (str "lazy" ++ pr_red_flag pr_ref f)
   | Unfold l ->
       hov 1 (str "unfold" ++ spc() ++
-             prlist_with_sep pr_coma (pr_with_occurrences pr_ref) l)
+             prlist_with_sep pr_comma (pr_with_occurrences pr_ref) l)
   | Fold l -> hov 1 (str "fold" ++ prlist (pr_arg pr_constr) l)
   | Pattern l ->
       hov 1 (str "pattern" ++
-        pr_arg (prlist_with_sep pr_coma (pr_with_occurrences pr_constr)) l)
+        pr_arg (prlist_with_sep pr_comma (pr_with_occurrences pr_constr)) l)
 
   | Red true -> error "Shouldn't be accessible from user."
   | ExtraRedExpr s -> str s

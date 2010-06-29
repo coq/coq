@@ -298,7 +298,7 @@ val pr_spc : unit -> std_ppcmds
 val pr_fnl : unit -> std_ppcmds
 val pr_int : int -> std_ppcmds
 val pr_str : string -> std_ppcmds
-val pr_coma : unit -> std_ppcmds
+val pr_comma : unit -> std_ppcmds
 val pr_semicolon : unit -> std_ppcmds
 val pr_bar : unit -> std_ppcmds
 val pr_arg : ('a -> std_ppcmds) -> 'a -> std_ppcmds

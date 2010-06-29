@@ -92,9 +92,9 @@ let normalize_evaluables=
 open Genarg
 open Ppconstr
 open Printer
-let pr_firstorder_using_raw _ _ _ = prlist_with_sep pr_coma pr_reference
-let pr_firstorder_using_glob _ _ _ = prlist_with_sep pr_coma (pr_or_var (pr_located pr_global))
-let pr_firstorder_using_typed _ _ _ = prlist_with_sep pr_coma pr_global
+let pr_firstorder_using_raw _ _ _ = prlist_with_sep pr_comma pr_reference
+let pr_firstorder_using_glob _ _ _ = prlist_with_sep pr_comma (pr_or_var (pr_located pr_global))
+let pr_firstorder_using_typed _ _ _ = prlist_with_sep pr_comma pr_global
 
 ARGUMENT EXTEND firstorder_using
   TYPED AS reference_list

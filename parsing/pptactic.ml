@@ -492,14 +492,14 @@ let pr_match_rule m pr pr_pat = function
       spc () ++ str "=>" ++ brk (1,4) ++ pr t
 (*
   | Pat (rl,mp,t) ->
-      hv 0 (prlist_with_sep pr_coma (pr_match_hyps pr_pat) rl ++
+      hv 0 (prlist_with_sep pr_comma (pr_match_hyps pr_pat) rl ++
         (if rl <> [] then spc () else mt ()) ++
          hov 0 (str "|-" ++ spc () ++ pr_match_pattern pr_pat mp ++ spc () ++
 	 str "=>" ++ brk (1,4) ++ pr t))
 *)
   | Pat (rl,mp,t) ->
       hov 0 (
-	hv 0 (prlist_with_sep pr_coma (pr_match_hyps pr_pat) rl) ++
+	hv 0 (prlist_with_sep pr_comma (pr_match_hyps pr_pat) rl) ++
         (if rl <> [] then spc () else mt ()) ++
         hov 0 (
 	  str "|-" ++ spc () ++ pr_match_pattern pr_pat mp ++ spc () ++
@@ -546,7 +546,7 @@ let pr_hintbases = function
 let pr_auto_using prc = function
   | [] -> mt ()
   | l -> spc () ++
-      hov 2 (str "using" ++ spc () ++ prlist_with_sep pr_coma prc l)
+      hov 2 (str "using" ++ spc () ++ prlist_with_sep pr_comma prc l)
 
 let pr_autoarg_adding = function
   | [] -> mt ()
@@ -705,7 +705,7 @@ and pr_atom1 = function
   | TacApply (a,ev,cb,inhyp) ->
       hov 1 ((if a then mt() else str "simple ") ++
              str (with_evars ev "apply") ++ spc () ++
-             prlist_with_sep pr_coma pr_with_bindings cb ++
+             prlist_with_sep pr_comma pr_with_bindings cb ++
              pr_in_hyp_as pr_ident inhyp)
   | TacElim (ev,cb,cbo) ->
       hov 1 (str (with_evars ev "elim") ++ pr_arg pr_with_bindings cb ++
@@ -734,7 +734,7 @@ and pr_atom1 = function
              pr_assertion pr_lconstr pr_constr ipat c)
   | TacGeneralize l ->
       hov 1 (str "generalize" ++ spc () ++
-             prlist_with_sep pr_coma (fun (cl,na) ->
+             prlist_with_sep pr_comma (fun (cl,na) ->
 	       pr_with_occurrences pr_constr cl ++ pr_as_name na)
 	     l)
   | TacGeneralizeDep c ->
@@ -764,7 +764,7 @@ and pr_atom1 = function
   | TacInductionDestruct (isrec,ev,(l,cl)) ->
       hov 1 (str (with_evars ev (if isrec then "induction" else "destruct")) ++
              spc () ++
-             prlist_with_sep pr_coma (fun (h,e,ids) ->
+             prlist_with_sep pr_comma (fun (h,e,ids) ->
 	       prlist_with_sep spc (pr_induction_arg pr_lconstr pr_constr) h ++
 	       pr_with_induction_names ids ++
                pr_opt pr_eliminator e) l ++
@@ -828,7 +828,7 @@ and pr_atom1 = function
   (* Constructors *)
   | TacLeft (ev,l) -> hov 1 (str (with_evars ev "left") ++ pr_bindings l)
   | TacRight (ev,l) -> hov 1 (str (with_evars ev "right") ++ pr_bindings l)
-  | TacSplit (ev,false,l) -> hov 1 (str (with_evars ev "split") ++ prlist_with_sep pr_coma pr_bindings l)
+  | TacSplit (ev,false,l) -> hov 1 (str (with_evars ev "split") ++ prlist_with_sep pr_comma pr_bindings l)
   | TacSplit (ev,true,l) -> hov 1 (str (with_evars ev "exists") ++ prlist_with_sep (fun () -> str",") pr_ex_bindings l)
   | TacAnyConstructor (ev,Some t) ->
       hov 1 (str (with_evars ev "constructor") ++ pr_arg (pr_tac_level (latom,E)) t)

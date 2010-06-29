@@ -79,7 +79,7 @@ and print_vars pconstr gtyp env sep _be _have vars =
 	  match st.st_label with
 	      Anonymous -> anomaly "anonymous variable"
 	    | Name id -> Environ.push_named (id,None,st.st_it) env in
-	let pr_sep = if sep then pr_coma () else mt () in
+	let pr_sep = if sep then pr_comma () else mt () in
 		spc() ++ pr_sep ++
 		   pr_statement pr_constr env st ++
 		  print_vars pconstr gtyp nenv true _be _have rest
@@ -145,7 +145,7 @@ let rec pr_bare_proof_instr _then _thus env = function
       str "given" ++ print_vars pr_constr _I env false false "given" hyps
   | Ptake witl ->
       str "take" ++ spc () ++
-	prlist_with_sep pr_coma (pr_constr env) witl
+	prlist_with_sep pr_comma (pr_constr env) witl
   | Pdefine (id,args,body) ->
       str "define" ++ spc () ++ pr_id id ++ spc () ++
 	prlist_with_sep spc
