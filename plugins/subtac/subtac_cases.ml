@@ -1897,7 +1897,7 @@ let liftn_rel_context n k sign =
     liftrec (k + rel_context_length sign) sign
 
 let nf_evars_env sigma (env : env) : env =
-  let nf t = nf_isevar sigma t in
+  let nf t = nf_evar sigma t in
   let env0 : env = reset_context env in
   let f e (na, b, t) e' : env =
     Environ.push_named (na, Option.map nf b, nf t) e'
@@ -1915,7 +1915,7 @@ let prepare_predicate_from_rettyp loc typing_fun isevars env tomatchs sign tycon
     match rtntyp with
       | Some rtntyp ->
 	  let predcclj = typing_fun (mk_tycon (new_Type ())) newenv rtntyp in
-	  let predccl = (j_nf_isevar !isevars predcclj).uj_val in
+	  let predccl = (j_nf_evar !isevars predcclj).uj_val in
 	    Some (build_initial_predicate true allnames predccl)
       | None ->
 	  match valcon_of_tycon tycon with
@@ -1996,7 +1996,7 @@ let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constra
 	let body = it_mkLambda_or_LetIn (applistc j.uj_val args) lets in
 	let j =
 	  { uj_val = it_mkLambda_or_LetIn body tomatchs_lets;
-	    uj_type = nf_isevar !isevars tycon; }
+	    uj_type = nf_evar !isevars tycon; }
 	in j
     else
       (* We build the elimination predicate if any and check its consistency *)

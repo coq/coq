@@ -187,7 +187,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	let _, ty_constr = instance_constructor k (List.rev subst) in
 	let termtype =
 	  let t = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
-	    Evarutil.nf_isevar !evars t
+	    Evarutil.nf_evar !evars t
 	in
 	Evarutil.check_evars env Evd.empty !evars termtype;
 	let cst = Declare.declare_internal_constant id
@@ -252,8 +252,8 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	      let term = Termops.it_mkLambda_or_LetIn def ctx in
 		term, termtype
 	in
-	let termtype = Evarutil.nf_isevar !evars termtype in
-	let term = Evarutil.nf_isevar !evars term in
+	let termtype = Evarutil.nf_evar !evars termtype in
+	let term = Evarutil.nf_evar !evars term in
 	let evm = undefined_evars !evars in
 	Evarutil.check_evars env Evd.empty !evars termtype;
 	  if Evd.is_empty evm then

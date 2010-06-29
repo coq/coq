@@ -22,3 +22,11 @@ replace x with 0 in H,H0 |- * .
 Undo.
 Admitted.
 
+(* This failed at some point when "replace" started to support arguments
+   with evars but "abstract" did not supported any evars even defined ones *)
+
+Class U.
+Lemma l (u : U) (f : U -> nat) (H : 0 = f u) : f u = 0.
+replace (f _) with 0 by abstract apply H.
+reflexivity.
+Qed.

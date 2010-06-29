@@ -23,33 +23,21 @@ open Reductionops
 open Pretype_errors
 open Retyping
 
-(* Expanding existential variables (pretyping.ml) *)
-(* 1- whd_ise fails if an existential is undefined *)
+open Pretype_errors
+open Retyping
+
+(* Expanding existential variables *)
+(* 1- flush_and_check_evars fails if an existential is undefined *)
 
 exception Uninstantiated_evar of existential_key
 
-let rec whd_ise sigma c =
+let rec flush_and_check_evars sigma c =
   match kind_of_term c with
-    | Evar (evk,args as ev) when Evd.mem sigma evk ->
-	if Evd.is_defined sigma evk then
-          whd_ise sigma (existential_value sigma ev)
-	else raise (Uninstantiated_evar evk)
-  | _ -> c
-
-
-(* Expand evars, possibly in the head of an application *)
-let whd_castappevar_stack sigma c =
-  let rec whrec (c, l as s) =
-    match kind_of_term c with
-      | Evar (evk,args as ev) when Evd.mem sigma evk & Evd.is_defined sigma evk
-	  -> whrec (existential_value sigma ev, l)
-      | Cast (c,_,_) -> whrec (c, l)
-      | App (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
-      | _ -> s
-  in
-  whrec (c, [])
-
-let whd_castappevar sigma c = applist (whd_castappevar_stack sigma c)
+  | Evar (evk,_ as ev) ->
+      (match existential_opt_value sigma ev with
+       | None -> raise (Uninstantiated_evar evk)
+       | Some c -> flush_and_check_evars sigma c)
+  | _ -> map_constr (flush_and_check_evars sigma) c
 
 let nf_evar = Pretype_errors.nf_evar
 let j_nf_evar = Pretype_errors.j_nf_evar
@@ -80,12 +68,6 @@ let nf_evars evm = Evd.fold (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info ev
 		     evm Evd.empty
 
 let nf_evar_map evd = Evd.evars_reset_evd (nf_evars evd) evd
-
-let nf_isevar evd = nf_evar evd
-let j_nf_isevar evd = j_nf_evar evd
-let jl_nf_isevar evd = jl_nf_evar evd
-let jv_nf_isevar evd = jv_nf_evar evd
-let tj_nf_isevar evd = tj_nf_evar evd
 
 (**********************)
 (* Creating new metas *)
@@ -1121,6 +1103,8 @@ let is_ground_env evd env =
    structures *)
 let is_ground_env = memo1_2 is_ground_env
 
+(* Return the head evar if any *)
+
 exception NoHeadEvar
 
 let head_evar =
@@ -1132,6 +1116,22 @@ let head_evar =
     | _              -> raise NoHeadEvar
   in
   hrec
+
+(* Expand head evar if any (currently consider only applications but I
+   guess it should consider Case too) *)
+
+let whd_head_evar_stack sigma c =
+  let rec whrec (c, l as s) =
+    match kind_of_term c with
+      | Evar (evk,args as ev) when Evd.is_defined sigma evk
+	  -> whrec (existential_value sigma ev, l)
+      | Cast (c,_,_) -> whrec (c, l)
+      | App (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
+      | _ -> s
+  in
+  whrec (c, [])
+
+let whd_head_evar sigma c = applist (whd_head_evar_stack sigma c)
 
 (* Check if an applied evar "?X[args] l" is a Miller's pattern; note
    that we don't care whether args itself contains Rel's or even Rel's
@@ -1282,10 +1282,10 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
 	  let evi = Evd.find evd evk1 in
 	    if occur_existential evd evi.evar_concl then
 	      let evenv = evar_unfiltered_env evi in
-	      let evc = nf_isevar evd evi.evar_concl in
+	      let evc = nf_evar evd evi.evar_concl in
 		match evi.evar_body with
 		| Evar_defined body ->
-		    let ty = nf_isevar evd (Retyping.get_type_of evenv evd body) in
+		    let ty = nf_evar evd (Retyping.get_type_of evenv evd body) in
 		      add_conv_pb (Reduction.CUMUL,evenv,ty,evc) evd
 		| Evar_empty -> (* Resulted in a constraint *)
 		    evd
@@ -1333,7 +1333,7 @@ let check_evars env initial_sigma evd c =
       | Evar (evk,args) ->
           assert (Evd.mem sigma evk);
 	  if not (Evd.mem initial_sigma evk) then
-            let (loc,k) = evar_source evk evd in
+            let (loc,k) = evar_source evk sigma in
 	      (match k with
 	      | ImplicitArg (gr, (i, id), false) -> ()
 	      | _ ->

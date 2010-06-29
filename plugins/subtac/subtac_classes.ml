@@ -167,8 +167,8 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	let term = Termops.it_mkLambda_or_LetIn def ctx in
 	  term, termtype
   in
-  let termtype = Evarutil.nf_isevar !evars termtype in
-  let term = Evarutil.nf_isevar !evars term in
+  let termtype = Evarutil.nf_evar !evars termtype in
+  let term = Evarutil.nf_evar !evars term in
   evars := undefined_evars !evars;
   Evarutil.check_evars env Evd.empty !evars termtype;
   let hook vis gr =

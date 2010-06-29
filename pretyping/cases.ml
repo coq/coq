@@ -1676,7 +1676,7 @@ let prepare_predicate loc typing_fun evdref env tomatchs sign tycon pred =
 	  evdref :=
             Coercion.inh_conv_coerces_to loc env !evdref predcclj.uj_val tycon)
         tycon;
-      let predccl = (j_nf_isevar !evdref predcclj).uj_val in
+      let predccl = (j_nf_evar !evdref predcclj).uj_val in
       [!evdref, KnownDep, predccl]
   in
   List.map
