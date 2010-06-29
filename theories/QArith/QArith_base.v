@@ -620,7 +620,7 @@ Proof.
 Qed.
 
 Hint Resolve Qle_not_lt Qlt_not_le Qnot_le_lt Qnot_lt_le
- Qlt_le_weak Qlt_not_eq Qle_antisym Qle_refl: qartih.
+ Qlt_le_weak Qlt_not_eq Qle_antisym Qle_refl: qarith.
 
 (** Some decidability results about orders. *)
 
