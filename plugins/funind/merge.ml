@@ -906,7 +906,7 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
   let indl,_,_ = Command.extract_mutual_inductive_declaration_components [(indexpr,[])] in
   let mie,impls = Command.interp_mutual_inductive indl [] true (* means: not coinductive *) in
   (* Declare the mutual inductive block with its associated schemes *)
-  ignore (Command.declare_mutual_inductive_with_eliminations false mie impls)
+  ignore (Command.declare_mutual_inductive_with_eliminations Declare.UserVerbose mie impls)
 
 
 (* Find infos on identifier id. *)
