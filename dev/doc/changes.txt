@@ -17,6 +17,11 @@ generally fewer than the defined ones.
 = CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
 =========================================
 
+** Light cleaning in evarutil.ml **
+
+whd_castappevar is now whd_head_evar
+obsolete whd_ise disappears
+
 ** Semantical change of h_induction_destruct **
 
 Warning, the order of the isrec and evar_flag was inconsistent and has

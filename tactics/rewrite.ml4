@@ -1006,12 +1006,12 @@ let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
 	    let cstrevars = !evars in
 	    let evars = solve_constraints env cstrevars in
 	    let p = map_rewprf 
-	      (fun p -> nf_zeta env evars (Evarutil.nf_isevar evars p)) 
+	      (fun p -> nf_zeta env evars (Evarutil.nf_evar evars p)) 
 	      p 
 	    in
-	    let newt = Evarutil.nf_isevar evars newt in
+	    let newt = Evarutil.nf_evar evars newt in
 	    let abs = Option.map (fun (x, y) ->
-	      Evarutil.nf_isevar evars x, Evarutil.nf_isevar evars y) abs in
+	      Evarutil.nf_evar evars x, Evarutil.nf_evar evars y) abs in
 	    let undef = split_evars (fst cstrevars) evars in
 	    let rewtac =
 	      match is_hyp with
@@ -1422,7 +1422,7 @@ let build_morphism_signature m =
     mkApp (Lazy.force proper_type, [| t; sig_; m |])
   in
   let evd = solve_constraints env !isevars in
-  let m = Evarutil.nf_isevar evd morph in
+  let m = Evarutil.nf_evar evd morph in
     Evarutil.check_evars env Evd.empty evd m; m
 
 let default_morphism sign m =

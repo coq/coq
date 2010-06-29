@@ -456,8 +456,8 @@ module Coercion = struct
 	  let (evd', val') =
 	    try
 	      inh_conv_coerce_to_fail loc env evd rigidonly
-		(Some (nf_isevar evd cj.uj_val))
-		(nf_isevar evd cj.uj_type) (nf_isevar evd t)
+		(Some (nf_evar evd cj.uj_val))
+		(nf_evar evd cj.uj_type) (nf_evar evd t)
 	    with NoCoercion ->
 	      let sigma =  evd in
 		try

@@ -69,8 +69,12 @@ val non_instantiated : evar_map -> (evar * evar_info) list
 (**********************************************************
    Unification utils *)
 
+(** [head_evar c} returns the head evar of [c] if any *)
 exception NoHeadEvar
 val head_evar : constr -> existential_key (** may raise NoHeadEvar *)
+
+(* Expand head evar if any *)
+val whd_head_evar :  evar_map -> constr -> constr
 
 val is_ground_term :  evar_map -> constr -> bool
 val is_ground_env  :  evar_map -> env -> bool
@@ -132,8 +136,8 @@ val lift_tycon : int -> type_constraint -> type_constraint
 
 (***********************************************************)
 
-(** [whd_ise] raise [Uninstantiated_evar] if an evar remains uninstantiated; 
-   *[whd_evar]* and *[nf_evar]* leave uninstantiated evar as is *)
+(** [flush_and_check_evars] raise [Uninstantiated_evar] if an evar remains
+    uninstantiated; [nf_evar] leaves uninstantiated evars as is *)
 
 val nf_evar :  evar_map -> constr -> constr
 val j_nf_evar :  evar_map -> unsafe_judgment -> unsafe_judgment
@@ -151,22 +155,11 @@ val nf_named_context_evar : evar_map -> named_context -> named_context
 val nf_rel_context_evar : evar_map -> rel_context -> rel_context
 val nf_env_evar : evar_map -> env -> env
 
-(** Same for evar defs *)
-val nf_isevar :  evar_map -> constr -> constr
-val j_nf_isevar :  evar_map -> unsafe_judgment -> unsafe_judgment
-val jl_nf_isevar :
-   evar_map -> unsafe_judgment list -> unsafe_judgment list
-val jv_nf_isevar :
-   evar_map -> unsafe_judgment array -> unsafe_judgment array
-val tj_nf_isevar :
-   evar_map -> unsafe_type_judgment -> unsafe_type_judgment
-
 val nf_evar_map : evar_map -> evar_map
 
-(** Replacing all evars *)
+(** Replacing all evars, possibly raising [Uninstantiated_evar] *)
 exception Uninstantiated_evar of existential_key
-val whd_ise :  evar_map -> constr -> constr
-val whd_castappevar :  evar_map -> constr -> constr
+val flush_and_check_evars :  evar_map -> constr -> constr
 
 (** Replace the vars and rels that are aliases to other vars and rels by 
    their representative that is most ancient in the context *)

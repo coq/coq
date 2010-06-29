@@ -2470,7 +2470,7 @@ let specialize_eqs id gl =
   let acc' = it_mkLambda_or_LetIn acc ctx'' in
   let ty' = Tacred.whd_simpl env !evars ty' 
   and acc' = Tacred.whd_simpl env !evars acc' in
-  let ty' = Evarutil.nf_isevar !evars ty' in
+  let ty' = Evarutil.nf_evar !evars ty' in
     if worked then
       tclTHENFIRST (Tacmach.internal_cut true id ty')
 	(exact_no_check (refresh_universes_strict acc')) gl
@@ -3463,8 +3463,10 @@ let abstract_subproof id tac gl =
       global_sign (empty_named_context,empty_named_context_val) in
   let id = next_global_ident_away id (pf_ids_of_hyps gl) in
   let concl = it_mkNamedProd_or_LetIn (pf_concl gl) sign in
-  if occur_existential concl then
-    error "\"abstract\" cannot handle existentials.";
+  let concl =
+    try flush_and_check_evars (project gl) concl
+    with Uninstantiated_evar _ ->
+      error "\"abstract\" cannot handle existentials." in
   let const = Pfedit.build_constant_by_tactic secsign concl
     (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)) in
   let cd = Entries.DefinitionEntry const in

@@ -73,7 +73,7 @@ let interp_definition boxed bl red_option c ctypopt =
     match ctypopt with
       None ->
 	let c, imps2 = interp_constr_evars_impls ~evdref ~fail_evar:false env_bl c in
-	let body = nf_isevar !evdref (it_mkLambda_or_LetIn c ctx) in
+	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
 	check_evars env Evd.empty !evdref body;
 	imps1@imps2,
 	{ const_entry_body = body;
@@ -83,8 +83,8 @@ let interp_definition boxed bl red_option c ctypopt =
     | Some ctyp ->
 	let ty, impls = interp_type_evars_impls ~evdref ~fail_evar:false env_bl ctyp in
 	let c, imps2 = interp_casted_constr_evars_impls ~evdref ~fail_evar:false env_bl c ty in
-	let body = nf_isevar !evdref (it_mkLambda_or_LetIn c ctx) in
-	let typ = nf_isevar !evdref (it_mkProd_or_LetIn ty ctx) in
+	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
+	let typ = nf_evar !evdref (it_mkProd_or_LetIn ty ctx) in
 	check_evars env Evd.empty !evdref body;
 	check_evars env Evd.empty !evdref typ;
 	imps1@imps2,

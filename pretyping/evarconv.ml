@@ -159,8 +159,8 @@ let ise_array2 evd f v1 v2 =
 
 let rec evar_conv_x env evd pbty term1 term2 =
   let sigma =  evd in
-  let term1 = whd_castappevar sigma term1 in
-  let term2 = whd_castappevar sigma term2 in
+  let term1 = whd_head_evar sigma term1 in
+  let term2 = whd_head_evar sigma term2 in
   (* Maybe convertible but since reducing can erase evars which [evar_apprec]
      could have found, we do it only if the terms are free of evar.
      Note: incomplete heuristic... *)
@@ -187,7 +187,7 @@ let rec evar_conv_x env evd pbty term1 term2 =
             (decompose_app term1) (decompose_app term2)
 
 and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
-  (* Evar must be undefined since we have whd_ised *)
+  (* Evar must be undefined since we have flushed evars *)
   match (flex_kind_of_term term1 l1, flex_kind_of_term term2 l2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
 	let f1 i =
@@ -521,8 +521,8 @@ let choose_less_dependent_instance evk evd term args =
   Evd.define evk (mkVar (fst (List.hd subst'))) evd
 
 let apply_conversion_problem_heuristic env evd pbty t1 t2 =
-  let t1 = apprec_nohdbeta env evd (whd_castappevar evd t1) in
-  let t2 = apprec_nohdbeta env evd (whd_castappevar evd t2) in
+  let t1 = apprec_nohdbeta env evd (whd_head_evar evd t1) in
+  let t2 = apprec_nohdbeta env evd (whd_head_evar evd t2) in
   let (term1,l1 as appr1) = decompose_app t1 in
   let (term2,l2 as appr2) = decompose_app t2 in
   match kind_of_term term1, kind_of_term term2 with

@@ -221,8 +221,8 @@ let oracle_order env cf1 cf2 =
 
 let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flags m n =
   let rec unirec_rec (curenv,nb as curenvnb) pb b ((sigma,metasubst,evarsubst) as substn) curm curn =
-    let cM = Evarutil.whd_castappevar sigma curm
-    and cN = Evarutil.whd_castappevar sigma curn in
+    let cM = Evarutil.whd_head_evar sigma curm
+    and cN = Evarutil.whd_head_evar sigma curn in
       match (kind_of_term cM,kind_of_term cN) with
 	| Meta k1, Meta k2 ->
 	    let stM,stN = extract_instance_status pb in

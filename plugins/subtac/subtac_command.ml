@@ -50,7 +50,7 @@ open Subtac_obligations
 (* Functions to parse and interpret constructions *)
 
 let evar_nf isevars c =
-  Evarutil.nf_isevar !isevars c
+  Evarutil.nf_evar !isevars c
 
 let interp_gen kind isevars env
                ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
@@ -213,7 +213,7 @@ let telescope = function
 
 let nf_evar_context isevars ctx =
   List.map (fun (n, b, t) ->
-    (n, Option.map (Evarutil.nf_isevar isevars) b, Evarutil.nf_isevar isevars t)) ctx
+    (n, Option.map (Evarutil.nf_evar isevars) b, Evarutil.nf_evar isevars t)) ctx
 
 let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
@@ -318,7 +318,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   let _ = isevars := Evarutil.nf_evar_map !isevars in
   let binders_rel = nf_evar_context !isevars binders_rel in
   let binders = nf_evar_context !isevars binders in
-  let top_arity = Evarutil.nf_isevar !isevars top_arity in
+  let top_arity = Evarutil.nf_evar !isevars top_arity in
   let hook, recname, typ = 
     if List.length binders_rel > 1 then
       let name = add_suffix recname "_func" in
@@ -326,7 +326,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
 	let body = it_mkLambda_or_LetIn (mkApp (constr_of_global gr, [|make|])) binders_rel in
 	let ty = it_mkProd_or_LetIn top_arity binders_rel in
 	let ce =
-	  { const_entry_body = Evarutil.nf_isevar !isevars body;
+	  { const_entry_body = Evarutil.nf_evar !isevars body;
 	    const_entry_type = Some ty;
 	    const_entry_opaque = false;
 	    const_entry_boxed = false} 
@@ -345,8 +345,8 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
 	  Impargs.declare_manual_implicits false gr impls
       in hook, recname, typ
   in
-  let fullcoqc = Evarutil.nf_isevar !isevars def in
-  let fullctyp = Evarutil.nf_isevar !isevars typ in
+  let fullcoqc = Evarutil.nf_evar !isevars def in
+  let fullctyp = Evarutil.nf_evar !isevars typ in
   let evm = evars_of_term !isevars Evd.empty fullctyp in
   let evm = evars_of_term !isevars evm fullcoqc in
   let evm = non_instanciated_map env isevars evm in

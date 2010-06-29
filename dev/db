@@ -6,8 +6,6 @@ install_printer Top_printers.ppidset
 install_printer Top_printers.ppevarsubst
 install_printer Top_printers.ppintset
 install_printer Top_printers.pplab
-install_printer Top_printers.ppmsid
-install_printer Top_printers.ppmbid
 install_printer Top_printers.ppdir
 install_printer Top_printers.ppmp
 install_printer Top_printers.ppkn

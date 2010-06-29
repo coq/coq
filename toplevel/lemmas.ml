@@ -320,7 +320,7 @@ let start_proof_com kind thms hook =
     Sign.iter_rel_context (check_evars env Evd.empty !evdref) ctx;
     let ids = List.map pi1 ctx in
       (compute_proof_name (fst kind) sopt,
-      (nf_isevar !evdref (it_mkProd_or_LetIn t' ctx),
+      (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),
        (ids, imps @ lift_implicits (List.length ids) imps'),
        guard)))
     thms in
