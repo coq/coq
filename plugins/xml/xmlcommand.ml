@@ -574,12 +574,16 @@ let show_pftreestate internal fn (kind,pftst) id =
         (Cic2acic.token_list_of_path (Lib.cwd ()) id Cic2acic.TVariable)
       in
       let kind_of_var = "VARIABLE","LocalFact" in
-       if not internal then print_object_kind uri kind_of_var;
-      uri
+      (match internal with
+       | Declare.KernelSilent -> ()
+       | _ -> print_object_kind uri kind_of_var
+       ); uri
    | Decl_kinds.Global, _ ->
       let uri = Cic2acic.uri_of_declaration id Cic2acic.TConstant in
-       if not internal then print_object_kind uri (kind_of_global_goal kind);
-       uri
+      (match internal with
+       | Declare.KernelSilent -> ()
+       | _ -> print_object_kind uri (kind_of_global_goal kind)
+      ); uri
  in
   print_object uri obj evar_map
    (Some (Tacmach.evc_of_pftreestate pftst,unshared_pf,proof_tree_to_constr,
@@ -589,7 +593,7 @@ let show_pftreestate internal fn (kind,pftst) id =
 let show fn =
  let pftst = Pfedit.get_pftreestate () in
  let (id,kind,_,_) = Pfedit.current_proof_statement () in
-  show_pftreestate false fn (kind,pftst) id
+  show_pftreestate Declare.KernelVerbose fn (kind,pftst) id
 ;;
 
 
