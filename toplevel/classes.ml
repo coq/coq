@@ -146,7 +146,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
   let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
   let k, cty, ctx', ctx, len, imps, subst =
     let (env', ctx), imps = interp_context_evars evars env ctx in
-    let c', imps' = interp_type_evars_impls ~evdref:evars env' tclass in
+    let c', imps' = interp_type_evars_impls ~evdref:evars ~fail_evar:false env' tclass in
     let len = List.length ctx in
     let imps = imps @ Impargs.lift_implicits len imps' in
     let ctx', c = decompose_prod_assum c' in
