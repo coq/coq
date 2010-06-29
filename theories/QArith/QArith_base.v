@@ -632,8 +632,15 @@ Proof.
   unfold Qle, Qlt, Qeq; intros; apply Zle_lt_or_eq; auto.
 Qed.
 
+(** These hints were meant to be added to the qarith database,
+    but a typo prevented that. This will be fixed in 8.3.
+    Concerning 8.2, for maximal compatibility , we
+    leave them in a separate database, in order to preserve
+    the strength of both [auto with qarith] and [auto with *].
+    (see bug #2346). *)
+
 Hint Resolve Qle_not_lt Qlt_not_le Qnot_le_lt Qnot_lt_le
- Qlt_le_weak Qlt_not_eq Qle_antisym Qle_refl: qarith.
+ Qlt_le_weak Qlt_not_eq Qle_antisym Qle_refl: qarith_extra.
 
 (** Some decidability results about orders. *)
 
