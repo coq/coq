@@ -493,8 +493,7 @@ module Coercion = struct
 		   with NoCoercion ->
 		     coerce_itf loc env' isevars None t t')
 	    with NoSubtacCoercion ->
-	      let sigma =  isevars in
-		error_cannot_coerce env' sigma (t, t'))
+	      error_cannot_coerce env' isevars (t, t'))
 	else isevars
       with _ -> isevars
 end

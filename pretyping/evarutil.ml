@@ -1504,6 +1504,10 @@ let judge_of_new_Type () = Typeops.judge_of_type (new_univ ())
    constraint on its domain and codomain. If the input constraint is
    an evar instantiate it with the product of 2 new evars. *)
 
+let unlift_tycon init cur c =
+  if cur = 1 then None, c
+  else Some (init, pred cur), c
+
 let split_tycon loc env evd tycon =
   let rec real_split evd c =
     let t = whd_betadeltaiota env evd c in
@@ -1523,14 +1527,7 @@ let split_tycon loc env evd tycon =
 		 let evd', (n, dom, rng) = real_split evd c in
 		   evd', (n, mk_tycon dom, mk_tycon rng)
 	     | Some (init, cur) ->
-		 if cur = 0 then
-		   let evd', (x, dom, rng) = real_split evd c in
-		     evd, (Anonymous,
-			  Some (None, dom),
-			  Some (None, rng))
-		 else
-		   evd, (Anonymous, None,
-			Some (if cur = 1 then None,c else Some (init, pred cur), c)))
+		 evd, (Anonymous, None, Some (unlift_tycon init cur c)))
 
 let valcon_of_tycon x =
   match x with

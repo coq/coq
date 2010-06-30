@@ -164,6 +164,28 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     | RProp c -> judge_of_prop_contents c
     | RType _ -> judge_of_new_Type ()
 
+  let split_tycon_lam loc env evd tycon =
+    let rec real_split evd c =
+      let t = whd_betadeltaiota env evd c in
+	match kind_of_term t with
+	| Prod (na,dom,rng) -> evd, (na, dom, rng)
+	| Evar ev when not (Evd.is_defined_evar evd ev) ->
+	    let (evd',prod) = define_evar_as_product evd ev in
+	    let (_,dom,rng) = destProd prod in
+	      evd',(Anonymous, dom, rng)
+	| _ -> error_not_product_loc loc env evd c
+    in
+      match tycon with
+      | None -> evd,(Anonymous,None,None)
+      | Some (abs, c) ->
+	  (match abs with
+	   | None ->
+	       let evd', (n, dom, rng) = real_split evd c in
+		 evd', (n, mk_tycon dom, mk_tycon rng)
+	   | Some (init, cur) ->
+	       evd, (Anonymous, None, Some (Some (init, succ cur), c)))
+	    
+	    
   (* [pretype tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
   (* in environment [env], with existential variables [( evdref)] and *)
   (* the type constraint tycon *)
@@ -353,7 +375,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		  evd, Some ty')
 	  evdref tycon
 	in
-	let (name',dom,rng) = evd_comb1 (split_tycon loc env) evdref tycon' in
+	let (name',dom,rng) = evd_comb1 (split_tycon_lam loc env) evdref tycon' in
 	let dom_valcon = valcon_of_tycon dom in
 	let j = pretype_type dom_valcon env evdref lvar c1 in
 	let var = (name,None,j.utj_val) in
