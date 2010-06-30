@@ -17,53 +17,53 @@ val contrib_name : string
 val subtac_dir : string list
 val fix_sub_module : string
 val fixsub_module : string list
-val init_constant : string list -> string -> constr
-val init_reference : string list -> string -> global_reference
-val fixsub : constr lazy_t
-val well_founded_ref : global_reference lazy_t
-val acc_ref : global_reference lazy_t
-val acc_inv_ref : global_reference lazy_t
-val fix_sub_ref : global_reference lazy_t
-val measure_on_R_ref : global_reference lazy_t
-val fix_measure_sub_ref : global_reference lazy_t
-val refl_ref : global_reference lazy_t
+val init_constant : string list -> string -> constr delayed
+val init_reference : string list -> string -> global_reference delayed
+val fixsub : constr delayed
+val well_founded_ref : global_reference delayed
+val acc_ref : global_reference delayed
+val acc_inv_ref : global_reference delayed
+val fix_sub_ref : global_reference delayed
+val measure_on_R_ref : global_reference delayed
+val fix_measure_sub_ref : global_reference delayed
+val refl_ref : global_reference delayed
 val lt_ref : reference
 val sig_ref : reference
 val proj1_sig_ref : reference
 val proj2_sig_ref : reference
 val build_sig : unit -> coq_sigma_data
-val sig_ : coq_sigma_data lazy_t
+val sig_ : coq_sigma_data delayed
 
-val fix_proto : constr lazy_t
+val fix_proto : constr delayed
 val fix_proto_ref : unit -> constant
 
-val eq_ind : constr lazy_t
-val eq_rec : constr lazy_t
-val eq_rect : constr lazy_t
-val eq_refl : constr lazy_t
+val eq_ind : constr delayed
+val eq_rec : constr delayed
+val eq_rect : constr delayed
+val eq_refl : constr delayed
 
-val not_ref : constr lazy_t
-val and_typ : constr lazy_t
+val not_ref : constr delayed
+val and_typ : constr delayed
 
-val eqdep_ind : constr lazy_t
-val eqdep_rec : constr lazy_t
+val eqdep_ind : constr delayed
+val eqdep_rec : constr delayed
 
-val jmeq_ind : constr lazy_t
-val jmeq_rec : constr lazy_t
-val jmeq_refl : constr lazy_t
+val jmeq_ind : constr delayed
+val jmeq_rec : constr delayed
+val jmeq_refl : constr delayed
 
-val boolind : constr lazy_t
-val sumboolind : constr lazy_t
-val natind : constr lazy_t
-val intind : constr lazy_t
-val existSind : constr lazy_t
-val existS : coq_sigma_data lazy_t
-val prod : coq_sigma_data lazy_t
+val boolind : constr delayed
+val sumboolind : constr delayed
+val natind : constr delayed
+val intind : constr delayed
+val existSind : constr delayed
+val existS : coq_sigma_data delayed
+val prod : coq_sigma_data delayed
 
-val well_founded : constr lazy_t
-val fix : constr lazy_t
-val acc : constr lazy_t
-val acc_inv : constr lazy_t
+val well_founded : constr delayed
+val fix : constr delayed
+val acc : constr delayed
+val acc_inv : constr delayed
 val extconstr : constr -> constr_expr
 val extsort : sorts -> constr_expr
 
@@ -81,7 +81,7 @@ val my_print_tycon_type : env -> type_constraint_type -> std_ppcmds
 val debug : int -> std_ppcmds -> unit
 val debug_msg : int -> std_ppcmds -> std_ppcmds
 val trace : std_ppcmds -> unit
-val wf_relations : (constr, constr lazy_t) Hashtbl.t
+val wf_relations : (constr, constr delayed) Hashtbl.t
 
 type binders = local_binder list
 val app_opt : ('a -> 'a) option -> 'a -> 'a

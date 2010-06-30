@@ -1179,6 +1179,12 @@ let iterate_for a b f x =
   let rec iterate i v = if i > b then v else iterate (succ i) (f i v) in
   iterate a x
 
+(* Delayed computations *)
+
+type 'a delayed = unit -> 'a
+
+let delayed_force f = f ()
+
 (* Misc *)
 
 type ('a,'b) union = Inl of 'a | Inr of 'b

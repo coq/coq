@@ -291,6 +291,12 @@ val iterate : ('a -> 'a) -> int -> 'a -> 'a
 val repeat : int -> ('a -> unit) -> 'a -> unit
 val iterate_for : int -> int -> (int -> 'a -> 'a) -> 'a -> 'a
 
+(** {6 Delayed computations. } *)
+
+type 'a delayed = unit -> 'a
+
+val delayed_force : 'a delayed -> 'a
+
 (** {6 Misc. } *)
 
 type ('a,'b) union = Inl of 'a | Inr of 'b

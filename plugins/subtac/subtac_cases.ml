@@ -20,13 +20,11 @@ open Sign
 open Reductionops
 open Typeops
 open Type_errors
-
 open Rawterm
 open Retyping
 open Pretype_errors
 open Evarutil
 open Evarconv
-
 open Subtac_utils
 
 (************************************************************************)
@@ -1511,11 +1509,11 @@ let eq_id avoid id =
   let hid' = next_ident_away hid avoid in
     hid'
 
-let mk_eq typ x y = mkApp (Lazy.force eq_ind, [| typ; x ; y |])
-let mk_eq_refl typ x = mkApp (Lazy.force eq_refl, [| typ; x |])
+let mk_eq typ x y = mkApp (delayed_force eq_ind, [| typ; x ; y |])
+let mk_eq_refl typ x = mkApp (delayed_force eq_refl, [| typ; x |])
 let mk_JMeq typ x typ' y =
-  mkApp (Lazy.force Subtac_utils.jmeq_ind, [| typ; x ; typ'; y |])
-let mk_JMeq_refl typ x = mkApp (Lazy.force Subtac_utils.jmeq_refl, [| typ; x |])
+  mkApp (delayed_force Subtac_utils.jmeq_ind, [| typ; x ; typ'; y |])
+let mk_JMeq_refl typ x = mkApp (delayed_force Subtac_utils.jmeq_refl, [| typ; x |])
 
 let hole = RHole (dummy_loc, Evd.QuestionMark (Evd.Define true))
 
@@ -1607,7 +1605,7 @@ let vars_of_ctx ctx =
 	| Some t' when kind_of_term t' = Rel 0 ->
 	    prev,
 	    (RApp (dummy_loc,
-		(RRef (dummy_loc, Lazy.force refl_ref)), [hole; RVar (dummy_loc, prev)])) :: vars
+		(RRef (dummy_loc, delayed_force refl_ref)), [hole; RVar (dummy_loc, prev)])) :: vars
 	| _ ->
 	    match na with
 		Anonymous -> raise (Invalid_argument "vars_of_ctx")
@@ -1648,7 +1646,7 @@ let build_ineqs prevpatterns pats liftsign =
 			  lift_rel_context len ppat_sign @ sign,
 			  len',
 			  succ n, (* nth pattern *)
-			  mkApp (Lazy.force eq_ind,
+			  mkApp (delayed_force eq_ind,
 				[| lift (len' + liftsign) curpat_ty;
 				   liftn (len + liftsign) (succ lens) ppat_c ;
 				   lift len' curpat_c |]) ::

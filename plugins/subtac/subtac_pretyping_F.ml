@@ -253,7 +253,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	let newenv =
 	  let marked_ftys =
 	    Array.map (fun ty -> let sort = Retyping.get_type_of env !evdref ty in
-				   mkApp (Lazy.force Subtac_utils.fix_proto, [| sort; ty |]))
+			 mkApp (delayed_force Subtac_utils.fix_proto, [| sort; ty |]))
 	      ftys
 	  in
 	    push_rec_types (names,marked_ftys,[||]) env

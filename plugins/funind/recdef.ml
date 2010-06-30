@@ -286,8 +286,6 @@ let find_reference sl s =
 			   (List.map id_of_string (List.rev sl)))
 	       (id_of_string s)));;
 
-let delayed_force f = f ()
-
 let le_lt_SS = function () -> (constant ["Recdef"] "le_lt_SS")
 let le_lt_n_Sm = function () -> (coq_base_constant "le_lt_n_Sm")
 

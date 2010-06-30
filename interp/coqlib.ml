@@ -180,13 +180,10 @@ type coq_bool_data  = {
   andb_prop : constr;
   andb_true_intro : constr}
 
-type 'a delayed = unit -> 'a
-
 let build_bool_type () =
   { andb =  init_constant ["Datatypes"] "andb";
     andb_prop =  init_constant ["Datatypes"] "andb_prop";
     andb_true_intro =  init_constant ["Datatypes"] "andb_true_intro" }
-
 
 let build_sigma_set () = anomaly "Use build_sigma_type"
 

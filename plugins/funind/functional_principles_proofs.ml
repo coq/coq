@@ -1345,7 +1345,6 @@ and acc_inv_id = Recdef.acc_inv_id
 and ltof_ref = Recdef.ltof_ref
 and acc_rel = Recdef.acc_rel
 and well_founded = Recdef.well_founded
-and delayed_force = Recdef.delayed_force
 and h_intros = Recdef.h_intros
 and list_rewrite = Recdef.list_rewrite
 and evaluable_of_global_reference = Recdef.evaluable_of_global_reference
