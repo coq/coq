@@ -104,3 +104,12 @@ val type_of_constant_knowing_parameters :
 val make_polymorphic_if_constant_for_ind : env -> unsafe_judgment ->
   constant_type
 
+(* Native type *)
+val type_of_int : env -> types
+val type_of_array : env -> types
+
+val judge_of_int : env -> Native.Uint31.t -> unsafe_judgment 
+val judge_of_array : 
+    env -> unsafe_type_judgment -> unsafe_judgment array -> unsafe_judgment
+
+val check_primitive_type : env -> Native.op_or_type -> types -> unit

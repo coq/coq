@@ -724,10 +724,10 @@ let check_one_fix renv recpos def =
                 bodies
 
         | Const kn ->
-            if evaluable_constant kn renv.env then
+            if evaluable_constant1 kn renv.env then
               try List.iter (check_rec_call renv []) l
               with (FixGuardError _ ) ->
-		let value = (applist(constant_value renv.env kn, l)) in
+		let value = (applist(constant_value_def renv.env kn, l)) in
 	        check_rec_call renv stack value
 	    else List.iter (check_rec_call renv []) l
 
@@ -761,6 +761,14 @@ let check_one_fix renv recpos def =
                   with (FixGuardError _) -> 
 		    check_rec_call renv stack (applist(c,l))
             end
+
+
+	| NativeInt _ -> assert (l = [])
+
+	| NativeArr (t,p) -> 
+	    assert (l = []);
+	    check_rec_call renv [] t;
+	    Array.iter (check_rec_call renv []) p
 
 	| Sort _ -> assert (l = [])
 

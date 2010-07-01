@@ -251,7 +251,9 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
        { const_entry_body = invProof;
          const_entry_type = None;
          const_entry_opaque = false;
-	 const_entry_boxed = true && (Flags.boxed_definitions())},
+	 const_entry_boxed = Flags.boxed_definitions();
+	 const_entry_inline_code = false	   
+       },
      IsProof Lemma)
   in ()
 

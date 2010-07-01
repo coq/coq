@@ -484,7 +484,8 @@ let rec pattern_to_term_and_type env typ  = function
 let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
   observe (str " Entering : " ++ Printer.pr_rawconstr rt);
   match rt with
-    | RRef _ | RVar _ | REvar _ | RPatVar _     | RSort _  | RHole _  ->
+    | RRef _ | RVar _ | REvar _ | RPatVar _     | RSort _  | RHole _ 
+    | RNativeInt _ ->
 	(* do nothing (except changing type of course) *)
 	mk_result [] rt avoid
     | RApp(_,_,_) ->
@@ -595,6 +596,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 		build_entry_lc env funnames avoid (mkRApp(b,args))
 	    | RRec _ -> error "Not handled RRec"
 	    | RProd _ -> error "Cannot apply a type"
+	    | RNativeInt _ | RNativeArr _ -> error "Cannot apply a native value"
 	end (* end of the application treatement *)
 
     | RLambda(_,n,_,t,b) ->
@@ -699,6 +701,8 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
     | RCast(_,b,_) ->
 	build_entry_lc env funnames  avoid b
     | RDynamic _ -> error "Not handled RDynamic"
+    | RNativeArr _ -> error "Not handled RNativeArr"
+
 and build_entry_lc_from_case env funname make_discr
     (el:tomatch_tuples)
     (brl:Rawterm.cases_clauses) avoid :
@@ -1139,7 +1143,7 @@ let rebuild_cons env nb_args relname args crossed_types rt =
    TODO: Find a valid way to deal with implicit arguments here!
 *)
 let rec compute_cst_params relnames params = function
-  | RRef _ | RVar _ | REvar _ | RPatVar _ -> params
+  | RRef _ | RVar _ | REvar _ | RPatVar _ | RNativeInt _ -> params
   | RApp(_,RVar(_,relname'),rtl) when Idset.mem relname' relnames ->
       compute_cst_params_from_app [] (params,rtl)
   | RApp(_,f,args) ->
@@ -1152,8 +1156,9 @@ let rec compute_cst_params relnames params = function
 		 discriminitation ones *)
   | RSort _ -> params
   | RHole _ -> params
-  | RIf _ | RRec _ | RCast _ | RDynamic _  ->
+  | RIf _ | RRec _ | RCast _ | RDynamic _  | RNativeArr _ ->
       raise (UserError("compute_cst_params", str "Not handled case"))
+
 and compute_cst_params_from_app acc (params,rtl) =
   match params,rtl with
     | _::_,[] -> assert false (* the rel has at least nargs + 1 arguments ! *)

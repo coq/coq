@@ -15,7 +15,7 @@
 open Names
 open Term
 
-type tag = int
+type tag = int 
 
 let id_tag = 0
 let iddef_tag = 1
@@ -25,27 +25,25 @@ let switch_tag = 4
 let cofix_tag = 5
 let cofix_evaluated_tag = 6
 
-type structured_constant =
+type structured_constant = 
   | Const_sorts of sorts
   | Const_ind of inductive
-  | Const_b0 of tag
-  | Const_bn of tag * structured_constant array
+  | Const_b0 of int
+  | Const_val of Term.values
 
+type reloc_table = (tag * int) array 
 
-type reloc_table = (tag * int) array
-
-type annot_switch =
+type annot_switch = 
    {ci : case_info; rtbl : reloc_table; tailcall : bool}
-
-module Label =
+ 
+module Label = 
   struct
     type t = int
     let no = -1
     let counter = ref no
     let create () = incr counter; !counter
-    let reset_label_counter () = counter := no
+    let reset_label_counter () = counter := no 
   end
-
 
 type instruction =
   | Klabel of Label.t
@@ -63,58 +61,30 @@ type instruction =
   | Kgrab of int                        (* number of arguments *)
   | Kgrabrec of int                     (* rec arg *)
   | Kclosure of Label.t * int           (* label, number of free variables *)
-  | Kclosurerec of int * int * Label.t array * Label.t array
+  | Kclosurerec of int * int * Label.t array * Label.t array 
                    (* nb fv, init, lbl types, lbl bodies *)
-  | Kclosurecofix of int * int * Label.t array * Label.t array
+  | Kclosurecofix of int * int * Label.t array * Label.t array 
                    (* nb fv, init, lbl types, lbl bodies *)
   | Kgetglobal of constant
   | Kconst of structured_constant
   | Kmakeblock of int * tag             (* size, tag *)
-  | Kmakeprod
+  | Kmakeprod 
   | Kmakeswitchblock of Label.t * Label.t * annot_switch * int
   | Kswitch of Label.t array * Label.t array (* consts,blocks *)
-  | Kpushfields of int
+  | Kpushfields of int 
   | Kfield of int
   | Ksetfield of int
   | Kstop
   | Ksequence of bytecodes * bytecodes
-(* spiwack: instructions concerning integers *)
+
   | Kbranch of Label.t                  (* jump to label *)
-  | Kaddint31                           (* adds the int31 in the accu
-                                           and the one ontop of the stack *)
-  | Kaddcint31                          (* makes the sum and keeps the carry *)
-  | Kaddcarrycint31                     (* sum +1, keeps the carry *)
-  | Ksubint31                           (* subtraction modulo *)
-  | Ksubcint31                          (* subtraction, keeps the carry *)
-  | Ksubcarrycint31                      (* subtraction -1, keeps the carry *)
-  | Kmulint31                           (* multiplication modulo *)
-  | Kmulcint31                          (* multiplication, result in two
-					   int31, for exact computation *)
-  | Kdiv21int31                          (* divides a double size integer
-                                           (represented by an int31 in the
-					   accumulator and one on the top of
-					   the stack) by an int31. The result
-					   is a pair of the quotient and the
-					   rest.
-					   If the divisor is 0, it returns
-					   0. *)
-  | Kdivint31                           (* euclidian division (returns a pair
-					   quotient,rest) *)
-  | Kaddmuldivint31                     (* generic operation for shifting and
-					   cycling. Takes 3 int31 i j and s,
-					   and returns x*2^s+y/(2^(31-s) *)
-  | Kcompareint31                       (* unsigned comparison of int31
-					   cf COMPAREINT31 in
-					   kernel/byterun/coq_interp.c
-					   for more info *)
-  | Khead0int31                         (* Give the numbers of 0 in head of a in31*)
-  | Ktail0int31                         (* Give the numbers of 0 in tail of a in31
-                                           ie low bits *)
-  | Kisconst of Label.t                 (* conditional jump *)
-  | Kareconst of int*Label.t            (* conditional jump *)
-  | Kcompint31                          (* dynamic compilation of int31 *)
-  | Kdecompint31                        (* dynamic decompilation of int31 *)
-(* /spiwack *)
+
+  | Kprim of Native.prim_op * constant option 
+  | Kprim_const of Native.prim_op * constant option * int 
+  | Kcamlprim of Native.caml_prim * Label.t 
+  | Kareint of int 
+
+
 
 and bytecodes = instruction list
 
@@ -122,130 +92,119 @@ type fv_elem = FVnamed of identifier | FVrel of int
 
 type fv = fv_elem array
 
-(* spiwack: this exception is expected to be raised by function expecting
-            closed terms. *)
-exception NotClosed
 
+exception Find_at of int
 
-(*spiwack: both type have been moved from Cbytegen because I needed then
-  for the retroknowledge *)
-type vm_env = {
-    size : int;              (* longueur de la liste [n] *)
-    fv_rev : fv_elem list    (* [fvn; ... ;fv1] *)
-  }
+(* rend le numero du constructeur correspondant au tag [tag],
+   [cst] = true si c'est un constructeur constant *)
 
-
-type comp_env = {
-    nb_stack : int;              (* nbre de variables sur la pile          *)
-    in_stack : int list;         (* position dans la pile                  *)
-    nb_rec : int;                (* nbre de fonctions mutuellement         *)
-                                 (* recursives =  nbr                      *)
-    pos_rec  : instruction list; (* instruction d'acces pour les variables *)
-                                 (*  de point fix ou de cofix              *)
-    offset : int;
-    in_env : vm_env ref
-  }
-
-
+let invert_tag cst tag reloc_tbl =
+  try 
+    for j = 0 to Array.length reloc_tbl - 1 do
+      let tagj,arity = reloc_tbl.(j) in
+      if tag = tagj && (cst && arity = 0 || not(cst || arity = 0)) then
+	raise (Find_at j)
+      else ()
+    done;raise Not_found 
+  with Find_at j -> (j+1)   
+             (* Argggg, ces constructeurs de ... qui commencent a 1*)
 
 (* --- Pretty print *)
-open Format
-let rec instruction ppf = function
-  | Klabel lbl -> fprintf ppf "L%i:" lbl
-  | Kacc n -> fprintf ppf "\tacc %i" n
-  | Kenvacc n -> fprintf ppf "\tenvacc %i" n
-  | Koffsetclosure n -> fprintf ppf "\toffsetclosure %i" n
-  | Kpush -> fprintf ppf "\tpush"
-  | Kpop n -> fprintf ppf "\tpop %i" n
-  | Kpush_retaddr lbl -> fprintf ppf "\tpush_retaddr L%i" lbl
-  | Kapply n -> fprintf ppf "\tapply %i" n
+open Pp
+open Util
+
+let pp_sort s = 
+  match family_of_sort s with
+  | InSet -> str "Set"
+  | InProp -> str "Prop"
+  | InType -> str "Type"
+
+let pp_struct_const = function
+  | Const_sorts s -> pp_sort s
+  | Const_ind (mind, i) -> pr_mind mind ++ str"#" ++ int i
+  | Const_b0 i -> int i
+  | Const_val v -> str "values"
+
+let pp_lbl lbl = str "L" ++ int lbl
+
+let rec pp_instr i = 
+  match i with
+  | Klabel _   | Ksequence _ -> assert false 
+  | Kacc n -> str "acc " ++ int n 
+  | Kenvacc n -> str "envacc " ++ int n
+  | Koffsetclosure n -> str "offsetclosure " ++ int n
+  | Kpush -> str "push" 
+  | Kpop n -> str "pop " ++ int n 
+  | Kpush_retaddr lbl -> str "push_retaddr " ++ pp_lbl lbl
+  | Kapply n -> str "apply " ++ int n
   | Kappterm(n, m) ->
-      fprintf ppf "\tappterm %i, %i" n m
-  | Kreturn n -> fprintf ppf "\treturn %i" n
-  | Kjump -> fprintf ppf "\tjump"
-  | Krestart -> fprintf ppf "\trestart"
-  | Kgrab n -> fprintf ppf "\tgrab %i" n
-  | Kgrabrec n -> fprintf ppf "\tgrabrec %i" n
+      str "appterm " ++ int n ++ str ", " ++ int m
+  | Kreturn n -> str "return " ++ int n
+  | Kjump -> str "jump"
+  | Krestart -> str "restart"
+  | Kgrab n -> str "grab " ++ int n
+  | Kgrabrec n -> str "grabrec " ++ int n
   | Kclosure(lbl, n) ->
-      fprintf ppf "\tclosure L%i, %i" lbl n
+      str "closure " ++ pp_lbl lbl ++ str ", " ++ int n
   | Kclosurerec(fv,init,lblt,lblb) ->
-      fprintf ppf "\tclosurerec";
-      fprintf ppf "%i , %i, " fv init;
-      print_string "types = ";
-      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblt;
-      print_string " bodies = ";
-      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblb;
+      h 1 (str "closurerec " ++
+	     int fv ++ str ", " ++ int init ++
+	     str " types = " ++ 
+	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
+	     str " bodies = " ++
+	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
   | Kclosurecofix (fv,init,lblt,lblb) ->
-      fprintf ppf "\tclosurecofix";
-      fprintf ppf " %i , %i, " fv init;
-      print_string "types = ";
-      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblt;
-      print_string " bodies = ";
-      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblb;
-  | Kgetglobal id -> fprintf ppf "\tgetglobal %s" (Names.string_of_con id)
-  | Kconst cst ->
-      fprintf ppf "\tconst"
+      h 1 (str "closurecofix " ++
+	     int fv ++ str ", " ++ int init ++
+	     str " types = " ++ 
+	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
+	     str " bodies = " ++
+	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
+  | Kgetglobal id -> str "getglobal " ++ pr_con id
+  | Kconst sc ->
+      str "const " ++ pp_struct_const sc
   | Kmakeblock(n, m) ->
-      fprintf ppf "\tmakeblock %i, %i" n m
-  | Kmakeprod -> fprintf ppf "\tmakeprod"
+      str "makeblock " ++ int n ++ str ", " ++ int m
+  | Kmakeprod -> str "makeprod"
   | Kmakeswitchblock(lblt,lbls,_,sz) ->
-      fprintf ppf "\tmakeswitchblock %i, %i, %i" lblt lbls sz
-  | Kswitch(lblc,lblb) ->
-      fprintf ppf "\tswitch";
-      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblc;
-      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblb;
-  | Kpushfields n -> fprintf ppf "\tpushfields %i" n
-  | Ksetfield n -> fprintf ppf "\tsetfield %i" n
-  | Kfield  n -> fprintf ppf "\tgetfield %i" n
-  | Kstop -> fprintf ppf "\tstop"
-  | Ksequence (c1,c2) ->
-      fprintf ppf "%a@ %a" instruction_list c1 instruction_list c2
-(* spiwack *)
-  | Kbranch lbl -> fprintf ppf "\tbranch %i" lbl
-  | Kaddint31 -> fprintf ppf "\taddint31"
-  | Kaddcint31 -> fprintf ppf "\taddcint31"
-  | Kaddcarrycint31 -> fprintf ppf "\taddcarrycint31"
-  | Ksubint31 -> fprintf ppf "\tsubint31"
-  | Ksubcint31 -> fprintf ppf "\tsubcint31"
-  | Ksubcarrycint31 -> fprintf ppf "\tsubcarrycint31"
-  | Kmulint31 -> fprintf ppf "\tmulint31"
-  | Kmulcint31 -> fprintf ppf "\tmulcint31"
-  | Kdiv21int31 -> fprintf ppf "\tdiv21int31"
-  | Kdivint31 -> fprintf ppf "\tdivint31"
-  | Kcompareint31 -> fprintf ppf "\tcompareint31"
-  | Khead0int31 -> fprintf ppf "\thead0int31"
-  | Ktail0int31 -> fprintf ppf "\ttail0int31"
-  | Kaddmuldivint31 -> fprintf ppf "\taddmuldivint31"
-  | Kisconst lbl -> fprintf ppf "\tisconst %i" lbl
-  | Kareconst(n,lbl) -> fprintf ppf "\tareconst %i %i" n lbl
-  | Kcompint31 -> fprintf ppf "\tcompint31"
-  | Kdecompint31 -> fprintf ppf "\tdecompint"
+      str "makeswitchblock " ++ pp_lbl lblt ++ str ", " ++
+	pp_lbl lbls ++ str ", " ++ int sz
+  | Kswitch(lblc,lblb) -> 
+      h 1 (str "switch " ++
+	     prlist_with_sep spc pp_lbl (Array.to_list lblc) ++
+	     str " | " ++
+	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
+  | Kpushfields n -> str "pushfields " ++ int n
+  | Kfield n -> str "field " ++ int n
+  | Ksetfield n -> str "set field" ++ int n
 
-(* /spiwack *)
+  | Kstop -> str "stop"
 
+  | Kbranch lbl -> str "branch " ++ pp_lbl lbl
 
-and instruction_list ppf = function
-    [] -> ()
-  | Klabel lbl :: il ->
-      fprintf ppf "L%i:%a" lbl instruction_list il
-  | instr :: il ->
-      fprintf ppf "%a@ %a" instruction instr instruction_list il
+  | Kprim (op, id) -> str (Native.prim_to_string op) ++ str " " ++
+	(match id with Some id -> pr_con id | None -> str "")
+  | Kprim_const (op, id, i) -> 
+      str (Native.prim_to_string op) ++ str "_const " ++
+	int i ++ str " " ++
+	(match id with Some id -> pr_con id | None -> str "") 
+  | Kcamlprim (p,lbl) -> 
+      str "camlcall " ++ str (Native.caml_prim_to_string p) ++
+	str " " ++ pp_lbl lbl
+  | Kareint n -> str "areint " ++ int n
 
-
-(*spiwack: moved this type in this file  because I needed it for
-  retroknowledge which can't depend from cbytegen *)
-type block =
-  | Bconstr of constr
-  | Bstrconst of structured_constant
-  | Bmakeblock of int * block array
-  | Bconstruct_app of int * int * int * block array
-                  (* tag , nparams, arity *)
-  | Bspecial of (comp_env -> block array -> int -> bytecodes -> bytecodes) * block array
-                (* spiwack: compilation given by a function *)
-                (* compilation function (see get_vm_constant_dynamic_info in
-                   retroknowledge.mli for more info) , argument array  *)
-
-
+and pp_bytecodes c =
+  match c with
+  | [] -> str ""
+  | Klabel lbl :: c ->
+	str "L" ++ int lbl ++ str ":" ++ str "\n" ++
+	pp_bytecodes c
+  | Ksequence (l1, l2) :: c ->
+      pp_bytecodes l1 ++ pp_bytecodes l2 ++  pp_bytecodes c
+  | i :: c ->
+      str "\t" ++ pp_instr i ++ str "\n" ++ pp_bytecodes c
 
 let draw_instr c =
-  fprintf std_formatter "@[<v 0>%a@]" instruction_list c
+  pperrnl (pp_bytecodes c);
+  flush_all()
+

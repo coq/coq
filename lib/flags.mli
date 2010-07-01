@@ -72,6 +72,18 @@ val is_unsafe : string -> bool
 val set_boxed_definitions : bool -> unit
 val boxed_definitions : unit -> bool
 
+val set_vm_draw_opt : bool -> unit
+val vm_draw_opt : unit -> bool
+
+val set_vm_draw_instr : bool -> unit
+val vm_draw_instr : unit -> bool
+
+val set_vm_array_warn : bool -> unit
+val vm_array_warn : unit -> bool
+
+val set_vm_optimize : bool -> unit
+val vm_optimize : unit -> bool
+
 (** Options for external tools *)
 
 (** Returns string format for default browser to use from Coq or CoqIDE *)

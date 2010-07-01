@@ -13,6 +13,7 @@
 (* This file manages the table of global symbols for the bytecode machine *)
 
 open Names
+open Native
 open Term
 open Vm
 open Cemitcodes
@@ -51,6 +52,22 @@ let set_global v =
   (global_data()).(n) <- v;
   incr num_global;
   n
+
+(* Initializing Ocaml primitive for the virtual machine *)
+let prim_print_int =
+       let pr x =
+	 Printf.fprintf stdout "%s\n" (Uint31.to_string x);
+	 flush stdout;
+	 x in
+       set_global (Obj.magic pr)
+let prim_Array_make = set_global (Obj.magic Parray.make)
+let prim_Array_get = set_global (Obj.magic Parray.get)
+let prim_Array_get_default = set_global (Obj.magic Parray.default)
+let prim_Array_set = set_global (Obj.magic Parray.set)
+let prim_Array_copy = set_global (Obj.magic Parray.copy)
+let prim_Array_reroot = set_global (Obj.magic Parray.reroot) 
+let prim_Array_length = set_global (Obj.magic Parray.length)
+
 
 (* [global_transp],[global_boxed] contiennent les valeurs des
    definitions gelees. Les deux versions sont maintenues en //.
@@ -114,12 +131,22 @@ let slot_for_str_cst key =
     n
 
 let slot_for_annot key =
-  try Hashtbl.find annot_tbl key
-  with Not_found ->
-    let n =  set_global (val_of_annot_switch key) in
+  try Hashtbl.find annot_tbl key 
+  with Not_found -> 
+    let n =  set_global (Obj.magic key) in
     Hashtbl.add annot_tbl key n;
     n
 
+let slot_for_caml_prim = function
+  | Int31print      -> prim_print_int
+  | ArrayMake       -> prim_Array_make
+  | ArrayGet        -> prim_Array_get
+  | ArrayGetdefault -> prim_Array_get_default
+  | ArraySet        -> prim_Array_set
+  | ArrayCopy       -> prim_Array_copy
+  | ArrayReroot     -> prim_Array_reroot
+  | ArrayLength     -> prim_Array_length
+  
 let rec slot_for_getglobal env kn =
   let (cb,rk) = lookup_constant_key kn env in
   try key rk
@@ -169,12 +196,12 @@ and slot_for_fv env fv =
 
 and eval_to_patch env (buff,pl,fv) =
   let patch = function
-    | Reloc_annot a, pos -> patch_int buff pos (slot_for_annot a)
-    | Reloc_const sc, pos -> patch_int buff pos (slot_for_str_cst sc)
-    | Reloc_getglobal kn, pos ->
-	patch_int buff pos (slot_for_getglobal env kn)
+    | Reloc_annot a, pos      -> patch_int buff pos (slot_for_annot a)
+    | Reloc_const sc, pos     -> patch_int buff pos (slot_for_str_cst sc)
+    | Reloc_getglobal kn, pos -> patch_int buff pos (slot_for_getglobal env kn)
+    | Reloc_caml_prim op, pos -> patch_int buff pos (slot_for_caml_prim op)
   in
-  List.iter patch pl;
+  Array.iter patch pl;
   let vm_env = Array.map (slot_for_fv env) fv in
   let tc = tcode_of_code buff (length buff) in
   eval_tcode tc vm_env

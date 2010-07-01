@@ -51,17 +51,20 @@ type mutual_inductive_entry = {
 (** {6 Constants (Definition/Axiom) } *)
 
 type definition_entry = {
-  const_entry_body   : constr;
-  const_entry_type   : types option;
-  const_entry_opaque : bool;
-  const_entry_boxed  : bool }
+  const_entry_body        : constr;
+  const_entry_type        : types option;
+  const_entry_opaque      : bool;
+  const_entry_boxed       : bool;
+  const_entry_inline_code : bool }
 
 type parameter_entry = types * bool  (*inline flag*)
+
+type primitive_entry = types * Native.op_or_type
 
 type constant_entry =
   | DefinitionEntry of definition_entry
   | ParameterEntry of parameter_entry
-
+  | PrimitiveEntry of primitive_entry 
 (** {6 Modules } *)
 
 

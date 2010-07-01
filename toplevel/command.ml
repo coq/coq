@@ -79,7 +79,9 @@ let interp_definition boxed bl red_option c ctypopt =
 	{ const_entry_body = body;
 	  const_entry_type = None;
           const_entry_opaque = false;
-	  const_entry_boxed = boxed }
+	  const_entry_boxed = boxed;
+	  const_entry_inline_code = false
+	}
     | Some ctyp ->
 	let ty, impls = interp_type_evars_impls ~evdref ~fail_evar:false env_bl ctyp in
 	let c, imps2 = interp_casted_constr_evars_impls ~evdref ~fail_evar:false env_bl c ty in
@@ -91,7 +93,9 @@ let interp_definition boxed bl red_option c ctypopt =
 	{ const_entry_body = body;
 	  const_entry_type = Some typ;
           const_entry_opaque = false;
-	  const_entry_boxed = boxed }
+	  const_entry_boxed = boxed;
+	  const_entry_inline_code = false
+	}
   in
   red_constant_entry (rel_context_length ctx) ce red_option, imps
 
@@ -163,6 +167,12 @@ let interp_assumption bl c =
 let declare_assumptions idl is_coe k c imps impl_is_on nl =
   !declare_assumptions_hook c;
   List.iter (declare_assumption is_coe k c imps impl_is_on nl) idl
+
+let declare_register (_,id) t o_t imps =
+  let kn = 
+    declare_constant id (PrimitiveEntry(t,o_t),IsPrimitive) in
+  maybe_declare_manual_implicits false (ConstRef kn) imps;
+  register_message id
 
 (* 3a| Elimination schemes for mutual inductive definitions *)
 
@@ -474,7 +484,8 @@ let declare_fix boxed kind f def t imps =
     const_entry_body = def;
     const_entry_type = Some t;
     const_entry_opaque = false;
-    const_entry_boxed = boxed
+    const_entry_boxed = boxed;
+    const_entry_inline_code = false
   } in
   let kn = declare_constant f (DefinitionEntry ce,IsDefinition kind) in
   let gr = ConstRef kn in

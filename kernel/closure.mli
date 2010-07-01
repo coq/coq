@@ -80,11 +80,12 @@ val unfold_red : evaluable_global_reference -> reds
 type table_key = id_key
 
 type 'a infos
-val ref_value_cache: 'a infos -> table_key -> 'a option
+val ref_value_cache: 'a infos -> table_key -> 'a  Declarations.constant_def
 val info_flags: 'a infos -> reds
 val create: ('a infos -> constr -> 'a) -> reds -> env ->
   (existential -> constr option) -> 'a infos
 val evar_value : 'a infos -> existential -> constr option
+val env_info : 'a infos -> Environ.env
 
 (***********************************************************************
   s Lazy reduction. *)
@@ -96,7 +97,7 @@ type fconstr
 (** [fconstr] can be accessed by using the function [fterm_of] and by
    matching on type [fterm] *)
 
-type fterm =
+and fterm =
   | FRel of int
   | FAtom of constr (** Metas and Sorts *)
   | FCast of fconstr * cast_kind * fconstr
@@ -111,6 +112,8 @@ type fterm =
   | FProd of name * fconstr * fconstr
   | FLetIn of name * fconstr * fconstr * constr * fconstr subs
   | FEvar of existential * fconstr subs
+  | FNativeInt of Native.Uint31.t
+  | FNativeArr of fconstr * fconstr Native.Parray.t
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
   | FLOCKED
@@ -120,10 +123,14 @@ type fterm =
    [append_stack] one array at a time but popped with [decomp_stack]
    one by one *)
 
+type 'a next_native_args = (Native.arg_kind * 'a) list
+
 type stack_member =
   | Zapp of fconstr array
   | Zcase of case_info * fconstr * fconstr array
   | Zfix of fconstr * stack
+  | Znative of Native.op * constant * fconstr list * fconstr next_native_args
+       (* operator, constr def, reduced arguments rev, next arguments *) 
   | Zshift of int
   | Zupdate of fconstr
 
@@ -131,6 +138,10 @@ and stack = stack_member list
 
 val empty_stack : stack
 val append_stack : fconstr array -> stack -> stack
+
+val check_native_args : Native.op -> stack -> bool
+val get_native_args1 : Native.op -> constant -> stack ->
+           fconstr list * fconstr * fconstr next_native_args * stack
 
 val decomp_stack : stack -> (fconstr * stack) option
 val array_of_stack : stack -> fconstr array
@@ -175,7 +186,8 @@ val whd_stack :
 (** Conversion auxiliary functions to do step by step normalisation *)
 
 (** [unfold_reference] unfolds references in a [fconstr] *)
-val unfold_reference : clos_infos -> table_key -> fconstr option
+val unfold_reference : 
+    clos_infos -> table_key -> fconstr Declarations.constant_def
 
 val eq_table_key : table_key -> table_key -> bool
 

@@ -93,7 +93,7 @@ let get_obligation_body expand obl =
   let c = Option.get obl.obl_body in
     if expand && obl.obl_status = Expand then
       match kind_of_term c with
-      | Const c -> constant_value (Global.env ()) c
+      | Const c -> constant_value_def (Global.env ()) c
       | _ -> c
     else c
 
@@ -189,7 +189,8 @@ let declare_definition prg =
     { const_entry_body = body;
       const_entry_type = Some typ;
       const_entry_opaque = false;
-      const_entry_boxed = boxed}
+      const_entry_boxed = boxed;
+      const_entry_inline_code = false}
   in
     (Command.get_declare_definition_hook ()) ce;
     match local with
@@ -289,7 +290,8 @@ let declare_obligation prg obl body =
 	{ const_entry_body = body;
 	  const_entry_type = Some ty;
 	  const_entry_opaque = opaque;
-	  const_entry_boxed = false} 
+	  const_entry_boxed = false;
+	  const_entry_inline_code = false} 
       in
       let constant = Declare.declare_constant obl.obl_name
 	(DefinitionEntry ce,IsProof Property)
@@ -419,14 +421,15 @@ let rec solve_obligation prg num tac =
 	      (fun strength gr ->
 		let cst = match gr with ConstRef cst -> cst | _ -> assert false in
 		let obl =
-		  let transparent = evaluable_constant cst (Global.env ()) in
+		  let transparent = evaluable_constant1 cst (Global.env ()) in
 		  let body =
 		    match obl.obl_status with
 		    | Expand ->
 			if not transparent then error_not_transp ()
-			else constant_value (Global.env ()) cst
+			else constant_value_def (Global.env ()) cst
 		    | Define opaque ->
-			if not opaque && not transparent then error_not_transp ()
+			if not opaque && not transparent then
+			  error_not_transp ()
 			else Libnames.constr_of_global gr
 		  in
 		    if transparent then

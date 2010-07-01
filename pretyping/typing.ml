@@ -179,6 +179,14 @@ let rec execute env evdref cstr =
 	let tj = type_judgment env tj in
         e_judge_of_cast env evdref cj k tj
 
+    | NativeInt i ->
+	judge_of_int env i
+
+    | NativeArr(t,p) ->
+	let tj = execute env evdref t in
+	let pj = execute_array env evdref p in
+	judge_of_array env (type_judgment env tj) pj  
+
 and execute_recdef env evdref (names,lar,vdef) =
   let larj = execute_array env evdref lar in
   let lara = Array.map (assumption_of_judgment env) larj in

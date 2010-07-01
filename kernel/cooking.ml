@@ -117,25 +117,29 @@ type recipe = {
   d_abstract : named_context;
   d_modlist : work_list }
 
-let on_body f =
-  Option.map (fun c -> Declarations.from_val (f (Declarations.force c)))
-
-let cook_constant env r =
+let cook_constant1 env r =
   let cb = r.d_from in
   let hyps = Sign.map_named_context (expmod_constr r.d_modlist) r.d_abstract in
-  let body =
-    on_body (fun c ->
-      abstract_constant_body (expmod_constr r.d_modlist c) hyps)
-      cb.const_body in
-  let typ = match cb.const_type with
+  let body, c =
+    let f = (fun c -> abstract_constant_body (expmod_constr r.d_modlist c) hyps) in
+    match cb.const_body with
+    | Def c -> 
+	let c = Declarations.from_val (f (Declarations.force c)) in
+	Def c, Some c 
+    | Opaque (Some c) -> 
+	let c = Declarations.from_val (f (Declarations.force c)) in
+	Opaque (Some c), Some c
+    | Opaque None | Primitive _ -> cb.const_body, None in
+  let typ = 
+    match cb.const_type with
     | NonPolymorphicType t ->
 	let typ = abstract_constant_type (expmod_constr r.d_modlist t) hyps in
 	NonPolymorphicType typ
     | PolymorphicArity (ctx,s) ->
 	let t = mkArity (ctx,Type s.poly_level) in
 	let typ = abstract_constant_type (expmod_constr r.d_modlist t) hyps in
-	let j = make_judge (force (Option.get body)) typ in
+	let j = make_judge (force (Option.get c)) typ in
 	Typeops.make_polymorphic_if_constant_for_ind env j
   in
   let boxed = Cemitcodes.is_boxed cb.const_body_code in
-  (body, typ, cb.const_constraints, cb.const_opaque, boxed,false)
+  (body, typ, cb.const_constraints, boxed, cb.const_inline_code,false)

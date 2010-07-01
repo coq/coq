@@ -5,6 +5,7 @@ type reloc_info =
   | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
   | Reloc_getglobal of constant
+  | Reloc_caml_prim of Native.caml_prim
 
 type patch = reloc_info * int
 
@@ -17,7 +18,7 @@ val length : emitcodes -> int
 
 val patch_int : emitcodes -> (*pos*)int -> int -> unit
 
-type to_patch = emitcodes * (patch list) * fv
+type to_patch = emitcodes * (patch array) * fv
 
 val subst_to_patch : Mod_subst.substitution -> to_patch -> to_patch
 

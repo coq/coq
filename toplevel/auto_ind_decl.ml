@@ -185,7 +185,7 @@ let build_beq_scheme kn =
         | Lambda _-> raise (EqUnknown "Lambda")
         | LetIn _ -> raise (EqUnknown "LetIn")
         | Const kn ->
-	    (match Environ.constant_opt_value env kn with
+	    (match Environ.constant_opt_value1 env kn with
 	      | None -> raise (ParameterWithoutEquality kn)
 	      | Some c -> aux (applist (c,a)))
         | Construct _ -> raise (EqUnknown "Construct")
@@ -194,6 +194,8 @@ let build_beq_scheme kn =
         | Fix _   -> raise (EqUnknown "Fix")
         | Meta _  -> raise (EqUnknown "Meta")
         | Evar _  -> raise (EqUnknown "Evar")
+	| NativeInt _ -> raise (EqUnknown "Int")
+	| NativeArr _ -> raise (EqUnknown "Array")
     in
       aux t
   in

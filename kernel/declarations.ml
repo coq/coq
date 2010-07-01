@@ -49,15 +49,19 @@ let force = force subst_mps
 
 let subst_constr_subst = subst_substituted
 
+type 'a constant_def =
+  | Def of 'a
+  | Opaque of 'a option (* None means parameter *)
+  | Primitive of Native.op
+ 
 type constant_body = {
     const_hyps : section_context; (* New: younger hyp at top *)
-    const_body : constr_substituted option;
+    const_body : constr_substituted constant_def;
     const_type : constant_type;
     const_body_code : Cemitcodes.to_patch_substituted;
-   (* const_type_code : Cemitcodes.to_patch; *)
     const_constraints : constraints;
-    const_opaque : bool;
-    const_inline : bool}
+    const_inline : bool;
+    const_inline_code : bool}
 
 (*s Inductive types (internal representation with redundant
     information). *)
@@ -214,15 +218,22 @@ let subst_arity sub arity =
     | PolymorphicArity (ctx,s) -> PolymorphicArity (subst_rel_context sub ctx,s)
 	
 (* TODO: should be changed to non-coping after Term.subst_mps *)
-let subst_const_body sub cb = {
-  const_hyps = (assert (cb.const_hyps=[]); []);
-  const_body = Option.map (subst_constr_subst sub) cb.const_body;
-  const_type = subst_arity sub cb.const_type;
-  const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
-  (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
-  const_constraints = cb.const_constraints;
-  const_opaque = cb.const_opaque;
-  const_inline = cb.const_inline} 
+let subst_constant_def sub d =
+  match d with
+  | Def cs -> Def (subst_constr_subst sub cs)
+  | Opaque o -> Opaque (Option.map (subst_constr_subst sub) o)
+  | Primitive op -> d
+
+let subst_const_body sub cb = 
+  {
+   const_hyps = (assert (cb.const_hyps=[]); []);
+   const_body = subst_constant_def sub cb.const_body;
+   const_type = subst_arity sub cb.const_type;
+   const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
+   const_constraints = cb.const_constraints;
+   const_inline = cb.const_inline;
+   const_inline_code = cb.const_inline_code
+ } 
   
 let subst_arity sub = function
 | Monomorphic s ->
@@ -291,7 +302,8 @@ and module_body =
       mod_type_alg : struct_expr_body option;
       mod_constraints : constraints;
       mod_delta : delta_resolver;
-      mod_retroknowledge : Retroknowledge.action list}
+      mod_retroknowledge :  (Native.retro_action * constr) list 
+    }
 
 and module_type_body =
     { typ_mp : module_path;

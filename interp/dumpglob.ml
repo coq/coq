@@ -81,6 +81,8 @@ let type_of_logical_kind = function
       | Property
       | Proposition
       | Corollary -> "thm")
+  | IsPrimitive -> "prim"
+
 
 let type_of_global_ref gr =
   if Typeclasses.is_class gr then

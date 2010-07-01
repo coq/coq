@@ -161,7 +161,8 @@ let hcons_constant_declaration = function
        { const_entry_body = hcons1_constr ce.const_entry_body;
 	 const_entry_type = Option.map hcons1_constr ce.const_entry_type;
          const_entry_opaque = ce.const_entry_opaque;
-         const_entry_boxed = ce.const_entry_boxed }
+         const_entry_boxed = ce.const_entry_boxed;
+	 const_entry_inline_code = ce.const_entry_inline_code }
   | cd -> cd
 
 let declare_constant_common id dhyps (cd,kind) =
@@ -319,3 +320,6 @@ let definition_message id =
 
 let assumption_message id =
   Flags.if_verbose msgnl (pr_id id ++ str " is assumed")
+
+let register_message id =
+  Flags.if_verbose msgnl (pr_id id ++ str " is registered")

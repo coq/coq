@@ -135,7 +135,7 @@ let fresh env n =
 let rec compute_metamap env sigma c = match kind_of_term c with
   (* le terme est directement une preuve *)
   | (Const _ | Evar _ | Ind _ | Construct _ |
-    Sort _ | Var _ | Rel _) ->
+    Sort _ | Var _ | Rel _ | NativeInt _) ->
       TH (c,[],[])
 
   (* le terme est une mv => un but *)
@@ -253,6 +253,26 @@ let rec compute_metamap env sigma c = match kind_of_term c with
 	  TH (cofix,mm,sgp)
 	with NoMeta ->
 	  TH (c,[],[])
+      end
+  | NativeArr (t,p) ->
+      (* Est Correct ? *)
+      (* Do not use the same hack than for app p can be to large *)
+      let ta = compute_metamap env sigma t in
+      let a = Array.map (compute_metamap env sigma) p in
+      begin
+	try
+	  let p', mm, sgp = replace_in_array false env sigma a in
+	  let t', mmt,sgpt =
+	    match ta with
+	    | TH(c,mm,[]) -> c,mm,[]
+	    | _ -> replace_by_meta env sigma ta in
+	  TH(mkArray(t',p'), mmt@mm, sgpt@sgp)
+	with NoMeta ->
+	  match ta with
+	  | TH(_,_,[]) -> TH(c,[],[])
+	  | _ -> 
+	      let t',mmt,sgpt = replace_by_meta env sigma ta in 
+	      TH (mkArray(t',p),mmt,sgpt)
       end
 
 

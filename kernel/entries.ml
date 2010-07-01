@@ -49,23 +49,27 @@ type mutual_inductive_entry = {
   mind_entry_record : bool;
   mind_entry_finite : bool;
   mind_entry_params : (identifier * local_entry) list;
-  mind_entry_inds : one_inductive_entry list }
+  mind_entry_inds   : one_inductive_entry list }
 
 
 (*s Constants (Definition/Axiom) *)
 
 type definition_entry = {
-  const_entry_body   : constr;
-  const_entry_type   : types option;
-  const_entry_opaque : bool;
-  const_entry_boxed  : bool}
+  const_entry_body        : constr;
+  const_entry_type        : types option;
+  const_entry_opaque      : bool;
+  const_entry_boxed       : bool;
+  const_entry_inline_code : bool }
 
 (* type and the inlining flag *)
 type parameter_entry = types * bool
 
+type primitive_entry = types * Native.op_or_type
+
 type constant_entry =
   | DefinitionEntry of definition_entry
   | ParameterEntry of parameter_entry
+  | PrimitiveEntry of primitive_entry
 
 (*s Modules *)
 

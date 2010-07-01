@@ -130,12 +130,7 @@ val safe_infer : safe_environment -> constr -> judgment * Univ.constraints
 val typing : safe_environment -> constr -> judgment
 
 
+(* Retroknowledge of inductive *)
 
-(*spiwack: safe retroknowledge functionalities *)
-
-open Retroknowledge
-
-val retroknowledge : (retroknowledge-> 'a) -> safe_environment -> 'a
-
-val register : safe_environment -> field -> Retroknowledge.entry -> constr
-                                         -> safe_environment
+val register : 
+    constr -> Native.retro_action -> safe_environment -> safe_environment

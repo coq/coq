@@ -49,8 +49,3 @@ val wit_by_arg_tac : glob_tactic_expr option typed_abstract_argument_type
 
 
 
-(** Spiwack: Primitive for retroknowledge registration *)
-
-val retroknowledge_field : Retroknowledge.field Pcoq.Gram.entry
-val rawwit_retroknowledge_field :  Retroknowledge.field raw_abstract_argument_type
-val wit_retroknowledge_field : Retroknowledge.field typed_abstract_argument_type

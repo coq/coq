@@ -35,15 +35,19 @@ type constr_substituted
 val from_val : constr -> constr_substituted
 val force : constr_substituted -> constr
 
+type 'a constant_def =
+  | Def of 'a
+  | Opaque of 'a option (* None means parameter *)
+  | Primitive of Native.op
+ 
 type constant_body = {
     const_hyps : section_context; (** New: younger hyp at top *)
-    const_body : constr_substituted option;
+    const_body : constr_substituted constant_def;
     const_type : constant_type;
-    const_body_code : to_patch_substituted;
-   (* const_type_code : to_patch;*)
+    const_body_code : Cemitcodes.to_patch_substituted;
     const_constraints : constraints;
-    const_opaque : bool;
-    const_inline : bool}
+    const_inline : bool;
+    const_inline_code : bool}
 
 val subst_const_body : substitution -> constant_body -> constant_body
 
@@ -184,7 +188,8 @@ and module_body =
       mod_constraints : constraints;
       (** quotiented set of equivalent constant and inductive name  *)
       mod_delta : delta_resolver;
-      mod_retroknowledge : Retroknowledge.action list}
+      mod_retroknowledge :  (Native.retro_action * constr) list 
+     }
       
 and module_type_body =
     { 

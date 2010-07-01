@@ -27,6 +27,16 @@ type key = int option ref
 
 type constant_key = constant_body * key
 
+type retroknowledge = {
+    retro_int31 : (constant * constr) option;
+    retro_array : (constant * constr) option;
+    retro_bool  : (constructor * constructor) option; (* true, false *)
+    retro_carry : (constructor * constructor) option; (* C0, C1 *)
+    retro_pair  : constructor option;
+    retro_cmp   : (constructor * constructor * constructor) option
+                    (* Eq, Lt, Gt *)
+}
+
 type globals = {
   env_constants : constant_key Cmap_env.t;
   env_inductives : mutual_inductive_body Mindmap_env.t;
@@ -47,18 +57,28 @@ type lazy_val = val_kind ref
 type named_vals = (identifier * lazy_val) list
 
 type env = {
-  env_globals       : globals;
-  env_named_context : named_context;
-  env_named_vals    : named_vals;
-  env_rel_context   : rel_context;
-  env_rel_val       : lazy_val list;
-  env_nb_rel        : int;
+  env_globals        : globals;
+  env_named_context  : named_context;
+  env_named_vals     : named_vals;
+  env_rel_context    : rel_context;
+  env_rel_val        : lazy_val list;
+  env_nb_rel         : int;
   env_stratification : stratification;
-  retroknowledge : Retroknowledge.retroknowledge }
+  env_retroknowledge : retroknowledge
+ }
 
 type named_context_val = named_context * named_vals
 
 let empty_named_context_val = [],[]
+
+let empty_retroknowledge = {
+    retro_int31 = None;
+    retro_array = None;
+    retro_bool  = None;
+    retro_carry = None;
+    retro_pair  = None;
+    retro_cmp   = None;
+}
 
 let empty_env = {
   env_globals = {
@@ -74,7 +94,8 @@ let empty_env = {
   env_stratification = {
     env_universes = initial_universes;
     env_engagement = None };
-  retroknowledge = Retroknowledge.initial_retroknowledge }
+  env_retroknowledge = empty_retroknowledge
+ }
 
 
 (* Rel context *)

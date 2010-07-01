@@ -43,6 +43,8 @@ type constr_pattern =
       * constr_pattern * constr_pattern * constr_pattern array
   | PFix of fixpoint
   | PCoFix of cofixpoint
+  | PNativeInt of Native.Uint31.t
+  | PNativeArr of constr_pattern * constr_pattern array
 
 let rec occur_meta_pattern = function
   | PApp (f,args) ->
@@ -56,8 +58,10 @@ let rec occur_meta_pattern = function
   | PCase(_,p,c,br) ->
       (occur_meta_pattern p) or
       (occur_meta_pattern c) or (array_exists occur_meta_pattern br)
+  | PNativeArr(t,p) ->
+      (occur_meta_pattern t) or (array_exists occur_meta_pattern p)
   | PMeta _ | PSoApp _ -> true
-  | PEvar _ | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _ -> false
+  | PEvar _|PVar _|PRef _|PRel _|PSort _|PFix _|PCoFix _|PNativeInt _ -> false
 
 type constr_label =
   | ConstNode of constant
@@ -80,7 +84,8 @@ let rec head_pattern_bound t =
 	-> raise BoundPattern
     (* Perhaps they were arguments, but we don't beta-reduce *)
     | PLambda _ -> raise BoundPattern
-    | PCoFix _ -> anomaly "head_pattern_bound: not a type"
+    | PNativeInt _ | PNativeArr _ | PCoFix _ -> 
+	anomaly "head_pattern_bound: not a type"
 
 let head_of_constr_reference c = match kind_of_term c with
   | Const sp -> ConstRef sp
@@ -134,7 +139,10 @@ let pattern_of_constr sigma t =
 	       pattern_of_constr p,pattern_of_constr a,
 	       Array.map pattern_of_constr br)
     | Fix f -> PFix f
-    | CoFix f -> PCoFix f in
+    | CoFix f -> PCoFix f
+    | NativeInt i -> PNativeInt i 
+    | NativeArr(t,p) -> 
+	PNativeArr(pattern_of_constr t,Array.map (pattern_of_constr) p) in
   let p = pattern_of_constr t in
   (* side-effect *)
   (* Warning: the order of dependencies in ctx is not ensured *)
@@ -150,8 +158,9 @@ let map_pattern_with_binders g f l = function
   | PLetIn (n,a,b) -> PLetIn (n,f l a,f (g n l) b)
   | PIf (c,b1,b2) -> PIf (f l c,f l b1,f l b2)
   | PCase (ci,po,p,pl) -> PCase (ci,f l po,f l p,Array.map (f l) pl)
+  | PNativeArr(p,pl) -> PNativeArr(f l p, Array.map (f l) pl)
   (* Non recursive *)
-  | (PVar _ | PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _
+  | (PVar _ | PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _ | PNativeInt _
   (* Bound to terms *)
   | PFix _ | PCoFix _ as x) -> x
 
@@ -200,12 +209,18 @@ let rec subst_pattern subst pat =
 	 snd (pattern_of_constr Evd.empty t)
   | PVar _
   | PEvar _
-  | PRel _ -> pat
+  | PRel _ 
+  | PNativeInt _ -> pat
   | PApp (f,args) ->
       let f' = subst_pattern subst f in
       let args' = array_smartmap (subst_pattern subst) args in
 	if f' == f && args' == args then pat else
 	  PApp (f',args')
+  | PNativeArr(t,p) ->
+      let t' = subst_pattern subst t in
+      let p' = array_smartmap (subst_pattern subst) p in
+	if t' == t && p' == p then pat else PNativeArr (t',p')
+
   | PSoApp (i,args) ->
       let args' = list_smartmap (subst_pattern subst) args in
 	if args' == args then pat else

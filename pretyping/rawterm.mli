@@ -71,6 +71,8 @@ type rawconstr =
   | RHole of (loc * Evd.hole_kind)
   | RCast of loc * rawconstr * rawconstr cast_type
   | RDynamic of loc * Dyn.t
+  | RNativeInt of loc * Native.Uint31.t
+  | RNativeArr of loc * rawconstr * rawconstr array
 
 and rawdecl = name * binding_kind * rawconstr option * rawconstr
 

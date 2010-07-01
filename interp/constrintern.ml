@@ -665,7 +665,7 @@ let find_constructor ref f aliases pats scopes =
   | TrueGlobal r ->
       let rec unf = function
         | ConstRef cst ->
-	    let v = Environ.constant_value (Global.env()) cst in
+	    let v = Environ.constant_value_def (Global.env()) cst in
 	    unf (global_of_constr v)
         | ConstructRef cstr ->
 	    Dumpglob.add_glob loc r;
@@ -1199,6 +1199,8 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	RCast (loc,intern env c1, CastCoerce)
 
     | CDynamic (loc,d) -> RDynamic (loc,d)
+    | CNativeArr(loc,t,p) ->
+	RNativeArr(loc, intern env t, Array.map (intern env) p)
 
   and intern_type env = intern (set_type_scope env)
 
@@ -1384,7 +1386,8 @@ let interp_gen kind sigma env
                ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
   let c = intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars sigma env c in
-    Default.understand_gen kind sigma env c
+  Default.understand_gen kind sigma env c
+
 
 let interp_constr sigma env c =
   interp_gen (OfType None) sigma env c

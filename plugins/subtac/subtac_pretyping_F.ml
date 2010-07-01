@@ -544,6 +544,16 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	      (*inh_conv_coerce_to_tycon loc env evdref j tycon*)
 	else
 	  user_err_loc (loc,"pretype",(str "Not a constr tagged Dynamic."))
+    | RNativeInt(loc,i) ->
+	begin 
+	  try judge_of_int env i
+	  with Invalid_argument _ ->
+	    user_err_loc (loc,"pretype",
+			  (str "Type of int31 should be register first."))
+	end
+    | RNativeArr(loc,t,p) -> assert false
+	
+
 
   (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
   and pretype_type valcon env evdref lvar = function

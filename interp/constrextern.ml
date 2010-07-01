@@ -264,6 +264,11 @@ let rec same_raw c d =
   | RCast(_,c1,_),r2 -> same_raw c1 r2
   | r1, RCast(_,c2,_) -> same_raw r1 c2
   | RDynamic(_,d1), RDynamic(_,d2) -> if d1<>d2 then failwith"RDynamic"
+  | RNativeInt(_,i1), RNativeInt(_,i2) -> if i1 <> i2 then failwith "RNativeInt"
+  | RNativeArr(_,t1,p1), RNativeArr(_,t2,p2) ->
+      if Array.length p1 <> Array.length p2 then failwith "RNativeArr";
+      same_raw t1 t2;
+      array_iter2 same_raw p1 p2
   | _ -> failwith "same_raw"
 
 let same_rawconstr c d =
@@ -754,6 +759,11 @@ let rec extern inctx scopes vars r =
       CCast (loc,sub_extern true scopes vars c, CastCoerce)
 
   | RDynamic (loc,d) -> CDynamic (loc,d)
+  | RNativeInt(loc,i) -> 
+      CPrim(loc, (Numeral (Bigint.of_string (Native.Uint31.to_string i))))
+  | RNativeArr(loc,t,p) ->
+      CNativeArr(loc, extern_typ scopes vars t,
+		 Array.map (extern inctx scopes vars) p)
 
 and extern_typ (_,scopes) =
   extern true (Some Notation.type_scope,scopes)
@@ -956,6 +966,9 @@ let rec raw_of_pat env = function
   | PFix f -> Detyping.detype false [] env (mkFix f)
   | PCoFix c -> Detyping.detype false [] env (mkCoFix c)
   | PSort s -> RSort (loc,s)
+  | PNativeInt i -> RNativeInt(loc,i)
+  | PNativeArr(t,p) ->
+      RNativeArr(loc,raw_of_pat env t, Array.map (raw_of_pat env) p)
 
 and raw_of_eqn env constr construct_nargs branch =
   let make_pat x env b ids =

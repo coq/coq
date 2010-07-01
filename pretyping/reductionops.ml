@@ -29,8 +29,11 @@ type 'a stack_member =
   | Zapp of 'a list
   | Zcase of case_info * 'a * 'a array
   | Zfix of 'a * 'a stack
+  | Znative of Native.op * constant * 'a list * 'a next_native_args
+        (* operator, constr def, reduced arguments rev, next arguments *) 
   | Zshift of int
   | Zupdate of 'a
+  
 
 and 'a stack = 'a stack_member list
 
@@ -105,6 +108,45 @@ let rec stack_nth s p = match s with
       if p >= q then stack_nth s (p-q)
       else List.nth args p
   | _ -> raise Not_found
+
+let check_native_args op stk =
+  let (nparams, nargs) = Native.arity op in
+  let rargs = stack_args_size stk in
+  (nparams + nargs) <= rargs
+
+let rec skip_native_args rargs nargs =
+  match nargs with
+  | (kd, a) :: nargs' ->
+      if kd = Native.Kwhnf then rargs, nargs 
+      else skip_native_args (a::rargs) nargs'
+  | [] -> rargs, []
+
+let get_native_args op kn stk =
+  let kargs = Native.op_kind op in
+  let rec get_args rnargs kargs args =
+    match kargs, args with
+    | kd::kargs, a::args -> get_args ((kd,a)::rnargs) kargs args
+    | _, _ -> rnargs, kargs, args in
+  let rec strip_rec rnargs kargs = function
+    | Zapp args :: s' ->
+	begin match get_args rnargs kargs args with
+	| rnargs, [], [] -> 
+	    (skip_native_args [] (List.rev rnargs), s')
+	| rnargs, [], eargs -> 
+	    (skip_native_args [] (List.rev rnargs),
+	     Zapp eargs :: s')
+	| rnargs, kargs, _ -> 
+	    strip_rec rnargs kargs s'
+	end
+    | _ -> assert false
+  in strip_rec [] kargs stk
+
+let get_native_args1 op kn stk =
+  match get_native_args op kn stk with
+  | ((rargs, (kd,a):: nargs), stk) ->
+      assert (kd = Native.Kwhnf);
+      (rargs, a, nargs, stk)
+  | _ -> assert false
 
 (**************************************************************)
 (* The type of (machine) states (= lambda-bar-calculus' cuts) *)
@@ -298,6 +340,168 @@ let reduce_fix whdfun sigma fix stack =
            | Construct _ -> Reduced (contract_fix fix, stack')
 	   | _ -> NotReducible)
 
+module CNativeEntries =
+  struct 
+
+    open Native
+
+    type elem = constr 
+    type args = constr array
+    module Parray = Native.Narray
+	  
+    let get = Array.get
+
+    let get_int e =
+      match kind_of_term e with
+      | NativeInt i -> i
+      | _ -> raise Not_found
+
+    let get_parray e =
+      match kind_of_term e with
+      | NativeArr(t,p) -> (t,p)
+      | _ -> raise Not_found
+
+    let dummy = mkRel 0
+    let current_retro = ref Pre_env.empty_retroknowledge
+    let defined_int = ref false
+    let cint = ref dummy 
+
+    let init_int retro =
+      match retro.Pre_env.retro_int31 with
+      | Some (cte, c) ->
+	  defined_int := true;
+	  cint := c
+      | None -> defined_int := false
+
+    let defined_bool = ref false
+    let ctrue = ref dummy
+    let cfalse = ref dummy
+
+    let init_bool retro =
+      match retro.Pre_env.retro_bool with
+      | Some (ct,cf) ->
+	  defined_bool := true;
+	  ctrue := mkConstruct ct;
+	  cfalse := mkConstruct cf
+      | None -> defined_bool :=false
+
+    let defined_carry = ref false
+    let cC0 = ref dummy
+    let cC1 = ref dummy
+
+    let init_carry retro =
+      match retro.Pre_env.retro_carry with
+      | Some(c0,c1) ->
+	  defined_carry := true;
+          cC0 := mkConstruct c0;
+	  cC1 := mkConstruct c1
+      | None -> defined_carry := false
+
+    let defined_pair = ref false
+    let cPair = ref dummy
+	
+    let init_pair retro = 
+      match retro.Pre_env.retro_pair with
+      | Some c ->
+	  defined_pair := true;
+          cPair := mkConstruct c
+      | None -> defined_pair := false
+
+    let defined_cmp = ref false
+    let cEq = ref dummy  
+    let cLt = ref dummy
+    let cGt = ref dummy
+
+    let init_cmp retro =
+      match retro.Pre_env.retro_cmp with
+      | Some (cEq', cLt', cGt') ->
+	  defined_cmp := true;
+	  cEq := mkConstruct cEq';
+	  cLt := mkConstruct cLt';
+	  cGt := mkConstruct cGt'
+      | None -> defined_cmp := false
+
+    let defined_array = ref false
+
+    let init_array retro =
+      defined_array := retro.Pre_env.retro_array <> None
+
+    let init env = 
+      current_retro := retroknowledge env;
+      init_int !current_retro;
+      init_bool !current_retro;
+      init_carry !current_retro;
+      init_pair !current_retro;
+      init_cmp !current_retro;
+      init_array !current_retro
+	  
+    let check_env env =
+      if not (!current_retro == retroknowledge env) then init env
+
+    let check_int env =
+      check_env env; 
+      assert (!defined_int)
+
+    let check_bool env =
+      check_env env;
+      assert (!defined_bool)
+
+    let check_carry env = 
+      check_env env;
+      assert (!defined_carry && !defined_int)
+
+    let check_pair env =
+      check_env env;
+      assert (!defined_pair && !defined_int)
+
+    let check_cmp env =
+      check_env env;
+      assert (!defined_cmp)
+
+    let check_array env =
+      check_env env;
+      assert (!defined_array)
+	
+
+    let mkInt env i = 
+      check_int env;
+      mkInt i 
+
+    let mkBool env b = 
+      check_bool env;
+      if b then !ctrue else !cfalse
+      
+    let mkCarry env b e = 
+      check_carry env;
+      mkApp ((if b then !cC1 else !cC0),[|!cint;e|])
+
+    let mkPair env e1 e2 = 
+      check_pair env;
+      mkApp(!cPair, [|!cint;!cint;e1;e2|])
+
+    let mkLt env = 
+      check_cmp env;
+      !cLt
+ 
+    let mkEq env = 
+      check_cmp env;
+      !cEq
+
+    let mkGt env = 
+      check_cmp env;
+      !cGt
+
+    let mkArray env t p =
+      check_array env;
+      mkArray(t,p)
+
+    let mkClos id t body s = 
+      Term.substl (Array.to_list s) (Term.mkLambda(id,t,body))
+
+  end
+
+module CredNative = RedNative(CNativeEntries)
+
 (* Generic reduction function *)
 
 (* Y avait un commentaire pour whd_betadeltaiota :
@@ -327,9 +531,24 @@ let rec whd_state_gen flags env sigma =
 	     | Some body -> whrec (body, stack)
 	     | None -> s)
       | Const const when red_delta flags ->
-	  (match constant_opt_value env const with
-	     | Some  body -> whrec (body, stack)
-	     | None -> s)
+	  begin match constant_value1 env const with
+	  | Def body ->  whrec (force body, stack)
+	  | Primitive op when check_native_args op stack ->
+	      let rargs, a, nargs, stk = get_native_args1 op const stack in
+	      let rec aux rargs a nargs = 
+		let (f1,args1) = whrec (a, empty_stack) in
+		let a = applistc f1 (list_of_stack args1) in
+	        let (rargs, nargs) = skip_native_args (a::rargs) nargs in
+		match nargs with
+		| [] ->  Array.of_list (List.rev rargs)
+		| (kd,a)::nargs -> aux rargs a nargs in
+	      let args = aux rargs a nargs in
+	      begin match CredNative.red_op env op x args with
+	      | Some m -> whrec (m,stk)
+	      | None -> s
+	      end
+	  | _ -> s
+	  end
       | LetIn (_,b,_,c) when red_zeta flags -> stacklam whrec [b] c stack
       | Cast (c,_,_) -> whrec (c, stack)
       | App (f,cl)  -> whrec (f, append_stack cl stack)
@@ -367,7 +586,6 @@ let rec whd_state_gen flags env sigma =
 	  (match reduce_fix (fun _ -> whrec) sigma fix stack with
              | Reduced s' -> whrec s'
 	     | NotReducible -> s)
-
       | x -> s
   in
   whrec
@@ -969,7 +1187,7 @@ let meta_reducible_instance evd b =
 let head_unfold_under_prod ts env _ c =
   let unfold cst =
     if Cpred.mem cst (snd ts) then
-      match constant_opt_value env cst with
+      match constant_opt_value1 env cst with
 	| Some c -> c
 	| None -> mkConst cst
     else mkConst cst in

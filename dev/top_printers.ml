@@ -193,6 +193,11 @@ let constr_display csr =
       ^(Array.fold_right (fun x i -> (name_display x)^(if not(i="")
         then (";"^i) else "")) lna "")^","
       ^(array_display bl)^")"
+  | NativeInt i ->
+      "Int("^(Native.Uint31.to_string i)^")"
+  | NativeArr(t,p) ->
+      "Array("^(term_display t)^", "^(array_display p)^")"
+
 
   and array_display v =
     "[|"^
@@ -302,6 +307,23 @@ let print_pure_constr csr =
 	  print_cut();
         done
       in print_string"{"; print_fix (); print_string"}"
+  | NativeInt i ->
+      print_string ("Int("^(Native.Uint31.to_string i)^")")
+  | NativeArr(t,p) ->
+      open_hbox();
+      print_string "Array(";
+      term_display t;
+      print_string ", ";
+      for i = 0 to Array.length p - 3 do
+	term_display p.(i);
+	print_string "; "
+      done;
+      if Array.length p > 2 then 
+	term_display p.(Array.length p - 2);
+      print_string "|";
+      if Array.length p > 1 then 
+	term_display p.(Array.length p - 1);
+      print_string "|]"
 
   and box_display c = open_hovbox 1; term_display c; close_box()
 

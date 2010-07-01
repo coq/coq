@@ -92,6 +92,22 @@ let boxed_definitions = ref true
 let set_boxed_definitions b = boxed_definitions := b
 let boxed_definitions _ = !boxed_definitions
 
+let vm_draw_opt = ref false
+let set_vm_draw_opt b = vm_draw_opt := b
+let vm_draw_opt _ = !vm_draw_opt 
+
+let vm_draw_instr = ref false
+let set_vm_draw_instr b = vm_draw_instr := b
+let vm_draw_instr _ = !vm_draw_instr 
+
+let vm_array_warn = ref false
+let set_vm_array_warn b = vm_array_warn := b
+let vm_array_warn _ = !vm_array_warn
+
+let vm_optimize = ref false
+let set_vm_optimize b = vm_optimize := b 
+let vm_optimize _ = !vm_optimize
+
 (* Flags for external tools *)
 
 let subst_command_placeholder s t =

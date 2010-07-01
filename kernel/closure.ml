@@ -21,6 +21,7 @@
 
 open Util
 open Pp
+open Native
 open Term
 open Names
 open Declarations
@@ -216,29 +217,34 @@ type 'a infos = {
   i_sigma : existential -> constr option;
   i_rels : int * (int * constr) list;
   i_vars : (identifier * constr) list;
-  i_tab : (table_key, 'a) Hashtbl.t }
+  i_tab : (table_key, 'a constant_def) Hashtbl.t
+  }
+
+let env_info info = info.i_env
 
 let info_flags info = info.i_flags
 
 let ref_value_cache info ref =
-  try
-    Some (Hashtbl.find info.i_tab ref)
+  try  
+    Hashtbl.find info.i_tab ref
   with Not_found ->
-  try
-    let body =
+    let v =
       match ref with
-	| RelKey n ->
-	    let (s,l) = info.i_rels in lift n (List.assoc (s-n) l)
-	| VarKey id -> List.assoc id info.i_vars
-	| ConstKey cst -> constant_value info.i_env cst
-    in
-    let v = info.i_repr info body in
-    Hashtbl.add info.i_tab ref v;
-    Some v
-  with
-    | Not_found (* List.assoc *)
-    | NotEvaluableConst _ (* Const *)
-      -> None
+      | RelKey n ->
+	  let (s,l) = info.i_rels in 
+	  (try Def (info.i_repr info (lift n (List.assoc (s-n) l)))
+	  with Not_found -> Opaque None)
+      | VarKey id -> 
+	  (try Def (info.i_repr info (List.assoc id info.i_vars))
+	  with Not_found -> Opaque None)
+      | ConstKey cst -> 
+	  begin match constant_value1 info.i_env cst with
+	  | Def t -> Def (info.i_repr info (force t))
+	  | Opaque _ -> Opaque None
+	  | Primitive op -> Primitive op
+	  end
+    in 
+    Hashtbl.add info.i_tab ref v; v
 
 let evar_value info ev =
   info.i_sigma ev
@@ -320,6 +326,8 @@ and fterm =
   | FProd of name * fconstr * fconstr
   | FLetIn of name * fconstr * fconstr * constr * fconstr subs
   | FEvar of existential * fconstr subs
+  | FNativeInt of Uint31.t
+  | FNativeArr of fconstr * fconstr Parray.t
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
   | FLOCKED
@@ -341,11 +349,14 @@ let update v1 (no,t) =
 
 (**********************************************************************)
 (* The type of (machine) stacks (= lambda-bar-calculus' contexts)     *)
+type 'a next_native_args = (Native.arg_kind * 'a) list
 
 type stack_member =
   | Zapp of fconstr array
   | Zcase of case_info * fconstr * fconstr array
   | Zfix of fconstr * stack
+  | Znative of Native.op * constant * fconstr list * fconstr next_native_args
+       (* operator, constr def, reduced arguments rev, next arguments *) 
   | Zshift of int
   | Zupdate of fconstr
 
@@ -416,7 +427,7 @@ let rec stack_nth s p = match s with
    when the lift is 0. *)
 let rec lft_fconstr n ft =
   match ft.term with
-    | (FInd _|FConstruct _|FFlex(ConstKey _|VarKey _)) -> ft
+    | (FInd _|FConstruct _|FFlex(ConstKey _|VarKey _)|FNativeInt _) -> ft
     | FRel i -> {norm=Norm;term=FRel(i+n)}
     | FLambda(k,tys,f,e) -> {norm=Cstr; term=FLambda(k,tys,f,subs_shft(n,e))}
     | FFix(fx,e) -> {norm=Cstr; term=FFix(fx,subs_shft(n,e))}
@@ -465,7 +476,7 @@ let rec compact_constr (lg, subs as s) c k =
         if i < k then c,s else
           (try mkRel (k + lg - list_index (i-k+1) subs), (lg,subs)
           with Not_found -> mkRel (k+lg), (lg+1, (i-k+1)::subs))
-    | (Sort _|Var _|Meta _|Ind _|Const _|Construct _) -> c,s
+    | (Sort _|Var _|Meta _|Ind _|Const _|Construct _ | NativeInt _) -> c,s
     | Evar(ev,v) ->
         let (v',s) = compact_vect s v k in
         if v==v' then c,s else mkEvar(ev,v'),s
@@ -503,6 +514,11 @@ let rec compact_constr (lg, subs as s) c k =
         let (a',s) = compact_constr s a k in
         let (br',s) = compact_vect s br k in
         if p==p' && a==a' && br==br' then c,s else mkCase(ci,p',a',br'),s
+    | NativeArr(t,p) ->
+	let (t',s) = compact_constr s t k in
+	let (p',s) = compact_vect s p k in
+	if t == t' && p == p' then c,s else mkArray(t,p'),s
+
 and compact_vect s v k = compact_v [] s v k (Array.length v - 1)
 and compact_v acc s v k i =
   if i < 0 then
@@ -546,7 +562,9 @@ let mk_clos e t =
     | Meta _ | Sort _ ->  { norm = Norm; term = FAtom t }
     | Ind kn -> { norm = Norm; term = FInd kn }
     | Construct kn -> { norm = Cstr; term = FConstruct kn }
-    | (CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _) ->
+    | NativeInt i -> {norm = Cstr; term = FNativeInt i}
+    | CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _
+    | NativeArr _ ->
         {norm = Red; term = FCLOS(t,e)}
 
 let mk_clos_vect env v = Array.map (mk_clos env) v
@@ -557,7 +575,7 @@ let mk_clos_vect env v = Array.map (mk_clos env) v
    Could be used insted of mk_clos. *)
 let mk_clos_deep clos_fun env t =
   match kind_of_term t with
-    | (Rel _|Ind _|Const _|Construct _|Var _|Meta _ | Sort _) ->
+    | (Rel _|Ind _|Const _|Construct _|Var _|Meta _|Sort _|NativeInt _) ->
         mk_clos env t
     | Cast (a,k,b) ->
         { norm = Red;
@@ -583,6 +601,15 @@ let mk_clos_deep clos_fun env t =
 	  term = FLetIn (n, clos_fun env b, clos_fun env t, c, env) }
     | Evar ev ->
 	{ norm = Red; term = FEvar(ev,env) }
+    | NativeArr(t,p) ->
+	let len = Array.length p - 1 in
+	{ norm = Cstr;
+	  term = 
+	  FNativeArr(clos_fun env t, 
+		     Parray.init (Uint31.of_int len)
+		       (fun i -> clos_fun env p.(i)) 
+		       (clos_fun env p.(len))) 
+	}
 
 (* A better mk_clos? *)
 let mk_clos2 = mk_clos_deep mk_clos
@@ -640,6 +667,12 @@ let rec to_constr constr_fun lfts v =
         let unfv = update v (fr.norm,fr.term) in
         to_constr constr_fun lfts unfv
     | FLOCKED -> assert false (*mkVar(id_of_string"_LOCK_")*)
+    | FNativeInt i -> mkInt i
+    | FNativeArr(t, p) ->
+	let init i = constr_fun lfts (Parray.get p (Uint31.of_int i)) in
+	mkArray(constr_fun lfts t,
+		Array.init (Uint31.to_int (Parray.length p) + 1) init)
+
 
 (* This function defines the correspondance between constr and
    fconstr. When we find a closure whose substitution is the identity,
@@ -678,6 +711,11 @@ let rec zip m stk =
         zip (lift_fconstr n m) s
     | Zupdate(rf)::s ->
         zip (update rf (m.norm,m.term)) s
+    | Znative(op,kn,rargs,kargs)::s ->
+	let args = List.rev_append rargs (m::List.map snd kargs) in
+	let f = {norm = Red;term = FFlex (ConstKey kn)} in
+                (* Check this *)
+	zip {norm=Red; term = FApp (f, Array.of_list args)} s
 
 let fapp_stack (m,stk) = zip m stk
 
@@ -756,6 +794,60 @@ let rec get_args n tys f e stk =
           get_args (n-na) etys f (subs_cons(l,e)) s
     | _ -> (Inr {norm=Cstr;term=FLambda(n,tys,f,e)}, stk)
 
+(* Get the arguments of a native operator *)
+let rec skip_native_args rargs nargs =
+  match nargs with
+  | (kd, a) :: nargs' ->
+      if kd = Native.Kwhnf then rargs, nargs 
+      else skip_native_args (a::rargs) nargs'
+  | [] -> rargs, []
+
+let get_native_args op kn stk =
+  let kargs = Native.op_kind op in
+  let rec get_args rnargs kargs args =
+    match kargs, args with
+    | kd::kargs, a::args -> get_args ((kd,a)::rnargs) kargs args
+    | _, _ -> rnargs, kargs, args in
+  let rec strip_rec rnargs h depth kargs = function
+    | Zshift k :: s ->
+	strip_rec (List.map (fun (kd,f) -> kd,lift_fconstr k f) rnargs)
+	  (lift_fconstr k h) (depth+k) kargs s
+    | Zapp args :: s' ->
+	begin match get_args rnargs kargs (Array.to_list args) with
+	| rnargs, [], [] -> 
+	    (skip_native_args [] (List.rev rnargs), s')
+	| rnargs, [], eargs -> 
+	    (skip_native_args [] (List.rev rnargs),
+	     Zapp (Array.of_list eargs) :: s')
+	| rnargs, kargs, _ -> 
+	    strip_rec rnargs {norm = h.norm;term=FApp(h, args)} depth kargs s'
+	end
+    | Zupdate(m) :: s ->
+	strip_rec rnargs (update m (h.norm, h.term)) depth  kargs s
+    | _ -> assert false
+  in strip_rec [] {norm = Red;term = FFlex(ConstKey kn)} 0 kargs stk
+
+let get_native_args1 op kn stk =
+  match get_native_args op kn stk with
+  | ((rargs, (kd,a):: nargs), stk) ->
+      assert (kd = Native.Kwhnf);
+      (rargs, a, nargs, stk)
+  | _ -> assert false
+	
+let check_native_args op stk =
+  let (nparams, nargs) = Native.arity op in
+  let rargs = stack_args_size stk in
+  (nparams + nargs) <= rargs
+(*
+  let rec aux n = function
+    | (Zshift _ | Zupdate _) :: s -> aux n s
+    | Zapp args :: s ->
+	let nargs = Array.length args in
+	if n <= nargs then true
+	else aux (n - nargs) s
+    | _ -> false in
+  aux (nparams + nargs) stk *)
+    
 
 (* Iota reduction: extract the arguments to be passed to the Case
    branches *)
@@ -827,7 +919,8 @@ let rec knh m stk =
     | FCast(t,_,_) -> knh t stk
 (* cases where knh stops *)
     | (FFlex _|FLetIn _|FConstruct _|FEvar _|
-       FCoFix _|FLambda _|FRel _|FAtom _|FInd _|FProd _) ->
+       FCoFix _|FLambda _|FRel _|FAtom _|FInd _|FProd _|
+       FNativeInt _|FNativeArr _) ->
         (m, stk)
 
 (* The same for pure terms *)
@@ -841,11 +934,176 @@ and knht e t stk =
     | Cast(a,_,_) -> knht e a stk
     | Rel n -> knh (clos_rel e n) stk
     | (Lambda _|Prod _|Construct _|CoFix _|Ind _|
-       LetIn _|Const _|Var _|Evar _|Meta _|Sort _) ->
+       LetIn _|Const _|Var _|Evar _|Meta _|Sort _|
+       NativeInt _ | NativeArr _) ->
         (mk_clos2 e t, stk)
 
 
 (************************************************************************)
+(* Reduction of Native operators                                        *)
+
+module FNativeEntries =
+  struct 
+
+    type elem = fconstr 
+    type args = fconstr array
+    module Parray = Parray	
+	  
+    let get = Array.get
+
+    let get_int e =
+      match e.term with
+      | FNativeInt i -> i
+      | _ -> raise Not_found
+
+    let get_parray e =
+      match e.term with
+      | FNativeArr(t,p) -> (t,p)
+      | _ -> raise Not_found
+
+    let dummy = {norm = Whnf; term = FRel 0}
+
+    let current_retro = ref Pre_env.empty_retroknowledge
+    let defined_int = ref false
+    let fint = ref dummy 
+
+    let init_int retro =
+      match retro.Pre_env.retro_int31 with
+      | Some (cte, _) ->
+	  defined_int := true;
+	  fint := { norm = Whnf; term = FFlex (ConstKey cte) }
+      | None -> defined_int := false
+
+    let defined_bool = ref false
+    let ftrue = ref dummy
+    let ffalse = ref dummy
+
+    let init_bool retro =
+      match retro.Pre_env.retro_bool with
+      | Some (ct,cf) ->
+	  defined_bool := true;
+	  ftrue := { norm = Whnf; term = FConstruct ct };
+	  ffalse := { norm = Whnf; term = FConstruct cf }
+      | None -> defined_bool :=false
+
+    let defined_carry = ref false
+    let fC0 = ref dummy
+    let fC1 = ref dummy
+
+    let init_carry retro =
+      match retro.Pre_env.retro_carry with
+      | Some(c0,c1) ->
+	  defined_carry := true;
+          fC0 := { norm = Whnf; term = FConstruct c0 };
+	  fC1 := { norm = Whnf; term = FConstruct c1 } 
+      | None -> defined_carry := false
+
+    let defined_pair = ref false
+    let fPair = ref dummy
+	
+    let init_pair retro = 
+      match retro.Pre_env.retro_pair with
+      | Some c ->
+	  defined_pair := true;
+          fPair := { norm = Whnf; term = FConstruct c }
+      | None -> defined_pair := false
+
+    let defined_cmp = ref false
+    let fEq = ref dummy  
+    let fLt = ref dummy
+    let fGt = ref dummy
+
+    let init_cmp retro =
+      match retro.Pre_env.retro_cmp with
+      | Some (cEq, cLt, cGt) ->
+	  defined_cmp := true;
+	  fEq := { norm = Whnf; term = FConstruct cEq };
+	  fLt := { norm = Whnf; term = FConstruct cLt };
+	  fGt := { norm = Whnf; term = FConstruct cGt }
+      | None -> defined_cmp := false
+
+    let defined_array = ref false
+
+    let init_array retro =
+      defined_array := retro.Pre_env.retro_array <> None
+
+    let init env = 
+      current_retro := retroknowledge env;
+      init_int !current_retro;
+      init_bool !current_retro;
+      init_carry !current_retro;
+      init_pair !current_retro;
+      init_cmp !current_retro;
+      init_array !current_retro
+
+	  
+    let check_env env =
+      if not (!current_retro == retroknowledge env) then init env
+
+    let check_int env =
+      check_env env; 
+      assert (!defined_int)
+
+    let check_bool env =
+      check_env env;
+      assert (!defined_bool)
+
+    let check_carry env = 
+      check_env env;
+      assert (!defined_carry && !defined_int)
+
+    let check_pair env =
+      check_env env;
+      assert (!defined_pair && !defined_int)
+
+    let check_cmp env =
+      check_env env;
+      assert (!defined_cmp)
+
+    let check_array env =
+      check_env env;
+      assert (!defined_array)
+
+    let mkInt env i = 
+      check_int env;
+      { norm = Whnf; term = FNativeInt i }
+
+    let mkBool env b = 
+      check_bool env;
+      if b then !ftrue else !ffalse
+       
+    let mkCarry env b e =
+      check_carry env;
+      {norm = Whnf;
+       term = FApp ((if b then !fC1 else !fC0),[|!fint;e|])}
+
+    let mkPair env e1 e2 =
+      check_pair env;
+      { norm = Whnf; term = FApp(!fPair, [|!fint;!fint;e1;e2|]) }
+
+    let mkLt env = 
+      check_cmp env;
+      !fLt
+ 
+    let mkEq env = 
+      check_cmp env;
+      !fEq
+
+    let mkGt env = 
+      check_cmp env;
+      !fGt
+
+    let mkArray env t p =
+      check_array env;
+      { norm = Whnf; term = FNativeArr(t, p)}
+
+    let mkClos id t body s =
+      { norm = Whnf; 
+	term = FLambda(1,[id,t],body, Esubst.CONS(s,Esubst.ESID 0)) }
+
+  end
+
+module FredNative = RedNative(FNativeEntries)
 
 (* Computes a weak head normal form from the result of knh. *)
 let rec knr info m stk =
@@ -856,16 +1114,19 @@ let rec knr info m stk =
         | Inr lam, s -> (lam,s))
   | FFlex(ConstKey kn) when red_set info.i_flags (fCONST kn) ->
       (match ref_value_cache info (ConstKey kn) with
-          Some v -> kni info v stk
-        | None -> (set_norm m; (m,stk)))
+      | Def v -> kni info v stk
+      | Primitive op when check_native_args op stk ->
+	  let rargs, a, nargs, stk = get_native_args1 op kn stk in
+	  kni info a (Znative(op,kn,rargs,nargs)::stk)
+      | _ -> set_norm m; (m,stk))
   | FFlex(VarKey id) when red_set info.i_flags (fVAR id) ->
       (match ref_value_cache info (VarKey id) with
-          Some v -> kni info v stk
-        | None -> (set_norm m; (m,stk)))
+      | Def v -> kni info v stk
+      | _  -> (set_norm m; (m,stk)))
   | FFlex(RelKey k) when red_set info.i_flags fDELTA ->
       (match ref_value_cache info (RelKey k) with
-          Some v -> kni info v stk
-        | None -> (set_norm m; (m,stk)))
+      | Def v -> kni info v stk
+      | _ -> (set_norm m; (m,stk)))
   | FConstruct(ind,c) when red_set info.i_flags fIOTA ->
       (match strip_update_shift_app m stk with
           (depth, args, Zcase(ci,_,br)::s) ->
@@ -878,6 +1139,25 @@ let rec knr info m stk =
             let (fxe,fxbd) = contract_fix_vect fx.term in
             knit info fxe fxbd stk'
         | (_,args,s) -> (m,args@s))
+  | (FNativeInt _ | FNativeArr _) ->
+      (match strip_update_shift m stk with
+      | (_, Znative(op,kn,rargs,nargs)::s) ->
+	  let (rargs, nargs) = skip_native_args (m::rargs) nargs in
+	  begin match nargs with
+	  | [] -> 
+	      let args = Array.of_list (List.rev rargs) in
+	      begin match FredNative.red_op info.i_env op (mkConst kn) args with
+	      | Some m -> kni info m s 
+	      | None -> 
+		  let f = {norm = Whnf; term = FFlex (ConstKey kn)} in
+		  let m = {norm = Whnf; term = FApp(f,args)} in
+		  (m,s)
+	      end
+	  | (kd,a)::nargs -> 
+	      assert (kd = Native.Kwhnf);
+	      kni info a (Znative(op,kn,rargs,nargs)::s)
+	  end
+      | (_, s) -> (m, s))
   | FCoFix _ when red_set info.i_flags fIOTA ->
       (match strip_update_shift_app m stk with
           (_, args, ((Zcase _::_) as stk')) ->
@@ -919,6 +1199,12 @@ let rec zip_term zfun m stk =
         zip_term zfun (lift n m) s
     | Zupdate(rf)::s ->
         zip_term zfun m s
+    | Znative(_,kn,rargs, kargs)::s ->
+	let kargs = List.map (fun (_,a) -> zfun a) kargs in
+	let args = 
+	  List.fold_left (fun args a -> zfun a ::args) (m::kargs) rargs in 
+	let h = mkApp (mkConst kn, Array.of_list args) in
+	zip_term zfun h s
 
 (* Computes the strong normal form of a term.
    1- Calls kni

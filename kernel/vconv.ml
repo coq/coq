@@ -206,6 +206,10 @@ let rec conv_eq pb t1 t2 cu =
     | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
 	if ln1 = ln2 then conv_eq_vect tl1 tl2 (conv_eq_vect bl1 bl2 cu)
 	else raise NotConvertible
+    | NativeInt i1, NativeInt i2 -> 
+	if i1 = i2 then cu else raise NotConvertible
+    | NativeArr(t1,p1), NativeArr(t2, p2) ->
+	conv_eq_vect p1 p2 (conv_eq CONV t1 t2 cu)
     | _ -> raise NotConvertible
 
 and conv_eq_vect vt1 vt2 cu =

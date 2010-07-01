@@ -318,7 +318,7 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
           mk_ctx (mkCase (ci,hd,List.hd le,Array.of_list (List.tl le))) in
         try_aux (c1::Array.to_list lc) mk_ctx next)
   | Construct _ | Fix _ | Ind _|CoFix _ |Evar _|Const _
-  | Rel _|Meta _|Var _|Sort _ ->
+  | Rel _|Meta _|Var _|Sort _ | NativeInt _ | NativeArr _ ->
       authorized_occ partial_app closed pat c mk_ctx next
 
   (* Tries [sub_match] for all terms in the list *)

@@ -501,11 +501,11 @@ let prterm = pr_lconstr
 (* spiwack: printer function for sets of Environ.assumption.
             It is used primarily by the Print Assumption command. *)
 let pr_assumptionset env s =
-  if (Environ.ContextObjectMap.is_empty s) then
+  if (Termops.ContextObjectMap.is_empty s) then
     str "Closed under the global context"
   else
     let (vars,axioms,opaque) =
-      Environ.ContextObjectMap.fold (fun t typ r ->
+      Termops.ContextObjectMap.fold (fun t typ r ->
 	let (v,a,o) = r in
 	match t with
 	| Variable id -> (  Some (

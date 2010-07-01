@@ -275,6 +275,9 @@ let find_hyps t =
     | T.CoFix (_,(_,tys,bodies)) ->
        let r = Array.fold_left (fun i x -> aux i x) l tys in
         Array.fold_left (fun i x -> aux i x) r bodies
+    | T.NativeInt _ -> l
+    | T.NativeArr(t,p) ->
+	Array.fold_left aux (aux l t) p
   and map_and_filter l =
    function
       [] -> []
@@ -474,6 +477,8 @@ let kind_of_constant kn =
     | DK.IsProof _ ->
         Pp.warning "Unsupported theorem kind (used Theorem instead)";
         "THEOREM",DK.string_of_theorem_kind DK.Theorem
+    | DK.IsPrimitive _ ->
+	Util.anomaly "xmlcommand.kind_of_constant: primitive not implement yet"
 ;;
 
 let kind_of_global r =
@@ -529,6 +534,10 @@ let print internal glob_ref kind xml_library_root =
        let id = N.id_of_label (N.con_label kn) in
        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
         G.lookup_constant kn in
+       let val0 =
+	 match val0 with
+	 | D.Def b | D.Opaque (Some b) -> Some b
+	 | _ -> None in
        let typ = Typeops.type_of_constant_type (Global.env()) typ in
         Cic2acic.Constant kn,mk_constant_obj id val0 typ variables hyps
     | Ln.IndRef (kn,_) ->

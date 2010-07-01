@@ -179,6 +179,10 @@ val mkFix : fixpoint -> constr
 type cofixpoint = int * rec_declaration
 val mkCoFix : cofixpoint -> constr
 
+(* Constructs native term *)
+val mkInt : Native.Uint31.t -> constr
+val mkArray : types * constr array  -> constr
+
 
 (** {6 Concrete type for making pattern-matching. } *)
 
@@ -209,6 +213,8 @@ type ('constr, 'types) kind_of_term =
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
+  | NativeInt of Native.Uint31.t
+  | NativeArr of 'types * 'constr array
 
 (** User view of [constr]. For [App], it is ensured there is at
    least one argument and the function is not itself an applicative
@@ -246,6 +252,8 @@ val isConstruct : constr -> bool
 val isFix : constr -> bool
 val isCoFix : constr -> bool
 val isCase : constr -> bool
+val isInt : constr -> bool
+val isArray : constr -> bool
 
 val is_Prop : constr -> bool
 val is_Set  : constr -> bool
@@ -323,6 +331,9 @@ val destFix : constr -> fixpoint
 
 val destCoFix : constr -> cofixpoint
 
+(* Destructs native term *)
+val destInt : constr -> Native.Uint31.t
+val destArray : constr -> types * constr array
 
 (** {6 Local } *)
 (** A {e declaration} has the form [(name,body,type)]. It is either an

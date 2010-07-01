@@ -47,6 +47,8 @@ type aconstr =
   | AHole of Evd.hole_kind
   | APatVar of patvar
   | ACast of aconstr * aconstr cast_type
+  | ANativeInt of Native.Uint31.t
+  | ANativeArr of aconstr * aconstr array
 
 (**********************************************************************)
 (* Re-interpret a notation as a rawconstr, taking care of binders     *)
@@ -123,6 +125,8 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
   | AHole x  -> RHole (loc,x)
   | APatVar n -> RPatVar (loc,(false,n))
   | ARef x -> RRef (loc,x)
+  | ANativeInt i -> RNativeInt(loc, i)
+  | ANativeArr(t,p) -> RNativeArr(loc, f e t, Array.map (f e) p)
 
 let rec rawconstr_of_aconstr loc x =
   let rec aux () x =
@@ -150,12 +154,16 @@ let compare_rawconstr f t1 t2 = match t1,t2 with
       f ty1 ty2 & f c1 c2
   | RHole _, RHole _ -> true
   | RSort (_,s1), RSort (_,s2) -> s1 = s2
+  | RNativeInt(_,i1), RNativeInt(_,i2) -> Native.Uint31.eq i1 i2
+  | RNativeArr(_,t1,p1),RNativeArr(_,t2,p2) -> 
+      f t1 t2 & array_for_all2 f p1 p2
   | (RLetIn _ | RCases _ | RRec _ | RDynamic _
     | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _),_
   | _,(RLetIn _ | RCases _ | RRec _ | RDynamic _
       | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _)
       -> error "Unsupported construction in recursive notations."
-  | (RRef _ | RVar _ | RApp _ | RLambda _ | RProd _ | RHole _ | RSort _), _
+  | (RRef _ | RVar _ | RApp _ | RLambda _ | RProd _ | RHole _ 
+    | RSort _ | RNativeInt _ | RNativeArr _), _
       -> false
 
 let rec eq_rawconstr t1 t2 = compare_rawconstr eq_rawconstr t1 t2
@@ -226,6 +234,8 @@ let aconstr_and_vars_of_rawconstr a =
   | RHole (_,w) -> AHole w
   | RRef (_,r) -> ARef r
   | RPatVar (_,(_,n)) -> APatVar n
+  | RNativeInt(_,i) -> ANativeInt i
+  | RNativeArr(_,t,p) -> ANativeArr(aux t, Array.map aux p)
   | RDynamic _ | REvar _ ->
       error "Existential variables not allowed in notations."
 
@@ -378,8 +388,15 @@ let rec subst_aconstr subst bound raw =
 	if ref' == ref then raw else
 	  AHole (Evd.InternalHole)
   | AHole (Evd.BinderType _ | Evd.QuestionMark _ | Evd.CasesType
-    | Evd.InternalHole | Evd.TomatchTypeParameter _ | Evd.GoalEvar
-    | Evd.ImpossibleCase | Evd.MatchingVar _) -> raw
+  | Evd.InternalHole | Evd.TomatchTypeParameter _ | Evd.GoalEvar
+  | Evd.ImpossibleCase | Evd.MatchingVar _) -> raw
+
+  | ANativeInt _ -> raw
+  | ANativeArr(t,p) ->
+      let t' = subst_aconstr subst bound t
+      and p' = array_smartmap (subst_aconstr subst bound) p in
+      if t' == t && p' == p then raw else
+	  ANativeArr(t',p')
 
   | ACast (r1,k) ->
       match k with
@@ -392,6 +409,7 @@ let rec subst_aconstr subst bound raw =
 	    let r1' = subst_aconstr subst bound r1 in
 	      if r1' == r1 then raw else
 		ACast (r1',CastCoerce)
+	
 
 let subst_interpretation subst (metas,pat) =
   let bound = List.map fst (fst metas @ snd metas) in
@@ -715,6 +733,7 @@ type constr_expr =
   | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
+  | CNativeArr of loc * constr_expr * constr_expr array
 
 and fix_expr =
     identifier located * (identifier located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr
@@ -776,6 +795,7 @@ let constr_loc = function
   | CPrim (loc,_) -> loc
   | CDelimiters (loc,_,_) -> loc
   | CDynamic _ -> dummy_loc
+  | CNativeArr (loc, _, _) -> loc
 
 let cases_pattern_expr_loc = function
   | CPatAlias (loc,_,_) -> loc
@@ -884,6 +904,9 @@ let fold_constr_expr_with_binders g f n acc = function
 	  (fold_local_binders g f n acc t lb) c lb) l acc
   | CCoFix (loc,_,_) ->
       Pp.warning "Capture check in multiple binders not done"; acc
+  | CNativeArr(loc,t,p) ->
+      Array.fold_left (f n) (f n acc t) p
+      
 
 let free_vars_of_constr_expr c =
   let rec aux bdvars l = function
@@ -1046,6 +1069,7 @@ let map_constr_expr_with_binders g f e = function
         let e'' = List.fold_left (fun e ((_,id),_,_,_) -> g id e) e' dl in
         let d' = f e'' d in
         (id,bl',t',d')) dl)
+  | CNativeArr(loc,t,p) -> CNativeArr(loc,f e t,Array.map (f e) p)
 
 (* Used in constrintern *)
 let rec replace_vars_constr_expr l = function

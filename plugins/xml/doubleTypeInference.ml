@@ -66,7 +66,10 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
    (* the type part is the synthesized type *)
    let judgement =
     match T.kind_of_term cstr with
-       T.Meta n ->
+    | T.NativeInt _ | T.NativeArr _ ->
+	Util.error 
+	  "doubleTypeInference.double_type_of: Native not yet implemented"
+    | T.Meta n ->
         Util.error
          "DoubleTypeInference.double_type_of: found a non-instanciated goal"
 

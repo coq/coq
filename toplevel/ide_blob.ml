@@ -64,6 +64,7 @@ let rec attribute_of_vernac_command = function
   | VernacExactProof _ -> [ProofEndingCommand]
 
   | VernacAssumption _ -> []
+  | VernacRegister _ -> []
   | VernacInductive _ -> []
   | VernacFixpoint _ -> []
   | VernacCoFixpoint _ -> []

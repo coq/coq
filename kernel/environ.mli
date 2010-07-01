@@ -118,19 +118,22 @@ val add_constant : constant -> constant_body -> env -> env
 (** Looks up in the context of global constant names 
    raises [Not_found] if the required path is not found *)
 val lookup_constant    : constant -> env -> constant_body
-val evaluable_constant : constant -> env -> bool
+val evaluable_constant1 : constant -> env -> bool
+val evaluable_constant_prim : constant -> env -> bool
 
 (** {6 ... } *)
 (** [constant_value env c] raises [NotEvaluableConst Opaque] if
    [c] is opaque and [NotEvaluableConst NoBody] if it has no
    body and [Not_found] if it does not exist in [env] *)
 
-type const_evaluation_result = NoBody | Opaque
+type const_evaluation_result = CteNoBody | CteOpaque | CtePrim of Native.op
+
 exception NotEvaluableConst of const_evaluation_result
 
-val constant_value     : env -> constant -> constr
+val constant_value1     : env -> constant -> constr_substituted constant_def
+val constant_value_def     : env -> constant -> constr
 val constant_type      : env -> constant -> constant_type
-val constant_opt_value : env -> constant -> constr option
+val constant_opt_value1 : env -> constant -> constr option
 
 (** {5 Inductive types } *)
 
@@ -190,8 +193,8 @@ type unsafe_type_judgment = {
 (** {6 Compilation of global declaration } *)
 
 val compile_constant_body :
-    env -> constr_substituted option -> bool -> bool -> Cemitcodes.body_code
-                                 (** opaque *) (* boxed *)
+    env -> constr_substituted constant_def -> bool -> Cemitcodes.body_code
+                                 (* boxed *)
 
 exception Hyp_not_found
 
@@ -217,33 +220,42 @@ val insert_after_hyp : named_context_val -> variable ->
 val remove_hyps : identifier list -> (named_declaration -> named_declaration) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val
 
 
+(** {5 Reduction of primitive} *)
+val retroknowledge : env -> Pre_env.retroknowledge
+val add_retroknowledge : env -> Native.retro_action * constr -> env
 
-open Retroknowledge
-(** functions manipulating the retroknowledge 
-    @author spiwack *)
-val retroknowledge : (retroknowledge->'a) -> env -> 'a
+module type RedNativeEntries =
+  sig
+    type elem
+    type args
+    module Parray : Native.PARRAY
 
-val registered : env -> field -> bool
+    val get : args -> int -> elem
+    val get_int :  elem -> Native.Uint31.t
+    val get_parray : elem -> elem * elem Parray.t
+    val mkInt : env -> Native.Uint31.t -> elem
+    val mkBool : env -> bool -> elem
+    val mkCarry : env -> bool -> elem -> elem (* true if carry *)
+    val mkPair : env -> elem -> elem -> elem
+    val mkLt : env -> elem
+    val mkEq : env -> elem
+    val mkGt : env -> elem
+    val mkArray : env -> elem -> elem Parray.t -> elem
+    val mkClos : name -> constr -> constr -> elem array -> elem
+  end
 
-val unregister : env -> field -> env
+module type RedNative =
+ sig
+   type elem
+   type args
+   val red_prim : env -> Native.prim_op -> args -> elem
+   val red_caml_prim : env -> Native.caml_prim -> args -> elem
+   val red_iterator : env -> Native.iterator -> constr -> args -> elem
+   val red_op : env -> Native.op -> constr -> args -> elem option
+ end
 
-val register : env -> field -> Retroknowledge.entry -> env
-
-
-
-(** a few declarations for the "Print Assumption" command 
-    @author spiwack *)
-type context_object =
-  | Variable of identifier (** A section variable or a Let definition *)
-  | Axiom of constant      (** An axiom or a constant. *)
-  | Opaque of constant     (** An opaque constant. *)
-
-(** AssumptionSet.t is a set of [assumption] *)
-module OrderedContextObject :  Set.OrderedType with type t = context_object
-module ContextObjectMap : Map.S with type key = context_object
-
-(** collects all the assumptions (optionally including opaque definitions)
-   on which a term relies (together with their type) *)
-val assumptions : ?add_opaque:bool -> transparent_state -> constr -> env -> Term.types ContextObjectMap.t
-
+module RedNative : 
+  functor (E:RedNativeEntries) -> 
+    RedNative with type elem = E.elem
+    with type args = E.args
 

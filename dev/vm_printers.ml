@@ -14,8 +14,11 @@ let ppripos (ri,pos) =
   | Reloc_const _ ->
       print_string "structured constant\n"
   | Reloc_getglobal kn ->
-      print_string ("getglob "^(string_of_con kn)^"\n"));
-   print_flush ()
+      print_string ("getglob "^(string_of_con kn)^"\n")
+  | Reloc_caml_prim p -> 
+      print_string ("caml primitive "^(Native.caml_prim_to_string p)^"\n"));
+  print_flush ()
+ 
 
 let print_vfix () = print_string "vfix"
 let print_vfix_app () = print_string "vfix_app"
@@ -78,6 +81,19 @@ and ppwhd whd =
   | Vatom_stk(a,s) ->
       open_hbox();ppatom a;close_box();
       print_string"@";ppstack s
+  | Varray p ->
+      let length = Native.Uint31.to_int (Native.Parray.length p) in
+      open_hbox();
+      print_string "[|";
+      for i = 0 to length - 2 do
+	ppvalues (Native.Parray.get p (Native.Uint31.of_int i));
+	print_string "; "
+      done;
+      ppvalues (Native.Parray.get p (Native.Uint31.of_int (length - 1)));
+      print_string " | ";
+      ppvalues (Native.Parray.default p);
+      print_string " |]";
+      close_box()
 
 and ppvblock b =
   open_hbox();

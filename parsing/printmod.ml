@@ -98,9 +98,9 @@ and print_modtype locals mty =
 
 and print_sig locals sign = 
   let print_spec (l,spec) = (match spec with
-    | SFBconst {const_body=Some _; const_opaque=false} -> str "Definition "
-    | SFBconst {const_body=None}
-    | SFBconst {const_opaque=true} -> str "Parameter "
+    | SFBconst {const_body=Def _} -> str "Definition "
+    | SFBconst {const_body=Opaque _} -> str "Parameter "
+    | SFBconst {const_body=Primitive _} -> str "Primitive "
     | SFBmind _ -> str "Inductive "
     | SFBmodule _ -> str "Module "
     | SFBmodtype _ -> str "Module Type ") ++ str (string_of_label l)
@@ -109,9 +109,10 @@ and print_sig locals sign =
 
 and print_struct locals struc = 
   let print_body (l,body) = (match body with
-    | SFBconst {const_body=Some _; const_opaque=false} -> str "Definition "
-    | SFBconst {const_body=Some _; const_opaque=true} -> str "Theorem "
-    | SFBconst {const_body=None} -> str "Parameter "
+    | SFBconst {const_body=Def _} -> str "Definition "
+    | SFBconst {const_body=Opaque (Some _)} -> str "Theorem "
+    | SFBconst {const_body=Opaque None} -> str "Parameter "
+    | SFBconst {const_body=Primitive _} -> str "Primitive "
     | SFBmind _ -> str "Inductive "
     | SFBmodule _ -> str "Module "
     | SFBmodtype _ -> str "Module Type ") ++ str (string_of_label l)

@@ -25,15 +25,15 @@ let make_mind_mpdot dir modname id =
 
 
 (* int31 stuff *)
-let int31_module = ["Coq"; "Numbers"; "Cyclic"; "Int31"; "Int31"]
+let int31_module = ["Coq"; "Numbers"; "Cyclic"; "Int31"; "Int31Native"]
 let int31_path = make_path int31_module "int31"
+(*
+let int31_notation_module = 
+  ["Coq"; "Numbers"; "Cyclic"; "Int31"; "Int31Notation"]
+let int31_notation_path = make_path int31_notation_module "int31"
+*)
 let int31_id = make_mind_mpfile int31_module
 let int31_scope = "int31_scope"
-
-let int31_construct = ConstructRef ((int31_id "int31",0),1)
-
-let int31_0 = ConstructRef ((int31_id "digits",0),1)
-let int31_1 = ConstructRef ((int31_id "digits",0),2)
 
 
 (* bigN stuff*)
@@ -97,55 +97,31 @@ exception Non_closed
 
 (* parses a *non-negative* integer (from bigint.ml) into an int31
    wraps modulo 2^31 *)
-let int31_of_pos_bigint dloc n =
-  let ref_construct = RRef (dloc, int31_construct) in
-  let ref_0 = RRef (dloc, int31_0) in
-  let ref_1 = RRef (dloc, int31_1) in
-  let rec args counter n =
-    if counter <= 0 then
-      []
-    else
-      let (q,r) = div2_with_rest n in
-	(if r then ref_1 else ref_0)::(args (counter-1) q)
-  in
-  RApp (dloc, ref_construct, List.rev (args 31 n))
-
-let error_negative dloc =
-  Util.user_err_loc (dloc, "interp_int31", Pp.str "int31 are only non-negative numbers.")
 
 let interp_int31 dloc n =
-  if is_pos_or_zero n then
-    int31_of_pos_bigint dloc n
-  else
-    error_negative dloc
+  let sn = to_string n in
+  try RNativeInt (dloc, Native.Uint31.of_string sn)
+  with Failure "int_of_string" ->
+    let msg = 
+      if is_pos_or_zero n then "int31: object to large."
+      else "int31 are only non-negative numbers." in
+    Util.user_err_loc (dloc, "interp_int31", Pp.str msg)
+
 
 (* Pretty prints an int31 *)
 
-let bigint_of_int31 =
-  let rec args_parsing args cur =
-    match args with
-      | [] -> cur
-      | (RRef (_,b))::l when b = int31_0 -> args_parsing l (mult_2 cur)
-      | (RRef (_,b))::l when b = int31_1 -> args_parsing l (add_1 (mult_2 cur))
-      | _ -> raise Non_closed
-  in
-  function
-  | RApp (_, RRef (_, c), args) when c=int31_construct -> args_parsing args zero
-  | _ -> raise Non_closed
 
 let uninterp_int31 i =
-  try
-    Some (bigint_of_int31 i)
-  with Non_closed ->
-    None
+  match i with
+  | RNativeInt(_,i) -> Some (of_string (Native.Uint31.to_string i))
+  | _ -> None
+
 
 (* Actually declares the interpreter for int31 *)
 let _ = Notation.declare_numeral_interpreter int31_scope
   (int31_path, int31_module)
   interp_int31
-  ([RRef (Util.dummy_loc, int31_construct)],
-   uninterp_int31,
-   true)
+  ([], uninterp_int31, false)
 
 
 (*** Parsing for bigN in digital notation ***)
@@ -174,7 +150,8 @@ let height bi =
 
 (* n must be a non-negative integer (from bigint.ml) *)
 let word_of_pos_bigint dloc hght n =
-  let ref_W0 = RRef (dloc, zn2z_W0) in
+  assert false
+(*  let ref_W0 = RRef (dloc, zn2z_W0) in
   let ref_WW = RRef (dloc, zn2z_WW) in
   let rec decomp hgt n =
     if is_neg_or_zero hgt then
@@ -187,7 +164,7 @@ let word_of_pos_bigint dloc hght n =
 			   decomp (sub_1 hgt) h;
 			   decomp (sub_1 hgt) l])
   in
-  decomp hght n
+  decomp hght n *)
 
 let bigN_of_pos_bigint dloc n =
   let ref_constructor i = RRef (dloc, bigN_constructor i) in
@@ -213,6 +190,7 @@ let interp_bigN dloc n =
 (* Pretty prints a bigN *)
 
 let bigint_of_word =
+(*
   let rec get_height rc =
     match rc with
     | RApp (_,RRef(_,c), [_;lft;rght]) when c = zn2z_WW ->
@@ -234,10 +212,11 @@ let bigint_of_word =
 	                                            (transform (new_hght) rght)
     | _ -> bigint_of_int31 rc
   in
-  fun rc ->
+*)
+  fun rc -> assert false (*
     let hght = get_height rc in
     transform hght rc
-
+*)
 let bigint_of_bigN rc =
   match rc with
   | RApp (_,_,[one_arg]) -> bigint_of_word one_arg

@@ -181,7 +181,7 @@ let build_id_coercion idf_opt source =
   let vs = match source with
     | CL_CONST sp -> mkConst sp
     | _ -> error_not_transparent source in
-  let c = match constant_opt_value env (destConst vs) with
+  let c = match constant_opt_value1 env (destConst vs) with
     | Some c -> c
     | None -> error_not_transparent source in
   let lams,t = decompose_lam_assum c in
@@ -219,7 +219,9 @@ let build_id_coercion idf_opt source =
       { const_entry_body = mkCast (val_f, DEFAULTcast, typ_f);
 	const_entry_type = Some typ_f;
         const_entry_opaque = false;
-	const_entry_boxed = Flags.boxed_definitions()} in
+	const_entry_boxed = Flags.boxed_definitions();
+	const_entry_inline_code = true
+      } in
   let kn = declare_constant idf (constr_entry,IsDefinition IdentityCoercion) in
   ConstRef kn
 

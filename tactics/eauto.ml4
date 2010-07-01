@@ -439,7 +439,7 @@ let unfold_head env (ids, csts) c =
 	| Some b -> true, b
 	| None -> false, c)
     | Const cst when Cset.mem cst csts ->
-	true, Environ.constant_value env cst
+	true, Environ.constant_value_def env cst
     | App (f, args) ->
 	(match aux f with
 	| true, f' -> true, Reductionops.whd_betaiota Evd.empty (mkApp (f', args))

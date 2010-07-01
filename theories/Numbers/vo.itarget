@@ -11,6 +11,10 @@ Cyclic/DoubleCyclic/DoubleMul.vo
 Cyclic/DoubleCyclic/DoubleSqrt.vo
 Cyclic/DoubleCyclic/DoubleSub.vo
 Cyclic/DoubleCyclic/DoubleType.vo
+Cyclic/Int31/Int31Native.vo
+Cyclic/Int31/Int31Op.vo
+Cyclic/Int31/Int31Bool.vo
+Cyclic/Int31/Int31Axioms.vo
 Cyclic/Int31/Int31.vo
 Cyclic/Int31/Cyclic31.vo
 Cyclic/Int31/Ring31.vo

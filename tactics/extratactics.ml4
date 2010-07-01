@@ -491,7 +491,7 @@ END
 
 
 
-
+(*
 (**********************************************************************)
 (*spiwack : Vernac commands for retroknowledge                        *)
 
@@ -501,7 +501,7 @@ VERNAC COMMAND EXTEND RetroknowledgeRegister
              let tb = Constrintern.interp_constr Evd.empty (Global.env ()) b in
              Global.register f tc tb ]
 END
-
+*)
 
 
 (**********************************************************************)
@@ -622,3 +622,4 @@ TACTIC EXTEND hget_evar
 END
 
 (**********************************************************************)
+

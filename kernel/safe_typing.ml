@@ -110,7 +110,8 @@ type safe_environment =
       engagement : engagement option;
       imports : library_info list;
       loads : (module_path * module_body) list;
-      local_retroknowledge : Retroknowledge.action list}
+      local_retroknowledge : (Native.retro_action * constr) list
+    }
 
 (*
   { old = senv.old;
@@ -139,7 +140,8 @@ let rec empty_environment =
     engagement = None;
     imports = [];
     loads = [];
-    local_retroknowledge = [] }
+    local_retroknowledge = []
+  }
 
 let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
@@ -154,47 +156,6 @@ let add_constraints cst senv =
   {senv with
     env = Environ.add_constraints cst senv.env;
     univ = Univ.Constraint.union cst senv.univ }
-
-
-(*spiwack: functions for safe retroknowledge *)
-
-(* terms which are closed under the environnement env, i.e
-   terms which only depends on constant who are themselves closed *)
-let closed env term =
-  ContextObjectMap.is_empty (assumptions full_transparent_state env term)
-
-(* the set of safe terms in an environement any recursive set of
-   terms who are known not to prove inconsistent statement. It should
-   include at least all the closed terms. But it could contain other ones
-   like the axiom of excluded middle for instance *)
-let safe =
-  closed
-
-
-
-(* universal lifting, used for the "get" operations mostly *)
-let retroknowledge f senv =
-  Environ.retroknowledge f (env_of_senv senv)
-
-let register senv field value by_clause =
-  (* todo : value closed, by_clause safe, by_clause of the proper type*)
-  (* spiwack : updates the safe_env with the information that the register
-     action has to be performed (again) when the environement is imported *)
-  {senv with env = Environ.register senv.env field value;
-             local_retroknowledge =
-      Retroknowledge.RKRegister (field,value)::senv.local_retroknowledge
-  }
-
-(* spiwack : currently unused *)
-let unregister senv field  =
-  (*spiwack: todo: do things properly or delete *)
-  {senv with env = Environ.unregister senv.env field}
-(* /spiwack *)
-
-
-
-
-
 
 
 
@@ -241,14 +202,18 @@ let hcons_constant_type = function
       PolymorphicArity (map_rel_context hcons1_constr ctx,s)
 
 let hcons_constant_body cb =
-  let body = match cb.const_body with
-      None -> None
-    | Some l_constr -> let constr = Declarations.force l_constr in
-	Some (Declarations.from_val (hcons1_constr constr))
-  in
-    { cb with
-	const_body = body;
-	const_type = hcons_constant_type cb.const_type }
+  let body = 
+    match cb.const_body with
+    | Def l_constr ->
+	let constr = Declarations.force l_constr in 
+	Def (Declarations.from_val (hcons1_constr constr))
+    | Opaque (Some l_constr) ->
+	let constr = Declarations.force l_constr in 
+	Opaque (Some (Declarations.from_val (hcons1_constr constr)))
+    | _ -> cb.const_body in
+  { cb with
+    const_body = body;
+    const_type = hcons_constant_type cb.const_type }
 
 let add_constant dir l decl senv =
   check_label l senv.labset;
@@ -261,7 +226,16 @@ let add_constant dir l decl senv =
 	    if dir = empty_dirpath then hcons_constant_body cb else cb
   in
   let senv' = add_constraints cb.const_constraints senv in
-  let env'' = Environ.add_constant kn cb senv'.env in
+  let lr, env'' = 
+    let lr = senv'.local_retroknowledge in
+    let env = Environ.add_constant kn cb senv'.env in
+    match decl with
+    | ConstantEntry (PrimitiveEntry (_,Native.OT_type t)) ->
+	let pttc = Native.Retro_type t, mkConst kn in
+	pttc::lr,
+	Environ.add_retroknowledge env pttc
+    | _ -> lr, env
+  in
   let resolver = 
     if cb.const_inline then
       add_inline_delta_resolver kn senv'.modinfo.resolver
@@ -277,8 +251,9 @@ let add_constant dir l decl senv =
           univ = senv'.univ;
           engagement = senv'.engagement;
 	  imports = senv'.imports;
-	  loads = senv'.loads ;
-	  local_retroknowledge = senv'.local_retroknowledge }
+	  loads = senv'.loads;
+	  local_retroknowledge = lr
+	}
 
 
 (* Insertion of inductive types. *)
@@ -307,7 +282,8 @@ let add_mind dir l mie senv =
         engagement = senv'.engagement;
 	imports = senv'.imports;
 	loads = senv'.loads;
-        local_retroknowledge = senv'.local_retroknowledge }
+	local_retroknowledge = senv'.local_retroknowledge
+      }
 
 (* Insertion of module types *)
 
@@ -316,17 +292,18 @@ let add_modtype l mte inl senv =
   let mp = MPdot(senv.modinfo.modpath, l) in
   let mtb = translate_module_type senv.env mp inl mte  in
   let senv' = add_constraints mtb.typ_constraints senv in
-   let env'' = Environ.add_modtype mp mtb senv'.env in
-    mp, { old = senv'.old;
-	  env = env'';
-	  modinfo = senv'.modinfo;
-	  labset = Labset.add l senv'.labset;
-	  revstruct = (l,SFBmodtype mtb)::senv'.revstruct;
-          univ = senv'.univ;
-          engagement = senv'.engagement;
-	  imports = senv'.imports;
-	  loads = senv'.loads;
-          local_retroknowledge = senv'.local_retroknowledge }
+  let env'' = Environ.add_modtype mp mtb senv'.env in
+  mp, { old = senv'.old;
+	env = env'';
+	modinfo = senv'.modinfo;
+	labset = Labset.add l senv'.labset;
+	revstruct = (l,SFBmodtype mtb)::senv'.revstruct;
+        univ = senv'.univ;
+        engagement = senv'.engagement;
+	imports = senv'.imports;
+	loads = senv'.loads;
+	local_retroknowledge = senv'.local_retroknowledge
+      }
 
 
 (* full_add_module adds module with universes and constraints *)
@@ -359,7 +336,8 @@ let add_module l me inl senv =
     engagement = senv'.engagement;
     imports = senv'.imports;
     loads = senv'.loads;
-    local_retroknowledge = senv'.local_retroknowledge }
+    local_retroknowledge = senv'.local_retroknowledge
+  }
     
 (* Interactive modules *)
 
@@ -381,8 +359,8 @@ let start_module l senv =
          engagement = None;
 	 imports = senv.imports;
 	 loads = [];
-	 (* spiwack : not sure, but I hope it's correct *)
-         local_retroknowledge = [] }
+	 local_retroknowledge = []
+       }
 
 let end_module l restype senv =
   let oldsenv = senv.old in
@@ -435,7 +413,9 @@ let end_module l restype senv =
       mod_type_alg = mod_typ_alg;
       mod_constraints = cst;
       mod_delta = resolver;
-      mod_retroknowledge = senv.local_retroknowledge }
+      (* Check this *)
+      mod_retroknowledge = senv.local_retroknowledge
+    }
   in
   let newenv = oldsenv.env in
   let newenv = set_engagement_opt senv.engagement newenv in
@@ -466,8 +446,8 @@ let end_module l restype senv =
 		  engagement = senv'.engagement;
 		  imports = senv'.imports;
 		  loads = senv'.loads@oldsenv.loads;
-		  local_retroknowledge = 
-	senv'.local_retroknowledge@oldsenv.local_retroknowledge }
+		  local_retroknowledge = oldsenv.local_retroknowledge
+		}
 
 
 (* Include for module and module type*)
@@ -535,8 +515,9 @@ let end_module l restype senv =
                univ = senv'.univ;
                engagement = senv'.engagement;
 	       imports = senv'.imports;
-	       loads = senv'.loads ;
-	       local_retroknowledge = senv'.local_retroknowledge }
+	       loads = senv'.loads;
+	       local_retroknowledge = senv'.local_retroknowledge
+	     }
        | SFBmind mib ->
 	   let kn = make_kn mp_sup empty_dirpath l in
 	   let mind = mind_of_kn_equiv kn
@@ -554,7 +535,8 @@ let end_module l restype senv =
                engagement = senv'.engagement;
 	       imports = senv'.imports;
 	       loads = senv'.loads;
-               local_retroknowledge = senv'.local_retroknowledge }
+	       local_retroknowledge = senv'.local_retroknowledge
+	     }
 
        | SFBmodule mb ->
 	   let senv' = full_add_module mb senv in
@@ -581,7 +563,7 @@ let end_module l restype senv =
                engagement = senv'.engagement;
 	       imports = senv'.imports;
 	       loads = senv'.loads;
-               local_retroknowledge = senv'.local_retroknowledge }
+	       local_retroknowledge = senv'.local_retroknowledge }
    in
      resolver,(List.fold_left add senv str)
 
@@ -617,7 +599,8 @@ let add_module_parameter mbid mte inl senv =
 		     engagement = senv.engagement;
 		     imports = senv.imports;
 		     loads = [];
-		     local_retroknowledge = senv.local_retroknowledge }
+		     local_retroknowledge = senv.local_retroknowledge
+		   }
       
 
 (* Interactive module types *)
@@ -639,9 +622,9 @@ let start_modtype l senv =
         univ = Univ.Constraint.empty;
         engagement = None;
 	imports = senv.imports;
-	loads = [] ;
-	(* spiwack: not 100% sure, but I think it should be like that *)
-        local_retroknowledge = []}
+	loads = [];
+	local_retroknowledge = []
+      }
 
 let end_modtype l senv =
   let oldsenv = senv.old in
@@ -691,10 +674,8 @@ let end_modtype l senv =
           engagement = senv.engagement;
 	  imports = senv.imports;
 	  loads = senv.loads@oldsenv.loads;
-          (* spiwack : if there is a bug with retroknowledge in nested modules
-             it's likely to come from here *)
-          local_retroknowledge = 
-        senv.local_retroknowledge@oldsenv.local_retroknowledge}
+	  local_retroknowledge = oldsenv.local_retroknowledge
+	}
 
 let current_modpath senv = senv.modinfo.modpath
 let delta_of_senv senv = senv.modinfo.resolver,senv.modinfo.resolver_of_param
@@ -750,7 +731,8 @@ let start_library dir senv =
         engagement = None;
 	imports = senv.imports;
 	loads = [];
-        local_retroknowledge = [] }
+	local_retroknowledge = []
+      }
 
 let pack_module senv =
   {mod_mp=senv.modinfo.modpath;
@@ -759,7 +741,7 @@ let pack_module senv =
    mod_type_alg=None;
    mod_constraints=Constraint.empty;
    mod_delta=senv.modinfo.resolver;
-   mod_retroknowledge=[];
+   mod_retroknowledge = []
   }
 
 let export senv dir =
@@ -783,7 +765,8 @@ let export senv dir =
       mod_type_alg = None;
       mod_constraints = senv.univ;
       mod_delta = senv.modinfo.resolver;
-      mod_retroknowledge = senv.local_retroknowledge}
+      mod_retroknowledge = senv.local_retroknowledge
+    }
   in
    mp, (dir,mb,senv.imports,engagement senv.env)
 
@@ -842,7 +825,7 @@ let import (dp,mb,depends,engmt) digest senv =
 
 and lighten_struct struc =
   let lighten_body (l,body) = (l,match body with
-    | SFBconst ({const_opaque=true} as x) -> SFBconst {x with const_body=None}
+    | SFBconst ({const_body=Opaque (Some _)} as x) -> SFBconst {x with const_body=Opaque None}
     | (SFBconst _ | SFBmind _ ) as x -> x
     | SFBmodule m -> SFBmodule (lighten_module m)
     | SFBmodtype m -> SFBmodtype
@@ -876,3 +859,101 @@ let j_type j = j.uj_type
 let safe_infer senv = infer (env_of_senv senv)
 
 let typing senv = Typeops.typing (env_of_senv senv)
+
+(* Register primitive *)
+
+let check_register_ind c r env =
+  let (mind,i) = destInd c in
+  let mb = lookup_mind mind env in
+  let error b s = 
+    if b then
+      user_err_loc (dummy_loc, "check_register_ind", Pp.str s) in
+  error (Array.length mb.mind_packets <> 1) "non mutual inductive is expected";
+  let ob = mb.mind_packets.(i) in
+  let check_nconstr n =
+    error (Array.length ob.mind_consnames <> n) 
+      ("an inductive type with "^(string_of_int n)^" constructor is expected") 
+  in
+  let check_name pos s =
+    error (ob.mind_consnames.(pos) <> id_of_string s)
+      ("the "^(string_of_int (pos + 1))^
+       "th constructor as not the expected name") in
+  let check_type pos t =
+    error (not (eq_constr t ob.mind_user_lc.(pos)))
+      ("the "^(string_of_int (pos + 1))^
+       "th constructor as not the expected type") in
+  let check_type_cte pos = check_type pos (mkRel 1) in
+  match r with
+  | Native.PIT_bool ->
+      check_nconstr 2;
+      check_name 0 "true";
+      check_type_cte 0;
+      check_name 1 "false";
+      check_type_cte 1
+  | Native.PIT_carry ->
+      check_nconstr 2;
+      let test_type pos =
+	let c = ob.mind_user_lc.(pos) in
+	let s = "the "^(string_of_int (pos + 1))^
+	   "th constructor as not the expected type" in
+	error (not (isProd c)) s;
+	let (_,d,cd) = destProd c in
+	error (not (is_Type d)) s;
+	error 
+	  (not (eq_constr 
+		  (mkProd (Anonymous,mkRel 1, mkApp (mkRel 3,[|mkRel 2|])))
+		  cd)) 
+	  s in
+      check_name 0 "C0";
+      test_type 0;
+      check_name 1 "C1";
+      test_type 1;
+  | Native.PIT_pair ->
+      check_nconstr 1;
+      check_name 0 "pair";
+      let c = ob.mind_user_lc.(0) in
+      let s =  "the "^(string_of_int 1)^
+	   "th constructor as not the expected type" in
+      begin match decompose_prod c with
+      | ([_,b;_,a;_,_B;_,_A], codom) ->
+	  error (not (is_Type _A)) s;
+	  error (not (is_Type _B)) s;
+	  error (not (eq_constr a (mkRel 2))) s;
+	  error (not (eq_constr b (mkRel 2))) s;
+	  error (not (eq_constr codom (mkApp (mkRel 5,[|mkRel 4; mkRel 3|])))) s
+      | _ -> error true s
+      end      
+  | Native.PIT_cmp ->
+      check_nconstr 3;
+      check_name 0 "Eq";
+      check_type_cte 0;
+      check_name 1 "Lt";
+      check_type_cte 1;
+      check_name 2 "Gt";
+      check_type_cte 2
+
+
+let register c r senv =
+  let _ =
+    match r with
+    | Native.Retro_ind i ->
+	if not (isInd c) then 
+	  user_err_loc (dummy_loc, "", 
+			Pp.str "Register inductive: an indutive is expected");
+	check_register_ind c i senv.env
+    | Native.Retro_type _ -> assert false
+    | Native.Retro_inline ->
+	if not (isConst c) then
+	  user_err_loc (dummy_loc, "",
+			Pp.str "Register inline: a constant is expected");
+	if  not (evaluable_constant1 (destConst c)  senv.env) then
+	   user_err_loc 
+	    (dummy_loc, "",
+	     Pp.str "Register inline: an evaluable constant is expected") in
+  let action = (r,c) in
+  { senv with
+    env = Environ.add_retroknowledge senv.env action;
+    local_retroknowledge = action::senv.local_retroknowledge
+  }
+   
+

@@ -138,7 +138,8 @@ let def_of_const t =
    match (kind_of_term t) with
     Const sp ->
       (try (match (Global.lookup_constant sp) with
-             {const_body=Some c} -> Declarations.force c
+              {const_body=Declarations.Opaque (Some c)}
+             |{const_body=Declarations.Def c} -> Declarations.force c
 	     |_ -> assert false)
        with _ ->
 	 anomaly ("Cannot find definition of constant "^
@@ -265,7 +266,9 @@ let rec (find_call_occs : int -> int -> constr -> constr ->
 	cf, (arg1::args) -> (fun l -> mkCase(i, t, (cf l), r)),(arg1::args)
       | _ -> (fun l -> expr),[])
   | Fix(_) -> error "find_call_occs : Fix"
-  | CoFix(_) -> error "find_call_occs : CoFix";;
+  | CoFix(_) -> error "find_call_occs : CoFix"
+  | NativeInt _ ->error "find_call_occs : NativeInt" 
+  | NativeArr _ ->error "find_call_occs : NativeArr" ;;
 
 let coq_constant s =
   Coqlib.gen_constant_in_modules "RecursiveDefinition"
@@ -963,8 +966,12 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
       match na_global with
 	  ConstRef c ->
 	    let cb = Global.lookup_constant c in
-	    if cb.Declarations.const_opaque then true
-	    else begin  match cb.const_body with None -> true | _ -> false end
+	    begin match cb.const_body with
+	    | Declarations.Primitive _ ->
+		anomaly "equation_lemma: not a constant (primitive)"
+	    | Declarations.Opaque _ -> true
+	    | Declarations.Def _ -> false
+	    end
 	| _ -> anomaly "equation_lemma: not a constant"
     in
     let lemma = mkConst (Lib.make_con na) in
@@ -1140,7 +1147,9 @@ let (declare_fun : identifier -> logical_kind -> constr -> global_reference) =
     let ce = {const_entry_body = value;
 	      const_entry_type = None;
 	      const_entry_opaque = false;
-              const_entry_boxed = true} in
+              const_entry_boxed = true;
+	      const_entry_inline_code = false
+	    } in
       ConstRef(declare_constant f_id (DefinitionEntry ce, kind));;
 
 let (declare_f : identifier -> logical_kind -> constr list -> global_reference -> global_reference) =
@@ -1344,9 +1353,7 @@ let (com_eqn : int -> identifier ->
     let opacity =
       match terminate_ref with
 	| ConstRef c ->
-	    let cb = Global.lookup_constant c in
-	    if cb.Declarations.const_opaque then true
-	    else begin match cb.const_body with None -> true | _ -> false end
+	    not (Environ.evaluable_constant1 c (Global.env()))
 	| _ -> anomaly "terminate_lemma: not a constant"
     in
     let (evmap, env) = Lemmas.get_current_context() in

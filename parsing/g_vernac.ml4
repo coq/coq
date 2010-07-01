@@ -141,7 +141,7 @@ GEXTEND Gram
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = identref; bl = binders_let; ":"; c = lconstr;
+    [ [  thm = thm_token; id = identref; bl = binders_let; ":"; c = lconstr;
         l = LIST0
           [ "with"; id = identref; bl = binders_let; ":"; c = lconstr ->
             (Some id,(bl,c,None)) ] ->
@@ -173,8 +173,17 @@ GEXTEND Gram
           VernacCoFixpoint (corecs,false)
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
-	l = LIST1 identref SEP "," -> VernacCombinedScheme (id, l) ] ]
+	l = LIST1 identref SEP "," -> VernacCombinedScheme (id, l)
+      | IDENT "RegisterInd";id=identref; "as"; r = register_ind_token ->
+        VernacRegister(id,PrimInd r) 
+      | IDENT "Register"; id=identref; ":"; t = lconstr; "as"; 
+        r = register_token ->
+         VernacRegister(id,PrimOp(t,r)) 
+      | IDENT "Register"; id = identref; "as"; "Inline" ->
+         VernacRegister(id,PrimInline)
+     ] ]
   ;
+
   gallina_ext:
     [ [ b = record_token; infer = infer_token; oc = opt_coercion; name = identref;
         ps = binders_let;
@@ -221,6 +230,64 @@ GEXTEND Gram
       | IDENT "Axioms" -> (Global, Logical)
       | IDENT "Parameters" -> (Global, Definitional) ] ]
   ;
+ 
+ 
+  register_ind_token:
+    [ [ "ind_bool" -> Native.PIT_bool
+      | "ind_carry" -> Native.PIT_carry
+      | "ind_pair" -> Native.PIT_pair
+      | "ind_cmp" -> Native.PIT_cmp ] ]
+  ;
+
+  register_token:
+    [ [ r = register_prim_token -> Native.OT_op r 
+      | r = register_type_token -> Native.OT_type r ] ]
+  ;
+  
+  register_type_token:
+    [ [ "int31_type" -> Native.PT_int31  
+      | "array_type" -> Native.PT_array ] ]
+  ;
+
+  register_prim_token:
+    [ [ "int31_print" -> Native.Ocaml_prim Native.Int31print
+      | "array_make" -> Native.Ocaml_prim Native.ArrayMake
+      | "array_get" -> Native.Ocaml_prim Native.ArrayGet
+      | "array_default" -> Native.Ocaml_prim Native.ArrayGetdefault
+      | "array_set" -> Native.Ocaml_prim Native.ArraySet
+      | "array_copy" -> Native.Ocaml_prim Native.ArrayCopy
+      | "array_reroot" -> Native.Ocaml_prim Native.ArrayReroot
+      | "array_length" -> Native.Ocaml_prim Native.ArrayLength
+     
+      | "int31_foldi" -> Native.Oiterator Native.Int31foldi
+      | "int31_foldi_down" -> Native.Oiterator Native.Int31foldi_down
+
+      | "int31_head0" -> Native.Oprim Native.Int31head0
+      | "int31_tail0" -> Native.Oprim Native.Int31tail0
+      | "int31_add" -> Native.Oprim Native. Int31add
+      | "int31_sub" -> Native.Oprim Native.Int31sub
+      | "int31_mul" -> Native.Oprim Native.Int31mul
+      | "int31_div" -> Native.Oprim Native.Int31div
+      | "int31_mod" -> Native.Oprim Native.Int31mod
+      | "int31_lsr" -> Native.Oprim Native.Int31lsr
+      | "int31_lsl" -> Native.Oprim Native.Int31lsl
+      | "int31_land" -> Native.Oprim Native.Int31land
+      | "int31_lor" -> Native.Oprim Native.Int31lor
+      | "int31_lxor" -> Native.Oprim Native.Int31lxor
+      | "int31_addc" -> Native.Oprim Native.Int31addc
+      | "int31_subc" -> Native.Oprim Native.Int31subc
+      | "int31_addcarryc" -> Native.Oprim Native.Int31addCarryC
+      | "int31_subcarryc" -> Native.Oprim Native.Int31subCarryC
+      | "int31_mulc" -> Native.Oprim Native.Int31mulc
+      | "int31_diveucl" -> Native.Oprim Native.Int31diveucl
+      | "int31_div21" -> Native.Oprim Native.Int31div21
+      | "int31_addmuldiv" -> Native.Oprim Native.Int31addMulDiv
+      | "int31_eq" -> Native.Oprim Native.Int31eq
+      | "int31_lt" -> Native.Oprim Native.Int31lt
+      | "int31_le" -> Native.Oprim Native.Int31le
+      | "int31_compare" -> Native.Oprim Native.Int31compare ] ]
+    ;
+
   inline:
     [ ["Inline" -> true |  -> false] ]
   ;

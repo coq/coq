@@ -11,6 +11,7 @@
 (* Extension: Arnaud Spiwack (support for native arithmetic), May 2005 *)
 
 open Names
+open Native
 open Term
 open Cbytecodes
 open Copcodes
@@ -21,6 +22,7 @@ type reloc_info =
   | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
   | Reloc_getglobal of constant
+  | Reloc_caml_prim of caml_prim
 
 type patch = reloc_info * int
 
@@ -152,8 +154,55 @@ and slot_for_getglobal id =
   enter (Reloc_getglobal id);
   out_int 0
 
+and slot_for_caml_prim op =
+  enter (Reloc_caml_prim op);
+  out_int 0
 
 (* Emission of one instruction *)
+
+let nocheck_prim_op = function
+  | Int31add -> opADDINT31
+  | Int31sub -> opSUBINT31
+  | Int31lt  -> opLTINT31
+  | Int31le  -> opLEINT31
+  | _ -> assert false
+
+
+let check_prim_op = function
+  | Int31head0     -> opCHECKHEAD0INT31
+  | Int31tail0     -> opCHECKTAIL0INT31
+  | Int31add       -> opCHECKADDINT31
+  | Int31sub       -> opCHECKSUBINT31
+  | Int31mul       -> opCHECKMULINT31
+  | Int31div       -> opCHECKDIVINT31
+  | Int31mod       -> opCHECKMODINT31
+  | Int31lsr       -> opCHECKLSRINT31
+  | Int31lsl       -> opCHECKLSLINT31
+  | Int31land      -> opCHECKLANDINT31
+  | Int31lor       -> opCHECKLORINT31
+  | Int31lxor      -> opCHECKLXORINT31
+  | Int31addc      -> opCHECKADDCINT31
+  | Int31subc      -> opCHECKSUBCINT31
+  | Int31addCarryC -> opCHECKADDCARRYCINT31
+  | Int31subCarryC -> opCHECKSUBCARRYCINT31
+  | Int31mulc      -> opCHECKMULCINT31
+  | Int31diveucl   -> opCHECKDIVEUCLINT31
+  | Int31div21     -> opCHECKDIV21INT31
+  | Int31addMulDiv -> opCHECKADDMULDIVINT31
+  | Int31eq        -> opCHECKEQINT31
+  | Int31lt        -> opCHECKLTINT31
+  | Int31le        -> opCHECKLEINT31
+  | Int31compare   -> opCHECKCOMPAREINT31
+
+let caml_prim_call op =
+  match op with
+  | Int31print -> opISINT_CAML_CALL1
+  | ArrayMake -> opISINT_CAML_CALL2
+  | ArrayGet -> opISARRAY_INT_CAML_CALL2
+  | ArraySet ->  opISARRAY_INT_CAML_CALL3
+  | ArrayGetdefault | ArrayCopy | ArrayReroot | ArrayLength -> 
+      opISARRAY_CAML_CALL1
+
 
 
 let emit_instr = function
@@ -175,7 +224,7 @@ let emit_instr = function
   | Kpush_retaddr lbl ->
       out opPUSH_RETADDR; out_label lbl
   | Kapply n ->
-      if n < 4 then out(opAPPLY1 + n - 1) else (out opAPPLY; out_int n)
+      if n <= 4 then out(opAPPLY1 + n - 1) else (out opAPPLY; out_int n)
   | Kappterm(n, sz) ->
       if n < 4 then (out(opAPPTERM1 + n - 1); out_int sz)
                else (out opAPPTERM; out_int n; out_int sz)
@@ -237,30 +286,39 @@ let emit_instr = function
   | Ksetfield n ->
       if n <= 1 then out (opSETFIELD0+n)
       else (out opSETFIELD;out_int n)
-  | Ksequence _ -> raise (Invalid_argument "Cemitcodes.emit_instr")
-  (* spiwack *)
+
   | Kbranch lbl -> out opBRANCH; out_label lbl
-  | Kaddint31 -> out opADDINT31
-  | Kaddcint31 -> out opADDCINT31
-  | Kaddcarrycint31 -> out opADDCARRYCINT31
-  | Ksubint31 -> out opSUBINT31
-  | Ksubcint31 -> out opSUBCINT31
-  | Ksubcarrycint31 -> out opSUBCARRYCINT31
-  | Kmulint31 -> out opMULINT31
-  | Kmulcint31 -> out opMULCINT31
-  | Kdiv21int31 -> out opDIV21INT31
-  | Kdivint31 -> out opDIVINT31
-  | Kaddmuldivint31 -> out opADDMULDIVINT31
-  | Kcompareint31 -> out opCOMPAREINT31
-  | Khead0int31 -> out opHEAD0INT31
-  | Ktail0int31 -> out opTAIL0INT31
-  | Kisconst lbl -> out opISCONST; out_label lbl
-  | Kareconst(n,lbl) -> out opARECONST; out_int n; out_label lbl
-  | Kcompint31 -> out opCOMPINT31
-  | Kdecompint31 -> out opDECOMPINT31
-  (*/spiwack *)
-  | Kstop ->
-      out opSTOP
+
+  | Kprim (op,None) -> 
+      out (nocheck_prim_op op)
+
+  | Kprim(op,Some q) ->
+      out (check_prim_op op);
+      slot_for_getglobal q
+
+  | Kprim_const(Int31lsl,Some q,i) ->
+      assert (i=1);
+      out opCHECKLSLINT31CONST1;
+      slot_for_getglobal q
+  | Kprim_const(Int31lsr,Some q,i) ->
+      assert (i=1);
+      out opCHECKLSRINT31CONST1;
+      slot_for_getglobal q
+
+  | Kprim_const(_,_,_) -> assert false
+
+  | Kcamlprim (op,lbl) -> 
+      out (caml_prim_call op);
+      out_label lbl;
+      slot_for_caml_prim op
+
+  | Kareint 2 -> out opAREINT2;
+
+  | Kstop -> out opSTOP
+
+  | Kareint _ -> assert false
+  | Ksequence _ -> assert false
+
 
 (* Emission of a list of instructions. Include some peephole optimization. *)
 
@@ -309,36 +367,55 @@ type emitcodes = string
 
 let length = String.length
 
-type to_patch = emitcodes * (patch list) * fv
+type to_patch = emitcodes * (patch array) * fv
 
 (* Substitution *)
 let rec subst_strcst s sc =
   match sc with
-  | Const_sorts _ | Const_b0 _ -> sc
-  | Const_bn(tag,args) -> Const_bn(tag,Array.map (subst_strcst s) args)
-  | Const_ind(ind) -> let kn,i = ind in Const_ind((subst_ind s kn, i))
+  | Const_b0 _ | Const_sorts _ -> sc
+  | Const_ind (mind,i) -> 
+      let mind' = subst_ind s mind in
+      if mind' == mind then sc 
+      else Const_ind (mind',i)
+  | Const_val _ -> sc
 
-let subst_patch s (ri,pos) =
+let subst_patch s (ri,pos as p) =
   match ri with
   | Reloc_annot a ->
-      let (kn,i) = a.ci.ci_ind in
-      let ci = {a.ci with ci_ind = (subst_ind s kn,i)} in
-      (Reloc_annot {a with ci = ci},pos)
-  | Reloc_const sc -> (Reloc_const (subst_strcst s sc), pos)
-  | Reloc_getglobal kn -> (Reloc_getglobal (fst (subst_con s kn)), pos)
-
-let subst_to_patch s (code,pl,fv) =
-  code,List.rev_map (subst_patch s) pl,fv
+      let (mind,i) = a.ci.ci_ind in
+      let mind' = subst_ind s mind in
+      if mind' == mind then p
+      else 
+	let ci = {a.ci with ci_ind = (mind',i)} in
+	(Reloc_annot {a with ci = ci},pos)
+  | Reloc_const sc ->
+      let sc' = subst_strcst s sc in
+      if sc' == sc then p
+      else (Reloc_const sc, pos)
+  | Reloc_getglobal cte -> 
+      let cte' = fst (subst_con s cte) in
+      if cte' == cte then p 
+      else (Reloc_getglobal cte', pos)
+  | Reloc_caml_prim _ -> p
+   
+let subst_to_patch s (code,tp,fv as to_patch) =
+  let tp' = Util.array_smartmap (subst_patch s) tp in
+  if tp == tp' then to_patch else (code, tp', fv)
 
 type body_code =
   | BCdefined of bool * to_patch
   | BCallias of constant
   | BCconstant
 
-let subst_body_code s = function
-  | BCdefined (b,tp) -> BCdefined (b,subst_to_patch s tp)
-  | BCallias kn -> BCallias (fst (subst_con s kn))
-  | BCconstant -> BCconstant
+let subst_body_code s bc = 
+  match bc with
+  | BCdefined (b,tp) -> 
+      let tp' = subst_to_patch s tp in
+      if tp == tp' then  bc else BCdefined (b,tp')
+  | BCallias cte -> 
+      let cte' = fst (subst_con s cte) in
+      if cte == cte' then bc else BCallias cte'
+  | BCconstant -> bc
 
 type to_patch_substituted = body_code substituted
 
@@ -359,12 +436,12 @@ let to_memory (init_code, fun_code, fv) =
   emit fun_code;
   let code = String.create !out_position in
   String.unsafe_blit !out_buffer 0 code 0 !out_position;
-  let reloc = List.rev !reloc_info in
   Array.iter (fun lbl ->
     (match lbl with
       Label_defined _ -> assert true
     | Label_undefined patchlist ->
 	assert (patchlist = []))) !label_table;
+  let reloc = Array.of_list !reloc_info in
   (code, reloc, fv)
 
 

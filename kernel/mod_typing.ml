@@ -81,64 +81,74 @@ and check_with_aux_def env sign with_decl mp equiv =
       let rev_before,spec,after = list_split_assoc l [] sig_b in
       let before = List.rev rev_before in
       let env' = Modops.add_signature mp before equiv env in
-	match with_decl with
-          | With_Definition ([],_) -> assert false
-	  | With_Definition ([id],c) ->
-	      let cb = match spec with
-		  SFBconst cb -> cb
-		| _ -> error_not_a_constant l
-	      in
-		begin
-		  match cb.const_body with
-		    | None ->
-			let (j,cst1) = Typeops.infer env' c in
-			let typ = Typeops.type_of_constant_type env' cb.const_type in
-			let cst2 = Reduction.conv_leq env' j.uj_type typ in
-			let cst =
-			  Constraint.union
-			    (Constraint.union cb.const_constraints cst1)
-			    cst2 in
-			let body = Some (Declarations.from_val j.uj_val) in
-			let cb' = {cb with
-				     const_body = body;
-				     const_body_code = Cemitcodes.from_val
-                            (compile_constant_body env' body false false);
-                                     const_constraints = cst} in
-			  SEBstruct(before@((l,SFBconst(cb'))::after)),cb',cst
-		    | Some b ->
-			let cst1 = Reduction.conv env' c (Declarations.force b) in
-			let cst = Constraint.union cb.const_constraints cst1 in
-			let body = Some (Declarations.from_val c) in
-			let cb' = {cb with
-				     const_body = body;
-				     const_body_code = Cemitcodes.from_val
-                            (compile_constant_body env' body false false);
-                                     const_constraints = cst} in
-			  SEBstruct(before@((l,SFBconst(cb'))::after)),cb',cst
-	      end
-	  | With_Definition (_::_,c) ->
-	      let old = match spec with
-		  SFBmodule msb -> msb
-		| _ -> error_not_a_module (string_of_label l)
-	      in
-		begin
-		  match old.mod_expr with
-                    | None ->
-			let new_with_decl = With_Definition (idl,c) in 
-			let sign,cb,cst = 
-			  check_with_aux_def env' old.mod_type new_with_decl 
-			    (MPdot(mp,l)) old.mod_delta in
-			let new_spec = SFBmodule({old with
-						    mod_type = sign;
-						    mod_type_alg = None}) in
-			  SEBstruct(before@((l,new_spec)::after)),cb,cst
-                    | Some msb ->
-			error_a_generative_module_expected l
-		end
-	  | _ -> anomaly "Modtyping:incorrect use of with"
+      match with_decl with
+      | With_Definition ([],_) -> assert false
+      | With_Definition ([id],c) ->
+	  let cb = 
+	    match spec with
+	    | SFBconst cb -> cb
+	    | _ -> error_not_a_constant l in
+	  begin match cb.const_body with
+	  | Def b ->
+	      let cst1 = Reduction.conv env' c (Declarations.force b) in
+	      let cst = Constraint.union cb.const_constraints cst1 in
+	      let body = Def (Declarations.from_val c) in
+	      let cb' = {cb with
+			 const_body = body;
+			 const_body_code = Cemitcodes.from_val 
+			   (compile_constant_body env' body false);
+                         const_constraints = cst} in
+	      SEBstruct(before@((l,SFBconst(cb'))::after)),cb',cst
+	  | Opaque (Some b) -> assert false
+(*
+	      let cst1 = Reduction.conv env' c (Declarations.force b) in
+	      let cst = Constraint.union cb.const_constraints cst1 in
+	      let body = Opaque (Some (Declarations.from_val c)) in
+	      let cb' = {cb with
+			 const_body = body;
+			 const_body_code = Cemitcodes.from_val 
+			   (compile_constant_body env' body false);
+                         const_constraints = cst} in
+	      SEBstruct(before@((l,SFBconst(cb'))::after)),cb',cst *)
+	  | Opaque None ->
+	      let (j,cst1) = Typeops.infer env' c in
+	      let typ = Typeops.type_of_constant_type env' cb.const_type in
+	      let cst2 = Reduction.conv_leq env' j.uj_type typ in
+	      let cst =
+		Constraint.union
+		  (Constraint.union cb.const_constraints cst1)
+		  cst2 in
+	      let body = Def (Declarations.from_val j.uj_val) in
+	      let cb' = {cb with
+			 const_body = body;
+			 const_body_code = Cemitcodes.from_val
+                           (compile_constant_body env' body false);
+                         const_constraints = cst} in
+	      SEBstruct(before@((l,SFBconst(cb'))::after)),cb',cst
+	  | Primitive _ -> assert false
+	  end
+      | With_Definition (_::_,c) ->
+	  let old = 
+	    match spec with
+	    | SFBmodule msb -> msb
+	    | _ -> error_not_a_module (string_of_label l)
+	  in
+	  begin match old.mod_expr with
+          | None ->
+	      let new_with_decl = With_Definition (idl,c) in 
+	      let sign,cb,cst = 
+		check_with_aux_def env' old.mod_type new_with_decl 
+		  (MPdot(mp,l)) old.mod_delta in
+	      let new_spec = SFBmodule({old with
+					mod_type = sign;
+					mod_type_alg = None}) in
+	      SEBstruct(before@((l,new_spec)::after)),cb,cst
+          | Some msb -> error_a_generative_module_expected l
+	  end
+      | _ -> anomaly "Modtyping:incorrect use of with"
     with
-	Not_found -> error_no_such_label l
-      | Reduction.NotConvertible -> error_with_incorrect l
+      Not_found -> error_no_such_label l
+    | Reduction.NotConvertible -> Printf.printf "ICI\n\n";error_with_incorrect l
 
 and check_with_aux_mod env sign with_decl mp equiv = 
   let sig_b = match sign with 
@@ -176,7 +186,7 @@ and check_with_aux_mod env sign with_decl mp equiv =
 			  (check_subtypes env' mtb_mp1 
 			     (module_type_of_module env' None old))
 			  old.mod_constraints
-			with Failure _ -> error_with_incorrect (label_of_id id)
+			with Failure _ -> Printf.printf "ICI1\n\n";error_with_incorrect (label_of_id id)
 		      end
 		  | Some (SEBident(mp')) ->
 		      check_modpath_equiv env' mp1 mp';
@@ -226,7 +236,7 @@ and check_with_aux_mod env sign with_decl mp equiv =
 	  | _ -> anomaly "Modtyping:incorrect use of with"
     with
 	Not_found -> error_no_such_label l
-      | Reduction.NotConvertible -> error_with_incorrect l
+      | Reduction.NotConvertible ->Printf.printf "ICI2\n\n"; error_with_incorrect l
 
 and translate_module env mp inl me =
   match me.mod_entry_expr, me.mod_entry_type with
@@ -239,8 +249,9 @@ and translate_module env mp inl me =
 	    mod_type = mtb.typ_expr;
 	    mod_type_alg = mtb.typ_expr_alg;
 	    mod_delta = mtb.typ_delta;
-	    mod_constraints = mtb.typ_constraints; 
-	    mod_retroknowledge = []}
+	    mod_constraints = mtb.typ_constraints;
+	    mod_retroknowledge = []
+	  }
    | Some mexpr, _ ->
 	let sign,alg_implem,resolver,cst1 =
 	  translate_struct_module_entry env mp inl mexpr in
@@ -266,11 +277,8 @@ and translate_module env mp inl me =
 	    mod_type_alg = alg1;
 	    mod_constraints = Univ.Constraint.union cst1 cst2;
 	    mod_delta = resolver;
-	    mod_retroknowledge = []} 
-	    (* spiwack: not so sure about that. It may
-	       cause a bug when closing nested modules.
-	       If it does, I don't really know how to
-	       fix the bug.*)
+	    mod_retroknowledge = []
+	  }
 
 
 and translate_struct_module_entry env mp inl mse  = match mse with

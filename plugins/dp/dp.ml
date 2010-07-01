@@ -262,7 +262,7 @@ let injection c l =
   let f = Imp (Fatom (Eq (App (c, vars xl), App (c, vars yl))), f) in
   let foralls = List.fold_right (fun (x,t) p -> Forall (x, t, p)) in
   let f = foralls xl (foralls yl f) in
-  let ax = Axiom ("injection_" ^ c, f) in
+  let ax = Fol.Axiom ("injection_" ^ c, f) in
   globals_stack := ax :: !globals_stack
 
 (* rec_names_for c [|n1;...;nk|] builds the list of constant names for
@@ -429,7 +429,7 @@ and tr_decl env id ty =
   else
     let s = Typing.type_of env Evd.empty t in
     if is_Prop s then
-      Axiom (id, tr_formula tv [] env t)
+      Fol.Axiom (id, tr_formula tv [] env t)
     else
       let l, t = decompose_arrows t in
       let l = List.map (tr_type tv env) l in
@@ -470,7 +470,7 @@ and axiomatize_body env r id d = match r with
       assert false
   | ConstRef c ->
       begin match (Global.lookup_constant c).const_body with
-	| Some b ->
+	| Def b | Declarations.Opaque (Some b) ->
 	    let b = force b in
 	    let axioms =
 	      (match d with
@@ -536,11 +536,11 @@ and axiomatize_body env r id d = match r with
 		     end
 		 | DeclType _ ->
 		     raise NotFO
-		 | Axiom _ -> assert false)
+		 | Fol.Axiom _ -> assert false)
 	    in
-	    let axioms = List.map (fun (id,ax) -> Axiom (id, ax)) axioms in
+	    let axioms = List.map (fun (id,ax) -> Fol.Axiom (id, ax)) axioms in
 	    globals_stack := axioms @ !globals_stack
-	| None ->
+	| Primitive _ | Declarations.Opaque None ->
 	    () (* Coq axiom *)
       end
   | IndRef i ->
@@ -1071,7 +1071,7 @@ let dp_hint l =
 	try
 	  let id = rename_global r in
 	  let tv, env, ty = decomp_type_quantifiers env ty in
-	  let d = Axiom (id, tr_formula tv [] env ty) in
+	  let d = Fol.Axiom (id, tr_formula tv [] env ty) in
 	  add_global r (Gfo d);
 	  globals_stack := d :: !globals_stack
 	with NotFO ->
@@ -1106,10 +1106,10 @@ let dp_predefined qid s =
       | DeclType (_, n) -> DeclType (s, n)
       | DeclFun (_, n, tyl, ty) -> DeclFun (s, n, tyl, ty)
       | DeclPred (_, n, tyl) -> DeclPred (s, n, tyl)
-      | Axiom _ as d -> d
+      | Fol.Axiom _ as d -> d
     in
     match d with
-      | Axiom _ ->  msg_warning (str " ignored (axiom)")
+      | Fol.Axiom _ ->  msg_warning (str " ignored (axiom)")
       | d -> add_global r (Gfo d)
   with NotFO ->
     msg_warning (str " ignored (not a first order declaration)")

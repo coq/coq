@@ -121,7 +121,9 @@ let def_of_const t =
    match (Term.kind_of_term t) with
     Term.Const sp ->
       (try (match (Global.lookup_constant sp) with
-             {Declarations.const_body=Some c} -> Declarations.force c
+             {Declarations.const_body=Declarations.Def c}
+             |{Declarations.const_body=Declarations.Opaque (Some c)} -> 
+		 Declarations.force c
 	     |_ -> assert false)
        with _ -> assert false)
     |_ -> assert false
@@ -183,6 +185,7 @@ let save with_clean id const (locality,kind) hook =
 let cook_proof _ =
   let (id,(entry,_,strength,hook)) = Pfedit.cook_proof (fun _ -> ()) in
   (id,(entry,strength,hook))
+
 
 let new_save_named opacity =
   let id,(const,persistence,hook) = cook_proof true  in

@@ -412,6 +412,8 @@ let rec detype (isgoal:bool) avoid env t =
 	  (Some p) c bl
     | Fix (nvn,recdef) -> detype_fix isgoal avoid env nvn recdef
     | CoFix (n,recdef) -> detype_cofix isgoal avoid env n recdef
+    | NativeInt i -> RNativeInt (dl,i)
+    | NativeArr(t,p) -> RNativeArr(dl,detype isgoal avoid env t, Array.map (detype isgoal avoid env) p)
 
 and detype_fix isgoal avoid env (vn,_ as nvn) (names,tys,bodies) =
   let def_avoid, def_env, lfi =
@@ -670,6 +672,11 @@ let rec subst_rawconstr subst raw =
 	     let r1' = subst_rawconstr subst r1 in
 	       if r1' == r1 then raw else RCast (loc,r1',k))
   | RDynamic _ -> raw
+  | RNativeInt _ -> raw
+  | RNativeArr(loc,t,p) -> 
+      let t' = subst_rawconstr subst t
+      and p' = array_smartmap (subst_rawconstr subst) p in
+      if t' == t && p' == p then raw else RNativeArr(loc,t',p')
 
 (* Utilities to transform kernel cases to simple pattern-matching problem *)
 

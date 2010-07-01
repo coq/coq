@@ -182,7 +182,10 @@ let generalizable_vars_of_rawconstr ?(bound=Idset.empty) ?(allowed=Idset.empty) 
 	array_fold_left_i vars_fix vs idl
     | RCast (loc,c,k) -> let v = vars bound vs c in
 	(match k with CastConv (_,t) -> vars bound v t | _ -> v)
-    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> vs
+    | RNativeArr(loc,t,p) ->
+	Array.fold_left (vars bound) (vars bound vs t) p
+    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | 
+       RDynamic _ |RNativeInt _) -> vs
 
   and vars_pattern bound vs (loc,idl,p,c) =
     let bound' = List.fold_right Idset.add idl bound  in

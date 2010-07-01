@@ -100,6 +100,7 @@ val import : compiled_library -> Digest.t -> module_path
 val type_of_global : Libnames.global_reference -> types
 val env_of_context : Environ.named_context_val -> Environ.env
 
+(* Register Primitives *)
 
-(** spiwack: register/unregister function for retroknowledge *)
-val register : Retroknowledge.field -> constr -> constr -> unit
+val register : constr -> Native.retro_action -> unit
+

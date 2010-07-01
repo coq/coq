@@ -43,7 +43,8 @@ struct
     | DCase   of case_info * 't * 't * 't array
     | DFix    of int array * int * 't array * 't array
     | DCoFix  of int * 't array * 't array
-
+    | DNativeInt of Native.Uint31.t
+    | DNativeArr of 't * 't array
     (* special constructors only inside the left-hand side of DCtx or
        DApp. Used to encode lists of foralls/letins/apps as contexts *)
     | DCons   of ('t * 't option) * 't
@@ -62,6 +63,8 @@ struct
     | DCase (_,t1,t2,ta) -> str "case"
     | DFix _ -> str "fix"
     | DCoFix _ -> str "cofix"
+    | DNativeInt _ -> str "INT"
+    | DNativeArr _ -> str "ARRAY"
     | DCons ((t,dopt),tl) -> f t ++ (match dopt with
 	  Some t' -> str ":=" ++ f t'
 	| None -> str "") ++ spc() ++ str "::" ++ spc() ++ f tl
@@ -73,13 +76,14 @@ struct
    *)
 
   let map f = function
-    | (DRel | DSort | DNil | DRef _) as c -> c
+    | (DRel | DSort | DNil | DRef _ | DNativeInt _) as c -> c
     | DCtx (ctx,c) -> DCtx (f ctx, f c)
     | DLambda (t,c) -> DLambda (f t, f c)
     | DApp (t,u) -> DApp (f t,f u)
     | DCase (ci,p,c,bl) -> DCase (ci, f p, f c, Array.map f bl)
     | DFix (ia,i,ta,ca) ->
 	DFix (ia,i,Array.map f ta,Array.map f ca)
+    | DNativeArr (t,p) -> DNativeArr(f t, Array.map f p) 
     | DCoFix(i,ta,ca) ->
 	DCoFix (i,Array.map f ta,Array.map f ca)
     | DCons ((t,topt),u) -> DCons ((f t,Option.map f topt), f u)
@@ -97,25 +101,28 @@ struct
     Pervasives.compare (make_name x) (make_name y)
 
   let fold f acc = function
-    | (DRel | DNil | DSort | DRef _) -> acc
+    | (DRel | DNil | DSort | DRef _|DNativeInt _) -> acc
     | DCtx (ctx,c) -> f (f acc ctx) c
     | DLambda (t,c) -> f (f acc t) c
     | DApp (t,u) -> f (f acc t) u
     | DCase (ci,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
     | DFix (ia,i,ta,ca) ->
 	Array.fold_left f (Array.fold_left f acc ta) ca
+    | DNativeArr(t,p) ->
+	Array.fold_left f (f acc t) p
     | DCoFix(i,ta,ca) ->
 	Array.fold_left f (Array.fold_left f acc ta) ca
     | DCons ((t,topt),u) -> f (Option.fold_left f (f acc t) topt) u
 
   let choose f = function
-    | (DRel | DSort | DNil | DRef _) -> invalid_arg "choose"
+    | (DRel | DSort | DNil | DRef _|DNativeInt _) -> invalid_arg "choose"
     | DCtx (ctx,c) -> f ctx
     | DLambda (t,c) -> f t
     | DApp (t,u) -> f u
     | DCase (ci,p,c,bl) -> f c
     | DFix (ia,i,ta,ca) -> f ta.(0)
     | DCoFix (i,ta,ca) -> f ta.(0)
+    | DNativeArr(t,p) -> f p.(0)
     | DCons ((t,topt),u) -> f u
 
   let fold2 (f:'a -> 'b -> 'c -> 'a) (acc:'a) (c1:'b t) (c2:'c t) : 'a =
@@ -123,7 +130,8 @@ struct
     if compare (head c1) (head c2) <> 0
     then invalid_arg "fold2:compare" else
       match c1,c2 with
-	| (DRel, DRel | DNil, DNil | DSort, DSort | DRef _, DRef _) -> acc
+	| (DRel, DRel | DNil, DNil | DSort, DSort | DRef _, DRef _
+           | DNativeInt _, DNativeInt _) -> acc
 	| (DCtx (c1,t1), DCtx (c2,t2)
 	  | DApp (c1,t1), DApp (c2,t2)
 	  | DLambda (c1,t1), DLambda (c2,t2)) -> f (f acc c1 c2) t1 t2
@@ -133,6 +141,8 @@ struct
 	    array_fold_left2 f (array_fold_left2 f acc ta1 ta2) ca1 ca2
 	| DCoFix(i,ta1,ca1), DCoFix(_,ta2,ca2) ->
 	    array_fold_left2 f (array_fold_left2 f acc ta1 ta2) ca1 ca2
+	| DNativeArr(t1,p1), DNativeArr(t2,p2) ->
+            array_fold_left2 f (f acc t1 t2) p1 p2
 	| DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
 	    f (Option.fold_left2 f (f acc t1 t2) topt1 topt2) u1 u2
 	| _ -> assert false
@@ -142,8 +152,9 @@ struct
     if compare (head c1) (head c2) <> 0
     then invalid_arg "map2_t:compare" else
       match c1,c2 with
-	| (DRel, DRel | DSort, DSort | DNil, DNil | DRef _, DRef _) as cc ->
-	    let (c,_) = cc in c
+	| (DRel, DRel | DSort, DSort | DNil, DNil | DRef _, DRef _
+           | DNativeInt _, DNativeInt _) as cc -> 
+	       let (c,_) = cc in c
 	| DCtx (c1,t1), DCtx (c2,t2) -> DCtx (f c1 c2, f t1 t2)
 	| DLambda (t1,c1), DLambda (t2,c2) -> DLambda (f t1 t2, f c1 c2)
 	| DApp (t1,u1), DApp (t2,u2) -> DApp (f t1 t2,f u1 u2)
@@ -153,6 +164,8 @@ struct
 	    DFix (ia,i,array_map2 f ta1 ta2,array_map2 f ca1 ca2)
 	| DCoFix (i,ta1,ca1), DCoFix (_,ta2,ca2) ->
 	    DCoFix (i,array_map2 f ta1 ta2,array_map2 f ca1 ca2)
+	| DNativeArr(t1,p1), DNativeArr(t2,p2) ->
+	    DNativeArr(f t1 t2, array_map2 f p1 p2)
 	| DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
 	    DCons ((f t1 t2,Option.lift2 f topt1 topt2), f u1 u2)
 	| _ -> assert false
@@ -237,6 +250,9 @@ struct
       | App (f,ca)     ->
 	  Array.fold_left (fun c a -> Term (DApp (c,a)))
 	    (pat_of_constr f) (Array.map pat_of_constr ca)
+      | NativeInt i -> Term (DNativeInt i)
+      | NativeArr(t,p) -> 
+	  Term (DNativeArr(pat_of_constr t,Array.map pat_of_constr p))
 
   and ctx_of_constr ctx c : term_pattern * term_pattern =
     match kind_of_term c with

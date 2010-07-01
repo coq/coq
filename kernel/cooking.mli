@@ -21,10 +21,9 @@ type recipe = {
   d_abstract : Sign.named_context;
   d_modlist : work_list }
 
-val cook_constant :
+val cook_constant1 :
   env -> recipe ->
-    constr_substituted option * constant_type * constraints * bool * bool
-  * bool
+    constr_substituted Declarations.constant_def * constant_type * constraints * bool * bool * bool
 
 (** {6 Utility functions used in module [Discharge]. } *)
 

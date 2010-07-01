@@ -72,6 +72,7 @@ val add_cache_hook : (full_path -> unit) -> unit
 
 val definition_message : identifier -> unit
 val assumption_message : identifier -> unit
+val register_message   : identifier -> unit
 val fixpoint_message : int array option -> identifier list -> unit
 val cofixpoint_message : identifier list -> unit
 val recursive_message : bool (** true = fixpoint *) ->

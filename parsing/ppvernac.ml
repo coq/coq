@@ -367,6 +367,7 @@ let pr_assumption_token many = function
   | (Local,Conjectural) ->
       anomaly "Don't know how to beautify a local conjecture"
 
+
 let pr_params pr_c (xl,(c,t)) =
   hov 2 (prlist_with_sep sep pr_lident xl ++ spc() ++
          (if c then str":>" else str":" ++
@@ -617,6 +618,18 @@ let rec pr_vernac = function
       hov 2
         (pr_assumption_token (n > 1) stre ++ spc() ++
 	 pr_ne_params_list pr_lconstr_expr l)
+  | VernacRegister(id,PrimOp(ce,r)) ->
+      hov 2
+	(str "Register" ++ spc() ++ pr_lident id ++ spc() ++ str ":" ++ spc() ++
+         pr_constr_expr ce ++ spc() ++ str "as" ++ spc() ++
+         str (Native.op_or_type_to_string r))
+  | VernacRegister(id,PrimInd r) ->
+      hov 2 
+	(str "RegisterInd" ++ pr_lident id ++ 
+        str "as" ++ spc() ++ str (Native.prim_ind_to_string r))
+  | VernacRegister(id,PrimInline) ->
+      hov 2
+	(str "Register" ++ spc() ++ pr_lident id ++ str "as Inline") 
   | VernacInductive (f,i,l) ->
 
       let pr_constructor (coe,(id,c)) =

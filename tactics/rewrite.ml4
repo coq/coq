@@ -647,7 +647,7 @@ let fold_match ?(force=false) env sigma c =
 let unfold_match env sigma sk app =
   match kind_of_term app with
   | App (f', args) when f' = mkConst sk ->
-      let v = Environ.constant_value (Global.env ()) sk in
+      let v = Environ.constant_value_def (Global.env ()) sk in
 	Reductionops.whd_beta sigma (mkApp (v, args))
   | _ -> app
     
@@ -1390,7 +1390,8 @@ let declare_projection n instance_id r =
     { const_entry_body = term;
       const_entry_type = Some typ;
       const_entry_opaque = false;
-      const_entry_boxed = false }
+      const_entry_boxed = false;
+      const_entry_inline_code = false }
   in
     ignore(Declare.declare_constant n (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
 

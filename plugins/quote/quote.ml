@@ -222,7 +222,7 @@ let compute_rhs bodyi index_of_f =
 
 let compute_ivs gl f cs =
   let cst = try destConst f with _ -> i_can't_do_that () in
-  let body = Environ.constant_value (Global.env()) cst in
+  let body = Environ.constant_value_def (Global.env()) cst in
   match decomp_term body with
     | Fix(([| len |], 0), ([| name |], [| typ |], [| body2 |])) ->
         let (args3, body3) = decompose_lam body2 in

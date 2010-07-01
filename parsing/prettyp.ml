@@ -117,11 +117,13 @@ let opacity env = function
   | VarRef v when pi2 (Environ.lookup_named v env) <> None ->
       Some(TransparentMaybeOpacified (Conv_oracle.get_strategy(VarKey v)))
   | ConstRef cst ->
-      let cb = Environ.lookup_constant cst env in
-      if cb.const_body = None then None
-      else if cb.const_opaque then Some FullyOpaque
-      else Some
-        (TransparentMaybeOpacified (Conv_oracle.get_strategy(ConstKey cst)))
+      begin match Environ.constant_value1 env cst with
+      | Def _ | Primitive _ -> 
+	  Some
+            (TransparentMaybeOpacified (Conv_oracle.get_strategy(ConstKey cst)))
+      | Opaque None -> None
+      | Opaque (Some _) -> Some FullyOpaque
+      end
   | _ -> None
 
 let print_opacity ref =
@@ -390,13 +392,14 @@ let print_constant with_values sep sp =
   let typ = ungeneralized_type_of_constant_type cb.const_type in
   hov 0 (
     match val_0 with
-    | None ->
+    | Primitive _ | Opaque None ->
 	str"*** [ " ++
 	print_basename sp ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]"
-    | _ ->
+    | Def sc | Opaque (Some sc) ->
 	print_basename sp ++ str sep ++ cut () ++
-	(if with_values then print_typed_body (val_0,typ) else pr_ltype typ))
+	(if with_values then print_typed_body (Some sc,typ) else 
+	pr_ltype typ))
   ++ fnl ()
 
 let gallina_print_constant_with_infos sp =
@@ -543,7 +546,22 @@ let print_full_pure_context () =
 	  let val_0 = cb.const_body in
 	  let typ = ungeneralized_type_of_constant_type cb.const_type in
 	  hov 0 (
-	    match val_0 with
+           match val_0 with
+	   | Def v ->
+	       str "Definition " ++ print_basename con ++ cut () ++
+		 str "  : " ++ pr_ltype typ ++ cut () ++ str " := " ++
+		 print_body (Some v)
+	   | Opaque (Some v) ->
+	       str "Theorem " ++ print_basename con ++ cut () ++
+		 str " : " ++ pr_ltype typ ++ str "." ++ fnl () ++
+		 str "Proof " ++ print_body (Some v)
+	   | Opaque None ->
+	       str "Axiom " ++ 
+		 print_basename con ++ str " : " ++ cut () ++ pr_ltype typ
+	   | Primitive _ ->
+	       str "Primitive " ++
+		 print_basename con ++ str " : " ++ cut () ++ pr_ltype typ) 
+  (* match val_0 with
 	    | None ->
 		str (if cb.const_opaque then "Axiom " else "Parameter ") ++
 		print_basename con ++ str " : " ++ cut () ++ pr_ltype typ
@@ -555,7 +573,7 @@ let print_full_pure_context () =
 		else
 		  str "Definition " ++ print_basename con ++ cut () ++
 		  str "  : " ++ pr_ltype typ ++ cut () ++ str " := " ++
-		  print_body val_0) ++ str "." ++ fnl () ++ fnl ()
+		  print_body val_0) *) ++ str "." ++ fnl () ++ fnl ()
       | "INDUCTIVE" ->
 	  let mind = Global.mind_of_delta (mind_of_kn kn) in
 	  let (mib,mip) = Global.lookup_inductive (mind,0) in
@@ -650,7 +668,7 @@ let print_opaque_name qid =
   match global qid with
     | ConstRef cst ->
 	let cb = Global.lookup_constant cst in
-        if cb.const_body <> None then
+        if cb.const_body <> Opaque None then
 	  print_constant_with_infos cst
         else
 	  error "Not a defined constant."
@@ -694,7 +712,7 @@ let print_impargs ref =
 
 let unfold_head_fconst =
   let rec unfrec k = match kind_of_term k with
-    | Const cst -> constant_value (Global.env ()) cst
+    | Const cst -> constant_value_def (Global.env ()) cst
     | Lambda (na,t,b) -> mkLambda (na,t,unfrec b)
     | App (f,v) -> appvect (unfrec f,v)
     | _ -> k

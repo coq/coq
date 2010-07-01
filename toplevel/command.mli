@@ -37,7 +37,8 @@ val interp_definition :
 val declare_definition : identifier -> locality * definition_object_kind ->
   definition_entry -> manual_implicits -> declaration_hook -> unit
 
-(** {6 Parameters/Assumptions} *)
+
+(** {6 Parameters/Assumptions/Primitives} *)
 
 val interp_assumption :
   local_binder list -> constr_expr -> types * manual_implicits
@@ -49,6 +50,9 @@ val declare_assumption : coercion_flag -> assumption_kind -> types ->
 val declare_assumptions : variable located list ->
   coercion_flag -> assumption_kind -> types -> manual_implicits ->
   bool -> bool -> unit
+
+
+val declare_register : variable located -> types -> Native.op_or_type ->  manual_implicits -> unit
 
 (** {6 Inductive and coinductive types} *)
 

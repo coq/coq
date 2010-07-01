@@ -227,6 +227,8 @@ let typeur sigma metamap =
         T.strip_outer_cast
           (subst_type env sigma (type_of env f) (Array.to_list args))
     | T.Cast (c,_, t) -> t
+    | T.NativeInt _ | T.NativeArr _ -> 
+	Util.anomaly "cic2acic.typeur: native not implemented yet"
     | T.Sort _ | T.Prod _ ->
        match sort_of env cstr with
           Coq_sort T.InProp -> T.mkProp
@@ -498,7 +500,10 @@ print_endline "PASSATO" ; flush stdout ;
           (* Now that we have all the auxiliary functions we  *)
           (* can finally proceed with the main case analysis. *)
           match T.kind_of_term tt with
-             T.Rel n ->
+	  | T.NativeInt _ | T.NativeArr _ ->
+	      Util.anomaly 
+		"cic2acic.acic_of_cic_context': Native not supported yet"
+          |  T.Rel n ->
               let id =
                match List.nth (E.rel_context env) (n - 1) with
                   (N.Name id,_,_)   -> id

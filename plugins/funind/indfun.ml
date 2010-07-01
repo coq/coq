@@ -190,7 +190,8 @@ let rec is_rec names =
   let check_id id names =  Idset.mem id names in
   let rec lookup names = function
     | RVar(_,id) -> check_id id names
-    | RRef _ | REvar _ | RPatVar _ | RSort _ |  RHole _ | RDynamic _ -> false
+    | RRef _ | REvar _ | RPatVar _ | RSort _ |  RHole _ | RDynamic _ 
+    | RNativeInt _ -> false
     | RCast(_,b,_) -> lookup names b
     | RRec _ -> error "RRec not handled"
     | RIf(_,b,_,lhs,rhs) ->
@@ -209,6 +210,10 @@ let rec is_rec names =
     | RCases(_,_,_,el,brl) ->
 	List.exists (fun (e,_) -> lookup names e) el ||
 	  List.exists (lookup_br names) brl
+    | RNativeArr(_,t,p) ->
+	lookup names t || 
+	array_exists (lookup names) p
+
   and lookup_br names (_,idl,_,rt) =
     let new_names = List.fold_right Idset.remove idl names in
     lookup new_names rt
@@ -623,6 +628,9 @@ let rec add_args id new_args b =
   | CPrim _ -> b
   | CDelimiters _ -> anomaly "add_args : CDelimiters"
   | CDynamic _ -> anomaly "add_args : CDynamic"
+  | CNativeArr(loc,t,p) ->
+      CNativeArr(loc, add_args id new_args t,
+		 Array.map (add_args id new_args) p)
 exception Stop of  Topconstr.constr_expr
 
 
@@ -696,8 +704,9 @@ let make_graph (f_ref:global_reference) =
   in
   Dumpglob.pause ();
   (match c_body.const_body with
-     | None -> error "Cannot build a graph over an axiom !"
-     | Some b ->
+    | Primitive _ -> error "Cannot build a graph over a primitive !"
+    | Opaque None -> error "Cannot build a graph over an axiom !"
+    | Opaque (Some b) | Def b ->
 	 let env = Global.env () in
 	 let body = (force b) in
 	 let extern_body,extern_type =

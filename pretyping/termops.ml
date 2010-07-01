@@ -87,6 +87,11 @@ let rec pr_constr c = match kind_of_term c with
            pr_name na ++ str":" ++ pr_constr ty ++
            cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
          str"}")
+  | NativeInt i -> str"Int("++str (Native.Uint31.to_string i) ++ str")"
+  | NativeArr(t,p) ->
+      (str"Array(" ++ pr_constr c ++ str ":|" ++
+       prlist_with_sep (fun _ -> str";"++spc ()) pr_constr (Array.to_list p) ++ str")")
+
 
 let term_printer = ref (fun _ -> pr_constr)
 let print_constr_env t = !term_printer t
@@ -282,7 +287,7 @@ let decompose_app_vect c =
 
 let map_constr_with_named_binders g f l c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> c
+    | Construct _ | NativeInt _) -> c
   | Cast (c,k,t) -> mkCast (f l c, k, f l t)
   | Prod (na,t,c) -> mkProd (na, f l t, f (g na l) c)
   | Lambda (na,t,c) -> mkLambda (na, f l t, f (g na l) c)
@@ -296,6 +301,8 @@ let map_constr_with_named_binders g f l c = match kind_of_term c with
   | CoFix(ln,(lna,tl,bl)) ->
       let l' = Array.fold_left (fun l na -> g na l) l lna in
       mkCoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
+  | NativeArr(t,p) -> mkArray(f l t, Array.map (f l) p)
+
 
 (* [map_constr_with_binders_left_to_right g f n c] maps [f n] on the
    immediate subterms of [c]; it carries an extra data [n] (typically
@@ -314,7 +321,7 @@ let fold_rec_types g (lna,typarray,_) e =
 
 let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> c
+    | Construct _ | NativeInt _) -> c
   | Cast (c,k,t) -> let c' = f l c in mkCast (c',k,f l t)
   | Prod (na,t,c) ->
       let t' = f l t in
@@ -347,11 +354,14 @@ let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
       let l' = fold_rec_types g fx l in
       let (tl',bl') = array_map_left_pair (f l) tl (f l') bl in
       mkCoFix (ln,(lna,tl',bl'))
+  | NativeArr(t,p) ->
+      let t' = f l t in
+      mkArray(t', array_map_left (f l) p)
 
 (* strong *)
 let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> cstr
+    | Construct _ | NativeInt _) -> cstr
   | Cast (c,k, t) ->
       let c' = f l c in
       let t' = f l t in
@@ -371,33 +381,36 @@ let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
       if b==b' && t==t' && c==c' then cstr else mkLetIn (na, b', t', c')
   | App (c,al) ->
       let c' = f l c in
-      let al' = Array.map (f l) al in
-      if c==c' && array_for_all2 (==) al al' then cstr else mkApp (c', al')
+      let al' = array_smartmap (f l) al in
+      if c==c' && al==al' then cstr else mkApp (c', al')
   | Evar (e,al) ->
-      let al' = Array.map (f l) al in
-      if array_for_all2 (==) al al' then cstr else mkEvar (e, al')
+      let al' = array_smartmap (f l) al in
+      if al==al' then cstr else mkEvar (e, al')
   | Case (ci,p,c,bl) ->
       let p' = f l p in
       let c' = f l c in
-      let bl' = Array.map (f l) bl in
-      if p==p' && c==c' && array_for_all2 (==) bl bl' then cstr else
-        mkCase (ci, p', c', bl')
+      let bl' = array_smartmap (f l) bl in
+      if p==p' && c==c' && bl==bl' then cstr 
+      else mkCase (ci, p', c', bl')
   | Fix (ln,(lna,tl,bl)) ->
-      let tl' = Array.map (f l) tl in
+      let tl' = array_smartmap (f l) tl in
       let l' =
-        array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
-      let bl' = Array.map (f l') bl in
-      if array_for_all2 (==) tl tl' && array_for_all2 (==) bl bl'
-      then cstr
+	array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
+      let bl' = array_smartmap (f l') bl in
+      if  tl==tl' && bl==bl' then cstr
       else mkFix (ln,(lna,tl',bl'))
   | CoFix(ln,(lna,tl,bl)) ->
-      let tl' = Array.map (f l) tl in
+      let tl' = array_smartmap (f l) tl in
       let l' =
         array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
-      let bl' = Array.map (f l') bl in
-      if array_for_all2 (==) tl tl' && array_for_all2 (==) bl bl'
-      then cstr
+      let bl' = array_smartmap (f l') bl in
+      if tl==tl' && bl==bl' then cstr
       else mkCoFix (ln,(lna,tl',bl'))
+  | NativeArr(t, p) ->
+      let t' = f l t in
+      let p' = array_smartmap (f l) p in
+      if t==t' && p == p' then cstr else mkArray (t', p')
+
 
 (* [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
    subterms of [c] starting from [acc] and proceeding from left to
@@ -408,7 +421,7 @@ let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
 
 let fold_constr_with_binders g f n acc c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> acc
+    | Construct _|NativeInt _) -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
   | Prod (_,t,c) -> f (g n) (f n acc t) c
   | Lambda (_,t,c) -> f (g n) (f n acc t) c
@@ -424,6 +437,8 @@ let fold_constr_with_binders g f n acc c = match kind_of_term c with
       let n' = iterate g (Array.length tl) n in
       let fd = array_map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+  | NativeArr(t,p) ->
+     Array.fold_left (f n) (f n acc t) p
 
 (* [iter_constr_with_full_binders g f acc c] iters [f acc] on the immediate
    subterms of [c]; it carries an extra data [acc] which is processed by [g] at
@@ -432,7 +447,7 @@ let fold_constr_with_binders g f n acc c = match kind_of_term c with
 
 let iter_constr_with_full_binders g f l c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> ()
+    | Construct _|NativeInt _) -> ()
   | Cast (c,_, t) -> f l c; f l t
   | Prod (na,t,c) -> f l t; f (g (na,None,t) l) c
   | Lambda (na,t,c) -> f l t; f (g (na,None,t) l) c
@@ -448,6 +463,8 @@ let iter_constr_with_full_binders g f l c = match kind_of_term c with
       let l' = array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
       Array.iter (f l) tl;
       Array.iter (f l') bl
+  | NativeArr(t,p) -> f l t; Array.iter (f l) p
+      
 
 (***************************)
 (* occurs check functions  *)
@@ -780,12 +797,13 @@ let eq_constr = constr_cmp Reduction.CONV
 (* App(c,[t1,...tn]) -> ([c,t1,...,tn-1],tn)
    App(c,[||]) -> ([],c) *)
 let split_app c = match kind_of_term c with
-    App(c,l) ->
-      let len = Array.length l in
+    App(c,p) ->
+      let len = Array.length p in
       if len=0 then ([],c) else
-	let last = Array.get l (len-1) in
-	let prev = Array.sub l 0 (len-1) in
-	c::(Array.to_list prev), last
+	let last = Array.get p (len-1) in
+	let l = ref [] in
+	for i = len - 2 downto 0 do l := p.(i)::!l done;
+	c::!l, last
   | _ -> assert false
 
 let hdtl l = List.hd l, List.tl l
@@ -996,3 +1014,155 @@ let coq_unit_judge =
 	(* In case the constants id/ID are not defined *)
 	make_judge (mkLambda (na1,mkProp,mkLambda(na2,mkRel 1,mkRel 1)))
                  (mkProd (na1,mkProp,mkArrow (mkRel 1) (mkRel 2)))
+
+
+(**************************************************************)
+(* spiwack: the following definitions are used by the function
+   [assumptions] which gives as an output the set of all
+   axioms and sections variables on which a given term depends
+   in a context (expectingly the Global context) *)
+
+type context_object =
+  | Variable of identifier (* A section variable or a Let definition *)
+  | Axiom of constant      (* An axiom or a constant. *)
+  | Opaque of constant     (* An opaque constant. *)
+
+(* Defines a set of [assumption] *)
+module OrderedContextObject =
+struct
+  type t = context_object
+  let compare x y =
+      match x , y with
+      | Variable i1 , Variable i2 -> id_ord i1 i2
+      | Axiom k1 , Axiom k2 -> Pervasives.compare k1 k2
+	          (* spiwack: it would probably be cleaner
+		     to provide a [kn_ord] function *)
+      | Opaque k1 , Opaque k2 -> Pervasives.compare k1 k2
+      | Variable _ , Axiom _ -> -1
+      | Axiom _ , Variable _ -> 1
+      | Opaque _ , _ -> -1
+      | _, Opaque _ -> 1
+end
+
+module ContextObjectSet = Set.Make (OrderedContextObject)
+module ContextObjectMap = Map.Make (OrderedContextObject)
+
+
+let assumptions ?(add_opaque=false) st (* t env *) =
+  let (idts,knst) = st in
+  (* Infix definition for chaining function that accumulate
+     on a and a ContextObjectSet, ContextObjectMap.  *)
+  let ( ** ) f1 f2 s m = let (s',m') = f1 s m in f2 s' m' in
+  (* This function eases memoization, by checking if an object is already
+     stored before trying and applying a function.
+     If the object is there, the function is not fired (we are in a
+     particular case where memoized object don't need a treatment at all).
+     If the object isn't there, it is stored and the function is fired*)
+  let try_and_go o f s m =
+    if ContextObjectSet.mem o s then
+      (s,m)
+    else
+      f (ContextObjectSet.add o s) m
+  in
+  let identity2 s m = (s,m) in
+  (* Goes recursively into the term to see if it depends on assumptions
+    the 3 important cases are : - Const _ where we need to first unfold
+    the constant and return the needed assumptions of its body in the
+    environment,
+                                - Rel _ which means the term is a variable
+    which has been bound earlier by a Lambda or a Prod (returns [] ),
+                                - Var _ which means that the term refers
+    to a section variable or a "Let" definition, in the former it is
+    an assumption of [t], in the latter is must be unfolded like a Const.
+    The other cases are straightforward recursion.
+    Calls to the environment are memoized, thus avoiding to explore
+    the DAG of the environment as if it was a tree (can cause
+    exponential behavior and prevent the algorithm from terminating
+    in reasonable time). [s] is a set of [context_object], representing
+    the object already visited.*)
+  let rec aux t env s acc =
+    match kind_of_term t with
+    | Var id -> aux_memoize_id id env s acc
+    | Meta _ | Evar _ ->
+	Util.anomaly "Environ.assumption: does not expect a meta or an evar"
+    | Cast (e1,_,e2) | Prod (_,e1,e2) | Lambda (_,e1,e2) ->
+                           ((aux e1 env)**(aux e2 env)) s acc
+    | LetIn (_,e1,e2,e3) -> ((aux e1 env)**
+                             (aux e2 env)**
+                             (aux e3 env))
+	                     s acc
+    | App (e1, e_array) -> ((aux e1 env)**
+			    (Array.fold_right
+			       (fun e f -> (aux e env)**f)
+                               e_array identity2))
+	                   s acc
+    | Case (_,e1,e2,e_array) -> ((aux e1 env)**
+                                 (aux e2 env)**
+				 (Array.fold_right
+				    (fun e f -> (aux e env)**f)
+                                    e_array identity2))
+	                        s acc
+    | Fix (_,(_, e1_array, e2_array)) | CoFix (_,(_,e1_array, e2_array)) ->
+        ((Array.fold_right
+	    (fun e f -> (aux e env)**f)
+            e1_array identity2) **
+           (Array.fold_right
+	      (fun e f -> (aux e env)**f)
+              e2_array identity2)) 
+	  s acc
+
+    | Const kn -> aux_memoize_kn kn env s acc
+
+    | NativeArr (t, p) ->
+	((aux t env)**
+	   (Array.fold_right
+	      (fun e f -> (aux e env)**f)
+              p identity2))
+	  s acc
+
+    | NativeInt _|Construct _|Ind _|Sort _|Rel _ -> (s,acc)
+
+  and add_id id env s acc =
+    (* a Var can be either a variable, or a "Let" definition.*)
+    match lookup_named id env with
+    | (_,None,t) ->
+        (s,ContextObjectMap.add (Variable id) t acc)
+    | (_,Some bdy,_) -> aux bdy env s acc
+
+  and aux_memoize_id id env =
+    try_and_go (Variable id) (add_id id env)
+
+  and add_kn kn env s acc =
+    let cb = lookup_constant kn env in 
+    let do_type cst =
+      let ctype =
+	match cb.Declarations.const_type with
+	| Declarations.PolymorphicArity (ctx,a) -> mkArity (ctx, Type a.Declarations.poly_level)
+	| Declarations.NonPolymorphicType t -> t
+      in (s,ContextObjectMap.add cst ctype acc)
+    in
+    match cb.Declarations.const_body with
+    | Declarations.Def body ->
+	let (s,acc) = 
+	  if not (Cpred.mem kn knst) && add_opaque (* ??? *) then
+	    do_type (Opaque kn)
+	  else (s,acc) in
+	aux (Declarations.force body) env s acc	
+    | Declarations.Opaque None -> do_type (Axiom kn)
+    | Declarations.Opaque (Some body) ->
+	let (s,acc) =
+	  if add_opaque  (* ??? *) then do_type (Opaque kn) 
+	  else (s,acc) in
+	aux (Declarations.force body) env s acc
+    | Declarations.Primitive _ -> (s, acc) (* ??? *)
+
+  and aux_memoize_kn kn env =
+    try_and_go (Axiom kn) (add_kn kn env)
+ in
+ fun t env ->
+   snd (aux t env (ContextObjectSet.empty) (ContextObjectMap.empty))
+
+(* /spiwack *)
+
+
+

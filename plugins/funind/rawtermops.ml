@@ -120,7 +120,7 @@ let remove_name_from_mapping mapping na =
 let change_vars =
   let rec change_vars mapping rt =
     match rt with
-      | RRef _ -> rt
+      | RRef _ | RNativeInt _ -> rt
       | RVar(loc,id) ->
 	  let new_id =
 	    try
@@ -184,6 +184,10 @@ let change_vars =
       | RCast(loc,b,CastCoerce) ->
 	  RCast(loc,change_vars mapping b,CastCoerce)
       | RDynamic _ -> error "Not handled RDynamic"
+      | RNativeArr(loc,t,p) ->
+	  RNativeArr(loc,change_vars mapping t,
+		     Array.map (change_vars mapping) p)
+
   and change_vars_br mapping ((loc,idl,patl,res) as br) =
     let new_mapping = List.fold_right Idmap.remove idl mapping in
     if idmap_is_empty new_mapping
@@ -370,6 +374,9 @@ let rec alpha_rt excluded rt =
 	     alpha_rt excluded f,
 	     List.map (alpha_rt excluded) args
 	    )
+    | RNativeInt _ -> rt
+    | RNativeArr (loc,t,p) ->
+	RNativeArr(loc,alpha_rt excluded t, Array.map (alpha_rt excluded) p)
   in
   new_rt
 
@@ -415,6 +422,8 @@ let is_free_in id =
     | RCast (_,b,CastConv (_,t)) -> is_free_in b || is_free_in t
     | RCast (_,b,CastCoerce) -> is_free_in b
     | RDynamic _ -> raise (UserError("",str "Not handled RDynamic"))
+    | RNativeInt _ -> false
+    | RNativeArr(_,t,p) -> is_free_in t || array_exists is_free_in p
   and is_free_in_br (_,ids,_,rt) =
     (not (List.mem id ids)) && is_free_in rt
   in
@@ -514,6 +523,10 @@ let replace_var_by_term x_id term =
       | RCast(loc,b,CastCoerce) ->
 	  RCast(loc,replace_var_by_pattern b,CastCoerce)
       | RDynamic _ -> raise (UserError("",str "Not handled RDynamic"))
+      | RNativeInt _ -> rt
+      | RNativeArr(loc,t,p) ->
+	  RNativeArr(loc, replace_var_by_pattern t, 
+		     Array.map replace_var_by_pattern p)
   and replace_var_by_pattern_br ((loc,idl,patl,res) as br) =
     if List.exists (fun id -> id_ord id x_id == 0) idl
     then br
@@ -585,29 +598,46 @@ let id_of_name = function
   | Names.Anonymous -> id_of_string "x"
   | Names.Name x -> x
 
-(* TODO: finish Rec caes *)
+(* TODO: finish Rec case *)
 let ids_of_rawterm c =
   let rec ids_of_rawterm acc c =
     let idof = id_of_name in
     match c with
-      | RVar (_,id) -> id::acc
+      | RVar (_,id) -> Idset.add id acc
       | RApp (loc,g,args) ->
-          ids_of_rawterm [] g @ List.flatten (List.map (ids_of_rawterm []) args) @ acc
-      | RLambda (loc,na,k,ty,c) -> idof na :: ids_of_rawterm [] ty @ ids_of_rawterm [] c @ acc
-      | RProd (loc,na,k,ty,c) -> idof na :: ids_of_rawterm [] ty @ ids_of_rawterm [] c @ acc
-      | RLetIn (loc,na,b,c) -> idof na :: ids_of_rawterm [] b @ ids_of_rawterm [] c @ acc
-      | RCast (loc,c,CastConv(k,t)) -> ids_of_rawterm [] c @ ids_of_rawterm [] t @ acc
-      | RCast (loc,c,CastCoerce) -> ids_of_rawterm [] c @ acc
-      | RIf (loc,c,(na,po),b1,b2) -> ids_of_rawterm [] c @ ids_of_rawterm [] b1 @ ids_of_rawterm [] b2 @ acc
+	  List.fold_left ids_of_rawterm (ids_of_rawterm acc g) args
+      | RLambda (loc,na,k,ty,c) -> 
+	  ids_of_rawterm (ids_of_rawterm (Idset.add (idof na) acc) ty) c
+      | RProd (loc,na,k,ty,c) -> 
+	  ids_of_rawterm (ids_of_rawterm (Idset.add (idof na) acc) ty) c
+      | RLetIn (loc,na,b,c) -> 
+	  ids_of_rawterm (ids_of_rawterm (Idset.add (idof na) acc) b) c
+      | RCast (loc,c,CastConv(k,t)) -> 
+	  ids_of_rawterm (ids_of_rawterm acc t) c
+      | RCast (loc,c,CastCoerce) -> ids_of_rawterm acc c
+      | RIf (loc,c,(na,po),b1,b2) -> 
+	  ids_of_rawterm (ids_of_rawterm (ids_of_rawterm acc c) b1) b2
       | RLetTuple (_,nal,(na,po),b,c) ->
-          List.map idof nal @ ids_of_rawterm [] b @ ids_of_rawterm [] c @ acc
+	  let acc = 
+	    List.fold_left (fun acc na -> Idset.add (idof na) acc) acc nal in
+	  ids_of_rawterm (ids_of_rawterm acc c) b
       | RCases (loc,sty,rtntypopt,tml,brchl) ->
-	  List.flatten (List.map (fun (_,idl,patl,c) -> idl @ ids_of_rawterm [] c) brchl)
+	  (* Bizard: l'objet du match n'est pas pris en compte ???? *)
+          (* Pareil pour le predicat ....                           *)
+	  let do_b acc (_,idl,patl,c) =
+	    let acc = 
+	      List.fold_left (fun acc id -> Idset.add id acc) acc idl in
+	    ids_of_rawterm acc c in
+	  List.fold_left do_b acc brchl
       | RRec _ -> failwith "Fix inside a constructor branch"
-      | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> []
+      | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _ | 
+	RNativeInt _) -> acc
+      | RNativeArr(loc,t,p) ->
+	  Array.fold_left ids_of_rawterm (ids_of_rawterm acc t) p
   in
   (* build the set *)
-  List.fold_left (fun acc x -> Idset.add x acc) Idset.empty (ids_of_rawterm [] c)
+  ids_of_rawterm Idset.empty c
+
 
 
 
@@ -669,6 +699,10 @@ let zeta_normalize =
       | RCast(loc,b,CastCoerce) ->
 	  RCast(loc,zeta_normalize_term b,CastCoerce)
       | RDynamic _ -> raise (UserError("",str "Not handled RDynamic"))
+      | RNativeInt _ -> rt
+      | RNativeArr(loc,t,p) ->
+	  RNativeArr(loc,zeta_normalize_term t,
+		     Array.map zeta_normalize_term p)
   and zeta_normalize_br (loc,idl,patl,res) =
     (loc,idl,patl,zeta_normalize_term res)
   in
@@ -688,7 +722,7 @@ let expand_as =
   in
   let rec expand_as map rt =
     match rt with
-      | RRef _ | REvar _ | RPatVar _ | RSort _ | RHole _ -> rt
+      | RRef _ | REvar _ | RPatVar _ | RSort _ | RHole _ | RNativeInt _ -> rt
       | RVar(_,id) ->
 	  begin
 	    try
@@ -712,6 +746,8 @@ let expand_as =
       | RCases(loc,sty,po,el,brl) ->
 	  RCases(loc, sty, Option.map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
 		List.map (expand_as_br map) brl)
+      | RNativeArr(loc,t,p) ->
+	  RNativeArr(loc,expand_as map t, Array.map (expand_as map) p)
   and expand_as_br map (loc,idl,cpl,rt) =
     (loc,idl,cpl, expand_as (List.fold_left add_as map cpl) rt)
   in

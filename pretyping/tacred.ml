@@ -42,7 +42,7 @@ let error_not_evaluable r =
      spc () ++ str "to an evaluable reference.")
 
 let is_evaluable_const env cst =
-  is_transparent (ConstKey cst) && evaluable_constant cst env
+  is_transparent (ConstKey cst) && evaluable_constant_prim cst env
 
 let is_evaluable_var env id =
   is_transparent (VarKey id) && evaluable_named id env
@@ -52,7 +52,7 @@ let is_evaluable env = function
   | EvalVarRef id -> is_evaluable_var env id
 
 let value_of_evaluable_ref env = function
-  | EvalConstRef con -> constant_value env con
+  | EvalConstRef con -> constant_value_def env con
   | EvalVarRef id -> Option.get (pi2 (lookup_named id env))
 
 let constr_of_evaluable_ref = function
@@ -94,7 +94,7 @@ let destEvalRef c = match kind_of_term c with
   | _ -> anomaly "Not an unfoldable reference"
 
 let reference_opt_value sigma env = function
-  | EvalConst cst -> constant_opt_value env cst
+  | EvalConst cst -> constant_opt_value1 env cst
   | EvalVar id ->
       let (_,v,_) = lookup_named id env in
       v
@@ -491,7 +491,7 @@ let reduce_mind_case_use_function func env sigma mia =
 		       the block was indeed initially built as a global
 		       definition *)
 		    let kn = make_con mp dp (label_of_id id) in
-		    try match constant_opt_value env kn with
+		    try match constant_opt_value1 env kn with
 		      | None -> None
                           (* TODO: check kn is correct *)
 		      | Some _ -> Some (minargs,mkConst kn)

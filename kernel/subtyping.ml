@@ -254,54 +254,47 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
       let cst = check_type cst env typ1 typ2 in
       let con = make_con mp1 empty_dirpath l in
       let cst =
-	if cb2.const_opaque then
-	  (* In this case we compare opaque definitions, we need to bypass
-	     the opacity and do a delta step*)
-	  match cb2.const_body with
-            | None -> cst
-            | Some lc2 ->
-		let c2 = Declarations.force lc2 in
-		let c1 = match cb1.const_body with
-		  | Some lc1 ->
-		      let c = Declarations.force lc1 in
-			begin
-			  match (kind_of_term c),(kind_of_term c2) with
-			      Const n1,Const n2 when (eq_constant n1 n2) -> c
-				(* c1 may have been strenghtened 
-				   we need to unfold it*)
-			    | Const n,_ ->
-				let cb = subst_const_body subst1
-				  (lookup_constant n env) in
-				  (match cb.const_opaque,
-				     cb.const_body with
-				       | true, Some lc1 ->
-					   Declarations.force lc1
-				       | _,_ -> c)
-			    | _ ,_-> c
-			end
-		  | None -> mkConst con
-		in
-		  check_conv cst conv env c1 c2
-	else
-	  match cb2.const_body with
-            | None -> cst
-            | Some lc2 ->
-		let c2 = Declarations.force lc2 in
-		let c1 = match cb1.const_body with
-		  | Some lc1 -> Declarations.force lc1
-		  | None -> mkConst con
-		in
-		  check_conv cst conv env c1 c2
-      in
-	cst
-   | IndType ((kn,i),mind1) ->
+	match cb2.const_body with
+        | Def lc2 ->
+	    let c2 = Declarations.force lc2 in
+	    let c1 = 
+	      match cb1.const_body with
+	      | Def lc1 | Opaque (Some lc1) -> Declarations.force lc1
+	      | Opaque None | Primitive _ -> mkConst con in
+	    check_conv cst conv env c1 c2
+        | Opaque (Some lc2) ->
+	    let c2 = Declarations.force lc2 in
+	    let c1 = 
+	      match cb1.const_body with
+	      | Def lc1 | Opaque (Some lc1)  ->
+		  let c = Declarations.force lc1 in
+		  begin
+		    match kind_of_term c, kind_of_term c2 with
+		    | Const n1,Const n2 when (eq_constant n1 n2) -> c
+			  (* c1 may have been strenghtened 
+			     we need to unfold it*)
+		    | Const n,_ ->
+			let cb = 
+			  subst_const_body subst1 (lookup_constant n env) in
+			(match cb.const_body with
+			 | Opaque (Some lc1) -> Declarations.force lc1
+			 | _ -> c)
+		    | _ ,_-> c
+		  end
+     	      | Opaque None | Primitive _ -> mkConst con in
+	    check_conv cst conv env c1 c2
+        | Opaque None -> cst
+        | Primitive op -> assert false in
+      cst
+
+ | IndType ((kn,i),mind1) ->
        ignore (Util.error (
        "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by an inductive type. Hint: you can rename the " ^
        "inductive type and give a definition to map the old name to the new " ^
        "name."));
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
-      if cb2.const_body <> None then error () ;
+      if cb2.const_body <> Opaque None then error () ;
       let arity1 = type_of_inductive env (mind1,mind1.mind_packets.(i)) in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
        check_conv cst conv_leq env arity1 typ2
@@ -312,7 +305,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
        "constructor and give a definition to map the old name to the new " ^
        "name."));
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
-      if cb2.const_body <> None then error () ;
+      if cb2.const_body <> Opaque None then error () ;
       let ty1 = type_of_constructor cstr (mind1,mind1.mind_packets.(i)) in
       let ty2 = Typeops.type_of_constant_type env cb2.const_type in
        check_conv cst conv env ty1 ty2
@@ -398,8 +391,9 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
 				mod_type = subst_struct_expr subst1 body_t1;
 				mod_type_alg= None;
 				mod_constraints=mtb1.typ_constraints;
-				mod_retroknowledge = [];
-				mod_delta = mtb1.typ_delta} env
+				mod_delta = mtb1.typ_delta;
+				mod_retroknowledge = []
+			      } env
 		| _ -> env
 	      in
 		check_structure cst env body_t1 body_t2 equiv 

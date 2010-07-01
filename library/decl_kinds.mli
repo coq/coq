@@ -40,7 +40,7 @@ type definition_object_kind =
   | Instance
   | Method
 
-type assumption_object_kind = Definitional | Logical | Conjectural
+type assumption_object_kind = Definitional | Logical | Conjectural 
 
 (** [assumption_kind]
 
@@ -65,6 +65,7 @@ type goal_kind = locality * goal_object_kind
 (** Kinds used in library *)
 
 type logical_kind =
+  | IsPrimitive
   | IsAssumption of assumption_object_kind
   | IsDefinition of definition_object_kind
   | IsProof of theorem_kind

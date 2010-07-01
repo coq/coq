@@ -95,6 +95,8 @@ let hdchar env c =
 	let id = match lna.(i) with Name id -> id | _ -> assert false in
 	lowercase_first_char id
     | Meta _|Evar _|Case (_, _, _, _) -> "y"
+    | NativeInt _ -> "i"
+    | NativeArr _ -> "p"
   in
   hdrec 0 c
 

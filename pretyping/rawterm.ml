@@ -70,6 +70,8 @@ type rawconstr =
   | RHole of (loc * hole_kind)
   | RCast of loc * rawconstr * rawconstr cast_type
   | RDynamic of loc * Dyn.t
+  | RNativeInt of loc * Native.Uint31.t
+  | RNativeArr of loc * rawconstr * rawconstr array
 
 and rawdecl = name * binding_kind * rawconstr option * rawconstr
 
@@ -141,7 +143,8 @@ let map_rawconstr_left_to_right f = function
       let comp1 = f c in
       let comp2 = match k with CastConv (k,t) -> CastConv (k, f t) | x -> x in
       RCast (loc,comp1,comp2)
-  | (RVar _ | RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) as x -> x
+  | RNativeArr(loc,t,p) -> RNativeArr(loc, f t, Array.map f p)
+  | (RNativeInt _ | RVar _ | RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) as x -> x
 
 let map_rawconstr = map_rawconstr_left_to_right
 
@@ -212,7 +215,8 @@ let occur_rawconstr id =
           occur_fix bl)
           idl bl tyl bv)
     | RCast (loc,c,k) -> (occur c) or (match k with CastConv (_, t) -> occur t | CastCoerce -> false)
-    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> false
+    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _ | RNativeInt _) -> false
+    | RNativeArr(loc,t,p) -> (occur t) or (array_exists occur p)
 
   and occur_pattern (loc,idl,p,c) = not (List.mem id idl) & (occur c)
 
@@ -270,7 +274,9 @@ let free_rawvars  =
 	array_fold_left_i vars_fix vs idl
     | RCast (loc,c,k) -> let v = vars bounded vs c in
 	(match k with CastConv (_,t) -> vars bounded v t | _ -> v)
-    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> vs
+    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _ | RNativeInt _) -> vs
+    | RNativeArr(loc,t,p) ->
+	Array.fold_left (vars bounded) (vars bounded vs t) p
 
   and vars_pattern bounded vs (loc,idl,p,c) =
     let bounded' = List.fold_right Idset.add idl bounded  in
@@ -304,6 +310,8 @@ let loc_of_rawconstr = function
   | RHole (loc,_) -> loc
   | RCast (loc,_,_) -> loc
   | RDynamic (loc,_) -> loc
+  | RNativeInt(loc,_) -> loc
+  | RNativeArr(loc,_,_) -> loc
 
 (**********************************************************************)
 (* Conversion from rawconstr to cases pattern, if possible            *)

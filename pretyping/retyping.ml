@@ -78,6 +78,8 @@ let retype sigma =
           (subst_type env sigma (type_of env f) (Array.to_list args))
     | Cast (c,_, t) -> t
     | Sort _ | Prod _ -> mkSort (sort_of env cstr)
+    | NativeInt _ -> Typeops.type_of_int env
+    | NativeArr(t, _) -> mkApp(Typeops.type_of_array env, [|t|])
 
   and sort_of env t =
     match kind_of_term t with

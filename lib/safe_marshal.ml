@@ -22,7 +22,8 @@ let bohcnv = Array.init 256 (fun i -> i -
                                       (if 0x61 <= i then 0x20 else 0))
 
 let hex_of_bin ch = hobcnv.(int_of_char ch)
-let bin_of_hex s = char_of_int (bohcnv.(int_of_char s.[0]) * 16 + bohcnv.(int_of_char s.[1]))
+let bin_of_hex s =
+    char_of_int (bohcnv.(int_of_char s.[0]) * 16 + bohcnv.(int_of_char s.[1]))
 
 let send cout expr =
   let mshl_expr = Marshal.to_string expr [] in

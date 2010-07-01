@@ -112,8 +112,8 @@ let check_arity env cb =
 
 let check_fix env cb i =
   match cb.const_body with
-    | None -> raise Impossible
-    | Some lbody ->
+    | Declarations.Opaque None | Primitive _ -> raise Impossible
+    | Declarations.Opaque (Some lbody) | Def lbody ->
 	match kind_of_term (Declarations.force lbody) with
 	  | Fix ((_,j),recd) when i=j -> check_arity env cb; (true,recd)
 	  | CoFix (j,recd) when i=j -> check_arity env cb; (false,recd)
@@ -144,7 +144,8 @@ let build_mb mp expr typ_opt =
     mod_type_alg = None;
     mod_constraints = Univ.Constraint.empty;
     mod_delta = Mod_subst.empty_delta_resolver;
-    mod_retroknowledge = [] }
+    mod_retroknowledge = []
+  }
 
 let my_type_of_mb env mb =
    mb.mod_type

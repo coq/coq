@@ -193,7 +193,7 @@ let use_evars_pattern_unification flags =
   && Flags.version_strictly_greater Flags.V8_2
 
 let expand_key env = function
-  | Some (ConstKey cst) -> constant_opt_value env cst
+  | Some (ConstKey cst) -> constant_opt_value1 env cst
   | Some (VarKey id) -> (try named_body id env with Not_found -> None)
   | Some (RelKey _) -> None
   | None -> None

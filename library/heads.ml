@@ -91,10 +91,12 @@ let kind_of_head env t =
   | Meta _ | Evar _ -> NotImmediatelyComputableHead
   | App (c,al) -> aux k (Array.to_list al @ l) c b
   | Case (_,_,c,_) -> aux k [] c true
+  | NativeInt _ | NativeArr _ -> ConstructorHead
   | Fix ((i,j),_) ->
       let n = i.(j) in
       try aux k [] (List.nth l n) true
       with Failure _ -> FlexibleHead (k + n + 1, k + n + 1, 0, true)
+     
   and on_subterm k l with_case = function
   | FlexibleHead (n,i,q,with_subcase) ->
       let m = List.length l in
@@ -120,9 +122,10 @@ let kind_of_head env t =
 
 let compute_head = function
 | EvalConstRef cst ->
-    (match constant_opt_value (Global.env()) cst with
-     | None -> RigidHead (RigidParameter cst)
-     | Some c -> kind_of_head (Global.env()) c)
+    (match constant_value1 (Global.env()) cst with
+    | Declarations.Def c -> kind_of_head (Global.env()) (Declarations.force c)
+    | Declarations.Opaque _ -> RigidHead (RigidParameter cst)
+    | Declarations.Primitive _ -> NotImmediatelyComputableHead)
 | EvalVarRef id ->
     (match pi2 (Global.lookup_named id) with
      | Some c when not (Decls.variable_opacity id) ->

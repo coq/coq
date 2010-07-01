@@ -204,6 +204,11 @@ type scheme =
   | CaseScheme of bool * reference or_by_notation * sort_expr
   | EqualityScheme of reference or_by_notation
 
+type register_kind = 
+  | PrimOp of constr_expr * Native.op_or_type
+  | PrimInd of Native.prim_ind 
+  | PrimInline
+
 type vernac_expr =
   (* Control *)
   | VernacList of located_vernac_expr list
@@ -235,6 +240,7 @@ type vernac_expr =
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of assumption_kind * bool * simple_binder with_coercion list
+  | VernacRegister of lident * register_kind
   | VernacInductive of inductive_flag * infer_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of (fixpoint_expr * decl_notation list) list * bool
   | VernacCoFixpoint of (cofixpoint_expr * decl_notation list) list * bool

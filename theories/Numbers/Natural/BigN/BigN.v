@@ -10,8 +10,8 @@
 
 (** Initial Author: Arnaud Spiwack *)
 
-Require Export Int31.
-Require Import CyclicAxioms Cyclic31 Ring31 NSig NSigNAxioms NMake
+Require Export Int31 Cyclic31.
+Require Import CyclicAxioms Ring31 NSig NSigNAxioms NMake
   NProperties NDiv GenericMinMax.
 
 (** The following [BigN] module regroups both the operations and

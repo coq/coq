@@ -190,7 +190,7 @@ module Default = struct
 
   let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
     try (the_conv_x_leq env t c1 evd, v)
-    with Reduction.NotConvertible ->
+    with Reduction.NotConvertible -> 
     try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->
     match
@@ -223,20 +223,21 @@ module Default = struct
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
   let inh_conv_coerce_to_gen rigidonly loc env evd cj (n, t) =
     match n with
-	None ->
-	  let (evd', val') =
+    | None ->
+	let (evd', val') =
+	  try
+	    inh_conv_coerce_to_fail loc env evd rigidonly 
+	      (Some cj.uj_val) cj.uj_type t
+	  with NoCoercion ->
+	    let evd = saturate_evd env evd in
 	    try
-	      inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
-	    with NoCoercion ->
-	      let evd = saturate_evd env evd in
-		try
-		  inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
-		with NoCoercion ->
-		  error_actual_type_loc loc env evd cj t
-	  in
-	  let val' = match val' with Some v -> v | None -> assert(false) in
-	    (evd',{ uj_val = val'; uj_type = t })
-      | Some (init, cur) -> (evd, cj)
+	      inh_conv_coerce_to_fail loc env evd rigidonly 
+		(Some cj.uj_val) cj.uj_type t
+	    with NoCoercion -> error_actual_type_loc loc env evd cj t
+	in
+	let val' = match val' with Some v -> v | None -> assert(false) in
+	(evd',{ uj_val = val'; uj_type = t })
+    | Some (init, cur) -> (evd, cj)
 
   let inh_conv_coerce_to = inh_conv_coerce_to_gen false
   let inh_conv_coerce_rigid_to = inh_conv_coerce_to_gen true

@@ -26,6 +26,8 @@ type 'a stack_member =
   | Zapp of 'a list
   | Zcase of case_info * 'a * 'a array
   | Zfix of 'a * 'a stack
+  | Znative of Native.op * constant * 'a list * 'a next_native_args
+        (* operator, constr def, reduced arguments rev, next arguments *) 
   | Zshift of int
   | Zupdate of 'a
 

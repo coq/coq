@@ -53,7 +53,7 @@ let solve_tccs_in_type env id isevars evm c typ =
     let stmt_id = Nameops.add_suffix id "_stmt" in
     let obls, _, c', t' = eterm_obligations env stmt_id !isevars evm 0 ~status:Expand c typ in
       match Subtac_obligations.add_definition stmt_id ~term:c' typ obls with
-      | Subtac_obligations.Defined cst -> constant_value (Global.env()) 
+      | Subtac_obligations.Defined cst -> constant_value_def (Global.env()) 
 	  (match cst with ConstRef kn -> kn | _ -> assert false)
       | _ ->
 	  errorlabstrm "start_proof"

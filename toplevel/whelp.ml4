@@ -169,7 +169,9 @@ let rec uri_of_constr c =
   | RVar _ | RRef _ | RHole _ | REvar _ | RSort _ | RCast (_,_, CastCoerce) ->
       anomaly "Written w/o parenthesis"
   | RPatVar _ | RDynamic _ ->
-      anomaly "Found constructors not supported in constr") ()
+      anomaly "Found constructors not supported in constr"
+  | RNativeInt _ | RNativeArr _ ->
+      anomaly "Found native constructor not supported in constr") ()
 
 let make_string f x = Buffer.reset b; f x; Buffer.contents b
 

@@ -511,6 +511,11 @@ let rec map_kn f f' c =
 	  let bl' = array_smartmap func bl in
 	    if (bl == bl'&& tl == tl') then c
 	    else mkCoFix (ln,(lna,tl',bl'))
+      | NativeArr(t, p) ->
+	  let t' = func t in
+	  let p' = array_smartmap func p in
+	  if t == t' && p == p' then c 
+	  else mkArray(t',p')
       | _ -> c
 
 let subst_mps sub =

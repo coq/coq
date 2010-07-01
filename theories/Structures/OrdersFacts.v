@@ -20,8 +20,10 @@ Module OrderedTypeFullFacts (Import O:OrderedTypeFull').
  Ltac order := OrderTac.order.
  Ltac iorder := intuition order.
 
+Ltac rewr H t := generalize t; clear H; intro H.
+
  Instance le_compat : Proper (eq==>eq==>iff) le.
- Proof. repeat red; iorder. Qed.
+ Proof. repeat red;intuition iorder. Qed.
 
  Instance le_preorder : PreOrder le.
  Proof. split; red; order. Qed.

@@ -77,6 +77,8 @@ let rec unloc = function
   | REvar (_,x,l) -> REvar (dummy_loc,x,l)
   | RPatVar (_,x) -> RPatVar (dummy_loc,x)
   | RDynamic (_,x) -> RDynamic (dummy_loc,x)
+  | RNativeInt(_,i) -> RNativeInt(dummy_loc,i)
+  | RNativeArr(_,t,p) -> RNativeArr(dummy_loc,unloc t, Array.map unloc p)
 
 let anonymize_if_reserved na t = match na with
   | Name id as na ->

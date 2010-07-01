@@ -164,11 +164,9 @@ let type_of_reference env = function
 
 let type_of_global t = type_of_reference (env ()) t
 
+(* Register Primitives *)
 
-(* spiwack: register/unregister functions for retroknowledge *)
-let register field value by_clause =
-  let entry = kind_of_term value in
-  let senv = Safe_typing.register !global_env field entry by_clause in
-  global_env := senv
+let register c r =
+  global_env := Safe_typing.register c r !global_env
 
 

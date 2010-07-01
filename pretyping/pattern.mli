@@ -77,6 +77,8 @@ type constr_pattern =
       * constr_pattern * constr_pattern * constr_pattern array
   | PFix of fixpoint
   | PCoFix of cofixpoint
+  | PNativeInt of Native.Uint31.t
+  | PNativeArr of constr_pattern * constr_pattern array 
 
 (** {5 Functions on patterns} *)
 
@@ -88,7 +90,7 @@ exception BoundPattern
 
 (** [head_pattern_bound t] extracts the head variable/constant of the
    type [t] or raises [BoundPattern] (even if a sort); it raises an anomaly
-   if [t] is an abstraction *)
+   if [t] is an abstraction, an interger, an array *)
 
 val head_pattern_bound : constr_pattern -> global_reference
 

@@ -354,6 +354,25 @@ let vernac_assumption kind l nl=
 	  else Dumpglob.dump_definition lid true "var") idl;
       let t,imps = interp_assumption [] c in
       declare_assumptions idl is_coe kind t imps false nl) l
+  
+let vernac_register id r =
+  if Pfedit.refining () then
+     errorlabstrm ""
+      (str "Cannot register a primitive while in proof editing mode.");
+  match r with
+  | PrimOp(t,o_t) ->
+      if Dumpglob.dump () then Dumpglob.dump_definition id false "ax";
+      let t,imps = interp_assumption [] t in
+      declare_register id t o_t imps 
+  | PrimInd i ->
+      Global.register (Constrintern.global_reference (snd id)) 
+	(Native.Retro_ind i)
+  | PrimInline ->
+      Global.register (Constrintern.global_reference (snd id)) 
+	Native.Retro_inline
+ 
+
+  
 
 let vernac_record k finite infer struc binders sort nameopt cfs =
   let const = match nameopt with
@@ -924,6 +943,37 @@ let _ =
       optwrite = (fun b -> Vm.set_transp_values (not b)) }
 
 let _ =
+  declare_bool_option 
+    { optsync  = false;
+      optname  = "print optimized version of the code";
+      optkey   = ["Draw";"Opt"];
+      optread  = Flags.vm_draw_opt;
+      optwrite = Flags.set_vm_draw_opt }
+
+let _ =
+  declare_bool_option 
+    { optsync  = false;
+      optname  = "print the bytecode";
+      optkey   = ["Draw";"Instr"];
+      optread  = Flags.vm_draw_instr;
+      optwrite = Flags.set_vm_draw_instr }
+let _ =
+  declare_bool_option
+    {optsync  = false;
+      optname  = "warn persistant array operation";
+      optkey   = ["Array";"Warn"];
+      optread  = Flags.vm_array_warn;
+      optwrite = Flags.set_vm_array_warn } 
+
+let _ =
+  declare_bool_option
+    {optsync  = false;
+      optname  = "optimization during compilation";
+      optkey   = ["Vm";"Optimize"];
+      optread  = Flags.vm_optimize;
+      optwrite = Flags.set_vm_optimize } 
+
+let _ =
   declare_int_option
     { optsync  = false;
       optname  = "the undo limit";
@@ -1095,7 +1145,7 @@ let vernac_print = function
 (*spiwack: prints all the axioms and section variables used by a term *)
   | PrintAssumptions (o,r) ->
       let cstr = constr_of_global (smart_global r) in
-      let nassumptions = Environ.assumptions (Conv_oracle.get_transp_state ())
+      let nassumptions = Termops.assumptions (Conv_oracle.get_transp_state ())
 	~add_opaque:o cstr (Global.env ()) in
       msg (Printer.pr_assumptionset (Global.env ()) nassumptions)
 
@@ -1321,6 +1371,7 @@ let interp c = match c with
   | VernacEndProof e -> vernac_end_proof e
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption stre l nl
+  | VernacRegister(id,r) -> vernac_register id r
   | VernacInductive (finite,infer,l) -> vernac_inductive finite infer l
   | VernacFixpoint (l,b) -> vernac_fixpoint l b
   | VernacCoFixpoint (l,b) -> vernac_cofixpoint l b

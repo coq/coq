@@ -26,6 +26,7 @@
 open Util
 open Pp
 open Names
+open Native
 open Univ
 open Esubst
 
@@ -101,6 +102,8 @@ type ('constr, 'types) kind_of_term =
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
+  | NativeInt of Uint31.t
+  | NativeArr of 'types * 'constr array 
 
 (* Experimental *)
 type ('constr, 'types) kind_of_type =
@@ -118,7 +121,7 @@ let kind_of_type = function
   | App (c,l) -> AtomicType (c, l)
   | (Rel _ | Meta _ | Var _ | Evar _ | Const _ | Case _ | Fix _ | CoFix _ | Ind _ as c)
     -> AtomicType (c,[||])
-  | (Lambda _ | Construct _) -> failwith "Not a type"
+  | (Lambda _ | Construct _ | NativeInt _ | NativeArr _) -> failwith "Not a type"
 
 (* constr is the fixpoint of the previous type. Requires option
    -rectypes of the Caml compiler to be set *)
@@ -162,6 +165,9 @@ let comp_term t1 t2 =
       & array_for_all2 (==) lna1 lna2
       & array_for_all2 (==) tl1 tl2
       & array_for_all2 (==) bl1 bl2
+  | NativeInt i1, NativeInt i2 -> Uint31.eq i1 i2
+  | NativeArr(t1,p1), NativeArr(t2,p2) ->
+      t1 == t2 && array_for_all2 (==) p1 p2
   | _ -> false
 
 let hash_term (sh_rec,(sh_sort,sh_con,sh_kn,sh_na,sh_id)) t =
@@ -189,6 +195,8 @@ let hash_term (sh_rec,(sh_sort,sh_con,sh_kn,sh_na,sh_id)) t =
       CoFix (ln,(Array.map sh_na lna,
                    Array.map sh_rec tl,
                    Array.map sh_rec bl))
+  | NativeInt _ -> t
+  | NativeArr(t,p) -> NativeArr(sh_rec t,Array.map sh_rec p)
 
 module Hconstr =
   Hashcons.Make(
@@ -271,6 +279,14 @@ let mkCase (ci, p, c, ac) = Case (ci, p, c, ac)
 let mkFix fix = Fix fix
 
 let mkCoFix cofix = CoFix cofix
+
+(* Constructs native expression *)
+
+let mkInt i = NativeInt i
+let mkArray (t,p) = NativeArr(t,p)
+
+
+
 
 let kind_of_term c = c
 let kind_of_term2 c = c
@@ -459,6 +475,28 @@ let destCoFix c = match kind_of_term c with
 
 let isCoFix c =  match kind_of_term c with CoFix _ -> true | _ -> false
 
+(* Destructs native terms *)
+
+let destInt c =
+  match kind_of_term c with
+  | NativeInt i -> i
+  | _ -> invalid_arg "destInt"
+
+let isInt c =
+  match kind_of_term c with
+  | NativeInt _ -> true
+  | _ -> false
+
+let destArray c =
+  match kind_of_term c with
+  | NativeArr (t, p) -> (t, p)
+  | _ -> invalid_arg "destArr"
+
+let isArray c =
+  match kind_of_term c with
+  | NativeArr _ -> true
+  | _ -> false
+
 (******************************************************************)
 (* Cast management                                                *)
 (******************************************************************)
@@ -519,7 +557,7 @@ let rec strip_head_cast c = match kind_of_term c with
 
 let fold_constr f acc c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> acc
+    | Construct _ | NativeInt _) -> acc
   | Cast (c,_,t) -> f (f acc c) t
   | Prod (_,t,c) -> f (f acc t) c
   | Lambda (_,t,c) -> f (f acc t) c
@@ -533,6 +571,8 @@ let fold_constr f acc c = match kind_of_term c with
   | CoFix (_,(lna,tl,bl)) ->
       let fd = array_map3 (fun na t b -> (na,t,b)) lna tl bl in
       Array.fold_left (fun acc (na,t,b) -> f (f acc t) b) acc fd
+  | NativeArr (t,p) ->
+     Array.fold_left f (f acc t) p
 
 (* [iter_constr f c] iters [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
@@ -540,7 +580,7 @@ let fold_constr f acc c = match kind_of_term c with
 
 let iter_constr f c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> ()
+    | Construct _ | NativeInt _) -> ()
   | Cast (c,_,t) -> f c; f t
   | Prod (_,t,c) -> f t; f c
   | Lambda (_,t,c) -> f t; f c
@@ -550,6 +590,7 @@ let iter_constr f c = match kind_of_term c with
   | Case (_,p,c,bl) -> f p; f c; Array.iter f bl
   | Fix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
   | CoFix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
+  | NativeArr(t,p) -> f t; Array.iter f p
 
 (* [iter_constr_with_binders g f n c] iters [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
@@ -559,7 +600,7 @@ let iter_constr f c = match kind_of_term c with
 
 let iter_constr_with_binders g f n c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> ()
+    | Construct _ | NativeInt _) -> ()
   | Cast (c,_,t) -> f n c; f n t
   | Prod (_,t,c) -> f n t; f (g n) c
   | Lambda (_,t,c) -> f n t; f (g n) c
@@ -573,6 +614,7 @@ let iter_constr_with_binders g f n c = match kind_of_term c with
   | CoFix (_,(_,tl,bl)) ->
       Array.iter (f n) tl;
       Array.iter (f (iterate g (Array.length tl) n)) bl
+  | NativeArr(t,p) -> f n t; Array.iter (f n) p
 
 (* [map_constr f c] maps [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
@@ -580,7 +622,7 @@ let iter_constr_with_binders g f n c = match kind_of_term c with
 
 let map_constr f c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> c
+    | Construct _ | NativeInt _) -> c
   | Cast (c,k,t) -> mkCast (f c, k, f t)
   | Prod (na,t,c) -> mkProd (na, f t, f c)
   | Lambda (na,t,c) -> mkLambda (na, f t, f c)
@@ -592,6 +634,7 @@ let map_constr f c = match kind_of_term c with
       mkFix (ln,(lna,Array.map f tl,Array.map f bl))
   | CoFix(ln,(lna,tl,bl)) ->
       mkCoFix (ln,(lna,Array.map f tl,Array.map f bl))
+  | NativeArr(t,p) -> mkArray(f c,Array.map f p)
 
 (* [map_constr_with_binders g f n c] maps [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
@@ -601,7 +644,7 @@ let map_constr f c = match kind_of_term c with
 
 let map_constr_with_binders g f l c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> c
+    | Construct _ | NativeInt _) -> c
   | Cast (c,k,t) -> mkCast (f l c, k, f l t)
   | Prod (na,t,c) -> mkProd (na, f l t, f (g l) c)
   | Lambda (na,t,c) -> mkLambda (na, f l t, f (g l) c)
@@ -615,6 +658,7 @@ let map_constr_with_binders g f l c = match kind_of_term c with
   | CoFix(ln,(lna,tl,bl)) ->
       let l' = iterate g (Array.length tl) l in
       mkCoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
+  | NativeArr(t,p) -> mkArray(f l t,Array.map (f l) p)
 
 (* [compare_constr f c1 c2] compare [c1] and [c2] using [f] to compare
    the immediate subterms of [c1] of [c2] if needed; Cast's,
@@ -634,14 +678,8 @@ let compare_constr f t1 t2 =
   | Lambda (_,t1,c1), Lambda (_,t2,c2) -> f t1 t2 & f c1 c2
   | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> f b1 b2 & f t1 t2 & f c1 c2
   | App (c1,l1), App (c2,l2) ->
-      if Array.length l1 = Array.length l2 then
-        f c1 c2 & array_for_all2 f l1 l2
-      else
-        let (h1,l1) = decompose_app t1 in
-        let (h2,l2) = decompose_app t2 in
-        if List.length l1 = List.length l2 then
-          f h1 h2 & List.for_all2 f l1 l2
-        else false
+      Array.length l1 = Array.length l2 && 
+      f c1 c2 && array_for_all2 f l1 l2
   | Evar (e1,l1), Evar (e2,l2) -> e1 = e2 & array_for_all2 f l1 l2
   | Const c1, Const c2 -> eq_constant c1 c2
   | Ind c1, Ind c2 -> eq_ind c1 c2
@@ -652,6 +690,11 @@ let compare_constr f t1 t2 =
       ln1 = ln2 & array_for_all2 f tl1 tl2 & array_for_all2 f bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
       ln1 = ln2 & array_for_all2 f tl1 tl2 & array_for_all2 f bl1 bl2
+  | NativeInt i1, NativeInt i2 -> Uint31.eq i1 i2
+  | NativeArr(t1,p1), NativeArr(t2,p2) ->
+      Array.length p1 = Array.length p2 &&
+      f t1 t2 &&
+      array_for_all2 f p1 p2
   | _ -> false
 
 (***************************************************************************)
@@ -1015,6 +1058,10 @@ let mkCoFix = mkCoFix
 (* Construct an implicit *)
 let implicit_sort = Type (make_univ(make_dirpath[id_of_string"implicit"],0))
 let mkImplicit = mkSort implicit_sort
+
+(* Constructs native term *)
+let mkInt = mkInt
+let mkArray = mkArray
 
 (***************************)
 (* Other term constructors *)

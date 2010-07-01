@@ -37,13 +37,14 @@ let set_strategy_one ref l  =
       ConstKey sp, Conv_oracle.Opaque ->
         Csymtable.set_opaque_const sp
     | ConstKey sp, _ ->
-        let cb = Global.lookup_constant sp in
-        if cb.const_body <> None & cb.const_opaque then
+	if Environ.evaluable_constant1 sp (Global.env ()) then
+	  Csymtable.set_transparent_const sp
+	else
           errorlabstrm "set_transparent_const"
             (str "Cannot make" ++ spc () ++
-            Nametab.pr_global_env Idset.empty (ConstRef sp) ++
-            spc () ++ str "transparent because it was declared opaque.");
-        Csymtable.set_transparent_const sp
+               Nametab.pr_global_env Idset.empty (ConstRef sp) ++
+               spc () ++ str "transparent because it was declared opaque.")
+        
     | _ -> ()
 
 let cache_strategy (_,str) =

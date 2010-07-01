@@ -386,7 +386,8 @@ let generate_functional_principle
 	  { const_entry_body = value;
 	    const_entry_type = None;
 	    const_entry_opaque = false;
-	    const_entry_boxed = Flags.boxed_definitions()
+	    const_entry_boxed = Flags.boxed_definitions();
+	    const_entry_inline_code = false
 	  }
 	in
 	ignore(
@@ -451,7 +452,7 @@ let get_funs_constant mp dp =
   function const ->
     let find_constant_body const =
       match (Global.lookup_constant const ).const_body with
-	| Some b ->
+	| Def b | Opaque (Some b) ->
 	    let body = force b in
 	    let body = Tacred.cbv_norm_flags
 	      (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
@@ -460,7 +461,8 @@ let get_funs_constant mp dp =
 	      body
 	    in
 	    body
-	| None -> error ( "Cannot define a principle over an axiom ")
+	| Opaque None -> error ( "Cannot define a principle over an axiom ")
+	| Primitive _ -> error ( "Cannot define a principle over an primitive ")
     in
     let f = find_constant_body const in
     let l_const = get_funs_constant const f in
@@ -584,7 +586,9 @@ let make_scheme (fas : (constant*Rawterm.rawsort) list) : Entries.definition_ent
     let finfos = find_Function_infos this_block_funs.(0) in
     try
       let equation =  Option.get finfos.equation_lemma in
-      (Global.lookup_constant equation).Declarations.const_opaque
+      match (Global.lookup_constant equation).const_body with
+      | Opaque _ -> true
+      | _ -> false
     with Option.IsNone -> (* non recursive definition *)
       false
   in
@@ -649,6 +653,7 @@ let make_scheme (fas : (constant*Rawterm.rawsort) list) : Entries.definition_ent
       other_fun_princ_types
     in
     const::other_result
+
 
 let build_scheme fas =
   Dumpglob.pause ();

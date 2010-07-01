@@ -15,6 +15,10 @@ open Reduction
 open Reductionops
 open Termops
 open Environ
+(*
+open Typing
+open Classops 
+*)
 open Recordops
 open Evarutil
 open Libnames
@@ -37,7 +41,7 @@ let flex_kind_of_term c l =
 
 let eval_flexible_term env c =
   match kind_of_term c with
-  | Const c -> constant_opt_value env c
+  | Const c -> constant_opt_value1 env c
   | Rel n ->
       (try let (_,v,_) = lookup_rel n env in Option.map (lift n) v
       with Not_found -> None)
@@ -183,8 +187,7 @@ let rec evar_conv_x env evd pbty term1 term2 =
           solve_simple_eqn evar_conv_x env evd
 	    (position_problem false pbty,destEvar term2,term1)
         else
-          evar_eqappr_x env evd pbty
-            (decompose_app term1) (decompose_app term2)
+          evar_eqappr_x env evd pbty (decompose_app term1) (decompose_app term2)
 
 and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
   (* Evar must be undefined since we have flushed evars *)
@@ -285,13 +288,12 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	let f1 i =
 	  if flex1 = flex2 then
 	    ise_list2 i (fun i -> evar_conv_x env i CONV) l1 l2
-	  else
-	     (i,false)
+	  else (i,false)
 	and f2 i =
-	  (try conv_record env i
+	  try conv_record env i
              (try check_conv_record appr1 appr2
 	      with Not_found -> check_conv_record appr2 appr1)
-           with Not_found -> (i,false))
+          with Not_found -> (i,false)
 	and f3 i =
           (* heuristic: unfold second argument first, exception made
              if the first argument is a beta-redex (expand a constant
@@ -463,6 +465,19 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
                  (fun i -> ise_list2 i
                      (fun i -> evar_conv_x env i CONV) l1 l2)]
             else (evd,false)
+	| NativeInt i1, NativeInt i2 when l1 = [] && l2 = [] ->
+	    (evd,i1 = i2)
+	| NativeArr(t1,p1), NativeArr(t2,p2) when l1 = [] && l2 = [] ->
+	    if Array.length p1 = Array.length p2 then
+	      ise_and evd
+		[(fun i -> evar_conv_x env i CONV t1 t2);
+		 (fun i -> ise_array2 i
+		     (fun i -> evar_conv_x env i CONV) p1 p2)]
+	    else (evd, false)
+
+	| (NativeInt _| NativeArr _), _ -> (evd,false)
+	| _, (NativeInt _ | NativeArr _) -> (evd,false)
+
 
 	| (Meta _ | Lambda _), _ -> (evd,false)
 	| _, (Meta _ | Lambda _) -> (evd,false)

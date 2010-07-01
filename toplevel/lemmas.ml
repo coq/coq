@@ -39,8 +39,13 @@ let retrieve_first_recthm = function
   | VarRef id ->
       (pi2 (Global.lookup_named id),variable_opacity id)
   | ConstRef cst ->
-      let {const_body=body;const_opaque=opaq} =	Global.lookup_constant cst in
-      (Option.map Declarations.force body,opaq)
+      let cb = 	Global.lookup_constant cst in
+      begin match cb.const_body with
+      | Declarations.Def v -> Some (Declarations.force v), false
+      | Declarations.Opaque (Some v) -> Some (Declarations.force v), true
+      | Declarations.Opaque None -> None, true
+      | Declarations.Primitive _ -> assert false
+      end
   | _ -> assert false
 
 let adjust_guardness_conditions const = function
@@ -225,7 +230,9 @@ let save_remaining_recthms (local,kind) body opaq i (id,(t_i,(_,imps))) =
             { const_entry_body = body_i;
               const_entry_type = Some t_i;
               const_entry_opaque = opaq;
-              const_entry_boxed = false (* copy of what cook_proof does *)} in
+              const_entry_boxed = false (* copy of what cook_proof does *);
+	      const_entry_inline_code = false
+	    } in
           let kn = declare_constant id (DefinitionEntry const, k) in
           (Global,ConstRef kn,imps)
 

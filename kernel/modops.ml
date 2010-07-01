@@ -113,7 +113,8 @@ let module_body_of_type mp mtb =
     mod_expr = None;
     mod_constraints = mtb.typ_constraints;
     mod_delta = mtb.typ_delta;
-    mod_retroknowledge = []}
+    mod_retroknowledge = []
+  }
 
 let check_modpath_equiv env mp1 mp2 = 
   if mp1=mp2 then () else
@@ -177,16 +178,24 @@ and subst_module sub do_delta mb =
   in
   let typ_alg' = Option.smartmap 
     (subst_struct_expr sub id_delta) mb.mod_type_alg in
+  (* Check This *)
+  let mb_retro =
+    Util.list_smartmap (fun (pt,c as ptc) ->
+      let c' = subst_mps sub c in
+      if c' == c then ptc else (pt,c')) mb.mod_retroknowledge in
   let mb_delta = do_delta mb.mod_delta sub in
     if mtb'==mb.mod_type && mb.mod_expr == me' 
-      && mb_delta == mb.mod_delta && mp == mb.mod_mp
+      && mb_delta == mb.mod_delta && mp == mb.mod_mp 
+	&& mb_retro == mb.mod_retroknowledge
     then mb else
       { mb with
 	  mod_mp = mp;
 	  mod_expr = me';
 	  mod_type_alg = typ_alg';
 	  mod_type=mtb'; 
-	  mod_delta = mb_delta}
+	  mod_delta = mb_delta;
+	  mod_retroknowledge = mb_retro
+      }
 
 and subst_struct_expr sub do_delta = function
     | SEBident mp -> SEBident (subst_mp sub mp)
@@ -211,29 +220,8 @@ let subst_struct_expr subst =
   subst_struct_expr subst
     (fun resolver subst-> subst_codom_delta_resolver subst resolver)
 
-(* spiwack: here comes the function which takes care of importing 
-   the retroknowledge declared in the library *)
-(* lclrk : retroknowledge_action list, rkaction : retroknowledge action *)
-let add_retroknowledge mp =
-  let perform rkaction env =
-    match rkaction with
-      | Retroknowledge.RKRegister (f, e) ->
-	  Environ.register env f 
-	  (match e with 
-	    | Const kn -> kind_of_term (mkConst kn)
-	    | Ind ind -> kind_of_term (mkInd ind)
-	    | _ -> anomaly "Modops.add_retroknowledge: had to import an unsupported kind of term")
-  in
-  fun lclrk env ->
-  (* The order of the declaration matters, for instance (and it's at the
-     time this comment is being written, the only relevent instance) the
-     int31 type registration absolutely needs int31 bits to be registered.
-     Since the local_retroknowledge is stored in reverse order (each new
-     registration is added at the top of the list) we need a fold_right
-     for things to go right (the pun is not intented). So we lose 
-     tail recursivity, but the world will have exploded before any module
-     imports 10 000 retroknowledge registration.*)
-  List.fold_right perform lclrk env
+let add_retroknowledge l env =
+  List.fold_left add_retroknowledge env l
 
 let rec add_signature mp sign resolver env = 
   let add_one env (l,elem) =
@@ -258,26 +246,25 @@ and add_module mb env =
   let env = Environ.shallow_add_module mp mb env in
     match mb.mod_type with
       | SEBstruct (sign) -> 
-	  add_retroknowledge mp mb.mod_retroknowledge 
+	  add_retroknowledge mb.mod_retroknowledge
 	    (add_signature mp sign mb.mod_delta env)
       | SEBfunctor _ -> env
       | _ -> anomaly "Modops:the evaluation of the structure failed "
 
 let strengthen_const env mp_from l cb resolver = 
-  match cb.const_opaque, cb.const_body with
-  | false, Some _ -> cb
-  | true, Some _ 
-  | _, None ->
+  match cb.const_body with
+  | Def _ -> cb
+  | _ ->
       let con = make_con mp_from empty_dirpath l in
       let con =  constant_of_delta resolver con in
       let const = mkConst con in 
-      let const_subs = Some (Declarations.from_val const) in
-	{cb with 
-	   const_body = const_subs;
-	   const_opaque = false;
-	   const_body_code = Cemitcodes.from_val
-            (compile_constant_body env const_subs false false)
-	}
+      let const_subs = Def (Declarations.from_val const) in
+      { cb with 
+	const_body = const_subs;
+	const_body_code = Cemitcodes.from_val
+	  (compile_constant_body env const_subs false);
+	const_inline_code = false
+      }
 	  
 
 let rec strengthen_mod env mp_from mp_to mb = 
@@ -294,8 +281,7 @@ let rec strengthen_mod env mp_from mp_to mb =
 	       mod_type_alg = mb.mod_type_alg;
 	       mod_constraints = mb.mod_constraints;
 	       mod_delta = add_mp_delta_resolver mp_from mp_to 
-	       (add_delta_resolver mb.mod_delta resolve_out);
-	       mod_retroknowledge = mb.mod_retroknowledge}
+	       (add_delta_resolver mb.mod_delta resolve_out) }
      | SEBfunctor _ -> mb
      | _ -> anomaly "Modops:the evaluation of the structure failed "
 	 
@@ -372,23 +358,18 @@ let complete_inline_delta_resolver env mp mbid mtb delta =
 	let kn = replace_mp_in_kn (MPbound mbid) mp kn in
 	let con = constant_of_kn kn in
 	let con' = constant_of_delta delta con in
-	  try
-	    let constant = lookup_constant con' env in
-	      if (not constant.Declarations.const_opaque) then
-		let constr = Option.map Declarations.force 
-		  constant.Declarations.const_body in
-		  if constr = None then 
-		    (make_inline delta r)
-		  else
-		    add_inline_constr_delta_resolver con (Option.get constr)
-		      (make_inline delta r)
-	      else
-		(make_inline delta r)
-	  with 
-	      Not_found -> error_no_such_label_sub (con_label con) 
-		(string_of_mp (con_modpath con))
+	try
+	  let constant = lookup_constant con' env in
+	  match constant.Declarations.const_body with
+	  | Def csubst ->
+	      let constr =  Declarations.force csubst in
+	      add_inline_constr_delta_resolver con constr (make_inline delta r)
+	  | _ -> make_inline delta r
+	with 
+	  Not_found -> error_no_such_label_sub (con_label con) 
+	      (string_of_mp (con_modpath con))
   in
-    make_inline delta constants
+  make_inline delta constants
 
 let rec strengthen_and_subst_mod
     mb subst env mp_from mp_to env resolver =

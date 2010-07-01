@@ -44,6 +44,8 @@ type aconstr =
   | AHole of Evd.hole_kind
   | APatVar of patvar
   | ACast of aconstr * aconstr cast_type
+  | ANativeInt of Native.Uint31.t
+  | ANativeArr of aconstr * aconstr array
 
 (** Translate a rawconstr into a notation given the list of variables
     bound by the notation; also interpret recursive patterns           *)
@@ -149,6 +151,7 @@ type constr_expr =
   | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
+  | CNativeArr of loc * constr_expr * constr_expr array
 
 and fix_expr =
     identifier located * (identifier located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr
