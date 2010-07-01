@@ -3,9 +3,19 @@ Potential sources of incompatibilities between Coq V8.2 and V8.3
 
 (see also file CHANGES)
 
-Most sources of incompatibilities can be avoided by calling coqtop or
-coqc with option "-compat 8.2". The sources of incompatibilities
-listed below must however be treated manually.
+The main incompatibilities between 8.2 and 8.3 are the following
+
+- When defining objects using tactics as in "Definition f binders :
+  type.", the binders are automatically introduced in the context. The
+  former behavior can be restored by using "Unset Automatic
+  Introduction" (for local modification) or "Global Unset Automatic
+  Introduction" (for inheritance through Require).
+
+- For setoid rewriting, Morphism has been renamed into Proper.
+
+In general, most sources of incompatibilities can be avoided by
+calling coqtop or coqc with option "-compat 8.2". The sources of
+incompatibilities listed below must however be treated manually.
 
 Syntax
 
@@ -27,6 +37,9 @@ Library
   Icharate, AMM11262, FSets, FingerTree]
 
 - Infix notation "++" has now to be set at level 60. [LinAlg]
+
+- When using Program (refl_equal and Vnil have maximal implicit
+  arguments, lemmas about measure have a different form, ...).
 
 Tactics
 
