@@ -133,8 +133,8 @@ Section defs.
 
 End defs.
 
-Hint Constructors HdRel: sorting.
-Hint Constructors Sorted: sorting.
+Hint Constructors HdRel.
+Hint Constructors Sorted.
 
 (* begin hide *)
 (* Compatibility with deprecated file Sorting.v *)
