@@ -785,7 +785,7 @@ parsing/grammar.cma: $(GRAMMARCMO)
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -I $(CAMLLIB) $(GRAMMARCMO) -impl" -impl test.ml4 -o test-grammar
 	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) unix.cma $(GRAMMARCMO) -linkall -a -o $@
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
 
 # toplevel/mltop.ml4 (ifdef Byte)
 
