@@ -304,7 +304,7 @@ and mp_renaming =
 let ref_renaming_fun (k,r) =
   let mp = modpath_of_r r in
   let l = mp_renaming mp in
-  let l = if lang () = Haskell && not (modular ()) then [""] else l in
+  let l = if lang () <> Ocaml && not (modular ()) then [""] else l in
   let s =
     if l = [""] (* this happens only at toplevel of the monolithic case *)
     then

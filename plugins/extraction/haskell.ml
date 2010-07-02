@@ -319,9 +319,10 @@ let rec pp_structure_elem = function
 
 and pp_module_expr = function
   | MEstruct (mp,sel) -> prlist_strict pp_structure_elem sel
-  | MEident _ -> failwith "Not Implemented: Module Ident"
-  | MEfunctor _ -> failwith "Not Implemented: Module Functor"
-  | MEapply _ -> failwith "Not Implemented: Module Application"
+  | MEfunctor _ -> mt ()
+      (* for the moment we simply discard unapplied functors *)
+  | MEident _ | MEapply _ -> assert false
+      (* should be expansed in extract_env *)
 
 let pp_struct =
   let pp_sel (mp,sel) =
