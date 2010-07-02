@@ -655,7 +655,7 @@ dev/printers.cma: | dev/printers.mllib.d
 parsing/grammar.cma: | parsing/grammar.mllib.d
 	$(SHOW)'Testing $@'
 	@touch test.ml4
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) -I $(CAMLLIB) unix.cma $^ -impl" -impl test.ml4 -o test-grammar
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) -I $(CAMLLIB) $^ -impl" -impl test.ml4 -o test-grammar
 	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $^ -linkall -a -o $@
@@ -801,7 +801,7 @@ plugins/%_mod.ml: plugins/%.mllib
 	$(HIDE)\
 	DEPS=$(CAMLP4DEPS); \
 	if ls $${DEPS} > /dev/null 2>&1; then \
-	$(CAMLP4O) $(PR_O) -I $(CAMLLIB) unix.cma $${DEPS} $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< $(TOTARGET); \
+	$(CAMLP4O) $(PR_O) -I $(CAMLLIB) $${DEPS} $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< $(TOTARGET); \
 	else echo $< : Dependency $${DEPS} not ready yet; false; fi
 
 %.vo %.glob: %.v states/initial.coq $(INITPLUGINSBEST) $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
