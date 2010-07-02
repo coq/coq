@@ -247,47 +247,91 @@ Proof.
  intros;apply foldi_down_cont_gt;trivial.
 Qed.
 
-(*
-Require Import Zwf.
+Require Import Wf_Z.
 
-Lemma int31_ind : forall (P:int -> Type) x y,
-  P x ->
-  (forall z, 
-    ((x <= z) && (z < y))%int31 = true ->
-    (forall w, ((x <= w) && (w <= z))%int31 = true -> P w) ->
-    P (z + 1)%int31) ->
-  forall z , ((x <= z) && (z <= y))%int31 = true -> P z.
+Lemma int_ind : forall (P:int -> Type),
+  P 0%int31 ->
+  (forall i, (i < max_int)%int31 = true -> P i -> P (i + 1)%int31) ->
+  forall i, P i.
 Proof.
- intros P x y Hx Hrec.
- assert (forall Y, Acc (Zwf [|x|]) Y -> Y <= [|y|] -> 
-          (forall z, [|x|] <= [|z|] <= Y -> P z)).
-  intros Y Hacc;elim Hacc;intros Y0 _ Hrec0 Hley z (Hlex,HleY).
- destruct (Z_le_lt_eq_dec _ _ HleY).
- apply Hrec0 with [|z|].
- red;omega. omega. omega.
- destruct (Z_le_lt_eq_dec _ _ Hlex).
-
-
- destruct (Zle_lt_or_eq _ _ HleY).
-
- assert (W:= Zwf_well_founded [|x|] [|y|]).
-
- elim W.
- unfold Zwf.
-
-    (for
-((x <= z) && (z < y))%int31 = true -> P z) ->
-   (z < y)%int
-*)
+ intros P HP0 Hrec.
+ assert (forall z, (0 <= z)%Z -> forall i, z = [|i|] -> P i).
+ intros z H;pattern z;apply natlike_rec2;intros;trivial.
+ rewrite <- (of_to_Z i), <- H0;exact HP0.
+ assert (W:= to_Z_bounded i).
+ assert ([|i - 1|] = [|i|] - 1).
+  rewrite sub_spec, Zmod_small;rewrite to_Z_1;auto with zarith.
+ assert (i = i - 1 + 1)%int31.
+  apply to_Z_inj.
+  rewrite add_spec, H2.
+  rewrite Zmod_small;rewrite to_Z_1;auto with zarith.
+ rewrite H3;apply Hrec.
+ rewrite ltb_spec, H2;change [|max_int|] with (wB - 1);auto with zarith.
+ apply X;auto with zarith.
+ intros;apply (X [|i|]);trivial.
+ destruct (to_Z_bounded i);trivial.
+Qed.
  
+Lemma int_ind_bounded : forall (P:int-> Type) min max,
+  [|min|] <= [|max|] ->
+  P max ->
+  (forall i, ([|min|] <= [|i|] + 1 <= [|max|]) -> P (i + 1)%int31 -> P i) ->
+  P min.
+Proof.
+ intros P min max Hle.
+ intros Hmax Hrec.
+ assert (W1:= to_Z_bounded max);assert (W2:= to_Z_bounded min).
+ assert (forall z, (0 <= z)%Z -> z <= [|max|] - [|min|]  -> forall i, z = [|i|] -> P (max - i)%int31).
+ intros z H1;pattern z;apply natlike_rec2;intros;trivial.
+ assert (max - i = max)%int31.
+  apply to_Z_inj;rewrite sub_spec, <- H0, Zminus_0_r, Zmod_small;auto using to_Z_bounded.
+ rewrite H2;trivial.
+ assert (W3:= to_Z_bounded i);apply Hrec.
+ rewrite sub_spec.
+ rewrite Zmod_small;auto with zarith.
+ assert (max - i + 1 = max - (i - 1))%int31.
+  apply to_Z_inj;rewrite add_spec, !sub_spec, to_Z_1.
+  rewrite (Zmod_small ([|max|] - [|i|]));auto with zarith.
+  rewrite (Zmod_small ([|i|] - 1));auto with zarith.
+  apply f_equal2;auto with zarith.
+ rewrite H3;apply X;auto with zarith.
+ rewrite sub_spec, to_Z_1, <- H2, Zmod_small;auto with zarith.
+ assert (min = max - (max - min))%int31.
+  apply to_Z_inj.
+  rewrite !sub_spec, !Zmod_small;auto with zarith.
+  rewrite Zmod_small;auto with zarith.
+ rewrite H;apply (X [| max - min |]);trivial;rewrite sub_spec, Zmod_small;auto with zarith.
+Qed.
+
+  
 Lemma forallb_spec : forall f from to, 
   forallb f from to = true ->
-  forall i, ((from <= i) && (i <= to))%int31 = true -> 
+  forall i, [|from|] <= [|i|] <= [|to|] -> 
   f i = true.
 Proof.
  intros.
-(* Warning *)
-Admitted.
+ generalize i H H0.
+ assert ([|from|] <= [|to|]) by auto with zarith.
+ clear i H0 H.
+ pattern from;apply int_ind_bounded with to;trivial.
+ intros;replace i with to;[ | apply to_Z_inj;auto with zarith].
+ unfold forallb in H;rewrite foldi_cont_eq in H;trivial.
+ destruct (f to);trivial.
+ intros;assert ([|i|] <= [|to|]) by auto with zarith.
+ destruct (Zle_lt_or_eq _ _ H4).
+ unfold forallb in H2;rewrite foldi_cont_lt in H2;
+  fold (forallb f (i+1) to) in H2;[ | rewrite ltb_spec;trivial].
+ generalize H2;clear H2;case_eq (f i);intros;[ | discriminate].
+ elimtype ([|i|] = [|i0|] \/ [|i+1|] <= [|i0|]);intros.
+ apply to_Z_inj in H7;subst;trivial.
+ auto with zarith.
+ rewrite add_spec;destruct (to_Z_bounded to);destruct (to_Z_bounded i);
+   rewrite Zmod_small;rewrite to_Z_1;auto with zarith; omega.
+ intros;replace i0 with to;[ | apply to_Z_inj;auto with zarith].
+ apply to_Z_inj in H5;subst.
+ unfold forallb in H2;rewrite foldi_cont_eq in H2;trivial.
+ destruct (f to);trivial.
+Qed.
 
 Lemma existsb_spec : forall f from to,
   existsb f from to = true ->
@@ -312,7 +356,6 @@ Proof.
  rewrite <- not_true_iff_false, eqb_spec in Heq1.
  symmetry;change ([|x|] > [|y|]);rewrite <- to_Z_eq in Heq1;omega.
 Qed.
-
 
 Lemma is_zero_spec : forall x : int, is_zero x = true <-> x = 0%int31.
 Proof.
