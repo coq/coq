@@ -108,7 +108,8 @@ let spawn_coqtop sup_args =
   let oc,ic = Unix.open_process (dir^"/coqtop.opt -ideslave "^sup_args) in
   { cin = ic; cout = oc ; sup_args = sup_args }
 
-let kill_coqtop coqtop = raw_interp coqtop "Quit."
+let kill_coqtop coqtop =
+  try raw_interp coqtop "Quit." with _ -> ()
 
 let reset_coqtop coqtop =
   kill_coqtop coqtop;

@@ -7,14 +7,8 @@
 (************************************************************************)
 
 class command_window :
-  unit ->
+  Coq.coqtop ->
   object
     method new_command : ?command:string -> ?term:string -> unit -> unit
     method frame : GBin.frame
   end
-
- val main : unit -> unit
-
-val command_window : unit -> command_window
-
-val get_current_toplevel : (unit -> Coq.coqtop) ref

@@ -61,7 +61,6 @@ object('self)
   method backtrack_to : GText.iter -> unit
   method backtrack_to_no_lock : GText.iter -> unit
   method clear_message : unit
-  method deactivate : unit -> unit
   method disconnected_keypress_handler : GdkEvent.Key.t -> bool
   method electric_handler : GtkSignal.id
   method find_phrase_starting_at :
@@ -102,18 +101,23 @@ type viewable_script =
      message_view : GText.view;
      analyzed_view : analyzed_views;
      toplvl : Coq.coqtop;
+     command : Command_windows.command_window;
     }
 
 
-let notebook_page_of_session {script=script;tab_label=bname;proof_view=proof;message_view=message} =
+let notebook_page_of_session
+      {script=script;tab_label=bname;proof_view=proof;message_view=message;command=command} =
   let session_paned =
-    GPack.paned `HORIZONTAL ~border_width:5 () in
+    GPack.paned `VERTICAL () in
+  let eval_paned =
+    GPack.paned `HORIZONTAL ~border_width:5
+      ~packing:(session_paned#pack1 ~shrink:false ~resize:true) () in
   let script_frame =
-    GBin.frame ~shadow_type:`IN ~packing:session_paned#add1 () in
+    GBin.frame ~shadow_type:`IN ~packing:eval_paned#add1 () in
   let script_scroll =
     GBin.scrolled_window ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:script_frame#add () in
   let state_paned =
-    GPack.paned `VERTICAL ~packing:session_paned#add2 () in
+    GPack.paned `VERTICAL ~packing:eval_paned#add2 () in
   let proof_frame =
     GBin.frame ~shadow_type:`IN ~packing:state_paned#add1 () in
   let proof_scroll =
@@ -132,40 +136,32 @@ let notebook_page_of_session {script=script;tab_label=bname;proof_view=proof;mes
                  then img#set_stock `SAVE
                  else img#set_stock `YES) in
   let _ =
-    session_paned#misc#connect#size_allocate
+    eval_paned#misc#connect#size_allocate
       (let old_paned_width = ref 2 in
        let old_paned_height = ref 2 in
          (fun {Gtk.width=paned_width;Gtk.height=paned_height} ->
             if !old_paned_width <> paned_width || !old_paned_height <> paned_height then (
-              session_paned#set_position (session_paned#position * paned_width / !old_paned_width);
+              eval_paned#set_position (eval_paned#position * paned_width / !old_paned_width);
               state_paned#set_position (state_paned#position * paned_height / !old_paned_height);
               old_paned_width := paned_width;
               old_paned_height := paned_height;
             ))) in
-    script_scroll#add script#coerce;
-    proof_scroll#add proof#coerce;
-    message_scroll#add message#coerce;
-    session_tab#pack bname#coerce;
-    img#set_stock `YES;
-    session_paned#set_position 1;
-    state_paned#set_position 1;
-    (Some session_tab#coerce,None,session_paned#coerce)
+  session_paned#pack2 ~shrink:false ~resize:false (command#frame#coerce);
+  script_scroll#add script#coerce;
+  proof_scroll#add proof#coerce;
+  message_scroll#add message#coerce;
+  session_tab#pack bname#coerce;
+  img#set_stock `YES;
+  eval_paned#set_position 1;
+  state_paned#set_position 1;
+  (Some session_tab#coerce,None,session_paned#coerce)
 
 let session_notebook =
   Typed_notebook.create notebook_page_of_session ~border_width:2 ~show_border:false ~scrollable:true ()
 
-let active_view = ref (~-1)
-
-let on_active_view f =
-  if !active_view < 0
-  then failwith "no active view !"
-  else f (session_notebook#get_nth_term !active_view)
-
 let cb = GData.clipboard Gdk.Atom.primary
 
-
 let last_cb_content = ref ""
-
 
 let update_notebook_pos () =
   let pos =
@@ -177,21 +173,7 @@ let update_notebook_pos () =
   in
   session_notebook#set_tab_pos pos
 
-
-let set_active_view i =
-  prerr_endline "entering set_active_view";
-  (try on_active_view (fun {tab_label=lbl} -> lbl#set_text lbl#text) with _ -> ());
-  session_notebook#goto_page i;
-  let s = session_notebook#get_nth_term i in
-    s.tab_label#set_use_markup true;
-    s.tab_label#set_label ("<span background=\"light green\">"^s.tab_label#text^"</span>");
-    active_view := i;
-    prerr_endline "exiting set_active_view"
-
-
-
 let to_do_on_page_switch = ref []
-
 
 let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup;
 			Sys.sigill; Sys.sigpipe; Sys.sigquit;
@@ -272,24 +254,16 @@ let do_if_not_computing text f x =
     prerr_endline
       "Discarded order (computations are ongoing)"
 
-(* XXX - 1 appel *)
-let kill_input_view i =
-  let v = session_notebook#get_nth_term i in
+let remove_current_view_page () =
+  let c = session_notebook#current_page in
+  let v = session_notebook#get_nth_term c in
     v.analyzed_view#kill_detached_views ();
     v.script#destroy ();
     v.tab_label#destroy ();
     v.proof_view#destroy ();
     v.message_view#destroy ();
     Coq.kill_coqtop v.toplvl;
-    session_notebook#remove_page i
-(*
-(* XXX - beaucoups d'appels, a garder *)
-let get_current_view =
-  focused_session
- *)
-let remove_current_view_page () =
-  let c = session_notebook#current_page in
-    kill_input_view c
+    session_notebook#remove_page c
 
 let print_items = [
   ([implicit],"Display _implicit arguments",GdkKeysyms._i,false);
@@ -386,15 +360,6 @@ exception Found
 
 (* For find_phrase_starting_at *)
 exception Stop of int
-
-(* XXX *)
-let activate_input i =
-  prerr_endline "entering activate_input";
-(*  (try on_active_view (fun {analyzed_view=a_v} -> a_v#reset_initial; a_v#deactivate ())
-   with _ -> ());
-  (session_notebook#get_nth_term i).analyzed_view#activate (); *)
-  set_active_view i;
-  prerr_endline "exiting activate_input"
 
 let warning msg =
   GToolbox.message_box ~title:"Warning"
@@ -1139,28 +1104,8 @@ object(self)
   val mutable deact_id = None
   val mutable act_id = None
 
-  method deactivate () = () (*
-    is_active <- false;
-    (match act_id with None -> ()
-       | Some id ->
-           reset_initial ();
-           input_view#misc#disconnect id;
-           prerr_endline "DISCONNECTED old active : ";
-           print_id id;
-    );
-    deact_id <- Some
-                  (input_view#event#connect#key_press self#disconnected_keypress_handler);
-    prerr_endline "CONNECTED  inactive : ";
-    print_id (Option.get deact_id)*)
-
-  (* XXX *)
   method activate () = if not is_active then begin
-    is_active <- true;(*
-    (match deact_id with None -> ()
-       | Some id -> input_view#misc#disconnect id;
-                    prerr_endline "DISCONNECTED old inactive : ";
-                    print_id id
-    );*)
+    is_active <- true;
     act_id <- Some
                 (input_view#event#connect#key_press self#active_keypress_handler);
     prerr_endline "CONNECTED active : ";
@@ -1365,6 +1310,8 @@ let create_session () =
     Stack.create () in
   let ct =
     spawn_coqtop !sup_args in
+  let command =
+    new Command_windows.command_window ct in
   let legacy_av =
     new analyzed_view script proof message stack ct in
   let _ =
@@ -1405,7 +1352,8 @@ let create_session () =
       message_view=message;
       analyzed_view=legacy_av;
       encoding="";
-      toplvl=ct
+      toplvl=ct;
+      command=command
     }
 
 (* XXX - to be used later
@@ -1770,13 +1718,7 @@ let main files =
 		(* File/Close Menu *)
 		let close_m =
                   file_factory#add_item "_Close buffer" ~key:GdkKeysyms._W in
-		let close_f () =
-		  let v = !active_view in
-		  let act = session_notebook#current_page in
-		    if v = act then flash_info "Cannot close an active view"
-		    else remove_current_view_page ()
-		in
-		  ignore (close_m#connect#activate close_f);
+		  ignore (close_m#connect#activate remove_current_view_page);
 
 		  (* File/Print Menu *)
 		  let _ = file_factory#add_item "_Print..."
@@ -2220,32 +2162,16 @@ let main files =
 				    ~accel_group
 				    ~accel_modi:!current.modifier_for_navigation
 				in
-				let _do_or_activate f () =
-				  let current = session_notebook#current_term in
-				  let analyzed_view = current.analyzed_view in (*
-				    if analyzed_view#is_active then begin
-                                      prerr_endline ("view "^current.tab_label#text^"already active"); *)
-				      ignore (f analyzed_view) (*
-                                    end else
-				      begin
-					flash_info "New proof started";
-                                        prerr_endline ("activating view "^current.tab_label#text);
-					activate_input session_notebook#current_page;
-					ignore (f analyzed_view)
-				      end *)
-				in
-
-				let do_or_activate f =
-				  do_if_not_computing "do_or_activate"
-				    (_do_or_activate
-				       (fun av -> f av;
-                                          pop_info ();
-                                          let cur_ct = session_notebook#current_term.toplvl in
-                                          push_info (Coq.current_status cur_ct)
-                                       )
+                                let do_or_activate f =
+                                  do_if_not_computing "do_or_activate"
+                                    (fun () ->
+                                       let current = session_notebook#current_term in
+                                       let av = current.analyzed_view in
+                                       ignore (f av);
+                                       pop_info ();
+                                       push_info (Coq.current_status current.toplvl)
                                     )
-				in
-
+                                in
 				let add_to_menu_toolbar text ~tooltip ?key ~callback icon =
 				  begin
 				    match key with None -> ()
@@ -2266,7 +2192,7 @@ let main files =
 				  add_to_menu_toolbar
 				    "_Close"
 				    ~tooltip:"Close current buffer"
-				    ~callback:close_f
+				    ~callback:remove_current_view_page
 				    `CLOSE;
 				  add_to_menu_toolbar
 				    "_Forward"
@@ -2567,7 +2493,7 @@ let cur_ct = session_notebook#current_term.toplvl in
 					  let _ =
 					    queries_factory#add_item "_SearchAbout " ~key:GdkKeysyms._F2
 					      ~callback:(fun () -> let term = get_current_word () in
-								     (Command_windows.command_window ())#new_command
+								     session_notebook#current_term.command#new_command
 								       ~command:"SearchAbout"
 								       ~term
 								       ())
@@ -2575,7 +2501,7 @@ let cur_ct = session_notebook#current_term.toplvl in
 					  let _ =
 					    queries_factory#add_item "_Check " ~key:GdkKeysyms._F3
 					      ~callback:(fun () -> let term = get_current_word () in
-								     (Command_windows.command_window ())#new_command
+								     session_notebook#current_term.command#new_command
 								       ~command:"Check"
 								       ~term
 								       ())
@@ -2583,7 +2509,7 @@ let cur_ct = session_notebook#current_term.toplvl in
 					  let _ =
 					    queries_factory#add_item "_Print " ~key:GdkKeysyms._F4
 					      ~callback:(fun () -> let term = get_current_word () in
-								     (Command_windows.command_window ())#new_command
+								     session_notebook#current_term.command#new_command
 								       ~command:"Print"
 								       ~term
 								       ())
@@ -2591,7 +2517,7 @@ let cur_ct = session_notebook#current_term.toplvl in
 					  let _ =
 					    queries_factory#add_item "_About " ~key:GdkKeysyms._F5
 					      ~callback:(fun () -> let term = get_current_word () in
-								     (Command_windows.command_window ())#new_command
+								     session_notebook#current_term.command#new_command
 								       ~command:"About"
 								       ~term
 								       ())
@@ -2599,7 +2525,7 @@ let cur_ct = session_notebook#current_term.toplvl in
 					  let _ =
 					    queries_factory#add_item "_Locate"
 					      ~callback:(fun () -> let term = get_current_word () in
-								     (Command_windows.command_window ())#new_command
+								     session_notebook#current_term.command#new_command
 								       ~command:"Locate"
 								       ~term
 								       ())
@@ -2607,7 +2533,7 @@ let cur_ct = session_notebook#current_term.toplvl in
 					  let _ =
 					    queries_factory#add_item "_Whelp Locate"
 					      ~callback:(fun () -> let term = get_current_word () in
-								     (Command_windows.command_window ())#new_command
+								     session_notebook#current_term.command#new_command
 								       ~command:"Whelp Locate"
 								       ~term
 								       ())
@@ -2656,7 +2582,6 @@ let cur_ct = session_notebook#current_term.toplvl in
 							flash_info (f ^ " successfully compiled")
 						      else begin
 							  flash_info (f ^ " failed to compile");
-							  activate_input session_notebook#current_page;
 							  av#process_until_end_or_error;
 							  av#insert_message "Compilation output:\n";
 							  av#insert_message res
@@ -2756,14 +2681,16 @@ let cur_ct = session_notebook#current_term.toplvl in
 					    ~accel_modi:[]
 					    ~accel_group
 					  in
-					  let _ =
-					    configuration_factory#add_item
-					      "Show/Hide _Query Pane"
-					      ~key:GdkKeysyms._Escape
-					      ~callback:(fun () -> if (Command_windows.command_window ())#frame#misc#visible then
-							   (Command_windows.command_window ())#frame#misc#hide ()
-							 else
-							   (Command_windows.command_window ())#frame#misc#show ())
+                                          let _ =
+                                            configuration_factory#add_item
+                                              "Show/Hide _Query Pane"
+                                              ~key:GdkKeysyms._Escape
+                                              ~callback:(fun () ->
+                                                           let ccw = session_notebook#current_term.command in
+                                                           if ccw#frame#misc#visible then
+                                                             ccw#frame#misc#hide ()
+                                                           else
+                                                             ccw#frame#misc#show ())
 					  in
 					  let _ =
 					    configuration_factory#add_check_item
@@ -2834,13 +2761,9 @@ let cur_ct = session_notebook#current_term.toplvl in
 					  (* End of menu *)
 
 					  (* The vertical Separator between Scripts and Goals *)
-					  let queries_pane = GPack.paned `VERTICAL ~packing:(vbox#pack ~expand:true ) () in
-					    queries_pane#pack1 ~shrink:false ~resize:true session_notebook#coerce;
+					    vbox#pack ~expand:true session_notebook#coerce;
                                             update_notebook_pos ();
 					    let nb = session_notebook in
-					    let command_object = Command_windows.command_window() in
-					    let queries_frame = command_object#frame in
-					      queries_pane#pack2 ~shrink:false ~resize:false (queries_frame#coerce);
 					    let lower_hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
 					    lower_hbox#pack ~expand:true status#coerce;
 					    let search_lbl = GMisc.label ~text:"Search:"
@@ -3086,17 +3009,16 @@ let cur_ct = session_notebook#current_term.toplvl in
                                                                                  let f = if Filename.check_suffix f ".v" then f else f^".v" in
 										 load_file (fun s -> print_endline s; exit 1) f)
                                                                     files;
-								 activate_input 0 
+          session_notebook#goto_page 0;
 								end
 							      else
 								begin
 								  let session = create_session () in
 								  let index = session_notebook#append_term session in
-								    activate_input index;
+          session_notebook#goto_page index;
 								end;
                                   initial_about session_notebook#current_term.proof_view#buffer;
                                   !show_toolbar !current.show_toolbar;
-                                  Command_windows.get_current_toplevel := (fun () -> session_notebook#current_term.toplvl);
                                   session_notebook#current_term.script#misc#grab_focus ()
 
 ;;
@@ -3142,7 +3064,6 @@ let start () =
 		  if level land Glib.Message.log_level `WARNING <> 0
 		  then Pp.warning msg
 		  else failwith ("Coqide internal error: " ^ msg)));
-    Command_windows.main ();
     main files;
     if !Coq_config.with_geoproof then ignore (Thread.create check_for_geoproof_input ());
     while true do

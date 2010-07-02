@@ -6,9 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-let get_current_toplevel = ref (fun () -> Coq.dummy_coqtop)
-
-class command_window () =
+class command_window coqtop =
 (*  let window = GWindow.window
 		 ~allow_grow:true ~allow_shrink:true
 		 ~width:500 ~height:250
@@ -106,10 +104,9 @@ object(self)
 	then com ^ " " else com ^ " " ^ entry#text ^" . "
       in
       try
-        let curtop = !get_current_toplevel () in
-	Coq.raw_interp curtop phrase;
+	Coq.raw_interp coqtop phrase;
 	result#buffer#set_text
-	  ("Result for command " ^ phrase ^ ":\n" ^ (Coq.read_stdout curtop))
+	  ("Result for command " ^ phrase ^ ":\n" ^ (Coq.read_stdout coqtop))
       with e ->
 	let (s,loc) = Coq.process_exn e in
 	assert (Glib.Utf8.validate s);
@@ -141,11 +138,3 @@ object(self)
     ignore (new_page_menu#connect#clicked self#new_command);
    (* ignore (window#event#connect#delete (fun _ -> window#misc#hide(); true));*)
 end
-
-let command_window = ref None
-
-let main () = command_window := Some (new command_window ())
-
-let command_window () = match !command_window with
-  | None -> failwith "No command window."
-  | Some c -> c
