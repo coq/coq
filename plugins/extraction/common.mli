@@ -43,7 +43,7 @@ val pp_global : kind -> global_reference -> string
 val pp_module : module_path -> string
 
 val top_visible_mp : unit -> module_path
-val push_visible : module_path -> module_path option -> unit
+val push_visible : module_path -> unit
 val pop_visible : unit -> unit
 
 val check_duplicate : module_path -> label -> string

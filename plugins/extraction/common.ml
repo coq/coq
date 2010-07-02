@@ -201,24 +201,19 @@ let mpfiles_add, mpfiles_mem, mpfiles_list, mpfiles_clear =
 type visible_layer = { mp : module_path;
 		       content : ((kind*string),unit) Hashtbl.t }
 
-let pop_visible, push_visible, get_visible, subst_mp =
-  let vis = ref [] and sub = ref [empty_subst] in
-  register_cleanup (fun () -> vis := []; sub := [empty_subst]);
+let pop_visible, push_visible, get_visible =
+  let vis = ref [] in
+  register_cleanup (fun () -> vis := []);
   let pop () =
     let v = List.hd !vis in
     (* we save the 1st-level-content of MPfile for later use *)
     if get_phase () = Impl && modular () && is_modfile v.mp
     then add_mpfiles_content v.mp v.content;
-    vis := List.tl !vis;
-    sub := List.tl !sub
-  and push mp o =
-    vis := { mp = mp; content = Hashtbl.create 97 } :: !vis;
-    let s = List.hd !sub in
-    let s = match o with None -> s | Some msid -> add_mp msid mp empty_delta_resolver s in
-    sub := s :: !sub
+    vis := List.tl !vis
+  and push mp =
+    vis := { mp = mp; content = Hashtbl.create 97 } :: !vis
   and get () = !vis
-  and subst mp = subst_mp (List.hd !sub) mp
-  in (pop,push,get,subst)
+  in (pop,push,get)
 
 let get_visible_mps () = List.map (function v -> v.mp) (get_visible ())
 let top_visible () = match get_visible () with [] -> assert false | v::_ -> v
@@ -234,7 +229,7 @@ let add_duplicate, check_duplicate =
      incr index;
      let ren = "Coq__" ^ string_of_int (!index) in
      dups := Gmap.add (mp,l) ren !dups
-  and check mp l = Gmap.find (subst_mp mp, l) !dups
+  and check mp l = Gmap.find (mp, l) !dups
   in (add,check)
 
 type reset_kind = AllButExternal | Everything
@@ -307,7 +302,7 @@ and mp_renaming =
     name in a [string list] form (head is the short name). *)
 
 let ref_renaming_fun (k,r) =
-  let mp = subst_mp (modpath_of_r r) in
+  let mp = modpath_of_r r in
   let l = mp_renaming mp in
   let l = if lang () = Haskell && not (modular ()) then [""] else l in
   let s =
@@ -430,7 +425,7 @@ let pp_global k r =
   let ls = ref_renaming (k,r) in
   assert (List.length ls > 1);
   let s = List.hd ls in
-  let mp = subst_mp (modpath_of_r r) in
+  let mp = modpath_of_r r in
   if mp = top_visible_mp () then
     (* simpliest situation: definition of r (or use in the same context) *)
     (* we update the visible environment *)
@@ -442,7 +437,6 @@ let pp_global k r =
 
 (* The next function is used only in Ocaml extraction...*)
 let pp_module mp =
-  let mp = subst_mp mp in
   let ls = mp_renaming mp in
   if List.length ls = 1 then dottify ls
   else match mp with
