@@ -71,6 +71,7 @@ let theories_dirs_map = [
     "theories/Sorting", "Sorting" ;
     "theories/Setoids", "Setoids" ;
     "theories/Sets", "Sets" ;
+    "theories/Array", "Array";
     "theories/Structures", "Structures" ;
     "theories/Lists", "Lists" ;
     "theories/Wellfounded", "Wellfounded" ;

@@ -11,98 +11,36 @@
 (**
 Author: Arnaud Spiwack (+ Pierre Letouzey)
 *)
-Require Import BigNumPrelude.
-Require Export Int31.
-Require Export ZArith.
-Require Export DoubleType.
 Require Import CyclicAxioms.
+Require Export ZArith.
+Require Export Int31Properties.
 
 Local Open Scope int31_scope.
-Local Open Scope bool_scope.
-
 (** {2 Operators } **)
 
 Definition Pdigits := Eval compute in P_of_succ_nat (size - 1).
-Definition max_int31 := Eval compute in 0 - 1.
-Register max_int31 as Inline.
 
-Definition is_zero (i:int31) := i == 0.
-Register is_zero as Inline.
-
-Definition is_even (i:int31) := is_zero (i land 1).
-Register is_even as Inline.
-
-Fixpoint to_Z_rec (n:nat) (i:int31) :=
-  match n with 
-  | O => 0%Z 
-  | S n => 
-    (if is_even i then Zdouble else Zdouble_plus_one) (to_Z_rec n (i >> 1))
-  end.
-
-Definition to_Z := to_Z_rec size.
-
-Fixpoint positive_to_int31_rec (n:nat) (p:positive) :=
+Fixpoint positive_to_int_rec (n:nat) (p:positive) :=
   match n, p with 
   | O, _ => (Npos p, 0)
   | S n, xH => (0%N, 1)
   | S n, xO p => 
-    let (N,i) := positive_to_int31_rec n p in
+    let (N,i) := positive_to_int_rec n p in
     (N, i << 1)
   | S n, xI p =>
-    let (N,i) := positive_to_int31_rec n p in
+    let (N,i) := positive_to_int_rec n p in
     (N, (i << 1) + 1) 
   end.
 
-Definition positive_to_int31 := positive_to_int31_rec size.
+Definition positive_to_int := positive_to_int_rec size.
 
-Fixpoint of_pos_rec (n:nat) (p:positive) :=
-  match n, p with 
-  | O, _ => 0
-  | S n, xH => 1
-  | S n, xO p => (of_pos_rec n p) << 1
-  | S n, xI p => (of_pos_rec n p) << 1 + 1
-  end.
-
-Definition of_pos := of_pos_rec size.
-
-Definition digits := Eval compute in (snd (positive_to_int31 Pdigits)).
-
-(* Opposite *)
-Definition opp31 (i:int31) := 0 - i.
-Register opp31 as Inline.
-Notation "- x" := (opp31 x) : int31_scope.
-
-Definition opp31c (i:int31) := 0 -c i.
-Register opp31c as Inline.
-
-Definition opp31carry i := max_int31 - i.
-Register is_zero as Inline.
-
-Definition succ31 i := i + 1.
-Register opp31carry as Inline.
-
-Definition succ31c i := i +c 1.
-Register succ31c as Inline.
-
-Definition pred31 i := i - 1.
-Register pred31 as Inline.
-
-Definition pred31c i := i -c 1.
-Register pred31c as Inline.
-
-Definition add31carry i j := i + j + 1.
-Register add31carry as Inline.
-
-Definition sub31carry i j := i - j - 1.
-Register sub31carry as Inline.
-
-Definition mul31c_WW x y :=
-  if is_zero x then W0
-  else 
-   if is_zero y then W0
-   else 
-    let (h,l) := mul31c x y in WW h l.
-Notation "n '*c' m" := (mul31c_WW n m) (at level 40, no associativity) : int31_scope.
+Definition mulc_WW x y :=
+  let (h, l) := mulc x y in
+  if is_zero h then 
+    if is_zero l then W0
+    else WW h l
+  else WW h l.
+Notation "n '*c' m" := (mulc_WW n m) (at level 40, no associativity) : int31_scope.
 
 Definition pos_mod p x := 
   if p <= digits then
@@ -110,140 +48,203 @@ Definition pos_mod p x :=
     (x << p) >> p
   else x.
 
-Definition of_Z z := 
-  match z with
-  | Zpos p => of_pos p
-  | Z0 => 0
-  | Zneg p => - (of_pos p)
-  end.
-
-(** Gcd **)
-Fixpoint gcd31_rec (guard:nat) (i j:int31) {struct guard} :=
-   match guard with
-   | O => 1
-   | S p => if j == 1 then i else gcd31_rec p j (i \% j)
-   end.
-
-Definition gcd31 := gcd31_rec (2*size).
-
-(** Square root functions using newton iteration **)
-
-Definition sqrt31_step (rec: int31 -> int31 -> int31) (i j: int31)  :=
-  let quo := i/j in
-  if quo < j then rec i ((j + i/j) >> 1)
-  else j.
-
-Definition iter31_sqrt :=
- Eval lazy beta delta [sqrt31_step] in
- fix iter31_sqrt (n: nat) (rec: int31 -> int31 -> int31)
-          (i j: int31) {struct n} : int31 :=
-  sqrt31_step
-   (fun i j => match n with
-      O =>  rec i j
-   | S n => (iter31_sqrt n (iter31_sqrt n rec)) i j
-   end) i j.
-
-Definition sqrt31 i :=
-  match compare31 1 i with
-    Gt => 0
-  | Eq => 1
-  | Lt => iter31_sqrt 31 (fun i j => j) i (i >> 1)
-  end.
-
-Definition sqrt312_step (rec: int31 -> int31 -> int31 -> int31)
-   (ih il j: int31)  :=
-  if ih < j then
-    let (quo,_) := diveucl31_21 ih il j in
-    if quo < j then
-      let m := 
-        match j +c quo with
-        | C0 m1 => m1 >> 1
-        | C1 m1 => (m1 >> 1) + 30
-        end in 
-      rec ih il m
-    else j
-  else j.
-
-Definition iter312_sqrt :=
- Eval lazy beta delta [sqrt312_step] in
- fix iter312_sqrt (n: nat)
-          (rec: int31  -> int31 -> int31 -> int31)
-          (ih il j: int31) {struct n} : int31 :=
-  sqrt312_step
-   (fun ih il j => 
-     match n with
-     | O =>  rec ih il j
-     | S n => (iter312_sqrt n (iter312_sqrt n rec)) ih il j
-   end) ih il j.
-
-Definition sqrt312 ih il :=
-  let s := iter312_sqrt 31 (fun ih il j => j) ih il max_int31 in
-  let (ih1, il1) := mul31c s s in
-  match il -c il1 with
-  | C0 il2 =>
-    if ih1 < ih then (s, C1 il2) else (s, C0 il2)
-  | C1 il2 =>
-    if ih1 < (ih - 1) then (s, C1 il2) else (s, C0 il2)
-  end.
-
-(* Access to the ith digit *)
-Definition digit p i := 
-  Eval compute in
-  let dm1 := digits - 1 in
-  (p << (dm1  - i)) >> dm1 == 1.
-
-
-
-
-Instance int31_ops : ZnZ.Ops int31 :=
+Instance int_ops : ZnZ.Ops int :=
 {
  digits      := Pdigits; (* number of digits *)
  zdigits     := digits; (* number of digits *)
  to_Z        := to_Z; (* conversion to Z *)
- of_pos      := positive_to_int31; (* positive -> N*int31 :  p => N,i
+ of_pos      := positive_to_int; (* positive -> N*int31 :  p => N,i
                                       where p = N*2^31+phi i *)
- head0       := head031;  (* number of head 0 *)
- tail0       := tail031;  (* number of tail 0 *)
+ head0       := head0;  (* number of head 0 *)
+ tail0       := tail0;  (* number of tail 0 *)
  zero        := 0;
  one         := 1;
- minus_one   := max_int31;
- compare     := compare31;
+ minus_one   := max_int;
+ compare     := compare;
  eq0         := is_zero;
- opp_c       := opp31c;
- opp         := opp31;
- opp_carry   := opp31carry;
- succ_c      := succ31c;
- add_c       := add31c;
- add_carry_c := add31carryc;
- succ        := succ31;
- add         := add31;
- add_carry   := add31carry;
- pred_c      := pred31c;
- sub_c       := sub31c;
- sub_carry_c := sub31carryc;
- pred        := pred31;
- sub         := sub31;
- sub_carry   := sub31carry;
- mul_c       := mul31c_WW;
- mul         := mul31;
- square_c    := fun x => mul31c_WW x x;
- div21       := diveucl31_21;
- div_gt      := diveucl31; (* this is supposed to be the special case of
+ opp_c       := oppc;
+ opp         := opp;
+ opp_carry   := oppcarry;
+ succ_c      := succc;
+ add_c       := addc;
+ add_carry_c := addcarryc;
+ succ        := succ;
+ add         := add;
+ add_carry   := addcarry;
+ pred_c      := predc;
+ sub_c       := subc;
+ sub_carry_c := subcarryc;
+ pred        := pred;
+ sub         := sub;
+ sub_carry   := subcarry;
+ mul_c       := mulc_WW;
+ mul         := mul;
+ square_c    := fun x => mulc_WW x x;
+ div21       := diveucl_21;
+ div_gt      := diveucl; (* this is supposed to be the special case of
                          division a/b where a > b *)
- div         := diveucl31;
- modulo_gt   := mod31;
- modulo      := mod31;
- gcd_gt      := gcd31;
- gcd         := gcd31;
- add_mul_div := addmuldiv31;
+ div         := diveucl;
+ modulo_gt   := Int31Native.mod;
+ modulo      := Int31Native.mod;
+ gcd_gt      := gcd;
+ gcd         := gcd;
+ add_mul_div := addmuldiv;
  pos_mod     := pos_mod;
  is_even     := is_even;
- sqrt2       := sqrt312;
- sqrt        := sqrt31
+ sqrt2       := sqrt2;
+ sqrt        := sqrt
 }.
 
-(** {2 Specification and proof} **)
+Local Open Scope Z_scope.
 
+Lemma is_zero_spec_aux : forall x : int, is_zero x = true -> [|x|] = 0%Z.
+Proof.
+ intros x;rewrite is_zero_spec;intros H;rewrite H;trivial.
+Qed.
+
+Lemma positive_to_int_spec :
+  forall p : positive,
+    Zpos p =
+      Z_of_N (fst (positive_to_int p)) * wB + to_Z (snd (positive_to_int p)).
+Proof.
+ (*** WARNING : TODO **)
+Admitted.
+
+Lemma mulc_WW_spec :
+   forall x y,[|| x *c y ||] = [|x|] * [|y|].
+Proof.
+ intros x y;unfold mulc_WW.
+ generalize (mulc_spec x y);destruct (mulc x y);simpl;intros Heq;rewrite Heq.
+ case_eq (is_zero i);intros;trivial.
+ apply is_zero_spec in H;rewrite H, to_Z_0.
+ case_eq (is_zero i0);intros;trivial.
+ apply is_zero_spec in H0;rewrite H0, to_Z_0, Zmult_comm;trivial.
+Qed.
+
+Lemma squarec_spec : 
+  forall x,
+    [||x *c x||] = [|x|] * [|x|].
+Proof (fun x => mulc_WW_spec x x).
+
+Lemma diveucl_spec_aux : forall a b, 0 < [|b|] ->
+  let (q,r) := diveucl a b in
+  [|a|] = [|q|] * [|b|] + [|r|] /\
+  0 <= [|r|] < [|b|].
+Proof.
+ intros a b H;assert (W:= diveucl_spec a b).
+ assert ([|b|]>0) by (auto with zarith).
+ generalize (Z_div_mod [|a|] [|b|] H0).
+ destruct (diveucl a b);destruct (Zdiv_eucl [|a|] [|b|]).
+ inversion W;rewrite Zmult_comm;trivial.
+Qed.
+
+Lemma diveucl_21_spec_aux : forall a1 a2 b,
+      wB/2 <= [|b|] ->
+      [|a1|] < [|b|] ->
+      let (q,r) := diveucl_21 a1 a2 b in
+      [|a1|] *wB+ [|a2|] = [|q|] * [|b|] + [|r|] /\
+      0 <= [|r|] < [|b|].
+Proof.
+ intros a1 a2 b H1 H2;assert (W:= diveucl_21_spec a1 a2 b).
+ assert (W1:= to_Z_bounded a1).
+ assert ([|b|]>0) by (auto with zarith).
+ generalize (Z_div_mod ([|a1|]*wB+[|a2|]) [|b|] H).
+ destruct (diveucl_21 a1 a2 b);destruct (Zdiv_eucl ([|a1|]*wB+[|a2|]) [|b|]).
+ inversion W;rewrite (Zmult_comm [|b|]);trivial.
+Qed.
+
+Lemma shift_unshift_mod_3:
+  forall n p a : Z,
+  0 <= p <= n ->
+  (a * 2 ^ (n - p)) mod 2 ^ n / 2 ^ (n - p) = a mod 2 ^ p.
+Proof.
+ intros;rewrite <- (shift_unshift_mod_2 n p a);[ | auto with zarith].
+ symmetry;apply Zmod_small.
+ generalize (a * 2 ^ (n - p));intros w.
+ assert (2 ^ n > 0) by (auto with zarith).
+ assert (H1 := Z_mod_lt w _ H0).
+ split;[apply div_le_0| apply div_lt];auto with zarith.
+Qed.
+
+Lemma pos_mod_spec : forall w p,
+       [|pos_mod p w|] = [|w|] mod (2 ^ [|p|]).
+Proof.
+ unfold pos_mod;intros.
+ assert (W:=to_Z_bounded p);assert (W':=to_Z_bounded digits);assert (W'' := to_Z_bounded w).
+ case_eq (p <= digits)%int31;intros Heq.
+ rewrite leb_spec in Heq.
+ rewrite lsr_spec, lsl_spec.
+ assert (0 <= [|p|] <= [|digits|]) by (auto with zarith).
+ rewrite <- (shift_unshift_mod_3 [|digits|] [|p|] [|w|] H).
+ replace ([|digits|] - [|p|]) with [|digits - p|];trivial.
+ rewrite sub_spec, Zmod_small;auto with zarith.
+ symmetry;apply Zmod_small.
+ rewrite <- Bool.not_true_iff_false, leb_spec in Heq.
+ assert (2 ^ [|digits|] < 2 ^ [|p|]);[ apply Zpower_lt_monotone | ];auto with zarith.
+ change wB with (2 ^ [|digits|]) in *;auto with zarith.
+Qed.
+
+Axiom sqrt2_spec : forall x y,
+       wB/ 4 <= [|x|] ->
+       let (s,r) := sqrt2 x y in
+          [||WW x y||] = [|s|] ^ 2 + [+|r|] /\
+          [+|r|] <= 2 * [|s|].
+
+(** {2 Specification and proof} **)
+Global Instance int_specs : ZnZ.Specs int_ops := {
+    spec_to_Z   := to_Z_bounded;
+    spec_of_pos := positive_to_int_spec;
+    spec_zdigits := refl_equal _;
+    spec_more_than_1_digit:= refl_equal _;
+    spec_0 := to_Z_0;
+    spec_1 := to_Z_1;
+    spec_m1 := refl_equal _;
+    spec_compare := compare_spec;
+    spec_eq0 := is_zero_spec_aux;
+    spec_opp_c := oppc_spec;
+    spec_opp := opp_spec;
+    spec_opp_carry := oppcarry_spec;
+    spec_succ_c := succc_spec;
+    spec_add_c := addc_spec;
+    spec_add_carry_c := addcarryc_spec;
+    spec_succ := succ_spec;
+    spec_add := add_spec;
+    spec_add_carry := addcarry_spec;
+    spec_pred_c := predc_spec;
+    spec_sub_c := subc_spec;
+    spec_sub_carry_c := subcarryc_spec;
+    spec_pred := pred_spec;
+    spec_sub := sub_spec;
+    spec_sub_carry := subcarry_spec;
+    spec_mul_c := mulc_WW_spec;
+    spec_mul := mul_spec;
+    spec_square_c := squarec_spec;
+    spec_div21 := diveucl_21_spec_aux;
+    spec_div_gt := fun a b _ => diveucl_spec_aux a b;
+    spec_div := diveucl_spec_aux;
+    spec_modulo_gt := fun a b _ _ => mod_spec a b;
+    spec_modulo := fun a b _ => mod_spec a b;
+    spec_gcd_gt := fun a b _ => gcd_spec a b;
+    spec_gcd := gcd_spec;
+    spec_head00 := head00_spec;
+    spec_head0 := head0_spec;
+    spec_tail00 := tail00_spec;
+    spec_tail0 := tail0_spec;
+    spec_add_mul_div := addmuldiv_spec;
+    spec_pos_mod := pos_mod_spec;
+    spec_is_even := is_even_spec;
+    spec_sqrt2 := sqrt2_spec;
+    spec_sqrt := sqrt_spec }.
+
+
+
+Module Int31Cyclic <: CyclicType.
+  Definition t := int.
+  Definition ops := int_ops.
+  Definition specs := int_specs.
+End Int31Cyclic.
+
+(*
 (*
 Lemma to_Z_rec_bounded :
   forall n i, (0 <= to_Z_rec n i < 2 ^ (Z_of_nat n))%Z.
@@ -1480,3 +1481,4 @@ Module Int31Cyclic <: CyclicType.
 End Int31Cyclic.
 
 
+*)

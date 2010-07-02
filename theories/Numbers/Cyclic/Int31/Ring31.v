@@ -9,21 +9,21 @@
 (** * Int31 numbers defines Z/(2^31)Z, and can hence be equipped
       with a ring structure and a ring tactic *)
 
-Require Import Int31 Cyclic31 CyclicAxioms.
+Require Import Cyclic31 CyclicAxioms.
 
 Local Open Scope int31_scope.
 
 (** Detection of constants *)
 
 Ltac isInt31cst t :=
-  match eval lazy delta [add31] in (t + 1)%int31 with
-  | add31 _ _ => constr:false
+  match eval lazy delta [add] in (t + 1)%int31 with
+  | add _ _ => constr:false
   | _ => constr:true
   end.
 
 Ltac Int31cst t :=
-  match eval lazy delta [add31] in (t + 1)%int31 with
-  | add31 _ _ => constr:NotConstant
+  match eval lazy delta [add] in (t + 1)%int31 with
+  | add _ _ => constr:NotConstant
   | _ => constr:t
   end.
 
@@ -46,13 +46,13 @@ intros A R R' zero one add mul sub opp Impl Ring.
 constructor; intros; apply Impl; apply Ring.
 Qed.
 
-Lemma Int31Ring : ring_theory 0 1 add31 mul31 sub31 opp31 Logic.eq.
+Lemma Int31Ring : ring_theory 0 1 add mul sub opp Logic.eq.
 Proof.
 exact (ring_theory_switch_eq _ _ _ _ _ _ _ _ _ Int31_canonic Int31ring.CyclicRing).
 Qed.
 
-Lemma eq31_correct : forall x y, eq31 x y = true -> x=y.
-Proof. now apply spec_eq. Qed.
+Lemma eq31_correct : forall x y, eqb x y = true -> x=y.
+Proof. now apply eqb_spec. Qed.
 
 Add Ring Int31Ring : Int31Ring
  (decidable eq31_correct,

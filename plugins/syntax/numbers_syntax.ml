@@ -26,7 +26,7 @@ let make_mind_mpdot dir modname id =
 
 (* int31 stuff *)
 let int31_module = ["Coq"; "Numbers"; "Cyclic"; "Int31"; "Int31Native"]
-let int31_path = make_path int31_module "int31"
+let int31_path = make_path int31_module "int"
 (*
 let int31_notation_module = 
   ["Coq"; "Numbers"; "Cyclic"; "Int31"; "Int31Notation"]

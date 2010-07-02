@@ -18,77 +18,77 @@ RegisterInd comparison as ind_cmp.
 
 Definition size := 31%nat.
 
-Register int31 : Set as int31_type.
+Register int : Set as int31_type.
 
 Delimit Scope int31_scope with int31.
-Bind Scope int31_scope with int31.
+Bind Scope int31_scope with int.
 
 (* Logical operations *)
-Register lsl31  : int31 -> int31 -> int31 as int31_lsl.
-Infix "<<" := lsl31 (at level 30, no associativity) : int31_scope.
+Register lsl  : int -> int -> int as int31_lsl.
+Infix "<<" := lsl (at level 30, no associativity) : int31_scope.
 
-Register lsr31  : int31 -> int31 -> int31 as int31_lsr.
-Infix ">>" := lsr31 (at level 30, no associativity) : int31_scope.
+Register lsr  : int -> int -> int as int31_lsr.
+Infix ">>" := lsr (at level 30, no associativity) : int31_scope.
 
-Register land31 : int31 -> int31 -> int31 as int31_land.
-Infix "land" := land31 (at level 40, left associativity) : int31_scope.
+Register land : int -> int -> int as int31_land.
+Infix "land" := land (at level 40, left associativity) : int31_scope.
 
-Register lor31  : int31 -> int31 -> int31 as int31_lor.
-Infix "lor" := lor31 (at level 40, left associativity) : int31_scope.
+Register lor  : int -> int -> int as int31_lor.
+Infix "lor" := lor (at level 40, left associativity) : int31_scope.
 
-Register lxor31 : int31 -> int31 -> int31 as int31_lxor.
-Infix "lxor" := lxor31 (at level 40, left associativity) : int31_scope.
+Register lxor : int -> int -> int as int31_lxor.
+Infix "lxor" := lxor (at level 40, left associativity) : int31_scope.
 
 (* Arithmetic modulo operations *)
-Register add31 : int31 -> int31 -> int31 as int31_add.
-Notation "n + m" := (add31 n m) : int31_scope.
+Register add : int -> int -> int as int31_add.
+Notation "n + m" := (add n m) : int31_scope.
 
-Register sub31 : int31 -> int31 -> int31 as int31_sub.
-Notation "n - m" := (sub31 n m) : int31_scope.
+Register sub : int -> int -> int as int31_sub.
+Notation "n - m" := (sub n m) : int31_scope.
 
-Register mul31 : int31 -> int31 -> int31 as int31_mul.
-Notation "n * m" := (mul31 n m) : int31_scope.
+Register mul : int -> int -> int as int31_mul.
+Notation "n * m" := (mul n m) : int31_scope.
 
-Register mul31c : int31 -> int31 -> int31 * int31 as int31_mulc.
+Register mulc : int -> int -> int * int as int31_mulc.
 
-Register div31 : int31 -> int31 -> int31 as int31_div.
-Notation "n / m" := (div31 n m) : int31_scope.
+Register div : int -> int -> int as int31_div.
+Notation "n / m" := (div n m) : int31_scope.
 
-Register mod31 : int31 -> int31 -> int31 as int31_mod.
-Notation "n '\%' m" := (mod31 n m) (at level 40, left associativity) : int31_scope.
+Register mod : int -> int -> int as int31_mod.
+Notation "n '\%' m" := (mod n m) (at level 40, left associativity) : int31_scope.
 
 (* Comparisons *)
-Register eq31 : int31 -> int31 -> bool as int31_eq.
-Notation "m '==' n" := (eq31 m n) (at level 70, no associativity) : bool_scope.
+Register eqb : int -> int -> bool as int31_eq.
+Notation "m '==' n" := (eqb m n) (at level 70, no associativity) : int31_scope.
 
-Register lt31 : int31 -> int31 -> bool as int31_lt.
-Notation "m < n" := (lt31 m n) : bool_scope.
+Register ltb : int -> int -> bool as int31_lt.
+Notation "m < n" := (ltb m n) : int31_scope.
 
-Register le31 : int31 -> int31 -> bool as int31_le.
-Notation "m <= n" := (le31 m n) : bool_scope.
+Register leb : int -> int -> bool as int31_le.
+Notation "m <= n" := (leb m n) : int31_scope.
 
 (* Iterators *)
-Register foldi_cont31 : 
+Register foldi_cont : 
    forall 
-     (A B     : Type)
-     (f       : int31 -> (A -> B) -> (A -> B)) 
-     (from to : int31)
+     {A B     : Type}
+     (f       : int -> (A -> B) -> (A -> B)) 
+     (from to : int)
      (cont    : A -> B), 
      A -> B 
      as int31_foldi.
 
-Register foldi_down_cont31 : 
+Register foldi_down_cont : 
   forall 
-    (A B         : Type)
-    (f           :int31 -> (A -> B) -> (A -> B))
-    (from downto : int31)
+    {A B         : Type}
+    (f           :int -> (A -> B) -> (A -> B))
+    (from downto : int)
     (cont        : A -> B),
     A -> B 
     as int31_foldi_down.
 
 (* Print *)
 
-Register print_int : int31 -> int31 as int31_print.
+Register print_int : int -> int as int31_print.
 
 
 

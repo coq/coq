@@ -13,11 +13,11 @@ Cyclic/DoubleCyclic/DoubleSub.vo
 Cyclic/DoubleCyclic/DoubleType.vo
 Cyclic/Int31/Int31Native.vo
 Cyclic/Int31/Int31Op.vo
-Cyclic/Int31/Int31Bool.vo
 Cyclic/Int31/Int31Axioms.vo
-Cyclic/Int31/Int31.vo
+Cyclic/Int31/Int31Properties.vo
 Cyclic/Int31/Cyclic31.vo
 Cyclic/Int31/Ring31.vo
+Cyclic/Int31/Int31.vo
 Cyclic/ZModulo/ZModulo.vo
 Integer/Abstract/ZAddOrder.vo
 Integer/Abstract/ZAdd.vo
