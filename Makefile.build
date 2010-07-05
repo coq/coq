@@ -70,7 +70,7 @@ BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(MLINCLUDES) $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
 DEPFLAGS= -slash $(LOCALINCLUDES)
 
-CAMLP4EXTENDFLAGS=-I $(CAMLLIB) unix.cma -I . #grammar dependencies are now in camlp4use statements
+CAMLP4EXTENDFLAGS=-I $(CAMLLIB) -I . #grammar dependencies are now in camlp4use statements
 CAMLP4DEPS=sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*\*)@\1@p'
 CAMLP4USE=sed -n -e 's/pa_macro.cmo/pa_macro.cmo -D$(CAMLVERSION)/' -e 's@^(\*.*camlp4use: "\(.*\)".*\*)@\1@p'
 
