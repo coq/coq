@@ -720,6 +720,7 @@ object(self)
 
   method show_goals_full =
     if not full_goal_done then
+      proof_view#buffer#set_text "";
       begin
         let menu_callback = if !current.contextual_menus_on_goal then
           (fun s () -> ignore (self#insert_this_phrase_on_success
@@ -978,6 +979,7 @@ object(self)
   (* backtrack Coq to the phrase preceding iterator [i] *)
   method backtrack_to_no_lock i =
     prerr_endline "Backtracking_to iter starts now.";
+    full_goal_done <- false;
     (* pop Coq commands until we reach iterator [i] *)
     let rec n_step n =
       if Stack.is_empty cmd_stack then n else
@@ -1030,6 +1032,7 @@ object(self)
       else self#backtrack_to point
 
   method undo_last_step =
+    full_goal_done <- false;
     if Mutex.try_lock coq_may_stop then
       (push_info "Undoing last step...";
        (try

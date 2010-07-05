@@ -404,9 +404,10 @@ let concl_next_tac sigma concl =
   ])
 
 let current_goals () =
-  let pfts =
-    Proof_global.give_me_the_proof ()
-  in
+  try 
+    let pfts =
+      Proof_global.give_me_the_proof ()
+    in
   let { Evd.it=all_goals ; sigma=sigma } = Proof.V82.subgoals pfts in
   if all_goals = [] then
     begin
@@ -441,6 +442,7 @@ let current_goals () =
       in
       Goals (List.map process_goal all_goals)
     end
+  with Proof_global.NoCurrentProof -> Message "" (* quick hack to have a clean message screen *)
 
 let id_of_name = function
   | Names.Anonymous -> id_of_string "x"
