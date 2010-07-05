@@ -25,5 +25,5 @@ cat $CMXS.startup.s | sed \
 # Recompile fixed startup code
 as -o $CMXS.startup.o $CMXS.startup.fixed.s
 # Build fixed .cmxs (assume all object files are at the same place)
-gcc -bundle -flat_namespace -undefined warning -read_only_relocs suppress -o $CMXS $OBJS $CMXS.startup.o
+ld -bundle -flat_namespace -undefined warning -read_only_relocs suppress -o $CMXS $OBJS $CMXS.startup.o
 rm $CMXS.startup.o $CMXS.startup.s $CMXS.startup.fixed.s
