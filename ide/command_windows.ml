@@ -104,9 +104,16 @@ object(self)
 	then com ^ " " else com ^ " " ^ entry#text ^" . "
       in
       try
-	Coq.raw_interp coqtop phrase;
-	result#buffer#set_text
-	  ("Result for command " ^ phrase ^ ":\n" ^ (Coq.read_stdout coqtop))
+        result#buffer#set_text
+          (match Coq.raw_interp coqtop phrase with
+             | Ide_blob.Fail (l,str) ->
+                 ("Error while interpreting "^phrase^":\n"^str)
+             | Ide_blob.Good () ->
+                 match Coq.read_stdout coqtop with
+                   | Ide_blob.Fail (l,str) ->
+                       ("Error while fetching "^phrase^"results:\n"^str)
+                   | Ide_blob.Good results ->
+                       ("Result for command " ^ phrase ^ ":\n" ^ results))
       with e ->
 	let (s,loc) = Coq.process_exn e in
 	assert (Glib.Utf8.validate s);

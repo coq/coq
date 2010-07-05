@@ -29,12 +29,14 @@ type coqtop = {
   mutable cout : in_channel ;
   mutable cin : out_channel ;
   sup_args : string ;
+  mutable version : int ;
 }
 
 let dummy_coqtop = {
   cout = stdin ;
   cin = stdout ;
   sup_args = "" ;
+  version = 0 ;
 }
 
 let prerr_endline s = if !debug then prerr_endline s else ()
@@ -81,14 +83,9 @@ let version () =
     (if Mltop.is_native then "native" else "bytecode")
     (if Coq_config.best="opt" then "native" else "bytecode")
 
-exception Coq_failure of (Util.loc option * string)
-
 let eval_call coqtop (c:'a Ide_blob.call) =
   Safe_marshal.send coqtop.cin c;
-  let res = (Safe_marshal.receive: in_channel -> 'a Ide_blob.value) coqtop.cout in
-  match res with
-    | Ide_blob.Good v -> v
-    | Ide_blob.Fail err -> raise (Coq_failure err)
+  (Safe_marshal.receive: in_channel -> 'a Ide_blob.value) coqtop.cout
 
 let is_in_loadpath coqtop s = eval_call coqtop (Ide_blob.is_in_loadpath s)
  
@@ -112,18 +109,20 @@ let spawn_coqtop sup_args =
     let oc,ic = Unix.open_process (dir^"/coqtop.opt -ideslave "^sup_args) in
     incr toplvl_ctr;
     Mutex.unlock toplvl_ctr_mtx;
-    { cin = ic; cout = oc ; sup_args = sup_args }
+    { cin = ic; cout = oc ; sup_args = sup_args ; version = 0 }
   with e ->
     Mutex.unlock toplvl_ctr_mtx;
     raise e
 
 let kill_coqtop coqtop =
+  let ic = coqtop.cin in
+  let oc = coqtop.cout in
   ignore (Thread.create
             (fun () ->
                try 
-                 ignore (Unix.close_process (coqtop.cout,coqtop.cin));
-                 Mutex.lock toplvl_ctr_mtx; decr toplvl_ctr; Mutex.unlock toplvl_ctr_mtx;
-               with _ -> ())
+                 ignore (Unix.close_process (oc,ic));
+                 Mutex.lock toplvl_ctr_mtx; decr toplvl_ctr; Mutex.unlock toplvl_ctr_mtx
+               with _ -> prerr_endline "Process leak")
             ())
 
 let coqtop_zombies =
@@ -137,7 +136,7 @@ let reset_coqtop coqtop =
   kill_coqtop coqtop;
   let ni = spawn_coqtop coqtop.sup_args in
   coqtop.cin <- ni.cin;
-  coqtop.cout <- ni.cout
+  coqtop.cout <- ni.cout;
 
 module PrintOpt =
 struct
@@ -156,13 +155,21 @@ struct
 
   let set coqtop opt value =
     Hashtbl.replace state_hack opt value;
-    List.iter
-      (fun cmd -> 
+    List.fold_left
+      (fun acc cmd -> 
          let str = (if value then "Set" else "Unset") ^ " Printing " ^ cmd ^ "." in
-         raw_interp coqtop str)
+         match raw_interp coqtop str with
+           | Ide_blob.Good () -> acc
+           | Ide_blob.Fail (l,errstr) ->  Ide_blob.Fail (l,"Could not eval \""^str^"\": "^errstr)
+      )
+      (Ide_blob.Good ())
       opt
 
-  let enforce_hack coqtop = Hashtbl.iter (set coqtop) state_hack 
+  let enforce_hack coqtop = Hashtbl.fold (fun opt v acc ->
+                                            match set coqtop opt v with
+                                              | Ide_blob.Good () -> Ide_blob.Good ()
+                                              | Ide_blob.Fail str -> Ide_blob.Fail str)
+                              state_hack (Ide_blob.Good ())
 end
 
 let rec is_pervasive_exn = function
@@ -197,14 +204,10 @@ let print_toplevel_error exc =
 
 let process_exn e = let s,loc= print_toplevel_error e in (msgnl s,loc)
 
-type tried_tactic =
-  | Interrupted
-  | Success of int (* nb of goals after *)
-  | Failed
-
 let goals coqtop =
-  PrintOpt.enforce_hack coqtop;
-  eval_call coqtop Ide_blob.current_goals
+  match PrintOpt.enforce_hack coqtop with
+    | Ide_blob.Good () -> eval_call coqtop Ide_blob.current_goals
+    | Ide_blob.Fail str -> Ide_blob.Fail str
 
 let make_cases coqtop s = eval_call coqtop (Ide_blob.make_cases s)
 
