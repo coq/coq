@@ -545,9 +545,9 @@ Module WRaw2SetsOn (E:DecidableType)(M:WRawSets E) <: WSetsOn E.
 
 End WRaw2SetsOn.
 
-Module WRaw2Sets (E:DecidableType)(M:WRawSets E) <: WSets with Module E := E.
-  Module E := E.
-  Include WRaw2SetsOn E M.
+Module WRaw2Sets (D:DecidableType)(M:WRawSets D) <: WSets with Module E := D.
+  Module E := D.
+  Include WRaw2SetsOn D M.
 End WRaw2Sets.
 
 (** Same approach for ordered sets *)
