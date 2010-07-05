@@ -18,11 +18,12 @@ val safe_basename_of_global : global_reference -> identifier
 val warning_axioms : unit -> unit
 val warning_both_mod_and_cst :
  qualid -> module_path -> global_reference -> unit
+val warning_id : string -> unit
 val error_axiom_scheme : global_reference -> int -> 'a
 val error_constant : global_reference -> 'a
 val error_inductive : global_reference -> 'a
 val error_nb_cons : unit -> 'a
-val error_module_clash : string -> 'a
+val error_module_clash : module_path -> module_path -> 'a
 val error_unknown_module : qualid -> 'a
 val error_scheme : unit -> 'a
 val error_not_visible : global_reference -> 'a
@@ -56,7 +57,6 @@ val common_prefix_from_list : module_path -> module_path list -> module_path
 val add_labels_mp : module_path -> label list -> module_path
 val get_nth_label_mp : int -> module_path -> label
 val labels_of_ref : global_reference -> module_path * label list
-val labels_of_ref2 : global_reference -> module_path * label
 
 (*s Some table-related operations *)
 
