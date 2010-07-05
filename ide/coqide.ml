@@ -104,35 +104,34 @@ type viewable_script =
      command : Command_windows.command_window;
     }
 
+let kill_session s =
+  s.analyzed_view#kill_detached_views ();
+  Coq.kill_coqtop s.toplvl
 
-let notebook_page_of_session
-      {script=script;tab_label=bname;proof_view=proof;message_view=message;command=command} =
-  let session_paned =
-    GPack.paned `VERTICAL () in
-  let eval_paned =
-    GPack.paned `HORIZONTAL ~border_width:5
-      ~packing:(session_paned#pack1 ~shrink:false ~resize:true) () in
-  let script_frame =
-    GBin.frame ~shadow_type:`IN ~packing:eval_paned#add1 () in
-  let script_scroll =
-    GBin.scrolled_window ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:script_frame#add () in
-  let state_paned =
-    GPack.paned `VERTICAL ~packing:eval_paned#add2 () in
-  let proof_frame =
-    GBin.frame ~shadow_type:`IN ~packing:state_paned#add1 () in
-  let proof_scroll =
-    GBin.scrolled_window ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:proof_frame#add () in
-  let message_frame =
-    GBin.frame ~shadow_type:`IN ~packing:state_paned#add2 () in
-  let message_scroll =
-    GBin.scrolled_window ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:message_frame#add () in
-  let session_tab =
-    GPack.hbox ~homogeneous:false () in
-  let img =
-    GMisc.image ~packing:session_tab#pack ~icon_size:`SMALL_TOOLBAR () in
+let build_session s =
+  let session_paned = GPack.paned `VERTICAL () in
+  let eval_paned = GPack.paned `HORIZONTAL ~border_width:5
+                     ~packing:(session_paned#pack1 ~shrink:false ~resize:true) () in
+  let script_frame = GBin.frame ~shadow_type:`IN
+                       ~packing:eval_paned#add1 () in
+  let script_scroll = GBin.scrolled_window ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC
+                        ~packing:script_frame#add () in
+  let state_paned = GPack.paned `VERTICAL
+                      ~packing:eval_paned#add2 () in
+  let proof_frame = GBin.frame ~shadow_type:`IN
+                      ~packing:state_paned#add1 () in
+  let proof_scroll = GBin.scrolled_window ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC
+                       ~packing:proof_frame#add () in
+  let message_frame = GBin.frame ~shadow_type:`IN
+                        ~packing:state_paned#add2 () in
+  let message_scroll = GBin.scrolled_window ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC
+                         ~packing:message_frame#add () in
+  let session_tab = GPack.hbox ~homogeneous:false () in
+  let img = GMisc.image ~icon_size:`SMALL_TOOLBAR
+              ~packing:session_tab#pack () in
   let _ =
-    script#buffer#connect#modified_changed
-      ~callback:(fun () -> if script#buffer#modified
+    s.script#buffer#connect#modified_changed
+      ~callback:(fun () -> if s.script#buffer#modified
                  then img#set_stock `SAVE
                  else img#set_stock `YES) in
   let _ =
@@ -146,18 +145,19 @@ let notebook_page_of_session
               old_paned_width := paned_width;
               old_paned_height := paned_height;
             ))) in
-  session_paned#pack2 ~shrink:false ~resize:false (command#frame#coerce);
-  script_scroll#add script#coerce;
-  proof_scroll#add proof#coerce;
-  message_scroll#add message#coerce;
-  session_tab#pack bname#coerce;
+  session_paned#pack2 ~shrink:false ~resize:false (s.command#frame#coerce);
+  script_scroll#add s.script#coerce;
+  proof_scroll#add s.proof_view#coerce;
+  message_scroll#add s.message_view#coerce;
+  session_tab#pack s.tab_label#coerce;
   img#set_stock `YES;
   eval_paned#set_position 1;
   state_paned#set_position 1;
   (Some session_tab#coerce,None,session_paned#coerce)
 
 let session_notebook =
-  Typed_notebook.create notebook_page_of_session ~border_width:2 ~show_border:false ~scrollable:true ()
+  Typed_notebook.create build_session kill_session
+    ~border_width:2 ~show_border:false ~scrollable:true ()
 
 let cb = GData.clipboard Gdk.Atom.primary
 
@@ -256,14 +256,8 @@ let do_if_not_computing text f x =
 
 let remove_current_view_page () =
   let c = session_notebook#current_page in
-  let v = session_notebook#get_nth_term c in
-    v.analyzed_view#kill_detached_views ();
-    v.script#destroy ();
-    v.tab_label#destroy ();
-    v.proof_view#destroy ();
-    v.message_view#destroy ();
-    Coq.kill_coqtop v.toplvl;
-    session_notebook#remove_page c
+  session_notebook#remove_page c
+
 
 let print_items = [
   ([implicit],"Display _implicit arguments",GdkKeysyms._i,false);
@@ -1533,276 +1527,301 @@ let main files =
       (vbox#pack ~expand:false ~fill:false)
       ()
     in
-      show_toolbar :=
-	(fun b -> if b then toolbar#misc#show () else toolbar#misc#hide ());
+    show_toolbar :=
+    (fun b -> if b then toolbar#misc#show () else toolbar#misc#hide ());
 
-      let factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/" menubar in
-      let accel_group = factory#accel_group in
+    let factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/" menubar in
+    let accel_group = factory#accel_group in
 
-      (* File Menu *)
-      let file_menu = factory#add_submenu "_File" in
+    (* File Menu *)
+    let file_menu = factory#add_submenu "_File" in
 
-      let file_factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/File/" file_menu ~accel_group in
+    let file_factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/File/" file_menu ~accel_group in
 
-      (* File/Load Menu *)
-      let load_file handler f =
-	let f = absolute_filename f in
-	  try
-	    prerr_endline "Loading file starts";
-	    if not (Util.list_fold_left_i
-                (fun i found x -> if found then found else
+    (* File/Load Menu *)
+    let load_file handler f =
+      let f = absolute_filename f in
+      try
+        prerr_endline "Loading file starts";
+        if not (Util.list_fold_left_i
+                  (fun i found x -> if found then found else
                      let {analyzed_view=av} = x in
-                         (match av#filename with
-                           | None -> false
-                           | Some fn ->
-                               if same_file f fn
-                               then (session_notebook#goto_page i; true)
-                               else false))
-                0 false session_notebook#pages)
-            then begin
-	    prerr_endline "Loading: must open";
-	    let b = Buffer.create 1024 in
-	      prerr_endline "Loading: get raw content";
-	      with_file handler f ~f:(input_channel b);
-	      prerr_endline "Loading: convert content";
-	      let s = do_convert (Buffer.contents b) in
-		prerr_endline "Loading: create view";
-                let session = create_session () in
-                  session.tab_label#set_text (Glib.Convert.filename_to_utf8 (Filename.basename f));
-		  prerr_endline "Loading: adding view";
-                  let index = session_notebook#append_term session in
-		  let av = session.analyzed_view in
-		    prerr_endline "Loading: set filename";
-		    av#set_filename (Some f);
-		    prerr_endline "Loading: stats";
-		    av#update_stats;
-		    let input_buffer = session.script#buffer in
-		      prerr_endline "Loading: fill buffer";
-		      input_buffer#set_text s;
-		      input_buffer#place_cursor input_buffer#start_iter;
-		      prerr_endline ("Loading: switch to view "^ string_of_int index);
-		      session_notebook#goto_page index;
-		      prerr_endline "Loading: highlight";
-		      input_buffer#set_modified false;
-		      prerr_endline "Loading: clear undo";
-		      session.script#clear_undo;
-		      prerr_endline "Loading: success"
-            end
-	  with
-	    | e -> handler ("Load failed: "^(Printexc.to_string e))
+                     (match av#filename with
+                        | None -> false
+                        | Some fn ->
+                            if same_file f fn
+                            then (session_notebook#goto_page i; true)
+                            else false))
+                  0 false session_notebook#pages)
+        then begin
+          prerr_endline "Loading: must open";
+          let b = Buffer.create 1024 in
+          prerr_endline "Loading: get raw content";
+          with_file handler f ~f:(input_channel b);
+          prerr_endline "Loading: convert content";
+          let s = do_convert (Buffer.contents b) in
+          prerr_endline "Loading: create view";
+          let session = create_session () in
+          session.tab_label#set_text (Glib.Convert.filename_to_utf8 (Filename.basename f));
+          prerr_endline "Loading: adding view";
+          let index = session_notebook#append_term session in
+          let av = session.analyzed_view in
+          prerr_endline "Loading: set filename";
+          av#set_filename (Some f);
+          prerr_endline "Loading: stats";
+          av#update_stats;
+          let input_buffer = session.script#buffer in
+          prerr_endline "Loading: fill buffer";
+          input_buffer#set_text s;
+          input_buffer#place_cursor input_buffer#start_iter;
+          prerr_endline ("Loading: switch to view "^ string_of_int index);
+          session_notebook#goto_page index;
+          prerr_endline "Loading: highlight";
+          input_buffer#set_modified false;
+          prerr_endline "Loading: clear undo";
+          session.script#clear_undo;
+          prerr_endline "Loading: success"
+        end
+      with
+        | e -> handler ("Load failed: "^(Printexc.to_string e))
+    in
+    let load f = load_file flash_info f in
+    let load_m = file_factory#add_item "_New"
+                   ~key:GdkKeysyms._N in
+    let load_f () =
+      match select_file_for_save ~title:"Create file" () with
+        | None -> ()
+        | Some f -> load f
+    in
+    ignore (load_m#connect#activate (load_f));
+
+    let load_m = file_factory#add_item "_Open"
+                   ~key:GdkKeysyms._O in
+    let load_f () =
+      match select_file_for_open ~title:"Load file" () with
+        | None -> ()
+        | Some f -> load f
+    in
+    ignore (load_m#connect#activate (load_f));
+
+    (* File/Save Menu *)
+    let save_m = file_factory#add_item "_Save"
+                   ~key:GdkKeysyms._S in
+    let save_f () =
+      let current = session_notebook#current_term in
+      try
+        (match current.analyzed_view#filename with
+           | None ->
+               begin match select_file_for_save ~title:"Save file" ()
+               with
+                 | None -> ()
+                 | Some f ->
+                     if current.analyzed_view#save_as f then begin
+                       current.tab_label#set_text (Filename.basename f);
+                       flash_info ("File " ^ f ^ " saved")
+                     end
+                     else warning ("Save Failed (check if " ^ f ^ " is writable)")
+               end
+           | Some f ->
+               if current.analyzed_view#save f then
+                 flash_info ("File " ^ f ^ " saved")
+               else warning  ("Save Failed (check if " ^ f ^ " is writable)")
+
+        )
+      with
+        | e -> warning "Save: unexpected error"
+    in
+    ignore (save_m#connect#activate save_f);
+
+    (* File/Save As Menu *)
+    let saveas_m = file_factory#add_item "S_ave as"
+    in
+    let saveas_f () =
+      let current = session_notebook#current_term in
+      try (match current.analyzed_view#filename with
+             | None ->
+                 begin match select_file_for_save ~title:"Save file as" ()
+                 with
+                   | None -> ()
+                   | Some f ->
+                       if current.analyzed_view#save_as f then begin
+                         current.tab_label#set_text (Filename.basename f);
+                         flash_info "Saved"
+                       end
+                       else flash_info "Save Failed"
+                 end
+             | Some f ->
+                 begin match select_file_for_save
+                               ~dir:(ref (Filename.dirname f))
+                               ~filename:(Filename.basename f)
+                                            ~title:"Save file as" ()
+                 with
+                   | None -> ()
+                   | Some f ->
+                       if current.analyzed_view#save_as f then begin
+                         current.tab_label#set_text (Filename.basename f);
+                         flash_info "Saved"
+                       end else flash_info "Save Failed"
+                 end);
+      with e -> flash_info "Save Failed"
+    in
+    ignore (saveas_m#connect#activate saveas_f);
+    (* XXX *)
+    (* File/Save All Menu *)
+    let saveall_m = file_factory#add_item "Sa_ve all" in
+    let saveall_f () =
+      List.iter
+        (function
+           | {script = view ; analyzed_view = av} ->
+               begin match av#filename with
+                 | None -> ()
+                 | Some f ->
+                     ignore (av#save f)
+               end
+        )  session_notebook#pages
+    in
+    (* XXX *)
+    let has_something_to_save () =
+      List.exists
+        (function
+           | {script=view} -> view#buffer#modified
+        )
+        session_notebook#pages
+    in
+    ignore (saveall_m#connect#activate saveall_f);
+    (* XXX *)
+    (* File/Revert Menu *)
+    let revert_m = file_factory#add_item "_Revert all buffers" in
+    let revert_f () =
+      List.iter
+        (function
+             {analyzed_view = av} ->
+               (try
+                  match av#filename,av#stats with
+                    | Some f,Some stats ->
+                        let new_stats = Unix.stat f in
+                        if new_stats.Unix.st_mtime > stats.Unix.st_mtime
+                        then av#revert
+                    | Some _, None -> av#revert
+                    | _ -> ()
+                with _ -> av#revert)
+        ) session_notebook#pages
+    in
+    ignore (revert_m#connect#activate revert_f);
+
+    (* File/Close Menu *)
+    let close_m =
+      file_factory#add_item "_Close buffer" ~key:GdkKeysyms._W in
+    ignore (close_m#connect#activate remove_current_view_page);
+
+    (* File/Print Menu *)
+    let _ = file_factory#add_item "_Print..."
+              ~key:GdkKeysyms._P
+              ~callback:(fun () -> do_print session_notebook#current_term) in
+
+    (* File/Export to Menu *)
+    let export_f kind () =
+      let v = session_notebook#current_term in
+      let av = v.analyzed_view in
+      match av#filename with
+        | None ->
+            flash_info "Cannot print: this buffer has no name"
+        | Some f ->
+            let basef = Filename.basename f in
+            let output =
+              let basef_we = try Filename.chop_extension basef with _ -> basef in
+              match kind with
+                | "latex" -> basef_we ^ ".tex"
+                | "dvi" | "ps" | "pdf" | "html" -> basef_we ^ "." ^ kind
+                | _ -> assert false
+            in
+            let cmd =
+              "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^
+              !current.cmd_coqdoc ^ " --" ^ kind ^ " -o " ^ (Filename.quote output) ^ " " ^ (Filename.quote basef)
+            in
+            let s,_ = run_command av#insert_message cmd in
+            flash_info (cmd ^
+                        if s = Unix.WEXITED 0
+                        then " succeeded"
+                        else " failed")
+    in
+    let file_export_m =  file_factory#add_submenu "E_xport to" in
+
+    let file_export_factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/Export/" file_export_m ~accel_group in
+    let _ =
+      file_export_factory#add_item "_Html" ~callback:(export_f "html")
+    in
+    let _ =
+      file_export_factory#add_item "_LaTeX" ~callback:(export_f "latex")
+    in
+    let _ =
+      file_export_factory#add_item "_Dvi" ~callback:(export_f "dvi")
+    in
+    let _ =
+      file_export_factory#add_item "_Pdf" ~callback:(export_f "pdf")
+    in
+    let _ =
+      file_export_factory#add_item "_Ps" ~callback:(export_f "ps")
+    in
+
+    (* File/Rehighlight Menu *)
+    let rehighlight_m = file_factory#add_item "Reh_ighlight" ~key:GdkKeysyms._L in
+    ignore (rehighlight_m#connect#activate
+              (fun () ->
+                 force_retag
+                   session_notebook#current_term.script#buffer;
+                 session_notebook#current_term.analyzed_view#recenter_insert));
+
+    (* File/Quit Menu *)
+    let quit_f () =
+      let kill_and_exit () =
+        let wait_window =
+          GWindow.window ~modal:true ~wm_class:"CoqIde" ~wm_name:"CoqIde" ~kind:`POPUP
+            ~title:"Terminating coqtops" () in
+        let _ =
+          GMisc.label ~text:"Terminating coqtops processes, please wait ..."
+            ~packing:wait_window#add () in
+        List.iter (fun _ -> session_notebook#remove_page 0) session_notebook#pages;
+        let callback () =
+          if Coq.coqtop_zombies () = 0 then
+            exit 0;
+          true in
+        ignore (GMain.Timeout.add ~ms:100 ~callback);
+        let warning_window =
+          GWindow.message_dialog ~message_type:`WARNING ~buttons:GWindow.Buttons.yes_no 
+            ~message:"Some coqtops processes are still running. If you quit CoqIDE right now, you may have to kill them manually. Do you want to wait for those processes to terminate ?" () in
+        let callback () =
+          wait_window#misc#hide ();
+          match warning_window#run () with
+            | `YES -> warning_window#misc#hide (); wait_window#show (); true
+            | `NO | `DELETE_EVENT -> exit 0
+        in
+        ignore (GMain.Timeout.add ~ms:5000 ~callback);
+        wait_window#show ()
       in
-      let load f = load_file flash_info f in
-      let load_m = file_factory#add_item "_New"
-	~key:GdkKeysyms._N in
-      let load_f () =
-	match select_file_for_save ~title:"Create file" () with
-	  | None -> ()
-	  | Some f -> load f
+      save_pref();
+      if has_something_to_save () then
+        match (GToolbox.question_box ~title:"Quit"
+                 ~buttons:["Save Named Buffers and Quit";
+                           "Quit without Saving";
+                           "Don't Quit"]
+                 ~default:0
+                             ~icon:
+                             (let img = GMisc.image () in
+                              img#set_stock `DIALOG_WARNING;
+                              img#set_icon_size `DIALOG;
+                              img#coerce)
+                             "There are unsaved buffers"
+        )
+        with 1 -> saveall_f () ; kill_and_exit ()
+          | 2 -> kill_and_exit ()
+          | _ -> ()
+            else kill_and_exit ()
       in
-	ignore (load_m#connect#activate (load_f));
-
-      let load_m = file_factory#add_item "_Open"
-	~key:GdkKeysyms._O in
-      let load_f () =
-	match select_file_for_open ~title:"Load file" () with
-	  | None -> ()
-	  | Some f -> load f
+      let _ = file_factory#add_item "_Quit" ~key:GdkKeysyms._Q
+                ~callback:quit_f
       in
-	ignore (load_m#connect#activate (load_f));
-
-	(* File/Save Menu *)
-	let save_m = file_factory#add_item "_Save"
-	  ~key:GdkKeysyms._S in
-	let save_f () =
-	  let current = session_notebook#current_term in
-	    try
-	      (match current.analyzed_view#filename with
-		 | None ->
-		     begin match select_file_for_save ~title:"Save file" ()
-		       with
-			 | None -> ()
-			 | Some f ->
-			     if current.analyzed_view#save_as f then begin
-                                 current.tab_label#set_text (Filename.basename f);
-				 flash_info ("File " ^ f ^ " saved")
-			       end
-			     else warning ("Save Failed (check if " ^ f ^ " is writable)")
-		     end
-		 | Some f ->
-		     if current.analyzed_view#save f then
-		       flash_info ("File " ^ f ^ " saved")
-		     else warning  ("Save Failed (check if " ^ f ^ " is writable)")
-
-	      )
-	    with
-	      | e -> warning "Save: unexpected error"
-	in
-	  ignore (save_m#connect#activate save_f);
-
-	  (* File/Save As Menu *)
-	  let saveas_m = file_factory#add_item "S_ave as"
-	  in
-	  let saveas_f () =
-	    let current = session_notebook#current_term in
-	      try (match current.analyzed_view#filename with
-		     | None ->
-			 begin match select_file_for_save ~title:"Save file as" ()
-			   with
-			     | None -> ()
-			     | Some f ->
-				 if current.analyzed_view#save_as f then begin
-                                   current.tab_label#set_text (Filename.basename f);
-				     flash_info "Saved"
-				   end
-				 else flash_info "Save Failed"
-			 end
-		     | Some f ->
-			 begin match select_file_for_save
-			     ~dir:(ref (Filename.dirname f))
-			     ~filename:(Filename.basename f)
-			     ~title:"Save file as" ()
-			   with
-			     | None -> ()
-			     | Some f ->
-				 if current.analyzed_view#save_as f then begin
-                                   current.tab_label#set_text (Filename.basename f);
-				     flash_info "Saved"
-				   end else flash_info "Save Failed"
-			 end);
-	      with e -> flash_info "Save Failed"
-	  in
-	    ignore (saveas_m#connect#activate saveas_f);
-	    (* XXX *)
-	    (* File/Save All Menu *)
-	    let saveall_m = file_factory#add_item "Sa_ve all" in
-	    let saveall_f () =
-	      List.iter
-		(function
-		   | {script = view ; analyzed_view = av} ->
-		       begin match av#filename with
-			 | None -> ()
-			 | Some f ->
-			     ignore (av#save f)
-		       end
-		)  session_notebook#pages
-	    in
-            (* XXX *)
-	    let has_something_to_save () =
-	      List.exists
-		(function
-		   | {script=view} -> view#buffer#modified
-		)
-		session_notebook#pages
-	    in
-	      ignore (saveall_m#connect#activate saveall_f);
-	     (* XXX *)
-	      (* File/Revert Menu *)
-	      let revert_m = file_factory#add_item "_Revert all buffers" in
-	      let revert_f () =
-		List.iter
-		  (function
-		       {analyzed_view = av} ->
-			 (try
-			      match av#filename,av#stats with
-				| Some f,Some stats ->
-				    let new_stats = Unix.stat f in
-				      if new_stats.Unix.st_mtime > stats.Unix.st_mtime
-				      then av#revert
-				| Some _, None -> av#revert
-				| _ -> ()
-			  with _ -> av#revert)
-		  ) session_notebook#pages
-	      in
-		ignore (revert_m#connect#activate revert_f);
-
-		(* File/Close Menu *)
-		let close_m =
-                  file_factory#add_item "_Close buffer" ~key:GdkKeysyms._W in
-		  ignore (close_m#connect#activate remove_current_view_page);
-
-		  (* File/Print Menu *)
-		  let _ = file_factory#add_item "_Print..."
-	            ~key:GdkKeysyms._P
-                    ~callback:(fun () -> do_print session_notebook#current_term) in
-
-		  (* File/Export to Menu *)
-		  let export_f kind () =
-		    let v = session_notebook#current_term in
-		    let av = v.analyzed_view in
-		      match av#filename with
-			| None ->
-			    flash_info "Cannot print: this buffer has no name"
-			| Some f ->
-			    let basef = Filename.basename f in
-			    let output =
-			      let basef_we = try Filename.chop_extension basef with _ -> basef in
-				match kind with
-				  | "latex" -> basef_we ^ ".tex"
-				  | "dvi" | "ps" | "pdf" | "html" -> basef_we ^ "." ^ kind
-				  | _ -> assert false
-			    in
-			    let cmd =
-			      "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^
-				!current.cmd_coqdoc ^ " --" ^ kind ^ " -o " ^ (Filename.quote output) ^ " " ^ (Filename.quote basef)
-			    in
-			    let s,_ = run_command av#insert_message cmd in
-			      flash_info (cmd ^
-					     if s = Unix.WEXITED 0
-					     then " succeeded"
-					     else " failed")
-		  in
-		  let file_export_m =  file_factory#add_submenu "E_xport to" in
-
-		  let file_export_factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/Export/" file_export_m ~accel_group in
-		  let _ =
-		    file_export_factory#add_item "_Html" ~callback:(export_f "html")
-		  in
-		  let _ =
-		    file_export_factory#add_item "_LaTeX" ~callback:(export_f "latex")
-		  in
-		  let _ =
-		    file_export_factory#add_item "_Dvi" ~callback:(export_f "dvi")
-		  in
-		  let _ =
-		    file_export_factory#add_item "_Pdf" ~callback:(export_f "pdf")
-		  in
-		  let _ =
-		    file_export_factory#add_item "_Ps" ~callback:(export_f "ps")
-		  in
-
-		  (* File/Rehighlight Menu *)
-		  let rehighlight_m = file_factory#add_item "Reh_ighlight" ~key:GdkKeysyms._L in
-		    ignore (rehighlight_m#connect#activate
-			      (fun () ->
-				 force_retag
-				   session_notebook#current_term.script#buffer;
-				 session_notebook#current_term.analyzed_view#recenter_insert));
-
-		    (* File/Quit Menu *)
-		    let quit_f () =
-		      save_pref();
-		      if has_something_to_save () then
-			match (GToolbox.question_box ~title:"Quit"
-				 ~buttons:["Save Named Buffers and Quit";
-					   "Quit without Saving";
-					   "Don't Quit"]
-				 ~default:0
-				 ~icon:
-				 (let img = GMisc.image () in
-				    img#set_stock `DIALOG_WARNING;
-				    img#set_icon_size `DIALOG;
-				    img#coerce)
-				 "There are unsaved buffers"
-			      )
-			with 1 -> saveall_f () ; exit 0
-			  | 2 -> exit 0
-			  | _ -> ()
-		      else exit 0
-		    in
-		    let _ = file_factory#add_item "_Quit" ~key:GdkKeysyms._Q
-		      ~callback:quit_f
-		    in
-		      ignore (w#event#connect#delete (fun _ -> quit_f (); true));
+      ignore (w#event#connect#delete (fun _ -> quit_f (); true));
 
 		      (* Edit Menu *)
 		      let edit_menu = factory#add_submenu "_Edit" in

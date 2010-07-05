@@ -23,6 +23,8 @@ val spawn_coqtop : string -> coqtop
 
 val kill_coqtop : coqtop -> unit
 
+val coqtop_zombies : unit -> int
+
 val reset_coqtop : coqtop -> unit
 
 exception Coq_failure of (Util.loc option * string)
@@ -40,8 +42,6 @@ sig
 
   val set : coqtop -> t -> bool -> unit
 end
-
-val reset_initial : unit -> unit
 
 val raw_interp : coqtop -> string -> unit
 

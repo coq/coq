@@ -530,7 +530,6 @@ type 'a value =
   | Fail of (Util.loc option * string)
 
 let eval_call c = 
-  let null_formatter = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in
   let filter_compat_exn = function
     | Vernac.DuringCommandInterp (loc,inner)
     | Vernacexpr.DuringSyntaxChecking (loc,inner) -> inner

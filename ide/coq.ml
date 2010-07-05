@@ -92,8 +92,6 @@ let eval_call coqtop (c:'a Ide_blob.call) =
 
 let is_in_loadpath coqtop s = eval_call coqtop (Ide_blob.is_in_loadpath s)
  
-let reset_initial = Ide_blob.reinit
-
 let raw_interp coqtop s = eval_call coqtop (Ide_blob.raw_interp s)
 
 let interp coqtop b s = eval_call coqtop (Ide_blob.interp b s)
@@ -102,14 +100,38 @@ let rewind coqtop i = eval_call coqtop (Ide_blob.rewind i)
  
 let read_stdout coqtop = eval_call coqtop Ide_blob.read_stdout
 
+let toplvl_ctr = ref 0
+
+let toplvl_ctr_mtx = Mutex.create ()
+
 let spawn_coqtop sup_args =
   let prog = Sys.argv.(0) in
   let dir = Filename.dirname prog in
-  let oc,ic = Unix.open_process (dir^"/coqtop.opt -ideslave "^sup_args) in
-  { cin = ic; cout = oc ; sup_args = sup_args }
+  Mutex.lock toplvl_ctr_mtx;
+  try 
+    let oc,ic = Unix.open_process (dir^"/coqtop.opt -ideslave "^sup_args) in
+    incr toplvl_ctr;
+    Mutex.unlock toplvl_ctr_mtx;
+    { cin = ic; cout = oc ; sup_args = sup_args }
+  with e ->
+    Mutex.unlock toplvl_ctr_mtx;
+    raise e
 
 let kill_coqtop coqtop =
-  try raw_interp coqtop "Quit." with _ -> ()
+  ignore (Thread.create
+            (fun () ->
+               try 
+                 ignore (Unix.close_process (coqtop.cout,coqtop.cin));
+                 Mutex.lock toplvl_ctr_mtx; decr toplvl_ctr; Mutex.unlock toplvl_ctr_mtx;
+               with _ -> ())
+            ())
+
+let coqtop_zombies =
+  (fun () ->
+     Mutex.lock toplvl_ctr_mtx;
+     let res = !toplvl_ctr in
+     Mutex.unlock toplvl_ctr_mtx;
+     res)
 
 let reset_coqtop coqtop =
   kill_coqtop coqtop;
