@@ -600,6 +600,14 @@ let string_of_modfile mp =
     modfile_mps := MPmap.add mp s' !modfile_mps;
     s'
 
+(* same as [string_of_modfile], but preserves the capital/uncapital 1st char *)
+
+let file_of_modfile mp =
+  let s0 = raw_string_of_modfile mp in
+  let s = string_of_modfile mp in
+  if s.[0] <> s0.[0] then s.[0] <- s0.[0];
+  s
+
 let add_blacklist_entries l =
   blacklist_table :=
     List.fold_right (fun s -> Idset.add (id_of_string (String.capitalize s)))

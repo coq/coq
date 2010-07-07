@@ -336,7 +336,6 @@ let pp_struct =
 let haskell_descr = {
   keywords = keywords;
   file_suffix = ".hs";
-  capital_file = true;
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = None;

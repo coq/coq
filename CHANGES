@@ -134,6 +134,9 @@ Module system
 
 Extraction
 
+- When using (Recursive) Extraction Library, the filenames are directly the
+  Coq ones with new appropriate extensions : we do not force anymore
+  uncapital first letters for Ocaml and capital ones for Haskell.
 - The extraction now tries harder to avoid code transformations that can be
   dangerous for the complexity. In particular many eta-expansions at the top
   of functions body are now avoided, clever partial applications will likely
