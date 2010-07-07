@@ -60,8 +60,8 @@ let _ =
     { optsync  = true;
       optname  = "automatic declaration of case analysis schemes";
       optkey   = ["Case";"Analysis";"Schemes"];
-      optread  = (fun () -> !elim_flag) ;
-      optwrite = (fun b -> elim_flag := b) }
+      optread  = (fun () -> !case_flag) ;
+      optwrite = (fun b -> case_flag := b) }
 
 let eq_flag = ref true
 let _ =
