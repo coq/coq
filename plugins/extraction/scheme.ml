@@ -206,7 +206,6 @@ let pp_struct =
 let scheme_descr = {
   keywords = keywords;
   file_suffix = ".scm";
-  capital_file = false;
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = None;

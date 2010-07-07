@@ -48,6 +48,7 @@ val current_toplevel : unit -> module_path
 val base_mp : module_path -> module_path
 val is_modfile : module_path -> bool
 val string_of_modfile : module_path -> string
+val file_of_modfile : module_path -> string
 val is_toplevel : module_path -> bool
 val at_toplevel : module_path -> bool
 val visible_kn : kernel_name -> bool

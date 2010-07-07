@@ -738,7 +738,6 @@ let pp_decl d = try pp_decl d with Failure "empty phrase" -> mt ()
 let ocaml_descr = {
   keywords = keywords;
   file_suffix = ".ml";
-  capital_file = false;
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = Some ".mli";

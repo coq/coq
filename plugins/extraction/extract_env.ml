@@ -373,11 +373,10 @@ let mono_filename f =
 
 (* Builds a suitable filename from a module id *)
 
-let module_filename fc =
+let module_filename mp =
+  let f = file_of_modfile mp in
   let d = descr () in
-  let fn = if d.capital_file then fc else String.uncapitalize fc
-  in
-  Some (fn^d.file_suffix), Option.map ((^) fn) d.sig_suffix, id_of_string fc
+  Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id_of_string f
 
 (*s Extraction of one decl to stdout. *)
 
@@ -534,8 +533,7 @@ let extraction_library is_rec m =
   let print = function
     | (MPfile dir as mp, sel) as e ->
 	let dry = not is_rec && dir <> dir_m in
-	let s = string_of_modfile mp in
-	print_structure_to_file (module_filename s) dry [e]
+	print_structure_to_file (module_filename mp) dry [e]
     | _ -> assert false
   in
   List.iter print struc;

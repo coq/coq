@@ -180,7 +180,6 @@ type language_descr = {
 
   (* Concerning the source file *)
   file_suffix : string;
-  capital_file : bool; (* should we capitalize filenames ? *)
   preamble : identifier -> module_path list -> unsafe_needs -> std_ppcmds;
   pp_struct : ml_structure -> std_ppcmds;
 
