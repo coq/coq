@@ -354,13 +354,14 @@ and translate_struct_type_entry env inl mse = match mse with
 
 and translate_module_type env mp inl mte =
 	let sign,alg,resolve,mp_from,cst = translate_struct_type_entry env inl mte in
-	 subst_modtype_and_resolver 
-	   {typ_mp = mp_from;
-	    typ_expr = sign;
-	    typ_expr_alg = alg;
-	    typ_constraints = cst;
-	    typ_delta = resolve} mp env
-	   
+	let mtb = subst_modtype_and_resolver
+	  {typ_mp = mp_from;
+	   typ_expr = sign;
+	   typ_expr_alg = None;
+	   typ_constraints = cst;
+	   typ_delta = resolve} mp env
+	in {mtb with typ_expr_alg = alg}
+
 let rec translate_struct_include_module_entry env mp inl mse  = match mse with
   | MSEident mp1 ->
       let mb = lookup_module mp1 env in 
