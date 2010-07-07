@@ -646,26 +646,20 @@ and pp_module_type params = function
       let mp_w =
 	List.fold_left (fun mp l -> MPdot(mp,label_of_id l)) mp_mt idl'
       in
-      let r = ConstRef (make_con mp_w empty_dirpath (label_of_id l))
-      in
+      let r = ConstRef (make_con mp_w empty_dirpath (label_of_id l)) in
       push_visible mp_mt [];
-      let s =
-	pp_module_type [] mt ++ str " with type " ++
-	  pp_global Type r ++ ids
-      in
+      let pp_w = str " with type " ++ ids ++ pp_global Type r in
       pop_visible();
-      s ++ str "=" ++ spc () ++ pp_type false vl typ
+      pp_module_type [] mt ++ pp_w ++ str " = " ++ pp_type false vl typ
   | MTwith(mt,ML_With_module(idl,mp)) ->
       let mp_mt = msid_of_mt mt in
       let mp_w =
 	List.fold_left (fun mp id -> MPdot(mp,label_of_id id)) mp_mt idl
       in
       push_visible mp_mt [];
-      let s =
-	pp_module_type [] mt ++ str " with module " ++ pp_modname mp_w
-      in
+      let pp_w = str " with module " ++ pp_modname mp_w in
       pop_visible ();
-      s ++ str " = " ++ pp_modname mp
+      pp_module_type [] mt ++ pp_w ++ str " = " ++ pp_modname mp
 
 let is_short = function MEident _ | MEapply _ -> true | _ -> false
 
