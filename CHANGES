@@ -133,12 +133,17 @@ Extraction
   dangerous for the complexity. In particular many eta-expansions at the top
   of functions body are now avoided, clever partial applications will likely
   be preserved, let-ins are almost always kept, etc.
+- Harsh support of module extraction to Haskell and Scheme: module hierarchy
+  is flattened, module abbreviations and functor applications are expanded,
+  module types and unapplied functors are discarded.
+- Less unsupported situations when extracting modules to Ocaml. In particular
+  module parameters might be alpha-renamed if a name clash is detected.  
 - Extract Inductive is now possible toward non-inductive types (e.g. nat => int)
 - Extraction Implicit: this new experimental command allows to mark
   some arguments of a function or constructor for removed during
   extraction, even if these arguments don't fit the usual elimination
   principles of extraction, for instance the length n of a vector.
-- A few .v files in plugins/extraction try to provide a library of common
+- Files ExtrOcaml*.v in plugins/extraction try to provide a library of common
   extraction commands: mapping of basics types toward Ocaml's counterparts,
   conversions from/to int and big_int, or even complete mapping of nat,Z,N
   to int or big_int, or mapping of ascii to char and string to char list
@@ -253,7 +258,7 @@ Library
 - Numbers library:
   - The abstract layer (NatInt, Natural/Abstract, Integer/Abstract) has
     been simplified and enhance thanks to new features of the module
-    system such as Include (see below). It has been extended to Euclidean
+    system such as Include (see above). It has been extended to Euclidean
     division (three flavors for integers: Trunc, Floor and Math).
   - The arbitrary-large efficient numbers (BigN, BigZ, BigQ) has also
     been reworked. They benefit from the abstract layer improvements
