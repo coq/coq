@@ -369,7 +369,7 @@ let print_one_decl struc mp decl =
   set_phase Pre;
   ignore (d.pp_struct struc);
   set_phase Impl;
-  push_visible mp;
+  push_visible mp [];
   msgnl (d.pp_decl decl);
   pop_visible ()
 

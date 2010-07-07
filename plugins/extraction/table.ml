@@ -84,8 +84,8 @@ let rec get_nth_label_mp n = function
 let common_prefix_from_list mp0 mpl =
   let prefixes = prefixes_mp mp0 in
   let rec f = function
-    | [] -> raise Not_found
-    | mp :: l -> if MPset.mem mp prefixes then mp else f l
+    | [] -> None
+    | mp :: l -> if MPset.mem mp prefixes then Some mp else f l
   in f mpl
 
 let rec parse_labels ll = function
@@ -109,19 +109,6 @@ let labels_of_ref r =
       | VarRef _ -> assert false
   in
   parse_labels2 [l] mp_top mp
-
-
-
-
-let labels_of_ref2 r =
- let mp1,_,l =
-  match r with
-     ConstRef con -> repr_con con
-   | IndRef (kn,_)
-   | ConstructRef ((kn,_),_) -> repr_mind kn
-   | VarRef _ -> assert false
- in mp1,l
-
 
 let rec add_labels_mp mp = function
   | [] -> mp
@@ -289,6 +276,10 @@ let check_inside_section () =
     err (str "You can't do that within a section." ++ fnl () ++
 	 str "Close it and try again.")
 
+let warning_id s =
+  msg_warning (str ("The identifier "^s^
+		    " contains __ which is reserved for the extraction"))
+
 let error_constant r =
   err (safe_pr_global r ++ str " is not a constant.")
 
@@ -298,8 +289,9 @@ let error_inductive r =
 let error_nb_cons () =
   err (str "Not the right number of constructors.")
 
-let error_module_clash s =
-  err (str ("There are two Coq modules with ML name " ^ s ^".\n") ++
+let error_module_clash mp1 mp2 =
+  err (str "The Coq modules " ++ pr_long_mp mp1 ++ str " and " ++
+       pr_long_mp mp2 ++ str " have the same ML name.\n" ++
        str "This is not supported yet. Please do some renaming first.")
 
 let error_unknown_module m =

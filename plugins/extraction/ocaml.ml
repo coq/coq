@@ -609,8 +609,8 @@ let rec pp_specif = function
 	 pp_alias_spec ren s
        with Not_found -> pp_spec s)
   | (l,Smodule mt) ->
-      let def = pp_module_type mt in
-      let def' = pp_module_type mt in
+      let def = pp_module_type [] mt in
+      let def' = pp_module_type [] mt in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1 (str "module " ++ name ++ str " : " ++ fnl () ++ def) ++
       (try
@@ -618,7 +618,7 @@ let rec pp_specif = function
 	 fnl () ++ hov 1 (str ("module "^ren^" : ") ++ fnl () ++ def')
        with Not_found -> Pp.mt ())
   | (l,Smodtype mt) ->
-      let def = pp_module_type mt in
+      let def = pp_module_type [] mt in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1 (str "module type " ++ name ++ str " = " ++ fnl () ++ def) ++
       (try
@@ -626,16 +626,16 @@ let rec pp_specif = function
 	 fnl () ++ str ("module type "^ren^" = ") ++ name
        with Not_found -> Pp.mt ())
 
-and pp_module_type = function
+and pp_module_type params = function
   | MTident kn ->
       pp_modname kn
   | MTfunsig (mbid, mt, mt') ->
-      let typ = pp_module_type mt in
+      let typ = pp_module_type [] mt in
       let name = pp_modname (MPbound mbid) in
-      let def = pp_module_type mt' in
+      let def = pp_module_type (MPbound mbid :: params) mt' in
       str "functor (" ++ name ++ str ":" ++ typ ++ str ") ->" ++ fnl () ++ def
-  | MTsig (mp1, sign) ->
-      push_visible mp1;
+  | MTsig (mp, sign) ->
+      push_visible mp params;
       let l = map_succeed pp_specif sign in
       pop_visible ();
       str "sig " ++ fnl () ++
@@ -650,9 +650,9 @@ and pp_module_type = function
       in
       let r = ConstRef (make_con mp_w empty_dirpath (label_of_id l))
       in
-      push_visible mp_mt;
+      push_visible mp_mt [];
       let s =
-	pp_module_type mt ++ str " with type " ++
+	pp_module_type [] mt ++ str " with type " ++
 	  pp_global Type r ++ ids
       in
       pop_visible();
@@ -662,9 +662,9 @@ and pp_module_type = function
       let mp_w =
 	List.fold_left (fun mp id -> MPdot(mp,label_of_id id)) mp_mt idl
       in
-      push_visible mp_mt;
+      push_visible mp_mt [];
       let s =
-	pp_module_type mt ++ str " with module " ++ pp_modname mp_w
+	pp_module_type [] mt ++ str " with module " ++ pp_modname mp_w
       in
       pop_visible ();
       s ++ str " = " ++ pp_modname mp
@@ -683,10 +683,10 @@ let rec pp_structure_elem = function
       let typ =
         (* virtual printing of the type, in order to have a correct mli later*)
 	if Common.get_phase () = Pre then
-	  str ": " ++ pp_module_type m.ml_mod_type
+	  str ": " ++ pp_module_type [] m.ml_mod_type
 	else mt ()
       in
-      let def = pp_module_expr m.ml_mod_expr in
+      let def = pp_module_expr [] m.ml_mod_expr in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1
 	(str "module " ++ name ++ typ ++ str " = " ++
@@ -696,7 +696,7 @@ let rec pp_structure_elem = function
 	 fnl () ++ str ("module "^ren^" = ") ++ name
        with Not_found -> mt ())
   | (l,SEmodtype m) ->
-      let def = pp_module_type m in
+      let def = pp_module_type [] m in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1 (str "module type " ++ name ++ str " = " ++ fnl () ++ def) ++
       (try
@@ -704,17 +704,17 @@ let rec pp_structure_elem = function
          fnl () ++ str ("module type "^ren^" = ") ++ name
        with Not_found -> mt ())
 
-and pp_module_expr = function
-  | MEident mp' -> pp_modname mp'
+and pp_module_expr params = function
+  | MEident mp -> pp_modname mp
+  | MEapply (me, me') ->
+      pp_module_expr [] me ++ str "(" ++ pp_module_expr [] me' ++ str ")"
   | MEfunctor (mbid, mt, me) ->
       let name = pp_modname (MPbound mbid) in
-      let typ = pp_module_type mt in
-      let def = pp_module_expr me in
+      let typ = pp_module_type [] mt in
+      let def = pp_module_expr (MPbound mbid :: params) me in
       str "functor (" ++ name ++ str ":" ++ typ ++ str ") ->" ++ fnl () ++ def
-  | MEapply (me, me') ->
-      pp_module_expr me ++ str "(" ++ pp_module_expr me' ++ str ")"
   | MEstruct (mp, sel) ->
-      push_visible mp;
+      push_visible mp params;
       let l = map_succeed pp_structure_elem sel in
       pop_visible ();
       str "struct " ++ fnl () ++
@@ -725,7 +725,7 @@ let do_struct f s =
   let pp s = try f s ++ fnl2 () with Failure "empty phrase" -> mt ()
   in
   let ppl (mp,sel) =
-    push_visible mp;
+    push_visible mp [];
     let p = prlist_strict pp sel in
     (* for monolithic extraction, we try to simulate the unavailability
        of [MPfile] in names by artificially nesting these [MPfile] *)

@@ -22,7 +22,14 @@ open Mlutil
 open Modutil
 open Mod_subst
 
-let string_of_id id = ascii_of_ident (Names.string_of_id id)
+let string_of_id id =
+  let s = Names.string_of_id id in
+  for i = 0 to String.length s - 2 do
+    if s.[i] = '_' && s.[i+1] = '_' then warning_id s
+  done;
+  ascii_of_ident s
+
+let is_mp_bound = function MPbound _ -> true | _ -> false
 
 (*s Some pretty-print utility functions. *)
 
@@ -64,17 +71,14 @@ let unquote s =
     for i=0 to String.length s - 1 do if s.[i] = '\'' then s.[i] <- '~' done;
     s
 
-let rec dottify = function
+let rec qualify delim = function
   | [] -> assert false
   | [s] -> s
-  | s::[""] -> s
-  | s::l -> (dottify l)^"."^s
+  | ""::l -> qualify delim l
+  | s::l -> s^delim^(qualify delim l)
 
-let rec pseudo_qualify up = function
-  | [] -> assert false
-  | [s] -> s
-  | s::[""] -> s
-  | s::l -> (if up then "" else "_")^(pseudo_qualify true l)^"__"^s
+let dottify = qualify "."
+let pseudo_qualify = qualify "__"
 
 (*s Uppercase/lowercase renamings. *)
 
@@ -185,23 +189,35 @@ let mpfiles_add, mpfiles_mem, mpfiles_list, mpfiles_clear =
   register_cleanup clear;
   (add,mem,list,clear)
 
+(*s List of module parameters that we should alpha-rename *)
+
+let params_ren_add, params_ren_mem =
+  let m = ref MPset.empty in
+  let add mp = m:=MPset.add mp !m
+  and mem mp = MPset.mem mp !m
+  and clear () = m:=MPset.empty
+  in
+  register_cleanup clear;
+  (add,mem)
+
 (*s table indicating the visible horizon at a precise moment,
     i.e. the stack of structures we are inside.
 
   - The sequence of [mp] parts should have the following form:
-  [X.Y; X; A.B.C; A.B; A; ...], i.e. each addition should either
-  be a [MPdot] over the last entry, or something new, mainly
-  [MPself], or [MPfile] at the beginning.
+  a [MPfile] at the beginning, and then more and more [MPdot]
+  over this [MPfile], or [MPbound] when inside the type of a
+  module parameter.
 
-  - The [content] part is used to recoard all the names already
+  - the [params] are the [MPbound] when [mp] is a functor,
+    the innermost [MPbound] coming first in the list.
+
+  - The [content] part is used to record all the names already
   seen at this level.
-
-  - The [subst] part is here mainly for printing signature
-  (in which names are still short, i.e. relative to a [msid]).
 *)
 
 type visible_layer = { mp : module_path;
-		       content : ((kind*string),unit) Hashtbl.t }
+		       params : module_path list;
+		       content : ((kind*string),label) Hashtbl.t }
 
 let pop_visible, push_visible, get_visible =
   let vis = ref [] in
@@ -212,15 +228,15 @@ let pop_visible, push_visible, get_visible =
     if get_phase () = Impl && modular () && is_modfile v.mp
     then add_mpfiles_content v.mp v.content;
     vis := List.tl !vis
-  and push mp =
-    vis := { mp = mp; content = Hashtbl.create 97 } :: !vis
+  and push mp mps =
+    vis := { mp = mp; params = mps; content = Hashtbl.create 97 } :: !vis
   and get () = !vis
   in (pop,push,get)
 
 let get_visible_mps () = List.map (function v -> v.mp) (get_visible ())
 let top_visible () = match get_visible () with [] -> assert false | v::_ -> v
 let top_visible_mp () = (top_visible ()).mp
-let add_visible ks = Hashtbl.add (top_visible ()).content ks ()
+let add_visible ks l = Hashtbl.add (top_visible ()).content ks l
 
 (* table of local module wrappers used to provide non-ambiguous names *)
 
@@ -286,7 +302,10 @@ let rec mp_renaming_fun mp = match mp with
       let lmp = mp_renaming mp in
       if lmp = [""] then (modfstlev_rename l)::lmp
       else (modular_rename Mod (id_of_label l))::lmp
-  | MPbound mbid -> [modular_rename Mod (id_of_mbid mbid)]
+  | MPbound mbid ->
+      let s = modular_rename Mod (id_of_mbid mbid) in
+      if not (params_ren_mem mp) then [s]
+      else let i,_,_ = repr_mbid mbid in [s^"__"^string_of_int i]
   | MPfile _ when not (modular ()) -> assert false (* see [at_toplevel] above *)
   | MPfile _ ->
       assert (get_phase () = Pre);
@@ -298,7 +317,9 @@ let rec mp_renaming_fun mp = match mp with
 
 and mp_renaming =
   let add,get,_ = mktable true in
-  fun x ->  try get x with Not_found -> let y = mp_renaming_fun x in add x y; y
+  fun x ->
+    try if is_mp_bound (base_mp x) then raise Not_found; get x
+    with Not_found -> let y = mp_renaming_fun x in add x y; y
 
 (*s Renamings creation for a [global_reference]: we build its fully-qualified
     name in a [string list] form (head is the short name). *)
@@ -322,7 +343,9 @@ let ref_renaming_fun (k,r) =
 
 let ref_renaming =
   let add,get,_ = mktable true in
-  fun x -> try get x with Not_found -> let y = ref_renaming_fun x in add x y; y
+  fun x ->
+    try if is_mp_bound (base_mp (modpath_of_r (snd x))) then raise Not_found; get x
+    with Not_found -> let y = ref_renaming_fun x in add x y; y
 
 (* [visible_clash mp0 (k,s)] checks if [mp0-s] of kind [k]
    can be printed as [s] in the current context of visible
@@ -340,12 +363,38 @@ let mpfiles_clash mp0 ks =
   clash (fun mp -> Hashtbl.mem (get_mpfiles_content mp)) mp0 ks
     (List.rev (mpfiles_list ()))
 
+let rec params_lookup mp0 ks = function
+  | [] -> false
+  | param :: _ when mp0 = param -> true
+  | param :: params ->
+      if ks = (Mod, List.hd (mp_renaming param)) then params_ren_add param;
+      params_lookup mp0 ks params
+
 let visible_clash mp0 ks =
   let rec clash = function
     | [] -> false
     | v :: _ when v.mp = mp0 -> false
-    | v :: _ when Hashtbl.mem v.content ks -> true
-    | _ :: vis -> clash vis
+    | v :: vis ->
+	let b = Hashtbl.mem v.content ks in
+	if b && not (is_mp_bound mp0) then true
+	else begin
+	  if b then params_ren_add mp0;
+	  if params_lookup mp0 ks v.params then false
+	  else clash vis
+	end
+  in clash (get_visible ())
+
+(* Same, but with verbose output (and mp0 shouldn't be a MPbound) *)
+
+let visible_clash_dbg mp0 ks =
+  let rec clash = function
+    | [] -> None
+    | v :: _ when v.mp = mp0 -> None
+    | v :: vis ->
+	try Some (v.mp,Hashtbl.find v.content ks)
+	with Not_found ->
+	  if params_lookup mp0 ks v.params then None
+	  else clash vis
   in clash (get_visible ())
 
 (* After the 1st pass, we can decide which modules will be opened initially *)
@@ -372,81 +421,116 @@ let opened_libraries () =
 (* First, a function that factorize the printing of both [global_reference]
    and module names for ocaml. When [k=Mod] then [olab=None], otherwise it
    contains the label of the reference to print.
-   Invariant: [List.length ls >= 2], simpler situations are handled elsewhere. *)
+   [rls] is the string list giving the qualified name, short name at the end.
+   Invariant: [List.length rls >= 2], simpler situations are handled elsewhere. *)
 
-let pp_ocaml_gen k mp ls olab =
-  try (* what is the largest prefix of [mp] that belongs to [visible]? *)
-    let prefix = common_prefix_from_list mp (get_visible_mps ()) in
-    let delta = mp_length mp - mp_length prefix in
-    assert (k <> Mod || mp <> prefix); (* mp as whole module isn't in itself *)
-    let ls = list_firstn (delta + if k = Mod then 0 else 1) ls in
-    let s,ls' = list_sep_last ls in
-    (* Reference r / module path mp is of the form [<prefix>.s.<List.rev ls'>].
-       Difficulty: in ocaml the prefix part cannot be used for
-       qualification (we are inside it) and the rest of the long
-       name may be hidden.
-       Solution: we duplicate the _definition_ of r / mp in a Coq__XXX module *)
-    let k' = if ls' = [] then k else Mod in
-    if visible_clash prefix (k',s) then
-      let front = if ls' = [] && k <> Mod then [s] else ls' in
-      let lab = (* label associated with s *)
-	if delta = 0 && k <> Mod then Option.get olab
-	else get_nth_label_mp delta mp
-      in
-      try dottify (front @ [check_duplicate prefix lab])
-      with Not_found ->
-	assert (get_phase () = Pre); (* otherwise it's too late *)
-	add_duplicate prefix lab; dottify ls
-    else dottify ls
+(* In Coq, we can qualify [M.t] even if we are inside [M], but in Ocaml we
+   cannot do that. So, if [t] gets hidden and we need a long name for it,
+   we duplicate the _definition_ of t in a Coq__XXX module, and similarly
+   for a sub-module [M.N] *)
+
+let pp_duplicate k' prefix mp rls olab =
+  let rls', lbl =
+    if k'<>Mod then
+      (* Here rls=[s], the ref to print is <prefix>.<s>, and olab<>None *)
+      rls, Option.get olab
+    else
+      (* Here rls=s::rls', we search the label for s inside mp *)
+      List.tl rls, get_nth_label_mp (mp_length mp - mp_length prefix) mp
+  in
+  try dottify (check_duplicate prefix lbl :: rls')
   with Not_found ->
-    (* [mp] belongs to a closed module, not one of [visible]. *)
-    let base = base_mp mp in
-    let base_s,ls1 = list_sep_last ls in
-    let s,ls2 = list_sep_last ls1 in
-    (* [List.rev ls] is [base_s :: s :: List.rev ls2] *)
-    let k' = if ls2 = [] then k else Mod in
-    if modular () && (mpfiles_mem base) &&
-      (not (mpfiles_clash base (k',s))) &&
-      (not (visible_clash base (k',s)))
-    then (* Standard situation of an object in another file: *)
-      (* Thanks to the "open" of this file we remove its name *)
-      dottify ls1
-    else if visible_clash base (Mod,base_s) then
-      error_module_clash base_s
-    else dottify ls
+    assert (get_phase () = Pre); (* otherwise it's too late *)
+    add_duplicate prefix lbl; dottify rls
 
-let pp_haskell_gen k mp ls =
-  if not (modular ()) then List.hd ls
-  else match List.rev ls with
-    | [] -> assert false
-    | s::ls' ->
-	(if base_mp mp <> top_visible_mp () then s ^ "." else "") ^
-	  (pseudo_qualify (upperkind k) (List.rev ls'))
+let fstlev_ks k = function
+  | [] -> assert false
+  | [s] -> k,s
+  | s::_ -> Mod,s
+
+(* [pp_ocaml_local] : [mp] has something in common with [top_visible ()]
+   but isn't equal to it *)
+
+let pp_ocaml_local k prefix mp rls olab =
+  (* what is the largest prefix of [mp] that belongs to [visible]? *)
+  assert (k <> Mod || mp <> prefix); (* mp as whole module isn't in itself *)
+  let rls = list_skipn (mp_length prefix) rls in
+  let k's = fstlev_ks k rls in
+  (* Reference r / module path mp is of the form [<prefix>.s.<...>]. *)
+  if not (visible_clash prefix k's) then dottify rls
+  else pp_duplicate (fst k's) prefix mp rls olab
+
+(* [pp_ocaml_bound] : [mp] starts with a [MPbound], and we are not inside
+   (i.e. we are not printing the type of the module parameter) *)
+
+let pp_ocaml_bound base rls =
+  (* clash with a MPbound will be detected and fixed by renaming this MPbound *)
+  if get_phase () = Pre then ignore (visible_clash base (Mod,List.hd rls));
+  dottify rls
+
+(* [pp_ocaml_extern] : [mp] isn't local, it is defined in another [MPfile]. *)
+
+let pp_ocaml_extern k base rls = match rls with
+  | [] | [_] -> assert false
+  | base_s :: rls' ->
+      let k's = fstlev_ks k rls' in
+      if modular () && (mpfiles_mem base) &&
+	(not (mpfiles_clash base k's)) &&
+	(not (visible_clash base k's))
+      then (* Standard situation of an object in another file: *)
+	(* Thanks to the "open" of this file we remove its name *)
+	dottify rls'
+      else match visible_clash_dbg base (Mod,base_s) with
+	| None -> dottify rls
+	| Some (mp,l) -> error_module_clash base (MPdot (mp,l))
+
+(* [pp_ocaml_gen] : choosing between [pp_ocaml_extern] or [pp_ocaml_extern] *)
+
+let pp_ocaml_gen k mp rls olab =
+  match common_prefix_from_list mp (get_visible_mps ()) with
+    | Some prefix -> pp_ocaml_local k prefix mp rls olab
+    | None ->
+	let base = base_mp mp in
+	if is_mp_bound base then pp_ocaml_bound base rls
+	else pp_ocaml_extern k base rls
+
+(* For Haskell, things are simplier: we have removed (almost) all structures *)
+
+let pp_haskell_gen k mp rls = match rls with
+  | [] -> assert false
+  | s::rls' ->
+      (if base_mp mp <> top_visible_mp () then s ^ "." else "") ^
+	(if upperkind k then "" else "_") ^ pseudo_qualify rls'
+
+(* Main name printing function for a reference *)
 
 let pp_global k r =
   let ls = ref_renaming (k,r) in
   assert (List.length ls > 1);
   let s = List.hd ls in
+  let l = label_of_r r in
   let mp = modpath_of_r r in
   if mp = top_visible_mp () then
     (* simpliest situation: definition of r (or use in the same context) *)
     (* we update the visible environment *)
-    (add_visible (k,s); unquote s)
-  else match lang () with
-    | Scheme -> unquote s (* no modular Scheme extraction... *)
-    | Haskell -> pp_haskell_gen k mp ls
-    | Ocaml -> pp_ocaml_gen k mp ls (Some (label_of_r r))
+    (add_visible (k,s) l; unquote s)
+  else
+    let rls = List.rev ls in (* for what come next it's easier this way *)
+    match lang () with
+      | Scheme -> unquote s (* no modular Scheme extraction... *)
+      | Haskell -> if modular () then pp_haskell_gen k mp rls else s
+      | Ocaml -> pp_ocaml_gen k mp rls (Some (label_of_r r))
 
 (* The next function is used only in Ocaml extraction...*)
+
 let pp_module mp =
   let ls = mp_renaming mp in
-  if List.length ls = 1 then dottify ls
-  else match mp with
-    | MPdot (mp0,_) when mp0 = top_visible_mp () ->
+  match mp with
+    | MPdot (mp0,l) when mp0 = top_visible_mp () ->
 	(* simpliest situation: definition of mp (or use in the same context) *)
 	(* we update the visible environment *)
 	let s = List.hd ls in
-	add_visible (Mod,s); s
-    | _ -> pp_ocaml_gen Mod mp ls None
+	add_visible (Mod,s) l; s
+    | _ -> pp_ocaml_gen Mod mp (List.rev ls) None
 
 

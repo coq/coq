@@ -197,7 +197,7 @@ and pp_module_expr = function
 
 let pp_struct =
   let pp_sel (mp,sel) =
-    push_visible mp;
+    push_visible mp [];
     let p = prlist_strict pp_structure_elem sel in
     pop_visible (); p
   in
