@@ -186,10 +186,9 @@ OTHERSYNTAXCMA:=$(addprefix plugins/syntax/, \
         string_syntax_plugin.cma )
 DECLMODECMA:=plugins/decl_mode/decl_mode_plugin.cma
 
-PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) \
+PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) $(DECLMODECMA) \
         $(QUOTECMA) $(RINGCMA) $(NEWRINGCMA) $(DPCMA) $(FIELDCMA) \
         $(FOURIERCMA) $(EXTRACTIONCMA) $(XMLCMA) \
-	$(DECLMODECMA) \
         $(CCCMA)  $(FOCMA) $(SUBTACCMA) $(RTAUTOCMA) \
         $(FUNINDCMA) $(NSATZCMA) $(NATSYNTAXCMA) $(OTHERSYNTAXCMA)
 
