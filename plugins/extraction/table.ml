@@ -82,8 +82,8 @@ let rec get_nth_label_mp n = function
 let common_prefix_from_list mp0 mpl =
   let prefixes = prefixes_mp mp0 in
   let rec f = function
-    | [] -> assert false
-    | mp :: l -> if MPset.mem mp prefixes then mp else f l
+    | [] -> None
+    | mp :: l -> if MPset.mem mp prefixes then Some mp else f l
   in f mpl
 
 let rec parse_labels ll = function
