@@ -140,17 +140,8 @@ let factor_fix env l cb msb =
     labels, recd, msb''
   end
 
-let build_mb mp expr typ_opt =
-  { mod_mp = mp;
-    mod_expr = Some expr;
-    mod_type = typ_opt;
-    mod_type_alg = None;
-    mod_constraints = Univ.Constraint.empty;
-    mod_delta = Mod_subst.empty_delta_resolver;
-    mod_retroknowledge = [] }
-
 let my_type_of_mb env mb =
-   mb.mod_type
+  match mb.mod_type_alg with Some m -> m | None -> mb.mod_type
 
 (** Ad-hoc update of environment, inspired by [Mod_type.check_with_aux_def].
     To check with Elie. *)
@@ -285,6 +276,17 @@ let rec extract_sfb env mp all = function
 (* From [struct_expr_body] to implementations *)
 
 and extract_seb env mp all = function
+  | (SEBident _ | SEBapply _) as seb when lang () <> Ocaml ->
+      (* in Haskell/Scheme, we expanse everything *)
+      let rec seb2mse = function
+	| SEBident mp -> Entries.MSEident mp
+	| SEBapply (s,s',_) -> Entries.MSEapply(seb2mse s, seb2mse s')
+	| _ -> assert false
+      in
+      let seb,_,_,_ =
+	Mod_typing.translate_struct_module_entry env mp true (seb2mse seb)
+      in
+      extract_seb env mp all seb
   | SEBident mp ->
       if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp false;
       Visit.add_mp mp; MEident mp

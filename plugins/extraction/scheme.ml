@@ -182,12 +182,18 @@ let pp_decl = function
 	  hov 2 (paren (str "define " ++ pp_global Term r ++ spc () ++
 			  pp_expr (empty_env ()) [] a)) ++ fnl () ++ fnl ()
 
-let pp_structure_elem = function
+let rec pp_structure_elem = function
   | (l,SEdecl d) -> pp_decl d
-  | (l,SEmodule m) ->
-      failwith "TODO: Scheme extraction of modules not implemented yet"
-  | (l,SEmodtype m) ->
-      failwith "TODO: Scheme extraction of modules not implemented yet"
+  | (l,SEmodule m) -> pp_module_expr m.ml_mod_expr
+  | (l,SEmodtype m) -> mt ()
+      (* for the moment we simply discard module type *)
+
+and pp_module_expr = function
+  | MEstruct (mp,sel) -> prlist_strict pp_structure_elem sel
+  | MEfunctor _ -> mt ()
+      (* for the moment we simply discard unapplied functors *)
+  | MEident _ | MEapply _ -> assert false
+      (* should be expansed in extract_env *)
 
 let pp_struct =
   let pp_sel (mp,sel) =
