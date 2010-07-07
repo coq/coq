@@ -323,8 +323,6 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
     exists e; unfold For_all in |- *; eauto.
   Qed.
 
-  Module E := E.
-
   Definition elt := elt.
   Definition t := t.
 
@@ -347,6 +345,8 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
   Definition lt_trans := lt_trans.
   Definition lt_not_eq := lt_not_eq.
   Definition compare := compare.
+
+  Module E := E.
 
 End DepOfNodep.
 
@@ -785,7 +785,6 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
   Qed.
 
 
-  Module E := E.
   Definition elt := elt.
   Definition t := t.
 
@@ -810,5 +809,7 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
   Definition lt_trans := lt_trans.
   Definition lt_not_eq := lt_not_eq.
   Definition compare := compare.
+
+  Module E := E.
 
 End NodepOfDep.
