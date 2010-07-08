@@ -1179,18 +1179,35 @@ let is_not_strict t =
    Futhermore we don't expand fixpoints. *)
 
 let inline_test t =
-  let t1 = eta_red t in
-  let t2 = snd (collect_lams t1) in
-  not (is_fix t2) && ml_size t < 12 && is_not_strict t
+  if auto_inline () then
+    let t1 = eta_red t in
+    let t2 = snd (collect_lams t1) in
+    not (is_fix t2) && ml_size t < 12 && is_not_strict t
+  else false
 
-let manual_inline_list =
-  let mp = MPfile (dirpath_of_string "Coq.Init.Wf") in
-  List.map (fun s -> (make_con mp empty_dirpath (mk_label s)))
-    [ "well_founded_induction_type"; "well_founded_induction";
-      "Acc_rect"; "Acc_rec" ; "Acc_iter" ; "Fix" ]
+let con_of_string s =
+  let null = empty_dirpath in
+  match repr_dirpath (dirpath_of_string s) with
+    | id :: d -> make_con (MPfile (make_dirpath d)) null (label_of_id id)
+    | [] -> assert false
+
+let manual_inline_set =
+  List.fold_right (fun x -> Cset.add (con_of_string x))
+    [ "Coq.Init.Wf.well_founded_induction_type";
+      "Coq.Init.Wf.well_founded_induction";
+      "Coq.Init.Wf.Acc_iter";
+      "Coq.Init.Wf.Fix_F";
+      "Coq.Init.Wf.Fix";
+      "Coq.Init.Datatypes.andb";
+      "Coq.Init.Datatypes.orb";
+      "Coq.Init.Logic.eq_rec_r";
+      "Coq.Init.Logic.eq_rect_r";
+      "Coq.Init.Specif.proj1_sig";
+    ]
+    Cset.empty
 
 let manual_inline = function
-  | ConstRef c -> List.mem c manual_inline_list
+  | ConstRef c -> Cset.mem c manual_inline_set
   | _ -> false
 
 (* If the user doesn't say he wants to keep [t], we inline in two cases:
@@ -1204,6 +1221,6 @@ let inline r t =
   not (to_keep r) (* The user DOES want to keep it *)
   && not (is_inline_custom r)
   && (to_inline r (* The user DOES want to inline it *)
-     || (auto_inline () && lang () <> Haskell && not (is_projection r)
-         && (is_recursor r || manual_inline r || inline_test t)))
+     || (lang () <> Haskell && not (is_projection r) &&
+         (is_recursor r || manual_inline r || inline_test t)))
 

@@ -351,7 +351,7 @@ let info_file f =
 
 (*s Extraction AutoInline *)
 
-let auto_inline_ref = ref true
+let auto_inline_ref = ref false
 
 let auto_inline () = !auto_inline_ref
 
