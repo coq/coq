@@ -360,7 +360,8 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	     ip_logical = (not b);
 	     ip_sign = s;
 	     ip_vars = v;
-	     ip_types = t })
+	     ip_types = t;
+	     ip_optim_id_ok = None })
 	mib.mind_packets
     in
 
@@ -787,7 +788,7 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
 	end
       else
 	(* Standard case: we apply [extract_branch]. *)
-	MLcase ((mi.ind_info,[]), a, Array.init br_size extract_branch)
+	MLcase ((mi.ind_info,BranchNone), a, Array.init br_size extract_branch)
 
 (*s Extraction of a (co)-fixpoint. *)
 
