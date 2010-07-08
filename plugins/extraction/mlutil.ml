@@ -1227,14 +1227,30 @@ let is_not_strict t =
    We expand small terms with at least one non-strict
    variable (i.e. a variable that may not be evaluated).
 
-   Futhermore we don't expand fixpoints. *)
+   Futhermore we don't expand fixpoints.
 
-let inline_test t =
-  if auto_inline () then
-    let t1 = eta_red t in
-    let t2 = snd (collect_lams t1) in
-    not (is_fix t2) && ml_size t < 12 && is_not_strict t
-  else false
+   Moreover, as mentionned by X. Leroy (bug #2241),
+   inling a constant from inside an opaque module might
+   break types. To avoid that, we require below that
+   both [r] and its body are globally visible. This isn't
+   fully satisfactory, since [r] might not be visible (functor),
+   and anyway it might be interesting to inline [r] at least
+   inside its own structure. But to be safe, we adopt this
+   restriction for the moment.
+*)
+
+open Declarations
+
+let inline_test r t =
+  if not (auto_inline ()) then false
+  else
+    let c = match r with ConstRef c -> c | _ -> assert false in
+    let body = try (Global.lookup_constant c).const_body with _ -> None in
+    if body = None then false
+    else
+      let t1 = eta_red t in
+      let t2 = snd (collect_lams t1) in
+      not (is_fix t2) && ml_size t < 12 && is_not_strict t
 
 let con_of_string s =
   let null = empty_dirpath in
@@ -1273,5 +1289,5 @@ let inline r t =
   && not (is_inline_custom r)
   && (to_inline r (* The user DOES want to inline it *)
      || (lang () <> Haskell && not (is_projection r) &&
-         (is_recursor r || manual_inline r || inline_test t)))
+         (is_recursor r || manual_inline r || inline_test r t)))
 
