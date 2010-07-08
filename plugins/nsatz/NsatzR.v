@@ -352,8 +352,8 @@ Ltac nsatzR_gen radicalmax info lparam lvar n RNG lH _rl :=
   (*idtac "variables:";idtac fv;*)
   let nparam := eval compute in (Z_of_nat (List.length lparam)) in
   let fv := parametres_en_tete fv lparam in
- (* idtac "variables:"; idtac fv;
-    idtac "nparam:"; idtac nparam;*)
+  idtac "variables:"; idtac fv;
+   (* idtac "nparam:"; idtac nparam;*)
   let lpol := list_fold_right
     ltac:(fun p l => let p' := mkPol p fv in constr:(p'::l))
     (@nil (PExpr Z))
