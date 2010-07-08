@@ -9,7 +9,7 @@
 (*
  Tactic nsatz: proofs of polynomials equalities with variables in R.
  Uses Hilbert Nullstellensatz and Buchberger algorithm.
- Thanks to B.Gregoire and L.Thery for help on ring tactic, 
+ Thanks to B.Gregoire and L.Thery for help on ring tactic,
  and to B.Barras for modularization of the ocaml code.
  Example: see test-suite/success/Nsatz.v
  L.Pottier, june 2010
@@ -352,8 +352,8 @@ Ltac nsatzR_gen radicalmax info lparam lvar n RNG lH _rl :=
   (*idtac "variables:";idtac fv;*)
   let nparam := eval compute in (Z_of_nat (List.length lparam)) in
   let fv := parametres_en_tete fv lparam in
- (* idtac "variables:"; idtac fv;
-    idtac "nparam:"; idtac nparam;*)
+  idtac "variables:"; idtac fv;
+   (* idtac "nparam:"; idtac nparam;*)
   let lpol := list_fold_right
     ltac:(fun p l => let p' := mkPol p fv in constr:(p'::l))
     (@nil (PExpr Z))
@@ -397,11 +397,11 @@ Ltac nsatzRradical radicalmax := nsatzRpv radicalmax 1%Z (@nil R) (@nil R).
 Ltac nsatzRparameters lparam := nsatzRpv 6%N 1%Z lparam (@nil R).
 
 Tactic Notation "nsatz" := nsatzR.
-Tactic Notation "nsatz" "with" "lexico" := 
+Tactic Notation "nsatz" "with" "lexico" :=
   nsatzRpv 6%N 2%Z (@nil R) (@nil R).
-Tactic Notation "nsatz" "with" "lexico" "sugar":= 
+Tactic Notation "nsatz" "with" "lexico" "sugar":=
   nsatzRpv 6%N 3%Z (@nil R) (@nil R).
-Tactic Notation "nsatz" "without" "sugar":= 
+Tactic Notation "nsatz" "without" "sugar":=
   nsatzRpv 6%N 0%Z (@nil R) (@nil R).
 
 
