@@ -238,6 +238,21 @@ let type_maxvar t =
     | _ -> n
   in parse 0 t
 
+(*s What are the type variables occurring in [t]. *)
+
+let intset_union_map_list f l =
+  List.fold_left (fun s t -> Intset.union s (f t)) Intset.empty l
+
+let intset_union_map_array f a =
+  Array.fold_left (fun s t -> Intset.union s (f t)) Intset.empty a
+
+let rec type_listvar = function
+  | Tmeta {contents = Some t} -> type_listvar t
+  | Tvar i | Tvar' i -> Intset.singleton i
+  | Tarr (a,b) -> Intset.union (type_listvar a) (type_listvar b)
+  | Tglob (_,l) -> intset_union_map_list type_listvar l
+  | _ -> Intset.empty
+
 (*s From [a -> b -> c] to [[a;b],c]. *)
 
 let rec type_decomp = function
@@ -650,11 +665,12 @@ let rec ast_glob_subst s t = match t with
 
 (*S Auxiliary functions used in simplification of ML cases. *)
 
-(*s [check_and_generalize (r0,l,c)] transforms any [MLcons(r0,l)] in [MLrel 1]
-  and raises [Impossible] if any variable in [l] occurs outside such a
-  [MLcons] *)
+(*s [check_function_branch (r,l,c)] checks if branch [c] can be seen
+  as a function [f] applied to [MLcons(r,l)]. For that it transforms
+  any [MLcons(r,l)] in [MLrel 1] and raises [Impossible] if any
+  variable in [l] occurs outside such a [MLcons] *)
 
-let check_and_generalize (r0,l,c) =
+let check_function_branch (r,l,c) =
   let nargs = List.length l in
   let rec genrec n = function
     | MLrel i as c ->
@@ -662,58 +678,85 @@ let check_and_generalize (r0,l,c) =
 	if i'<1 then c
 	else if i'>nargs then MLrel (i-nargs+1)
 	else raise Impossible
-    | MLcons(_,r,args) when r=r0 && (test_eta_args_lift n nargs args) ->
+    | MLcons(_,r',args) when r=r' && (test_eta_args_lift n nargs args) ->
 	MLrel (n+1)
     | a -> ast_map_lift genrec n a
   in genrec 0 c
 
+(*s [check_constant_branch (r,l,c)] checks if branch [c] is independent
+   from the pattern [MLcons(r,l)]. For that is raises [Impossible] if any
+   variable in [l] occurs in [c], and otherwise returns [c] lifted to
+   appear like a function with one arg (for uniformity with the
+   branch-as-function optimization) *)
+
+let check_constant_branch (_,l,c) =
+  let n = List.length l in
+  if ast_occurs_itvl 1 n c then raise Impossible;
+  ast_lift (1-n) c
+
+(* The following structure allows to record which element occurred
+   at what position, and then finally return the most frequent
+   element and its positions. *)
+
+let census_add, census_max, census_clean =
+  let h = Hashtbl.create 13 in
+  let clear () = Hashtbl.clear h in
+  let add e i =
+    let l = try Hashtbl.find h e with Not_found -> [] in
+    Hashtbl.replace h e (i::l)
+  in
+  let max e0 =
+    let len = ref 0 and lst = ref [] and elm = ref e0 in
+    Hashtbl.iter
+      (fun e l ->
+	 let n = List.length l in
+	 if n > !len then begin len := n; lst := l; elm := e end)
+      h;
+    (!elm,!lst)
+  in
+  (add,max,clear)
+
+(* Given an abstraction function [abstr] (one of [check_*_branch]),
+   return the longest possible list of branches that have the
+   same abstraction, along with this abstraction. *)
+
+let factor_branches abstr br =
+  census_clean ();
+  for i = 0 to Array.length br - 1 do
+    try census_add (abstr br.(i)) i with Impossible -> ()
+  done;
+  let br_factor, br_list = census_max MLdummy in
+  if br_list = [] then None
+  else if Array.length br >= 2 && List.length br_list < 2 then None
+  else Some (br_factor, br_list)
+
 (*s [check_generalizable_case] checks if all branches can be seen as the
   same function [f] applied to the term matched. It is a generalized version
-  of the identity case optimization. *)
+  of both the identity case optimization and the constant case optimisation
+  ([f] can be a constant function) *)
 
-(* CAVEAT: this optimization breaks typing in some special case. example:
-   [type 'x a = A]. Then [let f = function A -> A] has type ['x a -> 'y a],
+(* The optimisation [factor_branches check_function_branch] breaks types
+   in some special case. Example: [type 'x a = A].
+   Then [let f = function A -> A] has type ['x a -> 'y a],
    which is incompatible with the type of [let f x = x].
-   By default, we brutally disable this optim except for the known types
-   in theories/Init/*.v *)
+   We check first that there isn't such phantom variable in the inductive type
+   we're considering. *)
 
-let generalizable_mind m =
-  match mind_modpath m with
-    | MPfile dir -> is_dirpath_prefix_of (dirpath_of_string "Coq.Init") dir
-    | _ -> false
-
-let check_generalizable_case unsafe br =
-  if not unsafe then
-    (match br.(0) with
-     | ConstructRef ((kn,_),_), _, _ ->
-	 if not (generalizable_mind kn) then raise Impossible
-     | _ -> assert false);
-  let f = check_and_generalize br.(0) in
-  for i = 1 to Array.length br - 1 do
-    if check_and_generalize br.(i) <> f then raise Impossible
-  done; f
-
-(*s Detecting similar branches of a match *)
-
-(* If several branches of a match are equal (and independent from their
-   patterns) we will print them using a _ pattern. If _all_ branches
-   are equal, we remove the match.
-*)
-
-let common_branches br =
-  let tab = Hashtbl.create 13 in
-  for i = 0 to Array.length br - 1 do
-    let (r,ids,t) = br.(i) in
-    let n = List.length ids in
-    if not (ast_occurs_itvl 1 n t) then
-       let t = ast_lift (-n) t in
-       let l = try Hashtbl.find tab t with Not_found -> [] in
-       Hashtbl.replace tab t (i::l)
-  done;
-  let best = ref [] in
-  Hashtbl.iter
-    (fun _ l -> if List.length l > List.length !best then best := l) tab;
-  if Array.length br >= 2 && List.length !best < 2 then [] else !best
+let check_optim_id br =
+  let (kn,i) =
+    match br.(0) with (ConstructRef (c,_),_,_) -> c | _ -> assert false
+  in
+  let ip = (snd (lookup_ind kn)).ind_packets.(i) in
+  match ip.ip_optim_id_ok with
+    | Some ok -> ok
+    | None ->
+	let tvars =
+	  intset_union_map_array (intset_union_map_list type_listvar)
+	    ip.ip_types
+	in
+	let ok = (Intset.cardinal tvars = List.length ip.ip_vars) in
+	ip.ip_optim_id_ok <- Some ok;
+	ok
 
 (*s If all branches are functions, try to permut the case and the functions. *)
 
@@ -848,25 +891,33 @@ and simpl_case o i br e =
   if o.opt_case_iot && (is_iota_gen e) then (* Generalized iota-redex *)
     simpl o (iota_gen br e)
   else
-    try (* Does a term [f] exist such that each branch is [(f e)] ? *)
-      if not o.opt_case_idr then raise Impossible;
-      let f = check_generalizable_case o.opt_case_idg br in
-      simpl o (MLapp (MLlam (anonymous,f),[e]))
-    with Impossible ->
-      (* Detect common branches *)
-      let common_br = if not o.opt_case_cst then [] else common_branches br in
-      if List.length common_br = Array.length br then
-	let (_,ids,t) = br.(0) in ast_lift (-List.length ids) t
-      else
-	let new_i = (fst i, common_br) in
-	(* Swap the case and the lam if possible *)
-	if o.opt_case_fun
-	then
-	  let ids,br = permut_case_fun br [] in
-	  let n = List.length ids in
-	  if n <> 0 then named_lams ids (MLcase (new_i,ast_lift n e, br))
-	  else MLcase (new_i,e,br)
-	else MLcase (new_i,e,br)
+    (* Swap the case and the lam if possible *)
+    let ids,br = if o.opt_case_fun then permut_case_fun br [] else [],br in
+    let n = List.length ids in
+    if n <> 0 then
+      simpl o (named_lams ids (MLcase (i,ast_lift n e, br)))
+    else
+      (* Does a term [f] exist such that many branches are [(f e)] ? *)
+      let opt1 =
+	if o.opt_case_idr && (o.opt_case_idg || check_optim_id br) then
+	  factor_branches check_function_branch br
+	else None
+      in
+      (* Detect common constant branches. Often a particular case of
+	 branch-as-function optim, but not always (e.g. A->A|B->A) *)
+      let opt2 =
+	if opt1 = None && o.opt_case_cst then
+	  factor_branches check_constant_branch br
+	else opt1
+      in
+      match opt2 with
+	| Some (f,ints) when List.length ints = Array.length br ->
+	    (* if all branches have been factorized, we remove the match *)
+	    simpl o (MLletin (Tmp anonymous_name, e, f))
+	| Some (f,ints) ->
+	    let ci = if ast_occurs 1 f then BranchFun ints else BranchCst ints
+	    in MLcase ((fst i,ci), e, br)
+	| None -> MLcase (i, e, br)
 
 (*S Local prop elimination. *)
 (* We try to eliminate as many [prop] as possible inside an [ml_ast]. *)

@@ -184,18 +184,28 @@ and pp_pat env factors pv =
 			 (fun () -> (spc ())) pr_id (List.rev ids))) ++
 	   str " ->" ++ spc () ++ pp_expr par env' [] t)
   in
+  let factor_br, factor_l = try match factors with
+    | BranchFun (i::_ as l) -> check_function_branch pv.(i), l
+    | BranchCst (i::_ as l) -> ast_pop (check_constant_branch pv.(i)), l
+    | _ -> MLdummy, []
+  with Impossible -> MLdummy, []
+  in
+  let par = expr_needs_par factor_br in
+  let last = Array.length pv - 1 in
   prvecti
-    (fun i x -> if List.mem i factors then mt () else
+    (fun i x -> if List.mem i factor_l then mt () else
        (pp_one_pat pv.(i) ++
-	if factors = [] && i = Array.length pv - 1 then mt ()
-	else fnl () ++ str "  ")) pv
+       if i = last && factor_l = [] then mt () else
+       fnl () ++ str "  ")) pv
   ++
-  match factors with
-    | [] -> mt ()
-    | i::_ ->
-	let (_,ids,t) = pv.(i) in
-	let t = ast_lift (-List.length ids) t in
-	hov 2 (str "_ ->" ++ spc () ++ pp_expr (expr_needs_par t) env [] t)
+  if factor_l = [] then mt () else match factors with
+    | BranchFun _ ->
+	let ids, env' = push_vars [anonymous_name] env in
+	pr_id (List.hd ids) ++ str " ->" ++ spc () ++
+	pp_expr par env' [] factor_br
+    | BranchCst _ ->
+	str "_ ->" ++ spc () ++ pp_expr par env [] factor_br
+    | BranchNone -> mt ()
 
 (*s names of the functions ([ids]) are already pushed in [env],
     and passed here just for convenience. *)

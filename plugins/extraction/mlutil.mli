@@ -114,6 +114,10 @@ val normalize : ml_ast -> ml_ast
 val optimize_fix : ml_ast -> ml_ast
 val inline : global_reference -> ml_ast -> bool
 
+exception Impossible
+val check_function_branch : ml_branch -> ml_ast
+val check_constant_branch : ml_branch -> ml_ast
+
 (* Classification of signatures *)
 
 type sign_kind =
