@@ -21,6 +21,7 @@ open Util
 open Termops
 open Evd
 open Equality
+open Compat
 
 (**********************************************************************)
 (* replace, discriminate, injection, simplify_eq                      *)
@@ -543,7 +544,7 @@ let subst_var_with_hole occ tid t =
     | RVar (_,id) as x -> 
         if id = tid 
         then (decr occref; if !occref = 0 then x
-                           else (incr locref; RHole (Ploc.make !locref 0 (0,0),Evd.QuestionMark(Evd.Define true))))
+                           else (incr locref; RHole (make_loc (!locref,0),Evd.QuestionMark(Evd.Define true))))
         else x
     | c -> map_rawconstr_left_to_right substrec c in
   let t' = substrec t
@@ -556,7 +557,7 @@ let subst_hole_with_term occ tc t =
   let rec substrec = function
     | RHole (_,Evd.QuestionMark(Evd.Define true)) -> 
         decr occref; if !occref = 0 then tc
-                     else (incr locref; RHole (Ploc.make !locref 0 (0,0),Evd.QuestionMark(Evd.Define true)))
+                     else (incr locref; RHole (make_loc (!locref,0),Evd.QuestionMark(Evd.Define true)))
     | c -> map_rawconstr_left_to_right substrec c
   in
   substrec t
@@ -578,8 +579,8 @@ let hResolve id c occ t gl =
     try 
       Pretyping.Default.understand sigma env t_hole
     with 
-    | Ploc.Exc (loc,Pretype_errors.PretypeError (_, Pretype_errors.UnsolvableImplicit _)) -> 
-        resolve_hole (subst_hole_with_term (Ploc.line_nb loc) c_raw t_hole)
+    | Loc.Exc_located (loc,Pretype_errors.PretypeError (_, Pretype_errors.UnsolvableImplicit _)) ->
+        resolve_hole (subst_hole_with_term (fst (unloc loc)) c_raw t_hole)
   in
   let t_constr = resolve_hole (subst_var_with_hole occ id t_raw) in
   let t_constr_type = Retyping.get_type_of env sigma t_constr in

@@ -1,0 +1,23 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+(** Adding a bit of camlp5 syntax to camlp4 for compatibility:
+    - EXTEND ... becomes EXTEND Gram ...
+*)
+
+open Camlp4.PreCast
+
+let rec my_token_filter = parser
+  | [< '(KEYWORD "EXTEND",_ as t); s >] ->
+    [< 't; '(UIDENT "Gram", Loc.ghost); my_token_filter s >]
+  | [< 'tokloc; s >] -> [< 'tokloc; my_token_filter s >]
+  | [< >] -> [< >]
+
+let _ =
+  Token.Filter.define_filter (Gram.get_filter())
+    (fun prev strm -> prev (my_token_filter strm))

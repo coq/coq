@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*i camlp4deps: "tools/compat5b.cmo" i*)
+
 open Genarg
 open Q_util
 open Egrammar

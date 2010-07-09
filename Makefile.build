@@ -499,6 +499,20 @@ $(COQDOC): $(COQDOCCMO:.cmo=$(BESTOBJ))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,str unix)
 
+# Special rule for the compatibility-with-camlp5 extension for camlp4
+
+ifeq ($(CAMLP4),camlp4)
+tools/compat5.cmo: tools/compat5.mlp
+	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp "$(CAMLP4O) -impl" -impl $<
+tools/compat5b.cmo: tools/compat5b.mlp
+	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp "$(CAMLP4O) -impl" -impl $<
+else
+tools/compat5.cmo: tools/compat5.ml
+	$(OCAMLC) -c $<
+tools/compat5b.cmo: tools/compat5b.ml
+	$(OCAMLC) -c $<
+endif
+
 ###########################################################################
 # Installation
 ###########################################################################
@@ -673,11 +687,11 @@ toplevel/mltop.cmx: toplevel/mltop.optml | toplevel/mltop.ml.d toplevel/mltop.ml
 
 toplevel/mltop.ml: toplevel/mltop.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(PR_O) $(CAMLP4USE) -DByte -DHasDynlink -impl $< $(TOTARGET)
+	$(HIDE)$(CAMLP4O) $(PR_O) $(CAMLP4USE) -DByte -DHasDynlink -impl $< -o $@
 
 toplevel/mltop.optml: toplevel/mltop.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(PR_O) $(CAMLP4USE) $(NATDYNLINKDEF) -impl $< $(TOTARGET)
+	$(HIDE)$(CAMLP4O) $(PR_O) $(CAMLP4USE) $(NATDYNLINKDEF) -impl $< -o $@
 
 # pretty printing of the revision number when compiling a checked out
 # source tree
@@ -796,12 +810,17 @@ plugins/%_mod.ml: plugins/%.mllib
 	$(HIDE)sed -e "s/\([^ ]\{1,\}\)/let _=Mltop.add_known_module\"\1\" /g" $< > $@
 	$(HIDE)echo "let _=Mltop.add_known_module\"$(notdir $*)\"" >> $@
 
-%.ml: %.ml4 | %.ml4.d
+# NB: compatibility modules for camlp4: 
+# - tools/compat5.cmo changes GEXTEND into EXTEND. Safe, always loaded
+# - tools/compat5b.cmo changes EXTEND into EXTEND Gram. Interact badly with
+#    syntax such that VERNAC EXTEND, we only load it for a few files via camlp4deps
+
+%.ml: %.ml4 | %.ml4.d tools/compat5.cmo tools/compat5b.cmo
 	$(SHOW)'CAMLP4O   $<'
 	$(HIDE)\
 	DEPS=$(CAMLP4DEPS); \
 	if ls $${DEPS} > /dev/null 2>&1; then \
-	$(CAMLP4O) $(PR_O) -I $(CAMLLIB) $${DEPS} $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< $(TOTARGET); \
+	$(CAMLP4O) $(PR_O) -I $(CAMLLIB) tools/compat5.cmo $${DEPS} $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@; \
 	else echo $< : Dependency $${DEPS} not ready yet; false; fi
 
 %.vo %.glob: %.v states/initial.coq $(INITPLUGINSBEST) $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
