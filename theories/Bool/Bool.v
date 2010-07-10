@@ -81,6 +81,11 @@ Definition leb (b1 b2:bool) :=
   end.
 Hint Unfold leb: bool v62.
 
+Lemma leb_implb : forall b1 b2, leb b1 b2 <-> implb b1 b2 = true.
+Proof.
+ intros [ | ]; simpl; intuition.
+Qed.
+
 (* Infix "<=" := leb : bool_scope. *)
 
 (*************)
@@ -216,34 +221,48 @@ Qed.
 (** * Properties of [orb]     *)
 (********************************)
 
+Lemma orb_true_iff :
+  forall b1 b2, b1 || b2 = true <-> b1 = true \/ b2 = true.
+Proof.
+ intros [ | ]; simpl; intuition. discriminate.
+Qed.
+
+Lemma orb_false_iff :
+  forall b1 b2, b1 || b2 = false <-> b1 = false /\ b2 = false.
+Proof.
+ intros [ | ]; simpl; intuition. discriminate.
+Qed.
+
 Lemma orb_true_elim :
   forall b1 b2:bool, b1 || b2 = true -> {b1 = true} + {b2 = true}.
 Proof.
-  destruct b1; simpl in |- *; auto with bool.
+  destruct b1; simpl; auto.
 Defined.
 
 Lemma orb_prop : forall a b:bool, a || b = true -> a = true \/ b = true.
 Proof.
-  destruct a; destruct b; simpl in |- *; try (intro H; discriminate H);
-    auto with bool.
+ intros; apply orb_true_iff; trivial.
 Qed.
 
 Lemma orb_true_intro :
   forall b1 b2:bool, b1 = true \/ b2 = true -> b1 || b2 = true.
 Proof.
-  destruct b1; auto with bool.
-  destruct 1; intros.
-  elim diff_true_false; auto with bool.
-  rewrite H; trivial with bool.
+ intros; apply orb_true_iff; trivial.
 Qed.
 Hint Resolve orb_true_intro: bool v62.
 
 Lemma orb_false_intro :
   forall b1 b2:bool, b1 = false -> b2 = false -> b1 || b2 = false.
 Proof.
-  intros b1 b2 H1 H2; rewrite H1; rewrite H2; trivial with bool.
+  intros b1 b2 H1 H2; rewrite H1; trivial.
 Qed.
 Hint Resolve orb_false_intro: bool v62.
+
+Lemma orb_false_elim :
+  forall b1 b2:bool, b1 || b2 = false -> b1 = false /\ b2 = false.
+Proof.
+  intros. apply orb_false_iff; trivial.
+Qed.
 
 (** [true] is a zero for [orb] *)
 
@@ -278,16 +297,6 @@ Hint Resolve orb_false_l: bool v62.
 Notation orb_b_false := orb_false_r (only parsing).
 Notation orb_false_b := orb_false_l (only parsing).
 
-Lemma orb_false_elim :
-  forall b1 b2:bool, b1 || b2 = false -> b1 = false /\ b2 = false.
-Proof.
-  destruct b1.
-  intros; elim diff_true_false; auto with bool.
-  destruct b2.
-  intros; elim diff_true_false; auto with bool.
-  auto with bool.
-Qed.
-
 (** Complementation *)
 
 Lemma orb_negb_r : forall b:bool, b || negb b = true.
@@ -320,7 +329,13 @@ Hint Resolve orb_comm orb_assoc: bool v62.
 Lemma andb_true_iff :
   forall b1 b2:bool, b1 && b2 = true <-> b1 = true /\ b2 = true.
 Proof.
- destruct b1; destruct b2; intuition.
+ intros [ | ]; simpl; intuition. discriminate.
+Qed.
+
+Lemma andb_false_iff :
+  forall b1 b2:bool, b1 && b2 = false <-> b1 = false \/ b2 = false.
+Proof.
+ intros [ | ]; simpl; intuition. discriminate.
 Qed.
 
 Lemma andb_true_eq :
@@ -331,12 +346,12 @@ Defined.
 
 Lemma andb_false_intro1 : forall b1 b2:bool, b1 = false -> b1 && b2 = false.
 Proof.
-  destruct b1; destruct b2; simpl in |- *; tauto || auto with bool.
+  intros. apply andb_false_iff. auto.
 Qed.
 
 Lemma andb_false_intro2 : forall b1 b2:bool, b2 = false -> b1 && b2 = false.
 Proof.
-  destruct b1; destruct b2; simpl in |- *; tauto || auto with bool.
+  intros. apply andb_false_iff. auto.
 Qed.
 
 (** [false] is a zero for [andb] *)
@@ -372,7 +387,7 @@ Notation andb_true_b := andb_true_l (only parsing).
 Lemma andb_false_elim :
   forall b1 b2:bool, b1 && b2 = false -> {b1 = false} + {b2 = false}.
 Proof.
-  destruct b1; simpl in |- *; auto with bool.
+  destruct b1; simpl; auto.
 Defined.
 Hint Resolve andb_false_elim: bool v62.
 
@@ -738,4 +753,43 @@ Proof.
  unfold orb; auto.
 Qed.
 
+(*****************************************)
+(** * Reflect: a specialized inductive type for
+    relating propositions and booleans,
+    as popularized by the Ssreflect library. *)
+(*****************************************)
 
+Inductive reflect (P : Prop) : bool -> Set :=
+  | ReflectT : P -> reflect P true
+  | ReflectF : ~ P -> reflect P false.
+Hint Constructors reflect : bool.
+
+(** Interest: a case on a reflect lemma or hyp performs clever
+    unification, and leave the goal in a convenient shape
+    (a bit like case_eq). *)
+
+(** Relation with iff : *)
+
+Lemma reflect_iff : forall P b, reflect P b -> (P<->b=true).
+Proof.
+ destruct 1; intuition; discriminate.
+Qed.
+
+Lemma iff_reflect : forall P b, (P<->b=true) -> reflect P b.
+Proof.
+ destruct b; intuition.
+Qed.
+
+(** It would be nice to join [reflect_iff] and [iff_reflect]
+    in a unique [iff] statement, but this isn't allowed since
+    [iff] is in Prop. *)
+
+(** Reflect implies decidability of the proposition *)
+
+Lemma reflect_dec : forall P b, reflect P b -> {P}+{~P}.
+Proof.
+ destruct 1; auto.
+Qed.
+
+(** Reciprocally, from a decidability, we could state a
+    [reflect] as soon as we have a [bool_of_sumbool]. *)
