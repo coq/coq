@@ -164,9 +164,9 @@ Module OTF_to_TotalOrder (O:OrderedTypeFull) <: TotalOrder
 *)
 
 (** For stating properties like transitivity  of [leb],
-    we coerce [bool] into [Prop].
-    NB: To migrate in Init/Datatype later *)
-Local Coercion is_true b := b = true.  (*: bool >-> Sortclass.*)
+    we coerce [bool] into [Prop]. *)
+
+Local Coercion is_true : bool >-> Sortclass.
 Hint Unfold is_true.
 
 Module Type HasLeBool (Import T:Typ).
