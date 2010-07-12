@@ -268,7 +268,7 @@ Time
                          :: Y C
                             :: Y C1 :: Y H :: X C1 :: X C ::nil) in
  nsatz_domainpv 2%N 1%Z (@List.nil R) lv ltac:simplR Rdi.
-(* Finished transaction in 6. secs (5.579152u,0.001s)
+(* Finished transaction in 6. secs (5.579152u,0.001s) *)
 Qed.
 
 End Geometry.
