@@ -102,7 +102,7 @@ let toplvl_ctr = ref 0
 let toplvl_ctr_mtx = Mutex.create ()
 
 let spawn_coqtop sup_args =
-  let prog = Sys.argv.(0) in
+  let prog = Sys.executable_name in
   let dir = Filename.dirname prog in
   Mutex.lock toplvl_ctr_mtx;
   try 
