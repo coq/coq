@@ -185,7 +185,7 @@ let signature_of_structure s =
 (*s Searching one [ml_decl] in a [ml_structure] by its [global_reference] *)
 
 let get_decl_in_structure r struc =
-  try 
+  try
     let base_mp,ll = labels_of_ref r in
     if not (at_toplevel base_mp) then error_not_visible r;
     let sel = List.assoc base_mp struc in
@@ -200,7 +200,8 @@ let get_decl_in_structure r struc =
 		  | MEstruct (_,sel) -> go ll sel
 		  | _ -> error_not_visible r
     in go ll sel
-  with Not_found -> assert false
+  with Not_found ->
+    anomaly "reference not found in extracted structure"
 
 
 (*s Optimization of a [ml_structure]. *)

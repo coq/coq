@@ -452,11 +452,11 @@ let fstlev_ks k = function
 let pp_ocaml_local k prefix mp rls olab =
   (* what is the largest prefix of [mp] that belongs to [visible]? *)
   assert (k <> Mod || mp <> prefix); (* mp as whole module isn't in itself *)
-  let rls = list_skipn (mp_length prefix) rls in
-  let k's = fstlev_ks k rls in
+  let rls' = list_skipn (mp_length prefix) rls in
+  let k's = fstlev_ks k rls' in
   (* Reference r / module path mp is of the form [<prefix>.s.<...>]. *)
-  if not (visible_clash prefix k's) then dottify rls
-  else pp_duplicate (fst k's) prefix mp rls olab
+  if not (visible_clash prefix k's) then dottify rls'
+  else pp_duplicate (fst k's) prefix mp rls' olab
 
 (* [pp_ocaml_bound] : [mp] starts with a [MPbound], and we are not inside
    (i.e. we are not printing the type of the module parameter) *)
@@ -506,8 +506,7 @@ let pp_global k r =
   let ls = ref_renaming (k,r) in
   assert (List.length ls > 1);
   let s = List.hd ls in
-  let l = label_of_r r in
-  let mp = modpath_of_r r in
+  let mp,_,l = repr_of_r r in
   if mp = top_visible_mp () then
     (* simpliest situation: definition of r (or use in the same context) *)
     (* we update the visible environment *)
@@ -517,7 +516,7 @@ let pp_global k r =
     match lang () with
       | Scheme -> unquote s (* no modular Scheme extraction... *)
       | Haskell -> if modular () then pp_haskell_gen k mp rls else s
-      | Ocaml -> pp_ocaml_gen k mp rls (Some (label_of_r r))
+      | Ocaml -> pp_ocaml_gen k mp rls (Some l)
 
 (* The next function is used only in Ocaml extraction...*)
 
