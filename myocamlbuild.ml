@@ -287,6 +287,19 @@ let extra_rules () = begin
   flag_and_dep ["p4mod"; "use_grammar"] (P "parsing/grammar.cma");
   flag_and_dep ["p4mod"; "use_constr"] (P "parsing/q_constr.cmo");
 
+  flag_and_dep ["p4mod"; "use_compat5"] (P "tools/compat5.cmo");
+  flag_and_dep ["p4mod"; "use_compat5b"] (P "tools/compat5b.cmo");
+
+  let mlp_cmo s =
+    let src=s^".mlp" and dst=s^".cmo" in
+    rule (src^".cmo") ~dep:src ~prod:dst ~insert:`top
+      (fun env _ ->
+	 Cmd (S [!Options.ocamlc; A"-c"; A"-pp";
+		 Quote (S [camlp4o;A"-impl"]); camlp4incl; A"-impl"; P src]))
+  in
+  mlp_cmo "tools/compat5";
+  mlp_cmo "tools/compat5b";
+
 (** Special case of toplevel/mltop.ml4:
     - mltop.ml will be the old mltop.optml and be used to obtain mltop.cmx
     - we add a special mltop.ml4 --> mltop.cmo rule, before all the others
