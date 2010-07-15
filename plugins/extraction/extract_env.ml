@@ -338,7 +338,7 @@ let mono_environment refs mpl =
   let env = Global.env () in
   let l = List.rev (environment_until None) in
   List.rev_map
-    (fun (mp,m) -> mp, unpack (extract_seb env  mp false m)) l
+    (fun (mp,m) -> mp, unpack (extract_seb env mp false m)) l
 
 (**************************************)
 (*S Part II : Input/Output primitives *)

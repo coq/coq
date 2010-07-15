@@ -29,25 +29,21 @@ let occur_kn_in_ref kn = function
   | ConstRef _ -> false
   | VarRef _ -> assert false
 
-let modpath_of_r = function
-  | ConstRef kn -> con_modpath kn
+let repr_of_r = function
+  | ConstRef kn -> repr_con kn
   | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) -> mind_modpath kn
+  | ConstructRef ((kn,_),_) -> repr_mind kn
   | VarRef _ -> assert false
 
-let label_of_r = function
-  | ConstRef kn -> con_label kn
-  | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) -> mind_label kn
-  | VarRef _ -> assert false
+let modpath_of_r r =
+  let mp,_,_ = repr_of_r r in mp
+
+let label_of_r r =
+  let _,_,l = repr_of_r r in l
 
 let rec base_mp = function
   | MPdot (mp,l) -> base_mp mp
   | mp -> mp
-
-let rec mp_length = function
-  | MPdot (mp, _) -> 1 + (mp_length mp)
-  | _ -> 1
 
 let is_modfile = function
   | MPfile _ -> true
@@ -70,7 +66,14 @@ let is_toplevel mp =
 let at_toplevel mp =
   is_modfile mp || is_toplevel mp
 
-let visible_kn kn = at_toplevel (base_mp (modpath kn))
+let rec mp_length mp =
+  let mp0 = current_toplevel () in
+  let rec len = function
+    | mp when mp = mp0 -> 1
+    | MPdot (mp,_) -> 1 + len mp
+    | _ -> 1
+  in len mp
+
 let visible_con kn = at_toplevel (base_mp (con_modpath kn))
 
 let rec prefixes_mp mp = match mp with
@@ -96,18 +99,12 @@ let labels_of_mp mp = parse_labels [] mp
 
 let rec parse_labels2 ll mp1 = function
   | mp when mp1=mp -> mp,ll
-  | MPdot (mp,l) -> parse_labels (l::ll) mp
+  | MPdot (mp,l) -> parse_labels2 (l::ll) mp1 mp
   | mp -> mp,ll
 
 let labels_of_ref r =
-  let mp_top = fst(Lib.current_prefix()) in
-  let mp,_,l =
-    match r with
-	ConstRef con -> repr_con con
-      | IndRef (kn,_)
-      | ConstructRef ((kn,_),_) -> repr_mind kn
-      | VarRef _ -> assert false
-  in
+  let mp_top = current_toplevel () in
+  let mp,_,l = repr_of_r r in
   parse_labels2 [l] mp_top mp
 
 let rec add_labels_mp mp = function
@@ -302,7 +299,7 @@ let error_scheme () =
 
 let error_not_visible r =
   err (safe_pr_global r ++ str " is not directly visible.\n" ++
-       str "For example, it may be inside an applied functor." ++
+       str "For example, it may be inside an applied functor.\n" ++
        str "Use Recursive Extraction to get the whole environment.")
 
 let error_MPfile_as_mod mp b =
@@ -329,14 +326,13 @@ let error_non_implicit msg =
        fnl () ++ str "Please check the Extraction Implicit declarations.")
 
 let check_loaded_modfile mp = match base_mp mp with
-  | MPfile dp -> if not (Library.library_is_loaded dp) then
-      let mp1 = (fst(Lib.current_prefix())) in
-      let rec find_prefix = function
-	|MPfile dp1 when dp=dp1 -> ()
-	|MPdot(mp,_) -> find_prefix mp
-	|MPbound(_) -> ()
-	| _ -> err (str ("Please load library "^(string_of_dirpath dp^" first.")))
-      in find_prefix mp1 
+  | MPfile dp ->
+      if not (Library.library_is_loaded dp) then begin
+	match base_mp (current_toplevel ()) with
+	  | MPfile dp' when dp<>dp' ->
+	      err (str ("Please load library "^(string_of_dirpath dp^" first.")))
+	  | _ -> ()
+      end
   | _ -> ()
 
 let info_file f =

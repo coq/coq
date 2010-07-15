@@ -42,6 +42,7 @@ val info_file : string -> unit
 (*s utilities about [module_path] and [kernel_names] and [global_reference] *)
 
 val occur_kn_in_ref : mutual_inductive -> global_reference -> bool
+val repr_of_r : global_reference -> module_path * dir_path * label
 val modpath_of_r : global_reference -> module_path
 val label_of_r : global_reference -> label
 val current_toplevel : unit -> module_path
@@ -51,7 +52,6 @@ val string_of_modfile : module_path -> string
 val file_of_modfile : module_path -> string
 val is_toplevel : module_path -> bool
 val at_toplevel : module_path -> bool
-val visible_kn : kernel_name -> bool
 val visible_con : constant -> bool
 val mp_length : module_path -> int
 val prefixes_mp : module_path -> MPset.t
