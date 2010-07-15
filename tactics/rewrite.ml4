@@ -253,24 +253,34 @@ let evd_convertible env evd x y =
   try ignore(Evarconv.the_conv_x env x y evd); true
   with _ -> false
 
+let rec decompose_app_rel env evd t = 
+  match kind_of_term t with
+  | App (f, args) -> 
+      if Array.length args > 1 then 
+	let fargs, args = array_chop (Array.length args - 2) args in
+	  mkApp (f, fargs), args
+      else 
+	let (f', args) = decompose_app_rel env evd args.(0) in
+	let ty = Typing.type_of env evd args.(0) in
+	let f'' = mkLambda (Name (id_of_string "x"), ty,
+	  mkLambda (Name (id_of_string "y"), lift 1 ty,
+	    mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
+	in (f'', args)
+  | _ -> error "The term provided is not an applied relation."
+
 let decompose_applied_relation env sigma (c,l) left2right =
   let ctype = Typing.type_of env sigma c in
   let find_rel ty =
     let eqclause = Clenv.make_clenv_binding_env_apply env sigma None (c,ty) l in
-    let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
-    let rec split_last_two = function
-      | [c1;c2] -> [],(c1, c2)
-      | x::y::z ->
-	  let l,res = split_last_two (y::z) in x::l, res
-      | _ -> error "The term provided is not an applied relation." in
-    let others,(c1,c2) = split_last_two args in
+    let (equiv, args) = decompose_app_rel env sigma (Clenv.clenv_type eqclause) in
+    let c1 = args.(0) and c2 = args.(1) in 
     let ty1, ty2 =
       Typing.type_of env eqclause.evd c1, Typing.type_of env eqclause.evd c2
     in
       if not (evd_convertible env eqclause.evd ty1 ty2) then None
       else
 	Some { cl=eqclause; prf=(Clenv.clenv_value eqclause);
-	       car=ty1; rel=mkApp (equiv, Array.of_list others);
+	       car=ty1; rel = equiv;
 	       l2r=left2right; c1=c1; c2=c2; c=Some (c,l); abs=None }
   in
     match find_rel ctype with
@@ -1607,18 +1617,10 @@ let not_declared env ty rel =
   tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared " ++
 		str ty ++ str" relation. Maybe you need to require the Setoid library")
 
-let relation_of_constr env c =
-  match kind_of_term c with
-    | App (f, args) when Array.length args >= 2 ->
-	let relargs, args = array_chop (Array.length args - 2) args in
-	  mkApp (f, relargs), args
-    | _ -> errorlabstrm "relation_of_constr"
-	(str "The term " ++ Printer.pr_constr_env env c ++ str" is not an applied relation.")
-
 let setoid_proof gl ty fn fallback =
   let env = pf_env gl in
     try
-      let rel, args = relation_of_constr env (pf_concl gl) in
+      let rel, args = decompose_app_rel env (project gl) (pf_concl gl) in
       let evm, car = project gl, pf_type_of gl args.(0) in
 	fn env evm car rel gl
     with e ->
@@ -1626,7 +1628,7 @@ let setoid_proof gl ty fn fallback =
       with Hipattern.NoEquationFound ->
 	  match e with
 	  | Not_found ->
-	      let rel, args = relation_of_constr env (pf_concl gl) in
+	      let rel, args = decompose_app_rel env (project gl) (pf_concl gl) in
 		not_declared env ty rel gl
 	  | _ -> raise e
 
