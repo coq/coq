@@ -124,11 +124,11 @@ Ltac ApplyLemmaThenAndCont lemma expr tac CONT_tac :=
    - [SYN_tac term fv] reifies [term] given the list of atomic expressions
    - [LEMMA_tac fv kont] computes the correctness lemma and passes it to
        continuation kont
-   - [MAIN_tac H] process H which is the conclusion of the correctness
-       lemma instantiated with each reified term
+   - [MAIN_tac H] process H which is the conclusion of the correctness lemma
+       instantiated with each reified term
    - [fv] is the initial value of atomic expressions (to be completed by
        the reification of the terms
-   - [terms] the list (a constr of type list) of terms to reify ans process.
+   - [terms] the list (a constr of type list) of terms to reify and process.
  *)
 Ltac ReflexiveRewriteTactic
      FV_tac SYN_tac LEMMA_tac MAIN_tac fv terms :=
@@ -137,7 +137,12 @@ Ltac ReflexiveRewriteTactic
   let RW_tac lemma :=
      let fcons term CONT_tac :=
       let expr := SYN_tac term fv in
-      (ApplyLemmaThenAndCont lemma expr MAIN_tac CONT_tac) in
+      let main H :=
+        match type of H with
+        | (?req _ ?rhs) => change (req term rhs) in H
+        end;
+        MAIN_tac H in
+      (ApplyLemmaThenAndCont lemma expr main CONT_tac) in
      (* rewrite steps *)
      lazy_list_fold_right fcons ltac:(fun _=>idtac) terms in
   LEMMA_tac fv RW_tac.
