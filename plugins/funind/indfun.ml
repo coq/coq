@@ -492,13 +492,143 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 let map_option f = function 
   | None -> None 
   | Some v -> Some (f v)
+    
+let decompose_lambda_n_assum_constr_expr = 
+  let rec decompose_lambda_n_assum_constr_expr acc n e = 
+  if n = 0 then (List.rev acc,e)
+  else
+    match e with 
+      | Topconstr.CLambdaN(_, [],e') -> decompose_lambda_n_assum_constr_expr acc n e'
+      | Topconstr.CLambdaN(lambda_loc,(nal,bk,nal_type)::bl,e') ->
+	let nal_length = List.length nal in 
+	if nal_length <= n 
+	then
+	  decompose_lambda_n_assum_constr_expr 
+	    (Topconstr.LocalRawAssum(nal,bk,nal_type)::acc) 
+	    (n - nal_length) 
+	    (Topconstr.CLambdaN(lambda_loc,bl,e')) 
+  	else
+	  let nal_keep,nal_expr = list_chop n nal in 
+	  (List.rev (Topconstr.LocalRawAssum(nal_keep,bk,nal_type)::acc),
+	   Topconstr.CLambdaN(lambda_loc,(nal_expr,bk,nal_type)::bl,e')
+	  )
+      | Topconstr.CLetIn(_, na,nav,e') -> 
+	decompose_lambda_n_assum_constr_expr 
+	  (Topconstr.LocalRawDef(na,nav)::acc) (pred n) e'
+      | _ -> error "Not enough product or assumption"
+  in
+  decompose_lambda_n_assum_constr_expr []
 
-let do_generate_principle on_error register_built interactive_proof (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) :unit  =
-  let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
+let decompose_prod_n_assum_constr_expr = 
+  let rec decompose_prod_n_assum_constr_expr acc n e = 
+    (* Pp.msgnl (str "n := " ++ int n ++ fnl ()++ *)
+    (* 		str "e := " ++ Ppconstr.pr_lconstr_expr e); *)
+  if n = 0 then 
+    (* let _ = Pp.msgnl (str "return_type := " ++ Ppconstr.pr_lconstr_expr e) in  *)
+      (List.rev acc,e)
+  else
+    match e with 
+      | Topconstr.CProdN(_, [],e') -> decompose_prod_n_assum_constr_expr acc n e'
+      | Topconstr.CProdN(lambda_loc,(nal,bk,nal_type)::bl,e') ->
+	let nal_length = List.length nal in 
+	if nal_length <= n 
+	then
+	  (* let _ = Pp.msgnl (str "first case") in  *)
+	  decompose_prod_n_assum_constr_expr 
+	    (Topconstr.LocalRawAssum(nal,bk,nal_type)::acc) 
+	    (n - nal_length) 
+	    (if bl = [] then e' else (Topconstr.CLambdaN(lambda_loc,bl,e')))
+  	else
+	  (* let _ = Pp.msgnl (str "second case") in  *)
+	  let nal_keep,nal_expr = list_chop n nal in 
+	  (List.rev (Topconstr.LocalRawAssum(nal_keep,bk,nal_type)::acc),
+	   Topconstr.CLambdaN(lambda_loc,(nal_expr,bk,nal_type)::bl,e')
+	  )
+      | Topconstr.CArrow(_,premisse,concl) -> 
+	(* let _ = Pp.msgnl (str "arrow case") in  *)
+	decompose_prod_n_assum_constr_expr 
+	  (Topconstr.LocalRawAssum([dummy_loc,Names.Anonymous],
+				   Topconstr.Default Lib.Explicit,premisse)
+	  ::acc)
+	  (pred n)
+	  concl
+      | Topconstr.CLetIn(_, na,nav,e') -> 
+	decompose_prod_n_assum_constr_expr 
+	  (Topconstr.LocalRawDef(na,nav)::acc) (pred n) e'
+      | _ -> error "Not enough product or assumption"
+  in
+  decompose_prod_n_assum_constr_expr []
+
+open Topconstr
+    
+let id_of_name = function 
+  | Name id -> id 
+  | _ -> assert false
+
+ let rec rebuild_bl (aux,assoc) bl typ = 
+	match bl,typ with 
+	  | [], _ -> (List.rev aux,replace_vars_constr_expr assoc typ,assoc)
+	  | (Topconstr.LocalRawAssum(nal,bk,_))::bl',typ -> 
+	     rebuild_nal (aux,assoc) bk bl' nal (List.length nal) typ
+	  | (Topconstr.LocalRawDef(na,_))::bl',CLetIn(_,_,nat,typ') ->
+	    rebuild_bl ((Topconstr.LocalRawDef(na,replace_vars_constr_expr assoc nat)::aux),assoc)
+	      bl' typ'
+	  | _ -> assert false
+      and rebuild_nal (aux,assoc) bk bl' nal lnal typ = 
+	match nal,typ with 
+	  | [], _ -> rebuild_bl (aux,assoc) bl' typ
+	  | na::nal,CArrow(_,nat,typ') -> 
+	    rebuild_nal 
+	      ((LocalRawAssum([na],bk,replace_vars_constr_expr assoc nat))::aux,assoc) 
+	      bk bl' nal (pred lnal) typ'
+	  | _,CProdN(_,[],typ) -> rebuild_nal (aux,assoc) bk bl' nal lnal typ
+	  | _,CProdN(_,(nal',bk',nal't)::rest,typ') -> 
+	    let lnal' = List.length nal' in 
+	    if lnal' >= lnal 
+	    then 
+	      let old_nal',new_nal' = list_chop lnal nal' in 
+	      rebuild_bl ((LocalRawAssum(nal,bk,replace_vars_constr_expr assoc nal't)::aux),(List.rev_append (List.combine (List.map id_of_name (List.map snd old_nal'))  (List.map id_of_name (List.map snd nal))) assoc)) bl' 
+		(if new_nal' = [] && rest = []
+		 then  typ' 
+		 else if new_nal' = [] 
+		 then CProdN(dummy_loc,rest,typ')
+		 else CProdN(dummy_loc,((new_nal',bk',nal't)::rest),typ'))
+	    else 
+	      let captured_nal,non_captured_nal = list_chop lnal' nal in 
+	      rebuild_nal ((LocalRawAssum(captured_nal,bk,replace_vars_constr_expr assoc nal't)::aux), (List.rev_append (List.combine (List.map id_of_name (List.map snd captured_nal)) ((List.map id_of_name (List.map snd nal)))) assoc))
+		bk bl' non_captured_nal (lnal - lnal') (CProdN(dummy_loc,rest,typ'))
+	  | _ -> assert false
+
+let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) = 
+  let fixl,ntns = Command.extract_fixpoint_components false fixpoint_exprl in
+  let ((_,_,typel),_) = Command.interp_fixpoint fixl ntns in
+  let constr_expr_typel = 
+    List.map (Constrextern.extern_constr false (Global.env ())) typel in 
+  let fixpoint_exprl_with_new_bl = 
+    List.map2 (fun ((lna,(rec_arg_opt,rec_order),bl,ret_typ,opt_body),notation_list) fix_typ -> 
+     
+      let new_bl',new_ret_type,_ = rebuild_bl ([],[]) bl fix_typ in 
+      (((lna,(rec_arg_opt,rec_order),new_bl',new_ret_type,opt_body),notation_list):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
+    )
+      fixpoint_exprl constr_expr_typel 
+  in 
+  fixpoint_exprl_with_new_bl
+  
+
+let do_generate_principle on_error register_built interactive_proof
+    (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) :unit =
+  List.iter (fun (_,l) -> if l <> [] then error "Function does not support notations for now") fixpoint_exprl;
   let _is_struct =
     match fixpoint_exprl with
-      | [(((_,name),(wf_x,Topconstr.CWfRec wf_rel)(* Some (Wf (wf_rel,wf_x,using_lemmas)) *),args,types,body)),[]] ->
+      | [((_,(wf_x,Topconstr.CWfRec wf_rel),_,_,_),_) as fixpoint_expr] ->
+ 	  let ((((_,name),_,args,types,body)),_)  as fixpoint_expr =
+	    match recompute_binder_list [fixpoint_expr] with 
+	      | [e] -> e
+	      | _ -> assert false
+	  in 
+	  let fixpoint_exprl = [fixpoint_expr] in 
 	  let body = match body with | Some body -> body | None -> user_err_loc (dummy_loc,"Function",str "Body of Function must be given") in 
+	  let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
 	  let using_lemmas = [] in 
 	  let pre_hook =
 	    generate_principle
@@ -512,7 +642,14 @@ let do_generate_principle on_error register_built interactive_proof (fixpoint_ex
 	  if register_built
 	  then register_wf name rec_impls wf_rel (map_option snd wf_x) using_lemmas args types body pre_hook;
 	  false
-      | [(((_,name),(wf_x,Topconstr.CMeasureRec(wf_mes,wf_rel_opt)),args,types,body)),[]] ->
+      |[((_,(wf_x,Topconstr.CMeasureRec(wf_mes,wf_rel_opt)),_,_,_),_) as fixpoint_expr] ->
+ 	  let ((((_,name),_,args,types,body)),_)  as fixpoint_expr =
+	    match recompute_binder_list [fixpoint_expr] with 
+	      | [e] -> e
+	      | _ -> assert false
+	  in 
+	  let fixpoint_exprl = [fixpoint_expr] in 
+	  let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
 	  let using_lemmas = [] in
 	  let body = match body with | Some body -> body | None -> user_err_loc (dummy_loc,"Function",str "Body of Function must be given") in 
 	  let pre_hook =
@@ -536,22 +673,24 @@ let do_generate_principle on_error register_built interactive_proof (fixpoint_ex
 			 | _ -> ()
 		    )
 	    fixpoint_exprl;
-	  let fix_names =
-	    List.map (function (((_,name),_,_,_,_),_) -> name) fixpoint_exprl
-	  in
+	let fixpoint_exprl = recompute_binder_list fixpoint_exprl in 
+	let fix_names =
+	  List.map (function (((_,name),_,_,_,_),_) -> name) fixpoint_exprl
+	in
 	  (* ok all the expressions are structural *)
-	  let is_rec = List.exists (is_rec fix_names) recdefs in
-	  if register_built then register_struct is_rec fixpoint_exprl;
-	  generate_principle
-	    on_error
-	    false
-	    register_built
-	    fixpoint_exprl
-	    recdefs
-	    interactive_proof
-	    (Functional_principles_proofs.prove_princ_for_struct interactive_proof);
-	  if register_built then derive_inversion fix_names;
-	  true; 
+  	let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
+	let is_rec = List.exists (is_rec fix_names) recdefs in
+	if register_built then register_struct is_rec fixpoint_exprl;
+	generate_principle
+	  on_error
+	  false
+	  register_built
+	  fixpoint_exprl
+	  recdefs
+	  interactive_proof
+	  (Functional_principles_proofs.prove_princ_for_struct interactive_proof);
+	if register_built then derive_inversion fix_names;
+	true; 
   in
   ()
 

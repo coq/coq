@@ -593,15 +593,16 @@ let declare_cofixpoint boxed ((fixnames,fixdefs,fixtypes),fiximps) ntns =
   (* Declare notations *)
   List.iter Metasyntax.add_notation_interpretation ntns
 
-let extract_decreasing_argument = function
+let extract_decreasing_argument limit = function
   | (na,CStructRec) -> na
+  | (na,_) when not limit -> na
   | _ -> error 
       "Only structural decreasing is supported for a non-Program Fixpoint"
 
-let extract_fixpoint_components l =
+let extract_fixpoint_components limit l =
   let fixl, ntnl = List.split l in
   let fixl = List.map (fun ((_,id),ann,bl,typ,def) ->
-    let ann = extract_decreasing_argument ann in
+    let ann = extract_decreasing_argument limit ann in
       {fix_name = id; fix_annot = ann; fix_binders = bl; fix_body = def; fix_type = typ}) fixl in
   fixl, List.flatten ntnl
 
@@ -612,7 +613,7 @@ let extract_cofixpoint_components l =
   List.flatten ntnl
 
 let do_fixpoint l b =
-  let fixl,ntns = extract_fixpoint_components l in
+  let fixl,ntns = extract_fixpoint_components true l in
   let fix = interp_fixpoint fixl ntns in
   let possible_indexes =
     List.map compute_possible_guardness_evidences (snd fix) in
