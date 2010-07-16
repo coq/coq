@@ -19,4 +19,5 @@ Require Export FSetProperties.
 Require Export FSetEqProperties.
 Require Export FSetWeakList.
 Require Export FSetList.
+Require Export FSetPositive.
 Require Export FSetAVL.

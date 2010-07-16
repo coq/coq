@@ -8,6 +8,7 @@ FMaps.vo
 FMapWeakList.vo
 FSetCompat.vo
 FSetAVL.vo
+FSetPositive.vo
 FSetBridge.vo
 FSetDecide.vo
 FSetEqProperties.vo
