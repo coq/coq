@@ -88,6 +88,14 @@ Tactic Notation "destruct_with_eqn" ":" ident(H) constr(x) :=
 Tactic Notation "destruct_with_eqn" ":" ident(H) ident(n) :=
   try intros until n; destruct n as []_eqn:H.
 
+(** Break every hypothesis of a certain type *)
+
+Ltac destruct_all t :=
+ match goal with
+  | x : t |- _ => destruct x; destruct_all t
+  | _ => idtac
+ end.
+
 (* Rewriting in all hypothesis several times everywhere *)
 
 Tactic Notation "rewrite_all" constr(eq) := repeat rewrite eq in *.
