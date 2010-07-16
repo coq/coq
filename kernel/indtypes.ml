@@ -397,6 +397,15 @@ let ienv_push_inductive (env, n, ntypes, ra_env) (mi,lpar) =
   let newidx = n + auxntyp in
   (env', newidx, ntypes, ra_env')
 
+let rec ienv_decompose_prod (env,_,_,_ as ienv) n c =
+  if n=0 then (ienv,c) else
+    let c' = whd_betadeltaiota env c in
+    match kind_of_term c' with
+	Prod(na,a,b) ->
+	  let ienv' = ienv_push_var ienv (na,a,mk_norec) in
+	  ienv_decompose_prod ienv' (n-1) b
+      | _ -> assert false
+
 let array_min nmr a = if nmr = 0 then 0 else
   Array.fold_left (fun k (nmri,_) -> min k nmri) nmr a
 
@@ -441,6 +450,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
   and check_positive_nested (env,n,ntypes,ra_env as ienv) nmr (mi, largs) =
     let (mib,mip) = lookup_mind_specif env mi in
     let auxnpar = mib.mind_nparams_rec in
+    let nonrecpar = mib.mind_nparams - auxnpar in
     let (lpar,auxlargs) =
       try list_chop auxnpar largs
       with Failure _ -> raise (IllFormedInd (LocalNonPos n)) in
@@ -461,10 +471,12 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
 	let lpar' = List.map (lift auxntyp) lpar in
 	let irecargs_nmr =
 	  (* fails if the inductive type occurs non positively *)
-	  (* when substituted *)
+	  (* with recursive parameters substituted *)
 	  Array.map
 	    (function c ->
 	      let c' = hnf_prod_applist env' c lpar' in
+	      (* skip non-recursive parameters *)
+	      let (ienv',c') = ienv_decompose_prod ienv' nonrecpar c' in
 		check_constructors ienv' false nmr c')
 	    auxlcvect
 	in
