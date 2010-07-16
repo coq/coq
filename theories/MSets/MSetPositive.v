@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(** Efficient implementation of [FSetInterface.S] for positive keys,
+(** Efficient implementation of [MSetInterface.S] for positive keys,
     inspired from the [FMapPositive] module.
 
    This module was adapted by Alexandre Ren, Damien Pous, and Thomas
