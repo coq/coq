@@ -473,7 +473,7 @@ let current_cofix vcf =
       else find_cofix (pos+1)
     else raise Not_found in
   try find_cofix 0
-  with _ -> assert false
+  with Not_found -> assert false
 
 let check_cofix vcf1 vcf2 =
   (current_cofix vcf1 = current_cofix vcf2) &&
