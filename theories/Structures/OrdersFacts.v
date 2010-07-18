@@ -8,6 +8,7 @@
 
 Require Import Basics OrdersTac.
 Require Export Orders.
+Import Morphisms_Prop. (* For Hints *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -206,6 +207,7 @@ End OrderedTypeTest.
 
 Module OrderedTypeRev (O:OrderedTypeFull) <: OrderedTypeFull.
 
+Import O.
 Definition t := O.t.
 Definition eq := O.eq.
 Instance eq_equiv : Equivalence eq.

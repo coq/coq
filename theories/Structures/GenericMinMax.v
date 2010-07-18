@@ -7,6 +7,7 @@
 (***********************************************************************)
 
 Require Import Orders OrdersTac OrdersFacts Setoid Morphisms Basics.
+Import Morphisms_Prop. (* For Hints *)
 
 (** * A Generic construction of min and max *)
 

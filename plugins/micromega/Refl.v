@@ -15,6 +15,7 @@
 
 Require Import List.
 Require Setoid.
+Import Morphisms Morphisms_Prop. (* For Hints *)
 
 Set Implicit Arguments.
 

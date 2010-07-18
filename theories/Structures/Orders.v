@@ -7,6 +7,8 @@
 (***********************************************************************)
 
 Require Export Relations Morphisms Setoid Equalities.
+Import Morphisms_Prop. (* For Hints *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 

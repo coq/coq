@@ -15,6 +15,7 @@
 Require Import List.
 Require Import Refl.
 Require Import Bool.
+Import Morphisms Morphisms_Prop. (* For Hints *)
 
 Set Implicit Arguments.
 

@@ -12,11 +12,12 @@
  [FMapInterface.WS] using lists of pairs, unordered but without redundancy. *)
 
 Require Import FMapInterface.
+Import Morphisms_Prop. (* For Hints *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Module Raw (X:DecidableType).
+Module Raw (Import X:DecidableType).
 
 Module Import PX := KeyDecidableType X.
 

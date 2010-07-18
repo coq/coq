@@ -9,6 +9,7 @@
 (************************************************************************)
 
 Require Import NZAxioms NZBase Decidable OrdersTac.
+Import Morphisms_Prop. (* For Hints *)
 
 Module Type NZOrderPropSig
  (Import NZ : NZOrdSig')(Import NZBase : NZBasePropSig NZ).

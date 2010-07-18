@@ -7,6 +7,7 @@
 (***********************************************************************)
 
 Require Export SetoidList Morphisms OrdersTac.
+Import Morphisms_Prop. (* For Hints *)
 Set Implicit Arguments.
 Unset Strict Implicit.
 

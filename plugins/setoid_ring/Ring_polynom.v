@@ -13,6 +13,7 @@ Require Import BinPos.
 Require Import BinNat.
 Require Import BinInt.
 Require Export Ring_theory.
+Import Morphisms. (* For Hints *)
 
 Open Local Scope positive_scope.
 Import RingSyntax.

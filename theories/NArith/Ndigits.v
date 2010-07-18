@@ -7,6 +7,7 @@
 (************************************************************************)
 
 Require Import Bool Setoid Bvector BinPos BinNat.
+Import Le Morphisms. (* For Hints *)
 
 (** Operation over bits of a [N] number. *)
 

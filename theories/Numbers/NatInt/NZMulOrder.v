@@ -10,6 +10,7 @@
 
 Require Import NZAxioms.
 Require Import NZAddOrder.
+Import Morphisms_Prop. (* For Hints *)
 
 Module Type NZMulOrderPropSig (Import NZ : NZOrdAxiomsSig').
 Include NZAddOrderPropSig NZ.

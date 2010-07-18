@@ -100,8 +100,8 @@ Section decidability.
 
   Definition Z_le_gt_dec : {x <= y} + {x > y}.
   Proof.
-    elim Z_le_dec; auto with arith.
-    intro. right. apply Znot_le_gt; auto with arith.
+    elim Z_le_dec; auto.
+    intro. right. apply Znot_le_gt; auto.
   Defined.
 
   Definition Z_gt_le_dec : {x > y} + {x <= y}.
@@ -111,17 +111,17 @@ Section decidability.
 
   Definition Z_ge_lt_dec : {x >= y} + {x < y}.
   Proof.
-    elim Z_ge_dec; auto with arith.
-    intro. right. apply Znot_ge_lt; auto with arith.
+    elim Z_ge_dec; auto.
+    intro. right. apply Znot_ge_lt; auto.
   Defined.
 
   Definition Z_le_lt_eq_dec : x <= y -> {x < y} + {x = y}.
   Proof.
     intro H.
     apply Zcompare_rec with (n := x) (m := y).
-    intro. right. elim (Zcompare_Eq_iff_eq x y); auto with arith.
-    intro. left. elim (Zcompare_Eq_iff_eq x y); auto with arith.
-    intro H1. absurd (x > y); auto with arith.
+    intro. right. elim (Zcompare_Eq_iff_eq x y); auto.
+    intro. left. elim (Zcompare_Eq_iff_eq x y); auto.
+    intro H1. absurd (x > y); auto.
   Defined.
 
 End decidability.

@@ -9,6 +9,7 @@
 Require Export List.
 Require Export Sorting.
 Require Export Setoid Basics Morphisms.
+Import Morphisms_Prop. (* For Hints *)
 Set Implicit Arguments.
 Unset Strict Implicit.
 

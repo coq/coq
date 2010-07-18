@@ -9,6 +9,7 @@
 (** Euclidean Division *)
 
 Require Import NZAxioms NZMulOrder.
+Import Morphisms_Prop. (* For Hints *)
 
 (** The first signatures will be common to all divisions over NZ, N and Z *)
 
