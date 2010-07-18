@@ -11,7 +11,6 @@
 Require Export Decidable.
 Require Export NAxioms.
 Require Import NZProperties.
-Import Morphisms_Prop. (* For Hints *)
 
 Module NBasePropFunct (Import N : NAxiomsSig').
 (** First, we import all known facts about both natural numbers and integers. *)

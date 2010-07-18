@@ -8,7 +8,6 @@
 
 Require Export Bool.
 Require Export Setoid.
-Import Morphisms.
 
 Set Implicit Arguments.
 

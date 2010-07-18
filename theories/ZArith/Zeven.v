@@ -145,32 +145,32 @@ Definition Zdiv2 (z:Z) :=
 Lemma Zeven_div2 : forall n:Z, Zeven n -> n = 2 * Zdiv2 n.
 Proof.
   intro x; destruct x.
-  auto.
-  destruct p; auto.
-  intros. absurd (Zeven (Zpos (xI p))); red in |- *; auto.
-  intros. absurd (Zeven 1); red in |- *; auto.
-  destruct p; auto.
-  intros. absurd (Zeven (Zneg (xI p))); red in |- *; auto.
-  intros. absurd (Zeven (-1)); red in |- *; auto.
+  auto with arith.
+  destruct p; auto with arith.
+  intros. absurd (Zeven (Zpos (xI p))); red in |- *; auto with arith.
+  intros. absurd (Zeven 1); red in |- *; auto with arith.
+  destruct p; auto with arith.
+  intros. absurd (Zeven (Zneg (xI p))); red in |- *; auto with arith.
+  intros. absurd (Zeven (-1)); red in |- *; auto with arith.
 Qed.
 
 Lemma Zodd_div2 : forall n:Z, n >= 0 -> Zodd n -> n = 2 * Zdiv2 n + 1.
 Proof.
   intro x; destruct x.
-  intros. absurd (Zodd 0); red in |- *; auto.
-  destruct p; auto.
-  intros. absurd (Zodd (Zpos (xO p))); red in |- *; auto.
-  intros. absurd (Zneg p >= 0); red in |- *; auto.
+  intros. absurd (Zodd 0); red in |- *; auto with arith.
+  destruct p; auto with arith.
+  intros. absurd (Zodd (Zpos (xO p))); red in |- *; auto with arith.
+  intros. absurd (Zneg p >= 0); red in |- *; auto with arith.
 Qed.
 
 Lemma Zodd_div2_neg :
   forall n:Z, n <= 0 -> Zodd n -> n = 2 * Zdiv2 n - 1.
 Proof.
   intro x; destruct x.
-  intros. absurd (Zodd 0); red in |- *; auto.
-  intros. absurd (Zneg p >= 0); red in |- *; auto.
-  destruct p; auto.
-  intros. absurd (Zodd (Zneg (xO p))); red in |- *; auto.
+  intros. absurd (Zodd 0); red in |- *; auto with arith.
+  intros. absurd (Zneg p >= 0); red in |- *; auto with arith.
+  destruct p; auto with arith.
+  intros. absurd (Zodd (Zneg (xO p))); red in |- *; auto with arith.
 Qed.
 
 Lemma Z_modulo_2 :

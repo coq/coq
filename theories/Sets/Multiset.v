@@ -68,7 +68,7 @@ Section multiset_defs.
   Qed.
 
 
-  Require Import Plus. (* comm. and ass. of plus *)
+  Require Plus. (* comm. and ass. of plus *)
 
   Lemma munion_comm : forall x y:multiset, meq (munion x y) (munion y x).
   Proof.
@@ -167,8 +167,6 @@ Section multiset_defs.
   Qed.
 
   (** SingletonBag *)
-
-Import Morphisms_Prop Morphisms. (* For Hints *)
 
   Lemma meq_singleton : forall a a',
     eqA a a' -> meq (SingletonBag a) (SingletonBag a').

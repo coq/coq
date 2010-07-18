@@ -6,8 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Lt Le Plus.
-Require Import Compare_dec Even.
+Require Import Lt.
+Require Import Plus.
+Require Import Compare_dec.
+Require Import Even.
 
 Open Local Scope nat_scope.
 

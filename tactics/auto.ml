@@ -402,34 +402,11 @@ type hint_action = | CreateDB of bool * transparent_state
 		   | AddTransparency of evaluable_global_reference list * bool
 		   | AddTactic of (global_reference option * pri_auto_tactic) list
 
-let automatically_import_hints = ref false
-
-open Goptions
-let _ =
-  declare_bool_option
-    { optsync  = true;
-      optname  = "automatic importation of hints";
-      optkey   = ["Automatic";"Hints";"Importation"];
-      optread  = (fun () -> !automatically_import_hints);
-      optwrite = (:=) automatically_import_hints }
-
 let cache_autohint (_,(local,name,hints)) =
   match hints with
   | CreateDB (b, st) -> searchtable_add (name, Hint_db.empty st b)
   | AddTransparency (grs, b) -> add_transparency name grs b
   | AddTactic hints -> add_hint name hints
-
-let load_autohint _ x =
-  if
-    !automatically_import_hints || Flags.version_less_or_equal Flags.V8_2
-  then
-    cache_autohint x
-
-let open_autohint _ x =
-  if
-    not (!automatically_import_hints || Flags.version_less_or_equal Flags.V8_2)
-  then
-    cache_autohint x
 
 let forward_subst_tactic =
   ref (fun _ -> failwith "subst_tactic is not installed for auto")
@@ -523,8 +500,7 @@ let discharge_autohint (_,(local,name,hintlist as obj)) =
 let (inAutoHint,_) =
   declare_object {(default_object "AUTOHINT") with
                     cache_function = cache_autohint;
-		    open_function = open_autohint;
-		    load_function = load_autohint;
+		    load_function = (fun _ -> cache_autohint);
 		    subst_function = subst_autohint;
 		    classify_function = classify_autohint }
 

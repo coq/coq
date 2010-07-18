@@ -7,7 +7,6 @@
 (************************************************************************)
 
 Require Import Le Gt Minus Bool.
-Import Plus. (* For Hints *)
 
 Set Implicit Arguments.
 

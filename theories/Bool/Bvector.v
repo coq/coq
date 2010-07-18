@@ -10,7 +10,6 @@
 
 Require Export Bool Sumbool.
 Require Import Minus.
-Import Lt. (* For Hints *)
 
 Open Local Scope nat_scope.
 

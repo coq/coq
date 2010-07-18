@@ -7,7 +7,6 @@
 (************************************************************************)
 
 Require Import Orders BinPos Pnat POrderedType GenericMinMax.
-Import Plus. (* For Hints *)
 
 (** * Maximum and Minimum of two positive numbers *)
 

@@ -13,12 +13,11 @@
  left projection. *)
 
 Require Import FMapInterface.
-Import Morphisms. (* For Hints *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Module Raw (Import X:OrderedType).
+Module Raw (X:OrderedType).
 
 Module Import MX := OrderedTypeFacts X.
 Module Import PX := KeyOrderedType X.
@@ -1155,7 +1154,7 @@ Section Elt.
 
 End Make.
 
-Module Make_ord (X: OrderedType)(Import D : OrderedType) <:
+Module Make_ord (X: OrderedType)(D : OrderedType) <:
 Sord with Module Data := D
         with Module MapS.E := X.
 
@@ -1333,7 +1332,6 @@ Proof.
   inversion_clear Hm2; auto.
  destruct (IHm1 Hm11 (Build_slist Hm22));
   [ apply LT | apply EQ | apply GT ]; cmp_solve.
-Show.
 Qed.
 
 End Make_ord.

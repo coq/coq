@@ -87,7 +87,6 @@ Ltac subst_eqns :=
 Definition interp_ord o :=
  match o with OEQ => O.eq | OLT => O.lt | OLE => O.le end.
 Local Notation "#" := interp_ord.
-Import Morphisms_Prop. (* For Hints *)
 
 Lemma trans : forall o o' x y z, #o x y -> #o' y z -> #(o+o') x z.
 Proof.
@@ -268,21 +267,19 @@ End OT_to_OrderTac.
 
 Module TotalOrderRev (O:TotalOrder) <: TotalOrder.
 
-Import O.
 Definition t := O.t.
 Definition eq := O.eq.
 Definition lt := flip O.lt.
 Definition le := flip O.le.
 Include EqLtLeNotation.
-Import RelationClasses. (* For hints *)
 
 (* No Instance syntax to avoid saturating the Equivalence tables *)
 Definition eq_equiv := O.eq_equiv.
 
 Instance lt_strorder: StrictOrder lt.
-Proof. unfold lt. auto using O.lt_strorder with *. Qed.
+Proof. unfold lt; auto with *. Qed.
 Instance lt_compat : Proper (eq==>eq==>iff) lt.
-Proof. unfold lt; auto using O.lt_compat with *. Qed.
+Proof. unfold lt; auto with *. Qed.
 
 Lemma le_lteq : forall x y, x<=y <-> x<y \/ x==y.
 Proof. intros; unfold le, lt, flip. rewrite O.le_lteq; intuition. Qed.

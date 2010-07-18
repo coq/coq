@@ -9,7 +9,6 @@
 (************************************************************************)
 
 Require Import NZAxioms.
-Import Morphisms_Prop. (* For Hints *)
 
 Module Type NZBasePropSig (Import NZ : NZDomainSig').
 

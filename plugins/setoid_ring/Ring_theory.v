@@ -9,7 +9,6 @@
 Require Import Setoid.
 Require Import BinPos.
 Require Import BinNat.
-Import Morphisms. (* For Hints *)
 
 Set Implicit Arguments.
 
