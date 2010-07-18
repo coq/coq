@@ -570,7 +570,7 @@ GEXTEND Gram
       | IDENT "Generalizable"; 
 	   gen = [IDENT "All"; IDENT "Variables" -> Some []
 	     | IDENT "No"; IDENT "Variables" -> None
-	     | [IDENT "Variable" | IDENT "Variables"];
+	     | ["Variable" | IDENT "Variables"];
 		  idl = LIST1 identref -> Some idl ] ->
 	     VernacGeneralizable (use_non_locality (), gen) ] ]
   ;
