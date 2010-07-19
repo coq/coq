@@ -19,4 +19,5 @@ Require Export MSetProperties.
 Require Export MSetEqProperties.
 Require Export MSetWeakList.
 Require Export MSetList.
+Require Export MSetPositive.
 Require Export MSetAVL.

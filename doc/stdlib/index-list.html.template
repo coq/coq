@@ -427,6 +427,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/MSets/MSetWeakList.v
     theories/MSets/MSetList.v
     theories/MSets/MSetAVL.v
+    theories/MSets/MSetPositive.v
     theories/MSets/MSetToFiniteSet.v
     (theories/MSets/MSets.v)
   </dd>
@@ -446,8 +447,9 @@ through the <tt>Require Import</tt> command.</p>
     theories/FSets/FSetList.v
     theories/FSets/FSetWeakList.v
     theories/FSets/FSetCompat.v
-    (theories/FSets/FSets.v)
     theories/FSets/FSetAVL.v
+    theories/FSets/FSetPositive.v
+    (theories/FSets/FSets.v)
     theories/FSets/FSetToFiniteSet.v
     theories/FSets/FMapInterface.v
     theories/FSets/FMapWeakList.v
