@@ -586,7 +586,8 @@ let list_eq_set l1 l2 =
   | a::l2 -> aux (list_remove_first a l1) l2 in
   try aux l1 l2 with Not_found -> false
 
-let list_for_all2eq f l1 l2 = try List.for_all2 f l1 l2 with Failure _ -> false
+let list_for_all2eq f l1 l2 =
+  try List.for_all2 f l1 l2 with Invalid_argument _ -> false
 
 let list_filter_i p =
   let rec filter_i_rec i = function
