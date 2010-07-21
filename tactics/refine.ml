@@ -263,9 +263,12 @@ let rec compute_metamap env sigma c = match kind_of_term c with
 
 let ensure_products n =
   let p = ref 0 in
-  let rec aux n =
-    if n = 0 then tclFAIL 0 (mt())
-    else tclORELSE intro (fun gl -> incr p; tclTHEN introf (aux (n-1)) gl) in
+  let rec aux n gl =
+    if n = 0 then tclFAIL 0 (mt()) gl
+    else
+      tclTHEN
+        (tclORELSE intro (fun gl -> incr p; introf gl))
+        (aux (n-1)) gl in
   tclORELSE
     (aux n)
     (* Now we know how many red are needed *)
