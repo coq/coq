@@ -614,10 +614,11 @@ let prim_refiner r sigma goal =
 	  (sgl, sigma)
 
     (* Conversion rules *)
-    | Convert_concl (cl',_) ->
+    | Convert_concl (cl',k) ->
 	check_typability env sigma cl';
 	if (not !check) || is_conv_leq env sigma cl' cl then
           let (sg,ev,sigma) = mk_goal sign cl' in
+	  let ev = if k=VMcast then mkCast(ev,k,cl) else ev in
 	  let sigma = Goal.V82.partial_solution sigma goal ev in
           ([sg], sigma)
 	else
