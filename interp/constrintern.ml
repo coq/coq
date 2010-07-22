@@ -267,6 +267,113 @@ let set_var_scope loc id (_,_,scopt,scopes) varscopes =
     idscopes := Some (scopt,scopes)
 
 (**********************************************************************)
+(* Utilities for binders                                              *)
+
+let check_capture loc ty = function
+  | Name id when occur_var_constr_expr id ty ->
+      raise (InternalizationError (loc,VariableCapture id))
+  | _ ->
+      ()
+
+let locate_if_isevar loc na = function
+  | RHole _ ->
+      (try match na with
+	| Name id ->  Reserve.find_reserved_type id
+	| Anonymous -> raise Not_found
+      with Not_found -> RHole (loc, Evd.BinderType na))
+  | x -> x
+
+let check_hidden_implicit_parameters id (_,_,_,(indnames,_)) =
+  if List.mem id indnames then
+    errorlabstrm "" (strbrk "A parameter or name of an inductive type " ++
+    pr_id id ++ strbrk " is not allowed to be used as a bound variable in the type of its constructor.")
+
+let push_name_env ?(fail_anonymous=false) lvar (ids,unb,tmpsc,scopes as env) = function
+  | Anonymous ->
+      if fail_anonymous then errorlabstrm "" (str "Anonymous variables not allowed");
+      env
+  | Name id ->
+      check_hidden_implicit_parameters id lvar;
+      (Idset.add id ids, unb,tmpsc,scopes)
+
+let push_loc_name_env ?(fail_anonymous=false) lvar (ids,unb,tmpsc,scopes as env) loc = function
+  | Anonymous ->
+      if fail_anonymous then user_err_loc (loc,"", str "Anonymous variables not allowed");
+      env
+  | Name id ->
+      check_hidden_implicit_parameters id lvar;
+      Dumpglob.dump_binding loc id;
+      (Idset.add id ids,unb,tmpsc,scopes)
+
+let intern_generalized_binder ?(fail_anonymous=false) intern_type lvar
+    (ids,unb,tmpsc,sc as env) bl (loc, na) b b' t ty =
+  let ids = match na with Anonymous -> ids | Name na -> Idset.add na ids in
+  let ty, ids' =
+    if t then ty, ids else
+      Implicit_quantifiers.implicit_application ids
+	Implicit_quantifiers.combine_params_freevar ty
+  in
+  let ty' = intern_type (ids,true,tmpsc,sc) ty in
+  let fvs = Implicit_quantifiers.generalizable_vars_of_rawconstr ~bound:ids ~allowed:ids' ty' in
+  let env' = List.fold_left (fun env (x, l) -> push_loc_name_env ~fail_anonymous lvar env l (Name x)) env fvs in
+  let bl = List.map (fun (id, loc) -> (Name id, b, None, RHole (loc, Evd.BinderType (Name id)))) fvs in
+  let na = match na with
+    | Anonymous ->
+	if fail_anonymous then na
+	else
+	  let name =
+	    let id =
+	      match ty with
+	      | CApp (_, (_, CRef (Ident (loc,id))), _) -> id
+	      | _ -> id_of_string "H"
+	    in Implicit_quantifiers.make_fresh ids' (Global.env ()) id
+	  in Name name
+    | _ -> na
+  in (push_loc_name_env ~fail_anonymous lvar env' loc na), (na,b',None,ty') :: List.rev bl
+
+let intern_local_binder_aux ?(fail_anonymous=false) intern intern_type lvar ((ids,unb,ts,sc as env),bl) = function
+  | LocalRawAssum(nal,bk,ty) ->
+      (match bk with
+      | Default k ->
+	  let (loc,na) = List.hd nal in
+	  (* TODO: fail if several names with different implicit types *)
+	  let ty = locate_if_isevar loc na (intern_type env ty) in
+	    List.fold_left
+	      (fun ((ids,unb,ts,sc),bl) (_,na) ->
+		((name_fold Idset.add na ids,unb,ts,sc), (na,k,None,ty)::bl))
+	      (env,bl) nal
+      | Generalized (b,b',t) ->
+	  let env, b = intern_generalized_binder ~fail_anonymous intern_type lvar env bl (List.hd nal) b b' t ty in
+	    env, b @ bl)
+  | LocalRawDef((loc,na),def) ->
+      ((name_fold Idset.add na ids,unb,ts,sc),
+      (na,Explicit,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
+
+let intern_generalization intern (ids,unb,tmp_scope,scopes as env) lvar loc bk ak c =
+  let c = intern (ids,true,tmp_scope,scopes) c in
+  let fvs = Implicit_quantifiers.generalizable_vars_of_rawconstr ~bound:ids c in
+  let env', c' =
+    let abs =
+      let pi =
+	match ak with
+	| Some AbsPi -> true
+	| None when tmp_scope = Some Notation.type_scope
+	    || List.mem Notation.type_scope scopes -> true
+	| _ -> false
+      in
+	if pi then
+	  (fun (id, loc') acc ->
+	    RProd (join_loc loc' loc, Name id, bk, RHole (loc', Evd.BinderType (Name id)), acc))
+	else
+	  (fun (id, loc') acc ->
+	    RLambda (join_loc loc' loc, Name id, bk, RHole (loc', Evd.BinderType (Name id)), acc))
+    in
+      List.fold_right (fun (id, loc as lid) (env, acc) ->
+	let env' = push_loc_name_env lvar env loc (Name id) in
+	  (env', abs lid acc)) fvs (env,c)
+  in c'
+
+(**********************************************************************)
 (* Syntax extensions                                                  *)
 
 let traverse_binder (subst,substlist) (renaming,(ids,unb,tmpsc,scopes as env))=
@@ -845,116 +952,6 @@ let rec intern_cases_pattern genv scopes (ids,asubst as aliases) tmp_scope pat=
       let ids = List.hd idsl in
       check_or_pat_variables loc ids (List.tl idsl);
       (ids,List.flatten pl')
-
-(**********************************************************************)
-(* Fix and CoFix                                                      *)
-
-(**********************************************************************)
-(* Utilities for binders                                              *)
-
-let check_capture loc ty = function
-  | Name id when occur_var_constr_expr id ty ->
-      raise (InternalizationError (loc,VariableCapture id))
-  | _ ->
-      ()
-
-let locate_if_isevar loc na = function
-  | RHole _ ->
-      (try match na with
-	| Name id ->  Reserve.find_reserved_type id
-	| Anonymous -> raise Not_found
-      with Not_found -> RHole (loc, Evd.BinderType na))
-  | x -> x
-
-let check_hidden_implicit_parameters id (_,_,_,(indnames,_)) =
-  if List.mem id indnames then
-    errorlabstrm "" (strbrk "A parameter or name of an inductive type " ++
-    pr_id id ++ strbrk " is not allowed to be used as a bound variable in the type of its constructor.")
-
-let push_name_env ?(fail_anonymous=false) lvar (ids,unb,tmpsc,scopes as env) = function
-  | Anonymous ->
-      if fail_anonymous then errorlabstrm "" (str "Anonymous variables not allowed");
-      env
-  | Name id ->
-      check_hidden_implicit_parameters id lvar;
-      (Idset.add id ids, unb,tmpsc,scopes)
-
-let push_loc_name_env ?(fail_anonymous=false) lvar (ids,unb,tmpsc,scopes as env) loc = function
-  | Anonymous ->
-      if fail_anonymous then user_err_loc (loc,"", str "Anonymous variables not allowed");
-      env
-  | Name id ->
-      check_hidden_implicit_parameters id lvar;
-      Dumpglob.dump_binding loc id;
-      (Idset.add id ids,unb,tmpsc,scopes)
-
-let intern_generalized_binder ?(fail_anonymous=false) intern_type lvar
-    (ids,unb,tmpsc,sc as env) bl (loc, na) b b' t ty =
-  let ids = match na with Anonymous -> ids | Name na -> Idset.add na ids in
-  let ty, ids' =
-    if t then ty, ids else
-      Implicit_quantifiers.implicit_application ids
-	Implicit_quantifiers.combine_params_freevar ty
-  in
-  let ty' = intern_type (ids,true,tmpsc,sc) ty in
-  let fvs = Implicit_quantifiers.generalizable_vars_of_rawconstr ~bound:ids ~allowed:ids' ty' in
-  let env' = List.fold_left (fun env (x, l) -> push_loc_name_env ~fail_anonymous lvar env l (Name x)) env fvs in
-  let bl = List.map (fun (id, loc) -> (Name id, b, None, RHole (loc, Evd.BinderType (Name id)))) fvs in
-  let na = match na with
-    | Anonymous ->
-	if fail_anonymous then na
-	else
-	  let name =
-	    let id =
-	      match ty with
-	      | CApp (_, (_, CRef (Ident (loc,id))), _) -> id
-	      | _ -> id_of_string "H"
-	    in Implicit_quantifiers.make_fresh ids' (Global.env ()) id
-	  in Name name
-    | _ -> na
-  in (push_loc_name_env ~fail_anonymous lvar env' loc na), (na,b',None,ty') :: List.rev bl
-
-let intern_local_binder_aux ?(fail_anonymous=false) intern intern_type lvar ((ids,unb,ts,sc as env),bl) = function
-  | LocalRawAssum(nal,bk,ty) ->
-      (match bk with
-      | Default k ->
-	  let (loc,na) = List.hd nal in
-	  (* TODO: fail if several names with different implicit types *)
-	  let ty = locate_if_isevar loc na (intern_type env ty) in
-	    List.fold_left
-	      (fun ((ids,unb,ts,sc),bl) (_,na) ->
-		((name_fold Idset.add na ids,unb,ts,sc), (na,k,None,ty)::bl))
-	      (env,bl) nal
-      | Generalized (b,b',t) ->
-	  let env, b = intern_generalized_binder ~fail_anonymous intern_type lvar env bl (List.hd nal) b b' t ty in
-	    env, b @ bl)
-  | LocalRawDef((loc,na),def) ->
-      ((name_fold Idset.add na ids,unb,ts,sc),
-      (na,Explicit,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
-
-let intern_generalization intern (ids,unb,tmp_scope,scopes as env) lvar loc bk ak c =
-  let c = intern (ids,true,tmp_scope,scopes) c in
-  let fvs = Implicit_quantifiers.generalizable_vars_of_rawconstr ~bound:ids c in
-  let env', c' =
-    let abs =
-      let pi =
-	match ak with
-	| Some AbsPi -> true
-	| None when tmp_scope = Some Notation.type_scope
-	    || List.mem Notation.type_scope scopes -> true
-	| _ -> false
-      in
-	if pi then
-	  (fun (id, loc') acc ->
-	    RProd (join_loc loc' loc, Name id, bk, RHole (loc', Evd.BinderType (Name id)), acc))
-	else
-	  (fun (id, loc') acc ->
-	    RLambda (join_loc loc' loc, Name id, bk, RHole (loc', Evd.BinderType (Name id)), acc))
-    in
-      List.fold_right (fun (id, loc as lid) (env, acc) ->
-	let env' = push_loc_name_env lvar env loc (Name id) in
-	  (env', abs lid acc)) fvs (env,c)
-  in c'
 
 (**********************************************************************)
 (* Utilities for application                                          *)
