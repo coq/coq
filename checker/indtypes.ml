@@ -381,6 +381,15 @@ let ienv_push_inductive (env, n, ntypes, ra_env) (mi,lpar) =
   let newidx = n + auxntyp in
   (env', newidx, ntypes, ra_env')
 
+let rec ienv_decompose_prod (env,_,_,_ as ienv) n c =
+  if n=0 then (ienv,c) else
+    let c' = whd_betadeltaiota env c in
+    match c' with
+	Prod(na,a,b) ->
+	  let ienv' = ienv_push_var ienv (na,a,mk_norec) in
+	  ienv_decompose_prod ienv' (n-1) b
+      | _ -> assert false
+
 (* The recursive function that checks positivity and builds the list
    of recursive arguments *)
 let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp i indlc =
@@ -420,6 +429,7 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp i indlc =
   and check_positive_imbr (env,n,ntypes,ra_env as ienv) (mi, largs) =
     let (mib,mip) = lookup_mind_specif env mi in
     let auxnpar = mib.mind_nparams_rec in
+    let nonrecpar = mib.mind_nparams - auxnpar in
     let (lpar,auxlargs) =
       try list_chop auxnpar largs
       with Failure _ -> raise (IllFormedInd (LocalNonPos n)) in
@@ -439,10 +449,12 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp i indlc =
 	let lpar' = List.map (lift auxntyp) lpar in
 	let irecargs =
 	  (* fails if the inductive type occurs non positively *)
-	  (* when substituted *)
+	  (* with recursive parameters substituted *)
 	  Array.map
 	    (function c ->
 	      let c' = hnf_prod_applist env' c lpar' in
+	      (* skip non-recursive parameters *)
+	      let (ienv',c') = ienv_decompose_prod ienv' nonrecpar c' in
 		check_constructors ienv' false c')
 	    auxlcvect in
 	(Rtree.mk_rec [|mk_paths (Imbr mi) irecargs|]).(0)
