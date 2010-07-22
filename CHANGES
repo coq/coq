@@ -126,6 +126,7 @@ Module system
 - A functor application can be prefixed by a "!" to make it ignore any
   "Inline" annotation in the type of its argument(s) (for examples of
   use of the new features, see libraries Structures and Numbers).
+- Coercions are now active only when modules are imported.
 
 Extraction
 

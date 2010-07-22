@@ -338,7 +338,18 @@ let class_params = function
 let add_class cl =
   add_new_class cl { cl_param = class_params cl }
 
-let load_coercion i (_,(coe,stre,isid,cls,clt,ps)) =
+let automatically_import_coercions = ref false
+
+open Goptions
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optname  = "automatic importation of coercions";
+      optkey   = ["Automatic";"Coercions";"Importation"];
+      optread  = (fun () -> !automatically_import_coercions);
+      optwrite = (:=) automatically_import_coercions }
+
+let cache_coercion (_,(coe,stre,isid,cls,clt,ps)) =
   add_class cls;
   add_class clt;
   let is,_ = class_info cls in
@@ -352,8 +363,17 @@ let load_coercion i (_,(coe,stre,isid,cls,clt,ps)) =
   add_new_coercion coe xf;
   add_coercion_in_graph (xf,is,it)
 
-let cache_coercion o =
-  load_coercion 1 o
+let load_coercion _ o =
+  if
+    !automatically_import_coercions || Flags.version_less_or_equal Flags.V8_2
+  then
+    cache_coercion o
+
+let open_coercion _ o =
+  if not
+    (!automatically_import_coercions || Flags.version_less_or_equal Flags.V8_2)
+  then
+    cache_coercion o
 
 let subst_coercion (subst,(coe,stre,isid,cls,clt,ps as obj)) =
   let coe' = subst_coe_typ subst coe in
@@ -382,6 +402,7 @@ let classify_coercion (coe,stre,isid,cls,clt,ps as obj) =
 
 let (inCoercion,_) =
   declare_object {(default_object "COERCION") with
+    open_function = open_coercion;
     load_function = load_coercion;
     cache_function = cache_coercion;
     subst_function = subst_coercion;
