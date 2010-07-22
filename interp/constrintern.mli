@@ -71,7 +71,7 @@ type ltac_sign = identifier list * unbound_ltac_var_map
 
 type raw_binder = (name * binding_kind * rawconstr option * rawconstr)
 
-(** {6 Internalisation performs interpretation of global names and notations } *)
+(** {6 Internalization performs interpretation of global names and notations } *)
 
 val intern_constr : evar_map -> env -> constr_expr -> rawconstr
 

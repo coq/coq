@@ -55,7 +55,7 @@ type raw_binder = (name * binding_kind * rawconstr option * rawconstr)
 let interning_grammar = ref false
 
 (* Historically for parsing grammar rules, but in fact used only for
-   translator, v7 parsing, and unstrict tactic internalisation *)
+   translator, v7 parsing, and unstrict tactic internalization *)
 let for_grammar f x =
   interning_grammar := true;
   let a = f x in
@@ -90,9 +90,9 @@ let global_reference_in_absolute_module dir id =
   constr_of_global (Nametab.global_of_path (Libnames.make_path dir id))
 
 (**********************************************************************)
-(* Internalisation errors                                             *)
+(* Internalization errors                                             *)
 
-type internalisation_error =
+type internalization_error =
   | VariableCapture of identifier
   | WrongExplicitImplicit
   | IllegalMetavariable
@@ -102,7 +102,7 @@ type internalisation_error =
   | BadPatternsNumber of int * int
   | BadExplicitationNumber of explicitation * int option
 
-exception InternalisationError of loc * internalisation_error
+exception InternalizationError of loc * internalization_error
 
 let explain_variable_capture id =
   str "The variable " ++ pr_id id ++ str " occurs in its type"
@@ -144,7 +144,7 @@ let explain_bad_explicitation_number n po =
       str "Bad explicitation name: found " ++ pr_id id ++
       str" but was expecting " ++ s
 
-let explain_internalisation_error e =
+let explain_internalization_error e =
   let pp = match e with
   | VariableCapture id -> explain_variable_capture id
   | WrongExplicitImplicit -> explain_wrong_explicit_implicit
@@ -527,14 +527,14 @@ let loc_of_lhs lhs =
 let check_linearity lhs ids =
   match has_duplicate ids with
     | Some id ->
-	raise (InternalisationError (loc_of_lhs lhs,NonLinearPattern id))
+	raise (InternalizationError (loc_of_lhs lhs,NonLinearPattern id))
     | None ->
 	()
 
 (* Match the number of pattern against the number of matched args *)
 let check_number_of_pattern loc n l =
   let p = List.length l in
-  if n<>p then raise (InternalisationError (loc,BadPatternsNumber (n,p)))
+  if n<>p then raise (InternalizationError (loc,BadPatternsNumber (n,p)))
 
 let check_or_pat_variables loc ids idsl =
   if List.exists (fun ids' -> not (list_eq_set ids ids')) idsl then
@@ -644,7 +644,7 @@ let find_constructor ref f aliases pats scopes =
   let (loc,qid) = qualid_of_reference ref in
   let gref =
     try locate_extended qid
-    with Not_found -> raise (InternalisationError (loc,NotAConstructor ref)) in
+    with Not_found -> raise (InternalizationError (loc,NotAConstructor ref)) in
   match gref with
   | SynDef sp ->
       let (vars,a) = Syntax_def.search_syntactic_definition sp in
@@ -675,7 +675,7 @@ let find_constructor ref f aliases pats scopes =
 
 let find_pattern_variable = function
   | Ident (loc,id) -> id
-  | Qualid (loc,_) as x -> raise (InternalisationError(loc,NotAConstructor x))
+  | Qualid (loc,_) as x -> raise (InternalizationError(loc,NotAConstructor x))
 
 let maybe_constructor ref f aliases scopes =
   try
@@ -684,7 +684,7 @@ let maybe_constructor ref f aliases scopes =
     ConstrPat (c,idspl1)
   with
       (* patt var does not exists globally *)
-    | InternalisationError _ -> VarPat (find_pattern_variable ref)
+    | InternalizationError _ -> VarPat (find_pattern_variable ref)
       (* patt var also exists globally but does not satisfy preconditions *)
     | (Environ.NotEvaluableConst _ | Not_found) ->
         if_verbose msg_warning (str "pattern " ++ pr_reference ref ++
@@ -694,7 +694,7 @@ let maybe_constructor ref f aliases scopes =
 let mustbe_constructor loc ref f aliases patl scopes =
   try find_constructor ref f aliases patl scopes
   with (Environ.NotEvaluableConst _ | Not_found) ->
-    raise (InternalisationError (loc,NotAConstructor ref))
+    raise (InternalizationError (loc,NotAConstructor ref))
 
 let sort_fields mode loc l completer =
 (*mode=false if pattern and true if constructor*)
@@ -854,7 +854,7 @@ let rec intern_cases_pattern genv scopes (ids,asubst as aliases) tmp_scope pat=
 
 let check_capture loc ty = function
   | Name id when occur_var_constr_expr id ty ->
-      raise (InternalisationError (loc,VariableCapture id))
+      raise (InternalizationError (loc,VariableCapture id))
   | _ ->
       ()
 
@@ -1028,7 +1028,7 @@ let extract_explicit_arg imps args =
 (**********************************************************************)
 (* Main loop                                                          *)
 
-let internalise sigma globalenv env allow_patvar lvar c =
+let internalize sigma globalenv env allow_patvar lvar c =
   let rec intern (ids,unb,tmp_scope,scopes as env) = function
     | CRef ref as x ->
 	let (c,imp,subscopes,l),_ =
@@ -1042,7 +1042,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	let n =
 	  try list_index0 iddef lf
           with Not_found ->
-	    raise (InternalisationError (locid,UnboundFixName (false,iddef)))
+	    raise (InternalizationError (locid,UnboundFixName (false,iddef)))
 	in
         let idl = Array.map
           (fun (id,(n,order),bl,ty,bd) ->
@@ -1079,7 +1079,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	let n =
           try list_index0 iddef lf
           with Not_found ->
-	    raise (InternalisationError (locid,UnboundFixName (true,iddef)))
+	    raise (InternalizationError (locid,UnboundFixName (true,iddef)))
 	in
         let idl = Array.map
           (fun (id,bl,ty,bd) ->
@@ -1188,7 +1188,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
     | CPatVar (loc, n) when allow_patvar ->
 	RPatVar (loc, n)
     | CPatVar (loc, _) ->
-	raise (InternalisationError (loc,IllegalMetavariable))
+	raise (InternalizationError (loc,IllegalMetavariable))
     | CEvar (loc, n, l) ->
 	REvar (loc, n, Option.map (List.map (intern env)) l)
     | CSort (loc, s) ->
@@ -1342,9 +1342,9 @@ let internalise sigma globalenv env allow_patvar lvar c =
   try
     intern env c
   with
-      InternalisationError (loc,e) ->
+      InternalizationError (loc,e) ->
 	user_err_loc (loc,"internalize",
-	  explain_internalisation_error e)
+	  explain_internalization_error e)
 
 (**************************************************************************)
 (* Functions to translate constr_expr into rawconstr                       *)
@@ -1360,7 +1360,7 @@ let intern_gen isarity sigma env
                c =
   let tmp_scope =
     if isarity then Some Notation.type_scope else None in
-    internalise sigma env (extract_ids env, false, tmp_scope,[])
+    internalize sigma env (extract_ids env, false, tmp_scope,[])
       allow_patvar (ltacvars,Environ.named_context env, [], impls) c
 
 let intern_constr sigma env c = intern_gen false sigma env c
@@ -1371,8 +1371,8 @@ let intern_pattern env patt =
   try
     intern_cases_pattern env [] ([],[]) None patt
   with
-      InternalisationError (loc,e) ->
-	user_err_loc (loc,"internalize",explain_internalisation_error e)
+      InternalizationError (loc,e) ->
+	user_err_loc (loc,"internalize",explain_internalization_error e)
 
 
 type manual_implicits = (explicitation * (bool * bool * bool)) list
@@ -1461,7 +1461,7 @@ let interp_aconstr ?(impls=([],[])) (vars,varslist) a =
   let env = Global.env () in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = List.map (fun id -> (id,ref None)) (vars@varslist) in
-  let c = internalise Evd.empty (Global.env()) (extract_ids env, false, None, [])
+  let c = internalize Evd.empty (Global.env()) (extract_ids env, false, None, [])
     false (([],[]),Environ.named_context env,vl,impls) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a = aconstr_of_rawconstr vars c in
@@ -1487,7 +1487,7 @@ open Environ
 open Term
 
 let my_intern_constr sigma env lvar acc c =
-  internalise sigma env acc false lvar c
+  internalize sigma env acc false lvar c
 
 let my_intern_type sigma env lvar acc c = my_intern_constr sigma env lvar (set_type_scope acc) c
 
