@@ -146,11 +146,10 @@ let rec mlexpr_of_constr = function
   | Topconstr.CCases (loc,_,_,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Topconstr.CHole (loc, None) -> <:expr< Topconstr.CHole $dloc$ None >>
   | Topconstr.CHole (loc, Some _) -> failwith "mlexpr_of_constr: TODO CHole (Some _)"
-  | Topconstr.CNotation(_,ntn,subst) ->
+  | Topconstr.CNotation(_,ntn,(subst,substl,[])) ->
       <:expr< Topconstr.CNotation $dloc$ $mlexpr_of_string ntn$
-              $mlexpr_of_pair
-                (mlexpr_of_list mlexpr_of_constr)
-                (mlexpr_of_list (mlexpr_of_list mlexpr_of_constr)) subst$ >>
+              ($mlexpr_of_list mlexpr_of_constr subst$,
+               $mlexpr_of_list (mlexpr_of_list mlexpr_of_constr) substl$,[]) >>
   | Topconstr.CPatVar (loc,n) ->
       <:expr< Topconstr.CPatVar $dloc$ $mlexpr_of_pair mlexpr_of_bool mlexpr_of_ident n$ >>
   | _ -> failwith "mlexpr_of_constr: TODO"

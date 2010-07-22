@@ -22,10 +22,12 @@ type production_level =
 
 type ('lev,'pos) constr_entry_key_gen =
   | ETName | ETReference | ETBigint
+  | ETBinder of bool
   | ETConstr of ('lev * 'pos)
   | ETPattern
   | ETOther of string * string
   | ETConstrList of ('lev * 'pos) * Tok.t list
+  | ETBinderList of bool * Tok.t list
 
 (** Entries level (left-hand-side of grammar rules) *)
 

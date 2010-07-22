@@ -51,6 +51,7 @@ let ppcmd_of_cut = function
 type unparsing =
   | UnpMetaVar of int * parenRelation
   | UnpListMetaVar of int * parenRelation * unparsing list
+  | UnpBinderListMetaVar of int * bool * unparsing list
   | UnpTerminal of string
   | UnpBox of ppbox * unparsing list
   | UnpCut of ppcut

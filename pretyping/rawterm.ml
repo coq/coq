@@ -32,8 +32,6 @@ type patvar = identifier
 
 type rawsort = RProp of Term.contents | RType of Univ.universe option
 
-type binder_kind = BProd | BLambda | BLetIn
-
 type binding_kind = Lib.binding_kind = Explicit | Implicit
 
 type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
@@ -182,6 +180,36 @@ let map_rawconstr_with_binders_loc loc g f e = function
   | RPatVar (_,x) -> RPatVar (loc,x)
   | RDynamic (_,x) -> RDynamic (loc,x)
 *)
+
+let fold_rawconstr f acc =
+  let rec fold acc = function
+  | RVar _ -> acc
+  | RApp (_,c,args) -> List.fold_left fold (fold acc c) args
+  | RLambda (_,_,_,b,c) | RProd (_,_,_,b,c) | RLetIn (_,_,b,c) ->
+      fold (fold acc b) c
+  | RCases (_,_,rtntypopt,tml,pl) ->
+      List.fold_left fold_pattern
+	(List.fold_left fold (Option.fold_left fold acc rtntypopt) (List.map fst tml))
+	pl
+    | RLetTuple (_,_,rtntyp,b,c) ->
+	fold (fold (fold_return_type acc rtntyp) b) c
+    | RIf (_,c,rtntyp,b1,b2) ->
+	fold (fold (fold (fold_return_type acc rtntyp) c) b1) b2
+    | RRec (_,_,_,bl,tyl,bv) ->
+	let acc = Array.fold_left
+	  (List.fold_left (fun acc (na,k,bbd,bty) ->
+	    fold (Option.fold_left fold acc bbd) bty)) acc bl in
+	Array.fold_left fold (Array.fold_left fold acc tyl) bv
+    | RCast (_,c,k) -> fold (match k with CastConv (_, t) -> fold acc t | CastCoerce -> acc) c
+    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> acc
+
+  and fold_pattern acc (_,idl,p,c) = fold acc c
+
+  and fold_return_type acc (na,tyopt) = Option.fold_left fold acc tyopt
+
+  in fold acc
+
+let iter_rawconstr f = fold_rawconstr (fun () -> f) ()
 
 let occur_rawconstr id =
   let rec occur = function

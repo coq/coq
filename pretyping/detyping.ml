@@ -362,6 +362,8 @@ let detype_sort = function
   | Prop c -> RProp c
   | Type u -> RType (Some u)
 
+type binder_kind = BProd | BLambda | BLetIn
+
 (**********************************************************************)
 (* Main detyping function                                             *)
 

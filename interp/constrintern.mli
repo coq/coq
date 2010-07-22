@@ -171,10 +171,14 @@ val construct_reference : named_context -> identifier -> constr
 val global_reference : identifier -> constr
 val global_reference_in_absolute_module : dir_path -> identifier -> constr
 
-(** Interprets into a abbreviatable constr *)
-
+(** Interprets a term as the left-hand side of a notation; the boolean
+    list is a set and this set is [true] for a variable occurring in
+    term position, [false] for a variable occurring in binding
+    position; [true;false] if in both kinds of position *)
 val interp_aconstr : ?impls:internalization_env ->
-  identifier list * identifier list -> constr_expr -> interpretation
+  (identifier * notation_var_internalization_type) list ->
+  (identifier * identifier) list -> constr_expr ->
+  (identifier * (subscopes * notation_var_internalization_type)) list * aconstr
 
 (** Globalization leak for Grammar *)
 val for_grammar : ('a -> 'b) -> 'a -> 'b
