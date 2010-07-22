@@ -22,6 +22,13 @@ generally fewer than the defined ones.
 whd_castappevar is now whd_head_evar
 obsolete whd_ise disappears
 
+** Restructuration of the syntax of binders **
+
+binders_let -> binders
+binders_let_fixannot -> binders_fixannot
+binder_let -> closed_binder (and now covers only bracketed binders)
+binder was already obsolete and has been removed
+
 ** Semantical change of h_induction_destruct **
 
 Warning, the order of the isrec and evar_flag was inconsistent and has
