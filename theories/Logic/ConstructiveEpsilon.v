@@ -77,7 +77,7 @@ Fixpoint linear_search m (b : before_witness m) : {n : nat | P n} :=
     | right no => linear_search (S m) (inv_before_witness m b no)
   end.
 
-Definition constructive_indefinite_description_nat : 
+Definition constructive_indefinite_description_nat :
   (exists n, P n) -> {n:nat | P n} :=
   fun e => linear_search O (let (n, p) := e in O_witness n (stop n p)).
 
@@ -99,9 +99,9 @@ Hypothesis P_decidable : forall n : nat, {P n} + {~ P n}.
 given relation [R]. An element is accessible if there are no infinite
 [R]-descending chains starting from it.
 
-To use [Fix_F], we define a relation R and prove that if [exists n, P n] 
+To use [Fix_F], we define a relation R and prove that if [exists n, P n]
 then 0 is accessible with respect to R. Then, by induction on the
-definition of [Acc R 0], we show [{n : nat | P n}]. 
+definition of [Acc R 0], we show [{n : nat | P n}].
 
 The relation [R] describes the connection between the two successive
 numbers we try. Namely, [y] is [R]-less then [x] if we try [y] after
