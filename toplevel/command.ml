@@ -241,7 +241,7 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
   (* Compute interpretation metadatas *)
   let indimpls = List.map (fun (_, impls) -> userimpls @ lift_implicits (List.length userimpls) impls) arities in
   let arities = List.map fst arities in
-  let impls = compute_full_internalization_env env0 Inductive params indnames fullarities indimpls in
+  let impls = compute_internalization_env env0 (Inductive params) indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
 
   let constructors =
@@ -516,7 +516,7 @@ let interp_recursive isfix fixl notations =
   let env_rec = push_named_types env fixnames fixtypes in
 
   (* Get interpretation metadatas *)
-  let impls = compute_full_internalization_env env Recursive [] fixnames fixtypes fiximps in
+  let impls = compute_internalization_env env Recursive fixnames fixtypes fiximps in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
   let fixdefs =

@@ -30,7 +30,6 @@ open Topconstr
 (********** definition d'un record (structure) **************)
 
 let interp_evars evdref env impls k typ =
-  let impls = set_internalization_env_params impls [] in
   let typ' = intern_gen true ~impls !evdref env typ in
   let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
     imps, Pretyping.Default.understand_tcc_evars evdref env k typ'
@@ -46,8 +45,7 @@ let interp_fields_evars evars env nots l =
 	| Name id -> (id, compute_internalization_data env Constrintern.Method t' impl) :: impls
       in
       let d = (i,b',t') in
-      let impls' = set_internalization_env_params impls [] in
-      List.iter (Metasyntax.set_notation_for_interpretation impls') no;
+      List.iter (Metasyntax.set_notation_for_interpretation impls) no;
       (push_rel d env, impl :: uimpls, d::params, impls))
     (env, [], [], []) nots l
 

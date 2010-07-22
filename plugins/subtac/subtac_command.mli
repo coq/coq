@@ -13,7 +13,7 @@ val interp_gen :
   typing_constraint ->
   evar_map ref ->
   env ->
-  ?impls:full_internalization_env ->
+  ?impls:internalization_env ->
   ?allow_patvar:bool ->
   ?ltacvars:ltac_sign ->
   constr_expr -> constr
@@ -23,12 +23,12 @@ val interp_constr :
 val interp_type_evars :
   evar_map ref ->
   env ->
-  ?impls:full_internalization_env ->
+  ?impls:internalization_env ->
   constr_expr -> constr
 val interp_casted_constr_evars :
   evar_map ref ->
   env ->
-  ?impls:full_internalization_env ->
+  ?impls:internalization_env ->
   constr_expr -> types -> constr
 val interp_open_constr :
   evar_map ref -> env -> constr_expr -> constr

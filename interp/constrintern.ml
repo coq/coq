@@ -26,7 +26,10 @@ open Inductiveops
 (* To interpret implicits and arg scopes of variables in inductive
    types and recursive definitions and of projection names in records *)
 
-type var_internalization_type = Inductive | Recursive | Method
+type var_internalization_type =
+  | Inductive of identifier list (* list of params *)
+  | Recursive
+  | Method
 
 type var_internalization_data =
     (* type of the "free" variable, for coqdoc, e.g. while typing the
@@ -42,13 +45,6 @@ type var_internalization_data =
 
 type internalization_env =
     (identifier * var_internalization_data) list
-
-type full_internalization_env =
-    (* a superset of the list of variables that may be automatically
-       inserted and that must not occur as binders *)
-    identifier list *
-    (* mapping of the variables to their internalization data *)
-    internalization_env
 
 type raw_binder = (name * binding_kind * rawconstr option * rawconstr)
 
@@ -169,30 +165,26 @@ let error_inductive_parameter_not_implicit loc =
 (* Pre-computing the implicit arguments and arguments scopes needed   *)
 (* for interpretation *)
 
-let empty_internalization_env = ([],[])
+let empty_internalization_env = []
 
-let set_internalization_env_params ienv params =
-  let nparams = List.length params in
-  if nparams = 0 then
-    ([],ienv)
-  else
-    let ienv_with_implicit_params =
-      List.map (fun (id,(ty,_,impl,scopes)) ->
-	let sub_impl,_ = list_chop nparams impl in
-	let sub_impl' = List.filter is_status_implicit sub_impl in
-	(id,(ty,List.map name_of_implicit sub_impl',impl,scopes))) ienv in
-    (params, ienv_with_implicit_params)
+let compute_explicitable_implicit imps = function
+  | Inductive params ->
+      (* In inductive types, the parameters are fixed implicit arguments *)
+      let sub_impl,_ = list_chop (List.length params) imps in
+      let sub_impl' = List.filter is_status_implicit sub_impl in
+      List.map name_of_implicit sub_impl'
+  | Recursive | Method ->
+      (* Unable to know in advance what the implicit arguments will be *)
+      []
 
-let compute_internalization_data env ty typ impls =
-  let impl = compute_implicits_with_manual env typ (is_implicit_args()) impls in
-  (ty, [], impl, compute_arguments_scope typ)
+let compute_internalization_data env ty typ impl =
+  let impl = compute_implicits_with_manual env typ (is_implicit_args()) impl in
+  let expls_impl = compute_explicitable_implicit impl ty in
+  (ty, expls_impl, impl, compute_arguments_scope typ)
 
-let compute_full_internalization_env env ty params idl typl impll =
-  set_internalization_env_params
-    (list_map3
-      (fun id typ impl -> (id,compute_internalization_data env ty typ impl))
-      idl typl impll)
-    params
+let compute_internalization_env env ty =
+  list_map3
+    (fun id typ impl -> (id,compute_internalization_data env ty typ impl))
 
 (**********************************************************************)
 (* Contracting "{ _ }" in notations *)
@@ -283,9 +275,12 @@ let locate_if_isevar loc na = function
       with Not_found -> RHole (loc, Evd.BinderType na))
   | x -> x
 
-let check_hidden_implicit_parameters id (_,_,_,(indnames,_)) =
-  if List.mem id indnames then
-    errorlabstrm "" (strbrk "A parameter or name of an inductive type " ++
+let check_hidden_implicit_parameters id (_,_,_,impls) =
+  if List.exists (function
+    | (_,(Inductive indparams,_,_,_)) -> List.mem id indparams
+    | _ -> false) impls
+  then
+    errorlabstrm "" (strbrk "A parameter of an inductive type " ++
     pr_id id ++ strbrk " is not allowed to be used as a bound variable in the type of its constructor.")
 
 let push_name_env ?(global_level=false) lvar (ids,unb,tmpsc,scopes as env) =
@@ -461,34 +456,30 @@ let rec it_mkRLambda env body =
 (**********************************************************************)
 (* Discriminating between bound variables and global references       *)
 
-(* [vars1] is a set of name to avoid (used for the tactic language);
-   [vars2] is the set of global variables, env is the set of variables
-   abstracted until this point *)
-
 let string_of_ty = function
-  | Inductive -> "ind"
+  | Inductive _ -> "ind"
   | Recursive -> "def"
   | Method -> "meth"
 
-let intern_var (env,unbound_vars,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) loc id =
-  let (vars1,unbndltacvars) = ltacvars in
+let intern_var (ids,_,_,_ as genv) (ltacvars,namedctxvars,ntnvars,impls) loc id =
+  let (ltacvars,unbndltacvars) = ltacvars in
   (* Is [id] an inductive type potentially with implicit *)
   try
-    let ty,l,impl,argsc = List.assoc id impls in
-    let l = List.map
-      (fun id -> CRef (Ident (loc,id)), Some (loc,ExplByName id)) l in
+    let ty,expl_impls,impls,argsc = List.assoc id impls in
+    let expl_impls = List.map
+      (fun id -> CRef (Ident (loc,id)), Some (loc,ExplByName id)) expl_impls in
     let tys = string_of_ty ty in
-      Dumpglob.dump_reference loc "<>" (string_of_id id) tys;
-      RVar (loc,id), impl, argsc, l
+    Dumpglob.dump_reference loc "<>" (string_of_id id) tys;
+    RVar (loc,id), impls, argsc, expl_impls
   with Not_found ->
-  (* Is [id] bound in current env or is an ltac var bound to constr *)
-  if Idset.mem id env or List.mem id vars1
+  (* Is [id] bound in current term or is an ltac var bound to constr *)
+  if Idset.mem id ids or List.mem id ltacvars
   then
     RVar (loc,id), [], [], []
   (* Is [id] a notation variable *)
-  else if List.mem_assoc id vars3
+  else if List.mem_assoc id ntnvars
   then
-    (set_var_scope loc id genv vars3; RVar (loc,id), [], [], [])
+    (set_var_scope loc id genv ntnvars; RVar (loc,id), [], [], [])
   else
   (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
   try
@@ -498,7 +489,7 @@ let intern_var (env,unbound_vars,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) l
       | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
   with Not_found ->
     (* Is [id] a goal or section variable *)
-    let _ = Sign.lookup_named id vars2 in
+    let _ = Sign.lookup_named id namedctxvars in
       try
 	(* [id] a section variable *)
 	(* Redundant: could be done in intern_qualid *)
@@ -582,7 +573,7 @@ let intern_applied_reference intern (_, unb, _, _ as env) lvar args = function
 let interp_reference vars r =
   let (r,_,_,_),_ =
     intern_applied_reference (fun _ -> error_not_enough_arguments dummy_loc)
-      (Idset.empty,false,None,[]) (vars,[],[],([],[])) [] r
+      (Idset.empty,false,None,[]) (vars,[],[],[]) [] r
   in r
 
 let apply_scope_env (ids,unb,_,scopes) = function
@@ -1348,7 +1339,7 @@ let extract_ids env =
     Idset.empty
 
 let intern_gen isarity sigma env
-               ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
+               ?(impls=[]) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
   let tmp_scope =
     if isarity then Some Notation.type_scope else None in
@@ -1373,7 +1364,7 @@ type manual_implicits = (explicitation * (bool * bool * bool)) list
 (* Functions to parse and interpret constructions *)
 
 let interp_gen kind sigma env
-               ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
+               ?(impls=[]) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
   let c = intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars sigma env c in
     Default.understand_gen kind sigma env c
@@ -1381,10 +1372,10 @@ let interp_gen kind sigma env
 let interp_constr sigma env c =
   interp_gen (OfType None) sigma env c
 
-let interp_type sigma env ?(impls=([],[])) c =
+let interp_type sigma env ?(impls=[]) c =
   interp_gen IsType sigma env ~impls c
 
-let interp_casted_constr sigma env ?(impls=([],[])) c typ =
+let interp_casted_constr sigma env ?(impls=[]) c typ =
   interp_gen (OfType (Some typ)) sigma env ~impls c
 
 let interp_open_constr sigma env c =
@@ -1412,7 +1403,7 @@ let interp_constr_judgment sigma env c =
   Default.understand_judgment sigma env (intern_constr sigma env c)
 
 let interp_constr_evars_gen_impls ?evdref ?(fail_evar=true)
-    env ?(impls=([],[])) kind c =
+    env ?(impls=[]) kind c =
   let evdref =
     match evdref with
     | None -> ref Evd.empty
@@ -1424,23 +1415,23 @@ let interp_constr_evars_gen_impls ?evdref ?(fail_evar=true)
     Default.understand_tcc_evars ~fail_evar evdref env kind c, imps
 
 let interp_casted_constr_evars_impls ?evdref ?(fail_evar=true)
-    env ?(impls=([],[])) c typ =
+    env ?(impls=[]) c typ =
   interp_constr_evars_gen_impls ?evdref ~fail_evar env ~impls (OfType (Some typ)) c
 
-let interp_type_evars_impls ?evdref ?(fail_evar=true) env ?(impls=([],[])) c =
+let interp_type_evars_impls ?evdref ?(fail_evar=true) env ?(impls=[]) c =
   interp_constr_evars_gen_impls ?evdref ~fail_evar env IsType ~impls c
 
-let interp_constr_evars_impls ?evdref ?(fail_evar=true) env ?(impls=([],[])) c =
+let interp_constr_evars_impls ?evdref ?(fail_evar=true) env ?(impls=[]) c =
   interp_constr_evars_gen_impls ?evdref ~fail_evar env (OfType None) ~impls c
 
-let interp_constr_evars_gen evdref env ?(impls=([],[])) kind c =
+let interp_constr_evars_gen evdref env ?(impls=[]) kind c =
   let c = intern_gen (kind=IsType) ~impls ( !evdref) env c in
     Default.understand_tcc_evars evdref env kind c
 
-let interp_casted_constr_evars evdref env ?(impls=([],[])) c typ =
+let interp_casted_constr_evars evdref env ?(impls=[]) c typ =
   interp_constr_evars_gen evdref env ~impls (OfType (Some typ)) c
 
-let interp_type_evars evdref env ?(impls=([],[])) c =
+let interp_type_evars evdref env ?(impls=[]) c =
   interp_constr_evars_gen evdref env IsType ~impls c
 
 type ltac_sign = identifier list * unbound_ltac_var_map
@@ -1449,7 +1440,7 @@ let intern_constr_pattern sigma env ?(as_type=false) ?(ltacvars=([],[])) c =
   let c = intern_gen as_type ~allow_patvar:true ~ltacvars sigma env c in
   pattern_of_rawconstr c
 
-let interp_aconstr ?(impls=([],[])) (vars,varslist) a =
+let interp_aconstr ?(impls=[]) (vars,varslist) a =
   let env = Global.env () in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = List.map (fun id -> (id,ref None)) (vars@varslist) in
@@ -1484,7 +1475,7 @@ let my_intern_constr sigma env lvar acc c =
 let my_intern_type sigma env lvar acc c = my_intern_constr sigma env lvar (set_type_scope acc) c
 
 let intern_context global_level sigma env params =
-  let lvar = (([],[]),Environ.named_context env, [], ([], [])) in
+  let lvar = (([],[]),Environ.named_context env, [], []) in
     snd (List.fold_left
 	    (intern_local_binder_aux ~global_level (my_intern_constr sigma env lvar) (my_intern_type sigma env lvar) lvar)
 	    ((extract_ids env,false,None,[]), []) params)
