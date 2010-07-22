@@ -67,8 +67,7 @@ let red_constant_entry n ce = function
 let interp_definition boxed bl red_option c ctypopt =
   let env = Global.env() in
   let evdref = ref Evd.empty in
-  let (env_bl, ctx), imps1 =
-    interp_context_evars ~fail_anonymous:false evdref env bl in
+  let (env_bl, ctx), imps1 = interp_context_evars evdref env bl in
   let imps,ce =
     match ctypopt with
       None ->
@@ -225,7 +224,7 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
   let env0 = Global.env() in
   let evdref = ref Evd.empty in
   let (env_params, ctx_params), userimpls =
-    interp_context_evars ~fail_anonymous:false evdref env0 paramsl
+    interp_context_evars evdref env0 paramsl
   in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
 

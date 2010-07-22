@@ -155,13 +155,13 @@ val interp_binder_evars : evar_map ref -> env -> name -> constr_expr -> types
 
 val interp_context_gen : (env -> rawconstr -> types) ->
   (env -> rawconstr -> unsafe_judgment) ->
-  ?fail_anonymous:bool ->
+  ?global_level:bool ->
   evar_map -> env -> local_binder list -> (env * rel_context) * manual_implicits
   
-val interp_context : ?fail_anonymous:bool ->
+val interp_context : ?global_level:bool ->
   evar_map -> env -> local_binder list -> (env * rel_context) * manual_implicits
 
-val interp_context_evars : ?fail_anonymous:bool ->
+val interp_context_evars : ?global_level:bool ->
   evar_map ref -> env -> local_binder list -> (env * rel_context) * manual_implicits
 
 (** Locating references of constructions, possibly via a syntactic definition 

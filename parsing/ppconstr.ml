@@ -365,7 +365,7 @@ let tm_clash = function
 
 let pr_asin pr (na,indnalopt) =
   (match na with (* Decision of printing "_" or not moved to constrextern.ml *)
-    | Some na -> spc () ++ str "as " ++  pr_name na
+    | Some na -> spc () ++ str "as " ++  pr_lname na
     | None -> mt ()) ++
   (match indnalopt with
     | None -> mt ()
@@ -384,7 +384,7 @@ let pr_return_type pr po = pr_case_type pr po
 
 let pr_simple_return_type pr na po =
   (match na with
-    | Some (Name id) ->
+    | Some (_,Name id) ->
         spc () ++ str "as " ++  pr_id id
     | _ -> mt ()) ++
   pr_case_type pr po
@@ -518,7 +518,7 @@ let pr pr sep inherited a =
       hv 0 (
         str "let " ++
 	hov 0 (str "(" ++
-               prlist_with_sep sep_v pr_name nal ++
+               prlist_with_sep sep_v pr_lname nal ++
                str ")" ++
 	       pr_simple_return_type (pr mt) na po ++ str " :=" ++
                pr spc ltop c ++ str " in") ++

@@ -124,7 +124,7 @@ let ident_with =
              | _ -> err ())
       | _ -> err ())
 
-let aliasvar = function CPatAlias (_, _, id) -> Some (Name id) | _ -> None
+let aliasvar = function CPatAlias (loc, _, id) -> Some (loc,Name id) | _ -> None
 
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
@@ -251,7 +251,7 @@ GEXTEND Gram
 	  po = return_type;
 	  ":="; c1 = operconstr LEVEL "200"; "in";
           c2 = operconstr LEVEL "200" ->
-          CLetTuple (loc,List.map snd lb,po,c1,c2)
+          CLetTuple (loc,lb,po,c1,c2)
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
           "in"; c2 = operconstr LEVEL "200" ->
 	    CCases (loc, LetPatternStyle, None, [(c1,(None,None))], [(loc, [(loc,[p])], c2)])
@@ -308,14 +308,14 @@ GEXTEND Gram
     [ [ c=operconstr LEVEL "100"; p=pred_pattern -> (c,p) ] ]
   ;
   pred_pattern:
-    [ [ ona = OPT ["as"; id=name -> snd id];
+    [ [ ona = OPT ["as"; id=name -> id];
         ty = OPT ["in"; t=lconstr -> t] -> (ona,ty) ] ]
   ;
   case_type:
     [ [ "return"; ty = operconstr LEVEL "100" -> ty ] ]
   ;
   return_type:
-    [ [ a = OPT [ na = OPT["as"; id=name -> snd id];
+    [ [ a = OPT [ na = OPT["as"; na=name -> na];
                   ty = case_type -> (na,ty) ] ->
         match a with
           | None -> None, None

@@ -684,10 +684,10 @@ let rec extern inctx scopes vars r =
         let na' = match na,tm with
             Anonymous, RVar (_,id) when
               rtntypopt<>None & occur_rawconstr id (Option.get rtntypopt)
-              -> Some Anonymous
+              -> Some (dummy_loc,Anonymous)
           | Anonymous, _ -> None
           | Name id, RVar (_,id') when id=id' -> None
-          | Name _, _ -> Some na in
+          | Name _, _ -> Some (dummy_loc,na) in
 	(sub_extern false scopes vars tm,
 	(na',Option.map (fun (loc,ind,n,nal) ->
 	  let params = list_tabulate
@@ -701,15 +701,15 @@ let rec extern inctx scopes vars r =
       CCases (loc,sty,rtntypopt',tml,eqns)
 
   | RLetTuple (loc,nal,(na,typopt),tm,b) ->
-      CLetTuple (loc,nal,
-        (Option.map (fun _ -> na) typopt,
+      CLetTuple (loc,List.map (fun na -> (dummy_loc,na)) nal,
+        (Option.map (fun _ -> (dummy_loc,na)) typopt,
          Option.map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars tm,
         extern inctx scopes (List.fold_left add_vname vars nal) b)
 
   | RIf (loc,c,(na,typopt),b1,b2) ->
       CIf (loc,sub_extern false scopes vars c,
-        (Option.map (fun _ -> na) typopt,
+        (Option.map (fun _ -> (dummy_loc,na)) typopt,
          Option.map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern inctx scopes vars b1, sub_extern inctx scopes vars b2)
 

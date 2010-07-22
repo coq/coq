@@ -36,7 +36,6 @@ val dump_notation_location : (int * int) list -> Topconstr.notation -> (Notation
 val dump_binding : Util.loc -> Names.Idset.elt -> unit
 val dump_notation : Util.loc * (Topconstr.notation * Notation.notation_location) -> Topconstr.scope_name option -> bool -> unit
 val dump_constraint :  Topconstr.typeclass_constraint -> bool -> string -> unit
-val dump_local_binder : Topconstr.local_binder -> bool -> string -> unit
 
 val dump_string : string -> unit
 
