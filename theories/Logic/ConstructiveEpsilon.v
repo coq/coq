@@ -1,4 +1,3 @@
-(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -8,6 +7,8 @@
 (************************************************************************)
 
 (*i $Id$ i*)
+
+(*i $Id: ConstructiveEpsilon.v 12112 2009-04-28 15:47:34Z herbelin $ i*)
 
 (** This module proves the constructive description schema, which
 infers the sigma-existence (i.e., [Set]-existence) of a witness to a
@@ -24,29 +25,87 @@ recursion is in [Set]. This trick is described in Coq'Art book, Sect.
 [Fix_F] in the module Coq.Init.Wf. There, recursion is done on an
 inductive predicate [Acc] and the resulting type is in [Type].
 
-The predicate [Acc] delineates elements that are accessible via a
-given relation [R]. An element is accessible if there are no infinite
-[R]-descending chains starting from it.
-
-To use [Fix_F], we define a relation R and prove that if [exists n,
-P n] then 0 is accessible with respect to R. Then, by induction on the
-definition of [Acc R 0], we show [{n : nat | P n}]. *)
+To find a witness of [P] constructively, we program the well-known
+linear search algorithm that tries P on all natural numbers starting
+from 0 and going up.  Such an algorithm needs a suitable termination
+certificate.  We offer two ways for providing this termination
+certificate: a direct one, based on an ad-hoc predicate called
+[before_witness], and another one based on the predicate [Acc].
+For the first one we provide explicit and short proof terms. *)
 
 (** Based on ideas from Benjamin Werner and Jean-François Monin *)
 
-(** Contributed by Yevgeniy Makarov *)
+(** Contributed by Yevgeniy Makarov and Jean-François Monin *)
 
-Require Import Arith.
+(* -------------------------------------------------------------------- *)
 
-Section ConstructiveIndefiniteDescription.
+(* Direct version *)
+
+Section ConstructiveIndefiniteDescription_Direct.
 
 Variable P : nat -> Prop.
 
-Hypothesis P_decidable : forall x : nat, {P x} + {~ P x}.
+Hypothesis P_dec : forall n, {P n}+{~(P n)}.
 
-(** To find a witness of [P] constructively, we define an algorithm
-that tries P on all natural numbers starting from 0 and going up. The
-relation [R] describes the connection between the two successive
+
+(** The termination argument is [before_witness n], which says that
+any number before any witness (not necessarily the [x] of [exists x :A, P x])
+makes the search eventually stops. *)
+
+Inductive before_witness : nat -> Prop :=
+  | stop : forall n, P n -> before_witness n
+  | next : forall n, before_witness (S n) -> before_witness n.
+
+(* Computation of the initial termination certificate *)
+Fixpoint O_witness (n : nat) : before_witness n -> before_witness 0 :=
+  match n return (before_witness n -> before_witness 0) with
+    | 0 => fun b => b
+    | S n => fun b => O_witness n (next n b)
+  end.
+
+(* Inversion of [inv_before_witness n] in a way such that the result
+is structurally smaller even in the [stop] case. *)
+Definition inv_before_witness :
+  forall n, before_witness n -> ~(P n) -> before_witness (S n) :=
+  fun n b =>
+    match b in before_witness n return ~ P n -> before_witness (S n) with
+      | stop n p => fun not_p => match (not_p p) with end
+      | next n b => fun _ => b
+    end.
+
+Fixpoint linear_search m (b : before_witness m) : {n : nat | P n} :=
+  match P_dec m with
+    | left yes => exist (fun n => P n) m yes
+    | right no => linear_search (S m) (inv_before_witness m b no)
+  end.
+
+Definition constructive_indefinite_description_nat :
+  (exists n, P n) -> {n:nat | P n} :=
+  fun e => linear_search O (let (n, p) := e in O_witness n (stop n p)).
+
+End ConstructiveIndefiniteDescription_Direct.
+
+(************************************************************************)
+
+(* Version using the predicate [Acc] *)
+
+Require Import Arith.
+
+Section ConstructiveIndefiniteDescription_Acc.
+
+Variable P : nat -> Prop.
+
+Hypothesis P_decidable : forall n : nat, {P n} + {~ P n}.
+
+(** The predicate [Acc] delineates elements that are accessible via a
+given relation [R]. An element is accessible if there are no infinite
+[R]-descending chains starting from it.
+
+To use [Fix_F], we define a relation R and prove that if [exists n, P n]
+then 0 is accessible with respect to R. Then, by induction on the
+definition of [Acc R 0], we show [{n : nat | P n}].
+
+The relation [R] describes the connection between the two successive
 numbers we try. Namely, [y] is [R]-less then [x] if we try [y] after
 [x], i.e., [y = S x] and [P x] is false. Then the absence of an
 infinite [R]-descending chain from 0 is equivalent to the termination
@@ -92,13 +151,32 @@ destruct (IH y Ryx) as [n Hn].
 exists n; assumption.
 Defined.
 
-Theorem constructive_indefinite_description_nat : (exists n : nat, P n) -> {n : nat | P n}.
+Theorem constructive_indefinite_description_nat_Acc :
+  (exists n : nat, P n) -> {n : nat | P n}.
 Proof.
 intros H; apply acc_implies_P_eventually.
 apply P_eventually_implies_acc_ex; assumption.
 Defined.
 
-End ConstructiveIndefiniteDescription.
+End ConstructiveIndefiniteDescription_Acc.
+
+(************************************************************************)
+
+Section ConstructiveEpsilon_nat.
+
+Variable P : nat -> Prop.
+
+Hypothesis P_decidable : forall x : nat, {P x} + {~ P x}.
+
+Definition constructive_epsilon_nat (E : exists n : nat, P n) : nat
+  := proj1_sig (constructive_indefinite_description_nat P P_decidable E).
+
+Definition constructive_epsilon_spec_nat (E : (exists n, P n)) : P (constructive_epsilon_nat E)
+  := proj2_sig (constructive_indefinite_description_nat P P_decidable E).
+
+End ConstructiveEpsilon_nat.
+
+(************************************************************************)
 
 Section ConstructiveEpsilon.
 
