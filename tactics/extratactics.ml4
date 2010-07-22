@@ -623,3 +623,86 @@ TACTIC EXTEND hget_evar
 END
 
 (**********************************************************************)
+
+(**********************************************************************)
+(* A tactic that reduces one match t with ... by doing destruct t.    *)
+(* if t is not a variable, the tactic does                            *)
+(* case_eq t;intros ... heq;rewrite heq in *|-. (but heq itself is    *)
+(* preserved).                                                        *)
+(* Contributed by Julien Forest and Pierre Courtieu (july 2010)       *)
+(**********************************************************************)
+
+exception Found of tactic
+
+let rewrite_except h g =
+  tclMAP (fun id -> if id = h then tclIDTAC else 
+      tclTRY (Equality.general_rewrite_in true Termops.all_occurrences true id (mkVar h) false))
+    (Tacmach.pf_ids_of_hyps g) g
+
+
+let refl_equal = 
+  let coq_base_constant s =
+    Coqlib.gen_constant_in_modules "RecursiveDefinition"
+      (Coqlib.init_modules @ [["Coq";"Arith";"Le"];["Coq";"Arith";"Lt"]]) s in
+  function () -> (coq_base_constant "eq_refl")
+
+
+(* This is simply an implementation of the case_eq tactic.  this code
+  should be replaced by a call to the tactic but I don't know how to
+  call it before it is defined. *)
+let  mkCaseEq a  : tactic =
+     (fun g ->
+       let type_of_a = Tacmach.pf_type_of g a in
+       tclTHENLIST
+         [Hiddentac.h_generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])];
+          (fun g2 ->
+	    change_in_concl None
+	     (Tacred.pattern_occs [((false,[1]), a)] (Tacmach.pf_env g2) Evd.empty (Tacmach.pf_concl g2))
+		  g2);
+	  simplest_case a] g);;
+
+
+let case_eq_intros_rewrite x g =
+  let n = nb_prod (Tacmach.pf_concl g) in
+  Pp.msgnl (Printer.pr_lconstr x); 
+  tclTHENLIST [
+      mkCaseEq x;
+      (fun g -> 
+	let n' = nb_prod (Tacmach.pf_concl g) in
+	let h = fresh_id (Tacmach.pf_ids_of_hyps g) (id_of_string "heq") g in
+	tclTHENLIST [ (tclDO (n'-n-1) intro);
+		      Tacmach.introduction h;
+		      rewrite_except h] g
+      )
+    ] g
+
+let rec find_a_destructable_match t =
+  match kind_of_term t with
+    | Case (_,_,x,_) when closed0 x ->
+	if isVar x then
+	  (* TODO check there is no rel n. *)
+	  raise (Found (Tacinterp.eval_tactic(<:tactic<destruct x>>)))
+	else
+	  let _ = Pp.msgnl (Printer.pr_lconstr x)  in
+	  raise (Found (case_eq_intros_rewrite x))
+    | _ -> iter_constr find_a_destructable_match t
+	
+
+let destauto t =
+  try find_a_destructable_match t;
+    error "No destructable match found"
+  with Found tac -> tac
+
+let destauto_in id g = 
+  let ctype = Tacmach.pf_type_of g (mkVar id) in
+  Pp.msgnl (Printer.pr_lconstr (mkVar id)); 
+  Pp.msgnl (Printer.pr_lconstr (ctype)); 
+  destauto ctype g
+
+TACTIC EXTEND destauto
+| [ "destauto" ] -> [ (fun g -> destauto (Tacmach.pf_concl g) g) ]
+| [ "destauto" "in" hyp(id) ] -> [ destauto_in id ]
+END
+
+
+(* ********************************************************************* *)
