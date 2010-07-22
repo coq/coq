@@ -786,8 +786,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Definition eq := L.eq.
   Definition eq_equiv := L.eq_equiv.
   Definition lt l1 l2 :=
-    exists l1', exists l2', Ok l1' /\ Ok l2' /\
-      eq l1 l1' /\ eq l2 l2' /\ L.lt l1' l2'.
+    exists l1' l2', Ok l1' /\ Ok l2' /\ eq l1 l1' /\ eq l2 l2' /\ L.lt l1' l2'.
 
   Instance lt_strorder : StrictOrder lt.
   Proof.

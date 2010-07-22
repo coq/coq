@@ -51,15 +51,6 @@ Implicit Arguments Vcons [[A] [n]].
 
 (** Treating n-ary exists *)
 
-Notation " 'exists' x y , p" := (ex (fun x => (ex (fun y => p))))
-  (at level 200, x ident, y ident, right associativity) : type_scope.
-
-Notation " 'exists' x y z , p" := (ex (fun x => (ex (fun y => (ex (fun z => p))))))
-  (at level 200, x ident, y ident, z ident, right associativity) : type_scope.
-
-Notation " 'exists' x y z w , p" := (ex (fun x => (ex (fun y => (ex (fun z => (ex (fun w => p))))))))
-  (at level 200, x ident, y ident, z ident, w ident, right associativity) : type_scope.
-
 Tactic Notation "exists" constr(x) := exists x.
 Tactic Notation "exists" constr(x) constr(y) := exists x ; exists y.
 Tactic Notation "exists" constr(x) constr(y) constr(z) := exists x ; exists y ; exists z.
