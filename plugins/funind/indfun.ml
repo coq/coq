@@ -598,11 +598,13 @@ let id_of_name = function
 		bk bl' non_captured_nal (lnal - lnal') (CProdN(dummy_loc,rest,typ'))
 	  | _ -> assert false
 
+let rebuild_bl (aux,assoc) bl typ = rebuild_bl (aux,assoc) bl typ
+
 let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) = 
   let fixl,ntns = Command.extract_fixpoint_components false fixpoint_exprl in
   let ((_,_,typel),_) = Command.interp_fixpoint fixl ntns in
   let constr_expr_typel = 
-    List.map (Constrextern.extern_constr false (Global.env ())) typel in 
+    with_full_print (List.map (Constrextern.extern_constr false (Global.env ()))) typel in 
   let fixpoint_exprl_with_new_bl = 
     List.map2 (fun ((lna,(rec_arg_opt,rec_order),bl,ret_typ,opt_body),notation_list) fix_typ -> 
      
