@@ -251,7 +251,7 @@ let declare_option cast uncast
     let (gdecl_obj,_) = (* "Global": survives section and modules. *)
       declare_object {(default_object ("G  "^nickname key)) with
 		       cache_function = (fun (_,v) -> write v);
-		       classify_function = (fun v -> Keep v);
+		       classify_function = (fun v -> Substitute v);
 		       discharge_function = (fun (_,v) -> Some v);
 		       load_function = (fun _ (_,v) -> write v)}
     in
