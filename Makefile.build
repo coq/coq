@@ -599,7 +599,7 @@ install-coq-manpages:
 
 install-emacs:
 	$(MKDIR) $(FULLEMACSLIB)
-	$(INSTALLLIB) tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
+	$(INSTALLLIB) tools/coq-db.el tools/coq-font-lock.el tools/coq-syntax.el tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
 
 # command to update TeX' kpathsea database
 #UPDATETEX = $(MKTEXLSR) /usr/share/texmf /var/spool/texmf $(BASETEXDIR) > /dev/null
