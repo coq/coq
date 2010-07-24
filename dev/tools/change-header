@@ -16,17 +16,40 @@ if [ ! -f $newheader ]; then echo Cannot read file $newheader; exit 1; fi
 n=`wc -l $oldheader | sed -e "s/ *\([0-9]*\).*/\1/g"`
 nsucc=`expr $n + 1`
 
-filter="-name \*.mli -o -name \*.ml -o -name \*.ml4 -o -name \*.mll -o -name \*.mly"
+linea='(* -*- coding:utf-8 -*- *)'
+lineb='(* -*- compile-command: "make -C ../.. bin/coqdoc" -*- *)'
 
-for i in `find . $filter`; do
-  head -n +$n $i > $i.head.tmp$$
-  if diff -a -q $oldheader $i.head.tmp$$ > /dev/null; then
-    rm $i.head.tmp$$
-    echo "$i: header changed"
-    cat dev/header > $i.tmp$$
-    tail -n +$nsucc $i >> $i.tmp$$
-    mv $i.tmp$$ $i
+modified=0
+kept=0
+
+for i in `find . -name \*.mli -o -name \*.ml -o -name \*.ml4 -o -name \*.mll -o -name \*.mly -o -name \*.mlp -o -name \*.v`; do
+  headline=`head -n 1 $i`
+  if `echo $headline | grep "(\* -\*- .* \*)" > /dev/null`; then
+      # Has emacs header
+      head -n +$nsucc $i | tail -n $n > $i.head.tmp$$
+      hasheadline=1
+      nnext=`expr $nsucc + 1`
   else
-    echo "$i: old header not found, file untouched"
+      head -n +$n $i > $i.head.tmp$$
+      hasheadline=0
+      nnext=$nsucc
   fi
+  if diff -a -q $oldheader $i.head.tmp$$ > /dev/null; then
+    echo "$i: header changed"
+    if [ $hasheadline = 1 ]; then
+        echo $headline > $i.tmp$$
+    else
+        touch $i.tmp$$
+    fi
+    cat $newheader >> $i.tmp$$
+    tail -n +$nnext $i >> $i.tmp$$
+    mv $i.tmp$$ $i
+    modified=`expr $modified + 1`
+  else
+    kept=`expr $kept + 1`
+  fi
+  rm $i.head.tmp$$
 done
+
+echo $modified files updated 
+echo $kept files unchanged
