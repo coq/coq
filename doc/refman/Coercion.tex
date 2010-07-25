@@ -367,6 +367,29 @@ Coercions with a local source class or a local target class, and
 coercions which do not verify the uniform inheritance condition any longer
 are also forgotten.
 
+\asection{Coercions and Modules}
+\index{Coercions!and modules}
+
+From Coq version 8.3, the coercions present in a module are activated
+only when the module is explicitly imported. Formerly, the coercions
+were activated as soon as the module was required, whatever it was
+imported or not.
+
+To recover the behavior of the versions of Coq prior to 8.3, use the
+following command:
+
+\comindex{Set Automatic Coercions Import}
+\comindex{Unset Automatic Coercions Import}
+\begin{verbatim}
+Set Automatic Coercions Import.
+\end{verbatim}
+
+To cancel the effect of the option, use instead:
+
+\begin{verbatim}
+Unset Automatic Coercions Import.
+\end{verbatim}
+
 \asection{Examples}
 
   There are three situations:
