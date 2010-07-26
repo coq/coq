@@ -58,7 +58,7 @@ sig
     | GRLabel of global_reference
     | ProdLabel 
     | LambdaLabel
-    | SortLabel of sorts option
+    | SortLabel
 	
   val constr_pat_discr_st : transparent_state ->
     constr_pattern -> (term_label * constr_pattern list) option

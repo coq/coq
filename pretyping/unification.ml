@@ -573,12 +573,9 @@ let is_mimick_head f =
 let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
   let (evd',j') = inh_conv_coerce_rigid_to dummy_loc env evd j tycon in
-  let (evd',b) = Evarconv.consider_remaining_unif_problems env evd' in
-  if b then
-    let evd' = Evd.map_metas_fvalue (nf_evar evd') evd' in
+  let evd' = Evarconv.consider_remaining_unif_problems env evd' in
+  let evd' = Evd.map_metas_fvalue (nf_evar evd') evd' in
     (evd',j'.uj_val)
-  else
-    error "Cannot solve unification constraints"
 
 let w_coerce_to_type env evd c cty mvty =
   let evd,mvty = pose_all_metas_as_evars env evd mvty in
@@ -634,9 +631,7 @@ let order_metas metas =
 let solve_simple_evar_eqn env evd ev rhs =
   let evd,b = solve_simple_eqn Evarconv.evar_conv_x env evd (None,ev,rhs) in
   if not b then error_cannot_unify env evd (mkEvar ev,rhs);
-  let (evd,b) = Evarconv.consider_remaining_unif_problems env evd in
-  if not b then error "Cannot solve unification constraints";
-  evd
+  Evarconv.consider_remaining_unif_problems env evd
 
 (* [w_merge env sigma b metas evars] merges common instances in metas
    or in evars, possibly generating new unification problems; if [b]
@@ -656,11 +651,16 @@ let w_merge env with_types flags (evd,metas,evars) =
     	else begin
           let rhs' = subst_meta_instances metas rhs in
           match kind_of_term rhs with
-	  | App (f,cl) when is_mimick_head f & occur_meta rhs' ->
+	  | App (f,cl) when occur_meta rhs' ->
 	      if occur_evar evn rhs' then
                 error_occur_check env evd evn rhs';
-	      let evd' = mimick_evar evd flags f (Array.length cl) evn in
-	      w_merge_rec evd' metas evars eqns
+	      if is_mimick_head f then
+		let evd' = mimick_evar evd flags f (Array.length cl) evn in
+		  w_merge_rec evd' metas evars eqns
+	      else
+		let evd', rhs'' = pose_all_metas_as_evars env evd rhs' in
+	  	  w_merge_rec (solve_simple_evar_eqn env evd' ev rhs'')
+		    metas evars' eqns
           | _ ->
 	      w_merge_rec (solve_simple_evar_eqn env evd ev rhs')
 		metas evars' eqns

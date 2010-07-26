@@ -58,7 +58,7 @@ let rec catchable_exception = function
   (* unification errors *)
   | PretypeError(_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _
 		   |NoOccurrenceFound _|CannotUnifyBindingType _|NotClean _
-		   |CannotFindWellTypedAbstraction _
+		   |CannotFindWellTypedAbstraction _|OccurCheck _
 		   |UnsolvableImplicit _)) -> true
   | Typeclasses_errors.TypeClassError
       (_, Typeclasses_errors.UnsatisfiableConstraints _) -> true

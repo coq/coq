@@ -1,3 +1,5 @@
+(** -*- compile-command: "make -C ../.. plugins/subtac/subtac_plugin.cma" -*- *)
+
 open Evd
 open Libnames
 open Coqlib
@@ -18,14 +20,14 @@ let utils_module = "Utils"
 let fixsub_module = subtac_dir @ [fix_sub_module]
 let utils_module = subtac_dir @ [utils_module]
 let tactics_module = subtac_dir @ ["Tactics"]
-let init_constant dir s = gen_constant contrib_name dir s
-let init_reference dir s = gen_reference contrib_name dir s
+let init_constant dir s () = gen_constant contrib_name dir s
+let init_reference dir s () = gen_reference contrib_name dir s
 
-let fixsub = lazy (init_constant fixsub_module "Fix_sub")
-let ex_pi1 = lazy (init_constant utils_module "ex_pi1")
-let ex_pi2 = lazy (init_constant utils_module "ex_pi2")
+let fixsub = init_constant fixsub_module "Fix_sub"
+let ex_pi1 = init_constant utils_module "ex_pi1"
+let ex_pi2 = init_constant utils_module "ex_pi2"
 
-let make_ref l s = lazy (init_reference l s)
+let make_ref l s = init_reference l s
 let well_founded_ref = make_ref ["Init";"Wf"] "Well_founded"
 let acc_ref = make_ref  ["Init";"Wf"] "Acc"
 let acc_inv_ref = make_ref  ["Init";"Wf"] "Acc_inv"
@@ -41,68 +43,67 @@ let proj1_sig_ref = make_ref "Init.Specif.proj1_sig"
 let proj2_sig_ref = make_ref "Init.Specif.proj2_sig"
 
 let build_sig () =
-  { proj1 = init_constant ["Init"; "Specif"] "proj1_sig";
-    proj2 = init_constant ["Init"; "Specif"] "proj2_sig";
-    elim = init_constant ["Init"; "Specif"] "sig_rec";
-    intro = init_constant ["Init"; "Specif"] "exist";
-    typ = init_constant ["Init"; "Specif"] "sig" }
+  { proj1 = init_constant ["Init"; "Specif"] "proj1_sig" ();
+    proj2 = init_constant ["Init"; "Specif"] "proj2_sig" ();
+    elim = init_constant ["Init"; "Specif"] "sig_rec" ();
+    intro = init_constant ["Init"; "Specif"] "exist" ();
+    typ = init_constant ["Init"; "Specif"] "sig" () }
 
-let sig_ = lazy (build_sig ())
+let sig_ = build_sig
 
-let fix_proto = lazy (init_constant tactics_module "fix_proto")
+let fix_proto = init_constant tactics_module "fix_proto"
 let fix_proto_ref () = 
   match Nametab.global (make_ref "Program.Tactics.fix_proto") with
   | ConstRef c -> c
   | _ -> assert false
 
-let eq_ind = lazy (init_constant ["Init"; "Logic"] "eq")
-let eq_rec = lazy (init_constant ["Init"; "Logic"] "eq_rec")
-let eq_rect = lazy (init_constant ["Init"; "Logic"] "eq_rect")
-let eq_refl = lazy (init_constant ["Init"; "Logic"] "refl_equal")
-let eq_ind_ref = lazy (init_reference ["Init"; "Logic"] "eq")
-let refl_equal_ref = lazy (init_reference ["Init"; "Logic"] "refl_equal")
+let eq_ind = init_constant ["Init"; "Logic"] "eq"
+let eq_rec = init_constant ["Init"; "Logic"] "eq_rec"
+let eq_rect = init_constant ["Init"; "Logic"] "eq_rect"
+let eq_refl = init_constant ["Init"; "Logic"] "refl_equal"
+let eq_ind_ref = init_reference ["Init"; "Logic"] "eq"
+let refl_equal_ref = init_reference ["Init"; "Logic"] "refl_equal"
 
-let not_ref = lazy (init_constant ["Init"; "Logic"] "not")
+let not_ref = init_constant ["Init"; "Logic"] "not"
 
-let and_typ = lazy (Coqlib.build_coq_and ())
+let and_typ = Coqlib.build_coq_and
 
-let eqdep_ind = lazy (init_constant [ "Logic";"Eqdep"] "eq_dep")
-let eqdep_rec = lazy (init_constant ["Logic";"Eqdep"] "eq_dep_rec")
-let eqdep_ind_ref = lazy (init_reference [ "Logic";"Eqdep"] "eq_dep")
-let eqdep_intro_ref = lazy (init_reference [ "Logic";"Eqdep"] "eq_dep_intro")
+let eqdep_ind = init_constant [ "Logic";"Eqdep"] "eq_dep"
+let eqdep_rec = init_constant ["Logic";"Eqdep"] "eq_dep_rec"
+let eqdep_ind_ref = init_reference [ "Logic";"Eqdep"] "eq_dep"
+let eqdep_intro_ref = init_reference [ "Logic";"Eqdep"] "eq_dep_intro"
 
 let jmeq_ind =
-  lazy (check_required_library ["Coq";"Logic";"JMeq"];
-	init_constant ["Logic";"JMeq"] "JMeq")
+  init_constant ["Logic";"JMeq"] "JMeq"
+
 let jmeq_rec =
-  lazy (check_required_library ["Coq";"Logic";"JMeq"];
-	init_constant ["Logic";"JMeq"] "JMeq_rec")
+  init_constant ["Logic";"JMeq"] "JMeq_rec"
+
 let jmeq_refl =
-  lazy (check_required_library ["Coq";"Logic";"JMeq"];
-	init_constant ["Logic";"JMeq"] "JMeq_refl")
+  init_constant ["Logic";"JMeq"] "JMeq_refl"
 
-let ex_ind = lazy (init_constant ["Init"; "Logic"] "ex")
-let ex_intro = lazy (init_reference ["Init"; "Logic"] "ex_intro")
+let ex_ind = init_constant ["Init"; "Logic"] "ex"
+let ex_intro = init_reference ["Init"; "Logic"] "ex_intro"
 
-let proj1 = lazy (init_constant ["Init"; "Logic"] "proj1")
-let proj2 = lazy (init_constant ["Init"; "Logic"] "proj2")
+let proj1 = init_constant ["Init"; "Logic"] "proj1"
+let proj2 = init_constant ["Init"; "Logic"] "proj2"
 
-let boolind = lazy (init_constant ["Init"; "Datatypes"] "bool")
-let sumboolind = lazy (init_constant ["Init"; "Specif"] "sumbool")
-let natind = lazy (init_constant ["Init"; "Datatypes"] "nat")
-let intind = lazy (init_constant ["ZArith"; "binint"] "Z")
-let existSind = lazy (init_constant ["Init"; "Specif"] "sigS")
+let boolind = init_constant ["Init"; "Datatypes"] "bool"
+let sumboolind = init_constant ["Init"; "Specif"] "sumbool"
+let natind = init_constant ["Init"; "Datatypes"] "nat"
+let intind = init_constant ["ZArith"; "binint"] "Z"
+let existSind = init_constant ["Init"; "Specif"] "sigS"
 
-let existS = lazy (build_sigma_type ())
+let existS = build_sigma_type
 
-let prod = lazy (build_prod ())
+let prod = build_prod
 
 
 (* orders *)
-let well_founded = lazy (init_constant ["Init"; "Wf"] "well_founded")
-let fix = lazy (init_constant ["Init"; "Wf"] "Fix")
-let acc = lazy (init_constant ["Init"; "Wf"] "Acc")
-let acc_inv = lazy (init_constant ["Init"; "Wf"] "Acc_inv")
+let well_founded = init_constant ["Init"; "Wf"] "well_founded"
+let fix = init_constant ["Init"; "Wf"] "Fix"
+let acc = init_constant ["Init"; "Wf"] "Acc"
+let acc_inv = init_constant ["Init"; "Wf"] "Acc_inv"
 
 let extconstr = Constrextern.extern_constr true (Global.env ())
 let extsort s = Constrextern.extern_constr true (Global.env ()) (mkSort s)
@@ -151,8 +152,8 @@ let wf_relations = Hashtbl.create 10
 
 let std_relations () =
   let add k v = Hashtbl.add wf_relations k v in
-    add (init_constant ["Init"; "Peano"] "lt")
-      (lazy (init_constant ["Arith"; "Wf_nat"] "lt_wf"))
+    add (init_constant ["Init"; "Peano"] "lt" ())
+      (init_constant ["Arith"; "Wf_nat"] "lt_wf")
 
 let std_relations = Lazy.lazy_from_fun std_relations
 
@@ -226,7 +227,6 @@ let goal_fix_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Fixp
 open Tactics
 open Tacticals
 
-let id x = x
 let filter_map f l =
   let rec aux acc = function
       hd :: tl -> (match f hd with Some t -> aux (t :: acc) tl
@@ -257,51 +257,51 @@ let build_dependent_sum l =
 	  (fun typ ->
 	     let tex = mkLambda (Name n, t, typ) in
 	       conttype
-		 (mkApp (Lazy.force ex_ind, [| t; tex |])))
+		 (mkApp (ex_ind (), [| t; tex |])))
 	in
 	  aux (mkVar n :: names) conttac conttype tl
     | (n, t) :: [] ->
 	(conttac intros, conttype t)
     | [] -> raise (Invalid_argument "build_dependent_sum")
-  in aux [] id id (List.rev l)
+  in aux [] identity identity (List.rev l)
 
 open Proof_type
 open Tacexpr
 
 let mkProj1 a b c =
-  mkApp (Lazy.force proj1, [| a; b; c |])
+  mkApp (delayed_force proj1, [| a; b; c |])
 
 let mkProj2 a b c =
-  mkApp (Lazy.force proj2, [| a; b; c |])
+  mkApp (delayed_force proj2, [| a; b; c |])
 
 let mk_ex_pi1 a b c =
-  mkApp (Lazy.force ex_pi1, [| a; b; c |])
+  mkApp (delayed_force ex_pi1, [| a; b; c |])
 
 let mk_ex_pi2 a b c =
-  mkApp (Lazy.force ex_pi2, [| a; b; c |])
+  mkApp (delayed_force ex_pi2, [| a; b; c |])
 
 let mkSubset name typ prop =
-  mkApp ((Lazy.force sig_).typ,
+  mkApp ((delayed_force sig_).typ,
 	 [| typ; mkLambda (name, typ, prop) |])
 
-let mk_eq typ x y = mkApp (Lazy.force eq_ind, [| typ; x ; y |])
-let mk_eq_refl typ x = mkApp (Lazy.force eq_refl, [| typ; x |])
-let mk_JMeq typ x typ' y = mkApp (Lazy.force jmeq_ind, [| typ; x ; typ'; y |])
-let mk_JMeq_refl typ x = mkApp (Lazy.force jmeq_refl, [| typ; x |])
+let mk_eq typ x y = mkApp (delayed_force eq_ind, [| typ; x ; y |])
+let mk_eq_refl typ x = mkApp (delayed_force eq_refl, [| typ; x |])
+let mk_JMeq typ x typ' y = mkApp (delayed_force jmeq_ind, [| typ; x ; typ'; y |])
+let mk_JMeq_refl typ x = mkApp (delayed_force jmeq_refl, [| typ; x |])
 
 let unsafe_fold_right f = function
     hd :: tl -> List.fold_right f tl hd
   | [] -> raise (Invalid_argument "unsafe_fold_right")
 
 let mk_conj l =
-  let conj_typ = Lazy.force and_typ in
+  let conj_typ = delayed_force and_typ in
     unsafe_fold_right
       (fun c conj ->
 	 mkApp (conj_typ, [| c ; conj |]))
       l
 
 let mk_not c =
-  let notc = Lazy.force not_ref in
+  let notc = delayed_force not_ref in
     mkApp (notc, [| c |])
 
 let and_tac l hook =
@@ -336,7 +336,7 @@ let destruct_ex ext ex =
     match kind_of_term c with
 	App (f, args) ->
 	  (match kind_of_term f with
-	       Ind i when i = Term.destInd (Lazy.force ex_ind) && Array.length args = 2 ->
+	       Ind i when i = Term.destInd (delayed_force ex_ind) && Array.length args = 2 ->
 		 let (dom, rng) =
 		   try (args.(0), args.(1))
 		   with _ -> assert(false)
@@ -477,6 +477,7 @@ let pr_evar_map evd =
 
 let contrib_tactics_path =
   make_dirpath (List.map id_of_string ["Tactics";contrib_name;"Coq"])
+
 let tactics_tac s =
   lazy(make_kn (MPfile contrib_tactics_path) (make_dirpath []) (mk_label s))
 

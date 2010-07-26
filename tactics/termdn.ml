@@ -33,7 +33,7 @@ struct
     | GRLabel of global_reference
     | ProdLabel 
     | LambdaLabel
-    | SortLabel of sorts option
+    | SortLabel
 	
   module Y =  struct 
      type t = term_label
@@ -97,12 +97,7 @@ let constr_pat_discr_st (idpred,cpred) t =
       Some (GRLabel ref, args)
   | PProd (_, d, c), [] -> Some (ProdLabel, [d ; c])
   | PLambda (_, d, c), l -> Some (LambdaLabel, [d ; c] @ l)
-  | PSort s, [] -> 
-      let s' = match s with
-	| RProp c -> Some (Prop c)
-	| RType _ -> None 
-	    (* Don't try to be clever about type levels here *)
-      in Some (SortLabel s', [])
+  | PSort s, [] -> Some (SortLabel, [])
   | _ -> None
 
 open Dn
@@ -125,8 +120,7 @@ let constr_val_discr_st (idpred,cpred) t =
     | Var id when not (Idpred.mem id idpred) -> Label(GRLabel (VarRef id),l)
     | Prod (n, d, c) -> Label(ProdLabel, [d; c])
     | Lambda (n, d, c) -> Label(LambdaLabel, [d; c] @ l)
-    | Sort s when is_small s -> Label(SortLabel (Some s), [])
-    | Sort _ -> Label (SortLabel None, [])
+    | Sort _ -> Label (SortLabel, [])
     | Evar _ -> Everything
     | _ -> Nothing
 

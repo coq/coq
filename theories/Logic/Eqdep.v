@@ -31,5 +31,5 @@ Export EqdepTheory.
 
 (** Exported hints *)
 
-Hint Resolve eq_dep_eq: core v62.
-Hint Resolve inj_pair2 inj_pairT2: core.
+Hint Resolve eq_dep_eq: eqdep v62.
+Hint Resolve inj_pair2 inj_pairT2: eqdep.

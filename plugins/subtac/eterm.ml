@@ -141,16 +141,28 @@ let evar_dependencies evm ev =
       if Intset.equal deps deps' then deps
       else aux deps'
   in aux (Intset.singleton ev)
-
-let sort_dependencies evl =
-  List.stable_sort
-    (fun (id, ev, deps) (id', ev', deps') ->
-      if id = id' then 0
-      else if Intset.mem id deps' then -1
-      else if Intset.mem id' deps then 1
-      else Pervasives.compare id id')
-    evl
       
+let move_after (id, ev, deps as obl) l = 
+  let rec aux restdeps = function
+    | (id', _, _) as obl' :: tl -> 
+	let restdeps' = Intset.remove id' restdeps in
+	  if Intset.is_empty restdeps' then
+	    obl' :: obl :: tl
+	  else obl' :: aux restdeps' tl
+    | [] -> [obl]
+  in aux (Intset.remove id deps) l
+    
+let sort_dependencies evl =
+  let rec aux l found list =
+    match l with
+    | (id, ev, deps) as obl :: tl ->
+	let found' = Intset.union found (Intset.singleton id) in
+	  if Intset.subset deps found' then
+	    aux tl found' (obl :: list)
+	  else aux (move_after obl tl) found list
+    | [] -> List.rev list
+  in aux evl Intset.empty []
+
 let map_evar_body f = function
   | Evar_empty -> Evar_empty
   | Evar_defined c -> Evar_defined (f c)

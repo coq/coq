@@ -231,7 +231,7 @@ val coerce_reference_to_id : reference -> identifier
 val coerce_to_id : constr_expr -> identifier located
 val coerce_to_name : constr_expr -> name located
 
-val index_of_annot : local_binder list -> identifier located option -> int option
+val split_at_annot : local_binder list -> identifier located option -> local_binder list * local_binder list
 
 val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
 val prod_constr_expr : constr_expr -> local_binder list -> constr_expr

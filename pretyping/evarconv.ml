@@ -551,10 +551,10 @@ let apply_conversion_problem_heuristic env evd pbty t1 t2 =
 let consider_remaining_unif_problems env evd =
   let (evd,pbs) = extract_all_conv_pbs evd in
   List.fold_left
-    (fun (evd,b as p) (pbty,env,t1,t2) ->
-      if b then apply_conversion_problem_heuristic env evd pbty t1 t2 else p)
-    (evd,true)
-    pbs
+    (fun evd (pbty,env,t1,t2) ->
+      let evd', b = apply_conversion_problem_heuristic env evd pbty t1 t2 in
+	if b then evd' else Pretype_errors.error_cannot_unify env evd (t1, t2))
+    evd pbs
 
 (* Main entry points *)
 

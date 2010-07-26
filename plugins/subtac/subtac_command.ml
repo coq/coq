@@ -237,14 +237,18 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   let rel = interp_constr isevars env r in
   let relty = type_of env !isevars rel in
   let relargty =
-    let ctx, ar = Reductionops.splay_prod_n env !isevars 2 relty in
-      match ctx, kind_of_term ar with
-      | [(_, None, t); (_, None, u)], Sort (Prop Null)
-	  when Reductionops.is_conv env !isevars t u -> t
-      | _, _ ->
-	  user_err_loc (constr_loc r,
-		       "Subtac_command.build_wellfounded",
-		       my_print_constr env rel ++ str " is not an homogeneous binary relation.")
+    let error () =
+      user_err_loc (constr_loc r,
+		   "Subtac_command.build_wellfounded",
+		   my_print_constr env rel ++ str " is not an homogeneous binary relation.")
+    in
+      try
+	let ctx, ar = Reductionops.splay_prod_n env !isevars 2 relty in
+	  match ctx, kind_of_term ar with
+	  | [(_, None, t); (_, None, u)], Sort (Prop Null)
+	      when Reductionops.is_conv env !isevars t u -> t
+	  | _, _ -> error ()
+      with _ -> error ()
   in
   let measure = interp_casted_constr isevars binders_env measure relargty in
   let wf_rel, wf_rel_fun, measure_fn =
@@ -252,14 +256,14 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
       it_mkLambda_or_LetIn measure letbinders,
       it_mkLambda_or_LetIn measure binders
     in
-    let comb = constr_of_global (Lazy.force measure_on_R_ref) in
+    let comb = constr_of_global (delayed_force measure_on_R_ref) in
     let wf_rel = mkApp (comb, [| argtyp; relargty; rel; measure |]) in
     let wf_rel_fun x y =
       mkApp (rel, [| subst1 x measure_body;
  		     subst1 y measure_body |])
     in wf_rel, wf_rel_fun, measure
   in
-  let wf_proof = mkApp (Lazy.force well_founded, [| argtyp ; wf_rel |]) in
+  let wf_proof = mkApp (delayed_force well_founded, [| argtyp ; wf_rel |]) in
   let argid' = id_of_string (string_of_id argname ^ "'") in
   let wfarg len = (Name argid', None,
   		  mkSubset (Name argid') argtyp
@@ -267,7 +271,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   in
   let intern_bl = wfarg 1 :: [arg] in
   let _intern_env = push_rel_context intern_bl env in
-  let proj = (Lazy.force sig_).Coqlib.proj1 in
+  let proj = (delayed_force sig_).Coqlib.proj1 in
   let wfargpred = mkLambda (Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel 3)) in
   let projection = (* in wfarg :: arg :: before *)
     mkApp (proj, [| argtyp ; wfargpred ; mkRel 1 |])
@@ -280,7 +284,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   let intern_fun_binder = (Name (add_suffix recname "'"), None, intern_fun_arity_prod) in
   let curry_fun =
     let wfpred = mkLambda (Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel (2 * len + 4))) in
-    let arg = mkApp ((Lazy.force sig_).intro, [| argtyp; wfpred; lift 1 make; mkRel 1 |]) in
+    let arg = mkApp ((delayed_force sig_).intro, [| argtyp; wfpred; lift 1 make; mkRel 1 |]) in
     let app = mkApp (mkRel (2 * len + 2 (* recproof + orig binders + current binders *)), [| arg |]) in
     let rcurry = mkApp (rel, [| measure; lift len measure |]) in
     let lam = (Name (id_of_string "recproof"), None, rcurry) in
@@ -305,7 +309,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
   let prop = mkLambda (Name argname, argtyp, top_arity_let) in
   let def =
-    mkApp (constr_of_global (Lazy.force fix_sub_ref),
+    mkApp (constr_of_global (delayed_force fix_sub_ref),
 	  [| argtyp ; wf_rel ;
 	     make_existential dummy_loc ~opaque:(Define false) env isevars wf_proof ;
 	     prop ; intern_body_lam |])
@@ -428,7 +432,7 @@ let interp_recursive fixkind l boxed =
     List.fold_left2 (fun env' id t ->
       let sort = Retyping.get_type_of env !evdref t in
       let fixprot =
-	try mkApp (Lazy.force Subtac_utils.fix_proto, [|sort; t|])
+	try mkApp (delayed_force Subtac_utils.fix_proto, [|sort; t|])
 	with e -> t
       in
 	(id,None,fixprot) :: env')
@@ -452,7 +456,7 @@ let interp_recursive fixkind l boxed =
   let fixdefs = List.map out_def fixdefs in
 
   (* Instantiate evars and check all are resolved *)
-  let evd,_ = Evarconv.consider_remaining_unif_problems env_rec !evdref in
+  let evd = Evarconv.consider_remaining_unif_problems env_rec !evdref in
   let evd = Typeclasses.resolve_typeclasses
     ~onlyargs:true ~split:true ~fail:false env_rec evd
   in
@@ -517,8 +521,8 @@ let build_recursive l b =
 		    m ntn false)
 
       | _, _ when List.for_all (fun (n, ro) -> ro = CStructRec) g ->
-	  let fixl = List.map (fun (((_,id),_,bl,typ,def),ntn) ->
-	    ({Command.fix_name = id; Command.fix_binders = bl; 
+	  let fixl = List.map (fun (((_,id),(n,ro),bl,typ,def),ntn) ->
+	    ({Command.fix_name = id; Command.fix_binders = bl; Command.fix_annot = n;
 	      Command.fix_body = def; Command.fix_type = typ},ntn)) l
 	  in interp_recursive (IsFixpoint g) fixl b
       | _, _ ->
@@ -527,7 +531,7 @@ let build_recursive l b =
 
 let build_corecursive l b =
   let fixl = List.map (fun (((_,id),bl,typ,def),ntn) ->
-    ({Command.fix_name = id; Command.fix_binders = bl; 
+    ({Command.fix_name = id; Command.fix_binders = bl; Command.fix_annot = None;
       Command.fix_body = def; Command.fix_type = typ},ntn))
     l in
   interp_recursive IsCoFixpoint fixl b

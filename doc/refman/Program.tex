@@ -73,8 +73,25 @@ will be first rewrote to:
   works with the previous mechanism.
 \end{itemize}
 
-If you do specify a {\tt return} or {\tt in} clause the typechecker will
-fall back directly to \Coq's usual typing of dependent pattern-matching.
+To give more control over the generation of equalities, the typechecker will
+fall back directly to \Coq's usual typing of dependent pattern-matching
+if a {\tt return} or {\tt in} clause is specified. Likewise,
+the {\tt if} construct is not treated specially by \Program{} so boolean
+tests in the code are not automatically reflected in the obligations. 
+One can use the {\tt dec} combinator to get the correct hypotheses as in:
+
+\begin{coq_eval}
+Require Import Program Arith.
+\end{coq_eval}
+\begin{coq_example}
+Program Definition id (n : nat) : { x : nat | x = n } :=
+  if dec (leb n 0) then 0
+  else S (pred n).
+\end{coq_example}
+
+Finally, the let tupling construct {\tt let (x1, ..., xn) := t in b}
+does not produce an equality, contrary to the let pattern construct 
+{\tt let '(x1, ..., xn) := t in b}.
 
 The next two commands are similar to their standard counterparts
 Definition (see Section~\ref{Basic-definitions}) and Fixpoint (see Section~\ref{Fixpoint}) in that
@@ -127,8 +144,10 @@ The structural fixpoint operator behaves just like the one of Coq
 (see Section~\ref{Fixpoint}), except it may also generate obligations.
 It works with mutually recursive definitions too.
 
+\begin{coq_eval}
+Admit Obligations.
+\end{coq_eval}
 \begin{coq_example}
-Require Import Program.
 Program Fixpoint div2 (n : nat) : { x : nat | n = 2 * x \/ n = 2 * x + 1 } :=
   match n with
   | S (S p) => S (div2 p)
@@ -149,8 +168,7 @@ Require Import Arith.
 Require Import Program.
 \end{coq_eval}
 \begin{coq_example*}
-Definition id (n : nat) := n.
-Program Fixpoint div2 (n : nat) {measure id n} :
+Program Fixpoint div2 (n : nat) {measure n} :
   { x : nat | n = 2 * x \/ n = 2 * x + 1 } :=
   match n with
   | S (S p) => S (div2 p)
@@ -158,30 +176,29 @@ Program Fixpoint div2 (n : nat) {measure id n} :
   end.
 \end{coq_example*}
 
-The \verb|measure| keyword expects a measure function into the naturals, whereas
-\verb|wf| expects a relation.
+The order annotation can be either:
+\begin{itemize}
+\item {\tt measure f (R)?} where {\tt f} is a value of type {\tt X}
+  computed on any subset of the arguments and the optional
+  (parenthesised) term {\tt (R)} is a relation
+  on {\tt X}. By default {\tt X} defaults to {\tt nat} and {\tt R} to
+  {\tt lt}.
+\item {\tt wf R x} which is equivalent to {\tt measure x (R)}.
+\end{itemize}
 
 \paragraph{Caution}
 When defining structurally recursive functions, the
 generated obligations should have the prototype of the currently defined functional
 in their context. In this case, the obligations should be transparent
-(e.g. using Defined) so that the guardedness condition on
+(e.g. defined using {\tt Defined}) so that the guardedness condition on
 recursive calls can be checked by the
 kernel's type-checker. There is an optimization in the generation of
 obligations which gets rid of the hypothesis corresponding to the
 functionnal when it is not necessary, so that the obligation can be
-declared opaque (e.g. using Qed). However, as soon as it appears in the
+declared opaque (e.g. using {\tt Qed}). However, as soon as it appears in the
 context, the proof of the obligation is \emph{required} to be declared transparent.
 
 No such problems arise when using measures or well-founded recursion.
-
-An important point about well-founded and measure-based functions is the following:
-The recursive prototype of a function of type
-{\binder$_1$}\ldots{\binder$_n$} \{ {\tt measure m \binder$_i$} \}:{\type$_1$}, 
-inside the body is
-\verb|{|{\binder$_i'$ \verb$|$ {\tt m} $x_i'$ < {\tt m} $x_i$}\verb|}|\ldots{\binder$_n$},{\type$_1$}. 
-So any arguments appearing before the recursive one are ignored for the
-recursive calls, hence they are constant.
 
 \subsection{\tt Program Lemma {\ident} : type.
   \comindex{Program Lemma}
@@ -250,21 +267,21 @@ obligations called {\tt program\_simpl}. Importing
   \verb$Program Fixpoint f (x : A | P) := match x with A b => f b end.$
   
   Supposing $b : A$, the argument at the recursive call to f is not a
-  direct subterm of x as b is wrapped inside an exist constructor to build
+  direct subterm of x as b is wrapped inside an {\tt exist} constructor to build
   an object of type \verb${x : A | P}$.  Hence the definition is rejected
-  by the guardedness condition checker. However you can do
+  by the guardedness condition checker. However one can use
   wellfounded recursion on subset objects like this:
   
 \begin{verbatim}
-Program Fixpoint f (x : A | P) { measure size } :=
+Program Fixpoint f (x : A | P) { measure (size x) } :=
   match x with A b => f b end.
 \end{verbatim}
   
-  You will then just have to prove that the measure decreases at each recursive
+  One will then just have to prove that the measure decreases at each recursive
   call. There are three drawbacks though: 
   \begin{enumerate}
-  \item You have to define the measure yourself;
-  \item The reduction is a little more involved, although it works
+  \item A measure function has to be defined;
+  \item The reduction is a little more involved, although it works well
     using lazy evaluation;
   \item Mutual recursion on the underlying inductive type isn't possible
     anymore, but nested mutual recursion is always possible.
@@ -274,5 +291,5 @@ Program Fixpoint f (x : A | P) { measure size } :=
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% compile-command: "BIBINPUTS=\".\" make -C ../.. -f Makefile.stage2 doc/refman/Reference-Manual.pdf"
+%%% compile-command: "BIBINPUTS=\".\" make QUICK=1 -C ../.. doc/refman/Reference-Manual.pdf"
 %%% End: 

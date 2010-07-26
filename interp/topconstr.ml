@@ -1137,17 +1137,25 @@ let coerce_to_name = function
 
 (* Interpret the index of a recursion order annotation *)
 
-let index_of_annot bl na =
+let split_at_annot bl na =
   let names = List.map snd (names_of_local_assums bl) in
   match na with
   | None ->
       if names = [] then error "A fixpoint needs at least one parameter."
-      else None
+      else [], bl
   | Some (loc, id) ->
-      try Some (list_index0 (Name id) names)
-      with Not_found ->
-        user_err_loc(loc,"",
-        str "No parameter named " ++ Nameops.pr_id id ++ str".")
+      let rec aux acc = function
+	| LocalRawAssum (bls, k, t) as x :: rest ->
+	    let l, r = list_split_when (fun (loc, na) -> na = Name id) bls in
+	      if r = [] then aux (x :: acc) rest 
+	      else 
+		(List.rev (if l = [] then acc else LocalRawAssum (l, k, t) :: acc), 
+		 LocalRawAssum (r, k, t) :: rest)
+	| LocalRawDef _ as x :: rest -> aux (x :: acc) rest
+	| [] ->
+            user_err_loc(loc,"",
+			 str "No parameter named " ++ Nameops.pr_id id ++ str".")
+      in aux [] bl
 
 (* Used in correctness and interface *)
 

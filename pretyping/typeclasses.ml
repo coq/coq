@@ -106,6 +106,29 @@ let _ =
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init }
 
+let class_info c =
+  try Gmap.find c !classes
+  with _ -> not_a_class (Global.env()) (constr_of_global c)
+
+let global_class_of_constr env c =
+  try class_info (global_of_constr c)
+  with Not_found -> not_a_class env c
+
+let dest_class_app env c =
+  let cl, args = decompose_app c in
+    global_class_of_constr env cl, args
+
+let class_of_constr c = try Some (fst (dest_class_app (Global.env ()) c)) with _ -> None
+
+let rec is_class_type evd c =
+  match kind_of_term c with
+  | Prod (_, _, t) -> is_class_type evd t
+  | Evar (e, _) when is_defined evd e -> is_class_type evd (Evarutil.nf_evar evd c)
+  | _ -> class_of_constr c <> None
+
+let is_class_evar evd evi =
+  is_class_type evd evi.Evd.evar_concl
+
 (*
  * classes persistent object
  *)
@@ -153,8 +176,15 @@ let discharge_class (_,cl) =
       | ConstRef cst -> Lib.section_segment_of_constant cst
       | IndRef (ind,_) -> Lib.section_segment_of_mutual_inductive ind in
   let discharge_context ctx' subst (grs, ctx) =
-    let grs' = List.map (fun _ -> None) subst @
-      list_smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
+    let grs' = 
+      let newgrs = List.map (fun (_, _, t) -> 
+	match class_of_constr t with
+	| None -> None
+	| Some tc -> Some (tc.cl_impl, true))
+	ctx' 
+      in
+	list_smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
+	  @ newgrs
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
   let cl_impl' = Lib.discharge_global cl.cl_impl in
   if cl_impl' == cl.cl_impl then cl else
@@ -265,10 +295,6 @@ let add_inductive_class ind =
  * interface functions
  *)
 
-let class_info c =
-  try Gmap.find c !classes
-  with _ -> not_a_class (Global.env()) (constr_of_global c)
-
 let instance_constructor cl args =
   let lenpars = List.length (List.filter (fun (na, b, t) -> b = None) (snd cl.cl_context)) in
   let pars = fst (list_chop lenpars args) in
@@ -322,16 +348,6 @@ let is_implicit_arg k =
     | InternalHole -> true
     | _ -> false
 
-let global_class_of_constr env c =
-  try class_info (global_of_constr c)
-  with Not_found -> not_a_class env c
-
-let dest_class_app env c =
-  let cl, args = decompose_app c in
-    global_class_of_constr env cl, args
-
-let class_of_constr c = try Some (fst (dest_class_app (Global.env ()) c)) with _ -> None
-
 (* To embed a boolean for resolvability status.
    This is essentially a hack to mark which evars correspond to
    goals and do not need to be resolved when we have nested [resolve_all_evars]
@@ -355,15 +371,6 @@ let mark_unresolvables sigma =
   Evd.fold (fun ev evi evs ->
     Evd.add evs ev (mark_unresolvable evi))
     sigma Evd.empty
-
-let rec is_class_type evd c =
-  match kind_of_term c with
-  | Prod (_, _, t) -> is_class_type evd t
-  | Evar (e, _) when is_defined evd e -> is_class_type evd (Evarutil.nf_evar evd c)
-  | _ -> class_of_constr c <> None
-
-let is_class_evar evd evi =
-  is_class_type evd evi.Evd.evar_concl
 
 let has_typeclasses evd =
   Evd.fold (fun ev evi has -> has ||

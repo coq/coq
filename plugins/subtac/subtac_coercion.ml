@@ -39,7 +39,7 @@ let rec disc_subset x =
       (match kind_of_term c with
       Ind i ->
 	let len = Array.length l in
-	let sig_ = Lazy.force sig_ in
+	let sig_ = delayed_force sig_ in
 	  if len = 2 && i = Term.destInd sig_.typ
 	  then
 	    let (a, b) = pair_of_array l in
@@ -53,7 +53,7 @@ and disc_exist env x =
   | App (c, l) ->
       (match kind_of_term c with
       Construct c ->
-	if c = Term.destConstruct (Lazy.force sig_).intro
+	if c = Term.destConstruct (delayed_force sig_).intro
 	then Some (l.(0), l.(1), l.(2), l.(3))
 	else None
       | _ -> None)
@@ -66,7 +66,7 @@ module Coercion = struct
   let disc_proj_exist env x =
     match kind_of_term x with
       | App (c, l) ->
-	  (if Term.eq_constr c (Lazy.force sig_).proj1
+	  (if Term.eq_constr c (delayed_force sig_).proj1
 	     && Array.length l = 3
 	   then disc_exist env l.(2)
 	   else None)
@@ -100,7 +100,7 @@ module Coercion = struct
 	  Some (u, p) ->
 	    let f, ct = aux u in
 	      (Some (fun x ->
-		       app_opt f (mkApp ((Lazy.force sig_).proj1,
+		       app_opt f (mkApp ((delayed_force sig_).proj1,
 					 [| u; p; x |]))),
 	       ct)
 	| None -> (None, v)
@@ -146,9 +146,9 @@ module Coercion = struct
 		in
 		let args = List.rev (restargs @ mkRel 1 :: lift_args 1 tele) in
 		let pred = mkLambda (n, eqT, applistc (lift 1 c) args) in
-		let eq = mkApp (Lazy.force eq_ind, [| eqT; hdx; hdy |]) in
+		let eq = mkApp (delayed_force eq_ind, [| eqT; hdx; hdy |]) in
 		let evar = make_existential loc env isevars eq in
-		let eq_app x = mkApp (Lazy.force eq_rect,
+		let eq_app x = mkApp (delayed_force eq_rect,
 				      [| eqT; hdx; pred; x; hdy; evar|]) in
 		  aux (hdy :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i)  (fun x -> eq_app (co x))
 	  else Some co
@@ -187,8 +187,8 @@ module Coercion = struct
 	      (match kind_of_term c, kind_of_term c' with
 		   Ind i, Ind i' -> (* Inductive types *)
 		     let len = Array.length l in
-		     let existS = Lazy.force existS in
-		     let prod = Lazy.force prod in
+		     let existS = delayed_force existS in
+		     let prod = delayed_force prod in
 		       (* Sigma types *)
 		       if len = Array.length l' && len = 2 && i = i'
 			 && (i = Term.destInd existS.typ || i = Term.destInd prod.typ)
@@ -279,7 +279,7 @@ module Coercion = struct
 	  Some (u, p) ->
 	    let c = coerce_unify env u y in
 	    let f x =
-	      app_opt c (mkApp ((Lazy.force sig_).proj1,
+	      app_opt c (mkApp ((delayed_force sig_).proj1,
 				[| u; p; x |]))
 	    in Some f
 	| None ->
@@ -292,7 +292,7 @@ module Coercion = struct
 			 let evar = make_existential loc env isevars (mkApp (p, [| cx |]))
 			 in
 			   (mkApp
-			      ((Lazy.force sig_).intro,
+			      ((delayed_force sig_).intro,
 			       [| u; p; cx; evar |])))
 	      | None ->
 		  raise NoSubtacCoercion
@@ -496,8 +496,7 @@ module Coercion = struct
 		   with NoCoercion ->
 		     coerce_itf loc env' isevars None t t')
 	    with NoSubtacCoercion ->
-	      let sigma =  isevars in
-		error_cannot_coerce env' sigma (t, t'))
+	      error_cannot_coerce env' isevars (t, t'))
 	else isevars
       with _ -> isevars
 end

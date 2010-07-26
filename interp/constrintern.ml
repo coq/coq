@@ -1122,12 +1122,11 @@ let internalize sigma globalenv env allow_patvar lvar c =
         let idl = Array.map
           (fun (id,(n,order),bl,ty,bd) ->
 	     let intern_ro_arg f =
-               let idx = Option.default 0 (index_of_annot bl n) in
-	       let before, after = list_chop idx bl in
+	       let before, after = split_at_annot bl n in
 	       let ((ids',_,_,_) as env',rbefore) =
 		 List.fold_left intern_local_binder (env,[]) before in
 	       let ro = f (intern (ids', unb, tmp_scope, scopes)) in
-	       let n' = Option.map (fun _ -> List.length before) n in
+	       let n' = Option.map (fun _ -> List.length rbefore) n in
 		 n', ro, List.fold_left intern_local_binder (env',rbefore) after
 	     in
 	     let n, ro, ((ids',_,_,_),rbl) =
@@ -1500,8 +1499,9 @@ let interp_constr_evars_gen_impls ?evdref ?(fail_evar=true)
     | None -> ref Evd.empty
     | Some evdref -> evdref
   in
-  let c = intern_gen (kind=IsType) ~impls !evdref env c in
-  let imps = Implicit_quantifiers.implicits_of_rawterm c in
+  let istype = kind = IsType in
+  let c = intern_gen istype ~impls !evdref env c in
+  let imps = Implicit_quantifiers.implicits_of_rawterm ~with_products:istype c in
     Default.understand_tcc_evars ~fail_evar evdref env kind c, imps
 
 let interp_casted_constr_evars_impls ?evdref ?(fail_evar=true)

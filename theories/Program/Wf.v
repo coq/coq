@@ -214,7 +214,7 @@ Ltac fold_sub f :=
   match goal with
     | [ |- ?T ] =>
       match T with
-        appcontext C [ @Fix_sub _ _ _ _ ?arg ] =>
+        appcontext C [ @Fix_sub _ _ _ _ _ ?arg ] =>
         let app := context C [ f arg ] in
           change app
       end
@@ -251,6 +251,6 @@ Module WfExtensionality.
 
   Ltac unfold_sub f fargs :=
     set (call:=fargs) ; unfold f in call ; unfold call ; clear call ;
-      rewrite fix_sub_eq_ext ; repeat fold_sub fargs ; simpl proj1_sig.
+      rewrite fix_sub_eq_ext ; repeat fold_sub f ; simpl proj1_sig.
 
 End WfExtensionality.

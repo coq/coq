@@ -131,7 +131,7 @@ let import file (dp,mb,depends,engmt as vo) digest =
   full_add_module dp mb digest
 
 (* When the module is admitted, digests *must* match *)
-let unsafe_import file (dp,mb,depends,engmt as vo) digest =
+let unsafe_import file (dp,mb,depends,engmt) digest =
 (*  if !Flags.debug then Validate.apply !Flags.debug val_vo vo;*)
   let env = !genv in
   check_imports (errorlabstrm"unsafe_import") dp env depends;

@@ -208,7 +208,9 @@ val list_cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 val list_cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
 (* list_combinations [[a;b];[c;d]] returns [[a;c];[a;d];[b;c];[b;d]] *)
 val list_combinations : 'a list list -> 'a list list
-(* Keep only those products that do not return None *)
+val list_combine3 : 'a list -> 'b list -> 'c list -> ('a * 'b * 'c) list
+
+(** Keep only those products that do not return None *)
 val list_cartesian_filter :
   ('a -> 'b -> 'c option) -> 'a list -> 'b list -> 'c list
 val list_cartesians_filter :
@@ -278,7 +280,13 @@ val iterate : ('a -> 'a) -> int -> 'a -> 'a
 val repeat : int -> ('a -> unit) -> 'a -> unit
 val iterate_for : int -> int -> (int -> 'a -> 'a) -> 'a -> 'a
 
-(*s Misc. *)
+(** {6 Delayed computations. } *)
+
+type 'a delayed = unit -> 'a
+
+val delayed_force : 'a delayed -> 'a
+
+(** {6 Misc. } *)
 
 type ('a,'b) union = Inl of 'a | Inr of 'b
 

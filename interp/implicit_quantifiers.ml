@@ -297,19 +297,28 @@ let implicit_application env ?(allow_partial=true) f ty =
 	    CAppExpl (loc, (None, id), args), avoid
 	in c, avoid
 
-let implicits_of_rawterm l =
+let implicits_of_rawterm ?(with_products=true) l =
   let rec aux i c =
-    match c with
-	RProd (loc, na, bk, t, b) | RLambda (loc, na, bk, t, b) ->
-	  let rest = aux (succ i) b in
-	    if bk = Implicit then
-	      let name =
-		match na with
-		    Name id -> Some id
-		  | Anonymous -> None
-	      in
-		(ExplByPos (i, name), (true, true, true)) :: rest
-	    else rest
+    let abs loc na bk t b =
+      let rest = aux (succ i) b in
+	if bk = Implicit then
+	  let name =
+	    match na with
+	    | Name id -> Some id
+	    | Anonymous -> None
+	  in
+	    (ExplByPos (i, name), (true, true, true)) :: rest
+	else rest
+    in
+      match c with
+      | RProd (loc, na, bk, t, b) ->
+	  if with_products then abs loc na bk t b
+	  else 
+	    (if bk = Implicit then
+	       msg_warning (str "Ignoring implicit status of product binder " ++ 
+			      pr_name na ++ str " and following binders");
+	     [])
+      | RLambda (loc, na, bk, t, b) -> abs loc na bk t b
       | RLetIn (loc, na, t, b) -> aux i b
       | _ -> []
   in aux 1 l

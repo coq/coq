@@ -111,6 +111,9 @@ val clenv_unify_meta_types : ?flags:unify_flags -> clausenv -> clausenv
 val make_clenv_binding_apply :
   evar_info sigma -> int option -> constr * constr -> constr bindings ->
    clausenv
+val make_clenv_binding_env_apply :
+  env -> evar_map -> int option -> constr * constr -> constr bindings ->
+   clausenv
 val make_clenv_binding :
   evar_info sigma -> constr * constr -> constr bindings -> clausenv
 

@@ -66,7 +66,7 @@ let typecheck_params_and_fields id t ps nots fs =
   let env2,impls,newfs,data =
     interp_fields_evars evars env_ar nots (binders_of_decls fs)
   in
-  let evars,_ = Evarconv.consider_remaining_unif_problems env_ar !evars in
+  let evars = Evarconv.consider_remaining_unif_problems env_ar !evars in
   let evars = Typeclasses.resolve_typeclasses env_ar evars in
   let sigma =  evars in
   let newps = Evarutil.nf_rel_context_evar sigma newps in

@@ -2320,6 +2320,9 @@ let linear vars args =
       true
     with Seen -> false
 
+let is_defined_variable env id =
+  pi2 (lookup_named id env) <> None
+
 let abstract_args gl generalize_vars dep id defined f args =
   let sigma = project gl in
   let env = pf_env gl in
@@ -2347,7 +2350,7 @@ let abstract_args gl generalize_vars dep id defined f args =
     let liftargty = lift lenctx argty in
     let leq = constr_cmp Reduction.CUMUL liftargty ty in
       match kind_of_term arg with
-      | Var id when leq && not (Idset.mem id nongenvars) ->
+      | Var id when not (is_defined_variable env id) && leq && not (Idset.mem id nongenvars) ->
       	  (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls,
       	  Idset.add id nongenvars, Idset.remove id vars, env)
       | _ ->
@@ -2374,7 +2377,7 @@ let abstract_args gl generalize_vars dep id defined f args =
     let parvars = ids_of_constr ~all:true Idset.empty f' in
       if not (linear parvars args') then true, f, args
       else
-	match array_find_i (fun i x -> not (isVar x)) args' with
+	match array_find_i (fun i x -> not (isVar x) || is_defined_variable env (destVar x)) args' with
 	| None -> false, f', args'
 	| Some nonvar ->
 	    let before, after = array_chop nonvar args' in

@@ -102,6 +102,7 @@ val do_mutual_inductive :
 
 type structured_fixpoint_expr = {
   fix_name : identifier;
+  fix_annot : identifier located option;
   fix_binders : local_binder list;
   fix_body : constr_expr option;
   fix_type : constr_expr
@@ -112,8 +113,7 @@ type structured_fixpoint_expr = {
 
 val extract_fixpoint_components :
   (fixpoint_expr * decl_notation list) list ->
-    structured_fixpoint_expr list * decl_notation list *
-    (* possible structural arg: *) lident option list
+    structured_fixpoint_expr list * decl_notation list
 
 val extract_cofixpoint_components :
   (cofixpoint_expr * decl_notation list) list ->
@@ -126,20 +126,20 @@ type recursive_preentry =
 
 val interp_fixpoint :
   structured_fixpoint_expr list -> decl_notation list ->
-    recursive_preentry * (name list * manual_implicits) list
+    recursive_preentry * (name list * manual_implicits * int option) list
 
 val interp_cofixpoint :
   structured_fixpoint_expr list -> decl_notation list ->
-    recursive_preentry * (name list * manual_implicits) list
+    recursive_preentry * (name list * manual_implicits * int option) list
 
 (* Registering fixpoints and cofixpoints in the environment *)
 
 val declare_fixpoint :
-  bool -> recursive_preentry * (name list * manual_implicits) list -> 
+  bool -> recursive_preentry * (name list * manual_implicits * int option) list -> 
   lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint :
-  bool -> recursive_preentry * (name list * manual_implicits) list ->
+  bool -> recursive_preentry * (name list * manual_implicits * int option) list ->
     decl_notation list -> unit
 
 (* Entry points for the vernacular commands Fixpoint and CoFixpoint *)
