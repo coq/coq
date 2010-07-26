@@ -11,7 +11,8 @@ Rewriting tactics
   proofs that are dependent (use "simple subst" for preserving compatibility).
 - Added support for Leibniz-rewriting of dependent hypotheses.
 - Renamed "Morphism" into "Proper" and "respect" into "proper_prf"
-  (possible source of incompatibility).
+  (possible source of incompatibility). A partial fix is to define
+  "Notation Morphism R f := (Proper (R%signature) f)."
 - New tactic variants "rewrite* by" and "autorewrite*" that rewrite
   respectively the first and all matches whose side-conditions are
   solved.
