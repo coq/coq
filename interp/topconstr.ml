@@ -701,11 +701,11 @@ type constr_expr =
       (constr_expr * explicitation located option) list
   | CRecord of loc * constr_expr option * (reference * constr_expr) list
   | CCases of loc * case_style * constr_expr option *
-      (constr_expr * (name option * constr_expr option)) list *
+      (constr_expr * (name located option * constr_expr option)) list *
       (loc * cases_pattern_expr list located list * constr_expr) list
-  | CLetTuple of loc * name list * (name option * constr_expr option) *
+  | CLetTuple of loc * name located list * (name located option * constr_expr option) *
       constr_expr * constr_expr
-  | CIf of loc * constr_expr * (name option * constr_expr option)
+  | CIf of loc * constr_expr * (name located option * constr_expr option)
       * constr_expr * constr_expr
   | CHole of loc * Evd.hole_kind option
   | CPatVar of loc * (bool * patvar)
@@ -809,7 +809,7 @@ let ids_of_cases_tomatch tms =
   List.fold_right
     (fun (_,(ona,indnal)) l ->
       Option.fold_right (fun t -> (@) (ids_of_cases_indtype t))
-      indnal (Option.fold_right name_cons ona l))
+      indnal (Option.fold_right (down_located name_cons) ona l))
     tms []
 
 let is_constructor id =
@@ -874,11 +874,12 @@ let fold_constr_expr_with_binders g f n acc = function
 	let ids = ids_of_pattern_list patl in
 	f (Idset.fold g ids n) acc rhs) bl acc
   | CLetTuple (loc,nal,(ona,po),b,c) ->
-      let n' = List.fold_right (name_fold g) nal n in
-      f (Option.fold_right (name_fold g) ona n') (f n acc b) c
+      let n' = List.fold_right (down_located (name_fold g)) nal n in
+      f (Option.fold_right (down_located (name_fold g)) ona n') (f n acc b) c
   | CIf (_,c,(ona,po),b1,b2) ->
       let acc = f n (f n (f n acc b1) b2) c in
-      Option.fold_left (f (Option.fold_right (name_fold g) ona n)) acc po
+      Option.fold_left
+	(f (Option.fold_right (down_located (name_fold g)) ona n)) acc po
   | CFix (loc,_,l) ->
       let n' = List.fold_right (fun ((_,id),_,_,_,_) -> g id) l n in
       List.fold_right (fun (_,(_,o),lb,t,c) acc ->
@@ -975,7 +976,7 @@ let index_of_annot bl na =
 
 (* Used in correctness and interface *)
 
-let map_binder g e nal = List.fold_right (fun (_,na) -> name_fold g na) nal e
+let map_binder g e nal = List.fold_right (down_located (name_fold g)) nal e
 
 let map_binders f g e bl =
   (* TODO: avoid variable capture in [t] by some [na] in [List.tl nal] *)
@@ -1019,11 +1020,11 @@ let map_constr_expr_with_binders g f e = function
       let po = Option.map (f (List.fold_right g ids e)) rtnpo in
       CCases (loc, sty, po, List.map (fun (tm,x) -> (f e tm,x)) a,bl)
   | CLetTuple (loc,nal,(ona,po),b,c) ->
-      let e' = List.fold_right (name_fold g) nal e in
-      let e'' = Option.fold_right (name_fold g) ona e in
+      let e' = List.fold_right (down_located (name_fold g)) nal e in
+      let e'' = Option.fold_right (down_located (name_fold g)) ona e in
       CLetTuple (loc,nal,(ona,Option.map (f e'') po),f e b,f e' c)
   | CIf (loc,c,(ona,po),b1,b2) ->
-      let e' = Option.fold_right (name_fold g) ona e in
+      let e' = Option.fold_right (down_located (name_fold g)) ona e in
       CIf (loc,f e c,(ona,Option.map (f e') po),f e b1,f e b2)
   | CFix (loc,id,dl) ->
       CFix (loc,id,List.map (fun (id,n,bl,t,d) ->

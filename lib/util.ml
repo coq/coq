@@ -43,6 +43,7 @@ let invalid_arg_loc (loc,s) = Stdpp.raise_with_loc loc (Invalid_argument s)
 
 let located_fold_left f x (_,a) = f x a
 let located_iter2 f (_,a) (_,b) = f a b
+let down_located f (_,a) = f a
 
 (* Like Exc_located, but specifies the outermost file read, the filename
    associated to the location of the error, and the error itself. *)
@@ -65,6 +66,11 @@ let on_pi3 f (a,b,c) = (a,b,f c)
 let pi1 (a,_,_) = a
 let pi2 (_,a,_) = a
 let pi3 (_,_,a) = a
+
+(* Projection operator *)
+
+let down_fst f x = f (fst x)
+let down_snd f x = f (snd x)
 
 (* Characters *)
 

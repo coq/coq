@@ -53,7 +53,7 @@ let evar_nf isevars c =
   Evarutil.nf_evar !isevars c
 
 let interp_gen kind isevars env
-               ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
+               ?(impls=[]) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
   let c' = Constrintern.intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars ( !isevars) env c in
   let c' = SPretyping.understand_tcc_evars isevars env kind c' in
@@ -62,13 +62,13 @@ let interp_gen kind isevars env
 let interp_constr isevars env c =
   interp_gen (OfType None) isevars env c
 
-let interp_type_evars isevars env ?(impls=([],[])) c =
+let interp_type_evars isevars env ?(impls=[]) c =
   interp_gen IsType isevars env ~impls c
 
-let interp_casted_constr isevars env ?(impls=([],[])) c typ =
+let interp_casted_constr isevars env ?(impls=[]) c typ =
   interp_gen (OfType (Some typ)) isevars env ~impls c
 
-let interp_casted_constr_evars isevars env ?(impls=([],[])) c typ =
+let interp_casted_constr_evars isevars env ?(impls=[]) c typ =
   interp_gen (OfType (Some typ)) isevars env ~impls c
 
 let interp_open_constr isevars env c =
@@ -292,14 +292,13 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   let lift_lets = Termops.lift_rel_context 1 letbinders in
   let intern_body =
     let ctx = (Name recname, None, pi3 curry_fun) :: binders_rel in
-    let (r, l, impls, scopes) = 
+    let (r, l, impls, scopes) =
       Constrintern.compute_internalization_data env
 	Constrintern.Recursive full_arity impls 
     in
     let newimpls = [(recname, (r, l, impls @ 
       [Some (id_of_string "recproof", Impargs.Manual, (true, false))], 
 			      scopes @ [None]))] in
-    let newimpls = Constrintern.set_internalization_env_params newimpls [] in
     interp_casted_constr isevars ~impls:newimpls
       (push_rel_context ctx env) body (lift 1 top_arity)
   in
@@ -438,8 +437,8 @@ let interp_recursive fixkind l boxed =
   let env_rec = push_named_context rec_sign env in
 
   (* Get interpretation metadatas *)
-  let impls = Constrintern.compute_full_internalization_env env 
-    Constrintern.Recursive [] fixnames fixtypes fiximps 
+  let impls = Constrintern.compute_internalization_env env
+    Constrintern.Recursive fixnames fixtypes fiximps
   in
   let notations = List.flatten ntnl in
 

@@ -1104,12 +1104,12 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 	     (Ident (dummy_loc,id_of_string "Equivalence_Symmetric"), lemma2);
 	     (Ident (dummy_loc,id_of_string "Equivalence_Transitive"), lemma3)])
 
-type 'a binders_let_argtype = (local_binder list, 'a) Genarg.abstract_argument_type
+type 'a binders_argtype = (local_binder list, 'a) Genarg.abstract_argument_type
 
-let (wit_binders_let : Genarg.tlevel binders_let_argtype),
-  (globwit_binders_let : Genarg.glevel binders_let_argtype),
-  (rawwit_binders_let : Genarg.rlevel binders_let_argtype) =
-  Genarg.create_arg "binders_let"
+let (wit_binders : Genarg.tlevel binders_argtype),
+  (globwit_binders : Genarg.glevel binders_argtype),
+  (rawwit_binders : Genarg.rlevel binders_argtype) =
+  Genarg.create_arg "binders"
 
 open Pcoq.Constr
 
@@ -1147,35 +1147,35 @@ VERNAC COMMAND EXTEND AddRelation3
 END
 
 VERNAC COMMAND EXTEND AddParametricRelation
-  | [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq)
+  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)
 	"reflexivity" "proved" "by" constr(lemma1)
 	"symmetry" "proved" "by" constr(lemma2) "as" ident(n) ] ->
       [ declare_relation ~binders:b a aeq n (Some lemma1) (Some lemma2) None ]
-  | [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq)
+  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)
 	"reflexivity" "proved" "by" constr(lemma1)
 	"as" ident(n) ] ->
       [ declare_relation ~binders:b a aeq n (Some lemma1) None None ]
-  | [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq)  "as" ident(n) ] ->
+  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)  "as" ident(n) ] ->
       [ declare_relation ~binders:b a aeq n None None None ]
 END
 
 VERNAC COMMAND EXTEND AddParametricRelation2
-    [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
+    [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
       "as" ident(n) ] ->
       [ declare_relation ~binders:b a aeq n None (Some lemma2) None ]
-  | [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)  "as" ident(n) ] ->
+  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)  "as" ident(n) ] ->
       [ declare_relation ~binders:b a aeq n None (Some lemma2) (Some lemma3) ]
 END
 
 VERNAC COMMAND EXTEND AddParametricRelation3
-    [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
+    [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
       "transitivity" "proved" "by" constr(lemma3) "as" ident(n) ] ->
       [ declare_relation ~binders:b a aeq n (Some lemma1) None (Some lemma3) ]
-  | [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
+  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
       "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)
       "as" ident(n) ] ->
       [ declare_relation ~binders:b a aeq n (Some lemma1) (Some lemma2) (Some lemma3) ]
-  | [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq) "transitivity" "proved" "by" constr(lemma3)
+  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "transitivity" "proved" "by" constr(lemma3)
 	"as" ident(n) ] ->
       [ declare_relation ~binders:b a aeq n None None (Some lemma3) ]
 END
@@ -1324,13 +1324,13 @@ let add_morphism glob binders m s n =
 VERNAC COMMAND EXTEND AddSetoid1
    [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
      [ add_setoid [] a aeq t n ]
-  | [ "Add" "Parametric" "Setoid" binders_let(binders) ":" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
+  | [ "Add" "Parametric" "Setoid" binders(binders) ":" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
      [	add_setoid binders a aeq t n ]
   | [ "Add" "Morphism" constr(m) ":" ident(n) ] ->
       [ add_morphism_infer (not (Vernacexpr.use_section_locality ())) m n ]
   | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ] ->
       [ add_morphism (not (Vernacexpr.use_section_locality ())) [] m s n ]
-  | [ "Add" "Parametric" "Morphism" binders_let(binders) ":" constr(m)
+  | [ "Add" "Parametric" "Morphism" binders(binders) ":" constr(m)
 	"with" "signature" lconstr(s) "as" ident(n) ] ->
       [ add_morphism (not (Vernacexpr.use_section_locality ())) binders m s n ]
 END

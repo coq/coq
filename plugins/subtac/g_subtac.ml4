@@ -53,7 +53,7 @@ open Constr
 let sigref = mkRefC (Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Init.Specif.sig"))
 
 GEXTEND Gram
-  GLOBAL: subtac_gallina_loc typeclass_constraint Constr.binder subtac_withtac;
+  GLOBAL: subtac_gallina_loc typeclass_constraint subtac_withtac;
 
   subtac_gallina_loc:
     [ [ g = Vernac.gallina -> loc, g
@@ -65,19 +65,10 @@ GEXTEND Gram
       | -> None ] ]
   ;
 
-  Constr.binder_let:
+  Constr.closed_binder:
     [[ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" ->
 	  let typ = mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, t, c)]) in
           [LocalRawAssum ([id], default_binder_kind, typ)]
-    ] ];
-
-  Constr.binder:
-    [ [ "("; id=Prim.name; ":"; c=Constr.lconstr; "|"; p=Constr.lconstr; ")" ->
-          ([id],default_binder_kind, mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, c, p)]))
-      | "("; id=Prim.name; ":"; c=Constr.lconstr; ")" ->
-          ([id],default_binder_kind, c)
-      | "("; id=Prim.name; lid=LIST1 Prim.name; ":"; c=Constr.lconstr; ")" ->
-          (id::lid,default_binder_kind, c)
     ] ];
 
   END

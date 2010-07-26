@@ -47,7 +47,7 @@ val add_notation_interpretation :
 
 (* Add a notation interpretation for supporting the "where" clause *)
 
-val set_notation_for_interpretation : Constrintern.full_internalization_env ->
+val set_notation_for_interpretation : Constrintern.internalization_env ->
   (lstring * constr_expr * scope_name option) -> unit
 
 (* Add only the parsing/printing rule of a notation *)

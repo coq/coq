@@ -139,11 +139,11 @@ type constr_expr =
       (constr_expr * explicitation located option) list
   | CRecord of loc * constr_expr option * (reference * constr_expr) list
   | CCases of loc * case_style * constr_expr option *
-      (constr_expr * (name option * constr_expr option)) list *
+      (constr_expr * (name located option * constr_expr option)) list *
       (loc * cases_pattern_expr list located list * constr_expr) list
-  | CLetTuple of loc * name list * (name option * constr_expr option) *
+  | CLetTuple of loc * name located list * (name located option * constr_expr option) *
       constr_expr * constr_expr
-  | CIf of loc * constr_expr * (name option * constr_expr option)
+  | CIf of loc * constr_expr * (name located option * constr_expr option)
       * constr_expr * constr_expr
   | CHole of loc * Evd.hole_kind option
   | CPatVar of loc * (bool * patvar)

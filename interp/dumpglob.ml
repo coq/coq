@@ -161,13 +161,6 @@ let dump_name (loc, n) sec ty =
     | Names.Name id -> dump_definition (loc, id) sec ty
     | Names.Anonymous -> ()
 
-let dump_local_binder b sec ty =
-  if dump () then
-    match b with
-      | Topconstr.LocalRawAssum (nl, _, _) ->
-	  List.iter (fun x -> dump_name x sec ty) nl
-      | Topconstr.LocalRawDef _ -> ()
-
 let dump_modref loc mp ty =
   if dump () then
     let (dp, l) = Lib.split_modpath mp in

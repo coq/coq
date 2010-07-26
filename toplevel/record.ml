@@ -32,7 +32,6 @@ open Topconstr
 (********** definition d'un record (structure) **************)
 
 let interp_evars evdref env impls k typ =
-  let impls = set_internalization_env_params impls [] in
   let typ' = intern_gen true ~impls !evdref env typ in
   let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
     imps, Pretyping.Default.understand_tcc_evars evdref env k typ'
@@ -48,8 +47,7 @@ let interp_fields_evars evars env nots l =
 	| Name id -> (id, compute_internalization_data env Constrintern.Method t' impl) :: impls
       in
       let d = (i,b',t') in
-      let impls' = set_internalization_env_params impls [] in
-      List.iter (Metasyntax.set_notation_for_interpretation impls') no;
+      List.iter (Metasyntax.set_notation_for_interpretation impls) no;
       (push_rel d env, impl :: uimpls, d::params, impls))
     (env, [], [], []) nots l
 
@@ -62,7 +60,7 @@ let binders_of_decls = List.map binder_of_decl
 let typecheck_params_and_fields id t ps nots fs =
   let env0 = Global.env () in
   let evars = ref Evd.empty in
-  let (env1,newps), imps = interp_context_evars ~fail_anonymous:false evars env0 ps in
+  let (env1,newps), imps = interp_context_evars evars env0 ps in
   let fullarity = it_mkProd_or_LetIn (Option.cata (fun x -> x) (new_Type ()) t) newps in
   let env_ar = push_rel_context newps (push_rel (Name id,None,fullarity) env0) in
   let env2,impls,newfs,data =

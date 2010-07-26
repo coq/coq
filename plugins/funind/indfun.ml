@@ -169,9 +169,8 @@ let build_newrecursive
         let arityc = Topconstr.prod_constr_expr arityc bl in
         let arity = Constrintern.interp_type sigma env0 arityc in
 	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity [] in
-        (Environ.push_named (recname,None,arity) env, (recname,impl) :: impls))
+        (Environ.push_named (recname,None,arity) env, (recname, impl) :: impls))
       (env0,[]) lnameargsardef in
-  let rec_impls = Constrintern.set_internalization_env_params rec_impls [] in
   let recdef =
     (* Declare local notations *)
     let fs = States.freeze() in

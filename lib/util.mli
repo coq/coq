@@ -52,6 +52,7 @@ val invalid_arg_loc : loc * string -> 'a
 val join_loc : loc -> loc -> loc
 val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
 val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
+val down_located : ('a -> 'b) -> 'a located -> 'b
 
 (* Like [Exc_located], but specifies the outermost file read, the
    input buffer associated to the location of the error (or the module name
@@ -63,6 +64,11 @@ exception Error_in_file of string * (bool * string * loc) * exn
 
 val on_fst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
 val on_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
+
+(* Going down pairs *)
+
+val down_fst : ('a -> 'b) -> 'a * 'c -> 'b
+val down_snd : ('a -> 'b) -> 'c * 'a -> 'b
 
 (* Mapping under triple *)
 
