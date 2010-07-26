@@ -178,9 +178,10 @@ let rec check_same_type ty1 ty2 =
       check_same_type b1 b2
   | CCast(_,a1,CastCoerce), CCast(_,a2, CastCoerce) ->
       check_same_type a1 a2
-  | CNotation(_,n1,(e1,el1)), CNotation(_,n2,(e2,el2)) when n1=n2 ->
+  | CNotation(_,n1,(e1,el1,bl1)), CNotation(_,n2,(e2,el2,bl2)) when n1=n2 ->
       List.iter2 check_same_type e1 e2;
-      List.iter2 (List.iter2 check_same_type) el1 el2
+      List.iter2 (List.iter2 check_same_type) el1 el2;
+      List.iter2 check_same_fix_binder bl1 bl2
   | CPrim(_,i1), CPrim(_,i2) when i1=i2 -> ()
   | CDelimiters(_,s1,e1), CDelimiters(_,s2,e2) when s1=s2 ->
       check_same_type e1 e2
@@ -287,7 +288,7 @@ and spaces ntn n =
   if n = String.length ntn then []
   else if ntn.[n] = ' ' then wildcards ntn (n+1) else spaces ntn (n+1)
 
-let expand_curly_brackets loc mknot ntn (l,ll) =
+let expand_curly_brackets loc mknot ntn l =
   let ntn' = ref ntn in
   let rec expand_ntn i =
     function
@@ -300,12 +301,12 @@ let expand_curly_brackets loc mknot ntn (l,ll) =
             ntn' :=
               String.sub !ntn' 0 p ^ "_" ^
               String.sub !ntn' (p+5) (String.length !ntn' -p-5);
-            mknot (loc,"{ _ }",([a],[])) end
+            mknot (loc,"{ _ }",[a]) end
           else a in
         a' :: expand_ntn (i+1) l in
   let l = expand_ntn 0 l in
   (* side effect *)
-  mknot (loc,!ntn',(l,ll))
+  mknot (loc,!ntn',l)
 
 let destPrim = function CPrim(_,t) -> Some t | _ -> None
 let destPatPrim = function CPatPrim(_,t) -> Some t | _ -> None
@@ -313,32 +314,34 @@ let destPatPrim = function CPatPrim(_,t) -> Some t | _ -> None
 let make_notation_gen loc ntn mknot mkprim destprim l =
   if has_curly_brackets ntn
   then expand_curly_brackets loc mknot ntn l
-  else match ntn,List.map destprim (fst l),(snd l) with
+  else match ntn,List.map destprim l with
     (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
-    | "- _", [Some (Numeral p)],[] when Bigint.is_strictly_pos p ->
-        mknot (loc,ntn,([mknot (loc,"( _ )",l)],[]))
+    | "- _", [Some (Numeral p)] when Bigint.is_strictly_pos p ->
+        mknot (loc,ntn,([mknot (loc,"( _ )",l)]))
     | _ ->
 	match decompose_notation_key ntn, l with
-	| [Terminal "-"; Terminal x], ([],[]) ->
+	| [Terminal "-"; Terminal x], [] ->
 	    (try mkprim (loc, Numeral (Bigint.neg (Bigint.of_string x)))
- 	     with _ -> mknot (loc,ntn,([],[])))
-	| [Terminal x], ([],[]) ->
+	     with _ -> mknot (loc,ntn,[]))
+	| [Terminal x], [] ->
 	    (try mkprim (loc, Numeral (Bigint.of_string x))
- 	     with _ -> mknot (loc,ntn,([],[])))
+	     with _ -> mknot (loc,ntn,[]))
 	| _ ->
 	    mknot (loc,ntn,l)
 
-let make_notation loc ntn l =
+let make_notation loc ntn (terms,termlists,binders as subst) =
+  if termlists <> [] or binders <> [] then CNotation (loc,ntn,subst) else
   make_notation_gen loc ntn
-    (fun (loc,ntn,l) -> CNotation (loc,ntn,l))
+    (fun (loc,ntn,l) -> CNotation (loc,ntn,(l,[],[])))
     (fun (loc,p) -> CPrim (loc,p))
-    destPrim l
+    destPrim terms
 
-let make_pat_notation loc ntn l =
+let make_pat_notation loc ntn (terms,termlists as subst) =
+  if termlists <> [] then CPatNotation (loc,ntn,subst) else
   make_notation_gen loc ntn
-    (fun (loc,ntn,l) -> CPatNotation (loc,ntn,l))
+    (fun (loc,ntn,l) -> CPatNotation (loc,ntn,(l,[])))
     (fun (loc,p) -> CPatPrim (loc,p))
-    destPatPrim l
+    destPatPrim terms
 
  (* Better to use extern_rawconstr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
@@ -836,7 +839,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
           | _, None -> t, [], [], []
           | _ -> raise No_match in
 	(* Try matching ... *)
-	let subst,substlist = match_aconstr t pat in
+	let terms,termlists,binders = match_aconstr t pat in
 	(* Try availability of interpretation ... *)
         let e =
           match keyrule with
@@ -851,17 +854,21 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 		    List.map (fun (c,(scopt,scl)) ->
 		      extern (* assuming no overloading: *) true
 		        (scopt,scl@scopes') vars c)
-                      subst in
+                      terms in
 		  let ll =
 		    List.map (fun (c,(scopt,scl)) ->
 		      List.map (extern true (scopt,scl@scopes') vars) c)
-                      substlist in
-	          insert_delimiters (make_notation loc ntn (l,ll)) key)
+                      termlists in
+		  let bll =
+		    List.map (fun (bl,(scopt,scl)) ->
+		      snd (extern_local_binder (scopt,scl@scopes') vars bl))
+                      binders in
+	          insert_delimiters (make_notation loc ntn (l,ll,bll)) key)
           | SynDefRule kn ->
 	      let l =
 		List.map (fun (c,(scopt,scl)) ->
 		  extern true (scopt,scl@scopes) vars c, None)
-		  subst in
+		  terms in
               let a = CRef (Qualid (loc, shortest_qualid_of_syndef vars kn)) in
 	      if l = [] then a else CApp (loc,(None,a),l) in
  	if args = [] then e

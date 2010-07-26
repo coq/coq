@@ -922,6 +922,8 @@ GEXTEND Gram
   syntax_extension_type:
     [ [ IDENT "ident" -> ETName | IDENT "global" -> ETReference
       | IDENT "bigint" -> ETBigint
+      | IDENT "binder" -> ETBinder true
+      | IDENT "closed"; IDENT "binder" -> ETBinder false
     ] ]
   ;
   opt_scope:

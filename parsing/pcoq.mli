@@ -204,7 +204,9 @@ module Constr :
     val constr_pattern : constr_expr Gram.Entry.e
     val lconstr_pattern : constr_expr Gram.Entry.e
     val closed_binder : local_binder list Gram.Entry.e
+    val binder : local_binder list Gram.Entry.e (* closed_binder or variable *)
     val binders : local_binder list Gram.Entry.e
+    val open_binders : local_binder list Gram.Entry.e
     val binders_fixannot : (local_binder list * (identifier located option * recursion_order_expr)) Gram.Entry.e
     val typeclass_constraint : (name located * bool * constr_expr) Gram.Entry.e
     val record_declaration : constr_expr Gram.Entry.e

@@ -113,7 +113,9 @@ let pr_set_entry_type = function
   | ETConstr _ -> str"constr"
   | ETOther (_,e) -> str e
   | ETBigint -> str "bigint"
-  | ETConstrList _ -> failwith "Internal entry type"
+  | ETBinder true -> str "binder"
+  | ETBinder false -> str "closed binder"
+  | ETBinderList _ | ETConstrList _ -> failwith "Internal entry type"
 
 let strip_meta id =
   let s = string_of_id id in

@@ -38,8 +38,6 @@ type patvar = identifier
 
 type rawsort = RProp of Term.contents | RType of Univ.universe option
 
-type binder_kind = BProd | BLambda | BLetIn
-
 type binding_kind = Lib.binding_kind = Explicit | Implicit
 
 type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
@@ -110,6 +108,8 @@ val map_rawconstr_with_binders_loc : loc ->
   ('a -> rawconstr -> rawconstr) -> 'a -> rawconstr -> rawconstr
 i*)
 
+val fold_rawconstr : ('a -> rawconstr -> 'a) -> 'a -> rawconstr -> 'a
+val iter_rawconstr : (rawconstr -> unit) -> rawconstr -> unit
 val occur_rawconstr : identifier -> rawconstr -> bool
 val free_rawvars : rawconstr -> identifier list
 val loc_of_rawconstr : rawconstr -> loc

@@ -93,7 +93,7 @@ let is_freevar ids env x =
       with _ -> not (is_global x)
   with _ -> true
 
-(* Auxilliary functions for the inference of implicitly quantified variables. *)
+(* Auxiliary functions for the inference of implicitly quantified variables. *)
 
 let ungeneralizable loc id =
   user_err_loc (loc, "Generalization", 
@@ -110,7 +110,7 @@ let free_vars_of_constr_expr c ?(bound=Idset.empty) l =
   in
   let rec aux bdvars l c = match c with
     | CRef (Ident (loc,id)) -> found loc id bdvars l
-    | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id)) :: _, [])) when not (Idset.mem id bdvars) ->
+    | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id)) :: _, [], [])) when not (Idset.mem id bdvars) ->
 	fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux (Idset.add id bdvars) l c
     | c -> fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux bdvars l c
   in aux bound l c

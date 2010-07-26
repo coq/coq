@@ -45,10 +45,12 @@ type production_level =
 
 type ('lev,'pos) constr_entry_key_gen =
   | ETName | ETReference | ETBigint
+  | ETBinder of bool
   | ETConstr of ('lev * 'pos)
   | ETPattern
   | ETOther of string * string
   | ETConstrList of ('lev * 'pos) * Token.pattern list
+  | ETBinderList of bool * Token.pattern list
 
 (* Entries level (left-hand-side of grammar rules) *)
 type constr_entry_key =

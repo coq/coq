@@ -34,11 +34,6 @@ let mk_cast = function
     (c,(_,None)) -> c
   | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, CastConv (DEFAULTcast, ty))
 
-let loc_of_binder = function
-  | LocalRawAssum ((loc,_)::_,_,_)::_ -> loc
-  | LocalRawDef ((loc,_),_)::_ -> loc
-  | _ -> dummy_loc
-
 let binders_of_lidents l =
   List.map (fun (loc, id) ->
     LocalRawAssum ([loc, Name id], Default Rawterm.Explicit,
@@ -131,7 +126,7 @@ let aliasvar = function CPatAlias (loc, _, id) -> Some (loc,Name id) | _ -> None
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
   constr_pattern lconstr_pattern Constr.ident
-  closed_binder binders binders_fixannot
+  closed_binder open_binders binder binders binders_fixannot
   record_declaration typeclass_constraint pattern appl_arg;
   Constr.ident:
     [ [ id = Prim.ident -> id
@@ -204,7 +199,7 @@ GEXTEND Gram
       | "("; c = operconstr LEVEL "200"; ")" ->
           (match c with
               CPrim (_,Numeral z) when Bigint.is_pos_or_zero z ->
-                CNotation(loc,"( _ )",([c],[]))
+                CNotation(loc,"( _ )",([c],[],[]))
             | _ -> c)
       | "{|"; c = record_declaration; "|}" -> c
       | "`{"; c = operconstr LEVEL "200"; "}" ->
@@ -240,7 +235,7 @@ GEXTEND Gram
           mkCLambdaN loc bl c
       | "let"; id=name; bl = binders; ty = type_cstr; ":=";
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
-          let loc1 = loc_of_binder bl in
+          let loc1 = join_loc (local_binders_loc bl) (constr_loc c1) in
           CLetIn(loc,id,mkCLambdaN loc1 bl (mk_cast(c1,ty)),c2)
       | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
           let fixp = mk_single_fix fx in
@@ -394,12 +389,15 @@ GEXTEND Gram
     (* Same as binders but parentheses around a closed binder are optional if
        the latter is unique *)
     [ [ (* open binder *)
-        idl = LIST1 name; ":"; c = lconstr ->
-          [LocalRawAssum (idl,Default Explicit,c)]
+        id = name; idl = LIST0 name; ":"; c = lconstr ->
+          [LocalRawAssum (id::idl,Default Explicit,c)]
 	(* binders factorized with open binder *)
-      | idl = LIST1 name; bl = binders ->
-          let t = CHole (loc, Some (Evd.BinderType (snd (List.hd idl)))) in
-          LocalRawAssum (idl,Default Explicit,t)::bl
+      | id = name; idl = LIST0 name; bl = binders ->
+          let t = CHole (loc, Some (Evd.BinderType (snd id))) in
+          LocalRawAssum (id::idl,Default Explicit,t)::bl
+      | id1 = name; ".."; id2 = name ->
+          [LocalRawAssum ([id1;(loc,Name ldots_var);id2],
+	                  Default Explicit,CHole (loc,None))]
       | bl = closed_binder; bl' = binders ->
 	  bl@bl'
     ] ]

@@ -66,41 +66,52 @@ type grammar_constr_prod_item =
 type 'a action_env = 'a list * 'a list list
 
 let make_constr_action
-  (f : loc -> constr_expr action_env -> constr_expr) pil =
-  let rec make (env,envlist as fullenv : constr_expr action_env) = function
+  (f : loc -> constr_notation_substitution -> constr_expr) pil =
+  let rec make (constrs,constrlists,binders as fullsubst) = function
   | [] ->
-      Gramext.action (fun loc -> f loc fullenv)
+      Gramext.action (fun loc -> f loc fullsubst)
   | (GramConstrTerminal _ | GramConstrNonTerminal (_,None)) :: tl ->
       (* parse a non-binding item *)
-      Gramext.action (fun _ -> make fullenv tl)
+      Gramext.action (fun _ -> make fullsubst tl)
   | GramConstrNonTerminal (typ, Some _) :: tl ->
       (* parse a binding non-terminal *)
-    (match typ with
-    | (ETConstr _| ETOther _) ->
-        Gramext.action (fun (v:constr_expr) -> make (v :: env, envlist) tl)
-    | ETReference ->
-        Gramext.action (fun (v:reference) -> make (CRef v :: env, envlist) tl)
-    | ETName ->
-        Gramext.action (fun (na:name located) ->
-	  make (constr_expr_of_name na :: env, envlist) tl)
-    | ETBigint ->
-        Gramext.action (fun (v:Bigint.bigint) ->
-	  make (CPrim (dummy_loc,Numeral v) :: env, envlist) tl)
-    | ETConstrList (_,n) ->
-	Gramext.action (fun (v:constr_expr list) -> make (env, v::envlist) tl)
+     (match typ with
+     | (ETConstr _| ETOther _) ->
+	Gramext.action (fun (v:constr_expr) ->
+	  make (v :: constrs, constrlists, binders) tl)
+     | ETReference ->
+        Gramext.action (fun (v:reference) ->
+	  make (CRef v :: constrs, constrlists, binders) tl)
+     | ETName ->
+         Gramext.action (fun (na:name located) ->
+	  make (constr_expr_of_name na :: constrs, constrlists, binders) tl)
+     | ETBigint ->
+         Gramext.action (fun (v:Bigint.bigint) ->
+	  make (CPrim(dummy_loc,Numeral v) :: constrs, constrlists, binders) tl)
+     | ETConstrList (_,n) ->
+	Gramext.action (fun (v:constr_expr list) ->
+	  make (constrs, v::constrlists, binders) tl)
+    | ETBinder _ | ETBinderList (true,_) ->
+	Gramext.action (fun (v:local_binder list) ->
+	  make (constrs, constrlists, v::binders) tl)
+    | ETBinderList (false,_) ->
+	Gramext.action (fun (v:local_binder list list) ->
+	  make (constrs, constrlists, List.flatten v::binders) tl)
     | ETPattern ->
 	failwith "Unexpected entry of type cases pattern")
   | GramConstrListMark (n,b) :: tl ->
       (* Rebuild expansions of ConstrList *)
-      let heads,env = list_chop n env in
-      if b then make (env,(heads@List.hd envlist)::List.tl envlist) tl
-      else make (env,heads::envlist) tl
+      let heads,constrs = list_chop n constrs in
+      let constrlists =
+	if b then (heads@List.hd constrlists)::List.tl constrlists
+	else heads::constrlists
+      in make (constrs, constrlists, binders) tl
   in
-  make ([],[]) (List.rev pil)
+  make ([],[],[]) (List.rev pil)
 
 let make_cases_pattern_action
-  (f : loc -> cases_pattern_expr action_env -> cases_pattern_expr) pil =
-  let rec make (env,envlist as fullenv : cases_pattern_expr action_env) = function
+  (f : loc -> cases_pattern_notation_substitution -> cases_pattern_expr) pil =
+  let rec make (env,envlist as fullenv) = function
   | [] ->
       Gramext.action (fun loc -> f loc fullenv)
   | (GramConstrTerminal _ | GramConstrNonTerminal (_,None)) :: tl ->
@@ -123,7 +134,7 @@ let make_cases_pattern_action
     | ETConstrList (_,_) ->
         Gramext.action  (fun (vl:cases_pattern_expr list) ->
 	  make (env, vl :: envlist) tl)
-    | (ETPattern | ETOther _) ->
+    | (ETPattern | ETBinderList _ | ETBinder _ | ETOther _) ->
 	failwith "Unexpected entry of type cases pattern or other")
   | GramConstrListMark (n,b) :: tl ->
       (* Rebuild expansions of ConstrList *)
@@ -271,7 +282,10 @@ type notation_grammar =
     int * Gramext.g_assoc option * notation * grammar_constr_prod_item list list
 
 type all_grammar_command =
-  | Notation of (precedence * tolerability list) * notation_grammar
+  | Notation of
+	 (precedence * tolerability list) *
+	  notation_var_internalization_type list *
+	  notation_grammar
   | TacticGrammar of
       (string * int * grammar_prod_item list *
          (dir_path * Tacexpr.glob_tactic_expr))
@@ -280,14 +294,16 @@ let (grammar_state : all_grammar_command list ref) = ref []
 
 let extend_grammar gram =
   (match gram with
-  | Notation (_,a) -> extend_constr_notation a
+  | Notation (_,_,a) -> extend_constr_notation a
   | TacticGrammar g -> add_tactic_entry g);
   grammar_state := gram :: !grammar_state
 
 let recover_notation_grammar ntn prec =
   let l = map_succeed (function
-    | Notation (prec',(_,_,ntn',_ as x)) when prec = prec' & ntn = ntn' -> x
-    | _ -> failwith "") !grammar_state in
+    | Notation (prec',vars,(_,_,ntn',_ as x)) when prec = prec' & ntn = ntn' ->
+	 vars, x
+    | _ ->
+	 failwith "") !grammar_state in
   assert (List.length l = 1);
   List.hd l
 

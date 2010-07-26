@@ -209,7 +209,8 @@ let cases_pattern_key = function
 
 let aconstr_key = function (* Rem: AApp(ARef ref,[]) stands for @ref *)
   | AApp (ARef ref,args) -> RefKey(make_gr ref), Some (List.length args)
-  | AList (_,_,AApp (ARef ref,args),_,_) -> RefKey (make_gr ref), Some (List.length args)
+  | AList (_,_,AApp (ARef ref,args),_,_)
+  | ABinderList (_,_,AApp (ARef ref,args),_) -> RefKey (make_gr ref), Some (List.length args)
   | ARef ref -> RefKey(make_gr ref), None
   | _ -> Oth, None
 

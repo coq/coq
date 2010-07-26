@@ -48,7 +48,12 @@ type grammar_prod_item =
 (* Adding notations *)
 
 type all_grammar_command =
-  | Notation of (precedence * tolerability list) * notation_grammar
+  | Notation of
+	 (precedence * tolerability list)
+	  * notation_var_internalization_type list
+	   (** not needed for defining grammar, hosted by egrammar for
+	       transmission to interp_aconstr (via recover_notation_grammar) *)
+	  * notation_grammar
   | TacticGrammar of
       (string * int * grammar_prod_item list *
          (dir_path * Tacexpr.glob_tactic_expr))
@@ -64,5 +69,8 @@ val extend_vernac_command_grammar :
 val get_extend_vernac_grammars :
  unit -> (string * grammar_prod_item list list) list
 
+(** For a declared grammar, returns the rule + the ordered entry types
+    of variables in the rule (for use in the interpretation) *)
 val recover_notation_grammar :
-  notation -> (precedence * tolerability list) -> notation_grammar
+  notation -> (precedence * tolerability list) ->
+  notation_var_internalization_type list * notation_grammar

@@ -474,6 +474,8 @@ Locate "'exists' _ , _".
   & $|$ & {\tt right associativity} \\
   & $|$ & {\tt no associativity} \\
   & $|$ & {\ident} {\tt ident} \\
+  & $|$ & {\ident} {\tt binder} \\
+  & $|$ & {\ident} {\tt closed binder} \\
   & $|$ & {\ident} {\tt global} \\
   & $|$ & {\ident} {\tt bigint} \\
   & $|$ & {\tt only parsing} \\
@@ -485,69 +487,7 @@ Locate "'exists' _ , _".
 \label{notation-syntax}
 \end{figure}
 
-\subsection{Notations with recursive patterns}
-
-An experimental mechanism is provided for declaring elementary
-notations including recursive patterns. The basic syntax is
-
-\begin{coq_eval}
-Require Import List.
-\end{coq_eval}
-
-\begin{coq_example*}
-Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..).
-\end{coq_example*}
-
-On the right-hand-side, an extra construction of the form {\tt ..} ($f$
-$t_1$ $\ldots$ $t_n$) {\tt ..} can be used. Notice that {\tt ..} is part of
-the {\Coq} syntax while $\ldots$ is just a meta-notation of this
-manual to denote a sequence of terms of arbitrary size.
-
-This extra construction enclosed within {\tt ..}, let's call it $t$,
-must be one of the argument of an applicative term of the form {\tt
-($f$ $u_1$ $\ldots$ $u_n$)}. The sequences $t_1$ $\ldots$ $t_n$ and
-$u_1$ $\ldots$ $u_n$ must coincide everywhere but in two places. In
-one place, say the terms of indice $i$, we must have $u_i = t$. In the
-other place, say the terms of indice $j$, both $u_j$ and $t_j$ must be
-variables, say $x$ and $y$ which are bound by the notation string on
-the left-hand-side of the declaration. The variables $x$ and $y$ in
-the string must occur in a substring of the form "$x$ $s$ {\tt ..} $s$
-$y$" where {\tt ..} is part of the syntax and $s$ is two times the
-same sequence of terminal symbols (i.e. symbols which are not
-variables).
-
-These invariants must be satisfied in order the notation to be
-correct.  The term $t_i$ is the {\em terminating} expression of
-the notation and the pattern {\tt ($f$ $u_1$ $\ldots$ $u_{i-1}$ {\rm [I]}
-$u_{i+1}$ $\ldots$ $u_{j-1}$ {\rm [E]} $u_{j+1}$ $\ldots$ $u_{n}$)} is the
-{\em iterating pattern}. The hole [I] is the {\em iterative} place
-and the hole [E] is the {\em enumerating} place. Remark that if $j<i$, the
-iterative place comes after the enumerating place accordingly.
-
-The notation parses sequences of tokens such that the subpart "$x$ $s$
-{\tt ..} $s$ $y$" parses any number of time (but at least one time) a
-sequence of expressions separated by the sequence of tokens $s$. The
-parsing phase produces a list of expressions which
-are used to fill in order the holes [E] of the iterating pattern
-which is nested as many time as the length of the list, the hole [I]
-being the nesting point. In the innermost occurrence of the nested
-iterating pattern, the hole [I] is finally filled with the terminating
-expression.
-
-In the example above, $f$ is {\tt cons}, $n=3$ (because {\tt cons} has
-a hidden implicit argument!), $i=3$ and $j=2$. The {\em terminating}
-expression is {\tt nil} and the {\em iterating pattern} is {\tt cons
-{\rm [E] [I]}}. Finally, the sequence $s$ is made of the single token
-``{\tt ;}''. Here is another example.
-\begin{coq_example*}
-Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) (at level 0).
-\end{coq_example*}
-
-Notations with recursive patterns can be reserved like standard
-notations, they can also be declared within interpretation scopes (see
-section \ref{scopes}).
-
-\subsection{Notations and binders}
+\subsection{Notations and simple binders}
 
 Notations can be defined for binders as in the example:
 
@@ -591,6 +531,105 @@ parsed at level 99 to be factorized with the notation
 \verb="{ A } + { B }"= for which {\tt A} can be any term).  
 However, even if parsed as a term, this term must at the end be effectively 
 a single identifier.
+
+\subsection{Notations with recursive patterns}
+\label{RecursiveNotations}
+
+A mechanism is provided for declaring elementary notations with
+recursive patterns. The basic example is:
+
+\begin{coq_example*}
+Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..).
+\end{coq_example*}
+
+On the right-hand side, an extra construction of the form {\tt ..} $t$
+{\tt ..} can be used. Notice that {\tt ..} is part of the {\Coq}
+syntax and it must not be confused with the three-dots notation
+$\ldots$ used in this manual to denote a sequence of arbitrary size.
+
+On the left-hand side, the part ``$x$ $s$ {\tt ..} $s$ $y$'' of the
+notation parses any number of time (but at least one time) a sequence
+of expressions separated by the sequence of tokens $s$ (in the
+example, $s$ is just ``{\tt ;}'').
+
+In the right-hand side, the term enclosed within {\tt ..} must be a
+pattern with two holes of the form $\phi([~]_E,[~]_I)$ where the first
+hole is occupied either by $x$ or by $y$ and the second hole is
+occupied by an arbitrary term $t$ called the {\it terminating}
+expression of the recursive notation. The subterm {\tt ..} $\phi(x,t)$
+{\tt ..} (or {\tt ..} $\phi(y,t)$ {\tt ..})  must itself occur at
+second position of the same pattern where the first hole is occupied
+by the other variable, $y$ or $x$. Otherwise said, the right-hand side
+must contain a subterm of the form either $\phi(x,${\tt ..}
+$\phi(y,t)$ {\tt ..}$)$ or $\phi(y,${\tt ..}  $\phi(x,t)$ {\tt ..}$)$.
+The pattern $\phi$ is the {\em iterator} of the recursive notation
+and, of course, the name $x$ and $y$ can be chosen arbitrarily.
+
+The parsing phase produces a list of expressions which are used to
+fill in order the first hole of the iterating pattern which is
+repeatedly nested as many times as the length of the list, the second
+hole being the nesting point. In the innermost occurrence of the
+nested iterating pattern, the second hole is finally filled with the
+terminating expression.
+
+In the example above, the iterator $\phi([~]_E,[~]_I)$ is {\tt cons
+  $[~]_E$ $[~]_I$} and the terminating expression is {\tt nil}. Here are
+other examples:
+\begin{coq_example*}
+Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) (at level 0).
+Notation "[| t * ( x , y , .. , z ) ; ( a , b , .. , c )  * u |]" :=
+  (pair (pair .. (pair (pair t x) (pair t y)) .. (pair t z))
+        (pair .. (pair (pair a u) (pair b u)) .. (pair c u)))
+  (t at level 39).
+\end{coq_example*}
+
+Notations with recursive patterns can be reserved like standard
+notations, they can also be declared within interpretation scopes (see
+section \ref{scopes}).
+
+\subsection{Notations with recursive patterns involving binders}
+
+Recursive notations can also be used with binders. The basic example is:
+
+\begin{coq_example*}
+Notation "'exists' x .. y , p" := (ex (fun x => .. (ex (fun y => p)) ..))
+  (at level 200, x binder, y binder, right associativity).
+\end{coq_example*}
+
+The principle is the same as in Section~\ref{RecursiveNotations}
+except that in the iterator $\phi([~]_E,[~]_I)$, the first hole is a
+placeholder occurring at the position of the binding variable of a {\tt
+  fun} or a {\tt forall}.
+
+To specify that the part ``$x$ {\tt ..} $y$'' of the notation
+parses a sequence of binders, $x$ and $y$ must be marked as {\tt
+  binder} in the list of modifiers of the notation.  Then, the list of
+binders produced at the parsing phase are used to fill in the first
+hole of the iterating pattern which is repeatedly nested as many times
+as the number of binders generated. If ever the generalization
+operator {\tt `} (see Section~\ref{implicit-generalization}) is used
+in the binding list, the added binders are taken into account too.
+
+Binders parsing exist in two flavors. If $x$ and $y$ are marked as
+{\tt binder}, then a sequence such as {\tt a b c : T} will be accepted
+and interpreted as the sequence of binders {\tt (a:T) (b:T)
+  (c:T)}. For instance, in the notation above, the syntax {\tt exists
+  a b : nat, a = b} is provided.
+
+The variables $x$ and $y$ can also be marked as {\tt closed binder} in
+which case only well-bracketed binders of the form {\tt (a b c:T)} or
+{\tt \{a b c:T\}} etc. are accepted.
+
+With closed binders, the recursive sequence in the left-hand side can
+be of the general form $x$ $s$ {\tt ..} $s$ $y$ where $s$ is an
+arbitrary sequence of tokens. With open binders though, $s$ has to be
+empty. Here is an example of recursive notation with closed binders:
+
+\begin{coq_example*}
+Notation "'mylet' f x .. y :=  t 'in' u":=
+  (let f := fun x => .. (fun y => t) .. in u)
+  (x closed binder, y closed binder, at level 200, right associativity).
+\end{coq_example*}
 
 \subsection{Summary}
 
