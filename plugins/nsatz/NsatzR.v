@@ -396,7 +396,6 @@ Ltac nsatzR := nsatzRpv 6%N 1%Z (@nil R) (@nil R).
 Ltac nsatzRradical radicalmax := nsatzRpv radicalmax 1%Z (@nil R) (@nil R).
 Ltac nsatzRparameters lparam := nsatzRpv 6%N 1%Z lparam (@nil R).
 
-Tactic Notation "nsatz" := nsatzR.
 Tactic Notation "nsatz" "with" "lexico" := 
   nsatzRpv 6%N 2%Z (@nil R) (@nil R).
 Tactic Notation "nsatz" "with" "lexico" "sugar":= 
