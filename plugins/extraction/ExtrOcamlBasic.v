@@ -8,6 +8,8 @@
 
 (** Extraction to Ocaml : use of basic Ocaml types *)
 
+Scheme Equality for nat.
+
 Extract Inductive bool => bool [ true false ].
 Extract Inductive option => option [ Some None ].
 Extract Inductive unit => unit [ "()" ].
