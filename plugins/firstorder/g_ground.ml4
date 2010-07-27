@@ -53,9 +53,7 @@ let _=
     declare_int_option gdopt
 
 let (set_default_solver, default_solver, print_default_solver) = 
-  Tactic_option.declare_tactic_option "Firstorder default solver"
-
-let _ = set_default_solver false (<:tactic<auto with *>>)
+  Tactic_option.declare_tactic_option ~default:(<:tactic<auto with *>>) "Firstorder default solver"
 
 VERNAC COMMAND EXTEND Firstorder_Set_Solver
 | [ "Set" "Firstorder" "Solver" tactic(t) ] -> [

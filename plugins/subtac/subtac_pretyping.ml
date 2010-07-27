@@ -109,7 +109,7 @@ let env_with_binders env isevars l =
     | [] -> acc
   in aux (env, []) l
 
-let subtac_process env isevars id bl c tycon =
+let subtac_process ?(is_type=false) env isevars id bl c tycon =
   let c = Topconstr.abstract_constr_expr c bl in
   let tycon, imps =
     match tycon with
@@ -122,7 +122,10 @@ let subtac_process env isevars id bl c tycon =
 	    mk_tycon coqt, Some imps
   in
   let c = coqintern_constr !isevars env c in
-  let imps = Option.default (Implicit_quantifiers.implicits_of_rawterm ~with_products:false c) imps in
+  let imps = match imps with 
+    | Some i -> i
+    | None -> Implicit_quantifiers.implicits_of_rawterm ~with_products:is_type c
+  in
   let coqc, ctyp = interp env isevars c tycon in
   let evm = non_instanciated_map env isevars !isevars in
   let ty = nf_evar !isevars (match tycon with Some (None, c) -> c | _ -> ctyp) in

@@ -690,7 +690,11 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     if resolve_classes then (
       evdref := Typeclasses.resolve_typeclasses ~onlyargs:false
 	~split:true ~fail:fail_evar env !evdref);
-    evdref := consider_remaining_unif_problems env !evdref;
+    evdref := (try consider_remaining_unif_problems env !evdref
+	       with e when not resolve_classes -> 
+		 consider_remaining_unif_problems env 
+		   (Typeclasses.resolve_typeclasses ~onlyargs:false
+		      ~split:true ~fail:fail_evar env !evdref));
     let c = if expand_evar then nf_evar !evdref c' else c' in
       if fail_evar then check_evars env Evd.empty !evdref c;
       c

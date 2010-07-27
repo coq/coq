@@ -427,7 +427,7 @@ open Extraargs
 
 TACTIC EXTEND autounfold
 | [ "autounfold" hintbases(db) in_arg_hyp(id) ] ->
-    [ autounfold (match db with None -> ["core"] | Some x -> x) 
+    [ autounfold (match db with None -> Auto.current_db_names () | Some [] -> ["core"] | Some x -> x) 
 	(glob_in_arg_hyp_to_clause id) ]
 END
 

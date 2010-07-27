@@ -10,9 +10,9 @@ open Libobject
 open Proof_type
 open Pp
 
-let declare_tactic_option name =
-  let default_tactic : Proof_type.tactic ref = ref Refiner.tclIDTAC in
-  let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Tacexpr.TacId []) in
+let declare_tactic_option ?(default=Tacexpr.TacId []) name =
+  let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref default in
+  let default_tactic : Proof_type.tactic ref = ref (Tacinterp.eval_tactic !default_tactic_expr) in
   let locality = ref false in
   let set_default_tactic local t = 
     locality := local;
