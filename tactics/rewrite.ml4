@@ -1640,8 +1640,7 @@ let setoid_transitivity c gl =
       let proof = get_transitive_proof env evm car rel in
       match c with
       | None -> eapply proof
-      | Some c ->
-	  apply_with_bindings (proof,Rawterm.ExplicitBindings [ dummy_loc, Rawterm.NamedHyp (id_of_string "y"), c ]))
+      | Some c -> apply_with_bindings (proof,Rawterm.ImplicitBindings [ c ]))
     (transitivity_red true c)
 
 let setoid_symmetry_in id gl =
