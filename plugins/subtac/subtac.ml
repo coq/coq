@@ -76,7 +76,7 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
  	  (Pfedit.get_all_proof_names ())
   in
   let evm, c, typ, imps =
-    Subtac_pretyping.subtac_process env isevars id [] (Topconstr.prod_constr_expr t bl) None
+    Subtac_pretyping.subtac_process ~is_type:true env isevars id [] (Topconstr.prod_constr_expr t bl) None
   in
   let c = solve_tccs_in_type env id isevars evm c typ in
     Lemmas.start_proof id kind c (fun loc gr ->
@@ -138,9 +138,6 @@ let subtac (loc, command) =
       Dumpglob.dump_definition lid false "def";
       (match expr with
       | ProveBody (bl, t) ->
-	  if Lib.is_modtype () then
-	    errorlabstrm "Subtac_command.StartProof"
-	      (str "Proof editing mode not supported in module types");
 	  start_proof_and_print env isevars (Some lid) (Global, DefinitionBody Definition) (bl,t)
 	    (fun _ _ -> ())
       | DefineBody (bl, _, c, tycon) ->
@@ -218,33 +215,10 @@ let subtac (loc, command) =
 	    ++ x ++ spc () ++ str "and" ++ spc () ++ y
       in msg_warning cmds
 
-  | Cases.PatternMatchingError (env, exn) as e ->
-      debug 2 (Himsg.explain_pattern_matching_error env exn);
-      raise e
+  | Cases.PatternMatchingError (env, exn) as e -> raise e
 
-  | Type_errors.TypeError (env, exn) as e ->
-      debug 2 (Himsg.explain_type_error env exn);
-      raise e
+  | Type_errors.TypeError (env, exn) as e -> raise e
 
-  | Pretype_errors.PretypeError (env, exn) as e ->
-      debug 2 (Himsg.explain_pretype_error env exn);
-      raise e
+  | Pretype_errors.PretypeError (env, exn) as e -> raise e
 
-  | (Stdpp.Exc_located (loc, Proof_type.LtacLocated (_,e')) |
-     Stdpp.Exc_located (loc, e') as e) ->
-      debug 2 (str "Parsing exception: ");
-      (match e' with
-      | Type_errors.TypeError (env, exn) ->
-	  debug 2 (Himsg.explain_type_error env exn);
-	  raise e
-
-      | Pretype_errors.PretypeError (env, exn) ->
-	  debug 2 (Himsg.explain_pretype_error env exn);
-	  raise e
-
-      | e'' -> msg_warning (str "Unexpected exception: " ++ Cerrors.explain_exn e'');
-	  raise e)
-
-  | e ->
-      msg_warning (str "Uncatched exception: " ++ Cerrors.explain_exn e);
-      raise e
+  | e -> raise e

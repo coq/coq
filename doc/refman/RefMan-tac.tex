@@ -3207,6 +3207,24 @@ hint.
 
 \SeeAlso Section~\ref{Hints-databases}
 
+\subsection{\tt autounfold with  \ident$_1$ \dots\ \ident$_n$
+\tacindex{autounfold}
+\label{autounfold}}
+
+This tactic unfolds constants that were declared through a {\tt Hint
+  Unfold} in the given databases.
+
+\begin{Variants}
+\item {\tt autounfold with \ident$_1$ \dots\ \ident$_n$ in \textit{clause}}
+  
+  Perform the unfolding in the given clause.
+
+\item {\tt autounfold with *}
+  
+  Uses the unfold hints declared in all the hint databases.
+\end{Variants}
+
+
 % EXISTE ENCORE ?
 % 
 % \subsection{\tt Prolog [ \term$_1$ \dots\ \term$_n$ ] \num}

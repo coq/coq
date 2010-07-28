@@ -457,7 +457,8 @@ let interp_fix_context evdref env isfix fix =
   let before, after = if isfix then split_at_annot fix.fix_binders fix.fix_annot else [], fix.fix_binders in
   let (env', ctx), imps = interp_context_evars evdref env before in
   let (env'', ctx'), imps' = interp_context_evars evdref env' after in
-    ((env'', ctx' @ ctx), imps @ imps', Option.map (fun _ -> List.length ctx) fix.fix_annot)
+  let annot = Option.map (fun _ -> List.length (assums_of_rel_context ctx)) fix.fix_annot in
+    ((env'', ctx' @ ctx), imps @ imps', annot)
       
 let interp_fix_ccl evdref (env,_) fix =
   interp_type_evars evdref env fix.fix_type

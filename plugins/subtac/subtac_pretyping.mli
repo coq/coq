@@ -16,7 +16,7 @@ val interp :
     Rawterm.rawconstr ->
     Evarutil.type_constraint -> Term.constr * Term.constr
 
-val subtac_process : env -> evar_map ref -> identifier -> local_binder list ->
+val subtac_process : ?is_type:bool -> env -> evar_map ref -> identifier -> local_binder list ->
   constr_expr -> constr_expr option -> evar_map * constr * types * manual_explicitation list
 
 val subtac_proof : Decl_kinds.definition_kind -> Tacexpr.declaration_hook -> env -> evar_map ref -> identifier -> local_binder list ->
