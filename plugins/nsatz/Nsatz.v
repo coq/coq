@@ -8,8 +8,13 @@
 
 (*
  Tactic nsatz: proofs of polynomials equalities in a domain (ring without zero divisor).
- Reification is done by type classes.
- Example: see test-suite/success/Nsatz_domain.v
+ Reification is done by type classes, following a technique shown by Mathieu
+Sozeau. Verification of certificate is done by a code written by Benjamin
+Gregoire, following an idea of Laurent Théry.
+
+Examples: see test-suite/success/Nsatz.v
+
+Loïc Pottier, july 2010
 *)
 
 Require Import List.

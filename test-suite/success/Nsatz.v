@@ -1,4 +1,74 @@
-Require Import NsatzR ZArith Reals List Ring_polynom.
+Require Import Nsatz ZArith Reals List Ring_polynom.
+
+(* Example with a generic domain *)
+
+Variable A: Type.
+Variable Ad: Domain A.
+
+Definition Ari : Ring A:= (@domain_ring A Ad).
+Existing Instance Ari.
+
+Existing Instance ring_setoid.
+Existing Instance ring_plus_comp.
+Existing Instance ring_mult_comp.
+Existing Instance ring_sub_comp.
+Existing Instance ring_opp_comp.
+
+Add Ring Ar: (@ring_ring A (@domain_ring A Ad)).
+
+Instance zero_ring2 : Zero A := {zero := ring0}.
+Instance one_ring2 : One A := {one := ring1}.
+Instance addition_ring2 : Addition A := {addition x y := ring_plus x y}.
+Instance multiplication_ring2 : Multiplication A := {multiplication x y := ring_mult x y}.
+Instance subtraction_ring2 : Subtraction A := {subtraction x y := ring_sub x y}.
+Instance opposite_ring2 : Opposite A := {opposite x := ring_opp x}.
+
+Infix "==" := ring_eq (at level 70, no associativity).
+
+Ltac nsatzA := simpl; unfold Ari; nsatz_domain.
+
+Goal forall x y:A,  x == y -> x+0 == y*1+0.
+nsatzA.
+Qed.
+
+Lemma example3 : forall x y z,
+  x+y+z==0 ->
+  x*y+x*z+y*z==0->
+  x*y*z==0 -> x*x*x==0.
+Proof.
+Time nsatzA. 
+Admitted.
+
+Lemma example4 : forall x y z u,
+  x+y+z+u==0 ->
+  x*y+x*z+x*u+y*z+y*u+z*u==0->
+  x*y*z+x*y*u+x*z*u+y*z*u==0->
+  x*y*z*u==0 -> x*x*x*x==0.
+Proof.
+Time nsatzA.
+Qed.
+
+Lemma example5 : forall x y z u v,
+  x+y+z+u+v==0 ->
+  x*y+x*z+x*u+x*v+y*z+y*u+y*v+z*u+z*v+u*v==0->
+  x*y*z+x*y*u+x*y*v+x*z*u+x*z*v+x*u*v+y*z*u+y*z*v+y*u*v+z*u*v==0->
+  x*y*z*u+y*z*u*v+z*u*v*x+u*v*x*y+v*x*y*z==0 ->
+  x*y*z*u*v==0 -> x*x*x*x*x ==0.
+Proof.
+Time nsatzA.
+Qed.
+
+Goal forall x y:Z,  x = y -> (x+0)%Z = (y*1+0)%Z.
+nsatz.
+Qed.
+
+Goal forall x y:R,  x = y -> (x+0)%R = (y*1+0)%R.
+nsatz.
+Qed.
+
+Goal forall a b c x:R, a = b -> b = c -> (a*a)%R = (c*c)%R.
+nsatz.
+Qed.
 
 Section Examples.
 
@@ -16,12 +86,12 @@ Lemma example1 : forall x y,
   x*y=0 ->
   x^2=0.
 Proof.
- nsatzR.
+ nsatz.
 Qed.
 
 Lemma example2 : forall x, x^2=0 -> x=0.
 Proof.
- nsatzR.
+ nsatz.
 Qed.
 
 (*
@@ -29,12 +99,12 @@ Notation X  := (PEX Z 3).
 Notation Y  := (PEX Z 2).
 Notation Z_ := (PEX Z 1).
 *)
-Lemma example3 : forall x y z,
+Lemma example3b : forall x y z,
   x+y+z=0 ->
   x*y+x*z+y*z=0->
   x*y*z=0 -> x^3=0.
 Proof.
-Time nsatzR.
+Time nsatz. 
 Qed.
 
 (*
@@ -43,13 +113,13 @@ Notation Y  := (PEX Z 3).
 Notation Z_ := (PEX Z 2).
 Notation U  := (PEX Z 1).
 *)
-Lemma example4 : forall x y z u,
+Lemma example4b : forall x y z u,
   x+y+z+u=0 ->
   x*y+x*z+x*u+y*z+y*u+z*u=0->
   x*y*z+x*y*u+x*z*u+y*z*u=0->
   x*y*z*u=0 -> x^4=0.
 Proof.
-Time nsatzR.
+Time nsatz.
 Qed.
 
 (*
@@ -64,20 +134,20 @@ Notation "x :: y" := (List.app x y)
 (at level 60, right associativity, format "x :: y").
 *)
 
-Lemma example5 : forall x y z u v,
+Lemma example5b : forall x y z u v,
   x+y+z+u+v=0 ->
   x*y+x*z+x*u+x*v+y*z+y*u+y*v+z*u+z*v+u*v=0->
   x*y*z+x*y*u+x*y*v+x*z*u+x*z*v+x*u*v+y*z*u+y*z*v+y*u*v+z*u*v=0->
   x*y*z*u+y*z*u*v+z*u*v*x+u*v*x*y+v*x*y*z=0 ->
   x*y*z*u*v=0 -> x^5=0.
 Proof.
-Time nsatzR.
+Time nsatz.
 Qed.
 
 End Examples.
 
 Section Geometry.
-Require Export Reals NsatzR.
+
 Open Scope R_scope.
 
 Record point:Type:={
@@ -169,6 +239,7 @@ Ltac geo_begin:=
 
 (* Examples *)
 
+
 Lemma Thales: forall O A B C D:point,
   collinear O A C -> collinear O B D ->
   parallel A B C D ->
@@ -176,26 +247,7 @@ Lemma Thales: forall O A B C D:point,
   /\ distance2 O B * distance2 C D = distance2 O D * distance2 A B)
  \/ collinear O A B.
 repeat geo_begin.
-(*
 Time nsatz.
-*)
-Time nsatz without sugar.
-(*
-Time nsatz with lexico sugar.
-Time nsatz with lexico.
-*)
-(*
-Time nsatzRpv 1%N 1%Z (@nil R) (@nil R). (* revlex, sugar, no div *)
-(*Finished transaction in 1. secs (0.479927u,0.s)*)
-Time nsatzRpv 1%N 0%Z (@nil R) (@nil R). (* revlex, no sugar, no div *)
-(*Finished transaction in 0. secs (0.543917u,0.s)*)
-Time nsatzRpv 1%N 2%Z (@nil R) (@nil R). (* lex, no sugar, no div *)
-(*Finished transaction in 0. secs (0.586911u,0.s)*)
-Time nsatzRpv 1%N 3%Z (@nil R) (@nil R). (* lex, sugar, no div *)
-(*Finished transaction in 0. secs (0.481927u,0.s)*)
-Time nsatzRpv 1%N 5%Z (@nil R) (@nil R). (* revlex, sugar, div *)
-(*Finished transaction in 1. secs (0.601909u,0.s)*)
-*)
 Time nsatz.
 Qed.
 
@@ -209,8 +261,26 @@ Lemma hauteurs:forall A B C A1 B1 C1 H:point,
   \/ collinear A B C.
 
 geo_begin.
-Time nsatz.
-(*Finished transaction in 3. secs (2.43263u,0.010998s)*)
+ 
+(* Time nsatzRpv 2%N 1%Z (@nil R) (@nil R).*)
+(*Finished transaction in 3. secs (2.363641u,0.s)*)
+(*Time nsatz_domainR. trop long! *)
+Time 
+ let lv := constr:(Y A1
+ :: X A1
+    :: Y B1
+       :: X B1
+          :: Y A0
+             :: Y B
+                :: X B
+                   :: X A0
+                      :: X H
+                         :: Y C
+                            :: Y C1 :: Y H :: X C1 :: X C :: (@Datatypes.nil R)) in
+ nsatz_domainpv ltac:pretacR 2%N 1%Z (@Datatypes.nil R) lv ltac:simplR Rdi;
+  discrR.
+(* Finished transaction in 6. secs (5.579152u,0.001s) *)
 Qed.
 
 End Geometry.
+
