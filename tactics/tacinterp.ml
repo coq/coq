@@ -2146,9 +2146,9 @@ and interp_genarg ist gl x =
       match tactic_genarg_level s with
       | Some n ->
           (* Special treatment of tactic arguments *)
-          in_gen (wit_tactic n) (out_gen (globwit_tactic n) x)
-(*          in_gen (wit_tactic n)
-	    (TacArg(valueIn(val_interp ist gl (out_gen (globwit_tactic n) x))))*)
+          in_gen (wit_tactic n)
+	    (TacArg(valueIn(VFun(ist.trace,ist.lfun,[],
+				 out_gen (globwit_tactic n) x))))
       | None ->
           lookup_interp_genarg s ist gl x
 
