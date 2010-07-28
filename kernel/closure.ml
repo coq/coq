@@ -524,6 +524,7 @@ let destFLambda clos_fun t =
     | FLambda(n,(na,ty)::tys,b,e) ->
         (na,clos_fun e ty,{norm=Cstr;term=FLambda(n-1,tys,b,subs_lift e)})
     | _ -> assert false
+	(* t must be a FLambda and binding list cannot be empty *)
 
 (* Optimization: do not enclose variables in a closure.
    Makes variable access much faster *)
@@ -758,8 +759,8 @@ let rec reloc_rargs_rec depth stk =
 let reloc_rargs depth stk =
   if depth = 0 then stk else reloc_rargs_rec depth stk
 
-let rec drop_parameters depth n stk =
-  match stk with
+let rec drop_parameters depth n argstk =
+  match argstk with
       Zapp args::s ->
         let q = Array.length args in
         if n > q then drop_parameters depth (n-q) s
@@ -768,9 +769,12 @@ let rec drop_parameters depth n stk =
           let aft = Array.sub args n (q-n) in
           reloc_rargs depth (append_stack aft s)
     | Zshift(k)::s -> drop_parameters (depth-k) n s
-    | [] -> assert (n=0); []
-    | _ -> assert false (* we know that n < stack_args_size(stk) *)
-
+    | [] -> (* we know that n < stack_args_size(argstk) (if well-typed term) *)
+	if n=0 then []
+	else anomaly
+	  "ill-typed term: found a match on a partially applied constructor"
+    | _ -> assert false
+	(* strip_update_shift_app only produces Zapp and Zshift items *)
 
 (* Iota reduction: expansion of a fixpoint.
  * Given a fixpoint and a substitution, returns the corresponding
