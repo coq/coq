@@ -7,13 +7,9 @@
 (************************************************************************)
 
 (*
- Tactic nsatz: proofs of polynomials equalities with variables in R.
- Uses Hilbert Nullstellensatz and Buchberger algorithm.
- Thanks to B.Gregoire for the verification of the certicate
- and L.Thery for help on ring tactic, 
- and to B.Barras for modularization of the ocaml code.
- Example: see test-suite/success/Nsatz.v
- L.Pottier, june 2010
+ Tactic nsatz: proofs of polynomials equalities in a domain (ring without zero divisor).
+ Reification is done by type classes.
+ Example: see test-suite/success/Nsatz_domain.v
 *)
 
 Require Import List.
