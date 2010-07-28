@@ -16,7 +16,7 @@ open Cbytecodes
 external set_drawinstr : unit -> unit = "coq_set_drawinstr"
 
 (******************************************)
-(* Fonctions en plus du module Obj ********)
+(* Utility Functions about Obj ************)
 (******************************************)
 
 external offset_closure : Obj.t -> int -> Obj.t = "coq_offset_closure"
@@ -25,7 +25,7 @@ external offset : Obj.t -> int = "coq_offset"
 let accu_tag = 0
 
 (*******************************************)
-(* Initalisation de la machine abstraite ***)
+(* Initalization of the abstract machine ***)
 (*******************************************)
 
 external init_vm : unit -> unit = "init_coq_vm"
@@ -36,14 +36,12 @@ external transp_values : unit -> bool = "get_coq_transp_value"
 external set_transp_values : bool -> unit = "coq_set_transp_value"
 
 (*******************************************)
-(* Le code machine  ************************)
+(* Machine code *** ************************)
 (*******************************************)
 
 type tcode
 let tcode_of_obj v = ((Obj.obj v):tcode)
 let fun_code v = tcode_of_obj (Obj.field (Obj.repr v) 0)
-
-
 
 external mkAccuCode : int -> tcode = "coq_makeaccu"
 external mkPopStopCode : int -> tcode = "coq_pushpop"
@@ -73,12 +71,12 @@ let popstop_code i =
 let stop = popstop_code 0
 
 (******************************************************)
-(* Types de donnees abstraites et fonctions associees *)
+(* Abstract data types and utility functions **********)
 (******************************************************)
 
 (* Values of the abstract machine *)
 let val_of_obj v = ((Obj.obj v):values)
-let crasy_val = (val_of_obj (Obj.repr 0))
+let crazy_val = (val_of_obj (Obj.repr 0))
 
 (* Abstract data *)
 type vprod
@@ -99,63 +97,60 @@ type vswitch = {
     sw_env : vm_env
   }
 
-(* Representation des types abstraits:                                    *)
-(* + Les produits :                                                       *)
+(* Representation of values *)
+(* + Products : *)
 (*   -   vprod = 0_[ dom | codom]                                         *)
 (*             dom : values, codom : vfun                                 *)
 (*                                                                        *)
-(* + Les fonctions ont deux representations possibles :                   *)
-(*   - fonction non applique :  vf = Ct_[ C | fv1 | ... | fvn]            *)
+(* + Functions have two representations :                                 *)
+(*   - unapplied fun :  vf = Ct_[ C | fv1 | ... | fvn]                    *)
 (*                                       C:tcode, fvi : values            *)
-(*     Remarque : il n'y a pas de difference entre la fct et son          *)
-(*                environnement.                                          *)
-(*   - Application partielle  : Ct_[Restart:C| vf | arg1 | ... argn]      *)
+(*     Remark : a function and its environment is the same value.         *)
+(*   - partially applied fun : Ct_[Restart:C| vf | arg1 | ... argn]       *)
 (*                                                                        *)
-(* + Les points fixes :                                                   *)
+(* + Fixpoints :                                                          *)
 (*   -        Ct_[C1|Infix_t|C2|...|Infix_t|Cn|fv1|...|fvn]               *)
-(*     Remarque il n'y a qu'un seul block pour representer tout les       *)
-(*     points fixes d'une declaration mutuelle, chaque point fixe         *)
-(*     pointe sur la position de son code dans le block.                  *)
-(*   - L'application partielle d'un point fixe suit le meme schema        *)
-(*     que celui des fonctions                                            *)
-(*     Remarque seul les points fixes qui n'ont pas encore recu leur      *)
-(*     argument recursif sont encode de cette maniere (si l'argument      *)
-(*     recursif etait un constructeur le point fixe se serait reduit      *)
-(*     sinon il est represente par un accumulateur)                       *)
+(*     One single block to represent all of the fixpoints, each fixpoint  *)
+(*     is the pointer to the field holding the pointer to its code, and   *)
+(*     the infix tag is used to know where the block starts.              *)
+(*   - Partial application follows the scheme of partially applied        *)
+(*     functions. Note: only fixpoints not having been applied to its     *)
+(*     recursive argument are coded this way. When the rec. arg. is       *)
+(*     applied, either it's a constructor and the fix reduces, or it's    *)
+(*     and the fix is coded as an accumulator.                            *)
 (*                                                                        *)
-(* + Les cofix sont expliques dans cbytegen.ml                            *)
+(* + Cofixpoints : see cbytegen.ml                                        *)
 (*                                                                        *)
-(* + Les vblock encodent les constructeurs (non constant) de caml,        *)
-(*   la difference est que leur tag commence a 1 (0 est reserve pour les  *)
-(*   accumulateurs : accu_tag)                                            *)
+(* + vblock's encode (non constant) constructors as in Ocaml, but         *)
+(*   starting from 0 up. tag 0 ( = accu_tag) is reserved for              *)
+(*   accumulators.                                                        *)
 (*                                                                        *)
-(* + vm_env est le type des environnement machine (une fct ou un pt fixe) *)
+(* + vm_env is the type of the machine environments (i.e. a function or   *)
+(*   a fixpoint)                                                          *)
 (*                                                                        *)
-(* + Les accumulateurs : At_[accumulate| accu | arg1 | ... | argn ]       *)
-(*   - representation des [accu] : tag_[....]                             *)
-(*     -- tag <= 2 : encodage du type atom                                *)
-(*     -- 3_[accu|fix_app] : un point fixe bloque par un accu             *)
-(*     -- 4_[accu|vswitch] : un case bloque par un accu                   *)
-(*     -- 5_[fcofix]       : une fonction de cofix                        *)
-(*     -- 6_[fcofix|val]   : une fonction de cofix, val represente        *)
-(*        la valeur de la reduction de la fct applique a arg1 ... argn    *)
-(* Le type [arguments] est utiliser de maniere abstraite comme un         *)
-(* tableau, il represente la structure de donnee suivante :               *)
+(* + Accumulators : At_[accumulate| accu | arg1 | ... | argn ]            *)
+(*   - representation of [accu] : tag_[....]                              *)
+(*     -- tag <= 2 : encoding atom type (sorts, free vars, etc.)          *)
+(*     -- 3_[accu|fix_app] : a fixpoint blocked by an accu                *)
+(*     -- 4_[accu|vswitch] : a match blocked by an accu                   *)
+(*     -- 5_[fcofix]       : a cofix function                             *)
+(*     -- 6_[fcofix|val]   : a cofix function, val represent the value    *)
+(*        of the function applied to arg1 ... argn                        *)
+(* The [arguments] type, which is abstracted as an array, represents :    *)
 (*          tag[ _ | _ |v1|... | vn]                                      *)
-(* Generalement le 1er champs est un pointeur de code                     *)
+(* Generally the first field is a code pointer.                           *)
 
-(* Ne pas changer ce type sans modifier le code C, *)
-(* en particulier le fichier "coq_values.h"        *)
+(* Do not edit this type without editing C code, especially "coq_values.h" *)
 type atom =
   | Aid of id_key
   | Aiddef of id_key * values
   | Aind of inductive
 
-(* Les zippers *)
+(* Zippers *)
 
 type zipper =
   | Zapp of arguments
-  | Zfix of vfix*arguments  (* Peut-etre vide *)
+  | Zfix of vfix*arguments  (* Possibly empty *)
   | Zswitch of vswitch
 
 type stack = zipper list
@@ -193,28 +188,20 @@ let rec whd_accu a stk =
       let zswitch = Zswitch (Obj.obj (Obj.field at 1)) in
       whd_accu (Obj.field at 0) (zswitch :: stk)
   | 5 (* cofix_tag *) ->
+      let vcfx = Obj.obj (Obj.field at 0) in
+      let to_up = Obj.obj a in
       begin match stk with
-      | [] ->
-	  let vcfx = Obj.obj (Obj.field at 0) in
-	  let to_up = Obj.obj a in
-	  Vcofix(vcfx, to_up, None)
-      | [Zapp args] ->
-	  let vcfx = Obj.obj (Obj.field at 0) in
-	  let to_up = Obj.obj a in
-	  Vcofix(vcfx, to_up, Some args)
+      | []          -> Vcofix(vcfx, to_up, None)
+      | [Zapp args] -> Vcofix(vcfx, to_up, Some args)
       | _           -> assert false
       end
   | 6 (* cofix_evaluated_tag *) ->
+      let vcofix = Obj.obj (Obj.field at 0) in
+      let res = Obj.obj a in
       begin match stk with
-      | [] ->
-	  let vcofix = Obj.obj (Obj.field at 0) in
-	  let res = Obj.obj a in
-	  Vcofix(vcofix, res, None)
-      | [Zapp args] ->
-	  let vcofix = Obj.obj (Obj.field at 0) in
-	  let res = Obj.obj a in
-	  Vcofix(vcofix, res, Some args)
-      | _ -> assert false
+      | []          -> Vcofix(vcofix, res, None)
+      | [Zapp args] -> Vcofix(vcofix, res, Some args)
+      | _           -> assert false
       end
   | _ -> assert false
 
@@ -245,7 +232,7 @@ let whd_val : values -> whd =
 
 
 (************************************************)
-(* La machine abstraite *************************)
+(* Abstrct machine ******************************)
 (************************************************)
 
 (* gestion de la pile *)
@@ -291,7 +278,7 @@ let apply_vstack vf vstk =
     end
 
 (**********************************************)
-(* Constructeurs ******************************)
+(* Constructors *******************************)
 (**********************************************)
 
 let obj_of_atom : atom -> Obj.t =
@@ -349,10 +336,10 @@ let mkrel_vstack k arity =
   let max = k + arity - 1 in
   Array.init arity (fun i -> val_of_rel (max - i))
 
-(*************************************************)
-(** Operations pour la manipulation des donnees **)
-(*************************************************)
 
+(*************************************************)
+(** Operations manipulating data types ***********)
+(*************************************************)
 
 (* Functions over products *)
 
@@ -395,13 +382,13 @@ exception FALSE
 
 let check_fix f1 f2 =
   let i1, i2 = current_fix f1, current_fix f2 in
-  (* Verification du point de depart *)
+  (* Checking starting point *)
   if i1 = i2 then
     let fb1,fb2 = first (Obj.repr f1), first (Obj.repr f2) in
     let n = Obj.size (last fb1) in
-    (* Verification du nombre de definition *)
+    (* Checking number of definitions *)
     if n = Obj.size (last fb2) then
-      (* Verification des arguments recursifs *)
+      (* Checking recursive arguments *)
       try
 	for i = 0 to n - 1 do
 	  if unsafe_rec_arg fb1 i <> unsafe_rec_arg fb2 i
@@ -439,14 +426,14 @@ let relaccu_code i =
 
 let reduce_fix k vf =
   let fb = first (Obj.repr vf) in
-  (* calcul des types *)
+  (* computing types *)
   let fc_typ = ((Obj.obj (last fb)) : tcode array) in
   let ndef = Array.length fc_typ in
   let et = offset_closure fb (2*(ndef - 1)) in
   let ftyp =
     Array.map
-      (fun c -> interprete c crasy_val (Obj.magic et) 0) fc_typ in
-  (* Construction de l' environnement des corps des points fixes *)
+      (fun c -> interprete c crazy_val (Obj.magic et) 0) fc_typ in
+  (* Construction of the environment of fix bodies *)
   let e = Obj.dup fb in
   for i = 0 to ndef - 1 do
     Obj.set_field e (2 * i) (Obj.repr (relaccu_code (k + i)))
@@ -485,9 +472,11 @@ let reduce_cofix k vcf =
   let fc_typ = ((Obj.obj (last (Obj.repr vcf))) : tcode array) in
   let ndef = Array.length fc_typ in
   let ftyp =
-    Array.map (fun c -> interprete c crasy_val (Obj.magic vcf) 0) fc_typ in
-  (* Construction de l'environnement des corps des cofix *)
+    (* skip bodies and evaluate types *)
+    let tenv = Obj.obj (offset_closure (Obj.repr vcf) ndef) in
+    Array.map (fun c -> interprete c crazy_val tenv 0) fc_typ in
 
+  (* Construction of the environment of cofix bodies *)
   let e = Obj.dup (Obj.repr vcf) in
   for i = 0 to ndef - 1 do
     Obj.set_field e (i+1) (Obj.repr (val_of_rel (k+i)))
@@ -522,7 +511,7 @@ let case_info sw = sw.sw_annot.ci
 
 let type_of_switch sw =
   push_vstack sw.sw_stk;
-  interprete sw.sw_type_code crasy_val sw.sw_env 0
+  interprete sw.sw_type_code crazy_val sw.sw_env 0
 
 let branch_arg k (tag,arity) =
   if arity = 0 then  ((Obj.magic tag):values)
