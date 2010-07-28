@@ -798,11 +798,18 @@ let add_hint_lemmas eapply lems hint_db gl =
     list_map_append (pf_apply make_resolves gl (eapply,true,false) None) lems in
   Hint_db.add_list hintlist' hint_db
 
+
+(* Hints supplied by "using" are considered *before* the goal hyps.
+   This gives the user a (limited) way to control the search space.
+   Note: number of premisses is still the main ordering criterion, so
+   local hyps with fewer premisses are still prefered to user supplied
+   hints with larger number of premisses. (BB) *)
 let make_local_hint_db eapply lems gl =
   let sign = pf_hyps gl in
   let hintlist = list_map_append (pf_apply make_resolve_hyp gl) sign in
-  add_hint_lemmas eapply lems
-    (Hint_db.add_list hintlist (Hint_db.empty empty_transparent_state false)) gl
+  Hint_db.add_list hintlist
+    (add_hint_lemmas eapply lems
+     (Hint_db.empty empty_transparent_state false) gl)
 
 (* Serait-ce possible de compiler d'abord la tactique puis de faire la
    substitution sans passer par bdize dont l'objectif est de préparer un
