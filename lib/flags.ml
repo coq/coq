@@ -35,8 +35,6 @@ let dont_load_proofs = ref false
 
 let raw_print = ref false
 
-let unicode_syntax = ref false
-
 (* Compatibility mode *)
 
 type compat_version = V8_2

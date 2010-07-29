@@ -490,15 +490,11 @@ let pr_app pr a l =
     pr (lapp,L) a  ++
     prlist (fun a -> spc () ++ pr_expl_args pr a) l)
 
-let pr_forall () =
-  if !Flags.unicode_syntax then str"Π" ++ spc ()
-  else str"forall" ++ spc ()
+let pr_forall () = str"forall" ++ spc ()
 
-let pr_fun () =
-  if !Flags.unicode_syntax then str"λ" ++ spc ()
-  else str"fun" ++ spc ()
+let pr_fun () = str"fun" ++ spc ()
 
-let pr_fun_sep = lazy (if !Flags.unicode_syntax then str "," else str " =>")
+let pr_fun_sep = str " =>"
 
 
 let pr_dangling_with_for sep pr inherited a =
@@ -535,7 +531,7 @@ let pr pr sep inherited a =
       hov 0 (
         hov 2 (pr_delimited_binders pr_fun spc
                 (pr mt ltop) bl) ++
-	  Lazy.force pr_fun_sep ++ pr spc ltop a),
+	       pr_fun_sep ++ pr spc ltop a),
       llambda
   | CLetIn (_,(_,Name x),(CFix(_,(_,x'),[_])|CCoFix(_,(_,x'),[_]) as fx), b)
       when x=x' ->
