@@ -573,7 +573,7 @@ let match_opt f sigma t1 t2 = match (t1,t2) with
   | _ -> raise No_match
 
 let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
-  | (Name id1,Name id2) when List.mem id2 metas ->
+  | (Name id1,Name id2) when List.mem id2 (fst metas) ->
       alp, bind_env alp sigma id2 (RVar (dummy_loc,id1))
   | (Name id1,Name id2) -> (id1,id2)::alp,sigma
   | (Anonymous,Anonymous) -> alp,sigma
@@ -610,7 +610,7 @@ let remove_sigma x (sigmavar,sigmalist,sigmabinders) =
 let rec match_abinderlist_with_app match_fun metas sigma rest x iter termin =
   let rec aux sigma acc rest =
     try
-      let sigma = match_fun (ldots_var::metas) sigma rest iter in
+      let sigma = match_fun (ldots_var::fst metas,snd metas) sigma rest iter in
       let rest = List.assoc ldots_var (pi1 sigma) in
       let b = match List.assoc x (pi3 sigma) with [b] -> b | _ ->assert false in
       let sigma = remove_sigma x (remove_sigma ldots_var sigma) in
@@ -623,7 +623,7 @@ let rec match_abinderlist_with_app match_fun metas sigma rest x iter termin =
 let match_alist match_fun metas sigma rest x iter termin lassoc =
   let rec aux sigma acc rest =
     try
-      let sigma = match_fun (ldots_var::metas) sigma rest iter in
+      let sigma = match_fun (ldots_var::fst metas,snd metas) sigma rest iter in
       let rest = List.assoc ldots_var (pi1 sigma) in
       let t = List.assoc x (pi1 sigma) in
       let sigma = remove_sigma x (remove_sigma ldots_var sigma) in
@@ -633,10 +633,10 @@ let match_alist match_fun metas sigma rest x iter termin lassoc =
   let l,sigma = aux sigma [] rest in
   (pi1 sigma, (x,if lassoc then l else List.rev l)::pi2 sigma, pi3 sigma)
 
-let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
+let rec match_ alp (tmetas,blmetas as metas) sigma a1 a2 = match (a1,a2) with
 
   (* Matching notation variable *)
-  | r1, AVar id2 when List.mem id2 metas -> bind_env alp sigma id2 r1
+  | r1, AVar id2 when List.mem id2 tmetas -> bind_env alp sigma id2 r1
 
   (* Matching recursive notations for terms *)
   | r1, AList (x,_,iter,termin,lassoc) ->
@@ -656,11 +656,11 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | r, ABinderList (x,_,iter,termin) ->
       match_abinderlist_with_app (match_ alp) metas sigma r x iter termin
 
-  (* Matching individual binders *)
-  | RLambda (_,na,bk,t,b1), ALambda (Name id,_,b2) when List.mem id metas ->
+  (* Matching individual binders as part of a recursive pattern *)
+  | RLambda (_,na,bk,t,b1), ALambda (Name id,_,b2) when List.mem id blmetas ->
       match_ alp metas (bind_binder sigma id [(na,bk,None,t)]) b1 b2
   | RProd (_,na,bk,t,b1), AProd (Name id,_,b2)
-      when List.mem id metas & na <> Anonymous ->
+      when List.mem id blmetas & na <> Anonymous ->
       match_ alp metas (bind_binder sigma id [(na,bk,None,t)]) b1 b2
 
   (* Matching compositionally *)
@@ -741,7 +741,8 @@ and match_equations alp metas sigma (_,_,patl1,rhs1) (patl2,rhs2) =
   match_ alp metas sigma rhs1 rhs2
 
 let match_aconstr c (metas,pat) =
-  let vars = List.map fst metas in
+  let vars = list_split_by (fun (_,(_,x)) -> x <> NtnTypeBinderList) metas in
+  let vars = (List.map fst (fst vars), List.map fst (snd vars)) in
   let terms,termlists,binders = match_ [] vars ([],[],[]) c pat in
   (* Reorder canonically the substitution *)
   let find x =
@@ -789,20 +790,8 @@ let rec match_cases_pattern metas sigma a1 a2 = match (a1,a2) with
         List.iter (function AHole _ -> () | _ -> raise No_match) p2;
 	List.fold_left2 (match_cases_pattern metas) sigma args1 args2
   | r1, AList (x,_,iter,termin,lassoc) ->
-      match_alist match_cases_pattern
-	metas (pi1 sigma,pi2 sigma,()) r1 x iter termin lassoc
-(*
-  | PatCstr (loc,(ind,_ as r1),args1,_),
-    AList (x,y,(AApp (ARef (ConstructRef r2),l2) as iter),termin,lassoc)
-      when r1 = r2 ->
-      let nparams = Inductive.inductive_params (Global.lookup_inductive ind) in
-      assert (List.length args1 + nparams = List.length l2);
-      let (p2,args2) = list_chop nparams l2 in
-      List.iter (function AHole _ -> () | _ -> raise No_match) p2;
-      let x = if lassoc then x else y in
-      match_alist match_cases_pattern
-	metas (pi1 sigma,pi2 sigma,()) args1 args2 x iter termin lassoc
-*)
+      match_alist (fun (metas,_) -> match_cases_pattern metas)
+	(metas,[]) (pi1 sigma,pi2 sigma,()) r1 x iter termin lassoc
   | _ -> raise No_match
 
 let match_aconstr_cases_pattern c (metas,pat) =
