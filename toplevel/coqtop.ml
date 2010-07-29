@@ -249,7 +249,7 @@ let parse_args arglist =
     | "-emacs-U" :: rem -> Flags.print_emacs := true;
 	Flags.print_emacs_safechar := true; Pp.make_pp_emacs(); parse rem
 
-    | "-unicode" :: rem -> Flags.unicode_syntax := true; parse rem
+    | "-unicode" :: rem -> add_require "Utf8_core"; parse rem
 
     | "-coqlib" :: d :: rem -> Flags.coqlib_spec:=true; Flags.coqlib:=d; parse rem
     | "-coqlib" :: [] -> usage ()
