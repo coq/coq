@@ -699,6 +699,16 @@ let list_split_when p =
   in
   split_when_loop []
 
+(* [list_split_by p l] splits [l] into two lists [(l1,l2)] such that elements of
+   [l1] satisfy [p] and elements of [l2] do not *)
+let list_split_by p =
+  let rec split_by_loop = function
+  | []   -> ([],[])
+  | a::l ->
+      let (l1,l2) = split_by_loop l in if p a then (a::l1,l2) else (l1,a::l2)
+  in
+  split_by_loop
+
 let rec list_split3 = function
   | [] -> ([], [], [])
   | (x,y,z)::l ->
