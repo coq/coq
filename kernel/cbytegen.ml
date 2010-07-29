@@ -197,7 +197,7 @@ let pos_rel i r sz =
     let i = i - r.nb_stack in
     if i <= r.nb_rec then
       try List.nth r.pos_rec (i-1)
-      with _ -> assert false
+      with (Failure _|Invalid_argument _) -> assert false
     else
       let i = i - r.nb_rec in
       let db = FVrel(i) in
