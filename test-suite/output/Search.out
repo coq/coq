@@ -2,29 +2,11 @@ le_S: forall n m : nat, n <= m -> n <= S m
 le_n: forall n : nat, n <= n
 false: bool
 true: bool
-sumor_beq:
-  forall (A : Type) (B : Prop),
-  (A -> A -> bool) -> (B -> B -> bool) -> A + {B} -> A + {B} -> bool
-sumbool_beq:
-  forall A B : Prop,
-  (A -> A -> bool) -> (B -> B -> bool) -> {A} + {B} -> {A} + {B} -> bool
 xorb: bool -> bool -> bool
-sum_beq:
-  forall A B : Type,
-  (A -> A -> bool) -> (B -> B -> bool) -> A + B -> A + B -> bool
-prod_beq:
-  forall A B : Type,
-  (A -> A -> bool) -> (B -> B -> bool) -> A * B -> A * B -> bool
 orb: bool -> bool -> bool
-option_beq: forall A : Type, (A -> A -> bool) -> option A -> option A -> bool
 negb: bool -> bool
-nat_beq: nat -> nat -> bool
-list_beq: forall A : Type, (A -> A -> bool) -> list A -> list A -> bool
 implb: bool -> bool -> bool
-comparison_beq: comparison -> comparison -> bool
-bool_beq: bool -> bool -> bool
 andb: bool -> bool -> bool
-Empty_set_beq: Empty_set -> Empty_set -> bool
 pred_Sn: forall n : nat, n = pred (S n)
 plus_n_Sm: forall n m : nat, S (n + m) = n + S m
 plus_n_O: forall n : nat, n = n + 0
