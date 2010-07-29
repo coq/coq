@@ -253,7 +253,8 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
     | (FAtom a1, FAtom a2) ->
 	(match kind_of_term a1, kind_of_term a2 with
 	   | (Sort s1, Sort s2) ->
-	       assert (is_empty_stack v1 && is_empty_stack v2);
+	       if not (is_empty_stack v1 && is_empty_stack v2) then
+		 anomaly "conversion was given ill-typed terms (Sort)";
 	       sort_cmp cv_pb s1 s2 cuniv
 	   | (Meta n, Meta m) ->
                if n=m
@@ -313,14 +314,16 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
 
     (* other constructors *)
     | (FLambda _, FLambda _) ->
-        assert (is_empty_stack v1 && is_empty_stack v2);
+        if not (is_empty_stack v1 && is_empty_stack v2) then
+	  anomaly "conversion was given ill-typed terms (FLambda)";
         let (_,ty1,bd1) = destFLambda mk_clos hd1 in
         let (_,ty2,bd2) = destFLambda mk_clos hd2 in
         let u1 = ccnv CONV infos el1 el2 ty1 ty2 cuniv in
         ccnv CONV infos (el_lift el1) (el_lift el2) bd1 bd2 u1
 
     | (FProd (_,c1,c2), FProd (_,c'1,c'2)) ->
-        assert (is_empty_stack v1 && is_empty_stack v2);
+        if not (is_empty_stack v1 && is_empty_stack v2) then
+	  anomaly "conversion was given ill-typed terms (FProd)";
 	(* Luo's system *)
         let u1 = ccnv CONV infos el1 el2 c1 c'1 cuniv in
         ccnv cv_pb infos (el_lift el1) (el_lift el2) c2 c'2 u1

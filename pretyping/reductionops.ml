@@ -525,9 +525,11 @@ let nf_evar =
 (* Note by HH [oct 08] : why would it be the job of clos_norm_flags to add
    a [nf_evar] here *)
 let clos_norm_flags flgs env sigma t =
-  norm_val
-    (create_clos_infos ~evars:(safe_evar_value sigma) flgs env)
-    (inject t)
+  try
+    norm_val
+      (create_clos_infos ~evars:(safe_evar_value sigma) flgs env)
+      (inject t)
+  with Anomaly _ -> error "Tried to normalized ill-typed term" 
 
 let nf_beta = clos_norm_flags Closure.beta empty_env
 let nf_betaiota = clos_norm_flags Closure.betaiota empty_env
@@ -586,9 +588,11 @@ let nf_betaiota_preserving_vm_cast =
 
 (* lazy weak head reduction functions *)
 let whd_flags flgs env sigma t =
-  whd_val
-    (create_clos_infos ~evars:(safe_evar_value sigma) flgs env)
-    (inject t)
+  try
+    whd_val
+      (create_clos_infos ~evars:(safe_evar_value sigma) flgs env)
+      (inject t)
+  with Anomaly _ -> error "Tried to normalized ill-typed term" 
 
 (********************************************************************)
 (*                         Conversion                               *)
@@ -620,6 +624,7 @@ let test_conversion (f:?evars:'a->'b) env sigma x y =
   try let _ =
     f ~evars:(safe_evar_value sigma) env x y in true
   with NotConvertible -> false
+    | Anomaly _ -> error "Conversion test raised an anomaly"
 
 let is_conv env sigma = test_conversion Reduction.conv env sigma
 let is_conv_leq env sigma = test_conversion Reduction.conv_leq env sigma
@@ -628,6 +633,7 @@ let is_fconv = function | CONV -> is_conv | CUMUL -> is_conv_leq
 let test_trans_conversion f reds env sigma x y =
   try let _ = f reds env (nf_evar sigma x) (nf_evar sigma y) in true
   with NotConvertible -> false
+    | Anomaly _ -> error "Conversion test raised an anomaly"
 
 let is_trans_conv reds env sigma = test_trans_conversion Reduction.trans_conv reds env sigma
 let is_trans_conv_leq reds env sigma = test_trans_conversion Reduction.trans_conv_leq reds env sigma
