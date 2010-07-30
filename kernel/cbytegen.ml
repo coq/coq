@@ -19,49 +19,46 @@ open Declarations
 open Pre_env
 
 
-(* Compilation des variables + calcul des variables libres                *)
+(* Compilation of variables + computing free variables                    *)
 
-(* Dans la machine virtuelle il n'y a pas de difference entre les         *)
-(* fonctions et leur environnement                                        *)
+(* The virtual machine doesn't distinguish closures and their environment *)
 
-(* Representation de l'environnement des fonctions :                      *)
+(* Representation of function environments :                              *)
 (*        [clos_t | code | fv1 | fv2 | ... | fvn ]                        *)
 (*                ^                                                       *)
-(*  l'offset pour l'acces aux variables libres est 1 (il faut passer le   *)
-(*  pointeur de code).                                                    *)
-(*  Lors de la compilation, les variables libres sont stock'ees dans      *)
-(*  [in_env] dans l'ordre inverse de la representation machine, ceci      *)
-(* permet de rajouter des nouvelles variables dans l'environnememt        *)
-(* facilement.                                                            *)
-(* Les arguments de la fonction arrive sur la pile dans l'ordre de        *)
-(* l'application :  f arg1 ... argn                                       *)
-(*   - la pile est alors :                                                *)
+(*  The offset for accessing free variables is 1 (we must skip the code   *)
+(*  pointer).                                                             *)
+(*  While compiling, free variables are stored in [in_env] in order       *)
+(*  opposite to machine representation, so we can add new free variables  *)
+(*  easily (i.e. without changing the position of previous variables)     *)
+(* Function arguments are on the stack in the same order as the           *)
+(* application :  f arg1 ... argn                                         *)
+(*   - the stack is then :                                                *)
 (*        arg1 : ... argn : extra args : return addr : ...                *)
-(* Dans le corps de la fonction [arg1] est repr'esent'e par le de Bruijn  *)
-(*  [n], [argn] par le de Bruijn [1]                                      *)
+(* In the function body [arg1] is represented by de Bruijn [n], and       *)
+(* [argn] by de Bruijn [1]                                                *)
 
-(* Representation des environnements des points fixes mutuels :           *)
+(* Representation of environements of mutual fixpoints :                  *)
 (* [t1|C1| ... |tc|Cc| ... |t(nbr)|C(nbr)| fv1 | fv2 | .... | fvn | type] *)
 (*                ^<----------offset--------->                            *)
 (* type = [Ct1 | .... | Ctn]                                              *)
-(* Ci est le code correspondant au corps du ieme point fixe               *)
-(* Lors de l'evaluation d'un point fixe l'environnement est un pointeur   *)
-(* sur la position correspondante a son code.                             *)
-(* Dans le corps de chaque point fixe le de Bruijn [nbr] represente,      *)
-(* le 1er point fixe de la declaration mutuelle, le de Bruijn [1] le      *)
-(* nbr-ieme.                                                              *)
-(* L'acces a ces variables se fait par l'instruction [Koffsetclosure]     *)
-(*  (decalage de l'environnement)                                         *)
+(* Ci is the code pointer of the i-th body                                *)
+(* At runtime, a fixpoint environment (which is the same as the fixpoint  *)
+(* itself) is a pointer to the field holding its code pointer.            *)
+(* In each fixpoint body, de Bruijn [nbr] represents the first fixpoint   *)
+(* and de Bruijn [1] the last one.                                        *)
+(* Access to these variables is performed by the [Koffsetclosure n]       *)
+(* instruction that shifts the environment pointer of [n] fields.         *)
 
-(* Ceci permet de representer les points fixes mutuels en un seul bloc    *)
-(* [Ct1 | ... | Ctn] est un tableau contenant le code d'evaluation des    *)
-(* types des points fixes, ils sont utilises pour tester la conversion    *)
-(* Leur environnement d'execution est celui du dernier point fix :        *)
+(* This allows to represent mutual fixpoints in just one block.           *)
+(* [Ct1 | ... | Ctn] is an array holding code pointers of the fixpoint    *)
+(* types. They are used in conversion tests (which requires that          *)
+(* fixpoint types must be convertible). Their environment is the one of   *)
+(* the last fixpoint :                                                    *)
 (* [t1|C1| ... |tc|Cc| ... |t(nbr)|C(nbr)| fv1 | fv2 | .... | fvn | type] *)
 (*                                ^                                       *)
 
-
-(* Representation des cofix mutuels :                                     *)
+(* Representation of mutual cofix :                                       *)
 (*  a1 =   [A_t | accumulate | [Cfx_t | fcofix1 ] ]                       *)
 (*                ...                                                     *)
 (*  anbr = [A_t | accumulate | [Cfx_t | fcofixnbr ] ]                     *)
@@ -71,29 +68,28 @@ open Pre_env
 (*                ...                                                     *)
 (*  fcofixnbr = [clos_t | codenbr | a1 |...| anbr | fv1 |...| fvn | type] *)
 (*                      ^                                                 *)
-(*  Les blocs [ai] sont des fonctions qui accumulent leurs arguments :    *)
+(* The [ai] blocks are functions that accumulate their arguments:         *)
 (*           ai arg1  argp --->                                           *)
 (*    ai' = [A_t | accumulate | [Cfx_t | fcofixi] | arg1 | ... | argp ]   *)
-(* Si un tel bloc arrive sur un [match] il faut forcer l'evaluation,      *)
-(* la fonction [fcofixi] est alors appliqu'ee a [ai'] [arg1] ... [argp]   *)
-(* A la fin de l'evaluation [ai'] est mis a jour avec le resultat de      *)
-(* l'evaluation :                                                         *)
+(* If such a block is matched against, we have to force evaluation,       *)
+(* function [fcofixi] is then applied to [ai'] [arg1] ... [argp]          *)
+(* Once evaluation is completed [ai'] is updated with the result:         *)
 (*  ai' <--                                                               *)
 (*   [A_t | accumulate | [Cfxe_t |fcofixi|result] | arg1 | ... | argp ]   *)
-(* L'avantage de cette representation est qu'elle permet de n'evaluer     *)
-(* qu'une fois l'application d'un cofix (evaluation lazy)                 *)
-(* De plus elle permet de creer facilement des cycles quand les cofix     *)
-(* n'ont pas d'argument, ex:                                              *)
+(* This representation is nice because the application of the cofix is    *)
+(* evaluated only once (it simulates a lazy evaluation)                   *)
+(* Moreover, when cofix don't have arguments, it is possible to create    *)
+(* a cycle, e.g.:                                                         *)
 (*   cofix one := cons 1 one                                              *)
 (*   a1 = [A_t | accumulate | [Cfx_t|fcofix1] ]                           *)
 (*   fcofix1 = [clos_t | code | a1]                                       *)
-(*  Quand on force l'evaluation de [a1] le resultat est                   *)
-(*    [cons_t | 1 | a1]                                                   *)
-(*  [a1] est mis a jour :                                                 *)
+(* The result of evaluating [a1] is [cons_t | 1 | a1].                    *)
+(* When [a1] is updated :                                                 *)
 (*  a1 = [A_t | accumulate | [Cfxe_t | fcofix1 | [cons_t | 1 | a1]] ]     *)
-(* Le cycle est cree ...                                                  *)
-
-(* On conserve la fct de cofix pour la conversion                         *)
+(* The cycle is created ...                                               *)
+(*                                                                        *)
+(* In Cfxe_t accumulators, we need to store [fcofixi] for testing         *)
+(* conversion of cofixpoints (which is intentional).                      *)
 
 
 let empty_fv = { size= 0;  fv_rev = [] }
@@ -124,7 +120,7 @@ let comp_env_fun arity =
   }
 
 
-let comp_env_type rfv =
+let comp_env_fix_type rfv =
   { nb_stack = 0;
     in_stack = [];
     nb_rec = 0;
@@ -146,6 +142,15 @@ let comp_env_fix ndef curr_pos arity rfv =
      in_env = rfv
    }
 
+let comp_env_cofix_type ndef rfv =
+  { nb_stack = 0;
+    in_stack = [];
+    nb_rec = 0;
+    pos_rec = [];
+    offset = 1+ndef;
+    in_env = rfv
+  }
+
 let comp_env_cofix ndef arity rfv =
    let prec = ref [] in
    for i = 1 to ndef do
@@ -159,14 +164,13 @@ let comp_env_cofix ndef arity rfv =
      in_env = rfv
    }
 
-(* [push_param ] ajoute les parametres de fonction dans la pile *)
+(* [push_param ] add function parameters on the stack *)
 let push_param n sz r =
   { r with
     nb_stack = r.nb_stack + n;
     in_stack = add_param n sz r.in_stack }
 
-(* [push_local e sz] ajoute une nouvelle variable dans la pile a la *)
-(* position [sz]                                                    *)
+(* [push_local sz r] add a new variable on the stack at position [sz] *)
 let push_local sz r =
   { r with
     nb_stack = r.nb_stack + 1;
@@ -309,19 +313,19 @@ let cont_cofix arity =
     Kreturn (arity+2) ]
 
 
-(*i Global environment global *)
+(*i Global environment *)
 
 let global_env = ref empty_env
 
 let set_global_env env = global_env := env
 
 
-(* Code des fermetures *)
+(* Code of closures *)
 let fun_code = ref []
 
 let init_fun_code () = fun_code := []
 
-(* Compilation des constructeurs et des inductifs *)
+(* Compilation of constructors and inductive types *)
 
 (* Inv : nparam + arity > 0 *)
 let code_construct tag nparams arity cont =
@@ -436,7 +440,7 @@ let rec str_const c =
       end
   | _ -> Bconstr c
 
-(* compilation des applications *)
+(* compiling application *)
 let comp_args comp_expr reloc args sz cont =
   let nargs_m_1 = Array.length args - 1 in
   let c = ref (comp_expr reloc args.(0) (sz + nargs_m_1) cont) in
@@ -463,7 +467,7 @@ let comp_app comp_fun comp_arg reloc f args sz cont =
 	(comp_args comp_arg reloc args (sz + 3)
 	   (Kpush :: (comp_fun reloc f (sz+3+nargs) (Kapply nargs :: cont1))))
 
-(* Compilation des variables libres *)
+(* Compiling free variables *)
 
 let compile_fv_elem reloc fv sz cont =
   match fv with
@@ -478,7 +482,7 @@ let rec compile_fv reloc l sz cont =
       compile_fv_elem reloc fvn sz
 	(Kpush :: compile_fv reloc tl (sz + 1) cont)
 
-(* compilation des constantes *)
+(* Compiling constants *)
 
 let rec get_allias env kn =
   let tps = (lookup_constant kn env).const_body_code in
@@ -487,7 +491,7 @@ let rec get_allias env kn =
   | _ -> kn
 
 
-(* compilation des expressions *)
+(* Compiling expressions *)
 
 let rec compile_constr reloc c sz cont =
   match kind_of_term c with
@@ -534,7 +538,7 @@ let rec compile_constr reloc c sz cont =
       let lbl_types = Array.create ndef Label.no in
       let lbl_bodies = Array.create ndef Label.no in
       (* Compilation des types *)
-      let env_type = comp_env_type rfv in
+      let env_type = comp_env_fix_type rfv in
       for i = 0 to ndef - 1 do
 	let lbl,fcode =
 	  label_code
@@ -542,7 +546,7 @@ let rec compile_constr reloc c sz cont =
 	lbl_types.(i) <- lbl;
 	fun_code := [Ksequence(fcode,!fun_code)]
       done;
-      (* Compilation des corps *)
+      (* Compiling bodies *)
       for i = 0 to ndef - 1 do
 	let params,body = decompose_lam rec_bodies.(i) in
 	let arity = List.length params in
@@ -562,9 +566,9 @@ let rec compile_constr reloc c sz cont =
       let ndef = Array.length type_bodies in
       let lbl_types = Array.create ndef Label.no in
       let lbl_bodies = Array.create ndef Label.no in
-      (* Compilation des types *)
+      (* Compiling types *)
       let rfv = ref empty_fv in
-      let env_type = comp_env_type rfv in
+      let env_type = comp_env_cofix_type ndef rfv in
       for i = 0 to ndef - 1 do
 	let lbl,fcode =
 	  label_code
@@ -572,7 +576,7 @@ let rec compile_constr reloc c sz cont =
 	lbl_types.(i) <- lbl;
 	fun_code := [Ksequence(fcode,!fun_code)]
       done;
-      (* Compilation des corps *)
+      (* Compiling bodies *)
       for i = 0 to ndef - 1 do
 	let params,body = decompose_lam rec_bodies.(i) in
 	let arity = List.length params in
@@ -597,11 +601,11 @@ let rec compile_constr reloc c sz cont =
       let lbl_consts = Array.create oib.mind_nb_constant Label.no in
       let lbl_blocks = Array.create (oib.mind_nb_args+1) Label.no in
       let branch1,cont = make_branch cont in
-      (* Compilation du type *)
+      (* Compiling return type *)
       let lbl_typ,fcode =
 	label_code (compile_constr reloc t sz [Kpop sz; Kstop])
       in fun_code := [Ksequence(fcode,!fun_code)];
-      (* Compilation des branches *)
+      (* Compiling branches *)
       let lbl_sw = Label.create () in
       let sz_b,branch,is_tailcall =
 	match branch1 with
@@ -609,13 +613,13 @@ let rec compile_constr reloc c sz cont =
 	| _ -> sz+3, Kjump, false
       in
       let annot = {ci = ci; rtbl = tbl; tailcall = is_tailcall} in
-     (* Compilation de la branche accumulate *)
+     (* Compiling branch for accumulators *)
       let lbl_accu, code_accu =
 	label_code(Kmakeswitchblock(lbl_typ,lbl_sw,annot,sz) :: branch::cont)
       in
       lbl_blocks.(0) <- lbl_accu;
       let c = ref code_accu in
-      (* Compilation des branches constructeurs *)
+      (* Compiling regular constructor branches *)
       for i = 0 to Array.length tbl - 1 do
 	let tag, arity = tbl.(i) in
 	if arity = 0 then
