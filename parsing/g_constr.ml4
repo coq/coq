@@ -207,14 +207,10 @@ GEXTEND Gram
       ] ]
   ;
   forall:
-    [ [ "forall" -> ()
-    | IDENT "Π" -> ()
-    ] ]
+    [ [ "forall" -> () ] ]
   ;
   lambda:
-    [ [ "fun" -> ()
-    | IDENT "λ" -> ()
-    ] ]
+    [ [ "fun" -> () ] ]
   ;
   record_declaration:
     [ [ fs = LIST1 record_field_declaration SEP ";" -> CRecord (loc, None, fs)
