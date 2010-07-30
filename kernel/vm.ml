@@ -472,9 +472,8 @@ let reduce_cofix k vcf =
   let fc_typ = ((Obj.obj (last (Obj.repr vcf))) : tcode array) in
   let ndef = Array.length fc_typ in
   let ftyp =
-    (* skip bodies and evaluate types *)
-    let tenv = Obj.obj (offset_closure (Obj.repr vcf) ndef) in
-    Array.map (fun c -> interprete c crazy_val tenv 0) fc_typ in
+    (* Evaluate types *)
+    Array.map (fun c -> interprete c crazy_val (Obj.magic vcf) 0) fc_typ in
 
   (* Construction of the environment of cofix bodies *)
   let e = Obj.dup (Obj.repr vcf) in
