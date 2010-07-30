@@ -14,7 +14,7 @@ open Environ
 (************************************************************************)
 (*s Reduction functions *)
 
-val whd_betaiotazeta        : env -> constr -> constr
+val whd_betaiotazeta        : constr -> constr
 val whd_betadeltaiota       : env -> constr -> constr
 val whd_betadeltaiota_nolet : env -> constr -> constr
 

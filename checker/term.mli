@@ -111,8 +111,8 @@ val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
 val eq_constr : constr -> constr -> bool
 
 (* Validation *)
-val val_sortfam : Obj.t -> unit
-val val_sort : Obj.t -> unit
-val val_constr : Obj.t -> unit
-val val_rctxt : Obj.t -> unit
-val val_nctxt : Obj.t -> unit
+val val_sortfam : Validate.func
+val val_sort : Validate.func
+val val_constr : Validate.func
+val val_rctxt : Validate.func
+val val_nctxt : Validate.func

@@ -75,9 +75,10 @@ type guard_env =
     (* the recarg information of inductive family *)
     recvec  : wf_paths array;
     (* dB of variables denoting subterms *)
-    genv    : subterm_spec list;
+    genv    : subterm_spec Lazy.t list;
   }
 
-val subterm_specif : guard_env -> constr -> subterm_spec
-val case_branches_specif : guard_env -> subterm_spec -> inductive ->
-  constr array -> (guard_env * constr) array
+type stack_element = |SClosure of guard_env*constr |SArg of subterm_spec Lazy.t
+val subterm_specif : guard_env -> stack_element list -> constr -> subterm_spec
+val branches_specif : guard_env -> subterm_spec Lazy.t -> case_info ->
+  subterm_spec Lazy.t list array

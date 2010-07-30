@@ -42,13 +42,14 @@ type constant_body = {
 
 type recarg =
   | Norec
-  | Mrec of int
+  | Mrec of inductive
   | Imbr of inductive
 
 type wf_paths = recarg Rtree.t
 
 val mk_norec : wf_paths
 val mk_paths : recarg -> wf_paths list array -> wf_paths
+val dest_recarg : wf_paths -> recarg
 val dest_subterms : wf_paths -> wf_paths list array
 
 type monomorphic_inductive_arity = {
@@ -211,6 +212,6 @@ val subst_module : substitution -> module_body -> module_body
 val join : substitution -> substitution -> substitution
 
 (* Validation *)
-val val_eng : Obj.t -> unit
-val val_module : Obj.t -> unit
-val val_modtype : Obj.t -> unit
+val val_eng : Validate.func
+val val_module : Validate.func
+val val_modtype : Validate.func

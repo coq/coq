@@ -20,7 +20,7 @@ type polymorphic_arity = {
   poly_level : Univ.universe;
 }
 let val_pol_arity =
-  val_tuple"polyorphic_arity"[|val_list(val_opt val_univ);val_univ|]
+  val_tuple ~name:"polyorphic_arity"[|val_list(val_opt val_univ);val_univ|]
 
 type constant_type =
   | NonPolymorphicType of constr
@@ -74,7 +74,7 @@ let val_res =
 
 let val_subst =
   val_map ~name:"substitution"
-    val_subst_dom (val_tuple "substition range" [|val_mp;val_res|])
+    val_subst_dom (val_tuple ~name:"substition range" [|val_mp;val_res|])
 
 
 let fold_subst fb fp =
@@ -660,7 +660,7 @@ type constant_body = {
     const_opaque : bool;
     const_inline : bool}
 
-let val_cb = val_tuple "constant_body"
+let val_cb = val_tuple ~name:"constant_body"
   [|val_nctxt;
     val_opt val_cstr_subst;
     val_cst_type;
@@ -679,14 +679,14 @@ let subst_rel_context sub = list_smartmap (subst_rel_declaration sub)
 
 type recarg =
   | Norec
-  | Mrec of int
+  | Mrec of inductive
   | Imbr of inductive
 let val_recarg = val_sum "recarg" 1 (* Norec *)
-  [|[|val_int|] (* Mrec *);[|val_ind|] (* Imbr *)|]
+  [|[|val_ind|] (* Mrec *);[|val_ind|] (* Imbr *)|]
 
 let subst_recarg sub r = match r with
-  | Norec | Mrec _  -> r
-  | Imbr (kn,i) -> let kn' = subst_ind sub kn in
+  | Norec  -> r
+  | (Mrec(kn,i)|Imbr (kn,i)) -> let kn' = subst_ind sub kn in
       if kn==kn' then r else Imbr (kn',i)
 
 type wf_paths = recarg Rtree.t
@@ -724,7 +724,7 @@ type monomorphic_inductive_arity = {
   mind_sort : sorts;
 }
 let val_mono_ind_arity =
-  val_tuple"monomorphic_inductive_arity"[|val_constr;val_sort|]
+  val_tuple ~name:"monomorphic_inductive_arity"[|val_constr;val_sort|]
 
 type inductive_arity =
 | Monomorphic of monomorphic_inductive_arity
@@ -784,7 +784,7 @@ type one_inductive_body = {
     mind_reloc_tbl :  reloc_table;
   }
 
-let val_one_ind = val_tuple "one_inductive_body"
+let val_one_ind = val_tuple ~name:"one_inductive_body"
   [|val_id;val_rctxt;val_ind_arity;val_array val_id;val_array val_constr;
     val_int;val_int;val_list val_sortfam;val_array val_constr;val_array val_int;
     val_wfp;val_int;val_int;no_val|]
@@ -820,7 +820,7 @@ type mutual_inductive_body = {
     mind_constraints : Univ.constraints;
 
   }
-let val_ind_pack = val_tuple "mutual_inductive_body"
+let val_ind_pack = val_tuple ~name:"mutual_inductive_body"
   [|val_array val_one_ind;val_bool;val_bool;val_int;val_nctxt;
     val_int; val_int; val_rctxt;val_cstrs|]
 
@@ -923,7 +923,7 @@ let rec val_sfb o = val_sum "struct_field_body" 0
     [|val_module|];   (* SFBmodule *)
     [|val_modtype|]   (* SFBmodtype *)
   |] o
-and val_sb o = val_list (val_tuple"label*sfb"[|val_id;val_sfb|]) o
+and val_sb o = val_list (val_tuple ~name:"label*sfb"[|val_id;val_sfb|]) o
 and val_seb o = val_sum "struct_expr_body" 0
   [|[|val_mp|];                      (* SEBident *)
     [|val_uid;val_modtype;val_seb|]; (* SEBfunctor *)
@@ -934,10 +934,10 @@ and val_seb o = val_sum "struct_expr_body" 0
 and val_with o = val_sum "with_declaration_body" 0
   [|[|val_list val_id;val_mp|];
     [|val_list val_id;val_cb|]|] o
-and val_module o = val_tuple "module_body"
+and val_module o = val_tuple ~name:"module_body"
   [|val_mp;val_opt val_seb;val_seb;
     val_opt val_seb;val_cstrs;val_res;no_val|] o
-and val_modtype o = val_tuple "module_type_body"
+and val_modtype o = val_tuple ~name:"module_type_body"
   [|val_mp;val_seb;val_opt val_seb;val_cstrs;val_res|] o
 
 

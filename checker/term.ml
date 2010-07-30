@@ -36,8 +36,8 @@ type case_info =
   }
 let val_ci =
   let val_cstyle = val_enum "case_style" 5 in
-  let val_cprint = val_tuple "case_printing" [|val_int;val_cstyle|] in
-  val_tuple "case_info" [|val_ind;val_int;val_array val_int;val_cprint|]
+  let val_cprint = val_tuple ~name:"case_printing" [|val_int;val_cstyle|] in
+  val_tuple ~name:"case_info" [|val_ind;val_int;val_array val_int;val_cprint|]
 
 (* Sorts. *)
 
@@ -71,13 +71,14 @@ type 'constr pfixpoint =
 type 'constr pcofixpoint =
     int * 'constr prec_declaration
 
-let val_evar f = val_tuple "pexistential" [|val_int;val_array f|]
+let val_evar f = val_tuple ~name:"pexistential" [|val_int;val_array f|]
 let val_prec f =
-  val_tuple "prec_declaration"[|val_array val_name; val_array f; val_array f|]
+  val_tuple ~name:"prec_declaration"
+    [|val_array val_name; val_array f; val_array f|]
 let val_fix f =
-  val_tuple"pfixpoint"
-    [|val_tuple"fix2"[|val_array val_int;val_int|];val_prec f|]
-let val_cofix f = val_tuple"pcofixpoint"[|val_int;val_prec f|]
+  val_tuple ~name:"pfixpoint"
+    [|val_tuple~name:"fix2"[|val_array val_int;val_int|];val_prec f|]
+let val_cofix f = val_tuple ~name:"pcofixpoint"[|val_int;val_prec f|]
 
 type cast_kind = VMcast | DEFAULTcast
 let val_cast = val_enum "cast_kind" 2
@@ -311,9 +312,9 @@ let subst1 lam = substl [lam]
 (***************************************************************************)
 
 let val_ndecl =
-  val_tuple"named_declaration"[|val_id;val_opt val_constr;val_constr|]
+  val_tuple ~name:"named_declaration"[|val_id;val_opt val_constr;val_constr|]
 let val_rdecl =
-  val_tuple"rel_declaration"[|val_name;val_opt val_constr;val_constr|]
+  val_tuple ~name:"rel_declaration"[|val_name;val_opt val_constr;val_constr|]
 let val_nctxt = val_list val_ndecl
 let val_rctxt = val_list val_rdecl
 
@@ -437,7 +438,7 @@ let decompose_prod_n_assum n =
 (***************************)
 
 type arity = rel_context * sorts
-let val_arity = val_tuple"arity"[|val_rctxt;val_constr|]
+let val_arity = val_tuple ~name:"arity"[|val_rctxt;val_constr|]
 
 let mkArity (sign,s) = it_mkProd_or_LetIn (Sort s) sign
 

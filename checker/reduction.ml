@@ -78,11 +78,11 @@ let pure_stack lfts stk =
 (*                   Reduction Functions                                    *)
 (****************************************************************************)
 
-let whd_betaiotazeta env x =
+let whd_betaiotazeta x =
   match x with
     | (Sort _|Var _|Meta _|Evar _|Const _|Ind _|Construct _|
        Prod _|Lambda _|Fix _|CoFix _) -> x
-    | _ -> whd_val (create_clos_infos betaiotazeta env) (inject x)
+    | _ -> whd_val (create_clos_infos betaiotazeta empty_env) (inject x)
 
 let whd_betadeltaiota env t =
   match t with
