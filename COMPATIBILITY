@@ -20,23 +20,21 @@ incompatibilities listed below must however be treated manually.
 Syntax
 
 - The word "by" is now a keyword and can no longer be used as an identifier.
-  [Semantics, IEEE754]
 
 Type inference
 
-- Many changes in using classes. [ATBR]
+- Many changes in using classes.
 
 Library
 
 - New identifiers of the library can hide identifiers. This can be
   solved by changing the order of Require or by qualifying the
-  identifier with the name of its module.  [Stalmarck]
+  identifier with the name of its module.
 
 - Reorganisation of library (esp. FSets, Sorting, Numbers) may have
-  moved or removed names around. [FundamentalArithmetics, CoLoR,
-  Icharate, AMM11262, FSets, FingerTree]
+  moved or removed names around.
 
-- Infix notation "++" has now to be set at level 60. [LinAlg]
+- Infix notation "++" has now to be set at level 60.
 
 - When using Program (refl_equal and Vnil have maximal implicit
   arguments, lemmas about measure have a different form, ...).
@@ -45,10 +43,10 @@ Tactics
 
 - The synchronization of introduction names and quantified hypotheses
   names may exceptionally lead to different names in "induction"
-  (usually a name with lower index is required). [Automata]
+  (usually a name with lower index is required).
 
 - More checks in some commands (e.g. in Hint) may lead to forbid some
-  meaningless part of them. [CoLoR]
+  meaningless part of them.
 
 - When rewriting using setoid equality, the default equality found
-  might be different. [CoRN]
+  might be different.
