@@ -20,6 +20,9 @@ Unset Strict Implicit.
 
 Generalizable Variables A B .
 
+Local Notation "'λ'  x .. y , t" := (fun x => .. (fun y => t) ..)
+  (at level 200, x binder, y binder, right associativity).
+
 (** Export notations. *)
 
 Require Export Coq.Classes.SetoidClass.
