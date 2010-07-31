@@ -21,6 +21,12 @@ Require Export Coq.Classes.RelationClasses.
 Generalizable All Variables.
 Local Obligation Tactic := simpl_relation.
 
+Local Notation "'λ'  x .. y , t" := (fun x => .. (fun y => t) ..)
+  (at level 200, x binder, y binder, right associativity).
+
+Local Notation "'Π'  x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity) : type_scope.
+
 (** * Morphisms.
 
    We now turn to the definition of [Proper] and declare standard instances.

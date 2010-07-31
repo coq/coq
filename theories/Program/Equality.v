@@ -13,6 +13,9 @@ Require Export JMeq.
 
 Require Import Coq.Program.Tactics.
 
+Local Notation "'Π'  x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity) : type_scope.
+
 Ltac is_ground_goal := 
   match goal with
     |- ?T => is_ground T
