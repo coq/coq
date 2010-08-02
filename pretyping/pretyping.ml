@@ -717,6 +717,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 
   let understand_judgment_tcc evdref env c =
     let j = pretype empty_tycon env evdref ([],[]) c in
+    evdref := Typeclasses.resolve_typeclasses ~onlyargs:true ~split:true ~fail:false env !evdref;
     j_nf_evar !evdref j
 
   (* Raw calls to the unsafe inference machine: boolean says if we must

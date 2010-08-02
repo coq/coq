@@ -41,7 +41,7 @@ end.
 
 Theorem pos_eq_refl : forall m n, pos_eq m n = true -> m = n.
 induction m;simpl;destruct n;congruence ||
-(intro e;apply f_equal with positive;auto).
+(intro e;apply f_equal;auto).
 Qed.
 
 Fixpoint form_eq (p q:form) {struct p} :bool :=

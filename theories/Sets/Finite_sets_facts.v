@@ -173,14 +173,14 @@ Section Finite_sets_facts.
     clear H'2 c2 Y.
     intros X0 c2 H'2 H'3 x0 H'4 H'5.
     elim (classic (In U X0 x)).
-    intro H'6; apply f_equal with nat.
+    intro H'6; apply f_equal.
     apply H'0 with (Y := Subtract U (Add U X0 x0) x).
     elimtype (pred (S c2) = c2); auto with sets.
     apply card_soustr_1; auto with sets.
     rewrite <- H'5.
     apply Sub_Add_new; auto with sets.
     elim (classic (x = x0)).
-    intros H'6 H'7; apply f_equal with nat.
+    intros H'6 H'7; apply f_equal.
     apply H'0 with (Y := X0); auto with sets.
     apply Simplify_add with (x := x); auto with sets.
     pattern x at 2 in |- *; rewrite H'6; auto with sets.

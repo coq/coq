@@ -87,7 +87,7 @@ end.
 
 Theorem pos_eq_refl : forall m n, pos_eq m n = true -> m = n.
 induction m;simpl;intro n;destruct n;congruence ||
-(intro e;apply f_equal with positive;auto).
+(intro e;apply f_equal;auto).
 Defined.
 
 Theorem refl_pos_eq : forall m, pos_eq m m = true.
@@ -140,7 +140,7 @@ end.
 
 Theorem nat_eq_refl : forall m n, nat_eq m n = true -> m = n.
 induction m;simpl;intro n;destruct n;congruence ||
-(intro e;apply f_equal with nat;auto).
+(intro e;apply f_equal;auto).
 Defined.
 
 Theorem refl_nat_eq : forall n, nat_eq n n = true.
@@ -161,14 +161,14 @@ List.map  f (l ++ m) = List.map  f  l ++ List.map  f  m.
 induction l.
 reflexivity.
 simpl.
-intro m ; apply f_equal with (list B);apply IHl.
+intro m ; apply f_equal;apply IHl.
 Qed.
 
 Lemma length_map : forall (A B:Set) (f:A -> B) l,
 length (List.map  f l) = length l.
 induction l.
 reflexivity.
-simpl; apply f_equal with nat;apply IHl.
+simpl; apply f_equal;apply IHl.
 Qed.
 
 Lemma Lget_map : forall (A B:Set) (f:A -> B) i l,

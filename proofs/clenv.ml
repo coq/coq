@@ -229,6 +229,7 @@ let clenv_dependent hyps_only clenv =
   let ctyp_mvs = (mk_freelisted (clenv_type clenv)).freemetas in
   let deps = dependent_metas clenv mvs ctyp_mvs in
   let nonlinear = duplicated_metas (clenv_value clenv) in
+  let ctyp_mvs = dependent_metas clenv (Metaset.elements ctyp_mvs) ctyp_mvs in
   (* Make the assumption that duplicated metas have internal dependencies *)
   List.filter
     (fun mv -> if Metaset.mem mv deps
