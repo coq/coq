@@ -25,14 +25,15 @@ let pr_orient _prc _prlc _prt = function
   | true -> Pp.mt ()
   | false -> Pp.str " <-"
 
-
 ARGUMENT EXTEND orient TYPED AS bool PRINTED BY pr_orient
 | [ "->" ] -> [ true ]
 | [ "<-" ] -> [ false ]
 | [ ] -> [ true ]
 END
 
-let pr_int_list _prc _prlc _prt l =
+let pr_orient = pr_orient () () ()
+
+let pr_int_list_full _prc _prlc _prt l =
   let rec aux = function
     | i :: l -> Pp.int i ++ Pp.spc () ++ aux l
     | [] -> Pp.mt()
@@ -40,20 +41,22 @@ let pr_int_list _prc _prlc _prt l =
 
 ARGUMENT EXTEND int_nelist
   TYPED AS int list
-  PRINTED BY pr_int_list
+  PRINTED BY pr_int_list_full
   RAW_TYPED AS int list
-  RAW_PRINTED BY pr_int_list
+  RAW_PRINTED BY pr_int_list_full
   GLOB_TYPED AS int list
-  GLOB_PRINTED BY pr_int_list
+  GLOB_PRINTED BY pr_int_list_full
 | [ integer(x) int_nelist(l) ] -> [x::l]
 | [ integer(x) ] -> [ [x] ]
 END
+
+let pr_int_list = pr_int_list_full () () ()
 
 open Rawterm
 
 let pr_occurrences _prc _prlc _prt l =
   match l with
-    | ArgArg x -> pr_int_list _prc _prlc _prt x
+    | ArgArg x -> pr_int_list x
     | ArgVar (loc, id) -> Nameops.pr_id id
 
 let coerce_to_int = function
@@ -80,7 +83,7 @@ type occurrences = int list
 
 ARGUMENT EXTEND occurrences
   TYPED AS occurrences
-  PRINTED BY pr_int_list
+  PRINTED BY pr_int_list_full
 
   INTERPRETED BY interp_occs
   GLOBALIZED BY glob_occs
@@ -96,9 +99,12 @@ ARGUMENT EXTEND occurrences
 | [ var(id) ] -> [ ArgVar id ]
 END
 
+let pr_occurrences = pr_occurrences () () ()
+
 let pr_gen prc _prlc _prtac c = prc c
 
 let pr_rawc _prc _prlc _prtac (_,raw) = Printer.pr_rawconstr raw
+let pr_raw = pr_rawc () () ()
 
 let interp_raw ist gl (t,_) = (ist,t)
 
@@ -122,6 +128,7 @@ ARGUMENT EXTEND raw
   [ lconstr(c) ] -> [ c ]
 END
 
+
 type 'id gen_place= ('id * hyp_location_flag,unit) location
 
 type loc_place = identifier Util.located gen_place
@@ -137,6 +144,7 @@ let pr_gen_place pr_id = function
 
 let pr_loc_place _ _ _ = pr_gen_place (fun (_,id) -> Nameops.pr_id id)
 let pr_place _ _ _ = pr_gen_place Nameops.pr_id
+let pr_hloc = pr_loc_place () () ()
 
 let intern_place ist = function
     ConclLocation () -> ConclLocation ()
@@ -191,6 +199,7 @@ ARGUMENT EXTEND by_arg_tac
 | [ ] -> [ None ]
 END
 
+let pr_by_arg_tac prtac opt_c = pr_by_arg_tac () () prtac opt_c
 
 let pr_in_hyp  pr_id (lo,concl) :  Pp.std_ppcmds =
   match lo,concl with
@@ -265,6 +274,7 @@ ARGUMENT EXTEND in_arg_hyp
 | [ ] -> [ (Some [],true) ]
 END
 
+let pr_in_arg_hyp = pr_in_arg_hyp_typed () () ()
 
 let gen_in_arg_hyp_to_clause trad_id (hyps ,concl) : Tacticals.clause =
   {Tacexpr.onhyps=
