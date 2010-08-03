@@ -418,8 +418,10 @@ type subterm_spec =
   | Dead_code
   | Not_subterm
 
-let spec_of_tree t =
-  if Rtree.eq_rtree (=) t mk_norec then Not_subterm else Subterm(Strict,t)
+let spec_of_tree t = lazy
+  (if Rtree.eq_rtree (=) (Lazy.force t) mk_norec
+   then Not_subterm
+   else Subterm(Strict,Lazy.force t))
 
 let subterm_spec_glb =
   let glb2 s1 s2 =
@@ -443,7 +445,7 @@ type guard_env =
     (* the recarg information of inductive family *)
     recvec  : wf_paths array;
     (* dB of variables denoting subterms *)
-    genv    : subterm_spec list;
+    genv    : subterm_spec Lazy.t list;
   }
 
 let make_renv env minds recarg (kn,tyi) =
@@ -454,7 +456,7 @@ let make_renv env minds recarg (kn,tyi) =
     rel_min = recarg+2;
     inds = minds;
     recvec = mind_recvec;
-    genv = [Subterm(Large,mind_recvec.(tyi))] }
+    genv = [Lazy.lazy_from_val(Subterm(Large,mind_recvec.(tyi)))] }
 
 let push_var renv (x,ty,spec) =
   { renv with
@@ -466,11 +468,11 @@ let assign_var_spec renv (i,spec) =
   { renv with genv = list_assign renv.genv (i-1) spec }
 
 let push_var_renv renv (x,ty) =
-  push_var renv (x,ty,Not_subterm)
+  push_var renv (x,ty,Lazy.lazy_from_val Not_subterm)
 
 (* Fetch recursive information about a variable p *)
 let subterm_var p renv =
-  try List.nth renv.genv (p-1)
+  try Lazy.force (List.nth renv.genv (p-1))
   with Failure _ | Invalid_argument _ -> Not_subterm
 
 (* Add a variable and mark it as strictly smaller with information [spec]. *)
@@ -482,14 +484,14 @@ let push_ctxt_renv renv ctxt =
   { renv with
     env = push_rel_context ctxt renv.env;
     rel_min = renv.rel_min+n;
-    genv = iterate (fun ge -> Not_subterm::ge) n renv.genv }
+    genv = iterate (fun ge -> Lazy.lazy_from_val Not_subterm::ge) n renv.genv }
 
 let push_fix_renv renv (_,v,_ as recdef) =
   let n = Array.length v in
   { renv with
     env = push_rec_types recdef renv.env;
     rel_min = renv.rel_min+n;
-    genv = iterate (fun ge -> Not_subterm::ge) n renv.genv }
+    genv = iterate (fun ge -> Lazy.lazy_from_val Not_subterm::ge) n renv.genv }
 
 
 (******************************)
@@ -513,12 +515,47 @@ let lookup_subterms env ind =
 
 (*********************************)
 
+let match_trees t1 t2 =
+  let v1 = dest_subterms t1 in
+  let v2 = dest_subterms t2 in
+  array_for_all2 (fun l1 l2 -> List.length l1 = List.length l2) v1 v2
+
+(* In {match c as z in ind y_s return P with |C_i x_s => t end}
+   [branches_specif renv c_spec ind] returns an array of x_s specs given
+   c_spec the spec of c. *)
+let branches_specif renv c_spec ind =
+  let (_,mip) = lookup_mind_specif renv.env ind in
+  let car = 
+    (* We fetch the regular tree associated to the inductive of the match.
+       This is just to get the number of constructors (and constructor
+       arities) that fit the match branches without forcing c_spec.
+       Note that c_spec might be more precise than [v] below, because of
+       nested inductive types. *)
+    let v = dest_subterms mip.mind_recargs in
+      Array.map List.length v in
+    Array.mapi
+      (fun i nca -> (* i+1-th cstructor has arity nca *)
+	 let lvra = lazy 
+	   (match Lazy.force c_spec with
+		Subterm (_,t) when match_trees mip.mind_recargs t ->
+		  let vra = Array.of_list (dest_subterms t).(i) in
+		  assert (nca = Array.length vra);
+		  Array.map
+		    (fun t -> Lazy.force (spec_of_tree (lazy t)))
+		    vra
+	      | Dead_code -> Array.create nca Dead_code
+	      | _ -> Array.create nca Not_subterm) in
+	 list_tabulate (fun j -> lazy (Lazy.force lvra).(j)) nca)
+      car 
+
+
 (* Propagation of size information through Cases: if the matched
    object is a recursive subterm then compute the information
    associated to its own subterms.
    Rq: if branch is not eta-long, then the recursive information
    is not propagated to the missing abstractions *)
 let case_branches_specif renv c_spec ind lbr =
+  let vlrec = branches_specif renv c_spec ind in
   let rec push_branch_args renv lrec c =
     match lrec with
         ra::lr ->
@@ -530,17 +567,8 @@ let case_branches_specif renv c_spec ind lbr =
             | _ -> (* branch not in eta-long form: cannot perform rec. calls *)
                 (renv,c'))
       | [] -> (renv, c) in
-  match c_spec with
-      Subterm (_,t) ->
-        let sub_spec = Array.map (List.map spec_of_tree) (dest_subterms t) in
-        assert (Array.length sub_spec = Array.length lbr);
-        array_map2 (push_branch_args renv) sub_spec lbr
-    | Dead_code ->
-        let t = dest_subterms (lookup_subterms renv.env ind) in
-        let sub_spec = Array.map (List.map (fun _ -> Dead_code)) t in
-        assert (Array.length sub_spec = Array.length lbr);
-        array_map2 (push_branch_args renv) sub_spec lbr
-    | Not_subterm -> Array.map (fun c -> (renv,c)) lbr
+  assert (Array.length vlrec = Array.length lbr);
+  array_map2 (push_branch_args renv) vlrec lbr
 
 (* [subterm_specif renv t] computes the recursive structure of [t] and
    compare its size with the size of the initial recursive argument of
@@ -582,7 +610,8 @@ let rec subterm_specif renv t =
               let renv' =
                 (* Why Strict here ? To be general, it could also be
                    Large... *)
-                assign_var_spec renv' (nbfix-i, Subterm(Strict,recargs)) in
+                assign_var_spec renv'
+		  (nbfix-i, Lazy.lazy_from_val(Subterm(Strict,recargs))) in
               let decrArg = recindxs.(i) in
               let theBody = bodies.(i)   in
               let nbOfAbst = decrArg+1 in
@@ -593,7 +622,7 @@ let rec subterm_specif renv t =
                 if List.length l < nbOfAbst then renv''
                 else
                   let theDecrArg  = List.nth l decrArg in
-	          let arg_spec    = subterm_specif renv theDecrArg in
+	          let arg_spec    = lazy_subterm_specif renv theDecrArg in
                   assign_var_spec renv'' (1, arg_spec) in
 	      subterm_specif renv'' strippedBody)
 
@@ -607,10 +636,13 @@ let rec subterm_specif renv t =
     (* Other terms are not subterms *)
     | _ -> Not_subterm
 
+and lazy_subterm_specif renv t =
+  lazy (subterm_specif renv t)
+
 and case_subterm_specif renv ci c lbr =
   if Array.length lbr = 0 then [||]
   else
-    let c_spec = subterm_specif renv c in
+    let c_spec = lazy_subterm_specif renv c in
     case_branches_specif renv c_spec ci.ci_ind lbr
  
 (* Check term c can be applied to one of the mutual fixpoints. *)
@@ -627,7 +659,7 @@ let error_illegal_rec_call renv fx arg =
   let (_,le_vars,lt_vars) =
     List.fold_left
       (fun (i,le,lt) sbt ->
-        match sbt with
+        match Lazy.force sbt with
             (Subterm(Strict,_) | Dead_code) -> (i+1, le, i::lt)
           | (Subterm(Large,_)) -> (i+1, i::le, lt)
           | _ -> (i+1, le ,lt))
@@ -709,7 +741,7 @@ let check_one_fix renv recpos def =
                 (fun j body ->
                   if i=j then
                     let theDecrArg  = List.nth l decrArg in
-	            let arg_spec = subterm_specif renv theDecrArg in
+	            let arg_spec = lazy_subterm_specif renv theDecrArg in
 	            check_nested_fix_body renv' (decrArg+1) arg_spec body
                   else check_rec_call renv' body)
                 bodies
