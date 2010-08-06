@@ -6,7 +6,7 @@
 # 
 ##################################
 
-VERSION=8.3-bugfix
+VERSION=8.3-rc1
 VOMAGIC=08300
 STATEMAGIC=58300
 DATE=`LANG=C date +"%B %Y"`
@@ -1114,4 +1114,4 @@ echo
 echo "*Warning* To compile the system for a new architecture"
 echo "          don't forget to do a 'make archclean' before './configure'."
 
-# $Id: configure 12689 2010-01-26 13:41:56Z glondu $
+# $Id$
