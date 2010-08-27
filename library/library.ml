@@ -389,7 +389,7 @@ let try_locate_qualified_library (loc,qid) =
 
 let mk_library md digest = {
   library_name = md.md_name;
-  library_compiled = lighten_library md.md_compiled;
+  library_compiled = md.md_compiled;
   library_objects = md.md_objects;
   library_deps = md.md_deps;
   library_imports = md.md_imports;
