@@ -151,7 +151,7 @@ let parse_args () =
       |"-batch"|"-nois"|"-noglob"|"-no-glob"
       |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
       |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-beautify"|"-strict-implicit"
-      |"-dont-load-proofs"|"-impredicative-set"|"-vm"
+      |"-dont-load-proofs"|"-load-proofs"|"-impredicative-set"|"-vm"
       |"-unboxed-values"|"-unboxed-definitions"|"-draw-vm-instr" as o) :: rem ->
 	parse (cfiles,o::args) rem
 

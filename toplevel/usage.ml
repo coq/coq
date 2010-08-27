@@ -61,7 +61,8 @@ let print_usage_channel co command =
   -dump-glob f           dump globalizations in file f (to be used by coqdoc)
   -with-geoproof (yes|no) to (de)activate special functions for Geoproof within Coqide (default is yes)
   -impredicative-set     set sort Set impredicative
-  -dont-load-proofs      don't load opaque proofs in memory
+  -dont-load-proofs      don't load opaque proofs in memory (default)
+  -load-proofs           load opaque proofs in memory
   -xml                   export XML files either to the hierarchy rooted in
                          the directory $COQ_XML_LIBRARY_ROOT (if set) or to
                          stdout (if unset)
