@@ -233,6 +233,7 @@ let parse_args arglist =
     | "-compile-verbose" :: []       -> usage ()
 
     | "-load-proofs" :: rem -> Flags.load_proofs := true; parse rem
+    | "-dont-load-proofs" :: rem -> Flags.load_proofs := false; parse rem
 
     | "-beautify" :: rem -> make_beautify true; parse rem
 
