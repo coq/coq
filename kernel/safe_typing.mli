@@ -115,9 +115,9 @@ val import : compiled_library -> Digest.t -> safe_environment
 module LightenLibrary :
 sig
   type table 
-  type lighten_compiled_library 
-  val save : compiled_library -> lighten_compiled_library * table
-  val load : load_proof:bool -> (unit -> table) -> lighten_compiled_library -> compiled_library
+  type lightened_compiled_library 
+  val save : compiled_library -> lightened_compiled_library * table
+  val load : load_proof:bool -> (unit -> table) -> lightened_compiled_library -> compiled_library
 end
 
 (** {6 Typing judgments } *)

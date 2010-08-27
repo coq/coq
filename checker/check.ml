@@ -40,7 +40,7 @@ type compilation_unit_name = dir_path
 
 type library_disk = {
   md_name : compilation_unit_name;
-  md_compiled : Safe_typing.LightenLibrary.lighten_compiled_library;
+  md_compiled : Safe_typing.LightenLibrary.lightened_compiled_library;
   md_objects : library_objects;
   md_deps : (compilation_unit_name * Digest.t) list;
   md_imports : compilation_unit_name list }
@@ -303,7 +303,9 @@ let intern_from_file (dir, f) =
       let ch = with_magic_number_check raw_intern_library f in
       let (md:library_disk) = System.marshal_in ch in
       let digest = System.marshal_in ch in
-      let get_table () = (System.marshal_in ch : Safe_typing.LightenLibrary.table) in
+      let get_table () = 
+	(System.marshal_in ch : Safe_typing.LightenLibrary.table) 
+      in
       if dir <> md.md_name then
         errorlabstrm "load_physical_library"
           (name_clash_message dir md.md_name f);

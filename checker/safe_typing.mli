@@ -24,10 +24,26 @@ val import         :
 val unsafe_import  :
   System.physical_path -> compiled_library -> Digest.t -> unit
 
+(** Store the body of modules' opaque constants inside a table. 
+
+    This module is used during the serialization and deserialization
+    of vo files. 
+*)
 module LightenLibrary :
 sig
   type table 
-  type lighten_compiled_library 
-  val save : compiled_library -> lighten_compiled_library * table
-  val load : load_proof:bool -> (unit -> table) -> lighten_compiled_library -> compiled_library
+  type lightened_compiled_library 
+
+  (** [save] splits a library into a lightened library with indexes
+      and a table that maps these indexes to opaque terms. *)
+  val save : compiled_library -> lightened_compiled_library * table
+
+  (** [load lpf get_table lcl] builds a compiled library from a
+      lightened library [lcl] by remplacing every index by its related
+      opaque terms inside the table obtained by [get_table ()].  
+      If [lpf] is unset then the table is considered empty, which 
+      implies that [get_table] is not evaluated and every index 
+      is replaced by [None] inside the compiled library. *)
+  val load : load_proof:bool -> (unit -> table) 
+    -> lightened_compiled_library -> compiled_library
 end

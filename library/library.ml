@@ -117,7 +117,7 @@ type compilation_unit_name = dir_path
 
 type library_disk = {
   md_name : compilation_unit_name;
-  md_compiled : LightenLibrary.lighten_compiled_library;
+  md_compiled : LightenLibrary.lightened_compiled_library;
   md_objects : Declaremods.library_objects;
   md_deps : (compilation_unit_name * Digest.t) list;
   md_imports : compilation_unit_name list }

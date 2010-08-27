@@ -844,9 +844,10 @@ let import (dp,mb,depends,engmt) digest senv =
     some memory space. *)
 module LightenLibrary : sig
   type table 
-  type lighten_compiled_library 
-  val save : compiled_library -> lighten_compiled_library * table
-  val load : load_proof:bool -> (unit -> table) -> lighten_compiled_library -> compiled_library
+  type lightened_compiled_library 
+  val save : compiled_library -> lightened_compiled_library * table
+  val load : load_proof:bool -> (unit -> table) 
+    -> lightened_compiled_library -> compiled_library
 end = struct
 
   (* The table is implemented as an array of [constr_substituted].
@@ -858,7 +859,7 @@ end = struct
   (* To avoid any future misuse of the lightened library that could 
      interpret encoded keys as real [constr_substituted], we hide 
      these kind of values behind an abstract datatype. *)
-  type lighten_compiled_library = compiled_library
+  type lightened_compiled_library = compiled_library
 
   (* Map a [compiled_library] to another one by just updating 
      the opaque term [t] to [on_opaque_const_body t]. *)
