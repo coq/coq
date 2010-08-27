@@ -232,7 +232,7 @@ let parse_args arglist =
     | "-compile-verbose" :: f :: rem -> add_compile true f;  if not !glob_opt then Dumpglob.dump_to_dotglob (); parse rem
     | "-compile-verbose" :: []       -> usage ()
 
-    | "-dont-load-proofs" :: rem -> Flags.dont_load_proofs := true; parse rem
+    | "-load-proofs" :: rem -> Flags.load_proofs := true; parse rem
 
     | "-beautify" :: rem -> make_beautify true; parse rem
 

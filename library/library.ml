@@ -387,13 +387,17 @@ let try_locate_qualified_library (loc,qid) =
 (************************************************************************)
 (* Internalise libraries *)
 
-let mk_library md get_table digest = {
-  library_name = md.md_name;
-  library_compiled = LightenLibrary.load false get_table md.md_compiled;
-  library_objects = md.md_objects;
-  library_deps = md.md_deps;
-  library_imports = md.md_imports;
-  library_digest = digest }
+let mk_library md get_table digest = 
+  let md_compiled = 
+    LightenLibrary.load !Flags.load_proofs get_table md.md_compiled
+  in {
+    library_name     = md.md_name;
+    library_compiled = md_compiled;
+    library_objects  = md.md_objects;
+    library_deps     = md.md_deps;
+    library_imports  = md.md_imports;
+    library_digest    = digest 
+  }
 
 let intern_from_file f =
   let ch = System.with_magic_number_check raw_intern_library f in

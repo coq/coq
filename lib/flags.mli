@@ -21,7 +21,7 @@ val term_quality : bool ref
 
 val xml_export : bool ref
 
-val dont_load_proofs : bool ref
+val load_proofs : bool ref
 
 val raw_print : bool ref
 

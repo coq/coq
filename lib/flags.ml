@@ -29,7 +29,7 @@ let term_quality = ref false
 
 let xml_export = ref false
 
-let dont_load_proofs = ref false
+let load_proofs = ref false
 
 let raw_print = ref false
 

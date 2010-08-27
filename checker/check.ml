@@ -284,7 +284,7 @@ let with_magic_number_check f a =
 let mk_library md f get_table digest = {
   library_name = md.md_name;
   library_filename = f;
-  library_compiled = Safe_typing.LightenLibrary.load false get_table md.md_compiled;
+  library_compiled = Safe_typing.LightenLibrary.load true get_table md.md_compiled;
   library_deps = md.md_deps;
   library_digest = digest }
 
