@@ -634,12 +634,11 @@ let save_library_to dir f =
   try
     System.marshal_out ch md;
     flush ch;
-    (* The table of opaque definitions must be loaded only at will
-       whereas the digest is loaded all the time. As a consequence,
-       the digest must be serialized before the table (if we want to
-       keep the current simple layout of .vo files). This also entails
-       that the digest does not take opaque terms into account
-       anymore. *)
+    (* The loading of the opaque definitions table is optional whereas
+       the digest is loaded all the time. As a consequence, the digest
+       must be serialized before the table (if we want to keep the
+       current simple layout of .vo files). This also entails that the
+       digest does not take opaque terms into account anymore. *)
     let di = Digest.file f' in
     System.marshal_out ch di;
     System.marshal_out ch table;
