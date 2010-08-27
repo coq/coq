@@ -23,3 +23,11 @@ val import         :
   System.physical_path -> compiled_library -> Digest.t -> unit
 val unsafe_import  :
   System.physical_path -> compiled_library -> Digest.t -> unit
+
+module LightenLibrary :
+sig
+  type table 
+  type lighten_compiled_library 
+  val save : compiled_library -> lighten_compiled_library * table
+  val load : load_proof:bool -> (unit -> table) -> lighten_compiled_library -> compiled_library
+end

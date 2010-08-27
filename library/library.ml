@@ -117,7 +117,7 @@ type compilation_unit_name = dir_path
 
 type library_disk = {
   md_name : compilation_unit_name;
-  md_compiled : compiled_library;
+  md_compiled : LightenLibrary.lighten_compiled_library;
   md_objects : Declaremods.library_objects;
   md_deps : (compilation_unit_name * Digest.t) list;
   md_imports : compilation_unit_name list }
@@ -387,9 +387,9 @@ let try_locate_qualified_library (loc,qid) =
 (************************************************************************)
 (* Internalise libraries *)
 
-let mk_library md digest = {
+let mk_library md get_table digest = {
   library_name = md.md_name;
-  library_compiled = md.md_compiled;
+  library_compiled = LightenLibrary.load false get_table md.md_compiled;
   library_objects = md.md_objects;
   library_deps = md.md_deps;
   library_imports = md.md_imports;
@@ -397,11 +397,13 @@ let mk_library md digest = {
 
 let intern_from_file f =
   let ch = System.with_magic_number_check raw_intern_library f in
-  let md = System.marshal_in ch in
+  let lmd = System.marshal_in ch in
   let digest = System.marshal_in ch in
+  let get_table () = (System.marshal_in ch : LightenLibrary.table) in
+  register_library_filename lmd.md_name f;
+  let library = mk_library lmd get_table digest in
   close_in ch;
-  register_library_filename md.md_name f;
-  mk_library md digest
+  library
 
 let rec intern_library needed (dir, f) =
   (* Look if in the current logical environment *)
@@ -615,6 +617,7 @@ let error_recursively_dependent_library dir =
    writing the content and computing the checksum... *)
 let save_library_to dir f =
   let cenv, seg = Declaremods.end_library dir in
+  let cenv, table = LightenLibrary.save cenv in
   let md = {
     md_name = dir;
     md_compiled = cenv;
@@ -629,6 +632,7 @@ let save_library_to dir f =
     flush ch;
     let di = Digest.file f' in
     System.marshal_out ch di;
+    System.marshal_out ch table;
     close_out ch
   with e -> warning ("Removed file "^f'); close_out ch; Sys.remove f'; raise e
 

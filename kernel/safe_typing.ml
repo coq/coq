@@ -833,40 +833,124 @@ let import (dp,mb,depends,engmt) digest senv =
 	  loads = (mp,mb)::senv.loads }
 
 
-(* Remove the body of opaque constants in modules *)
- let rec lighten_module mb =
-  { mb with
-    mod_expr = None;
-    mod_type = lighten_modexpr mb.mod_type;
-  }
+ (* Store the body of modules' opaque constants inside a table.  
 
-and lighten_struct struc =
-  let lighten_body (l,body) = (l,match body with
-    | SFBconst ({const_opaque=true} as x) -> SFBconst {x with const_body=None}
-    | (SFBconst _ | SFBmind _ ) as x -> x
-    | SFBmodule m -> SFBmodule (lighten_module m)
-    | SFBmodtype m -> SFBmodtype
-	({m with
-	    typ_expr = lighten_modexpr m.typ_expr}))
-  in
-    List.map lighten_body struc
+    This module is used during the serialization and deserialization
+    of vo files. 
 
-and lighten_modexpr = function
-  | SEBfunctor (mbid,mty,mexpr) ->
-      SEBfunctor (mbid,
+    By adding an indirection to the opaque constant definitions, we
+    gain the ability not to load them. As these constant definitions
+    are usually big terms, we save a deserialization time as well as
+    some memory space. *)
+module LightenLibrary : sig
+  type table 
+  type lighten_compiled_library 
+  val save : compiled_library -> lighten_compiled_library * table
+  val load : load_proof:bool -> (unit -> table) -> lighten_compiled_library -> compiled_library
+end = struct
+
+  (* The table is implemented as an array of [constr_substituted].
+     Thus, its keys are integers which can be easily embedded inside
+     [constr_substituted]. This way the [compiled_library] type does
+     not have to be changed. *)
+  type table = constr_substituted array
+
+  (* To avoid any future misuse of the lightened library that could 
+     interpret encoded keys as real [constr_substituted], we hide 
+     these kind of values behind an abstract datatype. *)
+  type lighten_compiled_library = compiled_library
+
+  (* Map a [compiled_library] to another one by just updating 
+     the opaque term [t] to [on_opaque_const_body t]. *)
+  let traverse_library on_opaque_const_body =
+    let rec lighten_module mb =
+      { mb with
+	mod_expr = None;
+	mod_type = lighten_modexpr mb.mod_type;
+      }
+    and lighten_struct struc =
+      let lighten_body (l,body) = (l,match body with
+	| SFBconst ({const_opaque=true} as x) -> 
+	  SFBconst {x with const_body = on_opaque_const_body x.const_body }
+	| (SFBconst _ | SFBmind _ ) as x -> 
+	  x
+	| SFBmodule m -> 
+	  SFBmodule (lighten_module m)
+	| SFBmodtype m -> 
+	  SFBmodtype ({m with typ_expr = lighten_modexpr m.typ_expr}))
+      in
+      List.map lighten_body struc
+	
+    and lighten_modexpr = function
+      | SEBfunctor (mbid,mty,mexpr) ->
+	SEBfunctor (mbid,
 		    ({mty with
-			typ_expr = lighten_modexpr mty.typ_expr}),
-		  lighten_modexpr mexpr)
-  | SEBident mp as x -> x
-  | SEBstruct (struc) ->
-      SEBstruct  (lighten_struct struc)
-  | SEBapply (mexpr,marg,u) ->
-      SEBapply (lighten_modexpr mexpr,lighten_modexpr marg,u)
-  | SEBwith (seb,wdcl) ->
-      SEBwith (lighten_modexpr seb,wdcl)
+		      typ_expr = lighten_modexpr mty.typ_expr}),
+		    lighten_modexpr mexpr)
+      | SEBident mp as x -> x
+      | SEBstruct (struc) ->
+	SEBstruct  (lighten_struct struc)
+      | SEBapply (mexpr,marg,u) ->
+	SEBapply (lighten_modexpr mexpr,lighten_modexpr marg,u)
+      | SEBwith (seb,wdcl) ->
+	SEBwith (lighten_modexpr seb,wdcl)
+    in
+    fun (dp,mb,depends,s) -> (dp,lighten_module mb,depends,s) 
 
-let lighten_library (dp,mb,depends,s) = (dp,lighten_module mb,depends,s)
+  (* To disburden a library from opaque definitions, we simply 
+     traverse it and add an indirection between the module body 
+     and its reference to a [const_body]. *)
+  let save library = 
+    let ((insert    : constr_substituted -> constr_substituted), 
+	 (get_table : unit -> table)) = 
+      (* We use an integer as a key inside the table. *)
+      let counter = ref 0 in
+      (* ... but it is wrap inside a [constr_substituted]. *)
+      let key_as_constr key = Declarations.from_val (Term.mkRel key) in
 
+      (* During the traversal, the table is implemented by a list 
+	 to get constant time insertion. *)
+      let opaque_definitions = ref [] in
+      
+      ((* Insert inside the table. *) 
+	(fun opaque_definition -> 
+	incr counter; 
+	opaque_definitions := opaque_definition :: !opaque_definitions;
+	key_as_constr !counter), 
+
+       (* Get the final table representation. *)
+       (fun () -> Array.of_list (List.rev !opaque_definitions)))
+    in
+    let encode_const_body : constr_substituted option -> constr_substituted option = function
+      | None -> None
+      | Some ct -> Some (insert ct)
+    in
+    let lightened_library = traverse_library encode_const_body library in
+    (lightened_library, get_table ())
+
+  (* Loading is also a traversing that decode the embedded keys that
+     are inside the [lightened_library]. If the [load_proof] flag is
+     set, we lookup inside the table to graft the
+     [constr_substituted]. Otherwise, we set the [const_body] field
+     to [None]. 
+  *)
+  let load ~load_proof (get_table : unit -> table) lightened_library = 
+    let decode_key : constr_substituted option -> constr_substituted option = 
+      if load_proof then 
+	let table = get_table () in
+	function Some cterm -> 
+	  Some (table.(
+	    try 
+	      Term.destRel (Declarations.force cterm)
+	    with _ -> assert false
+	  ))
+	  | _ -> None
+      else 
+	fun _ -> None
+    in
+    traverse_library decode_key lightened_library
+
+end
 
 type judgment = unsafe_judgment
 

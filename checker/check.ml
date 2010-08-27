@@ -40,7 +40,7 @@ type compilation_unit_name = dir_path
 
 type library_disk = {
   md_name : compilation_unit_name;
-  md_compiled : Safe_typing.compiled_library;
+  md_compiled : Safe_typing.LightenLibrary.lighten_compiled_library;
   md_objects : library_objects;
   md_deps : (compilation_unit_name * Digest.t) list;
   md_imports : compilation_unit_name list }
@@ -281,10 +281,10 @@ let with_magic_number_check f a =
 (************************************************************************)
 (* Internalise libraries *)
 
-let mk_library md f digest = {
+let mk_library md f get_table digest = {
   library_name = md.md_name;
   library_filename = f;
-  library_compiled = md.md_compiled;
+  library_compiled = Safe_typing.LightenLibrary.load false get_table md.md_compiled;
   library_deps = md.md_deps;
   library_digest = digest }
 
@@ -298,20 +298,22 @@ let depgraph = ref LibraryMap.empty
 
 let intern_from_file (dir, f) =
   Flags.if_verbose msg (str"[intern "++str f++str" ...");
-  let (md,digest) =
+  let (md,get_table,close,digest) =
     try
       let ch = with_magic_number_check raw_intern_library f in
       let (md:library_disk) = System.marshal_in ch in
       let digest = System.marshal_in ch in
-      close_in ch;
+      let get_table () = (System.marshal_in ch : Safe_typing.LightenLibrary.table) in
       if dir <> md.md_name then
         errorlabstrm "load_physical_library"
           (name_clash_message dir md.md_name f);
       Flags.if_verbose msgnl(str" done]");
-      md,digest
+      md,get_table,(fun () -> close_in ch),digest
     with e -> Flags.if_verbose msgnl(str" failed!]"); raise e in
   depgraph := LibraryMap.add md.md_name md.md_deps !depgraph;
-  mk_library md f digest
+  let library = mk_library md f get_table digest in
+  close ();
+  library
 
 let get_deps (dir, f) =
   try LibraryMap.find dir !depgraph
