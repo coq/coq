@@ -905,7 +905,7 @@ end = struct
     let ((insert    : constr_substituted -> constr_substituted), 
 	 (get_table : unit -> table)) = 
       (* We use an integer as a key inside the table. *)
-      let counter = ref 0 in
+      let counter = ref (-1) in
       (* ... but it is wrapped inside a [constr_substituted]. *)
       let key_as_constr key = Declarations.from_val (Term.mkRel key) in
 
@@ -940,11 +940,11 @@ end = struct
       if load_proof then 
 	let table = get_table () in
 	function Some cterm -> 
-	  Some (table.(
-	    try 
-	      Term.destRel (Declarations.force cterm)
-	    with _ -> assert false
-	  ))
+	  Some (try 
+		  table.(Term.destRel (Declarations.force cterm))
+	    with _ -> 
+	      assert false
+	  )
 	  | _ -> None
       else 
 	fun _ -> None
