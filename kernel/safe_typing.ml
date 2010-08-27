@@ -906,7 +906,7 @@ end = struct
 	 (get_table : unit -> table)) = 
       (* We use an integer as a key inside the table. *)
       let counter = ref 0 in
-      (* ... but it is wrap inside a [constr_substituted]. *)
+      (* ... but it is wrapped inside a [constr_substituted]. *)
       let key_as_constr key = Declarations.from_val (Term.mkRel key) in
 
       (* During the traversal, the table is implemented by a list 
@@ -929,7 +929,7 @@ end = struct
     let lightened_library = traverse_library encode_const_body library in
     (lightened_library, get_table ())
 
-  (* Loading is also a traversing that decode the embedded keys that
+  (* Loading is also a traversing that decodes the embedded keys that
      are inside the [lightened_library]. If the [load_proof] flag is
      set, we lookup inside the table to graft the
      [constr_substituted]. Otherwise, we set the [const_body] field
