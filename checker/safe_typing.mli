@@ -34,10 +34,6 @@ sig
   type table 
   type lightened_compiled_library 
 
-  (** [save] splits a library into a lightened library with indexes
-      and a table that maps these indexes to opaque terms. *)
-  val save : compiled_library -> lightened_compiled_library * table
-
   (** [load lpf get_table lcl] builds a compiled library from a
       lightened library [lcl] by remplacing every index by its related
       opaque terms inside the table obtained by [get_table ()].  

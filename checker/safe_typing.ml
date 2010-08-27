@@ -79,7 +79,6 @@ type compiled_library =
 module LightenLibrary : sig
   type table 
   type lightened_compiled_library 
-  val save : compiled_library -> lightened_compiled_library * table
   val load : load_proof:bool -> (unit -> table) 
     -> lightened_compiled_library -> compiled_library
 end = struct
@@ -131,37 +130,6 @@ end = struct
 	SEBwith (traverse_modexpr seb,wdcl)
     in
     fun (dp,mb,depends,s) -> (dp,traverse_module mb,depends,s) 
-
-  (* To disburden a library from opaque definitions, we simply 
-     traverse it and add an indirection between the module body 
-     and its reference to a [const_body]. *)
-  let save library = 
-    let ((insert    : constr_substituted -> constr_substituted), 
-	 (get_table : unit -> table)) = 
-      (* We use an integer as a key inside the table. *)
-      let counter = ref 0 in
-      (* ... but it is wrapped inside a [constr_substituted]. *)
-      let key_as_constr key = Declarations.from_val (Term.Rel key) in
-
-      (* During the traversal, the table is implemented by a list 
-	 to get constant time insertion. *)
-      let opaque_definitions = ref [] in
-      
-      ((* Insert inside the table. *) 
-	(fun opaque_definition -> 
-	incr counter; 
-	opaque_definitions := opaque_definition :: !opaque_definitions;
-	key_as_constr !counter), 
-
-       (* Get the final table representation. *)
-       (fun () -> Array.of_list (List.rev !opaque_definitions)))
-    in
-    let encode_const_body : constr_substituted option -> constr_substituted option = function
-      | None -> None
-      | Some ct -> Some (insert ct)
-    in
-    let lightened_library = traverse_library encode_const_body library in
-    (lightened_library, get_table ())
 
   (* Loading is also a traversing that decodes the embedded keys that
      are inside the [lightened_library]. If the [load_proof] flag is
