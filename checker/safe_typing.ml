@@ -98,39 +98,39 @@ end = struct
   (* Map a [compiled_library] to another one by just updating 
      the opaque term [t] to [on_opaque_const_body t]. *)
   let traverse_library on_opaque_const_body =
-    let rec lighten_module mb =
+    let rec traverse_module mb =
       { mb with
-	mod_expr = Option.map lighten_modexpr mb.mod_expr;
-	mod_type = lighten_modexpr mb.mod_type;
+	mod_expr = Option.map traverse_modexpr mb.mod_expr;
+	mod_type = traverse_modexpr mb.mod_type;
       }
-    and lighten_struct struc =
-      let lighten_body (l,body) = (l,match body with
+    and traverse_struct struc =
+      let traverse_body (l,body) = (l,match body with
 	| SFBconst ({const_opaque=true} as x) -> 
 	  SFBconst {x with const_body = on_opaque_const_body x.const_body }
 	| (SFBconst _ | SFBmind _ ) as x -> 
 	  x
 	| SFBmodule m -> 
-	  SFBmodule (lighten_module m)
+	  SFBmodule (traverse_module m)
 	| SFBmodtype m -> 
-	  SFBmodtype ({m with typ_expr = lighten_modexpr m.typ_expr}))
+	  SFBmodtype ({m with typ_expr = traverse_modexpr m.typ_expr}))
       in
-      List.map lighten_body struc
+      List.map traverse_body struc
 	
-    and lighten_modexpr = function
+    and traverse_modexpr = function
       | SEBfunctor (mbid,mty,mexpr) ->
 	SEBfunctor (mbid,
 		    ({mty with
-		      typ_expr = lighten_modexpr mty.typ_expr}),
-		    lighten_modexpr mexpr)
+		      typ_expr = traverse_modexpr mty.typ_expr}),
+		    traverse_modexpr mexpr)
       | SEBident mp as x -> x
       | SEBstruct (struc) ->
-	SEBstruct  (lighten_struct struc)
+	SEBstruct  (traverse_struct struc)
       | SEBapply (mexpr,marg,u) ->
-	SEBapply (lighten_modexpr mexpr,lighten_modexpr marg,u)
+	SEBapply (traverse_modexpr mexpr,traverse_modexpr marg,u)
       | SEBwith (seb,wdcl) ->
-	SEBwith (lighten_modexpr seb,wdcl)
+	SEBwith (traverse_modexpr seb,wdcl)
     in
-    fun (dp,mb,depends,s) -> (dp,lighten_module mb,depends,s) 
+    fun (dp,mb,depends,s) -> (dp,traverse_module mb,depends,s) 
 
   (* To disburden a library from opaque definitions, we simply 
      traverse it and add an indirection between the module body 
