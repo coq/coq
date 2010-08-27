@@ -387,9 +387,6 @@ let try_locate_qualified_library (loc,qid) =
 (************************************************************************)
 (* Internalise libraries *)
 
-let lighten_library m =
-  if !Flags.dont_load_proofs then lighten_library m else m
-
 let mk_library md digest = {
   library_name = md.md_name;
   library_compiled = lighten_library md.md_compiled;
