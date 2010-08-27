@@ -100,7 +100,7 @@ end = struct
   let traverse_library on_opaque_const_body =
     let rec lighten_module mb =
       { mb with
-	mod_expr = None;
+	mod_expr = Option.map lighten_modexpr mb.mod_expr;
 	mod_type = lighten_modexpr mb.mod_type;
       }
     and lighten_struct struc =
