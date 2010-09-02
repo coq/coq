@@ -172,17 +172,15 @@ let beq_scheme_msg mind =
 let declare_beq_scheme_with l kn =
   try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen UserVerbose l kn
 
-(* TODO : maybe switch to KernelVerbose to have the right behaviour *)
 let try_declare_beq_scheme kn =
   (* TODO: handle Fix, see e.g. TheoryList.In_spec, eventually handle
       proof-irrelevance; improve decidability by depending on decidability
       for the parameters rather than on the bl and lb properties *)
-  try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen KernelSilent [] kn
+  try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen KernelVerbose [] kn
 
 let declare_beq_scheme = declare_beq_scheme_with []
 
 (* Case analysis schemes *)
-(* TODO: maybe switch to KernelVerbose *)
 let declare_one_case_analysis_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let kind = inductive_sort_family mip in
@@ -192,7 +190,7 @@ let declare_one_case_analysis_scheme ind =
        induction scheme, the other ones share the same code with the
        apropriate type *)
   if List.mem InType kelim then
-    ignore (define_individual_scheme dep KernelSilent None ind)
+    ignore (define_individual_scheme dep KernelVerbose None ind)
 
 (* Induction/recursion schemes *)
 
@@ -206,7 +204,6 @@ let kinds_from_type =
    InProp,ind_dep_scheme_kind_from_type;
    InSet,rec_dep_scheme_kind_from_type]
 
-  (* TODO: maybe switch to kernel verbose *)
 let declare_one_induction_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let kind = inductive_sort_family mip in
@@ -216,7 +213,7 @@ let declare_one_induction_scheme ind =
     list_map_filter (fun (sort,kind) ->
       if List.mem sort kelim then Some kind else None)
       (if from_prop then kinds_from_prop else kinds_from_type) in
-  List.iter (fun kind -> ignore (define_individual_scheme kind KernelSilent None ind))
+  List.iter (fun kind -> ignore (define_individual_scheme kind KernelVerbose None ind))
     elims
 
 let declare_induction_schemes kn =
@@ -241,10 +238,9 @@ let declare_eq_decidability_scheme_with l kn =
   try_declare_scheme (eq_dec_scheme_msg (kn,0))
     declare_eq_decidability_gen UserVerbose l kn
 
-(* TODO:  maybe switch to kernel verbose *)
 let try_declare_eq_decidability kn =
   try_declare_scheme (eq_dec_scheme_msg (kn,0))
-    declare_eq_decidability_gen KernelSilent [] kn
+    declare_eq_decidability_gen KernelVerbose [] kn
 
 let declare_eq_decidability = declare_eq_decidability_scheme_with []
 
@@ -252,36 +248,34 @@ let ignore_error f x = try ignore (f x) with _ -> ()
 
 let declare_rewriting_schemes ind =
   if Hipattern.is_inductive_equality ind then begin
-    ignore (define_individual_scheme rew_r2l_scheme_kind KernelSilent None ind);
-    ignore (define_individual_scheme rew_r2l_dep_scheme_kind KernelSilent None ind);
+    ignore (define_individual_scheme rew_r2l_scheme_kind KernelVerbose None ind);
+    ignore (define_individual_scheme rew_r2l_dep_scheme_kind KernelVerbose None ind);
     ignore (define_individual_scheme rew_r2l_forward_dep_scheme_kind
-      KernelSilent None ind);
+      KernelVerbose None ind);
     (* These ones expect the equality to be symmetric; the first one also *)
     (* needs eq *)
-    ignore_error (define_individual_scheme rew_l2r_scheme_kind KernelSilent None) ind;
+    ignore_error (define_individual_scheme rew_l2r_scheme_kind KernelVerbose None) ind;
     ignore_error
-      (define_individual_scheme rew_l2r_dep_scheme_kind KernelSilent None) ind;
+      (define_individual_scheme rew_l2r_dep_scheme_kind KernelVerbose None) ind;
     ignore_error
-      (define_individual_scheme rew_l2r_forward_dep_scheme_kind KernelSilent None) ind
+      (define_individual_scheme rew_l2r_forward_dep_scheme_kind KernelVerbose None) ind
   end
 
-(* TODO: maybe switch to kernel verbose *)
 let declare_congr_scheme ind =
   if Hipattern.is_equality_type (mkInd ind) then begin
     if
       try Coqlib.check_required_library Coqlib.logic_module_name; true
       with _ -> false
     then
-      ignore (define_individual_scheme congr_scheme_kind KernelSilent None ind)
+      ignore (define_individual_scheme congr_scheme_kind KernelVerbose None ind)
     else
       warning "Cannot build congruence scheme because eq is not found"
   end
 
-(* TODO: maybe switch to kernel verbose *)
 let declare_sym_scheme ind =
   if Hipattern.is_inductive_equality ind then
     (* Expect the equality to be symmetric *)
-    ignore_error (define_individual_scheme sym_scheme_kind KernelSilent None) ind
+    ignore_error (define_individual_scheme sym_scheme_kind KernelVerbose None) ind
 
 (* Scheme command *)
 

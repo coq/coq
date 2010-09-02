@@ -125,7 +125,7 @@ let define internal id c =
 	const_entry_boxed = Flags.boxed_definitions() },
       Decl_kinds.IsDefinition Scheme) in
   (match internal with
-  | KernelSilent -> ()
+  | KernelSilent -> () 
   | _-> definition_message id);
   kn
 
