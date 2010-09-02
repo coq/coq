@@ -159,7 +159,6 @@ let define_mutual_scheme kind internal names mind =
   | s,MutualSchemeFunction f ->
       define_mutual_scheme_base kind s f internal names mind
 
-(* TODO: change KernelSilent here to the right behaviour *)
 let find_scheme kind (mind,i as ind) =
   try Stringmap.find kind (Indmap.find ind !scheme_map)
   with Not_found ->

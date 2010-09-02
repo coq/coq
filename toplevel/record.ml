@@ -257,8 +257,7 @@ let declare_structure finite infer id idbuild paramimpls params arity fieldimpls
       mind_entry_record = true;
       mind_entry_finite = recursivity_flag_of_kind finite;
       mind_entry_inds = [mie_ind] } in
-(* TODO : maybe switch to KernelVerbose *)
-  let kn = Command.declare_mutual_inductive_with_eliminations KernelSilent mie [(paramimpls,[])] in
+  let kn = Command.declare_mutual_inductive_with_eliminations KernelVerbose mie [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in
   let kinds,sp_projs = declare_projections rsp ~kind ?name coers fieldimpls fields in
