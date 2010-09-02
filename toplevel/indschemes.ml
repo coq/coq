@@ -123,8 +123,8 @@ let declare_beq_scheme_gen internal names kn =
 
 let alarm what internal msg =
   let debug = false in
-  (* TODO: specify even more by distinguish KernelVerbose and UserVerbose *)
   match internal with
+  | KernelVerbose 
   | KernelSilent ->
     (if debug then
       Flags.if_verbose Pp.msg_warning
