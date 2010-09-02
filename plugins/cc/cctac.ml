@@ -104,7 +104,7 @@ let rec pattern_of_constr env sigma c =
     | Prod (_,a,_b) when not (dependent (mkRel 1) _b) ->
 	let b =pop _b in
 	let pa,sa = pattern_of_constr env sigma a in
-	let pb,sb = pattern_of_constr env sigma (pop b) in
+	let pb,sb = pattern_of_constr env sigma b in
 	let sort_b = sf_of env sigma b in
 	let sort_a = sf_of env sigma a in
 	  PApp(Product (sort_a,sort_b),
@@ -141,27 +141,27 @@ let patterns_of_constr env sigma nrels term=
 
 let rec quantified_atom_of_constr env sigma nrels term =
   match kind_of_term (whd_delta env term) with
-      Prod (_,atom,ff) ->
+      Prod (id,atom,ff) -> 
 	if eq_constr ff (Lazy.force _False) then
 	  let patts=patterns_of_constr env sigma nrels atom in
 	      `Nrule patts
-	else
-	  quantified_atom_of_constr env sigma (succ nrels) ff
-    | _ ->
+	else 
+	  quantified_atom_of_constr (Environ.push_rel (id,None,atom) env) sigma (succ nrels) ff
+    | _ ->  
 	let patts=patterns_of_constr env sigma nrels term in
 	    `Rule patts
 
 let litteral_of_constr env sigma term=
   match kind_of_term (whd_delta env term) with
-    | Prod (_,atom,ff) ->
+    | Prod (id,atom,ff) -> 
 	if eq_constr ff (Lazy.force _False) then
 	  match (atom_of_constr env sigma atom) with
 	      `Eq(t,a,b) -> `Neq(t,a,b)
 	    | `Other(p) -> `Nother(p)
 	else
 	  begin
-	    try
-	      quantified_atom_of_constr env sigma 1 ff
+	    try 
+	      quantified_atom_of_constr (Environ.push_rel (id,None,atom) env) sigma 1 ff  
 	    with Not_found ->
 	      `Other (decompose_term env sigma term)
 	  end
