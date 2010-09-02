@@ -190,8 +190,9 @@ Vernacular commands
   illustration of wrong commands.
 - Most commands referring to constant (e.g. Print or About) now support
   referring to the constant by a notation string.
-- New option to make generation of boolean equality automatic for datatypes
-  (use "Set Boolean Equality Schemes" for activation).
+- New option "Boolean Equality Schemes" to make generation of boolean
+  equality automatic for datatypes (together with option "Decidable
+  Equality Schemes", this replaces deprecated option "Equality Scheme").
 - Made support for automatic generation of case analysis schemes available
   to user (governed by option "Set Case Analysis Schemes").
 - New command "(Global?) Generalizable [All|No] Variable(s)? ident(s)?" to
