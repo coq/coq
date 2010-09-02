@@ -79,7 +79,7 @@ let _ = (* compatibility *)
 
 let is_eq_flag () = !eq_flag && Flags.version_strictly_greater Flags.V8_2
 
-let eq_dec_flag = ref false
+let eq_dec_flag = ref false 
 let _ =
   declare_bool_option
     { optsync  = true;
@@ -100,10 +100,7 @@ let _ =
 (* Util *)
 
 let define id internal c t =
-  (* TODO: specify even more by distinguish KernelVerbose and UserVerbose *)
-  let f = match internal with
-   | KernelSilent -> declare_internal_constant
-   | _ -> declare_constant in
+  let f = declare_constant ~internal in
   let kn = f id
     (DefinitionEntry
       { const_entry_body = c;
@@ -121,8 +118,8 @@ let declare_beq_scheme_gen internal names kn =
 
 let alarm what internal msg =
   let debug = false in
-  (* TODO: specify even more by distinguish KernelVerbose and UserVerbose *)
   match internal with
+  | KernelVerbose 
   | KernelSilent ->
     (if debug then
       Flags.if_verbose Pp.msg_warning

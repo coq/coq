@@ -187,7 +187,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	    Evarutil.nf_evar !evars t
 	in
 	Evarutil.check_evars env Evd.empty !evars termtype;
-	let cst = Declare.declare_internal_constant id
+	let cst = Declare.declare_constant ~internal:Declare.KernelSilent id
 	  (Entries.ParameterEntry (termtype,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in instance_hook k None false imps ?hook (ConstRef cst); id
       end
@@ -301,7 +301,7 @@ let context ?(hook=fun _ -> ()) l =
   in
   let fn (id, _, t) =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
-      let cst = Declare.declare_internal_constant id
+      let cst = Declare.declare_constant ~internal:Declare.KernelSilent id
 	(ParameterEntry (t,false), IsAssumption Logical)
       in
 	match class_of_constr t with

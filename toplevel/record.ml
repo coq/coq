@@ -193,7 +193,7 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
                     const_entry_opaque = false;
 		    const_entry_boxed = Flags.boxed_definitions() } in
 		  let k = (DefinitionEntry cie,IsDefinition kind) in
-		  let kn = declare_internal_constant fid k in
+		  let kn = declare_constant ~internal:KernelSilent fid k in
 		  Flags.if_verbose message (string_of_id fid ^" is defined");
 		  kn
                 with Type_errors.TypeError (ctx,te) ->

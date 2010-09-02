@@ -172,16 +172,11 @@ let declare_constant_common id dhyps (cd,kind) =
   Notation.declare_ref_arguments_scope (ConstRef c);
   c
 
-let declare_constant_gen internal id (cd,kind) =
+let declare_constant ?(internal = UserVerbose) id (cd,kind) =
   let cd = hcons_constant_declaration cd in
   let kn = declare_constant_common id [] (ConstantEntry cd,kind) in
   !xml_declare_constant (internal,kn);
   kn
-
-(* TODO: add a third function to distinguish between KernelVerbose
- * and user Verbose *)
-let declare_internal_constant = declare_constant_gen KernelSilent
-let declare_constant = declare_constant_gen UserVerbose
 
 (** Declaration of inductive blocks *)
 

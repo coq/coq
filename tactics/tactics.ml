@@ -3473,7 +3473,7 @@ let abstract_subproof id tac gl =
   let const = Pfedit.build_constant_by_tactic secsign concl
     (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)) in
   let cd = Entries.DefinitionEntry const in
-  let lem = mkConst (Declare.declare_internal_constant id (cd,IsProof Lemma)) in
+  let lem = mkConst (Declare.declare_constant ~internal:Declare.KernelSilent id (cd,IsProof Lemma)) in
   exact_no_check
     (applist (lem,List.rev (Array.to_list (instance_from_named_context sign))))
     gl
@@ -3503,7 +3503,7 @@ let admit_as_an_axiom gl =
   if occur_existential concl then error"\"admit\" cannot handle existentials.";
   let axiom =
     let cd = Entries.ParameterEntry (concl,false) in
-    let con = Declare.declare_internal_constant na (cd,IsAssumption Logical) in
+    let con = Declare.declare_constant ~internal:Declare.KernelSilent na (cd,IsAssumption Logical) in
     constr_of_global (ConstRef con)
   in
   exact_no_check

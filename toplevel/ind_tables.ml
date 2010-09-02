@@ -110,11 +110,7 @@ let declare_scheme kind indcl =
   Lib.add_anonymous_leaf (inScheme (kind,indcl))
 
 let define internal id c =
-  (* TODO: specify even more by distinguish between KernelVerbose and
-   * UserVerbose *)
-  let fd = match internal with 
-    | KernelSilent -> declare_internal_constant
-    | _ -> declare_constant in
+  let fd = declare_constant ~internal in
   let kn = fd id
     (DefinitionEntry
       { const_entry_body = c;
