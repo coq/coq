@@ -194,11 +194,11 @@ Vernacular commands
   illustration of wrong commands.
 - Most commands referring to constant (e.g. Print or About) now support
   referring to the constant by a notation string.
-- Made generation of boolean equality automatic for datatypes (use
-  "Unset Boolean Equality Schemes" for deactivation).
-- Made support for automatic generation of case analysis schemes and
-  congruence schemes available to user (governed by options "Unset
-  Case Analysis Schemes" and "Unset Congruence Schemes").
+- New option "Boolean Equality Schemes" to make generation of boolean
+  equality automatic for datatypes (together with option "Decidable
+  Equality Schemes", this replaces deprecated option "Equality Scheme").
+- Made support for automatic generation of case analysis schemes available
+  to user (governed by option "Set Case Analysis Schemes").
 - New command "(Global?) Generalizable [All|No] Variable(s)? ident(s)?" to
   declare which identifiers are generalizable in `{} and `() binders.
 - New command "Print Opaque Dependencies" to display opaque constants in
