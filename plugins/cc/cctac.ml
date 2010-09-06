@@ -74,9 +74,12 @@ let rec decompose_term env sigma t=
 		    decompose_term env sigma a),
 	      decompose_term env sigma b)
     | Construct c->
-	let (oib,_)=Global.lookup_inductive (fst c) in
-	let nargs=mis_constructor_nargs_env env c in
-	  Constructor {ci_constr=c;
+	let (mind,i_ind),i_con = c in 
+	let canon_mind = mind_of_kn (canonical_mind mind) in
+	let canon_ind = canon_mind,i_ind in
+	let (oib,_)=Global.lookup_inductive (canon_ind) in
+	let nargs=mis_constructor_nargs_env env (canon_ind,i_con) in
+	  Constructor {ci_constr= (canon_ind,i_con);
 		       ci_arity=nargs;
 		       ci_nhyps=nargs-oib.mind_nparams}
     | _ ->if closed0 t then (Symb t) else raise Not_found
