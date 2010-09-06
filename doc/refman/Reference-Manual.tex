@@ -43,6 +43,15 @@
 % linktocpage option makes page numbers, not section names, to be links in
 % the table of contents.
 % colorlinks option colors the links instead of using boxes.
+
+% The command \tocnumber was added to HEVEA in version 1.06-6.
+% It instructs HEVEA to put chapter numbers into the table of
+% content entries. The table of content is produced by HACHA using
+% the options -tocbis -o toc.html. HEVEA produces a warning when
+% a command is not recognized, so versions earlier than 1.06-6 can
+% still be used.
+%HEVEA\tocnumber
+
 \begin{document}
 %BEGIN LATEX
 \sloppy\hbadness=5000
