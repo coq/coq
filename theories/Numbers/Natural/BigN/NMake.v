@@ -27,13 +27,15 @@ Module Make (W0:CyclicType) <: NType.
 
  Include NMake_gen.Make W0.
 
+ Open Scope Z_scope.
+
  Local Notation "[ x ]" := (to_Z x).
 
  Definition eq (x y : t) := [x] = [y].
 
  Declare Reduction red_t :=
   lazy beta iota delta
-   [iter_t reduce same_level mk_t mk_t_S dom_t dom_op].
+   [iter_t reduce same_level mk_t mk_t_S succ_t dom_t dom_op].
 
  Ltac red_t :=
   match goal with |- ?u => let v := (eval red_t in u) in change v end.
@@ -62,7 +64,7 @@ Module Make (W0:CyclicType) <: NType.
  Proof.
  intros.
  change (Zpos (ZnZ.digits (dom_op n)) <= Zpos (ZnZ.digits (dom_op m))).
- rewrite (digits_dom_op n), (digits_dom_op m).
+ rewrite !digits_dom_op, !Pshiftl_Zpower.
  apply Zmult_le_compat_l; auto with zarith.
  apply Zpower_le_monotone2; auto with zarith.
  Qed.
@@ -84,11 +86,17 @@ Module Make (W0:CyclicType) <: NType.
 
  (** * Successor *)
 
- Local Notation succn := (fun n (x:dom_t n) =>
+ (** NB: it is crucial here and for the rest of this file to preserve
+     the let-in's. They allow to pre-compute once and for all the
+     field access to Z/nZ initial structures (when n=0..6). *)
+
+ Local Notation succn := (fun n =>
   let op := dom_op n in
-  match ZnZ.succ_c x with
+  let succ_c := ZnZ.succ_c in
+  let one := ZnZ.one in
+  fun x => match succ_c x with
    | C0 r => mk_t n r
-   | C1 r => mk_t_S n (WW ZnZ.one r)
+   | C1 r => mk_t_S n (WW one r)
   end).
 
  Definition succ : t -> t := Eval red_t in iter_t succn.
@@ -107,11 +115,13 @@ Module Make (W0:CyclicType) <: NType.
 
  (** * Addition *)
 
- Local Notation addn := (fun n (x y : dom_t n) =>
+ Local Notation addn := (fun n =>
   let op := dom_op n in
-  match ZnZ.add_c x y with
+  let add_c := ZnZ.add_c in
+  let one := ZnZ.one in
+  fun x y =>match add_c x y with
   | C0 r => mk_t n r
-  | C1 r => mk_t_S n (WW ZnZ.one r)
+  | C1 r => mk_t_S n (WW one r)
   end).
 
  Definition add : t -> t -> t := Eval red_t in same_level addn.
@@ -131,8 +141,9 @@ Module Make (W0:CyclicType) <: NType.
 
  (** * Predecessor *)
 
- Local Notation predn := (fun n (x:dom_t n) =>
-  match ZnZ.pred_c x with
+ Local Notation predn := (fun n =>
+  let pred_c := ZnZ.pred_c in
+  fun x => match pred_c x with
    | C0 r => reduce n r
    | C1 _ => zero
   end).
@@ -171,9 +182,9 @@ Module Make (W0:CyclicType) <: NType.
 
  (** * Subtraction *)
 
- Local Notation subn := (fun n (x y : dom_t n) =>
-  let op := dom_op n in
-  match ZnZ.sub_c x y with
+ Local Notation subn := (fun n =>
+  let sub_c := ZnZ.sub_c in
+  fun x y => match sub_c x y with
   | C0 r => reduce n r
   | C1 r => zero
   end).
@@ -214,6 +225,68 @@ Module Make (W0:CyclicType) <: NType.
 
  (** * Comparison *)
 
+ Definition comparen_m n :
+  forall m, word (dom_t n) (S m) -> dom_t n -> comparison :=
+  let op := dom_op n in
+  let zero := @ZnZ.zero _ op in
+  let compare := @ZnZ.compare _ op in
+  let compare0 := compare zero in
+  fun m => compare_mn_1 (dom_t n) (dom_t n) zero compare compare0 compare (S m).
+
+ Let spec_comparen_m:
+  forall n m (x : word (dom_t n) (S m)) (y : dom_t n),
+   comparen_m n m x y = Zcompare (eval n (S m) x) (ZnZ.to_Z y).
+ Proof.
+  intros n m x y.
+  unfold comparen_m, eval.
+  rewrite nmake_double.
+  apply spec_compare_mn_1.
+  exact ZnZ.spec_0.
+  intros. apply ZnZ.spec_compare.
+  exact ZnZ.spec_to_Z.
+  exact ZnZ.spec_compare.
+  exact ZnZ.spec_compare.
+  exact ZnZ.spec_to_Z.
+ Qed.
+
+ Definition comparenm n m wx wy :=
+    let mn := Max.max n m in
+    let d := diff n m in
+    let op := make_op mn in
+    ZnZ.compare
+       (castm (diff_r n m) (extend_tr wx (snd d)))
+       (castm (diff_l n m) (extend_tr wy (fst d))).
+
+ Local Notation compare_folded :=
+   (iter_sym _
+      (fun n => @ZnZ.compare _ (dom_op n))
+      comparen_m
+      comparenm
+      CompOpp).
+
+ Definition compare : t -> t -> comparison :=
+  Eval lazy beta iota delta [iter_sym dom_op dom_t comparen_m] in
+  compare_folded.
+
+ Lemma compare_fold : compare = compare_folded.
+ Proof.
+ lazy beta iota delta [iter_sym dom_op dom_t comparen_m]. reflexivity.
+ Qed.
+
+(** TODO: no need for ZnZ.Spec_rect , _ind, and so on... *)
+
+ Theorem spec_compare : forall x y,
+   compare x y = Zcompare [x] [y].
+ Proof.
+  intros x y. rewrite compare_fold. apply spec_iter_sym; clear x y.
+  intros. apply ZnZ.spec_compare.
+  intros. cbv beta zeta. apply spec_comparen_m.
+  intros n m x y; unfold comparenm.
+  rewrite (spec_cast_l n m x), (spec_cast_r n m y).
+  unfold to_Z; apply ZnZ.spec_compare.
+  intros. subst. apply Zcompare_antisym.
+ Qed.
+
  Definition eq_bool (x y : t) : bool :=
   match compare x y with
   | Eq => true
@@ -241,12 +314,393 @@ Module Make (W0:CyclicType) <: NType.
  intros. unfold min, Zmin. rewrite spec_compare; destruct Zcompare; reflexivity.
  Qed.
 
+ (** * Multiplication *)
+
+ Definition wn_mul n : forall m, word (dom_t n) (S m) -> dom_t n -> t :=
+  let op := dom_op n in
+  let zero := @ZnZ.zero _ op in
+  let succ := @ZnZ.succ _ op in
+  let add_c := @ZnZ.add_c _ op in
+  let mul_c := @ZnZ.mul_c _ op in
+  let ww := @ZnZ.WW _ op in
+  let ow := @ZnZ.OW _ op in
+  let eq0 := @ZnZ.eq0 _ op in
+  let mul_add := @DoubleMul.w_mul_add _ zero succ add_c mul_c in
+  let mul_add_n1 := @DoubleMul.double_mul_add_n1 _ zero ww ow mul_add in
+  fun m x y =>
+   let (w,r) := mul_add_n1 (S m) x y zero in
+   if eq0 w then mk_t_w' n m r
+   else mk_t_w' n (S m) (WW (extend n m w) r).
+
+ Definition mulnm n m x y :=
+    let mn := Max.max n m in
+    let d := diff n m in
+    let op := make_op mn in
+     reduce_n (S mn) (ZnZ.mul_c
+       (castm (diff_r n m) (extend_tr x (snd d)))
+       (castm (diff_l n m) (extend_tr y (fst d)))).
+
+ Local Notation mul_folded :=
+  (iter_sym _
+    (fun n => let mul_c := ZnZ.mul_c in
+      fun x y => reduce (S n) (succ_t _ (mul_c x y)))
+    wn_mul
+    mulnm
+    (fun x => x)).
+
+ Definition mul : t -> t -> t :=
+  Eval lazy beta iota delta
+   [iter_sym dom_op dom_t reduce succ_t extend zeron
+    wn_mul DoubleMul.w_mul_add mk_t_w'] in
+  mul_folded.
+
+ Lemma mul_fold : mul = mul_folded.
+ Proof.
+  lazy beta iota delta
+   [iter_sym dom_op dom_t reduce succ_t extend zeron
+    wn_mul  DoubleMul.w_mul_add mk_t_w']. reflexivity.
+ Qed.
+
+ Lemma spec_muln:
+   forall n (x: word _ (S n)) y,
+     [Nn (S n) (ZnZ.mul_c (Ops:=make_op n) x y)] = [Nn n x] * [Nn n y].
+ Proof.
+    intros n x y; unfold to_Z.
+    rewrite <- ZnZ.spec_mul_c.
+    rewrite make_op_S.
+    case ZnZ.mul_c; auto.
+ Qed.
+
+ Lemma spec_mul_add_n1: forall n m x y z,
+  let (q,r) := DoubleMul.double_mul_add_n1 ZnZ.zero ZnZ.WW ZnZ.OW
+          (DoubleMul.w_mul_add ZnZ.zero ZnZ.succ ZnZ.add_c ZnZ.mul_c)
+          (S m) x y z in
+  ZnZ.to_Z q * (base (ZnZ.digits (nmake_op _ (dom_op n) (S m))))
+   + eval n (S m) r =
+  eval n (S m) x * ZnZ.to_Z y + ZnZ.to_Z z.
+ Proof.
+ intros n m x y z.
+ rewrite digits_nmake.
+ unfold eval. rewrite nmake_double.
+ apply DoubleMul.spec_double_mul_add_n1.
+ apply ZnZ.spec_0.
+ exact ZnZ.spec_WW.
+ exact ZnZ.spec_OW.
+ apply DoubleCyclic.spec_mul_add.
+ Qed.
+
+ Lemma spec_wn_mul : forall n m x y,
+   [wn_mul n m x y] = (eval n (S m) x) * ZnZ.to_Z y.
+ Proof.
+  intros; unfold wn_mul.
+  generalize (spec_mul_add_n1 n m x y ZnZ.zero).
+  case DoubleMul.double_mul_add_n1; intros q r Hqr.
+  rewrite ZnZ.spec_0, Zplus_0_r in Hqr. rewrite <- Hqr.
+  generalize (ZnZ.spec_eq0 q); case ZnZ.eq0; intros HH.
+  rewrite HH; auto. simpl. apply spec_mk_t_w'.
+  clear.
+  rewrite spec_mk_t_w'.
+  set (m' := S m) in *.
+  unfold eval.
+  rewrite nmake_WW. f_equal. f_equal.
+  rewrite <- spec_mk_t.
+  symmetry. apply spec_extend.
+ Qed.
+
+ Theorem spec_mul : forall x y, [mul x y] = [x] * [y].
+ Proof.
+  intros x y. rewrite mul_fold. apply spec_iter_sym; clear x y.
+   intros n x y. cbv zeta beta.
+    rewrite spec_reduce, spec_succ_t, <- ZnZ.spec_mul_c; auto.
+   apply spec_wn_mul.
+   intros n m x y; unfold mulnm. rewrite spec_reduce_n.
+    rewrite (spec_cast_l n m x), (spec_cast_r n m y).
+    apply spec_muln.
+   intros. rewrite Zmult_comm; auto.
+ Qed.
+
+ (** * Division by a smaller number *)
+
+ Definition wn_divn1 n :=
+  let op := dom_op n in
+  let zd := ZnZ.zdigits op in
+  let zero := @ZnZ.zero _ op in
+  let ww := @ZnZ.WW _ op in
+  let head0 := @ZnZ.head0 _ op in
+  let add_mul_div := @ZnZ.add_mul_div _ op in
+  let div21 := @ZnZ.div21 _ op in
+  let compare := @ZnZ.compare _ op in
+  let sub := @ZnZ.sub _ op in
+  let ddivn1 :=
+    DoubleDivn1.double_divn1 zd zero ww head0 add_mul_div div21 compare sub in
+  fun m x y => let (u,v) := ddivn1 (S m) x y in (mk_t_w' n m u, mk_t n v).
+
+ Let div_gtnm n m wx wy :=
+    let mn := Max.max n m in
+    let d := diff n m in
+    let op := make_op mn in
+    let (q, r):= ZnZ.div_gt
+         (castm (diff_r n m) (extend_tr wx (snd d)))
+         (castm (diff_l n m) (extend_tr wy (fst d))) in
+    (reduce_n mn q, reduce_n mn r).
+
+ Local Notation div_gt_folded :=
+   (iter _
+     (fun n => let div_gt := ZnZ.div_gt in
+       fun x y => let (u,v) := div_gt x y in (reduce n u, reduce n v))
+     (fun n =>
+       let div_gt := ZnZ.div_gt in
+       fun m x y =>
+         let y' := DoubleBase.get_low (zeron n) (S m) y in
+         let (u,v) := div_gt x y' in (reduce n u, reduce n v))
+      wn_divn1
+      div_gtnm).
+
+ Definition div_gt :=
+  Eval lazy beta iota delta
+   [iter dom_op dom_t reduce zeron wn_divn1 mk_t_w' mk_t] in
+  div_gt_folded.
+
+ Lemma div_gt_fold : div_gt = div_gt_folded.
+ Proof.
+  lazy beta iota delta [iter dom_op dom_t reduce zeron wn_divn1 mk_t_w' mk_t].
+  reflexivity.
+ Qed.
+
+ Lemma spec_get_endn: forall n m x y,
+  eval n m x  <= [mk_t n y] ->
+   [mk_t n (DoubleBase.get_low (zeron n) m x)] = eval n m x.
+ Proof.
+  intros n m x y H.
+  unfold eval. rewrite nmake_double.
+  rewrite spec_mk_t in *.
+  apply DoubleBase.spec_get_low.
+  apply spec_zeron.
+  exact ZnZ.spec_to_Z.
+  apply Zle_lt_trans with (ZnZ.to_Z y); auto.
+    rewrite <- nmake_double; auto.
+  case (ZnZ.spec_to_Z y); auto.
+ Qed.
+
+ Let spec_divn1 n :=
+   DoubleDivn1.spec_double_divn1
+    (ZnZ.zdigits (dom_op n)) (ZnZ.zero:dom_t n)
+    ZnZ.WW ZnZ.head0
+    ZnZ.add_mul_div ZnZ.div21
+    ZnZ.compare ZnZ.sub ZnZ.to_Z
+    ZnZ.spec_to_Z
+    ZnZ.spec_zdigits
+    ZnZ.spec_0 ZnZ.spec_WW ZnZ.spec_head0
+    ZnZ.spec_add_mul_div ZnZ.spec_div21
+    ZnZ.spec_compare ZnZ.spec_sub.
+
+ Lemma spec_div_gt_aux : forall x y, [x] > [y] -> 0 < [y] ->
+   let (q,r) := div_gt x y in
+   [x] = [q] * [y] + [r] /\ 0 <= [r] < [y].
+ Proof.
+  intros x y. rewrite div_gt_fold. apply spec_iter; clear x y.
+   intros n x y H1 H2. simpl.
+    generalize (ZnZ.spec_div_gt x y H1 H2); case ZnZ.div_gt.
+    intros u v. rewrite 2 spec_reduce. auto.
+   intros n m x y H1 H2. cbv zeta beta.
+    generalize (ZnZ.spec_div_gt x
+                (DoubleBase.get_low (zeron n) (S m) y)).
+    case ZnZ.div_gt.
+    intros u v H3; repeat rewrite spec_reduce.
+    generalize (spec_get_endn n (S m) y x). rewrite !spec_mk_t. intros H4.
+    rewrite H4 in H3; auto with zarith.
+   intros n m x y H1 H2.
+    generalize (spec_divn1 n (S m) x y H2).
+    unfold wn_divn1; case DoubleDivn1.double_divn1.
+    intros u v H3.
+    rewrite spec_mk_t_w', spec_mk_t.
+    rewrite <- !nmake_double in H3; auto.
+   intros n m x y H1 H2; unfold div_gtnm.
+    generalize (ZnZ.spec_div_gt
+                   (castm (diff_r n m)
+                     (extend_tr x (snd (diff n m))))
+                   (castm (diff_l n m)
+                     (extend_tr y (fst (diff n m))))).
+    case ZnZ.div_gt.
+    intros xx yy HH.
+    repeat rewrite spec_reduce_n.
+    rewrite (spec_cast_l n m x), (spec_cast_r n m y).
+    unfold to_Z; apply HH.
+    rewrite (spec_cast_l n m x) in H1; auto.
+    rewrite (spec_cast_r n m y) in H1; auto.
+    rewrite (spec_cast_r n m y) in H2; auto.
+ Qed.
+
+ Theorem spec_div_gt: forall x y, [x] > [y] -> 0 < [y] ->
+  let (q,r) := div_gt x y in
+  [q] = [x] / [y] /\ [r] = [x] mod [y].
+ Proof.
+  intros x y H1 H2; generalize (spec_div_gt_aux x y H1 H2); case div_gt.
+  intros q r (H3, H4); split.
+  apply (Zdiv_unique [x] [y] [q] [r]); auto.
+  rewrite Zmult_comm; auto.
+  apply (Zmod_unique [x] [y] [q] [r]); auto.
+  rewrite Zmult_comm; auto.
+ Qed.
+
+ (** * General Division *)
+
+ Definition div_eucl (x y : t) : t * t :=
+  if eq_bool y zero then (zero,zero) else
+  match compare x y with
+  | Eq => (one, zero)
+  | Lt => (zero, x)
+  | Gt => div_gt x y
+  end.
+
+ Theorem spec_div_eucl: forall x y,
+      let (q,r) := div_eucl x y in
+      ([q], [r]) = Zdiv_eucl [x] [y].
+ Proof.
+ intros x y. unfold div_eucl.
+ rewrite spec_eq_bool, spec_compare, spec_0.
+ generalize (Zeq_bool_if [y] 0); case Zeq_bool.
+ intros ->. rewrite spec_0. destruct [x]; auto.
+ intros H'.
+ assert (H : 0 < [y]) by (generalize (spec_pos y); auto with zarith).
+ clear H'.
+ case Zcompare_spec; intros Cmp;
+   rewrite ?spec_0, ?spec_1; intros; auto with zarith.
+ rewrite Cmp; generalize (Z_div_same [y] (Zlt_gt _ _ H))
+                         (Z_mod_same [y] (Zlt_gt _ _ H));
+  unfold Zdiv, Zmod; case Zdiv_eucl; intros; subst; auto.
+ assert (LeLt: 0 <= [x] < [y]) by (generalize (spec_pos x); auto).
+ generalize (Zdiv_small _ _ LeLt) (Zmod_small _ _ LeLt);
+  unfold Zdiv, Zmod; case Zdiv_eucl; intros; subst; auto.
+ generalize (spec_div_gt _ _ (Zlt_gt _ _ Cmp) H); auto.
+ unfold Zdiv, Zmod; case Zdiv_eucl; case div_gt.
+ intros a b c d (H1, H2); subst; auto.
+ Qed.
+
+ Definition div (x y : t) : t := fst (div_eucl x y).
+
+ Theorem spec_div:
+   forall x y, [div x y] = [x] / [y].
+ Proof.
+ intros x y; unfold div; generalize (spec_div_eucl x y);
+   case div_eucl; simpl fst.
+ intros xx yy; unfold Zdiv; case Zdiv_eucl; intros qq rr H;
+  injection H; auto.
+ Qed.
+
+ (** * Modulo by a smaller number *)
+
+ Definition wn_modn1 n :=
+  let op := dom_op n in
+  let zd := ZnZ.zdigits op in
+  let zero := @ZnZ.zero _ op in
+  let head0 := @ZnZ.head0 _ op in
+  let add_mul_div := @ZnZ.add_mul_div _ op in
+  let div21 := @ZnZ.div21 _ op in
+  let compare := @ZnZ.compare _ op in
+  let sub := @ZnZ.sub _ op in
+  let dmodn1 :=
+    DoubleDivn1.double_modn1 zd zero head0 add_mul_div div21 compare sub in
+  fun m x y => reduce n (dmodn1 (S m) x y).
+
+ Let mod_gtnm n m wx wy :=
+    let mn := Max.max n m in
+    let d := diff n m in
+    let op := make_op mn in
+    reduce_n mn (ZnZ.modulo_gt
+         (castm (diff_r n m) (extend_tr wx (snd d)))
+         (castm (diff_l n m) (extend_tr wy (fst d)))).
+
+ Local Notation mod_gt_folded :=
+   (iter _
+      (fun n => let modulo_gt := ZnZ.modulo_gt in
+        fun x y => reduce n (modulo_gt x y))
+      (fun n => let modulo_gt := ZnZ.modulo_gt in
+        fun m x y =>
+          reduce n (modulo_gt x (DoubleBase.get_low (zeron n) (S m) y)))
+      wn_modn1
+      mod_gtnm).
+
+ Definition mod_gt :=
+  Eval lazy beta iota delta [iter dom_op dom_t reduce wn_modn1 zeron] in
+  mod_gt_folded.
+
+ Lemma mod_gt_fold : mod_gt = mod_gt_folded.
+ Proof.
+  lazy beta iota delta [iter dom_op dom_t reduce wn_modn1 zeron].
+  reflexivity.
+ Qed.
+
+ Let spec_modn1 n :=
+   DoubleDivn1.spec_double_modn1
+    (ZnZ.zdigits (dom_op n)) (ZnZ.zero:dom_t n)
+    ZnZ.WW ZnZ.head0
+    ZnZ.add_mul_div ZnZ.div21
+    ZnZ.compare ZnZ.sub ZnZ.to_Z
+    ZnZ.spec_to_Z
+    ZnZ.spec_zdigits
+    ZnZ.spec_0 ZnZ.spec_WW ZnZ.spec_head0
+    ZnZ.spec_add_mul_div ZnZ.spec_div21
+    ZnZ.spec_compare ZnZ.spec_sub.
+
+ Theorem spec_mod_gt:
+   forall x y, [x] > [y] -> 0 < [y] -> [mod_gt x y] = [x] mod [y].
+ Proof.
+ intros x y. rewrite mod_gt_fold. apply spec_iter; clear x y.
+ intros n x y H1 H2. simpl. rewrite spec_reduce.
+   exact (ZnZ.spec_modulo_gt x y H1 H2).
+ intros n m x y H1 H2. cbv zeta beta. rewrite spec_reduce.
+  rewrite <- spec_mk_t in H1.
+  rewrite <- (spec_get_endn n (S m) y x); auto with zarith.
+  rewrite spec_mk_t.
+  apply ZnZ.spec_modulo_gt; auto.
+  rewrite <- (spec_get_endn n (S m) y x), !spec_mk_t in H1; auto with zarith.
+  rewrite <- (spec_get_endn n (S m) y x), !spec_mk_t in H2; auto with zarith.
+ intros n m x y H1 H2. unfold wn_modn1. rewrite spec_reduce.
+  unfold eval; rewrite nmake_double.
+  apply (spec_modn1 n); auto.
+ intros n m x y H1 H2; unfold mod_gtnm.
+  repeat rewrite spec_reduce_n.
+  rewrite (spec_cast_l n m x), (spec_cast_r n m y).
+  unfold to_Z; apply ZnZ.spec_modulo_gt.
+  rewrite (spec_cast_l n m x) in H1; auto.
+  rewrite (spec_cast_r n m y) in H1; auto.
+  rewrite (spec_cast_r n m y) in H2; auto.
+ Qed.
+
+ (** * General Modulo *)
+
+ Definition modulo (x y : t) : t :=
+  if eq_bool y zero then zero else
+  match compare x y with
+  | Eq => zero
+  | Lt => x
+  | Gt => mod_gt x y
+  end.
+
+ Theorem spec_modulo:
+   forall x y, [modulo x y] = [x] mod [y].
+ Proof.
+ intros x y. unfold modulo.
+ rewrite spec_eq_bool, spec_compare, spec_0.
+ generalize (Zeq_bool_if [y] 0). case Zeq_bool.
+ intros ->; rewrite spec_0. destruct [x]; auto.
+ intro H'.
+ assert (H : 0 < [y]) by (generalize (spec_pos y); auto with zarith).
+ clear H'.
+ case Zcompare_spec;
+   rewrite ?spec_0, ?spec_1; intros; try split; auto with zarith.
+ rewrite H0; apply sym_equal; apply Z_mod_same; auto with zarith.
+ apply sym_equal; apply Zmod_small; auto with zarith.
+ generalize (spec_pos x); auto with zarith.
+ apply spec_mod_gt; auto with zarith.
+ Qed.
+
  (** * Square *)
 
- (** TODO: use reduce (original version was using it for N0 only) *)
-
- Local Notation squaren :=
-  (fun n (x : dom_t n) => mk_t_S n (ZnZ.square_c x)).
+ Local Notation squaren := (fun n =>
+   let square_c := ZnZ.square_c in
+   fun x => reduce (S n) (succ_t _ (square_c x))).
 
  Definition square : t -> t := Eval red_t in iter_t squaren.
 
@@ -256,13 +710,14 @@ Module Make (W0:CyclicType) <: NType.
  Theorem spec_square: forall x, [square x] = [x] * [x].
  Proof.
   intros x. rewrite square_fold. destr_t x as (n,x).
-  rewrite spec_mk_t_S. exact (ZnZ.spec_square_c x).
+  rewrite spec_succ_t. exact (ZnZ.spec_square_c x).
  Qed.
 
- (** * Sqrt *)
+ (** * Square Root *)
 
- Local Notation sqrtn :=
-  (fun n (x : dom_t n) => reduce n (ZnZ.sqrt x)).
+ Local Notation sqrtn := (fun n =>
+   let sqrt := ZnZ.sqrt in
+   fun x => reduce n (sqrt x)).
 
  Definition sqrt : t -> t := Eval red_t in iter_t sqrtn.
 
@@ -308,78 +763,6 @@ Module Make (W0:CyclicType) <: NType.
  apply spec_power_pos.
  Qed.
 
- (** * Div *)
-
- Definition div_eucl (x y : t) : t * t :=
-  if eq_bool y zero then (zero,zero) else
-  match compare x y with
-  | Eq => (one, zero)
-  | Lt => (zero, x)
-  | Gt => div_gt x y
-  end.
-
- Theorem spec_div_eucl: forall x y,
-      let (q,r) := div_eucl x y in
-      ([q], [r]) = Zdiv_eucl [x] [y].
- Proof.
- intros x y. unfold div_eucl.
- rewrite spec_eq_bool, spec_compare, spec_0.
- generalize (Zeq_bool_if [y] 0); case Zeq_bool.
- intros ->. rewrite spec_0. destruct [x]; auto.
- intros H'.
- assert (H : 0 < [y]) by (generalize (spec_pos y); auto with zarith).
- clear H'.
- case Zcompare_spec; intros Cmp;
-   rewrite ?spec_0, ?spec_1; intros; auto with zarith.
- rewrite Cmp; generalize (Z_div_same [y] (Zlt_gt _ _ H))
-                         (Z_mod_same [y] (Zlt_gt _ _ H));
-  unfold Zdiv, Zmod; case Zdiv_eucl; intros; subst; auto.
- assert (LeLt: 0 <= [x] < [y]) by (generalize (spec_pos x); auto).
- generalize (Zdiv_small _ _ LeLt) (Zmod_small _ _ LeLt);
-  unfold Zdiv, Zmod; case Zdiv_eucl; intros; subst; auto.
- generalize (spec_div_gt _ _ (Zlt_gt _ _ Cmp) H); auto.
- unfold Zdiv, Zmod; case Zdiv_eucl; case div_gt.
- intros a b c d (H1, H2); subst; auto.
- Qed.
-
- Definition div (x y : t) : t := fst (div_eucl x y).
-
- Theorem spec_div:
-   forall x y, [div x y] = [x] / [y].
- Proof.
- intros x y; unfold div; generalize (spec_div_eucl x y);
-   case div_eucl; simpl fst.
- intros xx yy; unfold Zdiv; case Zdiv_eucl; intros qq rr H;
-  injection H; auto.
- Qed.
-
- (** * Modulo *)
-
- Definition modulo (x y : t) : t :=
-  if eq_bool y zero then zero else
-  match compare x y with
-  | Eq => zero
-  | Lt => x
-  | Gt => mod_gt x y
-  end.
-
- Theorem spec_modulo:
-   forall x y, [modulo x y] = [x] mod [y].
- Proof.
- intros x y. unfold modulo.
- rewrite spec_eq_bool, spec_compare, spec_0.
- generalize (Zeq_bool_if [y] 0). case Zeq_bool.
- intros ->; rewrite spec_0. destruct [x]; auto.
- intro H'.
- assert (H : 0 < [y]) by (generalize (spec_pos y); auto with zarith).
- clear H'.
- case Zcompare_spec;
-   rewrite ?spec_0, ?spec_1; intros; try split; auto with zarith.
- rewrite H0; apply sym_equal; apply Z_mod_same; auto with zarith.
- apply sym_equal; apply Zmod_small; auto with zarith.
- generalize (spec_pos x); auto with zarith.
- apply spec_mod_gt; auto with zarith.
- Qed.
 
  (** * digits
 
@@ -388,7 +771,9 @@ Module Make (W0:CyclicType) <: NType.
      NB: This function isn't a morphism for setoid [eq].
  *)
 
- Local Notation digitsn := (fun n _ => ZnZ.digits (dom_op n)).
+ Local Notation digitsn := (fun n =>
+   let digits := ZnZ.digits (dom_op n) in
+   fun _ => digits).
 
  Definition digits : t -> positive := Eval red_t in iter_t digitsn.
 
@@ -598,7 +983,7 @@ Module Make (W0:CyclicType) <: NType.
  unfold base.
  apply Zlt_le_trans with (1 := pheight_correct x).
  apply Zpower_le_monotone2; auto with zarith.
- rewrite (digits_dom_op (_ _)); auto with zarith.
+ rewrite (digits_dom_op (_ _)), Pshiftl_Zpower. auto with zarith.
  Qed.
 
  Definition of_N (x:N) : t :=
@@ -624,7 +1009,9 @@ Module Make (W0:CyclicType) <: NType.
      NB: these functions are not morphism for setoid [eq].
  *)
 
- Local Notation head0n := (fun n x => reduce n (ZnZ.head0 x)).
+ Local Notation head0n := (fun n =>
+   let head0 := ZnZ.head0 in
+   fun x => reduce n (head0 x)).
 
  Definition head0 : t -> t := Eval red_t in iter_t head0n.
 
@@ -652,7 +1039,9 @@ Module Make (W0:CyclicType) <: NType.
  rewrite head0_fold, digits_fold. destr_t x as (n,x). exact (ZnZ.spec_head0 x).
  Qed.
 
- Local Notation tail0n := (fun n x => reduce n (ZnZ.tail0 x)).
+ Local Notation tail0n := (fun n =>
+  let tail0 := ZnZ.tail0 in
+  fun x => reduce n (tail0 x)).
 
  Definition tail0 : t -> t := Eval red_t in iter_t tail0n.
 
@@ -677,7 +1066,9 @@ Module Make (W0:CyclicType) <: NType.
      NB: this function is not a morphism for setoid [eq].
  *)
 
- Local Notation Ndigitsn := (fun n _ => reduce n (ZnZ.zdigits (dom_op n))).
+ Local Notation Ndigitsn := (fun n =>
+  let d := reduce n (ZnZ.zdigits (dom_op n)) in
+  fun _ => d).
 
  Definition Ndigits : t -> t := Eval red_t in iter_t Ndigitsn.
 
@@ -692,12 +1083,16 @@ Module Make (W0:CyclicType) <: NType.
 
  (** * Binary logarithm *)
 
- Local Notation log2n := (fun n x =>
+ Local Notation log2n := (fun n =>
   let op := dom_op n in
-  reduce n (ZnZ.sub_carry (ZnZ.zdigits op) (ZnZ.head0 x))).
+  let zdigits := ZnZ.zdigits op in
+  let head0 := ZnZ.head0 in
+  let sub_carry := ZnZ.sub_carry in
+  fun x => reduce n (sub_carry zdigits (head0 x))).
 
  Definition log2 : t -> t := Eval red_t in
-   fun x => if eq_bool x zero then zero else iter_t log2n x.
+   let log2 := iter_t log2n in
+   fun x => if eq_bool x zero then zero else log2 x.
 
  Lemma log2_fold :
    log2 = fun x => if eq_bool x zero then zero else iter_t log2n x.
@@ -775,10 +1170,14 @@ Module Make (W0:CyclicType) <: NType.
 
  (** * Right shift *)
 
- Local Notation shiftrn := (fun n (p x : dom_t n) =>
+ Local Notation shiftrn := (fun n =>
    let op := dom_op n in
-   match ZnZ.sub_c (ZnZ.zdigits op) p with
-   | C0 d => reduce n (ZnZ.add_mul_div d ZnZ.zero x)
+   let zdigits := ZnZ.zdigits op in
+   let sub_c := ZnZ.sub_c in
+   let add_mul_div := ZnZ.add_mul_div in
+   let zzero := ZnZ.zero in
+   fun p x => match sub_c zdigits p with
+   | C0 d => reduce n (add_mul_div d zzero x)
    | C1 _ => zero
    end).
 
@@ -834,9 +1233,11 @@ Module Make (W0:CyclicType) <: NType.
  (** First an unsafe version, working correctly only if
      the representation is large enough *)
 
- Local Notation unsafe_shiftln := (fun n p x =>
-   let ops := dom_op n in
-   reduce n (ZnZ.add_mul_div p x ZnZ.zero)).
+ Local Notation unsafe_shiftln := (fun n =>
+   let op := dom_op n in
+   let add_mul_div := ZnZ.add_mul_div in
+   let zero := ZnZ.zero in
+   fun p x => reduce n (add_mul_div p x zero)).
 
  Definition unsafe_shiftl : t -> t -> t := Eval red_t in
    same_level unsafe_shiftln.
@@ -857,7 +1258,7 @@ Module Make (W0:CyclicType) <: NType.
   transitivity (Zpos (ZnZ.digits (dom_op n))); auto.
   apply digits_dom_op_incr; auto.
  clear p x.
- intros n p x K HK Hx Hp. lazy zeta. rewrite spec_reduce.
+ intros n p x K HK Hx Hp. simpl. rewrite spec_reduce.
  destruct (ZnZ.spec_to_Z x).
  destruct (ZnZ.spec_to_Z p).
  rewrite ZnZ.spec_add_mul_div by (omega with *).
@@ -891,8 +1292,9 @@ Module Make (W0:CyclicType) <: NType.
  (** Then we define a function doubling the size of the representation
      but without changing the value of the number. *)
 
- Local Notation double_size_n :=
-  (fun n x => mk_t_S n (WW ZnZ.zero x)).
+ Local Notation double_size_n := (fun n =>
+  let zero := ZnZ.zero in
+  fun x => mk_t_S n (WW zero x)).
 
  Definition double_size : t -> t := Eval red_t in
    iter_t double_size_n.
@@ -910,7 +1312,8 @@ Module Make (W0:CyclicType) <: NType.
    forall x, Zpos (digits (double_size x)) = 2 * (Zpos (digits x)).
  Proof.
  intros x. rewrite ! digits_level, double_size_level.
- rewrite !(digits_dom_op (_ _)), inj_S, Zpower_Zsucc; auto with zarith.
+ rewrite 2 digits_dom_op, 2 Pshiftl_Zpower,
+         inj_S, Zpower_Zsucc; auto with zarith.
  ring.
  Qed.
 

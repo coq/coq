@@ -40,7 +40,7 @@ Notation bigN := BigN.t.
 Delimit Scope bigN_scope with bigN.
 Bind Scope bigN_scope with bigN.
 Bind Scope bigN_scope with BigN.t.
-Bind Scope bigN_scope with BigN.t_.
+Bind Scope bigN_scope with BigN.t'.
 (* Bind Scope has no retroactive effect, let's declare scopes by hand. *)
 Arguments Scope BigN.to_Z [bigN_scope].
 Arguments Scope BigN.succ [bigN_scope].
