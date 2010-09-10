@@ -815,6 +815,7 @@ let subst_cases_pattern loc alias intern fullsubst scopes a =
 	  match pl with PatCstr (loc, c, pl, Anonymous) -> (asubst, PatCstr (loc, c, pl, alias)) | _ -> x) v
       with Not_found ->
           anomaly "Inconsistent substitution of recursive notation")
+  | AHole _ -> ([],[[], PatVar (loc,Anonymous)])
   | t -> error_invalid_pattern_notation loc
   in aux alias fullsubst a
 
