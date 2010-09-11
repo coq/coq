@@ -243,3 +243,18 @@ test_open_match (forall z y, y + z  = 0).
 reflexivity.
 apply I.
 Qed.
+
+(* Test regular failure when clear/intro breaks soundness of the
+   interpretation of terms in current environment *)
+
+Ltac g y := clear y; assert (y=y).
+Goal forall x:nat, True.
+intro x.
+Fail g x.
+Abort.
+
+Ltac h y := assert (y=y).
+Goal forall x:nat, True.
+intro x.
+Fail clear x; f x.
+Abort.

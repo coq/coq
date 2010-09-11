@@ -401,8 +401,10 @@ let intern_ltac_variable ist = function
       raise Not_found
 
 let intern_constr_reference strict ist = function
-  | Ident (_,id) when (not strict & find_hyp id ist) or find_ctxvar id ist ->
-      RVar (dloc,id), None
+  | Ident (_,id) as r when not strict & find_hyp id ist ->
+      RVar (dloc,id), Some (CRef r)
+  | Ident (_,id) as r when find_ctxvar id ist ->
+      RVar (dloc,id), if strict then None else Some (CRef r)
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
       RRef (loc,locate_global_with_alias lqid), if strict then None else Some (CRef r)
@@ -564,9 +566,10 @@ let intern_evaluable_reference_or_by_notation ist = function
 (* Globalize a reduction expression *)
 let intern_evaluable ist = function
   | AN (Ident (loc,id)) when find_ltacvar id ist -> ArgVar (loc,id)
-  | AN (Ident (_,id)) when
-      (not !strict_check & find_hyp id ist) or find_ctxvar id ist ->
-      ArgArg (EvalVarRef id, None)
+  | AN (Ident (loc,id)) when not !strict_check & find_hyp id ist ->
+      ArgArg (EvalVarRef id, Some (loc,id))
+  | AN (Ident (loc,id)) when find_ctxvar id ist ->
+      ArgArg (EvalVarRef id, if !strict_check then None else Some (loc,id))
   | r ->
       let e = intern_evaluable_reference_or_by_notation ist r in
       let na = short_name r in
@@ -1138,7 +1141,8 @@ let interp_hyp ist gl (loc,id as locid) =
   with Not_found ->
   (* Then look if bound in the proof context at calling time *)
   if is_variable env id then id
-  else user_err_loc (loc,"eval_variable",pr_id id ++ str " not found.")
+  else user_err_loc (loc,"eval_variable",
+    str "No such hypothesis: " ++ pr_id id ++ str ".")
 
 let hyp_list_of_VList env = function
   | VList l -> List.map (coerce_to_hyp env) l
@@ -1210,7 +1214,7 @@ let interp_evaluable ist env = function
        with Not_found ->
        match r with
        | EvalConstRef _ -> r
-       | _ -> Pretype_errors.error_var_not_found_loc loc id)
+       | _ -> error_global_not_found_loc (loc,qualid_of_ident id))
   | ArgArg (r,None) -> r
   | ArgVar locid ->
       interp_ltac_var (coerce_to_evaluable_ref env) ist (Some env) locid

@@ -13,3 +13,11 @@ Goal EQ nat 0 0.
 Hint Unfold EQ.
 auto.
 Qed.
+
+(* Check regular failure when statically existing ref does not exist
+   any longer at run time *)
+
+Goal let x := 0 in True.
+intro x.
+Fail (clear x; unfold x).
+Abort.

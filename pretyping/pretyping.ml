@@ -235,6 +235,11 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	str " depends on pattern variable name " ++ pr_id id ++
 	str " which is not bound in current context.")
 
+  let protected_get_type_of env sigma c =
+    try Retyping.get_type_of env sigma c
+    with Anomaly _ ->
+      errorlabstrm "" (str "Cannot reinterpret " ++ quote (print_constr c) ++ str " in the current environment.")
+
   let pretype_id loc env sigma (lvar,unbndltacvars) id =
     try
       let (n,_,typ) = lookup_rel_id id (rel_context env) in
@@ -244,7 +249,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
       let (ids,c) = List.assoc id lvar in
       let subst = List.map (invert_ltac_bound_name env id) ids in
       let c = substl subst c in
-      { uj_val = c; uj_type = Retyping.get_type_of env sigma c }
+      { uj_val = c; uj_type = protected_get_type_of env sigma c }
     with Not_found ->
     try
       let (_,_,typ) = lookup_named id env in
