@@ -266,3 +266,18 @@ reflexivity.
 f_non_linear ((forall x y, x+y = 0) -> (forall y x, y+x = 0)) (* should fail *)
 || exact I.
 Qed.
+
+(* Test regular failure when clear/intro breaks soundness of the
+   interpretation of terms in current environment *)
+
+Ltac g y := clear y; assert (y=y).
+Goal forall x:nat, True.
+intro x.
+Fail g x.
+Abort.
+
+Ltac h y := assert (y=y).
+Goal forall x:nat, True.
+intro x.
+Fail clear x; f x.
+Abort.
