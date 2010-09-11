@@ -572,9 +572,10 @@ let intern_evaluable_reference_or_by_notation = function
 (* Globalizes a reduction expression *)
 let intern_evaluable ist = function
   | AN (Ident (loc,id)) when find_ltacvar id ist -> ArgVar (loc,id)
-  | AN (Ident (_,id)) when
-      (not !strict_check & find_hyp id ist) or find_ctxvar id ist ->
-      ArgArg (EvalVarRef id, None)
+  | AN (Ident (loc,id)) when not !strict_check & find_hyp id ist ->
+      ArgArg (EvalVarRef id, Some (loc,id))
+  | AN (Ident (loc,id)) when find_ctxvar id ist ->
+      ArgArg (EvalVarRef id, if !strict_check then None else Some (loc,id))
   | r ->
       let e = intern_evaluable_reference_or_by_notation r in
       let na = short_name r in
