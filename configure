@@ -328,8 +328,8 @@ MAKE=`which make`
 if [ "$MAKE" != "" ]; then
   MAKEVERSION=`$MAKE -v | head -1`
   case $MAKEVERSION in
-    "GNU Make 3.81") 
-      echo "You have GNU Make 3.81. Good!";;
+    "GNU Make 3.8"[12])
+      echo "You have GNU Make >= 3.81. Good!";;
     *)
       OK="no"
       if [ -x ./make ]; then
