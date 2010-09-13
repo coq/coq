@@ -82,6 +82,13 @@ let rec decompose_term env sigma t=
 	  Constructor {ci_constr= (canon_ind,i_con);
 		       ci_arity=nargs;
 		       ci_nhyps=nargs-oib.mind_nparams}
+    | Ind c -> 
+	let mind,i_ind = c in 
+	let canon_mind = mind_of_kn (canonical_mind mind) in
+	let canon_ind = canon_mind,i_ind in  (Symb (mkInd canon_ind))
+    | Const c -> 
+	let canon_const = constant_of_kn (canonical_con c) in 
+	  (Symb (mkConst canon_const))
     | _ ->if closed0 t then (Symb t) else raise Not_found
 
 (* decompose equality in members and type *)
