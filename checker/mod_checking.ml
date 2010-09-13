@@ -244,9 +244,9 @@ and check_module_type env mty =
 and check_module env mp mb =
   match mb.mod_expr, mb.mod_type with
     | None,mtb -> 
-	let _ = check_modtype env mtb mb.mod_mp in ()
+	let _ = check_modtype env mtb mb.mod_mp mb.mod_delta in ()
     | Some mexpr, mtb when mtb==mexpr ->
-	let _ = check_modtype env mtb mb.mod_mp in ()
+	let _ = check_modtype env mtb mb.mod_mp mb.mod_delta in ()
     | Some mexpr, _ ->
 	let sign = check_modexpr env mexpr mb.mod_mp mb.mod_delta in
 	let _ = check_modtype env mb.mod_type mb.mod_mp mb.mod_delta in
