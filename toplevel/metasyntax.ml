@@ -365,7 +365,7 @@ let error_not_same_scope x y =
 
 let error_both_bound_and_binding x y =
   errorlabstrm "" (strbrk "The recursive variables " ++ pr_id x ++
-  strbrk " and " ++ pr_id y ++ strbrk " cannot be used as placeholder
+  strbrk " and " ++ pr_id y ++ strbrk " cannot be used as placeholder \
   for both terms and binders.")
 
 (**********************************************************************)

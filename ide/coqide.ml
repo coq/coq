@@ -2430,8 +2430,8 @@ let main files =
 					  ("_Fixpoint __", "Fixpoint ident (_ : _) {struct _} : _ :=\n.\n",
 					   29, 5, Some GdkKeysyms._F);
 					add_complex_template("_Scheme __",
-							     "Scheme new_scheme := Induction for _ Sort _
-with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
+							     "Scheme new_scheme := Induction for _ Sort _\
+\nwith _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 
 					(* Template for match *)
 					let callback () =

@@ -135,20 +135,21 @@ let all_subdirs dir =
 
 (* usage *)
 let usage () =
-  prerr_endline "Usage: coqmktop <options> <ocaml options> files
-Flags are:
-  -coqlib dir    Specify where the Coq object files are
-  -camlbin dir   Specify where the OCaml binaries are
-  -camlp4bin dir Specify where the CAmp4/5 binaries are
-  -o exec-file   Specify the name of the resulting toplevel
-  -boot          Run in boot mode
-  -echo          Print calls to external commands
-  -ide           Build a toplevel for the Coq IDE
-  -full          Link high level tactics
-  -opt           Compile in native code
-  -searchisos    Build a toplevel for SearchIsos
-  -top           Build Coq on a OCaml toplevel (incompatible with -opt)
-  -R dir         Specify recursively directories for Ocaml\n";
+  prerr_endline "Usage: coqmktop <options> <ocaml options> files\
+\nFlags are:\
+\n  -coqlib dir    Specify where the Coq object files are\
+\n  -camlbin dir   Specify where the OCaml binaries are\
+\n  -camlp4bin dir Specify where the CAmp4/5 binaries are\
+\n  -o exec-file   Specify the name of the resulting toplevel\
+\n  -boot          Run in boot mode\
+\n  -echo          Print calls to external commands\
+\n  -ide           Build a toplevel for the Coq IDE\
+\n  -full          Link high level tactics\
+\n  -opt           Compile in native code\
+\n  -searchisos    Build a toplevel for SearchIsos\
+\n  -top           Build Coq on a OCaml toplevel (incompatible with -opt)\
+\n  -R dir         Specify recursively directories for Ocaml\
+\n";
   exit 1
 
 (* parsing of the command line *)
@@ -223,23 +224,24 @@ let declare_loading_string () =
   if not !top then
     "Mltop.remove ();;"
   else
-    "begin try
-       (* Enable rectypes in the toplevel if it has the directive #rectypes *)
-       begin match Hashtbl.find Toploop.directive_table \"rectypes\" with
-         | Toploop.Directive_none f -> f ()
-         | _ -> ()
-       end
-     with
-       | Not_found -> ()
-     end;;
-
-     let ppf = Format.std_formatter;;
-     Mltop.set_top
-       {Mltop.load_obj=
-         (fun f -> if not (Topdirs.load_file ppf f) then failwith \"error\");
-        Mltop.use_file=Topdirs.dir_use ppf;
-        Mltop.add_dir=Topdirs.dir_directory;
-        Mltop.ml_loop=(fun () -> Toploop.loop ppf) };;\n"
+    "begin try\
+\n       (* Enable rectypes in the toplevel if it has the directive #rectypes *)\
+\n       begin match Hashtbl.find Toploop.directive_table \"rectypes\" with\
+\n         | Toploop.Directive_none f -> f ()\
+\n         | _ -> ()\
+\n       end\
+\n     with\
+\n       | Not_found -> ()\
+\n     end;;\
+\n\
+\n     let ppf = Format.std_formatter;;\
+\n     Mltop.set_top\
+\n       {Mltop.load_obj=\
+\n         (fun f -> if not (Topdirs.load_file ppf f) then failwith \"error\");\
+\n        Mltop.use_file=Topdirs.dir_use ppf;\
+\n        Mltop.add_dir=Topdirs.dir_directory;\
+\n        Mltop.ml_loop=(fun () -> Toploop.loop ppf) };;\
+\n"
 
 (* create a temporary main file to link *)
 let create_tmp_main_file modules =

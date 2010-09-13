@@ -96,7 +96,7 @@ let try_convert s =
   try
     do_convert s
   with _ ->
-    "(* Fatal error: wrong encoding in input.
+    "(* Fatal error: wrong encoding in input. \
 Please choose a correct encoding in the preference panel.*)";;
 
 

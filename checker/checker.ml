@@ -169,26 +169,26 @@ let print_usage_channel co command =
   output_string co command;
   output_string co "Coq options are:\n";
   output_string co
-"  -I dir -as coqdir      map physical dir to logical coqdir
-  -I dir                 map directory dir to the empty logical path
-  -include dir           (idem)
-  -R dir -as coqdir      recursively map physical dir to logical coqdir
-  -R dir coqdir          (idem)
-
-  -admit module          load module and dependencies without checking
-  -norec module          check module but admit dependencies without checking
-
-  -where                 print Coq's standard library location and exit
-  -v                     print Coq version and exit
-  -boot                  boot mode
-  -o, --output-context   print the list of assumptions
-  -m, --memoty           print the maximum heap size
-  -silent                disable trace of constants being checked
-
-  -impredicative-set     set sort Set impredicative
-
-  -h, --help             print this list of options
-"
+"  -I dir -as coqdir      map physical dir to logical coqdir\
+\n  -I dir                 map directory dir to the empty logical path\
+\n  -include dir           (idem)\
+\n  -R dir -as coqdir      recursively map physical dir to logical coqdir\
+\n  -R dir coqdir          (idem)\
+\n\
+\n  -admit module          load module and dependencies without checking\
+\n  -norec module          check module but admit dependencies without checking\
+\n\
+\n  -where                 print Coq's standard library location and exit\
+\n  -v                     print Coq version and exit\
+\n  -boot                  boot mode\
+\n  -o, --output-context   print the list of assumptions\
+\n  -m, --memoty           print the maximum heap size\
+\n  -silent                disable trace of constants being checked\
+\n\
+\n  -impredicative-set     set sort Set impredicative\
+\n\
+\n  -h, --help             print this list of options\
+\n"
 
 (* print the usage on standard error *)
 

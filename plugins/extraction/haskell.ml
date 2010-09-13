@@ -45,14 +45,14 @@ let preamble mod_name used_modules usf =
   (if used_modules = [] then mt () else fnl ()) ++
   (if not usf.magic then mt ()
    else str "\
-#ifdef __GLASGOW_HASKELL__
-import qualified GHC.Base
-unsafeCoerce = GHC.Base.unsafeCoerce#
-#else
--- HUGS
-import qualified IOExts
-unsafeCoerce = IOExts.unsafeCoerce
-#endif" ++ fnl2 ())
+\n#ifdef __GLASGOW_HASKELL__\
+\nimport qualified GHC.Base\
+\nunsafeCoerce = GHC.Base.unsafeCoerce#\
+\n#else\
+\n-- HUGS\
+\nimport qualified IOExts\
+\nunsafeCoerce = IOExts.unsafeCoerce\
+\n#endif" ++ fnl2 ())
   ++
   (if not usf.mldummy then mt ()
    else str "__ = Prelude.error \"Logical or arity value used\"" ++ fnl2 ())

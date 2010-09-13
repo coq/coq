@@ -607,7 +607,7 @@ let construct_discriminator sigma env dirn c sort =
           CP : changed assert false in a more informative error
        *)
       errorlabstrm "Equality.construct_discriminator"
-	(str "Cannot discriminate on inductive constructors with
+	(str "Cannot discriminate on inductive constructors with \
 		 dependent types.") in
   let (ind,_) = dest_ind_family indf in
   let (mib,mip) = lookup_mind_specif env ind in

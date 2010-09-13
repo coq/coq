@@ -1395,7 +1395,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
       | (imp::impl', []) ->
 	  if eargs <> [] then
 	    (let (id,(loc,_)) = List.hd eargs in
-	       user_err_loc (loc,"",str "Not enough non implicit
+	       user_err_loc (loc,"",str "Not enough non implicit \
 	    arguments to accept the argument bound to " ++
 		 pr_id id ++ str"."));
 	  []

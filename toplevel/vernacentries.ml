@@ -1128,7 +1128,7 @@ let interp_search_about_item = function
 	    (fun _ -> true) s sc in
 	GlobSearchSubPattern (Pattern.PRef ref)
       with UserError _ ->
-	error ("Unable to interp \""^s^"\" either as a reference or
+	error ("Unable to interp \""^s^"\" either as a reference or \
           	as an identifier component")
 
 let vernac_search s r =
