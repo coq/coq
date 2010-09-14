@@ -424,8 +424,6 @@ let interp_with_options verbosely options s =
   prerr_endline s;
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   let pe = Pcoq.Gram.Entry.parse Pcoq.main_entry pa in
-  (* Temporary hack to make coqide.byte work (WTF???) *)
-  Pervasives.prerr_endline "";
   match pe with 
     | None -> assert false
     | Some((loc,vernac) as last) ->
