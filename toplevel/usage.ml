@@ -6,11 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-let version () =
+let version ret =
   Printf.printf "The Coq Proof Assistant, version %s (%s)\n"
     Coq_config.version Coq_config.date;
   Printf.printf "compiled on %s with OCaml %s\n" Coq_config.compile_date Coq_config.caml_version;
-  exit 0
+  exit ret
 
 (* print the usage of coqtop (or coqc) on channel co *)
 

@@ -12,10 +12,3 @@
    produce the output state if any, and finally will launch [Toplevel.loop]. *)
 
 val start : unit -> unit
-
-(** [init_ide] is to be used by the Coq IDE.
-   It does everything [start] does, except launching the toplevel loop.
-   It returns the list of Coq files given on the command line. *)
-
-val init_ide : System.physical_path list -> string list
-

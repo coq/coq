@@ -83,6 +83,23 @@ let version () =
     (if Mltop.is_native then "native" else "bytecode")
     (if Coq_config.best="opt" then "native" else "bytecode")
 
+let filter_coq_opts argv =
+  let prog = Sys.executable_name in
+  let dir = Filename.dirname prog in
+  let argstr = String.concat " " argv in
+  let oc,ic,ec = Unix.open_process_full (dir^"/coqtop.opt -filteropts "^argstr) (Unix.environment ()) in
+  let rec read_all_lines in_chan =
+    try
+      let arg = input_line in_chan in
+        arg::(read_all_lines in_chan)
+    with End_of_file -> [] in
+  let filtered_argv = read_all_lines oc in
+  let message = read_all_lines ec in
+  match Unix.close_process_full (oc,ic,ec) with
+    | Unix.WEXITED 0 -> true,filtered_argv
+    | Unix.WEXITED 2 -> false,filtered_argv
+    | _ -> false,message
+
 let eval_call coqtop (c:'a Ide_blob.call) =
   Safe_marshal.send coqtop.cin c;
   (Safe_marshal.receive: in_channel -> 'a Ide_blob.value) coqtop.cout

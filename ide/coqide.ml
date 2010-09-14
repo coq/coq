@@ -3080,13 +3080,20 @@ let rec check_for_geoproof_input () =
 	(* cb_Dr#set_text "Ack" *)
     done
 
-let rec init = function
-  | [] -> []
-  | "-args"::str::rem -> sup_args := str; init rem
-  | f::rem -> f::(init rem)
+let process_argv argv =
+  try 
+    let continue,filtered = filter_coq_opts (List.tl argv) in
+    if not continue then
+      (List.iter Pervasives.prerr_endline filtered; exit 0);
+    if List.exists (fun arg -> String.get arg 0 == '-') filtered then
+      (output_string stderr "illegal coqide option\n"; exit 1);
+    filtered
+  with _ ->
+    (output_string stderr "coqtop choked on one of your option"; exit 1)
 
 let start () =
-  let files = init (List.tl (Array.to_list Sys.argv)) in
+  sup_args := String.concat " " (List.tl (Array.to_list Sys.argv));
+  let files = process_argv (Array.to_list Sys.argv) in
     ignore_break ();
     GtkMain.Rc.add_default_file (lib_ide_file ".coqide-gtk2rc");
     (try
@@ -3114,5 +3121,4 @@ let start () =
 	    flush stderr;
 	    crash_save 127
     done
-
 

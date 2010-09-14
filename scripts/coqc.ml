@@ -163,7 +163,7 @@ let parse_args () =
     | ("-config" | "--config") :: _ -> Usage.print_config (); exit 0
 
     | ("-v"|"--version") :: _ ->
-        Usage.version ()
+        Usage.version 0
     | f :: rem ->
 	if Sys.file_exists f then
 	  parse (f::cfiles,args) rem

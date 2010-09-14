@@ -14,6 +14,7 @@ open Ide_blob
 
 val short_version : unit -> string
 val version : unit -> string
+val filter_coq_opts : string list -> bool * string list
 
 type coqtop
 
