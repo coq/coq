@@ -580,7 +580,7 @@ let update_delta_resolver resolver1 resolver2 =
 		Equiv (solve_delta_kn resolver2 kn)
 	      in Deltamap.add key new_hint res
 	  | _ -> Deltamap.add key hint res
-      with not_found -> 
+      with Not_found ->
 	Deltamap.add key hint res
     in
       Deltamap.fold apply_res resolver1 empty_delta_resolver
