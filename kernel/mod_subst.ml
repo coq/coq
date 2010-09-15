@@ -643,7 +643,7 @@ let update_delta_resolver resolver1 resolver2 =
 		   Change_equiv_to_inline c ->
 		     Deltamap.add key (Inline (Some c)) res)
 	  | _ -> Deltamap.add key hint res
-      with not_found -> 
+      with Not_found ->
 	Deltamap.add key hint res
     in
       Deltamap.fold apply_res resolver1 empty_delta_resolver
