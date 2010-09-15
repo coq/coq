@@ -238,7 +238,7 @@ and check_with_aux_mod env mtb with_decl mp =
       | Reduction.NotConvertible -> error_with_incorrect l
 
 and check_module_type env mty =
-  let _ = check_modtype env mty.typ_expr mty.typ_mp in ()
+  let _ = check_modtype env mty.typ_expr mty.typ_mp mty.typ_delta in ()
 
 							 
 and check_module env mp mb =
