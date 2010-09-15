@@ -98,10 +98,23 @@ end = struct
      the opaque term [t] to [on_opaque_const_body t]. *)
   let traverse_library on_opaque_const_body =
     let rec traverse_module mb =
-      { mb with
-	mod_expr = Option.map traverse_modexpr mb.mod_expr;
-	mod_type = traverse_modexpr mb.mod_type;
-      }
+      match mb.mod_expr with 
+	  None -> 
+	    { mb with
+		mod_expr = None;
+		mod_type = traverse_modexpr mb.mod_type;
+	    }
+	| Some impl when impl == mb.mod_type-> 
+	    let mtb =  traverse_modexpr mb.mod_type in 
+	      { mb with
+		  mod_expr = Some mtb;
+		  mod_type = mtb;
+	      }    
+	| Some impl -> 
+	    { mb with
+		mod_expr = Option.map traverse_modexpr mb.mod_expr;
+		mod_type = traverse_modexpr mb.mod_type;
+	    }    
     and traverse_struct struc =
       let traverse_body (l,body) = (l,match body with
 	| SFBconst ({const_opaque=true} as x) -> 
