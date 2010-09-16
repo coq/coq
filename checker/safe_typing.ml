@@ -11,7 +11,6 @@ open Util
 open Names
 open Declarations
 open Environ
-open Mod_checking
 
 (************************************************************************)
 (*
@@ -189,7 +188,7 @@ let import file (dp,mb,depends,engmt as vo) digest =
   let env = !genv in
   check_imports msg_warning dp env depends;
   check_engagement env engmt;
-  check_module (add_constraints mb.mod_constraints env) mb.mod_mp mb;
+  Mod_checking.check_module (add_constraints mb.mod_constraints env) mb.mod_mp mb;
   stamp_library file digest;
   (* We drop proofs once checked *)
 (*  let mb = lighten_module mb in*)
