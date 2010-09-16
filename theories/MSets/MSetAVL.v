@@ -330,7 +330,7 @@ Fixpoint elements_aux (acc : list X.t) (s : t) : list X.t :=
 
 (** then [elements] is an instanciation with an empty [acc] *)
 
-Definition elements := elements_aux nil.
+Definition elements s := elements_aux nil s.
 
 (** ** Filter *)
 

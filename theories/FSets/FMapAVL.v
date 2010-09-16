@@ -272,7 +272,7 @@ Fixpoint elements_aux (acc : list (key*elt)) m : list (key*elt) :=
 
 (** then [elements] is an instanciation with an empty [acc] *)
 
-Definition elements := elements_aux nil.
+Definition elements m := elements_aux nil m.
 
 (** * Fold *)
 
