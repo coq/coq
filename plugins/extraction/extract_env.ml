@@ -69,7 +69,7 @@ module type VISIT = sig
 
   (* Add kernel_name / constant / reference / ... in the visit lists.
      These functions silently add the mp of their arg in the mp list *)
-  val add_kn : mutual_inductive -> unit
+  val add_ind : mutual_inductive -> unit
   val add_con : constant -> unit
   val add_ref : global_reference -> unit
   val add_decl_deps : ml_decl -> unit
@@ -77,31 +77,35 @@ module type VISIT = sig
 
   (* Test functions:
      is a particular object a needed dependency for the current extraction ? *)
-  val needed_kn : mutual_inductive -> bool
+  val needed_ind : mutual_inductive -> bool
   val needed_con : constant -> bool
   val needed_mp : module_path -> bool
 end
 
 module Visit : VISIT = struct
   (* What used to be in a single KNset should now be split into a KNset
-     (for inductives and modules names) and a Cset for constants
+     (for inductives and modules names) and a Cset_env for constants
      (and still the remaining MPset) *)
   type must_visit =
-      { mutable kn : Mindset.t; mutable con : Cset.t; mutable mp : MPset.t }
+      { mutable ind : KNset.t; mutable con : KNset.t; mutable mp : MPset.t }
   (* the imperative internal visit lists *)
-  let v = { kn = Mindset.empty ; con = Cset.empty ; mp = MPset.empty }
+  let v = { ind = KNset.empty ; con = KNset.empty ; mp = MPset.empty }
   (* the accessor functions *)
-  let reset () = v.kn <- Mindset.empty; v.con <- Cset.empty; v.mp <- MPset.empty
-  let needed_kn kn = Mindset.mem kn v.kn
-  let needed_con c = Cset.mem c v.con
+  let reset () = v.ind <- KNset.empty; v.con <- KNset.empty; v.mp <- MPset.empty
+  let needed_ind i = KNset.mem (user_mind i) v.ind
+  let needed_con c = KNset.mem (user_con c) v.con
   let needed_mp mp = MPset.mem mp v.mp
   let add_mp mp =
     check_loaded_modfile mp; v.mp <- MPset.union (prefixes_mp mp) v.mp
-  let add_kn kn = v.kn <- Mindset.add kn v.kn; add_mp (mind_modpath kn)
-  let add_con c = v.con <- Cset.add c v.con; add_mp (con_modpath c)
+  let add_ind i =
+    let kn = user_mind i in
+    v.ind <- KNset.add kn v.ind; add_mp (modpath kn)
+  let add_con c =
+    let kn = user_con c in
+    v.con <- KNset.add kn v.con; add_mp (modpath kn)
   let add_ref = function
     | ConstRef c -> add_con c
-    | IndRef (kn,_) | ConstructRef ((kn,_),_) -> add_kn kn
+    | IndRef (ind,_) | ConstructRef ((ind,_),_) -> add_ind ind
     | VarRef _ -> assert false
   let add_decl_deps = decl_iter_references add_ref add_ref add_ref
   let add_spec_deps = spec_iter_references add_ref add_ref add_ref
@@ -280,7 +284,7 @@ let rec extract_sfb env mp all = function
       let ms = extract_sfb env mp all msb in
       let kn = make_kn mp empty_dirpath l in
       let mind = mind_of_kn kn in
-      let b = Visit.needed_kn mind in
+      let b = Visit.needed_ind mind in
       if all || b then
 	let d = Dind (kn, extract_inductive env mind) in
 	if (not b) && (logical_decl d) then ms
