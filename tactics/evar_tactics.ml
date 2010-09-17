@@ -51,7 +51,8 @@ let instantiate n (ist,rawc) ido gl =
         gl
 
 let let_evar name typ gls =
-  let sigma',evar = Evarutil.new_evar gls.sigma (pf_env gls) typ in
+  let src = (dummy_loc,GoalEvar) in
+  let sigma',evar = Evarutil.new_evar gls.sigma (pf_env gls) ~src typ in
   Refiner.tclTHEN (Refiner.tclEVARS sigma')
     (Tactics.letin_tac None name evar None nowhere) gls
 

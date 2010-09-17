@@ -281,3 +281,20 @@ Goal forall x:nat, True.
 intro x.
 Fail clear x; f x.
 Abort.
+
+(* Do not consider evars as unification holes in Ltac matching (and at
+   least not as holes unrelated to the original evars)
+   [Example adapted from Ynot code]
+ *)
+
+Ltac not_eq e1 e2 :=
+  match e1 with
+    | e2 => fail 1
+    | _ => idtac
+  end.
+
+Goal True.
+evar(foo:nat).
+let evval := eval compute in foo in not_eq evval 1.
+let evval := eval compute in foo in not_eq 1 evval.
+Abort.
