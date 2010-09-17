@@ -190,7 +190,11 @@ let soustraite_fichier_ML dep md ext =
 	 a_faire_opt := !a_faire_opt ^ opt)
       (List.rev list);
     (!a_faire, !a_faire_opt)
-  with Sys_error _ -> ("","")
+  with
+    | Sys_error _ -> ("","")
+    | _ ->
+       Printf.eprintf "Coqdep: subprocess %s failed on file %s%s\n" dep md ext;
+       exit 1
 
 let autotraite_fichier_ML md ext =
   try
@@ -236,7 +240,13 @@ let traite_fichier_mllib md ext =
 	     a_faire_opt := !a_faire_opt^" "^file^".cmx"
 	 | None -> ()) list;
     (!a_faire, !a_faire_opt)
-  with Sys_error _ -> ("","")
+  with
+    | Sys_error _ -> ("","")
+    | Syntax_error (i,j) ->
+	Printf.eprintf "File \"%s%s\", characters %i-%i:\nError: Syntax error\n"
+	  md ext i j;
+	exit 1
+
 
 (* Makefile's escaping rules are awful: $ is escaped by doubling and
    other special characters are escaped by backslash prefixing while
