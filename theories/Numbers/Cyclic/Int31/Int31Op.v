@@ -41,6 +41,11 @@ Register is_zero as Inline.
 Definition is_even (i:int) := is_zero (i land 1).
 Register is_even as Inline.
 
+(** Bit *)
+
+Definition bit i n :=  negb (is_zero ((i >> n) << (digits - 1))).
+Register bit as Inline.
+
 (** Extra modulo operations *)
 Definition opp (i:int) := 0 - i.
 Register opp as Inline.
@@ -143,25 +148,6 @@ Definition forallb (f:int -> bool) from to :=
 
 Definition existsb (f:int -> bool) from to :=
   foldi_cont (fun i cont _ => if f i then true else cont tt) from to (fun _ => false) tt.
-
-(** Translation to Bvector *)
-
-Fixpoint to_vect_rec (n:nat) (i:int) : Bvector n :=
-  match n as n0 return Bvector n0 with
-  | O => Bnil
-  | S n' => Bcons (negb (is_even i)) n' (to_vect_rec n' (i>>1))
-  end.
-
-Definition to_vect := to_vect_rec size.
-
-Fixpoint of_vect_rec (n:nat) : Bvector n -> int :=
- match n as n0 return Bvector n0 -> int with
- | O => fun _ => 0
- | S n' => fun v => 
-   (if Blow n' v then fun x => x lor 1 else fun x => x) ((of_vect_rec n' (Bhigh n' v)) << 1)
- end.
-
-Definition of_vect := of_vect_rec size.
 
 (** Translation to Z *)
 

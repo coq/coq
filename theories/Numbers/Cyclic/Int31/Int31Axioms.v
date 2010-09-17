@@ -30,20 +30,20 @@ Local Open Scope Z_scope.
 
 (* Bijection : int31 <-> Bvector size *)
 
-Axiom to_vect_inj : forall x y, to_vect x = to_vect y -> x = y.
+Axiom to_Z_inj : forall x y, [|x|] = [|y|] -> x = y.
 
-Axiom to_of_vect : forall x, to_vect (of_vect x) = x.
+Axiom of_to_Z : forall x, of_Z ([|x|]) = x.
 
 (** Specification of logical operations *)
 Axiom lsl_spec : forall x p, [| x << p |] = [|x|] * 2^[|p|] mod wB.
 
 Axiom lsr_spec : forall x p, [|x >> p|] = [|x|] / 2 ^ [|p|].
 
-Axiom lor_spec : forall x y, to_vect (x lor y) = BVor size (to_vect x) (to_vect y).
+Axiom land_spec: forall x y i , bit (x land y) i = bit x i && bit y i.
 
-Axiom land_spec : forall x y, to_vect (x land y) = BVand size (to_vect x) (to_vect y).
+Axiom lor_spec: forall x y i, bit (x lor y) i = bit x i || bit y i.
 
-Axiom lxor_spec : forall x y, to_vect (x lxor y) = BVxor size (to_vect x) (to_vect y).
+Axiom lxor_spec: forall  x y i, bit (x lxor y) i = xorb (bit x i) (bit y i).
 
 (** Specification of basic opetations *)
 
