@@ -817,6 +817,18 @@ let rec decomp_lams_eta_n n m env c t =
   let eta_args = List.rev_map mkRel (interval 1 d) in
   rels, applist (lift d c,eta_args)
 
+(* Let's try to identify some situation where extracted code
+   will allow generalisation of type variables *)
+
+let rec gentypvar_ok c = match kind_of_term c with
+  | Lambda _ | Const _ -> true
+  | App (c,v) ->
+      (* if all arguments are variables, these variables will
+	 disappear after extraction (see [empty_s] below) *)
+      array_for_all isRel v && gentypvar_ok c
+  | Cast (c,_,_) -> gentypvar_ok c
+  | _ -> false
+
 (*s From a constant to a ML declaration. *)
 
 let extract_std_constant env kn body typ =
@@ -845,6 +857,17 @@ let extract_std_constant env kn body typ =
 	(lang () = Haskell || sign_kind s <> UnsafeLogicalSig)
       then decompose_lam_n m body
       else decomp_lams_eta_n n m env body typ
+  in
+  (* Should we do one eta-expansion to avoid non-generalizable '_a ? *)
+  let rels, c =
+    let n = List.length rels in
+    let s,s' = list_split_at n s in
+    let k = sign_kind s in
+    let empty_s = (k = EmptySig || k = SafeLogicalSig) in
+    if lang () = Ocaml && empty_s && not (gentypvar_ok c)
+      && s' <> [] && type_maxvar t <> 0
+    then decomp_lams_eta_n (n+1) n env body typ
+    else rels,c
   in
   let n = List.length rels in
   let s = list_firstn n s in
