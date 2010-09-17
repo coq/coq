@@ -61,7 +61,7 @@ let clenv_value_cast_meta clenv =
     clenv_cast_meta clenv (clenv_value clenv)
 
 let clenv_pose_dependent_evars with_evars clenv =
-  let dep_mvs = clenv_dependent false clenv in
+  let dep_mvs = clenv_dependent clenv in
   if dep_mvs <> [] & not with_evars then
     raise
       (RefinerError (UnresolvedBindings (List.map (meta_name clenv.evd) dep_mvs)));

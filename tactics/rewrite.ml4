@@ -349,10 +349,7 @@ let unify_eqn env sigma hypinfo t =
 	      (* For Ring essentially, only when doing setoid_rewrite *)
 	      clenv_unify allowK ~flags:rewrite2_unif_flags CONV left t cl
 	  in
-	  let env' =
-	    let mvs = clenv_dependent false env' in
-	      clenv_pose_metas_as_evars env' mvs
-	  in
+	  let env' = Clenvtac.clenv_pose_dependent_evars true env' in
 	  let evd' = Typeclasses.resolve_typeclasses ~fail:true env'.env env'.evd in
 	  let env' = { env' with evd = evd' } in
 	  let nf c = Evarutil.nf_evar evd' (Clenv.clenv_nf_meta env' c) in
@@ -1552,10 +1549,7 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
   in
   let evd' = Typeclasses.resolve_typeclasses ~fail:false env evd' in
   let cl' = {cl with evd = evd'} in
-  let cl' =
-    let mvs = clenv_dependent false cl' in
-      clenv_pose_metas_as_evars cl' mvs
-  in
+  let cl' = Clenvtac.clenv_pose_dependent_evars true cl' in
   let nf c = Evarutil.nf_evar ( cl'.evd) (Clenv.clenv_nf_meta cl' c) in
   let c1 = if l2r then nf c' else nf c1
   and c2 = if l2r then nf c2 else nf c'

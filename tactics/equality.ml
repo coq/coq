@@ -103,9 +103,7 @@ let instantiate_lemma_all env sigma gl c ty l l2r concl =
       | _ -> error "The term provided is not an applied relation." in
   let others,(c1,c2) = split_last_two args in
   let try_occ (evd', c') =
-    let cl' = {eqclause with evd = evd'} in
-    let mvs = clenv_dependent false cl' in
-      clenv_pose_metas_as_evars cl' mvs
+    clenv_pose_dependent_evars true {eqclause with evd = evd'}
   in
   let occs =
     Unification.w_unify_to_subterm_all ~flags:rewrite_unif_flags env
