@@ -175,6 +175,10 @@ let mktable autoclean =
 let add_mpfiles_content,get_mpfiles_content,clear_mpfiles_content =
   mktable false
 
+let get_mpfiles_content mp =
+  try get_mpfiles_content mp
+  with Not_found -> failwith "get_mpfiles_content"
+
 (*s The list of external modules that will be opened initially *)
 
 let mpfiles_add, mpfiles_mem, mpfiles_list, mpfiles_clear =
@@ -221,11 +225,13 @@ let pop_visible, push_visible, get_visible =
   let vis = ref [] in
   register_cleanup (fun () -> vis := []);
   let pop () =
-    let v = List.hd !vis in
-    (* we save the 1st-level-content of MPfile for later use *)
-    if get_phase () = Impl && modular () && is_modfile v.mp
-    then add_mpfiles_content v.mp v.content;
-    vis := List.tl !vis
+    match !vis with
+      | [] -> assert false
+      | v :: vl ->
+	  vis := vl;
+	  (* we save the 1st-level-content of MPfile for later use *)
+	  if get_phase () = Impl && modular () && is_modfile v.mp
+	  then add_mpfiles_content v.mp v.content
   and push mp mps =
     vis := { mp = mp; params = mps; content = Hashtbl.create 97 } :: !vis
   and get () = !vis
@@ -304,8 +310,8 @@ let rec mp_renaming_fun mp = match mp with
       let s = modular_rename Mod (id_of_mbid mbid) in
       if not (params_ren_mem mp) then [s]
       else let i,_,_ = repr_mbid mbid in [s^"__"^string_of_int i]
-  | MPfile _ when not (modular ()) -> assert false (* see [at_toplevel] above *)
   | MPfile _ ->
+      assert (modular ()); (* see [at_toplevel] above *)
       assert (get_phase () = Pre);
       let current_mpfile = (list_last (get_visible ())).mp in
       if mp <> current_mpfile then mpfiles_add mp;
@@ -400,27 +406,28 @@ let visible_clash_dbg mp0 ks =
 let opened_libraries () =
   if not (modular ()) then []
   else
-    let used = mpfiles_list () in
-    let rec check_elsewhere avoid = function
-      | [] -> []
-      | mp :: mpl ->
-	  let clash s = Hashtbl.mem (get_mpfiles_content mp) (Mod,s) in
-	  if List.exists clash avoid
-	  then check_elsewhere avoid mpl
-	  else mp :: check_elsewhere (string_of_modfile mp :: avoid) mpl
+    let used_files = mpfiles_list () in
+    let used_ks = List.map (fun mp -> Mod,string_of_modfile mp) used_files in
+    (* By default, we open all used files. Ambiguities will be resolved later
+       by using qualified names. Nonetheless, we don't open any file A that
+       contains an immediate submodule A.B hiding another file B : otherwise,
+       after such an open, there's no unambiguous way to refer to objects of B. *)
+    let to_open =
+      List.filter
+	(fun mp ->
+	   not (List.exists (Hashtbl.mem (get_mpfiles_content mp)) used_ks))
+	used_files
     in
-    let opened = check_elsewhere [] used in
     mpfiles_clear ();
-    List.iter mpfiles_add opened;
-    opened
+    List.iter mpfiles_add to_open;
+    mpfiles_list ()
 
 (*s On-the-fly qualification issues for both monolithic or modular extraction. *)
 
-(* First, a function that factorize the printing of both [global_reference]
-   and module names for ocaml. When [k=Mod] then [olab=None], otherwise it
-   contains the label of the reference to print.
-   [rls] is the string list giving the qualified name, short name at the end.
-   Invariant: [List.length rls >= 2], simpler situations are handled elsewhere. *)
+(* [pp_ocaml_gen] below is a function that factorize the printing of both
+   [global_reference] and module names for ocaml. When [k=Mod] then [olab=None],
+   otherwise it contains the label of the reference to print.
+   [rls] is the string list giving the qualified name, short name at the end. *)
 
 (* In Coq, we can qualify [M.t] even if we are inside [M], but in Ocaml we
    cannot do that. So, if [t] gets hidden and we need a long name for it,
@@ -469,18 +476,21 @@ let pp_ocaml_bound base rls =
 (* [pp_ocaml_extern] : [mp] isn't local, it is defined in another [MPfile]. *)
 
 let pp_ocaml_extern k base rls = match rls with
-  | [] | [_] -> assert false
+  | [] -> assert false
   | base_s :: rls' ->
-      let k's = fstlev_ks k rls' in
-      if modular () && (mpfiles_mem base) &&
-	(not (mpfiles_clash base k's)) &&
-	(not (visible_clash base k's))
-      then (* Standard situation of an object in another file: *)
-	(* Thanks to the "open" of this file we remove its name *)
+      if (not (modular ())) (* Pseudo qualification with "" *)
+	|| (rls' = [])  (* Case of a file A.v used as a module later *)
+	|| (not (mpfiles_mem base)) (* Module not opened *)
+	|| (mpfiles_clash base (fstlev_ks k rls')) (* Conflict in opened files *)
+	|| (visible_clash base (fstlev_ks k rls')) (* Local conflict *)
+      then
+	(* We need to fully qualify. Last clash situation is unsupported *)
+	match visible_clash_dbg base (Mod,base_s) with
+	  | None -> dottify rls
+	  | Some (mp,l) -> error_module_clash base (MPdot (mp,l))
+      else
+	(* Standard situation : object in an opened file *)
 	dottify rls'
-      else match visible_clash_dbg base (Mod,base_s) with
-	| None -> dottify rls
-	| Some (mp,l) -> error_module_clash base (MPdot (mp,l))
 
 (* [pp_ocaml_gen] : choosing between [pp_ocaml_extern] or [pp_ocaml_extern] *)
 

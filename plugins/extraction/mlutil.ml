@@ -654,10 +654,10 @@ let rec tmp_head_lams = function
 let rec ast_glob_subst s t = match t with
   | MLapp ((MLglob ((ConstRef kn) as refe)) as f, a) ->
       let a = List.map (fun e -> tmp_head_lams (ast_glob_subst s e)) a in
-      (try linear_beta_red a (Refmap.find refe s)
+      (try linear_beta_red a (Refmap'.find refe s)
        with Not_found -> MLapp (f, a))
   | MLglob ((ConstRef kn) as refe) ->
-      (try Refmap.find refe s with Not_found -> t)
+      (try Refmap'.find refe s with Not_found -> t)
   | _ -> ast_map (ast_glob_subst s) t
 
 
@@ -1257,7 +1257,7 @@ let con_of_string s =
     | [] -> assert false
 
 let manual_inline_set =
-  List.fold_right (fun x -> Cset.add (con_of_string x))
+  List.fold_right (fun x -> Cset_env.add (con_of_string x))
     [ "Coq.Init.Wf.well_founded_induction_type";
       "Coq.Init.Wf.well_founded_induction";
       "Coq.Init.Wf.Acc_iter";
@@ -1269,10 +1269,10 @@ let manual_inline_set =
       "Coq.Init.Logic.eq_rect_r";
       "Coq.Init.Specif.proj1_sig";
     ]
-    Cset.empty
+    Cset_env.empty
 
 let manual_inline = function
-  | ConstRef c -> Cset.mem c manual_inline_set
+  | ConstRef c -> Cset_env.mem c manual_inline_set
   | _ -> false
 
 (* If the user doesn't say he wants to keep [t], we inline in two cases:

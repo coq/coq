@@ -11,6 +11,9 @@ open Libnames
 open Miniml
 open Declarations
 
+module Refset' : Set.S with type elt = global_reference
+module Refmap' : Map.S with type key = global_reference
+
 val safe_basename_of_global : global_reference -> identifier
 
 (*s Warning and Error messages. *)

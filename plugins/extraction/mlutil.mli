@@ -11,6 +11,7 @@ open Names
 open Term
 open Libnames
 open Miniml
+open Table
 
 (*s Utility functions over ML types with meta. *)
 
@@ -106,7 +107,7 @@ val ast_lift : int -> ml_ast -> ml_ast
 val ast_pop : ml_ast -> ml_ast
 val ast_subst : ml_ast -> ml_ast -> ml_ast
 
-val ast_glob_subst : ml_ast Refmap.t -> ml_ast -> ml_ast
+val ast_glob_subst : ml_ast Refmap'.t -> ml_ast -> ml_ast
 
 val normalize : ml_ast -> ml_ast
 val optimize_fix : ml_ast -> ml_ast
