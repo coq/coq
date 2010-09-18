@@ -172,7 +172,7 @@ let show_match id =
 	    | [] -> assert false
 	    | [x] -> "| "^ x  ^ " => \n" ^ acc
 	    | x::l ->
-		"| (" ^ List.fold_left (fun acc s ->  acc ^ " " ^ s) x l ^ ")"
+		"| " ^ List.fold_left (fun acc s ->  acc ^ " " ^ s) x l
 		^ " => \n" ^ acc)
 	"end" patterns in
     msg (str ("match # with\n" ^ cases))
