@@ -624,3 +624,8 @@ TACTIC EXTEND hget_evar
 END
 
 (**********************************************************************)
+
+TACTIC EXTEND constr_eq
+| [ "constr_eq" constr(x) constr(y) ] -> [ 
+    if eq_constr x y then tclIDTAC else tclFAIL 0 (str "Not equal") ]
+END

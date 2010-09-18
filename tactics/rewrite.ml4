@@ -431,29 +431,30 @@ let pointwise_or_dep_relation n t car rel =
 	  [| t; mkLambda (n, t, car); mkLambda (n, t, rel) |])
 
 let lift_cstr env sigma evars (args : constr list) ty cstr =
-  let cstr =
-    let start env car =
-      match cstr with
-      | None | Some (_, None) ->
-	  Evarutil.e_new_evar evars env (mk_relation car)
-      | Some (ty, Some rel) -> rel
-    in
-    let rec aux env prod n = 
-      if n = 0 then start env prod
-      else
-	match kind_of_term (Reduction.whd_betadeltaiota env prod) with
-	| Prod (na, ty, b) ->
-	    if noccurn 1 b then
-	      let b' = lift (-1) b in
-	      let rb = aux env b' (pred n) in
-		mkApp (Lazy.force pointwise_relation, [| ty; b'; rb |])
-	    else
-	      let rb = aux (Environ.push_rel (na, None, ty) env) b (pred n) in
-		mkApp (Lazy.force forall_relation, 
-		      [| ty; mkLambda (na, ty, b); mkLambda (na, ty, rb) |])
-	| _ -> assert false
-    in aux env ty (List.length args)
-  in Some (ty, cstr)
+  let start env car =
+    match cstr with
+    | None | Some (_, None) ->
+	Evarutil.e_new_evar evars env (mk_relation car)
+    | Some (ty, Some rel) -> rel
+  in
+  let rec aux env prod n args = 
+    if n = 0 then Some (start env prod)
+    else
+      match kind_of_term (Reduction.whd_betadeltaiota env prod) with
+      | Prod (na, ty, b) ->
+	  if noccurn 1 b then
+	    let b' = lift (-1) b in
+	    let rb = aux env b' (pred n) (List.tl args) in
+	      Option.map (fun rb -> mkApp (Lazy.force pointwise_relation, [| ty; b'; rb |]))
+		rb
+	  else
+	    let rb = aux (Environ.push_rel (na, None, ty) env) b (pred n) (List.tl args) in
+	      Option.map 
+		(fun rb -> mkApp (Lazy.force forall_relation, 
+				  [| ty; mkLambda (na, ty, b); mkLambda (na, ty, rb) |]))
+		rb
+      | _ -> None
+  in Option.map (fun rel -> (ty, rel)) (aux env ty (List.length args) args)
 
 let unlift_cstr env sigma = function
   | None -> None
