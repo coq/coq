@@ -197,7 +197,10 @@ let rec vernac_com interpfun (loc,com) =
 	  with e -> stop(); raise e
 	end
 
-    | v -> if not !just_parsing then interpfun v
+    | v ->
+        if not !just_parsing then
+          States.with_heavy_rollback interpfun
+            Cerrors.process_vernac_interp_error v
 
   in
     try
@@ -236,12 +239,9 @@ and read_vernac_file verbosely s =
  * with a new label to make vernac undoing easier. Also freeze state to speed up
  * backtracking. *)
 let eval_expr last =
-  vernac_com (States.with_heavy_rollback Vernacentries.interp) last;
+  vernac_com Vernacentries.interp last;
   Lib.add_frozen_state();
   Lib.mark_end_of_command()
-
-let eval_ctrl ast =
-  vernac_com Vernacentries.interp (Util.dummy_loc,ast)
 
 (* raw_do_vernac : Pcoq.Gram.parsable -> unit
  * vernac_step . parse_sentence *)

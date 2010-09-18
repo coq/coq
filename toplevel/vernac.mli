@@ -22,7 +22,6 @@ exception End_of_input
 
 val just_parsing : bool ref
 val eval_expr : Util.loc * Vernacexpr.vernac_expr -> unit
-val eval_ctrl : Vernacexpr.vernac_expr -> unit
 val raw_do_vernac : Pcoq.Gram.parsable -> unit
 
 (** Set XML hooks *)
