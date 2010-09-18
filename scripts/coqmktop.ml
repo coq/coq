@@ -233,7 +233,7 @@ let declare_loading_string () =
      let ppf = Format.std_formatter;;
      Mltop.set_top
        {Mltop.load_obj=
-         (fun f -> if not (Topdirs.load_file ppf f) then failwith \"error\");
+         (fun f -> if not (Topdirs.load_file ppf f) then Util.error (\"Could not load plugin \"^f));\
         Mltop.use_file=Topdirs.dir_use ppf;
         Mltop.add_dir=Topdirs.dir_directory;
         Mltop.ml_loop=(fun () -> Toploop.loop ppf) };;\n"
