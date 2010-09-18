@@ -163,7 +163,7 @@ let make_cases s =
 let show_match id = 
   try
     let s = string_of_id (snd id) in
-    let patterns = make_cases s in
+    let patterns = List.rev (make_cases s) in
     let cases = 
       List.fold_left 
 	(fun acc x -> 
