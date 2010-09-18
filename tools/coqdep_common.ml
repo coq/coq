@@ -138,7 +138,7 @@ let warning_clash file dir =
       let d2 = Filename.dirname f2 in
       let dl = List.map Filename.dirname (List.rev fl) in
       eprintf
-        "*** Warning: in file %s, \n    required library %s is ambiguous!\n    (found %s.v in "
+        "*** Warning: in file %s, \n    required library %s matches several files in path\n    (found %s.v in "
         file (String.concat "." dir) f;
       List.iter (fun s -> eprintf "%s, " s) dl;
       eprintf "%s and %s; used the latter)\n" d2 d1

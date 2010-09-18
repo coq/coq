@@ -1,0 +1,1 @@
+misc/deps/client/bar.vo misc/deps/client/bar.glob: misc/deps/client/bar.v misc/deps/client/foo.vo misc/deps/lib/foo.vo
