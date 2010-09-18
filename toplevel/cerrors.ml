@@ -28,6 +28,8 @@ let guill s = "\""^s^"\""
 let where s =
   if !Flags.debug then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
 
+exception EvaluatedError of std_ppcmds * exn option
+
 (* assumption : explain_sys_exn does NOT end with a 'FNL anymore! *)
 
 let rec explain_exn_default_aux anomaly_string report_fn = function
@@ -69,54 +71,6 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ str (guill s) ++ report_fn ())
   | Sys.Break ->
       hov 0 (fnl () ++ str "User interrupt.")
-  | Univ.UniverseInconsistency (o,u,v) ->
-      let msg =
-	if !Constrextern.print_universes then
-	  spc() ++ str "(cannot enforce" ++ spc() ++ Univ.pr_uni u ++ spc() ++
-          str (match o with Univ.Lt -> "<" | Univ.Le -> "<=" | Univ.Eq -> "=")
-	  ++ spc() ++ Univ.pr_uni v ++ str")"
-	else
-	  mt() in
-      hov 0 (str "Error: Universe inconsistency" ++ msg ++ str ".")
-  | TypeError(ctx,te) ->
-      hov 0 (str "Error:" ++ spc () ++ Himsg.explain_type_error ctx te)
-  | PretypeError(ctx,te) ->
-      hov 0 (str "Error:" ++ spc () ++ Himsg.explain_pretype_error ctx te)
-  | Typeclasses_errors.TypeClassError(env, te) ->
-      hov 0 (str "Error:" ++ spc () ++ Himsg.explain_typeclass_error env te)
-  | InductiveError e ->
-      hov 0 (str "Error:" ++ spc () ++ Himsg.explain_inductive_error e)
-  | RecursionSchemeError e ->
-      hov 0 (str "Error:" ++ spc () ++ Himsg.explain_recursion_scheme_error e)
-  | Proof_type.LtacLocated (_,(Refiner.FailError (i,s) as exc)) when Lazy.force s <> mt () ->
-      explain_exn_default_aux anomaly_string report_fn exc
-  | Proof_type.LtacLocated (s,exc) ->
-      hov 0 (Himsg.explain_ltac_call_trace s ++ fnl ()
-             ++ explain_exn_default_aux anomaly_string report_fn exc)
-  | Cases.PatternMatchingError (env,e) ->
-      hov 0
-	(str "Error:" ++ spc () ++ Himsg.explain_pattern_matching_error env e)
-  | Tacred.ReductionTacticError e ->
-      hov 0 (str "Error:" ++ spc () ++ Himsg.explain_reduction_tactic_error e)
-  | Logic.RefinerError e ->
-      hov 0 (str "Error:" ++ spc () ++ Himsg.explain_refiner_error e)
-  | Nametab.GlobalizationError q ->
-      hov 0 (str "Error:" ++ spc () ++
-	       str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
-	       spc () ++ str "was not found" ++
-	       spc () ++ str "in the current" ++ spc () ++ str "environment.")
-  | Nametab.GlobalizationConstantError q ->
-      hov 0 (str "Error:" ++ spc () ++
-	       str "No constant of this name:" ++ spc () ++
-               Libnames.pr_qualid q ++ str ".")
-  | Refiner.FailError (i,s) ->
-      hov 0 (str "Error: Tactic failure" ++
-                (if Lazy.force s <> mt() then str ":" ++ Lazy.force s else mt ()) ++
-                if i=0 then str "." else str " (level " ++ int i ++ str").")
-  | Stdpp.Exc_located (loc,exc) ->
-      hov 0 ((if loc = dummy_loc then (mt ())
-               else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
-               ++ explain_exn_default_aux anomaly_string report_fn exc)
   | Lexer.Error Illegal_character ->
       hov 0 (str "Syntax error: Illegal character.")
   | Lexer.Error Unterminated_comment ->
@@ -140,11 +94,68 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
 	       else
 		 (mt ())) ++
 	       report_fn ())
-  | AlreadyDeclared msg ->
-      hov 0 (str "Error: " ++ msg ++ str ".")
+  | EvaluatedError (msg,None) ->
+      msg
+  | EvaluatedError (msg,Some reraise) ->
+      msg ++ explain_exn_default_aux anomaly_string report_fn reraise
   | reraise ->
       hov 0 (anomaly_string () ++ str "Uncaught exception " ++
 	       str (Printexc.to_string reraise) ++ report_fn ())
+
+let wrap_vernac_error strm =
+  EvaluatedError (hov 0 (str "Error:" ++ spc () ++ strm), None)
+
+let rec process_vernac_interp_error = function
+  | Univ.UniverseInconsistency (o,u,v) ->
+      let msg =
+	if !Constrextern.print_universes then
+	  spc() ++ str "(cannot enforce" ++ spc() ++ Univ.pr_uni u ++ spc() ++
+          str (match o with Univ.Lt -> "<" | Univ.Le -> "<=" | Univ.Eq -> "=")
+	  ++ spc() ++ Univ.pr_uni v ++ str")"
+	else
+	  mt() in
+      wrap_vernac_error (str "Universe inconsistency" ++ msg ++ str ".")
+  | TypeError(ctx,te) ->
+      wrap_vernac_error (Himsg.explain_type_error ctx te)
+  | PretypeError(ctx,te) ->
+      wrap_vernac_error (Himsg.explain_pretype_error ctx te)
+  | Typeclasses_errors.TypeClassError(env, te) ->
+      wrap_vernac_error (Himsg.explain_typeclass_error env te)
+  | InductiveError e ->
+      wrap_vernac_error (Himsg.explain_inductive_error e)
+  | RecursionSchemeError e ->
+      wrap_vernac_error (Himsg.explain_recursion_scheme_error e)
+  | Cases.PatternMatchingError (env,e) ->
+      wrap_vernac_error (Himsg.explain_pattern_matching_error env e)
+  | Tacred.ReductionTacticError e ->
+      wrap_vernac_error (Himsg.explain_reduction_tactic_error e)
+  | Logic.RefinerError e ->
+      wrap_vernac_error (Himsg.explain_refiner_error e)
+  | Nametab.GlobalizationError q ->
+      wrap_vernac_error
+        (str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
+	 spc () ++ str "was not found" ++
+	 spc () ++ str "in the current" ++ spc () ++ str "environment.")
+  | Nametab.GlobalizationConstantError q ->
+      wrap_vernac_error
+        (str "No constant of this name:" ++ spc () ++
+         Libnames.pr_qualid q ++ str ".")
+  | Refiner.FailError (i,s) ->
+      EvaluatedError (hov 0 (str "Error: Tactic failure" ++
+                (if Lazy.force s <> mt() then str ":" ++ Lazy.force s else mt ()) ++
+                if i=0 then str "." else str " (level " ++ int i ++ str")."),
+                None)
+  | AlreadyDeclared msg ->
+      wrap_vernac_error (msg ++ str ".")
+  | Proof_type.LtacLocated (_,(Refiner.FailError (i,s) as exc)) when Lazy.force s <> mt () ->
+      process_vernac_interp_error exc
+  | Proof_type.LtacLocated (s,exc) ->
+      EvaluatedError (hov 0 (Himsg.explain_ltac_call_trace s ++ fnl()),
+        Some (process_vernac_interp_error exc))
+  | Stdpp.Exc_located (loc,exc) ->
+      Stdpp.Exc_located (loc,process_vernac_interp_error exc)
+  | exc ->
+      exc
 
 let anomaly_string () = str "Anomaly: "
 

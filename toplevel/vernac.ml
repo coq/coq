@@ -198,7 +198,10 @@ let rec vernac_com interpfun (loc,com) =
 	  with e -> stop(); raise e
 	end
 
-    | v -> if not !just_parsing then interpfun v
+    | v ->
+        if not !just_parsing then
+          States.with_heavy_rollback interpfun
+            Cerrors.process_vernac_interp_error v
 
   in
     try
@@ -239,7 +242,7 @@ and read_vernac_file verbosely s =
  * backtracking. *)
 
 let raw_do_vernac po =
-  vernac (States.with_heavy_rollback Vernacentries.interp) (po,None);
+  vernac Vernacentries.interp (po,None);
   Lib.add_frozen_state();
   Lib.mark_end_of_command()
 

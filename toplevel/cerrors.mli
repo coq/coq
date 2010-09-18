@@ -19,9 +19,13 @@ val print_loc : loc -> std_ppcmds
 
 val explain_exn : exn -> std_ppcmds
 
-(** Same, but will re-raise all anomalies instead of explaining them *)
+(** Precompute errors raised during vernac interpretation *)
 
 val explain_exn_no_anomaly : exn -> std_ppcmds
+
+(** Pre-explain a vernac interpretation error *)
+
+val process_vernac_interp_error : exn -> exn
 
 (** For debugging purpose (?), the explain function can be twicked *)
 
