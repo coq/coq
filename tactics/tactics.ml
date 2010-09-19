@@ -883,7 +883,8 @@ let make_projection params cstr sign elim i n c =
       match List.nth l i with
       | Some proj ->
 	  let t = Typeops.type_of_constant (Global.env()) proj in
-	  Some (beta_applist (mkConst proj,params),prod_applist t (params@[c]))
+	  let args = extended_rel_vect 0 sign in
+	  Some (beta_applist (mkConst proj,params),prod_applist t (params@[mkApp (c,args)]))
       | None -> None
   in Option.map (fun (abselim,elimt) -> 
     let c = beta_applist (abselim,[mkApp (c,extended_rel_vect 0 sign)]) in
