@@ -222,7 +222,7 @@ let find_class_proof proof_type proof_method env evars carrier relation =
   try
     let goal = mkApp (Lazy.force proof_type, [| carrier ; relation |]) in
     let evars, c = Typeclasses.resolve_one_typeclass env evars goal in
-      mkApp (Lazy.force proof_method, [| carrier; relation; c |]), evars
+      mkApp (Lazy.force proof_method, [| carrier; relation; c |])
   with e when Logic.catchable_exception e -> raise Not_found
 
 let get_reflexive_proof env = find_class_proof reflexive_type reflexive_proof env
@@ -368,7 +368,7 @@ let unify_eqn env sigma hypinfo t =
     let res =
       if l2r then (prf, (car, rel, c1, c2))
       else
-	try (mkApp (fst (get_symmetric_proof env Evd.empty car rel),
+	try (mkApp (get_symmetric_proof env Evd.empty car rel,
 		   [| c1 ; c2 ; prf |]),
 	    (car, rel, c2, c1))
 	with Not_found ->
@@ -1626,25 +1626,23 @@ let setoid_proof gl ty fn fallback =
 		not_declared env ty rel gl
 	  | _ -> raise e
 
-let apply_with_evars (c,evars) = tclTHEN (Refiner.tclEVARS evars) (apply c)
-
 let setoid_reflexivity gl =
   setoid_proof gl "reflexive"
-    (fun env evm car rel -> apply_with_evars (get_reflexive_proof env evm car rel))
+    (fun env evm car rel -> apply (get_reflexive_proof env evm car rel))
     (reflexivity_red true)
 
 let setoid_symmetry gl =
   setoid_proof gl "symmetric"
-    (fun env evm car rel -> apply_with_evars (get_symmetric_proof env evm car rel))
+    (fun env evm car rel -> apply (get_symmetric_proof env evm car rel))
     (symmetry_red true)
 
 let setoid_transitivity c gl =
   setoid_proof gl "transitive"
     (fun env evm car rel ->
-      let proof,evm = get_transitive_proof env evm car rel in
+      let proof = get_transitive_proof env evm car rel in
       match c with
-      | None -> tclTHEN (Refiner.tclEVARS evm) (eapply proof)
-      | Some c -> tclTHEN (Refiner.tclEVARS evm) (apply_with_bindings (proof,Rawterm.ImplicitBindings [ c ])))
+      | None -> eapply proof
+      | Some c -> apply_with_bindings (proof,Rawterm.ImplicitBindings [ c ]))
     (transitivity_red true c)
 
 let setoid_symmetry_in id gl =

@@ -455,9 +455,9 @@ let setoid_of_relation env a r =
   try
     lapp coq_mk_Setoid
       [|a ; r ;
-	fst (Rewrite.get_reflexive_proof env evm a r) ;
-	fst (Rewrite.get_symmetric_proof env evm a r) ;
-	fst (Rewrite.get_transitive_proof env evm a r) |]
+	Rewrite.get_reflexive_proof env evm a r ;
+	Rewrite.get_symmetric_proof env evm a r ;
+	Rewrite.get_transitive_proof env evm a r |]
   with Not_found ->
     error "cannot find setoid relation"
 
