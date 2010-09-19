@@ -324,6 +324,7 @@ let def_token =
   | "CoInductive"
   | "Equations"
   | "Instance"
+  | "Declare" space+ "Instance"
   | "Global" space+ "Instance"
 
 let decl_token =
