@@ -9,5 +9,5 @@ Record Value (etyp : nat -> Type) := Mk {
 Definition some_value (etyp : nat -> Type) :  (Value etyp).
 Proof.
   intros.
-  apply Mk.
+  Fail apply Mk. (* Check that it does not raise an anomaly *)
 
