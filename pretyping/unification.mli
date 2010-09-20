@@ -15,7 +15,8 @@ type unify_flags = {
   use_metas_eagerly : bool;
   modulo_delta : Names.transparent_state;
   resolve_evars : bool;
-  use_evars_pattern_unification : bool
+  use_evars_pattern_unification : bool;
+  modulo_eta : bool
 }
 
 val default_unify_flags : unify_flags

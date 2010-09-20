@@ -729,6 +729,7 @@ let elim_flags = {
   modulo_delta = empty_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = true;
+  modulo_eta = true
 }
 
 let elimination_clause_scheme with_evars allow_K i elimclause indclause gl =

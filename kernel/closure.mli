@@ -139,6 +139,7 @@ val stack_args_size : stack -> int
 val stack_tail : int -> stack -> stack
 val stack_nth : stack -> int -> fconstr
 val zip_term : (fconstr -> constr) -> constr -> stack -> constr
+val eta_expand_stack : stack -> stack
 
 (** To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use

@@ -297,6 +297,7 @@ let rewrite_unif_flags = {
   Unification.modulo_delta = empty_transparent_state;
   Unification.resolve_evars = true;
   Unification.use_evars_pattern_unification = true;
+  Unification.modulo_eta = true
 }
 
 let conv_transparent_state = (Idpred.empty, Cpred.full)
@@ -307,6 +308,7 @@ let rewrite2_unif_flags = {
   Unification.modulo_delta = empty_transparent_state;
   Unification.resolve_evars = true;
   Unification.use_evars_pattern_unification = true;
+  Unification.modulo_eta = true
 }
 
 let setoid_rewrite_unif_flags = {
@@ -315,6 +317,7 @@ let setoid_rewrite_unif_flags = {
   Unification.modulo_delta = conv_transparent_state;
   Unification.resolve_evars = true;
   Unification.use_evars_pattern_unification = true;
+  Unification.modulo_eta = true
 }
 
 let convertible env evd x y =

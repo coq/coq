@@ -590,6 +590,21 @@ Ltac gen_srewrite Rsth Reqe ARth :=
      | progress rewrite <- (ARopp_mul_l ARth)
      | progress rewrite <- (ARopp_mul_r Rsth Reqe ARth) ].
 
+Ltac gen_srewrite_sr Rsth Reqe ARth :=
+  repeat first
+     [ gen_reflexivity Rsth
+     | progress rewrite (ARopp_zero Rsth Reqe ARth)
+     | rewrite (ARadd_0_l ARth)
+     | rewrite (ARadd_0_r Rsth ARth)
+     | rewrite (ARmul_1_l ARth)
+     | rewrite (ARmul_1_r Rsth ARth)
+     | rewrite (ARmul_0_l ARth)
+     | rewrite (ARmul_0_r Rsth ARth)
+     | rewrite (ARdistr_l ARth)
+     | rewrite (ARdistr_r Rsth Reqe ARth)
+     | rewrite (ARadd_assoc ARth)
+     | rewrite (ARmul_assoc ARth) ].
+
 Ltac gen_add_push add Rsth Reqe ARth x :=
   repeat (match goal with
   | |- context [add (add ?y x) ?z] =>

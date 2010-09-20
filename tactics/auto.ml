@@ -756,6 +756,7 @@ let auto_unif_flags = {
   modulo_delta = empty_transparent_state;
   resolve_evars = true;
   use_evars_pattern_unification = false;
+  modulo_eta = true
 }
 
 (* Try unification with the precompiled clause, then use registered Apply *)

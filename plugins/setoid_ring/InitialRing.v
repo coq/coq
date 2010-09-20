@@ -307,9 +307,7 @@ Section NMORPHISM.
   Notation "x == y" := (req x y).
    Add Morphism radd : radd_ext4.  exact (Radd_ext Reqe). Qed.
    Add Morphism rmul : rmul_ext4.  exact (Rmul_ext Reqe). Qed.
-   Add Morphism ropp : ropp_ext4.  exact (Ropp_ext Reqe). Qed.
-   Add Morphism rsub : rsub_ext5.  exact (ARsub_ext Rsth Reqe ARth). Qed.
-   Ltac norm := gen_srewrite Rsth Reqe ARth.
+   Ltac norm := gen_srewrite_sr Rsth Reqe ARth.
 
  Definition gen_phiN1 x :=
   match x with

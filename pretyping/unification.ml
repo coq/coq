@@ -169,7 +169,8 @@ type unify_flags = {
   use_metas_eagerly : bool;
   modulo_delta : Names.transparent_state;
   resolve_evars : bool;
-  use_evars_pattern_unification : bool
+  use_evars_pattern_unification : bool;
+  modulo_eta : bool
 }
 
 let default_unify_flags = {
@@ -178,6 +179,7 @@ let default_unify_flags = {
   modulo_delta = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = true;
+  modulo_eta = true
 }
 
 let default_no_delta_unify_flags = {
@@ -186,6 +188,7 @@ let default_no_delta_unify_flags = {
   modulo_delta = empty_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = false;
+  modulo_eta = true
 }
 
 let use_evars_pattern_unification flags =
@@ -258,6 +261,14 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	      (unirec_rec curenvnb topconv true substn t1 t2) c1 c2
 	| LetIn (_,a,_,c), _ -> unirec_rec curenvnb pb b substn (subst1 a c) cN
 	| _, LetIn (_,a,_,c) -> unirec_rec curenvnb pb b substn cM (subst1 a c)
+
+        (* eta-expansion *)
+	| Lambda (na,t1,c1), _ when flags.modulo_eta ->
+	    unirec_rec (push (na,t1) curenvnb) topconv true substn
+	      c1 (mkApp (lift 1 cN,[|mkRel 1|]))
+	| _, Lambda (na,t2,c2) when flags.modulo_eta ->
+	    unirec_rec (push (na,t2) curenvnb) topconv true substn
+	      (mkApp (lift 1 cM,[|mkRel 1|])) c2
 
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
             array_fold_left2 (unirec_rec curenvnb topconv true)

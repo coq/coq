@@ -96,6 +96,7 @@ let auto_unif_flags = {
   modulo_delta = var_full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = true;
+  modulo_eta = true
 }
 
 let rec eq_constr_mod_evars x y =
@@ -144,7 +145,7 @@ let with_prods nprods (c, clenv) f gls =
 
 let flags_of_state st =
   {auto_unif_flags with
-    modulo_conv_on_closed_terms = Some st; modulo_delta = st}
+    modulo_conv_on_closed_terms = Some st; modulo_delta = st; modulo_eta = false}
 
 let rec e_trivial_fail_db db_list local_db goal =
   let tacl =

@@ -244,7 +244,7 @@ let rec ccnv cv_pb infos lft1 lft2 term1 term2 cuniv =
 and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
   Util.check_for_interrupt ();
   (* First head reduce both terms *)
-  let rec  whd_both (t1,stk1) (t2,stk2) =
+  let rec whd_both (t1,stk1) (t2,stk2) =
     let st1' = whd_stack (snd infos) t1 stk1 in
     let st2' = whd_stack (snd infos) t2 stk2 in
     (* Now, whd_stack on term2 might have modified st1 (due to sharing),
@@ -307,20 +307,10 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
 		    | None -> raise NotConvertible) in
           eqappr cv_pb infos app1 app2 cuniv)
 
-    (* only one constant, defined var or defined rel *)
-    | (FFlex fl1, _)      ->
-        (match unfold_reference infos fl1 with
-           | Some def1 ->
-	       eqappr cv_pb infos (lft1, whd_stack (snd infos) def1 v1) appr2 cuniv
-           | None -> raise NotConvertible)
-    | (_, FFlex fl2)      ->
-        (match unfold_reference infos fl2 with
-           | Some def2 ->
-	       eqappr cv_pb infos appr1 (lft2, whd_stack (snd infos) def2 v2) cuniv
-           | None -> raise NotConvertible)
-
     (* other constructors *)
     | (FLambda _, FLambda _) ->
+        (* Inconsistency: we tolerate that v1, v2 contain shift and update but
+           we throw them away *)
         if not (is_empty_stack v1 && is_empty_stack v2) then
 	  anomaly "conversion was given ill-typed terms (FLambda)";
         let (_,ty1,bd1) = destFLambda mk_clos hd1 in
@@ -335,49 +325,75 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
         let u1 = ccnv CONV infos el1 el2 c1 c'1 cuniv in
         ccnv cv_pb infos (el_lift el1) (el_lift el2) c2 c'2 u1
 
+    (* Eta-expansion on the fly *)
+    | (FLambda _, _) ->
+        if v1 <> [] then
+	  anomaly "conversion was given unreduced term (FLambda)";
+        let (_,_ty1,bd1) = destFLambda mk_clos hd1 in
+	eqappr CONV infos
+	  (lft1,(bd1,[])) (el_lift lft2,(hd2,eta_expand_stack v2)) cuniv
+    | (_, FLambda _) ->
+        if v2 <> [] then
+	  anomaly "conversion was given unreduced term (FLambda)";
+        let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
+	eqappr CONV infos
+	  (el_lift lft1,(hd1,eta_expand_stack v1)) (lft2,(bd2,[])) cuniv
+
+    (* only one constant, defined var or defined rel *)
+    | (FFlex fl1, _)      ->
+        (match unfold_reference infos fl1 with
+           | Some def1 ->
+	       eqappr cv_pb infos (lft1, whd_stack (snd infos) def1 v1) appr2 cuniv
+           | None -> raise NotConvertible)
+    | (_, FFlex fl2)      ->
+        (match unfold_reference infos fl2 with
+           | Some def2 ->
+	       eqappr cv_pb infos appr1 (lft2, whd_stack (snd infos) def2 v2) cuniv
+           | None -> raise NotConvertible)
+
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
 
-     | (FInd ind1, FInd ind2) ->
-         if eq_ind ind1 ind2
-	 then
-           convert_stacks infos lft1 lft2 v1 v2 cuniv
-         else raise NotConvertible
+    | (FInd ind1, FInd ind2) ->
+        if eq_ind ind1 ind2
+	then
+          convert_stacks infos lft1 lft2 v1 v2 cuniv
+        else raise NotConvertible
 
-     | (FConstruct (ind1,j1), FConstruct (ind2,j2)) ->
-	 if j1 = j2 && eq_ind ind1 ind2
-	 then
-           convert_stacks infos lft1 lft2 v1 v2 cuniv
-         else raise NotConvertible
+    | (FConstruct (ind1,j1), FConstruct (ind2,j2)) ->
+	if j1 = j2 && eq_ind ind1 ind2
+	then
+          convert_stacks infos lft1 lft2 v1 v2 cuniv
+        else raise NotConvertible
 
-     | (FFix ((op1,(_,tys1,cl1)),e1), FFix((op2,(_,tys2,cl2)),e2)) ->
-	 if op1 = op2
-	 then
-	   let n = Array.length cl1 in
-           let fty1 = Array.map (mk_clos e1) tys1 in
-           let fty2 = Array.map (mk_clos e2) tys2 in
-           let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
-           let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
-	   let u1 = convert_vect infos el1 el2 fty1 fty2 cuniv in
-           let u2 =
-             convert_vect infos
-		 (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 u1 in
-           convert_stacks infos lft1 lft2 v1 v2 u2
-         else raise NotConvertible
+    | (FFix ((op1,(_,tys1,cl1)),e1), FFix((op2,(_,tys2,cl2)),e2)) ->
+	if op1 = op2
+	then
+	  let n = Array.length cl1 in
+          let fty1 = Array.map (mk_clos e1) tys1 in
+          let fty2 = Array.map (mk_clos e2) tys2 in
+          let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
+          let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
+	  let u1 = convert_vect infos el1 el2 fty1 fty2 cuniv in
+          let u2 =
+            convert_vect infos
+	      (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 u1 in
+          convert_stacks infos lft1 lft2 v1 v2 u2
+        else raise NotConvertible
 
-     | (FCoFix ((op1,(_,tys1,cl1)),e1), FCoFix((op2,(_,tys2,cl2)),e2)) ->
-         if op1 = op2
-         then
-	   let n = Array.length cl1 in
-           let fty1 = Array.map (mk_clos e1) tys1 in
-           let fty2 = Array.map (mk_clos e2) tys2 in
-           let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
-           let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
-           let u1 = convert_vect infos el1 el2 fty1 fty2 cuniv in
-           let u2 =
-	     convert_vect infos
-		 (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 u1 in
-           convert_stacks infos lft1 lft2 v1 v2 u2
-         else raise NotConvertible
+    | (FCoFix ((op1,(_,tys1,cl1)),e1), FCoFix((op2,(_,tys2,cl2)),e2)) ->
+        if op1 = op2
+        then
+	  let n = Array.length cl1 in
+          let fty1 = Array.map (mk_clos e1) tys1 in
+          let fty2 = Array.map (mk_clos e2) tys2 in
+          let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
+          let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
+          let u1 = convert_vect infos el1 el2 fty1 fty2 cuniv in
+          let u2 =
+	    convert_vect infos
+	      (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 u1 in
+          convert_stacks infos lft1 lft2 v1 v2 u2
+        else raise NotConvertible
 
      (* Should not happen because both (hd1,v1) and (hd2,v2) are in whnf *)
      | ( (FLetIn _, _) | (FCases _,_) | (FApp _,_) | (FCLOS _,_) | (FLIFT _,_)

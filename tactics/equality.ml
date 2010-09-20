@@ -86,6 +86,7 @@ let rewrite_unif_flags = {
   Unification.modulo_delta = empty_transparent_state;
   Unification.resolve_evars = true;
   Unification.use_evars_pattern_unification = true;
+  Unification.modulo_eta = true
 }
 
 let side_tac tac sidetac =
