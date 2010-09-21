@@ -278,7 +278,6 @@ let derive_inversion fix_names =
   with _ -> ()
 
 let warning_error names e =
-  Pp.msg_warning (str "Youhou\n@.");
   let e_explain e =
     match e with
       | ToShow e -> spc () ++ Cerrors.explain_exn e
