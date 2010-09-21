@@ -13,7 +13,6 @@ open Names
 open Nametab
 open Term
 open Libnames
-open Classops
 open Libobject
 open Library
 (*i*)

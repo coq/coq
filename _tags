@@ -55,6 +55,7 @@
 "tactics/rewrite.ml4": use_grammar
 
 <plugins/**/*.ml4>: use_grammar
+"plugins/subtac/g_subtac.ml4": use_extend
 
 ## sub-directory inclusion
 
