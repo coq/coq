@@ -2189,6 +2189,8 @@ let coq_eq_refl = lazy ((Coqlib.build_coq_eq_data ()).Coqlib.refl)
 let coq_heq = lazy (Coqlib.coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq")
 let coq_heq_refl = lazy (Coqlib.coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq_refl")
 
+let coq_block = lazy (Coqlib.coq_constant "tactics" ["Program";"Equality"] "block")
+
 let mkEq t x y = 
   mkApp (Lazy.force coq_eq, [| refresh_universes_strict t; x; y |])
     
@@ -2304,23 +2306,6 @@ let hyps_of_vars env sign nogen hyps =
         sign 
     in lh
 
-exception Seen
-
-let linear vars args = 
-  let seen = ref vars in
-    try 
-      Array.iter (fun i -> 
-	let rels = ids_of_constr ~all:true Idset.empty i in
-	let seen' = 
-	  Idset.fold (fun id acc ->
-	    if Idset.mem id acc then raise Seen
-	    else Idset.add id acc)
-	    rels !seen
-	in seen := seen')
-	args;
-      true
-    with Seen -> false
-
 let is_defined_variable env id =
   pi2 (lookup_named id env) <> None
 
@@ -2376,13 +2361,17 @@ let abstract_args gl generalize_vars dep id defined f args =
   let f', args' = decompose_indapp f args in
   let dogen, f', args' =
     let parvars = ids_of_constr ~all:true Idset.empty f' in
-      if not (linear parvars args') then true, f, args
-      else
-	match array_find_i (fun i x -> not (isVar x) || is_defined_variable env (destVar x)) args' with
-	| None -> false, f', args'
-	| Some nonvar ->
-	    let before, after = array_chop nonvar args' in
-	      true, mkApp (f', before), after
+    let seen = ref parvars in
+    let find i x = not (isVar x) || 
+      let v = destVar x in
+	if is_defined_variable env v || Idset.mem v !seen then true
+	else (seen := Idset.add v !seen; false)
+    in
+      match array_find_i find args' with
+      | None -> false, f', args'
+      | Some nonvar ->
+	  let before, after = array_chop nonvar args' in
+	    true, mkApp (f', before), after
   in
     if dogen then
       let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars, env = 
@@ -2441,14 +2430,14 @@ let specialize_eqs id gl =
     match kind_of_term ty with
     | Prod (na, t, b) -> 
 	(match kind_of_term t with
-	| App (eq, [| eqty; x; y |]) when eq_constr eq (Lazy.force coq_eq) ->
+	| App (eq, [| eqty; x; y |]) when in_eqs && eq_constr eq (Lazy.force coq_eq) ->
 	    let c = if noccur_between 1 (List.length ctx) x then y else x in
 	    let pt = mkApp (Lazy.force coq_eq, [| eqty; c; c |]) in
 	    let p = mkApp (Lazy.force coq_eq_refl, [| eqty; c |]) in
 	      if unif (push_rel_context ctx env) evars pt t then
 		aux true ctx (mkApp (acc, [| p |])) (subst1 p b)
 	      else acc, in_eqs, ctx, ty
-	| App (heq, [| eqty; x; eqty'; y |]) when eq_constr heq (Lazy.force coq_heq) ->
+	| App (heq, [| eqty; x; eqty'; y |]) when in_eqs && eq_constr heq (Lazy.force coq_heq) ->
 	    let eqt, c = if noccur_between 1 (List.length ctx) x then eqty', y else eqty, x in
 	    let pt = mkApp (Lazy.force coq_heq, [| eqt; c; eqt; c |]) in
 	    let p = mkApp (Lazy.force coq_heq_refl, [| eqt; c |]) in
@@ -2460,8 +2449,10 @@ let specialize_eqs id gl =
 	    else 
 	      let e = e_new_evar evars (push_rel_context ctx env) t in
 		aux false ((na, Some e, t) :: ctx) (mkApp (lift 1 acc, [| mkRel 1 |])) b)
+    | App (f, args) when eq_constr f (Lazy.force coq_block) && not in_eqs ->
+	aux true ctx acc args.(1)
     | t -> acc, in_eqs, ctx, ty
-  in 
+  in
   let acc, worked, ctx, ty = aux false [] (mkVar id) ty in
   let ctx' = nf_rel_context_evar !evars ctx in
   let ctx'' = List.map (fun (n,b,t as decl) ->
