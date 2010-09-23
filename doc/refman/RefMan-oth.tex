@@ -51,6 +51,56 @@ displays the objects defined since the beginning of this section.
 %% was introduced.
 \end{Variants}
 
+\section{Options and Flags}
+\subsection[\tt Set {\rm\sl option} {\rm\sl value}.]{\tt Set {\rm\sl option} {\rm\sl value}.\comindex{Set}}
+This command sets {\rm\sl option} to {\rm\sl value}. The original value of
+{\rm\sl option} is restored when the current module ends.
+
+\begin{Variants}
+\item {\tt Set {\rm\sl flag}.}\\
+This command switches {\rm\sl flag} on. The original state of
+{\rm\sl flag} is restored when the current module ends.
+\item {\tt Local Set {\rm\sl option} {\rm\sl value}.\comindex{Local Set}}
+This command sets {\rm\sl option} to {\rm\sl value}. The original value of
+{\rm\sl option} is restored when the current \emph{section} ends.
+\item {\tt Local Set {\rm\sl flag}.}\\
+This command switches {\rm\sl flag} on. The original state of
+{\rm\sl flag} is restored when the current \emph{section} ends.
+\item {\tt Global Set {\rm\sl option} {\rm\sl value}.\comindex{Global Set}}
+This command sets {\rm\sl option} to {\rm\sl value}. The original value of
+{\rm\sl option} is \emph{not} restored at the end of the module. Additionally,
+if set in a file, {\rm\sl option} is set to {\rm\sl value} when the file is
+{\tt Require}-d.
+\item {\tt Global Set {\rm\sl flag}.}\\
+This command switches {\rm\sl flag} on. The original state of
+{\rm\sl flag} is \emph{not} restored at the end of the module. Additionally,
+if set in a file, {\rm\sl flag} is switched on when the file is
+{\tt Require}-d.
+\end{Variants}
+
+\subsection[\tt Unset {\rm\sl flag}.]{\tt Unset {\rm\sl flag}.\comindex{Unset}}
+This command switches {\rm\sl flag} off. The original state of {\rm\sl flag}
+is restored when the current module ends.
+
+\begin{Variants}
+\item {\tt Local Unset {\rm\sl flag}.\comindex{Local Unset}}\\
+This command switches {\rm\sl flag} off. The original state of {\rm\sl flag}
+is restored when the current \emph{section} ends.
+\item {\tt Global Unset {\rm\sl flag}.\comindex{Global Unset}}\\
+This command switches {\rm\sl flag} off.  The original state of
+{\rm\sl flag} is \emph{not} restored at the end of the module. Additionally,
+if set in a file, {\rm\sl flag} is switched on when the file is
+{\tt Require}-d.
+\end{Variants}
+
+\subsection[\tt Test {\rm\sl option}.]{\tt Test {\rm\sl option}.\comindex{Test}}
+This command prints the current value of {\rm\sl option}.
+
+\begin{Variants}
+\item {\tt Test {\rm\sl flag}.}\\
+This command prints whether {\rm\sl flag} is on or off.
+\end{Variants}
+
 \section{Requests to the environment}
 
 \subsection[\tt Check {\term}.]{\tt Check {\term}.\label{Check}
