@@ -2359,8 +2359,8 @@ let abstract_args gl generalize_vars dep id defined f args =
 	    nongenvars, Idset.union argvars vars, env)
   in 
   let f', args' = decompose_indapp f args in
+  let parvars = ids_of_constr ~all:true Idset.empty f' in
   let dogen, f', args' =
-    let parvars = ids_of_constr ~all:true Idset.empty f' in
     let seen = ref parvars in
     let find i x = not (isVar x) || 
       let v = destVar x in
@@ -2375,7 +2375,7 @@ let abstract_args gl generalize_vars dep id defined f args =
   in
     if dogen then
       let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars, env = 
-	Array.fold_left aux (pf_type_of gl f',[],env,f',[],[],[],Idset.empty,Idset.empty,env) args'
+	Array.fold_left aux (pf_type_of gl f',[],env,f',[],[],[],parvars,Idset.empty,env) args'
       in
       let args, refls = List.rev args, List.rev refls in
       let vars = 
