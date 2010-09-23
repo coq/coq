@@ -1444,9 +1444,116 @@ Proof.
  apply to_Z_inj; rewrite !add_spec, Zplus_comm; auto.
 Qed.
 
-(* Should prove the equivalence *)
+Lemma lsr_add_distr x y n: (x + y) << n = ((x << n) + (y << n))%int31.
+Proof.
+ apply to_Z_inj.
+ rewrite add_spec, !lsl_spec, add_spec.
+ rewrite Zmult_mod_idemp_l, <-Zplus_mod.
+ apply f_equal2 with (f := Zmod); auto with zarith.
+Qed.
+
+Lemma is_even_add x y : 
+  is_even (x + y) = negb (xorb (negb (is_even x)) (negb (is_even y))).
+Proof.
+ assert (F : [|x + y|] mod 2 = ([|x|] mod 2 + [|y|] mod 2) mod 2).
+  assert (F1: (2 | wB)) by (apply Zpower_divide; apply refl_equal).
+  assert (F2: 0 < wB) by (apply refl_equal).
+  case (to_Z_bounded x); intros H1x H2x.
+  case (to_Z_bounded y); intros H1y H2y.
+  rewrite add_spec, <-Zmod_div_mod; auto with zarith.
+  rewrite (Z_div_mod_eq [|x|] 2) at 1; auto with zarith.
+  rewrite (Z_div_mod_eq [|y|] 2) at 1; auto with zarith.
+  rewrite Zplus_mod.
+  rewrite Zmult_comm, (fun x => Zplus_comm (x * 2)), Z_mod_plus; auto with zarith.
+  rewrite Zmult_comm, (fun x => Zplus_comm (x * 2)), Z_mod_plus; auto with zarith.
+  rewrite !Zmod_mod, <-Zplus_mod; auto.
+ generalize (is_even_spec (x + y)) (is_even_spec x) (is_even_spec y).
+ do 3 case is_even; auto; rewrite F; intros H1 H2 H3;
+  generalize H1; rewrite H2, H3; try discriminate.
+Qed.
+
+Lemma bit_add_0 x y: bit (x + y) 0 = xorb (bit x 0) (bit y 0).
+Proof.
+ rewrite <-(fun x => (negb_involutive (bit x 0))).
+ rewrite <-is_even_bit, is_even_add, !is_even_bit.
+ do 2 case bit; auto.
+Qed.
+ 
+Lemma add_cancel_l x y z : (x + y = x + z)%int31 -> y = z.
+Proof.
+ intros H; case (to_Z_bounded x); case (to_Z_bounded y); case (to_Z_bounded z); 
+  intros H1z H2z H1y H2y H1x H2x.
+ generalize (add_le_r y x) (add_le_r z x); rewrite (add_comm y x), H, (add_comm z x).
+ case_eq  (x <= x + z)%int31; intros H1 H2 H3.
+ apply to_Z_inj; generalize H; rewrite <-to_Z_eq, !add_spec, !Zmod_small; auto with zarith.
+ apply to_Z_inj; assert ([|x|] + [|y|] = [|x|] + [|z|]); auto with zarith.
+ assert (F1: wB > 0) by apply refl_equal.
+ rewrite (Z_div_mod_eq ([|x|] + [|y|]) wB), (Z_div_mod_eq ([|x|] + [|z|]) wB); auto.
+ rewrite <-to_Z_eq, !add_spec in H; rewrite H.
+ replace (([|x|] + [|y|])/wB) with 1.
+ replace (([|x|] + [|z|])/wB) with 1; auto with zarith.
+ apply Zle_antisym.
+ apply Zdiv_le_lower_bound; auto with zarith.
+ assert (F2: [|x|] + [|z|] < 2 * wB); auto with zarith.
+ generalize (Zdiv_lt_upper_bound _ _ _ (Zgt_lt _ _ F1) F2); auto with zarith.
+ apply Zle_antisym.
+ apply Zdiv_le_lower_bound; auto with zarith.
+ assert (F2: [|x|] + [|y|] < 2 * wB); auto with zarith.
+ generalize (Zdiv_lt_upper_bound _ _ _ (Zgt_lt _ _ F1) F2); auto with zarith.
+Qed.
+
+Lemma add_cancel_r x y z : (y + x = z + x)%int31 -> y = z.
+Proof.
+  rewrite !(fun t => add_comm t x); intros Hl; apply (add_cancel_l x); auto.
+Qed.
+
+Lemma to_Z_split x : [|x|] = [|(x  >> 1)|] * 2 + [|bit x 0|].
+Proof.
+  case (to_Z_bounded x); intros H1x H2x.
+  case (to_Z_bounded (bit x 0)); intros H1b H2b.
+  assert (F1: 0 <= [|x >> 1|] < wB/2).
+    rewrite lsr_spec, to_Z_1, Zpower_1_r; split; auto with zarith.
+    apply Zdiv_lt_upper_bound; auto with zarith.
+  rewrite (bit_split x) at 1.
+  rewrite add_spec, Zmod_small, lsl_spec, to_Z_1, Zpower_1_r, Zmod_small; 
+    split; auto with zarith.
+  change wB with ((wB/2)*2); auto with zarith.
+  rewrite lsl_spec, to_Z_1, Zpower_1_r, Zmod_small; auto with zarith.
+  change wB with ((wB/2)*2); auto with zarith.
+  rewrite lsl_spec, to_Z_1, Zpower_1_r, Zmod_small; auto with zarith.
+  2: change wB with ((wB/2)*2); auto with zarith.
+  change wB with (((wB/2 - 1) * 2 + 1) + 1).
+  assert ([|bit x 0|] <= 1); auto with zarith.
+  case bit; discriminate.
+Qed.
+
+Lemma lor_le x y : (y <= x lor y)%int31 = true.
+Proof.
+ generalize x y (to_Z_bounded x) (to_Z_bounded y); clear x y.
+ unfold wB; elim size.
+ replace (2^Z_of_nat 0) with 1%Z; auto with zarith.
+ intros x y Hx Hy; replace x with 0%int31.
+ replace y with 0%int31; auto.
+ apply to_Z_inj; rewrite to_Z_0; auto with zarith.
+ apply to_Z_inj; rewrite to_Z_0; auto with zarith.
+ intros n IH x y; rewrite inj_S.
+ unfold Zsucc; rewrite Zpower_exp, Zpower_1_r; auto with zarith.
+ intros Hx Hy.
+ rewrite leb_spec.
+ rewrite (to_Z_split y) at 1; rewrite (to_Z_split (x lor y)).
+ assert ([|y>>1|] <= [|(x lor y) >> 1|]).
+  rewrite lor_lsr, <-leb_spec; apply IH.
+  rewrite lsr_spec, to_Z_1, Zpower_1_r; split; auto with zarith.
+  apply Zdiv_lt_upper_bound; auto with zarith.
+  rewrite lsr_spec, to_Z_1, Zpower_1_r; split; auto with zarith.
+  apply Zdiv_lt_upper_bound; auto with zarith.
+ assert ([|bit y 0|] <= [|bit (x lor y) 0|]); auto with zarith.
+ rewrite lor_spec; do 2 case bit; try discriminate.
+Qed.
+
+
 Lemma bit_add_or x y: 
-  (forall n, bit x n = true -> bit y n = true -> False) -> (x + y)%int31= x lor y.
+  (forall n, bit x n = true -> bit y n = true -> False) <-> (x + y)%int31= x lor y.
 Proof.
  generalize x y (to_Z_bounded x) (to_Z_bounded y); clear x y.
  unfold wB; elim size.
@@ -1459,6 +1566,7 @@ Proof.
  intros n IH x y; rewrite inj_S.
  unfold Zsucc; rewrite Zpower_exp, Zpower_1_r; auto with zarith.
  intros Hx Hy.
+ split.
  intros Hn.
  assert (F1: ((x >> 1) + (y >> 1))%int31 = (x >> 1) lor (y >> 1)).
    apply IH.
@@ -1481,6 +1589,64 @@ Proof.
  rewrite <-!add_assoc; apply f_equal2 with (f := add); auto.
  rewrite add_comm, <-!add_assoc; apply f_equal2 with (f := add); auto.
  rewrite add_comm; auto.
+ intros Heq.
+ generalize (add_le_r x y); rewrite Heq, lor_le; intro Hb.
+ generalize Heq; rewrite (bit_split x) at 1; rewrite (bit_split y )at 1; clear Heq.
+ rewrite (fun y => add_comm y (bit x 0)), <-!add_assoc, add_comm,
+         <-!add_assoc, (add_comm (bit y 0)), add_assoc, <-lsr_add_distr.
+ rewrite (bit_split (x lor y)), lor_spec.
+ intros Heq.
+ assert (F: (bit x 0 + bit y 0)%int31 = (bit x 0 || bit y 0)).
+  assert (F1: (2 | wB)) by (apply Zpower_divide; apply refl_equal).
+  assert (F2: 0 < wB) by (apply refl_equal).
+  assert (F3: [|bit x  0 + bit y 0|] mod 2 = [|bit x 0 || bit y 0|] mod 2).
+  apply trans_equal with (([|(x>>1 + y>>1) << 1|] + [|bit x 0 + bit y 0|]) mod 2).
+  rewrite lsl_spec, Zplus_mod, <-Zmod_div_mod; auto with zarith.
+  rewrite Zpower_1_r, Z_mod_mult, Zplus_0_l, Zmod_mod; auto with zarith.
+  rewrite (Zmod_div_mod 2 wB), <-add_spec, Heq; auto with zarith.
+  rewrite add_spec, <-Zmod_div_mod; auto with zarith.
+  rewrite lsl_spec, Zplus_mod, <-Zmod_div_mod; auto with zarith.
+  rewrite Zpower_1_r, Z_mod_mult, Zplus_0_l, Zmod_mod; auto with zarith.
+  generalize F3; do 2 case bit; try discriminate; auto.
+ case (IH (x >> 1) (y >> 1)).
+ rewrite lsr_spec, to_Z_1, Zpower_1_r; split; auto with zarith.
+ apply Zdiv_lt_upper_bound; auto with zarith.
+ rewrite lsr_spec, to_Z_1, Zpower_1_r; split; auto with zarith.
+ apply Zdiv_lt_upper_bound; auto with zarith.
+ intros _ HH m; case (to_Z_bounded m); intros H1m H2m.
+ case_eq (digits <= m)%int31.
+ intros Hlm; rewrite bit_M; auto; discriminate.
+ rewrite <- not_true_iff_false, leb_spec; intros Hlm.
+ case (Zle_lt_or_eq 0 [|m|]); auto; intros Hm.
+ replace m with ((m -1) + 1)%int31.
+ rewrite <-(bit_half x), <-(bit_half y); auto with zarith.
+ apply HH.
+ rewrite <-lor_lsr.
+ assert (0 <= [|bit (x lor y) 0|] <= 1) by (case bit; split; discriminate).
+ rewrite F in Heq; generalize (add_cancel_r _ _ _ Heq).
+ intros Heq1; apply to_Z_inj.
+ generalize Heq1; rewrite <-to_Z_eq, lsl_spec, to_Z_1, Zpower_1_r, Zmod_small.
+ rewrite lsl_spec, to_Z_1, Zpower_1_r, Zmod_small; auto with zarith.
+ case (to_Z_bounded (x lor y)); intros H1xy H2xy.
+ rewrite lsr_spec, to_Z_1, Zpower_1_r; auto with zarith.
+ change wB with ((wB/2)*2); split; auto with zarith.
+ assert ([|x lor y|] / 2  < wB / 2); auto with zarith.
+ apply Zdiv_lt_upper_bound; auto with zarith.
+ split.
+ case (to_Z_bounded (x >> 1 + y >> 1)); auto with zarith.
+ rewrite add_spec.
+ apply Zle_lt_trans with (([|x >> 1|] + [|y >> 1|]) * 2); auto with zarith.
+ case (Zmod_le_first ([|x >> 1|] + [|y >> 1|]) wB); auto with zarith.
+ case (to_Z_bounded (x >> 1)); case (to_Z_bounded (y >> 1)); auto with zarith.
+ generalize Hb; rewrite (to_Z_split x) at 1; rewrite (to_Z_split y) at 1.
+ case (to_Z_bounded (bit x 0)); case (to_Z_bounded (bit y 0)); auto with zarith.
+ rewrite ltb_spec, sub_spec, to_Z_1, Zmod_small; auto with zarith.
+ rewrite ltb_spec, sub_spec, to_Z_1, Zmod_small; auto with zarith.
+ apply to_Z_inj.
+ rewrite add_spec, sub_spec, Zplus_mod_idemp_l, to_Z_1, Zmod_small; auto with zarith.
+ replace m with 0%int31.
+ intros Hbx Hby; generalize F; rewrite <-to_Z_eq, Hbx, Hby; discriminate.
+ apply to_Z_inj; auto.
 Qed.
 
 Lemma addmuldiv_spec : forall x y p, [|p|] <= [|digits|] ->
@@ -1490,7 +1656,8 @@ Proof.
  intros x y p H.
  assert (Fp := to_Z_bounded p); assert (Fd := to_Z_bounded digits).
  rewrite addmuldiv_def_spec; unfold addmuldiv_def.
- rewrite <-bit_add_or, add_spec, lsl_spec, lsr_spec, Zplus_mod_idemp_l, sub_spec.
+ case (bit_add_or (x << p) (y >> (digits - p))); intros HH _.
+ rewrite <-HH, add_spec, lsl_spec, lsr_spec, Zplus_mod_idemp_l, sub_spec.
  rewrite (fun x y => Zmod_small (x - y)); auto with zarith.
  intros n; rewrite bit_lsl, bit_lsr.
  generalize (add_le_r (digits - p) n).

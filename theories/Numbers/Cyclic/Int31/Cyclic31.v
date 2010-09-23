@@ -107,8 +107,37 @@ Lemma positive_to_int_spec :
     Zpos p =
       Z_of_N (fst (positive_to_int p)) * wB + to_Z (snd (positive_to_int p)).
 Proof.
- (*** WARNING : TODO **)
-Admitted.
+ assert (H: (wB <= wB) -> forall p : positive,
+  Zpos p = Z_of_N (fst (positive_to_int p)) * wB + [|snd (positive_to_int p)|] /\
+  [|snd (positive_to_int p)|] < wB).
+  2: intros p; case (H (Zle_refl wB) p); auto.
+ unfold positive_to_int, wB at 1 3 4.
+ elim size.
+ intros _ p; simpl;
+   rewrite to_Z_0, Pmult_1_r; split; auto with zarith; apply refl_equal.
+ intros n; rewrite inj_S; unfold Zsucc; rewrite Zpower_exp, Zpower_1_r; auto with zarith.
+ intros IH Hle p.
+ assert (F1: 2 ^ Z_of_nat n <= wB); auto with zarith.
+  assert (0 <= 2 ^ Z_of_nat n); auto with zarith.
+ case p; simpl.
+ intros p1.
+ generalize (IH F1 p1); case positive_to_int_rec; simpl.
+ intros n1 i (H1,H2).
+ rewrite Zpos_xI, H1.
+ replace [|i << 1  + 1|] with ([|i|] * 2 + 1).
+ split; auto with zarith; ring.
+ rewrite add_spec, lsl_spec, Zplus_mod_idemp_l, to_Z_1, Zpower_1_r, Zmod_small; auto.
+ case (to_Z_bounded i); split; auto with zarith.
+ intros p1.
+ generalize (IH F1 p1); case positive_to_int_rec; simpl.
+ intros n1 i (H1,H2).
+ rewrite Zpos_xO, H1.
+ replace [|i << 1|] with ([|i|] * 2).
+ split; auto with zarith; ring.
+ rewrite lsl_spec, to_Z_1, Zpower_1_r, Zmod_small; auto.
+ case (to_Z_bounded i); split; auto with zarith.
+ rewrite to_Z_1; assert (0 < 2^ Z_of_nat n); auto with zarith.
+Qed.
 
 Lemma mulc_WW_spec :
    forall x y,[|| x *c y ||] = [|x|] * [|y|].
