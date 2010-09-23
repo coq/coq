@@ -205,6 +205,8 @@ Vernacular commands
 - Syntax of Implicit Type now supports more than one block of variables of
   a given type.
 - Command "Canonical Structure" now warns when it has no effects.
+- Commands of the form "Set X" or "Unset X" now support "Local" and "Global"
+  prefixes.
 
 Library
 
