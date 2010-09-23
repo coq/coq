@@ -210,6 +210,8 @@ Definition sqrt i :=
   | Lt => iter_sqrt size (fun i j => j) i (i >> 1)
   end.
 
+Definition high_bit := 1 << (digits - 1).
+
 Definition sqrt2_step (rec: int -> int -> int -> int)
    (ih il j: int)  :=
   if ih < j then
@@ -217,7 +219,7 @@ Definition sqrt2_step (rec: int -> int -> int -> int)
     if quo < j then
       match j +c quo with
       | C0 m1 => rec ih il (m1 >> 1)
-      | C1 m1 => rec ih il ((m1 >> 1) + 30)
+      | C1 m1 => rec ih il ((m1 >> 1) + high_bit)
       end 
     else j
   else j.
