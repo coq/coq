@@ -183,9 +183,11 @@ type conv_pb =
 
 let sort_cmp pb s0 s1 cuniv =
   match (s0,s1) with
-    | (Prop c1, Prop c2) ->
+    | (Prop c1, Prop c2) when pb = CUMUL ->
         if c1 = Null or c2 = Pos then cuniv   (* Prop <= Set *)
         else raise NotConvertible
+    | (Prop c1, Prop c2) ->
+        if c1 = c2 then cuniv else raise NotConvertible
     | (Prop c1, Type u) when pb = CUMUL -> assert (is_univ_variable u); cuniv
     | (Type u1, Type u2) ->
 	assert (is_univ_variable u2);
