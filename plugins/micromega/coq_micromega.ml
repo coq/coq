@@ -1434,7 +1434,7 @@ let micromega_gen
       (" Skipping what remains of this tactic: the complexity of the goal requires "
       ^ "the use of a specialized external tool called csdp. \n\n" 
       ^ "Unfortunately this instance of Coq isn't aware of the presence of any \"csdp\" executable. \n\n"
-      ^ "You may need to specify the location during Coq's pre-compilation configuration step")) gl
+      ^ "This executable should be in PATH")) gl
 
 let lift_ratproof  prover l =
  match prover l with
