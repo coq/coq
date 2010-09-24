@@ -59,12 +59,6 @@ let rec occur_meta_pattern = function
   | PMeta _ | PSoApp _ -> true
   | PEvar _ | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _ -> false
 
-type constr_label =
-  | ConstNode of constant
-  | IndNode of inductive
-  | CstrNode of constructor
-  | VarNode of identifier
-
 exception BoundPattern;;
 
 let rec head_pattern_bound t =
@@ -154,8 +148,6 @@ let map_pattern_with_binders g f l = function
   | (PVar _ | PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _
   (* Bound to terms *)
   | PFix _ | PCoFix _ as x) -> x
-
-let map_pattern f = map_pattern_with_binders (fun _ () -> ()) (fun () -> f) ()
 
 let error_instantiate_pattern id l =
   let is = if List.length l = 1 then "is" else "are" in

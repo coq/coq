@@ -173,9 +173,6 @@ let rec attribute_of_vernac_command = function
   | VernacExtend ("Subtac_Obligations", _) -> [GoalStartingCommand]
   | VernacExtend _ -> []
   
-let is_vernac_goal_starting_command com =
-  List.mem GoalStartingCommand (attribute_of_vernac_command com)
-
 let is_vernac_navigation_command com =
   List.mem NavigationCommand (attribute_of_vernac_command com)
 

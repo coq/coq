@@ -37,7 +37,7 @@ let set_trace b = trace := b
 let timeout = ref 10
 let set_timeout n = timeout := n
 
-let (dp_timeout_obj,_) =
+let dp_timeout_obj =
   declare_object
     {(default_object "Dp_timeout") with
        cache_function = (fun (_,x) -> set_timeout x);
@@ -45,7 +45,7 @@ let (dp_timeout_obj,_) =
 
 let dp_timeout x = Lib.add_anonymous_leaf (dp_timeout_obj x)
 
-let (dp_debug_obj,_) =
+let dp_debug_obj =
   declare_object
     {(default_object "Dp_debug") with
        cache_function = (fun (_,x) -> set_debug x);
@@ -53,7 +53,7 @@ let (dp_debug_obj,_) =
 
 let dp_debug x = Lib.add_anonymous_leaf (dp_debug_obj x)
 
-let (dp_trace_obj,_) =
+let dp_trace_obj =
   declare_object
     {(default_object "Dp_trace") with
        cache_function = (fun (_,x) -> set_trace x);
@@ -826,7 +826,7 @@ let prelude_files = ref ([] : string list)
 
 let set_prelude l = prelude_files := l
 
-let (dp_prelude_obj,_) =
+let dp_prelude_obj =
   declare_object
     {(default_object "Dp_prelude") with
        cache_function = (fun (_,x) -> set_prelude x);
@@ -1088,7 +1088,7 @@ let dp_hint l =
   in
   List.iter one_hint (List.map (fun qid -> qid, Nametab.global qid) l)
 
-let (dp_hint_obj,_) =
+let dp_hint_obj =
   declare_object
     {(default_object "Dp_hint") with
        cache_function = (fun (_,l) -> dp_hint l);
@@ -1114,7 +1114,7 @@ let dp_predefined qid s =
   with NotFO ->
     msg_warning (str " ignored (not a first order declaration)")
 
-let (dp_predefined_obj,_) =
+let dp_predefined_obj =
   declare_object
     {(default_object "Dp_predefined") with
        cache_function = (fun (_,(id,s)) -> dp_predefined id s);

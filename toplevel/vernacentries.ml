@@ -20,7 +20,6 @@ open Tacmach
 open Constrintern
 open Prettyp
 open Printer
-open Tactic_printer
 open Tacinterp
 open Command
 open Goptions
@@ -1160,16 +1159,6 @@ let vernac_locate = function
 
 (********************)
 (* Proof management *)
-
-let vernac_goal = function
-  | None -> ()
-  | Some c ->
-      if not (refining()) then begin
-        let unnamed_kind = Lemma (* Arbitrary *) in
-        start_proof_com (Global, Proof unnamed_kind) [None,c] (fun _ _ ->());
-	print_subgoals ()
-      end else
-	error "repeated Goal not permitted in refining mode."
 
 let vernac_abort = function
   | None ->

@@ -487,17 +487,7 @@ let subst_autohint (subst,(local,name,hintlist as obj)) =
 let classify_autohint ((local,name,hintlist) as obj) =
   if local or hintlist = (AddTactic []) then Dispose else Substitute obj
 
-let discharge_autohint (_,(local,name,hintlist as obj)) =
-  if local then None else
-    match hintlist with
-    | CreateDB _ ->
-	(* We assume that the transparent state is either empty or full *)
-	Some obj
-    | AddTransparency _ | AddTactic _ ->
-	(* Needs the adequate code here to support Global Hints in sections *)
-	None
-
-let (inAutoHint,_) =
+let inAutoHint =
   declare_object {(default_object "AUTOHINT") with
                     cache_function = cache_autohint;
 		    load_function = (fun _ -> cache_autohint);
@@ -952,8 +942,6 @@ let full_trivial lems gl =
 let gen_trivial lems = function
   | None -> full_trivial lems
   | Some l -> trivial lems l
-
-let inj_open c = (Evd.empty,c)
 
 let h_trivial lems l =
   Refiner.abstract_tactic (TacTrivial (lems,l))

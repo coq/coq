@@ -111,13 +111,10 @@ let subst_scope (subst,sc) = sc
 
 open Libobject
 
-let discharge_scope (local,_,_ as o) =
-  if local then None else Some o
-
 let classify_scope (local,_,_ as o) =
   if local then Dispose else Substitute o
 
-let (inScope,outScope) =
+let inScope =
   declare_object {(default_object "SCOPE") with
       cache_function = cache_scope;
       open_function = open_scope;
@@ -499,7 +496,7 @@ let rebuild_arguments_scope (req,r,l) =
 	let l1,_ = list_chop (List.length l' - List.length l) l' in
 	(req,r,l1@l)
 
-let (inArgumentsScope,outArgumentsScope) =
+let inArgumentsScope =
   declare_object {(default_object "ARGUMENTS-SCOPE") with
       cache_function = cache_arguments_scope;
       load_function = load_arguments_scope;
@@ -621,9 +618,6 @@ let factorize_entries = function
 	    if a = a' then (a',c::l,rest) else (a,[c],(a',l)::rest))
 	  (ntn,[c],[]) l in
       (ntn,l_of_ntn)::rest
-
-let is_ident s = (* Poor analysis *)
-  String.length s <> 0 & is_letter s.[0]
 
 let browse_notation strict ntn map =
   let find =

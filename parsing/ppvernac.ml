@@ -84,26 +84,11 @@ let rec match_vernac_rule tys = function
       else match_vernac_rule tys rls
 
 let sep = fun _ -> spc()
-let sep_p = fun _ -> str"."
-let sep_v = fun _ -> str","
 let sep_v2 = fun _ -> str"," ++ spc()
-let sep_pp = fun _ -> str":"
 
 let pr_ne_sep sep pr = function
     [] -> mt()
   | l -> sep() ++ pr l
-
-let pr_entry_prec = function
-  | Some LeftA -> str"LEFTA "
-  | Some RightA -> str"RIGHTA "
-  | Some NonA -> str"NONA "
-  | None -> mt()
-
-let pr_prec = function
-  | Some LeftA -> str", left associativity"
-  | Some RightA -> str", right associativity"
-  | Some NonA -> str", no associativity"
-  | None -> mt()
 
 let pr_set_entry_type = function
   | ETName -> str"ident"
@@ -167,11 +152,6 @@ let pr_explanation (e,b,f) =
   | ExplByName id -> pr_id id in
   let a = if f then str"!" ++ a else a in
     if b then str "[" ++ a ++ str "]" else a
-
-let pr_class_rawexpr = function
-  | FunClass -> str"Funclass"
-  | SortClass -> str"Sortclass"
-  | RefClass qid -> pr_smart_global qid
 
 let pr_option_ref_value = function
   | QualidRefValue id -> pr_reference id
@@ -289,9 +269,6 @@ let pr_type_option pr_c = function
 let pr_decl_notation prc ((loc,ntn),c,scopt) =
   fnl () ++ str "where " ++ qs ntn ++ str " := " ++ prc c ++
   pr_opt (fun sc -> str ": " ++ str sc) scopt
-
-let pr_vbinders l =
-  hv 0 (pr_binders l)
 
 let pr_binders_arg =
   pr_ne_sep spc pr_binders
@@ -420,21 +397,6 @@ let pr_grammar_tactic_rule n (_,pil,t) =
   hov 2 (str "Tactic Notation" ++ print_level n ++ spc() ++
     hov 0 (prlist_with_sep sep pr_production_item pil ++
     spc() ++ str":=" ++ spc() ++ pr_raw_tactic t))
-
-let pr_box b = let pr_boxkind = function
-  | PpHB n -> str"h" ++ spc() ++ int n
-  | PpVB n -> str"v" ++ spc() ++ int n
-  | PpHVB n -> str"hv" ++ spc() ++ int n
-  | PpHOVB n -> str"hov" ++ spc() ++ int n
-  | PpTB -> str"t"
-in str"<" ++ pr_boxkind b ++ str">"
-
-let pr_paren_reln_or_extern = function
-  | None,L -> str"L"
-  | None,E -> str"E"
-  | Some pprim,Any -> qs pprim
-  | Some pprim,Prec p -> qs pprim ++ spc() ++ str":" ++ spc() ++ int p
-  | _ -> mt()
 
 let pr_statement head (id,(bl,c,guard)) =
   assert (id<>None);

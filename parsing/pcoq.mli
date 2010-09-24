@@ -147,11 +147,6 @@ val uconstr : gram_universe
 val utactic : gram_universe
 val uvernac : gram_universe
 
-(*
-val get_entry : gram_universe -> string -> typed_entry
-val get_entry_type : gram_universe -> string -> entry_type
-*)
-
 val create_entry : gram_universe -> string -> entry_type -> typed_entry
 val create_generic_entry : string -> ('a, rlevel) abstract_argument_type ->
   'a Gram.entry

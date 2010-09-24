@@ -75,21 +75,6 @@ let _ =
       optread  = (fun () -> !dependent_propositions_elimination) ;
       optwrite = (fun b -> dependent_propositions_elimination := b) }
 
-let apply_in_side_conditions_come_first = ref true
-
-let use_apply_in_side_conditions_come_first () =
-  !apply_in_side_conditions_come_first
-  && Flags.version_strictly_greater Flags.V8_2
-
-let _ =
-  declare_bool_option
-    { optsync  = true;
-      optname  = "apply-in side-conditions coming first";
-      optkey   = ["Side";"Conditions";"First";"For";"apply";"in"];
-      optread  = (fun () -> !dependent_propositions_elimination) ;
-      optwrite = (fun b -> dependent_propositions_elimination := b) }
-
-
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
@@ -163,7 +148,6 @@ let internal_cut_rev_replace = internal_cut_rev_gen true
 (* Moving hypotheses *)
 let move_hyp        = Tacmach.move_hyp
 
-let order_hyps      = Tacmach.order_hyps
 
 (* Renaming hypotheses *)
 let rename_hyp      = Tacmach.rename_hyp
@@ -340,16 +324,6 @@ let unfold_in_hyp   loccname = reduct_in_hyp   (unfoldn loccname)
 let unfold_option   loccname = reduct_option (unfoldn loccname,DEFAULTcast)
 let pattern_option l = reduct_option (pattern_occs l,DEFAULTcast)
 
-(* A function which reduces accordingly to a reduction expression,
-   as the command Eval does. *)
-
-let checking_fun = function
-  (* Expansion is not necessarily well-typed: e.g. expansion of t into x is
-     not well-typed in [H:(P t); x:=t |- G] because x is defined after H *)
-  | Fold _ -> with_check
-  | Pattern _ -> with_check
-  | _ -> (fun x -> x)
-
 (* The main reduction function *)
 
 let reduction_clause redexp cl =
@@ -455,7 +429,6 @@ let intro_using id = intro_gen dloc (IntroBasedOn (id,[])) no_move false false
 let intro = intro_gen dloc (IntroAvoid []) no_move false false
 let introf = intro_gen dloc (IntroAvoid []) no_move true false
 let intro_avoiding l = intro_gen dloc (IntroAvoid l) no_move false false
-let introf_move_name destopt = intro_gen dloc (IntroAvoid []) destopt true false
 
 (**** Multiple introduction tactics ****)
 
@@ -2164,23 +2137,6 @@ let make_up_names n ind_opt cname =
       else avoid in
   id_of_string base, hyprecname, avoid
 
-let is_indhyp p n t =
-  let l, c = decompose_prod t in
-  let c,_ = decompose_app c in
-  let p = p + List.length l in
-  match kind_of_term c with
-    | Rel k when p < k & k <= p + n -> true
-    | _ -> false
-
-let chop_context n l =
-  let rec chop_aux acc = function
-    | n, (_,Some _,_ as h :: t) -> chop_aux (h::acc) (n, t)
-    | 0, l2 -> (List.rev acc, l2)
-    | n, (h::t) -> chop_aux (h::acc) (n-1, t)
-    | _, [] -> anomaly "chop_context"
-  in
-  chop_aux [] (n,l)
-
 let error_ind_scheme s =
   let s = if s <> "" then s^" " else s in
   error ("Cannot recognize "^s^"an induction scheme.")
@@ -2212,8 +2168,6 @@ let lift_togethern n l =
 	(lift n x :: acc, succ n))
       l ([], n)
   in l'
-
-let lift_together l = lift_togethern 0 l
 
 let lift_list l = List.map (lift 1) l
 
@@ -2277,17 +2231,6 @@ let make_abstract_generalize gl id concl dep ctx body c eqs args refls =
   let appeqs = mkApp (instc, Array.of_list refls) in
     (* Finaly, apply the reflexivity proof for the original hyp, to get a term of type gl again. *)
     mkApp (appeqs, abshypt)
-      
-let deps_of_var id env =
-  Environ.fold_named_context
-    (fun _ (n,b,t) (acc : Idset.t) -> 
-      if Option.cata (occur_var env id) false b || occur_var env id t then
-	Idset.add n acc
-      else acc)
-    env ~init:Idset.empty
-    
-let idset_of_list =
-  List.fold_left (fun s x -> Idset.add x s) Idset.empty
 
 let hyps_of_vars env sign nogen hyps =
   if Idset.is_empty hyps then [] 
@@ -2490,33 +2433,6 @@ let specialize_eqs id gl =
 let occur_rel n c =
   let res = not (noccurn n c) in
   res
-
-let list_filter_firsts f l =
-  let rec list_filter_firsts_aux f acc l =
-    match l with
-      | e::l' when f e -> list_filter_firsts_aux f (acc@[e]) l'
-      | _ -> acc,l
-  in
-  list_filter_firsts_aux f [] l
-
-let count_rels_from n c =
-  let rels = free_rels c in
-  let cpt,rg = ref 0, ref n in
-  while Intset.mem !rg rels do
-    cpt:= !cpt+1; rg:= !rg+1;
-  done;
-  !cpt
-
-let count_nonfree_rels_from n c =
-  let rels = free_rels c in
-  if Intset.exists (fun x -> x >= n) rels then
-    let cpt,rg = ref 0, ref n in
-    while not (Intset.mem !rg rels) do
-      cpt:= !cpt+1; rg:= !rg+1;
-    done;
-    !cpt
-  else raise Not_found
-
 
 (* cuts a list in two parts, first of size n. Size must be greater than n *)
 let cut_list n l =
@@ -3022,14 +2938,6 @@ let induction_without_atomization isrec with_evars elim names lid gl =
   if nlid <> awaited_nargs
   then error "Not the right number of induction arguments."
   else induction_from_context_l with_evars elim_info lid names gl
-
-let enforce_eq_name id gl = function
-  | (b,(loc,IntroAnonymous)) ->
-      (b,(loc,IntroIdentifier (fresh_id [id] (add_prefix "Heq" id) gl)))
-  | (b,(loc,IntroFresh heq_base)) ->
-      (b,(loc,IntroIdentifier (fresh_id [id] heq_base gl)))
-  | x ->
-      x
 
 let has_selected_occurrences = function
   | None -> false

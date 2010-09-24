@@ -81,7 +81,6 @@ module type RedFlagsSig = sig
   val red_add_transparent : reds -> transparent_state -> reds
   val mkflags : red_kind list -> reds
   val red_set : reds -> red_kind -> bool
-  val red_get_const : reds -> bool * evaluable_global_reference list
 end
 
 module RedFlags = (struct
@@ -155,16 +154,6 @@ module RedFlags = (struct
     | IOTA -> incr_cnt red.r_iota iota
     | DELTA -> (* Used for Rel/Var defined in context *)
 	incr_cnt red.r_delta delta
-
-  let red_get_const red =
-    let p1,p2 = red.r_const in
-    let (b1,l1) = Idpred.elements p1 in
-    let (b2,l2) = Cpred.elements p2 in
-    if b1=b2 then
-      let l1' = List.map (fun x -> EvalVarRef x) l1 in
-      let l2' = List.map (fun x -> EvalConstRef x) l2 in
-      (b1, l1' @ l2')
-    else error "unrepresentable pair of predicate"
 
 end : RedFlagsSig)
 
@@ -688,16 +677,6 @@ let fapp_stack (m,stk) = zip m stk
    called only when m is a constructor, a cofix
    (strip_update_shift_app), a fix (get_nth_arg) or an abstraction
    (strip_update_shift, through get_arg). *)
-
-(* optimised for the case where there are no shifts... *)
-let strip_update_shift head stk =
-  assert (head.norm <> Red);
-  let rec strip_rec h depth = function
-    | Zshift(k)::s -> strip_rec (lift_fconstr k h) (depth+k) s
-    | Zupdate(m)::s ->
-        strip_rec (update m (h.norm,h.term)) depth s
-    | stk -> (depth,stk) in
-  strip_rec head 0 stk
 
 (* optimised for the case where there are no shifts... *)
 let strip_update_shift_app head stk =

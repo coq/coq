@@ -66,8 +66,6 @@ let add_load_path isroot (phys_path,coq_path) =
 	  load_paths := (phys_path,coq_path,isroot) :: !load_paths;
       | _ -> anomaly ("Two logical paths are associated to "^phys_path)
 
-let physical_paths (dp,lp) = dp
-
 let extend_path_with_dirpath p dir =
   List.fold_left Filename.concat p
     (List.map string_of_id (List.rev (repr_dirpath dir)))
@@ -213,9 +211,6 @@ let library_is_loaded dir =
 let library_is_opened dir =
   List.exists (fun m -> m.library_name = dir) !libraries_imports_list
 
-let library_is_exported dir =
-  List.exists (fun m -> m.library_name = dir) !libraries_exports_list
-
 let loaded_libraries () =
   List.map (fun m -> m.library_name) !libraries_loaded_list
 
@@ -305,7 +300,7 @@ let subst_import (_,o) = o
 let classify_import (_,export as obj) =
   if export then Substitute obj else Dispose
 
-let (in_import, out_import) =
+let in_import =
   declare_object {(default_object "IMPORT LIBRARY") with
        cache_function = cache_import;
        open_function = open_import;
@@ -517,7 +512,7 @@ let discharge_require (_,o) = Some o
 
 (* open_function is never called from here because an Anticipate object *)
 
-let (in_require, out_require) =
+let in_require =
   declare_object {(default_object "REQUIRE") with
        cache_function = cache_require;
        load_function = load_require;

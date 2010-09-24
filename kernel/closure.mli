@@ -60,8 +60,6 @@ module type RedFlagsSig = sig
   (** Tests if a reduction kind is set *)
   val red_set : reds -> red_kind -> bool
 
-  (** Gives the constant list *)
-  val red_get_const : reds -> bool * evaluable_global_reference list
 end
 
 module RedFlags : RedFlagsSig

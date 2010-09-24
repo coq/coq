@@ -266,8 +266,6 @@ let t_reduction_not = tacticIn reduction_not
 let intuition_gen tac =
   interp (tacticIn (tauto_intuit t_reduction_not tac))
 
-let simplif_gen = interp (tacticIn simplif)
-
 let tauto_intuitionistic g =
   try intuition_gen <:tactic<fail>> g
   with

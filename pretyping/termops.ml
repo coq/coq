@@ -32,7 +32,6 @@ let pr_name = function
   | Name id -> pr_id id
   | Anonymous -> str "_"
 
-let pr_path sp = str(string_of_kn sp)
 let pr_con sp = str(string_of_con sp)
 
 let rec pr_constr c = match kind_of_term c with

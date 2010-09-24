@@ -107,18 +107,6 @@ let ident_colon =
               | _ -> err ())
         | _ -> err ())
 
-let ident_with =
-  Gram.Entry.of_parser "ident_with"
-    (fun strm ->
-      match get_tok (stream_nth 0 strm) with
-      | IDENT s ->
-          (match get_tok (stream_nth 1 strm) with
-             | KEYWORD "with" ->
-		 stream_njunk 2 strm;
-		 Names.id_of_string s
-             | _ -> err ())
-      | _ -> err ())
-
 let aliasvar = function CPatAlias (loc, _, id) -> Some (loc,Name id) | _ -> None
 
 GEXTEND Gram

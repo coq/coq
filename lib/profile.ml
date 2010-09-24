@@ -9,7 +9,6 @@
 open Gc
 
 let word_length = Sys.word_size / 8
-let int_size = Sys.word_size - 1
 
 let float_of_time t = float_of_int t /. 100.
 let time_of_float f = int_of_float (f *. 100.)
@@ -352,7 +351,6 @@ let close_profile print =
 	end
     | _ -> failwith "Inconsistency"
 
-let append_profile () = close_profile false
 let print_profile () = close_profile true
 
 let declare_profile name =

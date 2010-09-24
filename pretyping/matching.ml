@@ -85,13 +85,6 @@ let build_lambda toabstract stk (m : constr) =
   in
   buildrec m 1 stk
 
-let memb_metavars m n =
-  match (m,n) with
-    | (None, _)     -> true
-    | (Some mvs, n) -> List.mem n mvs
-
-let eq_context ctxt1 ctxt2 = array_for_all2 eq_constr ctxt1 ctxt2
-
 let same_case_structure (_,cs1,ind,_) ci2 br1 br2 =
   match ind with
   | Some ind -> ind = ci2.ci_ind

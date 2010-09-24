@@ -252,12 +252,6 @@ let add_frozen_state () =
 
 (* Modules. *)
 
-
-let is_opened id = function
-    oname,(OpenedSection _ | OpenedModule _ | OpenedModtype _) when
-      basename (fst oname) = id -> true
-  | _ -> false
-
 let is_opening_node = function
     _,(OpenedSection _ | OpenedModule _ | OpenedModtype _) -> true
   | _ -> false
@@ -355,13 +349,6 @@ let contents_after = function
   | Some sp -> let (after,_,_) = split_lib sp in after
 
 (* Modules. *)
-
-let check_for_comp_unit () =
-  let is_decl = function (_,FrozenState _) -> false | _ -> true in
-  try
-    let _ = find_entry_p is_decl in
-    error "a module cannot be started after some declarations"
-  with Not_found -> ()
 
 (* TODO: use check_for_module ? *)
 let start_compilation s mp =
@@ -499,8 +486,6 @@ let add_section_constant kn =
 
 let replacement_context () = pi2 (List.hd !sectab)
 
-let variables_context () = pi1 (List.hd !sectab)
-
 let section_segment_of_constant con =
   Names.Cmap.find con (fst (pi3 (List.hd !sectab)))
 
@@ -595,7 +580,7 @@ let close_section () =
 (* Backtracking. *)
 
 let (inLabel,outLabel) =
-  declare_object {(default_object "DOT") with
+  declare_object_full {(default_object "DOT") with
 				classify_function = (fun _ -> Dispose)}
 
 let recache_decl = function

@@ -49,7 +49,6 @@ extern code_t accumulate;
 /* functions over global environment */
 
 value coq_static_alloc(value size);  /* ML */
-value coq_static_free(value string); /* ML */
 
 value init_coq_vm(value unit); /* ML */
 value re_init_coq_vm(value unit); /* ML */

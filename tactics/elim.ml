@@ -109,12 +109,6 @@ let head_in gls indl t =
     in List.mem ity indl
   with Not_found -> false
 
-let inductive_of = function
-  | IndRef ity -> ity
-  | r ->
-      errorlabstrm "Decompose"
-        (Printer.pr_global r ++ str " is not an inductive type.")
-
 let decompose_these c l gls =
   let indl = (*List.map inductive_of*) l in
   general_decompose (fun (_,t) -> head_in gls indl t) c gls
@@ -133,8 +127,6 @@ let decompose_or c gls =
   general_decompose
     (fun (_,t) -> is_disjunction t)
     c gls
-
-let inj_open c = (Evd.empty,c)
 
 let h_decompose l c =
   Refiner.abstract_tactic (TacDecompose (l,c)) (decompose_these c l)

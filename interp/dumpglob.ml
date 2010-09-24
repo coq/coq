@@ -154,11 +154,6 @@ let dump_constraint ((loc, n), _, _) sec ty =
     | Names.Name id -> dump_definition (loc, id) sec ty
     | Names.Anonymous -> ()
 
-let dump_name (loc, n) sec ty =
-  match n with
-    | Names.Name id -> dump_definition (loc, id) sec ty
-    | Names.Anonymous -> ()
-
 let dump_modref loc mp ty =
   if dump () then
     let (dp, l) = Lib.split_modpath mp in

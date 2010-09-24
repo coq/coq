@@ -93,10 +93,6 @@ let rec head c =
   | LetIn (_,_,_,c) -> head c
   | _              -> c
 
-let constr_to_full_path c = match kind_of_term c with
-  | Const sp -> sp
-  | _ -> raise No_full_path
-
 let xor a b = (a or b) & (not (a & b))
 
 let plain_display ref a c =

@@ -76,7 +76,7 @@ let discharge_structure (_,(ind,id,kl,projs)) =
   Some (Lib.discharge_inductive ind, discharge_constructor id, kl,
         List.map (Option.map Lib.discharge_con) projs)
 
-let (inStruc,outStruc) =
+let inStruc =
   declare_object {(default_object "STRUCTURE") with
     cache_function = cache_structure;
     load_function = load_structure;
@@ -135,7 +135,7 @@ open Libobject
 let load_method (_,(ty,id)) =
   meth_dnet := MethodsDnet.add ty id !meth_dnet
 
-let (in_method,out_method) =
+let in_method =
   declare_object
     { (default_object "RECMETHODS") with
 	load_function = (fun _ -> load_method);
@@ -290,7 +290,7 @@ let subst_canonical_structure (subst,(cst,ind as obj)) =
 let discharge_canonical_structure (_,(cst,ind)) =
   Some (Lib.discharge_con cst,Lib.discharge_inductive ind)
 
-let (inCanonStruc,outCanonStruct) =
+let inCanonStruc =
   declare_object {(default_object "CANONICAL-STRUCTURE") with
     open_function = open_canonical_structure;
     cache_function = cache_canonical_structure;
@@ -327,8 +327,6 @@ let check_and_decompose_canonical_structure ref =
 
 let declare_canonical_structure ref =
   add_canonical_structure (check_and_decompose_canonical_structure ref)
-
-let outCanonicalStructure x = fst (outCanonStruct x)
 
 let lookup_canonical_conversion (proj,pat) =
   List.assoc pat (Refmap.find proj !object_table)

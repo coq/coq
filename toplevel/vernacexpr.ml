@@ -372,9 +372,6 @@ let locality_flag = ref None
 
 let local_of_bool = function true -> Local | false -> Global
 
-let is_true = function Some (_,b) -> b | _ -> false
-let is_false = function Some (_,b) -> not b | _ -> false
-
 let check_locality () =
   match !locality_flag with
   | Some (loc,true) -> 

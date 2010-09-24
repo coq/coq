@@ -39,7 +39,6 @@ type object_pr = {
   print_module              : bool -> Names.module_path -> std_ppcmds;
   print_modtype             : module_path -> std_ppcmds;
   print_named_decl          : identifier * constr option * types -> std_ppcmds;
-  print_leaf_entry          : bool -> Libnames.object_name * Libobject.obj -> Pp.std_ppcmds;
   print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
   print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
   print_typed_value_in_env  : Environ.env -> Term.constr * Term.types -> Pp.std_ppcmds;
@@ -457,11 +456,6 @@ let gallina_print_library_entry with_values ent =
     | (_,Lib.FrozenState _) ->
 	None
 
-let gallina_print_leaf_entry with_values c =
-  match gallina_print_leaf_entry with_values c with
-    | None    -> mt ()
-    | Some pp -> pp ++ fnl()
-
 let gallina_print_context with_values =
   let rec prec n = function
     | h::rest when n = None or Option.get n > 0 ->
@@ -487,7 +481,6 @@ let default_object_pr = {
   print_module              = gallina_print_module;
   print_modtype             = gallina_print_modtype;
   print_named_decl          = gallina_print_named_decl;
-  print_leaf_entry          = gallina_print_leaf_entry;
   print_library_entry       = gallina_print_library_entry;
   print_context             = gallina_print_context;
   print_typed_value_in_env  = gallina_print_typed_value_in_env;
@@ -504,7 +497,6 @@ let print_syntactic_def x = !object_pr.print_syntactic_def x
 let print_module x  = !object_pr.print_module  x
 let print_modtype x = !object_pr.print_modtype x
 let print_named_decl x = !object_pr.print_named_decl x
-let print_leaf_entry x = !object_pr.print_leaf_entry x
 let print_library_entry x = !object_pr.print_library_entry x
 let print_context x = !object_pr.print_context x
 let print_typed_value_in_env x = !object_pr.print_typed_value_in_env x
@@ -582,16 +574,6 @@ let print_full_pure_context () =
    its constructors and elimination,
    assume that the declaration of constructors and eliminations
    follows the definition of the inductive type *)
-
-let list_filter_vec f vec =
-  let rec frec n lf =
-    if n < 0 then lf
-    else if f vec.(n) then
-      frec (n-1) (vec.(n)::lf)
-    else
-      frec (n-1) lf
-  in
-  frec (Array.length vec -1) []
 
 (* This is designed to print the contents of an opened section *)
 let read_sec_context r =
@@ -691,15 +673,6 @@ let print_impargs ref =
   print_ref (need_expansion impl ref) ref ++ fnl() ++
   (if has_impl then print_impl_args impl
    else (str "No implicit arguments" ++ fnl ()))
-
-let unfold_head_fconst =
-  let rec unfrec k = match kind_of_term k with
-    | Const cst -> constant_value (Global.env ()) cst
-    | Lambda (na,t,b) -> mkLambda (na,t,unfrec b)
-    | App (f,v) -> appvect (unfrec f,v)
-    | _ -> k
-  in
-  unfrec
 
 (* for debug *)
 let inspect depth =

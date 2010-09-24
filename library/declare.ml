@@ -78,7 +78,7 @@ let discharge_variable (_,o) = match o with
   | Inr (id,_) -> Some (Inl (variable_constraints id))
   | Inl _ -> Some o
 
-let (inVariable,_) =
+let inVariable =
   declare_object { (default_object "VARIABLE") with
     cache_function = cache_variable;
     discharge_function = discharge_variable;
@@ -145,7 +145,7 @@ let dummy_constant (ce,_,mk) = dummy_constant_entry,[],mk
 
 let classify_constant cst = Substitute (dummy_constant cst)
 
-let (inConstant,_) =
+let inConstant =
   declare_object { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
@@ -259,7 +259,7 @@ let dummy_inductive_entry (_,m) = ([],{
   mind_entry_finite = true;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds })
 
-let (inInductive,_) =
+let inInductive =
   declare_object {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
     load_function = load_inductive;

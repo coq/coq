@@ -299,17 +299,6 @@ let reference_eval sigma env = function
        end)
   | ref -> compute_consteval sigma env ref
 
-let rev_firstn_liftn fn ln =
-  let rec rfprec p res l =
-    if p = 0 then
-      res
-    else
-      match l with
-        | [] -> invalid_arg "Reduction.rev_firstn_liftn"
-        | a::rest -> rfprec (p-1) ((lift ln a)::res) rest
-  in
-  rfprec fn []
-
 (* If f is bound to EliminationFix (n',infos), then n' is the minimal
    number of args for starting the reduction and infos is
    (nbfix,[(yi1,Ti1);...;(yip,Tip)],n) indicating that f converts

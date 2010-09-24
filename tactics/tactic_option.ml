@@ -25,7 +25,7 @@ let declare_tactic_option ?(default=Tacexpr.TacId []) name =
   let subst (s, (local, tac)) =
     (local, Tacinterp.subst_tactic s tac)
   in
-  let input, _output = 
+  let input =
     declare_object
       { (default_object name) with
 	cache_function = cache;

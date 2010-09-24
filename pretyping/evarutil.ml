@@ -1394,32 +1394,7 @@ let check_evars env initial_sigma sigma c =
       | _ -> iter_constr proc_rec c
   in proc_rec c
 
-(* Substitutes undefined evars by evars of same context up to renaming *)
-
-let subst_evar_evar subst c =
-  let rec aux c = match kind_of_term c with
-  | Evar (evk,args) ->
-      let evk' = try ExistentialMap.find evk subst with Not_found -> evk in
-      mkEvar (evk',Array.map aux args)
-  | _ -> map_constr aux c
-  in aux c
-
-let subst_undefined_evar_info_evar subst evi =
-  { evi with
-    evar_hyps = map_named_val (subst_evar_evar subst) evi.evar_hyps;
-    evar_concl = subst_evar_evar subst evi.evar_concl }
-
 open Rawterm
-
-let subst_evar_evar_in_constr_with_bindings subst (c,bl) =
-  (subst_evar_evar subst c,
-   match bl with
-   | ImplicitBindings largs ->
-       ImplicitBindings (List.map (subst_evar_evar subst) largs)
-   | ExplicitBindings lbind ->
-       ExplicitBindings (List.map (on_pi3 (subst_evar_evar subst)) lbind)
-   | NoBindings ->
-       NoBindings)
 
 (* Operations on value/type constraints *)
 

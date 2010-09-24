@@ -432,7 +432,7 @@ let cache_transitivity_lemma (_,(left,lem)) =
 
 let subst_transitivity_lemma (subst,(b,ref)) = (b,subst_mps subst ref)
 
-let (inTransitivity,_) =
+let inTransitivity =
   declare_object {(default_object "TRANSITIVITY-STEPS") with
     cache_function = cache_transitivity_lemma;
     open_function = (fun i o -> if i=1 then cache_transitivity_lemma o);

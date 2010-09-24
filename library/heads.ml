@@ -165,7 +165,7 @@ let discharge_head (_,(ref,k)) =
 let rebuild_head (ref,k) =
   (ref, compute_head ref)
 
-let (inHead, _) =
+let inHead =
   declare_object {(default_object "HEAD") with
     cache_function = cache_head;
     load_function = load_head;

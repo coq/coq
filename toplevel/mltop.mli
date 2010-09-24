@@ -61,8 +61,6 @@ type ml_module_object = {
   mlocal: Vernacexpr.locality_flag;
   mnames: string list;
 }
-val inMLModule : ml_module_object -> Libobject.obj
-val outMLModule : Libobject.obj -> ml_module_object
 
 val declare_ml_modules : Vernacexpr.locality_flag -> string list -> unit
 

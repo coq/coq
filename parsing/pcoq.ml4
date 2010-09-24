@@ -264,13 +264,6 @@ let get_univ s =
 
 let get_entry (u, utab) s = Hashtbl.find utab s
 
-let get_entry_type (u, utab) s =
-  try
-    type_of_typed_entry (get_entry (u, utab) s)
-  with Not_found ->
-    errorlabstrm "Pcoq.get_entry"
-      (str "Unknown grammar entry " ++ str u ++ str ":" ++ str s ++ str ".")
-
 let new_entry etyp (u, utab) s =
   if !trace then (Printf.eprintf "[Creating entry %s:%s]\n" u s; flush stderr);
   let ename = u ^ ":" ^ s in
@@ -340,7 +333,6 @@ module Prim =
 module Constr =
   struct
     let gec_constr = make_gen_entry uconstr rawwit_constr
-    let gec_constr_list = make_gen_entry uconstr (wit_list0 rawwit_constr)
 
     (* Entries that can be refered via the string -> Gram.entry table *)
     let constr = gec_constr "constr"

@@ -37,7 +37,7 @@ let _ = register_proof_mode standard
 (* Default proof mode, to be set at the beginning of proofs. *)
 let default_proof_mode = ref standard
 
-let set_default_proof_mode = 
+let _ =
   Goptions.declare_string_option {Goptions.
     optsync = true ;
     optname = "default proof mode" ;

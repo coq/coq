@@ -117,7 +117,6 @@ val tryAllHypsAndConcl  : (identifier option -> tactic) -> tactic
 
 val onAllHyps           : (identifier -> tactic) -> tactic
 val onAllHypsAndConcl   : (identifier option -> tactic) -> tactic
-val onAllHypsAndConclLR : (identifier option -> tactic) -> tactic
 
 val onClause   : (identifier option -> tactic) -> clause -> tactic
 val onClauseLR : (identifier option -> tactic) -> clause -> tactic

@@ -21,7 +21,7 @@ let reserve_table = ref Idmap.empty
 let cache_reserved_type (_,(id,t)) =
   reserve_table := Idmap.add id t !reserve_table
 
-let (in_reserved, _) =
+let in_reserved =
   declare_object {(default_object "RESERVED-TYPE") with
     cache_function = cache_reserved_type }
 

@@ -42,13 +42,6 @@ let append_stack_list l s =
   | (l1, s) -> Zapp l1 :: s
 let append_stack v s = append_stack_list (Array.to_list v) s
 
-(* Collapse the shifts in the stack *)
-let zshift n s =
-  match (n,s) with
-      (0,_) -> s
-    | (_,Zshift(k)::s) -> Zshift(n+k)::s
-    | _ -> Zshift(n)::s
-
 let rec stack_args_size = function
   | Zapp l::s -> List.length l + stack_args_size s
   | Zshift(_)::s -> stack_args_size s
@@ -61,10 +54,6 @@ let rec decomp_stack = function
   | Zapp(v::l)::s -> Some (v, (Zapp l :: s))
   | Zapp [] :: s -> decomp_stack s
   | _ -> None
-let rec decomp_stackn = function
-  | Zapp [] :: s -> decomp_stackn s
-  | Zapp l :: s -> (Array.of_list l, s)
-  | _ -> assert false
 let array_of_stack s =
   let rec stackrec = function
   | [] -> []
@@ -152,10 +141,6 @@ let appterm_of_stack (f,s) = (f,list_of_stack s)
 let whd_stack sigma x =
   appterm_of_stack (whd_app_state sigma (x, empty_stack))
 let whd_castapp_stack = whd_stack
-
-let stack_reduction_of_reduction red_fun env sigma s =
-  let t = red_fun env sigma (app_stack s) in
-  whd_stack t
 
 let strong whdfun env sigma t =
   let rec strongrec env t =
@@ -584,14 +569,6 @@ let rec whd_betaiota_preserving_vm_cast env sigma t =
 let nf_betaiota_preserving_vm_cast =
   strong whd_betaiota_preserving_vm_cast
 
-(* lazy weak head reduction functions *)
-let whd_flags flgs env sigma t =
-  try
-    whd_val
-      (create_clos_infos ~evars:(safe_evar_value sigma) flgs env)
-      (inject t)
-  with Anomaly _ -> error "Tried to normalized ill-typed term" 
-
 (********************************************************************)
 (*                         Conversion                               *)
 (********************************************************************)
@@ -923,17 +900,6 @@ let meta_instance sigma b =
 let nf_meta sigma c = meta_instance sigma (mk_freelisted c)
 
 (* Instantiate metas that create beta/iota redexes *)
-
-let meta_value evd mv =
-  let rec valrec mv =
-    match meta_opt_fvalue evd mv with
-    | Some (b,_) ->
-      instance evd
-        (List.map (fun mv' -> (mv',valrec mv')) (Metaset.elements b.freemetas))
-        b.rebus
-    | None -> mkMeta mv
-  in
-  valrec mv
 
 let meta_reducible_instance evd b =
   let fm = Metaset.elements b.freemetas in

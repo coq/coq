@@ -154,11 +154,6 @@ let db_mc_pattern_success debug =
     msgnl (str "The goal has been successfully matched!" ++ fnl() ++
            str "Let us execute the right-hand side part..." ++ fnl())
 
-let pp_match_pattern env = function
-  | Term c -> Term (extern_constr_pattern (names_of_rel_context env) c)
-  | Subterm (b,o,c) ->
-    Subterm (b,o,(extern_constr_pattern (names_of_rel_context env) c))
-
 (* Prints a failure message for an hypothesis pattern *)
 let db_hyp_pattern_failure debug env (na,hyp) =
   if debug <> DebugOff & !skip = 0 then

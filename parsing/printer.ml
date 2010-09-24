@@ -242,18 +242,6 @@ let pr_context_of env = match Flags.print_hyps_limit () with
 
 (* display goal parts (Proof mode) *)
 
-let pr_restricted_named_context among env =
-  hv 0 (fold_named_context
-	  (fun env ((id,_,_) as d) pps ->
-	     if true || Idset.mem id among then
-	       pps ++
-		 fnl () ++ str (emacs_str (String.make 1 (Char.chr 253)) "") ++
-		 pr_var_decl env d
-	     else
-	       pps)
-          env ~init:(mt ()))
-
-
 let pr_predicate pr_elt (b, elts) =
   let pr_elts = prlist_with_sep spc pr_elt elts in
     if b then
@@ -268,13 +256,6 @@ let pr_idpred p = pr_predicate Nameops.pr_id (Idpred.elements p)
 let pr_transparent_state (ids, csts) =
   hv 0 (str"VARIABLES: " ++ pr_idpred ids ++ fnl () ++
 	str"CONSTANTS: " ++ pr_cpred csts ++ fnl ())
-
-let pr_subgoal_metas metas env=
-  let pr_one (meta,typ) =
-    str "?" ++ int meta ++ str " : " ++
-      hov 0 (pr_ltype_env_at_top env typ) ++ fnl () ++
-      str (emacs_str (String.make 1 (Char.chr 253)) "") in
-    hv 0 (prlist_with_sep mt pr_one metas)
 
 (* display complete goal *)
 let default_pr_goal gs =

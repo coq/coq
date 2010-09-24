@@ -65,7 +65,7 @@ let subst_addfield (subst,(typ,th as obj)) =
       (typ',th')
 
 (* Declaration of the Add Field library object *)
-let (in_addfield,out_addfield)=
+let in_addfield =
   Libobject.declare_object {(Libobject.default_object "ADD_FIELD") with
        Libobject.open_function = (fun i o -> if i=1 then cache_addfield o);
        Libobject.cache_function = cache_addfield;

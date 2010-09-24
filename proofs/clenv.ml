@@ -30,9 +30,7 @@ open Coercion.Default
 (* Abbreviations *)
 
 let pf_env = Refiner.pf_env
-let pf_hyps = Refiner.pf_hyps
 let pf_type_of gls c  = Typing.type_of (pf_env gls) gls.sigma c
-let pf_concl gls = Goal.V82.concl (Refiner.project gls) (sig_it gls)
 
 (******************************************************************)
 (* Clausal environments *)
@@ -143,9 +141,6 @@ let mk_clenv_from_n gls n (c,cty) =
   mk_clenv_from_env (pf_env gls) gls.sigma n (c, cty)
 
 let mk_clenv_from gls = mk_clenv_from_n gls None
-
-let mk_clenv_rename_from_n gls n (c,t) =
-  mk_clenv_from_n gls n (c,rename_bound_vars_as_displayed [] t)
 
 let mk_clenv_type_of gls t = mk_clenv_from gls (t,pf_type_of gls t)
 

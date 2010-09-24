@@ -204,10 +204,6 @@ open Pp
 open Tacexpr
 open Rawterm
 
-let rec pr_list f = function
-  | []   -> mt ()
-  | a::l1 -> (f a) ++ pr_list f l1
-
 let db_pr_goal sigma g =
   let env = Goal.V82.env sigma g in
   let penv = print_named_context env in

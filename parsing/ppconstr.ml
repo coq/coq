@@ -22,14 +22,10 @@ open Constrextern
 open Termops
 (*i*)
 
-let sep_p = fun _ -> str"."
 let sep_v = fun _ -> str"," ++ spc()
-let sep_pp = fun _ -> str":"
-let sep_bar = fun _ -> spc() ++ str"| "
 let pr_tight_coma () = str "," ++ cut ()
 
 let latom = 0
-let lannot = 100
 let lprod = 200
 let llambda = 200
 let lif = 200
@@ -107,10 +103,6 @@ let pr_com_at n =
 let pr_with_comments loc pp = pr_located (fun x -> x) (loc,pp)
 
 let pr_sep_com sep f c = pr_with_comments (constr_loc c) (sep() ++ f c)
-
-let pr_optc pr = function
-  | None -> mt ()
-  | Some x -> pr_sep_com spc pr x
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 
@@ -355,21 +347,6 @@ let pr_recursive pr_decl id = function
         (pr_decl true) dl ++
       fnl() ++ str "for " ++ pr_id id
 
-let is_var id = function
-  | CRef (Ident (_,id')) when id=id' -> true
-  | _ -> false
-
-let tm_clash = function
-  | (CRef (Ident (_,id)), Some (CApp (_,_,nal)))
-      when List.exists (function CRef (Ident (_,id')),_ -> id=id' | _ -> false)
-	nal
-      -> Some id
-  | (CRef (Ident (_,id)), Some (CAppExpl (_,_,nal)))
-      when List.exists (function CRef (Ident (_,id')) -> id=id' | _ -> false)
-	nal
-      -> Some id
-  | _ -> None
-
 let pr_asin pr (na,indnalopt) =
   (match na with (* Decision of printing "_" or not moved to constrextern.ml *)
     | Some na -> spc () ++ str "as " ++  pr_lname na
@@ -386,8 +363,6 @@ let pr_case_type pr po =
     | None | Some (CHole _) -> mt()
     | Some p ->
         spc() ++ hov 2 (str "return" ++ pr_sep_com spc (pr lsimple) p)
-
-let pr_return_type pr po = pr_case_type pr po
 
 let pr_simple_return_type pr na po =
   (match na with
@@ -560,38 +535,6 @@ let pr pr sep inherited a =
   let loc = constr_loc a in
   pr_with_comments loc
     (sep() ++ if prec_less prec inherited then strm else surround strm)
-
-
-let rec strip_context n iscast t =
-  if n = 0 then
-    [], if iscast then match t with CCast (_,c,_) -> c | _ -> t else t
-  else match t with
-    | CLambdaN (loc,(nal,bk,t)::bll,c) ->
-	let n' = List.length nal in
-	if n' > n then
-	  let nal1,nal2 = list_chop n nal in
-	  [LocalRawAssum (nal1,bk,t)], CLambdaN (loc,(nal2,bk,t)::bll,c)
-	else
-	let bl', c = strip_context (n-n') iscast
-	  (if bll=[] then c else CLambdaN (loc,bll,c)) in
-	LocalRawAssum (nal,bk,t) :: bl', c
-    | CProdN (loc,(nal,bk,t)::bll,c) ->
-	let n' = List.length nal in
-	if n' > n then
-	  let nal1,nal2 = list_chop n nal in
-	  [LocalRawAssum (nal1,bk,t)], CProdN (loc,(nal2,bk,t)::bll,c)
-	else
-	let bl', c = strip_context (n-n') iscast
-	  (if bll=[] then c else CProdN (loc,bll,c)) in
-	LocalRawAssum (nal,bk,t) :: bl', c
-    | CArrow (loc,t,c) ->
-	let bl', c = strip_context (n-1) iscast c in
-	LocalRawAssum ([loc,Anonymous],default_binder_kind,t) :: bl', c
-    | CCast (_,c,_) -> strip_context n false c
-    | CLetIn (_,na,b,c) ->
-	let bl', c = strip_context (n-1) iscast c in
-	LocalRawDef (na,b) :: bl', c
-    | _ -> anomaly "strip_context"
 
 type term_pr = {
   pr_constr_expr   : constr_expr -> std_ppcmds;

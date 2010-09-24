@@ -40,7 +40,6 @@ type domain =
 type 'a t = (domain * 'a option) array
 
 (** The root is the first item of the array. *)
-let is_root i = (i = 0)
 
 (** Standard layout for left child. *)
 let left_child i = 2 * i + 1

@@ -378,7 +378,6 @@ let locate_modtype qid = SpTab.locate qid !the_modtypetab
 let full_name_modtype qid = SpTab.user_name qid !the_modtypetab
 
 let locate_tactic qid = SpTab.locate qid !the_tactictab
-let full_name_tactic qid = SpTab.user_name qid !the_tactictab
 
 let locate_dir qid = DirTab.locate qid !the_dirtab
 
@@ -411,20 +410,12 @@ let locate_constant qid =
     | TrueGlobal (ConstRef kn) -> kn
     | _ -> raise Not_found
 
-let locate_mind qid =
-  match locate_extended qid with
-    | TrueGlobal (IndRef (kn,0)) -> kn
-    | _ -> raise Not_found
-
 let global_of_path sp =
   match SpTab.find sp !the_ccitab with
     | TrueGlobal ref -> ref
     | _ -> raise Not_found
 
 let extended_global_of_path sp = SpTab.find sp !the_ccitab
-
-let locate_in_absolute_module dir id =
-  global_of_path (make_path dir id)
 
 let global r =
   let (loc,qid) = qualid_of_reference r in
@@ -448,8 +439,6 @@ let exists_section = exists_dir
 let exists_module = exists_dir
 
 let exists_modtype sp = SpTab.exists sp !the_modtypetab
-
-let exists_tactic sp = SpTab.exists sp !the_tactictab
 
 (* Reverse locate functions ***********************************************)
 

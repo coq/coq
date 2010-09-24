@@ -166,8 +166,6 @@ let computable p k =
   &&
   noccur_between 1 (k+1) ccl
 
-let avoid_flag isgoal = if isgoal then Some true else None
-
 let lookup_name_as_displayed env t s =
   let rec lookup avoid n c = match kind_of_term c with
     | Prod (name,_,c') ->

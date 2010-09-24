@@ -65,13 +65,6 @@ let mismatched_props env n m = mismatched_ctx_inst env Properties n m
 
 type binder_list = (identifier located * bool * constr_expr) list
 
-(* Calls to interpretation functions. *)
-
-let interp_type_evars evdref env ?(impls=empty_internalization_env) typ =
-  let typ' = intern_gen true ~impls !evdref env typ in
-  let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
-    imps, Pretyping.Default.understand_tcc_evars evdref env Pretyping.IsType typ'
-
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 
 open Topconstr
@@ -280,14 +273,6 @@ let named_of_rel_context l =
 	  (mkVar id :: subst, d :: ctx))
       l ([], [])
   in ctx
-
-let push_named_context = List.fold_right push_named
-
-let rec list_filter_map f = function
-  | [] -> []
-  | hd :: tl -> match f hd with
-    | None -> list_filter_map f tl
-    | Some x -> x :: list_filter_map f tl
 
 let context ?(hook=fun _ -> ()) l =
   let env = Global.env() in

@@ -135,16 +135,6 @@ let delta_of_mp resolve mp =
       | _ -> anomaly "mod_subst: bad association in delta_resolver"
   with
       Not_found -> mp
-	
-let delta_of_kn resolve kn =
-  try 
-    match Deltamap.find (KN kn) resolve with
-      | Equiv kn1 -> kn1
-      | Inline _ -> kn
-      | _ -> anomaly 
-	  "mod_subst: bad association in delta_resolver"
-  with
-      Not_found -> kn
 
 let remove_mp_delta_resolver resolver mp =
     Deltamap.remove (MP mp) resolver

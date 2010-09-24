@@ -32,7 +32,7 @@ open Nameops
 
 let cache_token (_,s) = add_keyword s
 
-let (inToken, outToken) =
+let inToken =
   declare_object {(default_object "TOKEN") with
        open_function = (fun i o -> if i=1 then cache_token o);
        cache_function = cache_token;
@@ -70,7 +70,7 @@ let subst_tactic_parule subst (key,n,p,(d,tac)) =
 let subst_tactic_notation (subst,(pa,pp)) =
   (subst_tactic_parule subst pa,pp)
 
-let (inTacticGrammar, outTacticGrammar) =
+let inTacticGrammar =
   declare_object {(default_object "TacticGrammar") with
        open_function = (fun i o -> if i=1 then cache_tactic_notation o);
        cache_function = cache_tactic_notation;
@@ -363,11 +363,6 @@ let error_not_same_scope x y =
   error ("Variables "^string_of_id x^" and "^string_of_id y^
     " must be in the same scope.")
 
-let error_both_bound_and_binding x y =
-  errorlabstrm "" (strbrk "The recursive variables " ++ pr_id x ++
-  strbrk " and " ++ pr_id y ++ strbrk " cannot be used as placeholder \
-  for both terms and binders.")
-
 (**********************************************************************)
 (* Build pretty-printing rules                                        *)
 
@@ -402,12 +397,6 @@ let is_left_bracket s =
 let is_right_bracket s =
   let l = String.length s in l <> 0 &
   (s.[l-1] = '}' or s.[l-1] = ']' or s.[l-1] = ')')
-
-let is_left_bracket_on_left s =
-  let l = String.length s in l <> 0 & s.[l-1] = '>'
-
-let is_right_bracket_on_right s =
-  let l = String.length s in l <> 0 & s.[0] = '<'
 
 let is_comma s =
   let l = String.length s in l <> 0 &
@@ -726,7 +715,7 @@ let subst_syntax_extension (subst,(local,sy)) =
 let classify_syntax_definition (local,_ as o) =
   if local then Dispose else Substitute o
 
-let (inSyntaxExtension, outSyntaxExtension) =
+let inSyntaxExtension =
   declare_object {(default_object "SYNTAX-EXTENSION") with
        open_function = (fun i o -> if i=1 then cache_syntax_extension o);
        cache_function = cache_syntax_extension;
@@ -976,7 +965,7 @@ let subst_notation (subst,(lc,scope,pat,b,ndf)) =
 let classify_notation (local,_,_,_,_ as o) =
   if local then Dispose else Substitute o
 
-let (inNotation, outNotation) =
+let inNotation =
   declare_object {(default_object "NOTATION") with
        open_function = open_notation;
        cache_function = cache_notation;
@@ -1152,7 +1141,7 @@ let subst_scope_command (subst,(scope,o as x)) = match o with
       scope, ScopeClasses cl'
   | _ -> x
 
-let (inScopeCommand,outScopeCommand) =
+let inScopeCommand =
   declare_object {(default_object "DELIMITERS") with
       cache_function = cache_scope_command;
       open_function = open_scope_command;

@@ -105,14 +105,6 @@ type 'id gclause =
 
 let nowhere = {onhyps=Some[]; concl_occs=no_occurrences_expr}
 
-let goal_location_of = function
-| { onhyps = Some [scl]; concl_occs = occs } when occs = no_occurrences_expr ->
-      Some scl
-| { onhyps = Some []; concl_occs = occs } when occs = all_occurrences_expr ->
-    None
-| _ ->
-    error "Not a simple \"in\" clause (one hypothesis or the conclusion)"
-
 type 'constr induction_clause =
   ('constr with_bindings induction_arg list * 'constr with_bindings option *
    (intro_pattern_expr located option * intro_pattern_expr located option))

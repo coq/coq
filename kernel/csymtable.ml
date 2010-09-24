@@ -23,7 +23,6 @@ open Cbytegen
 
 
 external tcode_of_code : emitcodes -> int -> tcode = "coq_tcode_of_code"
-external free_tcode : tcode -> unit = "coq_static_free"
 external eval_tcode : tcode -> values array -> values = "coq_eval_tcode"
 
 (*******************)

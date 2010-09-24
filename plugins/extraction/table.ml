@@ -459,7 +459,7 @@ let lang_ref = ref Ocaml
 
 let lang () = !lang_ref
 
-let (extr_lang,_) =
+let extr_lang =
   declare_object
     {(default_object "Extraction Lang") with
        cache_function = (fun (_,l) -> lang_ref := l);
@@ -491,7 +491,7 @@ let add_inline_entries b l =
 
 (* Registration of operations for rollback. *)
 
-let (inline_extraction,_) =
+let inline_extraction =
   declare_object
     {(default_object "Extraction Inline") with
        cache_function = (fun (_,(b,l)) -> add_inline_entries b l);
@@ -534,7 +534,7 @@ let print_extraction_inline () =
 
 (* Reset part *)
 
-let (reset_inline,_) =
+let reset_inline =
   declare_object
     {(default_object "Reset Extraction Inline") with
        cache_function = (fun (_,_)-> inline_table :=  empty_inline_table);
@@ -573,7 +573,7 @@ let add_implicits r l =
 
 (* Registration of operations for rollback. *)
 
-let (implicit_extraction,_) =
+let implicit_extraction =
   declare_object
     {(default_object "Extraction Implicit") with
        cache_function = (fun (_,(r,l)) -> add_implicits r l);
@@ -633,7 +633,7 @@ let add_blacklist_entries l =
 
 (* Registration of operations for rollback. *)
 
-let (blacklist_extraction,_) =
+let blacklist_extraction =
   declare_object
     {(default_object "Extraction Blacklist") with
        cache_function = (fun (_,l) -> add_blacklist_entries l);
@@ -661,7 +661,7 @@ let print_extraction_blacklist () =
 
 (* Reset part *)
 
-let (reset_blacklist,_) =
+let reset_blacklist =
   declare_object
     {(default_object "Reset Extraction Blacklist") with
        cache_function = (fun (_,_)-> blacklist_table := Idset.empty);
@@ -707,7 +707,7 @@ let find_custom_match pv =
 
 (* Registration of operations for rollback. *)
 
-let (in_customs,_) =
+let in_customs =
   declare_object
     {(default_object "ML extractions") with
        cache_function = (fun (_,(r,ids,s)) -> add_custom r ids s);
@@ -722,7 +722,7 @@ let _ = declare_summary "ML extractions"
 	    unfreeze_function = ((:=) customs);
 	    init_function = (fun () -> customs := Refmap'.empty) }
 
-let (in_custom_matchs,_) =
+let in_custom_matchs =
   declare_object
     {(default_object "ML extractions custom matchs") with
        cache_function = (fun (_,(r,s)) -> add_custom_match r s);

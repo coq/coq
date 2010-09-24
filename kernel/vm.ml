@@ -538,12 +538,6 @@ let branch_of_switch k sw =
 
 (* Evaluation *)
 
-
-let is_accu v =
-  let o = Obj.repr v in
-  Obj.is_block o && Obj.tag o = accu_tag &&
-  fun_code v == accumulate && Obj.tag (Obj.field o 1) < cofix_tag
-
 let rec whd_stack v stk =
   match stk with
   | [] -> whd_val v

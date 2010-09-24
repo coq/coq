@@ -71,28 +71,20 @@ let try_find_reference dir s =
   constr_of_global (try_find_global_reference dir s)
 
 let gen_constant dir s = Coqlib.gen_constant "rewrite" dir s
-let coq_proj1 = lazy(gen_constant ["Init"; "Logic"] "proj1")
-let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
 let coq_eq = lazy(gen_constant ["Init"; "Logic"] "eq")
-let coq_eq_rect = lazy (gen_constant ["Init"; "Logic"] "eq_rect")
 let coq_f_equal = lazy (gen_constant ["Init"; "Logic"] "f_equal")
-let iff = lazy (gen_constant ["Init"; "Logic"] "iff")
 let coq_all = lazy (gen_constant ["Init"; "Logic"] "all")
 let impl = lazy (gen_constant ["Program"; "Basics"] "impl")
 let arrow = lazy (gen_constant ["Program"; "Basics"] "arrow")
-let coq_id = lazy (gen_constant ["Init"; "Datatypes"] "id")
 
 let reflexive_type = lazy (try_find_reference ["Classes"; "RelationClasses"] "Reflexive")
-let reflexive_proof_global = lazy (try_find_global_reference ["Classes"; "RelationClasses"] "reflexivity")
 let reflexive_proof = lazy (try_find_reference ["Classes"; "RelationClasses"] "reflexivity")
 
 let symmetric_type = lazy (try_find_reference ["Classes"; "RelationClasses"] "Symmetric")
 let symmetric_proof = lazy (try_find_reference ["Classes"; "RelationClasses"] "symmetry")
-let symmetric_proof_global = lazy (try_find_global_reference ["Classes"; "RelationClasses"] "symmetry")
 
 let transitive_type = lazy (try_find_reference ["Classes"; "RelationClasses"] "Transitive")
 let transitive_proof = lazy (try_find_reference ["Classes"; "RelationClasses"] "transitivity")
-let transitive_proof_global = lazy (try_find_global_reference ["Classes"; "RelationClasses"] "transitivity")
 
 let coq_inverse = lazy (gen_constant (* ["Classes"; "RelationClasses"] "inverse" *)
 			   ["Program"; "Basics"] "flip")
@@ -100,18 +92,14 @@ let coq_inverse = lazy (gen_constant (* ["Classes"; "RelationClasses"] "inverse"
 let inverse car rel = mkApp (Lazy.force coq_inverse, [| car ; car; mkProp; rel |])
 (* let inverse car rel = mkApp (Lazy.force coq_inverse, [| car ; car; new_Type (); rel |]) *)
 
-let complement = lazy (gen_constant ["Classes"; "RelationClasses"] "complement")
 let forall_relation = lazy (gen_constant ["Classes"; "Morphisms"] "forall_relation")
 let pointwise_relation = lazy (gen_constant ["Classes"; "Morphisms"] "pointwise_relation")
 
-let respectful_dep = lazy (gen_constant ["Classes"; "Morphisms"] "respectful_dep")
 let respectful = lazy (gen_constant ["Classes"; "Morphisms"] "respectful")
 
-let equivalence = lazy (gen_constant ["Classes"; "RelationClasses"] "Equivalence")
 let default_relation = lazy (gen_constant ["Classes"; "SetoidTactics"] "DefaultRelation")
 
 let subrelation = lazy (gen_constant ["Classes"; "RelationClasses"] "subrelation")
-let is_subrelation = lazy (gen_constant ["Classes"; "RelationClasses"] "is_subrelation")
 let do_subrelation = lazy (gen_constant ["Classes"; "Morphisms"] "do_subrelation")
 let apply_subrelation = lazy (gen_constant ["Classes"; "Morphisms"] "apply_subrelation")
 
@@ -119,24 +107,12 @@ let coq_relation = lazy (gen_constant ["Relations";"Relation_Definitions"] "rela
 let mk_relation a = mkApp (Lazy.force coq_relation, [| a |])
 (* let mk_relation a = mkProd (Anonymous, a, mkProd (Anonymous, a, new_Type ())) *)
 
-let coq_relationT = lazy (gen_constant ["Classes";"Relations"] "relationT")
-
-let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "Equivalence_Reflexive")
-
-let setoid_equiv = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv")
-let setoid_proper = lazy (gen_constant ["Classes"; "SetoidClass"] "setoid_proper")
-let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "Equivalence_Reflexive")
-
 let rewrite_relation_class = lazy (gen_constant ["Classes"; "RelationClasses"] "RewriteRelation")
-let rewrite_relation = lazy (gen_constant ["Classes"; "RelationClasses"] "rewrite_relation")
 
 let arrow_morphism a b =
   if isprop a && isprop b then
     Lazy.force impl
   else Lazy.force arrow
-
-let setoid_refl pars x =
-  applistc (Lazy.force setoid_refl_proj) (pars @ [x])
 
 let proper_type = lazy (constr_of_global (Lazy.force proper_class).cl_impl)
 
@@ -164,10 +140,6 @@ let _ =
 let split_head = function
     hd :: tl -> hd, tl
   | [] -> assert(false)
-
-let new_goal_evar (goal,cstr) env t =
-  let goal', t = Evarutil.new_evar goal env t in
-    (goal', cstr), t
 
 let new_cstr_evar (goal,cstr) env t =
   let cstr', t = Evarutil.new_evar cstr env t in
@@ -311,15 +283,6 @@ let rewrite2_unif_flags = {
   Unification.modulo_eta = true
 }
 
-let setoid_rewrite_unif_flags = {
-  Unification.modulo_conv_on_closed_terms = Some conv_transparent_state;
-  Unification.use_metas_eagerly = true;
-  Unification.modulo_delta = conv_transparent_state;
-  Unification.resolve_evars = true;
-  Unification.use_evars_pattern_unification = true;
-  Unification.modulo_eta = true
-}
-
 let convertible env evd x y =
   Reductionops.is_conv env evd x y
 
@@ -385,11 +348,6 @@ let unfold_impl t =
 	mkProd (Anonymous, a, lift 1 b)
     | _ -> assert false
 
-let unfold_id t =
-  match kind_of_term t with
-    | App (id, [| a; b |]) (* when eq_constr id (Lazy.force coq_id) *) -> b
-    | _ -> assert false
-
 let unfold_all t =
   match kind_of_term t with
     | App (id, [| a; b |]) (* when eq_constr id (Lazy.force coq_all) *) ->
@@ -397,9 +355,6 @@ let unfold_all t =
 	  | Lambda (n, ty, b) -> mkProd (n, ty, b)
 	  | _ -> assert false)
     | _ -> assert false
-
-let decomp_prod env evm n c =
-  snd (Reductionops.splay_prod_n env evm n c)
 
 let rec decomp_pointwise n c =
   if n = 0 then c
@@ -1099,11 +1054,8 @@ let occurrences_of = function
 	error "Illegal negative occurrence number.";
       (true,nl)
 
-let pr_gen_strategy pr_id = Pp.mt ()
-let pr_loc_strategy _ _ _ = Pp.mt ()
 let pr_strategy _ _ _ (s : strategy) = Pp.str "<strategy>"
 
-let intern_strategy ist gl c = c
 let interp_strategy ist gl c = c
 let glob_strategy ist l = l
 let subst_strategy evm l = l
@@ -1119,7 +1071,7 @@ let interp_constr_list env sigma =
 
 open Pcoq
 
-let (wit_strategy, globwit_strategy, rawwit_strategy) =
+let _ =
   (Genarg.create_arg "strategy" :
       ((strategy, Genarg.tlevel) Genarg.abstract_argument_type *
 	  (strategy, Genarg.glevel) Genarg.abstract_argument_type *
@@ -1216,10 +1168,6 @@ let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 let anew_instance binders instance fields =
   new_instance binders instance (CRecord (dummy_loc,None,fields)) ~generalize:false None
 
-let require_library dirpath =
-  let qualid = (dummy_loc, Libnames.qualid_of_dirpath (Libnames.dirpath_of_string dirpath)) in
-    Library.require_library [qualid] (Some false)
-
 let declare_instance_refl binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
   in anew_instance binders instance
@@ -1234,8 +1182,6 @@ let declare_instance_trans binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Transitive") "Coq.Classes.RelationClasses.Transitive"
   in anew_instance binders instance
        [(Ident (dummy_loc,id_of_string "transitivity"),lemma)]
-
-let constr_tac = Tacinterp.interp (Tacexpr.TacAtom (dummy_loc, Tacexpr.TacAnyConstructor (false,None)))
 
 let declare_relation ?(binders=[]) a aeq n refl symm trans =
   init_setoid ();
@@ -1281,10 +1227,11 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 
 type 'a binders_argtype = (local_binder list, 'a) Genarg.abstract_argument_type
 
-let (wit_binders : Genarg.tlevel binders_argtype),
-  (globwit_binders : Genarg.glevel binders_argtype),
-  (rawwit_binders : Genarg.rlevel binders_argtype) =
-  Genarg.create_arg "binders"
+let _, _, rawwit_binders =
+ (Genarg.create_arg "binders" :
+    Genarg.tlevel binders_argtype *
+    Genarg.glevel binders_argtype *
+    Genarg.rlevel binders_argtype)
 
 open Pcoq.Constr
 
@@ -1354,9 +1301,6 @@ VERNAC COMMAND EXTEND AddParametricRelation3
 	"as" ident(n) ] ->
       [ declare_relation ~binders:b a aeq n None None (Some lemma3) ]
 END
-
-let mk_qualid s =
-  Libnames.Qualid (dummy_loc, Libnames.qualid_of_string s)
 
 let cHole = CHole (dummy_loc, None)
 
@@ -1598,15 +1542,6 @@ let general_s_rewrite_clause x =
     | Some id -> general_s_rewrite (Some id)
 
 let _ = Equality.register_general_rewrite_clause general_s_rewrite_clause
-
-let is_loaded d =
-  let d' = List.map id_of_string d in
-  let dir = make_dirpath (List.rev d') in
-    Library.library_is_loaded dir
-
-let try_loaded f gl =
-  if is_loaded ["Coq";"Classes";"RelationClasses"] then f gl
-  else tclFAIL 0 (str"You need to require Coq.Classes.RelationClasses first") gl
 
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 

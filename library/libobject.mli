@@ -85,14 +85,17 @@ val default_object : string -> 'a object_declaration
 val ident_subst_function : substitution * 'a -> 'a
 
 (** {6 ... } *)
-(** Given an object declaration, the function [declare_object]
+(** Given an object declaration, the function [declare_object_full]
    will hand back two functions, the "injection" and "projection"
    functions for dynamically typed library-objects. *)
 
 type obj
 
-val declare_object :
+val declare_object_full :
   'a object_declaration -> ('a -> obj) * (obj -> 'a)
+
+val declare_object :
+  'a object_declaration -> ('a -> obj)
 
 val object_tag : obj -> string
 

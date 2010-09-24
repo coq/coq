@@ -64,14 +64,7 @@ type constant_entry =
 
 (** {6 Modules } *)
 
-
-type specification_entry = 
-    SPEconst of constant_entry
-  | SPEmind of mutual_inductive_entry
-  | SPEmodule of module_entry
-  | SPEmodtype of module_struct_entry
-
-and module_struct_entry =
+type module_struct_entry =
     MSEident of module_path
   | MSEfunctor of mod_bound_id * module_struct_entry * module_struct_entry
   | MSEwith of module_struct_entry * with_declaration

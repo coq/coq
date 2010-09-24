@@ -90,8 +90,6 @@ let pr_quantified_hypothesis = function
   | AnonHyp n -> int n
   | NamedHyp id -> pr_id id
 
-let pr_quantified_hypothesis_arg h = spc () ++ pr_quantified_hypothesis h
-
 let pr_binding prc = function
   | loc, NamedHyp id, c -> hov 1 (pr_id id ++ str " := " ++ cut () ++ prc c)
   | loc, AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
@@ -129,11 +127,6 @@ let rec pr_message_token prid = function
 let pr_fresh_ids = prlist (fun s -> spc() ++ pr_or_var qs s)
 
 let with_evars ev s = if ev then "e" ^ s else s
-
-let out_bindings = function
-  | ImplicitBindings l -> ImplicitBindings (List.map snd l)
-  | ExplicitBindings l -> ExplicitBindings (List.map (fun (loc,id,c) -> (loc,id,snd c)) l)
-  | NoBindings -> NoBindings
 
 let if_pattern_ident b pr c = (if b then str "?" else mt()) ++ pr c
 
@@ -294,8 +287,6 @@ let pr_extend prc prlc prtac prpat =
 (**********************************************************************)
 (* The tactic printer                                                 *)
 
-let sep_v = fun _ -> str"," ++ spc()
-
 let strip_prod_binders_expr n ty =
   let rec strip_ty acc n ty =
     match ty with
@@ -316,8 +307,6 @@ let pr_ltac_or_var pr = function
   | ArgArg x -> pr x
   | ArgVar (loc,id) -> pr_with_comments loc (pr_id id)
 
-let pr_arg pr x = spc () ++ pr x
-
 let pr_ltac_constant sp =
   pr_qualid (Nametab.shortest_qualid_of_tactic sp)
 
@@ -325,12 +314,6 @@ let pr_evaluable_reference_env env = function
   | EvalVarRef id -> pr_id id
   | EvalConstRef sp ->
       Nametab.pr_global_env (Termops.vars_of_env env) (Libnames.ConstRef sp)
-
-let pr_quantified_hypothesis = function
-  | AnonHyp n -> int n
-  | NamedHyp id -> pr_id id
-
-let pr_quantified_hypothesis_arg h = spc () ++ pr_quantified_hypothesis h
 
 let pr_esubst prc l =
   let pr_qhyp = function
@@ -355,10 +338,6 @@ let pr_bindings prlc prc = pr_bindings_gen false prlc prc
 
 let pr_with_bindings prlc prc (c,bl) =
   hov 1 (prc c ++ pr_bindings prlc prc bl)
-
-let pr_with_constr prc = function
-  | None -> mt ()
-  | Some c -> spc () ++ hov 1 (str "with" ++ spc () ++ prc c)
 
 let pr_with_induction_names = function
   | None, None -> mt ()
@@ -440,15 +419,6 @@ let pr_clauses default_is_concl pr_id = function
         (prlist_with_sep (fun () -> str",") (pr_hyp_location pr_id) l ++
 	 (if occs = no_occurrences_expr then mt ()
 	  else pr_with_occurrences (fun () -> str" |- *") (occs,())))
-
-let pr_clause_pattern pr_id = function
-  | (None, []) -> mt ()
-  | (glopt,l) ->
-      str " in" ++
-      prlist
-        (fun (id,nl) -> prlist (pr_arg int) nl
-	  ++ spc () ++ pr_id id) l ++
-        pr_opt (fun nl -> prlist_with_sep spc int nl ++ str " Goal") glopt
 
 let pr_orient b = if b then mt () else str " <-"
 
@@ -545,20 +515,6 @@ let pr_auto_using prc = function
   | [] -> mt ()
   | l -> spc () ++
       hov 2 (str "using" ++ spc () ++ prlist_with_sep pr_comma prc l)
-
-let pr_autoarg_adding = function
-  | [] -> mt ()
-  | l ->
-      spc () ++ str "adding [" ++
-        hv 0 (prlist_with_sep spc pr_reference l) ++ str "]"
-
-let pr_autoarg_destructing = function
-  | true -> spc () ++ str "destructing"
-  | false -> mt ()
-
-let pr_autoarg_usingTDB = function
-  | true -> spc () ++ str "using tdb"
-  | false -> mt ()
 
 let pr_then () = str ";"
 
@@ -1037,9 +993,6 @@ let rec raw_printers =
 and pr_raw_tactic_level env n (t:raw_tactic_expr) =
   fst (make_pr_tac raw_printers env) n t
 
-and pr_raw_match_rule env t =
-  snd (make_pr_tac raw_printers env) t
-
 let pr_and_constr_expr pr (c,_) = pr c
 
 let pr_pat_and_constr_expr b (c,_) =
@@ -1060,9 +1013,6 @@ let rec glob_printers =
 
 and pr_glob_tactic_level env n (t:glob_tactic_expr) =
   fst (make_pr_tac glob_printers env) n t
-
-and pr_glob_match_rule env t =
-  snd (make_pr_tac glob_printers env) t
 
 let pr_constr_or_lconstr_pattern b =
   if b then pr_lconstr_pattern else pr_constr_pattern

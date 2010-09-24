@@ -273,11 +273,6 @@ let pp_dirs ft =
 
 (* pretty print on stdout and stderr *)
 
-let pp_std_dirs = pp_dirs !std_ft
-let pp_err_dirs = pp_dirs !err_ft
-
-let ppcmds x = Ppdir_ppcmds x
-
 (* Special chars for emacs, to detect warnings inside goal output *)
 let emacs_warning_start_string = String.make 1 (Char.chr 254)
 let emacs_warning_end_string = String.make 1 (Char.chr 255)

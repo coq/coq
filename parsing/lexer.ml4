@@ -250,8 +250,6 @@ let rec number len = parser
   | [< ' ('0'..'9' as c); s >] -> number (store len c) s
   | [< >] -> len
 
-let escape len c = store len c
-
 let rec string in_comments bp len = parser
   | [< ''"'; esc=(parser [<''"' >] -> true | [< >] -> false); s >] ->
       if esc then string in_comments bp (store len '"') s else len

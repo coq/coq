@@ -171,12 +171,9 @@ let fullGoal gl = None :: List.map Option.make (pf_ids_of_hyps gl)
 
 let onAllHyps tac gl = tclMAP tac (pf_ids_of_hyps gl) gl
 let onAllHypsAndConcl tac gl = tclMAP tac (fullGoal gl) gl
-let onAllHypsAndConclLR tac gl = tclMAP tac (List.rev (fullGoal gl)) gl
 
 let tryAllHyps tac gl = tclFIRST_PROGRESS_ON tac (pf_ids_of_hyps gl) gl
 let tryAllHypsAndConcl tac gl = tclFIRST_PROGRESS_ON tac (fullGoal gl) gl
-let tryAllHypsAndConclLR tac gl =
-  tclFIRST_PROGRESS_ON tac (List.rev (fullGoal gl)) gl
 
 let onClause tac cl gls = tclMAP tac (simple_clause_of cl gls) gls
 let onClauseLR tac cl gls = tclMAP tac (List.rev (simple_clause_of cl gls)) gls

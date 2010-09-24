@@ -57,7 +57,7 @@ let cache_generalizable_type (_,(local,cmd)) =
 let load_generalizable_type _ (_,(local,cmd)) =
   generalizable_table := add_generalizable cmd !generalizable_table
     
-let (in_generalizable, _) =
+let in_generalizable =
   declare_object {(default_object "GENERALIZED-IDENT") with
     load_function = load_generalizable_type;
     cache_function = cache_generalizable_type;
@@ -202,8 +202,6 @@ let generalizable_vars_of_rawconstr ?(bound=Idset.empty) ?(allowed=Idset.empty) 
 
 let rec make_fresh ids env x =
   if is_freevar ids env x then x else make_fresh ids env (Nameops.lift_subscript x)
-
-let next_ident_away_from id avoid = make_fresh avoid (Global.env ()) id
 
 let next_name_away_from na avoid =
   match na with

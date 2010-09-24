@@ -93,24 +93,6 @@ let check_for_coloneq =
       | KEYWORD "(" -> skip_binders 2
       | _ -> err ())
 
-let guess_lpar_ipat s strm =
-  match get_tok (stream_nth 0 strm) with
-    | KEYWORD "(" ->
-        (match get_tok (stream_nth 1 strm) with
-          | KEYWORD ("("|"[") -> ()
-          | IDENT _ ->
-              (match get_tok (stream_nth 2 strm) with
-                | KEYWORD s' when s = s' -> ()
-                | _ -> err ())
-          | _ -> err ())
-    | _ -> err ()
-
-let guess_lpar_coloneq =
-  Gram.Entry.of_parser "guess_lpar_coloneq" (guess_lpar_ipat ":=")
-
-let guess_lpar_colon =
-  Gram.Entry.of_parser "guess_lpar_colon" (guess_lpar_ipat ":")
-
 let lookup_at_as_coma =
   Gram.Entry.of_parser "lookup_at_as_coma"
     (fun strm ->

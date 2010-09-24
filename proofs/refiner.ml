@@ -24,28 +24,10 @@ open Logic
 let sig_it x = x.it
 let project x = x.sigma
 
-
-let and_status = List.fold_left (+) 0
-
 (* Getting env *)
 
 let pf_env gls = Global.env_of_context (Goal.V82.hyps (project gls) (sig_it gls))
 let pf_hyps gls = named_context_of_val (Goal.V82.hyps (project gls) (sig_it gls))
-
-(* [mapshape [ l1 ; ... ; lk ] [ v1 ; ... ; vk ] [ p_1 ; .... ; p_(l1+...+lk) ]]
-   gives
-   [ (v1 [p_1 ... p_l1]) ; (v2 [ p_(l1+1) ... p_(l1+l2) ]) ; ... ;
-   (vk [ p_(l1+...+l(k-1)+1) ... p_(l1+...lk) ]) ]
- *)
-
-let rec mapshape nl (fl : (proof_tree list -> proof_tree) list)
-                    (l : proof_tree list) =
-  match nl with
-    | [] -> []
-    | h::t ->
-	let m,l = list_chop h l in
-	(List.hd fl m) :: (mapshape t (List.tl fl) l)
-
 
 let abstract_operation syntax semantics =
   semantics

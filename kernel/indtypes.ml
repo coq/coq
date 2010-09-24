@@ -85,15 +85,6 @@ let mind_check_names mie =
   vue since inductive and constructors are not referred to by their
   name, but only by the name of the inductive packet and an index. *)
 
-let mind_check_arities env mie =
-  let check_arity id c =
-    if not (is_arity env c) then
-      raise (InductiveError (NotAnArity id))
-  in
-  List.iter
-    (fun {mind_entry_typename=id; mind_entry_arity=ar} -> check_arity id ar)
-    mie.mind_entry_inds
-
 (************************************************************************)
 (************************************************************************)
 
@@ -548,16 +539,6 @@ let check_positivity kn env_ar params inds =
 (************************************************************************)
 (************************************************************************)
 (* Build the inductive packet *)
-
-(* Elimination sorts *)
-let is_recursive = Rtree.is_infinite
-(*  let rec one_is_rec rvec =
-    List.exists (function Mrec(i) -> List.mem i listind
-                   | Imbr(_,lvec) -> array_exists one_is_rec lvec
-                   | Norec -> false) rvec
-  in
-  array_exists one_is_rec
-*)
 
 (* Allowed eliminations *)
 

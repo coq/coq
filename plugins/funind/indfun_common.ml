@@ -362,7 +362,7 @@ let pr_table tb =
   let l = Cmap.fold (fun k v acc -> v::acc) tb [] in
   Util.prlist_with_sep fnl pr_info l
 
-let in_Function,out_Function =
+let in_Function =
   Libobject.declare_object
     {(Libobject.default_object "FUNCTIONS_DB") with
        Libobject.cache_function = cache_Function;

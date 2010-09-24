@@ -277,9 +277,6 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map pi1 ctx)))
 
-let qualid_of_con c = 
-  Qualid (dummy_loc, shortest_qualid_of_global Idset.empty (ConstRef c))
-
 let declare_instance_cst glob con =
   let instance = Typeops.type_of_constant (Global.env ()) con in
   let _, r = decompose_prod_assum instance in

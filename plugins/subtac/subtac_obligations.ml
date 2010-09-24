@@ -153,7 +153,7 @@ let _ =
 
 let progmap_union = ProgMap.fold ProgMap.add
 
-let (input,output) =
+let input =
   declare_object
     { (default_object "Program state") with
       classify_function = (fun () ->

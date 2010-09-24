@@ -195,8 +195,6 @@ module SpOrdered =
     let compare = sp_ord
   end
 
-module Spset = Set.Make(SpOrdered)
-module Sppred = Predicate.Make(SpOrdered)
 module Spmap = Map.Make(SpOrdered)
 
 let dirpath sp = let (p,_) = repr_path sp in p

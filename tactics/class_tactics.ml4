@@ -45,18 +45,6 @@ let _ = Auto.auto_init := (fun () ->
 
 exception Found of evar_map
 
-let is_dependent ev evm =
-  Evd.fold (fun ev' evi dep ->
-    if ev = ev' then dep
-    else dep || occur_evar ev evi.evar_concl)
-    evm false
-
-let evar_filter evi =
-  let hyps' = evar_filtered_context evi in
-    { evi with 
-      evar_hyps = Environ.val_of_named_context hyps';
-      evar_filter = List.map (fun _ -> true) hyps' }
-
 let evars_to_goals p evm =
   let goals, evm' =
     Evd.fold
@@ -85,8 +73,6 @@ open Auto
 let e_give_exact flags c gl = 
   let t1 = (pf_type_of gl c) in
     tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl
-
-let assumption flags id = e_give_exact flags (mkVar id)
 
 open Unification
 
@@ -210,9 +196,6 @@ let rec catchable = function
   | Loc.Exc_located (_, e) -> catchable e
   | e -> Logic.catchable_exception e
 
-let is_ground gl =
-  Evarutil.is_ground_term (project gl) (pf_concl gl)
-
 let nb_empty_evars s =
   Evd.fold (fun ev evi acc -> if evi.evar_body = Evar_empty then succ acc else acc) s 0
 
@@ -296,10 +279,6 @@ let normevars_tac : atac =
   (*     in {it = gls'; sigma = s}) *)
 
 
-let id_tac : atac =
-  { skft = fun sk fk {it = gl; sigma = s} ->
-    sk {it = [gl]; sigma = s} fk }
-
 (* Ordering of states is lexicographic on the number of remaining goals. *)
 let compare (pri, _, _, res) (pri', _, _, res') =
   let nbgoals s =
@@ -311,16 +290,6 @@ let compare (pri, _, _, res) (pri', _, _, res') =
 
 let or_tac (x : 'a tac) (y : 'a tac) : 'a tac =
   { skft = fun sk fk gls -> x.skft sk (fun () -> y.skft sk fk gls) gls }
-
-let solve_tac (x : 'a tac) : 'a tac =
-  { skft = fun sk fk gls -> x.skft (fun ({it = gls},_ as res) fk -> 
-    if gls = [] then sk res fk else fk ()) fk gls }
-
-let solve_unif_tac : atac =
-  { skft = fun sk fk {it = gl; sigma = s} -> 
-    try let s' = Evarconv.consider_remaining_unif_problems (Global.env ()) s in
-	  normevars_tac.skft sk fk ({it=gl; sigma=s'})
-    with _ -> fk () }
 
 let hints_tac hints =
   { skft = fun sk fk {it = gl,info; sigma = s} ->
@@ -386,17 +355,6 @@ let evars_of_term c =
     | Evar (n, _) -> Intset.add n acc
     | _ -> fold_constr evrec acc c
   in evrec Intset.empty c
-
-exception Found_evar of int
-
-let occur_evars evars c =
-  try
-    let rec evrec c =
-      match kind_of_term c with
-      | Evar (n, _) -> if Intset.mem n evars then raise (Found_evar n) else ()
-      | _ -> iter_constr evrec c
-    in evrec c; false
-  with Found_evar _ -> true
 
 let dependent only_classes evd oev concl =
   let concl_evars = Intset.union (evars_of_term concl)

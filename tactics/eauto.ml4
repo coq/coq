@@ -410,19 +410,6 @@ let autounfold db cls gl =
     | OnConcl occs -> tac occs None)
     cls gl
 
-let autosimpl db cl =
-  let unfold_of_elts constr (b, elts) =
-    if not b then
-      List.map (fun c -> all_occurrences, constr c) elts
-    else []
-  in
-  let unfolds = List.concat (List.map (fun dbname ->
-    let db = searchtable_map dbname in
-    let (ids, csts) = Hint_db.transparent_state db in
-      unfold_of_elts (fun x -> EvalConstRef x) (Cpred.elements csts) @
-      unfold_of_elts (fun x -> EvalVarRef x) (Idpred.elements ids)) db)
-  in unfold_option unfolds cl
-
 open Extraargs
 
 TACTIC EXTEND autounfold

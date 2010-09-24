@@ -300,8 +300,6 @@ let compute_manual_implicits env flags t enriching l =
   in
   merge 1 l autoimps
 
-let const v _ = v
-
 let compute_implicits_auto env f manual t =
   match manual with
   | [] ->
@@ -523,7 +521,7 @@ let rebuild_implicits (req,l) =
 let classify_implicits (req,_ as obj) =
   if req = ImplLocal then Dispose else Substitute obj
 
-let (inImplicits, _) =
+let inImplicits =
   declare_object {(default_object "IMPLICITS") with
     cache_function = cache_implicits;
     load_function = load_implicits;

@@ -220,7 +220,7 @@ let subst_dd (subst,(local,na,dd)) =
     d_pri = dd.d_pri;
     d_code = !forward_subst_tactic subst dd.d_code })
 
-let (inDD,_) =
+let inDD =
   declare_object {(default_object "DESTRUCT-HYP-CONCL-DATA") with
                     cache_function = cache_dd;
 		    open_function = (fun i o -> if i=1 then cache_dd o);

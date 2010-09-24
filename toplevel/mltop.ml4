@@ -217,8 +217,6 @@ let file_of_name name =
     coqtop could always load plugins, we prefer to have uniformity between
     bytecode and native versions. *)
 
-let stdlib_use_plugins = Coq_config.has_natdynlink
-
 (* [known_loaded_module] contains the names of the loaded ML modules
  * (linked or loaded with load_object). It is used not to load a
  * module twice. It is NOT the list of ML modules Coq knows. *)
@@ -298,7 +296,7 @@ let cache_ml_module_object (_,{mnames=mnames}) =
 let classify_ml_module_object ({mlocal=mlocal} as o) =
   if mlocal then Dispose else Substitute o
 
-let (inMLModule,outMLModule) =
+let inMLModule =
   declare_object {(default_object "ML-MODULE") with
                     load_function = (fun _ -> cache_ml_module_object);
                     cache_function = cache_ml_module_object;

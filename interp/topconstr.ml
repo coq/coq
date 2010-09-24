@@ -508,8 +508,6 @@ let subst_interpretation subst (metas,pat) =
   let bound = List.map fst metas in
   (metas,subst_aconstr subst bound pat)
 
-let encode_list_value l = RApp (dummy_loc,RVar (dummy_loc,ldots_var),l)
-
 (* Pattern-matching rawconstr and aconstr *)
 
 let abstract_return_type_context pi mklam tml rtno =
@@ -527,11 +525,6 @@ let abstract_return_type_context_rawconstr =
 let abstract_return_type_context_aconstr =
   abstract_return_type_context pi3
     (fun na c -> ALambda(na,AHole Evd.InternalHole,c))
-
-let rec adjust_scopes = function
-  | _,[] -> []
-  | [],a::args -> (None,a) :: adjust_scopes ([],args)
-  | sc::scopes,a::args -> (sc,a) :: adjust_scopes (scopes,args)
 
 exception No_match
 
@@ -585,10 +578,6 @@ let rec match_cases_pattern_binders metas acc pat1 pat2 =
       List.fold_left2 (match_cases_pattern_binders metas)
 	(match_names metas acc na1 na2) patl1 patl2
   | _ -> raise No_match
-
-let adjust_application_n n loc f l =
-  let l1,l2 = list_chop (List.length l - n) l in
-  if l1 = [] then f,l else RApp (loc,f,l1), l2
 
 let glue_letin_with_decls = true
 
@@ -946,10 +935,6 @@ let local_binder_loc = function
 let local_binders_loc bll =
   if bll = [] then dummy_loc else
   join_loc (local_binder_loc (List.hd bll)) (local_binder_loc (list_last bll))
-
-let occur_var_constr_ref id = function
-  | Ident (loc,id') -> id = id'
-  | Qualid _ -> false
 
 let ids_of_cases_indtype =
   let add_var ids = function CRef (Ident (_,id)) -> id::ids | _ -> ids in

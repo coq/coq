@@ -749,16 +749,6 @@ let insert_aliases env sigma alias eqns =
 (**********************************************************************)
 (* Functions to deal with elimination predicate *)
 
-exception Occur
-let noccur_between_without_evar n m term =
-  let rec occur_rec n c = match kind_of_term c with
-    | Rel p       -> if n<=p && p<n+m then raise Occur
-    | Evar (_,cl) -> ()
-    | _             -> iter_constr_with_binders succ occur_rec n c
-  in
-  (m = 0) or (try occur_rec n term; true with Occur -> false)
-
-
 (* Infering the predicate *)
 (*
 The problem to solve is the following:

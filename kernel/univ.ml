@@ -568,16 +568,6 @@ let no_upper_constraints u cst =
 
 (* Pretty-printing *)
 
-let num_universes g =
-  UniverseLMap.fold (fun _ _ -> succ) g 0
-
-let num_edges g =
-  let reln_len = function
-    | Equiv _ -> 1
-    | Canonical {lt=lt;le=le} -> List.length lt + List.length le
-  in
-  UniverseLMap.fold (fun _ a n -> n + (reln_len a)) g 0
-
 let pr_arc = function
   | Canonical {univ=u; lt=[]; le=[]} ->
       mt ()

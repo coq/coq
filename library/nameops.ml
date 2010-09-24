@@ -110,8 +110,6 @@ let add_prefix s id = id_of_string (s ^ string_of_id id)
 
 let atompart_of_id id = fst (repr_ident id)
 
-let lift_ident = lift_subscript
-
 (* Names *)
 
 let out_name = function

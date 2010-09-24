@@ -190,8 +190,6 @@ and execute_recdef env evdref (names,lar,vdef) =
 
 and execute_array env evdref = Array.map (execute env evdref)
 
-and execute_list env evdref = List.map (execute env evdref)
-
 let check env evd c t =
   let evdref = ref evd in
   let j = execute env evdref c in

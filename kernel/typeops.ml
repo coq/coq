@@ -18,7 +18,6 @@ open Reduction
 open Inductive
 open Type_errors
 
-let conv = default_conv CONV
 let conv_leq = default_conv CUMUL
 
 let conv_leq_vecti env v1 v2 =
@@ -44,8 +43,6 @@ let assumption_of_judgment env j =
   try (type_judgment env j).utj_val
   with TypeError _ ->
     error_assumption env j
-
-let sort_judgment env j = (type_judgment env j).utj_type
 
 (************************************************)
 (* Incremental typing rules: builds a typing judgement given the *)
@@ -473,8 +470,6 @@ and execute_recdef env (names,lar,vdef) i cu =
     ((lara.(i),(names,lara,vdefv)),cst)
 
 and execute_array env = array_fold_map' (execute env)
-
-and execute_list env = list_fold_map' (execute env)
 
 (* Derived functions *)
 let infer env constr =
