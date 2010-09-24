@@ -290,6 +290,7 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
   pr_ne_context_of (str "In environment") env ++
   st ++ str "." ++ fnl () ++
   (try (* May fail with unresolved globals. *)
+      let fixenv = make_all_name_different fixenv in
       let pvd = pr_lconstr_env fixenv vdefj.(i).uj_val in
 	str"Recursive definition is:" ++ spc () ++ pvd ++ str "."
     with _ -> mt ())
