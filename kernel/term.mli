@@ -359,6 +359,7 @@ val rel_context_nhyps : rel_context -> int
 
 (** Constructs either [(x:t)c] or [[x=b:t]c] *)
 val mkProd_or_LetIn : rel_declaration -> types -> types
+val mkProd_wo_LetIn : rel_declaration -> types -> types
 val mkNamedProd_or_LetIn : named_declaration -> types -> types
 val mkNamedProd_wo_LetIn : named_declaration -> types -> types
 

@@ -901,6 +901,11 @@ let mkNamedLambda_or_LetIn (id,body,t) c =
     | Some b -> mkNamedLetIn id b t c
 
 (* Constructs either [(x:t)c] or [c] where [x] is replaced by [b] *)
+let mkProd_wo_LetIn (na,body,t) c =
+  match body with
+    | None -> mkProd (na,  t, c)
+    | Some b -> subst1 b c
+
 let mkNamedProd_wo_LetIn (id,body,t) c =
   match body with
     | None -> mkNamedProd id t c
