@@ -868,13 +868,18 @@ type conjunction_status =
   | DefinedRecord of constant option list
   | NotADefinedRecordUseScheme of constr
 
-let make_projection params cstr sign elim i n c =
+let make_projection sigma params cstr sign elim i n c =
   let elim = match elim with
   | NotADefinedRecordUseScheme elim ->
       let (na,b,t) = List.nth cstr.cs_args i in
       let b = match b with None -> mkRel (i+1) | Some b -> b in
       let branch = it_mkLambda_or_LetIn b cstr.cs_args in
-      if noccur_between 1 (n-i-1) t then
+      if
+	(* excludes dependent projection types *)
+	noccur_between 1 (n-i-1) t
+	(* excludes flexible projection types *)
+	&& not (isEvar (fst (whd_betaiota_stack sigma t)))
+      then
         let t = lift (i+1-n) t in
 	Some (beta_applist (elim,params@[t;branch]),t)
       else
@@ -909,7 +914,7 @@ let descend_in_conjunctions tac exit c gl =
 	    NotADefinedRecordUseScheme elim in
 	tclFIRST
 	  (list_tabulate (fun i gl ->
-	    match make_projection params cstr sign elim i n c with
+	    match make_projection (project gl) params cstr sign elim i n c with
 	    | None -> tclFAIL 0 (mt()) gl
 	    | Some (p,pt) ->
 	    tclTHENS
