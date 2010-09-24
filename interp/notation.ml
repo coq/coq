@@ -113,7 +113,7 @@ let subst_scope (subst,sc) = sc
 
 open Libobject
 
-let discharge_scope (local,_,_ as o) =
+let discharge_scope (_,(local,_,_ as o)) =
   if local then None else Some o
 
 let classify_scope (local,_,_ as o) =
@@ -124,6 +124,7 @@ let (inScope,outScope) =
       cache_function = cache_scope;
       open_function = open_scope;
       subst_function = subst_scope;
+      discharge_function = discharge_scope;
       classify_function = classify_scope }
 
 let open_close_scope (local,opening,sc) =
