@@ -321,13 +321,6 @@ let val_rctxt = val_list val_rdecl
 type named_declaration = identifier * constr option * constr
 type rel_declaration = name * constr option * constr
 
-let map_named_declaration f (id, v, ty) = (id, Option.map f v, f ty)
-let map_rel_declaration = map_named_declaration
-
-let fold_named_declaration f (_, v, ty) a = f ty (Option.fold_right f v a)
-let fold_rel_declaration = fold_named_declaration
-
-
 type named_context = named_declaration list
 let empty_named_context = []
 let fold_named_context f l ~init = List.fold_right f l init
@@ -438,7 +431,6 @@ let decompose_prod_n_assum n =
 (***************************)
 
 type arity = rel_context * sorts
-let val_arity = val_tuple ~name:"arity"[|val_rctxt;val_constr|]
 
 let mkArity (sign,s) = it_mkProd_or_LetIn (Sort s) sign
 

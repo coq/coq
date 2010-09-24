@@ -117,9 +117,6 @@ let val_enum s n = val_sum s n [||]
 let rec val_rec_sum name cc f ctx o =
   val_sum name cc (f (overr (ctx/name) (val_rec_sum name cc f))) ctx o
 
-let rec val_rectype f o =
-  f (val_rectype f) o
-
 (**************************************************************************)
 (* Builtin types *)
 

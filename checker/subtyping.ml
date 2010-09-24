@@ -365,8 +365,3 @@ let check_subtypes env sup super =
     (module_body_of_type sup.typ_mp sup) env in
     check_modtypes env (strengthen env sup sup.typ_mp) super empty_subst 
       (map_mp super.typ_mp sup.typ_mp) false 
-
-let check_equal env sup super =
-  (*if sup<>super then*)
-  check_modtypes env sup super empty_subst 
-    (map_mp super.typ_mp sup.typ_mp) true

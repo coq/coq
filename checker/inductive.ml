@@ -81,8 +81,6 @@ let instantiate_params full t args sign =
   if rem_args <> [] then fail();
   substl subs ty
 
-let instantiate_partial_params = instantiate_params false
-
 let full_inductive_instantiate mib params sign =
   let dummy = Prop Null in
   let t = mkArity (sign,dummy) in
@@ -97,10 +95,6 @@ let full_constructor_instantiate ((mind,_),(mib,_),params) =
 (************************************************************************)
 
 (* Functions to build standard types related to inductive *)
-
-
-let number_of_inductives mib = Array.length mib.mind_packets
-let number_of_constructors mip = Array.length mip.mind_consnames
 
 (*
 Computing the actual sort of an applied or partially applied inductive type:
@@ -458,10 +452,6 @@ let push_var_renv renv (x,ty) =
 let subterm_var p renv =
   try Lazy.force (List.nth renv.genv (p-1))
   with Failure _ | Invalid_argument _ -> Not_subterm
-
-(* Add a variable and mark it as strictly smaller with information [spec]. *)
-let add_subterm renv (x,a,spec) =
-  push_var renv (x,a,spec_of_tree spec)
 
 let push_ctxt_renv renv ctxt =
   let n = rel_context_length ctxt in

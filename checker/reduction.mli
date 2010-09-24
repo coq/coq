@@ -29,7 +29,6 @@ type conv_pb = CONV | CUMUL
 
 val conv           : constr conversion_function
 val conv_leq       : constr conversion_function
-val conv_leq_vecti : constr array conversion_function
 
 val vm_conv : conv_pb -> constr conversion_function
 
@@ -37,9 +36,6 @@ val vm_conv : conv_pb -> constr conversion_function
 
 (* Builds an application node, reducing beta redexes it may produce. *)
 val beta_appvect : constr -> constr array -> constr
-
-(* Builds an application node, reducing the [n] first beta-zeta redexes. *)
-val betazeta_appvect : int -> constr -> constr array -> constr
 
 (* Pseudo-reduction rule  Prod(x,A,B) a --> B[x\a] *)
 val hnf_prod_applist : env -> constr -> constr list -> constr
@@ -52,4 +48,3 @@ val dest_prod       : env -> constr -> rel_context * constr
 val dest_prod_assum : env -> constr -> rel_context * constr
 
 val dest_arity : env -> constr -> arity
-val is_arity   : env -> constr -> bool

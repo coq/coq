@@ -92,9 +92,6 @@ let error_ill_formed_branch env c i actty expty =
   raise (TypeError (env,
     IllFormedBranch (c,i,nf_betaiota actty, nf_betaiota expty)))
 
-let error_generalization env nvar c =
-  raise (TypeError (env, Generalization (nvar,c)))
-
 let error_actual_type env j expty =
   raise (TypeError (env, ActualType (j,expty)))
 

@@ -187,11 +187,6 @@ and module_type_body =
 
 (* Substitutions *)
 
-val fold_subst :
-  (mod_bound_id -> module_path -> 'a -> 'a) ->
-  (module_path -> module_path -> 'a -> 'a) ->
-  substitution -> 'a -> 'a
-
 type 'a subst_fun = substitution -> 'a -> 'a
 
 val empty_subst : substitution

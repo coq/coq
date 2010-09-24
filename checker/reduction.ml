@@ -105,15 +105,6 @@ let beta_appvect c v =
       | _ -> applist (substl env t, stack) in
   stacklam [] c (Array.to_list v)
 
-let betazeta_appvect n c v =
-  let rec stacklam n env t stack =
-    if n = 0 then applist (substl env t, stack) else
-    match t, stack with
-        Lambda(_,_,c), arg::stacktl -> stacklam (n-1) (arg::env) c stacktl
-      | LetIn(_,b,_,c), _ -> stacklam (n-1) (b::env) c stack
-      | _ -> anomaly "Not enough lambda/let's" in
-  stacklam n [] c (Array.to_list v)
-
 (********************************************************************)
 (*                         Conversion                               *)
 (********************************************************************)
@@ -371,31 +362,12 @@ let fconv cv_pb env t1 t2 =
   if eq_constr t1 t2 then ()
   else clos_fconv cv_pb env t1 t2
 
-let conv_cmp = fconv
 let conv = fconv CONV
 let conv_leq = fconv CUMUL
 
-let conv_leq_vecti env v1 v2 =
-  array_fold_left2_i
-    (fun i _ t1 t2 ->
-      (try conv_leq env t1 t2
-      with (NotConvertible|Invalid_argument _) ->
-        raise (NotConvertibleVect i));
-      ())
-    ()
-    v1
-    v2
+(* option for conversion : no compilation for the checker *)
 
-(* option for conversion *)
-
-let vm_conv = ref fconv
-let set_vm_conv f = vm_conv := f
-let vm_conv cv_pb env t1 t2 =
-  try
-    !vm_conv cv_pb env t1 t2
-  with Not_found | Invalid_argument _ ->
-      (* If compilation fails, fall-back to closure conversion *)
-      clos_fconv cv_pb env t1 t2
+let vm_conv = fconv
 
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
@@ -449,10 +421,4 @@ let dest_arity env c =
   match c with
     | Sort s -> l,s
     | _ -> error "not an arity"
-
-let is_arity env c =
-  try
-    let _ = dest_arity env c in
-    true
-  with UserError _ -> false
 

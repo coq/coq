@@ -23,8 +23,6 @@ let error_not_a_functor _ = error "Application of not a functor"
 
 let error_incompatible_modtypes _ _ = error "Incompatible module types"
 
-let error_not_equal _ _ = error "Not equal modules"
-
 let error_not_match l _ =
   error ("Signature components for label "^string_of_label l^" do not match")
 
@@ -59,11 +57,6 @@ let destr_functor env mtb =
       	    (arg_id,arg_t,body_t)
   | _ -> error_not_a_functor mtb
 
-
-let is_functor = function
- | SEBfunctor (arg_id,arg_t,body_t) -> true
- | _ -> false
-
 let module_body_of_type mp mtb = 
   { mod_mp = mp;
     mod_type = mtb.typ_expr;
@@ -72,14 +65,6 @@ let module_body_of_type mp mtb =
     mod_constraints = mtb.typ_constraints;
     mod_delta = mtb.typ_delta;
     mod_retroknowledge = []}
-
-let check_modpath_equiv env mp1 mp2 = 
-  if mp1=mp2 then () else
- (*   let mb1=lookup_module  mp1 env in
-    let mb2=lookup_module mp2 env in
-      if (delta_of_mp mb1.mod_delta mp1)=(delta_of_mp mb2.mod_delta mp2)
-      then ()
-      else*) error_not_equal mp1 mp2
 
 let rec add_signature mp sign resolver env = 
   let add_one env (l,elem) =

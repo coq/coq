@@ -91,9 +91,6 @@ let push_rec_include (s, alias) = includes := (s,alias,true) :: !includes
 
 let set_default_include d =
   push_include (d, Check.default_root_prefix)
-let set_default_rec_include d =
-  let p = Check.default_root_prefix in
-  push_rec_include (d, p)
 let set_include d p =
   let p = dirpath_of_string p in
   push_include (d,p)
@@ -201,8 +198,6 @@ let usage () =
   print_usage_coqtop ();
   flush stderr;
   exit 1
-
-let warning s = msg_warning (str s)
 
 open Type_errors
 

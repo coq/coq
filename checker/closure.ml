@@ -63,11 +63,8 @@ module type RedFlagsSig = sig
   val fVAR : identifier -> red_kind
   val no_red : reds
   val red_add : reds -> red_kind -> reds
-  val red_sub : reds -> red_kind -> reds
-  val red_add_transparent : reds -> transparent_state -> reds
   val mkflags : red_kind list -> reds
   val red_set : reds -> red_kind -> bool
-  val red_get_const : reds -> bool * evaluable_global_reference list
 end
 
 module RedFlags = (struct
@@ -112,21 +109,6 @@ module RedFlags = (struct
 	let (l1,l2) = red.r_const in
 	{ red with r_const = Idpred.add id l1, l2 }
 
-  let red_sub red = function
-    | BETA -> { red with r_beta = false }
-    | DELTA -> { red with r_delta = false }
-    | CONST kn ->
- 	let (l1,l2) = red.r_const in
-	{ red with r_const = l1, Cpred.remove kn l2 }
-    | IOTA -> { red with r_iota = false }
-    | ZETA -> { red with r_zeta = false }
-    | VAR id ->
-	let (l1,l2) = red.r_const in
-	{ red with r_const = Idpred.remove id l1, l2 }
-
-  let red_add_transparent red tr =
-    { red with r_const = tr }
-
   let mkflags = List.fold_left red_add no_red
 
   let red_set red = function
@@ -144,160 +126,14 @@ module RedFlags = (struct
     | DELTA -> (* Used for Rel/Var defined in context *)
 	incr_cnt red.r_delta delta
 
-  let red_get_const red =
-    let p1,p2 = red.r_const in
-    let (b1,l1) = Idpred.elements p1 in
-    let (b2,l2) = Cpred.elements p2 in
-    if b1=b2 then
-      let l1' = List.map (fun x -> EvalVarRef x) l1 in
-      let l2' = List.map (fun x -> EvalConstRef x) l2 in
-      (b1, l1' @ l2')
-    else error "unrepresentable pair of predicate"
-
 end : RedFlagsSig)
 
 open RedFlags
 
 let betadeltaiota = mkflags [fBETA;fDELTA;fZETA;fIOTA]
 let betadeltaiotanolet = mkflags [fBETA;fDELTA;fIOTA]
-let betaiota = mkflags [fBETA;fIOTA]
-let beta = mkflags [fBETA]
 let betaiotazeta = mkflags [fBETA;fIOTA;fZETA]
-let unfold_red kn =
-  let flag = match kn with
-    | EvalVarRef id -> fVAR id
-    | EvalConstRef kn -> fCONST kn
-  in (* Remove fZETA for finer behaviour ? *)
-  mkflags [fBETA;flag;fIOTA;fZETA]
 
-(************************* Obsolète
-(* [r_const=(true,cl)] means all constants but those in [cl] *)
-(* [r_const=(false,cl)] means only those in [cl] *)
-type reds = {
-  r_beta : bool;
-  r_const : bool * constant_path list * identifier list;
-  r_zeta : bool;
-  r_evar : bool;
-  r_iota : bool }
-
-let betadeltaiota_red = {
-  r_beta = true;
-  r_const = true,[],[];
-  r_zeta = true;
-  r_evar = true;
-  r_iota = true }
-
-let betaiota_red = {
-  r_beta = true;
-  r_const = false,[],[];
-  r_zeta = false;
-  r_evar = false;
-  r_iota = true }
-
-let beta_red = {
-  r_beta = true;
-  r_const = false,[],[];
-  r_zeta = false;
-  r_evar = false;
-  r_iota = false }
-
-let no_red = {
-  r_beta = false;
-  r_const = false,[],[];
-  r_zeta = false;
-  r_evar = false;
-  r_iota = false }
-
-let betaiotazeta_red = {
-  r_beta = true;
-  r_const = false,[],[];
-  r_zeta = true;
-  r_evar = false;
-  r_iota = true }
-
-let unfold_red kn =
-  let c = match kn with
-    | EvalVarRef id -> false,[],[id]
-    | EvalConstRef kn -> false,[kn],[]
-  in {
-  r_beta = true;
-  r_const = c;
-  r_zeta = true;   (* false for finer behaviour ? *)
-  r_evar = false;
-  r_iota = true }
-
-(* Sets of reduction kinds.
-   Main rule: delta implies all consts (both global (= by
-   kernel_name) and local (= by Rel or Var)), all evars, and zeta (= letin's).
-   Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of
-   a LetIn expression is Letin reduction *)
-
-type red_kind =
-    BETA | DELTA | ZETA | IOTA
-  | CONST of constant_path list | CONSTBUT of constant_path list
-  | VAR of identifier | VARBUT of identifier
-
-let rec red_add red = function
-  | BETA -> { red with r_beta = true }
-  | DELTA ->
-      (match red.r_const with
-	| _,_::_,[] | _,[],_::_ -> error "Conflict in the reduction flags"
-	| _ -> { red with r_const = true,[],[]; r_zeta = true; r_evar = true })
-  | CONST cl ->
-      (match red.r_const with
-	| true,_,_ -> error "Conflict in the reduction flags"
-	| _,l1,l2 -> { red with r_const = false, list_union cl l1, l2 })
-  | CONSTBUT cl ->
-      (match red.r_const with
-	| false,_::_,_ | false,_,_::_ ->
-			   error "Conflict in the reduction flags"
-	| _,l1,l2 ->
-	    { red with r_const = true, list_union cl l1, l2;
-		r_zeta = true; r_evar = true })
-  | IOTA -> { red with r_iota = true }
-  | ZETA -> { red with r_zeta = true }
-  | VAR id ->
-      (match red.r_const with
-	| true,_,_ -> error "Conflict in the reduction flags"
-	| _,l1,l2 -> { red with r_const = false, l1, list_union [id] l2 })
-  | VARBUT cl ->
-      (match red.r_const with
-	| false,_::_,_ | false,_,_::_ ->
-			   error "Conflict in the reduction flags"
-	| _,l1,l2 ->
-	    { red with r_const = true, l1, list_union [cl] l2;
-		r_zeta = true; r_evar = true })
-
-let red_delta_set red =
-  let b,_,_ = red.r_const in b
-
-let red_local_const = red_delta_set
-
-(* to know if a redex is allowed, only a subset of red_kind is used ... *)
-let red_set red = function
-  | BETA -> incr_cnt red.r_beta beta
-  | CONST [kn] ->
-      let (b,l,_) = red.r_const in
-      let c = List.mem kn l in
-      incr_cnt ((b & not c) or (c & not b)) delta
-  | VAR id -> (* En attendant d'avoir des kn pour les Var *)
-     let (b,_,l) = red.r_const in
-      let c = List.mem id l in
-      incr_cnt ((b & not c) or (c & not b)) delta
-  | ZETA -> incr_cnt red.r_zeta zeta
-  | EVAR -> incr_cnt red.r_zeta evar
-  | IOTA -> incr_cnt red.r_iota iota
-  | DELTA -> red_delta_set red (*Used for Rel/Var defined in context*)
-  (* Not for internal use *)
-  | CONST _ | CONSTBUT _ | VAR _ | VARBUT _ -> failwith "not implemented"
-
-(* Gives the constant list *)
-let red_get_const red =
-  let b,l1,l2 = red.r_const in
-  let l1' = List.map (fun x -> EvalConstRef x) l1 in
-  let l2' = List.map (fun x -> EvalVarRef x) l2 in
-  b, l1' @ l2'
-fin obsolète **************)
 (* specification of the reduction function *)
 
 
@@ -333,8 +169,6 @@ type 'a infos = {
   i_rels : int * (int * constr) list;
   i_vars : (identifier * constr) list;
   i_tab : (table_key, 'a) Hashtbl.t }
-
-let info_flags info = info.i_flags
 
 let ref_value_cache info ref =
   try
@@ -445,9 +279,6 @@ and fterm =
 
 let fterm_of v = v.term
 let set_norm v = v.norm <- Norm
-let is_val v = v.norm = Norm
-
-let mk_atom c = {norm=Norm;term=FAtom c}
 
 (* Could issue a warning if no is still Red, pointing out that we loose
    sharing. *)
@@ -470,7 +301,6 @@ type stack_member =
 
 and stack = stack_member list
 
-let empty_stack = []
 let append_stack v s =
   if Array.length v = 0 then s else
   match s with
@@ -483,52 +313,6 @@ let zshift n s =
       (0,_) -> s
     | (_,Zshift(k)::s) -> Zshift(n+k)::s
     | _ -> Zshift(n)::s
-
-let rec stack_args_size = function
-  | Zapp v :: s -> Array.length v + stack_args_size s
-  | Zshift(_)::s -> stack_args_size s
-  | Zupdate(_)::s -> stack_args_size s
-  | _ -> 0
-
-(* When used as an argument stack (only Zapp can appear) *)
-let rec decomp_stack = function
-  | Zapp v :: s ->
-      (match Array.length v with
-          0 -> decomp_stack s
-        | 1 -> Some (v.(0), s)
-        | _ ->
-            Some (v.(0), (Zapp (Array.sub v 1 (Array.length v - 1)) :: s)))
-  | _ -> None
-let array_of_stack s =
-  let rec stackrec = function
-  | [] -> []
-  | Zapp args :: s -> args :: (stackrec s)
-  | _ -> assert false
-  in Array.concat (stackrec s)
-let rec stack_assign s p c = match s with
-  | Zapp args :: s ->
-      let q = Array.length args in
-      if p >= q then
-	Zapp args :: stack_assign s (p-q) c
-      else
-        (let nargs = Array.copy args in
-         nargs.(p) <- c;
-         Zapp nargs :: s)
-  | _ -> s
-let rec stack_tail p s =
-  if p = 0 then s else
-    match s with
-      | Zapp args :: s ->
-	  let q = Array.length args in
-	  if p >= q then stack_tail (p-q) s
-	  else Zapp (Array.sub args p (q-p)) :: s
-      | _ -> failwith "stack_tail"
-let rec stack_nth s p = match s with
-  | Zapp args :: s ->
-      let q = Array.length args in
-      if p >= q then stack_nth s (p-q)
-      else args.(p)
-  | _ -> raise Not_found
 
 (* Lifting. Preserves sharing (useful only for cell with norm=Red).
    lft_fconstr always create a new cell, while lift_fconstr avoids it
@@ -805,16 +589,6 @@ let fapp_stack (m,stk) = zip m stk
    called only when m is a constructor, a cofix
    (strip_update_shift_app), a fix (get_nth_arg) or an abstraction
    (strip_update_shift, through get_arg). *)
-
-(* optimised for the case where there are no shifts... *)
-let strip_update_shift head stk =
-  assert (head.norm <> Red);
-  let rec strip_rec h depth = function
-    | Zshift(k)::s -> strip_rec (lift_fconstr k h) (depth+k) s
-    | Zupdate(m)::s ->
-        strip_rec (update m (h.norm,h.term)) depth s
-    | stk -> (depth,stk) in
-  strip_rec head 0 stk
 
 (* optimised for the case where there are no shifts... *)
 let strip_update_shift_app head stk =

@@ -84,8 +84,6 @@ val error_number_branches : env -> unsafe_judgment -> int -> 'a
 
 val error_ill_formed_branch : env -> constr -> int -> constr -> constr -> 'a
 
-val error_generalization : env -> name * constr -> unsafe_judgment -> 'a
-
 val error_actual_type : env -> unsafe_judgment -> constr -> 'a
 
 val error_cant_apply_not_functional :

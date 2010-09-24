@@ -10,7 +10,6 @@ open Pp
 open Util
 open Names
 
-let pr_id id = str (string_of_id id)
 let pr_dirpath dp = str (string_of_dirpath dp)
 let default_root_prefix = make_dirpath []
 let split_dirpath d =
@@ -153,12 +152,6 @@ let find_logical_path phys_dir =
   | _,[] -> default_root_prefix
   | _,l -> anomaly ("Two logical paths are associated to "^phys_dir)
 
-let is_in_load_paths phys_dir =
-  let dir = canonical_path_name phys_dir in
-  let lp = get_load_paths () in
-  let check_p = fun p -> (String.compare dir p) == 0 in
-    List.exists check_p lp
-
 let remove_load_path dir =
   load_paths := list_filter2 (fun p d -> p <> dir) !load_paths
 
@@ -189,12 +182,8 @@ let add_load_path (phys_path,coq_path) =
 	  load_paths := (phys_path :: fst !load_paths, coq_path :: snd !load_paths)
       | _ -> anomaly ("Two logical paths are associated to "^phys_path)
 
-let physical_paths (dp,lp) = dp
-
 let load_paths_of_dir_path dir =
   fst (list_filter2 (fun p d -> d = dir) !load_paths)
-
-let get_full_load_paths () = List.combine (fst !load_paths) (snd !load_paths)
 
 (************************************************************************)
 (*s Locate absolute or partially qualified library names in the path *)
@@ -267,8 +256,8 @@ let try_locate_qualified_library qid =
 
 (*s Loading from disk to cache (preparation phase) *)
 
-let (raw_extern_library, raw_intern_library) =
-  System.raw_extern_intern Coq_config.vo_magic_number ".vo"
+let raw_intern_library =
+  snd (System.raw_extern_intern Coq_config.vo_magic_number ".vo")
 
 let with_magic_number_check f a =
   try f a

@@ -31,8 +31,6 @@ val add_signature : module_path -> structure_body -> delta_resolver -> env -> en
 (* adds a module and its components, but not the constraints *)
 val add_module : module_body ->  env -> env
 
-val check_modpath_equiv : env -> module_path -> module_path -> unit
-
 val strengthen : env -> module_type_body -> module_path -> module_type_body
 
 val subst_and_strengthen : module_body -> module_path -> env -> module_body 

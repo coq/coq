@@ -76,14 +76,6 @@ let val_subst =
   val_map ~name:"substitution"
     val_subst_dom (val_tuple ~name:"substition range" [|val_mp;val_res|])
 
-
-let fold_subst fb fp =
-  Umap.fold
-    (fun k (mp,_) acc ->
-      match k with
-        | MBI mbid -> fb mbid mp acc
-        | MPI mp1 -> fp mp1 mp acc)
-
 let empty_subst = Umap.empty
 
 let add_mbid mbid mp =
@@ -94,50 +86,8 @@ let add_mp mp1 mp2  =
 let map_mbid mbid mp = add_mbid mbid mp empty_subst
 let map_mp mp1 mp2 = add_mp mp1 mp2 empty_subst
 
-let add_inline_delta_resolver con =
-  Deltamap.add (KN(user_con con)) (Inline None)
-    
-let add_inline_constr_delta_resolver con cstr =
-  Deltamap.add (KN(user_con con)) (Inline (Some cstr))
-
-let add_constant_delta_resolver con =
-  Deltamap.add (KN(user_con con)) (Equiv (canonical_con con))
-
-let add_mind_delta_resolver mind =
-  Deltamap.add (KN(user_mind mind)) (Equiv (canonical_mind mind))
-
-let add_mp_delta_resolver mp1 mp2 = 
-  Deltamap.add (MP mp1) (Prefix_equiv mp2)
-
 let mp_in_delta mp = 
   Deltamap.mem (MP mp) 
-
-let con_in_delta con resolver = 
-try 
-  match Deltamap.find (KN(user_con con)) resolver with
-  | Inline _  | Prefix_equiv _ -> false
-  | Equiv _ -> true
-with
- Not_found -> false
-
-let mind_in_delta mind resolver = 
-try 
-  match Deltamap.find (KN(user_mind mind)) resolver with
-  | Inline _  | Prefix_equiv _ -> false
-  | Equiv _ -> true
-with
- Not_found -> false
-
-let delta_of_mp resolve mp =
-  try 
-    match Deltamap.find (MP mp) resolve with
-      | Prefix_equiv mp1 -> mp1
-      | _ -> anomaly "mod_subst: bad association in delta_resolver"
-  with
-      Not_found -> mp
-
-let remove_mp_delta_resolver resolver mp =
-    Deltamap.remove (MP mp) resolver
 
 exception Inline_kn
 
@@ -212,16 +162,6 @@ let mind_of_delta2 resolve mind =
       mind
     else
       mind_of_kn_equiv kn1 new_kn
-
-
-
-let inline_of_delta resolver = 
-  let extract key hint l =
-    match key,hint with 
-      |KN kn, Inline _ -> kn::l
-      | _,_ -> l
-  in
-    Deltamap.fold extract resolver []
 
 exception Not_inline
   
@@ -340,33 +280,6 @@ let subst_mind0 sub mind =
 	       Some mind
     with 
 	No_subst -> Some mind
-
-let subst_con sub con =
-  let kn1,kn2 = user_con con,canonical_con con in
-  let mp1,dir,l = repr_kn kn1 in
-  let mp2,_,_ = repr_kn kn2 in
-    try 
-      let side,con',resolve =   
-        match subst_mp0 sub mp1,subst_mp0 sub mp2 with
-	    None,None ->raise No_subst
-	  | Some (mp',resolve),None -> User,(make_con_equiv mp' mp2 dir l), resolve
-	  | None, Some(mp',resolve)-> Canonical,(make_con_equiv mp1 mp' dir l), resolve
-	  | Some(mp1',resolve1),Some(mp2',resolve2)->Canonical,
-	      (make_con_equiv mp1' mp2' dir l), resolve2 
-      in
-	match constant_of_delta_with_inline resolve con' with
-            None -> begin
-	      match side with
-	      |User ->
-	      let con = constant_of_delta resolve con' in
-		con,Const con
-	      |Canonical ->
-		  let con = constant_of_delta2 resolve con' in
-		con,Const con
-	    end
-	  | Some t -> con',t
-    with No_subst -> con , Const con 
- 
 
 let subst_con0 sub con =
   let kn1,kn2 = user_con con,canonical_con con in

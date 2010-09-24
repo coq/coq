@@ -89,37 +89,6 @@ let check_args env c hyps =
   with UserError _ | Not_found ->
     error_reference_variables env c
 
-
-(* Checks if the given context of variables [hyps] is included in the
-   current context of [env]. *)
-(*
-let check_hyps id env hyps =
-  let hyps' = named_context env in
-  if not (hyps_inclusion env hyps hyps') then
-    error_reference_variables env id
-*)
-(* Instantiation of terms on real arguments. *)
-
-(* Make a type polymorphic if an arity *)
-
-let extract_level env p =
-  let _,c = dest_prod_assum env p in
-  match c with Sort (Type u) -> Some u | _ -> None
-
-let extract_context_levels env =
-  List.fold_left
-    (fun l (_,b,p) -> if b=None then extract_level env p::l else l) []
-
-let make_polymorphic_if_arity env t =
-  let params, ccl = dest_prod_assum env t in
-  match ccl with
-  | Sort (Type u) ->
-      let param_ccls = extract_context_levels env params in
-      let s = { poly_param_levels = param_ccls; poly_level = u} in
-      PolymorphicArity (params,s)
-  | _ ->
-      NonPolymorphicType t
-
 (* Type of constants *)
 
 let type_of_constant_knowing_parameters env t paramtyps =
@@ -132,9 +101,6 @@ let type_of_constant_knowing_parameters env t paramtyps =
 
 let type_of_constant_type env t =
   type_of_constant_knowing_parameters env t [||]
-
-let type_of_constant env cst =
-  type_of_constant_type env (constant_type env cst)
 
 let judge_of_constant_knowing_parameters env cst paramstyp =
   let c = Const cst in
@@ -404,12 +370,9 @@ and execute_recdef env (names,lar,vdef) i =
 
 and execute_array env = Array.map (execute env)
 
-and execute_list env = List.map (execute env)
-
 (* Derived functions *)
 let infer env constr = execute env constr
 let infer_type env constr = execute_type env constr
-let infer_v env cv = execute_array env cv
 
 (* Typing of several terms. *)
 

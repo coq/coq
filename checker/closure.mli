@@ -49,32 +49,19 @@ module type RedFlagsSig = sig
   (* Adds a reduction kind to a set *)
   val red_add : reds -> red_kind -> reds
 
-  (* Removes a reduction kind to a set *)
-  val red_sub : reds -> red_kind -> reds
-
-  (* Adds a reduction kind to a set *)
-  val red_add_transparent : reds -> transparent_state -> reds
-
   (* Build a reduction set from scratch = iter [red_add] on [no_red] *)
   val mkflags : red_kind list -> reds
 
   (* Tests if a reduction kind is set *)
   val red_set : reds -> red_kind -> bool
-
-  (* Gives the constant list *)
-  val red_get_const : reds -> bool * evaluable_global_reference list
 end
 
 module RedFlags : RedFlagsSig
 open RedFlags
 
-val beta               : reds
-val betaiota           : reds
 val betadeltaiota      : reds
 val betaiotazeta       : reds
 val betadeltaiotanolet : reds
-
-val unfold_red : evaluable_global_reference -> reds
 
 (***********************************************************************)
 type table_key =
@@ -84,7 +71,6 @@ type table_key =
 
 type 'a infos
 val ref_value_cache: 'a infos -> table_key -> 'a option
-val info_flags: 'a infos -> reds
 val create: ('a infos -> constr -> 'a) -> reds -> env -> 'a infos
 
 (************************************************************************)
@@ -130,23 +116,13 @@ type stack_member =
 
 and stack = stack_member list
 
-val empty_stack : stack
 val append_stack : fconstr array -> stack -> stack
-
-val decomp_stack : stack -> (fconstr * stack) option
-val array_of_stack : stack -> fconstr array
-val stack_assign : stack -> int -> fconstr -> stack
-val stack_args_size : stack -> int
-val stack_tail : int -> stack -> stack
-val stack_nth : stack -> int -> fconstr
 
 (* To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
    a reduction function *)
 
 val inject : constr -> fconstr
-(* mk_atom: prevents a term from being evaluated *)
-val mk_atom : constr -> fconstr
 
 val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr

@@ -73,14 +73,6 @@ val subst1 : constr -> constr -> constr
 
 type named_declaration = identifier * constr option * constr
 type rel_declaration = name * constr option * constr
-val map_named_declaration :
-  (constr -> constr) -> named_declaration -> named_declaration
-val map_rel_declaration :
-  (constr -> constr) -> rel_declaration -> rel_declaration
-val fold_named_declaration :
-  (constr -> 'a -> 'a) -> named_declaration -> 'a -> 'a
-val fold_rel_declaration :
-  (constr -> 'a -> 'a) -> rel_declaration -> 'a -> 'a
 type named_context = named_declaration list
 val empty_named_context : named_context
 val fold_named_context :

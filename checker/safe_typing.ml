@@ -18,7 +18,6 @@ open Environ
  *)
 
 let genv = ref empty_env
-let reset () = genv := empty_env
 let get_env () = !genv
 
 let set_engagement c =

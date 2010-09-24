@@ -50,11 +50,9 @@ val add_constraints : Univ.constraints -> env -> env
 (* Constants *)
 val lookup_constant : constant -> env -> Declarations.constant_body
 val add_constant : constant -> Declarations.constant_body -> env -> env
-val constant_type : env -> constant -> Declarations.constant_type
 type const_evaluation_result = NoBody | Opaque
 exception NotEvaluableConst of const_evaluation_result
 val constant_value : env -> constant -> constr
-val constant_opt_value : env -> constant -> constr option
 val evaluable_constant : constant -> env -> bool
 
 (* Inductives *)

@@ -58,13 +58,6 @@ let rec list_split_assoc k rev_before = function
   | (k',b)::after when k=k' -> rev_before,b,after
   | h::tail -> list_split_assoc k (h::rev_before) tail
 
-let rec list_fold_map2 f e = function
-  |  []  -> (e,[],[])
-  |  h::t ->
-       let e',h1',h2' = f e h in
-       let e'',t1',t2' = list_fold_map2 f e' t in
-	 e'',h1'::t1',h2'::t2'
-
 let check_definition_sub env cb1 cb2 =
   let check_type env t1 t2 =
 

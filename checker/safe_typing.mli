@@ -12,7 +12,6 @@ open Term
 open Environ
 (*i*)
 
-val reset : unit -> unit
 val get_env : unit -> env
 
 (* exporting and importing modules *)
