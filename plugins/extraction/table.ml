@@ -58,11 +58,6 @@ let raw_string_of_modfile = function
   | MPfile f -> String.capitalize (string_of_id (List.hd (repr_dirpath f)))
   | _ -> assert false
 
-let rec modfile_of_mp = function
-  | (MPfile _) as mp -> mp
-  | MPdot (mp,_) -> modfile_of_mp mp
-  | _ -> raise Not_found
-
 let current_toplevel () = fst (Lib.current_prefix ())
 
 let is_toplevel mp =
@@ -96,12 +91,6 @@ let common_prefix_from_list mp0 mpl =
     | mp :: l -> if MPset.mem mp prefixes then Some mp else f l
   in f mpl
 
-let rec parse_labels ll = function
-  | MPdot (mp,l) -> parse_labels (l::ll) mp
-  | mp -> mp,ll
-
-let labels_of_mp mp = parse_labels [] mp
-
 let rec parse_labels2 ll mp1 = function
   | mp when mp1=mp -> mp,ll
   | MPdot (mp,l) -> parse_labels2 (l::ll) mp1 mp
@@ -111,10 +100,6 @@ let labels_of_ref r =
   let mp_top = current_toplevel () in
   let mp,_,l = repr_of_r r in
   parse_labels2 [l] mp_top mp
-
-let rec add_labels_mp mp = function
-  | [] -> mp
-  | l :: ll -> add_labels_mp (MPdot (mp,l)) ll
 
 
 (*S The main tables: constants, inductives, records, ... *)

@@ -18,7 +18,6 @@ open Table
 val reset_meta_count : unit -> unit
 val new_meta : 'a -> ml_type
 
-val type_subst : int -> ml_type -> ml_type -> ml_type
 val type_subst_list : ml_type list -> ml_type -> ml_type
 val type_subst_vect : ml_type array -> ml_type -> ml_type
 

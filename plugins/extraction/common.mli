@@ -14,7 +14,6 @@ open Pp
 
 val fnl2 : unit -> std_ppcmds
 val space_if : bool -> std_ppcmds
-val sec_space_if : bool -> std_ppcmds
 
 val pp_par : bool -> std_ppcmds -> std_ppcmds
 val pp_apply : std_ppcmds -> bool -> std_ppcmds list -> std_ppcmds

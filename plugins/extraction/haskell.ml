@@ -281,8 +281,6 @@ let rec pp_ind first kn i ind =
 
 (*s Pretty-printing of a declaration. *)
 
-let pp_string_parameters ids = prlist (fun id -> str id ++ str " ")
-
 let pp_decl = function
   | Dind (kn,i) when i.ind_info = Singleton ->
       pp_singleton (mind_of_kn kn) i.ind_packets.(0) ++ fnl ()

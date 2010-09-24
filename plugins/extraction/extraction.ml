@@ -38,8 +38,6 @@ let type_of env c = Retyping.get_type_of env none (strip_outer_cast c)
 
 let sort_of env c = Retyping.get_sort_family_of env none (strip_outer_cast c)
 
-let is_axiom env kn = (Environ.lookup_constant kn env).const_body = None
-
 (*S Generation of flags and signatures. *)
 
 (* The type [flag] gives us information about any Coq term:
@@ -271,14 +269,6 @@ let rec extract_type env db j c args =
 	extract_type_app env db (IndRef (kn,i),s) args
     | Case _ | Fix _ | CoFix _ -> Tunknown
     | _ -> assert false
-
-(* [extract_maybe_type] calls [extract_type] when used on a Coq type,
-   and otherwise returns [Tdummy] or [Tunknown] *)
-
-and extract_maybe_type env db c =
-  let t = whd_betadeltaiota env none (type_of env c) in
-  if isSort t then extract_type env db 0 c []
-  else if sort_of env t = InProp then Tdummy Kother else Tunknown
 
 (*s Auxiliary function dealing with type application.
   Precondition: [r] is a type scheme represented by the signature [s],

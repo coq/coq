@@ -45,8 +45,6 @@ let fnl2 () = fnl () ++ fnl ()
 
 let space_if = function true -> str " " | false -> mt ()
 
-let sec_space_if = function true -> spc () | false -> mt ()
-
 let is_digit = function
   | '0'..'9' -> true
   | _ -> false

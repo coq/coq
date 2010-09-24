@@ -56,10 +56,8 @@ val at_toplevel : module_path -> bool
 val visible_con : constant -> bool
 val mp_length : module_path -> int
 val prefixes_mp : module_path -> MPset.t
-val modfile_of_mp : module_path -> module_path
 val common_prefix_from_list :
   module_path -> module_path list -> module_path option
-val add_labels_mp : module_path -> label list -> module_path
 val get_nth_label_mp : int -> module_path -> label
 val labels_of_ref : global_reference -> module_path * label list
 

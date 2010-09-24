@@ -54,18 +54,6 @@ let new_meta _ =
   incr meta_count;
   Tmeta {id = !meta_count; contents = None}
 
-(*s Sustitution of [Tvar i] by [t] in a ML type. *)
-
-let type_subst i t0 t =
-  let rec subst t = match t with
-    | Tvar j when i = j -> t0
-    | Tmeta {contents=None} -> t
-    | Tmeta {contents=Some u} -> subst u
-    | Tarr (a,b) -> Tarr (subst a, subst b)
-    | Tglob (r, l) -> Tglob (r, List.map subst l)
-    | a -> a
-  in subst t
-
 (* Simultaneous substitution of [[Tvar 1; ... ; Tvar n]] by [l] in a ML type. *)
 
 let type_subst_list l t =
@@ -441,15 +429,6 @@ let ast_occurs_itvl k k' t =
     ast_iter_rel (fun i -> if (k <= i) && (i <= k') then raise Found) t; false
   with Found -> true
 
-(*s Number of occurences of [Rel k] (resp. [Rel 1]) in [t]. *)
-
-let nb_occur_k k t =
-  let cpt = ref 0 in
-  ast_iter_rel (fun i -> if i = k then incr cpt) t;
-  !cpt
-
-let nb_occur t = nb_occur_k 1 t
-
 (* Number of occurences of [Rel 1] in [t], with special treatment of match:
    occurences in different branches aren't added, but we rather use max. *)
 
@@ -572,7 +551,6 @@ let rec many_lams id a = function
   | 0 -> a
   | n -> many_lams id (MLlam (id,a)) (pred n)
 
-let anonym_lams a n = many_lams anonymous a n
 let anonym_tmp_lams a n = many_lams (Tmp anonymous_name) a n
 let dummy_lams a n = many_lams Dummy a n
 
@@ -1143,11 +1121,6 @@ and ml_size_list l = List.fold_left (fun a t -> a + ml_size t) 0 l
 and ml_size_array l = Array.fold_left (fun a t -> a + ml_size t) 0 l
 
 let is_fix = function MLfix _ -> true | _ -> false
-
-let rec is_constr = function
-  | MLcons _   -> true
-  | MLlam(_,t) -> is_constr t
-  | _          -> false
 
 (*s Strictness *)
 
