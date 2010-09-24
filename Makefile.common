@@ -216,8 +216,7 @@ IDECMA:=ide/ide.cma
 
 # modules known by the toplevel of Coq
 
-OBJSMOD:=Coq_config \
- $(foreach lib,$(CORECMA),$(shell cat $(lib:.cma=.mllib)))
+OBJSMOD:=Coq_config $(shell cat $(CORECMA:.cma=.mllib))
 
 IDEMOD:=$(shell cat ide/ide.mllib)
 

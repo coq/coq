@@ -1,0 +1,74 @@
+#######################################################################
+#  v      #   The Coq Proof Assistant  /  The Coq Development Team    #
+# <O___,, #        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              #
+#   \VV/  #############################################################
+#    //   #      This file is distributed under the terms of the      #
+#         #       GNU Lesser General Public License Version 2.1       #
+#######################################################################
+
+
+#### Source Code Analysis via Oug ####
+#### Cf http://home.gna.org/oug ####
+
+
+# To be used from top dir : make -f dev/Makefile.oug ...
+
+include Makefile.build
+
+# Oug location: in the path by default, native version
+
+OUG:=oug.x
+
+# NB: coq should have been compiled with the same ocaml version as oug
+
+# NOTA: it seems we obtain more useless elements reported when _not_
+# providing the .mli files, and also when giving a precise start point.
+# TO BE INVESTIGATED
+
+ml_of_cma = $(patsubst %.cmo,%.ml,$(filter %.cmo,$(shell cat $(1:.cma=.mllib.d))))
+local_ml_of_cma = $(filter $(dir $(1))%,$(call ml_of_cma,$(1)))
+mli_of_ml = $(foreach ml,$(1),$(wildcard $(ml)i))
+
+# Analysis of coqtop, without plugins
+
+COREML:=config/coq_config.ml $(call ml_of_cma, $(CORECMA))
+COREMLI:=$(call mli_of_ml,$(COREML))
+
+core.oug:
+	$(OUG) --dump-data $@ -rectypes $(MLINCLUDES) $(COREML)
+
+core.useless: core.oug
+	$(OUG) --load-data $< --no-reduce --print-loc --roots "<Coqtop.start>" --useless-elements $@
+
+core_intf.oug:
+	$(OUG) --dump-data $@ -rectypes $(MLINCLUDES) $(COREML) $(COREMLI)
+
+core_intf.useless: core_intf.oug
+	$(OUG) --load-data $< --no-reduce --print-loc --roots "<Coqtop.start>" --useless-elements $@
+
+# Analysis of coqchk, considering only files in the checker/ subdir
+
+CHECKERML:=$(call local_ml_of_cma,checker/check.cma)
+CHECKERMLI:=$(call mli_of_ml,$(CHECKERML))
+
+## BUG: in oug, include dirs have reversed priority compared with ocaml, cannot use CHKLIBS
+MYCHKINCL:=$(MLINCLUDES) -I checker
+
+checker.oug:
+	$(OUG) --dump-data $@ -rectypes $(MYCHKINCL) $(CHECKERML) #$(CHECKERMLI)
+
+checker.useless: checker.oug
+	$(OUG) --load-data $< --no-reduce --print-loc --roots "<Checker.start>" --useless-elements $@
+
+# Analysis of extraction
+
+EXTRACTIONML:=$(call local_ml_of_cma,$(EXTRACTIONCMA))
+EXTRACTIONMLI:=$(call mli_of_ml,$(EXTRACTIONMLI))
+
+extraction.oug:
+	$(OUG) --dump-data $@ -rectypes $(MLINCLUDES) $(EXTRACTIONML) #$(EXTRACTIONMLI)
+
+extraction.useless: extraction.oug
+	$(OUG) --load-data $< --no-reduce --print-loc --useless-elements $@
+
+# More to come ...
