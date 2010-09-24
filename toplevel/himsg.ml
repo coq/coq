@@ -228,6 +228,7 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
       str "Recursive definition on" ++ spc () ++ pr_lconstr_env env c ++ spc () ++
       str "which should be an inductive type"
   | RecursionOnIllegalTerm(j,(arg_env, arg),le,lt) ->
+      let arg_env = make_all_name_different arg_env in
       let called =
         match names.(j) with
             Name id -> pr_id id
@@ -288,6 +289,7 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
   pr_ne_context_of (str "In environment") env ++
   st ++ str "." ++ fnl () ++
   (try (* May fail with unresolved globals. *)
+      let fixenv = make_all_name_different fixenv in
       let pvd = pr_lconstr_env fixenv vdefj.(i).uj_val in
 	str"Recursive definition is:" ++ spc () ++ pvd ++ str "."
     with _ -> mt ())
