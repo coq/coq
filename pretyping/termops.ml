@@ -235,18 +235,18 @@ let mkProd_wo_LetIn (na,body,t) c =
     | None -> mkProd (na,  t, c)
     | Some b -> subst1 b c
 
-let it_mkProd ~init = List.fold_left (fun c (n,t)  -> mkProd (n, t, c)) init
-let it_mkLambda ~init = List.fold_left (fun c (n,t)  -> mkLambda (n, t, c)) init
+let it_mkProd init = List.fold_left (fun c (n,t)  -> mkProd (n, t, c)) init
+let it_mkLambda init = List.fold_left (fun c (n,t)  -> mkLambda (n, t, c)) init
 
 let it_named_context_quantifier f ~init =
   List.fold_left (fun c d -> f d c) init
 
-let it_mkProd_or_LetIn = it_named_context_quantifier mkProd_or_LetIn
-let it_mkProd_wo_LetIn = it_named_context_quantifier mkProd_wo_LetIn
-let it_mkLambda_or_LetIn = it_named_context_quantifier mkLambda_or_LetIn
-let it_mkNamedProd_or_LetIn = it_named_context_quantifier mkNamedProd_or_LetIn
-let it_mkNamedProd_wo_LetIn = it_named_context_quantifier mkNamedProd_wo_LetIn
-let it_mkNamedLambda_or_LetIn = it_named_context_quantifier mkNamedLambda_or_LetIn
+let it_mkProd_or_LetIn init = it_named_context_quantifier mkProd_or_LetIn ~init
+let it_mkProd_wo_LetIn init = it_named_context_quantifier mkProd_wo_LetIn ~init
+let it_mkLambda_or_LetIn init = it_named_context_quantifier mkLambda_or_LetIn ~init
+let it_mkNamedProd_or_LetIn init = it_named_context_quantifier mkNamedProd_or_LetIn ~init
+let it_mkNamedProd_wo_LetIn init = it_named_context_quantifier mkNamedProd_wo_LetIn ~init
+let it_mkNamedLambda_or_LetIn init = it_named_context_quantifier mkNamedLambda_or_LetIn ~init
 
 (* *)
 

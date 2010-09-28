@@ -388,7 +388,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
   let coq_I = Coqlib.build_coq_I () in
   let rec scan_type  context type_of_hyp : tactic =
     if isLetIn type_of_hyp then
-      let real_type_of_hyp = it_mkProd_or_LetIn ~init:type_of_hyp context in
+      let real_type_of_hyp = it_mkProd_or_LetIn type_of_hyp context in
       let reduced_type_of_hyp = nf_betaiotazeta real_type_of_hyp in
       (* length of context didn't change ? *)
       let new_context,new_typ_of_hyp =
@@ -406,13 +406,13 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
     then
       begin
 	let (x,t_x,t') = destProd type_of_hyp in
-	let actual_real_type_of_hyp = it_mkProd_or_LetIn ~init:t' context in
+	let actual_real_type_of_hyp = it_mkProd_or_LetIn t' context in
 	if is_property ptes_infos t_x actual_real_type_of_hyp then
 	  begin
 	    let pte,pte_args =  (destApp t_x) in
 	    let (* fix_info *) prove_rec_hyp = (Idmap.find (destVar pte) ptes_infos).proving_tac in
 	    let popped_t' = pop t' in
-	    let real_type_of_hyp = it_mkProd_or_LetIn ~init:popped_t' context in
+	    let real_type_of_hyp = it_mkProd_or_LetIn popped_t' context in
 	    let prove_new_type_of_hyp =
 	      let context_length = List.length context in
 	      tclTHENLIST
@@ -463,7 +463,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 (* 		    );  *)
 	  let popped_t' = pop t' in
 	  let real_type_of_hyp =
-	    it_mkProd_or_LetIn ~init:popped_t' context
+	    it_mkProd_or_LetIn popped_t' context
 	  in
 	  let prove_trivial =
 	    let nb_intro = List.length context in
@@ -491,7 +491,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	then (*  t_x :=  t = t   => we remove this precond *)
 	  let popped_t' = pop t' in
 	  let real_type_of_hyp =
-	    it_mkProd_or_LetIn ~init:popped_t' context
+	    it_mkProd_or_LetIn popped_t' context
 	  in
 	  let hd,args = destApp t_x in
 	  let get_args hd args =
@@ -954,7 +954,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
   let type_ctxt,type_of_f = decompose_prod_n_assum (nb_params + nb_args)
     (Typeops.type_of_constant_type (Global.env()) f_def.const_type) in
   let eqn = mkApp(Lazy.force eq,[|type_of_f;eq_lhs;eq_rhs|]) in
-  let lemma_type = it_mkProd_or_LetIn ~init:eqn type_ctxt in
+  let lemma_type = it_mkProd_or_LetIn eqn type_ctxt in
   let f_id = id_of_label (con_label (destConst f)) in
   let prove_replacement =
     tclTHENSEQ

@@ -2221,11 +2221,11 @@ let make_abstract_generalize gl id concl dep ctx body c eqs args refls =
   in
     (* Abstract by equalitites *)
   let eqs = lift_togethern 1 eqs in (* lift together and past genarg *)
-  let abseqs = it_mkProd_or_LetIn ~init:(lift eqslen abshypeq) (List.map (fun x -> (Anonymous, None, x)) eqs) in
+  let abseqs = it_mkProd_or_LetIn (lift eqslen abshypeq) (List.map (fun x -> (Anonymous, None, x)) eqs) in
     (* Abstract by the "generalized" hypothesis. *)
   let genarg = mkProd_or_LetIn (Name id, body, c) abseqs in
     (* Abstract by the extension of the context *)
-  let genctyp = it_mkProd_or_LetIn ~init:genarg ctx in
+  let genctyp = it_mkProd_or_LetIn genarg ctx in
     (* The goal will become this product. *)
   let genc = mkCast (mkMeta meta, DEFAULTcast, genctyp) in
     (* Apply the old arguments giving the proper instantiation of the hyp *)

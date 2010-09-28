@@ -131,9 +131,9 @@ let mkProd_or_LetIn_name env b d = mkProd_or_LetIn (name_assumption env d) b
 let mkLambda_or_LetIn_name env b d = mkLambda_or_LetIn (name_assumption env d)b
 
 let it_mkProd_or_LetIn_name env b hyps =
-  it_mkProd_or_LetIn ~init:b (name_context env hyps)
+  it_mkProd_or_LetIn b (name_context env hyps)
 let it_mkLambda_or_LetIn_name env b hyps =
-  it_mkLambda_or_LetIn ~init:b (name_context env hyps)
+  it_mkLambda_or_LetIn b (name_context env hyps)
 
 (**********************************************************************)
 (* Fresh names *)

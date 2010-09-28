@@ -49,14 +49,14 @@ val extended_rel_vect : int -> rel_context -> constr array
 (** iterators/destructors on terms *)
 val mkProd_or_LetIn : rel_declaration -> types -> types
 val mkProd_wo_LetIn : rel_declaration -> types -> types
-val it_mkProd : init:types -> (name * types) list -> types
-val it_mkLambda : init:constr -> (name * types) list -> constr
-val it_mkProd_or_LetIn   : init:types -> rel_context -> types
-val it_mkProd_wo_LetIn : init:types -> rel_context -> types
-val it_mkLambda_or_LetIn : init:constr -> rel_context -> constr
-val it_mkNamedProd_or_LetIn   : init:types -> named_context -> types
-val it_mkNamedProd_wo_LetIn   : init:types -> named_context -> types
-val it_mkNamedLambda_or_LetIn : init:constr -> named_context -> constr
+val it_mkProd : types -> (name * types) list -> types
+val it_mkLambda : constr -> (name * types) list -> constr
+val it_mkProd_or_LetIn : types -> rel_context -> types
+val it_mkProd_wo_LetIn : types -> rel_context -> types
+val it_mkLambda_or_LetIn : constr -> rel_context -> constr
+val it_mkNamedProd_or_LetIn : types -> named_context -> types
+val it_mkNamedProd_wo_LetIn : types -> named_context -> types
+val it_mkNamedLambda_or_LetIn : constr -> named_context -> constr
 
 val it_named_context_quantifier :
   (named_declaration -> 'a -> 'a) -> init:'a -> named_context -> 'a

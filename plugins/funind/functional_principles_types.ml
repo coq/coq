@@ -114,9 +114,8 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   in
   let pre_princ =
     it_mkProd_or_LetIn
-      ~init:
       (it_mkProd_or_LetIn
-	 ~init:(Option.fold_right
+	 (Option.fold_right
 			   mkProd_or_LetIn
 			   princ_type_info.indarg
 			   princ_type_info.concl
@@ -267,10 +266,10 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       (lift (List.length ptes_vars) pre_res)
   in
   it_mkProd_or_LetIn
-    ~init:(it_mkProd_or_LetIn
-	     ~init:pre_res (List.map (fun (id,t,b) -> Name(Hashtbl.find tbl id), t,b)
-			      new_predicates)
-	  )
+    (it_mkProd_or_LetIn
+       pre_res (List.map (fun (id,t,b) -> Name(Hashtbl.find tbl id), t,b)
+          	      new_predicates)
+    )
     princ_type_info.params
 
 
@@ -291,8 +290,7 @@ let change_property_sort toSort princ princName =
 	    (fun i -> mkRel (nargs - i )))
   in
   it_mkLambda_or_LetIn
-    ~init:
-    (it_mkLambda_or_LetIn ~init
+    (it_mkLambda_or_LetIn init
        (List.map change_sort_in_predicate princ_info.predicates)
     )
     princ_info.params
@@ -639,7 +637,7 @@ let make_scheme (fas : (constant*Rawterm.rawsort) list) : Entries.definition_ent
 	     const
 	 with Found_type i ->
 	   let princ_body =
-	     Termops.it_mkLambda_or_LetIn ~init:(mkFix((idxs,i),decl)) ctxt
+	     Termops.it_mkLambda_or_LetIn (mkFix((idxs,i),decl)) ctxt
 	   in
 	   {const with
 	      Entries.const_entry_body = princ_body;
