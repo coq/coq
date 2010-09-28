@@ -322,15 +322,15 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	Impargs.declare_manual_implicits false (ConstRef proj_cst) (List.hd fieldimpls);
 	Classes.set_typeclass_transparency (EvalConstRef cst) false;
 	if infer then Evd.fold (fun ev evi _ -> Recordops.declare_method (ConstRef cst) ev sign) sign ();
-	cref, [proj_name, Some proj_cst]
+	cref, [Name proj_name, Some proj_cst]
     | _ ->
 	let idarg = Namegen.next_ident_away (snd id) (Termops.ids_of_context (Global.env())) in
 	let ind = declare_structure BiFinite infer (snd id) idbuild paramimpls
 	  params (Option.cata (fun x -> x) (Termops.new_Type ()) arity) fieldimpls fields
 	  ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields) sign
 	in
-	  IndRef ind, (List.map2 (fun (id, _, _) y -> (Nameops.out_name id, y))
-			     (List.rev fields) (Recordops.lookup_projections ind))
+	  IndRef ind, (List.map2 (fun (id, _, _) y -> (id, y))
+			 (List.rev fields) (Recordops.lookup_projections ind))
   in
   let ctx_context =
     List.map (fun (na, b, t) ->

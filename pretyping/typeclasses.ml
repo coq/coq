@@ -46,7 +46,7 @@ type typeclass = {
   cl_props : rel_context;
 
   (* The method implementaions as projections. *)
-  cl_projs : (identifier * constant option) list;
+  cl_projs : (name * constant option) list;
 }
 module Gmap = Fmap.Make(RefOrdered)
 

@@ -32,9 +32,10 @@ type typeclass = {
   (** Context of definitions and properties on defs, will not be shared *)
   cl_props : rel_context;
 
-  (** The methods implementations of the typeclass as projections. Some may be undefinable due to
-     sorting restrictions. *)
-  cl_projs : (identifier * constant option) list;
+  (** The methods implementations of the typeclass as projections. 
+      Some may be undefinable due to sorting restrictions or simply undefined if 
+      no name is provided. *)
+  cl_projs : (name * constant option) list;
 }
 
 type instance

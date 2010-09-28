@@ -134,7 +134,8 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 		  let (loc_mid, c) = List.find (fun (id', _) -> Name (snd (get_id id')) = id) rest in
 		  let rest' = List.filter (fun (id', _) -> Name (snd (get_id id')) <> id) rest in
 		  let (loc, mid) = get_id loc_mid in
-		    Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
+		    Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) 
+		      (List.assoc (Name mid) k.cl_projs);
 		    c :: props, rest'
 		with Not_found ->
 		  (CHole (Util.dummy_loc, None) :: props), rest
