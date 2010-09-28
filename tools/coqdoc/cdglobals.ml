@@ -74,6 +74,7 @@ let toc_depth = (ref None : int option ref)
 let lib_name = ref "Library"
 let lib_subtitles = ref false
 let interpolate = ref false
+let inline_notmono = ref false
 
 let charset = ref "iso-8859-1"
 let inputenc = ref ""

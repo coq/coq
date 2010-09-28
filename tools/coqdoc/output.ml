@@ -627,7 +627,7 @@ module Html = struct
 
   let rec reach_item_level n =
     if !item_level < n then begin
-      printf "<ul>\n<li>"; incr item_level;
+      printf "<ul class=\"doclist\">\n<li>"; incr item_level;
       reach_item_level n
     end else if !item_level > n then begin
       printf "\n</li>\n</ul>\n"; decr item_level;
@@ -665,7 +665,9 @@ module Html = struct
 
   let end_code () = end_coq (); start_doc ()
 
-  let start_inline_coq () = printf "<span class=\"inlinecode\">"
+  let start_inline_coq () = 
+    if !inline_notmono then printf "<span class=\"inlinecodenm\">"
+                       else printf "<span class=\"inlinecode\">"
 
   let end_inline_coq () = printf "</span>"
 
@@ -673,7 +675,50 @@ module Html = struct
 
   let end_inline_coq_block () = end_inline_coq ()
 
-  let paragraph () = printf "\n<br/> <br/>\n"
+  let paragraph () = printf "\n<div class=\"paragraph\"> </div>\n\n" 
+
+  (* inference rules *)
+  let inf_rule assumptions (_,_,midnm) conclusions =
+    (* this first function replaces any occurance of 3 or more spaces
+       in a row with "&nbsp;"s.  We do this to the assumptions so that
+       people can put multiple rules on a line with nice formatting *)
+    let replace_spaces str =
+      let rec copy a n = match n with 0 -> [] | n -> (a :: copy a (n - 1)) in 
+      let results = Str.full_split (Str.regexp "[' '][' '][' ']+") str in
+      let strs = List.map (fun r -> match r with
+                                    | Str.Text s  -> [s]
+                                    | Str.Delim s -> 
+                                        copy "&nbsp;" (String.length s))  
+                          results
+      in
+        String.concat "" (List.concat strs)
+    in
+    let start_assumption line =
+          (printf "<tr class=\"infruleassumption\">\n";
+           printf "  <td class=\"infrule\">%s</td>\n" (replace_spaces line)) in
+    let end_assumption () =
+          (printf "  <td></td>\n";
+           printf "</td>\n") in
+    let rec print_assumptions hyps = 
+          match hyps with
+          | []                 -> start_assumption "&nbsp;&nbsp;"
+          | [(_,hyp)]          -> start_assumption hyp
+          | ((_,hyp) :: hyps') -> (start_assumption hyp;
+                                   end_assumption ();
+                                   print_assumptions hyps') in
+    printf "<center><table class=\"infrule\">\n";
+    print_assumptions assumptions;
+    printf "  <td class=\"infrulenamecol\" rowspan=\"3\">\n";
+    (match midnm with
+     | None   -> printf "    &nbsp;\n  </td>" 
+     | Some s -> printf "    %s &nbsp;\n  </td>" s);
+    printf "</tr>\n";
+    printf "<tr class=\"infrulemiddle\">\n";
+    printf "  <td class=\"infrule\"><hr /></td>\n";
+    printf "</tr>\n";
+    print_assumptions conclusions;
+    end_assumption ();
+    printf "</table></center>"
 
   let section lev f =
     let lab = new_label () in
@@ -1138,6 +1183,21 @@ let stop_verbatim =
 let verbatim_char =
   select output_char Html.char TeXmacs.char Raw.char
 let hard_verbatim_char = output_char
+
+let inf_rule_dumb assumptions (midsp,midln,midnm) conclusions = 
+  start_verbatim ();
+  let dumb_line = 
+       function (sp,ln) -> (String.iter char ((String.make sp ' ') ^ ln);
+                            char '\n')
+  in 
+    (List.iter dumb_line assumptions;
+     dumb_line (midsp, midln ^ (match midnm with 
+                                | Some s -> " " ^ s 
+                                | None -> ""));
+     List.iter dumb_line conclusions);
+  stop_verbatim ()
+
+let inf_rule = select inf_rule_dumb Html.inf_rule inf_rule_dumb inf_rule_dumb
 
 let make_multi_index = select Latex.make_multi_index Html.make_multi_index TeXmacs.make_multi_index Raw.make_multi_index
 let make_index = select Latex.make_index Html.make_index TeXmacs.make_index Raw.make_index

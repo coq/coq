@@ -78,6 +78,23 @@ val stop_latex_math : unit -> unit
 val start_verbatim : unit -> unit
 val stop_verbatim : unit -> unit
 
+(* this outputs an inference rule in one go.  You pass it the list of
+   assumptions, then the middle line info, then the conclusion (which
+   is allowed to span multiple lines).
+
+   In each case, the int is the number of spaces before the start of
+   the line's text and the string is the text of the line with the
+   leading trailing space trimmed.  For the middle rule, you can
+   also optionally provide a name.
+
+   We need the space info so that in modes where we aren't doing
+   something smart we can just format the rule verbatim like the user did
+*)
+val inf_rule :  (int * string) list
+             -> (int * string * (string option)) 
+             -> (int * string) list
+             -> unit
+
 val make_multi_index : unit -> unit
 val make_index : unit -> unit
 val make_toc : unit -> unit

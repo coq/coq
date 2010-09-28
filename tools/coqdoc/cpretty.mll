@@ -648,8 +648,6 @@ and coq = parse
 (*s Scanning documentation, at beginning of line *)
 
 and doc_bol = parse
-  | space* nl+
-      { Output.paragraph (); doc_bol lexbuf }
   | space* section space+ ([^'\n' '*'] | '*'+ [^'\n' ')' '*'])* ('*'+ '\n')?
       { let eol, lex = strip_eol (lexeme lexbuf) in
         let lev, s = sec_title lex in
@@ -659,31 +657,24 @@ and doc_bol = parse
           else
             Output.section lev (fun () -> ignore (doc None (from_string s)));
 	    if eol then doc_bol lexbuf else doc None lexbuf }
-  | space* nl space* '-'+
-      { (* adding this production instead of just letting the paragraph
-           production and the begin list production fire eliminates
-           extra vertical whitespace. *)
-        let buf' = lexeme lexbuf in
-        let buf =
-          let bufs = Str.split_delim (Str.regexp "['\n']") buf' in
-            match bufs with
-              | (_ :: s :: []) -> s
-              | (_ :: _ :: s :: _) -> s
-              | _ -> eprintf "Internal error bad_split1 - please report\n";
-                     exit 1
+  | space_nl* '-'+
+      { let buf' = lexeme lexbuf in
+        let bufs = Str.split_delim (Str.regexp "['\n']") buf' in
+        let lines = (List.length bufs) - 1 in
+        let line = 
+          match bufs with
+          | [] -> eprintf "Internal error bad_split1 - please report\n";
+                  exit 1
+          | _ -> List.nth bufs lines
         in
-          match check_start_list buf with
+          match check_start_list line with
           | Neither -> backtrack_past_newline lexbuf; doc None lexbuf
-          | List n -> Output.item 1; doc (Some [n]) lexbuf
+          | List n -> Output.paragraph ();
+                      Output.item 1; doc (Some [n]) lexbuf
           | Rule -> Output.rule (); doc None lexbuf
       }
-  | space* '-'+
-      { let buf = lexeme lexbuf in
-          match check_start_list buf with
-          | Neither -> backtrack lexbuf; doc None lexbuf
-          | List n -> Output.item 1; doc (Some [n]) lexbuf
-          | Rule -> Output.rule (); doc None lexbuf
-      }
+  | space* nl+
+      { Output.paragraph (); doc_bol lexbuf }
   | "<<" space*
       { Output.start_verbatim (); verbatim lexbuf; doc_bol lexbuf }
   | eof
@@ -719,6 +710,8 @@ and doc_list_bol indents = parse
         Output.end_inline_coq_block ();
         formatted := false;
         doc_list_bol indents lexbuf }
+  | "[[[" nl
+      { inf_rules (Some indents) lexbuf }
   | space* nl space* '-'
       { (* Like in the doc_bol production, these two productions
            exist only to deal properly with whitespace *)
@@ -754,9 +747,16 @@ and doc_list_bol indents = parse
                 backtrack_past_newline lexbuf;
                 doc_list_bol indents lexbuf
               end
-        | Before -> Output.stop_item ();
-                    backtrack_past_newline lexbuf;
-                    doc_bol lexbuf
+        | Before -> 
+        (* Here we were at the beginning of a line, and it was blank.
+           The next line started before any list items.  So: insert
+           a paragraph for the empty line, rewind to whatever's just
+           after the newline, then toss over to doc_bol for whatever
+           comes next. *)
+            Output.stop_item ();
+            Output.paragraph ();
+            backtrack_past_newline lexbuf;
+            doc_bol lexbuf
 
       }
   | space* _
@@ -765,7 +765,10 @@ and doc_list_bol indents = parse
         | Before -> Output.stop_item (); backtrack lexbuf;
                     doc_bol lexbuf
         | StartLevel n ->
-            Output.reach_item_level (n-1);
+            (if n = 1 then
+               Output.stop_item ()
+             else
+               Output.reach_item_level (n-1));
             backtrack lexbuf;
             doc (Some (take (n-1) indents)) lexbuf
         | InLevel (n,_) ->
@@ -793,6 +796,8 @@ and doc indents = parse
 		  | Some ls -> doc_list_bol ls lexbuf
 		  | None -> doc_bol lexbuf
 		else doc indents lexbuf)}
+  | "[[[" nl
+      { inf_rules indents lexbuf }
   | "[]"
       { Output.proofbox (); doc indents lexbuf }
   | "["
@@ -807,6 +812,18 @@ and doc indents = parse
         in
         let eol = comment lexbuf in
           if eol then bol_parse lexbuf else doc indents lexbuf
+      }
+  | '*'* "*)" space_nl* "(**"
+      {(match indents with
+        | Some _ -> Output.stop_item ()
+        | None -> ());
+       (* this says - if there is a blank line between the two comments,
+          insert one in the output too *)
+       let lines = List.length (Str.split_delim (Str.regexp "['\n']") 
+                                                (lexeme lexbuf))
+       in 
+         if lines > 2 then Output.paragraph ();
+       doc_bol lexbuf
       }
   | '*'* "*)" space* nl
       { true }
@@ -894,10 +911,16 @@ and escaped_coq = parse
       { Tokens.flush_sublexer () }
   | (identifier '.')* identifier
       { Output.ident (lexeme lexbuf) (lexeme_start lexbuf); escaped_coq lexbuf }
-  | space
-      { Tokens.flush_sublexer(); Output.char (lexeme_char lexbuf 0);
-        escaped_coq lexbuf }
-  | _
+  | space_nl*
+      { let str = lexeme lexbuf in
+          Tokens.flush_sublexer();
+          (if !Cdglobals.inline_notmono then () 
+                                        else Output.end_inline_coq ()); 
+          String.iter Output.char str; 
+          (if !Cdglobals.inline_notmono then () 
+                                        else Output.start_inline_coq ());
+          escaped_coq lexbuf }
+  | _ 
       { Output.sublexer (lexeme_char lexbuf 0) (lexeme_start lexbuf);
         escaped_coq lexbuf }
 
@@ -1123,6 +1146,71 @@ and printing_token_body = parse
 	  s }
   | _   { Buffer.add_string token_buffer (lexeme lexbuf);
 	  printing_token_body lexbuf }
+
+(*s These handle inference rules, parsing the body segments of things
+    enclosed in [[[  ]]] brackets *)
+and inf_rules indents = parse
+  | space* nl     (* blank line, before or between definitions *)
+      { inf_rules indents lexbuf }
+  | "]]]" nl      (* end of the inference rules block *)
+      { match indents with
+        | Some ls -> doc_list_bol ls lexbuf
+        | None -> doc_bol lexbuf }
+  | _ 
+      { backtrack lexbuf;  (* anything else must be the first line in a rule *)
+        inf_rules_assumptions indents [] lexbuf}
+
+(* The inference rule parsing just collects the inference rule and then
+   calls the output function once, instead of doing things incrementally
+   like the rest of the lexer.  If only there were a real parsing phase...
+*)
+and inf_rules_assumptions indents assumptions = parse
+  | space* "---" '-'* [^ '\n']* nl (* hit the horizontal line *)
+      { let line = lexeme lexbuf in
+        let (spaces,_) = count_spaces line in
+        let dashes_and_name = 
+               cut_head_tail_spaces (String.sub line 0 (String.length line - 1))
+        in
+        let ldn = String.length dashes_and_name in
+        let (dashes,name) = 
+          try (let i = String.index dashes_and_name ' ' in
+               let d = String.sub dashes_and_name 0 i in
+               let n = cut_head_tail_spaces 
+                        (String.sub dashes_and_name (i+1) (ldn-i-1))
+               in
+                 (d, Some n))
+          with _ -> (dashes_and_name, None)
+            
+        in
+          inf_rules_conclusion indents (List.rev assumptions) 
+                               (spaces, dashes, name) [] lexbuf }
+  | [^ '\n']* nl (* if it's not the horizontal line, it's an assumption *)
+      { let line = lexeme lexbuf in
+        let (spaces,_) = count_spaces line in
+        let assumption = cut_head_tail_spaces 
+                            (String.sub line 0 (String.length line - 1))
+        in
+          inf_rules_assumptions indents ((spaces,assumption)::assumptions)
+                                lexbuf }
+
+(*s The conclusion is required to come immediately after the
+    horizontal bar.  It is allowed to contain multiple lines of
+    text, like the assumptions.  The conclusion ends when we spot a
+    blank line or a ']]]'. *)
+and inf_rules_conclusion indents assumptions middle conclusions = parse
+  | space* nl | space* "]]]" nl (* end of conclusions. *)
+      { backtrack lexbuf;
+        Output.inf_rule assumptions middle (List.rev conclusions);
+        inf_rules indents lexbuf }
+  | space* [^ '\n']+ nl (* this is a line in the conclusion *)
+      { let line = lexeme lexbuf in
+        let (spaces,_) = count_spaces line in
+        let conc = cut_head_tail_spaces (String.sub line 0 
+                                                    (String.length line - 1))
+        in
+          inf_rules_conclusion indents assumptions middle 
+                               ((spaces,conc) :: conclusions) lexbuf
+      }
 
 (*s A small scanner to support the chapter subtitle feature *)
 and st_start m = parse

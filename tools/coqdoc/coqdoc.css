@@ -101,8 +101,13 @@ h4.section {
     color: rgb(30%,30%,70%);
     font-family: monospace } 
 
-.doc .inlinecode .id {
-    color: rgb(30%,30%,70%);
+.doc .inlinecode .id { 
+    color: rgb(30%,30%,70%); 
+} 
+
+.inlinecodenm { 
+    display: inline;
+    color: #444444;
 }
 
 .doc .code { 
@@ -123,6 +128,32 @@ h4.section {
     font-size: 110%; 
     font-family: monospace;
  } 
+
+table.infrule {
+  border: 0px;
+  margin-left: 50px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+td.infrule {
+    font-family: monospace;
+    text-align: center;
+/*    color: rgb(35%,35%,70%);  */
+    padding: 0px;
+    line-height: 100%;
+}
+
+tr.infrulemiddle hr {
+    margin: 1px 0 1px 0;
+}
+
+.infrulenamecol {
+    color: rgb(60%,60%,60%); 
+    font-size: 80%;
+    padding-left: 1em;
+    padding-bottom: 0.1em
+}
 
 /* Pied de page */
 
@@ -231,4 +262,13 @@ h4.section {
     position: absolute;
     bottom: 0;
     text-align: bottom;
+}
+
+.paragraph {
+    height: 0.75em;
+}
+
+ul.doclist {
+    margin-top: 0em;
+    margin-bottom: 0em;
 }
