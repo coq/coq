@@ -384,7 +384,7 @@ let try_locate_qualified_library (loc,qid) =
 
 let mk_library md get_table digest = 
   let md_compiled = 
-    LightenLibrary.load !Flags.load_proofs get_table md.md_compiled
+    LightenLibrary.load ~load_proof:!Flags.load_proofs get_table md.md_compiled
   in {
     library_name     = md.md_name;
     library_compiled = md_compiled;

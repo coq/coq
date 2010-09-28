@@ -16,11 +16,11 @@ exception Forbidden
 let status = GMisc.statusbar ()
 
 let push_info,pop_info =
-  let status_context = status#new_context "Messages" in
+  let status_context = status#new_context ~name:"Messages" in
     (fun s -> ignore (status_context#push s)),status_context#pop
 
 let flash_info =
-  let flash_context = status#new_context "Flash" in
+  let flash_context = status#new_context ~name:"Flash" in
     (fun ?(delay=5000) s -> flash_context#flash ~delay s)
 
 

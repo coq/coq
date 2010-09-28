@@ -585,13 +585,13 @@ let vernac_coercion stre ref qids qidt =
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
-  Class.try_add_new_coercion_with_target ref' stre source target;
+  Class.try_add_new_coercion_with_target ref' stre ~source ~target;
   if_verbose msgnl (pr_global ref' ++ str " is now a coercion")
 
 let vernac_identity_coercion stre id qids qidt =
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  Class.try_add_new_identity_coercion id stre source target
+  Class.try_add_new_identity_coercion id stre ~source ~target
 
 (* Type classes *)
 
@@ -694,7 +694,7 @@ let vernac_add_loadpath isrec pdir ldiropt =
   let alias = match ldiropt with
     | None -> Nameops.default_root_prefix
     | Some ldir -> ldir in
-  (if isrec then Mltop.add_rec_path else Mltop.add_path) pdir alias
+  (if isrec then Mltop.add_rec_path else Mltop.add_path) ~unix_path:pdir ~coq_root:alias
 
 let vernac_remove_loadpath path =
   Library.remove_load_path (System.expand_path_macros path)

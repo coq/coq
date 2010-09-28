@@ -264,7 +264,7 @@ let add_new_coercion_core coef stre source target isid =
   check_arity cls;
   check_arity clt;
   let stre' = get_strength stre coef cls clt in
-  declare_coercion coef stre' isid cls clt (List.length lvs)
+  declare_coercion coef stre' ~isid ~src:cls ~target:clt ~params:(List.length lvs)
 
 let try_add_new_coercion_core ref b c d e =
   try add_new_coercion_core ref b c d e

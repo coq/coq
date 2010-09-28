@@ -142,6 +142,6 @@ object(self)
     self#frame#misc#show ()
 
   initializer
-    ignore (new_page_menu#connect#clicked self#new_command);
+    ignore (new_page_menu#connect#clicked ~callback:self#new_command);
    (* ignore (window#event#connect#delete (fun _ -> window#misc#hide(); true));*)
 end

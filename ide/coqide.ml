@@ -135,7 +135,7 @@ let build_session s =
                  else img#set_stock `YES) in
   let _ =
     eval_paned#misc#connect#size_allocate
-      (let old_paned_width = ref 2 in
+      ~callback:(let old_paned_width = ref 2 in
        let old_paned_height = ref 2 in
          (fun {Gtk.width=paned_width;Gtk.height=paned_height} ->
             if !old_paned_width <> paned_width || !old_paned_height <> paned_height then (
@@ -336,8 +336,8 @@ let get_current_word () =
 	  let it = av#get_insert in
 	  let start = find_word_start it in
 	  let stop = find_word_end start in
-	    script#buffer#move_mark `SEL_BOUND start;
-	    script#buffer#move_mark `INSERT stop;
+	    script#buffer#move_mark `SEL_BOUND ~where:start;
+	    script#buffer#move_mark `INSERT ~where:stop;
 	    script#buffer#get_text ~slice:true ~start ~stop ()
       | _,Some t ->
  	  prerr_endline "Some selected";
@@ -563,7 +563,7 @@ object(self)
                 let s = try_convert (Buffer.contents b) in
                   input_buffer#set_text s;
                   self#update_stats;
-                  input_buffer#place_cursor input_buffer#start_iter;
+                  input_buffer#place_cursor ~where:input_buffer#start_iter;
                   input_buffer#set_modified false;
                   pop_info ();
                   flash_info "Buffer reverted";
@@ -763,7 +763,7 @@ object(self)
                    input_buffer#apply_tag Tags.Script.error
                      ~start:starti
                      ~stop:stopi;
-                   input_buffer#place_cursor starti)
+                   input_buffer#place_cursor ~where:starti)
         end
       end in
     try
@@ -813,7 +813,7 @@ object(self)
                   let completion = input_buffer#get_text ~start ~stop () in
                     ignore (input_buffer#delete_selection ());
                     ignore (input_buffer#insert_interactive completion);
-                    input_buffer#move_mark `SEL_BOUND (it())#backward_char;
+                    input_buffer#move_mark `SEL_BOUND ~where:(it())#backward_char;
                     true
           end else false
           else false
@@ -854,7 +854,7 @@ object(self)
         (if is_complete then Tags.Script.processed else Tags.Script.unjustified) ~start ~stop;
          if (self#get_insert#compare) stop <= 0 then
            begin
-             b#place_cursor stop;
+             b#place_cursor ~where:stop;
              self#recenter_insert
            end;
          let ide_payload = { start = `MARK (b#create_mark start);
@@ -884,7 +884,7 @@ object(self)
           input_buffer#apply_tag
             (if is_complete then Tags.Script.processed else Tags.Script.unjustified) ~start ~stop;
              if (self#get_insert#compare) stop <= 0 then
-               input_buffer#place_cursor stop;
+               input_buffer#place_cursor ~where:stop;
              let ide_payload = { start = `MARK (input_buffer#create_mark start);
                                  stop = `MARK (input_buffer#create_mark stop); } in
              Stack.push ide_payload cmd_stack;
@@ -1051,7 +1051,7 @@ object(self)
             input_buffer#move_mark
               ~where:start
               (`NAME "start_of_input");
-            input_buffer#place_cursor start;
+            input_buffer#place_cursor ~where:start;
             self#recenter_insert;
             self#show_goals;
             self#clear_message
@@ -1123,7 +1123,7 @@ object(self)
   method activate () = if not is_active then begin
     is_active <- true;
     act_id <- Some
-                (input_view#event#connect#key_press self#active_keypress_handler);
+                (input_view#event#connect#key_press ~callback:self#active_keypress_handler);
     prerr_endline "CONNECTED active : ";
     print_id (Option.get act_id);
     match
@@ -1164,8 +1164,8 @@ object(self)
          last_index <- not last_index;)
 
   method private electric_paren tag =
-    let oparen_code = Glib.Utf8.to_unichar "("  (ref 0) in
-    let cparen_code = Glib.Utf8.to_unichar ")"  (ref 0) in
+    let oparen_code = Glib.Utf8.to_unichar "("  ~pos:(ref 0) in
+    let cparen_code = Glib.Utf8.to_unichar ")"  ~pos:(ref 0) in
       ignore (input_buffer#connect#insert_text ~callback:
                 (fun it x ->
                    input_buffer#remove_tag
@@ -1211,7 +1211,7 @@ object(self)
                            if (it#compare self#get_start_of_input)<0
                            then GtkSignal.stop_emit ();
                            if String.length s > 1 then
-                             (prerr_endline "insert_text: Placing cursor";input_buffer#place_cursor it)));
+                             (prerr_endline "insert_text: Placing cursor";input_buffer#place_cursor ~where:it)));
     ignore (input_buffer#connect#after#apply_tag
               ~callback:(fun tag ~start ~stop ->
                            if (start#compare self#get_start_of_input)>=0
@@ -1240,7 +1240,7 @@ object(self)
                                  ((input_view#buffer#get_iter `SEL_BOUND)#offset)
                              in
                                if has_completed then
-                                 input_buffer#move_mark `SEL_BOUND (input_buffer#get_iter `SEL_BOUND)#forward_char;
+                                 input_buffer#move_mark `SEL_BOUND ~where:(input_buffer#get_iter `SEL_BOUND)#forward_char;
 
 
               )
@@ -1282,7 +1282,7 @@ object(self)
                                | None -> () )
       );
       ignore (input_buffer#connect#insert_text
-                (fun it s ->
+                ~callback:(fun it s ->
                    prerr_endline "Should recenter ?";
                    if String.contains s '\n' then begin
                                             prerr_endline "Should recenter : yes";
@@ -1602,7 +1602,7 @@ let main files =
           let input_buffer = session.script#buffer in
           prerr_endline "Loading: fill buffer";
           input_buffer#set_text s;
-          input_buffer#place_cursor input_buffer#start_iter;
+          input_buffer#place_cursor ~where:input_buffer#start_iter;
           prerr_endline ("Loading: switch to view "^ string_of_int index);
           session_notebook#goto_page index;
           prerr_endline "Loading: highlight";
@@ -1622,7 +1622,7 @@ let main files =
         | None -> ()
         | Some f -> load f
     in
-    ignore (load_m#connect#activate (load_f));
+    ignore (load_m#connect#activate ~callback:(load_f));
 
     let load_m = file_factory#add_item "_Open"
                    ~key:GdkKeysyms._O in
@@ -1631,7 +1631,7 @@ let main files =
         | None -> ()
         | Some f -> load f
     in
-    ignore (load_m#connect#activate (load_f));
+    ignore (load_m#connect#activate ~callback:(load_f));
 
     (* File/Save Menu *)
     let save_m = file_factory#add_item "_Save"
@@ -1660,7 +1660,7 @@ let main files =
       with
         | e -> warning "Save: unexpected error"
     in
-    ignore (save_m#connect#activate save_f);
+    ignore (save_m#connect#activate ~callback:save_f);
 
     (* File/Save As Menu *)
     let saveas_m = file_factory#add_item "S_ave as"
@@ -1694,7 +1694,7 @@ let main files =
                  end);
       with e -> flash_info "Save Failed"
     in
-    ignore (saveas_m#connect#activate saveas_f);
+    ignore (saveas_m#connect#activate ~callback:saveas_f);
     (* XXX *)
     (* File/Save All Menu *)
     let saveall_m = file_factory#add_item "Sa_ve all" in
@@ -1717,7 +1717,7 @@ let main files =
         )
         session_notebook#pages
     in
-    ignore (saveall_m#connect#activate saveall_f);
+    ignore (saveall_m#connect#activate ~callback:saveall_f);
     (* XXX *)
     (* File/Revert Menu *)
     let revert_m = file_factory#add_item "_Revert all buffers" in
@@ -1732,12 +1732,12 @@ let main files =
                     | _ -> ()
                 with _ -> av#revert)
     in
-    ignore (revert_m#connect#activate (fun () -> List.iter revert_f session_notebook#pages));
+    ignore (revert_m#connect#activate ~callback:(fun () -> List.iter revert_f session_notebook#pages));
 
     (* File/Close Menu *)
     let close_m =
       file_factory#add_item "_Close buffer" ~key:GdkKeysyms._W in
-    ignore (close_m#connect#activate remove_current_view_page);
+    ignore (close_m#connect#activate ~callback:remove_current_view_page);
 
     (* File/Print Menu *)
     let _ = file_factory#add_item "_Print..."
@@ -1792,7 +1792,7 @@ let main files =
     (* File/Rehighlight Menu *)
     let rehighlight_m = file_factory#add_item "Reh_ighlight" ~key:GdkKeysyms._L in
     ignore (rehighlight_m#connect#activate
-              (fun () ->
+              ~callback:(fun () ->
                  force_retag
                    session_notebook#current_term.script#buffer;
                  session_notebook#current_term.analyzed_view#recenter_insert));
@@ -1846,7 +1846,7 @@ let main files =
       let _ = file_factory#add_item "_Quit" ~key:GdkKeysyms._Q
                 ~callback:quit_f
       in
-      ignore (w#event#connect#delete (fun _ -> quit_f (); true));
+      ignore (w#event#connect#delete ~callback:(fun _ -> quit_f (); true));
 
       (* Edit Menu *)
       let edit_menu = factory#add_submenu "_Edit" in
@@ -1875,17 +1875,17 @@ let main files =
       ignore(edit_f#add_item "Cut" ~key:GdkKeysyms._X ~callback:
                (fun () -> GtkSignal.emit_unit
                             (get_active_view_for_cp ())
-                            GtkText.View.S.cut_clipboard
+                            ~sgn:GtkText.View.S.cut_clipboard
                ));
       ignore(edit_f#add_item "Copy" ~key:GdkKeysyms._C ~callback:
                (fun () -> GtkSignal.emit_unit
                             (get_active_view_for_cp ())
-                            GtkText.View.S.copy_clipboard));
+                            ~sgn:GtkText.View.S.copy_clipboard));
       ignore(edit_f#add_item "Paste" ~key:GdkKeysyms._V ~callback:
                (fun () ->
                   try GtkSignal.emit_unit
                         session_notebook#current_term.script#as_view
-                        GtkText.View.S.paste_clipboard
+                        ~sgn:GtkText.View.S.paste_clipboard
                   with _ -> prerr_endline "EMIT PASTE FAILED"));
       ignore (edit_f#add_separator ());
 
@@ -2041,7 +2041,7 @@ let main files =
 			in
 			let close_find () =
 			  let (v,b,_,stop) = last_find () in
-			    b#place_cursor stop;
+			    b#place_cursor ~where:stop;
 			    find_w#misc#hide();
 			    v#coerce#misc#grab_focus()
 			in
@@ -2100,14 +2100,14 @@ let main files =
 			    ~key:GdkKeysyms._B
 			    ~callback:(find_f ~backward:true)
 			  in
-			  let _ = close_find_button#connect#clicked close_find in
-			  let _ = replace_button#connect#clicked do_replace in
-			  let _ = replace_find_button#connect#clicked do_replace_find in
-			  let _ = find_again_button#connect#clicked find_again_forward in
-			  let _ = find_again_backward_button#connect#clicked find_again_backward in
-			  let _ = find_entry#connect#changed do_find in
+			  let _ = close_find_button#connect#clicked ~callback:close_find in
+			  let _ = replace_button#connect#clicked ~callback:do_replace in
+			  let _ = replace_find_button#connect#clicked ~callback:do_replace_find in
+			  let _ = find_again_button#connect#clicked ~callback:find_again_forward in
+			  let _ = find_again_backward_button#connect#clicked ~callback:find_again_backward in
+			  let _ = find_entry#connect#changed ~callback:do_find in
 			  let _ = find_entry#event#connect#key_press ~callback:key_find in
-			  let _ = find_w#event#connect#delete (fun _ -> find_w#misc#hide(); true) in
+			  let _ = find_w#event#connect#delete ~callback:(fun _ -> find_w#misc#hide(); true) in
 			    (*
 			      let search_if = edit_f#add_item "Search _forward"
 			      ~key:GdkKeysyms._greater
@@ -2408,9 +2408,9 @@ let main files =
 					    if view#buffer#insert_interactive text then begin
 						let iter = view#buffer#get_iter_at_mark `INSERT in
 						  ignore (iter#nocopy#backward_chars offset);
-						  view#buffer#move_mark `INSERT iter;
+						  view#buffer#move_mark `INSERT ~where:iter;
 						  ignore (iter#nocopy#backward_chars len);
-						  view#buffer#move_mark `SEL_BOUND iter;
+						  view#buffer#move_mark `SEL_BOUND ~where:iter;
 					      end in
 					  ignore (templates_factory#add_item menu_text ~callback ?key)
 				      in
@@ -2461,7 +2461,7 @@ let cur_ct = session_notebook#current_term.toplvl in
                                                     if view#buffer#insert_interactive s then
                                                       let i = view#buffer#get_iter (`MARK m) in
                                                       let _ = i#nocopy#forward_chars 9 in
-                                                      view#buffer#place_cursor i;
+                                                      view#buffer#place_cursor ~where:i;
                                                       view#buffer#move_mark ~where:(i#backward_chars 3)
                                                         `SEL_BOUND
                                             with Not_found -> flash_info "Not an inductive type"
@@ -2684,7 +2684,7 @@ let cur_ct = session_notebook#current_term.toplvl in
 						  input_buffer#apply_tag Tags.Script.error
    						    ~start:starti
 						    ~stop:stopi;
-						  input_buffer#place_cursor starti;
+						  input_buffer#place_cursor ~where:starti;
 						  av#set_message error_msg;
 						  v.script#misc#grab_focus ()
 					    with Not_found ->
@@ -2830,7 +2830,7 @@ let cur_ct = session_notebook#current_term.toplvl in
 						prerr_endline "End Search";
 						memo_search ();
 						let v = session_notebook#current_term.script in
-						  v#buffer#move_mark `SEL_BOUND (v#buffer#get_iter_at_mark `INSERT);
+						  v#buffer#move_mark `SEL_BOUND ~where:(v#buffer#get_iter_at_mark `INSERT);
 						  v#coerce#misc#grab_focus ();
 						  search_input#entry#set_text "";
 						  search_lbl#misc#hide ();
@@ -2840,7 +2840,7 @@ let cur_ct = session_notebook#current_term.toplvl in
 						prerr_endline "End Search(focus out)";
 						memo_search ();
 						let v = session_notebook#current_term.script in
-						  v#buffer#move_mark `SEL_BOUND (v#buffer#get_iter_at_mark `INSERT);
+						  v#buffer#move_mark `SEL_BOUND ~where:(v#buffer#get_iter_at_mark `INSERT);
 						  search_input#entry#set_text "";
 						  search_lbl#misc#hide ();
 						  search_input#misc#hide ()
@@ -2907,7 +2907,7 @@ let cur_ct = session_notebook#current_term.toplvl in
 							       ready_to_wrap_search := false;
 							       flash_info "Search wrapped";
 							       v#buffer#place_cursor
-								 (if !search_forward then v#buffer#start_iter else
+								 ~where:(if !search_forward then v#buffer#start_iter else
 								      v#buffer#end_iter);
 							       search_f ()
 							     end else begin
@@ -2920,8 +2920,8 @@ let cur_ct = session_notebook#current_term.toplvl in
 							   prerr_endline ("SELBOUND="^(string_of_int (v#buffer#get_iter_at_mark `SEL_BOUND)#offset));
 							   prerr_endline ("INSERT="^(string_of_int (v#buffer#get_iter_at_mark `INSERT)#offset));
 
-							   v#buffer#move_mark `SEL_BOUND start;
-							   v#buffer#move_mark `INSERT stop;
+							   v#buffer#move_mark `SEL_BOUND ~where:start;
+							   v#buffer#move_mark `INSERT ~where:stop;
 							   prerr_endline "search: after moving marks";
 							   prerr_endline ("SELBOUND="^(string_of_int (v#buffer#get_iter_at_mark `SEL_BOUND)#offset));
 							   prerr_endline ("INSERT="^(string_of_int (v#buffer#get_iter_at_mark `INSERT)#offset));
@@ -2938,11 +2938,11 @@ let cur_ct = session_notebook#current_term.toplvl in
 									    prerr_endline "search_key_rel: Placing sel_bound";
 									    v#buffer#move_mark
 									      `SEL_BOUND
-									      (v#buffer#get_iter_at_mark `INSERT)
+									      ~where:(v#buffer#get_iter_at_mark `INSERT)
 									| Some mk -> let it = v#buffer#get_iter_at_mark
 									    (`MARK mk) in
 										       prerr_endline "search_key_rel: Placing cursor";
-									    v#buffer#place_cursor it;
+									    v#buffer#place_cursor ~where:it;
 									    start_of_search := None
 								     );
 								     search_input#entry#set_text "";
@@ -2950,7 +2950,7 @@ let cur_ct = session_notebook#current_term.toplvl in
 								 end;
 							       false
 							    ));
-						  ignore (search_input#entry#connect#changed search_f);
+						  ignore (search_input#entry#connect#changed ~callback:search_f);
 						    push_info "Ready";
                                                                  (* Location display *)
 						    let l = GMisc.label

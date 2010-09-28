@@ -203,7 +203,7 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
 	      Impargs.maybe_declare_manual_implicits false refi impls;
 	      if coe then begin
 	        let cl = Class.class_of_global (IndRef indsp) in
-	        Class.try_add_new_coercion_with_source refi Global cl
+	        Class.try_add_new_coercion_with_source refi Global ~source:cl
 	      end;
 	      let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
 	      let constr_fip = applist (constr_fi,proj_args) in

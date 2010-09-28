@@ -208,7 +208,7 @@ let same c d = try check_same_type c d; true with _ -> false
 let has_curly_brackets ntn =
   String.length ntn >= 6 & (String.sub ntn 0 6 = "{ _ } " or
     String.sub ntn (String.length ntn - 6) 6 = " { _ }" or
-    string_string_contains ntn " { _ } ")
+    string_string_contains ~where:ntn ~what:" { _ } ")
 
 let rec wildcards ntn n =
   if n = String.length ntn then []

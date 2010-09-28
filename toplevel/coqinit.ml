@@ -50,9 +50,9 @@ let load_rcfile() =
     Flags.if_verbose msgnl (str"Skipping rcfile loading.")
 
 (* Puts dir in the path of ML and in the LoadPath *)
-let coq_add_path d s =
-  Mltop.add_path d (Names.make_dirpath [Nameops.coq_root;Names.id_of_string s])
-let coq_add_rec_path s = Mltop.add_rec_path s (Names.make_dirpath [Nameops.coq_root])
+let coq_add_path unix_path s =
+  Mltop.add_path ~unix_path ~coq_root:(Names.make_dirpath [Nameops.coq_root;Names.id_of_string s])
+let coq_add_rec_path unix_path = Mltop.add_rec_path ~unix_path ~coq_root:(Names.make_dirpath [Nameops.coq_root])
 
 (* By the option -include -I or -R of the command line *)
 let includes = ref []
@@ -92,21 +92,21 @@ let init_load_path () =
   let dirs = ["states";"plugins"] in
     (* first user-contrib *)
     if Sys.file_exists user_contrib then
-      Mltop.add_rec_path user_contrib Nameops.default_root_prefix;
+      Mltop.add_rec_path ~unix_path:user_contrib ~coq_root:Nameops.default_root_prefix;
     (* then states, theories and dev *)
     List.iter (fun s -> coq_add_rec_path (coqlib/s)) dirs;
     (* developer specific directory to open *)
     if Coq_config.local then coq_add_path (coqlib/"dev") "dev";
     (* then standard library *)
     List.iter
-      (fun (s,alias) -> Mltop.add_rec_path (coqlib/s) (Names.make_dirpath [Names.id_of_string alias; Nameops.coq_root]))
+      (fun (s,alias) -> Mltop.add_rec_path ~unix_path:(coqlib/s) ~coq_root:(Names.make_dirpath [Names.id_of_string alias; Nameops.coq_root]))
       theories_dirs_map;
     (* then current directory *)
-    Mltop.add_path "." Nameops.default_root_prefix;
+    Mltop.add_path ~unix_path:"." ~coq_root:Nameops.default_root_prefix;
     (* additional loadpath, given with -I -include -R options *)
     List.iter
-      (fun (s,alias,reci) ->
-	if reci then Mltop.add_rec_path s alias else Mltop.add_path s alias)
+      (fun (unix_path, coq_root, reci) ->
+	if reci then Mltop.add_rec_path ~unix_path ~coq_root else Mltop.add_path ~unix_path ~coq_root)
       (List.rev !includes)
 
 let init_library_roots () =

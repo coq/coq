@@ -191,7 +191,7 @@ let filter_by_module_from_list = function
   | l, outside -> filter_by_module l (not outside)
 
 let filter_subproof gr _ _ =
-  not (string_string_contains (name_of_reference gr) "_subproof")
+  not (string_string_contains ~where:(name_of_reference gr) ~what:"_subproof")
 
 let (&&&&&) f g x y z = f x y z && g x y z
 
@@ -216,7 +216,7 @@ type glob_search_about_item =
 
 let search_about_item (itemref,typ) = function
   | GlobSearchSubPattern pat -> is_matching_appsubterm ~closed:false pat typ
-  | GlobSearchString s -> string_string_contains (name_of_reference itemref) s
+  | GlobSearchString s -> string_string_contains ~where:(name_of_reference itemref) ~what:s
 
 let raw_search_about filter_modules display_function l =
   let filter ref' env typ =

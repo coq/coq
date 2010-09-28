@@ -72,17 +72,17 @@ let convert_string d =
     flush_all ();
     failwith "caught"
 
-let add_rec_path ~unix_path:dir ~coq_root:coq_dirpath =
-  if exists_dir dir then
-    let dirs = all_subdirs dir in
-    let prefix = repr_dirpath coq_dirpath in
+let add_rec_path ~unix_path ~coq_root =
+  if exists_dir unix_path then
+    let dirs = all_subdirs ~unix_path in
+    let prefix = repr_dirpath coq_root in
     let convert_dirs (lp,cp) =
       (lp,make_dirpath (List.map convert_string (List.rev cp)@prefix)) in
     let dirs = map_succeed convert_dirs dirs in
     List.iter Check.add_load_path dirs;
-    Check.add_load_path (dir,coq_dirpath)
+    Check.add_load_path (unix_path, coq_root)
   else
-    msg_warning (str ("Cannot open " ^ dir))
+    msg_warning (str ("Cannot open " ^ unix_path))
 
 (* By the option -include -I or -R of the command line *)
 let includes = ref []
@@ -105,21 +105,21 @@ let init_load_path () =
   let plugins = coqlib/"plugins" in
   (* first user-contrib *)
   if Sys.file_exists user_contrib then
-    add_rec_path user_contrib Check.default_root_prefix;
+    add_rec_path ~unix_path:user_contrib ~coq_root:Check.default_root_prefix;
   (* then plugins *)
-  add_rec_path plugins (Names.make_dirpath [coq_root]);
+  add_rec_path ~unix_path:plugins ~coq_root:(Names.make_dirpath [coq_root]);
   (* then standard library *)
 (*  List.iter
     (fun (s,alias) ->
       add_rec_path (coqlib/s) ([alias; coq_root]))
     theories_dirs_map;*)
-  add_rec_path (coqlib/"theories") (Names.make_dirpath[coq_root]);
+  add_rec_path ~unix_path:(coqlib/"theories") ~coq_root:(Names.make_dirpath[coq_root]);
   (* then current directory *)
-  add_path "." Check.default_root_prefix;
+  add_path ~unix_path:"." ~coq_root:Check.default_root_prefix;
   (* additional loadpath, given with -I -include -R options *)
   List.iter
-    (fun (s,alias,reci) ->
-      if reci then add_rec_path s alias else add_path s alias)
+    (fun (unix_path, coq_root, reci) ->
+      if reci then add_rec_path ~unix_path ~coq_root else add_path ~unix_path ~coq_root)
     (List.rev !includes);
   includes := []
 
