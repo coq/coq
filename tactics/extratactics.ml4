@@ -18,7 +18,6 @@ open Tacexpr
 open Rawterm
 open Tactics
 open Util
-open Termops
 open Evd
 open Equality
 open Compat
@@ -228,11 +227,11 @@ TACTIC EXTEND rewrite_star
 | [ "rewrite" "*" orient(o) open_constr(c) "at" occurrences(occ) "in" hyp(id) by_arg_tac(tac) ] ->
     [ rewrite_star (Some id) o (occurrences_of occ) c tac ]
 | [ "rewrite" "*" orient(o) open_constr(c) "in" hyp(id) by_arg_tac(tac) ] ->
-    [ rewrite_star (Some id) o all_occurrences c tac ]
+    [ rewrite_star (Some id) o Termops.all_occurrences c tac ]
 | [ "rewrite" "*" orient(o) open_constr(c) "at" occurrences(occ) by_arg_tac(tac) ] ->
     [ rewrite_star None o (occurrences_of occ) c tac ]
 | [ "rewrite" "*" orient(o) open_constr(c) by_arg_tac(tac) ] ->
-    [ rewrite_star None o all_occurrences c tac ]
+    [ rewrite_star None o Termops.all_occurrences c tac ]
     END
 
 (**********************************************************************)
@@ -538,7 +537,7 @@ END
 (**********************************************************************)
 
 let subst_var_with_hole occ tid t = 
-  let occref = if occ > 0 then ref occ else error_invalid_occurrence [occ] in
+  let occref = if occ > 0 then ref occ else Termops.error_invalid_occurrence [occ] in
   let locref = ref 0 in
   let rec substrec = function
     | RVar (_,id) as x -> 
@@ -549,7 +548,7 @@ let subst_var_with_hole occ tid t =
     | c -> map_rawconstr_left_to_right substrec c in
   let t' = substrec t
   in
-  if !occref > 0 then error_invalid_occurrence [occ] else t'
+  if !occref > 0 then Termops.error_invalid_occurrence [occ] else t'
 
 let subst_hole_with_term occ tc t =
   let locref = ref 0 in
@@ -570,9 +569,9 @@ let out_arg = function
 
 let hResolve id c occ t gl = 
   let sigma = project gl in 
-  let env = clear_named_body id (pf_env gl) in
-  let env_ids = ids_of_context env in
-  let env_names = names_of_rel_context env in
+  let env = Termops.clear_named_body id (pf_env gl) in
+  let env_ids = Termops.ids_of_context env in
+  let env_names = Termops.names_of_rel_context env in
   let c_raw = Detyping.detype true env_ids env_names c in 
   let t_raw = Detyping.detype true env_ids env_names t in 
   let rec resolve_hole t_hole =

@@ -17,7 +17,6 @@ open Environ
 open Libnames
 open Tactics
 open Rawterm
-open Termops
 open Tacticals
 open Tacexpr
 open Pcoq
@@ -102,7 +101,7 @@ let protect_tac map =
   Tactics.reduct_option (protect_red map,DEFAULTcast) None ;;
 
 let protect_tac_in map id =
-  Tactics.reduct_option (protect_red map,DEFAULTcast) (Some(id,InHyp));;
+  Tactics.reduct_option (protect_red map,DEFAULTcast) (Some(id, Termops.InHyp));;
 
 
 TACTIC EXTEND protect_fv

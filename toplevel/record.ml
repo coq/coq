@@ -12,7 +12,6 @@ open Names
 open Libnames
 open Nameops
 open Term
-open Termops
 open Environ
 open Declarations
 open Entries
@@ -59,7 +58,7 @@ let typecheck_params_and_fields id t ps nots fs =
   let env0 = Global.env () in
   let evars = ref Evd.empty in
   let (env1,newps), imps = interp_context_evars evars env0 ps in
-  let fullarity = it_mkProd_or_LetIn (Option.cata (fun x -> x) (new_Type ()) t) newps in
+  let fullarity = it_mkProd_or_LetIn (Option.cata (fun x -> x) (Termops.new_Type ()) t) newps in
   let env_ar = push_rel_context newps (push_rel (Name id,None,fullarity) env0) in
   let env2,impls,newfs,data =
     interp_fields_evars evars env_ar nots (binders_of_decls fs)
@@ -148,7 +147,7 @@ let subst_projection fid l c =
 
 let instantiate_possibly_recursive_type indsp paramdecls fields =
   let subst = list_map_i (fun i _ -> mkRel i) 1 paramdecls in
-  substl_rel_context (subst@[mkInd indsp]) fields
+  Termops.substl_rel_context (subst@[mkInd indsp]) fields
 
 (* We build projections *)
 let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls fields =
@@ -156,11 +155,11 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
   let (mib,mip) = Global.lookup_inductive indsp in
   let paramdecls = mib.mind_params_ctxt in
   let r = mkInd indsp in
-  let rp = applist (r, extended_rel_list 0 paramdecls) in
-  let paramargs = extended_rel_list 1 paramdecls in (*def in [[params;x:rp]]*)
+  let rp = applist (r, Termops.extended_rel_list 0 paramdecls) in
+  let paramargs = Termops.extended_rel_list 1 paramdecls in (*def in [[params;x:rp]]*)
   let x = match name with Some n -> Name n | None -> Namegen.named_hd (Global.env()) r Anonymous in
   let fields = instantiate_possibly_recursive_type indsp paramdecls fields in
-  let lifted_fields = lift_rel_context 1 fields in
+  let lifted_fields = Termops.lift_rel_context 1 fields in
   let (_,kinds,sp_projs,_) =
     list_fold_left3
       (fun (nfi,kinds,sp_projs,subst) coe (fi,optci,ti) impls ->
@@ -234,7 +233,7 @@ open Typeclasses
 let declare_structure finite infer id idbuild paramimpls params arity fieldimpls fields
     ?(kind=StructureComponent) ?name is_coe coers sign =
   let nparams = List.length params and nfields = List.length fields in
-  let args = extended_rel_list nfields params in
+  let args = Termops.extended_rel_list nfields params in
   let ind = applist (mkRel (1+nparams+nfields), args) in
   let type_constructor = it_mkProd_or_LetIn ind fields in
   let mie_ind =
@@ -248,7 +247,7 @@ let declare_structure finite infer id idbuild paramimpls params arity fieldimpls
   (* there is probably a way to push this to "declare_mutual" *)
   begin match  finite with
   | BiFinite ->
-      if dependent (mkRel (nparams+1)) (it_mkProd_or_LetIn mkProp fields) then
+      if Termops.dependent (mkRel (nparams+1)) (it_mkProd_or_LetIn mkProp fields) then
 	error "Records declared with the keyword Record or Structure cannot be recursive. Maybe you meant to define an Inductive or CoInductive record."
   | _ -> ()
   end;
@@ -306,7 +305,7 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	let cst = Declare.declare_constant (snd id)
 	  (DefinitionEntry class_entry, IsDefinition Definition)
 	in
-	let inst_type = appvectc (mkConst cst) (rel_vect 0 (List.length params)) in
+	let inst_type = appvectc (mkConst cst) (Termops.rel_vect 0 (List.length params)) in
 	let proj_type = it_mkProd_or_LetIn (mkProd(Name (snd id), inst_type, lift 1 field)) params in
 	let proj_body = it_mkLambda_or_LetIn (mkLambda (Name (snd id), inst_type, mkRel 1)) params in
 	let proj_entry =
@@ -325,9 +324,9 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	if infer then Evd.fold (fun ev evi _ -> Recordops.declare_method (ConstRef cst) ev sign) sign ();
 	cref, [proj_name, Some proj_cst]
     | _ ->
-	let idarg = Namegen.next_ident_away (snd id) (ids_of_context (Global.env())) in
+	let idarg = Namegen.next_ident_away (snd id) (Termops.ids_of_context (Global.env())) in
 	let ind = declare_structure BiFinite infer (snd id) idbuild paramimpls
-	  params (Option.cata (fun x -> x) (new_Type ()) arity) fieldimpls fields
+	  params (Option.cata (fun x -> x) (Termops.new_Type ()) arity) fieldimpls fields
 	  ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields) sign
 	in
 	  IndRef ind, (List.map2 (fun (id, _, _) y -> (Nameops.out_name id, y))
@@ -385,7 +384,7 @@ let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuil
 	if infer then search_record declare_class_instance gr sign;
 	gr
     | _ ->
-	let arity = Option.default (new_Type ()) sc in
+	let arity = Option.default (Termops.new_Type ()) sc in
 	let implfs = List.map
 	  (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs in
 	let ind = declare_structure finite infer idstruc idbuild implpars params arity implfs fields is_coe coers sign in

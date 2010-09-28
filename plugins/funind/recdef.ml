@@ -9,7 +9,6 @@
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
 open Term
-open Termops
 open Namegen
 open Environ
 open Declarations
@@ -374,7 +373,7 @@ let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
 		h_intros thin_intros;
 
 		tclMAP
-		  (fun eq -> tclTRY (Equality.general_rewrite_in true all_occurrences (* deps proofs also: *) true teq eq false))
+		  (fun eq -> tclTRY (Equality.general_rewrite_in true Termops.all_occurrences (* deps proofs also: *) true teq eq false))
 		  (List.rev eqs);
 		(fun g1 ->
 		   let ty_teq = pf_type_of g1 (mkVar teq) in
@@ -382,7 +381,7 @@ let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
 		     let _,args = try destApp ty_teq with _ -> Pp.msgnl (Printer.pr_goal g1 ++ fnl () ++ pr_id teq ++ str ":" ++ Printer.pr_lconstr ty_teq); assert false in
 		     args.(1),args.(2)
 		   in
-	           cont_function (mkVar teq::eqs) (replace_term teq_lhs teq_rhs expr) g1
+	           cont_function (mkVar teq::eqs) (Termops.replace_term teq_lhs teq_rhs expr) g1
 		)
 	      ]
 	      
@@ -435,7 +434,7 @@ let tclUSER tac is_mes l g =
       clear_tac;
       if is_mes
       then tclTHEN
-             (unfold_in_concl [(all_occurrences, evaluable_of_global_reference
+             (unfold_in_concl [(Termops.all_occurrences, evaluable_of_global_reference
                                       (delayed_force ltof_ref))])
              tac
       else tac
@@ -534,7 +533,7 @@ let rec list_cond_rewrite k def pmax cond_eqs le_proofs =
 	   Nameops.out_name k_na,Nameops.out_name def_na
 	 in
 	 tclTHENS
-	   (general_rewrite_bindings false all_occurrences
+	   (general_rewrite_bindings false Termops.all_occurrences
 	      (* dep proofs also: *) true
 	      (mkVar eq,
 	       ExplicitBindings[dummy_loc, NamedHyp k_id, mkVar k;
@@ -577,7 +576,7 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
 	   observe_tac "refl equal" (apply (delayed_force refl_equal))] g
   | spec1::specs ->
       fun g ->
-	let ids = ids_of_named_context (pf_hyps g) in
+	let ids = Termops.ids_of_named_context (pf_hyps g) in
 	let p = next_ident_away_in_goal p_id ids in
         let ids = p::ids in
 	let pmax = next_ident_away_in_goal pmax_id ids in
@@ -623,7 +622,7 @@ let rec introduce_all_values concl_tac is_mes acc_inv func context_fn
 	   (List.rev values) (List.rev specs) (delayed_force coq_O) [] [])]
   | arg::args ->
       (fun g ->
-	let ids = ids_of_named_context (pf_hyps g) in
+	let ids = Termops.ids_of_named_context (pf_hyps g) in
 	let rec_res = next_ident_away_in_goal rec_res_id ids in
         let ids = rec_res::ids in
 	let hspec = next_ident_away_in_goal hspec_id ids in
@@ -836,7 +835,7 @@ let rec instantiate_lambda t l =
 let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_arg_num  : tactic =
   begin
     fun g ->
-      let ids = ids_of_named_context (pf_hyps g) in
+      let ids = Termops.ids_of_named_context (pf_hyps g) in
       let func_body = (def_of_const (constr_of_global func)) in
       let (f_name, _, body1) = destLambda func_body in
       let f_id =
@@ -924,7 +923,7 @@ let clear_goals =
       | Prod(Name id as na,t',b) ->
 	  let b' = clear_goal b in
 	  if noccurn 1 b' && (is_rec_res id)
-	  then pop b'
+	  then Termops.pop b'
 	  else if b' == b then t
 	  else mkProd(na,t',b')
       | _ -> map_constr clear_goal t
@@ -952,7 +951,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
   let sign = Global.named_context () in
   let sign = clear_proofs sign in
   let na = next_global_ident_away name [] in
-  if occur_existential gls_type then
+  if Termops.occur_existential gls_type then
     Util.error "\"abstract\" cannot handle existentials";
   let hook _ _ =
     let opacity =
@@ -1158,7 +1157,7 @@ let start_equation (f:global_reference) (term_f:global_reference)
   let x = n_x_id ids nargs in
   tclTHENLIST [
     h_intros x;
-    unfold_in_concl [(all_occurrences, evaluable_of_global_reference f)];
+    unfold_in_concl [(Termops.all_occurrences, evaluable_of_global_reference f)];
     observe_tac "simplest_case"
       (simplest_case (mkApp (terminate_constr,
                              Array.of_list (List.map mkVar x))));
@@ -1200,7 +1199,7 @@ let rec introduce_all_values_eq cont_tac functional termine
            simpl_iter (onHyp heq2);
            unfold_in_hyp [((true,[1]), evaluable_of_global_reference
                              (global_of_constr functional))]
-             (heq2, InHyp);
+             (heq2, Termops.InHyp);
            tclTHENS
 	     (fun gls ->
 		let t_eq = compute_renamed_type gls (mkVar heq2) in
@@ -1208,7 +1207,7 @@ let rec introduce_all_values_eq cont_tac functional termine
 		  let _,_,t  = destProd t_eq in let def_na,_,_ = destProd t in
 		  Nameops.out_name def_na
 		in
-		observe_tac "rewrite heq" (general_rewrite_bindings false all_occurrences
+		observe_tac "rewrite heq" (general_rewrite_bindings false Termops.all_occurrences
 		(* dep proofs also: *) true (mkVar heq2,
 		 ExplicitBindings[dummy_loc,NamedHyp def_id,
 				  f]) false) gls)
@@ -1264,7 +1263,7 @@ let rec introduce_all_values_eq cont_tac functional termine
 			       f_S(mkVar pmax');
 			       dummy_loc, NamedHyp def_id, f])
 			 in
-			   observe_tac "general_rewrite_bindings" ( (general_rewrite_bindings false all_occurrences (* dep proofs also: *) true
+			   observe_tac "general_rewrite_bindings" ( (general_rewrite_bindings false Termops.all_occurrences (* dep proofs also: *) true
 							       c_b false))
 			     g
 		     )
@@ -1321,7 +1320,7 @@ let rec prove_eq nb_arg  (termine:constr) (f:constr)(functional:global_reference
 		_,[] -> observe_tac "base_leaf_eq(1)" (base_leaf_eq functional eqs f)
 	      | fn,args ->
 	        fun g ->
-		  let ids = ids_of_named_context (pf_hyps g) in
+		  let ids = Termops.ids_of_named_context (pf_hyps g) in
 	          observe_tac "rec_leaf_eq" (rec_leaf_eq termine f ids
 		    (constr_of_global functional)
 		    eqs expr fn args) g))
@@ -1330,7 +1329,7 @@ let rec prove_eq nb_arg  (termine:constr) (f:constr)(functional:global_reference
 		_,[] -> observe_tac "base_leaf_eq(2)" ( base_leaf_eq functional eqs f)
 	      | fn,args ->
 		  fun g ->
-		    let ids = ids_of_named_context (pf_hyps g) in
+		    let ids = Termops.ids_of_named_context (pf_hyps g) in
 		    observe_tac "rec_leaf_eq" (rec_leaf_eq
 		      termine f ids (constr_of_global functional)
 		      eqs expr fn args) g));;

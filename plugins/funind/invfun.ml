@@ -16,7 +16,6 @@ open Tacticals
 open Tactics
 open Indfun_common
 open Tacmach
-open Termops
 open Sign
 open Hiddentac
 
@@ -686,7 +685,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	  h_generalize (List.map mkVar ids);
 	  thin ids
 	]
-      else unfold_in_concl [(all_occurrences,Names.EvalConstRef (destConst f))]
+      else unfold_in_concl [(Termops.all_occurrences, Names.EvalConstRef (destConst f))]
     in
     (* The proof of each branche itself *)
     let ind_number = ref 0 in

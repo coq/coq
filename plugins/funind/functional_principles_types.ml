@@ -1,7 +1,6 @@
 open Printer
 open Util
 open Term
-open Termops
 open Namegen
 open Names
 open Declarations
@@ -139,7 +138,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   in
   let dummy_var = mkVar (id_of_string "________") in
   let mk_replacement c i args =
-    let res = mkApp(rel_to_fun.(i),Array.map pop (array_get_start args)) in
+    let res = mkApp(rel_to_fun.(i), Array.map Termops.pop (array_get_start args)) in
 (*     observe (str "replacing " ++ pr_lconstr c ++ str " by "  ++ pr_lconstr res); *)
     res
   in
@@ -198,58 +197,58 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     begin
       try
 	let new_t,binders_to_remove_from_t = compute_new_princ_type remove env t in
-	let new_x : name = get_name (ids_of_context env) x in
+	let new_x : name = get_name (Termops.ids_of_context env) x in
 	let new_env = Environ.push_rel (x,None,t) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
 	 if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
-	 then (pop new_b),filter_map (eq_constr (mkRel 1)) pop binders_to_remove_from_b
+	 then (Termops.pop new_b), filter_map (eq_constr (mkRel 1)) Termops.pop binders_to_remove_from_b
 	 else
 	   (
 	     bind_fun(new_x,new_t,new_b),
 	     list_union_eq
 	       eq_constr
 	       binders_to_remove_from_t
-	       (List.map pop binders_to_remove_from_b)
+	       (List.map Termops.pop binders_to_remove_from_b)
 	   )
 
        with
 	 | Toberemoved ->
 (* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [dummy_var] 1 b)  in
-	    new_b, List.map pop binders_to_remove_from_b
+	    new_b, List.map Termops.pop binders_to_remove_from_b
 	| Toberemoved_with_rel (n,c) ->
 (* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
-	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map pop binders_to_remove_from_b)
+	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map Termops.pop binders_to_remove_from_b)
     end
   and compute_new_princ_type_for_letin remove env x v t b =
     begin
       try
 	let new_t,binders_to_remove_from_t = compute_new_princ_type remove env t in
 	let new_v,binders_to_remove_from_v = compute_new_princ_type remove env v in
-	let new_x : name = get_name (ids_of_context env) x in
+	let new_x : name = get_name (Termops.ids_of_context env) x in
 	let new_env = Environ.push_rel (x,Some v,t) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
 	if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
-	then (pop new_b),filter_map (eq_constr (mkRel 1)) pop binders_to_remove_from_b
+	then (Termops.pop new_b),filter_map (eq_constr (mkRel 1)) Termops.pop binders_to_remove_from_b
 	else
 	  (
 	    mkLetIn(new_x,new_v,new_t,new_b),
 	    list_union_eq
 	      eq_constr
 	      (list_union_eq eq_constr binders_to_remove_from_t binders_to_remove_from_v)
-	      (List.map pop binders_to_remove_from_b)
+	      (List.map Termops.pop binders_to_remove_from_b)
 	  )
 
       with
 	| Toberemoved ->
 (* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [dummy_var] 1 b)  in
-	    new_b, List.map pop binders_to_remove_from_b
+	    new_b, List.map Termops.pop binders_to_remove_from_b
 	| Toberemoved_with_rel (n,c) ->
 (* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
-	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map pop binders_to_remove_from_b)
+	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map Termops.pop binders_to_remove_from_b)
     end
   and  compute_new_princ_type_with_acc remove env e (c_acc,to_remove_acc)  =
     let new_e,to_remove_from_e = compute_new_princ_type remove env e

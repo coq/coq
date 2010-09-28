@@ -23,7 +23,6 @@ open Fol
 open Names
 open Nameops
 open Namegen
-open Termops
 open Coqlib
 open Hipattern
 open Libnames
@@ -148,7 +147,7 @@ let fresh_var = function
    env names, and returns the new variables together with the new
    environment *)
 let coq_rename_vars env vars =
-  let avoid = ref (ids_of_named_context (Environ.named_context env)) in
+  let avoid = ref (Termops.ids_of_named_context (Environ.named_context env)) in
   List.fold_right
     (fun (na,t) (newvars, newenv) ->
        let id = next_name_away na !avoid in
@@ -183,7 +182,7 @@ let decomp_type_lambdas env t =
 
 let decompose_arrows =
   let rec arrows_rec l c = match kind_of_term c with
-    | Prod (_,t,c) when not (dependent (mkRel 1) c) -> arrows_rec (t :: l) c
+    | Prod (_,t,c) when not (Termops.dependent (mkRel 1) c) -> arrows_rec (t :: l) c
     | Cast (c,_,_) -> arrows_rec l c
     | _ -> List.rev l, c
   in
@@ -195,8 +194,8 @@ let rec eta_expanse t vars env i =
     t, vars, env
   else
     match kind_of_term (Typing.type_of env Evd.empty t) with
-      | Prod (n, a, b) when not (dependent (mkRel 1) b) ->
-	  let avoid = ids_of_named_context (Environ.named_context env) in
+      | Prod (n, a, b) when not (Termops.dependent (mkRel 1) b) ->
+	  let avoid = Termops.ids_of_named_context (Environ.named_context env) in
 	  let id = next_name_away n avoid in
 	  let env' = Environ.push_named (id, None, a) env in
 	  let t' = mkApp (t, [| mkVar id |]) in

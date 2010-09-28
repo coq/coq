@@ -13,7 +13,6 @@ open Names
 open Sign
 open Evd
 open Term
-open Termops
 open Reductionops
 open Environ
 open Type_errors
@@ -106,7 +105,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
       else id
 
   let invert_ltac_bound_name env id0 id =
-    try mkRel (pi1 (lookup_rel_id id (rel_context env)))
+    try mkRel (pi1 (Termops.lookup_rel_id id (rel_context env)))
     with Not_found ->
       errorlabstrm "" (str "Ltac variable " ++ pr_id id0 ++
 	str " depends on pattern variable name " ++ pr_id id ++
@@ -115,7 +114,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   let pretype_id loc env sigma (lvar,unbndltacvars) id =
     let id = strip_meta id in (* May happen in tactics defined by Grammar *)
       try
-	let (n,_,typ) = lookup_rel_id id (rel_context env) in
+	let (n,_,typ) = Termops.lookup_rel_id id (rel_context env) in
 	  { uj_val  = mkRel n; uj_type = lift n typ }
       with Not_found ->
 	try
@@ -151,7 +150,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     let s' = mkProd (Anonymous, ind, s) in
     let ccl = lift 1 (decomp n pj.uj_val) in
     let ccl' = mkLambda (Anonymous, ind, ccl) in
-      {uj_val=it_mkLambda ccl' sign; uj_type=it_mkProd s' sign}
+      {uj_val=Termops.it_mkLambda ccl' sign; uj_type=Termops.it_mkProd s' sign}
 
   (*************************************************************************)
   (* Main pretyping function                                               *)
@@ -224,7 +223,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
           match tycon with
             | Some (None, ty) -> ty
             | None | Some _ ->
-		e_new_evar evdref env ~src:(loc,InternalHole) (new_Type ()) in
+		e_new_evar evdref env ~src:(loc, InternalHole) (Termops.new_Type ()) in
 	  { uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
 
     | RRec (loc,fixkind,names,bl,lar,vdef) ->
@@ -386,7 +385,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     | RProd(loc,name,k,c1,c2)        ->
 	let j = pretype_type empty_valcon env evdref lvar c1 in
 	let var = (name,j.utj_val) in
-	let env' = push_rel_assum var env in
+	let env' = Termops.push_rel_assum var env in
 	let j' = pretype_type empty_valcon env' evdref lvar c2 in
 	let resj =
 	  try judge_of_product env name j j'
@@ -395,7 +394,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 
     | RLetIn(loc,name,c1,c2)      ->
 	let j = pretype empty_tycon env evdref lvar c1 in
-	let t = refresh_universes j.uj_type in
+	let t = Termops.refresh_universes j.uj_type in
 	let var = (name,Some j.uj_val,t) in
         let tycon = lift_tycon 1 tycon in
 	let j' = pretype tycon (push_rel var env) evdref lvar c2 in
@@ -503,7 +502,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		let p = match tycon with
 		  | Some (None, ty) -> ty
 		  | None | Some _ ->
-                      e_new_evar evdref env ~src:(loc,InternalHole) (new_Type ())
+                      e_new_evar evdref env ~src:(loc,InternalHole) (Termops.new_Type ())
 		in
 		  it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
 	  let pred = nf_evar ( !evdref) pred in
@@ -584,7 +583,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		 { utj_val = v;
 		   utj_type = s }
 	   | None ->
-	       let s = new_Type_sort () in
+	       let s = Termops.new_Type_sort () in
 		 { utj_val = e_new_evar evdref env ~src:loc (mkSort s);
 		   utj_type = s})
     | c ->

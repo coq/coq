@@ -10,7 +10,6 @@ module Search = Explore.Make(Proof_search)
 
 open Util
 open Term
-open Termops
 open Names
 open Evd
 open Tacmach
@@ -102,7 +101,7 @@ let rec make_form atom_env gls term =
   let cciterm=special_whd gls term  in
     match kind_of_term cciterm with
 	Prod(_,a,b) ->
-	  if not (dependent (mkRel 1) b) &&
+	  if not (Termops.dependent (mkRel 1) b) &&
 	    Retyping.get_sort_family_of
 	    (pf_env gls) (Tacmach.project gls) a = InProp
 	  then
@@ -142,7 +141,7 @@ let rec make_hyps atom_env gls lenv = function
   | (id,None,typ)::rest ->
       let hrec=
 	make_hyps atom_env gls (typ::lenv) rest in
-	if List.exists (dependent (mkVar id)) lenv ||
+	if List.exists (Termops.dependent (mkVar id)) lenv ||
 	  (Retyping.get_sort_family_of
 	     (pf_env gls) (Tacmach.project gls) typ <> InProp)
 	then

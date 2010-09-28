@@ -20,7 +20,6 @@ open Constrintern
 open Subtac_command
 open Typeclasses
 open Typeclasses_errors
-open Termops
 open Decl_kinds
 open Entries
 open Util

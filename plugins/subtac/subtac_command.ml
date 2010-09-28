@@ -21,7 +21,6 @@ open Tacmach
 open Tactic_debug
 open Topconstr
 open Term
-open Termops
 open Tacexpr
 open Safe_typing
 open Typing
@@ -133,7 +132,7 @@ let collect_non_rec env =
       let i =
         list_try_find_i
           (fun i f ->
-             if List.for_all (fun (_, def) -> not (occur_var env f def)) ldefrec
+             if List.for_all (fun (_, def) -> not (Termops.occur_var env f def)) ldefrec
              then i else failwith "try_find_i")
           0 lnamerec
       in

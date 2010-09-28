@@ -19,7 +19,6 @@ open Pattern
 open Ppextend
 open Ppconstr
 open Printer
-open Termops
 
 let pr_global x = Nametab.pr_global_env Idset.empty x
 
@@ -388,11 +387,11 @@ let pr_by_tactic prt = function
   | tac -> spc() ++ str "by " ++ prt tac
 
 let pr_hyp_location pr_id = function
-  | occs, InHyp -> spc () ++ pr_with_occurrences pr_id occs
-  | occs, InHypTypeOnly ->
+  | occs, Termops.InHyp -> spc () ++ pr_with_occurrences pr_id occs
+  | occs, Termops.InHypTypeOnly ->
       spc () ++
       pr_with_occurrences (fun id -> str "(type of " ++ pr_id id ++ str ")") occs
-  | occs, InHypValueOnly ->
+  | occs, Termops.InHypValueOnly ->
       spc () ++
       pr_with_occurrences (fun id -> str "(value of " ++ pr_id id ++ str ")") occs
 

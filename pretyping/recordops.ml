@@ -19,7 +19,6 @@ open Names
 open Libnames
 open Nametab
 open Term
-open Termops
 open Typeops
 open Libobject
 open Library
@@ -206,7 +205,7 @@ let cs_pattern_of_constr t =
 	      _ -> raise Not_found
 	end
     | Rel n -> Default_cs, pred n, []
-    | Prod (_,a,b) when not (dependent (mkRel 1) b) -> Prod_cs, -1, [a;pop b]
+    | Prod (_,a,b) when not (Termops.dependent (mkRel 1) b) -> Prod_cs, -1, [a; Termops.pop b]
     | Sort s -> Sort_cs (family_of_sort s), -1, []
     | _ ->
 	begin
@@ -240,7 +239,7 @@ let compute_canonical_projections (con,ind) =
                      (let con_pp = Nametab.pr_global_env Idset.empty (ConstRef con)
                       and proji_sp_pp = Nametab.pr_global_env Idset.empty (ConstRef proji_sp) in
 		      msg_warning (str "No global reference exists for projection value"
-                                   ++ print_constr t ++ str " in instance "  
+                                   ++ Termops.print_constr t ++ str " in instance "  
                                    ++ con_pp ++ str " of " ++ proji_sp_pp ++ str ", ignoring it."));
 		   l
 	       end

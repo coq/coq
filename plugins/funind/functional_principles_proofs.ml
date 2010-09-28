@@ -1,7 +1,6 @@
 open Printer
 open Util
 open Term
-open Termops
 open Namegen
 open Names
 open Declarations
@@ -263,7 +262,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
     in
     let sub = compute_substitution Intmap.empty (snd t1) (snd t2) in
     let sub = compute_substitution sub (fst t1) (fst t2) in
-    let end_of_type_with_pop = pop end_of_type in (*the equation will be removed *)
+    let end_of_type_with_pop = Termops.pop end_of_type in (*the equation will be removed *)
     let new_end_of_type =
       (* Ugly hack to prevent Map.fold order change between ocaml-3.08.3 and ocaml-3.08.4
 	 Can be safely replaced by the next comment for Ocaml >= 3.08.4
@@ -286,7 +285,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
 	   try
 	     let witness = Intmap.find i sub in
 	     if b' <> None then anomaly "can not redefine a rel!";
-	     (pop end_of_type,ctxt_size,mkLetIn(x',witness,t',witness_fun))
+	     (Termops.pop end_of_type,ctxt_size,mkLetIn(x',witness,t',witness_fun))
 	   with Not_found  ->
 	     (mkProd_or_LetIn decl end_of_type, ctxt_size + 1, mkLambda_or_LetIn decl witness_fun)
 	)
@@ -411,7 +410,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	  begin
 	    let pte,pte_args =  (destApp t_x) in
 	    let (* fix_info *) prove_rec_hyp = (Idmap.find (destVar pte) ptes_infos).proving_tac in
-	    let popped_t' = pop t' in
+	    let popped_t' = Termops.pop t' in
 	    let real_type_of_hyp = it_mkProd_or_LetIn popped_t' context in
 	    let prove_new_type_of_hyp =
 	      let context_length = List.length context in
@@ -461,7 +460,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 (* 	    observe (str "In "++Ppconstr.pr_id hyp_id++  *)
 (* 		       str " removing useless precond True" *)
 (* 		    );  *)
-	  let popped_t' = pop t' in
+	  let popped_t' = Termops.pop t' in
 	  let real_type_of_hyp =
 	    it_mkProd_or_LetIn popped_t' context
 	  in
@@ -489,7 +488,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	  ]
 	else if is_trivial_eq t_x
 	then (*  t_x :=  t = t   => we remove this precond *)
-	  let popped_t' = pop t' in
+	  let popped_t' = Termops.pop t' in
 	  let real_type_of_hyp =
 	    it_mkProd_or_LetIn popped_t' context
 	  in
@@ -589,7 +588,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	 let fun_body =
 	   mkLambda(Anonymous,
 		    pf_type_of g' term,
-		    replace_term term (mkRel 1) dyn_infos.info
+		    Termops.replace_term term (mkRel 1) dyn_infos.info
 		   )
 	 in
 	 let new_body = pf_nf_betaiota g' (mkApp(fun_body,[| new_term_value |])) in
@@ -909,8 +908,8 @@ let generalize_non_dep hyp g =
   let to_revert,_ =
     Environ.fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
       if List.mem hyp hyps
-	or List.exists (occur_var_in_decl env hyp) keep
-	or occur_var env hyp hyp_typ
+	or List.exists (Termops.occur_var_in_decl env hyp) keep
+	or Termops.occur_var env hyp hyp_typ
 	or Termops.is_section_variable hyp (* should be dangerous *)
       then (clear,decl::keep)
       else (hyp::clear,keep))
@@ -1300,7 +1299,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		 in
 		 let fname = destConst (fst (decompose_app (List.hd (List.rev pte_args)))) in
 		 tclTHENSEQ
-		   [unfold_in_concl [(all_occurrences,Names.EvalConstRef fname)];
+		   [unfold_in_concl [(Termops.all_occurrences, Names.EvalConstRef fname)];
 		    let do_prove =
 		      build_proof
 			interactive_proof
@@ -1400,7 +1399,7 @@ let build_clause eqs =
   {
     Tacexpr.onhyps =
       Some (List.map
-	      (fun id -> (Rawterm.all_occurrences_expr,id),InHyp)
+	      (fun id -> (Rawterm.all_occurrences_expr, id), Termops.InHyp)
 	      eqs
 	   );
     Tacexpr.concl_occs = Rawterm.no_occurrences_expr
@@ -1416,7 +1415,7 @@ let rec rewrite_eqs_in_eqs eqs =
 	       (fun id gl ->
 		  observe_tac
 		    (Format.sprintf "rewrite %s in %s " (string_of_id eq) (string_of_id id))
-		    (tclTRY (Equality.general_rewrite_in true all_occurrences (* dep proofs also: *) true id (mkVar eq) false))
+		    (tclTRY (Equality.general_rewrite_in true Termops.all_occurrences (* dep proofs also: *) true id (mkVar eq) false))
 		    gl
 	       )
 	       eqs
@@ -1438,7 +1437,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 		  (fun g ->
 		     if is_mes
 		     then
-		       unfold_in_concl [(all_occurrences, evaluable_of_global_reference (delayed_force ltof_ref))] g
+		       unfold_in_concl [(Termops.all_occurrences, evaluable_of_global_reference (delayed_force ltof_ref))] g
 		     else tclIDTAC g
 		  );
 		  observe_tac "rew_and_finish"

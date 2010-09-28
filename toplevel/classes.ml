@@ -10,7 +10,6 @@
 open Names
 open Decl_kinds
 open Term
-open Termops
 open Sign
 open Entries
 open Evd
