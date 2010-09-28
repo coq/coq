@@ -92,7 +92,7 @@ Proof.
   exact (Vcons a 0 v).
 
   inversion v as [| a0 n0 H0 H1 ].
-  exact (Vcons a (S n) (f a H0)).
+  exact (Vcons a0 (S n) (f a H0)).
 Defined.
 
 Lemma Vshiftrepeat : forall n:nat, vector (S n) -> vector (S (S n)).
