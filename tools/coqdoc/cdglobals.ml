@@ -87,7 +87,7 @@ let set_latin1 () =
 
 let set_utf8 () =
   charset := "utf-8";
-  inputenc := "utf8";
+  inputenc := "utf8x";
   utf8 := true
 
 (* Parsing options *)

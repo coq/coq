@@ -273,7 +273,7 @@ Module Make (W0:CyclicType) <: NType.
  lazy beta iota delta [iter_sym dom_op dom_t comparen_m]. reflexivity.
  Qed.
 
-(** TODO: no need for ZnZ.Spec_rect , _ind, and so on... *)
+(** TODO: no need for ZnZ.Spec_rect , Spec_ind, and so on... *)
 
  Theorem spec_compare : forall x y,
    compare x y = Zcompare [x] [y].

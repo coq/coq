@@ -182,6 +182,7 @@ module Latex = struct
     if !header_trailer then begin
       printf "\\documentclass[12pt]{report}\n";
       if !inputenc != "" then printf "\\usepackage[%s]{inputenc}\n" !inputenc;
+      if !inputenc = "utf8x" then printf "\\usepackage{tipa}\n";
       printf "\\usepackage[T1]{fontenc}\n";
       printf "\\usepackage{fullpage}\n";
       printf "\\usepackage{coqdoc}\n";
