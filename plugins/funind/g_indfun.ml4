@@ -432,7 +432,7 @@ TACTIC EXTEND fauto
     [ "fauto" tactic(tac)] ->
       [
 	let heuristic = chose_heuristic None in
-	finduction None heuristic (snd tac)
+	finduction None heuristic (Tacinterp.eval_tactic tac)
       ]
   |
     [ "fauto" ] ->

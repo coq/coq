@@ -100,7 +100,7 @@ let progress_evars t gl =
   in tclTHEN t check gl
 
 TACTIC EXTEND progress_evars
-  [ "progress_evars" tactic(t) ] -> [ progress_evars (snd t) ]
+  [ "progress_evars" tactic(t) ] -> [ progress_evars (Tacinterp.eval_tactic t) ]
 END
 
 let unify_e_resolve flags (c,clenv) gls =

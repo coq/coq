@@ -297,5 +297,5 @@ END
 
 TACTIC EXTEND intuition
 | [ "intuition" ] -> [ intuition_gen default_intuition_tac ]
-| [ "intuition" tactic(t) ] -> [ intuition_gen (fst t) ]
+| [ "intuition" tactic(t) ] -> [ intuition_gen t ]
 END

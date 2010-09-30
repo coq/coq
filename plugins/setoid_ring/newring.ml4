@@ -831,7 +831,7 @@ let ring_lookup (f:glob_tactic_expr) lH rl t gl =
 
 TACTIC EXTEND ring_lookup
 | [ "ring_lookup" tactic0(f) "[" constr_list(lH) "]" ne_constr_list(lrt) ] ->
-    [ let (t,lr) = list_sep_last lrt in ring_lookup (fst f) lH lr t]
+    [ let (t,lr) = list_sep_last lrt in ring_lookup f lH lr t]
 END
 
 
@@ -1159,5 +1159,5 @@ let field_lookup (f:glob_tactic_expr) lH rl t gl =
 
 TACTIC EXTEND field_lookup
 | [ "field_lookup" tactic(f) "[" constr_list(lH) "]" ne_constr_list(lt) ] ->
-      [ let (t,l) = list_sep_last lt in field_lookup (fst f) lH l t ]
+      [ let (t,l) = list_sep_last lt in field_lookup f lH l t ]
 END

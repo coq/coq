@@ -13,7 +13,7 @@ open Tacexpr
 open Quote
 
 let make_cont k x =
-  let k = TacDynamic(dummy_loc, Tacinterp.tactic_in (fun _ -> fst k)) in
+  let k = TacDynamic(dummy_loc, Tacinterp.tactic_in (fun _ -> k)) in
   let x = TacDynamic(dummy_loc, Pretyping.constr_in x) in
   let tac = <:tactic<let cont := $k in cont $x>> in
   Tacinterp.interp tac

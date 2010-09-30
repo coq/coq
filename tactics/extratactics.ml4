@@ -193,7 +193,7 @@ TACTIC EXTEND autorewrite
 | [ "autorewrite" "with" ne_preident_list(l) in_arg_hyp(cl) "using" tactic(t) ] ->
     [
       let cl =  glob_in_arg_hyp_to_clause cl in
-      auto_multi_rewrite_with (snd t) l cl
+      auto_multi_rewrite_with (Tacinterp.eval_tactic t) l cl
 
     ]
 END
@@ -203,7 +203,7 @@ TACTIC EXTEND autorewrite_star
     [ auto_multi_rewrite ~conds:AllMatches l (glob_in_arg_hyp_to_clause  cl) ]
 | [ "autorewrite" "*" "with" ne_preident_list(l) in_arg_hyp(cl) "using" tactic(t) ] ->
     [ let cl =  glob_in_arg_hyp_to_clause cl in
-	auto_multi_rewrite_with ~conds:AllMatches (snd t) l cl ]
+	auto_multi_rewrite_with ~conds:AllMatches (Tacinterp.eval_tactic t) l cl ]
 END
 
 (**********************************************************************)
@@ -465,12 +465,12 @@ let add_transitivity_lemma left lem =
 (* Vernacular syntax *)
 
 TACTIC EXTEND stepl
-| ["stepl" constr(c) "by" tactic(tac) ] -> [ step true c (snd tac) ]
+| ["stepl" constr(c) "by" tactic(tac) ] -> [ step true c (Tacinterp.eval_tactic tac) ]
 | ["stepl" constr(c) ] -> [ step true c tclIDTAC ]
 END
 
 TACTIC EXTEND stepr
-| ["stepr" constr(c) "by" tactic(tac) ] -> [ step false c (snd tac) ]
+| ["stepr" constr(c) "by" tactic(tac) ] -> [ step false c (Tacinterp.eval_tactic tac) ]
 | ["stepr" constr(c) ] -> [ step false c tclIDTAC ]
 END
 

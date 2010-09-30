@@ -13,6 +13,13 @@ efficiency, when an evar is known to be undefined, it is preferable to
 use specific functions about undefined evars since these ones are
 generally fewer than the defined ones.
 
+** Type changes in TACTIC EXTEND rules **
+
+Arguments bound with tactic(_) in TACTIC EXTEND rules are now of type
+glob_tactic_expr, instead of glob_tactic_expr * tactic. Only the first
+component is kept, the second one can be obtained via
+Tacinterp.eval_tactic.
+
 =========================================
 = CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
 =========================================
