@@ -673,7 +673,8 @@ let w_merge env with_types flags (evd,metas,evars) =
 		  metas evars' eqns
 
           | _ ->
-	      w_merge_rec (solve_simple_evar_eqn env evd ev rhs')
+	    let evd', rhs'' = pose_all_metas_as_evars env evd rhs' in
+	      w_merge_rec (solve_simple_evar_eqn env evd' ev rhs'')
 		metas evars' eqns
 	end
     | [] ->
