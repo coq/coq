@@ -67,8 +67,6 @@ usage () {
     printf "\tSpecifies whether or not to use dynamic loading of native code\n"
     echo "-coqide (opt|byte|no)"
     printf "\tSpecifies whether or not to compile Coqide\n"
-    echo "-uim-script-path"
-    printf "\tSpecifies where uim's .scm files are installed\n"
     echo "-browser <command>"
     printf "\tUse <command> to open URL %%s\n"
     echo "-with-doc (yes|no)"
@@ -248,9 +246,6 @@ while : ; do
     -force-caml-version|--force-caml-version|-force-ocaml-version|--force-ocaml-version) 
           force_caml_version_spec=yes
 	  force_caml_version=yes;;
-    -uim-script-path)
-          uim_script_path=$2
-          shift;;
     *) echo "Unknown option \"$1\"." 1>&2; usage; exit 2;;
   esac
   shift
@@ -651,15 +646,6 @@ case $COQIDE in
         esac;;
     no) LABLGTKINCLUDES="";;
 esac
-
-if which uim-fep; then
-    for cand in i"$uim_script_path" /usr/local/share/uim/ /usr/share/uim/; do
-        if [ -f "$cand/loader.scm" ]; then
-            UIMSCRIPTDIR=$cand
-            break
-        fi
-    done
-fi
 
 # strip command
 
@@ -1100,7 +1086,6 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|CHECKEDOUTSOURCETREE|$checkedout|" \
     -e "s|WITHDOCOPT|$with_doc|" \
     -e "s|HASNATIVEDYNLINK|$NATDYNLINKFLAG|" \
-    -e "s|UIMSCRIPTPATH|$UIMSCRIPTDIR|" \
       "$config_template" > "$config_file"
 
 chmod a-w "$config_file"
@@ -1114,4 +1099,4 @@ echo
 echo "*Warning* To compile the system for a new architecture"
 echo "          don't forget to do a 'make archclean' before './configure'."
 
-# $Id: configure 12689 2010-01-26 13:41:56Z glondu $
+# $Id$

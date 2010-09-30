@@ -340,14 +340,6 @@ install-ide-info:
 	$(MKDIR) $(FULLIDELIB)
 	$(INSTALLLIB) ide/FAQ $(FULLIDELIB)
 
-# IM files
-
-IMFILES=$(addprefix ide/uim/, coqide.scm coqide-rules.scm coqide-custom.scm)
-
-install-im:
-	$(INSTALLLIB) $(IMFILES) $(UIMSCRIPTDIR)
-	uim-module-manager --register coqide
-
 ###########################################################################
 # tests
 ###########################################################################
