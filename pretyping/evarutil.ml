@@ -59,8 +59,15 @@ let nf_evar_info evc info =
       | Evar_empty -> Evar_empty
       | Evar_defined c -> Evar_defined (Reductionops.nf_evar evc c) }
 
-let nf_evars evm = Evd.fold (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
-		     evm Evd.empty
+let nf_evars evm =
+  Evd.fold
+    (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
+    evm Evd.empty
+
+let nf_evars_undefined evm =
+  Evd.fold_undefined
+    (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
+    evm Evd.empty
 
 let nf_evar_map evd = Evd.evars_reset_evd (nf_evars evd) evd
 
@@ -86,7 +93,7 @@ let collect_evars emap c =
   list_uniquize (collrec [] c)
 
 let push_dependent_evars sigma emap =
-  Evd.fold (fun ev {evar_concl = ccl} (sigma',emap') ->
+  Evd.fold_undefined (fun ev {evar_concl = ccl} (sigma',emap') ->
     List.fold_left
       (fun (sigma',emap') ev ->
 	(Evd.add sigma' ev (Evd.find emap' ev),Evd.remove emap' ev))
@@ -111,7 +118,7 @@ let push_duplicated_evars sigma emap c =
 (* replaces a mapping of existentials into a mapping of metas.
    Problem if an evar appears in the type of another one (pops anomaly) *)
 let evars_to_metas sigma (emap, c) =
-  let emap = nf_evars emap in
+  let emap = nf_evars_undefined emap in
   let sigma',emap' = push_dependent_evars sigma emap in
   let sigma',emap' = push_duplicated_evars sigma' emap' c in
   let change_exist evar =
