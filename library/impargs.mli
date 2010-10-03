@@ -103,7 +103,7 @@ val merge_impls : implicits_list -> implicits_list -> implicits_list
 
 type implicit_interactive_request =
   | ImplAuto
-  | ImplManual of implicit_status list
+  | ImplManual
 
 type implicit_discharge_request =
   | ImplLocal

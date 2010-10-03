@@ -409,23 +409,16 @@ let compute_global_implicits flags manual = function
 (* Merge a manual explicitation with an implicit_status list *)
 
 let merge_impls oldimpls newimpls =
-  let (before, news), olds =
-    let len = List.length newimpls - List.length oldimpls in
-      if len >= 0 then list_chop len newimpls, oldimpls
-      else
-	let before, after = list_chop (-len) oldimpls in
-	  (before, newimpls), after
-  in
-    before @ (List.map2 (fun orig ni ->
-      match orig with
-      | Some (_, Manual, _) -> orig
-      | _ -> ni) olds news)
+  List.map2 (fun orig ni ->
+    match orig with
+    | Some (_, Manual, _) -> orig
+    | _ -> ni) oldimpls newimpls
 
 (* Caching implicits *)
 
 type implicit_interactive_request =
   | ImplAuto
-  | ImplManual of implicit_status list
+  | ImplManual
 
 type implicit_discharge_request =
   | ImplLocal
@@ -507,16 +500,13 @@ let rebuild_implicits (req,l) =
 	  let oldimpls = snd (List.hd l) in
 	  let newimpls = compute_global_implicits flags [] ref in
 	    [ref,merge_impls oldimpls newimpls]
-      | ImplManual m ->
+      | ImplManual ->
 	  let oldimpls = snd (List.hd l) in
-	  let auto =
-	    if flags.auto then
-	      let newimpls = compute_global_implicits flags [] ref in
-		merge_impls oldimpls newimpls
-	    else oldimpls
-	  in
-	  let l' = merge_impls auto m in
-	  [ref,l']
+	  if flags.auto then
+	    let newimpls = compute_global_implicits flags [] ref in
+	    [ref, merge_impls oldimpls newimpls]
+	  else
+	    [ref,oldimpls]
 
 let classify_implicits (req,_ as obj) =
   if req = ImplLocal then Dispose else Substitute obj
@@ -572,7 +562,7 @@ let declare_manual_implicits local ref ?enriching l =
   let l' = compute_manual_implicits env flags t enriching l in
   let req =
     if is_local local ref then ImplLocal
-    else ImplInteractive(ref,flags,ImplManual l')
+    else ImplInteractive(ref,flags,ImplManual)
   in
     add_anonymous_leaf (inImplicits (req,[ref,l']))
 
