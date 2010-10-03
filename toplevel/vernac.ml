@@ -43,7 +43,7 @@ let raise_with_file file exc =
           ((b, f, loc), e)
       | Loc.Exc_located (loc, e) when loc <> dummy_loc ->
           ((false,file, loc), e)
-      | _ -> ((false,file,cmdloc), re)
+      | Loc.Exc_located (_, e) | e -> ((false,file,cmdloc), e)
   in
   raise (Error_in_file (file, inner, disable_drop inex))
 
