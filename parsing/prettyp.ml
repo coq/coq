@@ -646,16 +646,16 @@ let print_opaque_name qid =
 	print_named_decl (id,c,ty)
 
 let print_about_any k =
-  begin match k with
+  v 0 (match k with
   | Term ref ->
-      print_ref false ref ++ fnl () ++ print_name_infos ref ++
-      print_opacity ref
+      print_ref false ref ++ fnl () ++ print_name_infos ref ++ cut () ++
+      print_opacity ref ++
+      hov 0 (str "Expands to: " ++ pr_located_qualid k)
   | Syntactic kn ->
-      print_syntactic_def kn
+      print_syntactic_def kn ++
+      hov 0 (str "Expands to: " ++ pr_located_qualid k)
   | Dir _ | ModuleType _ | Undefined _ ->
-      mt () end
-  ++
-  hov 0 (str "Expands to: " ++ pr_located_qualid k)
+      hov 0 (pr_located_qualid k))
 
 let print_about = function
   | Genarg.ByNotation (loc,ntn,sc) ->
