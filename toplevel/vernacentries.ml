@@ -1090,7 +1090,7 @@ let vernac_print = function
       pp (Notation.pr_scope (Constrextern.without_symbols pr_lrawconstr) s)
   | PrintVisibility s ->
       pp (Notation.pr_visibility (Constrextern.without_symbols pr_lrawconstr) s)
-  | PrintAbout qid -> msgnl (print_about qid)
+  | PrintAbout qid -> msg (print_about qid)
   | PrintImplicit qid -> msg (print_impargs qid)
 (*spiwack: prints all the axioms and section variables used by a term *)
   | PrintAssumptions (o,r) ->

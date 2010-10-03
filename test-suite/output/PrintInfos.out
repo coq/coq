@@ -1,0 +1,80 @@
+or_introl : forall A B : Prop, A -> A \/ B
+
+Argument A is implicit
+Argument scopes are [type_scope type_scope _]
+Expands to: Constructor Coq.Init.Logic.or_introl
+Inductive or (A B : Prop) : Prop :=
+    or_introl : A -> A \/ B | or_intror : B -> A \/ B
+
+For or_introl: Argument A is implicit
+For or_intror: Argument B is implicit
+For or: Argument scopes are [type_scope type_scope]
+For or_introl: Argument scopes are [type_scope type_scope _]
+For or_intror: Argument scopes are [type_scope type_scope _]
+or_introl : forall A B : Prop, A -> A \/ B
+
+Argument A is implicit
+Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
+
+For eq: Argument A is implicit and maximally inserted
+For eq_refl: Argument A is implicit
+For eq: Argument scopes are [type_scope _ _]
+For eq_refl: Argument scopes are [type_scope _]
+eq_refl : forall (A : Type) (x : A), x = x
+
+Argument A is implicit
+Argument scopes are [type_scope _]
+Expands to: Constructor Coq.Init.Logic.eq_refl
+eq_refl : forall (A : Type) (x : A), x = x
+
+Argument A is implicit
+plus = 
+fix plus (n m : nat) : nat := match n with
+                              | 0 => m
+                              | S p => S (plus p m)
+                              end
+     : nat -> nat -> nat
+
+Argument scopes are [nat_scope nat_scope]
+plus : nat -> nat -> nat
+
+Argument scopes are [nat_scope nat_scope]
+plus is transparent
+Expands to: Constant Coq.Init.Peano.plus
+plus : nat -> nat -> nat
+
+No implicit arguments
+plus_n_O : forall n : nat, n = n + 0
+
+Argument scope is [nat_scope]
+plus_n_O is opaque
+Expands to: Constant Coq.Init.Peano.plus_n_O
+Inductive le (n : nat) : nat -> Prop :=
+    le_n : n <= n | le_S : forall m : nat, n <= m -> n <= S m
+
+For le_S: Argument m is implicit
+For le_S: Argument n is implicit and maximally inserted
+For le: Argument scopes are [nat_scope nat_scope]
+For le_n: Argument scope is [nat_scope]
+For le_S: Argument scopes are [nat_scope nat_scope _]
+comparison : Set
+
+Expands to: Inductive Coq.Init.Datatypes.comparison
+Inductive comparison : Set :=
+    Eq : comparison | Lt : comparison | Gt : comparison
+bar : foo
+
+Expanded type for implicit arguments
+bar : forall x : nat, x = 0
+
+Argument x is implicit and maximally inserted
+Expands to: Constant Top.bar
+*** [ bar : foo ]
+
+Expanded type for implicit arguments
+bar : forall x : nat, x = 0
+
+Argument x is implicit and maximally inserted
+Module Coq.Init.Peano
+Notation existS2 := existT2
+Expands to: Notation Coq.Init.Specif.existS2

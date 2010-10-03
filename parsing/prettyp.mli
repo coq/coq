@@ -22,7 +22,6 @@ open Genarg
 val assumptions_for_print : name list -> Termops.names_context
 
 val print_closed_sections : bool ref
-val print_impl_args : Impargs.implicits_list -> std_ppcmds
 val print_context : bool -> int option -> Lib.library_segment -> std_ppcmds
 val print_library_entry : bool -> (object_name * Lib.node) -> std_ppcmds option
 val print_full_context : unit -> std_ppcmds
@@ -42,12 +41,6 @@ val print_name : reference or_by_notation -> std_ppcmds
 val print_opaque_name : reference -> std_ppcmds
 val print_about : reference or_by_notation -> std_ppcmds
 val print_impargs : reference or_by_notation -> std_ppcmds
-
-(*i
-val print_extracted_name : identifier -> std_ppcmds
-val print_extraction : unit -> std_ppcmds
-val print_extracted_vars : unit -> std_ppcmds
-i*)
 
 (** Pretty-printing functions for classes and coercions *)
 val print_graph : unit -> std_ppcmds
