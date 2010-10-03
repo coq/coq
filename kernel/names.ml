@@ -108,7 +108,7 @@ let rec check_bound_mp = function
   | _ -> false
 
 let rec string_of_mp = function
-  | MPfile sl -> "MPfile (" ^ string_of_dirpath sl ^ ")"
+  | MPfile sl -> string_of_dirpath sl
   | MPbound uid -> string_of_uid uid
  (* | MPapp (mp1,mp2) -> 
       "("^string_of_mp mp ^ " " ^ 
