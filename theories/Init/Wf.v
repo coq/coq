@@ -34,6 +34,8 @@ Section Well_founded.
   destruct 1; trivial.
  Defined.
 
+ Global Implicit Arguments Acc_inv [x y] [x].
+
  (** A relation is well-founded if every element is accessible *)
 
  Definition well_founded := forall a:A, Acc a.

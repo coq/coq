@@ -14,8 +14,6 @@ Require Import ProofIrrelevance.
 
 Open Local Scope program_scope.
 
-Implicit Arguments Acc_inv [A R x y].
-
 Section Well_founded.
   Variable A : Type.
   Variable R : A -> A -> Prop.
