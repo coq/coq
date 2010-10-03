@@ -48,7 +48,7 @@ type var_internalization_data =
     identifier list *
       (** impargs to automatically add to the variable, e.g. for "JMeq A a B b"
           in implicit mode, this is [A;B] and this adds (A:=A) and (B:=B) *)
-    Impargs.implicits_list * (** signature of impargs of the variable *)
+    Impargs.implicit_status list * (** signature of impargs of the variable *)
     scope_name option list (** subscopes of the args of the variable *)
 
 (** A map of free variables to their implicit arguments and scopes *)

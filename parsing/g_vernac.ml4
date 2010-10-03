@@ -556,7 +556,7 @@ GEXTEND Gram
 
       (* Implicit *)
       | IDENT "Implicit"; IDENT "Arguments"; qid = smart_global;
-	   pos = OPT [ "["; l = LIST0 implicit_name; "]" ->
+	   pos = LIST0 [ "["; l = LIST0 implicit_name; "]" ->
 	     List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
 	   VernacDeclareImplicits (use_section_locality (),qid,pos)
 

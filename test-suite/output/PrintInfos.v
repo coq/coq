@@ -26,3 +26,6 @@ Print bar.
 
 About Peano. (* Module *)
 About existS2. (* Notation *)
+
+Implicit Arguments eq_refl [[A] [x]] [[A]].
+Print eq_refl.

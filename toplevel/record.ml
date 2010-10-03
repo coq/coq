@@ -318,8 +318,8 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	  (DefinitionEntry proj_entry, IsDefinition Definition)
 	in
 	let cref = ConstRef cst in
-	Impargs.declare_manual_implicits false cref paramimpls;
-	Impargs.declare_manual_implicits false (ConstRef proj_cst) (List.hd fieldimpls);
+	Impargs.declare_manual_implicits false cref [paramimpls];
+	Impargs.declare_manual_implicits false (ConstRef proj_cst) [List.hd fieldimpls];
 	Classes.set_typeclass_transparency (EvalConstRef cst) false;
 	if infer then Evd.fold (fun ev evi _ -> Recordops.declare_method (ConstRef cst) ev sign) sign ();
 	cref, [Name proj_name, Some proj_cst]

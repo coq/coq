@@ -79,7 +79,7 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
   in
   let c = solve_tccs_in_type env id isevars evm c typ in
     Lemmas.start_proof id kind c (fun loc gr ->
-      Impargs.declare_manual_implicits (loc = Local) gr ~enriching:true imps;
+      Impargs.declare_manual_implicits (loc = Local) gr ~enriching:true [imps];
       hook loc gr)
 
 let print_subgoals () = Flags.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()

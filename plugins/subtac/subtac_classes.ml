@@ -171,7 +171,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
   let hook vis gr =
     let cst = match gr with ConstRef kn -> kn | _ -> assert false in
     let inst = Typeclasses.new_instance k pri global (ConstRef cst) in
-      Impargs.declare_manual_implicits false gr ~enriching:false imps;
+      Impargs.declare_manual_implicits false gr ~enriching:false [imps];
       Typeclasses.add_instance inst
   in
   let evm = Subtac_utils.evars_of_term !evars Evd.empty term in

@@ -526,7 +526,7 @@ let rec extern inctx scopes vars r =
     extern_symbol scopes vars r'' (uninterp_notations r'')
   with No_match -> match r' with
   | RRef (loc,ref) ->
-      extern_global loc (implicits_of_global ref)
+      extern_global loc (select_stronger_impargs (implicits_of_global ref))
         (extern_reference loc vars ref)
 
   | RVar (loc,id) -> CRef (Ident (loc,id))
@@ -579,7 +579,8 @@ let rec extern inctx scopes vars r =
 		 CRecord (loc, None, List.rev (ip projs locals args []))
 	       with
 		 | Not_found | No_match | Exit ->
-		     extern_app loc inctx (implicits_of_global ref)
+		     extern_app loc inctx
+		       (select_stronger_impargs (implicits_of_global ref))
 		       (Some ref,extern_reference rloc vars ref) args
 	     end
 	 | _       ->
@@ -752,12 +753,17 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 	      let subscopes =
 		try list_skipn n (find_arguments_scope ref) with _ -> [] in
 	      let impls =
-		try list_skipn n (implicits_of_global ref) with _ -> [] in
+		let impls =
+		  select_impargs_size
+		    (List.length args) (implicits_of_global ref) in
+		try list_skipn n impls with _ -> [] in
 	      (if n = 0 then f else RApp (dummy_loc,f,args1)),
 	      args2, subscopes, impls
 	  | RApp (_,(RRef (_,ref) as f),args), None ->
 	      let subscopes = find_arguments_scope ref in
-	      let impls = implicits_of_global ref in
+	      let impls =
+		  select_impargs_size
+		    (List.length args) (implicits_of_global ref) in
 	      f, args, subscopes, impls
 	  | RRef _, Some 0 -> RApp (dummy_loc,t,[]), [], [], []
           | _, None -> t, [], [], []

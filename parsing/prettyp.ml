@@ -59,6 +59,10 @@ let with_line_skip l = if l = [] then mt() else fnl() ++ pr_infos_list l
 
 let blankline = mt() (* add a blank sentence in the list of infos *)
 
+let add_colon prefix = if ismt prefix then mt () else prefix ++ str ": "
+
+let int_or_no n = if n=0 then str "no" else int n
+
 (*******************)
 (** Basic printing *)
 
@@ -88,12 +92,32 @@ let print_impargs_by_name max = function
       str (conjugate_verb_to_be impls) ++ str" implicit" ++
       (if max then strbrk " and maximally inserted" else mt()))]
 
-let print_impargs_list l =
+let print_one_impargs_list l =
   let imps = List.filter is_status_implicit l in
   let maximps = List.filter Impargs.maximal_insertion_of imps in
   let nonmaximps = list_subtract imps maximps in
   print_impargs_by_name false nonmaximps @
   print_impargs_by_name true maximps
+
+let print_impargs_list prefix l =
+  let l = extract_impargs_data l in
+  List.flatten (List.map (fun (cond,imps) ->
+    match cond with
+    | None ->
+	List.map (fun pp -> add_colon prefix ++ pp)
+	  (print_one_impargs_list imps)
+    | Some (n1,n2) ->
+       [v 2 (prlist_with_sep cut (fun x -> x)
+	 [(if ismt prefix then str "When" else prefix ++ str ", when") ++
+	   str " applied to " ++
+	   (if n1 = n2 then int_or_no n2 else
+	    if n1 = 0 then str "less than " ++ int n2
+	    else int n1 ++ str " to " ++ int_or_no n2) ++
+	    str (plural n2 " argument") ++ str ":";
+          v 0 (prlist_with_sep cut (fun x -> x)
+	    (if List.exists is_status_implicit imps
+	    then print_one_impargs_list imps
+	    else [str "No implicit arguments"]))])]) l)
 
 let need_expansion impl ref =
   let typ = Global.type_of_global ref in
@@ -106,20 +130,22 @@ let need_expansion impl ref =
 let print_impargs ref =
   let ref = Smartlocate.smart_global ref in
   let impl = implicits_of_global ref in
-  let has_impl = List.filter is_status_implicit impl <> [] in
+  let has_impl = impl <> [] in
   (* Need to reduce since implicits are computed with products flattened *)
   pr_infos_list
-    ([ print_ref (need_expansion impl ref) ref; blankline ] @
-    (if has_impl then print_impargs_list impl
+    ([ print_ref (need_expansion (select_impargs_size 0 impl) ref) ref;
+       blankline ] @
+    (if has_impl then print_impargs_list (mt()) impl
      else [str "No implicit arguments"]))
 
 (*********************)
 (** Printing Scopes  *)
 
-let print_argument_scopes = function
-  | [Some sc] -> [str"Argument scope is [" ++ str sc ++ str"]"]
+let print_argument_scopes prefix = function
+  | [Some sc] ->
+      [add_colon prefix ++ str"Argument scope is [" ++ str sc ++ str"]"]
   | l when not (List.for_all ((=) None) l) ->
-     [hov 2 (str"Argument scopes are" ++ spc() ++
+     [add_colon prefix ++ hov 2 (str"Argument scopes are" ++ spc() ++
       str "[" ++
       prlist_with_sep spc (function Some sc -> str sc | None -> str "_") l ++
       str "]")]
@@ -163,23 +189,22 @@ let print_opacity ref =
 (* *)
 
 let print_name_infos ref =
-  let impl = implicits_of_global ref in
+  let impls = implicits_of_global ref in
   let scopes = Notation.find_arguments_scope ref in
   let type_info_for_implicit =
-    if need_expansion impl ref then
+    if need_expansion (select_impargs_size 0 impls) ref then
       (* Need to reduce since implicits are computed with products flattened *)
       [str "Expanded type for implicit arguments";
        print_ref true ref; blankline]
     else
       [] in
   type_info_for_implicit @
-  print_impargs_list impl @
-  print_argument_scopes scopes
+  print_impargs_list (mt()) impls @
+  print_argument_scopes (mt()) scopes
 
 let print_id_args_data test pr id l =
   if List.exists test l then
-    List.map (fun pp -> str"For " ++ pr_id id ++ str": " ++ pp)
-      (List.filter (fun x -> not (ismt x)) (pr l))
+    pr (str "For " ++ pr_id id) l
   else
     []
 
@@ -195,7 +220,8 @@ let print_args_data_of_inductive_ids get test pr sp mipv =
 
 let print_inductive_implicit_args =
   print_args_data_of_inductive_ids
-    implicits_of_global is_status_implicit print_impargs_list
+    implicits_of_global (fun l -> positions_of_implicits l <> [])
+    print_impargs_list
 
 let print_inductive_argument_scopes =
   print_args_data_of_inductive_ids

@@ -310,7 +310,7 @@ type vernac_expr =
   | VernacSyntacticDefinition of identifier located * (identifier list * constr_expr) *
       locality_flag * onlyparsing_flag
   | VernacDeclareImplicits of locality_flag * reference or_by_notation *
-      (explicitation * bool * bool) list option
+      (explicitation * bool * bool) list list
   | VernacReserve of simple_binder list
   | VernacGeneralizable of locality_flag * (lident list) option
   | VernacSetOpacity of

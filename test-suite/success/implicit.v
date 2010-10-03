@@ -86,3 +86,9 @@ Fixpoint plus n m {struct n} :=
   | 0 => m
   | S p => S (plus p m)
   end.
+
+(* Check multiple implicit arguments signatures *)
+
+Implicit Arguments eq_refl [[A] [x]] [[A]].
+
+Check eq_refl : 0 = 0.

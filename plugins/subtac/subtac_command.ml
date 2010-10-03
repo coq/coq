@@ -332,7 +332,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
 	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
 	let gr = ConstRef c in
 	  if Impargs.is_implicit_args () || impls <> [] then
-	    Impargs.declare_manual_implicits false gr impls
+	    Impargs.declare_manual_implicits false gr [impls]
       in
       let typ = it_mkProd_or_LetIn top_arity binders in
 	hook, name, typ
@@ -340,7 +340,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
       let typ = it_mkProd_or_LetIn top_arity binders_rel in
       let hook l gr = 
 	if Impargs.is_implicit_args () || impls <> [] then
-	  Impargs.declare_manual_implicits false gr impls
+	  Impargs.declare_manual_implicits false gr [impls]
       in hook, recname, typ
   in
   let fullcoqc = Evarutil.nf_evar !isevars def in

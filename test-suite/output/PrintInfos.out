@@ -78,3 +78,12 @@ Argument x is implicit and maximally inserted
 Module Coq.Init.Peano
 Notation existS2 := existT2
 Expands to: Notation Coq.Init.Specif.existS2
+Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
+
+For eq: Argument A is implicit and maximally inserted
+For eq_refl, when applied to no arguments:
+  Arguments A, x are implicit and maximally inserted
+For eq_refl, when applied to 1 argument:
+  Argument A is implicit and maximally inserted
+For eq: Argument scopes are [type_scope _ _]
+For eq_refl: Argument scopes are [type_scope _]
