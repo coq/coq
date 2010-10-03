@@ -1620,8 +1620,9 @@ let interp_induction_arg ist gl sigma arg =
   let env = pf_env gl in
   match arg with
   | ElimOnConstr c ->
-      let sigma, c = interp_constr_with_bindings ist env sigma c in
-      sigma, ElimOnConstr c
+      let sigma', (c,b) = interp_constr_with_bindings ist env sigma c in
+      let sigma, c = solve_remaining_evars false true env sigma sigma' c in
+      sigma, ElimOnConstr (c,b)
   | ElimOnAnonHyp n as x -> sigma, x
   | ElimOnIdent (loc,id) ->
       try
