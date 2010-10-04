@@ -197,7 +197,7 @@ let rec catchable = function
   | e -> Logic.catchable_exception e
 
 let nb_empty_evars s =
-  Evd.fold (fun ev evi acc -> if evi.evar_body = Evar_empty then succ acc else acc) s 0
+  Evd.fold_undefined (fun ev evi acc -> succ acc) s 0
 
 let pr_ev evs ev = Printer.pr_constr_env (Goal.V82.env evs ev) (Evarutil.nf_evar evs (Goal.V82.concl evs ev))
 
@@ -471,8 +471,8 @@ let _ =
   Typeclasses.solve_instanciation_problem := (fun x y z -> resolve_one_typeclass x ~sigma:y z)
 
 let has_undefined p oevd evd =
-  Evd.fold (fun ev evi has -> has ||
-    (evi.evar_body = Evar_empty && snd (p oevd ev evi)))
+  Evd.fold_undefined (fun ev evi has -> has ||
+    snd (p oevd ev evi))
     evd false
 
 let rec merge_deps deps = function
