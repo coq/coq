@@ -430,20 +430,18 @@ let compute_global_implicits flags manual = function
 
 (* Merge a manual explicitation with an implicit_status list *)
 
-let merge_one_impls_block (cond,oldimpls) (_,newimpls) =
-  cond, List.map2 (fun orig ni ->
+let merge_impls (cond,oldimpls) (_,newimpls) =
+  let oldimpls,usersuffiximpls = list_chop (List.length newimpls) oldimpls in
+  cond, (List.map2 (fun orig ni ->
     match orig with
     | Some (_, Manual, _) -> orig
-    | _ -> ni) oldimpls newimpls
-
-let merge_impls oldimpls newimpls =
-  List.map2 merge_one_impls_block oldimpls newimpls
+    | _ -> ni) oldimpls newimpls)@usersuffiximpls
 
 (* Caching implicits *)
 
 type implicit_interactive_request =
   | ImplAuto
-  | ImplManual
+  | ImplManual of int
 
 type implicit_discharge_request =
   | ImplLocal
@@ -519,13 +517,13 @@ let rebuild_implicits (req,l) =
   | ImplConstant (con,flags) ->
       let oldimpls = snd (List.hd l) in
       let newimpls = compute_constant_implicits flags [] con in
-      req, [ConstRef con, merge_impls oldimpls newimpls]
+      req, [ConstRef con, List.map2 merge_impls oldimpls newimpls]
   | ImplMutualInductive (kn,flags) ->
       let newimpls = compute_all_mib_implicits flags [] kn in
       let rec aux olds news =
 	match olds, news with
 	| (_, oldimpls) :: old, (gr, newimpls) :: tl ->
-	    (gr, merge_impls oldimpls newimpls) :: aux old tl
+	    (gr, List.map2 merge_impls oldimpls newimpls) :: aux old tl
 	| [], [] -> []
 	| _, _ -> assert false
       in req, aux l newimpls
@@ -536,14 +534,14 @@ let rebuild_implicits (req,l) =
       | ImplAuto ->
 	  let oldimpls = snd (List.hd l) in
 	  let newimpls = compute_global_implicits flags [] ref in
-	    [ref,merge_impls oldimpls newimpls]
-      | ImplManual ->
+	    [ref,List.map2 merge_impls oldimpls newimpls]
+      | ImplManual userimplsize ->
 	  let oldimpls = snd (List.hd l) in
 	  if flags.auto then
-	    let newimpls = compute_global_implicits flags [] ref in
-	    assert (List.tl newimpls = []);
-	    let newimpls = List.map (fun _ -> List.hd newimpls) oldimpls in
-	    [ref,merge_impls oldimpls newimpls]
+	    let newimpls = List.hd (compute_global_implicits flags [] ref) in
+	    let p = List.length (snd newimpls) - userimplsize in
+	    let newimpls = on_snd (list_firstn p) newimpls in
+	    [ref,List.map (fun o -> merge_impls o newimpls) oldimpls]
 	  else
 	    [ref,oldimpls]
 
@@ -629,7 +627,7 @@ let declare_manual_implicits local ref ?enriching l =
 	   set_manual_implicits env flags enriching autoimpls imps)) l in
   let req =
     if is_local local ref then ImplLocal
-    else ImplInteractive(ref,flags,ImplManual)
+    else ImplInteractive(ref,flags,ImplManual (List.length autoimpls))
   in
     add_anonymous_leaf (inImplicits (req,[ref,l']))
 
@@ -652,7 +650,8 @@ let lift_implicits n =
 
 let make_implicits_list l = [DefaultImpArgs, l]
 
-let rec drop_first_implicits p = function
+let rec drop_first_implicits p l =
+  if p = 0 then l else match l with
   | _,[] as x -> x
   | DefaultImpArgs,imp::impls ->
       drop_first_implicits (p-1) (DefaultImpArgs,impls)
