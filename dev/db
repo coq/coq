@@ -35,4 +35,4 @@ install_printer Top_printers.ppobj
 install_printer Top_printers.pploc
 install_printer Top_printers.prsubst
 install_printer Top_printers.prdelta
-install_printer Top_printers.ppconstr
+install_printer Top_printers.ppfconstr
