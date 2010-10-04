@@ -775,11 +775,11 @@ let vernac_syntactic_definition lid =
   Metasyntax.add_syntactic_definition (snd lid)
 
 let vernac_declare_implicits local r = function
-  | Some imps ->
-      Impargs.declare_manual_implicits local (smart_global r) ~enriching:false
-	(List.map (fun (ex,b,f) -> ex, (b,true,f)) imps)
-  | None ->
+  | [] ->
       Impargs.declare_implicits local (smart_global r)
+  | _::_ as imps ->
+      Impargs.declare_manual_implicits local (smart_global r) ~enriching:false
+	(List.map (List.map (fun (ex,b,f) -> ex, (b,true,f))) imps)
 
 let vernac_reserve bl =
   let sb_decl = (fun (idl,c) ->
@@ -1113,7 +1113,7 @@ let vernac_print = function
       pp (Notation.pr_scope (Constrextern.without_symbols pr_lrawconstr) s)
   | PrintVisibility s ->
       pp (Notation.pr_visibility (Constrextern.without_symbols pr_lrawconstr) s)
-  | PrintAbout qid -> msgnl (print_about qid)
+  | PrintAbout qid -> msg (print_about qid)
   | PrintImplicit qid -> msg (print_impargs qid)
 (*spiwack: prints all the axioms and section variables used by a term *)
   | PrintAssumptions (o,r) ->

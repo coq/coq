@@ -1197,6 +1197,19 @@ When in a module, tells not to activate the implicit arguments of
 {\qualid} declared by this commands to contexts that requires the
 module.
 
+\item {\tt \zeroone{Global {\sl |} Local} Implicit Arguments {\qualid} \sequence{[ \nelist{\possiblybracketedident}{} ]}{}}
+
+For names of constants, inductive types, constructors, lemmas which
+can only be applied to a fixed number of arguments (this excludes for
+instance constants whose type is polymorphic), multiple lists
+of implicit arguments can be given. These lists must be of different
+length, and, depending on the number of arguments {\qualid} is applied
+to in practice, the longest applicable list of implicit arguments is
+used to select which implicit arguments are inserted.
+
+For printing, the omitted arguments are the ones of the longest list
+of implicit arguments of the sequence.
+
 \end{Variants}
 
 \Example
@@ -1220,6 +1233,8 @@ Fixpoint length (A:Type) (l:list A) : nat :=
 Implicit Arguments map [A B].
 Implicit Arguments length [[A]]. (* A has to be maximally inserted *)
 Check (fun l:list (list nat) => map length l).
+Implicit Arguments map [A B] [A] [].
+Check (fun l => map length l = map (list nat) nat length l).
 \end{coq_example}
 
 \Rem To know which are the implicit arguments of an object, use the command

@@ -42,8 +42,8 @@ Notation " x ~= y " := (@JMeq _ x _ y) (at level 70, no associativity).
 
 (** Notation for the single element of [x = x] and [x ~= x]. *)
 
-Implicit Arguments eq_refl [[A] [x]].
-Implicit Arguments JMeq_refl [[A] [x]].
+Implicit Arguments eq_refl [[A] [x]] [A].
+Implicit Arguments JMeq_refl [[A] [x]] [A].
 
 (** Do something on an heterogeneous equality appearing in the context. *)
 

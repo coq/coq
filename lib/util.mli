@@ -330,7 +330,9 @@ val prlist_with_sep :
 val prvect : ('a -> std_ppcmds) -> 'a array -> std_ppcmds
 val prvecti : (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
 val prvect_with_sep :
-   (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b array -> std_ppcmds
+   (unit -> std_ppcmds) -> ('a -> std_ppcmds) -> 'a array -> std_ppcmds
+val prvecti_with_sep :
+   (unit -> std_ppcmds) -> (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
 val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 val pr_enum : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 val pr_located : ('a -> std_ppcmds) -> 'a located -> std_ppcmds

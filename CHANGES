@@ -110,6 +110,7 @@ Specification language
 - Binders given before ":" in lemmas and in definitions built by tactics are
   now automatically introduced (possible source of incompatibility that can
   be resolved by invoking "Unset Automatic Introduction").
+- New support for multiple implicit arguments signatures per reference.
 
 Module system
 

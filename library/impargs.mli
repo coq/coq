@@ -51,7 +51,7 @@ type implicit_explanation =
   | Manual
 
 type implicit_status = (identifier * implicit_explanation * (bool * bool)) option
-type implicits_list = implicit_status list
+type implicits_list (* = implicit_status list *)
 
 val is_status_implicit : implicit_status -> bool
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
@@ -63,7 +63,7 @@ val positions_of_implicits : implicits_list -> int list
 
 (* Computation of the positions of arguments automatically inferable
    for an object of the given type in the given env *)
-val compute_implicits : env -> types -> implicits_list
+val compute_implicits : env -> types -> implicits_list list
 
 (* A [manual_explicitation] is a tuple of a positional or named explicitation with
    maximal insertion, force inference and force usage flags. Forcing usage makes
@@ -71,7 +71,7 @@ val compute_implicits : env -> types -> implicits_list
 type manual_explicitation = Topconstr.explicitation * (bool * bool * bool)
 
 val compute_implicits_with_manual : env -> types -> bool ->
-  manual_explicitation list -> implicits_list
+  manual_explicitation list -> implicit_status list
 
 (*s Computation of implicits (done using the global environment). *)
 
@@ -88,22 +88,33 @@ val declare_implicits : bool -> global_reference -> unit
    Unsets implicits if [l] is empty. *)
 
 val declare_manual_implicits : bool -> global_reference -> ?enriching:bool ->
-  manual_explicitation list -> unit
+  manual_explicitation list list -> unit
 
 (* If the list is empty, do nothing, otherwise declare the implicits. *)
 
 val maybe_declare_manual_implicits : bool -> global_reference -> ?enriching:bool ->
   manual_explicitation list -> unit
 
-val implicits_of_global : global_reference -> implicits_list
+val implicits_of_global : global_reference -> implicits_list list
+
+val extract_impargs_data :
+  implicits_list list -> ((int * int) option * implicit_status list) list
 
 val lift_implicits : int -> manual_explicitation list -> manual_explicitation list
 
 val merge_impls : implicits_list -> implicits_list -> implicits_list
 
+val make_implicits_list : implicit_status list -> implicits_list list
+
+val drop_first_implicits : int -> implicits_list -> implicits_list
+
+val select_impargs_size : int -> implicits_list list -> implicit_status list
+
+val select_stronger_impargs : implicits_list list -> implicit_status list
+
 type implicit_interactive_request =
   | ImplAuto
-  | ImplManual of implicit_status list
+  | ImplManual of int
 
 type implicit_discharge_request =
   | ImplLocal

@@ -20,16 +20,14 @@ Notation " () " := tt.
 
 (** Set maximally inserted implicit arguments for standard definitions. *)
 
-Implicit Arguments eq [[A]].
-
 Implicit Arguments Some [[A]].
 Implicit Arguments None [[A]].
 
-Implicit Arguments inl [[A] [B]].
-Implicit Arguments inr [[A] [B]].
+Implicit Arguments inl [[A] [B]] [A].
+Implicit Arguments inr [[A] [B]] [B].
 
-Implicit Arguments left [[A] [B]].
-Implicit Arguments right [[A] [B]].
+Implicit Arguments left [[A] [B]] [A].
+Implicit Arguments right [[A] [B]] [B].
 
 Implicit Arguments pair [[A] [B]].
 Implicit Arguments fst [[A] [B]].
@@ -50,8 +48,8 @@ Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) : list_scope.
 
 Require Import Bvector.
 
-Implicit Arguments Vnil [[A]].
-Implicit Arguments Vcons [[A] [n]].
+Implicit Arguments Vnil [[A]] [].
+Implicit Arguments Vcons [[A] [n]] [].
 
 (** Treating n-ary exists *)
 
