@@ -333,13 +333,13 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
 	  anomaly "conversion was given unreduced term (FLambda)";
         let (_,_ty1,bd1) = destFLambda mk_clos hd1 in
 	eqappr CONV infos
-	  (lft1,(bd1,[])) (el_lift lft2,(hd2,eta_expand_stack v2)) cuniv
+	  (el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack v2)) cuniv
     | (_, FLambda _) ->
         if v2 <> [] then
 	  anomaly "conversion was given unreduced term (FLambda)";
         let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
 	eqappr CONV infos
-	  (el_lift lft1,(hd1,eta_expand_stack v1)) (lft2,(bd2,[])) cuniv
+	  (el_lift lft1, (hd1, eta_expand_stack v1)) (el_lift lft2, (bd2, [])) cuniv
 
     (* only one constant, defined var or defined rel *)
     | (FFlex fl1, _)      ->
