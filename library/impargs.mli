@@ -51,7 +51,10 @@ type implicit_explanation =
   | Manual
 
 type implicit_status = (identifier * implicit_explanation * (bool * bool)) option
-type implicits_list (* = implicit_status list *)
+
+type implicit_side_condition
+
+type implicits_list = implicit_side_condition * implicit_status list
 
 val is_status_implicit : implicit_status -> bool
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
