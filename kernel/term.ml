@@ -102,6 +102,24 @@ type ('constr, 'types) kind_of_term =
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
 
+(* Experimental, used in Presburger contrib *)
+type ('constr, 'types) kind_of_type =
+  | SortType   of sorts
+  | CastType   of 'types * 'types
+  | ProdType   of name * 'types * 'types
+  | LetInType  of name * 'constr * 'types * 'types
+  | AtomicType of 'constr * 'constr array
+
+let kind_of_type = function
+  | Sort s -> SortType s
+  | Cast (c,_,t) -> CastType (c, t)
+  | Prod (na,t,c) -> ProdType (na, t, c)
+  | LetIn (na,b,t,c) -> LetInType (na, b, t, c)
+  | App (c,l) -> AtomicType (c, l)
+  | (Rel _ | Meta _ | Var _ | Evar _ | Const _ | Case _ | Fix _ | CoFix _ | Ind _ as c)
+    -> AtomicType (c,[||])
+  | (Lambda _ | Construct _) -> failwith "Not a type"
+
 (* constr is the fixpoint of the previous type. Requires option
    -rectypes of the Caml compiler to be set *)
 type constr = (constr,constr) kind_of_term

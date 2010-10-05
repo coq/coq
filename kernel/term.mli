@@ -216,6 +216,16 @@ type ('constr, 'types) kind_of_term =
 
 val kind_of_term : constr -> (constr, types) kind_of_term
 
+(** Experimental, used in Presburger contrib *)
+type ('constr, 'types) kind_of_type =
+  | SortType   of sorts
+  | CastType   of 'types * 'types
+  | ProdType   of name * 'types * 'types
+  | LetInType  of name * 'constr * 'types * 'types
+  | AtomicType of 'constr * 'constr array
+
+val kind_of_type : types -> (constr, types) kind_of_type
+
 (** {6 Simple term case analysis. } *)
 
 val isRel  : constr -> bool
