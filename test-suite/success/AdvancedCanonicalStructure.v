@@ -79,19 +79,17 @@ Record interp_pair :Type :=
     link: abs = interp repr }.
 
 Lemma prod_interp :forall (a b:interp_pair),a * b = interp (Prod a b) .
-proof.
-let a:interp_pair,b:interp_pair.
-reconsider thesis as (a * b = interp a * interp b).
-thus thesis by (link a),(link b).
-end proof.
+Proof.
+intros a b.
+change (a * b = interp a * interp b).
+rewrite (link a), (link b); reflexivity.
 Qed.
 
 Lemma fun_interp :forall (a b:interp_pair), (a -> b) = interp (Fun a b).
-proof.
-let a:interp_pair,b:interp_pair.
-reconsider thesis as ((a -> b) = (interp a -> interp b)).
-thus thesis using rewrite (link a);rewrite (link b);reflexivity.
-end proof.
+Proof.
+intros a b.
+change ((a -> b) = (interp a -> interp b)).
+rewrite (link a), (link b); reflexivity.
 Qed.
 
 Canonical Structure ProdCan (a b:interp_pair) :=
