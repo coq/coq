@@ -99,3 +99,11 @@ Parameter p : forall A, A -> forall n, n = 0 -> True.
 Implicit Arguments p [A n].
 Notation Q := (p 0).
 Check Q eq_refl.
+
+(* Check implicits with Context *)
+
+Section C.
+Context {A:Set}.
+Definition h (a:A) := a.
+End C.
+Check h 0.

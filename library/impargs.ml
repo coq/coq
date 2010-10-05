@@ -366,7 +366,7 @@ let set_manual_implicits env flags enriching autoimps l =
 let compute_semi_auto_implicits env f manual t =
   match manual with
   | [] ->
-      if not f.auto then []
+      if not f.auto then [DefaultImpArgs, []]
       else let _,l = compute_implicits_flags env f false t in
 	     [DefaultImpArgs, prepare_implicits f l]
   | _ ->
@@ -453,7 +453,7 @@ type implicit_discharge_request =
 let implicits_table = ref Refmap.empty
 
 let implicits_of_global ref =
-  try Refmap.find ref !implicits_table with Not_found -> []
+  try Refmap.find ref !implicits_table with Not_found -> [DefaultImpArgs,[]]
 
 let cache_implicits_decl (ref,imps) =
   implicits_table := Refmap.add ref imps !implicits_table
@@ -483,7 +483,7 @@ let adjust_side_condition p = function
   | LessArgsThan n -> LessArgsThan (n+p)
   | DefaultImpArgs -> DefaultImpArgs
 
-let add_section_impls vars extra_impls (cond,impls)=
+let add_section_impls vars extra_impls (cond,impls) =
   let p = List.length vars - List.length extra_impls in
   adjust_side_condition p cond, extra_impls @ impls
 
@@ -660,12 +660,14 @@ let rec drop_first_implicits p l =
       drop_first_implicits (p-1) (LessArgsThan n,impls)
 
 let rec select_impargs_size n = function
-  | [] -> []
+  | [] -> [] (* Tolerance for (DefaultImpArgs,[]) *)
   | [_, impls] | (DefaultImpArgs, impls)::_ -> impls
   | (LessArgsThan p, impls)::l ->
       if n <= p then impls else select_impargs_size n l
 
-let rec select_stronger_impargs = function [] -> [] | (_,impls)::_ -> impls
+let rec select_stronger_impargs = function
+  | [] -> [] (* Tolerance for (DefaultImpArgs,[]) *)
+  | (_,impls)::_ -> impls
 
 (*s Registration as global tables *)
 
