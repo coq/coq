@@ -271,7 +271,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v
 	    | grep -v "Welcome to Coq" \
 	    | grep -v "Skipping rcfile loading" \
 	    > $$tmpoutput; \
-	  diff $$tmpoutput $*.out 2>&1; R=$$?; times; \
+	  diff -u $*.out $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -386,7 +386,7 @@ misc/deps-order.log:
 	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
 	  $(coqdep) -I misc/deps/lib -as lib -R misc/deps/client client misc/deps/client/bar.v 2>&1 \
 	    | head -n 1 > $$tmpoutput; \
-	  diff $$tmpoutput misc/deps/deps.out 2>&1; R=$$?; times; \
+	  diff -u misc/deps/deps.out $$tmpoutput 2>&1; R=$$?; times; \
 	  $(bincoqc) -I misc/deps/lib -as lib misc/deps/lib/foo.v 2>&1; \
 	  $(bincoqc) -I misc/deps/lib -as lib -R misc/deps/client client misc/deps/client/foo.v 2>&1; \
 	  $(coqtop) -I misc/deps/lib -as lib -R misc/deps/client client -load-vernac-source misc/deps/client/bar.v 2>&1; \
