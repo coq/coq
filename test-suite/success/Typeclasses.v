@@ -8,9 +8,9 @@ Reserved Notation "x >>= y" (at level 65, left associativity).
 
 
 Record Monad {m : Type -> Type} := {
-  unit : Π {α}, α -> m α where "'return' t" := (unit t) ;
-  bind : Π {α β}, m α -> (α -> m β) -> m β where "x >>= y" := (bind x y) ;
-  bind_unit_left : Π {α β} (a : α) (f : α -> m β), return a >>= f = f a }.
+  unit : forall {α}, α -> m α where "'return' t" := (unit t) ;
+  bind : forall {α β}, m α -> (α -> m β) -> m β where "x >>= y" := (bind x y) ;
+  bind_unit_left : forall {α β} (a : α) (f : α -> m β), return a >>= f = f a }.
 
 Print Visibility.
 Print unit.
