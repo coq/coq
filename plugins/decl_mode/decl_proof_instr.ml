@@ -132,7 +132,6 @@ let daimon_tac gls =
 let daimon _ pftree =
   set_daimon_flag ();
   {pftree with
-     open_subgoals=0;
      ref=Some (Daimon,[])}
 
 let daimon_subtree =

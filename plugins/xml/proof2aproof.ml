@@ -63,8 +63,7 @@ let nf_evar sigma ~preserve =
 (* Warning: statuses, goals, prim_rules and tactic_exprs are not unshared! *)
 let rec unshare_proof_tree =
  let module PT = Proof_type in
-  function {PT.open_subgoals = status ;
-	    PT.goal = goal ;
+  function {PT.goal = goal ;
 	    PT.ref = ref} ->
    let unshared_ref =
     match ref with
@@ -78,8 +77,7 @@ let rec unshare_proof_tree =
 	in
          Some (unshared_rule, List.map unshare_proof_tree pfs)
    in
-    {PT.open_subgoals = status ;
-     PT.goal = goal ;
+    {PT.goal = goal ;
      PT.ref = unshared_ref}
 ;;
 

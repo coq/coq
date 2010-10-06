@@ -73,7 +73,6 @@ type prim_rule =
   if [ref = (Some(Nested(Tactic t,p),l))] then [p] is the proof
   that the goal can be proven if the goals in [l] are solved. *)
 type proof_tree = {
-  open_subgoals : int;
   goal : goal;
   ref : (rule * proof_tree list) option }
 

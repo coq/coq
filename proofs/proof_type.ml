@@ -44,7 +44,6 @@ type prim_rule =
   | Change_evars
 
 type proof_tree = {
-  open_subgoals : int;
   goal : goal;
   ref : (rule * proof_tree list) option }
 
