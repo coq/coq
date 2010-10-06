@@ -19,6 +19,5 @@ Gtk_parsing
 Undo
 Coq
 Coq_commands
-Coq_tactics
 Command_windows
 Coqide
