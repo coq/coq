@@ -1057,12 +1057,6 @@ let build_branch current deps (realnames,dep) pb arsign eqns const_info =
   let names = get_names pb.env cs_args eqns in
   let submat = List.map (fun (tms,eqn) -> prepend_pattern tms eqn) eqns in
   let typs = List.map2 (fun (_,c,t) na -> (na,c,t)) cs_args names in
-  let _,typs',_ =
-    List.fold_right
-      (fun (na,c,t as d) (env,typs,tms) ->
-	 let tms = List.map List.tl tms in
- 	 (push_rel d env, (na,NotInd(c,t))::typs,tms))
-      typs (pb.env,[],List.map fst eqns) in
 
   let dep_sign =
     find_dependencies_signature
@@ -1082,9 +1076,10 @@ let build_branch current deps (realnames,dep) pb arsign eqns const_info =
   let pred_is_not_dep =
     noccur_predicate_between 1 (List.length realnames + 1) pb.pred tomatch in
 
-  let typs'' =
+  let typs' =
     list_map2_i
-      (fun i (na,t) deps ->
+      (fun i d deps ->
+        let (na,c,t) = map_rel_declaration (lift i) d in
 	let dep = match dep with
 	  | Name _ as na',k -> (if na <> Anonymous then na else na'),k
 	  | Anonymous,KnownNotDep ->
@@ -1093,15 +1088,13 @@ let build_branch current deps (realnames,dep) pb arsign eqns const_info =
 	      else
 		(force_name na,KnownDep)
 	  | _,_ -> anomaly "Inconsistent dependency" in
-	((mkRel i, lift_tomatch_type i t),deps,dep))
-      1 typs' (List.rev dep_sign) in
+	((mkRel i, NotInd (c,t)),deps,dep))
+      1 typs (List.rev dep_sign) in
 
   let pred =
-    specialize_predicate typs'' (realnames,dep) arsign const_info tomatch pb.pred in
+    specialize_predicate typs' (realnames,dep) arsign const_info tomatch pb.pred in
 
-  let currents = List.map (fun x -> Pushed x) typs'' in
-
-  let sign = List.map (fun (na,t) -> mkDeclTomatch na t) typs' in
+  let currents = List.map (fun x -> Pushed x) typs' in
 
   let ind =
     appvect (
@@ -1109,7 +1102,7 @@ let build_branch current deps (realnames,dep) pb arsign eqns const_info =
       List.map (lift const_info.cs_nargs) const_info.cs_params),
       const_info.cs_concl_realargs) in
 
-  let cur_alias = lift (List.length sign) current in
+  let cur_alias = lift (List.length typs) current in
   let currents = Alias (ci,cur_alias,alias_type,ind) :: currents in
   let tomatch = List.rev_append currents tomatch in
 
@@ -1118,13 +1111,13 @@ let build_branch current deps (realnames,dep) pb arsign eqns const_info =
     raise_pattern_matching_error
       (dummy_loc, pb.env, NonExhaustive (complete_history history));
 
-  sign,
+  typs,
   { pb with
-      env = push_rels sign pb.env;
+      env = push_rels typs pb.env;
       tomatch = tomatch;
       pred = pred;
       history = history;
-      mat = List.map (push_rels_eqn_with_names sign) submat }
+      mat = List.map (push_rels_eqn_with_names typs) submat }
 
 (**********************************************************************
  INVARIANT:
@@ -1566,7 +1559,7 @@ let prepare_predicate_from_arsign_tycon loc tomatchs sign arsign c =
 	  | Rel n when signlen > 1 (* The term is of a dependent type,
 				      maybe some variable in its type appears in the tycon. *) ->
 	      (match tmtype with
-		  NotInd _ -> (* len - signlen, subst*) assert false (* signlen > 1 *)
+		  NotInd _ -> (subst, len - signlen)
 		| IsInd (_, IndType(indf,realargs),_) ->
 		    let subst =
 		      if dependent tm c && List.for_all isRel realargs
@@ -1676,6 +1669,7 @@ let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, e
     (* We push the initial terms to match and push their alias to rhs' envs *)
     (* names of aliases will be recovered from patterns (hence Anonymous *)
     (* here) *)
+
     let initial_pushed = List.map2 (fun tm na -> Pushed(tm,[],na)) tomatchs nal in
 
     (* A typing function that provides with a canonical term for absurd cases*)
