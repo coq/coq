@@ -1237,16 +1237,6 @@ let vernac_end_subproof () =
   let p = Proof_global.give_me_the_proof () in
   Proof.unfocus subproof_kind p ; print_subgoals ()
 
-let explain_proof occ =
-  (* spiwack: don't know what it's supposed to do. Undocumented. 
-     Deactivated and candidate for removal. (Feb. 2010) *)
-  ()
-
-let explain_tree occ =
-  (* spiwack: don't know what it's supposed to do. Undocumented.
-     Deactivated and candidate for removeal. (Feb. 2010) *)
-  ()
-
 let vernac_show = function
   | ShowGoal nopt ->
       if !pcoq <> None then (Option.get !pcoq).show_goal nopt
@@ -1267,8 +1257,6 @@ let vernac_show = function
   | ShowIntros all -> show_intro all
   | ShowMatch id -> show_match id
   | ShowThesis -> show_thesis ()
-  | ExplainProof occ -> explain_proof occ
-  | ExplainTree occ -> explain_tree occ
 
 
 let vernac_check_guard () =

@@ -464,8 +464,6 @@ let rec pr_vernac = function
 	| ShowIntros b -> str"Show " ++ (if b then str"Intros" else str"Intro")
 	| ShowMatch id -> str"Show Match " ++ pr_lident id
 	| ShowThesis -> str "Show Thesis"
-	| ExplainProof l -> str"Explain Proof" ++ spc() ++ prlist_with_sep sep int l
-	| ExplainTree l -> str"Explain Proof Tree" ++ spc() ++ prlist_with_sep sep int l
       in pr_showable s
   | VernacCheckGuard -> str"Guarded"
 

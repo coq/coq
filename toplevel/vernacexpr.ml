@@ -93,8 +93,6 @@ type showable =
   | ShowIntros of bool
   | ShowMatch of lident
   | ShowThesis
-  | ExplainProof of int list
-  | ExplainTree of int list
 
 type comment =
   | CommentConstr of constr_expr
