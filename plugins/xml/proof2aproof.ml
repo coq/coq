@@ -59,28 +59,6 @@ let nf_evar sigma ~preserve =
     aux
 ;;
 
-(* Unshares a proof-tree.                                                  *)
-(* Warning: statuses, goals, prim_rules and tactic_exprs are not unshared! *)
-let rec unshare_proof_tree =
- let module PT = Proof_type in
-  function {PT.goal = goal ;
-	    PT.ref = ref} ->
-   let unshared_ref =
-    match ref with
-       None -> None
-     | Some (rule,pfs) ->
-        let unshared_rule =
-         match rule with
-             PT.Nested (cmpd, pf) ->
-               PT.Nested (cmpd, unshare_proof_tree pf)
-	   | other -> other
-	in
-         Some (unshared_rule, List.map unshare_proof_tree pfs)
-   in
-    {PT.goal = goal ;
-     PT.ref = unshared_ref}
-;;
-
 module ProofTreeHash =
  Hashtbl.Make
   (struct
