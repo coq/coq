@@ -451,13 +451,6 @@ let rec pr_vernac = function
   | VernacBacktrack (i,j,k) ->
       str "Backtrack" ++  spc() ++ prlist_with_sep sep int [i;j;k]
   | VernacFocus i -> str"Focus" ++ pr_opt int i
-  | VernacGo g ->
-      let pr_goable = function
-	| GoTo i -> int i
-	| GoTop -> str"top"
-	| GoNext -> str"next"
-	| GoPrev -> str"prev"
-      in str"Go" ++ spc() ++  pr_goable g
   | VernacShow s ->
       let pr_showable = function
 	| ShowGoal n -> str"Show" ++ pr_opt int n

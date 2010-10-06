@@ -84,10 +84,6 @@ GEXTEND Gram
 	  VernacShow (ExplainProof l)
       | IDENT "Explain"; IDENT "Proof"; IDENT "Tree"; l = LIST0 integer ->
 	  VernacShow (ExplainTree l)
-      | IDENT "Go"; n = natural -> VernacGo (GoTo n)
-      | IDENT "Go"; IDENT "top" -> VernacGo GoTop
-      | IDENT "Go"; IDENT "prev" -> VernacGo GoPrev
-      | IDENT "Go"; IDENT "next" -> VernacGo GoNext
       | IDENT "Guarded" -> VernacCheckGuard
 (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;

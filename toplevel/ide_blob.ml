@@ -156,7 +156,6 @@ let rec attribute_of_vernac_command = function
   
   | VernacFocus _ -> [SolveCommand]
   | VernacUnfocus -> [SolveCommand]
-  | VernacGo _ -> []
   | VernacShow _ -> [OtherStatePreservingCommand]
   | VernacCheckGuard -> [OtherStatePreservingCommand]
   | VernacProof (Tacexpr.TacId []) -> [OtherStatePreservingCommand]

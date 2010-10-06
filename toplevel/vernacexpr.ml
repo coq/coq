@@ -81,12 +81,6 @@ type locatable =
   | LocateTactic of reference
   | LocateFile of string
 
-type goable =
-  | GoTo of int
-  | GoTop
-  | GoNext
-  | GoPrev
-
 type showable =
   | ShowGoal of int option
   | ShowGoalImplicitly of int option
@@ -344,7 +338,6 @@ type vernac_expr =
   | VernacUnfocus
   | VernacSubproof of int option
   | VernacEndSubproof
-  | VernacGo of goable
   | VernacShow of showable
   | VernacCheckGuard
   | VernacProof of raw_tactic_expr

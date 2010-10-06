@@ -1237,11 +1237,6 @@ let vernac_end_subproof () =
   let p = Proof_global.give_me_the_proof () in
   Proof.unfocus subproof_kind p ; print_subgoals ()
 
-let vernac_go _ = 
-  (* spiwack: don't know what it's supposed to do. Undocumented. 
-     Deactivated and candidate for removal. (Feb. 2010) *)
-  ()
-
 let explain_proof occ =
   (* spiwack: don't know what it's supposed to do. Undocumented. 
      Deactivated and candidate for removal. (Feb. 2010) *)
@@ -1405,7 +1400,6 @@ let interp c = match c with
   | VernacUnfocus -> vernac_unfocus ()
   | VernacSubproof n -> vernac_subproof n
   | VernacEndSubproof -> vernac_end_subproof ()
-  | VernacGo g -> vernac_go g
   | VernacShow s -> vernac_show s
   | VernacCheckGuard -> vernac_check_guard ()
   | VernacProof tac -> vernac_set_end_tac tac
