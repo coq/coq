@@ -443,6 +443,8 @@ cc: $(CCVO) $(CCCMA)
 subtac: $(SUBTACCMA)
 rtauto: $(RTAUTOVO) $(RTAUTOCMA)
 
+pluginsopt: $(PLUGINSOPT)
+
 ###########################################################################
 # rules to make theories, plugins and states
 ###########################################################################

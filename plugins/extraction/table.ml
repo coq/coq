@@ -482,6 +482,8 @@ let inline_extraction =
        cache_function = (fun (_,(b,l)) -> add_inline_entries b l);
        load_function = (fun _ (_,(b,l)) -> add_inline_entries b l);
        classify_function = (fun o -> Substitute o);
+       discharge_function =
+	(fun (_,(b,l)) -> Some (b, List.map pop_global_reference l));
        subst_function =
         (fun (s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))
     }
@@ -494,7 +496,6 @@ let _ = declare_summary "Extraction Inline"
 (* Grammar entries. *)
 
 let extraction_inline b l =
-  check_inside_section ();
   let refs = List.map Nametab.global l in
   List.iter
     (fun r -> match r with
