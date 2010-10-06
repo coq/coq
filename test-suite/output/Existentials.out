@@ -1,1 +1,3 @@
-Existential 1 = ?9 : [n : nat  m : nat |- nat] 
+Existential 1 = ?17 : [q : nat  n : nat  m : nat |- n = ?16] 
+Existential 2 = ?16 : [n : nat  m : nat |- nat] 
+Existential 3 = ?14 : [p : nat  q := S p : nat  n : nat  m : nat |- ?16 = m] 
