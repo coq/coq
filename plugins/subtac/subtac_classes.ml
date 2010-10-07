@@ -119,7 +119,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
     match props with
     | Inr term ->
 	let c = interp_casted_constr_evars evars env' term cty in
-	  Inr (c, subst)
+	  Inr c
     | Inl props ->
 	let get_id =
 	  function
@@ -159,7 +159,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
 	let term = Termops.it_mkLambda_or_LetIn app (ctx' @ ctx) in
 	  term, termtype
-    | Inr (def, subst) ->
+    | Inr def ->
 	let termtype = it_mkProd_or_LetIn cty ctx in
 	let term = Termops.it_mkLambda_or_LetIn def ctx in
 	  term, termtype
