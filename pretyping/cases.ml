@@ -1720,7 +1720,7 @@ let prepare_predicate_from_arsign_tycon loc env tomatchs sign arsign c =
 		&& signlen > 1 (* The term is of a dependent type but does not appear in 
 				  the tycon, maybe some variable in its type does. *) ->
 	      (match tmtype with
-		  NotInd _ -> (* len - signlen, subst*) assert false (* signlen > 1 *)
+                  NotInd _ -> (subst, len - signlen)
 		| IsInd (_, IndType(indf,realargs),_) ->
 		    List.fold_left
 		      (fun (subst, len) arg -> 
