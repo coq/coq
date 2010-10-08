@@ -144,6 +144,12 @@ Extraction
   dangerous for the complexity. In particular many eta-expansions at the top
   of functions body are now avoided, clever partial applications will likely
   be preserved, let-ins are almost always kept, etc.
+- In the same spirit, auto-inlining is now disabled by default, except for
+  induction principles, since this feature was producing more frequently
+  weird code than clear gain. The previous behavior can be restored via
+  "Set Extraction AutoInline".
+- Unicode characters in identifiers are now transformed into ascii strings
+  that are legal in Ocaml and other languages.
 - Harsh support of module extraction to Haskell and Scheme: module hierarchy
   is flattened, module abbreviations and functor applications are expanded,
   module types and unapplied functors are discarded.
