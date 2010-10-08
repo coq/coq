@@ -39,6 +39,7 @@ let check_command = Gram.entry_create "vernac:check_command"
 
 let tactic_mode = Gram.entry_create "vernac:tactic_command"
 let noedit_mode = Gram.entry_create "vernac:noedit_command"
+let bullet = Gram.entry_create "vernac:bullet"
 
 let class_rawexpr = Gram.entry_create "vernac:class_rawexpr"
 let thm_token = Gram.entry_create "vernac:thm_token"
@@ -71,7 +72,7 @@ let default_command_entry =
 
 let no_hook _ _ = ()
 GEXTEND Gram
-  GLOBAL: vernac gallina_ext tactic_mode noedit_mode subgoal_command;
+  GLOBAL: vernac gallina_ext tactic_mode noedit_mode bullet subgoal_command;
   vernac: FIRST
     [ [ IDENT "Time"; v = vernac -> VernacTime v
       | IDENT "Timeout"; n = natural; v = vernac -> VernacTimeout(n,v)
