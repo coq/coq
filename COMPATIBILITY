@@ -36,6 +36,9 @@ Library
 
 - Infix notation "++" has now to be set at level 60. [LinAlg]
 
+- When using the Programs library or any feature that uses it,
+  (lemmas about measure have a different form, ...).
+
 Tactics
 
 - The synchronization of introduction names and quantified hypotheses
