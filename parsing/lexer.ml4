@@ -147,7 +147,7 @@ let lookup_utf8_tail c cs =
       | _ -> error_utf8 cs
     in
     try classify_unicode unicode, n
-    with UnsupportedUtf8 -> error_unsupported_unicode_character n cs
+    with UnsupportedUtf8 -> njunk n cs; error_unsupported_unicode_character n cs
 
 let lookup_utf8 cs =
   match Stream.peek cs with
