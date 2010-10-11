@@ -326,7 +326,6 @@ let rec raw_analyze_notation_tokens = function
   | String ".." :: sl -> NonTerminal ldots_var :: raw_analyze_notation_tokens sl
   | String "_" :: _ -> error "_ must be quoted."
   | String x :: sl when is_normal_token x ->
-      Lexer.check_ident x;
       NonTerminal (Names.id_of_string x) :: raw_analyze_notation_tokens sl
   | String s :: sl ->
       Lexer.check_keyword s;
