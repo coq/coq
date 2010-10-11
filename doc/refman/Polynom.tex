@@ -37,11 +37,6 @@ commutativity.
 \begin{Examples}
 \item In the ring of integers, the normal form of 
 $x (3 + yx + 25(1 - z)) + zx$ is $28x + (-24)xz + xxy$.
-\item For the classical propositional calculus (or the boolean rings)
-  the normal form is what logicians call \textit{disjunctive normal
-    form}: every formula is equivalent to a disjunction of
-  conjunctions of atoms. (Here $\oplus$ is $\vee$, $\otimes$ is
-  $\wedge$, variables are atoms and the only constants are T and F)
 \end{Examples}
 
 \texttt{ring} is also able to compute a normal form modulo monomial 
@@ -660,7 +655,8 @@ Coq Reference Manual, version 8.0.
 This tactic, written by Samuel Boutin and Patrick Loiseleur, applies
 associative commutative rewriting on every ring.  The tactic must be
 loaded by \texttt{Require Import LegacyRing}. The ring must be declared in
-the \texttt{Add Ring} command. The ring of booleans
+the \texttt{Add Ring} command. The ring of booleans (with \texttt{andb}
+as multiplication and \texttt{xorb} as addition)
 is predefined; if one wants to use the tactic on \texttt{nat} one must
 first require the module \texttt{LegacyArithRing}; for \texttt{Z}, do
 \texttt{Require Import LegacyZArithRing}; for \texttt{N}, do \texttt{Require
