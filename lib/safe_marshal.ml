@@ -25,6 +25,7 @@ let hex_of_bin ch = hobcnv.(int_of_char ch)
 let bin_of_hex s =
     char_of_int (bohcnv.(int_of_char s.[0]) * 16 + bohcnv.(int_of_char s.[1]))
 
+
 let send cout expr =
   let mshl_expr = Marshal.to_string expr [] in
   let payload = Buffer.create (String.length mshl_expr * 2) in
@@ -43,5 +44,6 @@ let receive cin =
     String.blit payload (2*i) buf 0 2;
     Buffer.add_char mshl_expr (bin_of_hex buf)
   done;
-  Marshal.from_string (Buffer.contents mshl_expr) 0
+  let res = Marshal.from_string (Buffer.contents mshl_expr) 0 in
+  res
 

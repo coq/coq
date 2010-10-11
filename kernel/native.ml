@@ -48,9 +48,10 @@ type prim_op =
   | Int31compare
 
 type op =
+  | Oprim of prim_op
   | Ocaml_prim of caml_prim
   | Oiterator of iterator
-  | Oprim of prim_op
+
 
 
 let caml_prim_to_string = function

@@ -47,9 +47,10 @@ type prim_op =
   | Int31compare
 
 type op =
+  | Oprim of prim_op
   | Ocaml_prim of caml_prim
   | Oiterator of iterator
-  | Oprim of prim_op
+
 
 val prim_to_string : prim_op -> string
 val caml_prim_to_string : caml_prim -> string

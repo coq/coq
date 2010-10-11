@@ -673,10 +673,10 @@ let check_primitive_error () =
       (Invalid_argument "Typeops.check_primitive_type:Not the expected type")
   
 let check_caml_prim_type env op t =
-  Printf.printf "check_caml_prim_type: not yet implemented\n"
+  Printf.eprintf "check_caml_prim_type: not yet implemented\n"
 
 let check_iterator_type env op t =
-  Printf.printf "check_iterator_type: not yet implemented\n"
+  Printf.eprintf "check_iterator_type: not yet implemented\n"
 
 let typeof_prim env op = 
   let i = 

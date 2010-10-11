@@ -148,7 +148,7 @@ and check_with_aux_def env sign with_decl mp equiv =
       | _ -> anomaly "Modtyping:incorrect use of with"
     with
       Not_found -> error_no_such_label l
-    | Reduction.NotConvertible -> Printf.printf "ICI\n\n";error_with_incorrect l
+    | Reduction.NotConvertible -> error_with_incorrect l
 
 and check_with_aux_mod env sign with_decl mp equiv = 
   let sig_b = match sign with 
@@ -186,7 +186,7 @@ and check_with_aux_mod env sign with_decl mp equiv =
 			  (check_subtypes env' mtb_mp1 
 			     (module_type_of_module env' None old))
 			  old.mod_constraints
-			with Failure _ -> Printf.printf "ICI1\n\n";error_with_incorrect (label_of_id id)
+			with Failure _ -> error_with_incorrect (label_of_id id)
 		      end
 		  | Some (SEBident(mp')) ->
 		      check_modpath_equiv env' mp1 mp';
@@ -236,7 +236,7 @@ and check_with_aux_mod env sign with_decl mp equiv =
 	  | _ -> anomaly "Modtyping:incorrect use of with"
     with
 	Not_found -> error_no_such_label l
-      | Reduction.NotConvertible ->Printf.printf "ICI2\n\n"; error_with_incorrect l
+      | Reduction.NotConvertible -> error_with_incorrect l
 
 and translate_module env mp inl me =
   match me.mod_entry_expr, me.mod_entry_type with
