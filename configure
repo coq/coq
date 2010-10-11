@@ -6,7 +6,7 @@
 # 
 ##################################
 
-VERSION=8.3-bugfix
+VERSION=8.3
 VOMAGIC=08300
 STATEMAGIC=58300
 DATE=`LANG=C date +"%B %Y"`
@@ -441,12 +441,6 @@ case $ARCH in
       CAMLLIB=`"$CAMLC" -where`
 esac
 
-# We need to set a special flag for OCaml 3.07
-case  $CAMLVERSION in 
-	3.07*)
-	  cflags="$cflags -DOCAML_307";;
-esac
-
 if [ "$coq_debug_flag" = "-g" ]; then
     case $CAMLTAG in
         OCAML31*)
@@ -530,7 +524,8 @@ else
 fi
 
 if [ "$CAMLP4" = "camlp5" ] && `$camlp4oexec -v 2>&1 | grep -q 5.00`; then
-    echo "Camlp5 version 5.00 not supported: versions 4.0x or >= 5.01 are OK."
+    echo "Camlp5 version 5.00 not supported: versions 4.0x or >= 5.01 are OK"
+    echo "(depending also on your ocaml version)."
     echo "Configuration script failed!"
     exit 1
 fi

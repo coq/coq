@@ -15,8 +15,8 @@ WHAT DO YOU NEED ?
    ppc) and FreeBSD. Automated tests are run under many, many
    different architectures under GNU/Linux.
 
-   Naturally, Coq will run faster on an architecture where OCaml can
-   compile to native code, rather than only bytecode. At time of
+   Naturally, Coq will run faster on an architecture where Objective Caml
+   can compile to native code, rather than only bytecode. At time of
    writing, that is IA32, PowerPC, AMD64, Alpha, Sparc, Mips, IA64,
    HPPA and StrongArm. See
    http://caml.inria.fr/ocaml/portability.en.html for details.
@@ -44,8 +44,10 @@ WHAT DO YOU NEED ?
      - Objective Caml version 3.09.3 or later
        (available at http://caml.inria.fr/)
 
-       For Ocaml version >= 3.10.0, you also need to install camlp5
-       (version <= 4.08, or 5.01 transitional)
+       For Objective Caml version >= 3.10.0, you also need to install
+       camlp5 (use "transitional" mode and choose a version compatible
+       with the corresponding version of Objective Caml, however
+       avoiding version 5.00)
   
 
      - GNU Make version 3.81 or later
@@ -73,9 +75,6 @@ WHAT DO YOU NEED ?
 
      - for Coqide, the Lablgtk development files, and the GTK libraries, see INSTALL.ide for more details
 
-   By FTP, Coq comes as a single compressed tar-file. You have
-   probably already decompressed it if you are reading this document.
-
 
 QUICK INSTALLATION PROCEDURE.
 =============================
@@ -99,23 +98,16 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    bigger), you will also need the "ocamlopt" (or its native code version
    "ocamlopt.opt") command.
 
-2- Check that you have Camlp4 installed on your 
-   computer and that the command "camlp4" lies in a directory which
+2- If using Ocaml >= 3.10, check that you have Camlp5 installed on your
+   computer and that the command "camlp5" lies in a directory which
    is present in your $PATH environment variable path.
-   (You need Camlp4 in both bytecode and native versions if
-   your platform supports it).
+   (You need Camlp5 in transitional mode and in both bytecode and
+   native versions if your platform supports it).
 
-   Note: in the latest ocaml distributions, camlp4 comes with ocaml so
-   you do not have to check this point anymore.
+2- You will need about 400Mo free on your disk to compile Coq in full
+   with its standard library and documentation.
 
-3- The uncompression and un-tarring of the distribution file gave birth 
-   to a directory named "coq-8.xx". You can rename this directory and put 
-   it wherever you want. Just keep in mind that you will need some spare
-   space during the compilation (reckon on about 50 Mb of disk space
-   for the whole system in native-code compilation). Once installed, the
-   binaries take about 14 Mb, and the library about 9 Mb.
-
-4- First you need to configure the system. It is done automatically with
+3- First you need to configure the system. It is done automatically with
    the command:
 
 	./configure <options>
@@ -209,7 +201,7 @@ INSTALLATION PROCEDURE FOR ADVANCED USERS.
    binaries will reside in the subdirectory bin/.
 
    If you want to compile the sources for debugging (i.e. with the option
-   -g of the Caml compiler) then add the -debug option at configuration
+   -g of the ocaml compiler) then add the -debug option at configuration
    step :
 
 	./configure -debug <other options>
@@ -324,7 +316,7 @@ MOVING BINARIES OR LIBRARY.
 DYNAMICALLY LOADED LIBRARIES FOR BYTECODE EXECUTABLES.
 ======================================================
 
-   Some bytecode executables of Coq use the OCaml runtime, which dynamically
+   Some bytecode executables of Coq use the ocaml runtime, which dynamically
    loads a shared library (.so or .dll). When it is not installed properly, you
    can get an error message of this kind:
 
@@ -337,12 +329,12 @@ DYNAMICALLY LOADED LIBRARIES FOR BYTECODE EXECUTABLES.
        the command a limited number of times in a controlled environment (e.g.
        during compilation of binary packages);
      - install dllcoqrun.so in a location listed in the file ld.conf that is in
-       the directory of the standard library of OCaml;
+       the directory of the standard library of Objective Caml;
      - recompile your bytecode executables after reconfiguring the location of
        of the shared library:
          ./configure -coqrunbyteflags "-dllib -lcoqrun -dllpath <path>" ...
        where <path> is the directory where the dllcoqrun.so is installed;
-     - (not recommended) compile bytecode executables with a custom OCaml
+     - (not recommended) compile bytecode executables with a custom ocaml
        runtime by using:
          ./configure -custom ...
        be aware that stripping executables generated this way, or performing

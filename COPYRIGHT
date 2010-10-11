@@ -6,7 +6,7 @@ Paris Sud, University Paris 7, Ecole Polytechnique.
 This product includes also software developed by
   Pierre Crégut, France Telecom R & D (plugins/omega and plugins/romega)
   Pierre Courtieu and Julien Forest, CNAM (plugins/funind)
-  Claudio Sacerdoti Coen, HELM, University of Bologna, (plugins/xml)
+  Claudio Sacerdoti Coen, HELM, University of Bologna (plugins/xml)
   Pierre Corbineau, Radbout University, Nijmegen (declarative mode)
   John Harrison, University of Cambridge (csdp wrapper)
 

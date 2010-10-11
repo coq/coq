@@ -1,20 +1,4 @@
-INSTALLATION PROCEDURE FOR THE PRECOMPILED COQ V8.1 SYSTEM UNDER MACOS X
-------------------------------------------------------------------------
+INSTALLATION PROCEDURE FOR THE PRECOMPILED VERSION OF COQ SYSTEM UNDER MACOS X
+------------------------------------------------------------------------------
 
-You can also use fink, or the MacOS X package prepared by the Coq
-team. To use the MacOS X package,:
-
-1) Download archive coq-8.1-macosx-ppc.dmg (for PowerPC-base computer)
-   or coq-8.1-macosx-i386.dmg (for Pentium-based computer).
-
-2) Double-click on its icon; it mounts a disk volume named "Coq V8.1".
-
-3) Open volume "Coq 8.1" and double-click on coq-8.1.pkg to launch the
-   installer (you'll need administrator permissions).
-
-4) Coq installs in /usr/local/bin, which should be in your PATH, and
-   can be used from a Terminal window: the interactive toplevel is
-   named coqtop and the compiler is coqc.
-
-If you have any trouble with this installation, please contact:
-coq-bugs@pauillac.inria.fr.
+See up-to-date informations on http://coq.inria.fr/download.

@@ -20,12 +20,12 @@ COMPILATION.
     distribution. If you really need to recompile under Windows, here
     are some indications:
 
-    1- Install ocaml for Windows (MinGW port), preferably version 3.09.3.
+    1- Install ocaml for Windows (MinGW port), at least version 3.09.3.
        See: http://caml.inria.fr
 
     2- Install a shell environment with at least:
          - a C compiler (gcc),
-         - the GNU make utility
+         - the GNU make utility (version >= 3.81)
 
        The Cygwin environment is well suited for compiling Coq
        (official packages are made using Cygwin) See:
@@ -43,9 +43,9 @@ COMPILATION.
         make world
         make install
 
-    5- Though not nescessary, you can find useful:
+    5- Though not necessary, you can find useful:
          - Windows version of (X)Emacs: it is a powerful environment for
-           developpers with coloured syntax, modes for compilation and debug,
+           developers with colored syntax, modes for compilation and debug,
            and many more. It is free. See: http://www.gnu.org/software.
          - Windows subversion client (very useful if you have access to the Coq
            archive).

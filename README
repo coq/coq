@@ -27,8 +27,7 @@ CHANGES.
 AVAILABILITY.
 =============
 
-   Coq is available at http://coq.inria.fr, or, for older versions at
-   ftp://ftp.inria.fr/INRIA/LogiCal/coq.
+   Coq is available at http://coq.inria.fr/download.
 
 
 THE COQ CLUB.
@@ -38,7 +37,7 @@ THE COQ CLUB.
    discuss questions about the Coq system and related topics. The submission
    address is:
 
-	coq-club@coq.inria.fr
+	coq-club@inria.fr
 
    The topics to be discussed in the club should include:
 
@@ -53,13 +52,10 @@ THE COQ CLUB.
      * theoretical questions about typed lambda-calculi which are
        closely related to Coq.
 
-   To be added to, or removed from, the mailing list, please write to:
-
-	coq-club-request@coq.inria.fr
-
-   Please use also this address for any questions/suggestions about the
-   Coq Club. It might sometimes take a few days before your messages get
-   forwarded.
+   To be added to, or removed from, the mailing list, go to
+   https://sympa-roc.inria.fr/wws/info/coq-club or write to
+   sympa@inria.fr with subject either "subscribe coq-club" or
+   "unsubscribe coq-club". List is moderated for non-subscribers.
 
 
 BUGS REPORT.
@@ -67,8 +63,8 @@ BUGS REPORT.
 
    Send your bug reports by filling a form at
 
-        http://logical.saclay.inria.fr/coq-bugs
+        http://coq.inria.fr/bugs/
 
-   To be effective, bug reports should mention the Caml version used
-   to compile and run Coq, the Coq version (coqtop -v), the configuration
-   used, and include a complete source example leading to the bug.
+   To be effective, bug reports should mention the Coq version (coqtop -v),
+   the configuration used, and include a complete source example
+   leading to the bug.
