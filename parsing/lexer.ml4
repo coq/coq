@@ -133,7 +133,7 @@ let lookup_utf8_tail c cs =
       | _ -> error_utf8 cs
     in
     try classify_unicode unicode, n
-    with UnsupportedUtf8 -> error_unsupported_unicode_character n cs
+    with UnsupportedUtf8 -> njunk n cs; error_unsupported_unicode_character n cs
 	
 let lookup_utf8 cs =
   match Stream.peek cs with
@@ -144,8 +144,11 @@ let lookup_utf8 cs =
 let check_special_token str =
   let rec loop_symb = parser
     | [< ' (' ' | '\n' | '\r' | '\t' | '"') >] -> bad_token str
-    | [< _ = Stream.empty >] -> ()
-    | [< '_ ; s >] -> loop_symb s
+    | [< s >] ->
+	match lookup_utf8 s with
+	| Utf8Token (_,n) -> njunk n s; loop_symb s
+	| AsciiChar -> Stream.junk s; loop_symb s
+	| EmptyStream -> ()
   in
   loop_symb (Stream.of_string str)
 
