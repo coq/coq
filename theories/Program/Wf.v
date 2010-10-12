@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -13,8 +13,6 @@ Require Import Coq.Program.Utils.
 Require Import ProofIrrelevance.
 
 Open Local Scope program_scope.
-
-Implicit Arguments Acc_inv [A R x y].
 
 Section Well_founded.
   Variable A : Type.

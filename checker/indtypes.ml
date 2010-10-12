@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -381,9 +381,18 @@ let ienv_push_inductive (env, n, ntypes, ra_env) (mi,lpar) =
   let newidx = n + auxntyp in
   (env', newidx, ntypes, ra_env')
 
+let rec ienv_decompose_prod (env,_,_,_ as ienv) n c =
+  if n=0 then (ienv,c) else
+    let c' = whd_betadeltaiota env c in
+    match c' with
+	Prod(na,a,b) ->
+	  let ienv' = ienv_push_var ienv (na,a,mk_norec) in
+	  ienv_decompose_prod ienv' (n-1) b
+      | _ -> assert false
+
 (* The recursive function that checks positivity and builds the list
    of recursive arguments *)
-let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp i indlc =
+let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp (_,i as ind) indlc =
   let lparams = rel_context_length hyps in
   (* check the inductive types occur positively in [c] *)
   let rec check_pos (env, n, ntypes, ra_env as ienv) c =
@@ -420,6 +429,7 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp i indlc =
   and check_positive_imbr (env,n,ntypes,ra_env as ienv) (mi, largs) =
     let (mib,mip) = lookup_mind_specif env mi in
     let auxnpar = mib.mind_nparams_rec in
+    let nonrecpar = mib.mind_nparams - auxnpar in
     let (lpar,auxlargs) =
       try list_chop auxnpar largs
       with Failure _ -> raise (IllFormedInd (LocalNonPos n)) in
@@ -439,10 +449,12 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp i indlc =
 	let lpar' = List.map (lift auxntyp) lpar in
 	let irecargs =
 	  (* fails if the inductive type occurs non positively *)
-	  (* when substituted *)
+	  (* with recursive parameters substituted *)
 	  Array.map
 	    (function c ->
 	      let c' = hnf_prod_applist env' c lpar' in
+	      (* skip non-recursive parameters *)
+	      let (ienv',c') = ienv_decompose_prod ienv' nonrecpar c' in
 		check_constructors ienv' false c')
 	    auxlcvect in
 	(Rtree.mk_rec [|mk_paths (Imbr mi) irecargs|]).(0)
@@ -482,7 +494,7 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp i indlc =
           with IllFormedInd err ->
             explain_ind_err (ntypes-i) env lparams c err)
       indlc
-  in mk_paths (Mrec i) irecargs
+  in mk_paths (Mrec ind) irecargs
 
 let check_subtree (t1:'a) (t2:'a) =
   if not (Rtree.compare_rtree (fun t1 t2 ->
@@ -493,16 +505,17 @@ let check_subtree (t1:'a) (t2:'a) =
     failwith "bad recursive trees"
 (* if t1=t2 then () else msg_warning (str"TODO: check recursive positions")*)
 
-let check_positivity env_ar params nrecp inds =
+let check_positivity env_ar mind params nrecp inds =
   let ntypes = Array.length inds in
-  let rc = Array.mapi (fun j t -> (Mrec j,t)) (Rtree.mk_rec_calls ntypes) in
+  let rc =
+    Array.mapi (fun j t -> (Mrec(mind,j),t)) (Rtree.mk_rec_calls ntypes) in
   let lra_ind = List.rev (Array.to_list rc) in
   let lparams = rel_context_length params in
   let check_one i mip =
     let ra_env =
       list_tabulate (fun _ -> (Norec,mk_norec)) lparams @ lra_ind in
     let ienv = (env_ar, 1+lparams, ntypes, ra_env) in
-      check_positivity_one ienv params nrecp i mip.mind_nf_lc
+      check_positivity_one ienv params nrecp (mind,i) mip.mind_nf_lc
   in
   let irecargs = Array.mapi check_one inds in
   let wfp = Rtree.mk_rec irecargs in
@@ -535,7 +548,7 @@ let check_inductive env kn mib =
   (*  - check constructor types *)
   Array.iter (typecheck_one_inductive env_ar params mib) mib.mind_packets;
   (* check mind_nparams_rec: positivity condition *)
-  check_positivity env_ar params mib.mind_nparams_rec mib.mind_packets;
+  check_positivity env_ar kn params mib.mind_nparams_rec mib.mind_packets;
   (* check mind_equiv... *)
   (* Now we can add the inductive *)
   add_mind kn mib env

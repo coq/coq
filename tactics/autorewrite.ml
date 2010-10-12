@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -223,7 +223,7 @@ let classify_hintrewrite x = Libobject.Substitute x
 
 
 (* Declaration of the Hint Rewrite library object *)
-let (inHintRewrite,_)=
+let inHintRewrite =
   Libobject.declare_object {(Libobject.default_object "HINT_REWRITE") with
     Libobject.cache_function = cache_hintrewrite;
     Libobject.load_function = (fun _ -> cache_hintrewrite);

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -51,7 +51,8 @@ let instantiate n (ist,rawc) ido gl =
         gl
 
 let let_evar name typ gls =
-  let sigma',evar = Evarutil.new_evar gls.sigma (pf_env gls) typ in
+  let src = (dummy_loc,GoalEvar) in
+  let sigma',evar = Evarutil.new_evar gls.sigma (pf_env gls) ~src typ in
   Refiner.tclTHEN (Refiner.tclEVARS sigma')
     (Tactics.letin_tac None name evar None nowhere) gls
 

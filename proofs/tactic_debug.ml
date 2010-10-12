@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -153,11 +153,6 @@ let db_mc_pattern_success debug =
   if debug <> DebugOff & !skip = 0 then
     msgnl (str "The goal has been successfully matched!" ++ fnl() ++
            str "Let us execute the right-hand side part..." ++ fnl())
-
-let pp_match_pattern env = function
-  | Term c -> Term (extern_constr_pattern (names_of_rel_context env) c)
-  | Subterm (b,o,c) ->
-    Subterm (b,o,(extern_constr_pattern (names_of_rel_context env) c))
 
 (* Prints a failure message for an hypothesis pattern *)
 let db_hyp_pattern_failure debug env (na,hyp) =

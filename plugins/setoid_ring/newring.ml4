@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -17,7 +17,6 @@ open Environ
 open Libnames
 open Tactics
 open Rawterm
-open Termops
 open Tacticals
 open Tacexpr
 open Pcoq
@@ -102,7 +101,7 @@ let protect_tac map =
   Tactics.reduct_option (protect_red map,DEFAULTcast) None ;;
 
 let protect_tac_in map id =
-  Tactics.reduct_option (protect_red map,DEFAULTcast) (Some(id,InHyp));;
+  Tactics.reduct_option (protect_red map,DEFAULTcast) (Some(id, Termops.InHyp));;
 
 
 TACTIC EXTEND protect_fv
@@ -441,7 +440,7 @@ let subst_th (subst,th) =
       ring_post_tac = posttac' }
 
 
-let (theory_to_obj, obj_to_theory) =
+let theory_to_obj =
   let cache_th (name,th) = add_entry name th in
   declare_object
     {(default_object "tactic-new-ring-theory") with
@@ -833,7 +832,7 @@ let ring_lookup (f:glob_tactic_expr) lH rl t gl =
 
 TACTIC EXTEND ring_lookup
 | [ "ring_lookup" tactic0(f) "[" constr_list(lH) "]" ne_constr_list(lrt) ] ->
-    [ let (t,lr) = list_sep_last lrt in ring_lookup (fst f) lH lr t]
+    [ let (t,lr) = list_sep_last lrt in ring_lookup f lH lr t]
 END
 
 
@@ -1017,7 +1016,7 @@ let subst_th (subst,th) =
       field_pre_tac = pretac';
       field_post_tac = posttac' }
 
-let (ftheory_to_obj, obj_to_ftheory) =
+let ftheory_to_obj =
   let cache_th (name,th) = add_field_entry name th in
   declare_object
     {(default_object "tactic-new-field-theory") with
@@ -1161,5 +1160,5 @@ let field_lookup (f:glob_tactic_expr) lH rl t gl =
 
 TACTIC EXTEND field_lookup
 | [ "field_lookup" tactic(f) "[" constr_list(lH) "]" ne_constr_list(lt) ] ->
-      [ let (t,l) = list_sep_last lt in field_lookup (fst f) lH l t ]
+      [ let (t,l) = list_sep_last lt in field_lookup f lH l t ]
 END

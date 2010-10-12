@@ -263,22 +263,24 @@ A list of symbol codes is available at \url{http://www.unicode.org}.
 
 This method obviously doesn't scale, that's why the preferred alternative is to
 use an Input Method Editor. On POSIX systems (Linux distros, BSD variants and
-MacOS X), you can use \texttt{uim} and the CoqIDE IM module to support \LaTeX{}-style
-edition. To do this, you must have \texttt{uim} installed on your system.
-Then, issue a \texttt{make install-im} as root from the Coq source directory
+MacOS X), you can use \texttt{uim} version 1.6 or later which provides a \LaTeX{}-style
+input method.
 
-If everything went right, execute \texttt{uim-pref-gtk} as your regular user
-and in the "Global Settings" menu set the default Input Method to "CoqIDE"
-(don't forget to tick the checkbox "Specify default IM").  You can now execute
-CoqIDE with the following commands (assuming you use a Bourne-style shell):
+To configure \texttt{uim}, execute \texttt{uim-pref-gtk} as your regular user.
+In the "Global Settings" group set the default Input Method to "ELatin" (don't
+forget to tick the checkbox "Specify default IM"). In the "ELatin" group set the
+layout to "TeX", and remember the content of the "[ELatin] on" field (by default
+"<Control>\"). You can now execute CoqIDE with the following commands (assuming
+you use a Bourne-style shell):
 
 \begin{verbatim}
 $ export GTK_IM_MODULE=uim
 $ coqide
 \end{verbatim}
 
-If you then type the sequence "\verb=\Gamma=", you will see the sequence being
-replaced by $\Gamma$ as soon as you  type the second "a".
+Activate the ELatin Input Method with Ctrl-\textbackslash, then type the
+sequence "\verb=\Gamma=". You will see the sequence being
+replaced by $\Gamma$ as soon as you type the second "a".
 
 \subsection[Character encoding for saved files]{Character encoding for saved files\label{sec:coqidecharencoding}}
 

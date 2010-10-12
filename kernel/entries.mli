@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -67,14 +67,7 @@ type constant_entry =
   | PrimitiveEntry of primitive_entry 
 (** {6 Modules } *)
 
-
-type specification_entry = 
-    SPEconst of constant_entry
-  | SPEmind of mutual_inductive_entry
-  | SPEmodule of module_entry
-  | SPEmodtype of module_struct_entry
-
-and module_struct_entry =
+type module_struct_entry =
     MSEident of module_path
   | MSEfunctor of mod_bound_id * module_struct_entry * module_struct_entry
   | MSEwith of module_struct_entry * with_declaration

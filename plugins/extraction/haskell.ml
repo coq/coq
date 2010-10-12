@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -45,14 +45,14 @@ let preamble mod_name used_modules usf =
   (if used_modules = [] then mt () else fnl ()) ++
   (if not usf.magic then mt ()
    else str "\
-#ifdef __GLASGOW_HASKELL__
-import qualified GHC.Base
-unsafeCoerce = GHC.Base.unsafeCoerce#
-#else
--- HUGS
-import qualified IOExts
-unsafeCoerce = IOExts.unsafeCoerce
-#endif" ++ fnl2 ())
+\n#ifdef __GLASGOW_HASKELL__\
+\nimport qualified GHC.Base\
+\nunsafeCoerce = GHC.Base.unsafeCoerce#\
+\n#else\
+\n-- HUGS\
+\nimport qualified IOExts\
+\nunsafeCoerce = IOExts.unsafeCoerce\
+\n#endif" ++ fnl2 ())
   ++
   (if not usf.mldummy then mt ()
    else str "__ = Prelude.error \"Logical or arity value used\"" ++ fnl2 ())
@@ -182,18 +182,28 @@ and pp_pat env factors pv =
 			 (fun () -> (spc ())) pr_id (List.rev ids))) ++
 	   str " ->" ++ spc () ++ pp_expr par env' [] t)
   in
+  let factor_br, factor_l = try match factors with
+    | BranchFun (i::_ as l) -> check_function_branch pv.(i), l
+    | BranchCst (i::_ as l) -> ast_pop (check_constant_branch pv.(i)), l
+    | _ -> MLdummy, []
+  with Impossible -> MLdummy, []
+  in
+  let par = expr_needs_par factor_br in
+  let last = Array.length pv - 1 in
   prvecti
-    (fun i x -> if List.mem i factors then mt () else
+    (fun i x -> if List.mem i factor_l then mt () else
        (pp_one_pat pv.(i) ++
-	if factors = [] && i = Array.length pv - 1 then mt ()
-	else fnl () ++ str "  ")) pv
+       if i = last && factor_l = [] then mt () else
+       fnl () ++ str "  ")) pv
   ++
-  match factors with
-    | [] -> mt ()
-    | i::_ ->
-	let (_,ids,t) = pv.(i) in
-	let t = ast_lift (-List.length ids) t in
-	hov 2 (str "_ ->" ++ spc () ++ pp_expr (expr_needs_par t) env [] t)
+  if factor_l = [] then mt () else match factors with
+    | BranchFun _ ->
+	let ids, env' = push_vars [anonymous_name] env in
+	pr_id (List.hd ids) ++ str " ->" ++ spc () ++
+	pp_expr par env' [] factor_br
+    | BranchCst _ ->
+	str "_ ->" ++ spc () ++ pp_expr par env [] factor_br
+    | BranchNone -> mt ()
 
 (*s names of the functions ([ids]) are already pushed in [env],
     and passed here just for convenience. *)
@@ -271,8 +281,6 @@ let rec pp_ind first kn i ind =
 
 (*s Pretty-printing of a declaration. *)
 
-let pp_string_parameters ids = prlist (fun id -> str id ++ str " ")
-
 let pp_decl = function
   | Dind (kn,i) when i.ind_info = Singleton ->
       pp_singleton (mind_of_kn kn) i.ind_packets.(0) ++ fnl ()
@@ -285,7 +293,7 @@ let pp_decl = function
 	  try
 	    let ids,s = find_type_custom r in
 	    prlist (fun id -> str (id^" ")) ids ++ str "=" ++ spc () ++ str s
-	  with not_found ->
+	  with Not_found ->
 	    prlist (fun id -> pr_id id ++ str " ") l ++
 	    if t = Taxiom then str "= () -- AXIOM TO BE REALIZED\n"
 	    else str "=" ++ spc () ++ pp_type false l t
@@ -319,13 +327,14 @@ let rec pp_structure_elem = function
 
 and pp_module_expr = function
   | MEstruct (mp,sel) -> prlist_strict pp_structure_elem sel
-  | MEident _ -> failwith "Not Implemented: Module Ident"
-  | MEfunctor _ -> failwith "Not Implemented: Module Functor"
-  | MEapply _ -> failwith "Not Implemented: Module Application"
+  | MEfunctor _ -> mt ()
+      (* for the moment we simply discard unapplied functors *)
+  | MEident _ | MEapply _ -> assert false
+      (* should be expansed in extract_env *)
 
 let pp_struct =
   let pp_sel (mp,sel) =
-    push_visible mp None;
+    push_visible mp [];
     let p = prlist_strict pp_structure_elem sel in
     pop_visible (); p
   in
@@ -335,7 +344,6 @@ let pp_struct =
 let haskell_descr = {
   keywords = keywords;
   file_suffix = ".hs";
-  capital_file = true;
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = None;

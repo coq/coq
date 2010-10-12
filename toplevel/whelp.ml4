@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -18,7 +18,6 @@ open Environ
 open Rawterm
 open Libnames
 open Nametab
-open Termops
 open Detyping
 open Constrintern
 open Dischargedhypsmap
@@ -198,7 +197,7 @@ let whelp_elim ind =
 let on_goal f =
   let { Evd.it=goals ; sigma=sigma } = Proof.V82.subgoals (get_pftreestate ()) in
   let gls = { Evd.it=List.hd goals ; sigma = sigma }  in
-  f (it_mkNamedProd_or_LetIn (pf_concl gls) (pf_hyps gls))
+  f (Termops.it_mkNamedProd_or_LetIn (pf_concl gls) (pf_hyps gls))
 
 type whelp_request =
   | Locate of string

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -96,8 +96,6 @@ module EvarInfoMap = struct
   type t = evar_info ExistentialMap.t * evar_info ExistentialMap.t
 
   let empty = ExistentialMap.empty, ExistentialMap.empty
-  let is_empty (def,undef) =
-    (ExistentialMap.is_empty def, ExistentialMap.is_empty undef)
 
   let to_list (def,undef) =
     (* Workaround for change in Map.fold behavior in ocaml 3.08.4 *)

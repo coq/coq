@@ -238,3 +238,19 @@ eapply f_equal with (* should fail because ill-typed *)
         end) in H
 || injection H.
 Abort.
+
+(* A legitimate simple eapply that was failing in coq <= 8.3.
+   Cf. in Unification.w_merge the addition of an extra pose_all_metas_as_evars
+   on 30/9/2010
+*)
+
+Lemma simple_eapply_was_failing :
+ (forall f:nat->nat, exists g, f = g) -> True.
+Proof.
+ assert (modusponens : forall P Q, P -> (P->Q) -> Q) by auto.
+ intros.
+ eapply modusponens.
+ simple eapply H.
+ (* error message with V8.3 :
+    Impossible to unify "?18" with "fun g : nat -> nat => ?6 = g". *)
+Abort.

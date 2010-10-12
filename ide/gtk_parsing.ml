@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -9,12 +9,12 @@
 open Ideutils
 
 
-let underscore = Glib.Utf8.to_unichar "_" (ref 0)
-let arobase = Glib.Utf8.to_unichar "@" (ref 0)
-let prime = Glib.Utf8.to_unichar "'" (ref 0)
-let bn = Glib.Utf8.to_unichar "\n" (ref 0)
-let space = Glib.Utf8.to_unichar " " (ref 0)
-let tab = Glib.Utf8.to_unichar "\t" (ref 0)
+let underscore = Glib.Utf8.to_unichar "_" ~pos:(ref 0)
+let arobase = Glib.Utf8.to_unichar "@" ~pos:(ref 0)
+let prime = Glib.Utf8.to_unichar "'" ~pos:(ref 0)
+let bn = Glib.Utf8.to_unichar "\n" ~pos:(ref 0)
+let space = Glib.Utf8.to_unichar " " ~pos:(ref 0)
+let tab = Glib.Utf8.to_unichar "\t" ~pos:(ref 0)
 
 
 (* TODO: avoid num and prime at the head of a word *)

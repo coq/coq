@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -176,9 +176,10 @@ let rec check_same_type ty1 ty2 =
       check_same_type b1 b2
   | CCast(_,a1,CastCoerce), CCast(_,a2, CastCoerce) ->
       check_same_type a1 a2
-  | CNotation(_,n1,(e1,el1)), CNotation(_,n2,(e2,el2)) when n1=n2 ->
+  | CNotation(_,n1,(e1,el1,bl1)), CNotation(_,n2,(e2,el2,bl2)) when n1=n2 ->
       List.iter2 check_same_type e1 e2;
-      List.iter2 (List.iter2 check_same_type) el1 el2
+      List.iter2 (List.iter2 check_same_type) el1 el2;
+      List.iter2 check_same_fix_binder bl1 bl2
   | CPrim(_,i1), CPrim(_,i2) when i1=i2 -> ()
   | CDelimiters(_,s1,e1), CDelimiters(_,s2,e2) when s1=s2 ->
       check_same_type e1 e2
@@ -201,79 +202,6 @@ and check_same_fix_binder bl1 bl2 =
 
 let same c d = try check_same_type c d; true with _ -> false
 
-(* Idem for rawconstr *)
-
-let array_iter2 f v1 v2 =
-  List.iter2 f (Array.to_list v1) (Array.to_list v2)
-
-let rec same_patt p1 p2 =
-  match p1, p2 with
-      PatVar(_,na1), PatVar(_,na2) -> if na1<>na2 then failwith "PatVar"
-    | PatCstr(_,c1,pl1,al1), PatCstr(_,c2,pl2,al2) ->
-        if c1<>c2 || al1 <> al2 then failwith "PatCstr";
-        List.iter2 same_patt pl1 pl2
-    | _ -> failwith "same_patt"
-
-let rec same_raw c d =
-  match c,d with
-   | RRef(_,gr1), RRef(_,gr2) -> if gr1<>gr2 then failwith "RRef"
-   | RVar(_,id1), RVar(_,id2) -> if id1<>id2 then failwith "RVar"
-   | REvar(_,e1,a1), REvar(_,e2,a2) ->
-       if e1 <> e2 then failwith "REvar";
-       Option.iter2(List.iter2 same_raw) a1 a2
-  | RPatVar(_,pv1), RPatVar(_,pv2) -> if pv1<>pv2 then failwith "RPatVar"
-  | RApp(_,f1,a1), RApp(_,f2,a2) ->
-      List.iter2 same_raw (f1::a1) (f2::a2)
-  | RLambda(_,na1,bk1,t1,m1), RLambda(_,na2,bk2,t2,m2) ->
-      if na1 <> na2 then failwith "RLambda";
-      same_raw t1 t2; same_raw m1 m2
-  | RProd(_,na1,bk1,t1,m1), RProd(_,na2,bk2,t2,m2) ->
-      if na1 <> na2 then failwith "RProd";
-      same_raw t1 t2; same_raw m1 m2
-  | RLetIn(_,na1,t1,m1), RLetIn(_,na2,t2,m2) ->
-      if na1 <> na2 then failwith "RLetIn";
-      same_raw t1 t2; same_raw m1 m2
-  | RCases(_,_,_,c1,b1), RCases(_,_,_,c2,b2) ->
-      List.iter2
-        (fun (t1,(al1,oind1)) (t2,(al2,oind2)) ->
-          same_raw t1 t2;
-          if al1 <> al2 then failwith "RCases";
-          Option.iter2(fun (_,i1,_,nl1) (_,i2,_,nl2) ->
-            if i1<>i2 || nl1 <> nl2 then failwith "RCases") oind1 oind2) c1 c2;
-      List.iter2 (fun (_,_,pl1,b1) (_,_,pl2,b2) ->
-        List.iter2 same_patt pl1 pl2;
-        same_raw b1 b2) b1 b2
-  | RLetTuple(_,nl1,_,b1,c1), RLetTuple(_,nl2,_,b2,c2) ->
-      if nl1<>nl2 then failwith "RLetTuple";
-      same_raw b1 b2;
-      same_raw c1 c2
-  | RIf(_,b1,_,t1,e1),RIf(_,b2,_,t2,e2) ->
-      same_raw b1 b2; same_raw t1 t2; same_raw e1 e2
-  | RRec(_,fk1,na1,bl1,ty1,def1), RRec(_,fk2,na2,bl2,ty2,def2) ->
-      if fk1 <> fk2 || na1 <> na2 then failwith "RRec";
-      array_iter2
-        (List.iter2 (fun (na1,bk1,bd1,ty1) (na2,bk2,bd2,ty2) ->
-          if na1<>na2 then failwith "RRec";
-          Option.iter2 same_raw bd1 bd2;
-          same_raw ty1 ty2)) bl1 bl2;
-      array_iter2 same_raw ty1 ty2;
-      array_iter2 same_raw def1 def2
-  | RSort(_,s1), RSort(_,s2) -> if s1<>s2 then failwith "RSort"
-  | RHole _, _ -> ()
-  | _, RHole _ -> ()
-  | RCast(_,c1,_),r2 -> same_raw c1 r2
-  | r1, RCast(_,c2,_) -> same_raw r1 c2
-  | RDynamic(_,d1), RDynamic(_,d2) -> if d1<>d2 then failwith"RDynamic"
-  | RNativeInt(_,i1), RNativeInt(_,i2) -> if i1 <> i2 then failwith "RNativeInt"
-  | RNativeArr(_,t1,p1), RNativeArr(_,t2,p2) ->
-      if Array.length p1 <> Array.length p2 then failwith "RNativeArr";
-      same_raw t1 t2;
-      array_iter2 same_raw p1 p2
-  | _ -> failwith "same_raw"
-
-let same_rawconstr c d =
-  try same_raw c d; true
-  with Failure _ | Invalid_argument _ -> false
 
 (**********************************************************************)
 (* mapping patterns to cases_pattern_expr                                *)
@@ -281,7 +209,7 @@ let same_rawconstr c d =
 let has_curly_brackets ntn =
   String.length ntn >= 6 & (String.sub ntn 0 6 = "{ _ } " or
     String.sub ntn (String.length ntn - 6) 6 = " { _ }" or
-    string_string_contains ntn " { _ } ")
+    string_string_contains ~where:ntn ~what:" { _ } ")
 
 let rec wildcards ntn n =
   if n = String.length ntn then []
@@ -290,7 +218,7 @@ and spaces ntn n =
   if n = String.length ntn then []
   else if ntn.[n] = ' ' then wildcards ntn (n+1) else spaces ntn (n+1)
 
-let expand_curly_brackets loc mknot ntn (l,ll) =
+let expand_curly_brackets loc mknot ntn l =
   let ntn' = ref ntn in
   let rec expand_ntn i =
     function
@@ -303,12 +231,12 @@ let expand_curly_brackets loc mknot ntn (l,ll) =
             ntn' :=
               String.sub !ntn' 0 p ^ "_" ^
               String.sub !ntn' (p+5) (String.length !ntn' -p-5);
-            mknot (loc,"{ _ }",([a],[])) end
+            mknot (loc,"{ _ }",[a]) end
           else a in
         a' :: expand_ntn (i+1) l in
   let l = expand_ntn 0 l in
   (* side effect *)
-  mknot (loc,!ntn',(l,ll))
+  mknot (loc,!ntn',l)
 
 let destPrim = function CPrim(_,t) -> Some t | _ -> None
 let destPatPrim = function CPatPrim(_,t) -> Some t | _ -> None
@@ -316,32 +244,34 @@ let destPatPrim = function CPatPrim(_,t) -> Some t | _ -> None
 let make_notation_gen loc ntn mknot mkprim destprim l =
   if has_curly_brackets ntn
   then expand_curly_brackets loc mknot ntn l
-  else match ntn,List.map destprim (fst l),(snd l) with
+  else match ntn,List.map destprim l with
     (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
-    | "- _", [Some (Numeral p)],[] when Bigint.is_strictly_pos p ->
-        mknot (loc,ntn,([mknot (loc,"( _ )",l)],[]))
+    | "- _", [Some (Numeral p)] when Bigint.is_strictly_pos p ->
+        mknot (loc,ntn,([mknot (loc,"( _ )",l)]))
     | _ ->
 	match decompose_notation_key ntn, l with
-	| [Terminal "-"; Terminal x], ([],[]) ->
+	| [Terminal "-"; Terminal x], [] ->
 	    (try mkprim (loc, Numeral (Bigint.neg (Bigint.of_string x)))
- 	     with _ -> mknot (loc,ntn,([],[])))
-	| [Terminal x], ([],[]) ->
+	     with _ -> mknot (loc,ntn,[]))
+	| [Terminal x], [] ->
 	    (try mkprim (loc, Numeral (Bigint.of_string x))
- 	     with _ -> mknot (loc,ntn,([],[])))
+	     with _ -> mknot (loc,ntn,[]))
 	| _ ->
 	    mknot (loc,ntn,l)
 
-let make_notation loc ntn l =
+let make_notation loc ntn (terms,termlists,binders as subst) =
+  if termlists <> [] or binders <> [] then CNotation (loc,ntn,subst) else
   make_notation_gen loc ntn
-    (fun (loc,ntn,l) -> CNotation (loc,ntn,l))
+    (fun (loc,ntn,l) -> CNotation (loc,ntn,(l,[],[])))
     (fun (loc,p) -> CPrim (loc,p))
-    destPrim l
+    destPrim terms
 
-let make_pat_notation loc ntn l =
+let make_pat_notation loc ntn (terms,termlists as subst) =
+  if termlists <> [] then CPatNotation (loc,ntn,subst) else
   make_notation_gen loc ntn
-    (fun (loc,ntn,l) -> CPatNotation (loc,ntn,l))
+    (fun (loc,ntn,l) -> CPatNotation (loc,ntn,(l,[])))
     (fun (loc,p) -> CPatPrim (loc,p))
-    destPatPrim l
+    destPatPrim terms
 
  (* Better to use extern_rawconstr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
@@ -557,11 +487,6 @@ let rec flatten_application = function
   | RApp (loc,RApp(_,a,l'),l) -> flatten_application (RApp (loc,a,l'@l))
   | a -> a
 
-let rec rename_rawconstr_var id0 id1 = function
-    RRef(loc,VarRef id) when id=id0 -> RRef(loc,VarRef id1)
-  | RVar(loc,id) when id=id0 -> RVar(loc,id1)
-  | c -> map_rawconstr (rename_rawconstr_var id0 id1) c
-
 (**********************************************************************)
 (* mapping rawterms to numerals (in presence of coercions, choose the *)
 (* one with no delimiter if possible)                                 *)
@@ -602,7 +527,7 @@ let rec extern inctx scopes vars r =
     extern_symbol scopes vars r'' (uninterp_notations r'')
   with No_match -> match r' with
   | RRef (loc,ref) ->
-      extern_global loc (implicits_of_global ref)
+      extern_global loc (select_stronger_impargs (implicits_of_global ref))
         (extern_reference loc vars ref)
 
   | RVar (loc,id) -> CRef (Ident (loc,id))
@@ -655,7 +580,8 @@ let rec extern inctx scopes vars r =
 		 CRecord (loc, None, List.rev (ip projs locals args []))
 	       with
 		 | Not_found | No_match | Exit ->
-		     extern_app loc inctx (implicits_of_global ref)
+		     extern_app loc inctx
+		       (select_stronger_impargs (implicits_of_global ref))
 		       (Some ref,extern_reference rloc vars ref) args
 	     end
 	 | _       ->
@@ -689,10 +615,10 @@ let rec extern inctx scopes vars r =
         let na' = match na,tm with
             Anonymous, RVar (_,id) when
               rtntypopt<>None & occur_rawconstr id (Option.get rtntypopt)
-              -> Some Anonymous
+              -> Some (dummy_loc,Anonymous)
           | Anonymous, _ -> None
           | Name id, RVar (_,id') when id=id' -> None
-          | Name _, _ -> Some na in
+          | Name _, _ -> Some (dummy_loc,na) in
 	(sub_extern false scopes vars tm,
 	(na',Option.map (fun (loc,ind,n,nal) ->
 	  let params = list_tabulate
@@ -706,15 +632,15 @@ let rec extern inctx scopes vars r =
       CCases (loc,sty,rtntypopt',tml,eqns)
 
   | RLetTuple (loc,nal,(na,typopt),tm,b) ->
-      CLetTuple (loc,nal,
-        (Option.map (fun _ -> na) typopt,
+      CLetTuple (loc,List.map (fun na -> (dummy_loc,na)) nal,
+        (Option.map (fun _ -> (dummy_loc,na)) typopt,
          Option.map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars tm,
         extern inctx scopes (List.fold_left add_vname vars nal) b)
 
   | RIf (loc,c,(na,typopt),b1,b2) ->
       CIf (loc,sub_extern false scopes vars c,
-        (Option.map (fun _ -> na) typopt,
+        (Option.map (fun _ -> (dummy_loc,na)) typopt,
          Option.map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern inctx scopes vars b1, sub_extern inctx scopes vars b2)
 
@@ -833,18 +759,23 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 	      let subscopes =
 		try list_skipn n (find_arguments_scope ref) with _ -> [] in
 	      let impls =
-		try list_skipn n (implicits_of_global ref) with _ -> [] in
+		let impls =
+		  select_impargs_size
+		    (List.length args) (implicits_of_global ref) in
+		try list_skipn n impls with _ -> [] in
 	      (if n = 0 then f else RApp (dummy_loc,f,args1)),
 	      args2, subscopes, impls
 	  | RApp (_,(RRef (_,ref) as f),args), None ->
 	      let subscopes = find_arguments_scope ref in
-	      let impls = implicits_of_global ref in
+	      let impls =
+		  select_impargs_size
+		    (List.length args) (implicits_of_global ref) in
 	      f, args, subscopes, impls
 	  | RRef _, Some 0 -> RApp (dummy_loc,t,[]), [], [], []
           | _, None -> t, [], [], []
           | _ -> raise No_match in
 	(* Try matching ... *)
-	let subst,substlist = match_aconstr t pat in
+	let terms,termlists,binders = match_aconstr t pat in
 	(* Try availability of interpretation ... *)
         let e =
           match keyrule with
@@ -859,17 +790,21 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 		    List.map (fun (c,(scopt,scl)) ->
 		      extern (* assuming no overloading: *) true
 		        (scopt,scl@scopes') vars c)
-                      subst in
+                      terms in
 		  let ll =
 		    List.map (fun (c,(scopt,scl)) ->
 		      List.map (extern true (scopt,scl@scopes') vars) c)
-                      substlist in
-	          insert_delimiters (make_notation loc ntn (l,ll)) key)
+                      termlists in
+		  let bll =
+		    List.map (fun (bl,(scopt,scl)) ->
+		      snd (extern_local_binder (scopt,scl@scopes') vars bl))
+                      binders in
+	          insert_delimiters (make_notation loc ntn (l,ll,bll)) key)
           | SynDefRule kn ->
 	      let l =
 		List.map (fun (c,(scopt,scl)) ->
 		  extern true (scopt,scl@scopes) vars c, None)
-		  subst in
+		  terms in
               let a = CRef (Qualid (loc, shortest_qualid_of_syndef vars kn)) in
 	      if l = [] then a else CApp (loc,(None,a),l) in
  	if args = [] then e
@@ -969,32 +904,6 @@ let rec raw_of_pat env = function
   | PNativeInt i -> RNativeInt(loc,i)
   | PNativeArr(t,p) ->
       RNativeArr(loc,raw_of_pat env t, Array.map (raw_of_pat env) p)
-
-and raw_of_eqn env constr construct_nargs branch =
-  let make_pat x env b ids =
-    let avoid = List.fold_right (name_fold (fun x l -> x::l)) env [] in
-    let id = next_name_away_with_default "x" x avoid in
-    PatVar (dummy_loc,Name id),(Name id)::env,id::ids
-  in
-  let rec buildrec ids patlist env n b =
-    if n=0 then
-      (dummy_loc, ids,
-       [PatCstr(dummy_loc, constr, List.rev patlist,Anonymous)],
-       raw_of_pat env b)
-    else
-      match b with
-	| PLambda (x,_,b) ->
-	    let pat,new_env,new_ids = make_pat x env b ids in
-            buildrec new_ids (pat::patlist) new_env (n-1) b
-
-	| PLetIn (x,_,b) ->
-	    let pat,new_env,new_ids = make_pat x env b ids in
-            buildrec new_ids (pat::patlist) new_env (n-1) b
-
-	| _ ->
-	    error "Unsupported branch in case-analysis while printing pattern."
-  in
-  buildrec [] [] env construct_nargs branch
 
 let extern_constr_pattern env pat =
   extern true (None,[]) Idset.empty (raw_of_pat env pat)

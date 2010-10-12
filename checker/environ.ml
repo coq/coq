@@ -118,11 +118,6 @@ let add_constant kn cs env =
 	env_constants = new_constants } in
   { env with env_globals = new_globals }
 
-(* constant_type gives the type of a constant *)
-let constant_type env kn =
-  let cb = lookup_constant kn env in
-  cb.const_type
-
 type const_evaluation_result = NoBody | Opaque
 
 exception NotEvaluableConst of const_evaluation_result
@@ -133,10 +128,6 @@ let constant_value env kn =
   match cb.const_body with
     | Some l_body -> force_constr l_body
     | None -> raise (NotEvaluableConst NoBody)
-
-let constant_opt_value env cst =
-  try Some (constant_value env cst)
-  with NotEvaluableConst _ -> None
 
 (* A global const is evaluable if it is defined and not opaque *)
 let evaluable_constant cst env =

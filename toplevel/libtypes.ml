@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -71,7 +71,7 @@ let subst a b = Profile.profile2 subst_key TypeDnet.subst a b
 let load_key = Profile.declare_profile "load"
 let load a = Profile.profile1 load_key load a
 *)
-let (input,output) =
+let input =
   declare_object
     { (default_object "LIBTYPES") with
 	load_function = (fun _ -> load);

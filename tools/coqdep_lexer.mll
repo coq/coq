@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -24,6 +24,7 @@
   let comment_depth = ref 0
 
   exception Fin_fichier
+  exception Syntax_error of int*int
 
   let module_current_name = ref []
   let module_names = ref []
@@ -221,12 +222,13 @@ and qual_id = parse
   | _ { caml_action lexbuf }
 
 and mllib_list = parse
-  | coq_ident { let s = String.uncapitalize (Lexing.lexeme lexbuf)
+  | caml_up_ident { let s = String.uncapitalize (Lexing.lexeme lexbuf)
 		in s :: mllib_list lexbuf }
   | "*predef*" { mllib_list lexbuf }
   | space+ { mllib_list lexbuf }
   | eof { [] }
+  | _ { raise (Syntax_error (Lexing.lexeme_start lexbuf,
+			     Lexing.lexeme_end lexbuf)) }
 
 and ocamldep_parse = parse
   | [^ ':' ]* ':' { mllib_list lexbuf }
-  | _ { [] }

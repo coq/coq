@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -57,8 +57,6 @@ type inductive_info =
   | Standard
   | Record of global_reference list
 
-type case_info = int list (* list of branches to merge in a _ pattern *)
-
 (* A [ml_ind_packet] is the miniml counterpart of a [one_inductive_body].
    If the inductive is logical ([ip_logical = false]), then all other fields
    are unused. Otherwise,
@@ -73,7 +71,9 @@ type ml_ind_packet = {
   ip_logical : bool;
   ip_sign : signature;
   ip_vars : identifier list;
-  ip_types : (ml_type list) array }
+  ip_types : (ml_type list) array;
+  mutable ip_optim_id_ok : bool option
+}
 
 (* [ip_nparams] contains the number of parameters. *)
 
@@ -95,6 +95,13 @@ type ml_ident =
   | Dummy
   | Id of identifier
   | Tmp of identifier
+
+(* list of branches to merge in a common pattern *)
+
+type case_info =
+  | BranchNone
+  | BranchFun of int list
+  | BranchCst of int list
 
 type ml_branch = global_reference * ml_ident list * ml_ast
 
@@ -178,7 +185,6 @@ type language_descr = {
 
   (* Concerning the source file *)
   file_suffix : string;
-  capital_file : bool; (* should we capitalize filenames ? *)
   preamble : identifier -> module_path list -> unsafe_needs -> std_ppcmds;
   pp_struct : ml_structure -> std_ppcmds;
 

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -195,8 +195,6 @@ module SpOrdered =
     let compare = sp_ord
   end
 
-module Spset = Set.Make(SpOrdered)
-module Sppred = Predicate.Make(SpOrdered)
 module Spmap = Map.Make(SpOrdered)
 
 let dirpath sp = let (p,_) = repr_path sp in p

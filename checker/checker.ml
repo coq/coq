@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -72,17 +72,17 @@ let convert_string d =
     flush_all ();
     failwith "caught"
 
-let add_rec_path ~unix_path:dir ~coq_root:coq_dirpath =
-  if exists_dir dir then
-    let dirs = all_subdirs dir in
-    let prefix = repr_dirpath coq_dirpath in
+let add_rec_path ~unix_path ~coq_root =
+  if exists_dir unix_path then
+    let dirs = all_subdirs ~unix_path in
+    let prefix = repr_dirpath coq_root in
     let convert_dirs (lp,cp) =
       (lp,make_dirpath (List.map convert_string (List.rev cp)@prefix)) in
     let dirs = map_succeed convert_dirs dirs in
     List.iter Check.add_load_path dirs;
-    Check.add_load_path (dir,coq_dirpath)
+    Check.add_load_path (unix_path, coq_root)
   else
-    msg_warning (str ("Cannot open " ^ dir))
+    msg_warning (str ("Cannot open " ^ unix_path))
 
 (* By the option -include -I or -R of the command line *)
 let includes = ref []
@@ -91,9 +91,6 @@ let push_rec_include (s, alias) = includes := (s,alias,true) :: !includes
 
 let set_default_include d =
   push_include (d, Check.default_root_prefix)
-let set_default_rec_include d =
-  let p = Check.default_root_prefix in
-  push_rec_include (d, p)
 let set_include d p =
   let p = dirpath_of_string p in
   push_include (d,p)
@@ -108,21 +105,21 @@ let init_load_path () =
   let plugins = coqlib/"plugins" in
   (* first user-contrib *)
   if Sys.file_exists user_contrib then
-    add_rec_path user_contrib Check.default_root_prefix;
+    add_rec_path ~unix_path:user_contrib ~coq_root:Check.default_root_prefix;
   (* then plugins *)
-  add_rec_path plugins (Names.make_dirpath [coq_root]);
+  add_rec_path ~unix_path:plugins ~coq_root:(Names.make_dirpath [coq_root]);
   (* then standard library *)
 (*  List.iter
     (fun (s,alias) ->
       add_rec_path (coqlib/s) ([alias; coq_root]))
     theories_dirs_map;*)
-  add_rec_path (coqlib/"theories") (Names.make_dirpath[coq_root]);
+  add_rec_path ~unix_path:(coqlib/"theories") ~coq_root:(Names.make_dirpath[coq_root]);
   (* then current directory *)
-  add_path "." Check.default_root_prefix;
+  add_path ~unix_path:"." ~coq_root:Check.default_root_prefix;
   (* additional loadpath, given with -I -include -R options *)
   List.iter
-    (fun (s,alias,reci) ->
-      if reci then add_rec_path s alias else add_path s alias)
+    (fun (unix_path, coq_root, reci) ->
+      if reci then add_rec_path ~unix_path ~coq_root else add_path ~unix_path ~coq_root)
     (List.rev !includes);
   includes := []
 
@@ -169,26 +166,26 @@ let print_usage_channel co command =
   output_string co command;
   output_string co "Coq options are:\n";
   output_string co
-"  -I dir -as coqdir      map physical dir to logical coqdir
-  -I dir                 map directory dir to the empty logical path
-  -include dir           (idem)
-  -R dir -as coqdir      recursively map physical dir to logical coqdir
-  -R dir coqdir          (idem)
-
-  -admit module          load module and dependencies without checking
-  -norec module          check module but admit dependencies without checking
-
-  -where                 print Coq's standard library location and exit
-  -v                     print Coq version and exit
-  -boot                  boot mode
-  -o, --output-context   print the list of assumptions
-  -m, --memoty           print the maximum heap size
-  -silent                disable trace of constants being checked
-
-  -impredicative-set     set sort Set impredicative
-
-  -h, --help             print this list of options
-"
+"  -I dir -as coqdir      map physical dir to logical coqdir\
+\n  -I dir                 map directory dir to the empty logical path\
+\n  -include dir           (idem)\
+\n  -R dir -as coqdir      recursively map physical dir to logical coqdir\
+\n  -R dir coqdir          (idem)\
+\n\
+\n  -admit module          load module and dependencies without checking\
+\n  -norec module          check module but admit dependencies without checking\
+\n\
+\n  -where                 print Coq's standard library location and exit\
+\n  -v                     print Coq version and exit\
+\n  -boot                  boot mode\
+\n  -o, --output-context   print the list of assumptions\
+\n  -m, --memoty           print the maximum heap size\
+\n  -silent                disable trace of constants being checked\
+\n\
+\n  -impredicative-set     set sort Set impredicative\
+\n\
+\n  -h, --help             print this list of options\
+\n"
 
 (* print the usage on standard error *)
 
@@ -201,8 +198,6 @@ let usage () =
   print_usage_coqtop ();
   flush stderr;
   exit 1
-
-let warning s = msg_warning (str s)
 
 open Type_errors
 

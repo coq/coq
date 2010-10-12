@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -30,7 +30,7 @@ Inductive Permutation : list A -> list A -> Prop :=
 | perm_swap x y l : Permutation (y::x::l) (x::y::l)
 | perm_trans l l' l'' : Permutation l l' -> Permutation l' l'' -> Permutation l l''.
 
-Hint Constructors Permutation.
+Local Hint Constructors Permutation.
 
 (** Some facts about [Permutation] *)
 
@@ -67,8 +67,13 @@ Qed.
 
 End Permutation.
 
-Hint Constructors Permutation.
-Hint Resolve Permutation_refl Permutation_sym Permutation_trans.
+Hint Resolve Permutation_refl perm_nil perm_skip.
+
+(* These hints do not reduce the size of the problem to solve and they
+   must be used with care to avoid combinatoric explosions *)
+
+Local Hint Resolve perm_swap perm_trans.
+Local Hint Resolve Permutation_sym Permutation_trans.
 
 (* This provides reflexivity, symmetry and transitivity and rewriting
    on morphims to come *)
@@ -159,7 +164,7 @@ Proof.
   apply perm_swap; auto.
   apply perm_skip; auto.
 Qed.
-Hint Resolve Permutation_cons_app.
+Local Hint Resolve Permutation_cons_app.
 
 Theorem Permutation_middle : forall (l1 l2:list A) a,
   Permutation (a :: l1 ++ l2) (l1 ++ a :: l2).

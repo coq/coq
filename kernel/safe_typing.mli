@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -112,7 +112,13 @@ val import : compiled_library -> Digest.t -> safe_environment
 
 (** Remove the body of opaque constants *)
 
-val lighten_library : compiled_library -> compiled_library
+module LightenLibrary :
+sig
+  type table 
+  type lightened_compiled_library 
+  val save : compiled_library -> lightened_compiled_library * table
+  val load : load_proof:bool -> (unit -> table) -> lightened_compiled_library -> compiled_library
+end
 
 (** {6 Typing judgments } *)
 

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -65,7 +65,7 @@ let subst_addfield (subst,(typ,th as obj)) =
       (typ',th')
 
 (* Declaration of the Add Field library object *)
-let (in_addfield,out_addfield)=
+let in_addfield =
   Libobject.declare_object {(Libobject.default_object "ADD_FIELD") with
        Libobject.open_function = (fun i o -> if i=1 then cache_addfield o);
        Libobject.cache_function = cache_addfield;

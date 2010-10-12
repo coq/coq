@@ -1,35 +1,14 @@
-The Coq proof assistant V7 and V8 includes software developed by the 
-Coq development team inside the LogiCal project, at INRIA, CNRS and
-University Paris Sud. 
+                     The Coq proof assistant
 
-Copyright 1999-2004 The Coq development team, 
-INRIA-CNRS, University Paris Sud, All rights reserved.
-
-This version contains modifications by Lionel Elie Mamane
-<lionel@mamane.lu> done while under employment of the Radboud
-University Nijmegen. However, no copyright-assignment-to-employer
-agreement was signed, and copyright of articles and books written on
-work time rest with the employee. By analogy, it is Lionel's opinion
-that copyright on these changes rests with him.
+Copyright 1999-2010 The Coq development team, INRIA, CNRS, University
+Paris Sud, University Paris 7, Ecole Polytechnique.
 
 This product includes also software developed by
-	Yves Bertot, Lemme, INRIA Sophia-Antipolis (plugins/interface,
-parsing/search.ml)
-	Pierre Crégut, France Telecom R & D (plugins/omega and plugins/romega)
-	Pierre Courtieu, Lemme (plugins/funind)
-	Loïc Pottier, Lemme, INRIA Sophia-Antipolis (plugins/fourier)
-	Claudio Sacerdoti Coen, HELM, University of Bologna, (plugins/xml)
+  Pierre CrÃ©gut, France Telecom R & D (plugins/omega and plugins/romega)
+  Pierre Courtieu and Julien Forest, CNAM (plugins/funind)
+  Claudio Sacerdoti Coen, HELM, University of Bologna, (plugins/xml)
+  Pierre Corbineau, Radbout University, Nijmegen (declarative mode)
+  John Harrison, University of Cambridge (csdp wrapper)
 
-The file CREDITS contains a list of past contributors
-The credits section in Reference Manual introduction details
-contributions.
-
-The Coq development Team (march 2004)
-	Bruno Barras (INRIA)
-	Pierre Corbineau (Université Paris Sud)
-	Jean-Christophe Filliâtre (CNRS)
-	Hugo Herbelin (INRIA)
-	Pierre Letouzey (Université Paris Sud)
-	Claude Marché (Université Paris Sud-INRIA)
-	Christine Paulin (Université Paris Sud)	
-	Clément Renard (INRIA)
+The file CREDITS contains a list of contributors.
+The credits section in the Reference Manual details contributions.

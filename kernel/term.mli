@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -221,9 +221,8 @@ type ('constr, 'types) kind_of_term =
    term *)
 
 val kind_of_term : constr -> (constr, types) kind_of_term
-val kind_of_term2 : constr -> ((constr,types) kind_of_term,constr) kind_of_term
 
-(** Experimental *)
+(** Experimental, used in Presburger contrib *)
 type ('constr, 'types) kind_of_type =
   | SortType   of sorts
   | CastType   of 'types * 'types
@@ -370,6 +369,7 @@ val rel_context_nhyps : rel_context -> int
 
 (** Constructs either [(x:t)c] or [[x=b:t]c] *)
 val mkProd_or_LetIn : rel_declaration -> types -> types
+val mkProd_wo_LetIn : rel_declaration -> types -> types
 val mkNamedProd_or_LetIn : named_declaration -> types -> types
 val mkNamedProd_wo_LetIn : named_declaration -> types -> types
 

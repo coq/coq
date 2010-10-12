@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -36,7 +36,6 @@ val dump_notation_location : (int * int) list -> Topconstr.notation -> (Notation
 val dump_binding : Util.loc -> Names.Idset.elt -> unit
 val dump_notation : Util.loc * (Topconstr.notation * Notation.notation_location) -> Topconstr.scope_name option -> bool -> unit
 val dump_constraint :  Topconstr.typeclass_constraint -> bool -> string -> unit
-val dump_local_binder : Topconstr.local_binder -> bool -> string -> unit
 
 val dump_string : string -> unit
 

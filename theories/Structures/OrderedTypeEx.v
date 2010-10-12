@@ -239,3 +239,93 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
 
 End PairOrderedType.
 
+
+(** Even if [positive] can be seen as an ordered type with respect to the
+  usual order (see above), we can also use a lexicographic order over bits
+  (lower bits are considered first). This is more natural when using
+  [positive] as indexes for sets or maps (see FSetPositive and FMapPositive. *)
+
+Module PositiveOrderedTypeBits <: UsualOrderedType.
+  Definition t:=positive.
+  Definition eq:=@eq positive.
+  Definition eq_refl := @refl_equal t.
+  Definition eq_sym := @sym_eq t.
+  Definition eq_trans := @trans_eq t.
+
+  Fixpoint bits_lt (p q:positive) : Prop :=
+   match p, q with
+   | xH, xI _ => True
+   | xH, _ => False
+   | xO p, xO q => bits_lt p q
+   | xO _, _ => True
+   | xI p, xI q => bits_lt p q
+   | xI _, _ => False
+   end.
+
+  Definition lt:=bits_lt.
+
+  Lemma bits_lt_trans :
+    forall x y z : positive, bits_lt x y -> bits_lt y z -> bits_lt x z.
+  Proof.
+  induction x.
+  induction y; destruct z; simpl; eauto; intuition.
+  induction y; destruct z; simpl; eauto; intuition.
+  induction y; destruct z; simpl; eauto; intuition.
+  Qed.
+
+  Lemma lt_trans : forall x y z : t, lt x y -> lt y z -> lt x z.
+  Proof.
+  exact bits_lt_trans.
+  Qed.
+
+  Lemma bits_lt_antirefl : forall x : positive, ~ bits_lt x x.
+  Proof.
+  induction x; simpl; auto.
+  Qed.
+
+  Lemma lt_not_eq : forall x y : t, lt x y -> ~ eq x y.
+  Proof.
+  intros; intro.
+  rewrite <- H0 in H; clear H0 y.
+  unfold lt in H.
+  exact (bits_lt_antirefl x H).
+  Qed.
+
+  Definition compare : forall x y : t, Compare lt eq x y.
+  Proof.
+  induction x; destruct y.
+  (* I I *)
+  destruct (IHx y).
+  apply LT; auto.
+  apply EQ; rewrite e; red; auto.
+  apply GT; auto.
+  (* I O *)
+  apply GT; simpl; auto.
+  (* I H *)
+  apply GT; simpl; auto.
+  (* O I *)
+  apply LT; simpl; auto.
+  (* O O *)
+  destruct (IHx y).
+  apply LT; auto.
+  apply EQ; rewrite e; red; auto.
+  apply GT; auto.
+  (* O H *)
+  apply LT; simpl; auto.
+  (* H I *)
+  apply LT; simpl; auto.
+  (* H O *)
+  apply GT; simpl; auto.
+  (* H H *)
+  apply EQ; red; auto.
+  Qed.
+
+  Lemma eq_dec (x y: positive): {x = y} + {x <> y}.
+  Proof.
+  intros. case_eq ((x ?= y) Eq); intros.
+  left. apply Pcompare_Eq_eq; auto.
+  right. red. intro. subst y. rewrite (Pcompare_refl x) in H. discriminate.
+  right. red. intro. subst y. rewrite (Pcompare_refl x) in H. discriminate.
+  Qed.
+
+End PositiveOrderedTypeBits.

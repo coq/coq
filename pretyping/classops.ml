@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -336,7 +336,18 @@ let class_params = function
 let add_class cl =
   add_new_class cl { cl_param = class_params cl }
 
-let load_coercion i (_,(coe,stre,isid,cls,clt,ps)) =
+let automatically_import_coercions = ref false
+
+open Goptions
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optname  = "automatic import of coercions";
+      optkey   = ["Automatic";"Coercions";"Import"];
+      optread  = (fun () -> !automatically_import_coercions);
+      optwrite = (:=) automatically_import_coercions }
+
+let cache_coercion (_,(coe,stre,isid,cls,clt,ps)) =
   add_class cls;
   add_class clt;
   let is,_ = class_info cls in
@@ -350,8 +361,17 @@ let load_coercion i (_,(coe,stre,isid,cls,clt,ps)) =
   add_new_coercion coe xf;
   add_coercion_in_graph (xf,is,it)
 
-let cache_coercion o =
-  load_coercion 1 o
+let load_coercion _ o =
+  if
+    !automatically_import_coercions || Flags.version_less_or_equal Flags.V8_2
+  then
+    cache_coercion o
+
+let open_coercion _ o =
+  if not
+    (!automatically_import_coercions || Flags.version_less_or_equal Flags.V8_2)
+  then
+    cache_coercion o
 
 let subst_coercion (subst,(coe,stre,isid,cls,clt,ps as obj)) =
   let coe' = subst_coe_typ subst coe in
@@ -378,8 +398,9 @@ let discharge_coercion (_,(coe,stre,isid,cls,clt,ps)) =
 let classify_coercion (coe,stre,isid,cls,clt,ps as obj) =
   if stre = Local then Dispose else Substitute obj
 
-let (inCoercion,_) =
+let inCoercion =
   declare_object {(default_object "COERCION") with
+    open_function = open_coercion;
     load_function = load_coercion;
     cache_function = cache_coercion;
     subst_function = subst_coercion;

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -105,7 +105,7 @@ type ('constr, 'types) kind_of_term =
   | NativeInt of Uint31.t
   | NativeArr of 'types * 'constr array 
 
-(* Experimental *)
+(* Experimental, used in Presburger contrib *)
 type ('constr, 'types) kind_of_type =
   | SortType   of sorts
   | CastType   of 'types * 'types
@@ -289,7 +289,6 @@ let mkArray (t,p) = NativeArr(t,p)
 
 
 let kind_of_term c = c
-let kind_of_term2 c = c
 
 (************************************************************************)
 (*    kind_of_term = constructions as seen by the user                 *)
@@ -300,14 +299,6 @@ let kind_of_term2 c = c
    term *)
 
 let kind_of_term = kind_of_term
-
-
-(* En vue d'un kind_of_type : constr -> hnftype ??? *)
-type hnftype =
-  | HnfSort   of sorts
-  | HnfProd   of name * constr * constr
-  | HnfAtom   of constr
-  | HnfInd of inductive * constr array
 
 (**********************************************************************)
 (*          Non primitive term destructors                            *)
@@ -362,17 +353,11 @@ let rec is_Type c = match kind_of_term c with
   | Cast (c,_,_) -> is_Type c
   | _ -> false
 
-let isType = function
-  | Type _ -> true
-  | _ -> false
-
 let is_small = function
   | Prop _ -> true
   | _ -> false
 
 let iskind c = isprop c or is_Type c
-
-let same_kind c1 c2 = (isprop c1 & isprop c2) or (is_Type c1 & is_Type c2)
 
 (* Tests if an evar *)
 let isEvar c = match kind_of_term c with Evar _ -> true | _ -> false
@@ -439,10 +424,6 @@ let isConst c = match kind_of_term c with Const _ -> true | _ -> false
 let destEvar c = match kind_of_term c with
   | Evar (kn, a as r) -> r
   | _ -> invalid_arg "destEvar"
-
-let num_of_evar c = match kind_of_term c with
-  | Evar (n, _) -> n
-  | _ -> anomaly "num_of_evar called with bad args"
 
 (* Destructs a (co)inductive type named kn *)
 let destInd c = match kind_of_term c with
@@ -534,18 +515,6 @@ let decompose_app c =
   match kind_of_term c with
     | App (f,cl) -> (f, Array.to_list cl)
     | _ -> (c,[])
-
-(* strips head casts and flattens head applications *)
-let rec strip_head_cast c = match kind_of_term c with
-  | App (f,cl) ->
-      let rec collapse_rec f cl2 = match kind_of_term f with
-	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
-	| Cast (c,_,_) -> collapse_rec c cl2
-	| _ -> if Array.length cl2 = 0 then f else mkApp (f,cl2)
-      in
-      collapse_rec f cl
-  | Cast (c,_,_) -> strip_head_cast c
-  | _ -> c
 
 (****************************************************************************)
 (*              Functions to recur through subterms                         *)
@@ -942,12 +911,10 @@ let mkCast = mkCast
 (* Constructs the product (x:t1)t2 *)
 let mkProd = mkProd
 let mkNamedProd id typ c = mkProd (Name id, typ, subst_var id c)
-let mkProd_string   s t c = mkProd (Name (id_of_string s), t, c)
 
 (* Constructs the abstraction [x:t1]t2 *)
 let mkLambda = mkLambda
 let mkNamedLambda id typ c = mkLambda (Name id, typ, subst_var id c)
-let mkLambda_string s t c = mkLambda (Name (id_of_string s), t, c)
 
 (* Constructs [x=c_1:t]c_2 *)
 let mkLetIn = mkLetIn
@@ -994,11 +961,6 @@ let mkArrow t1 t2 = mkProd (Anonymous, t1, t2)
    function is not itself an applicative term *)
 let mkApp = mkApp
 
-let mkAppA v =
-  let l = Array.length v in
-  if l=0 then anomaly "mkAppA received an empty array"
-  else mkApp (v.(0), Array.sub v 1 (Array.length v -1))
-
 (* Constructs a constant *)
 (* The array of terms correspond to the variables introduced in the section *)
 let mkConst = mkConst
@@ -1017,7 +979,6 @@ let mkConstruct = mkConstruct
 
 (* Constructs the term <p>Case c of c1 | c2 .. | cn end *)
 let mkCase = mkCase
-let mkCaseL (ci, p, c, ac) = mkCase (ci, p, c, Array.of_list ac)
 
 (* If recindxs = [|i1,...in|]
       funnames = [|f1,...fn|]

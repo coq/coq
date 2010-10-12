@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -410,24 +410,11 @@ let autounfold db cls gl =
     | OnConcl occs -> tac occs None)
     cls gl
 
-let autosimpl db cl =
-  let unfold_of_elts constr (b, elts) =
-    if not b then
-      List.map (fun c -> all_occurrences, constr c) elts
-    else []
-  in
-  let unfolds = List.concat (List.map (fun dbname ->
-    let db = searchtable_map dbname in
-    let (ids, csts) = Hint_db.transparent_state db in
-      unfold_of_elts (fun x -> EvalConstRef x) (Cpred.elements csts) @
-      unfold_of_elts (fun x -> EvalVarRef x) (Idpred.elements ids)) db)
-  in unfold_option unfolds cl
-
 open Extraargs
 
 TACTIC EXTEND autounfold
 | [ "autounfold" hintbases(db) in_arg_hyp(id) ] ->
-    [ autounfold (match db with None -> ["core"] | Some x -> x) 
+    [ autounfold (match db with None -> Auto.current_db_names () | Some [] -> ["core"] | Some x -> x) 
 	(glob_in_arg_hyp_to_clause id) ]
 END
 

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -266,7 +266,12 @@ let load_pref () =
     set_command_with_pair_compat "cmd_editor" (fun v -> np.cmd_editor <- v);
     set_hd "text_font" (fun v -> np.text_font <- Pango.Font.from_string v);
     set_hd "doc_url" (fun v ->
-      if not (Flags.is_standard_doc_url v) && v <> use_default_doc_url then
+      if not (Flags.is_standard_doc_url v) &&
+        v <> use_default_doc_url &&
+	(* Extra hack to support links to last released doc version *)
+        v <> Coq_config.wwwcoq ^ "doc" &&
+	v <> Coq_config.wwwcoq ^ "doc/"
+      then
 	prerr_endline ("Warning: Non-standard URL for Coq documentation in preference file: "^v);
       np.doc_url <- v);
     set_hd "library_url" (fun v -> np.library_url <- v);

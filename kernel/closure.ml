@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -82,7 +82,6 @@ module type RedFlagsSig = sig
   val red_add_transparent : reds -> transparent_state -> reds
   val mkflags : red_kind list -> reds
   val red_set : reds -> red_kind -> bool
-  val red_get_const : reds -> bool * evaluable_global_reference list
 end
 
 module RedFlags = (struct
@@ -156,16 +155,6 @@ module RedFlags = (struct
     | IOTA -> incr_cnt red.r_iota iota
     | DELTA -> (* Used for Rel/Var defined in context *)
 	incr_cnt red.r_delta delta
-
-  let red_get_const red =
-    let p1,p2 = red.r_const in
-    let (b1,l1) = Idpred.elements p1 in
-    let (b2,l2) = Cpred.elements p2 in
-    if b1=b2 then
-      let l1' = List.map (fun x -> EvalVarRef x) l1 in
-      let l2' = List.map (fun x -> EvalConstRef x) l2 in
-      (b1, l1' @ l2')
-    else error "unrepresentable pair of predicate"
 
 end : RedFlagsSig)
 
@@ -551,6 +540,7 @@ let destFLambda clos_fun t =
     | FLambda(n,(na,ty)::tys,b,e) ->
         (na,clos_fun e ty,{norm=Cstr;term=FLambda(n-1,tys,b,subs_lift e)})
     | _ -> assert false
+	(* t must be a FLambda and binding list cannot be empty *)
 
 (* Optimization: do not enclose variables in a closure.
    Makes variable access much faster *)
@@ -727,16 +717,6 @@ let fapp_stack (m,stk) = zip m stk
    (strip_update_shift, through get_arg). *)
 
 (* optimised for the case where there are no shifts... *)
-let strip_update_shift head stk =
-  assert (head.norm <> Red);
-  let rec strip_rec h depth = function
-    | Zshift(k)::s -> strip_rec (lift_fconstr k h) (depth+k) s
-    | Zupdate(m)::s ->
-        strip_rec (update m (h.norm,h.term)) depth s
-    | stk -> (depth,stk) in
-  strip_rec head 0 stk
-
-(* optimised for the case where there are no shifts... *)
 let strip_update_shift_app head stk =
   assert (head.norm <> Red);
   let rec strip_rec rstk h depth = function
@@ -753,15 +733,14 @@ let strip_update_shift_app head stk =
 
 let get_nth_arg head n stk =
   assert (head.norm <> Red);
-  let rec strip_rec rstk h depth n = function
+  let rec strip_rec rstk h n = function
     | Zshift(k) as e :: s ->
-        strip_rec (e::rstk) (lift_fconstr k h) (depth+k) n s
+        strip_rec (e::rstk) (lift_fconstr k h) n s
     | Zapp args::s' ->
         let q = Array.length args in
         if n >= q
         then
-          strip_rec (Zapp args::rstk)
-            {norm=h.norm;term=FApp(h,args)} depth (n-q) s'
+          strip_rec (Zapp args::rstk) {norm=h.norm;term=FApp(h,args)} (n-q) s'
         else
           let bef = Array.sub args 0 n in
           let aft = Array.sub args (n+1) (q-n-1) in
@@ -769,9 +748,9 @@ let get_nth_arg head n stk =
             List.rev (if n = 0 then rstk else (Zapp bef :: rstk)) in
           (Some (stk', args.(n)), append_stack aft s')
     | Zupdate(m)::s ->
-        strip_rec rstk (update m (h.norm,h.term)) depth n s
+        strip_rec rstk (update m (h.norm,h.term)) n s
     | s -> (None, List.rev rstk @ s) in
-  strip_rec [] head 0 n stk
+  strip_rec [] head n stk
 
 (* Beta reduction: look for an applied argument in the stack.
    Since the encountered update marks are removed, h must be a whnf *)
@@ -793,6 +772,13 @@ let rec get_args n tys f e stk =
           let etys = list_skipn na tys in
           get_args (n-na) etys f (subs_cons(l,e)) s
     | _ -> (Inr {norm=Cstr;term=FLambda(n,tys,f,e)}, stk)
+
+(* Eta expansion: add a reference to implicit surrounding lambda at end of stack *)
+let rec eta_expand_stack = function
+  | (Zapp _ | Zfix _ | Zcase _ | Zshift _ | Zupdate _ | Znative _ as e) :: s ->
+      e :: eta_expand_stack s
+  | [] ->
+      [Zshift 1; Zapp [|{norm=Norm; term= FRel 1}|]]
 
 (* Get the arguments of a native operator *)
 let rec skip_native_args rargs nargs =
@@ -861,8 +847,8 @@ let rec reloc_rargs_rec depth stk =
 let reloc_rargs depth stk =
   if depth = 0 then stk else reloc_rargs_rec depth stk
 
-let rec drop_parameters depth n stk =
-  match stk with
+let rec drop_parameters depth n argstk =
+  match argstk with
       Zapp args::s ->
         let q = Array.length args in
         if n > q then drop_parameters depth (n-q) s
@@ -871,9 +857,12 @@ let rec drop_parameters depth n stk =
           let aft = Array.sub args n (q-n) in
           reloc_rargs depth (append_stack aft s)
     | Zshift(k)::s -> drop_parameters (depth-k) n s
-    | [] -> assert (n=0); []
-    | _ -> assert false (* we know that n < stack_args_size(stk) *)
-
+    | [] -> (* we know that n < stack_args_size(argstk) (if well-typed term) *)
+	if n=0 then []
+	else anomaly
+	  "ill-typed term: found a match on a partially applied constructor"
+    | _ -> assert false
+	(* strip_update_shift_app only produces Zapp and Zshift items *)
 
 (* Iota reduction: expansion of a fixpoint.
  * Given a fixpoint and a substitution, returns the corresponding
@@ -1140,8 +1129,8 @@ let rec knr info m stk =
             knit info fxe fxbd stk'
         | (_,args,s) -> (m,args@s))
   | (FNativeInt _ | FNativeArr _) ->
-      (match strip_update_shift m stk with
-      | (_, Znative(op,kn,rargs,nargs)::s) ->
+      (match strip_update_shift_app m stk with
+      | (_, _, Znative(op,kn,rargs,nargs)::s) ->
 	  let (rargs, nargs) = skip_native_args (m::rargs) nargs in
 	  begin match nargs with
 	  | [] -> 
@@ -1157,7 +1146,7 @@ let rec knr info m stk =
 	      assert (kd = Native.Kwhnf);
 	      kni info a (Znative(op,kn,rargs,nargs)::s)
 	  end
-      | (_, s) -> (m, s))
+      | (_, _, s) -> (m, s))
   | FCoFix _ when red_set info.i_flags fIOTA ->
       (match strip_update_shift_app m stk with
           (_, args, ((Zcase _::_) as stk')) ->

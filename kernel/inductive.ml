@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -78,8 +78,6 @@ let instantiate_params full t args sign =
   if rem_args <> [] then fail();
   substl subs ty
 
-let instantiate_partial_params = instantiate_params false
-
 let full_inductive_instantiate mib params sign =
   let dummy = prop_sort in
   let t = mkArity (sign,dummy) in
@@ -94,10 +92,6 @@ let full_constructor_instantiate ((mind,_),(mib,_),params) =
 (************************************************************************)
 
 (* Functions to build standard types related to inductive *)
-
-
-let number_of_inductives mib = Array.length mib.mind_packets
-let number_of_constructors mip = Array.length mip.mind_consnames
 
 (*
 Computing the actual sort of an applied or partially applied inductive type:

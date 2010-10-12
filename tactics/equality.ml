@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -86,6 +86,7 @@ let rewrite_unif_flags = {
   Unification.modulo_delta = empty_transparent_state;
   Unification.resolve_evars = true;
   Unification.use_evars_pattern_unification = true;
+  Unification.modulo_eta = true
 }
 
 let side_tac tac sidetac =
@@ -103,9 +104,7 @@ let instantiate_lemma_all env sigma gl c ty l l2r concl =
       | _ -> error "The term provided is not an applied relation." in
   let others,(c1,c2) = split_last_two args in
   let try_occ (evd', c') =
-    let cl' = {eqclause with evd = evd'} in
-    let mvs = clenv_dependent false cl' in
-      clenv_pose_metas_as_evars cl' mvs
+    clenv_pose_dependent_evars true {eqclause with evd = evd'}
   in
   let occs =
     Unification.w_unify_to_subterm_all ~flags:rewrite_unif_flags env
@@ -607,7 +606,7 @@ let construct_discriminator sigma env dirn c sort =
           CP : changed assert false in a more informative error
        *)
       errorlabstrm "Equality.construct_discriminator"
-	(str "Cannot discriminate on inductive constructors with
+	(str "Cannot discriminate on inductive constructors with \
 		 dependent types.") in
   let (ind,_) = dest_ind_family indf in
   let (mib,mip) = lookup_mind_specif env ind in

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -16,7 +16,6 @@ open Tacticals
 open Tactics
 open Indfun_common
 open Tacmach
-open Termops
 open Sign
 open Hiddentac
 
@@ -248,7 +247,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	     | [] | [_] | [_;_] -> anomaly "bad context"
 	     | hres::res::(x,_,t)::ctxt ->
 		 Termops.it_mkLambda_or_LetIn
-		   ~init:(Termops.it_mkProd_or_LetIn ~init:concl [hres;res])
+		   (Termops.it_mkProd_or_LetIn concl [hres;res])
 		   ((x,None,t)::ctxt)
 	)
 	lemmas_types_infos
@@ -627,7 +626,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     *)
     let lemmas =
       Array.map
-	(fun (_,(ctxt,concl)) -> nf_zeta (Termops.it_mkLambda_or_LetIn ~init:concl ctxt))
+	(fun (_,(ctxt,concl)) -> nf_zeta (Termops.it_mkLambda_or_LetIn concl ctxt))
 	lemmas_types_infos
     in
     (* We get the constant and the principle corresponding to this lemma *)
@@ -686,7 +685,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	  h_generalize (List.map mkVar ids);
 	  thin ids
 	]
-      else unfold_in_concl [(all_occurrences,Names.EvalConstRef (destConst f))]
+      else unfold_in_concl [(Termops.all_occurrences, Names.EvalConstRef (destConst f))]
     in
     (* The proof of each branche itself *)
     let ind_number = ref 0 in
@@ -754,7 +753,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	   let (type_of_lemma_ctxt,type_of_lemma_concl) as type_info =
 	     generate_type false const_of_f graph i
 	   in
-	   let type_of_lemma = Termops.it_mkProd_or_LetIn ~init:type_of_lemma_concl type_of_lemma_ctxt in
+	   let type_of_lemma = Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
 	   let type_of_lemma = nf_zeta type_of_lemma in
 	   observe (str "type_of_lemma := " ++ Printer.pr_lconstr type_of_lemma);
 	   type_of_lemma,type_info
@@ -809,7 +808,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	   let (type_of_lemma_ctxt,type_of_lemma_concl) as type_info =
 	     generate_type true  const_of_f graph i
 	   in
-	   let type_of_lemma = Termops.it_mkProd_or_LetIn ~init:type_of_lemma_concl type_of_lemma_ctxt in
+	   let type_of_lemma = Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
 	   let type_of_lemma = nf_zeta type_of_lemma in
 	   observe (str "type_of_lemma := " ++ Printer.pr_lconstr type_of_lemma);
 	   type_of_lemma,type_info

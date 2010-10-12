@@ -157,8 +157,7 @@ Qed.
 Hint Resolve In_InA.
 
 Lemma InA_split : forall l x, InA x l ->
- exists l1, exists y, exists l2,
- eqA x y /\ l = l1++y::l2.
+ exists l1 y l2, eqA x y /\ l = l1++y::l2.
 Proof.
 induction l; intros; inv.
 exists (@nil A); exists a; exists l; auto.

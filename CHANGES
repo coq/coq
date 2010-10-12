@@ -114,6 +114,7 @@ Specification language
 - Binders given before ":" in lemmas and in definitions built by tactics are
   now automatically introduced (possible source of incompatibility that can
   be resolved by invoking "Unset Automatic Introduction").
+- New support for multiple implicit arguments signatures per reference.
 
 Module system
 
@@ -131,19 +132,35 @@ Module system
 - A functor application can be prefixed by a "!" to make it ignore any
   "Inline" annotation in the type of its argument(s) (for examples of
   use of the new features, see libraries Structures and Numbers).
+- Coercions are now active only when modules are imported (use "Set Automatic
+  Coercions Import" to get the behavior of the previous versions of Coq).
 
 Extraction
 
+- When using (Recursive) Extraction Library, the filenames are directly the
+  Coq ones with new appropriate extensions : we do not force anymore
+  uncapital first letters for Ocaml and capital ones for Haskell.
 - The extraction now tries harder to avoid code transformations that can be
   dangerous for the complexity. In particular many eta-expansions at the top
   of functions body are now avoided, clever partial applications will likely
   be preserved, let-ins are almost always kept, etc.
+- In the same spirit, auto-inlining is now disabled by default, except for
+  induction principles, since this feature was producing more frequently
+  weird code than clear gain. The previous behavior can be restored via
+  "Set Extraction AutoInline".
+- Unicode characters in identifiers are now transformed into ascii strings
+  that are legal in Ocaml and other languages.
+- Harsh support of module extraction to Haskell and Scheme: module hierarchy
+  is flattened, module abbreviations and functor applications are expanded,
+  module types and unapplied functors are discarded.
+- Less unsupported situations when extracting modules to Ocaml. In particular
+  module parameters might be alpha-renamed if a name clash is detected.
 - Extract Inductive is now possible toward non-inductive types (e.g. nat => int)
 - Extraction Implicit: this new experimental command allows to mark
   some arguments of a function or constructor for removed during
   extraction, even if these arguments don't fit the usual elimination
   principles of extraction, for instance the length n of a vector.
-- A few .v files in plugins/extraction try to provide a library of common
+- Files ExtrOcaml*.v in plugins/extraction try to provide a library of common
   extraction commands: mapping of basics types toward Ocaml's counterparts,
   conversions from/to int and big_int, or even complete mapping of nat,Z,N
   to int or big_int, or mapping of ascii to char and string to char list
@@ -184,11 +201,11 @@ Vernacular commands
   illustration of wrong commands.
 - Most commands referring to constant (e.g. Print or About) now support
   referring to the constant by a notation string.
-- Made generation of boolean equality automatic for datatypes (use
-  "Unset Boolean Equality Schemes" for deactivation).
-- Made support for automatic generation of case analysis schemes and
-  congruence schemes available to user (governed by options "Unset
-  Case Analysis Schemes" and "Unset Congruence Schemes").
+- New option "Boolean Equality Schemes" to make generation of boolean
+  equality automatic for datatypes (together with option "Decidable
+  Equality Schemes", this replaces deprecated option "Equality Scheme").
+- Made support for automatic generation of case analysis schemes available
+  to user (governed by option "Set Case Analysis Schemes").
 - New command "(Global?) Generalizable [All|No] Variable(s)? ident(s)?" to
   declare which identifiers are generalizable in `{} and `() binders.
 - New command "Print Opaque Dependencies" to display opaque constants in
@@ -199,6 +216,8 @@ Vernacular commands
 - Syntax of Implicit Type now supports more than one block of variables of
   a given type.
 - Command "Canonical Structure" now warns when it has no effects.
+- Commands of the form "Set X" or "Unset X" now support "Local" and "Global"
+  prefixes.
 
 Library
 
@@ -258,7 +277,7 @@ Library
 - Numbers library:
   - The abstract layer (NatInt, Natural/Abstract, Integer/Abstract) has
     been simplified and enhance thanks to new features of the module
-    system such as Include (see below). It has been extended to Euclidean
+    system such as Include (see above). It has been extended to Euclidean
     division (three flavors for integers: Trunc, Floor and Math).
   - The arbitrary-large efficient numbers (BigN, BigZ, BigQ) has also
     been reworked. They benefit from the abstract layer improvements
@@ -309,10 +328,6 @@ Internal infrastructure
   the ocamlbuild system. In particular "make" takes advantage
   of .mllib files for building .cma/.cmxa. The .vo files to
   compile are now listed in several vo.itarget files.
-- A dependency to Unix has been added to grammar.cma. Compilation of
-  ML files preprocessed with camlp[45] using this library must also
-  load unix.cma. It is recommended to use Makefiles generated by
-  coq_makefile, which handle this transparently.
 
 Changes from V8.1 to V8.2
 =========================

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -67,8 +67,7 @@ let red_constant_entry n ce = function
 let interp_definition boxed bl red_option c ctypopt =
   let env = Global.env() in
   let evdref = ref Evd.empty in
-  let (env_bl, ctx), imps1 =
-    interp_context_evars ~fail_anonymous:false evdref env bl in
+  let (env_bl, ctx), imps1 = interp_context_evars evdref env bl in
   let imps,ce =
     match ctypopt with
       None ->
@@ -235,7 +234,7 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
   let env0 = Global.env() in
   let evdref = ref Evd.empty in
   let (env_params, ctx_params), userimpls =
-    interp_context_evars ~fail_anonymous:false evdref env0 paramsl
+    interp_context_evars evdref env0 paramsl
   in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
 
@@ -252,7 +251,7 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
   (* Compute interpretation metadatas *)
   let indimpls = List.map (fun (_, impls) -> userimpls @ lift_implicits (List.length userimpls) impls) arities in
   let arities = List.map fst arities in
-  let impls = compute_full_internalization_env env0 Inductive params indnames fullarities indimpls in
+  let impls = compute_internalization_env env0 (Inductive params) indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
 
   let constructors =
@@ -466,7 +465,8 @@ let interp_fix_context evdref env isfix fix =
   let before, after = if isfix then split_at_annot fix.fix_binders fix.fix_annot else [], fix.fix_binders in
   let (env', ctx), imps = interp_context_evars evdref env before in
   let (env'', ctx'), imps' = interp_context_evars evdref env' after in
-    ((env'', ctx' @ ctx), imps @ imps', Option.map (fun _ -> List.length ctx) fix.fix_annot)
+  let annot = Option.map (fun _ -> List.length (assums_of_rel_context ctx)) fix.fix_annot in
+    ((env'', ctx' @ ctx), imps @ imps', annot)
       
 let interp_fix_ccl evdref (env,_) fix =
   interp_type_evars evdref env fix.fix_type
@@ -528,7 +528,7 @@ let interp_recursive isfix fixl notations =
   let env_rec = push_named_types env fixnames fixtypes in
 
   (* Get interpretation metadatas *)
-  let impls = compute_full_internalization_env env Recursive [] fixnames fixtypes fiximps in
+  let impls = compute_internalization_env env Recursive fixnames fixtypes fiximps in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
   let fixdefs =
@@ -604,15 +604,16 @@ let declare_cofixpoint boxed ((fixnames,fixdefs,fixtypes),fiximps) ntns =
   (* Declare notations *)
   List.iter Metasyntax.add_notation_interpretation ntns
 
-let extract_decreasing_argument = function
+let extract_decreasing_argument limit = function
   | (na,CStructRec) -> na
+  | (na,_) when not limit -> na
   | _ -> error 
       "Only structural decreasing is supported for a non-Program Fixpoint"
 
-let extract_fixpoint_components l =
+let extract_fixpoint_components limit l =
   let fixl, ntnl = List.split l in
   let fixl = List.map (fun ((_,id),ann,bl,typ,def) ->
-    let ann = extract_decreasing_argument ann in
+    let ann = extract_decreasing_argument limit ann in
       {fix_name = id; fix_annot = ann; fix_binders = bl; fix_body = def; fix_type = typ}) fixl in
   fixl, List.flatten ntnl
 
@@ -623,7 +624,7 @@ let extract_cofixpoint_components l =
   List.flatten ntnl
 
 let do_fixpoint l b =
-  let fixl,ntns = extract_fixpoint_components l in
+  let fixl,ntns = extract_fixpoint_components true l in
   let fix = interp_fixpoint fixl ntns in
   let possible_indexes =
     List.map compute_possible_guardness_evidences (snd fix) in

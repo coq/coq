@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -178,6 +178,8 @@ let rec evar_conv_x env evd pbty term1 term2 =
   match ground_test with
       Some b -> (evd,b)
     | None ->
+	(* Until pattern-unification is used consistently, use nohdbeta to not
+	   destroy beta-redexes that can be used for 1st-order unification *)
         let term1 = apprec_nohdbeta env evd term1 in
         let term2 = apprec_nohdbeta env evd term2 in
         if is_undefined_evar evd term1 then
@@ -244,13 +246,13 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
                   (fun i -> evar_conv_x env i CONV) l1 rest2);
                (fun i -> evar_conv_x env i pbty term1 (applist(term2,deb2)))]
           else (i,false)
-	and f4 i =
+	and f2 i =
 	  match eval_flexible_term env flex2 with
 	    | Some v2 ->
 		evar_eqappr_x env i pbty appr1 (evar_apprec env i l2 v2)
 	    | None -> (i,false)
 	in
-	ise_try evd [f1; f4]
+	ise_try evd [f1; f2]
 
     | MaybeFlexible flex1, Flexible ev2 ->
 	let f1 i =
@@ -276,13 +278,13 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
                   (fun i -> evar_conv_x env i CONV) rest1 l2);
                (fun i -> evar_conv_x env i pbty (applist(term1,deb1)) term2)]
           else (i,false)
-	and f4 i =
+	and f2 i =
 	  match eval_flexible_term env flex1 with
 	    | Some v1 ->
 		evar_eqappr_x env i pbty (evar_apprec env i l1 v1) appr2
 	    | None -> (i,false)
 	in
-	ise_try evd [f1; f4]
+	ise_try evd [f1; f2]
 
     | MaybeFlexible flex1, MaybeFlexible flex2 ->
 	let f1 i =
@@ -320,6 +322,25 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 		| None -> (i,false)
 	in
 	ise_try evd [f1; f2; f3]
+
+    (* Eta-expansion *)
+    | Rigid c1, (Flexible _ | MaybeFlexible _) when isLambda c1 ->
+	assert (l1 = []);
+	let (na,c1,c'1) = destLambda c1 in
+        let c = nf_evar evd c1 in
+	let env' = push_rel (na,None,c) env in
+        let appr1 = evar_apprec env' evd [] c'1 in
+	let appr2 = (lift 1 term2, List.map (lift 1) l2 @ [mkRel 1]) in
+	evar_eqappr_x env' evd CONV appr1 appr2
+
+    | (Flexible _ | MaybeFlexible _), Rigid c2 when isLambda c2 ->
+	assert (l2 = []);
+	let (na,c2,c'2) = destLambda c2 in
+        let c = nf_evar evd c2 in
+	let env' = push_rel (na,None,c) env in
+	let appr1 = (lift 1 term1, List.map (lift 1) l1 @ [mkRel 1]) in
+        let appr2 = evar_apprec env' evd [] c'2 in
+	evar_eqappr_x env' evd CONV appr1 appr2
 
     | Flexible ev1, Rigid _ ->
 	if
@@ -386,7 +407,8 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	| Sort s1, Sort s2 when l1=[] & l2=[] ->
             (evd,base_sort_cmp pbty s1 s2)
 
-	| Lambda (na,c1,c'1), Lambda (_,c2,c'2) when l1=[] & l2=[] ->
+	| Lambda (na,c1,c'1), Lambda (_,c2,c'2) ->
+	    assert (l1=[] & l2=[]);
             ise_and evd
               [(fun i -> evar_conv_x env i CONV c1 c2);
                (fun i ->
@@ -474,16 +496,29 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 		 (fun i -> ise_array2 i
 		     (fun i -> evar_conv_x env i CONV) p1 p2)]
 	    else (evd, false)
+	(* Eta-expansion *)
+	| Lambda (na,c1,c'1), _ ->
+	    assert (l1 = []);
+            let c = nf_evar evd c1 in
+	    let env' = push_rel (na,None,c) env in
+            let appr1 = evar_apprec env' evd [] c'1 in
+	    let appr2 = (lift 1 c2, List.map (lift 1) l2 @ [mkRel 1]) in
+	    evar_eqappr_x env' evd CONV appr1 appr2
+
+
+	| _, Lambda (na,c2,c'2) ->
+	    assert (l2 = []);
+            let c = nf_evar evd c2 in
+	    let env' = push_rel (na,None,c) env in
+	    let appr1 = (lift 1 c1, List.map (lift 1) l1 @ [mkRel 1]) in
+            let appr2 = evar_apprec env' evd [] c'2 in
+	    evar_eqappr_x env' evd CONV appr1 appr2
 
 	| (NativeInt _| NativeArr _), _ -> (evd,false)
 	| _, (NativeInt _ | NativeArr _) -> (evd,false)
 
-
-	| (Meta _ | Lambda _), _ -> (evd,false)
-	| _, (Meta _ | Lambda _) -> (evd,false)
-
-	| (Ind _ | Construct _ | Sort _ | Prod _), _ -> (evd,false)
-	| _, (Ind _ | Construct _ | Sort _ | Prod _) -> (evd,false)
+	| (Meta _ | Ind _ | Construct _ | Sort _ | Prod _), _ -> (evd,false)
+	| _, (Meta _ | Ind _ | Construct _ | Sort _ | Prod _) -> (evd,false)
 
 	| (App _ | Case _ | Fix _ | CoFix _),
 	  (App _ | Case _ | Fix _ | CoFix _) -> (evd,false)

@@ -121,6 +121,39 @@ Notation "- 4" := (-2 + -2).
 Check -4.
 
 (**********************************************************************)
+(* Check ill-formed recursive notations *)
+
+(* Recursive variables not part of a recursive pattern *)
+Fail Notation "( x , y , .. , z )" := (pair x .. (pair y z) ..).
+
+(* No recursive notation *)
+Fail Notation "( x , y , .. , z )" := (pair x (pair y z)).
+
+(* Left-unbound variable *)
+Fail Notation "( x , y , .. , z )" := (pair x .. (pair y w) ..).
+
+(* Right-unbound variable *)
+Fail Notation "( x , y , .. , z )" := (pair y .. (pair z 0) ..).
+
+(* Not the right kind of recursive pattern *)
+Fail Notation "( x , y , .. , z )" := (ex (fun z => .. (ex (fun y => x)) ..)).
+Fail Notation "( x -- y , .. , z )" := (pair y .. (pair z 0) ..)
+  (y closed binder, z closed binder).
+
+(* No separator allowed with open binders *)
+Fail Notation "( x -- y , .. , z )" := (ex (fun z => .. (ex (fun y => x)) ..))
+  (y binder, z binder).
+
+(* Ends of pattern do not match *)
+Fail Notation "( x , y , .. , z )" := (pair y .. (pair (plus z) 0) ..).
+Fail Notation "( x , y , .. , z )" := (pair y .. (plus z 0) ..).
+Fail Notation "( x1 , x2 , y , .. , z )" := (y y .. (x2 z 0) ..).
+Fail Notation "( x1 , x2 , y , .. , z )" := (x1 y .. (x2 z 0) ..).
+
+(* Ends of pattern are the same *)
+Fail Notation "( x , y , .. , z )" := (pair .. (pair (pair y z) x) .. x).
+
+(**********************************************************************)
 (* Check preservation of scopes at printing time *)
 
 Notation SUM := sum.
@@ -162,6 +195,12 @@ Open Scope Z_scope.
 Notation "[| x , y , .. , z ; a , b , .. , c |]" :=
   (pair (pair .. (pair x y) .. z) (pair .. (pair a b) .. c)).
 Check [|1,2,3;4,5,6|].
+
+Notation "[| t * ( x , y , .. , z ) ; ( a , b , .. , c )  * u |]" :=
+  (pair (pair .. (pair (pair t x) (pair t y)) .. (pair t z))
+        (pair .. (pair (pair a u) (pair b u)) .. (pair c u)))
+  (t at level 39).
+Check [|0*(1,2,3);(4,5,6)*false|].
 
 (**********************************************************************)
 (* Test recursive notations involving applications                    *)

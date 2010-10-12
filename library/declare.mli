@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -43,17 +43,19 @@ type constant_declaration = constant_entry * logical_kind
 
 (** [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
-   the full path of the declaration *)
+   the full path of the declaration 
+
+  internal specify if the constant has been created by the kernel or by the
+  user, and in the former case, if its errors should be silent
+   
+   *)
 type internal_flag =
   | KernelVerbose
   | KernelSilent
   | UserVerbose
 
 val declare_constant :
- identifier -> constant_declaration -> constant
-
-val declare_internal_constant :
-  identifier -> constant_declaration -> constant
+ ?internal:internal_flag -> identifier -> constant_declaration -> constant
 
 (** [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of

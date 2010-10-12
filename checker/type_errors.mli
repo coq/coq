@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -22,7 +22,7 @@ type guard_error =
   (* Fixpoints *)
   | NotEnoughAbstractionInFixBody
   | RecursionNotOnInductiveType of constr
-  | RecursionOnIllegalTerm of int * constr * int list * int list
+  | RecursionOnIllegalTerm of int * (env * constr) * int list * int list
   | NotEnoughArgumentsForFixCall of int
   (* CoFixpoints *)
   | CodomainNotInductiveType of constr
@@ -83,8 +83,6 @@ val error_case_not_inductive : env -> unsafe_judgment -> 'a
 val error_number_branches : env -> unsafe_judgment -> int -> 'a
 
 val error_ill_formed_branch : env -> constr -> int -> constr -> constr -> 'a
-
-val error_generalization : env -> name * constr -> unsafe_judgment -> 'a
 
 val error_actual_type : env -> unsafe_judgment -> constr -> 'a
 

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -18,7 +18,6 @@ open Nameops
 open Inductiveops
 open Declarations
 open Term
-open Termops
 open Tacmach
 open Tactics
 open Tacticals
@@ -64,19 +63,29 @@ let rec decompose_term env sigma t=
 	let tf=decompose_term env sigma f in
 	let targs=Array.map (decompose_term env sigma) args in
 	  Array.fold_left (fun s t->Appli (s,t)) tf targs
-    | Prod (_,a,_b) when not (dependent (mkRel 1) _b) ->
-	let b = pop _b in
+    | Prod (_,a,_b) when not (Termops.dependent (mkRel 1) _b) ->
+	let b = Termops.pop _b in
 	let sort_b = sf_of env sigma b in
 	let sort_a = sf_of env sigma a in
 	Appli(Appli(Product (sort_a,sort_b) ,
 		    decompose_term env sigma a),
 	      decompose_term env sigma b)
     | Construct c->
-	let (oib,_)=Global.lookup_inductive (fst c) in
-	let nargs=mis_constructor_nargs_env env c in
-	  Constructor {ci_constr=c;
+	let (mind,i_ind),i_con = c in 
+	let canon_mind = mind_of_kn (canonical_mind mind) in
+	let canon_ind = canon_mind,i_ind in
+	let (oib,_)=Global.lookup_inductive (canon_ind) in
+	let nargs=mis_constructor_nargs_env env (canon_ind,i_con) in
+	  Constructor {ci_constr= (canon_ind,i_con);
 		       ci_arity=nargs;
 		       ci_nhyps=nargs-oib.mind_nparams}
+    | Ind c -> 
+	let mind,i_ind = c in 
+	let canon_mind = mind_of_kn (canonical_mind mind) in
+	let canon_ind = canon_mind,i_ind in  (Symb (mkInd canon_ind))
+    | Const c -> 
+	let canon_const = constant_of_kn (canonical_con c) in 
+	  (Symb (mkConst canon_const))
     | _ ->if closed0 t then (Symb t) else raise Not_found
 
 (* decompose equality in members and type *)
@@ -101,10 +110,10 @@ let rec pattern_of_constr env sigma c =
 	  (array_map_to_list (pattern_of_constr env sigma) args) in
 	  PApp (pf,List.rev pargs),
 	List.fold_left Intset.union Intset.empty lrels
-    | Prod (_,a,_b) when not (dependent (mkRel 1) _b) ->
-	let b =pop _b in
+    | Prod (_,a,_b) when not (Termops.dependent (mkRel 1) _b) ->
+	let b = Termops.pop _b in
 	let pa,sa = pattern_of_constr env sigma a in
-	let pb,sb = pattern_of_constr env sigma (pop b) in
+	let pb,sb = pattern_of_constr env sigma b in
 	let sort_b = sf_of env sigma b in
 	let sort_a = sf_of env sigma a in
 	  PApp(Product (sort_a,sort_b),
@@ -141,27 +150,27 @@ let patterns_of_constr env sigma nrels term=
 
 let rec quantified_atom_of_constr env sigma nrels term =
   match kind_of_term (whd_delta env term) with
-      Prod (_,atom,ff) ->
+      Prod (id,atom,ff) -> 
 	if eq_constr ff (Lazy.force _False) then
 	  let patts=patterns_of_constr env sigma nrels atom in
 	      `Nrule patts
-	else
-	  quantified_atom_of_constr env sigma (succ nrels) ff
-    | _ ->
+	else 
+	  quantified_atom_of_constr (Environ.push_rel (id,None,atom) env) sigma (succ nrels) ff
+    | _ ->  
 	let patts=patterns_of_constr env sigma nrels term in
 	    `Rule patts
 
 let litteral_of_constr env sigma term=
   match kind_of_term (whd_delta env term) with
-    | Prod (_,atom,ff) ->
+    | Prod (id,atom,ff) -> 
 	if eq_constr ff (Lazy.force _False) then
 	  match (atom_of_constr env sigma atom) with
 	      `Eq(t,a,b) -> `Neq(t,a,b)
 	    | `Other(p) -> `Nother(p)
 	else
 	  begin
-	    try
-	      quantified_atom_of_constr env sigma 1 ff
+	    try 
+	      quantified_atom_of_constr (Environ.push_rel (id,None,atom) env) sigma 1 ff  
 	    with Not_found ->
 	      `Other (decompose_term env sigma term)
 	  end
@@ -248,19 +257,19 @@ let rec proof_tac p gls =
     | SymAx c ->
 	let l=constr_of_term p.p_lhs and
 	    r=constr_of_term p.p_rhs in
-        let typ = refresh_universes (pf_type_of gls l) in
+        let typ = Termops.refresh_universes (pf_type_of gls l) in
 	  exact_check
 	    (mkApp(Lazy.force _sym_eq,[|typ;r;l;c|])) gls
     | Refl t ->
 	let lr = constr_of_term t in
-	let typ = refresh_universes (pf_type_of gls lr) in
+	let typ = Termops.refresh_universes (pf_type_of gls lr) in
 	exact_check
 	   (mkApp(Lazy.force _refl_equal,[|typ;constr_of_term t|])) gls
     | Trans (p1,p2)->
 	let t1 = constr_of_term p1.p_lhs and
 	    t2 = constr_of_term p1.p_rhs and
 	    t3 = constr_of_term p2.p_rhs in
-	let typ = refresh_universes (pf_type_of gls t2) in
+	let typ = Termops.refresh_universes (pf_type_of gls t2) in
 	let prf =
 	  mkApp(Lazy.force _trans_eq,[|typ;t1;t2;t3;_M 1;_M 2|]) in
 	  tclTHENS (refine prf) [(proof_tac p1);(proof_tac p2)] gls
@@ -269,9 +278,9 @@ let rec proof_tac p gls =
 	and tx1=constr_of_term p2.p_lhs
 	and tf2=constr_of_term p1.p_rhs
 	and tx2=constr_of_term p2.p_rhs in
-	let typf = refresh_universes (pf_type_of gls tf1) in
-	let typx = refresh_universes (pf_type_of gls tx1) in
-	let typfx = refresh_universes (pf_type_of gls (mkApp (tf1,[|tx1|]))) in
+	let typf = Termops.refresh_universes (pf_type_of gls tf1) in
+	let typx = Termops.refresh_universes (pf_type_of gls tx1) in
+	let typfx = Termops.refresh_universes (pf_type_of gls (mkApp (tf1,[|tx1|]))) in
 	let id = pf_get_new_id (id_of_string "f") gls in
 	let appx1 = mkLambda(Name id,typf,mkApp(mkRel 1,[|tx1|])) in
 	let lemma1 =
@@ -299,8 +308,8 @@ let rec proof_tac p gls =
 	 let ti=constr_of_term prf.p_lhs in
 	 let tj=constr_of_term prf.p_rhs in
 	 let default=constr_of_term p.p_lhs in
-	 let intype=refresh_universes (pf_type_of gls ti) in
-	 let outtype=refresh_universes (pf_type_of gls default) in
+	 let intype = Termops.refresh_universes (pf_type_of gls ti) in
+	 let outtype = Termops.refresh_universes (pf_type_of gls default) in
 	 let special=mkRel (1+nargs-argind) in
 	 let proj=build_projection intype outtype cstr special default gls in
 	 let injt=
@@ -309,7 +318,7 @@ let rec proof_tac p gls =
 
 let refute_tac c t1 t2 p gls =
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
-  let intype=refresh_universes (pf_type_of gls tt1) in
+  let intype = Termops.refresh_universes (pf_type_of gls tt1) in
   let neweq=
     mkApp(Lazy.force _eq,
 	  [|intype;tt1;tt2|]) in
@@ -320,7 +329,7 @@ let refute_tac c t1 t2 p gls =
 
 let convert_to_goal_tac c t1 t2 p gls =
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
-  let sort=refresh_universes (pf_type_of gls tt2) in
+  let sort = Termops.refresh_universes (pf_type_of gls tt2) in
   let neweq=mkApp(Lazy.force _eq,[|sort;tt1;tt2|]) in
   let e=pf_get_new_id (id_of_string "e") gls in
   let x=pf_get_new_id (id_of_string "X") gls in
@@ -340,14 +349,14 @@ let convert_to_hyp_tac c1 t1 c2 t2 p gls =
 
 let discriminate_tac cstr p gls =
   let t1=constr_of_term p.p_lhs and t2=constr_of_term p.p_rhs in
-  let intype=refresh_universes (pf_type_of gls t1) in
+  let intype = Termops.refresh_universes (pf_type_of gls t1) in
   let concl=pf_concl gls in
-  let outsort=mkType (new_univ ()) in
+  let outsort = mkType (Termops.new_univ ()) in
   let xid=pf_get_new_id (id_of_string "X") gls in
   let tid=pf_get_new_id (id_of_string "t") gls in
   let identity=mkLambda(Name xid,outsort,mkLambda(Name tid,mkRel 1,mkRel 1)) in
   let trivial=pf_type_of gls identity in
-  let outtype=mkType (new_univ ()) in
+  let outtype = mkType (Termops.new_univ ()) in
   let pred=mkLambda(Name xid,outtype,mkRel 1) in
   let hid=pf_get_new_id (id_of_string "Heq") gls in
   let proj=build_projection intype outtype cstr trivial concl gls in
@@ -402,7 +411,7 @@ let cc_tactic depth additionnal_terms gls=
 			 str "\"congruence with (" ++
 			 prlist_with_sep
 			   (fun () -> str ")" ++ pr_spc () ++ str "(")
-			   (print_constr_env (pf_env gls))
+			   (Termops.print_constr_env (pf_env gls))
 			   terms_to_complete ++
 			 str ")\","
 		       end);
@@ -444,7 +453,7 @@ let simple_reflexivity () = apply (Lazy.force _refl_equal)
 
 let f_equal gl =
   let cut_eq c1 c2 =
-    let ty = refresh_universes (pf_type_of gl c1) in
+    let ty = Termops.refresh_universes (pf_type_of gl c1) in
     tclTHENTRY
       (Tactics.cut (mkApp (Lazy.force _eq, [|ty; c1; c2|])))
       (simple_reflexivity ())

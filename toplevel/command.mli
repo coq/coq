@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -107,7 +107,7 @@ type structured_fixpoint_expr = {
 (** Extracting the semantical components out of the raw syntax of
    (co)fixpoints declarations *)
 
-val extract_fixpoint_components :
+val extract_fixpoint_components : bool -> 
   (fixpoint_expr * decl_notation list) list ->
     structured_fixpoint_expr list * decl_notation list
 

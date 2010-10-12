@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -64,11 +64,6 @@ let error_global_not_found_loc (loc,qid) = error_global_not_found_loc loc qid
 let skip_metaid = function
   | AI x -> x
   | MetaId (loc,_) -> error_syntactic_metavariables_not_allowed loc
-
-type ltac_type =
-  | LtacFun of ltac_type
-  | LtacBasic
-  | LtacTactic
 
 (* Values for interpretation *)
 type value =
@@ -160,22 +155,6 @@ let valueOut = function
 
 (* To embed constr *)
 let constrIn t = CDynamic (dummy_loc,constr_in t)
-let constrOut = function
-  | CDynamic (_,d) ->
-    if (Dyn.tag d) = "constr" then
-      constr_out d
-    else
-      anomalylabstrm "constrOut" (str "Dynamic tag should be constr")
-  | ast ->
-    anomalylabstrm "constrOut" (str "Not a Dynamic ast")
-
-(* Globalizes the identifier *)
-let find_reference env qid =
-  (* We first look for a variable of the current proof *)
-  match repr_qualid qid with
-    | (d,id) when repr_dirpath d = [] & List.mem id (ids_of_context env)
-	-> VarRef id
-    | _ -> Nametab.locate qid
 
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 let atomic_mactab = ref Idmap.empty
@@ -346,10 +325,6 @@ let intern_name l ist = function
   | Anonymous -> Anonymous
   | Name id -> Name (intern_ident l ist id)
 
-let vars_of_ist (lfun,_,_,env) =
-  List.fold_left (fun s id -> Idset.add id s)
-    (vars_of_env env) lfun
-
 let strict_check = ref false
 
 let adjust_loc loc = if !strict_check then dloc else loc
@@ -395,8 +370,10 @@ let intern_ltac_variable ist = function
       raise Not_found
 
 let intern_constr_reference strict ist = function
-  | Ident (_,id) when (not strict & find_hyp id ist) or find_ctxvar id ist ->
-      RVar (dloc,id), None
+  | Ident (_,id) as r when not strict & find_hyp id ist ->
+      RVar (dloc,id), Some (CRef r)
+  | Ident (_,id) as r when find_ctxvar id ist ->
+      RVar (dloc,id), if strict then None else Some (CRef r)
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
       RRef (loc,locate_global_with_alias lqid), if strict then None else Some (CRef r)
@@ -517,12 +494,6 @@ let intern_bindings ist = function
 let intern_constr_with_bindings ist (c,bl) =
   (intern_constr ist c, intern_bindings ist bl)
 
-let intern_clause_pattern ist (l,occl) =
-  let rec check = function
-    | (hyp,l) :: rest -> (intern_hyp ist (skip_metaid hyp),l)::(check rest)
-    | [] -> []
-  in (l,check occl)
-
   (* TODO: catch ltac vars *)
 let intern_induction_arg ist = function
   | ElimOnConstr c -> ElimOnConstr (intern_constr_with_bindings ist c)
@@ -558,9 +529,10 @@ let intern_evaluable_reference_or_by_notation ist = function
 (* Globalize a reduction expression *)
 let intern_evaluable ist = function
   | AN (Ident (loc,id)) when find_ltacvar id ist -> ArgVar (loc,id)
-  | AN (Ident (_,id)) when
-      (not !strict_check & find_hyp id ist) or find_ctxvar id ist ->
-      ArgArg (EvalVarRef id, None)
+  | AN (Ident (loc,id)) when not !strict_check & find_hyp id ist ->
+      ArgArg (EvalVarRef id, Some (loc,id))
+  | AN (Ident (loc,id)) when find_ctxvar id ist ->
+      ArgArg (EvalVarRef id, if !strict_check then None else Some (loc,id))
   | r ->
       let e = intern_evaluable_reference_or_by_notation ist r in
       let na = short_name r in
@@ -991,14 +963,6 @@ and intern_genarg ist x =
 (***************************************************************************)
 (* Evaluation/interpretation *)
 
-let constr_to_id loc = function
-  | VConstr ([],c) when isVar c -> destVar c
-  | _ -> invalid_arg_loc (loc, "Not an identifier")
-
-let constr_to_qid loc c =
-  try shortest_qualid_of_global Idset.empty (global_of_constr c)
-  with _ -> invalid_arg_loc (loc, "Not a global reference")
-
 let is_variable env id =
   List.mem id (ids_of_named_context (Environ.named_context env))
 
@@ -1132,7 +1096,8 @@ let interp_hyp ist gl (loc,id as locid) =
   with Not_found ->
   (* Then look if bound in the proof context at calling time *)
   if is_variable env id then id
-  else user_err_loc (loc,"eval_variable",pr_id id ++ str " not found.")
+  else user_err_loc (loc,"eval_variable",
+    str "No such hypothesis: " ++ pr_id id ++ str ".")
 
 let hyp_list_of_VList env = function
   | VList l -> List.map (coerce_to_hyp env) l
@@ -1144,16 +1109,6 @@ let interp_hyp_list_as_list ist gl (loc,id as x) =
 
 let interp_hyp_list ist gl l =
   List.flatten (List.map (interp_hyp_list_as_list ist gl) l)
-
-let interp_clause_pattern ist gl (l,occl) =
-  let rec check acc = function
-    | (hyp,l) :: rest ->
-	let hyp = interp_hyp ist gl hyp in
-	if List.mem hyp acc then
-	  error ("Hypothesis "^(string_of_id hyp)^" occurs twice.");
-	(hyp,l)::(check (hyp::acc) rest)
-    | [] -> []
-  in (l,check [] occl)
 
 let interp_move_location ist gl = function
   | MoveAfter id -> MoveAfter (interp_hyp ist gl id)
@@ -1204,7 +1159,7 @@ let interp_evaluable ist env = function
        with Not_found ->
        match r with
        | EvalConstRef _ -> r
-       | _ -> Pretype_errors.error_var_not_found_loc loc id)
+       | _ -> error_global_not_found_loc (loc,qualid_of_ident id))
   | ArgArg (r,None) -> r
   | ArgVar locid ->
       interp_ltac_var (coerce_to_evaluable_ref env) ist (Some env) locid
@@ -1391,8 +1346,6 @@ let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
 
 let interp_constr_list ist env sigma c =
   snd (interp_constr_in_compound_list (fun x -> x) (fun x -> x) (fun ist env sigma c -> (Evd.empty, interp_constr ist env sigma c)) ist env sigma c)
-
-let inj_open c = (Evd.empty,c)
 
 let interp_open_constr_list =
   interp_constr_in_compound_list (fun x -> x) (fun x -> x)
@@ -2421,7 +2374,9 @@ and interp_atomic ist gl tac =
   | TacChange (Some op,c,cl) ->
       let sign,op = interp_typed_pattern ist env sigma op in
       h_change (Some op)
-        (pf_interp_constr ist (extend_gl_hyps gl sign) c)
+        (try pf_interp_constr ist (extend_gl_hyps gl sign) c
+	 with Not_found | Anomaly _ (* Hack *) ->
+	   errorlabstrm "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side."))
         (interp_clause ist gl cl)
 
   (* Equivalence relations *)
@@ -2882,11 +2837,6 @@ and subst_genarg subst (x:glob_generic_argument) =
 (***************************************************************************)
 (* Tactic registration *)
 
-(* For bad tactic calls *)
-let bad_tactic_args s =
-  anomalylabstrm s
-    (str "Tactic " ++ str s ++ str " called with bad arguments")
-
 (* Declaration of the TAC-DEFINITION object *)
 let add (kn,td) = mactab := Gmap.add kn td !mactab
 let replace (kn,td) = mactab := Gmap.add kn td (Gmap.remove kn !mactab)
@@ -2931,7 +2881,7 @@ let subst_md (subst,(local,defs)) =
 let classify_md (local,defs as o) =
   if local then Dispose else Substitute o
 
-let (inMD,outMD) =
+let inMD =
   declare_object {(default_object "TAC-DEFINITION") with
      cache_function  = cache_md;
      load_function   = load_md;

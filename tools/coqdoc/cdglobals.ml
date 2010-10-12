@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -74,6 +74,7 @@ let toc_depth = (ref None : int option ref)
 let lib_name = ref "Library"
 let lib_subtitles = ref false
 let interpolate = ref false
+let inline_notmono = ref false
 
 let charset = ref "iso-8859-1"
 let inputenc = ref ""
@@ -87,7 +88,7 @@ let set_latin1 () =
 
 let set_utf8 () =
   charset := "utf-8";
-  inputenc := "utf8";
+  inputenc := "utf8x";
   utf8 := true
 
 (* Parsing options *)

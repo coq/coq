@@ -10,12 +10,10 @@ Hashcons
 Dyn
 System
 Envars
-Gset
 Gmap
 Fset
 Fmap
-Tlm
-tries
+Tries
 Gmapl
 Profile
 Explore

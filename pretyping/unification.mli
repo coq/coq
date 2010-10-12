@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -15,7 +15,8 @@ type unify_flags = {
   use_metas_eagerly : bool;
   modulo_delta : Names.transparent_state;
   resolve_evars : bool;
-  use_evars_pattern_unification : bool
+  use_evars_pattern_unification : bool;
+  modulo_eta : bool
 }
 
 val default_unify_flags : unify_flags

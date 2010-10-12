@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -37,7 +37,7 @@ let _ = register_proof_mode standard
 (* Default proof mode, to be set at the beginning of proofs. *)
 let default_proof_mode = ref standard
 
-let set_default_proof_mode = 
+let _ =
   Goptions.declare_string_option {Goptions.
     optsync = true ;
     optname = "default proof mode" ;

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -73,6 +73,14 @@ Hint Resolve andb_true_intro: bool.
 Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.
 
 Hint Constructors eq_true : eq_true.
+
+(** Another way of interpreting booleans as propositions *)
+
+Definition is_true b := b = true.
+
+(** [is_true] can be activated as a coercion by
+   (Local) Coercion is_true : bool >-> Prop.
+*)
 
 (** Additional rewriting lemmas about [eq_true] *)
 

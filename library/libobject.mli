@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -85,14 +85,17 @@ val default_object : string -> 'a object_declaration
 val ident_subst_function : substitution * 'a -> 'a
 
 (** {6 ... } *)
-(** Given an object declaration, the function [declare_object]
+(** Given an object declaration, the function [declare_object_full]
    will hand back two functions, the "injection" and "projection"
    functions for dynamically typed library-objects. *)
 
 type obj
 
-val declare_object :
+val declare_object_full :
   'a object_declaration -> ('a -> obj) * (obj -> 'a)
+
+val declare_object :
+  'a object_declaration -> ('a -> obj)
 
 val object_tag : obj -> string
 

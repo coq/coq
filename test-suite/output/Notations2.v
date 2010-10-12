@@ -24,3 +24,44 @@ Check forall (A: Set) (le: A -> A -> Prop) (x y: A), le x y \/ le y x.
 Remove Printing Let prod.
 Check match (0,0,0) with (x,y,z) => x+y+z end.
 Check let '(a,b,c) := ((2,3),4) in a.
+
+(* Test notations with binders *)
+
+Notation "∃  x .. y , P":=
+  (ex (fun x => .. (ex (fun y => P)) ..)) (x binder, y binder, at level 200).
+
+Check (∃ n p, n+p=0).
+
+Notation "∀  x .. y , P":= (forall x, .. (forall y, P) ..)
+  (x binder, at level 200, right associativity).
+
+Check (∀ n p, n+p=0).
+
+Notation "'λ'  x .. y , P":= (fun x, .. (fun y, P) ..)
+  (y binder, at level 200, right associativity).
+
+Check (λ n p, n+p=0).
+
+Generalizable Variable A.
+
+Check `(λ n p : A, n=p).
+Check `(∃ n p : A, n=p).
+Check `(∀ n p : A, n=p).
+
+Notation "'let'' f x .. y  :=  t 'in' u":=
+  (let f := fun x => .. (fun y => t) .. in u)
+  (f ident, x closed binder, y closed binder, at level 200,
+   right associativity).
+
+Check let' f x y z (a:bool) := x+y+z+1 in f 0 1 2.
+
+(* This one is not fully satisfactory because binders in the same type
+   are re-factorized and parentheses are needed even for atomic binder
+
+Notation "'mylet' f [ x ; .. ; y ]  :=  t 'in' u":=
+  (let f := fun x => .. (fun y => t) .. in u)
+  (f ident, x closed binder, y closed binder, at level 200,
+   right associativity).
+
+Check mylet f [x;y;z;(a:bool)] := x+y+z+1 in f 0 1 2.
+*)

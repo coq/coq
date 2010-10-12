@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -37,6 +37,7 @@ let none = Evd.empty
 let type_of env c = Retyping.get_type_of env none (strip_outer_cast c)
 
 let sort_of env c = Retyping.get_sort_family_of env none (strip_outer_cast c)
+
 
 let is_axiom env kn = 
   (Environ.lookup_constant kn env).const_body = Declarations.Opaque None
@@ -276,14 +277,6 @@ let rec extract_type env db j c args =
     | Case _ | Fix _ | CoFix _ -> Tunknown
     | _ -> assert false
 
-(* [extract_maybe_type] calls [extract_type] when used on a Coq type,
-   and otherwise returns [Tdummy] or [Tunknown] *)
-
-and extract_maybe_type env db c =
-  let t = whd_betadeltaiota env none (type_of env c) in
-  if isSort t then extract_type env db 0 c []
-  else if sort_of env t = InProp then Tdummy Kother else Tunknown
-
 (*s Auxiliary function dealing with type application.
   Precondition: [r] is a type scheme represented by the signature [s],
   and is completely applied: [List.length args = List.length s]. *)
@@ -364,7 +357,8 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	     ip_logical = (not b);
 	     ip_sign = s;
 	     ip_vars = v;
-	     ip_types = t })
+	     ip_types = t;
+	     ip_optim_id_ok = None })
 	mib.mind_packets
     in
 
@@ -793,7 +787,7 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
 	end
       else
 	(* Standard case: we apply [extract_branch]. *)
-	MLcase ((mi.ind_info,[]), a, Array.init br_size extract_branch)
+	MLcase ((mi.ind_info,BranchNone), a, Array.init br_size extract_branch)
 
 (*s Extraction of a (co)-fixpoint. *)
 
@@ -819,6 +813,18 @@ let rec decomp_lams_eta_n n m env c t =
   let rels = (list_firstn d rels) @ rels' in
   let eta_args = List.rev_map mkRel (interval 1 d) in
   rels, applist (lift d c,eta_args)
+
+(* Let's try to identify some situation where extracted code
+   will allow generalisation of type variables *)
+
+let rec gentypvar_ok c = match kind_of_term c with
+  | Lambda _ | Const _ -> true
+  | App (c,v) ->
+      (* if all arguments are variables, these variables will
+	 disappear after extraction (see [empty_s] below) *)
+      array_for_all isRel v && gentypvar_ok c
+  | Cast (c,_,_) -> gentypvar_ok c
+  | _ -> false
 
 (*s From a constant to a ML declaration. *)
 
@@ -848,6 +854,17 @@ let extract_std_constant env kn body typ =
 	(lang () = Haskell || sign_kind s <> UnsafeLogicalSig)
       then decompose_lam_n m body
       else decomp_lams_eta_n n m env body typ
+  in
+  (* Should we do one eta-expansion to avoid non-generalizable '_a ? *)
+  let rels, c =
+    let n = List.length rels in
+    let s,s' = list_chop n s in
+    let k = sign_kind s in
+    let empty_s = (k = EmptySig || k = SafeLogicalSig) in
+    if lang () = Ocaml && empty_s && not (gentypvar_ok c)
+      && s' <> [] && type_maxvar t <> 0
+    then decomp_lams_eta_n (n+1) n env body typ
+    else rels,c
   in
   let n = List.length rels in
   let s = list_firstn n s in

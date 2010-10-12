@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -19,7 +19,6 @@ open Names
 open Libnames
 open Nametab
 open Term
-open Termops
 open Typeops
 open Libobject
 open Library
@@ -76,7 +75,7 @@ let discharge_structure (_,(ind,id,kl,projs)) =
   Some (Lib.discharge_inductive ind, discharge_constructor id, kl,
         List.map (Option.map Lib.discharge_con) projs)
 
-let (inStruc,outStruc) =
+let inStruc =
   declare_object {(default_object "STRUCTURE") with
     cache_function = cache_structure;
     load_function = load_structure;
@@ -135,7 +134,7 @@ open Libobject
 let load_method (_,(ty,id)) =
   meth_dnet := MethodsDnet.add ty id !meth_dnet
 
-let (in_method,out_method) =
+let in_method =
   declare_object
     { (default_object "RECMETHODS") with
 	load_function = (fun _ -> load_method);
@@ -206,7 +205,7 @@ let cs_pattern_of_constr t =
 	      _ -> raise Not_found
 	end
     | Rel n -> Default_cs, pred n, []
-    | Prod (_,a,b) when not (dependent (mkRel 1) b) -> Prod_cs, -1, [a;pop b]
+    | Prod (_,a,b) when not (Termops.dependent (mkRel 1) b) -> Prod_cs, -1, [a; Termops.pop b]
     | Sort s -> Sort_cs (family_of_sort s), -1, []
     | _ ->
 	begin
@@ -240,7 +239,7 @@ let compute_canonical_projections (con,ind) =
                      (let con_pp = Nametab.pr_global_env Idset.empty (ConstRef con)
                       and proji_sp_pp = Nametab.pr_global_env Idset.empty (ConstRef proji_sp) in
 		      msg_warning (str "No global reference exists for projection value"
-                                   ++ print_constr t ++ str " in instance "  
+                                   ++ Termops.print_constr t ++ str " in instance "  
                                    ++ con_pp ++ str " of " ++ proji_sp_pp ++ str ", ignoring it."));
 		   l
 	       end
@@ -290,7 +289,7 @@ let subst_canonical_structure (subst,(cst,ind as obj)) =
 let discharge_canonical_structure (_,(cst,ind)) =
   Some (Lib.discharge_con cst,Lib.discharge_inductive ind)
 
-let (inCanonStruc,outCanonStruct) =
+let inCanonStruc =
   declare_object {(default_object "CANONICAL-STRUCTURE") with
     open_function = open_canonical_structure;
     cache_function = cache_canonical_structure;
@@ -327,8 +326,6 @@ let check_and_decompose_canonical_structure ref =
 
 let declare_canonical_structure ref =
   add_canonical_structure (check_and_decompose_canonical_structure ref)
-
-let outCanonicalStructure x = fst (outCanonStruct x)
 
 let lookup_canonical_conversion (proj,pat) =
   List.assoc pat (Refmap.find proj !object_table)

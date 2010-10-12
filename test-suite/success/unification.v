@@ -135,4 +135,4 @@ Goal (forall (A B : Set) (f : A -> B), (fun x => f x) = f) ->
  forall (A B C : Set) (g : (A -> B) -> C) (f : A -> B), g (fun x => f x) = g f.
 Proof.
   intros.
-  rewrite H.
+  rewrite H with (f:=f0).

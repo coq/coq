@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *   The HELM Project         /   The EU MoWGLI Project       *)
 (*         *   University of Bologna                                    *)
@@ -59,30 +59,6 @@ let nf_evar sigma ~preserve =
 	 Util.anomaly "proof2aproof.nf_evar: native not yet implemented"
    in
     aux
-;;
-
-(* Unshares a proof-tree.                                                  *)
-(* Warning: statuses, goals, prim_rules and tactic_exprs are not unshared! *)
-let rec unshare_proof_tree =
- let module PT = Proof_type in
-  function {PT.open_subgoals = status ;
-	    PT.goal = goal ;
-	    PT.ref = ref} ->
-   let unshared_ref =
-    match ref with
-       None -> None
-     | Some (rule,pfs) ->
-        let unshared_rule =
-         match rule with
-             PT.Nested (cmpd, pf) ->
-               PT.Nested (cmpd, unshare_proof_tree pf)
-	   | other -> other
-	in
-         Some (unshared_rule, List.map unshare_proof_tree pfs)
-   in
-    {PT.open_subgoals = status ;
-     PT.goal = goal ;
-     PT.ref = unshared_ref}
 ;;
 
 module ProofTreeHash =

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -307,9 +307,7 @@ Section NMORPHISM.
   Notation "x == y" := (req x y).
    Add Morphism radd : radd_ext4.  exact (Radd_ext Reqe). Qed.
    Add Morphism rmul : rmul_ext4.  exact (Rmul_ext Reqe). Qed.
-   Add Morphism ropp : ropp_ext4.  exact (Ropp_ext Reqe). Qed.
-   Add Morphism rsub : rsub_ext5.  exact (ARsub_ext Rsth Reqe ARth). Qed.
-   Ltac norm := gen_srewrite Rsth Reqe ARth.
+   Ltac norm := gen_srewrite_sr Rsth Reqe ARth.
 
  Definition gen_phiN1 x :=
   match x with

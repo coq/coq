@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -41,7 +41,7 @@ end.
 
 Theorem pos_eq_refl : forall m n, pos_eq m n = true -> m = n.
 induction m;simpl;destruct n;congruence ||
-(intro e;apply f_equal with positive;auto).
+(intro e;apply f_equal;auto).
 Qed.
 
 Fixpoint form_eq (p q:form) {struct p} :bool :=

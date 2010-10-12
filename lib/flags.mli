@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -21,11 +21,9 @@ val term_quality : bool ref
 
 val xml_export : bool ref
 
-val dont_load_proofs : bool ref
+val load_proofs : bool ref
 
 val raw_print : bool ref
-
-val unicode_syntax : bool ref
 
 type compat_version = V8_2
 val compat_version : compat_version option ref

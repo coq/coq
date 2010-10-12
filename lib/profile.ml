@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -9,14 +9,12 @@
 open Gc
 
 let word_length = Sys.word_size / 8
-let int_size = Sys.word_size - 1
 
 let float_of_time t = float_of_int t /. 100.
 let time_of_float f = int_of_float (f *. 100.)
 
 let get_time () =
-  let  {Unix.tms_utime = ut;Unix.tms_stime = st} = Unix.times () in
-  time_of_float (ut +. st)
+  time_of_float (Sys.time ())
 
 (* Since ocaml 3.01, gc statistics are in float *)
 let get_alloc () =
@@ -155,7 +153,10 @@ let merge_profile filename (curr_table, curr_outside, curr_total as new_data) =
 (* Unix measure of time is approximative and shoitt delays are often
    unperceivable; therefore, total times are measured in one (big)
    step to avoid rounding errors and to get the best possible
-   approximation *)
+   approximation.
+   Note: Sys.time is the same as:
+     Unix.(let x = times () in x.tms_utime +. x.tms_stime)
+ *)
 
 (*
 ----------        start profile for f1
@@ -350,7 +351,6 @@ let close_profile print =
 	end
     | _ -> failwith "Inconsistency"
 
-let append_profile () = close_profile false
 let print_profile () = close_profile true
 
 let declare_profile name =

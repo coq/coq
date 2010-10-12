@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -250,6 +250,11 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	str " depends on pattern variable name " ++ pr_id id ++
 	str " which is not bound in current context.")
 
+  let protected_get_type_of env sigma c =
+    try Retyping.get_type_of env sigma c
+    with Anomaly _ ->
+      errorlabstrm "" (str "Cannot reinterpret " ++ quote (print_constr c) ++ str " in the current environment.")
+
   let pretype_id loc env sigma (lvar,unbndltacvars) id =
     (* Look for the binder of [id] *)
     try
@@ -261,7 +266,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
       let (ids,c) = List.assoc id lvar in
       let subst = List.map (invert_ltac_bound_name env id) ids in
       let c = substl subst c in
-      { uj_val = c; uj_type = Retyping.get_type_of env sigma c }
+      { uj_val = c; uj_type = protected_get_type_of env sigma c }
     with Not_found ->
     (* Check if [id] is a section or goal variable *)
     try
@@ -703,7 +708,11 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     if resolve_classes then (
       evdref := Typeclasses.resolve_typeclasses ~onlyargs:false
 	  ~split:true ~fail:fail_evar env !evdref);
-    evdref := consider_remaining_unif_problems env !evdref;
+    evdref := (try consider_remaining_unif_problems env !evdref
+	       with e when not resolve_classes -> 
+		 consider_remaining_unif_problems env 
+		   (Typeclasses.resolve_typeclasses ~onlyargs:false
+		      ~split:true ~fail:fail_evar env !evdref));
     let c = if expand_evar then nf_evar !evdref c' else c' in
     if fail_evar then check_evars env Evd.empty !evdref c;
     c
@@ -726,6 +735,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 
   let understand_judgment_tcc evdref env c =
     let j = pretype empty_tycon env evdref ([],[]) c in
+    evdref := Typeclasses.resolve_typeclasses ~onlyargs:true ~split:true ~fail:false env !evdref;
     j_nf_evar !evdref j
 
   (* Raw calls to the unsafe inference machine: boolean says if we must

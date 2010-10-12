@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -94,7 +94,7 @@ module MakeTable =
 	    if p' == p then obj else
 	      (f,p')
 	in
-        let (inGo,outGo) =
+        let inGo =
           Libobject.declare_object {(Libobject.default_object nick) with
                 Libobject.load_function = load_options;
 		Libobject.open_function = load_options;
@@ -235,21 +235,21 @@ let declare_option cast uncast
       That way I shouldn't collide with [nickname key] for any [key]. As [key]-s are
        lists of strings *without* spaces. *)
   let (write,lwrite,gwrite) = if sync then
-    let (ldecl_obj,_) = (* "Local": doesn't survive section or modules. *)
+    let ldecl_obj = (* "Local": doesn't survive section or modules. *)
       declare_object {(default_object ("L  "^nickname key)) with
 		       cache_function = (fun (_,v) -> write v);
 		       classify_function = (fun _ -> Dispose)}
     in
-    let (decl_obj,_) = (* default locality: survives sections but not modules. *)
+    let decl_obj = (* default locality: survives sections but not modules. *)
       declare_object {(default_object (nickname key)) with
 		       cache_function = (fun (_,v) -> write v);
 		       classify_function = (fun _ -> Dispose);
 		       discharge_function = (fun (_,v) -> Some v)}
     in
-    let (gdecl_obj,_) = (* "Global": survives section and modules. *)
+    let gdecl_obj = (* "Global": survives section and modules. *)
       declare_object {(default_object ("G  "^nickname key)) with
 		       cache_function = (fun (_,v) -> write v);
-		       classify_function = (fun v -> Keep v);
+		       classify_function = (fun v -> Substitute v);
 		       discharge_function = (fun (_,v) -> Some v);
 		       load_function = (fun _ (_,v) -> write v)}
     in

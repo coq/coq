@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -567,16 +567,6 @@ let no_upper_constraints u cst =
   | Max _ -> anomaly "no_upper_constraints"
 
 (* Pretty-printing *)
-
-let num_universes g =
-  UniverseLMap.fold (fun _ _ -> succ) g 0
-
-let num_edges g =
-  let reln_len = function
-    | Equiv _ -> 1
-    | Canonical {lt=lt;le=le} -> List.length lt + List.length le
-  in
-  UniverseLMap.fold (fun _ a n -> n + (reln_len a)) g 0
 
 let pr_arc = function
   | Canonical {univ=u; lt=[]; le=[]} ->

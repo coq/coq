@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -79,7 +79,7 @@ let object_tag lobj = Dyn.tag lobj
 let cache_tab =
   (Hashtbl.create 17 : (string,dynamic_object_declaration) Hashtbl.t)
 
-let declare_object odecl =
+let declare_object_full odecl =
   let na = odecl.object_name in
   let (infun,outfun) = Dyn.create na in
   let cacher (oname,lobj) =
@@ -121,6 +121,8 @@ let declare_object odecl =
 			     dyn_discharge_function = discharge;
 			     dyn_rebuild_function = rebuild };
   (infun,outfun)
+
+let declare_object odecl = fst (declare_object_full odecl)
 
 let missing_tab = (Hashtbl.create 17 : (string, unit) Hashtbl.t)
 

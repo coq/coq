@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -60,8 +60,6 @@ module type RedFlagsSig = sig
   (** Tests if a reduction kind is set *)
   val red_set : reds -> red_kind -> bool
 
-  (** Gives the constant list *)
-  val red_get_const : reds -> bool * evaluable_global_reference list
 end
 
 module RedFlags : RedFlagsSig
@@ -150,6 +148,7 @@ val stack_args_size : stack -> int
 val stack_tail : int -> stack -> stack
 val stack_nth : stack -> int -> fconstr
 val zip_term : (fconstr -> constr) -> constr -> stack -> constr
+val eta_expand_stack : stack -> stack
 
 (** To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use

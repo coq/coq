@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -32,10 +32,6 @@ let register_set_typeclass_transparency =
   (:=) set_typeclass_transparency_ref
 let set_typeclass_transparency gr c = !set_typeclass_transparency_ref gr c
 
-let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
-(* let mismatched_defs env n m = mismatched_ctx_inst env Definitions n m *)
-let mismatched_props env n m = mismatched_ctx_inst env Properties n m
-
 type rels = constr list
 
 (* This module defines type-classes *)
@@ -50,7 +46,7 @@ type typeclass = {
   cl_props : rel_context;
 
   (* The method implementaions as projections. *)
-  cl_projs : (identifier * constant option) list;
+  cl_projs : (name * constant option) list;
 }
 module Gmap = Fmap.Make(RefOrdered)
 
@@ -197,7 +193,7 @@ let discharge_class (_,cl) =
 
 let rebuild_class cl = cl
 
-let (class_input,class_output) =
+let class_input =
   declare_object
     { (default_object "type classes state") with
       cache_function = cache_class;
@@ -246,7 +242,7 @@ let classify_instance inst =
   if inst.is_global = -1 then Dispose
   else Substitute inst
 
-let (instance_input,instance_output) =
+let instance_input =
   declare_object
     { (default_object "type classes instances state") with
       cache_function = cache_instance;
@@ -303,13 +299,6 @@ let instance_constructor cl args =
       | _ -> assert false
 
 let typeclasses () = Gmap.fold (fun _ l c -> l :: c) !classes []
-
-let cmapl_add x y m =
-  try
-    let l = Gmap.find x m in
-    Gmap.add x (Gmap.add y.is_impl y l) m
-  with Not_found ->
-    Gmap.add x (Gmap.add y.is_impl y Gmap.empty) m
 
 let cmap_elements c = Gmap.fold (fun k v acc -> v :: acc) c []
 

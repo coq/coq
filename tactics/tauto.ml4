@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -266,8 +266,6 @@ let t_reduction_not = tacticIn reduction_not
 let intuition_gen tac =
   interp (tacticIn (tauto_intuit t_reduction_not tac))
 
-let simplif_gen = interp (tacticIn simplif)
-
 let tauto_intuitionistic g =
   try intuition_gen <:tactic<fail>> g
   with
@@ -299,5 +297,5 @@ END
 
 TACTIC EXTEND intuition
 | [ "intuition" ] -> [ intuition_gen default_intuition_tac ]
-| [ "intuition" tactic(t) ] -> [ intuition_gen (fst t) ]
+| [ "intuition" tactic(t) ] -> [ intuition_gen t ]
 END

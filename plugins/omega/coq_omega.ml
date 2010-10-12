@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -20,7 +20,6 @@ open Proof_type
 open Names
 open Nameops
 open Term
-open Termops
 open Declarations
 open Environ
 open Sign
@@ -131,7 +130,7 @@ let exists_tac c = constructor_tac false (Some 1) 1 (Rawterm.ImplicitBindings [c
 let generalize_tac t = generalize_time (generalize t)
 let elim t = elim_time (simplest_elim t)
 let exact t = exact_time (Tactics.refine t)
-let unfold s = Tactics.unfold_in_concl [all_occurrences, Lazy.force s]
+let unfold s = Tactics.unfold_in_concl [Termops.all_occurrences, Lazy.force s]
 
 let rev_assoc k =
   let rec loop = function

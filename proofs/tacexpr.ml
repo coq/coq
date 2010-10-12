@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -104,14 +104,6 @@ type 'id gclause =
     concl_occs : occurrences_expr }
 
 let nowhere = {onhyps=Some[]; concl_occs=no_occurrences_expr}
-
-let goal_location_of = function
-| { onhyps = Some [scl]; concl_occs = occs } when occs = no_occurrences_expr ->
-      Some scl
-| { onhyps = Some []; concl_occs = occs } when occs = all_occurrences_expr ->
-    None
-| _ ->
-    error "Not a simple \"in\" clause (one hypothesis or the conclusion)"
 
 type 'constr induction_clause =
   ('constr with_bindings induction_arg list * 'constr with_bindings option *

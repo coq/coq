@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -33,13 +33,6 @@ let rec list_split_assoc k rev_before = function
   | [] -> raise Not_found
   | (k',b)::after when k=k' -> rev_before,b,after
   | h::tail -> list_split_assoc k (h::rev_before) tail
-
-let rec list_fold_map2 f e = function
-  |  []  -> (e,[],[])
-  |  h::t ->
-       let e',h1',h2' = f e h in
-       let e'',t1',t2' = list_fold_map2 f e' t in
-	 e'',h1'::t1',h2'::t2'
 
 let discr_resolver env mtb =
      match mtb.typ_expr with
@@ -362,13 +355,14 @@ and translate_struct_type_entry env inl mse = match mse with
 
 and translate_module_type env mp inl mte =
 	let sign,alg,resolve,mp_from,cst = translate_struct_type_entry env inl mte in
-	 subst_modtype_and_resolver 
-	   {typ_mp = mp_from;
-	    typ_expr = sign;
-	    typ_expr_alg = alg;
-	    typ_constraints = cst;
-	    typ_delta = resolve} mp env
-	   
+	let mtb = subst_modtype_and_resolver
+	  {typ_mp = mp_from;
+	   typ_expr = sign;
+	   typ_expr_alg = None;
+	   typ_constraints = cst;
+	   typ_delta = resolve} mp env
+	in {mtb with typ_expr_alg = alg}
+
 let rec translate_struct_include_module_entry env mp inl mse  = match mse with
   | MSEident mp1 ->
       let mb = lookup_module mp1 env in 

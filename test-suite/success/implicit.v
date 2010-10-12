@@ -86,3 +86,24 @@ Fixpoint plus n m {struct n} :=
   | 0 => m
   | S p => S (plus p m)
   end.
+
+(* Check multiple implicit arguments signatures *)
+
+Implicit Arguments eq_refl [[A] [x]] [[A]].
+
+Check eq_refl : 0 = 0.
+
+(* Check that notations preserve implicit (since 8.3) *)
+
+Parameter p : forall A, A -> forall n, n = 0 -> True.
+Implicit Arguments p [A n].
+Notation Q := (p 0).
+Check Q eq_refl.
+
+(* Check implicits with Context *)
+
+Section C.
+Context {A:Set}.
+Definition h (a:A) := a.
+End C.
+Check h 0.

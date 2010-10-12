@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -18,7 +18,6 @@ open Reduction
 open Inductive
 open Type_errors
 
-let conv = default_conv CONV
 let conv_leq = default_conv CUMUL
 
 let conv_leq_vecti env v1 v2 =
@@ -44,8 +43,6 @@ let assumption_of_judgment env j =
   try (type_judgment env j).utj_val
   with TypeError _ ->
     error_assumption env j
-
-let sort_judgment env j = (type_judgment env j).utj_type
 
 (************************************************)
 (* Incremental typing rules: builds a typing judgement given the *)

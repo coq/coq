@@ -414,7 +414,6 @@ let string_of_intset d =
 open Printer
 open Ppconstr
 open Nameops
-open Termops
 open Evd
 
 let pr_meta_map evd =
@@ -426,11 +425,11 @@ let pr_meta_map evd =
     | (mv,Cltyp (na,b)) ->
       	hov 0
 	  (pr_meta mv ++ pr_name na ++ str " : " ++
-           print_constr b.rebus ++ fnl ())
+           Termops.print_constr b.rebus ++ fnl ())
     | (mv,Clval(na,b,_)) ->
       	hov 0
 	  (pr_meta mv ++ pr_name na ++ str " := " ++
-             print_constr (fst b).rebus ++ fnl ())
+             Termops.print_constr (fst b).rebus ++ fnl ())
   in
   prlist pr_meta_binding ml
 
@@ -441,11 +440,11 @@ let pr_evar_info evi =
     (*pr_idl (List.rev (ids_of_named_context (evar_context evi))) *)
     Printer.pr_named_context (Global.env()) (evar_context evi)
   in
-  let pty = print_constr evi.evar_concl in
+  let pty = Termops.print_constr evi.evar_concl in
   let pb =
     match evi.evar_body with
       | Evar_empty -> mt ()
-      | Evar_defined c -> spc() ++ str"=> "  ++ print_constr c
+      | Evar_defined c -> spc() ++ str"=> "  ++ Termops.print_constr c
   in
   hov 2 (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]")
 
@@ -459,11 +458,11 @@ let pr_evar_map sigma =
 let pr_constraints pbs =
   h 0
     (prlist_with_sep pr_fnl (fun (pbty,t1,t2) ->
-      print_constr t1 ++ spc() ++
+      Termops.print_constr t1 ++ spc() ++
       str (match pbty with
 	| Reduction.CONV -> "=="
 	| Reduction.CUMUL -> "<=") ++
-      spc() ++ print_constr t2) pbs)
+      spc() ++ Termops.print_constr t2) pbs)
 
 let pr_evar_map evd =
   let pp_evm =

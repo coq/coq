@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -614,10 +614,11 @@ let prim_refiner r sigma goal =
 	  (sgl, sigma)
 
     (* Conversion rules *)
-    | Convert_concl (cl',_) ->
+    | Convert_concl (cl',k) ->
 	check_typability env sigma cl';
 	if (not !check) || is_conv_leq env sigma cl' cl then
           let (sg,ev,sigma) = mk_goal sign cl' in
+	  let ev = if k=VMcast then mkCast(ev,k,cl) else ev in
 	  let sigma = Goal.V82.partial_solution sigma goal ev in
           ([sg], sigma)
 	else
@@ -692,27 +693,6 @@ let prim_refiner r sigma goal =
 type variable_proof_status = ProofVar | SectionVar of identifier
 
 type proof_variable = name * variable_proof_status
-
-let subst_proof_vars =
-  let rec aux p vars =
-    let _,subst =
-      List.fold_left (fun (n,l) var ->
-        let t = match var with
-          | Anonymous,_ -> l
-          | Name id, ProofVar -> (id,mkRel n)::l
-          | Name id, SectionVar id' -> (id,mkVar id')::l in
-        (n+1,t)) (p,[]) vars
-    in replace_vars (List.rev subst)
-  in aux 1
-
-let rec rebind id1 id2 = function
-  | [] -> [Name id2,SectionVar id1]
-  | (na,k as x)::l ->
-      if na = Name id1 then (Name id2,k)::l else
-        let l' = rebind id1 id2 l in
-        if na = Name id2 then (Anonymous,k)::l' else x::l'
-
-let add_proof_var id vl = (Name id,ProofVar)::vl
 
 let proof_variable_index x =
   let rec aux n = function

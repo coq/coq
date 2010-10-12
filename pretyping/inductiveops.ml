@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -146,9 +146,6 @@ let make_case_info env ind style =
     ci_cstr_ndecls = mip.mind_consnrealdecls;
     ci_pp_info = print_info }
 
-let make_default_case_info env style ind =
-  make_case_info env ind style
-
 (*s Useful functions *)
 
 type constructor_summary = {
@@ -199,12 +196,6 @@ let get_constructors env (ind,params) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   Array.init (Array.length mip.mind_consnames)
     (fun j -> get_constructor (ind,mib,mip,params) (j+1))
-
-let rec instantiate args c = match kind_of_term c, args with
-  | Prod (_,_,c), a::args -> instantiate args (subst1 a c)
-  | LetIn (_,b,_,c), args -> instantiate args (subst1 b c)
-  | _, [] -> c
-  | _ -> anomaly "too short arity"
 
 (* substitution in a signature *)
 

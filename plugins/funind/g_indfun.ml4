@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -187,7 +187,7 @@ let warning_error names e =
 	  (str "Cannot define principle(s) for "++
 	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Libnames.pr_reference names) ++
 	     if do_observe () then Cerrors.explain_exn e else mt ())
-    | _ -> anomaly ""
+    | _ -> raise e
 
 
 VERNAC COMMAND EXTEND NewFunctionalScheme
@@ -215,11 +215,11 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
 		  end
 	      | _ -> assert false (* we can only have non empty  list *)
 	  end
-    	  | e ->
+	  | e -> 
 	      let names = List.map (fun (_,na,_) -> na) fas in
 	      warning_error names e
-
       end
+
     ]
 END
 (***** debug only ***)
@@ -432,7 +432,7 @@ TACTIC EXTEND fauto
     [ "fauto" tactic(tac)] ->
       [
 	let heuristic = chose_heuristic None in
-	finduction None heuristic (snd tac)
+	finduction None heuristic (Tacinterp.eval_tactic tac)
       ]
   |
     [ "fauto" ] ->

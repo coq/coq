@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -23,17 +23,19 @@ type production_level =
 
 type ('lev,'pos) constr_entry_key_gen =
   | ETName | ETReference | ETBigint
+  | ETBinder of bool (* true=open, as in "fun .."; false as in "let f .. :=" *)
   | ETConstr of ('lev * 'pos)
   | ETPattern
   | ETOther of string * string
   | ETConstrList of ('lev * 'pos) * Tok.t list
+  | ETBinderList of bool * Tok.t list
 
 (**  Entries level (left-hand-side of grammar rules) *)
 
 type constr_entry_key =
     (int,unit) constr_entry_key_gen
 
-(** Entries used in productions (in right-hand-side of grammar rules) *)
+(** Entries used in productions (in right-hand side of grammar rules) *)
 
 type constr_prod_entry_key =
     (production_level,production_position) constr_entry_key_gen

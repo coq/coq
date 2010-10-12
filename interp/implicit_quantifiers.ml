@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -57,7 +57,7 @@ let cache_generalizable_type (_,(local,cmd)) =
 let load_generalizable_type _ (_,(local,cmd)) =
   generalizable_table := add_generalizable cmd !generalizable_table
     
-let (in_generalizable, _) =
+let in_generalizable =
   declare_object {(default_object "GENERALIZED-IDENT") with
     load_function = load_generalizable_type;
     cache_function = cache_generalizable_type;
@@ -91,7 +91,7 @@ let is_freevar ids env x =
       with _ -> not (is_global x)
   with _ -> true
 
-(* Auxilliary functions for the inference of implicitly quantified variables. *)
+(* Auxiliary functions for the inference of implicitly quantified variables. *)
 
 let ungeneralizable loc id =
   user_err_loc (loc, "Generalization", 
@@ -108,7 +108,7 @@ let free_vars_of_constr_expr c ?(bound=Idset.empty) l =
   in
   let rec aux bdvars l c = match c with
     | CRef (Ident (loc,id)) -> found loc id bdvars l
-    | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id)) :: _, [])) when not (Idset.mem id bdvars) ->
+    | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id)) :: _, [], [])) when not (Idset.mem id bdvars) ->
 	fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux (Idset.add id bdvars) l c
     | c -> fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux bdvars l c
   in aux bound l c
@@ -205,8 +205,6 @@ let generalizable_vars_of_rawconstr ?(bound=Idset.empty) ?(allowed=Idset.empty) 
 
 let rec make_fresh ids env x =
   if is_freevar ids env x then x else make_fresh ids env (Nameops.lift_subscript x)
-
-let next_ident_away_from id avoid = make_fresh avoid (Global.env ()) id
 
 let next_name_away_from na avoid =
   match na with

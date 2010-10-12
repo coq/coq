@@ -20,7 +20,7 @@ type polymorphic_arity = {
   poly_level : Univ.universe;
 }
 let val_pol_arity =
-  val_tuple"polyorphic_arity"[|val_list(val_opt val_univ);val_univ|]
+  val_tuple ~name:"polyorphic_arity"[|val_list(val_opt val_univ);val_univ|]
 
 type constant_type =
   | NonPolymorphicType of constr
@@ -74,15 +74,7 @@ let val_res =
 
 let val_subst =
   val_map ~name:"substitution"
-    val_subst_dom (val_tuple "substition range" [|val_mp;val_res|])
-
-
-let fold_subst fb fp =
-  Umap.fold
-    (fun k (mp,_) acc ->
-      match k with
-        | MBI mbid -> fb mbid mp acc
-        | MPI mp1 -> fp mp1 mp acc)
+    val_subst_dom (val_tuple ~name:"substition range" [|val_mp;val_res|])
 
 let empty_subst = Umap.empty
 
@@ -94,60 +86,8 @@ let add_mp mp1 mp2  =
 let map_mbid mbid mp = add_mbid mbid mp empty_subst
 let map_mp mp1 mp2 = add_mp mp1 mp2 empty_subst
 
-let add_inline_delta_resolver con =
-  Deltamap.add (KN(user_con con)) (Inline None)
-    
-let add_inline_constr_delta_resolver con cstr =
-  Deltamap.add (KN(user_con con)) (Inline (Some cstr))
-
-let add_constant_delta_resolver con =
-  Deltamap.add (KN(user_con con)) (Equiv (canonical_con con))
-
-let add_mind_delta_resolver mind =
-  Deltamap.add (KN(user_mind mind)) (Equiv (canonical_mind mind))
-
-let add_mp_delta_resolver mp1 mp2 = 
-  Deltamap.add (MP mp1) (Prefix_equiv mp2)
-
 let mp_in_delta mp = 
   Deltamap.mem (MP mp) 
-
-let con_in_delta con resolver = 
-try 
-  match Deltamap.find (KN(user_con con)) resolver with
-  | Inline _  | Prefix_equiv _ -> false
-  | Equiv _ -> true
-with
- Not_found -> false
-
-let mind_in_delta mind resolver = 
-try 
-  match Deltamap.find (KN(user_mind mind)) resolver with
-  | Inline _  | Prefix_equiv _ -> false
-  | Equiv _ -> true
-with
- Not_found -> false
-
-let delta_of_mp resolve mp =
-  try 
-    match Deltamap.find (MP mp) resolve with
-      | Prefix_equiv mp1 -> mp1
-      | _ -> anomaly "mod_subst: bad association in delta_resolver"
-  with
-      Not_found -> mp
-	
-let delta_of_kn resolve kn =
-  try 
-    match Deltamap.find (KN kn) resolve with
-      | Equiv kn1 -> kn1
-      | Inline _ -> kn
-      | _ -> anomaly 
-	  "mod_subst: bad association in delta_resolver"
-  with
-      Not_found -> kn
-
-let remove_mp_delta_resolver resolver mp =
-    Deltamap.remove (MP mp) resolver
 
 exception Inline_kn
 
@@ -222,16 +162,6 @@ let mind_of_delta2 resolve mind =
       mind
     else
       mind_of_kn_equiv kn1 new_kn
-
-
-
-let inline_of_delta resolver = 
-  let extract key hint l =
-    match key,hint with 
-      |KN kn, Inline _ -> kn::l
-      | _,_ -> l
-  in
-    Deltamap.fold extract resolver []
 
 exception Not_inline
   
@@ -350,33 +280,6 @@ let subst_mind0 sub mind =
 	       Some mind
     with 
 	No_subst -> Some mind
-
-let subst_con sub con =
-  let kn1,kn2 = user_con con,canonical_con con in
-  let mp1,dir,l = repr_kn kn1 in
-  let mp2,_,_ = repr_kn kn2 in
-    try 
-      let side,con',resolve =   
-        match subst_mp0 sub mp1,subst_mp0 sub mp2 with
-	    None,None ->raise No_subst
-	  | Some (mp',resolve),None -> User,(make_con_equiv mp' mp2 dir l), resolve
-	  | None, Some(mp',resolve)-> Canonical,(make_con_equiv mp1 mp' dir l), resolve
-	  | Some(mp1',resolve1),Some(mp2',resolve2)->Canonical,
-	      (make_con_equiv mp1' mp2' dir l), resolve2 
-      in
-	match constant_of_delta_with_inline resolve con' with
-            None -> begin
-	      match side with
-	      |User ->
-	      let con = constant_of_delta resolve con' in
-		con,Const con
-	      |Canonical ->
-		  let con = constant_of_delta2 resolve con' in
-		con,Const con
-	    end
-	  | Some t -> con',t
-    with No_subst -> con , Const con 
- 
 
 let subst_con0 sub con =
   let kn1,kn2 = user_con con,canonical_con con in
@@ -580,7 +483,7 @@ let update_delta_resolver resolver1 resolver2 =
 		Equiv (solve_delta_kn resolver2 kn)
 	      in Deltamap.add key new_hint res
 	  | _ -> Deltamap.add key hint res
-      with not_found -> 
+      with Not_found ->
 	Deltamap.add key hint res
     in
       Deltamap.fold apply_res resolver1 empty_delta_resolver
@@ -660,7 +563,7 @@ type constant_body = {
     const_opaque : bool;
     const_inline : bool}
 
-let val_cb = val_tuple "constant_body"
+let val_cb = val_tuple ~name:"constant_body"
   [|val_nctxt;
     val_opt val_cstr_subst;
     val_cst_type;
@@ -679,14 +582,14 @@ let subst_rel_context sub = list_smartmap (subst_rel_declaration sub)
 
 type recarg =
   | Norec
-  | Mrec of int
+  | Mrec of inductive
   | Imbr of inductive
 let val_recarg = val_sum "recarg" 1 (* Norec *)
-  [|[|val_int|] (* Mrec *);[|val_ind|] (* Imbr *)|]
+  [|[|val_ind|] (* Mrec *);[|val_ind|] (* Imbr *)|]
 
 let subst_recarg sub r = match r with
-  | Norec | Mrec _  -> r
-  | Imbr (kn,i) -> let kn' = subst_ind sub kn in
+  | Norec  -> r
+  | (Mrec(kn,i)|Imbr (kn,i)) -> let kn' = subst_ind sub kn in
       if kn==kn' then r else Imbr (kn',i)
 
 type wf_paths = recarg Rtree.t
@@ -724,7 +627,7 @@ type monomorphic_inductive_arity = {
   mind_sort : sorts;
 }
 let val_mono_ind_arity =
-  val_tuple"monomorphic_inductive_arity"[|val_constr;val_sort|]
+  val_tuple ~name:"monomorphic_inductive_arity"[|val_constr;val_sort|]
 
 type inductive_arity =
 | Monomorphic of monomorphic_inductive_arity
@@ -784,7 +687,7 @@ type one_inductive_body = {
     mind_reloc_tbl :  reloc_table;
   }
 
-let val_one_ind = val_tuple "one_inductive_body"
+let val_one_ind = val_tuple ~name:"one_inductive_body"
   [|val_id;val_rctxt;val_ind_arity;val_array val_id;val_array val_constr;
     val_int;val_int;val_list val_sortfam;val_array val_constr;val_array val_int;
     val_wfp;val_int;val_int;no_val|]
@@ -820,7 +723,7 @@ type mutual_inductive_body = {
     mind_constraints : Univ.constraints;
 
   }
-let val_ind_pack = val_tuple "mutual_inductive_body"
+let val_ind_pack = val_tuple ~name:"mutual_inductive_body"
   [|val_array val_one_ind;val_bool;val_bool;val_int;val_nctxt;
     val_int; val_int; val_rctxt;val_cstrs|]
 
@@ -923,7 +826,7 @@ let rec val_sfb o = val_sum "struct_field_body" 0
     [|val_module|];   (* SFBmodule *)
     [|val_modtype|]   (* SFBmodtype *)
   |] o
-and val_sb o = val_list (val_tuple"label*sfb"[|val_id;val_sfb|]) o
+and val_sb o = val_list (val_tuple ~name:"label*sfb"[|val_id;val_sfb|]) o
 and val_seb o = val_sum "struct_expr_body" 0
   [|[|val_mp|];                      (* SEBident *)
     [|val_uid;val_modtype;val_seb|]; (* SEBfunctor *)
@@ -934,10 +837,10 @@ and val_seb o = val_sum "struct_expr_body" 0
 and val_with o = val_sum "with_declaration_body" 0
   [|[|val_list val_id;val_mp|];
     [|val_list val_id;val_cb|]|] o
-and val_module o = val_tuple "module_body"
+and val_module o = val_tuple ~name:"module_body"
   [|val_mp;val_opt val_seb;val_seb;
     val_opt val_seb;val_cstrs;val_res;no_val|] o
-and val_modtype o = val_tuple "module_type_body"
+and val_modtype o = val_tuple ~name:"module_type_body"
   [|val_mp;val_seb;val_opt val_seb;val_cstrs;val_res|] o
 
 

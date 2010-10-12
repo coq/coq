@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -54,11 +54,6 @@ type substitution = (module_path * delta_resolver) Umap.t
     
 let empty_subst = Umap.empty
 
-
-let string_of_subst_domain = function
-  | MBI mbid -> debug_string_of_mbid mbid
-  | MPI mp -> string_of_mp mp
-      
 let add_mbid mbid mp resolve =
   Umap.add (MBI mbid) (mp,resolve)
 let add_mp mp1 mp2 resolve =
@@ -109,16 +104,6 @@ let delta_of_mp resolve mp =
       | _ -> anomaly "mod_subst: bad association in delta_resolver"
   with
       Not_found -> mp
-	
-let delta_of_kn resolve kn =
-  try 
-    match Deltamap.find (KN kn) resolve with
-      | Equiv kn1 -> kn1
-      | Inline _ -> kn
-      | _ -> anomaly 
-	  "mod_subst: bad association in delta_resolver"
-  with
-      Not_found -> kn
 
 let remove_mp_delta_resolver resolver mp =
     Deltamap.remove (MP mp) resolver
@@ -648,7 +633,7 @@ let update_delta_resolver resolver1 resolver2 =
 		   Change_equiv_to_inline c ->
 		     Deltamap.add key (Inline (Some c)) res)
 	  | _ -> Deltamap.add key hint res
-      with not_found -> 
+      with Not_found ->
 	Deltamap.add key hint res
     in
       Deltamap.fold apply_res resolver1 empty_delta_resolver

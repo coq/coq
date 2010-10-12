@@ -526,17 +526,17 @@ let sdpa_run_succeeded =
 (* ------------------------------------------------------------------------- *)
 
 let sdpa_default_parameters =
-"100     unsigned int maxIteration;
-1.0E-7  double 0.0 < epsilonStar;
-1.0E2   double 0.0 < lambdaStar;
-2.0     double 1.0 < omegaStar;
--1.0E5  double lowerBound;
-1.0E5   double upperBound;
-0.1     double 0.0 <= betaStar <  1.0;
-0.2     double 0.0 <= betaBar  <  1.0, betaStar <= betaBar;
-0.9     double 0.0 < gammaStar  <  1.0;
-1.0E-7  double 0.0 < epsilonDash;
-";;
+"100     unsigned int maxIteration;\
+\n1.0E-7  double 0.0 < epsilonStar;\
+\n1.0E2   double 0.0 < lambdaStar;\
+\n2.0     double 1.0 < omegaStar;\
+\n-1.0E5  double lowerBound;\
+\n1.0E5   double upperBound;\
+\n0.1     double 0.0 <= betaStar <  1.0;\
+\n0.2     double 0.0 <= betaBar  <  1.0, betaStar <= betaBar;\
+\n0.9     double 0.0 < gammaStar  <  1.0;\
+\n1.0E-7  double 0.0 < epsilonDash;\
+\n";;
 
 (* ------------------------------------------------------------------------- *)
 (* These were suggested by Makoto Yamashita for problems where we are        *)
@@ -544,17 +544,17 @@ let sdpa_default_parameters =
 (* ------------------------------------------------------------------------- *)
 
 let sdpa_alt_parameters =
-"1000    unsigned int maxIteration;
-1.0E-7  double 0.0 < epsilonStar;
-1.0E4   double 0.0 < lambdaStar;
-2.0     double 1.0 < omegaStar;
--1.0E5  double lowerBound;
-1.0E5   double upperBound;
-0.1     double 0.0 <= betaStar <  1.0;
-0.2     double 0.0 <= betaBar  <  1.0, betaStar <= betaBar;
-0.9     double 0.0 < gammaStar  <  1.0;
-1.0E-7  double 0.0 < epsilonDash;
-";;
+"1000    unsigned int maxIteration;\
+\n1.0E-7  double 0.0 < epsilonStar;\
+\n1.0E4   double 0.0 < lambdaStar;\
+\n2.0     double 1.0 < omegaStar;\
+\n-1.0E5  double lowerBound;\
+\n1.0E5   double upperBound;\
+\n0.1     double 0.0 <= betaStar <  1.0;\
+\n0.2     double 0.0 <= betaBar  <  1.0, betaStar <= betaBar;\
+\n0.9     double 0.0 < gammaStar  <  1.0;\
+\n1.0E-7  double 0.0 < epsilonDash;\
+\n";;
 
 let sdpa_params = sdpa_alt_parameters;;
 
@@ -563,21 +563,21 @@ let sdpa_params = sdpa_alt_parameters;;
 (* ------------------------------------------------------------------------- *)
 
 let csdp_default_parameters =
-"axtol=1.0e-8
-atytol=1.0e-8
-objtol=1.0e-8
-pinftol=1.0e8
-dinftol=1.0e8
-maxiter=100
-minstepfrac=0.9
-maxstepfrac=0.97
-minstepp=1.0e-8
-minstepd=1.0e-8
-usexzgap=1
-tweakgap=0
-affine=0
-printlevel=1
-";;
+"axtol=1.0e-8\
+\natytol=1.0e-8\
+\nobjtol=1.0e-8\
+\npinftol=1.0e8\
+\ndinftol=1.0e8\
+\nmaxiter=100\
+\nminstepfrac=0.9\
+\nmaxstepfrac=0.97\
+\nminstepp=1.0e-8\
+\nminstepd=1.0e-8\
+\nusexzgap=1\
+\ntweakgap=0\
+\naffine=0\
+\nprintlevel=1\
+\n";;
 
 let csdp_params = csdp_default_parameters;;
 

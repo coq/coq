@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,12 +8,9 @@
 
 (** {6 This program is a small time and allocation profiler for Objective Caml } *)
 
-(*i It requires the UNIX library *)
-
 (** Adapted from Christophe Raffalli *)
 
-(** To use it, link it with the program you want to profile (do not forget
-"-cclib -lunix -custom unix.cma" among the link options).
+(** To use it, link it with the program you want to profile.
 
 To trace a function "f" you first need to get a key for it by using :
 

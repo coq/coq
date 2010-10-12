@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -19,6 +19,13 @@ open Util
 open Pp
 open Miniml
 
+(** Sets and maps for [global_reference] that do _not_ work modulo
+    name equivalence (otherwise use Refset / Refmap ) *)
+
+module RefOrd = struct type t = global_reference let compare = compare end
+module Refmap' = Map.Make(RefOrd)
+module Refset' = Set.Make(RefOrd)
+
 (*S Utilities about [module_path] and [kernel_names] and [global_reference] *)
 
 let occur_kn_in_ref kn = function
@@ -27,25 +34,21 @@ let occur_kn_in_ref kn = function
   | ConstRef _ -> false
   | VarRef _ -> assert false
 
-let modpath_of_r = function
-  | ConstRef kn -> con_modpath kn
+let repr_of_r = function
+  | ConstRef kn -> repr_con kn
   | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) -> mind_modpath kn
+  | ConstructRef ((kn,_),_) -> repr_mind kn
   | VarRef _ -> assert false
 
-let label_of_r = function
-  | ConstRef kn -> con_label kn
-  | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) -> mind_label kn
-  | VarRef _ -> assert false
+let modpath_of_r r =
+  let mp,_,_ = repr_of_r r in mp
+
+let label_of_r r =
+  let _,_,l = repr_of_r r in l
 
 let rec base_mp = function
   | MPdot (mp,l) -> base_mp mp
   | mp -> mp
-
-let rec mp_length = function
-  | MPdot (mp, _) -> 1 + (mp_length mp)
-  | _ -> 1
 
 let is_modfile = function
   | MPfile _ -> true
@@ -55,11 +58,6 @@ let raw_string_of_modfile = function
   | MPfile f -> String.capitalize (string_of_id (List.hd (repr_dirpath f)))
   | _ -> assert false
 
-let rec modfile_of_mp = function
-  | (MPfile _) as mp -> mp
-  | MPdot (mp,_) -> modfile_of_mp mp
-  | _ -> raise Not_found
-
 let current_toplevel () = fst (Lib.current_prefix ())
 
 let is_toplevel mp =
@@ -68,7 +66,14 @@ let is_toplevel mp =
 let at_toplevel mp =
   is_modfile mp || is_toplevel mp
 
-let visible_kn kn = at_toplevel (base_mp (modpath kn))
+let rec mp_length mp =
+  let mp0 = current_toplevel () in
+  let rec len = function
+    | mp when mp = mp0 -> 1
+    | MPdot (mp,_) -> 1 + len mp
+    | _ -> 1
+  in len mp
+
 let visible_con kn = at_toplevel (base_mp (con_modpath kn))
 
 let rec prefixes_mp mp = match mp with
@@ -82,48 +87,19 @@ let rec get_nth_label_mp n = function
 let common_prefix_from_list mp0 mpl =
   let prefixes = prefixes_mp mp0 in
   let rec f = function
-    | [] -> raise Not_found
-    | mp :: l -> if MPset.mem mp prefixes then mp else f l
+    | [] -> None
+    | mp :: l -> if MPset.mem mp prefixes then Some mp else f l
   in f mpl
-
-let rec parse_labels ll = function
-  | MPdot (mp,l) -> parse_labels (l::ll) mp
-  | mp -> mp,ll
-
-let labels_of_mp mp = parse_labels [] mp
 
 let rec parse_labels2 ll mp1 = function
   | mp when mp1=mp -> mp,ll
-  | MPdot (mp,l) -> parse_labels (l::ll) mp
+  | MPdot (mp,l) -> parse_labels2 (l::ll) mp1 mp
   | mp -> mp,ll
 
 let labels_of_ref r =
-  let mp_top = fst(Lib.current_prefix()) in
-  let mp,_,l =
-    match r with
-	ConstRef con -> repr_con con
-      | IndRef (kn,_)
-      | ConstructRef ((kn,_),_) -> repr_mind kn
-      | VarRef _ -> assert false
-  in
+  let mp_top = current_toplevel () in
+  let mp,_,l = repr_of_r r in
   parse_labels2 [l] mp_top mp
-
-
-
-
-let labels_of_ref2 r =
- let mp1,_,l =
-  match r with
-     ConstRef con -> repr_con con
-   | IndRef (kn,_)
-   | ConstructRef ((kn,_),_) -> repr_mind kn
-   | VarRef _ -> assert false
- in mp1,l
-
-
-let rec add_labels_mp mp = function
-  | [] -> mp
-  | l :: ll -> add_labels_mp (MPdot (mp,l)) ll
 
 
 (*S The main tables: constants, inductives, records, ... *)
@@ -133,37 +109,47 @@ let rec add_labels_mp mp = function
 
 (*s Constants tables. *)
 
-let terms = ref (Cmap.empty : ml_decl Cmap.t)
-let init_terms () = terms := Cmap.empty
-let add_term kn d = terms := Cmap.add kn d !terms
-let lookup_term kn = Cmap.find kn !terms
+let terms = ref (Cmap_env.empty : ml_decl Cmap_env.t)
+let init_terms () = terms := Cmap_env.empty
+let add_term kn d = terms := Cmap_env.add kn d !terms
+let lookup_term kn = Cmap_env.find kn !terms
 
-let types = ref (Cmap.empty : ml_schema Cmap.t)
-let init_types () = types := Cmap.empty
-let add_type kn s = types := Cmap.add kn s !types
-let lookup_type kn = Cmap.find kn !types
+let types = ref (Cmap_env.empty : ml_schema Cmap_env.t)
+let init_types () = types := Cmap_env.empty
+let add_type kn s = types := Cmap_env.add kn s !types
+let lookup_type kn = Cmap_env.find kn !types
 
 (*s Inductives table. *)
 
-let inductives = ref (Mindmap.empty : (mutual_inductive_body * ml_ind) Mindmap.t)
-let init_inductives () = inductives := Mindmap.empty
-let add_ind kn mib ml_ind = inductives := Mindmap.add kn (mib,ml_ind) !inductives
-let lookup_ind kn = Mindmap.find kn !inductives
+let inductives =
+  ref (Mindmap_env.empty : (mutual_inductive_body * ml_ind) Mindmap_env.t)
+let init_inductives () = inductives := Mindmap_env.empty
+let add_ind kn mib ml_ind =
+  inductives := Mindmap_env.add kn (mib,ml_ind) !inductives
+let lookup_ind kn = Mindmap_env.find kn !inductives
 
 (*s Recursors table. *)
+
+(* NB: here we can use the equivalence between canonical
+   and user constant names : Cset is fine, no need for [Cset_env] *)
 
 let recursors = ref Cset.empty
 let init_recursors () = recursors := Cset.empty
 
 let add_recursors env kn =
-  let make_kn id = make_con (mind_modpath kn) empty_dirpath (label_of_id id) in
+  let mk_con id =
+    make_con_equiv
+      (modpath (user_mind kn))
+      (modpath (canonical_mind kn))
+      empty_dirpath (label_of_id id)
+  in
   let mib = Environ.lookup_mind kn env in
   Array.iter
     (fun mip ->
        let id = mip.mind_typename in
-       let kn_rec = make_kn (Nameops.add_suffix id "_rec")
-       and kn_rect = make_kn (Nameops.add_suffix id "_rect") in
-       recursors := Cset.add kn_rec (Cset.add kn_rect !recursors))
+       let c_rec = mk_con (Nameops.add_suffix id "_rec")
+       and c_rect = mk_con (Nameops.add_suffix id "_rect") in
+       recursors := Cset.add c_rec (Cset.add c_rect !recursors))
     mib.mind_packets
 
 let is_recursor = function
@@ -171,6 +157,8 @@ let is_recursor = function
   | _ -> false
 
 (*s Record tables. *)
+
+(* NB: here, working modulo name equivalence is ok *)
 
 let projs = ref (Refmap.empty : int Refmap.t)
 let init_projs () = projs := Refmap.empty
@@ -180,12 +168,12 @@ let projection_arity r = Refmap.find r !projs
 
 (*s Table of used axioms *)
 
-let info_axioms = ref Refset.empty
-let log_axioms = ref Refset.empty
-let init_axioms () = info_axioms := Refset.empty; log_axioms := Refset.empty
-let add_info_axiom r = info_axioms := Refset.add r !info_axioms
-let remove_info_axiom r = info_axioms := Refset.remove r !info_axioms
-let add_log_axiom r = log_axioms := Refset.add r !log_axioms
+let info_axioms = ref Refset'.empty
+let log_axioms = ref Refset'.empty
+let init_axioms () = info_axioms := Refset'.empty; log_axioms := Refset'.empty
+let add_info_axiom r = info_axioms := Refset'.add r !info_axioms
+let remove_info_axiom r = info_axioms := Refset'.remove r !info_axioms
+let add_log_axiom r = log_axioms := Refset'.add r !log_axioms
 
 (*s Extraction mode: modular or monolithic *)
 
@@ -234,7 +222,7 @@ let pr_long_global ref = pr_path (Nametab.path_of_global ref)
 let err s = errorlabstrm "Extraction" s
 
 let warning_axioms () =
-  let info_axioms = Refset.elements !info_axioms in
+  let info_axioms = Refset'.elements !info_axioms in
   if info_axioms = [] then ()
   else begin
     let s = if List.length info_axioms = 1 then "axiom" else "axioms" in
@@ -243,7 +231,7 @@ let warning_axioms () =
        ++ hov 1 (spc () ++ prlist_with_sep spc safe_pr_global info_axioms)
        ++ str "." ++ fnl ())
   end;
-  let log_axioms = Refset.elements !log_axioms in
+  let log_axioms = Refset'.elements !log_axioms in
   if log_axioms = [] then ()
   else begin
     let s = if List.length log_axioms = 1 then "axiom was" else "axioms were"
@@ -287,6 +275,10 @@ let check_inside_section () =
     err (str "You can't do that within a section." ++ fnl () ++
 	 str "Close it and try again.")
 
+let warning_id s =
+  msg_warning (str ("The identifier "^s^
+		    " contains __ which is reserved for the extraction"))
+
 let error_constant r =
   err (safe_pr_global r ++ str " is not a constant.")
 
@@ -296,8 +288,9 @@ let error_inductive r =
 let error_nb_cons () =
   err (str "Not the right number of constructors.")
 
-let error_module_clash s =
-  err (str ("There are two Coq modules with ML name " ^ s ^".\n") ++
+let error_module_clash mp1 mp2 =
+  err (str "The Coq modules " ++ pr_long_mp mp1 ++ str " and " ++
+       pr_long_mp mp2 ++ str " have the same ML name.\n" ++
        str "This is not supported yet. Please do some renaming first.")
 
 let error_unknown_module m =
@@ -308,7 +301,7 @@ let error_scheme () =
 
 let error_not_visible r =
   err (safe_pr_global r ++ str " is not directly visible.\n" ++
-       str "For example, it may be inside an applied functor." ++
+       str "For example, it may be inside an applied functor.\n" ++
        str "Use Recursive Extraction to get the whole environment.")
 
 let error_MPfile_as_mod mp b =
@@ -335,14 +328,13 @@ let error_non_implicit msg =
        fnl () ++ str "Please check the Extraction Implicit declarations.")
 
 let check_loaded_modfile mp = match base_mp mp with
-  | MPfile dp -> if not (Library.library_is_loaded dp) then
-      let mp1 = (fst(Lib.current_prefix())) in
-      let rec find_prefix = function
-	|MPfile dp1 when dp=dp1 -> ()
-	|MPdot(mp,_) -> find_prefix mp
-	|MPbound(_) -> ()
-	| _ -> err (str ("Please load library "^(string_of_dirpath dp^" first.")))
-      in find_prefix mp1 
+  | MPfile dp ->
+      if not (Library.library_is_loaded dp) then begin
+	match base_mp (current_toplevel ()) with
+	  | MPfile dp' when dp<>dp' ->
+	      err (str ("Please load library "^(string_of_dirpath dp^" first.")))
+	  | _ -> ()
+      end
   | _ -> ()
 
 let info_file f =
@@ -357,7 +349,7 @@ let info_file f =
 
 (*s Extraction AutoInline *)
 
-let auto_inline_ref = ref true
+let auto_inline_ref = ref false
 
 let auto_inline () = !auto_inline_ref
 
@@ -452,7 +444,7 @@ let lang_ref = ref Ocaml
 
 let lang () = !lang_ref
 
-let (extr_lang,_) =
+let extr_lang =
   declare_object
     {(default_object "Extraction Lang") with
        cache_function = (fun (_,l) -> lang_ref := l);
@@ -467,16 +459,16 @@ let extraction_language x = Lib.add_anonymous_leaf (extr_lang x)
 
 (*s Extraction Inline/NoInline *)
 
-let empty_inline_table = (Refset.empty,Refset.empty)
+let empty_inline_table = (Refset'.empty,Refset'.empty)
 
 let inline_table = ref empty_inline_table
 
-let to_inline r = Refset.mem r (fst !inline_table)
+let to_inline r = Refset'.mem r (fst !inline_table)
 
-let to_keep r = Refset.mem r (snd !inline_table)
+let to_keep r = Refset'.mem r (snd !inline_table)
 
 let add_inline_entries b l =
-  let f b = if b then Refset.add else Refset.remove in
+  let f b = if b then Refset'.add else Refset'.remove in
   let i,k = !inline_table in
   inline_table :=
   (List.fold_right (f b) l i),
@@ -484,12 +476,14 @@ let add_inline_entries b l =
 
 (* Registration of operations for rollback. *)
 
-let (inline_extraction,_) =
+let inline_extraction =
   declare_object
     {(default_object "Extraction Inline") with
        cache_function = (fun (_,(b,l)) -> add_inline_entries b l);
        load_function = (fun _ (_,(b,l)) -> add_inline_entries b l);
        classify_function = (fun o -> Substitute o);
+       discharge_function =
+	(fun (_,(b,l)) -> Some (b, List.map pop_global_reference l));
        subst_function =
         (fun (s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))
     }
@@ -502,7 +496,6 @@ let _ = declare_summary "Extraction Inline"
 (* Grammar entries. *)
 
 let extraction_inline b l =
-  check_inside_section ();
   let refs = List.map Nametab.global l in
   List.iter
     (fun r -> match r with
@@ -514,20 +507,20 @@ let extraction_inline b l =
 
 let print_extraction_inline () =
   let (i,n)= !inline_table in
-  let i'= Refset.filter (function ConstRef _ -> true | _ -> false) i in
+  let i'= Refset'.filter (function ConstRef _ -> true | _ -> false) i in
   msg
     (str "Extraction Inline:" ++ fnl () ++
-     Refset.fold
+     Refset'.fold
        (fun r p ->
 	  (p ++ str "  " ++ safe_pr_long_global r ++ fnl ())) i' (mt ()) ++
      str "Extraction NoInline:" ++ fnl () ++
-     Refset.fold
+     Refset'.fold
        (fun r p ->
 	  (p ++ str "  " ++ safe_pr_long_global r ++ fnl ())) n (mt ()))
 
 (* Reset part *)
 
-let (reset_inline,_) =
+let reset_inline =
   declare_object
     {(default_object "Reset Extraction Inline") with
        cache_function = (fun (_,_)-> inline_table :=  empty_inline_table);
@@ -539,10 +532,10 @@ let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
 type int_or_id = ArgInt of int | ArgId of identifier
 
-let implicits_table = ref Refmap.empty
+let implicits_table = ref Refmap'.empty
 
 let implicits_of_global r =
- try Refmap.find r !implicits_table with Not_found -> []
+ try Refmap'.find r !implicits_table with Not_found -> []
 
 let add_implicits r l =
   let typ = Global.type_of_global r in
@@ -562,11 +555,11 @@ let add_implicits r l =
 		safe_pr_global r))
   in
   let l' = List.map check l in
-  implicits_table := Refmap.add r l' !implicits_table
+  implicits_table := Refmap'.add r l' !implicits_table
 
 (* Registration of operations for rollback. *)
 
-let (implicit_extraction,_) =
+let implicit_extraction =
   declare_object
     {(default_object "Extraction Implicit") with
        cache_function = (fun (_,(r,l)) -> add_implicits r l);
@@ -578,7 +571,7 @@ let (implicit_extraction,_) =
 let _ = declare_summary "Extraction Implicit"
 	  { freeze_function = (fun () -> !implicits_table);
 	    unfreeze_function = ((:=) implicits_table);
-	    init_function = (fun () -> implicits_table := Refmap.empty) }
+	    init_function = (fun () -> implicits_table := Refmap'.empty) }
 
 (* Grammar entries. *)
 
@@ -608,6 +601,17 @@ let string_of_modfile mp =
     modfile_mps := MPmap.add mp s' !modfile_mps;
     s'
 
+(* same as [string_of_modfile], but preserves the capital/uncapital 1st char *)
+
+let file_of_modfile mp =
+  let s0 = match mp with
+    | MPfile f -> string_of_id (List.hd (repr_dirpath f))
+    | _ -> assert false
+  in
+  let s = String.copy (string_of_modfile mp) in
+  if s.[0] <> s0.[0] then s.[0] <- s0.[0];
+  s
+
 let add_blacklist_entries l =
   blacklist_table :=
     List.fold_right (fun s -> Idset.add (id_of_string (String.capitalize s)))
@@ -615,7 +619,7 @@ let add_blacklist_entries l =
 
 (* Registration of operations for rollback. *)
 
-let (blacklist_extraction,_) =
+let blacklist_extraction =
   declare_object
     {(default_object "Extraction Blacklist") with
        cache_function = (fun (_,l) -> add_blacklist_entries l);
@@ -643,7 +647,7 @@ let print_extraction_blacklist () =
 
 (* Reset part *)
 
-let (reset_blacklist,_) =
+let reset_blacklist =
   declare_object
     {(default_object "Reset Extraction Blacklist") with
        cache_function = (fun (_,_)-> blacklist_table := Idset.empty);
@@ -657,22 +661,22 @@ let reset_extraction_blacklist () = Lib.add_anonymous_leaf (reset_blacklist ())
 let use_type_scheme_nb_args, register_type_scheme_nb_args =
   let r = ref (fun _ _ -> 0) in (fun x y -> !r x y), (:=) r
 
-let customs = ref Refmap.empty
+let customs = ref Refmap'.empty
 
-let add_custom r ids s = customs := Refmap.add r (ids,s) !customs
+let add_custom r ids s = customs := Refmap'.add r (ids,s) !customs
 
-let is_custom r = Refmap.mem r !customs
+let is_custom r = Refmap'.mem r !customs
 
 let is_inline_custom r = (is_custom r) && (to_inline r)
 
-let find_custom r = snd (Refmap.find r !customs)
+let find_custom r = snd (Refmap'.find r !customs)
 
-let find_type_custom r = Refmap.find r !customs
+let find_type_custom r = Refmap'.find r !customs
 
-let custom_matchs = ref Refmap.empty
+let custom_matchs = ref Refmap'.empty
 
 let add_custom_match r s =
-  custom_matchs := Refmap.add r s !custom_matchs
+  custom_matchs := Refmap'.add r s !custom_matchs
 
 let indref_of_match pv =
   if Array.length pv = 0 then raise Not_found;
@@ -681,15 +685,15 @@ let indref_of_match pv =
     | _ -> raise Not_found
 
 let is_custom_match pv =
-  try Refmap.mem (indref_of_match pv) !custom_matchs
+  try Refmap'.mem (indref_of_match pv) !custom_matchs
   with Not_found -> false
 
 let find_custom_match pv =
-  Refmap.find (indref_of_match pv) !custom_matchs
+  Refmap'.find (indref_of_match pv) !custom_matchs
 
 (* Registration of operations for rollback. *)
 
-let (in_customs,_) =
+let in_customs =
   declare_object
     {(default_object "ML extractions") with
        cache_function = (fun (_,(r,ids,s)) -> add_custom r ids s);
@@ -702,9 +706,9 @@ let (in_customs,_) =
 let _ = declare_summary "ML extractions"
 	  { freeze_function = (fun () -> !customs);
 	    unfreeze_function = ((:=) customs);
-	    init_function = (fun () -> customs := Refmap.empty) }
+	    init_function = (fun () -> customs := Refmap'.empty) }
 
-let (in_custom_matchs,_) =
+let in_custom_matchs =
   declare_object
     {(default_object "ML extractions custom matchs") with
        cache_function = (fun (_,(r,s)) -> add_custom_match r s);
@@ -716,7 +720,7 @@ let (in_custom_matchs,_) =
 let _ = declare_summary "ML extractions custom match"
 	  { freeze_function = (fun () -> !custom_matchs);
 	    unfreeze_function = ((:=) custom_matchs);
-	    init_function = (fun () -> custom_matchs := Refmap.empty) }
+	    init_function = (fun () -> custom_matchs := Refmap'.empty) }
 
 (* Grammar entries. *)
 

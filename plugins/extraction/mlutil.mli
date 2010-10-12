@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -11,13 +11,13 @@ open Names
 open Term
 open Libnames
 open Miniml
+open Table
 
 (*s Utility functions over ML types with meta. *)
 
 val reset_meta_count : unit -> unit
 val new_meta : 'a -> ml_type
 
-val type_subst : int -> ml_type -> ml_type -> ml_type
 val type_subst_list : ml_type list -> ml_type -> ml_type
 val type_subst_vect : ml_type array -> ml_type -> ml_type
 
@@ -106,11 +106,15 @@ val ast_lift : int -> ml_ast -> ml_ast
 val ast_pop : ml_ast -> ml_ast
 val ast_subst : ml_ast -> ml_ast -> ml_ast
 
-val ast_glob_subst : ml_ast Refmap.t -> ml_ast -> ml_ast
+val ast_glob_subst : ml_ast Refmap'.t -> ml_ast -> ml_ast
 
 val normalize : ml_ast -> ml_ast
 val optimize_fix : ml_ast -> ml_ast
 val inline : global_reference -> ml_ast -> bool
+
+exception Impossible
+val check_function_branch : ml_branch -> ml_ast
+val check_constant_branch : ml_branch -> ml_ast
 
 (* Classification of signatures *)
 

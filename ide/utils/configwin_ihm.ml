@@ -320,17 +320,17 @@ class ['a] list_selection_box
       in
       let _ = dbg "list_selection_box: connecting wb_add" in
       (* connect the functions to the buttons *)
-      ignore (wb_add#connect#clicked f_add);
+      ignore (wb_add#connect#clicked ~callback:f_add);
       let _ = dbg "list_selection_box: connecting wb_remove" in
-      ignore (wb_remove#connect#clicked f_remove);
+      ignore (wb_remove#connect#clicked ~callback:f_remove);
       let _ = dbg "list_selection_box: connecting wb_up" in
-      ignore (wb_up#connect#clicked (fun () -> self#up_selected));
+      ignore (wb_up#connect#clicked ~callback:(fun () -> self#up_selected));
       (
        match f_edit_opt with
 	 None -> ()
        | Some f ->
 	   let _ = dbg "list_selection_box: connecting wb_edit" in
-	   ignore (wb_edit#connect#clicked (fun () -> self#edit_selected f))
+	   ignore (wb_edit#connect#clicked ~callback:(fun () -> self#edit_selected f))
       );
       (* connect the selection and deselection of items in the clist *)
       let f_select ~row ~column ~event =
@@ -350,9 +350,9 @@ class ['a] list_selection_box
       in
       (* connect the select and deselect events *)
       let _ = dbg "list_selection_box: connecting select_row" in
-      ignore(wlist#connect#select_row f_select);
+      ignore(wlist#connect#select_row ~callback:f_select);
       let _ = dbg "list_selection_box: connecting unselect_row" in
-      ignore(wlist#connect#unselect_row f_unselect);
+      ignore(wlist#connect#unselect_row ~callback:f_unselect);
 
       (* initialize the clist with the listref *)
       self#update !listref
@@ -488,9 +488,9 @@ class color_param_box param (tt:GData.tooltips) =
     in
     let wb_ok = dialog#ok_button in
     let wb_cancel = dialog#cancel_button in
-    let _ = dialog#connect#destroy GMain.Main.quit in
+    let _ = dialog#connect#destroy ~callback:GMain.Main.quit in
     let _ = wb_ok#connect#clicked
-	(fun () ->
+	~callback:(fun () ->
 (*	  let color = dialog#colorsel#color in
 	  let r = (Gdk.Color.red color) in
 	  let g = (Gdk.Color.green color)in
@@ -505,11 +505,11 @@ class color_param_box param (tt:GData.tooltips) =
 	  dialog#destroy ()
 	)
     in
-    let _ = wb_cancel#connect#clicked dialog#destroy in
+    let _ = wb_cancel#connect#clicked ~callback:dialog#destroy in
     GMain.Main.main ()
   in
   let _ =
-    if param.color_editable then ignore (wb#connect#clicked f_sel)
+    if param.color_editable then ignore (wb#connect#clicked ~callback:f_sel)
   in
 
   object (self)
@@ -525,7 +525,7 @@ class color_param_box param (tt:GData.tooltips) =
 	()
 
     initializer
-      ignore (we#connect#changed (fun () -> set_color we#text));
+      ignore (we#connect#changed ~callback:(fun () -> set_color we#text));
 
   end ;;
 
@@ -573,19 +573,19 @@ class font_param_box param (tt:GData.tooltips) =
     dialog#selection#set_font_name !v;
     let wb_ok = dialog#ok_button in
     let wb_cancel = dialog#cancel_button in
-    let _ = dialog#connect#destroy GMain.Main.quit in
+    let _ = dialog#connect#destroy ~callback:GMain.Main.quit in
     let _ = wb_ok#connect#clicked
-	(fun () ->
+	~callback:(fun () ->
 	  let font = dialog#selection#font_name in
 	  we#set_text font ;
 	  set_entry_font (Some font);
 	  dialog#destroy ()
 	)
     in
-    let _ = wb_cancel#connect#clicked dialog#destroy in
+    let _ = wb_cancel#connect#clicked ~callback:dialog#destroy in
     GMain.Main.main ()
   in
-  let _ = if param.font_editable then ignore (wb#connect#clicked f_sel) in
+  let _ = if param.font_editable then ignore (wb#connect#clicked ~callback:f_sel) in
 
   object (self)
     (** This method returns the main box ready to be packed. *)
@@ -730,7 +730,7 @@ class filename_param_box param (tt:GData.tooltips) =
   in
   let _ =
     if param.string_editable then
-      let _ = wb#connect#clicked f_click in
+      let _ = wb#connect#clicked ~callback:f_click in
       ()
     else
       ()
@@ -782,7 +782,7 @@ class hotkey_param_box param (tt:GData.tooltips) =
   in
   let _ =
     if param.hk_editable then
-      ignore (we#event#connect#key_press capture)
+      ignore (we#event#connect#key_press ~callback:capture)
     else
       ()
   in
@@ -811,7 +811,7 @@ class modifiers_param_box param =
                                   ~active:(List.mem modifier param.md_value)
                                   ~packing:(hbox#pack ~expand:false) () in
                       ignore (but#connect#toggled
-                                (fun _ -> if but#active then value := modifier::!value
+                                ~callback:(fun _ -> if but#active then value := modifier::!value
                                  else value := List.filter ((<>) modifier) !value)))
             param.md_allow
   in
@@ -867,7 +867,7 @@ class date_param_box param (tt:GData.tooltips) =
   in
   let _ =
     if param.date_editable then
-      let _ = wb#connect#clicked f_click in
+      let _ = wb#connect#clicked ~callback:f_click in
       ()
     else
       ()
@@ -1102,9 +1102,9 @@ let edit ?(with_apply=true)
 	  | _ -> destroy (); rep
       with
 	  Failure s ->
-	    GToolbox.message_box "Error" s; iter rep
+	    GToolbox.message_box ~title:"Error" s; iter rep
 	| e ->
-	    GToolbox.message_box "Error" (Printexc.to_string e); iter rep
+	    GToolbox.message_box ~title:"Error" (Printexc.to_string e); iter rep
     in
       iter Return_cancel
 
@@ -1205,9 +1205,9 @@ let simple_edit ?(with_apply=true)
       | _ -> destroy (); rep
     with
       Failure s ->
-	GToolbox.message_box "Error" s; iter rep
+	GToolbox.message_box ~title:"Error" s; iter rep
     | e ->
-	GToolbox.message_box "Error" (Printexc.to_string e); iter rep
+	GToolbox.message_box ~title:"Error" (Printexc.to_string e); iter rep
   in
   iter Return_cancel
 

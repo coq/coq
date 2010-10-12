@@ -1,36 +1,17 @@
 (* -*- coding:utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
 (* Logic *)
-Notation "∀ x , P" := (forall x , P)
-  (at level 200, x ident, right associativity) : type_scope.
-Notation "∀ x y , P" := (forall x y , P)
-  (at level 200, x ident, y ident, right associativity) : type_scope.
-Notation "∀ x y z , P" := (forall x y z , P)
-  (at level 200, x ident, y ident, z ident, right associativity) : type_scope.
-Notation "∀ x y z u , P" := (forall x y z u , P)
-  (at level 200, x ident, y ident, z ident, u ident, right associativity)
-  : type_scope.
-Notation "∀ x : t , P" := (forall x : t , P)
-  (at level 200, x ident, right associativity) : type_scope.
-Notation "∀ x y : t , P" := (forall x y : t , P)
-  (at level 200, x ident, y ident, right associativity) : type_scope.
-Notation "∀ x y z : t , P" := (forall x y z : t , P)
-  (at level 200, x ident, y ident, z ident, right associativity) : type_scope.
-Notation "∀ x y z u : t , P" := (forall x y z u : t , P)
-  (at level 200, x ident, y ident, z ident, u ident, right associativity)
-  : type_scope.
-
-Notation "∃ x , P" := (exists x , P)
-  (at level 200, x ident, right associativity) : type_scope.
-Notation "∃ x : t , P" := (exists x : t, P)
-  (at level 200, x ident, right associativity) : type_scope.
+Notation "∀  x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity) : type_scope.
+Notation "∃  x .. y , P" := (exists x, .. (exists y, P) ..)
+  (at level 200, x binder, y binder, right associativity) : type_scope.
 
 Notation "x ∨ y" := (x \/ y) (at level 85, right associativity) : type_scope.
 Notation "x ∧ y" := (x /\ y) (at level 80, right associativity) : type_scope.
@@ -40,10 +21,8 @@ Notation "¬ x" := (~x) (at level 75, right associativity) : type_scope.
 Notation "x ≠ y" := (x <> y) (at level 70) : type_scope.
 
 (* Abstraction *)
-(* Not nice
-Notation  "'λ' x : T , y" := ([x:T] y) (at level 1, x,T,y at level 10).
-Notation  "'λ' x := T , y" := ([x:=T] y) (at level 1, x,T,y at level 10).
-*)
+Notation "'λ'  x .. y , t" := (fun x => .. (fun y => t) ..)
+  (at level 200, x binder, y binder, right associativity).
 
 (* Arithmetic *)
 Notation "x ≤ y" := (le x y) (at level 70, no associativity).
@@ -51,10 +30,10 @@ Notation "x ≥ y" := (ge x y) (at level 70, no associativity).
 
 (* test *)
 (*
-Goal ∀ x, True -> (∃ y , x ≥ y + 1) ∨ x ≤ 0.
+Check ∀ x z, True -> (∃ y v, x + v ≥ y + z) ∨ x ≤ 0.
 *)
 
 (* Integer Arithmetic *)
 (* TODO: this should come after ZArith
-Notation "x ≤ y" := (Zle x y) (at level 1, y at level 10).
+Notation "x ≤ y" := (Zle x y) (at level 70, no associativity).
 *)

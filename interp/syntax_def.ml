@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -62,7 +62,7 @@ let subst_syntax_constant (subst,(local,pat,onlyparse)) =
 let classify_syntax_constant (local,_,_ as o) =
   if local then Dispose else Substitute o
 
-let (in_syntax_constant, out_syntax_constant) =
+let in_syntax_constant =
   declare_object {(default_object "SYNTAXCONSTANT") with
     cache_function = cache_syntax_constant;
     load_function = load_syntax_constant;
@@ -74,8 +74,8 @@ type syndef_interpretation = (identifier * subscopes) list * aconstr
 
 (* Coercions to the general format of notation that also supports
    variables bound to list of expressions *)
-let in_pat (ids,ac) = ((ids,[]),ac)
-let out_pat ((ids,idsl),ac) = assert (idsl=[]); (ids,ac)
+let in_pat (ids,ac) = (List.map (fun (id,sc) -> (id,(sc,NtnTypeConstr))) ids,ac)
+let out_pat (ids,ac) = (List.map (fun (id,(sc,typ)) -> (id,sc)) ids,ac)
 
 let declare_syntactic_definition local id onlyparse pat =
   let _ = add_leaf id (in_syntax_constant (local,in_pat pat,onlyparse)) in ()

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -10,7 +10,6 @@
 open Names
 open Decl_kinds
 open Term
-open Termops
 open Sign
 open Entries
 open Evd
@@ -64,13 +63,6 @@ let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
 let mismatched_props env n m = mismatched_ctx_inst env Properties n m
 
 type binder_list = (identifier located * bool * constr_expr) list
-
-(* Calls to interpretation functions. *)
-
-let interp_type_evars evdref env ?(impls=empty_internalization_env) typ =
-  let typ' = intern_gen true ~impls !evdref env typ in
-  let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
-    imps, Pretyping.Default.understand_tcc_evars evdref env Pretyping.IsType typ'
 
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 
@@ -188,7 +180,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	    Evarutil.nf_evar !evars t
 	in
 	Evarutil.check_evars env Evd.empty !evars termtype;
-	let cst = Declare.declare_internal_constant id
+	let cst = Declare.declare_constant ~internal:Declare.KernelSilent id
 	  (Entries.ParameterEntry (termtype,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in instance_hook k None false imps ?hook (ConstRef cst); id
       end
@@ -221,7 +213,8 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 			let (loc_mid, c) = List.find (fun (id', _) -> Name (snd (get_id id')) = id) rest in
 			let rest' = List.filter (fun (id', _) -> Name (snd (get_id id')) <> id) rest in
 			let (loc, mid) = get_id loc_mid in
-			  Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
+			  Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) 
+			    (List.assoc (Name mid) k.cl_projs);
 			  c :: props, rest'
 		      with Not_found ->
 			(CHole (Util.dummy_loc, None) :: props), rest
@@ -231,7 +224,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 		if rest <> [] then
 		  unbound_method env' k.cl_impl (get_id (fst (List.hd rest)))
 		else
-		  Inl (type_ctx_instance evars env' k.cl_props props subst)
+		  Inl (type_ctx_instance evars (push_rel_context ctx' env') k.cl_props props subst)
 	in	  
 	evars := Evarutil.nf_evar_map !evars;
 	let term, termtype =
@@ -282,14 +275,6 @@ let named_of_rel_context l =
       l ([], [])
   in ctx
 
-let push_named_context = List.fold_right push_named
-
-let rec list_filter_map f = function
-  | [] -> []
-  | hd :: tl -> match f hd with
-    | None -> list_filter_map f tl
-    | Some x -> x :: list_filter_map f tl
-
 let context ?(hook=fun _ -> ()) l =
   let env = Global.env() in
   let evars = ref Evd.empty in
@@ -302,7 +287,7 @@ let context ?(hook=fun _ -> ()) l =
   in
   let fn (id, _, t) =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
-      let cst = Declare.declare_internal_constant id
+      let cst = Declare.declare_constant ~internal:Declare.KernelSilent id
 	(ParameterEntry (t,false), IsAssumption Logical)
       in
 	match class_of_constr t with

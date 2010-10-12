@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -204,10 +204,6 @@ let rename_hyp l       = with_check (rename_hyp_no_check l)
 open Pp
 open Tacexpr
 open Rawterm
-
-let rec pr_list f = function
-  | []   -> mt ()
-  | a::l1 -> (f a) ++ pr_list f l1
 
 let db_pr_goal sigma g =
   let env = Goal.V82.env sigma g in

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -151,12 +151,12 @@ let usage () =
 let warning s = msg_warning (str s)
 
 let ide_slave = ref false
+let filter_opts = ref false
 
-let ide_args = ref []
 let parse_args arglist =
   let glob_opt = ref false in
   let rec parse = function
-    | [] -> ()
+    | [] -> []
     | "-with-geoproof" :: s :: rem ->
 	if s = "yes" then Coq_config.with_geoproof := true
 	else if s = "no" then Coq_config.with_geoproof := false
@@ -232,7 +232,8 @@ let parse_args arglist =
     | "-compile-verbose" :: f :: rem -> add_compile true f;  if not !glob_opt then Dumpglob.dump_to_dotglob (); parse rem
     | "-compile-verbose" :: []       -> usage ()
 
-    | "-dont-load-proofs" :: rem -> Flags.dont_load_proofs := true; parse rem
+    | "-load-proofs" :: rem -> Flags.load_proofs := true; parse rem
+    | "-dont-load-proofs" :: rem -> Flags.load_proofs := false; parse rem
 
     | "-beautify" :: rem -> make_beautify true; parse rem
 
@@ -249,20 +250,20 @@ let parse_args arglist =
     | "-emacs-U" :: rem -> Flags.print_emacs := true;
 	Flags.print_emacs_safechar := true; Pp.make_pp_emacs(); parse rem
 
-    | "-unicode" :: rem -> Flags.unicode_syntax := true; parse rem
+    | "-unicode" :: rem -> add_require "Utf8_core"; parse rem
 
     | "-coqlib" :: d :: rem -> Flags.coqlib_spec:=true; Flags.coqlib:=d; parse rem
     | "-coqlib" :: [] -> usage ()
 
-    | "-where" :: _ -> print_endline (Envars.coqlib ()); exit 0
+    | "-where" :: _ -> print_endline (Envars.coqlib ()); exit (if !filter_opts then 2 else 0)
 
-    | ("-config"|"--config") :: _ -> Usage.print_config (); exit 0
+    | ("-config"|"--config") :: _ -> Usage.print_config (); exit (if !filter_opts then 2 else 0)
 
     | ("-quiet"|"-silent") :: rem -> Flags.make_silent true; parse rem
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
 
-    | ("-v"|"--version") :: _ -> Usage.version ()
+    | ("-v"|"--version") :: _ -> Usage.version (if !filter_opts then 2 else 0)
 
     | "-init-file" :: f :: rem -> set_rcfile f; parse rem
     | "-init-file" :: []       -> usage ()
@@ -290,9 +291,9 @@ let parse_args arglist =
 
     | "-ideslave" :: rem -> ide_slave := true; parse rem
 
-    | s :: rem ->
-	  ide_args := s :: !ide_args;
-	  parse rem
+    | "-filteropts" :: rem -> filter_opts := true; parse rem
+
+    | s :: rem -> s :: (parse rem)
   in
   try
     parse arglist
@@ -310,8 +311,10 @@ let init arglist =
   Lib.init();
   begin
     try
-      parse_args arglist;
-      if !ide_args <> [] then usage ();
+      let foreign_args = parse_args arglist in
+      if !filter_opts then
+        (print_string (String.concat "\n" foreign_args); exit 0);
+      (* no else. ignore additional options. makes life easier *)
       if !ide_slave then begin
         Flags.make_silent true;
         Pfedit.set_undo (Some 5000);
@@ -346,12 +349,6 @@ let init arglist =
   Lib.declare_initial_state ()
 
 let init_toplevel = init
-
-let init_ide arglist =
-  Flags.make_silent true;
-  Pfedit.set_undo (Some 5000);
-  Ide_blob.init_stdout ();
-  List.rev !ide_args
 
 let start () =
   init_toplevel (List.tl (Array.to_list Sys.argv));

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -87,6 +87,14 @@ Tactic Notation "destruct_with_eqn" ":" ident(H) constr(x) :=
   destruct x as []_eqn:H.
 Tactic Notation "destruct_with_eqn" ":" ident(H) ident(n) :=
   try intros until n; destruct n as []_eqn:H.
+
+(** Break every hypothesis of a certain type *)
+
+Ltac destruct_all t :=
+ match goal with
+  | x : t |- _ => destruct x; destruct_all t
+  | _ => idtac
+ end.
 
 (* Rewriting in all hypothesis several times everywhere *)
 

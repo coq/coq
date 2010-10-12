@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -480,12 +480,34 @@ End AddS.
 
  End SimplOp.
 
+(** TODO : to migrate in NArith *)
+
+ Notation Pshiftl := DoubleBase.double_digits.
+
+ Lemma Pshiftl_plus : forall n m p,
+  Pshiftl p (m + n) = Pshiftl (Pshiftl p n) m.
+ Proof.
+ induction m; simpl; congruence.
+ Qed.
+
+ Lemma Pshiftl_Zpower : forall n d,
+  Zpos (Pshiftl d n) = (Zpos d * 2 ^ Z_of_nat n)%Z.
+ Proof.
+ intros.
+ rewrite Zmult_comm.
+ induction n. simpl; auto.
+ transitivity (2 * (2 ^ Z_of_nat n * Zpos d))%Z.
+ rewrite <- IHn. auto.
+ rewrite Zmult_assoc.
+ rewrite <- Zpower_Zsucc, inj_S; auto with zarith.
+ Qed.
+
+(** END TODO *)
 
 (** Abstract vision of a datatype of arbitrary-large numbers.
     Concrete operations can be derived from these generic
     fonctions, in particular from [iter_t] and [same_level].
 *)
-
 
 Module Type NAbstract.
 
@@ -496,7 +518,7 @@ Declare Instance dom_op n : ZnZ.Ops (dom_t n).
 Declare Instance dom_spec n : ZnZ.Specs (dom_op n).
 
 Axiom digits_dom_op : forall n,
-  Zpos (ZnZ.digits (dom_op n)) = Zpos (ZnZ.digits (dom_op 0)) * 2 ^ Z_of_nat n.
+  ZnZ.digits (dom_op n) = Pshiftl (ZnZ.digits (dom_op 0)) n.
 
 (** The type [t] of arbitrary-large numbers, with abstract constructor [mk_t]
     and destructor [destr_t] and iterator [iter_t] *)
@@ -553,23 +575,5 @@ Axiom spec_mk_t_S : forall n (x:zn2z (dom_t n)),
   [mk_t_S n x] = zn2z_to_Z (base (ZnZ.digits (dom_op n))) ZnZ.to_Z x.
 
 Axiom mk_t_S_level : forall n x, level (mk_t_S n x) = S n.
-
-(** Not generalized yet : *)
-
-Parameter compare : t -> t -> comparison.
-Axiom spec_compare : forall x y, compare x y = Zcompare [x] [y].
-
-Parameter mul : t -> t -> t.
-Axiom spec_mul : forall x y, [mul x y] = [x] * [y].
-
-Parameter div_gt : t -> t -> t*t.
-Axiom spec_div_gt: forall x y,
-       [x] > [y] -> 0 < [y] ->
-      let (q,r) := div_gt x y in
-      [q] = [x] / [y] /\ [r] = [x] mod [y].
-
-Parameter mod_gt : t -> t -> t.
-Axiom spec_mod_gt :
- forall x y, [x] > [y] -> 0 < [y] -> [mod_gt x y] = [x] mod [y].
 
 End NAbstract.

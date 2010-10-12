@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -51,6 +51,7 @@ val user_err_loc : loc * string * std_ppcmds -> 'a
 val invalid_arg_loc : loc * string -> 'a
 val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
 val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
+val down_located : ('a -> 'b) -> 'a located -> 'b
 
 (** Like [Exc_located], but specifies the outermost file read, the
    input buffer associated to the location of the error (or the module name
@@ -62,6 +63,11 @@ exception Error_in_file of string * (bool * string * loc) * exn
 
 val on_fst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
 val on_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
+
+(** Going down pairs *)
+
+val down_fst : ('a -> 'b) -> 'a * 'c -> 'b
+val down_snd : ('a -> 'b) -> 'c * 'a -> 'b
 
 (** Mapping under triple *)
 
@@ -175,6 +181,7 @@ val list_subset : 'a list -> 'a list -> bool
 val list_chop : int -> 'a list -> 'a list * 'a list
 (* former [list_split_at] was a duplicate of [list_chop] *)
 val list_split_when : ('a -> bool) -> 'a list -> 'a list * 'a list
+val list_split_by : ('a -> bool) -> 'a list -> 'a list * 'a list
 val list_split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
 val list_partition_by : ('a -> 'a -> bool) -> 'a list -> 'a list list
 val list_firstn : int -> 'a list -> 'a list
@@ -291,6 +298,12 @@ val iterate : ('a -> 'a) -> int -> 'a -> 'a
 val repeat : int -> ('a -> unit) -> 'a -> unit
 val iterate_for : int -> int -> (int -> 'a -> 'a) -> 'a -> 'a
 
+(** {6 Delayed computations. } *)
+
+type 'a delayed = unit -> 'a
+
+val delayed_force : 'a delayed -> 'a
+
 (** {6 Misc. } *)
 
 type ('a,'b) union = Inl of 'a | Inr of 'b
@@ -335,7 +348,9 @@ val prlist_with_sep :
 val prvect : ('a -> std_ppcmds) -> 'a array -> std_ppcmds
 val prvecti : (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
 val prvect_with_sep :
-   (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b array -> std_ppcmds
+   (unit -> std_ppcmds) -> ('a -> std_ppcmds) -> 'a array -> std_ppcmds
+val prvecti_with_sep :
+   (unit -> std_ppcmds) -> (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
 val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 val pr_enum : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 val pr_located : ('a -> std_ppcmds) -> 'a located -> std_ppcmds

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -214,7 +214,7 @@ let rec display_action print_var = function
             constant factors.\n" e1.id e2.id
       | NEGATE_CONTRADICT(e1,e2,b) ->
           Printf.printf
-            "Equations E%d and E%d state that their body is at the same time
+            "Equations E%d and E%d state that their body is at the same time \
             equal and different\n" e1.id e2.id
       | CONSTANT_NOT_NUL (e,k) ->
           Printf.printf "Equation E%d states %s = 0.\n" e (sbi k)

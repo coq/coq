@@ -153,7 +153,7 @@ let _ =
 
 let progmap_union = ProgMap.fold ProgMap.add
 
-let (input,output) =
+let input =
   declare_object
     { (default_object "Program state") with
       classify_function = (fun () ->
@@ -212,7 +212,7 @@ let declare_definition prg =
 	in
 	let gr = ConstRef c in
 	  if Impargs.is_implicit_args () || prg.prg_implicits <> [] then
-	    Impargs.declare_manual_implicits false gr prg.prg_implicits;
+	    Impargs.declare_manual_implicits false gr [prg.prg_implicits];
 	  print_message (Subtac_utils.definition_message prg.prg_name);
 	  progmap_remove prg; 
 	  prg.prg_hook local gr;

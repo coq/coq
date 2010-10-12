@@ -1,0 +1,1 @@
+Definition a := 1.

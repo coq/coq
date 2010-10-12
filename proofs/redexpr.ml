@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -86,7 +86,7 @@ let discharge_strategy (_,(local,obj)) =
   if local then None else
   map_strategy disch_ref obj
 
-let (inStrategy,outStrategy) =
+let inStrategy =
   declare_object {(default_object "STRATEGY") with
                     cache_function = (fun (_,obj) -> cache_strategy obj);
 		    load_function = (fun _ (_,obj) -> cache_strategy obj);
@@ -212,7 +212,7 @@ let subst_red_expr subs e =
     (Pattern.subst_pattern subs)
     e
 
-let (inReduction,_) =
+let inReduction =
   declare_object
     {(default_object "REDUCTION") with
        cache_function = (fun (_,(_,s,e)) -> decl_red_expr s e);

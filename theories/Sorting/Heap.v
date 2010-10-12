@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -134,44 +134,45 @@ Section defs.
       (munion (list_contents _ eqA_dec l1) (list_contents _ eqA_dec l2)) ->
       (forall a, HdRel leA a l1 -> HdRel leA a l2 -> HdRel leA a l) ->
       merge_lem l1 l2.
+  Require Import Morphisms.
+  
+  Instance: Equivalence (@meq A).
+  Proof. constructor; auto with datatypes. red. apply meq_trans. Defined.
 
+  Instance: Proper (@meq A ++> @meq _ ++> @meq _) (@munion A).
+  Proof. intros x y H x' y' H'. now apply meq_congr. Qed.
+  
   Lemma merge :
     forall l1:list A, Sorted leA l1 ->
     forall l2:list A, Sorted leA l2 -> merge_lem l1 l2.
   Proof.
-    simple induction 1; intros.
+    fix 1; intros; destruct l1.
     apply merge_exist with l2; auto with datatypes.
-    elim H2; intros.
-    apply merge_exist with (a :: l); simpl in |- *; auto using cons_sort with datatypes.
+    rename l1 into l.
+    revert l2 H0. fix 1. intros.
+    destruct l2 as [|a0 l0]. 
+    apply merge_exist with (a :: l); simpl; auto with datatypes. 
     elim (leA_dec a a0); intros.
 
     (* 1 (leA a a0) *)
-    cut (merge_lem l (a0 :: l0)); auto using cons_sort with datatypes.
-    intros [l3 l3sorted l3contents Hrec].
-    apply merge_exist with (a :: l3); simpl in |- *;
+    apply Sorted_inv in H. destruct H.
+    destruct (merge l H (a0 :: l0) H0).
+    apply merge_exist with (a :: l1). clear merge merge0.
       auto using cons_sort, cons_leA with datatypes.
-    apply meq_trans with
-      (munion (singletonBag a)
-	(munion (list_contents _ eqA_dec l)
-          (list_contents _ eqA_dec (a0 :: l0)))).
-    apply meq_right; trivial with datatypes.
-    apply meq_sym; apply munion_ass.
-    intros; apply cons_leA.
+    simpl. rewrite m. now rewrite munion_ass. 
+    intros. apply cons_leA. 
     apply (@HdRel_inv _ leA) with l; trivial with datatypes.
 
     (* 2 (leA a0 a) *)
-    elim X0; simpl in |- *; intros.
-    apply merge_exist with (a0 :: l3); simpl in |- *;
+    apply Sorted_inv in H0. destruct H0.
+    destruct (merge0 l0 H0). clear merge merge0.  
+    apply merge_exist with (a0 :: l1); 
       auto using cons_sort, cons_leA with datatypes.
-    apply meq_trans with
-      (munion (singletonBag a0)
-	(munion (munion (singletonBag a) (list_contents _ eqA_dec l))
-          (list_contents _ eqA_dec l0))).
-    apply meq_right; trivial with datatypes.
-    apply munion_perm_left.
-    intros; apply cons_leA; apply HdRel_inv with (l:=l0); trivial with datatypes.
+    simpl; rewrite m. simpl. setoid_rewrite munion_ass at 1. rewrite munion_comm.
+    repeat rewrite munion_ass. setoid_rewrite munion_comm at 3. reflexivity.
+    intros. apply cons_leA. 
+    apply (@HdRel_inv _ leA) with l0; trivial with datatypes.
   Qed.
-
 
   (** ** From trees to multisets *)
 

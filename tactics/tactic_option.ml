@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -10,9 +10,9 @@ open Libobject
 open Proof_type
 open Pp
 
-let declare_tactic_option name =
-  let default_tactic : Proof_type.tactic ref = ref Refiner.tclIDTAC in
-  let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Tacexpr.TacId []) in
+let declare_tactic_option ?(default=Tacexpr.TacId []) name =
+  let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref default in
+  let default_tactic : Proof_type.tactic ref = ref (Tacinterp.eval_tactic !default_tactic_expr) in
   let locality = ref false in
   let set_default_tactic local t = 
     locality := local;
@@ -25,7 +25,7 @@ let declare_tactic_option name =
   let subst (s, (local, tac)) =
     (local, Tacinterp.subst_tactic s tac)
   in
-  let input, _output = 
+  let input =
     declare_object
       { (default_object name) with
 	cache_function = cache;

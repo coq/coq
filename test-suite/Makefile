@@ -40,6 +40,7 @@ endif
 
 command := $(coqtop) -top Top -load-vernac-source
 coqc := $(coqtop) -compile
+coqdep := $(BIN)coqdep
 
 SHOW := $(if $(VERBOSE),@true,@echo)
 HIDE := $(if $(VERBOSE),,@)
@@ -74,7 +75,7 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
   interactive micromega $(COMPLEXITY) modules
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) xml bugs
+SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs
 
 #######################################################################
 # Phony targets
@@ -114,7 +115,6 @@ $(foreach S,$(VSUBSYSTEMS),$(eval $(call mkstamp,$(S))))
 # Summary
 #######################################################################
 
-summary_one = echo $(1); if [ -f $(2).log ]; then tail -n1 $(2).log; fi | sort -g
 summary_dir = echo $(1); find $(2) -name '*.log' -print0 | xargs -0 tail -q -n1 | sort -g
 
 .PHONY: summary summary.log
@@ -128,7 +128,7 @@ summary:
 	  $(call summary_dir, "Output tests", output); \
 	  $(call summary_dir, "Interactive tests", interactive); \
 	  $(call summary_dir, "Micromega tests", micromega); \
-	  $(call summary_one, "Miscellaneous tests", xml); \
+	  $(call summary_dir, "Miscellaneous tests", misc); \
 	  $(call summary_dir, "Complexity tests", complexity); \
 	  $(call summary_dir, "Module tests", modules); \
 	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
@@ -271,7 +271,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v
 	    | grep -v "Welcome to Coq" \
 	    | grep -v "Skipping rcfile loading" \
 	    > $$tmpoutput; \
-	  diff $$tmpoutput $*.out 2>&1; R=$$?; times; \
+	  diff -u $*.out $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -354,10 +354,12 @@ $(addsuffix .log,$(wildcard modules/*.v)): %.v.log: modules/Nat.vo modules/plik.
 # Miscellaneous tests
 #######################################################################
 
+misc: misc/xml.log misc/deps-order.log
+
 # Test xml compilation
-xml: xml.log
-xml.log:
-	@echo "TEST      xml"
+xml: misc/xml.log
+misc/xml.log:
+	@echo "TEST      misc/xml"
 	$(HIDE){ \
 	  echo $(call log_intro,xml); \
 	  rm -rf misc/xml; \
@@ -365,9 +367,36 @@ xml.log:
 	  $(bincoqc) -xml misc/berardi_test 2>&1; times; \
 	  if [ ! -d misc/xml ]; then \
 	    echo $(log_failure); \
-	    echo "    xml... failed"; \
+	    echo "    misc/xml... failed"; \
 	  else \
 	    echo $(log_success); \
-	    echo "    xml...apparently ok"; \
+	    echo "    misc/xml...apparently ok"; \
 	  fi; rm -r misc/xml; \
+	} > "$@"
+
+# Check that both coqdep and coqtop/coqc takes the later -I/-R
+# Check that both coqdep and coqtop/coqc supports both -R and -I dir -as lib
+# See bugs 2242, 2337, 2339
+deps-order: misc/deps-order.log
+misc/deps-order.log:
+	@echo "TEST      misc/deps-order"
+	$(HIDE){ \
+	  echo $(call log_intro,deps-order); \
+	  rm -f misc/deps/*/*.vo; \
+	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
+	  $(coqdep) -I misc/deps/lib -as lib -R misc/deps/client client misc/deps/client/bar.v 2>&1 \
+	    | head -n 1 > $$tmpoutput; \
+	  diff -u misc/deps/deps.out $$tmpoutput 2>&1; R=$$?; times; \
+	  $(bincoqc) -I misc/deps/lib -as lib misc/deps/lib/foo.v 2>&1; \
+	  $(bincoqc) -I misc/deps/lib -as lib -R misc/deps/client client misc/deps/client/foo.v 2>&1; \
+	  $(coqtop) -I misc/deps/lib -as lib -R misc/deps/client client -load-vernac-source misc/deps/client/bar.v 2>&1; \
+	  S=$$?; times; \
+	  if [ $$R = 0 -a $$S = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    misc/deps-order...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    misc/deps-order...Error! (unexpected order)"; \
+	  fi; \
+	  rm $$tmpoutput; \
 	} > "$@"

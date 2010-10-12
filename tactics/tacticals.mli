@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -117,7 +117,6 @@ val tryAllHypsAndConcl  : (identifier option -> tactic) -> tactic
 
 val onAllHyps           : (identifier -> tactic) -> tactic
 val onAllHypsAndConcl   : (identifier option -> tactic) -> tactic
-val onAllHypsAndConclLR : (identifier option -> tactic) -> tactic
 
 val onClause   : (identifier option -> tactic) -> clause -> tactic
 val onClauseLR : (identifier option -> tactic) -> clause -> tactic

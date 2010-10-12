@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -21,7 +21,7 @@ let reserve_table = ref Idmap.empty
 let cache_reserved_type (_,(id,t)) =
   reserve_table := Idmap.add id t !reserve_table
 
-let (in_reserved, _) =
+let in_reserved =
   declare_object {(default_object "RESERVED-TYPE") with
     cache_function = cache_reserved_type }
 

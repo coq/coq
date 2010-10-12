@@ -553,11 +553,10 @@ pattern:
 \begin{quote}
 {\tt context} {\ident} {\tt [} {\cpattern} {\tt ]}
 \end{quote}
-It matches any term which one subterm matches {\cpattern}. If there is
-a match, the optional {\ident} is assign the ``matched context'', that
-is the initial term where the matched subterm is replaced by a
-hole. The definition of {\tt context} in expressions below will show
-how to use such term contexts.
+It matches any term with a subterm matching {\cpattern}. If there is
+a match, the optional {\ident} is assigned the ``matched context'', i.e.
+the initial term where the matched subterm is replaced by a
+hole. The example below will show how to use such term contexts.
 
 If the evaluation of the right-hand-side of a valid match fails, the
 next matching subterm is tried. If no further subterm matches, the

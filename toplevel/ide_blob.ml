@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -157,7 +157,6 @@ let rec attribute_of_vernac_command = function
   
   | VernacFocus _ -> [SolveCommand]
   | VernacUnfocus -> [SolveCommand]
-  | VernacGo _ -> []
   | VernacShow _ -> [OtherStatePreservingCommand]
   | VernacCheckGuard -> [OtherStatePreservingCommand]
   | VernacProof (Tacexpr.TacId []) -> [OtherStatePreservingCommand]
@@ -174,9 +173,6 @@ let rec attribute_of_vernac_command = function
   | VernacExtend ("Subtac_Obligations", _) -> [GoalStartingCommand]
   | VernacExtend _ -> []
   
-let is_vernac_goal_starting_command com =
-  List.mem GoalStartingCommand (attribute_of_vernac_command com)
-
 let is_vernac_navigation_command com =
   List.mem NavigationCommand (attribute_of_vernac_command com)
 
@@ -405,9 +401,10 @@ let concl_next_tac sigma concl =
   ])
 
 let current_goals () =
-  let pfts =
-    Proof_global.give_me_the_proof ()
-  in
+  try 
+    let pfts =
+      Proof_global.give_me_the_proof ()
+    in
   let { Evd.it=all_goals ; sigma=sigma } = Proof.V82.subgoals pfts in
   if all_goals = [] then
     begin
@@ -442,6 +439,7 @@ let current_goals () =
       in
       Goals (List.map process_goal all_goals)
     end
+  with Proof_global.NoCurrentProof -> Message "" (* quick hack to have a clean message screen *)
 
 let id_of_name = function
   | Names.Anonymous -> id_of_string "x"
@@ -531,7 +529,6 @@ type 'a value =
   | Fail of (Util.loc option * string)
 
 let eval_call c = 
-  let null_formatter = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in
   let filter_compat_exn = function
     | Vernac.DuringCommandInterp (loc,inner)
     | Vernacexpr.DuringSyntaxChecking (loc,inner) -> inner

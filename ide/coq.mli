@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -14,6 +14,7 @@ open Ide_blob
 
 val short_version : unit -> string
 val version : unit -> string
+val filter_coq_opts : string list -> bool * string list
 
 type coqtop
 
@@ -23,9 +24,11 @@ val spawn_coqtop : string -> coqtop
 
 val kill_coqtop : coqtop -> unit
 
+val coqtop_zombies : unit -> int
+
 val reset_coqtop : coqtop -> unit
 
-exception Coq_failure of (Util.loc option * string)
+val process_exn : exn -> string*(Util.loc option)
 
 module PrintOpt :
 sig
@@ -38,34 +41,25 @@ sig
   val existential : t
   val universes : t
 
-  val set : coqtop -> t -> bool -> unit
+  val set : coqtop -> t -> bool -> unit Ide_blob.value
 end
 
-val reset_initial : unit -> unit
+val raw_interp : coqtop -> string -> unit Ide_blob.value
 
-val raw_interp : coqtop -> string -> unit
+val interp : coqtop -> bool -> string -> int Ide_blob.value
 
-val interp : coqtop -> bool -> string -> int
+val rewind : coqtop -> int -> int Ide_blob.value
 
-val rewind : coqtop -> int -> int
+val read_stdout : coqtop -> string Ide_blob.value
 
-val read_stdout : coqtop -> string
+val is_in_loadpath : coqtop -> string -> bool Ide_blob.value
 
-val process_exn : exn -> string*(Util.loc option)
-
-val is_in_loadpath : coqtop -> string -> bool
-
-val make_cases : coqtop -> string -> string list list
-
-type tried_tactic =
-  | Interrupted
-  | Success of int (* nb of goals after *)
-  | Failed
+val make_cases : coqtop -> string -> string list list Ide_blob.value
 
 (* Message to display in lower status bar. *)
 
-val current_status : coqtop -> string
+val current_status : coqtop -> string Ide_blob.value
 
-val goals : coqtop -> goals
+val goals : coqtop -> goals Ide_blob.value
 
 val msgnl : Pp.std_ppcmds -> string

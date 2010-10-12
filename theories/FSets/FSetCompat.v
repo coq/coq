@@ -173,8 +173,6 @@ Module Backport_Sets
 
   Include Backport_WSets E M.
 
-  Module E := E.
-
   Implicit Type s : t.
   Implicit Type x y : elt.
 
@@ -212,6 +210,8 @@ Module Backport_Sets
    intros s s'; destruct (CompSpec2Type (M.compare_spec s s'));
     [ apply EQ | apply LT | apply GT ]; auto.
   Defined.
+
+  Module E := E.
 
 End Backport_Sets.
 
@@ -346,8 +346,6 @@ Module Update_Sets
                     with Definition E.lt := E.lt)
  <: MSetInterface.Sets with Module E:=E.
 
-  Module E := E.
-
   Include Update_WSets E M.
 
   Implicit Type s : t.
@@ -406,5 +404,7 @@ Module Update_Sets
 
   Lemma compare_spec : forall s s', CompSpec eq lt s s' (compare s s').
   Proof. intros; unfold compare; destruct M.compare; auto. Qed.
+
+  Module E := E.
 
 End Update_Sets.

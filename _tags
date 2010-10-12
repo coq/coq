@@ -25,7 +25,6 @@
 
 "toplevel/whelp.ml4": use_grammar
 "parsing/g_vernac.ml4": use_grammar
-"parsing/g_decl_mode.ml4": use_grammar
 "tactics/extraargs.ml4": use_grammar
 "tactics/extratactics.ml4": use_grammar
 "tactics/class_tactics.ml4": use_grammar
@@ -34,6 +33,23 @@
 "tactics/eqdecide.ml4": use_grammar
 "tactics/hipattern.ml4": use_grammar, use_constr
 "tactics/rewrite.ml4": use_grammar
+
+"parsing/g_constr.ml4": use_compat5
+"parsing/g_ltac.ml4": use_compat5
+"parsing/g_prim.ml4": use_compat5
+"parsing/g_proofs.ml4": use_compat5
+"parsing/g_tactic.ml4": use_compat5
+"parsing/g_vernac.ml4": use_compat5
+"parsing/g_xml.ml4": use_compat5
+"parsing/pcoq.ml4": use_compat5
+"plugins/decl_mode/g_decl_mode.ml4": use_compat5
+"plugins/funind/g_indfun.ml4": use_compat5
+"plugins/subtac/g_subtac.ml4": use_compat5
+
+"parsing/argextend.ml4": use_compat5b
+"parsing/q_constr.ml4": use_compat5b
+"parsing/tacextend.ml4": use_compat5b
+"parsing/vernacextend.ml4": use_compat5b
 
 <plugins/**/*.ml4>: use_grammar
 

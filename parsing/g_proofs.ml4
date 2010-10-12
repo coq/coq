@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -80,14 +80,6 @@ GEXTEND Gram
       | IDENT "Show"; IDENT "Intros" -> VernacShow (ShowIntros true)
       | IDENT "Show"; IDENT "Match"; id = identref -> VernacShow (ShowMatch id)
       | IDENT "Show"; IDENT "Thesis" -> VernacShow ShowThesis
-      | IDENT "Explain"; IDENT "Proof"; l = LIST0 integer ->
-	  VernacShow (ExplainProof l)
-      | IDENT "Explain"; IDENT "Proof"; IDENT "Tree"; l = LIST0 integer ->
-	  VernacShow (ExplainTree l)
-      | IDENT "Go"; n = natural -> VernacGo (GoTo n)
-      | IDENT "Go"; IDENT "top" -> VernacGo GoTop
-      | IDENT "Go"; IDENT "prev" -> VernacGo GoPrev
-      | IDENT "Go"; IDENT "next" -> VernacGo GoNext
       | IDENT "Guarded" -> VernacCheckGuard
 (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -30,9 +30,7 @@ open Coercion.Default
 (* Abbreviations *)
 
 let pf_env = Refiner.pf_env
-let pf_hyps = Refiner.pf_hyps
 let pf_type_of gls c  = Typing.type_of (pf_env gls) gls.sigma c
-let pf_concl gls = Goal.V82.concl (Refiner.project gls) (sig_it gls)
 
 (******************************************************************)
 (* Clausal environments *)
@@ -144,9 +142,6 @@ let mk_clenv_from_n gls n (c,cty) =
 
 let mk_clenv_from gls = mk_clenv_from_n gls None
 
-let mk_clenv_rename_from_n gls n (c,t) =
-  mk_clenv_from_n gls n (c,rename_bound_vars_as_displayed [] t)
-
 let mk_clenv_type_of gls t = mk_clenv_from gls (t,pf_type_of gls t)
 
 (******************************************************************)
@@ -197,24 +192,58 @@ let clenv_assign mv rhs clenv =
 
 (* [clenv_dependent hyps_only clenv]
  * returns a list of the metavars which appear in the template of clenv,
- * and which are dependent, This is computed by taking the metavars in cval,
- * in right-to-left order, and collecting the metavars which appear
+ * and which are dependent, This is computed by taking the metavars of the
+ * template in right-to-left order, and collecting the metavars which appear
  * in their types, and adding in all the metavars appearing in the
  * type of clenv.
- * If [hyps_only] then metavariables occurring in the type are _excluded_ *)
+ * If [hyps_only] then metavariables occurring in the concl are _excluded_
+ * If [iter] is also set then all metavariables *recursively* occurring
+ * in the concl are _excluded_
 
-(* [clenv_metavars clenv mv]
- * returns a list of the metavars which appear in the type of
- * the metavar mv.  The list is unordered. *)
+   Details of the strategies used for computing the set of unresolved
+   dependent metavariables
 
-let clenv_metavars evd mv =
+   We typically have a clause of the form
+
+   lem(?T:Type,?T,?U:Type,?V:Type,?x:?T,?y:?U,?z:?V,?H:hyp(?x,?z)) :concl(?y,?z)
+
+   Then, we compute:
+   A  = the set of all unresolved metas
+   C  = the set of metas occurring in concl (here ?y, ?z)
+   C* = the recursive closure of C wrt types (here ?y, ?z, ?U, ?V)
+   D  = the set of metas occurring in a type of meta (here ?x, ?T, ?z, ?U, ?V)
+   NL = the set of duplicated metas even if non dependent (here ?T)
+       (we make the assumption that duplicated metas have internal dependencies)
+
+   Then, for the "apply"-style tactic (hyps_only), missing metas are
+     A inter ((D minus C) union NL)
+
+   for the optimized "apply"-style tactic (taking in care, f_equal style
+   lemma, from 2/8/10, Coq > 8.3), missing metas are
+     A inter (( D minus C* ) union NL)
+
+   for the "elim"-style tactic, missing metas are
+     A inter (D union C union NL)
+
+   In any case, we respect the order given in A.
+*)
+
+let clenv_metas_in_type_of_meta evd mv =
   (mk_freelisted (meta_instance evd (meta_ftype evd mv))).freemetas
 
-let dependent_metas clenv mvs conclmetas =
+let dependent_in_type_of_metas clenv mvs =
   List.fold_right
-    (fun mv deps ->
-       Metaset.union deps (clenv_metavars clenv.evd mv))
-    mvs conclmetas
+    (fun mv -> Metaset.union (clenv_metas_in_type_of_meta clenv.evd mv))
+    mvs Metaset.empty
+
+let dependent_closure clenv mvs =
+  let rec aux mvs acc =
+    Metaset.fold
+      (fun mv deps ->
+	let metas_of_meta_type = clenv_metas_in_type_of_meta clenv.evd mv in
+	aux metas_of_meta_type (Metaset.union deps metas_of_meta_type))
+      mvs acc in
+  aux mvs mvs
 
 let duplicated_metas c =
   let rec collrec (one,more as acc) c =
@@ -224,19 +253,24 @@ let duplicated_metas c =
   in
   snd (collrec ([],[]) c)
 
-let clenv_dependent hyps_only clenv =
-  let mvs = undefined_metas clenv.evd in
-  let ctyp_mvs = (mk_freelisted (clenv_type clenv)).freemetas in
-  let deps = dependent_metas clenv mvs ctyp_mvs in
-  let nonlinear = duplicated_metas (clenv_value clenv) in
-  (* Make the assumption that duplicated metas have internal dependencies *)
+let clenv_dependent_gen hyps_only ?(iter=true) clenv =
+  let all_undefined = undefined_metas clenv.evd in
+  let deps_in_concl = (mk_freelisted (clenv_type clenv)).freemetas in
+  let deps_in_hyps = dependent_in_type_of_metas clenv all_undefined in
+  let non_linear = duplicated_metas (clenv_value clenv) in
+  let deps_in_concl =
+    if hyps_only && iter then dependent_closure clenv deps_in_concl
+    else deps_in_concl in
   List.filter
-    (fun mv -> if Metaset.mem mv deps
-               then not (hyps_only && Metaset.mem mv ctyp_mvs)
-               else List.mem mv nonlinear)
-    mvs
+    (fun mv ->
+      Metaset.mem mv deps_in_hyps &&
+	not (hyps_only && Metaset.mem mv deps_in_concl)
+      || not hyps_only && Metaset.mem mv deps_in_concl
+      || List.mem mv non_linear)
+    all_undefined
 
-let clenv_missing ce = clenv_dependent true ce
+let clenv_missing ce = clenv_dependent_gen true ce
+let clenv_dependent ce = clenv_dependent_gen false ce
 
 (******************************************************************)
 
@@ -372,7 +406,7 @@ type arg_bindings = constr explicit_bindings
 let clenv_independent clenv =
   let mvs = collect_metas (clenv_value clenv) in
   let ctyp_mvs = (mk_freelisted (clenv_type clenv)).freemetas in
-  let deps = dependent_metas clenv mvs ctyp_mvs in
+  let deps = Metaset.union (dependent_in_type_of_metas clenv mvs) ctyp_mvs in
   List.filter (fun mv -> not (Metaset.mem mv deps)) mvs
 
 let check_bindings bl =
@@ -447,17 +481,28 @@ let clenv_constrain_last_binding c clenv =
   let k = try list_last all_mvs with Failure _ -> raise NoSuchBinding in
   clenv_assign_binding clenv k c
 
+let error_not_right_number_missing_arguments n =
+  errorlabstrm ""
+    (strbrk "Not the right number of missing arguments (expected " ++
+      int n ++ str ").")
+
 let clenv_constrain_dep_args hyps_only bl clenv =
   if bl = [] then
     clenv
   else
-    let occlist = clenv_dependent hyps_only clenv in
+    let occlist = clenv_dependent_gen hyps_only clenv in
     if List.length occlist = List.length bl then
       List.fold_left2 clenv_assign_binding clenv occlist bl
     else
-      errorlabstrm ""
-	(strbrk "Not the right number of missing arguments (expected " ++
-	 int (List.length occlist) ++ str ").")
+      if hyps_only then
+	(* Tolerance for compatibility <= 8.3 *)
+	let occlist' = clenv_dependent_gen hyps_only ~iter:false clenv in
+	if List.length occlist' = List.length bl then
+	  List.fold_left2 clenv_assign_binding clenv occlist' bl
+	else
+	  error_not_right_number_missing_arguments (List.length occlist)
+      else
+	error_not_right_number_missing_arguments (List.length occlist)
 
 (****************************************************************)
 (* Clausal environment for an application *)

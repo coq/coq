@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -84,13 +84,6 @@ let build_lambda toabstract stk (m : constr) =
 	  buildrec (lift (-1) m) (n+1) tl
   in
   buildrec m 1 stk
-
-let memb_metavars m n =
-  match (m,n) with
-    | (None, _)     -> true
-    | (Some mvs, n) -> List.mem n mvs
-
-let eq_context ctxt1 ctxt2 = array_for_all2 eq_constr ctxt1 ctxt2
 
 let same_case_structure (_,cs1,ind,_) ci2 br1 br2 =
   match ind with

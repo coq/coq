@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -339,19 +339,29 @@ and pp_one_pat env i (r,ids,t) =
     expr
 
 and pp_pat env (info,factors) pv =
+  let factor_br, factor_l = try match factors with
+    | BranchFun (i::_ as l) -> check_function_branch pv.(i), l
+    | BranchCst (i::_ as l) -> ast_pop (check_constant_branch pv.(i)), l
+    | _ -> MLdummy, []
+  with Impossible -> MLdummy, []
+  in
+  let par = expr_needs_par factor_br in
+  let last = Array.length pv - 1 in
   prvecti
-    (fun i x -> if List.mem i factors then mt () else
+    (fun i x -> if List.mem i factor_l then mt () else
        let s1,s2 = pp_one_pat env info x in
        hov 2 (s1 ++ str " ->" ++ spc () ++ s2) ++
-       (if factors = [] && i = Array.length pv-1 then mt ()
-	else fnl () ++ str "  | ")) pv
+       if i = last && factor_l = [] then mt () else
+       fnl () ++ str "  | ") pv
   ++
-  match factors with
-     | [] -> mt ()
-     | i::_ ->
-	 let (_,ids,t) = pv.(i) in
-	 let t = ast_lift (-List.length ids) t in
-	 hov 2 (str "_ ->" ++ spc () ++ pp_expr (expr_needs_par t) env [] t)
+  if factor_l = [] then mt () else match factors with
+    | BranchFun _ ->
+	let ids, env' = push_vars [anonymous_name] env in
+	hov 2 (pr_id (List.hd ids) ++ str " ->" ++ spc () ++
+	       pp_expr par env' [] factor_br)
+    | BranchCst _ ->
+	hov 2 (str "_ ->" ++ spc () ++ pp_expr par env [] factor_br)
+    | BranchNone -> mt ()
 
 and pp_function env t =
   let bl,t' = collect_lams t in
@@ -607,8 +617,8 @@ let rec pp_specif = function
 	 pp_alias_spec ren s
        with Not_found -> pp_spec s)
   | (l,Smodule mt) ->
-      let def = pp_module_type (Some l) mt in
-      let def' = pp_module_type (Some l) mt in
+      let def = pp_module_type [] mt in
+      let def' = pp_module_type [] mt in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1 (str "module " ++ name ++ str " : " ++ fnl () ++ def) ++
       (try
@@ -616,7 +626,7 @@ let rec pp_specif = function
 	 fnl () ++ hov 1 (str ("module "^ren^" : ") ++ fnl () ++ def')
        with Not_found -> Pp.mt ())
   | (l,Smodtype mt) ->
-      let def = pp_module_type None mt in
+      let def = pp_module_type [] mt in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1 (str "module type " ++ name ++ str " = " ++ fnl () ++ def) ++
       (try
@@ -624,20 +634,16 @@ let rec pp_specif = function
 	 fnl () ++ str ("module type "^ren^" = ") ++ name
        with Not_found -> Pp.mt ())
 
-and pp_module_type ol = function
+and pp_module_type params = function
   | MTident kn ->
       pp_modname kn
   | MTfunsig (mbid, mt, mt') ->
-      let typ = pp_module_type None mt in
+      let typ = pp_module_type [] mt in
       let name = pp_modname (MPbound mbid) in
-      let def = pp_module_type None mt' in
+      let def = pp_module_type (MPbound mbid :: params) mt' in
       str "functor (" ++ name ++ str ":" ++ typ ++ str ") ->" ++ fnl () ++ def
-  | MTsig (mp1, sign) ->
-      let tvm = top_visible_mp () in
-      let mp = match ol with None -> mp1 | Some l -> MPdot (tvm,l) in
-      (* References in [sign] are in short form (relative to [msid]).
-	 In push_visible, [msid-->mp] is added to the current subst. *)
-      push_visible mp (Some mp1);
+  | MTsig (mp, sign) ->
+      push_visible mp params;
       let l = map_succeed pp_specif sign in
       pop_visible ();
       str "sig " ++ fnl () ++
@@ -650,26 +656,20 @@ and pp_module_type ol = function
       let mp_w =
 	List.fold_left (fun mp l -> MPdot(mp,label_of_id l)) mp_mt idl'
       in
-      let r = ConstRef (make_con mp_w empty_dirpath (label_of_id l))
-      in
-      push_visible mp_mt None;
-      let s =
-	pp_module_type None mt ++ str " with type " ++
-	  pp_global Type r ++ ids
-      in
+      let r = ConstRef (make_con mp_w empty_dirpath (label_of_id l)) in
+      push_visible mp_mt [];
+      let pp_w = str " with type " ++ ids ++ pp_global Type r in
       pop_visible();
-      s ++ str "=" ++ spc () ++ pp_type false vl typ
+      pp_module_type [] mt ++ pp_w ++ str " = " ++ pp_type false vl typ
   | MTwith(mt,ML_With_module(idl,mp)) ->
       let mp_mt = msid_of_mt mt in
       let mp_w =
 	List.fold_left (fun mp id -> MPdot(mp,label_of_id id)) mp_mt idl
       in
-      push_visible mp_mt None;
-      let s =
-	pp_module_type None mt ++ str " with module " ++ pp_modname mp_w
-      in
+      push_visible mp_mt [];
+      let pp_w = str " with module " ++ pp_modname mp_w in
       pop_visible ();
-      s ++ str " = " ++ pp_modname mp
+      pp_module_type [] mt ++ pp_w ++ str " = " ++ pp_modname mp
 
 let is_short = function MEident _ | MEapply _ -> true | _ -> false
 
@@ -685,10 +685,10 @@ let rec pp_structure_elem = function
       let typ =
         (* virtual printing of the type, in order to have a correct mli later*)
 	if Common.get_phase () = Pre then
-	  str ": " ++ pp_module_type (Some l) m.ml_mod_type
+	  str ": " ++ pp_module_type [] m.ml_mod_type
 	else mt ()
       in
-      let def = pp_module_expr (Some l) m.ml_mod_expr in
+      let def = pp_module_expr [] m.ml_mod_expr in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1
 	(str "module " ++ name ++ typ ++ str " = " ++
@@ -698,7 +698,7 @@ let rec pp_structure_elem = function
 	 fnl () ++ str ("module "^ren^" = ") ++ name
        with Not_found -> mt ())
   | (l,SEmodtype m) ->
-      let def = pp_module_type None m in
+      let def = pp_module_type [] m in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1 (str "module type " ++ name ++ str " = " ++ fnl () ++ def) ++
       (try
@@ -706,21 +706,17 @@ let rec pp_structure_elem = function
          fnl () ++ str ("module type "^ren^" = ") ++ name
        with Not_found -> mt ())
 
-and pp_module_expr ol = function
-  | MEident mp' -> pp_modname mp'
+and pp_module_expr params = function
+  | MEident mp -> pp_modname mp
+  | MEapply (me, me') ->
+      pp_module_expr [] me ++ str "(" ++ pp_module_expr [] me' ++ str ")"
   | MEfunctor (mbid, mt, me) ->
       let name = pp_modname (MPbound mbid) in
-      let typ = pp_module_type None mt in
-      let def = pp_module_expr None me in
+      let typ = pp_module_type [] mt in
+      let def = pp_module_expr (MPbound mbid :: params) me in
       str "functor (" ++ name ++ str ":" ++ typ ++ str ") ->" ++ fnl () ++ def
-  | MEapply (me, me') ->
-      pp_module_expr None me ++ str "(" ++ pp_module_expr None me' ++ str ")"
   | MEstruct (mp, sel) ->
-      let tvm = top_visible_mp () in
-      let mp = match ol with None -> mp | Some l -> MPdot (tvm,l) in
-      (* No need to update the subst with [Some msid] below : names are
-	 already in long form (see [subst_structure] in [Extract_env]). *)
-      push_visible mp None;
+      push_visible mp params;
       let l = map_succeed pp_structure_elem sel in
       pop_visible ();
       str "struct " ++ fnl () ++
@@ -731,7 +727,7 @@ let do_struct f s =
   let pp s = try f s ++ fnl2 () with Failure "empty phrase" -> mt ()
   in
   let ppl (mp,sel) =
-    push_visible mp None;
+    push_visible mp [];
     let p = prlist_strict pp sel in
     (* for monolithic extraction, we try to simulate the unavailability
        of [MPfile] in names by artificially nesting these [MPfile] *)
@@ -750,7 +746,6 @@ let pp_decl d = try pp_decl d with Failure "empty phrase" -> mt ()
 let ocaml_descr = {
   keywords = keywords;
   file_suffix = ".ml";
-  capital_file = false;
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = Some ".mli";

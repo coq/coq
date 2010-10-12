@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -262,7 +262,7 @@ let classify_module (_,substobjs) =
   Substitute (None,substobjs)
 
 let (in_module,out_module) =
-  declare_object {(default_object "MODULE") with
+  declare_object_full {(default_object "MODULE") with
     cache_function = cache_module;
     load_function = load_module;
     open_function = open_module;
@@ -289,7 +289,7 @@ let open_keep i ((sp,kn),seg) =
   let dirpath,mp = dir_of_sp sp, mp_of_kn kn in
     open_objects i (dirpath,(mp,empty_dirpath)) seg
 
-let (in_modkeep,_) =
+let in_modkeep =
   declare_object {(default_object "MODULE KEEP OBJECTS") with
     cache_function = cache_keep;
     load_function = load_keep;
@@ -376,7 +376,7 @@ let classify_modtype (_,substobjs,_) =
   Substitute (None,substobjs,[])
 
 
-let (in_modtype,_) =
+let in_modtype =
     declare_object {(default_object "MODULE TYPE") with
       cache_function = cache_modtype;
       open_function = open_modtype;
@@ -649,7 +649,7 @@ let subst_import (subst,(export,mp as obj)) =
     if mp'==mp then obj else
       (export,mp')
 
-let (in_import,_) =
+let in_import =
   declare_object {(default_object "IMPORT MODULE") with
 		    cache_function = cache_import;
 		    open_function = (fun i o -> if i=1 then cache_import o);
@@ -840,7 +840,7 @@ let classify_include ((me,is_mod),substobjs) =
   Substitute ((me,is_mod),substobjs)
 
 let (in_include,out_include) =
-  declare_object {(default_object "INCLUDE") with
+  declare_object_full {(default_object "INCLUDE") with
     cache_function = cache_include;
     load_function = load_include;
     open_function = open_include;

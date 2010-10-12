@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -108,13 +108,6 @@ let rec shift_value n = function
 
 let shift_value n v =
   if n = 0 then v else shift_value n v
-
-let rec shift_stack n = function
-    TOP -> TOP
-  | APP(v,stk) -> APP(Array.map (shift_value n) v, shift_stack n stk)
-  | CASE(c,b,i,s,stk) -> CASE(c,b,i,subs_shft(n,s), shift_stack n stk)
-let shift_stack n stk =
-  if n = 0 then stk else shift_stack n stk
 
 (* Contracts a fixpoint: given a fixpoint and a bindings,
  * returns the corresponding fixpoint body, and the bindings in which

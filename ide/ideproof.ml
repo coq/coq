@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -71,7 +71,7 @@ let mode_tactic sel_cb (proof:GText.view) = function
       insert_goal cur_goal cur_goal_menu 1 goals_cnt;
       Util.list_fold_left_i (fun i _ (_,(g,_)) -> insert_goal g [] i goals_cnt) 2 () rem_goals;
       ignore(proof#buffer#place_cursor  
-        ((proof#buffer#get_iter_at_mark `INSERT)#backward_lines (3*goals_cnt - 2)));
+        ~where:((proof#buffer#get_iter_at_mark `INSERT)#backward_lines (3*goals_cnt - 2)));
       ignore(proof#scroll_to_mark `INSERT)
 
 

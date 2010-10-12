@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -111,17 +111,18 @@ let subst_scope (subst,sc) = sc
 
 open Libobject
 
-let discharge_scope (local,_,_ as o) =
+let discharge_scope (_,(local,_,_ as o)) =
   if local then None else Some o
 
 let classify_scope (local,_,_ as o) =
   if local then Dispose else Substitute o
 
-let (inScope,outScope) =
+let inScope =
   declare_object {(default_object "SCOPE") with
       cache_function = cache_scope;
       open_function = open_scope;
       subst_function = subst_scope;
+      discharge_function = discharge_scope;
       classify_function = classify_scope }
 
 let open_close_scope (local,opening,sc) =
@@ -207,7 +208,8 @@ let cases_pattern_key = function
 
 let aconstr_key = function (* Rem: AApp(ARef ref,[]) stands for @ref *)
   | AApp (ARef ref,args) -> RefKey(make_gr ref), Some (List.length args)
-  | AList (_,_,AApp (ARef ref,args),_,_) -> RefKey (make_gr ref), Some (List.length args)
+  | AList (_,_,AApp (ARef ref,args),_,_)
+  | ABinderList (_,_,AApp (ARef ref,args),_) -> RefKey (make_gr ref), Some (List.length args)
   | ARef ref -> RefKey(make_gr ref), None
   | _ -> Oth, None
 
@@ -498,7 +500,7 @@ let rebuild_arguments_scope (req,r,l) =
 	let l1,_ = list_chop (List.length l' - List.length l) l' in
 	(req,r,l1@l)
 
-let (inArgumentsScope,outArgumentsScope) =
+let inArgumentsScope =
   declare_object {(default_object "ARGUMENTS-SCOPE") with
       cache_function = cache_arguments_scope;
       load_function = load_arguments_scope;
@@ -620,9 +622,6 @@ let factorize_entries = function
 	    if a = a' then (a',c::l,rest) else (a,[c],(a',l)::rest))
 	  (ntn,[c],[]) l in
       (ntn,l_of_ntn)::rest
-
-let is_ident s = (* Poor analysis *)
-  String.length s <> 0 & is_letter s.[0]
 
 let browse_notation strict ntn map =
   let find =

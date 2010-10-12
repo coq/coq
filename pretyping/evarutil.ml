@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -59,8 +59,15 @@ let nf_evar_info evc info =
       | Evar_empty -> Evar_empty
       | Evar_defined c -> Evar_defined (Reductionops.nf_evar evc c) }
 
-let nf_evars evm = Evd.fold (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
-		     evm Evd.empty
+let nf_evars evm =
+  Evd.fold
+    (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
+    evm Evd.empty
+
+let nf_evars_undefined evm =
+  Evd.fold_undefined
+    (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
+    evm Evd.empty
 
 let nf_evar_map evd = Evd.evars_reset_evd (nf_evars evd) evd
 
@@ -86,7 +93,7 @@ let collect_evars emap c =
   list_uniquize (collrec [] c)
 
 let push_dependent_evars sigma emap =
-  Evd.fold (fun ev {evar_concl = ccl} (sigma',emap') ->
+  Evd.fold_undefined (fun ev {evar_concl = ccl} (sigma',emap') ->
     List.fold_left
       (fun (sigma',emap') ev ->
 	(Evd.add sigma' ev (Evd.find emap' ev),Evd.remove emap' ev))
@@ -111,7 +118,7 @@ let push_duplicated_evars sigma emap c =
 (* replaces a mapping of existentials into a mapping of metas.
    Problem if an evar appears in the type of another one (pops anomaly) *)
 let evars_to_metas sigma (emap, c) =
-  let emap = nf_evars emap in
+  let emap = nf_evars_undefined emap in
   let sigma',emap' = push_dependent_evars sigma emap in
   let sigma',emap' = push_duplicated_evars sigma' emap' c in
   let change_exist evar =
@@ -1394,32 +1401,7 @@ let check_evars env initial_sigma sigma c =
       | _ -> iter_constr proc_rec c
   in proc_rec c
 
-(* Substitutes undefined evars by evars of same context up to renaming *)
-
-let subst_evar_evar subst c =
-  let rec aux c = match kind_of_term c with
-  | Evar (evk,args) ->
-      let evk' = try ExistentialMap.find evk subst with Not_found -> evk in
-      mkEvar (evk',Array.map aux args)
-  | _ -> map_constr aux c
-  in aux c
-
-let subst_undefined_evar_info_evar subst evi =
-  { evi with
-    evar_hyps = map_named_val (subst_evar_evar subst) evi.evar_hyps;
-    evar_concl = subst_evar_evar subst evi.evar_concl }
-
 open Rawterm
-
-let subst_evar_evar_in_constr_with_bindings subst (c,bl) =
-  (subst_evar_evar subst c,
-   match bl with
-   | ImplicitBindings largs ->
-       ImplicitBindings (List.map (subst_evar_evar subst) largs)
-   | ExplicitBindings lbind ->
-       ExplicitBindings (List.map (on_pi3 (subst_evar_evar subst)) lbind)
-   | NoBindings ->
-       NoBindings)
 
 (* Operations on value/type constraints *)
 

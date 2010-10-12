@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -281,6 +281,19 @@ let rec compute_metamap env sigma c = match kind_of_term c with
  *  Réalise le 3. ci-dessus
  *)
 
+let ensure_products n =
+  let p = ref 0 in
+  let rec aux n gl =
+    if n = 0 then tclFAIL 0 (mt()) gl
+    else
+      tclTHEN
+        (tclORELSE intro (fun gl -> incr p; introf gl))
+        (aux (n-1)) gl in
+  tclORELSE
+    (aux n)
+    (* Now we know how many red are needed *)
+    (fun gl -> tclDO !p red_in_concl gl)
+
 let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
   let c = substl subst c in
   match (kind_of_term c,sgp) with
@@ -359,7 +372,9 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 	let fixes = array_map3 (fun f n c -> (out_name f,succ n,c)) fi ni ai in
 	let firsts,lasts = list_chop j (Array.to_list fixes) in
 	tclTHENS
-	  (mutual_fix (out_name fi.(j)) (succ ni.(j)) (firsts@List.tl lasts) j)
+	  (tclTHEN
+            (ensure_products (succ ni.(j)))
+            (mutual_fix (out_name fi.(j)) (succ ni.(j)) (firsts@List.tl lasts) j))
 	  (List.map (function
 		       | None -> tclIDTAC
 		       | Some th -> tcc_aux subst th) sgp)

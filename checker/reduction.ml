@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -78,11 +78,11 @@ let pure_stack lfts stk =
 (*                   Reduction Functions                                    *)
 (****************************************************************************)
 
-let whd_betaiotazeta env x =
+let whd_betaiotazeta x =
   match x with
     | (Sort _|Var _|Meta _|Evar _|Const _|Ind _|Construct _|
        Prod _|Lambda _|Fix _|CoFix _) -> x
-    | _ -> whd_val (create_clos_infos betaiotazeta env) (inject x)
+    | _ -> whd_val (create_clos_infos betaiotazeta empty_env) (inject x)
 
 let whd_betadeltaiota env t =
   match t with
@@ -104,15 +104,6 @@ let beta_appvect c v =
         Lambda(_,_,c), arg::stacktl -> stacklam (arg::env) c stacktl
       | _ -> applist (substl env t, stack) in
   stacklam [] c (Array.to_list v)
-
-let betazeta_appvect n c v =
-  let rec stacklam n env t stack =
-    if n = 0 then applist (substl env t, stack) else
-    match t, stack with
-        Lambda(_,_,c), arg::stacktl -> stacklam (n-1) (arg::env) c stacktl
-      | LetIn(_,b,_,c), _ -> stacklam (n-1) (b::env) c stack
-      | _ -> anomaly "Not enough lambda/let's" in
-  stacklam n [] c (Array.to_list v)
 
 (********************************************************************)
 (*                         Conversion                               *)
@@ -152,7 +143,8 @@ type conv_pb =
 
 let sort_cmp univ pb s0 s1 =
   match (s0,s1) with
-    | (Prop c1, Prop c2) -> if c1 = Pos & c2 = Null then raise NotConvertible
+    | (Prop c1, Prop c2) when pb = CUMUL -> if c1 = Pos & c2 = Null then raise NotConvertible
+    | (Prop c1, Prop c2) -> if c1 <> c2 then raise NotConvertible
     | (Prop c1, Type u)  ->
         (match pb with
             CUMUL -> ()
@@ -370,31 +362,12 @@ let fconv cv_pb env t1 t2 =
   if eq_constr t1 t2 then ()
   else clos_fconv cv_pb env t1 t2
 
-let conv_cmp = fconv
 let conv = fconv CONV
 let conv_leq = fconv CUMUL
 
-let conv_leq_vecti env v1 v2 =
-  array_fold_left2_i
-    (fun i _ t1 t2 ->
-      (try conv_leq env t1 t2
-      with (NotConvertible|Invalid_argument _) ->
-        raise (NotConvertibleVect i));
-      ())
-    ()
-    v1
-    v2
+(* option for conversion : no compilation for the checker *)
 
-(* option for conversion *)
-
-let vm_conv = ref fconv
-let set_vm_conv f = vm_conv := f
-let vm_conv cv_pb env t1 t2 =
-  try
-    !vm_conv cv_pb env t1 t2
-  with Not_found | Invalid_argument _ ->
-      (* If compilation fails, fall-back to closure conversion *)
-      clos_fconv cv_pb env t1 t2
+let vm_conv = fconv
 
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
@@ -448,10 +421,4 @@ let dest_arity env c =
   match c with
     | Sort s -> l,s
     | _ -> error "not an arity"
-
-let is_arity env c =
-  try
-    let _ = dest_arity env c in
-    true
-  with UserError _ -> false
 

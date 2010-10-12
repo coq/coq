@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -118,7 +118,7 @@ let rec check_bound_mp = function
   | _ -> false
 
 let rec string_of_mp = function
-  | MPfile sl -> "MPfile (" ^ string_of_dirpath sl ^ ")"
+  | MPfile sl -> string_of_dirpath sl
   | MPbound uid -> string_of_uid uid
  (* | MPapp (mp1,mp2) -> 
       "("^string_of_mp mp ^ " " ^ 

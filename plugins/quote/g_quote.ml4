@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -13,7 +13,7 @@ open Tacexpr
 open Quote
 
 let make_cont k x =
-  let k = TacDynamic(dummy_loc, Tacinterp.tactic_in (fun _ -> fst k)) in
+  let k = TacDynamic(dummy_loc, Tacinterp.tactic_in (fun _ -> k)) in
   let x = TacDynamic(dummy_loc, Pretyping.constr_in x) in
   let tac = <:tactic<let cont := $k in cont $x>> in
   Tacinterp.interp tac

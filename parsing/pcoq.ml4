@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -264,13 +264,6 @@ let get_univ s =
 
 let get_entry (u, utab) s = Hashtbl.find utab s
 
-let get_entry_type (u, utab) s =
-  try
-    type_of_typed_entry (get_entry (u, utab) s)
-  with Not_found ->
-    errorlabstrm "Pcoq.get_entry"
-      (str "Unknown grammar entry " ++ str u ++ str ":" ++ str s ++ str ".")
-
 let new_entry etyp (u, utab) s =
   if !trace then (Printf.eprintf "[Creating entry %s:%s]\n" u s; flush stderr);
   let ename = u ^ ":" ^ s in
@@ -340,7 +333,6 @@ module Prim =
 module Constr =
   struct
     let gec_constr = make_gen_entry uconstr rawwit_constr
-    let gec_constr_list = make_gen_entry uconstr (wit_list0 rawwit_constr)
 
     (* Entries that can be refered via the string -> Gram.entry table *)
     let constr = gec_constr "constr"
@@ -354,10 +346,11 @@ module Constr =
     let pattern = Gram.entry_create "constr:pattern"
     let constr_pattern = gec_constr "constr_pattern"
     let lconstr_pattern = gec_constr "lconstr_pattern"
+    let closed_binder = Gram.entry_create "constr:closed_binder"
     let binder = Gram.entry_create "constr:binder"
-    let binder_let = Gram.entry_create "constr:binder_let"
-    let binders_let = Gram.entry_create "constr:binders_let"
-    let binders_let_fixannot = Gram.entry_create "constr:binders_let_fixannot"
+    let binders = Gram.entry_create "constr:binders"
+    let open_binders = Gram.entry_create "constr:open_binders"
+    let binders_fixannot = Gram.entry_create "constr:binders_fixannot"
     let typeclass_constraint = Gram.entry_create "constr:typeclass_constraint"
     let record_declaration = Gram.entry_create "constr:record_declaration"
     let appl_arg = Gram.entry_create "constr:appl_arg"
@@ -603,10 +596,15 @@ let compute_entry allow_create adjust forpat = function
        else weaken_entry Constr.operconstr),
       adjust (n,q), false
   | ETName -> weaken_entry Prim.name, None, false
+  | ETBinder true -> anomaly "Should occur only as part of BinderList"
+  | ETBinder false -> weaken_entry Constr.binder, None, false
+  | ETBinderList (true,tkl) ->
+      assert (tkl=[]); weaken_entry Constr.open_binders, None, false
+  | ETBinderList (false,_) -> anomaly "List of entries cannot be registered."
   | ETBigint -> weaken_entry Prim.bigint, None, false
   | ETReference -> weaken_entry Constr.global, None, false
   | ETPattern -> weaken_entry Constr.pattern, None, false
-  | ETConstrList _ -> error "List of entries cannot be registered."
+  | ETConstrList _ -> anomaly "List of entries cannot be registered."
   | ETOther (u,n) ->
       let u = get_univ u in
       let e =
@@ -646,6 +644,12 @@ let is_binder_level from e =
       ETConstr(NumLevel 200,(BorderProd(Right,_)|InternalProd)) -> true
     | _ -> false
 
+let make_sep_rules tkl =
+  Gram.srules'
+    [List.map gram_token_of_token tkl,
+     List.fold_right (fun _ v -> Gram.action (fun _ -> v)) tkl
+       (Gram.action (fun loc -> ()))]
+
 let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
   if is_binder_level from typ then
     if forpat then
@@ -661,10 +665,15 @@ let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
     | ETConstrList (typ',tkl) ->
         Slist1sep
           (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'),
-           Gram.srules'
-             [List.map gram_token_of_token tkl,
-              List.fold_right (fun _ v -> Gram.action (fun _ -> v)) tkl
-                (Gram.action (fun loc -> ()))])
+	   make_sep_rules tkl)
+    | ETBinderList (false,[]) ->
+        Slist1
+	  (symbol_of_constr_prod_entry_key assoc from forpat (ETBinder false))
+    | ETBinderList (false,tkl) ->
+        Slist1sep
+	  (symbol_of_constr_prod_entry_key assoc from forpat (ETBinder false),
+	   make_sep_rules tkl)
+
     | _ ->
     match interp_constr_prod_entry_key assoc from forpat typ with
       | (eobj,None,_) -> Snterm (Gram.Entry.obj eobj)

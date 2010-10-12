@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -51,7 +51,7 @@ let discharge_scheme (_,(kind,l)) =
   Some (kind,Array.map (fun (ind,const) ->
     (Lib.discharge_inductive ind,Lib.discharge_con const)) l)
 
-let (inScheme,_) =
+let inScheme =
   declare_object {(default_object "SCHEME") with
                     cache_function = cache_scheme;
                     load_function = (fun _ -> cache_scheme);
@@ -110,11 +110,7 @@ let declare_scheme kind indcl =
   Lib.add_anonymous_leaf (inScheme (kind,indcl))
 
 let define internal id c =
-  (* TODO: specify even more by distinguish between KernelVerbose and
-   * UserVerbose *)
-  let fd = match internal with 
-    | KernelSilent -> declare_internal_constant
-    | _ -> declare_constant in
+  let fd = declare_constant ~internal in
   let kn = fd id
     (DefinitionEntry
       { const_entry_body = c;
@@ -161,7 +157,6 @@ let define_mutual_scheme kind internal names mind =
   | s,MutualSchemeFunction f ->
       define_mutual_scheme_base kind s f internal names mind
 
-(* TODO: change KernelSilent here to the right behaviour *)
 let find_scheme kind (mind,i as ind) =
   try Stringmap.find kind (Indmap.find ind !scheme_map)
   with Not_found ->

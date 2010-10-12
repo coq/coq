@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -32,8 +32,6 @@ val cases_pattern_loc : cases_pattern -> loc
 type patvar = identifier
 
 type rawsort = RProp of Term.contents | RType of Univ.universe option
-
-type binder_kind = BProd | BLambda | BLetIn
 
 type binding_kind = Lib.binding_kind = Explicit | Implicit
 
@@ -107,6 +105,8 @@ val map_rawconstr_with_binders_loc : loc ->
   ('a -> rawconstr -> rawconstr) -> 'a -> rawconstr -> rawconstr
 *)
 
+val fold_rawconstr : ('a -> rawconstr -> 'a) -> 'a -> rawconstr -> 'a
+val iter_rawconstr : (rawconstr -> unit) -> rawconstr -> unit
 val occur_rawconstr : identifier -> rawconstr -> bool
 val free_rawvars : rawconstr -> identifier list
 val loc_of_rawconstr : rawconstr -> loc

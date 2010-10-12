@@ -216,19 +216,18 @@ See `coq-syntax-db' for DB structure."
   "Not documented."
   (nth 3 l)) ; fourth argument is nil --> state preserving command
 
-
-;;A new face for tactics which fail when they don't kill the current goal
-(defface coq-solve-tactics-face 
-  (proof-face-specs
-   (:foreground "red" t) ; pour les fonds clairs
-   (:foreground "red"  t) ; pour les fond foncés
-   ()) ; pour le noir et blanc
-  "Face for names of closing tactics in proof scripts."
-  :group 'proof-faces)
-
 (defconst coq-solve-tactics-face 'coq-solve-tactics-face
   "Expression that evaluates to a face.
 Required so that 'proof-solve-tactics-face is a proper facename")
+
+
+;;A new face for tactics which fail when they don't kill the current goal
+(defface coq-solve-tactics-face
+  '((t (:background "red")))
+  "Face for names of closing tactics in proof scripts."
+  :group 'proof-faces)
+
+
 
 
 

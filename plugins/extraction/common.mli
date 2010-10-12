@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -14,7 +14,6 @@ open Pp
 
 val fnl2 : unit -> std_ppcmds
 val space_if : bool -> std_ppcmds
-val sec_space_if : bool -> std_ppcmds
 
 val pp_par : bool -> std_ppcmds -> std_ppcmds
 val pp_apply : std_ppcmds -> bool -> std_ppcmds list -> std_ppcmds
@@ -43,7 +42,9 @@ val pp_global : kind -> global_reference -> string
 val pp_module : module_path -> string
 
 val top_visible_mp : unit -> module_path
-val push_visible : module_path -> module_path option -> unit
+(* In [push_visible], the [module_path list] corresponds to
+   module parameters, the innermost one coming first in the list *)
+val push_visible : module_path -> module_path list -> unit
 val pop_visible : unit -> unit
 
 val check_duplicate : module_path -> label -> string

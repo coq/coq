@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -75,11 +75,11 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
  	  (Pfedit.get_all_proof_names ())
   in
   let evm, c, typ, imps =
-    Subtac_pretyping.subtac_process env isevars id [] (Topconstr.prod_constr_expr t bl) None
+    Subtac_pretyping.subtac_process ~is_type:true env isevars id [] (Topconstr.prod_constr_expr t bl) None
   in
   let c = solve_tccs_in_type env id isevars evm c typ in
     Lemmas.start_proof id kind c (fun loc gr ->
-      Impargs.declare_manual_implicits (loc = Local) gr ~enriching:true imps;
+      Impargs.declare_manual_implicits (loc = Local) gr ~enriching:true [imps];
       hook loc gr)
 
 let print_subgoals () = Flags.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
@@ -137,9 +137,6 @@ let subtac (loc, command) =
       Dumpglob.dump_definition lid false "def";
       (match expr with
       | ProveBody (bl, t) ->
-	  if Lib.is_modtype () then
-	    errorlabstrm "Subtac_command.StartProof"
-	      (str "Proof editing mode not supported in module types");
 	  start_proof_and_print env isevars (Some lid) (Global, DefinitionBody Definition) (bl,t)
 	    (fun _ _ -> ())
       | DefineBody (bl, _, c, tycon) ->
@@ -217,33 +214,15 @@ let subtac (loc, command) =
 	    ++ x ++ spc () ++ str "and" ++ spc () ++ y
       in msg_warning cmds
 
-  | Cases.PatternMatchingError (env, exn) as e ->
-      debug 2 (Himsg.explain_pattern_matching_error env exn);
-      raise e
+  | Cases.PatternMatchingError (env, exn) as e -> raise e
 
-  | Type_errors.TypeError (env, exn) as e ->
-      debug 2 (Himsg.explain_type_error env exn);
-      raise e
+  | Type_errors.TypeError (env, exn) as e -> raise e
 
-  | Pretype_errors.PretypeError (env, exn) as e ->
-      debug 2 (Himsg.explain_pretype_error env exn);
-      raise e
+  | Pretype_errors.PretypeError (env, exn) as e -> raise e
 
   | (Loc.Exc_located (loc, Proof_type.LtacLocated (_,e')) |
-     Loc.Exc_located (loc, e') as e) ->
-      debug 2 (str "Parsing exception: ");
-      (match e' with
-      | Type_errors.TypeError (env, exn) ->
-	  debug 2 (Himsg.explain_type_error env exn);
-	  raise e
+     Loc.Exc_located (loc, e') as e) -> raise e
 
-      | Pretype_errors.PretypeError (env, exn) ->
-	  debug 2 (Himsg.explain_pretype_error env exn);
-	  raise e
-
-      | e'' -> msg_warning (str "Unexpected exception: " ++ Cerrors.explain_exn e'');
-	  raise e)
-
-  | e ->
-      msg_warning (str "Uncaught exception: " ++ Cerrors.explain_exn e);
+  | e -> 
+      (*       msg_warning (str "Uncaught exception: " ++ Cerrors.explain_exn e); *)
       raise e

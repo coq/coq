@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -16,11 +16,11 @@ exception Forbidden
 let status = GMisc.statusbar ()
 
 let push_info,pop_info =
-  let status_context = status#new_context "Messages" in
+  let status_context = status#new_context ~name:"Messages" in
     (fun s -> ignore (status_context#push s)),status_context#pop
 
 let flash_info =
-  let flash_context = status#new_context "Flash" in
+  let flash_context = status#new_context ~name:"Flash" in
     (fun ?(delay=5000) s -> flash_context#flash ~delay s)
 
 
@@ -96,7 +96,7 @@ let try_convert s =
   try
     do_convert s
   with _ ->
-    "(* Fatal error: wrong encoding in input.
+    "(* Fatal error: wrong encoding in input. \
 Please choose a correct encoding in the preference panel.*)";;
 
 

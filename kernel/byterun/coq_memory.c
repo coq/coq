@@ -50,12 +50,6 @@ value coq_static_alloc(value size) /* ML */
   return (value) coq_stat_alloc((asize_t) Long_val(size));
 }
 
-value coq_static_free(value blk)  /* ML */
-{
-  coq_stat_free((void *) blk);
-  return Val_unit;
-}
-
 value accumulate_code(value unit) /* ML */
 {
   return (value) accumulate;

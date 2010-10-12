@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -24,7 +24,6 @@ open Cbytegen
 
 
 external tcode_of_code : emitcodes -> int -> tcode = "coq_tcode_of_code"
-external free_tcode : tcode -> unit = "coq_static_free"
 external eval_tcode : tcode -> values array -> values = "coq_eval_tcode"
 
 (*******************)
@@ -187,7 +186,7 @@ and slot_for_fv env fv =
 	    let (_, b, _) = lookup_rel i env.env_rel_context in
 	    let (v, d) =
 	      match b with
-		| None -> (val_of_rel i, Idset.empty)
+		| None -> (val_of_rel (nb_rel env - i), Idset.empty)
 		| Some c -> let renv =  env_of_rel i env in
 			      (val_of_constr renv c, Environ.global_vars_set (Environ.env_of_pre_env renv) c)
 	    in

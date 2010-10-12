@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -298,17 +298,6 @@ let reference_eval sigma env = function
 	 v
        end)
   | ref -> compute_consteval sigma env ref
-
-let rev_firstn_liftn fn ln =
-  let rec rfprec p res l =
-    if p = 0 then
-      res
-    else
-      match l with
-        | [] -> invalid_arg "Reduction.rev_firstn_liftn"
-        | a::rest -> rfprec (p-1) ((lift ln a)::res) rest
-  in
-  rfprec fn []
 
 (* If f is bound to EliminationFix (n',infos), then n' is the minimal
    number of args for starting the reduction and infos is

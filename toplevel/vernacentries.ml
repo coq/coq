@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -20,7 +20,6 @@ open Tacmach
 open Constrintern
 open Prettyp
 open Printer
-open Tactic_printer
 open Tacinterp
 open Command
 open Goptions
@@ -151,7 +150,7 @@ let show_match id =
 	    | [] -> assert false
 	    | [x] -> "| "^ x  ^ " => \n" ^ acc
 	    | x::l ->
-		"| (" ^ List.fold_left (fun acc s ->  acc ^ " " ^ s) x l ^ ")"
+		"| " ^ List.fold_left (fun acc s ->  acc ^ " " ^ s) x l
 		^ " => \n" ^ acc)
 	"end" patterns in
     msg (str ("match # with\n" ^ cases))
@@ -174,7 +173,9 @@ let print_loadpath dir =
 let print_modules () =
   let opened = Library.opened_libraries ()
   and loaded = Library.loaded_libraries () in
-  let loaded_opened = list_intersect loaded opened
+  (* we intersect over opened to preserve the order of opened since *)
+  (* non-commutative operations (e.g. visibility) are done at import time *)
+  let loaded_opened = list_intersect opened loaded
   and only_loaded = list_subtract loaded opened in
   str"Loaded and imported library files: " ++
   pr_vertical_list pr_dirpath loaded_opened ++ fnl () ++
@@ -603,13 +604,13 @@ let vernac_coercion stre ref qids qidt =
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
-  Class.try_add_new_coercion_with_target ref' stre source target;
+  Class.try_add_new_coercion_with_target ref' stre ~source ~target;
   if_verbose msgnl (pr_global ref' ++ str " is now a coercion")
 
 let vernac_identity_coercion stre id qids qidt =
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  Class.try_add_new_identity_coercion id stre source target
+  Class.try_add_new_identity_coercion id stre ~source ~target
 
 (* Type classes *)
 
@@ -618,7 +619,6 @@ let vernac_instance abst glob sup inst props pri =
   ignore(Classes.new_instance ~abstract:abst ~global:glob sup inst props pri)
 
 let vernac_context l =
-  List.iter (fun x -> Dumpglob.dump_local_binder x true "var") l;
   Classes.context l
 
 let vernac_declare_instance glob id =
@@ -713,7 +713,7 @@ let vernac_add_loadpath isrec pdir ldiropt =
   let alias = match ldiropt with
     | None -> Nameops.default_root_prefix
     | Some ldir -> ldir in
-  (if isrec then Mltop.add_rec_path else Mltop.add_path) pdir alias
+  (if isrec then Mltop.add_rec_path else Mltop.add_path) ~unix_path:pdir ~coq_root:alias
 
 let vernac_remove_loadpath path =
   Library.remove_load_path (System.expand_path_macros path)
@@ -779,11 +779,11 @@ let vernac_syntactic_definition lid =
   Metasyntax.add_syntactic_definition (snd lid)
 
 let vernac_declare_implicits local r = function
-  | Some imps ->
-      Impargs.declare_manual_implicits local (smart_global r) ~enriching:false
-	(List.map (fun (ex,b,f) -> ex, (b,true,f)) imps)
-  | None ->
+  | [] ->
       Impargs.declare_implicits local (smart_global r)
+  | _::_ as imps ->
+      Impargs.declare_manual_implicits local (smart_global r) ~enriching:false
+	(List.map (List.map (fun (ex,b,f) -> ex, (b,true,f))) imps)
 
 let vernac_reserve bl =
   let sb_decl = (fun (idl,c) ->
@@ -1105,7 +1105,7 @@ let vernac_global_check c =
 
 let vernac_print = function
   | PrintTables -> print_tables ()
-  | PrintFullContext -> msg (print_full_context_typ ())
+  | PrintFullContext-> msg (print_full_context_typ ())
   | PrintSectionContext qid -> msg (print_sec_context_typ qid)
   | PrintInspect n -> msg (inspect n)
   | PrintGrammar ent -> Metasyntax.print_grammar ent
@@ -1140,7 +1140,7 @@ let vernac_print = function
       pp (Notation.pr_scope (Constrextern.without_symbols pr_lrawconstr) s)
   | PrintVisibility s ->
       pp (Notation.pr_visibility (Constrextern.without_symbols pr_lrawconstr) s)
-  | PrintAbout qid -> msgnl (print_about qid)
+  | PrintAbout qid -> msg (print_about qid)
   | PrintImplicit qid -> msg (print_impargs qid)
 (*spiwack: prints all the axioms and section variables used by a term *)
   | PrintAssumptions (o,r) ->
@@ -1177,7 +1177,7 @@ let interp_search_about_item = function
 	    (fun _ -> true) s sc in
 	GlobSearchSubPattern (Pattern.PRef ref)
       with UserError _ ->
-	error ("Unable to interp \""^s^"\" either as a reference or
+	error ("Unable to interp \""^s^"\" either as a reference or \
           	as an identifier component")
 
 let vernac_search s r =
@@ -1209,16 +1209,6 @@ let vernac_locate = function
 
 (********************)
 (* Proof management *)
-
-let vernac_goal = function
-  | None -> ()
-  | Some c ->
-      if not (refining()) then begin
-        let unnamed_kind = Lemma (* Arbitrary *) in
-        start_proof_com (Global, Proof unnamed_kind) [None,c] (fun _ _ ->());
-	print_subgoals ()
-      end else
-	error "repeated Goal not permitted in refining mode."
 
 let vernac_abort = function
   | None ->
@@ -1297,21 +1287,6 @@ let vernac_end_subproof () =
   let p = Proof_global.give_me_the_proof () in
   Proof.unfocus subproof_kind p ; print_subgoals ()
 
-let vernac_go _ = 
-  (* spiwack: don't know what it's supposed to do. Undocumented. 
-     Deactivated and candidate for removal. (Feb. 2010) *)
-  ()
-
-let explain_proof occ =
-  (* spiwack: don't know what it's supposed to do. Undocumented. 
-     Deactivated and candidate for removal. (Feb. 2010) *)
-  ()
-
-let explain_tree occ =
-  (* spiwack: don't know what it's supposed to do. Undocumented.
-     Deactivated and candidate for removeal. (Feb. 2010) *)
-  ()
-
 let vernac_show = function
   | ShowGoal nopt ->
       if !pcoq <> None then (Option.get !pcoq).show_goal nopt
@@ -1332,8 +1307,6 @@ let vernac_show = function
   | ShowIntros all -> show_intro all
   | ShowMatch id -> show_match id
   | ShowThesis -> show_thesis ()
-  | ExplainProof occ -> explain_proof occ
-  | ExplainTree occ -> explain_tree occ
 
 
 let vernac_check_guard () =
@@ -1466,7 +1439,6 @@ let interp c = match c with
   | VernacUnfocus -> vernac_unfocus ()
   | VernacSubproof n -> vernac_subproof n
   | VernacEndSubproof -> vernac_end_subproof ()
-  | VernacGo g -> vernac_go g
   | VernacShow s -> vernac_show s
   | VernacCheckGuard -> vernac_check_guard ()
   | VernacProof tac -> vernac_set_end_tac tac

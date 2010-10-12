@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -50,6 +50,7 @@ let usage () =
   prerr_endline "  -p <string>          insert <string> in LaTeX preamble";
   prerr_endline "  --files-from <file>  read file names to process in <file>";
   prerr_endline "  --glob-from <file>   read globalization information from <file>";
+  prerr_endline "  --no-glob            don't use any globalization information (no links will be inserted at identifiers)";
   prerr_endline "  --quiet              quiet mode (default)";
   prerr_endline "  --verbose            verbose mode";
   prerr_endline "  --no-externals       no links to Coq standard library";
@@ -70,6 +71,7 @@ let usage () =
   prerr_endline "  --no-lib-name        don't display \"Library\" before library names in the toc";
   prerr_endline "  --lib-name <string>  call top level toc entries <string> instead of \"Library\"";
   prerr_endline "  --lib-subtitles      first line comments of the form (** * ModuleName : text *) will be interpreted as subtitles";
+  prerr_endline "  --inline-notmono     use a proportional width font for inline code (possibly with a different color)";
   prerr_endline "";
   exit 1
 
@@ -300,6 +302,9 @@ let parse () =
     | ("-lib-subtitles" | "--lib-subtitles") :: rem ->
       Cdglobals.lib_subtitles := true;
       parse_rec rem
+    | ("-inline-notmono" | "--inline-notmono") :: rem ->
+      Cdglobals.inline_notmono := true;
+      parse_rec rem
 
     | ("-latin1" | "--latin1") :: rem ->
 	Cdglobals.set_latin1 (); parse_rec rem
@@ -338,6 +343,8 @@ let parse () =
 	glob_source := GlobFile f; parse_rec rem
     | ("-glob-from" | "--glob-from") :: [] ->
 	usage ()
+    | ("-no-glob" | "--no-glob") :: rem ->
+	glob_source := NoGlob; parse_rec rem
     | ("--no-externals" | "-no-externals" | "-noexternals") :: rem ->
 	Cdglobals.externals := false; parse_rec rem
     | ("--external" | "-external") :: u :: logicalpath :: rem ->

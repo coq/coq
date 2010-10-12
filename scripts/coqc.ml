@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -151,7 +151,7 @@ let parse_args () =
       |"-batch"|"-nois"|"-noglob"|"-no-glob"
       |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
       |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-beautify"|"-strict-implicit"
-      |"-dont-load-proofs"|"-impredicative-set"|"-vm"
+      |"-dont-load-proofs"|"-load-proofs"|"-impredicative-set"|"-vm"
       |"-unboxed-values"|"-unboxed-definitions"|"-draw-vm-instr" as o) :: rem ->
 	parse (cfiles,o::args) rem
 
@@ -163,7 +163,7 @@ let parse_args () =
     | ("-config" | "--config") :: _ -> Usage.print_config (); exit 0
 
     | ("-v"|"--version") :: _ ->
-        Usage.version ()
+        Usage.version 0
     | f :: rem ->
 	if Sys.file_exists f then
 	  parse (f::cfiles,args) rem

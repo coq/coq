@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -337,6 +337,28 @@ and make_app l=function
     Appli (s1,s2)->make_app ((constr_of_term s2)::l) s1
   | other -> applistc (constr_of_term other) l
 
+let rec canonize_name c =
+  let func =  canonize_name in
+    match kind_of_term c with
+      | Const kn ->
+	  let canon_const = constant_of_kn (canonical_con kn) in 
+	    (mkConst canon_const)
+      | Ind (kn,i) ->
+	  let canon_mind = mind_of_kn (canonical_mind kn) in
+	    (mkInd (canon_mind,i))
+      | Construct ((kn,i),j) ->
+	  let canon_mind = mind_of_kn (canonical_mind kn) in
+	    mkConstruct ((canon_mind,i),j) 
+      | Prod (na,t,ct) ->
+	  mkProd (na,func t, func ct)
+      | Lambda (na,t,ct) ->
+	  mkLambda (na, func t,func ct)
+      | LetIn (na,b,t,ct) ->
+	  mkLetIn (na, func b,func t,func ct)
+      | App (ct,l) ->
+	  mkApp (func ct,array_smartmap func l)
+      | _ -> c
+
 (* rebuild a term from a pattern and a substitution *)
 
 let build_subst uf subst =
@@ -364,6 +386,7 @@ let rec add_term state t=
 	Not_found ->
 	  let b=next uf in
 	  let typ = pf_type_of state.gls (constr_of_term t) in
+	  let typ = canonize_name typ in
 	  let new_node=
 	    match t with
 		Symb _ | Product (_,_) ->

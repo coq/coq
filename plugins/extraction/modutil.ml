@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -185,7 +185,7 @@ let signature_of_structure s =
 (*s Searching one [ml_decl] in a [ml_structure] by its [global_reference] *)
 
 let get_decl_in_structure r struc =
-  try 
+  try
     let base_mp,ll = labels_of_ref r in
     if not (at_toplevel base_mp) then error_not_visible r;
     let sel = List.assoc base_mp struc in
@@ -200,7 +200,8 @@ let get_decl_in_structure r struc =
 		  | MEstruct (_,sel) -> go ll sel
 		  | _ -> error_not_visible r
     in go ll sel
-  with Not_found -> assert false
+  with Not_found ->
+    anomaly "reference not found in extracted structure"
 
 
 (*s Optimization of a [ml_structure]. *)
@@ -214,45 +215,25 @@ let get_decl_in_structure r struc =
 let dfix_to_mlfix rv av i =
   let rec make_subst n s =
     if n < 0 then s
-    else make_subst (n-1) (Refmap.add rv.(n) (n+1) s)
+    else make_subst (n-1) (Refmap'.add rv.(n) (n+1) s)
   in
-  let s = make_subst (Array.length rv - 1) Refmap.empty
+  let s = make_subst (Array.length rv - 1) Refmap'.empty
   in
   let rec subst n t = match t with
     | MLglob ((ConstRef kn) as refe) ->
-	(try MLrel (n + (Refmap.find refe s)) with Not_found -> t)
+	(try MLrel (n + (Refmap'.find refe s)) with Not_found -> t)
     | _ -> ast_map_lift subst n t
   in
   let ids = Array.map (fun r -> id_of_label (label_of_r r)) rv in
   let c = Array.map (subst 0) av
   in MLfix(i, ids, c)
 
-let rec optim to_appear s = function
-  | [] -> []
-  | (Dtype (r,_,Tdummy _) | Dterm(r,MLdummy,_)) as d :: l ->
-      if List.mem r to_appear
-      then d :: (optim to_appear s l)
-      else optim to_appear s l
-  | Dterm (r,t,typ) :: l ->
-      let t = normalize (ast_glob_subst !s t) in
-      let i = inline r t in
-      if i then s := Refmap.add r t !s;
-      if not i || modular () || List.mem r to_appear
-      then
-	let d = match optimize_fix t with
-	  | MLfix (0, _, [|c|]) ->
-	      Dfix ([|r|], [|ast_subst (MLglob r) c|], [|typ|])
-	  | t -> Dterm (r, t, typ)
-	in d :: (optim to_appear s l)
-      else optim to_appear s l
-  | d :: l -> d :: (optim to_appear s l)
-
 let rec optim_se top to_appear s = function
   | [] -> []
   | (l,SEdecl (Dterm (r,a,t))) :: lse ->
       let a = normalize (ast_glob_subst !s a) in
       let i = inline r a in
-      if i then s := Refmap.add r a !s;
+      if i then s := Refmap'.add r a !s;
       if top && i && not (modular ()) && not (List.mem r to_appear)
       then optim_se top to_appear s lse
       else
@@ -268,7 +249,7 @@ let rec optim_se top to_appear s = function
       let fake_body = MLfix (0,[||],[||]) in
       for i = 0 to Array.length rv - 1 do
 	if inline rv.(i) fake_body
-	then s := Refmap.add rv.(i) (dfix_to_mlfix rv av i) !s
+	then s := Refmap'.add rv.(i) (dfix_to_mlfix rv av i) !s
 	else all := false
       done;
       if !all && top && not (modular ())
@@ -299,11 +280,11 @@ let base_r = function
   | _ -> assert false
 
 let reset_needed, add_needed, found_needed, is_needed =
-  let needed = ref Refset.empty in
-  ((fun l -> needed := Refset.empty),
-   (fun r -> needed := Refset.add (base_r r) !needed),
-   (fun r -> needed := Refset.remove (base_r r) !needed),
-   (fun r -> Refset.mem (base_r r) !needed))
+  let needed = ref Refset'.empty in
+  ((fun l -> needed := Refset'.empty),
+   (fun r -> needed := Refset'.add (base_r r) !needed),
+   (fun r -> needed := Refset'.remove (base_r r) !needed),
+   (fun r -> Refset'.mem (base_r r) !needed))
 
 let declared_refs = function
   | Dind (kn,_) -> [|IndRef (mind_of_kn kn,0)|]
@@ -358,7 +339,7 @@ let check_implicits = function
   | _ -> false
 
 let optimize_struct to_appear struc =
-  let subst = ref (Refmap.empty : ml_ast Refmap.t) in
+  let subst = ref (Refmap'.empty : ml_ast Refmap'.t) in
   let opt_struc =
     List.map (fun (mp,lse) -> (mp, optim_se true to_appear subst lse)) struc
   in

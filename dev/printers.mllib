@@ -13,11 +13,9 @@ Dyn
 System
 Envars
 Store
-Gset
 Gmap
 Fset
 Fmap
-Tlm
 Gmapl
 Profile
 Explore

@@ -58,13 +58,6 @@ let rec list_split_assoc k rev_before = function
   | (k',b)::after when k=k' -> rev_before,b,after
   | h::tail -> list_split_assoc k (h::rev_before) tail
 
-let rec list_fold_map2 f e = function
-  |  []  -> (e,[],[])
-  |  h::t ->
-       let e',h1',h2' = f e h in
-       let e'',t1',t2' = list_fold_map2 f e' t in
-	 e'',h1'::t1',h2'::t2'
-
 let check_definition_sub env cb1 cb2 =
   let check_type env t1 t2 =
 
@@ -238,15 +231,15 @@ and check_with_aux_mod env mtb with_decl mp =
       | Reduction.NotConvertible -> error_with_incorrect l
 
 and check_module_type env mty =
-  let _ = check_modtype env mty.typ_expr mty.typ_mp in ()
+  let _ = check_modtype env mty.typ_expr mty.typ_mp mty.typ_delta in ()
 
 							 
 and check_module env mp mb =
   match mb.mod_expr, mb.mod_type with
     | None,mtb -> 
-	let _ = check_modtype env mtb mb.mod_mp in ()
+	let _ = check_modtype env mtb mb.mod_mp mb.mod_delta in ()
     | Some mexpr, mtb when mtb==mexpr ->
-	let _ = check_modtype env mtb mb.mod_mp in ()
+	let _ = check_modtype env mtb mb.mod_mp mb.mod_delta in ()
     | Some mexpr, _ ->
 	let sign = check_modexpr env mexpr mb.mod_mp mb.mod_delta in
 	let _ = check_modtype env mb.mod_type mb.mod_mp mb.mod_delta in

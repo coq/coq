@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -105,11 +105,6 @@ let init_modules = [
   init_dir@["Peano"];
   init_dir@["Wf"]
 ]
-
-let coq_id = id_of_string "Coq"
-let init_id = id_of_string "Init"
-let arith_id = id_of_string "Arith"
-let datatypes_id = id_of_string "Datatypes"
 
 let logic_module_name = ["Coq";"Init";"Logic"]
 let logic_module = make_dir logic_module_name
@@ -228,8 +223,6 @@ let lazy_logic_constant dir id = lazy (logic_constant dir id)
 let coq_eq_eq = lazy_init_constant ["Logic"] "eq"
 let coq_eq_refl = lazy_init_constant ["Logic"] "eq_refl"
 let coq_eq_ind = lazy_init_constant ["Logic"] "eq_ind"
-let coq_eq_rec = lazy_init_constant ["Logic"] "eq_rec"
-let coq_eq_rect = lazy_init_constant ["Logic"] "eq_rect"
 let coq_eq_congr = lazy_init_constant ["Logic"] "f_equal"
 let coq_eq_sym  = lazy_init_constant ["Logic"] "eq_sym"
 let coq_eq_trans  = lazy_init_constant ["Logic"] "eq_trans"
@@ -251,8 +244,6 @@ let build_coq_eq_refl () = Lazy.force coq_eq_refl
 let build_coq_eq_sym () = Lazy.force coq_eq_sym
 let build_coq_f_equal2 () = Lazy.force coq_f_equal2
 
-let build_coq_sym_eq = build_coq_eq_sym (* compatibility *)
-
 let build_coq_inversion_eq_data () =
   let _ = check_required_library logic_module_name in {
   inv_eq = Lazy.force coq_eq_eq;
@@ -264,8 +255,6 @@ let build_coq_inversion_eq_data () =
 let coq_jmeq_eq = lazy_logic_constant ["JMeq"] "JMeq"
 let coq_jmeq_refl = lazy_logic_constant ["JMeq"] "JMeq_refl"
 let coq_jmeq_ind = lazy_logic_constant ["JMeq"] "JMeq_ind"
-let coq_jmeq_rec = lazy_logic_constant ["JMeq"] "JMeq_rec"
-let coq_jmeq_rect = lazy_logic_constant ["JMeq"] "JMeq_rect"
 let coq_jmeq_sym  = lazy_logic_constant ["JMeq"] "JMeq_sym"
 let coq_jmeq_congr  = lazy_logic_constant ["JMeq"] "JMeq_congr"
 let coq_jmeq_trans  = lazy_logic_constant ["JMeq"] "JMeq_trans"
@@ -301,8 +290,6 @@ let build_coq_sumbool () = Lazy.force coq_sumbool
 let coq_identity_eq = lazy_init_constant ["Datatypes"] "identity"
 let coq_identity_refl = lazy_init_constant ["Datatypes"] "refl_identity"
 let coq_identity_ind = lazy_init_constant ["Datatypes"] "identity_ind"
-let coq_identity_rec = lazy_init_constant ["Datatypes"] "identity_rec"
-let coq_identity_rect = lazy_init_constant ["Datatypes"] "identity_rect"
 let coq_identity_congr = lazy_init_constant ["Logic_Type"] "identity_congr"
 let coq_identity_sym = lazy_init_constant ["Logic_Type"] "identity_sym"
 let coq_identity_trans = lazy_init_constant ["Logic_Type"] "identity_trans"

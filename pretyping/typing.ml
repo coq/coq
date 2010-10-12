@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -197,8 +197,6 @@ and execute_recdef env evdref (names,lar,vdef) =
   (names,lara,vdefv)
 
 and execute_array env evdref = Array.map (execute env evdref)
-
-and execute_list env evdref = List.map (execute env evdref)
 
 let check env evd c t =
   let evdref = ref evd in

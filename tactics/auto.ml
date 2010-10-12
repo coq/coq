@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -487,17 +487,7 @@ let subst_autohint (subst,(local,name,hintlist as obj)) =
 let classify_autohint ((local,name,hintlist) as obj) =
   if local or hintlist = (AddTactic []) then Dispose else Substitute obj
 
-let discharge_autohint (_,(local,name,hintlist as obj)) =
-  if local then None else
-    match hintlist with
-    | CreateDB _ ->
-	(* We assume that the transparent state is either empty or full *)
-	Some obj
-    | AddTransparency _ | AddTactic _ ->
-	(* Needs the adequate code here to support Global Hints in sections *)
-	None
-
-let (inAutoHint,_) =
+let inAutoHint =
   declare_object {(default_object "AUTOHINT") with
                     cache_function = cache_autohint;
 		    load_function = (fun _ -> cache_autohint);
@@ -703,12 +693,11 @@ let print_applicable_hint () =
 (* displays the whole hint database db *)
 let print_hint_db db =
   let (ids, csts) = Hint_db.transparent_state db in
-  msg (hov 0
+  msgnl (hov 0
 	  ((if Hint_db.use_dn db then str"Discriminated database"
-	    else str"Non-discriminated database") ++ fnl ()));
-  msg (hov 0
-	  (str"Unfoldable variable definitions: " ++ pr_idpred ids ++ fnl () ++
-	   str"Unfoldable constant definitions: " ++ pr_cpred csts ++ fnl ()));
+	    else str"Non-discriminated database")));
+  msgnl (hov 2 (str"Unfoldable variable definitions: " ++ pr_idpred ids));
+  msgnl (hov 2 (str"Unfoldable constant definitions: " ++ pr_cpred csts));
   Hint_db.iter
     (fun head hintlist ->
       match head with
@@ -757,6 +746,7 @@ let auto_unif_flags = {
   modulo_delta = empty_transparent_state;
   resolve_evars = true;
   use_evars_pattern_unification = false;
+  modulo_eta = true
 }
 
 (* Try unification with the precompiled clause, then use registered Apply *)
@@ -952,8 +942,6 @@ let full_trivial lems gl =
 let gen_trivial lems = function
   | None -> full_trivial lems
   | Some l -> trivial lems l
-
-let inj_open c = (Evd.empty,c)
 
 let h_trivial lems l =
   Refiner.abstract_tactic (TacTrivial (lems,l))

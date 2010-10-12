@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -98,7 +98,7 @@ let build_branches_type env (mind,_ as _ind) mib mip params dep p =
     let carity = snd (rtbl.(i)) in
     let crealargs = Array.sub cargs nparams (Array.length cargs - nparams) in
     let codom = 
-      let papp = mkApp(p,crealargs) in
+      let papp = mkApp(lift (List.length decl) p,crealargs) in
       if dep then
 	let cstr = ith_constructor_of_inductive ind (i+1) in
         let relargs = Array.init carity (fun i -> mkRel (carity-i)) in

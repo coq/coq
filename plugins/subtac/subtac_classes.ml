@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -20,18 +20,17 @@ open Constrintern
 open Subtac_command
 open Typeclasses
 open Typeclasses_errors
-open Termops
 open Decl_kinds
 open Entries
 open Util
 
 module SPretyping = Subtac_pretyping.Pretyping
 
-let interp_constr_evars_gen evdref env ?(impls=([],[])) kind c =
+let interp_constr_evars_gen evdref env ?(impls=[]) kind c =
   SPretyping.understand_tcc_evars evdref env kind
     (intern_gen (kind=IsType) ~impls ( !evdref) env c)
 
-let interp_casted_constr_evars evdref env ?(impls=([],[])) c typ =
+let interp_casted_constr_evars evdref env ?(impls=[]) c typ =
   interp_constr_evars_gen evdref env ~impls (OfType (Some typ)) c
 
 let interp_context_evars evdref env params =
@@ -120,7 +119,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
     match props with
     | Inr term ->
 	let c = interp_casted_constr_evars evars env' term cty in
-	  Inr (c, subst)
+	  Inr c
     | Inl props ->
 	let get_id =
 	  function
@@ -135,7 +134,8 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 		  let (loc_mid, c) = List.find (fun (id', _) -> Name (snd (get_id id')) = id) rest in
 		  let rest' = List.filter (fun (id', _) -> Name (snd (get_id id')) <> id) rest in
 		  let (loc, mid) = get_id loc_mid in
-		    Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
+		    Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) 
+		      (List.assoc (Name mid) k.cl_projs);
 		    c :: props, rest'
 		with Not_found ->
 		  (CHole (Util.dummy_loc, None) :: props), rest
@@ -159,7 +159,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
 	let term = Termops.it_mkLambda_or_LetIn app (ctx' @ ctx) in
 	  term, termtype
-    | Inr (def, subst) ->
+    | Inr def ->
 	let termtype = it_mkProd_or_LetIn cty ctx in
 	let term = Termops.it_mkLambda_or_LetIn def ctx in
 	  term, termtype
@@ -171,7 +171,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
   let hook vis gr =
     let cst = match gr with ConstRef kn -> kn | _ -> assert false in
     let inst = Typeclasses.new_instance k pri global (ConstRef cst) in
-      Impargs.declare_manual_implicits false gr ~enriching:false imps;
+      Impargs.declare_manual_implicits false gr ~enriching:false [imps];
       Typeclasses.add_instance inst
   in
   let evm = Subtac_utils.evars_of_term !evars Evd.empty term in

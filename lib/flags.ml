@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -29,11 +29,9 @@ let term_quality = ref false
 
 let xml_export = ref false
 
-let dont_load_proofs = ref false
+let load_proofs = ref true
 
 let raw_print = ref false
-
-let unicode_syntax = ref false
 
 (* Compatibility mode *)
 
@@ -130,8 +128,7 @@ let browser_cmd_fmt =
 
 let is_standard_doc_url url =
   let wwwcompatprefix = "http://www.lix.polytechnique.fr/coq/" in
-  let wwwprefix = "http://coq.inria.fr/" in
-  let n = String.length wwwprefix in
+  let n = String.length Coq_config.wwwcoq in
   let n' = String.length Coq_config.wwwrefman in
   url = Coq_config.localwwwrefman ||
   url = Coq_config.wwwrefman ||

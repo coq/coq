@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -165,8 +165,6 @@ let computable p k =
   (rel_context_length sign = k+1)
   &&
   noccur_between 1 (k+1) ccl
-
-let avoid_flag isgoal = if isgoal then Some true else None
 
 let lookup_name_as_displayed env t s =
   let rec lookup avoid n c = match kind_of_term c with
@@ -361,6 +359,8 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
 let detype_sort = function
   | Prop c -> RProp c
   | Type u -> RType (Some u)
+
+type binder_kind = BProd | BLambda | BLetIn
 
 (**********************************************************************)
 (* Main detyping function                                             *)

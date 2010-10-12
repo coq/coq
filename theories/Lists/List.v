@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -117,7 +117,7 @@ Section Facts.
     unfold not; intros a H; inversion_clear H.
   Qed.
 
-  Theorem in_split : forall x (l:list A), In x l -> exists l1, exists l2, l = l1++x::l2.
+  Theorem in_split : forall x (l:list A), In x l -> exists l1 l2, l = l1++x::l2.
   Proof.
   induction l; simpl; destruct 1.
   subst a; auto.
@@ -1641,7 +1641,7 @@ Proof. exact Forall2_nil. Qed.
 
 Theorem Forall2_app_inv_l : forall A B (R:A->B->Prop) l1 l2 l',
   Forall2 R (l1 ++ l2) l' ->
-  exists l1', exists l2', Forall2 R l1 l1' /\ Forall2 R l2 l2' /\ l' = l1' ++ l2'.
+  exists l1' l2', Forall2 R l1 l1' /\ Forall2 R l2 l2' /\ l' = l1' ++ l2'.
 Proof.
   induction l1; intros.
     exists [], l'; auto.

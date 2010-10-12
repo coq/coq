@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -12,6 +12,9 @@ Require Export ProofIrrelevance.
 Require Export JMeq.
 
 Require Import Coq.Program.Tactics.
+
+Local Notation "'Π'  x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity) : type_scope.
 
 Ltac is_ground_goal := 
   match goal with
@@ -36,8 +39,8 @@ Notation " x ~= y " := (@JMeq _ x _ y) (at level 70, no associativity).
 
 (** Notation for the single element of [x = x] and [x ~= x]. *)
 
-Implicit Arguments eq_refl [[A] [x]].
-Implicit Arguments JMeq_refl [[A] [x]].
+Implicit Arguments eq_refl [[A] [x]] [A].
+Implicit Arguments JMeq_refl [[A] [x]] [A].
 
 (** Do something on an heterogeneous equality appearing in the context. *)
 

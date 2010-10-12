@@ -788,7 +788,8 @@ let lambda_of_prim kn op args =
 
 
 
-(* Global environment *)
+(*i Global environment *)
+
 
 let global_env = ref empty_env 
 

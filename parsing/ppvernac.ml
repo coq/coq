@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -84,26 +84,11 @@ let rec match_vernac_rule tys = function
       else match_vernac_rule tys rls
 
 let sep = fun _ -> spc()
-let sep_p = fun _ -> str"."
-let sep_v = fun _ -> str","
 let sep_v2 = fun _ -> str"," ++ spc()
-let sep_pp = fun _ -> str":"
 
 let pr_ne_sep sep pr = function
     [] -> mt()
   | l -> sep() ++ pr l
-
-let pr_entry_prec = function
-  | Some LeftA -> str"LEFTA "
-  | Some RightA -> str"RIGHTA "
-  | Some NonA -> str"NONA "
-  | None -> mt()
-
-let pr_prec = function
-  | Some LeftA -> str", left associativity"
-  | Some RightA -> str", right associativity"
-  | Some NonA -> str", no associativity"
-  | None -> mt()
 
 let pr_set_entry_type = function
   | ETName -> str"ident"
@@ -112,7 +97,9 @@ let pr_set_entry_type = function
   | ETConstr _ -> str"constr"
   | ETOther (_,e) -> str e
   | ETBigint -> str "bigint"
-  | ETConstrList _ -> failwith "Internal entry type"
+  | ETBinder true -> str "binder"
+  | ETBinder false -> str "closed binder"
+  | ETBinderList _ | ETConstrList _ -> failwith "Internal entry type"
 
 let strip_meta id =
   let s = string_of_id id in
@@ -165,11 +152,6 @@ let pr_explanation (e,b,f) =
   | ExplByName id -> pr_id id in
   let a = if f then str"!" ++ a else a in
     if b then str "[" ++ a ++ str "]" else a
-
-let pr_class_rawexpr = function
-  | FunClass -> str"Funclass"
-  | SortClass -> str"Sortclass"
-  | RefClass qid -> pr_smart_global qid
 
 let pr_option_ref_value = function
   | QualidRefValue id -> pr_reference id
@@ -287,9 +269,6 @@ let pr_type_option pr_c = function
 let pr_decl_notation prc ((loc,ntn),c,scopt) =
   fnl () ++ str "where " ++ qs ntn ++ str " := " ++ prc c ++
   pr_opt (fun sc -> str ": " ++ str sc) scopt
-
-let pr_vbinders l =
-  hv 0 (pr_binders l)
 
 let pr_binders_arg =
   pr_ne_sep spc pr_binders
@@ -420,21 +399,6 @@ let pr_grammar_tactic_rule n (_,pil,t) =
     hov 0 (prlist_with_sep sep pr_production_item pil ++
     spc() ++ str":=" ++ spc() ++ pr_raw_tactic t))
 
-let pr_box b = let pr_boxkind = function
-  | PpHB n -> str"h" ++ spc() ++ int n
-  | PpVB n -> str"v" ++ spc() ++ int n
-  | PpHVB n -> str"hv" ++ spc() ++ int n
-  | PpHOVB n -> str"hov" ++ spc() ++ int n
-  | PpTB -> str"t"
-in str"<" ++ pr_boxkind b ++ str">"
-
-let pr_paren_reln_or_extern = function
-  | None,L -> str"L"
-  | None,E -> str"E"
-  | Some pprim,Any -> qs pprim
-  | Some pprim,Prec p -> qs pprim ++ spc() ++ str":" ++ spc() ++ int p
-  | _ -> mt()
-
 let pr_statement head (id,(bl,c,guard)) =
   assert (id<>None);
   hov 0
@@ -488,13 +452,6 @@ let rec pr_vernac = function
   | VernacBacktrack (i,j,k) ->
       str "Backtrack" ++  spc() ++ prlist_with_sep sep int [i;j;k]
   | VernacFocus i -> str"Focus" ++ pr_opt int i
-  | VernacGo g ->
-      let pr_goable = function
-	| GoTo i -> int i
-	| GoTop -> str"top"
-	| GoNext -> str"next"
-	| GoPrev -> str"prev"
-      in str"Go" ++ spc() ++  pr_goable g
   | VernacShow s ->
       let pr_showable = function
 	| ShowGoal n -> str"Show" ++ pr_opt int n
@@ -508,8 +465,6 @@ let rec pr_vernac = function
 	| ShowIntros b -> str"Show " ++ (if b then str"Intros" else str"Intro")
 	| ShowMatch id -> str"Show Match " ++ pr_lident id
 	| ShowThesis -> str "Show Thesis"
-	| ExplainProof l -> str"Explain Proof" ++ spc() ++ prlist_with_sep sep int l
-	| ExplainTree l -> str"Explain Proof Tree" ++ spc() ++ prlist_with_sep sep int l
       in pr_showable s
   | VernacCheckGuard -> str"Guarded"
 
@@ -850,13 +805,15 @@ let rec pr_vernac = function
         (pr_locality local ++ str"Notation " ++ pr_lident id ++
 	 prlist_with_sep spc pr_id ids ++ str" :=" ++ pr_constrarg c ++
          pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
-  | VernacDeclareImplicits (local,q,None) ->
+  | VernacDeclareImplicits (local,q,[]) ->
       hov 2 (pr_section_locality local ++ str"Implicit Arguments" ++ spc() ++ 
 	pr_smart_global q)
-  | VernacDeclareImplicits (local,q,Some imps) ->
+  | VernacDeclareImplicits (local,q,impls) ->
       hov 1 (pr_section_locality local ++ str"Implicit Arguments " ++ 
 	spc() ++ pr_smart_global q ++ spc() ++
-	str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
+	prlist_with_sep spc (fun imps ->
+	  str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
+	  impls)
   | VernacReserve bl ->
       let n = List.length (List.flatten (List.map fst bl)) in
       hov 2 (str"Implicit Type" ++

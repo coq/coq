@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -39,6 +39,7 @@ let check_command = Gram.entry_create "vernac:check_command"
 
 let tactic_mode = Gram.entry_create "vernac:tactic_command"
 let noedit_mode = Gram.entry_create "vernac:noedit_command"
+let bullet = Gram.entry_create "vernac:bullet"
 
 let class_rawexpr = Gram.entry_create "vernac:class_rawexpr"
 let thm_token = Gram.entry_create "vernac:thm_token"
@@ -71,7 +72,7 @@ let default_command_entry =
 
 let no_hook _ _ = ()
 GEXTEND Gram
-  GLOBAL: vernac gallina_ext tactic_mode noedit_mode subgoal_command;
+  GLOBAL: vernac gallina_ext tactic_mode noedit_mode bullet subgoal_command;
   vernac: FIRST
     [ [ IDENT "Time"; v = vernac -> VernacTime v
       | IDENT "Timeout"; n = natural; v = vernac -> VernacTimeout(n,v)
@@ -141,9 +142,9 @@ GEXTEND Gram
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [  thm = thm_token; id = identref; bl = binders_let; ":"; c = lconstr;
+    [ [ thm = thm_token; id = identref; bl = binders; ":"; c = lconstr;
         l = LIST0
-          [ "with"; id = identref; bl = binders_let; ":"; c = lconstr ->
+          [ "with"; id = identref; bl = binders; ":"; c = lconstr ->
             (Some id,(bl,c,None)) ] ->
           VernacStartTheoremProof (thm,(Some id,(bl,c,None))::l, false, no_hook)
       | stre = assumption_token; nl = inline; bl = assum_list ->
@@ -186,7 +187,7 @@ GEXTEND Gram
 
   gallina_ext:
     [ [ b = record_token; infer = infer_token; oc = opt_coercion; name = identref;
-        ps = binders_let;
+        ps = binders;
 	s = OPT [ ":"; s = lconstr -> s ];
 	cfs = [ ":="; l = constructor_list_or_record_decl -> l
 	  | -> RecordDecl (None, []) ] ->
@@ -305,13 +306,13 @@ GEXTEND Gram
   ;
   (* Simple definitions *)
   def_body:
-    [ [ bl = binders_let; ":="; red = reduce; c = lconstr ->
+    [ [ bl = binders; ":="; red = reduce; c = lconstr ->
       (match c with
           CCast(_,c, Rawterm.CastConv (k,t)) -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
-    | bl = binders_let; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
+    | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
 	DefineBody (bl, red, c, Some t)
-    | bl = binders_let; ":"; t = lconstr ->
+    | bl = binders; ":"; t = lconstr ->
         ProveBody (bl, t) ] ]
   ;
   reduce:
@@ -328,7 +329,7 @@ GEXTEND Gram
   ;
   (* Inductives and records *)
   inductive_definition:
-    [ [ id = identref; oc = opt_coercion; indpar = binders_let;
+    [ [ id = identref; oc = opt_coercion; indpar = binders;
         c = OPT [ ":"; c = lconstr -> c ];
         ":="; lc = constructor_list_or_record_decl; ntn = decl_notation ->
 	   (((oc,id),indpar,c,lc),ntn) ] ]
@@ -355,13 +356,13 @@ GEXTEND Gram
   (* (co)-fixpoints *)
   rec_definition:
     [ [ id = identref;
-	bl = binders_let_fixannot;
+	bl = binders_fixannot;
         ty = type_cstr;
 	def = OPT [":="; def = lconstr -> def]; ntn = decl_notation ->
 	  let bl, annot = bl in ((id,annot,bl,ty,def),ntn) ] ]
   ;
   corec_definition:
-    [ [ id = identref; bl = binders_let; ty = type_cstr; 
+    [ [ id = identref; bl = binders; ty = type_cstr;
         def = OPT [":="; def = lconstr -> def]; ntn = decl_notation ->
           ((id,bl,ty,def),ntn) ] ]
   ;
@@ -402,12 +403,12 @@ GEXTEND Gram
     [ [ bd = record_binder; ntn = decl_notation -> bd,ntn ] ]
   ;
   record_binder_body:
-    [ [ l = binders_let; oc = of_type_with_opt_coercion;
+    [ [ l = binders; oc = of_type_with_opt_coercion;
          t = lconstr -> fun id -> (oc,AssumExpr (id,mkCProdN loc l t))
-      | l = binders_let; oc = of_type_with_opt_coercion;
+      | l = binders; oc = of_type_with_opt_coercion;
          t = lconstr; ":="; b = lconstr -> fun id ->
 	   (oc,DefExpr (id,mkCLambdaN loc l b,Some (mkCProdN loc l t)))
-      | l = binders_let; ":="; b = lconstr -> fun id ->
+      | l = binders; ":="; b = lconstr -> fun id ->
          match b with
 	 | CCast(_,b, Rawterm.CastConv (_, t)) ->
 	     (false,DefExpr(id,mkCLambdaN loc l b,Some (mkCProdN loc l t)))
@@ -430,7 +431,7 @@ GEXTEND Gram
   ;
 
   constructor_type:
-    [[ l = binders_let;
+    [[ l = binders;
       t= [ coe = of_type_with_opt_coercion; c = lconstr ->
 	            fun l id -> (coe,(id,mkCProdN loc l c))
             |  ->
@@ -605,7 +606,7 @@ GEXTEND Gram
          t = class_rawexpr ->
 	  VernacCoercion (use_locality_exp (), ByNotation ntn, s, t)
 
-      | IDENT "Context"; c = binders_let ->
+      | IDENT "Context"; c = binders ->
 	  VernacContext c
 
       | IDENT "Instance"; namesup = instance_name; ":";
@@ -623,7 +624,7 @@ GEXTEND Gram
 
       (* Implicit *)
       | IDENT "Implicit"; IDENT "Arguments"; qid = smart_global;
-	   pos = OPT [ "["; l = LIST0 implicit_name; "]" ->
+	   pos = LIST0 [ "["; l = LIST0 implicit_name; "]" ->
 	     List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
 	   VernacDeclareImplicits (use_section_locality (),qid,pos)
 
@@ -637,7 +638,7 @@ GEXTEND Gram
       | IDENT "Generalizable"; 
 	   gen = [IDENT "All"; IDENT "Variables" -> Some []
 	     | IDENT "No"; IDENT "Variables" -> None
-	     | [IDENT "Variable" | IDENT "Variables"];
+	     | ["Variable" | IDENT "Variables"];
 		  idl = LIST1 identref -> Some idl ] ->
 	     VernacGeneralizable (use_non_locality (), gen) ] ]
   ;
@@ -655,7 +656,7 @@ GEXTEND Gram
       | IDENT "transparent" -> Conv_oracle.transparent ] ]
   ;
   instance_name:
-    [ [ name = identref; sup = OPT binders_let ->
+    [ [ name = identref; sup = OPT binders ->
 	  (let (loc,id) = name in (loc, Name id)),
           (Option.default [] sup)
       | -> (loc, Anonymous), []  ] ]
@@ -998,6 +999,8 @@ GEXTEND Gram
   syntax_extension_type:
     [ [ IDENT "ident" -> ETName | IDENT "global" -> ETReference
       | IDENT "bigint" -> ETBigint
+      | IDENT "binder" -> ETBinder true
+      | IDENT "closed"; IDENT "binder" -> ETBinder false
     ] ]
   ;
   opt_scope:

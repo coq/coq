@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -39,7 +39,6 @@ type object_pr = {
   print_module              : bool -> Names.module_path -> std_ppcmds;
   print_modtype             : module_path -> std_ppcmds;
   print_named_decl          : identifier * constr option * types -> std_ppcmds;
-  print_leaf_entry          : bool -> Libnames.object_name * Libobject.obj -> Pp.std_ppcmds;
   print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
   print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
   print_typed_value_in_env  : Environ.env -> Term.constr * Term.types -> Pp.std_ppcmds;
@@ -49,39 +48,25 @@ type object_pr = {
 let gallina_print_module  = print_module
 let gallina_print_modtype = print_modtype
 
-(*********************)
-(** Basic printing   *)
-
-let print_basename sp = pr_global (ConstRef sp)
+(**************)
+(** Utilities *)
 
 let print_closed_sections = ref false
 
-let with_line_skip p = if ismt p then mt() else (fnl () ++ p)
+let pr_infos_list l = v 0 (prlist_with_sep cut (fun x -> x) l) ++ fnl()
 
-(********************************)
-(** Printing implicit arguments *)
+let with_line_skip l = if l = [] then mt() else fnl() ++ pr_infos_list l
 
-let conjugate_to_be = function [_] -> "is" | _ -> "are"
+let blankline = mt() (* add a blank sentence in the list of infos *)
 
-let pr_implicit imp = pr_id (name_of_implicit imp)
+let add_colon prefix = if ismt prefix then mt () else prefix ++ str ": "
 
-let print_impl_args_by_name max = function
-  | []  -> mt ()
-  | impls ->
-      hov 0 (str (plural (List.length impls) "Argument") ++ spc() ++
-      prlist_with_sep pr_comma pr_implicit impls ++ spc() ++
-      str (conjugate_to_be impls) ++ str" implicit" ++
-      (if max then strbrk " and maximally inserted" else mt())) ++ fnl()
+let int_or_no n = if n=0 then str "no" else int n
 
-let print_impl_args l =
-  let imps = List.filter is_status_implicit l in
-  let maximps = List.filter Impargs.maximal_insertion_of imps in
-  let nonmaximps = list_subtract imps maximps in
-  print_impl_args_by_name false nonmaximps ++
-  print_impl_args_by_name true maximps
+(*******************)
+(** Basic printing *)
 
-(*********************)
-(** Printing Scopes  *)
+let print_basename sp = pr_global (ConstRef sp)
 
 let print_ref reduce ref =
   let typ = Global.type_of_global ref in
@@ -90,16 +75,49 @@ let print_ref reduce ref =
       let ctx,ccl = Reductionops.splay_prod_assum (Global.env()) Evd.empty typ
       in it_mkProd_or_LetIn ccl ctx
     else typ in
-  hov 0 (pr_global ref ++ str " :" ++ spc () ++ pr_ltype typ) ++ fnl ()
+  hov 0 (pr_global ref ++ str " :" ++ spc () ++ pr_ltype typ)
 
-let print_argument_scopes = function
-  | [Some sc] -> str"Argument scope is [" ++ str sc ++ str"]" ++ fnl()
-  | l when not (List.for_all ((=) None) l) ->
-      hov 2 (str"Argument scopes are" ++ spc() ++
-      str "[" ++
-      prlist_with_sep spc (function Some sc -> str sc | None -> str "_") l ++
-      str "]") ++ fnl()
-  | _  -> mt()
+(********************************)
+(** Printing implicit arguments *)
+
+let conjugate_verb_to_be = function [_] -> "is" | _ -> "are"
+
+let pr_impl_name imp = pr_id (name_of_implicit imp)
+
+let print_impargs_by_name max = function
+  | []  -> []
+  | impls ->
+     [hov 0 (str (plural (List.length impls) "Argument") ++ spc() ++
+      prlist_with_sep pr_comma pr_impl_name impls ++ spc() ++
+      str (conjugate_verb_to_be impls) ++ str" implicit" ++
+      (if max then strbrk " and maximally inserted" else mt()))]
+
+let print_one_impargs_list l =
+  let imps = List.filter is_status_implicit l in
+  let maximps = List.filter Impargs.maximal_insertion_of imps in
+  let nonmaximps = list_subtract imps maximps in
+  print_impargs_by_name false nonmaximps @
+  print_impargs_by_name true maximps
+
+let print_impargs_list prefix l =
+  let l = extract_impargs_data l in
+  List.flatten (List.map (fun (cond,imps) ->
+    match cond with
+    | None ->
+	List.map (fun pp -> add_colon prefix ++ pp)
+	  (print_one_impargs_list imps)
+    | Some (n1,n2) ->
+       [v 2 (prlist_with_sep cut (fun x -> x)
+	 [(if ismt prefix then str "When" else prefix ++ str ", when") ++
+	   str " applied to " ++
+	   (if n1 = n2 then int_or_no n2 else
+	    if n1 = 0 then str "less than " ++ int n2
+	    else int n1 ++ str " to " ++ int_or_no n2) ++
+	    str (plural n2 " argument") ++ str ":";
+          v 0 (prlist_with_sep cut (fun x -> x)
+	    (if List.exists is_status_implicit imps
+	    then print_one_impargs_list imps
+	    else [str "No implicit arguments"]))])]) l)
 
 let need_expansion impl ref =
   let typ = Global.type_of_global ref in
@@ -108,6 +126,33 @@ let need_expansion impl ref =
   impl <> [] & List.length impl >= nprods &
     let _,lastimpl = list_chop nprods impl in
       List.filter is_status_implicit lastimpl <> []
+
+let print_impargs ref =
+  let ref = Smartlocate.smart_global ref in
+  let impl = implicits_of_global ref in
+  let has_impl = impl <> [] in
+  (* Need to reduce since implicits are computed with products flattened *)
+  pr_infos_list
+    ([ print_ref (need_expansion (select_impargs_size 0 impl) ref) ref;
+       blankline ] @
+    (if has_impl then print_impargs_list (mt()) impl
+     else [str "No implicit arguments"]))
+
+(*********************)
+(** Printing Scopes  *)
+
+let print_argument_scopes prefix = function
+  | [Some sc] ->
+      [add_colon prefix ++ str"Argument scope is [" ++ str sc ++ str"]"]
+  | l when not (List.for_all ((=) None) l) ->
+     [add_colon prefix ++ hov 2 (str"Argument scopes are" ++ spc() ++
+      str "[" ++
+      prlist_with_sep spc (function Some sc -> str sc | None -> str "_") l ++
+      str "]")]
+  | _  -> []
+
+(*********************)
+(** Printing Opacity *)
 
 type opacity =
   | FullyOpaque
@@ -128,8 +173,9 @@ let opacity env = function
 
 let print_opacity ref =
   match opacity (Global.env()) ref with
-    | None -> mt ()
-    | Some s -> pr_global ref ++ str " is " ++
+    | None -> []
+    | Some s ->
+       [pr_global ref ++ str " is " ++
         str (match s with
           | FullyOpaque -> "opaque"
           | TransparentMaybeOpacified Conv_oracle.Opaque ->
@@ -139,38 +185,45 @@ let print_opacity ref =
           | TransparentMaybeOpacified (Conv_oracle.Level n) ->
               "transparent (with expansion weight "^string_of_int n^")"
           | TransparentMaybeOpacified Conv_oracle.Expand ->
-              "transparent (with minimal expansion weight)") ++ fnl()
+              "transparent (with minimal expansion weight)")]
+
+(*******************)
+(* *)
 
 let print_name_infos ref =
-  let impl = implicits_of_global ref in
+  let impls = implicits_of_global ref in
   let scopes = Notation.find_arguments_scope ref in
-  let type_for_implicit =
-    if need_expansion impl ref then
+  let type_info_for_implicit =
+    if need_expansion (select_impargs_size 0 impls) ref then
       (* Need to reduce since implicits are computed with products flattened *)
-      str "Expanded type for implicit arguments" ++ fnl () ++
-      print_ref true ref ++ fnl()
-    else mt() in
-  type_for_implicit ++ print_impl_args impl ++ print_argument_scopes scopes
+      [str "Expanded type for implicit arguments";
+       print_ref true ref; blankline]
+    else
+      [] in
+  type_info_for_implicit @
+  print_impargs_list (mt()) impls @
+  print_argument_scopes (mt()) scopes
 
 let print_id_args_data test pr id l =
   if List.exists test l then
-    str"For " ++ pr_id id ++ str": " ++ pr l
+    pr (str "For " ++ pr_id id) l
   else
-    mt()
+    []
 
 let print_args_data_of_inductive_ids get test pr sp mipv =
-  prvecti
+  List.flatten (Array.to_list (Array.mapi
     (fun i mip ->
-      print_id_args_data test pr mip.mind_typename (get (IndRef (sp,i))) ++
-      prvecti
+      print_id_args_data test pr mip.mind_typename (get (IndRef (sp,i))) @
+      List.flatten (Array.to_list (Array.mapi
 	(fun j idc ->
 	  print_id_args_data test pr idc (get (ConstructRef ((sp,i),j+1))))
-        mip.mind_consnames)
-    mipv
+        mip.mind_consnames)))
+    mipv))
 
 let print_inductive_implicit_args =
   print_args_data_of_inductive_ids
-    implicits_of_global is_status_implicit print_impl_args
+    implicits_of_global (fun l -> positions_of_implicits l <> [])
+    print_impargs_list
 
 let print_inductive_argument_scopes =
   print_args_data_of_inductive_ids
@@ -365,7 +418,7 @@ let gallina_print_inductive sp =
   else
     pr_mutual_inductive mib.mind_finite names) ++ fnl () ++
   with_line_skip
-    (print_inductive_implicit_args sp mipv ++
+    (print_inductive_implicit_args sp mipv @
      print_inductive_argument_scopes sp mipv)
 
 let print_named_decl id =
@@ -460,11 +513,6 @@ let gallina_print_library_entry with_values ent =
     | (_,Lib.FrozenState _) ->
 	None
 
-let gallina_print_leaf_entry with_values c =
-  match gallina_print_leaf_entry with_values c with
-    | None    -> mt ()
-    | Some pp -> pp ++ fnl()
-
 let gallina_print_context with_values =
   let rec prec n = function
     | h::rest when n = None or Option.get n > 0 ->
@@ -490,7 +538,6 @@ let default_object_pr = {
   print_module              = gallina_print_module;
   print_modtype             = gallina_print_modtype;
   print_named_decl          = gallina_print_named_decl;
-  print_leaf_entry          = gallina_print_leaf_entry;
   print_library_entry       = gallina_print_library_entry;
   print_context             = gallina_print_context;
   print_typed_value_in_env  = gallina_print_typed_value_in_env;
@@ -507,7 +554,6 @@ let print_syntactic_def x = !object_pr.print_syntactic_def x
 let print_module x  = !object_pr.print_module  x
 let print_modtype x = !object_pr.print_modtype x
 let print_named_decl x = !object_pr.print_named_decl x
-let print_leaf_entry x = !object_pr.print_leaf_entry x
 let print_library_entry x = !object_pr.print_library_entry x
 let print_context x = !object_pr.print_context x
 let print_typed_value_in_env x = !object_pr.print_typed_value_in_env x
@@ -601,16 +647,6 @@ let print_full_pure_context () =
    assume that the declaration of constructors and eliminations
    follows the definition of the inductive type *)
 
-let list_filter_vec f vec =
-  let rec frec n lf =
-    if n < 0 then lf
-    else if f vec.(n) then
-      frec (n-1) (vec.(n)::lf)
-    else
-      frec (n-1) lf
-  in
-  frec (Array.length vec -1) []
-
 (* This is designed to print the contents of an opened section *)
 let read_sec_context r =
   let loc,qid = qualid_of_reference r in
@@ -682,16 +718,19 @@ let print_opaque_name qid =
 	print_named_decl (id,c,ty)
 
 let print_about_any k =
-  begin match k with
+  match k with
   | Term ref ->
-      print_ref false ref ++ fnl () ++ print_name_infos ref ++
-      print_opacity ref
+      pr_infos_list
+       ([print_ref false ref; blankline] @
+	print_name_infos ref @
+	print_opacity ref @
+	[hov 0 (str "Expands to: " ++ pr_located_qualid k)])
   | Syntactic kn ->
-      print_syntactic_def kn
+      v 0 (
+      print_syntactic_def kn ++
+      hov 0 (str "Expands to: " ++ pr_located_qualid k)) ++ fnl()
   | Dir _ | ModuleType _ | Undefined _ ->
-      mt () end
-  ++
-  hov 0 (str "Expands to: " ++ pr_located_qualid k)
+      hov 0 (pr_located_qualid k) ++ fnl()
 
 let print_about = function
   | Genarg.ByNotation (loc,ntn,sc) ->
@@ -700,24 +739,6 @@ let print_about = function
                ntn sc))
   | Genarg.AN ref ->
       print_about_any (locate_any_name ref)
-
-let print_impargs ref =
-  let ref = Smartlocate.smart_global ref in
-  let impl = implicits_of_global ref in
-  let has_impl = List.filter is_status_implicit impl <> [] in
-  (* Need to reduce since implicits are computed with products flattened *)
-  print_ref (need_expansion impl ref) ref ++ fnl() ++
-  (if has_impl then print_impl_args impl
-   else (str "No implicit arguments" ++ fnl ()))
-
-let unfold_head_fconst =
-  let rec unfrec k = match kind_of_term k with
-    | Const cst -> constant_value_def (Global.env ()) cst
-    | Lambda (na,t,b) -> mkLambda (na,t,unfrec b)
-    | App (f,v) -> appvect (unfrec f,v)
-    | _ -> k
-  in
-  unfrec
 
 (* for debug *)
 let inspect depth =
@@ -787,7 +808,7 @@ let print_canonical_projections () =
 open Typeclasses
 
 let pr_typeclass env t =
-  print_ref false t.cl_impl
+  print_ref false t.cl_impl ++ fnl ()
 
 let print_typeclasses () =
   let env = Global.env () in
@@ -796,7 +817,7 @@ let print_typeclasses () =
 let pr_instance env i =
   (*   gallina_print_constant_with_infos i.is_impl *)
   (* lighter *)
-  print_ref false (instance_impl i)
+  print_ref false (instance_impl i) ++ fnl ()
 
 let print_all_instances () =
   let env = Global.env () in

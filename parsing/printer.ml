@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -11,7 +11,6 @@ open Util
 open Names
 open Nameops
 open Term
-open Termops
 open Sign
 open Environ
 open Global
@@ -62,7 +61,7 @@ let pr_constr_under_binders_env_gen pr env (ids,c) =
   (* we also need to preserve the actual names of the patterns *)
   (* So what to do? *)
   let assums = List.map (fun id -> (Name id,(* dummy *) mkProp)) ids in
-  pr (push_rels_assum assums env) c
+  pr (Termops.push_rels_assum assums env) c
 
 let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_constr_env
 let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_lconstr_env
@@ -88,9 +87,9 @@ let pr_ljudge_env env j =
 let pr_ljudge j = pr_ljudge_env (Global.env()) j
 
 let pr_lrawconstr_env env c =
-  pr_lconstr_expr (extern_rawconstr (vars_of_env env) c)
+  pr_lconstr_expr (extern_rawconstr (Termops.vars_of_env env) c)
 let pr_rawconstr_env env c =
-  pr_constr_expr (extern_rawconstr (vars_of_env env) c)
+  pr_constr_expr (extern_rawconstr (Termops.vars_of_env env) c)
 
 let pr_lrawconstr c =
   pr_lconstr_expr (extern_rawconstr Idset.empty c)
@@ -101,14 +100,14 @@ let pr_cases_pattern t =
   pr_cases_pattern_expr (extern_cases_pattern Idset.empty t)
 
 let pr_lconstr_pattern_env env c =
-  pr_lconstr_pattern_expr (extern_constr_pattern (names_of_rel_context env) c)
+  pr_lconstr_pattern_expr (extern_constr_pattern (Termops.names_of_rel_context env) c)
 let pr_constr_pattern_env env c =
-  pr_constr_pattern_expr (extern_constr_pattern (names_of_rel_context env) c)
+  pr_constr_pattern_expr (extern_constr_pattern (Termops.names_of_rel_context env) c)
 
 let pr_lconstr_pattern t =
-  pr_lconstr_pattern_expr (extern_constr_pattern empty_names_context t)
+  pr_lconstr_pattern_expr (extern_constr_pattern Termops.empty_names_context t)
 let pr_constr_pattern t =
-  pr_constr_pattern_expr (extern_constr_pattern empty_names_context t)
+  pr_constr_pattern_expr (extern_constr_pattern Termops.empty_names_context t)
 
 let pr_sort s = pr_rawsort (extern_sort s)
 
@@ -120,7 +119,7 @@ let _ = Termops.set_print_constr pr_lconstr_env
 let pr_global_env = pr_global_env
 let pr_global = pr_global_env Idset.empty
 
-let pr_constant env cst = pr_global_env (vars_of_env env) (ConstRef cst)
+let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (ConstRef cst)
 let pr_existential env ev = pr_lconstr_env env (mkEvar ev)
 let pr_inductive env ind = pr_lconstr_env env (mkInd ind)
 let pr_constructor env cstr = pr_lconstr_env env (mkConstruct cstr)
@@ -242,18 +241,6 @@ let pr_context_of env = match Flags.print_hyps_limit () with
 
 (* display goal parts (Proof mode) *)
 
-let pr_restricted_named_context among env =
-  hv 0 (fold_named_context
-	  (fun env ((id,_,_) as d) pps ->
-	     if true || Idset.mem id among then
-	       pps ++
-		 fnl () ++ str (emacs_str (String.make 1 (Char.chr 253)) "") ++
-		 pr_var_decl env d
-	     else
-	       pps)
-          env ~init:(mt ()))
-
-
 let pr_predicate pr_elt (b, elts) =
   let pr_elts = prlist_with_sep spc pr_elt elts in
     if b then
@@ -262,19 +249,12 @@ let pr_predicate pr_elt (b, elts) =
     else
       if elts = [] then str"none" else pr_elts
 
-let pr_cpred p = pr_predicate pr_con (Cpred.elements p)
+let pr_cpred p = pr_predicate (pr_constant (Global.env())) (Cpred.elements p)
 let pr_idpred p = pr_predicate Nameops.pr_id (Idpred.elements p)
 
 let pr_transparent_state (ids, csts) =
   hv 0 (str"VARIABLES: " ++ pr_idpred ids ++ fnl () ++
 	str"CONSTANTS: " ++ pr_cpred csts ++ fnl ())
-
-let pr_subgoal_metas metas env=
-  let pr_one (meta,typ) =
-    str "?" ++ int meta ++ str " : " ++
-      hov 0 (pr_ltype_env_at_top env typ) ++ fnl () ++
-      str (emacs_str (String.make 1 (Char.chr 253)) "") in
-    hv 0 (prlist_with_sep mt pr_one metas)
 
 (* display complete goal *)
 let default_pr_goal gs =
@@ -457,7 +437,7 @@ let pr_prim_rule = function
         | [] -> mt () in
       (str"cofix " ++ pr_id f ++  str" with " ++ print_mut others)
   | Refine c ->
-      str(if occur_meta c then "refine " else "exact ") ++
+      str(if Termops.occur_meta c then "refine " else "exact ") ++
       Constrextern.with_meta_as_hole pr_constr c
 
   | Convert_concl (c,_) ->
@@ -508,7 +488,7 @@ let pr_assumptionset env s =
       Termops.ContextObjectMap.fold (fun t typ r ->
 	let (v,a,o) = r in
 	match t with
-	| Variable id -> (  Some (
+	| Termops.Variable id -> (  Some (
 	                      Option.default (fnl ()) v
 			   ++ str (string_of_id id)
 			   ++ str " : "
@@ -517,7 +497,7 @@ let pr_assumptionset env s =
 			    )
 	                 ,
 	                   a, o)
-	| Axiom kn    -> ( v ,
+	| Termops.Axiom kn    -> ( v ,
 			     Some (
 			      Option.default (fnl ()) a
 			   ++ (pr_constant env kn)
@@ -527,7 +507,7 @@ let pr_assumptionset env s =
 			     )
 			 , o
 			 )
-	| Opaque kn    -> ( v , a ,
+	| Termops.Opaque kn    -> ( v , a ,
 			     Some (
 			      Option.default (fnl ()) o
 			   ++ (pr_constant env kn)

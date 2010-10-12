@@ -1688,7 +1688,7 @@ Lemma Rwf : well_founded R.
 \item Define the step function (which needs proofs that recursive
 calls are on smaller arguments).
 
-\begin{coq_example*}
+\begin{verbatim}
 Definition split (l : list nat) 
    : {l1: list nat | R l1 l} * {l2 : list nat | R l2 l}
    := (* ... *) .
@@ -1698,7 +1698,7 @@ Definition merge_step (l : list nat) (f: forall l':list nat, R l' l -> list nat)
   let (l1,H1) := lH1 in
   let (l2,H2) := lH2 in
   concat (f l1 H1) (f l2 H2).
-\end{coq_example*}
+\end{verbatim}
 
 \item Define the recursive function by fixpoint on the step function.
 

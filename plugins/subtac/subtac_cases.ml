@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -122,7 +122,7 @@ type tomatch_stack = tomatch_status list
      originating from a subterm in which case real args are not dependent;
      it accounts for n+1 binders if dep or n binders if not dep
    - [PrProd] types abstracted term ([Abstract]); it accounts for one binder
-   - [PrCcl] types the right-hand-side
+   - [PrCcl] types the right-hand side
    - Aliases [Alias] have no trace in [predicate_signature]
 *)
 
@@ -1149,7 +1149,7 @@ let rec generalize_problem pb = function
 	  tomatch = Abstract d :: tomatch;
           pred = Option.map (generalize_predicate i d) pb'.pred }
 
-(* No more patterns: typing the right-hand-side of equations *)
+(* No more patterns: typing the right-hand side of equations *)
 let build_leaf pb =
   let rhs = extract_rhs pb in
   let tycon = match pb.pred with
@@ -1926,7 +1926,7 @@ let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constra
 
   let typing_fun tycon env = typing_fun tycon env isevars in
 
-  (* We build the matrix of patterns and right-hand-side *)
+  (* We build the matrix of patterns and right-hand side *)
   let matx = matx_of_eqns env eqns in
 
   (* We build the vector of terms to match consistently with the *)

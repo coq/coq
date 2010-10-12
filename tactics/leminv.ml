@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -33,8 +33,6 @@ open Inv
 open Vernacexpr
 open Safe_typing
 open Decl_kinds
-
-let not_work_message = "tactic fails to build the inversion lemma, may be because the predicate has arguments that depend on other arguments"
 
 let no_inductive_inconstr env constr =
   (str "Cannot recognize an inductive predicate in " ++
@@ -85,18 +83,6 @@ let no_inductive_inconstr env constr =
    the respective assumption in each subgoal.
 
  *)
-
-let thin_ids env (hyps,vars) =
-  fst
-    (List.fold_left
-       (fun ((ids,globs) as sofar) (id,c,a) ->
-          if List.mem id globs then
-	    match c with
-	      | None -> (id::ids,(global_vars env a)@globs)
-	      | Some body ->
-                  (id::ids,(global_vars env body)@(global_vars env a)@globs)
-          else sofar)
-       ([],vars) hyps)
 
 (* returns the sub_signature of sign corresponding to those identifiers that
  * are not global. *)

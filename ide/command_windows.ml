@@ -1,14 +1,12 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-let get_current_toplevel = ref (fun () -> Coq.dummy_coqtop)
-
-class command_window () =
+class command_window coqtop =
 (*  let window = GWindow.window
 		 ~allow_grow:true ~allow_shrink:true
 		 ~width:500 ~height:250
@@ -106,10 +104,16 @@ object(self)
 	then com ^ " " else com ^ " " ^ entry#text ^" . "
       in
       try
-        let curtop = !get_current_toplevel () in
-	Coq.raw_interp curtop phrase;
-	result#buffer#set_text
-	  ("Result for command " ^ phrase ^ ":\n" ^ (Coq.read_stdout curtop))
+        result#buffer#set_text
+          (match Coq.raw_interp coqtop phrase with
+             | Ide_blob.Fail (l,str) ->
+                 ("Error while interpreting "^phrase^":\n"^str)
+             | Ide_blob.Good () ->
+                 match Coq.read_stdout coqtop with
+                   | Ide_blob.Fail (l,str) ->
+                       ("Error while fetching "^phrase^"results:\n"^str)
+                   | Ide_blob.Good results ->
+                       ("Result for command " ^ phrase ^ ":\n" ^ results))
       with e ->
 	let (s,loc) = Coq.process_exn e in
 	assert (Glib.Utf8.validate s);
@@ -138,14 +142,6 @@ object(self)
     self#frame#misc#show ()
 
   initializer
-    ignore (new_page_menu#connect#clicked self#new_command);
+    ignore (new_page_menu#connect#clicked ~callback:self#new_command);
    (* ignore (window#event#connect#delete (fun _ -> window#misc#hide(); true));*)
 end
-
-let command_window = ref None
-
-let main () = command_window := Some (new command_window ())
-
-let command_window () = match !command_window with
-  | None -> failwith "No command window."
-  | Some c -> c

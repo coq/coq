@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -75,21 +75,6 @@ let _ =
       optread  = (fun () -> !dependent_propositions_elimination) ;
       optwrite = (fun b -> dependent_propositions_elimination := b) }
 
-let apply_in_side_conditions_come_first = ref true
-
-let use_apply_in_side_conditions_come_first () =
-  !apply_in_side_conditions_come_first
-  && Flags.version_strictly_greater Flags.V8_2
-
-let _ =
-  declare_bool_option
-    { optsync  = true;
-      optname  = "apply-in side-conditions coming first";
-      optkey   = ["Side";"Conditions";"First";"For";"apply";"in"];
-      optread  = (fun () -> !dependent_propositions_elimination) ;
-      optwrite = (fun b -> dependent_propositions_elimination := b) }
-
-
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
@@ -163,7 +148,6 @@ let internal_cut_rev_replace = internal_cut_rev_gen true
 (* Moving hypotheses *)
 let move_hyp        = Tacmach.move_hyp
 
-let order_hyps      = Tacmach.order_hyps
 
 (* Renaming hypotheses *)
 let rename_hyp      = Tacmach.rename_hyp
@@ -340,16 +324,6 @@ let unfold_in_hyp   loccname = reduct_in_hyp   (unfoldn loccname)
 let unfold_option   loccname = reduct_option (unfoldn loccname,DEFAULTcast)
 let pattern_option l = reduct_option (pattern_occs l,DEFAULTcast)
 
-(* A function which reduces accordingly to a reduction expression,
-   as the command Eval does. *)
-
-let checking_fun = function
-  (* Expansion is not necessarily well-typed: e.g. expansion of t into x is
-     not well-typed in [H:(P t); x:=t |- G] because x is defined after H *)
-  | Fold _ -> with_check
-  | Pattern _ -> with_check
-  | _ -> (fun x -> x)
-
 (* The main reduction function *)
 
 let reduction_clause redexp cl =
@@ -455,7 +429,6 @@ let intro_using id = intro_gen dloc (IntroBasedOn (id,[])) no_move false false
 let intro = intro_gen dloc (IntroAvoid []) no_move false false
 let introf = intro_gen dloc (IntroAvoid []) no_move true false
 let intro_avoiding l = intro_gen dloc (IntroAvoid l) no_move false false
-let introf_move_name destopt = intro_gen dloc (IntroAvoid []) destopt true false
 
 (**** Multiple introduction tactics ****)
 
@@ -729,6 +702,7 @@ let elim_flags = {
   modulo_delta = empty_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = true;
+  modulo_eta = true
 }
 
 let elimination_clause_scheme with_evars allow_K i elimclause indclause gl =
@@ -869,13 +843,18 @@ type conjunction_status =
   | DefinedRecord of constant option list
   | NotADefinedRecordUseScheme of constr
 
-let make_projection params cstr sign elim i n c =
+let make_projection sigma params cstr sign elim i n c =
   let elim = match elim with
   | NotADefinedRecordUseScheme elim ->
       let (na,b,t) = List.nth cstr.cs_args i in
       let b = match b with None -> mkRel (i+1) | Some b -> b in
       let branch = it_mkLambda_or_LetIn b cstr.cs_args in
-      if noccur_between 1 (n-i-1) t then
+      if
+	(* excludes dependent projection types *)
+	noccur_between 1 (n-i-1) t
+	(* excludes flexible projection types *)
+	&& not (isEvar (fst (whd_betaiota_stack sigma t)))
+      then
         let t = lift (i+1-n) t in
 	Some (beta_applist (elim,params@[t;branch]),t)
       else
@@ -884,7 +863,8 @@ let make_projection params cstr sign elim i n c =
       match List.nth l i with
       | Some proj ->
 	  let t = Typeops.type_of_constant (Global.env()) proj in
-	  Some (beta_applist (mkConst proj,params),prod_applist t (params@[c]))
+	  let args = extended_rel_vect 0 sign in
+	  Some (beta_applist (mkConst proj,params),prod_applist t (params@[mkApp (c,args)]))
       | None -> None
   in Option.map (fun (abselim,elimt) -> 
     let c = beta_applist (abselim,[mkApp (c,extended_rel_vect 0 sign)]) in
@@ -909,7 +889,7 @@ let descend_in_conjunctions tac exit c gl =
 	    NotADefinedRecordUseScheme elim in
 	tclFIRST
 	  (list_tabulate (fun i gl ->
-	    match make_projection params cstr sign elim i n c with
+	    match make_projection (project gl) params cstr sign elim i n c with
 	    | None -> tclFAIL 0 (mt()) gl
 	    | Some (p,pt) ->
 	    tclTHENS
@@ -2162,23 +2142,6 @@ let make_up_names n ind_opt cname =
       else avoid in
   id_of_string base, hyprecname, avoid
 
-let is_indhyp p n t =
-  let l, c = decompose_prod t in
-  let c,_ = decompose_app c in
-  let p = p + List.length l in
-  match kind_of_term c with
-    | Rel k when p < k & k <= p + n -> true
-    | _ -> false
-
-let chop_context n l =
-  let rec chop_aux acc = function
-    | n, (_,Some _,_ as h :: t) -> chop_aux (h::acc) (n, t)
-    | 0, l2 -> (List.rev acc, l2)
-    | n, (h::t) -> chop_aux (h::acc) (n-1, t)
-    | _, [] -> anomaly "chop_context"
-  in
-  chop_aux [] (n,l)
-
 let error_ind_scheme s =
   let s = if s <> "" then s^" " else s in
   error ("Cannot recognize "^s^"an induction scheme.")
@@ -2210,8 +2173,6 @@ let lift_togethern n l =
 	(lift n x :: acc, succ n))
       l ([], n)
   in l'
-
-let lift_together l = lift_togethern 0 l
 
 let lift_list l = List.map (lift 1) l
 
@@ -2260,11 +2221,11 @@ let make_abstract_generalize gl id concl dep ctx body c eqs args refls =
   in
     (* Abstract by equalitites *)
   let eqs = lift_togethern 1 eqs in (* lift together and past genarg *)
-  let abseqs = it_mkProd_or_LetIn ~init:(lift eqslen abshypeq) (List.map (fun x -> (Anonymous, None, x)) eqs) in
+  let abseqs = it_mkProd_or_LetIn (lift eqslen abshypeq) (List.map (fun x -> (Anonymous, None, x)) eqs) in
     (* Abstract by the "generalized" hypothesis. *)
   let genarg = mkProd_or_LetIn (Name id, body, c) abseqs in
     (* Abstract by the extension of the context *)
-  let genctyp = it_mkProd_or_LetIn ~init:genarg ctx in
+  let genctyp = it_mkProd_or_LetIn genarg ctx in
     (* The goal will become this product. *)
   let genc = mkCast (mkMeta meta, DEFAULTcast, genctyp) in
     (* Apply the old arguments giving the proper instantiation of the hyp *)
@@ -2275,17 +2236,6 @@ let make_abstract_generalize gl id concl dep ctx body c eqs args refls =
   let appeqs = mkApp (instc, Array.of_list refls) in
     (* Finaly, apply the reflexivity proof for the original hyp, to get a term of type gl again. *)
     mkApp (appeqs, abshypt)
-      
-let deps_of_var id env =
-  Environ.fold_named_context
-    (fun _ (n,b,t) (acc : Idset.t) -> 
-      if Option.cata (occur_var env id) false b || occur_var env id t then
-	Idset.add n acc
-      else acc)
-    env ~init:Idset.empty
-    
-let idset_of_list =
-  List.fold_left (fun s x -> Idset.add x s) Idset.empty
 
 let hyps_of_vars env sign nogen hyps =
   if Idset.is_empty hyps then [] 
@@ -2485,33 +2435,6 @@ let specialize_eqs id gl =
 let occur_rel n c =
   let res = not (noccurn n c) in
   res
-
-let list_filter_firsts f l =
-  let rec list_filter_firsts_aux f acc l =
-    match l with
-      | e::l' when f e -> list_filter_firsts_aux f (acc@[e]) l'
-      | _ -> acc,l
-  in
-  list_filter_firsts_aux f [] l
-
-let count_rels_from n c =
-  let rels = free_rels c in
-  let cpt,rg = ref 0, ref n in
-  while Intset.mem !rg rels do
-    cpt:= !cpt+1; rg:= !rg+1;
-  done;
-  !cpt
-
-let count_nonfree_rels_from n c =
-  let rels = free_rels c in
-  if Intset.exists (fun x -> x >= n) rels then
-    let cpt,rg = ref 0, ref n in
-    while not (Intset.mem !rg rels) do
-      cpt:= !cpt+1; rg:= !rg+1;
-    done;
-    !cpt
-  else raise Not_found
-
 
 (* cuts a list in two parts, first of size n. Size must be greater than n *)
 let cut_list n l =
@@ -3018,14 +2941,6 @@ let induction_without_atomization isrec with_evars elim names lid gl =
   then error "Not the right number of induction arguments."
   else induction_from_context_l with_evars elim_info lid names gl
 
-let enforce_eq_name id gl = function
-  | (b,(loc,IntroAnonymous)) ->
-      (b,(loc,IntroIdentifier (fresh_id [id] (add_prefix "Heq" id) gl)))
-  | (b,(loc,IntroFresh heq_base)) ->
-      (b,(loc,IntroIdentifier (fresh_id [id] heq_base gl)))
-  | x ->
-      x
-
 let has_selected_occurrences = function
   | None -> false
   | Some cls ->
@@ -3470,7 +3385,7 @@ let abstract_subproof id tac gl =
   let const = Pfedit.build_constant_by_tactic secsign concl
     (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)) in
   let cd = Entries.DefinitionEntry const in
-  let lem = mkConst (Declare.declare_internal_constant id (cd,IsProof Lemma)) in
+  let lem = mkConst (Declare.declare_constant ~internal:Declare.KernelSilent id (cd,IsProof Lemma)) in
   exact_no_check
     (applist (lem,List.rev (Array.to_list (instance_from_named_context sign))))
     gl
@@ -3500,7 +3415,7 @@ let admit_as_an_axiom gl =
   if occur_existential concl then error"\"admit\" cannot handle existentials.";
   let axiom =
     let cd = Entries.ParameterEntry (concl,false) in
-    let con = Declare.declare_internal_constant na (cd,IsAssumption Logical) in
+    let con = Declare.declare_constant ~internal:Declare.KernelSilent na (cd,IsAssumption Logical) in
     constr_of_global (ConstRef con)
   in
   exact_no_check

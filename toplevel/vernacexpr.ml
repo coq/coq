@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -81,12 +81,6 @@ type locatable =
   | LocateTactic of reference
   | LocateFile of string
 
-type goable =
-  | GoTo of int
-  | GoTop
-  | GoNext
-  | GoPrev
-
 type showable =
   | ShowGoal of int option
   | ShowGoalImplicitly of int option
@@ -99,8 +93,6 @@ type showable =
   | ShowIntros of bool
   | ShowMatch of lident
   | ShowThesis
-  | ExplainProof of int list
-  | ExplainTree of int list
 
 type comment =
   | CommentConstr of constr_expr
@@ -316,7 +308,7 @@ type vernac_expr =
   | VernacSyntacticDefinition of identifier located * (identifier list * constr_expr) *
       locality_flag * onlyparsing_flag
   | VernacDeclareImplicits of locality_flag * reference or_by_notation *
-      (explicitation * bool * bool) list option
+      (explicitation * bool * bool) list list
   | VernacReserve of simple_binder list
   | VernacGeneralizable of locality_flag * (lident list) option
   | VernacSetOpacity of
@@ -350,7 +342,6 @@ type vernac_expr =
   | VernacUnfocus
   | VernacSubproof of int option
   | VernacEndSubproof
-  | VernacGo of goable
   | VernacShow of showable
   | VernacCheckGuard
   | VernacProof of raw_tactic_expr
@@ -377,9 +368,6 @@ let syntax_checking_error loc s =
 let locality_flag = ref None
 
 let local_of_bool = function true -> Local | false -> Global
-
-let is_true = function Some (_,b) -> b | _ -> false
-let is_false = function Some (_,b) -> not b | _ -> false
 
 let check_locality () =
   match !locality_flag with

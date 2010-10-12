@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -12,10 +12,3 @@
    produce the output state if any, and finally will launch [Toplevel.loop]. *)
 
 val start : unit -> unit
-
-(** [init_ide] is to be used by the Coq IDE.
-   It does everything [start] does, except launching the toplevel loop.
-   It returns the list of Coq files given on the command line. *)
-
-val init_ide : System.physical_path list -> string list
-

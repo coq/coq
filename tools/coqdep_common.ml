@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -137,7 +137,7 @@ let warning_clash file dir =
       let d2 = Filename.dirname f2 in
       let dl = List.map Filename.dirname (List.rev fl) in
       eprintf
-        "*** Warning: in file %s, \n    required library %s is ambiguous!\n    (found %s.v in "
+        "*** Warning: in file %s, \n    required library %s matches several files in path\n    (found %s.v in "
         file (String.concat "." dir) f;
       List.iter (fun s -> eprintf "%s, " s) dl;
       eprintf "%s and %s; used the latter)\n" d2 d1
@@ -190,7 +190,11 @@ let soustraite_fichier_ML dep md ext =
 	 a_faire_opt := !a_faire_opt ^ opt)
       (List.rev list);
     (!a_faire, !a_faire_opt)
-  with Sys_error _ -> ("","")
+  with
+    | Sys_error _ -> ("","")
+    | _ ->
+       Printf.eprintf "Coqdep: subprocess %s failed on file %s%s\n" dep md ext;
+       exit 1
 
 let autotraite_fichier_ML md ext =
   try
@@ -236,7 +240,13 @@ let traite_fichier_mllib md ext =
 	     a_faire_opt := !a_faire_opt^" "^file^".cmx"
 	 | None -> ()) list;
     (!a_faire, !a_faire_opt)
-  with Sys_error _ -> ("","")
+  with
+    | Sys_error _ -> ("","")
+    | Syntax_error (i,j) ->
+	Printf.eprintf "File \"%s%s\", characters %i-%i:\nError: Syntax error\n"
+	  md ext i j;
+	exit 1
+
 
 (* Makefile's escaping rules are awful: $ is escaped by doubling and
    other special characters are escaped by backslash prefixing while

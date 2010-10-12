@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -267,9 +267,11 @@ type conv_pb =
 
 let sort_cmp pb s0 s1 cuniv =
   match (s0,s1) with
-    | (Prop c1, Prop c2) ->
+    | (Prop c1, Prop c2) when pb = CUMUL ->
         if c1 = Null or c2 = Pos then cuniv   (* Prop <= Set *)
         else raise NotConvertible
+    | (Prop c1, Prop c2) ->
+        if c1 = c2 then cuniv else raise NotConvertible
     | (Prop c1, Type u) when pb = CUMUL -> assert (is_univ_variable u); cuniv
     | (Type u1, Type u2) ->
 	assert (is_univ_variable u2);
@@ -355,7 +357,7 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
   pr_state st2;  Printf.printf "\n\n";*)
   Util.check_for_interrupt ();
   (* First head reduce both terms *)
-  let rec  whd_both (t1,stk1) (t2,stk2) =
+  let rec whd_both (t1,stk1) (t2,stk2) =
     let st1' = whd_stack (snd infos) t1 stk1 in
     let st2' = whd_stack (snd infos) t2 stk2 in
     (* Now, whd_stack on term2 might have modified st1 (due to sharing),
@@ -369,24 +371,25 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
 (*  pr_state (hd1,v1);  Printf.printf "\n\n";
   pr_state (hd2,v2);  Printf.printf "\n\n\n"; *)
   match (fterm_of hd1, fterm_of hd2) with
-  (* case of leaves *)
-  | (FAtom a1, FAtom a2) ->
-      (match kind_of_term a1, kind_of_term a2 with
-      | (Sort s1, Sort s2) ->
-	  assert (is_empty_stack v1 && is_empty_stack v2);
-	  sort_cmp cv_pb s1 s2 cuniv
-      | (Meta n, Meta m) ->
-          if n=m
-	  then convert_stacks infos lft1 lft2 v1 v2 cuniv
-          else raise NotConvertible
-      | _ -> raise NotConvertible)
-  | (FEvar ((ev1,args1),env1), FEvar ((ev2,args2),env2)) ->
-      if ev1=ev2 then
-        let u1 = convert_stacks infos lft1 lft2 v1 v2 cuniv in
-        convert_vect infos el1 el2
-          (Array.map (mk_clos env1) args1)
-          (Array.map (mk_clos env2) args2) u1
-      else raise NotConvertible
+    (* case of leaves *)
+    | (FAtom a1, FAtom a2) ->
+	(match kind_of_term a1, kind_of_term a2 with
+	   | (Sort s1, Sort s2) ->
+	       if not (is_empty_stack v1 && is_empty_stack v2) then
+		 anomaly "conversion was given ill-typed terms (Sort)";
+	       sort_cmp cv_pb s1 s2 cuniv
+	   | (Meta n, Meta m) ->
+               if n=m
+	       then convert_stacks infos lft1 lft2 v1 v2 cuniv
+               else raise NotConvertible
+	   | _ -> raise NotConvertible)
+    | (FEvar ((ev1,args1),env1), FEvar ((ev2,args2),env2)) ->
+        if ev1=ev2 then
+          let u1 = convert_stacks infos lft1 lft2 v1 v2 cuniv in
+          convert_vect infos el1 el2
+            (Array.map (mk_clos env1) args1)
+            (Array.map (mk_clos env2) args2) u1
+        else raise NotConvertible
 
     (* 2 index known to be bound to no constant *)
   | (FRel n, FRel m) ->
@@ -396,19 +399,16 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
 
     (* 2 constants, 2 local defined vars or 2 defined rels *)
   | (FFlex fl1, FFlex fl2) ->
-(*       Printf.printf "Flex, Flex\n"; *)
        begin try (* try first intensional equality *)
 	if eq_table_key fl1 fl2
         then convert_stacks infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
       with NotConvertible ->
-(*	Printf.printf "Oracle "; *)
          (* else the oracle tells which constant is to be expanded *)
         let (app1,app2) =
 	  let aux appr1 lft1 fl1 v1 appr2 lft2 fl2 v2 =
 	    begin match unfold_reference infos fl1 with
 	    | Def def1 ->
-(*		Printf.printf "Unfold 1\n"; *)
 		((lft1, whd_stack (snd infos) def1 v1), appr2)
 	    | Primitive op when check_native_args op v1 ->
 		let kn = 
@@ -420,7 +420,6 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
 	    | _ ->
 		begin match unfold_reference infos fl2 with
 		| Def def2 ->
-(*		    Printf.printf "Unfold 2\n"; *)
 		    (appr1, (lft2, whd_stack (snd infos) def2 v2))
 		| Primitive op when check_native_args op v2 -> 
 		    let kn = 
@@ -433,16 +432,48 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
 		end
 	    end in
           if Conv_oracle.oracle_order fl1 fl2 then
-            ( (*Printf.printf "1 2\n"; *)
-	    aux appr1 lft1 fl1 v1 appr2 lft2 fl2 v2 )
+	    aux appr1 lft1 fl1 v1 appr2 lft2 fl2 v2
 	  else 
 	    let (app2,app1) = 
-	      (*Printf.printf "2 1\n"; *)
 	      aux appr2 lft2 fl2 v2 appr1 lft1 fl1 v1 in
 	    (app1,app2) in
 	eqappr cv_pb infos app1 app2 cuniv 
-      end	
-      (* only one constant, defined var or defined rel *)  
+      end
+  (* other constructors *)
+  | (FLambda _, FLambda _) ->
+      (* Inconsistency: we tolerate that v1, v2 contain shift and update but
+         we throw them away *)
+      if not (is_empty_stack v1 && is_empty_stack v2) then
+	anomaly "conversion was given ill-typed terms (FLambda)";
+      let (_,ty1,bd1) = destFLambda mk_clos hd1 in
+      let (_,ty2,bd2) = destFLambda mk_clos hd2 in
+      let u1 = ccnv CONV infos el1 el2 ty1 ty2 cuniv in
+      ccnv CONV infos (el_lift el1) (el_lift el2) bd1 bd2 u1
+
+  | (FProd (_,c1,c2), FProd (_,c'1,c'2)) ->
+      if not (is_empty_stack v1 && is_empty_stack v2) then
+	anomaly "conversion was given ill-typed terms (FProd)";
+      (* Luo's system *)
+      let u1 = ccnv CONV infos el1 el2 c1 c'1 cuniv in
+      ccnv cv_pb infos (el_lift el1) (el_lift el2) c2 c'2 u1
+
+  (* Eta-expansion on the fly *)
+  | (FLambda _, _) ->
+      if v1 <> [] then
+	anomaly "conversion was given unreduced term (FLambda)";
+      let (_,_ty1,bd1) = destFLambda mk_clos hd1 in
+      eqappr CONV infos
+	(el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack v2)) cuniv
+  | (_, FLambda _) ->
+      if v2 <> [] then
+	anomaly "conversion was given unreduced term (FLambda)";
+      let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
+      eqappr CONV infos
+	(el_lift lft1, (hd1, eta_expand_stack v1)) (el_lift lft2, (bd2, [])) cuniv
+
+
+	
+  (* only one constant, defined var or defined rel *)  
   | (FFlex fl1, _)      ->
       begin match unfold_reference infos fl1 with
       | Def def1 -> 
@@ -458,7 +489,6 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
       | _ -> raise NotConvertible
       end
   | (_, FFlex fl2)      ->
-(*      Printf.printf "Flex2\n"; *)
       begin match unfold_reference infos fl2 with
       | Def def2 ->
 	  eqappr cv_pb infos appr1 
@@ -474,33 +504,23 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
       | _ -> raise NotConvertible
       end
 
-  (* other constructors *)
-  | (FLambda _, FLambda _) ->
-      assert (is_empty_stack v1 && is_empty_stack v2);
-      let (_,ty1,bd1) = destFLambda mk_clos hd1 in
-      let (_,ty2,bd2) = destFLambda mk_clos hd2 in
-      let u1 = ccnv CONV infos el1 el2 ty1 ty2 cuniv in
-      ccnv CONV infos (el_lift el1) (el_lift el2) bd1 bd2 u1
-	
-  | (FProd (_,c1,c2), FProd (_,c'1,c'2)) ->
-      assert (is_empty_stack v1 && is_empty_stack v2);
-      (* Luo's system *)
-      let u1 = ccnv CONV infos el1 el2 c1 c'1 cuniv in
-      ccnv cv_pb infos (el_lift el1) (el_lift el2) c2 c'2 u1
-	
   (* Inductive types:  MutInd MutConstruct Fix Cofix *)
-	  
+
   | (FInd ind1, FInd ind2) ->
-      if eq_ind ind1 ind2 then convert_stacks infos lft1 lft2 v1 v2 cuniv
-      else raise NotConvertible
-	    
-  | (FConstruct (ind1,j1), FConstruct (ind2,j2)) ->
-      if j1 = j2 && eq_ind ind1 ind2 then
+      if eq_ind ind1 ind2
+      then
         convert_stacks infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
-	    
+	  
+  | (FConstruct (ind1,j1), FConstruct (ind2,j2)) ->
+      if j1 = j2 && eq_ind ind1 ind2
+      then
+        convert_stacks infos lft1 lft2 v1 v2 cuniv
+      else raise NotConvertible
+	  
   | (FFix ((op1,(_,tys1,cl1)),e1), FFix((op2,(_,tys2,cl2)),e2)) ->
-      if op1 = op2 then
+      if op1 = op2
+      then
 	let n = Array.length cl1 in
         let fty1 = Array.map (mk_clos e1) tys1 in
         let fty2 = Array.map (mk_clos e2) tys2 in
@@ -512,9 +532,10 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
 	    (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 u1 in
         convert_stacks infos lft1 lft2 v1 v2 u2
       else raise NotConvertible
-	    
+	  
   | (FCoFix ((op1,(_,tys1,cl1)),e1), FCoFix((op2,(_,tys2,cl2)),e2)) ->
-      if op1 = op2 then
+      if op1 = op2
+      then
 	let n = Array.length cl1 in
         let fty1 = Array.map (mk_clos e1) tys1 in
         let fty2 = Array.map (mk_clos e2) tys2 in
@@ -523,10 +544,10 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
         let u1 = convert_vect infos el1 el2 fty1 fty2 cuniv in
         let u2 =
 	  convert_vect infos
-	      (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 u1 in
+	    (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 u1 in
         convert_stacks infos lft1 lft2 v1 v2 u2
       else raise NotConvertible
-	
+
   (* Native constructors *)    
   | FNativeInt i1, FNativeInt i2 ->
       if i1 = i2 then convert_stacks infos lft1 lft2 v1 v2 cuniv

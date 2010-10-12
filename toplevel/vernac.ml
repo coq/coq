@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -43,7 +43,7 @@ let raise_with_file file exc =
           ((b, f, loc), e)
       | Loc.Exc_located (loc, e) when loc <> dummy_loc ->
           ((false,file, loc), e)
-      | _ -> ((false,file,cmdloc), re)
+      | Loc.Exc_located (_, e) | e -> ((false,file,cmdloc), e)
   in
   raise (Error_in_file (file, inner, disable_drop inex))
 
@@ -197,7 +197,10 @@ let rec vernac_com interpfun (loc,com) =
 	  with e -> stop(); raise e
 	end
 
-    | v -> if not !just_parsing then interpfun v
+    | v ->
+        if not !just_parsing then
+          States.with_heavy_rollback interpfun
+            Cerrors.process_vernac_interp_error v
 
   in
     try
@@ -236,12 +239,9 @@ and read_vernac_file verbosely s =
  * with a new label to make vernac undoing easier. Also freeze state to speed up
  * backtracking. *)
 let eval_expr last =
-  vernac_com (States.with_heavy_rollback Vernacentries.interp) last;
+  vernac_com Vernacentries.interp last;
   Lib.add_frozen_state();
   Lib.mark_end_of_command()
-
-let eval_ctrl ast =
-  vernac_com Vernacentries.interp (Util.dummy_loc,ast)
 
 (* raw_do_vernac : Pcoq.Gram.parsable -> unit
  * vernac_step . parse_sentence *)

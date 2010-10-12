@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -216,11 +216,9 @@ Definition all (A:Type) (P:A -> Prop) := forall x:A, P x.
 
 (* Rule order is important to give printing priority to fully typed exists *)
 
-Notation "'exists' x , p" := (ex (fun x => p))
-  (at level 200, x ident, right associativity) : type_scope.
-Notation "'exists' x : t , p" := (ex (fun x:t => p))
-  (at level 200, x ident, right associativity,
-    format "'[' 'exists'  '/  ' x  :  t ,  '/  ' p ']'")
+Notation "'exists' x .. y , p" := (ex (fun x => .. (ex (fun y => p)) ..))
+  (at level 200, x binder, right associativity,
+   format "'[' 'exists'  '/  ' x .. y ,  '/  ' p ']'")
   : type_scope.
 
 Notation "'exists2' x , p & q" := (ex2 (fun x => p) (fun x => q))
@@ -390,13 +388,11 @@ Definition uniqueness (A:Type) (P:A->Prop) := forall x y, P x -> P y -> x = y.
 
 (** Unique existence *)
 
-Notation "'exists' ! x , P" := (ex (unique (fun x => P)))
-  (at level 200, x ident, right associativity,
-    format "'[' 'exists' !  '/  ' x ,  '/  ' P ']'") : type_scope.
-Notation "'exists' ! x : A , P" :=
-  (ex (unique (fun x:A => P)))
-  (at level 200, x ident, right associativity,
-    format "'[' 'exists' !  '/  ' x  :  A ,  '/  ' P ']'") : type_scope.
+Notation "'exists' ! x .. y , p" :=
+  (ex (unique (fun x => .. (ex (unique (fun y => p))) ..)))
+  (at level 200, x binder, right associativity,
+   format "'[' 'exists'  !  '/  ' x .. y ,  '/  ' p ']'")
+  : type_scope.
 
 Lemma unique_existence : forall (A:Type) (P:A->Prop),
   ((exists x, P x) /\ uniqueness P) <-> (exists! x, P x).

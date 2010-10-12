@@ -42,6 +42,7 @@ let invalid_arg_loc (loc,s) = Loc.raise loc (Invalid_argument s)
 
 let located_fold_left f x (_,a) = f x a
 let located_iter2 f (_,a) (_,b) = f a b
+let down_located f (_,a) = f a
 
 (* Like Exc_located, but specifies the outermost file read, the filename
    associated to the location of the error, and the error itself. *)
@@ -64,6 +65,11 @@ let on_pi3 f (a,b,c) = (a,b,f c)
 let pi1 (a,_,_) = a
 let pi2 (_,a,_) = a
 let pi3 (_,_,a) = a
+
+(* Projection operator *)
+
+let down_fst f x = f (fst x)
+let down_snd f x = f (snd x)
 
 (* Characters *)
 
@@ -135,7 +141,7 @@ let string_string_contains ~where ~what =
   with
       Not_found -> false
 
-let plural n s = if n>1 then s^"s" else s
+let plural n s = if n<>1 then s^"s" else s
 
 let ordinal n =
   let s = match n mod 10 with 1 -> "st" | 2 -> "nd" | 3 -> "rd" | _ -> "th" in
@@ -577,7 +583,8 @@ let list_eq_set l1 l2 =
   | a::l2 -> aux (list_remove_first a l1) l2 in
   try aux l1 l2 with Not_found -> false
 
-let list_for_all2eq f l1 l2 = try List.for_all2 f l1 l2 with Failure _ -> false
+let list_for_all2eq f l1 l2 =
+  try List.for_all2 f l1 l2 with Invalid_argument _ -> false
 
 let list_filter_i p =
   let rec filter_i_rec i = function
@@ -691,6 +698,16 @@ let list_split_when p =
       | (a::l)  -> if (p a) then (List.rev x,y) else split_when_loop (a::x) l
   in
   split_when_loop []
+
+(* [list_split_by p l] splits [l] into two lists [(l1,l2)] such that elements of
+   [l1] satisfy [p] and elements of [l2] do not *)
+let list_split_by p =
+  let rec split_by_loop = function
+  | []   -> ([],[])
+  | a::l ->
+      let (l1,l2) = split_by_loop l in if p a then (a::l1,l2) else (l1,a::l2)
+  in
+  split_by_loop
 
 let rec list_split3 = function
   | [] -> ([], [], [])
@@ -1179,6 +1196,12 @@ let iterate_for a b f x =
   let rec iterate i v = if i > b then v else iterate (succ i) (f i v) in
   iterate a x
 
+(* Delayed computations *)
+
+type 'a delayed = unit -> 'a
+
+let delayed_force f = f ()
+
 (* Misc *)
 
 type ('a,'b) union = Inl of 'a | Inr of 'b
@@ -1269,29 +1292,28 @@ let pr_vertical_list pr = function
   | [] -> str "none" ++ fnl ()
   | l -> fnl () ++ str "  " ++ hov 0 (prlist_with_sep pr_fnl pr l) ++ fnl ()
 
-let prvecti elem v =
-  let n = Array.length v in
+(* [prvecti_with_sep sep pr [|a0 ; ... ; an|]] outputs
+   [pr 0 a0 ++ sep() ++ ... ++ sep() ++ pr n an] *)
+
+let prvecti_with_sep sep elem v =
   let rec pr i =
     if i = 0 then
       elem 0 v.(0)
     else
-      let r = pr (i-1) and e = elem i v.(i) in r ++ e
+      let r = pr (i-1) and s = sep () and e = elem i v.(i) in
+      r ++ s ++ e
   in
+  let n = Array.length v in
   if n = 0 then mt () else pr (n - 1)
+
+(* [prvecti pr [|a0 ; ... ; an|]] outputs [pr 0 a0 ++ ... ++ pr n an] *)
+
+let prvecti elem v = prvecti_with_sep mt elem v
 
 (* [prvect_with_sep sep pr [|a ; ... ; c|]] outputs
    [pr a ++ sep() ++ ... ++ sep() ++ pr c] *)
 
-let prvect_with_sep sep elem v =
-  let rec pr n =
-    if n = 0 then
-      elem v.(0)
-    else
-      let r = pr (n-1) and s = sep() and e = elem v.(n) in
-      r ++ s ++ e
-      in
-  let n = Array.length v in
-  if n = 0 then mt () else pr (n - 1)
+let prvect_with_sep sep elem v = prvecti_with_sep sep (fun _ -> elem) v
 
 (* [prvect pr [|a ; ... ; c|]] outputs [pr a ++ ... ++ pr c] *)
 

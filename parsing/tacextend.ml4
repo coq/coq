@@ -1,10 +1,12 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
+
+(*i camlp4deps: "tools/compat5b.cmo" i*)
 
 open Util
 open Genarg
@@ -40,12 +42,6 @@ let rec make_let e = function
       let loc = join_loc loc (MLast.loc_of_expr e) in
       let e = make_let e l in
       let v = <:expr< Genarg.out_gen $make_wit loc t$ $lid:p$ >> in
-      let v =
-        (* Special case for tactics which must be stored in algebraic
-           form to avoid marshalling closures and to be reprinted *)
-        if is_tactic_genarg t then
-          <:expr< ($v$, Tacinterp.eval_tactic $v$) >>
-        else v in
       <:expr< let $lid:p$ = $v$ in $e$ >>
   | _::l -> make_let e l
 
@@ -83,9 +79,7 @@ let rec make_eval_tactic e = function
       let p = Names.string_of_id p in
       let loc = join_loc loc (MLast.loc_of_expr e) in
       let e = make_eval_tactic e l in
-        (* Special case for tactics which must be stored in algebraic
-           form to avoid marshalling closures and to be reprinted *)
-      <:expr< let $lid:p$ = ($lid:p$,Tacinterp.eval_tactic $lid:p$) in $e$ >>
+      <:expr< let $lid:p$ = $lid:p$ in $e$ >>
   | _::l -> make_eval_tactic e l
 
 let rec make_fun e = function

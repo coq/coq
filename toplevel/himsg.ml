@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -228,6 +228,7 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
       str "Recursive definition on" ++ spc () ++ pr_lconstr_env env c ++ spc () ++
       str "which should be an inductive type"
   | RecursionOnIllegalTerm(j,(arg_env, arg),le,lt) ->
+      let arg_env = make_all_name_different arg_env in
       let called =
         match names.(j) with
             Name id -> pr_id id
@@ -288,6 +289,7 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
   pr_ne_context_of (str "In environment") env ++
   st ++ str "." ++ fnl () ++
   (try (* May fail with unresolved globals. *)
+      let fixenv = make_all_name_different fixenv in
       let pvd = pr_lconstr_env fixenv vdefj.(i).uj_val in
 	str"Recursive definition is:" ++ spc () ++ pvd ++ str "."
     with _ -> mt ())
@@ -522,10 +524,9 @@ let explain_no_instance env (_,id) l =
     prlist_with_sep pr_spc (pr_lconstr_env env) l
 
 let undefined_evars evm =
-  Evd.fold (fun ev evi undef ->
-    if evi.evar_body = Evar_empty then
+  Evd.fold_undefined (fun ev evi undef ->
       Evd.add undef ev (Evarutil.nf_evar_info evm evi)
-    else undef) evm Evd.empty
+  ) evm Evd.empty
 
 let pr_constraints printenv env evm =
   let evm = undefined_evars evm in

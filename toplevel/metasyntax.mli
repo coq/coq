@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -43,7 +43,7 @@ val add_notation_interpretation :
 
 (** Add a notation interpretation for supporting the "where" clause *)
 
-val set_notation_for_interpretation : Constrintern.full_internalization_env ->
+val set_notation_for_interpretation : Constrintern.internalization_env ->
   (lstring * constr_expr * scope_name option) -> unit
 
 (** Add only the parsing/printing rule of a notation *)

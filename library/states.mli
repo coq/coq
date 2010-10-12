@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -25,7 +25,7 @@ val unfreeze : state -> unit
 (** [with_heavy_rollback f x] applies [f] to [x] and restores the
   state of the whole system as it was before the evaluation if an exception
   is raised. *)
-val with_heavy_rollback : ('a -> 'b) -> 'a -> 'b
+val with_heavy_rollback : ('a -> 'b) -> (exn -> exn) -> 'a -> 'b
 
 (** [with_state_protection f x] applies [f] to [x] and restores the
   state of the whole system as it was before the evaluation of f *)

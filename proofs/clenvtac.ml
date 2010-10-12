@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -61,7 +61,7 @@ let clenv_value_cast_meta clenv =
     clenv_cast_meta clenv (clenv_value clenv)
 
 let clenv_pose_dependent_evars with_evars clenv =
-  let dep_mvs = clenv_dependent false clenv in
+  let dep_mvs = clenv_dependent clenv in
   if dep_mvs <> [] & not with_evars then
     raise
       (RefinerError (UnresolvedBindings (List.map (meta_name clenv.evd) dep_mvs)));
@@ -107,6 +107,7 @@ let fail_quick_unif_flags = {
   modulo_delta = empty_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = false;
+  modulo_eta = true
 }
 
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -111,8 +111,7 @@ apply JMeq_refl.
 Qed.
 
 Lemma eq_dep_strictly_stronger_JMeq :
- exists U, exists P, exists p, exists q, exists x, exists y,
-  JMeq x y /\ ~ eq_dep U P p x q y.
+ exists U P p q x y, JMeq x y /\ ~ eq_dep U P p x q y.
 Proof.
 exists bool. exists (fun _ => True). exists true. exists false.
 exists I. exists I.

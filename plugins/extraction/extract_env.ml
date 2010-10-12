@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -66,7 +66,7 @@ module type VISIT = sig
 
   (* Add kernel_name / constant / reference / ... in the visit lists.
      These functions silently add the mp of their arg in the mp list *)
-  val add_kn : mutual_inductive -> unit
+  val add_ind : mutual_inductive -> unit
   val add_con : constant -> unit
   val add_ref : global_reference -> unit
   val add_decl_deps : ml_decl -> unit
@@ -74,31 +74,35 @@ module type VISIT = sig
 
   (* Test functions:
      is a particular object a needed dependency for the current extraction ? *)
-  val needed_kn : mutual_inductive -> bool
+  val needed_ind : mutual_inductive -> bool
   val needed_con : constant -> bool
   val needed_mp : module_path -> bool
 end
 
 module Visit : VISIT = struct
   (* What used to be in a single KNset should now be split into a KNset
-     (for inductives and modules names) and a Cset for constants
+     (for inductives and modules names) and a Cset_env for constants
      (and still the remaining MPset) *)
   type must_visit =
-      { mutable kn : Mindset.t; mutable con : Cset.t; mutable mp : MPset.t }
+      { mutable ind : KNset.t; mutable con : KNset.t; mutable mp : MPset.t }
   (* the imperative internal visit lists *)
-  let v = { kn = Mindset.empty ; con = Cset.empty ; mp = MPset.empty }
+  let v = { ind = KNset.empty ; con = KNset.empty ; mp = MPset.empty }
   (* the accessor functions *)
-  let reset () = v.kn <- Mindset.empty; v.con <- Cset.empty; v.mp <- MPset.empty
-  let needed_kn kn = Mindset.mem kn v.kn
-  let needed_con c = Cset.mem c v.con
+  let reset () = v.ind <- KNset.empty; v.con <- KNset.empty; v.mp <- MPset.empty
+  let needed_ind i = KNset.mem (user_mind i) v.ind
+  let needed_con c = KNset.mem (user_con c) v.con
   let needed_mp mp = MPset.mem mp v.mp
   let add_mp mp =
     check_loaded_modfile mp; v.mp <- MPset.union (prefixes_mp mp) v.mp
-  let add_kn kn = v.kn <- Mindset.add kn v.kn; add_mp (mind_modpath kn)
-  let add_con c = v.con <- Cset.add c v.con; add_mp (con_modpath c)
+  let add_ind i =
+    let kn = user_mind i in
+    v.ind <- KNset.add kn v.ind; add_mp (modpath kn)
+  let add_con c =
+    let kn = user_con c in
+    v.con <- KNset.add kn v.con; add_mp (modpath kn)
   let add_ref = function
     | ConstRef c -> add_con c
-    | IndRef (kn,_) | ConstructRef ((kn,_),_) -> add_kn kn
+    | IndRef (ind,_) | ConstructRef ((ind,_),_) -> add_ind ind
     | VarRef _ -> assert false
   let add_decl_deps = decl_iter_references add_ref add_ref add_ref
   let add_spec_deps = spec_iter_references add_ref add_ref add_ref
@@ -137,24 +141,43 @@ let factor_fix env l cb msb =
     labels, recd, msb''
   end
 
-let build_mb mp expr typ_opt =
-  { mod_mp = mp;
-    mod_expr = Some expr;
-    mod_type = typ_opt;
-    mod_type_alg = None;
-    mod_constraints = Univ.Constraint.empty;
-    mod_delta = Mod_subst.empty_delta_resolver;
-    mod_retroknowledge = []
-  }
+(** Expanding a [struct_expr_body] into a version without abbreviations
+    or functor applications. This is done via a detour to entries
+    (hack proposed by Elie)
+*)
 
-let my_type_of_mb env mb =
-   mb.mod_type
+
+let rec seb2mse = function
+  | SEBapply (s,s',_) -> Entries.MSEapply(seb2mse s, seb2mse s')
+  | SEBident mp -> Entries.MSEident mp
+  | _ -> failwith "seb2mse: received a non-atomic seb"
+
+let expand_seb env mp seb =
+  let seb,_,_,_ =
+    Mod_typing.translate_struct_module_entry env mp true (seb2mse seb)
+  in seb
+
+(** When possible, we use the nicer, shorter, algebraic type structures
+    instead of the expanded ones. *)
+
+let my_type_of_mb mb =
+  let m0 = mb.mod_type in
+  match mb.mod_type_alg with Some m -> m0,m | None -> m0,m0
+
+let my_type_of_mtb mtb =
+  let m0 = mtb.typ_expr in
+  match mtb.typ_expr_alg with Some m -> m0,m | None -> m0,m0
 
 (** Ad-hoc update of environment, inspired by [Mod_type.check_with_aux_def].
     To check with Elie. *)
 
-let env_for_mtb_with env mp mtb idl =
-  let sig_b = match mtb with
+let rec msid_of_seb = function
+  | SEBident mp -> mp
+  | SEBwith (seb,_) -> msid_of_seb seb
+  | _ -> assert false
+
+let env_for_mtb_with env mp seb idl =
+  let sig_b = match seb with
     | SEBstruct(sig_b) -> sig_b
     | _ -> assert false
   in
@@ -182,49 +205,47 @@ let rec extract_sfb_spec env mp = function
       else begin Visit.add_spec_deps s; (l,Spec s) :: specs end
   | (l,SFBmodule mb) :: msig ->
       let specs = extract_sfb_spec env mp msig in
-      let spec = extract_seb_spec env mb.mod_mp (my_type_of_mb env mb) in
+      let spec = extract_seb_spec env mb.mod_mp (my_type_of_mb mb) in
       (l,Smodule spec) :: specs
   | (l,SFBmodtype mtb) :: msig ->
       let specs = extract_sfb_spec env mp msig in
-      (l,Smodtype (extract_seb_spec env mtb.typ_mp mtb.typ_expr)) :: specs
+      let spec = extract_seb_spec env mtb.typ_mp (my_type_of_mtb mtb) in
+      (l,Smodtype spec) :: specs
 
 (* From [struct_expr_body] to specifications *)
 
-(* Invariant: the [seb] given to [extract_seb_spec] should either come:
-   - from a [mod_type] or [type_expr] field
-   - from the output of [Modops.eval_struct].
+(* Invariant: the [seb] given to [extract_seb_spec] should either come
+   from a [mod_type] or [type_expr] field, or their [_alg] counterparts.
    This way, any encountered [SEBident] should be a true module type.
-   For instance, [my_type_of_mb] ensures this invariant.
 *)
 
-and extract_seb_spec env mp1 = function
+and extract_seb_spec env mp1 (seb,seb_alg) = match seb_alg with
   | SEBident mp -> Visit.add_mp mp; MTident mp
-  | SEBwith(mtb',With_definition_body(idl,cb))->
-      let env' = env_for_mtb_with env  mp1 mtb' idl in
-      let mtb''= extract_seb_spec env mp1 mtb' in
+  | SEBwith(seb',With_definition_body(idl,cb))->
+      let env' = env_for_mtb_with env (msid_of_seb seb') seb idl in
+      let mt = extract_seb_spec env mp1 (seb,seb') in
       (match extract_with_type env' cb with (* cb peut contenir des kn  *)
-	 | None ->  mtb''
-	 | Some (vl,typ) -> MTwith(mtb'',ML_With_type(idl,vl,typ)))
-  | SEBwith(mtb',With_module_body(idl,mp))->
+	 | None -> mt
+	 | Some (vl,typ) -> MTwith(mt,ML_With_type(idl,vl,typ)))
+  | SEBwith(seb',With_module_body(idl,mp))->
       Visit.add_mp mp;
-      MTwith(extract_seb_spec env mp1 mtb',
+      MTwith(extract_seb_spec env mp1 (seb,seb'),
 	     ML_With_module(idl,mp))
-(* TODO: On pourrait peut-etre oter certaines eta-expansion, du genre:
-   | SEBfunctor(mbid,_,SEBapply(m,SEBident (MPbound mbid2),_))
-     when mbid = mbid2 -> extract_seb_spec env m
-   (* faudrait alors ajouter un test de non-apparition de mbid dans mb *)
-*)
- | SEBfunctor (mbid, mtb, mtb') ->
+  | SEBfunctor (mbid, mtb, seb_alg') ->
+      let seb' = match seb with
+	| SEBfunctor (mbid',_,seb') when mbid' = mbid -> seb'
+	| _ -> assert false
+      in
       let mp = MPbound mbid in
-      let env' = Modops.add_module (Modops.module_body_of_type mp mtb) 
-	env in
-      MTfunsig (mbid, extract_seb_spec env mp mtb.typ_expr,
-		extract_seb_spec env' mp1 mtb')
+      let env' = Modops.add_module (Modops.module_body_of_type mp mtb) env in
+      MTfunsig (mbid, extract_seb_spec env mp (my_type_of_mtb mtb),
+		extract_seb_spec env' mp1 (seb',seb_alg'))
   | SEBstruct (msig) ->
       let env' = Modops.add_signature mp1 msig empty_delta_resolver env in
-	MTsig (mp1, extract_sfb_spec env' mp1 msig)
+      MTsig (mp1, extract_sfb_spec env' mp1 msig)
   | SEBapply _ ->
-      assert false
+      if seb <> seb_alg then extract_seb_spec env mp1 (seb,seb)
+      else assert false
 
 
 
@@ -261,7 +282,7 @@ let rec extract_sfb env mp all = function
       let ms = extract_sfb env mp all msb in
       let kn = make_kn mp empty_dirpath l in
       let mind = mind_of_kn kn in
-      let b = Visit.needed_kn mind in
+      let b = Visit.needed_ind mind in
       if all || b then
 	let d = Dind (kn, extract_inductive env mind) in
 	if (not b) && (logical_decl d) then ms
@@ -277,12 +298,15 @@ let rec extract_sfb env mp all = function
       let ms = extract_sfb env mp all msb in
       let mp = MPdot (mp,l) in
        if all || Visit.needed_mp mp then
-	(l,SEmodtype (extract_seb_spec env mp mtb.typ_expr)) :: ms
+	(l,SEmodtype (extract_seb_spec env mp (my_type_of_mtb mtb))) :: ms
       else ms
 
 (* From [struct_expr_body] to implementations *)
 
 and extract_seb env mp all = function
+  | (SEBident _ | SEBapply _) as seb when lang () <> Ocaml ->
+      (* in Haskell/Scheme, we expand everything *)
+      extract_seb env mp all (expand_seb env mp seb)
   | SEBident mp ->
       if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp false;
       Visit.add_mp mp; MEident mp
@@ -293,7 +317,7 @@ and extract_seb env mp all = function
       let mp1 = MPbound mbid in
       let env' = Modops.add_module (Modops.module_body_of_type  mp1 mtb)
 	env  in
-      MEfunctor (mbid, extract_seb_spec env mp1 mtb.typ_expr,
+      MEfunctor (mbid, extract_seb_spec env mp1 (my_type_of_mtb mtb),
 		 extract_seb env' mp true meb)
   | SEBstruct (msb) ->
       let env' = Modops.add_signature mp msb empty_delta_resolver env in
@@ -304,7 +328,7 @@ and extract_module env mp all mb =
   (* [mb.mod_expr <> None ], since we look at modules from outside. *)
   (* Example of module with empty [mod_expr] is X inside a Module F [X:SIG]. *)
   { ml_mod_expr = extract_seb env mp all (Option.get mb.mod_expr);
-    ml_mod_type = extract_seb_spec env mp (my_type_of_mb env mb) }
+    ml_mod_type = extract_seb_spec env mp (my_type_of_mb mb) }
 
 
 let unpack = function MEstruct (_,sel) -> sel | _ -> assert false
@@ -316,7 +340,7 @@ let mono_environment refs mpl =
   let env = Global.env () in
   let l = List.rev (environment_until None) in
   List.rev_map
-    (fun (mp,m) -> mp, unpack (extract_seb env  mp false m)) l
+    (fun (mp,m) -> mp, unpack (extract_seb env mp false m)) l
 
 (**************************************)
 (*S Part II : Input/Output primitives *)
@@ -351,11 +375,10 @@ let mono_filename f =
 
 (* Builds a suitable filename from a module id *)
 
-let module_filename fc =
+let module_filename mp =
+  let f = file_of_modfile mp in
   let d = descr () in
-  let fn = if d.capital_file then fc else String.uncapitalize fc
-  in
-  Some (fn^d.file_suffix), Option.map ((^) fn) d.sig_suffix, id_of_string fc
+  Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id_of_string f
 
 (*s Extraction of one decl to stdout. *)
 
@@ -365,7 +388,7 @@ let print_one_decl struc mp decl =
   set_phase Pre;
   ignore (d.pp_struct struc);
   set_phase Impl;
-  push_visible mp None;
+  push_visible mp [];
   msgnl (d.pp_decl decl);
   pop_visible ()
 
@@ -512,8 +535,7 @@ let extraction_library is_rec m =
   let print = function
     | (MPfile dir as mp, sel) as e ->
 	let dry = not is_rec && dir <> dir_m in
-	let s = string_of_modfile mp in
-	print_structure_to_file (module_filename s) dry [e]
+	print_structure_to_file (module_filename mp) dry [e]
     | _ -> assert false
   in
   List.iter print struc;

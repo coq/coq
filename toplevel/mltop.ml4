@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -126,8 +126,8 @@ let add_ml_dir s =
     | _ -> ()
 
 (* For Rec Add ML Path *)
-let add_rec_ml_dir dir =
-  List.iter (fun (lp,_) -> add_ml_dir lp) (all_subdirs dir)
+let add_rec_ml_dir unix_path =
+  List.iter (fun (lp,_) -> add_ml_dir lp) (all_subdirs ~unix_path)
 
 (* Adding files to Coq and ML loadpath *)
 
@@ -148,19 +148,19 @@ let convert_string d =
     flush_all ();
     failwith "caught"
 
-let add_rec_path ~unix_path:dir ~coq_root:coq_dirpath =
-  if exists_dir dir then
-    let dirs = all_subdirs dir in
-    let prefix = Names.repr_dirpath coq_dirpath in
+let add_rec_path ~unix_path ~coq_root =
+  if exists_dir unix_path then
+    let dirs = all_subdirs ~unix_path in
+    let prefix = Names.repr_dirpath coq_root in
     let convert_dirs (lp,cp) =
       (lp,Names.make_dirpath (List.map convert_string (List.rev cp)@prefix)) in
     let dirs = map_succeed convert_dirs dirs in
     List.iter (fun lpe -> add_ml_dir (fst lpe)) dirs;
-    add_ml_dir dir;
+    add_ml_dir unix_path;
     List.iter (Library.add_load_path false) dirs;
-    Library.add_load_path true (dir,coq_dirpath)
+    Library.add_load_path true (unix_path, coq_root)
   else
-    msg_warning (str ("Cannot open " ^ dir))
+    msg_warning (str ("Cannot open " ^ unix_path))
 
 (* convertit un nom quelconque en nom de fichier ou de module *)
 let mod_of_name name =
@@ -216,8 +216,6 @@ let file_of_name name =
     made according to the presence of native dynlink : even if bytecode
     coqtop could always load plugins, we prefer to have uniformity between
     bytecode and native versions. *)
-
-let stdlib_use_plugins = Coq_config.has_natdynlink
 
 (* [known_loaded_module] contains the names of the loaded ML modules
  * (linked or loaded with load_object). It is used not to load a
@@ -298,7 +296,7 @@ let cache_ml_module_object (_,{mnames=mnames}) =
 let classify_ml_module_object ({mlocal=mlocal} as o) =
   if mlocal then Dispose else Substitute o
 
-let (inMLModule,outMLModule) =
+let inMLModule =
   declare_object {(default_object "ML-MODULE") with
                     load_function = (fun _ -> cache_ml_module_object);
                     cache_function = cache_ml_module_object;

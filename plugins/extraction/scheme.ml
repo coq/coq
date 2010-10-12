@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -180,16 +180,22 @@ let pp_decl = function
 	  hov 2 (paren (str "define " ++ pp_global Term r ++ spc () ++
 			  pp_expr (empty_env ()) [] a)) ++ fnl () ++ fnl ()
 
-let pp_structure_elem = function
+let rec pp_structure_elem = function
   | (l,SEdecl d) -> pp_decl d
-  | (l,SEmodule m) ->
-      failwith "TODO: Scheme extraction of modules not implemented yet"
-  | (l,SEmodtype m) ->
-      failwith "TODO: Scheme extraction of modules not implemented yet"
+  | (l,SEmodule m) -> pp_module_expr m.ml_mod_expr
+  | (l,SEmodtype m) -> mt ()
+      (* for the moment we simply discard module type *)
+
+and pp_module_expr = function
+  | MEstruct (mp,sel) -> prlist_strict pp_structure_elem sel
+  | MEfunctor _ -> mt ()
+      (* for the moment we simply discard unapplied functors *)
+  | MEident _ | MEapply _ -> assert false
+      (* should be expansed in extract_env *)
 
 let pp_struct =
   let pp_sel (mp,sel) =
-    push_visible mp None;
+    push_visible mp [];
     let p = prlist_strict pp_structure_elem sel in
     pop_visible (); p
   in
@@ -198,7 +204,6 @@ let pp_struct =
 let scheme_descr = {
   keywords = keywords;
   file_suffix = ".scm";
-  capital_file = false;
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = None;

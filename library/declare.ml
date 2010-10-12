@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -78,7 +78,7 @@ let discharge_variable (_,o) = match o with
   | Inr (id,_) -> Some (Inl (variable_constraints id))
   | Inl _ -> Some o
 
-let (inVariable,_) =
+let inVariable =
   declare_object { (default_object "VARIABLE") with
     cache_function = cache_variable;
     discharge_function = discharge_variable;
@@ -145,7 +145,7 @@ let dummy_constant (ce,_,mk) = dummy_constant_entry,[],mk
 
 let classify_constant cst = Substitute (dummy_constant cst)
 
-let (inConstant,_) =
+let inConstant =
   declare_object { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
@@ -173,16 +173,11 @@ let declare_constant_common id dhyps (cd,kind) =
   Notation.declare_ref_arguments_scope (ConstRef c);
   c
 
-let declare_constant_gen internal id (cd,kind) =
+let declare_constant ?(internal = UserVerbose) id (cd,kind) =
   let cd = hcons_constant_declaration cd in
   let kn = declare_constant_common id [] (ConstantEntry cd,kind) in
   !xml_declare_constant (internal,kn);
   kn
-
-(* TODO: add a third function to distinguish between KernelVerbose
- * and user Verbose *)
-let declare_internal_constant = declare_constant_gen KernelSilent
-let declare_constant = declare_constant_gen UserVerbose
 
 (** Declaration of inductive blocks *)
 
@@ -265,7 +260,7 @@ let dummy_inductive_entry (_,m) = ([],{
   mind_entry_finite = true;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds })
 
-let (inInductive,_) =
+let inInductive =
   declare_object {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
     load_function = load_inductive;
