@@ -603,7 +603,7 @@ let map_constr f c = match kind_of_term c with
       mkFix (ln,(lna,Array.map f tl,Array.map f bl))
   | CoFix(ln,(lna,tl,bl)) ->
       mkCoFix (ln,(lna,Array.map f tl,Array.map f bl))
-  | NativeArr(t,p) -> mkArray(f c,Array.map f p)
+  | NativeArr(t,p) -> mkArray(f t,Array.map f p)
 
 (* [map_constr_with_binders g f n c] maps [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift

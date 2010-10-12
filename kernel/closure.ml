@@ -506,7 +506,7 @@ let rec compact_constr (lg, subs as s) c k =
     | NativeArr(t,p) ->
 	let (t',s) = compact_constr s t k in
 	let (p',s) = compact_vect s p k in
-	if t == t' && p == p' then c,s else mkArray(t,p'),s
+	if t == t' && p == p' then c,s else mkArray(t',p'),s
 
 and compact_vect s v k = compact_v [] s v k (Array.length v - 1)
 and compact_v acc s v k i =

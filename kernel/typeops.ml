@@ -590,7 +590,7 @@ let rec execute renv env cstr =
 	  let te = execute renv env e in
 	  let _,cte = type_of_cast env e te DEFAULTcast t in
 	  renv.rc <- Constraint.union renv.rc cte) p;
-	mkApp(ta, [|t|]) (* Check this *)
+	mkApp(ta, [|t|]) 
 
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
