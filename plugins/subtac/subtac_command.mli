@@ -43,7 +43,7 @@ val interp_binder :     Evd.evar_map ref ->
 
 
 val telescope :
-  (Names.name * 'a option * Term.types) list ->
+  (Names.name * Term.types option * Term.types) list ->
   Term.types * (Names.name * Term.types option * Term.types) list *
     Term.constr
 

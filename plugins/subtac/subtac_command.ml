@@ -187,7 +187,7 @@ let sigT_info = lazy
     ci_pp_info   =  { ind_nargs = 0; style = LetStyle }
   }
 
-let telescope = function
+let rec telescope = function
   | [] -> assert false
   | [(n, None, t)] -> t, [n, Some (mkRel 1), t], mkRel 1
   | (n, None, t) :: tl ->
@@ -208,7 +208,8 @@ let telescope = function
 	(List.rev tys) tl (mkRel 1, [])
       in ty, ((n, Some last, t) :: subst), constr
 
-  | _ -> raise (Invalid_argument "telescope")
+  | (n, Some b, t) :: tl -> let ty, subst, term = telescope tl in
+      ty, ((n, Some b, t) :: subst), lift 1 term
 
 let nf_evar_context isevars ctx =
   List.map (fun (n, b, t) ->
