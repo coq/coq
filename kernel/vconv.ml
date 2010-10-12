@@ -48,6 +48,22 @@ let rec conv_val pb k v1 v2 cu =
 
 and conv_whd pb k whd1 whd2 cu =
   match whd1, whd2 with
+  | Varray p1, Varray p2 -> 
+      if p1 == p2 then cu
+      else
+	let n = Native.Parray.length p1 in
+	if n = Native.Parray.length p2 then
+	  let rcu = ref cu in
+	  let n = Native.Uint31.to_int n in
+	  for i = 0 to n - 1 do
+	    let i =  Native.Uint31.of_int n in
+	    rcu := 
+	      conv_val CONV k 
+		(Native.Parray.get p1 i) (Native.Parray.get p2 i) !rcu
+	  done;
+	  conv_val CONV k 
+	    (Native.Parray.default p1) (Native.Parray.default p2) !rcu
+	else raise NotConvertible
   | Vsort s1, Vsort s2 -> sort_cmp pb s1 s2 cu
   | Vprod p1, Vprod p2 ->
       let cu = conv_val CONV k (dom p1) (dom p2) cu in
