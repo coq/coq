@@ -22,6 +22,7 @@
   \usepackage[dvips]{graphicx}
 \fi
 
+\input{../common/version.tex}
 %\input{../macros.tex}
 
 % Making hevea happy
@@ -132,7 +133,7 @@
 
 %%%%%%% Coq pour les nuls %%%%%%%
 
-\title{Coq Version 8.1 for the Clueless\\
+\title{Coq Version {\coqversion} for the Clueless\\
   \large(\protect\ref{lastquestion}
   \ Hints)
 }
@@ -370,7 +371,7 @@ downloadable postscripts.
 
 \Question{Where can I find this FAQ on the web?}
 
-This FAQ is available online at \ahref{http://coq.inria.fr/doc/faq.html}{\url{http://coq.inria.fr/doc/faq.html}}.
+This FAQ is available online at \ahref{http://coq.inria.fr/faq}{\url{http://coq.inria.fr/faq}}.
 
 \Question{How can I submit suggestions / improvements / additions for this FAQ?}
 
@@ -378,20 +379,20 @@ This FAQ is unfinished (in the sense that there are some obvious
 sections that are missing). Please send contributions to Coq-Club.
 
 \Question{Is there any mailing list about {\Coq}?} 
-The main {\Coq} mailing list is \url{coq-club@pauillac.inria.fr}, which
+The main {\Coq} mailing list is \url{coq-club@inria.fr}, which
 broadcasts questions and suggestions about the implementation, the
 logical formalism or proof developments. See
-\ahref{http://coq.inria.fr/mailman/listinfo/coq-club}{\url{http://pauillac.inria.fr/mailman/listinfo/coq-club}} for
+\ahref{http://coq.inria.fr/mailman/listinfo/coq-club}{\url{https://sympa-roc.inria.fr/wws/info/coq-club}} for
 subscription. For bugs reports see question \ref{coqbug}.
 
 \Question{Where can I find an archive of the list?}
 The archives of the {\Coq} mailing list are available at
-\ahref{http://pauillac.inria.fr/pipermail/coq-club}{\url{http://coq.inria.fr/pipermail/coq-club}}.
+\ahref{http://pauillac.inria.fr/pipermail/coq-club}{\url{https://sympa-roc.inria.fr/wws/arc/coq-club}}.
 
 
 \Question{How can I be kept informed of new releases of {\Coq}?}
 
-New versions of {\Coq} are announced on the coq-club mailing list. If you only want to receive information about new releases, you can subscribe to {\Coq} on \ahref{http://freshmeat.net/projects/coq/}{\url{http://freshmeat.net/projects/coq/}}.
+New versions of {\Coq} are announced on the coq-club mailing list.
 
 
 \Question{Is there any book about {\Coq}?}
@@ -411,11 +412,11 @@ There are examples in the manual~\cite{Coq:manual} and in the
 Coq'Art~\cite{Coq:coqart} exercises \ahref{\url{http://www.labri.fr/Perso/~casteran/CoqArt/index.html}}{\url{http://www.labri.fr/Perso/~casteran/CoqArt/index.html}}.
 You can also find large developments using
 {\Coq} in the {\Coq} user contributions:
-\ahref{http://coq.inria.fr/contribs-eng.html}{\url{http://coq.inria.fr/contribs-eng.html}}.
+\ahref{http://coq.inria.fr/contribs}{\url{http://coq.inria.fr/contribs}}.
 
 \Question{How can I report a bug?}\label{coqbug}
 
-You can use the web interface accessible at \ahref{http://coq.inria.fr}{\url{http://coq.inria.fr}}, link ``contacts''.
+You can use the web interface accessible at \ahref{http://coq.inria.fr/bugs}{\url{http://coq.inria.fr/bugs}}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -430,7 +431,7 @@ You can use the web interface accessible at \ahref{http://coq.inria.fr}{\url{htt
 The sources of {\Coq} can be found online in the tar.gz'ed packages
 (\ahref{http://coq.inria.fr}{\url{http://coq.inria.fr}}, link
 ``download''). Development sources can be accessed at
-\ahref{http://coq.gforge.inria.fr/}{\url{http://coq.gforge.inria.fr/}}
+\ahref{https://gforge.inria.fr/scm/?group_id=269}{\url{https://gforge.inria.fr/scm/?group_id=269}}
 
 \Question{On which platform is {\Coq} available?}
 Compiled binaries are available for Linux, MacOS X, and Windows. The
@@ -2226,8 +2227,7 @@ You can use this bibtex entry:
 @Manual{Coq:manual,
   title =        {The Coq proof assistant reference manual},
   author =       {\mbox{The Coq development team}},
-  organization = {LogiCal Project},
-  note =         {Version 8.2},
+  note =         {Version 8.3},
   year =         {2009},
   url =          "http://coq.inria.fr"
 }
