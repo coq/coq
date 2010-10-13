@@ -654,14 +654,28 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	else
 	  user_err_loc (loc,"pretype",(str "Not a constr tagged Dynamic."))
     | RNativeInt (loc,i) ->
-	begin 
+	let resj = 
 	  try judge_of_int env i
 	  with Invalid_argument _ ->
 	    user_err_loc (loc,"pretype",
 			  (str "Type of int31 should be register first."))
-	end
-    | RNativeArr(loc,_,_) -> assert false
-	    
+	in
+	inh_conv_coerce_to_tycon loc env evdref resj tycon
+
+    | RNativeArr(loc,t,a) -> 
+	let jt = pretype_type empty_valcon env evdref lvar t in	
+	let ja = 
+	  Array.map (pretype (mk_tycon jt.utj_val) env evdref lvar) a in
+	let ta = 
+	  try type_of_array env
+	  with Invalid_argument _ ->
+	    user_err_loc (loc,"pretype",
+			  (str "Type of array should be register first.")) in
+	let j = {
+	  uj_val = Term.mkArray(jt.utj_val, Array.map (fun j -> j.uj_val) ja);
+	  uj_type = Term.mkApp(ta,[|jt.utj_val|])
+	} in
+	inh_conv_coerce_to_tycon loc env evdref j tycon    
 	
 	    
   (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)

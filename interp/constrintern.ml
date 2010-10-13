@@ -1184,7 +1184,8 @@ let internalize sigma globalenv env allow_patvar lvar c =
     | CNotation (loc,"- _",([CPrim (_,Numeral p)],[],[]))
 	when Bigint.is_strictly_pos p ->
 	intern env (CPrim (loc,Numeral (Bigint.neg p)))
-    | CNotation (_,"( _ )",([a],[],[])) -> intern env a
+    | CNotation (_,"( _ )",([a],[],[])) -> 
+	intern env a
     | CNotation (loc,ntn,args) ->
         intern_notation intern env lvar loc ntn args
     | CGeneralization (loc,b,a,c) ->
@@ -1433,10 +1434,9 @@ let extract_ids env =
 let intern_gen isarity sigma env
                ?(impls=[]) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
-  let tmp_scope =
-    if isarity then Some Notation.type_scope else None in
-    internalize sigma env (extract_ids env, false, tmp_scope,[])
-      allow_patvar (ltacvars,Environ.named_context env, [], impls) c
+  let tmp_scope = if isarity then Some Notation.type_scope else None in
+  internalize sigma env (extract_ids env, false, tmp_scope,[])
+    allow_patvar (ltacvars,Environ.named_context env, [], impls) c
 
 let intern_constr sigma env c = intern_gen false sigma env c
 

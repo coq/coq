@@ -121,7 +121,7 @@ let uninterp_int31 i =
 let _ = Notation.declare_numeral_interpreter int31_scope
   (int31_path, int31_module)
   interp_int31
-  ([], uninterp_int31, false)
+  ([], uninterp_int31, true)
 
 
 (*** Parsing for bigN in digital notation ***)
