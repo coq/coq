@@ -1,18 +1,17 @@
 \renewcommand{\@meta}{
 \begin{rawhtml}
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-<title>Reference Manual | The Coq Proof Assistant</title>
 
-<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
-<style type="text/css" media="all">@import "http://coq.inria.fr/modules/node/node.css";</style>
+<LINK rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+<STYLE type="text/css" media="all">@import "http://coq.inria.fr/modules/node/node.css";</STYLE>
 
-<style type="text/css" media="all">@import "http://coq.inria.fr/modules/system/defaults.css";</style>
-<style type="text/css" media="all">@import "http://coq.inria.fr/modules/system/system.css";</style>
-<style type="text/css" media="all">@import "http://coq.inria.fr/modules/user/user.css";</style>
+<STYLE type="text/css" media="all">@import "http://coq.inria.fr/modules/system/defaults.css";</STYLE>
+<STYLE type="text/css" media="all">@import "http://coq.inria.fr/modules/system/system.css";</STYLE>
+<STYLE type="text/css" media="all">@import "http://coq.inria.fr/modules/user/user.css";</STYLE>
 
-<style type="text/css" media="all">@import "http://coq.inria.fr/sites/all/themes/coq/style.css";</style>
-<style type="text/css" media="all">@import "http://coq.inria.fr/sites/all/themes/coq/coqdoc.css";</style>
-<style type="text/css" media="all">@import "http://coq.inria.fr/sites/all/themes/coq/hevea.css";</style>
+<STYLE type="text/css" media="all">@import "http://coq.inria.fr/sites/all/themes/coq/style.css";</STYLE>
+<STYLE type="text/css" media="all">@import "http://coq.inria.fr/sites/all/themes/coq/coqdoc.css";</STYLE>
+<STYLE type="text/css" media="all">@import "http://coq.inria.fr/sites/all/themes/coq/hevea.css";</STYLE>
 \end{rawhtml}}
 
 % for HeVeA
@@ -36,7 +35,7 @@
 
 <div id="logoWrapper">
 
-<div id="logo"><a href="http://coq.inria.fr/" title="Home"><img src="http://coq.inria.fr/files/barron_logo.png" alt="Home" /></a>
+<div id="logo"><a href="http://coq.inria.fr/" title="Home"><img src="http://coq.inria.fr/files/barron_logo.png" alt="Home"></a>
 </div>
 <div id="siteName"><a href="http://coq.inria.fr/" title="Home">The Coq Proof Assistant</a>
 </div>
@@ -77,8 +76,6 @@
 </div>
 </div>
 
-
-</div>
 
 </div>
 
