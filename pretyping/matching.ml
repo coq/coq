@@ -231,6 +231,10 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 
       |	PFix c1, Fix _ when eq_constr (mkFix c1) cT -> subst
       |	PCoFix c1, CoFix _ when eq_constr (mkCoFix c1) cT -> subst
+      | PNativeInt i1, NativeInt i2 when Native.Uint31.eq i1 i2 -> subst
+      | PNativeArr(pt,pa), NativeArr(t,a) 
+	     when Array.length pa = Array.length a ->
+         array_fold_left2 (sorec stk) (sorec stk subst pt t) pa a
       | _ -> raise PatternMatchingFailure
 
   in
