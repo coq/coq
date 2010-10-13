@@ -198,7 +198,9 @@ through the <tt>Require Import</tt> command.</p>
   <dt> <b>Numbers</b>: 
     An experimental modular architecture for arithmetic
   </dt>
-    <dt> <b>&nbsp;&nbsp;Prelude</b>: 
+  <dd>
+    <dl>
+    <dt> <b>&nbsp;&nbsp;Prelude</b>:</dt>
     <dd>
     theories/Numbers/NumPrelude.v
     theories/Numbers/BigNumPrelude.v
@@ -207,6 +209,7 @@ through the <tt>Require Import</tt> command.</p>
 
     <dt> <b>&nbsp;&nbsp;NatInt</b>:
        Abstract mixed natural/integer/cyclic arithmetic
+    </dt>
     <dd>
     theories/Numbers/NatInt/NZAdd.v
     theories/Numbers/NatInt/NZAddOrder.v
@@ -219,10 +222,10 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/NatInt/NZDomain.v
     theories/Numbers/NatInt/NZProperties.v
     </dd>
-    </dt>
 
-    <dt> <b>&nbsp;&nbsp;Cyclic</b>: 
+    <dt> <b>&nbsp;&nbsp;Cyclic</b>:
        Abstract and 31-bits-based cyclic arithmetic
+    </dt>
     <dd>
     theories/Numbers/Cyclic/Abstract/CyclicAxioms.v
     theories/Numbers/Cyclic/Abstract/NZCyclic.v
@@ -241,10 +244,10 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Cyclic/Int31/Int31.v
     theories/Numbers/Cyclic/ZModulo/ZModulo.v
     </dd>
-    </dt>
 
-    <dt> <b>&nbsp;&nbsp;Natural</b>: 
+    <dt> <b>&nbsp;&nbsp;Natural</b>:
        Abstract and 31-bits-words-based natural arithmetic
+    </dt>
     <dd>
     theories/Numbers/Natural/Abstract/NAdd.v
     theories/Numbers/Natural/Abstract/NAddOrder.v
@@ -267,10 +270,10 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Natural/BigN/NMake.v
     theories/Numbers/Natural/BigN/NMake_gen.v
     </dd>
-    </dt>
 
     <dt> <b>&nbsp;&nbsp;Integer</b>: 
        Abstract and concrete (especially 31-bits-words-based) integer arithmetic
+    </dt>
     <dd>
     theories/Numbers/Integer/Abstract/ZAdd.v
     theories/Numbers/Integer/Abstract/ZAddOrder.v
@@ -291,17 +294,17 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Integer/BigZ/BigZ.v
     theories/Numbers/Integer/BigZ/ZMake.v
     </dd>
-    </dt>
 
     <dt><b>&nbsp;&nbsp;Rational</b>:
        Abstract and 31-bits-words-based rational arithmetic
+    </dt>
     <dd>
     theories/Numbers/Rational/SpecViaQ/QSig.v
     theories/Numbers/Rational/BigQ/BigQ.v
     theories/Numbers/Rational/BigQ/QMake.v
     </dd>
-    </dt>
-  </dt>
+    </dl>
+  </dd>
   
   <dt> <b>Relations</b>:
        Relations (definitions and basic results)
@@ -341,7 +344,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Sets/Uniset.v
   </dd>
     
-  <dt> <b>Classes</b>:
+  <dt> <b>Classes</b>:</dt>
   <dd> 
     theories/Classes/Init.v
     theories/Classes/RelationClasses.v
@@ -356,7 +359,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Classes/RelationPairs.v
   </dd>
 
-  <dt> <b>Setoids</b>:
+  <dt> <b>Setoids</b>:</dt>
   <dd> 
     theories/Setoids/Setoid.v
   </dd>
