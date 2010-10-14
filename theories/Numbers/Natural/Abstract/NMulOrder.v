@@ -10,8 +10,8 @@
 
 Require Export NAddOrder.
 
-Module NMulOrderPropFunct (Import N : NAxiomsSig').
-Include NAddOrderPropFunct N.
+Module NMulOrderProp (Import N : NAxiomsMiniSig').
+Include NAddOrderProp N.
 
 (** Theorems that are either not valid on Z or have different proofs
     on N and Z *)
@@ -74,5 +74,5 @@ assert (H3 : 1 < n * m) by now apply (lt_1_l m).
 rewrite H in H3; false_hyp H3 lt_irrefl.
 Qed.
 
-End NMulOrderPropFunct.
+End NMulOrderProp.
 

@@ -10,8 +10,8 @@
 
 Require Export ZAdd.
 
-Module ZMulPropFunct (Import Z : ZAxiomsSig').
-Include ZAddPropFunct Z.
+Module ZMulProp (Import Z : ZAxiomsMiniSig').
+Include ZAddProp Z.
 
 (** A note on naming: right (correspondingly, left) distributivity
     happens when the sum is multiplied by a number on the right
@@ -65,6 +65,6 @@ intros n m p; rewrite (mul_comm (n - m) p), (mul_comm n p), (mul_comm m p);
 now apply mul_sub_distr_l.
 Qed.
 
-End ZMulPropFunct.
+End ZMulProp.
 
 

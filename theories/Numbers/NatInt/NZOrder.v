@@ -10,8 +10,8 @@
 
 Require Import NZAxioms NZBase Decidable OrdersTac.
 
-Module Type NZOrderPropSig
- (Import NZ : NZOrdSig')(Import NZBase : NZBasePropSig NZ).
+Module Type NZOrderProp
+ (Import NZ : NZOrdSig')(Import NZBase : NZBaseProp NZ).
 
 Instance le_wd : Proper (eq==>eq==>iff) le.
 Proof.
@@ -357,6 +357,13 @@ intros z n H; apply lt_exists_pred_strong with (z := z) (n := n).
 assumption. apply le_refl.
 Qed.
 
+Lemma lt_succ_pred : forall z n, z < n -> S (P n) == n.
+Proof.
+ intros z n H.
+ destruct (lt_exists_pred _ _ H) as (n' & EQ & LE).
+ rewrite EQ. now rewrite pred_succ.
+Qed.
+
 (** Stronger variant of induction with assumptions n >= 0 (n < 0)
 in the induction step *)
 
@@ -557,7 +564,7 @@ apply right_induction with (S n); [assumption | | now apply <- le_succ_l].
 intros; apply H2; try assumption. now apply -> le_succ_l.
 Qed.
 
-(** Elimintation principle for <= *)
+(** Elimination principle for <= *)
 
 Theorem le_ind : forall (n : t),
   A n ->
@@ -628,15 +635,12 @@ Qed.
 
 End WF.
 
-End NZOrderPropSig.
-
-Module NZOrderPropFunct (NZ : NZOrdSig) :=
- NZBasePropSig NZ <+ NZOrderPropSig NZ.
+End NZOrderProp.
 
 (** If we have moreover a [compare] function, we can build
     an [OrderedType] structure. *)
 
-Module NZOrderedTypeFunct (NZ : NZDecOrdSig')
-  <: DecidableTypeFull <: OrderedTypeFull :=
- NZ <+ NZOrderPropFunct <+ Compare2EqBool <+ HasEqBool2Dec.
+Module NZOrderedType (NZ : NZDecOrdSig')
+ <: DecidableTypeFull <: OrderedTypeFull
+ := NZ <+ NZBaseProp <+ NZOrderProp <+ Compare2EqBool <+ HasEqBool2Dec.
 

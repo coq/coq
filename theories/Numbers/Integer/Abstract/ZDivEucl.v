@@ -23,17 +23,17 @@
 
 Require Import ZAxioms ZProperties NZDiv.
 
-Module Type ZDivSpecific (Import Z : ZAxiomsExtSig')(Import DM : DivMod' Z).
+Module Type ZDivSpecific (Import Z : ZAxiomsSig')(Import DM : DivMod' Z).
  Axiom mod_always_pos : forall a b, 0 <= a mod b < abs b.
 End ZDivSpecific.
 
-Module Type ZDiv (Z:ZAxiomsExtSig)
+Module Type ZDiv (Z:ZAxiomsSig)
  := DivMod Z <+ NZDivCommon Z <+ ZDivSpecific Z.
 
-Module Type ZDivSig := ZAxiomsExtSig <+ ZDiv.
-Module Type ZDivSig' := ZAxiomsExtSig' <+ ZDiv <+ DivModNotation.
+Module Type ZDivSig := ZAxiomsSig <+ ZDiv.
+Module Type ZDivSig' := ZAxiomsSig' <+ ZDiv <+ DivModNotation.
 
-Module ZDivPropFunct (Import Z : ZDivSig')(Import ZP : ZPropSig Z).
+Module ZDivProp (Import Z : ZDivSig')(Import ZP : ZProp Z).
 
 (** We benefit from what already exists for NZ *)
 
@@ -49,7 +49,7 @@ Module ZDivPropFunct (Import Z : ZDivSig')(Import ZP : ZPropSig Z).
   apply mod_always_pos.
   Qed.
  End ZD.
- Module Import NZDivP := NZDivPropFunct Z ZP ZD.
+ Module Import NZDivP := NZDivProp Z ZP ZD.
 
 (** Another formulation of the main equation *)
 
@@ -601,5 +601,5 @@ now apply mod_mul.
 Qed.
 
 
-End ZDivPropFunct.
+End ZDivProp.
 

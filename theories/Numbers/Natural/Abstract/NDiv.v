@@ -6,18 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Euclidean Division *)
+(** Properties of Euclidean Division *)
 
-Require Import NAxioms NProperties NZDiv.
+Require Import NAxioms NSub NZDiv.
 
-Module Type NDivSpecific (Import N : NAxiomsSig')(Import DM : DivMod' N).
- Axiom mod_upper_bound : forall a b, b ~= 0 -> a mod b < b.
-End NDivSpecific.
-
-Module Type NDivSig := NAxiomsSig <+ DivMod <+ NZDivCommon <+ NDivSpecific.
-Module Type NDivSig' := NAxiomsSig' <+ DivMod' <+ NZDivCommon <+ NDivSpecific.
-
-Module NDivPropFunct (Import N : NDivSig')(Import NP : NPropSig N).
+Module NDivProp (Import N : NAxiomsSig')(Import NP : NSubProp N).
 
 (** We benefit from what already exists for NZ *)
 
@@ -30,7 +23,7 @@ Module NDivPropFunct (Import N : NDivSig')(Import NP : NPropSig N).
   Lemma mod_bound : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
   Proof. split. apply le_0_l. apply mod_upper_bound. order. Qed.
  End ND.
- Module Import NZDivP := NZDivPropFunct N NP ND.
+ Module Import NZDivP := NZDivProp N NP ND.
 
  Ltac auto' := try rewrite <- neq_0_lt_0; auto using le_0_l.
 
@@ -235,5 +228,5 @@ Lemma mod_divides : forall a b, b~=0 ->
  (a mod b == 0 <-> exists c, a == b*c).
 Proof. intros. apply mod_divides; auto'. Qed.
 
-End NDivPropFunct.
+End NDivProp.
 

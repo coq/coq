@@ -10,14 +10,14 @@
 
 Require Import BinPos Ndiv_def.
 Require Export BinNat.
-Require Import NAxioms NProperties NDiv.
+Require Import NAxioms NProperties.
 
 Local Open Scope N_scope.
 
 (** * Implementation of [NAxiomsSig] module type via [BinNat.N] *)
 
 Module Type N
- <: NAxiomsSig <: UsualOrderedTypeFull <: TotalOrder <: DecidableTypeFull.
+ <: NAxiomsMiniSig <: UsualOrderedTypeFull <: TotalOrder <: DecidableTypeFull.
 
 (** Bi-directional induction. *)
 
@@ -144,6 +144,19 @@ Program Instance mod_wd : Proper (eq==>eq==>eq) Nmod.
 Definition div_mod := fun x y (_:y<>0) => Ndiv_mod_eq x y.
 Definition mod_upper_bound := Nmod_lt.
 
+(** Odd and Even *)
+
+Definition Even n := exists m, n = 2*m.
+Definition Odd n := exists m, n = 2*m+1.
+Definition even_spec := Neven_spec.
+Definition odd_spec := Nodd_spec.
+
+(** Power *)
+
+Definition pow_0_r := Npow_0_r.
+Definition pow_succ_r n p (H:0 <= p) := Npow_succ_r n p.
+Program Instance pow_wd : Proper (eq==>eq==>eq) Npow.
+
 (** The instantiation of operations.
     Placing them at the very end avoids having indirections in above lemmas. *)
 
@@ -164,13 +177,12 @@ Definition min := Nmin.
 Definition max := Nmax.
 Definition div := Ndiv.
 Definition modulo := Nmod.
+Definition pow := Npow.
+Definition even := Neven.
+Definition odd := Nodd.
 
-Include NPropFunct
+Include NProp
  <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
-
-(** Generic properties of [div] and [mod] *)
-
-Include NDivPropFunct.
 
 End N.
 

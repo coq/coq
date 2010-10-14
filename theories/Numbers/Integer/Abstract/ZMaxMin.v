@@ -10,8 +10,8 @@ Require Import ZAxioms ZMulOrder GenericMinMax.
 
 (** * Properties of minimum and maximum specific to integer numbers *)
 
-Module Type ZMaxMinProp (Import Z : ZAxiomsSig').
-Include ZMulOrderPropFunct Z.
+Module Type ZMaxMinProp (Import Z : ZAxiomsMiniSig').
+Include ZMulOrderProp Z.
 
 (** The following results are concrete instances of [max_monotone]
     and similar lemmas. *)

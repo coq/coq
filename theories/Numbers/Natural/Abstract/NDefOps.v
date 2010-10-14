@@ -12,8 +12,37 @@ Require Import Bool. (* To get the orb and negb function *)
 Require Import RelationPairs.
 Require Export NStrongRec.
 
-Module NdefOpsPropFunct (Import N : NAxiomsSig').
-Include NStrongRecPropFunct N.
+(** In this module, we derive generic implementations of usual operators
+   just via the use of a [recursion] function. *)
+
+Module NdefOpsProp (Import N : NAxiomsFullSig').
+Include NStrongRecProp N.
+
+(** Nullity Test *)
+
+Definition if_zero (A : Type) (a b : A) (n : N.t) : A :=
+  recursion a (fun _ _ => b) n.
+
+Implicit Arguments if_zero [A].
+
+Instance if_zero_wd (A : Type) :
+ Proper (Logic.eq ==> Logic.eq ==> N.eq ==> Logic.eq) (@if_zero A).
+Proof.
+intros; unfold if_zero.
+repeat red; intros. apply recursion_wd; auto. repeat red; auto.
+Qed.
+
+Theorem if_zero_0 : forall (A : Type) (a b : A), if_zero a b 0 = a.
+Proof.
+unfold if_zero; intros; now rewrite recursion_0.
+Qed.
+
+Theorem if_zero_succ :
+ forall (A : Type) (a b : A) (n : N.t), if_zero a b (S n) = b.
+Proof.
+intros; unfold if_zero.
+now rewrite recursion_succ.
+Qed.
 
 (*****************************************************)
 (**                   Addition                       *)
@@ -473,5 +502,5 @@ Theorem log_pow2 : forall n, log (2^^n) = n.
 
 *)
 
-End NdefOpsPropFunct.
+End NdefOpsProp.
 

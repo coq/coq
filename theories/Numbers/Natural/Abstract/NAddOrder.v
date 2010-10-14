@@ -10,8 +10,8 @@
 
 Require Export NOrder.
 
-Module NAddOrderPropFunct (Import N : NAxiomsSig').
-Include NOrderPropFunct N.
+Module NAddOrderProp (Import N : NAxiomsMiniSig').
+Include NOrderProp N.
 
 (** Theorems true for natural numbers, not for integers *)
 
@@ -43,4 +43,4 @@ Proof.
 intros; apply add_nonneg_pos. apply le_0_l. assumption.
 Qed.
 
-End NAddOrderPropFunct.
+End NAddOrderProp.

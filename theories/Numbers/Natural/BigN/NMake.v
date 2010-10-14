@@ -16,7 +16,7 @@
     representation. The representation-dependent (and macro-generated) part
     is now in [NMake_gen]. *)
 
-Require Import BigNumPrelude ZArith CyclicAxioms DoubleType
+Require Import Bool BigNumPrelude ZArith Nnat CyclicAxioms DoubleType
   Nbasic Wf_nat StreamMemo NSig NMake_gen.
 
 Module Make (W0:CyclicType) <: NType.
@@ -68,6 +68,8 @@ Module Make (W0:CyclicType) <: NType.
  apply Zmult_le_compat_l; auto with zarith.
  apply Zpower_le_monotone2; auto with zarith.
  Qed.
+
+ Definition to_N (x : t) := Zabs_N (to_Z x).
 
  (** * Zero and One *)
 
@@ -731,16 +733,16 @@ Module Make (W0:CyclicType) <: NType.
 
  (** * Power *)
 
- Fixpoint power_pos (x:t)(p:positive) : t :=
+ Fixpoint pow_pos (x:t)(p:positive) : t :=
   match p with
   | xH => x
-  | xO p => square (power_pos x p)
-  | xI p => mul (square (power_pos x p)) x
+  | xO p => square (pow_pos x p)
+  | xI p => mul (square (pow_pos x p)) x
   end.
 
- Theorem spec_power_pos: forall x n, [power_pos x n] = [x] ^ Zpos n.
+ Theorem spec_pow_pos: forall x n, [pow_pos x n] = [x] ^ Zpos n.
  Proof.
- intros x n; generalize x; elim n; clear n x; simpl power_pos.
+ intros x n; generalize x; elim n; clear n x; simpl pow_pos.
  intros; rewrite spec_mul; rewrite spec_square; rewrite H.
  rewrite Zpos_xI; rewrite Zpower_exp; auto with zarith.
  rewrite (Zmult_comm 2); rewrite Zpower_mult; auto with zarith.
@@ -752,15 +754,23 @@ Module Make (W0:CyclicType) <: NType.
  intros; rewrite Zpower_1_r; auto.
  Qed.
 
- Definition power (x:t)(n:N) : t := match n with
+ Definition pow_N (x:t)(n:N) : t := match n with
   | BinNat.N0 => one
-  | BinNat.Npos p => power_pos x p
+  | BinNat.Npos p => pow_pos x p
  end.
 
- Theorem spec_power: forall x n, [power x n] = [x] ^ Z_of_N n.
+ Theorem spec_pow_N: forall x n, [pow_N x n] = [x] ^ Z_of_N n.
  Proof.
  destruct n; simpl. apply spec_1.
- apply spec_power_pos.
+ apply spec_pow_pos.
+ Qed.
+
+ Definition pow (x y:t) : t := pow_N x (to_N y).
+
+ Theorem spec_pow : forall x y, [pow x y] = [x] ^ [y].
+ Proof.
+ intros. unfold pow, to_N.
+ now rewrite spec_pow_N, Z_of_N_abs, Zabs_eq by apply spec_pos.
  Qed.
 
 
@@ -999,8 +1009,6 @@ Module Make (W0:CyclicType) <: NType.
   simpl of_N. exact spec_0.
  intros p; exact (spec_of_pos p).
  Qed.
-
- Definition to_N (x : t) := Zabs_N (to_Z x).
 
  (** * [head0] and [tail0]
 
@@ -1497,17 +1505,40 @@ Module Make (W0:CyclicType) <: NType.
 
  (** * Parity test *)
 
- Definition is_even : t -> bool := Eval red_t in
+ Definition even : t -> bool := Eval red_t in
    iter_t (fun n x => ZnZ.is_even x).
 
- Lemma is_even_fold : is_even = iter_t (fun n x => ZnZ.is_even x).
+ Definition odd x := negb (even x).
+
+ Lemma even_fold : even = iter_t (fun n x => ZnZ.is_even x).
  Proof. red_t; reflexivity. Qed.
 
- Theorem spec_is_even: forall x,
-   if is_even x then [x] mod 2 = 0 else [x] mod 2 = 1.
+ Theorem spec_even_aux: forall x,
+   if even x then [x] mod 2 = 0 else [x] mod 2 = 1.
  Proof.
- intros x. rewrite is_even_fold. destr_t x as (n,x).
+ intros x. rewrite even_fold. destr_t x as (n,x).
  exact (ZnZ.spec_is_even x).
+ Qed.
+
+ Theorem spec_even: forall x, even x = Zeven_bool [x].
+ Proof.
+ intros x. assert (H := spec_even_aux x). symmetry.
+ rewrite (Z_div_mod_eq_full [x] 2); auto with zarith.
+ destruct (even x); rewrite H, ?Zplus_0_r.
+ rewrite Zeven_bool_iff. apply Zeven_2p.
+ apply not_true_is_false. rewrite Zeven_bool_iff.
+ apply Zodd_not_Zeven. apply Zodd_2p_plus_1.
+ Qed.
+
+ Theorem spec_odd: forall x, odd x = Zodd_bool [x].
+ Proof.
+ intros x. unfold odd.
+ assert (H := spec_even_aux x). symmetry.
+ rewrite (Z_div_mod_eq_full [x] 2); auto with zarith.
+ destruct (even x); rewrite H, ?Zplus_0_r; simpl negb.
+ apply not_true_is_false. rewrite Zodd_bool_iff.
+ apply Zeven_not_Zodd. apply Zeven_2p.
+ apply Zodd_bool_iff. apply Zodd_2p_plus_1.
  Qed.
 
 End Make.

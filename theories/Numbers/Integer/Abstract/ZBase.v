@@ -12,8 +12,8 @@ Require Export Decidable.
 Require Export ZAxioms.
 Require Import NZProperties.
 
-Module ZBasePropFunct (Import Z : ZAxiomsSig').
-Include NZPropFunct Z.
+Module ZBaseProp (Import Z : ZAxiomsMiniSig').
+Include NZProp Z.
 
 (* Theorems that are true for integers but not for natural numbers *)
 
@@ -27,5 +27,5 @@ Proof.
 intros n1 n2; split; [apply pred_inj | apply pred_wd].
 Qed.
 
-End ZBasePropFunct.
+End ZBaseProp.
 

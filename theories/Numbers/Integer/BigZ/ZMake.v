@@ -271,23 +271,23 @@ Module Make (N:NType) <: ZType.
  unfold square, to_Z; intros [x | x]; rewrite N.spec_square; ring.
  Qed.
 
- Definition power_pos x p :=
+ Definition pow_pos x p :=
   match x with
-  | Pos nx => Pos (N.power_pos nx p)
+  | Pos nx => Pos (N.pow_pos nx p)
   | Neg nx =>
     match p with
     | xH => x
-    | xO _ => Pos (N.power_pos nx p)
-    | xI _ => Neg (N.power_pos nx p)
+    | xO _ => Pos (N.pow_pos nx p)
+    | xI _ => Neg (N.pow_pos nx p)
     end
   end.
 
- Theorem spec_power_pos: forall x n, to_Z (power_pos x n) = to_Z x ^ Zpos n.
+ Theorem spec_pow_pos: forall x n, to_Z (pow_pos x n) = to_Z x ^ Zpos n.
  Proof.
  assert (F0: forall x, (-x)^2 = x^2).
    intros x; rewrite Zpower_2; ring.
- unfold power_pos, to_Z; intros [x | x] [p | p |];
-   try rewrite N.spec_power_pos; try ring.
+ unfold pow_pos, to_Z; intros [x | x] [p | p |];
+   try rewrite N.spec_pow_pos; try ring.
  assert (F: 0 <= 2 * Zpos p).
   assert (0 <= Zpos p); auto with zarith.
  rewrite Zpos_xI; repeat rewrite Zpower_exp; auto with zarith.
@@ -300,18 +300,32 @@ Module Make (N:NType) <: ZType.
  rewrite F0; ring.
  Qed.
 
- Definition power x n :=
+ Definition pow_N x n :=
   match n with
   | N0 => one
-  | Npos p => power_pos x p
+  | Npos p => pow_pos x p
   end.
 
- Theorem spec_power: forall x n, to_Z (power x n) = to_Z x ^ Z_of_N n.
+ Theorem spec_pow_N: forall x n, to_Z (pow_N x n) = to_Z x ^ Z_of_N n.
  Proof.
- destruct n; simpl. rewrite N.spec_1; reflexivity.
- apply spec_power_pos.
+ destruct n; simpl. apply N.spec_1.
+ apply spec_pow_pos.
  Qed.
 
+ Definition pow x y :=
+  match to_Z y with
+  | Z0 => one
+  | Zpos p => pow_pos x p
+  | Zneg p => zero
+  end.
+
+ Theorem spec_pow: forall x y, to_Z (pow x y) = to_Z x ^ to_Z y.
+ Proof.
+ intros. unfold pow. destruct (to_Z y); simpl.
+ apply N.spec_1.
+ apply spec_pow_pos.
+ apply N.spec_0.
+ Qed.
 
  Definition sqrt x :=
   match x with
@@ -449,6 +463,30 @@ Module Make (N:NType) <: ZType.
  rewrite spec_0. intros <-; auto.
  rewrite spec_0, spec_1. symmetry. rewrite Zsgn_pos; auto.
  rewrite spec_0, spec_m1. symmetry. rewrite Zsgn_neg; auto with zarith.
+ Qed.
+
+ Definition even z :=
+  match z with
+   | Pos n => N.even n
+   | Neg n => N.even n
+  end.
+
+ Definition odd z :=
+  match z with
+   | Pos n => N.odd n
+   | Neg n => N.odd n
+  end.
+
+ Lemma spec_even : forall z, even z = Zeven_bool (to_Z z).
+ Proof.
+  intros [n|n]; simpl; rewrite N.spec_even; trivial.
+  destruct (N.to_Z n) as [|p|p]; now try destruct p.
+ Qed.
+
+ Lemma spec_odd : forall z, odd z = Zodd_bool (to_Z z).
+ Proof.
+  intros [n|n]; simpl; rewrite N.spec_odd; trivial.
+  destruct (N.to_Z n) as [|p|p]; now try destruct p.
  Qed.
 
 End Make.

@@ -10,9 +10,39 @@
 
 
 Require Import ZAxioms ZProperties.
-Require Import BinInt Zcompare Zorder ZArith_dec Zbool.
+Require Import BinInt Zcompare Zorder ZArith_dec Zbool Zeven.
 
 Local Open Scope Z_scope.
+
+(** An alternative Zpow *)
+
+(** The Zpow is extensionnaly equal to Zpower in ZArith, but not
+    convertible with it. This Zpow uses a logarithmic number of
+    multiplications instead of a linear one. We should try someday to
+    replace Zpower with this Zpow.
+*)
+
+Definition Zpow n m :=
+  match m with
+    | Z0 => 1
+    | Zpos p => Piter_op Zmult p n
+    | Zneg p => 0
+  end.
+
+Lemma Zpow_0_r : forall n, Zpow n 0 = 1.
+Proof. reflexivity. Qed.
+
+Lemma Zpow_succ_r : forall a b, 0<=b -> Zpow a (Zsucc b) = a * Zpow a b.
+Proof.
+ intros a [|b|b] Hb; [ | |now elim Hb]; simpl.
+ now rewrite Zmult_1_r.
+ rewrite <- Pplus_one_succ_r. apply Piter_op_succ. apply Zmult_assoc.
+Qed.
+
+Lemma Zpow_neg : forall a b, b<0 -> Zpow a b = 0.
+Proof.
+ now destruct b.
+Qed.
 
 Theorem Z_bi_induction :
   forall A : Z -> Prop, Proper (eq ==> iff) A ->
@@ -24,11 +54,10 @@ intros; rewrite <- Zsucc_succ'. now apply -> AS.
 intros n H. rewrite <- Zpred_pred'. rewrite Zsucc_pred in H. now apply <- AS.
 Qed.
 
-
-(** * Implementation of [ZAxiomsSig] by [BinInt.Z] *)
+(** * Implementation of [ZAxiomsMiniSig] by [BinInt.Z] *)
 
 Module Z
- <: ZAxiomsExtSig <: UsualOrderedTypeFull <: TotalOrder
+ <: ZAxiomsSig <: UsualOrderedTypeFull <: TotalOrder
  <: UsualDecidableTypeFull.
 
 Definition t := Z.
@@ -110,13 +139,36 @@ Definition sgn_null := Zsgn_0.
 Definition sgn_pos := Zsgn_1.
 Definition sgn_neg := Zsgn_m1.
 
+(** Even and Odd *)
+
+Definition Even n := exists m, n=2*m.
+Definition Odd n := exists m, n=2*m+1.
+
+Lemma even_spec n : Zeven_bool n = true <-> Even n.
+Proof. rewrite Zeven_bool_iff. exact (Zeven_ex_iff n). Qed.
+
+Lemma odd_spec n : Zodd_bool n = true <-> Odd n.
+Proof. rewrite Zodd_bool_iff. exact (Zodd_ex_iff n). Qed.
+
+Definition even := Zeven_bool.
+Definition odd := Zodd_bool.
+
+(** Power *)
+
+Program Instance pow_wd : Proper (eq==>eq==>eq) Zpow.
+
+Definition pow_0_r := Zpow_0_r.
+Definition pow_succ_r := Zpow_succ_r.
+Definition pow_neg := Zpow_neg.
+Definition pow := Zpow.
+
 (** We define [eq] only here to avoid refering to this [eq] above. *)
 
 Definition eq := (@eq Z).
 
 (** Now the generic properties. *)
 
-Include ZPropFunct
+Include ZProp
  <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
 
 End Z.

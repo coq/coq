@@ -29,7 +29,7 @@ Require Import CyclicAxioms Cyclic31 Ring31 NSig NSigNAxioms NMake
 
 Module BigN <: NType <: OrderedTypeFull <: TotalOrder :=
  NMake.Make Int31Cyclic <+ NTypeIsNAxioms
- <+ !NPropSig <+ !NDivPropFunct <+ HasEqBool2Dec
+ <+ !NProp <+ HasEqBool2Dec
  <+ !MinMaxLogicalProperties <+ !MinMaxDecProperties.
 
 
@@ -58,8 +58,9 @@ Arguments Scope BigN.compare [bigN_scope bigN_scope].
 Arguments Scope BigN.min [bigN_scope bigN_scope].
 Arguments Scope BigN.max [bigN_scope bigN_scope].
 Arguments Scope BigN.eq_bool [bigN_scope bigN_scope].
-Arguments Scope BigN.power_pos [bigN_scope positive_scope].
-Arguments Scope BigN.power [bigN_scope N_scope].
+Arguments Scope BigN.pow_pos [bigN_scope positive_scope].
+Arguments Scope BigN.pow_N [bigN_scope N_scope].
+Arguments Scope BigN.pow [bigN_scope bigN_scope].
 Arguments Scope BigN.sqrt [bigN_scope].
 Arguments Scope BigN.div_eucl [bigN_scope bigN_scope].
 Arguments Scope BigN.modulo [bigN_scope bigN_scope].
@@ -71,7 +72,7 @@ Infix "+" := BigN.add : bigN_scope.
 Infix "-" := BigN.sub : bigN_scope.
 Infix "*" := BigN.mul : bigN_scope.
 Infix "/" := BigN.div : bigN_scope.
-Infix "^" := BigN.power : bigN_scope.
+Infix "^" := BigN.pow : bigN_scope.
 Infix "?=" := BigN.compare : bigN_scope.
 Infix "==" := BigN.eq (at level 70, no associativity) : bigN_scope.
 Notation "x != y" := (~x==y)%bigN (at level 70, no associativity) : bigN_scope.
@@ -110,11 +111,11 @@ Qed.
 Lemma BigNeqb_correct : forall x y, BigN.eq_bool x y = true -> x==y.
 Proof. now apply BigN.eqb_eq. Qed.
 
-Lemma BigNpower : power_theory 1 BigN.mul BigN.eq (@id N) BigN.power.
+Lemma BigNpower : power_theory 1 BigN.mul BigN.eq BigN.of_N BigN.pow.
 Proof.
 constructor.
-intros. red. rewrite BigN.spec_power. unfold id.
-destruct Zpower_theory as [EQ]. rewrite EQ.
+intros. red. rewrite BigN.spec_pow, BigN.spec_of_N.
+rewrite Zpower_theory.(rpow_pow_N).
 destruct n; simpl. reflexivity.
 induction p; simpl; intros; BigN.zify; rewrite ?IHp; auto.
 Qed.
@@ -172,6 +173,12 @@ Ltac BigNcst t :=
  | false => constr:NotConstant
  end.
 
+Ltac BigN_to_N t :=
+ match isBigNcst t with
+ | true => eval vm_compute in (BigN.to_N t)
+ | false => constr:NotConstant
+ end.
+
 Ltac Ncst t :=
  match isNcst t with
  | true => constr:t
@@ -183,11 +190,12 @@ Ltac Ncst t :=
 Add Ring BigNr : BigNring
  (decidable BigNeqb_correct,
   constants [BigNcst],
-  power_tac BigNpower [Ncst],
+  power_tac BigNpower [BigN_to_N],
   div BigNdiv).
 
 Section TestRing.
-Let test : forall x y, 1 + x*y + x^2 + 1 == 1*1 + 1 + y*x + 1*x*x.
+Local Notation "2" := (BigN.N0 2%int31) : bigN_scope. (* temporary notation *)
+Let test : forall x y, 1 + x*y^1 + x^2 + 1 == 1*1 + 1 + y*x + 1*x*x.
 intros. ring_simplify. reflexivity.
 Qed.
 End TestRing.

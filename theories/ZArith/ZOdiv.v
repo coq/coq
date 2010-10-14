@@ -228,7 +228,7 @@ Module ZODivMod := ZBinary.Z <+ ZODiv.
 
 (** We hence benefit from generic results about this abstract division. *)
 
-Module Z := ZDivTrunc.ZDivPropFunct ZODivMod ZBinary.Z.
+Module Z := ZDivTrunc.ZDivProp ZODivMod ZBinary.Z.
 
 (** * Unicity results *)
 

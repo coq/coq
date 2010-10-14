@@ -6,11 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Rbase.
-Require Import Rfunctions.
-Require Import SeqSeries.
-Require Import Rtrigo_fun.
-Require Import Max.
+Require Import Max Rbase Rfunctions SeqSeries Rtrigo_fun.
 Open Local Scope R_scope.
 
 (********************************)

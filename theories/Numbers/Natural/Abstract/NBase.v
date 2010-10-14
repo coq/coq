@@ -12,42 +12,19 @@ Require Export Decidable.
 Require Export NAxioms.
 Require Import NZProperties.
 
-Module NBasePropFunct (Import N : NAxiomsSig').
+Module NBaseProp (Import N : NAxiomsMiniSig').
 (** First, we import all known facts about both natural numbers and integers. *)
-Include NZPropFunct N.
+Include NZProp N.
 
-(** We prove that the successor of a number is not zero by defining a
-function (by recursion) that maps 0 to false and the successor to true *)
-
-Definition if_zero (A : Type) (a b : A) (n : N.t) : A :=
-  recursion a (fun _ _ => b) n.
-
-Implicit Arguments if_zero [A].
-
-Instance if_zero_wd (A : Type) :
- Proper (Logic.eq ==> Logic.eq ==> N.eq ==> Logic.eq) (@if_zero A).
-Proof.
-intros; unfold if_zero.
-repeat red; intros. apply recursion_wd; auto. repeat red; auto.
-Qed.
-
-Theorem if_zero_0 : forall (A : Type) (a b : A), if_zero a b 0 = a.
-Proof.
-unfold if_zero; intros; now rewrite recursion_0.
-Qed.
-
-Theorem if_zero_succ :
- forall (A : Type) (a b : A) (n : N.t), if_zero a b (S n) = b.
-Proof.
-intros; unfold if_zero.
-now rewrite recursion_succ.
-Qed.
+(** From [pred_0] and order facts, we can prove that 0 isn't a successor. *)
 
 Theorem neq_succ_0 : forall n, S n ~= 0.
 Proof.
-intros n H.
-generalize (Logic.eq_refl (if_zero false true 0)).
-rewrite <- H at 1. rewrite if_zero_0, if_zero_succ; discriminate.
+ intros n EQ.
+ assert (EQ' := pred_succ n).
+ rewrite EQ, pred_0 in EQ'.
+ rewrite <- EQ' in EQ.
+ now apply (neq_succ_diag_l 0).
 Qed.
 
 Theorem neq_0_succ : forall n, 0 ~= S n.
@@ -204,5 +181,5 @@ Ltac double_induct n m :=
   pattern n, m; apply double_induction; clear n m;
   [solve_relation_wd | | | ].
 
-End NBasePropFunct.
+End NBaseProp.
 

@@ -10,8 +10,8 @@
 
 Require Export ZAddOrder.
 
-Module Type ZMulOrderPropFunct (Import Z : ZAxiomsSig').
-Include ZAddOrderPropFunct Z.
+Module Type ZMulOrderProp (Import Z : ZAxiomsMiniSig').
+Include ZAddOrderProp Z.
 
 Local Notation "- 1" := (-(1)).
 
@@ -227,5 +227,5 @@ apply mul_lt_mono_nonneg.
 now apply lt_le_incl. assumption. apply le_0_1. assumption.
 Qed.
 
-End ZMulOrderPropFunct.
+End ZMulOrderProp.
 

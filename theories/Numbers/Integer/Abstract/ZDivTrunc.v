@@ -35,14 +35,14 @@ End ZDivSpecific.
 Module Type ZDiv (Z:ZAxiomsSig)
  := DivMod Z <+ NZDivCommon Z <+ ZDivSpecific Z.
 
-Module Type ZDivSig := ZAxiomsExtSig <+ ZDiv.
-Module Type ZDivSig' := ZAxiomsExtSig' <+ ZDiv <+ DivModNotation.
+Module Type ZDivSig := ZAxiomsSig <+ ZDiv.
+Module Type ZDivSig' := ZAxiomsSig' <+ ZDiv <+ DivModNotation.
 
-Module ZDivPropFunct (Import Z : ZDivSig')(Import ZP : ZPropSig Z).
+Module ZDivProp (Import Z : ZDivSig')(Import ZP : ZProp Z).
 
 (** We benefit from what already exists for NZ *)
 
- Module Import NZDivP := NZDivPropFunct Z ZP Z.
+ Module Import NZDivP := NZDivProp Z ZP Z.
 
 Ltac pos_or_neg a :=
  let LT := fresh "LT" in
@@ -528,5 +528,5 @@ Proof.
  intros (c,Hc). rewrite Hc, mul_comm. now apply mod_mul.
 Qed.
 
-End ZDivPropFunct.
+End ZDivProp.
 

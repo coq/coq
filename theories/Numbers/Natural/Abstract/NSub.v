@@ -10,8 +10,8 @@
 
 Require Export NMulOrder.
 
-Module Type NSubPropFunct (Import N : NAxiomsSig').
-Include NMulOrderPropFunct N.
+Module Type NSubProp (Import N : NAxiomsMiniSig').
+Include NMulOrderProp N.
 
 Theorem sub_0_l : forall n, 0 - n == 0.
 Proof.
@@ -316,5 +316,5 @@ Theorem add_dichotomy :
   forall n m, (exists p, p + n == m) \/ (exists p, p + m == n).
 Proof. exact le_alt_dichotomy. Qed.
 
-End NSubPropFunct.
+End NSubProp.
 

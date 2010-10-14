@@ -13,13 +13,13 @@ Require Import ZArith Nnat NAxioms NDiv NSig.
 Module NTypeIsNAxioms (Import N : NType').
 
 Hint Rewrite
- spec_0 spec_succ spec_add spec_mul spec_pred spec_sub
+ spec_0 spec_1 spec_succ spec_add spec_mul spec_pred spec_sub
  spec_div spec_modulo spec_gcd spec_compare spec_eq_bool
- spec_max spec_min spec_power_pos spec_power
+ spec_max spec_min spec_pow_pos spec_pow_N spec_pow spec_even spec_odd
  : nsimpl.
 Ltac nsimpl := autorewrite with nsimpl.
-Ltac ncongruence := unfold eq; repeat red; intros; nsimpl; congruence.
-Ltac zify := unfold eq, lt, le in *; nsimpl.
+Ltac ncongruence := unfold eq, to_N; repeat red; intros; nsimpl; congruence.
+Ltac zify := unfold eq, lt, le, to_N in *; nsimpl.
 
 Local Obligation Tactic := ncongruence.
 
@@ -177,6 +177,70 @@ Proof.
 zify. auto.
 Qed.
 
+(** Power *)
+
+Program Instance pow_wd : Proper (eq==>eq==>eq) pow.
+
+Local Notation "1" := (succ 0).
+Local Notation "2" := (succ 1).
+
+Lemma pow_0_r : forall a, a^0 == 1.
+Proof.
+ intros. now zify.
+Qed.
+
+Lemma pow_succ_r : forall a b, 0<=b -> a^(succ b) == a * a^b.
+Proof.
+ intros a b. zify. intro Hb.
+ rewrite Zpower_exp; auto with zarith.
+ simpl. unfold Zpower_pos; simpl. ring.
+Qed.
+
+Lemma pow_pow_N : forall a b, a^b == pow_N a (to_N b).
+Proof.
+ intros. zify. f_equal.
+ now rewrite Z_of_N_abs, Zabs_eq by apply spec_pos.
+Qed.
+
+Lemma pow_N_pow : forall a b, pow_N a b == a^(of_N b).
+Proof.
+ intros. zify. f_equal. symmetry. apply spec_of_N.
+Qed.
+
+Lemma pow_pos_N : forall a p, pow_pos a p == pow_N a (Npos p).
+Proof.
+ intros. now zify.
+Qed.
+
+(** Even / Odd *)
+
+Definition Even n := exists m, n == 2*m.
+Definition Odd n := exists m, n == 2*m+1.
+
+Lemma even_spec : forall n, even n = true <-> Even n.
+Proof.
+ intros n. unfold Even. zify.
+ rewrite Zeven_bool_iff, Zeven_ex_iff.
+ split; intros (m,Hm).
+ exists (of_N (Zabs_N m)).
+ zify. rewrite spec_of_N, Z_of_N_abs, Zabs_eq; auto.
+ generalize (spec_pos n); auto with zarith.
+ exists [m]. revert Hm. now zify.
+Qed.
+
+Lemma odd_spec : forall n, odd n = true <-> Odd n.
+Proof.
+ intros n. unfold Odd. zify.
+ rewrite Zodd_bool_iff, Zodd_ex_iff.
+ split; intros (m,Hm).
+ exists (of_N (Zabs_N m)).
+ zify. rewrite spec_of_N, Z_of_N_abs, Zabs_eq; auto.
+ generalize (spec_pos n); auto with zarith.
+ exists [m]. revert Hm. now zify.
+Qed.
+
+(** Div / Mod *)
+
 Program Instance div_wd : Proper (eq==>eq==>eq) div.
 Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 
@@ -191,6 +255,8 @@ intros a b. zify. intros.
 destruct (Z_mod_lt [a] [b]); auto.
 generalize (spec_pos b); auto with zarith.
 Qed.
+
+(** Recursion *)
 
 Definition recursion (A : Type) (a : A) (f : N.t -> A -> A) (n : N.t) :=
   Nrect (fun _ => A) a (fun n a => f (N.of_N n) a) (N.to_N n).
@@ -250,5 +316,5 @@ Qed.
 End NTypeIsNAxioms.
 
 Module NType_NAxioms (N : NType)
- <: NAxiomsSig <: NDivSig <: HasCompare N <: HasEqBool N <: HasMinMax N
+ <: NAxiomsSig <: HasCompare N <: HasEqBool N <: HasMinMax N
  := N <+ NTypeIsNAxioms.

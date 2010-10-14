@@ -937,8 +937,8 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
 
  Definition power_pos (x : t) p : t :=
   match x with
-  | Qz zx => Qz (Z.power_pos zx p)
-  | Qq nx dx => Qq (Z.power_pos nx p) (N.power_pos dx p)
+  | Qz zx => Qz (Z.pow_pos zx p)
+  | Qq nx dx => Qq (Z.pow_pos nx p) (N.pow_pos dx p)
   end.
 
  Theorem spec_power_pos : forall x p, [power_pos x p] == [x] ^ Zpos p.
@@ -946,25 +946,25 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  intros [ z | n d ] p; unfold power_pos.
  (* Qz *)
  simpl.
- rewrite Z.spec_power_pos.
+ rewrite Z.spec_pow_pos.
  rewrite Qpower_decomp.
  red; simpl; f_equal.
  rewrite Zpower_pos_1_l; auto.
  (* Qq *)
  simpl.
- rewrite Z.spec_power_pos.
+ rewrite Z.spec_pow_pos.
  destr_eqb; nzsimpl; intros.
  apply Qeq_sym; apply Qpower_positive_0.
- rewrite N.spec_power_pos in *.
+ rewrite N.spec_pow_pos in *.
  assert (0 < N.to_Z d ^ ' p)%Z by
   (apply Zpower_gt_0; auto with zarith).
  romega.
- rewrite N.spec_power_pos, H in *.
+ rewrite N.spec_pow_pos, H in *.
  rewrite Zpower_0_l in H0; [romega|discriminate].
  rewrite Qpower_decomp.
  red; simpl; do 3 f_equal.
  rewrite Z2P_correct by (generalize (N.spec_pos d); romega).
- rewrite N.spec_power_pos. auto.
+ rewrite N.spec_pow_pos. auto.
  Qed.
 
  Instance strong_spec_power_pos x p `(Reduced x) : Reduced (power_pos x p).
@@ -979,10 +979,10 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  revert H.
  unfold Reduced; rewrite strong_spec_red, Qred_iff; simpl.
  destr_eqb; nzsimpl; simpl; intros.
- rewrite N.spec_power_pos in H0.
+ rewrite N.spec_pow_pos in H0.
  rewrite H, Zpower_0_l in *; [romega|discriminate].
  rewrite Z2P_correct in *; auto.
- rewrite N.spec_power_pos, Z.spec_power_pos; auto.
+ rewrite N.spec_pow_pos, Z.spec_pow_pos; auto.
  rewrite Zgcd_1_rel_prime in *.
  apply rel_prime_Zpower; auto with zarith.
  Qed.

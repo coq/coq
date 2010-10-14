@@ -6,20 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Export ZMulOrder.
+(** Properties of [abs] and [sgn] *)
 
-(** An axiomatization of [abs]. *)
-
-Module Type HasAbs(Import Z : ZAxiomsSig').
- Parameter Inline abs : t -> t.
- Axiom abs_eq : forall n, 0<=n -> abs n == n.
- Axiom abs_neq : forall n, n<=0 -> abs n == -n.
-End HasAbs.
+Require Import ZMulOrder.
 
 (** Since we already have [max], we could have defined [abs]. *)
 
-Module GenericAbs (Import Z : ZAxiomsSig')
-                  (Import ZP : ZMulOrderPropFunct Z) <: HasAbs Z.
+Module GenericAbs (Import Z : ZAxiomsMiniSig')
+                  (Import ZP : ZMulOrderProp Z) <: HasAbs Z.
  Definition abs n := max n (-n).
  Lemma abs_eq : forall n, 0<=n -> abs n == n.
  Proof.
@@ -35,22 +29,13 @@ Module GenericAbs (Import Z : ZAxiomsSig')
  Qed.
 End GenericAbs.
 
-(** An Axiomatization of [sgn]. *)
-
-Module Type HasSgn (Import Z : ZAxiomsSig').
- Parameter Inline sgn : t -> t.
- Axiom sgn_null : forall n, n==0 -> sgn n == 0.
- Axiom sgn_pos : forall n, 0<n -> sgn n == 1.
- Axiom sgn_neg : forall n, n<0 -> sgn n == -(1).
-End HasSgn.
-
 (** We can deduce a [sgn] function from a [compare] function *)
 
-Module Type ZDecAxiomsSig := ZAxiomsSig <+ HasCompare.
-Module Type ZDecAxiomsSig' := ZAxiomsSig' <+ HasCompare.
+Module Type ZDecAxiomsSig := ZAxiomsMiniSig <+ HasCompare.
+Module Type ZDecAxiomsSig' := ZAxiomsMiniSig' <+ HasCompare.
 
 Module Type GenericSgn (Import Z : ZDecAxiomsSig')
-                       (Import ZP : ZMulOrderPropFunct Z) <: HasSgn Z.
+                       (Import ZP : ZMulOrderProp Z) <: HasSgn Z.
  Definition sgn n :=
   match compare 0 n with Eq => 0 | Lt => 1 | Gt => -(1) end.
  Lemma sgn_null : forall n, n==0 -> sgn n == 0.
@@ -61,11 +46,11 @@ Module Type GenericSgn (Import Z : ZDecAxiomsSig')
  Proof. unfold sgn; intros. destruct (compare_spec 0 n); order. Qed.
 End GenericSgn.
 
-Module Type ZAxiomsExtSig := ZAxiomsSig <+ HasAbs <+ HasSgn.
-Module Type ZAxiomsExtSig' := ZAxiomsSig' <+ HasAbs <+ HasSgn.
 
-Module Type ZSgnAbsPropSig (Import Z : ZAxiomsExtSig')
-                           (Import ZP : ZMulOrderPropFunct Z).
+(** Derived properties of [abs] and [sgn] *)
+
+Module Type ZSgnAbsProp (Import Z : ZAxiomsSig')
+                        (Import ZP : ZMulOrderProp Z).
 
 Ltac destruct_max n :=
  destruct (le_ge_cases 0 n);
@@ -343,6 +328,15 @@ Proof.
  rewrite eq_opp_l. apply abs_neq. now apply lt_le_incl.
 Qed.
 
-End ZSgnAbsPropSig.
+Lemma sgn_sgn : forall x, sgn (sgn x) == sgn x.
+Proof.
+ intros.
+ destruct (sgn_spec x) as [(LT,EQ)|[(EQ',EQ)|(LT,EQ)]]; rewrite EQ.
+ apply sgn_pos, lt_0_1.
+ now apply sgn_null.
+ apply sgn_neg. rewrite opp_neg_pos. apply lt_0_1.
+Qed.
+
+End ZSgnAbsProp.
 
 

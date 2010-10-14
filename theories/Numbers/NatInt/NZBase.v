@@ -10,7 +10,7 @@
 
 Require Import NZAxioms.
 
-Module Type NZBasePropSig (Import NZ : NZDomainSig').
+Module Type NZBaseProp (Import NZ : NZDomainSig').
 
 Include BackportEq NZ NZ. (** eq_refl, eq_sym, eq_trans *)
 
@@ -83,5 +83,5 @@ Tactic Notation "nzinduct" ident(n) :=
 Tactic Notation "nzinduct" ident(n) constr(u) :=
   induction_maker n ltac:(apply central_induction with (z := u)).
 
-End NZBasePropSig.
+End NZBaseProp.
 

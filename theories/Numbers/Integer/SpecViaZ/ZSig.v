@@ -46,8 +46,9 @@ Module Type ZType.
  Parameter opp : t -> t.
  Parameter mul : t -> t -> t.
  Parameter square : t -> t.
- Parameter power_pos : t -> positive -> t.
- Parameter power : t -> N -> t.
+ Parameter pow_pos : t -> positive -> t.
+ Parameter pow_N : t -> N -> t.
+ Parameter pow : t -> t -> t.
  Parameter sqrt : t -> t.
  Parameter div_eucl : t -> t -> t * t.
  Parameter div : t -> t -> t.
@@ -55,6 +56,8 @@ Module Type ZType.
  Parameter gcd : t -> t -> t.
  Parameter sgn : t -> t.
  Parameter abs : t -> t.
+ Parameter even : t -> bool.
+ Parameter odd : t -> bool.
 
  Parameter spec_compare: forall x y, compare x y = Zcompare [x] [y].
  Parameter spec_eq_bool: forall x y, eq_bool x y = Zeq_bool [x] [y].
@@ -70,8 +73,9 @@ Module Type ZType.
  Parameter spec_opp: forall x, [opp x] = - [x].
  Parameter spec_mul: forall x y, [mul x y] = [x] * [y].
  Parameter spec_square: forall x, [square x] = [x] *  [x].
- Parameter spec_power_pos: forall x n, [power_pos x n] = [x] ^ Zpos n.
- Parameter spec_power: forall x n, [power x n] = [x] ^ Z_of_N n.
+ Parameter spec_pow_pos: forall x n, [pow_pos x n] = [x] ^ Zpos n.
+ Parameter spec_pow_N: forall x n, [pow_N x n] = [x] ^ Z_of_N n.
+ Parameter spec_pow: forall x n, [pow x n] = [x] ^ [n].
  Parameter spec_sqrt: forall x, 0 <= [x] ->
    [sqrt x] ^ 2 <= [x] < ([sqrt x] + 1) ^ 2.
  Parameter spec_div_eucl: forall x y,
@@ -81,6 +85,8 @@ Module Type ZType.
  Parameter spec_gcd: forall a b, [gcd a b] = Zgcd (to_Z a) (to_Z b).
  Parameter spec_sgn : forall x, [sgn x] = Zsgn [x].
  Parameter spec_abs : forall x, [abs x] = Zabs [x].
+ Parameter spec_even : forall x, even x = Zeven_bool [x].
+ Parameter spec_odd : forall x, odd x = Zodd_bool [x].
 
 End ZType.
 
@@ -91,6 +97,7 @@ Module Type ZType_Notation (Import Z:ZType).
  Infix "+" := add.
  Infix "-" := sub.
  Infix "*" := mul.
+ Infix "^" := pow.
  Notation "- x" := (opp x).
  Infix "<=" := le.
  Infix "<" := lt.

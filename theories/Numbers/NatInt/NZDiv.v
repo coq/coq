@@ -45,11 +45,10 @@ Module Type NZDiv (NZ:NZOrdAxiomsSig)
 
 Module Type NZDiv' (NZ:NZOrdAxiomsSig) := NZDiv NZ <+ DivModNotation NZ.
 
-Module NZDivPropFunct
+Module NZDivProp
  (Import NZ : NZOrdAxiomsSig')
- (Import NZP : NZMulOrderPropSig NZ)
- (Import NZD : NZDiv' NZ)
-.
+ (Import NZP : NZMulOrderProp NZ)
+ (Import NZD : NZDiv' NZ).
 
 (** Uniqueness theorems *)
 
@@ -538,5 +537,5 @@ Proof.
  rewrite (mul_le_mono_pos_l _ _ b); auto. nzsimpl. order.
 Qed.
 
-End NZDivPropFunct.
+End NZDivProp.
 

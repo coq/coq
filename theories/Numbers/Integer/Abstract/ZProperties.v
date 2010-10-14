@@ -6,17 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Export ZAxioms ZMaxMin ZSgnAbs.
+Require Export ZAxioms ZMaxMin ZSgnAbs ZParity ZPow.
 
-(** This functor summarizes all known facts about Z.
-    For the moment it is only an alias to the last functor which
-    subsumes all others, plus properties of [sgn] and [abs].
-*)
+(** This functor summarizes all known facts about Z. *)
 
-Module Type ZPropSig (Z:ZAxiomsExtSig) :=
- ZMaxMinProp Z <+ ZSgnAbsPropSig Z.
+Module Type ZProp (Z:ZAxiomsSig) :=
+ ZMaxMinProp Z <+ ZSgnAbsProp Z <+ ZParityProp Z <+ ZPowProp Z.
 
-Module ZPropFunct (Z:ZAxiomsExtSig) <: ZPropSig Z.
- Include ZPropSig Z.
-End ZPropFunct.
 

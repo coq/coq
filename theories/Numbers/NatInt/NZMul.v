@@ -10,9 +10,8 @@
 
 Require Import NZAxioms NZBase NZAdd.
 
-Module Type NZMulPropSig
- (Import NZ : NZAxiomsSig')(Import NZBase : NZBasePropSig NZ).
-Include NZAddPropSig NZ NZBase.
+Module Type NZMulProp (Import NZ : NZAxiomsSig')(Import NZBase : NZBaseProp NZ).
+Include NZAddProp NZ NZBase.
 
 Theorem mul_0_r : forall n, n * 0 == 0.
 Proof.
@@ -65,4 +64,19 @@ Proof.
 intro n. now nzsimpl.
 Qed.
 
-End NZMulPropSig.
+Theorem mul_shuffle0 : forall n m p, n*m*p == n*p*m.
+Proof.
+intros n m p. now rewrite <- 2 mul_assoc, (mul_comm m).
+Qed.
+
+Theorem mul_shuffle1 : forall n m p q, (n * m) * (p * q) == (n * p) * (m * q).
+Proof.
+intros n m p q. now rewrite 2 mul_assoc, (mul_shuffle0 n).
+Qed.
+
+Theorem mul_shuffle2 : forall n m p q, (n * m) * (p * q) == (n * q) * (m * p).
+Proof.
+intros n m p q. rewrite (mul_comm p). apply mul_shuffle1.
+Qed.
+
+End NZMulProp.

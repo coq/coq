@@ -29,7 +29,7 @@ Require Import ZProperties ZDivFloor ZSig ZSigZAxioms ZMake.
 
 Module BigZ <: ZType <: OrderedTypeFull <: TotalOrder :=
  ZMake.Make BigN <+ ZTypeIsZAxioms
- <+ !ZPropSig <+ !ZDivPropFunct <+ HasEqBool2Dec
+ <+ !ZProp <+ !ZDivProp <+ HasEqBool2Dec
  <+ !MinMaxLogicalProperties <+ !MinMaxDecProperties.
 
 (** Notations about [BigZ] *)
@@ -60,8 +60,9 @@ Arguments Scope BigZ.compare [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.min [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.max [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.eq_bool [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.power_pos [bigZ_scope positive_scope].
-Arguments Scope BigZ.power [bigZ_scope N_scope].
+Arguments Scope BigZ.pow_pos [bigZ_scope positive_scope].
+Arguments Scope BigZ.pow_N [bigZ_scope N_scope].
+Arguments Scope BigZ.pow [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.sqrt [bigZ_scope].
 Arguments Scope BigZ.div_eucl [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.modulo [bigZ_scope bigZ_scope].
@@ -74,7 +75,7 @@ Infix "-" := BigZ.sub : bigZ_scope.
 Notation "- x" := (BigZ.opp x) : bigZ_scope.
 Infix "*" := BigZ.mul : bigZ_scope.
 Infix "/" := BigZ.div : bigZ_scope.
-Infix "^" := BigZ.power : bigZ_scope.
+Infix "^" := BigZ.pow : bigZ_scope.
 Infix "?=" := BigZ.compare : bigZ_scope.
 Infix "==" := BigZ.eq (at level 70, no associativity) : bigZ_scope.
 Notation "x != y" := (~x==y)%bigZ (at level 70, no associativity) : bigZ_scope.
@@ -136,11 +137,13 @@ Qed.
 Lemma BigZeqb_correct : forall x y, BigZ.eq_bool x y = true -> x==y.
 Proof. now apply BigZ.eqb_eq. Qed.
 
-Lemma BigZpower : power_theory 1 BigZ.mul BigZ.eq (@id N) BigZ.power.
+Definition BigZ_of_N n := BigZ.of_Z (Z_of_N n).
+
+Lemma BigZpower : power_theory 1 BigZ.mul BigZ.eq BigZ_of_N BigZ.pow.
 Proof.
 constructor.
-intros. red. rewrite BigZ.spec_power. unfold id.
-destruct Zpower_theory as [EQ]. rewrite EQ.
+intros. unfold BigZ.eq, BigZ_of_N. rewrite BigZ.spec_pow, BigZ.spec_of_Z.
+rewrite Zpower_theory.(rpow_pow_N).
 destruct n; simpl. reflexivity.
 induction p; simpl; intros; BigZ.zify; rewrite ?IHp; auto.
 Qed.
@@ -178,16 +181,25 @@ Ltac BigZcst t :=
  | false => constr:NotConstant
  end.
 
+Ltac BigZ_to_N t :=
+ match t with
+ | BigZ.Pos ?t => BigN_to_N t
+ | BigZ.zero => constr:0%N
+ | BigZ.one => constr:1%N
+ | _ => constr:NotConstant
+ end.
+
 (** Registration for the "ring" tactic *)
 
 Add Ring BigZr : BigZring
  (decidable BigZeqb_correct,
   constants [BigZcst],
-  power_tac BigZpower [Ncst],
+  power_tac BigZpower [BigZ_to_N],
   div BigZdiv).
 
 Section TestRing.
-Let test : forall x y, 1 + x*y + x^2 + 1 == 1*1 + 1 + y*x + 1*x*x.
+Local Notation "2" := (BigZ.Pos (BigN.N0 2%int31)) : bigZ_scope.
+Let test : forall x y, 1 + x*y + x^2 + 1 == 1*1 + 1 + (y + 1*x)*x.
 Proof.
 intros. ring_simplify. reflexivity.
 Qed.

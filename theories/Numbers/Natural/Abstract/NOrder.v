@@ -10,8 +10,8 @@
 
 Require Export NAdd.
 
-Module NOrderPropFunct (Import N : NAxiomsSig').
-Include NAddPropFunct N.
+Module NOrderProp (Import N : NAxiomsMiniSig').
+Include NAddProp N.
 
 (* Theorems that are true for natural numbers but not for integers *)
 
@@ -238,5 +238,5 @@ rewrite pred_0. split; intro H; apply le_0_l.
 intro n. rewrite pred_succ. apply succ_le_mono.
 Qed.
 
-End NOrderPropFunct.
+End NOrderProp.
 

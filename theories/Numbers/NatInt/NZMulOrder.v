@@ -11,8 +11,8 @@
 Require Import NZAxioms.
 Require Import NZAddOrder.
 
-Module Type NZMulOrderPropSig (Import NZ : NZOrdAxiomsSig').
-Include NZAddOrderPropSig NZ.
+Module Type NZMulOrderProp (Import NZ : NZOrdAxiomsSig').
+Include NZAddOrderProp NZ.
 
 Theorem mul_lt_pred :
   forall p q n m, S p == q -> (p * n < p * m <-> q * n + m < q * m + n).
@@ -302,4 +302,4 @@ rewrite !mul_add_distr_r; nzsimpl; now rewrite le_succ_l.
 apply add_pos_pos; now apply lt_0_1.
 Qed.
 
-End NZMulOrderPropSig.
+End NZMulOrderProp.

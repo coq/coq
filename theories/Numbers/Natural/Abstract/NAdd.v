@@ -10,8 +10,8 @@
 
 Require Export NBase.
 
-Module NAddPropFunct (Import N : NAxiomsSig').
-Include NBasePropFunct N.
+Module NAddProp (Import N : NAxiomsMiniSig').
+Include NBaseProp N.
 
 (** For theorems about [add] that are both valid for [N] and [Z], see [NZAdd] *)
 (** Now comes theorems valid for natural numbers but not for Z *)
@@ -75,5 +75,5 @@ intros n m H; rewrite (add_comm n (P m));
 rewrite (add_comm n m); now apply add_pred_l.
 Qed.
 
-End NAddPropFunct.
+End NAddProp.
 

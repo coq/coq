@@ -8,25 +8,131 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Import Peano Peano_dec Compare_dec EqNat NAxioms NProperties NDiv.
+Require Import
+ Bool Peano Peano_dec Compare_dec Plus Minus Le EqNat NAxioms NProperties.
 
-(** Functions not already defined: div mod *)
+(** Functions not already defined *)
 
-Definition divF div x y := if leb y x then S (div (x-y) y) else 0.
-Definition modF mod x y := if leb y x then mod (x-y) y else x.
-Definition initF (_ _ : nat) := 0.
+Fixpoint pow n m :=
+  match m with
+    | O => 1
+    | S m => n * (pow n m)
+  end.
 
-Fixpoint loop {A} (F:A->A)(i:A) (n:nat) : A :=
- match n with
-  | 0 => i
-  | S n => F (loop F i n)
- end.
+Infix "^" := pow : nat_scope.
 
-Definition div x y := loop divF initF x x y.
-Definition modulo x y := loop modF initF x x y.
+Lemma pow_0_r : forall a, a^0 = 1.
+Proof. reflexivity. Qed.
+
+Lemma pow_succ_r : forall a b, 0<=b -> a^(S b) = a * a^b.
+Proof. reflexivity. Qed.
+
+Definition Even n := exists m, n = 2*m.
+Definition Odd n := exists m, n = 2*m+1.
+
+Fixpoint even n :=
+  match n with
+    | O => true
+    | 1 => false
+    | S (S n') => even n'
+  end.
+
+Definition odd n := negb (even n).
+
+Lemma even_spec : forall n, even n = true <-> Even n.
+Proof.
+ fix 1.
+  destruct n as [|[|n]]; simpl; try rewrite even_spec; split.
+  now exists 0.
+  trivial.
+  discriminate.
+  intros (m,H). destruct m. discriminate.
+   simpl in H. rewrite <- plus_n_Sm in H. discriminate.
+  intros (m,H). exists (S m). rewrite H. simpl. now rewrite plus_n_Sm.
+  intros (m,H). destruct m. discriminate. exists m.
+   simpl in H. rewrite <- plus_n_Sm in H. inversion H. reflexivity.
+Qed.
+
+Lemma odd_spec : forall n, odd n = true <-> Odd n.
+Proof.
+ unfold odd.
+ fix 1.
+  destruct n as [|[|n]]; simpl; try rewrite odd_spec; split.
+  discriminate.
+  intros (m,H). rewrite <- plus_n_Sm in H; discriminate.
+  now exists 0.
+  trivial.
+  intros (m,H). exists (S m). rewrite H. simpl. now rewrite <- (plus_n_Sm m).
+  intros (m,H). destruct m. discriminate. exists m.
+   simpl in H. rewrite <- plus_n_Sm in H. inversion H. simpl.
+   now rewrite <- !plus_n_Sm, <- !plus_n_O.
+Qed.
+
+(* A linear, tail-recursive, division for nat.
+
+   In [divmod], [y] is the predecessor of the actual divisor,
+   and [u] is [y] minus the real remainder
+*)
+
+Fixpoint divmod x y q u :=
+  match x with
+    | 0 => (q,u)
+    | S x' => match u with
+                | 0 => divmod x' y (S q) y
+                | S u' => divmod x' y q u'
+              end
+  end.
+
+Definition div x y :=
+  match y with
+    | 0 => 0
+    | S y' => fst (divmod x y' 0 y')
+  end.
+
+Definition modulo x y :=
+  match y with
+    | 0 => 0
+    | S y' => y' - snd (divmod x y' 0 y')
+  end.
+
 Infix "/" := div : nat_scope.
 Infix "mod" := modulo (at level 40, no associativity) : nat_scope.
 
+Lemma divmod_spec : forall x y q u, u <= y ->
+ let (q',u') := divmod x y q u in
+ x + (S y)*q + (y-u) = (S y)*q' + (y-u') /\ u' <= y.
+Proof.
+ induction x. simpl. intuition.
+ intros y q u H. destruct u; simpl divmod.
+ generalize (IHx y (S q) y (le_n y)). destruct divmod as (q',u').
+ intros (EQ,LE); split; trivial.
+ rewrite <- EQ, <- minus_n_O, minus_diag, <- plus_n_O.
+ now rewrite !plus_Sn_m, plus_n_Sm, <- plus_assoc, mult_n_Sm.
+ generalize (IHx y q u (le_Sn_le _ _ H)). destruct divmod as (q',u').
+ intros (EQ,LE); split; trivial.
+ rewrite <- EQ.
+ rewrite !plus_Sn_m, plus_n_Sm. f_equal. now apply minus_Sn_m.
+Qed.
+
+Lemma div_mod : forall x y, y<>0 -> x = y*(x/y) + x mod y.
+Proof.
+ intros x y Hy.
+ destruct y; [ now elim Hy | clear Hy ].
+ unfold div, modulo.
+ generalize (divmod_spec x y 0 y (le_n y)).
+ destruct divmod as (q,u).
+ intros (U,V).
+ simpl in *.
+ now rewrite <- mult_n_O, minus_diag, <- !plus_n_O in U.
+Qed.
+
+Lemma mod_upper_bound : forall x y, y<>0 -> x mod y < y.
+Proof.
+ intros x y Hy.
+ destruct y; [ now elim Hy | clear Hy ].
+ unfold modulo.
+ apply le_n_S, le_minus.
+Qed.
 
 (** * Implementation of [NAxiomsSig] by [nat] *)
 
@@ -119,25 +225,26 @@ Proof.
 reflexivity.
 Qed.
 
-Definition recursion (A : Type) : A -> (nat -> A -> A) -> nat -> A :=
-  nat_rect (fun _ => A).
-Implicit Arguments recursion [A].
+(** Recursion fonction *)
 
-Instance recursion_wd (A : Type) (Aeq : relation A) :
- Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) (@recursion A).
+Definition recursion {A} : A -> (nat -> A -> A) -> nat -> A :=
+  nat_rect (fun _ => A).
+
+Instance recursion_wd {A} (Aeq : relation A) :
+ Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) recursion.
 Proof.
 intros a a' Ha f f' Hf n n' Hn. subst n'.
 induction n; simpl; auto. apply Hf; auto.
 Qed.
 
 Theorem recursion_0 :
-  forall (A : Type) (a : A) (f : nat -> A -> A), recursion a f 0 = a.
+  forall {A} (a : A) (f : nat -> A -> A), recursion a f 0 = a.
 Proof.
 reflexivity.
 Qed.
 
 Theorem recursion_succ :
-  forall (A : Type) (Aeq : relation A) (a : A) (f : nat -> A -> A),
+  forall {A} (Aeq : relation A) (a : A) (f : nat -> A -> A),
     Aeq a a -> Proper (eq==>Aeq==>Aeq) f ->
       forall n : nat, Aeq (recursion a f (S n)) (f n (recursion a f n)).
 Proof.
@@ -171,56 +278,29 @@ Definition eqb_eq := beq_nat_true_iff.
 Definition compare_spec := nat_compare_spec.
 Definition eq_dec := eq_nat_dec.
 
-(** Generic Properties *)
+Definition Even := Even.
+Definition Odd := Odd.
+Definition even := even.
+Definition odd := odd.
+Definition even_spec := even_spec.
+Definition odd_spec := odd_spec.
 
-Include NPropFunct
- <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
-
-(** Proofs of specification for [div] and [mod]. *)
-
-Lemma div_mod : forall x y, y<>0 -> x = y*(x/y) + x mod y.
-Proof.
- cut (forall n x y, y<>0 -> x<=n ->
-       x = y*(loop divF initF n x y) + (loop modF initF n x y)).
- intros H x y Hy. apply H; auto.
- induction n.
- simpl; unfold initF; simpl. intros. nzsimpl. auto with arith.
- simpl; unfold divF at 1, modF at 1.
- intros.
- destruct (leb y x) as [ ]_eqn:L;
-  [apply leb_complete in L | apply leb_complete_conv in L; now nzsimpl].
- rewrite mul_succ_r, <- add_assoc, (add_comm y), add_assoc.
- rewrite <- IHn; auto.
- symmetry; apply sub_add; auto.
- rewrite <- lt_succ_r.
- apply lt_le_trans with x; auto.
- apply sub_lt; auto. rewrite <- neq_0_lt_0; auto.
-Qed.
-
-Lemma mod_upper_bound : forall x y, y<>0 -> x mod y < y.
-Proof.
- cut (forall n x y, y<>0 -> x<=n -> loop modF initF n x y < y).
- intros H x y Hy. apply H; auto.
- induction n.
- simpl; unfold initF. intros. rewrite <- neq_0_lt_0; auto.
- simpl; unfold modF at 1.
- intros.
- destruct (leb y x) as [ ]_eqn:L;
-  [apply leb_complete in L | apply leb_complete_conv in L]; auto.
- apply IHn; auto.
- rewrite <- lt_succ_r.
- apply lt_le_trans with x; auto.
- apply sub_lt; auto. rewrite <- neq_0_lt_0; auto.
-Qed.
+Definition pow := pow.
+Program Instance pow_wd : Proper (eq==>eq==>eq) pow.
+Definition pow_0_r := pow_0_r.
+Definition pow_succ_r := pow_succ_r.
 
 Definition div := div.
 Definition modulo := modulo.
 Program Instance div_wd : Proper (eq==>eq==>eq) div.
 Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
+Definition div_mod := div_mod.
+Definition mod_upper_bound := mod_upper_bound.
 
-(** Generic properties of [div] and [mod] *)
+(** Generic Properties *)
 
-Include NDivPropFunct.
+Include NProp
+ <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
 
 End Nat.
 

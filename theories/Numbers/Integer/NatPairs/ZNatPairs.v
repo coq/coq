@@ -8,16 +8,17 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Import NProperties. (* The most complete file for N *)
-Require Export ZProperties. (* The most complete file for Z *)
+Require Import NSub ZAxioms.
 Require Export Ring.
 
 Notation "s #1" := (fst s) (at level 9, format "s '#1'") : pair_scope.
 Notation "s #2" := (snd s) (at level 9, format "s '#2'") : pair_scope.
 Open Local Scope pair_scope.
 
-Module ZPairsAxiomsMod (Import N : NAxiomsSig) <: ZAxiomsSig.
-Module Import NPropMod := NPropFunct N. (* Get all properties of N *)
+Module ZPairsAxiomsMod (Import N : NAxiomsMiniSig) <: ZAxiomsMiniSig.
+ Module Import NProp.
+   Include NSubProp N.
+ End NProp.
 
 Delimit Scope NScope with N.
 Bind Scope NScope with N.t.

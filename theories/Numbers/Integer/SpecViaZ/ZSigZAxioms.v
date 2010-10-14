@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import ZArith ZAxioms ZDivFloor ZSig.
+Require Import ZArith Nnat ZAxioms ZDivFloor ZSig.
 
 (** * The interface [ZSig.ZType] implies the interface [ZAxiomsSig]
 
@@ -20,6 +20,7 @@ Hint Rewrite
  spec_0 spec_1 spec_add spec_sub spec_pred spec_succ
  spec_mul spec_opp spec_of_Z spec_div spec_modulo
  spec_compare spec_eq_bool spec_max spec_min spec_abs spec_sgn
+ spec_pow spec_even spec_odd
  : zsimpl.
 
 Ltac zsimpl := autorewrite with zsimpl.
@@ -188,12 +189,14 @@ Qed.
 
 (** Part specific to integers, not natural numbers *)
 
-Program Instance opp_wd : Proper (eq ==> eq) opp.
-
 Theorem succ_pred : forall n, succ (pred n) == n.
 Proof.
 intros. zify. auto with zarith.
 Qed.
+
+(** Opp *)
+
+Program Instance opp_wd : Proper (eq ==> eq) opp.
 
 Theorem opp_0 : - 0 == 0.
 Proof.
@@ -204,6 +207,8 @@ Theorem opp_succ : forall n, - (succ n) == pred (- n).
 Proof.
 intros. zify. auto with zarith.
 Qed.
+
+(** Abs / Sgn *)
 
 Theorem abs_eq : forall n, 0 <= n -> abs n == n.
 Proof.
@@ -229,6 +234,67 @@ Theorem sgn_neg : forall n, n<0 -> sgn n == opp (succ 0).
 Proof.
 intros n. zify. omega with *.
 Qed.
+
+(** Power *)
+
+Program Instance pow_wd : Proper (eq==>eq==>eq) pow.
+
+Local Notation "1" := (succ 0).
+Local Notation "2" := (succ 1).
+
+Lemma pow_0_r : forall a, a^0 == 1.
+Proof.
+ intros. now zify.
+Qed.
+
+Lemma pow_succ_r : forall a b, 0<=b -> a^(succ b) == a * a^b.
+Proof.
+ intros a b. zify. intros Hb.
+ rewrite Zpower_exp; auto with zarith.
+ simpl. unfold Zpower_pos; simpl. ring.
+Qed.
+
+Lemma pow_neg : forall a b, b<0 -> a^b == 0.
+Proof.
+ intros a b. zify. intros Hb.
+ destruct [b]; reflexivity || discriminate.
+Qed.
+
+Lemma pow_pow_N : forall a b, 0<=b -> a^b == pow_N a (Zabs_N (to_Z b)).
+Proof.
+ intros a b. zify. intros Hb.
+ now rewrite spec_pow_N, Z_of_N_abs, Zabs_eq.
+Qed.
+
+Lemma pow_pos_N : forall a p, pow_pos a p == pow_N a (Npos p).
+Proof.
+ intros a b. red. now rewrite spec_pow_N, spec_pow_pos.
+Qed.
+
+(** Even / Odd *)
+
+Definition Even n := exists m, n == 2*m.
+Definition Odd n := exists m, n == 2*m+1.
+
+Lemma even_spec : forall n, even n = true <-> Even n.
+Proof.
+ intros n. unfold Even. zify.
+ rewrite Zeven_bool_iff, Zeven_ex_iff.
+ split; intros (m,Hm).
+ exists (of_Z m). now zify.
+ exists [m]. revert Hm. now zify.
+Qed.
+
+Lemma odd_spec : forall n, odd n = true <-> Odd n.
+Proof.
+ intros n. unfold Odd. zify.
+ rewrite Zodd_bool_iff, Zodd_ex_iff.
+ split; intros (m,Hm).
+ exists (of_Z m). now zify.
+ exists [m]. revert Hm. now zify.
+Qed.
+
+(** Div / Mod *)
 
 Program Instance div_wd : Proper (eq==>eq==>eq) div.
 Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.

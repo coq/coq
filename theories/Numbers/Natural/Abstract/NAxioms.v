@@ -8,30 +8,67 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Export NZAxioms.
+Require Export NZAxioms NZPow NZDiv.
 
-Set Implicit Arguments.
+(** From [NZ], we obtain natural numbers just by stating that [pred 0] == 0 *)
 
-Module Type NAxioms (Import NZ : NZDomainSig').
+Module Type NAxiom (Import NZ : NZDomainSig').
+ Axiom pred_0 : P 0 == 0.
+End NAxiom.
 
-Axiom pred_0 : P 0 == 0.
+Module Type NAxiomsMiniSig := NZOrdAxiomsSig <+ NAxiom.
+Module Type NAxiomsMiniSig' := NZOrdAxiomsSig' <+ NAxiom.
 
-Parameter Inline recursion : forall A : Type, A -> (t -> A -> A) -> t -> A.
-Implicit Arguments recursion [A].
 
-Declare Instance recursion_wd (A : Type) (Aeq : relation A) :
- Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) (@recursion A).
+(** Let's now add some more functions and their specification *)
+
+(** Parity functions *)
+
+Module Type Parity (Import N : NAxiomsMiniSig').
+ Parameter Inline even odd : t -> bool.
+ Definition Even n := exists m, n == 2*m.
+ Definition Odd n := exists m, n == 2*m+1.
+ Axiom even_spec : forall n, even n = true <-> Even n.
+ Axiom odd_spec : forall n, odd n = true <-> Odd n.
+End Parity.
+
+(** Power function : NZPow is enough *)
+
+(** Division Function : we reuse NZDiv.DivMod and NZDiv.NZDivCommon,
+    and add to that a N-specific constraint. *)
+
+Module Type NDivSpecific (Import N : NAxiomsMiniSig')(Import DM : DivMod' N).
+ Axiom mod_upper_bound : forall a b, b ~= 0 -> a mod b < b.
+End NDivSpecific.
+
+
+(** We now group everything together. *)
+
+Module Type NAxiomsSig := NAxiomsMiniSig <+ HasCompare <+ Parity
+  <+ NZPow.NZPow <+ DivMod <+ NZDivCommon <+ NDivSpecific.
+
+Module Type NAxiomsSig' := NAxiomsMiniSig' <+ HasCompare <+ Parity
+  <+ NZPow.NZPow' <+ DivMod' <+ NZDivCommon <+ NDivSpecific.
+
+
+(** It could also be interesting to have a constructive recursor function. *)
+
+Module Type NAxiomsRec (Import NZ : NZDomainSig').
+
+Parameter Inline recursion : forall {A : Type}, A -> (t -> A -> A) -> t -> A.
+
+Declare Instance recursion_wd {A : Type} (Aeq : relation A) :
+ Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) recursion.
 
 Axiom recursion_0 :
-  forall (A : Type) (a : A) (f : t -> A -> A), recursion a f 0 = a.
+  forall {A} (a : A) (f : t -> A -> A), recursion a f 0 = a.
 
 Axiom recursion_succ :
-  forall (A : Type) (Aeq : relation A) (a : A) (f : t -> A -> A),
+  forall {A} (Aeq : relation A) (a : A) (f : t -> A -> A),
     Aeq a a -> Proper (eq==>Aeq==>Aeq) f ->
       forall n, Aeq (recursion a f (S n)) (f n (recursion a f n)).
 
-End NAxioms.
+End NAxiomsRec.
 
-Module Type NAxiomsSig := NZOrdAxiomsSig <+ NAxioms.
-Module Type NAxiomsSig' := NZOrdAxiomsSig' <+ NAxioms.
-
+Module Type NAxiomsFullSig := NAxiomsSig <+ NAxiomsRec.
+Module Type NAxiomsFullSig' := NAxiomsSig' <+ NAxiomsRec.

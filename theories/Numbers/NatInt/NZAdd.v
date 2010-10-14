@@ -10,8 +10,7 @@
 
 Require Import NZAxioms NZBase.
 
-Module Type NZAddPropSig
- (Import NZ : NZAxiomsSig')(Import NZBase : NZBasePropSig NZ).
+Module Type NZAddProp (Import NZ : NZAxiomsSig')(Import NZBase : NZBaseProp NZ).
 
 Hint Rewrite
  pred_succ add_0_l add_succ_l mul_0_l mul_succ_l sub_0_r sub_succ_r : nz.
@@ -76,8 +75,7 @@ Qed.
 
 Theorem add_shuffle2 : forall n m p q, (n + m) + (p + q) == (n + q) + (m + p).
 Proof.
-intros n m p q.
-rewrite 2 add_assoc, add_shuffle0, add_cancel_r. apply add_shuffle0.
+intros n m p q. rewrite (add_comm p). apply add_shuffle1.
 Qed.
 
 Theorem sub_1_r : forall n, n - 1 == P n.
@@ -85,4 +83,4 @@ Proof.
 intro n; now nzsimpl.
 Qed.
 
-End NZAddPropSig.
+End NZAddProp.

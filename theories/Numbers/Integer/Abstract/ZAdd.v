@@ -10,8 +10,8 @@
 
 Require Export ZBase.
 
-Module ZAddPropFunct (Import Z : ZAxiomsSig').
-Include ZBasePropFunct Z.
+Module ZAddProp (Import Z : ZAxiomsMiniSig').
+Include ZBaseProp Z.
 
 (** Theorems that are either not valid on N or have different proofs
     on N and Z *)
@@ -287,5 +287,5 @@ Qed.
 
 (** Of course, there are many other variants *)
 
-End ZAddPropFunct.
+End ZAddProp.
 

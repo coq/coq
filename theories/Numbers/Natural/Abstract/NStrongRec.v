@@ -13,8 +13,8 @@ and proves its properties *)
 
 Require Export NSub.
 
-Module NStrongRecPropFunct (Import N : NAxiomsSig').
-Include NSubPropFunct N.
+Module NStrongRecProp (Import N : NAxiomsFullSig').
+Include NSubProp N.
 
 Section StrongRecursion.
 
@@ -204,5 +204,5 @@ End StrongRecursion.
 
 Implicit Arguments strong_rec [A].
 
-End NStrongRecPropFunct.
+End NStrongRecProp.
 

@@ -11,8 +11,8 @@
 Require Export NZAxioms NZMulOrder.
 
 (** This functor summarizes all known facts about NZ.
-    For the moment it is only an alias to [NZMulOrderPropFunct], which
+    For the moment it is only an alias to [NZMulOrderProp], which
     subsumes all others.
 *)
 
-Module Type NZPropFunct := NZMulOrderPropSig.
+Module Type NZProp := NZMulOrderProp.

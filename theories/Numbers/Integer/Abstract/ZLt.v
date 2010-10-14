@@ -10,8 +10,8 @@
 
 Require Export ZMul.
 
-Module ZOrderPropFunct (Import Z : ZAxiomsSig').
-Include ZMulPropFunct Z.
+Module ZOrderProp (Import Z : ZAxiomsMiniSig').
+Include ZMulProp Z.
 
 (** Instances of earlier theorems for m == 0 *)
 
@@ -128,5 +128,5 @@ setoid_replace (P 0) with (-(1)) in H2. now apply lt_le_trans with m.
 apply <- eq_opp_r. now rewrite opp_pred, opp_0.
 Qed.
 
-End ZOrderPropFunct.
+End ZOrderProp.
 

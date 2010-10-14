@@ -46,8 +46,9 @@ Module Type NType.
  Parameter sub : t -> t -> t.
  Parameter mul : t -> t -> t.
  Parameter square : t -> t.
- Parameter power_pos : t -> positive -> t.
- Parameter power : t -> N -> t.
+ Parameter pow_pos : t -> positive -> t.
+ Parameter pow_N : t -> N -> t.
+ Parameter pow : t -> t -> t.
  Parameter sqrt : t -> t.
  Parameter log2 : t -> t.
  Parameter div_eucl : t -> t -> t * t.
@@ -56,7 +57,8 @@ Module Type NType.
  Parameter gcd : t -> t -> t.
  Parameter shiftr : t -> t -> t.
  Parameter shiftl : t -> t -> t.
- Parameter is_even : t -> bool.
+ Parameter even : t -> bool.
+ Parameter odd : t -> bool.
 
  Parameter spec_compare: forall x y, compare x y = Zcompare [x] [y].
  Parameter spec_eq_bool: forall x y, eq_bool x y = Zeq_bool [x] [y].
@@ -70,8 +72,9 @@ Module Type NType.
  Parameter spec_sub: forall x y, [sub x y] = Zmax 0 ([x] - [y]).
  Parameter spec_mul: forall x y, [mul x y] = [x] * [y].
  Parameter spec_square: forall x, [square x] = [x] *  [x].
- Parameter spec_power_pos: forall x n, [power_pos x n] = [x] ^ Zpos n.
- Parameter spec_power: forall x n, [power x n] = [x] ^ Z_of_N n.
+ Parameter spec_pow_pos: forall x n, [pow_pos x n] = [x] ^ Zpos n.
+ Parameter spec_pow_N: forall x n, [pow_N x n] = [x] ^ Z_of_N n.
+ Parameter spec_pow: forall x n, [pow x n] = [x] ^ [n].
  Parameter spec_sqrt: forall x, [sqrt x] ^ 2 <= [x] < ([sqrt x] + 1) ^ 2.
  Parameter spec_log2_0: forall x, [x] = 0 -> [log2 x] = 0.
  Parameter spec_log2: forall x, [x]<>0 -> 2^[log2 x] <= [x] < 2^([log2 x]+1).
@@ -82,8 +85,8 @@ Module Type NType.
  Parameter spec_gcd: forall a b, [gcd a b] = Zgcd [a] [b].
  Parameter spec_shiftr: forall p x, [shiftr p x] = [x] / 2^[p].
  Parameter spec_shiftl: forall p x, [shiftl p x] = [x] * 2^[p].
- Parameter spec_is_even: forall x,
-  if is_even x then [x] mod 2 = 0 else [x] mod 2 = 1.
+ Parameter spec_even: forall x, even x = Zeven_bool [x].
+ Parameter spec_odd: forall x, odd x = Zodd_bool [x].
 
 End NType.
 
@@ -94,6 +97,7 @@ Module Type NType_Notation (Import N:NType).
  Infix "+" := add.
  Infix "-" := sub.
  Infix "*" := mul.
+ Infix "^" := pow.
  Infix "<=" := le.
  Infix "<" := lt.
 End NType_Notation.

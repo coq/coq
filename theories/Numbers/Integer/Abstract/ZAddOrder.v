@@ -10,8 +10,8 @@
 
 Require Export ZLt.
 
-Module ZAddOrderPropFunct (Import Z : ZAxiomsSig').
-Include ZOrderPropFunct Z.
+Module ZAddOrderProp (Import Z : ZAxiomsMiniSig').
+Include ZOrderProp Z.
 
 (** Theorems that are either not valid on N or have different proofs
     on N and Z *)
@@ -293,6 +293,6 @@ End PosNeg.
 
 Ltac zero_pos_neg n := induction_maker n ltac:(apply zero_pos_neg).
 
-End ZAddOrderPropFunct.
+End ZAddOrderProp.
 
 

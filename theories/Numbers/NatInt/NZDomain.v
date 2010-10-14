@@ -305,7 +305,7 @@ End NZOfNat.
 
 Module NZOfNatOrd (Import NZ:NZOrdSig').
 Include NZOfNat NZ.
-Include NZOrderPropFunct NZ.
+Include NZBaseProp NZ <+ NZOrderProp NZ.
 Local Open Scope ofnat.
 
 Theorem ofnat_S_gt_0 :

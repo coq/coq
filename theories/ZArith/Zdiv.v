@@ -315,7 +315,7 @@ Module Z.
  Proof. intros; apply Z_mod_lt; auto with zarith. Qed.
  Definition mod_neg_bound := Z_mod_neg.
 
- Include ZBinary.Z <+ ZDivFloor.ZDivPropFunct.
+ Include ZBinary.Z <+ ZDivFloor.ZDivProp.
 
 End Z.
 
