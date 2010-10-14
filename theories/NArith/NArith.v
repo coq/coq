@@ -20,7 +20,7 @@ Module N.
  Include NBinary.N.
 End N.
 
-(** [N] contains An [order] tactic for natural numbers *)
+(** [N] contains an [order] tactic for natural numbers *)
 
 (** Note that [N.order] is domain-agnostic: it will not prove
     [1<=2] or [x<=x+x], but rather things like [x<=y -> y<=x -> x=y]. *)

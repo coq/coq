@@ -521,3 +521,38 @@ Proof.
  now rewrite Nmult_1_r.
  apply Piter_op_succ. apply Nmult_assoc.
 Qed.
+
+(** Parity *)
+
+Definition Neven n :=
+  match n with
+    | N0 => true
+    | Npos (xO _) => true
+    | _ => false
+  end.
+Definition Nodd n := negb (Neven n).
+
+Local Notation "1" := (Npos xH) : N_scope.
+Local Notation "2" := (Npos (xO xH)) : N_scope.
+
+Lemma Neven_spec : forall n, Neven n = true <-> exists m, n=2*m.
+Proof.
+ destruct n.
+ split. now exists N0.
+ trivial.
+ destruct p; simpl; split; trivial; try discriminate.
+ intros (m,H). now destruct m.
+ now exists (Npos p).
+ intros (m,H). now destruct m.
+Qed.
+
+Lemma Nodd_spec : forall n, Nodd n = true <-> exists m, n=2*m+1.
+Proof.
+ destruct n.
+ split. discriminate.
+ intros (m,H). now destruct m.
+ destruct p; simpl; split; trivial; try discriminate.
+ exists (Npos p). reflexivity.
+ intros (m,H). now destruct m.
+ exists N0. reflexivity.
+Qed.
