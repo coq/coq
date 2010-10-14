@@ -501,3 +501,23 @@ Lemma Ndouble_plus_one_inj :
 Proof.
   intros. rewrite <- (Ndouble_plus_one_div2 n). rewrite H. apply Ndouble_plus_one_div2.
 Qed.
+
+(** Power *)
+
+Definition Npow n p :=
+  match p with
+    | N0 => Npos 1
+    | Npos p => Piter_op Nmult p n
+  end.
+
+Infix "^" := Npow : N_scope.
+
+Lemma Npow_0_r : forall n, n ^ N0 = Npos 1.
+Proof. reflexivity. Qed.
+
+Lemma Npow_succ_r : forall n p, n^(Nsucc p) = n * n^p.
+Proof.
+ intros n p; destruct p; simpl.
+ now rewrite Nmult_1_r.
+ apply Piter_op_succ. apply Nmult_assoc.
+Qed.

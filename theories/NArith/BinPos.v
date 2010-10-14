@@ -93,14 +93,28 @@ Unset Boxed Definitions.
 
 Infix "+" := Pplus : positive_scope.
 
+Definition Piter_op {A}(op:A->A->A) :=
+  fix iter (p:positive)(a:A) : A :=
+  match p with
+    | 1 => a
+    | p~0 => iter p (op a a)
+    | p~1 => op a (iter p (op a a))
+  end.
+
+Lemma Piter_op_succ : forall A (op:A->A->A),
+ (forall x y z, op x (op y z) = op (op x y) z) ->
+ forall p a,
+ Piter_op op (Psucc p) a = op a (Piter_op op p a).
+Proof.
+ induction p; simpl; intros; trivial.
+ rewrite H. apply IHp.
+Qed.
+
 (** From binary positive numbers to Peano natural numbers *)
 
-Fixpoint Pmult_nat (x:positive) (pow2:nat) : nat :=
-  match x with
-    | p~1 => (pow2 + Pmult_nat p (pow2 + pow2))%nat
-    | p~0 => Pmult_nat p (pow2 + pow2)%nat
-    | 1 => pow2
-  end.
+Definition Pmult_nat : positive -> nat -> nat :=
+ Eval unfold Piter_op in (* for compatibility *)
+ Piter_op plus.
 
 Definition nat_of_P (x:positive) := Pmult_nat x (S O).
 
