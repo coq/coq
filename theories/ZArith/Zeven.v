@@ -49,6 +49,16 @@ Definition Zodd_bool (z:Z) :=
     | _ => true
   end.
 
+Lemma Zeven_bool_iff : forall n, Zeven_bool n = true <-> Zeven n.
+Proof.
+ destruct n as [|p|p]; try destruct p; simpl in *; split; easy.
+Qed.
+
+Lemma Zodd_bool_iff : forall n, Zodd_bool n = true <-> Zodd n.
+Proof.
+ destruct n as [|p|p]; try destruct p; simpl in *; split; easy.
+Qed.
+
 Definition Zeven_odd_dec : forall z:Z, {Zeven z} + {Zodd z}.
 Proof.
   intro z. case z;
@@ -235,6 +245,16 @@ Theorem Zodd_2p_plus_1: forall p, Zodd (2 * p + 1).
 Proof.
   destruct p; simpl; auto.
   destruct p; simpl; auto.
+Qed.
+
+Theorem Zeven_ex_iff : forall n, Zeven n <-> exists m, n = 2*m.
+Proof.
+ split. apply Zeven_ex. intros (m,->). apply Zeven_2p.
+Qed.
+
+Theorem Zodd_ex_iff : forall n, Zodd n <-> exists m, n = 2*m + 1.
+Proof.
+ split. apply Zodd_ex. intros (m,->). apply Zodd_2p_plus_1.
 Qed.
 
 Theorem Zeven_plus_Zodd: forall a b,
