@@ -71,7 +71,7 @@ Module Make (W0:CyclicType) <: NType.
 
  Definition to_N (x : t) := Zabs_N (to_Z x).
 
- (** * Zero and One *)
+ (** * Zero, One *)
 
  Definition zero := mk_t O ZnZ.zero.
  Definition one := mk_t O ZnZ.one.
@@ -113,6 +113,18 @@ Module Make (W0:CyclicType) <: NType.
   intros. rewrite spec_mk_t. assumption.
   intros. unfold interp_carry in *.
   rewrite spec_mk_t_S. simpl. rewrite ZnZ.spec_1. assumption.
+ Qed.
+
+ (** Two *)
+
+ (** Not really pretty, but since W0 might be Z/2Z, we're not sure
+     there's a proper 2 there. *)
+
+ Definition two := succ one.
+
+ Lemma spec_2 : [two] = 2.
+ Proof.
+  unfold two. now rewrite spec_succ, spec_1.
  Qed.
 
  (** * Addition *)

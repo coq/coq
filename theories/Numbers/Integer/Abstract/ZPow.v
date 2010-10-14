@@ -78,12 +78,10 @@ Lemma pow_opp_even : forall a b, Even b -> (-a)^b == a^b.
 Proof.
  intros a b (c,H). rewrite H.
  destruct (le_gt_cases 0 c).
- assert (0 <= 2) by (apply le_le_succ_r, le_0_1).
- rewrite 2 pow_mul_r; trivial.
+ rewrite 2 pow_mul_r by order'.
  rewrite 2 pow_2_r.
  now rewrite mul_opp_opp.
- assert (2*c < 0).
-  apply mul_pos_neg; trivial. rewrite lt_succ_r. apply le_0_1.
+ assert (2*c < 0) by (apply mul_pos_neg; order').
  now rewrite !pow_neg.
 Qed.
 
@@ -91,10 +89,8 @@ Lemma pow_opp_odd : forall a b, Odd b -> (-a)^b == -(a^b).
 Proof.
  intros a b (c,H). rewrite H.
  destruct (le_gt_cases 0 c) as [LE|GT].
- assert (0 <= 2*c).
-  apply mul_nonneg_nonneg; trivial.
-  apply le_le_succ_r, le_0_1.
- rewrite add_succ_r, add_0_r, !pow_succ_r; trivial.
+ assert (0 <= 2*c) by (apply mul_nonneg_nonneg; order').
+ rewrite add_1_r, !pow_succ_r; trivial.
  rewrite pow_opp_even by (now exists c).
  apply mul_opp_l.
  apply double_above in GT. rewrite mul_0_r in GT.

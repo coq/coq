@@ -17,7 +17,7 @@ Require Import ZArith Nnat ZAxioms ZDivFloor ZSig.
 Module ZTypeIsZAxioms (Import Z : ZType').
 
 Hint Rewrite
- spec_0 spec_1 spec_add spec_sub spec_pred spec_succ
+ spec_0 spec_1 spec_2 spec_add spec_sub spec_pred spec_succ
  spec_mul spec_opp spec_of_Z spec_div spec_modulo
  spec_compare spec_eq_bool spec_max spec_min spec_abs spec_sgn
  spec_pow spec_even spec_odd
@@ -41,6 +41,16 @@ Program Instance mul_wd : Proper (eq ==> eq ==> eq) mul.
 Theorem pred_succ : forall n, pred (succ n) == n.
 Proof.
 intros. zify. auto with zarith.
+Qed.
+
+Theorem one_succ : 1 == succ 0.
+Proof.
+now zify.
+Qed.
+
+Theorem two_succ : 2 == succ 1.
+Proof.
+now zify.
 Qed.
 
 Section Induction.
@@ -225,12 +235,12 @@ Proof.
 intros n. zify. omega with *.
 Qed.
 
-Theorem sgn_pos : forall n, 0<n -> sgn n == succ 0.
+Theorem sgn_pos : forall n, 0<n -> sgn n == 1.
 Proof.
 intros n. zify. omega with *.
 Qed.
 
-Theorem sgn_neg : forall n, n<0 -> sgn n == opp (succ 0).
+Theorem sgn_neg : forall n, n<0 -> sgn n == opp 1.
 Proof.
 intros n. zify. omega with *.
 Qed.
@@ -238,9 +248,6 @@ Qed.
 (** Power *)
 
 Program Instance pow_wd : Proper (eq==>eq==>eq) pow.
-
-Local Notation "1" := (succ 0).
-Local Notation "2" := (succ 1).
 
 Lemma pow_0_r : forall a, a^0 == 1.
 Proof.

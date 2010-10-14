@@ -308,7 +308,7 @@ Qed.
 
 Theorem half_1 : half 1 == 0.
 Proof.
-unfold half. rewrite half_aux_succ, half_aux_0; simpl; auto with *.
+unfold half. rewrite one_succ, half_aux_succ, half_aux_0; simpl; auto with *.
 Qed.
 
 Theorem half_double : forall n,
@@ -346,9 +346,8 @@ assert (LE : 0 <= half n) by apply le_0_l.
 le_elim LE; auto.
 destruct (half_double n) as [E|E];
  rewrite <- LE, mul_0_r, ?add_0_r in E; rewrite E in LT.
-destruct (nlt_0_r _ LT).
-rewrite <- succ_lt_mono in LT.
-destruct (nlt_0_r _ LT).
+order'.
+order.
 Qed.
 
 Theorem half_decrease : forall n, 0 < n -> half n < n.
@@ -359,11 +358,11 @@ destruct (half_double n) as [E|E]; rewrite E at 2;
 rewrite <- add_0_l at 1.
 rewrite <- add_lt_mono_r.
 assert (LE : 0 <= half n) by apply le_0_l.
-le_elim LE; auto.
+nzsimpl. le_elim LE; auto.
 rewrite <- LE, mul_0_r in E. rewrite E in LT. destruct (nlt_0_r _ LT).
 rewrite <- add_0_l at 1.
 rewrite <- add_lt_mono_r.
-rewrite add_succ_l. apply lt_0_succ.
+nzsimpl. apply lt_0_succ.
 Qed.
 
 
@@ -437,7 +436,7 @@ destruct (n<<2) as [ ]_eqn:H.
 auto with *.
 apply succ_wd, E, half_decrease.
 rewrite <- not_true_iff_false, ltb_lt, nlt_ge, le_succ_l in H.
-apply lt_succ_l; auto.
+order'.
 Qed.
 Hint Resolve log_good_step.
 
@@ -468,7 +467,7 @@ intros n IH k Hk1 Hk2.
 destruct (lt_ge_cases k 2) as [LT|LE].
 (* base *)
 rewrite log_init, pow_0 by auto.
-rewrite <- le_succ_l in Hk2.
+rewrite <- le_succ_l, <- one_succ in Hk2.
 le_elim Hk2.
 rewrite <- nle_gt, le_succ_l in LT. destruct LT; auto.
 rewrite <- Hk2.

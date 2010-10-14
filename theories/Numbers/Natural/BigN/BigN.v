@@ -68,6 +68,7 @@ Arguments Scope BigN.gcd [bigN_scope bigN_scope].
 
 Local Notation "0" := BigN.zero : bigN_scope. (* temporary notation *)
 Local Notation "1" := BigN.one : bigN_scope. (* temporary notation *)
+Local Notation "2" := BigN.two : bigN_scope. (* temporary notation *)
 Infix "+" := BigN.add : bigN_scope.
 Infix "-" := BigN.sub : bigN_scope.
 Infix "*" := BigN.mul : bigN_scope.
@@ -164,6 +165,7 @@ Ltac isBigNcst t :=
    end
  | BigN.zero => constr:true
  | BigN.one => constr:true
+ | BigN.two => constr:true
  | _ => constr:false
  end.
 
@@ -194,7 +196,6 @@ Add Ring BigNr : BigNring
   div BigNdiv).
 
 Section TestRing.
-Local Notation "2" := (BigN.N0 2%int31) : bigN_scope. (* temporary notation *)
 Let test : forall x y, 1 + x*y^1 + x^2 + 1 == 1*1 + 1 + y*x + 1*x*x.
 intros. ring_simplify. reflexivity.
 Qed.

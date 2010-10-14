@@ -125,7 +125,7 @@ Theorem lt_n1_r : forall n m, n < m -> m < 0 -> n < -(1).
 Proof.
 intros n m H1 H2. apply -> lt_le_pred in H2.
 setoid_replace (P 0) with (-(1)) in H2. now apply lt_le_trans with m.
-apply <- eq_opp_r. now rewrite opp_pred, opp_0.
+apply <- eq_opp_r. now rewrite one_succ, opp_pred, opp_0.
 Qed.
 
 End ZOrderProp.

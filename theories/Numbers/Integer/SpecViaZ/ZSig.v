@@ -38,6 +38,7 @@ Module Type ZType.
  Parameter max : t -> t -> t.
  Parameter zero : t.
  Parameter one : t.
+ Parameter two : t.
  Parameter minus_one : t.
  Parameter succ : t -> t.
  Parameter add  : t -> t -> t.
@@ -65,6 +66,7 @@ Module Type ZType.
  Parameter spec_max : forall x y, [max x y] = Zmax [x] [y].
  Parameter spec_0: [zero] = 0.
  Parameter spec_1: [one] = 1.
+ Parameter spec_2: [two] = 2.
  Parameter spec_m1: [minus_one] = -1.
  Parameter spec_succ: forall n, [succ n] = [n] + 1.
  Parameter spec_add: forall x y, [add x y] = [x] + [y].
@@ -94,6 +96,8 @@ Module Type ZType_Notation (Import Z:ZType).
  Notation "[ x ]" := (to_Z x).
  Infix "=="  := eq (at level 70).
  Notation "0" := zero.
+ Notation "1" := one.
+ Notation "2" := two.
  Infix "+" := add.
  Infix "-" := sub.
  Infix "*" := mul.

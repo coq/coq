@@ -70,6 +70,7 @@ Arguments Scope BigZ.gcd [bigZ_scope bigZ_scope].
 
 Local Notation "0" := BigZ.zero : bigZ_scope.
 Local Notation "1" := BigZ.one : bigZ_scope.
+Local Notation "2" := BigZ.two : bigZ_scope.
 Infix "+" := BigZ.add : bigZ_scope.
 Infix "-" := BigZ.sub : bigZ_scope.
 Notation "- x" := (BigZ.opp x) : bigZ_scope.
@@ -171,6 +172,7 @@ Ltac isBigZcst t :=
  | BigZ.Neg ?t => isBigNcst t
  | BigZ.zero => constr:true
  | BigZ.one => constr:true
+ | BigZ.two => constr:true
  | BigZ.minus_one => constr:true
  | _ => constr:false
  end.
@@ -186,6 +188,7 @@ Ltac BigZ_to_N t :=
  | BigZ.Pos ?t => BigN_to_N t
  | BigZ.zero => constr:0%N
  | BigZ.one => constr:1%N
+ | BigZ.two => constr:2%N
  | _ => constr:NotConstant
  end.
 
@@ -198,7 +201,6 @@ Add Ring BigZr : BigZring
   div BigZdiv).
 
 Section TestRing.
-Local Notation "2" := (BigZ.Pos (BigN.N0 2%int31)) : bigZ_scope.
 Let test : forall x y, 1 + x*y + x^2 + 1 == 1*1 + 1 + (y + 1*x)*x.
 Proof.
 intros. ring_simplify. reflexivity.

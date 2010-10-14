@@ -41,20 +41,20 @@ Proof.
  intros x.
  split; intros [(y,H)|(y,H)].
  right. exists y. rewrite H. now nzsimpl.
- left. exists (S y). rewrite H. now nzsimpl.
+ left. exists (S y). rewrite H. now nzsimpl'.
  right. exists (P y). rewrite <- succ_inj_wd. rewrite H.
-  nzsimpl. now rewrite <- add_succ_l, <- add_succ_r, succ_pred.
+  nzsimpl'. now rewrite <- add_succ_l, <- add_succ_r, succ_pred.
  left. exists y. rewrite <- succ_inj_wd. rewrite H. now nzsimpl.
 Qed.
 
 Lemma double_below : forall n m, n<=m -> 2*n < 2*m+1.
 Proof.
- intros. nzsimpl. apply lt_succ_r. now apply add_le_mono.
+ intros. nzsimpl'. apply lt_succ_r. now apply add_le_mono.
 Qed.
 
 Lemma double_above : forall n m, n<m -> 2*n+1 < 2*m.
 Proof.
- intros. nzsimpl.
+ intros. nzsimpl'.
  rewrite <- le_succ_l, <- add_succ_l, <- add_succ_r.
  apply add_le_mono; now apply le_succ_l.
 Qed.
@@ -95,7 +95,7 @@ Qed.
 
 Lemma odd_1 : odd 1 = true.
 Proof.
- rewrite odd_spec. exists 0. now nzsimpl.
+ rewrite odd_spec. exists 0. now nzsimpl'.
 Qed.
 
 Lemma Odd_succ_Even : forall n, Odd (S n) <-> Even n.
@@ -140,7 +140,7 @@ Proof.
  exists (n'+m'). now rewrite mul_add_distr_l, Hn, Hm.
  exists (n'+m'). now rewrite mul_add_distr_l, Hn, Hm, add_assoc.
  exists (n'+m'). now rewrite mul_add_distr_l, Hn, Hm, add_shuffle0.
- exists (n'+m'+1). rewrite Hm,Hn. nzsimpl. now rewrite add_shuffle1.
+ exists (n'+m'+1). rewrite Hm,Hn. nzsimpl'. now rewrite add_shuffle1.
 Qed.
 
 Lemma odd_add : forall n m, odd (n+m) = xorb (odd n) (odd m).

@@ -46,6 +46,16 @@ Definition sub_succ_r := Nminus_succ_r.
 Definition mul_0_l := Nmult_0_l.
 Definition mul_succ_l n m := eq_trans (Nmult_Sn_m n m) (Nplus_comm _ _).
 
+Lemma one_succ : 1 = Nsucc 0.
+Proof.
+reflexivity.
+Qed.
+
+Lemma two_succ : 2 = Nsucc 1.
+Proof.
+reflexivity.
+Qed.
+
 (** Order *)
 
 Program Instance lt_wd : Proper (eq==>eq==>iff) Nlt.
@@ -165,7 +175,9 @@ Definition eq := @eq N.
 Definition eqb := Neqb.
 Definition compare := Ncompare.
 Definition eq_dec := N_eq_dec.
-Definition zero := N0.
+Definition zero := 0.
+Definition one := 1.
+Definition two := 2.
 Definition succ := Nsucc.
 Definition pred := Npred.
 Definition add := Nplus.

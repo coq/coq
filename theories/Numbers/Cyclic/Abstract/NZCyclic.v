@@ -31,6 +31,8 @@ Local Notation "[| x |]" := (ZnZ.to_Z x) (at level 0, x at level 99).
 
 Definition eq (n m : t) := [| n |] = [| m |].
 Definition zero := ZnZ.zero.
+Definition one := ZnZ.one.
+Definition two := ZnZ.succ ZnZ.one.
 Definition succ := ZnZ.succ.
 Definition pred := ZnZ.pred.
 Definition add := ZnZ.add.
@@ -45,10 +47,10 @@ Local Infix "+" := add.
 Local Infix "-" := sub.
 Local Infix "*" := mul.
 
-Hint Rewrite ZnZ.spec_0 ZnZ.spec_succ ZnZ.spec_pred
+Hint Rewrite ZnZ.spec_0 ZnZ.spec_1 ZnZ.spec_succ ZnZ.spec_pred
  ZnZ.spec_add ZnZ.spec_mul ZnZ.spec_sub : cyclic.
 Ltac zify :=
- unfold eq, zero, succ, pred, add, sub, mul in *;
+ unfold eq, zero, one, two, succ, pred, add, sub, mul in *;
  autorewrite with cyclic.
 Ltac zcongruence := repeat red; intros; zify; congruence.
 
@@ -75,20 +77,19 @@ Proof.
 pose proof gt_wB_1; auto with zarith.
 Qed.
 
+Lemma one_mod_wB : 1 mod wB = 1.
+Proof.
+rewrite Zmod_small. reflexivity. split. auto with zarith. apply gt_wB_1.
+Qed.
+
 Lemma succ_mod_wB : forall n : Z, (n + 1) mod wB = ((n mod wB) + 1) mod wB.
 Proof.
-intro n.
-pattern 1 at 2. replace 1 with (1 mod wB). rewrite <- Zplus_mod.
-reflexivity.
-now rewrite Zmod_small; [ | split; [auto with zarith | apply gt_wB_1]].
+intro n. rewrite <- one_mod_wB at 2. now rewrite <- Zplus_mod.
 Qed.
 
 Lemma pred_mod_wB : forall n : Z, (n - 1) mod wB = ((n mod wB) - 1) mod wB.
 Proof.
-intro n.
-pattern 1 at 2. replace 1 with (1 mod wB). rewrite <- Zminus_mod.
-reflexivity.
-now rewrite Zmod_small; [ | split; [auto with zarith | apply gt_wB_1]].
+intro n. rewrite <- one_mod_wB at 2. now rewrite Zminus_mod.
 Qed.
 
 Lemma NZ_to_Z_mod : forall n, [| n |] mod wB = [| n |].
@@ -101,6 +102,16 @@ Proof.
 intro n. zify.
 rewrite <- pred_mod_wB.
 replace ([| n |] + 1 - 1)%Z with [| n |] by ring. apply NZ_to_Z_mod.
+Qed.
+
+Theorem one_succ : one == succ zero.
+Proof.
+zify; simpl. now rewrite one_mod_wB.
+Qed.
+
+Theorem two_succ : two == succ one.
+Proof.
+reflexivity.
 Qed.
 
 Section Induction.

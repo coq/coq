@@ -56,13 +56,15 @@ Qed.
 
 Theorem mul_1_l : forall n, 1 * n == n.
 Proof.
-intro n. now nzsimpl.
+intro n. now nzsimpl'.
 Qed.
 
 Theorem mul_1_r : forall n, n * 1 == n.
 Proof.
-intro n. now nzsimpl.
+intro n. now nzsimpl'.
 Qed.
+
+Hint Rewrite mul_1_l mul_1_r : nz.
 
 Theorem mul_shuffle0 : forall n m p, n*m*p == n*p*m.
 Proof.

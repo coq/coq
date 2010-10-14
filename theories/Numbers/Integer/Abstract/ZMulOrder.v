@@ -177,22 +177,16 @@ Qed.
 
 Theorem eq_mul_1 : forall n m, n * m == 1 -> n == 1 \/ n == -1.
 Proof.
-assert (F : ~ 1 < -1).
-intro H.
-assert (H1 : -1 < 0). apply <- opp_neg_pos. apply lt_succ_diag_r.
-assert (H2 : 1 < 0) by now apply lt_trans with (-1).
-false_hyp H2 nlt_succ_diag_l.
+assert (F := lt_m1_0).
 zero_pos_neg n.
-intros m H; rewrite mul_0_l in H; false_hyp H neq_succ_diag_r.
-intros n H; split; apply <- le_succ_l in H; le_elim H.
-intros m H1; apply (lt_1_mul_l n m) in H.
-rewrite H1 in H; destruct H as [H | [H | H]].
-false_hyp H F. false_hyp H neq_succ_diag_l. false_hyp H lt_irrefl.
-intros; now left.
-intros m H1; apply (lt_1_mul_l n m) in H. rewrite mul_opp_l in H1;
-apply -> eq_opp_l in H1. rewrite H1 in H; destruct H as [H | [H | H]].
-false_hyp H lt_irrefl. apply -> eq_opp_l in H. rewrite opp_0 in H.
-false_hyp H neq_succ_diag_l. false_hyp H F.
+(* n = 0 *)
+intros m. nzsimpl. now left.
+(* 0 < n, proving P n /\ P (-n) *)
+intros n Hn. rewrite <- le_succ_l, <- one_succ in Hn.
+le_elim Hn; split; intros m H.
+destruct (lt_1_mul_l n m) as [|[|]]; order'.
+rewrite mul_opp_l, eq_opp_l in H. destruct (lt_1_mul_l n m) as [|[|]]; order'.
+now left.
 intros; right; symmetry; now apply opp_wd.
 Qed.
 

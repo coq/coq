@@ -31,6 +31,7 @@ Module Make (N:NType) <: ZType.
 
  Definition zero := Pos N.zero.
  Definition one  := Pos N.one.
+ Definition two := Pos N.two.
  Definition minus_one := Neg N.one.
 
  Definition of_Z x :=
@@ -62,6 +63,10 @@ Module Make (N:NType) <: ZType.
 
  Theorem spec_1: to_Z one = 1.
  exact N.spec_1.
+ Qed.
+
+ Theorem spec_2: to_Z two = 2.
+ exact N.spec_2.
  Qed.
 
  Theorem spec_m1: to_Z minus_one = -1.

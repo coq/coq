@@ -40,6 +40,7 @@ Module Type NType.
  Parameter min : t -> t -> t.
  Parameter zero : t.
  Parameter one : t.
+ Parameter two : t.
  Parameter succ : t -> t.
  Parameter pred : t -> t.
  Parameter add  : t -> t -> t.
@@ -66,6 +67,7 @@ Module Type NType.
  Parameter spec_min : forall x y, [min x y] = Zmin [x] [y].
  Parameter spec_0: [zero] = 0.
  Parameter spec_1: [one] = 1.
+ Parameter spec_2: [two] = 2.
  Parameter spec_succ: forall n, [succ n] = [n] + 1.
  Parameter spec_add: forall x y, [add x y] = [x] + [y].
  Parameter spec_pred: forall x, [pred x] = Zmax 0 ([x] - 1).
@@ -94,6 +96,8 @@ Module Type NType_Notation (Import N:NType).
  Notation "[ x ]" := (to_Z x).
  Infix "==" := eq (at level 70).
  Notation "0" := zero.
+ Notation "1" := one.
+ Notation "2" := two.
  Infix "+" := add.
  Infix "-" := sub.
  Infix "*" := mul.

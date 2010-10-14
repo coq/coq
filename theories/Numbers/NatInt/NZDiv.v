@@ -160,12 +160,12 @@ Qed.
 
 Lemma div_1_l: forall a, 1<a -> 1/a == 0.
 Proof.
-intros; apply div_small; split; auto. apply le_succ_diag_r.
+intros; apply div_small; split; auto. apply le_0_1.
 Qed.
 
 Lemma mod_1_l: forall a, 1<a -> 1 mod a == 1.
 Proof.
-intros; apply mod_small; split; auto. apply le_succ_diag_r.
+intros; apply mod_small; split; auto. apply le_0_1.
 Qed.
 
 Lemma div_mul : forall a b, 0<=a -> 0<b -> (a*b)/b == a.

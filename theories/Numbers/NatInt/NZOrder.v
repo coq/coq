@@ -231,18 +231,32 @@ Qed.
 
 Theorem lt_0_1 : 0 < 1.
 Proof.
-apply lt_succ_diag_r.
+rewrite one_succ. apply lt_succ_diag_r.
 Qed.
 
 Theorem le_0_1 : 0 <= 1.
 Proof.
-apply le_succ_diag_r.
+apply lt_le_incl, lt_0_1.
+Qed.
+
+Theorem lt_0_2 : 0 < 2.
+Proof.
+transitivity 1. apply lt_0_1. rewrite two_succ. apply lt_succ_diag_r.
+Qed.
+
+Theorem le_0_2 : 0 <= 2.
+Proof.
+apply lt_le_incl, lt_0_2.
 Qed.
 
 Theorem lt_1_l : forall n m, 0 < n -> n < m -> 1 < m.
 Proof.
-intros n m H1 H2. apply <- le_succ_l in H1. order.
+intros n m H1 H2. rewrite one_succ. apply <- le_succ_l in H1. order.
 Qed.
+
+(** The order tactic enriched with some knowledge of 0,1,2 *)
+
+Ltac order' := generalize lt_0_1 lt_0_2; order.
 
 
 (** More Trichotomy, decidability and double negation elimination. *)

@@ -94,12 +94,11 @@ Qed.
 Theorem eq_pred_0 : forall n, P n == 0 <-> n == 0 \/ n == 1.
 Proof.
 cases n.
-rewrite pred_0. setoid_replace (0 == 1) with False using relation iff. tauto.
-split; intro H; [symmetry in H; false_hyp H neq_succ_0 | elim H].
+rewrite pred_0. now split; [left|].
 intro n. rewrite pred_succ.
-setoid_replace (S n == 0) with False using relation iff by
-  (apply -> neg_false; apply neq_succ_0).
-rewrite succ_inj_wd. tauto.
+split. intros H; right. now rewrite H, one_succ.
+intros [H|H]. elim (neq_succ_0 _ H).
+apply succ_inj_wd. now rewrite <- one_succ.
 Qed.
 
 Theorem succ_pred : forall n, n ~= 0 -> S (P n) == n.
@@ -130,6 +129,7 @@ Theorem pair_induction :
   A 0 -> A 1 ->
     (forall n, A n -> A (S n) -> A (S (S n))) -> forall n, A n.
 Proof.
+rewrite one_succ.
 intros until 3.
 assert (D : forall n, A n /\ A (S n)); [ |intro n; exact (proj1 (D n))].
 induct n; [ | intros n [IH1 IH2]]; auto.

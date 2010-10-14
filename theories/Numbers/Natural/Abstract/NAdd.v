@@ -45,7 +45,7 @@ Qed.
 Theorem eq_add_1 : forall n m,
   n + m == 1 -> n == 1 /\ m == 0 \/ n == 0 /\ m == 1.
 Proof.
-intros n m H.
+intros n m. rewrite one_succ. intro H.
 assert (H1 : exists p, n + m == S p) by now exists 0.
 apply -> eq_add_succ in H1. destruct H1 as [[n' H1] | [m' H1]].
 left. rewrite H1 in H; rewrite add_succ_l in H; apply succ_inj in H.

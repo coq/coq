@@ -313,8 +313,8 @@ Theorem ofnat_S_gt_0 :
 Proof.
 unfold ofnat.
 intros n; induction n as [| n IH]; simpl in *.
-apply lt_0_1.
-apply lt_trans with 1. apply lt_0_1. now rewrite <- succ_lt_mono.
+apply lt_succ_diag_r.
+apply lt_trans with (S 0). apply lt_succ_diag_r. now rewrite <- succ_lt_mono.
 Qed.
 
 Theorem ofnat_S_neq_0 :

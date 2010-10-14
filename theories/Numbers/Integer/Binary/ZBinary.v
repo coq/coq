@@ -63,6 +63,8 @@ Module Z
 Definition t := Z.
 Definition eqb := Zeq_bool.
 Definition zero := 0.
+Definition one := 1.
+Definition two := 2.
 Definition succ := Zsucc.
 Definition pred := Zpred.
 Definition add := Zplus.
@@ -98,6 +100,16 @@ Definition sub_0_r := Zminus_0_r.
 Definition sub_succ_r := Zminus_succ_r.
 Definition mul_0_l := Zmult_0_l.
 Definition mul_succ_l := Zmult_succ_l.
+
+Lemma one_succ : 1 = Zsucc 0.
+Proof.
+reflexivity.
+Qed.
+
+Lemma two_succ : 2 = Zsucc 1.
+Proof.
+reflexivity.
+Qed.
 
 (** Boolean Equality *)
 

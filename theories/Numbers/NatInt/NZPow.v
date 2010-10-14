@@ -40,13 +40,6 @@ Module NZPowProp
 
 Hint Rewrite pow_0_r pow_succ_r : nz.
 
-Lemma lt_0_2 : 0 < 2.
-Proof.
- apply lt_succ_r, le_0_1.
-Qed.
-
-Ltac order' := generalize lt_0_1 lt_0_2; order.
-
 (** Power and basic constants *)
 
 Lemma pow_0_l : forall a, 0<a -> 0^a == 0.
@@ -58,7 +51,7 @@ Qed.
 
 Lemma pow_1_r : forall a, a^1 == a.
 Proof.
- intros. now nzsimpl.
+ intros. now nzsimpl'.
 Qed.
 
 Lemma pow_1_l : forall a, 0<=a -> 1^a == 1.
@@ -68,12 +61,14 @@ Proof.
  now nzsimpl.
 Qed.
 
-Hint Rewrite pow_1_l : nz.
+Hint Rewrite pow_1_r pow_1_l : nz.
 
 Lemma pow_2_r : forall a, a^2 == a*a.
 Proof.
- intros. nzsimpl; order'.
+ intros. rewrite two_succ. nzsimpl; order'.
 Qed.
+
+Hint Rewrite pow_2_r : nz.
 
 (** Power and addition, multiplication *)
 
@@ -173,7 +168,7 @@ Qed.
 Lemma pow_le_mono_r : forall a b c, 0<a -> 0<=b<=c -> a^b <= a^c.
 Proof.
  intros a b c Ha (Hb,H).
- apply le_succ_l in Ha.
+ apply le_succ_l in Ha; rewrite <- one_succ in Ha.
  apply lt_eq_cases in Ha; destruct Ha as [Ha|Ha]; [|rewrite <- Ha].
  apply lt_eq_cases in H; destruct H as [H|H]; [|now rewrite <- H].
  apply lt_le_incl, pow_lt_mono_r; now try split.
@@ -192,7 +187,7 @@ Lemma pow_lt_mono : forall a b c d, 0<a<c -> 0<b<d ->
  a^b < c^d.
 Proof.
  intros a b c d (Ha,Hac) (Hb,Hbd).
- apply le_succ_l in Ha.
+ apply le_succ_l in Ha; rewrite <- one_succ in Ha.
  apply lt_eq_cases in Ha; destruct Ha as [Ha|Ha]; [|rewrite <- Ha].
  transitivity (a^d).
  apply pow_lt_mono_r; intuition order.
@@ -277,9 +272,9 @@ Proof.
  intros a b Ha Hb. apply le_ind with (4:=Hb). solve_predicate_wd.
  nzsimpl. order'.
  clear b Hb. intros b Hb IH. nzsimpl; trivial.
- rewrite <- !le_succ_l in *.
+ rewrite <- !le_succ_l in *. rewrite <- two_succ in Ha.
  transitivity (2*(S b)).
-  nzsimpl. rewrite <- 2 succ_le_mono.
+  nzsimpl'. rewrite <- 2 succ_le_mono.
   rewrite <- (add_0_l b) at 1. apply add_le_mono; order.
  apply mul_le_mono_nonneg; trivial.
  order'.
@@ -323,7 +318,7 @@ Proof.
          (a + b) * (a ^ c + b ^ c) <= 2 * (a * a ^ c + b * b ^ c)).
  (* begin *)
   intros a b c (Ha,H) Hc.
-  rewrite !mul_add_distr_l, !mul_add_distr_r. nzsimpl.
+  rewrite !mul_add_distr_l, !mul_add_distr_r. nzsimpl'.
   rewrite <- !add_assoc. apply add_le_mono_l.
   rewrite !add_assoc. apply add_le_mono_r.
   destruct (le_exists_sub _ _ H) as (d & EQ & Hd).
@@ -345,7 +340,7 @@ Proof.
  rewrite mul_assoc. rewrite (mul_comm (a+b)).
  assert (EQ : S (P c) == c) by (apply lt_succ_pred with 0; order').
  assert (LE : 0 <= P c) by (now rewrite succ_le_mono, EQ, le_succ_l).
- assert (EQ' : 2^c == 2^(P c) * 2) by (rewrite <- EQ at 1; nzsimpl; order).
+ assert (EQ' : 2^c == 2^(P c) * 2) by (rewrite <- EQ at 1; nzsimpl'; order).
  rewrite EQ', <- !mul_assoc.
  apply mul_le_mono_nonneg_l.
  apply pow_nonneg_nonneg; order'.

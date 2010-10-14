@@ -13,7 +13,7 @@ Require Import ZArith Nnat NAxioms NDiv NSig.
 Module NTypeIsNAxioms (Import N : NType').
 
 Hint Rewrite
- spec_0 spec_1 spec_succ spec_add spec_mul spec_pred spec_sub
+ spec_0 spec_1 spec_2 spec_succ spec_add spec_mul spec_pred spec_sub
  spec_div spec_modulo spec_gcd spec_compare spec_eq_bool
  spec_max spec_min spec_pow_pos spec_pow_N spec_pow spec_even spec_odd
  : nsimpl.
@@ -35,6 +35,16 @@ Program Instance mul_wd : Proper (eq==>eq==>eq) mul.
 Theorem pred_succ : forall n, pred (succ n) == n.
 Proof.
 intros. zify. generalize (spec_pos n); omega with *.
+Qed.
+
+Theorem one_succ : 1 == succ 0.
+Proof.
+now zify.
+Qed.
+
+Theorem two_succ : 2 == succ 1.
+Proof.
+now zify.
 Qed.
 
 Definition N_of_Z z := of_N (Zabs_N z).
@@ -180,9 +190,6 @@ Qed.
 (** Power *)
 
 Program Instance pow_wd : Proper (eq==>eq==>eq) pow.
-
-Local Notation "1" := (succ 0).
-Local Notation "2" := (succ 1).
 
 Lemma pow_0_r : forall a, a^0 == 1.
 Proof.

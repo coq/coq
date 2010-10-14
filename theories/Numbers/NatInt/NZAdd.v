@@ -14,7 +14,9 @@ Module Type NZAddProp (Import NZ : NZAxiomsSig')(Import NZBase : NZBaseProp NZ).
 
 Hint Rewrite
  pred_succ add_0_l add_succ_l mul_0_l mul_succ_l sub_0_r sub_succ_r : nz.
+Hint Rewrite one_succ two_succ : nz'.
 Ltac nzsimpl := autorewrite with nz.
+Ltac nzsimpl' := autorewrite with nz nz'.
 
 Theorem add_0_r : forall n, n + 0 == n.
 Proof.
@@ -38,13 +40,15 @@ Qed.
 
 Theorem add_1_l : forall n, 1 + n == S n.
 Proof.
-intro n; now nzsimpl.
+intro n; now nzsimpl'.
 Qed.
 
 Theorem add_1_r : forall n, n + 1 == S n.
 Proof.
-intro n; now nzsimpl.
+intro n; now nzsimpl'.
 Qed.
+
+Hint Rewrite add_1_l add_1_r : nz.
 
 Theorem add_assoc : forall n m p, n + (m + p) == (n + m) + p.
 Proof.
@@ -80,7 +84,9 @@ Qed.
 
 Theorem sub_1_r : forall n, n - 1 == P n.
 Proof.
-intro n; now nzsimpl.
+intro n; now nzsimpl'.
 Qed.
+
+Hint Rewrite sub_1_r : nz.
 
 End NZAddProp.

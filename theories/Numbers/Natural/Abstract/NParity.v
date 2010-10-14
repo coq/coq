@@ -40,17 +40,17 @@ Proof.
  intros x.
  intros [(y,H)|(y,H)].
  right. exists y. rewrite H. now nzsimpl.
- left. exists (S y). rewrite H. now nzsimpl.
+ left. exists (S y). rewrite H. now nzsimpl'.
 Qed.
 
 Lemma double_below : forall n m, n<=m -> 2*n < 2*m+1.
 Proof.
- intros. nzsimpl. apply lt_succ_r. now apply add_le_mono.
+ intros. nzsimpl'. apply lt_succ_r. now apply add_le_mono.
 Qed.
 
 Lemma double_above : forall n m, n<m -> 2*n+1 < 2*m.
 Proof.
- intros. nzsimpl.
+ intros. nzsimpl'.
  rewrite <- le_succ_l, <- add_succ_l, <- add_succ_r.
  apply add_le_mono; now apply le_succ_l.
 Qed.
@@ -91,7 +91,7 @@ Qed.
 
 Lemma odd_1 : odd 1 = true.
 Proof.
- rewrite odd_spec. exists 0. now nzsimpl.
+ rewrite odd_spec. exists 0. now nzsimpl'.
 Qed.
 
 Lemma Odd_succ_Even : forall n, Odd (S n) <-> Even n.
@@ -138,7 +138,7 @@ Proof.
  exists (n'+m'). now rewrite mul_add_distr_l, Hn, Hm.
  exists (n'+m'). now rewrite mul_add_distr_l, Hn, Hm, add_assoc.
  exists (n'+m'). now rewrite mul_add_distr_l, Hn, Hm, add_shuffle0.
- exists (n'+m'+1). rewrite Hm,Hn. nzsimpl. now rewrite add_shuffle1.
+ exists (n'+m'+1). rewrite Hm,Hn. nzsimpl'. now rewrite add_shuffle1.
 Qed.
 
 Lemma odd_add : forall n m, odd (n+m) = xorb (odd n) (odd m).
@@ -176,19 +176,17 @@ Proof.
  exists (n'-m'). now rewrite mul_sub_distr_l, Hn, Hm.
  exists (n'-m'-1).
   rewrite !mul_sub_distr_l, Hn, Hm, sub_add_distr, mul_1_r.
-  rewrite <- (add_1_l 1) at 5. rewrite sub_add_distr.
+  rewrite two_succ at 5. rewrite <- (add_1_l 1). rewrite sub_add_distr.
   symmetry. apply sub_add.
   apply le_add_le_sub_l.
-  rewrite add_1_l, <- (mul_1_r 2) at 1.
-  rewrite <- mul_sub_distr_l. rewrite <- mul_le_mono_pos_l.
-  rewrite le_succ_l. rewrite <- lt_add_lt_sub_l, add_0_r.
+  rewrite add_1_l, <- two_succ, <- (mul_1_r 2) at 1.
+  rewrite <- mul_sub_distr_l. rewrite <- mul_le_mono_pos_l by order'.
+  rewrite one_succ, le_succ_l. rewrite <- lt_add_lt_sub_l, add_0_r.
   destruct (le_gt_cases n' m') as [LE|GT]; trivial.
   generalize (double_below _ _ LE). order.
-  apply lt_succ_r, le_0_1.
  exists (n'-m'). rewrite mul_sub_distr_l, Hn, Hm.
   apply add_sub_swap.
-  apply mul_le_mono_pos_l.
-  apply lt_succ_r, le_0_1.
+  apply mul_le_mono_pos_l; try order'.
   destruct (le_gt_cases m' n') as [LE|GT]; trivial.
   generalize (double_above _ _ GT). order.
  exists (n'-m'). rewrite Hm,Hn, mul_sub_distr_l.

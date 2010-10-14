@@ -26,8 +26,6 @@ Module Type ZeroSuccPredNotation (T:Typ)(Import NZ:ZeroSuccPred T).
  Notation "0" := zero.
  Notation S := succ.
  Notation P := pred.
- Notation "1" := (S 0).
- Notation "2" := (S 1).
 End ZeroSuccPredNotation.
 
 Module Type ZeroSuccPred' (T:Typ) :=
@@ -42,9 +40,33 @@ Module Type IsNZDomain (Import E:Eq')(Import NZ:ZeroSuccPred' E).
     A 0 -> (forall n, A n <-> A (S n)) -> forall n, A n.
 End IsNZDomain.
 
-Module Type NZDomainSig := EqualityType <+ ZeroSuccPred <+ IsNZDomain.
-Module Type NZDomainSig' := EqualityType' <+ ZeroSuccPred' <+ IsNZDomain.
+(** Axiomatization of some more constants
 
+    Simply denoting "1" for (S 0) and so on works ok when implementing
+    by nat, but leaves some (Nsucc N0) when implementing by N.
+*)
+
+Module Type OneTwo (Import T:Typ).
+ Parameter Inline one two : t.
+End OneTwo.
+
+Module Type OneTwoNotation (T:Typ)(Import NZ:OneTwo T).
+ Notation "1" := one.
+ Notation "2" := two.
+End OneTwoNotation.
+
+Module Type OneTwo' (T:Typ) := OneTwo T <+ OneTwoNotation T.
+
+Module Type IsOneTwo (E:Eq')(Z:ZeroSuccPred' E)(O:OneTwo' E).
+ Import E Z O.
+ Axiom one_succ : 1 == S 0.
+ Axiom two_succ : 2 == S 1.
+End IsOneTwo.
+
+Module Type NZDomainSig :=
+ EqualityType <+ ZeroSuccPred <+ IsNZDomain <+ OneTwo <+ IsOneTwo.
+Module Type NZDomainSig' :=
+ EqualityType' <+ ZeroSuccPred' <+ IsNZDomain <+ OneTwo' <+ IsOneTwo.
 
 (** Axiomatization of basic operations : [+] [-] [*] *)
 

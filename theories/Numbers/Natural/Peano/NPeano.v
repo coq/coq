@@ -163,6 +163,16 @@ Proof.
 reflexivity.
 Qed.
 
+Theorem one_succ : 1 = S 0.
+Proof.
+reflexivity.
+Qed.
+
+Theorem two_succ : 2 = S 1.
+Proof.
+reflexivity.
+Qed.
+
 Theorem add_0_l : forall n : nat, 0 + n = n.
 Proof.
 reflexivity.
@@ -259,6 +269,8 @@ Definition eq := @eq nat.
 Definition eqb := beq_nat.
 Definition compare := nat_compare.
 Definition zero := 0.
+Definition one := 1.
+Definition two := 2.
 Definition succ := S.
 Definition pred := pred.
 Definition add := plus.

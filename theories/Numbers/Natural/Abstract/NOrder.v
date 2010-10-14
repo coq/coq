@@ -63,6 +63,7 @@ Qed.
 
 Theorem zero_one : forall n, n == 0 \/ n == 1 \/ 1 < n.
 Proof.
+setoid_rewrite one_succ.
 induct n. now left.
 cases n. intros; right; now left.
 intros n IH. destruct IH as [H | [H | H]].
@@ -73,6 +74,7 @@ Qed.
 
 Theorem lt_1_r : forall n, n < 1 <-> n == 0.
 Proof.
+setoid_rewrite one_succ.
 cases n.
 split; intro; [reflexivity | apply lt_succ_diag_r].
 intros n. rewrite <- succ_lt_mono.
@@ -81,6 +83,7 @@ Qed.
 
 Theorem le_1_r : forall n, n <= 1 <-> n == 0 \/ n == 1.
 Proof.
+setoid_rewrite one_succ.
 cases n.
 split; intro; [now left | apply le_succ_diag_r].
 intro n. rewrite <- succ_le_mono, le_0_r, succ_inj_wd.

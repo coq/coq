@@ -102,6 +102,11 @@ Proof.
 intro n. rewrite (opp_le_mono 0 n). now rewrite opp_0.
 Qed.
 
+Theorem lt_m1_0 : -(1) < 0.
+Proof.
+apply opp_neg_pos, lt_0_1.
+Qed.
+
 Theorem sub_lt_mono_l : forall n m p, n < m <-> p - m < p - n.
 Proof.
 intros n m p. do 2 rewrite <- add_opp_r. rewrite <- add_lt_mono_l.
