@@ -46,7 +46,7 @@ let zn2z_WW = ConstructRef ((zn2z_id "zn2z",0),2)
 
 let bigN_module = ["Coq"; "Numbers"; "Natural"; "BigN"; "BigN" ]
 let bigN_path = make_path (bigN_module@["BigN"]) "t"
-let bigN_t = make_mind_mpdot bigN_module "BigN" "t_"
+let bigN_t = make_mind_mpdot bigN_module "BigN" "t'"
 let bigN_scope = "bigN_scope"
 
 (* number of inlined level of bigN (actually the level 0 to n_inlined-1 are inlined) *)
