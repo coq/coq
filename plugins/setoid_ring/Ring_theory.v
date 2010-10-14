@@ -229,7 +229,7 @@ Section DEFINITIONS.
 
  (** Specification of the power function *)
  Section POWER.
-  Variable Cpow : Set.
+  Variable Cpow : Type.
   Variable Cp_phi : N -> Cpow.
   Variable rpow : R -> Cpow -> R.
 
