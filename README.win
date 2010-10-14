@@ -20,7 +20,7 @@ COMPILATION.
     distribution. If you really need to recompile under Windows, here
     are some indications:
 
-    1- Install ocaml for Windows (MinGW port), at least version 3.09.3.
+    1- Install ocaml for Windows (MinGW port), at least version 3.10.2.
        See: http://caml.inria.fr
 
     2- Install a shell environment with at least:
