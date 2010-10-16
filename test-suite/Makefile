@@ -40,7 +40,7 @@ endif
 
 command := $(coqtop) -top Top -load-vernac-source
 coqc := $(coqtop) -compile
-coqdep := $(BIN)coqdep
+coqdep := $(BIN)coqdep -coqlib $(LIB)
 
 SHOW := $(if $(VERBOSE),@true,@echo)
 HIDE := $(if $(VERBOSE),,@)
