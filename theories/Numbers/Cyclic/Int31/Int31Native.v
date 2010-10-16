@@ -15,6 +15,7 @@ RegisterInd bool as ind_bool.
 RegisterInd prod as ind_pair. 
 RegisterInd carry as ind_carry.
 RegisterInd comparison as ind_cmp.
+RegisterInd eq as ind_eq.
 
 Definition size := 31%nat.
 
@@ -66,6 +67,11 @@ Notation "m < n" := (ltb m n) : int31_scope.
 
 Register leb : int -> int -> bool as int31_le.
 Notation "m <= n" := (leb m n) : int31_scope.
+
+(* This operator has the following reduction rule
+     eqb_correct i i (eq_refl true) ---> (eq_refl i) *)
+Register eqb_correct : forall i j, (i==j)%int31 = true -> i = j as int31_eqb_correct.
+
 
 (* Iterators *)
 Register foldi_cont : 

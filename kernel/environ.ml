@@ -434,6 +434,12 @@ let add_retroknowledge env (pt,c) =
 	      | None -> ((ind,1), (ind,2), (ind,3)) 
 	      | Some (((ind',_),_,_) as t) -> assert (ind = ind'); t in
 	    { retro with retro_cmp = Some r } 
+	| PIT_eq ->
+	    let r = 
+	      match retro.retro_refl with
+	      | None -> (ind,1)
+	      | Some ((ind',_) as t) -> assert (ind = ind'); t in
+	    { retro with retro_refl = Some r }
       in
       { env with env_retroknowledge = retro }
   | Retro_inline ->
@@ -456,6 +462,8 @@ module type RedNativeEntries =
     val get : args -> int -> elem
     val get_int :  elem -> Uint31.t
     val get_parray : elem -> elem * elem Parray.t
+    val is_refl : elem -> bool
+    val mk_int_refl : env -> elem -> elem
     val mkInt : env -> Uint31.t -> elem
     val mkBool : env -> bool -> elem
     val mkCarry : env -> bool -> elem -> elem (* true if carry *)
@@ -569,16 +577,21 @@ module RedNative (E:RedNativeEntries) :
 	  E.mkBool env (Uint31.le i1 i2)
       | Int31compare    ->
 	  let i1, i2 = get_int2 args in 
-	  match Uint31.compare i1 i2 with
+	  begin match Uint31.compare i1 i2 with
 	  | x when x < 0 ->  E.mkLt env
 	  | 0 -> E.mkEq env
 	  | _ -> E.mkGt env
+	  end
+      | Int31eqb_correct ->
+	  if E.is_refl (E.get args 2) then E.mk_int_refl env (E.get args 0)
+	  else raise (Invalid_argument "red_prim:eqb_correct:not refl") 
+	  
 	  	  
     let red_caml_prim env op args =
       match op with
       | Int31print      -> 
 	  let i = get_int1 args in
-	  Printf.fprintf stdout "%s\n" (Uint31.to_string i);flush stdout;
+	  Printf.fprintf stderr "%s\n" (Uint31.to_string i);flush stdout;
 	  E.mkInt env i
       | ArrayMake       ->
 	  let t = E.get args 0 in

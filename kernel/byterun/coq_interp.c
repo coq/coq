@@ -1443,6 +1443,12 @@ value coq_interprete
         Next;
       }
 
+      Instruct (ISINT){
+	print_instr("ISINT");
+	accu = (Is_long(accu)) ? coq_true : coq_false; 
+	Next;
+      }
+
       Instruct (AREINT2){
 	print_instr("AREINT2");
 	accu = (Is_long(accu) && Is_long(sp[0])) ? coq_true : coq_false; 

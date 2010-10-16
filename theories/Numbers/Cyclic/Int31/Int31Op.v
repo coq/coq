@@ -245,3 +245,21 @@ Definition sqrt2 ih il :=
   | C1 il2 =>
     if ih1 < (ih - 1) then (s, C1 il2) else (s, C0 il2)
   end.
+
+(* Extra function on equality *)
+ 
+Definition cast i j :=
+     (if i == j as b return ((b = true -> i = j) -> option (forall P : int -> Type, P i -> P j))
+      then fun Heq : true = true -> i = j =>
+             Some
+             (fun (P : int -> Type) (Hi : P i) =>
+               match Heq (eq_refl true) in (_ = y) return (P y) with
+               | eq_refl => Hi
+               end)
+      else fun _ : false = true -> i = j => None) (eqb_correct i j).
+
+Definition eqo i j :=
+   (if i == j as b return ((b = true -> i = j) -> option (i=j))
+    then fun Heq : true = true -> i = j =>
+             Some (Heq (eq_refl true))
+     else fun _ : false = true -> i = j => None) (eqb_correct i j).

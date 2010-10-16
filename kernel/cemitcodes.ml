@@ -193,6 +193,7 @@ let check_prim_op = function
   | Int31lt        -> opCHECKLTINT31
   | Int31le        -> opCHECKLEINT31
   | Int31compare   -> opCHECKCOMPAREINT31
+  | Int31eqb_correct -> assert false
 
 let caml_prim_call op =
   match op with
@@ -312,6 +313,7 @@ let emit_instr = function
       out_label lbl;
       slot_for_caml_prim op
 
+  | Kareint 1 -> out opISINT
   | Kareint 2 -> out opAREINT2;
 
   | Kstop -> out opSTOP

@@ -233,6 +233,8 @@ module type RedNativeEntries =
     val get : args -> int -> elem
     val get_int :  elem -> Native.Uint31.t
     val get_parray : elem -> elem * elem Parray.t
+    val is_refl : elem -> bool
+    val mk_int_refl : env -> elem -> elem
     val mkInt : env -> Native.Uint31.t -> elem
     val mkBool : env -> bool -> elem
     val mkCarry : env -> bool -> elem -> elem (* true if carry *)

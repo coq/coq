@@ -1027,6 +1027,8 @@ let check_register_ind c r env =
       check_type_cte 1;
       check_name 2 "Gt";
       check_type_cte 2
+  | Native.PIT_eq ->
+      Format.eprintf "Warning : check_register_ind not implemented for eq@."
 
 
 let register c r senv =

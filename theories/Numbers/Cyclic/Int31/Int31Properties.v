@@ -1,6 +1,7 @@
 Require Import Zgcd_alt.
 Require Import Bvector.
 Require Export Int31Axioms.
+Require Import Eqdep_dec.
 
 Local Open Scope int31_scope.
 Local Open Scope Z_scope.
@@ -17,6 +18,74 @@ Proof. reflexivity. Qed.
 
 Lemma to_Z_1 : [|1|] = 1.
 Proof. reflexivity. Qed.
+
+(** equality *)
+Lemma eqb_complete : forall x y, x = y -> (x == y) = true.
+Proof.
+ intros x y H;rewrite H, eqb_refl;trivial.
+Qed.
+
+Lemma eqb_spec : forall x y, (x == y) = true <-> x = y.
+Proof.
+ split;auto using eqb_correct, eqb_complete.
+Qed.
+
+Lemma eqb_false_spec : forall x y, (x == y) = false <-> x <> y.
+Proof.
+ intros;rewrite <- not_true_iff_false, eqb_spec;split;trivial.
+Qed.
+
+Lemma eqb_false_complete : forall x y, x <> y -> (x == y) = false.
+Proof.
+ intros x y;rewrite eqb_false_spec;trivial. 
+Qed.
+
+Lemma eqb_false_correct : forall x y, (x == y) = false -> x <> y.
+Proof.
+ intros x y;rewrite eqb_false_spec;trivial.
+Qed.  
+ 
+Definition eqs (i j : int) : {i = j} + { i <> j } := 
+  (if i == j as b return ((b = true -> i = j) -> (b = false -> i <> j) -> {i=j} + {i <> j} )
+    then fun (Heq : true = true -> i = j) _ => left _ (Heq (eq_refl true))
+    else fun _ (Hdiff : false = false -> i <> j) => right _ (Hdiff (eq_refl false)))
+  (eqb_correct i j)
+  (eqb_false_correct i j).
+
+Lemma eq_dec : forall i j:int, i = j \/ i <> j.
+Proof.
+ intros i j;destruct (eqs i j);auto.
+Qed.
+
+Lemma cast_refl : forall i, cast i i = Some (fun P H => H).
+Proof.
+ unfold cast;intros.
+ generalize (eqb_correct i i).
+ rewrite eqb_refl;intros.
+ rewrite (eq_proofs_unicity eq_dec (e (eq_refl true)) (eq_refl i));trivial.
+Qed.
+
+Lemma cast_diff : forall i j, i == j = false -> cast i j = None.
+Proof.
+ intros;unfold cast.
+ generalize (eqb_correct i j).
+ rewrite H;trivial.
+Qed.
+
+Lemma eqo_refl : forall i, eqo i i = Some (eq_refl i).
+Proof.
+ unfold eqo;intros.
+ generalize (eqb_correct i i).
+ rewrite eqb_refl;intros.
+ rewrite (eq_proofs_unicity eq_dec (e (eq_refl true)) (eq_refl i));trivial.
+Qed.
+
+Lemma eqo_diff : forall i j, i == j = false -> eqo i j = None.
+Proof.
+ intros;unfold eqo.
+ generalize (eqb_correct i j).
+ rewrite H;trivial.
+Qed.
 
 (** translation with Z *)
 Require Import Ndigits.
@@ -1670,3 +1739,128 @@ Proof.
  rewrite leb_spec, add_spec, Zmod_small, sub_spec, Zmod_small; auto with zarith.
  rewrite sub_spec, Zmod_small; auto with zarith.
 Qed. 
+
+Lemma lxor_comm: forall i1 i2 : int, i1 lxor i2 = i2 lxor i1.
+Proof.
+ intros;apply bit_eq;intros.
+ rewrite !lxor_spec;apply xorb_comm.
+Qed.
+
+Lemma lxor_assoc: forall i1 i2 i3 : int, i1 lxor (i2 lxor i3) = i1 lxor i2 lxor i3.
+Proof.
+ intros;apply bit_eq;intros.
+ rewrite !lxor_spec, xorb_assoc;trivial.
+Qed.
+
+Lemma lxor_0_l : forall i, 0 lxor i = i.
+Proof.
+  intros;apply bit_eq;intros.
+  rewrite lxor_spec, bit_0, xorb_false_l;trivial.
+Qed.
+
+Lemma lxor_0_r : forall i, i lxor 0 = i.
+Proof.
+ intros;rewrite lxor_comm;apply lxor_0_l.
+Qed.
+
+Lemma lxor_nilpotent: forall i, i lxor i = 0%int31.
+Proof.
+ intros;apply bit_eq;intros.
+ rewrite lxor_spec, xorb_nilpotent, bit_0;trivial.
+Qed.
+
+Lemma lor_0_l : forall i, 0 lor i = i.
+Proof.
+  intros;apply bit_eq;intros.
+  rewrite lor_spec, bit_0, orb_false_l;trivial.
+Qed.
+
+Lemma lor_0_r : forall i, i lor 0 = i.
+Proof.
+ intros;rewrite lor_comm;apply lor_0_l.
+Qed.
+
+Lemma bit_max_int : forall i, (i < digits)%int31 = true -> bit max_int i = true.
+Proof.
+ intros;apply (forallb_spec (bit max_int) 0 (digits - 1)).
+ vm_compute;trivial.
+ rewrite ltb_spec in H.
+ destruct (to_Z_bounded i).
+ change [|0|] with 0%Z.
+ change [|digits - 1 |] with ([|digits|] - 1)%Z;omega.
+Qed.
+
+Lemma reflect_leb : forall i j, reflect ([|i|] <= [|j|])%Z (i <= j)%int31.
+Proof.
+ intros; apply iff_reflect.
+ symmetry;apply leb_spec.
+Qed.
+
+Lemma reflect_eqb : forall i j, reflect (i = j)%Z (i == j).
+Proof.
+ intros; apply iff_reflect.
+ symmetry;apply eqb_spec.
+Qed.
+
+Lemma reflect_ltb : forall i j, reflect ([|i|] < [|j|])%Z (i < j)%int31.
+Proof.
+ intros; apply iff_reflect.
+ symmetry;apply ltb_spec.
+Qed.
+
+Lemma land_max_int_l : forall i, max_int land i = i.
+Proof.
+  intros;apply bit_eq;intros.
+  rewrite land_spec.
+  destruct (reflect_leb digits i0).
+  rewrite <- leb_spec in z.
+  rewrite !bit_M;trivial.
+  rewrite bit_max_int;trivial.
+  rewrite ltb_spec;omega.
+Qed.
+
+Lemma land_max_int_r : forall i, i land max_int = i.
+Proof.
+ intros;rewrite land_comm;apply land_max_int_l.
+Qed.
+
+
+Lemma lsr_is_even_eq : forall i j,
+  i >> 1 = j >> 1 ->
+  is_even i = is_even j ->
+  i = j.
+Proof.
+ intros;apply bit_eq.
+ intros n;destruct (reflect_eqb n 0).
+ rewrite <- (negb_involutive (bit i n)), <- (negb_involutive (bit j n)).
+ rewrite e, <- !is_even_bit, H0;trivial.
+ assert (W1 : [|n|] <> 0) by (intros Heq;apply n0;apply to_Z_inj;trivial).
+ assert (W2 := to_Z_bounded n);clear n0.
+ assert (W3 : [|n-1|] = [|n|] - 1).
+   rewrite sub_spec, to_Z_1, Zmod_small;trivial;omega.
+ assert (H1 : n = ((n-1)+1)%int31).
+   apply to_Z_inj;rewrite add_spec, W3.
+   rewrite Zmod_small;rewrite to_Z_1; omega.
+ destruct (reflect_ltb (n-1) digits).
+  rewrite <- ltb_spec in z.
+  rewrite H1, <- !bit_half, H;trivial.
+ assert ((digits <= n)%int31 = true).
+  rewrite leb_spec;omega.
+ rewrite !bit_M;trivial.
+Qed.
+
+Lemma lsr1_bit : forall i k, (bit i k >> 1 = 0)%int31.
+Proof.
+ intros;destruct (bit i k);trivial.
+Qed.
+
+Lemma bit_xor_split: forall i : int, i = (i >> 1) << 1 lxor bit i 0.
+Proof.
+ intros.
+ rewrite bit_or_split at 1.
+ apply lsr_is_even_eq.
+ rewrite lxor_lsr, lor_lsr, lsr1_bit, lxor_0_r, lor_0_r;trivial.
+ rewrite is_even_or, is_even_xor.
+ rewrite is_even_lsl_1;trivial.
+ rewrite (xorb_true_l (is_even (bit i 0))), negb_involutive;trivial.
+Qed.

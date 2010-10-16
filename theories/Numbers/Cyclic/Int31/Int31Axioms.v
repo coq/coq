@@ -65,7 +65,7 @@ Axiom div_spec : forall x y, [|x / y|] = [|x|] / [|y|].
 Axiom mod_spec : forall x y, [|x \% y|] = [|x|] mod [|y|].
 
 (* Comparisons *)
-Axiom eqb_spec : forall x y, (x == y)%int31 = true <-> x = y.
+Axiom eqb_refl : forall x, (x == x)%int31 = true.
 
 Axiom ltb_spec : forall x y, (x < y)%int31 = true <-> [|x|] < [|y|].
 

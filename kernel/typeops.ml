@@ -725,10 +725,15 @@ let typeof_prim env op =
   | Int31compare ->
       let cmp = type_of_cmp env in
       mkArrow i (mkArrow i cmp)
+  | Int31eqb_correct -> 
+     raise  (Invalid_argument "typeof_prim:Int31eqb_correct:not implemented") 
 
 let check_prim_type env op t =
-  if not (eq_constr (typeof_prim env op) t) then
-    raise (Invalid_argument "check_prim_type: not the expected type")
+  if op = Int31eqb_correct then
+    Format.eprintf "Warning check_prim_type: Int31eqb_correct not implemented@."
+  else
+    if not (eq_constr (typeof_prim env op) t) then
+      raise (Invalid_argument "check_prim_type: not the expected type")
 
 let check_primitive_type env op_t t =
   match op_t with

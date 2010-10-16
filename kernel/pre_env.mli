@@ -26,8 +26,9 @@ type retroknowledge = {
     retro_bool  : (constructor * constructor) option; (* true, false *)
     retro_carry : (constructor * constructor) option; (* C0, C1 *)
     retro_pair  : constructor option;
-    retro_cmp   : (constructor * constructor * constructor) option
+    retro_cmp   : (constructor * constructor * constructor) option;
                     (* Eq, Lt, Gt *)
+    retro_refl  : constructor option
 }
 
 type globals = {

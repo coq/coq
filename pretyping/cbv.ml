@@ -287,6 +287,17 @@ module VNativeEntries =
 
     let init_array retro =
       defined_array := retro.Pre_env.retro_array <> None
+   
+    let defined_refl = ref false
+	
+    let crefl = ref dummy_construct
+	
+    let init_refl retro =
+      match retro.Pre_env.retro_refl with
+      | Some crefl' ->
+	  defined_refl := true;
+	  crefl := crefl'
+      | None -> defined_refl := false
 
     let init env = 
       current_retro := retroknowledge env;
@@ -295,8 +306,8 @@ module VNativeEntries =
       init_carry !current_retro;
       init_pair !current_retro;
       init_cmp !current_retro;
-      init_array !current_retro
-
+      init_array !current_retro;
+      init_refl !current_retro
 	  
     let check_env env =
       if not (!current_retro == retroknowledge env) then init env
@@ -324,6 +335,19 @@ module VNativeEntries =
     let check_array env =
       check_env env;
       assert (!defined_array)
+ 
+    let check_refl env =
+      check_env env;
+      assert (!defined_refl && !defined_int)
+
+    let is_refl e =
+      match e with
+      | CONSTR(_,_) -> true
+      | _ -> false
+
+    let mk_int_refl env e =
+      check_refl env;
+      CONSTR(!crefl,[|!vint;e|])
 
     let mkInt env i = 
       check_int env;

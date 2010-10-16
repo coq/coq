@@ -106,7 +106,7 @@ type lambda =
   | Lcprim        of constant * Native.caml_prim * lambda array
 	(* No check if None *)
   | Lcase         of annot_sw * lambda * lambda * lam_branches 
-  | Lareint       of lambda * lambda 
+  | Lareint       of lambda array 
   | Lif           of lambda * lambda * lambda
   | Lfix          of (int array * int) * fix_decl 
   | Lcofix        of int * fix_decl 
@@ -210,9 +210,10 @@ let rec pp_lam lam =
 		     pp_names ids ++ str " => " ++ pp_lam c)
 		 (Array.to_list block)))
 	     ++ cut() ++ str "end")
-  | Lareint(a1,a2)->
+  | Lareint a->
       hov 1
-	(str "(are_int " ++ pp_lam a1 ++ spc () ++ pp_lam a2 ++ str ")")
+	(str "(are_int " ++ (prlist_with_sep spc pp_lam (Array.to_list a))
+	   ++ str ")")
   | Lif (t, bt, bf) ->
       v 0 (str "(if " ++ pp_lam t ++ 
 	     cut () ++ str "then " ++ pp_lam bt ++ 
@@ -318,10 +319,9 @@ let map_lam_with_binders g f n lam =
       let br' = 
 	if const == const' && block == block' then br else (const',block') in
       if t == t' && a == a' && br == br' then lam else Lcase(annot,t',a',br')
-  | Lareint(a1,a2) ->
-      let a1' = f n a1 in
-      let a2' = f n a2 in
-      if a1 == a1' && a2 == a2' then lam else Lareint(a1',a2')
+  | Lareint a ->
+      let a' = array_smartmap (f n) a in
+      if a == a' then lam else Lareint a' 
   | Lif(t,bt,bf) ->
       let t' = f n t in
       let bt' = f n bt in
@@ -528,9 +528,8 @@ let rec occurence k kind lam =
       Array.iter (fun (ids,c) -> 
 	r := occurence (k+Array.length ids) kind c && !r) block;
       !r 
-  | Lareint(a1,a2) -> 
-      let kind = occurence k kind a1 in
-      occurence k kind a2 
+  | Lareint a -> 
+      occurence_args k kind a
   | Lif (t, bt, bf) ->
       let kind = occurence k kind t in
       kind && occurence k kind bt && occurence k kind bf
@@ -642,7 +641,8 @@ let rec get_allias env kn =
 
 let isle l1 l2 = Lprim(None, Native.Int31le, [|l1;l2|])
 let islt l1 l2 = Lprim(None, Native.Int31lt, [|l1;l2|])
-let areint l1 l2 = Lareint(l1, l2)
+let areint l1 l2 = Lareint [|l1; l2|]
+let isint l = Lareint [|l|]
 let add31 l1 l2 =Lprim(None, Native.Int31add, [|l1;l2|]) 
 let sub31 l1 l2 =Lprim(None, Native.Int31sub, [|l1;l2|]) 
 let one31 = mkConst_b0 1
@@ -765,8 +765,16 @@ let lambda_of_iterator kn op args =
 
 (* Compilation of primitive *)
   
+let _h =  Name(id_of_string "f")
+
 let prim kn op args =
   match op with
+  | Native.Oprim Native.Int31eqb_correct ->
+      let h = Lrel(_h,1) in
+      Llet(_h,args.(2),
+	Lif(isint h,
+            Lint 0 (* constructor eq_refl *),
+	    Lapp(Lconst kn, [|lam_lift 1 args.(0);lam_lift 1 args.(1);h|])))
   | Native.Oprim p      -> Lprim(Some kn, p, args)
   | Native.Ocaml_prim p -> Lcprim(kn, p, args)
   | Native.Oiterator p  -> lambda_of_iterator kn p args
@@ -783,10 +791,6 @@ let lambda_of_prim kn op args =
   else mkLapp (expense_prim kn op expected) args
 
  
-
-
-
-
 
 (*i Global environment *)
 

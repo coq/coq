@@ -1016,6 +1016,17 @@ module FNativeEntries =
     let init_array retro =
       defined_array := retro.Pre_env.retro_array <> None
 
+    let defined_refl = ref false
+	
+    let frefl = ref dummy
+	
+    let init_refl retro =
+      match retro.Pre_env.retro_refl with
+      | Some crefl ->
+	  defined_refl := true;
+	  frefl := { norm = Whnf; term = FConstruct crefl }
+      | None -> defined_refl := false
+
     let init env = 
       current_retro := retroknowledge env;
       init_int !current_retro;
@@ -1023,7 +1034,9 @@ module FNativeEntries =
       init_carry !current_retro;
       init_pair !current_retro;
       init_cmp !current_retro;
-      init_array !current_retro
+      init_array !current_retro;
+      init_refl !current_retro
+	
 
 	  
     let check_env env =
@@ -1052,6 +1065,20 @@ module FNativeEntries =
     let check_array env =
       check_env env;
       assert (!defined_array)
+
+    let check_refl env =
+      check_env env;
+      assert (!defined_refl && !defined_int)
+
+    let is_refl e =
+      match e.term with
+      | FApp({norm = _; term = FConstruct _},_) -> true
+      | _ -> false
+
+    let mk_int_refl env e =
+      check_refl env;
+      {norm = Whnf;
+       term = FApp (!frefl,[|!fint;e|])}
 
     let mkInt env i = 
       check_int env;

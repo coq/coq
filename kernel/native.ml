@@ -46,6 +46,7 @@ type prim_op =
   | Int31le
 
   | Int31compare
+  | Int31eqb_correct
 
 type op =
   | Oprim of prim_op
@@ -98,6 +99,7 @@ let prim_to_string = function
   | Int31le        -> "le"
 
   | Int31compare   -> "compare"
+  | Int31eqb_correct -> "eqb_correct"
 
 let to_string = function
   | Ocaml_prim op -> caml_prim_to_string op
@@ -136,6 +138,7 @@ let prim_kind = function
   | Int31eq | Int31lt | Int31le | Int31compare -> [Kwhnf; Kwhnf]
 
   | Int31div21 | Int31addMulDiv -> [Kwhnf; Kwhnf; Kwhnf]
+  | Int31eqb_correct -> [Karg;Karg;Kwhnf]
 
 let op_kind = function
   | Ocaml_prim op -> caml_prim_kind op
@@ -166,6 +169,7 @@ let prim_arity = function
   | Int31compare -> (0,2)
 	
   | Int31div21 | Int31addMulDiv -> (0,3)
+  | Int31eqb_correct -> (0,3)
 
 let arity = function
   | Ocaml_prim op -> caml_prim_arity op
@@ -568,6 +572,7 @@ type prim_ind =
   | PIT_carry
   | PIT_pair
   | PIT_cmp
+  | PIT_eq
 
 type prim_type =
   | PT_int31
@@ -588,6 +593,7 @@ let prim_ind_to_string = function
   | PIT_carry -> "carry"
   | PIT_pair -> "pair"
   | PIT_cmp -> "cmp"
+  | PIT_eq -> "eq"
 
 let prim_type_to_string = function
   | PT_int31 -> "int31"

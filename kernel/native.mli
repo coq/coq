@@ -45,6 +45,7 @@ type prim_op =
   | Int31le
 
   | Int31compare
+  | Int31eqb_correct
 
 type op =
   | Oprim of prim_op
@@ -147,6 +148,7 @@ type prim_ind =
   | PIT_carry
   | PIT_pair
   | PIT_cmp
+  | PIT_eq
 
 type prim_type =
   | PT_int31

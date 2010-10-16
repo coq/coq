@@ -54,7 +54,7 @@ Axiom reroot_length : forall A (t:array A), length (copy t) = length t.
 (*** TODO: remove this axiom using get_outofbound, reroot_get *)
 Axiom reroot_default : forall A (t:array A), default (copy t) = default t.
 
-
+(* Definition *)
 Definition to_list {A:Type} (t:array A) :=
   let len := length t in
   if len == 0 then nil
@@ -87,6 +87,15 @@ Definition foldi_right {A B:Type} (f:int -> A -> B -> B) (t:array A) b :=
 Definition fold_right {A B:Type} (f: A -> B -> B) (t:array A) b :=
   foldi_down (fun i b => f (t.[i]) b) (length t - 1) 0 b.
 
-
+(* Lemmas *)
+Lemma get_set_same_default : 
+   forall (A : Type) (t : array A) (i : int) ,
+       (t .[ i <- default t]) .[ i] = default t.
+Proof.
+ intros A t i;case_eq (i < (length t));intros.
+ rewrite get_set_same;trivial.
+ rewrite get_outofbound, default_set;trivial.
+ rewrite length_set;trivial.
+Qed.
 
 

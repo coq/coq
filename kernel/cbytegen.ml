@@ -448,11 +448,10 @@ let rec compile_lam reloc lam sz cont =
       compile_args reloc args nparams nargs sz 
 	(Kcamlprim (op, lbl_default) :: cont)
 
-  | Lareint(l1, l2) ->
-      compile_lam reloc l2 sz
-	(Kpush :: 
-	 compile_lam reloc l1 (sz+1) 
-	   (Kareint 2 :: cont))
+  | Lareint args ->
+      let nargs = Array.length args in
+      compile_args reloc args 0 nargs sz
+	(Kareint nargs :: cont)
       
   | Lif(t, bt, bf) ->
       let branch, cont = make_branch cont in
@@ -640,7 +639,7 @@ let compile env c = compile_opt (Flags.vm_optimize ()) env c
 let compile_constant_body env body boxed =
   match body with
   | Opaque _ -> BCconstant
-  | Primitive op -> BCconstant
+  | Primitive _op -> BCconstant
   | Def sb ->
       let body = Declarations.force sb in
       if boxed then

@@ -46,7 +46,7 @@ void init_arity () {
     arity[PUSHCONST0]=arity[PUSHCONST1]=arity[PUSHCONST2]=arity[PUSHCONST3]=
     arity[ACCUMULATE]=arity[STOP]=arity[MAKEPROD]= 
     arity[ADDINT31]=arity[SUBINT31]=arity[LTINT31]=arity[LEINT31]=
-    arity[AREINT2]=0;
+    arity[ISINT]=arity[AREINT2]=0;
   /* instruction with one operand */
   arity[ACC]=arity[PUSHACC]=arity[POP]=arity[ENVACC]=arity[PUSHENVACC]=
     arity[PUSH_RETADDR]=arity[APPLY]=arity[APPTERM1]=arity[APPTERM2]=

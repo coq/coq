@@ -237,7 +237,8 @@ GEXTEND Gram
     [ [ "ind_bool" -> Native.PIT_bool
       | "ind_carry" -> Native.PIT_carry
       | "ind_pair" -> Native.PIT_pair
-      | "ind_cmp" -> Native.PIT_cmp ] ]
+      | "ind_cmp" -> Native.PIT_cmp 
+      | "ind_eq"  -> Native.PIT_eq] ]
   ;
 
   register_token:
@@ -286,7 +287,8 @@ GEXTEND Gram
       | "int31_eq" -> Native.Oprim Native.Int31eq
       | "int31_lt" -> Native.Oprim Native.Int31lt
       | "int31_le" -> Native.Oprim Native.Int31le
-      | "int31_compare" -> Native.Oprim Native.Int31compare ] ]
+      | "int31_compare" -> Native.Oprim Native.Int31compare 
+      | "int31_eqb_correct" ->  Native.Oprim Native.Int31eqb_correct] ]
     ;
 
   inline:
