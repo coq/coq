@@ -79,6 +79,7 @@ module Error = struct
     | Unterminated_string
     | Undefined_token
     | Bad_token of string
+    | UnsupportedUnicode of int
 
   exception E of t
 
@@ -89,7 +90,9 @@ module Error = struct
 	 | Unterminated_comment -> "Unterminated comment"
 	 | Unterminated_string -> "Unterminated string"
 	 | Undefined_token -> "Undefined token"
-	 | Bad_token tok -> Format.sprintf "Bad token %S" tok)
+	 | Bad_token tok -> Format.sprintf "Bad token %S" tok
+	 | UnsupportedUnicode x ->
+	     Printf.sprintf "Unsupported Unicode character (0x%x)" x)
 
   let print ppf x = Format.fprintf ppf "%s@." (to_string x)
 
@@ -107,9 +110,9 @@ type token_kind =
   | AsciiChar
   | EmptyStream
 
-let error_unsupported_unicode_character n cs =
+let error_unsupported_unicode_character n unicode cs =
   let bp = Stream.count cs in
-  err (bp,bp+n) (Bad_token "Unsupported Unicode character")
+  err (bp,bp+n) (UnsupportedUnicode unicode)
 
 let error_utf8 cs =
   let bp = Stream.count cs in
@@ -158,7 +161,8 @@ let lookup_utf8_tail c cs =
       | _ -> error_utf8 cs
     in
     try classify_unicode unicode, n
-    with UnsupportedUtf8 -> njunk n cs; error_unsupported_unicode_character n cs
+    with UnsupportedUtf8 ->
+      njunk n cs; error_unsupported_unicode_character n unicode cs
 
 let lookup_utf8 cs =
   match Stream.peek cs with
@@ -166,16 +170,25 @@ let lookup_utf8 cs =
     | Some ('\x80'..'\xFF' as c) -> Utf8Token (lookup_utf8_tail c cs)
     | None -> EmptyStream
 
-let check_special_token str =
+let unlocated f x =
+  try f x with Loc.Exc_located (_,exc) -> raise exc
+
+let check_keyword str =
   let rec loop_symb = parser
     | [< ' (' ' | '\n' | '\r' | '\t' | '"') >] -> bad_token str
     | [< s >] ->
-	match lookup_utf8 s with
+	match unlocated lookup_utf8 s with
 	| Utf8Token (_,n) -> njunk n s; loop_symb s
 	| AsciiChar -> Stream.junk s; loop_symb s
 	| EmptyStream -> ()
   in
   loop_symb (Stream.of_string str)
+
+let check_keyword_to_add s =
+  try check_keyword s
+  with Error.E (UnsupportedUnicode unicode) ->
+    Flags.if_verbose msg_warning
+      (strbrk (Printf.sprintf "Token '%s' contains unicode character 0x%x which will not be parsable." s unicode))
 
 let check_ident str =
   let rec loop_id intail = parser
@@ -184,17 +197,13 @@ let check_ident str =
     | [< ' ('0'..'9' | ''') when intail; s >] ->
         loop_id true s
     | [< s >] ->
-	match lookup_utf8 s with
+	match unlocated lookup_utf8 s with
 	| Utf8Token (UnicodeLetter, n) -> njunk n s; loop_id true s
 	| Utf8Token (UnicodeIdentPart, n) when intail -> njunk n s; loop_id true s
 	| EmptyStream -> ()
 	| Utf8Token _ | AsciiChar -> bad_token str
   in
   loop_id false (Stream.of_string str)
-
-let check_keyword str =
-  try check_special_token str
-  with Error.E _ -> check_ident str
 
 (* Keyword and symbol dictionary *)
 let token_tree = ref empty_ttree
@@ -204,8 +213,11 @@ let is_keyword s =
   with Not_found -> false
 
 let add_keyword str =
-  check_keyword str;
-  token_tree := ttree_add !token_tree str
+  if not (is_keyword str) then
+    begin
+      check_keyword_to_add str;
+      token_tree := ttree_add !token_tree str
+    end
 
 let remove_keyword str =
   token_tree := ttree_remove !token_tree str

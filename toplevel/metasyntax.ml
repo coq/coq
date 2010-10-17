@@ -328,7 +328,6 @@ let rec raw_analyze_notation_tokens = function
   | String x :: sl when is_normal_token x ->
       NonTerminal (Names.id_of_string x) :: raw_analyze_notation_tokens sl
   | String s :: sl ->
-      Lexer.check_keyword s;
       Terminal (drop_simple_quotes s) :: raw_analyze_notation_tokens sl
   | WhiteSpace n :: sl ->
       Break n :: raw_analyze_notation_tokens sl
