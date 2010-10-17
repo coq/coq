@@ -144,11 +144,8 @@ let lookup_utf8 cs =
 let check_special_token str =
   let rec loop_symb = parser
     | [< ' (' ' | '\n' | '\r' | '\t' | '"') >] -> bad_token str
-    | [< s >] ->
-	match lookup_utf8 s with
-	| Utf8Token (_,n) -> njunk n s; loop_symb s
-	| AsciiChar -> Stream.junk s; loop_symb s
-	| EmptyStream -> ()
+    | [< _ = Stream.empty >] -> ()
+    | [< '_ ; s >] -> loop_symb s
   in
   loop_symb (Stream.of_string str)
 
