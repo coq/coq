@@ -315,6 +315,13 @@ Proof.
 Qed.
 Hint Resolve orb_comm orb_assoc: bool v62.
 
+(** Idempotence *)
+
+Lemma orb_idempotent : forall b, b || b = b.
+Proof.
+  destruct b;trivial.
+Qed.
+ 
 (*******************************)
 (** * Properties of [andb]     *)
 (*******************************)

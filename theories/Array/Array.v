@@ -98,4 +98,10 @@ Proof.
  rewrite length_set;trivial.
 Qed.
 
-
+Lemma get_not_default_lt : forall A (t:array A) x,
+ t.[x] <> default t -> (x < length t)%int31 = true.
+Proof.
+ intros A t x Hd.
+ case_eq (x < length t);intros Heq;[trivial | ].
+ elim Hd;rewrite get_outofbound;trivial.
+Qed.

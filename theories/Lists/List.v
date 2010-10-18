@@ -1036,6 +1036,14 @@ End Fold_Right_Recursor.
       case (f a); simpl; solve[auto].
     Qed.
 
+   Lemma existsb_rev : forall l ,
+     existsb (rev l) = existsb l.
+   Proof.
+     induction l;simpl;trivial.
+     rewrite existsb_app, IHl, orb_comm;simpl.
+     rewrite orb_false_r;trivial.
+   Qed.
+
   (** find whether a boolean function is satisfied by
     all the elements of a list. *)
 

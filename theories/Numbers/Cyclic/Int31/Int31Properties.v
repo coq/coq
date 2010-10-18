@@ -263,7 +263,6 @@ Proof.
   rewrite Zmod_small;auto with zarith.
  rewrite H;apply (X [| max - min |]);trivial;rewrite sub_spec, Zmod_small;auto with zarith.
 Qed.
-
   
 Lemma forallb_spec : forall f from to, 
   forallb f from to = true ->
@@ -1864,3 +1863,14 @@ Proof.
  rewrite is_even_lsl_1;trivial.
  rewrite (xorb_true_l (is_even (bit i 0))), negb_involutive;trivial.
 Qed.
+
+(** max_int *)
+Lemma succ_max_int : forall x,
+  (x < max_int)%int31 = true -> (0 < x + 1)%int31 = true.
+Proof.
+ intros x;rewrite ltb_spec, ltb_spec, add_spec.
+ intros; assert (W:= to_Z_bounded x); assert (W1:= to_Z_bounded max_int).
+ change [|0|] with 0%Z;change [|1|] with 1%Z.
+ rewrite Zmod_small;omega.
+Qed.
+
