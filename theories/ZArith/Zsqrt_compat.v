@@ -11,6 +11,16 @@ Require Import Omega.
 Require Export ZArith_base.
 Open Local Scope Z_scope.
 
+(**    !! This file is deprecated !!
+
+    Please use rather Zsqrt_def.Zsqrt (or Zsqrtrem).
+    Unlike here, proofs there are fully separated from functions.
+    Some equivalence proofs between the old and the new versions
+    can be found below. A Require Import ZArith provides by default
+    the new versions.
+
+*)
+
 (**********************************************************************)
 (** Definition and properties of square root on Z *)
 
@@ -211,3 +221,12 @@ Proof.
 Qed.
 
 
+(** Equivalence between Zsqrt_plain and [Zsqrt_def.Zsqrt] *)
+
+Lemma Zsqrt_equiv : forall n, Zsqrt_plain n = Zsqrt_def.Zsqrt n.
+Proof.
+ intros. destruct (Z_le_gt_dec 0 n).
+ symmetry. apply Z.sqrt_unique; trivial.
+ now apply Zsqrt_interval.
+ now destruct n.
+Qed.

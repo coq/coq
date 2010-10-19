@@ -135,6 +135,11 @@ Infix "<" := Nlt : N_scope.
 Infix ">=" := Nge : N_scope.
 Infix ">" := Ngt : N_scope.
 
+Notation "x <= y <= z" := (x <= y /\ y <= z) : N_scope.
+Notation "x <= y < z" := (x <= y /\ y < z) : N_scope.
+Notation "x < y < z" := (x < y /\ y < z) : N_scope.
+Notation "x < y <= z" := (x < y /\ y <= z) : N_scope.
+
 (** Min and max *)
 
 Definition Nmin (n n' : N) := match Ncompare n n' with
@@ -461,6 +466,24 @@ intros.
 destruct (Ncompare x y) as [ ]_eqn; constructor; auto.
 apply Ncompare_Eq_eq; auto.
 apply Ngt_Nlt; auto.
+Qed.
+
+(** Order and operations *)
+
+(** NB : Many more results will come from NBinary, the Number instantiation.
+    The next lemma is useful for proving the correctness of the division.
+*)
+
+Lemma Nplus_lt_cancel_l : forall n m p, p+n < p+m -> n<m.
+Proof.
+ intros. destruct p. simpl; auto.
+ destruct n; destruct m.
+ elim (Nlt_irrefl _ H).
+ red; auto.
+ rewrite Nplus_0_r in H. simpl in H.
+ red in H. simpl in H.
+ elim (Plt_not_plus_l _ _ H).
+ now apply (Pplus_lt_mono_l p).
 Qed.
 
 (** 0 is the least natural number *)

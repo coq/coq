@@ -8,7 +8,7 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Import BinPos Ndiv_def.
+Require Import BinPos Ndiv_def Nsqrt_def.
 Require Export BinNat.
 Require Import NAxioms NProperties.
 
@@ -167,6 +167,11 @@ Definition pow_0_r := Npow_0_r.
 Definition pow_succ_r n p (H:0 <= p) := Npow_succ_r n p.
 Program Instance pow_wd : Proper (eq==>eq==>eq) Npow.
 
+(** Sqrt *)
+
+Program Instance sqrt_wd : Proper (eq==>eq) Nsqrt.
+Definition sqrt_spec n (H:0<=n) := Nsqrt_spec n.
+
 (** The instantiation of operations.
     Placing them at the very end avoids having indirections in above lemmas. *)
 
@@ -192,6 +197,7 @@ Definition modulo := Nmod.
 Definition pow := Npow.
 Definition even := Neven.
 Definition odd := Nodd.
+Definition sqrt := Nsqrt.
 
 Include NProp
  <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.

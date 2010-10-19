@@ -11,6 +11,5 @@ Require Export ZAxioms ZMaxMin ZSgnAbs ZParity ZPow.
 (** This functor summarizes all known facts about Z. *)
 
 Module Type ZProp (Z:ZAxiomsSig) :=
- ZMaxMinProp Z <+ ZSgnAbsProp Z <+ ZParityProp Z <+ ZPowProp Z.
-
-
+ ZMaxMinProp Z <+ ZSgnAbsProp Z <+ ZParityProp Z <+ ZPowProp Z
+ <+ NZSqrt.NZSqrtProp Z Z.

@@ -9,3 +9,5 @@ Ndiv_def.vo
 Pnat.vo
 POrderedType.vo
 Pminmax.vo
+Psqrt.vo
+Nsqrt_def.vo

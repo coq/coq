@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import
- Bool Peano Peano_dec Compare_dec Plus Minus Le EqNat NAxioms NProperties.
+ Bool Peano Peano_dec Compare_dec Plus Minus Le Lt EqNat NAxioms NProperties.
 
 (** Functions not already defined *)
 
@@ -133,6 +133,75 @@ Proof.
  unfold modulo.
  apply le_n_S, le_minus.
 Qed.
+
+(** Square root *)
+
+(** The following square root function is linear (and tail-recursive).
+  With Peano representation, we can't do better. For faster algorithm,
+  see Psqrt/Zsqrt/Nsqrt...
+
+  We search the square root of n = k + p^2 + (q - r)
+  with q = 2p and 0<=r<=q. We starts with p=q=r=0, hence
+  looking for the square root of n = k. Then we progressively
+  decrease k and r. When k = S k' and r=0, it means we can use (S p)
+  as new sqrt candidate, since (S k')+p^2+2p = k'+(S p)^2.
+  When k reaches 0, we have found the biggest p^2 square contained
+  in n, hence the square root of n is p.
+*)
+
+Fixpoint sqrt_iter k p q r :=
+  match k with
+    | O => p
+    | S k' => match r with
+                | O => sqrt_iter k' (S p) (S (S q)) (S (S q))
+                | S r' => sqrt_iter k' p q r'
+              end
+  end.
+
+Definition sqrt n := sqrt_iter n 0 0 0.
+
+Lemma sqrt_iter_spec : forall k p q r,
+ q = p+p -> r<=q ->
+ let s := sqrt_iter k p q r in
+ s*s <= k + p*p + (q - r) < (S s)*(S s).
+Proof.
+ induction k.
+ (* k = 0 *)
+ simpl; intros p q r Hq Hr.
+ split.
+ apply le_plus_l.
+ apply le_lt_n_Sm.
+ rewrite <- mult_n_Sm.
+ rewrite plus_assoc, (plus_comm p), <- plus_assoc.
+ apply plus_le_compat; trivial.
+ rewrite <- Hq. apply le_minus.
+ (* k = S k' *)
+ destruct r.
+ (* r = 0 *)
+ intros Hq _.
+ replace (S k + p*p + (q-0)) with (k + (S p)*(S p) + (S (S q) - S (S q))).
+ apply IHk.
+ simpl. rewrite <- plus_n_Sm. congruence.
+ auto with arith.
+ rewrite minus_diag, <- minus_n_O, <- plus_n_O. simpl.
+ rewrite <- plus_n_Sm; f_equal. rewrite <- plus_assoc; f_equal.
+ rewrite <- mult_n_Sm, (plus_comm p), <- plus_assoc. congruence.
+ (* r = S r' *)
+ intros Hq Hr.
+ replace (S k + p*p + (q-S r)) with (k + p*p + (q - r)).
+ apply IHk; auto with arith.
+ simpl. rewrite plus_n_Sm. f_equal. rewrite minus_Sn_m; auto.
+Qed.
+
+Lemma sqrt_spec : forall n,
+ let s := sqrt n in s*s <= n < S s * S s.
+Proof.
+ intros.
+ replace n with (n + 0*0 + (0-0)).
+ apply sqrt_iter_spec; auto.
+ simpl. now rewrite <- 2 plus_n_O.
+Qed.
+
 
 (** * Implementation of [NAxiomsSig] by [nat] *)
 
@@ -297,10 +366,14 @@ Definition odd := odd.
 Definition even_spec := even_spec.
 Definition odd_spec := odd_spec.
 
-Definition pow := pow.
 Program Instance pow_wd : Proper (eq==>eq==>eq) pow.
 Definition pow_0_r := pow_0_r.
 Definition pow_succ_r := pow_succ_r.
+Definition pow := pow.
+
+Definition sqrt_spec a (Ha:0<=a) := sqrt_spec a.
+Program Instance sqrt_wd : Proper (eq==>eq) sqrt.
+Definition sqrt := sqrt.
 
 Definition div := div.
 Definition modulo := modulo.

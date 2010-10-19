@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Export NZAxioms.
-Require Import NZPow.
+Require Import NZPow NZSqrt.
 
 (** We obtain integers by postulating that successor of predecessor
     is identity. *)
@@ -76,15 +76,20 @@ Module Type ZPowSpecNeg (Import Z : ZAxiomsMiniSig')(Import P : Pow' Z).
  Axiom pow_neg : forall a b, b<0 -> a^b == 0.
 End ZPowSpecNeg.
 
+(** Same for the sqrt function. *)
+
+Module Type ZSqrtSpecNeg (Import Z : ZAxiomsMiniSig')(Import P : Sqrt' Z).
+ Axiom sqrt_neg : forall a, a<0 -> √a == 0.
+End ZSqrtSpecNeg.
 
 (** Let's group everything *)
 
 Module Type ZAxiomsSig :=
   ZAxiomsMiniSig <+ HasCompare <+ HasAbs <+ HasSgn <+ Parity
-   <+ NZPow.NZPow <+ ZPowSpecNeg.
+   <+ NZPow.NZPow <+ ZPowSpecNeg <+ NZSqrt.NZSqrt <+ ZSqrtSpecNeg.
 Module Type ZAxiomsSig' :=
   ZAxiomsMiniSig' <+ HasCompare <+ HasAbs <+ HasSgn <+ Parity
-   <+ NZPow.NZPow' <+ ZPowSpecNeg.
+   <+ NZPow.NZPow' <+ ZPowSpecNeg <+ NZSqrt.NZSqrt' <+ ZSqrtSpecNeg.
 
 
 (** Division is left apart, since many different flavours are available *)

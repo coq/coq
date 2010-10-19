@@ -338,15 +338,14 @@ Module Make (N:NType) <: ZType.
   | Neg nx => Neg N.zero
   end.
 
- Theorem spec_sqrt: forall x, 0 <= to_Z x ->
-   to_Z (sqrt x) ^ 2 <= to_Z x < (to_Z (sqrt x) + 1) ^ 2.
+ Theorem spec_sqrt: forall x, to_Z (sqrt x) = Zsqrt (to_Z x).
  Proof.
- unfold to_Z, sqrt; intros [x | x] H.
-   exact (N.spec_sqrt x).
- replace (N.to_Z x) with 0.
-   rewrite N.spec_0; simpl Zpower; unfold Zpower_pos, iter_pos;
-    auto with zarith.
- generalize (N.spec_pos x); auto with zarith.
+  destruct x as [p|p]; simpl.
+  apply N.spec_sqrt.
+  rewrite N.spec_0.
+  destruct (Z_le_lt_eq_dec _ _ (N.spec_pos p)) as [LT|EQ].
+  rewrite Zsqrt_neg; auto with zarith.
+  now rewrite <- EQ.
  Qed.
 
  Definition div_eucl x y :=

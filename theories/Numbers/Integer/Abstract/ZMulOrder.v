@@ -92,14 +92,7 @@ Qed.
 
 Notation mul_nonpos := le_mul_0 (only parsing).
 
-Theorem le_0_square : forall n, 0 <= n * n.
-Proof.
-intro n; destruct (neg_nonneg_cases n).
-apply lt_le_incl; now apply mul_neg_neg.
-now apply mul_nonneg_nonneg.
-Qed.
-
-Notation square_nonneg := le_0_square (only parsing).
+Notation le_0_square := square_nonneg (only parsing).
 
 Theorem nlt_square_0 : forall n, ~ n * n < 0.
 Proof.

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 
-Require Import BinPos BinNat Pnat Plus Compare_dec.
+Require Import BinPos BinNat.
 
 Local Open Scope N_scope.
 
@@ -76,45 +76,11 @@ Proof.
   simpl; f_equal; apply Pplus_comm.
 Qed.
 
-Lemma Plt_add_cancel_l : forall n m p, (p+n < p+m -> n<m)%positive.
-Proof.
- intros n m p H.
- unfold Plt in *.
- rewrite nat_of_P_compare_morphism in *.
- rewrite 2 nat_of_P_plus_morphism in *.
- apply nat_compare_lt.
- apply nat_compare_lt in H.
- eapply plus_lt_reg_l; eauto.
-Qed.
-
-Lemma Plt_add_not_lt : forall n m, ~(n+m < n)%positive.
-Proof.
- intros n m H.
- unfold Plt in *.
- rewrite nat_of_P_compare_morphism in *.
- rewrite nat_of_P_plus_morphism in *.
- apply nat_compare_lt in H.
- absurd (nat_of_P m < 0)%nat.
- red; inversion 1.
- apply plus_lt_reg_l with (nat_of_P n). now rewrite plus_0_r.
-Qed.
-
-Lemma Nlt_add_cancel_l : forall n m p, p+n < p+m -> n<m.
-Proof.
- intros. destruct p. simpl; auto.
- destruct n; destruct m.
- elim (Nlt_irrefl _ H).
- red; auto.
- rewrite Nplus_0_r in H. simpl in H.
- elim (Plt_add_not_lt _ _ H).
- apply Plt_add_cancel_l with p; auto.
-Qed.
-
 Lemma NPgeb_ineq0 : forall a p, a < Npos p -> NPgeb (2*a) p = true ->
  2*a - Npos p < Npos p.
 Proof.
 intros a p LT GE.
-apply Nlt_add_cancel_l with (Npos p).
+apply Nplus_lt_cancel_l with (Npos p).
 rewrite Nplus_comm.
 generalize (NPgeb_correct (2*a) p). rewrite GE. intros <-.
 rewrite <- (Nmult_1_l (Npos p)). rewrite <- Nmult_plus_distr_r.
@@ -125,7 +91,7 @@ Lemma NPgeb_ineq1 : forall a p, a < Npos p -> NPgeb (2*a+1) p = true ->
   (2*a+1) - Npos p < Npos p.
 Proof.
 intros a p LT GE.
-apply Nlt_add_cancel_l with (Npos p).
+apply Nplus_lt_cancel_l with (Npos p).
 rewrite Nplus_comm.
 generalize (NPgeb_correct (2*a+1) p). rewrite GE. intros <-.
 rewrite <- (Nmult_1_l (Npos p)). rewrite <- Nmult_plus_distr_r.

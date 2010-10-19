@@ -746,6 +746,19 @@ Proof.
   intros [p|p| ] [q|q| ] H; destr_eq H; auto.
 Qed.
 
+(** Square *)
+
+Lemma Psquare_xO : forall p, p~0 * p~0 = (p*p)~0~0.
+Proof.
+ intros. simpl. now rewrite Pmult_comm.
+Qed.
+
+Lemma Psquare_xI : forall p, p~1 * p~1 = (p*p+p)~0~1.
+Proof.
+ intros. simpl. rewrite Pmult_comm. simpl. f_equal.
+ rewrite Pplus_assoc, Pplus_diag. simpl. now rewrite Pplus_comm.
+Qed.
+
 (*********************************************************************)
 (** Properties of boolean equality *)
 
@@ -959,9 +972,27 @@ Proof.
  exact Pcompare_1.
 Qed.
 
+Lemma Plt_1_succ : forall n, 1 < Psucc n.
+Proof.
+ intros. apply Pcompare_p_Sq. destruct n; auto.
+Qed.
+
 Lemma Plt_lt_succ : forall n m : positive, n < m -> n < Psucc m.
 Proof.
   unfold Plt; intros n m H; apply <- Pcompare_p_Sq; auto.
+Qed.
+
+Lemma Psucc_lt_compat : forall n m, n < m <-> Psucc n < Psucc m.
+Proof.
+ unfold Plt. induction n; destruct m; simpl; auto; split; try easy; intros.
+ now apply Pcompare_Lt_eq_Lt, Pcompare_p_Sq, IHn, Pcompare_Gt_Lt.
+ now apply Pcompare_eq_Lt, IHn, Pcompare_p_Sq, Pcompare_Lt_eq_Lt.
+ destruct (Psucc n); discriminate.
+ now apply Pcompare_eq_Lt, Pcompare_p_Sq, Pcompare_Lt_eq_Lt.
+ now apply Pcompare_Lt_eq_Lt, Pcompare_p_Sq, Pcompare_Gt_Lt.
+ destruct n; discriminate.
+ apply Plt_1_succ.
+ destruct m; auto.
 Qed.
 
 Lemma Plt_irrefl : forall p : positive, ~ p < p.
@@ -992,6 +1023,51 @@ Proof.
   unfold Ple, Plt. intros.
   generalize (Pcompare_eq_iff p q).
   destruct ((p ?= q) Eq); intuition; discriminate.
+Qed.
+
+(** Strict order and operations *)
+
+Lemma Pplus_lt_mono_l : forall p q r, q<r <-> p+q < p+r.
+Proof.
+ induction p using Prect.
+ intros q r. rewrite <- 2 Pplus_one_succ_l. apply Psucc_lt_compat.
+ intros q r. rewrite 2 Pplus_succ_permute_l.
+ eapply iff_trans; [ eapply IHp | eapply Psucc_lt_compat ].
+Qed.
+
+Lemma Pplus_lt_mono : forall p q r s, p<q -> r<s -> p+r<q+s.
+Proof.
+ intros. apply Plt_trans with (p+s).
+ now apply Pplus_lt_mono_l.
+ rewrite (Pplus_comm p), (Pplus_comm q). now apply Pplus_lt_mono_l.
+Qed.
+
+Lemma Pmult_lt_mono_l : forall p q r, q<r -> p*q < p*r.
+Proof.
+ induction p using Prect; auto.
+ intros q r H. rewrite 2 Pmult_Sn_m.
+ apply Pplus_lt_mono; auto.
+Qed.
+
+Lemma Pmult_lt_mono : forall p q r s, p<q -> r<s -> p*r < q*s.
+Proof.
+ intros. apply Plt_trans with (p*s).
+ now apply Pmult_lt_mono_l.
+ rewrite (Pmult_comm p), (Pmult_comm q). now apply Pmult_lt_mono_l.
+Qed.
+
+Lemma Plt_plus_r : forall p q, p < p+q.
+Proof.
+ induction q using Prect.
+ rewrite <- Pplus_one_succ_r. apply Pcompare_p_Sp.
+ apply Plt_trans with (p+q); auto.
+ apply Pplus_lt_mono_l, Pcompare_p_Sp.
+Qed.
+
+Lemma Plt_not_plus_l : forall p q, ~ p+q < p.
+Proof.
+ intros p q H. elim (Plt_irrefl p).
+ apply Plt_trans with (p+q); auto using Plt_plus_r.
 Qed.
 
 

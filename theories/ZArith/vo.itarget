@@ -27,5 +27,6 @@ Zorder.vo
 Zpow_def.vo
 Zpower.vo
 Zpow_facts.vo
-Zsqrt.vo
+Zsqrt_compat.vo
 Zwf.vo
+Zsqrt_def.vo

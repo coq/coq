@@ -738,9 +738,16 @@ Module Make (W0:CyclicType) <: NType.
  Lemma sqrt_fold : sqrt = iter_t sqrtn.
  Proof. red_t; reflexivity. Qed.
 
- Theorem spec_sqrt: forall x, [sqrt x] ^ 2 <= [x] < ([sqrt x] + 1) ^ 2.
+ Theorem spec_sqrt_aux: forall x, [sqrt x] ^ 2 <= [x] < ([sqrt x] + 1) ^ 2.
  Proof.
   intros x. rewrite sqrt_fold. destr_t x as (n,x). exact (ZnZ.spec_sqrt x).
+ Qed.
+
+ Theorem spec_sqrt: forall x, [sqrt x] = Zsqrt [x].
+ Proof.
+  intros x.
+  symmetry. apply Z.sqrt_unique. apply spec_pos.
+  rewrite <- ! Zpower_2. apply spec_sqrt_aux.
  Qed.
 
  (** * Power *)

@@ -239,9 +239,14 @@ Proof.
 apply lt_le_incl, lt_0_1.
 Qed.
 
+Theorem lt_1_2 : 1 < 2.
+Proof.
+rewrite two_succ. apply lt_succ_diag_r.
+Qed.
+
 Theorem lt_0_2 : 0 < 2.
 Proof.
-transitivity 1. apply lt_0_1. rewrite two_succ. apply lt_succ_diag_r.
+transitivity 1. apply lt_0_1. apply lt_1_2.
 Qed.
 
 Theorem le_0_2 : 0 <= 2.
@@ -256,7 +261,7 @@ Qed.
 
 (** The order tactic enriched with some knowledge of 0,1,2 *)
 
-Ltac order' := generalize lt_0_1 lt_0_2; order.
+Ltac order' := generalize lt_0_1 lt_1_2; order.
 
 
 (** More Trichotomy, decidability and double negation elimination. *)

@@ -18,7 +18,7 @@ Module ZTypeIsZAxioms (Import Z : ZType').
 
 Hint Rewrite
  spec_0 spec_1 spec_2 spec_add spec_sub spec_pred spec_succ
- spec_mul spec_opp spec_of_Z spec_div spec_modulo
+ spec_mul spec_opp spec_of_Z spec_div spec_modulo spec_sqrt
  spec_compare spec_eq_bool spec_max spec_min spec_abs spec_sgn
  spec_pow spec_even spec_odd
  : zsimpl.
@@ -276,6 +276,21 @@ Qed.
 Lemma pow_pos_N : forall a p, pow_pos a p == pow_N a (Npos p).
 Proof.
  intros a b. red. now rewrite spec_pow_N, spec_pow_pos.
+Qed.
+
+(** Sqrt *)
+
+Program Instance sqrt_wd : Proper (eq==>eq) sqrt.
+
+Lemma sqrt_spec : forall n, 0<=n ->
+ (sqrt n)*(sqrt n) <= n /\ n < (succ (sqrt n))*(succ (sqrt n)).
+Proof.
+ intros n. zify. apply Zsqrt_spec.
+Qed.
+
+Lemma sqrt_neg : forall n, n<0 -> sqrt n == 0.
+Proof.
+ intros n. zify. apply Zsqrt_neg.
 Qed.
 
 (** Even / Odd *)

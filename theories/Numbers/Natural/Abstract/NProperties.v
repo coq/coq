@@ -7,9 +7,9 @@
 (************************************************************************)
 
 Require Export NAxioms.
-Require Import NMaxMin NParity NPow NDiv.
+Require Import NMaxMin NParity NPow NSqrt NDiv.
 
 (** This functor summarizes all known facts about N. *)
 
 Module Type NProp (N:NAxiomsSig) :=
- NMaxMinProp N <+ NParityProp N <+ NPowProp N <+ NDivProp N.
+ NMaxMinProp N <+ NParityProp N <+ NPowProp N <+ NSqrtProp N <+ NDivProp N.

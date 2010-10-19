@@ -8,7 +8,7 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Export NZAxioms NZPow NZDiv.
+Require Export NZAxioms NZPow NZSqrt NZDiv.
 
 (** From [NZ], we obtain natural numbers just by stating that [pred 0] == 0 *)
 
@@ -32,7 +32,7 @@ Module Type Parity (Import N : NAxiomsMiniSig').
  Axiom odd_spec : forall n, odd n = true <-> Odd n.
 End Parity.
 
-(** Power function : NZPow is enough *)
+(** For Power and Sqrt functions : NZPow and NZSqrt are enough *)
 
 (** Division Function : we reuse NZDiv.DivMod and NZDiv.NZDivCommon,
     and add to that a N-specific constraint. *)
@@ -45,10 +45,12 @@ End NDivSpecific.
 (** We now group everything together. *)
 
 Module Type NAxiomsSig := NAxiomsMiniSig <+ HasCompare <+ Parity
-  <+ NZPow.NZPow <+ DivMod <+ NZDivCommon <+ NDivSpecific.
+  <+ NZPow.NZPow <+ NZSqrt.NZSqrt
+  <+ DivMod <+ NZDivCommon <+ NDivSpecific.
 
 Module Type NAxiomsSig' := NAxiomsMiniSig' <+ HasCompare <+ Parity
-  <+ NZPow.NZPow' <+ DivMod' <+ NZDivCommon <+ NDivSpecific.
+  <+ NZPow.NZPow' <+ NZSqrt.NZSqrt'
+  <+ DivMod' <+ NZDivCommon <+ NDivSpecific.
 
 
 (** It could also be interesting to have a constructive recursor function. *)

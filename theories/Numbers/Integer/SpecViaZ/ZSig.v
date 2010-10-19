@@ -78,13 +78,12 @@ Module Type ZType.
  Parameter spec_pow_pos: forall x n, [pow_pos x n] = [x] ^ Zpos n.
  Parameter spec_pow_N: forall x n, [pow_N x n] = [x] ^ Z_of_N n.
  Parameter spec_pow: forall x n, [pow x n] = [x] ^ [n].
- Parameter spec_sqrt: forall x, 0 <= [x] ->
-   [sqrt x] ^ 2 <= [x] < ([sqrt x] + 1) ^ 2.
+ Parameter spec_sqrt: forall x, [sqrt x] = Zsqrt [x].
  Parameter spec_div_eucl: forall x y,
    let (q,r) := div_eucl x y in ([q], [r]) = Zdiv_eucl [x] [y].
  Parameter spec_div: forall x y, [div x y] = [x] / [y].
  Parameter spec_modulo: forall x y, [modulo x y] = [x] mod [y].
- Parameter spec_gcd: forall a b, [gcd a b] = Zgcd (to_Z a) (to_Z b).
+ Parameter spec_gcd: forall a b, [gcd a b] = Zgcd [a] [b].
  Parameter spec_sgn : forall x, [sgn x] = Zsgn [x].
  Parameter spec_abs : forall x, [abs x] = Zabs [x].
  Parameter spec_even : forall x, even x = Zeven_bool [x].

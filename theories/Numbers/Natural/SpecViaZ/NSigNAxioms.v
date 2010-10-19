@@ -1,4 +1,5 @@
 (************************************************************************)
+
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
@@ -14,7 +15,7 @@ Module NTypeIsNAxioms (Import N : NType').
 
 Hint Rewrite
  spec_0 spec_1 spec_2 spec_succ spec_add spec_mul spec_pred spec_sub
- spec_div spec_modulo spec_gcd spec_compare spec_eq_bool
+ spec_div spec_modulo spec_gcd spec_compare spec_eq_bool spec_sqrt
  spec_max spec_min spec_pow_pos spec_pow_N spec_pow spec_even spec_odd
  : nsimpl.
 Ltac nsimpl := autorewrite with nsimpl.
@@ -217,6 +218,16 @@ Qed.
 Lemma pow_pos_N : forall a p, pow_pos a p == pow_N a (Npos p).
 Proof.
  intros. now zify.
+Qed.
+
+(** Sqrt *)
+
+Program Instance sqrt_wd : Proper (eq==>eq) sqrt.
+
+Lemma sqrt_spec : forall n, 0<=n ->
+ (sqrt n)*(sqrt n) <= n /\ n < (succ (sqrt n))*(succ (sqrt n)).
+Proof.
+ intros n. zify. apply Zsqrt_spec.
 Qed.
 
 (** Even / Odd *)

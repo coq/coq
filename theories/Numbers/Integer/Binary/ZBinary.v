@@ -10,7 +10,7 @@
 
 
 Require Import ZAxioms ZProperties.
-Require Import BinInt Zcompare Zorder ZArith_dec Zbool Zeven.
+Require Import BinInt Zcompare Zorder ZArith_dec Zbool Zeven Zsqrt_def.
 
 Local Open Scope Z_scope.
 
@@ -173,6 +173,17 @@ Definition pow_0_r := Zpow_0_r.
 Definition pow_succ_r := Zpow_succ_r.
 Definition pow_neg := Zpow_neg.
 Definition pow := Zpow.
+
+(** Sqrt *)
+
+(** NB : we use a new Zsqrt defined in Zsqrt_def, the previous
+   module Zsqrt.v is now Zsqrt_compat.v *)
+
+Program Instance sqrt_wd : Proper (eq==>eq) Zsqrt.
+
+Definition sqrt_spec := Zsqrt_spec.
+Definition sqrt_neg := Zsqrt_neg.
+Definition sqrt := Zsqrt.
 
 (** We define [eq] only here to avoid refering to this [eq] above. *)
 

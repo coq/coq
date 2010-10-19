@@ -295,11 +295,60 @@ assumption. assert (F : m * m < n * n) by now apply square_lt_mono_nonneg.
 apply -> lt_nge in F. false_hyp H2 F.
 Qed.
 
-Theorem mul_2_mono_l : forall n m, n < m -> 1 + (1 + 1) * n < (1 + 1) * m.
+Theorem mul_2_mono_l : forall n m, n < m -> 1 + 2 * n < 2 * m.
 Proof.
-intros n m. rewrite <- le_succ_l, (mul_le_mono_pos_l (S n) m (1 + 1)).
-rewrite !mul_add_distr_r; nzsimpl; now rewrite le_succ_l.
-apply add_pos_pos; now apply lt_0_1.
+intros n m. rewrite <- le_succ_l, (mul_le_mono_pos_l (S n) m two).
+rewrite two_succ. nzsimpl. now rewrite le_succ_l.
+order'.
+Qed.
+
+(** A few results about squares *)
+
+Lemma square_nonneg : forall a, 0 <= a * a.
+Proof.
+ intros. rewrite <- (mul_0_r a). destruct (le_gt_cases a 0).
+ now apply mul_le_mono_nonpos_l.
+ apply mul_le_mono_nonneg_l; order.
+Qed.
+
+Lemma crossmul_le_addsquare : forall a b, 0<=a -> 0<=b -> b*a+a*b <= a*a+b*b.
+Proof.
+ assert (AUX : forall a b, 0<=a<=b -> b*a+a*b <= a*a+b*b).
+  intros a b (Ha,H).
+  destruct (le_exists_sub _ _ H) as (d & EQ & Hd).
+  rewrite EQ.
+  rewrite 2 mul_add_distr_r.
+  rewrite !add_assoc. apply add_le_mono_r.
+  rewrite add_comm. apply add_le_mono_l.
+  apply mul_le_mono_nonneg_l; trivial. order.
+ intros a b Ha Hb.
+ destruct (le_gt_cases a b).
+ apply AUX; split; order.
+ rewrite (add_comm (b*a)), (add_comm (a*a)).
+ apply AUX; split; order.
+Qed.
+
+Lemma add_square_le : forall a b, 0<=a -> 0<=b ->
+ a*a + b*b <= (a+b)*(a+b).
+Proof.
+ intros a b Ha Hb.
+ rewrite mul_add_distr_r, !mul_add_distr_l.
+ rewrite add_assoc.
+ apply add_le_mono_r.
+ rewrite <- add_assoc.
+ rewrite <- (add_0_r (a*a)) at 1.
+ apply add_le_mono_l.
+ apply add_nonneg_nonneg; now apply mul_nonneg_nonneg.
+Qed.
+
+Lemma square_add_le : forall a b, 0<=a -> 0<=b ->
+ (a+b)*(a+b) <= 2*(a*a + b*b).
+Proof.
+ intros a b Ha Hb.
+ rewrite !mul_add_distr_l, !mul_add_distr_r. nzsimpl'.
+ rewrite <- !add_assoc. apply add_le_mono_l.
+ rewrite !add_assoc. apply add_le_mono_r.
+ apply crossmul_le_addsquare; order.
 Qed.
 
 End NZMulOrderProp.
