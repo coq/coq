@@ -130,211 +130,6 @@ Proof.
  rewrite leb_spec, orb_true_iff, ltb_spec, eqb_spec, <- to_Z_eq;omega.
 Qed.
 
-(** Iterators *)
-
-Lemma foldi_gt : forall A f from to (a:A), 
-  (to < from)%int31 = true -> foldi f from to a = a.
-Proof.
- intros;apply foldi_cont_gt;trivial.
-Qed.
-
-Lemma foldi_eq : forall A f from to (a:A),
-  from = to -> foldi f from to a = f from a.
-Proof.
- intros;apply foldi_cont_eq;trivial.
-Qed.
-
-Lemma foldi_lt : forall A f from to (a:A), 
-  (from < to)%int31 = true -> foldi f from to a = foldi f (from + 1) to (f from a).
-Proof.
- intros;apply foldi_cont_lt;trivial.
-Qed.
-
-Lemma fold_gt : forall A f from to (a:A), 
-  (to < from)%int31 = true -> fold f from to a = a.
-Proof.
- intros;apply foldi_cont_gt;trivial.
-Qed.
-
-Lemma fold_eq : forall A f from to (a:A),
-  from = to -> fold f from to a = f a.
-Proof.
- intros;apply foldi_cont_eq;trivial.
-Qed.
-
-Lemma fold_lt : forall A f from to (a:A), 
-  (from < to)%int31 = true -> fold f from to a = fold f (from + 1) to (f a).
-Proof.
- intros;apply foldi_cont_lt;trivial.
-Qed.
-
-Lemma foldi_down_lt : forall A f from downto (a:A),
-  (from < downto)%int31 = true -> foldi_down f from downto a = a.
-Proof.
- intros;apply foldi_down_cont_lt;trivial.
-Qed.
-
-Lemma foldi_down_eq : forall A f from downto (a:A),
-  from = downto -> foldi_down f from downto a = f from a.
-Proof.
- intros;apply foldi_down_cont_eq;trivial.
-Qed.
-
-Lemma foldi_down_gt : forall A f from downto (a:A),
-  (downto < from)%int31 = true-> 
-  foldi_down f from downto a = 
-  foldi_down f (from-1) downto (f from a).
-Proof.
- intros;apply foldi_down_cont_gt;trivial.
-Qed.
-
-Lemma fold_down_lt : forall A f from downto (a:A),
-  (from < downto)%int31 = true -> fold_down f from downto a = a.
-Proof.
- intros;apply foldi_down_cont_lt;trivial.
-Qed.
-
-Lemma fold_down_eq : forall A f from downto (a:A),
-  from = downto -> fold_down f from downto a = f a.
-Proof.
- intros;apply foldi_down_cont_eq;trivial.
-Qed.
-
-Lemma fold_down_gt : forall A f from downto (a:A),
-  (downto < from)%int31 = true-> 
-  fold_down f from downto a = 
-  fold_down f (from-1) downto (f a).
-Proof.
- intros;apply foldi_down_cont_gt;trivial.
-Qed.
-
-Require Import Wf_Z.
-
-Lemma int_ind : forall (P:int -> Type),
-  P 0%int31 ->
-  (forall i, (i < max_int)%int31 = true -> P i -> P (i + 1)%int31) ->
-  forall i, P i.
-Proof.
- intros P HP0 Hrec.
- assert (forall z, (0 <= z)%Z -> forall i, z = [|i|] -> P i).
- intros z H;pattern z;apply natlike_rec2;intros;trivial.
- rewrite <- (of_to_Z i), <- H0;exact HP0.
- assert (W:= to_Z_bounded i).
- assert ([|i - 1|] = [|i|] - 1).
-  rewrite sub_spec, Zmod_small;rewrite to_Z_1;auto with zarith.
- assert (i = i - 1 + 1)%int31.
-  apply to_Z_inj.
-  rewrite add_spec, H2.
-  rewrite Zmod_small;rewrite to_Z_1;auto with zarith.
- rewrite H3;apply Hrec.
- rewrite ltb_spec, H2;change [|max_int|] with (wB - 1);auto with zarith.
- apply X;auto with zarith.
- intros;apply (X [|i|]);trivial.
- destruct (to_Z_bounded i);trivial.
-Qed.
- 
-Lemma int_ind_bounded : forall (P:int-> Type) min max,
-  [|min|] <= [|max|] ->
-  P max ->
-  (forall i, ([|min|] <= [|i|] + 1 <= [|max|]) -> P (i + 1)%int31 -> P i) ->
-  P min.
-Proof.
- intros P min max Hle.
- intros Hmax Hrec.
- assert (W1:= to_Z_bounded max);assert (W2:= to_Z_bounded min).
- assert (forall z, (0 <= z)%Z -> z <= [|max|] - [|min|]  -> forall i, z = [|i|] -> P (max - i)%int31).
- intros z H1;pattern z;apply natlike_rec2;intros;trivial.
- assert (max - i = max)%int31.
-  apply to_Z_inj;rewrite sub_spec, <- H0, Zminus_0_r, Zmod_small;auto using to_Z_bounded.
- rewrite H2;trivial.
- assert (W3:= to_Z_bounded i);apply Hrec.
- rewrite sub_spec.
- rewrite Zmod_small;auto with zarith.
- assert (max - i + 1 = max - (i - 1))%int31.
-  apply to_Z_inj;rewrite add_spec, !sub_spec, to_Z_1.
-  rewrite (Zmod_small ([|max|] - [|i|]));auto with zarith.
-  rewrite (Zmod_small ([|i|] - 1));auto with zarith.
-  apply f_equal2;auto with zarith.
- rewrite H3;apply X;auto with zarith.
- rewrite sub_spec, to_Z_1, <- H2, Zmod_small;auto with zarith.
- assert (min = max - (max - min))%int31.
-  apply to_Z_inj.
-  rewrite !sub_spec, !Zmod_small;auto with zarith.
-  rewrite Zmod_small;auto with zarith.
- rewrite H;apply (X [| max - min |]);trivial;rewrite sub_spec, Zmod_small;auto with zarith.
-Qed.
-  
-Lemma forallb_spec : forall f from to, 
-  forallb f from to = true ->
-  forall i, [|from|] <= [|i|] <= [|to|] -> 
-  f i = true.
-Proof.
- intros.
- generalize i H H0.
- assert ([|from|] <= [|to|]) by auto with zarith.
- clear i H0 H.
- pattern from;apply int_ind_bounded with to;trivial.
- intros;replace i with to;[ | apply to_Z_inj;auto with zarith].
- unfold forallb in H;rewrite foldi_cont_eq in H;trivial.
- destruct (f to);trivial.
- intros;assert ([|i|] <= [|to|]) by auto with zarith.
- destruct (Zle_lt_or_eq _ _ H4).
- unfold forallb in H2;rewrite foldi_cont_lt in H2;
-  fold (forallb f (i+1) to) in H2;[ | rewrite ltb_spec;trivial].
- generalize H2;clear H2;case_eq (f i);intros;[ | discriminate].
- elimtype ([|i|] = [|i0|] \/ [|i+1|] <= [|i0|]);intros.
- apply to_Z_inj in H7;subst;trivial.
- auto with zarith.
- rewrite add_spec;destruct (to_Z_bounded to);destruct (to_Z_bounded i);
-   rewrite Zmod_small;rewrite to_Z_1;auto with zarith; omega.
- intros;replace i0 with to;[ | apply to_Z_inj;auto with zarith].
- apply to_Z_inj in H5;subst.
- unfold forallb in H2;rewrite foldi_cont_eq in H2;trivial.
- destruct (f to);trivial.
-Qed.
-
-Lemma existsb_spec : forall f from to,
-  existsb f from to = true ->
-  exists i, ((from <= i)%int31 && (i <= to)%int31 && (f i)) = true .
-Proof.
- intros.
- generalize H.
- case_eq (from <= to)%int31; [idtac | rewrite <- not_true_iff_false];
-  rewrite leb_spec; intros Heq.
- 2: unfold existsb; rewrite foldi_cont_gt; try discriminate.
- 2: rewrite ltb_spec; auto with zarith.
- pattern from;apply int_ind_bounded with to;trivial.
- unfold existsb; rewrite foldi_cont_eq; auto.
- case_eq (f to); try discriminate.
- intros Hf _; exists to; auto.
- rewrite !andb_true_iff; repeat split; auto; rewrite leb_spec; auto with zarith.
- intros i Hi IH.
- case (Zle_lt_or_eq [|from|] [|to|]); auto with zarith; intros Hf.
- unfold existsb; rewrite foldi_cont_lt.
- case_eq (f i).
- intros; exists i.
- rewrite !andb_true_iff; repeat split; auto; rewrite leb_spec; auto with zarith.
- intros _ HH; case (IH HH); intros i1.
- rewrite !andb_true_iff; intros ((H1,H2),H3).
- exists i1; rewrite H2, H3, !andb_true_r.
- rewrite leb_spec in H1 |- *; rewrite add_spec, Zmod_small, to_Z_1 in H1; auto with zarith.
- rewrite to_Z_1; split; auto with zarith.
- case (to_Z_bounded i); auto with zarith.
- case (to_Z_bounded to); auto with zarith.
- rewrite ltb_spec; auto with zarith.
- unfold existsb; rewrite foldi_cont_lt.
- case_eq (f i).
- intros Hfi _; exists i; auto.
- rewrite !andb_true_iff; repeat split; auto; rewrite leb_spec; auto with zarith.
- intros _ HH; case (IH HH); intros i1.
- rewrite !andb_true_iff; intros ((H1,H2),H3).
- exists i1; rewrite H2, H3, !andb_true_r.
- rewrite leb_spec in H1 |- *; rewrite add_spec, Zmod_small, to_Z_1 in H1; auto with zarith.
- rewrite to_Z_1; split; auto with zarith.
- case (to_Z_bounded i); auto with zarith.
- case (to_Z_bounded to); auto with zarith.
- rewrite ltb_spec; auto with zarith.
-Qed.
 
 (** Comparison *)
 
@@ -1779,16 +1574,6 @@ Proof.
  intros;rewrite lor_comm;apply lor_0_l.
 Qed.
 
-Lemma bit_max_int : forall i, (i < digits)%int31 = true -> bit max_int i = true.
-Proof.
- intros;apply (forallb_spec (bit max_int) 0 (digits - 1)).
- vm_compute;trivial.
- rewrite ltb_spec in H.
- destruct (to_Z_bounded i).
- change [|0|] with 0%Z.
- change [|digits - 1 |] with ([|digits|] - 1)%Z;omega.
-Qed.
-
 Lemma reflect_leb : forall i j, reflect ([|i|] <= [|j|])%Z (i <= j)%int31.
 Proof.
  intros; apply iff_reflect.
@@ -1806,23 +1591,6 @@ Proof.
  intros; apply iff_reflect.
  symmetry;apply ltb_spec.
 Qed.
-
-Lemma land_max_int_l : forall i, max_int land i = i.
-Proof.
-  intros;apply bit_eq;intros.
-  rewrite land_spec.
-  destruct (reflect_leb digits i0).
-  rewrite <- leb_spec in z.
-  rewrite !bit_M;trivial.
-  rewrite bit_max_int;trivial.
-  rewrite ltb_spec;omega.
-Qed.
-
-Lemma land_max_int_r : forall i, i land max_int = i.
-Proof.
- intros;rewrite land_comm;apply land_max_int_l.
-Qed.
-
 
 Lemma lsr_is_even_eq : forall i j,
   i >> 1 = j >> 1 ->
@@ -1864,7 +1632,9 @@ Proof.
  rewrite (xorb_true_l (is_even (bit i 0))), negb_involutive;trivial.
 Qed.
 
-(** max_int *)
+(** Order *)
+Local Open Scope int31_scope.
+
 Lemma succ_max_int : forall x,
   (x < max_int)%int31 = true -> (0 < x + 1)%int31 = true.
 Proof.
@@ -1874,3 +1644,387 @@ Proof.
  rewrite Zmod_small;omega.
 Qed.
 
+Lemma leb_max_int : forall x, (x <= max_int)%int31 = true.
+Proof.
+ intros x;rewrite leb_spec;assert (W:= to_Z_bounded x).
+ change [|max_int|] with (wB - 1)%Z;omega.
+Qed.
+
+Lemma leb_0 : forall x, 0 <= x = true.
+Proof.
+ intros x;rewrite leb_spec;destruct (to_Z_bounded x);trivial.
+Qed.
+
+Lemma ltb_0 : forall x, ~ (x < 0 = true).
+Proof.
+ intros x;rewrite ltb_spec, to_Z_0;destruct (to_Z_bounded x);omega.
+Qed.
+
+Lemma leb_trans : forall x y z, x <= y = true ->  y <= z = true -> x <= z = true.
+Proof.
+ intros x y z;rewrite !leb_spec;apply Zle_trans.
+Qed.
+
+Lemma lt_trans : forall x y z, x < y = true ->  y < z = true -> x < z = true.
+Proof.
+ intros x y z;rewrite !ltb_spec;apply Zlt_trans.
+Qed.
+
+Lemma ltb_leb_trans : forall x y z, x < y = true ->  y <= z = true -> x < z = true.
+Proof.
+ intros x y z;rewrite leb_spec, !ltb_spec;apply Zlt_le_trans.
+Qed.
+
+Lemma leb_ltb_trans : forall x y z, x <= y = true ->  y < z = true -> x < z = true.
+Proof.
+ intros x y z;rewrite leb_spec, !ltb_spec;apply Zle_lt_trans.
+Qed.
+
+Lemma gtb_not_leb : forall n m, m < n = true -> ~(n <= m = true).
+Proof.
+ intros n m; rewrite ltb_spec, leb_spec;omega.
+Qed.
+
+Lemma leb_not_gtb : forall n m, m <= n = true -> ~(n < m = true).
+Proof.
+ intros n m; rewrite ltb_spec, leb_spec;omega.
+Qed.
+
+Lemma leb_refl : forall n, n <= n = true.
+Proof.
+ intros n;rewrite leb_spec;apply Zle_refl.
+Qed.
+
+Lemma leb_negb_gtb : forall x y, x <= y = negb (y < x).
+Proof.
+ intros x y;apply Bool.eq_true_iff_eq;split;intros.
+ apply Bool.eq_true_not_negb;apply leb_not_gtb;trivial.
+ rewrite Bool.negb_true_iff, <- Bool.not_true_iff_false in H.
+ rewrite leb_spec; rewrite ltb_spec in H;omega.
+Qed.
+
+Lemma ltb_negb_geb : forall x y, x < y = negb (y <= x).
+Proof.
+ intros;rewrite leb_negb_gtb, Bool.negb_involutive;trivial.
+Qed.
+
+(** Iterators *)
+
+Lemma foldi_gt : forall A f from to (a:A), 
+  (to < from)%int31 = true -> foldi f from to a = a.
+Proof.
+ intros;unfold foldi;rewrite foldi_cont_gt;trivial.
+Qed.
+
+Lemma foldi_eq : forall A f from to (a:A),
+  from = to -> foldi f from to a = f from a.
+Proof.
+ intros;unfold foldi;rewrite foldi_cont_eq;trivial.
+Qed.
+
+Lemma foldi_lt : forall A f from to (a:A), 
+  (from < to)%int31 = true -> foldi f from to a = foldi f (from + 1) to (f from a).
+Proof.
+ intros;unfold foldi;rewrite foldi_cont_lt;trivial.
+Qed.
+
+Lemma fold_gt : forall A f from to (a:A), 
+  (to < from)%int31 = true -> fold f from to a = a.
+Proof.
+ intros;apply foldi_gt;trivial.
+Qed.
+
+Lemma fold_eq : forall A f from to (a:A),
+  from = to -> fold f from to a = f a.
+Proof.
+ intros;apply foldi_eq;trivial.
+Qed.
+
+Lemma fold_lt : forall A f from to (a:A), 
+  (from < to)%int31 = true -> fold f from to a = fold f (from + 1) to (f a).
+Proof.
+ intros;apply foldi_lt;trivial.
+Qed.
+
+Lemma foldi_down_lt : forall A f from downto (a:A),
+  (from < downto)%int31 = true -> foldi_down f from downto a = a.
+Proof.
+ intros;unfold foldi_down;rewrite foldi_down_cont_lt;trivial.
+Qed.
+
+Lemma foldi_down_eq : forall A f from downto (a:A),
+  from = downto -> foldi_down f from downto a = f from a.
+Proof.
+ intros;unfold foldi_down;rewrite foldi_down_cont_eq;trivial.
+Qed.
+
+Lemma foldi_down_gt : forall A f from downto (a:A),
+  (downto < from)%int31 = true-> 
+  foldi_down f from downto a = 
+  foldi_down f (from-1) downto (f from a).
+Proof.
+ intros;unfold foldi_down;rewrite foldi_down_cont_gt;trivial.
+Qed.
+
+Lemma fold_down_lt : forall A f from downto (a:A),
+  (from < downto)%int31 = true -> fold_down f from downto a = a.
+Proof.
+ intros;apply foldi_down_lt;trivial.
+Qed.
+
+Lemma fold_down_eq : forall A f from downto (a:A),
+  from = downto -> fold_down f from downto a = f a.
+Proof.
+ intros;apply foldi_down_eq;trivial.
+Qed.
+
+Lemma fold_down_gt : forall A f from downto (a:A),
+  (downto < from)%int31 = true-> 
+  fold_down f from downto a = 
+  fold_down f (from-1) downto (f a).
+Proof.
+ intros;apply foldi_down_gt;trivial.
+Qed.
+
+Require Import Wf_Z.
+
+Lemma int_ind : forall (P:int -> Type),
+  P 0%int31 ->
+  (forall i, (i < max_int)%int31 = true -> P i -> P (i + 1)%int31) ->
+  forall i, P i.
+Proof.
+ intros P HP0 Hrec.
+ assert (forall z, (0 <= z)%Z -> forall i, z = [|i|] -> P i).
+ intros z H;pattern z;apply natlike_rec2;intros;trivial.
+ rewrite <- (of_to_Z i), <- H0;exact HP0.
+ assert (W:= to_Z_bounded i).
+ assert ([|i - 1|] = [|i|] - 1)%Z.
+  rewrite sub_spec, Zmod_small;rewrite to_Z_1;auto with zarith.
+ assert (i = i - 1 + 1)%int31.
+  apply to_Z_inj.
+  rewrite add_spec, H2.
+  rewrite Zmod_small;rewrite to_Z_1;auto with zarith.
+ rewrite H3;apply Hrec.
+ rewrite ltb_spec, H2;change [|max_int|] with (wB - 1)%Z;auto with zarith.
+ apply X;auto with zarith.
+ intros;apply (X [|i|]);trivial.
+ destruct (to_Z_bounded i);trivial.
+Qed.
+ 
+Lemma int_ind_bounded : forall (P:int-> Type) min max,
+  min <= max =true ->
+  P max ->
+  (forall i, min <= i + 1 = true-> i < max =true-> P (i + 1) -> P i) ->
+  P min.
+Proof.
+ intros P min max Hle.
+ intros Hmax Hrec.
+ assert (W1:= to_Z_bounded max);assert (W2:= to_Z_bounded min).
+ assert (forall z, (0 <= z)%Z -> (z <= [|max|] - [|min|])%Z  -> forall i, z = [|i|] -> P (max - i)%int31).
+ intros z H1;pattern z;apply natlike_rec2;intros;trivial.
+ assert (max - i = max)%int31.
+  apply to_Z_inj;rewrite sub_spec, <- H0, Zminus_0_r, Zmod_small;auto using to_Z_bounded.
+ rewrite H2;trivial.
+ assert (W3:= to_Z_bounded i);apply Hrec.
+ rewrite leb_spec,add_spec, sub_spec, to_Z_1, (Zmod_small ([|max|] - [|i|])), Zmod_small;auto with zarith.
+ rewrite ltb_spec, sub_spec, Zmod_small;auto with zarith.
+ assert (max - i + 1 = max - (i - 1))%int31.
+  apply to_Z_inj;rewrite add_spec, !sub_spec, to_Z_1.
+  rewrite (Zmod_small ([|max|] - [|i|]));auto with zarith.
+  rewrite (Zmod_small ([|i|] - 1));auto with zarith.
+  apply f_equal2;auto with zarith.
+ rewrite H3;apply X;auto with zarith.
+ rewrite sub_spec, to_Z_1, <- H2, Zmod_small;auto with zarith.
+ rewrite leb_spec in Hle;assert (min = max - (max - min))%int31.
+  apply to_Z_inj.
+  rewrite !sub_spec, !Zmod_small;auto with zarith.
+  rewrite Zmod_small;auto with zarith.
+ rewrite H;apply (X [| max - min |]);trivial;rewrite sub_spec, Zmod_small;auto with zarith.
+Qed.
+
+Lemma foldi_cont_Ind : forall A B (P: Z -> (A -> B) -> Prop) (f:int -> (A -> B) -> (A -> B)) min max cont,
+   (forall z, ([|max|] < z)%Z -> P z cont) ->
+   (forall i cont, min <= i = true -> i <= max = true -> P ([|i|] + 1)%Z cont -> P [|i|] (f i cont)) ->
+   P [|min|] (foldi_cont f min max cont).
+Proof.
+ intros A B P f min max cont Ha Hf.
+ assert (Bmax:= to_Z_bounded max);assert (Bmin:= to_Z_bounded min).
+ case_eq (min <= max);intros Heq.
+ generalize (leb_refl min).
+ assert (P ([|max|] + 1)%Z cont) by (apply Ha;auto with zarith).
+ clear Ha;revert cont H.
+ pattern min at 2 3 4;apply int_ind_bounded with max;trivial.
+ intros;rewrite foldi_cont_eq;auto using leb_refl.
+ intros i Hle Hlt Hr cont Hcont Hle'.
+ rewrite foldi_cont_lt;[ | trivial].
+ apply Hf;trivial. rewrite leb_spec;rewrite ltb_spec in Hlt;auto with zarith.
+ assert ([|i|] + 1 = [|i + 1|])%Z.
+  rewrite ltb_spec in Hlt;assert (W:= to_Z_bounded i);rewrite add_spec, to_Z_1, Zmod_small;omega.
+ rewrite H;apply Hr;trivial.
+ assert (max < min = true) by (rewrite ltb_negb_geb,Heq;trivial).
+ rewrite foldi_cont_gt;trivial;apply Ha;rewrite <- ltb_spec;trivial.
+Qed.
+
+Lemma foldi_cont_ind : forall A B (P: (A -> B) -> Prop) (f:int -> (A -> B) -> (A -> B)) min max cont,
+   P cont ->
+   (forall i cont, min <= i = true -> i <= max = true -> P cont -> P (f i cont)) ->
+   P (foldi_cont f min max cont).
+Proof.
+ intros A B P f min max cont Ha Hf.
+ set (P2 := fun (z:Z) b => P b);change (P2 [|min|] (foldi_cont f min max cont)).
+ apply foldi_cont_Ind;trivial.
+Qed.
+
+Lemma foldi_ind : forall A (P: A -> Prop) (f:int -> A -> A) min max a,
+   P a ->
+   (forall i a, min <= i = true -> i <= max = true -> P a -> P (f i a)) ->
+   P (foldi f min max a).
+Proof.
+ unfold foldi;intros A P f min max a Ha Hr;revert a Ha.
+ apply foldi_cont_ind;auto.
+Qed.
+
+Lemma fold_ind : forall A (P: A -> Prop) (f: A -> A) min max a,
+   P a -> (forall a, P a -> P (f a)) -> P (fold f min max a).
+Proof.
+ unfold fold;intros A P f min max a Ha Hr;revert a Ha.
+ apply foldi_cont_ind;auto.
+Qed.
+
+Lemma foldi_down_cont_Ind :
+   forall A B (P: Z -> (A -> B) -> Prop) (f:int -> (A -> B) -> (A -> B)) max min cont,
+   (forall z, (z < [|min|])%Z -> P z cont) -> 
+   (forall i cont, min <= i = true -> i <= max = true -> P ([|i|] - 1)%Z cont -> P [|i|] (f i cont)) ->
+   P [|max|] (foldi_down_cont f max min cont).
+Proof.
+ intros A B P f max min cont Ha Hf.
+ assert (Bmax:= to_Z_bounded max);assert (Bmin:= to_Z_bounded min).
+ case_eq (min <= max);intros Heq.
+ generalize (leb_refl max).
+ assert (P ([|min|] -1)%Z cont) by (apply Ha;auto with zarith).
+ clear Ha;revert cont H Heq.
+ pattern max at 1 2 4 5;apply int_ind;trivial.
+ intros; assert (0 = min).
+   apply to_Z_inj;revert Heq;rewrite leb_spec, to_Z_0;omega.
+ rewrite foldi_down_cont_eq;subst;auto.
+ intros i Hmaxi Hr cont Hcont Hmin Hmax.
+ generalize Hmin;rewrite leb_ltb_eqb;case_eq (min < i+1);simpl;intros Hlt Hmin'.
+ rewrite foldi_down_cont_gt;[ | trivial].
+ apply Hf;trivial.
+ assert ([|i|] + 1 = [|i + 1|])%Z.
+   assert (W:= to_Z_bounded i);rewrite ltb_spec in Hmaxi;
+    assert (W2 := to_Z_bounded max_int);rewrite add_spec, to_Z_1, Zmod_small;auto with zarith.
+ assert (i + 1 - 1 = i).
+  rewrite leb_spec in *;rewrite ltb_spec in *.
+  assert (W1:= to_Z_bounded i); apply to_Z_inj;rewrite sub_spec,to_Z_1, Zmod_small;try omega.
+ assert ([|i|] = [|i+1|]-1)%Z.
+   rewrite <- H;ring.
+ rewrite <- H1, H0;apply Hr;trivial.
+ rewrite ltb_spec in Hlt;rewrite leb_spec;omega.
+ rewrite leb_spec in Hmax |- *;omega.
+ rewrite eqb_spec in Hmin';subst;rewrite foldi_down_cont_eq;auto.
+ assert (max < min = true) by (rewrite ltb_negb_geb,Heq;trivial).
+ rewrite foldi_down_cont_lt;trivial.
+ apply Ha;rewrite <- ltb_spec;trivial.
+Qed.
+
+Lemma foldi_down_cont_ind : forall A B (P: (A -> B) -> Prop) (f:int -> (A -> B) -> (A -> B)) max min cont,
+   P cont ->
+   (forall i cont, min <= i = true -> i <= max = true -> P cont -> P (f i cont)) ->
+   P (foldi_down_cont f max min cont).
+Proof.
+ intros A B P f max min cont Ha Hf.
+ set (P2 := fun (z:Z) b => P b);change (P2 [|max|] (foldi_down_cont f max min cont)).
+ apply foldi_down_cont_Ind;trivial.
+Qed.
+
+Lemma foldi_down_ind : forall A (P: A -> Prop) (f:int -> A -> A) max min a,
+   P a ->
+   (forall i a, min <= i = true -> i <= max = true -> P a -> P (f i a)) ->
+   P (foldi_down f max min a).
+Proof.
+ unfold foldi_down;intros A P f max min a Ha Hr;revert a Ha.
+ apply foldi_down_cont_ind;auto.
+Qed.
+
+Lemma fold_down_ind : forall A (P: A -> Prop) (f: A -> A) max min a,
+   P a -> (forall a, P a -> P (f a)) -> P (fold_down f max min a).
+Proof.
+ unfold fold_down;intros A P f max min a Ha Hr;revert a Ha.
+ apply foldi_down_cont_ind;auto.
+Qed.
+
+Lemma forallb_spec : forall f from to, 
+  forallb f from to = true <->
+  forall i, from <= i = true -> i <= to = true -> f i = true.
+Proof.
+ unfold forallb;intros f from to.
+ setoid_rewrite leb_spec.
+ apply foldi_cont_Ind.
+ intros;split;[intros;elimtype False;omega | trivial].
+ intros i cont Hfr Hto Hcont.
+ case_eq (f i);intros Heq.
+ rewrite Hcont;clear Hcont;split;auto with zarith;intros.
+ assert (H2 : ([|i0|] = [|i|] \/ [|i|] + 1 <= [|i0|])%Z) by omega; destruct H2;auto with zarith.
+ apply to_Z_inj in H2;rewrite H2;trivial.
+ split;[discriminate | intros].
+ rewrite leb_spec in Hto;rewrite <- Heq;auto with zarith.
+Qed.
+
+Lemma existsb_spec : forall f from to,
+  existsb f from to = true <->
+  exists i, ((from <= i) && (i <= to) && (f i)) = true .
+Proof.
+ unfold existsb;intros.
+ repeat setoid_rewrite andb_true_iff;setoid_rewrite leb_spec.
+ apply foldi_cont_Ind.
+ intros;split;[discriminate | intros [i [W1 W2]];elimtype False;omega].
+ intros i cont Hfr Hto Hcont.
+ case_eq (f i);intros Heq.
+  split;trivial.
+  exists i;rewrite leb_spec in Hto;auto with zarith.
+ rewrite Hcont;clear Hcont;split;intros [i0 [W1 W2]];
+  exists i0;split;auto with zarith.
+ assert (~ [|i|] = [|i0|]);[ | auto with zarith].
+ intros W;apply to_Z_inj in W;rewrite W in Heq;rewrite Heq in W2;discriminate.
+Qed.
+
+Lemma bit_max_int : forall i, (i < digits)%int31 = true -> bit max_int i = true.
+Proof.
+ intros;apply (forallb_spec (bit max_int) 0 (digits - 1)).
+ vm_compute;trivial.
+ apply leb_0.
+ rewrite ltb_spec in H.
+ destruct (to_Z_bounded i);rewrite leb_spec.
+ change [|digits - 1 |] with ([|digits|] - 1)%Z;omega.
+Qed.
+
+Lemma land_max_int_l : forall i, max_int land i = i.
+Proof.
+  intros;apply bit_eq;intros.
+  rewrite land_spec.
+  destruct (reflect_leb digits i0).
+  rewrite <- leb_spec in z.
+  rewrite !bit_M;trivial.
+  rewrite bit_max_int;trivial.
+  rewrite ltb_spec;omega.
+Qed.
+
+Lemma land_max_int_r : forall i, i land max_int = i.
+Proof.
+ intros;rewrite land_comm;apply land_max_int_l.
+Qed.
+
+Lemma to_Z_sub_1 : forall x, x <> 0 -> ([| x - 1|] = [|x|] - 1)%Z.
+Proof.
+  intros x Hdiff;assert ([|x|] <> 0%Z).
+  rewrite <- to_Z_0;intros Heq;apply Hdiff;apply to_Z_inj;trivial.
+  assert (W:= to_Z_bounded x);rewrite sub_spec, to_Z_1, Zmod_small;omega.
+Qed.
+
+Lemma ltb_leb_sub1 : (forall x i,  x <> 0 -> (i < x = true <-> i <= x - 1 = true)).
+Proof.
+ intros x i Hdiff.
+ rewrite ltb_spec, leb_spec, to_Z_sub_1;trivial.
+ split;auto with zarith.
+Qed.

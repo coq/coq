@@ -73,27 +73,27 @@ Axiom leb_spec : forall x y, (x <= y)%int31 = true <-> [|x|] <= [|y|].
 
 (** Iterators *)
 
-Axiom foldi_cont_gt : forall A B f from to cont a,
-  (to < from)%int31 = true -> foldi_cont (A:=A) (B:=B) f from to cont a = cont a.
+Axiom foldi_cont_gt : forall A B f from to cont,
+  (to < from)%int31 = true -> foldi_cont (A:=A) (B:=B) f from to cont = cont.
 
-Axiom foldi_cont_eq : forall A B f from to cont a,
-  from = to -> foldi_cont (A:=A) (B:=B) f from to cont a = f from cont a.
+Axiom foldi_cont_eq : forall A B f from to cont,
+  from = to -> foldi_cont (A:=A) (B:=B) f from to cont = f from cont.
 
-Axiom foldi_cont_lt : forall A B f from to cont a,
+Axiom foldi_cont_lt : forall A B f from to cont,
   (from < to)%int31 = true-> 
-  foldi_cont (A:=A) (B:=B) f from to cont a = 
-  f from (fun a' => foldi_cont f (from+1) to cont a') a.
+  foldi_cont (A:=A) (B:=B) f from to cont = 
+  f from (fun a' => foldi_cont f (from+1) to cont a').
 
-Axiom foldi_down_cont_lt : forall A B f from downto cont a,
-  (from < downto)%int31 = true -> foldi_down_cont (A:=A) (B:=B) f from downto cont a = cont a.
+Axiom foldi_down_cont_lt : forall A B f from downto cont,
+  (from < downto)%int31 = true -> foldi_down_cont (A:=A) (B:=B) f from downto cont = cont.
 
-Axiom foldi_down_cont_eq : forall A B f from downto cont a,
-  from = downto -> foldi_down_cont (A:=A) (B:=B) f from downto cont a = f from cont a.
+Axiom foldi_down_cont_eq : forall A B f from downto cont,
+  from = downto -> foldi_down_cont (A:=A) (B:=B) f from downto cont = f from cont.
 
-Axiom foldi_down_cont_gt : forall A B f from downto cont a,
+Axiom foldi_down_cont_gt : forall A B f from downto cont,
   (downto < from)%int31 = true-> 
-  foldi_down_cont (A:=A) (B:=B) f from downto cont a = 
-  f from (fun a' => foldi_down_cont f (from-1) downto cont a') a.
+  foldi_down_cont (A:=A) (B:=B) f from downto cont = 
+  f from (fun a' => foldi_down_cont f (from-1) downto cont a').
 
 (** Print *)
 
