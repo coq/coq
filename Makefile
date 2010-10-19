@@ -160,8 +160,18 @@ else
 stage1 $(STAGE1_TARGETS) : always
 	$(call stage-template,1)
 
+ifneq (,$(STAGE1_IMPLICITS))
+$(STAGE1_IMPLICITS) : always
+	$(call stage-template,1)
+endif
+
 stage2 $(STAGE2_TARGETS) : stage1
 	$(call stage-template,2)
+
+ifneq (,$(STAGE2_IMPLICITS))
+$(STAGE2_IMPLICITS) : stage1
+	$(call stage-template,2)
+endif
 
 # Nota:
 # - world is one of the targets in $(STAGE2_TARGETS), hence launching

@@ -365,7 +365,7 @@ DATE=$(shell LANG=C date +"%B %Y")
 
 SOURCEDOCDIR=dev/source-doc
 
-CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa %.cmxs %.dep.ps %.dot
+CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.o %.cmi %.cma %.cmxa %.a %.cmxs %.dep.ps %.dot
 
 ### Targets forwarded by Makefile to a specific stage:
 
@@ -374,10 +374,12 @@ CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa %.cmxs %.dep.ps %.dot
 STAGE1_TARGETS:= $(STAGE1) $(COQDEPBOOT) \
   $(GENFILES) \
   source-doc revision toplevel/mltop.byteml toplevel/mltop.optml \
-  $(STAGE1_ML4:.ml4=.ml4-preprocessed) %.o
+  $(STAGE1_ML4:.ml4=.ml4-preprocessed)
+
+STAGE1_IMPLICITS:=
 
 ifdef CM_STAGE1
- STAGE1_TARGETS+=$(CAML_OBJECT_PATTERNS)
+ STAGE1_IMPLICITS+=$(CAML_OBJECT_PATTERNS)
 endif
 
 ## Enumeration of targets that require being done at stage2
@@ -402,12 +404,13 @@ STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
   printers debug initplugins plugins \
   world install coqide coqide-files coq coqlib \
   coqlight states check init theories theories-light \
-  $(DOC_TARGETS) $(VO_TARGETS) validate \
-  %.vo %.glob states/% install-% %.ml4-preprocessed \
+  $(DOC_TARGETS) $(VO_TARGETS) validate
+
+STAGE2_IMPLICITS:= %.vo %.glob states/% install-% %.ml4-preprocessed \
   $(DOC_TARGET_PATTERNS)
 
 ifndef CM_STAGE1
- STAGE2_TARGETS+=$(CAML_OBJECT_PATTERNS)
+ STAGE2_IMPLICITS+=$(CAML_OBJECT_PATTERNS)
 endif
 
 
