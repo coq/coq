@@ -15,7 +15,7 @@ Require Export NStrongRec.
 (** In this module, we derive generic implementations of usual operators
    just via the use of a [recursion] function. *)
 
-Module NdefOpsProp (Import N : NAxiomsFullSig').
+Module NdefOpsProp (Import N : NAxiomsRecSig').
 Include NStrongRecProp N.
 
 (** Nullity Test *)

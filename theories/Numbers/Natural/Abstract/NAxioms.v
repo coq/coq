@@ -72,5 +72,8 @@ Axiom recursion_succ :
 
 End NAxiomsRec.
 
+Module Type NAxiomsRecSig := NAxiomsMiniSig <+ NAxiomsRec.
+Module Type NAxiomsRecSig' := NAxiomsMiniSig' <+ NAxiomsRec.
+
 Module Type NAxiomsFullSig := NAxiomsSig <+ NAxiomsRec.
 Module Type NAxiomsFullSig' := NAxiomsSig' <+ NAxiomsRec.

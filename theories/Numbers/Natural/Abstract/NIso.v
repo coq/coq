@@ -10,7 +10,7 @@
 
 Require Import NBase.
 
-Module Homomorphism (N1 N2 : NAxiomsFullSig).
+Module Homomorphism (N1 N2 : NAxiomsRecSig).
 
 Local Notation "n == m" := (N2.eq n m) (at level 70, no associativity).
 
@@ -51,7 +51,7 @@ Qed.
 
 End Homomorphism.
 
-Module Inverse (N1 N2 : NAxiomsFullSig).
+Module Inverse (N1 N2 : NAxiomsRecSig).
 
 Module Import NBasePropMod1 := NBaseProp N1.
 (* This makes the tactic induct available. Since it is taken from
@@ -74,7 +74,7 @@ Qed.
 
 End Inverse.
 
-Module Isomorphism (N1 N2 : NAxiomsFullSig).
+Module Isomorphism (N1 N2 : NAxiomsRecSig).
 
 Module Hom12 := Homomorphism N1 N2.
 Module Hom21 := Homomorphism N2 N1.

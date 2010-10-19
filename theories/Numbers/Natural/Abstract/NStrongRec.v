@@ -13,7 +13,7 @@ and proves its properties *)
 
 Require Export NSub.
 
-Module NStrongRecProp (Import N : NAxiomsFullSig').
+Module NStrongRecProp (Import N : NAxiomsRecSig').
 Include NSubProp N.
 
 Section StrongRecursion.
