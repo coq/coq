@@ -8,7 +8,7 @@
 
 (** THIS FILE IS DEPRECATED. Use [NPeano.Nat] instead. *)
 
-Require Export NPeano.
+Require Import NPeano.
 
 Local Open Scope nat_scope.
 Implicit Types m n p : nat.

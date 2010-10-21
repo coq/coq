@@ -220,6 +220,10 @@ struct
       ["Coq";"Reals" ; "Rpow_def"];
       ["LRing_normalise"]]
 
+  let r_modules =
+    [["Coq";"Reals" ; "Rdefinitions"];
+     ["Coq";"Reals" ; "Rpow_def"]]
+
   (**
     * Initialization : a large amount of Caml symbols are derived from
     * ZMicromega.v
@@ -227,6 +231,7 @@ struct
 
   let init_constant = gen_constant_in_modules "ZMicromega" init_modules
   let constant = gen_constant_in_modules "ZMicromega" coq_modules
+  let r_constant = gen_constant_in_modules "ZMicromega" r_modules
   (* let constant = gen_constant_in_modules "Omicron" coq_modules *)
 
   let coq_and = lazy (init_constant "and")
@@ -305,16 +310,16 @@ struct
   let coq_Qmult = lazy (constant "Qmult")
   let coq_Qpower = lazy (constant "Qpower")
 
-  let coq_Rgt = lazy (constant "Rgt")
-  let coq_Rge = lazy (constant "Rge")
-  let coq_Rle = lazy (constant "Rle")
-  let coq_Rlt = lazy (constant "Rlt")
+  let coq_Rgt = lazy (r_constant "Rgt")
+  let coq_Rge = lazy (r_constant "Rge")
+  let coq_Rle = lazy (r_constant "Rle")
+  let coq_Rlt = lazy (r_constant "Rlt")
 
-  let coq_Rplus = lazy (constant "Rplus")
-  let coq_Rminus = lazy (constant "Rminus")
-  let coq_Ropp = lazy (constant "Ropp")
-  let coq_Rmult = lazy (constant "Rmult")
-  let coq_Rpower = lazy (constant "pow")
+  let coq_Rplus = lazy (r_constant "Rplus")
+  let coq_Rminus = lazy (r_constant "Rminus")
+  let coq_Ropp = lazy (r_constant "Ropp")
+  let coq_Rmult = lazy (r_constant "Rmult")
+  let coq_Rpower = lazy (r_constant "pow")
 
   let coq_PEX = lazy (constant "PEX" )
   let coq_PEc = lazy (constant"PEc")
