@@ -96,7 +96,7 @@ Hint Resolve (ARadd_0_l  ARth) (ARadd_comm  ARth) (ARadd_assoc ARth)
              (ARsub_def  ARth) .
 
  (* Power coefficients *)
- Variable Cpow : Set.
+ Variable Cpow : Type.
  Variable Cp_phi : N -> Cpow.
  Variable rpow : R -> Cpow -> R.
  Variable pow_th : power_theory rI rmul req Cp_phi rpow.

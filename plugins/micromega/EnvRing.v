@@ -43,7 +43,7 @@ Section MakeRingPol.
                                 cO cI cadd cmul csub copp ceqb phi.
 
   (* Power coefficients *)
- Variable Cpow : Set.
+ Variable Cpow : Type.
  Variable Cp_phi : N -> Cpow.
  Variable rpow : R -> Cpow -> R.
  Variable pow_th : power_theory rI rmul req Cp_phi rpow.
