@@ -146,7 +146,53 @@ Lemma ltb_negb_geb : forall x y, x < y = negb (y <= x).
 Proof.
  intros;rewrite leb_negb_gtb, Bool.negb_involutive;trivial.
 Qed.
-  
+
+Lemma fold_left_Ind : 
+     forall A B (P : int -> A -> Prop) (f : A -> B -> A) (t:array B),
+     (forall a i, i < length t = true -> P i a -> P (i+1) (f a (t.[i]))) ->
+     forall a, P 0 a ->
+     P (length t) (fold_left f a t).
+Proof.
+ intros;unfold fold_left.
+ destruct (reflect_eqb 0 (length t)).
+   rewrite <- e; trivial.
+ set (P' z := 0 <= z = true -> z < length t = true ->
+            forall a, P (length t - 1 - z) a -> 
+            P (length t) (foldi (fun (i : int) (a0 : A) => f a0 (t .[ i])) (length t - 1 - z) (length t - 1) a)).
+ assert (P' (length t - 1)).
+  apply int_ind;unfold P'.
+  replace (length t - 1 - 0) with (length t - 1);[ intros| ring].
+  assert (length t = length t - 1 + 1) by ring.
+  rewrite H4 at 1;rewrite foldi_eq;trivial.
+  apply H;trivial. rewrite ltb_spec, to_Z_sub_1;auto with zarith.
+  intros.
+  rewrite foldi_lt.
+  assert (Eq : length t - 1 - (i + 1) + 1 = length t - 1 - i) by ring.
+  rewrite Eq;apply H2. apply leb_0.
+  assert (W:= to_Z_bounded max_int);rewrite ltb_spec in H1. 
+  assert (W1 := to_Z_bounded i); assert (W2 := to_Z_bounded (length t)).
+  generalize H4; rewrite !ltb_spec, add_spec, to_Z_1, Zmod_small;try omega.
+  rewrite <- Eq;apply H;trivial.
+  assert (W:= to_Z_sub_1 (length t) (not_eq_sym n)).
+  assert (W1:= to_Z_bounded max_int); assert (W2:= to_Z_bounded i).
+  assert ([|i+1|] = [|i|] + 1)%Z.
+   rewrite ltb_spec in H1;
+   rewrite add_spec, to_Z_1, Zmod_small;auto with zarith.
+  rewrite leb_spec in H3;rewrite ltb_spec in H4 |- *.
+  assert (W3 := to_Z_bounded (length t)).
+  rewrite (sub_spec (length t - 1)), Zmod_small;try omega.
+  assert (W:= to_Z_sub_1 (length t) (not_eq_sym n)).
+  assert (W1:= to_Z_bounded max_int); assert (W2:= to_Z_bounded i).
+  assert ([|i+1|] = [|i|] + 1)%Z.
+   rewrite ltb_spec in H1;
+   rewrite add_spec, to_Z_1, Zmod_small;auto with zarith.
+  rewrite leb_spec in H3;rewrite ltb_spec in H4 |- *.
+  assert (W3 := to_Z_bounded (length t)).
+  rewrite (sub_spec (length t - 1)), Zmod_small;try omega.
+ red in H1;replace (length t - 1 - (length t - 1)) with 0 in H1;[apply H1;trivial | ring ].
+ apply leb_0. rewrite ltb_leb_sub1;auto using leb_refl.
+Qed.
+
 Lemma fold_left_ind : 
      forall A B (P : A -> Prop) (f : A -> B -> A) (t:array B),
      (forall a i, i < length t = true -> P a -> P (f a (t.[i]))) ->
