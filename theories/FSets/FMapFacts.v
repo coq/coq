@@ -738,7 +738,7 @@ End WFacts_fun.
 
 (** * Same facts for self-contained weak sets and for full maps *)
 
-Module WFacts (M:S) := WFacts_fun M.E M.
+Module WFacts (M:WS) := WFacts_fun M.E M.
 Module Facts := WFacts.
 
 (** * Additional Properties for weak maps
