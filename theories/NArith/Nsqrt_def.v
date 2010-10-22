@@ -10,7 +10,7 @@
 
 Require Import BinPos BinNat Psqrt.
 
-Open Scope N_scope.
+Local Open Scope N_scope.
 
 Definition Nsqrtrem n :=
  match n with

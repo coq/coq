@@ -25,7 +25,7 @@ Delimit Scope N_scope with N.
 Bind Scope N_scope with N.
 Arguments Scope Npos [positive_scope].
 
-Open Local Scope N_scope.
+Local Open Scope N_scope.
 
 Definition Ndiscr : forall n:N, { p:positive | n = Npos p } + { n = N0 }.
 Proof.
