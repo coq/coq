@@ -81,6 +81,10 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (str "Syntax error: Undefined token.")
   | Lexer.Error (Bad_token s) ->
       hov 0 (str "Syntax error: Bad token" ++ spc () ++ str s ++ str ".")
+  | Stdpp.Exc_located (loc,exc) ->
+      hov 0 ((if loc = dummy_loc then (mt ())
+               else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
+               ++ explain_exn_default_aux anomaly_string report_fn exc)
   | Assert_failure (s,b,e) ->
       hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
 	       (if s <> "" then
