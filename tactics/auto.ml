@@ -566,8 +566,19 @@ type hints_entry =
   | HintsDestructEntry of identifier * int * (bool,unit) location *
       (patvar list * constr_pattern) * glob_tactic_expr
 
+let rec drop_extra_args c = match kind_of_term c with
+  (* Removed trailing extra implicit arguments, what improves compatibility
+     for constants with recently added maximal implicit arguments *)
+  | App (f,args) when isEvar (array_last args) ->
+      drop_extra_args (mkApp (f,fst (array_chop (Array.length args - 1) args)))
+  | _ -> c
+
 let interp_hints h =
-  let f = Constrintern.interp_constr Evd.empty (Global.env()) in
+  let f c =
+    let evd,c = Constrintern.interp_open_constr Evd.empty (Global.env()) c in
+    let c = drop_extra_args c in
+    Evarutil.check_evars (Global.env()) Evd.empty evd c;
+    c in
   let fr r =
     let gr = global_with_alias r in
     let r' = evaluable_of_global_reference (Global.env()) gr in
