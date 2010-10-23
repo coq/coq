@@ -126,6 +126,9 @@ Inductive sumbool (A B:Prop) : Set :=
 
 Add Printing If sumbool.
 
+Implicit Arguments left [[A] [B]] [A].
+Implicit Arguments right [[A] [B]] [B].
+
 (** [sumor] is an option type equipped with the justification of why
     it may not be a regular value *)
 

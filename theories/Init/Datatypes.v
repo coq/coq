@@ -153,6 +153,9 @@ Inductive sum (A B:Type) : Type :=
 
 Notation "x + y" := (sum x y) : type_scope.
 
+Implicit Arguments inl [[A] [B]] [A].
+Implicit Arguments inr [[A] [B]] [B].
+
 (** [prod A B], written [A * B], is the product of [A] and [B];
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
 
@@ -163,6 +166,8 @@ Add Printing Let prod.
 
 Notation "x * y" := (prod x y) : type_scope.
 Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope.
+
+Implicit Arguments pair [[A] [B]].
 
 Section projections.
   Variables A B : Type.

@@ -249,3 +249,6 @@ Fixpoint BshiftRa_iter (n:nat) (bv:Bvector (S n)) (p:nat) : Bvector (S n) :=
   end.
 
 End BOOLEAN_VECTORS.
+
+Implicit Arguments Vcons [[A] [n]] [].
+Implicit Arguments Vnil [[A]] [].

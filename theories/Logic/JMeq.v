@@ -24,6 +24,8 @@ Inductive JMeq (A:Type) (x:A) : forall B:Type, B -> Prop :=
 
 Set Elimination Schemes.
 
+Implicit Arguments JMeq_refl [[A] [x]] [A].
+
 Hint Resolve JMeq_refl.
 
 Lemma JMeq_sym : forall (A B:Type) (x:A) (y:B), JMeq x y -> JMeq y x.
