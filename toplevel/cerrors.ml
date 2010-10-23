@@ -146,10 +146,13 @@ let explain_exn_default =
 let raise_if_debug e =
   if !Flags.debug then raise e
 
-let _ = Tactic_debug.explain_logic_error := explain_exn_default
+let _ = Tactic_debug.explain_logic_error :=
+  (fun e -> explain_exn_default (process_vernac_interp_error e))
 
 let _ = Tactic_debug.explain_logic_error_no_anomaly :=
-          explain_exn_default_aux (fun () -> mt()) (fun () -> str ".")
+  (fun e ->
+    explain_exn_default_aux mt (fun () -> str ".")
+      (process_vernac_interp_error e))
 
 let explain_exn_function = ref explain_exn_default
 
