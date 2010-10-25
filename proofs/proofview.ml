@@ -110,7 +110,7 @@ let focus_sublist i j l =
     try 
       Util.list_chop (j-i+1) sub_right 
     with Failure "list_chop" -> 
-      Util.errorlabstrm "nth_unproven" (Pp.str"Not such unproven subgoal")
+      Util.errorlabstrm "nth_unproven" (Pp.str"No such unproven subgoal")
   in
   (sub, (left,right))
 
