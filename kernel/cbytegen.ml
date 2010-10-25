@@ -437,14 +437,14 @@ let rec compile_lam reloc lam sz cont =
       let (jump, cont) = make_branch cont in
       let lbl_default = Label.create () in
       let default =
-	let cont = Kgetglobal kn :: Kapply all :: jump :: !fun_code in
+	let cont = [Kgetglobal kn; Kapply all; jump] in
 	Klabel lbl_default ::
 	Kpush ::
 	if nparams = 0 then cont
 	else 
 	  compile_args reloc 
 	    args 0 nparams (sz + nargs) (Kpush::cont) in
-      fun_code := default;
+      fun_code := List.append default !fun_code;
       compile_args reloc args nparams nargs sz 
 	(Kcamlprim (op, lbl_default) :: cont)
 

@@ -133,18 +133,21 @@ Proof.
  elim Hd;rewrite get_outofbound;trivial.
 Qed.
 
-(* Move *)
-Lemma leb_negb_gtb : forall x y, x <= y = negb (y < x).
+Lemma foldi_left_Ind : 
+     forall A B (P : int -> A -> Prop) (f : int -> A -> B -> A) (t:array B),
+     (forall a i, i < length t = true -> P i a -> P (i+1) (f i a (t.[i]))) ->
+     forall a, P 0 a ->
+     P (length t) (foldi_left f a t).
 Proof.
- intros x y;apply Bool.eq_true_iff_eq;split;intros.
- apply Bool.eq_true_not_negb;apply leb_not_gtb;trivial.
- rewrite Bool.negb_true_iff, <- Bool.not_true_iff_false in H.
- rewrite leb_spec; rewrite ltb_spec in H;omega.
-Qed.
-
-Lemma ltb_negb_geb : forall x y, x < y = negb (y <= x).
-Proof.
- intros;rewrite leb_negb_gtb, Bool.negb_involutive;trivial.
+ intros;unfold foldi_left.
+ destruct (reflect_eqb 0 (length t)).
+  rewrite <- e;trivial.
+ assert ((length t - 1) + 1 = length t) by ring.
+ rewrite <- H1 at 1;apply foldi_Ind;auto.
+ assert (W:= leb_max_int (length t));rewrite leb_spec in W.
+ rewrite ltb_spec, to_Z_sub_1;auto with zarith.
+ intros Hlt;elim (ltb_0 _ Hlt).
+ intros;apply H;trivial. rewrite ltb_leb_sub1;auto.
 Qed.
 
 Lemma fold_left_Ind : 
@@ -153,44 +156,8 @@ Lemma fold_left_Ind :
      forall a, P 0 a ->
      P (length t) (fold_left f a t).
 Proof.
- intros;unfold fold_left.
- destruct (reflect_eqb 0 (length t)).
-   rewrite <- e; trivial.
- set (P' z := 0 <= z = true -> z < length t = true ->
-            forall a, P (length t - 1 - z) a -> 
-            P (length t) (foldi (fun (i : int) (a0 : A) => f a0 (t .[ i])) (length t - 1 - z) (length t - 1) a)).
- assert (P' (length t - 1)).
-  apply int_ind;unfold P'.
-  replace (length t - 1 - 0) with (length t - 1);[ intros| ring].
-  assert (length t = length t - 1 + 1) by ring.
-  rewrite H4 at 1;rewrite foldi_eq;trivial.
-  apply H;trivial. rewrite ltb_spec, to_Z_sub_1;auto with zarith.
-  intros.
-  rewrite foldi_lt.
-  assert (Eq : length t - 1 - (i + 1) + 1 = length t - 1 - i) by ring.
-  rewrite Eq;apply H2. apply leb_0.
-  assert (W:= to_Z_bounded max_int);rewrite ltb_spec in H1. 
-  assert (W1 := to_Z_bounded i); assert (W2 := to_Z_bounded (length t)).
-  generalize H4; rewrite !ltb_spec, add_spec, to_Z_1, Zmod_small;try omega.
-  rewrite <- Eq;apply H;trivial.
-  assert (W:= to_Z_sub_1 (length t) (not_eq_sym n)).
-  assert (W1:= to_Z_bounded max_int); assert (W2:= to_Z_bounded i).
-  assert ([|i+1|] = [|i|] + 1)%Z.
-   rewrite ltb_spec in H1;
-   rewrite add_spec, to_Z_1, Zmod_small;auto with zarith.
-  rewrite leb_spec in H3;rewrite ltb_spec in H4 |- *.
-  assert (W3 := to_Z_bounded (length t)).
-  rewrite (sub_spec (length t - 1)), Zmod_small;try omega.
-  assert (W:= to_Z_sub_1 (length t) (not_eq_sym n)).
-  assert (W1:= to_Z_bounded max_int); assert (W2:= to_Z_bounded i).
-  assert ([|i+1|] = [|i|] + 1)%Z.
-   rewrite ltb_spec in H1;
-   rewrite add_spec, to_Z_1, Zmod_small;auto with zarith.
-  rewrite leb_spec in H3;rewrite ltb_spec in H4 |- *.
-  assert (W3 := to_Z_bounded (length t)).
-  rewrite (sub_spec (length t - 1)), Zmod_small;try omega.
- red in H1;replace (length t - 1 - (length t - 1)) with 0 in H1;[apply H1;trivial | ring ].
- apply leb_0. rewrite ltb_leb_sub1;auto using leb_refl.
+ intros.
+ apply (foldi_left_Ind A B P (fun i => f));trivial.
 Qed.
 
 Lemma fold_left_ind : 
@@ -199,14 +166,48 @@ Lemma fold_left_ind :
      forall a, P a ->
      P (fold_left f a t).
 Proof.
- intros;unfold fold_left.
- case_eq (0 == (length t));intros Heq;trivial.
- apply foldi_ind;trivial.
- cut (0 < length t = true);[ | 
-  (generalize (leb_0 (length t));rewrite leb_ltb_eqb, Heq, Bool.orb_false_r;trivial)].
- intros;apply H;trivial.
- rewrite leb_spec in *;rewrite ltb_spec in *. rewrite to_Z_0 in H1.
- assert (W:= to_Z_bounded (length t));rewrite sub_spec, to_Z_1, Zmod_small in H3;omega.
+ intros;apply (fold_left_Ind A B (fun _ => P));trivial.
+Qed.
+
+Lemma foldi_right_Ind : 
+     forall A B (P : int -> A -> Prop) (f : int -> B -> A -> A) (t:array B),
+     (forall a i, i < length t = true -> P (i+1) a -> P i (f i (t.[i]) a)) ->
+     forall a, P (length t) a ->
+     P 0 (foldi_right f t a).
+Proof.
+ intros;unfold foldi_right.
+ destruct (reflect_eqb 0 (length t)).
+  rewrite e;trivial.
+ set (P' z a := (*-1 <= z < [|length t|] ->*) P (of_Z (z + 1)) a).
+ assert (P' ([|0|] - 1)%Z (foldi_down (fun (i : int) (b : A) => f i (t .[ i]) b) (length t - 1) 0 a)).
+ apply foldi_down_ZInd;unfold P'.
+ intros Hlt;elim (ltb_0 _ Hlt).
+ rewrite to_Z_sub_1;auto.
+ ring_simplify ([|length t|] - 1 + 1)%Z;rewrite of_to_Z;trivial.
+ intros;ring_simplify ([|i|] - 1 + 1)%Z;rewrite of_to_Z;auto.
+ assert (i < length t = true).
+   rewrite ltb_leb_sub1;auto.
+ apply H;trivial.
+ rewrite <-(to_Z_add_1 _ _ H4), of_to_Z in H3;auto.
+ exact H1.
+Qed.
+ 
+Lemma fold_right_Ind : 
+     forall A B (P : int -> A -> Prop) (f : B -> A -> A) (t:array B),
+     (forall a i, i < length t = true -> P (i+1) a -> P i (f (t.[i]) a)) ->
+     forall a, P (length t) a ->
+     P 0 (fold_right f t a).
+Proof.
+ intros;apply (foldi_right_Ind A B P (fun i => f));trivial.
+Qed.
+
+Lemma fold_right_ind : 
+     forall A B (P : A -> Prop) (f : B -> A -> A) (t:array B),
+     (forall a i, i < length t = true -> P a -> P (f (t.[i]) a)) ->
+     forall a, P a ->
+     P (fold_right f t a).
+Proof.
+ intros;apply (fold_right_Ind A B (fun i => P));trivial.
 Qed.
 
 Lemma forallb_spec : forall A (f : A -> bool) t,

@@ -438,10 +438,11 @@ let to_memory (init_code, fun_code, fv) =
   emit fun_code;
   let code = String.create !out_position in
   String.unsafe_blit !out_buffer 0 code 0 !out_position;
-  Array.iter (fun lbl ->
+  Array.iteri (fun i lbl ->
     (match lbl with
       Label_defined _ -> assert true
     | Label_undefined patchlist ->
+        if patchlist <> [] then Format.eprintf "Undefined label %i@." i;
 	assert (patchlist = []))) !label_table;
   let reloc = Array.of_list !reloc_info in
   (code, reloc, fv)

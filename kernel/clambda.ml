@@ -532,7 +532,9 @@ let rec occurence k kind lam =
       occurence_args k kind a
   | Lif (t, bt, bf) ->
       let kind = occurence k kind t in
-      kind && occurence k kind bt && occurence k kind bf
+      let kt = occurence k kind bt in
+      let kf = occurence k kind bf in
+      kind && kt && kf
   | Lfix(_,(ids,ltypes,lbodies)) 
   | Lcofix(_,(ids,ltypes,lbodies)) ->
       let kind = occurence_args k kind ltypes in
@@ -548,7 +550,7 @@ let occur_once lam =
       
 (* [remove_let lam] remove let expression in [lam] if the variable is *)
 (* used at most once time in the body, and does not appear under      *)
-(* a lambda or a fix or a cofix                                       *)
+(* a lambda or a fix or a cofix or a rec                              *)
       
 let rec remove_let subst lam =
   match lam with
@@ -647,6 +649,7 @@ let add31 l1 l2 =Lprim(None, Native.Int31add, [|l1;l2|])
 let sub31 l1 l2 =Lprim(None, Native.Int31sub, [|l1;l2|]) 
 let one31 = mkConst_b0 1
 
+let _A = Name (id_of_string "A")
 let _f = Name(id_of_string "f")
 let _min = Name (id_of_string "min") 
 let _max = Name (id_of_string "max") 
@@ -666,6 +669,45 @@ let r_aux = mkLrel _aux
 let r_i = mkLrel _i
 let r_i' = mkLrel _i'
 let r_a = mkLrel _a
+
+(*
+let params_foldi = [| _A; _f; _min; _max; _a|]
+let params_foldi_down = [| _A; _f; _max; _min; _a|]
+let pi = [|_i|]
+let lambda_of_iterator kn op =
+  match op with
+  | Native.Int31foldi ->
+      let body = 
+	Lif(areint (r_min 3) (r_max 2),
+	    Lif(isle (r_min 3) (r_max 2),
+		Lapp(Lrec(_aux,
+			  Llam(pi,
+			       Lif(islt (r_i 1) (r_max 3),
+				   Lapp(r_f 6, 
+					[|Lapp(r_aux 2, 
+					       [|add31 (r_i 1) one31|])|]),
+				   
+				   Lapp(r_f 6, [|r_a 3|])))),
+		     [|r_min 3|]),
+		r_a 1),
+	    Lapp(Lconst kn,[|mkLrel _A 5; r_f 4; r_min 3; r_max 2; r_a 1|])) in
+      Llam(params_foldi, body)
+  | Native.Int31foldi_down ->
+      let body = 
+	Lif(areint (r_min 2) (r_max 3),
+	    Lif(isle (r_min 2) (r_max 3),
+		Lapp(Lrec(_aux,
+			  Llam(pi,
+			       Lif(islt (r_min 4) (r_i 1),
+				   Lapp(r_f 6, 
+					[|Lapp(r_aux 2, 
+					       [|sub31 (r_i 1) one31|])|]),
+				   Lapp(r_f 6, [|r_a 3|])))),
+		     [|r_max 3|]),
+		r_a 1),
+	    Lapp(Lconst kn,[|mkLrel _A 5; r_f 4; r_max 3; r_min 2; r_a 1|])) in
+      Llam(params_foldi_down, body)
+  *)    
 
 let lambda_of_iterator kn op args =
   match op with

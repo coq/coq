@@ -77,19 +77,19 @@ Register eqb_correct : forall i j, (i==j)%int31 = true -> i = j as int31_eqb_cor
 Register foldi_cont : 
    forall 
      {A B     : Type}
-     (f       : int -> (A -> B) -> (A -> B)) 
+     (f       : int -> (A -> B) -> A -> B) 
      (from to : int)
      (cont    : A -> B), 
-     A -> B 
+     A -> B
      as int31_foldi.
 
 Register foldi_down_cont : 
   forall 
     {A B         : Type}
-    (f           :int -> (A -> B) -> (A -> B))
+    (f           : int -> (A -> B) -> A -> B)
     (from downto : int)
     (cont        : A -> B),
-    A -> B 
+    A -> B
     as int31_foldi_down.
 
 (* Print *)
