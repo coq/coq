@@ -38,6 +38,7 @@ Axiom default_set : forall A t i (a:A), default (t.[i<-a]) = default t.
 Axiom get_make : forall A (a:A) size i, (make size a).[i] = a.
 Axiom default_make : forall A (a:A) size, (default (make size a)) = a.
 
+Axiom ltb_length : forall A (t:array A), length t <= max_array_length = true.
 
 Axiom length_make : forall A size (a:A), 
   length (make size a) = if size <= max_array_length then size else max_array_length.
