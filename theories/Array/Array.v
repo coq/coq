@@ -57,10 +57,20 @@ Definition to_list {A:Type} (t:array A) :=
   if 0 == len then nil
   else foldi_down (fun i l => t.[i] :: l)%list (len - 1) 0 nil.
 
-Definition forallb {A:Type} (f:A->bool) (t:array A) :=
+Definition forallbi {A:Type} (f:int-> A->bool) (t:array A) :=
+  let len := length t in
+  if 0 == len then true
+  else forallb (fun i => f i (t.[i])) 0 (len - 1).
+
+Definition forallb {A:Type} (f: A->bool) (t:array A) :=
   let len := length t in
   if 0 == len then true
   else forallb (fun i => f (t.[i])) 0 (len - 1).
+
+Definition existsbi {A:Type} (f:int->A->bool) (t:array A) :=
+  let len := length t in
+  if 0 == len then false
+  else existsb (fun i => f i (t.[i])) 0 (len - 1).
 
 Definition existsb {A:Type} (f:A->bool) (t:array A) :=
   let len := length t in
@@ -211,10 +221,10 @@ Proof.
  intros;apply (fold_right_Ind A B (fun i => P));trivial.
 Qed.
 
-Lemma forallb_spec : forall A (f : A -> bool) t,
-  forallb f t = true <-> forall i, i < length t = true -> f (t.[i]) = true.
+Lemma forallbi_spec : forall A (f : int -> A -> bool) t,
+  forallbi f t = true <-> forall i, i < length t = true -> f i (t.[i]) = true.
 Proof.
- unfold forallb;intros A f t.
+ unfold forallbi;intros A f t.
  destruct (reflect_eqb 0 (length t)).
  split;[intros | trivial].
  elim (ltb_0 i);rewrite e;trivial.
@@ -222,15 +232,29 @@ Proof.
  apply leb_0. rewrite <- ltb_leb_sub1;auto. rewrite ltb_leb_sub1;auto.
 Qed.
 
-Lemma existsb_spec : forall A (f : A -> bool) t,
-  existsb f t = true <-> exists i, i < length t = true /\ f (t.[i]) = true.
+Lemma forallb_spec : forall A (f : A -> bool) t,
+  forallb f t = true <-> forall i, i < length t = true -> f (t.[i]) = true.
 Proof.
- unfold existsb;intros A f t.
+ intros A f;apply (forallbi_spec A (fun i => f)).
+Qed.
+
+Lemma existsbi_spec : forall A (f : int -> A -> bool) t,
+  existsbi f t = true <-> exists i, i < length t = true /\ f i (t.[i]) = true.
+Proof.
+ unfold existsbi;intros A f t.
  destruct (reflect_eqb 0 (length t)).
  split;[discriminate | intros [i [Hi _]];rewrite <- e in Hi;elim (ltb_0 _ Hi)].
  rewrite existsb_spec. repeat setoid_rewrite Bool.andb_true_iff.
  split;intros [i H];decompose [and] H;clear H;exists i;repeat split;trivial.
  rewrite ltb_leb_sub1;auto. apply leb_0. rewrite <- ltb_leb_sub1;auto.
 Qed.
+
+Lemma existsb_spec : forall A (f : A -> bool) t,
+  existsb f t = true <-> exists i, i < length t = true /\ f (t.[i]) = true.
+Proof.
+ intros A f;apply (existsbi_spec A (fun i => f)).
+Qed.
+
+
 
 
