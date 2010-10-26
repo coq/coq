@@ -65,7 +65,7 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ str (guill s) ++ report_fn ())
   | Sys.Break ->
       hov 0 (fnl () ++ str "User interrupt.")
-  | Stdpp.Exc_located (loc,exc) ->
+  | Loc.Exc_located (loc,exc) ->
       hov 0 ((if loc = dummy_loc then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
                ++ explain_exn_default_aux anomaly_string report_fn exc)
