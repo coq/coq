@@ -146,7 +146,7 @@ Proof.
  assert ((length t - 1) + 1 = length t) by ring.
  rewrite <- H1 at 1;apply foldi_Ind;auto.
  assert (W:= leb_max_int (length t));rewrite leb_spec in W.
- rewrite ltb_spec, to_Z_sub_1;auto with zarith.
+ rewrite ltb_spec, to_Z_sub_1_diff;auto with zarith.
  intros Hlt;elim (ltb_0 _ Hlt).
  intros;apply H;trivial. rewrite ltb_leb_sub1;auto.
 Qed.
@@ -183,7 +183,7 @@ Proof.
  assert (P' ([|0|] - 1)%Z (foldi_down (fun (i : int) (b : A) => f i (t .[ i]) b) (length t - 1) 0 a)).
  apply foldi_down_ZInd;unfold P'.
  intros Hlt;elim (ltb_0 _ Hlt).
- rewrite to_Z_sub_1;auto.
+ rewrite to_Z_sub_1_diff;auto.
  ring_simplify ([|length t|] - 1 + 1)%Z;rewrite of_to_Z;trivial.
  intros;ring_simplify ([|i|] - 1 + 1)%Z;rewrite of_to_Z;auto.
  assert (i < length t = true).

@@ -1663,7 +1663,7 @@ Proof.
  intros x y z;rewrite !leb_spec;apply Zle_trans.
 Qed.
 
-Lemma lt_trans : forall x y z, x < y = true ->  y < z = true -> x < z = true.
+Lemma ltb_trans : forall x y z, x < y = true ->  y < z = true -> x < z = true.
 Proof.
  intros x y z;rewrite !ltb_spec;apply Zlt_trans.
 Qed.
@@ -1721,10 +1721,21 @@ Proof.
  assert ([|x|] = 0)%Z;[ rewrite Heq, to_Z_0;trivial | omega].
 Qed.
 
-Lemma to_Z_sub_1 : forall x, x <> 0 -> ([| x - 1|] = [|x|] - 1)%Z.
+Lemma not_ltb_refl : forall i, ~(i < i = true).
 Proof.
-  intros x Hdiff;apply to_Z_sub_gt.
-  revert Hdiff;rewrite not_0_ltb, ltb_spec, leb_spec, to_Z_0, to_Z_1;omega.
+ intros;rewrite ltb_spec;omega.
+Qed.
+
+Lemma to_Z_sub_1 : forall x y, y < x = true -> ([| x - 1|] = [|x|] - 1)%Z.
+Proof.
+ intros;apply to_Z_sub_gt.
+ generalize (leb_ltb_trans _ _ _ (leb_0 y) H).
+ rewrite ltb_spec, leb_spec, to_Z_0, to_Z_1;auto with zarith.
+Qed.
+ 
+Lemma to_Z_sub_1_diff : forall x, x <> 0 -> ([| x - 1|] = [|x|] - 1)%Z.
+Proof.
+  intros x;rewrite not_0_ltb;apply to_Z_sub_1.
 Qed.
 
 Lemma to_Z_add_1 : forall x y, x < y = true -> [|x+1|] = ([|x|] + 1)%Z.
@@ -1736,7 +1747,7 @@ Qed.
 Lemma ltb_leb_sub1 : forall x i,  x <> 0 -> (i < x = true <-> i <= x - 1 = true).
 Proof.
  intros x i Hdiff.
- rewrite ltb_spec, leb_spec, to_Z_sub_1;trivial.
+ rewrite ltb_spec, leb_spec, to_Z_sub_1_diff;trivial.
  split;auto with zarith.
 Qed.
 
@@ -2102,6 +2113,150 @@ Proof.
  apply foldi_down_cont_ind;auto.
 Qed.
 
+Lemma foldi_cont_ZInd2 : forall A B (P: Z -> (A -> B) -> (A -> B) -> Prop) (f1 f2:int -> (A -> B) -> (A -> B)) min max cont1 cont2,
+   (forall z, ([|max|] < z)%Z -> P z cont1 cont2) ->
+   (forall i cont1 cont2, min <= i = true -> i <= max = true -> P ([|i|] + 1)%Z cont1 cont2 -> 
+                               P [|i|] (f1 i cont1) (f2 i cont2)) ->
+   P [|min|] (foldi_cont f1 min max cont1) (foldi_cont f2 min max cont2).
+Proof.
+ intros.
+ set (P' z cont := 
+        if Zlt_bool [|max|] z then cont = cont1
+        else P z cont (foldi_cont f2 (of_Z z) max cont2)).
+ assert (P' [|min|] (foldi_cont f1 min max cont1)).
+  apply foldi_cont_ZInd;unfold P';intros.
+  rewrite Zlt_is_lt_bool in H1;rewrite H1;trivial.
+  case_eq (Zlt_bool [|max|] [|i|]);intros.
+  rewrite <- Zlt_is_lt_bool, <- ltb_spec in H4.
+  elim (not_ltb_refl max);apply ltb_leb_trans with i;trivial.
+  rewrite of_to_Z;generalize H2;rewrite leb_ltb_eqb, orb_true_iff;intros [Hlt | Heq].
+  rewrite foldi_cont_lt;[apply H0 | ];trivial.
+  revert H3;case_eq (Zlt_bool [|max|] ([|i|] + 1)).
+  rewrite <- Zlt_is_lt_bool;rewrite ltb_spec in Hlt;intros;elimtype False;omega.
+  rewrite <- (to_Z_add_1 _ _ Hlt), of_to_Z; intros _ W;exact W.
+  rewrite eqb_spec in Heq;subst.
+  rewrite foldi_cont_eq;[apply H0 | ];trivial.
+  assert ([|max|] < [|max|] + 1)%Z by auto with zarith.
+   rewrite Zlt_is_lt_bool in H5;rewrite H5 in H3;rewrite H3.
+   apply H;rewrite Zlt_is_lt_bool;trivial.
+ revert H1;unfold P';case_eq (Zlt_bool [|max|] [|min|]).
+ rewrite <- Zlt_is_lt_bool;intros.
+ rewrite H2;rewrite foldi_cont_gt;[ | rewrite ltb_spec];auto.
+ rewrite of_to_Z;auto.
+Qed.
+
+Lemma foldi_ZInd2 : forall A (P : Z -> A -> A -> Prop) f1 f2 min max a1 a2,  
+  (max < min = true -> P ([|max|] + 1)%Z a1 a2) ->
+  P [|min|] a1 a2 ->
+  (forall i a1 a2, min <= i = true -> i <= max = true -> 
+      P [|i|] a1 a2 -> P ([|i|] + 1)%Z (f1 i a1) (f2 i a2)) ->
+  P ([|max|]+1)%Z (foldi f1 min max a1) (foldi f2 min max a2).
+Proof.
+ unfold foldi;intros A P f1 f2 min max a1 a2 Hlt;intros.
+ set (P' z cont1 cont2 := 
+       if Zlt_bool [|max|] z then cont1 = (fun a0 : A => a0) /\ cont2 = (fun a0 : A => a0)
+       else forall a1 a2, P z a1 a2 -> P ([|max|]+1)%Z (cont1 a1) (cont2 a2)).
+ assert (P' [|min|] (foldi_cont (fun (i : int) (cont : A -> A) (a0 : A) => cont (f1 i a0)) min
+                       max (fun a0 : A => a0)) 
+                    (foldi_cont (fun (i : int) (cont : A -> A) (a0 : A) => cont (f2 i a0)) min
+                       max (fun a0 : A => a0))).
+ apply foldi_cont_ZInd2;intros;red.
+ rewrite Zlt_is_lt_bool in H1;rewrite H1;auto.
+ case_eq (Zlt_bool [|max|] [|i|]);intros.
+  rewrite <- Zlt_is_lt_bool in H4;rewrite leb_spec in H2;elimtype False;omega.
+ clear H4; revert H3;unfold P'.
+ case_eq (Zlt_bool [|max|] ([|i|] + 1));intros;auto.
+  rewrite <- Zlt_is_lt_bool in H3; assert ([|i|] = [|max|]) by (rewrite leb_spec in H2;omega).
+  destruct H4;subst;rewrite <- H6;apply H0;trivial.
+ revert H1;unfold P'.
+ case_eq (Zlt_bool [|max|] [|min|]);auto.
+ rewrite <- Zlt_is_lt_bool, <- ltb_spec;intros;rewrite !foldi_cont_gt;auto.
+Qed.
+
+Lemma foldi_eq_compat : forall A (f1 f2:int -> A -> A) min max a,
+  (forall i a, min <= i = true -> i <= max = true -> f1 i a = f2 i a) ->
+  foldi f1 min max a = foldi f2 min max a.
+Proof.
+ intros; set (P' (z:Z) (a1 a2:A) := a1 = a2).
+ assert (P' ([|max|] + 1)%Z (foldi f1 min max a) (foldi f2 min max a)).
+ apply foldi_ZInd2;unfold P';intros;subst;auto.
+ apply H0.
+Qed.
+
+Lemma foldi_down_cont_ZInd2 :
+   forall A B (P: Z -> (A -> B) -> (A -> B) -> Prop) (f1 f2:int -> (A -> B) -> (A -> B)) max min cont1 cont2,
+   (forall z, (z < [|min|])%Z -> P z cont1 cont2) -> 
+   (forall i cont1 cont2, min <= i = true -> i <= max = true -> P ([|i|] - 1)%Z cont1 cont2 ->
+             P [|i|] (f1 i cont1) (f2 i cont2)) ->
+   P [|max|] (foldi_down_cont f1 max min cont1) (foldi_down_cont f2 max min cont2).
+Proof.
+  intros.
+ set (P' z cont := 
+        if Zlt_bool z [|min|] then cont = cont1 
+        else P z cont (foldi_down_cont f2 (of_Z z) min cont2)).
+ assert (P' [|max|] (foldi_down_cont f1 max min cont1)).
+  apply foldi_down_cont_ZInd;unfold P';intros.
+  rewrite Zlt_is_lt_bool in H1;rewrite H1;trivial.
+  case_eq (Zlt_bool [|i|] [|min|]);intros.
+  rewrite <- Zlt_is_lt_bool, <- ltb_spec in H4.
+  elim (not_ltb_refl min);apply leb_ltb_trans with i;trivial.
+  rewrite of_to_Z;generalize H1;rewrite leb_ltb_eqb, orb_true_iff;intros [Hlt | Heq].
+  rewrite foldi_down_cont_gt;[apply H0 | ];trivial.
+  revert H3;case_eq (Zlt_bool ([|i|] - 1) [|min|]).
+  rewrite <- Zlt_is_lt_bool;rewrite ltb_spec in Hlt;intros;elimtype False;omega.
+  rewrite <- (to_Z_sub_1 _ _ Hlt), of_to_Z; intros _ W;exact W.
+  rewrite eqb_spec in Heq;subst.
+  rewrite foldi_down_cont_eq;[apply H0 | ];trivial.
+  assert ([|i|] - 1 < [|i|])%Z by auto with zarith.
+   rewrite Zlt_is_lt_bool in H5;rewrite H5 in H3;rewrite H3.
+   apply H;rewrite Zlt_is_lt_bool;trivial.
+ revert H1;unfold P';case_eq (Zlt_bool [|max|] [|min|]).
+ rewrite <- Zlt_is_lt_bool;intros.
+ rewrite H2;rewrite foldi_down_cont_lt;[ | rewrite ltb_spec];auto.
+ rewrite of_to_Z;auto.
+Qed.
+
+Lemma foldi_down_ZInd2 :
+   forall A (P: Z -> A -> A -> Prop) (f1 f2:int -> A -> A) max min a1 a2,
+   (max < min = true -> P ([|min|] - 1)%Z a1 a2) ->
+   (P [|max|] a1 a2) -> 
+   (forall z, (z < [|min|])%Z -> P z a1 a2) -> 
+   (forall i a1 a2, min <= i = true -> i <= max = true -> P [|i|] a1 a2 ->
+             P ([|i|] - 1)%Z (f1 i a1) (f2 i a2)) ->
+   P ([|min|] - 1)%Z (foldi_down f1 max min a1) (foldi_down f2 max min a2).
+Proof.
+ unfold foldi_down;intros A P f1 f2 max min a1 a2 Hlt;intros.
+ set (P' z cont1 cont2 := 
+       if Zlt_bool z [|min|] then cont1 = (fun a0 : A => a0) /\ cont2 = (fun a0 : A => a0)
+       else forall a1 a2, P z a1 a2 -> P ([|min|] - 1)%Z (cont1 a1) (cont2 a2)).
+ assert (P' [|max|] (foldi_down_cont (fun (i : int) (cont : A -> A) (a0 : A) => cont (f1 i a0)) max
+                       min (fun a0 : A => a0))
+                    (foldi_down_cont (fun (i : int) (cont : A -> A) (a0 : A) => cont (f2 i a0)) max
+                       min (fun a0 : A => a0))).
+ apply foldi_down_cont_ZInd2;intros;red.
+  rewrite Zlt_is_lt_bool in H2;rewrite H2;auto.
+  case_eq (Zlt_bool [|i|] [|min|]);intros.
+  rewrite <- Zlt_is_lt_bool in H5;rewrite leb_spec in H2;elimtype False;omega.
+  clear H5;revert H4;unfold P'.
+  case_eq (Zlt_bool ([|i|] - 1) [|min|]);intros;auto.
+  rewrite <- Zlt_is_lt_bool in H4; assert ([|i|] = [|min|]) by (rewrite leb_spec in H2;omega).
+  destruct H5;subst;rewrite <- H7;apply H1;trivial.
+ revert H2;unfold P'.
+ case_eq (Zlt_bool [|max|] [|min|]);auto.
+ rewrite <- Zlt_is_lt_bool, <- ltb_spec;intros;rewrite foldi_down_cont_lt;auto.
+ destruct H3. rewrite H4;auto.
+Qed.
+
+Lemma foldi_down_eq_compat : forall A (f1 f2:int -> A -> A) max min a,
+  (forall i a, min <= i = true -> i <= max = true -> f1 i a = f2 i a) ->
+  foldi_down f1 max min a = foldi_down f2 max min a.
+Proof.
+ intros; set (P' (z:Z) (a1 a2:A) := a1 = a2).
+ assert (P' ([|min|] - 1)%Z (foldi_down f1 max min a) (foldi_down f2 max min a)).
+ apply foldi_down_ZInd2;unfold P';intros;subst;auto.
+ apply H0.
+Qed.
+
 Lemma forallb_spec : forall f from to, 
   forallb f from to = true <->
   forall i, from <= i = true -> i <= to = true -> f i = true.
@@ -2117,6 +2272,16 @@ Proof.
  apply to_Z_inj in H2;rewrite H2;trivial.
  split;[discriminate | intros].
  rewrite leb_spec in Hto;rewrite <- Heq;auto with zarith.
+Qed.
+
+Lemma forallb_eq_compat : forall f1 f2 from to,
+  (forall i, from <= i = true -> i <= to = true -> f1 i = f2 i) ->
+  forallb f1 from to = forallb f2 from to.
+Proof.
+ unfold forallb;intros.
+ set (P' (z:Z) (cont1 cont2:unit -> bool) := cont1 tt = cont2 tt).
+ refine (foldi_cont_ZInd2 _ _ P' _ _ from to _ _ _ _);unfold P';intros;trivial.
+ rewrite H2, H;trivial.
 Qed.
 
 Lemma existsb_spec : forall f from to,
@@ -2135,6 +2300,16 @@ Proof.
   exists i0;split;auto with zarith.
  assert (~ [|i|] = [|i0|]);[ | auto with zarith].
  intros W;apply to_Z_inj in W;rewrite W in Heq;rewrite Heq in W2;discriminate.
+Qed.
+
+Lemma existsb_eq_compat : forall f1 f2 from to,
+  (forall i, from <= i = true -> i <= to = true -> f1 i = f2 i) ->
+  existsb f1 from to = existsb f2 from to.
+Proof.
+ unfold existsb;intros.
+ set (P' (z:Z) (cont1 cont2:unit -> bool) := cont1 tt = cont2 tt).
+ refine (foldi_cont_ZInd2 _ _ P' _ _ from to _ _ _ _);unfold P';intros;trivial.
+ rewrite H2, H;trivial.
 Qed.
 
 Lemma bit_max_int : forall i, (i < digits)%int31 = true -> bit max_int i = true.
