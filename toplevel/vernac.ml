@@ -170,7 +170,7 @@ let rec vernac_com interpfun (loc,com) =
 	  | e ->
 	      (* if [e] is an anomaly, the next function will re-raise it *)
 	      let msg = Cerrors.explain_exn_no_anomaly e in
-	      msgnl (str "The command has indeed failed with message:" ++
+	      if_verbose msgnl (str "The command has indeed failed with message:" ++
 		     fnl () ++ str "=> " ++ hov 0 msg)
 	end
 
