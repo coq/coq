@@ -188,12 +188,12 @@ doc/faq/html/index.html: doc/faq/FAQ.v.html
 ifeq ($(QUICK),1)
 doc/stdlib/html/genindex.html:
 else
-doc/stdlib/html/genindex.html: | $(COQDOC) $(THEORIESVO)
+doc/stdlib/html/genindex.html: | $(COQDOC) $(THEORIESVO) $(PLUGINSVO)
 endif
 	- rm -rf doc/stdlib/html
 	$(MKDIR) doc/stdlib/html
 	$(COQDOC) -q -d doc/stdlib/html --with-header doc/common/styles/html/$(HTMLSTYLE)/header.html --with-footer doc/common/styles/html/$(HTMLSTYLE)/footer.html --multi-index --html -g \
-	  -R theories Coq $(THEORIESVO:.vo=.v)
+	  -R theories Coq -R plugins Coq $(THEORIESVO:.vo=.v)  $(PLUGINSVO:.vo=.v)
 	mv doc/stdlib/html/index.html doc/stdlib/html/genindex.html
 
 doc/stdlib/index-list.html: doc/stdlib/index-list.html.template doc/stdlib/make-library-index
