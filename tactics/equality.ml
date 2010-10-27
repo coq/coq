@@ -182,12 +182,30 @@ let find_elim hdcncl lft2rgt dep cls args gl =
       pf_conv_x gl (List.nth args 0) (List.nth args 2)) && not dep
     || Flags.version_less_or_equal Flags.V8_2
   then
-    (* use eq_rect, eq_rect_r, JMeq_rect, etc for compatibility *)
-    let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
-    let hdcncls = string_of_inductive hdcncl ^ suffix in
-    let rwr_thm = if lft2rgt = Some (cls=None) then hdcncls^"_r" else hdcncls in
-    try pf_global gl (id_of_string rwr_thm)
-    with Not_found -> error ("Cannot find rewrite principle "^rwr_thm^".")
+    match kind_of_term hdcncl with 
+      | Ind ind_sp -> 
+	let pr1 = 
+	  lookup_eliminator ind_sp (elimination_sort_of_clause cls gl) 
+	in 
+	if lft2rgt = Some (cls=None) 
+	then
+	  let c1 = destConst pr1 in 
+	  let mp,dp,l = repr_con (constant_of_kn (canonical_con c1)) in 
+	  let l' = label_of_id (add_suffix (id_of_label l) "_r")  in 
+	  let c1' = Global.constant_of_delta (make_con mp dp l') in
+	  begin 
+	    try 
+	      let _ = Global.lookup_constant c1' in
+	      mkConst c1'
+	    with Not_found -> 
+	      let rwr_thm = string_of_label l' in 
+	      error ("Cannot find rewrite principle "^rwr_thm^".")
+	  end
+	else pr1 
+      | _ -> 
+	  (* cannot occur since we checked that we are in presence of 
+	     Logic.eq or Jmeq just before *)
+	assert false
   else
   let scheme_name = match dep, lft2rgt, inccl with
     (* Non dependent case *)
