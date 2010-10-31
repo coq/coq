@@ -286,12 +286,14 @@ let make_exact_entry sigma pri (c,cty) =
     | Prod _ -> failwith "make_exact_entry"
     | _ ->
 	let pat = snd (Pattern.pattern_of_constr sigma cty) in
-	let head = 
-	  try head_of_constr_reference (fst (head_constr cty)) 
-	  with _ -> failwith "make_exact_entry" 
+	let hd =
+	  try head_pattern_bound pat
+	  with BoundPattern -> failwith "make_exact_entry"
 	in
-          (Some head,
-	  { pri=(match pri with Some pri -> pri | None -> 0); pat=Some pat; code=Give_exact c })
+          (Some hd,
+	  { pri = (match pri with None -> 0 | Some p -> p);
+	    pat = Some pat;
+	    code = Give_exact c })
 
 let make_apply_entry env sigma (eapply,hnf,verbose) pri (c,cty) =
   let cty = if hnf then hnf_constr env sigma cty else cty in
@@ -300,8 +302,9 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri (c,cty) =
         let ce = mk_clenv_from dummy_goal (c,cty) in
 	let c' = clenv_type (* ~reduce:false *) ce in
 	let pat = snd (Pattern.pattern_of_constr sigma c') in
-        let hd = (try head_pattern_bound pat
-          with BoundPattern -> failwith "make_apply_entry") in
+        let hd =
+	  try head_pattern_bound pat
+          with BoundPattern -> failwith "make_apply_entry" in
         let nmiss = List.length (clenv_missing ce) in
 	if nmiss = 0 then
 	  (Some hd,
@@ -907,12 +910,12 @@ and my_find_search_delta db_list local_db hdc concl =
 
 and tac_of_hint db_list local_db concl (flags, {pat=p; code=t}) =
   match t with
-  | Res_pf (term,cl) -> unify_resolve_gen flags (term,cl)
-  | ERes_pf (_,c) -> (fun gl -> error "eres_pf")
+  | Res_pf (c,cl) -> unify_resolve_gen flags (c,cl)
+  | ERes_pf _ -> (fun gl -> error "eres_pf")
   | Give_exact c  -> exact_check c
-  | Res_pf_THEN_trivial_fail (term,cl) ->
+  | Res_pf_THEN_trivial_fail (c,cl) ->
       tclTHEN
-        (unify_resolve_gen flags (term,cl))
+        (unify_resolve_gen flags (c,cl))
         (trivial_fail_db (flags <> None) db_list local_db)
   | Unfold_nth c -> (fun gl ->
       if exists_evaluable_reference (pf_env gl) c then
