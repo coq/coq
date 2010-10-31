@@ -686,7 +686,7 @@ let whd_simpl_orelse_delta_but_fix_old env sigma c =
            with Redelimination ->
              match reference_opt_value sigma env ref with
 	       | Some c ->
-		   (match kind_of_term ((strip_lam c)) with
+		   (match kind_of_term (strip_lam c) with
                      | CoFix _ | Fix _ -> s
 		     | _ -> redrec (c, stack))
 	       | None -> s)
@@ -696,7 +696,7 @@ let whd_simpl_orelse_delta_but_fix_old env sigma c =
 
 (* Same as [whd_simpl] but also reduces constants that do not hide a
    reducible fix, but does this reduction of constants only until it
-   it immediately hides a non reducible fix or a cofix *)
+   immediately hides a non reducible fix or a cofix *)
 
 let whd_simpl_orelse_delta_but_fix env sigma c =
   let rec redrec s =
@@ -704,7 +704,7 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
     if isEvalRef env constr then
       match reference_opt_value sigma env (destEvalRef constr) with
 	| Some c ->
-	    (match kind_of_term ((strip_lam c)) with
+	    (match kind_of_term (strip_lam c) with
               | CoFix _ | Fix _ -> s'
 	      | _ -> redrec (c, stack))
 	| None -> s'
